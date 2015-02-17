@@ -537,8 +537,8 @@ found:
 	TCPCONN_UNLOCK(part);
 
 	LM_DBG("con found in state %d\n",c->state);
-	// FIXME, this breaks the ASYNC CONNECT + WRITE
-	if (c->state<S_CONN_OK) {
+
+	if (c->state!=S_CONN_OK) {
 		/* no need to aquired, just return the conn with an invalid fd */
 		*conn = c;
 		*conn_fd = -1;
@@ -841,7 +841,7 @@ struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
 					available to the rest of the world */
 
 	/* inform TCP main about this new connection */
-	if (state==S_CONN_INIT) {
+	if (state==S_CONN_CONNECTING) {
 		response[0]=(long)c;
 		response[1]=ASYNC_CONNECT;
 		n=send_fd(unix_tcp_sock, response, sizeof(response), c->s);
@@ -956,7 +956,7 @@ static inline int handle_new_connect(struct socket_info* si)
 	}
 
 	/* add socket to list */
-	tcpconn=tcpconn_new(new_sock, &su, si, si->proto, S_CONN_ACCEPT);
+	tcpconn=tcpconn_new(new_sock, &su, si, si->proto, S_CONN_OK);
 	if (tcpconn){
 		tcpconn->refcnt++; /* safe, not yet available to the
 							  outside world */
@@ -1027,7 +1027,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 	} else {
 		LM_DBG("connection %p fd %d is now writable\n", tcpconn, tcpconn->s);
 		/* we received a write event */
-		if (tcpconn->flags & F_CONN_NOT_CONNECTED) {
+		if (tcpconn->state==S_CONN_CONNECTING) {
 			/* we're coming from an async connect & write
 			 * let's see if we connected succesfully*/
 			err_len=sizeof(err);
@@ -1043,7 +1043,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 
 			/* we succesfully connected - further treat this case as if we
 			 * were coming from an async write */
-			tcpconn->flags &=~F_CONN_NOT_CONNECTED;
+			tcpconn->state = S_CONN_OK;
 			LM_DBG("Succesfully completed previous async connect\n");
 
 			goto async_write;
@@ -1307,7 +1307,6 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 				LM_CRIT(" cmd CONN_NEW: no fd received\n");
 				break;
 			}
-			tcpconn->flags|=F_CONN_NOT_CONNECTED;
 			tcpconn->s=fd;
 			/* add tcpconn to the list*/
 			tcpconn_add(tcpconn);

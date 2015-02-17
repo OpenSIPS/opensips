@@ -50,11 +50,9 @@
 /* tcp connection flags */
 #define F_CONN_NON_BLOCKING   1
 #define F_CONN_REMOVED        2 /*!< no longer in "main" listen fd list */
-#define F_CONN_NOT_CONNECTED  4 /*!< a connection in pending state,
-								  waiting to be connected */
 
 enum tcp_conn_states { S_CONN_ERROR=-2, S_CONN_BAD=-1, S_CONN_OK=0,
-		S_CONN_INIT, S_CONN_EOF, S_CONN_ACCEPT, S_CONN_CONNECT };
+		S_CONN_CONNECTING, S_CONN_EOF };
 
 struct tcp_connection;
 

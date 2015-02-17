@@ -476,7 +476,7 @@ again:
 async_connect:
 	LM_DBG("Create connection for async connect\n");
 	/* create a new dummy connection */
-	con=tcp_conn_create(fd, server, send_sock, PROTO_TCP, S_CONN_INIT);
+	con=tcp_conn_create(fd, server, send_sock, PROTO_TCP, S_CONN_CONNECTING);
 	if (con==NULL) {
 		LM_ERR("tcp_conn_create failed\n");
 		goto error;
@@ -494,7 +494,7 @@ async_connect:
 	return 0;
 
 local_connect:
-	con=tcp_conn_create(fd, server, send_sock, PROTO_TCP, S_CONN_CONNECT);
+	con=tcp_conn_create(fd, server, send_sock, PROTO_TCP, S_CONN_OK);
 	if (con==NULL) {
 		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;
@@ -539,7 +539,7 @@ static struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
 		LM_ERR("tcp_blocking_connect failed\n");
 		goto error;
 	}
-	con=tcp_conn_create(s, server, send_sock, PROTO_TCP, S_CONN_CONNECT);
+	con=tcp_conn_create(s, server, send_sock, PROTO_TCP, S_CONN_OK);
 	if (con==NULL){
 		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;
@@ -708,7 +708,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 	if (fd==-1) {
 		/* connection is not writable because of its state - can we append
 		 * data to it for later writting (async writting)? */
-		if (c->flags & F_CONN_NOT_CONNECTED) {
+		if (c->state==S_CONN_CONNECTING) {
 			/* the connection is currently in the process of getting
 			 * connected - let's append our send chunk as well - just in
 			 * case we ever manage to get through */
