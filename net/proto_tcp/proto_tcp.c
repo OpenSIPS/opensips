@@ -476,7 +476,7 @@ again:
 async_connect:
 	LM_DBG("Create connection for async connect\n");
 	/* create a new dummy connection */
-	con=tcp_conn_create(fd, server, send_sock, PROTO_TCP, S_CONN_CONNECTING);
+	con=tcp_conn_create(fd, server, send_sock, S_CONN_CONNECTING);
 	if (con==NULL) {
 		LM_ERR("tcp_conn_create failed\n");
 		goto error;
@@ -494,7 +494,7 @@ async_connect:
 	return 0;
 
 local_connect:
-	con=tcp_conn_create(fd, server, send_sock, PROTO_TCP, S_CONN_OK);
+	con=tcp_conn_create(fd, server, send_sock, S_CONN_OK);
 	if (con==NULL) {
 		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;
@@ -539,7 +539,7 @@ static struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
 		LM_ERR("tcp_blocking_connect failed\n");
 		goto error;
 	}
-	con=tcp_conn_create(s, server, send_sock, PROTO_TCP, S_CONN_OK);
+	con=tcp_conn_create(s, server, send_sock, S_CONN_OK);
 	if (con==NULL){
 		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;

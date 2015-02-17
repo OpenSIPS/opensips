@@ -83,7 +83,7 @@ int tcp_conn_get(int id, struct ip_addr* ip, int port, int timeout,
 
 /* creates a new tcp conn around a newly connected socket */
 struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
-		struct socket_info* ba, int type, int state);
+		struct socket_info* si, int state);
 
 /* release a connection aquired via tcp_conn_get() or tcp_conn_create() */
 void tcp_conn_release(struct tcp_connection* c, int pending_data);

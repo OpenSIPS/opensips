@@ -765,7 +765,7 @@ static inline void tcpconn_ref(struct tcp_connection* c)
 
 
 static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
-								struct socket_info* ba, int type, int state)
+							struct socket_info* si, int state, int flags)
 {
 	struct tcp_connection *c;
 
@@ -787,26 +787,25 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c->refcnt=0;
 	su2ip_addr(&c->rcv.src_ip, su);
 	c->rcv.src_port=su_getport(su);
-	c->rcv.bind_address=ba;
-	if (ba){
-		c->rcv.dst_ip=ba->address;
-		c->rcv.dst_port=ba->port_no;
-	}
+	c->rcv.bind_address = si;
+	c->rcv.dst_ip = si->address;
+	c->rcv.dst_port = si->port_no;
 	print_ip("tcpconn_new: new tcp connection to: ", &c->rcv.src_ip, "\n");
-	LM_DBG("on port %d, type %d\n", c->rcv.src_port, type);
+	LM_DBG("on port %d, proto %d\n", c->rcv.src_port, si->proto);
 	c->id=(*connection_id)++;
 	c->rcv.proto_reserved1=0; /* this will be filled before receive_message*/
 	c->rcv.proto_reserved2=0;
 	c->state=state;
 	c->extra_data=0;
-	c->type = type;
-	c->rcv.proto = type;
+	c->type = si->proto;
+	c->rcv.proto = si->proto;
 	c->timeout=get_ticks()+tcp_con_lifetime;
-	c->flags|=F_CONN_REMOVED;
+	c->flags|=F_CONN_REMOVED|flags;
 
-	if (protos[type].net.conn_init &&
-	protos[type].net.conn_init(c)<0) {
-		LM_ERR("failed to do proto %d specific init for conn %p\n",type,c);
+	if (protos[si->proto].net.conn_init &&
+	protos[si->proto].net.conn_init(c)<0) {
+		LM_ERR("failed to do proto %d specific init for conn %p\n",
+			si->proto,c);
 		goto error;
 	}
 
@@ -823,16 +822,19 @@ error:
 
 
 /* creates a new tcp connection structure and informs the TCP Main on that
- * a +1 ref is set for the new conn ! */
+ * a +1 ref is set for the new conn !
+ * IMPORTANT - the function assumes you want to create a new TCP conn as 
+ * a result of a connect operation - the conn will be set as connect !!
+ * Accepted connection are triggered internally only */
 struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
-								struct socket_info* ba, int type, int state)
+											struct socket_info* si, int state)
 {
 	struct tcp_connection *c;
 	long response[2];
 	int n;
 
 	/* create the connection structure */
-	c = tcpconn_new(sock, su, ba, type, state);
+	c = tcpconn_new(sock, su, si, state, 0);
 	if (c==NULL) {
 		LM_ERR("tcpconn_new failed\n");
 		return NULL;
@@ -956,7 +958,7 @@ static inline int handle_new_connect(struct socket_info* si)
 	}
 
 	/* add socket to list */
-	tcpconn=tcpconn_new(new_sock, &su, si, si->proto, S_CONN_OK);
+	tcpconn=tcpconn_new(new_sock, &su, si, S_CONN_OK, F_CONN_ACCEPTED);
 	if (tcpconn){
 		tcpconn->refcnt++; /* safe, not yet available to the
 							  outside world */
@@ -978,7 +980,6 @@ static inline int handle_new_connect(struct socket_info* si)
 	}else{ /*tcpconn==0 */
 		LM_ERR("tcpconn_new failed, closing socket\n");
 		close(new_sock);
-
 	}
 	return 1; /* accept() was succesfull */
 }
