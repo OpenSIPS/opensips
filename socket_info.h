@@ -166,24 +166,17 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 		case PROTO2UINT('u', 'd', 'p'):
 			if(len==3) { *proto=PROTO_UDP; return 0; }
 			break;
-#ifdef USE_TCP
 		case PROTO2UINT('t', 'c', 'p'):
 			if(len==3) { *proto=PROTO_TCP; return 0; }
 			break;
-#ifdef USE_TLS
 		case PROTO2UINT('t', 'l', 's'):
 			if(len==3) { *proto=PROTO_TLS; return 0; }
 			break;
-#endif
-#endif
-#ifdef USE_SCTP
 		case PROTO2UINT('s', 'c', 't'):
 			if(len==4 && (s[3]=='p' || s[3]=='P')) {
 				*proto=PROTO_SCTP; return 0;
 			}
 			break;
-#endif
-
 		default:
 			return -1;
 	}

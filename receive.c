@@ -159,22 +159,14 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		}
 		/* check if necessary to add receive?->moved to forward_req */
 		/* check for the alias stuff */
-#ifdef USE_TCP
 		if (msg->via1->alias && tcp_accept_aliases &&
-				(((rcv_info->proto==PROTO_TCP) && !tcp_disable)
-#ifdef USE_TLS
-					|| ((rcv_info->proto==PROTO_TLS) && !tls_disable)
-#endif
-				)
-			){
-			// FIXME TCP
-			//if (tcpconn_add_alias(rcv_info->proto_reserved1, msg->via1->port,
-			//						rcv_info->proto)!=0){
-			//	LM_ERR("tcp alias failed\n");
-			//	/* continue */
-			//}
+		protos[rcv_info->proto].net.flags&PROTO_NET_USE_TCP) {
+			if (tcpconn_add_alias(rcv_info->proto_reserved1, msg->via1->port,
+									rcv_info->proto)!=0){
+				LM_ERR("tcp alias failed\n");
+				/* continue */
+			}
 		}
-#endif
 
 		LM_DBG("preparing to run routing scripts...\n");
 		/* set request route type --bogdan*/

@@ -1183,12 +1183,7 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 	anchor=0;
 
 	/* check to see if we need to add clen */
-#ifdef USE_TCP
-	if (proto == PROTO_TCP
-#ifdef USE_TLS
-	    || proto == PROTO_TLS
-#endif
-	    ) {
+	if (protos[proto].net.flags&PROTO_NET_USE_TCP) {
 		if (parse_headers(msg, HDR_CONTENTLENGTH_F, 0)==-1){
 			LM_ERR("parsing content-length\n");
 			goto error;
@@ -1206,8 +1201,6 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 			}
 		}
 	}
-#endif
-
 
 	if ((anchor==0) && body_delta){
 		if (parse_headers(msg, HDR_CONTENTLENGTH_F, 0) == -1) {
@@ -1391,13 +1384,8 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	if (flags&MSG_TRANS_NOVIA_FLAG)
 		goto build_msg;
 
-#ifdef USE_TCP
-	/* add id if tcp */
-	if (msg->rcv.proto==PROTO_TCP
-#ifdef USE_TLS
-	|| msg->rcv.proto==PROTO_TLS
-#endif
-	){
+	/* add id if tcp-based protocol  */
+	if (protos[msg->rcv.proto].net.flags&PROTO_NET_USE_TCP) {
 		if  ((id_buf=id_builder(msg, &id_len))==0){
 			LM_ERR("id_builder failed\n");
 			goto error; /* we don't need to free anything,
@@ -1408,7 +1396,6 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		extra_params.s=id_buf;
 		extra_params.len=id_len;
 	}
-#endif
 
 	/* check whether to add rport parameter to local via */
 	if(msg->msg_flags&FL_FORCE_LOCAL_RPORT) {

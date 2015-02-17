@@ -43,6 +43,7 @@
 
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
+#include "net/trans.h"
 #include "resolve.h"
 #include "dprint.h"
 #include "ut.h"
@@ -1303,28 +1304,21 @@ not_found:
 
 static inline int get_naptr_proto(struct naptr_rdata *n)
 {
-#ifdef USE_TLS
 	if (n->services[3]=='s' || n->services[3]=='S' )
 		return PROTO_TLS;
-#endif
 	switch (n->services[n->services_len-1]) {
 		case 'U':
 		case 'u':
 			return PROTO_UDP;
 			break;
-#ifdef USE_TCP
 		case 'T':
 		case 't':
 			return PROTO_TCP;
 			break;
-#endif
-#ifdef USE_SCTP
 		case 'S':
 		case 's':
 			return PROTO_SCTP;
 			break;
-#endif
-
 	}
 	LM_CRIT("failed to detect proto\n");
 	return PROTO_NONE;
@@ -1562,20 +1556,13 @@ static inline void filter_and_sort_naptr( struct rdata** head_p, struct rdata** 
 		if ( (is_sips || naptr->services_len!=7 ||
 			strncasecmp(naptr->services,"sip+d2",6) ) &&
 		(
-#ifdef USE_TLS
-		tls_disable ||
-#endif
 		naptr->services_len!=8 || strncasecmp(naptr->services,"sips+d2",7)))
 			goto skip;
 		p = naptr->services[naptr->services_len-1];
 		/* by default we do not support SCTP */
 		if ( p!='U' && p!='u'
-#ifdef USE_TCP
-		&& (tcp_disable || (p!='T' && p!='t'))
-#endif
-#ifdef USE_SCTP
-		&& (sctp_disable || (p!='S' && p!='s'))
-#endif
+		&& ((p!='T' && p!='t'))
+		&& ((p!='S' && p!='s'))
 		)
 			goto skip;
 		/* is it valid? (SIPS+D2U is not!) */
@@ -1631,9 +1618,7 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 	struct hostent* he;
 
 	if ( (is_sips)
-#ifdef USE_TLS
 	&& (tls_disable)
-#endif
 	) {
 		LM_ERR("cannot resolve SIPS as no TLS support is configured\n");
 		return 0;
@@ -1721,22 +1706,16 @@ do_srv:
 			memcpy(tmp+SRV_UDP_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_UDP_PREFIX_LEN + name->len] = '\0';
 			break;
-#ifdef USE_TCP
 		case PROTO_TCP:
-			if (tcp_disable) goto err_proto;
 			memcpy(tmp, SRV_TCP_PREFIX, SRV_TCP_PREFIX_LEN);
 			memcpy(tmp+SRV_TCP_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_TCP_PREFIX_LEN + name->len] = '\0';
 			break;
-#endif
-#ifdef USE_TLS
 		case PROTO_TLS:
-			if (tls_disable) goto err_proto;
 			memcpy(tmp, SRV_TLS_PREFIX, SRV_TLS_PREFIX_LEN);
 			memcpy(tmp+SRV_TLS_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_TLS_PREFIX_LEN + name->len] = '\0';
 			break;
-#endif
 		default:
 			goto err_proto;
 	}
@@ -1777,29 +1756,16 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	struct rdata *rd;
 	struct hostent* he;
 
-	if ( (is_sips)
-#ifdef USE_TLS
-	&& (tls_disable)
-#endif
-	) {
-		LM_ERR("cannot resolve SIPS as no TLS support is configured\n");
-		return 0;
-	}
-
 	if (dn)
 		*dn = 0;
 
 	/* check if it's an ip address */
-	if ( ((ip=str2ip(name))!=0)
-#ifdef USE_IPV6
-	|| ((ip=str2ip6(name))!=0)
-#endif
-	){
+	if ( ((ip=str2ip(name))!=0) || ((ip=str2ip6(name))!=0) ){
 		/* we are lucky, this is an ip address */
 		if (proto && *proto==PROTO_NONE)
 			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		if (port && *port==0)
-			*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
+			*port = protos[*proto].default_port;
 		return ip_addr2he(name,ip);
 	}
 
@@ -1884,30 +1850,21 @@ do_srv:
 			memcpy(tmp+SRV_UDP_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_UDP_PREFIX_LEN + name->len] = '\0';
 			break;
-#ifdef USE_TCP
 		case PROTO_TCP:
-			if (tcp_disable) goto err_proto;
 			memcpy(tmp, SRV_TCP_PREFIX, SRV_TCP_PREFIX_LEN);
 			memcpy(tmp+SRV_TCP_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_TCP_PREFIX_LEN + name->len] = '\0';
 			break;
-#endif
-#ifdef USE_TLS
 		case PROTO_TLS:
-			if (tls_disable) goto err_proto;
 			memcpy(tmp, SRV_TLS_PREFIX, SRV_TLS_PREFIX_LEN);
 			memcpy(tmp+SRV_TLS_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_TLS_PREFIX_LEN + name->len] = '\0';
 			break;
-#endif
-#ifdef USE_SCTP
 		case PROTO_SCTP:
-			if (sctp_disable) goto err_proto;
 			memcpy(tmp, SRV_SCTP_PREFIX, SRV_SCTP_PREFIX_LEN);
 			memcpy(tmp+SRV_SCTP_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_SCTP_PREFIX_LEN + name->len] = '\0';
 			break;
-#endif
 		default:
 			goto err_proto;
 	}
@@ -1919,7 +1876,7 @@ do_srv:
 	LM_DBG("no valid SRV record found for %s, trying A record lookup...\n",
 		tmp);
 	/* set default port */
-	if (port) *port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
+	if (port) *port = protos[*proto].default_port;
 
 do_a:
 	/* do A record lookup */

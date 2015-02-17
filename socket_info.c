@@ -173,35 +173,6 @@ static void free_sock_info(struct socket_info* si)
 }
 
 
-
-#if 0
-/* TODO: update this based on the networking info */
-static char* get_proto_name(unsigned short proto)
-{
-	switch(proto){
-		case PROTO_NONE:
-			return "*";
-		case PROTO_UDP:
-			return "udp";
-#ifdef USE_TCP
-		case PROTO_TCP:
-			return "tcp";
-#endif
-#ifdef USE_TLS
-		case PROTO_TLS:
-			return "tls";
-#endif
-#ifdef USE_SCTP
-		case PROTO_SCTP:
-			return "sctp";
-#endif
-		default:
-			return "unknown";
-	}
-}
-#endif
-
-
 /* checks if the proto: host:port is one of the address we listen on
  * and returns the corresponding socket_info structure.
  * if port==0, the  port number is ignored
@@ -378,19 +349,8 @@ int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 			LM_ERR("get_sock_info_list failed\n");
 			goto error;
 		}
-		if (port==0){ /* use default port */
-			port=
-#ifdef USE_TLS
-				((c_proto)==PROTO_TLS)?tls_port_no:
-#endif
-				port_no;
-		}
-#ifdef USE_TLS
-		else if ((c_proto==PROTO_TLS) && (proto==0)){
-			/* -l  ip:port => on udp:ip:port; tcp:ip:port and tls:ip:port+1? */
-				port++;
-		}
-#endif
+		if (port==0) /* use default port */
+			port=protos[c_proto].default_port;
 		if (new_sock2list(name, port, c_proto, adv_name, adv_port, children,
 		flags, list)<0){
 			LM_ERR("new_sock2list failed\n");
@@ -562,18 +522,13 @@ int fix_socket_list(struct socket_info **list)
 #endif
 	for (si=*list;si;si=si->next){
 		/* fix the number of processes per interface */
-		/* TODO: what shall we do with these? */
-		if (si->children==0 && (si->proto==PROTO_UDP || si->proto==PROTO_SCTP))
+		if (!si->children && protos[si->proto].net.flags&PROTO_NET_USE_UDP)
 			si->children = children_no;
 		/* fix port number, port_no should be !=0 here */
 		/* XXX: we should not have port 0 here */
 		if (si->port_no==0){
 			LM_WARN("Port 0 for socket <%.*s>\n", si->name.len, si->name.s);
-#ifdef USE_TLS
-			si->port_no= (si->proto==PROTO_TLS)?tls_port_no:port_no;
-#else
-			si->port_no= port_no;
-#endif
+			si->port_no= protos[si->proto].default_port;
 		}
 		tmp=int2str(si->port_no, &len);
 		if (len>=MAX_PORT_LEN){
@@ -832,19 +787,15 @@ int get_socket_list_from_proto(int **ipList, int protocol) {
 
 	/* I hate to use #ifdefs, but this is necessary because of the way
 	 * get_sock_info_list() is defined.  */
-#ifndef USE_TCP
 	if (protocol == PROTO_TCP)
 	{
 		return 0;
 	}
-#endif
 
-#ifndef USE_TLS
 	if (protocol == PROTO_TLS)
 	{
 		return 0;
 	}
-#endif
 
 	/* Retrieve the list of sockets with respect to the given protocol. */
 	list=get_sock_info_list(protocol);
