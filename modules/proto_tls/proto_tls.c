@@ -45,6 +45,7 @@
 #include "../../receive.h"
 #include "../../pt.h"
 
+#include "../../net/proto_tcp/tcp_common_defs.h"
 #include "tls_config.h"
 #include "tls_domain.h"
 #include "tls_server.h"
@@ -59,7 +60,6 @@ static int proto_tls_init_listener(struct socket_info *si);
 static int proto_tls_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
 
-struct tcp_req;
 /* buffer to be used for reading all TCP SIP messages
    detached from the actual con - in order to improve
    paralelism ( process the SIP message while the con
@@ -1027,14 +1027,9 @@ static int tls_conn_init(struct tcp_connection* c)
 	*/
 	LM_DBG("entered: Creating a whole new ssl connection\n");
 
-	/*
-	* do everything tcpconn_new wouldn't do when TLS
-	*/
-	//FIXME
-	//c->flags = 0;
-	//c->timeout = get_ticks() + DEFAULT_TCP_CONNECTION_LIFETIME;
-
-	if (c->state == S_CONN_ACCEPT) {
+	if ( c->flags&F_CONN_ACCEPTED ) {
+		/* connection created as a result of an accept -> server */
+		c->proto_flags = F_TLS_DO_ACCEPT;
 		LM_DBG("looking up socket based TLS server "
 			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
 		dom = tls_find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
@@ -1046,8 +1041,10 @@ static int tls_conn_init(struct tcp_connection* c)
 			LM_ERR("no TLS server domain found\n");
 			return -1;
 		}
-	} else if (c->state == S_CONN_CONNECT) {
+	} else {
+		/* connection created as a result of a connect -> client */
 		avp = NULL;
+		c->proto_flags = F_TLS_DO_CONNECT;
 		if (tls_client_domain_avp > 0) {
 			avp = search_first_avp(0, tls_client_domain_avp, &val, 0);
 		} else {
@@ -1087,9 +1084,6 @@ static int tls_conn_init(struct tcp_connection* c)
 				}
 			}
 		}
-	} else {
-		LM_ERR("invalid connection state (bug in TCP code)\n");
-		return -1;
 	}
 	if (!c->extra_data) {
 		LM_ERR("failed to create SSL structure\n");
@@ -1103,10 +1097,10 @@ static int tls_conn_init(struct tcp_connection* c)
 	}
 #endif
 
-	if (c->state == S_CONN_ACCEPT) {
+	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
 		LM_DBG("Setting in ACCEPT mode (server)\n");
 		SSL_set_accept_state((SSL *) c->extra_data);
-	} else if (c->state == S_CONN_CONNECT) {
+	} else {
 		LM_DBG("Setting in CONNECT mode (client)\n");
 		SSL_set_connect_state((SSL *) c->extra_data);
 	}
@@ -1128,10 +1122,116 @@ static void tls_conn_clean(struct tcp_connection* c)
 }
 
 
-static int proto_tls_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to, int id)
+static struct tcp_connection* tls_sync_connect(struct socket_info* send_sock,
+		union sockaddr_union* server)
 {
-	return -1;
+	int s;
+	union sockaddr_union my_name;
+	socklen_t my_name_len;
+	struct tcp_connection* con;
+
+	s=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
+	if (s==-1){
+		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
+		goto error;
+	}
+	if (tcp_init_sock_opt(s)<0){
+		LM_ERR("tcp_init_sock_opt failed\n");
+		goto error;
+	}
+	my_name_len = sockaddru_len(send_sock->su);
+	memcpy( &my_name, &send_sock->su, my_name_len);
+	su_setport( &my_name, 0);
+	if (bind(s, &my_name.s, my_name_len )!=0) {
+		LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
+		goto error;
+	}
+
+	if (tcp_connect_blocking(s, &server->s, sockaddru_len(*server))<0){
+		LM_ERR("tcp_blocking_connect failed\n");
+		goto error;
+	}
+	con=tcp_conn_create(s, server, send_sock, S_CONN_OK);
+	if (con==NULL){
+		LM_ERR("tcp_conn_create failed, closing the socket\n");
+		goto error;
+	}
+	return con;
+	/*FIXME: set sock idx! */
+error:
+	/* close the opened socket */
+	if (s!=-1) close(s);
+	return 0;
+}
+
+
+static int proto_tls_send(struct socket_info* send_sock,
+				char* buf, unsigned int len, union sockaddr_union* to, int id)
+{
+	struct tcp_connection *c;
+	struct ip_addr ip;
+	int port;
+	int fd, n;
+
+	if (to){
+		su2ip_addr(&ip, to);
+		port=su_getport(to);
+		n = tcp_conn_get(id, &ip, port, tcp_con_lifetime, &c, &fd);
+	}else if (id){
+		n = tcp_conn_get(id, 0, 0, tcp_con_lifetime, &c, &fd);
+	}else{
+		LM_CRIT("prot_tls_send called with null id & to\n");
+		return -1;
+	}
+
+	if (n<0) {
+		/* error during conn get, return with error too */
+		LM_ERR("failed to aquire connection\n");
+		return -1;
+	}
+
+	/* was connection found ?? */
+	if (c==0) {
+		// FIXME 
+		//if (tcp_no_new_conn) {
+		//	return -1;
+		//}
+		LM_DBG("no open tcp connection found, opening new one\n");
+		/* create tcp connection */
+		if ((c=tls_sync_connect(send_sock, to))==0) {
+			LM_ERR("connect failed\n");
+			return -1;
+		}
+		fd = c->s;
+		goto send_it;
+	}
+
+	/* now we have a connection, let's what we can do with it */
+	/* BE CAREFUL now as we need to release the conn before exiting !!! */
+	if (fd==-1) {
+		/* connection is not writable because of its state */
+		/* return error, nothing to do about it */
+		tcp_conn_release(c, 0);
+		return -1;
+	}
+
+send_it:
+	LM_DBG("sending via fd %d...\n",fd);
+	lock_get(&c->write_lock);
+	n = tls_blocking_write(c, fd, buf, len);
+	lock_release(&c->write_lock);
+	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
+	LM_DBG("buf=\n%.*s\n", (int)len, buf);
+	if (n<0){
+		LM_ERR("failed to send\n");
+		c->state=S_CONN_BAD;
+		tcp_conn_release(c, 0);
+		close(fd);
+		return -1;
+	}
+	close(fd);
+	tcp_conn_release(c, 0);
+	return n;
 }
 
 

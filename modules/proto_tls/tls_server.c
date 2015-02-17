@@ -211,15 +211,14 @@ static void tls_dump_verification_failure(long verification_result)
 /*
  * Wrapper around SSL_accept, returns -1 on error, 0 on success
  */
-static int
-tls_accept(struct tcp_connection *c, short *poll_events)
+static int tls_accept(struct tcp_connection *c, short *poll_events)
 {
 	int ret, err;
 	SSL *ssl;
 	X509* cert;
 
-	if (c->state != S_CONN_ACCEPT) {
-		LM_ERR("invalid connection state (bug in TLS code)\n");
+	if ( (c->proto_flags&F_TLS_DO_ACCEPT)==0 ) {
+		LM_BUG("invalid connection state (bug in TLS code)\n");
 		return -1;
 	}
 
@@ -236,17 +235,17 @@ tls_accept(struct tcp_connection *c, short *poll_events)
 	}
 #endif
 	if (ret > 0) {
-		LM_INFO("New TLS connection from %s:%d accepted\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
-		c->state = S_CONN_OK;
+		LM_INFO("New TLS connection from %s:%d accepted\n",
+			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+		/* TLS accept done, reset the flag */
+		c->proto_flags &= ~F_TLS_DO_ACCEPT;
 
 		LM_DBG("new TLS connection from %s:%d using %s %s %d\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
 			SSL_get_cipher_version(ssl), SSL_get_cipher_name(ssl),
-			SSL_get_cipher_bits(ssl, 0)
-			);
+			SSL_get_cipher_bits(ssl, 0) );
 		LM_DBG("local socket: %s:%d\n",
-			ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port
-			);
+			ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port );
 		cert = SSL_get_peer_certificate(ssl);
 		if (cert != 0) {
 			tls_dump_cert_info("tls_accept: client TLS certificate", cert);
@@ -260,7 +259,8 @@ tls_accept(struct tcp_connection *c, short *poll_events)
 		}
 		cert = SSL_get_certificate(ssl);
 		if (cert != 0) {
-			tls_dump_cert_info("tls_accept: local TLS server certificate", cert);
+			tls_dump_cert_info("tls_accept: local TLS server certificate",
+				cert);
 		} else {
 			/* this should not happen, servers always present a cert */
 			LM_ERR("local TLS server domain has no certificate\n");
@@ -270,10 +270,10 @@ tls_accept(struct tcp_connection *c, short *poll_events)
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
-		                LM_INFO("TLS connection from %s:%d accept failed cleanly\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+				LM_INFO("TLS connection from %s:%d accept failed cleanly\n",
+					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 				c->state = S_CONN_BAD;
 				return -1;
-
 			case SSL_ERROR_WANT_READ:
 				if (poll_events)
 					*poll_events = POLLIN;
@@ -282,21 +282,24 @@ tls_accept(struct tcp_connection *c, short *poll_events)
 				if (poll_events)
 					*poll_events = POLLOUT;
 				return 0;
-
 			default:
 				c->state = S_CONN_BAD;
 				if (errno == 0) {
-                                    LM_ERR("New TLS connection from %s:%d failed to accept: rejected by client\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+					LM_ERR("New TLS connection from %s:%d failed to accept:"
+						" rejected by client\n",
+						ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 				} else {
-                                    LM_ERR("New TLS connection from %s:%d failed to accept\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
-                                    LM_ERR("TLS error: (ret=%d, err=%d, errno=%d/%s):\n", ret, err, errno, strerror(errno));
-                                    tls_print_errstack();
+					LM_ERR("New TLS connection from %s:%d failed to accept\n",
+						ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+					LM_ERR("TLS error: (ret=%d, err=%d, errno=%d/%s):\n",
+						ret, err, errno, strerror(errno));
+					tls_print_errstack();
 				}
 				return -1;
 		}
 	}
 
-	LM_ERR("bug\n");
+	LM_BUG("bug\n");
 	return -1;
 }
 
@@ -304,15 +307,14 @@ tls_accept(struct tcp_connection *c, short *poll_events)
 /*
  * wrapper around SSL_connect, returns 0 on success, -1 on error
  */
-static int
-tls_connect(struct tcp_connection *c, short *poll_events)
+static int tls_connect(struct tcp_connection *c, short *poll_events)
 {
 	int ret, err;
 	SSL *ssl;
 	X509* cert;
 
-	if (c->state != S_CONN_CONNECT) {
-		LM_ERR("invalid connection state (bug in TLS code)\n");
+	if ( (c->proto_flags&F_TLS_DO_CONNECT)==0 ) {
+		LM_BUG("invalid connection state (bug in TLS code)\n");
 		return -1;
 	}
 
@@ -320,8 +322,9 @@ tls_connect(struct tcp_connection *c, short *poll_events)
 
 	ret = SSL_connect(ssl);
 	if (ret > 0) {
-		LM_INFO("New TLS connection to %s:%d established\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
-		c->state = S_CONN_OK;
+		LM_INFO("New TLS connection to %s:%d established\n",
+			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+		c->proto_flags &= ~F_TLS_DO_CONNECT;
 		LM_DBG("new TLS connection to %s:%d using %s %s %d\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
 			SSL_get_cipher_version(ssl), SSL_get_cipher_name(ssl),
@@ -354,10 +357,10 @@ tls_connect(struct tcp_connection *c, short *poll_events)
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
-		                LM_INFO("New TLS connection to %s:%d failed cleanly\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+				LM_INFO("New TLS connection to %s:%d failed cleanly\n",
+					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 				c->state = S_CONN_BAD;
 				return -1;
-
 			case SSL_ERROR_WANT_READ:
 				if (poll_events)
 					*poll_events = POLLIN;
@@ -366,12 +369,12 @@ tls_connect(struct tcp_connection *c, short *poll_events)
 				if (poll_events)
 					*poll_events = POLLOUT;
 				return 0;
-
 			case SSL_ERROR_SYSCALL:
 				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
 					strerror(errno), errno);
 			default:
-		                LM_ERR("New TLS connection to %s:%d failed\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+				LM_ERR("New TLS connection to %s:%d failed\n",
+					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 				LM_ERR("TLS error: %d (ret=%d) err=%s(%d)\n",
 					err,ret,strerror(errno), errno);
 				c->state = S_CONN_BAD;
@@ -380,15 +383,14 @@ tls_connect(struct tcp_connection *c, short *poll_events)
 		}
 	}
 
-	LM_ERR("bug\n");
+	LM_BUG("bug\n");
 	return -1;
 }
 
 /*
  * wrapper around SSL_shutdown, returns -1 on error, 0 on success
  */
-static int
-tls_shutdown(struct tcp_connection *c)
+static int tls_shutdown(struct tcp_connection *c)
 {
 	int             ret,
 					err;
@@ -439,8 +441,8 @@ tls_shutdown(struct tcp_connection *c)
  * Wrapper around SSL_write, returns number of bytes written on success, *
  * -1 on error, 0 when it would block
  */
-static int
-tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len, short *poll_events)
+static int tls_write(struct tcp_connection *c, int fd, const void *buf,
+												size_t len, short *poll_events)
 {
 	int             ret,
 					err;
@@ -462,7 +464,6 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len, short *
 			LM_DBG("connection closed cleanly\n");
 			c->state = S_CONN_EOF;
 			return -1;
-
 		case SSL_ERROR_WANT_READ:
 			if (poll_events)
 				*poll_events = POLLIN;
@@ -471,9 +472,9 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len, short *
 			if (poll_events)
 				*poll_events = POLLOUT;
 			return 0;
-
 		default:
-		        LM_ERR("TLS connection to %s:%d write failed\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+			LM_ERR("TLS connection to %s:%d write failed\n",
+				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 			LM_ERR("TLS write error:\n");
 			c->state = S_CONN_BAD;
 			tls_print_errstack();
@@ -481,15 +482,14 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len, short *
 		}
 	}
 
-	LM_ERR("bug\n");
+	LM_BUG("bug\n");
 	return -1;
 }
 
 
 /*
  * Wrapper around SSL_read
- */
-/*
+ *
  * returns number of bytes read, 0 on eof and transits into S_CONN_EOF, -1
  * on error
  */
@@ -542,8 +542,7 @@ static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
 /*
  * perform one-way shutdown, do not wait fro notify from the remote peer
  */
-void
-tls_close(struct tcp_connection *c, int fd)
+void tls_close(struct tcp_connection *c, int fd)
 {
 	/*
 	* runs within global tcp lock
@@ -561,9 +560,8 @@ tls_close(struct tcp_connection *c, int fd)
 /*
  * fixme: probably does not work correctly
  */
-size_t
-tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
-		size_t len)
+size_t tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
+																	size_t len)
 {
 	#define MAX_SSL_RETRIES 32
 	int             written, n;
@@ -574,6 +572,11 @@ tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 	written = 0;
 	retries = 0;
 
+	if (c->state!=S_CONN_OK) {
+		LM_ERR("TLS broken connection\n");
+		goto error;
+	}
+
 	if (tls_update_fd(c, fd) < 0)
 		goto error;
 
@@ -581,27 +584,18 @@ tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 again:
 	n = 0;
 	pf.events = 0;
-	switch (c->state) {
-		case S_CONN_ACCEPT:
-			if (tls_accept(c, &(pf.events)) < 0)
-				goto error;
-			timeout = tls_handshake_timeout * 1000;
-			break;
 
-		case S_CONN_CONNECT:
-			if (tls_connect(c, &(pf.events)) < 0)
-				goto error;
-			timeout = tls_handshake_timeout * 1000;
-			break;
-
-		case S_CONN_OK:
-			n = tls_write(c, fd, buf, len, &(pf.events));
-			timeout = tls_send_timeout * 1000;
-			break;
-
-		default:
-			LM_ERR("TLS broken connection\n");
+	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
+		if (tls_accept(c, &(pf.events)) < 0)
 			goto error;
+		timeout = tls_handshake_timeout * 1000;
+	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
+		if (tls_connect(c, &(pf.events)) < 0)
+			goto error;
+		timeout = tls_handshake_timeout * 1000;
+	} else {
+		n = tls_write(c, fd, buf, len, &(pf.events));
+		timeout = tls_send_timeout * 1000;
 	}
 
 	if (n < 0) {
@@ -636,9 +630,6 @@ again:
 		return written;
 	}
 
-	/*
-	*
-	*/
 	if (pf.events == 0)
 		pf.events = POLLOUT;
 
@@ -694,15 +685,8 @@ error:
  */
 size_t tls_read(struct tcp_connection * c,struct tcp_req *r)
 {
-	/*
-	* no lock acquired
-	*/
-	/*
-	* shamelessly stolen from tcp_read
-	*/
 	int             bytes_free;
-	int             fd,
-					read;
+	int             fd, read;
 
 	fd = c->fd;
 	bytes_free = TCP_BUF_SIZE - (int) (r->pos - r->buf);
@@ -733,8 +717,7 @@ size_t tls_read(struct tcp_connection * c,struct tcp_req *r)
  * does not transit a connection into S_CONN_OK then tcp layer would not
  * call tcp_read
  */
-int
-tls_fix_read_conn(struct tcp_connection *c)
+int tls_fix_read_conn(struct tcp_connection *c)
 {
 	/*
 	* no lock acquired
@@ -749,22 +732,17 @@ tls_fix_read_conn(struct tcp_connection *c)
 	* something to write
 	*/
 	lock_get(&c->write_lock);
-    switch (c->state) {
-		case S_CONN_ACCEPT:
-			ret = tls_update_fd(c, c->fd);
-			if (!ret)
-				ret = tls_accept(c, NULL);
-			break;
 
-		case S_CONN_CONNECT:
-			ret = tls_update_fd(c, c->fd);
-			if (!ret)
-				ret = tls_connect(c, NULL);
-			break;
-
-		default:	/* fall through */
-			break;
+	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
+		ret = tls_update_fd(c, c->fd);
+		if (!ret)
+			ret = tls_accept(c, NULL);
+	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
+		ret = tls_update_fd(c, c->fd);
+		if (!ret)
+			ret = tls_connect(c, NULL);
 	}
+
 	lock_release(&c->write_lock);
 
 	return ret;
