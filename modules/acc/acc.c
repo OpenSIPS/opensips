@@ -109,6 +109,9 @@ extern struct acc_extra *db_extra;
 extern struct acc_extra *db_extra_bye;
 extern int acc_log_facility;
 
+/* call created avp id */
+extern int acc_created_avp_id;
+
 static int build_core_dlg_values(struct dlg_cell *dlg,struct sip_msg *req);
 static int build_extra_dlg_values(struct acc_extra* extra,
 		struct dlg_cell *dlg,struct sip_msg *req, struct sip_msg *reply);
@@ -144,6 +147,24 @@ static str val_arr[ACC_CORE_LEN+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 		c_vals[_i].s = 0; \
 		c_vals[_i].len = 0; \
 	} while(0)
+
+/*
+ *
+ */
+static inline int get_timestamps(unsigned int* created, unsigned int* setup_time)\
+{
+	int_str _created_ts;
+
+	if (search_first_avp( 0, acc_created_avp_id, &_created_ts, 0)==0) {
+		LM_ERR("cannot find created avp\n");
+		return -1;
+	}
+
+	*created = (unsigned int)_created_ts.n;
+	*setup_time = time(NULL) - *created;
+
+	return 0;
+}
 
 /* returns:
  * 		method name
@@ -362,7 +383,7 @@ end:
 }
 
 
-int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl)
+int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 {
 	static char log_msg[MAX_SYSLOG_SIZE];
 	static char *log_msg_end=log_msg+MAX_SYSLOG_SIZE-2;
@@ -370,6 +391,13 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl)
 	int n;
 	int m;
 	int i;
+	unsigned int _created;
+	unsigned int _setup_time;
+
+	if (cdr_flag && get_timestamps(&_created, &_setup_time)<0) {
+		LM_ERR("cannot get timestamps\n");
+		return -1;
+	}
 
 	/* get default values */
 	m = core2strar( rq, val_arr);
@@ -414,6 +442,16 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl)
 	/* terminating line */
 	*(p++) = '\n';
 	*(p++) = 0;
+
+
+	if (cdr_flag) {
+		LM_GEN2(acc_log_facility, log_level, "%.*stimestamp=%lu;created=%lu;setuptime=%lu%s",
+			acc_env.text.len, acc_env.text.s,
+			(unsigned long) acc_env.ts,
+			(unsigned long) _created,
+			(unsigned long) _setup_time, log_msg);
+		return 1;
+	}
 
 	LM_GEN2(acc_log_facility, log_level, "%.*stimestamp=%lu%s",
 		acc_env.text.len, acc_env.text.s,(unsigned long) acc_env.ts, log_msg);
@@ -476,12 +514,12 @@ static void acc_db_init_keys(void)
 	VAL_TYPE(db_vals+time_idx)=DB_DATETIME;
 
 	if (dlg_api.get_dlg) {
-		db_keys[n++] = &acc_duration_col;
 		db_keys[n++] = &acc_setuptime_col;
 		db_keys[n++] = &acc_created_col;
+		db_keys[n++] = &acc_duration_col;
+		VAL_TYPE(db_vals + n-1) = DB_INT;
+		VAL_TYPE(db_vals + n-2) = DB_DATETIME;
 		VAL_TYPE(db_vals + n-3) = DB_INT;
-		VAL_TYPE(db_vals + n-2) = DB_INT;
-		VAL_TYPE(db_vals + n-1) = DB_DATETIME;
 	}
 
 }
@@ -547,19 +585,27 @@ void acc_db_close(void)
 
 
 int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
-		query_list_t **ins_list)
+		query_list_t **ins_list, int cdr_flag)
 {
 	static db_ps_t my_ps_ins = NULL;
 	static db_ps_t my_ps = NULL;
 	int m;
 	int n;
 	int i;
+	unsigned int _created=0;
+	unsigned int  _setup_time=0;
+
+	if (cdr_flag && get_timestamps(&_created, &_setup_time)<0) {
+		LM_ERR("cannot get timestamps\n");
+		return -1;
+	}
 
 	/* formated database columns */
 	m = core2strar( rq, val_arr );
 
 	for(i = 0; i < m; i++)
 		VAL_STR(db_vals+i) = val_arr[i];
+
 	/* time value */
 	VAL_TIME(db_vals+(m++)) = acc_env.ts;
 
@@ -568,6 +614,11 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 
 	for( i++; i < m; i++)
 		VAL_STR(db_vals+i) = val_arr[i];
+
+	if (cdr_flag) {
+		VAL_INT(db_vals+(m++)) = _setup_time;
+		VAL_TIME(db_vals+(m++)) = _created;
+	}
 
 	acc_dbf.use_table(db_handle, &acc_env.text/*table*/);
 	CON_PS_REFERENCE(db_handle) = ins_list? &my_ps_ins : &my_ps;
@@ -648,9 +699,9 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	}
 
 	VAL_TIME(db_vals+ACC_CORE_LEN) = start_time;
-	VAL_INT(db_vals+ret+nr_vals+nr_bye_vals+1) = time(NULL) - start_time;
-	VAL_INT(db_vals+ret+nr_vals+nr_bye_vals+2) = start_time - created;
-	VAL_TIME(db_vals+ret+nr_vals+nr_bye_vals+3) = created;
+	VAL_INT(db_vals+ret+nr_vals+nr_bye_vals+1) = start_time - created;
+	VAL_TIME(db_vals+ret+nr_vals+nr_bye_vals+2) = created;
+	VAL_INT(db_vals+ret+nr_vals+nr_bye_vals+3) = time(NULL) - start_time;
 
 	total = ret + 4;
 	acc_dbf.use_table(db_handle, &table);
@@ -773,6 +824,7 @@ int init_acc_aaa(char* aaa_proto_url, int srv_type)
 	if (dlg_api.get_dlg) {
 		rd_attrs[n++].name = "Sip-Call-Duration";
 		rd_attrs[n++].name = "Sip-Call-Setuptime";
+		rd_attrs[n++].name = "Sip-Call-Created";
 	}
 
 	prot_url.s = aaa_proto_url;
@@ -820,15 +872,23 @@ static inline aaa_map *aaa_status( struct sip_msg *req, int code )
 		} \
 	}while(0)
 
-int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl)
+int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag)
 {
 	int attr_cnt;
 	aaa_message *send;
 	int offset, i, av_type;
 	aaa_map *r_stat;
 
+	unsigned int _created=0;
+	unsigned int _setup_time=0;
+
 	if ((send = proto.create_aaa_message(conn, AAA_ACCT)) == NULL) {
 		LM_ERR("failed to create new aaa message for acct\n");
+		return -1;
+	}
+
+	if (cdr_flag && get_timestamps(&_created, &_setup_time)<0) {
+		LM_ERR("cannot get timestamps\n");
 		return -1;
 	}
 
@@ -860,6 +920,13 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl)
 	offset = RA_STATIC_MAX-1;
 	for (i = 1; i < attr_cnt; i++)
 		ADD_AAA_AVPAIR( offset + i, val_arr[i].s, val_arr[i].len );
+
+	if (cdr_flag) {
+		av_type = (uint32_t)_setup_time;
+		ADD_AAA_AVPAIR( offset + attr_cnt + 1, &av_type, -1);
+		av_type = (uint32_t)_created;
+		ADD_AAA_AVPAIR( offset + attr_cnt + 2, &av_type, -1);
+	}
 
 	/* call-legs attributes also get inserted */
 	if (leg_info) {
@@ -1021,7 +1088,7 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	av_type = rd_vals[RV_SIP_SESSION].value; /* session*/
 	ADD_AAA_AVPAIR( RA_SERVICE_TYPE, &av_type, -1);
 
-	av_type = (uint32_t)acc_env.code; /* status=integer */
+	av_type =  (uint32_t)acc_env.code; /* status=integer */
 	ADD_AAA_AVPAIR( RA_SIP_RESPONSE_CODE, &av_type, -1);
 
 	av_type = METHOD_INVITE; /* method */
@@ -1411,12 +1478,15 @@ error:
 #undef EVI_CREATE_PARAM
 
 
-int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl)
+int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 {
 	int m;
 	int n;
 	int i;
 	int backup_idx = -1, ret = -1;
+
+	unsigned int _created=0;
+	unsigned int _setup_time=0;
 
 	/*
 	 * if the code is not set, choose the missed calls event
@@ -1430,6 +1500,11 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl)
 	/* check if someone is interested in this event */
 	if (!evi_probe_event(acc_env.event))
 		return 1;
+
+	if (cdr_flag && get_timestamps(&_created, &_setup_time)<0) {
+		LM_ERR("cannot get timestamps\n");
+		return -1;
+	}
 
 	m = core2strar( rq, val_arr );
 
@@ -1452,6 +1527,20 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl)
 			LM_ERR("cannot set acc extra parameter\n");
 			return -1;
 		}
+
+	/* little hack to jump over the duration parameter*/
+	m++;
+
+	if (cdr_flag && evi_param_set_int(evi_params[m++], &_setup_time) < 0) {
+		LM_ERR("cannot set setuptime parameter\n");
+		goto end;
+	}
+
+	if (cdr_flag && evi_param_set_int(evi_params[m++], &_created) < 0) {
+		LM_ERR("cannot set created parameter\n");
+		goto end;
+	}
+
 
 	/* multi-leg columns */
 	if ( !leg_info ) {

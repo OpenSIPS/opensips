@@ -99,6 +99,7 @@ Irina-Maria Stanescu
               1.6.41. evi_extra (string)
               1.6.42. evi_extra_bye (string)
               1.6.43. cdr_flag (string/integer)
+              1.6.44. acc_created_avp_name (string)
 
         1.7. Exported Functions
 
@@ -161,11 +162,12 @@ Irina-Maria Stanescu
    1.41. evi_extra example
    1.42. evi_extra_bye example
    1.43. cdr_flag example
-   1.44. acc_log_request usage
-   1.45. acc_db_request usage
-   1.46. acc_aaa_request usage
-   1.47. acc_diam_request usage
-   1.48. acc_evi_request usage
+   1.44. acc_created_avp_name example
+   1.45. acc_log_request usage
+   1.46. acc_db_request usage
+   1.47. acc_aaa_request usage
+   1.48. acc_diam_request usage
+   1.49. acc_evi_request usage
 
 Chapter 1. Admin Guide
 
@@ -386,6 +388,14 @@ Note
        parameter-value pair in the event. Similar to the database
        behavior, multiple events will be raised, and the only
        difference between them is the leg information.
+
+   Important!!! In order to use RADIUS, one must include the AVPs
+   which are located in
+   $(opensips_install_dir)/etc/dictionary.opensips, both in
+   opensips radius config script dictionary and radius server
+   dictionary. Most important are the last three AVPs (IDs : 227,
+   228, 229) which you won't find in any SIP dictionary (at least
+   at this moment) because they are only used in openSips.
 
 1.4. CDRs accounting
 
@@ -958,6 +968,17 @@ modparam("acc", "evi_extra_bye",
    Example 1.43. cdr_flag example
 modparam("acc", "cdr_flag", "CDR_FLAG")
 
+1.6.44. acc_created_avp_name (string)
+
+   The name of the openSips avp that will be used to hold the time
+   when the call was created. This time will only be logged on
+   missed calls.
+
+   Default value is "accX_created".
+
+   Example 1.44. acc_created_avp_name example
+modparam("acc", "acc_created_avp_name", "call_created_avp")
+
 1.7. Exported Functions
 
 1.7.1.  acc_log_request(comment)
@@ -977,7 +998,7 @@ modparam("acc", "cdr_flag", "CDR_FLAG")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.44. acc_log_request usage
+   Example 1.45. acc_log_request usage
 ...
 acc_log_request("403 Destination not allowed");
 ...
@@ -998,7 +1019,7 @@ acc_log_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.45. acc_db_request usage
+   Example 1.46. acc_db_request usage
 ...
 acc_db_request("Some comment", "Some table");
 acc_db_request("$T_reply_code $(<reply>rr)","acc");
@@ -1018,7 +1039,7 @@ acc_db_request("$T_reply_code $(<reply>rr)","acc");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.46. acc_aaa_request usage
+   Example 1.47. acc_aaa_request usage
 ...
 acc_aaa_request("403 Destination not allowed");
 ...
@@ -1037,7 +1058,7 @@ acc_aaa_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.47. acc_diam_request usage
+   Example 1.48. acc_diam_request usage
 ...
 acc_diam_request("403 Destination not allowed");
 ...
@@ -1060,7 +1081,7 @@ acc_diam_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.48. acc_evi_request usage
+   Example 1.49. acc_evi_request usage
 ...
 acc_evi_request("403 Destination not allowed");
 ...
@@ -1132,6 +1153,8 @@ acc_evi_request("403 Destination not allowed");
        parameter
      * multi_leg_info* - Extra parameters added by the
        multi_leg_info parameter
+     * created - Timestamp when the call was created
+     * setuptime - The call setup time in seconds
 
 Chapter 2. Frequently Asked Questions
 

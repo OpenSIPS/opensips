@@ -32,7 +32,9 @@ CREATE TABLE missed_calls (
     callid VARCHAR2(64) DEFAULT '',
     sip_code VARCHAR2(3) DEFAULT '',
     sip_reason VARCHAR2(32) DEFAULT '',
-    time DATE
+    time DATE,
+    setuptime NUMBER(10) DEFAULT 0 NOT NULL,
+    created DATE DEFAULT NULL
 );
 
 CREATE OR REPLACE TRIGGER missed_calls_tr

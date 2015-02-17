@@ -55,6 +55,8 @@ extern struct rr_binds rrb;
 extern str flags_str;
 extern str table_str;
 
+extern int acc_created_avp_id;
+
 struct acc_enviroment acc_env;
 
 static query_list_t *acc_ins_list = NULL;
@@ -188,7 +190,7 @@ int w_acc_log_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 	env_set_to( rq->to );
 	env_set_comment( &accp );
 	env_set_text( ACC_REQUEST, ACC_REQUEST_LEN);
-	return acc_log_request( rq, NULL);
+	return acc_log_request( rq, NULL, is_cdr_acc_on(rq));
 }
 
 
@@ -208,7 +210,7 @@ int w_acc_aaa_request(struct sip_msg *rq, pv_elem_t* comment, char* foo)
 
 	env_set_to( rq->to );
 	env_set_comment( &accp );
-	return acc_aaa_request( rq, NULL);
+	return acc_aaa_request( rq, NULL, is_cdr_acc_on(rq));
 }
 
 
@@ -234,14 +236,14 @@ int w_acc_db_request(struct sip_msg *rq, pv_elem_t* comment, char *table)
 	env_set_text(table, table_len);
 
 	if (table_len == db_table_mc.len && (strncmp(table, db_table_mc.s, table_len) == 0)) {
-		return acc_db_request(rq, NULL, &mc_ins_list);
+		return acc_db_request(rq, NULL, &mc_ins_list, is_cdr_acc_on(rq));
 	}
 
 	if (table_len == db_table_acc.len && (strncmp(table, db_table_acc.s, table_len) == 0)) {
-		return acc_db_request(rq, NULL, &acc_ins_list);
+		return acc_db_request(rq, NULL, &acc_ins_list, is_cdr_acc_on(rq));
 	}
 
-	return acc_db_request( rq, NULL,NULL);
+	return acc_db_request( rq, NULL,NULL, is_cdr_acc_on(rq));
 }
 
 #ifdef DIAM_ACC
@@ -272,7 +274,7 @@ int w_acc_evi_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 	env_set_to( rq->to );
 	env_set_comment( &accp );
 
-	return acc_evi_request( rq, NULL);
+	return acc_evi_request( rq, NULL, is_cdr_acc_on(rq));
 }
 
 int acc_pvel_to_acc_param(struct sip_msg* rq, pv_elem_t* pv_el, struct acc_param* accp)
@@ -329,6 +331,7 @@ void acc_onreq( struct cell* t, int type, struct tmcb_params *ps )
 {
 	int tmcb_types;
 	int is_invite;
+	int_str _avp_created_value;
 
 	if ( ps->req && !skip_cancel(ps->req) &&
 	(is_acc_on(ps->req) || is_mc_on(ps->req)) ) {
@@ -347,6 +350,13 @@ void acc_onreq( struct cell* t, int type, struct tmcb_params *ps )
 
 		/* if cdr accounting is enabled */
 		if (is_cdr_acc_on(ps->req) && !has_totag(ps->req)) {
+			_avp_created_value.n = time(NULL);
+
+			if ( add_avp(0, acc_created_avp_id, _avp_created_value) != 0) {
+				LM_ERR("failed to add created avp value!\n");
+				return;
+			}
+
 			if (is_invite && create_acc_dlg(ps->req) < 0) {
 				LM_ERR("cannot use dialog accounting module\n");
 				return;
@@ -428,24 +438,24 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 
 	if (is_evi_mc_on(req)) {
 		env_set_event(acc_missed_event);
-		acc_evi_request( req, reply );
+		acc_evi_request( req, reply, is_cdr_acc_on(req) );
 		flags_to_reset |= evi_missed_flag;
 	}
 
 	if (is_log_mc_on(req)) {
 		env_set_text( ACC_MISSED, ACC_MISSED_LEN);
-		acc_log_request( req, reply );
+		acc_log_request( req, reply, is_cdr_acc_on(req) );
 		flags_to_reset |= log_missed_flag;
 	}
 
 	if (is_aaa_mc_on(req)) {
-		acc_aaa_request( req, reply );
+		acc_aaa_request( req, reply, is_cdr_acc_on(req) );
 		flags_to_reset |= aaa_missed_flag;
 	}
 
 	if (is_db_mc_on(req)) {
 		env_set_text(db_table_mc.s, db_table_mc.len);
-		acc_db_request( req, reply,&mc_ins_list);
+		acc_db_request( req, reply,&mc_ins_list, is_cdr_acc_on(req));
 		flags_to_reset |= db_missed_flag;
 	}
 /* DIAMETER */
@@ -597,20 +607,20 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		/* do old accounting */
 		if ( is_evi_acc_on(req) ) {
 			env_set_event(acc_event);
-			acc_evi_request( req, reply );
+			acc_evi_request( req, reply, is_cdr_acc_on(req) );
 		}
 
 		if ( is_log_acc_on(req) ) {
 			env_set_text( ACC_ANSWERED, ACC_ANSWERED_LEN);
-			acc_log_request( req, reply );
+			acc_log_request( req, reply, is_cdr_acc_on(req) );
 		}
 
 		if (is_aaa_acc_on(req))
-			acc_aaa_request( req, reply );
+			acc_aaa_request( req, reply, is_cdr_acc_on(req) );
 
 		if (is_db_acc_on(req)) {
 			env_set_text( table.s.s, table.s.len);
-			acc_db_request( req, reply, &acc_ins_list);
+			acc_db_request( req, reply, &acc_ins_list, is_cdr_acc_on(req));
 		}
 	}
 

@@ -57,6 +57,8 @@
 		<column><field>sip_code</field><type>DB_STR</type></column>
 		<column><field>sip_reason</field><type>DB_STR</type></column>
 		<column><field>time</field><type>DB_DATETIME</type></column>
+		<column><field>setuptime</field><type>DB_INT</type></column>
+		<column><field>created</field><type>DB_DATETIME</type></column>
 	</db_table>
 	<!-- Declaration of dbaliases table-->
 	<db_table id="dbaliases">
@@ -991,6 +993,8 @@
 				<col><field>sip_code</field></col>
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
+				<col><field>setuptime</field></col>
+				<col><field>created</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -1004,6 +1008,8 @@
 				<col><field>sip_code</field></col>
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
+				<col><field>setuptime</field></col>
+				<col><field>created</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -1020,6 +1026,8 @@
 				<col><field>sip_code</field></col>
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
+				<col><field>setuptime</field></col>
+				<col><field>created</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

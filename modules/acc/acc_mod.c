@@ -192,6 +192,10 @@ struct acc_extra *evi_extra = 0;
 static char *evi_extra_bye_str = 0;
 struct acc_extra *evi_extra_bye = 0;
 
+/* db avp variables */
+str acc_created_avp_name = str_init("accX_created");
+int acc_created_avp_id = -1;
+
 
 
 /* ------------- fixup function --------------- */
@@ -286,6 +290,7 @@ static param_export_t params[] = {
 	{"acc_sip_code_column",  STR_PARAM, &acc_sipcode_col.s    },
 	{"acc_sip_reason_column",STR_PARAM, &acc_sipreason_col.s  },
 	{"acc_time_column",      STR_PARAM, &acc_time_col.s       },
+	{"acc_created_avp_name", STR_PARAM, &acc_created_avp_name.s},
 	{0,0,0}
 };
 
@@ -426,6 +431,7 @@ static int mod_init( void )
 	acc_sipcode_col.len = strlen(acc_sipcode_col.s);
 	acc_sipreason_col.len = strlen(acc_sipreason_col.s);
 	acc_time_col.len = strlen(acc_time_col.s);
+	acc_created_avp_name.len = strlen(acc_created_avp_name.s);
 
 	if (log_facility_str) {
 		int tmp = str2facility(log_facility_str);
@@ -531,6 +537,11 @@ static int mod_init( void )
 	/* ------------ SQL INIT SECTION ----------- */
 
 	if (db_url.s) {
+		if ( parse_avp_spec( &acc_created_avp_name, &acc_created_avp_id)<0 ) {
+			LM_ERR("failed to register AVP name <%s>\n", acc_created_avp_name.s);
+			return -1;
+		}
+
 		/* parse the extra string, if any */
 		if (db_extra_str && (db_extra=parse_acc_extra(db_extra_str, 1))==0 ) {
 			LM_ERR("failed to parse db_extra param\n");

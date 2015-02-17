@@ -82,7 +82,7 @@
 extern struct dlg_binds dlg_api;
 
 void acc_log_init();
-int  acc_log_request( struct sip_msg *req, struct sip_msg *rpl);
+int  acc_log_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag);
 int  acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg);
 int  store_log_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
 		struct sip_msg *reply);
@@ -91,13 +91,13 @@ int  acc_db_init(const str* db_url);
 int  acc_db_init_child(const str* db_url);
 void acc_db_close();
 int  acc_db_request( struct sip_msg *req, struct sip_msg *rpl,
-		query_list_t **ins_list);
+		query_list_t **ins_list, int cdr_flag);
 int  acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg);
 int  store_db_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
 		struct sip_msg *reply);
 
 int  init_acc_aaa(char* aaa_proto_url, int srv_type);
-int  acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl);
+int  acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag);
 int  acc_aaa_cdrs_request(struct dlg_cell *dlg);
 int  acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg);
 int  store_aaa_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
@@ -108,7 +108,7 @@ int  store_created_dlg_time(struct dlg_cell *dlg);
 int  create_acc_dlg(struct sip_msg* req);
 
 int  init_acc_evi(void);
-int  acc_evi_request( struct sip_msg *req, struct sip_msg *rpl);
+int  acc_evi_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag);
 int  acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg);
 int  store_evi_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
 		struct sip_msg *reply);

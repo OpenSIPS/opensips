@@ -24,7 +24,9 @@ CREATE TABLE missed_calls (
     callid CHAR(64) DEFAULT '' NOT NULL,
     sip_code CHAR(3) DEFAULT '' NOT NULL,
     sip_reason CHAR(32) DEFAULT '' NOT NULL,
-    time DATETIME NOT NULL
+    time DATETIME NOT NULL,
+    setuptime INT(11) UNSIGNED DEFAULT 0 NOT NULL,
+    created DATETIME DEFAULT NULL
 ) ENGINE=MyISAM;
 
 CREATE INDEX callid_idx ON missed_calls (callid);

@@ -74,6 +74,8 @@
 				<col><field>sip_code</field></col>
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
+				<col><field>setuptime</field></col>
+				<col><field>created</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -87,6 +89,8 @@
 				<col><field>sip_code</field></col>
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
+				<col><field>setuptime</field></col>
+				<col><field>created</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -103,6 +107,8 @@
 				<col><field>sip_code</field></col>
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
+				<col><field>setuptime</field></col>
+				<col><field>created</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
