@@ -1156,7 +1156,8 @@ str* write_dialog_vars( struct dlg_val *vars)
 	return &o;
 }
 
-
+/* needs to be run under the dialog lock , since it iterates on the profile links, which might get
+ * deallocatd if the dialog ends */
 str* write_dialog_profiles( struct dlg_profile_link *links)
 {
 	static str o = {NULL,0},cached_marker={"/s",2};
