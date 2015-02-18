@@ -250,7 +250,6 @@ static int rmq_reconnect(evi_reply_sock *sock)
 			LM_ERR("cannot create new connection\n");
 			return -1;
 		}
-		rmqp->flags |= RMQ_PARAM_CONN;
 		rmqp->sock = amqp_open_socket(sock->address.s, sock->port);
 		if (rmqp->sock < 0) {
 			LM_ERR("cannot opens socket\n");
@@ -271,6 +270,7 @@ channel_max: the maximum number of channels per connection
 frame_max: maximum AMQP frame size for client
 */
 
+		rmqp->flags |= RMQ_PARAM_CONN;
 		if (rmq_error("Logging in", amqp_login(
 				rmqp->conn,
 				RMQ_DEFAULT_VHOST,
