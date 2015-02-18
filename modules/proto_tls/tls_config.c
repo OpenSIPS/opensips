@@ -24,8 +24,6 @@
 #include "tls_config.h"
 #include "../../config.h"
 
-int             tls_log;
-
 int             tls_method = TLS_USE_SSLv23;
 
 /*

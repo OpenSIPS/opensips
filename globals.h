@@ -45,21 +45,6 @@ extern char* pid_file;
 extern char* pgid_file;
 
 extern struct socket_info* bind_address; /*!< pointer to the crt. proc.  listening address */
-extern struct socket_info* sendipv4; /*!< ipv4 socket to use when msg.  comes from ipv6*/
-extern struct socket_info* sendipv6; /*!< same as above for ipv6 */
-#ifdef USE_TCP
-extern struct socket_info* sendipv4_tcp; /*!< ipv4 socket to use when msg.  comes from ipv6*/
-extern struct socket_info* sendipv6_tcp; /*!< same as above for ipv6 */
-extern int unix_tcp_sock; /*!< socket used for communication with tcp main*/
-#endif
-#ifdef USE_TLS
-extern struct socket_info* sendipv4_tls; /*!< ipv4 socket to use when msg.  comes from ipv6*/
-extern struct socket_info* sendipv6_tls; /*!< same as above for ipv6 */
-#endif
-#ifdef USE_SCTP
-extern struct socket_info* sendipv4_sctp; /*!< ipv4 socket to use when msg.  comes from ipv6*/
-extern struct socket_info* sendipv6_sctp; /*!< same as above for ipv6 */
-#endif
 
 extern int auto_aliases;
 
@@ -83,10 +68,6 @@ extern int tcp_keepinterval;
 extern int tcp_max_msg_time;
 extern int tcp_no_new_conn; // FIXME TCP  - to be removed
 extern int tcp_no_new_conn_bflag;
-#endif
-#ifdef USE_TLS
-extern int tls_disable;
-extern unsigned short tls_port_no;
 #endif
 #ifdef USE_SCTP
 extern int sctp_disable;

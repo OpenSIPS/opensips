@@ -35,7 +35,6 @@ enum tls_method {
 	TLS_USE_TLSv1_2
 };
 
-extern int      tls_log;
 extern int      tls_method;
 
 extern int      tls_verify_client_cert;

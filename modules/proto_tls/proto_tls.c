@@ -49,7 +49,12 @@
 #include "tls_config.h"
 #include "tls_domain.h"
 #include "tls_server.h"
+#include "tls_params.h"
 
+// FIXME do we still need something like this ?
+//static int tls_disable;
+static int tls_port_no = SIPS_PORT;
+static char *tls_domain_avp = NULL;
 
 static int  mod_init(void);
 static void mod_destroy(void);
@@ -84,6 +89,22 @@ static cmd_export_t cmds[] = {
 
 
 static param_export_t params[] = {
+	{ "tls_port",              INT_PARAM,         &tls_port_no               },
+	{ "tls_handshake_timeout", INT_PARAM,         &tls_handshake_timeout     },
+	{ "tls_send_timeout",      INT_PARAM,         &tls_send_timeout          },
+	{ "client_domain_avp",     STR_PARAM,         &tls_domain_avp            },
+	{ "server_domain", STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_add_srv_domain },
+	{ "client_domain", STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_add_cli_domain },
+	{ "tls_method",    STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_method     },
+	{ "verify_cert",   STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_verify     },
+	{ "require_cert",  STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_require    },
+	{ "certificate",   STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_certificate},
+	{ "private_key",   STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_pk         },
+	{ "ca_list",       STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_calist     },
+	{ "ca_dir",        STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_cadir      },
+	{ "ciphers_list",  STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_cplist     },
+	{ "dh_params",     STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_dhparams   },
+	{ "ec_curve",      STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_eccurve    },
 	{0, 0, 0}
 };
 
@@ -824,9 +845,23 @@ static int init_tls_domains(struct tls_domain *d)
 
 static int mod_init(void)
 {
+	str s;
 	int n;
 
 	LM_INFO("initializing TLS protocol\n");
+
+	/* just in case, if port change since (via modparam)
+	 * since the module was loaded */
+	protos[PROTO_TLS].default_port = tls_port_no;
+
+	if (tls_domain_avp) {
+		s.s = tls_domain_avp;
+		s.len = strlen(s.s);
+		if (parse_avp_spec( &s, &tls_client_domain_avp)) {
+			LM_ERR("cannot parse tls_client_avp");
+			return -1;
+		}
+	}
 
 	/*
 	* this has to be called before any function calling CRYPTO_malloc,
@@ -877,13 +912,23 @@ static int mod_init(void)
 		return -1;
 	}
 
+
+	/*
+	 * finish setting up the tls default domains
+	 */
+	tls_default_client_domain.type = TLS_DOMAIN_DEF|TLS_DOMAIN_CLI ;
+	tls_default_client_domain.addr.af = AF_INET;
+
+	tls_default_server_domain.type = TLS_DOMAIN_DEF|TLS_DOMAIN_SRV;
+	tls_default_server_domain.addr.af = AF_INET;
+
 	/*
 	 * now initialize tls default domains
 	 */
-	if ( (n=init_tls_domains(tls_default_server_domain)) ) {
+	if ( (n=init_tls_domains(&tls_default_server_domain)) ) {
 		return n;
 	}
-	if ( (n=init_tls_domains(tls_default_client_domain)) ) {
+	if ( (n=init_tls_domains(&tls_default_client_domain)) ) {
 		return n;
 	}
 	/*
@@ -922,11 +967,11 @@ static void mod_destroy(void)
 			SSL_CTX_free(d->ctx);
 		d = d->next;
 	}
-	if (tls_default_server_domain && tls_default_server_domain->ctx) {
-		SSL_CTX_free(tls_default_server_domain->ctx);
+	if (tls_default_server_domain.ctx) {
+		SSL_CTX_free(tls_default_server_domain.ctx);
 	}
-	if (tls_default_client_domain && tls_default_client_domain->ctx) {
-		SSL_CTX_free(tls_default_client_domain->ctx);
+	if (tls_default_client_domain.ctx) {
+		SSL_CTX_free(tls_default_client_domain.ctx);
 	}
 	tls_free_domains();
 
@@ -941,46 +986,13 @@ static void mod_destroy(void)
 }
 
 
-/*
- * called once from main.c (main process) before
- * parsing the configuration
- */
-//FIXME - to be removed when params are moved into module
-int pre_init_tls(void)
-{
-	LM_DBG("entered\n");
-
-	/* already init ? */
-	if (tls_default_client_domain)
-		return 0;
-
-	tls_default_client_domain = tls_new_domain(TLS_DOMAIN_DEF|TLS_DOMAIN_CLI);
-	if (tls_default_client_domain==0) {
-		LM_ERR("failed to initialize tls_default_client_domain\n");
-		return -1;
-	}
-	tls_default_client_domain->addr.af = AF_INET;
-
-	tls_default_server_domain = tls_new_domain(TLS_DOMAIN_DEF|TLS_DOMAIN_SRV);
-	if (tls_default_server_domain==0) {
-		LM_ERR("failed to initialize tls_default_server_domain\n");
-		return -1;
-	}
-	tls_default_server_domain->addr.af = AF_INET;
-
-	return 0;
-}
-
-
-
-
 static int proto_tls_api_bind(struct api_proto *proto_api,
 		struct api_proto_net *net_binds, unsigned short *port)
 {
 	memcpy(proto_api, &tls_proto_binds, sizeof(struct api_proto));
 	memcpy(net_binds, &tls_proto_net_binds,
 			sizeof(struct api_proto_net));
-	*port = SIPS_PORT;
+	*port = tls_port_no;
 
 	return 0;
 }

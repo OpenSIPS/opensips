@@ -26,8 +26,25 @@
 
 struct tls_domain *tls_server_domains = NULL;
 struct tls_domain *tls_client_domains = NULL;
-struct tls_domain *tls_default_server_domain = NULL;
-struct tls_domain *tls_default_client_domain = NULL;
+struct tls_domain tls_default_server_domain;
+struct tls_domain tls_default_client_domain;
+
+
+struct tls_domain *tls_find_domain_by_id( str *id)
+{
+	struct tls_domain *d;
+
+	for (d=tls_server_domains ; d ; d=d->next ) {
+		if (id->len==d->id.len && memcmp(id->s,d->id.s,id->len)==0)
+			return d;
+	}
+	for (d=tls_client_domains ; d ; d=d->next ) {
+		if (id->len==d->id.len && memcmp(id->s,d->id.s,id->len)==0)
+			return d;
+	}
+	return NULL;
+}
+
 
 /*
  * find server domain with given ip and port
@@ -46,7 +63,7 @@ tls_find_server_domain(struct ip_addr *ip, unsigned short port)
 	}
 	LM_DBG("virtual TLS server domain not found, "
 		"Using default TLS server domain settings\n");
-	return tls_default_server_domain;
+	return &tls_default_server_domain;
 }
 
 /*
@@ -66,7 +83,7 @@ tls_find_client_domain(struct ip_addr *ip, unsigned short port)
 	}
 	LM_DBG("virtual TLS client domain not found, "
 		"Using default TLS client domain settings\n");
-	return tls_default_client_domain;
+	return &tls_default_client_domain;
 }
 
 /*
@@ -92,12 +109,11 @@ tls_find_client_domain_name(str name)
 /*
  * create a new server domain (identified by a socket)
  */
-int
-tls_new_server_domain(struct ip_addr *ip, unsigned short port)
+int tls_new_server_domain( str *id, struct ip_addr *ip, unsigned short port)
 {
 	struct tls_domain *d;
 
-	d = tls_new_domain(TLS_DOMAIN_SRV);
+	d = tls_new_domain( id, TLS_DOMAIN_SRV);
 	if (d == NULL) {
 		LM_ERR("pkg memory allocation failure\n");
 		return -1;
@@ -116,12 +132,11 @@ tls_new_server_domain(struct ip_addr *ip, unsigned short port)
 /*
  * create a new client domain (identified by a socket)
  */
-int
-tls_new_client_domain(struct ip_addr *ip, unsigned short port)
+int tls_new_client_domain(str *id, struct ip_addr *ip, unsigned short port)
 {
 	struct tls_domain *d;
 
-	d = tls_new_domain(TLS_DOMAIN_CLI);
+	d = tls_new_domain( id, TLS_DOMAIN_CLI);
 	if (d == NULL) {
 		LM_ERR("pkg memory allocation failure\n");
 		return -1;
@@ -140,26 +155,25 @@ tls_new_client_domain(struct ip_addr *ip, unsigned short port)
 /*
  * create a new client domain (identified by a string)
  */
-int
-tls_new_client_domain_name(char *s, int len)
+int tls_new_client_domain_name( str *id, str *domain)
 {
 	struct tls_domain *d;
 
-	d = tls_new_domain(TLS_DOMAIN_CLI | TLS_DOMAIN_NAME);
+	d = tls_new_domain( id, TLS_DOMAIN_CLI | TLS_DOMAIN_NAME);
 	if (d == NULL) {
 		LM_ERR("pkg memory allocation failure\n");
 		return -1;
 	}
 
 	/* initialize name data */
-	d->name.s = pkg_malloc(len);
+	d->name.s = pkg_malloc(domain->len);
 	if (d->name.s == NULL) {
 		LM_ERR("pkg memory allocation failure\n");
 		pkg_free(d);
 		return -1;
 	}
-	memcpy(d->name.s, s, len);
-	d->name.len = len;
+	memcpy(d->name.s, domain->s, domain->len);
+	d->name.len = domain->len;
 
 	/* add this new domain to the linked list */
 	d->next = tls_client_domains;
@@ -171,16 +185,22 @@ tls_new_client_domain_name(char *s, int len)
  * allocate memory and set default values for
  * TLS domain structure
  */
-struct tls_domain *tls_new_domain(int type)
+struct tls_domain *tls_new_domain( str *id, int type)
 {
 	struct tls_domain *d;
 
-	d = pkg_malloc(sizeof(struct tls_domain));
+	LM_DBG("adding new domain [%.*s] type %d\n", id->len, id->s, type);
+
+	d = pkg_malloc(sizeof(struct tls_domain) + id->len);
 	if (d == NULL) {
 		LM_ERR("pkg memory allocation failure\n");
 		return 0;
 	}
 	memset( d, 0, sizeof(struct tls_domain));
+
+	d->id.s = (char*)(d+1);
+	d->id.len = id->len;
+	memcpy( d->id.s, id->s, id->len);
 
 	d->type = type;
 
@@ -218,7 +238,5 @@ tls_free_domains(void)
 		}
 		pkg_free(p);
 	}
-	pkg_free(tls_default_client_domain);
-	pkg_free(tls_default_server_domain);
 }
 

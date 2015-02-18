@@ -346,25 +346,6 @@ TCP_KEEPCOUNT           "tcp_keepcount"
 TCP_KEEPIDLE            "tcp_keepidle"
 TCP_KEEPINTERVAL        "tcp_keepinterval"
 TCP_MAX_MSG_TIME		"tcp_max_msg_time"
-DISABLE_TLS		"disable_tls"
-TLSLOG			"tlslog"|"tls_log"
-TLS_PORT_NO		"tls_port_no"
-TLS_METHOD		"tls_method"
-TLS_VERIFY_CLIENT	"tls_verify_client"
-TLS_VERIFY_SERVER	"tls_verify_server"
-TLS_REQUIRE_CLIENT_CERTIFICATE "tls_require_client_certificate"
-TLS_CERTIFICATE	"tls_certificate"
-TLS_PRIVATE_KEY "tls_private_key"
-TLS_CA_LIST		"tls_ca_list"
-TLS_CA_DIR		"tls_ca_dir"
-TLS_DH_PARAMS		"tls_dh_params"
-TLS_EC_CURVE		"tls_ec_curve"
-TLS_CIPHERS_LIST	"tls_ciphers_list"
-TLS_HANDSHAKE_TIMEOUT	"tls_handshake_timeout"
-TLS_SEND_TIMEOUT	"tls_send_timeout"
-TLS_SERVER_DOMAIN	"tls_server_domain"
-TLS_CLIENT_DOMAIN	"tls_client_domain"
-TLS_CLIENT_DOMAIN_AVP	"tls_client_domain_avp"
 ADVERTISED_ADDRESS	"advertised_address"
 ADVERTISED_PORT		"advertised_port"
 DISABLE_CORE		"disable_core_dump"
@@ -390,9 +371,6 @@ YES			"yes"|"true"|"on"|"enable"
 NO			"no"|"false"|"off"|"disable"
 INET		"inet"|"INET"
 INET6		"inet6"|"INET6"
-SSLv23			"sslv23"|"SSLv23"|"SSLV23"|"TLSany"|"TLSAny"
-TLSv1			"tlsv1"|"TLSv1"|"TLSV1"
-TLSv1_2			"tlsv1_2"|"TLSv1_2"|"TLSV1_2"
 NULLV			"null"|"NULL"
 
 LETTER		[a-zA-Z]
@@ -401,7 +379,6 @@ ALPHANUM	{LETTER}|{DIGIT}|[_]
 NUMBER		0|([1-9]{DIGIT}*)
 /*NUMBER		0|(([-+])?[1-9]{DIGIT}*)*/
 ID			{LETTER}{ALPHANUM}*
-PROTO_NAME	{LETTER}*
 HEX			[0-9a-fA-F]
 HEXNUMBER	0x{HEX}+
 OCTNUMBER	0[0-7]+
@@ -656,38 +633,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{TCP_KEEPIDLE}        { count(); yylval.strval=yytext; return TCP_KEEPIDLE; }
 <INITIAL>{TCP_KEEPINTERVAL}    { count(); yylval.strval=yytext; return TCP_KEEPINTERVAL; }
 <INITIAL>{TCP_MAX_MSG_TIME}    { count(); yylval.strval=yytext; return TCP_MAX_MSG_TIME; }
-<INITIAL>{DISABLE_TLS}	{ count(); yylval.strval=yytext; return DISABLE_TLS; }
-<INITIAL>{TLSLOG}		{ count(); yylval.strval=yytext; return TLS_PORT_NO; }
-<INITIAL>{TLS_PORT_NO}	{ count(); yylval.strval=yytext; return TLS_PORT_NO; }
-<INITIAL>{TLS_METHOD}	{ count(); yylval.strval=yytext; return TLS_METHOD; }
-<INITIAL>{TLS_VERIFY_CLIENT}	{ count(); yylval.strval=yytext; return TLS_VERIFY_CLIENT; }
-<INITIAL>{TLS_VERIFY_SERVER}	{ count(); yylval.strval=yytext; return TLS_VERIFY_SERVER; }
-<INITIAL>{TLS_REQUIRE_CLIENT_CERTIFICATE}	{ count(); yylval.strval=yytext;
-										return TLS_REQUIRE_CLIENT_CERTIFICATE;}
-<INITIAL>{TLS_CERTIFICATE}	{ count(); yylval.strval=yytext;
-										return TLS_CERTIFICATE; }
-<INITIAL>{TLS_PRIVATE_KEY}	{ count(); yylval.strval=yytext;
-										return TLS_PRIVATE_KEY; }
-<INITIAL>{TLS_CA_LIST}	{ count(); yylval.strval=yytext;
-										return TLS_CA_LIST; }
-<INITIAL>{TLS_CA_DIR}  { count(); yylval.strval=yytext;
-                                                                                return TLS_CA_DIR; }
-<INITIAL>{TLS_DH_PARAMS}  { count(); yylval.strval=yytext;
-										return TLS_DH_PARAMS; }
-<INITIAL>{TLS_EC_CURVE}  { count(); yylval.strval=yytext;
-										return TLS_EC_CURVE; }
-<INITIAL>{TLS_CIPHERS_LIST}	{ count(); yylval.strval=yytext;
-										return TLS_CIPHERS_LIST; }
-<INITIAL>{TLS_HANDSHAKE_TIMEOUT}	{ count(); yylval.strval=yytext;
-										return TLS_HANDSHAKE_TIMEOUT; }
-<INITIAL>{TLS_SEND_TIMEOUT}	{ count(); yylval.strval=yytext;
-										return TLS_SEND_TIMEOUT; }
-<INITIAL>{TLS_SERVER_DOMAIN}		{ count(); yylval.strval=yytext;
-									return TLS_SERVER_DOMAIN; }
-<INITIAL>{TLS_CLIENT_DOMAIN}		{ count(); yylval.strval=yytext;
-									return TLS_CLIENT_DOMAIN; }
-<INITIAL>{TLS_CLIENT_DOMAIN_AVP}	{ count(); yylval.strval=yytext;
-										return TLS_CLIENT_DOMAIN_AVP; }
 <INITIAL>{SERVER_SIGNATURE}	{ count(); yylval.strval=yytext; return SERVER_SIGNATURE; }
 <INITIAL>{SERVER_HEADER}	{ count(); yylval.strval=yytext; return SERVER_HEADER; }
 <INITIAL>{USER_AGENT_HEADER}	{ count(); yylval.strval=yytext; return USER_AGENT_HEADER; }
@@ -775,9 +720,6 @@ IMPORTFILE      "import_file"
 						  yylval.intval=-1; /* no match*/
 						#endif
 						  return NUMBER; }
-<INITIAL>{SSLv23}		{ count(); yylval.strval=yytext; return SSLv23; }
-<INITIAL>{TLSv1}		{ count(); yylval.strval=yytext; return TLSv1; }
-<INITIAL>{TLSv1_2}		{ count(); yylval.strval=yytext; return TLSv1_2; }
 
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }
@@ -909,11 +851,6 @@ IMPORTFILE      "import_file"
 <COMMENT>.|{EAT_ABLE}|{CR}				{ count(); };
 
 <INITIAL>{COM_LINE}.*{CR}	{ count(); }
-
-<INITIAL>{PROTO_NAME}	{ count(); addstr(&s_buf, yytext, yyleng);
-									yylval.strval=s_buf.s;
-									memset(&s_buf, 0, sizeof(s_buf));
-									return PROTO_NAME; }
 
 <INITIAL>{ID}			{ count(); addstr(&s_buf, yytext, yyleng);
 									yylval.strval=s_buf.s;

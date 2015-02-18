@@ -552,12 +552,7 @@ int forward_reply(struct sip_msg* msg)
 	proto=msg->via2->proto;
 	if (update_sock_struct_from_via( to, msg, msg->via2 )==-1) goto error;
 
-#ifdef USE_TCP
-	if (proto==PROTO_TCP
-#ifdef USE_TLS
-			|| proto==PROTO_TLS
-#endif
-			){
+	if (protos[proto].net.flags&PROTO_NET_USE_TCP){
 		/* find id in i param if it exists */
 		if (msg->via1->i&&msg->via1->i->value.s){
 			s=msg->via1->i->value.s;
@@ -565,7 +560,6 @@ int forward_reply(struct sip_msg* msg)
 			id=reverse_hex2int(s, len);
 		}
 	}
-#endif
 
 	send_sock = get_send_socket(msg, to, proto);
 
