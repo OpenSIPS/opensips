@@ -253,7 +253,6 @@ static int rmq_reconnect(evi_reply_sock *sock)
 			LM_ERR("cannot create new connection\n");
 			return -1;
 		}
-		rmqp->flags |= RMQ_PARAM_CONN;
 #if defined AMQP_VERSION_v04
 		amqp_sock = amqp_tcp_socket_new(rmqp->conn);
 		if (!amqp_sock) {
@@ -274,6 +273,7 @@ static int rmq_reconnect(evi_reply_sock *sock)
 		amqp_set_sockfd(rmqp->conn, socket);
 #endif
 
+		rmqp->flags |= RMQ_PARAM_CONN;
 		if (rmq_error("Logging in", amqp_login(
 				rmqp->conn,
 				RMQ_DEFAULT_VHOST,
