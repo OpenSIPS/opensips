@@ -145,11 +145,6 @@ int trans_load_proto(char *name, enum sip_protos proto)
 	}
 	memcpy(protos[proto].name, name_buf + PROTO_PREFIX_LEN, len + 1);
 
-	/* initialize the module */
-	if (protos[proto].tran.init && protos[proto].tran.init() < 0) {
-		LM_ERR("cannot initialzie protocol %s\n", name);
-		goto error;
-	}
 	protos[proto].id = proto;
 
 	LM_DBG("Loaded <%s> protocol handlers\n", protos[proto].name);

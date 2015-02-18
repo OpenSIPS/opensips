@@ -40,20 +40,8 @@
 /* initializes the UDP network layer */
 int udp_init(void)
 {
-	int i;
-
-	/* init all UDP based protocols too */
-	for( i=PROTO_FIRST ; i<PROTO_LAST ; i++ )
-		if (protos[i].net.flags&PROTO_NET_USE_UDP && protos[i].id!=PROTO_NONE)
-			if (protos[i].tran.init()<0) {
-				LM_ERR("failed to init protocol %d (%s)\n",
-					protos[i].id, protos[i].name);
-				goto error;
-			}
-
+	/* nothing to do here for now */
 	return 0;
-error:
-	return -1;
 }
 
 /* destroys the UDP network layer */

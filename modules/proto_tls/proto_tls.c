@@ -53,7 +53,6 @@
 
 static int  mod_init(void);
 static void mod_destroy(void);
-static int proto_tls_init(void);
 static int proto_tls_api_bind(struct api_proto *proto_binds,
 		struct api_proto_net *net_binds, unsigned short *port);
 static int proto_tls_init_listener(struct socket_info *si);
@@ -109,7 +108,6 @@ struct module_exports exports = {
 };
 
 static struct api_proto tls_proto_binds = {
-	.init			= proto_tls_init,
 	.init_listener	= proto_tls_init_listener,
 	.send			= proto_tls_send,
 };
@@ -824,7 +822,7 @@ static int init_tls_domains(struct tls_domain *d)
 }
 
 
-static int proto_tls_init(void)
+static int mod_init(void)
 {
 	int n;
 
@@ -900,12 +898,6 @@ static int proto_tls_init(void)
 	/*
 	 * we are all set
 	 */
-	return 0;
-}
-
-
-static int mod_init(void)
-{
 	return 0;
 }
 
