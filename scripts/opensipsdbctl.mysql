@@ -481,9 +481,9 @@ migrate_table ${dst_db}.imc_members \
 # runtime data only, nothing to migrate
 
 ## REGISTRANT module
-migrate_table ${dst_db}.sip_trace \
+migrate_table ${dst_db}.registrant \
 	"id,registrar,proxy,aor,third_party_registrant,username,password,binding_URI,binding_params,expiry,forced_socket" \
-	${src_db}.sip_trace \
+	${src_db}.registrant \
 	"?id,?registrar,?proxy,?aor,?third_party_registrant,?username,?password,?binding_URI,?binding_params,?expiry,?forced_socket"
 
 ## SIPTRACE module
