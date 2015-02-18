@@ -1274,7 +1274,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		bencode_dictionary_add(ng_flags.dict, "replace", ng_flags.replace);
 	if ((ng_flags.transport & 0x100))
 		bencode_dictionary_add_string(ng_flags.dict, "transport-protocol",
-				transports[ng_flags.transport & 0x005]);
+				transports[ng_flags.transport & 0x007]);
 	if (ng_flags.rtcp_mux && ng_flags.rtcp_mux->child)
 		bencode_dictionary_add(ng_flags.dict, "rtcp-mux", ng_flags.rtcp_mux);
 
