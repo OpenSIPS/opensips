@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -20,7 +21,7 @@
  * History
  * --------
  *  2007-06-22	sctp_server.c created, using udp_server.c as template -gmarmon
- *
+ *  2015-02-19 migrated to the new proto interfaces (bogdan)
  */
 
 /*!
@@ -35,6 +36,7 @@
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
+#include <netinet/sctp.h>
 #include <errno.h>
 #include <arpa/inet.h>
 #ifdef __linux__
@@ -51,7 +53,7 @@
 
 #define LISTEN_BACKLOG 5
 
-int proto_sctp_init_listener(struct socket_info* si)
+int proto_sctp_init_listener(struct socket_info* sock_info)
 {
 	union sockaddr_union* addr;
 	int optval;
@@ -87,12 +89,10 @@ int proto_sctp_init_listener(struct socket_info* si)
 	}
 #endif
 
-	/* tos */
-
 	/* this sockopt causes a kernel panic in some sctp implementations.
 	 * commenting it out. -gmarmon */
 
-	/*
+	/* tos
 	optval=tos;
 	if (setsockopt(sock_info->socket, IPPROTO_IP, IP_TOS, (void*)&optval,
 			sizeof(optval)) ==-1){
@@ -140,9 +140,9 @@ error:
 }
 
 
-
-int sctp_server_rcv_loop(void)
+int proto_sctp_read(struct socket_info *si, int* bytes_read)
 {
+	struct receive_info ri;
 	int len;
 #ifdef DYN_BUF
 	char* buf;
@@ -150,88 +150,58 @@ int sctp_server_rcv_loop(void)
 	static char buf [BUF_SIZE+1];
 #endif
 	char *tmp;
-	union sockaddr_union* from;
 	unsigned int fromlen;
-	struct receive_info ri;
 	struct sctp_sndrcvinfo sinfo;
 
-
-	from=(union sockaddr_union*) pkg_malloc(sizeof(union sockaddr_union));
-	if (from==0){
-		LM_ERR("out of pkg memory\n");
+#ifdef DYN_BUF
+	buf=pkg_malloc(BUF_SIZE+1);
+	if (buf==0){
+		LM_ERR(" could not allocate receive buffer in pkg memory\n");
 		goto error;
 	}
-	memset(&sinfo, 0 , sizeof(sinfo));
-	ri.bind_address=bind_address; /* this will not change, we do it only once*/
-	ri.dst_port=bind_address->port_no;
-	ri.dst_ip=bind_address->address;
-	ri.proto=PROTO_SCTP;
-	ri.proto_reserved1=ri.proto_reserved2=0;
-	for(;;){
-#ifdef DYN_BUF
-		buf=pkg_malloc(BUF_SIZE+1);
-		if (buf==0){
-			LM_ERR(" could not allocate receive buffer in pkg memory\n");
-			goto error;
-		}
 #endif
-		fromlen=sockaddru_len(bind_address->su);
-		len = sctp_recvmsg(bind_address->socket, buf, BUF_SIZE, &from->s, &fromlen, &sinfo, 0);
-
-		if (len==-1){
-			if (errno==EAGAIN){
-				LM_DBG("packet with bad checksum received\n");
-				continue;
-			}
-			LM_ERR("sctp_recvmsg:[%d] %s\n", errno, strerror(errno));
-			if ((errno==EINTR)||(errno==EWOULDBLOCK)|| (errno==ECONNREFUSED))
-				continue; /* goto skip;*/
-			else goto error;
+	fromlen=sockaddru_len(si->su);
+	len = sctp_recvmsg(si->socket, buf, BUF_SIZE, &ri.src_su.s, &fromlen,
+		&sinfo, 0);
+	if (len==-1){
+		if (errno==EAGAIN){
+			LM_DBG("packet with bad checksum received\n");
+			return 0;
 		}
-		/* we must 0-term the messages, receive_msg expects it */
-		buf[len]=0; /* no need to save the previous char */
-
-		ri.src_su=*from;
-		su2ip_addr(&ri.src_ip, from);
-		ri.src_port=su_getport(from);
-
-#ifndef NO_ZERO_CHECKS
-		if (buf[len-1]==0) {
-			tmp=ip_addr2a(&ri.src_ip);
-			LM_WARN("upstream bug - 0-terminated packet from %s %d\n",
-					tmp, htons(ri.src_port));
-			len--;
-		}
-#endif
-		if (ri.src_port==0){
-			tmp=ip_addr2a(&ri.src_ip);
-			LM_INFO("dropping 0 port packet from %s\n", tmp);
-			continue;
-		}
-
-
-		/* receive_msg must free buf too!*/
-		receive_msg(buf, len, &ri);
-
-	/* skip: do other stuff */
-
+		if ((errno==EINTR)||(errno==EWOULDBLOCK)|| (errno==ECONNREFUSED))
+			return -1;
+		LM_ERR("sctp_recvmsg:[%d] %s\n", errno, strerror(errno));
+		return -2;
 	}
-	/*
-	if (from) pkg_free(from);
-	return 0;
-	*/
 
-error:
-	if (from) pkg_free(from);
-	return -1;
+	/* we must 0-term the messages, receive_msg expects it */
+	buf[len]=0; /* no need to save the previous char */
+
+	ri.bind_address = si;
+	ri.dst_port = si->port_no;
+	ri.dst_ip = si->address;
+	ri.proto = si->proto;
+	ri.proto_reserved1 = ri.proto_reserved2 = 0;
+
+	su2ip_addr(&ri.src_ip, &ri.src_su);
+	ri.src_port=su_getport(&ri.src_su);
+
+	if (ri.src_port==0){
+		tmp=ip_addr2a(&ri.src_ip);
+		LM_INFO("dropping 0 port packet from %s\n", tmp);
+		return 0;
+	}
+
+	/* receive_msg must free buf too!*/
+	receive_msg(buf, len, &ri);
+
+	return 0;
 }
 
 
-
-
 /*! \brief which socket to use? main socket or new one? */
-int sctp_server_send(struct socket_info *source, char *buf, unsigned len,
-										union sockaddr_union*  to)
+int proto_sctp_send(struct socket_info *source, char *buf, unsigned len,
+										union sockaddr_union* to, int id)
 {
 	int n;
 	int tolen;
@@ -255,6 +225,4 @@ again:
 	}
 	return n;
 }
-
-#endif
 

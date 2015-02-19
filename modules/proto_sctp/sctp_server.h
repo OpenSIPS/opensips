@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -19,7 +20,8 @@
  *
  * History
  * --------
- *  2007-06-22	sctp_server.h created, using udp_server.h as template -gmarmon
+ *  2007-06-22 sctp_server.h created, using udp_server.h as template -gmarmon
+ *  2015-02-19 migrated to the new proto interfaces (bogdan)
  */
 
 /*!
@@ -27,21 +29,16 @@
  * \brief SCTP protocol support
  */
 
-#ifdef USE_SCTP
+#ifndef _MOD_SCTP_sctp_server_h
+#define _MOD_SCTP_sctp_server_h
 
-#ifndef sctp_server_h
-#define sctp_server_h
-
-#include <netinet/sctp.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include "ip_addr.h"
+#include "../../ip_addr.h"
 
 int proto_sctp_init_listener(struct socket_info* si);
 
-int sctp_server_send(struct socket_info* source,char *buf, unsigned len,
-				union sockaddr_union*  to);
+int proto_sctp_send(struct socket_info *source, char *buf, unsigned len,
+		union sockaddr_union* to, int id);
 
+int proto_sctp_read(struct socket_info *si, int* bytes_read);
 
-#endif
 #endif

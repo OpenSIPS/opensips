@@ -31,6 +31,8 @@
 
 #include "sctp_server.h"
 
+static int sctp_port = SIP_PORT;
+
 static int proto_sctp_init(struct proto_info *pi);
 
 static cmd_export_t cmds[] = {
@@ -40,8 +42,10 @@ static cmd_export_t cmds[] = {
 
 
 static param_export_t params[] = {
+	{ "sctp_port",    INT_PARAM,    &sctp_port },
 	{0, 0, 0}
 };
+
 
 struct module_exports exports = {
 	PROTO_PREFIX "sctp",  /* module name*/
@@ -65,7 +69,7 @@ struct module_exports exports = {
 
 static int proto_sctp_init(struct proto_info *pi)
 {
-	pi->default_port		= SIP_PORT;
+	pi->default_port		= sctp_port;
 
 	pi->tran.init_listener	= proto_sctp_init_listener;
 	pi->tran.send			= proto_sctp_send;
