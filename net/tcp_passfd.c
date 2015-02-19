@@ -25,8 +25,6 @@
  *               to handle signals  (andrei)
  */
 
-#ifdef USE_TCP
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
@@ -269,4 +267,3 @@ again:
 error:
 	return ret;
 }
-#endif

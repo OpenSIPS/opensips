@@ -42,10 +42,8 @@
 
 struct process_table {
 	int pid;
-#ifdef USE_TCP
 	int unix_sock; /* unix socket on which tcp main listens */
 	int idx;       /* tcp child index, -1 for other processes */
-#endif
 	char desc[MAX_PT_DESC];
 
 	int default_debug; /* used when resetting the log level */

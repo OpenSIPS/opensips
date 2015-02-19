@@ -776,11 +776,7 @@ assign_stm: DEBUG EQUAL snumber {
 		}
 		| TCP_KEEPALIVE EQUAL error { yyerror("boolean value expected"); }
 		| TCP_MAX_MSG_TIME EQUAL NUMBER {
-			#ifdef USE_TCP
-			        tcp_max_msg_time=$3;
-			#else
-				warn("tcp support not compiled in");
-			#endif
+				tcp_max_msg_time=$3;
 		}
 		| TCP_MAX_MSG_TIME EQUAL error { yyerror("boolean value expected"); }
 		| TCP_KEEPCOUNT EQUAL NUMBER 		{
@@ -2208,27 +2204,15 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| FORCE_LOCAL_RPORT				{
 					mk_action2( $$, FORCE_LOCAL_RPORT_T,0, 0, 0, 0); }
 		| FORCE_TCP_ALIAS LPAREN NUMBER RPAREN	{
-					#ifdef USE_TCP
-						mk_action2( $$, FORCE_TCP_ALIAS_T,NUMBER_ST, 0,
-										(void*)$3, 0);
-					#else
-						yyerror("tcp support not compiled in");
-					#endif
-												}
+				mk_action2( $$, FORCE_TCP_ALIAS_T,NUMBER_ST, 0,
+					(void*)$3, 0);
+		}
 		| FORCE_TCP_ALIAS LPAREN RPAREN	{
-					#ifdef USE_TCP
-						mk_action2( $$, FORCE_TCP_ALIAS_T,0, 0, 0, 0);
-					#else
-						yyerror("tcp support not compiled in");
-					#endif
-										}
+				mk_action2( $$, FORCE_TCP_ALIAS_T,0, 0, 0, 0);
+		}
 		| FORCE_TCP_ALIAS				{
-					#ifdef USE_TCP
-						mk_action2( $$, FORCE_TCP_ALIAS_T,0, 0, 0, 0);
-					#else
-						yyerror("tcp support not compiled in");
-					#endif
-										}
+				mk_action2( $$, FORCE_TCP_ALIAS_T,0, 0, 0, 0);
+		}
 		| FORCE_TCP_ALIAS LPAREN error RPAREN	{$$=0;
 					yyerror("bad argument, number expected");
 					}

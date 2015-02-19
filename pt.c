@@ -24,10 +24,6 @@
  * 2007-06-07 - created to contain process handling functions (bogdan)
  */
 
-
-
-
-
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -52,9 +48,7 @@ unsigned int counted_processes = 0;
 int init_multi_proc_support(void)
 {
 	unsigned short proc_no;
-	#ifdef USE_TCP
 	unsigned int i;
-	#endif
 
 	proc_no = 0;
 
@@ -88,12 +82,10 @@ int init_multi_proc_support(void)
 	}
 	memset(pt, 0, sizeof(struct process_table)*proc_no);
 
-	#ifdef USE_TCP
 	for( i=0 ; i<proc_no ; i++ ) {
 		pt[i].unix_sock = -1;
 		pt[i].idx = -1;
 	}
-	#endif
 
 	/* set the pid for the starter process */
 	set_proc_attrs("starter");

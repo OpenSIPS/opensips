@@ -493,10 +493,8 @@ int forward_reply(struct sip_msg* msg)
 	int proto;
 	int id; /* used only by tcp*/
 	struct socket_info *send_sock;
-#ifdef USE_TCP
 	char* s;
 	int len;
-#endif
 
 	to=0;
 	id=0;
