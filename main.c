@@ -254,8 +254,6 @@ int auto_aliases=1;
  * disabled or not */
 int sl_fwd_disabled=-1;
 
-unsigned short port_no=0; /* default port*/
-
 /* process number - 0 is the main process */
 int process_no = 0;
 
@@ -1122,8 +1120,6 @@ try_again:
 	}
 
 	/* fix parameters */
-	if (port_no<=0) port_no=SIP_PORT;
-
 	if (children_no<=0) children_no=CHILD_NO;
 #ifdef USE_TCP
 	if (!tcp_disable){

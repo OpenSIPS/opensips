@@ -31,7 +31,6 @@
 
 #include "../../pt.h"
 #include "../../timer.h"
-#include "../../sr_module.h"
 #include "../../socket_info.h"
 #include "../../receive.h"
 #include "../api_proto.h"
@@ -50,6 +49,8 @@ static int udp_read_req(struct socket_info *src, int* bytes_read);
 
 static callback_list* cb_list = NULL;
 
+static int udp_port = SIP_PORT;
+
 
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_udp_init, 0, 0, 0, 0},
@@ -58,6 +59,7 @@ static cmd_export_t cmds[] = {
 
 
 static param_export_t params[] = {
+	{ "udp_port",    INT_PARAM,   &udp_port   },
 	{0, 0, 0}
 };
 
@@ -91,7 +93,7 @@ static int mod_init(void)
 
 static int proto_udp_init(struct proto_info *pi)
 {
-	pi->default_port		= SIP_PORT;
+	pi->default_port		= udp_port;
 
 	pi->tran.init_listener	= proto_udp_init_listener;
 	pi->tran.send			= proto_udp_send;

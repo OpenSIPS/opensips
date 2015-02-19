@@ -837,10 +837,6 @@ static int mod_init(void)
 
 	LM_INFO("initializing TLS protocol\n");
 
-	/* just in case, if port change since (via modparam)
-	 * since the module was loaded */
-	protos[PROTO_TLS].default_port = tls_port_no;
-
 	if (tls_domain_avp) {
 		s.s = tls_domain_avp;
 		s.len = strlen(s.s);
@@ -1319,5 +1315,4 @@ error:
 	/* connection will be released as ERROR */
 	return -1;
 }
-
 

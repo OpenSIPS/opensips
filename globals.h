@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -39,7 +37,6 @@
 extern char * cfg_file;
 extern int config_check;
 extern char *stat_file;
-extern unsigned short port_no;
 
 extern char* pid_file;
 extern char* pgid_file;

@@ -318,7 +318,6 @@ extern char *finame;
 %token DNS_SERVERS_NO
 %token DNS_USE_SEARCH
 %token MAX_WHILE_LOOPS
-%token PORT
 %token CHILDREN
 %token CHECK_VIA
 %token SHM_HASH_SPLIT_PERCENTAGE
@@ -631,8 +630,6 @@ assign_stm: DEBUG EQUAL snumber {
 		| DNS_SERVERS_NO error { yyerror("number expected"); }
 		| DNS_USE_SEARCH EQUAL NUMBER   { dns_search_list=$3; }
 		| DNS_USE_SEARCH error { yyerror("boolean value expected"); }
-		| PORT EQUAL NUMBER   { port_no=$3; }
-		| PORT EQUAL error    { yyerror("number expected"); }
 		| MAX_WHILE_LOOPS EQUAL NUMBER { max_while_loops=$3; }
 		| MAX_WHILE_LOOPS EQUAL error { yyerror("number expected"); }
 		| MAXBUFFER EQUAL NUMBER { maxbuffer=$3; }

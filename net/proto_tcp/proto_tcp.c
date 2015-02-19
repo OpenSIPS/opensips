@@ -61,6 +61,9 @@ static int tcp_conn_init(struct tcp_connection* c);
 static void tcp_conn_clean(struct tcp_connection* c);
 
 
+/* default port for TCP protocol */
+static int tcp_port = SIP_PORT;
+
 /* 1 if TCP connect & write should be async */
 static int tcp_async = 0;
 
@@ -121,6 +124,7 @@ static cmd_export_t cmds[] = {
 
 
 static param_export_t params[] = {
+	{ "tcp_port",                        INT_PARAM, &tcp_port               },
 	{ "tcp_max_msg_chunks",              INT_PARAM, &tcp_max_msg_chunks     },
 	{ "tcp_crlf_pingpong",               INT_PARAM, &tcp_crlf_pingpong      },
 	{ "tcp_crlf_drop",                   INT_PARAM, &tcp_crlf_drop          },
@@ -156,7 +160,7 @@ struct module_exports proto_tcp_exports = {
 
 static int proto_tcp_init(struct proto_info *pi)
 {
-	pi->default_port		= SIP_PORT;
+	pi->default_port		= tcp_port;
 
 	pi->tran.init_listener	= proto_tcp_init_listener;
 	pi->tran.send			= proto_tcp_send;

@@ -151,7 +151,7 @@ static struct socket_info *get_sock_hdr(struct sip_msg *msg)
 		return 0;
 	}
 
-	LM_DBG("%d:<%.*s>:%d -> p=%p\n", proto,socks.len,socks.s,port_no,sock );
+	LM_DBG("%d:<%.*s>:%d -> p=%p\n", proto,socks.len,socks.s,port,sock );
 
 	return sock;
 }

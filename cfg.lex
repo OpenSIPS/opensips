@@ -304,7 +304,6 @@ DNS_RETR_TIME   dns_retr_time
 DNS_RETR_NO     dns_retr_no
 DNS_SERVERS_NO  dns_servers_no
 DNS_USE_SEARCH  dns_use_search_list
-PORT	port
 MAXBUFFER maxbuffer
 CHILDREN children
 CHECK_VIA	check_via
@@ -585,7 +584,6 @@ IMPORTFILE      "import_file"
 								return DNS_SERVERS_NO; }
 <INITIAL>{DNS_USE_SEARCH}	{ count(); yylval.strval=yytext;
 								return DNS_USE_SEARCH; }
-<INITIAL>{PORT}	{ count(); yylval.strval=yytext; return PORT; }
 <INITIAL>{MAX_WHILE_LOOPS}	{ count(); yylval.strval=yytext;
 								return MAX_WHILE_LOOPS; }
 <INITIAL>{MAXBUFFER}	{ count(); yylval.strval=yytext; return MAXBUFFER; }
