@@ -414,11 +414,6 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 			return MHD_NO;
 		}
 		memset(pr, 0, sizeof(struct post_request));
-		pr->p_list = slinkedl_init(&httpd_alloc, &httpd_free);
-		if (pr->p_list==NULL) {
-			LM_ERR("oom while allocating list\n");
-			return MHD_NO;
-		}
 		*con_cls = pr;
 		pr = NULL;
 	}
@@ -426,6 +421,11 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	if(strncmp(method, "POST", 4)==0) {
 		if(pr == NULL){
 			pr = *con_cls;
+			pr->p_list = slinkedl_init(&httpd_alloc, &httpd_free);
+			if (pr->p_list==NULL) {
+				LM_ERR("oom while allocating list\n");
+				return MHD_NO;
+			}
 			LM_DBG("running MHD_create_post_processor\n");
 			pr->pp = MHD_create_post_processor(connection,
 											post_buf_size,
