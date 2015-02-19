@@ -166,17 +166,8 @@ unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
 												  not want to exceed during the
 												  auto-probing procedure; may
 												  be re-configured */
-int children_no = 0;			/* number of children processing requests */
+int children_no = CHILD_NO;		/* number of children processing requests */
 enum poll_types io_poll_method=0; 	/*!< by default choose the best method */
-#ifdef USE_TCP
-int tcp_children_no = 0;
-int tcp_disable = 0; /* 1 if tcp is disabled */
-int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;	/* Max number of seconds that
-												   we except a full SIP message
-												   to arrive in - anything above
-												   will lead to the connection to
-												   closed */
-#endif
 int sig_flag = 0;              /* last signal received */
 
 int dont_fork = 0;
@@ -942,24 +933,12 @@ int main(int argc, char** argv)
 			case 'E':
 					cfg_log_stderr=1;
 					break;
-			case 'T':
-#ifdef USE_TCP
-					tcp_disable=1;
-#else
-					LM_WARN("tcp support not compiled in\n");
-#endif
-					break;
-			break;
 			case 'N':
-#ifdef USE_TCP
 					tcp_children_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
 						LM_ERR("bad process number: -N %s\n", optarg);
 						goto error00;
 					}
-#else
-					LM_WARN("tcp support not compiled in\n");
-#endif
 					break;
 			case 'W':
 					io_poll_method=get_poll_type(optarg);
@@ -1120,13 +1099,6 @@ try_again:
 	}
 
 	/* fix parameters */
-	if (children_no<=0) children_no=CHILD_NO;
-#ifdef USE_TCP
-	if (!tcp_disable){
-		if (tcp_children_no<=0) tcp_children_no=children_no;
-	}
-#endif
-
 	if (working_dir==0) working_dir="/";
 
 	/* get uid/gid */

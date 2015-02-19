@@ -48,7 +48,8 @@ extern int auto_aliases;
 extern unsigned int maxbuffer;
 extern int children_no;
 extern enum poll_types io_poll_method;
-#ifdef USE_TCP
+
+/* TCP network layer related parameters */
 extern int tcp_children_no;
 extern int tcp_disable;
 extern int tcp_accept_aliases;
@@ -63,9 +64,9 @@ extern int tcp_keepcount;
 extern int tcp_keepidle;
 extern int tcp_keepinterval;
 extern int tcp_max_msg_time;
-extern int tcp_no_new_conn; // FIXME TCP  - to be removed
+extern int tcp_no_new_conn;
 extern int tcp_no_new_conn_bflag;
-#endif
+
 extern int dont_fork;
 extern int no_daemon_mode;
 extern int check_via;

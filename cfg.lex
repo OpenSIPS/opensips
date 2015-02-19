@@ -331,7 +331,6 @@ CHROOT		"chroot"
 WDIR		"workdir"|"wdir"
 MHOMED		mhomed
 POLL_METHOD		"poll_method"
-DISABLE_TCP		"disable_tcp"
 TCP_CHILDREN	"tcp_children"
 TCP_ACCEPT_ALIASES	"tcp_accept_aliases"
 TCP_SEND_TIMEOUT	"tcp_send_timeout"
@@ -610,7 +609,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
 <INITIAL>{MHOMED}	{ count(); yylval.strval=yytext; return MHOMED; }
 <INITIAL>{TCP_NO_NEW_CONN_BFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_BFLAG; }
-<INITIAL>{DISABLE_TCP}	{ count(); yylval.strval=yytext; return DISABLE_TCP; }
 <INITIAL>{TCP_CHILDREN}	{ count(); yylval.strval=yytext; return TCP_CHILDREN; }
 <INITIAL>{TCP_ACCEPT_ALIASES}	{ count(); yylval.strval=yytext;
 									return TCP_ACCEPT_ALIASES; }

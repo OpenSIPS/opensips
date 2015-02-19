@@ -1185,10 +1185,9 @@ static int proto_tls_send(struct socket_info* send_sock,
 
 	/* was connection found ?? */
 	if (c==0) {
-		// FIXME 
-		//if (tcp_no_new_conn) {
-		//	return -1;
-		//}
+		if (tcp_no_new_conn) {
+			return -1;
+		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
 		if ((c=tls_sync_connect(send_sock, to))==0) {

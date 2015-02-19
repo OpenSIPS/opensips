@@ -354,7 +354,6 @@ extern char *finame;
 %token WDIR
 %token MHOMED
 %token POLL_METHOD
-%token DISABLE_TCP
 %token TCP_ACCEPT_ALIASES
 %token TCP_CHILDREN
 %token TCP_CONNECT_TIMEOUT
@@ -727,101 +726,53 @@ assign_stm: DEBUG EQUAL snumber {
 									}
 									}
 		| POLL_METHOD EQUAL error { yyerror("poll method name expected"); }
-		| DISABLE_TCP EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_disable=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| DISABLE_TCP EQUAL error { yyerror("boolean value expected"); }
 		| TCP_ACCEPT_ALIASES EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_accept_aliases=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_accept_aliases=$3;
+		}
 		| TCP_ACCEPT_ALIASES EQUAL error { yyerror("boolean value expected"); }
 		| TCP_CHILDREN EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_children_no=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_children_no=$3;
+		}
 		| TCP_CHILDREN EQUAL error { yyerror("number expected"); }
 		| TCP_CONNECT_TIMEOUT EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_connect_timeout=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_connect_timeout=$3;
+		}
 		| TCP_CONNECT_TIMEOUT EQUAL error { yyerror("number expected"); }
 		| TCP_SEND_TIMEOUT EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_send_timeout=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_send_timeout=$3;
+		}
 		| TCP_SEND_TIMEOUT EQUAL error { yyerror("number expected"); }
 		| TCP_CON_LIFETIME EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_con_lifetime=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_con_lifetime=$3;
+		}
 		| TCP_CON_LIFETIME EQUAL error { yyerror("number expected"); }
 		| TCP_LISTEN_BACKLOG EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_listen_backlog=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_listen_backlog=$3;
+		}
 		| TCP_LISTEN_BACKLOG EQUAL error { yyerror("number expected"); }
 		| TCP_MAX_CONNECTIONS EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_max_connections=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_max_connections=$3;
+		}
 		| TCP_MAX_CONNECTIONS EQUAL error { yyerror("number expected"); }
 		| TCP_NO_NEW_CONN_BFLAG EQUAL NUMBER {
-			#ifdef USE_TCP
 				tmp = NULL;
 				fix_flag_name(tmp, $3);
-				// FIXME TCP - this flag should be in proto level now
-				//tcp_no_new_conn_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, tmp);
-				//if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
-				//	yyerror("invalid TCP no_new_conn Branch Flag");
-				//flag_idx2mask( &tcp_no_new_conn_bflag );
-			#else
-				warn("tcp support not compiled in");
-			#endif
+				tcp_no_new_conn_bflag =
+					get_flag_id_by_name(FLAG_TYPE_BRANCH, tmp);
+				if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
+					yyerror("invalid TCP no_new_conn Branch Flag");
+				flag_idx2mask( &tcp_no_new_conn_bflag );
 		}
 		| TCP_NO_NEW_CONN_BFLAG EQUAL ID {
-			#ifdef USE_TCP
-				// FIXME TCP
-				//tcp_no_new_conn_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, $3);
-				//if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
-				//	yyerror("invalid TCP no_new_conn Branch Flag");
-				//flag_idx2mask( &tcp_no_new_conn_bflag );
-			#else
-				warn("tcp support not compiled in");
-			#endif
+				tcp_no_new_conn_bflag =
+					get_flag_id_by_name(FLAG_TYPE_BRANCH, $3);
+				if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
+					yyerror("invalid TCP no_new_conn Branch Flag");
+				flag_idx2mask( &tcp_no_new_conn_bflag );
 		}
 		| TCP_NO_NEW_CONN_BFLAG EQUAL error { yyerror("number value expected"); }
 		| TCP_KEEPALIVE EQUAL NUMBER {
-			#ifdef USE_TCP
-			        tcp_keepalive=$3;
-			#else
-				warn("tcp support not compiled in");
-			#endif
+				tcp_keepalive=$3;
 		}
 		| TCP_KEEPALIVE EQUAL error { yyerror("boolean value expected"); }
 		| TCP_MAX_MSG_TIME EQUAL NUMBER {
@@ -833,39 +784,27 @@ assign_stm: DEBUG EQUAL snumber {
 		}
 		| TCP_MAX_MSG_TIME EQUAL error { yyerror("boolean value expected"); }
 		| TCP_KEEPCOUNT EQUAL NUMBER 		{
-			#ifdef USE_TCP
-			    #ifndef HAVE_TCP_KEEPCNT
+			#ifndef HAVE_TCP_KEEPCNT
 				warn("cannot be enabled (no OS support)");
-			    #else
-			        tcp_keepcount=$3;
-			    #endif
-		        #else
-				warn("tcp support not compiled in");
+			#else
+				tcp_keepcount=$3;
 			#endif
 		}
 		| TCP_KEEPCOUNT EQUAL error { yyerror("int value expected"); }
 		| TCP_KEEPIDLE EQUAL NUMBER 		{
-			#ifdef USE_TCP
-			    #ifndef HAVE_TCP_KEEPIDLE
+			#ifndef HAVE_TCP_KEEPIDLE
 				warn("cannot be enabled (no OS support)");
-			    #else
-			        tcp_keepidle=$3;
-			    #endif
-		        #else
-				warn("tcp support not compiled in");
+			#else
+				tcp_keepidle=$3;
 			#endif
 		}
 		| TCP_KEEPIDLE EQUAL error { yyerror("int value expected"); }
 		| TCP_KEEPINTERVAL EQUAL NUMBER 		{
-			#ifdef USE_TCP
-			    #ifndef HAVE_TCP_KEEPINTVL
+			#ifndef HAVE_TCP_KEEPINTVL
 				warn("cannot be enabled (no OS support)");
-			    #else
-			        tcp_keepinterval=$3;
-			    #endif
-		        #else
-				warn("tcp support not compiled in");
-			#endif
+			#else
+				tcp_keepinterval=$3;
+			 #endif
 		}
 		| TCP_KEEPINTERVAL EQUAL error { yyerror("int value expected"); }
 		| SERVER_SIGNATURE EQUAL NUMBER { server_signature=$3; }

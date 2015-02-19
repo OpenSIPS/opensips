@@ -109,14 +109,6 @@ struct tcp_data {
 };
 
 
-/*!< should a new TCP conn be open if needed? - branch flag to be set in
- * the SIP messages - configuration option */
-int tcp_no_new_conn_bflag = 0;
-/*!< should a new TCP conn be open if needed? - variable used to used for
- * signalizing between SIP layer (branch flag) and TCP layer (tcp_send func)*/
-int tcp_no_new_conn = 0;
-
-
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_tcp_init, 0, 0, 0, 0},
 	{0,0,0,0,0,0}

@@ -102,6 +102,12 @@ int tcp_listen_backlog=DEFAULT_TCP_LISTEN_BACKLOG;
 enum poll_types tcp_poll_method=0;
 int tcp_max_connections=DEFAULT_TCP_MAX_CONNECTIONS;
 int tcp_max_fd_no=0;
+/* number of TCP workers */
+int tcp_children_no = CHILD_NO;
+/* Max number of seconds that we except a full SIP message
+ * to arrive in - anything above will lead to the connection to closed */
+int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;
+
 
 #ifdef HAVE_SO_KEEPALIVE
     int tcp_keepalive = 1;
@@ -112,6 +118,15 @@ int tcp_keepcount = 0;
 int tcp_keepidle = 0;
 int tcp_keepinterval = 0;
 
+/*!< should a new TCP conn be open if needed? - branch flag to be set in
+ * the SIP messages - configuration option */
+int tcp_no_new_conn_bflag = 0;
+/*!< should a new TCP conn be open if needed? - variable used to used for
+ * signalizing between SIP layer (branch flag) and TCP layer (tcp_send func)*/
+int tcp_no_new_conn = 0;
+
+/* FIXME - we should set this on if no TCP based proto is loaded */
+int tcp_disabled = 0;
 
 
 /****************************** helper functions *****************************/
@@ -1612,7 +1627,7 @@ int tcp_pre_connect_proc_to_tcp_main( int proc_no)
 {
 	int sockfd[2];
 
-	if(tcp_disable)
+	if (tcp_disabled)
 		return 0;
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
@@ -1629,7 +1644,7 @@ int tcp_pre_connect_proc_to_tcp_main( int proc_no)
 
 void tcp_connect_proc_to_tcp_main( int proc_no, int child )
 {
-	if(tcp_disable)
+	if (tcp_disabled)
 		return;
 
 	if (child) {
@@ -1643,7 +1658,7 @@ void tcp_connect_proc_to_tcp_main( int proc_no, int child )
 
 int tcp_count_processes(void)
 {
-	return ((!tcp_disable)?( 1/* tcp main */ + tcp_children_no ):0);
+	return ((!tcp_disabled)?( 1/* tcp main */ + tcp_children_no ):0);
 }
 
 
@@ -1655,7 +1670,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	struct socket_info *si;
 	stat_var *load_p = NULL;
 
-	if (tcp_disable)
+	if (tcp_disabled)
 		return 0;
 
 	/* estimate max fd. no:
@@ -1776,7 +1791,7 @@ struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param)
 	int len;
 
 	/* FIXME - remove tcp_disable and list the conn type too */
-	if (tcp_disable)
+	if (tcp_disabled)
 		return init_mi_tree( 404, MI_SSTR("TCP support disabled"));
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
