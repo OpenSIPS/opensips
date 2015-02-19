@@ -41,9 +41,7 @@
 
 
 static int mod_init(void);
-static int proto_udp_init(void);
-static int proto_udp_api_bind(struct api_proto *proto_binds,
-		struct api_proto_net *net_binds, unsigned short *port);
+static int proto_udp_init(struct proto_info *pi);
 static int proto_udp_init_listener(struct socket_info *si);
 static int proto_udp_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
@@ -54,7 +52,7 @@ static callback_list* cb_list = NULL;
 
 
 static cmd_export_t cmds[] = {
-	{"proto_bind_api", (cmd_function)proto_udp_api_bind, 0, 0, 0, 0},
+	{"proto_init", (cmd_function)proto_udp_init, 0, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
 
@@ -83,20 +81,6 @@ struct module_exports proto_udp_exports = {
 	0,          /* per-child init function */
 };
 
-static struct api_proto udp_proto_binds = {
-	.init			= proto_udp_init,
-	.init_listener	= proto_udp_init_listener,
-	.send			= proto_udp_send,
-};
-
-static struct api_proto_net udp_proto_net_binds = {
-	.flags			= PROTO_NET_USE_UDP,
-	.read			= (proto_net_read_f)udp_read_req,
-	.write			= NULL,
-	.conn_init		= NULL,
-	.conn_clean		= NULL,
-};
-
 
 static int mod_init(void)
 {
@@ -105,20 +89,15 @@ static int mod_init(void)
 }
 
 
-static int proto_udp_init(void)
+static int proto_udp_init(struct proto_info *pi)
 {
-	/* TODO - port fixing */
-	return 0;
-}
+	pi->default_port		= SIP_PORT;
 
+	pi->tran.init_listener	= proto_udp_init_listener;
+	pi->tran.send			= proto_udp_send;
 
-static int proto_udp_api_bind(struct api_proto *proto_api,
-					struct api_proto_net *net_binds, unsigned short *port)
-{
-	memcpy(proto_api, &udp_proto_binds, sizeof(struct api_proto));
-	memcpy(net_binds, &udp_proto_net_binds,
-			sizeof(struct api_proto_net));
-	*port = SIP_PORT;
+	pi->net.flags			= PROTO_NET_USE_UDP;
+	pi->net.read			= (proto_net_read_f)udp_read_req;
 
 	return 0;
 }

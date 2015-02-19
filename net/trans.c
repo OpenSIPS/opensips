@@ -73,7 +73,7 @@ int trans_load(void)
 	cmd_export_t *cmd;
 	char * proto_name;
 	int proto = PROTO_NONE;
-	api_proto_bind abind;
+	api_proto_init abind;
 
 	/* go through all protocol modules loaded and load only the ones
 	 * that are prefixed with the PROTO_PREFIX token */
@@ -94,18 +94,11 @@ int trans_load(void)
 			}
 
 			for (cmd = mod->exports->cmds; cmd && cmd->name; cmd++) {
-				if (strcmp("proto_bind_api", cmd->name)==0) {
-					abind = (api_proto_bind)cmd->function;
-					if (abind(&protos[proto].tran,
-							&protos[proto].net,
-							&protos[proto].default_port) < 0) {
+				if (strcmp("proto_init", cmd->name)==0) {
+					abind = (api_proto_init)cmd->function;
+					if (abind(&protos[proto]) < 0) {
 						LM_ERR("cannot load protocol's functions for %s\n",
 								proto_name);
-						return -1;
-					}
-					/* initialize the protocol */
-					if (protos[proto].tran.init() < 0) {
-						LM_ERR("cannot initi protocol %s\n", proto_name);
 						return -1;
 					}
 					/* everything was fine, return */

@@ -54,6 +54,8 @@ struct proto_info {
 	struct socket_info *sendipv6;
 };
 
+typedef int (*api_proto_init)(struct proto_info *pi);
+
 extern struct proto_info *protos;
 
 /*

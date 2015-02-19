@@ -39,9 +39,7 @@
 #include "proto_tcp_handler.h"
 
 static int mod_init(void);
-static int proto_tcp_init(void);
-static int proto_tcp_api_bind(struct api_proto *proto_binds,
-		struct api_proto_net *net_binds, unsigned short *port);
+static int proto_tcp_init(struct proto_info *pi);
 static int proto_tcp_init_listener(struct socket_info *si);
 static int proto_tcp_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
@@ -117,7 +115,7 @@ int tcp_no_new_conn = 0;
 
 
 static cmd_export_t cmds[] = {
-	{"proto_bind_api", (cmd_function)proto_tcp_api_bind, 0, 0, 0, 0},
+	{"proto_init", (cmd_function)proto_tcp_init, 0, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
 
@@ -156,24 +154,17 @@ struct module_exports proto_tcp_exports = {
 	0,          /* per-child init function */
 };
 
-static struct api_proto tcp_proto_binds = {
-	.init			= proto_tcp_init,
-	.init_listener	= proto_tcp_init_listener,
-	.send			= proto_tcp_send,
-};
-
-static struct api_proto_net tcp_proto_net_binds = {
-	.flags			= PROTO_NET_USE_TCP,
-	.read			= (proto_net_read_f)tcp_read_req,
-	.write			= (proto_net_write_f)tcp_write_async_req,
-	.conn_init		= tcp_conn_init,
-	.conn_clean		= tcp_conn_clean,
-};
-
-
-static int mod_init(void)
+static int proto_tcp_init(struct proto_info *pi)
 {
-	LM_INFO("initializing TCP-plain protocol\n");
+	pi->default_port		= SIP_PORT;
+
+	pi->tran.init_listener	= proto_tcp_init_listener;
+	pi->tran.send			= proto_tcp_send;
+
+	pi->net.flags			= PROTO_NET_USE_TCP;
+	pi->net.read			= (proto_net_read_f)tcp_read_req;
+	pi->net.write			= (proto_net_write_f)tcp_write_async_req;
+
 	if (tcp_async && !tcp_has_async_write()) {
 		LM_WARN("TCP network layer does not have suport for ASYNC write, "
 			"disabling it for TCP plain\n");
@@ -181,30 +172,18 @@ static int mod_init(void)
 	}
 
 	/* without async support, there is nothing to init/clean per conn */
-	if (tcp_async==0) {
-		tcp_proto_net_binds.conn_init = NULL;
-		tcp_proto_net_binds.conn_clean = NULL;
-		protos[PROTO_TCP].net.conn_init = NULL;
-		protos[PROTO_TCP].net.conn_clean = NULL;
+	if (tcp_async!=0) {
+		pi->net.conn_init	= tcp_conn_init;
+		pi->net.conn_clean	= tcp_conn_clean;
 	}
 
 	return 0;
 }
 
-static int proto_tcp_init(void)
-{
-	/* TODO - port fixing */
-	return 0;
-}
 
-
-static int proto_tcp_api_bind(struct api_proto *proto_api,
-		struct api_proto_net *net_binds, unsigned short *port)
+static int mod_init(void)
 {
-	memcpy(proto_api, &tcp_proto_binds, sizeof(struct api_proto));
-	memcpy(net_binds, &tcp_proto_net_binds,
-			sizeof(struct api_proto_net));
-	*port = SIP_PORT;
+	LM_INFO("initializing TCP-plain protocol\n");
 
 	return 0;
 }

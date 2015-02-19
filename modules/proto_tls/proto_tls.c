@@ -57,10 +57,8 @@ static int tls_port_no = SIPS_PORT;
 static char *tls_domain_avp = NULL;
 
 static int  mod_init(void);
-static int proto_tls_init(void);
 static void mod_destroy(void);
-static int proto_tls_api_bind(struct api_proto *proto_binds,
-		struct api_proto_net *net_binds, unsigned short *port);
+static int proto_tls_init(struct proto_info *pi);
 static int proto_tls_init_listener(struct socket_info *si);
 static int proto_tls_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
@@ -84,7 +82,7 @@ static void tls_conn_clean(struct tcp_connection* c);
 
 
 static cmd_export_t cmds[] = {
-	{"proto_bind_api", (cmd_function)proto_tls_api_bind, 0, 0, 0, 0},
+	{"proto_init", (cmd_function)proto_tls_init, 0, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
 
@@ -129,19 +127,6 @@ struct module_exports exports = {
 	0,          /* per-child init function */
 };
 
-static struct api_proto tls_proto_binds = {
-	.init			= proto_tls_init,
-	.init_listener	= proto_tls_init_listener,
-	.send			= proto_tls_send,
-};
-
-static struct api_proto_net tls_proto_net_binds = {
-	.flags			= PROTO_NET_USE_TCP,
-	.read			= (proto_net_read_f)tls_read_req,
-	.write			= NULL,
-	.conn_init		= tls_conn_init,
-	.conn_clean		= tls_conn_clean,
-};
 
 /**************  Controll related functions ***************/
 
@@ -988,21 +973,21 @@ static void mod_destroy(void)
 }
 
 
-static int proto_tls_init(void)
+static int proto_tls_init(struct proto_info *pi)
 {
-	/* TODO - implement this */
-	return 0;
-}
-static int proto_tls_api_bind(struct api_proto *proto_api,
-		struct api_proto_net *net_binds, unsigned short *port)
-{
-	memcpy(proto_api, &tls_proto_binds, sizeof(struct api_proto));
-	memcpy(net_binds, &tls_proto_net_binds,
-			sizeof(struct api_proto_net));
-	*port = tls_port_no;
+	pi->default_port		= tls_port_no;
+
+	pi->tran.init_listener	= proto_tls_init_listener;
+	pi->tran.send			= proto_tls_send;
+
+	pi->net.flags			= PROTO_NET_USE_TCP;
+	pi->net.read			= (proto_net_read_f)tls_read_req;
+	pi->net.conn_init		= tls_conn_init;
+	pi->net.conn_clean		= tls_conn_clean;
 
 	return 0;
 }
+
 
 
 static int proto_tls_init_listener(struct socket_info *si)
