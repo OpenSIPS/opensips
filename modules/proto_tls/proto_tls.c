@@ -57,6 +57,7 @@ static int tls_port_no = SIPS_PORT;
 static char *tls_domain_avp = NULL;
 
 static int  mod_init(void);
+static int proto_tls_init(void);
 static void mod_destroy(void);
 static int proto_tls_api_bind(struct api_proto *proto_binds,
 		struct api_proto_net *net_binds, unsigned short *port);
@@ -129,6 +130,7 @@ struct module_exports exports = {
 };
 
 static struct api_proto tls_proto_binds = {
+	.init			= proto_tls_init,
 	.init_listener	= proto_tls_init_listener,
 	.send			= proto_tls_send,
 };
@@ -986,6 +988,11 @@ static void mod_destroy(void)
 }
 
 
+static int proto_tls_init(void)
+{
+	/* TODO - implement this */
+	return 0;
+}
 static int proto_tls_api_bind(struct api_proto *proto_api,
 		struct api_proto_net *net_binds, unsigned short *port)
 {

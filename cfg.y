@@ -482,12 +482,7 @@ statements:	statements statement {}
 		| statements error { yyerror(""); YYABORT;}
 	;
 
-statement:	assign_stm {
-			/* FIXME add the temporary listening interfaces */
-			if (fix_tmp_listeners() < 0) {
-				LM_WARN("cannot fix command line listeners\n");
-			}
-		 }
+statement:	assign_stm
 		| module_stm
 		| {rt=REQUEST_ROUTE;} route_stm
 		| {rt=FAILURE_ROUTE;} failure_route_stm
@@ -538,10 +533,6 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 proto:	ID {
 		if (parse_proto((unsigned char *)$1, strlen($1), &i_tmp) < 0) {
 			yyerrorf("cannot handle protocol <%s>\n", $1);
-			YYABORT;
-		}
-		if (trans_load_proto($1, i_tmp) < 0) {
-			yyerrorf("cannot load protocol <%s>\n", $1);
 			YYABORT;
 		}
 		$$ = i_tmp;

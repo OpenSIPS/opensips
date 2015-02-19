@@ -69,7 +69,7 @@ void trans_destroy(void);
 /*
  * loads the transport protocol
  */
-int trans_load_proto(char *name, enum sip_protos proto);
+int trans_load(void);
 
 /*
  * adds a new listener
@@ -79,12 +79,12 @@ int add_listener(struct socket_id *sock, enum si_flags flags);
 /*
  * adds a temporary listener
  */
-int add_tmp_listener(char *name, int port, int proto);
+int add_cmd_listener(char *name, int port, int proto);
 
 /*
  * fixes temporary listeners
  */
-int fix_tmp_listeners(void);
+int fix_cmd_listeners(void);
 
 /*
  * fixes all socket lists

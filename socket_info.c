@@ -524,12 +524,9 @@ int fix_socket_list(struct socket_info **list)
 		/* fix the number of processes per interface */
 		if (!si->children && protos[si->proto].net.flags&PROTO_NET_USE_UDP)
 			si->children = children_no;
-		/* fix port number, port_no should be !=0 here */
-		/* XXX: we should not have port 0 here */
-		if (si->port_no==0){
-			LM_WARN("Port 0 for socket <%.*s>\n", si->name.len, si->name.s);
+		if (si->port_no==0)
 			si->port_no= protos[si->proto].default_port;
-		}
+
 		tmp=int2str(si->port_no, &len);
 		if (len>=MAX_PORT_LEN){
 			LM_ERR("bad port number: %d\n", si->port_no);

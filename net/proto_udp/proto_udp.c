@@ -41,6 +41,7 @@
 
 
 static int mod_init(void);
+static int proto_udp_init(void);
 static int proto_udp_api_bind(struct api_proto *proto_binds,
 		struct api_proto_net *net_binds, unsigned short *port);
 static int proto_udp_init_listener(struct socket_info *si);
@@ -83,6 +84,7 @@ struct module_exports proto_udp_exports = {
 };
 
 static struct api_proto udp_proto_binds = {
+	.init			= proto_udp_init,
 	.init_listener	= proto_udp_init_listener,
 	.send			= proto_udp_send,
 };
@@ -99,6 +101,13 @@ static struct api_proto_net udp_proto_net_binds = {
 static int mod_init(void)
 {
 	LM_INFO("initializing UDP-plain protocol\n");
+	return 0;
+}
+
+
+static int proto_udp_init(void)
+{
+	/* TODO - port fixing */
 	return 0;
 }
 

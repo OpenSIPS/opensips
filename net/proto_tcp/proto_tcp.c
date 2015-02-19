@@ -39,6 +39,7 @@
 #include "proto_tcp_handler.h"
 
 static int mod_init(void);
+static int proto_tcp_init(void);
 static int proto_tcp_api_bind(struct api_proto *proto_binds,
 		struct api_proto_net *net_binds, unsigned short *port);
 static int proto_tcp_init_listener(struct socket_info *si);
@@ -156,6 +157,7 @@ struct module_exports proto_tcp_exports = {
 };
 
 static struct api_proto tcp_proto_binds = {
+	.init			= proto_tcp_init,
 	.init_listener	= proto_tcp_init_listener,
 	.send			= proto_tcp_send,
 };
@@ -186,6 +188,12 @@ static int mod_init(void)
 		protos[PROTO_TCP].net.conn_clean = NULL;
 	}
 
+	return 0;
+}
+
+static int proto_tcp_init(void)
+{
+	/* TODO - port fixing */
 	return 0;
 }
 

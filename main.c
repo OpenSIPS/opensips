@@ -919,7 +919,7 @@ int main(int argc, char** argv)
 					}
 					tmp[tmp_len]=0; /* null terminate the host */
 					/* add a new addr. to our address list */
-					if (add_tmp_listener(tmp, port, proto)!=0){
+					if (add_cmd_listener(tmp, port, proto)!=0){
 						LM_ERR("failed to add new listen address\n");
 						goto error00;
 					}
@@ -1121,6 +1121,18 @@ try_again:
 
 	/* init the resolver, before fixing the config */
 	resolv_init();
+
+	/* fix temporary listeners added in the cmd line */
+	if (fix_cmd_listeners() < 0) {
+		LM_ERR("cannot add temproray listeners\n");
+		return ret;
+	}
+
+	/* load transport protocols */
+	if (trans_load() < 0) {
+		LM_ERR("cannot load transport protocols\n");
+		goto error;
+	}
 
 	/* fix parameters */
 	if (port_no<=0) port_no=SIP_PORT;

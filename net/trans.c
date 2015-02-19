@@ -37,7 +37,7 @@
  * are developed. Since this is done only once, it's not that bad */
 struct proto_info *protos;
 
-static struct socket_id *tmp_listeners;
+static struct socket_id *cmd_listeners;
 
 
 int trans_init(void)
@@ -67,91 +67,60 @@ void trans_destroy(void)
 
 #define PROTO_PREFIX_LEN (sizeof(PROTO_PREFIX) - 1)
 
-int trans_load_proto(char *name, enum sip_protos proto)
+int trans_load(void)
 {
-	int len = strlen(name);
-	char name_buf[/* PROTO_PREFIX */ PROTO_PREFIX_LEN + len + /* '\0' */ 1];
-	int i;
-	api_proto_bind proto_api;
+	struct sr_module *mod;
+	cmd_export_t *cmd;
+	char * proto_name;
+	int proto = PROTO_NONE;
+	api_proto_bind abind;
 
-	if (proto == PROTO_NONE) {
-		LM_ERR("unknown protocol %s\n", name);
-		goto error;
-	}
-	if (protos[proto].id != PROTO_NONE) {
-		if (proto != protos[proto].id) {
-			LM_BUG("inconsistent protocol id\n");
-			goto error;
-		}
-		return 0;
-	}
-
-	/* load the protocol */
-	memcpy(name_buf, PROTO_PREFIX, PROTO_PREFIX_LEN);
-	memcpy(name_buf + PROTO_PREFIX_LEN, name, len);
-	name_buf[len + PROTO_PREFIX_LEN] = '\0';
-
-	/* lowercase the protocol */
-	for (i = PROTO_PREFIX_LEN; i < PROTO_PREFIX_LEN + len; i++)
-		name_buf[i] |= 0x20;
-
-
-	/* check built-in protocols */
-	switch (proto) {
-	case PROTO_TCP:
-		if (register_module(&proto_tcp_exports, "net/proto", 0) < 0) {
-			LM_ERR("cannot load static TCP protocol\n");
-			return -1;
-		}
-		break;
-	case PROTO_UDP:
-		if (register_module(&proto_udp_exports, "net/proto", 0) < 0) {
-			LM_ERR("cannot load static UDP protocol\n");
-			return -1;
-		}
-	default:
-
-		/* load module if not already loaded from script */
-		if (!module_loaded(name_buf)) {
-
-			char module_buf[/* PROTO_PREFIX */ PROTO_PREFIX_LEN + len +
-				/* .so */ 3 + /* '\0' */ 1];
-			strcpy(module_buf, name_buf);
-			strcat(module_buf, ".so");
-
-			if (load_module(module_buf) < 0) {
-				LM_ERR("cannot load module %s\n", name_buf);
-				goto error;
+	/* go through all protocol modules loaded and load only the ones
+	 * that are prefixed with the PROTO_PREFIX token */
+	for (mod=modules; mod; mod = mod->next) {
+		if (strncmp(PROTO_PREFIX, mod->exports->name, PROTO_PREFIX_LEN) == 0) {
+			proto_name = mod->exports->name + PROTO_PREFIX_LEN;
+			if (parse_proto((unsigned char *)proto_name,
+					strlen(proto_name), &proto) < 0) {
+				LM_ERR("don't know any protocol <%s>\n", proto_name);
+				return -1;
 			}
+
+			/* check if we have any listeners for that protocol */
+			if (!protos[proto].listeners) {
+				LM_WARN("protocol %s loaded, but no listeners defined! "
+						"Skipping ...", proto_name);
+				goto next;
+			}
+
+			for (cmd = mod->exports->cmds; cmd && cmd->name; cmd++) {
+				if (strcmp("proto_bind_api", cmd->name)==0) {
+					abind = (api_proto_bind)cmd->function;
+					if (abind(&protos[proto].tran,
+							&protos[proto].net,
+							&protos[proto].default_port) < 0) {
+						LM_ERR("cannot load protocol's functions for %s\n",
+								proto_name);
+						return -1;
+					}
+					/* initialize the protocol */
+					if (protos[proto].tran.init() < 0) {
+						LM_ERR("cannot initi protocol %s\n", proto_name);
+						return -1;
+					}
+					/* everything was fine, return */
+					protos[proto].id = proto;
+					protos[proto].name = proto_name;
+					goto next;
+				}
+			}
+			LM_ERR("No binding found for protocol %s\n", proto_name);
+			return -1;
 		}
-		break;
+next:
+		;
 	}
-
-	proto_api = (api_proto_bind)find_mod_export(name_buf,
-			"proto_bind_api", 0, 0);
-	if (!proto_api) {
-		LM_ERR("cannot find transport API for protocol %s\n", name);
-		goto error;
-	}
-	if (proto_api(&protos[proto].tran,
-			&protos[proto].net, &protos[proto].default_port) < 0) {
-		LM_ERR("cannot bind transport API for protocol %s\n", name);
-		goto error;
-	}
-	protos[proto].name = pkg_malloc(len + 1);
-	if (!protos[proto].name) {
-		LM_ERR("cannot allocate space for protocol's name\n");
-		goto error;
-	}
-	memcpy(protos[proto].name, name_buf + PROTO_PREFIX_LEN, len + 1);
-
-	protos[proto].id = proto;
-
-	LM_DBG("Loaded <%s> protocol handlers\n", protos[proto].name);
-
 	return 0;
-error:
-	return -1;
 }
 #undef PROTO_PREFIX_LEN
 
@@ -163,84 +132,55 @@ int add_listener(struct socket_id *sock, enum si_flags flags)
 	 * otherwise UDP will be assumed
 	 */
 	enum sip_protos proto = sock->proto;
-	struct proto_info *pi;
-	int port;
 
 	/* validate the protocol */
 	if (proto < PROTO_FIRST || proto >= PROTO_LAST) {
 		LM_BUG("invalid protocol number %d\n", proto);
 		return -1;
 	}
-	pi = &protos[proto];
-	if (pi->id == PROTO_NONE) {
-		LM_BUG("protocol %d not registered\n", proto);
-		return -1;
-	}
-	/* fix the socket's protocol */
-	port = sock->port ? sock->port : pi->default_port;
 
 	/* convert to socket_info */
-	if (new_sock2list(sock->name, port, sock->proto, sock->adv_name, sock->adv_port,
-			sock->children, flags, &pi->listeners) < 0) {
+	if (new_sock2list(sock->name, sock->port, sock->proto, sock->adv_name, sock->adv_port,
+			sock->children, flags, &protos[proto].listeners) < 0) {
 		LM_ERR("cannot add socket to the list\n");
 		return -1;
 	}
 
-/*
- * TODO: can't add them right away because we first have to resolve the hosts
- * and the resolver is not yet initialized
- *
-	if (protos[proto - 1].binds.add_listener &&
-			protos[proto - 1].binds.add_listener(sock->name, port) < 0) {
-		LM_ERR("cannot add socket");
-		return -1;
-	}
-*/
 	return 0;
 }
 
-int add_tmp_listener(char *name, int port, int proto)
+int add_cmd_listener(char *name, int port, int proto)
 {
 	struct socket_id *tmp = pkg_malloc(sizeof(struct socket_id));
 	if (!tmp) {
-		LM_ERR("no more pkg memory\n");
+		fprintf(stderr, "no more pkg memory\n");
 		return -1;
 	}
 	memset(tmp, 0, sizeof(struct socket_id));
 	tmp->name = name;
 	tmp->port = port;
 	tmp->proto = proto;
-	tmp->next = tmp_listeners;
-	tmp_listeners = tmp;
+	tmp->next = cmd_listeners;
+	cmd_listeners = tmp;
 
 	return 0;
 }
 
 
-int fix_tmp_listeners(void)
+int fix_cmd_listeners(void)
 {
 	struct socket_id *si, *prev;
-	for (si = tmp_listeners; si;) {
+	for (si = cmd_listeners; si;) {
+		if (si->proto == PROTO_NONE)
+			si->proto = PROTO_UDP;
 		if (add_listener(si, 0) < 0)
-			LM_ERR("cannot add socket <%s>, skipping...\n", si->name);
+			LM_ERR("Cannot add socket <%s>, skipping...\n", si->name);
 		prev = si;
 		si = si->next;
 		pkg_free(prev);
 	}
 	return 0;
 }
-
-#if 0
-int add_all_listeners(struct socket_info *si, proto_add_listener_f add_func)
-{
-	for (; si; si = si->next)
-		if (add_func(si) < 0) {
-			LM_ERR("cannot add listener %.*s\n", si->name.len, si->name.s);
-			return -1;
-		}
-	return 0;
-}
-#endif
 
 
 /*
@@ -249,6 +189,8 @@ int fix_all_socket_lists(void)
 {
 	int i;
 	int found = 0;
+	static char buf[5 /* currently sctp\0 is the largest protocol */];
+	char *p;
 #if 0
 	/* TODO: decide what to do with this */
 	struct utsname myname;
@@ -289,23 +231,25 @@ int fix_all_socket_lists(void)
 	}
 #endif
 
-	for (i = PROTO_FIRST; i < PROTO_LAST; i++)
+	for (i = PROTO_FIRST; i < PROTO_LAST; i++) {
 		if (protos[i].id != PROTO_NONE) {
 			if (fix_socket_list(&protos[i].listeners)!=0) {
 				LM_ERR("fix_socket_list for %d failed\n", protos[i].id);
 				goto error;
 			}
 
-			/* add all sockets to the protocol list
-			FIXME - why do we need this ??
-			if (add_all_listeners(protos[i].listeners, protos[i].api.add_listener)!=0) {
-				LM_ERR("cannot add listeners for proto %d\n", protos[i].id);
-				goto error;
-			}
-			*/
-
 			found++;
+		} else if (protos[i].listeners) {
+			p = proto2str(i, buf);
+			if (p == NULL)
+				goto error;
+			*p = '\0';
+
+			LM_ERR("listeners found for protocol %s, but no module "
+					"can handle it\n", buf);
+			goto error;
 		}
+	}
 
 	if (!found){
 		LM_ERR("no listening sockets\n");
