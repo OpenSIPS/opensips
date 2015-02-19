@@ -130,10 +130,6 @@
 #include "net/net_tcp.h"
 #include "net/net_udp.h"
 
-#ifdef USE_SCTP
-#include "sctp_server.h"
-#endif
-
 #include "version.h"
 #include "mi/mi_core.h"
 #include "db/db_insertq.h"
@@ -180,9 +176,6 @@ int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;	/* Max number of seconds that
 												   to arrive in - anything above
 												   will lead to the connection to
 												   closed */
-#endif
-#ifdef USE_SCTP
-int sctp_disable = 0; /* 1 if sctp is disabled */
 #endif
 int sig_flag = 0;              /* last signal received */
 
@@ -958,12 +951,6 @@ int main(int argc, char** argv)
 					LM_WARN("tcp support not compiled in\n");
 #endif
 					break;
-			case 'S':
-#ifdef USE_SCTP
-					sctp_disable=1;
-#else
-					LM_WARN("sctp support not compiled in\n");
-#endif
 			break;
 			case 'N':
 #ifdef USE_TCP
