@@ -125,8 +125,8 @@ int tcp_no_new_conn_bflag = 0;
  * signalizing between SIP layer (branch flag) and TCP layer (tcp_send func)*/
 int tcp_no_new_conn = 0;
 
-/* FIXME - we should set this on if no TCP based proto is loaded */
-int tcp_disabled = 0;
+/* if the TCP net layer is on or off (if no TCP based protos are loaded) */
+static int tcp_disabled = 1;
 
 
 /****************************** helper functions *****************************/
@@ -462,14 +462,6 @@ error:
 		si->socket=-1;
 	}
 	return -1;
-}
-
-
-// used to return a listener
-struct socket_info* tcp_find_listener(union sockaddr_union* to, int proto)
-{
-	// TODO: implementation
-	return NULL;
 }
 
 
@@ -1452,7 +1444,7 @@ static inline void __tcpconn_timeout(int force)
 }
 
 
-void tcp_main_server(void)
+static void tcp_main_server(void)
 {
 	static unsigned int last_sec = 0;
 	int flags;
@@ -1532,6 +1524,14 @@ error:
 int tcp_init(void)
 {
 	unsigned int i;
+
+	/* first we do auto-detection to see if there are any TCP based
+	 * protocols loaded */
+	for ( i=PROTO_FIRST ; i<PROTO_LAST ; i++ )
+		if (is_tcp_based_proto(i)) {tcp_disabled=0;break;}
+
+	if (tcp_disabled)
+		return 0;
 
 	/* init tcp children array */
 	tcp_children = (struct tcp_child*)pkg_malloc
@@ -1790,13 +1790,12 @@ struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param)
 	char *p;
 	int len;
 
-	/* FIXME - remove tcp_disable and list the conn type too */
-	if (tcp_disabled)
-		return init_mi_tree( 404, MI_SSTR("TCP support disabled"));
-
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==NULL)
 		return 0;
+
+	if (tcp_disabled)
+		return rpl_tree;
 
 	for( part=0 ; part<TCP_PARTITION_SIZE ; part++) {
 		TCPCONN_LOCK(part);

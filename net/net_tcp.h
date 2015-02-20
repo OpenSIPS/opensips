@@ -71,10 +71,6 @@ int tcp_init_sock_opt(int s);
 int tcp_connect_blocking(int s, const struct sockaddr *servaddr,
 		socklen_t addrlen);
 
-// used to return a listener
-struct socket_info* tcp_find_listener(union sockaddr_union* to, int proto);
-
-
 /********************** TCP conn management functions ************************/
 
 /* returns the connection identified by either the id or the destination to */

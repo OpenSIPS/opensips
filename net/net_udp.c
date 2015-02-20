@@ -35,12 +35,20 @@
 
 #define UDP_SELECT_TIMEOUT  1
 
+/* if the UDP network layer is used or not by some protos */
+static int udp_disabled = 1;
 
 
 /* initializes the UDP network layer */
 int udp_init(void)
 {
-	/* nothing to do here for now */
+	unsigned int i;
+
+	/* first we do auto-detection to see if there are any UDP based
+	 * protocols loaded */
+	for ( i=PROTO_FIRST ; i<PROTO_LAST ; i++ )
+		if (is_udp_based_proto(i)) {udp_disabled=0;break;}
+
 	return 0;
 }
 
@@ -55,6 +63,9 @@ int udp_count_processes(void)
 {
 	struct socket_info *si;
 	int n, i;
+
+	if (udp_disabled)
+		return 0;
 
 	for( i=0,n=0 ; i<PROTO_LAST ; i++)
 		if (protos[i].id!=PROTO_NONE && is_udp_based_proto(i))
@@ -311,6 +322,9 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 	stat_var *load_p = NULL;
 	pid_t pid;
 	int i,p;
+
+	if (udp_disabled)
+		return 0;
 
 	for( p=PROTO_FIRST ; p<PROTO_LAST ; p++ ) {
 		if ( !is_udp_based_proto(p) )
