@@ -245,3 +245,27 @@ skip_listeners:
 	LM_DBG("%d children are going to be inited\n",ret);
 	return ret;
 }
+
+/* returns the number of SIP listener processes (UDP + TCP + SCTP) */
+int count_sip_listeners(void)
+{
+	int ret = 0;
+	struct socket_info* si;
+
+	if (dont_fork)
+		return 1;
+
+	for (si = udp_listen; si; si = si->next)
+		ret += si->children;
+
+	#ifdef USE_TCP
+	ret += tcp_disable? 0 : tcp_children_no;
+	#endif
+
+	#ifdef USE_SCTP
+	for (si = sctp_listen; si; si = si->next)
+		ret += si->children;
+	#endif
+
+	return ret;
+}

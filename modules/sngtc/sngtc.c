@@ -99,7 +99,7 @@ static str card_ip_a, card_ip_b;
 static int pipe_index;
 
 /* one R+W pipe for each SIP UDP receiver process */
-int *udp_receiver_pipes;
+int *sip_listener_pipes;
 
 /* pipe for the sangoma worker */
 int sangoma_pipe[2];
@@ -202,7 +202,7 @@ void free_transcoding_sessions(struct sngtc_session_list *first)
 	int rc;
 
 	req.type        = REQ_FREE_SESSION;
-	req.response_fd = udp_receiver_pipes[pipe_index + WRITE_END];
+	req.response_fd = sip_listener_pipes[pipe_index + WRITE_END];
 
 	for (session = first; session; ) {
 
@@ -217,9 +217,9 @@ void free_transcoding_sessions(struct sngtc_session_list *first)
 			goto free_mem;
 		}
 
-		if (read(udp_receiver_pipes[pipe_index + READ_END], &rc, sizeof(rc)) < 0) {
+		if (read(sip_listener_pipes[pipe_index + READ_END], &rc, sizeof(rc)) < 0) {
 			LM_ERR("failed to read sangoma worker reply on pipe fd %d (%d: %s)\n",
-			       udp_receiver_pipes[pipe_index + READ_END], errno,
+			       sip_listener_pipes[pipe_index + READ_END], errno,
 			       strerror(errno));
 			goto free_mem;
 		}
@@ -273,7 +273,7 @@ void sngtc_dlg_terminated(struct dlg_cell *dlg, int type,
 
 static int mod_init(void)
 {
-	int i, udp_receiver_no;
+	int i, sip_listeners;
 
 	LM_INFO("initializing module\n");
 
@@ -289,24 +289,13 @@ static int mod_init(void)
 		return -1;
 	}
 
-    udp_receiver_no = count_init_children(0);
+    sip_listeners = count_sip_listeners();
 
-	if (!dont_fork) {
+	LM_DBG("SIP listeners: %d\n", sip_listeners);
 
-#ifdef USE_TCP
-		udp_receiver_no -= !tcp_disable ? tcp_children_no : 0;
-#endif
-
-		udp_receiver_no--; /* MAIN */
-	}
-
-	udp_receiver_no -= 2; /* TIMER, SANGOMA WORKER */
-
-	LM_DBG("Children: %d\n", udp_receiver_no);
-
-    udp_receiver_pipes = pkg_malloc(2 * udp_receiver_no *
-	                                sizeof(*udp_receiver_pipes));
-    if (!udp_receiver_pipes) {
+    sip_listener_pipes = pkg_malloc(2 * sip_listeners *
+	                                sizeof(*sip_listener_pipes));
+    if (!sip_listener_pipes) {
         LM_ERR("Not enough pkg mem\n");
         return -1;
     }
@@ -337,14 +326,14 @@ static int mod_init(void)
 
 	LM_DBG("Sangoma pipe: [%d %d]\n", sangoma_pipe[0], sangoma_pipe[1]);
 
-	for (i = 0; i < udp_receiver_no; i++) {
-		if (pipe(udp_receiver_pipes + 2 * i) != 0) {
+	for (i = 0; i < sip_listeners; i++) {
+		if (pipe(sip_listener_pipes + 2 * i) != 0) {
 			LM_ERR("Failed to create pipe for UDP receiver %d\n", i);
 			return -1;
 		}
 
-		LM_DBG("SIP pipe: [%d %d]\n", udp_receiver_pipes[2 * i],
-		       udp_receiver_pipes[2 * i + 1]);
+		LM_DBG("SIP pipe: [%d %d]\n", sip_listener_pipes[2 * i],
+		       sip_listener_pipes[2 * i + 1]);
 	}
 
 	sngtc_init_cfg.operation_mode   = SNGTC_MODE_SOAP_CLIENT;
@@ -382,7 +371,7 @@ static int child_init(int rank)
 
 	pipe_index = 2 * (*proc_counter)++;
 
-	close(udp_receiver_pipes[pipe_index + WRITE_END]);
+	close(sip_listener_pipes[pipe_index + WRITE_END]);
 
 	lock_release(index_lock);
 
@@ -791,7 +780,7 @@ static struct sngtc_codec_reply *create_transcoding_session(
 	LM_DBG("creating sng transcoding session\n");
 
 	req.type        = REQ_CREATE_SESSION;
-	req.response_fd = udp_receiver_pipes[pipe_index + WRITE_END];
+	req.response_fd = sip_listener_pipes[pipe_index + WRITE_END];
 	req.sng_req     = *request;
 	req.sng_reply   = reply;
 
@@ -801,9 +790,9 @@ static struct sngtc_codec_reply *create_transcoding_session(
 		goto out_free;
 	}
 
-	if (read(udp_receiver_pipes[pipe_index + READ_END], &rc, sizeof(rc)) < 0) {
+	if (read(sip_listener_pipes[pipe_index + READ_END], &rc, sizeof(rc)) < 0) {
 		LM_ERR("failed to read sangoma worker reply on pipe fd %d (%d: %s)\n",
-		       udp_receiver_pipes[pipe_index + READ_END], errno, strerror(errno));
+		       sip_listener_pipes[pipe_index + READ_END], errno, strerror(errno));
 		goto out_free;
 	}
 
