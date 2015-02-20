@@ -541,7 +541,7 @@ int forward_reply(struct sip_msg* msg)
 	proto=msg->via2->proto;
 	if (update_sock_struct_from_via( to, msg, msg->via2 )==-1) goto error;
 
-	if (protos[proto].net.flags&PROTO_NET_USE_TCP){
+	if (is_tcp_based_proto(proto)){
 		/* find id in i param if it exists */
 		if (msg->via1->i&&msg->via1->i->value.s){
 			s=msg->via1->i->value.s;

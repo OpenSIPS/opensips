@@ -57,8 +57,7 @@ int udp_count_processes(void)
 	int n, i;
 
 	for( i=0,n=0 ; i<PROTO_LAST ; i++)
-		if (protos[i].id!=PROTO_NONE &&
-				protos[i].net.flags&PROTO_NET_USE_UDP)
+		if (protos[i].id!=PROTO_NONE && is_udp_based_proto(i))
 			for( si=protos[i].listeners ; si; si=si->next)
 				n+=si->children;
 
@@ -314,7 +313,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 	int i,p;
 
 	for( p=PROTO_FIRST ; p<PROTO_LAST ; p++ ) {
-		if ( (protos[p].net.flags&PROTO_NET_USE_UDP)==0 )
+		if ( !is_udp_based_proto(p) )
 			continue;
 
 		for(si=protos[p].listeners; si ; si=si->next ) {

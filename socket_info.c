@@ -522,7 +522,7 @@ int fix_socket_list(struct socket_info **list)
 #endif
 	for (si=*list;si;si=si->next){
 		/* fix the number of processes per interface */
-		if (!si->children && protos[si->proto].net.flags&PROTO_NET_USE_UDP)
+		if (!si->children && is_udp_based_proto(si->proto))
 			si->children = children_no;
 		if (si->port_no==0)
 			si->port_no= protos[si->proto].default_port;

@@ -58,6 +58,13 @@ typedef int (*api_proto_init)(struct proto_info *pi);
 
 extern struct proto_info *protos;
 
+#define is_tcp_based_proto(_p) \
+	(protos[_p].net.flags&PROTO_NET_USE_TCP)
+
+#define is_udp_based_proto(_p) \
+	(protos[_p].net.flags&PROTO_NET_USE_UDP)
+
+
 /*
  * initializes transport interface structures
  */

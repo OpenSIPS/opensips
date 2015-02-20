@@ -1468,7 +1468,7 @@ void tcp_main_server(void)
 
 	/* add all the sockets we listens on for connections */
 	for( n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
-		if (protos[n].net.flags&PROTO_NET_USE_TCP)
+		if ( is_tcp_based_proto(n) )
 			for( si=protos[n].listeners ; si ; si=si->next ) {
 				if ( (si->socket!=-1) &&
 				reactor_add_reader( si->socket, F_TCP_LISTENER, si)<0 ) {
@@ -1678,7 +1678,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	 *  + 1 udp sock/udp proc + 1 tcp_child sock/tcp child*
 	 *  + no_listen_tcp */
 	for( r=0,n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
-		if (protos[n].net.flags&PROTO_NET_USE_TCP)
+		if ( is_tcp_based_proto(n) )
 			for(si=protos[n].listeners; si ; si=si->next,r++ );
 
 	tcp_max_fd_no=counted_processes*2 + r - 1/*timer*/ + 3/*stdin/out/err*/;

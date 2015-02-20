@@ -160,7 +160,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		/* check if necessary to add receive?->moved to forward_req */
 		/* check for the alias stuff */
 		if (msg->via1->alias && tcp_accept_aliases &&
-		protos[rcv_info->proto].net.flags&PROTO_NET_USE_TCP) {
+		is_tcp_based_proto(rcv_info->proto) ) {
 			if (tcpconn_add_alias(rcv_info->proto_reserved1, msg->via1->port,
 									rcv_info->proto)!=0){
 				LM_ERR("tcp alias failed\n");

@@ -1183,7 +1183,7 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 	anchor=0;
 
 	/* check to see if we need to add clen */
-	if (protos[proto].net.flags&PROTO_NET_USE_TCP) {
+	if (is_tcp_based_proto(proto)) {
 		if (parse_headers(msg, HDR_CONTENTLENGTH_F, 0)==-1){
 			LM_ERR("parsing content-length\n");
 			goto error;
@@ -1385,7 +1385,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		goto build_msg;
 
 	/* add id if tcp-based protocol  */
-	if (protos[msg->rcv.proto].net.flags&PROTO_NET_USE_TCP) {
+	if (is_tcp_based_proto(msg->rcv.proto)) {
 		if  ((id_buf=id_builder(msg, &id_len))==0){
 			LM_ERR("id_builder failed\n");
 			goto error; /* we don't need to free anything,

@@ -1904,7 +1904,7 @@ next_avp:
 
 		case FORCE_TCP_ALIAS_T:
 			script_trace("core", "force_tcp_alias", msg, a->file, a->line) ;
-			if (protos[msg->rcv.proto].net.flags&PROTO_NET_USE_TCP) {
+			if (is_tcp_based_proto(msg->rcv.proto)) {
 				if (a->elem[0].type==NOSUBTYPE)	port=msg->via1->port;
 				else if (a->elem[0].type==NUMBER_ST)
 					port=(int)a->elem[0].u.number;
