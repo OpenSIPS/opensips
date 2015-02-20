@@ -70,6 +70,7 @@ void trans_destroy(void)
 int trans_load(void)
 {
 	struct sr_module *mod;
+	struct sr_module *prev = NULL, *next;
 	cmd_export_t *cmd;
 	char * proto_name;
 	int proto = PROTO_NONE;
@@ -77,7 +78,7 @@ int trans_load(void)
 
 	/* go through all protocol modules loaded and load only the ones
 	 * that are prefixed with the PROTO_PREFIX token */
-	for (mod=modules; mod; mod = mod->next) {
+	for (mod=modules; mod && (next = mod->next, 1); mod = next) {
 		if (strncmp(PROTO_PREFIX, mod->exports->name, PROTO_PREFIX_LEN) == 0) {
 			proto_name = mod->exports->name + PROTO_PREFIX_LEN;
 			if (parse_proto((unsigned char *)proto_name,
@@ -89,8 +90,16 @@ int trans_load(void)
 			/* check if we have any listeners for that protocol */
 			if (!protos[proto].listeners) {
 				LM_WARN("protocol %s loaded, but no listeners defined! "
-						"Skipping ...", proto_name);
-				goto next;
+						"Skipping ...\n", proto_name);
+				if (!prev)
+					modules = mod->next;
+				else
+					prev->next = mod->next;
+
+				/* we do not call the destroy_f because the module was not
+				 * initialized yet here */
+				pkg_free(mod);
+				continue;
 			}
 
 			for (cmd = mod->exports->cmds; cmd && cmd->name; cmd++) {
@@ -111,7 +120,7 @@ int trans_load(void)
 			return -1;
 		}
 next:
-		;
+		prev = mod;
 	}
 	return 0;
 }
