@@ -81,7 +81,8 @@ Chapter 1. Admin Guide
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
-     * sngtc_node library.
+     * sngtc_node library - download from Sangoma, compile and
+       install .
      * sngtc_server up and running.
 
 1.4. Exported Functions

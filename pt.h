@@ -60,6 +60,7 @@ int   init_multi_proc_support();
 void  set_proc_attrs( char *fmt, ...);
 pid_t internal_fork(char *proc_desc);
 int count_init_children(int flags);
+int count_sip_listeners(void);
 
 /* return processes pid */
 inline static int my_pid(void)
