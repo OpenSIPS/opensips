@@ -1,5 +1,8 @@
 /*
- * Copyright (C) 2014-2015 Robison Tesini & Evandro Villaron
+ * $Id$
+ *
+ * dialog module - basic support for dialog tracking
+ *
  *
  * This file is part of opensips, a free SIP server.
  *

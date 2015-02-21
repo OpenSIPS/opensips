@@ -1,5 +1,9 @@
 /*
- * Copyright (C) 2014-2015 Robison Tesini & Evandro Villaron
+ * $Id$
+ *
+ * dialog module - basic support for dialog tracking
+ *
+ * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -54,5 +58,5 @@ xsi:schemaLocation=\"urn:nena:xml:ns:es:v2 v2.xsd\"> \n \
 </lie> \n \
 <callOrigin>%s</callOrigin> \n \
 <datetimestamp>%s</datetimestamp> \n \
-<customer></customer> \n \
+<customer>7</customer> \n \
 </esrRequest>";

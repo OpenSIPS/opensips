@@ -1,5 +1,8 @@
 /*
- * Copyright (C) 2014-2015 Robison Tesini & Evandro Villaron
+ * $Id$
+ *
+ * dialog module - basic support for dialog tracking
+ *
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -24,51 +27,52 @@
 
 
 typedef struct parsed_xml_vpc {
-	char* organizationname;
-	char* hostname;
-	char* nenaid;
-	char* contact;
-	char* certuri;
+    char* organizationname;
+    char* hostname;
+    char* nenaid;
+    char* contact;
+    char* certuri;
 }NENA;
 
 typedef struct parsed_xml_ert{
-	char* selectiveRoutingID ;
-	char* routingESN;
-	char* npa;
+    char* selectiveRoutingID ;
+    char* routingESN;
+    char* npa;
 }ERT;
 
 typedef struct parsed_xml_resp{
-	char* result;
-	char* esgwri;
-	char* esqk;
-	char* lro;
-	char* callid;
-	char* datetimestamp;
-	
-	NENA *vpc;
-	NENA *destination;
-	ERT  *ert;
+    char* result;
+    char* esgwri;
+    char* esqk;
+    char* lro;
+    char* callid;
+    char* datetimestamp;
+    
+    NENA *vpc;
+    NENA *destination;
+    ERT  *ert;
 }PARSED;
 
 typedef struct esct{
-	NENA *source;
-	NENA *vpc;
-	char* esgw;
-	char* esqk;
-	char* callid;
-	char* ert_srid;
-	int   ert_resn;
-	int   ert_npa;
-	char* datetimestamp;
-	char* lro;
-	char* disposition;
-	char* result; 
-	int   timeout;
+    NENA *source;
+    NENA *vpc;
+    char* esgwri;
+    char* esgw;
+    char* esqk;
+    char* callid;
+    char* ert_srid;
+    int   ert_resn;
+    int   ert_npa;
+    char* datetimestamp;
+    char* lro;
+    char* disposition;
+    char* result; 
+    int   timeout;
 }ESCT;
 
 typedef struct node {
-	ESCT *esct;
-	struct node *next;
+    ESCT *esct;
+    struct node *next;
 }NODE;
 
 
@@ -79,8 +83,6 @@ int check_ectAck_init_tags( char* str_total);
 PARSED* parse_xml(char* xml);
 char* parse_xml_esct(char* xml);
 int isNotBlank(char *str);
-ESCT* find_esct(char* callId);
-
 unsigned long findOutSize(ESCT* esct);
 unsigned long findOutNenaSize(NENA* nena);
 char* buildXmlFromModel(ESCT* esct);
