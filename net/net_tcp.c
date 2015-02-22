@@ -240,22 +240,27 @@ int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
 #endif
 	int elapsed;
 	int to;
-	utime_t uticks;
 	int err;
+	struct timeval begin;
 	unsigned int err_len;
 	int poll_err;
 	char *ip;
 	unsigned short port;
 
 	poll_err=0;
-	to = tcp_connect_timeout;
-	uticks = get_uticks();
+	to = tcp_connect_timeout*1000;
+
+	if (gettimeofday(&(begin), NULL)) {
+		LM_ERR("Failed to get TCP connect start time\n");
+		goto error;
+	}
+
 again:
 	n=connect(fd, servaddr, addrlen);
 	if (n==-1){
 		if (errno==EINTR){
-			elapsed = get_uticks() - uticks;
-			if (elapsed<to*1000) goto again;
+			elapsed=get_time_diff(&begin);
+			if (elapsed<to) goto again;
 			else goto error_timeout;
 		}
 		if (errno!=EINPROGRESS && errno!=EALREADY){
@@ -274,18 +279,18 @@ again:
 		pf.events=POLLOUT;
 #endif
 	while(1){
-		elapsed = get_uticks() - uticks;
-		if (elapsed<to*1000)
+		elapsed = get_time_diff(&begin);
+		if (elapsed<to)
 			to-=elapsed;
 		else
 			goto error_timeout;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 		sel_set=orig_set;
-		timeout.tv_sec = to / 1000;
-		timeout.tv_usec = to % 1000;
+		timeout.tv_sec = to/1000000;
+		timeout.tv_usec = to%1000000;
 		n=select(fd+1, 0, &sel_set, 0, &timeout);
 #else
-		n=poll(&pf, 1, to);
+		n=poll(&pf, 1, to/1000);
 #endif
 		if (n<0){
 			if (errno==EINTR) continue;

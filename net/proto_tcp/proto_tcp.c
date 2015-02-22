@@ -384,8 +384,7 @@ again:
 	if (n==-1) {
 		if (errno==EINTR){
 			elapsed=get_time_diff(&begin);
-			if (elapsed<tcp_async_local_connect_timeout*1000)
-				goto again;
+			if (elapsed<to) goto again;
 			else {
 				LM_DBG("Local connect attempt failed \n");
 				goto async_connect;

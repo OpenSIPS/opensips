@@ -46,10 +46,8 @@
 #define DEFAULT_TCP_CONNECTION_LIFETIME 120
 /*!< TCP listen backlog count */
 #define DEFAULT_TCP_LISTEN_BACKLOG 10
-/*!< If a send can't write for more then 100ms, timeout */
-#define DEFAULT_TCP_SEND_TIMEOUT 100
-/*!< If a connect doesn't complete in more than 100ms, timeout */
-#define DEFAULT_TCP_CONNECT_TIMEOUT 100
+/*!< If a connect doesn't complete in more than 10ms, timeout */
+#define DEFAULT_TCP_CONNECT_TIMEOUT 10
 /*!< Maximum number of connections */
 #define DEFAULT_TCP_MAX_CONNECTIONS 2048
 /*!< After 5 seconds, the child "returns"
