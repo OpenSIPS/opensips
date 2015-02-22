@@ -151,7 +151,6 @@ int  mi_init_datagram_server(sockaddr_dtgram *addr, unsigned int socket_domain,
 			}
 			socks->tx_sock = socks->rx_sock;
 			break;
-#ifdef USE_IPV6
 		case AF_INET6:
 			if(bind(socks->rx_sock, (struct sockaddr*)&addr->udp_addr.sin6,
 					sizeof(addr->udp_addr)) < 0) {
@@ -160,7 +159,6 @@ int  mi_init_datagram_server(sockaddr_dtgram *addr, unsigned int socket_domain,
 			}
 			socks->tx_sock = socks->rx_sock;
 			break;
-#endif
 		default:
 			LM_ERR("domain not supported\n");
 			goto err_rx;

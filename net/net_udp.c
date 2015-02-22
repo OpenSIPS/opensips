@@ -85,9 +85,7 @@ int udp_count_processes(void)
 static int setup_mcast_rcvr(int sock, union sockaddr_union* addr)
 {
 	struct ip_mreq mreq;
-#ifdef USE_IPV6
 	struct ipv6_mreq mreq6;
-#endif /* USE_IPV6 */
 
 	if (addr->s.sa_family==AF_INET){
 		memcpy(&mreq.imr_multiaddr, &addr->sin.sin_addr,
@@ -99,8 +97,6 @@ static int setup_mcast_rcvr(int sock, union sockaddr_union* addr)
 			LM_ERR("setsockopt: %s\n", strerror(errno));
 			return -1;
 		}
-
-#ifdef USE_IPV6
 	} else if (addr->s.sa_family==AF_INET6){
 		memcpy(&mreq6.ipv6mr_multiaddr, &addr->sin6.sin6_addr,
 		       sizeof(struct in6_addr));
@@ -114,8 +110,6 @@ static int setup_mcast_rcvr(int sock, union sockaddr_union* addr)
 			LM_ERR("setsockopt:%s\n",  strerror(errno));
 			return -1;
 		}
-
-#endif /* USE_IPV6 */
 	} else {
 		LM_ERR("unsupported protocol family\n");
 		return -1;
@@ -208,7 +202,6 @@ int udp_init_listener(struct socket_info *si)
 				goto error;
 			}
 		}
-#ifdef USE_IPV6
 	} else if (addr->s.sa_family==AF_INET6){
 		if (setsockopt(si->socket, IPPROTO_IPV6, IPV6_MULTICAST_LOOP,
 						&mcast_loopback, sizeof(mcast_loopback))==-1){
@@ -224,7 +217,6 @@ int udp_init_listener(struct socket_info *si)
 				goto error;
 			}
 		}
-#endif /* USE_IPV6*/
 	} else {
 		LM_ERR("unsupported protocol family %d\n", addr->s.sa_family);
 		goto error;
@@ -238,11 +230,9 @@ int udp_init_listener(struct socket_info *si)
 		LM_ERR("bind(%x, %p, %d) on %s: %s\n", si->socket, &addr->s,
 				(unsigned)sockaddru_len(*addr),	si->address_str.s,
 				strerror(errno));
-	#ifdef USE_IPV6
 		if (addr->s.sa_family==AF_INET6)
 			LM_ERR("might be caused by using a link "
 					" local address, try site local or global\n");
-	#endif
 		goto error;
 	}
 	return 0;

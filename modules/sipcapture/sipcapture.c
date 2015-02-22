@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * sipcapture module - helper module to capture sip messages
  *
  * Copyright (C) 2011 Alexandr Dubovikov (QSC AG) (alexandr.dubovikov@gmail.com)
@@ -473,9 +471,7 @@ static int mod_init(void) {
 	if (ipip_capture_on || moni_capture_on) {
 
 		if(extract_host_port() && (((ip=str2ip(&raw_socket_listen)) == NULL)
-#ifdef  USE_IPV6
 		               && ((ip=str2ip6(&raw_socket_listen)) == NULL)
-#endif
 		         ))
 		{
 			LM_ERR("bad RAW IP: %.*s\n", raw_socket_listen.len, raw_socket_listen.s);
@@ -667,14 +663,11 @@ int hep_msg_received(int sockfd, struct receive_info *ri, str *msg, void* param)
         struct ip_addr dst_ip, src_ip;
         char *hep_payload, *end, *p, *hep_ip;
         struct hep_iphdr *hepiph = NULL;
-
         struct hep_timehdr* heptime_tmp;
+        struct hep_ip6hdr *hepip6h = NULL;
 
         memset(heptime, 0, sizeof(struct hep_timehdr));
 
-#ifdef USE_IPV6
-        struct hep_ip6hdr *hepip6h = NULL;
-#endif /* USE_IPV6 */
 
 	if(!hep_capture_on) {
 		LM_ERR("HEP is not enabled\n");
@@ -698,11 +691,9 @@ int hep_msg_received(int sockfd, struct receive_info *ri, str *msg, void* param)
         	case AF_INET:
                 	hl += sizeof(struct hep_iphdr);
                         break;
-#ifdef USE_IPV6
 		case AF_INET6:
                 	hl += sizeof(struct hep_ip6hdr);
                         break;
-#endif /* USE_IPV6 */
 		default:
                         LM_ERR("unsupported family [%d]\n", heph->hp_f);
                         return 0;
@@ -737,14 +728,10 @@ int hep_msg_received(int sockfd, struct receive_info *ri, str *msg, void* param)
                 	offset+=sizeof(struct hep_iphdr);
                         hepiph = (struct hep_iphdr*) hep_ip;
                         break;
-#ifdef USE_IPV6
-
 		case AF_INET6:
                 	offset+=sizeof(struct hep_ip6hdr);
                         hepip6h = (struct hep_ip6hdr*) hep_ip;
                         break;
-#endif /* USE_IPV6 */
-
 	}
 
 	/* VOIP payload */
@@ -774,7 +761,6 @@ int hep_msg_received(int sockfd, struct receive_info *ri, str *msg, void* param)
                         memcpy(&dst_ip.u.addr, &hepiph->hp_dst, 4);
                         memcpy(&src_ip.u.addr, &hepiph->hp_src, 4);
                         break;
-#ifdef USE_IPV6
 
 		case AF_INET6:
                 	dst_ip.af = src_ip.af = AF_INET6;
@@ -783,7 +769,6 @@ int hep_msg_received(int sockfd, struct receive_info *ri, str *msg, void* param)
                         memcpy(&src_ip.u.addr, &hepip6h->hp6_src, 16);
                         break;
 
-#endif /* USE_IPV6 */
 	}
 
         ri->src_ip = src_ip;

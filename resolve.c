@@ -462,9 +462,7 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
 
 		/* check if it's an ip address */
 		if ( ((ip=str2ip(&s))!=0)
-#ifdef USE_IPV6
 			|| ((ip=str2ip6(&s))!=0)
-#endif
 		){
 			/* we are lucky, this is an ip address */
 			return ip_addr2he(&s, ip);
@@ -477,7 +475,6 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
 	else {
 		he=gethostbyname(name);
 	}
-#ifdef USE_IPV6
 	if(he==0 && dns_try_ipv6){
 		/*try ipv6*/
 	#ifdef HAVE_GETHOSTBYNAME2
@@ -498,7 +495,6 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
 		#error neither gethostbyname2 or getipnodebyname present
 	#endif
 	}
-#endif
 	return he;
 }
 
@@ -621,7 +617,6 @@ int check_ip_address(struct ip_addr* ip, str *name,
 		LM_DBG("params %s, %.*s, %d\n", s, name->len, name->s, resolver);
 		len=strlen(s);
 
-	#ifdef USE_IPV6
 		/* check if name->s is an ipv6 address or an ipv6 address ref. */
 		if ((ip->af==AF_INET6) &&
 				(	((len==name->len)&&(strncasecmp(name->s, s, name->len)==0))
@@ -633,7 +628,6 @@ int check_ip_address(struct ip_addr* ip, str *name,
 		   )
 			return 0;
 		else
-	#endif
 
 			if (strncmp(name->s, s, name->len)==0)
 				return 0;
@@ -1626,9 +1620,7 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 
 	/* check if it's an ip address */
 	if ( ((ip=str2ip(name))!=0)
-#ifdef USE_IPV6
 	|| ((ip=str2ip6(name))!=0)
-#endif
 	){
 		/* we are lucky, this is an ip address */
 		if (proto && *proto==PROTO_NONE)

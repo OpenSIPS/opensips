@@ -710,11 +710,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{NULLV}		{ count(); yylval.intval=0; return NULLV; }
 <INITIAL>{INET}			{ count(); yylval.intval=AF_INET; return NUMBER; }
 <INITIAL>{INET6}		{ count();
-						#ifdef USE_IPV6
 						  yylval.intval=AF_INET6;
-						#else
-						  yylval.intval=-1; /* no match*/
-						#endif
 						  return NUMBER; }
 
 <INITIAL>{COMMA}		{ count(); return COMMA; }

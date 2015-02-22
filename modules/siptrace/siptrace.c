@@ -1787,9 +1787,7 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 	struct hep_timehdr hep_time;
 	struct timeval tvb;
 	struct timezone tz;
-#if USE_IPV6
 	struct hep_ip6hdr hep_ip6header;
-#endif
 
 	if(body->s==NULL || body->len <= 0)
 		return -1;
@@ -1801,11 +1799,7 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 
 	/* message length */
 	len = body->len
-#if USE_IPV6
 		+ sizeof(struct hep_ip6hdr)
-#else
-		+ sizeof(struct hep_iphdr)
-#endif
 		+ sizeof(struct hep_hdr) + sizeof(struct hep_timehdr);
 
 
@@ -1860,7 +1854,6 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 
 		len = sizeof(struct hep_iphdr);
 	}
-#ifdef USE_IPV6
 	else if (from_su.s.sa_family==AF_INET6){
 		/* prepare the hep6 headers */
 
@@ -1874,7 +1867,6 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 
 		len = sizeof(struct hep_ip6hdr);
 	}
-#endif /* USE_IPV6 */
 	else {
 		LM_ERR("ERROR: trace_send_hep_duplicate: Unsupported protocol family\n");
 		goto error;;
@@ -1900,12 +1892,10 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 		memcpy((void*)buffer + buflen, &hep_ipheader, sizeof(struct hep_iphdr));
 		buflen += sizeof(struct hep_iphdr);
 	}
-#if USE_IPV6
 	else {
 		memcpy((void*)buffer+buflen, &hep_ip6header, sizeof(struct hep_ip6hdr));
 		buflen += sizeof(struct hep_ip6hdr);
 	}
-#endif /* USE_IPV6 */
 
 	if(hep_version == 2) {
 
@@ -2013,9 +2003,7 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 
 	/* check if it's an ip address */
 	if (((ip_a = str2ip(&host_uri)) != 0)
-#ifdef  USE_IPV6
 			|| ((ip_a = str2ip6 (&host_uri)) != 0)
-#endif
 	) {
 		ip_addr2su(tmp_su, ip_a, ntohs(port));
 		return 0;

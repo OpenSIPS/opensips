@@ -189,18 +189,17 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 	struct socket_info* si;
 	struct socket_info** list;
 	unsigned short c_proto;
-#ifdef USE_IPV6
 	struct ip_addr* ip6;
-#endif
+
 	h_len=host->len;
 	hname=host->s;
-#ifdef USE_IPV6
+
 	if ((h_len>2)&&((*hname)=='[')&&(hname[h_len-1]==']')){
 		/* ipv6 reference, skip [] */
 		hname++;
 		h_len-=2;
 	}
-#endif
+
 	c_proto=proto?proto:PROTO_UDP;
 	do{
 		/* "proto" is all the time valid here */
@@ -241,7 +240,6 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 				* ipv6 addresses if we are lucky*/
 				goto found;
 			/* check if host == ip address */
-#ifdef USE_IPV6
 			/* ipv6 case is uglier, host can be [3ffe::1] */
 			ip6=str2ip6(host);
 			if (ip6){
@@ -251,7 +249,6 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 					continue; /* no match, but this is an ipv6 address
 								 so no point in trying ipv4 */
 			}
-#endif
 			/* ipv4 */
 			if ( 	(!(si->flags&SI_IS_IP)) &&
 					(h_len==si->address_str.len) &&

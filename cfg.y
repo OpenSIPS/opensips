@@ -1049,14 +1049,9 @@ ipv6addr:	IPV6ADDR {
 						memset($$, 0, sizeof(struct ip_addr));
 						$$->af=AF_INET6;
 						$$->len=16;
-					#ifdef USE_IPV6
 						if (inet_pton(AF_INET6, $1, $$->u.addr)<=0){
 							yyerror("bad ipv6 address");
 						}
-					#else
-						yyerror("ipv6 address & no ipv6 support compiled in");
-						YYABORT;
-					#endif
 					}
 				}
 	;
