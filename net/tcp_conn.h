@@ -42,15 +42,23 @@
 #include "tcp_conn_defs.h"
 
 
-#define DEFAULT_TCP_CONNECTION_LIFETIME 120 	/*!< TCP connection lifetime, in seconds */
-#define DEFAULT_TCP_LISTEN_BACKLOG 10          /*!< TCP listen backlog count */
-#define DEFAULT_TCP_SEND_TIMEOUT 10 		/*!< If a send can't write for more then 10s, timeout */
-#define DEFAULT_TCP_CONNECT_TIMEOUT 10		/*!< If a connect doesn't complete in this time, timeout */
-#define DEFAULT_TCP_MAX_CONNECTIONS 2048	/*!< Maximum number of connections */
-#define TCP_CHILD_TIMEOUT 5 			/*!< After 5 seconds, the child "returns"
-							 the connection to the tcp master process */
-#define TCP_MAIN_SELECT_TIMEOUT 5		/*!< how often "tcp main" checks for timeout*/
-#define TCP_CHILD_SELECT_TIMEOUT 2		/*!< the same as above but for children */
+/*!< TCP connection lifetime, in seconds */
+#define DEFAULT_TCP_CONNECTION_LIFETIME 120
+/*!< TCP listen backlog count */
+#define DEFAULT_TCP_LISTEN_BACKLOG 10
+/*!< If a send can't write for more then 100ms, timeout */
+#define DEFAULT_TCP_SEND_TIMEOUT 100
+/*!< If a connect doesn't complete in more than 100ms, timeout */
+#define DEFAULT_TCP_CONNECT_TIMEOUT 100
+/*!< Maximum number of connections */
+#define DEFAULT_TCP_MAX_CONNECTIONS 2048
+/*!< After 5 seconds, the child "returns"
+  the connection to the tcp master process */
+#define TCP_CHILD_TIMEOUT 5
+/*!< how often "tcp main" checks for timeout*/
+#define TCP_MAIN_SELECT_TIMEOUT 5
+/*!< the same as above but for children */
+#define TCP_CHILD_SELECT_TIMEOUT 2
 
 
 /* keepalive */

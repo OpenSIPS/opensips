@@ -357,7 +357,6 @@ extern char *finame;
 %token TCP_ACCEPT_ALIASES
 %token TCP_CHILDREN
 %token TCP_CONNECT_TIMEOUT
-%token TCP_SEND_TIMEOUT
 %token TCP_CON_LIFETIME
 %token TCP_LISTEN_BACKLOG
 %token TCP_MAX_CONNECTIONS
@@ -738,10 +737,6 @@ assign_stm: DEBUG EQUAL snumber {
 				tcp_connect_timeout=$3;
 		}
 		| TCP_CONNECT_TIMEOUT EQUAL error { yyerror("number expected"); }
-		| TCP_SEND_TIMEOUT EQUAL NUMBER {
-				tcp_send_timeout=$3;
-		}
-		| TCP_SEND_TIMEOUT EQUAL error { yyerror("number expected"); }
 		| TCP_CON_LIFETIME EQUAL NUMBER {
 				tcp_con_lifetime=$3;
 		}

@@ -54,7 +54,6 @@ extern int tcp_children_no;
 extern int tcp_disable;
 extern int tcp_accept_aliases;
 extern int tcp_connect_timeout;
-extern int tcp_send_timeout;
 extern int tcp_con_lifetime; /*!< connection lifetime */
 extern int tcp_listen_backlog;
 extern int tcp_max_fd_no;

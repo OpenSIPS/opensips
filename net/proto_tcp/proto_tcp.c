@@ -64,20 +64,22 @@ static void tcp_conn_clean(struct tcp_connection* c);
 /* default port for TCP protocol */
 static int tcp_port = SIP_PORT;
 
+/* in miliseconds */
+static int tcp_send_timeout = 100;
+
 /* 1 if TCP connect & write should be async */
 static int tcp_async = 0;
 
-/* Number of microseconds that a worker will block waiting for a local
+/* Number of miliseconds that a worker will block waiting for a local
  * connect - if connect op exceeds this, it will get passed to TCP main*/
+static int tcp_async_local_connect_timeout = 10;
 
-static int tcp_async_local_connect_timeout = 10000;
-/* Number of microseconds that a worker will block waiting for a local
+/* Number of miliseconds that a worker will block waiting for a local
  * write - if write op exceeds this, it will get passed to TCP main*/
+static int tcp_async_local_write_timeout = 10;
 
-static int tcp_async_local_write_timeout = 10000;
 /* maximum number of write chunks that will be queued per TCP connection - 
   if we exceed this number, we just drop the connection */
-
 static int tcp_async_max_postponed_chunks = 32;
 
 static int tcp_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
@@ -117,6 +119,7 @@ static cmd_export_t cmds[] = {
 
 static param_export_t params[] = {
 	{ "tcp_port",                        INT_PARAM, &tcp_port               },
+	{ "tcp_send_timeout",                INT_PARAM, &tcp_send_timeout       },
 	{ "tcp_max_msg_chunks",              INT_PARAM, &tcp_max_msg_chunks     },
 	{ "tcp_crlf_pingpong",               INT_PARAM, &tcp_crlf_pingpong      },
 	{ "tcp_crlf_drop",                   INT_PARAM, &tcp_crlf_drop          },
@@ -369,7 +372,7 @@ static int tcpconn_async_connect(struct socket_info* send_sock,
 	/* attempt to do connect and see if we do block or not */
 	poll_err=0;
 	elapsed = 0;
-	to = tcp_async_local_connect_timeout;
+	to = tcp_async_local_connect_timeout*1000;
 
 	if (gettimeofday(&(begin), NULL)) {
 		LM_ERR("Failed to get TCP connect start time\n");
@@ -381,7 +384,7 @@ again:
 	if (n==-1) {
 		if (errno==EINTR){
 			elapsed=get_time_diff(&begin);
-			if (elapsed<tcp_async_local_connect_timeout)
+			if (elapsed<tcp_async_local_connect_timeout*1000)
 				goto again;
 			else {
 				LM_DBG("Local connect attempt failed \n");
@@ -532,7 +535,7 @@ error:
 
 /**************  WRITE related functions ***************/
 
-/* called under the TCP connection write lock */
+/* called under the TCP connection write lock, timeout is in miliseconds */
 static int async_tsend_stream(struct tcp_connection *c,
 		int fd, char* buf, unsigned int len, int timeout)
 {
@@ -575,7 +578,7 @@ again:
 	}
 
 poll_loop:
-	n=poll(&pf,1,timeout/1000);
+	n=poll(&pf,1,timeout);
 	if (n<0) {
 		if (errno==EINTR)
 			goto poll_loop;
@@ -664,7 +667,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				return len;
 			}
 
-			LM_DBG("First connect attempt succeded in less than %d us, "
+			LM_DBG("First connect attempt succeded in less than %d ms, "
 				"proceed to writing \n",tcp_async_local_connect_timeout);
 			/* our first connect attempt succeeded - go ahead as normal */
 		} else if ((c=tcp_sync_connect(send_sock, to))==0) {
@@ -718,7 +721,7 @@ send_it:
 	if (tcp_async) {
 		n=async_tsend_stream(c,fd,buf,len,tcp_async_local_write_timeout);
 	} else {
-		n=tsend_stream(fd, buf, len, tcp_send_timeout*1000);
+		n=tsend_stream(fd, buf, len, tcp_send_timeout);
 	}
 
 	get_time_difference(snd,tcpthreshold,tcp_timeout_send);

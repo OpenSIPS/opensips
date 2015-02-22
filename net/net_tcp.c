@@ -95,7 +95,6 @@ static int tcp_connections_no = 0;
 /*!< by default don't accept aliases */
 int tcp_accept_aliases=0;
 int tcp_connect_timeout=DEFAULT_TCP_CONNECT_TIMEOUT;
-int tcp_send_timeout=DEFAULT_TCP_SEND_TIMEOUT;
 int tcp_con_lifetime=DEFAULT_TCP_CONNECTION_LIFETIME;
 int tcp_listen_backlog=DEFAULT_TCP_LISTEN_BACKLOG;
 /*!< by default choose the best method */
@@ -241,7 +240,7 @@ int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
 #endif
 	int elapsed;
 	int to;
-	int ticks;
+	utime_t uticks;
 	int err;
 	unsigned int err_len;
 	int poll_err;
@@ -250,13 +249,13 @@ int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
 
 	poll_err=0;
 	to = tcp_connect_timeout;
-	ticks=get_ticks();
+	uticks = get_uticks();
 again:
 	n=connect(fd, servaddr, addrlen);
 	if (n==-1){
 		if (errno==EINTR){
-			elapsed=(get_ticks()-ticks)*TIMER_TICK;
-			if (elapsed<to)		goto again;
+			elapsed = get_uticks() - uticks;
+			if (elapsed<to*1000) goto again;
 			else goto error_timeout;
 		}
 		if (errno!=EINPROGRESS && errno!=EALREADY){
@@ -275,18 +274,18 @@ again:
 		pf.events=POLLOUT;
 #endif
 	while(1){
-		elapsed=(get_ticks()-ticks)*TIMER_TICK;
-		if (elapsed<to)
+		elapsed = get_uticks() - uticks;
+		if (elapsed<to*1000)
 			to-=elapsed;
 		else
 			goto error_timeout;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 		sel_set=orig_set;
-		timeout.tv_sec=to;
-		timeout.tv_usec=0;
+		timeout.tv_sec = to / 1000;
+		timeout.tv_usec = to % 1000;
 		n=select(fd+1, 0, &sel_set, 0, &timeout);
 #else
-		n=poll(&pf, 1, to*1000);
+		n=poll(&pf, 1, to);
 #endif
 		if (n<0){
 			if (errno==EINTR) continue;
