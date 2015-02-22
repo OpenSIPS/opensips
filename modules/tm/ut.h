@@ -60,6 +60,7 @@ inline static enum sip_protos get_proto(enum sip_protos force_proto,
 				case PROTO_UDP:/* transport specified explicitly */
 				case PROTO_TCP:
 				case PROTO_TLS:
+				case PROTO_SCTP:
 					return proto;
 				default:
 					LM_ERR("unsupported transport: %d\n", proto );
@@ -68,6 +69,7 @@ inline static enum sip_protos get_proto(enum sip_protos force_proto,
 		case PROTO_UDP: /* some protocol has been forced -- take it */
 		case PROTO_TCP:
 		case PROTO_TLS:
+		case PROTO_SCTP:
 			return force_proto;
 		default:
 			LM_ERR("unsupported forced protocol: %d\n", force_proto);
