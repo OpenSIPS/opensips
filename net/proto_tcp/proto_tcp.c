@@ -65,7 +65,7 @@ static void tcp_conn_clean(struct tcp_connection* c);
 static int tcp_port = SIP_PORT;
 
 /* in miliseconds */
-static int tcp_send_timeout = 100;
+static int tcp_send_timeout = 10;
 
 /* 1 if TCP connect & write should be async */
 static int tcp_async = 0;
