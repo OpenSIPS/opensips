@@ -571,14 +571,14 @@ again:
 	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
 		if (tls_accept(c, &(pf.events)) < 0)
 			goto error;
-		timeout = tls_handshake_timeout * 1000;
+		timeout = tls_handshake_timeout;
 	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
 		if (tls_connect(c, &(pf.events)) < 0)
 			goto error;
-		timeout = tls_handshake_timeout * 1000;
+		timeout = tls_handshake_timeout;
 	} else {
 		n = tls_write(c, fd, buf, len, &(pf.events));
-		timeout = tls_send_timeout * 1000;
+		timeout = tls_send_timeout;
 	}
 
 	if (n < 0) {
@@ -618,10 +618,6 @@ again:
 
 poll_loop:
 	while (1) {
-		/*
-		* keep tls_send_timeout in seconds to be compatible with
-		* tcp_send_timeout
-		*/
 		n = poll(&pf, 1, timeout);
 		if (n < 0) {
 			if (errno == EINTR)
