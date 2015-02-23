@@ -64,6 +64,13 @@ extern struct proto_info *protos;
 #define is_udp_based_proto(_p) \
 	(protos[_p].net.flags&PROTO_NET_USE_UDP)
 
+#define DST_FCNTL_SET_LIFETIME 1
+
+#define trans_set_dst_attr( _rcv, _attr, _val) \
+	do { \
+		if (protos[(_rcv)->proto].tran.dst_attr) \
+			protos[(_rcv)->proto].tran.dst_attr(_rcv,_attr,_val);\
+	}while(0)
 
 /*
  * initializes transport interface structures

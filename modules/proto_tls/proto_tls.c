@@ -975,6 +975,7 @@ static int proto_tls_init(struct proto_info *pi)
 
 	pi->tran.init_listener	= proto_tls_init_listener;
 	pi->tran.send			= proto_tls_send;
+	pi->tran.dst_attr		= tcp_conn_fcntl;
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
 	pi->net.read			= (proto_net_read_f)tls_read_req;

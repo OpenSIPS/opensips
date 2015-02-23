@@ -605,28 +605,32 @@ error:
 }
 
 
-// used to tune the tcp_connection attributes
-int tcp_conn_fcntl(struct tcp_connection *conn, int attr, void *value)
+/* used to tune the tcp_connection attributes - not to be used inside the
+   network layer, but onlu from the above layer (otherwise we may end up 
+   in strange deadlocks!) */
+int tcp_conn_fcntl(struct receive_info *rcv, int attr, void *value)
 {
-	// TODO: implementation
+	struct tcp_connection *con;
+
+	switch (attr) {
+	case DST_FCNTL_SET_LIFETIME:
+		/* set connection timeout */
+		TCPCONN_LOCK(rcv->proto_reserved1);
+		con =_tcpconn_find(rcv->proto_reserved1);
+		if (!con) {
+			LM_ERR("Strange, tcp conn not found (id=%d)\n",
+				rcv->proto_reserved1);
+		} else {
+			con->lifetime = (int)(long)(value);
+		}
+		TCPCONN_UNLOCK(rcv->proto_reserved1);
+		return 0;
+	default:
+		LM_ERR("unsupported operation %d on conn\n",attr);
+		return -1;
+	}
 	return -1;
 }
-
-/** FIXME - have it in tcp_conn_fcntl
-void force_tcp_conn_lifetime(struct receive_info *rcv, unsigned int timeout)
-{
-	struct tcp_connection* con;
-	unsigned int lifetime = get_ticks() + timeout;
-
-	TCPCONN_LOCK(rcv->proto_reserved1);
-	con =_tcpconn_find(rcv->proto_reserved1);
-	if (!con) {
-		LM_ERR("Strange, tcp conn not found (id=%d)\n",rcv->proto_reserved1);
-	} else {
-		con->lifetime = lifetime;
-	}
-	TCPCONN_UNLOCK(rcv->proto_reserved1);
-}*/
 
 
 static struct tcp_connection* tcpconn_add(struct tcp_connection *c)
