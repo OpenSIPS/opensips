@@ -467,7 +467,8 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 
 	if ( tcp_check && e_max>0 ) {
 		e_max -= act_time;
-		// force_tcp_conn_lifetime( &_m->rcv , e_max + 10 ); FIXME TCP
+		trans_set_dst_attr( &_m->rcv, DST_FCNTL_SET_LIFETIME,
+			(void*)(long)(e_max + 10) );
 	}
 
 	return 0;
@@ -661,7 +662,8 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 	if ( tcp_check && e_max>-1 ) {
 		if (e_max) e_max -= act_time;
-		// force_tcp_conn_lifetime( &_m->rcv , e_max + 10 ); FIXME
+		trans_set_dst_attr( &_m->rcv, DST_FCNTL_SET_LIFETIME,
+			(void*)(long)(e_max + 10) );
 	}
 
 	return 0;
