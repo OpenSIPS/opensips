@@ -398,8 +398,6 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			&(con->rcv.src_su), con->rcv.proto_reserved1) < 0) {
 				LM_ERR("CRLF pong - tcp_send() failed\n");
 			}
-			//FIXME if (!size)
-			//	goto done;
 		} else {
 			msg_buf = req->start;
 			msg_len = req->parsed-req->start;
@@ -415,7 +413,9 @@ static inline int tcp_handle_req(struct tcp_req *req,
 					 *	detach it , release the conn and free it afterwards */
 					con->con_req = NULL;
 				}
-				//FIXME goto done;
+				/* TODO - we could indicate to the TCP net layer to release
+				 * the connection -> other worker may read the next available
+				 * message on the pipe */
 			} else {
 				LM_DBG("We still have things on the pipe - "
 					"keeping connection \n");
