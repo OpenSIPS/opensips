@@ -187,16 +187,18 @@ again:
 				if (resp<0) {
 					ret=-1; /* some error occured */
 					con->state=S_CONN_BAD;
+					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
+					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					tcpconn_release(con, CONN_ERROR);
 				} else if (con->state==S_CONN_EOF) {
+					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
+					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					tcpconn_release(con, CONN_EOF);
 				} else {
 					//tcpconn_release(con, CONN_RELEASE);
 					/* keep the connection for now */
 					break;
 				}
-				reactor_del_all( con->fd, idx, IO_FD_CLOSING );
-				tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 			}
 			break;
 		case F_NONE:
