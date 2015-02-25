@@ -707,7 +707,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				trans_fill_left(val, st, i);
 			else
 				trans_fill_right(val, st, i);
-			
+
 			break;
 		default:
 			LM_ERR("unknown subtype %d\n",
@@ -875,6 +875,12 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		case TR_URI_R2:
 			val->rs = (_tr_parsed_uri.r2_val.s)?
 				_tr_parsed_uri.r2_val:_tr_empty;
+			break;
+		case TR_URI_SCHEMA:
+			val->rs.s = _tr_uri.s;
+			/* maximum size of schema can be 4 so the ':' shall be found after
+			 * five chars */
+			val->rs.len = q_memchr(val->rs.s, ':', 5) - val->rs.s;
 			break;
 		default:
 			LM_ERR("unknown subtype %d\n",
@@ -2601,8 +2607,10 @@ char* tr_parse_uri(str* in, trans_t *t)
 	} else if(name.len==2 && strncasecmp(name.s, "r2", 2)==0) {
 		t->subtype = TR_URI_R2;
 		return p;
+	} else if (name.len==6 && strncasecmp(name.s, "schema", 6)==0) {
+		t->subtype = TR_URI_SCHEMA;
+		return p;
 	}
-
 
 	LM_ERR("unknown transformation: %.*s/%.*s!\n", in->len,
 			in->s, name.len, name.s);
