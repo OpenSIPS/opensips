@@ -348,6 +348,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 		last_called_prefix.s = shm_realloc(last_called_prefix.s,
 				matched_len * sizeof(char));
 		last_called_prefix.len = matched_len;
+		memcpy(last_called_prefix.s, number.s, matched_len);
 		se->stats.seq_calls = 1;
 	}
 	lock_release(frd_seq_calls_lock);
