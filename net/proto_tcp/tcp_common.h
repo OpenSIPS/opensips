@@ -332,17 +332,6 @@ skip:
 }
 
 
-#define init_tcp_req( r, _size) \
-	do{ \
-		(r)->parsed=(r)->start=(r)->buf; \
-		(r)->pos=(r)->buf + (_size); \
-		(r)->error=TCP_REQ_OK;\
-		(r)->state=H_SKIP_EMPTY; \
-		(r)->body=0; \
-		(r)->complete=(r)->content_len=(r)->has_content_len=0; \
-		(r)->bytes_to_go=0; \
-	}while(0)
-
 
 static inline int tcp_handle_req(struct tcp_req *req,
 							struct tcp_connection *con, int _max_msg_chunks)
@@ -440,7 +429,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 #ifdef EXTRA_DEBUG
 		LM_DBG("preparing for new request, kept %ld bytes\n", size);
 #endif
-		init_tcp_req(&_tcp_common_current_req, size);
+		init_tcp_req(req, size);
 		con->msg_attempts = 0;
 
 		/* if we still have some unparsed bytes, try to  parse them too*/

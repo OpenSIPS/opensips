@@ -62,5 +62,17 @@ struct tcp_req{
 	enum tcp_req_states state;
 };
 
+#define init_tcp_req( r, _size) \
+	do{ \
+		(r)->parsed=(r)->start=(r)->buf; \
+		(r)->pos=(r)->buf + (_size); \
+		(r)->error=TCP_REQ_OK;\
+		(r)->state=H_SKIP_EMPTY; \
+		(r)->body=0; \
+		(r)->complete=(r)->content_len=(r)->has_content_len=0; \
+		(r)->bytes_to_go=0; \
+	}while(0)
+
+
 #endif
 
