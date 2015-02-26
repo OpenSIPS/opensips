@@ -65,7 +65,7 @@ fifo_cmd()
 	while :
 	do
 		suffix=$(od -An -N4 -tx4 /dev/urandom  | tr -d " ")
-		(mkfifo -m a+w $CHROOT_DIR/tmp/osips_rply_$suffix) >& /dev/null && break
+		(mkfifo -m a+w $CHROOT_DIR/tmp/osips_rply_$suffix) > /dev/null 2>&1 && break
 	done
 	name=osips_rply_$suffix
 	path=$CHROOT_DIR/tmp/$name
