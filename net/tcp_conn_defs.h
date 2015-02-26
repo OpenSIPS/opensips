@@ -43,7 +43,7 @@
 #define TCP_CON_MAX_ALIASES  4
 
 /*!< the max number of seconds that a child waits  until the message is 
- * ead completely - anything above will lead to the connection being closed
+ * read completely - anything above will lead to the connection being closed
  * and considered an attack */
 #define TCP_CHILD_MAX_MSG_TIME  4
 
@@ -78,8 +78,12 @@ struct tcp_connection{
 	enum sip_protos type;			/*!< PROTO_TCP or a protocol over it, e.g. TLS */
 	enum tcp_conn_states state;		/*!< connection state */
 	void* extra_data;			/*!< extra data associated to the connection, 0 for tcp*/
-	unsigned int timeout;			/*!< connection timeout, after this it will be removed*/
-	unsigned int lifetime;			/*!< lifetime to be set for the connection */
+	/*!< connection timeout, to be used by worker only; after this
+	 * it will be released (with success or not) */
+	unsigned int timeout;
+	/*!< the lifetime of the connection - watched by TCP main process
+	 * in order to close un-used connections */
+	unsigned int lifetime;
 	unsigned id_hash;			/*!< hash index in the id_hash */
 	struct tcp_connection* id_next;		/*!< next in id hash table */
 	struct tcp_connection* id_prev;		/*!< prev in id hash table */
@@ -101,6 +105,15 @@ struct tcp_connection{
 /*! \brief add port as an alias for the "id" connection
  * \return 0 on success,-1 on failure */
 int tcpconn_add_alias(int id, int port, int proto);
+
+
+#define tcp_conn_set_lifetime( _c, _lt) \
+	do { \
+		unsigned int _timeout = get_ticks() + _lt;\
+		if (_timeout > (_c)->lifetime ) \
+			(_c)->lifetime = _timeout;\
+	}while(0)
+
 
 #endif
 

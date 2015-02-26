@@ -43,6 +43,8 @@ static int proto_tcp_init(struct proto_info *pi);
 static int proto_tcp_init_listener(struct socket_info *si);
 static int proto_tcp_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
+inline static int _tcp_write_on_socket(struct tcp_connection *c, int fd,
+		char *buf, int len);
 
 struct tcp_req;
 /* buffer to be used for reading all TCP SIP messages
@@ -51,7 +53,7 @@ struct tcp_req;
    can be sent back to main to do more stuff */
 static struct tcp_req tcp_current_req;
 
-#define _tcp_common_send proto_tcp_send
+#define _tcp_common_write _tcp_write_on_socket
 #define _tcp_common_current_req tcp_current_req
 #include "tcp_common.h"
 
@@ -72,7 +74,7 @@ static int tcp_async = 0;
 
 /* Number of miliseconds that a worker will block waiting for a local
  * connect - if connect op exceeds this, it will get passed to TCP main*/
-static int tcp_async_local_connect_timeout = 10;
+static int tcp_async_local_connect_timeout = 100;
 
 /* Number of miliseconds that a worker will block waiting for a local
  * write - if write op exceeds this, it will get passed to TCP main*/
@@ -607,6 +609,24 @@ poll_loop:
 }
 
 
+/* This is just a wrapper around the writing function, so we can use them
+ * internally, but also export them to the "tcp_common" funcs */
+inline static int _tcp_write_on_socket(struct tcp_connection *c, int fd,
+															char *buf, int len)
+{
+	int n;
+
+	lock_get(&c->write_lock);
+	if (tcp_async) {
+		n=async_tsend_stream(c,fd,buf,len,tcp_async_local_write_timeout);
+	} else {
+		n=tsend_stream(fd, buf, len, tcp_send_timeout);
+	}
+	lock_release(&c->write_lock);
+
+	return n;
+}
+
 
 /*! \brief Finds a tcpconn & sends on it */
 static int proto_tcp_send(struct socket_info* send_sock,
@@ -715,21 +735,17 @@ static int proto_tcp_send(struct socket_info* send_sock,
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
-	lock_get(&c->write_lock);
 	start_expire_timer(snd,tcpthreshold);
 
-	if (tcp_async) {
-		n=async_tsend_stream(c,fd,buf,len,tcp_async_local_write_timeout);
-	} else {
-		n=tsend_stream(fd, buf, len, tcp_send_timeout);
-	}
+	n = _tcp_write_on_socket(c, fd, buf, len);
 
 	get_time_difference(snd,tcpthreshold,tcp_timeout_send);
 	stop_expire_timer(get,tcpthreshold,"tcp ops",buf,(int)len,1);
-	lock_release(&c->write_lock);
+
+	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
-	LM_DBG("buf=\n%.*s\n", (int)len, buf);
+	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
 	if (n<0){
 		LM_ERR("failed to send\n");
 		c->state=S_CONN_BAD;

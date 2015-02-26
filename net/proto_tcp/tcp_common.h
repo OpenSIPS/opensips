@@ -372,7 +372,8 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		}
 
 		/* update the timeout - we succesfully read the request */
-		con->timeout=get_ticks()+tcp_max_msg_time;
+		tcp_conn_set_lifetime( con, tcp_con_lifetime);
+		con->timeout=con->lifetime;
 
 		/* if we are here everything is nice and ok*/
 		update_stat( pt[process_no].load, +1 );
@@ -394,9 +395,8 @@ static inline int tcp_handle_req(struct tcp_req *req,
 
 		if (req->state==H_PING_CRLFCRLF) {
 			/* we send the reply */
-			if (_tcp_common_send( con->rcv.bind_address, CRLF, CRLF_LEN,
-			&(con->rcv.src_su), con->rcv.proto_reserved1) < 0) {
-				LM_ERR("CRLF pong - tcp_send() failed\n");
+			if (_tcp_common_write( con, con->fd, CRLF, CRLF_LEN) < 0) {
+				LM_ERR("CRLF pong - _tcp_common_write() failed\n");
 			}
 		} else {
 			msg_buf = req->start;
@@ -447,6 +447,10 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		if (size) return 1;
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
+		if (con->msg_attempts==0)
+			/* if first iteration, set a short timeout for reading
+			 * a whole SIP message */
+			con->timeout = get_ticks() + tcp_max_msg_time;
 
 		con->msg_attempts ++;
 		if (con->msg_attempts == _max_msg_chunks) {

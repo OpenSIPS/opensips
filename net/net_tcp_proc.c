@@ -66,7 +66,7 @@ static void tcpconn_release(struct tcp_connection* c, long state)
 void tcp_conn_release(struct tcp_connection* c, int pending_data)
 {
 	if (c->state==S_CONN_BAD) {
-		c->timeout=0;
+		c->lifetime=0;
 		/* CONN_ERROR will auto-dec refcnt => we must not call tcpconn_put !!*/
 		tcpconn_release(c, CONN_ERROR);
 		return;
@@ -156,7 +156,7 @@ again:
 				 * handle_io might decide to del. the new connection =>
 				 * must be in the list */
 				tcpconn_listadd(tcp_conn_lst, con, c_next, c_prev);
-				con->timeout=get_ticks()+tcp_max_msg_time;
+				con->timeout = con->lifetime;
 				if (reactor_add_reader( s, F_TCPCONN, con )<0) {
 					LM_CRIT("failed to add new socket to the fd list\n");
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);

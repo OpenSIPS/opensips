@@ -51,8 +51,6 @@
 #include "tls_server.h"
 #include "tls_params.h"
 
-// FIXME do we still need something like this ?
-//static int tls_disable;
 static int tls_port_no = SIPS_PORT;
 static char *tls_domain_avp = NULL;
 
@@ -70,8 +68,8 @@ static int proto_tls_send(struct socket_info* send_sock,
 static struct tcp_req tls_current_req;
 
 /* re-use similar and existing functions from the TCP-plain protocol */
-#define _tcp_common_send proto_tls_send
-#define _tcp_common_current_req tls_current_req
+#define _tcp_common_write        tls_blocking_write
+#define _tcp_common_current_req  tls_current_req
 #include "../../net/proto_tcp/tcp_common.h"
 
 
@@ -1210,9 +1208,10 @@ static int proto_tls_send(struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
-	lock_get(&c->write_lock);
+
 	n = tls_blocking_write(c, fd, buf, len);
-	lock_release(&c->write_lock);
+	tcp_conn_set_lifetime( c, tcp_con_lifetime);
+
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
 	LM_DBG("buf=\n%.*s\n", (int)len, buf);
 	if (n<0){

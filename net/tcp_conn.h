@@ -46,8 +46,8 @@
 #define DEFAULT_TCP_CONNECTION_LIFETIME 120
 /*!< TCP listen backlog count */
 #define DEFAULT_TCP_LISTEN_BACKLOG 10
-/*!< If a connect doesn't complete in more than 10ms, timeout */
-#define DEFAULT_TCP_CONNECT_TIMEOUT 10
+/*!< If a connect doesn't complete in more than 100ms, timeout */
+#define DEFAULT_TCP_CONNECT_TIMEOUT 100
 /*!< Maximum number of connections */
 #define DEFAULT_TCP_MAX_CONNECTIONS 2048
 /*!< After 5 seconds, the child "returns"
@@ -139,6 +139,7 @@ static inline unsigned tcp_addr_hash(struct ip_addr* ip, unsigned short port)
 #define tcp_id_hash(id) (id&(TCP_ID_HASH_SIZE-1))
 
 void tcpconn_put(struct tcp_connection* c);
+
 
 #endif
 

@@ -322,7 +322,8 @@ again:
 	}
 error_timeout:
 	/* timeout */
-	LM_ERR("timeout %d s elapsed from %d s\n", elapsed, tcp_connect_timeout);
+	LM_ERR("timeout %d ms elapsed from %d s\n", elapsed,
+		tcp_connect_timeout*1000);
 error:
 	return -1;
 end:
@@ -621,7 +622,7 @@ int tcp_conn_fcntl(struct receive_info *rcv, int attr, void *value)
 			LM_ERR("Strange, tcp conn not found (id=%d)\n",
 				rcv->proto_reserved1);
 		} else {
-			con->lifetime = (int)(long)(value);
+			tcp_conn_set_lifetime( con, (int)(long)(value));
 		}
 		TCPCONN_UNLOCK(rcv->proto_reserved1);
 		return 0;
@@ -814,7 +815,8 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c->extra_data=0;
 	c->type = si->proto;
 	c->rcv.proto = si->proto;
-	c->timeout=get_ticks()+tcp_con_lifetime;
+	/* start with the default conn lifetime */
+	c->lifetime = get_ticks()+tcp_con_lifetime;
 	c->flags|=F_CONN_REMOVED|flags;
 
 	if (protos[si->proto].net.conn_init &&
@@ -900,7 +902,7 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 		tcp_connections_no--;
 	}else{
 		/* force timeout */
-		tcpconn->timeout=0;
+		tcpconn->lifetime=0;
 		tcpconn->state=S_CONN_BAD;
 		LM_DBG("delaying (%p, flags %04x) ref = %d ...\n",
 				tcpconn, tcpconn->flags, tcpconn->refcnt);
@@ -910,25 +912,7 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 }
 
 
-static inline void tcpconn_set_timeout(struct tcp_connection *c)
-{
-	unsigned int timeout = get_ticks() + tcp_con_lifetime;
-
-	if (c->lifetime) {
-		if ( c->lifetime < timeout ) {
-			c->timeout = timeout;
-			c->lifetime = 0;
-		} else
-			c->timeout = c->lifetime;
-	} else {
-		c->timeout = timeout;
-	}
-}
-
-
-
-
-/************************ TCP MAIN process functions *************************/
+/************************ TCP MAIN process functions ************************/
 
 /*! \brief
  * handles a new connection, called internally by tcp_main_loop/handle_io.
@@ -984,7 +968,7 @@ static inline int handle_new_connect(struct socket_info* si)
 			if (tcpconn->refcnt==0){
 				_tcpconn_rm(tcpconn);
 				close(new_sock/*same as tcpconn->s*/);
-			}else tcpconn->timeout=0; /* force expire */
+			}else tcpconn->lifetime=0; /* force expire */
 			TCPCONN_UNLOCK(id);
 		}
 	}else{ /*tcpconn==0 */
@@ -1030,7 +1014,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 				fd=tcpconn->s;
 				_tcpconn_rm(tcpconn);
 				close(fd);
-			}else tcpconn->timeout=0; /* force expire*/
+			}else tcpconn->lifetime=0; /* force expire*/
 			TCPCONN_UNLOCK(id);
 		}
 		return 0; /* we are not interested in possibly queued io events,
@@ -1077,7 +1061,7 @@ async_write:
 					fd=tcpconn->s;
 					_tcpconn_rm(tcpconn);
 					close(fd);
-				}else tcpconn->timeout=0; /* force expire*/
+				}else tcpconn->lifetime=0; /* force expire*/
 				TCPCONN_UNLOCK(id);
 			}
 			return 0;
@@ -1162,8 +1146,6 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 				tcpconn_destroy(tcpconn);
 				break;
 			}
-			/* update the timeout (lifetime) */
-			tcpconn_set_timeout( tcpconn );
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
 			reactor_add_reader( tcpconn->s, F_TCPCONN, tcpconn);
@@ -1175,8 +1157,6 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 				tcpconn_destroy(tcpconn);
 				break;
 			}
-			/* update the timeout (lifetime) */
-			tcpconn_set_timeout( tcpconn );
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
 			reactor_add_writer( tcpconn->s, F_TCPCONN, tcpconn);
@@ -1306,8 +1286,6 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			tcpconn->s=fd;
 			/* add tcpconn to the list*/
 			tcpconn_add(tcpconn);
-			/* update the timeout*/
-			tcpconn->timeout=get_ticks()+tcp_con_lifetime;
 			reactor_add_reader( tcpconn->s, F_TCPCONN, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED;
 			break;
@@ -1321,8 +1299,8 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			tcpconn->s=fd;
 			/* add tcpconn to the list*/
 			tcpconn_add(tcpconn);
-			/* update the timeout*/
-			tcpconn->timeout=get_ticks()+tcp_con_lifetime /* FIXME - shorter*/;
+			/* FIXME - now we have lifetime==default_lifetime - should we
+			 * set a shorter one when waiting for a connect ??? */
 			/* only maintain the socket in the IO_WATCH_WRITE watcher
 			 * while we have stuff to write - otherwise we're going to get
 			 * useless events */
@@ -1334,8 +1312,6 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 				tcpconn_destroy(tcpconn);
 				break;
 			}
-			/* update the timeout (lifetime) */
-			tcpconn_set_timeout( tcpconn );
 			/* must be after the de-ref*/
 			reactor_add_writer( tcpconn->s, F_TCPCONN, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED;
@@ -1398,13 +1374,13 @@ error:
  * iterates through all TCP connections and closes expired ones
  * Note: runs once per second at most
  */
-#define tcpconn_timeout(last_sec, close_all) \
+#define tcpconn_lifetime(last_sec, close_all) \
 	do { \
 		int now; \
 		now = get_ticks(); \
 		if (last_sec != now) { \
 			last_sec = now; \
-			__tcpconn_timeout(close_all); \
+			__tcpconn_lifetime(close_all); \
 		} \
 	} while (0)
 
@@ -1414,7 +1390,7 @@ error:
  * the same except for io_watch_del..
  * \todo FIXME (very inefficient for now)
  */
-static inline void __tcpconn_timeout(int force)
+static inline void __tcpconn_lifetime(int force)
 {
 	struct tcp_connection *c, *next;
 	unsigned int ticks,part;
@@ -1429,10 +1405,10 @@ static inline void __tcpconn_timeout(int force)
 			c=TCP_PART(part).tcpconn_id_hash[h];
 			while(c){
 				next=c->id_next;
-				if (force ||((c->refcnt==0) && (ticks>c->timeout))) {
+				if (force ||((c->refcnt==0) && (ticks>c->lifetime))) {
 					if (!force)
 						LM_DBG("timeout for hash=%d - %p"
-								" (%d > %d)\n", h, c, ticks, c->timeout);
+								" (%d > %d)\n", h, c, ticks, c->lifetime);
 					fd=c->s;
 					_tcpconn_rm(c);
 					if ((!force)&&(fd>0)&&(c->refcnt==0)) {
@@ -1515,7 +1491,7 @@ static void tcp_main_server(void)
 
 	/* main loop (requires "handle_io()" implementation) */
 	reactor_main_loop( TCP_MAIN_SELECT_TIMEOUT, error,
-			tcpconn_timeout(last_sec, 0) );
+			tcpconn_lifetime(last_sec, 0) );
 
 error:
 	destroy_worker_reactor();
@@ -1606,7 +1582,7 @@ void tcp_destroy(void)
 
 	if (tcp_parts[0].tcpconn_id_hash)
 			/* force close/expire for all active tcpconns*/
-			__tcpconn_timeout(1);
+			__tcpconn_lifetime(1);
 
 	if (connection_id){
 		shm_free(connection_id);
@@ -1846,25 +1822,18 @@ struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param)
 				if (attr==0)
 					goto error;
 
-				/* add timeout */
-				_ts = (time_t)conn->timeout + startup_time;
+				/* add lifetime */
+				_ts = (time_t)conn->lifetime + startup_time;
 				date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
 										"%Y-%m-%d %H:%M:%S", localtime(&_ts));
 				if (date_buf_len != 0) {
-					attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Timeout"),
+					attr = add_mi_attr( node, MI_DUP_VALUE,MI_SSTR("Lifetime"),
 										date_buf, date_buf_len);
 				} else {
 					p = int2str((unsigned long)_ts, &len);
-					attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Timeout"),
+					attr = add_mi_attr( node, MI_DUP_VALUE,MI_SSTR("Lifetime"),
 						p,len);
 				}
-				if (attr==0)
-					goto error;
-
-				/* add lifetime */
-				p = int2str((unsigned long)conn->lifetime, &len);
-				attr = add_mi_attr( node, MI_DUP_VALUE,
-					MI_SSTR("Pending lifetime"), p, len);
 				if (attr==0)
 					goto error;
 
