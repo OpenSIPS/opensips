@@ -25,33 +25,20 @@
 #define tls_server_h
 
 #include <stdio.h>
-#include "../tcp_conn.h"
+#include "../../net/tcp_conn.h"
 
-/*
- * dump ssl error stack
- */
-void            tls_print_errstack(void);
 
-/*
- * Called when new tcp connection is accepted
- */
-int             tls_tcpconn_init(struct tcp_connection *c, int sock);
+#define F_TLS_DO_ACCEPT  (1<<0)
+#define F_TLS_DO_CONNECT (1<<1)
 
-/*
- * clean the extra data upon connection shut down
- */
-void            tls_tcpconn_clean(struct tcp_connection *c);
+size_t tls_blocking_write(struct tcp_connection *c, int fd,
+		const char *buf, size_t len);
 
-/*
- * shut down the TLS connection
- */
-void            tls_close(struct tcp_connection *c, int fd);
+size_t tls_read(struct tcp_connection *c,struct tcp_req *r);
 
-size_t          tls_blocking_write(struct tcp_connection *c, int fd,
-				   const char *buf, size_t len);
+int tls_fix_read_conn(struct tcp_connection *c);
 
-size_t          tls_read(struct tcp_connection *c,struct tcp_req *r);
+int tls_conn_shutdown(struct tcp_connection *c);
 
-int             tls_fix_read_conn(struct tcp_connection *c);
 
 #endif

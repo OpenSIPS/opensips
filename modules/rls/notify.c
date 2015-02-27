@@ -723,10 +723,8 @@ int rls_send_notify(subs_t* subs, str* body, str* start_cid,
 	}
 	LM_DBG("str_hdr= %.*s\n", str_hdr.len, str_hdr.s);
 
-#ifdef USE_TCP
-        /* don't open new TCP connections if connection is down */
+	/* don't open new TCP connections if connection is down */
 	tcp_no_new_conn = 1;
-#endif
 
 	rt = tmb.t_request_within
 		(&met,
@@ -737,9 +735,7 @@ int rls_send_notify(subs_t* subs, str* body, str* start_cid,
 		(void*)cb_param,
 		NULL);
 
-#ifdef USE_TCP
 	tcp_no_new_conn = 0;
-#endif
 
 	if(rt < 0)
 	{

@@ -54,10 +54,8 @@ struct hep_iphdr{
         struct in_addr hp_dst;      /* source and dest address */
 };
 
-#ifdef USE_IPV6
 struct hep_ip6hdr {
         struct in6_addr hp6_src;        /* source address */
         struct in6_addr hp6_dst;        /* destination address */
 };
-#endif
 

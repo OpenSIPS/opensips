@@ -143,13 +143,6 @@ ifeq ($(NICER),1)
 	export Q=@
 endif
 
-# TLS support
-TLS ?= 
-ifneq ($(TLS),)
-	RELEASE:=$(RELEASE)-tls
-else
-	RELEASE:=$(RELEASE)-notls
-endif
 # extra CC command line options (e.g  -march=athlon-mp)
 CC_EXTRA_OPTS ?=
 
@@ -485,13 +478,8 @@ export CC_NAME
 # -DNOSMP
 #		don't use smp compliant locking (faster but won't work on SMP machines)
 #		(not yet enabled) (FAST_LOCK, USE_FUTEX)
-# -DUSE_TCP
-#		compiles in tcp support
 # -DDISABLE_NAGLE
 #		disable the tcp Nagle algorithm (lower delay)
-# -DUSE_TLS
-#		compiles in tls support, requires -DUSE_TCP. Please use
-#		make TLS=1 instead. (tls support is experimental for now)
 # -DHAVE_RESOLV_RES
 #		support for changing some of the resolver parameters present
 #		 (_res structure in <resolv.h>)
@@ -523,14 +511,6 @@ ifneq ($(FREERADIUS),)
 	RADIUS_LIB= -lfreeradius-client
 else
 	RADIUS_LIB= -lradiusclient-ng
-endif
-
-ifneq ($(TLS),)
-	DEFS+= -DUSE_TLS
-endif
-
-ifneq ($(SCTP),)
-	DEFS+= -DUSE_SCTP
 endif
 
 ifeq ($(mode),)
@@ -1438,12 +1418,6 @@ ifneq (,$(findstring CYGWIN, $(OS)))
 		DEFS+= -DUSE_SYSV_SEM  # try sys v sems
 		found_lock_method=yes
 	endif
-endif
-
-#add libssl if needed
-ifneq ($(TLS),)
-DEFS+= -I$(LOCALBASE)/ssl/include -I$(LOCALBASE)/include -I$(SYSBASE)/include/openssl
-LIBS+= -L$(LOCALBASE)/lib -L$(LOCALBASE)/ssl/lib -lssl  -lcrypto
 endif
 
 #add libsctp if needed

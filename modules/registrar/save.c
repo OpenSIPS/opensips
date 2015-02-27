@@ -60,9 +60,6 @@
 #include "../../dset.h"
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
-#ifdef USE_TCP
-#include "../../tcp_server.h"
-#endif
 #include "../usrloc/usrloc.h"
 #include "common.h"
 #include "sip_msg.h"
@@ -154,7 +151,7 @@ static struct socket_info *get_sock_hdr(struct sip_msg *msg)
 		return 0;
 	}
 
-	LM_DBG("%d:<%.*s>:%d -> p=%p\n", proto,socks.len,socks.s,port_no,sock );
+	LM_DBG("%d:<%.*s>:%d -> p=%p\n", proto,socks.len,socks.s,port,sock );
 
 	return sock;
 }
@@ -374,22 +371,17 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 	unsigned int cflags;
 	int num;
 	int e;
-#ifdef USE_TCP
 	int e_max;
 	int tcp_check;
 	struct sip_uri uri;
-#endif
 
 	cflags = (_sctx->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
-#ifdef USE_TCP
-	if ( (_m->flags&tcp_persistent_flag) &&
-	(_m->rcv.proto==PROTO_TCP||_m->rcv.proto==PROTO_TLS)) {
+	if (is_tcp_based_proto(_m->rcv.proto) && (_m->flags&tcp_persistent_flag)) {
 		e_max = 0;
 		tcp_check = 1;
 	} else {
 		e_max = tcp_check = 0;
 	}
-#endif
 
 	for( num=0,r=0,ci=0 ; _c ; _c = get_next_contact(_c) ) {
 		/* calculate expires */
@@ -450,13 +442,12 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 			}
 		}
 
-#ifdef USE_TCP
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri( _c->uri.s, _c->uri.len, &uri)<0) {
 				LM_ERR("failed to parse contact <%.*s>\n",
 						_c->uri.len, _c->uri.s);
-			} else if (uri.proto==PROTO_TCP || uri.proto==PROTO_TLS) {
+			} else if ( is_tcp_based_proto(uri.proto) ) {
 				if (e_max) {
 					LM_WARN("multiple TCP contacts on single REGISTER\n");
 					if (e>e_max) e_max = e;
@@ -465,7 +456,6 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 				}
 			}
 		}
-#endif
 	}
 
 	if (r) {
@@ -475,12 +465,11 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		ul.release_urecord(r, 0);
 	}
 
-#ifdef USE_TCP
 	if ( tcp_check && e_max>0 ) {
 		e_max -= act_time;
-		force_tcp_conn_lifetime( &_m->rcv , e_max + 10 );
+		trans_set_dst_attr( &_m->rcv, DST_FCNTL_SET_LIFETIME,
+			(void*)(long)(e_max + 10) );
 	}
-#endif
 
 	return 0;
 error:
@@ -511,11 +500,9 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 	unsigned int cflags;
 	int ret;
 	int num;
-#ifdef USE_TCP
 	int e_max;
 	int tcp_check;
 	struct sip_uri uri;
-#endif
 
 	/* mem flag */
 	cflags = (_sctx->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
@@ -536,15 +523,12 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 		}
 	}
 
-#ifdef USE_TCP
-	if ( (_m->flags&tcp_persistent_flag) &&
-	(_m->rcv.proto==PROTO_TCP||_m->rcv.proto==PROTO_TLS)) {
+	if (is_tcp_based_proto(_m->rcv.proto) && (_m->flags&tcp_persistent_flag)) {
 		e_max = -1;
 		tcp_check = 1;
 	} else {
 		e_max = tcp_check = 0;
 	}
-#endif
 
 	for( ; _c ; _c = get_next_contact(_c) ) {
 		/* calculate expires */
@@ -662,28 +646,25 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				}
 			}
 		}
-#ifdef USE_TCP
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri( _c->uri.s, _c->uri.len, &uri)<0) {
 				LM_ERR("failed to parse contact <%.*s>\n",
 						_c->uri.len, _c->uri.s);
-			} else if (uri.proto==PROTO_TCP || uri.proto==PROTO_TLS) {
+			} else if (is_tcp_based_proto(uri.proto)) {
 				if (e_max>0) {
 					LM_WARN("multiple TCP contacts on single REGISTER\n");
 				}
 				if (e>e_max) e_max = e;
 			}
 		}
-#endif
 	}
 
-#ifdef USE_TCP
 	if ( tcp_check && e_max>-1 ) {
 		if (e_max) e_max -= act_time;
-		force_tcp_conn_lifetime( &_m->rcv , e_max + 10 );
+		trans_set_dst_attr( &_m->rcv, DST_FCNTL_SET_LIFETIME,
+			(void*)(long)(e_max + 10) );
 	}
-#endif
 
 	return 0;
 error:

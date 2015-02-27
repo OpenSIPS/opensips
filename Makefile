@@ -31,8 +31,6 @@
 #  2007-09-28  added db_berkeley (wiquan)
 #
 
-#TLS=1
-#SCTP=1
 #FREERADIUS=1
 NICER?=1
 auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
@@ -52,8 +50,6 @@ tls_overwrite_certs?=
 
 makefile_defs=0
 DEFS:=
-TLS?=
-SCTP?=
 DEBUG_PARSER?=
 
 # create the template only if the file is not yet created
@@ -64,17 +60,6 @@ include Makefile.conf
 include Makefile.sources
 include Makefile.defs
 
-# if not set on the cmd. line or the env, exclude this modules:
-#exclude_modules?= b2b_logic jabber cpl-c xmpp rls mi_xmlrpc xcap_client \
-#	db_mysql db_postgres db_unixodbc db_oracle db_berkeley aaa_radius \
-#	osp perl snmpstats db_perlvdb carrierroute mmgeoip \
-#	presence presence_xml presence_mwi presence_dialoginfo \
-#	pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo \
-#	ldap h350 identity regex cachedb_memcached cachedb_redis event_rabbitmq \
-#	db_http json python dialplan mi_http
-ifeq ($(TLS),)
-	exclude_modules+= tlsops
-endif
 # always exclude the SVN dir
 override exclude_modules+= .svn $(skip_modules)
 
@@ -124,13 +109,9 @@ modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
 
 doc_modules_basenames=$(patsubst modules/%, %, $(doc_modules))
 
-ifeq ($(TLS),)
-	tls_configs=""
-else
-	tls_configs=$(patsubst etc/%, %, $(wildcard etc/tls/*) \
-			$(wildcard etc/tls/rootCA/*) $(wildcard etc/tls/rootCA/certs/*) \
-			$(wildcard etc/tls/rootCA/private/*) $(wildcard etc/tls/user/*))
-endif
+tls_configs=$(patsubst etc/%, %, $(wildcard etc/tls/*) \
+		$(wildcard etc/tls/rootCA/*) $(wildcard etc/tls/rootCA/certs/*) \
+		$(wildcard etc/tls/rootCA/private/*) $(wildcard etc/tls/user/*))
 
 MODULE_MYSQL_INCLUDED=$(shell echo $(modules)| grep db_mysql )
 ifeq (,$(MODULE_MYSQL_INCLUDED))
@@ -184,7 +165,6 @@ export DEFS PROFILE CC LD MKDEP MKTAGS CFLAGS LDFLAGS MOD_CFLAGS MOD_LDFLAGS
 export LIBS RADIUS_LIB
 export LEX YACC YACC_FLAGS
 export PREFIX LOCALBASE SYSBASE
-export TLS SCTP
 # export relevant variables for recursive calls of this makefile 
 # (e.g. make deb)
 #export LIBS
@@ -196,13 +176,8 @@ export cfg-target modules-target data-dir data-prefix data-target
 export INSTALL INSTALL_CFG INSTALL_BIN INSTALL_MODULES INSTALL_DOC INSTALL_MAN 
 export INSTALL_TOUCH
 
-ifneq ($(TLS),)
-	tar_extra_args+=
-else
-	tar_extra_args+=--exclude=$(notdir $(CURDIR))/tls* \
-		--exclude=$(notdir $(CURDIR))/etc/tls* \
-		--exclude=$(notdir $(CURDIR))/modules/tls* 
-endif
+tar_extra_args+=--exclude=$(notdir $(CURDIR))/tls* \
+	--exclude=$(notdir $(CURDIR))/etc/tls*
 # include the common rules
 include Makefile.rules
 
@@ -574,24 +549,22 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 				$(cfg-prefix)/$(cfg-dir)/osipsconsolerc; \
 		fi
 		#$(INSTALL_CFG) etc/$(NAME).cfg $(cfg-prefix)/$(cfg-dir)
-		if [ "$(TLS)" != "" ] ; then \
-			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls ; \
-			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA ; \
-			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs ; \
-			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private ; \
-			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/user ; \
-			for FILE in $(tls_configs) ; do \
-				if [ -f etc/$$FILE ]; then \
-					if [ "$(tls_overwrite_certs)" != "" -o \
-							 ! -f $(cfg-prefix)/$(cfg-dir)/$$FILE ] ; then \
-						$(INSTALL_TOUCH) etc/$$FILE \
-							$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
-						$(INSTALL_CFG) etc/$$FILE \
-							$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
-					fi; \
-				fi ;\
-			done ; \
-		fi
+		mkdir -p $(cfg-prefix)/$(cfg-dir)/tls ; \
+		mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA ; \
+		mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs ; \
+		mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private ; \
+		mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/user ; \
+		for FILE in $(tls_configs) ; do \
+			if [ -f etc/$$FILE ]; then \
+				if [ "$(tls_overwrite_certs)" != "" -o \
+						 ! -f $(cfg-prefix)/$(cfg-dir)/$$FILE ] ; then \
+					$(INSTALL_TOUCH) etc/$$FILE \
+						$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
+					$(INSTALL_CFG) etc/$$FILE \
+						$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
+				fi; \
+			fi ;\
+		done ; \
 
 install-console: $(bin-prefix)/$(bin-dir)
 		# install osipsconsole

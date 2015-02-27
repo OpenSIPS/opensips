@@ -41,7 +41,6 @@
 #include "../../mem/shm_mem.h"
 #include "../../parser/msg_parser.h"
 #include "../../globals.h"
-#include "../../udp_server.h"
 #include "../../msg_translator.h"
 #include "../../timer.h"
 #include "../../forward.h"

@@ -27,7 +27,7 @@
  */
 
 #include "../../sr_module.h"    /* param_export_t, proc_export_t */
-#include "../../udp_server.h"   /* register_udprecv_cb() */
+#include "../../net/proto_udp/proto_udp.h"   /* register_udprecv_cb() */
 #include "../../socket_info.h"  /* grep_sock_info() */
 #include "../../ip_addr.h"      /* struct socket_info */
 #include "../../str.h"          /* str */

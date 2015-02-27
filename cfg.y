@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
  /*
@@ -34,7 +34,7 @@
  * 2003-04-12  added force_rport, chroot and wdir (andrei)
  * 2003-04-15  added tcp_children, disable_tcp (andrei)
  * 2003-04-22  strip_tail added (jiri)
- * 2003-07-03  tls* (disable, certificate, private_key, ca_list, verify, 
+ * 2003-07-03  tls* (disable, certificate, private_key, ca_list, verify,
  *              require_certificate added (andrei)
  * 2003-07-06  more tls config. vars added: tls_method, tls_port_no (andrei)
  * 2003-10-02  added {,set_}advertised_{address,port} (andrei)
@@ -58,7 +58,7 @@
  * 2005-07-26  default onreply route added (andrei)
  * 2005-11-22  added tos configurability (thanks to Andreas Granig)
  * 2005-11-29  added serialize_branches and next_branches (bogdan)
- * 2006-03-02  MODULE_T action points to a cmd_export_t struct instead to 
+ * 2006-03-02  MODULE_T action points to a cmd_export_t struct instead to
  *              a function address - more info is accessible (bogdan)
  * 2006-03-02  store the cfg line into the action struct to be able to
  *              give more hints if fixups fail (bogdan)
@@ -80,9 +80,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -105,17 +103,10 @@
 #include "pvar.h"
 #include "blacklists.h"
 #include "xlog.h"
-#include "tcp_server.h"
-#include "tcp_conn.h"
 #include "db/db_insertq.h"
 #include "bin_interface.h"
-
-
+#include "net/trans.h"
 #include "config.h"
-#ifdef USE_TLS
-#include "tls/tls_config.h"
-#include "tls/tls_domain.h"
-#endif
 
 #ifdef DEBUG_DMALLOC
 #include <dmalloc.h>
@@ -141,19 +132,14 @@ static pv_spec_t *spec;
 static pv_elem_t *pvmodel;
 static struct bl_rule *bl_head = 0;
 static struct bl_rule *bl_tail = 0;
-static struct stat statf;
 
 action_elem_t elems[MAX_ACTION_ELEMS];
 static action_elem_t route_elems[MAX_ACTION_ELEMS];
 action_elem_t *a_tmp;
 
 static inline void warn(char* s);
-static struct socket_id* mk_listen_id(char*, int, int);
+static struct socket_id* mk_listen_id(char*, enum sip_protos, int);
 static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
-
-static char *mpath=NULL;
-static char mpath_buf[256];
-static int  mpath_len = 0;
 
 extern int line;
 extern int column;
@@ -290,11 +276,7 @@ extern char *finame;
 %token PROTO
 %token AF
 %token MYSELF
-%token MSGLEN 
-%token UDP
-%token TCP
-%token TLS
-%token SCTP
+%token MSGLEN
 %token NULLV
 %token CACHE_STORE
 %token CACHE_FETCH
@@ -336,7 +318,6 @@ extern char *finame;
 %token DNS_SERVERS_NO
 %token DNS_USE_SEARCH
 %token MAX_WHILE_LOOPS
-%token PORT
 %token CHILDREN
 %token CHECK_VIA
 %token SHM_HASH_SPLIT_PERCENTAGE
@@ -373,49 +354,18 @@ extern char *finame;
 %token WDIR
 %token MHOMED
 %token POLL_METHOD
-%token DISABLE_TCP
-%token ASYNC_TCP
-%token ASYNC_TCP_LOCAL_CON_TIMEOUT
-%token ASYNC_TCP_LOCAL_WRITE_TIMEOUT
-%token ASYNC_TCP_MAX_POSTPONED_CHUNKS
 %token TCP_ACCEPT_ALIASES
 %token TCP_CHILDREN
 %token TCP_CONNECT_TIMEOUT
-%token TCP_SEND_TIMEOUT
 %token TCP_CON_LIFETIME
 %token TCP_LISTEN_BACKLOG
 %token TCP_MAX_CONNECTIONS
-%token TCP_OPT_CRLF_PINGPONG
-%token TCP_OPT_CRLF_DROP
 %token TCP_NO_NEW_CONN_BFLAG
 %token TCP_KEEPALIVE
 %token TCP_KEEPCOUNT
 %token TCP_KEEPIDLE
 %token TCP_KEEPINTERVAL
-%token TCP_MAX_MSG_CHUNKS
 %token TCP_MAX_MSG_TIME
-%token DISABLE_TLS
-%token TLSLOG
-%token TLS_PORT_NO
-%token TLS_METHOD
-%token TLS_HANDSHAKE_TIMEOUT
-%token TLS_SEND_TIMEOUT
-%token TLS_SERVER_DOMAIN
-%token TLS_CLIENT_DOMAIN
-%token TLS_CLIENT_DOMAIN_AVP
-%token SSLv23
-%token TLSv1
-%token TLSv1_2
-%token TLS_VERIFY_CLIENT
-%token TLS_VERIFY_SERVER
-%token TLS_REQUIRE_CLIENT_CERTIFICATE
-%token TLS_CERTIFICATE
-%token TLS_PRIVATE_KEY
-%token TLS_CA_LIST
-%token TLS_CA_DIR 
-%token TLS_CIPHERS_LIST
-%token TLS_DH_PARAMS
-%token TLS_EC_CURVE
 %token ADVERTISED_ADDRESS
 %token ADVERTISED_PORT
 %token DISABLE_CORE
@@ -500,7 +450,6 @@ extern char *finame;
 %type <specval> script_var
 %type <strval> host
 %type <strval> listen_id
-%type <sockid> listen_lst
 %type <sockid> listen_def
 %type <sockid> id_lst
 %type <sockid> phostport
@@ -531,9 +480,9 @@ statements:	statements statement {}
 		| statements error { yyerror(""); YYABORT;}
 	;
 
-statement:	assign_stm 
+statement:	assign_stm
 		| module_stm
-		| {rt=REQUEST_ROUTE;} route_stm 
+		| {rt=REQUEST_ROUTE;} route_stm
 		| {rt=FAILURE_ROUTE;} failure_route_stm
 		| {rt=ONREPLY_ROUTE;} onreply_route_stm
 		| {rt=BRANCH_ROUTE;} branch_route_stm
@@ -579,25 +528,14 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 						}
 	;
 
-proto:	  UDP	{ $$=PROTO_UDP; }
-		| TCP	{ $$=PROTO_TCP; }
-		| TLS	{
-			#ifdef USE_TLS
-				$$=PROTO_TLS;
-			#else
-				$$=PROTO_TCP;
-				warn("tls support not compiled in");
-			#endif
-			}
-		| SCTP  { 
-			#ifdef USE_SCTP
-				$$=PROTO_SCTP;
-			#else
-				yyerror("sctp support not compiled in\n");YYABORT;
-			#endif
-			}
-		| ANY	{ $$=0; }
-		;
+proto:	ID {
+		if (parse_proto((unsigned char *)$1, strlen($1), &i_tmp) < 0) {
+			yyerrorf("cannot handle protocol <%s>\n", $1);
+			YYABORT;
+		}
+		$$ = i_tmp;
+	 }
+;
 
 port:	  NUMBER	{ $$=$1; }
 		| ANY		{ $$=0; }
@@ -609,11 +547,9 @@ snumber:	NUMBER	{ $$=$1; }
 ;
 
 
-phostport:	listen_id				{ $$=mk_listen_id($1, 0, 0); }
-			| listen_id COLON port	{ $$=mk_listen_id($1, 0, $3); }
-			| proto COLON listen_id	{ $$=mk_listen_id($3, $1, 0); }
+phostport: proto COLON listen_id	{ $$=mk_listen_id($3, $1, 0); }
 			| proto COLON listen_id COLON port	{ $$=mk_listen_id($3, $1, $5);}
-			| listen_id COLON error { $$=0; yyerror(" port number expected"); }
+			| proto COLON listen_id COLON error { $$=0; yyerror(" port number expected"); }
 			;
 
 id_lst:		phostport		{  $$=$1 ; }
@@ -628,11 +564,6 @@ listen_def:	phostport				{ $$=$1; }
 			| phostport AS listen_id COLON port{ $$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5); }
 			| phostport AS listen_id COLON port USE_CHILDREN NUMBER { $$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5); $1->children=$7; }
 			;
-
-listen_lst:		listen_def		{  $$=$1 ; }
-		| listen_def listen_lst	{ $$=$1; $$->next=$2; }
-		;
-
 
 blst_elem: LPAREN  proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 				s_tmp.s=$8;
@@ -657,7 +588,7 @@ blst_elem_list: blst_elem_list COMMA blst_elem {}
 		;
 
 
-assign_stm: DEBUG EQUAL snumber { 
+assign_stm: DEBUG EQUAL snumber {
 					*debug=$3;
 			}
 		| DEBUG EQUAL error  { yyerror("number  expected"); }
@@ -678,7 +609,7 @@ assign_stm: DEBUG EQUAL snumber {
 		| LOGFACILITY EQUAL error { yyerror("ID expected"); }
 		| LOGNAME EQUAL STRING { log_name=$3; }
 		| LOGNAME EQUAL error { yyerror("string value expected"); }
-		| AVP_ALIASES EQUAL STRING { 
+		| AVP_ALIASES EQUAL STRING {
 				yyerror("AVP_ALIASES shouldn't be used anymore\n");
 			}
 		| AVP_ALIASES EQUAL error { yyerror("string value expected"); }
@@ -698,14 +629,12 @@ assign_stm: DEBUG EQUAL snumber {
 		| DNS_SERVERS_NO error { yyerror("number expected"); }
 		| DNS_USE_SEARCH EQUAL NUMBER   { dns_search_list=$3; }
 		| DNS_USE_SEARCH error { yyerror("boolean value expected"); }
-		| PORT EQUAL NUMBER   { port_no=$3; }
-		| PORT EQUAL error    { yyerror("number expected"); } 
 		| MAX_WHILE_LOOPS EQUAL NUMBER { max_while_loops=$3; }
-		| MAX_WHILE_LOOPS EQUAL error { yyerror("number expected"); } 
+		| MAX_WHILE_LOOPS EQUAL error { yyerror("number expected"); }
 		| MAXBUFFER EQUAL NUMBER { maxbuffer=$3; }
 		| MAXBUFFER EQUAL error { yyerror("number expected"); }
 		| CHILDREN EQUAL NUMBER { children_no=$3; }
-		| CHILDREN EQUAL error { yyerror("number expected"); } 
+		| CHILDREN EQUAL error { yyerror("number expected"); }
 		| CHECK_VIA EQUAL NUMBER { check_via=$3; }
 		| CHECK_VIA EQUAL error { yyerror("boolean value expected"); }
 		| SHM_HASH_SPLIT_PERCENTAGE EQUAL NUMBER { shm_hash_split_percentage=$3; }
@@ -797,396 +726,79 @@ assign_stm: DEBUG EQUAL snumber {
 									}
 									}
 		| POLL_METHOD EQUAL error { yyerror("poll method name expected"); }
-		| DISABLE_TCP EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_disable=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| DISABLE_TCP EQUAL error { yyerror("boolean value expected"); }
-		| ASYNC_TCP EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_async=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| ASYNC_TCP EQUAL error { yyerror("boolean value expected"); }
-		| ASYNC_TCP_LOCAL_CON_TIMEOUT EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_async_local_connect_timeout=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| ASYNC_TCP_LOCAL_CON_TIMEOUT EQUAL error { yyerror("boolean value expected"); }
-		| ASYNC_TCP_LOCAL_WRITE_TIMEOUT EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_async_local_write_timeout=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| ASYNC_TCP_LOCAL_WRITE_TIMEOUT EQUAL error { yyerror("boolean value expected"); }
-		| ASYNC_TCP_MAX_POSTPONED_CHUNKS EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_async_max_postponed_chunks=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| ASYNC_TCP_MAX_POSTPONED_CHUNKS EQUAL error { yyerror("boolean value expected"); }
 		| TCP_ACCEPT_ALIASES EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_accept_aliases=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_accept_aliases=$3;
+		}
 		| TCP_ACCEPT_ALIASES EQUAL error { yyerror("boolean value expected"); }
 		| TCP_CHILDREN EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_children_no=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_children_no=$3;
+		}
 		| TCP_CHILDREN EQUAL error { yyerror("number expected"); }
 		| TCP_CONNECT_TIMEOUT EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_connect_timeout=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_connect_timeout=$3;
+		}
 		| TCP_CONNECT_TIMEOUT EQUAL error { yyerror("number expected"); }
-		| TCP_SEND_TIMEOUT EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_send_timeout=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| TCP_SEND_TIMEOUT EQUAL error { yyerror("number expected"); }
 		| TCP_CON_LIFETIME EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_con_lifetime=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_con_lifetime=$3;
+		}
 		| TCP_CON_LIFETIME EQUAL error { yyerror("number expected"); }
 		| TCP_LISTEN_BACKLOG EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_listen_backlog=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_listen_backlog=$3;
+		}
 		| TCP_LISTEN_BACKLOG EQUAL error { yyerror("number expected"); }
 		| TCP_MAX_CONNECTIONS EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_max_connections=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
+				tcp_max_connections=$3;
+		}
 		| TCP_MAX_CONNECTIONS EQUAL error { yyerror("number expected"); }
-		| TCP_OPT_CRLF_PINGPONG EQUAL NUMBER {
-			#ifdef USE_TCP
-				tcp_crlf_pingpong=$3;
-			#else
-				warn("tcp support not compiled in");
-			#endif
-		}
-		| TCP_OPT_CRLF_PINGPONG EQUAL error { yyerror("boolean value expected"); }
-		| TCP_OPT_CRLF_DROP EQUAL NUMBER {
-			#ifdef USE_TCP
-				tcp_crlf_drop=$3;
-			#else
-				warn("tcp support not compiled in");
-			#endif
-		}
-		| TCP_OPT_CRLF_DROP EQUAL error { yyerror("boolean value expected"); }
 		| TCP_NO_NEW_CONN_BFLAG EQUAL NUMBER {
-			#ifdef USE_TCP
 				tmp = NULL;
 				fix_flag_name(tmp, $3);
-				tcp_no_new_conn_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, tmp);
+				tcp_no_new_conn_bflag =
+					get_flag_id_by_name(FLAG_TYPE_BRANCH, tmp);
 				if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
 					yyerror("invalid TCP no_new_conn Branch Flag");
 				flag_idx2mask( &tcp_no_new_conn_bflag );
-			#else
-				warn("tcp support not compiled in");
-			#endif
 		}
 		| TCP_NO_NEW_CONN_BFLAG EQUAL ID {
-			#ifdef USE_TCP
-				tcp_no_new_conn_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, $3);
+				tcp_no_new_conn_bflag =
+					get_flag_id_by_name(FLAG_TYPE_BRANCH, $3);
 				if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
 					yyerror("invalid TCP no_new_conn Branch Flag");
 				flag_idx2mask( &tcp_no_new_conn_bflag );
-			#else
-				warn("tcp support not compiled in");
-			#endif
 		}
 		| TCP_NO_NEW_CONN_BFLAG EQUAL error { yyerror("number value expected"); }
 		| TCP_KEEPALIVE EQUAL NUMBER {
-			#ifdef USE_TCP
-			        tcp_keepalive=$3;
-			#else
-				warn("tcp support not compiled in");
-			#endif
+				tcp_keepalive=$3;
 		}
 		| TCP_KEEPALIVE EQUAL error { yyerror("boolean value expected"); }
-		| TCP_MAX_MSG_CHUNKS EQUAL NUMBER {
-			#ifdef USE_TCP
-			        tcp_max_msg_chunks=$3;
-			#else
-				warn("tcp support not compiled in");
-			#endif
-		}
-		| TCP_MAX_MSG_CHUNKS EQUAL error { yyerror("boolean value expected"); }
 		| TCP_MAX_MSG_TIME EQUAL NUMBER {
-			#ifdef USE_TCP
-			        tcp_max_msg_time=$3;
-			#else
-				warn("tcp support not compiled in");
-			#endif
+				tcp_max_msg_time=$3;
 		}
 		| TCP_MAX_MSG_TIME EQUAL error { yyerror("boolean value expected"); }
-		| TCP_KEEPCOUNT EQUAL NUMBER 		{ 
-			#ifdef USE_TCP
-			    #ifndef HAVE_TCP_KEEPCNT
+		| TCP_KEEPCOUNT EQUAL NUMBER 		{
+			#ifndef HAVE_TCP_KEEPCNT
 				warn("cannot be enabled (no OS support)");
-			    #else
-			        tcp_keepcount=$3;
-			    #endif
-		        #else
-				warn("tcp support not compiled in");
+			#else
+				tcp_keepcount=$3;
 			#endif
 		}
 		| TCP_KEEPCOUNT EQUAL error { yyerror("int value expected"); }
-		| TCP_KEEPIDLE EQUAL NUMBER 		{ 
-			#ifdef USE_TCP
-			    #ifndef HAVE_TCP_KEEPIDLE
+		| TCP_KEEPIDLE EQUAL NUMBER 		{
+			#ifndef HAVE_TCP_KEEPIDLE
 				warn("cannot be enabled (no OS support)");
-			    #else
-			        tcp_keepidle=$3;
-			    #endif
-		        #else
-				warn("tcp support not compiled in");
+			#else
+				tcp_keepidle=$3;
 			#endif
 		}
 		| TCP_KEEPIDLE EQUAL error { yyerror("int value expected"); }
-		| TCP_KEEPINTERVAL EQUAL NUMBER 		{ 
-			#ifdef USE_TCP
-			    #ifndef HAVE_TCP_KEEPINTVL
+		| TCP_KEEPINTERVAL EQUAL NUMBER 		{
+			#ifndef HAVE_TCP_KEEPINTVL
 				warn("cannot be enabled (no OS support)");
-			    #else
-			        tcp_keepinterval=$3;
-			    #endif
-		        #else
-				warn("tcp support not compiled in");
-			#endif
+			#else
+				tcp_keepinterval=$3;
+			 #endif
 		}
 		| TCP_KEEPINTERVAL EQUAL error { yyerror("int value expected"); }
-		| DISABLE_TLS EQUAL NUMBER {
-									#ifdef USE_TLS
-										tls_disable=$3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| DISABLE_TLS EQUAL error { yyerror("boolean value expected"); }
-		| TLSLOG EQUAL NUMBER 		{ 
-									#ifdef USE_TLS
-										tls_log=$3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLSLOG EQUAL error { yyerror("int value expected"); }
-		| TLS_PORT_NO EQUAL NUMBER {
-									#ifdef USE_TLS
-										tls_port_no=$3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_PORT_NO EQUAL error { yyerror("number expected"); }
-		| TLS_METHOD EQUAL SSLv23 {
-									#ifdef USE_TLS
-										tls_default_server_domain->method =
-											TLS_USE_SSLv23;
-										tls_default_client_domain->method =
-											TLS_USE_SSLv23;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_METHOD EQUAL TLSv1 {
-									#ifdef USE_TLS
-										tls_default_server_domain->method =
-											TLS_USE_TLSv1;
-										tls_default_client_domain->method =
-											TLS_USE_TLSv1;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_METHOD EQUAL TLSv1_2 {
-									#ifdef USE_TLS
-										tls_default_server_domain->method =
-											TLS_USE_TLSv1_2;
-										tls_default_client_domain->method =
-											TLS_USE_TLSv1_2;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_METHOD EQUAL error {
-									#ifdef USE_TLS
-										yyerror("SSLv23, TLSv1 or TLSv1_2 expected");
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-										
-		| TLS_VERIFY_CLIENT EQUAL NUMBER {
-									#ifdef USE_TLS
-										tls_default_server_domain->verify_cert
-											= $3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_VERIFY_CLIENT EQUAL error { yyerror("boolean value expected"); }
-		| TLS_VERIFY_SERVER EQUAL NUMBER {
-									#ifdef USE_TLS
-										tls_default_client_domain->verify_cert
-											=$3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_VERIFY_SERVER EQUAL error { yyerror("boolean value expected"); }
-		| TLS_REQUIRE_CLIENT_CERTIFICATE EQUAL NUMBER {
-									#ifdef USE_TLS
-										tls_default_server_domain->require_client_cert=$3;
-									#else
-										warn( "tls support not compiled in");
-									#endif
-									}
-		| TLS_REQUIRE_CLIENT_CERTIFICATE EQUAL error { yyerror("boolean value expected"); }
-		| TLS_CERTIFICATE EQUAL STRING { 
-									#ifdef USE_TLS
-										tls_default_server_domain->cert_file=
-											$3;
-										tls_default_client_domain->cert_file=
-											$3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_CERTIFICATE EQUAL error { yyerror("string value expected"); }
-		| TLS_PRIVATE_KEY EQUAL STRING { 
-									#ifdef USE_TLS
-										tls_default_server_domain->pkey_file=
-											$3;
-										tls_default_client_domain->pkey_file=
-											$3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_PRIVATE_KEY EQUAL error { yyerror("string value expected"); }
-		| TLS_CA_LIST EQUAL STRING { 
-									#ifdef USE_TLS
-										tls_default_server_domain->ca_file =
-											$3;
-										tls_default_client_domain->ca_file =
-											$3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_CA_LIST EQUAL error { yyerror("string value expected"); }
-  	        | TLS_CA_DIR EQUAL STRING {
-                                                                        #ifdef USE_TLS
-                                                                                tls_default_server_domain->ca_directory =
-                                                                                        $3;
-                                                                                tls_default_client_domain->ca_directory =
-                                                                                        $3;
-                                                                        #else
-                                                                                warn("tls support not compiled in");
-                                                                        #endif
-                                                                        }
-                | TLS_CA_DIR EQUAL error { yyerror("string value expected"); }
-		| TLS_CIPHERS_LIST EQUAL STRING { 
-									#ifdef USE_TLS
-										tls_default_server_domain->ciphers_list
-											= $3;
-										tls_default_client_domain->ciphers_list
-											= $3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_CIPHERS_LIST EQUAL error { yyerror("string value expected"); }
-		| TLS_DH_PARAMS EQUAL STRING { 
-									#ifdef USE_TLS
-										tls_default_server_domain->tmp_dh_file =
-											$3;
-										tls_default_client_domain->tmp_dh_file =
-											$3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_DH_PARAMS EQUAL error { yyerror("string value expected"); }
-		| TLS_EC_CURVE EQUAL STRING { 
-									#ifdef USE_TLS
-										tls_default_server_domain->tls_ec_curve =
-											$3;
-										tls_default_client_domain->tls_ec_curve =
-											$3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_EC_CURVE EQUAL error { yyerror("string value expected"); }
-		| TLS_HANDSHAKE_TIMEOUT EQUAL NUMBER {
-									#ifdef USE_TLS
-										tls_handshake_timeout=$3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_HANDSHAKE_TIMEOUT EQUAL error { yyerror("number expected"); }
-		| TLS_SEND_TIMEOUT EQUAL NUMBER {
-									#ifdef USE_TLS
-										tls_send_timeout=$3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_SEND_TIMEOUT EQUAL error { yyerror("number expected"); }
-		| TLS_CLIENT_DOMAIN_AVP EQUAL STRING {
-									#ifdef USE_TLS
-										tstr.s = $3;
-										tstr.len = strlen(tstr.s);
-										if (parse_avp_spec(&tstr, &tls_client_domain_avp)) {
-											yyerror("cannot parse tls_client_avp");
-										}
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_CLIENT_DOMAIN_AVP EQUAL error { yyerror("number expected"); }
-		| tls_server_domain_stm
-		| tls_client_domain_stm
 		| SERVER_SIGNATURE EQUAL NUMBER { server_signature=$3; }
 		| SERVER_SIGNATURE EQUAL error { yyerror("boolean value expected"); }
 		| SERVER_HEADER EQUAL STRING { server_header.s=$3;
@@ -1198,25 +810,16 @@ assign_stm: DEBUG EQUAL snumber {
 									}
 		| USER_AGENT_HEADER EQUAL error { yyerror("string value expected"); }
 		| XLOG_BUF_SIZE EQUAL NUMBER { xlog_buf_size = $3; }
-		| XLOG_FORCE_COLOR EQUAL NUMBER { xlog_force_color = $3; } 
+		| XLOG_FORCE_COLOR EQUAL NUMBER { xlog_force_color = $3; }
 		| XLOG_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| XLOG_FORCE_COLOR EQUAL error { yyerror("boolean value expected"); }
-		| LISTEN EQUAL listen_lst {
-							for(lst_tmp=$3; lst_tmp; lst_tmp=lst_tmp->next){
-								if (add_listen_iface(	lst_tmp->name,
-														lst_tmp->port,
-														lst_tmp->proto,
-														lst_tmp->adv_name,
-														lst_tmp->adv_port,
-														lst_tmp->children,
-														0
-													)!=0){
-									LM_CRIT("cfg. parser: failed"
-											" to add listen address\n");
-									break;
-								}
+		| LISTEN EQUAL listen_def {
+							if (add_listener($3, 0)!=0){
+								LM_CRIT("cfg. parser: failed"
+										" to add listen address\n");
+								break;
 							}
-							 }
+						}
 		| LISTEN EQUAL  error { yyerror("ip address or hostname "
 						"expected (use quotes if the hostname includes"
 						" config keywords)"); }
@@ -1244,7 +847,7 @@ assign_stm: DEBUG EQUAL snumber {
 						" config keywords)"); }
 		| BIN_CHILDREN EQUAL NUMBER { bin_children=$3; }
 		| BIN_CHILDREN EQUAL error { yyerror("number expected"); }
-		| ALIAS EQUAL  id_lst { 
+		| ALIAS EQUAL  id_lst {
 							for(lst_tmp=$3; lst_tmp; lst_tmp=lst_tmp->next)
 								add_alias(lst_tmp->name, strlen(lst_tmp->name),
 											lst_tmp->port, lst_tmp->proto);
@@ -1335,7 +938,7 @@ assign_stm: DEBUG EQUAL snumber {
 		 }
 		| TOS EQUAL error { yyerror("number expected"); }
 		| MPATH EQUAL STRING { mpath=$3; strcpy(mpath_buf, $3);
-								mpath_len=strlen($3); 
+								mpath_len=strlen($3);
 								if(mpath_buf[mpath_len-1]!='/') {
 									mpath_buf[mpath_len]='/';
 									mpath_len++;
@@ -1378,43 +981,8 @@ assign_stm: DEBUG EQUAL snumber {
 	;
 
 module_stm:	LOADMODULE STRING	{
-			if(*$2!='/' && mpath!=NULL
-					&& strlen($2)+mpath_len<255)
-			{
-				strcpy(mpath_buf+mpath_len, $2);
-				if (stat(mpath_buf, &statf) == -1) {
-					i_tmp = strlen(mpath_buf);
-					if(strchr($2, '/')==NULL &&
-							strncmp(mpath_buf+i_tmp-3, ".so", 3)==0)
-					{
-						if(i_tmp+strlen($2)<255)
-						{
-							strcpy(mpath_buf+i_tmp-3, "/");
-							strcpy(mpath_buf+i_tmp-2, $2);
-							if (stat(mpath_buf, &statf) == -1) {
-								mpath_buf[mpath_len]='\0';
-								LM_ERR("module '%s' not found in '%s'\n",
-									$2, mpath_buf);
-								yyerror("failed to load module");
-							}
-						} else {
-							yyerror("failed to load module - path too long");
-						}
-					} else {
-						yyerror("failed to load module - not found");
-					}
-				}
-				LM_DBG("loading module %s\n", mpath_buf);
-				if (sr_load_module(mpath_buf)!=0){
-					yyerror("failed to load module");
-				}
-				mpath_buf[mpath_len]='\0';
-			} else {
-				LM_DBG("loading module %s\n", $2);
-				if (sr_load_module($2)!=0){
-					yyerror("failed to load module");
-				}
-			}
+			if (load_module($2) < 0)
+				yyerrorf("failed to load module %s\n", $2);
 		}
 		| LOADMODULE error	{ yyerror("string expected");  }
 		| MODPARAM LPAREN STRING COMMA STRING COMMA STRING RPAREN {
@@ -1437,7 +1005,7 @@ ip:		 ipv4  { $$=$1; }
 		|ipv6  { $$=$1; }
 		;
 
-ipv4:	NUMBER DOT NUMBER DOT NUMBER DOT NUMBER { 
+ipv4:	NUMBER DOT NUMBER DOT NUMBER DOT NUMBER {
 											$$=pkg_malloc(
 													sizeof(struct ip_addr));
 											if ($$==0){
@@ -1445,7 +1013,7 @@ ipv4:	NUMBER DOT NUMBER DOT NUMBER DOT NUMBER {
 													"parser: out of memory.\n"
 													);
 											}else{
-												memset($$, 0, 
+												memset($$, 0,
 													sizeof(struct ip_addr));
 												$$->af=AF_INET;
 												$$->len=4;
@@ -1479,251 +1047,15 @@ ipv6addr:	IPV6ADDR {
 						memset($$, 0, sizeof(struct ip_addr));
 						$$->af=AF_INET6;
 						$$->len=16;
-					#ifdef USE_IPV6
 						if (inet_pton(AF_INET6, $1, $$->u.addr)<=0){
 							yyerror("bad ipv6 address");
 						}
-					#else
-						yyerror("ipv6 address & no ipv6 support compiled in");
-						YYABORT;
-					#endif
 					}
 				}
 	;
 
 ipv6:	ipv6addr { $$=$1; }
 	| LBRACK ipv6addr RBRACK {$$=$2; }
-;
-
-tls_server_domain_stm : TLS_SERVER_DOMAIN LBRACK ip COLON port RBRACK { 
-						#ifdef USE_TLS
-							if (tls_new_server_domain($3, $5)) 
-								yyerror("tls_new_server_domain failed");
-						#else	
-							warn("tls support not compiled in");
-						#endif
-							}
-	         LBRACE tls_server_decls RBRACE
-;
-
-tls_client_domain_stm : TLS_CLIENT_DOMAIN LBRACK ip COLON port RBRACK { 
-						#ifdef USE_TLS
-							if (tls_new_client_domain($3, $5))
-								yyerror("tls_new_client_domain failed");
-						#else	
-							warn("tls support not compiled in");
-						#endif
-							}
-	         LBRACE tls_client_decls RBRACE
-;
-
-tls_client_domain_stm : TLS_CLIENT_DOMAIN LBRACK STRING RBRACK { 
-						#ifdef USE_TLS
-							if (tls_new_client_domain_name($3, strlen($3)))
-								yyerror("tls_new_client_domain_name failed");
-						#else	
-							warn("tls support not compiled in");
-						#endif
-							}
-	         LBRACE tls_client_decls RBRACE
-;
-
-tls_server_decls : tls_server_var
-          | tls_server_decls tls_server_var
-;
-
-tls_client_decls : tls_client_var
-          | tls_client_decls tls_client_var
-;
-	
-tls_server_var : TLS_METHOD EQUAL SSLv23 { 
-						#ifdef USE_TLS
-									tls_server_domains->method=TLS_USE_SSLv23;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_METHOD EQUAL TLSv1 { 
-						#ifdef USE_TLS
-									tls_server_domains->method=TLS_USE_TLSv1;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_METHOD EQUAL TLSv1_2 { 
-						#ifdef USE_TLS
-									tls_server_domains->method=TLS_USE_TLSv1_2;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_METHOD EQUAL error { yyerror("SSLv23, TLSv1 or TLSV1_2 expected"); }
-	| TLS_CERTIFICATE EQUAL STRING { 
-						#ifdef USE_TLS
-									tls_server_domains->cert_file=$3;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_CERTIFICATE EQUAL error { yyerror("string value expected"); }
-
-	| TLS_PRIVATE_KEY EQUAL STRING { 
-						#ifdef USE_TLS
-									tls_server_domains->pkey_file=$3;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_PRIVATE_KEY EQUAL error { yyerror("string value expected"); }
-
-	| TLS_CA_LIST EQUAL STRING { 
-						#ifdef USE_TLS
-									tls_server_domains->ca_file=$3; 
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}	
-	| TLS_CA_LIST EQUAL error { yyerror("string value expected"); }
-	| TLS_CA_DIR EQUAL STRING {
-                                                #ifdef USE_TLS
-                                                                        tls_server_domains->ca_directory=$3;
-                                                #else
-                                                                        warn("tls support not compiled in");
-                                                #endif
-                                                                }
-        | TLS_CA_DIR EQUAL error { yyerror("string value expected"); }
-	| TLS_CIPHERS_LIST EQUAL STRING { 
-						#ifdef USE_TLS
-									tls_server_domains->ciphers_list=$3;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_CIPHERS_LIST EQUAL error { yyerror("string value expected"); }
-	| TLS_DH_PARAMS EQUAL STRING { 
-						#ifdef USE_TLS
-									tls_server_domains->tmp_dh_file=$3; 
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}	
-	| TLS_DH_PARAMS EQUAL error { yyerror("string value expected"); }
-	| TLS_EC_CURVE EQUAL STRING { 
-						#ifdef USE_TLS
-									tls_server_domains->tls_ec_curve=$3; 
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}	
-	| TLS_EC_CURVE EQUAL error { yyerror("string value expected"); }
-	| TLS_VERIFY_CLIENT EQUAL NUMBER {
-						#ifdef USE_TLS
-									tls_server_domains->verify_cert=$3;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_VERIFY_CLIENT EQUAL error { yyerror("boolean value expected"); }
-	| TLS_REQUIRE_CLIENT_CERTIFICATE EQUAL NUMBER {
-						#ifdef USE_TLS
-									tls_server_domains->require_client_cert=$3;
-						#else
-									warn( "tls support not compiled in");
-						#endif
-								}
-	| TLS_REQUIRE_CLIENT_CERTIFICATE EQUAL error { 
-						yyerror("boolean value expected"); }
-;
-
-tls_client_var : TLS_METHOD EQUAL SSLv23 { 
-						#ifdef USE_TLS
-									tls_client_domains->method=TLS_USE_SSLv23;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_METHOD EQUAL TLSv1 { 
-						#ifdef USE_TLS
-									tls_client_domains->method=TLS_USE_TLSv1;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_METHOD EQUAL TLSv1_2 { 
-						#ifdef USE_TLS
-									tls_client_domains->method=TLS_USE_TLSv1_2;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_METHOD EQUAL error {
-						yyerror("SSLv23, TLSv1 or TLSv1_2 expected"); }
-	| TLS_CERTIFICATE EQUAL STRING { 
-						#ifdef USE_TLS
-									tls_client_domains->cert_file=$3;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_CERTIFICATE EQUAL error { yyerror("string value expected"); }
-
-	| TLS_PRIVATE_KEY EQUAL STRING { 
-						#ifdef USE_TLS
-									tls_client_domains->pkey_file=$3;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_PRIVATE_KEY EQUAL error { yyerror("string value expected"); }
-
-	| TLS_CA_LIST EQUAL STRING { 
-						#ifdef USE_TLS
-									tls_client_domains->ca_file=$3; 
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}	
-	| TLS_CA_LIST EQUAL error { yyerror("string value expected"); }
-	| TLS_CA_DIR EQUAL STRING {
-                                                #ifdef USE_TLS
-                                                                        tls_client_domains->ca_directory=$3;
-                                                #else
-                                                                        warn("tls support not compiled in");
-                                                #endif
-                                                                }
-        | TLS_CA_DIR EQUAL error { yyerror("string value expected"); }
-	| TLS_CIPHERS_LIST EQUAL STRING { 
-						#ifdef USE_TLS
-									tls_client_domains->ciphers_list=$3;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_CIPHERS_LIST EQUAL error { yyerror("string value expected"); }
-	| TLS_DH_PARAMS EQUAL STRING { 
-						#ifdef USE_TLS
-									tls_client_domains->tmp_dh_file=$3; 
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}	
-	| TLS_DH_PARAMS EQUAL error { yyerror("string value expected"); }
-	| TLS_EC_CURVE EQUAL STRING { 
-						#ifdef USE_TLS
-									tls_client_domains->tls_ec_curve=$3; 
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}	
-	| TLS_EC_CURVE EQUAL error { yyerror("string value expected"); }
-	| TLS_VERIFY_SERVER EQUAL NUMBER {
-						#ifdef USE_TLS
-									tls_client_domains->verify_cert=$3;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_VERIFY_SERVER EQUAL error { yyerror("boolean value expected"); }
 ;
 
 route_name:  ID {
@@ -1749,7 +1081,7 @@ route_stm:  ROUTE LBRACE actions RBRACE {
 						}
 						push($3, &rlist[DEFAULT_RT].a);
 					}
-		| ROUTE LBRACK route_name RBRACK LBRACE actions RBRACE { 
+		| ROUTE LBRACK route_name RBRACK LBRACE actions RBRACE {
 						if ( strtol($3,&tmp,10)==0 && *tmp==0) {
 							/* route[0] detected */
 							if (rlist[DEFAULT_RT].a!=0) {
@@ -1933,7 +1265,7 @@ compop:	GT	{$$=GT_OP; }
 		| LT	{$$=LT_OP; }
 		| GTE	{$$=GTE_OP; }
 		| LTE	{$$=LTE_OP; }
-	;		
+	;
 matchop: MATCH	{$$=MATCH_OP; }
 		| NOTMATCH	{$$=NOTMATCH_OP; }
 	;
@@ -1941,7 +1273,7 @@ matchop: MATCH	{$$=MATCH_OP; }
 intop:	equalop	{$$=$1; }
 	 | compop	{$$=$1; }
 	;
-		
+
 strop:	equalop	{$$=$1; }
 	    | compop {$$=$1; }
 		| matchop	{$$=$1; }
@@ -1952,7 +1284,7 @@ uri_type:	URI			{$$=URI_O;}
 		|	TO_URI		{$$=TO_URI_O;}
 		;
 
-script_var:	SCRIPTVAR	{ 
+script_var:	SCRIPTVAR	{
 				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
 				if (spec==NULL){
 					yyerror("no more pkg memory\n");
@@ -1973,12 +1305,12 @@ script_var:	SCRIPTVAR	{
 
 exp_elem: exp_cond		{$$=$1; }
 		| exp_stm		{$$=mk_elem( NO_OP, ACTION_O, 0, ACTIONS_ST, $1 ); }
-		| snumber		{$$=mk_elem( NO_OP, NUMBER_O, 0, NUMBER_ST, 
+		| snumber		{$$=mk_elem( NO_OP, NUMBER_O, 0, NUMBER_ST,
 											(void*)$1 ); }
 		| script_var    {
 				$$=mk_elem(NO_OP, SCRIPTVAR_O,0,SCRIPTVAR_ST,(void*)$1);
 			}
-		| uri_type strop host 	{$$ = mk_elem($2, $1, 0, STR_ST, $3); 
+		| uri_type strop host 	{$$ = mk_elem($2, $1, 0, STR_ST, $3);
 				 			}
 		| DSTIP equalop ipnet	{ $$=mk_elem($2, DSTIP_O, 0, NET_ST, $3);
 								}
@@ -1992,7 +1324,7 @@ exp_elem: exp_cond		{$$=$1; }
 
 exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 									}
-		| METHOD strop  ID	{$$ = mk_elem($2, METHOD_O, 0, STR_ST, $3); 
+		| METHOD strop  ID	{$$ = mk_elem($2, METHOD_O, 0, STR_ST, $3);
 				 			}
 		| METHOD strop error { $$=0; yyerror("string expected"); }
 		| METHOD error	{ $$=0; yyerror("invalid operator,"
@@ -2010,13 +1342,13 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 		| script_var intop snumber {
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,NUMBER_ST,(void *)$3);
 			}
-		| script_var equalop MYSELF	{ 
+		| script_var equalop MYSELF	{
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1, MYSELF_ST, 0);
 			}
-		| script_var equalop NULLV	{ 
+		| script_var equalop NULLV	{
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1, NULLV_ST, 0);
 			}
-		| uri_type strop STRING	{$$ = mk_elem($2, $1, 0, STR_ST, $3); 
+		| uri_type strop STRING	{$$ = mk_elem($2, $1, 0, STR_ST, $3);
 				 				}
 		| uri_type equalop MYSELF	{ $$=mk_elem($2, $1, 0, MYSELF_ST, 0);
 								}
@@ -2055,7 +1387,7 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 										ip_tmp=str2ip6(&s_tmp);
 									if (ip_tmp){
 										$$=mk_elem($2, SRCIP_O, 0, NET_ST,
-												mk_net_bitlen(ip_tmp, 
+												mk_net_bitlen(ip_tmp,
 														ip_tmp->len*8) );
 									}else{
 										$$=mk_elem($2, SRCIP_O, 0, STR_ST,
@@ -2066,7 +1398,7 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 								}
 		| SRCIP strop error { $$=0; yyerror( "ip address or hostname"
 						 "expected" ); }
-		| SRCIP error  { $$=0; 
+		| SRCIP error  { $$=0;
 						 yyerror("invalid operator, ==, != or =~ expected");}
 		| DSTIP strop STRING	{	s_tmp.s=$3;
 									s_tmp.len=strlen($3);
@@ -2075,7 +1407,7 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 										ip_tmp=str2ip6(&s_tmp);
 									if (ip_tmp){
 										$$=mk_elem($2, DSTIP_O, 0, NET_ST,
-												mk_net_bitlen(ip_tmp, 
+												mk_net_bitlen(ip_tmp,
 														ip_tmp->len*8) );
 									}else{
 										$$=mk_elem($2, DSTIP_O, 0, STR_ST,
@@ -2086,7 +1418,7 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 								}
 		| DSTIP strop error { $$=0; yyerror( "ip address or hostname"
 						 			"expected" ); }
-		| DSTIP error { $$=0; 
+		| DSTIP error { $$=0;
 						yyerror("invalid operator, ==, != or =~ expected");}
 		| MYSELF equalop uri_type	{ $$=mk_elem($2, $3, 0, MYSELF_ST, 0);
 								}
@@ -2094,21 +1426,21 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 								}
 		| MYSELF equalop DSTIP  { $$=mk_elem($2, DSTIP_O, 0, MYSELF_ST, 0);
 								}
-		| MYSELF equalop error {	$$=0; 
+		| MYSELF equalop error {	$$=0;
 									yyerror(" URI, SRCIP or DSTIP expected"); }
-		| MYSELF error	{ $$=0; 
+		| MYSELF error	{ $$=0;
 							yyerror ("invalid operator, == or != expected");
 						}
 	;
 
-ipnet:	ip SLASH ip	{ $$=mk_net($1, $3); } 
+ipnet:	ip SLASH ip	{ $$=mk_net($1, $3); }
 	| ip SLASH NUMBER 	{	if (($3<0) || ($3>(long)$1->len*8)){
 								yyerror("invalid bit number in netmask");
 								$$=0;
 							}else{
 								$$=mk_net_bitlen($1, $3);
 							/*
-								$$=mk_net($1, 
+								$$=mk_net($1,
 										htonl( ($3)?~( (1<<(32-$3))-1 ):0 ) );
 							*/
 							}
@@ -2151,7 +1483,7 @@ assignop:
 	| MODULOEQ { $$ = MODULOEQ_T; }
 	| BANDEQ { $$ = BANDEQ_T; }
 	| BOREQ { $$ = BOREQ_T; }
-	| BXOREQ { $$ = BXOREQ_T; } 
+	| BXOREQ { $$ = BXOREQ_T; }
 	;
 
 assignexp :
@@ -2161,43 +1493,43 @@ assignexp :
 	| script_var { $$ = mk_elem(VALUE_OP, SCRIPTVAR_O, $1, 0, 0); }
 	| exp_cond { $$= $1; }
 	| cmd { $$=mk_elem( NO_OP, ACTION_O, 0, ACTIONS_ST, $1 ); }
-	| assignexp PLUS assignexp { 
+	| assignexp PLUS assignexp {
 				$$ = mk_elem(PLUS_OP, EXPR_O, $1, EXPR_ST, $3);
 			}
-	| assignexp MINUS assignexp { 
-				$$ = mk_elem(MINUS_OP, EXPR_O, $1, EXPR_ST, $3); 
+	| assignexp MINUS assignexp {
+				$$ = mk_elem(MINUS_OP, EXPR_O, $1, EXPR_ST, $3);
 			}
-	| assignexp MULT assignexp { 
+	| assignexp MULT assignexp {
 				$$ = mk_elem(MULT_OP, EXPR_O, $1, EXPR_ST, $3);
 			}
-	| assignexp SLASH assignexp { 
+	| assignexp SLASH assignexp {
 				$$ = mk_elem(DIV_OP, EXPR_O, $1, EXPR_ST, $3);
 			}
-	| assignexp MODULO assignexp { 
+	| assignexp MODULO assignexp {
 				$$ = mk_elem(MODULO_OP, EXPR_O, $1, EXPR_ST, $3);
 			}
-	| assignexp BAND assignexp { 
+	| assignexp BAND assignexp {
 				$$ = mk_elem(BAND_OP, EXPR_O, $1, EXPR_ST, $3);
 			}
-	| assignexp BOR assignexp { 
+	| assignexp BOR assignexp {
 				$$ = mk_elem(BOR_OP, EXPR_O, $1, EXPR_ST, $3);
 			}
-	| assignexp BXOR assignexp { 
+	| assignexp BXOR assignexp {
 				$$ = mk_elem(BXOR_OP, EXPR_O, $1, EXPR_ST, $3);
 			}
-	| assignexp BLSHIFT assignexp { 
+	| assignexp BLSHIFT assignexp {
 				$$ = mk_elem(BLSHIFT_OP, EXPR_O, $1, EXPR_ST, $3);
 			}
-	| assignexp BRSHIFT assignexp { 
+	| assignexp BRSHIFT assignexp {
 				$$ = mk_elem(BRSHIFT_OP, EXPR_O, $1, EXPR_ST, $3);
 			}
-	| BNOT assignexp { 
+	| BNOT assignexp {
 				$$ = mk_elem(BNOT_OP, EXPR_O, $2, 0, 0);
 			}
 	| LPAREN assignexp RPAREN { $$ = $2; }
 	;
 
-assign_cmd: script_var assignop assignexp {	
+assign_cmd: script_var assignop assignexp {
 			if(!pv_is_w($1))
 				yyerror("invalid left operand in assignment");
 			if($1->trans!=0)
@@ -2243,7 +1575,7 @@ assign_cmd: script_var assignop assignexp {
 					$1,
 					0);
 		}
-	; 
+	;
 
 exp_stm:	cmd						{ $$=$1; }
 		|	if_cmd					{ $$=$1; }
@@ -2331,7 +1663,7 @@ case_stms:	case_stms case_stm	{$$=append_action($1, $2); }
 		| case_stm			{$$=$1;}
 	;
 
-case_stm: CASE snumber COLON actions SBREAK SEMICOLON 
+case_stm: CASE snumber COLON actions SBREAK SEMICOLON
 										{ mk_action3( $$, CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
@@ -2340,7 +1672,7 @@ case_stm: CASE snumber COLON actions SBREAK SEMICOLON
 													$4,
 													(void*)1);
 											}
-		| CASE snumber COLON SBREAK SEMICOLON 
+		| CASE snumber COLON SBREAK SEMICOLON
 										{ mk_action3( $$, CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
@@ -2365,7 +1697,7 @@ case_stm: CASE snumber COLON actions SBREAK SEMICOLON
 													0,
 													(void*)0);
 							}
-		| CASE STRING COLON actions SBREAK SEMICOLON 
+		| CASE STRING COLON actions SBREAK SEMICOLON
 										{ mk_action3( $$, CASE_T,
 													STR_ST,
 													ACTIONS_ST,
@@ -2374,7 +1706,7 @@ case_stm: CASE snumber COLON actions SBREAK SEMICOLON
 													$4,
 													(void*)1);
 											}
-		| CASE STRING COLON SBREAK SEMICOLON 
+		| CASE STRING COLON SBREAK SEMICOLON
 										{ mk_action3( $$, CASE_T,
 													STR_ST,
 													ACTIONS_ST,
@@ -2564,7 +1896,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| FORWARD error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| FORWARD LPAREN error RPAREN { $$=0; yyerror("bad forward "
 										"argument"); }
-		
+
 		| SEND LPAREN STRING RPAREN { mk_action2( $$, SEND_T,
 											STRING_ST,
 											0,
@@ -2586,34 +1918,34 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| EXIT LPAREN RPAREN	{mk_action2( $$, EXIT_T,0, 0, 0, 0); }
 		| EXIT					{mk_action2( $$, EXIT_T,0, 0, 0, 0); }
 		| RETURN LPAREN snumber RPAREN	{mk_action2( $$, RETURN_T,
-																NUMBER_ST, 
+																NUMBER_ST,
 																0,
 																(void*)$3,
 																0);
 												}
 		| RETURN LPAREN script_var RPAREN	{mk_action2( $$, RETURN_T,
-																SCRIPTVAR_ST, 
+																SCRIPTVAR_ST,
 																0,
 																(void*)$3,
 																0);
 												}
 		| RETURN LPAREN RPAREN	{mk_action2( $$, RETURN_T,
-																NUMBER_ST, 
+																NUMBER_ST,
 																0,
 																(void*)1,
 																0);
 												}
 		| RETURN				{mk_action2( $$, RETURN_T,
-																NUMBER_ST, 
+																NUMBER_ST,
 																0,
 																(void*)1,
 																0);
 												}
-		| LOG_TOK LPAREN STRING RPAREN	{mk_action2( $$, LOG_T, NUMBER_ST, 
+		| LOG_TOK LPAREN STRING RPAREN	{mk_action2( $$, LOG_T, NUMBER_ST,
 													STRING_ST,(void*)4,$3);
 									}
 		| LOG_TOK LPAREN snumber COMMA STRING RPAREN	{mk_action2( $$, LOG_T,
-																NUMBER_ST, 
+																NUMBER_ST,
 																STRING_ST,
 																(void*)$3,
 																$5);
@@ -2670,42 +2002,42 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 													NUMBER_ST, STR_ST,
 													0, (void *)$3 ); }
 		| SETBFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| RESETBFLAG LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$, 
+		| RESETBFLAG LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$,
 													RESETBFLAG_T,
 													NUMBER_ST, NUMBER_ST,
 													(void *)$3, (void *)$5 ); }
-		| RESETBFLAG LPAREN NUMBER COMMA ID RPAREN {mk_action2( $$, 
+		| RESETBFLAG LPAREN NUMBER COMMA ID RPAREN {mk_action2( $$,
 													RESETBFLAG_T,
 													NUMBER_ST, STR_ST,
 													(void *)$3, (void *)$5 ); }
-		| RESETBFLAG LPAREN NUMBER RPAREN {mk_action2( $$, 
+		| RESETBFLAG LPAREN NUMBER RPAREN {mk_action2( $$,
 													RESETBFLAG_T,
 													NUMBER_ST, NUMBER_ST,
 													0, (void *)$3 ); }
-		| RESETBFLAG LPAREN ID RPAREN {mk_action2( $$, 
+		| RESETBFLAG LPAREN ID RPAREN {mk_action2( $$,
 													RESETBFLAG_T,
 													NUMBER_ST, STR_ST,
 													0, (void *)$3 ); }
 		| RESETBFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| ISBFLAGSET LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$, 
+		| ISBFLAGSET LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$,
 													ISBFLAGSET_T,
 													NUMBER_ST, NUMBER_ST,
 													(void *)$3, (void *)$5 ); }
-		| ISBFLAGSET LPAREN NUMBER COMMA ID RPAREN {mk_action2( $$, 
+		| ISBFLAGSET LPAREN NUMBER COMMA ID RPAREN {mk_action2( $$,
 													ISBFLAGSET_T,
 													NUMBER_ST, STR_ST,
 													(void *)$3, (void *)$5 ); }
-		| ISBFLAGSET LPAREN NUMBER RPAREN {mk_action2( $$, 
+		| ISBFLAGSET LPAREN NUMBER RPAREN {mk_action2( $$,
 													ISBFLAGSET_T,
 													NUMBER_ST, NUMBER_ST,
 													0, (void *)$3 ); }
-		| ISBFLAGSET LPAREN ID RPAREN {mk_action2( $$, 
+		| ISBFLAGSET LPAREN ID RPAREN {mk_action2( $$,
 													ISBFLAGSET_T,
 													NUMBER_ST, STR_ST,
 													0, (void *)$3 ); }
 		| ISBFLAGSET error { $$=0; yyerror("missing '(' or ')'?"); }
 		| ERROR LPAREN STRING COMMA STRING RPAREN {mk_action2( $$, ERROR_T,
-																STRING_ST, 
+																STRING_ST,
 																STRING_ST,
 																$3,
 																$5);
@@ -2713,14 +2045,14 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| ERROR error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| ERROR LPAREN error RPAREN { $$=0; yyerror("bad error"
 														"argument"); }
-		| ROUTE LPAREN route_name RPAREN	{ 
+		| ROUTE LPAREN route_name RPAREN	{
 						i_tmp = get_script_route_idx( $3, rlist, RT_NO, 0);
 						if (i_tmp==-1) yyerror("too many script routes");
 						mk_action2( $$, ROUTE_T, NUMBER_ST,
 							0, (void*)(long)i_tmp, 0);
 					}
 
-		| ROUTE LPAREN route_name COMMA route_param RPAREN	{ 
+		| ROUTE LPAREN route_name COMMA route_param RPAREN	{
 						i_tmp = get_script_route_idx( $3, rlist, RT_NO, 0);
 						if (i_tmp==-1) yyerror("too many script routes");
 						if ($5 <= 0) yyerror("too many route parameters");
@@ -2737,7 +2069,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 							(void*)(long)$5,
 							(void*)a_tmp);
 					}
-	
+
 		| ROUTE error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| ROUTE LPAREN error RPAREN { $$=0; yyerror("bad route"
 						"argument"); }
@@ -2752,7 +2084,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| PREFIX error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| PREFIX LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
-		| STRIP_TAIL LPAREN NUMBER RPAREN { mk_action2( $$, STRIP_TAIL_T, 
+		| STRIP_TAIL LPAREN NUMBER RPAREN { mk_action2( $$, STRIP_TAIL_T,
 									NUMBER_ST, 0, (void *) $3, 0); }
 		| STRIP_TAIL error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| STRIP_TAIL LPAREN error RPAREN { $$=0; yyerror("bad argument, "
@@ -2763,13 +2095,13 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| STRIP error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| STRIP LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"number expected"); }
-		| APPEND_BRANCH LPAREN STRING COMMA STRING RPAREN { 
+		| APPEND_BRANCH LPAREN STRING COMMA STRING RPAREN {
 				{   qvalue_t q;
 				if (str2q(&q, $5, strlen($5)) < 0) {
 					yyerror("bad argument, q value expected");
 				}
 				mk_action2( $$, APPEND_BRANCH_T, STR_ST, NUMBER_ST, $3,
-						(void *)(long)q); } 
+						(void *)(long)q); }
 		}
 		| APPEND_BRANCH LPAREN STRING RPAREN { mk_action2( $$, APPEND_BRANCH_T,
 						STR_ST, NUMBER_ST, $3, (void *)Q_UNSPECIFIED) ; }
@@ -2820,7 +2152,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 						SCRIPTVAR_ST, SCRIPTVAR_ELEM_ST, $3, pvmodel) ;
 			}
 
-		| SET_HOSTPORT LPAREN STRING RPAREN { mk_action2( $$, SET_HOSTPORT_T, 
+		| SET_HOSTPORT LPAREN STRING RPAREN { mk_action2( $$, SET_HOSTPORT_T,
 														STR_ST, 0, $3, 0); }
 		| SET_HOSTPORT error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_HOSTPORT LPAREN error RPAREN { $$=0; yyerror("bad argument,"
@@ -2835,12 +2167,12 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| SET_USER error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_USER LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
-		| SET_USERPASS LPAREN STRING RPAREN { mk_action2( $$, SET_USERPASS_T, 
+		| SET_USERPASS LPAREN STRING RPAREN { mk_action2( $$, SET_USERPASS_T,
 														STR_ST, 0, $3, 0); }
 		| SET_USERPASS error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_USERPASS LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
-		| SET_URI LPAREN STRING RPAREN { mk_action2( $$, SET_URI_T, STR_ST, 
+		| SET_URI LPAREN STRING RPAREN { mk_action2( $$, SET_URI_T, STR_ST,
 														0, $3, 0); }
 		| SET_URI error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_URI LPAREN error RPAREN { $$=0; yyerror("bad argument, "
@@ -2865,28 +2197,16 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| FORCE_LOCAL_RPORT				{
 					mk_action2( $$, FORCE_LOCAL_RPORT_T,0, 0, 0, 0); }
 		| FORCE_TCP_ALIAS LPAREN NUMBER RPAREN	{
-					#ifdef USE_TCP
-						mk_action2( $$, FORCE_TCP_ALIAS_T,NUMBER_ST, 0,
-										(void*)$3, 0);
-					#else
-						yyerror("tcp support not compiled in");
-					#endif
-												}
+				mk_action2( $$, FORCE_TCP_ALIAS_T,NUMBER_ST, 0,
+					(void*)$3, 0);
+		}
 		| FORCE_TCP_ALIAS LPAREN RPAREN	{
-					#ifdef USE_TCP
-						mk_action2( $$, FORCE_TCP_ALIAS_T,0, 0, 0, 0); 
-					#else
-						yyerror("tcp support not compiled in");
-					#endif
-										}
+				mk_action2( $$, FORCE_TCP_ALIAS_T,0, 0, 0, 0);
+		}
 		| FORCE_TCP_ALIAS				{
-					#ifdef USE_TCP
-						mk_action2( $$, FORCE_TCP_ALIAS_T,0, 0, 0, 0);
-					#else
-						yyerror("tcp support not compiled in");
-					#endif
-										}
-		| FORCE_TCP_ALIAS LPAREN error RPAREN	{$$=0; 
+				mk_action2( $$, FORCE_TCP_ALIAS_T,0, 0, 0, 0);
+		}
+		| FORCE_TCP_ALIAS LPAREN error RPAREN	{$$=0;
 					yyerror("bad argument, number expected");
 					}
 		| SET_ADV_ADDRESS LPAREN listen_id RPAREN {
@@ -2955,7 +2275,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								" string expected");
 								}
 		| UNUSE_BLACKLIST error {$$=0; yyerror("missing '(' or ')' ?"); }
-		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING RPAREN { 
+		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING RPAREN {
 									mk_action3( $$, CACHE_STORE_T,
 													STR_ST,
 													STR_ST,
@@ -2964,39 +2284,39 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 													$5,
 													$7);
 							}
-		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING COMMA NUMBER 
-								RPAREN { 
-								elems[0].type = STR_ST; 
-								elems[0].u.data = $3; 
-								elems[1].type = STR_ST; 
-								elems[1].u.data = $5; 
-								elems[2].type = STR_ST; 
-								elems[2].u.data = $7; 
-								elems[3].type = NUMBER_ST; 
+		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING COMMA NUMBER
+								RPAREN {
+								elems[0].type = STR_ST;
+								elems[0].u.data = $3;
+								elems[1].type = STR_ST;
+								elems[1].u.data = $5;
+								elems[2].type = STR_ST;
+								elems[2].u.data = $7;
+								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
 								mk_action_($$, CACHE_STORE_T, 4, elems);
 							}
 		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING COMMA script_var
-								RPAREN { 
-								elems[0].type = STR_ST; 
-								elems[0].u.data = $3; 
-								elems[1].type = STR_ST; 
-								elems[1].u.data = $5; 
-								elems[2].type = STR_ST; 
-								elems[2].u.data = $7; 
-								elems[3].type = SCRIPTVAR_ST; 
+								RPAREN {
+								elems[0].type = STR_ST;
+								elems[0].u.data = $3;
+								elems[1].type = STR_ST;
+								elems[1].u.data = $5;
+								elems[2].type = STR_ST;
+								elems[2].u.data = $7;
+								elems[3].type = SCRIPTVAR_ST;
 								elems[3].u.data = $9;
 								mk_action_($$, CACHE_STORE_T, 4, elems);
 							}
 
-		| CACHE_REMOVE LPAREN STRING COMMA STRING RPAREN { 
+		| CACHE_REMOVE LPAREN STRING COMMA STRING RPAREN {
 									mk_action2( $$, CACHE_REMOVE_T,
 													STR_ST,
 													STR_ST,
 													$3,
 													$5);
 							}
-		| CACHE_FETCH LPAREN STRING COMMA STRING COMMA script_var RPAREN { 
+		| CACHE_FETCH LPAREN STRING COMMA STRING COMMA script_var RPAREN {
 									mk_action3( $$, CACHE_FETCH_T,
 													STR_ST,
 													STR_ST,
@@ -3005,7 +2325,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 													$5,
 													$7);
 							}
-		| CACHE_COUNTER_FETCH LPAREN STRING COMMA STRING COMMA script_var RPAREN { 
+		| CACHE_COUNTER_FETCH LPAREN STRING COMMA STRING COMMA script_var RPAREN {
 									mk_action3( $$, CACHE_COUNTER_FETCH_T,
 													STR_ST,
 													STR_ST,
@@ -3014,33 +2334,33 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 													$5,
 													$7);
 							}
-		| CACHE_ADD LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER RPAREN { 
-								elems[0].type = STR_ST; 
-								elems[0].u.data = $3; 
-								elems[1].type = STR_ST; 
-								elems[1].u.data = $5; 
-								elems[2].type = NUMBER_ST; 
+		| CACHE_ADD LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER RPAREN {
+								elems[0].type = STR_ST;
+								elems[0].u.data = $3;
+								elems[1].type = STR_ST;
+								elems[1].u.data = $5;
+								elems[2].type = NUMBER_ST;
 								elems[2].u.number = $7;
 								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
 								mk_action_($$, CACHE_ADD_T, 4, elems);
 							}
-		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER RPAREN { 
-								elems[0].type = STR_ST; 
-								elems[0].u.data = $3; 
-								elems[1].type = STR_ST; 
-								elems[1].u.data = $5; 
-								elems[2].type = SCRIPTVAR_ST; 
+		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER RPAREN {
+								elems[0].type = STR_ST;
+								elems[0].u.data = $3;
+								elems[1].type = STR_ST;
+								elems[1].u.data = $5;
+								elems[2].type = SCRIPTVAR_ST;
 								elems[2].u.data = $7;
 								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
 								mk_action_($$, CACHE_ADD_T, 4, elems);
 							}
-		| CACHE_ADD LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER COMMA script_var RPAREN { 
-								elems[0].type = STR_ST; 
-								elems[0].u.data = $3; 
-								elems[1].type = STR_ST; 
-								elems[1].u.data = $5; 
+		| CACHE_ADD LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER COMMA script_var RPAREN {
+								elems[0].type = STR_ST;
+								elems[0].u.data = $3;
+								elems[1].type = STR_ST;
+								elems[1].u.data = $5;
 								elems[2].type = NUMBER_ST;
 								elems[2].u.number = $7;
 								elems[3].type = NUMBER_ST;
@@ -3049,11 +2369,11 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[4].u.data = $11;
 								mk_action_($$, CACHE_ADD_T, 5, elems);
 							}
-		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER COMMA script_var RPAREN { 
-								elems[0].type = STR_ST; 
-								elems[0].u.data = $3; 
-								elems[1].type = STR_ST; 
-								elems[1].u.data = $5; 
+		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER COMMA script_var RPAREN {
+								elems[0].type = STR_ST;
+								elems[0].u.data = $3;
+								elems[1].type = STR_ST;
+								elems[1].u.data = $5;
 								elems[2].type = SCRIPTVAR_ST;
 								elems[2].u.data = $7;
 								elems[3].type = NUMBER_ST;
@@ -3062,33 +2382,33 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[4].u.data = $11;
 								mk_action_($$, CACHE_ADD_T, 5, elems);
 							}
-		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER RPAREN { 
-								elems[0].type = STR_ST; 
-								elems[0].u.data = $3; 
-								elems[1].type = STR_ST; 
-								elems[1].u.data = $5; 
-								elems[2].type = NUMBER_ST; 
+		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER RPAREN {
+								elems[0].type = STR_ST;
+								elems[0].u.data = $3;
+								elems[1].type = STR_ST;
+								elems[1].u.data = $5;
+								elems[2].type = NUMBER_ST;
 								elems[2].u.number = $7;
 								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
 								mk_action_($$, CACHE_SUB_T, 4, elems);
 							}
-		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER RPAREN { 
-								elems[0].type = STR_ST; 
-								elems[0].u.data = $3; 
-								elems[1].type = STR_ST; 
-								elems[1].u.data = $5; 
-								elems[2].type = SCRIPTVAR_ST; 
+		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER RPAREN {
+								elems[0].type = STR_ST;
+								elems[0].u.data = $3;
+								elems[1].type = STR_ST;
+								elems[1].u.data = $5;
+								elems[2].type = SCRIPTVAR_ST;
 								elems[2].u.data = $7;
 								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
 								mk_action_($$, CACHE_SUB_T, 4, elems);
 							}
-		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER COMMA script_var RPAREN { 
-								elems[0].type = STR_ST; 
-								elems[0].u.data = $3; 
-								elems[1].type = STR_ST; 
-								elems[1].u.data = $5; 
+		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER COMMA script_var RPAREN {
+								elems[0].type = STR_ST;
+								elems[0].u.data = $3;
+								elems[1].type = STR_ST;
+								elems[1].u.data = $5;
 								elems[2].type = NUMBER_ST;
 								elems[2].u.number = $7;
 								elems[3].type = NUMBER_ST;
@@ -3097,11 +2417,11 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[4].u.data = $11;
 								mk_action_($$, CACHE_SUB_T, 5, elems);
 							}
-		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER COMMA script_var RPAREN { 
-								elems[0].type = STR_ST; 
-								elems[0].u.data = $3; 
-								elems[1].type = STR_ST; 
-								elems[1].u.data = $5; 
+		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER COMMA script_var RPAREN {
+								elems[0].type = STR_ST;
+								elems[0].u.data = $3;
+								elems[1].type = STR_ST;
+								elems[1].u.data = $5;
 								elems[2].type = SCRIPTVAR_ST;
 								elems[2].u.data = $7;
 								elems[3].type = NUMBER_ST;
@@ -3110,20 +2430,20 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[4].u.data = $11;
 								mk_action_($$, CACHE_SUB_T, 5, elems);
 							}
-		| CACHE_RAW_QUERY LPAREN STRING COMMA STRING COMMA STRING RPAREN { 
-								elems[0].type = STR_ST; 
-								elems[0].u.data = $3; 
-								elems[1].type = STR_ST; 
-								elems[1].u.data = $5; 
-								elems[2].type = STR_ST; 
+		| CACHE_RAW_QUERY LPAREN STRING COMMA STRING COMMA STRING RPAREN {
+								elems[0].type = STR_ST;
+								elems[0].u.data = $3;
+								elems[1].type = STR_ST;
+								elems[1].u.data = $5;
+								elems[2].type = STR_ST;
 								elems[2].u.data = $7;
 								mk_action_($$, CACHE_RAW_QUERY_T, 3, elems);
 							}
-		| CACHE_RAW_QUERY LPAREN STRING COMMA STRING RPAREN { 
-								elems[0].type = STR_ST; 
-								elems[0].u.data = $3; 
-								elems[1].type = STR_ST; 
-								elems[1].u.data = $5; 
+		| CACHE_RAW_QUERY LPAREN STRING COMMA STRING RPAREN {
+								elems[0].type = STR_ST;
+								elems[0].u.data = $3;
+								elems[1].type = STR_ST;
+								elems[1].u.data = $5;
 								mk_action_($$, CACHE_RAW_QUERY_T, 2, elems);
 							}
 		| ID LPAREN RPAREN		{
@@ -3181,24 +2501,24 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| SUBSCRIBE_EVENT LPAREN STRING COMMA STRING COMMA NUMBER RPAREN {
 				mk_action3($$, SUBSCRIBE_EVENT_T, STR_ST, STR_ST, NUMBER_ST, $3, $5, (void*)(long)$7); }
 		| CONSTRUCT_URI LPAREN STRING COMMA STRING COMMA STRING COMMA STRING COMMA STRING COMMA script_var RPAREN {
-				elems[0].type = STR_ST; 
-				elems[0].u.data = $3; 
-				elems[1].type = STR_ST; 
-				elems[1].u.data = $5; 
-				elems[2].type = STR_ST; 
-				elems[2].u.data = $7; 
-				elems[3].type = STR_ST; 
+				elems[0].type = STR_ST;
+				elems[0].u.data = $3;
+				elems[1].type = STR_ST;
+				elems[1].u.data = $5;
+				elems[2].type = STR_ST;
+				elems[2].u.data = $7;
+				elems[3].type = STR_ST;
 				elems[3].u.data = $9;
-				elems[4].type = STR_ST; 
+				elems[4].type = STR_ST;
 				elems[4].u.data = $11;
-				elems[5].type = SCRIPTVAR_ST; 
+				elems[5].type = SCRIPTVAR_ST;
 				elems[5].u.data = $13;
 				mk_action_($$, CONSTRUCT_URI_T,6,elems); }
 		| GET_TIMESTAMP LPAREN script_var COMMA script_var RPAREN {
 				elems[0].type = SCRIPTVAR_ST;
 				elems[0].u.data = $3;
 				elems[1].type = SCRIPTVAR_ST;
-				elems[1].u.data = $5; 
+				elems[1].u.data = $5;
 				mk_action_($$, GET_TIMESTAMP_T,2,elems); }
 		| SCRIPT_TRACE LPAREN RPAREN {
 				mk_action2($$, SCRIPT_TRACE_T, 0, 0, 0, 0); }
@@ -3258,7 +2578,7 @@ static void yyerrorf(char *fmt, ...)
 }
 
 
-static struct socket_id* mk_listen_id(char* host, int proto, int port)
+static struct socket_id* mk_listen_id(char* host, enum sip_protos proto, int port)
 {
 	struct socket_id* l;
 	l=pkg_malloc(sizeof(struct socket_id));

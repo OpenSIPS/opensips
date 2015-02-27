@@ -103,13 +103,10 @@
 #include "dprint.h"
 #include "daemonize.h"
 #include "route.h"
-#include "udp_server.h"
 #include "bin_interface.h"
 #include "globals.h"
 #include "mem/mem.h"
-#ifdef SHM_MEM
 #include "mem/shm_mem.h"
-#endif
 #include "sr_module.h"
 #include "timer.h"
 #include "parser/msg_parser.h"
@@ -130,21 +127,13 @@
 #include "core_stats.h"
 #include "pvar.h"
 #include "poll_types.h"
-#ifdef USE_TCP
-#include "tcp_init.h"
-#include "tcp_conn.h"
-#ifdef USE_TLS
-#include "tls/tls_init.h"
-#endif
-#endif
-
-#ifdef USE_SCTP
-#include "sctp_server.h"
-#endif
+#include "net/net_tcp.h"
+#include "net/net_udp.h"
 
 #include "version.h"
 #include "mi/mi_core.h"
 #include "db/db_insertq.h"
+#include "net/trans.h"
 
 static char* version=OPENSIPS_FULL_VERSION;
 static char* flags=OPENSIPS_COMPILE_FLAGS;
@@ -177,43 +166,8 @@ unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
 												  not want to exceed during the
 												  auto-probing procedure; may
 												  be re-configured */
-int children_no = 0;			/* number of children processing requests */
+int children_no = CHILD_NO;		/* number of children processing requests */
 enum poll_types io_poll_method=0; 	/*!< by default choose the best method */
-#ifdef USE_TCP
-int tcp_children_no = 0;
-int tcp_disable = 0; /* 1 if tcp is disabled */
-int tcp_crlf_pingpong = 1; /* 0: send CRLF pong to incoming CRLFCRLF ping */
-int tcp_crlf_drop = 0; /* 0: do not drop single CRLF messages */
-int tcp_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK; /* Max number of chunks that
-													 we except to receive a SIP
-													 message - anything above will
-													 lead to the connection
-													 being treat as broken & closed */
-int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;	/* Max number of seconds that
-												   we except a full SIP message
-												   to arrive in - anything above
-												   will lead to the connection to
-												   closed */
-int tcp_async = 0;	/* 1 if TCP connect & write should be async */
-int tcp_async_local_connect_timeout = 10000; /* Number of microseconds that a
-									worker will block waiting for a local
-									connect - if connect op exceeds this, it
-									will get passed to TCP main*/
-int tcp_async_local_write_timeout = 10000; /* Number of microseconds that a
-									worker will block waiting for a local
-									write - if write op exceeds this, it
-									will get passed to TCP main*/
-int tcp_async_max_postponed_chunks = 32; /* maximum number of write chunks that
-											will be queued per TCP connection -
-											if we exceed this number, we just
-											drop the connection */
-#endif
-#ifdef USE_TLS
-int tls_disable = 1; /* 1 if tls is disabled */
-#endif
-#ifdef USE_SCTP
-int sctp_disable = 0; /* 1 if sctp is disabled */
-#endif
 int sig_flag = 0;              /* last signal received */
 
 int dont_fork = 0;
@@ -279,33 +233,8 @@ int mcast_ttl = -1; /* if -1, don't touch it, use the default (usually 1) */
 
 int tos = IPTOS_LOWDELAY;
 
-struct socket_info* udp_listen=0;
-#ifdef USE_TCP
-struct socket_info* tcp_listen=0;
-#endif
-#ifdef USE_TLS
-struct socket_info* tls_listen=0;
-#endif
-#ifdef USE_SCTP
-struct socket_info* sctp_listen=0;
-#endif
-
 struct socket_info* bind_address=0; /* pointer to the crt. proc.
 									 listening address*/
-struct socket_info* sendipv4; /* ipv4 socket to use when msg. comes from ipv6*/
-struct socket_info* sendipv6; /* same as above for ipv6 */
-#ifdef USE_TCP
-struct socket_info* sendipv4_tcp;
-struct socket_info* sendipv6_tcp;
-#endif
-#ifdef USE_TLS
-struct socket_info* sendipv4_tls;
-struct socket_info* sendipv6_tls;
-#endif
-#ifdef USE_SCTP
-struct socket_info* sendipv4_sctp;
-struct socket_info* sendipv6_sctp;
-#endif
 
 
 /* if aliases should be automatically discovered and added
@@ -315,11 +244,6 @@ int auto_aliases=1;
 /* if the stateless forwarding support in core should be
  * disabled or not */
 int sl_fwd_disabled=-1;
-
-unsigned short port_no=0; /* default port*/
-#ifdef USE_TLS
-unsigned short tls_port_no=0; /* default port */
-#endif
 
 /* process number - 0 is the main process */
 int process_no = 0;
@@ -395,12 +319,8 @@ void cleanup(int show_status)
 
 	handle_ql_shutdown();
 	destroy_modules();
-#ifdef USE_TCP
-	destroy_tcp();
-#endif
-#ifdef USE_TLS
-	destroy_tls();
-#endif
+	udp_destroy();
+	tcp_destroy();
 	destroy_timer();
 	destroy_stats_collector();
 	destroy_script_cb();
@@ -719,11 +639,8 @@ error:
 static int main_loop(void)
 {
 	static int chd_rank;
-	int  i,rc;
-	pid_t pid;
-	struct socket_info* si;
+	int  rc;
 	int* startup_done = NULL;
-	stat_var *load_p = NULL;
 
 	chd_rank=0;
 
@@ -739,17 +656,16 @@ static int main_loop(void)
 			goto error;
 		}
 
-		if (udp_listen==0){
+		if (protos[PROTO_UDP].listeners==NULL){
 			LM_ERR("no fork mode requires at least one"
 					" udp listen address, exiting...\n");
 			goto error;
 		}
 		/* only one address, we ignore all the others */
-		if (udp_init(udp_listen)==-1) goto error;
-		bind_address=udp_listen;
-		sendipv4=bind_address;
-		sendipv6=bind_address; /*FIXME*/
-		if (udp_listen->next){
+		// FIXME UDP
+		//if (udp_init(udp_listen)==-1) goto error;
+		bind_address=protos[PROTO_UDP].listeners;
+		if (protos[PROTO_UDP].listeners->next) {
 			LM_WARN("using only the first listen address (no fork)\n");
 		}
 
@@ -785,7 +701,7 @@ static int main_loop(void)
 
 		is_main=1;
 
-		if (register_udp_load_stat(&udp_listen->sock_str,
+		if (register_udp_load_stat(&protos[PROTO_UDP].listeners->sock_str,
 		&pt[process_no].load, 1)!=0) {
 			LM_ERR("failed to init udp load statistics\n");
 			goto error;
@@ -799,70 +715,14 @@ static int main_loop(void)
 			return rc;
 		}
 
-		return udp_rcv_loop();
+		// FIXME return udp_rcv_loop();
+		return -1;
 	} else {  /* don't fork */
 
-		for(si=udp_listen;si;si=si->next){
-			/* create the listening socket (for each address)*/
-			/* udp */
-			if (udp_init(si)==-1) goto error;
-			/* get first ipv4/ipv6 socket*/
-			if ((si->address.af==AF_INET)&&
-					((sendipv4==0)||(sendipv4->flags&SI_IS_LO)))
-				sendipv4=si;
-			#ifdef USE_IPV6
-			if((sendipv6==0)&&(si->address.af==AF_INET6))
-				sendipv6=si;
-			#endif
+		if (trans_init_all_listeners()<0) {
+			LM_ERR("failed to init all SIP listeners, aborting\n");
+			goto error;
 		}
-		#ifdef USE_TCP
-		if (!tcp_disable){
-			for(si=tcp_listen; si; si=si->next){
-				/* same thing for tcp */
-				if (tcp_init(si)==-1)  goto error;
-				/* get first ipv4/ipv6 socket*/
-				if ((si->address.af==AF_INET)&
-						((sendipv4_tcp==0)||(sendipv4_tcp->flags&SI_IS_LO)))
-					sendipv4_tcp=si;
-				#ifdef USE_IPV6
-				if((sendipv6_tcp==0)&&(si->address.af==AF_INET6))
-					sendipv6_tcp=si;
-				#endif
-			}
-		}
-		#ifdef USE_TLS
-		if (!tls_disable){
-			for(si=tls_listen; si; si=si->next){
-				/* same as for tcp*/
-				if (tls_init(si)==-1)  goto error;
-				/* get first ipv4/ipv6 socket*/
-				if ((si->address.af==AF_INET)&&
-						((sendipv4_tls==0)||(sendipv4_tls->flags&SI_IS_LO)))
-					sendipv4_tls=si;
-				#ifdef USE_IPV6
-				if((sendipv6_tls==0)&&(si->address.af==AF_INET6))
-					sendipv6_tls=si;
-				#endif
-			}
-		}
-		#endif /* USE_TLS */
-		#endif /* USE_TCP */
-		#ifdef USE_SCTP
-		if (!sctp_disable){
-			for(si=sctp_listen; si; si=si->next){
-				/* same thing for sctp */
-				if (sctp_server_init(si)==-1)  goto error;
-				/* get first ipv4/ipv6 socket*/
-				if ((si->address.af==AF_INET)&&
-						((sendipv4_sctp==0)||(sendipv4_sctp->flags&SI_IS_LO)))
-					sendipv4_sctp=si;
-			#ifdef USE_IPV6
-				if((sendipv6_sctp==0)&&(si->address.af==AF_INET6))
-					sendipv6_sctp=si;
-			#endif
-			}
-		}
-		#endif /* USE_SCTP */
 
 		/* all processes should have access to all the sockets (for sending)
 		 * so we open all first*/
@@ -893,174 +753,27 @@ static int main_loop(void)
 			goto error;
 		}
 
-		/* udp processes */
-		for(si=udp_listen; si; si=si->next){
+		/* fork for the timer process*/
+		if (start_timer_processes()!=0) {
+			LM_CRIT("cannot start timer process(es)\n");
+			goto error;
+		}
 
-			if(register_udp_load_stat(&si->sock_str,&load_p,si->children)!=0){
-				LM_ERR("failed to init load statistics\n");
-				goto error;
-			}
+		/* fork all processes required by UDP network layer */
+		if (udp_start_processes( &chd_rank, startup_done)<0) {
+			LM_CRIT("cannot start TCP processes\n");
+			goto error;
+		}
 
-			for(i=0;i<si->children;i++){
-				chd_rank++;
-				if ( (pid=internal_fork( "UDP receiver"))<0 ) {
-					LM_CRIT("cannot fork UDP process\n");
-					goto error;
-				} else {
-					if (pid==0) {
-						/* new UDP process */
-						/* set a more detailed description */
-						set_proc_attrs("SIP receiver %.*s ",
-							si->sock_str.len, si->sock_str.s);
-						bind_address=si; /* shortcut */
-						if (init_child(chd_rank) < 0) {
-							LM_ERR("init_child failed for UDP listener\n");
-							if (send_status_code(-1) < 0)
-								LM_ERR("failed to send status code\n");
-							clean_write_pipeend();
-							if (chd_rank == 1 && startup_done)
-								*startup_done = -1;
-							exit(-1);
-						}
-
-						/* first UDP proc runs statup_route (if defined) */
-						if(chd_rank == 1 && startup_done!=NULL) {
-							LM_DBG("runing startup for first UDP\n");
-							if(run_startup_route()< 0) {
-								if (send_status_code(-1) < 0)
-									LM_ERR("failed to send status code\n");
-								clean_write_pipeend();
-								*startup_done = -1;
-								LM_ERR("Startup route processing failed\n");
-								exit(-1);
-							}
-							*startup_done = 1;
-						}
-
-						if (!no_daemon_mode && send_status_code(0) < 0)
-							LM_ERR("failed to send status code\n");
-						clean_write_pipeend();
-
-
-						/* all UDP listeners on same interface
-						 * have same SHM load pointer */
-						pt[process_no].load = load_p;
-						udp_rcv_loop();
-						exit(-1);
-					}
-					else {
-						/* wait for first proc to finish the startup route */
-						if(chd_rank == 1 && startup_done!=NULL)
-							while( !(*startup_done) ) {usleep(5);handle_sigs();}
-					}
-				}
-			}
-			/*parent*/
-			/*close(udp_sock)*/; /*if it's closed=>sendto invalid fd errors?*/
+		/* fork all processes required by TCP network layer */
+		if (tcp_start_processes( &chd_rank, startup_done)<0) {
+			LM_CRIT("cannot start TCP processes\n");
+			goto error;
 		}
 	}
-
-	#ifdef USE_SCTP
-	if(!sctp_disable){
-		for(si=sctp_listen; si; si=si->next){
-			for(i=0;i<si->children;i++){
-				chd_rank++;
-				if ( (pid=internal_fork( "SCTP receiver"))<0 ) {
-					LM_CRIT("cannot fork SCTP process\n");
-					goto error;
-				} else if (pid==0){
-					/* new SCTP process */
-					/* set a more detailed description */
-					set_proc_attrs("SIP receiver %.*s ",
-						si->sock_str.len, si->sock_str.s);
-					bind_address=si; /* shortcut */
-					if (init_child(chd_rank) < 0) {
-						LM_ERR("init_child failed\n");
-						if (send_status_code(-1) < 0)
-							LM_ERR("failed to send status code\n");
-						clean_write_pipeend();
-						if( (si==sctp_listen && i==0) && startup_done)
-							*startup_done = -1;
-						exit(-1);
-					}
-
-					/* was startup route executed so far ? if not, run it only by the
-					 * first SCTP proc (first proc from first interface) */
-					if( (si==sctp_listen && i==0) && startup_done!=NULL && *startup_done==0) {
-						LM_DBG("runing startup for first SCTP\n");
-						if(run_startup_route()< 0) {
-							LM_ERR("Startup route processing failed\n");
-							if (send_status_code(-1) < 0)
-								LM_ERR("failed to send status code\n");
-							clean_write_pipeend();
-							*startup_done = -1;
-							exit(-1);
-						}
-						*startup_done = 1;
-					}
-
-					if (!no_daemon_mode && send_status_code(0) < 0)
-						LM_ERR("failed to send status code\n");
-					clean_write_pipeend();
-
-					sctp_server_rcv_loop();
-					exit(-1);
-				} else {
-					/* wait for first proc to finish the startup route */
-					if( (si==sctp_listen && i==0) && startup_done!=NULL)
-						while( !(*startup_done) ) {usleep(5);handle_sigs();}
-				}
-			}
-		}
-	}
-	#endif /* USE_SCTP */
 
 	/* this is the main process -> it shouldn't send anything */
 	bind_address=0;
-
-	/* fork for the timer process*/
-	if (start_timer_processes()!=0) {
-		LM_CRIT("cannot start timer process(es)\n");
-		goto error;
-	}
-
-	#ifdef USE_TCP
-	if (!tcp_disable){
-		/* start tcp  & tls receivers */
-		if (tcp_init_children(&chd_rank, startup_done)<0) goto error;
-		/* wait for the startup route to be executed */
-		if( startup_done!=NULL)
-			while( !(*startup_done) ) {usleep(5);handle_sigs();}
-		/* start tcp+tls master proc */
-		if ( (pid=internal_fork( "TCP main"))<0 ) {
-			LM_CRIT("cannot fork tcp main process\n");
-			goto error;
-		}else if (pid==0){
-			/* child */
-			/* close the TCP inter-process sockets */
-			close(unix_tcp_sock);
-			unix_tcp_sock = -1;
-			close(pt[process_no].unix_sock);
-			pt[process_no].unix_sock = -1;
-			/* init modules */
-			if (init_child(PROC_TCP_MAIN) < 0) {
-				LM_ERR("error in init_child for tcp main\n");
-				if (send_status_code(-1) < 0)
-					LM_ERR("failed to send status code\n");
-				clean_write_pipeend();
-
-				exit(-1);
-			}
-
-			if (!no_daemon_mode && send_status_code(0) < 0)
-				LM_ERR("failed to send status code\n");
-			clean_write_pipeend();
-
-			tcp_main_loop();
-			exit(-1);
-		}
-	}
-	#endif
 
 	if (startup_done) {
 		if (*startup_done==0)
@@ -1073,16 +786,12 @@ static int main_loop(void)
 	set_proc_attrs("attendant");
 
 	if (init_child(PROC_MAIN) < 0) {
-		if (send_status_code(-1) < 0)
-			LM_ERR("failed to send status code\n");
-		clean_write_pipeend();
 		LM_ERR("error in init_child for PROC_MAIN\n");
+		report_failure_status();
 		goto error;
 	}
 
-	if (!no_daemon_mode && send_status_code(0) < 0)
-		LM_ERR("failed to send status code\n");
-	clean_write_pipeend();
+	report_conditional_status( (!no_daemon_mode), 0);
 
 	for(;;){
 			handle_sigs();
@@ -1094,10 +803,7 @@ error:
 	is_main=1;  /* if we are here, we are the "main process",
 				  any forked children should exit with exit(-1) and not
 				  ever use return */
-	if (!dont_fork && send_status_code(-1) < 0)
-		LM_ERR("failed to send status code\n");
-	clean_write_pipeend();
-
+	report_conditional_status( (!dont_fork), -1);
 	return -1;
 
 }
@@ -1151,6 +857,7 @@ int main(int argc, char** argv)
 		goto error00;
 
 	init_route_lists();
+
 	/* process command line (get port no, cfg. file path etc) */
 	/* first reset getopt */
 	optind = 1;
@@ -1194,7 +901,7 @@ int main(int argc, char** argv)
 					}
 					tmp[tmp_len]=0; /* null terminate the host */
 					/* add a new addr. to our address list */
-					if (add_listen_iface(tmp, port, proto, 0, 0, 0,0 )!=0){
+					if (add_cmd_listener(tmp, port, proto)!=0){
 						LM_ERR("failed to add new listen address\n");
 						goto error00;
 					}
@@ -1226,30 +933,12 @@ int main(int argc, char** argv)
 			case 'E':
 					cfg_log_stderr=1;
 					break;
-			case 'T':
-#ifdef USE_TCP
-					tcp_disable=1;
-#else
-					LM_WARN("tcp support not compiled in\n");
-#endif
-					break;
-			case 'S':
-#ifdef USE_SCTP
-					sctp_disable=1;
-#else
-					LM_WARN("sctp support not compiled in\n");
-#endif
-			break;
 			case 'N':
-#ifdef USE_TCP
 					tcp_children_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
 						LM_ERR("bad process number: -N %s\n", optarg);
 						goto error00;
 					}
-#else
-					LM_WARN("tcp support not compiled in\n");
-#endif
 					break;
 			case 'W':
 					io_poll_method=get_poll_type(optarg);
@@ -1348,15 +1037,6 @@ try_again:
 	/*register builtin  modules*/
 	register_builtin_modules();
 
-#ifdef USE_TLS
-	/* initialize default TLS domains,
-	   must be done before reading the config */
-	if (pre_init_tls()<0){
-		LM_CRIT("could not pre_init_tls, exiting...\n");
-		goto error00;
-	}
-#endif /* USE_TLS */
-
 	if (preinit_black_lists()!=0) {
 		LM_CRIT("failed to alloc black list's anchor\n");
 		goto error00;
@@ -1372,6 +1052,15 @@ try_again:
 #ifdef DEBUG_PARSER
 	yydebug = 1;
 #endif
+
+	/*
+	 * initializes transport interfaces - we initialize them here because we
+	 * can have listening interfaces declared in the command line
+	 */
+	if (trans_init() < 0) {
+		LM_ERR("cannot initilize transport interface\n");
+		goto error;
+	}
 
 	/* parse the config file, prior to this only default values
 	   e.g. for debugging settings will be used */
@@ -1397,20 +1086,19 @@ try_again:
 	/* init the resolver, before fixing the config */
 	resolv_init();
 
-	/* fix parameters */
-	if (port_no<=0) port_no=SIP_PORT;
-#ifdef USE_TLS
-	if (tls_port_no<=0) tls_port_no=SIPS_PORT;
-#endif
-
-
-	if (children_no<=0) children_no=CHILD_NO;
-#ifdef USE_TCP
-	if (!tcp_disable){
-		if (tcp_children_no<=0) tcp_children_no=children_no;
+	/* fix temporary listeners added in the cmd line */
+	if (fix_cmd_listeners() < 0) {
+		LM_ERR("cannot add temproray listeners\n");
+		return ret;
 	}
-#endif
 
+	/* load transport protocols */
+	if (trans_load() < 0) {
+		LM_ERR("cannot load transport protocols\n");
+		goto error;
+	}
+
+	/* fix parameters */
 	if (working_dir==0) working_dir="/";
 
 	/* get uid/gid */
@@ -1440,9 +1128,9 @@ try_again:
 
 	if (dont_fork){
 		LM_WARN("no fork mode %s\n",
-				(udp_listen)?(
-				(udp_listen->next)?" and more than one listen address found"
-				"(will use only the first one)":""
+				(protos[PROTO_UDP].listeners)?(
+				(protos[PROTO_UDP].listeners->next)?" and more than one listen"
+				" address found(will use only the first one)":""
 				):"and no udp listen address found" );
 	}
 	if (config_check){
@@ -1483,24 +1171,16 @@ try_again:
 
 	fix_poll_method( &io_poll_method );
 
-#ifdef USE_TCP
-	if (!tcp_disable){
-		/*init tcp*/
-		if (init_tcp()<0){
-			LM_CRIT("could not initialize tcp, exiting...\n");
-			goto error;
-		}
+	/*init UDP networking layer*/
+	if (udp_init()<0){
+		LM_CRIT("could not initialize tcp, exiting...\n");
+		goto error;
 	}
-#ifdef USE_TLS
-	if (!tls_disable){
-		/* init tls*/
-		if (init_tls()<0){
-			LM_CRIT("could not initialize tls, exiting...\n");
-			goto error;
-		}
+	/*init TCP networking layer*/
+	if (tcp_init()<0){
+		LM_CRIT("could not initialize tcp, exiting...\n");
+		goto error;
 	}
-#endif /* USE_TLS */
-#endif /* USE_TCP */
 
 	/* init_daemon? */
 	if (!dont_fork){

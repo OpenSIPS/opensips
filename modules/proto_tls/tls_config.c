@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2004,2005 Free Software Foundation, Inc.
  * Copyright (C) 2006 enum.at
@@ -24,9 +22,7 @@
 
 
 #include "tls_config.h"
-#include "../config.h"
-
-int             tls_log;
+#include "../../config.h"
 
 int             tls_method = TLS_USE_SSLv23;
 
@@ -47,9 +43,9 @@ char 	       *tls_ca_dir    = TLS_CA_DIRECTORY;
 char           *tls_tmp_dh_file        = TLS_DH_PARAMS_FILE;
 /* defaul cipher=0, this means the DEFAULT ciphers */
 char           *tls_ciphers_list = 0;
-/* TLS timeouts; should be low to detect problems fast */
-int             tls_handshake_timeout = 30;
-int             tls_send_timeout      = 30;
+/* TLS timeouts (in ms); should be low to detect problems fast */
+int             tls_handshake_timeout = 100;
+int             tls_send_timeout      = 100;
 /* per default, the TLS domains do not have a name */
 int             tls_client_domain_avp = -1;
 

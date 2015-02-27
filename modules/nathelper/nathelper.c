@@ -1297,9 +1297,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	if (buf == NULL)
 		goto done;
 
-#ifdef USE_TCP
-		tcp_no_new_conn = 1;
-#endif
+	tcp_no_new_conn = 1;
 
 	cp = buf;
 	while (1) {
@@ -1362,9 +1360,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 		}
 	}
 
-#ifdef USE_TCP
-		tcp_no_new_conn = 0;
-#endif
+	tcp_no_new_conn = 0;
 
 done:
 	if (buf)

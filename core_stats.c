@@ -84,28 +84,20 @@ static unsigned long net_get_wb_udp(unsigned short foo)
 	return get_total_bytes_waiting(PROTO_UDP);
 }
 
-#ifdef USE_TCP
 static unsigned long net_get_wb_tcp(unsigned short foo)
 {
 	return get_total_bytes_waiting(PROTO_TCP);
 }
-#endif
 
-#ifdef USE_TLS
 static unsigned long net_get_wb_tls(unsigned short foo)
 {
 	return get_total_bytes_waiting(PROTO_TLS);
 }
-#endif
 
 stat_export_t net_stats[] = {
 	{"waiting_udp" ,    STAT_IS_FUNC,  (stat_var**)net_get_wb_udp    },
-#ifdef USE_TCP
 	{"waiting_tcp" ,    STAT_IS_FUNC,  (stat_var**)net_get_wb_tcp    },
-#endif
-#ifdef USE_TLS
 	{"waiting_tls" ,    STAT_IS_FUNC,  (stat_var**)net_get_wb_tls    },
-#endif
 	{0,0,0}
 };
 

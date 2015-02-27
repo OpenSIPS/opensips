@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2015 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -18,32 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History
+ * --------
+ *  2007-06-22 sctp_server.h created, using udp_server.h as template -gmarmon
+ *  2015-02-19 migrated to the new proto interfaces (bogdan)
  */
 
+/*!
+ * \file
+ * \brief SCTP protocol support
+ */
 
-#ifndef udp_server_h
-#define udp_server_h
+#ifndef _MOD_SCTP_sctp_server_h
+#define _MOD_SCTP_sctp_server_h
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include "ip_addr.h"
+#include "../../ip_addr.h"
 
-typedef int (callback_f)(int sockfd, struct receive_info *ri,
-													str* msg, void* param);
+int proto_sctp_init_listener(struct socket_info* si);
 
-typedef struct cb_list{
-	callback_f* func;       /* function to be called */
-	void* param;            /* extra parameter */
-	char a;                 /* first byte of message */
-	char b;                 /* second byte of message */
-	struct cb_list* next;   /* linked list */
-}callback_list;
+int proto_sctp_send(struct socket_info *source, char *buf, unsigned len,
+		union sockaddr_union* to, int id);
 
-int udp_init(struct socket_info* si);
-int udp_send(struct socket_info* source,char *buf, unsigned len,
-				union sockaddr_union*  to);
-int udp_rcv_loop();
-
-int register_udprecv_cb(callback_f func, void* param, char a, char b);
+int proto_sctp_read(struct socket_info *si, int* bytes_read);
 
 #endif

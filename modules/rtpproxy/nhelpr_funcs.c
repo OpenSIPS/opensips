@@ -38,7 +38,6 @@
 #include "../../forward.h"
 #include "../../resolve.h"
 #include "../../globals.h"
-#include "../../udp_server.h"
 #include "../../pt.h"
 #include "../../parser/msg_parser.h"
 #include "../../trim.h"

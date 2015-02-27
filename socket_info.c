@@ -58,6 +58,7 @@
 #include "ut.h"
 #include "resolve.h"
 #include "name_alias.h"
+#include "net/trans.h"
 
 #define MAX_PROC_BUFFER	256
 
@@ -100,6 +101,9 @@
 		if ((el)->prev) (el)->prev->next=(el)->next; \
 	}while(0)
 
+
+#define get_sock_info_list(_proto) \
+	&protos[_proto].listeners
 
 
 /* another helper function, it just creates a socket_info struct */
@@ -169,32 +173,6 @@ static void free_sock_info(struct socket_info* si)
 }
 
 
-
-static char* get_proto_name(unsigned short proto)
-{
-	switch(proto){
-		case PROTO_NONE:
-			return "*";
-		case PROTO_UDP:
-			return "udp";
-#ifdef USE_TCP
-		case PROTO_TCP:
-			return "tcp";
-#endif
-#ifdef USE_TLS
-		case PROTO_TLS:
-			return "tls";
-#endif
-#ifdef USE_SCTP
-		case PROTO_SCTP:
-			return "sctp";
-#endif
-		default:
-			return "unknown";
-	}
-}
-
-
 /* checks if the proto: host:port is one of the address we listen on
  * and returns the corresponding socket_info structure.
  * if port==0, the  port number is ignored
@@ -211,25 +189,21 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 	struct socket_info* si;
 	struct socket_info** list;
 	unsigned short c_proto;
-#ifdef USE_IPV6
 	struct ip_addr* ip6;
-#endif
+
 	h_len=host->len;
 	hname=host->s;
-#ifdef USE_IPV6
+
 	if ((h_len>2)&&((*hname)=='[')&&(hname[h_len-1]==']')){
 		/* ipv6 reference, skip [] */
 		hname++;
 		h_len-=2;
 	}
-#endif
+
 	c_proto=proto?proto:PROTO_UDP;
 	do{
-		/* get the proper sock_list */
-		if (c_proto==PROTO_NONE)
-			list=&udp_listen;
-		else
-			list=get_sock_info_list(c_proto);
+		/* "proto" is all the time valid here */
+		list=get_sock_info_list(c_proto);
 
 		if (list==0){
 			LM_WARN("unknown proto %d\n", c_proto);
@@ -266,7 +240,6 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 				* ipv6 addresses if we are lucky*/
 				goto found;
 			/* check if host == ip address */
-#ifdef USE_IPV6
 			/* ipv6 case is uglier, host can be [3ffe::1] */
 			ip6=str2ip6(host);
 			if (ip6){
@@ -276,7 +249,6 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 					continue; /* no match, but this is an ipv6 address
 								 so no point in trying ipv4 */
 			}
-#endif
 			/* ipv4 */
 			if ( 	(!(si->flags&SI_IS_IP)) &&
 					(h_len==si->address_str.len) &&
@@ -313,10 +285,7 @@ struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
 	c_proto=proto?proto:PROTO_UDP;
 	do{
 		/* get the proper sock_list */
-		if (c_proto==PROTO_NONE)
-			list=&udp_listen;
-		else
-			list=get_sock_info_list(c_proto);
+		list=get_sock_info_list(c_proto);
 
 		if (list==0){
 			LM_WARN("unknown proto %d\n", c_proto);
@@ -377,19 +346,8 @@ int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 			LM_ERR("get_sock_info_list failed\n");
 			goto error;
 		}
-		if (port==0){ /* use default port */
-			port=
-#ifdef USE_TLS
-				((c_proto)==PROTO_TLS)?tls_port_no:
-#endif
-				port_no;
-		}
-#ifdef USE_TLS
-		else if ((c_proto==PROTO_TLS) && (proto==0)){
-			/* -l  ip:port => on udp:ip:port; tcp:ip:port and tls:ip:port+1? */
-				port++;
-		}
-#endif
+		if (port==0) /* use default port */
+			port=protos[c_proto].default_port;
 		if (new_sock2list(name, port, c_proto, adv_name, adv_port, children,
 		flags, list)<0){
 			LM_ERR("new_sock2list failed\n");
@@ -561,16 +519,11 @@ int fix_socket_list(struct socket_info **list)
 #endif
 	for (si=*list;si;si=si->next){
 		/* fix the number of processes per interface */
-		if (si->children==0 && (si->proto==PROTO_UDP || si->proto==PROTO_SCTP))
+		if (!si->children && is_udp_based_proto(si->proto))
 			si->children = children_no;
-		/* fix port number, port_no should be !=0 here */
-		if (si->port_no==0){
-#ifdef USE_TLS
-			si->port_no= (si->proto==PROTO_TLS)?tls_port_no:port_no;
-#else
-			si->port_no= port_no;
-#endif
-		}
+		if (si->port_no==0)
+			si->port_no= protos[si->proto].default_port;
+
 		tmp=int2str(si->port_no, &len);
 		if (len>=MAX_PORT_LEN){
 			LM_ERR("bad port number: %d\n", si->port_no);
@@ -762,14 +715,8 @@ int fix_socket_list(struct socket_info **list)
 	si=*list;
 	while(si){
 		if ((si->flags & SI_IS_MCAST) &&
-		    ((si->proto == PROTO_TCP)
-#ifdef USE_TLS
-		    || (si->proto == PROTO_TLS)
-#endif /* USE_TLS */
-#ifdef USE_SCTP
-			|| (si->proto == PROTO_SCTP)
-#endif
-		    )){
+		    (si->proto != PROTO_UDP)
+		   ){
 			LM_WARN("removing entry %s:%s [%s]:%s\n",
 			    get_proto_name(si->proto), si->name.s,
 			    si->address_str.s, si->port_no_str.s);
@@ -790,110 +737,17 @@ error:
 
 
 
-/* fix all 3 socket lists
- * return 0 on success, -1 on error */
-int fix_all_socket_lists(void)
-{
-	struct utsname myname;
-
-	if ((udp_listen==0)
-#ifdef USE_TCP
-			&& (tcp_listen==0)
-#ifdef USE_TLS
-			&& (tls_listen==0)
-#endif
-#endif
-#ifdef USE_SCTP
-			&& (sctp_listen==0)
-#endif
-		){
-		/* get all listening ipv4 interfaces */
-		if (add_interfaces(0, AF_INET, 0,  PROTO_UDP, &udp_listen)==0){
-			/* if ok, try to add the others too */
-#ifdef USE_TCP
-			if (!tcp_disable){
-				if (add_interfaces(0, AF_INET, 0,  PROTO_TCP, &tcp_listen)!=0)
-					goto error;
-#ifdef USE_TLS
-				if (!tls_disable){
-					if (add_interfaces(0, AF_INET, 0, PROTO_TLS,
-								&tls_listen)!=0)
-					goto error;
-				}
-#endif
-			}
-#endif
-#ifdef USE_SCTP
-			if (!sctp_disable){
-				if (add_interfaces(0, AF_INET, 0, PROTO_SCTP, &sctp_listen)!=0)
-					goto error;
-			}
-#endif
-		}else{
-			/* if error fall back to get hostname */
-			/* get our address, only the first one */
-			if (uname (&myname) <0){
-				LM_ERR("cannot determine hostname, try -l address\n");
-				goto error;
-			}
-			if (add_listen_iface(myname.nodename, 0, 0, 0, 0, 0, 0)!=0){
-				LM_ERR("add_listen_iface failed \n");
-				goto error;
-			}
-		}
-	}
-	if (fix_socket_list(&udp_listen)!=0){
-		LM_ERR("fix_socket_list udp failed\n");
-		goto error;
-	}
-#ifdef USE_TCP
-	if (!tcp_disable && (fix_socket_list(&tcp_listen)!=0)){
-		LM_ERR("fix_socket_list tcp failed\n");
-		goto error;
-	}
-#ifdef USE_TLS
-	if (!tls_disable && (fix_socket_list(&tls_listen)!=0)){
-		LM_ERR("fix_socket_list tls failed\n");
-		goto error;
-	}
-#endif
-#endif
-#ifdef USE_SCTP
-	if (!sctp_disable && (fix_socket_list(&sctp_listen)!=0)){
-		LM_ERR("fix_socket_list sctp failed\n");
-		goto error;
-	}
-#endif
-
-	if ((udp_listen==0)
-#ifdef USE_TCP
-			&& (tcp_listen==0 || tcp_disable)
-#ifdef USE_TLS
-			&& (tls_listen==0 || tls_disable)
-#endif
-#endif
-#ifdef USE_SCTP
-			&& (sctp_listen==0 || sctp_disable)
-#endif
-	){
-		LM_ERR("no listening sockets\n");
-		goto error;
-	}
-	return 0;
-error:
-	return -1;
-}
 
 
 /*
- * This function will retrieve a list of all ip addresses and ports that OpenSER
- * is listening on, with respect to the transport protocol specified with
- * 'protocol'.
+ * This function will retrieve a list of all ip addresses and ports that
+ * OpenSIPS is listening on, with respect to the transport protocol specified
+ * with 'protocol'.
  *
- * The first parameter, ipList, is a pointer to a pointer. It will be assigned a
- * new block of memory holding the IP Addresses and ports being listened to with
- * respect to 'protocol'.  The array maps a 2D array into a 1 dimensional space,
- * and is layed out as follows:
+ * The first parameter, ipList, is a pointer to a pointer. It will be assigned
+ * a new block of memory holding the IP Addresses and ports being listened to 
+ * with respect to 'protocol'.  The array maps a 2D array into a 1 dimensional 
+ * space, and is layed out as follows:
  *
  * The first NUM_IP_OCTETS indices will be the IP address, and the next index
  * the port.  So if NUM_IP_OCTETS is equal to 4 and there are two IP addresses
@@ -906,15 +760,15 @@ error:
  *  - iplist[5] will be the first octet of the first ip address,
  *  - and so on.
  *
- * The function will return the number of sockets which were found.  This can be
- * used to index into ipList.
+ * The function will return the number of sockets which were found.  This can
+ * be used to index into ipList.
  *
  * NOTE: This function assigns a block of memory equal to:
  *
  *            returnedValue * (NUM_IP_OCTETS + 1) * sizeof(int);
  *
- *       Therefore it is CRUCIAL that you free ipList when you are done with its
- *       contents, to avoid a nasty memory leak.
+ *       Therefore it is CRUCIAL that you free ipList when you are done with
+ *       its contents, to avoid a nasty memory leak.
  */
 int get_socket_list_from_proto(int **ipList, int protocol) {
 
@@ -927,19 +781,15 @@ int get_socket_list_from_proto(int **ipList, int protocol) {
 
 	/* I hate to use #ifdefs, but this is necessary because of the way
 	 * get_sock_info_list() is defined.  */
-#ifndef USE_TCP
 	if (protocol == PROTO_TCP)
 	{
 		return 0;
 	}
-#endif
 
-#ifndef USE_TLS
 	if (protocol == PROTO_TLS)
 	{
 		return 0;
 	}
-#endif
 
 	/* Retrieve the list of sockets with respect to the given protocol. */
 	list=get_sock_info_list(protocol);
@@ -1236,24 +1086,6 @@ int get_total_bytes_waiting(int only_proto)
 	return bytesWaiting;
 }
 
-
-void print_all_socket_lists(void)
-{
-	struct socket_info *si;
-	struct socket_info** list;
-	unsigned short proto;
-
-
-	proto=PROTO_UDP;
-	do{
-		list=get_sock_info_list(proto);
-		for(si=list?*list:0; si; si=si->next){
-			printf("             %s: %s [%s]:%s%s\n", get_proto_name(proto),
-			       si->name.s, si->address_str.s, si->port_no_str.s,
-			       si->flags & SI_IS_MCAST ? " mcast" : "");
-		}
-	}while((proto=next_proto(proto)));
-}
 
 
 void print_aliases(void)

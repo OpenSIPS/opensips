@@ -39,23 +39,13 @@
 #define forward_h
 
 #include "globals.h"
+#include "mem/mem.h"
 #include "parser/msg_parser.h"
 #include "route.h"
 #include "proxy.h"
 #include "ip_addr.h"
-
-#include "udp_server.h"
-#ifdef USE_TCP
-#include "tcp_server.h"
-#endif
-
-#ifdef USE_SCTP
-#include "sctp_server.h"
-#endif
-
 #include "script_cb.h"
-
-#include "mem/mem.h"
+#include "net/trans.h"
 
 struct socket_info* get_send_socket(struct sip_msg* msg,
 									union sockaddr_union* su, int proto);
@@ -97,6 +87,16 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 {
 	str out_buff;
 
+	if (proto<=PROTO_NONE || proto>=PROTO_OTHER) {
+		LM_BUG("bogus proto %d received!\n",proto);
+		return -1;
+	}
+	if (protos[proto].id==PROTO_NONE) {
+		LM_BUG("using proto %d which is not init!\n",proto);
+		return -1;
+	}
+
+	/* determin the send socket */
 	if (send_sock==0)
 		send_sock=get_send_socket(0, to, proto);
 	if (send_sock==0){
@@ -107,65 +107,17 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 	out_buff.len = len;
 	out_buff.s = buf;
 
-	/* the raw processing callbacks are free to change whatever inside the buffer
-	further use out_buff.s and at the end try to free out_buff.s
-	if changed by callbacks */
+	/* the raw processing callbacks are free to change whatever inside
+	 * the buffer further use out_buff.s and at the end try to free out_buff.s
+	 * if changed by callbacks */
 	run_post_raw_processing_cb(POST_RAW_PROCESSING,&out_buff, msg);
 
 	/* update the length for further processing */
 	len = out_buff.len;
 
-	if (proto==PROTO_UDP){
-		if (udp_send(send_sock, out_buff.s, out_buff.len, to)==-1){
-			LM_ERR("udp_send failed\n");
-			goto error;
-		}
-	}
-#ifdef USE_TCP
-	else if (proto==PROTO_TCP){
-		if (tcp_disable){
-			LM_WARN("attempt to send on tcp and tcp"
-					" support is disabled\n");
-			goto error;
-		}else{
-			if (tcp_send(send_sock, proto, out_buff.s, out_buff.len, to, id)<0){
-				LM_ERR("tcp_send failed\n");
-				goto error;
-			}
-		}
-	}
-#ifdef USE_TLS
-	else if (proto==PROTO_TLS){
-		if (tls_disable){
-			LM_WARN("attempt to send on tls and tls"
-					" support is disabled\n");
-			goto error;
-		}else{
-			if (tcp_send(send_sock, proto, out_buff.s, out_buff.len, to, id)<0){
-				LM_ERR("tcp_send failed\n");
-				goto error;
-			}
-		}
-	}
-#endif /* USE_TLS */
-#endif /* USE_TCP */
-#ifdef USE_SCTP
-	else if (proto==PROTO_SCTP){
-		if (sctp_disable){
-			LM_WARN("attempt to send on sctp and sctp"
-					" support is disabled\n");
-			goto error;
-		}else{
-			if (sctp_server_send(send_sock, out_buff.s, out_buff.len, to)<0){
-				LM_ERR("sctp_send failed\n");
-				goto error;
-			}
-		}
-	}
-#endif /* USE_SCTP */
-	else{
-			LM_CRIT("unknown proto %d\n", proto);
-			goto error;
+	if (protos[proto].tran.send(send_sock, out_buff.s, out_buff.len, to, id)<0){
+		LM_ERR("send() for proto %d failed\n",proto);
+		goto error;
 	}
 
 	/* potentially allocated by the out raw processing */

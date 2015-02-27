@@ -24,14 +24,12 @@
  * 2007-06-07 - created to contain process handling functions (bogdan)
  */
 
-
-
-
-
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdio.h>
 #include "mem/shm_mem.h"
+#include "net/net_tcp.h"
+#include "net/net_udp.h"
 #include "socket_info.h"
 #include "sr_module.h"
 #include "dprint.h"
@@ -50,10 +48,7 @@ unsigned int counted_processes = 0;
 int init_multi_proc_support(void)
 {
 	unsigned short proc_no;
-	struct socket_info* si;
-	#ifdef USE_TCP
 	unsigned int i;
-	#endif
 
 	proc_no = 0;
 
@@ -62,17 +57,10 @@ int init_multi_proc_support(void)
 		/* only one UDP listener */
 		proc_no = 1;
 	} else {
-		#ifdef USE_SCTP
-		/* SCTP listeners */
-		for (si=sctp_listen; si; si=si->next)
-			proc_no+=si->children;
-		#endif
-		/* UDP listeners */
-		for (si=udp_listen; si; si=si->next)
-			proc_no+=si->children;
-		#ifdef USE_TCP
-		proc_no += ((!tcp_disable)?( 1/* tcp main */ + tcp_children_no ):0);
-		#endif
+		/* UDP based listeners */
+		proc_no += udp_count_processes();
+		/* TCP based listeners */
+		proc_no += tcp_count_processes();
 		/* attendent */
 		proc_no++;
 	}
@@ -94,12 +82,10 @@ int init_multi_proc_support(void)
 	}
 	memset(pt, 0, sizeof(struct process_table)*proc_no);
 
-	#ifdef USE_TCP
 	for( i=0 ; i<proc_no ; i++ ) {
 		pt[i].unix_sock = -1;
 		pt[i].idx = -1;
 	}
-	#endif
 
 	/* set the pid for the starter process */
 	set_proc_attrs("starter");
@@ -133,9 +119,6 @@ pid_t internal_fork(char *proc_desc)
 	static int process_counter = 1;
 	pid_t pid;
 	unsigned int seed;
-	#ifdef USE_TCP
-	int sockfd[2];
-	#endif
 
 	if (process_counter==CHILD_COUNTER_STOP) {
 		LM_CRIT("buggy call from non-main process!!!");
@@ -146,14 +129,12 @@ pid_t internal_fork(char *proc_desc)
 
 	LM_DBG("forking new process \"%s\"\n",proc_desc);
 
-	#ifdef USE_TCP
-	if(!tcp_disable){
-		if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
-			LM_ERR("socketpair failed: %s\n", strerror(errno));
-			return -1;
-		}
+	/* set TCP communication */
+	if (tcp_pre_connect_proc_to_tcp_main(process_counter)<0){
+		LM_ERR("failed to connect future proc %d to TCP main\n",
+			process_no);
+		return -1;
 	}
-	#endif
 
 	if ( (pid=fork())<0 ){
 		LM_CRIT("cannot fork \"%s\" process\n",proc_desc);
@@ -173,26 +154,12 @@ pid_t internal_fork(char *proc_desc)
 
 		/* set attributes */
 		set_proc_attrs(proc_desc);
-		/* set TCP communication */
-		#ifdef USE_TCP
-		if (!tcp_disable){
-			close(sockfd[0]);
-			unix_tcp_sock=sockfd[1];
-			pt[process_no].unix_sock=sockfd[0];
-		}
-		#endif
+		tcp_connect_proc_to_tcp_main( process_no, 1);
 		return 0;
 	}else{
 		/* parent process */
 		pt[process_counter].pid = pid;
-		#ifdef USE_TCP
-		if (!tcp_disable) {
-			close(sockfd[1]);
-			/* set the fd also in parent to be eliminate any
-			 * races between the parent and child */
-			pt[process_counter].unix_sock=sockfd[0];
-		}
-		#endif
+		tcp_connect_proc_to_tcp_main( process_counter, 0);
 		process_counter++;
 		return pid;
 	}
@@ -207,23 +174,13 @@ int count_init_children(int flags)
 {
 	int ret=0,i;
 	struct sr_module *m;
-	struct socket_info* si;
 
 	if (dont_fork)
 		goto skip_listeners;
 
-	/* UDP listening children */
-	for (si=udp_listen;si;si=si->next)
-		ret+=si->children;
-
-	#ifdef USE_SCTP
-	for (si=sctp_listen;si;si=si->next)
-		ret+=si->children;
-	#endif
-
-	#ifdef USE_TCP
-	ret += ((!tcp_disable)?( 1/* tcp main */ + tcp_children_no ):0);
-	#endif
+	/* listening children */
+	ret += udp_count_processes();
+	ret += tcp_count_processes();
 
 	/* attendent */
 	ret++;

@@ -48,14 +48,13 @@
 #xcap_client= XCAP client for OpenSIPS.It fetches XCAP elements, either documents or part of them, by sending HTTP GET requests | libxml-dev and libcurl-dev
 #xmpp= Gateway between OpenSIPS and a jabber server. It enables the exchange of IMs between SIP clients and XMPP(jabber) clients. | parsing/building XML files, tipically libexpat1-devel
 
-exclude_modules?= aaa_radius b2b_logic cachedb_cassandra cachedb_couchbase cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cpl-c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_unixodbc dialplan event_rabbitmq h350 regex identity jabber json ldap lua httpd mi_xmlrpc_ng mmgeoip osp perl pi_http presence presence_dialoginfo presence_mwi presence_xml pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp python rest_client rls sngtc snmpstats xcap xcap_client xmpp 
+exclude_modules?= aaa_radius b2b_logic cachedb_cassandra cachedb_couchbase cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cpl-c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_unixodbc dialplan event_rabbitmq h350 regex identity jabber json ldap lua httpd mi_xmlrpc_ng mmgeoip osp perl pi_http presence presence_dialoginfo presence_mwi presence_xml proto_tls pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp python rest_client rls sngtc snmpstats tlsops xcap xcap_client xmpp 
 
 include_modules?= 
 
 DEFS+= -DPKG_MALLOC #Uses a faster malloc (exclusive w/ USE_SHM_MEM)
 DEFS+= -DSHM_MEM #Compiles in shared mem. support, needed by some modules and USE_SHM_MEM
 DEFS+= -DSHM_MMAP #Use mmap instead of SYSV shared memory
-DEFS+= -DUSE_IPV6 #Compile in support for IPv6
 DEFS+= -DUSE_MCAST #Compile in support for IP Multicast
 DEFS+= -DDISABLE_NAGLE #Disabled the TCP NAgle Algorithm ( lower delay )
 DEFS+= -DSTATISTICS #Enables the statistics manager
@@ -63,9 +62,6 @@ DEFS+= -DHAVE_RESOLV_RES #Support for changing some of the resolver parameters
 #DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
 DEFS+= -DF_MALLOC #An even faster allocator. Not recommended for debugging
 #DEFS+= -DF_MALLOC_OPTIMIZATIONS #Remove all internal checks in F_MALLOC
-DEFS+= -DUSE_TCP #Compiles in TCP support 
-#DEFS+= -DUSE_TLS #Compiles in TLS support
-#DEFS+= -DUSE_SCTP #Compiles in SCTP support
 #DEFS+= -DDBG_QM_MALLOC #Allocator used for debugging information
 #DEFS+= -DUSE_SHM_MEM #All PKG allocations are mapped to SHM ( exclusive w/ PKG_MALLOC )
 #DEFS+= -DDBG_F_MALLOC #TODO ? 

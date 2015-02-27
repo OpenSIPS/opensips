@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -27,8 +25,6 @@
  *               to handle signals  (andrei)
  */
 
-#ifdef USE_TCP
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
@@ -36,7 +32,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include "dprint.h"
+#include "../dprint.h"
 
 
 
@@ -271,4 +267,3 @@ again:
 error:
 	return ret;
 }
-#endif

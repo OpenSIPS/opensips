@@ -83,13 +83,10 @@ Options:\n\
     -d           Debugging mode (multiple -d increase the level)\n\
     -D           Do not fork into daemon mode\n\
     -F           Daemon mode, but leave main process foreground\n\
-    -E           Log to stderr\n"
-#ifdef USE_TCP
-"    -T           Disable tcp\n\
+    -E           Log to stderr\n\
     -N processes Number of tcp child processes (default: equal to `-n`)\n\
-    -W method    poll method\n"
-#endif
-"    -V           Version number\n\
+    -W method    poll method\n\
+    -V           Version number\n\
     -h           This help message\n\
     -b nr        Maximum receive buffer size which will not be exceeded by\n\
                   auto-probing procedure even if  OS allows\n\
@@ -101,9 +98,6 @@ Options:\n\
     -g gid       Change gid \n\
     -P file      Create a pid file\n\
     -G file      Create a pgid file\n"
-#ifdef USE_SCTP
-"    -S         Disable sctp\n"
-#endif
 ;
 
 #endif

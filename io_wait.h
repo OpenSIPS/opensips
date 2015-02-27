@@ -86,7 +86,6 @@
 #include <fcntl.h>
 
 #include "dprint.h"
-#include "globals.h"   /* tcp_async */
 
 #include "poll_types.h" /* poll_types*/
 #ifdef HAVE_SIGIO_RT
@@ -737,7 +736,7 @@ error:
  * \param poll_method poll method (0 for automatic best fit)
  */
 int init_io_wait(io_wait_h* h, char *name, int max_fd,
-						enum poll_types poll_method, int max_prio, int async);
+								enum poll_types poll_method, int max_prio);
 
 /*! \brief destroys everything init_io_wait allocated */
 void destroy_io_wait(io_wait_h* h);

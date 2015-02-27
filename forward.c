@@ -223,71 +223,22 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 	/* check if we need to change the socket (different address families -
 	 * eg: ipv4 -> ipv6 or ipv6 -> ipv4) */
 	switch(proto){
-#ifdef USE_TCP
-		case PROTO_TCP:
-		/* on tcp just use the "main address", we don't really now the
-		 * sending address (we can find it out, but we'll need also to see
-		 * if we listen on it, and if yes on which port -> too complicated*/
-			switch(to->s.sa_family){
-				/* FIXME */
-				case AF_INET:	send_sock=sendipv4_tcp;
-								break;
-#ifdef USE_IPV6
-				case AF_INET6:	send_sock=sendipv6_tcp;
-								break;
-#endif
-				default:	LM_ERR("don't know how to forward to af %d\n",
-								to->s.sa_family);
-			}
-			break;
-#endif
-#ifdef USE_TLS
-		case PROTO_TLS:
-			switch(to->s.sa_family){
-				/* FIXME */
-				case AF_INET:	send_sock=sendipv4_tls;
-								break;
-#ifdef USE_IPV6
-				case AF_INET6:	send_sock=sendipv6_tls;
-								break;
-#endif
-				default:	LM_ERR("don't know how"
-									" to forward to af %d\n", to->s.sa_family);
-			}
-			break;
-#endif /* USE_TLS */
-#ifdef USE_SCTP
-		case PROTO_SCTP:
-			switch(to->s.sa_family){
-				case AF_INET:	send_sock=sendipv4_sctp;
-								break;
-#ifdef USE_IPV6
-				case AF_INET6:	send_sock=sendipv6_sctp;
-								break;
-#endif
-				default:	LM_ERR("don't know how to forward to af %d\n",
-								to->s.sa_family);
-			}
-			break;
-#endif /* USE_SCTP */
 		case PROTO_UDP:
-			if ((bind_address==0)||(to->s.sa_family!=bind_address->address.af)||
-				  (bind_address->proto!=PROTO_UDP)){
-				switch(to->s.sa_family){
-					case AF_INET:	send_sock=sendipv4;
-									break;
-#ifdef USE_IPV6
-					case AF_INET6:	send_sock=sendipv6;
-									break;
-#endif
-					default:	LM_ERR("don't know how to forward to af %d\n",
-										to->s.sa_family);
-				}
-			}else send_sock = (msg && msg->rcv.bind_address->address.af==bind_address->address.af &&
-				msg->rcv.bind_address->proto==bind_address->proto)? msg->rcv.bind_address : bind_address;
-			break;
+			if ((bind_address)&&(to->s.sa_family==bind_address->address.af)&&
+			(bind_address->proto==PROTO_UDP)) {
+				send_sock = (msg &&
+				msg->rcv.bind_address->address.af==bind_address->address.af &&
+				msg->rcv.bind_address->proto==bind_address->proto) ?
+					msg->rcv.bind_address : bind_address;
+				break;
+			}
+			/* default logic for all protos */
 		default:
-			LM_CRIT("unknown proto %d\n", proto);
+			/* we don't really now the sending address (we can find it out,
+			 * but we'll need also to see if we listen on it, and if yes on
+			 * which port -> too complicated*/
+			send_sock = (to->s.sa_family==AF_INET) ?
+				protos[proto].sendipv4 : protos[proto].sendipv6;
 	}
 	return send_sock;
 }
@@ -399,10 +350,8 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	hostent2su( &to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
 	last_sock = 0;
 
-#ifdef USE_TCP
 	if (getb0flags(msg) & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
-#endif
 
 	do {
 		send_sock=get_send_socket( msg, &to, p->proto);
@@ -421,9 +370,7 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 			buf = build_req_buf_from_sip_req(msg, &len, send_sock, p->proto, 0);
 			if (!buf){
 				LM_ERR("building req buf failed\n");
-#ifdef USE_TCP
 				tcp_no_new_conn = 0;
-#endif
 				goto error;
 			}
 
@@ -453,9 +400,7 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 
 	}while( get_next_su( p, &to, (ser_error==E_IP_BLOCKED)?0:1)==0 );
 
-#ifdef USE_TCP
 	tcp_no_new_conn = 0;
-#endif
 
 	if (ser_error) {
 		update_stat( drp_reqs, 1);
@@ -548,10 +493,8 @@ int forward_reply(struct sip_msg* msg)
 	int proto;
 	int id; /* used only by tcp*/
 	struct socket_info *send_sock;
-#ifdef USE_TCP
 	char* s;
 	int len;
-#endif
 
 	to=0;
 	id=0;
@@ -598,12 +541,7 @@ int forward_reply(struct sip_msg* msg)
 	proto=msg->via2->proto;
 	if (update_sock_struct_from_via( to, msg, msg->via2 )==-1) goto error;
 
-#ifdef USE_TCP
-	if (proto==PROTO_TCP
-#ifdef USE_TLS
-			|| proto==PROTO_TLS
-#endif
-			){
+	if (is_tcp_based_proto(proto)){
 		/* find id in i param if it exists */
 		if (msg->via1->i&&msg->via1->i->value.s){
 			s=msg->via1->i->value.s;
@@ -611,7 +549,6 @@ int forward_reply(struct sip_msg* msg)
 			id=reverse_hex2int(s, len);
 		}
 	}
-#endif
 
 	send_sock = get_send_socket(msg, to, proto);
 

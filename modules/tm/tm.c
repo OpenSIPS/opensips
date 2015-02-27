@@ -30,7 +30,6 @@
  *  2003-04-05  s/reply_route/failure_route, onreply_route introduced (jiri)
  *  2003-04-14  use protocol from uri (jiri)
  *  2003-07-07  added t_relay_to_tls, t_replicate_tls, t_forward_nonack_tls
- *              added #ifdef USE_TCP, USE_TLS
  *              removed t_relay_{udp,tcp,tls} (andrei)
  *  2003-09-26  added t_forward_nonack_uri() - same as t_forward_nonack() but
  *              takes no parameters -> forwards to uri (bogdan)

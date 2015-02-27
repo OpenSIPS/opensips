@@ -51,7 +51,6 @@
 #include "dprint.h"
 #include "proxy.h"
 #include "forward.h"
-#include "udp_server.h"
 #include "route.h"
 #include "parser/msg_parser.h"
 #include "parser/parse_uri.h"
@@ -67,9 +66,8 @@
 #include "cachedb/cachedb.h"
 #include "msg_translator.h"
 #include "mod_fix.h"
-#ifdef USE_TCP
-#include "tcp_server.h"
-#endif
+/* needed by tcpconn_add_alias() */
+#include "net/tcp_conn_defs.h"
 
 #include "script_var.h"
 #include "xlog.h"
@@ -1904,15 +1902,9 @@ next_avp:
 			ret = do_action_set_adv_port(msg, a);
 			break;
 
-#ifdef USE_TCP
 		case FORCE_TCP_ALIAS_T:
 			script_trace("core", "force_tcp_alias", msg, a->file, a->line) ;
-			if ( msg->rcv.proto==PROTO_TCP
-#ifdef USE_TLS
-					|| msg->rcv.proto==PROTO_TLS
-#endif
-			   ){
-
+			if (is_tcp_based_proto(msg->rcv.proto)) {
 				if (a->elem[0].type==NOSUBTYPE)	port=msg->via1->port;
 				else if (a->elem[0].type==NUMBER_ST)
 					port=(int)a->elem[0].u.number;
@@ -1930,7 +1922,6 @@ next_avp:
 					break;
 				}
 			}
-#endif
 			ret=1; /* continue processing */
 			break;
 		case FORCE_SEND_SOCKET_T:

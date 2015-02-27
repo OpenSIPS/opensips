@@ -139,12 +139,10 @@ unsigned int calc_udp_load(void *val)
 	return ( get_stat_val((stat_var*)val) * 100) / *((int*)(((stat_var*)val)+1));
 }
 
-#ifdef USE_TCP
 unsigned int calc_tcp_load(void *val)
 {
 	return ( get_stat_val((stat_var*)val) * 100)/tcp_children_no;
 }
-#endif
 
 int register_udp_load_stat(str *name, stat_var **s, int children)
 {
@@ -177,7 +175,6 @@ int register_udp_load_stat(str *name, stat_var **s, int children)
 	return 0;
 }
 
-#ifdef USE_TCP
 int register_tcp_load_stat(stat_var **s)
 {
 	*s = shm_malloc(sizeof(stat_var));
@@ -202,7 +199,6 @@ int register_tcp_load_stat(stat_var **s)
 
 	return 0;
 }
-#endif
 
 
 /************* Functions for handling MODULEs(groups) of stats ***************/

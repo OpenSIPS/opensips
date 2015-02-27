@@ -19,8 +19,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -32,7 +32,7 @@
  *  2003-04-05  s/reply_route/failure_route, onreply_route introduced (jiri)
  *  2003-04-12  added force_rport, chdir and wdir (andrei)
  *  2003-04-22  strip_tail added (jiri)
- *  2003-07-03  tls* (disable, certificate, private_key, ca_list, verify, 
+ *  2003-07-03  tls* (disable, certificate, private_key, ca_list, verify,
  *               require_certificate added (andrei)
  *  2003-07-06  more tls config. vars added: tls_method, tls_port_no (andrei)
  *  2003-10-02  added {,set_}advertised_{address,port} (andrei)
@@ -66,6 +66,7 @@
 	#include "mem/mem.h"
 	#include <string.h>
 	#include <stdlib.h>
+	#include <unistd.h>
 	#include "ip_addr.h"
 
 
@@ -83,7 +84,7 @@
 		int left;
 	};
 
-	
+
 	static int comment_nest=0;
 	static int state=0;
 	static struct str_buf s_buf;
@@ -94,7 +95,7 @@
 	int startcolumn=1;
 	int startline=1;
 	char *finame = 0;
-	
+
 	static char* addchar(struct str_buf *, char);
 	static char* addstr(struct str_buf *, char*, int);
 	static void count();
@@ -129,7 +130,7 @@
 %}
 
 /* start conditions */
-%x STRING1 STRING2 COMMENT COMMENT_LN SCRIPTVARS 
+%x STRING1 STRING2 COMMENT COMMENT_LN SCRIPTVARS
 %x INCLF IMPTF
 
 /* action keywords */
@@ -303,7 +304,6 @@ DNS_RETR_TIME   dns_retr_time
 DNS_RETR_NO     dns_retr_no
 DNS_SERVERS_NO  dns_servers_no
 DNS_USE_SEARCH  dns_use_search_list
-PORT	port
 MAXBUFFER maxbuffer
 CHILDREN children
 CHECK_VIA	check_via
@@ -331,46 +331,18 @@ CHROOT		"chroot"
 WDIR		"workdir"|"wdir"
 MHOMED		mhomed
 POLL_METHOD		"poll_method"
-DISABLE_TCP		"disable_tcp"
-ASYNC_TCP		"tcp_async"
-ASYNC_TCP_LOCAL_CON_TIMEOUT		"tcp_async_local_connect_timeout"
-ASYNC_TCP_LOCAL_WRITE_TIMEOUT	"tcp_async_local_write_timeout"
-ASYNC_TCP_MAX_POSTPONED_CHUNKS	"tcp_async_max_postponed_chunks"
 TCP_CHILDREN	"tcp_children"
 TCP_ACCEPT_ALIASES	"tcp_accept_aliases"
-TCP_SEND_TIMEOUT	"tcp_send_timeout"
 TCP_CONNECT_TIMEOUT	"tcp_connect_timeout"
 TCP_CON_LIFETIME    "tcp_connection_lifetime"
 TCP_LISTEN_BACKLOG   "tcp_listen_backlog"
 TCP_MAX_CONNECTIONS "tcp_max_connections"
-TCP_OPT_CRLF_PINGPONG   "tcp_crlf_pingpong"
-TCP_OPT_CRLF_DROP   "tcp_crlf_drop"
 TCP_NO_NEW_CONN_BFLAG "tcp_no_new_conn_bflag"
 TCP_KEEPALIVE           "tcp_keepalive"
 TCP_KEEPCOUNT           "tcp_keepcount"
 TCP_KEEPIDLE            "tcp_keepidle"
 TCP_KEEPINTERVAL        "tcp_keepinterval"
-TCP_MAX_MSG_CHUNKS		"tcp_max_msg_chunks"
 TCP_MAX_MSG_TIME		"tcp_max_msg_time"
-DISABLE_TLS		"disable_tls"
-TLSLOG			"tlslog"|"tls_log"
-TLS_PORT_NO		"tls_port_no"
-TLS_METHOD		"tls_method"
-TLS_VERIFY_CLIENT	"tls_verify_client"
-TLS_VERIFY_SERVER	"tls_verify_server"
-TLS_REQUIRE_CLIENT_CERTIFICATE "tls_require_client_certificate"
-TLS_CERTIFICATE	"tls_certificate"
-TLS_PRIVATE_KEY "tls_private_key"
-TLS_CA_LIST		"tls_ca_list"
-TLS_CA_DIR		"tls_ca_dir"
-TLS_DH_PARAMS		"tls_dh_params"
-TLS_EC_CURVE		"tls_ec_curve"
-TLS_CIPHERS_LIST	"tls_ciphers_list"
-TLS_HANDSHAKE_TIMEOUT	"tls_handshake_timeout"
-TLS_SEND_TIMEOUT	"tls_send_timeout"
-TLS_SERVER_DOMAIN	"tls_server_domain"
-TLS_CLIENT_DOMAIN	"tls_client_domain"
-TLS_CLIENT_DOMAIN_AVP	"tls_client_domain_avp"
 ADVERTISED_ADDRESS	"advertised_address"
 ADVERTISED_PORT		"advertised_port"
 DISABLE_CORE		"disable_core_dump"
@@ -395,15 +367,8 @@ MODPARAM        modparam
 /* values */
 YES			"yes"|"true"|"on"|"enable"
 NO			"no"|"false"|"off"|"disable"
-UDP			"udp"|"UDP"
-TCP			"tcp"|"TCP"
-TLS			"tls"|"TLS"
-SCTP		"sctp"|"SCTP"
 INET		"inet"|"INET"
 INET6		"inet6"|"INET6"
-SSLv23			"sslv23"|"SSLv23"|"SSLV23"|"TLSany"|"TLSAny"
-TLSv1			"tlsv1"|"TLSv1"|"TLSV1"
-TLSv1_2			"tlsv1_2"|"TLSv1_2"|"TLSV1_2"
 NULLV			"null"|"NULL"
 
 LETTER		[a-zA-Z]
@@ -499,11 +464,11 @@ IMPORTFILE      "import_file"
 <INITIAL>{PREFIX}	{ count(); yylval.strval=yytext; return PREFIX; }
 <INITIAL>{STRIP}	{ count(); yylval.strval=yytext; return STRIP; }
 <INITIAL>{STRIP_TAIL}	{ count(); yylval.strval=yytext; return STRIP_TAIL; }
-<INITIAL>{APPEND_BRANCH}	{ count(); yylval.strval=yytext; 
+<INITIAL>{APPEND_BRANCH}	{ count(); yylval.strval=yytext;
 								return APPEND_BRANCH; }
-<INITIAL>{REMOVE_BRANCH}	{ count(); yylval.strval=yytext; 
+<INITIAL>{REMOVE_BRANCH}	{ count(); yylval.strval=yytext;
 								return REMOVE_BRANCH; }
-<INITIAL>{PV_PRINTF}	{ count(); yylval.strval=yytext; 
+<INITIAL>{PV_PRINTF}	{ count(); yylval.strval=yytext;
 								return PV_PRINTF; }
 <INITIAL>{FORCE_RPORT}	{ count(); yylval.strval=yytext; return FORCE_RPORT; }
 <INITIAL>{FORCE_LOCAL_RPORT}	{ count(); yylval.strval=yytext; return FORCE_LOCAL_RPORT; }
@@ -618,7 +583,6 @@ IMPORTFILE      "import_file"
 								return DNS_SERVERS_NO; }
 <INITIAL>{DNS_USE_SEARCH}	{ count(); yylval.strval=yytext;
 								return DNS_USE_SEARCH; }
-<INITIAL>{PORT}	{ count(); yylval.strval=yytext; return PORT; }
 <INITIAL>{MAX_WHILE_LOOPS}	{ count(); yylval.strval=yytext;
 								return MAX_WHILE_LOOPS; }
 <INITIAL>{MAXBUFFER}	{ count(); yylval.strval=yytext; return MAXBUFFER; }
@@ -644,21 +608,10 @@ IMPORTFILE      "import_file"
 <INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
 <INITIAL>{MHOMED}	{ count(); yylval.strval=yytext; return MHOMED; }
-<INITIAL>{TCP_OPT_CRLF_PINGPONG}    { count(); yylval.strval=yytext; return TCP_OPT_CRLF_PINGPONG; }
-<INITIAL>{TCP_OPT_CRLF_DROP}    { count(); yylval.strval=yytext; return TCP_OPT_CRLF_DROP; }
 <INITIAL>{TCP_NO_NEW_CONN_BFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_BFLAG; }
-<INITIAL>{DISABLE_TCP}	{ count(); yylval.strval=yytext; return DISABLE_TCP; }
-<INITIAL>{ASYNC_TCP}	{ count(); yylval.strval=yytext; return ASYNC_TCP; }
-<INITIAL>{ASYNC_TCP_LOCAL_CON_TIMEOUT}	{ count(); yylval.strval=yytext; return ASYNC_TCP_LOCAL_CON_TIMEOUT; }
-<INITIAL>{ASYNC_TCP_LOCAL_WRITE_TIMEOUT}	{ count(); yylval.strval=yytext;
-	return ASYNC_TCP_LOCAL_WRITE_TIMEOUT; }
-<INITIAL>{ASYNC_TCP_MAX_POSTPONED_CHUNKS}	{ count(); yylval.strval=yytext;
-	return ASYNC_TCP_MAX_POSTPONED_CHUNKS; }
 <INITIAL>{TCP_CHILDREN}	{ count(); yylval.strval=yytext; return TCP_CHILDREN; }
 <INITIAL>{TCP_ACCEPT_ALIASES}	{ count(); yylval.strval=yytext;
 									return TCP_ACCEPT_ALIASES; }
-<INITIAL>{TCP_SEND_TIMEOUT}		{ count(); yylval.strval=yytext;
-									return TCP_SEND_TIMEOUT; }
 <INITIAL>{TCP_CONNECT_TIMEOUT}		{ count(); yylval.strval=yytext;
 									return TCP_CONNECT_TIMEOUT; }
 <INITIAL>{TCP_CON_LIFETIME}		{ count(); yylval.strval=yytext;
@@ -673,40 +626,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{TCP_KEEPCOUNT}       { count(); yylval.strval=yytext; return TCP_KEEPCOUNT; }
 <INITIAL>{TCP_KEEPIDLE}        { count(); yylval.strval=yytext; return TCP_KEEPIDLE; }
 <INITIAL>{TCP_KEEPINTERVAL}    { count(); yylval.strval=yytext; return TCP_KEEPINTERVAL; }
-<INITIAL>{TCP_MAX_MSG_CHUNKS}    { count(); yylval.strval=yytext; return TCP_MAX_MSG_CHUNKS; }
 <INITIAL>{TCP_MAX_MSG_TIME}    { count(); yylval.strval=yytext; return TCP_MAX_MSG_TIME; }
-<INITIAL>{DISABLE_TLS}	{ count(); yylval.strval=yytext; return DISABLE_TLS; }
-<INITIAL>{TLSLOG}		{ count(); yylval.strval=yytext; return TLS_PORT_NO; }
-<INITIAL>{TLS_PORT_NO}	{ count(); yylval.strval=yytext; return TLS_PORT_NO; }
-<INITIAL>{TLS_METHOD}	{ count(); yylval.strval=yytext; return TLS_METHOD; }
-<INITIAL>{TLS_VERIFY_CLIENT}	{ count(); yylval.strval=yytext; return TLS_VERIFY_CLIENT; }
-<INITIAL>{TLS_VERIFY_SERVER}	{ count(); yylval.strval=yytext; return TLS_VERIFY_SERVER; }
-<INITIAL>{TLS_REQUIRE_CLIENT_CERTIFICATE}	{ count(); yylval.strval=yytext;
-										return TLS_REQUIRE_CLIENT_CERTIFICATE;}
-<INITIAL>{TLS_CERTIFICATE}	{ count(); yylval.strval=yytext; 
-										return TLS_CERTIFICATE; }
-<INITIAL>{TLS_PRIVATE_KEY}	{ count(); yylval.strval=yytext; 
-										return TLS_PRIVATE_KEY; }
-<INITIAL>{TLS_CA_LIST}	{ count(); yylval.strval=yytext; 
-										return TLS_CA_LIST; }
-<INITIAL>{TLS_CA_DIR}  { count(); yylval.strval=yytext;
-                                                                                return TLS_CA_DIR; }
-<INITIAL>{TLS_DH_PARAMS}  { count(); yylval.strval=yytext;
-										return TLS_DH_PARAMS; }
-<INITIAL>{TLS_EC_CURVE}  { count(); yylval.strval=yytext;
-										return TLS_EC_CURVE; }
-<INITIAL>{TLS_CIPHERS_LIST}	{ count(); yylval.strval=yytext; 
-										return TLS_CIPHERS_LIST; }
-<INITIAL>{TLS_HANDSHAKE_TIMEOUT}	{ count(); yylval.strval=yytext;
-										return TLS_HANDSHAKE_TIMEOUT; }
-<INITIAL>{TLS_SEND_TIMEOUT}	{ count(); yylval.strval=yytext;
-										return TLS_SEND_TIMEOUT; }
-<INITIAL>{TLS_SERVER_DOMAIN}		{ count(); yylval.strval=yytext;
-									return TLS_SERVER_DOMAIN; }
-<INITIAL>{TLS_CLIENT_DOMAIN}		{ count(); yylval.strval=yytext;
-									return TLS_CLIENT_DOMAIN; }
-<INITIAL>{TLS_CLIENT_DOMAIN_AVP}	{ count(); yylval.strval=yytext;
-										return TLS_CLIENT_DOMAIN_AVP; }
 <INITIAL>{SERVER_SIGNATURE}	{ count(); yylval.strval=yytext; return SERVER_SIGNATURE; }
 <INITIAL>{SERVER_HEADER}	{ count(); yylval.strval=yytext; return SERVER_HEADER; }
 <INITIAL>{USER_AGENT_HEADER}	{ count(); yylval.strval=yytext; return USER_AGENT_HEADER; }
@@ -788,21 +708,10 @@ IMPORTFILE      "import_file"
 <INITIAL>{YES}			{ count(); yylval.intval=1; return NUMBER; }
 <INITIAL>{NO}			{ count(); yylval.intval=0; return NUMBER; }
 <INITIAL>{NULLV}		{ count(); yylval.intval=0; return NULLV; }
-<INITIAL>{TCP}			{ count(); return TCP; }
-<INITIAL>{UDP}			{ count(); return UDP; }
-<INITIAL>{TLS}			{ count(); return TLS; }
-<INITIAL>{SCTP}			{ count(); return SCTP; }
 <INITIAL>{INET}			{ count(); yylval.intval=AF_INET; return NUMBER; }
 <INITIAL>{INET6}		{ count();
-						#ifdef USE_IPV6
 						  yylval.intval=AF_INET6;
-						#else
-						  yylval.intval=-1; /* no match*/
-						#endif
 						  return NUMBER; }
-<INITIAL>{SSLv23}		{ count(); yylval.strval=yytext; return SSLv23; }
-<INITIAL>{TLSv1}		{ count(); yylval.strval=yytext; return TLSv1; }
-<INITIAL>{TLSv1_2}		{ count(); yylval.strval=yytext; return TLSv1_2; }
 
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }
@@ -827,7 +736,7 @@ IMPORTFILE      "import_file"
 								BEGIN(SCRIPTVARS);
 							}
 <SCRIPTVARS>{LPAREN} { count(); np++; yymore(); svar_tlen = yyleng; }
-<SCRIPTVARS>{RPAREN} { 
+<SCRIPTVARS>{RPAREN} {
 			count();
 			if(np==0 || np==1) {
 				if(np==0)
@@ -890,14 +799,14 @@ IMPORTFILE      "import_file"
 <INITIAL>{TICK} { count(); state=STRING_S; BEGIN(STRING2); }
 
 
-<STRING1>{QUOTES} { count(); state=INITIAL_S; BEGIN(INITIAL); 
+<STRING1>{QUOTES} { count(); state=INITIAL_S; BEGIN(INITIAL);
 						yytext[yyleng-1]=0; yyleng--;
 						addstr(&s_buf, yytext, yyleng);
 						yylval.strval=s_buf.s;
 						memset(&s_buf, 0, sizeof(s_buf));
 						return STRING;
 					}
-<STRING2>{TICK}  { count(); state=INITIAL_S; BEGIN(INITIAL); 
+<STRING2>{TICK}  { count(); state=INITIAL_S; BEGIN(INITIAL);
 						yytext[yyleng-1]=0; yyleng--;
 						addstr(&s_buf, yytext, yyleng);
 						yylval.strval=s_buf.s;
@@ -911,12 +820,12 @@ IMPORTFILE      "import_file"
 <STRING1>\\a		{ count(); addchar(&s_buf, '\a'); }
 <STRING1>\\t		{ count(); addchar(&s_buf, '\t'); }
 <STRING1>\\{QUOTES}	{ count(); addchar(&s_buf, '"');  }
-<STRING1>\\\\		{ count(); addchar(&s_buf, '\\'); } 
-<STRING1>\\x{HEX}{1,2}	{ count(); addchar(&s_buf, 
+<STRING1>\\\\		{ count(); addchar(&s_buf, '\\'); }
+<STRING1>\\x{HEX}{1,2}	{ count(); addchar(&s_buf,
 											(char)strtol(yytext+2, 0, 16)); }
  /* don't allow \[0-7]{1}, it will eat the backreferences from
     subst_uri if allowed (although everybody should use '' in subt_uri) */
-<STRING1>\\[0-7]{2,3}	{ count(); addchar(&s_buf, 
+<STRING1>\\[0-7]{2,3}	{ count(); addchar(&s_buf,
 											(char)strtol(yytext+1, 0, 8));  }
 <STRING1>\\{CR}		{ count(); } /* eat escaped CRs */
 <STRING1>{CR}	{ count();addchar(&s_buf, *yytext); }
@@ -933,9 +842,9 @@ IMPORTFILE      "import_file"
 								}
 <COMMENT>.|{EAT_ABLE}|{CR}				{ count(); };
 
-<INITIAL>{COM_LINE}.*{CR}	{ count(); } 
+<INITIAL>{COM_LINE}.*{CR}	{ count(); }
 
-<INITIAL>{ID}			{ count(); addstr(&s_buf, yytext, yyleng); 
+<INITIAL>{ID}			{ count(); addstr(&s_buf, yytext, yyleng);
 									yylval.strval=s_buf.s;
 									memset(&s_buf, 0, sizeof(s_buf));
 									return ID; }
@@ -968,7 +877,7 @@ IMPORTFILE      "import_file"
 
 <<EOF>>							{
 									switch(state){
-										case STRING_S: 
+										case STRING_S:
 											LM_CRIT("cfg. parser: unexpected EOF in"
 														" unclosed string\n");
 											if (s_buf.s){
@@ -989,7 +898,7 @@ IMPORTFILE      "import_file"
 									if(oss_pop_yy_state()<0)
 										return 0;
 								}
-			
+
 %%
 
 
@@ -1005,7 +914,7 @@ static char* addstr(struct str_buf* dst_b, char* src, int len)
 	char *tmp;
 	unsigned size;
 	unsigned used;
-	
+
 	if (dst_b->left<(len+1)){
 		used=(unsigned)(dst_b->crt-dst_b->s);
 		size=used+len+1;
@@ -1014,7 +923,7 @@ static char* addstr(struct str_buf* dst_b, char* src, int len)
 		tmp=pkg_malloc(size);
 		if (tmp==0) goto error;
 		if (dst_b->s){
-			memcpy(tmp, dst_b->s, used); 
+			memcpy(tmp, dst_b->s, used);
 			pkg_free(dst_b->s);
 		}
 		dst_b->s=tmp;
@@ -1025,7 +934,7 @@ static char* addstr(struct str_buf* dst_b, char* src, int len)
 	dst_b->crt+=len;
 	*(dst_b->crt)=0;
 	dst_b->left-=len;
-	
+
 	return dst_b->s;
 error:
 	LM_CRIT("lex:addstr: memory allocation error\n");
@@ -1037,7 +946,7 @@ error:
 static void count(void)
 {
 	int i;
-	
+
 	startcolumn=column;
 	for (i=0; i<yyleng;i++){
 		if (yytext[i]=='\n'){

@@ -1,9 +1,5 @@
 /*
- * $Id$
- *
- * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2004,2005 Free Software Foundation, Inc.
- * Copyright (C) 2006 enum.at
+ * Copyright (C) 2014-2015 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,40 +16,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  */
 
-#ifndef tls_init_h
-#define tls_init_h
 
-#include <openssl/ssl.h>
-#include "tls_config.h"
-#include "tls_domain.h"
-#include "../tcp_conn.h"
 
-/*
- * just once before cleanup
- */
-void            destroy_tls(void);
+#ifndef _NET_proto_udp_h
+#define _NET_proto_udp_h
 
-/*
- * for each socket
- */
-int             tls_init(struct socket_info *si);
+typedef int (udp_rcv_cb_f)(int sockfd, struct receive_info *ri,
+													str* msg, void* param);
 
-/*
- * just once, pre-initialize the tls subsystem
- * (allocate memory for the default TLS domains)
- */
-int             pre_init_tls(void);
+typedef struct cb_list{
+	udp_rcv_cb_f* func;     /* function to be called */
+	void* param;            /* extra parameter */
+	char a;                 /* first byte of message */
+	char b;                 /* second byte of message */
+	struct cb_list* next;   /* linked list */
+}callback_list;
 
-/*
- * just once, initialize the tls subsystem
- */
-int             init_tls(void);
 
-/*
- * initialize tls domains
- */
-int		init_tls_domains(struct tls_domain *d);
+int register_udprecv_cb(udp_rcv_cb_f* func, void* param, char a, char b);
+
 
 #endif

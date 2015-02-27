@@ -23,10 +23,10 @@
  */
 
 #include "bin_interface.h"
-#include "udp_server.h"
 #include "config.h"
 #include "daemonize.h"
 #include "pt.h"
+#include "net/net_udp.h"
 
 struct socket_info *bin;
 
@@ -254,7 +254,7 @@ int bin_pop_int(void *info)
  */
 int bin_send(union sockaddr_union *dest)
 {
-	int rc;
+	int rc, destlen;
 	str st;
 
 	if (!dest)
@@ -271,9 +271,13 @@ int bin_send(union sockaddr_union *dest)
 	        LEN_FIELD_SIZE, bin_send_type, bin_send_size, send_buffer, bin_send_size,
 	        bin->socket);
 
-	rc = udp_send(bin, send_buffer, bin_send_size, dest);
-	if (rc == -1)
-		LM_ERR("binary packet UDP send failed!\n");
+	destlen=sockaddru_len(*dest);
+again:
+	rc=sendto(bin->socket, send_buffer, bin_send_size, 0, &dest->s, destlen);
+	if (rc==-1){
+		if (errno==EINTR) goto again;
+		LM_ERR("sendto() failed with %s(%d)\n", strerror(errno),errno);
+	}
 
 	return rc;
 }
@@ -416,7 +420,7 @@ int start_bin_receivers(void)
 	pid_t pid;
 	int i;
 
-	if (udp_init(bin) != 0)
+	if (udp_init_listener(bin) != 0)
 		return -1;
 
 	for (i = 1; i <= bin_children; i++) {
@@ -436,9 +440,7 @@ int start_bin_receivers(void)
 
 			if (init_child(PROC_BIN) < 0) {
 				LM_ERR("init_child failed for BIN listener\n");
-				if (send_status_code(-1) < 0)
-					LM_ERR("failed to send status code\n");
-				clean_write_pipeend();
+				report_failure_status();
 				exit(-1);
 			}
 

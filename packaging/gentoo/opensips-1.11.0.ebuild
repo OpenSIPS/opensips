@@ -60,8 +60,7 @@ src_unpack() {
 	unpack ${MY_P}.tar.gz
 
 	cd ${S}
-	use ipv6 || \
-		sed -i -e "s/-DUSE_IPV6//g" Makefile.defs
+	use ipv6
 }
 
 src_compile() {

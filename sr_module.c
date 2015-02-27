@@ -50,6 +50,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include "net/proto_udp/proto_udp_handler.h"
+#include "net/proto_tcp/proto_tcp_handler.h"
+
+
 
 struct sr_module* modules=0;
 
@@ -79,6 +87,10 @@ struct sr_module* modules=0;
 #ifdef STATIC_SL
 	extern struct module_exports sl_exports;
 #endif
+
+char *mpath=NULL;
+char mpath_buf[256];
+int  mpath_len = 0;
 
 
 /* initializes statically built (compiled in) modules*/
@@ -267,6 +279,115 @@ skip:
 	return -1;
 }
 
+/* built-in modules with static exports */
+struct static_modules {
+	str name;
+	struct module_exports *exp;
+};
+
+struct static_modules static_modules[] = {
+	{ str_init(PROTO_PREFIX "udp"), &proto_udp_exports },
+	{ str_init(PROTO_PREFIX "tcp"), &proto_tcp_exports },
+};
+
+static int load_static_module(char *path)
+{
+	int len = strlen(path);
+	char *end = path + len;
+	struct sr_module* t;
+	unsigned int i;
+
+	/* eliminate the .so, if found */
+	if (len > 3 && strncmp(end - 3, ".so", 3)==0) {
+		end -= 3;
+		len -= 3;
+	}
+	/* we check whether the protocol is found within the static_modules */
+	for (i = 0; i < (sizeof(static_modules)/sizeof(static_modules[0])); i++) {
+		if (len >= static_modules[i].name.len &&
+				/* the path ends in the module's name */
+				memcmp(end - static_modules[i].name.len,
+					static_modules[i].name.s, static_modules[i].name.len) == 0 &&
+				/* check if the previous char is '/' or nothing */
+				(len == static_modules[i].name.len || (*(end-len-1) == '/'))) {
+
+			/* yey, found the module - check if it was loaded twice */
+			for(t=modules;t; t=t->next){
+				if (t->handle==static_modules[i].exp){
+					LM_WARN("attempting to load the same module twice (%s)\n", path);
+					return 0;
+				}
+			}
+
+			/* version control */
+			if (!version_control(static_modules[i].exp, path)) {
+				exit(0);
+			}
+
+			/* launch register */
+			if (register_module(static_modules[i].exp, path, static_modules[i].exp)<0)
+				return -1;
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+/* returns 0 on success , <0 on error */
+int load_module(char* name)
+{
+	int i_tmp;
+	struct stat statf;
+
+	/* if this is a static module, load it directly */
+	if (load_static_module(name) == 0)
+		return 0;
+
+	if(*name!='/' && mpath!=NULL
+		&& strlen(name)+mpath_len<255)
+	{
+		strcpy(mpath_buf+mpath_len, name);
+		if (stat(mpath_buf, &statf) == -1 || S_ISDIR(statf.st_mode)) {
+			i_tmp = strlen(mpath_buf);
+			if(strchr(name, '/')==NULL &&
+				strncmp(mpath_buf+i_tmp-3, ".so", 3)==0)
+			{
+				if(i_tmp+strlen(name)<255)
+				{
+					strcpy(mpath_buf+i_tmp-3, "/");
+					strcpy(mpath_buf+i_tmp-2, name);
+					if (stat(mpath_buf, &statf) == -1) {
+						mpath_buf[mpath_len]='\0';
+						LM_ERR("module '%s' not found in '%s'\n",
+								name, mpath_buf);
+						return -1;
+					}
+				} else {
+					LM_ERR("failed to load module - path too long\n");
+					return -1;
+				}
+			} else {
+				LM_ERR("failed to load module - not found\n");
+				return -1;
+			}
+		}
+		LM_DBG("loading module %s\n", mpath_buf);
+		if (sr_load_module(mpath_buf)!=0){
+			LM_ERR("failed to load module\n");
+			return -1;
+		}
+		mpath_buf[mpath_len]='\0';
+	} else {
+		LM_DBG("loading module %s\n", name);
+		if (sr_load_module(name)!=0){
+			LM_ERR("failed to load module\n");
+			return -1;
+		}
+	}
+	return 0;
+}
+
 
 
 /* searches the module list and returns pointer to the "name" function or
@@ -298,11 +419,11 @@ cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags)
 	for(t=modules;t;t=t->next){
 		for(cmd=t->exports->cmds; cmd && cmd->name; cmd++){
 			if((strcmp(name, cmd->name)==0)&&
-			   (cmd->param_no==param_no) &&
-			   ((cmd->flags & flags) == flags)
+				(cmd->param_no==param_no) &&
+				((cmd->flags & flags) == flags)
 			  ){
 				LM_DBG("found <%s>(%d) in module %s [%s]\n",
-					name, param_no, t->exports->name, t->path);
+						name, param_no, t->exports->name, t->path);
 				return cmd;
 			}
 		}
@@ -632,15 +753,11 @@ int start_module_procs(void)
 					if ( m->exports->procs[n].flags&PROC_FLAG_INITCHILD ) {
 						if (init_child(PROC_MODULE) < 0) {
 							LM_ERR("error in init_child for PROC_MODULE\n");
-							if (send_status_code(-1) < 0)
-								LM_ERR("failed to send status code\n");
-							clean_write_pipeend();
+							report_failure_status();
 							exit(-1);
 						}
 
-						if (!no_daemon_mode && send_status_code(0) < 0)
-							LM_ERR("failed to send status code\n");
-						clean_write_pipeend();
+						report_conditional_status( (!no_daemon_mode), 0);
 					} else
 						clean_write_pipeend();
 

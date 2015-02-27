@@ -523,7 +523,7 @@ enum poll_types get_poll_type(char* s)
  * \param  poll_method - poll method (0 for automatic best fit)
  */
 int init_io_wait(io_wait_h* h, char *name, int max_fd,
-						enum poll_types poll_method, int max_prio, int async)
+								enum poll_types poll_method, int max_prio)
 {
 	char * poll_err;
 
@@ -555,15 +555,6 @@ int init_io_wait(io_wait_h* h, char *name, int max_fd,
 	}
 
 	h->poll_method=poll_method;
-
-	if (h->poll_method != POLL_POLL && h->poll_method != POLL_EPOLL_LT &&
-		h->poll_method != POLL_EPOLL_ET) {
-		if (async)
-			LM_WARN("Tried to enable async polling but current poll method "
-				"is %d. Currently we only support POLL and EPOLL \n",
-				h->poll_method);
-		async=0;
-	}
 
 	/* common stuff, everybody has fd_hash */
 	h->fd_hash=local_malloc(sizeof(*(h->fd_hash))*h->max_fd_no);
