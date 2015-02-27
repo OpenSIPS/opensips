@@ -1030,7 +1030,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 			if (err != 0) {
 				LM_DBG("Failed connection attempt\n");
 				tcpconn_ref(tcpconn);
-				reactor_del_all(tcpconn->s, -1, IO_FD_CLOSING);
+				reactor_del_all(tcpconn->s, fd_i, IO_FD_CLOSING);
 				tcpconn->flags|=F_CONN_REMOVED;
 				tcpconn_destroy(tcpconn);
 				return 0;
