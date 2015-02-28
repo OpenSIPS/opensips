@@ -492,8 +492,8 @@ static struct tcp_connection* _tcpconn_find(int id)
 }
 
 
-/*! \brief _tcpconn_find with locks and timeout + aquire fd */
-int tcp_conn_get(int id, struct ip_addr* ip, int port, int timeout,
+/*! \brief _tcpconn_find with locks and aquire fd */
+int tcp_conn_get(int id, struct ip_addr* ip, int port,
 									struct tcp_connection** conn, int* conn_fd)
 {
 	struct tcp_connection* c;
@@ -545,7 +545,6 @@ int tcp_conn_get(int id, struct ip_addr* ip, int port, int timeout,
 
 found:
 	c->refcnt++;
-	c->timeout=get_ticks()+timeout;
 	TCPCONN_UNLOCK(part);
 
 	LM_DBG("con found in state %d\n",c->state);
