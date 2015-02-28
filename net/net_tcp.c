@@ -540,7 +540,7 @@ int tcp_conn_get(int id, struct ip_addr* ip, int port,
 
 	/* not found */
 	*conn = NULL;
-	*conn_fd = -1;
+	if (conn_fd) *conn_fd = -1;
 	return 0;
 
 found:
@@ -549,10 +549,10 @@ found:
 
 	LM_DBG("con found in state %d\n",c->state);
 
-	if (c->state!=S_CONN_OK) {
+	if (c->state!=S_CONN_OK || conn_fd==NULL) {
 		/* no need to aquired, just return the conn with an invalid fd */
 		*conn = c;
-		*conn_fd = -1;
+		if (conn_fd) *conn_fd = -1;
 		return 1;
 	}
 
