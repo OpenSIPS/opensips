@@ -29,8 +29,7 @@
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
 #include "../../globals.h"
-#include "../../tcp_server.h"
-#include "../../tcp_conn.h"
+#include "../../net/net_tcp.h"
 #include "../../ut.h"
 #include "tls_select.h"
 
@@ -44,10 +43,10 @@ struct tcp_connection* get_cur_connection(struct sip_msg* msg)
 		return 0;
 	}
 
-	c = tcpconn_get(msg->rcv.proto_reserved1, 0, 0, tcp_con_lifetime);
+	tcp_conn_get(msg->rcv.proto_reserved1, 0, 0, &c, NULL/*fd*/);
 	if (c && c->type != PROTO_TLS) {
 		LM_ERR("connection found but is not TLS (bug in config)\n");
-		tcpconn_put(c);
+		tcp_conn_release(c, 0);
 		return 0;
 	}
 	return c;
@@ -85,7 +84,7 @@ static inline int get_cert(X509** cert, struct tcp_connection** c,
 
 	return 0;
 err:
-	tcpconn_put(*c);
+	tcp_conn_release(*c,0);
 	return -1;
 }
 
@@ -117,11 +116,11 @@ int tlsops_cipher(struct sip_msg *msg, pv_param_t *param,
 	res->rs.s = buf;
 	res->rs.len = cipher.len;
 	res->flags = PV_VAL_STR;
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 
 	return 0;
 err:
-	if (c) tcpconn_put(c);
+	if (c) tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }
 
@@ -155,11 +154,11 @@ int tlsops_bits(struct sip_msg *msg, pv_param_t *param,
 	res->rs.len = bits.len;
 	res->ri = b;
 	res->flags = PV_VAL_STR | PV_VAL_INT;
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 
 	return 0;
 err:
-	if (c) tcpconn_put(c);
+	if (c) tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }
 
@@ -193,11 +192,11 @@ int tlsops_version(struct sip_msg *msg, pv_param_t *param,
 	res->rs.len = version.len;
 	res->flags = PV_VAL_STR;
 
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 
 	return 0;
 err:
-	if (c) tcpconn_put(c);
+	if (c) tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }
 
@@ -224,11 +223,11 @@ int tlsops_desc(struct sip_msg *msg, pv_param_t *param,
 	res->rs.len = strlen(buf);
 	res->flags = PV_VAL_STR;
 
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 
 	return 0;
 err:
-	if (c) tcpconn_put(c);
+	if (c) tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }
 
@@ -257,7 +256,7 @@ int tlsops_cert_version(struct sip_msg *msg, pv_param_t *param,
 	res->rs.s = buf;
 	res->flags = PV_VAL_STR;
 	if (!my) X509_free(cert);
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 	return 0;
 }
 
@@ -306,12 +305,12 @@ int tlsops_check_cert(struct sip_msg *msg, pv_param_t *param,
 	res->flags = PV_VAL_STR | PV_VAL_INT;
 
 	if (cert) X509_free(cert);
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 
 	return 0;
 err:
 	if (cert) X509_free(cert);
-	if (c) tcpconn_put(c);
+	if (c) tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }
 
@@ -360,13 +359,13 @@ int tlsops_validity(struct sip_msg *msg, pv_param_t *param,
 
 	BIO_free(mem);
 	if (!my) X509_free(cert);
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 
 	return 0;
 err:
 	if (mem) BIO_free(mem);
 	if (!my) X509_free(cert);
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }
 
@@ -400,7 +399,7 @@ int tlsops_sn(struct sip_msg *msg, pv_param_t *param,
 	res->flags = PV_VAL_STR | PV_VAL_INT;
 
 	if (!my) X509_free(cert);
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 	return 0;
 }
 
@@ -500,13 +499,13 @@ int tlsops_comp(struct sip_msg *msg, pv_param_t *param,
 		OPENSSL_free(text.s);
 	}
 	if (!my) X509_free(cert);
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 	return 0;
 
  err:
 	if (text.s) OPENSSL_free(text.s);
 	if (!my) X509_free(cert);
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }
 
@@ -593,12 +592,12 @@ int tlsops_alt(struct sip_msg *msg, pv_param_t *param,
 
 	if (names) sk_GENERAL_NAME_pop_free(names, GENERAL_NAME_free);
 	if (!my) X509_free(cert);
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 	return 0;
  err:
 	if (names) sk_GENERAL_NAME_pop_free(names, GENERAL_NAME_free);
 	if (!my) X509_free(cert);
-	tcpconn_put(c);
+	tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }
 
