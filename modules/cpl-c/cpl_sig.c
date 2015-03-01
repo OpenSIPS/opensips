@@ -66,7 +66,7 @@ int cpl_proxy_to_loc_set( struct sip_msg *msg, struct location **locs,
 	}
 	/* is the location NATED? */
 	bflags = ((*locs)->flags&CPL_LOC_NATED) ? cpl_fct.ulb.nat_flag : 0 ;
-	setb0flags(bflags);
+	setb0flags(msg,bflags);
 	/* free the location and point to the next one */
 	foo = (*locs)->next;
 	free_location( *locs );
