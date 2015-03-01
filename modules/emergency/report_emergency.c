@@ -360,7 +360,7 @@ int get_db_routing(str table_name, rw_lock_t *ref_lock ){
     str SRID;
     int RESN;
     int NPA;
-    int nr_rows, i, size, id;
+    int nr_rows, i, size;
     struct esrn_routing *esrn_cell, *old_list, *it, *aux, *new_list;
     struct esrn_routing *init_esrn = NULL;
 
@@ -391,8 +391,6 @@ int get_db_routing(str table_name, rw_lock_t *ref_lock ){
             LM_ERR("Invalid value returned 1\n");
             goto end;
         }
-
-        id = VAL_INT(values);
 
         if (VAL_NULL(values + 1) ||
                 (VAL_TYPE(values + 1) != DB_STR && VAL_TYPE(values + 1) != DB_STRING)) {

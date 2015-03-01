@@ -1347,9 +1347,9 @@ int bye(struct sip_msg *msg, int dir) {
             timeinfo = localtime(&rawtime);
             strftime(formated_time, 80, "%Y-%m-%dT%H:%M:%S%Z", timeinfo);        
             info_call->esct->datetimestamp = formated_time;
-            LM_INFO(" --- TREAT BYE - XML ESCT %s \n \n", xml);
 
             xml = buildXmlFromModel(info_call->esct);    
+            LM_INFO(" --- TREAT BYE - XML ESCT %s \n \n", xml);
 
             // sends HTTP POST esctRequest to VPC
             resp = post(url_vpc, xml, &response);

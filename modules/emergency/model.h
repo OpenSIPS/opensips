@@ -60,3 +60,4 @@ xsi:schemaLocation=\"urn:nena:xml:ns:es:v2 v2.xsd\"> \n \
 <datetimestamp>%s</datetimestamp> \n \
 <customer>7</customer> \n \
 </esrRequest>";
+
