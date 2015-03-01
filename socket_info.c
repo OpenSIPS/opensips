@@ -102,10 +102,6 @@
 	}while(0)
 
 
-#define get_sock_info_list(_proto) \
-	&protos[_proto].listeners
-
-
 /* another helper function, it just creates a socket_info struct */
 inline struct socket_info* new_sock_info(	char* name,
 								unsigned short port, unsigned short proto,

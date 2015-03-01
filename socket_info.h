@@ -351,6 +351,12 @@ static inline char* socket2str(struct socket_info *sock, char *s, int* len, int 
 	return p1;
 }
 
-int probe_max_sock_buff(int sock,int buff_choice,int buff_max,int buff_increment);
+
+#define get_sock_info_list(_proto) \
+	&protos[_proto].listeners
+
+
+int probe_max_sock_buff( int sock, int buff_choice, int buff_max,
+		int buff_increment);
 
 #endif
