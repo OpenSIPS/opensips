@@ -18,8 +18,10 @@
 
 # path to the database schemas
 DATA_DIR="/usr/local/share/opensips"
-if [ -d "$DATA_DIR/mysql" ] ; then
+if [ -d "$DATA_DIR/mysql" ]; then
 	DB_SCHEMA="$DATA_DIR/mysql"
+elif [ -d "scripts/mysql" ]; then
+	DB_SCHEMA="scripts/mysql"
 else
 	DB_SCHEMA="./mysql"
 fi
