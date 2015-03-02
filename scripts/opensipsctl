@@ -23,8 +23,11 @@ if [ -f ~/.opensipsctlrc ]; then
 fi
 
 if [ $TEST = "true" ]; then
+	ETCDIR=etc/
 	if [ -f ./opensipsctlrc ]; then
 		. ./opensipsctlrc
+	elif [ -f scripts/opensipsctlrc ]; then
+		. scripts/opensipsctlrc
 	fi
 fi
 
@@ -44,6 +47,9 @@ fi
 # you better set the variables in ~/.opensipsctlrc
 if [ -z $ETCDIR ] ; then
 	ETCDIR="/usr/local/etc/opensips"
+else
+	# Fix relative paths
+	[ "${ETCDIR:0:1}" != "/" ] && ETCDIR=$PWD/$ETCDIR
 fi
 
 ### version for this script
@@ -2612,7 +2618,7 @@ tls_ca() {
 		minfo "CA-List is locate at $USER_DIR/$USER-calist.pem "
 
 	else
-		merr "unknown TLS command $1"
+		[ -n "$1" ] && merr "unknown TLS command: \"$1\""
 		usage_tls
 		exit 1
 	fi

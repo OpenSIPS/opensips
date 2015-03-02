@@ -39,6 +39,8 @@
 # user name column
 # USERCOL="username"
 
+## for testing / development
+#ETCDIR=etc/
 
 # SQL definitions
 # If you change this definitions here, then you must change them 
