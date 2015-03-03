@@ -39,6 +39,10 @@
 extern int action_flags;
 extern int use_script_trace;
 
+extern action_elem_p route_params[MAX_REC_LEV];
+extern int route_params_number[MAX_REC_LEV];
+extern int route_rec_level;
+
 #define LONGEST_ACTION_SIZE		5
 
 typedef struct {
