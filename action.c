@@ -102,8 +102,9 @@ extern err_info_t _oser_err_info;
 action_time longest_action[LONGEST_ACTION_SIZE];
 int min_action_time=0;
 
-action_elem_t *route_params = NULL;
-int route_params_number = 0;
+action_elem_p route_params[MAX_REC_LEV];
+int route_params_number[MAX_REC_LEV];
+int route_rec_level = -1;
 
 static int for_each_handler(struct sip_msg *msg, struct action *a);
 
@@ -425,8 +426,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 	str name_s;
 	struct timeval start;
 	int end_time;
-	action_elem_t *route_params_bak;
-	int route_params_number_bak;
 	int aux_counter;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
@@ -754,14 +753,13 @@ int do_action(struct action* a, struct sip_msg* msg)
 					ret=E_BUG;
 					break;
 				}
-				route_params_bak = route_params;
-				route_params = (action_elem_t *)a->elem[2].u.data;
-				route_params_number_bak = route_params_number;
-				route_params_number = a->elem[1].u.number;
+				route_rec_level++;
 
+				route_params[route_rec_level] = (action_elem_t *)a->elem[2].u.data;
+				route_params_number[route_rec_level] = a->elem[1].u.number;
 				return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
-				route_params = route_params_bak;
-				route_params_number = route_params_number_bak;
+
+				route_rec_level--;
 			} else {
 				return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
 			}
