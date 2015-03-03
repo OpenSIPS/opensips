@@ -1455,10 +1455,8 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				}
 				n = v.ri;
 			}
-			if(n<0)
+			if(n>=0)
 			{
-				n = -n;
-				n--;
 				for (pit = _tr_params_list; pit; pit=pit->next)
 				{
 					if(n==0)
@@ -1471,6 +1469,9 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			} else {
 				/* ugly hack -- params are in reverse order 
 				 * - first count then find */
+				n = -n;
+				n--;
+
 				i = 0;
 				for (pit = _tr_params_list; pit; pit=pit->next)
 					i++;
@@ -1510,10 +1511,8 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				}
 				n = v.ri;
 			}
-			if(n<0)
+			if(n>=0)
 			{
-				n = -n;
-				n--;
 				for (pit = _tr_params_list; pit; pit=pit->next)
 				{
 					if(n==0)
@@ -1524,8 +1523,11 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					n--;
 				}
 			} else {
-				/* ugly hack -- params are in reverse order 
+				/* ugly hack -- params are in sorted order
 				 * - first count then find */
+				n = -n;
+				n--;
+
 				i = 0;
 				for (pit = _tr_params_list; pit; pit=pit->next)
 					i++;
@@ -1548,8 +1550,9 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 
 		case TR_PL_COUNT:
 			val->ri = 0;
-			for (pit = _tr_params_list; pit; pit=pit->next)
+			for (pit = _tr_params_list; pit; pit=pit->next) {
 				val->ri++;
+			}
 			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
 			val->rs.s = int2str(val->ri, &val->rs.len);
 			break;
