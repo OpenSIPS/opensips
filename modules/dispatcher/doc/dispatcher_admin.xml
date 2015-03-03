@@ -37,7 +37,7 @@
 		Thus, the following arguments are equivalent: "default : 4" vs "4".
 		Remember that in order to be able to use a table from a partition, its name must be
 		found in the "version" table belonging to the database defined in the partition's db_url.
-		Also, in version 1.12 the "flags" parameter has been moved to to ds_select_dst and
+		Also, in version 1.12 the "flags" parameter has been moved to ds_select_dst and
 		ds_select_domain along with "force_dst" and "use_default" flags.
 	</para>
 	</section>

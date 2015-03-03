@@ -50,7 +50,7 @@ typedef struct _exec_async_param {
 /* list head */
 extern exec_list_p exec_async_list;
 
-/* process that waits for asyncronous executions */
+/* process that waits for asynchronous executions */
 void exec_async_proc(int rank);
 int exec_async(struct sip_msg *msg, char *cmd, str* input );
 

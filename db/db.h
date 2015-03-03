@@ -275,7 +275,7 @@ typedef int (*db_insert_update_f) (const db_con_t* _h, const db_key_t* _k,
 				const db_val_t* _v, const int _n);
 
 /**
- * \brief Asynchronous raw SQL query on a separate TCP connection.
+ * \brief Asynchronous raw SQL query on a separate DB connection.
  *		  Returns immediately.
  *
  * If all currently open connections are in use, it will attempt to open a new
@@ -291,8 +291,8 @@ typedef int (*db_insert_update_f) (const db_con_t* _h, const db_key_t* _k,
 typedef int (*db_async_raw_query_f) (db_con_t *_h, const str *_q);
 
 /*
- * \brief Reads data from the given fd's SQL connection. Also fetches all data
- *			when it resumes fetching data for the last time.
+ * \brief Reads data from the given fd's SQL connection. Populates the query
+ *			result parameter when it resumes fetching data for the last time.
  *
  * \param _h structure representing the database handle
  * \param fd read file descriptor obtained in starting phase

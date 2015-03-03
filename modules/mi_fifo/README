@@ -55,10 +55,10 @@ Chapter 1. Admin Guide
    command over a FIFO file and returns the output through the
    reply_fifo specified.
 
-   The module checks every 30 seconds if the FIFO files exists,
-   and if it was deleted, it recreates it. If one wants to force
-   the fifo file recreation, it should send a SIGHUP signal to the
-   MI process PID.
+   The module checks every 30 seconds if the FIFO file exists, and
+   if it was deleted, it recreates it. If one wants to force the
+   fifo file recreation, it should send a SIGHUP signal to the MI
+   process PID.
 
 1.2. FIFO command syntax
 

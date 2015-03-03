@@ -340,7 +340,7 @@ modparam("uac_registrant", "binding_URI_column", "contact_uri")
 		The column's name in the database storing the
 		binding params in REGISTER (not mandatory field).
 		If not NULL or not empty, the string stored here will be added
-		as paramns to the Contact URI in REGISTER (it MUST start with <quote>;</quote>.
+		as params to the Contact URI in REGISTER (it MUST start with <quote>;</quote>.
 		There is no validation on the string stored here.
 		</para>
 		<para>

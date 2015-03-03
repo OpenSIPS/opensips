@@ -134,7 +134,7 @@ modparam("exec", "setvars", 1)
 		</title>
 		<para>
 		Specifies the longest time a program is allowed to execute. If the
-		time is exceeded, the program is killed.
+		time is exceeded, the program is killed (SIGTERM)
 		</para>
 		<para>
 		<emphasis>

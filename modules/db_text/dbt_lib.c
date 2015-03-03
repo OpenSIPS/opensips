@@ -143,7 +143,7 @@ dbt_cache_p dbt_cache_get_db(str *_s)
 	}
 	if(!dbt_is_database(_s))
 	{
-		LM_ERR("database [%.*s] does not exists!\n", _s->len, _s->s);
+		LM_ERR("database [%.*s] does not exist!\n", _s->len, _s->s);
 		goto done;
 	}
 	LM_DBG("new db!\n");

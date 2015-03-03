@@ -13,7 +13,7 @@
 		reply_fifo specified.
 	</para>
 	<para>
-		The module checks every 30 seconds if the FIFO files exists,
+		The module checks every 30 seconds if the FIFO file exists,
 		and if it was deleted, it recreates it. If one wants to force
 		the fifo file recreation, it should send a SIGHUP signal to
 		the MI process PID.

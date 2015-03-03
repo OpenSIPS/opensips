@@ -37,7 +37,7 @@
 typedef int (*get_con_fd_f) (void *con);
 
 /**
- * Sets up the DB handle for an asynchronous query. A new connections is
+ * Sets up the DB handle for an asynchronous query. A new connection is
  * opened if necessary, otherwise one is grabbed from the idle pool.
  *
  * params:

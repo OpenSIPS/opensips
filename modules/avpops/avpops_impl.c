@@ -862,7 +862,6 @@ int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
 
 	rc = param->dbf->async_raw_resume(param->hdl, fd, &res);
 	if (async_status == ASYNC_CONTINUE) {
-		LM_INFO("XXX ASYNC_CONTINUE\n");
 		return rc;
 	}
 

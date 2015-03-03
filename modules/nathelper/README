@@ -329,7 +329,7 @@ if (search("User-Agent: Cisco ATA.*") {
 
    Alters the SDP information in orer to facilitate NAT traversal.
    What changes to be performed may be controled via the “flags”
-   paramter. Since version 1.12 the name of the old ip fields are
+   parameter. Since version 1.12 the name of the old ip fields are
    "a=oldoip" for old origin ip and "a=oldcip" for old meda ip.
 
    Meaning of the parameters is as follows:

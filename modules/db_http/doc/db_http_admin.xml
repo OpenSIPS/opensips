@@ -89,7 +89,7 @@ modparam("db_http", "SSL",1)
 		</example>
 	</section>
 	<section>
-		<title><varname>cap_raw_quey</varname>(int)</title>
+		<title><varname>cap_raw_query</varname>(int)</title>
 		<para>
 		Whether or not the server supports raw queries.
 		</para>
@@ -98,10 +98,10 @@ modparam("db_http", "SSL",1)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>cap_raw_quey</varname> parameter</title>
+		<title>Set <varname>cap_raw_query</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("db_http", "cap_raw_quey", 1)
+modparam("db_http", "cap_raw_query", 1)
 ...
 </programlisting>
 		</example>

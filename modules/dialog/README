@@ -1098,9 +1098,9 @@ unset_dlg_profile("caller","$fu");
    Checks if the current dialog belongs to a profile. If the
    profile supports values, the check can be reinforced to take
    into account a specific value - if the dialog was inserted into
-   the profile for a specific value. If not value is passed, only
+   the profile for a specific value. If no value is passed, only
    simply belonging of the dialog to the profile is checked. Note
-   that the profile does not supports values, this will be
+   that if the profile does not support values, this will be
    silently discarded.
 
    NOTE: the dialog must be created before using this function
@@ -1176,7 +1176,7 @@ set_dlg_flag("3");
 1.7.11.  test_and_set_dlg_flag(idx, value)
 
    Atomically checks if the dialog flag index idx is equal to
-   value. If true, changes the value with the oppsosite one. This
+   value. If true, changes the value with the opposite one. This
    operation is done under the dialog lock.
 
    The flag index can be between 0 and 31.

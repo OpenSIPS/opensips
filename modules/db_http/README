@@ -26,7 +26,7 @@ Andrei Dragus
         1.3. Exported Parameters
 
               1.3.1. SSL(int)
-              1.3.2. cap_raw_quey(int)
+              1.3.2. cap_raw_query(int)
               1.3.3. cap_replace(int)
               1.3.4. cap_insert_update(int)
               1.3.5. cap_last_inserted_id(int)
@@ -52,7 +52,7 @@ Andrei Dragus
 
    1.1. Setting db_url for a module
    1.2. Set SSL parameter
-   1.3. Set cap_raw_quey parameter
+   1.3. Set cap_raw_query parameter
    1.4. Set cap_replace parameter
    1.5. Set cap_insert_update parameter
    1.6. Set cap_last_inserted_id parameter
@@ -127,15 +127,15 @@ modparam("presence", "db_url","http://user:pass@www.some.com/some/some")
 modparam("db_http", "SSL",1)
 ...
 
-1.3.2. cap_raw_quey(int)
+1.3.2. cap_raw_query(int)
 
    Whether or not the server supports raw queries.
 
    Default value is “0”.
 
-   Example 1.3. Set cap_raw_quey parameter
+   Example 1.3. Set cap_raw_query parameter
 ...
-modparam("db_http", "cap_raw_quey", 1)
+modparam("db_http", "cap_raw_query", 1)
 ...
 
 1.3.3. cap_replace(int)

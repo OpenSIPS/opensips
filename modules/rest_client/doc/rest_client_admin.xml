@@ -259,14 +259,14 @@ if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain", "$var(b
 	</section>
 
 	<section>
-	<title>Exported Asyncronous Functions</title>
+	<title>Exported Asynchronous Functions</title>
 	<section>
 		<title>
 		<function moreinfo="none">rest_get(url, body_pv[, ctype_pv[, retcode_pv]])
 		</function>
 		</title>
 		<para>
-		Runs a GET HTTP requests. This function does exactly the same as
+		Runs a GET HTTP request. This function does exactly the same as
 		<xref linkend="rest_get"/> (in terms of input, output and processing),
 		but in an asynchronous way. The script execution is suspended until the HTTP
 		response if available for read (the full response).
@@ -276,7 +276,7 @@ if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain", "$var(b
 		<programlisting format="linespecific">
 {
 ...
-async( rest_post("http://myserver.org/register_user", "$fU", "text/plain", "$var(body)", "$var(ct)", "$var(rcode)"), resume );
+async(rest_get("http://myserver.org/register_user", "$fU", "text/plain", "$var(body)", "$var(ct)", "$var(rcode)"), resume);
 }
 
 route[resume] {

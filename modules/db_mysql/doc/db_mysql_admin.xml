@@ -67,7 +67,7 @@ modparam("db_mysql", "exec_query_threshold", 60000)
 		<section>
 		<title><varname>timeout_interval</varname> (integer)</title>
 		<para>
-		Time interval after that an connection attempt, read or write request
+		Time interval after which a connection attempt (read or write request)
 		is aborted. The value counts three times, as several retries are done
 		from the driver before it gives up.
 		</para>

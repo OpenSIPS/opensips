@@ -56,7 +56,7 @@ extern unsigned int context_sizes[];
 /*
  * allocate a new GLOBAL context in pkg mem
  *
- * Note: this will not change the "current_ctx"
+ * Note: this will not change the "current_processing_ctx"
  */
 context_p context_alloc(void);
 #define   context_free(context_p) pkg_free(context_p)

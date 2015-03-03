@@ -228,7 +228,7 @@ Chapter 1. Admin Guide
      * branch flags - flags that are visible only from a specific
        branch - in all replies and routes connected to this
        branch.
-       script flags - flags that exist only during script
+     * script flags - flags that exist only during script
        execution. They are not store anywhere and are lost once
        the top level route was left.
 
@@ -451,7 +451,7 @@ modparam("tm", "unix_tx_timeout", 5)
 
    If true (non null value), the final response timer will be
    re-triggered for each received provisional reply. In this case,
-   final response timeout may occure after a time longer than
+   final response timeout may occur after a time longer than
    fr_inv_timeout (if UAS keeps sending provisional replies)
 
    Default value is 1 (true).

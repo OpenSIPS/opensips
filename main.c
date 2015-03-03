@@ -1058,7 +1058,7 @@ try_again:
 	 * can have listening interfaces declared in the command line
 	 */
 	if (trans_init() < 0) {
-		LM_ERR("cannot initilize transport interface\n");
+		LM_ERR("cannot initialize transport interface\n");
 		goto error;
 	}
 

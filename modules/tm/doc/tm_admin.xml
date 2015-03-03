@@ -83,6 +83,8 @@
 				from a specific branch - in all replies and routes connected 
 				to this branch.
 			</para>
+			</listitem>
+			<listitem>
 			<para>
 				<emphasis>script</emphasis> flags - flags that exist only
 				during script execution. They are not store anywhere and are
@@ -428,7 +430,7 @@ modparam("tm", "unix_tx_timeout", 5)
 		<para>
 		If true (non null value), the final response timer will be re-triggered
 		for each received provisional reply. In this case, final response
-		timeout may occure after a time longer than <emphasis>fr_inv_timeout</emphasis>
+		timeout may occur after a time longer than <emphasis>fr_inv_timeout</emphasis>
 		(if UAS keeps sending provisional replies)
 		</para>
 		<para>

@@ -40,7 +40,7 @@ Liviu Chircu
               1.4.2. rest_post(url, send_body_pv, send_ctype_pv,
                       recv_body_pv[, recv_ctype_pv[, retcode_pv]])
 
-        1.5. Exported Asyncronous Functions
+        1.5. Exported Asynchronous Functions
 
               1.5.1. rest_get(url, body_pv[, ctype_pv[,
                       retcode_pv]])
@@ -208,12 +208,12 @@ if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain",
 }
 ...
 
-1.5. Exported Asyncronous Functions
+1.5. Exported Asynchronous Functions
 
 1.5.1.  rest_get(url, body_pv[, ctype_pv[, retcode_pv]])
 
-   Runs a GET HTTP requests. This function does exactly the same
-   as Section 1.4.1, “ rest_get(url, body_pv[, ctype_pv[,
+   Runs a GET HTTP request. This function does exactly the same as
+   Section 1.4.1, “ rest_get(url, body_pv[, ctype_pv[,
    retcode_pv]]) ” (in terms of input, output and processing), but
    in an asynchronous way. The script execution is suspended until
    the HTTP response if available for read (the full response).
@@ -221,8 +221,8 @@ if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain",
    Example 1.8. async rest_post usage
 {
 ...
-async( rest_post("http://myserver.org/register_user", "$fU", "text/plain
-", "$var(body)", "$var(ct)", "$var(rcode)"), resume );
+async(rest_get("http://myserver.org/register_user", "$fU", "text/plain",
+ "$var(body)", "$var(ct)", "$var(rcode)"), resume);
 }
 
 route[resume] {
