@@ -272,14 +272,15 @@ if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain", "$var(b
 		response if available for read (the full response).
 		</para>
 		<example>
-		<title><function moreinfo="none">async rest_post</function> usage</title>
+		<title><function moreinfo="none">async rest_get</function> usage</title>
 		<programlisting format="linespecific">
 {
 ...
 async(rest_get("http://myserver.org/register_user", "$fU", "text/plain", "$var(body)", "$var(ct)", "$var(rcode)"), resume);
 }
 
-route[resume] {
+route [resume]
+{
 	if ( $rc &lt; 0 ) {
 		xlog("Error code $var(rcode) in HTTP POST!\n");
 		send_reply("403", "POST Forbidden");

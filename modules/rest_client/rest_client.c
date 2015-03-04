@@ -65,16 +65,16 @@ static int fixup_rest_post(void **param, int param_no);
  * Function headers
  */
 static int w_rest_get(struct sip_msg *msg, char *gp_url, char *body_pv,
-				char *type_pv, char *code_pv);
+				char *ctype_pv, char *code_pv);
 static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
 				char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv);
 
 static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
 							void **resume_param, char *gp_url,
-							char *body_pv, char *type_pv, char *code_pv);
+							char *body_pv, char *ctype_pv, char *code_pv);
 static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f,
 					 void **resume_param, char *gp_url, char *gp_body,
-					 char *gp_type, char *body_pv, char *type_pv, char *code_pv);
+					 char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv);
 
 
 static acmd_export_t acmds[] = {
@@ -268,7 +268,7 @@ static int fixup_rest_post(void **param, int param_no)
 /**************************** Module functions *******************************/
 
 static int w_rest_get(struct sip_msg *msg, char *gp_url, char *body_pv,
-                      char *type_pv, char *code_pv)
+                      char *ctype_pv, char *code_pv)
 {
 	str url;
 
@@ -277,7 +277,7 @@ static int w_rest_get(struct sip_msg *msg, char *gp_url, char *body_pv,
 		return -1;
 	}
 
-	return rest_get_method(msg, url.s, (pv_spec_p)body_pv, (pv_spec_p)type_pv,
+	return rest_get_method(msg, url.s, (pv_spec_p)body_pv, (pv_spec_p)ctype_pv,
 	                       (pv_spec_p)code_pv);
 }
 
@@ -301,7 +301,7 @@ static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
 		return -1;
 	}
 
-	return rest_post_method(msg, url.s, ctype.s, body.s, (pv_spec_p)body_pv,
+	return rest_post_method(msg, url.s, body.s, ctype.s, (pv_spec_p)body_pv,
 	                        (pv_spec_p)ctype_pv, (pv_spec_p)code_pv);
 }
 
@@ -320,15 +320,15 @@ static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
 
 	LM_DBG("async rest get %.*s %p %p %p\n", url.len, url.s, body_pv, ctype_pv, code_pv);
 
-	param = shm_malloc(sizeof *param);
+	param = pkg_malloc(sizeof *param);
 	if (!param) {
 		LM_ERR("no more shm\n");
 		return -1;
 	}
 	memset(param, '\0', sizeof *param);
 
-	read_fd = start_async_get(msg, url.s, &param->handle, &param->body,
-							  ctype_pv ? &param->ctype : NULL);
+	read_fd = start_async_http_req(msg, REST_CLIENT_GET, url.s, NULL, NULL,
+				&param->handle, &param->body, ctype_pv ? &param->ctype : NULL);
 
 	if (read_fd < 0) {
 		*resume_param = NULL;
@@ -337,8 +337,9 @@ static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
 		return -1;
 	}
 
-	*resume_f = resume_async_get;
+	*resume_f = resume_async_http_req;
 
+	param->method = REST_CLIENT_GET;
 	param->body_pv = (pv_spec_p)body_pv;
 	param->ctype_pv = (pv_spec_p)ctype_pv;
 	param->code_pv = (pv_spec_p)code_pv;
@@ -351,8 +352,56 @@ static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
 
 static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f,
 					 void **resume_param, char *gp_url, char *gp_body,
-					 char *gp_type, char *body_pv, char *type_pv, char *code_pv)
+					 char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv)
 {
-	return 0;
+	rest_async_param *param;
+	str url, ctype, body;
+	int read_fd;
+
+	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
+		LM_ERR("Invalid HTTP URL pseudo variable!\n");
+		return -1;
+	}
+
+	if (fixup_get_svalue(msg, (gparam_p)gp_ctype, &ctype) != 0) {
+		LM_ERR("Invalid HTTP POST content type pseudo variable!\n");
+		return -1;
+	}
+
+	if (fixup_get_svalue(msg, (gparam_p)gp_body, &body) != 0) {
+		LM_ERR("Invalid HTTP POST body pseudo variable!\n");
+		return -1;
+	}
+
+	LM_DBG("async rest post '%.*s' %p %p %p\n", url.len, url.s, body_pv, ctype_pv, code_pv);
+
+	param = pkg_malloc(sizeof *param);
+	if (!param) {
+		LM_ERR("no more shm\n");
+		return -1;
+	}
+	memset(param, '\0', sizeof *param);
+
+	read_fd = start_async_http_req(msg, REST_CLIENT_POST, url.s, body.s, ctype.s,
+				&param->handle, &param->body, ctype_pv ? &param->ctype : NULL);
+
+	if (read_fd < 0) {
+		*resume_param = NULL;
+		*resume_f = NULL;
+		/* keep default async status of NO_IO */
+		return -1;
+	}
+
+	*resume_f = resume_async_http_req;
+
+	param->method = REST_CLIENT_POST;
+	param->body_pv = (pv_spec_p)body_pv;
+	param->ctype_pv = (pv_spec_p)ctype_pv;
+	param->code_pv = (pv_spec_p)code_pv;
+	*resume_param = param;
+	/* async started with success */
+	async_status = read_fd;
+
+	return 1;
 }
 

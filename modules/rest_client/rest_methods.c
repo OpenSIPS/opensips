@@ -89,23 +89,27 @@ static inline char del_transfer(int fd)
 }
 
 /**
- * start_async_get - performs an HTTP GET request, stores results in pvars
+ * start_async_http_req - performs an HTTP request, stores results in pvars
  *		- TCP connect phase is synchronous, due to libcurl limitations
  *		- TCP read phase is asynchronous, thanks to the libcurl multi interface
  *
  * @msg:		sip message struct
+ * @method:		HTTP verb
  * @url:		HTTP URL to be queried
- * @out_handle: CURL easy handle this request will be based on
- * @body_pv:	pvar which will hold the result body
- * @ctype_pv:	NULL / pvar which will hold the reply content type header
- * @code_pv:	NULL / pvar to hold the HTTP return code
+ * @req_body:	Body of the request (NULL if not needed)
+ * @req_ctype:	Value for the "Content-Type: " header of the request (same as ^)
+ * @out_handle: CURL easy handle used to perform the transfer
+ * @body:	    reply body; gradually reallocated as data arrives
+ * @ctype:	    will eventually hold the last "Content-Type" header of the reply
  */
-int start_async_get(struct sip_msg *msg, char *url, CURL **out_handle,
-					str *body, str *ctype)
+int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
+					     char *url, char *req_body, char *req_ctype,
+					     CURL **out_handle, str *body, str *ctype)
 {
 	CURL *handle;
 	CURLcode rc;
 	CURLMcode mrc;
+	struct curl_slist *list = NULL;
 	fd_set rset, wset, eset;
 	int max_fd, fd, i;
 	long lim, check_time;
@@ -117,6 +121,24 @@ int start_async_get(struct sip_msg *msg, char *url, CURL **out_handle,
 	}
 
 	w_curl_easy_setopt(handle, CURLOPT_URL, url);
+
+	switch (method) {
+	case REST_CLIENT_POST:
+		w_curl_easy_setopt(handle, CURLOPT_POST, 1);
+		w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req_body);
+
+		if (req_ctype) {
+			sprintf(print_buff, "Content-Type: %s", req_ctype);
+			list = curl_slist_append(list, print_buff);
+			w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, list);
+		}
+		break;
+	case REST_CLIENT_GET:
+		break;
+
+	default:
+		LM_ERR("Unsupported rest_client_method: %d, defaulting to GET\n", method);
+	}
 
 	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
 	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
@@ -186,10 +208,13 @@ int start_async_get(struct sip_msg *msg, char *url, CURL **out_handle,
 		usleep(check_time);
 	}
 
-	LM_ERR("timeout while getting read fd! url: '%s'\n", url);
+	LM_ERR("timeout while connecting to '%s' (%ld sec)\n", url, connection_timeout);
 	goto error;
 
 success:
+	if (method == REST_CLIENT_POST)
+		curl_slist_free_all(list);
+
 	*out_handle = handle;
 	return fd;
 
@@ -203,7 +228,7 @@ cleanup:
 	return -1;
 }
 
-enum async_ret_code resume_async_get(int fd, struct sip_msg *msg, void *_param)
+enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_param)
 {
 	CURLcode rc;
 	CURLMcode mrc;
@@ -307,7 +332,7 @@ enum async_ret_code resume_async_get(int fd, struct sip_msg *msg, void *_param)
 	if (param->ctype_pv)
 		pkg_free(param->ctype.s);
 	curl_easy_cleanup(param->handle);
-	shm_free(param);
+	pkg_free(param);
 
 	/* default async status is DONE */
 	return 1;
@@ -423,7 +448,7 @@ cleanup:
  * @ctype_pv:	pvar which will hold the result content type
  * @code_pv:	pvar to hold the HTTP return code
  */
-int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
+int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
                      pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
 {
 	CURLcode rc;

@@ -54,7 +54,7 @@ Liviu Chircu
    1.5. Setting the ssl_capath parameter
    1.6. rest_get usage
    1.7. rest_post usage
-   1.8. async rest_post usage
+   1.8. async rest_get usage
 
 Chapter 1. Admin Guide
 
@@ -218,14 +218,15 @@ if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain",
    in an asynchronous way. The script execution is suspended until
    the HTTP response if available for read (the full response).
 
-   Example 1.8. async rest_post usage
+   Example 1.8. async rest_get usage
 {
 ...
 async(rest_get("http://myserver.org/register_user", "$fU", "text/plain",
  "$var(body)", "$var(ct)", "$var(rcode)"), resume);
 }
 
-route[resume] {
+route [resume]
+{
         if ( $rc < 0 ) {
                 xlog("Error code $var(rcode) in HTTP POST!\n");
                 send_reply("403", "POST Forbidden");
