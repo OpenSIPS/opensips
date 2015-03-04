@@ -39,6 +39,7 @@
 #include "../../lock_ops.h"
 #include "../../hash_func.h"
 #include "../../db/db.h"
+#include "../../evi/evi_modules.h"
 #include "presence.h"
 #include "notify.h"
 #include "utils_func.h"
@@ -56,6 +57,66 @@ struct p_modif
 };
 
 #define MAX_NO_OF_EXTRA_HDRS 4
+
+
+/* event declaration */
+extern event_id_t        presence_event_id;
+
+static inline void presence_raise_event(presentity_t* presentity)
+{
+        evi_params_p list;
+        static str parameter_user_str = { "user", 4 };
+        static str parameter_domain_str = { "domain", 6 };
+        static str parameter_eventname_str = { "event", 5 };
+        static str parameter_expires_str = { "expires", 7 };
+        static str parameter_etag_str = { "etag", 4 };
+        static str parameter_body_str = { "body", 4 };
+        if (presence_event_id == EVI_ERROR) {
+                LM_ERR("event not registered %d\n", presence_event_id);
+                return;
+        }
+
+        if (evi_probe_event(presence_event_id)) {
+                if (!(list = evi_get_params()))
+                        return;
+                //if (evi_param_add_str(list, &parameter_user_str, &user)) {
+                if (evi_param_add_str(list, &parameter_user_str, &presentity->user)) {
+                         LM_ERR("unable to add user parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_param_add_str(list, &parameter_domain_str, &presentity->domain)) {
+                         LM_ERR("unable to add domain parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_param_add_str(list, &parameter_eventname_str, &presentity->event->name)) {
+                         LM_ERR("unable to add event parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_param_add_int(list, &parameter_expires_str, &presentity->expires)) {
+                         LM_ERR("unable to add expires parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_param_add_str(list, &parameter_etag_str, &presentity->etag)) {
+                         LM_ERR("unable to add etag parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_param_add_str(list, &parameter_body_str, &presentity->body)) {
+                         LM_ERR("unable to add body parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_raise_event(presence_event_id, list)) {
+                        LM_ERR("unable to send event %d\n", presence_event_id);
+                }
+        } else {
+                LM_DBG("no event sent\n");
+        }
+}
 
 
 void inline build_extra_hdrs(struct sip_msg* msg, const str* map, str* extra_hdrs)
@@ -529,6 +590,9 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	presentity.etag_new = etag_new;
 	presentity.sphere = sphere;
 	presentity.body = body;
+
+	/* send event E_PRESENCE_PUBLISH*/
+	presence_raise_event(&presentity);
 
 	/* querry the database and update or insert */
 	if(update_presentity(msg, &presentity, &sent_reply) <0)
