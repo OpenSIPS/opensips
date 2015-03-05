@@ -71,6 +71,7 @@ struct tcp_conn_alias{
 struct tcp_connection{
 	int s;					/*!< socket, used by "tcp main" */
 	int fd;					/*!< used only by "children", don't modify it! private data! */
+	int proc_id;				/*!< used only by "children", contains the pt table ID of the TCP worker currently holding the connection, or -1 if in TCP main */
 	gen_lock_t write_lock;
 	int id;					/*!< id (unique!) used to retrieve a specific connection when reply-ing*/
 	struct receive_info rcv;		/*!< src & dst ip, ports, proto a.s.o*/

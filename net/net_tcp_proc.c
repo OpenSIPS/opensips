@@ -132,7 +132,6 @@ again:
 					LM_CRIT("null pointer\n");
 					break;
 			}
-			con->fd=s;
 			if (s==-1) {
 				LM_ERR("read_fd:no fd read\n");
 				goto con_error;
@@ -162,10 +161,16 @@ again:
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					goto con_error;
 				}
+	
+				/* mark that the connection is currently in our process
+				future writes to this con won't have to acquire FD */
+				con->proc_id = process_no;
+				/* save FD which is valid in context of this TCP worker */
+				con->fd=s;
 			} else if (rw & IO_WATCH_WRITE) {
 				LM_DBG("Received con %p ref = %d\n",con,con->refcnt);
 				lock_get(&con->write_lock);
-				resp = protos[con->type].net.write( (void*)con );
+				resp = protos[con->type].net.write( (void*)con, s );
 				lock_release(&con->write_lock);
 				if (resp<0) {
 					ret=-1; /* some error occured */
@@ -189,10 +194,12 @@ again:
 					con->state=S_CONN_BAD;
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
+					con->proc_id = -1;
 					tcpconn_release(con, CONN_ERROR);
 				} else if (con->state==S_CONN_EOF) {
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
+					con->proc_id = -1;
 					tcpconn_release(con, CONN_EOF);
 				} else {
 					//tcpconn_release(con, CONN_RELEASE);
@@ -237,6 +244,7 @@ static inline void tcp_receive_timeout(void)
 			/* fd will be closed in tcpconn_release */
 			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
+			con->proc_id = -1;
 			con->state=S_CONN_BAD;
 			tcpconn_release(con, CONN_ERROR);
 			continue;
@@ -247,6 +255,10 @@ static inline void tcp_receive_timeout(void)
 			/* fd will be closed in tcpconn_release */
 			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
+
+			/* connection is going to main */
+			con->proc_id = -1;
+
 			if (con->msg_attempts)
 				tcpconn_release(con, CONN_ERROR);
 			else

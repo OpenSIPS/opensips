@@ -57,7 +57,7 @@ static struct tcp_req tcp_current_req;
 #define _tcp_common_current_req tcp_current_req
 #include "tcp_common.h"
 
-static int tcp_write_async_req(struct tcp_connection* con);
+static int tcp_write_async_req(struct tcp_connection* con,int fd);
 static int tcp_read_req(struct tcp_connection* con, int* bytes_read);
 static int tcp_conn_init(struct tcp_connection* c);
 static void tcp_conn_clean(struct tcp_connection* c);
@@ -701,7 +701,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 	}
 	get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 
-	/* now we have a connection, let's what we can do with it */
+	/* now we have a connection, let's see what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
 	if (fd==-1) {
 		/* connection is not writable because of its state - can we append
@@ -753,7 +753,12 @@ send_it:
 		close(fd);
 		return -1;
 	}
-	close(fd);
+
+	/* only close the FD if not already in the context of our process
+	either we just connected, or main sent us the FD */
+	if (c->proc_id != process_no)
+		close(fd);
+
 	tcp_conn_release(c, (n<len)?1:0/*pending data in async mode?*/ );
 	return n;
 }
@@ -764,7 +769,7 @@ send_it:
  *	* if returns = 0 : the connection will be released
  *	* if returns < 0 : the connection will be released as BAD /  broken
  */
-static int tcp_write_async_req(struct tcp_connection* con)
+static int tcp_write_async_req(struct tcp_connection* con,int fd)
 {
 	int n,left;
 	struct tcp_send_chunk *chunk;
@@ -782,7 +787,7 @@ again:
 	left = (int)((chunk->buf+chunk->len)-chunk->pos);
 	LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",
 		   left,chunk,con,chunk->ticks,get_ticks());
-	n=send(con->fd, chunk->pos, left,
+	n=send(fd, chunk->pos, left,
 #ifdef HAVE_MSG_NOSIGNAL
 			MSG_NOSIGNAL
 #else

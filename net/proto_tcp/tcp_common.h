@@ -395,8 +395,8 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			if (!size) {
 				/* did not read any more things -  we can release
 				 * the connection */
-				LM_DBG("We're releasing the connection in state %d \n",
-					con->state);
+				LM_DBG("Nothing more to read on TCP conn %p, currently in state %d \n",
+					con,con->state);
 				if (req != &_tcp_common_current_req) {
 					/* we have the buffer in the connection tied buff -
 					 *	detach it , release the conn and free it afterwards */

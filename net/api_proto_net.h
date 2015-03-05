@@ -33,7 +33,7 @@
 #define PROTO_NET_USE_UDP	(1<<1) /* set by proto's that are based on UDP */
 
 
-typedef int (*proto_net_write_f)(void *src);
+typedef int (*proto_net_write_f)(void *src, int fd);
 typedef int (*proto_net_read_f)(void *src, int *len);
 typedef int (*proto_net_conn_init_f)(struct tcp_connection *c);
 typedef void (*proto_net_conn_clean_f)(struct tcp_connection *c);

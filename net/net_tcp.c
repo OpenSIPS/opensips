@@ -556,8 +556,13 @@ found:
 		return 1;
 	}
 
-	/* FIXME - check if conn is not already in this process, in this
-	 case we do not need to perfrom aquire ! */
+	if (c->proc_id == process_no) {
+		LM_DBG("tcp connection found (%p) already in this process ( %d ) , fd = %d\n", c, c->proc_id, c->fd);
+		/* we already have the connection in this worker's reactor, no need to acquire FD */
+		*conn = c;
+		*conn_fd = c->fd;
+		return 1;
+	}
 
 	/* aquire the fd for this connection too */
 	LM_DBG("tcp connection found (%p), acquiring fd\n", c);

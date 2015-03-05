@@ -256,12 +256,12 @@ again:
 #define fd_array_print \
 	do { \
 		int k;\
-		LM_INFO("[%s] size=%d, fd array is",h->name,h->fd_no);\
-		for(k=0;k<h->fd_no;k++) LM_GEN1(L_INFO," %d",h->fd_array[k].fd);\
-		LM_GEN1(L_INFO,"\n"); \
-		LM_INFO("[%s] size=%d, prio array is",h->name,h->max_prio);\
-		for(k=0;k<h->max_prio;k++) LM_GEN1(L_INFO," %d",h->prio_idx[k]);\
-		LM_GEN1(L_INFO,"\n"); \
+		LM_DBG("[%s] size=%d, fd array is",h->name,h->fd_no);\
+		for(k=0;k<h->fd_no;k++) LM_GEN1(L_DBG," %d",h->fd_array[k].fd);\
+		LM_GEN1(L_DBG,"\n"); \
+		LM_DBG("[%s] size=%d, prio array is",h->name,h->max_prio);\
+		for(k=0;k<h->max_prio;k++) LM_GEN1(L_DBG," %d",h->prio_idx[k]);\
+		LM_GEN1(L_DBG,"\n"); \
 	}while(0)
 
 /*! \brief generic io_watch_add function
