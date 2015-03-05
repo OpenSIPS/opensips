@@ -205,14 +205,6 @@ int sctp_server_rcv_loop(void)
 		su2ip_addr(&ri.src_ip, from);
 		ri.src_port=su_getport(from);
 
-#ifndef NO_ZERO_CHECKS
-		if (buf[len-1]==0) {
-			tmp=ip_addr2a(&ri.src_ip);
-			LM_WARN("upstream bug - 0-terminated packet from %s %d\n",
-					tmp, htons(ri.src_port));
-			len--;
-		}
-#endif
 		if (ri.src_port==0){
 			tmp=ip_addr2a(&ri.src_ip);
 			LM_INFO("dropping 0 port packet from %s\n", tmp);
