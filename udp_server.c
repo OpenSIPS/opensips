@@ -374,13 +374,6 @@ int udp_rcv_loop(void)
 			else goto error;
 		}
 
-#ifndef NO_ZERO_CHECKS
-		if (len<MIN_UDP_PACKET) {
-			LM_DBG("probing packet received len = %d\n", len);
-			continue;
-		}
-#endif
-
 		/* we must 0-term the messages, receive_msg expects it */
 		buf[len]=0; /* no need to save the previous char */
 
