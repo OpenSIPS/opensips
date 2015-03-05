@@ -284,20 +284,20 @@ static int w_rest_get(struct sip_msg *msg, char *gp_url, char *body_pv,
 static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
                    char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv)
 {
-	str url, ctype, body;
+	str url, body, ctype = { NULL, 0 };
 
 	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
 		LM_ERR("Invalid HTTP URL pseudo variable!\n");
 		return -1;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_ctype, &ctype) != 0) {
-		LM_ERR("Invalid HTTP POST content type pseudo variable!\n");
+	if (fixup_get_svalue(msg, (gparam_p)gp_body, &body) != 0) {
+		LM_ERR("Invalid HTTP POST body pseudo variable!\n");
 		return -1;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_body, &body) != 0) {
-		LM_ERR("Invalid HTTP POST body pseudo variable!\n");
+	if (gp_ctype && fixup_get_svalue(msg, (gparam_p)gp_ctype, &ctype) != 0) {
+		LM_ERR("Invalid HTTP POST content type pseudo variable!\n");
 		return -1;
 	}
 
@@ -355,7 +355,7 @@ static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f
 					 char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv)
 {
 	rest_async_param *param;
-	str url, ctype, body;
+	str url, body, ctype = { NULL, 0 };
 	int read_fd;
 
 	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
@@ -363,13 +363,13 @@ static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f
 		return -1;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_ctype, &ctype) != 0) {
-		LM_ERR("Invalid HTTP POST content type pseudo variable!\n");
+	if (fixup_get_svalue(msg, (gparam_p)gp_body, &body) != 0) {
+		LM_ERR("Invalid HTTP POST body pseudo variable!\n");
 		return -1;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_body, &body) != 0) {
-		LM_ERR("Invalid HTTP POST body pseudo variable!\n");
+	if (gp_ctype && fixup_get_svalue(msg, (gparam_p)gp_ctype, &ctype) != 0) {
+		LM_ERR("Invalid HTTP POST content type pseudo variable!\n");
 		return -1;
 	}
 
