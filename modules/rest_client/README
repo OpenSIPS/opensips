@@ -34,16 +34,21 @@ Liviu Chircu
 
         1.4. Exported Functions
 
-              1.4.1. rest_get(url, body_pv[, ctype_pv[,
-                      retcode_pv]])
+              1.4.1. rest_get(url, body_pv[, [ctype_pv][,
+                      [retcode_pv]]])
 
-              1.4.2. rest_post(url, send_body_pv, send_ctype_pv,
-                      recv_body_pv[, recv_ctype_pv[, retcode_pv]])
+              1.4.2. rest_post(url, send_body_pv, [send_ctype_pv],
+                      recv_body_pv[, [recv_ctype_pv][,
+                      [retcode_pv]]])
 
         1.5. Exported Asynchronous Functions
 
-              1.5.1. rest_get(url, body_pv[, ctype_pv[,
-                      retcode_pv]])
+              1.5.1. rest_get(url, body_pv[, [ctype_pv][,
+                      [retcode_pv]]])
+
+              1.5.2. rest_post(url, send_body_pv, [send_ctype_pv],
+                      recv_body_pv[, [recv_ctype_pv][,
+                      [retcode_pv]]])
 
    List of Examples
 
@@ -55,6 +60,7 @@ Liviu Chircu
    1.6. rest_get usage
    1.7. rest_post usage
    1.8. async rest_get usage
+   1.9. async rest_post usage
 
 Chapter 1. Admin Guide
 
@@ -138,7 +144,7 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 
 1.4. Exported Functions
 
-1.4.1.  rest_get(url, body_pv[, ctype_pv[, retcode_pv]])
+1.4.1.  rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
 
    Issues an HTTP GET request to the given 'url', and returns a
    representation of the resource.
@@ -172,21 +178,22 @@ if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)", "$var(ct
 }
 ...
 
-1.4.2.  rest_post(url, send_body_pv, send_ctype_pv, recv_body_pv[,
-recv_ctype_pv[, retcode_pv]])
+1.4.2.  rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv[,
+[recv_ctype_pv][, [retcode_pv]]])
 
-   Issues an HTTP POST request to the specified 'url'. The request
-   body will be copied from the 'send_body_pv' pseudo-variable.
-   Its MIME content type will be taken from 'send_ctype_pv'.
+   Issues an HTTP POST request to the specified url. The request
+   body will be copied from the send_body_pv pseudo-variable. The
+   MIME Content-Type header for the request will be taken from
+   send_ctype_pv (default is "application/x-www-form-urlencoded")
 
-   The recv_body_pv pseudo-var will hold the body of the HTTP
-   response.
+   The mandatory recv_body_pv pseudo-var will hold the body of the
+   HTTP response.
 
    The optional recv_ctype_pv parameter will contain the value of
-   the "Content-Type:" header of the response message.
+   the "Content-Type" header of the response message.
 
    The optional retcode_pv pseudo-var parameter can be given in
-   order to save the HTTP status code of the response message.
+   order to retrieve the HTTP status code of the response message.
 
    Possible parameter types
      * url, send_body_pv, send_type_pv - String, pseudo-variable,
@@ -200,8 +207,8 @@ recv_ctype_pv[, retcode_pv]])
 ...
 # Storing data using a RESTful service with an HTTP POST request
 
-if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain",
- "$var(body)", "$var(ct)", "$var(rcode)")) {
+if (!rest_post("http://myserver.org/register_user", "$fU", , "$var(body)
+", "$var(ct)", "$var(rcode)")) {
         xlog("Error code $var(rcode) in HTTP POST!\n");
         send_reply("403", "POST Forbidden");
         exit;
@@ -210,24 +217,48 @@ if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain",
 
 1.5. Exported Asynchronous Functions
 
-1.5.1.  rest_get(url, body_pv[, ctype_pv[, retcode_pv]])
+1.5.1.  rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
 
-   Runs a GET HTTP request. This function does exactly the same as
-   Section 1.4.1, “ rest_get(url, body_pv[, ctype_pv[,
-   retcode_pv]]) ” (in terms of input, output and processing), but
-   in an asynchronous way. The script execution is suspended until
-   the HTTP response if available for read (the full response).
+   Sends a GET HTTP request. This function behaves exactly the
+   same as rest_get (in terms of input, output and processing),
+   but in an asynchronous way. Script execution is suspended until
+   the entire content of the HTTP response if available.
 
    Example 1.8. async rest_get usage
-{
-...
-async(rest_get("http://myserver.org/register_user", "$fU", "text/plain",
- "$var(body)", "$var(ct)", "$var(rcode)"), resume);
+route {
+        ...
+        async(rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)",
+ , "$var(rcode)"), resume);
 }
 
 route [resume]
 {
-        if ( $rc < 0 ) {
+        if ($rc < 0) {
+                xlog("Error code $var(rcode) in HTTP GET!\n");
+                send_reply("403", "GET Forbidden");
+                exit;
+        }
+        ......
+}
+
+1.5.2.  rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv[,
+[recv_ctype_pv][, [retcode_pv]]])
+
+   Sends a POST HTTP request. This function behaves exactly the
+   same as rest_post (in terms of input, output and processing),
+   but in an asynchronous way. Script execution is suspended until
+   the entire content of the HTTP response if available.
+
+   Example 1.9. async rest_post usage
+route {
+        ...
+        async(rest_post("http://myserver.org/register_user", "$fU", , "$
+var(body)", "$var(ct)", "$var(rcode)"), resume);
+}
+
+route [resume]
+{
+        if ($rc < 0) {
                 xlog("Error code $var(rcode) in HTTP POST!\n");
                 send_reply("403", "POST Forbidden");
                 exit;
