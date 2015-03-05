@@ -368,12 +368,10 @@ static void bin_receive_loop(void)
 
 		rcv_end = rcv_buf + rcv_bytes;
 
-#ifndef NO_ZERO_CHECKS
-		if (rcv_bytes < MIN_UDP_PACKET) {
-			LM_DBG("probing packet received len = %d\n", rcv_bytes);
+		if (rcv_bytes < MIN_BIN_PACKET_SIZE) {
+			LM_INFO("received invalid packet: len = %d\n", rcv_bytes);
 			continue;
 		}
-#endif
 
 		if (!is_valid_bin_packet(rcv_buf)) {
 			LM_WARN("Invalid binary packet header! First 10 bytes: %.*s\n",
