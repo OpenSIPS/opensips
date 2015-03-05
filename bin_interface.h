@@ -34,6 +34,8 @@
 #define LEN_FIELD_SIZE         sizeof(int)
 #define CMD_FIELD_SIZE         sizeof(int)
 #define HEADER_SIZE            (BIN_PACKET_MARKER_SIZE + CRC_FIELD_SIZE)
+#define MIN_BIN_PACKET_SIZE \
+	(HEADER_SIZE + LEN_FIELD_SIZE + CMD_FIELD_SIZE + 2) /* e.g. >tm<.so */
 
 #define bin_send_type \
 	(*(int *)(send_buffer + HEADER_SIZE + LEN_FIELD_SIZE + \
