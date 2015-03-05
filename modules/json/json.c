@@ -600,6 +600,8 @@ int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag ,
 				json_tokener_errors[(unsigned long)obj]
 #endif
 			);
+
+			pv_add_json(pvp, NULL);
 			return -1;
 
 		}
