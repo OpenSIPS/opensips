@@ -41,19 +41,19 @@ gen_lock_t *hp_stats_lock;
 
 #ifdef STATISTICS
 
-int stats_are_expired(struct hp_block *qm)
+int stats_are_expired(struct hp_block *hpb)
 {
 	struct timeval now;
 
 	gettimeofday(&now, NULL);
 
 	return (now.tv_sec * 1000000L + now.tv_usec) -
-	       (qm->last_updated.tv_sec * 1000000L + qm->last_updated.tv_usec)
+	       (hpb->last_updated.tv_sec * 1000000L + hpb->last_updated.tv_usec)
 
 	       > SHM_STATS_SAMPLING_PERIOD;
 }
 
-void update_shm_stats(struct hp_block *qm)
+void update_shm_stats(struct hp_block *hpb)
 {
 	struct hp_frag_lnk *bucket, *it;
 	int i, j, used_mem;
@@ -62,10 +62,10 @@ void update_shm_stats(struct hp_block *qm)
 
 	lock_get(hp_stats_lock);
 
-	qm->used = qm->real_used = qm->total_fragments = 0;
+	hpb->used = hpb->real_used = hpb->total_fragments = 0;
 
-	for (i = 0, bucket = qm->free_hash;
-	     bucket < &qm->free_hash[HP_HASH_SIZE];
+	for (i = 0, bucket = hpb->free_hash;
+	     bucket < &hpb->free_hash[HP_HASH_SIZE];
 		 i++, bucket++) {
 
 		size = UN_HASH(i);
@@ -74,153 +74,153 @@ void update_shm_stats(struct hp_block *qm)
 			in_use_frags = bucket->total_no - bucket->no;
 			used_mem = in_use_frags * size;
 
-			qm->used            += used_mem;
-			qm->real_used       += used_mem + bucket->total_no * FRAG_OVERHEAD;
-			qm->total_fragments += bucket->total_no;
+			hpb->used            += used_mem;
+			hpb->real_used       += used_mem + bucket->total_no * FRAG_OVERHEAD;
+			hpb->total_fragments += bucket->total_no;
 		} else {
-			for (j = 0, it = &qm->free_hash[HP_HASH_SIZE + i * shm_secondary_hash_size];
+			for (j = 0, it = &hpb->free_hash[HP_HASH_SIZE + i * shm_secondary_hash_size];
 			     j < shm_secondary_hash_size;
 				 j++, it++) {
 
 				in_use_frags = it->total_no - it->no;
 				used_mem = in_use_frags * size;
 
-				qm->used            += used_mem;
-				qm->real_used       += used_mem + it->total_no * FRAG_OVERHEAD;
-				qm->total_fragments += it->total_no;
+				hpb->used            += used_mem;
+				hpb->real_used       += used_mem + it->total_no * FRAG_OVERHEAD;
+				hpb->total_fragments += it->total_no;
 			}
 		}
 	}
 
-	if (qm->real_used > qm->max_real_used)
-		qm->max_real_used = qm->real_used;
+	if (hpb->real_used > hpb->max_real_used)
+		hpb->max_real_used = hpb->real_used;
 
 	LM_DBG("updated shm statistics: [ us: %ld | rus: %ld | frags: %ld ]\n",
-	        qm->used, qm->real_used, qm->total_fragments);
+	        hpb->used, hpb->real_used, hpb->total_fragments);
 
-	gettimeofday(&qm->last_updated, NULL);
+	gettimeofday(&hpb->last_updated, NULL);
 
 	lock_release(hp_stats_lock);
 }
 
-unsigned long hp_shm_get_size(struct hp_block *qm)
+unsigned long hp_shm_get_size(struct hp_block *hpb)
 {
-	return qm->size;
+	return hpb->size;
 }
 
 #ifdef HP_MALLOC_FAST_STATS
-unsigned long hp_shm_get_used(struct hp_block *qm)
+unsigned long hp_shm_get_used(struct hp_block *hpb)
 {
-	if (stats_are_expired(qm))
-		update_shm_stats(qm);
+	if (stats_are_expired(hpb))
+		update_shm_stats(hpb);
 
-	return qm->used;
+	return hpb->used;
 }
 
-unsigned long hp_shm_get_real_used(struct hp_block *qm)
+unsigned long hp_shm_get_real_used(struct hp_block *hpb)
 {
-	if (stats_are_expired(qm))
-		update_shm_stats(qm);
+	if (stats_are_expired(hpb))
+		update_shm_stats(hpb);
 
-	return qm->real_used;
+	return hpb->real_used;
 }
 
-unsigned long hp_shm_get_max_real_used(struct hp_block *qm)
+unsigned long hp_shm_get_max_real_used(struct hp_block *hpb)
 {
-	if (stats_are_expired(qm))
-		update_shm_stats(qm);
+	if (stats_are_expired(hpb))
+		update_shm_stats(hpb);
 
-	return qm->max_real_used;
+	return hpb->max_real_used;
 }
 
-unsigned long hp_shm_get_free(struct hp_block *qm)
+unsigned long hp_shm_get_free(struct hp_block *hpb)
 {
-	if (stats_are_expired(qm))
-		update_shm_stats(qm);
+	if (stats_are_expired(hpb))
+		update_shm_stats(hpb);
 
-	return qm->size - qm->real_used;
+	return hpb->size - hpb->real_used;
 }
 
-unsigned long hp_shm_get_frags(struct hp_block *qm)
+unsigned long hp_shm_get_frags(struct hp_block *hpb)
 {
-	if (stats_are_expired(qm))
-		update_shm_stats(qm);
+	if (stats_are_expired(hpb))
+		update_shm_stats(hpb);
 
-	return qm->total_fragments;
+	return hpb->total_fragments;
 }
 
-void hp_init_shm_statistics(struct hp_block *qm)
+void hp_init_shm_statistics(struct hp_block *hpb)
 {
-	update_shm_stats(qm);
+	update_shm_stats(hpb);
 }
 
 #else /* HP_MALLOC_FAST_STATS */
 
-void hp_init_shm_statistics(struct hp_block *qm)
+void hp_init_shm_statistics(struct hp_block *hpb)
 {
-	update_stat(shm_used, qm->used);
-	update_stat(shm_rused, qm->real_used);
-	update_stat(shm_frags, qm->total_fragments);
+	update_stat(shm_used, hpb->used);
+	update_stat(shm_rused, hpb->real_used);
+	update_stat(shm_frags, hpb->total_fragments);
 
 	LM_DBG("initializing atomic shm statistics: "
-	       "[ us: %ld | rus: %ld | frags: %ld ]\n", qm->used, qm->real_used, qm->total_fragments);
+	       "[ us: %ld | rus: %ld | frags: %ld ]\n", hpb->used, hpb->real_used, hpb->total_fragments);
 }
 
-unsigned long hp_shm_get_used(struct hp_block *qm)
+unsigned long hp_shm_get_used(struct hp_block *hpb)
 {
 	return get_stat_val(shm_used);
 }
 
-unsigned long hp_shm_get_real_used(struct hp_block *qm)
+unsigned long hp_shm_get_real_used(struct hp_block *hpb)
 {
 	return get_stat_val(shm_rused);
 }
 
-unsigned long hp_shm_get_max_real_used(struct hp_block *qm)
+unsigned long hp_shm_get_max_real_used(struct hp_block *hpb)
 {
-	return qm->max_real_used;
+	return hpb->max_real_used;
 }
 
-unsigned long hp_shm_get_free(struct hp_block *qm)
+unsigned long hp_shm_get_free(struct hp_block *hpb)
 {
-	return qm->size - get_stat_val(shm_rused);
+	return hpb->size - get_stat_val(shm_rused);
 }
 
-unsigned long hp_shm_get_frags(struct hp_block *qm)
+unsigned long hp_shm_get_frags(struct hp_block *hpb)
 {
 	return get_stat_val(shm_frags);
 }
 #endif /* HP_MALLOC_FAST_STATS */
 
 
-unsigned long hp_pkg_get_size(struct hp_block *qm)
+unsigned long hp_pkg_get_size(struct hp_block *hpb)
 {
-	return qm->size;
+	return hpb->size;
 }
 
-unsigned long hp_pkg_get_used(struct hp_block *qm)
+unsigned long hp_pkg_get_used(struct hp_block *hpb)
 {
-	return qm->used;
+	return hpb->used;
 }
 
-unsigned long hp_pkg_get_real_used(struct hp_block *qm)
+unsigned long hp_pkg_get_real_used(struct hp_block *hpb)
 {
-	return qm->real_used;
+	return hpb->real_used;
 }
 
-unsigned long hp_pkg_get_max_real_used(struct hp_block *qm)
+unsigned long hp_pkg_get_max_real_used(struct hp_block *hpb)
 {
-	return qm->max_real_used;
+	return hpb->max_real_used;
 }
 
-unsigned long hp_pkg_get_free(struct hp_block *qm)
+unsigned long hp_pkg_get_free(struct hp_block *hpb)
 {
-	return qm->size - qm->real_used;
+	return hpb->size - hpb->real_used;
 }
 
-unsigned long hp_pkg_get_frags(struct hp_block *qm)
+unsigned long hp_pkg_get_frags(struct hp_block *hpb)
 {
-	return qm->total_fragments;
+	return hpb->total_fragments;
 }
 
 #endif /* STATISTICS */
