@@ -204,6 +204,7 @@ static inline struct fd_map* hash_fd_map(	io_wait_h* h,
 	h->fd_hash[fd].fd=fd;
 	h->fd_hash[fd].type=type;
 	h->fd_hash[fd].data=data;
+
 	h->fd_hash[fd].flags|=flags;
 
 	return &h->fd_hash[fd];
@@ -257,7 +258,7 @@ again:
 	do { \
 		int k;\
 		LM_DBG("[%s] size=%d, fd array is",h->name,h->fd_no);\
-		for(k=0;k<h->fd_no;k++) LM_GEN1(L_DBG," %d",h->fd_array[k].fd);\
+		for(k=0;k<h->fd_no;k++) LM_GEN1(L_DBG," %d flags = %d",h->fd_array[k].fd,h->fd_hash[h->fd_array[k].fd].flags);\
 		LM_GEN1(L_DBG,"\n"); \
 		LM_DBG("[%s] size=%d, prio array is",h->name,h->max_prio);\
 		for(k=0;k<h->max_prio;k++) LM_GEN1(L_DBG," %d",h->prio_idx[k]);\
@@ -353,6 +354,7 @@ inline static int io_watch_add(	io_wait_h* h,
 	}
 	LM_DBG("[%s] io_watch_add op on %d (%p, %d, %d, %p,%d), fd_no=%d\n",
 			h->name,fd,h,fd,type,data,flags,h->fd_no);
+	fd_array_print;
 	/*  hash sanity check */
 	e=get_fd_map(h, fd);
 
@@ -428,7 +430,7 @@ again1:
 				n=epoll_ctl(h->epfd, EPOLL_CTL_ADD, fd, &ep_event);
 				if (n==-1){
 					if (errno==EAGAIN) goto again1;
-					LM_ERR("[%s] epoll_ctl failed: %s [%d]\n",
+					LM_ERR("[%s] epoll_ctl ADD failed: %s [%d]\n",
 						h->name,strerror(errno), errno);
 					goto error;
 				}
@@ -437,7 +439,7 @@ again11:
 				n=epoll_ctl(h->epfd, EPOLL_CTL_MOD, fd, &ep_event);
 				if (n==-1){
 					if (errno==EAGAIN) goto again11;
-					LM_ERR("[%s] epoll_ctl failed: %s [%d]\n",
+					LM_ERR("[%s] epoll_ctl MOD failed: %s [%d]\n",
 						h->name,strerror(errno), errno);
 					goto error;
 				}
@@ -520,6 +522,7 @@ check_io_again:
 		}
 	}
 #endif
+	fd_array_print;
 	return 0;
 error:
 	if (e) unhash_fd_map(e,0,flags,already);

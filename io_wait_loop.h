@@ -182,12 +182,12 @@ again:
 		for(r=h->fd_no-1; (r>=0) && n ; r--) {
 			e = get_fd_map(h, h->fd_array[r].fd);
 			if ( e->flags & IO_WATCH_PRV_TRIG_READ ) {
-				while((handle_io( e, r, IO_WATCH_READ)>0) && repeat);
 				e->flags &= ~IO_WATCH_PRV_TRIG_READ;
+				while((handle_io( e, r, IO_WATCH_READ)>0) && repeat);
 				n--;
 			} else if ( e->flags & IO_WATCH_PRV_TRIG_WRITE ){
-				handle_io( e, r, IO_WATCH_WRITE);
 				e->flags &= ~IO_WATCH_PRV_TRIG_WRITE;
+				handle_io( e, r, IO_WATCH_WRITE);
 				n--;
 			}
 		}
@@ -242,8 +242,8 @@ again:
 		for(r=h->fd_no-1; (r>=0) && n ; r--) {
 			e = get_fd_map(h, h->fd_array[r].fd);
 			if ( e->flags & IO_WATCH_PRV_TRIG_READ ) {
-				while((handle_io( e, r, IO_WATCH_READ)>0) && repeat);
 				e->flags &= ~IO_WATCH_PRV_TRIG_READ;
+				while((handle_io( e, r, IO_WATCH_READ)>0) && repeat);
 				n--;
 			}
 		}
@@ -400,8 +400,8 @@ again:
 		for(r=h->fd_no-1; (r>=0) && n ; r--) {
 			e = get_fd_map(h, h->fd_array[r].fd);
 			if ( e->flags & IO_WATCH_PRV_TRIG_READ ) {
-				while((handle_io( e, r, IO_WATCH_READ)>0) && repeat);
 				e->flags &= ~IO_WATCH_PRV_TRIG_READ;
+				while((handle_io( e, r, IO_WATCH_READ)>0) && repeat);
 				n--;
 			}
 		}
