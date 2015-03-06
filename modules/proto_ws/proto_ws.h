@@ -29,10 +29,22 @@
 #define WS_SUPPORTED_VERSION	13		/*!< WebSocket supported version */
 #define WS_DEFAULT_PORT			80		/*!< WebSocket default port */
 
-#include "ws_handshake.h"
 
-enum ws_conn_states { WS_CON_INIT, WS_CON_HANDSHAKE, WS_CON_HANDSHAKE_DONE,
+enum ws_conn_state { WS_CON_INIT, WS_CON_HANDSHAKE, WS_CON_HANDSHAKE_DONE,
 	WS_CON_BAD_REQ };
+
+#define WS_STATE(_c) \
+	((enum ws_conn_state)(unsigned long)((_c)->proto_data))
+#define WS_SET_STATE(_c, _s) \
+	(_c)->proto_data = (((void *)(unsigned long)(_s)))
+
+/*
+ * For now we only need the state stored in the connection
+ * Later, we should probably store info about origin, resoruce. versions,
+ * protocols supported, etc. - razvanc
+ */
+#if 0
+#include "ws_handshake.h"
 
 struct ws_data {
 	/* the state of the connection */
@@ -42,5 +54,6 @@ struct ws_data {
 	 * it after the handshake is completed */
 	struct ws_hs *handshake;
 };
+#endif
 
 #endif /* _PROTO_WS_H_ */

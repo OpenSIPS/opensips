@@ -32,26 +32,26 @@
 #include "../../timer.h"
 #include "../../ut.h"
 #include "../../sha1.h"
-#include "ws_handshake.h"
 #include "proto_ws.h"
 #include "ws_tcp.h"
 #include "ws.h"
 
 static int ws_read_http(struct tcp_connection *c, struct tcp_req *r);
-static int ws_parse_handshake(struct tcp_connection *c, char *msg, int len);
-static int ws_complete_handshake(struct tcp_connection *c);
+static int ws_parse_handshake(struct tcp_connection *c,
+		char *msg, int len, str *key);
+static int ws_complete_handshake(struct tcp_connection *c, str *key);
 static int ws_bad_handshake(struct tcp_connection *c);
 
 static struct tcp_req ws_current_req;
 
 int ws_handshake(struct tcp_connection *con)
 {
-	struct ws_data *wsd = (struct ws_data *)con->proto_data;
 	int bytes, total_bytes;
 	long size = 0;
 	int msg_len;
 	char *msg_buf;
 	struct tcp_req *req;
+	str key;
 
 	if (con->con_req) {
 		req=con->con_req;
@@ -134,16 +134,16 @@ int ws_handshake(struct tcp_connection *con)
 			 * message on the pipe */
 		} else {
 			LM_WARN("extra data on socket before handshake is completed!\n");
-			wsd->state = WS_CON_BAD_REQ;
+			WS_SET_STATE(con, WS_CON_BAD_REQ);
 			goto error;
 		}
 
-		if (ws_parse_handshake(con, msg_buf, msg_len) < 0) {
+		if (ws_parse_handshake(con, msg_buf, msg_len, &key) < 0) {
 			LM_DBG("cannot parse handshake\n");
 			goto error;
 		}
 
-		if (ws_complete_handshake(con) < 0) {
+		if (ws_complete_handshake(con, &key) < 0) {
 			LM_DBG("cannot complete handshake\n");
 			goto error;
 		}
@@ -152,8 +152,7 @@ int ws_handshake(struct tcp_connection *con)
 		con->msg_attempts = 0;
 
 		/* handshake now completed, destroy the handshake data */
-		wsd->handshake = NULL;
-		wsd->state = WS_CON_HANDSHAKE_DONE;
+		WS_SET_STATE(con, WS_CON_HANDSHAKE_DONE);
 
 		/* finished handshake */
 		goto done;
@@ -216,7 +215,7 @@ done:
 	return size;
 error:
 	/* connection will be released as ERROR */
-	if (wsd->state == WS_CON_BAD_REQ)
+	if (WS_STATE(con) == WS_CON_BAD_REQ)
 		ws_bad_handshake(con);
 	if (req != &ws_current_req) {
 		pkg_free(req);
@@ -229,11 +228,10 @@ error:
 #define HTTP_GET_METHOD_LEN (sizeof(HTTP_GET_METHOD) - 1)
 
 static inline int ws_parse_first_line(struct tcp_connection *c,
-		char **msg_buf, int *msg_len)
+		char **msg_buf, int *msg_len, unsigned *ver_maj, unsigned *ver_min)
 {
 	char *p, *sp, *spe, *end, *cr;
 	int len;
-	struct ws_data *wsd = (struct ws_data *)c->proto_data;
 	str tmp;
 
 	/* go to the first CRLF. According to RFC 2616:
@@ -283,16 +281,6 @@ static inline int ws_parse_first_line(struct tcp_connection *c,
 		LM_ERR("invalid request URI: <%.*s>\n", (int)(end - sp), sp);
 		goto error;
 	}
-	/* TODO: should we store this? */
-	/*
-	wsd->handshake->resource.len = spe - sp;
-	wsd->handshake->resource.s = shm_malloc(wsd->handshake->resource.len);
-	if (!wsd->handshake->resource.s) {
-		LM_ERR("no more shm mem\n");
-		goto error;
-	}
-	memcpy(wsd->handshake->resource.s, sp, wsd->handshake->resource.len);
-	*/
 	spe++;
 
 	/* reverse search for the version */
@@ -309,13 +297,13 @@ static inline int ws_parse_first_line(struct tcp_connection *c,
 		goto version_error;
 	}
 	tmp.len = sp - tmp.s;
-	if (str2int(&tmp, &wsd->handshake->version_major) < 0) {
+	if (str2int(&tmp, ver_maj) < 0) {
 		LM_ERR("invalid major\n");
 		goto version_error;
 	}
 	tmp.s = sp + 1;
 	tmp.len = end - tmp.s;
-	if (tmp.s >= end || str2int(&tmp, &wsd->handshake->version_minor) < 0) {
+	if (tmp.s >= end || str2int(&tmp, ver_min) < 0) {
 		LM_ERR("invlid minor\n");
 		goto version_error;
 	}
@@ -323,7 +311,6 @@ static inline int ws_parse_first_line(struct tcp_connection *c,
 	return 0;
 version_error:
 	LM_ERR("invalid version: <%.*s>\n", (int)(end - spe), spe);
-	/* shm_free(wsd->handshake->resource.s); */
 error:
 	return -1;
 }
@@ -355,8 +342,6 @@ error:
 					WS_KEY_F | \
 					WS_VER_F | \
 					WS_PROTO_F)
-
-static struct ws_hs static_ws_handshake;
 
 #define GET_LOWER(_p) \
 	((*(_p)) | 0x20)
@@ -391,31 +376,23 @@ static inline int ws_has_param(const char *p, int l, str ps)
 }
 
 
-static int ws_parse_handshake(struct tcp_connection *c, char *msg, int len)
+static int ws_parse_handshake(struct tcp_connection *c,
+		char *msg, int len, str *key)
 {
-	struct ws_data *wsd = (struct ws_data *)c->proto_data;
 	struct sip_msg tmp_msg;
 	struct hdr_field *hf;
 	unsigned version;
 	char flags = 0;
+	unsigned ver_min, ver_maj;
 
-	/*
-	 * XXX: since we don't have anything that should be passed further, we can use
-	 * a static holder here. Take care that wsd->handshake is stored in shm,
-	 * so we should not let this data leave this process.
-	 */
-	wsd->handshake = &static_ws_handshake;
-
-	if (ws_parse_first_line(c, &msg, &len) != 0) {
+	if (ws_parse_first_line(c, &msg, &len, &ver_maj, &ver_min) != 0) {
 		LM_ERR("cannot parse the first line of the message\n%.*s\n", len, msg);
 		goto error;
 	}
 
 	/* check the HTTP version */
-	if (wsd->handshake->version_major < 1 ||
-	(wsd->handshake->version_major == 1 && wsd->handshake->version_minor < 1)) {
-		LM_ERR("Invalid HTTP version: %u.%u\n", wsd->handshake->version_major,
-				wsd->handshake->version_minor);
+	if (ver_maj < 1 || (ver_maj == 1 && ver_min < 1)) {
+		LM_ERR("Invalid HTTP version: %u.%u\n", ver_maj, ver_min);
 		goto error;
 	}
 
@@ -506,8 +483,8 @@ static int ws_parse_handshake(struct tcp_connection *c, char *msg, int len)
 				str_trim_spaces_lr(hf->body);
 
 				/* the key is already in the buffer, so we can just point it out */
-				wsd->handshake->key.len = hf->body.len;
-				wsd->handshake->key.s = hf->body.s;
+				key->len = hf->body.len;
+				key->s = hf->body.s;
 
 				flags |= WS_KEY_F;
 			} else if (hf->name.len == HDR_LEN("Sec-WebSocket-Version") &&
@@ -569,14 +546,6 @@ static int ws_parse_handshake(struct tcp_connection *c, char *msg, int len)
 		goto ws_error;
 	}
 
-
-#if 0
-
-
-
-
-#endif
-
 	/* parsing done, free headers */
 	free_hdr_field_lst(tmp_msg.headers);
 
@@ -584,7 +553,7 @@ static int ws_parse_handshake(struct tcp_connection *c, char *msg, int len)
 ws_error:
 	free_hdr_field_lst(tmp_msg.headers);
 error:
-	wsd->state = WS_CON_BAD_REQ;
+	WS_SET_STATE(c, WS_CON_BAD_REQ);
 	return -1;
 }
 
@@ -609,11 +578,10 @@ unsigned char ws_accept_buf[WS_ACCEPT_KEY_LEN];
 #define WS_HTTP_ACCEPT_END "\r\n\r\n"
 #define WS_HTTP_ACCEPT_END_LEN (sizeof(WS_HTTP_ACCEPT_END) - 1)
 
-static int ws_complete_handshake(struct tcp_connection *c)
+static int ws_complete_handshake(struct tcp_connection *c, str *key)
 {
 	int n;
 	struct timeval get;
-	struct ws_data *wsd = (struct ws_data *)c->proto_data;
 	static struct iovec iov[] = {
 		{ (void*)WS_HTTP_ACCEPT, WS_HTTP_ACCEPT_LEN }, /* all mandatory headers */
 		{ (void *)ws_accept_buf, WS_ACCEPT_KEY_LEN }, /* the cookie */
@@ -624,8 +592,8 @@ static int ws_complete_handshake(struct tcp_connection *c)
 	start_expire_timer(get, tcpthreshold);
 
 	/* compute the ws_key */
-	memcpy(ws_key_buf, wsd->handshake->key.s, wsd->handshake->key.len);
-	sha1(ws_key_buf, wsd->handshake->key.len + WS_GUID_KEY_LEN, ws_sha1_buf);
+	memcpy(ws_key_buf, key->s, key->len);
+	sha1(ws_key_buf, key->len + WS_GUID_KEY_LEN, ws_sha1_buf);
 	base64encode(ws_accept_buf, ws_sha1_buf, WS_SHA1_KEY_LEN);
 
 	n = ws_raw_writev(c, c->fd, iov, 3);

@@ -35,6 +35,7 @@ extern int ws_max_msg_chunks;
 extern int ws_send_timeout;
 
 int ws_process(struct tcp_connection *con);
+int ws_handshake(struct tcp_connection *con);
 int ws_req_write(struct tcp_connection *con, int fd, char *buf, int len);
 
 #endif /* _WS_H_ */

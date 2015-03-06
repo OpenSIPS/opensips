@@ -31,13 +31,13 @@
 
 #include "../../pt.h"
 #include "../../sr_module.h"
+#include "../../net/net_tcp.h"
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../receive.h"
 #include "proto_ws.h"
-#include "ws_handshake.h"
 #include "ws.h"
 
 static int mod_init(void);
@@ -45,10 +45,7 @@ static int proto_ws_init(struct proto_info *pi);
 static int proto_ws_init_listener(struct socket_info *si);
 static int proto_ws_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
-
 static int ws_read_req(struct tcp_connection* con, int* bytes_read);
-static int ws_conn_init(struct tcp_connection* c);
-static void ws_conn_clean(struct tcp_connection* c);
 
 /* parameters*/
 int ws_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
@@ -104,8 +101,6 @@ static int proto_ws_init(struct proto_info *pi)
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
 	pi->net.read			= (proto_net_read_f)ws_read_req;
-	pi->net.conn_init		= ws_conn_init;
-	pi->net.conn_clean		= ws_conn_clean;
 
 	return 0;
 }
@@ -126,40 +121,6 @@ static int proto_ws_init_listener(struct socket_info *si)
 	return tcp_init_listener(si);
 }
 
-
-static int ws_conn_init(struct tcp_connection* c)
-{
-	struct ws_data *d;
-	struct ws_hs *hs;
-
-	d = (struct ws_data *)shm_malloc(sizeof(struct ws_data));
-	if (!d) {
-		LM_ERR("Failed to create ws in shm memory\n");
-		return -1;
-	}
-	hs = (struct ws_hs *)shm_malloc(sizeof(struct ws_hs));
-	if (!hs) {
-		LM_ERR("Failed to alloc handshake structure in shm memory\n");
-		shm_free(d);
-		return -1;
-	}
-	memset(hs, 0, sizeof(struct ws_hs));
-
-	/* initialize all fields here */
-	d->state = WS_CON_HANDSHAKE;
-	d->handshake = hs;
-	c->proto_data = (void *)d;
-	return 0;
-}
-
-
-static void ws_conn_clean(struct tcp_connection* c)
-{
-	struct ws_data *wsd = (struct ws_data *)c->proto_data;
-	wsd->handshake = NULL;
-	shm_free(wsd);
-	c->proto_data = NULL;
-}
 
 
 
@@ -249,80 +210,6 @@ static int proto_ws_send(struct socket_info* send_sock,
 }
 
 
-/* Responsible for writing the TCP send chunks - called under con write lock
- *	* if returns = 1 : the connection will be released for more writting
- *	* if returns = 0 : the connection will be released
- *	* if returns < 0 : the connection will be released as BAD /  broken
- */
-#if 0
-static int ws_write_async_req(struct tcp_connection* con)
-{
-	int n,left;
-	struct tcp_send_chunk *chunk;
-	struct tcp_data *d = (struct tcp_data*)con->proto_data;
-
-	if (d->async_chunks_no == 0) {
-		LM_DBG("The connection has been triggered "
-		" for a write event - but we have no pending write chunks\n");
-		return 0;
-	}
-
-next_chunk:
-	chunk=d->async_chunks[0];
-again:
-	left = (int)((chunk->buf+chunk->len)-chunk->pos);
-	LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",
-		   left,chunk,con,chunk->ticks,get_ticks());
-	n=send(con->fd, chunk->pos, left,
-#ifdef HAVE_MSG_NOSIGNAL
-			MSG_NOSIGNAL
-#else
-			0
-#endif
-	);
-
-	if (n<0) {
-		if (errno==EINTR)
-			goto again;
-		else if (errno==EAGAIN || errno==EWOULDBLOCK) {
-			LM_DBG("Can't finish to write chunk %p on conn %p\n",
-				   chunk,con);
-			/* report back we have more writting to be done */
-			return 1;
-		} else {
-			LM_ERR("Error occured while sending async chunk %d (%s)\n",
-				   errno,strerror(errno));
-			/* report the conn as broken */
-			return -1;
-		}
-	}
-
-	if (n < left) {
-		/* partial write */
-		chunk->pos+=n;
-		goto again;
-	} else {
-		/* written a full chunk - move to the next one, if any */
-		shm_free(chunk);
-		d->async_chunks_no--;
-		if (d->async_chunks_no == 0) {
-			LM_DBG("We have finished writing all our async chunks in %p\n",con);
-			d->oldest_chunk=0;
-			/*  report back everything ok */
-			return 0;
-		} else {
-			LM_DBG("We still have %d chunks pending on %p\n",
-					d->async_chunks_no,con);
-			memmove(&d->async_chunks[0],&d->async_chunks[1],
-					d->async_chunks_no * sizeof(struct tcp_send_chunk*));
-			d->oldest_chunk = d->async_chunks[0]->ticks;
-			goto next_chunk;
-		}
-	}
-	return 0;
-}
-#endif
-
 
 
 /**************  READ related functions ***************/
@@ -336,12 +223,9 @@ again:
  */
 static int ws_read_req(struct tcp_connection* con, int* bytes_read)
 {
-	struct ws_data* wsd;
 	int size;
 
-	wsd = (struct ws_data *)con->proto_data;
-
-	if (wsd->state != WS_CON_HANDSHAKE_DONE) {
+	if (WS_STATE(con) != WS_CON_HANDSHAKE_DONE) {
 
 		size = ws_handshake(con);
 		if (size < 0) {
@@ -351,7 +235,7 @@ static int ws_read_req(struct tcp_connection* con, int* bytes_read)
 		if (size == 0)
 			goto done;
 	}
-	if (wsd->state == WS_CON_HANDSHAKE_DONE && ws_process(con) < 0)
+	if (WS_STATE(con) == WS_CON_HANDSHAKE_DONE && ws_process(con) < 0)
 		goto error;
 
 done:
