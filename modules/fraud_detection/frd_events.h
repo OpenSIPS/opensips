@@ -1,5 +1,4 @@
 /**
- *
  * Fraud Detection Module
  *
  * Copyright (C) 2014 OpenSIPS Foundation

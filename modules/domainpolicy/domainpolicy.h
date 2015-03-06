@@ -1,5 +1,4 @@
 /* domainpolicy.h v 0.1 2002/12/27
- *
  * Header file for domainpolicy table relates functions
  *
  * Copyright (C) 2002-2003 Juha Heinanen

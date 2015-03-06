@@ -1,4 +1,4 @@
-/* $Id: $
+/*
  * Peering module
  *
  * Copyright (C) 2008 Juha Heinanen

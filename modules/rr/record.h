@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Route & Record-Route module
  *
  * Copyright (C) 2001-2003 FhG Fokus

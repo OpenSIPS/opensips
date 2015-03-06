@@ -1,6 +1,4 @@
 /*
- * $Id: hash.c 7123 2010-08-08 11:46:36Z bogdan_iancu $
- *
  * memory cache system module
  *
  * Copyright (C) 2009 Anca Vamanu

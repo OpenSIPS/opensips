@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * message printing
  *
  * Copyright (C) 2001-2003 FhG Fokus

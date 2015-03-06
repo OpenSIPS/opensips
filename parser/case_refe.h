@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Refer-To Header Field Name Parsing Macros
  *
  * Copyright (C) 2005 Juha Heinanen

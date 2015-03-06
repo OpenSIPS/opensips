@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * eXtended JABber module - Jabber connections pool
  *
  * Copyright (C) 2001-2003 FhG Fokus

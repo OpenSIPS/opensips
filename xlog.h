@@ -1,6 +1,4 @@
 /*
- * $Id: xl_lib.h 5901 2009-07-21 07:45:05Z bogdan_iancu $
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.

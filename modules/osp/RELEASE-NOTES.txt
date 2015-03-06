@@ -1,4 +1,3 @@
-
 2005 July 23
   Implemented routing and authorization validation.  The module can:
    o Request authorization and routing information from an OSP server

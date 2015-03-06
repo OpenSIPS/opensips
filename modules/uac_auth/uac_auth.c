@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * uac_auth module
  *
  * Copyright (C) 2011 VoIP Embedded Inc.

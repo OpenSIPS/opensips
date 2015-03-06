@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * sleepycat module, portions of this code were templated using
  * the dbtext and postgres modules.
 

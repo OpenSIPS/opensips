@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  * Copyright (C) 2010-2012 OpenSIPS Solutions
  *

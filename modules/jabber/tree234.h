@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * tree234.h: header defining functions in tree234.c.
  *
  * This file is copyright 1999-2001 Simon Tatham.

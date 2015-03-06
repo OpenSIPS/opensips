@@ -1,6 +1,4 @@
 /**
- * $Id$
- *
  * dispatcher module -- stateless load balancing
  *
  * Copyright (C) 2004-2005 FhG Fokus

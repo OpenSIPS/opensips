@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2005-2009 Voice Sistem S.R.L.
  *

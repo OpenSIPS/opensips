@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 1&1 Internet AG
  * Copyright (C) 2001-2003 FhG Fokus
  *

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (c) 2004 Juha Heinanen
  *
  *

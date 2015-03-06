@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Add "dialog" event to presence module
  *
  * Copyright (C) 2007 Juha Heinanen

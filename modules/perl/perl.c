@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Perl module for OpenSIPS
  *
  * Copyright (C) 2006 Collax GmbH

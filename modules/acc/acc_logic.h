@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Accounting module
  *
  * Copyright (C) 2006 Voice Sistem SRL

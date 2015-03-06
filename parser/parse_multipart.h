@@ -1,6 +1,4 @@
 /**
- * $Id$
- *
  * Copyright (C) 2009 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.

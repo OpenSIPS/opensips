@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * load balancer module - complex call load balancing
  *
  * Copyright (C) 2009 Voice Sistem SRL

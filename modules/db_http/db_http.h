@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2012 Guillaume Bour (Orange-Vallee)
  *
  * This file is part of opensips, a free SIP server.

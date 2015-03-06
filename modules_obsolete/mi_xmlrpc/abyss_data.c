@@ -1,5 +1,4 @@
 /******************************************************************************
-**
 ** list.c
 **
 ** This file is part of the ABYSS Web server project.

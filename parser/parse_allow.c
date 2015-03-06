@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (c) 2004 Juha Heinanen
  *
  * This file is part of opensips, a free SIP server.

@@ -1,6 +1,4 @@
 /*
- * $Id: cpl_time.h 6099 2009-09-09 11:46:49Z bogdan_iancu $
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of ser, a free SIP server.

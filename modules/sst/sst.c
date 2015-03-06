@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * SIP Session Timer (sst) module - support for tracking dialogs and
  * SIP Session Timers.
  *

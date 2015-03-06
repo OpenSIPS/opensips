@@ -1,5 +1,3 @@
-
-
 This directory contains an already generated TLS certificate that can be
 used in your OpenSIPS configuration. It is a generic certificate with the 
 main purpose of serving both as an example and a testing sample.

@@ -1,5 +1,4 @@
-/* $Id: python_exec.c,v 1.1 2009/12/09 09:28:57 root Exp root $
- *
+/*
  * Copyright (C) 2009 Sippy Software, Inc., http://www.sippysoft.com
  *
  * This file is part of opensips, a free SIP server.

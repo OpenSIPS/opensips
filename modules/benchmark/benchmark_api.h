@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Benchmarking module for OpenSIPS
  *
  * Copyright (C) 2007 Collax GmbH

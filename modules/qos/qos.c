@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * QoS module - support for tracking dialogs and SDP
  *
  * Copyright (C) 2007 SOMA Networks, Inc.

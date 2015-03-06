@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011 VoIP Embedded, Inc.
  *
  * This file is part of opensips, a free SIP server.

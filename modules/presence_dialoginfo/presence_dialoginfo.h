@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence_dialoginfo module - presence_dialoginfo header file
  *
  * Copyright (C) 2007 Juha Heinanen

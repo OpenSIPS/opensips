@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * version and compile flags macros
  *
  * Copyright (C) 2004 FhG Fokus

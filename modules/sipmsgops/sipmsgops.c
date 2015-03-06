@@ -1,5 +1,4 @@
-/*$Id: textops.c 8628 2011-12-19 14:20:30Z bogdan_iancu $
- *
+/*
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.

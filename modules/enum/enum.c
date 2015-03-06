@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Enum and E164 related functions
  *
  * Copyright (C) 2002-2008 Juha Heinanen

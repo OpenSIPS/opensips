@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Usrloc hash table collision slot
  *
  * Copyright (C) 2001-2003 FhG Fokus

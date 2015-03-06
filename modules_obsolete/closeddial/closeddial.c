@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * This file is part of Open SIP Server (opensips).
  *
  * opensips is free software; you can redistribute it and/or

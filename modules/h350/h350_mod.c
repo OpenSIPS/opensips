@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * OpenSIPS H.350 Module
  *
  * Copyright (C) 2007 University of North Carolina

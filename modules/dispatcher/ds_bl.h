@@ -1,6 +1,4 @@
 /**
- * $Id$
- *
  * Copyright (C) 2012 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.

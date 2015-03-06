@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * List of registered domains
  *
  * Copyright (C) 2001-2003 FhG Fokus

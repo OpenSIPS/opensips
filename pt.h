@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Process Table
  *
  * Copyright (C) 2001-2003 FhG Fokus

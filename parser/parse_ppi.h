@@ -1,5 +1,4 @@
 /*
- *
  * Copyright (C) 2006 Juha Heinanen
  *
  * This file is part of opensips, a free SIP server.

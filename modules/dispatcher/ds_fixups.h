@@ -1,5 +1,4 @@
 /**
- *
  * dispatcher module fixup functions
  *
  * Copyright (C) 2004-2005 FhG Fokus

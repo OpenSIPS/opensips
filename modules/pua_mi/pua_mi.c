@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua_mi module - MI pua module
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.

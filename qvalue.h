@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Handling of the q value
  *
  * Copyright (C) 2004 FhG FOKUS

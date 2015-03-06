@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Flatstore module MI interface
  *
  * Copyright (C) 2006 Voice Sistem RL

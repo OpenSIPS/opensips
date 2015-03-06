@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Shared memory functions
  *
  * Copyright (C) 2001-2003 FhG Fokus

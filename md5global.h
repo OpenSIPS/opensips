@@ -1,5 +1,4 @@
 /* GLOBAL.H - RSAREF types and constants
- *
  */
 
 

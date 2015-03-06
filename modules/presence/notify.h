@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence module -presence server implementation
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.

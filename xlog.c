@@ -1,6 +1,4 @@
 /**
- * $Id: xlog.c 6153 2009-09-17 16:27:34Z anca_vamanu $
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.

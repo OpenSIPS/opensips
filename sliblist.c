@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * A simple linked list implementation.
  *
  * Copyright (C) 2013 VoIP Embedded, Inc.

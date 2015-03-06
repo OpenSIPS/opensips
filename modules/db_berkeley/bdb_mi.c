@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * db_berkeley MI functions
  *
  * Copyright (C) 2007  Cisco Systems

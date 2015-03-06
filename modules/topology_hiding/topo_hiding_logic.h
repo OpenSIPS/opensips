@@ -1,5 +1,4 @@
 /**
- *
  * Topology Hiding Module
  *
  * Copyright (C) 2015 OpenSIPS Foundation

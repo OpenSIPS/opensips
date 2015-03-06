@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Various URI checks and Request URI manipulation
  *
  * Copyright (C) 2001-2003 FhG Fokus

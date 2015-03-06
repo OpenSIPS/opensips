@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * emergency module - basic support for emergency calls
  *
  * This file is part of opensips, a free SIP server.

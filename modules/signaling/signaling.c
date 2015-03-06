@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * signaling module - interface for sending sip messages
  *
  * Copyright (C) 2008 Voice Sistem S.R.L.

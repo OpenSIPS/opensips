@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Domain table related functions
  *
  * Copyright (C) 2002-2003 Juha Heinanen

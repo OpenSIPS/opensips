@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * UNIXODBC module
  *
  * Copyright (C) 2005-2006 Marco Lorrai

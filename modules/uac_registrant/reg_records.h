@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * registrant module
  *
  * Copyright (C) 2011 VoIP Embedded Inc.

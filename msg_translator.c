@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2006 Andreas Granig <agranig@linguin.org>
  *   ( covers insert_path_as_route() )

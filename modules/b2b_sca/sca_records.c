@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * shared call appearance module
  *
  * Copyright (C) 2010 VoIP Embedded, Inc.

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Contact, Content-Type, Content-Length, Content-Disposition
  * Header Field Name Parsing Macros
  *

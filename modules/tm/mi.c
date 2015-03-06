@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Header file for TM MI functions
  *
  * Copyright (C) 2001-2003 FhG Fokus

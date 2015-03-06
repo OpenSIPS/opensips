@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * b2b_sca module
  *
  * Copyright (C) 2010 VoIP Embedded, Inc.

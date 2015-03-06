@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence_dialoginfo module - add_event header file
  *
  * Copyright (C) 2007 Juha Heinanen

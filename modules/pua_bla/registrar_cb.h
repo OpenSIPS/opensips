@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua_bla module - pua Bridged Line Appearance
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.

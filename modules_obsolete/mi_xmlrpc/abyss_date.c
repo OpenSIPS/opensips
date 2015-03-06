@@ -1,5 +1,4 @@
 /******************************************************************************
-**
 ** This file is part of the ABYSS Web server project.
 **
 ** Copyright (C) 2000 by Moez Mahfoudh <mmoez@bigfoot.com>.

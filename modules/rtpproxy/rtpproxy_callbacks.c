@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2010 Sippy Software, Inc., http://www.sippysoft.com
  *
  * This file is part of opensips, a free SIP server.

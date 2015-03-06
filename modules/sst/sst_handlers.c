@@ -1,6 +1,4 @@
 /*
- * $Id: sst_handlers.c 7046 2010-07-22 14:07:23Z bogdan_iancu $
- *
  * Copyright (C) 2006 SOMA Networks, Inc.
  * Written by Ron Winacott (karwin)
  *

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * http_db_handler module
  *
  * Copyright (C) 2012 VoIP Embedded, Inc.

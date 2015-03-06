@@ -1,6 +1,4 @@
 /*
-* $Id$
-*
 * OpenSIPS LDAP Module
 *
 * Copyright (C) 2007 University of North Carolina

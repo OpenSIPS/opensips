@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Hash table functions header file
  *
  * Copyright (C) 2009 Irina Stanescu

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Oracle module result related functions
  *
  * Copyright (C) 2007,2008 TRUNK MOBILE

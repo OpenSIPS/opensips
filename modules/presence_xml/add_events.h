@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence_xml module -
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.

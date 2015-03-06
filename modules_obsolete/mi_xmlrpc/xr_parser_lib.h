@@ -1,6 +1,4 @@
 /*
-** $Id$
-**
 ** Copyright (C) 2001 by First Peer, Inc. All rights reserved.
 ** Copyright (C) 2001 by Eric Kidd. All rights reserved.
 **

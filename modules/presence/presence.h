@@ -1,6 +1,4 @@
 /*
- * $Id
- *
  * presence - presence server implementation
  *
  * Copyright (C) 2006 Voice Sistem SRL

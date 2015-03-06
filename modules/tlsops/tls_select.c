@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * TLS module - select interface
  *
  * Copyright (C)  2001-2003 FhG FOKUS

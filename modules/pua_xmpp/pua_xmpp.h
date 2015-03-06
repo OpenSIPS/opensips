@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua_xmpp module - presence SIP - XMPP Gateway
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * back-to-back logic module
  *
  * Copyright (C) 2009 Free Software Fundation

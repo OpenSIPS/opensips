@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * xcap_client module - XCAP client for OpenSIPS
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.

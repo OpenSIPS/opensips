@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * SIP routing engine
  *
  * Copyright (C) 2001-2003 FhG Fokus

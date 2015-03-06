@@ -1,6 +1,4 @@
 /*
- * $Id: localcache.c 6910 2010-05-26 09:23:27Z bogdan_iancu $
- *
  * memory cache system module
  *
  * Copyright (C) 2009 Anca Vamanu

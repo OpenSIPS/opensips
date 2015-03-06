@@ -1,6 +1,4 @@
 /*
- * $Id: dlg.h $
- *
  * back-to-back entities modules
  *
  * Copyright (C) 2009 Free Software Fundation

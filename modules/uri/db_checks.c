@@ -1,6 +1,4 @@
 /*
- * $Id: checks.c 5901 2009-07-21 07:45:05Z bogdan_iancu $
- *
  * Various URI checks
  *
  * Copyright (C) 2001-2004 FhG FOKUS

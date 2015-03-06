@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2013 OpenSIPS Solutions
  *
  * This file is part of Open SIP Server (OpenSIPS).

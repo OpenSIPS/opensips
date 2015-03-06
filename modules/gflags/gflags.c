@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2004 FhG
  * Copyright (C) 2005-2006 Voice Sistem S.R.L.
  *

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * emergency module - basic support for emergency calls
  *
  *

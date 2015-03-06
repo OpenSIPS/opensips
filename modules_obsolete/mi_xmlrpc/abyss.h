@@ -1,5 +1,4 @@
 /*******************************************************************************
-**
 ** abyss.h
 **
 ** This file is part of the ABYSS Web server project.

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Header file for USRLOC MI functions
  *
  * Copyright (C) 2006 Voice Sistem SRL

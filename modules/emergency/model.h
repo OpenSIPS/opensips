@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * dialog module - basic support for dialog tracking
  *
  * Copyright (C) 2006 Voice Sistem SRL

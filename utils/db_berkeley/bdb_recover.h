@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * recovery for berkeley_db module
  *
  * Copyright (C) 2007 Cisco Systems

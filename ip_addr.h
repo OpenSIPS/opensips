@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * ip address family related structures
  *
  * Copyright (C) 2001-2003 FhG Fokus

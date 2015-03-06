@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Various URI related functions
  *
  * Copyright (C) 2001-2003 FhG Fokus

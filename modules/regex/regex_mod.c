@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * regex module - pcre operations
  *
  * Copyright (C) 2008 Iñaki Baz Castillo

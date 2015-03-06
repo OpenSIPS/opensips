@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011 VoIP Embedded Inc. <http://www.voipembedded.com/>
  *
  *

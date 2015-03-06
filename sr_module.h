@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * modules/plug-in structures declarations
  *
  * Copyright (C) 2001-2003 FhG Fokus

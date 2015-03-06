@@ -1,6 +1,4 @@
 /*
- * $Id: server.h $
- *
  * back-to-back entities module
  *
  * Copyright (C) 2009 Free Software Fundation

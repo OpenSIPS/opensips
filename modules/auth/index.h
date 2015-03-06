@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Nonce index  related functions
  *
  * Copyright (C)2008  Voice System S.R.L

@@ -1,7 +1,4 @@
-
 /*
- * $Id$
- *
  * XMPP Module
  * This file is part of opensips, a free SIP server.
  *

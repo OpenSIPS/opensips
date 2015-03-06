@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence_dialoginfo module - Presence Handling of dialog events
  *
  * Copyright (C) 2007 Juha Heinanen

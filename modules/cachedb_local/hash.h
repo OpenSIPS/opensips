@@ -1,6 +1,4 @@
 /*
- * $Id: hash.h 5855 2009-07-15 08:30:12Z andreidragus $
- *
  * memory cache system module
  *
  * Copyright (C) 2009 Anca Vamanu

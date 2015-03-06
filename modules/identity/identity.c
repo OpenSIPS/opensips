@@ -1,6 +1,4 @@
 /*
- *$Id$
- *
  * Copyright (C) 2007 Alexander Christ,
  *    Cologne University of Applied Sciences
  * Copyright (C) 2009 Voice Sistem SRL

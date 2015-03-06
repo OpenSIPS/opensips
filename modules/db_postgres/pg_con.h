@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * POSTGRES module, portions of this code were templated using
  * the mysql module, thus it's similarity.
  *

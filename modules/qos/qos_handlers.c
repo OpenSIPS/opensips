@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 SOMA Networks, Inc.
  * Written by Ovidiu Sas (osas)
  *

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Perl virtual database module
  *
  * Copyright (C) 2007 Collax GmbH

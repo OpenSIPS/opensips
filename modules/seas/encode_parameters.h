@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2006-2007 VozTelecom Sistemas S.L
  *
  * This file is part of opensips, a free SIP server.

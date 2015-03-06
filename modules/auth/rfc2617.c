@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Digest response calculation as per RFC2617
  *
  * Copyright (C) 2001-2003 FhG Fokus

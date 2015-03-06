@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua_dialoginfo module - sending publish with dialog info from dialog module
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.

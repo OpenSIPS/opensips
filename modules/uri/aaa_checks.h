@@ -1,6 +1,4 @@
 /*
- * $Id: $
- *
  * Header file for aaa based checks
  *
  * Copyright (C) 2002-2003 Juha Heinanen

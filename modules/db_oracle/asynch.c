@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Oracle module interface
  *
  * Copyright (C) 2007,2008 TRUNK MOBILE

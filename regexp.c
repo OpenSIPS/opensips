@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Regular expression functions
  *
  * Copyright (C) 2003 Juha Heinanen

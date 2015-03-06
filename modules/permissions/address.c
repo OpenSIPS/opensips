@@ -1,6 +1,4 @@
 /*
- * $Id: address.c 5901 2009-07-21 07:45:05Z bogdan_iancu $
- *
  * check_address related functions
  *
  * Copyright (C) 2003 Juha Heinanen

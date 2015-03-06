@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Supported parser.
  *
  * Copyright (C) 2006 Andreas Granig <agranig@linguin.org>

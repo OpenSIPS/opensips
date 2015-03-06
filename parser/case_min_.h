@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Session-Expires Header Field Name Parsing Macros
  *
  * Copyright (c) 2006 SOMA Networks, Inc. <http://www.somanetworks.com/>

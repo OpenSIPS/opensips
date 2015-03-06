@@ -1,5 +1,4 @@
 /**
- *
  * drouting module developer api
  *
  * Copyright (C) 2014 OpenSIPS Foundation

@@ -1,6 +1,4 @@
 /*
- * $Id: memcached.c 8040 2011-06-24 08:54:06Z bogdan_iancu $
- *
  * Copyright (C) 2009 Voice Sistem SRL
  * Copyright (C) 2009 Andrei Dragus
  *

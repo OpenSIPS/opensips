@@ -1,4 +1,3 @@
-
 #ifndef B2BUA_LOGIC_LOAD_
 #define B2BUA_LOGIC_LOAD_
 

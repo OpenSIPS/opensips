@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (c) 2006 SOMA Networks, Inc. <http://www.somanetworks.com/>
  *
  * This file is part of opensips, a free SIP server.

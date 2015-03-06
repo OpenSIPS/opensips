@@ -1,5 +1,4 @@
 /*
- *
  * P-Preferred-Identity Header Field Name Parsing Macros
  *
  * Copyright (C) 2006 Juha Heinanen

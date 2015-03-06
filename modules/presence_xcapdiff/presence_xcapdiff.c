@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2008 AG Projects
  *
  * This file is part of opensips, a free SIP server.

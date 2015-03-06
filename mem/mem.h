@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * memory related stuff (malloc & friends)
  *
  * Copyright (C) 2001-2003 FhG Fokus

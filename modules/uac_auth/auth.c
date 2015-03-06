@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011 VoIP Embedded Inc.
  * Copyright (C) 2013 OpenSIPS Solutions
  *

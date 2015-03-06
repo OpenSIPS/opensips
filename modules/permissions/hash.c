@@ -1,6 +1,4 @@
 /*
- * $Id: $
- *
  * Hash table functions
  *
  * Copyright (C) 2009 Irina Stanescu

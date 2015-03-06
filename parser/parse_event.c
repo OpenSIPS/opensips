@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Event header field body parser.
  * The parser was written for Presence Agent module only.
  * it recognize presence package only, no sub-packages, no parameters

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Usrloc contact structure
  *
  * Copyright (C) 2001-2003 FhG Fokus

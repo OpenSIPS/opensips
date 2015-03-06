@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * ALIAS_DB Module
  *
  * Copyright (C) 2004-2009 Voice Sistem SRL

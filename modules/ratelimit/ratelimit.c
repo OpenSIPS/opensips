@@ -1,6 +1,4 @@
 /*
- * $Id: ratelimit.c 8109 2011-06-30 18:16:54Z bogdan_iancu $
- *
  * ratelimit module
  *
  * Copyright (C) 2006 Hendrik Scholz <hscholz@raisdorf.net>

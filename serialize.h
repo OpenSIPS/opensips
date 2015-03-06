@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * sequential forking implementation
  *
  * Copyright (C) 2005 Juha Heinanen

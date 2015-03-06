@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * sca logic module
  *
  * Copyright (C) 2010 VoIP Embedded, Inc.

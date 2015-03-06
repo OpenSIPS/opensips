@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Header file for address.c implementing allow_address function
  *
  * Copyright (C) 2003-2008 Juha Heinanen

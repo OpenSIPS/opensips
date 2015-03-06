@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <!--
- * $Id$
+ *
  *
  * XSL converter script for pi_http framework table
  *

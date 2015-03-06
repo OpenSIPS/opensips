@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * eXtended JABber module - functions used for SIP 2 JABBER communication
  *
  * Copyright (C) 2001-2003 FhG Fokus

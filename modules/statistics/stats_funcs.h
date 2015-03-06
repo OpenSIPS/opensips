@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * statistics module - script interface to internal statistics manager
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.

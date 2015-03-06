@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * xcap module - XCAP operations module
  *
  * Copyright (C) 2012 AG Projects

@@ -1,6 +1,4 @@
 /*
- * $Id: b2b_entities.c $
- *
  * back-to-back entities module
  *
  * Copyright (C) 2009 Free Software Fundation

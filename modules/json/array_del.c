@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2009 Voice Sistem SRL
  * Copyright (C) 2009 Andrei Dragus
  *

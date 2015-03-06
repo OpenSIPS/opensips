@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2009 Irina Stanescu
  * Copyright (C) 2009 Voice System
 

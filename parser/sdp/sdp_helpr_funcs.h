@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * SDP parser helpers
  *
  * Copyright (C) 2008 SOMA Networks, INC.

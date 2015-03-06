@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Domain Policy related functions
  *
  * Copyright (C) 2006 Otmar Lendl & Klaus Darilion

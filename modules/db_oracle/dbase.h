@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Oracle module core functions
  *
  * Copyright (C) 2007,2008 TRUNK MOBILE

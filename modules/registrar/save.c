@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Process REGISTER request and send reply
  *
  * Copyright (C) 2001-2003 FhG Fokus

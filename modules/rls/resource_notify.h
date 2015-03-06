@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * rls module - resource list server
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.

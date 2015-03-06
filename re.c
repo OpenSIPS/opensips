@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * regexp and regexp substitutions implementations
  *
  * Copyright (C) 2001-2003 FhG Fokus

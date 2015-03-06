@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2008 Sippy Software, Inc., http://www.sippysoft.com
  *
  * This file is part of ser, a free SIP server.

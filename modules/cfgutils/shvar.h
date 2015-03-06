@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 Elena-Ramona Modroiu
  *
  * This file is part of opensips, a free SIP server.

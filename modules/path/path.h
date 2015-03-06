@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Path handling for intermediate proxies.
  *
  * Copyright (C) 2006 Inode GmbH (Andreas Granig <andreas.granig@inode.info>)

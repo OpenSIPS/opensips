@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Flatstore module interface
  *
  * Copyright (C) 2004 FhG Fokus

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * DBText module interface
  *
  * Copyright (C) 2001-2003 FhG Fokus

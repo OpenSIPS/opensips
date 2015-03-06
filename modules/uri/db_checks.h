@@ -1,6 +1,4 @@
 /*
- * $Id: $
- *
  * Various URI checks
  *
  * Copyright (C) 2001-2004 FhG FOKUS

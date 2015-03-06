@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * eXtended JABber module - headers for functions used for JABBER srv connection
  *
  * Copyright (C) 2001-2003 FhG Fokus
