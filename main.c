@@ -1086,6 +1086,8 @@ try_again:
 	/* init the resolver, before fixing the config */
 	resolv_init();
 
+	fix_poll_method( &io_poll_method );
+
 	/* fix temporary listeners added in the cmd line */
 	if (fix_cmd_listeners() < 0) {
 		LM_ERR("cannot add temproray listeners\n");
@@ -1169,8 +1171,6 @@ try_again:
 
 	init_shm_statistics();
 
-	fix_poll_method( &io_poll_method );
-
 	/*init UDP networking layer*/
 	if (udp_init()<0){
 		LM_CRIT("could not initialize tcp, exiting...\n");
@@ -1245,7 +1245,7 @@ try_again:
 		LM_CRIT("failed to create DNS blacklist\n");
 		goto error;
 	}
-
+	
 	/* init modules */
 	if (init_modules() != 0) {
 		LM_ERR("error while initializing modules\n");
