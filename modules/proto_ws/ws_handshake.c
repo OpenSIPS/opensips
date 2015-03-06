@@ -342,11 +342,10 @@ error:
 
 #define WS_HDR "websocket"
 #define WS_HDR_LEN (sizeof(WS_HDR) - 1)
+#define WS_PROTO_SIP "sip"
+#define WS_PROTO_SIP_LEN (sizeof(WS_PROTO_SIP) - 1)
 #define WS_UPGRADE_HDR "Upgrade"
 #define WS_UPGRADE_HDR_LEN (sizeof(WS_UPGRADE_HDR) - 1)
-#define WS_PROTO_SIP_HDR "sip"
-#define WS_PROTO_SIP_HDR_LEN (sizeof(WS_PROTO_SIP_HDR) - 1)
-
 
 /* all flags */
 #define WS_ALL_F (WS_HOST_F | \
@@ -365,6 +364,31 @@ static struct ws_hs static_ws_handshake;
 	((*(_p) + (*((_p)+1)<<8) + (*((_p)+2)<<16) + (*((_p)+3)<<24)) | 0x20202020)
 #define GET_DWORD(_c0, _c1, _c2, _c3) \
 	((_c0) + ((_c1)<<8) + ((_c2)<<16) + ((_c3)<<24))
+
+static inline int ws_has_param(const char *p, int l, str ps)
+{
+	char *pe;
+	str tmp;
+
+	do {
+		/* search next comma */
+		pe = q_memchr(ps.s, ',', ps.len);
+		if (!pe) {
+			/* last parameter */
+			str_trim_spaces_lr(ps);
+			return (ps.len == l && !strncasecmp(p, ps.s, ps.len));
+		}
+		tmp.s = ps.s;
+		tmp.len = pe - ps.s;
+		str_trim_spaces_lr(tmp);
+		if (tmp.len == l && !strncasecmp(p, tmp.s, tmp.len))
+			return 1;
+		ps.len -= pe - ps.s + 1;
+		ps.s = pe + 1;
+	} while (ps.len > 0);
+
+	return 0;
+}
 
 
 static int ws_parse_handshake(struct tcp_connection *c, char *msg, int len)
@@ -426,11 +450,9 @@ static int ws_parse_handshake(struct tcp_connection *c, char *msg, int len)
 					GET_LOWER(hf->name.s + 6) != 'e')
 				break;
 
-			/* we can safely trim this here because nobody else is using it*/
-			str_trim_spaces_lr(hf->body);
-			if (hf->body.len != WS_HDR_LEN ||
-				strncasecmp(hf->body.s, WS_HDR, WS_HDR_LEN) != 0) {
-				LM_ERR("Invalid Upgrade header <%.*s>\n", hf->body.len, hf->body.s);
+			if (!ws_has_param(WS_HDR, WS_HDR_LEN, hf->body)) {
+				LM_ERR("Invalid Upgrade header <%.*s>\n",
+						hf->body.len, hf->body.s);
 				goto ws_error;
 			}
 			flags |= WS_UPGRADE_F;
@@ -444,10 +466,10 @@ static int ws_parse_handshake(struct tcp_connection *c, char *msg, int len)
 					GET_LOWER(hf->name.s + 8) != 'o' ||
 					GET_LOWER(hf->name.s + 9) != 'n')
 				break;
-			str_trim_spaces_lr(hf->body);
-			if (hf->body.len != WS_UPGRADE_HDR_LEN ||
-				strncasecmp(hf->body.s, WS_UPGRADE_HDR, WS_UPGRADE_HDR_LEN) != 0) {
-				LM_ERR("Invalid Connection header <%.*s>\n", hf->body.len, hf->body.s);
+
+			if (!ws_has_param(WS_UPGRADE_HDR, WS_UPGRADE_HDR_LEN, hf->body)) {
+				LM_ERR("Invalid Connection header <%.*s>\n",
+						hf->body.len, hf->body.s);
 				goto ws_error;
 			}
 
@@ -515,10 +537,9 @@ static int ws_parse_handshake(struct tcp_connection *c, char *msg, int len)
 					GET_LOWER(hf->name.s + 20) == 'o' &&
 					GET_LOWER(hf->name.s + 21) == 'l') {
 
-				str_trim_spaces_lr(hf->body);
-				if (hf->body.len != WS_PROTO_SIP_HDR_LEN ||
-					strncasecmp(hf->body.s, WS_PROTO_SIP_HDR, WS_PROTO_SIP_HDR_LEN) != 0) {
-					LM_ERR("Invalid Protocol <%.*s>\n", hf->body.len, hf->body.s);
+				if (!ws_has_param(WS_PROTO_SIP, WS_PROTO_SIP_LEN, hf->body)) {
+					LM_ERR("Invalid Protocol <%.*s>\n",
+							hf->body.len, hf->body.s);
 					goto ws_error;
 				}
 				flags |= WS_PROTO_F;
