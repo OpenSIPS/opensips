@@ -131,9 +131,6 @@ extern unsigned int shm_hash_split_percentage;
 extern unsigned int shm_hash_split_factor;
 extern unsigned int shm_secondary_hash_size;
 extern unsigned long pkg_mem_size;
-extern char *mem_warming_pattern_file;
-extern int mem_warming_percentage;
-extern int mem_warming_enabled;
 
 extern int reply_to_via;
 
