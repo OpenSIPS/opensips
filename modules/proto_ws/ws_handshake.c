@@ -105,7 +105,8 @@ int ws_handshake(struct tcp_connection *con)
 		}
 
 		/* update the timeout - we succesfully read the request */
-		con->timeout=get_ticks() + 10/* TODO: what should we do with this ? +tcp_max_msg_time*/;
+		tcp_conn_set_lifetime( con, tcp_con_lifetime);
+		con->timeout=con->lifetime;
 
 		con->rcv.proto_reserved1=con->id; /* copy the id */
 		/* we overwrite whatever is there, since we are not interested
@@ -161,13 +162,11 @@ int ws_handshake(struct tcp_connection *con)
 		/* request not complete - check the if the thresholds are exceeded */
 
 		con->msg_attempts++;
-		/* TODO: msg chunks?
-		if (con->msg_attempts == tcp_max_msg_chunks) {
+		if (con->msg_attempts == ws_max_msg_chunks) {
 			LM_ERR("Made %u read attempts but message is not complete yet - "
 				   "closing connection \n",con->msg_attempts);
 			goto error;
 		}
-		*/
 	}
 
 	if (!req->complete && (req == &ws_current_req)) {
@@ -591,6 +590,8 @@ unsigned char ws_accept_buf[WS_ACCEPT_KEY_LEN];
 
 static int ws_complete_handshake(struct tcp_connection *c)
 {
+	int n;
+	struct timeval get;
 	struct ws_data *wsd = (struct ws_data *)c->proto_data;
 	static struct iovec iov[] = {
 		{ (void*)WS_HTTP_ACCEPT, WS_HTTP_ACCEPT_LEN }, /* all mandatory headers */
@@ -598,12 +599,18 @@ static int ws_complete_handshake(struct tcp_connection *c)
 		{ (void *)WS_HTTP_ACCEPT_END, WS_HTTP_ACCEPT_END_LEN }/* message end */
 	};
 
+	reset_tcp_vars(tcpthreshold);
+	start_expire_timer(get, tcpthreshold);
+
 	/* compute the ws_key */
 	memcpy(ws_key_buf, wsd->handshake->key.s, wsd->handshake->key.len);
 	sha1(ws_key_buf, wsd->handshake->key.len + WS_GUID_KEY_LEN, ws_sha1_buf);
 	base64encode(ws_accept_buf, ws_sha1_buf, WS_SHA1_KEY_LEN);
 
-	return ws_raw_writev(c, c->fd, iov, 3);
+	n = ws_raw_writev(c, c->fd, iov, 3);
+	stop_expire_timer(get, tcpthreshold, "ws handshake", "", 0, 1);
+
+	return n;
 }
 
 #define WS_HTTP_BAD_REQ						\
@@ -614,8 +621,15 @@ static int ws_complete_handshake(struct tcp_connection *c)
 
 static int ws_bad_handshake(struct tcp_connection *c)
 {
-	/* TODO: handle bad version */
-	return ws_raw_write(c, c->fd, WS_HTTP_BAD_REQ, WS_HTTP_BAD_REQ_LEN);
+	int n;
+	struct timeval get;
+
+	reset_tcp_vars(tcpthreshold);
+	start_expire_timer(get, tcpthreshold);
+	n = ws_raw_write(c, c->fd, WS_HTTP_BAD_REQ, WS_HTTP_BAD_REQ_LEN);
+	stop_expire_timer(get, tcpthreshold, "ws handshake", "", 0, 1);
+
+	return n;
 }
 
 /*! \brief

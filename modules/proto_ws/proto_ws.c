@@ -50,15 +50,26 @@ static int ws_read_req(struct tcp_connection* con, int* bytes_read);
 static int ws_conn_init(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
 
+/* parameters*/
+int ws_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
+
+/* in miliseconds */
+int ws_send_timeout = 100;
+
+static int ws_port;
 
 
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_ws_init, 0, 0, 0, 0},
-	{0,0,0,0,0,0}
+	{0, 0, 0, 0, 0, 0}
 };
 
 
 static param_export_t params[] = {
+	/* XXX: should we drop the ws prefix? */
+	{ "ws_port",           INT_PARAM, &ws_port           },
+	{ "ws_max_msg_chunks", INT_PARAM, &ws_max_msg_chunks },
+	{ "ws_send_timeout",   INT_PARAM, &ws_send_timeout   },
 	{0, 0, 0}
 };
 
@@ -86,7 +97,7 @@ struct module_exports exports = {
 
 static int proto_ws_init(struct proto_info *pi)
 {
-	pi->default_port		= WS_DEFAULT_PORT;
+	pi->default_port		= ws_port;
 
 	pi->tran.init_listener	= proto_ws_init_listener;
 	pi->tran.send			= proto_ws_send;
@@ -163,9 +174,13 @@ static int proto_ws_send(struct socket_info* send_sock,
 											union sockaddr_union* to, int id)
 {
 	struct tcp_connection *c;
+	struct timeval get;
 	struct ip_addr ip;
-	int port;
+	int port = 0;
 	int fd, n;
+
+	reset_tcp_vars(tcpthreshold);
+	start_expire_timer(get,tcpthreshold);
 
 	if (to){
 		su2ip_addr(&ip, to);
@@ -175,12 +190,14 @@ static int proto_ws_send(struct socket_info* send_sock,
 		n = tcp_conn_get(id, 0, 0, &c, &fd);
 	}else{
 		LM_CRIT("prot_tls_send called with null id & to\n");
+		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 		return -1;
 	}
 
 	if (n<0) {
 		/* error during conn get, return with error too */
 		LM_ERR("failed to aquire connection\n");
+		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 		return -1;
 	}
 
@@ -192,8 +209,10 @@ static int proto_ws_send(struct socket_info* send_sock,
 		/* XXX: currently cannot work as a WebSocket client */
 		LM_ERR("no open tcp connection found. "
 				"WebSocket connect is not supported!\n");
+		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 		return -1;
 	}
+	get_time_difference(get, tcpthreshold, tcp_timeout_con_get);
 
 	/* now we have a connection, let's what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
@@ -207,6 +226,7 @@ static int proto_ws_send(struct socket_info* send_sock,
 	LM_DBG("sending via fd %d...\n",fd);
 
 	n = ws_req_write(c, fd, buf, len);
+	stop_expire_timer(get, tcpthreshold, "WS ops",buf,(int)len,1);
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
@@ -218,7 +238,12 @@ static int proto_ws_send(struct socket_info* send_sock,
 		close(fd);
 		return -1;
 	}
-	close(fd);
+
+	/* only close the FD if not already in the context of our process
+	either we just connected, or main sent us the FD */
+	if (c->proc_id != process_no)
+		close(fd);
+
 	tcp_conn_release(c, 0);
 	return n;
 }

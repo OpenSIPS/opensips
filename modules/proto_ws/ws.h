@@ -30,6 +30,10 @@
 /* borrow suff from proto_tcp - but don't use parse and common */
 #include "../../net/proto_tcp/tcp_common_defs.h"
 
+
+extern int ws_max_msg_chunks;
+extern int ws_send_timeout;
+
 int ws_process(struct tcp_connection *con);
 int ws_req_write(struct tcp_connection *con, int fd, char *buf, int len);
 

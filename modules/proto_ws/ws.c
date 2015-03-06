@@ -435,7 +435,7 @@ again:
 	if (req->tcp.complete) {
 
 		/* update the timeout - we succesfully read the request */
-		tcp_conn_set_lifetime(con, 10);
+		tcp_conn_set_lifetime(con, ws_send_timeout);
 		con->timeout=con->lifetime;
 
 		/* if we are here everything is nice and ok*/
@@ -541,7 +541,7 @@ again:
 		/* request not complete - check the if the thresholds are exceeded */
 
 		con->msg_attempts++;
-		if (con->msg_attempts == 4/*TODO: change this: tcp_max_msg_chunks*/) {
+		if (con->msg_attempts == ws_max_msg_chunks) {
 			LM_ERR("Made %u read attempts but message is not complete yet - "
 				   "closing connection \n",con->msg_attempts);
 			goto error;
