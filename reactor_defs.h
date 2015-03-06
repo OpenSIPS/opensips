@@ -89,7 +89,7 @@ extern io_wait_h _worker_io;
 	destroy_io_wait(&_worker_io)
 
 #define reactor_has_async() \
-	(_worker_io.poll_method==POLL_POLL || _worker_io.poll_method==POLL_EPOLL_LT || _worker_io.poll_method==POLL_EPOLL_ET)
+	(io_poll_method==POLL_POLL || io_poll_method==POLL_EPOLL_LT || io_poll_method==POLL_EPOLL_ET)
 
 #endif
 

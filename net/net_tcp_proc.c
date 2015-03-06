@@ -50,7 +50,8 @@ static void tcpconn_release(struct tcp_connection* c, long state)
 	}
 
 	/* release req & signal the parent */
-	if (c->fd!=-1) close(c->fd);
+	c->proc_id = -1;
+
 	/* errno==EINTR, EWOULDBLOCK a.s.o todo */
 	response[0]=(long)c;
 	response[1]=state;
@@ -133,8 +134,9 @@ again:
 					break;
 			}
 			if (s==-1) {
-				LM_ERR("read_fd:no fd read\n");
-				goto con_error;
+				LM_BUG("read_fd:no fd read\n");
+				/* FIXME? */
+				return -1;
 			}
 			if (con==tcp_conn_lst){
 				LM_CRIT("duplicate"
@@ -145,7 +147,7 @@ again:
 				break; /* try to recover */
 			}
 
-			LM_DBG("We have received conn %p with rw %d\n",con,rw);
+			LM_DBG("We have received conn %p with rw %d on fd %d\n",con,rw,s);
 			if (rw & IO_WATCH_READ) {
 				/* 0 attempts so far for this SIP MSG */
 				con->msg_attempts = 0;
@@ -168,7 +170,7 @@ again:
 				/* save FD which is valid in context of this TCP worker */
 				con->fd=s;
 			} else if (rw & IO_WATCH_WRITE) {
-				LM_DBG("Received con %p ref = %d\n",con,con->refcnt);
+				LM_DBG("Received con for async write %p ref = %d\n",con,con->refcnt);
 				lock_get(&con->write_lock);
 				resp = protos[con->type].net.write( (void*)con, s );
 				lock_release(&con->write_lock);
@@ -183,6 +185,8 @@ again:
 					tcpconn_release(con, CONN_RELEASE);
 				}
 				ret = 0;
+				/* we always close the socket received for writing */
+				close(s);
 			}
 			break;
 		case F_TCPCONN:
@@ -195,11 +199,13 @@ again:
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->proc_id = -1;
+					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 					tcpconn_release(con, CONN_ERROR);
 				} else if (con->state==S_CONN_EOF) {
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->proc_id = -1;
+					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 					tcpconn_release(con, CONN_EOF);
 				} else {
 					//tcpconn_release(con, CONN_RELEASE);
@@ -246,6 +252,7 @@ static inline void tcp_receive_timeout(void)
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 			con->proc_id = -1;
 			con->state=S_CONN_BAD;
+			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 			tcpconn_release(con, CONN_ERROR);
 			continue;
 		}
@@ -258,6 +265,7 @@ static inline void tcp_receive_timeout(void)
 
 			/* connection is going to main */
 			con->proc_id = -1;
+			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 
 			if (con->msg_attempts)
 				tcpconn_release(con, CONN_ERROR);

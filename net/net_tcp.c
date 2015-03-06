@@ -872,6 +872,7 @@ struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
 			LM_ERR("Failed to send the socket to main for async connection\n");
 			goto error;
 		}
+		close(sock);
 	} else {
 		response[0]=(long)c;
 		response[1]=CONN_NEW;

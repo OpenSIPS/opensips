@@ -67,7 +67,7 @@ static void tcp_conn_clean(struct tcp_connection* c);
 static int tcp_port = SIP_PORT;
 
 /* in miliseconds */
-static int tcp_send_timeout = 10;
+static int tcp_send_timeout = 100;
 
 /* 1 if TCP connect & write should be async */
 static int tcp_async = 0;
@@ -668,7 +668,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 		if (tcp_no_new_conn) {
 			return -1;
 		}
-		LM_DBG("no open tcp connection found, opening new one\n");
+		LM_DBG("no open tcp connection found, opening new one, async = %d\n",tcp_async);
 		/* create tcp connection */
 		if (tcp_async) {
 			n = tcpconn_async_connect(send_sock, to, buf, len, &c );
