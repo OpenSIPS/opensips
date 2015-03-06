@@ -115,6 +115,9 @@
 #define SRV_TLS_PREFIX "_sips._tcp."
 #define SRV_TLS_PREFIX_LEN (sizeof(SRV_TLS_PREFIX) - 1)
 
+#define SRV_WS_PREFIX "_sip._ws."
+#define SRV_WS_PREFIX_LEN (sizeof(SRV_WS_PREFIX) - 1)
+
 #define SRV_MAX_PREFIX_LEN SRV_TLS_PREFIX_LEN
 
 #ifdef HP_MALLOC

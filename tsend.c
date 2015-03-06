@@ -160,3 +160,41 @@ error:
 	return -1;
 }
 
+
+/*! \brief writes a vector on fd (which must be O_NONBLOCK); if it cannot
+ * send any data in timeout milliseconds it will return ERROR
+ * \return -1 on error, or number of bytes written
+ *  (if less than len => couldn't send all)
+ *  bugs: signals will reset the timer
+ */
+int tsend_stream_ev(int fd, struct iovec *iov, int iovcnt, int timeout)
+{
+	int written;
+	int i, len = 0;
+	TSEND_INIT;
+
+	for (i = 0; i < iovcnt; i++)
+		len += iov[i].iov_len;
+
+	written=0;
+	i = 0;
+again:
+	n=writev(fd, &iov[i], iovcnt);
+	TSEND_ERR_CHECK("tsend_stream");
+	written+=n;
+	if ((unsigned int)n<len){
+		/* partial write */
+		len-=n;
+		while (n > iov[i].iov_len) {
+			i++;
+			n -= iov[i].iov_len;
+			iovcnt--;
+		}
+	}else{
+		/* successful full write */
+		return written;
+	}
+	TSEND_POLL("tsend_stream");
+error:
+	return -1;
+}

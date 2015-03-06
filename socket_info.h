@@ -157,7 +157,7 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 	/* must support 3-char arrays for udp, tcp, tls,
 	 * must support 4-char arrays for sctp */
 	*proto=PROTO_NONE;
-	if (len!=3 && len!=4) return -1;
+	if (len < 2 || len > 4) return -1;
 
 	i=PROTO2UINT(s[0], s[1], s[2]);
 	switch(i){
@@ -175,6 +175,10 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 				*proto=PROTO_SCTP; return 0;
 			}
 			break;
+		case PROTO2UINT('w', 's', '\0'):
+			if(len==2) { *proto=PROTO_WS; return 0; }
+			break;
+
 		default:
 			return -1;
 	}
@@ -299,6 +303,10 @@ static inline char* proto2str(int proto, char *p)
 			*(p++) = 'c';
 			*(p++) = 't';
 			*(p++) = 'p';
+			break;
+		case PROTO_WS:
+			*(p++) = 'w';
+			*(p++) = 's';
 			break;
 		default:
 			LM_CRIT("unsupported proto %d\n", proto);

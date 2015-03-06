@@ -186,7 +186,9 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					/* tls */
 					      VTLS_L, VTLS_S_FIN,
 					/* sctp */
-					VS_S, VS_C, VS_T, VS_P_FIN
+					VS_S, VS_C, VS_T, VS_P_FIN,
+					/* ws */
+					VW_W, VW_S_FIN
 	};
 	register enum states state;
 	char* s;
@@ -785,6 +787,11 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						v=p;
 						state=VS_S;
 						break;
+					case 'w':
+					case 'W':
+						v=p;
+						state=VW_W;
+						break;
 					default:
 						v=p;
 						state=URI_VAL_P;
@@ -812,6 +819,9 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			value_switch(VS_C, 't', 'T', VS_T);
 			value_switch(VS_T, 'p', 'P', VS_P_FIN);
 			transport_fin(VS_P_FIN, PROTO_SCTP);
+			/* ws */
+			value_switch(VW_W, 's', 'S', VW_S_FIN);
+			transport_fin(VW_S_FIN, PROTO_WS);
 
 			/* ttl */
 			param_switch(PTTL_T2,  'l', 'L', PTTL_L);
@@ -1132,6 +1142,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		case VTLS_L:
 		case VS_S:
 		case VS_C:
+		case VW_W:
 		case VS_T:
 			uri->params.s=s;
 			uri->params.len=p-s;
@@ -1161,6 +1172,12 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->params.len=p-s;
 			param_set(b, v);
 			uri->proto=PROTO_SCTP;
+			break;
+		case VW_S_FIN:
+			uri->params.s=s;
+			uri->params.len=p-s;
+			param_set(b, v);
+			uri->proto=PROTO_WS;
 			break;
 		/* headers */
 		case URI_HEADERS:

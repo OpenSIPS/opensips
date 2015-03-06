@@ -1318,7 +1318,8 @@ nh_timer(unsigned int ticks, void *timer_idx)
 
 		if (next_hop.proto != PROTO_NONE && next_hop.proto != PROTO_UDP &&
 		    (natping_tcp == 0 || (next_hop.proto != PROTO_TCP &&
-		                          next_hop.proto != PROTO_TLS)))
+		                          next_hop.proto != PROTO_TLS &&
+								  next_hop.proto != PROTO_WS)))
 			continue;
 
 		LM_DBG("resolving next hop: '%.*s'\n",
@@ -1394,6 +1395,7 @@ create_rcv_uri(str* uri, struct sip_msg* m)
 
 	port.s = int2str(m->rcv.src_port, &port.len);
 
+	/* TODO: make this dynamic based on protos */
 	switch(m->rcv.proto) {
 	case PROTO_NONE:
 	case PROTO_UDP:
@@ -1414,6 +1416,11 @@ create_rcv_uri(str* uri, struct sip_msg* m)
 	case PROTO_SCTP:
 		proto.s = "SCTP";
 		proto.len = 4;
+		break;
+
+	case PROTO_WS:
+		proto.s = "WS";
+		proto.len = 2;
 		break;
 
 	default:

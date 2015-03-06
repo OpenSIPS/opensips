@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 - OpenSIPS Foundation
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -17,23 +18,26 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- *  History:
- * --------
- *  2004-02-26  created by andrei
+ *
+ * History:
+ * -------
+ *  2015-02-xx  first version (razvanc)
  */
 
-#ifndef __tsend_h
-#define __tsend_h
+#ifndef _WS_HANDSHAKE_H_
+#define _WS_HANDSHAKE_H_
+
+#include "../../net/net_tcp.h"
 
 
-int tsend_stream(int fd, char* buf, unsigned int len, int timeout);
-int tsend_dgram(int fd, char* buf, unsigned int len,
-				const struct sockaddr* to, socklen_t tolen, int timeout);
-int tsend_stream_ev(int fd, const struct iovec *iov, int iovcnt, int timeout);
-int tsend_dgram_ev(int fd, const struct iovec* v, int count, int timeout);
+struct ws_hs {
+	//str resource;					/*!< HTTP resource */
+	str key;						/*!< WebSocket Handshake key */
+	unsigned version_major;			/*!< WebSocket major version */
+	unsigned version_minor;			/*!< WebSocket minor version */
+};
 
+int ws_handshake(struct tcp_connection *con);
+void ws_hs_clean(struct ws_hs *hs);
 
-
-#endif
-
-
+#endif /* _WS_HANDSHAKE_H_ */

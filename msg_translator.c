@@ -463,6 +463,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			case SUBST_RCV_PROTO: \
 				if (msg->rcv.bind_address){ \
 					switch(msg->rcv.bind_address->proto){ \
+						/* TODO change this to look in proto !*/ \
 						case PROTO_NONE: \
 						case PROTO_UDP: \
 						case PROTO_TCP: \
@@ -471,6 +472,9 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								break; \
 						case PROTO_SCTP: \
 								new_len+=4; \
+								break; \
+						case PROTO_WS: \
+								new_len+=2; \
 								break; \
 						default: \
 						LM_CRIT("unknown proto %d\n", \
@@ -497,6 +501,9 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								break; \
 						case PROTO_SCTP: \
 								new_len+=TRANSPORT_PARAM_LEN+4; \
+								break; \
+						case PROTO_WS: \
+								new_len+=TRANSPORT_PARAM_LEN+2; \
 								break; \
 						default: \
 						LM_CRIT("unknown proto %d\n", \
@@ -529,6 +536,9 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						case PROTO_SCTP: \
 								new_len+=4; \
 								break; \
+						case PROTO_WS: \
+								new_len+=2; \
+								break; \
 						default: \
 						LM_CRIT("unknown proto %d\n", \
 								send_sock->proto); \
@@ -555,6 +565,9 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								break; \
 						case PROTO_SCTP: \
 								new_len+=TRANSPORT_PARAM_LEN+4; \
+								break; \
+						case PROTO_WS: \
+								new_len+=TRANSPORT_PARAM_LEN+2; \
 								break; \
 						default: \
 						LM_CRIT("unknown proto %d\n", \
@@ -770,6 +783,7 @@ void process_lumps(	struct sip_msg* msg,
 					offset+=rcv_port_str->len; \
 				}\
 				switch(msg->rcv.bind_address->proto){ \
+					/* TODO: change this to look into protos ! */ \
 					case PROTO_NONE: \
 					case PROTO_UDP: \
 						break; /* nothing to do, udp is default*/ \
@@ -792,6 +806,13 @@ void process_lumps(	struct sip_msg* msg,
 								TRANSPORT_PARAM_LEN); \
 						offset+=TRANSPORT_PARAM_LEN; \
 						memcpy(new_buf+offset, "sctp", 4); \
+						offset+=4; \
+						break; \
+					case PROTO_WS: \
+						memcpy(new_buf+offset, TRANSPORT_PARAM, \
+								TRANSPORT_PARAM_LEN); \
+						offset+=TRANSPORT_PARAM_LEN; \
+						memcpy(new_buf+offset, "ws", 2); \
 						offset+=4; \
 						break; \
 					default: \
@@ -862,6 +883,13 @@ void process_lumps(	struct sip_msg* msg,
 						memcpy(new_buf+offset, "sctp", 4); \
 						offset+=4; \
 						break; \
+					case PROTO_WS: \
+						memcpy(new_buf+offset, TRANSPORT_PARAM, \
+								TRANSPORT_PARAM_LEN); \
+						offset+=TRANSPORT_PARAM_LEN; \
+						memcpy(new_buf+offset, "ws", 2); \
+						offset+=2; \
+						break; \
 					default: \
 						LM_CRIT("unknown proto %d\n", \
 								send_sock->proto); \
@@ -891,6 +919,10 @@ void process_lumps(	struct sip_msg* msg,
 						memcpy(new_buf+offset, "sctp", 4); \
 						offset+=4; \
 						break; \
+					case PROTO_WS: \
+						memcpy(new_buf+offset, "ws", 2); \
+						offset+=2; \
+						break; \
 					default: \
 						LM_CRIT("unknown proto %d\n", \
 								msg->rcv.bind_address->proto); \
@@ -919,6 +951,10 @@ void process_lumps(	struct sip_msg* msg,
 					case PROTO_SCTP: \
 						memcpy(new_buf+offset, "sctp", 4); \
 						offset+=4; \
+						break; \
+					case PROTO_WS: \
+						memcpy(new_buf+offset, "ws", 2); \
+						offset+=2; \
 						break; \
 					default: \
 						LM_CRIT("unknown proto %d\n", \
@@ -2026,6 +2062,9 @@ char* via_builder( unsigned int *len,
 	}else if(proto==PROTO_SCTP){
 		memcpy(line_buf+local_via_len-4, "SCTP ", 5);
 		local_via_len++;
+	}else if(proto==PROTO_WS){
+		memcpy(line_buf+local_via_len-4, "WS ", 3);
+		local_via_len--;
 	}else{
 		LM_CRIT("unknown proto %d\n", proto);
 		return 0;
