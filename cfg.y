@@ -637,15 +637,45 @@ assign_stm: DEBUG EQUAL snumber {
 		| CHILDREN EQUAL error { yyerror("number expected"); }
 		| CHECK_VIA EQUAL NUMBER { check_via=$3; }
 		| CHECK_VIA EQUAL error { yyerror("boolean value expected"); }
-		| SHM_HASH_SPLIT_PERCENTAGE EQUAL NUMBER { shm_hash_split_percentage=$3; }
+		| SHM_HASH_SPLIT_PERCENTAGE EQUAL NUMBER {
+			#ifdef HP_MALLOC
+			shm_hash_split_percentage=$3;
+			#else
+			yyerror("Cannot set parameter; Please recompile with support for HP_MALLOC");
+			#endif
+			}
 		| SHM_HASH_SPLIT_PERCENTAGE EQUAL error { yyerror("number expected"); }
-		| SHM_SECONDARY_HASH_SIZE EQUAL NUMBER { shm_secondary_hash_size=$3; }
+		| SHM_SECONDARY_HASH_SIZE EQUAL NUMBER {
+			#ifdef HP_MALLOC
+			shm_secondary_hash_size=$3;
+			#else
+			yyerror("Cannot set parameter; Please recompile with support for HP_MALLOC");
+			#endif
+			}
 		| SHM_SECONDARY_HASH_SIZE EQUAL error { yyerror("number expected"); }
-		| MEM_WARMING_ENABLED EQUAL NUMBER { mem_warming_enabled = $3; }
+		| MEM_WARMING_ENABLED EQUAL NUMBER {
+			#ifdef HP_MALLOC
+			mem_warming_enabled = $3;
+			#else
+			yyerror("Cannot set parameter; Please recompile with support for HP_MALLOC");
+			#endif
+			}
 		| MEM_WARMING_ENABLED EQUAL error { yyerror("number expected"); }
-		| MEM_WARMING_PATTERN_FILE EQUAL STRING { mem_warming_pattern_file = $3; }
+		| MEM_WARMING_PATTERN_FILE EQUAL STRING {
+			#ifdef HP_MALLOC
+			mem_warming_pattern_file = $3;
+			#else
+			yyerror("Cannot set parameter; Please recompile with support for HP_MALLOC");
+			#endif
+			}
 		| MEM_WARMING_PATTERN_FILE EQUAL error { yyerror("string expected"); }
-		| MEM_WARMING_PERCENTAGE EQUAL NUMBER { mem_warming_percentage = $3; }
+		| MEM_WARMING_PERCENTAGE EQUAL NUMBER {
+			#ifdef HP_MALLOC
+			mem_warming_percentage = $3;
+			#else
+			yyerror("Cannot set parameter; Please recompile with support for HP_MALLOC");
+			#endif
+			}
 		| MEM_WARMING_PERCENTAGE EQUAL error { yyerror("number expected"); }
 		| MEMLOG EQUAL NUMBER { memlog=$3; memdump=$3; }
 		| MEMLOG EQUAL error { yyerror("int value expected"); }

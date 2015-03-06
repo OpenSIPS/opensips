@@ -42,4 +42,8 @@
 		extern struct qm_block* shm_block;
 #	endif
 
+extern int mem_warming_enabled;
+extern char *mem_warming_pattern_file;
+extern int mem_warming_percentage;
+
 #endif
