@@ -35,23 +35,23 @@
 extern gen_lock_t *hp_stats_lock;
 
 #ifdef STATISTICS
-int stats_are_expired(struct hp_block *qm);
-void update_shm_stats(struct hp_block *qm);
-void hp_init_shm_statistics(struct hp_block *qm);
+int stats_are_expired(struct hp_block *hpb);
+void update_shm_stats(struct hp_block *hpb);
+void hp_init_shm_statistics(struct hp_block *hpb);
 
-unsigned long hp_shm_get_size(struct hp_block *qm);
-unsigned long hp_shm_get_used(struct hp_block *qm);
-unsigned long hp_shm_get_free(struct hp_block *qm);
-unsigned long hp_shm_get_real_used(struct hp_block *qm);
-unsigned long hp_shm_get_max_real_used(struct hp_block *qm);
-unsigned long hp_shm_get_frags(struct hp_block *qm);
+unsigned long hp_shm_get_size(struct hp_block *hpb);
+unsigned long hp_shm_get_used(struct hp_block *hpb);
+unsigned long hp_shm_get_free(struct hp_block *hpb);
+unsigned long hp_shm_get_real_used(struct hp_block *hpb);
+unsigned long hp_shm_get_max_real_used(struct hp_block *hpb);
+unsigned long hp_shm_get_frags(struct hp_block *hpb);
 
-unsigned long hp_pkg_get_size(struct hp_block *qm);
-unsigned long hp_pkg_get_used(struct hp_block *qm);
-unsigned long hp_pkg_get_free(struct hp_block *qm);
-unsigned long hp_pkg_get_real_used(struct hp_block *qm);
-unsigned long hp_pkg_get_max_real_used(struct hp_block *qm);
-unsigned long hp_pkg_get_frags(struct hp_block *qm);
+unsigned long hp_pkg_get_size(struct hp_block *hpb);
+unsigned long hp_pkg_get_used(struct hp_block *hpb);
+unsigned long hp_pkg_get_free(struct hp_block *hpb);
+unsigned long hp_pkg_get_real_used(struct hp_block *hpb);
+unsigned long hp_pkg_get_max_real_used(struct hp_block *hpb);
+unsigned long hp_pkg_get_frags(struct hp_block *hpb);
 
 #define update_stats_pkg_frag_attach(blk, frag) \
 	do { \

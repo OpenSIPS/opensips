@@ -200,11 +200,11 @@ void *hp_shm_malloc_unsafe(struct hp_block *, unsigned long size);
 void *hp_pkg_malloc(struct hp_block *, unsigned long size);
 
 void hp_shm_free(struct hp_block *, void *p);
-void hp_shm_free_unsafe(struct hp_block *qm, void *p);
+void hp_shm_free_unsafe(struct hp_block *hpb, void *p);
 void hp_pkg_free(struct hp_block *, void *p);
 
 void *hp_shm_realloc(struct hp_block *, void *p, unsigned long size);
-void *hp_shm_realloc_unsafe(struct hp_block *qm, void *p, unsigned long size);
+void *hp_shm_realloc_unsafe(struct hp_block *hpb, void *p, unsigned long size);
 void *hp_pkg_realloc(struct hp_block *, void *p, unsigned long size);
 
 void hp_status(struct hp_block *);
