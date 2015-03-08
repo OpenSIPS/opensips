@@ -494,20 +494,21 @@ modparam("dialplan", "repl_exp_col", "column_name")
 	</section>
 
 	<section>
-		<title><varname>attrs_col</varname> (string)</title>
+		<title><varname>timerec_col</varname> (integer)</title>
 		<para>
-		The column name to store the rule's attributes to be set to the message.
+		The column name that indicates an additional time recurrence check within the rule.
+		(column values are RFC 2445-compatible strings)
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>attrs</quote>.
+			Default value is <quote>timerec</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>attrs_col</varname> parameter</title>
+		<title>Set <varname>timerec_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialplan", "attrs_col", "column_name")
+modparam("dialplan", "timerec_col", "month_match")
 ...
 		</programlisting>
 		</example>
@@ -528,6 +529,26 @@ modparam("dialplan", "attrs_col", "column_name")
 		<programlisting format="linespecific">
 ...
 modparam("dialplan", "disabled_col", "disabled_column")
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>attrs_col</varname> (string)</title>
+		<para>
+		The column name to store rule-specific attributes.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>attrs</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>attrs_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialplan", "attrs_col", "column_name")
 ...
 		</programlisting>
 		</example>

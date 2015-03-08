@@ -39,8 +39,9 @@ Andreea-Ancuta Onofrei
               1.6.8. match_flags_col (string)
               1.6.9. subst_exp_col (string)
               1.6.10. repl_exp_col (string)
-              1.6.11. attrs_col (string)
+              1.6.11. timerec_col (integer)
               1.6.12. disabled_col (integer)
+              1.6.13. attrs_col (string)
 
         1.7. Exported Functions
 
@@ -69,12 +70,13 @@ Andreea-Ancuta Onofrei
    1.9. Set match_flags_col parameter
    1.10. Set subs_exp_col parameter
    1.11. Set repl_exp_col parameter
-   1.12. Set attrs_col parameter
+   1.12. Set timerec_col parameter
    1.13. Set disabled_col parameter
-   1.14. dp_translate usage
+   1.14. Set attrs_col parameter
    1.15. dp_translate usage
    1.16. dp_translate usage
    1.17. dp_translate usage
+   1.18. dp_translate usage
 
 Chapter 1. Admin Guide
 
@@ -338,16 +340,17 @@ modparam("dialplan", "subst_exp_col", "column_name")
 modparam("dialplan", "repl_exp_col", "column_name")
 ...
 
-1.6.11. attrs_col (string)
+1.6.11. timerec_col (integer)
 
-   The column name to store the rule's attributes to be set to the
-   message.
+   The column name that indicates an additional time recurrence
+   check within the rule. (column values are RFC 2445-compatible
+   strings)
 
-   Default value is “attrs”.
+   Default value is “timerec”.
 
-   Example 1.12. Set attrs_col parameter
+   Example 1.12. Set timerec_col parameter
 ...
-modparam("dialplan", "attrs_col", "column_name")
+modparam("dialplan", "timerec_col", "month_match")
 ...
 
 1.6.12. disabled_col (integer)
@@ -360,6 +363,17 @@ modparam("dialplan", "attrs_col", "column_name")
    Example 1.13. Set disabled_col parameter
 ...
 modparam("dialplan", "disabled_col", "disabled_column")
+...
+
+1.6.13. attrs_col (string)
+
+   The column name to store rule-specific attributes.
+
+   Default value is “attrs”.
+
+   Example 1.14. Set attrs_col parameter
+...
+modparam("dialplan", "attrs_col", "column_name")
 ...
 
 1.7. Exported Functions
@@ -394,20 +408,20 @@ modparam("dialplan", "disabled_col", "disabled_column")
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE.
 
-   Example 1.14. dp_translate usage
+   Example 1.15. dp_translate usage
 ...
 dp_translate("240", "$ruri.user/$avp(dest)");
 xlog("translated to var $avp(dest) \n");
 ...
 
-   Example 1.15. dp_translate usage
+   Example 1.16. dp_translate usage
 ...
 $avp(src) = $ruri.user;
 dp_translate("$var(x)", "$avp(src)/$var(y)", "$var(attrs)");
 xlog("translated to var $var(y) with attributes: '$var(attrs)'\n");
 ...
 
-   Example 1.16. dp_translate usage
+   Example 1.17. dp_translate usage
 ...
 $avp(src) = $uri.user;
 dp_translate("example_partition:$var(x)", "$avp(src)/$var(y)", "$avp(att
@@ -415,7 +429,7 @@ rs)");
 xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
 ...
 
-   Example 1.17. dp_translate usage
+   Example 1.18. dp_translate usage
 ...
 $var(partition) = "default";
 $var(id)        = 10;
