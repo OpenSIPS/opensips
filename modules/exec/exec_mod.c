@@ -49,12 +49,13 @@ unsigned int time_to_kill=0;
 
 static int mod_init( void );
 
-static int w_exec_dset(struct sip_msg* msg, char* cmd, char* foo);
-static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo);
-static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl);
-static int w_exec_getenv(struct sip_msg* msg, char* cmd, char* avpl);
-static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err, char* avp_env);
-static int w_async_exec(struct sip_msg* msg,
+inline static int w_exec_dset(struct sip_msg* msg, char* cmd, char* foo);
+inline static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo);
+inline static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl);
+inline static int w_exec_getenv(struct sip_msg* msg, char* cmd, char* avpl);
+inline static int w_exec(struct sip_msg* msg, char* cmd, char* in,
+		char* out, char* err, char* avp_env);
+inline static int w_async_exec(struct sip_msg* msg,
 		async_resume_module **resume_f, void **resume_param,
 		char *cmd, char* out, char* in, char* err, char* avp_env );
 
@@ -461,7 +462,8 @@ memerr:
 }
 
 
-static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err ,char* avp_env)
+inline static int w_exec(struct sip_msg* msg, char* cmd, char* in,
+		char* out, char* err ,char* avp_env)
 {
 	str command;
 	str input = {NULL, 0};
@@ -508,8 +510,8 @@ static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err
 }
 
 
-static int w_async_exec(struct sip_msg* msg, async_resume_module **resume_f, void **resume_param,
-	char* cmd, char* in, char* out, char* err, char* avp_env)
+inline static int w_async_exec(struct sip_msg* msg, async_resume_module **resume_f,
+		void **resume_param, char* cmd, char* in, char* out, char* err, char* avp_env)
 {
 	str command;
 	str input = {NULL, 0};
