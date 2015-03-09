@@ -1964,6 +1964,7 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 	else if(strncmp(sproto->s, "tls",3) == 0) *proto = IPPROTO_IDP; /* fake proto type */
 	else if(strncmp(sproto->s, "sctp",4) == 0) *proto = IPPROTO_SCTP;
 	else if(strncmp(sproto->s, "any",3) == 0) *proto = IPPROTO_UDP;
+	else if(strncmp(sproto->s, "ws",2) == 0) *proto = IPPROTO_IDP; /* fake proto type */
 	else {
 		LM_ERR("bad protocol %.*s\n", sproto->len, sproto->s);
 		return -1;
