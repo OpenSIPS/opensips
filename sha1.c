@@ -25,25 +25,9 @@
  *  http://www.itl.nist.gov/fipspubs/fip180-1.htm
  */
 
-#if !defined(POLARSSL_CONFIG_FILE)
-#include "polarssl/config.h"
-#else
-#include POLARSSL_CONFIG_FILE
-#endif
+#include "sha1.h"
 
-#if defined(POLARSSL_SHA1_C)
-
-#include "polarssl/sha1.h"
-
-#if defined(POLARSSL_FS_IO) || defined(POLARSSL_SELF_TEST)
-#include <stdio.h>
-#endif
-
-#if defined(POLARSSL_PLATFORM_C)
-#include "polarssl/platform.h"
-#else
 #define polarssl_printf printf
-#endif
 
 /* Implementation that should never be optimized out by the compiler */
 static void polarssl_zeroize( void *v, size_t n ) {
@@ -654,5 +638,3 @@ exit:
 }
 
 #endif /* POLARSSL_SELF_TEST */
-
-#endif /* POLARSSL_SHA1_C */

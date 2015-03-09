@@ -24,12 +24,6 @@
 #ifndef POLARSSL_SHA1_H
 #define POLARSSL_SHA1_H
 
-#if !defined(POLARSSL_CONFIG_FILE)
-#include "config.h"
-#else
-#include POLARSSL_CONFIG_FILE
-#endif
-
 #include <string.h>
 
 #if defined(_MSC_VER) && !defined(EFIX64) && !defined(EFI32)
@@ -40,10 +34,6 @@ typedef UINT32 uint32_t;
 #endif
 
 #define POLARSSL_ERR_SHA1_FILE_IO_ERROR                -0x0076  /**< Read/write error in file. */
-
-#if !defined(POLARSSL_SHA1_ALT)
-// Regular implementation
-//
 
 #ifdef __cplusplus
 extern "C" {
@@ -192,6 +182,5 @@ int sha1_self_test( int verbose );
 
 #ifdef __cplusplus
 }
-#endif
 
 #endif /* sha1.h */
