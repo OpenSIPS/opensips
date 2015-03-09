@@ -342,9 +342,9 @@ inline static int io_watch_add(	io_wait_h* h,
 		goto error;
 	}
 	/* check if not too big */
-	if (h->fd_no>=h->max_fd_no){
+	if (fd>=h->max_fd_no){
 		LM_CRIT("[%s] maximum fd number exceeded: %d/%d\n",
-			h->name, h->fd_no, h->max_fd_no);
+			h->name, fd, h->max_fd_no);
 		goto error;
 	}
 	if (prio > h->max_prio) {
@@ -354,7 +354,7 @@ inline static int io_watch_add(	io_wait_h* h,
 	}
 	LM_DBG("[%s] io_watch_add op on %d (%p, %d, %d, %p,%d), fd_no=%d\n",
 			h->name,fd,h,fd,type,data,flags,h->fd_no);
-	fd_array_print;
+	//fd_array_print;
 	/*  hash sanity check */
 	e=get_fd_map(h, fd);
 
@@ -522,7 +522,7 @@ check_io_again:
 		}
 	}
 #endif
-	fd_array_print;
+	//fd_array_print;
 	return 0;
 error:
 	if (e) unhash_fd_map(e,0,flags,already);
@@ -596,7 +596,7 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 	LM_DBG("[%s] io_watch_del op on index %d %d (%p, %d, %d, 0x%x,0x%x) "
 		"fd_no=%d called\n", h->name,idx,fd, h, fd, idx, flags,
 		sock_flags,h->fd_no);
-	fd_array_print;
+	//fd_array_print;
 
 	e=get_fd_map(h, fd);
 	/* more sanity checks */
@@ -721,7 +721,7 @@ again_devpoll:
 	}
 
 	fix_fd_array;
-	fd_array_print;
+	//fd_array_print;
 
 	return 0;
 error:
