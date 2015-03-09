@@ -29,6 +29,8 @@
 #osp= Enables OpenSIPS to support secure, multi-lateral peering using the OSP standard | OSP development kit, tipically osptoolkit
 #perl= Easily implement your own OpenSIPS extensions in Perl | Perl library development files, tipically libperl-dev
 #pi_http= Provides a simple web database provisioning interface | XML parsing & building library, tipically libxml-dev
+#proto_sctp= Provides support for SCTP listeners in OpenSIPS | SCTP development library, tipically libsctp-dev 
+#proto_tls= Provides support for TLS listeners in OpenSIPS | SSL development library, tipically libssl-dev 
 #presence= Handles PUBLISH and SUBSCRIBE messages and generates NOTIFY messages in a general, event independent way | XML parsing & Building library, tipically libxml-dev
 #presence_dialoginfo= Enables the handling of "Event: dialog" (as defined in RFC 4235) |  XML parsing & building library, tipically libxml-dev
 #presence_mwi= Does specific handling for notify-subscribe message-summary (message waiting indication) events as specified in RFC 3842 | XML parsing & building library, tipically libxml-dev
