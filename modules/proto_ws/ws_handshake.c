@@ -46,7 +46,7 @@ static struct tcp_req ws_current_req;
 
 int ws_handshake(struct tcp_connection *con)
 {
-	int bytes, total_bytes;
+	int bytes, total_bytes = 0;
 	long size = 0;
 	int msg_len;
 	char *msg_buf;
