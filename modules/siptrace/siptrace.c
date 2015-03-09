@@ -1959,11 +1959,11 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 	str host_uri;
 
 	/*parse protocol */
-	if(strncmp(sproto->s, "udp:",4) == 0) *proto = IPPROTO_UDP;
-	else if(strncmp(sproto->s, "tcp:",4) == 0) *proto = IPPROTO_TCP;
-	else if(strncmp(sproto->s, "tls:",4) == 0) *proto = IPPROTO_IDP; /* fake proto type */
-	else if(strncmp(sproto->s, "sctp:",5) == 0) *proto = IPPROTO_SCTP;
-	else if(strncmp(sproto->s, "any:",4) == 0) *proto = IPPROTO_UDP;
+	if(strncmp(sproto->s, "udp",3) == 0) *proto = IPPROTO_UDP;
+	else if(strncmp(sproto->s, "tcp",3) == 0) *proto = IPPROTO_TCP;
+	else if(strncmp(sproto->s, "tls",3) == 0) *proto = IPPROTO_IDP; /* fake proto type */
+	else if(strncmp(sproto->s, "sctp",4) == 0) *proto = IPPROTO_SCTP;
+	else if(strncmp(sproto->s, "any",3) == 0) *proto = IPPROTO_UDP;
 	else {
 		LM_ERR("bad protocol %.*s\n", sproto->len, sproto->s);
 		return -1;
