@@ -175,11 +175,11 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 				*proto=PROTO_SCTP; return 0;
 			}
 			break;
-		case PROTO2UINT('w', 's', '\0'):
-			if(len==2) { *proto=PROTO_WS; return 0; }
-			break;
 
 		default:
+			if(len==2 && (s[0]|0x20)=='w' && (s[1]|0x20)=='s') {
+				*proto=PROTO_WS; return 0;
+			}
 			return -1;
 	}
 	return -1;
