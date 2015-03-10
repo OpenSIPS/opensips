@@ -695,7 +695,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 			return -1;
 		}
-
+	
 		fd=c->s;
 		goto send_it;
 	}
@@ -749,8 +749,9 @@ send_it:
 	if (n<0){
 		LM_ERR("failed to send\n");
 		c->state=S_CONN_BAD;
+		if (c->proc_id != process_no)
+			close(fd);
 		tcp_conn_release(c, 0);
-		close(fd);
 		return -1;
 	}
 
