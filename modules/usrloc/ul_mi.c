@@ -86,7 +86,8 @@ static inline int mi_fix_aor(str *aor)
 
 
 
-static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r, time_t t, int short_dump)
+static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r,
+													time_t t, int short_dump)
 {
 	struct mi_node *anode;
 	struct mi_node *cnode;
@@ -572,7 +573,6 @@ struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param)
 	struct mi_node *node;
 	udomain_t *dom;
 	urecord_t *rec;
-	ucontact_t* con;
 	str *aor;
 	int ret;
 	time_t t;
@@ -602,23 +602,16 @@ struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param)
 	}
 
 	get_act_time();
-	rpl_tree = 0;
-	rpl = 0;
 
-	for( con=rec->contacts ; con ; con=con->next) {
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
+		goto error;
 
-		if (VALID_CONTACT( con, act_time)) {
-			if (rpl_tree==0) {
-				rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-				if (rpl_tree==0)
-					goto error;
-				rpl = &rpl_tree->node;
-				rpl->flags |= MI_IS_ARRAY;
-			}
+	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
-			if (mi_add_aor_node(rpl, rec, t, 0)!=0) goto error;
-		}
-	}
+	if (mi_add_aor_node(rpl, rec, t, 0)!=0)
+		goto error;
 
 	unlock_udomain( dom, aor);
 
