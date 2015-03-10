@@ -44,22 +44,8 @@ auto_aliases=no
 
 listen=udp:127.0.0.1:5060   # CUSTOMIZE ME
 
-ifelse(ENABLE_TCP, `yes', `disable_tcp=no
-listen=tcp:127.0.0.1:5060   # CUSTOMIZE ME' , `
-ifelse(ENABLE_TLS,`yes',`disable_tcp=no
-',`disable_tcp=yes')')
-
-ifelse(ENABLE_TLS,`yes',`disable_tls=no
-listen=tls:127.0.0.1:5061   # CUSTOMIZE ME
-tls_verify_server=1
-tls_verify_client = 1
-tls_require_client_certificate = 0
-tls_method = TLSv1
-tls_certificate = "/usr/local/etc/opensips/tls/user/user-cert.pem"
-tls_private_key = "/usr/local/etc/opensips/tls/user/user-privkey.pem"
-tls_ca_list = "/usr/local/etc/opensips/tls/user/user-calist.pem"
-', `disable_tls=yes
-')
+ifelse(ENABLE_TCP, `yes', `listen=tcp:127.0.0.1:5060   # CUSTOMIZE ME' , `')
+ifelse(ENABLE_TLS,`yes',`listen=tls:127.0.0.1:5061   # CUSTOMIZE ME' , `')
 
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')', `')
 
@@ -166,6 +152,17 @@ modparam("load_balancer", "probing_interval", 30)
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
 loadmodule "mi_http.so"
 ',`')
+
+ifelse(ENABLE_TCP, `yes', `loadmodule "proto_tcp.so"' , `')
+ifelse(ENABLE_TLS, `yes', `loadmodule "proto_tls.so"
+modparam("proto_tls","verify_cert", "1")
+modparam("proto_tls","require_cert", "0")
+modparam("proto_tls","tls_method", "TLSv1")
+modparam("proto_tls","certificate", "/usr/local/etc/opensips/tls/user/user-cert.pem")
+modparam("proto_tls","private_key", "/usr/local/etc/opensips/tls/user/user-privkey.pem")
+modparam("proto_tls","ca_list", "/usr/local/etc/opensips/tls/user/user-calist.pem")
+
+' , `')
 
 ####### Routing Logic ########
 
