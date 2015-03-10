@@ -68,8 +68,10 @@ struct os_timer{
 	unsigned int interval;
 	/* internal time for the next triggering */
 	utime_t expires;
-	/* time of the current triggering */
-	utime_t current_time;
+	/* time of the current triggering (based on ITIMER_TICKs) */
+	utime_t trigger_time;
+	/* UTICKs or TICKs of the triggering */
+	utime_t time;
 	/* next element in the timer list */
 	struct os_timer* next;
 };

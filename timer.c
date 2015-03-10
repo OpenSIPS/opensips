@@ -165,7 +165,8 @@ static inline struct os_timer* new_os_timer(char *label, unsigned short flags,
 	t->t_param=param;
 	t->interval=interval;
 	t->expires=*jiffies+interval;
-	t->current_time = 0;
+	t->trigger_time = 0;
+	t->time = 0;
 	return t;
 }
 
@@ -306,17 +307,18 @@ static inline void timer_ticker(struct os_timer *timer_list, utime_t *drift)
 	ssize_t l;
 
 	/* we need to store the original time as while executing the
-	   the handlers, the time may progress, affecting the way we
+	   the handlers, the time may pass, affecting the way we
 	   calculate the new expire (expire will include the time
 	   taken to run handlers) -bogdan */
 	j = *jiffies;
 
 	for (t=timer_list;t; t=t->next){
 		if (j>=t->expires){
-			if (t->current_time) {
-				LM_WARN("timer task <%s> already schedualed for %lld s"
-					" (now %d), it may overlap..\n",
-					t->label, t->current_time, j);
+			if (t->trigger_time) {
+				LM_WARN("timer task <%s> already schedualed for %lld ms"
+					" (now %lld ms), it may overlap..\n",
+					t->label, (utime_t)(t->trigger_time/1000),
+					((utime_t)*ijiffies/1000) );
 				if (t->flags&TIMER_FLAG_SKIP_ON_DELAY) {
 					/* skip this execution of the timer handler */
 					t->expires = j + t->interval;
@@ -331,7 +333,8 @@ static inline void timer_ticker(struct os_timer *timer_list, utime_t *drift)
 				}
 			}
 			t->expires = j + t->interval;
-			t->current_time = j;
+			t->trigger_time = *ijiffies;
+			t->time = j;
 			/* push the jobs for execution */
 again:
 			l = write( timer_pipe[1], &t, sizeof(t));
@@ -358,9 +361,11 @@ static inline void utimer_ticker(struct os_timer *utimer_list, utime_t *drift)
 
 	for ( t=utimer_list ; t ; t=t->next){
 		if (uj>=t->expires){
-			if (t->current_time) {
-				LM_WARN("utimer task <%s>%p already schedualed for %lld us (now %lld),"
-					" skipping..\n", t->label,t,t->current_time,uj);
+			if (t->trigger_time) {
+				LM_WARN("utimer task <%s> already schedualed for %lld ms"
+					" (now %lld ms), it may overlap..\n",
+					t->label, (utime_t)(t->trigger_time/1000),
+					((utime_t)*ijiffies/1000) );
 				if (t->flags&TIMER_FLAG_SKIP_ON_DELAY) {
 					/* skip this execution of the timer handler */
 					t->expires = uj + t->interval;
@@ -375,7 +380,8 @@ static inline void utimer_ticker(struct os_timer *utimer_list, utime_t *drift)
 				}
 			}
 			t->expires = uj + t->interval;
-			t->current_time = uj;
+			t->trigger_time = *ijiffies;
+			t->time = uj;
 			/* push the jobs for execution */
 again:
 			l = write( timer_pipe[1], &t, sizeof(t));
@@ -499,8 +505,8 @@ static void run_timer_process_jif(void)
 		/* update public utimer */
 		if (ucnt==umultiple) {
 			*(ujiffies)+=UTIMER_TICK;
-			/* no overflow test as even if we go for 1 microsecond tick, this will
-			 * happen in 14038618 years :P */
+			/* no overflow test as even if we go for 1 microsecond tick,
+			 * this will happen in 14038618 years :P */
 			ucnt = 0;
 
 			cnt++;
@@ -577,19 +583,19 @@ void handle_timer_job(void)
 	/* run the handler */
 	if (t->flags&TIMER_FLAG_IS_UTIMER) {
 
-		if (t->current_time!=*ujiffies)
+		if (t->trigger_time<(*ijiffies-ITIMER_TICK) )
 			LM_WARN("utimer job <%s> has a %lld us delay in execution\n",
-				t->label, *ujiffies-t->current_time);
-		t->u.utimer_f( t->current_time , t->t_param);
-		t->current_time = 0;
+				t->label, *ijiffies-t->trigger_time);
+		t->u.utimer_f( t->time , t->t_param);
+		t->trigger_time = 0;
 
 	} else {
 
-		if ((unsigned int)t->current_time!=*jiffies)
-			LM_WARN("timer job <%s> has a %d s delay in execution\n",
-				t->label, *jiffies-(unsigned int)t->current_time);
-		t->u.timer_f( (unsigned int)t->current_time , t->t_param);
-		t->current_time = 0;
+		if (t->trigger_time<(*ijiffies-ITIMER_TICK) )
+			LM_WARN("timer job <%s> has a %lld us delay in execution\n",
+				t->label, *ijiffies-t->trigger_time);
+		t->u.timer_f( (unsigned int)t->time , t->t_param);
+		t->trigger_time = 0;
 
 	}
 
