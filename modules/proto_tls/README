@@ -1,4 +1,4 @@
-TLS support
+TLS module
 
 Peter Griffiths
 
@@ -8,27 +8,37 @@ Edited by
 
 Bogdan-Andrei Iancu
 
+Edited by
+
 Cesc Santasusana
+
+Edited by
 
 Klaus Darilion
 
-   Copyright � 2005 voice-system.ro
+Edited by
 
-   Copyright � 2005 Cesc Santasusana
+Christian Lahme
 
-   Copyright � 2006 enum.at
-     _________________________________________________________
+   Copyright © 2005 Voice Sistem SRL
+
+   Copyright © 2005 Cesc Santasusana
+
+   Copyright © 2006 enum.at
+
+   Copyright © 2013 Secusmart GmbH
+   Revision History
+   Revision $Revision$ $Date$
+     __________________________________________________________
 
    Table of Contents
-   1. User's Guide
+
+   1. Admin Guide
 
         1.1. Overview
         1.2. History
         1.3. Scenario
-        1.4. Compiling TLS support
-
-              1.4.1. Dependencies of external libraries
-
+        1.4. Dependencies of external libraries
         1.5. TLS setup
 
               1.5.1. Creating CA root certificate
@@ -38,28 +48,28 @@ Klaus Darilion
 
         1.6. OpenSIPS TLS configuration parameters
 
-              1.6.1. disable_tls=integer
-              1.6.2. listen=interface
-              1.6.3. tls_port_no=number
-              1.6.4. tls_method=value
-              1.6.5. tls_certificate=file
-              1.6.6. tls_private_key=file
-              1.6.7. tls_ca_list=file
-              1.6.8. tls_ciphers_list=string
-              1.6.9. tls_verify_client=number and
-                      tls_require_client_certificate=number
+              1.6.1. listen=interface
+              1.6.2. tls_port (integer)
+              1.6.3. tls_method [(string):](string)
+              1.6.4. certificate [(string):](string)
+              1.6.5. private_key [(string):](string)
+              1.6.6. ca_list [(string):]((string)
+              1.6.7. ca_dir [(string):](string)
+              1.6.8. ciphers_list [(string):](string)
+              1.6.9. dh_params [(string):](string)
+              1.6.10. ec_curve[(string):](string)
+              1.6.11. verify_cert [(string):](string) and
+                      require_cert[(string):](string)
 
-              1.6.10. tls_verify_server=number
-              1.6.11. tls_handshake_timeout=number and
-                      tls_send_timeout=number
+              1.6.12. tls_handshake_timeout (integer) and
+                      tls_send_timeout (integer)
 
-              1.6.12. tls_client_domain_avp=number
-              1.6.13. tls_server_domain, tls_client_domain
-                      section
+              1.6.13. client_domain_avp (integer)
+              1.6.14. server_domain, client_domain (string)
 
         1.7. OpenSIPS with TLS - script example
 
-   2. Developer's Guide
+   2. Developer Guide
 
         2.1. TLS_CONFIG
         2.2. TLS_INIT
@@ -69,7 +79,7 @@ Klaus Darilion
               2.2.3. init_tls
               2.2.4. destroy_tls
               2.2.5. tls_init
-              2.2.6. ser_malloc, ser_realloc, ser_free
+              2.2.6. os_malloc, os_realloc, os_free
 
         2.3. TLS_SERVER
 
@@ -96,86 +106,81 @@ Klaus Darilion
    3. Frequently Asked Questions
 
    List of Examples
-   1-1. Set disable_tls variable
-   1-2. Set listen variable
-   1-3. Set tls_port_no variable
-   1-4. Set tls_method variable
-   1-5. Set tls_certificate variable
-   1-6. Set tls_private_key variable
-   1-7. Set tls_ca_list variable
-   1-8. Set tls_ciphers_list variable
-   1-9. Set tls_verify_client & tls_require_client_certificate
-          variable
 
-   1-10. Set tls_verify_server variable
-   1-11. Set tls_handshake_timeout & tls_send_timeout variable
-   1-12. Set tls_client_domain_avp variable
-   1-13. Usage of tls_client_domain and tls_server_domain block
-   1-14. Script with TLS support
-     _________________________________________________________
+   1.1. Set listen variable
+   1.2. Set tls_port variable
+   1.3. Set tls_method variable
+   1.4. Set certificate variable
+   1.5. Set private_key variable
+   1.6. Set ca_list variable
+   1.7. Set ca_dir variable
+   1.8. Set ciphers_list variable
+   1.9. Set dh_params variable
+   1.10. Set verify_cert & require_cert variable
+   1.11. Set tls_handshake_timeout & tls_send_timeout variable
+   1.12. Set tls_client_domain_avp variable
+   1.13. Usage of tls_client_domain and tls_server_domain block
+   1.14. Script with TLS support
 
-Chapter 1. User's Guide
+Chapter 1. Admin Guide
 
 1.1. Overview
 
-   TLS is an optional part of the OpenSIPS's core, not a module.
    TLS, as defined in SIP RFC 3261, is a mandatory feature for
    proxies and can be used to secure the SIP signalling on a
    hop-by-hop basis (not end-to-end). TLS works on top of TCP.
-   DTLS, or TLS over UDP is already defined by IETF and may
-   become available in the future.
-     _________________________________________________________
+   DTLS, or TLS over UDP is already defined by IETF and may become
+   available in the future.
 
 1.2. History
 
-   The TLS support was originally developed by Peter Griffiths
-   and posted as a patch on SER development mailing list. Thanks
-   to Cesc Santasusana, several problems were fixed and some
+   The TLS support was originally developed by Peter Griffiths and
+   posted as a patch on SER development mailing list. Thanks to
+   Cesc Santasusana, several problems were fixed and some
    improvements were added.
 
    The TLS support was simultaneously added in both projects. In
-   SER, the support was committed in a separate "experimental"
-   CVS tree, as patch to the main CVS tree. In OpenSIPS, the
-   support was integrated directly into the CVS tree, as a
-   built-in component, and is part of stable OpenSIPS since
-   release >=1.0.0.
-     _________________________________________________________
+   SER, the support was committed in a separate “experimental” CVS
+   tree, as patch to the main CVS tree. In OpenSIPS, the support
+   was integrated directly into the CVS tree, as a built-in
+   component, and is part of stable OpenSIPS since release
+   >=1.0.0.
 
 1.3. Scenario
 
    By the increased number of providers the SIP world is
    continuously growing. More users means more calls and more
-   calls means a high probability for a user to receive calls
-   from totally unknown people or, in the worst case, to receive
+   calls means a high probability for a user to receive calls from
+   totally unknown people or, in the worst case, to receive
    unwanted calls. To prevent this, a defense mechanism must be
    adopted by the SIP provider. Since only the called user is
    fully able to classify a call as being unwanted, the SIP
    server, based on all information regarding the call should
-   notify the user about the desirability of the call.
-   Information like the caller domain, the received source or the
-   incoming protocol can be very useful for a SIP server to
-   establish the nature of the call.
+   notify the user about the desirability of the call. Information
+   like the caller domain, the received source or the incoming
+   protocol can be very useful for a SIP server to establish the
+   nature of the call.
 
    As this information is quite limited, is very improbable for a
    server to be able detect the unwanted calls - there are many
-   calls that it cannot predict anything about its status
-   (neutral calls). So, instead on alerting the called user about
-   unwanted calls, the server can notify the user about calls
-   that are considered trusted - calls for which the server is
-   100% sure there are not unwanted.
+   calls that it cannot predict anything about its status (neutral
+   calls). So, instead on alerting the called user about unwanted
+   calls, the server can notify the user about calls that are
+   considered trusted - calls for which the server is 100% sure
+   there are not unwanted.
 
    So, a trust concept must be defined for SIP servers. Which
    calls are trusted and which are not? A call is trusted if the
    caller can be identify as a trustable user - a user about we
    have reliable information.
 
-   Since all the user from its domain are authenticated (or
-   should be), a SIP server can consider all the calls generated
-   by its user as trusted. Now we have to extend the trust
-   concept to the multi-domain level. A mutual agreement, between
-   several domains, can establish a trusting relationship. So, a
-   domain (called A) will consider also as trusted calls all the
-   calls generated by user from a different domain (called B) and
+   Since all the user from its domain are authenticated (or should
+   be), a SIP server can consider all the calls generated by its
+   user as trusted. Now we have to extend the trust concept to the
+   multi-domain level. A mutual agreement, between several
+   domains, can establish a trusting relationship. So, a domain
+   (called A) will consider also as trusted calls all the calls
+   generated by user from a different domain (called B) and
    vice-versa. But just an agreement is not enough; since the
    authentication information is strictly limited to a domain (a
    domain can authenticate only its own user, not the user from
@@ -190,7 +195,6 @@ Chapter 1. User's Guide
 
    For such a mechanism to work, the following requirements must
    be met:
-
      * all UA must have set as outbound proxy their home server.
      * all SIP servers must authenticated all the calls generated
        by their own users.
@@ -202,8 +206,8 @@ Chapter 1. User's Guide
    users or is the call is received from a trusted domain ( which
    is equivalent with a call received via TLS). Untrusted call
    will be calls received from users belonging to untrusted
-   domains or from users from trusted domains, but whose calls
-   are not routed via their home server (so, they are not
+   domains or from users from trusted domains, but whose calls are
+   not routed via their home server (so, they are not
    authenticated by there home servers).
 
    Once the server is able to tell if the call is trusted or not,
@@ -216,101 +220,79 @@ Chapter 1. User's Guide
    now by several hardphones like CISCO ATA, CISCO 7960 and SNOM.
    This phones can change their ringing tone based on the present
    or content of the "Alert-Info" SIP header as follows:
-
      * CISCO ATA - it has 4 pre-defined ringing types. The
-       Alert-Info header must look like "Alert-info: Bellcore-drX
-       EOH"" where X can be between 1 and 4. Note that 1 is the
+       Alert-Info header must look like “Alert-info: Bellcore-drX
+       EOH"” where X can be between 1 and 4. Note that 1 is the
        phone default ringing tone.
      * CISCO 7960 - it has 2 pre-defined ringing types and the
-       possibility of uploading new ones. The "Alert-Info" header
-       must look like "Alert-info: X EOH" where X can be whatever
+       possibility of uploading new ones. The “Alert-Info” header
+       must look like “Alert-info: X EOH” where X can be whatever
        number. When this header is present, the phones will not
-       change the ringing tone, but the ringing pattern.
-       Normally, the phone rings like
-       [ring.........ring..........ring] where [ring] is the
-       ringing tone; if the header is present, the ringing
-       pattern will be [ring.ring.........ring.ring........]. So,
-       to be able to hear some difference between the two
-       patterns (and not only as length), its strongly
-       recommended to have a highly asymmetric ringing type (as
-       the pre-defined are not!!).
-     * SNOM - The "Alert-Info" header must look like "Alert-info:
-       URL EOH"" where URL can be a HTTP URL (for example) from
+       change the ringing tone, but the ringing pattern. Normally,
+       the phone rings like [ring.........ring..........ring]
+       where [ring] is the ringing tone; if the header is present,
+       the ringing pattern will be
+       [ring.ring.........ring.ring........]. So, to be able to
+       hear some difference between the two patterns (and not only
+       as length), its strongly recommended to have a highly
+       asymmetric ringing type (as the pre-defined are not!!).
+     * SNOM - The “Alert-Info” header must look like “Alert-info:
+       URL EOH"” where URL can be a HTTP URL (for example) from
        where the phone can retrieve a ringing tone.
 
-   A script example which implements this scenario can be found
-   in Section 1.7.
-     _________________________________________________________
+   A script example which implements this scenario can be found in
+   Section 1.7, “OpenSIPS with TLS - script example”.
 
-1.4. Compiling TLS support
+1.4. Dependencies of external libraries
 
-   To compile OpenSIPS with the TLS support, the environment
-   variable TLS must be set. Note that this is required for all
-   make commands (and not only for compiling). To set the
-   variable, there are several ways to do it:
-
-     * run all make commands like "TLS=1 make
-       all|clean|install|etc"
-     * before starting, export the TLS variable like "export
-       TLS=1" (in bash) and use the make commands as usual. NOTE:
-       the exported variable will be available only in current
-       shell!
-     * comment (to disable) or uncomment (to enable) the "TLS=1"
-       line in the Makefile file; use the make commands as usual
-       without any limitations.
-     _________________________________________________________
-
-1.4.1. Dependencies of external libraries
-
-   OpenSIPS TLS support requires the following packages:
-
+   OpenSIPS TLS v1.0 support requires the following packages:
      * openssl or libssl >= 0.9.6
      * openssl-dev or libssl-dev
-     _________________________________________________________
+
+   OpenSIPS TLS v1.1/1.2 support requires the following packages:
+     * openssl or libssl >= 1.0.1e
+     * openssl-dev or libssl-dev
 
 1.5. TLS setup
 
    TLS provides for strong authentication mechanism, as well as
-   encryption following authentication. Of course, null
-   encryption can be used, as well as weak authentication
-   mechanisms (for example, anonymous, that is, no
-   authentication).
+   encryption following authentication. Of course, null encryption
+   can be used, as well as weak authentication mechanisms (for
+   example, anonymous, that is, no authentication).
 
    How does verification work? Verification is the process by
-   which the authentication data provided by the peers is
-   checked. This data consists usually of a peer certificate,
-   plus a chain of trusted certification authorities. If for
-   whatever reason, either of the peers thinks that the handshake
-   is not valid, the ssl connection is not established. The
-   reasons could be many: untrusted server certificate, too-weak
-   algorithm, invalid client cert, no client authentication, ...
+   which the authentication data provided by the peers is checked.
+   This data consists usually of a peer certificate, plus a chain
+   of trusted certification authorities. If for whatever reason,
+   either of the peers thinks that the handshake is not valid, the
+   ssl connection is not established. The reasons could be many:
+   untrusted server certificate, too-weak algorithm, invalid
+   client cert, no client authentication, ...
 
-   This paragraph describe how to generate all the needed keys
-   and certificates for establishing TLS connection with SER. The
+   This paragraph describe how to generate all the needed keys and
+   certificates for establishing TLS connection with SER. The
    described TLS setup is based on the assumption that we run our
    own certificate authority (CA) and we want to connect via TLS
    several OpenSIPS servers (SIP domain).
 
-   Warning
+Warning
 
    In this setup the private key is not encrypted. The client and
    server keys must not be encrypted (or else OpenSIPS will ask
    you for a password on startup or will fail to load the
    certificates), but you should use a password at least for your
    CA private key.
-     _________________________________________________________
 
 1.5.1. Creating CA root certificate
 
    This part must be done only once, disregarding the number of
    how many interconnected OpenSIPS's we want to have.
 
-   Using "opensipsctl tls rootCA", you may create a local root CA.
+   Using “opensipsctl tls rootCA”, you may create a local root CA.
 
    The script will produce the private key (which will be used to
    sign client/server certificates) and the self-signed
    certificate authority.
-     _________________________________________________________
 
 1.5.2. Creating a server/client certificate
 
@@ -318,12 +300,11 @@ Chapter 1. User's Guide
    into your TLS enabled network: build a certificate request and
    sign it with a root CA (yourself or from third party).
 
-   For this purpose you may use the "opensipsctl tls userCERT"
+   For this purpose you may use the “opensipsctl tls userCERT”
 
    The output of the script will be a directory containing all
    needed TLS files for configuring the OpenSIPS proxy (private
    key, signed certificate and CA list)
-     _________________________________________________________
 
 1.5.3. Setting OpenSIPS to use the certificate
 
@@ -331,140 +312,116 @@ Chapter 1. User's Guide
    list must contain all CA root certificates to be accepted by
    your server):
 
-   If you use the "opensipsctl tls userCERT", it will create an
+   If you use the “opensipsctl tls userCERT”, it will create an
    one element CA list with the CA used to sign the certificate.
 
    To add more CAs to your list, just do:
-
      * cat add_cacert.pem >> calist.pem
 
    Now copy intended OpenSIPS certificate, private key and ca list
    file (basically the whole content of the opensipsX directory)
    to your intended machine in some directory (which will be
-   further refer by path "path").
+   further refer by path “path”).
 
    There are some OpenSIPS TLS specific parameter that must be set
    up in OpenSIPS configuration file to use the certificate:
-
      * set up ser.cfg to use the certificate :
-       tls_certificate=/path/cert.pem
+       modparam("proto_tls", "certificate", "/path/cert.pem"
      * set up ser to use the private key :
-       tls_private_key=/path/privkey.pem
-     * set up ser to use the CA list (optional - make sens only
-       if tls_verify is turned on)
-       tls_ca_list=/path/calist.pem
-     _________________________________________________________
+       modparam("proto_tls", "private_key", "/path/privkey.pem"
+     * set up ser to use the CA list (optional - make sens only if
+       tls_verify is turned on)
+       modparam("proto_tls", "ca_list", "/path/calist.pem"
 
 1.5.4. TLS OpenSIPS authentication behavior
 
-   The "tls_verify_server", "tls_verify_client" and
-   "tls_require_client_certificate" are OpenSIPS-names for the
+   The "verify_cert" and "require_cert" are OpenSIPS-names for the
    OpenSSL defined flags:
-
-     * SSL_VERIFY_PEER is tls_verify_client/tls_verify_server
-     * SSL_VERIFY_FAIL_IF_NO_PEER_CERT is
-       tls_require_client_certificate
-       (tls_require_client_certificate is only used if
-       tls_verify_client=1)
+     * SSL_VERIFY_PEER is verify_cert
+     * SSL_VERIFY_FAIL_IF_NO_PEER_CERT is require_cert
+       (require_cert is only used if verify_cert=1)
 
    If your OpenSIPS is acting as a server (incoming TLS
    connections), it will always send its server-side certificate
-   to the client. If tls_verify_client is disabled (set to 0),
-   your OpenSIPS will not request the client a client-certificate.
-   This means that the client is not authenticated. If
-   tls_verify_client=1, your OpenSIPS (the server) sends a
-   client-certificate request to the client. But the client is
-   free to not provide any. In this case,
-   tls_require_client_certificate comes into play:
-
-     * tls_require_client_certificate=0 - the verification
-       process will succeed if the client does not provide a
-       certificate, or if it provides one, it verifies correctly
-       against the server's list of trusted certification
-       authorities.
-     * tls_require_client_certificate=1 - the verification
-       process will only succeed if the client provides a
-       certificate and this verifies correctly against the
-       server's list of trusted CAs.
+   to the client. If verify_cert is disabled (set to 0), your
+   OpenSIPS will not request the client a client-certificate. This
+   means that the client is not authenticated. If verify_cert=1,
+   your OpenSIPS (the server) sends a client-certificate request
+   to the client. But the client is free to not provide any. In
+   this case, require_cert comes into play:
+     * require_cert=0(client side) - the verification process will
+       succeed if the client does not provide a certificate, or if
+       it provides one, it verifies correctly against the server's
+       list of trusted certification authorities.
+     * require_cert=1(client side) - the verification process will
+       only succeed if the client provides a certificate and this
+       verifies correctly against the server's list of trusted
+       CAs.
 
    If your OpenSIPS is acting as a client (outgoing TLS
    connections), it will always receive a certificate from the
-   peer. If tls_verify_server is disabled (set to 0), your
+   peer. If verify_cert(server side) is disabled (set to 0), your
    OpenSIPS will not verifiy the certificate and allows TLS
    connections to servers which do not present a valid
-   certificate. If tls_verify_server=1, your OpenSIPS (the client)
-   verifies the server certificate and will close the TLS
+   certificate. If verify_cert=1(server side), your OpenSIPS (the
+   client) verifies the server certificate and will close the TLS
    connection if the server certificate is not valid.
 
    For more details see page man verify(1).
-     _________________________________________________________
 
 1.6. OpenSIPS TLS configuration parameters
 
    All these parameters can be used from the opensips.cfg file, to
    configure the behavior of OpenSIPS-TLS.
-     _________________________________________________________
 
-1.6.1. disable_tls=integer
-
-   Disables TLS (no server is created on the listen addresses, no
-   outgoing connections can be set up). A non 0 value means
-   disable.
-
-   It's usable only if TLS support was compiled.
-
-   Default value is 1 (TLS disabled). 
-
-   Example 1-1. Set disable_tls variable
-...
-disable_tls = 1
-...
-     _________________________________________________________
-
-1.6.2. listen=interface
+1.6.1. listen=interface
 
    Not specific to TLS. Allows to specify the protocol (udp, tcp,
    tls), the IP address and the port where the listening server
    will be.
 
-   Example 1-2. Set listen variable
+   Example 1.1. Set listen variable
 ...
 listen = tls:1.2.3.4:5061
 ...
-     _________________________________________________________
 
-1.6.3. tls_port_no=number
+1.6.2. tls_port (integer)
 
    Sets the default TLS listening port.
 
-   It's usable only if TLS support was compiled.
+   Default value is 5061.
 
-   Default value is 5061. 
-
-   Example 1-3. Set tls_port_no variable
+   Example 1.2. Set tls_port variable
 ...
-tls_port_no = 5062
+modparam("proto_tls", "tls_port", 5062)
 ...
-     _________________________________________________________
 
-1.6.4. tls_method=value
+1.6.3. tls_method [(string):](string)
 
-   Sets the TLS protocol method which can be:
-
-     * TLSv1 - means OpenSIPS will accept only TLSv1 (1.0) connections
+   Sets the TLS protocol. The first parameter, if set, represents
+   the id of the domain. TLS method which can be:
+     * TLSv1_2 - means OpenSIPS will accept only TLSv1.2
+       connections (rfc3261 conformant).
+     * TLSv1 - means OpenSIPS will accept only TLSv1 connections
        (rfc3261 conformant).
-     * SSLv23 - means OpenSIPS will accept TLSv1, TLSv1.1 or TLSv1.2
-       connections. (SSLv2 and SSLv3 are disabled).
+     * SSLv3 - means OpenSIPS will accept only SSLv3 connections
+     * SSLv2 - means OpenSIPS will accept only SSLv2 connections
+       (almost all old clients support this).
+     * SSLv23 - means OpenSIPS will accept any of the above
+       methods, but the initial SSL hello must be v2 (in the
+       initial hello all the supported protocols are advertised
+       enabling switching to a higher and more secure version).
+       The initial v2 hello means it will not accept connections
+       from SSLv3 or TLSv1 only clients.
 
-   It's usable only if TLS support was compiled.
+   Default value is SSLv23.
 
-   Default value is SSLv23. 
+Warning
 
-   Warning
-
-   Best is to use SSLv23, for extended compatibility. Using any
-   of the other will restrict the version to just that one
-   version.
+   Best is to use SSLv23, for extended compatibility. Using any of
+   the other will restrict the version to just that one version.
+   In fact, SSLv2 is disabled in the source code; to use it, you
+   need to edit tls/tls_init.c
 
    If you want RFC3261 conformance and all your clients support
    TLSv1 (or you are planning to use encrypted "tunnels" only
@@ -472,152 +429,180 @@ tls_port_no = 5062
    support older clients use SSLv23 (in fact most of the
    applications with SSL support use the SSLv23 method).
 
-   Example 1-4. Set tls_method variable
+   Example 1.3. Set tls_method variable
 ...
-tls_method = TLSv1
+modparam("proto_tls", "tls_method", "TLSv1")
+modparam("proto_tls", "tls_method", "dom:TLSv1")
 ...
-     _________________________________________________________
 
-1.6.5. tls_certificate=file
+1.6.4. certificate [(string):](string)
 
    Public certificate file for OpenSIPS. It will be used as
    server-side certificate for incoming TLS connections, and as a
-   client-side certificate for outgoing TLS connections.
+   client-side certificate for outgoing TLS connections. The first
+   parameter, if set, represents the id of the domain.
 
-   See previous chapter Section 1.5.3 for more information.
+   See previous chapter Section 1.5.3, “Setting OpenSIPS to use
+   the certificate” for more information.
 
-   It's usable only if TLS support was compiled.
+   Default value is "CFG_DIR/cert.pem".
 
-   Default value is "CFG_DIR/cert.pem". 
-
-   Example 1-5. Set tls_certificate variable 
+   Example 1.4. Set certificate variable
 ...
-tls_certificate="/mycerts/certs/opensips_server_cert.pem"
+modparam("proto_tls", "certificate", "/mycerts/certs/opensips_server_cer
+t.pem")
+modparam("proto_tls", "certificate", "dom:/mycerts/certs/opensips_server
+_cert.pem")
 ...
-     _________________________________________________________
 
-1.6.6. tls_private_key=file
+1.6.5. private_key [(string):](string)
 
    Private key of the above certificate. I must be kept in a safe
-   place with tight permissions!
+   place with tight permissions! The first parameter, if set,
+   represents the id of the domain.
 
-   See previous chapter Section 1.5.3 for more information.
+   See previous chapter Section 1.5.3, “Setting OpenSIPS to use
+   the certificate” for more information.
 
-   It's usable only if TLS support was compiled.
+   Default value is "CFG_DIR/cert.pem".
 
-   Default value is "CFG_DIR/cert.pem". 
-
-   Example 1-6. Set tls_private_key variable 
+   Example 1.5. Set private_key variable
 ...
-tls_private_key="/mycerts/private/prik.pem"
+modparam("proto_tls", "private_key", "/mycerts/private/prik.pem")
+modparam("proto_tls", "private_key", "dom:/mycerts/private/prik.pem")
 ...
-     _________________________________________________________
 
-1.6.7. tls_ca_list=file
+1.6.6. ca_list [(string):]((string)
 
    List of trusted CAs. The file contains the certificates
-   accepted, one after the other. It MUST be a file, not a
-   folder.
+   accepted, one after the other. It MUST be a file, not a folder.
+   The first parameter, if set, represents the id of the domain.
 
-   See previous chapter Section 1.5.3 for more information.
+   See previous chapter Section 1.5.3, “Setting OpenSIPS to use
+   the certificate” for more information.
 
-   It's usable only if TLS support was compiled.
+   Default value is "".
 
-   Default value is "". 
-
-   Example 1-7. Set tls_ca_list variable
+   Example 1.6. Set ca_list variable
 ...
-tls_ca_list="/mycerts/certs/ca_list.pem"
+modparam("proto_tls", "ca_list", "/mycerts/certs/ca_list.pem")
+modparam("proto_tls", "ca_list", "dom:/mycerts/certs/ca_list.pem")
 ...
-     _________________________________________________________
 
-1.6.8. tls_ciphers_list=string
+1.6.7. ca_dir [(string):](string)
+
+   Directory storing trusted CAs. The path contains the
+   certificates accepted, each as hash which is linked to
+   certificate file. The first parameter, if set, represents the
+   id of the domain.
+
+   See previous chapter Section 1.5.3, “Setting OpenSIPS to use
+   the certificate” for more information.
+
+   Default value is "".
+
+   Example 1.7. Set ca_dir variable
+...
+modparam("proto_tls", "ca_dir", "/mycerts/certs")
+modparam("proto_tls", "ca_dir", "dom:/mycerts/certs")
+...
+
+1.6.8. ciphers_list [(string):](string)
 
    You can specify the list of algorithms for authentication and
-   encryption that you allow. To obtain a list of ciphers and
-   then choose, use the openssl application:
-
+   encryption that you allow. The first parameter, if set,
+   represents the id of the domain. To obtain a list of ciphers
+   and then choose, use the openssl application:
      * openssl ciphers 'ALL:eNULL:!LOW:!EXPORT'
 
-   Warning
+Warning
 
    Do not use the NULL algorithms (no encryption) ... only for
    testing!!!
 
-   It's usable only if TLS support was compiled.
+   It defaults to the OpenSSL default ciphers.
 
-   It defaults to the OpenSSL default ciphers. 
-
-   Example 1-8. Set tls_ciphers_list variable 
+   Example 1.8. Set ciphers_list variable
 ...
-tls_ciphers_list="NULL"
+modparam("proto_tls", "ciphers_list", "NULL")
+modparam("proto_tls", "ciphers_list", "dom:NULL")
 ...
-     _________________________________________________________
 
-1.6.9. tls_verify_client=number and
-tls_require_client_certificate=number
+1.6.9. dh_params [(string):](string)
 
-   Technically, tls_verify_client activates SSL_VERIFY_PEER in
-   the ssl_context. tls_require_client_certificate does the same
-   with SSL_VERIFY_FAIL_IF_NO_PEER_CERT, which is only possible
-   if SSL_VERIFY_PEER is also turned on.
+   You can specify a file which contains Diffie-Hellman parameters
+   as a PEM-file. This is needed if you would like to specify
+   ciphers including Diffie-Hellman mode. The first parameter, if
+   set, represents the id of the domain.
+
+   It defaults to not set a dh param file.
+
+   Example 1.9. Set dh_params variable
+...
+modparam("proto_tls", "dh_params", "/etc/pki/CA/dh1024.pem")
+modparam("proto_tls", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
+...
+
+1.6.10. ec_curve[(string):](string)
+
+   You can specify an elliptic curve which should be used for
+   ciphers which demand an elliptic curve. The first parameter, if
+   set, represents the id of the domain.
+
+   It's usable only if TLS v1.1/1.2 support was compiled. A list
+   of curves which can be used you can get by
+                                openssl ecparam -list_curve
+
+   It defaults to not set a elliptic curve.
+
+1.6.11. verify_cert [(string):](string) and
+require_cert[(string):](string)
+
+   Technically, tls_verify_client activates SSL_VERIFY_PEER in the
+   ssl_context. tls_require_client_certificate does the same with
+   SSL_VERIFY_FAIL_IF_NO_PEER_CERT, which is only possible if
+   SSL_VERIFY_PEER is also turned on. Since version 2.1, these
+   parameters act have been reduced to only one. They act both on
+   client side and server side if no domain specified, elseway
+   they act on a specific domain, depending on the first
+   parameter.
 
    These two parameters are used for incoming TLS connections,
    where OpenSIPS acts as server.
 
-   See previous chapter Section 1.5.4 for more information.
+   See previous chapter Section 1.5.4, “TLS OpenSIPS
+   authentication behavior” for more information.
 
    It's usable only if TLS support was compiled.
 
-   Default value for both is 1. 
+   Default value for both is 1.
 
-   Example 1-9. Set tls_verify_client &
-   tls_require_client_certificate variable
+   Example 1.10. Set verify_cert & require_cert variable
 ...
 # turn on the strictest and strongest authentication possible
-tls_verify_client = 1
-tls_require_client_certificate = 1
+modparam("proto_tls", "require_cert", "1")
+modparam("proto_tls", "require_cert", "1:1")
+modparam("proto_tls", "verify_cert", "0")
+modparam("proto_tls", "verify_cert", "1:1")
 ...
-     _________________________________________________________
 
-1.6.10. tls_verify_server=number
-
-   Technically, tls_verify_server activates SSL_VERIFY_PEER in
-   the ssl_context.
-
-   This parameter is used for outgoing TLS connections, where
-   OpenSIPS acts as client.
-
-   See previous chapter Section 1.5.4 for more information.
-
-   It's usable only if TLS support was compiled.
-
-   Default value is 1. 
-
-   Example 1-10. Set tls_verify_server variable
-...
-# turn on the strictest and strongest authentication possible
-tls_verify_server = 1
-...
-     _________________________________________________________
-
-1.6.11. tls_handshake_timeout=number and tls_send_timeout=number
+1.6.12. tls_handshake_timeout (integer) and tls_send_timeout
+(integer)
 
    Timeouts ... advanced users only
 
-   It's usable only if TLS support was compiled.
+   Default value for both is 30.
 
-   Default value for both is 30. 
-
-   Example 1-11. Set tls_handshake_timeout & tls_send_timeout
+   Example 1.11. Set tls_handshake_timeout & tls_send_timeout
    variable
 ...
-tls_handshake_timeout=119    # number of seconds
-tls_send_timeout=121         # number of seconds
+modparam("proto_tls", "tls_handshake_timeout", 119)             # number
+ of seconds
+modparam("proto_tls", "tls_send_timeout", 121)                  # number
+ of seconds
 ...
-     _________________________________________________________
 
-1.6.12. tls_client_domain_avp=number
+1.6.13. client_domain_avp (integer)
 
    This sets the interger AVP used for name based TLS server
    domains (please see tls_client_domain for more details).
@@ -625,15 +610,15 @@ tls_send_timeout=121         # number of seconds
 
    It's usable only if TLS support was compiled.
 
-   Default value is 0. 
+   Default value is 0.
 
-   Example 1-12. Set tls_client_domain_avp variable
+   Example 1.12. Set tls_client_domain_avp variable
 ...
-tls_client_domain_avp=400    # only integer named AVPs are supported
+modparam("proto_tls", "tls_client_domain_avp", "400")           # only i
+nteger named AVPs are supported
 ...
-     _________________________________________________________
 
-1.6.13. tls_server_domain, tls_client_domain section
+1.6.14. server_domain, client_domain (string)
 
    If you only run one domain, the main one is enough. If you are
    running several TLS servers (that is, you have more than one
@@ -668,14 +653,14 @@ tls_client_domain_avp=400    # only integer named AVPs are supported
    provide a client certificate. In this scenario, socket based
    distinction is not possible as there is no dedicated outgoing
    socket. Thus, the certificate selection (selection of the
-   proper TLS client domain) will be name based. For this
-   purpose, TLS client domains can be associated with a name
-   (e.g. the domain can be used as name). If the SIP proxy
-   establishes a new outgoing TLS connection, it checks for the
-   TLS client domain AVP (parameter tls_client_domain_avp). If
-   this AVP is set (e.g. in OpenSIPS.cfg), OpenSIPS searches for a
-   TLS client domain with the same name and uses the certificates
-   defined in the respective tls_client_domain section.
+   proper TLS client domain) will be name based. For this purpose,
+   TLS client domains can be associated with a name (e.g. the
+   domain can be used as name). If the SIP proxy establishes a new
+   outgoing TLS connection, it checks for the TLS client domain
+   AVP (parameter tls_client_domain_avp). If this AVP is set (e.g.
+   in OpenSIPS.cfg), OpenSIPS searches for a TLS client domain
+   with the same name and uses the certificates defined in the
+   respective tls_client_domain section.
 
    TLS client domains can also be socket based. If name based
    domains are disabled or no name based AVP is found, OpenSIPS
@@ -690,9 +675,9 @@ tls_client_domain_avp=400    # only integer named AVPs are supported
    NOTE: Make sure to also configure OpenSIPS to listen on the
    specified IP:port.
 
-   NOTE: Except tls_handshake_timeout and tls_send_timeout all
-   TLS parameters can be set per TLS domain. If a parameter is
-   not explicit set, the default value will be used.
+   NOTE: Except tls_handshake_timeout and tls_send_timeout all TLS
+   parameters can be set per TLS domain. If a parameter is not
+   explicit set, the default value will be used.
 
    NOTE: The tls_verify_client and tls_require_client_certificate
    options can only be configured in TLS server domains, whereas
@@ -701,70 +686,81 @@ tls_client_domain_avp=400    # only integer named AVPs are supported
 
    It's usable only if TLS support was compiled.
 
-   Example 1-13. Usage of tls_client_domain and tls_server_domain
-   block 
+   Example 1.13. Usage of tls_client_domain and tls_server_domain
+   block
 ...
 listen=tls:IP_2:port2
-listen=tls:IP_3:port4
+listen=tls:IP_3:port3
 ...
 # set the TLS client domain AVP
-tls_client_domain_avp = 400
+modparam("proto_tls", "tls_client_domain_avp", "400")
 ...
-# socket based TLS server domains (for virtual SIPS hosting)
-tls_server_domain[IP_2:port2] {
-    #specify parameters for a domain in particular, otherwise,
-    #it will use the default values.
-    tls_certificate = "/certs/atlanta.com/cert.pem"
-    tls_private_key = "/certs/atlanta.com/privkey.pem"
-    tls_ca_list     = "/certs/wellknownCAs"
-    tls_method=tlsv1
-}
-tls_server_domain[IP_3:port3] {
-    tls_certificate = "/certs/biloxy.com/cert.pem"
-    tls_private_key = "/certs/biloxy.com/privkey.pem"
-    tls_ca_list     = "/certs/wellknownCAs"
-    tls_method=tlsv1
-    tls_verify_client = 1
-    tls_require_client_certificate = 1
-}
-# name based TLS client domains (for virtual SIPS hosting)
-tls_client_domain["atlanta.com"] {
-    tls_certificate = "/certs/atlanta.com/cert.pem"
-    tls_private_key = "/certs/atlanta.com/privkey.pem"
-    tls_ca_list     = "/certs/wellknownCAs"
-    tls_method=tlsv1
-    tls_verify_server = 1
-}
-tls_client_domain["biloxi.com"] {
-    tls_certificate = "/certs/biloxy.com/cert.pem"
-    tls_private_key = "/certs/biloxy.com/privkey.pem"
-    tls_ca_list     = "/certs/wellknownCAs"
-    tls_method=tlsv1
-    tls_verify_server = 0
-}
-# socket based TLS server domains (for TLS based downstream from GW pro
-vider)
-tls_server_domain[IP_5:port5] {
-    tls_certificate = "/certs/local/cert.pem"
-    tls_private_key = "/certs/local/privkey.pem"
-    tls_ca_list     = "/certs/GWproviderSelfSignedCA"
-    tls_method=tlsv1
-    # TLS needed only for encryption, access is restricted via
-    # IP access lists
-    tls_verify_client = 0
-}
-# socket based TLS client domains (for TLS based upstream to GW provide
-r)
+
+# 'atlanta' server domain
+modparam("proto_tls", "server_domain", "1=IP_2:port2")
+
+modparam("proto_tls", "certificate", "1:/certs/atlanta.com/cert.pem")
+modparam("proto_tls", "private_key", "1:/certs/atlanta.com/privkey.pem")
+modparam("proto_tls", "ca_list", "1:/certs/wellknownCAs")
+modparam("proto_tls", "tls_method", "1:tlsv1")
+modparam("proto_tls", "verify_cert", "1:1")
+modparam("proto_tls", "require_cert", "1:1")
+
+#'biloxy' server domain
+
+modparam("proto_tls", "server_domain", "2=IP_3:port3")
+
+modparam("proto_tls", "certificate", "2:/certs/biloxy.com/cert.pem")
+modparam("proto_tls", "private_key", "2:/certs/biloxy.com/privkey.pem")
+modparam("proto_tls", "ca_list", "2:/certs/wellknownCAs")
+modparam("proto_tls", "tls_method", "2:tlsv1")
+modparam("proto_tls", "verify_cert", "2:1")
+modparam("proto_tls", "require_cert", "2:1")
+
+# 'atlanta' client domain
+modparam("proto_tls", "client_domain", "3=IP_2:port2")
+
+modparam("proto_tls", "certificate", "3:/certs/atlanta.com/cert.pem")
+modparam("proto_tls", "private_key", "3:/certs/atlanta.com/privkey.pem")
+modparam("proto_tls", "ca_list", "3:/certs/wellknownCAs")
+modparam("proto_tls", "tls_method", "3:tlsv1")
+modparam("proto_tls", "verify_cert", "3:1")
+modparam("proto_tls", "require_cert", "3:1")
+
+#'biloxy' client domain
+modparam("proto_tls", "client_domain", "4=IP_3:port3")
+
+modparam("proto_tls", "certificate", "4:/certs/biloxy.com/cert.pem")
+modparam("proto_tls", "private_key", "4:/certs/biloxy.com/privkey.pem")
+modparam("proto_tls", "ca_list", "4:/certs/wellknownCAs")
+modparam("proto_tls", "tls_method", "4:tlsv1")
+modparam("proto_tls", "verify_cert", "4:1")
+modparam("proto_tls", "require_cert", "4:1")
+
+
+
+
+# socket based TLS server domains (for TLS based downstream from GW prov
+ider)
+modparam("proto_tls", "client_domain", "5=IP_5:port5")
+
+modparam("proto_tls", "certificate", "5:/certs/atlanta.com/cert.pem")
+modparam("proto_tls", "private_key", "5:/certs/atlanta.com/privkey.pem")
+modparam("proto_tls", "ca_list", "5:/certs/wellknownCAs")
+modparam("proto_tls", "tls_method", "5:tlsv1")
+modparam("proto_tls", "verify_cert", "5:0")
+
+# socket based TLS client domains (for TLS based upstream to GW provider
+)
 # GW IP: 1.2.3.4, GW port: 6677
-tls_client_domain[1.2.3.4:6677] {
-    tls_certificate = "/certs/local/cert.pem"
-    tls_private_key = "/certs/local/privkey.pem"
-    tls_ca_list     = "/certs/GWproviderSelfSignedCA"
-    tls_method=tlsv1
-    # TLS needed only for encryption, access is restricted via
-    # IP access lists
-    tls_verify_server = 0
-}
+modparam("proto_tls", "client_domain", "6=1.2.3.4:6677")
+
+modparam("proto_tls", "certificate", "6:/certs/biloxy.com/cert.pem")
+modparam("proto_tls", "private_key", "6:/certs/biloxy.com/privkey.pem")
+modparam("proto_tls", "ca_list", "6:/certs/wellknownCAs")
+modparam("proto_tls", "tls_method", "6:tlsv1")
+modparam("proto_tls", "verify_cert", "6:0")
+
 ...
 route{
 ...
@@ -778,7 +774,6 @@ route{
     t_relay("tls:1.2.3.4:6677");
     exit;
 ...
-     _________________________________________________________
 
 1.7. OpenSIPS with TLS - script example
 
@@ -789,12 +784,10 @@ route{
    NOTE: Since the TLS engine is quite memory consuming, increase
    the used memory by the run time parameter "-m" (see OpenSIPS -h
    for more details).
-
      * fork = yes
 
-   Example 1-14. Script with TLS support
-  # ----------- global configuration parameters -----------------------
--
+   Example 1.14. Script with TLS support
+  # ----------- global configuration parameters ------------------------
   debug=3
   fork=yes
   log_stderror=no
@@ -807,17 +800,20 @@ route{
   children=4
   fifo="/tmp/opensips_fifo"
 
+  # ------------------ module loading ----------------------------------
+
   #TLS specific settings
-  tls_certificate="/path/opensipsX_cert.pem"
-  tls_private_key="/path/privkey.pem"
-  tls_ca_list="/path/calist.pem"
-  tls_verify=on
-  tls_require_client_certificate=on
+  loadmodule "proto_tls.so"
+
+  modparam("proto_tls", "certificate", "/path/opensipsX_cert.pem")
+  modparam("proto_tls", "private_key", "/path/privkey.pem")
+  modparam("proto_tls", "ca_list", "/path/calist.pem")
+  modparam("proto_tls", "ca_list", "/path/calist.pem")
+  modparam("proto_tls", "require_cert", "1")
+  modparam("proto_tls", "verify_cert", "1")
 
   alias=_DNS_ALIAS_
 
-  # ------------------ module loading ---------------------------------
--
 
   loadmodule "modules/sl/sl.so"
   loadmodule "modules/rr/rr.so"
@@ -831,8 +827,7 @@ route{
   loadmodule "modules/textops/textops.so"
   loadmodule "modules/uri_db/uri_db.so"
 
-  # ----------------- setting module-specific parameters --------------
--
+  # ----------------- setting module-specific parameters ---------------
 
   # -- auth_db params --
   modparam("auth_db", "db_url", "sql_url")
@@ -843,8 +838,7 @@ route{
   # no multiple registrations
   modparam("registrar", "append_branches", 0)
 
-  # -------------------------  request routing logic ------------------
--
+  # -------------------------  request routing logic -------------------
 
   # main routing logic
 
@@ -860,8 +854,8 @@ route{
   # challenge him (skip REGISTERs -- we will chalenge them later)
   if (from_uri==myself) {
       setflag(1);
-      if ( (method=="INVITE" || method=="SUBSCRIBE" || method=="MESSAGE
-")
+      if ( (method=="INVITE" || method=="SUBSCRIBE" || method=="MESSAGE"
+)
       &&  !(src_ip==myself) ) {
           if  (!(proxy_authorize( "domA.net", "subscriber" ))) {
               proxy_challenge("domA.net","0"/*no-qop*/);
@@ -927,8 +921,8 @@ route{
       };
       if (!db_check_to()) {
           log("LOG: To Cheating attempt\n");
-          sl_send_reply("403", "That is ugly -- use To=id in REGISTERs"
-);
+          sl_send_reply("403", "That is ugly -- use To=id in REGISTERs")
+;
           break;
       };
       # it is an authenticated request, update Contact database now
@@ -961,20 +955,17 @@ route{
 
   #end of script
   }
-     _________________________________________________________
 
-Chapter 2. Developer's Guide
+Chapter 2. Developer Guide
 
 2.1. TLS_CONFIG
 
    It contains configuration variables for OpenSIPS's TLS
    (timeouts, file paths, etc).
-     _________________________________________________________
 
 2.2. TLS_INIT
 
    Initialization related functions and parameters.
-     _________________________________________________________
 
 2.2.1. ssl context
 
@@ -983,7 +974,6 @@ Chapter 2. Developer's Guide
    The ssl context is a member of the TLS domain strcuture. Thus,
    every TLS domain, default and virtual - servers and clients,
    have its own SSL context.
-     _________________________________________________________
 
 2.2.2. pre_init_tls
 
@@ -991,7 +981,6 @@ Chapter 2. Developer's Guide
 
    Called once to pre_initialize the tls subsystem, from the
    main(). Called before parsing the configuration file.
-     _________________________________________________________
 
 2.2.3. init_tls
 
@@ -999,30 +988,26 @@ Chapter 2. Developer's Guide
 
    Called once to initialize the tls subsystem, from the main().
    Called after parsing the configuration file.
-     _________________________________________________________
 
 2.2.4. destroy_tls
 
    void destroy_tls(void);
 
    Called once, just before cleanup.
-     _________________________________________________________
 
 2.2.5. tls_init
 
    int tls_init(struct socket_info *c);
 
    Called once for each tls socket created, from main.c
-     _________________________________________________________
 
-2.2.6. ser_malloc, ser_realloc, ser_free
+2.2.6. os_malloc, os_realloc, os_free
 
    Wrapper functions around the shm_* functions. OpenSSL uses
-   non-shared memory to create its objects, thus it would not
-   work in OpenSIPS. By creating these wrappers and configuring
-   OpenSSL to use them instead of its default memory functions,
-   we have all OpenSSL objects in shared memory, ready to use.
-     _________________________________________________________
+   non-shared memory to create its objects, thus it would not work
+   in OpenSIPS. By creating these wrappers and configuring OpenSSL
+   to use them instead of its default memory functions, we have
+   all OpenSSL objects in shared memory, ready to use.
 
 2.3. TLS_SERVER
 
@@ -1030,9 +1015,9 @@ Chapter 2. Developer's Guide
 
    Each TLS connection, incoming or outgoing, creates an SSL *
    object, where configuration inherited from the SSL_CTX * and
-   particular info on that socket are stored. This SSL *
-   structure is kept in OpenSIPS as long as the connection is
-   alive, as part of the "struct tcp_connection *" object:
+   particular info on that socket are stored. This SSL * structure
+   is kept in OpenSIPS as long as the connection is alive, as part
+   of the “struct tcp_connection *” object:
 ...
 struct tcp_connection *c;
 SSL *ssl;
@@ -1041,28 +1026,24 @@ SSL *ssl;
 c->extra_data = (void *) ssl;
 ssl = (SSL *) c->extra_data;
 ...
-     _________________________________________________________
 
 2.3.2. tls_print_errstack
 
    void tls_print_errstack(void);
 
    Dumps ssl error stack.
-     _________________________________________________________
 
 2.3.3. tls_tcpconn_init
 
    int tls_tcpconn_init( struct tcp_connection *c, int fd);
 
    Called when new tcp connection is accepted
-     _________________________________________________________
 
 2.3.4. tls_tcpconn_clean
 
    void tls_tcpconn_clean( struct tcp_connection *c);
 
    Shuts down the TLS connection.
-     _________________________________________________________
 
 2.3.5. tls_blocking_write
 
@@ -1070,21 +1051,18 @@ ssl = (SSL *) c->extra_data;
    const char *buf, size_t len);
 
    Writes a memory chunk in blocking mode (syncron).
-     _________________________________________________________
 
 2.3.6. tls_read
 
    size_t tls_read( struct tcp_connection *c);
 
    Reads from a TLS connection. Return the number of bytes read.
-     _________________________________________________________
 
 2.3.7. tls_fix_read_conn
 
    void tls_tcpconn_clean( struct tcp_connection *c);
 
    Shuts down the TLS connection.
-     _________________________________________________________
 
 2.4. TLS_DOMAIN
 
@@ -1105,7 +1083,6 @@ ssl = (SSL *) c->extra_data;
    extern struct tls_domain *tls_client_domains;
 
    List with defined client domains.
-     _________________________________________________________
 
 2.4.2. tls_find_server_domain
 
@@ -1114,7 +1091,6 @@ ssl = (SSL *) c->extra_data;
 
    Find a TLS server domain with given ip and port (local
    listening socket).
-     _________________________________________________________
 
 2.4.3. tls_find_client_domain
 
@@ -1123,14 +1099,12 @@ ssl = (SSL *) c->extra_data;
 
    Find TLS client domain with given ip and port (socket of the
    remote destination).
-     _________________________________________________________
 
 2.4.4. tls_find_client_domain_name
 
    struct tls_domain *tls_find_client_name(str name);
 
    Find TLS client domain with given name.
-     _________________________________________________________
 
 2.4.5. tls_new__domain
 
@@ -1138,7 +1112,6 @@ ssl = (SSL *) c->extra_data;
 
    Creates new TLS: allocate memory, set the type and initialize
    members
-     _________________________________________________________
 
 2.4.6. tls_new_server_domain
 
@@ -1147,16 +1120,14 @@ ssl = (SSL *) c->extra_data;
 
    Creates and adds to the list of TLS server domains a new
    domain.
-     _________________________________________________________
 
 2.4.7. tls_new_client_domain
 
    int tls_new_client_domain(struct ip_addr *ip, unsigned short
    port);
 
-   Creates and adds to the list of TLS client domains a new
-   socket based domain.
-     _________________________________________________________
+   Creates and adds to the list of TLS client domains a new socket
+   based domain.
 
 2.4.8. tls_new_client_domain_name
 
@@ -1164,47 +1135,46 @@ ssl = (SSL *) c->extra_data;
 
    Creates and adds to the list of TLS client domains a new name
    based domain.
-     _________________________________________________________
 
 2.4.9. tls_free_domains
 
    void tls_free_domains(void);
 
    Cleans up the entire domain lists.
-     _________________________________________________________
 
 Chapter 3. Frequently Asked Questions
 
-   3.1. Where can I post a question about TLS?
-   3.2. How can I report a bug?
-   3.3. How can I debug ssl/tls problems?
+   3.1.
 
-   3.1. Where can I post a question about TLS?
+       Where can I post a question about TLS?
 
-   Use one (the most appropriate) of the OpenSIPS mailing lists:
+       Use one (the most appropriate) of the OpenSIPS mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-     * User Mailing List -
-       http://opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://opensips.org/cgi-bin/mailman/listinfo/devel
+       Remember: first at all, check if your question wasn't already
+       answered.
 
-   Remember: first at all, check if your question wasn't already
-   answered.
+   3.2.
 
-   3.2. How can I report a bug?
+       How can I report a bug?
 
-   Accumulate as much as possible information (OpenSIPS version,
-   opensips -V output, your OS (uname -a), OpenSIPS logs, network
-   dumps, core dump files, configuration file) and send a mail to
-   http://opensips.org/cgi-bin/mailman/listinfo/devel
+       Accumulate as much as possible information (OpenSIPS version,
+       opensips -V output, your OS (uname -a), OpenSIPS logs, network
+       dumps, core dump files, configuration file) and send a mail to
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   Also you may try OpenSIPS's bug report web page:
-   http://www.opensips.org/pmwiki.php?n=Development.Tracker
+       Also you may try OpenSIPS's bug report web page:
+       http://www.opensips.org/pmwiki.php?n=Development.Tracker
 
-   3.3. How can I debug ssl/tls problems?
+   3.3.
 
-   Increase the log level in opensips.cfg (debug=4) and watch the
-   log statements in syslog.
+       How can I debug ssl/tls problems?
 
-   Install the ssldump utility and start it. This will give you a
-   trace of the ssl/tls connections.
+       Increase the log level in opensips.cfg (debug=4) and watch the
+       log statements in syslog.
+
+       Install the ssldump utility and start it. This will give you a
+       trace of the ssl/tls connections.

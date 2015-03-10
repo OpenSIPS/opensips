@@ -1,20 +1,13 @@
 <!-- Module Developer's Guide -->
+<!-- TODO this document needs to be updated -->
 
 <chapter>
-	<chapterinfo>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision$</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
-	</chapterinfo>
-	<title>Developer's Guide</title>
+	<title>&develguide;</title>
 
 	<section>
 		<title>TLS_CONFIG</title>
 		<para>
-		It contains configuration variables for &ser;'s TLS (timeouts, 
+		It contains configuration variables for &osips;'s TLS (timeouts,
 		file paths, etc).
 		</para>
 	</section>
@@ -73,12 +66,12 @@
 			</para>
 		</section>
 		<section>
-			<title>ser_malloc, ser_realloc, ser_free</title>
+			<title>os_malloc, os_realloc, os_free</title>
 			<para>
-			Wrapper functions around the shm_* functions. OpenSSL uses 
-			non-shared memory to create its objects, thus it would not 
-			work in &ser;. By creating these wrappers and configuring 
-			OpenSSL to use them instead of its default memory functions, 
+			Wrapper functions around the shm_* functions. OpenSSL uses
+			non-shared memory to create its objects, thus it would not
+			work in &osips;. By creating these wrappers and configuring
+			OpenSSL to use them instead of its default memory functions,
 			we have all OpenSSL objects in shared memory, ready to use.
 			</para>
 		</section>
@@ -89,10 +82,10 @@
 		<section>
 			<title>SSL data per connection</title>
 			<para>
-			Each TLS connection, incoming or outgoing, creates an 
-			SSL * object, where configuration inherited from the 
-			SSL_CTX * and particular info on that socket are stored. 
-			This SSL * structure is kept in &ser; as  long as the connection
+			Each TLS connection, incoming or outgoing, creates an
+			SSL * object, where configuration inherited from the
+			SSL_CTX * and particular info on that socket are stored.
+			This SSL * structure is kept in &osips; as  long as the connection
 			is alive, as part of the <quote>struct tcp_connection *</quote>
 			object:
 			<programlisting format="linespecific">
@@ -101,7 +94,7 @@ struct tcp_connection *c;
 SSL *ssl;
 
 /*create somehow SSL object*/
-c->extra_data = (void *) ssl; 
+c->extra_data = (void *) ssl;
 ssl = (SSL *) c->extra_data;
 ...
 </programlisting>
@@ -122,7 +115,7 @@ ssl = (SSL *) c->extra_data;
 			int tls_tcpconn_init( struct tcp_connection *c, int fd);
 			</para>
 			<para>
-			Called when new tcp connection is accepted 
+			Called when new tcp connection is accepted
 			</para>
 		</section>
 		<section>
@@ -137,7 +130,7 @@ ssl = (SSL *) c->extra_data;
 		<section>
 			<title>tls_blocking_write</title>
 			<para>
-			size_t tls_blocking_write( struct tcp_connection *c, int fd, 
+			size_t tls_blocking_write( struct tcp_connection *c, int fd,
 			const char *buf, size_t len);
 			</para>
 			<para>
@@ -200,7 +193,7 @@ ssl = (SSL *) c->extra_data;
 			unsigned short port);
 			</para>
 			<para>
-			Find a TLS server domain with given ip and port 
+			Find a TLS server domain with given ip and port
 			(local listening socket).
 			</para>
 		</section>
@@ -211,7 +204,7 @@ ssl = (SSL *) c->extra_data;
 			unsigned short port);
 			</para>
 			<para>
-			Find TLS client domain with given ip and port 
+			Find TLS client domain with given ip and port
 			(socket of the remote destination).
 			</para>
 		</section>
@@ -272,9 +265,3 @@ ssl = (SSL *) c->extra_data;
 	</section>
 
 </chapter>
-
-<!-- Keep this element at the end of the file
-Local Variables:
-sgml-parent-document: ("tls.sgml" "book" "chapter")
-End:
--->

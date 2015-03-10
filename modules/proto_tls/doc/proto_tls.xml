@@ -1,20 +1,23 @@
-<!DOCTYPE Book PUBLIC "-//OASIS//DTD DocBook V4.2//EN" [
+<?xml version="1.0" encoding='ISO-8859-1'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
 
-<!ENTITY user SYSTEM "tls_user.sgml">
-<!ENTITY devel SYSTEM "tls_devel.sgml">
-<!ENTITY faq SYSTEM "tls_faq.sgml">
+
+<!ENTITY admin SYSTEM "proto_tls_admin.xml">
+<!ENTITY devel SYSTEM "proto_tls_devel.xml">
+<!ENTITY faq SYSTEM "proto_tls_faq.xml">
 
 <!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../doc/entities.sgml">
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
 %docentities;
 
 ]>
 
 <book>
 	<bookinfo>
-	<title>TLS support</title>
-	<productname class="trade">&sername;</productname>
+	<title>TLS module</title>
+	<productname class="trade">&osipsname;</productname>
 	<authorgroup>
 		<author>
 			<firstname>Peter</firstname>
@@ -78,7 +81,7 @@
 	</bookinfo>
 	<toc></toc>
 
-	&user;
+	&admin;
 	&devel;
 	&faq;
 

@@ -1,15 +1,7 @@
 <!-- Module FAQ -->
 
 <chapter>
-	<chapterinfo>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision$</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
-	</chapterinfo>
-	<title>Frequently Asked Questions</title>
+	<title>&faqguide;</title>
 	<qandaset defaultlabel="number">
 	<qandaentry>
 		<question>
@@ -17,14 +9,14 @@
 		</question>
 		<answer>
 		<para>
-			Use one (the most appropriate) of the &ser; mailing lists:
+			Use one (the most appropriate) of the &osips; mailing lists:
 		</para>
 		<itemizedlist>
 			<listitem>
-			<para>User Mailing List - &seruserslink;</para>
+			<para>User Mailing List - &osipsuserslink;</para>
 			</listitem>
 			<listitem>
-			<para>Developer Mailing List - &serdevlink;</para>
+			<para>Developer Mailing List - &osipsdevlink;</para>
 			</listitem>
 		</itemizedlist>
 		<para>
@@ -39,10 +31,10 @@
 		</question>
 		<answer>
 		<para>
-			Accumulate as much as possible information (&ser; version,
-			opensips -V output, your OS (uname -a), &ser; logs, network dumps,
+			Accumulate as much as possible information (&osips; version,
+			opensips -V output, your OS (uname -a), &osips; logs, network dumps,
 			core dump files, configuration file)
-			and send a mail to &serdevlink;
+			and send a mail to &osipsdevlink;
 		</para>
 		<para>
 			Also you may try OpenSIPS's bug report web page:
@@ -65,12 +57,5 @@
 		</para>
 	</answer>
 	</qandaentry>
-
 	</qandaset>
 </chapter>
-
-<!-- Keep this element at the end of the file
-Local Variables:
-sgml-parent-document: ("tls.sgml" "Book" "chapter")
-End:
--->
