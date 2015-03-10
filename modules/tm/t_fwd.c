@@ -358,6 +358,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 	request->parsed_uri_ok=0;
 	request->dst_uri=*next_hop;
 	request->path_vec=*path;
+	request->ruri_bflags=bflags;
 
 	if ( pre_print_uac_request( t, branch, request)!= 0 ) {
 		ret = -1;
@@ -401,7 +402,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 	t->uac[branch].uri.s=t->uac[branch].request.buffer.s+
 		request->first_line.u.request.method.len+1;
 	t->uac[branch].uri.len=request->new_uri.len;
-	t->uac[branch].br_flags = bflags;
+	t->uac[branch].br_flags = request->ruri_bflags;
 	t->uac[branch].added_rr = count_local_rr( request );
 	t->nr_of_outgoings++;
 
@@ -568,7 +569,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	int success_branch;
 	str dst_uri;
 	struct socket_info *bk_sock;
-	unsigned int br_flags;
+	unsigned int br_flags, bk_bflags;
 	int idx;
 	str path;
 	str bk_path;
@@ -600,6 +601,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	backup_dst = p_msg->dst_uri;
 	bk_sock = p_msg->force_send_socket;
 	bk_path = p_msg->path_vec;
+	bk_bflags = p_msg->ruri_bflags;
 
 	/* check if the UAS retranmission port needs to be updated */
 	if ( (p_msg->msg_flags ^ t->uas.request->msg_flags) & FL_FORCE_RPORT )
@@ -644,6 +646,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	p_msg->dst_uri = backup_dst;
 	p_msg->force_send_socket = bk_sock;
 	p_msg->path_vec = bk_path;
+	p_msg->ruri_bflags = bk_bflags;
+
 	/* update on_branch, if modified */
 	t->on_branch = get_on_branch();
 	/* update flags, if changed in branch route */
