@@ -12,9 +12,11 @@
 #directory lists for clean rules
 all_modules=$(shell [ -d modules -a -d utils ] && ls modules)
 all_utils=$(shell [ -d modules -a -d utils ] && ls utils)
+builtin_modules=$(shell [ -d net ] && ls net | grep ^proto_ )
 all_nostatic_modules=$(filter-out $(addprefix modules/, $(static_modules)), \
 			$(wildcard modules/*))
 all_modules:=$(addprefix modules/, $(all_modules))
+all_modules:="$(addprefix net/, $(builtin_modules)) $all_modules"
 all_utils:=$(addprefix utils/, $(all_utils))
 
 #implicit rules

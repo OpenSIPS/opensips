@@ -107,7 +107,7 @@ modules_names=$(patsubst modules/%, %.so, $(modules))
 modules_basenames=$(patsubst modules/%, %, $(modules))
 modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
 
-doc_modules_basenames=$(patsubst modules/%, %, $(doc_modules))
+doc_modules_basenames=$(patsubst modules/%, %, $(patsubst net/%, %, $(doc_modules)))
 
 tls_configs=$(patsubst etc/%, %, $(wildcard etc/tls/*) \
 		$(wildcard etc/tls/rootCA/*) $(wildcard etc/tls/rootCA/certs/*) \
@@ -260,74 +260,97 @@ tool-xsltproc:
 modules-readme: tool-lynx tool-xsltproc
 	@set -e; \
 	for r in $(doc_modules_basenames) ""; do \
+		if [ ! -d "modules/$$r/doc" -a ! -d "net/$$r/doc" ]; then \
+			continue; \
+		fi; \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc"; \
-			if [ -f "$$r".xml ]; then \
-				echo ""; \
-				echo "docbook xml to html: $$r.xml"; \
-				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
-							$$r.xml; \
-				echo "docbook html to txt: $$r.html"; \
-				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt; \
-				echo "docbook txt to readme: $$r.txt"; \
-				rm $$r.html; \
-				mv $$r.txt ../README; \
-				echo ""; \
-			fi; \
-			cd ../../..; \
+		elif [ -d "net/$$r/doc" ]; then \
+			cd "net/$$r/doc"; \
 		fi; \
+		\
+		if [ -f "$$r".xml ]; then \
+			echo ""; \
+			echo "docbook xml to html: $$r.xml"; \
+			$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
+						$$r.xml; \
+			echo "docbook html to txt: $$r.html"; \
+			$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt; \
+			echo "docbook txt to readme: $$r.txt"; \
+			rm $$r.html; \
+			mv $$r.txt ../README; \
+			echo ""; \
+		fi; \
+		cd ../../..; \
 	done
 
 .PHONY: modules-docbook-txt
 modules-docbook-txt: tool-lynx tool-xsltproc
 	@set -e; \
 	for r in $(doc_modules_basenames) ""; do \
+		if [ ! -d "modules/$$r/doc" -a ! -d "net/$$r/doc" ]; then \
+			continue; \
+		fi; \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc"; \
-			if [ -f "$$r".xml ]; then \
-				echo ""; \
-				echo "docbook xml to html: $$r.xml"; \
-				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
-							$$r.xml; \
-				echo "docbook html to txt: $$r.html"; \
-				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt; \
-				rm $$r.html; \
-				echo ""; \
-			fi; \
-			cd ../../..; \
+		elif [ -d "net/$$r/doc" ]; then \
+			cd "net/$$r/doc"; \
 		fi; \
+		\
+		if [ -f "$$r".xml ]; then \
+			echo ""; \
+			echo "docbook xml to html: $$r.xml"; \
+			$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
+						$$r.xml; \
+			echo "docbook html to txt: $$r.html"; \
+			$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt; \
+			rm $$r.html; \
+			echo ""; \
+		fi; \
+		cd ../../..; \
 	done
 
 .PHONY: modules-docbook-html
 modules-docbook-html: tool-xsltproc
 	@set -e; \
 	for r in $(doc_modules_basenames) ""; do \
+		if [ ! -d "modules/$$r/doc" -a ! -d "net/$$r/doc" ]; then \
+			continue; \
+		fi; \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc"; \
-			if [ -f "$$r".xml ]; then \
-				echo ""; \
-				echo "docbook xml to html: $$r.xml"; \
-				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
-							$$r.xml; \
-				echo ""; \
-			fi; \
-			cd ../../..; \
+		elif [ -d "net/$$r/doc" ]; then \
+			cd "net/$$r/doc"; \
 		fi; \
+		\
+		if [ -f "$$r".xml ]; then \
+			echo ""; \
+			echo "docbook xml to html: $$r.xml"; \
+			$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
+						$$r.xml; \
+			echo ""; \
+		fi; \
+		cd ../../..; \
 	done
 
 .PHONY: modules-docbook-pdf
 modules-docbook-pdf: tool-docbook2pdf
 	@set -e; \
 	for r in $(doc_modules_basenames) ""; do \
+		if [ ! -d "modules/$$r/doc" -a ! -d "net/$$r/doc" ]; then \
+			continue; \
+		fi; \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc"; \
-			if [ -f "$$r".xml ]; then \
-				echo ""; \
-				echo "docbook xml to pdf: $$r.xml"; \
-				$(DBXML2PDF) "$$r".xml; \
-			fi; \
-			cd ../../..; \
+		elif [ -d "net/$$r/doc" ]; then \
+			cd "net/$$r/doc"; \
 		fi; \
+		if [ -f "$$r".xml ]; then \
+			echo ""; \
+			echo "docbook xml to pdf: $$r.xml"; \
+			$(DBXML2PDF) "$$r".xml; \
+		fi; \
+		cd ../../..; \
 	done
 
 .PHONY: modules-docbook
