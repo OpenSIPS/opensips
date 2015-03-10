@@ -45,17 +45,29 @@ static char print_buffer[PRINT_BUFFER_SIZE];
 
 /*********************** msg flags ****************************/
 
-int setflag( struct sip_msg* msg, flag_t flag ) {
+int setflag(struct sip_msg* msg, flag_t flag)
+{
+#ifdef EXTRA_DEBUG
+	LM_DBG("mflags for %p : (%u, %u)\n", msg, flag, msg->flags);
+#endif
 	msg->flags |= 1 << flag;
 	return 1;
 }
 
-int resetflag( struct sip_msg* msg, flag_t flag ) {
+int resetflag(struct sip_msg* msg, flag_t flag)
+{
+#ifdef EXTRA_DEBUG
+	LM_DBG("mflags for %p : (%u, %u)\n", msg, flag, msg->flags);
+#endif
 	msg->flags &= ~ (1 << flag);
 	return 1;
 }
 
-int isflagset( struct sip_msg* msg, flag_t flag ) {
+int isflagset(struct sip_msg* msg, flag_t flag)
+{
+#ifdef EXTRA_DEBUG
+	LM_DBG("mflags for %p : (%u, %u)\n", msg, flag, msg->flags);
+#endif
 	return (msg->flags & (1<<flag)) ? 1 : -1;
 }
 
@@ -86,6 +98,9 @@ str bitmask_to_flag_list(enum flag_type type, int bitmask)
 	struct flag_entry *entry;
 	str ret;
 
+#ifdef EXTRA_DEBUG
+	LM_DBG("bitmask -> %u\n", bitmask);
+#endif
 	ret.s   = print_buffer;
 	ret.len = 0;
 	for (entry = flag_lists[type]; entry; entry = entry->next) {
@@ -115,6 +130,9 @@ int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
 	if (flags->len < 0)
 		return 0;
 
+#ifdef EXTRA_DEBUG
+	LM_DBG("flag_list -> '%*.s'\n", flags->len, flags->s);
+#endif
 	lim = flags->s + flags->len;
 	crt_flag = flags->s;
 	for (p = flags->s; p <= lim; p++) {

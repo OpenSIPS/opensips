@@ -96,6 +96,9 @@ int setbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask)
 	unsigned int *flags;
 
 	flags = get_ptr_bflags( msg, b_idx );
+#ifdef EXTRA_DEBUG
+	LM_DBG("bflags for %p : (%u, %u)\n", msg, mask, *flags);
+#endif
 	if (flags==0)
 		return -1;
 
@@ -112,6 +115,9 @@ int isbflagset(struct sip_msg *msg, unsigned int b_idx, unsigned int mask)
 	unsigned int *flags;
 
 	flags = get_ptr_bflags( msg, b_idx );
+#ifdef EXTRA_DEBUG
+	LM_DBG("bflags for %p : (%u, %u)\n", msg, mask, *flags);
+#endif
 	if (flags==0)
 		return -1;
 
@@ -127,6 +133,9 @@ int resetbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask)
 	unsigned int *flags;
 
 	flags = get_ptr_bflags( msg, b_idx );
+#ifdef EXTRA_DEBUG
+	LM_DBG("bflags for %p : (%u, %u)\n", msg, mask, *flags);
+#endif
 	if (flags==0)
 		return -1;
 
