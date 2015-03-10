@@ -36,7 +36,7 @@ static struct tcp_connection* tcp_conn_lst=0;
 static int tcpmain_sock=-1;
 
 
-static void tcpconn_release(struct tcp_connection* c, long state)
+static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 {
 	long response[2];
 
@@ -44,7 +44,10 @@ static void tcpconn_release(struct tcp_connection* c, long state)
 			c, state, c->fd, c->id);
 	LM_DBG(" extra_data %p\n", c->extra_data);
 
-	if (c->con_req) {
+	/* if we are in a writer context, do not touch the buffer contain read packets per connection
+	might be in a completely different process 
+	even if in our process we shouldn't touch it, since it might currently be in use, when we've read multiple SIP messages in one try*/
+	if (!writer && c->con_req) {
 		pkg_free(c->con_req);
 		c->con_req = NULL;
 	}
@@ -63,17 +66,18 @@ static void tcpconn_release(struct tcp_connection* c, long state)
 /* wrapper around internal tcpconn_release() - to be called by functions which
  * used tcp_conn_get(), in order to release the connection;
  * It does the unref and pushes back (if needed) some update to TCP main;
- * right now, it used only from the xxx_send() functions */
+ * right now, it used only from the xxx_send() functions 	
+ */
 void tcp_conn_release(struct tcp_connection* c, int pending_data)
 {
 	if (c->state==S_CONN_BAD) {
 		c->lifetime=0;
 		/* CONN_ERROR will auto-dec refcnt => we must not call tcpconn_put !!*/
-		tcpconn_release(c, CONN_ERROR);
+		tcpconn_release(c, CONN_ERROR,1);
 		return;
 	}
 	if (pending_data)
-		tcpconn_release(c, ASYNC_WRITE);
+		tcpconn_release(c, ASYNC_WRITE,1);
 	tcpconn_put(c);
 	return;
 }
@@ -143,7 +147,7 @@ again:
 							" connection received: %p, id %d, fd %d, refcnt %d"
 							" state %d (n=%d)\n", con, con->id, con->fd,
 							con->refcnt, con->state, n);
-				tcpconn_release(con, CONN_ERROR);
+				tcpconn_release(con, CONN_ERROR,0);
 				break; /* try to recover */
 			}
 
@@ -177,12 +181,12 @@ again:
 				if (resp<0) {
 					ret=-1; /* some error occured */
 					con->state=S_CONN_BAD;
-					tcpconn_release(con, CONN_ERROR);
+					tcpconn_release(con, CONN_ERROR,1);
 					break;
 				} else if (resp==1) {
-					tcpconn_release(con, ASYNC_WRITE);
+					tcpconn_release(con, ASYNC_WRITE,1);
 				} else {
-					tcpconn_release(con, CONN_RELEASE);
+					tcpconn_release(con, CONN_RELEASE,1);
 				}
 				ret = 0;
 				/* we always close the socket received for writing */
@@ -200,13 +204,13 @@ again:
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->proc_id = -1;
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-					tcpconn_release(con, CONN_ERROR);
+					tcpconn_release(con, CONN_ERROR,0);
 				} else if (con->state==S_CONN_EOF) {
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->proc_id = -1;
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-					tcpconn_release(con, CONN_EOF);
+					tcpconn_release(con, CONN_EOF,0);
 				} else {
 					//tcpconn_release(con, CONN_RELEASE);
 					/* keep the connection for now */
@@ -227,7 +231,7 @@ again:
 	return ret;
 con_error:
 	con->state=S_CONN_BAD;
-	tcpconn_release(con, CONN_ERROR);
+	tcpconn_release(con, CONN_ERROR,0);
 	return ret;
 error:
 	return -1;
@@ -248,12 +252,13 @@ static inline void tcp_receive_timeout(void)
 		if (con->state<0){   /* kill bad connections */
 			/* S_CONN_BAD or S_CONN_ERROR, remove it */
 			/* fd will be closed in tcpconn_release */
+
 			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 			con->proc_id = -1;
 			con->state=S_CONN_BAD;
 			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-			tcpconn_release(con, CONN_ERROR);
+			tcpconn_release(con, CONN_ERROR,0);
 			continue;
 		}
 		if (con->timeout<=ticks){
@@ -268,9 +273,9 @@ static inline void tcp_receive_timeout(void)
 			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 
 			if (con->msg_attempts)
-				tcpconn_release(con, CONN_ERROR);
+				tcpconn_release(con, CONN_ERROR,0);
 			else
-				tcpconn_release(con, CONN_RELEASE);
+				tcpconn_release(con, CONN_RELEASE,0);
 		}
 	}
 }
