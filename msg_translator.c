@@ -813,7 +813,7 @@ void process_lumps(	struct sip_msg* msg,
 								TRANSPORT_PARAM_LEN); \
 						offset+=TRANSPORT_PARAM_LEN; \
 						memcpy(new_buf+offset, "ws", 2); \
-						offset+=4; \
+						offset+=2; \
 						break; \
 					default: \
 						LM_CRIT("unknown proto %d\n", \
