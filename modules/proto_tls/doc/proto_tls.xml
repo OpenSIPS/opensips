@@ -55,6 +55,13 @@
 				<email>christian.lahme@secusmart.com</email>
 			</address>
 		</editor>
+		<editor>
+			<firstname>Ionut-Razvan</firstname>
+			<surname>Ionita</surname>
+			<address>
+				<email>ionutionita@opensips.org</email>
+			</address>
+		</editor>
 	</authorgroup>
 	<copyright>
 		<year>2005</year>
@@ -72,12 +79,10 @@
 		<year>2013</year>
 		<holder>Secusmart GmbH</holder>
 	</copyright>
-	<revhistory>
-		<revision>
-			<revnumber>$Revision$</revnumber>
-			<date>$Date$</date>
-		</revision>
-	</revhistory>
+	<copyright>
+		<year>2015</year>
+		<holder>&osipssolname;</holder>
+	</copyright>
 	</bookinfo>
 	<toc></toc>
 
