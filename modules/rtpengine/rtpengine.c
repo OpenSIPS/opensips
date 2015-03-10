@@ -257,7 +257,7 @@ static pv_export_t mod_pvs[] = {
 
 static param_export_t params[] = {
 	{"rtpengine_sock",         STR_PARAM|USE_FUNC_PARAM,
-	                         (void*)rtpengine_set_store          },
+				 (void*)rtpengine_set_store          },
 	{"rtpengine_disable_tout", INT_PARAM, &rtpengine_disable_tout },
 	{"rtpengine_retr",         INT_PARAM, &rtpengine_retr         },
 	{"rtpengine_tout",         INT_PARAM, &rtpengine_tout         },
@@ -431,8 +431,8 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 			return -1;
 		}
 		memmove(pnode->rn_url.s, p1, p2 - p1);
-		pnode->rn_url.s[p2 - p1] 	= 0;
-		pnode->rn_url.len 			= p2-p1;
+		pnode->rn_url.s[p2 - p1]	= 0;
+		pnode->rn_url.len			= p2-p1;
 
 		LM_DBG("url is %s, len is %i\n", pnode->rn_url.s, pnode->rn_url.len);
 		/* Leave only address in rn_address */
@@ -1031,6 +1031,16 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg, enu
 					ng_flags->transport |= 0x101;
 				else if (str_eq(&key, "AVPF"))
 					ng_flags->transport |= 0x102;
+				else if (str_eq(&key, "DTLS")){
+					err = "missing value";
+					if (!val.s)
+						goto error;
+					err = "invalid value";
+					if (str_eq(&val, "passive"))
+						bencode_dictionary_add_str(ng_flags->dict, "DTLS", &val);
+					else
+						goto error;
+				}
 				else
 					goto error;
 				break;
