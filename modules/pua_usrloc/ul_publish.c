@@ -197,10 +197,8 @@ void ul_publish(ucontact_t* c, int type, void* param)
 	publ_info_t publ;
 	int error;
 
-	if (ctx_pul_get()==0 && !(type & UL_CONTACT_EXPIRE))
-	{
+	if (!(type & UL_CONTACT_EXPIRE) && ctx_pul_get()==0)
 		return;
-	}
 
 	if(type & UL_CONTACT_DELETE)
 		LM_DBG("\nul_publish: DELETE type\n");
