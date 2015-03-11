@@ -27,6 +27,22 @@
 				<email>peter_grf@yahoo.com</email>
 			</address>
 		</author>
+		<author>
+			<firstname>Klaus</firstname>
+			<surname>Darilion</surname>
+			<affiliation><orgname>enum.at</orgname></affiliation>
+			<address>
+				<email>klaus.darilion@enum.at</email>
+			</address>
+		</author>
+		<editor>
+			<firstname>Klaus</firstname>
+			<surname>Darilion</surname>
+			<address>
+				<email>klaus.darilion@enum.at</email>
+			</address>
+		</editor>
+
 		<editor>
 			<firstname>Bogdan-Andrei</firstname>
 			<surname>Iancu</surname>
