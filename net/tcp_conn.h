@@ -57,33 +57,6 @@
 #define TCP_CHILD_SELECT_TIMEOUT 2
 
 
-/* keepalive */
-#ifndef NO_TCP_KEEPALIVE
-    #define HAVE_SO_KEEPALIVE
-#endif
-
-/* keepintvl */
-#ifndef NO_TCP_KEEPINTVL
-    #ifdef __OS_linux
-        #define HAVE_TCP_KEEPINTVL
-    #endif
-#endif
-
-/* keepidle */
-#ifndef NO_TCP_KEEPIDLE
-    #ifdef __OS_linux
-        #define HAVE_TCP_KEEPIDLE
-    #endif
-#endif
-
-/* keepcnt */
-#ifndef NO_TCP_KEEPCNT
-    #ifdef __OS_linux
-        #define HAVE_TCP_KEEPCNT
-    #endif
-#endif
-
-
 /* fd communication commands - internal usage ONLY */
 enum conn_cmds { CONN_DESTROY=-3, CONN_ERROR=-2, CONN_EOF=-1, CONN_RELEASE,
 		CONN_GET_FD, CONN_NEW, ASYNC_CONNECT, ASYNC_WRITE };

@@ -39,6 +39,34 @@
 #include "../locking.h"
 #include "../ip_addr.h"
 
+
+/* keepalive */
+#ifndef NO_TCP_KEEPALIVE
+    #define HAVE_SO_KEEPALIVE
+#endif
+
+/* keepintvl */
+#ifndef NO_TCP_KEEPINTVL
+    #ifdef __OS_linux
+        #define HAVE_TCP_KEEPINTVL
+    #endif
+#endif
+
+/* keepidle */
+#ifndef NO_TCP_KEEPIDLE
+    #ifdef __OS_linux
+        #define HAVE_TCP_KEEPIDLE
+    #endif
+#endif
+
+/* keepcnt */
+#ifndef NO_TCP_KEEPCNT
+    #ifdef __OS_linux
+        #define HAVE_TCP_KEEPCNT
+    #endif
+#endif
+
+
 /*!< Maximum number of port aliases */
 #define TCP_CON_MAX_ALIASES  4
 

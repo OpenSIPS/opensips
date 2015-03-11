@@ -807,7 +807,7 @@ assign_stm: DEBUG EQUAL snumber {
 		| TCP_MAX_MSG_TIME EQUAL error { yyerror("boolean value expected"); }
 		| TCP_KEEPCOUNT EQUAL NUMBER 		{
 			#ifndef HAVE_TCP_KEEPCNT
-				warn("cannot be enabled (no OS support)");
+				warn("cannot be enabled TCP_KEEPCOUNT (no OS support)");
 			#else
 				tcp_keepcount=$3;
 			#endif
@@ -815,7 +815,7 @@ assign_stm: DEBUG EQUAL snumber {
 		| TCP_KEEPCOUNT EQUAL error { yyerror("int value expected"); }
 		| TCP_KEEPIDLE EQUAL NUMBER 		{
 			#ifndef HAVE_TCP_KEEPIDLE
-				warn("cannot be enabled (no OS support)");
+				warn("cannot be enabled TCP_KEEPIDLE (no OS support)");
 			#else
 				tcp_keepidle=$3;
 			#endif
@@ -823,7 +823,7 @@ assign_stm: DEBUG EQUAL snumber {
 		| TCP_KEEPIDLE EQUAL error { yyerror("int value expected"); }
 		| TCP_KEEPINTERVAL EQUAL NUMBER 		{
 			#ifndef HAVE_TCP_KEEPINTVL
-				warn("cannot be enabled (no OS support)");
+				warn("cannot be enabled TCP_KEEPINTERVAL (no OS support)");
 			#else
 				tcp_keepinterval=$3;
 			 #endif
