@@ -60,7 +60,7 @@ static str relay_reason_100 = str_init("Giving a try");
 /* ----------------------------------------------------- */
 int send_pr_buffer( struct retr_buf *rb, void *buf, int len,
 #ifdef EXTRA_DEBUG
-						, char* file, const char *function, int line,
+					char* file, const char *function, int line,
 #endif
 					void* ctx)
 {

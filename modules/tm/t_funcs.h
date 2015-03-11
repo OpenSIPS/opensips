@@ -86,7 +86,7 @@ extern int noisy_ctimer;
 int send_pr_buffer( struct retr_buf *rb,
 	void *buf, int len, char* file, const char *function, int line, void* ctx);
 #define SEND_PR_BUFFER(_rb,_bf,_le ) \
-	send_pr_buffer( (_rb), (_bf), (_le), __FILE__,  __FUNCTION__, __LINE__ )
+	send_pr_buffer( (_rb), (_bf), (_le), __FILE__,  __FUNCTION__, __LINE__, NULL)
 #define SEND_PR_CONTEXTS_BUFFER(_rb,_bf,_le, _ctx ) \
 	send_pr_buffer( (_rb), (_bf), (_le), __FILE__, __FUNCTION, __LINE__ ,_ctx)
 #else
