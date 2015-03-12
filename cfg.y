@@ -453,7 +453,7 @@ extern char *finame;
 %type <sockid> listen_def
 %type <sockid> id_lst
 %type <sockid> phostport
-%type <intval> proto port
+%type <intval> proto port any_proto
 %type <strval> host_sep
 %type <intval> uri_type
 %type <intval> equalop compop matchop strop intop
@@ -578,14 +578,17 @@ listen_def:	phostport				{ $$=$1; }
 				}
 			;
 
-blst_elem: LPAREN  proto COMMA ipnet COMMA port COMMA STRING RPAREN {
+any_proto:	  ANY	{ $$=PROTO_NONE; }
+			| proto	{ $$=$1; }
+
+blst_elem: LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 				s_tmp.s=$8;
 				s_tmp.len=strlen($8);
 				if (add_rule_to_list(&bl_head,&bl_tail,$4,&s_tmp,$6,$2,0)) {
 					yyerror("failed to add backlist element\n");YYABORT;
 				}
 			}
-		| NOT  LPAREN  proto COMMA ipnet COMMA port COMMA STRING RPAREN {
+		| NOT  LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 				s_tmp.s=$9;
 				s_tmp.len=strlen($9);
 				if (add_rule_to_list(&bl_head,&bl_tail,$5,&s_tmp,
