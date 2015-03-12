@@ -296,6 +296,7 @@ error:
 
 	if(uri.s)
 		pkg_free(uri.s);
-	ctx_pul_set( 0/* pua UL off*/);
+	if (!(type & UL_CONTACT_EXPIRE))
+		ctx_pul_set( 0/* pua UL off*/);
 	return;
 }
