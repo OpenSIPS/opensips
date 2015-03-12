@@ -865,16 +865,8 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 	status = RR_DRIVEN;
 
 done:
-	if (force_ss) {
-		set_sip_defaults( puri.port_no, puri.proto);
-		si = grep_sock_info( &puri.host, puri.port_no, puri.proto);
-		if (si) {
-			_m->force_send_socket = si;
-		} else {
-			if (enable_socket_mismatch_warning)
-				LM_WARN("no socket found for match second RR\n");
-		}
-	}
+	if (force_ss)
+		_m->force_send_socket = _m->rcv.bind_address;
 	/* run RR callbacks -bogdan */
 	run_rr_callbacks( _m, &routed_params );
 	return status;
