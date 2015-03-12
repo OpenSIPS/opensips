@@ -37,7 +37,7 @@
 /* module functions */
 static int mod_init();
 static int destroy(void);
-void mi_http_answer_to_connection (void *cls, void *connection,
+int mi_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
@@ -202,7 +202,11 @@ static ssize_t mi_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max
 	return -1;
 }
 
-void mi_http_answer_to_connection (void *cls, void *connection,
+#define MI_HTTP_OK				200
+#define MI_HTTP_NOT_ACCEPTABLE	406
+#define MI_HTTP_INTERNAL_ERROR	500
+
+int mi_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
@@ -213,6 +217,7 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 	str arg = {NULL, 0};
 	struct mi_root *tree = NULL;
 	struct mi_handler *async_hdl;
+	int ret_code = MI_HTTP_OK;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 		"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
@@ -228,6 +233,7 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 				if (tree == NULL) {
 					LM_ERR("no reply\n");
 					*page = MI_HTTP_U_ERROR;
+					ret_code = MI_HTTP_INTERNAL_ERROR;
 				} else if (tree == MI_ROOT_ASYNC_RPL) {
 					LM_DBG("got an async reply\n");
 					tree = NULL;
@@ -241,6 +247,9 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 							cmd,
 							arg.len, arg.s);
 						*page = MI_HTTP_U_ERROR;
+						ret_code = MI_HTTP_INTERNAL_ERROR;
+					} else {
+						ret_code = tree->code;
 					}
 				}
 			} else {
@@ -249,6 +258,7 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 							mod, cmd, tree)) {
 					LM_ERR("unable to build response\n");
 					*page = MI_HTTP_U_ERROR;
+					ret_code = MI_HTTP_INTERNAL_ERROR;
 				}
 			}
 			if (tree) {
@@ -258,12 +268,14 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 		} else {
 			LM_ERR("unable to parse URL [%s]\n", url);
 			*page = MI_HTTP_U_URL;
+			ret_code = MI_HTTP_NOT_ACCEPTABLE;
 		}
 	} else {
 		LM_ERR("unexpected method [%s]\n", method);
 		*page = MI_HTTP_U_METHOD;
+		ret_code = MI_HTTP_INTERNAL_ERROR;
 	}
 
-	return;
+	return ret_code;
 }
 

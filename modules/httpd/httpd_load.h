@@ -62,8 +62,9 @@ enum HTTPD_CONTENT_TYPE {
  * @param page the page to return.  If no page is returned,
  *             then the page will be built later on via a
  *             callback (see httpd_flush_data_cb)
+ * @returns code the HTTP code to be returned to the client
  */
-typedef void (httpd_acces_handler_cb) (void *cls, void *connection, const char *url,
+typedef int (httpd_acces_handler_cb) (void *cls, void *connection, const char *url,
 				const char *method, const char *version,
 				const char *upload_data, size_t *upload_data_size,
 				void **con_cls,

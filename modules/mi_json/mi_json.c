@@ -35,7 +35,7 @@
 /* module functions */
 static int mod_init();
 static int destroy(void);
-void mi_json_answer_to_connection (void *cls, void *connection,
+int mi_json_answer_to_connection (void *cls, void *connection,
     const char *url, const char *method,
     const char *version, const char *upload_data,
     size_t *upload_data_size, void **con_cls,
@@ -187,7 +187,11 @@ static ssize_t mi_json_flush_data(void *cls, uint64_t pos, char *buf, size_t max
   return -1;
 }
 
-void mi_json_answer_to_connection (void *cls, void *connection,
+#define MI_JSON_OK				200
+#define MI_JSON_NOT_ACCEPTABLE	406
+#define MI_JSON_INTERNAL_ERROR	500
+
+int mi_json_answer_to_connection (void *cls, void *connection,
     const char *url, const char *method,
     const char *version, const char *upload_data,
     size_t *upload_data_size, void **con_cls,
@@ -198,6 +202,7 @@ void mi_json_answer_to_connection (void *cls, void *connection,
 	struct mi_cmd *f = NULL;
 	struct mi_root *tree = NULL;
 	struct mi_handler *async_hdl;
+	int ret_code = MI_JSON_OK;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 			"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
@@ -215,6 +220,7 @@ void mi_json_answer_to_connection (void *cls, void *connection,
 			if (f == NULL) {
 				LM_ERR("unable to find mi command [%.*s]\n", command.len, command.s);
 				*page = MI_HTTP_U_NOT_FOUND;
+				ret_code = MI_JSON_INTERNAL_ERROR;
 			} else {
 
 				tree = mi_json_run_mi_cmd(f, &command,&params,
@@ -222,6 +228,7 @@ void mi_json_answer_to_connection (void *cls, void *connection,
 				if (tree == NULL) {
 					LM_ERR("no reply\n");
 					*page = MI_HTTP_U_ERROR;
+					ret_code = MI_JSON_INTERNAL_ERROR;
 				} else if (tree == MI_ROOT_ASYNC_RPL) {
 					LM_DBG("got an async reply\n");
 					tree = NULL;
@@ -231,6 +238,9 @@ void mi_json_answer_to_connection (void *cls, void *connection,
 					if(0!=mi_json_build_page(page, buffer->len, tree)){
 						LM_ERR("unable to build response\n");
 						*page = MI_HTTP_U_ERROR;
+						ret_code = MI_JSON_INTERNAL_ERROR;
+					} else {
+						ret_code = tree->code;
 					}
 				}
 			}
@@ -238,6 +248,7 @@ void mi_json_answer_to_connection (void *cls, void *connection,
 			page->s = buffer->s;
 			LM_ERR("unable to build response for empty request\n");
 			*page = MI_HTTP_U_ERROR;
+			ret_code = MI_JSON_INTERNAL_ERROR;
 		}
 		if (tree) {
 			free_mi_tree(tree);
@@ -246,7 +257,8 @@ void mi_json_answer_to_connection (void *cls, void *connection,
 	} else {
 		LM_ERR("unexpected method [%s]\n", method);
 		*page = MI_HTTP_U_METHOD;
+		ret_code = MI_JSON_NOT_ACCEPTABLE;
 	}
 
-	return;
+	return ret_code;
 }

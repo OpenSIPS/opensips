@@ -37,7 +37,7 @@
 /* module functions */
 static int mod_init();
 static int destroy(void);
-void mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
+int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
@@ -187,7 +187,11 @@ static ssize_t mi_xmlrpc_http_flush_data(void *cls, uint64_t pos, char *buf, siz
 	return -1;
 }
 
-void mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
+#define MI_XMLRPC_OK				200
+#define MI_XMLRPC_NOT_ACCEPTABLE	406
+#define MI_XMLRPC_INTERNAL_ERROR	500
+
+int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
@@ -196,6 +200,7 @@ void mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 	str arg = {NULL, 0};
 	struct mi_root *tree = NULL;
 	struct mi_handler *async_hdl;
+	int ret_code = MI_XMLRPC_OK;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 		"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
@@ -209,6 +214,7 @@ void mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 			if (tree == NULL) {
 				LM_ERR("no reply\n");
 				*page = MI_HTTP_U_ERROR;
+				ret_code = MI_XMLRPC_INTERNAL_ERROR;
 			} else if (tree == MI_ROOT_ASYNC_RPL) {
 				LM_DBG("got an async reply\n");
 				tree = NULL;
@@ -218,12 +224,16 @@ void mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 				if(0!=mi_xmlrpc_http_build_page(page, buffer->len, tree)){
 					LM_ERR("unable to build response\n");
 					*page = MI_HTTP_U_ERROR;
+					ret_code = MI_XMLRPC_INTERNAL_ERROR;
+				} else {
+					ret_code = tree->code;
 				}
 			}
 		} else {
 			page->s = buffer->s;
 			LM_ERR("unable to build response for empty request\n");
 			*page = MI_HTTP_U_ERROR;
+			ret_code = MI_XMLRPC_INTERNAL_ERROR;
 		}
 		if (tree) {
 			free_mi_tree(tree);
@@ -232,8 +242,9 @@ void mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 	} else {
 		LM_ERR("unexpected method [%s]\n", method);
 		*page = MI_HTTP_U_METHOD;
+		return MI_XMLRPC_NOT_ACCEPTABLE;
 	}
 
-	return;
+	return ret_code;
 }
 

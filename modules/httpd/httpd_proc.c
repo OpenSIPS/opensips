@@ -398,6 +398,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	char *p;
 	int cnt_type = HTTPD_STD_CNT_TYPE;
 	int accept_type = HTTPD_STD_CNT_TYPE;
+	int ret_code = MHD_HTTP_OK;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 			"versio=%s, upload_data[%zu]=%p, *con_cls=%p\n",
@@ -492,13 +493,14 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 					if (cb) {
 						normalised_url = &url[cb->http_root->len+1];
 						LM_DBG("normalised_url=[%s]\n", normalised_url);
-						cb->callback(cls, (void*)connection,
+						ret_code = cb->callback(cls, (void*)connection,
 								normalised_url,
 								method, version,
 								upload_data, upload_data_size, con_cls,
 								&buffer, &page);
 					} else {
 						page = MI_HTTP_U_URL;
+						ret_code = MHD_HTTP_BAD_REQUEST;
 					}
 					/* slinkedl_traverse(pr->p_list,
 							&httpd_print_data, NULL, NULL); */
@@ -577,13 +579,14 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 			if (cb) {
 				normalised_url = &url[cb->http_root->len+1];
 				LM_DBG("normalised_url=[%s]\n", normalised_url);
-				cb->callback(cls, (void*)connection,
+				ret_code = cb->callback(cls, (void*)connection,
 						normalised_url,
 						method, version,
 						upload_data, upload_data_size, con_cls,
 						&buffer, &page);
 			} else {
 				page = MI_HTTP_U_URL;
+				ret_code = MHD_HTTP_BAD_REQUEST;
 			}
 			/* slinkedl_traverse(pr->p_list, &httpd_print_data, NULL, NULL); */
 			slinkedl_list_destroy(*con_cls);
@@ -600,16 +603,18 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 		if (cb) {
 			normalised_url = &url[cb->http_root->len+1];
 			LM_DBG("normalised_url=[%s]\n", normalised_url);
-			cb->callback(cls, (void*)connection,
+			ret_code = cb->callback(cls, (void*)connection,
 					normalised_url,
 					method, version,
 					upload_data, upload_data_size, con_cls,
 					&buffer, &page);
 		} else {
 			page = MI_HTTP_U_URL;
+			ret_code = MHD_HTTP_BAD_REQUEST;
 		}
 	}else{
 		page = MI_HTTP_U_METHOD;
+		ret_code = MHD_HTTP_METHOD_NOT_ACCEPTABLE;
 	}
 
 send_response:
@@ -635,10 +640,8 @@ send_response:
 		MHD_add_response_header(response,
 								MHD_HTTP_HEADER_CONTENT_TYPE,
 								"application/json");
-	ret = MHD_queue_response (connection, MHD_HTTP_OK, response);
+	ret = MHD_queue_response (connection, ret_code, response);
 	MHD_destroy_response (response);
-
-
 
 	return ret;
 }
