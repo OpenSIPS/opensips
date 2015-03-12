@@ -26,6 +26,11 @@
 #ifndef _MI_XMLRPC_HTTP_HTTP_FNC_H
 #define _MI_XMLRPC_HTTP_HTTP_FNC_H
 
+#define MI_XMLRPC_XML_START		"<?xml version=\"1.0\" "	\
+	"encoding=\"UTF-8\"?>\r\n<methodResponse>\r\n<params>"	\
+	"\r\n<param><value><string>"
+#define MI_XMLRPC_XML_STOP		"</string></value></param>"	\
+	"\r\n</params>\r\n</methodResponse>\r\n"
 
 typedef struct mi_xmlrpc_http_html_page_data_ {
 	str page;

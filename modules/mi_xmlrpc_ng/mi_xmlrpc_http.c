@@ -48,10 +48,10 @@ str http_root = str_init("RPC2");
 httpd_api_t httpd_api;
 
 
-static const str MI_HTTP_U_ERROR = str_init("<html><body>"
-"Internal server error!</body></html>");
-static const str MI_HTTP_U_METHOD = str_init("<html><body>"
-"Unexpected method (only POST is accepted)!</body></html>");
+static const str MI_XMLRPC_U_ERROR = str_init(MI_XMLRPC_XML_START
+		"Internal server error!" MI_XMLRPC_XML_STOP);
+static const str MI_XMLRPC_U_METHOD = str_init(MI_XMLRPC_XML_START
+		"Unexpected method (only POST is accepted)!" MI_XMLRPC_XML_STOP);
 
 
 /* module parameters */
@@ -162,8 +162,8 @@ static ssize_t mi_xmlrpc_http_flush_data(void *cls, uint64_t pos, char *buf, siz
 				shm_free(*(void**)hdl->param);
 				*(void**)hdl->param = NULL;
 				lock_release(lock);
-				memcpy(buf, MI_HTTP_U_ERROR.s, MI_HTTP_U_ERROR.len);
-				return MI_HTTP_U_ERROR.len;
+				memcpy(buf, MI_XMLRPC_U_ERROR.s, MI_XMLRPC_U_ERROR.len);
+				return MI_XMLRPC_U_ERROR.len;
 			} else {
 				shm_free(*(void**)hdl->param);
 				*(void**)hdl->param = NULL;
@@ -178,8 +178,8 @@ static ssize_t mi_xmlrpc_http_flush_data(void *cls, uint64_t pos, char *buf, siz
 	} else {
 		lock_release(lock);
 		LM_ERR("Invalid async reply\n");
-		memcpy(buf, MI_HTTP_U_ERROR.s, MI_HTTP_U_ERROR.len);
-		return MI_HTTP_U_ERROR.len;
+		memcpy(buf, MI_XMLRPC_U_ERROR.s, MI_XMLRPC_U_ERROR.len);
+		return MI_XMLRPC_U_ERROR.len;
 	}
 	lock_release(lock);
 	LM_CRIT("done?\n");
@@ -213,7 +213,7 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 						page, buffer, &async_hdl);
 			if (tree == NULL) {
 				LM_ERR("no reply\n");
-				*page = MI_HTTP_U_ERROR;
+				*page = MI_XMLRPC_U_ERROR;
 				ret_code = MI_XMLRPC_INTERNAL_ERROR;
 			} else if (tree == MI_ROOT_ASYNC_RPL) {
 				LM_DBG("got an async reply\n");
@@ -223,7 +223,7 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 					page->s, page->len);
 				if(0!=mi_xmlrpc_http_build_page(page, buffer->len, tree)){
 					LM_ERR("unable to build response\n");
-					*page = MI_HTTP_U_ERROR;
+					*page = MI_XMLRPC_U_ERROR;
 					ret_code = MI_XMLRPC_INTERNAL_ERROR;
 				} else {
 					ret_code = tree->code;
@@ -232,7 +232,7 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 		} else {
 			page->s = buffer->s;
 			LM_ERR("unable to build response for empty request\n");
-			*page = MI_HTTP_U_ERROR;
+			*page = MI_XMLRPC_U_ERROR;
 			ret_code = MI_XMLRPC_INTERNAL_ERROR;
 		}
 		if (tree) {
@@ -241,7 +241,7 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 		}
 	} else {
 		LM_ERR("unexpected method [%s]\n", method);
-		*page = MI_HTTP_U_METHOD;
+		*page = MI_XMLRPC_U_METHOD;
 		return MI_XMLRPC_NOT_ACCEPTABLE;
 	}
 

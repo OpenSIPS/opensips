@@ -233,10 +233,8 @@ static const str MI_XMLRPC_HTTP_NODE_SEPARATOR = str_init(":: ");
 static const str MI_XMLRPC_HTTP_ATTR_SEPARATOR = str_init(" ");
 static const str MI_XMLRPC_HTTP_ATTR_VAL_SEPARATOR = str_init("=");
 
-static const str MI_XMLRPC_HTTP_XML_START = str_init("<?xml version=\"1.0\" "
-"encoding=\"UTF-8\"?>\r\n<methodResponse>\r\n<params>\r\n<param><value><string>");
-static const str MI_XMLRPC_HTTP_XML_STOP = str_init("</string></value></param>"
-"\r\n</params>\r\n</methodResponse>\r\n");
+static const str MI_XMLRPC_HTTP_XML_START = str_init(MI_XMLRPC_XML_START);
+static const str MI_XMLRPC_HTTP_XML_STOP = str_init(MI_XMLRPC_XML_STOP);
 
 static const str MI_XMLRPC_HTTP_ESC_LT =    str_init("&lt;");   /* < */
 static const str MI_XMLRPC_HTTP_ESC_GT =    str_init("&gt;");   /* > */
