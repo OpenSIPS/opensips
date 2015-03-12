@@ -55,7 +55,6 @@ exclude_modules?= aaa_radius b2b_logic cachedb_cassandra cachedb_couchbase cache
 include_modules?= 
 
 DEFS+= -DPKG_MALLOC #Uses a faster malloc (exclusive w/ USE_SHM_MEM)
-DEFS+= -DSHM_MEM #Compiles in shared mem. support, needed by some modules and USE_SHM_MEM
 DEFS+= -DSHM_MMAP #Use mmap instead of SYSV shared memory
 DEFS+= -DUSE_MCAST #Compile in support for IP Multicast
 DEFS+= -DDISABLE_NAGLE #Disabled the TCP NAgle Algorithm ( lower delay )

@@ -320,7 +320,6 @@ void cleanup(int show_status)
 		pkg_status();
 	}
 #endif
-#ifdef SHM_MEM
 	cleanup_debug();
 
 	if (pt) shm_free(pt);
@@ -332,7 +331,6 @@ void cleanup(int show_status)
 
 	/* zero all shmem alloc vars that we still use */
 	shm_mem_destroy();
-#endif
 	if (pid_file) unlink(pid_file);
 	if (pgid_file) unlink(pgid_file);
 }
@@ -441,10 +439,8 @@ void handle_sigs(void)
 			LM_GEN1(memdump, "Memory status (pkg):\n");
 			pkg_status();
 #endif
-#ifdef SHM_MEM
 			LM_GEN1(memdump, "Memory status (shm):\n");
 			shm_status();
-#endif
 			break;
 
 		case SIGUSR2:
@@ -1185,10 +1181,9 @@ try_again:
 	LM_NOTICE("version: %s\n", version);
 
 	/* print some data about the configuration */
-#ifdef SHM_MEM
 	LM_INFO("using %ld Mb shared memory\n", ((shm_mem_size/1024)/1024));
-#endif
-	LM_INFO("using %ld Mb private memory per process\n", ((pkg_mem_size/1024)/1024));
+	LM_INFO("using %ld Mb private memory per process\n",
+		((pkg_mem_size/1024)/1024));
 
 	/* init timer */
 	if (init_timer()<0){

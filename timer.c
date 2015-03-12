@@ -49,9 +49,7 @@
 #include "sr_module.h"
 #include "daemonize.h"
 #include "mem/mem.h"
-#ifdef SHM_MEM
 #include "mem/shm_mem.h"
-#endif
 
 #include <stdlib.h>
 
@@ -75,17 +73,10 @@ int init_timer(void)
 {
 	int optval;
 
-#ifdef SHM_MEM
 	jiffies  = shm_malloc(sizeof(unsigned int));
 	ujiffies = shm_malloc(sizeof(utime_t));
 	ijiffies = shm_malloc(sizeof(utime_t));
-#else
-	/* in this case get_ticks won't work! */
-	LM_WARN("no shared memory support compiled-> get_ticks won't work\n");
-	jiffies = pkg_malloc(sizeof(int));
-	ujiffies = pkg_malloc(sizeof(utime_t));
-	ijiffies = pkg_malloc(sizeof(utime_t));
-#endif
+
 	if (jiffies==0 || ujiffies==0 || ijiffies==0 ){
 		LM_CRIT("could not init jiffies\n");
 		return E_OUT_OF_MEM;
@@ -132,13 +123,8 @@ int init_timer(void)
 void destroy_timer(void)
 {
 	if (jiffies){
-#ifdef SHM_MEM
 		shm_free(jiffies); jiffies=0;
 		shm_free(ujiffies); ujiffies=0;
-#else
-		pkg_free(jiffies); jiffies=0;
-		pkg_free(ujiffies); ujiffies=0;
-#endif
 	}
 }
 
@@ -271,30 +257,12 @@ int register_route_timers(void)
 
 unsigned int get_ticks(void)
 {
-	if (jiffies==0){
-		LM_CRIT("bug -> jiffies not initialized\n");
-		return 0;
-	}
-#ifndef SHM_MEM
-	LM_WARN("no shared memory support compiled in"
-			", returning 0 (probably wrong)");
-	return 0;
-#endif
 	return *jiffies;
 }
 
 
 utime_t get_uticks(void)
 {
-	if (ujiffies==0){
-		LM_CRIT("bug -> ujiffies not initialized\n");
-		return 0;
-	}
-#ifndef SHM_MEM
-	LM_WARN("no shared memory support compiled in"
-			", returning 0 (probably wrong)");
-	return 0;
-#endif
 	return *ujiffies;
 }
 

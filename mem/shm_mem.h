@@ -27,8 +27,6 @@
  */
 
 
-#ifdef SHM_MEM
-
 #include "../statistics.h"
 #include "../error.h"
 
@@ -475,8 +473,6 @@ inline static unsigned long shm_get_frags(unsigned short foo) {
 	return MY_SHM_GET_FRAGS(shm_block);
 }
 #endif /*STATISTICS*/
-
-#endif
 
 #endif
 

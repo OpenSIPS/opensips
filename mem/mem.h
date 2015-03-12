@@ -180,7 +180,7 @@ void set_pkg_stats(pkg_status_holder*);
 #		define MY_PKG_GET_FREE()   qm_get_free(mem_block)
 #		define MY_PKG_GET_FRAGS()  qm_get_frags(mem_block)
 #	endif
-#elif defined(SHM_MEM) && defined(USE_SHM_MEM)
+#elif defined(USE_SHM_MEM)
 #	include "shm_mem.h"
 #	define pkg_malloc(s) shm_malloc((s))
 #	define pkg_free(p)   shm_free((p))

@@ -429,9 +429,6 @@ export CC_NAME
 #		completely turns of all the logging (and DBG(...))
 # -DEXTRA_DEBUG
 #		compiles in some extra debugging code
-# -DSHM_MEM
-#		compiles in shared mem. support, needed by some modules and
-#		by USE_SHM_MEM
 # -DSHM_MMAP
 #		use mmap instead of SYSV shared memory
 # -DPKG_MALLOC

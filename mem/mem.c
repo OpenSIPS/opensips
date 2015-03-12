@@ -40,9 +40,7 @@
 	#endif
 #endif
 
-#ifdef SHM_MEM
 #include "shm_mem.h"
-#endif
 
 #ifdef PKG_MALLOC
 	char* mem_pool = NULL;
@@ -196,14 +194,12 @@ inline void pkg_threshold_check(void)
 
 int init_shm_mallocs(void)
 {
-#ifdef SHM_MEM
 	if (shm_mem_init()<0) {
 		LM_CRIT("could not initialize shared memory pool, exiting...\n");
 		 fprintf(stderr, "Too much shared memory demanded: %ld\n",
 			shm_mem_size );
 		return -1;
 	}
-#endif
 	return 0;
 }
 

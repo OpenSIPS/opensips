@@ -28,8 +28,6 @@
  */
 
 
-#ifdef SHM_MEM
-
 #include <stdlib.h>
 
 #include "shm_mem.h"
@@ -412,8 +410,8 @@ struct mi_root *mi_shm_check(struct mi_root *cmd, void *param)
 
 void init_shm_statistics(void)
 {
-	#if defined(SHM_MEM) && defined(HP_MALLOC)
-		hp_init_shm_statistics(shm_block);
+	#ifdef HP_MALLOC
+	hp_init_shm_statistics(shm_block);
 	#endif
 }
 
@@ -455,4 +453,3 @@ void shm_mem_destroy(void)
 #endif
 }
 
-#endif
