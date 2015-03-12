@@ -709,8 +709,11 @@ int hep_msg_received(int sockfd, struct receive_info *ri, str *msg, void* param)
         /* PROTO */
         if(heph->hp_p == IPPROTO_UDP) ri->proto=PROTO_UDP;
         else if(heph->hp_p == IPPROTO_TCP) ri->proto=PROTO_TCP;
-        else if(heph->hp_p == IPPROTO_IDP) ri->proto=PROTO_TLS; /* fake protocol */
+        else if(heph->hp_p == IPPROTO_IDP) ri->proto=PROTO_TLS;
+                                            /* fake protocol */
         else if(heph->hp_p == IPPROTO_SCTP) ri->proto=PROTO_SCTP;
+        else if(heph->hp_p == IPPROTO_ESP) ri->proto=PROTO_WS;
+                                            /* fake protocol */
         else {
         	LM_ERR("unknow protocol [%d]\n",heph->hp_p);
                 ri->proto = PROTO_NONE;
