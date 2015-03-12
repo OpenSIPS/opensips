@@ -140,7 +140,7 @@ mdbg() {
 
 mwarn() {
 	if [ -t 1 -a -z "$NOHLPRINT" ] ; then
-		echo -e '\E[37;32m'"\033[1mWARNING: $1\033[0m"
+		echo -e '\E[37;33m'"\033[1mWARNING: $1\033[0m"
 	else
 		echo "** WARNING: $1"
 	fi
@@ -148,7 +148,11 @@ mwarn() {
 
 minfo() {
 	if [ -t 1 -a -z "$NOHLPRINT" ] ; then
-		echo -e '\E[37;33m'"\033[1mINFO: $1\033[0m"
+		if [ ! -z "$2" ]; then
+			echo -e '\E[37;'$2'm'"\033[1mINFO: $1\033[0m"
+		else
+			echo -e '\E[37;32m'"\033[1mINFO: $1\033[0m"
+		fi
 	else
 		echo "** INFO: $1"
 	fi
