@@ -549,7 +549,10 @@ snumber:	NUMBER	{ $$=$1; }
 
 phostport: proto COLON listen_id	{ $$=mk_listen_id($3, $1, 0); }
 			| proto COLON listen_id COLON port	{ $$=mk_listen_id($3, $1, $5);}
-			| proto COLON listen_id COLON error { $$=0; yyerror(" port number expected"); }
+			| proto COLON listen_id COLON error {
+				$$=0;
+				yyerror(" port number expected");
+				}
 			;
 
 id_lst:		phostport		{  $$=$1 ; }
@@ -559,10 +562,20 @@ id_lst:		phostport		{  $$=$1 ; }
 
 listen_def:	phostport				{ $$=$1; }
 			| phostport USE_CHILDREN NUMBER { $$=$1; $$->children=$3; }
-			| phostport AS listen_id { $$=$1; set_listen_id_adv((struct socket_id *)$1, $3, 5060); }
-			| phostport AS listen_id USE_CHILDREN NUMBER { $$=$1; set_listen_id_adv((struct socket_id *)$1, $3, 5060); $1->children=$5; }
-			| phostport AS listen_id COLON port{ $$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5); }
-			| phostport AS listen_id COLON port USE_CHILDREN NUMBER { $$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5); $1->children=$7; }
+			| phostport AS listen_id {
+				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, 5060);
+				}
+			| phostport AS listen_id USE_CHILDREN NUMBER {
+				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, 5060);
+				$1->children=$5;
+				}
+			| phostport AS listen_id COLON port{
+				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5);
+				}
+			| phostport AS listen_id COLON port USE_CHILDREN NUMBER {
+				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5);
+				$1->children=$7;
+				}
 			;
 
 blst_elem: LPAREN  proto COMMA ipnet COMMA port COMMA STRING RPAREN {
@@ -641,7 +654,8 @@ assign_stm: DEBUG EQUAL snumber {
 			#ifdef HP_MALLOC
 			shm_hash_split_percentage=$3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with support for HP_MALLOC");
+			yyerror("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC");
 			#endif
 			}
 		| SHM_HASH_SPLIT_PERCENTAGE EQUAL error { yyerror("number expected"); }
@@ -649,7 +663,8 @@ assign_stm: DEBUG EQUAL snumber {
 			#ifdef HP_MALLOC
 			shm_secondary_hash_size=$3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with support for HP_MALLOC");
+			yyerror("Cannot set parameter; Please recompile with support"
+				" for HP_MALLOC");
 			#endif
 			}
 		| SHM_SECONDARY_HASH_SIZE EQUAL error { yyerror("number expected"); }
@@ -657,7 +672,8 @@ assign_stm: DEBUG EQUAL snumber {
 			#ifdef HP_MALLOC
 			mem_warming_enabled = $3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with support for HP_MALLOC");
+			yyerror("Cannot set parameter; Please recompile with support"
+				" for HP_MALLOC");
 			#endif
 			}
 		| MEM_WARMING_ENABLED EQUAL error { yyerror("number expected"); }
@@ -665,7 +681,8 @@ assign_stm: DEBUG EQUAL snumber {
 			#ifdef HP_MALLOC
 			mem_warming_pattern_file = $3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with support for HP_MALLOC");
+			yyerror("Cannot set parameter; Please recompile with "
+				"support for HP_MALLOC");
 			#endif
 			}
 		| MEM_WARMING_PATTERN_FILE EQUAL error { yyerror("string expected"); }
@@ -673,7 +690,8 @@ assign_stm: DEBUG EQUAL snumber {
 			#ifdef HP_MALLOC
 			mem_warming_percentage = $3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with support for HP_MALLOC");
+			yyerror("Cannot set parameter; Please recompile with "
+				"support for HP_MALLOC");
 			#endif
 			}
 		| MEM_WARMING_PERCENTAGE EQUAL error { yyerror("number expected"); }
@@ -688,30 +706,24 @@ assign_stm: DEBUG EQUAL snumber {
 		| TCPTHRESHOLD EQUAL NUMBER { tcpthreshold=$3; }
 		| TCPTHRESHOLD EQUAL error { yyerror("int value expected"); }
 		| EVENT_SHM_THRESHOLD EQUAL NUMBER {
-			#ifdef SHM_MEM
-				#ifdef STATISTICS
-					if ($3 < 0 || $3 > 100)
-						yyerror("SHM threshold has to be a percentage between 0 and 100");
-					event_shm_threshold=$3;
-				#else
-					yyerror("statistics support not compiled in");
-				#endif /* STATISTICS */
-			#else /* SHM_MEM */
-				yyerror("shm memory support not compiled in");
-			#endif
+			#ifdef STATISTICS
+			if ($3 < 0 || $3 > 100)
+				yyerror("SHM threshold has to be a percentage between"
+					" 0 and 100");
+			event_shm_threshold=$3;
+			#else
+			yyerror("statistics support not compiled in");
+			#endif /* STATISTICS */
 			}
 		| EVENT_SHM_THRESHOLD EQUAL error { yyerror("int value expected"); }
 		| EVENT_PKG_THRESHOLD EQUAL NUMBER {
-			#ifdef PKG_MALLOC
-                                #ifdef STATISTICS
-                                        if ($3 < 0 || $3 > 100)
-                                                yyerror("PKG threshold has to be a percentage between 0 and 100");
-                                        event_pkg_threshold=$3;
-                                #else
-                                        yyerror("statistics support not compiled in");
-                                #endif
-			#else /* PKG_MALLOC */
-				yyerror("pkg memory support not compiled in");
+			#ifdef STATISTICS
+			if ($3 < 0 || $3 > 100)
+				yyerror("PKG threshold has to be a percentage between "
+					"0 and 100");
+			event_pkg_threshold=$3;
+			#else
+			yyerror("statistics support not compiled in");
 			#endif
 			}
 		| EVENT_PKG_THRESHOLD EQUAL error { yyerror("int value expected"); }
@@ -821,7 +833,7 @@ assign_stm: DEBUG EQUAL snumber {
 			#endif
 		}
 		| TCP_KEEPIDLE EQUAL error { yyerror("int value expected"); }
-		| TCP_KEEPINTERVAL EQUAL NUMBER 		{
+		| TCP_KEEPINTERVAL EQUAL NUMBER {
 			#ifndef HAVE_TCP_KEEPINTVL
 				warn("cannot be enabled TCP_KEEPINTERVAL (no OS support)");
 			#else
@@ -898,8 +910,7 @@ assign_stm: DEBUG EQUAL snumber {
 								tmp = int2str($3, &i_tmp);
 								if (i_tmp > default_global_port.len)
 									default_global_port.s =
-										pkg_realloc(default_global_port.s, i_tmp);
-
+									pkg_realloc(default_global_port.s, i_tmp);
 								if (!default_global_port.s) {
 									LM_CRIT("cfg. parser: out of memory.\n");
 									default_global_port.len = 0;
@@ -1002,7 +1013,9 @@ assign_stm: DEBUG EQUAL snumber {
 		| DB_DEFAULT_URL EQUAL STRING { db_default_url=$3; }
 		| DB_DEFAULT_URL EQUAL error { yyerror("string value expected"); }
 		| DB_MAX_ASYNC_CONNECTIONS EQUAL NUMBER { db_max_async_connections=$3; }
-		| DB_MAX_ASYNC_CONNECTIONS EQUAL error { yyerror("integer value expected"); }
+		| DB_MAX_ASYNC_CONNECTIONS EQUAL error {
+				yyerror("integer value expected");
+				}
 		| DISABLE_503_TRANSLATION EQUAL NUMBER { disable_503_translation=$3; }
 		| DISABLE_503_TRANSLATION EQUAL error {
 				yyerror("integer value expected");
@@ -1017,14 +1030,14 @@ module_stm:	LOADMODULE STRING	{
 		| LOADMODULE error	{ yyerror("string expected");  }
 		| MODPARAM LPAREN STRING COMMA STRING COMMA STRING RPAREN {
 				if (set_mod_param_regex($3, $5, STR_PARAM, $7) != 0) {
-					yyerrorf("Parameter <%s> not found in module <%s> - can't set",
-						$5, $3);
+					yyerrorf("Parameter <%s> not found in module <%s> - "
+						"can't set", $5, $3);
 				}
 			}
 		| MODPARAM LPAREN STRING COMMA STRING COMMA snumber RPAREN {
 				if (set_mod_param_regex($3, $5, INT_PARAM, (void*)$7) != 0) {
-					yyerrorf("Parameter <%s> not found in module <%s> - can't set",
-						$5, $3);
+					yyerrorf("Parameter <%s> not found in module <%s> - "
+						"can't set", $5, $3);
 				}
 			}
 		| MODPARAM error { yyerror("Invalid arguments"); }
@@ -1563,8 +1576,8 @@ assign_cmd: script_var assignop assignexp {
 			if(!pv_is_w($1))
 				yyerror("invalid left operand in assignment");
 			if($1->trans!=0)
-				yyerror(
-					"transformations not accepted in right side of assignment");
+				yyerror("transformations not accepted in right side "
+					"of assignment");
 
 			mk_action2( $$, $2,
 					SCRIPTVAR_ST,
@@ -1576,8 +1589,8 @@ assign_cmd: script_var assignop assignexp {
 			if(!pv_is_w($1))
 				yyerror("invalid left operand in assignment");
 			if($1->trans!=0)
-				yyerror(
-					"transformations not accepted in right side of assignment");
+				yyerror("transformations not accepted in right side "
+					"of assignment");
 
 			mk_action2( $$, EQ_T,
 					SCRIPTVAR_ST,
@@ -1596,8 +1609,8 @@ assign_cmd: script_var assignop assignexp {
 					yyerror("invalid left operand in NULL assignment");
 			}
 			if($1->trans!=0)
-				yyerror(
-					"transformations not accepted in right side of assignment");
+				yyerror("transformations not accepted in right side "
+					"of assignment");
 
 			mk_action2( $$, COLONEQ_T,
 					SCRIPTVAR_ST,
@@ -1785,7 +1798,8 @@ module_func_param: STRING {
 										}
 		| module_func_param COMMA STRING {
 										if ($1+1>=MAX_ACTION_ELEMS) {
-											yyerror("too many arguments in function\n");
+											yyerror("too many arguments "
+												"in function\n");
 											$$=0;
 										}
 										elems[$1+1].type = STRING_ST;
@@ -1808,8 +1822,9 @@ module_func_param: STRING {
 										}
 		| module_func_param COMMA {
 										if ($1+1>=MAX_ACTION_ELEMS) {
-										 	   yyerror("too many arguments in function\n");
-										 	   $$=0;
+											yyerror("too many arguments "
+												"in function\n");
+											$$=0;
 										}
 										elems[$1+1].type = NULLV_ST;
 										elems[$1+1].u.data = NULL;
@@ -1817,15 +1832,18 @@ module_func_param: STRING {
 										}
 		| NUMBER {
 										$$=0;
-										yyerror("numbers used as parameters - they should be quoted");
+										yyerror("numbers used as parameters -"
+											" they should be quoted");
 										}
 		| COMMA NUMBER {
-									   $$=0;
-									   yyerror("numbers used as parameters - they should be quoted");
-									   }
+										$$=0;
+										yyerror("numbers used as parameters -"
+											" they should be quoted");
+										}
 		| module_func_param COMMA NUMBER {
 										$$=0;
-										yyerror("numbers used as parameters - they should be quoted");
+										yyerror("numbers used as parameters -"
+											" they should be quoted");
 										}
 	;
 
@@ -1942,7 +1960,9 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| SEND error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SEND LPAREN error RPAREN { $$=0; yyerror("bad send"
 													"argument"); }
-		| ASSERT LPAREN exp COMMA STRING RPAREN	{mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, $5); }
+		| ASSERT LPAREN exp COMMA STRING RPAREN	 {
+			mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, $5);
+			}
 		| DROP LPAREN RPAREN	{mk_action2( $$, DROP_T,0, 0, 0, 0); }
 		| DROP					{mk_action2( $$, DROP_T,0, 0, 0, 0); }
 		| EXIT LPAREN RPAREN	{mk_action2( $$, EXIT_T,0, 0, 0, 0); }
@@ -1983,12 +2003,14 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| LOG_TOK error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| LOG_TOK LPAREN error RPAREN { $$=0; yyerror("bad log"
 									"argument"); }
-		| SETDEBUG LPAREN snumber RPAREN {mk_action2($$, SET_DEBUG_T, NUMBER_ST,
-									0, (void *)$3, 0 ); }
+		| SETDEBUG LPAREN snumber RPAREN {
+			mk_action2($$, SET_DEBUG_T, NUMBER_ST, 0, (void *)$3, 0 );
+			}
 		| SETDEBUG LPAREN RPAREN {mk_action2( $$, SET_DEBUG_T, 0, 0, 0, 0 ); }
 		| SETDEBUG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| SETFLAG LPAREN NUMBER RPAREN {mk_action2($$, SETFLAG_T, NUMBER_ST, 0,
-													(void *)$3, 0 ); }
+		| SETFLAG LPAREN NUMBER RPAREN {
+			mk_action2($$, SETFLAG_T, NUMBER_ST, 0, (void *)$3, 0 );
+			}
 		| SETFLAG LPAREN ID RPAREN {mk_action2($$, SETFLAG_T, STR_ST, 0,
 													(void *)$3, 0 ); }
 		| SETFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
@@ -2093,8 +2115,8 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 						memcpy(a_tmp, route_elems, $5*sizeof(action_elem_t));
 
 						mk_action3( $$, ROUTE_T, NUMBER_ST,	/* route idx */
-							NUMBER_ST,						/* number of params */
-							SCRIPTVAR_ELEM_ST,				/* parameters */
+							NUMBER_ST,					/* number of params */
+							SCRIPTVAR_ELEM_ST,			/* parameters */
 							(void*)(long)i_tmp,
 							(void*)(long)$5,
 							(void*)a_tmp);
@@ -2143,7 +2165,6 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 						mk_action1($$, REMOVE_BRANCH_T, NUMBER_ST, (void*)$3);}
 		| REMOVE_BRANCH LPAREN script_var RPAREN {
 						mk_action1( $$, REMOVE_BRANCH_T, SCRIPTVAR_ST, $3);}
-
 		| PV_PRINTF LPAREN STRING COMMA STRING RPAREN {
 				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
 				memset(spec, 0, sizeof(pv_spec_t));
@@ -2217,7 +2238,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| RESET_DSTURI LPAREN RPAREN { mk_action2( $$, RESET_DSTURI_T,
 															0,0,0,0); }
 		| RESET_DSTURI { mk_action2( $$, RESET_DSTURI_T, 0,0,0,0); }
-		| ISDSTURISET LPAREN RPAREN { mk_action2( $$, ISDSTURISET_T, 0,0,0,0); }
+		| ISDSTURISET LPAREN RPAREN { mk_action2( $$, ISDSTURISET_T, 0,0,0,0);}
 		| ISDSTURISET { mk_action2( $$, ISDSTURISET_T, 0,0,0,0); }
 		| FORCE_RPORT LPAREN RPAREN	{ mk_action2( $$, FORCE_RPORT_T,
 															0, 0, 0, 0); }
@@ -2249,7 +2270,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| SET_ADV_PORT LPAREN NUMBER RPAREN {
 								tstr.s = int2str($3, &tstr.len);
 								if (!(tmp = pkg_malloc(tstr.len + 1))) {
-										LM_CRIT("cfg. parser: out of memory.\n");
+										LM_CRIT("out of pkg memory\n");
 										$$ = 0;
 								} else {
 									memcpy(tmp, tstr.s, tstr.len);
@@ -2494,7 +2515,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 									}
 								}
 		| ID LPAREN module_func_param RPAREN		{
-									cmd_tmp=(void*)find_cmd_export_t($1, $3, rt);
+									cmd_tmp=(void*)find_cmd_export_t($1,$3,rt);
 									if (cmd_tmp==0){
 										if (find_cmd_export_t($1, $3, 0)) {
 											yyerror("Command cannot be "
@@ -2512,8 +2533,9 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								}
 		| ID LPAREN error RPAREN { $$=0; yyerrorf("bad arguments for "
 												"command <%s>", $1); }
-		| ID error { $$=0; yyerrorf("bare word <%s> found, command calls need '()'", $1); }
-
+		| ID error { $$=0;
+			yyerrorf("bare word <%s> found, command calls need '()'", $1);
+			}
 		| XDBG LPAREN STRING RPAREN {
 				mk_action1($$, XDBG_T, STR_ST, $3);	}
 		| XLOG LPAREN STRING RPAREN {
@@ -2525,11 +2547,13 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| RAISE_EVENT LPAREN STRING COMMA script_var RPAREN {
 				mk_action2($$, RAISE_EVENT_T, STR_ST, SCRIPTVAR_ST, $3, $5); }
 		| RAISE_EVENT LPAREN STRING COMMA script_var COMMA script_var RPAREN {
-				mk_action3($$, RAISE_EVENT_T, STR_ST, SCRIPTVAR_ST, SCRIPTVAR_ST, $3, $5, $7); }
+				mk_action3($$, RAISE_EVENT_T, STR_ST, SCRIPTVAR_ST,
+					SCRIPTVAR_ST, $3, $5, $7); }
 		| SUBSCRIBE_EVENT LPAREN STRING COMMA STRING RPAREN {
 				mk_action2($$, SUBSCRIBE_EVENT_T, STR_ST, STR_ST, $3, $5); }
 		| SUBSCRIBE_EVENT LPAREN STRING COMMA STRING COMMA NUMBER RPAREN {
-				mk_action3($$, SUBSCRIBE_EVENT_T, STR_ST, STR_ST, NUMBER_ST, $3, $5, (void*)(long)$7); }
+				mk_action3($$, SUBSCRIBE_EVENT_T, STR_ST, STR_ST,
+					NUMBER_ST, $3, $5, (void*)(long)$7); }
 		| CONSTRUCT_URI LPAREN STRING COMMA STRING COMMA STRING COMMA STRING COMMA STRING COMMA script_var RPAREN {
 				elems[0].type = STR_ST;
 				elems[0].u.data = $3;
@@ -2567,12 +2591,12 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				if(pv_parse_format(&tstr, &pvmodel)<0)
 					yyerror("error in second parameter");
 				mk_action3($$, SCRIPT_TRACE_T, NUMBER_ST,
-						   SCRIPTVAR_ELEM_ST, STR_ST, (void *)$3, pvmodel, $7); }
+						SCRIPTVAR_ELEM_ST, STR_ST, (void *)$3, pvmodel, $7); }
 		| ASYNC_TOKEN LPAREN async_func COMMA route_name RPAREN {
 				i_tmp = get_script_route_idx( $5, rlist, RT_NO, 0);
 				if (i_tmp==-1) yyerror("too many script routes");
 				mk_action2($$, ASYNC_T, ACTIONS_ST, NUMBER_ST,
-						   $3, (void*)(long)i_tmp);
+						$3, (void*)(long)i_tmp);
 				}
 
 	;
@@ -2608,7 +2632,8 @@ static void yyerrorf(char *fmt, ...)
 }
 
 
-static struct socket_id* mk_listen_id(char* host, enum sip_protos proto, int port)
+static struct socket_id* mk_listen_id(char* host, enum sip_protos proto,
+																	int port)
 {
 	struct socket_id* l;
 	l=pkg_malloc(sizeof(struct socket_id));
