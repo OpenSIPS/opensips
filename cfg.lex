@@ -119,7 +119,11 @@
 	} *oss_yy_fname_list = 0;
 
 	/* hack to solve the duplicate declaration of 'isatty' function */
+#if YY_FLEX_MAJOR_VERSION <= 2 && YY_FLEX_MINOR_VERSION <= 5 && YY_FLEX_SUBMINOR_VERSION <= 38
 	#define YY_NO_UNISTD_H
+#else
+	#include <unistd.h>
+#endif
 
 	/* hack to skip the declaration of lex unused function 'input' */
 	#define YY_NO_INPUT
