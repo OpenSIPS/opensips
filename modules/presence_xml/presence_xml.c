@@ -233,27 +233,30 @@ static int mod_init(void)
 		return -1;
 	}
 
- 	if(pres_rules_auid.s)
-        {
-                pres_rules_auid.len = strlen(pres_rules_auid.s);
- 	        if (pres_rules_auid.len == IETF_PRES_RULES_AUID_LEN &&
- 	            strncmp(pres_rules_auid.s, IETF_PRES_RULES_AUID, IETF_PRES_RULES_AUID_LEN) == 0)
-                {
-                         LM_INFO("using IETF mode for pres-rules\n");
-                         pres_rules_doc_id = PRES_RULES;
-                }
- 	        if (pres_rules_auid.len == OMA_PRES_RULES_AUID_LEN &&
- 	            strncmp(pres_rules_auid.s, OMA_PRES_RULES_AUID, OMA_PRES_RULES_AUID_LEN) == 0)
- 	        {
-                         LM_INFO("using OMA mode for pres-rules\n");
-                         pres_rules_doc_id = OMA_PRES_RULES;
- 	        }
-                else
-                {
-                         LM_ERR("unrecognized AUID for pres-rules: %.*s\n", pres_rules_auid.len, pres_rules_auid.s);
-                         return -1;
-                }
-        }
+	if(pres_rules_auid.s)
+	{
+		pres_rules_auid.len = strlen(pres_rules_auid.s);
+		if (pres_rules_auid.len == IETF_PRES_RULES_AUID_LEN &&
+		strncmp(pres_rules_auid.s, IETF_PRES_RULES_AUID,
+		IETF_PRES_RULES_AUID_LEN) == 0)
+		{
+			LM_INFO("using IETF mode for pres-rules\n");
+			pres_rules_doc_id = PRES_RULES;
+		}
+		if (pres_rules_auid.len == OMA_PRES_RULES_AUID_LEN &&
+		strncmp(pres_rules_auid.s, OMA_PRES_RULES_AUID,
+		OMA_PRES_RULES_AUID_LEN) == 0)
+		{
+			LM_INFO("using OMA mode for pres-rules\n");
+			pres_rules_doc_id = OMA_PRES_RULES;
+		}
+		else
+		{
+			LM_ERR("unrecognized AUID for pres-rules: %.*s\n",
+				pres_rules_auid.len, pres_rules_auid.s);
+			return -1;
+		}
+	}
 
 	if(force_active== 0 && !integrated_xcap_server )
 	{
@@ -261,7 +264,8 @@ static int mod_init(void)
 		bind_xcap_client_t bind_xcap_client;
 
 		/* bind xcap */
-		bind_xcap_client = (bind_xcap_client_t)find_export("bind_xcap_client", 1, 0);
+		bind_xcap_client = (bind_xcap_client_t)find_export("bind_xcap_client",
+			1, 0);
 		if (!bind_xcap_client)
 		{
 			LM_ERR("Can't bind xcap_client\n");
