@@ -2292,41 +2292,27 @@ int check_rls(void)
 /*! \brief debug function, prints main routing table */
 void print_rl(void)
 {
-	int j;
+#define dump_rlist(rlist, max, desc) \
+	{ \
+		int __j; \
+		for (__j = 0; __j < max; __j++) { \
+			if (!(rlist)[__j].a) \
+				continue; \
+			LM_GEN1(L_DBG, desc " routing block %d:\n", __j); \
+			print_actions((rlist)[__j].a); \
+			LM_GEN1(L_DBG, "\n\n"); \
+		} \
+	}
 
-	for(j=0; j<RT_NO; j++){
-		if (rlist[j].a==0){
-			if (j==0) LM_DBG("WARNING: the main routing table is empty\n");
-			continue;
-		}
-		LM_DBG("routing table %d:\n",j);
-		print_actions(rlist[j].a);
-		LM_DBG("\n");
-	}
-	for(j=0; j<ONREPLY_RT_NO; j++){
-		if (onreply_rlist[j].a==0){
-			continue;
-		}
-		LM_DBG("onreply routing table %d:\n",j);
-		print_actions(onreply_rlist[j].a);
-		LM_DBG("\n");
-	}
-	for(j=0; j<FAILURE_RT_NO; j++){
-		if (failure_rlist[j].a==0){
-			continue;
-		}
-		LM_DBG("failure routing table %d:\n",j);
-		print_actions(failure_rlist[j].a);
-		LM_DBG("\n");
-	}
-	for(j=0; j<BRANCH_RT_NO; j++){
-		if (branch_rlist[j].a==0){
-			continue;
-		}
-		LM_DBG("T-branch routing table %d:\n",j);
-		print_actions(branch_rlist[j].a);
-		LM_DBG("\n");
-	}
+	dump_rlist(rlist,          RT_NO,         "main");
+	dump_rlist(onreply_rlist,  ONREPLY_RT_NO, "onreply");
+	dump_rlist(failure_rlist,  FAILURE_RT_NO, "failure");
+	dump_rlist(branch_rlist,   BRANCH_RT_NO,  "branch");
+	dump_rlist(&local_rlist,   1,             "local");
+	dump_rlist(&error_rlist,   1,             "error");
+	dump_rlist(&startup_rlist, 1,             "startup");
+	dump_rlist(timer_rlist,    TIMER_RT_NO,   "timer");
+	dump_rlist(event_rlist,    EVENT_RT_NO,   "event");
 }
 
 
