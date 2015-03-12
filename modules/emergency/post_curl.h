@@ -1,6 +1,7 @@
 /*
- * dialog module - basic support for dialog tracking
+ * emergency module - basic support for emergency calls
  *
+ * Copyright (C) 2014-2015 Robison Tesini & Evandro Villaron
  *
  * This file is part of opensips, a free SIP server.
  *

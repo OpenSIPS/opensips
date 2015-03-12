@@ -1,6 +1,8 @@
 /*
  * emergency module - basic support for emergency calls
  *
+ * Copyright (C) 2014-2015 Robison Tesini & Evandro Villaron
+ *
  * This file is part of opensips, a free SIP server.
  *
  * opensips is free software; you can redistribute it and/or modify
