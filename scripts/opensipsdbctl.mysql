@@ -335,20 +335,14 @@ migrate_table ${dst_db}.cachedb \
 	${src_db}.cachedb \
 	"?keyname,?value,?counter,?expires" 
 
-## CLOSEDDIAL module
-migrate_table ${dst_db}.closeddial \
-	"id,username,domain,cd_username,cd_domain,group_id,new_uri" \
-	${src_db}.closeddial \
-	"?id,?username,?domain,?cd_username,?cd_domain,?group_id,?new_uri"
-
 ## DIALOG modules
 #  runtime data, nothing to migrate
 
 ## DIALPLAN module
 migrate_table ${dst_db}.dialplan \
-	"id,dpid,pr,match_op,match_exp,subst_exp,repl_exp,attrs" \
+	"id,dpid,pr,match_op,match_exp,match_flags,subst_exp,repl_exp,disabled,attrs" \
 	${src_db}.dialplan \
-	"?id,?dpid,?pr,?match_op,?match_exp,?subst_exp,?repl_exp,?attrs"
+	"?id,?dpid,?pr,?match_op,?match_exp,?match_flags,?subst_exp,?repl_exp,?disabled,?attrs"
 
 ## DISPATCHER module (changes here, the flags and state columns)
 migrate_table ${dst_db}.dispatcher \
@@ -364,9 +358,9 @@ migrate_table ${dst_db}.domain \
 
 ## DROUTING module
 migrate_table ${dst_db}.dr_gateways \
-	"id,gwid,type,address,strip,pri_prefix,attrs,probe_mode,description" \
+	"id,gwid,type,address,strip,pri_prefix,attrs,probe_mode,state,socket,description" \
 	${src_db}.dr_gateways \
-	"?id,?gwid,?type,?address,?strip,?pri_prefix,?attrs,?probe_mode,?description"
+	"?id,?gwid,?type,?address,?strip,?pri_prefix,?attrs,?probe_mode,?state,?socket,?description"
 
 migrate_table ${dst_db}.dr_rules \
 	"ruleid,groupid,prefix,timerec,priority,routeid,gwlist,attrs,description" \
@@ -420,14 +414,14 @@ migrate_table ${dst_db}.address \
 
 ## REGISTRAR module
 migrate_table ${dst_db}.aliases \
-	 "id,username,domain,contact,received,path,expires,q,callid,cseq,last_modified,flags,cflags,user_agent,socket,methods" \
+	 "id,username,domain,contact,received,path,expires,q,callid,cseq,last_modified,flags,cflags,user_agent,socket,methods,sip_instance,attr" \
  	 ${src_db}.aliases \
-	 "?id,?username,?domain,?contact,?received,?path,?expires,?q,?callid,?cseq,?last_modified,?flags,?cflags,?user_agent,?socket,?methods"
+	 "?id,?username,?domain,?contact,?received,?path,?expires,?q,?callid,?cseq,?last_modified,?flags,?cflags,?user_agent,?socket,?methods,?sip_instance,?attr"
 
 ## RTPPROXY module
 migrate_table ${dst_db}.rtpproxy_sockets \
 	"id,rtpproxy_sock,set_id" \
-	${src_db}.nh_sockets \
+	${src_db}.rtpproxy_sockets \
 	"?id,?rtpproxy_sock,?set_id"
 
 ## SPEEDDIAL module
@@ -495,9 +489,9 @@ migrate_table ${dst_db}.registrant \
 
 ## SIPTRACE module
 migrate_table ${dst_db}.sip_trace \
-	"id,time_stamp,callid,traced_user,msg,method,status,fromip,toip,fromtag,direction" \
+	"id,time_stamp,callid,traced_user,msg,method,status,from_proto,from_ip,from_port,to_proto,to_ip,to_port,fromtag,direction" \
 	${src_db}.sip_trace \
-	"?id,?time_stamp,?callid,?traced_user,?msg,?method,?status,?fromip,?toip, ?fromtag,?direction"
+	"?id,?time_stamp,?callid,?traced_user,?msg,?method,?status,SUBSTRING_INDEX(?fromip,':',1),SUBSTRING(SUBSTRING_INDEX(?fromip,':',2),LENGTH(SUBSTRING_INDEX(?fromip,':',1))+1),SUBSTRING(SUBSTRING_INDEX(?fromip,':',3),LENGTH(SUBSTRING_INDEX(?fromip,':',2))+1),SUBSTRING_INDEX(?toip,':',1),SUBSTRING(SUBSTRING_INDEX(?toip,':',2),LENGTH(SUBSTRING_INDEX(?toip,':',1))+1),SUBSTRING(SUBSTRING_INDEX(?toip,':',3),LENGTH(SUBSTRING_INDEX(?toip,':',2))+1),?fromtag,?direction"
 
 ## USERBLACKLIST module
 migrate_table ${dst_db}.userblacklist \

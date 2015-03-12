@@ -94,7 +94,7 @@
 
 # opensips extra modules
 # EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist 
-#                 b2b registrant call_center fraud_detection"
+#                 b2b registrant call_center fraud_detection cachedb_sql"
 
 
 ## type of aliases used: DB - database aliases; UL - usrloc aliases

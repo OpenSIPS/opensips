@@ -275,15 +275,26 @@ opensips_pframework() #pars: <action>
 case $1 in
 	migrate)
 		if [ "$USED_DBENGINE" != "mysql" ] ; then
-			merr "$USED_DBENGINE don't support migrate operation"
+			merr "The \"$1\" operation is not supported for $USED_DBENGINE (MYSQL only)"
 			exit 1
 		fi
+
+		minfo	"MySQL DB migration tool for OpenSIPS 1.11.x\n\
+------------------------------------------------------------"
+		mwarn "\
+We recommend using this tool ONLY in order to upgrade an existing\n\
+OpenSIPS 1.11.x MySQL database to 2.1 schema. Behaviour when automatically\n\
+migrating earlier DB versions (1.8, 1.9, 1.10) to 2.1 is undefined"
+		read -p"Do you wish to continue? (y/N) " ANS
+
+		[ "$ANS" != "y" -a "$ANS" != "Y" ] && exit 1
+
 		if [ $# -ne 3 ] ; then
-			merr "migrate requires 2 parameters: old and new database"
+			merr "\"migrate\" command requires exactly 2 params: <old_database> and <new_database>"
 			exit 1
 		fi
 		# create new database
-		minfo "Creating new Database $3...."
+		minfo "Creating new database \"$3\" ..."
 		NO_USER_INIT="yes"
 		opensips_create $3
 		if [ "$?" -ne 0 ] ; then
@@ -291,7 +302,7 @@ case $1 in
 			exit 1
 		fi
 		# migrate data
-		minfo "Migrating data from $2 to $3...."
+		minfo "Migrating data from \"$2\" to \"$3\" ..."
 		migrate_db $2 $3
 		minfo "Migration successfully completed."
 		exit 0;
