@@ -51,13 +51,16 @@ static struct lump* delete_existing_contact(struct sip_msg *msg);
 static int topo_parse_passed_params(str *params,struct th_ct_params **lst);
 static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 		struct dlg_cb_params * params);
+static void topo_dlg_initial_reply (struct dlg_cell* dlg, int type,
+		struct dlg_cb_params * params);
 static void th_down_onreply(struct cell* t, int type,struct tmcb_params *param);
 static void th_up_onreply(struct cell* t, int type, struct tmcb_params *param);
-static void th_initial_up_onreply(struct cell* t, int type, struct tmcb_params *param);
 static void th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param);
 static void th_no_dlg_user_onreply(struct cell* t, int type, struct tmcb_params *param);
 static int topo_no_dlg_encode_contact(struct sip_msg *req,int flags);
 static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info);
+static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_msg *req,
+		int init_req, int dir);
 
 /* exposed logic below */
 
@@ -749,16 +752,14 @@ static int topo_hiding_with_dlg(struct sip_msg *req,struct cell* t,struct dlg_ce
 		return -1;
 	}
 
-	if (tm_api.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
-	th_initial_up_onreply,
-	(void*)dlg, NULL)<0 ) {
-		LM_ERR("failed to register TMCB\n");
+	if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED, topo_dlg_initial_reply, NULL, NULL)) {
+		LM_ERR("cannot register callback for fwded relies in dialog\n");
 		return -1;
 	}
 
 	if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED | DLGCB_REQ_WITHIN, 
 	topo_dlg_onroute, NULL , NULL)) {
-		LM_ERR("cannot register callback for database accounting\n");
+		LM_ERR("cannot register callback for sequential requests\n");
 		return -1;
 	}
 
@@ -769,6 +770,25 @@ static void topo_unref_dialog(void *dialog)
 {
 	dlg_api.unref_dlg((struct dlg_cell*)dialog, 1);
 }
+
+static void topo_dlg_initial_reply (struct dlg_cell* dlg, int type,
+		struct dlg_cb_params * params)
+{
+	struct cell *t;
+
+	if (dlg==0)
+		return;
+	if (params->msg==FAKED_REPLY)
+		return;
+
+	t = tm_api.t_gett();
+	if (t == T_UNDEFINED || t == NULL)
+		return;
+
+	if(dlg_th_onreply(dlg, params->msg, t->uas.request, 1, DLG_DIR_UPSTREAM) < 0)
+		LM_ERR("Failed to transform the reply for topology hiding\n");
+}
+
 
 static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 		struct dlg_cb_params * params)
@@ -922,18 +942,6 @@ static void th_up_onreply(struct cell* t, int type, struct tmcb_params *param)
 		return;
 
 	if(dlg_th_onreply(dlg, param->rpl, param->req, 0, DLG_DIR_UPSTREAM) < 0)
-		LM_ERR("Failed to transform the reply for topology hiding\n");
-}
-
-static void th_initial_up_onreply(struct cell* t, int type, struct tmcb_params *param)
-{
-	struct dlg_cell *dlg;
-
-	dlg = (struct dlg_cell *)(*param->param);
-	if (dlg==0)
-		return;
-
-	if(dlg_th_onreply(dlg, param->rpl, param->req, 1, DLG_DIR_UPSTREAM) < 0)
 		LM_ERR("Failed to transform the reply for topology hiding\n");
 }
 
