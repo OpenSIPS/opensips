@@ -1,0 +1,38 @@
+<!-- Module FAQ -->
+
+<chapter>
+
+	<title>&faqguide;</title>
+	<qandaset defaultlabel="number">
+
+	<qandaentry>
+		<question>
+			<para>After switching to OpenSIPS 2.1, I'm getting this error:
+				"listeners found for protocol tcp, but no module can handle it"
+			</para>
+		</question>
+		<answer>
+		<para>
+			You need to load the "proto_tcp" module. In your script, make sure
+			you do a <emphasis role='bold'>loadmodule "proto_tcp.so"</emphasis> after setting the <emphasis role='bold'><ulink
+			url="http://www.opensips.org/Documentation/Script-CoreParameters-2-1#toc74">mpath</ulink></emphasis>.
+		</para>
+		</answer>
+	</qandaentry>
+
+	<qandaentry>
+		<question>
+			<para>I cannot locate "proto_tcp.so". Where is it?
+			</para>
+		</question>
+		<answer>
+			<para>
+				The "proto_udp" and "proto_tcp" modules are simply built into
+				the opensips binary by default. They are not available as shared
+				libraries, but look like modules for code consistency reasons.
+			</para>
+		</answer>
+	</qandaentry>
+
+	</qandaset>
+</chapter>
