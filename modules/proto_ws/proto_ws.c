@@ -53,7 +53,7 @@ int ws_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
 /* in miliseconds */
 int ws_send_timeout = 100;
 
-static int ws_port;
+static int ws_port = WS_DEFAULT_PORT;
 
 
 static cmd_export_t cmds[] = {
