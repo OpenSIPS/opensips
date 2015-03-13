@@ -64,8 +64,9 @@ Carsten Bock
               1.3.21. destination_col (string)
               1.3.22. state_col (string)
               1.3.23. weight_col (string)
-              1.3.24. attrs_col (string)
-              1.3.25. socket_col (string)
+              1.3.24. priority_col (string)
+              1.3.25. attrs_col (string)
+              1.3.26. socket_col (string)
 
         1.4. Exported Functions
 
@@ -126,12 +127,13 @@ Carsten Bock
    1.22. Set “destination_col” parameter
    1.23. Set “state_col” parameter
    1.24. Set “weight_col” parameter
-   1.25. Set “attrs_col” parameter
-   1.26. Set “socket_col” parameter
-   1.27. ds_select_dst usage
-   1.28. ds_count usage
-   1.29. ds_is_in_list usage
-   1.30. OpenSIPS config script - sample dispatcher usage
+   1.25. Set “priority_col” parameter
+   1.26. Set “attrs_col” parameter
+   1.27. Set “socket_col” parameter
+   1.28. ds_select_dst usage
+   1.29. ds_count usage
+   1.30. ds_is_in_list usage
+   1.31. OpenSIPS config script - sample dispatcher usage
 
 Chapter 1. Admin Guide
 
@@ -549,26 +551,38 @@ modparam("dispatcher", "state_col", "dststate")
 modparam("dispatcher", "weight_col", "dstweight")
 ...
 
-1.3.24. attrs_col (string)
+1.3.24. priority_col (string)
+
+   The column's name in the database storing the priority for
+   destination uri.
+
+   Default value is “priority”.
+
+   Example 1.25. Set “priority_col” parameter
+...
+modparam("dispatcher", "priority_col", "dstprio")
+...
+
+1.3.25. attrs_col (string)
 
    The column's name in the database storing the attributes
    (opaque string) for destination uri.
 
    Default value is “attrs”.
 
-   Example 1.25. Set “attrs_col” parameter
+   Example 1.26. Set “attrs_col” parameter
 ...
 modparam("dispatcher", "attrs_col", "dstattrs")
 ...
 
-1.3.25. socket_col (string)
+1.3.26. socket_col (string)
 
    The column's name in the database storing the socket (as
    string) for destination uri.
 
    Default value is “socket”.
 
-   Example 1.26. Set “socket_col” parameter
+   Example 1.27. Set “socket_col” parameter
 ...
 modparam("dispatcher", "socket_col", "my_sock")
 ...
@@ -641,7 +655,7 @@ modparam("dispatcher", "socket_col", "my_sock")
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.27. ds_select_dst usage
+   Example 1.28. ds_select_dst usage
 ...
 ds_select_dst("1", "0");
 ...
@@ -749,7 +763,7 @@ ds_select_dst("$var(part_name):$var(setid)","$var(alg)","$var(flags)");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
 
-   Example 1.28. ds_count usage
+   Example 1.29. ds_count usage
 ...
 if (ds_count("1", "a", "$avp(result)")) {
         ...
@@ -787,7 +801,7 @@ if (ds_count("$avp(partition) : $avp(set)", "ip", "$avp(result)")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.29. ds_is_in_list usage
+   Example 1.30. ds_is_in_list usage
 ...
 if (ds_is_in_list("$si", "$sp")) {
         # source IP:PORT is in a dispatcher list
@@ -875,7 +889,7 @@ _empty_line_
 
    Next picture displays a sample usage of dispatcher.
 
-   Example 1.30. OpenSIPS config script - sample dispatcher usage
+   Example 1.31. OpenSIPS config script - sample dispatcher usage
 ...
 #
 # $Id$
