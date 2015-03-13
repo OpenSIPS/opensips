@@ -195,8 +195,9 @@ static int proto_ws_send(struct socket_info* send_sock,
 	if (n<0){
 		LM_ERR("failed to send\n");
 		c->state=S_CONN_BAD;
+		if (c->proc_id != process_no)
+			close(fd);
 		tcp_conn_release(c, 0);
-		close(fd);
 		return -1;
 	}
 
