@@ -51,6 +51,7 @@
 #include "../../pvar.h"
 #include "../../mem/mem.h"
 #include "../../mod_fix.h"
+#include "../../context.h"
 #include "loose.h"
 #include "record.h"
 #include "rr_cb.h"
@@ -62,6 +63,12 @@
 str i_user;
 char *ignore_user = NULL;
 #endif
+
+int ctx_rrdone_idx = -1;
+#define ctx_rrdone_set(_val) \
+	context_put_int(CONTEXT_GLOBAL,current_processing_ctx,ctx_rrdone_idx,_val)
+#define ctx_rrdone_get() \
+	context_get_int(CONTEXT_GLOBAL, current_processing_ctx, ctx_rrdone_idx)
 
 /* module parameters */
 int append_fromtag = 1;
@@ -81,7 +88,10 @@ static int w_add_rr_param(struct sip_msg *,char *, char *);
 static int w_check_route_param(struct sip_msg *,char *, char *);
 static int w_is_direction(struct sip_msg *,char *, char *);
 
-static int pv_get_rr_params(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+static int pv_get_rr_params(struct sip_msg *msg, pv_param_t *param,
+	pv_value_t *res);
+
+
 /*! \brief
  * Exported functions
  */
@@ -170,7 +180,7 @@ static int mod_init(void)
 
 	ctx_rrparam_idx = context_register_str(CONTEXT_GLOBAL);
 	ctx_routing_idx = context_register_int(CONTEXT_GLOBAL);
-	ctx_rrstat_idx  = context_register_int(CONTEXT_GLOBAL);
+	ctx_rrdone_idx  = context_register_int(CONTEXT_GLOBAL);
 
 #ifdef ENABLE_USER_CHECK
 	if(ignore_user)
@@ -267,7 +277,7 @@ static int w_record_route(struct sip_msg *msg, char *key, char *bar)
 {
 	str s;
 
-	if (ctx_rrstat_get()==2) {
+	if (ctx_rrdone_get()==1) {
 		LM_ERR("Double attempt to record-route\n");
 		return -1;
 	}
@@ -279,7 +289,7 @@ static int w_record_route(struct sip_msg *msg, char *key, char *bar)
 	if ( record_route( msg, key?&s:0 )<0 )
 		return -1;
 
-	ctx_rrstat_set(2);
+	ctx_rrdone_set(1);
 	return 1;
 }
 
@@ -288,7 +298,7 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 {
 	str s;
 
-	if (ctx_rrstat_get()==2) {
+	if (ctx_rrdone_get()==1) {
 		LM_ERR("Double attempt to record-route\n");
 		return -1;
 	}
@@ -316,7 +326,7 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 		return -1;
 
 done:
-	ctx_rrstat_set(2);
+	ctx_rrdone_set(1);
 	return 1;
 }
 

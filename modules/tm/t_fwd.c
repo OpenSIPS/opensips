@@ -314,12 +314,16 @@ static inline unsigned int count_local_rr(struct sip_msg *req)
 	/* we look for the RR anchors only
 	 * in the main list (no after or before) */
 	for( r=req->add_rm ; r ; r=r->next )
-		if ( r->type==HDR_RECORDROUTE_T && r->op==LUMP_NOP) {
-			if (r->after && r->after->op==LUMP_ADD_OPT) {
+		if ( r->type==HDR_RECORDROUTE_T && r->op==LUMP_NOP && r->after) {
+			/* only the master RR anchor has "after" */
+			if (r->after->op==LUMP_ADD_OPT &&
+			r->after->u.cond==COND_IF_DIFF_REALMS) {
+				/* conditional second RR hdr (when doing double RR) */
 				if (r->after->flags&LUMPFLAG_COND_TRUE) {
 					cnt++;
 				}
 			} else {
+				/* mandatory first RR hdr */
 				cnt++;
 			}
 		}

@@ -209,18 +209,7 @@ static int topo_delete_record_routes(struct sip_msg *req)
 
 	/* delete also the added record route and the did param */
 	for(crt=req->add_rm; crt;) {
-		lump = 0;
-		if(crt->type != HDR_RECORDROUTE_T)
-			/* check on before list for parameters */
-			for( lump=crt->before ; lump ; lump=lump->before ) {
-				/* we are looking for the lump that adds the
-				 * suffix of the RR header */
-				if ( lump->type==HDR_RECORDROUTE_T && lump->op==LUMP_ADD) {
-					break;
-				}
-			}
-
-		if((crt->type==HDR_RECORDROUTE_T) || lump) {
+		if ((crt->type==HDR_RECORDROUTE_T) && (crt->op==LUMP_NOP) ) {
 			/* lump found */
 			lump = crt;
 			crt = crt->next;
@@ -259,7 +248,7 @@ static int topo_delete_record_routes(struct sip_msg *req)
 
 	/* delete record-route headers */
 	for (it=req->record_route;it;it=it->sibling) {
-		if (del_lump(req,it->name.s - buf,it->len,HDR_RECORDROUTE_T) == 0) {
+		if (del_lump(req,it->name.s - buf,it->len, 0) == 0) {
 			LM_ERR("del_lump failed - while deleting record-route\n");
 			return -1;
 		}
@@ -1572,7 +1561,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 
 	/* delete record route */
 	for (it=msg->record_route;it;it=it->sibling) {
-		if (del_lump(msg, it->name.s - buf, it->len,HDR_RECORDROUTE_T) == 0) {
+		if (del_lump(msg, it->name.s - buf, it->len, 0) == 0) {
 			LM_ERR("del_lump failed\n");
 			return -1;
 		}
