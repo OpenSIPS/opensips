@@ -452,6 +452,7 @@ extern char *finame;
 %type <strval> listen_id
 %type <sockid> listen_def
 %type <sockid> id_lst
+%type <sockid> alias_def
 %type <sockid> phostport
 %type <intval> proto port any_proto
 %type <strval> host_sep
@@ -555,8 +556,18 @@ phostport: proto COLON listen_id	{ $$=mk_listen_id($3, $1, 0); }
 				}
 			;
 
-id_lst:		phostport		{  $$=$1 ; }
-		| phostport id_lst	{ $$=$1; $$->next=$2; }
+alias_def:	listen_id						{ $$=mk_listen_id($1, PROTO_NONE, 0); }
+		 |	ANY COLON listen_id				{ $$=mk_listen_id($3, PROTO_NONE, 0); }
+		 |	ANY COLON listen_id COLON port	{ $$=mk_listen_id($3, PROTO_NONE, $5); }
+		 |	ANY COLON listen_id COLON error {
+				$$=0;
+				yyerror(" port number expected");
+				}
+		 | phostport
+		 ;
+
+id_lst:		alias_def		{  $$=$1 ; }
+		| alias_def id_lst	{ $$=$1; $$->next=$2; }
 		;
 
 
