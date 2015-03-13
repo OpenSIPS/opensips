@@ -1222,9 +1222,10 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
 					&msg->rcv.dst_ip, msg->rcv.dst_port, msg->rcv.proto);
 		} else {
-			db_vals[4].val.str_val.s = proto2str(send_sock->proto,fromip_buff);
-			db_vals[4].val.str_val.len = strlen(db_vals[4].val.str_val.s);
-			db_vals[5].val.str_val = send_sock->sock_str;
+			char *nbuff = proto2str(send_sock->proto,fromip_buff);
+			db_vals[4].val.str_val.s = fromip_buff;
+			db_vals[4].val.str_val.len = nbuff - fromip_buff;
+			db_vals[5].val.str_val = send_sock->address_str;
 			db_vals[6].val.int_val = send_sock->port_no;
 		}
 	}
