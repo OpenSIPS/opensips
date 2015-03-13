@@ -202,6 +202,8 @@ ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
 loadmodule "mi_http.so"
 ',`')
 
+loadmodule "proto_udp.so"
+
 ifelse(ENABLE_TCP, `yes', `loadmodule "proto_tcp.so"' , `')
 ifelse(ENABLE_TLS, `yes', `loadmodule "proto_tls.so"
 modparam("proto_tls","verify_cert", "1")
