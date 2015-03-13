@@ -112,41 +112,7 @@ Ionut-Razvan Ionita
         1.9. OpenSIPS with TLS - script example
         1.10. Debug TLS connections
 
-   2. Developer Guide
-
-        2.1. TLS_CONFIG
-        2.2. TLS_INIT
-
-              2.2.1. ssl context
-              2.2.2. pre_init_tls
-              2.2.3. init_tls
-              2.2.4. destroy_tls
-              2.2.5. tls_init
-              2.2.6. os_malloc, os_realloc, os_free
-
-        2.3. TLS_SERVER
-
-              2.3.1. SSL data per connection
-              2.3.2. tls_print_errstack
-              2.3.3. tls_tcpconn_init
-              2.3.4. tls_tcpconn_clean
-              2.3.5. tls_blocking_write
-              2.3.6. tls_read
-              2.3.7. tls_fix_read_conn
-
-        2.4. TLS_DOMAIN
-
-              2.4.1. tls_domains
-              2.4.2. tls_find_server_domain
-              2.4.3. tls_find_client_domain
-              2.4.4. tls_find_client_domain_name
-              2.4.5. tls_new__domain
-              2.4.6. tls_new_server_domain
-              2.4.7. tls_new_client_domain
-              2.4.8. tls_new_client_domain_name
-              2.4.9. tls_free_domains
-
-   3. Frequently Asked Questions
+   2. Frequently Asked Questions
 
    List of Examples
 
@@ -1251,195 +1217,9 @@ xlog("L_INFO","$$tls_peer_notAfter              = '$tls_peer_notAfter'\n
 xlog("L_INFO","==================== end TLS pseudo variables ===========
 ======='\n");
 
-Chapter 2. Developer Guide
+Chapter 2. Frequently Asked Questions
 
-2.1. TLS_CONFIG
-
-   It contains configuration variables for OpenSIPS's TLS
-   (timeouts, file paths, etc).
-
-2.2. TLS_INIT
-
-   Initialization related functions and parameters.
-
-2.2.1. ssl context
-
-   extern SSL_CTX *default_client_ctx;
-
-   The ssl context is a member of the TLS domain strcuture. Thus,
-   every TLS domain, default and virtual - servers and clients,
-   have its own SSL context.
-
-2.2.2. pre_init_tls
-
-   int init_tls(void);
-
-   Called once to pre_initialize the tls subsystem, from the
-   main(). Called before parsing the configuration file.
-
-2.2.3. init_tls
-
-   int init_tls(void);
-
-   Called once to initialize the tls subsystem, from the main().
-   Called after parsing the configuration file.
-
-2.2.4. destroy_tls
-
-   void destroy_tls(void);
-
-   Called once, just before cleanup.
-
-2.2.5. tls_init
-
-   int tls_init(struct socket_info *c);
-
-   Called once for each tls socket created, from main.c
-
-2.2.6. os_malloc, os_realloc, os_free
-
-   Wrapper functions around the shm_* functions. OpenSSL uses
-   non-shared memory to create its objects, thus it would not work
-   in OpenSIPS. By creating these wrappers and configuring OpenSSL
-   to use them instead of its default memory functions, we have
-   all OpenSSL objects in shared memory, ready to use.
-
-2.3. TLS_SERVER
-
-2.3.1. SSL data per connection
-
-   Each TLS connection, incoming or outgoing, creates an SSL *
-   object, where configuration inherited from the SSL_CTX * and
-   particular info on that socket are stored. This SSL * structure
-   is kept in OpenSIPS as long as the connection is alive, as part
-   of the “struct tcp_connection *” object:
-...
-struct tcp_connection *c;
-SSL *ssl;
-
-/*create somehow SSL object*/
-c->extra_data = (void *) ssl;
-ssl = (SSL *) c->extra_data;
-...
-
-2.3.2. tls_print_errstack
-
-   void tls_print_errstack(void);
-
-   Dumps ssl error stack.
-
-2.3.3. tls_tcpconn_init
-
-   int tls_tcpconn_init( struct tcp_connection *c, int fd);
-
-   Called when new tcp connection is accepted
-
-2.3.4. tls_tcpconn_clean
-
-   void tls_tcpconn_clean( struct tcp_connection *c);
-
-   Shuts down the TLS connection.
-
-2.3.5. tls_blocking_write
-
-   size_t tls_blocking_write( struct tcp_connection *c, int fd,
-   const char *buf, size_t len);
-
-   Writes a memory chunk in blocking mode (syncron).
-
-2.3.6. tls_read
-
-   size_t tls_read( struct tcp_connection *c);
-
-   Reads from a TLS connection. Return the number of bytes read.
-
-2.3.7. tls_fix_read_conn
-
-   void tls_tcpconn_clean( struct tcp_connection *c);
-
-   Shuts down the TLS connection.
-
-2.4. TLS_DOMAIN
-
-2.4.1. tls_domains
-
-   extern struct tls_domain *tls_default_server_domain;
-
-   The default TLS server domain.
-
-   extern struct tls_domain *tls_default_client_domain;
-
-   The default TLS client domain.
-
-   extern struct tls_domain *tls_server_domains;
-
-   List with defined server domains.
-
-   extern struct tls_domain *tls_client_domains;
-
-   List with defined client domains.
-
-2.4.2. tls_find_server_domain
-
-   struct tls_domain *tls_find_server_domain(struct ip_addr *ip,
-   unsigned short port);
-
-   Find a TLS server domain with given ip and port (local
-   listening socket).
-
-2.4.3. tls_find_client_domain
-
-   struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
-   unsigned short port);
-
-   Find TLS client domain with given ip and port (socket of the
-   remote destination).
-
-2.4.4. tls_find_client_domain_name
-
-   struct tls_domain *tls_find_client_name(str name);
-
-   Find TLS client domain with given name.
-
-2.4.5. tls_new__domain
-
-   struct tls_domain *tls_new_domain(int type);
-
-   Creates new TLS: allocate memory, set the type and initialize
-   members
-
-2.4.6. tls_new_server_domain
-
-   int tls_new_server_domain(struct ip_addr *ip, unsigned short
-   port);
-
-   Creates and adds to the list of TLS server domains a new
-   domain.
-
-2.4.7. tls_new_client_domain
-
-   int tls_new_client_domain(struct ip_addr *ip, unsigned short
-   port);
-
-   Creates and adds to the list of TLS client domains a new socket
-   based domain.
-
-2.4.8. tls_new_client_domain_name
-
-   int tls_new_client_domain_name(char *s, int len);
-
-   Creates and adds to the list of TLS client domains a new name
-   based domain.
-
-2.4.9. tls_free_domains
-
-   void tls_free_domains(void);
-
-   Cleans up the entire domain lists.
-
-Chapter 3. Frequently Asked Questions
-
-   3.1.
+   2.1.
 
        Where can I post a question about TLS?
 
@@ -1452,7 +1232,7 @@ Chapter 3. Frequently Asked Questions
        Remember: first at all, check if your question wasn't already
        answered.
 
-   3.2.
+   2.2.
 
        How can I report a bug?
 
@@ -1464,7 +1244,7 @@ Chapter 3. Frequently Asked Questions
        Also you may try OpenSIPS's bug report web page:
        http://www.opensips.org/pmwiki.php?n=Development.Tracker
 
-   3.3.
+   2.3.
 
        How can I debug ssl/tls problems?
 
@@ -1474,7 +1254,7 @@ Chapter 3. Frequently Asked Questions
        Install the ssldump utility and start it. This will give you a
        trace of the ssl/tls connections.
 
-   3.4.
+   2.4.
 
        What is the difference between the TLS directory and the TLSOPS
        module directory?
@@ -1483,13 +1263,13 @@ Chapter 3. Frequently Asked Questions
        layer. The TLSOPS module implements TLS related functions which
        can be used in the routing script.
 
-   3.5.
+   2.5.
 
        Where can I find more about OpenSIPS?
 
        Take a look at http://www.opensips.org/.
 
-   3.6.
+   2.6.
 
        Where can I post a question about this module?
 
@@ -1507,7 +1287,7 @@ Chapter 3. Frequently Asked Questions
        If you want to keep the mail private, send it to
        <users@lists.opensips.org>.
 
-   3.7.
+   2.7.
 
        How can I report a bug?
 

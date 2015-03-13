@@ -5,7 +5,6 @@
 
 
 <!ENTITY admin SYSTEM "proto_tls_admin.xml">
-<!ENTITY devel SYSTEM "proto_tls_devel.xml">
 <!ENTITY faq SYSTEM "proto_tls_faq.xml">
 
 <!-- Include general documentation entities -->
@@ -103,7 +102,6 @@
 	<toc></toc>
 
 	&admin;
-	&devel;
 	&faq;
 
 </book>
