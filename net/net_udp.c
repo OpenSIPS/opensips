@@ -38,6 +38,7 @@
 /* if the UDP network layer is used or not by some protos */
 static int udp_disabled = 1;
 
+extern void handle_sigs(void);
 
 /* initializes the UDP network layer */
 int udp_init(void)
@@ -367,8 +368,11 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 				} else {
 					/*parent*/
 					/* wait for first proc to finish the startup route */
-					if(*chd_rank == 1 && startup_done!=NULL)
-						while(!(*startup_done)) {usleep(5);/*handle_sigs();*/}
+					if (*chd_rank == 1 && startup_done)
+						while(!(*startup_done)) {
+							usleep(5);
+							handle_sigs();
+						}
 				}
 			} /* procs per listener */
 		} /* looping through the listeners per proto */

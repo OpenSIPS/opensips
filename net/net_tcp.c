@@ -129,6 +129,7 @@ static int tcp_disabled = 1;
 
 
 /****************************** helper functions *****************************/
+extern void handle_sigs(void);
 
 static inline int init_sock_keepalive(int s)
 {
@@ -1652,7 +1653,6 @@ int tcp_count_processes(void)
 	return ((!tcp_disabled)?( 1/* tcp main */ + tcp_children_no ):0);
 }
 
-
 int tcp_start_processes(int *chd_rank, int *startup_done)
 {
 	int r, n;
@@ -1733,8 +1733,11 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	}
 
 	/* wait for the startup route to be executed */
-	if( startup_done!=NULL)
-		while( !(*startup_done) ) {usleep(5);/*handle_sigs();*/}
+	if (startup_done)
+		while (!(*startup_done)) {
+			usleep(5);
+			handle_sigs();
+		}
 
 	/* start the TCP manager process */
 	if ( (pid=internal_fork( "TCP main"))<0 ) {
