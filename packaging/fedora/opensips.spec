@@ -9,7 +9,7 @@
 
 Summary:  Open Source SIP Server
 Name:     opensips
-Version:  1.11.0
+Version:  2.1.0
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -47,16 +47,16 @@ BuildRequires:  curl-devel
 BuildRequires:  GeoIP-devel
 BuildRequires:  pcre-devel
 BuildRequires:  python-devel
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 BuildRequires:  systemd-units
 %endif
 BuildRequires:  libxslt
 BuildRequires:  lynx
 BuildRequires:  ncurses-devel
-BuildRequireS:  json-c-devel
+BuildRequires:  json-c-devel
 
 #Initscripts
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 # Users and groups
 Requires(pre): shadow-utils
 Requires(post): systemd
@@ -111,20 +111,10 @@ AAA server which will in turn send a reply containing result of the
 authentication. So basically the whole authentication is done in the AAA
 server.
 
-%package  auth_diameter
-Summary:  Performs authentication using a Diameter server
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  auth_diameter
-This module implements SIP authentication and authorization with DIAMETER
-server, namely DIameter Server Client (DISC).
-
 %package  b2bua
 Summary:  Back-2-Back User Agent
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-Requires: %{name}-pua
 
 %description  b2bua
 B2BUA is an implementation of the behavior of a B2BUA as defined in RFC 3261
@@ -137,6 +127,18 @@ Requires: %{name} = %{version}-%{release}
 
 %description  carrierroute
 A module which provides routing, balancing and blacklisting capabilities.
+
+%package  compression
+Summary:  Message compression and compaction
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  compression
+This module implements message compression/decompression and base64 encoding
+for sip messages using deflate and gzip algorithm/headers. Another feature of
+this module is reducing headers to compact for as specified in SIP RFC's, sdp
+body codec unnecessary description removal (for codecs 0-97), whitelist for
+headers not be removed (excepting necessary headers).
 
 %package  cpl-c
 Summary:  Call Processing Language interpreter
@@ -182,6 +184,20 @@ OpenSIPS's database access. It does not handle a particular database engine
 itself but lets the user relay database requests to arbitrary Perl functions.
 %endif
 
+%package  emergency
+Summary:  Emergency module
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  emergency
+The emergency module provides emergency call treatment for OpenSIPS, following
+the architecture i2 specification of the american entity NENA. (National
+Emergency Number Association). The NENA solution routes the emergency call to
+a closer gateway (ESGW) and this forward the call to a PSAP(call center
+responsible for answering emergency calls) that serves the area of the caller,
+so this must consider the handling and transport of caller location information
+in the SIP protocol.
+
 %package  event_datagram
 Summary:  Event datagram module
 Group:    System Environment/Daemons
@@ -223,6 +239,15 @@ Requires: %{name} = %{version}-%{release}
 This module is an implementation of an XMLRPC client used to notify XMLRPC servers
 whenever certain notifications are raised by OpenSIPS. It acts as a transport layer
 for the Event Notification Interface.
+
+%package  fraud_detection
+Summary:  Detects fraudulent calls
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  fraud_detection
+This module provides a way to prevent some basic fraud attacks. Alerts are provided
+through return codes and events.
 
 %package  h350
 Summary:  H350 implementation
@@ -327,7 +352,7 @@ BuildRequires:  perl(ExtUtils::MakeMaker)
 %if 0%{?rhel}
 BuildRequires:  perl(ExtUtils::Embed)
 %else
-%if 0%{?redhat} == 5
+%if 0%{?rhel} == 5
 BuildRequires:  perl(ExtUtils::Embed), perl-devel
 %else
 BuildRequires:  perl(ExtUtils::Embed)
@@ -434,6 +459,41 @@ Requires: %{name}-xcap_client
 %description  presence_xml
 The module does specific handling for notify-subscribe events using xml bodies.
 It is used with the general event handling module, presence.
+
+%package  proto_sctp
+Summary:  SCTP protocol module - implements SCTP transport for SIP
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  proto_sctp
+The proto_sctp module is an optional transport module (shared library) which exports
+the required logic in order to handle SCTP-based communication. (socket initialization
+and send/recv primitives to be used by higher-level network layers)
+
+%package  proto_tls
+Summary:  TLS protocol module - implements TLS transport for SIP
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: lksctp-tools
+BuildRequires: lksctp-tools-devel
+
+%description  proto_tls
+TLS, as defined in SIP RFC 3261, is a mandatory feature for proxies and can be used
+to secure the SIP signalling on a hop-by-hop basis (not end-to-end). TLS works on top
+of TCP. DTLS, or TLS over UDP is already defined by IETF and may become available in
+the future. This module also implements TLS related functions to use in the routing
+script, and exports pseudo variables with certificate and TLS parameters.
+
+%package  proto_ws
+Summary:  WebSocket protocol module - implements WS transport for SIP
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  proto_ws
+The WebSocket protocol (RFC 6455) provides an end-to-end full-duplex communication
+channel between two web-based applications. This allows WebSocket enabled browsers
+to connect to a WebSocket server and exchange any type of data. RFC 7118 provides
+the specifications for transporting SIP messages over the WebSocket protocol.
 
 %package  pua
 Summary:  Offer the functionality of a presence user agent client
@@ -557,6 +617,20 @@ Requires: %{name}-xcap
 The modules is a Resource List Server implementation following the
 specification in RFC 4662 and RFC 4826.
 
+%package  rtpengine
+Summary:  Connector to RTPengine external RTP relay
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  rtpengine
+This is a module that enables media streams to be proxied via an RTP proxy. The only
+RTP proxy currently known to work with this module is the Sipwise rtpengine
+https://github.com/sipwise/rtpengine. The rtpengine module is a modified version of
+the original rtpproxy module using a new control protocol. The module is designed to
+be a drop-in replacement for the old module from a configuration file point of view,
+however due to the incompatible control protocol, it only works with RTP proxies which
+specifically support it.
+
 %package  seas
 Summary:  Transfers the execution logic control to a given external entity
 Group:    System Environment/Daemons
@@ -599,16 +673,15 @@ table representations of more complicated data such as user and contact
 information, and alarm monitoring capabilities.
 %endif
 
-%package  tlsops
-Summary:  TLS-relating functions for the OpenSIPS
+%package  topology_hiding
+Summary:  Provides Topology Hiding capabilities
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  tlsops
-The %{name}-tlsops package implements TLS related functions to use in the
-routing script, and exports pseudo variables with certificate and TLS
-parameters.
-
+%description  topology_hiding
+This is a module which provides topology hiding capabilities. The module can
+work on top of the dialog module, or as a standalone module ( thus alowing
+topology hiding for all types of requests )
 %package  unixodbc
 Summary:  OpenSIPS unixODBC Storage support
 Group:    System Environment/Daemons
@@ -703,11 +776,10 @@ for i in docdir/*; do
   rm -f $i.old
 done
 
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 # install systemd files
 install -D -m 0644 -p packaging/fedora/%{name}.service $RPM_BUILD_ROOT%{_unitdir}/%{name}.service
 install -D -m 0644 -p packaging/fedora/%{name}.tmpfiles.conf $RPM_BUILD_ROOT%{_sysconfdir}/tmpfiles.d/%{name}.conf
-install -D -m 0755 -p packaging/fedora/%{name}.m4cfg $RPM_BUILD_ROOT%{_sbindir}/%{name}-m4cfg
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/run/%{name}
 %else
 install -p -D -m 755 packaging/fedora/opensips.init $RPM_BUILD_ROOT%{_initrddir}/opensips
@@ -729,7 +801,7 @@ useradd -r -g %{name} -d %{_localstatedir}/run/%{name} -s /sbin/nologin \
 -c "OpenSIPS SIP Server" %{name} 2>/dev/null || :
 
 %post
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 if [ $1 -eq 1 ] ; then
 	# Initial installation
 	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
@@ -739,7 +811,7 @@ fi
 %endif
 
 %preun
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 if [ $1 -eq 0 ] ; then
 	# Package removal, not upgrade
 	/bin/systemctl --no-reload disable %{name}.service > /dev/null 2>&1 || :
@@ -752,7 +824,7 @@ if [ $1 = 0 ]; then
 fi
 %endif
 
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 %triggerun -- %{name} < 1.7.2-1
 # Save the current service runlevel info
 # User must manually run systemd-sysv-convert --apply opensips
@@ -786,10 +858,9 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %dir %{_libdir}/opensips/opensipsctl/
 %dir %{_libdir}/opensips/opensipsctl/dbtextdb/
 
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 %{_unitdir}/%{name}.service
 %{_sysconfdir}/tmpfiles.d/%{name}.conf
-%{_sbindir}/%{name}-m4cfg
 %dir %attr(0755, %{name}, %{name}) %{_localstatedir}/run/%{name}
 %else
 %attr(755,root,root) %{_initrddir}/opensips
@@ -853,7 +924,6 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/cachedb_local.so
 %{_libdir}/opensips/modules/cachedb_sql.so
 %{_libdir}/opensips/modules/call_control.so
-%{_libdir}/opensips/modules/closeddial.so
 %{_libdir}/opensips/modules/cfgutils.so
 %{_libdir}/opensips/modules/db_cachedb.so
 %{_libdir}/opensips/modules/db_flatstore.so
@@ -925,8 +995,6 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.cachedb_sql
 %doc docdir/README.call_control
 %doc docdir/README.cfgutils
-%doc docdir/README.closeddial
-%doc docdir/README.db_cachedb
 %doc docdir/README.db_flatstore
 %doc docdir/README.db_text
 %doc docdir/README.db_virtual
@@ -946,13 +1014,11 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.imc
 %doc docdir/README.load_balancer
 %doc docdir/README.mangler
-%doc docdir/README.mathops
 %doc docdir/README.maxfwd
 %doc docdir/README.mediaproxy
 %doc docdir/README.mi_datagram
 %doc docdir/README.mi_fifo
 %doc docdir/README.mi_http
-%doc docdir/README.mi_json
 %doc docdir/README.msilo
 %doc docdir/README.nat_traversal
 %doc docdir/README.nathelper
@@ -966,7 +1032,6 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.registrar
 %doc docdir/README.rr
 %doc docdir/README.rtpproxy
-%doc docdir/README.script_helper
 %doc docdir/README.signaling
 %doc docdir/README.sipcapture
 %doc docdir/README.sipmsgops
@@ -999,10 +1064,6 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/auth_aaa.so
 %doc docdir/README.auth_aaa
 
-%files auth_diameter
-%{_libdir}/opensips/modules/auth_diameter.so
-%doc docdir/README.auth_diameter
-
 %files b2bua
 %{_libdir}/opensips/modules/b2b_entities.so
 %{_libdir}/opensips/modules/b2b_logic.so
@@ -1016,6 +1077,10 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %files carrierroute
 %{_libdir}/opensips/modules/carrierroute.so
 %doc docdir/README.carrierroute
+
+%files compression
+%{_libdir}/opensips/modules/compression.so
+%doc docdir/README.compression
 
 %files cpl-c
 %{_libdir}/opensips/modules/cpl-c.so
@@ -1056,6 +1121,10 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.db_perlvdb
 %endif
 
+%files emergency
+%{_libdir}/opensips/modules/emergency.so
+%doc docdir/README.emergency
+
 %files event_datagram
 %{_libdir}/opensips/modules/event_datagram.so
 %doc docdir/README.event_datagram
@@ -1071,6 +1140,10 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %files event_xmlrpc
 %{_libdir}/opensips/modules/event_xmlrpc.so
 %doc docdir/README.event_xmlrpc
+
+%files fraud_detection
+%{_libdir}/opensips/modules/fraud_detection.so
+%doc docdir/README.fraud_detection
 
 %files h350
 %{_libdir}/opensips/modules/h350.so
@@ -1175,6 +1248,18 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/presence_xml.so
 %doc docdir/README.presence_xml
 
+%files proto_sctp
+%{_libdir}/opensips/modules/proto_sctp.so
+%doc docdir/README.proto_sctp
+
+%files proto_tls
+%{_libdir}/opensips/modules/proto_tls.so
+%doc docdir/README.proto_tls
+
+%files proto_ws
+%{_libdir}/opensips/modules/proto_ws.so
+%doc docdir/README.proto_ws
+
 %files pua
 %{_libdir}/opensips/modules/pua.so
 %doc docdir/README.pua
@@ -1220,6 +1305,10 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/rls.so
 %doc docdir/README.rls
 
+%files rtpengine
+%{_libdir}/opensips/modules/rtpengine.so
+%doc docdir/README.rtpengine
+
 %files seas
 %{_libdir}/opensips/modules/seas.so
 %doc docdir/README.seas
@@ -1241,9 +1330,9 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_datadir}/snmp/mibs/OPENSER-TC
 %endif
 
-%files tlsops
-%{_libdir}/opensips/modules/tlsops.so
-%doc docdir/README.tlsops
+%files topology_hiding
+%{_libdir}/opensips/modules/topology_hiding.so
+%doc docdir/README.topology_hiding
 
 %files unixodbc
 %{_libdir}/opensips/modules/db_unixodbc.so
@@ -1258,9 +1347,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.xcap_client
 
 %files xmlrpc
-%{_libdir}/opensips/modules/mi_xmlrpc.so
 %{_libdir}/opensips/modules/mi_xmlrpc_ng.so
-%doc docdir/README.mi_xmlrpc
 %doc docdir/README.mi_xmlrpc_ng
 
 %files xmpp
@@ -1268,6 +1355,12 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.xmpp
 
 %changelog
+* Sat Mar 14 2015 Nick Altmann <nick.altmann@gmail.com> - 2.1.0-1
+- Specification updated for opensips 2.1
+- Removed packages: auth_diameter, tlsops
+- New packages: compression, emergency, fraud_detection,
+  proto_sctp, proto_tls, proto_ws, rtpengine, topology_hiding
+
 * Fri Mar 21 2014 Nick Altmann <nick.altmann@gmail.com> - 1.11.0-1
 - Update to 1.11.0
 
