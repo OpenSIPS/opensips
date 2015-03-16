@@ -74,11 +74,11 @@ $0 $VERSION
 
 usage: $COMMAND create <db name or db_path, optional> ...(creates a new database)
        $COMMAND drop <db name or db_path, optional> .....(!entirely deletes tables!)
-       $COMMAND reinit <db name or db_path, optional> ...(!entirely deletes and than re-creates tables!)
+       $COMMAND reinit <db name or db_path, optional> ...(!entirely deletes and then re-creates tables!)
        $COMMAND backup <file> ...........................(dumps current database to file)
        $COMMAND restore <file> ..........................(restores tables from a file)
        $COMMAND copy <new_db> ...........................(creates a new db from an existing one)
-       $COMMAND migrate <old_db> <new_db> ...............(migrates DB from 1.6.4 to 1.7)
+       $COMMAND migrate <old_db> <new_db> ...............(migrates DB from 1.11.x to 2.1.x)
        $COMMAND presence ................................(adds the presence related tables)
        $COMMAND extra ...................................(adds the extra tables)
 

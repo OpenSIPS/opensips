@@ -279,8 +279,8 @@ case $1 in
 			exit 1
 		fi
 
-		minfo	"MySQL DB migration tool for OpenSIPS 1.11.x\n\
-------------------------------------------------------------"
+		minfo	"MySQL DB migration tool for OpenSIPS 1.11.x databases\n\
+----------------------------------------------------------------------"
 		mwarn "\
 We recommend using this tool ONLY in order to upgrade an existing\n\
 OpenSIPS 1.11.x MySQL database to 2.1 schema. Behaviour when automatically\n\
@@ -423,6 +423,7 @@ migrating earlier DB versions (1.8, 1.9, 1.10) to 2.1 is undefined"
 		echo  "$0 $VERSION"
 		;;
 	*)
+		merr "$0: Uknown command - \"$1\""
 		usage
 		exit 1;
 		;;
