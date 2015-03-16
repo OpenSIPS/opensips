@@ -196,179 +196,6 @@
 	</section>
 
 	<section>
-		<title>TLS setup</title>
-		<para>
-		TLS provides for strong authentication mechanism, as well as
-		encryption following authentication. Of course, null encryption can
-		be used, as well as weak authentication mechanisms (for example,
-		anonymous, that is, no authentication).
-		</para>
-		<para>
-		How does verification work? Verification is the process by which
-		the authentication data provided by the peers is checked. This data
-		consists usually of a peer certificate, plus a chain of trusted
-		certification authorities. If for whatever reason, either of the
-		peers thinks that the handshake is not valid, the ssl connection is
-		not established. The reasons could be many: untrusted server
-		certificate, too-weak algorithm, invalid client cert, no client
-		authentication, ...
-		</para>
-		<para>
-		This paragraph describe how to generate all the needed keys and
-		certificates for establishing TLS connection with SER. The described
-		TLS setup is based on the assumption that we run our own certificate
-		authority (CA) and we want to connect via TLS several &osips; servers
-		(SIP domain).
-		</para>
-		<warning><para>
-		In this setup the private key is not encrypted. The client
-		and server keys must not be encrypted (or else &osips; will ask you for
-		a password on startup or will fail to load the certificates), but
-		you should use a password at least for your CA private key.
-		</para></warning>
-
-		<section>
-			<title>Creating CA root certificate</title>
-			<para>
-			This part must be done only once, disregarding the number of
-			how many interconnected &osips;'s we want to have.
-			</para>
-			<para>
-			Using <quote>opensipsctl tls rootCA</quote>, you may create a local
-			root CA.
-			</para>
-			<para>
-			The script will produce the private key (which will be used to
-			sign client/server certificates) and the self-signed certificate
-			authority.
-			</para>
-		</section>
-
-		<section>
-			<title>Creating a server/client certificate</title>
-			<para>
-			This part must be done for each OpenSIPS server interconnected
-			into your TLS enabled network: build a certificate request and
-			sign it with a root CA (yourself or from third party).
-			</para>
-			<para>
-			For this purpose you may use the
-			<quote>opensipsctl tls userCERT</quote>
-			</para>
-			<para>
-			The output of the script will be a directory containing all needed
-			TLS files for configuring the &osips; proxy (private key, signed
-			certificate and CA list)
-			</para>
-		</section>
-
-		<section id="tls-set-ca">
-			<title>Setting &osips; to use the certificate</title>
-			<para>
-			Append to the CA list file all the  CA root certificates
-			( this list must contain all CA root certificates to be
-			accepted by your server):
-			</para>
-			<para>
-			If you use the <quote>opensipsctl tls userCERT</quote>, it will
-			create an one element CA list with the CA used to sign the
-			certificate.
-			</para>
-			<para>
-			To add more CAs to your list, just do:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para>cat add_cacert.pem >> calist.pem</para>
-				</listitem>
-			</itemizedlist>
-			<para>
-			Now copy intended &osips; certificate, private key and ca list
-			file (basically the whole content of the opensipsX directory) to
-			your intended machine in some directory (which will be further
-			refer by path <quote>path</quote>).
-			</para>
-			<para>
-			There are some &osips; TLS specific parameter that must be set up
-			in &osips; configuration file to use the certificate:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para>set up opensips.cfg to use the certificate :</para>
-				<para>modparam("proto_tls", "certificate", "/path/cert.pem"</para>
-				</listitem>
-				<listitem>
-				<para>set up opensips to use the private key :</para>
-				<para>modparam("proto_tls", "private_key", "/path/privkey.pem"</para>
-				</listitem>
-				<listitem>
-				<para>set up opensips to use the CA list (optional - make sens
-				only if verify_cert is turned on)</para>
-				<para>modparam("proto_tls", "ca_list", "/path/calist.pem"</para>
-				</listitem>
-			</itemizedlist>
-		</section>
-
-		<section id="tls-auth-model">
-			<title>TLS &osips; authentication behavior</title>
-			<para>
-			The "verify_cert" and "require_cert" are &osips;-names for the OpenSSL defined flags:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para>SSL_VERIFY_PEER is verify_cert</para>
-				</listitem>
-				<listitem>
-				<para>SSL_VERIFY_FAIL_IF_NO_PEER_CERT is
-				require_cert (require_cert is only used if verify_cert=1)</para>
-				</listitem>
-			</itemizedlist>
-			<para>
-			If your &osips; is acting as a server (incoming TLS connections),
-			it will always send its
-			server-side certificate to the client. If verify_cert is disabled
-			(set to 0), your &osips; will not request the client a
-			client-certificate. This means that the client is not
-			authenticated.
-			If verify_cert=1, your &osips; (the server) sends a
-			client-certificate request to the client. But the client is free
-			to not provide any. In this case,  require_cert comes
-			into play:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>require_cert=0(client side)</emphasis> - the
-				verification process will succeed if the client does not
-				provide a certificate, or if it provides one, it verifies
-				correctly against the server's list of trusted certification
-				authorities.
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>require_cert=1(client side)</emphasis> - the
-				verification process will only succeed if the client
-				provides a certificate and this verifies correctly
-				against the server's list of trusted CAs.
-				</para>
-				</listitem>
-			</itemizedlist>
-			<para>
-			If your &osips; is acting as a client (outgoing TLS connections), it will
-			always receive a certificate from the peer. If verify_cert(server side) is disabled
-			(set to 0), your &osips; will not verifiy the certificate and allows TLS
-			connections to servers which do not present a valid certificate.
-			If verify_cert=1(server side), your &osips; (the client) verifies the server
-			certificate and will close the TLS connection if the server certificate is
-			not valid.
-			</para>
-			<para>
-			For more details see page man verify(1).
-			</para>
-		</section>
-
-	</section>
-
-	<section>
 	<title>Exported Functions</title>
 	<section>
 		<title>
@@ -513,10 +340,6 @@ modparam("proto_tls", "tls_method", "dom:TLSv1")
 			a client-side certificate for outgoing TLS connections. The first
 			parameter, if set, represents the id of the domain.
 			</para>
-			<para>
-				See previous chapter <xref linkend="tls-set-ca"/> for more
-			information.
-			</para>
 			<para><emphasis>
 				Default value is "CFG_DIR/cert.pem".
 			</emphasis></para>
@@ -538,10 +361,6 @@ modparam("proto_tls", "certificate", "dom:/mycerts/certs/opensips_server_cert.pe
 			Private key of the above certificate. I must be kept in a
 			safe place with tight permissions! The first parameter, if set,
 			represents the id of the domain.
-			</para>
-			<para>
-				See previous chapter <xref linkend="tls-set-ca"/> for more
-			information.
 			</para>
 			<para><emphasis>
 				Default value is "CFG_DIR/cert.pem".
@@ -566,10 +385,6 @@ modparam("proto_tls", "private_key", "dom:/mycerts/private/prik.pem")
 			a folder. The first parameter, if set, represents the id
 			of the domain.
 			</para>
-			<para>
-				See previous chapter <xref linkend="tls-set-ca"/> for more
-			information.
-			</para>
 			<para><emphasis>
 				Default value is "".
 			</emphasis></para>
@@ -591,10 +406,6 @@ modparam("proto_tls", "ca_list", "dom:/mycerts/certs/ca_list.pem")
 			certificates accepted, each as hash which is linked to
 			certificate file. The first parameter, if set, represents
 			the id of the domain.
-			</para>
-			<para>
-				See previous chapter <xref linkend="tls-set-ca"/> for more
-			information.
 			</para>
 			<para><emphasis>
 				Default value is "".
@@ -698,10 +509,6 @@ modparam("proto_tls", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
 			<para>
 			These two parameters are used for incoming TLS connections, where
 			&osips; acts as server.
-			</para>
-			<para>
-				See previous chapter <xref linkend="tls-auth-model"/> for
-			more information.
 			</para>
 			<para>
 			It's usable only if TLS support was compiled.
