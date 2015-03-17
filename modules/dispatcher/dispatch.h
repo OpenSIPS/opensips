@@ -69,6 +69,8 @@
 #define DS_PARTITION_DELIM ':'
 #define DS_DEFAULT_PARTITION_NAME "default"
 
+extern int ds_persistent_state;
+
 typedef struct _ds_dest
 {
 	str uri;

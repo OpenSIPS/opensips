@@ -81,6 +81,7 @@ str ds_ping_method = {"OPTIONS",7};
 str ds_ping_from   = {"sip:dispatcher@localhost", 24};
 static int ds_ping_interval = 0;
 int ds_probing_mode = 0;
+int ds_persistent_state = 1;
 
 /* db partiton info */
 
@@ -244,6 +245,7 @@ static param_export_t params[]={
 	{"options_reply_codes",   STR_PARAM, &options_reply_codes_str.s},
 	{"ds_probing_sock",       STR_PARAM, &probing_sock_s},
 	{"ds_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_ds_bl},
+	{"persistent_state",      INT_PARAM, &ds_persistent_state},
 	{0,0,0}
 };
 
@@ -818,8 +820,8 @@ static int mod_init(void)
 	}
 
 	/* register timer to flush the state of destination back to DB */
-	if (register_timer("ds-flusher",ds_flusher_routine,NULL, 30 ,
-	TIMER_FLAG_SKIP_ON_DELAY)<0) {
+	if (ds_persistent_state && register_timer("ds-flusher", ds_flusher_routine,
+			NULL, 30 , TIMER_FLAG_SKIP_ON_DELAY)<0) {
 		LM_ERR("failed to register timer for DB flushing!\n");
 		return -1;
 	}
@@ -882,7 +884,8 @@ static void destroy(void)
 	LM_DBG("destroying module ...\n");
 
 	/* flush the state of the destinations */
-	ds_flusher_routine(0, NULL);
+	if (ds_persistent_state)
+		ds_flusher_routine(0, NULL);
 
 	ds_partition_t *part_it = partitions, *aux;
 

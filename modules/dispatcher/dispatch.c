@@ -416,14 +416,14 @@ err1:
 
 /* variables used to generate the pvar name */
 static int ds_has_pattern = 0;
-static str ds_pattern_suffix = str_init("");
 static str ds_pattern_prefix = str_init("");
+static str ds_pattern_suffix = str_init("");
 
 void ds_pvar_parse_pattern(str pattern)
 {
 	char *p, *end;
 
-	ds_pattern_suffix = pattern;
+	ds_pattern_prefix = pattern;
 	end = pattern.s + pattern.len - DS_PV_ALGO_MARKER_LEN + 1;
 
 	/* first try to see if we have the marker */
@@ -437,30 +437,30 @@ void ds_pvar_parse_pattern(str pattern)
 	}
 
 	ds_has_pattern = 1;
-	ds_pattern_suffix.len = p - pattern.s;
+	ds_pattern_prefix.len = p - pattern.s;
 
 	/* skip marker */
-	ds_pattern_prefix.s = p + DS_PV_ALGO_MARKER_LEN;
-	ds_pattern_prefix.len = pattern.s + pattern.len - ds_pattern_prefix.s;
+	ds_pattern_suffix.s = p + DS_PV_ALGO_MARKER_LEN;
+	ds_pattern_suffix.len = pattern.s + pattern.len - ds_pattern_suffix.s;
 }
 
 
 ds_pvar_param_p ds_get_pvar_param(str uri)
 {
 	str name;
-	int len = ds_pattern_suffix.len + uri.len + ds_pattern_prefix.len;
+	int len = ds_pattern_prefix.len + uri.len + ds_pattern_suffix.len;
 	char buf[len]; /* XXX: check if this works for all compilers */
 	ds_pvar_param_p param;
 
 	if (ds_has_pattern) {
 		name.len = 0;
 		name.s = buf;
-		memcpy(buf, ds_pattern_suffix.s, ds_pattern_suffix.len);
-		name.len = ds_pattern_suffix.len;
+		memcpy(buf, ds_pattern_prefix.s, ds_pattern_prefix.len);
+		name.len = ds_pattern_prefix.len;
 		memcpy(name.s + name.len, uri.s, uri.len);
 		name.len += uri.len;
-		memcpy(name.s + name.len, ds_pattern_prefix.s, ds_pattern_prefix.len);
-		name.len += ds_pattern_prefix.len;
+		memcpy(name.s + name.len, ds_pattern_suffix.s, ds_pattern_suffix.len);
+		name.len += ds_pattern_suffix.len;
 	}
 
 	param = shm_malloc(sizeof(ds_pvar_param_t));
@@ -469,7 +469,7 @@ ds_pvar_param_p ds_get_pvar_param(str uri)
 		return NULL;
 	}
 
-	if (!pv_parse_spec(ds_has_pattern ? &name : &ds_pattern_suffix, &param->pvar)) {
+	if (!pv_parse_spec(ds_has_pattern ? &name : &ds_pattern_prefix, &param->pvar)) {
 		LM_ERR("cannot parse pattern spec\n");
 		shm_free(param);
 		return NULL;
@@ -721,10 +721,10 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 
 
 /*load groups of destinations from DB*/
-static ds_data_t* ds_load_data(ds_partition_t *partition)
+static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 {
 	ds_data_t *d_data;
-	int i, id, nr_rows, cnt;
+	int i, id, nr_rows, cnt, nr_cols = 7;
 	int state;
 	int weight;
 	int prio;
@@ -738,8 +738,11 @@ static ds_data_t* ds_load_data(ds_partition_t *partition)
 	db_row_t * rows;
 
 	db_key_t query_cols[7] = {&ds_set_id_col, &ds_dest_uri_col,
-			&ds_dest_sock_col, &ds_dest_state_col,
-			&ds_dest_weight_col, &ds_dest_attrs_col, &ds_dest_prio_col};
+			&ds_dest_sock_col, &ds_dest_weight_col, &ds_dest_attrs_col,
+			&ds_dest_prio_col, &ds_dest_state_col};
+
+	if (!use_state_col)
+		nr_cols--;
 
 	if(*partition->db_handle == NULL){
 			LM_ERR("invalid DB handler\n");
@@ -759,7 +762,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition)
 	memset( d_data, 0, sizeof(ds_data_t));
 
 	/*select the whole table and all the columns*/
-	if(partition->dbf.query(*partition->db_handle,0,0,0,query_cols,0,7,0,&res) < 0) {
+	if(partition->dbf.query(*partition->db_handle,0,0,0,query_cols,0,nr_cols,0,&res) < 0) {
 		LM_ERR("error while querying database\n");
 		goto error;
 	}
@@ -808,38 +811,35 @@ static ds_data_t* ds_load_data(ds_partition_t *partition)
 			sock = NULL;
 		}
 
-		/* state */
-		if (VAL_NULL(values+3)) {
-			state = 0;
-		} else {
-			state = VAL_INT(values+3);
-		}
-
 		/* weight */
-		if (VAL_NULL(values+4)) {
+		if (VAL_NULL(values+3))
 			weight = 1;
-		} else {
-			weight = VAL_INT(values+4);
-		}
+		else
+			weight = VAL_INT(values+3);
 
 		/* attrs */
-		get_str_from_dbval( "ATTRIBUTES", values+5,
+		get_str_from_dbval( "ATTRIBUTES", values+4,
 			0/*not_null*/, 0/*not_empty*/, attrs, error2);
 
 		/* priority */
-		if (VAL_NULL(values+6)) {
+		if (VAL_NULL(values+5))
 			prio = 0;
-		} else {
-			prio = VAL_INT(values+6);
-		}
+		else
+			prio = VAL_INT(values+5);
+
+		/* state */
+		if (!use_state_col || VAL_NULL(values+6))
+			/* active state */
+			state = 0;
+		else
+			state = VAL_INT(values+6);
 
 		if (add_dest2list(id, uri, sock, state, weight, prio, attrs, d_data) != 0) {
 			LM_WARN("failed to add destination <%.*s> in group %d\n",uri.len,uri.s,id);
 			continue;
 		} else {
-			cnt ++;
+			cnt++;
 		}
-
 	}
 
 	if (cnt==0) {
@@ -870,7 +870,7 @@ int ds_reload_db(ds_partition_t *partition)
 	ds_data_t *old_data;
 	ds_data_t *new_data;
 
-	new_data = ds_load_data(partition);
+	new_data = ds_load_data(partition, ds_persistent_state);
 	if (new_data==NULL) {
 		LM_ERR("failed to load the new data, dropping the reload\n");
 		return -1;
@@ -1491,7 +1491,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selecte
 			ds_id = 0;
 		break;
 		case 9:
-			if (!ds_has_pattern && ds_pattern_suffix.len == 0 ) {
+			if (!ds_has_pattern && ds_pattern_prefix.len == 0 ) {
 				LM_WARN("no pattern specified - using first entry...\n");
 				ds_select_ctl->alg = 8;
 				break;
