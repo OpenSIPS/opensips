@@ -152,7 +152,6 @@ struct module_exports exports= {
 
 static void set_lengths(void)
 {
-	db_url.len = strlen(db_url.s);
 	table_name.len = strlen(table_name.s);
 	rid_col.len = strlen(rid_col.s);
 	pid_col.len = strlen(pid_col.s);
@@ -175,6 +174,7 @@ static void set_lengths(void)
 static int mod_init(void)
 {
 	LM_INFO("Initializing module\n");
+	init_db_url(db_url, 0);
 
 	if ((frd_data_lock = lock_init_rw()) == NULL) {
 		LM_CRIT("failed to init reader/writer lock\n");
