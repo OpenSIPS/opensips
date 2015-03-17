@@ -506,6 +506,26 @@ modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>persistent_state</varname> (int)</title>
+		<para>
+		Specifies whether the <emphasis>state</emphasis> column
+		should be loaded at startup and flushed during runtime or not.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>1</quote> (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <varname>persistent_state</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# disable all DB operations with the state of a destination
+modparam("dispatcher", "persistent_state", 0)
+...
+</programlisting>
+		</example>
+	</section>
 
 	<section>
 		<title><varname>table_name</varname> (string)</title>
