@@ -95,7 +95,7 @@ static int fixup_cnt_call(void** param, int param_no);
 
 static int w_lb_start(struct sip_msg *req, char *grp, char *rl, char *fl);
 static int w_lb_next(struct sip_msg *req);
-static int w_lb_start_and_next(struct sip_msg *req,char *grp,char *rl,char *fl);
+static int w_lb_start_or_next(struct sip_msg *req,char *grp,char *rl,char *fl);
 static int w_lb_reset(struct sip_msg *req);
 static int w_lb_is_started(struct sip_msg *req);
 static int w_lb_disable_dst(struct sip_msg *req);
@@ -117,9 +117,13 @@ static cmd_export_t cmds[]={
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"lb_start",         (cmd_function)w_lb_start,         3, fixup_resources,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"lb_start_and_next",(cmd_function)w_lb_start_and_next,2, fixup_resources,
+	{"load_balance",    (cmd_function)w_lb_start_or_next,  2, fixup_resources,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"lb_start_and_next",(cmd_function)w_lb_start_and_next,3, fixup_resources,
+	{"load_balance",    (cmd_function)w_lb_start_or_next,  3, fixup_resources,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_start_or_next",(cmd_function)w_lb_start_or_next,  2, fixup_resources,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_start_or_next",(cmd_function)w_lb_start_or_next,  3, fixup_resources,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"lb_next",          (cmd_function)w_lb_next,          0,               0,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
@@ -619,7 +623,7 @@ static int w_lb_start(struct sip_msg *req, char *grp, char *rl, char *fl)
 }
 
 
-static int w_lb_start_and_next(struct sip_msg *req, char *grp, char *rl, char *fl)
+static int w_lb_start_or_next(struct sip_msg *req,char *grp,char *rl,char *fl)
 {
 	return (do_lb_is_started(req) > 0) ?
 		w_lb_next(req) :
