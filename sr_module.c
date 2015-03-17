@@ -517,14 +517,16 @@ void destroy_modules(void)
 {
 	struct sr_module* t, *foo;
 
-	t=modules;
-	while(t) {
-		foo=t->next;
-		if ((t->exports)&&(t->exports->destroy_f)) t->exports->destroy_f();
+	t = modules;
+	while (t) {
+		foo = t->next;
+		if (t->init_done && t->exports && t->exports->destroy_f)
+			t->exports->destroy_f();
 		pkg_free(t);
-		t=foo;
+		t = foo;
 	}
-	modules=0;
+
+	modules = NULL;
 }
 
 
@@ -608,8 +610,8 @@ static int init_mod( struct sr_module* m, int skip_others)
 		if (!skip_others && init_mod(m->next, 0) != 0)
 			return -1;
 
-		/* our module might have been already loaded through dependencies! */
-		if (m->is_loaded)
+		/* our module might have been already init'ed through dependencies! */
+		if (m->init_done)
 			return 0;
 
 		if (!m->exports)
@@ -617,7 +619,7 @@ static int init_mod( struct sr_module* m, int skip_others)
 
 		/* make sure certain modules get loaded before this one */
 		for (dep = m->sr_deps; dep; dep = dep->next) {
-			if (!dep->mod->is_loaded)
+			if (!dep->mod->init_done)
 				if (init_mod(dep->mod, 1) != 0)
 					return -1;
 		}
@@ -629,6 +631,8 @@ static int init_mod( struct sr_module* m, int skip_others)
 				return -1;
 			}
 		}
+
+		m->init_done = 1;
 
 		/* no init function -- proceed further */
 #ifdef STATISTICS
@@ -649,8 +653,6 @@ static int init_mod( struct sr_module* m, int skip_others)
 					m->exports->name);
 			}
 		}
-
-		m->is_loaded = 1;
 
 		/* proceed with success */
 		return 0;

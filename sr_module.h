@@ -158,7 +158,7 @@ typedef struct proc_export_ proc_export_t;
 struct sr_module{
 	char* path;
 	void* handle;
-	int is_loaded;
+	int init_done;
 	struct module_exports* exports;
 
 	/* a list of module dependencies */
