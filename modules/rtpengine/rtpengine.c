@@ -759,11 +759,6 @@ mod_init(void)
 	unsigned short avp_flags;
 	str s;
 
-	if(register_mi_mod(exports.name, mi_cmds)!=0) {
-		LM_ERR("failed to register MI commands\n");
-		return -1;
-	}
-
 	ctx_rtpeset_idx = context_register_ptr(CONTEXT_GLOBAL);
 
 	/* any rtpengine configured? */
