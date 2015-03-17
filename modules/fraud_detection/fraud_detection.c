@@ -210,6 +210,7 @@ static int mod_init(void)
 		LM_ERR("no more shm memory\n");
 		return -1;
 	}
+	*dr_head = NULL;
 
 	set_lengths();
 	if (init_stats_table() != 0)
