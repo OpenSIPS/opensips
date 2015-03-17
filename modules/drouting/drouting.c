@@ -1110,6 +1110,8 @@ static int dr_init(void)
 			goto error;
 		}
 	} else {
+		init_db_url(db_url, 0);
+
 		add_head_config();
 
 		/* if not empty save to head_config structure */
@@ -1169,7 +1171,6 @@ static int dr_init(void)
 			head_start->drc_table.len = drc_table.len;
 		}
 
-		db_url.len = strlen(db_url.s);
 		head_start->db_url.len = db_url.len;
 		head_start->db_url.s = shm_malloc( db_url.len * sizeof(char));
 		if( head_start->db_url.s == 0 ) {
