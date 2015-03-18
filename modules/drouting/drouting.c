@@ -2955,12 +2955,13 @@ static int route2_carrier(struct sip_msg* msg, char* part_carrier,
 	pgw_list_t *cdst;
 	pcr_t *cr;
 	pv_value_t pv_val;
-	str *ruri, id;
+	str ruri, id;
 	str next_carrier_attrs = {NULL, 0};
 	str next_gw_attrs = {NULL, 0};
 	int j,n;
 	dr_part_old_t * part_cr;
 	struct head_db * current_partition = 0;
+	char *ruri_buf=NULL;
 
 	part_cr = (dr_part_old_t*)part_carrier;
 	if(use_partitions) {
@@ -3009,11 +3010,19 @@ static int route2_carrier(struct sip_msg* msg, char* part_carrier,
 		destroy_avps( 0, current_partition->rule_prefix_avp, 1);
 
 	/* get the RURI */
-	ruri = GET_RURI(msg);
-	/* parse ruri */
-	if (parse_uri( ruri->s, ruri->len, &uri)!=0) {
-		LM_ERR("unable to parse RURI\n");
+	ruri = *GET_RURI(msg);
+	ruri_buf = (char*)pkg_malloc(ruri.len);
+	if (ruri_buf==NULL) {
+		LM_ERR("no more pkg mem (needed %d)\n",ruri.len);
 		return -1;
+	}
+	memcpy(ruri_buf, ruri.s, ruri.len);
+	ruri.s = ruri_buf;
+
+	/* parse ruri */
+	if (parse_uri( ruri.s, ruri.len, &uri)!=0) {
+		LM_ERR("unable to parse RURI\n");
+		goto error_free;
 	}
 
 	/* ref the data for reading */
@@ -3111,6 +3120,8 @@ no_gws:
 error:
 	/* we are done reading -> unref the data */
 	lock_stop_read( current_partition->ref_lock );
+error_free:
+	if (ruri_buf) pkg_free(ruri_buf);
 	return -1;
 }
 
@@ -3120,12 +3131,13 @@ static int route2_gw(struct sip_msg* msg, char* ch_part_gw, char* gw_att_pv)
 	struct sip_uri  uri;
 	pgw_t *gw;
 	pv_value_t pv_val;
-	str *ruri, ids, id;
+	str ruri, ids, id;
 	str next_gw_attrs = {NULL, 0};
 	char *p;
 	int idx;
 	dr_part_old_t * part_gw = (dr_part_old_t*)ch_part_gw;
 	struct head_db * current_partition = 0;
+	char *ruri_buf = NULL;
 
 	if( part_gw==NULL ) {
 		LM_ERR("No gateway to route to\n");
@@ -3171,11 +3183,19 @@ static int route2_gw(struct sip_msg* msg, char* ch_part_gw, char* gw_att_pv)
 	}
 
 	/* get the RURI */
-	ruri = GET_RURI(msg);
-	/* parse ruri */
-	if (parse_uri( ruri->s, ruri->len, &uri)!=0) {
-		LM_ERR("unable to parse RURI\n");
+	ruri = *GET_RURI(msg);
+	ruri_buf = (char*)pkg_malloc(ruri.len);
+	if (ruri_buf==NULL) {
+		LM_ERR("no more pkg mem (needed %d)\n",ruri.len);
 		return -1;
+	}
+	memcpy(ruri_buf, ruri.s, ruri.len);
+	ruri.s = ruri_buf;
+
+	/* parse ruri */
+	if (parse_uri( ruri.s, ruri.len, &uri)!=0) {
+		LM_ERR("unable to parse RURI\n");
+		goto error_free;
 	}
 
 	/* ref the data for reading */
@@ -3219,7 +3239,7 @@ static int route2_gw(struct sip_msg* msg, char* ch_part_gw, char* gw_att_pv)
 
 	if ( idx==0 ) {
 		LM_ERR("no GW added at all\n");
-		return -1;
+		goto error_free;
 	}
 
 	if (gw_attrs_spec) {
@@ -3227,11 +3247,15 @@ static int route2_gw(struct sip_msg* msg, char* ch_part_gw, char* gw_att_pv)
 		pv_val.rs = !next_gw_attrs.s ? attrs_empty : next_gw_attrs;
 		if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
 			LM_ERR("failed to set value for gateway attrs pvar\n");
-			return -1;
+			goto error_free;
 		}
 	}
 
 	return 1;
+
+error_free:
+	if (ruri_buf) pkg_free(ruri_buf);
+	return -1;
 }
 
 int fxup_split_param(void ** fst_param, void ** scnd_param) {
