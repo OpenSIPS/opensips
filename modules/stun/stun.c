@@ -614,7 +614,7 @@ StunMsg* deserialize(IN Buffer* buffer){
 
     /* check if message has at least the 20 bits header */
     if(buffer->size < 20){
-		LM_ERR("Buff size < 20\n");
+		LM_WARN("Buff size < 20\n");
 		goto error;
     }
 

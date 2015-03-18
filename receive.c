@@ -163,7 +163,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		is_tcp_based_proto(rcv_info->proto) ) {
 			if (tcpconn_add_alias(rcv_info->proto_reserved1, msg->via1->port,
 									rcv_info->proto)!=0){
-				LM_ERR("tcp alias failed\n");
+				LM_WARN("tcp alias failed\n");
 				/* continue */
 			}
 		}

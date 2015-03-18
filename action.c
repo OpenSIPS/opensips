@@ -1915,7 +1915,7 @@ next_avp:
 
 				if (tcpconn_add_alias(msg->rcv.proto_reserved1, port,
 									msg->rcv.proto)!=0){
-					LM_ERR("tcp alias failed\n");
+					LM_WARN("tcp alias failed\n");
 					ret=E_UNSPEC;
 					break;
 				}
