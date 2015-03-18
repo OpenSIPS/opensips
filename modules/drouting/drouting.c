@@ -2084,6 +2084,7 @@ no_gws:
 	/* we are done reading -> unref the data */
 	lock_stop_read( ref_lock );
 
+	if (ruri_buf) pkg_free(ruri_buf);
 	return 1;
 error:
 	/* we are done reading -> unref the data */
@@ -2191,6 +2192,7 @@ static int route2_gw(struct sip_msg* msg, char* gw_str, char* gw_att_pv)
 		}
 	}
 
+	if (ruri_buf) pkg_free(ruri_buf);
 	return 1;
 error_free:
 	if (ruri_buf) pkg_free(ruri_buf);
