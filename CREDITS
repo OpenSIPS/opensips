@@ -2,14 +2,14 @@
 #   OpenSIPS  #
 #=============#
 
-Current OpenSIPS team in alphabetical order as of 20 March 2014:
+Current OpenSIPS team in alphabetical order as of 18 March 2015:
 
 Core Team:
 
 Bogdan Andrei Iancu
-Dan Pascu
-Razvan Crainea
+Ionut-Razvan Ionita
 Liviu Chircu
+Razvan Crainea
 Vladut-Stefan Paiu
 
 
@@ -18,6 +18,7 @@ Module Maintainers:
 Alexandr Dubovikov
 Anca Vamanu
 Arnaud Chong
+Dan Pascu
 Di-Shi Sun
 Iñaki Baz Castillo
 Marc Leurent
@@ -26,31 +27,48 @@ Saúl Ibarra Corretgé
 Dynamic Packet
 
 
-============== Release 1.11.0 =================
-Baptiste Cholley
+============== Release 2.1.0 =================
+Andrei Datcu
+Alexander Mustafin
+Antonis Psaras
+Bill Hau
+Bobby Hakimi
 Brett Nemeroff
-Christian Lahme
-Damien Sanders
-Di-Shi Sun
-Earl C. Ruby III
-Jayesh Nambiar
-Jeff Pyle
-Marco Hierl
-Max E. Reyes Vera Juarez
+buchtajz (GitHub)
+Carlos Oliva
+Chris Maciejewski
+cityant
+Damien Sandras
+eldonogithub
+Eric Tamme
+Evandro Villaron
+Ezequiel Lovelle
+Fabrizio Picconi
+Gary Nyquist
+gergelypeli (GitHub)
+Giuseppe Cardone
+hydrosine (GitHub)
+jalung (GitHub)
+jamesabravo (GitHub)
+Jamuel Starkey
+jbonicioli (GitHub)
+John Nash
+John Quick
+Justin Zondagh
 Mayama Takeshi
+Mihai Tiganus
+miko95 (GitHub)
 Nick Altmann
-Norm Brandinger
-Richard Revels
-Rob Gagnon
-Ryan Bullock
+Norman Brandinger
+Ovidiu Sas
+Parantido De Rica
+Peter Kelly
+Peter Lemenkov
+Robison Tesini
+SamyGo
+Satish Patel
+sekil (IRC)
+Sergey Khripchenko
 Stas Kobzar
-Stéphane Alnet
-Trevor Francis
 Walter Doekes
-csollet
-dcb314
-dexteruk
-fabriziopicconi
-franklyfox
-peppolon
-Varun (varunvairavan on GITHUB)
+zhangst (GitHub)
