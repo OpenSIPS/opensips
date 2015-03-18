@@ -56,7 +56,7 @@
 #include "event_list.h"
 #include "bind_presence.h"
 #include "notify.h"
-
+#include "../../evi/evi_modules.h"
 
 
 #define S_TABLE_VERSION  4
@@ -127,6 +127,10 @@ unsigned long waiting_subs_time = 3*24*3600;
 str bla_presentity_spec_param = {0, 0};
 pv_spec_t bla_presentity_spec;
 int fix_remote_target=1;
+
+/* event id */
+static str presence_publish_event = str_init("E_PRESENCE_PUBLISH");
+event_id_t presence_event_id = EVI_ERROR;
 
 static cmd_export_t cmds[]=
 {
@@ -207,6 +211,11 @@ struct module_exports exports= {
  */
 static int mod_init(void)
 {
+	/* register event E_PRESENCE_NOTIFY */ 
+	if( (presence_event_id=evi_publish_event(presence_publish_event)) == EVI_ERROR )
+		LM_ERR("Cannot register E_PRESENCE_PUBLISH event\n");
+	else
+		LM_NOTICE("E_PRESENCE_PUBLISH event registered\n");
 	db_url.len = db_url.s ? strlen(db_url.s) : 0;
 	LM_DBG("db_url=%s/%d/%p\n", ZSW(db_url.s), db_url.len,db_url.s);
 	presentity_table.len = strlen(presentity_table.s);
