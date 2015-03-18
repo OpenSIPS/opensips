@@ -582,6 +582,14 @@ remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
           + 'm' (Method filtering) - this flag tells if the
             contact filtering based on supported methods should be
             performed during lookup.
+          + 'u' (User-Agent filtering) - this flag enables regexp
+            filtering by user-agent. It's useful with enabled
+            append_branches parameter. Regexp must follow the 'u'
+            flag and must use format like 'u/regexp/'.
+          + 'i' (Case insensitive search) - this flag enables case
+            insensitive filtering for the 'u' flag.
+          + 'e' (Use extended regexp) - this flag enables using of
+            extended regexp format for the 'u' flag.
      * AOR (optional)- AOR to lookup for; if missing, the RURI is
        used as AOR; This must be a variable.
 
@@ -598,6 +606,8 @@ remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
 lookup("location");  # simple lookup
    #or
 lookup("location","m"); # lookup with method filtering
+   #or
+lookup("location","u/phone/i"); # lookup with user-agent filtering
    #or
 lookup("location","","$var(aor)"); # simple lookup with AOR from PV
 switch ($retcode) {

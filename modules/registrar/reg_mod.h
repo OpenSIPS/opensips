@@ -74,6 +74,7 @@
 
 #define REG_LOOKUP_METHODFILTER_FLAG   (1<<0)
 #define REG_LOOKUP_NOBRANCH_FLAG       (1<<1)
+#define REG_LOOKUP_UAFILTER_FLAG       (1<<2)
 
 extern int default_expires;
 extern qvalue_t default_q;
