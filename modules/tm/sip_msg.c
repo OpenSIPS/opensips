@@ -1127,14 +1127,14 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
  *
  * Handles all realloc() operations needed to update "c_msg" from "msg"
  *
- * !! WARNING !!
- *		"msg" must have been initially created with fake_req() from "c_msg"!
  */
 int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 {
 	unsigned char copy_mask = 0;
 	int l1_len, l2_len, l3_len;
 	char *p;
+	struct lump *add_rm_aux=NULL,*body_lumps_aux=NULL;
+	struct lump_rpl *reply_lump_aux=NULL;
 
 	if ( (c_msg->msg_flags & (FL_SHM_UPDATABLE|FL_SHM_CLONE))==0 ) {
 		LM_CRIT("BUG trying to update a msg not in SHM or not "
@@ -1168,9 +1168,20 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 	 *
 	 * That is why mem is not leaked after the following allocations:
 	 */
-	if (l1_len) c_msg->add_rm = tm_shm_malloc_unsafe(l1_len);
-	if (l2_len) c_msg->body_lumps = tm_shm_malloc_unsafe(l2_len);
-	if (l3_len) c_msg->reply_lump = tm_shm_malloc_unsafe(l3_len);
+	
+	if (l1_len) { 
+		add_rm_aux = c_msg->add_rm;
+		c_msg->add_rm = tm_shm_malloc_unsafe(l1_len); 
+	}
+	if (l2_len) {
+		body_lumps_aux = c_msg->body_lumps;
+		c_msg->body_lumps = tm_shm_malloc_unsafe(l2_len);
+	}
+
+	if (l3_len) {
+		reply_lump_aux = c_msg->reply_lump;
+		c_msg->reply_lump = tm_shm_malloc_unsafe(l3_len);
+	}
 
 	/* done with mem ops */
 	tm_shm_unlock();
@@ -1214,26 +1225,23 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 		c_msg->reply_lump = NULL;
 	}
 
-	del_notflaged_lumps(&msg->add_rm, LUMPFLAG_SHMEM);
-	del_notflaged_lumps(&msg->body_lumps, LUMPFLAG_SHMEM);
-	del_nonshm_lump_rpl(&msg->reply_lump);
-
-	/* SHM lumps have been duplicated. They can be finally freed */
-	tm_shm_lock();
-	if (msg->add_rm) tm_shm_free_unsafe(msg->add_rm);
-	if (msg->body_lumps) tm_shm_free_unsafe(msg->body_lumps);
-	if (msg->reply_lump) tm_shm_free_unsafe(msg->reply_lump);
-	tm_shm_unlock();
-
-	msg->add_rm = c_msg->add_rm;
-	msg->body_lumps = c_msg->body_lumps;
-	msg->reply_lump = c_msg->reply_lump;
-
 	/* flags */
 	c_msg->flags = msg->flags;
 	c_msg->msg_flags = msg->msg_flags|(FL_SHM_UPDATABLE|FL_SHM_CLONE);
 	c_msg->ruri_q = msg->ruri_q;
 	c_msg->ruri_bflags = msg->ruri_bflags;
+
+	if (!(msg->msg_flags & FL_TM_FAKE_REQ)) {
+		/* if not a fake request, we should free old values right now, otherwise we leak
+		if it's a fake request, then we can't free old info now - we might still need
+		it ( eg. to build a reply from the faked req ) - let the freeing happen
+		when destryong the fake req */
+		tm_shm_lock();
+		if (add_rm_aux) tm_shm_free_unsafe(add_rm_aux);
+		if (body_lumps_aux) tm_shm_free_unsafe(body_lumps_aux);
+		if (reply_lump_aux) tm_shm_free_unsafe(reply_lump_aux);
+		tm_shm_unlock();
+	}
 
 	return 0;
 }

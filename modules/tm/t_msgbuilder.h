@@ -142,6 +142,8 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 	 * not cloned (and cannot be cloned) */
 	faked_req->parsed_uri_ok = 0;
 
+	faked_req->msg_flags |= FL_TM_FAKE_REQ;
+
 	/* new_uri can change -- make a private copy */
 	faked_req->new_uri.s=pkg_malloc( uac->uri.len+1 );
 	if (!faked_req->new_uri.s) {
@@ -249,6 +251,13 @@ inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 	del_notflaged_lumps( &(faked_req->add_rm), LUMPFLAG_SHMEM );
 	del_notflaged_lumps( &(faked_req->body_lumps), LUMPFLAG_SHMEM );
 	del_nonshm_lump_rpl( &(faked_req->reply_lump) );
+
+        if (faked_req->add_rm != t->uas.request->add_rm)
+       		shm_free(faked_req->add_rm);
+        if (faked_req->body_lumps != t->uas.request->body_lumps)
+       		shm_free(faked_req->body_lumps);
+        if (faked_req->reply_lump != t->uas.request->reply_lump)
+       		shm_free(faked_req->reply_lump);
 
 	clean_msg_clone( faked_req, t->uas.request, t->uas.end_request);
 }
