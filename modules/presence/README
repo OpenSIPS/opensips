@@ -64,7 +64,11 @@ Saul Ibarra Corretge
               1.5.3. pres_phtable_list
               1.5.4. subs_phtable_list
 
-        1.6. Installation
+        1.6. Exported Events
+
+              1.6.1. E_PRESENCE_PUBLISH
+
+        1.7. Installation
 
    2. Developer Guide
 
@@ -573,7 +577,22 @@ _empty_line_
 :subs_phtable_list:fifo_reply
 _empty_line_
 
-1.6. Installation
+1.6. Exported Events
+
+1.6.1.  E_PRESENCE_PUBLISH
+
+   This event is raised when the presence module receives a
+   PUBLISH message.
+
+   Parameters:
+     * user - the AOR of the user
+     * domain - the domain
+     * event - the type of the event published
+     * expires - the expire value of the publish
+     * etag - the entity tag
+     * body - the body of the PUBLISH request
+
+1.7. Installation
 
    The module requires 3 table in OpenSIPS database: presentity,
    active_watchers and watchers tables. The SQL syntax to create

@@ -735,6 +735,42 @@ _empty_line_
 </section>
 
 
+	<section>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_PRESENCE_PUBLISH</function>
+		</title>
+		<para>
+			This event is raised when the presence module receives
+			a PUBLISH message.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>user</emphasis> - the AOR of the user
+			</para></listitem>
+			<listitem><para>
+				<emphasis>domain</emphasis> - the domain
+			</para></listitem>
+			<listitem><para>
+				<emphasis>event</emphasis> - the type of the
+					event published
+			</para></listitem>
+			<listitem><para>
+				<emphasis>expires</emphasis> - the expire value
+					of the publish
+			</para></listitem>
+			<listitem><para>
+				<emphasis>etag</emphasis> - the entity tag
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body</emphasis> - the body of the
+					PUBLISH request
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
 
 <section>
 	<title>Installation</title>
