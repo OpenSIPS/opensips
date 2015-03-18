@@ -338,3 +338,48 @@ Description: HTTP transport layer and Management Interface for OpenSIPS.
  .
  This package provides an HTTP transport layer and Management Interface for
  OpenSIPS.
+
+Package: opensips-compression-module
+Architecture: any
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), zlib1g
+Build-Depends: zlib1g-dev
+Description: Headers and body compression module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the compression module, that is able to compress
+ SIP headers and body, as  well as shrink the size of a SIP package.
+
+Package: opensips-emergency-module
+Architecture: any
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
+Build-Depends: zlib1g-dev
+Description: Emerrgency call module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ The emergency module provides emergency call treatment for OpenSIPS, following
+ the architecture i2 specification of the american entity NENA. (National
+ Emergency Number Association).
+
+Package: opensips-tls-module
+Architecture: any
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), libssl-dev
+Description: TLS transport module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the TLS support for OpenSIPS.
+
+Package: opensips-sctp-module
+Architecture: any
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), libsctp-dev
+Description: SCTP transport module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the SCTP support for OpenSIPS.

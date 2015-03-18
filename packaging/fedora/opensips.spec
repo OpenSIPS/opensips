@@ -132,6 +132,7 @@ A module which provides routing, balancing and blacklisting capabilities.
 Summary:  Message compression and compaction
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+BuildRequires:	zlib-devel
 
 %description  compression
 This module implements message compression/decompression and base64 encoding
@@ -464,6 +465,8 @@ It is used with the general event handling module, presence.
 Summary:  SCTP protocol module - implements SCTP transport for SIP
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+Requires: lksctp-tools
+BuildRequires: lksctp-tools-devel
 
 %description  proto_sctp
 The proto_sctp module is an optional transport module (shared library) which exports
@@ -474,8 +477,8 @@ and send/recv primitives to be used by higher-level network layers)
 Summary:  TLS protocol module - implements TLS transport for SIP
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-Requires: lksctp-tools
-BuildRequires: lksctp-tools-devel
+Requires: openssl
+BuildRequires: openssl-devel
 
 %description  proto_tls
 TLS, as defined in SIP RFC 3261, is a mandatory feature for proxies and can be used
