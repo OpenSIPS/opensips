@@ -167,15 +167,20 @@ int check_message_support(struct sip_msg* msg);
 /** TM callback function */
 static void m_tm_callback( struct cell *t, int type, struct tmcb_params *ps);
 
+/* commands wrappers and fixups */
+static int fixup_m_dump(void** param, int param_no);
+
 static cmd_export_t cmds[]={
 	{"m_store",  (cmd_function)m_store, 0, 0, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE},
 	{"m_store",  (cmd_function)m_store, 1, fixup_spve_null, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE},
 	{"m_dump",   (cmd_function)m_dump,  0, 0, 0,
-		REQUEST_ROUTE},
+		REQUEST_ROUTE | STARTUP_ROUTE | TIMER_ROUTE | EVENT_ROUTE},
 	{"m_dump",   (cmd_function)m_dump,  1, fixup_spve_null, 0,
-		REQUEST_ROUTE},
+		REQUEST_ROUTE | STARTUP_ROUTE | TIMER_ROUTE | EVENT_ROUTE},
+	{"m_dump",   (cmd_function)m_dump,  2, fixup_m_dump, 0,
+		REQUEST_ROUTE | STARTUP_ROUTE | TIMER_ROUTE | EVENT_ROUTE},
 	{0,0,0,0,0,0}
 };
 
@@ -794,7 +799,7 @@ error:
 /**
  * dump message
  */
-static int m_dump(struct sip_msg* msg, char* owner, char* str2)
+static int m_dump(struct sip_msg* msg, char* owner, char* maxmsg)
 {
 	struct to_body *pto = NULL;
 	db_key_t db_keys[3];
@@ -804,6 +809,8 @@ static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 	db_key_t db_cols[6];
 	db_res_t* db_res = NULL;
 	int i, db_no_cols = 6, db_no_keys = 3, mid, n;
+	int sent_cnt = 0;
+	int maxmsg_i;
 	static char hdr_buf[1024];
 	static char body_buf[1024];
 	struct sip_uri puri;
@@ -835,50 +842,7 @@ static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 	body_str.s=body_buf;
 	body_str.len=1024;
 
-	/* check for TO header */
-	if(msg->to==NULL && (parse_headers(msg, HDR_TO_F, 0)==-1
-				|| msg->to==NULL || msg->to->body.s==NULL))
-	{
-		LM_ERR("cannot find TO HEADER!\n");
-		goto error;
-	}
-
-	pto = get_to(msg);
-	if (pto == NULL || pto->error != PARSE_OK) {
-		LM_ERR("failed to parse TO header\n");
-		goto error;
-	}
-
-	/**
-	 * check if has expires=0 (REGISTER)
-	 */
-	if(parse_headers(msg, HDR_EXPIRES_F, 0) >= 0)
-	{
-		/* check 'expires' > 0 */
-		if(msg->expires && msg->expires->body.len > 0)
-		{
-			i = atoi(msg->expires->body.s);
-			if(i <= 0)
-			{ /* user goes offline */
-				LM_DBG("user <%.*s> goes offline - expires=%d\n",
-						pto->uri.len, pto->uri.s, i);
-				goto error;
-			}
-			else
-				LM_DBG("user <%.*s> online - expires=%d\n",
-						pto->uri.len, pto->uri.s, i);
-		}
-	}
-	else
-	{
-		LM_ERR("failed to parse 'expires'\n");
-		goto error;
-	}
-
-	if (check_message_support(msg)!=0) {
-	    LM_DBG("MESSAGE method not supported\n");
-	    return -1;
-	}
+	maxmsg_i = (int)(long)maxmsg;
 
 	/* get the owner */
 	memset(&puri, 0, sizeof(struct sip_uri));
@@ -897,6 +861,20 @@ static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 			LM_DBG("using user id [%.*s]\n", owner_s.len, owner_s.s);
 		}
 	} else { /* get it from  To URI */
+		/* check for TO header */
+		if(msg->to==NULL && (parse_headers(msg, HDR_TO_F, 0)==-1
+				|| msg->to==NULL || msg->to->body.s==NULL))
+		{
+			LM_ERR("cannot find TO HEADER!\n");
+			goto error;
+		}
+
+		pto = get_to(msg);
+		if (pto == NULL || pto->error != PARSE_OK) {
+			LM_ERR("failed to parse TO header\n");
+			goto error;
+		}
+
 		if(parse_uri(pto->uri.s, pto->uri.len, &puri)!=0)
 		{
 			LM_ERR("bad owner To URI!\n");
@@ -908,6 +886,38 @@ static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 	{
 		LM_ERR("bad owner URI!\n");
 		goto error;
+	}
+	if (msg->REQ_METHOD == METHOD_REGISTER) {
+		/**
+		 * check if has expires=0 (REGISTER)
+		 */
+		if(parse_headers(msg, HDR_EXPIRES_F, 0) >= 0)
+		{
+			/* check 'expires' > 0 */
+			if(msg->expires && msg->expires->body.len > 0)
+			{
+				i = atoi(msg->expires->body.s);
+				if(i <= 0)
+				{ /* user goes offline */
+					LM_DBG("user <%.*s@%.*s> goes offline - expires=%d\n",
+							puri.user.len, puri.user.s, puri.host.len, puri.host.s, i);
+					goto error;
+				}
+				else
+					LM_DBG("user <%.*s@%.*s> online - expires=%d\n",
+							puri.user.len, puri.user.s, puri.host.len, puri.host.s, i);
+			}
+		}
+		else
+		{
+			LM_ERR("failed to parse 'expires'\n");
+			goto error;
+		}
+
+		if (check_message_support(msg)!=0) {
+			LM_DBG("MESSAGE method not supported\n");
+			return -1;
+		}
 	}
 
 	db_vals[0].type = DB_STR;
@@ -933,12 +943,12 @@ static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 	if((msilo_dbf.query(db_con,db_keys,db_ops,db_vals,db_cols,db_no_keys,
 				db_no_cols, ob_key, &db_res)!=0) || (RES_ROW_N(db_res) <= 0))
 	{
-		LM_DBG("no stored message for <%.*s>!\n", pto->uri.len,	pto->uri.s);
+		LM_DBG("no stored message for <%.*s@%.*s>!\n", puri.user.len, puri.user.s, puri.host.len, puri.host.s);
 		goto done;
 	}
 
-	LM_DBG("dumping [%d] messages for <%.*s>!!!\n",
-			RES_ROW_N(db_res), pto->uri.len, pto->uri.s);
+	LM_DBG("dumping [%d] messages for <%.*s@%.*s>!!!\n",
+			RES_ROW_N(db_res), puri.user.len, puri.user.s, puri.host.len, puri.host.s);
 
 	for(i = 0; i < RES_ROW_N(db_res); i++)
 	{
@@ -968,7 +978,7 @@ static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 			goto error;
 		}
 
-		LM_DBG("msg [%d-%d] for: %.*s\n", i+1, mid,	pto->uri.len, pto->uri.s);
+		LM_DBG("msg [%d-%d] for: %.*s@%.*s\n", i+1, mid, puri.user.len, puri.user.s, puri.host.len, puri.host.s);
 
 		/** sending using TM function: t_uac */
 		body_str.len = 1024;
@@ -990,6 +1000,12 @@ static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 					(void*)(long)mid, /* Callback parameter */
 					NULL
 				);
+			if (maxmsg_i > 0) {
+				LM_DBG("Maximum number of dumped messages: %d\n", maxmsg_i);
+				sent_cnt++;
+				if (sent_cnt >= maxmsg_i)
+					break;
+			}
 	}
 
 done:
@@ -1299,6 +1315,16 @@ int ms_reset_stime(int mid)
 	{
 		LM_ERR("failed to make update for [%d]!\n",	mid);
 		return -1;
+	}
+	return 0;
+}
+
+static int fixup_m_dump(void** param, int param_no)
+{
+	if (param_no==1) {
+		return fixup_spve(param);
+	} else if (param_no==2) {
+		return fixup_uint(param);
 	}
 	return 0;
 }

@@ -614,7 +614,7 @@ m_store("$tu");
 		</example>
 	</section>
 	<section>
-		<title><function moreinfo="none">m_dump([owner])</function></title>
+		<title><function moreinfo="none">m_dump([owner, [maxmsg]])</function></title>
 		<para>
 		The method sends stored messages for the &sip; user that is going to 
 		register to his actual contact address. The method should be called 
@@ -629,6 +629,8 @@ m_store("$tu");
 			a SIP URI whose inbox will be dumped. It can have
 			any pseudo variable. If "owner" is missing, the SIP address is
 			taken from To URI.
+			<emphasis>maxmsg</emphasis> - is a maximum number of messages
+			to be dumped.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -641,6 +643,7 @@ m_store("$tu");
 ...
 m_dump();
 m_dump("$fu");
+m_dump("$fu", 10);
 ...
 </programlisting>
 		</example>
