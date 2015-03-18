@@ -3151,6 +3151,7 @@ no_gws:
 
 	/* we are done reading -> unref the data */
 	lock_stop_read( current_partition->ref_lock );
+	if (ruri_buf) pkg_free(ruri_buf);
 
 	return 1;
 error:
@@ -3287,6 +3288,7 @@ static int route2_gw(struct sip_msg* msg, char* ch_part_gw, char* gw_att_pv)
 		}
 	}
 
+	if (ruri_buf) pkg_free(ruri_buf);
 	return 1;
 
 error_free:
