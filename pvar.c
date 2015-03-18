@@ -966,6 +966,22 @@ static int pv_get_cseq(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_strval(msg, param, res, &(get_cseq(msg)->number));
 }
 
+static int pv_get_cseq_method(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	if(msg==NULL)
+		return -1;
+
+	if(msg->cseq==NULL && ((parse_headers(msg, HDR_CSEQ_F, 0)==-1)
+				|| (msg->cseq==NULL)) )
+	{
+		LM_ERR("cannot parse CSEQ header\n");
+		return pv_get_null(msg, param, res);
+	}
+	return pv_get_strval(msg, param, res, &(get_cseq(msg)->method));
+}
+
+
 static int pv_get_msg_buf(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -3260,6 +3276,9 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0},
 	{{"cs", (sizeof("cs")-1)}, /* */
 		PVT_CSEQ, pv_get_cseq, 0,
+		0, 0, 0, 0},
+	{{"cm", (sizeof("cm")-1)}, /* */
+		PVT_CSEQ_METHOD, pv_get_cseq_method, 0,
 		0, 0, 0, 0},
 	{{"ct", (sizeof("ct")-1)}, /* */
 		PVT_CONTACT, pv_get_contact_body, 0,
