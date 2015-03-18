@@ -446,7 +446,7 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 		}
 	}
 
-	if (input->len) {
+	if (input && input->len) {
 		if (fwrite(input->s, 1, input->len, pin) != input->len) {
 			LM_ERR("failed to write to pipe\n");
 			ser_error=E_EXEC;
@@ -525,7 +525,7 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input,
 		}
 	}
 
-	if (input->len) {
+	if (input && input->len) {
 		if ( (val=fwrite(input->s, 1, input->len, pin)) != input->len) {
 			LM_ERR("failed to write all (%d needed, %d written) to input pipe,"
 				" but continuing\n",input->len,val);
