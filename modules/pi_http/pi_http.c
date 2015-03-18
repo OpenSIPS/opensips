@@ -42,7 +42,7 @@ extern ph_framework_t *ph_framework_data;
 /* module functions */
 static int mod_init();
 static int destroy(void);
-void ph_answer_to_connection (void *cls, void *connection,
+int ph_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
@@ -209,7 +209,7 @@ static ssize_t ph_flush_data(void *cls, uint64_t pos, char *buf, size_t max)
 }
 
 
-void ph_answer_to_connection (void *cls, void *connection,
+int ph_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
@@ -242,7 +242,7 @@ void ph_answer_to_connection (void *cls, void *connection,
 		*page = PI_HTTP_U_METHOD;
 	}
 
-	return;
+	return 0;
 }
 
 
