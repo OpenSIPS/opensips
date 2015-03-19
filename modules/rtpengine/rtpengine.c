@@ -134,6 +134,11 @@ struct ng_flags_parse {
 	bencode_item_t *dict, *flags, *direction, *replace, *rtcp_mux;
 };
 
+typedef struct rtpe_set_link {
+	struct rtpe_set *rset;
+	pv_spec_t rpv;
+} rtpe_set_link_t;
+
 static const char *command_strings[] = {
 	[OP_OFFER]		= "offer",
 	[OP_ANSWER]		= "answer",
@@ -144,18 +149,18 @@ static const char *command_strings[] = {
 
 static char *gencookie();
 static int rtpe_test(struct rtpe_node*, int, int);
-static int start_recording_f(struct sip_msg *, char *, char *);
-static int rtpengine_answer1_f(struct sip_msg *, char *, char *);
-static int rtpengine_offer1_f(struct sip_msg *, char *, char *);
-static int rtpengine_delete1_f(struct sip_msg *, char *, char *);
-static int rtpengine_manage1_f(struct sip_msg *, char *, char *);
+static int start_recording_f(struct sip_msg *);
+static int rtpengine_answer1_f(struct sip_msg *, gparam_p str1);
+static int rtpengine_offer1_f(struct sip_msg *, gparam_p str1);
+static int rtpengine_delete1_f(struct sip_msg *, gparam_p str1);
+static int rtpengine_manage1_f(struct sip_msg *, gparam_p str1);
 
 static int parse_flags(struct ng_flags_parse *, struct sip_msg *, enum rtpe_operation *, const char *);
 
 static int rtpengine_offer_answer(struct sip_msg *msg, const char *flags, int op);
 static int add_rtpengine_socks(struct rtpe_set * rtpe_list, char * rtpengine);
 static int fixup_set_id(void ** param, int param_no);
-static int set_rtpengine_set_f(struct sip_msg * msg, char * str1, char * str2);
+static int set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param);
 static struct rtpe_set * select_rtpe_set(int id_set);
 static struct rtpe_node *select_rtpe_node(str, int, struct rtpe_set *);
 static char *send_rtpe_command(struct rtpe_node *, bencode_item_t *, int *);
@@ -200,11 +205,6 @@ static int *rtpe_socks = 0;
 
 static int     setid_avp_type;
 static int_str setid_avp;
-
-typedef struct rtpe_set_link {
-	struct rtpe_set *rset;
-	pv_spec_t rpv;
-} rtpe_set_link_t;
 
 /* tm */
 static struct tm_binds tmb;
@@ -1714,7 +1714,7 @@ static int rtpengine_delete(struct sip_msg *msg, const char *flags) {
 }
 
 static int
-rtpengine_delete1_f(struct sip_msg* msg, char* str1, char* str2)
+rtpengine_delete1_f(struct sip_msg* msg, gparam_p str1)
 {
 	str flags;
 
@@ -1723,7 +1723,7 @@ rtpengine_delete1_f(struct sip_msg* msg, char* str1, char* str2)
 
 	flags.s = NULL;
 	if (str1)
-		fixup_get_svalue(msg, (gparam_p)str1, &flags);
+		fixup_get_svalue(msg, str1, &flags);
 
 	return rtpengine_delete(msg, flags.s);
 }
@@ -1731,13 +1731,13 @@ rtpengine_delete1_f(struct sip_msg* msg, char* str1, char* str2)
 /* This function assumes p points to a line of requested type. */
 
 static int
-set_rtpengine_set_f(struct sip_msg * msg, char * str1, char * str2)
+set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param)
 {
 	rtpe_set_link_t *rtpl;
 	pv_value_t val;
 	struct rtpe_set *set;
 
-	rtpl = (rtpe_set_link_t*)str1;
+	rtpl = set_param;
 
 	if(rtpl->rset != NULL) {
 		ctx_rtpeset_set( rtpl->rset );
@@ -1813,7 +1813,7 @@ rtpengine_manage(struct sip_msg *msg, const char *flags)
 }
 
 static int
-rtpengine_manage1_f(struct sip_msg *msg, char *str1, char *str2)
+rtpengine_manage1_f(struct sip_msg *msg, gparam_p str1)
 {
 	str flags;
 
@@ -1822,13 +1822,13 @@ rtpengine_manage1_f(struct sip_msg *msg, char *str1, char *str2)
 
 	flags.s = NULL;
 	if (str1)
-		fixup_get_svalue(msg, (gparam_p)str1, &flags);
+		fixup_get_svalue(msg, str1, &flags);
 
 	return rtpengine_manage(msg, flags.s);
 }
 
 static int
-rtpengine_offer1_f(struct sip_msg *msg, char *str1, char *str2)
+rtpengine_offer1_f(struct sip_msg *msg, gparam_p str1)
 {
 	str flags;
 
@@ -1837,12 +1837,12 @@ rtpengine_offer1_f(struct sip_msg *msg, char *str1, char *str2)
 
 	flags.s = NULL;
 	if (str1)
-		fixup_get_svalue(msg, (gparam_p)str1, &flags);
+		fixup_get_svalue(msg, str1, &flags);
 	return rtpengine_offer_answer(msg, flags.s, OP_OFFER);
 }
 
 static int
-rtpengine_answer1_f(struct sip_msg *msg, char *str1, char *str2)
+rtpengine_answer1_f(struct sip_msg *msg, gparam_p str1)
 {
 	str flags;
 
@@ -1855,7 +1855,7 @@ rtpengine_answer1_f(struct sip_msg *msg, char *str1, char *str2)
 
 	flags.s = NULL;
 	if (str1)
-		fixup_get_svalue(msg, (gparam_p)str1, &flags);
+		fixup_get_svalue(msg, str1, &flags);
 	return rtpengine_offer_answer(msg, flags.s, OP_ANSWER);
 }
 
@@ -1898,7 +1898,7 @@ error:
 
 
 static int
-start_recording_f(struct sip_msg* msg, char *foo, char *bar)
+start_recording_f(struct sip_msg* msg)
 {
 	return rtpe_function_call_simple(msg, OP_START_RECORDING, NULL);
 }
