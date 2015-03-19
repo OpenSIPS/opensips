@@ -19,6 +19,8 @@
  *
 */
 
+#include <Python.h>
+
 #include "../../str.h"
 #include "../../sr_module.h"
 
@@ -27,7 +29,6 @@
 #include "python_msgobj.h"
 #include "python_support.h"
 
-#include <Python.h>
 #include <libgen.h>
 
 static int mod_init(void);

@@ -19,11 +19,12 @@
  *
 */
 
+#include <Python.h>
+
 #include "../../dprint.h"
 #include "python_mod.h"
 
 #include <stdio.h>
-#include <Python.h>
 
 void
 python_handle_exception(const char *fname)
