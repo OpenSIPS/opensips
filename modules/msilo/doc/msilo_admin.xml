@@ -635,7 +635,8 @@ m_store("$tu");
 		</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE.
+		This function can be used from REQUEST_ROUTE, STARTUP_ROUTE,
+		TIMER_ROUTE, EVENT_ROUTE
 		</para>
 		<example>
 		<title><function>m_dump</function> usage</title>

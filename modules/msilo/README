@@ -522,7 +522,8 @@ m_store("$tu");
        is missing, the SIP address is taken from To URI.
      * maxmsg - is a maximum number of messages to be dumped.
 
-   This function can be used from REQUEST_ROUTE.
+   This function can be used from REQUEST_ROUTE, STARTUP_ROUTE,
+   TIMER_ROUTE, EVENT_ROUTE
 
    Example 1.28. m_dump usage
 ...
