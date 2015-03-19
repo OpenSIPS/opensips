@@ -28,7 +28,6 @@ f none /opt/opensips/db_berkeley/opensips/imc_rooms 0644 root root
 f none /opt/opensips/db_berkeley/opensips/load_balancer 0644 root root
 f none /opt/opensips/db_berkeley/opensips/location 0644 root root
 f none /opt/opensips/db_berkeley/opensips/missed_calls 0644 root root
-f none /opt/opensips/db_berkeley/opensips/pdt 0644 root root
 f none /opt/opensips/db_berkeley/opensips/nh_sockets 0644 root root
 f none /opt/opensips/db_berkeley/opensips/presentity 0644 root root
 f none /opt/opensips/db_berkeley/opensips/pua 0644 root root

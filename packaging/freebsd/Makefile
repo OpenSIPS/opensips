@@ -37,7 +37,7 @@ MODULES=	acc alias_db auth auth_db auth_diameter avpops benchmark \
 		cfgutils dbtext dialog dispatcher diversion domain \
 		domainpolicy enum exec flatstore gflags group imc \
 		mangler maxfwd mediaproxy mi_datagram mi_fifo msilo nathelper \
-		options path pdt permissions pike registrar rr seas \
+		options path permissions pike registrar rr seas \
 		siptrace sl sms speeddial sst statistics textops tm uac \
 		uac_redirect uri uri_db usrloc xlog
 

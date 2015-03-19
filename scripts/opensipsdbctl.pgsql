@@ -14,7 +14,6 @@
 #             split GRANTs for SERWeb tables so that it is only executed 
 #                  if SERWeb tables are created
 #             added GRANTs for re_grp table
-#             added CREATE pdt table (from PDT module)
 #             corrected comments to indicate Postgres as opposed to MySQL
 #             made last_modified/created stamps consistent to now() using 
 #                  local TIMESTAMP

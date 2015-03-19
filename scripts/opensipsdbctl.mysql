@@ -400,12 +400,6 @@ migrate_table ${dst_db}.silo \
 	${src_db}.silo \
 	"?id,?src_addr,?dst_addr,?username,?domain,?inc_time,?exp_time,?snd_time,?ctype,?body"
 
-## PDT module
-migrate_table ${dst_db}.pdt \
-	"id,sdomain,prefix,domain" \
-	${src_db}.pdt \
-	"?id,?sdomain,?prefix,?domain"
-
 ## PERMISSION module
 migrate_table ${dst_db}.address \
 	"id,grp,ip,mask,port,proto,pattern,context_info" \

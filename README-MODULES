@@ -366,12 +366,6 @@ Maturity:   beta
 Depends on: rr
 Purpose:    PATH support for complex routing
 
-Name:       pdt
-Use:        regular
-Maturity:   stable
-Depends on: database
-Purpose:    Prefix to Domain translation
-
 Name:       peering
 Use:        experimental
 Maturity:   alpha

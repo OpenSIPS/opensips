@@ -38,7 +38,6 @@ f none lib/opensips/modules/mysql.so 0755 bin bin
 f none lib/opensips/modules/nathelper.so 0755 bin bin
 f none lib/opensips/modules/options.so 0755 bin bin
 f none lib/opensips/modules/path.so 0755 bin bin
-f none lib/opensips/modules/pdt.so 0755 bin bin
 f none lib/opensips/modules/permissions.so 0755 bin bin
 f none lib/opensips/modules/pike.so 0755 bin bin
 f none lib/opensips/modules/registrar.so 0755 bin bin
@@ -100,7 +99,6 @@ f none doc/opensips/README.mysql 0644 bin bin
 f none doc/opensips/README.nathelper 0644 bin bin
 f none doc/opensips/README.options 0644 bin bin
 f none doc/opensips/README.path 0644 bin bin
-f none doc/opensips/README.pdt 0644 bin bin
 f none doc/opensips/README.permissions 0644 bin bin
 f none doc/opensips/README.pike 0644 bin bin
 f none doc/opensips/README.registrar 0644 bin bin

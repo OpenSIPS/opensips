@@ -961,7 +961,6 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/rtpproxy.so
 %{_libdir}/opensips/modules/options.so
 %{_libdir}/opensips/modules/path.so
-%{_libdir}/opensips/modules/pdt.so
 %{_libdir}/opensips/modules/permissions.so
 %{_libdir}/opensips/modules/pike.so
 %{_libdir}/opensips/modules/qos.so
@@ -1027,7 +1026,6 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.nathelper
 %doc docdir/README.options
 %doc docdir/README.path
-%doc docdir/README.pdt
 %doc docdir/README.permissions
 %doc docdir/README.pike
 %doc docdir/README.qos

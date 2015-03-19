@@ -263,7 +263,6 @@ sbin/insserv etc/init.d/
 %doc %{_docdir}/opensips/README.nathelper
 %doc %{_docdir}/opensips/README.options
 %doc %{_docdir}/opensips/README.path
-%doc %{_docdir}/opensips/README.pdt
 %doc %{_docdir}/opensips/README.permissions
 %doc %{_docdir}/opensips/README.pike
 %doc %{_docdir}/opensips/README.qos
@@ -332,7 +331,6 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/nathelper.so
 %{_libdir}/opensips/modules/options.so
 %{_libdir}/opensips/modules/path.so
-%{_libdir}/opensips/modules/pdt.so
 %{_libdir}/opensips/modules/permissions.so
 %{_libdir}/opensips/modules/pike.so
 %{_libdir}/opensips/modules/qos.so

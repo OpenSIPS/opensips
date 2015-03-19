@@ -122,7 +122,7 @@ my $ALIAS_EXISTS = 0;
 #
 my @STANDARD_TABLES = ('version', 'acc', 'dbaliases',
 			'domain', 'grp', 'uri', 'speed_dial', 
-			'gw', 'pdt', 'subscriber', 'location', 
+			'gw', 'subscriber', 'location', 
 			're_grp', 'address', 'missed_calls', 
 			'usr_preferences', 'aliases', 'silo', 
 			'dialog', 'dispatcher', 'dialplan',
@@ -131,7 +131,7 @@ my @STANDARD_TABLES = ('version', 'acc', 'dbaliases',
 
 my @STANDARD_MODULES = ('standard', 'acc', 'domain', 'group', 
 	'permissions', 'registrar', 'usrloc', 'msilo', 'alias_db', 'uri_db',
-	'speeddial', 'avpops', 'auth_db', 'pdt', 'dialog', 'dispatcher', 
+	'speeddial', 'avpops', 'auth_db', 'dialog', 'dispatcher', 
 	'dialplan','drouting','rtpproxy','load_balancer' );
 
 my @EXTRA_TABLES = ('imc_members', 'imc_rooms', 'cpl', 'sip_trace', 
@@ -6284,9 +6284,6 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 
 	### gw
 	&mysql_migrate_table( $dst_db . ".gw", "id,gw_name,grp_id,ip_addr,port,uri_scheme,transport,strip,tag,flags", $src_db . ".gw", "?id,?gw_name,?grp_id,?ip_addr,?port,?uri_scheme,?transport,?strip,?tag,?flags" );
-
-	### pdt
-	&mysql_migrate_table( $dst_db. ".pdt", "id,sdomain,prefix,domain", $src_db . ".pdt", "?id,?sdomain,?prefix,?domain" );
 
 	### subscriber
 	&mysql_migrate_table( $dst_db . ".subscriber", "id,username,domain,password,email_address,ha1,ha1b,rpid", $src_db . ".subscriber", "?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid" );

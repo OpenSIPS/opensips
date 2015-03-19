@@ -27,7 +27,6 @@ f none /opt/opensips/postgres/imc-create.sql 0644 root root
 f none /opt/opensips/postgres/load_balancer-create.sql 0644 root root
 f none /opt/opensips/postgres/msilo-create.sql 0644 root root
 f none /opt/opensips/postgres/nathelper-create.sql 0644 root root
-f none /opt/opensips/postgres/pdt-create.sql 0644 root root
 f none /opt/opensips/postgres/permissions-create.sql 0644 root root
 f none /opt/opensips/postgres/presence-create.sql 0644 root root
 f none /opt/opensips/postgres/registrar-create.sql 0644 root root

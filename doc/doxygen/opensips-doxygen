@@ -522,7 +522,6 @@ INPUT                  = ./ \
                          modules/options \
                          modules/osp \
                          modules/path \
-                         modules/pdt \
                          modules/perl \
                          modules/perlvdb \
                          modules/permissions \
