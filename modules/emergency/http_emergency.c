@@ -28,6 +28,158 @@
 #include <stdlib.h>
 #include "http_emergency.h" 
 
+/* finish the emergency call frees resources:
+    - pull call cell this call from list linked eme_calls 
+    - send esct to VPC to release ESQK Key*/
+int send_esct(str callid_ori){
+
+    char* esct_callid;
+    NODE* info_call;
+    char* xml = NULL;
+    time_t rawtime;
+    struct tm * timeinfo;
+    char formated_time[80];
+    char* response;
+    int resp;
+    char* callidHeader;
+
+    callidHeader = pkg_malloc(callid_ori.len + 1);
+    if(callidHeader == NULL){
+        LM_ERR("No memory left\n");
+        return -1;
+    }
+    memset(callidHeader, 0, callid_ori.len + 1); 
+    memcpy(callidHeader, callid_ori.s, callid_ori.len);
+
+    // extract call cell with same callid from list linked eme_calls
+    LM_INFO(" --- BYE  callid=%s \n", callidHeader);
+    info_call = find_and_delete_esct(callidHeader);
+    if (info_call->esct == NULL) {
+        LM_ERR(" --- BYE DID NOT FIND CALLID \n");
+        return -1;
+    }
+
+    if (strlen(info_call->esct->esqk) > 0){
+
+        // if VPC provide ESQK then opensips need send esct to free this key
+        LM_INFO(" --- SEND ESQK =%s\n \n",info_call->esct->esqk);
+
+        if(info_call->esct->datetimestamp){
+            shm_free (info_call->esct->datetimestamp);
+            LM_DBG(" ---  FREE INFO_CALL->TIME");                                
+        }
+        time(&rawtime);
+        timeinfo = localtime(&rawtime);
+        strftime(formated_time, 80, "%Y-%m-%dT%H:%M:%S%Z", timeinfo);        
+        info_call->esct->datetimestamp = formated_time;
+        LM_INFO(" --- TREAT BYE - XML ESCT %s \n \n", xml);
+
+        xml = buildXmlFromModel(info_call->esct);    
+
+        // sends HTTP POST esctRequest to VPC
+        resp = post(url_vpc, xml, &response);
+        if (resp == -1) {
+            LM_ERR(" --- PROBLEM IN POST DO BYE\n \n");
+            free_call_cell(info_call);            
+            pkg_free(xml); 
+            return -1;
+        }
+
+        // verify if esct response came OK
+        esct_callid = parse_xml_esct(response);
+        if (esct_callid== NULL) {
+            LM_ERR(" --- esctAck invalid format or without mandatory field \n \n");        
+        } else {
+            if (strcmp(esct_callid, callidHeader)){
+                LM_ERR(" --- callid in esctAck different from asctRequest \n \n");             
+            }
+            if(esct_callid)
+                pkg_free(esct_callid);
+        }
+        pkg_free(response);
+        pkg_free(xml);
+        
+    }
+
+    return 1;
+
+}
+
+/* search and delete call cell with callid key
+*   - search cell with callid in list linked calls_eme
+*   - if found returns the pointer of this cell and free cell 
+*   - report call datas in emergency_report table
+
+
+*/
+NODE* find_and_delete_esct(char* callId) {
+    struct node* list_eme = *calls_eme;
+    NODE *current = list_eme;
+    NODE *previous = NULL;
+      
+    while (current) {       
+        if (same_callid(current->esct->callid, callId) == 0) {            
+            NODE* node = current;
+            NODE* next = current->next;           
+            if (collect_data(current, db_url, *db_table) == 1) {
+                LM_DBG("****** REPORT OK\n");
+            } else {
+                LM_DBG("****** REPORT NOK\n");
+            }                      
+            if (previous == NULL){
+                if (next == NULL){;        
+                    *calls_eme = NULL;
+                }else{      
+                    *calls_eme = next;
+                }
+            }else{               
+                current = next;
+                previous->next = current;
+            }
+           
+            return node;
+        }
+        previous = current;
+        current = current->next;
+    }
+    
+    printf("Not found\n");
+    return NULL;
+}
+
+int same_callid(char* callIdEsct, char* callId) {
+    if (callIdEsct == NULL || callId == NULL) {
+        return 0;
+    } else {
+        LM_DBG(" --- Comparing callId  = %s com %s", callId, callIdEsct);
+        return strcmp(callIdEsct, callId);
+    }
+}
+
+
+/* Search the cell with callid key in list linked calls_eme, 
+*  if found returns the pointer of this cell
+*/
+ESCT* find_esct(char* callId) {
+    LM_DBG(" --- find_esct to calid  = %s ", callId);
+
+    struct node* list_eme = *calls_eme;
+
+    NODE* current = list_eme;
+
+    while (current) {
+
+        LM_INFO(" --- CALL_LIST callId  = %s \n", current->esct->callid);
+        if (same_callid(current->esct->callid, callId) == 0) {
+            LM_INFO(" --- FOUND ESCT with callId key = %s ", callId);
+            ESCT* esct = current->esct;
+            return esct;
+        }
+        current = current->next;
+    }
+    LM_INFO("Did not find\n");
+    return NULL;
+}
 
 
 /*  verify the result field of the VPC
@@ -90,11 +242,16 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
     call_cell_vpc->contact = empty;
     call_cell_vpc->certuri = empty;
 
+    call_cell->esgwri = empty; 
+    call_cell->ert_srid = empty;         
+    call_cell->ert_npa = 0;
+    call_cell->ert_resn = 0;
+
     call_cell->esqk = empty;
     call_cell->lro = empty;
     call_cell->datetimestamp = empty;
 
-    LM_INFO(" --- TREAT PARSE ESRRESPONSE...");
+    LM_DBG(" --- TREAT PARSE ESRRESPONSE...");
     if (parsed->destination->organizationname != NULL) {
         char* field = shm_malloc(sizeof (char)*strlen(parsed->destination->organizationname)+1);
         if (field == NULL) {
@@ -272,7 +429,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
     }
 
     if (parsed-> lro!= NULL ) {
-        LM_INFO( "LRO %s \n", parsed-> lro);
+        LM_DBG( "LRO %s \n", parsed-> lro);
         int len_lro = strlen(parsed->lro);
 
         lro_aux = pkg_malloc(sizeof (char)*len_lro + 1);
@@ -295,7 +452,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
             return -1;
         }
         pt_lro.len = strlen(pt_lro.s);
-        LM_INFO("****** PATTERN LRO OK II %.*s\n",pt_lro.len,pt_lro.s);
+        LM_DBG("****** PATTERN LRO OK II %.*s\n",pt_lro.len,pt_lro.s);
         call_cell->lro = shm_malloc(sizeof (char)*pt_lro.len+1);
 
         if (call_cell->lro == NULL) {

@@ -26,56 +26,75 @@
 
 
 typedef struct parsed_xml_vpc {
-	char* organizationname;
-	char* hostname;
-	char* nenaid;
-	char* contact;
-	char* certuri;
+    char* organizationname;
+    char* hostname;
+    char* nenaid;
+    char* contact;
+    char* certuri;
 }NENA;
 
 typedef struct parsed_xml_ert{
-	char* selectiveRoutingID ;
-	char* routingESN;
-	char* npa;
+    char* selectiveRoutingID ;
+    char* routingESN;
+    char* npa;
 }ERT;
 
 typedef struct parsed_xml_resp{
-	char* result;
-	char* esgwri;
-	char* esqk;
-	char* lro;
-	char* callid;
-	char* datetimestamp;
-	
-	NENA *vpc;
-	NENA *destination;
-	ERT  *ert;
+    char* result;
+    char* esgwri;
+    char* esqk;
+    char* lro;
+    char* callid;
+    char* datetimestamp;
+    
+    NENA *vpc;
+    NENA *destination;
+    ERT  *ert;
 }PARSED;
 
 typedef struct esct{
-	NENA *source;
-	NENA *vpc;
-	char* esgwri;
-	char* esgw;
-	char* esqk;
-	char* callid;
-	char* ert_srid;
-	int   ert_resn;
-	int   ert_npa;
-	char* datetimestamp;
-	char* lro;
-	char* disposition;
-	char* result; 
-	int   timeout;
+    NENA *source;
+    NENA *vpc;
+    char* esgwri;
+    char* esgw;
+    char* esqk;
+    char* callid;
+    char* ert_srid;
+    int   ert_resn;
+    int   ert_npa;
+    char* datetimestamp;
+    char* lro;
+    char* disposition;
+    char* result; 
+    int   timeout;
 }ESCT;
 
 typedef struct node {
-	ESCT *esct;
-	struct node *next;
+    ESCT *esct;
+    struct node *next;
 }NODE;
 
+struct dialog_params{
+    char* version;
+    char* state;
+    char* entity;
+};
+
+struct target_info{
+    char* dialog_id;
+    char* callid;
+    char* local_tag;
+    char* direction;
+};
+
+struct notify_body{
+    struct dialog_params* params;
+    struct target_info* target;
+    char* state;
+};
 
 char* copy_str_between_tow_pointers(char* str_begin, char* str_end);
+char* copy_str_between_tow_pointers_simple(char* str_begin, char* str_end);
 char* copy_str_between_tow_tags(char* tag_begin, char* str_total);
 int check_str_between_init_tags( char* str_total);
 int check_ectAck_init_tags( char* str_total);
@@ -85,4 +104,6 @@ int isNotBlank(char *str);
 unsigned long findOutSize(ESCT* esct);
 unsigned long findOutNenaSize(NENA* nena);
 char* buildXmlFromModel(ESCT* esct);
+struct notify_body* parse_notify(char* xml);
+char* check_dialog_init_tags( char* str_total);
 

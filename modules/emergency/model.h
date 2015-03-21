@@ -56,6 +56,5 @@ xsi:schemaLocation=\"urn:nena:xml:ns:es:v2 v2.xsd\"> \n \
 </lie> \n \
 <callOrigin>%s</callOrigin> \n \
 <datetimestamp>%s</datetimestamp> \n \
-<customer>7</customer> \n \
+<customer>0</customer> \n \
 </esrRequest>";
-

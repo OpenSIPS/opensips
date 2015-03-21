@@ -22,6 +22,7 @@
  * History:
  * --------
  *  2014-10-14 initial version (Villaron/Tesini)
+ *  2013-03-21 implementing subscriber function (Villaron/Tesini)
  */
 
 
@@ -56,6 +57,8 @@ int check_geolocation_header(struct sip_msg *msg);
 int get_geolocation_header(struct sip_msg *msg, char** locationHeader);
 int found_CBN(struct sip_msg *msg, char** cbn);
 int get_callid_header(struct sip_msg *msg, char** callidHeader);
+int get_expires_header(struct sip_msg *msg, char** expires);
+int check_event_header(struct sip_msg *msg);
 int add_hdr_rpl(struct esct *call_cell,struct sip_msg *msg); 
 int add_headers(char *esqk, struct sip_msg *msg, str cbn);
 int add_hdr_PAI(struct sip_msg *msg, str cbn);
@@ -64,3 +67,5 @@ int proxy_request(struct sip_msg *msg,char *call_server_hostname);
 int new_uri_proxy(struct sip_msg *req_msg, char* new_uri );
 int get_ip_socket(struct sip_msg *msg, char** s_addr); 
 int extract_contact_hdrs(struct sip_msg *reply, char **contact_esgwri, char **contact_lro);
+int get_subscription_state_header(struct sip_msg *msg, char** subs_state, char** expires);
+int get_event_header(struct sip_msg *msg, char** subs_state, char** expires);

@@ -22,7 +22,9 @@
  * History:
  * --------
  *  2014-10-14 initial version (Villaron/Tesini)
+ *  2013-03-21 implementing subscriber function (Villaron/Tesini)
  */
+
 
 #include "../../sr_module.h"
 #include "../../dprint.h"
@@ -48,29 +50,52 @@
 #include "../../db/db_insertq.h"
 #include "../../forward.h"
 #include "../rr/api.h"
+#include "../tm/tm_load.h" /*load_tm_api*/
 
-#include "report_emergency.h" 
+#include "http_emergency.h" 
 
-#include "post_curl.h"
+ #define TIMER_B				30
+ #define MAXNUMBERLEN 			31
 
-struct node *list_call;
-struct node **calls_eme;
+struct sm_subscriber **subs_pt;
+struct tm_binds eme_tm;
 
-char *url_vpc;
-str db_url;
-str *db_table;
-char *empty;
+struct dlg_identity{
+	str callid;
+	str from_tag;
+	str to_tag; 
+};
 
-int send_esct(str callid_ori);
-NODE* find_and_delete_esct(char* callId);
-ESCT* find_esct(char* callId);
-int same_callid(char* callIdEsct, char* callId);
-int faixa_result(int result); 
-int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_cell_vpc, NENA *call_cell_source, PARSED *parsed, int proxy_hole);
-int get_lro_in_contact(char *contact_lro, ESCT *call_cell);
-int get_esqk_in_contact(char *contact_lro, ESCT *call_cell);
-int get_esgwri_ert_in_contact(char *contact_esgwri, ESCT *call_cell);
-void insert_call_cell_in_list(ESCT *call_cell);
-void free_call_cell(NODE *info_call);
-void free_nena(NENA *nena);
-void free_parsed(PARSED *parsed);
+struct sm_subscriber{
+	struct dlg_identity dlg_id;
+	int status;
+	str loc_uri;
+	str rem_uri;
+	str contact;
+	str callid_ori;
+	str event;
+	int expires;
+	int timeout;
+	struct sm_subscriber *prev;	
+	struct sm_subscriber *next;
+};
+
+struct parms_cb{
+	str callid_ori;
+	str event;
+};
+
+int send_subscriber(struct sip_msg* msg, char* callidHeader, int expires);
+int send_subscriber_within(struct sip_msg* msg, struct sm_subscriber* subs, int expires);
+int get_uris_to_subscribe(struct sip_msg* msg, str* contact, str* notifier, str* subscriber );
+int build_params_cb(struct sip_msg* msg, char* callidHeader,  struct parms_cb* params_cb );
+str* add_hdr_subscriber(int expires, str event);
+void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *params);
+int extract_reply_headers(struct sip_msg* reply, str* callid, int expires);
+int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb);
+int treat_notify(struct sip_msg *msg); 
+struct sm_subscriber* get_subs_cell(struct sip_msg *msg);
+void subs_cback_func_II(struct cell *t, int cb_type, struct tmcb_params *params);
+dlg_t* build_dlg(struct sm_subscriber* subscriber);
+struct sm_subscriber* find_subscriber_cell(str* callId, str* to_tag);
+int same_dialog_id(struct sm_subscriber* subs_cell, str* callId, str* to_tag);

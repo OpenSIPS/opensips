@@ -56,12 +56,10 @@
 #include "../../forward.h"
 #include "../../proxy.h"
 #include "../dialog/dlg_load.h"
-#include "../tm/tm_load.h" /*load_tm_api*/
 
-#include "post_curl.h"
 #include "model.h"
 
-#include "http_emergency.h"
+#include "subscriber_emergency.h"
 
 
 #define MAXNUMBERLEN 31
@@ -97,7 +95,6 @@ size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata);
  */
 
 char *emergency_codes;
-char *url_vpc;
 char *vpc_organization_name;
 char *vpc_hostname;
 char *vpc_nena_id;
@@ -121,6 +118,7 @@ int proxy_hole = 0;
 
 struct code_number *codes = NULL;
 
+
 //struct node **calls_eme = NULL;
 
 struct multi_body *mbody;
@@ -130,11 +128,12 @@ struct lump *l;
 
 int mandatory_parm = 0;
 int timer_interval=10;
-static str db_url;
 str table_name=str_init("emergency_routing");
-static rw_lock_t *ref_lock = NULL;
 str table_report=str_init("emergency_report");
+static rw_lock_t *ref_lock = NULL;
 
+
+str callid_invite;
 
 /*
  * Function headers
@@ -148,16 +147,15 @@ static int failure(struct sip_msg *msg);
 static int set_codes(unsigned int type, void *val);
 
 void routing_timer(unsigned int ticks,void *attr);
-char *replace_str(char *str, char *orig, char *rep);
 int check_myself(struct sip_msg *msg);
-int same_callid(char* callIdEsct, char* callId);
 int contingency(struct sip_msg *msg, ESCT *call_cell);
 int fill_blank_space(void);
 int fill_parm_with_BS(char** var);
 unsigned long get_xml_size(char* lie, char* formated_time, char* callidHeader, char* cbn);
 char* formatted_xml(char* lie, char* callidHeader, char* cbn);
 int routing_by_ert( struct sip_msg *msg, ESCT *call_cell);
-int treat_routing(struct sip_msg* msg, struct esct *call_cell, str cbn);
+int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeader, str cbn);
 int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str cbn);
-NODE* find_and_delete_esct(char* callId);
-ESCT* find_esct(char* callId);
+
+
+

@@ -22,6 +22,8 @@
  * History:
  * --------
  *  2014-10-14 initial version (Villaron/Tesini)
+ *  2013-03-21 implementing subscriber function (Villaron/Tesini)
+ *  
  */
 
 
@@ -41,8 +43,9 @@ static int child_init(int);
 static void mod_destroy(void);
 
 struct dlg_binds dlgb;
-struct tm_binds eme_tm;
 struct rr_binds rr_api;
+
+str callid_aux;
 
 /*
  * Exported functions
@@ -89,6 +92,7 @@ static param_export_t params[] = {
     { "callorigin", STR_PARAM, &call_origin},   
     { 0, 0, 0}
 };
+
 
 static dep_export_t deps = {
        { /* OpenSIPS module dependencies */
@@ -216,6 +220,7 @@ static int mod_init(void) {
         return -1;
     }
 
+
     empty = shm_malloc(sizeof (char));
     memset(empty, '\0', 1); 
 
@@ -250,12 +255,29 @@ static int mod_init(void) {
         db_con = 0;
     }
 
+    db_table = (str *)shm_malloc(sizeof (str*));
+    if (!db_table) {
+        LM_ERR("no more memory");
+        return -1;
+    }
+    db_table = &table_report;
+
+
+
     db_esrn_esgwri = shm_malloc(sizeof (struct esrn_routing *));
     if (!db_esrn_esgwri) {
         LM_ERR("no more memory");
         return -1;
     }
     *db_esrn_esgwri = NULL;
+
+    subs_pt = shm_malloc(sizeof (struct sm_subscriber *));
+    if (!subs_pt) {
+        LM_ERR("no more memory");
+        return -1;
+    }
+    *subs_pt = NULL;
+
 
     if (register_timer("emer_rout_table", routing_timer, 0,
           timer_interval, 0) < 0) {
@@ -508,6 +530,46 @@ static void libera_esqk(void) {
     }
 }
 
+static void free_subs(void) {
+
+    time_t rawtime;
+    struct sm_subscriber* current;
+    struct sm_subscriber* previous = NULL;
+    struct sm_subscriber* free_cell;
+    struct sm_subscriber* next;
+    int time_C;
+
+    time(&rawtime);
+    time_C = (int)rawtime;
+    LM_INFO("TIME : %d \n", (int)rawtime );
+
+    current = *subs_pt;
+    while (current) {
+
+        next = current->next;
+        LM_INFO("timeout %d\n", current->timeout);   
+        if (current->timeout <= time_C ){
+            LM_INFO("time fires %d\n", current->timeout);              
+            free_cell = current;
+
+            if (previous == NULL){
+                if (next == NULL){                
+                    *subs_pt = NULL;              
+                }else{
+                    *subs_pt = next;
+                }
+            }else{
+                current = next;
+                previous->next = current;
+            } 
+            
+        }else{
+            previous = current;           
+        }  
+        current = current->next;
+    }
+}
+
 
 /* 
 * - copying data from the routing table to the list db_esrn_domain (performance improvement)
@@ -518,6 +580,8 @@ void routing_timer(unsigned int ticks, void *attr) {
         LM_ERR("ERROR IN GET ROUTING OF DB \n");
 
     libera_esqk();
+
+    free_subs();
 
 }
 
@@ -534,44 +598,51 @@ void routing_timer(unsigned int ticks, void *attr) {
 int emergency_call(struct sip_msg *msg) {
     struct dlg_cell *dlg;
 
+
     // verify if mandatory parameters were configurated in script
     if (mandatory_parm)
         return -1; 
 
      // the emergency call treatment start with INVITE    
     if (memcmp(msg->first_line.u.request.method.s,"INVITE", msg->first_line.u.request.method.len) == 0) {
-        
         if (is_emergency_call(msg)) {
             LM_INFO(" --- IT IS AN EMERGECY -----  \n \n"); 
             // It is, forward the INVITE            
             if(send_request_vpc(msg) == 1){
+                LM_INFO(" --- CRIA DIALOGO -----  \n \n"); 
+                if (dlgb.create_dlg(msg,0)<1) {
+                    LM_ERR("failed to create dialog\n");
+                    return -1;
+                }
+                dlg = dlgb.get_dlg();
+                if (dlg==NULL) {
+                    LM_CRIT("BUG: found after create dialog\n");
+                    return -1;
+                }
+                if(dlgb.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED, indialog_ua ,0,0)!=0) {
+                    LM_ERR("failed to register dialog callback\n");
+                    return -1;
+                }
 
-                //if(proxy_hole == 0){
-
-                    if (dlgb.create_dlg(msg,0)<1) {
-                        LM_ERR("failed to create dialog\n");
-                        return -1;
-                    }
-                    dlg = dlgb.get_dlg();
-                    if (dlg==NULL) {
-                        LM_CRIT("BUG: found after create dialog\n");
-                        return -1;
-                    }
-                    if(dlgb.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED, indialog_ua ,0,0)!=0) {
-                        LM_ERR("failed to register dialog callback\n");
-                        return -1;
-                    }
-
-                    return 1;
-                //}
-                //return 1;
+                return 1;
             }
 
         } else {
             LM_INFO(" --- IT IS NOT AN EMERGENCY  -----  \n \n");           
         }
-    }
+    }else{
+        if (memcmp(msg->first_line.u.request.method.s,"NOTIFY", msg->first_line.u.request.method.len) == 0){
+             LM_INFO(" --- TREAT NOTIFY -----  \n \n"); 
 
+            if ( !treat_notify(msg)){
+                LM_ERR ("***** ERROR IN NOTIFY TREATMENT \n");
+                return -1; 
+            }
+
+            return 1;  
+        }
+
+    }
     return -1;
 }
 
@@ -655,10 +726,6 @@ static int failure(struct sip_msg *msg) {
             info_call->disposition = "esgwri";
             info_call->timeout = ACK_TIME;
 
-            //if(eme_tm.t_relay(msg,0,0,0,0,0,0))
-                      // LM_ERR(" ---ERRO EM NEW_URI_PROXY"); 
-
-            //LM_INFO(" ---Hole: proxy routing \n");
             return 1;
         }
     }  
@@ -706,7 +773,7 @@ static int failure(struct sip_msg *msg) {
     }
     
     error : 
-          LM_INFO(" ---FAILURE JA TRANSMITIU LRO");  
+        LM_INFO(" ---FAILURE JA TRANSMITIU LRO");  
         if(callidHeader)
             pkg_free(callidHeader);
         return -1;
@@ -882,7 +949,7 @@ int send_request_vpc(struct sip_msg *msg) {
     } 
 
 
-    LM_DBG(" --- CALLID-HEADER = %s \n \n", callidHeader);
+    LM_INFO(" --- CALLID-HEADER = %s \n \n", callidHeader);
     xml = formatted_xml(lie, callidHeader, cbn.s);
 
     //  HTTP POST to VPC
@@ -892,10 +959,11 @@ int send_request_vpc(struct sip_msg *msg) {
         LM_ERR(" --- PROBLEM IN POST \n \n");
         goto error;
     }
-
+    LM_INFO(" --- CALLID-HEADER II = %s \n \n", callidHeader);
     
     parsed = parse_xml(response);
     if (parsed != NULL) {
+        LM_INFO(" --- CALLID-HEADER III = %s \n \n", callidHeader);       
         if(create_call_cell(parsed, msg, callidHeader, cbn) == -1){
             pkg_free(response);
             goto error;
@@ -969,7 +1037,7 @@ int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str
             return -1;
         }
         
-        if (treat_routing(msg, call_cell, cbn) == -1){
+        if (treat_routing(msg, call_cell, callidHeader, cbn) == -1){
             return -1;
         }
         return 1;
@@ -987,7 +1055,7 @@ int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str
 *   - checks the esgwri code or the data from the emergency area (selectiveRoutingID, routingESN, npa) to translate to esgwri
 *   - includes the data ersResponse to a node of the list calls_eme
 */
-int treat_routing(struct sip_msg* msg, struct esct *call_cell, str cbn) {
+int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeader, str cbn) {
     static str msg300={"Multiple Choices",sizeof("Multiple Choices")-1};
 
     // transforma result em inteiro para ficar mais facil sua analise separando-o em faixas
@@ -1071,6 +1139,10 @@ int treat_routing(struct sip_msg* msg, struct esct *call_cell, str cbn) {
             call_cell->timeout = BYE_TIME; 
             pkg_free(cbn.s); 
 
+            int expires = 300;
+
+            if( !send_subscriber(msg, callidHeader, expires)) 
+                return -1;
 
         }else{
             LM_ERR("proxy_hole invalid\n");
@@ -1205,7 +1277,7 @@ int routing_ack(struct sip_msg *msg) {
 
     if (proxy_hole == 2) {
         // Redirect Proxy scenario III 
-        LM_DBG(" ---Hole: proxy redirect \n");
+        LM_INFO(" ---Hole: proxy redirect \n");
         return -1;
     }
 
@@ -1238,28 +1310,6 @@ end :
         return resp;
 }
 
-
-/* Search the cell with callid key in list linked calls_eme, 
-*  if found returns the pointer of this cell
-*/
-ESCT* find_esct(char* callId) {
-    LM_DBG(" --- find_esct para calid  = %s ", callId);
-
-    struct node* list_eme = *calls_eme;
-
-    NODE* current = list_eme;
-    while (current) {
-        LM_INFO(" --- CALL_LIST callId  = %s \n", current->esct->callid);
-        if (same_callid(current->esct->callid, callId) == 0) {
-            LM_INFO(" --- FOUND ESCT with callId key = %s ", callId);
-            ESCT* esct = current->esct;
-            return esct;
-        }
-        current = current->next;
-    }
-    LM_INFO("Did not find\n");
-    return NULL;
-}
 
 /* Treat BYE
 */
@@ -1346,9 +1396,9 @@ int bye(struct sip_msg *msg, int dir) {
             timeinfo = localtime(&rawtime);
             strftime(formated_time, 80, "%Y-%m-%dT%H:%M:%S%Z", timeinfo);        
             info_call->esct->datetimestamp = formated_time;
+            LM_INFO(" --- TREAT BYE - XML ESCT %s \n \n", xml);
 
             xml = buildXmlFromModel(info_call->esct);    
-            LM_INFO(" --- TREAT BYE - XML ESCT %s \n \n", xml);
 
             // sends HTTP POST esctRequest to VPC
             resp = post(url_vpc, xml, &response);
@@ -1384,61 +1434,10 @@ end :
     return resp;
 }
 
-/* search and delete call cell with callid key
-*   - search cell with callid in list linked calls_eme
-*   - if found returns the pointer of this cell and free cell 
-*   - report call datas in emergency_report table
-
-
-*/
-NODE* find_and_delete_esct(char* callId) {
-    struct node* list_eme = *calls_eme;
-    NODE *current = list_eme;
-    NODE *previous = NULL;
-      
-    while (current) {       
-        if (same_callid(current->esct->callid, callId) == 0) {            
-            NODE* node = current;
-            NODE* next = current->next;           
-            if (collect_data(current, db_url, table_report) == 1) {
-                LM_DBG("****** REPORT OK\n");
-            } else {
-                LM_DBG("****** REPORT NOK\n");
-            }                      
-            if (previous == NULL){
-                if (next == NULL){;        
-                    *calls_eme = NULL;
-                }else{      
-                    *calls_eme = next;
-                }
-            }else{               
-                current = next;
-                previous->next = current;
-            }
-           
-            return node;
-        }
-        previous = current;
-        current = current->next;
-    }
-    
-    printf("Not found\n");
-    return NULL;
-}
-
 
 /*
  * Aux functions
  */
-
-int same_callid(char* callIdEsct, char* callId) {
-    if (callIdEsct == NULL || callId == NULL) {
-        return 0;
-    } else {
-        LM_DBG(" --- Comparing callId  = %s com %s", callId, callIdEsct);
-        return strcmp(callIdEsct, callId);
-    }
-}
 
 
 /* fill with blanck spaces
