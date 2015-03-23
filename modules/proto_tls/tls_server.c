@@ -61,7 +61,7 @@
 /*
  * Update ssl structure with new fd
  */
-static int tls_update_fd(struct tcp_connection *c, int fd)
+int tls_update_fd(struct tcp_connection *c, int fd)
 {
 	/*
 	* must be run from within a lock

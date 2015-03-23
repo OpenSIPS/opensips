@@ -38,5 +38,6 @@ int tls_fix_read_conn(struct tcp_connection *c);
 
 int tls_conn_shutdown(struct tcp_connection *c);
 
+int tls_update_fd(struct tcp_connection *c, int fd);
 
 #endif
