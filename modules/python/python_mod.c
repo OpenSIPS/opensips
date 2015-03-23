@@ -99,9 +99,6 @@ mod_init(void)
         child_init_mname.len = strlen(child_init_mname.s);
     }
 
-    dname = dirname(script_name.s);
-    if (strlen(dname) == 0)
-        dname = ".";
     bname = basename(script_name.s);
     i = strlen(bname);
     if (bname[i - 1] == 'c' || bname[i - 1] == 'o')
@@ -113,6 +110,9 @@ mod_init(void)
           script_name.s);
         return -1;
     }
+    dname = dirname(script_name.s);
+    if (strlen(dname) == 0)
+        dname = ".";
 
     Py_Initialize();
     PyEval_InitThreads();
