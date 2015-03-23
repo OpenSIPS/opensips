@@ -21,61 +21,50 @@
 		<firstname>Maxim</firstname>
 		<surname>Sobolev</surname>
 		<affiliation><orgname>Sippy Software, Inc.</orgname></affiliation>
-		<address>
-			<email>sobomax@sippysoft.com</email>
-		</address>
+		<email>sobomax@sippysoft.com</email>
 		</author>
 		<author>
 		<firstname>Juha</firstname>
 		<surname>Heinanen</surname>
 		<affiliation><orgname>TuTPro, Inc.</orgname></affiliation>
-		<address>
-			<email>jh@tutpro.com</email>
-		</address>
+		<email>jh@tutpro.com</email>
 		</author>
 		<editor>
 		<firstname>Maxim</firstname>
 		<surname>Sobolev</surname>
-		<address>
-			<email>sobomax@sippysoft.com</email>
-		</address>
+		<email>sobomax@sippysoft.com</email>
 		</editor>
 		<editor>
 		<firstname>Bogdan-Andrei</firstname>
 		<surname>Iancu</surname>
-		<address>
-			<email>bogdan@voice-system.ro</email>
-		</address>
+		<email>bogdan@voice-system.ro</email>
 		</editor>
 		<editor>
 		<firstname>Juha</firstname>
 		<surname>Heinanen</surname>
-		<address>
-			<email>jh@tutpro.com</email>
-		</address>
+		<email>jh@tutpro.com</email>
 		</editor>
 		<editor>
 		<firstname>Sas</firstname>
 		<surname>Ovidiu</surname>
-		<address>
-			<email>osas@voipembedded.com</email>
-		</address>
+		<email>osas@voipembedded.com</email>
 		</editor>
 		<editor>
 		<firstname>Carsten</firstname>
 		<surname>Bock</surname>
 		<affiliation><orgname>ng-voice GmbH</orgname></affiliation>
-		<address>
-			<email>carsten@ng-voice.com</email>
-		</address>
+		<email>carsten@ng-voice.com</email>
 		</editor>
 		<editor>
 		<firstname>Richard</firstname>
 		<surname>Fuchs</surname>
 		<affiliation><orgname>Sipwise GmbH</orgname></affiliation>
-		<address>
-			<email>rfuchs@sipwise.com</email>
-		</address>
+		<email>rfuchs@sipwise.com</email>
+		</editor>
+		<editor>
+		<firstname>Robert</firstname>
+		<surname>Gagnon</surname>
+		<affiliation><orgname>Telepoint Global Hosting Services, LLC</orgname></affiliation>
 		</editor>
 	</authorgroup>
 	<copyright>

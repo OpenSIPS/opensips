@@ -21,23 +21,22 @@
 		<firstname>Maxim</firstname>
 		<surname>Sobolev</surname>
 		<affiliation><orgname>Sippy Software, Inc.</orgname></affiliation>
-		<address>
-			<email>sobomax@sippysoft.com</email>
-		</address>
+		<email>sobomax@sippysoft.com</email>
 		</author>
 		<editor>
 		<firstname>Maxim</firstname>
 		<surname>Sobolev</surname>
-		<address>
-			<email>sobomax@sippysoft.com</email>
-		</address>
+		<email>sobomax@sippysoft.com</email>
 		</editor>
 		<editor>
 		<firstname>Bogdan-Andrei</firstname>
 		<surname>Iancu</surname>
-		<address>
-			<email>bogdan@opensips.org</email>
-		</address>
+		<email>bogdan@opensips.org</email>
+		</editor>
+		<editor>
+		<firstname>Robert</firstname>
+		<surname>Gagnon</surname>
+		<affiliation><orgname>Telepoint Global Hosting Services, LLC</orgname></affiliation>
 		</editor>
 	</authorgroup>
 	<copyright>

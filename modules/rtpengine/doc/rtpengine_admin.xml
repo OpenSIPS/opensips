@@ -376,6 +376,8 @@ rtpengine_offer();
 				<listitem><para>
 				<emphasis>symmetric</emphasis> - flags that for the UA from which
 				message is received, support symmetric RTP must be forced.
+				<emphasis>(This option was made obsolete in RTPEngine sometime around mr3.3.x, and
+				does not exist in newer versions at all).</emphasis>
 				</para></listitem>
 				<listitem><para>
 				<emphasis>repacketize=NN</emphasis> - requests the &rtp; proxy to perform
@@ -540,7 +542,44 @@ onreply_route[2]
 		<title><function>rtpengine_delete</function> usage</title>
 		<programlisting format="linespecific">
 ...
-rtpengine_delete();
+#
+# Loose route section of main route example
+#
+if (has_totag()) {
+    if (loose_route()) {
+        if (is_method("INVITE")) {
+            record_route();
+        }
+
+        if (is_method("CANCEL|BYE")) {
+            #
+            # Grab statistics BEFORE deleting RTP
+            #
+            append_hf("x-rtp-statistics: $rtpstat\r\n");
+            #
+            # Release RTPEngine resources
+            #
+            rtpengine_delete();
+        }
+
+        route(relay);
+    } else {
+        if (is_method("ACK")) {
+            if (has_body("application/sdp")) {
+                rtpengine_answer();
+            }
+
+            if (t_check_trans()) {
+                t_relay();
+                exit;
+            } else {
+                exit;
+            }
+        }
+        sl_send_reply("404", "Not Found");
+    }
+    exit;
+}
 ...
 </programlisting>
 		</example>
