@@ -3,38 +3,56 @@ rtpengine Module
 Maxim Sobolev
 
    Sippy Software, Inc.
+   <sobomax@sippysoft.com>
 
 Juha Heinanen
 
    TuTPro, Inc.
+   <jh@tutpro.com>
 
 Edited by
 
 Maxim Sobolev
 
+   <sobomax@sippysoft.com>
+
 Edited by
 
 Bogdan-Andrei Iancu
+
+   <bogdan@voice-system.ro>
 
 Edited by
 
 Juha Heinanen
 
+   <jh@tutpro.com>
+
 Edited by
 
 Sas Ovidiu
+
+   <osas@voipembedded.com>
 
 Edited by
 
 Carsten Bock
 
    ng-voice GmbH
+   <carsten@ng-voice.com>
 
 Edited by
 
 Richard Fuchs
 
    Sipwise GmbH
+   <rfuchs@sipwise.com>
+
+Edited by
+
+Robert Gagnon
+
+   Telepoint Global Hosting Services, LLC
 
    Copyright © 2003-2008 Sippy Software, Inc.
 
@@ -374,6 +392,9 @@ rtpengine_offer();
             description also includes connection information.
           + symmetric - flags that for the UA from which message
             is received, support symmetric RTP must be forced.
+            (This option was made obsolete in RTPEngine sometime
+            around mr3.3.x, and does not exist in newer versions
+            at all).
           + repacketize=NN - requests the RTP proxy to perform
             re-packetization of RTP traffic coming from the UA
             which has sent the current message to increase or
@@ -503,7 +524,44 @@ onreply_route[2]
 
    Example 1.10. rtpengine_delete usage
 ...
-rtpengine_delete();
+#
+# Loose route section of main route example
+#
+if (has_totag()) {
+    if (loose_route()) {
+        if (is_method("INVITE")) {
+            record_route();
+        }
+
+        if (is_method("CANCEL|BYE")) {
+            #
+            # Grab statistics BEFORE deleting RTP
+            #
+            append_hf("x-rtp-statistics: $rtpstat\r\n");
+            #
+            # Release RTPEngine resources
+            #
+            rtpengine_delete();
+        }
+
+        route(relay);
+    } else {
+        if (is_method("ACK")) {
+            if (has_body("application/sdp")) {
+                rtpengine_answer();
+            }
+
+            if (t_check_trans()) {
+                t_relay();
+                exit;
+            } else {
+                exit;
+            }
+        }
+        sl_send_reply("404", "Not Found");
+    }
+    exit;
+}
 ...
 
 1.5.5.  rtpengine_manage([flags])
@@ -621,8 +679,8 @@ Chapter 2. Frequently Asked Questions
 
    For example, if you had a call “rtpproxy_offer("FRWOC+PS");”,
    this would then become:
-rtpengine_offer("force trust-address symmetric replace-origin replace-se
-ssion-connection ICE=force RTP/SAVPF");
+rtpengine_offer("force trust-address symmetric replace-origin replace-s
+ession-connection ICE=force RTP/SAVPF");
 
    Finally, if you were using the second paramater (explicit media
    address) to any of these functions, this has been replaced by
