@@ -31,7 +31,7 @@
 DATA_DIR="/usr/local/share/opensips"
 if [ -d "$DATA_DIR/postgres" ]; then
 	DB_SCHEMA="$DATA_DIR/postgres"
-elif [ -d "scripts/postgres" ];; then
+elif [ -d "scripts/postgres" ]; then
 	DB_SCHEMA="scripts/postgres"
 else
 	DB_SCHEMA="./postgres"
