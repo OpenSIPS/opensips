@@ -146,14 +146,15 @@ for TABLE in $STANDARD_TABLES; do
 	sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;"
 	if [ $TABLE != "version" ] ; then
 		mdbg "creating table: $TABLE"
-		if [ $TABLE = "dr_gateways" ] 
-		then
-			mdbg "creating table 1: $TABLE"
-			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
-		elif [ $TABLE = "dr_rules" ] 
+		if [ $TABLE = "dr_rules" ] 
 		then
 			mdbg "creating table 2: $TABLE"
 			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_ruleid_seq TO $DBRWUSER;"
+		elif [ $TABLE = "dialog" ] 
+		then
+			mdbg "creating table 2: $TABLE"
+			# the dialog table doesn't have an auto increment key
+			#sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_dlg_id_seq TO $DBRWUSER;"
 		else
 			mdbg "creating table 3: $TABLE"
 			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
@@ -247,8 +248,12 @@ done
 
 for TABLE in $EXTRA_TABLES; do
 	sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;"
-	if [ $TABLE != "route_tree" ] ; then
-		sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
+	if [ $TABLE != "route_tree" ] && [ $TABLE != "cachedb" ] ; then
+			if [ $TABLE == "fraud_detection" ] ; then
+				sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_ruleid_seq TO $DBRWUSER;"
+			else
+				sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
+			fi
 	fi
 	if [ $? -ne 0 ] ; then
 		merr "Grant privileges to extra tables failed!"
