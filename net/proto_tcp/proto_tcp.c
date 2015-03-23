@@ -70,7 +70,7 @@ static int tcp_port = SIP_PORT;
 static int tcp_send_timeout = 100;
 
 /* 1 if TCP connect & write should be async */
-static int tcp_async = 0;
+static int tcp_async = 1;
 
 /* Number of miliseconds that a worker will block waiting for a local
  * connect - if connect op exceeds this, it will get passed to TCP main*/
