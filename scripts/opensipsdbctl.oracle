@@ -13,8 +13,10 @@ DBSYSUSER="sys"
 
 # path to the database schemas
 DATA_DIR="/usr/local/share/opensips"
-if [ -d "$DATA_DIR/oracle" ] ; then
+if [ -d "$DATA_DIR/oracle" ]; then
 	DB_SCHEMA="$DATA_DIR/oracle"
+elif [ -d "scripts/oracle" ]; then
+	DB_SCHEMA="scripts/oracle"
 else
 	DB_SCHEMA="./oracle"
 fi

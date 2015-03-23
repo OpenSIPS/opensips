@@ -112,8 +112,10 @@ fi ;
 
 # path to the database schemas
 DATA_DIR="/usr/local/share/opensips"
-if [ -d "$DATA_DIR/db_berkeley/opensips" ] ; then
+if [ -d "$DATA_DIR/db_berkeley/opensips" ]; then
 	DB_SCHEMA="$DATA_DIR/db_berkeley/opensips"
+elif [ -d "scripts/db_berkeley/opensips" ]; then
+	DB_SCHEMA="scripts/db_berkeley/opensips"
 else
 	DB_SCHEMA="./db_berkeley/opensips"
 fi
