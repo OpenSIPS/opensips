@@ -11,8 +11,10 @@
 
 # path to the database schemas
 DATA_DIR="/usr/local/share/opensips"
-if [ -d "$DATA_DIR/dbtext/opensips" ] ; then
+if [ -d "$DATA_DIR/dbtext/opensips" ]; then
 	DB_SCHEMA="$DATA_DIR/dbtext/opensips"
+elif [ -d "scripts/dbtext/opensips" ]; then
+	DB_SCHEMA="scripts/dbtext/opensips"
 else
 	DB_SCHEMA="./dbtext/opensips"
 fi
