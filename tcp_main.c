@@ -1854,7 +1854,9 @@ int tcp_init_children(int *chd_rank, int *startup_done)
 					LM_ERR("failed to send status code\n");
 				clean_write_pipeend();
 
-				*startup_done = -1;
+				if (startup_done)
+					*startup_done = -1;
+
 				exit(-1);
 			}
 	
