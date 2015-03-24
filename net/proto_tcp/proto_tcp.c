@@ -333,7 +333,7 @@ static inline int add_write_chunk(struct tcp_connection *con,char *buf,int len,
  */
 static int tcpconn_async_connect(struct socket_info* send_sock,
 					union sockaddr_union* server, char *buf, unsigned len,
-					struct tcp_connection** c)
+					struct tcp_connection** c, int *ret_fd)
 {
 	int fd, n;
 	union sockaddr_union my_name;
@@ -480,6 +480,7 @@ local_connect:
 		goto error;
 	}
 	*c = con;
+	*ret_fd = fd;
 	/* report a local connect */
 	return 1;
 
@@ -491,7 +492,7 @@ error:
 
 
 static struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
-		union sockaddr_union* server)
+		union sockaddr_union* server, int *fd)
 {
 	int s;
 	union sockaddr_union my_name;
@@ -524,6 +525,7 @@ static struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
 		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;
 	}
+	*fd = s;
 	return con;
 	/*FIXME: set sock idx! */
 error:
@@ -671,7 +673,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 		LM_DBG("no open tcp connection found, opening new one, async = %d\n",tcp_async);
 		/* create tcp connection */
 		if (tcp_async) {
-			n = tcpconn_async_connect(send_sock, to, buf, len, &c );
+			n = tcpconn_async_connect(send_sock, to, buf, len, &c, &fd);
 			if ( n<0 ) {
 				LM_ERR("async TCP connect failed\n");
 				get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
@@ -690,13 +692,12 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			LM_DBG("First connect attempt succeded in less than %d ms, "
 				"proceed to writing \n",tcp_async_local_connect_timeout);
 			/* our first connect attempt succeeded - go ahead as normal */
-		} else if ((c=tcp_sync_connect(send_sock, to))==0) {
+		} else if ((c=tcp_sync_connect(send_sock, to, &fd))==0) {
 			LM_ERR("connect failed\n");
 			get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 			return -1;
 		}
 	
-		fd=c->s;
 		goto send_it;
 	}
 	get_time_difference(get,tcpthreshold,tcp_timeout_con_get);

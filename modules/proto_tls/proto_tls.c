@@ -60,6 +60,14 @@ static int is_peer_verified(struct sip_msg*, char*, char*);
 static int tls_port_no = SIPS_PORT;
 static char *tls_domain_avp = NULL;
 
+static int tls_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
+
+/* 0: send CRLF pong to incoming CRLFCRLF ping */
+static int tls_crlf_pingpong = 1;
+
+/* 0: do not drop single CRLF messages */
+static int tls_crlf_drop = 0;
+
 static int  mod_init(void);
 static void mod_destroy(void);
 static int proto_tls_init(struct proto_info *pi);
@@ -110,6 +118,9 @@ static param_export_t params[] = {
 	{ "ciphers_list",  STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_cplist     },
 	{ "dh_params",     STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_dhparams   },
 	{ "ec_curve",      STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_eccurve    },
+	{ "tls_crlf_pingpong",     INT_PARAM,         &tls_crlf_pingpong         },
+	{ "tls_crlf_drop",         INT_PARAM,         &tls_crlf_drop             },
+	{ "tls_max_msg_chunks",    INT_PARAM,         &tls_max_msg_chunks        },
 	{0, 0, 0}
 };
 
@@ -1291,7 +1302,7 @@ static void tls_conn_clean(struct tcp_connection* c)
 
 
 static struct tcp_connection* tls_sync_connect(struct socket_info* send_sock,
-		union sockaddr_union* server)
+		union sockaddr_union* server, int *fd)
 {
 	int s;
 	union sockaddr_union my_name;
@@ -1324,6 +1335,7 @@ static struct tcp_connection* tls_sync_connect(struct socket_info* send_sock,
 		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;
 	}
+	*fd = s;
 	return con;
 	/*FIXME: set sock idx! */
 error:
@@ -1365,11 +1377,10 @@ static int proto_tls_send(struct socket_info* send_sock,
 		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
-		if ((c=tls_sync_connect(send_sock, to))==0) {
+		if ((c=tls_sync_connect(send_sock, to, &fd))==0) {
 			LM_ERR("connect failed\n");
 			return -1;
 		}
-		fd = c->s;
 		goto send_it;
 	}
 
@@ -1448,7 +1459,7 @@ again:
 			}
 		}
 
-		tcp_parse_headers(req, 0/*crlf_pingpong*/, 0/*crlf_drop*/);
+		tcp_parse_headers(req, tls_crlf_pingpong, tls_crlf_drop);
 #ifdef EXTRA_DEBUG
 					/* if timeout state=0; goto end__req; */
 		LM_DBG("read= %d bytes, parsed=%d, state=%d, error=%d\n",
@@ -1480,7 +1491,7 @@ again:
 		goto error;
 	}
 
-	switch (tcp_handle_req(req, con, 4/*max_msg_chunks*/) ) {
+	switch (tcp_handle_req(req, con, tls_max_msg_chunks) ) {
 		case 1:
 			goto again;
 		case -1:
