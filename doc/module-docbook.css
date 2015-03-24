@@ -9,7 +9,7 @@ body {
 	width: 80%;
 	/* margin: 5px 50px 5px 50px auto; */
 	background: #fff;
-	color: #666;
+	color: #000;
 }
 
 p.c2 {
@@ -66,7 +66,7 @@ h1 {
 	-moz-border-radius: 7px;
 	border-radius: 7px;
 	background: -moz-linear-gradient(top, #528c5a, #c3d7bc);
-	background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#528c5a), to(#c3d7bc)):
+	background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#528c5a), to(#c3d7bc));
 	background: -webkit-linear-gradient(top, #528c5a, #c3d7bc);
 	background: -ms-linear-gradient(top, #528c5a, #c3d7bc);
 	background: -o-linear-gradient(top, #528c5a, #c3d7bc);
@@ -95,7 +95,7 @@ h2 {
 	-moz-border-radius: 7px;
 	border-radius: 7px;
 	background: -moz-linear-gradient(top, #528c5a, #c3d7bc);
-	background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#528c5a), to(#c3d7bc)):
+	background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#528c5a), to(#c3d7bc));
 	background: -webkit-linear-gradient(top, #528c5a, #c3d7bc);
 	background: -ms-linear-gradient(top, #528c5a, #c3d7bc);
 	background: -o-linear-gradient(top, #528c5a, #c3d7bc);
@@ -266,7 +266,7 @@ div.sect1,div.sect2,div.sect3 {
 div.example,div.toc {
 	color: #185662;
 	border: 1px solid #bfbfbf;
-	padding: 15px 20px;
+	padding: 10px;
 	background-color: #e7f7df;
 	-moz-border-radius: 20px;
 	border-radius: 20px;
