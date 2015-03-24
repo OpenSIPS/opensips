@@ -1302,7 +1302,7 @@ static void tls_conn_clean(struct tcp_connection* c)
 
 
 static struct tcp_connection* tls_sync_connect(struct socket_info* send_sock,
-		union sockaddr_union* server)
+		union sockaddr_union* server, int *fd)
 {
 	int s;
 	union sockaddr_union my_name;
@@ -1335,6 +1335,7 @@ static struct tcp_connection* tls_sync_connect(struct socket_info* send_sock,
 		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;
 	}
+	*fd = s;
 	return con;
 	/*FIXME: set sock idx! */
 error:
@@ -1376,11 +1377,10 @@ static int proto_tls_send(struct socket_info* send_sock,
 		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
-		if ((c=tls_sync_connect(send_sock, to))==0) {
+		if ((c=tls_sync_connect(send_sock, to, &fd))==0) {
 			LM_ERR("connect failed\n");
 			return -1;
 		}
-		fd = c->s;
 		goto send_it;
 	}
 
