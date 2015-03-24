@@ -75,6 +75,9 @@ Ionut-Razvan Ionita
 
               1.6.13. client_domain_avp (integer)
               1.6.14. server_domain, client_domain (string)
+              1.6.15. tls_crlf_pingpong (integer)
+              1.6.16. tls_crlf_drop (integer)
+              1.6.17. tls_max_msg_chunks (integer)
 
         1.7. Pseudo-Variables
 
@@ -123,9 +126,12 @@ Ionut-Razvan Ionita
    1.12. Set tls_handshake_timeout & tls_send_timeout variable
    1.13. Set tls_client_domain_avp variable
    1.14. Usage of tls_client_domain and tls_server_domain block
-   1.15. Example of $tls_[peer|my]_[subject|issuer]
-   1.16. Script with TLS support
-   1.17. Example of TLS logging
+   1.15. Set tls_crlf_pingpong parameter
+   1.16. Set tls_crlf_drop parameter
+   1.17. Set tls_max_msg_chunks parameter
+   1.18. Example of $tls_[peer|my]_[subject|issuer]
+   1.19. Script with TLS support
+   1.20. Example of TLS logging
 
 Chapter 1. Admin Guide
 
@@ -665,6 +671,48 @@ route{
     exit;
 ...
 
+1.6.15. tls_crlf_pingpong (integer)
+
+   Send CRLF pong (\r\n) to incoming CRLFCRLF ping messages over
+   TLS. By default it is enabled (1).
+
+   Default value is 1 (enabled).
+
+   Example 1.15. Set tls_crlf_pingpong parameter
+...
+modparam("proto_tcp", "tls_crlf_pingpong", 0)
+...
+
+1.6.16. tls_crlf_drop (integer)
+
+   Drop CRLF (\r\n) ping messages. When this parameter is enabled,
+   the TLS layer drops packets that contains a single CRLF
+   message. If a CRLFCRLF message is received, it is handled
+   according to the tls_crlf_pingpong parameter.
+
+   Default value is 0 (disabled).
+
+   Example 1.16. Set tls_crlf_drop parameter
+...
+modparam("proto_tcp", "tls_crlf_drop", 1)
+...
+
+1.6.17. tls_max_msg_chunks (integer)
+
+   The maximum number of chunks that a SIP message is expected to
+   arrive via TLS. If a packet is received more fragmented than
+   this, the connection is dropped (either the connection is very
+   overloaded and this leads to high fragmentation - or we are the
+   victim of an ongoing attack where the attacker is sending the
+   traffic very fragmented in order to decrease our performance).
+
+   Default value is 4.
+
+   Example 1.17. Set tls_max_msg_chunks parameter
+...
+modparam("proto_tcp", "tls_max_msg_chunks", 8)
+...
+
 1.7. Pseudo-Variables
 
    This module exports the follong pseudo-variables:
@@ -709,7 +757,7 @@ route{
    $tls_[peer|my]_[subject|issuer] - ASCII dump of the fields in
    the issuer/subject section of the certificate. String type.
 
-   Example 1.15. Example of $tls_[peer|my]_[subject|issuer]
+   Example 1.18. Example of $tls_[peer|my]_[subject|issuer]
 /C=AT/ST=Vienna/L=Vienna/O=enum.at/CN=enum.at
 
 1.7.8. $tls_[peer|my]_[subject|issuer]_cn
@@ -804,7 +852,7 @@ route{
    for more details).
      * fork = yes
 
-   Example 1.16. Script with TLS support
+   Example 1.19. Script with TLS support
   # ----------- global configuration parameters ------------------------
   debug=3
   fork=yes
@@ -980,7 +1028,7 @@ route{
    statements into your OpenSIPS.cfg. This will dump all available
    TLS pseudo variables.
 
-   Example 1.17. Example of TLS logging
+   Example 1.20. Example of TLS logging
 xlog("L_INFO","==================== start TLS pseudo variables =========
 ========='\n");
 xlog("L_INFO","$$tls_version                    = '$tls_version'\n");
