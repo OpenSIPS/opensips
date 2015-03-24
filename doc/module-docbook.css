@@ -163,7 +163,7 @@ h3.editor {
 	margin: 0 0 0 20px;
 }
 
-div.affiliation,code.email {
+div.affiliation,div.editor code.email,div.author code.email {
 	margin-left: 20px;
 }
 
