@@ -26,7 +26,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "report_emergency.h" 
+#include "report_emergency.h"
 
 #define NR_KEYS 				 12
 
@@ -158,7 +158,7 @@ int report(struct emergency_report *report, str db_url, str table_report) {
     LM_INFO("DISPOSITION_REPORT_LEN %d \n", report->disposition.len);
 
 
-    // no field can be null 
+    // no field can be null
     int i = 0;
 
     for (i = 0; i < NR_KEYS; i++)
@@ -177,7 +177,7 @@ int report(struct emergency_report *report, str db_url, str table_report) {
 
     db_funcs.close(db_con);
     db_con = 0;
-    
+
     return 1;
 }
 
@@ -186,20 +186,20 @@ int report(struct emergency_report *report, str db_url, str table_report) {
 *   - CALLID
 *   - ESGWRI
 *   - ERT-RESN
-*   - ERT-NPA 
-*   - ERT-SRID 
-*   - LRO 
-*   - VPC - NAME 
-*   - VPC - HOST 
-*   - TIMESTAMP 
-*   - RESULT 
-*   - DISPOSITION 
+*   - ERT-NPA
+*   - ERT-SRID
+*   - LRO
+*   - VPC - NAME
+*   - VPC - HOST
+*   - TIMESTAMP
+*   - RESULT
+*   - DISPOSITION
 */
 int collect_data(struct node *current, str db_url, str table_report) {
 
     int callid_len, esgwri_len, srid_len, lro_len, vpc_name_len, vpc_host_len, time_len, result_len, disposition_len;
     int size_report;
-    struct emergency_report *report_eme; 
+    struct emergency_report *report_eme;
     callid_len = strlen(current->esct->callid);
     esgwri_len = strlen(current->esct->esgwri);
     srid_len = strlen(current->esct->ert_srid);
@@ -209,14 +209,14 @@ int collect_data(struct node *current, str db_url, str table_report) {
     disposition_len = strlen(current->esct->disposition);
     vpc_name_len = strlen(current->esct->vpc->organizationname);
     vpc_host_len = strlen(current->esct->vpc->hostname);
-    
+
     size_report = sizeof (struct emergency_report) +callid_len + esgwri_len + srid_len + lro_len + vpc_name_len + vpc_host_len + time_len + result_len + disposition_len;
     report_eme = pkg_malloc(size_report);
     if (report_eme == NULL) {
         LM_ERR("no more pkg memory\n");
         return -1;
     }
- 
+
     memset(report_eme, 0, size_report);
 
     report_eme->callid.len = callid_len;
@@ -234,7 +234,7 @@ int collect_data(struct node *current, str db_url, str table_report) {
 
     report_eme->ert_resn = current->esct->ert_resn;
     report_eme->ert_npa = current->esct->ert_npa;
- 
+
     report_eme->esgwri.len = esgwri_len;
     if (esgwri_len == 0) {
         report_eme->esgwri.s = " ";
@@ -272,8 +272,8 @@ int collect_data(struct node *current, str db_url, str table_report) {
     }
     report_eme->result.len = result_len;
     report_eme->result.s = (char *) (report_eme + 1) + callid_len + srid_len + esgwri_len + lro_len + vpc_name_len + vpc_host_len + time_len;
-    memcpy(report_eme->result.s, current->esct->result, result_len);          
- 
+    memcpy(report_eme->result.s, current->esct->result, result_len);
+
     report_eme->timestamp.len = time_len;
     if (time_len == 0) {
         report_eme->timestamp.s = " ";
@@ -281,7 +281,7 @@ int collect_data(struct node *current, str db_url, str table_report) {
     } else {
         report_eme->timestamp.s = (char *) (report_eme + 1) + callid_len + srid_len + esgwri_len + lro_len + vpc_name_len + vpc_host_len;
         memcpy(report_eme->timestamp.s, current->esct->datetimestamp, time_len);
-    }  
+    }
     report_eme->disposition.len = disposition_len;
     report_eme->disposition.s = (char *) (report_eme + 1) + callid_len + srid_len + esgwri_len + lro_len + vpc_name_len + vpc_host_len + time_len + result_len;
     memcpy(report_eme->disposition.s, current->esct->disposition, disposition_len);
@@ -298,7 +298,7 @@ int collect_data(struct node *current, str db_url, str table_report) {
     LM_INFO(" --- REPORT - RESULT %.*s \n\n", report_eme->result.len, report_eme->result.s);
     LM_INFO(" --- REPORT - DISPOSITION %.*s \n\n", report_eme->disposition.len, report_eme->disposition.s);
 
-    LM_INFO(" --- TABLE_REPORT %.*s \n\n", table_report.len, table_report.s);   
+    LM_INFO(" --- TABLE_REPORT %.*s \n\n", table_report.len, table_report.s);
 
 /*
     if (report(report_eme, db_url, table_report) != 1) {
@@ -307,7 +307,7 @@ int collect_data(struct node *current, str db_url, str table_report) {
         return -1;
     }
 */
-    
+
     LM_INFO("****** INSERT OK\n");
     pkg_free(report_eme);
     return 1;
@@ -315,7 +315,7 @@ int collect_data(struct node *current, str db_url, str table_report) {
 
 
 /* retreives esgwrifrom the list db_esrn_esgwri
-* using  srid(selectiveRoutingID), resn(routingESN) and npa. 
+* using  srid(selectiveRoutingID), resn(routingESN) and npa.
 */
 int emergency_routing(char *srid, int resn, int npa, char** esgwri, rw_lock_t *ref_lock ) {
 
@@ -326,7 +326,7 @@ int emergency_routing(char *srid, int resn, int npa, char** esgwri, rw_lock_t *r
     while (esrn_domain != NULL) {
         LM_DBG("CMP SRID= %.*s \n", esrn_domain->srid.len, esrn_domain->srid.s);
         LM_DBG("CMP RESN= %d \n", esrn_domain->resn);
-        LM_DBG("CMP NPA = %d \n", esrn_domain->npa);                
+        LM_DBG("CMP NPA = %d \n", esrn_domain->npa);
         if (strncmp(esrn_domain->srid.s, srid, esrn_domain->srid.len) == 0) {
             if ((esrn_domain->resn == resn)&&(esrn_domain->npa == npa)) {
                 char* temp = pkg_malloc(sizeof (char) * esrn_domain->esgwri.len + 1);
@@ -361,7 +361,7 @@ int get_db_routing(str table_name, rw_lock_t *ref_lock ){
     str SRID;
     int RESN;
     int NPA;
-    int nr_rows, i, size, id;
+    int nr_rows, i, size;
     struct esrn_routing *esrn_cell, *old_list, *it, *aux, *new_list;
     struct esrn_routing *init_esrn = NULL;
 
@@ -392,8 +392,6 @@ int get_db_routing(str table_name, rw_lock_t *ref_lock ){
             LM_ERR("Invalid value returned 1\n");
             goto end;
         }
-
-        id = VAL_INT(values);
 
         if (VAL_NULL(values + 1) ||
                 (VAL_TYPE(values + 1) != DB_STR && VAL_TYPE(values + 1) != DB_STRING)) {
