@@ -77,9 +77,17 @@ int tcp_connect_blocking(int s, const struct sockaddr *servaddr,
 int tcp_conn_get(int id, struct ip_addr* ip, int port,
 		struct tcp_connection** conn, int* conn_fd);
 
-/* creates a new tcp conn around a newly connected socket */
+/* creates a new tcp conn around a newly connected socket
+ * and sends it to the master */
 struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
 		struct socket_info* si, int state);
+
+/* creates a new tcp conn around a newly connected socket */
+struct tcp_connection* tcp_conn_new(int sock, union sockaddr_union* su,
+		struct socket_info* si, int state);
+
+/* sends a connected connection to the master */
+int tcp_conn_send(struct tcp_connection *con);
 
 /* release a connection aquired via tcp_conn_get() or tcp_conn_create() */
 void tcp_conn_release(struct tcp_connection* c, int pending_data);

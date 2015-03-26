@@ -852,8 +852,19 @@ struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
 											struct socket_info* si, int state)
 {
 	struct tcp_connection *c;
-	long response[2];
-	int n;
+
+	/* create the connection structure */
+	c = tcp_conn_new(sock, su, si, state);
+	if (c==NULL)
+		return NULL;
+
+	return (tcp_conn_send(c) == 0 ? c : NULL);
+}
+
+struct tcp_connection* tcp_conn_new(int sock, union sockaddr_union* su,
+		struct socket_info* si, int state)
+{
+	struct tcp_connection *c;
 
 	/* create the connection structure */
 	c = tcpconn_new(sock, su, si, state, 0);
@@ -864,8 +875,16 @@ struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
 	c->refcnt++; /* safe to do it w/o locking, it's not yet
 					available to the rest of the world */
 
+	return c;
+}
+
+int tcp_conn_send(struct tcp_connection *c)
+{
+	long response[2];
+	int n;
+
 	/* inform TCP main about this new connection */
-	if (state==S_CONN_CONNECTING) {
+	if (c->state==S_CONN_CONNECTING) {
 		response[0]=(long)c;
 		response[1]=ASYNC_CONNECT;
 		n=send_fd(unix_tcp_sock, response, sizeof(response), c->s);
@@ -873,7 +892,7 @@ struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
 			LM_ERR("Failed to send the socket to main for async connection\n");
 			goto error;
 		}
-		close(sock);
+		close(c->s);
 	} else {
 		response[0]=(long)c;
 		response[1]=CONN_NEW;
@@ -884,11 +903,11 @@ struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
 		}
 	}
 
-	return c;
+	return 0;
 error:
 	_tcpconn_rm(c);
 	tcp_connections_no--;
-	return NULL;
+	return -1;
 }
 
 
