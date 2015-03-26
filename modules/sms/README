@@ -150,7 +150,7 @@ modem_param       = name "=" value
      * r=retry (optional) - How many times to try to re-send a SMS
        that reported error. Default is twice.
      * l=looping (optional) - Time for modem to wait before
-       performing a new check for incomimg/outgoing SMS/SIP_MSG.
+       performing a new check for incoming/outgoing SMS/SIP_MSG.
        Default is 20.
 
    No default value, the parameter is mandatory.

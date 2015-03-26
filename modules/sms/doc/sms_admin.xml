@@ -163,7 +163,7 @@ modem_param	  = name "=" value
 		<listitem>
 			<para>
 			l=looping (optional) - Time for modem to wait before performing a 
-			new check for incomimg/outgoing <acronym>SMS</acronym>/SIP_MSG.
+			new check for incoming/outgoing <acronym>SMS</acronym>/SIP_MSG.
 			Default is 20.
 			</para>
 		</listitem>
