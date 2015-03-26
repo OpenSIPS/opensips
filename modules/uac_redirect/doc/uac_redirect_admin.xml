@@ -8,28 +8,28 @@
 	<section>
 		<title>Overview</title>
 		<para>
-		UAC REDIRECT - User Agent Client redirection - module enhance &osips;
+		UAC REDIRECT - User Agent Client redirection - module enhances &osips;
 		with the functionality of being able to handle (interpret, filter,
 		log and follow) redirect responses ( 3xx replies class).
 		</para>
 		<para>
-		UAC REDIRECT module offer stateful processing, gathering the
+		UAC REDIRECT module offers stateful processing, gathering the
 		contacts from all 3xx branches of a call.
 		</para>
 		<para>
-		The module provide a powerful mechanism for selecting and filtering 
+		The module provides a powerful mechanism for selecting and filtering 
 		the contacts to be used for the new redirect:
 		</para>
 		<itemizedlist>
 			<listitem>
-			<para><emphasis>number based</emphasis> - limits like the 
-			number of total contacts to be used or the maximum number of 
+			<para><emphasis>number based</emphasis> - limits, like the 
+			number of total contacts to be used, or the maximum number of 
 			contacts per branch to be selected.
 			</para>
 			</listitem>
 			<listitem>
 			<para><emphasis>Regular Expression based</emphasis> - combinations
-			of deny and accept filters allow a strict control of the 
+			of deny and accept filters allow or strict control of the 
 			contacts to be used for redirection.
 			</para>
 			</listitem>
@@ -43,7 +43,7 @@
 	<section>
 		<title>Accounting</title>
 		<para>
-		UAC REDIRECT module allows to log all the redirection (to be later
+		UAC REDIRECT module allows logging of all redirection (to be later
 		used for CDR aggregation). This functionality may be dynamically
 		enabled for each redirection situation.
 		</para>
@@ -138,15 +138,15 @@ modparam("uac_redirect","default_filter","deny")
 		<section>
 			<title><varname>deny_filter</varname> (string)</title>
 			<para>
-			The regular expression for default deny filtering. It make sens
-			to be defined on only if the <varname>default_filter</varname>
+			The regular expression for default deny filtering. It makes sense
+			to be defined only if the <varname>default_filter</varname>
 			parameter is set to <quote>accept</quote>. All contacts matching
 			the <varname>deny_filter</varname> will be rejected; the rest 
 			of them will be accepted for redirection.
 			</para>
 			<para>
-			The parameter may be defined only one - multiple definition will
-			overwrite the previous definitions. If more regular expression 
+			The parameter may be defined only once - multiple definitions will
+			overwrite the previous definitions. If more regular expressions
 			need to be defined, use the 
 			<function moreinfo="none">set_deny_filter()</function> scripting
 			function.
@@ -170,15 +170,15 @@ modparam("uac_redirect","deny_filter",".*@siphub\.net")
 		<section>
 			<title><varname>accept_filter</varname> (string)</title>
 			<para>
-			The regular expression for default accept filtering. It make sens
-			to be defined on only if the <varname>default_filter</varname>
+			The regular expression for default accept filtering. It makes sense
+			to be defined only if the <varname>default_filter</varname>
 			parameter is set to <quote>deny</quote>. All contacts matching
 			the <varname>accept_filter</varname> will be accepted; the rest 
 			of them will be rejected for redirection.
 			</para>
 			<para>
-			The parameter may be defined only one - multiple definition will
-			overwrite the previous definitions. If more regular expression 
+			The parameter may be defined only once - multiple definitions will
+			overwrite the previous definitions. If more regular expressions
 			need to be defined, use the 
 			<function moreinfo="none">set_accept_filter()</function> scripting
 			function.
@@ -202,8 +202,8 @@ modparam("uac_redirect","accept_filter",".*@siphub\.net")
 		<section>
 			<title><varname>acc_function</varname> (string)</title>
 			<para>
-			Specifies the accounting function to be used. Just be defining 
-			this parameter, the accounting support will not be enabled. 
+			Specifies the accounting function to be used. Accounting support
+			will not be enabled just by defining this parameter. 
 			Accounting may only be enabled via two parameters 
 			<function moreinfo="none">set_accept_filter()</function> 
 			scripting function.
@@ -244,9 +244,9 @@ modparam("uac_redirect","acc_function","acc_db_request")
 			<para>
 			Specifies the accounting table to be used if DB accounting was 
 			chosen (<varname>acc_function</varname> was set to 
-			<quote>acc_db_request</quote>). Just be defining 
-			this parameter, the accounting support will not be enabled. 
-			Accounting may only be enabled via two parameters 
+			<quote>acc_db_request</quote>). Accounting support will not be
+			enabled just by defining this parameter.  Accounting may only
+			be enabled via two parameters 
 			<function moreinfo="none">set_accept_filter()</function> 
 			scripting function.
 			</para>
@@ -271,16 +271,16 @@ modparam("uac_redirect","acc_db_table","acc_redirect")
 		<title>Exported Functions</title>
 		<section>
 			<title>
-				<function moreinfo="none">set_deny_filter(filter,flags)
+				<function moreinfo="none">set_deny_filter(filter, flag)
 					</function>
 			</title>
 			<para>
-			Sets additional deny filters. Maximum 6 may be combined. This
+			Sets additional deny filters. Maximum of 6 may be combined. This
 			additional filter will apply only to the current message - it
 			will not have a global effect.
 			</para>
 			<para>
-			Default or previous added deny filter may be reset depending of
+			Default or previous added deny filter may be reset depending on
 			the <emphasis>flag</emphasis> parameter value:
 			</para>
 			<itemizedlist>
@@ -312,8 +312,8 @@ modparam("uac_redirect","acc_db_table","acc_redirect")
 				<title><function>set_deny_filter</function> usage</title>
 				<programlisting format="linespecific">
 ...
-set_deny_filter(".*@domain2.net","reset_all");
-set_deny_filter(".*@domain1.net","");
+set_deny_filter(".*@domain2.net", "reset_all");
+set_deny_filter(".*@domain1.net", "");
 ...
 				</programlisting>
 			</example>
@@ -321,11 +321,11 @@ set_deny_filter(".*@domain1.net","");
 
 		<section>
 			<title>
-				<function moreinfo="none">set_accept_filter(filter,flags)
+				<function moreinfo="none">set_accept_filter(filter, flag)
 					</function>
 			</title>
 			<para>
-			Sets additional accept filters. Maximum 6 may be combined. This
+			Sets additional accept filters. Maximum of 6 may be combined. This
 			additional filter will apply only to the current message - it
 			will not have a global effect.
 			</para>
@@ -362,8 +362,8 @@ set_deny_filter(".*@domain1.net","");
 				<title><function>set_accept_filter</function> usage</title>
 				<programlisting format="linespecific">
 ...
-set_accept_filter(".*@domain2.net","reset_added");
-set_accept_filter(".*@domain1.net","");
+set_accept_filter(".*@domain2.net", "reset_added");
+set_accept_filter(".*@domain1.net", "");
 ...
 				</programlisting>
 			</example>
@@ -381,7 +381,7 @@ set_accept_filter(".*@domain1.net","");
 			</para>
 			<para>
 				How many contacts (in total and per branch) are selected 
-				depends of the <emphasis>max</emphasis> parameter values.
+				depends on the <emphasis>max</emphasis> parameter values.
 				Its syntax is:
 			</para>
 			<itemizedlist>
@@ -397,7 +397,7 @@ set_accept_filter(".*@domain1.net","");
 			</itemizedlist>
 			<para>
 				Both <quote>max_total</quote> and <quote>max_branch</quote>
-				are positive integer. To specify unlimited values, use 0 value
+				are positive integers. To specify unlimited values, use 0 value
 				or "*" character.
 			</para>
 			<para>
@@ -430,7 +430,7 @@ get_redirects("*");
 
 		<section>
 			<title>
-				<function moreinfo="none">get_redirects(max,reason)</function>
+				<function moreinfo="none">get_redirects(max, reason)</function>
 			</title>
 			<para>
 				The function has same functionality as 
@@ -438,7 +438,7 @@ get_redirects("*");
 				function, but it will produce accounting records.
 			</para>
 			<para>
-				The accounting records will be mark by the 
+				The accounting records will be marked by the 
 				<emphasis>reason</emphasis> phrase.
 			</para>
 			<para>
@@ -452,7 +452,7 @@ get_redirects("*");
 				<title><function>get_redirects</function> usage</title>
 				<programlisting format="linespecific">
 ...
-get_redirects("4:1","Redirected");
+get_redirects("4:1", "Redirected");
 ...
 				</programlisting>
 			</example>
@@ -471,7 +471,7 @@ loadmodule "modules/tm/tm.so"
 loadmodule "modules/acc/acc.so"
 loadmodule "modules/uac_redirect/uac_redirect.so"
 
-modparam("usrloc", "db_mode",   0)
+modparam("usrloc", "db_mode", 0)
 
 route{
 	if (uri==myself) {
@@ -503,7 +503,7 @@ failure_route[1] {
 }
 
 failure_route[2] {
-	get_redirects("6:2","redirect");
+	get_redirects("6:2", "redirect");
 	t_relay();
 }
 				</programlisting>

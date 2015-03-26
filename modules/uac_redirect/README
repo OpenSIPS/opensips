@@ -2,9 +2,19 @@ UAC_REDIRECT Module
 
 Bogdan-Andrei Iancu
 
+   <bogdan@opensips.org>
+
 Edited by
 
 Bogdan-Andrei Iancu
+
+   <bogdan@opensips.org>
+
+Edited by
+
+Robert Gagnon
+
+   Telepoint Global Hosting Services, LLC
 
    Copyright © 2005 Voice Sistem
    Revision History
@@ -32,10 +42,10 @@ Bogdan-Andrei Iancu
 
         1.5. Exported Functions
 
-              1.5.1. set_deny_filter(filter,flags)
-              1.5.2. set_accept_filter(filter,flags)
+              1.5.1. set_deny_filter(filter, flag)
+              1.5.2. set_accept_filter(filter, flag)
               1.5.3. get_redirects(max)
-              1.5.4. get_redirects(max,reason)
+              1.5.4. get_redirects(max, reason)
 
         1.6. Script Example
 
@@ -56,21 +66,21 @@ Chapter 1. Admin Guide
 
 1.1. Overview
 
-   UAC REDIRECT - User Agent Client redirection - module enhance
+   UAC REDIRECT - User Agent Client redirection - module enhances
    OpenSIPS with the functionality of being able to handle
    (interpret, filter, log and follow) redirect responses ( 3xx
    replies class).
 
-   UAC REDIRECT module offer stateful processing, gathering the
+   UAC REDIRECT module offers stateful processing, gathering the
    contacts from all 3xx branches of a call.
 
-   The module provide a powerful mechanism for selecting and
+   The module provides a powerful mechanism for selecting and
    filtering the contacts to be used for the new redirect:
-     * number based - limits like the number of total contacts to
-       be used or the maximum number of contacts per branch to be
+     * number based - limits, like the number of total contacts to
+       be used, or the maximum number of contacts per branch to be
        selected.
      * Regular Expression based - combinations of deny and accept
-       filters allow a strict control of the contacts to be used
+       filters allow or strict control of the contacts to be used
        for redirection.
 
    When selecting from a 3xx branch the contacts to be used, the
@@ -79,7 +89,7 @@ Chapter 1. Admin Guide
 
 1.2. Accounting
 
-   UAC REDIRECT module allows to log all the redirection (to be
+   UAC REDIRECT module allows logging of all redirection (to be
    later used for CDR aggregation). This functionality may be
    dynamically enabled for each redirection situation.
 
@@ -127,14 +137,14 @@ modparam("uac_redirect","default_filter","deny")
 
 1.4.2. deny_filter (string)
 
-   The regular expression for default deny filtering. It make sens
-   to be defined on only if the default_filter parameter is set to
-   “accept”. All contacts matching the deny_filter will be
+   The regular expression for default deny filtering. It makes
+   sense to be defined only if the default_filter parameter is set
+   to “accept”. All contacts matching the deny_filter will be
    rejected; the rest of them will be accepted for redirection.
 
-   The parameter may be defined only one - multiple definition
+   The parameter may be defined only once - multiple definitions
    will overwrite the previous definitions. If more regular
-   expression need to be defined, use the set_deny_filter()
+   expressions need to be defined, use the set_deny_filter()
    scripting function.
 
    This parameter is optional, it's default value being NULL.
@@ -146,14 +156,14 @@ modparam("uac_redirect","deny_filter",".*@siphub\.net")
 
 1.4.3. accept_filter (string)
 
-   The regular expression for default accept filtering. It make
-   sens to be defined on only if the default_filter parameter is
-   set to “deny”. All contacts matching the accept_filter will be
+   The regular expression for default accept filtering. It makes
+   sense to be defined only if the default_filter parameter is set
+   to “deny”. All contacts matching the accept_filter will be
    accepted; the rest of them will be rejected for redirection.
 
-   The parameter may be defined only one - multiple definition
+   The parameter may be defined only once - multiple definitions
    will overwrite the previous definitions. If more regular
-   expression need to be defined, use the set_accept_filter()
+   expressions need to be defined, use the set_accept_filter()
    scripting function.
 
    This parameter is optional, it's default value being NULL.
@@ -165,8 +175,8 @@ modparam("uac_redirect","accept_filter",".*@siphub\.net")
 
 1.4.4. acc_function (string)
 
-   Specifies the accounting function to be used. Just be defining
-   this parameter, the accounting support will not be enabled.
+   Specifies the accounting function to be used. Accounting
+   support will not be enabled just by defining this parameter.
    Accounting may only be enabled via two parameters
    set_accept_filter() scripting function.
 
@@ -186,9 +196,9 @@ modparam("uac_redirect","acc_function","acc_db_request")
 1.4.5. acc_db_table (string)
 
    Specifies the accounting table to be used if DB accounting was
-   chosen (acc_function was set to “acc_db_request”). Just be
-   defining this parameter, the accounting support will not be
-   enabled. Accounting may only be enabled via two parameters
+   chosen (acc_function was set to “acc_db_request”). Accounting
+   support will not be enabled just by defining this parameter.
+   Accounting may only be enabled via two parameters
    set_accept_filter() scripting function.
 
    The default value is “acc”.
@@ -200,13 +210,13 @@ modparam("uac_redirect","acc_db_table","acc_redirect")
 
 1.5. Exported Functions
 
-1.5.1.  set_deny_filter(filter,flags)
+1.5.1.  set_deny_filter(filter, flag)
 
-   Sets additional deny filters. Maximum 6 may be combined. This
-   additional filter will apply only to the current message - it
-   will not have a global effect.
+   Sets additional deny filters. Maximum of 6 may be combined.
+   This additional filter will apply only to the current message -
+   it will not have a global effect.
 
-   Default or previous added deny filter may be reset depending of
+   Default or previous added deny filter may be reset depending on
    the flag parameter value:
      * reset_all - reset both default and previous added deny
        filters;
@@ -218,15 +228,15 @@ modparam("uac_redirect","acc_db_table","acc_redirect")
 
    Example 1.6. set_deny_filter usage
 ...
-set_deny_filter(".*@domain2.net","reset_all");
-set_deny_filter(".*@domain1.net","");
+set_deny_filter(".*@domain2.net", "reset_all");
+set_deny_filter(".*@domain1.net", "");
 ...
 
-1.5.2.  set_accept_filter(filter,flags)
+1.5.2.  set_accept_filter(filter, flag)
 
-   Sets additional accept filters. Maximum 6 may be combined. This
-   additional filter will apply only to the current message - it
-   will not have a global effect.
+   Sets additional accept filters. Maximum of 6 may be combined.
+   This additional filter will apply only to the current message -
+   it will not have a global effect.
 
    Default or previous added deny filter may be reset depending of
    the flag parameter value:
@@ -240,8 +250,8 @@ set_deny_filter(".*@domain1.net","");
 
    Example 1.7. set_accept_filter usage
 ...
-set_accept_filter(".*@domain2.net","reset_added");
-set_accept_filter(".*@domain1.net","");
+set_accept_filter(".*@domain2.net", "reset_added");
+set_accept_filter(".*@domain1.net", "");
 ...
 
 1.5.3.  get_redirects(max)
@@ -252,12 +262,12 @@ set_accept_filter(".*@domain1.net","");
    branches, this must be done explicitly from script.
 
    How many contacts (in total and per branch) are selected
-   depends of the max parameter values. Its syntax is:
+   depends on the max parameter values. Its syntax is:
      * max = max_total [":" max_branch]
      * max_total = number of total contacts to be selected
      * max_branch = number of contacts per branch to be selected
 
-   Both “max_total” and “max_branch” are positive integer. To
+   Both “max_total” and “max_branch” are positive integers. To
    specify unlimited values, use 0 value or "*" character.
 
    NOTE that during the selection process, each set of contacts
@@ -279,12 +289,12 @@ get_redirects("6:*");
 get_redirects("*");
 ...
 
-1.5.4.  get_redirects(max,reason)
+1.5.4.  get_redirects(max, reason)
 
    The function has same functionality as get_redirects(max)
    function, but it will produce accounting records.
 
-   The accounting records will be mark by the reason phrase.
+   The accounting records will be marked by the reason phrase.
 
    If this function appears in the script, at startup, the module
    will import the accounting function. Otherwise not.
@@ -293,7 +303,7 @@ get_redirects("*");
 
    Example 1.9. get_redirects usage
 ...
-get_redirects("4:1","Redirected");
+get_redirects("4:1", "Redirected");
 ...
 
 1.6. Script Example
@@ -306,7 +316,7 @@ loadmodule "modules/tm/tm.so"
 loadmodule "modules/acc/acc.so"
 loadmodule "modules/uac_redirect/uac_redirect.so"
 
-modparam("usrloc", "db_mode",   0)
+modparam("usrloc", "db_mode", 0)
 
 route{
         if (uri==myself) {
@@ -338,6 +348,6 @@ failure_route[1] {
 }
 
 failure_route[2] {
-        get_redirects("6:2","redirect");
+        get_redirects("6:2", "redirect");
         t_relay();
 }
