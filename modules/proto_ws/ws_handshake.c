@@ -27,6 +27,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../net/net_tcp.h"
 #include "../../globals.h"
+#include "../../io_wait.h"
 #include "../../dprint.h"
 #include "../../tsend.h"
 #include "../../timer.h"
@@ -36,30 +37,270 @@
 #include "ws_tcp.h"
 #include "ws.h"
 
+#define HTTP_SEP			"\r\n"
+#define HTTP_SEP_LEN		(sizeof(HTTP_SEP) - 1)
+#define HTTP_END HTTP_SEP HTTP_SEP
+#define HTTP_END_LEN		(sizeof(HTTP_END) - 1)
+#define HTTP_GET_METHOD		"GET"
+#define HTTP_GET_METHOD_LEN	(sizeof(HTTP_GET_METHOD) - 1)
+#define HTTP_VER_TOKEN		"HTTP/"
+#define HTTP_VER_TOKEN_LEN	(sizeof(HTTP_VER_TOKEN) - 1)
+#define HTTP_VER_MAJ		1
+#define HTTP_VER_MIN		1
+#define HTTP_VERSION		HTTP_VER_TOKEN "1.1"
+#define HTTP_VERSION_LEN	(sizeof(HTTP_VERSION) - 1)
+#define HTTP_REPLY_CODE		"101"
+#define HTTP_REPLY_CODE_LEN	(sizeof(HTTP_REPLY_CODE) - 1)
+#define HTTP_REPLY_REASON1	"Switching"
+#define HTTP_REPLY_REASON1_LEN	(sizeof(HTTP_REPLY_REASON1) - 1)
+#define HTTP_REPLY_REASON2	"Protocols"
+#define HTTP_REPLY_REASON2_LEN	(sizeof(HTTP_REPLY_REASON2) - 1)
+
+
+
 static int ws_read_http(struct tcp_connection *c, struct tcp_req *r);
-static int ws_parse_handshake(struct tcp_connection *c,
-		char *msg, int len, str *key);
-static int ws_complete_handshake(struct tcp_connection *c, str *key);
+static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len);
+static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len);
+static int ws_complete_handshake(struct tcp_connection *c);
+static int ws_start_handshake(struct tcp_connection *c);
 static int ws_bad_handshake(struct tcp_connection *c);
 
 static struct tcp_req ws_current_req;
 
-int ws_handshake(struct tcp_connection *con)
+
+#define WS_KEY_LEN 24
+static char ws_key[WS_KEY_LEN];
+static const char base64alphabet[] =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+#define BASE64ALPHABET_LEN (sizeof base64alphabet)
+
+/* we're using a completely random key - no reason yet for something else */
+static str ws_rand_key(void)
+{
+	static str key = { ws_key, WS_KEY_LEN };
+	int i;
+
+	for (i = 0; i < WS_KEY_LEN; i++)
+		ws_key[i] = base64alphabet[rand() % BASE64ALPHABET_LEN];
+
+	return key;
+}
+
+
+int ws_client_handshake(struct tcp_connection *con)
+{
+
+	int bytes;
+	long size = 0;
+	int msg_len;
+	char *msg_buf;
+	struct tcp_req *req;
+	int to;
+	int elapsed;
+	struct timeval begin;
+	unsigned int err_len, poll_err = 0, n, err;
+#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
+	fd_set sel_set;
+	fd_set orig_set;
+	struct timeval timeout;
+#else
+	struct pollfd pf;
+#endif
+
+	WS_STATE(con) = WS_CON_HANDSHAKE;
+	WS_KEY(con) = ws_rand_key();
+	if (ws_start_handshake(con) < 0) {
+		LM_ERR("cannot start handshake\n");
+		return -1;
+	}
+
+	/* there should be no req in the con */
+	if (con->con_req) {
+		LM_BUG("there should not be any con req!\n");
+		goto error;
+	}
+	init_tcp_req(&ws_current_req, 0);
+	req=&ws_current_req;
+
+	to = ws_hs_read_tout*1000;
+	if (gettimeofday(&(begin), NULL)) {
+		LM_ERR("Failed to get TCP connect start time\n");
+		goto error;
+	}
+#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
+		FD_ZERO(&orig_set);
+		FD_SET(con->fd, &orig_set);
+#else
+		pf.fd=con->fd;
+		pf.events=POLLIN;
+#endif
+
+	do {
+		elapsed = get_time_diff(&begin);
+		if (elapsed<to) {
+			to-=elapsed;
+		} else {
+			LM_ERR("Timeout waiting for handshake read\n");
+			goto error;
+		}
+#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
+		sel_set=orig_set;
+		timeout.tv_sec = to/1000000;
+		timeout.tv_usec = to%1000000;
+		n=select(con->fd+1, 0, &sel_set, 0, &timeout);
+#else
+		n=poll(&pf, 1, to/1000);
+#endif
+		if (n<0){
+			if (errno==EINTR) continue;
+			goto error;
+		}else if (n==0) /* timeout */ continue;
+#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
+		if (FD_ISSET(con->fd, &sel_set))
+#else
+		if (pf.revents&(POLLERR|POLLHUP|POLLNVAL)) {
+			LM_ERR("poll error: flags %d - %d %d %d %d \n", pf.revents,
+				   POLLOUT,POLLERR,POLLHUP,POLLNVAL);
+			poll_err=1;
+		}
+#endif
+		{
+			err_len=sizeof(err);
+			getsockopt(con->fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
+			if (err != 0 || poll_err != 0) {
+				if (err != EINPROGRESS && err != EALREADY)
+					goto error;
+				continue;
+			}
+		}
+
+		if (req->error == TCP_REQ_OK) {
+			bytes = ws_read_http(con, req);
+			if (bytes == -1) {
+				LM_ERR("failed to read %d:%s\n", errno, strerror(errno));
+				goto error;
+			}
+
+			if ((con->state==S_CONN_EOF) && (req->complete==0)) {
+				LM_DBG("EOF received\n");
+				goto done;
+			}
+
+		}
+		if (req->error!=TCP_REQ_OK){
+			LM_ERR("bad request, state=%d, error=%d "
+					  "buf:\n%.*s\nparsed:\n%.*s\n", req->state, req->error,
+					  (int)(req->pos-req->buf), req->buf,
+					  (int)(req->parsed-req->start), req->start);
+			LM_DBG("- received from: port %d\n", con->rcv.src_port);
+			print_ip("- received from: ip ",&con->rcv.src_ip, "\n");
+			goto error;
+		}
+
+		con->msg_attempts++;
+		if (con->msg_attempts == ws_max_msg_chunks) {
+			LM_ERR("Made %u read attempts but message is not complete yet - "
+				   "closing connection \n",con->msg_attempts);
+			goto error;
+		}
+
+		elapsed = get_time_diff(&begin);
+		if (elapsed >= to) {
+			LM_ERR("Timeout waiting for handshare response\n");
+			goto error;
+		} else {
+			to -= elapsed;
+		}
+	} while(!req->complete);
+
+#ifdef EXTRA_DEBUG
+	LM_DBG("end of header part\n");
+	LM_DBG("- received from: port %d\n", con->rcv.src_port);
+	print_ip("- received from: ip ", &con->rcv.src_ip, "\n");
+	LM_DBG("headers:\n%.*s.\n",(int)(req->body-req->start), req->start);
+#endif
+	if (req->has_content_len) {
+		LM_DBG("content-length= %d\n", req->content_len);
+#ifdef EXTRA_DEBUG
+		LM_DBG("body:\n%.*s\n", req->content_len,req->body);
+#endif
+	}
+
+	/* update the timeout - we succesfully read the request */
+	tcp_conn_set_lifetime(con, tcp_con_lifetime);
+	con->timeout=con->lifetime;
+
+	con->rcv.proto_reserved1=con->id; /* copy the id */
+	/* we overwrite whatever is there, since we are not interested
+	 * in any other data after the handshake */
+	*req->parsed=0;
+
+	/* prepare for next request */
+	size=req->pos-req->parsed;
+
+	msg_buf = req->start;
+	msg_len = req->parsed-req->start;
+
+	if (!size) {
+		/* did not read any more things -  we can release
+		 * the connection */
+		LM_DBG("We're releasing the connection in state %d \n",
+				con->state);
+	} else {
+		/* TODO - should we handle whatever data is sent by the client
+		 * even though the handshake is not completed */
+		/* TODO - we need to find a way to move data from tcp_req to ws_req */
+		LM_WARN("extra data on socket before handshake is completed!\n");
+		WS_STATE(con) = WS_CON_BAD_REQ;
+		goto error;
+	}
+
+	/* TODO: parse and verify response */
+	if (ws_parse_rpl_handshake(con, msg_buf, msg_len) < 0) {
+		LM_ERR("invalid WebSocket reply <%.*s>\n", msg_len, msg_buf);
+		goto error;
+	}
+
+	init_tcp_req(req, 0);
+	con->msg_attempts = 0;
+
+	/* handshake now completed, destroy the handshake data */
+	WS_STATE(con) = WS_CON_HANDSHAKE_DONE;
+
+	LM_DBG("ws_read end\n");
+done:
+	/* connection will be released */
+	return size;
+error:
+	return -1;
+}
+
+int ws_server_handshake(struct tcp_connection *con)
 {
 	int bytes, total_bytes = 0;
 	long size = 0;
 	int msg_len;
 	char *msg_buf;
 	struct tcp_req *req;
-	str key;
 
 	if (con->con_req) {
+		if (WS_TYPE(con) != WS_SERVER) {
+			LM_BUG("cannot create handshake as %d\n", WS_TYPE(con));
+			return -1;
+		}
 		req=con->con_req;
 		LM_DBG("Using the per connection buff \n");
 	} else {
+		if (WS_TYPE(con) != WS_NONE) {
+			LM_BUG("not a new connection here %d", WS_TYPE(con));
+			return -1;
+		}
+		WS_TYPE(con) = WS_SERVER;
+		WS_STATE(con) = WS_CON_HANDSHAKE;
 		LM_DBG("Using the global ( per process ) buff \n");
 		init_tcp_req(&ws_current_req, 0);
 		req=&ws_current_req;
+		/* first time here, mark the state as being SERVER */
 	}
 
 	if (req->error == TCP_REQ_OK) {
@@ -133,17 +374,19 @@ int ws_handshake(struct tcp_connection *con)
 			 * the connection -> other worker may read the next available
 			 * message on the pipe */
 		} else {
+			/* TODO - should we handle whatever data is sent by the client
+			 * even though the handshake is not completed */
 			LM_WARN("extra data on socket before handshake is completed!\n");
-			WS_SET_STATE(con, WS_CON_BAD_REQ);
+			WS_STATE(con) = WS_CON_BAD_REQ;
 			goto error;
 		}
 
-		if (ws_parse_handshake(con, msg_buf, msg_len, &key) < 0) {
+		if (ws_parse_req_handshake(con, msg_buf, msg_len) < 0) {
 			LM_DBG("cannot parse handshake\n");
 			goto error;
 		}
 
-		if (ws_complete_handshake(con, &key) < 0) {
+		if (ws_complete_handshake(con) < 0) {
 			LM_DBG("cannot complete handshake\n");
 			goto error;
 		}
@@ -152,11 +395,11 @@ int ws_handshake(struct tcp_connection *con)
 		con->msg_attempts = 0;
 
 		/* handshake now completed, destroy the handshake data */
-		WS_SET_STATE(con, WS_CON_HANDSHAKE_DONE);
+		WS_STATE(con) = WS_CON_HANDSHAKE_DONE;
 
 		/* finished handshake */
 		goto done;
-		
+
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
 
@@ -224,10 +467,7 @@ error:
 	return -1;
 }
 
-#define HTTP_GET_METHOD "GET"
-#define HTTP_GET_METHOD_LEN (sizeof(HTTP_GET_METHOD) - 1)
-
-static inline int ws_parse_first_line(struct tcp_connection *c,
+static inline int ws_parse_req_http_fl(struct tcp_connection *c,
 		char **msg_buf, int *msg_len, unsigned *ver_maj, unsigned *ver_min)
 {
 	char *p, *sp, *spe, *end, *cr;
@@ -316,6 +556,103 @@ error:
 }
 
 
+static inline int ws_parse_rpl_http_fl(struct tcp_connection *c,
+		char **msg_buf, int *msg_len, unsigned *ver_maj, unsigned *ver_min)
+{
+	char *p, *sp, *end, *cr;
+	int len;
+	str tmp;
+
+	/* go to the first CRLF. According to RFC 2616:
+	 * No CR or LF is allowed except in the final CRLF sequence.*/
+	cr = q_memchr(*msg_buf, '\r', *msg_len);
+	if (!cr) {
+		LM_ERR("invalid first line: cannot find CR\n");
+		goto error;
+	}
+	if (cr == *msg_buf + *msg_len || *(cr + 1) != '\n') {
+		LM_ERR("invalid first line: CR is not followed by LF\n");
+		goto error;
+	}
+	/* update the message and len */
+	p = *msg_buf;
+	end = cr;
+	len = end - p;
+
+	if (len < HTTP_VERSION_LEN) {
+		LM_ERR("invalid first line: version too small <%.*s>\n", len, p);
+		goto error;
+	}
+	if (memcmp(p, HTTP_VER_TOKEN, HTTP_VER_TOKEN_LEN) != 0) {
+		LM_ERR("invalid first line: invalid protocol <%.*s>\n", len, p);
+		goto error;
+	}
+	p += HTTP_VER_TOKEN_LEN;
+	tmp.s = p;
+	sp = q_memchr(tmp.s, '.', end - tmp.s);
+	if (!sp || sp == tmp.s) {
+		LM_ERR("cannot find version DOT");
+		goto error;
+	}
+	tmp.len = sp - tmp.s;
+	if (str2int(&tmp, ver_maj) < 0) {
+		LM_ERR("invalid major <%.*s>\n", tmp.len, tmp.s);
+		goto error;
+	}
+	p = sp + 1;
+	tmp.s = p;
+	sp = q_memchr(tmp.s, ' ', end - tmp.s);
+	if (!sp || sp == tmp.s) {
+		LM_ERR("cannot find version separator");
+		goto error;
+	}
+	tmp.len = sp - tmp.s;
+	if (str2int(&tmp, ver_min) < 0) {
+		LM_ERR("invalid minor <%.*s>\n", tmp.len, tmp.s);
+		goto error;
+	}
+
+	for (; sp < end && *sp == ' '; sp++);
+	if (sp == end || (end - sp) < HTTP_REPLY_CODE_LEN) {
+		LM_ERR("invalid first line: cannot find reply code\n");
+		goto error;
+	}
+	if (memcmp(sp, HTTP_REPLY_CODE, HTTP_REPLY_CODE_LEN) != 0) {
+		LM_ERR("invalid first line: reply code <%.*s>\n", (int)(end - sp), sp);
+		goto error;
+	}
+	sp += HTTP_REPLY_CODE_LEN;
+	for (; sp < end && *sp == ' '; sp++);
+	if (sp == end || (end - sp) < HTTP_REPLY_REASON1_LEN) {
+		LM_ERR("invalid first line: cannot find reason1\n");
+		goto error;
+	}
+	if (strncasecmp(sp, HTTP_REPLY_REASON1, HTTP_REPLY_REASON1_LEN) != 0) {
+		LM_ERR("invalid first line: reason <%.*s>\n", (int)(end - sp), sp);
+		goto error;
+	}
+	p = sp + HTTP_REPLY_REASON1_LEN;
+	for (; p < end && *p == ' '; p++);
+	if (p == end || (end - p) < HTTP_REPLY_REASON2_LEN) {
+		LM_ERR("invalid first line: cannot find reason2\n");
+		goto error;
+	}
+	if (strncasecmp(p, HTTP_REPLY_REASON2, HTTP_REPLY_REASON2_LEN) != 0) {
+		LM_ERR("invalid first line: reason <%.*s>\n", (int)(end - sp), sp);
+		goto error;
+	}
+	p += HTTP_REPLY_REASON2_LEN;
+	for (; p < end; p++)
+		if (*p != ' ') {
+			LM_ERR("trailing characters: <%.*s>\n", (int)(end - p), p);
+			goto error;
+		}
+
+	return 0;
+error:
+	return -1;
+}
+
 #define WS_HOST_F		(1 << 0)
 #define WS_UPGRADE_F	(1 << 1)
 #define WS_CONN_F		(1 << 2)
@@ -324,6 +661,7 @@ error:
 #define WS_VER_F		(1 << 5)
 /* for SIP connections, RFC7118 requires sip protocol */
 #define WS_PROTO_F		(1 << 6)
+#define WS_ACCEPT_F		(1 << 7)
 
 #define HDR_LEN(_s) (sizeof(_s) - 1)
 
@@ -334,13 +672,19 @@ error:
 #define WS_UPGRADE_HDR "Upgrade"
 #define WS_UPGRADE_HDR_LEN (sizeof(WS_UPGRADE_HDR) - 1)
 
-/* all flags */
-#define WS_ALL_F (WS_HOST_F | \
+/* all flags for req */
+#define WS_ALL_REQ_F (WS_HOST_F | \
 					WS_UPGRADE_F | \
 					WS_CONN_F | \
 					WS_ORIGIN_F | \
 					WS_KEY_F | \
 					WS_VER_F | \
+					WS_PROTO_F)
+
+/* all flags for reply */
+#define WS_ALL_RPL_F (WS_UPGRADE_F | \
+					WS_CONN_F | \
+					WS_ACCEPT_F | \
 					WS_PROTO_F)
 
 #define GET_LOWER(_p) \
@@ -376,8 +720,7 @@ static inline int ws_has_param(const char *p, int l, str ps)
 }
 
 
-static int ws_parse_handshake(struct tcp_connection *c,
-		char *msg, int len, str *key)
+static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 {
 	struct sip_msg tmp_msg;
 	struct hdr_field *hf;
@@ -385,13 +728,14 @@ static int ws_parse_handshake(struct tcp_connection *c,
 	char flags = 0;
 	unsigned ver_min, ver_maj;
 
-	if (ws_parse_first_line(c, &msg, &len, &ver_maj, &ver_min) != 0) {
+	if (ws_parse_req_http_fl(c, &msg, &len, &ver_maj, &ver_min) != 0) {
 		LM_ERR("cannot parse the first line of the message\n%.*s\n", len, msg);
 		goto error;
 	}
 
 	/* check the HTTP version */
-	if (ver_maj < 1 || (ver_maj == 1 && ver_min < 1)) {
+	if (ver_maj < HTTP_VER_MAJ ||
+			(ver_maj == HTTP_VER_MAJ && ver_min < HTTP_VER_MIN)) {
 		LM_ERR("Invalid HTTP version: %u.%u\n", ver_maj, ver_min);
 		goto error;
 	}
@@ -482,9 +826,8 @@ static int ws_parse_handshake(struct tcp_connection *c,
 
 				str_trim_spaces_lr(hf->body);
 
-				/* the key is already in the buffer, so we can just point it out */
-				key->len = hf->body.len;
-				key->s = hf->body.s;
+				/* the key is already in the buffer, so we can just copy it */
+				WS_KEY(c) = hf->body;
 
 				flags |= WS_KEY_F;
 			} else if (hf->name.len == HDR_LEN("Sec-WebSocket-Version") &&
@@ -526,7 +869,7 @@ static int ws_parse_handshake(struct tcp_connection *c,
 
 	}
 
-	if (flags != WS_ALL_F) {
+	if (flags != WS_ALL_REQ_F) {
 		/* negate so we can easily compare them */
 		flags = ~flags;
 		if (flags & WS_HOST_F)
@@ -553,48 +896,57 @@ static int ws_parse_handshake(struct tcp_connection *c,
 ws_error:
 	free_hdr_field_lst(tmp_msg.headers);
 error:
-	WS_SET_STATE(c, WS_CON_BAD_REQ);
+	WS_STATE(c) = WS_CON_BAD_REQ;
 	return -1;
 }
+
+#define WS_SHA1_KEY_LEN		20
+#define WS_ACCEPT_KEY_LEN	28 /* 20-bytes string BASE64 encoded */
 
 #define WS_GUID_KEY "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 #define WS_GUID_KEY_LEN (sizeof(WS_GUID_KEY) - 1)
 
 unsigned char ws_key_buf[] = "xxxxxxxxxxxxxxxxxxxxxxxx" /* the key len: 24 */
 		WS_GUID_KEY /* the GUID */;
-
-#define WS_SHA1_KEY_LEN		20
-#define WS_ACCEPT_KEY_LEN	28 /* 20-bytes string BASE64 encoded */
 unsigned char ws_sha1_buf[WS_SHA1_KEY_LEN];
 unsigned char ws_accept_buf[WS_ACCEPT_KEY_LEN];
 
-#define WS_HTTP_ACCEPT						\
-	"HTTP/1.1 101 Switching Protocols\r\n"	\
-	"Upgrade: websocket\r\n"				\
-	"Connection: Upgrade\r\n"				\
-	"Sec-WebSocket-Protocol: sip\r\n"		\
+static void ws_compute_key(str *key)
+{
+	memcpy(ws_key_buf, key->s, key->len);
+	sha1(ws_key_buf, key->len + WS_GUID_KEY_LEN, ws_sha1_buf);
+	base64encode(ws_accept_buf, ws_sha1_buf, WS_SHA1_KEY_LEN);
+}
+
+static int ws_is_valid_key(str *key, str *accept)
+{
+	ws_compute_key(key);
+	return strncasecmp((char *)ws_accept_buf, accept->s, accept->len);
+}
+
+#define WS_HTTP_ACCEPT							\
+	HTTP_VERSION " " HTTP_REPLY_CODE " Switching Protocols" HTTP_SEP	\
+	"Upgrade: websocket" HTTP_SEP				\
+	"Connection: Upgrade" HTTP_SEP				\
+	"Sec-WebSocket-Protocol: sip" HTTP_SEP		\
 	"Sec-WebSocket-Accept: "
 #define WS_HTTP_ACCEPT_LEN (sizeof(WS_HTTP_ACCEPT) - 1)
-#define WS_HTTP_ACCEPT_END "\r\n\r\n"
-#define WS_HTTP_ACCEPT_END_LEN (sizeof(WS_HTTP_ACCEPT_END) - 1)
 
-static int ws_complete_handshake(struct tcp_connection *c, str *key)
+static int ws_complete_handshake(struct tcp_connection *c)
 {
 	int n;
 	struct timeval get;
 	static struct iovec iov[] = {
 		{ (void*)WS_HTTP_ACCEPT, WS_HTTP_ACCEPT_LEN }, /* all mandatory headers */
 		{ (void *)ws_accept_buf, WS_ACCEPT_KEY_LEN }, /* the cookie */
-		{ (void *)WS_HTTP_ACCEPT_END, WS_HTTP_ACCEPT_END_LEN }/* message end */
+		{ (void *)HTTP_END, HTTP_END_LEN }/* message end */
 	};
 
 	reset_tcp_vars(tcpthreshold);
 	start_expire_timer(get, tcpthreshold);
 
-	/* compute the ws_key */
-	memcpy(ws_key_buf, key->s, key->len);
-	sha1(ws_key_buf, key->len + WS_GUID_KEY_LEN, ws_sha1_buf);
-	base64encode(ws_accept_buf, ws_sha1_buf, WS_SHA1_KEY_LEN);
+	/* compute the ws_key in ws_accept_buf */
+	ws_compute_key(&WS_KEY(c));
 
 	n = ws_raw_writev(c, c->fd, iov, 3);
 	stop_expire_timer(get, tcpthreshold, "ws handshake", "", 0, 1);
@@ -603,9 +955,9 @@ static int ws_complete_handshake(struct tcp_connection *c, str *key)
 }
 
 #define WS_HTTP_BAD_REQ						\
-	"HTTP/1.1 400 Bad Request\r\n"			\
-	"Sec-WebSocket-Version: 13\r\n"			\
-	"\r\n"
+	"HTTP/1.1 400 Bad Request" HTTP_SEP		\
+	"Sec-WebSocket-Version: 13" HTTP_END
+
 #define WS_HTTP_BAD_REQ_LEN (sizeof(WS_HTTP_BAD_REQ) - 1)
 
 static int ws_bad_handshake(struct tcp_connection *c)
@@ -617,6 +969,239 @@ static int ws_bad_handshake(struct tcp_connection *c)
 	start_expire_timer(get, tcpthreshold);
 	n = ws_raw_write(c, c->fd, WS_HTTP_BAD_REQ, WS_HTTP_BAD_REQ_LEN);
 	stop_expire_timer(get, tcpthreshold, "ws handshake", "", 0, 1);
+
+	return n;
+}
+
+static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len)
+{
+	struct sip_msg tmp_msg;
+	struct hdr_field *hf;
+	char flags = 0;
+	unsigned ver_min, ver_maj;
+
+	if (ws_parse_rpl_http_fl(c, &msg, &len, &ver_maj, &ver_min) != 0) {
+		LM_ERR("cannot parse the first line of the message\n%.*s\n", len, msg);
+		goto error;
+	}
+
+	/* check the HTTP version */
+	if (ver_maj < HTTP_VER_MAJ ||
+			(ver_maj == HTTP_VER_MAJ && ver_min < HTTP_VER_MIN)) {
+		LM_ERR("Invalid HTTP version: %u.%u\n", ver_maj, ver_min);
+		goto error;
+	}
+	return 0;
+
+	/* Parse the Headers */
+	memset(&tmp_msg, 0, sizeof(struct sip_msg));
+	tmp_msg.len = len;
+	tmp_msg.buf = tmp_msg.unparsed = msg;
+	if (parse_headers(&tmp_msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("cannot parse headers\n%.*s\n", len, msg);
+		goto error;
+	}
+	/* verify headers according to RFC6455 */
+	for (hf = tmp_msg.headers; hf; hf = hf->next) {
+		if (hf->type != HDR_OTHER_T)
+			continue;
+		/*
+		 * since all mandatory headers have name length larger
+		 * than 4, we can use integer comparison from start
+		 */
+		if (hf->name.len < 7)
+			continue;
+
+		switch (GET_LOWER_DWORD(hf->name.s)) {
+		case GET_DWORD('u', 'p', 'g', 'r'): /* Upgrade */
+			if (hf->name.len != HDR_LEN("Upgrade") ||
+					GET_LOWER(hf->name.s + 4) != 'a' ||
+					GET_LOWER(hf->name.s + 5) != 'd' ||
+					GET_LOWER(hf->name.s + 6) != 'e')
+				break;
+
+			if (!ws_has_param(WS_HDR, WS_HDR_LEN, hf->body)) {
+				LM_ERR("Invalid Upgrade header <%.*s>\n",
+						hf->body.len, hf->body.s);
+				goto ws_error;
+			}
+			flags |= WS_UPGRADE_F;
+			break;
+		case GET_DWORD('c', 'o', 'n', 'n'): /* Connection */
+			if (hf->name.len != HDR_LEN("Connection") ||
+					GET_LOWER(hf->name.s + 4) != 'e' ||
+					GET_LOWER(hf->name.s + 5) != 'c' ||
+					GET_LOWER(hf->name.s + 6) != 't' ||
+					GET_LOWER(hf->name.s + 7) != 'i' ||
+					GET_LOWER(hf->name.s + 8) != 'o' ||
+					GET_LOWER(hf->name.s + 9) != 'n')
+				break;
+
+			if (!ws_has_param(WS_UPGRADE_HDR, WS_UPGRADE_HDR_LEN, hf->body)) {
+				LM_ERR("Invalid Connection header <%.*s>\n",
+						hf->body.len, hf->body.s);
+				goto ws_error;
+			}
+
+			flags |= WS_CONN_F;
+			break;
+		case GET_DWORD('s', 'e', 'c', '-'): /* Sec-* */
+			if (hf->name.len < HDR_LEN("Sec-Websocket-*") ||
+					GET_LOWER(hf->name.s + 4) != 'w' ||
+					GET_LOWER(hf->name.s + 5) != 'e' ||
+					GET_LOWER(hf->name.s + 6) != 'b' ||
+					GET_LOWER(hf->name.s + 7) != 's' ||
+					GET_LOWER(hf->name.s + 8) != 'o' ||
+					GET_LOWER(hf->name.s + 9) != 'c' ||
+					GET_LOWER(hf->name.s + 10) != 'k' ||
+					GET_LOWER(hf->name.s + 11) != 'e' ||
+					GET_LOWER(hf->name.s + 12) != 't' ||
+					GET_LOWER(hf->name.s + 13) != '-')
+				break;
+
+			if (hf->name.len == HDR_LEN("Sec-WebSocket-Accept") &&
+					GET_LOWER(hf->name.s + 14) == 'a' &&
+					GET_LOWER(hf->name.s + 15) == 'c' &&
+					GET_LOWER(hf->name.s + 16) == 'c' &&
+					GET_LOWER(hf->name.s + 17) == 'e' &&
+					GET_LOWER(hf->name.s + 18) == 'p' &&
+					GET_LOWER(hf->name.s + 19) == 't') {
+
+				str_trim_spaces_lr(hf->body);
+				if (!ws_is_valid_key(&WS_KEY(c), &hf->body)) {
+					LM_ERR("invalid answer key <%.*s> for <%.*s>\n",
+							hf->body.len, hf->body.s,
+							WS_KEY(c).len, WS_KEY(c).s);
+					goto error;
+				}
+
+				flags |= WS_ACCEPT_F;
+			} else if (hf->name.len == HDR_LEN("Sec-WebSocket-Protocol") &&
+					GET_LOWER(hf->name.s + 14) == 'p' &&
+					GET_LOWER(hf->name.s + 15) == 'r' &&
+					GET_LOWER(hf->name.s + 16) == 'o' &&
+					GET_LOWER(hf->name.s + 17) == 't' &&
+					GET_LOWER(hf->name.s + 18) == 'o' &&
+					GET_LOWER(hf->name.s + 19) == 'c' &&
+					GET_LOWER(hf->name.s + 20) == 'o' &&
+					GET_LOWER(hf->name.s + 21) == 'l') {
+
+				if (!ws_has_param(WS_PROTO_SIP, WS_PROTO_SIP_LEN, hf->body)) {
+					LM_ERR("Invalid Protocol <%.*s>\n",
+							hf->body.len, hf->body.s);
+					goto ws_error;
+				}
+				/* TODO: verify accepted protocols */
+				flags |= WS_PROTO_F;
+			} else if (hf->name.len == HDR_LEN("Sec-WebSocket-Extensions") &&
+					GET_LOWER(hf->name.s + 14) == 'e' &&
+					GET_LOWER(hf->name.s + 15) == 'x' &&
+					GET_LOWER(hf->name.s + 16) == 't' &&
+					GET_LOWER(hf->name.s + 17) == 'e' &&
+					GET_LOWER(hf->name.s + 18) == 'n' &&
+					GET_LOWER(hf->name.s + 19) == 's' &&
+					GET_LOWER(hf->name.s + 20) == 'i' &&
+					GET_LOWER(hf->name.s + 21) == 'o' &&
+					GET_LOWER(hf->name.s + 22) == 'n' &&
+					GET_LOWER(hf->name.s + 23) == 's') {
+
+				LM_ERR("Extensions are not yet supported\n");
+				goto ws_error;
+			}
+			break;
+		}
+
+	}
+
+	if (flags != WS_ALL_REQ_F) {
+		/* negate so we can easily compare them */
+		flags = ~flags;
+		if (flags & WS_HOST_F)
+			LM_ERR("Host header not present!\n");
+		if (flags & WS_UPGRADE_F)
+			LM_ERR("Upgrade header not present!\n");
+		if (flags & WS_CONN_F)
+			LM_ERR("Connection header not present!\n");
+		if (flags & WS_ORIGIN_F)
+			LM_ERR("Origin header not present!\n");
+		if (flags & WS_KEY_F)
+			LM_ERR("Sec-WebSocket-Key header not present!\n");
+		if (flags & WS_VER_F)
+			LM_ERR("Sec-WebSocket-Version header not present!\n");
+		if (flags & WS_PROTO_F)
+			LM_ERR("Sec-WebSocket-Protocol header not present!\n");
+		goto ws_error;
+	}
+
+	/* parsing done, free headers */
+	free_hdr_field_lst(tmp_msg.headers);
+
+	return 0;
+ws_error:
+	free_hdr_field_lst(tmp_msg.headers);
+error:
+	WS_STATE(c) = WS_CON_BAD_REQ;
+	return -1;
+}
+
+/* TODO: protocol should be dynamic */
+#define HTTP_HANDSHAKE_END							\
+	"Upgrade: websocket" HTTP_SEP					\
+	"Connection: upgrade" HTTP_SEP					\
+	"Sec-WebSocket-Version: 13" HTTP_SEP			\
+	"Sec-WebSocket-Protocol: " WS_PROTO_SIP HTTP_END
+#define HTTP_HANDSHAKE_END_LEN (sizeof(HTTP_HANDSHAKE_END) - 1)
+
+#define MAX_HOST_LEN IP_ADDR_MAX_STR_SIZE /*IP*/ + 1 /*':'*/ + 5 /*65535*/
+
+static int ws_start_handshake(struct tcp_connection *c)
+{
+	int n;
+	struct timeval get;
+	char *ip;
+	char *port;
+	int port_len;
+	static char host_orig_buf[MAX_HOST_LEN];
+	static struct iovec iov[] = {
+		{ (void*)HTTP_GET_METHOD, HTTP_GET_METHOD_LEN },	/* GET method */
+		{ (void*)" ", 1 },
+		{ (void*)NULL, 0 },									/* the resource */
+		{ (void*)" ", 1 },
+		{ (void*)HTTP_VERSION, HTTP_VERSION_LEN },			/* the version */
+		{ (void*)HTTP_SEP, HTTP_SEP_LEN },
+		{ (void*)"Host: ", 6 },
+		{ (void*)host_orig_buf, 0 },						/* the host */
+		{ (void*)HTTP_SEP, HTTP_SEP_LEN },
+		{ (void*)"Origin: ", 8 },
+		{ (void*)host_orig_buf, 0 },						/* the origin */
+		{ (void*)HTTP_SEP, HTTP_SEP_LEN },
+		{ (void*)"Sec-WebSocket-Key: ", 19 },
+		{ (void*)NULL, 0 },									/* the origin */
+		{ (void*)HTTP_SEP, HTTP_SEP_LEN },
+		{ (void*)HTTP_HANDSHAKE_END, HTTP_HANDSHAKE_END_LEN }, /* constant part */
+	};
+
+	reset_tcp_vars(tcpthreshold);
+	start_expire_timer(get, tcpthreshold);
+
+	ip = ip_addr2a(&c->rcv.dst_ip);
+	port = int2str(c->rcv.dst_port, &port_len);
+	n = strlen(ip);
+	memcpy(host_orig_buf, ip, n);
+	host_orig_buf[n] = ':';
+	memcpy(host_orig_buf + n + 1, port, port_len);
+
+	iov[2].iov_base = ws_resource.s;
+	iov[2].iov_len = ws_resource.len;
+
+	iov[7].iov_len = n + port_len + 1;
+	iov[10].iov_len = iov[7].iov_len;
+
+	iov[13].iov_base = WS_KEY(c).s;
+	iov[13].iov_len = WS_KEY(c).len;
+
+	n = ws_raw_writev(c, c->fd, iov, 16);
+	stop_expire_timer(get, tcpthreshold, "ws start handshake", "", 0, 1);
 
 	return n;
 }
