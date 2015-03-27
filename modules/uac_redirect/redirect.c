@@ -58,8 +58,8 @@ char *def_filter_s = 0;
 static int redirect_init(void);
 static int w_set_deny(struct sip_msg* msg, char *dir, char *foo);
 static int w_set_accept(struct sip_msg* msg, char *dir, char *foo);
-static int w_get_redirect1(struct sip_msg* msg, char *dir, char *foo);
-static int w_get_redirect2(struct sip_msg* msg, char *dir, char *foo);
+static int w_get_redirect1(struct sip_msg* msg, char *dir);
+static int w_get_redirect2(struct sip_msg* msg, char *dir, pv_elem_t *reason);
 static int regexp_compile(char *re_s, regex_t **re);
 static int get_redirect_fixup(void** param, int param_no);
 static int setf_fixup(void** param, int param_no);
@@ -343,7 +343,7 @@ static int w_set_accept(struct sip_msg* msg, char *re, char *flags)
 }
 
 
-static int w_get_redirect2(struct sip_msg* msg, char *max_c, char *reason)
+static int w_get_redirect2(struct sip_msg* msg, char *max_c, pv_elem_t *reason)
 {
 	int n;
 	unsigned short max;
@@ -351,7 +351,7 @@ static int w_get_redirect2(struct sip_msg* msg, char *max_c, char *reason)
 	msg_tracer( msg, 0);
 	/* get the contacts */
 	max = (unsigned short)(long)max_c;
-	n = get_redirect(msg , (max>>8)&0xff, max&0xff, (struct acc_param*)reason);
+	n = get_redirect(msg , (max>>8)&0xff, max&0xff, reason);
 	reset_filters();
 	/* reset the tracer */
 	msg_tracer( msg, 1);
@@ -360,7 +360,7 @@ static int w_get_redirect2(struct sip_msg* msg, char *max_c, char *reason)
 }
 
 
-static int w_get_redirect1(struct sip_msg* msg, char *max_c, char *foo)
+static int w_get_redirect1(struct sip_msg* msg, char *max_c)
 {
 	return w_get_redirect2(msg, max_c, 0);
 }
