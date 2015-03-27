@@ -191,13 +191,14 @@ static int get_redirect_fixup(void** param, int param_no)
 		rd_acc_fct = fct;
 		/* Convert reason into pv_elem_t */
 		if (s.s == 0 || s.s[0] == 0) {
-			reason = 0;
+			s.s = "n/a";
+			s.len = 3;
 		} else {
 			s.len = strlen(s.s);
-			if (pv_parse_format(&s, &reason) < 0) {
-				LM_ERR("pv_parse_format failed\n");
-				return E_OUT_OF_MEM;
-			}
+		}
+		if (pv_parse_format(&s, &reason) < 0) {
+			LM_ERR("pv_parse_format failed\n");
+			return E_OUT_OF_MEM;
 		}
 		*param = (void*)reason;
 	}
