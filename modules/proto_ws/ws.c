@@ -194,12 +194,12 @@ void inline ws_mask(char *buf, int len, unsigned int mask)
 	char *end = buf + len;
 
 	/* xor first bits, until aligned */
-	for (; p < end && (((unsigned long)p) % sizeof(unsigned int *)); p++,
+	for (; p < end && (((unsigned long)p) % sizeof(unsigned long *)); p++,
 			mask = ROTATE32(mask))
 		*p ^= MASK8(mask);
 
 	/* xor the big chunk, which is aligned */
-	for (; (p - (sizeof(int) - 1)) < end; p += sizeof(int))
+	for (; p < end - (sizeof(int) - 1); p += sizeof(int))
 		*((int *)p) ^= mask;
 
 	/* the last chunk may not be processed */
@@ -207,6 +207,7 @@ void inline ws_mask(char *buf, int len, unsigned int mask)
 		*p ^= MASK8(mask);
 	//ws_print_masked(buf, len);
 }
+
 
 
 int inline ws_send(struct tcp_connection *con, int fd, int op, int should_mask,
@@ -264,7 +265,7 @@ int inline ws_send_close(struct tcp_connection *con, int ret)
 	uint16_t code;
 	int len;
 	char *buf;
-	
+
 	if (ret) {
 		code = htons(ret);
 		len = sizeof(uint16_t);
