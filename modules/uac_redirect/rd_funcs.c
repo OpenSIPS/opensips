@@ -273,7 +273,7 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
 			backup_uri = req->new_uri;
 			req->new_uri =  scontacts[i];
 			//FIXME
-			rd_acc_fct( req, (char *)reason, acc_db_table,
+			rd_acc_fct( req, (char*)reason, acc_db_table,
 					NULL, NULL, NULL, NULL);
 			req->new_uri = backup_uri;
 		}
