@@ -92,6 +92,9 @@ int tcp_conn_send(struct tcp_connection *con);
 /* release a connection aquired via tcp_conn_get() or tcp_conn_create() */
 void tcp_conn_release(struct tcp_connection* c, int pending_data);
 
+/* destroys a connection before sending it to main */
+void tcp_conn_destroy(struct tcp_connection* tcpconn);
+
 /* used to tune the connection attributes */
 int tcp_conn_fcntl(struct receive_info *rcv, int attr, void *value);
 

@@ -936,6 +936,12 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 	TCPCONN_UNLOCK(id);
 }
 
+/* wrapper to the internally used function */
+void tcp_conn_destroy(struct tcp_connection* tcpconn)
+{
+	return tcpconn_destroy(tcpconn);
+}
+
 
 /************************ TCP MAIN process functions ************************/
 
