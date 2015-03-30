@@ -164,7 +164,7 @@ modparam("fraud_detection", "table_name", "my_fraud")
 
    Example 1.3. Set “rid_col” parameter
 ...
-modparam("dispatcher", "rid_col", "theruleid"")
+modparam("fraud_detection", "rid_col", "theruleid"")
 ...
 
 1.3.4. pid_col (string)
@@ -178,7 +178,7 @@ modparam("dispatcher", "rid_col", "theruleid"")
 
    Example 1.4. Set “pid_col” parameter
 ...
-modparam("dispatcher", "pid_col", "profile"")
+modparam("fraud_detection", "pid_col", "profile"")
 ...
 
 1.3.5. prefix_col (string)
@@ -190,7 +190,7 @@ modparam("dispatcher", "pid_col", "profile"")
 
    Example 1.5. Set “prefix_col” parameter
 ...
-modparam("dispatcher", "prefix_col", "myprefix")
+modparam("fraud_detection", "prefix_col", "myprefix")
 ...
 
 1.3.6. start_h (string)
@@ -205,7 +205,7 @@ modparam("dispatcher", "prefix_col", "myprefix")
 
    Example 1.6. Set “start_h” parameter
 ...
-modparam("dispatcher", "start_h", "the_start_time")
+modparam("fraud_detection", "start_h", "the_start_time")
 ...
 
 1.3.7. end_h (string)
@@ -220,7 +220,7 @@ modparam("dispatcher", "start_h", "the_start_time")
 
    Example 1.7. Set “end_h” parameter
 ...
-modparam("dispatcher", "end_h", "the_end_time")
+modparam("fraud_detection", "end_h", "the_end_time")
 ...
 
 1.3.8. days_col (string)
@@ -237,7 +237,7 @@ modparam("dispatcher", "end_h", "the_end_time")
 
    Example 1.8. Set “days_col” parameter
 ...
-modparam("dispatcher", "days_col", "days")
+modparam("fraud_detection", "days_col", "days")
 ...
 
 1.3.9. cpm_thresh_warn_col (string)
@@ -249,7 +249,7 @@ modparam("dispatcher", "days_col", "days")
 
    Example 1.9. Set “cpm_thresh_warn_col” parameter
 ...
-modparam("dispatcher", "cpm_thresh_warn_col", "cpm_warn_thresh")
+modparam("fraud_detection", "cpm_thresh_warn_col", "cpm_warn_thresh")
 ...
 
 1.3.10. cpm_thresh_crit_col (string)
@@ -261,7 +261,7 @@ modparam("dispatcher", "cpm_thresh_warn_col", "cpm_warn_thresh")
 
    Example 1.10. Set “cpm_thresh_crit_col” parameter
 ...
-modparam("dispatcher", "cpm_thresh_crit_col", "cpm_crit_thresh")
+modparam("fraud_detection", "cpm_thresh_crit_col", "cpm_crit_thresh")
 ...
 
 1.3.11. calldur_thresh_warn_col (string)
@@ -273,7 +273,8 @@ modparam("dispatcher", "cpm_thresh_crit_col", "cpm_crit_thresh")
 
    Example 1.11. Set “calldur_thresh_warn_col” parameter
 ...
-modparam("dispatcher", "calldur_thresh_warn_col", "calldur_warn_thresh")
+modparam("fraud_detection", "calldur_thresh_warn_col", "calldur_warn_thr
+esh")
 ...
 
 1.3.12. calldur_thresh_crit_col (string)
@@ -285,7 +286,8 @@ modparam("dispatcher", "calldur_thresh_warn_col", "calldur_warn_thresh")
 
    Example 1.12. Set “calldur_thresh_crit_col” parameter
 ...
-modparam("dispatcher", "calldur_thresh_crit_col", "calldur_crit_thresh")
+modparam("fraud_detection", "calldur_thresh_crit_col", "calldur_crit_thr
+esh")
 ...
 
 1.3.13. totalc_thresh_warn_col (string)
@@ -297,7 +299,8 @@ modparam("dispatcher", "calldur_thresh_crit_col", "calldur_crit_thresh")
 
    Example 1.13. Set “totalc_thresh_warn_col” parameter
 ...
-modparam("dispatcher", "totalc_thresh_warn_col", "totalc_warn_thresh")
+modparam("fraud_detection", "totalc_thresh_warn_col", "totalc_warn_thres
+h")
 ...
 
 1.3.14. totalc_thresh_crit_col (string)
@@ -309,7 +312,8 @@ modparam("dispatcher", "totalc_thresh_warn_col", "totalc_warn_thresh")
 
    Example 1.14. Set “totalc_thresh_crit_col” parameter
 ...
-modparam("dispatcher", "totalc_thresh_crit_col", "totalc_crit_thresh")
+modparam("fraud_detection", "totalc_thresh_crit_col", "totalc_crit_thres
+h")
 ...
 
 1.3.15. concalls_thresh_warn_col (string)
@@ -321,8 +325,8 @@ modparam("dispatcher", "totalc_thresh_crit_col", "totalc_crit_thresh")
 
    Example 1.15. Set “concalls_thresh_warn_col” parameter
 ...
-modparam("dispatcher", "concalls_thresh_warn_col", "concalls_warn_thresh
-")
+modparam("fraud_detection", "concalls_thresh_warn_col", "concalls_warn_t
+hresh")
 ...
 
 1.3.16. concalls_thresh_crit_col (string)
@@ -334,8 +338,8 @@ modparam("dispatcher", "concalls_thresh_warn_col", "concalls_warn_thresh
 
    Example 1.16. Set “concalls_thresh_crit_col” parameter
 ...
-modparam("dispatcher", "concalls_thresh_crit_col", "concalls_crit_thresh
-")
+modparam("fraud_detection", "concalls_thresh_crit_col", "concalls_crit_t
+hresh")
 ...
 
 1.3.17. seqcalls_thresh_warn_col (string)
@@ -347,8 +351,8 @@ modparam("dispatcher", "concalls_thresh_crit_col", "concalls_crit_thresh
 
    Example 1.17. Set “seqcalls_thresh_warn_col” parameter
 ...
-modparam("dispatcher", "seqcalls_thresh_warn_col", "seqcalls_warn_thresh
-")
+modparam("fraud_detection", "seqcalls_thresh_warn_col", "seqcalls_warn_t
+hresh")
 ...
 
 1.3.18. seqcalls_thresh_crit_col (string)
@@ -360,8 +364,8 @@ modparam("dispatcher", "seqcalls_thresh_warn_col", "seqcalls_warn_thresh
 
    Example 1.18. Set “seqcalls_thresh_crit_col” parameter
 ...
-modparam("dispatcher", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh
-")
+modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_t
+hresh")
 ...
 
 1.4. Exported Functions
