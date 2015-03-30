@@ -46,14 +46,22 @@ static int proto_ws_init_listener(struct socket_info *si);
 static int proto_ws_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
 static int ws_read_req(struct tcp_connection* con, int* bytes_read);
+static int ws_conn_init(struct tcp_connection* c);
+static void ws_conn_clean(struct tcp_connection* c);
 
 /* parameters*/
 int ws_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
 
-/* in miliseconds */
+/* in milliseconds */
 int ws_send_timeout = 100;
 
+/* in milliseconds */
+int ws_hs_read_tout = 100;
+
 static int ws_port = WS_DEFAULT_PORT;
+
+/* XXX: this information should be dynamically provided */
+str ws_resource = str_init("/");
 
 
 static cmd_export_t cmds[] = {
@@ -67,6 +75,8 @@ static param_export_t params[] = {
 	{ "ws_port",           INT_PARAM, &ws_port           },
 	{ "ws_max_msg_chunks", INT_PARAM, &ws_max_msg_chunks },
 	{ "ws_send_timeout",   INT_PARAM, &ws_send_timeout   },
+	{ "ws_resource",       STR_PARAM, &ws_resource       },
+	{ "ws_handshake_timeout", INT_PARAM, &ws_hs_read_tout },
 	{0, 0, 0}
 };
 
@@ -102,6 +112,9 @@ static int proto_ws_init(struct proto_info *pi)
 	pi->net.flags			= PROTO_NET_USE_TCP;
 	pi->net.read			= (proto_net_read_f)ws_read_req;
 
+	pi->net.conn_init		= ws_conn_init;
+	pi->net.conn_clean		= ws_conn_clean;
+
 	return 0;
 }
 
@@ -113,6 +126,44 @@ static int mod_init(void)
 }
 
 
+static int ws_conn_init(struct tcp_connection* c)
+{
+	struct ws_data *d;
+
+	/* allocate the tcp_data and the array of chunks as a single mem chunk */
+	d = (struct ws_data *)shm_malloc(sizeof(*d));
+	if (d==NULL) {
+		LM_ERR("failed to create ws states in shm mem\n");
+		return -1;
+	}
+	d->state = WS_CON_INIT;
+	d->type = WS_NONE;
+	d->code = WS_ERR_NONE;
+
+	c->proto_data = (void*)d;
+	return 0;
+}
+
+static void ws_conn_clean(struct tcp_connection* c)
+{
+	struct ws_data *d = (struct ws_data*)c->proto_data;
+	if (!d)
+		return;
+
+	switch (d->code) {
+	case WS_ERR_NOSEND:
+		break;
+	case WS_ERR_NONE:
+		WS_CODE(c) = WS_ERR_NORMAL;
+	default:
+		ws_close(c);
+		break;
+	}
+
+	shm_free(d);
+	c->proto_data = NULL;
+}
+
 
 static int proto_ws_init_listener(struct socket_info *si)
 {
@@ -121,8 +172,86 @@ static int proto_ws_init_listener(struct socket_info *si)
 	return tcp_init_listener(si);
 }
 
+static struct tcp_connection* ws_sync_connect(struct socket_info* send_sock,
+		union sockaddr_union* server)
+{
+	int s;
+	union sockaddr_union my_name;
+	socklen_t my_name_len;
+	struct tcp_connection* con;
 
+	s=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
+	if (s==-1){
+		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
+		goto error;
+	}
+	if (tcp_init_sock_opt(s)<0){
+		LM_ERR("tcp_init_sock_opt failed\n");
+		goto error;
+	}
+	my_name_len = sockaddru_len(send_sock->su);
+	memcpy( &my_name, &send_sock->su, my_name_len);
+	su_setport( &my_name, 0);
+	if (bind(s, &my_name.s, my_name_len )!=0) {
+		LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
+		goto error;
+	}
 
+	if (tcp_connect_blocking(s, &server->s, sockaddru_len(*server))<0){
+		LM_ERR("tcp_blocking_connect failed\n");
+		goto error;
+	}
+	con=tcp_conn_new(s, server, send_sock, S_CONN_OK);
+	if (con==NULL){
+		LM_ERR("tcp_conn_create failed, closing the socket\n");
+		goto error;
+	}
+	/* it is safe to move this here and clear it after we complete the
+	 * handshake, just before sending the fd to main */
+	con->fd = s;
+	return con;
+error:
+	/* close the opened socket */
+	if (s!=-1) close(s);
+	return 0;
+}
+
+static struct tcp_connection* ws_connect(struct socket_info* send_sock,
+		union sockaddr_union* to, int *fd)
+{
+	struct tcp_connection *c;
+
+	if ((c=ws_sync_connect(send_sock, to))==0) {
+		LM_ERR("connect failed\n");
+		return NULL;
+	}
+	/* the state of the connection should be NONE, otherwise something is
+	 * wrong */
+	if (WS_TYPE(c) != WS_NONE) {
+		LM_BUG("invalid type for connection %d\n", WS_TYPE(c));
+		goto error;
+	}
+	WS_TYPE(c) = WS_CLIENT;
+
+	if (ws_client_handshake(c) < 0) {
+		LM_ERR("cannot complete WebSocket handshake\n");
+		goto error;
+	}
+
+	*fd = c->fd;
+	/* clear the fd, just in case */
+	c->fd = -1;
+	/* handshake done - send the socket to main */
+	if (tcp_conn_send(c) < 0) {
+		LM_ERR("cannot send socket to main\n");
+		goto error;
+	}
+
+	return c;
+error:
+	tcp_conn_destroy(c);
+	return NULL;
+}
 
 
 /**************  WRITE related functions ***************/
@@ -167,11 +296,13 @@ static int proto_ws_send(struct socket_info* send_sock,
 		if (tcp_no_new_conn) {
 			return -1;
 		}
-		/* XXX: currently cannot work as a WebSocket client */
-		LM_ERR("no open tcp connection found. "
-				"WebSocket connect is not supported!\n");
-		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
-		return -1;
+		LM_DBG("no open tcp connection found, opening new one\n");
+		/* create tcp connection */
+		if ((c=ws_connect(send_sock, to, &fd))==0) {
+			LM_ERR("connect failed\n");
+			return -1;
+		}
+		goto send_it;
 	}
 	get_time_difference(get, tcpthreshold, tcp_timeout_con_get);
 
@@ -184,6 +315,7 @@ static int proto_ws_send(struct socket_info* send_sock,
 		return -1;
 	}
 
+send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
 	n = ws_req_write(c, fd, buf, len);
@@ -191,7 +323,6 @@ static int proto_ws_send(struct socket_info* send_sock,
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
-	LM_DBG("buf=\n%.*s\n", (int)len, buf);
 	if (n<0){
 		LM_ERR("failed to send\n");
 		c->state=S_CONN_BAD;
@@ -228,7 +359,7 @@ static int ws_read_req(struct tcp_connection* con, int* bytes_read)
 
 	if (WS_STATE(con) != WS_CON_HANDSHAKE_DONE) {
 
-		size = ws_handshake(con);
+		size = ws_server_handshake(con);
 		if (size < 0) {
 			LM_ERR("cannot complete WebSocket handshake\n");
 			goto error;

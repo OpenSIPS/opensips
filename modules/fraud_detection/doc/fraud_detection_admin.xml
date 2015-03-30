@@ -161,7 +161,7 @@ modparam("fraud_detection", "table_name", "my_fraud")
 		<title>Set <quote>rid_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "rid_col", "theruleid"")
+modparam("fraud_detection", "rid_col", "theruleid"")
 ...
 </programlisting>
 		</example>
@@ -186,7 +186,7 @@ modparam("dispatcher", "rid_col", "theruleid"")
 		<title>Set <quote>pid_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "pid_col", "profile"")
+modparam("fraud_detection", "pid_col", "profile"")
 ...
 </programlisting>
 		</example>
@@ -207,7 +207,7 @@ modparam("dispatcher", "pid_col", "profile"")
 		<title>Set <quote>prefix_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "prefix_col", "myprefix")
+modparam("fraud_detection", "prefix_col", "myprefix")
 ...
 </programlisting>
 		</example>
@@ -233,7 +233,7 @@ modparam("dispatcher", "prefix_col", "myprefix")
 		<title>Set <quote>start_h</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "start_h", "the_start_time")
+modparam("fraud_detection", "start_h", "the_start_time")
 ...
 </programlisting>
 		</example>
@@ -259,7 +259,7 @@ modparam("dispatcher", "start_h", "the_start_time")
 		<title>Set <quote>end_h</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "end_h", "the_end_time")
+modparam("fraud_detection", "end_h", "the_end_time")
 ...
 </programlisting>
 		</example>
@@ -288,7 +288,7 @@ modparam("dispatcher", "end_h", "the_end_time")
 		<title>Set <quote>days_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "days_col", "days")
+modparam("fraud_detection", "days_col", "days")
 ...
 </programlisting>
 		</example>
@@ -309,7 +309,7 @@ modparam("dispatcher", "days_col", "days")
 		<title>Set <quote>cpm_thresh_warn_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "cpm_thresh_warn_col", "cpm_warn_thresh")
+modparam("fraud_detection", "cpm_thresh_warn_col", "cpm_warn_thresh")
 ...
 </programlisting>
 		</example>
@@ -330,7 +330,7 @@ modparam("dispatcher", "cpm_thresh_warn_col", "cpm_warn_thresh")
 		<title>Set <quote>cpm_thresh_crit_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "cpm_thresh_crit_col", "cpm_crit_thresh")
+modparam("fraud_detection", "cpm_thresh_crit_col", "cpm_crit_thresh")
 ...
 </programlisting>
 		</example>
@@ -351,7 +351,7 @@ modparam("dispatcher", "cpm_thresh_crit_col", "cpm_crit_thresh")
 		<title>Set <quote>calldur_thresh_warn_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "calldur_thresh_warn_col", "calldur_warn_thresh")
+modparam("fraud_detection", "calldur_thresh_warn_col", "calldur_warn_thresh")
 ...
 </programlisting>
 		</example>
@@ -372,7 +372,7 @@ modparam("dispatcher", "calldur_thresh_warn_col", "calldur_warn_thresh")
 		<title>Set <quote>calldur_thresh_crit_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "calldur_thresh_crit_col", "calldur_crit_thresh")
+modparam("fraud_detection", "calldur_thresh_crit_col", "calldur_crit_thresh")
 ...
 </programlisting>
 		</example>
@@ -393,7 +393,7 @@ modparam("dispatcher", "calldur_thresh_crit_col", "calldur_crit_thresh")
 		<title>Set <quote>totalc_thresh_warn_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "totalc_thresh_warn_col", "totalc_warn_thresh")
+modparam("fraud_detection", "totalc_thresh_warn_col", "totalc_warn_thresh")
 ...
 </programlisting>
 		</example>
@@ -414,7 +414,7 @@ modparam("dispatcher", "totalc_thresh_warn_col", "totalc_warn_thresh")
 		<title>Set <quote>totalc_thresh_crit_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "totalc_thresh_crit_col", "totalc_crit_thresh")
+modparam("fraud_detection", "totalc_thresh_crit_col", "totalc_crit_thresh")
 ...
 </programlisting>
 		</example>
@@ -436,7 +436,7 @@ modparam("dispatcher", "totalc_thresh_crit_col", "totalc_crit_thresh")
 		<title>Set <quote>concalls_thresh_warn_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "concalls_thresh_warn_col", "concalls_warn_thresh")
+modparam("fraud_detection", "concalls_thresh_warn_col", "concalls_warn_thresh")
 ...
 </programlisting>
 		</example>
@@ -458,7 +458,7 @@ modparam("dispatcher", "concalls_thresh_warn_col", "concalls_warn_thresh")
 		<title>Set <quote>concalls_thresh_crit_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "concalls_thresh_crit_col", "concalls_crit_thresh")
+modparam("fraud_detection", "concalls_thresh_crit_col", "concalls_crit_thresh")
 ...
 </programlisting>
 		</example>
@@ -480,7 +480,7 @@ modparam("dispatcher", "concalls_thresh_crit_col", "concalls_crit_thresh")
 		<title>Set <quote>seqcalls_thresh_warn_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "seqcalls_thresh_warn_col", "seqcalls_warn_thresh")
+modparam("fraud_detection", "seqcalls_thresh_warn_col", "seqcalls_warn_thresh")
 ...
 </programlisting>
 		</example>
@@ -502,7 +502,7 @@ modparam("dispatcher", "seqcalls_thresh_warn_col", "seqcalls_warn_thresh")
 		<title>Set <quote>seqcalls_thresh_crit_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
+modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 ...
 </programlisting>
 		</example>

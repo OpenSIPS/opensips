@@ -33,27 +33,49 @@
 enum ws_conn_state { WS_CON_INIT, WS_CON_HANDSHAKE, WS_CON_HANDSHAKE_DONE,
 	WS_CON_BAD_REQ };
 
-#define WS_STATE(_c) \
-	((enum ws_conn_state)(unsigned long)((_c)->proto_data))
-#define WS_SET_STATE(_c, _s) \
-	(_c)->proto_data = (((void *)(unsigned long)(_s)))
+enum ws_conn_type { WS_NONE, WS_CLIENT, WS_SERVER };
+
+enum ws_close_code {
+	WS_ERR_NONE		= 0,
+	WS_ERR_NORMAL	= 1000,
+	WS_ERR_CLIENT	= 1001,
+	WS_ERR_PROTO	= 1002,
+	WS_ERR_INVALID	= 1003,
+	WS_ERR_BADDATA	= 1007,
+	WS_ERR_POLICY	= 1008,
+	WS_ERR_TOO_BIG	= 1009,
+	WS_ERR_BADEXT	= 1010,
+	WS_ERR_UNEXPECT	= 1011,
+	WS_ERR_NOSEND	= 10000
+};
 
 /*
  * For now we only need the state stored in the connection
  * Later, we should probably store info about origin, resoruce. versions,
  * protocols supported, etc. - razvanc
  */
-#if 0
-#include "ws_handshake.h"
-
 struct ws_data {
 	/* the state of the connection */
-	enum ws_conn_states state;
+	enum ws_conn_state state;
 
-	/* we use a pointer here because we want to detach
-	 * it after the handshake is completed */
-	struct ws_hs *handshake;
+	/* the type of the connection */
+	enum ws_conn_type type;
+
+	/* close code */
+	enum ws_close_code code;
+
+	/* WebSocket Handshake key */
+	str key;
 };
-#endif
+
+#define WS_STATE(_c) \
+	(((struct ws_data *)(_c)->proto_data)->state)
+#define WS_TYPE(_c) \
+	(((struct ws_data *)(_c)->proto_data)->type)
+#define WS_CODE(_c) \
+	(((struct ws_data *)(_c)->proto_data)->code)
+#define WS_KEY(_c) \
+	(((struct ws_data *)(_c)->proto_data)->key)
+
 
 #endif /* _PROTO_WS_H_ */

@@ -33,6 +33,7 @@
 #include "../../timer.h"
 #include "../../ut.h"
 #include "../../pt.h"
+#include "proto_ws.h"
 #include "ws_tcp.h"
 #include "ws.h"
 
@@ -76,16 +77,6 @@
 #define WS_MASK_SLEN		0x7F
 #define WS_MASK_OPCODE		0x0F
 
-
-#define WS_ERR_NORMAL		1000
-#define WS_ERR_CLIENT		1001
-#define WS_ERR_PROTO		1002
-#define WS_ERR_INVALID		1003
-#define WS_ERR_BADDATA		1007
-#define WS_ERR_POLICY		1008
-#define WS_ERR_TOO_BIG		1009
-#define WS_ERR_BADEXT		1010
-#define WS_ERR_UNEXPECT		1011
 
 
 /* Minimum size of a header - not masked, nor extended len */
@@ -151,6 +142,7 @@ struct ws_req {
 	struct tcp_req tcp;
 	unsigned int op;
 	unsigned int mask;
+	unsigned int is_masked;
 };
 
 #define ROTATE32(_k) ((((_k) & 0xFF) << 24) | ((_k) >> 8))
@@ -194,12 +186,12 @@ void inline ws_mask(char *buf, int len, unsigned int mask)
 	char *end = buf + len;
 
 	/* xor first bits, until aligned */
-	for (; p < end && (((unsigned long)p) % sizeof(unsigned int *)); p++,
+	for (; p < end && (((unsigned long)p) % sizeof(unsigned long *)); p++,
 			mask = ROTATE32(mask))
 		*p ^= MASK8(mask);
 
 	/* xor the big chunk, which is aligned */
-	for (; (p - (sizeof(int) - 1)) < end; p += sizeof(int))
+	for (; p < end - (sizeof(int) - 1); p += sizeof(int))
 		*((int *)p) ^= mask;
 
 	/* the last chunk may not be processed */
@@ -209,11 +201,17 @@ void inline ws_mask(char *buf, int len, unsigned int mask)
 }
 
 
-int inline ws_send(struct tcp_connection *con, int fd, int op, int should_mask,
-		unsigned int mask, char *body, unsigned int len)
+int inline ws_send(struct tcp_connection *con, int fd, int op,
+		char *body, unsigned int len)
 {
+	/*
+	 * we need this buffer to mask the message sent to the client
+	 * since we cannot modify the buffer - it might be readonly
+	 */
+	static char *body_buf = 0;
 	static unsigned char hdr_buf[WS_MAX_HDR_LEN];
 	static struct iovec v[2] = { {hdr_buf, 0}, {0, 0}};
+	unsigned int mask = rand();
 
 	/* FIN + OPCODE */
 	hdr_buf[0] = WS_BIT_FIN | (op & WS_MASK_OPCODE);
@@ -236,17 +234,26 @@ int inline ws_send(struct tcp_connection *con, int fd, int op, int should_mask,
 		*(uint64_t *)(hdr_buf + WS_MIN_HDR_LEN) = htonl(len);
 	}
 
-	if (should_mask) {
+	if (WS_TYPE(con) == WS_CLIENT) {
 		/* set the mask in the message */
 		*(uint32_t *)(v[0].iov_base + v[0].iov_len) = mask;
 		v[0].iov_len += WS_MASK_SIZE;
 		/* also indicate that the message is masked */
 		hdr_buf[1] |= WS_BIT_MASK;
 
-		ws_mask(body, len, mask);
+		body_buf = body_buf ? pkg_realloc(body_buf, len) : pkg_malloc(len);
+		if (!body_buf) {
+			LM_ERR("oom for body buffer\n");
+			return -1;
+		}
+		memcpy(body_buf, body, len);
+
+		ws_mask(body_buf, len, mask);
+		v[1].iov_base = body_buf;
+	} else {
+		v[1].iov_base = body;
 	}
 
-	v[1].iov_base = body;
 	v[1].iov_len = len;
 
 	return ws_raw_writev(con, fd, v, 2);
@@ -254,40 +261,37 @@ int inline ws_send(struct tcp_connection *con, int fd, int op, int should_mask,
 
 int inline ws_send_pong(struct tcp_connection *con, struct ws_req *req)
 {
-	return ws_send(con, con->fd, WS_OP_PONG, !WS_IS_MASKED(req),
-			0/* XXX: no need to mask for now, only when act as client */,
+	return ws_send(con, con->fd, WS_OP_PONG,
 			req->tcp.body, req->tcp.content_len);
 }
 
-int inline ws_send_close(struct tcp_connection *con, int ret)
+static int inline ws_send_close(struct tcp_connection *con)
 {
 	uint16_t code;
 	int len;
 	char *buf;
-	
-	if (ret) {
-		code = htons(ret);
+
+	if (WS_CODE(con)) {
+		code = htons(WS_CODE(con));
 		len = sizeof(uint16_t);
 	} else {
 		len = 0;
 	}
 
 	buf = (char *)&code;
-	return ws_send(con, con->fd, WS_OP_CLOSE, 0, 0, buf, len);
+	return ws_send(con, con->fd, WS_OP_CLOSE, buf, len);
 }
 
 /* Public functions down here */
 
 int ws_req_write(struct tcp_connection *con, int fd, char *buf, int len)
 {
-	return ws_send(con, fd, WS_OP_TEXT, 0/* XXX: should be taken from con */,
-			0/* XXX: taken from con */,
-			buf, len);
+	return ws_send(con, fd, WS_OP_TEXT, buf, len);
 }
 
 static struct ws_req ws_current_req;
 
-int inline ws_parse(struct ws_req *req)
+enum ws_close_code inline ws_parse(struct ws_req *req)
 {
 
 	uint64_t clen;
@@ -331,7 +335,7 @@ int inline ws_parse(struct ws_req *req)
 			clen = WS_ELENC(req);
 			if ((clen+WS_MIN_HDR_LEN+WS_ELENC_SIZE+WS_IF_MASK_SIZE(req))>
 					TCP_BUF_SIZE) {
-				LM_ERR("packet too large, can't fit: %u\n", req->tcp.content_len);
+				LM_ERR("packet too large, can't fit: %lu\n", clen);
 				req->tcp.error = TCP_REQ_OVERRUN;
 				return WS_ERR_TOO_BIG;
 			}
@@ -362,6 +366,9 @@ int inline ws_parse(struct ws_req *req)
 		if (WS_IS_MASKED(req)) {
 			req->tcp.body += WS_MASK_SIZE;
 			req->mask = WS_MASK(req);
+			req->is_masked = 1;
+		} else {
+			req->is_masked = 0;
 		}
 	}
 
@@ -387,6 +394,7 @@ int inline ws_parse(struct ws_req *req)
 		init_tcp_req(&(_req)->tcp, _size); \
 		(_req)->op = WS_OP_CONT; \
 		(_req)->mask = 0; \
+		(_req)->is_masked = 0; \
 	} while(0)
 
 int ws_process(struct tcp_connection *con)
@@ -394,7 +402,7 @@ int ws_process(struct tcp_connection *con)
 	struct ws_req *req;
 	struct ws_req *newreq;
 	long size = 0;
-	int ret_code = 0;
+	enum ws_close_code ret_code = WS_ERR_NONE;
 	unsigned char bk;
 	char *msg_buf;
 	int msg_len;
@@ -429,6 +437,15 @@ again:
 		if ((con->state==S_CONN_EOF) && (req->tcp.complete==0)) {
 			LM_DBG("EOF received\n");
 			goto done;
+		}
+		/* sanity mask checks */
+		if ((WS_TYPE(con) == WS_CLIENT && req->is_masked) ||
+			(WS_TYPE(con) == WS_SERVER && !req->is_masked)) {
+			LM_DBG("malformed WS msg - %s %s\n",
+					req->is_masked ? "masked" : "not masked",
+					WS_TYPE(con) == WS_CLIENT ? "client" : "server");
+			ret_code = WS_ERR_BADDATA;
+			goto error;
 		}
 	}
 
@@ -467,7 +484,9 @@ again:
 				ret_code = WS_ERR_NORMAL;
 			}
 			/* respond to close */
-			ws_send_close(con, ret_code);
+			WS_CODE(con) = ret_code;
+			ws_send_close(con);
+			WS_CODE(con) = WS_ERR_NOSEND;
 
 			/* release the connextion */
 			con->state = S_CONN_EOF;
@@ -599,7 +618,11 @@ done:
 	/* connection will be released */
 	return size;
 error:
-	if (ret_code)
-		ws_send_close(con, ret_code);
+	WS_CODE(con) = ret_code;
 	return -1;
+}
+
+void ws_close(struct tcp_connection *c)
+{
+	ws_send_close(c);
 }
