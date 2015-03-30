@@ -335,7 +335,7 @@ enum ws_close_code inline ws_parse(struct ws_req *req)
 			clen = WS_ELENC(req);
 			if ((clen+WS_MIN_HDR_LEN+WS_ELENC_SIZE+WS_IF_MASK_SIZE(req))>
 					TCP_BUF_SIZE) {
-				LM_ERR("packet too large, can't fit: %u\n", req->tcp.content_len);
+				LM_ERR("packet too large, can't fit: %lu\n", clen);
 				req->tcp.error = TCP_REQ_OVERRUN;
 				return WS_ERR_TOO_BIG;
 			}
