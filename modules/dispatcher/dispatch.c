@@ -1,10 +1,9 @@
 /*
- * $Id$
- *
  * dispatcher module
  *
- * Copyright (C) 2004-2006 FhG Fokus
+ * Copyright (C) 2010-2015 OpenSIPS Solutions
  * Copyright (C) 2005-2010 Voice-System.ro
+ * Copyright (C) 2004-2006 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -79,7 +78,10 @@ typedef struct _ds_dest
 	str uri;
 	str attrs;
 	int flags;
-	int weight;
+	unsigned short weight;
+	unsigned short running_weight;
+	unsigned short active_running_weight;
+	unsigned short priority;
 	struct socket_info *sock;
 	struct ip_addr ips[DS_MAX_IPS]; /* IP-Address of the entry */
 	unsigned short int ports[DS_MAX_IPS]; /* Port of the request URI */
@@ -92,6 +94,7 @@ typedef struct _ds_set
 {
 	int id;				/* id of dst set */
 	int nr;				/* number of items in dst set */
+	int active_nr;		/* number of active items in dst set */
 	int last;			/* last used item in dst set */
 	int weight_sum;		/* sum of the weights from dst set */
 	ds_dest_p dlist;
@@ -109,6 +112,9 @@ int *next_idx   = NULL;
 
 #define _ds_list 	(ds_lists[*crt_idx])
 #define _ds_list_nr (*ds_list_nr)
+
+#define dst_is_active(_dst) \
+	(!((_dst).flags&(DS_INACTIVE_DST|DS_PROBING_DST)))
 
 void destroy_list(int);
 
@@ -257,15 +263,45 @@ err:
 	return -1;
 }
 
+
+/* iterates the whole set and calculates (1) the number of
+   active destinations and (2) the running and total weight
+   sum for the active destinations */
+static inline void re_calculate_active_dsts(ds_set_p sp)
+{
+	int j,i;
+
+	/* pre-calculate the running weights for each destination */
+	for( j=0,i=-1,sp->active_nr=sp->nr ; j<sp->nr ; j++ ) {
+		/* running weight is the current weight plus the running weight of
+		 * the previous element */
+		sp->dlist[j].running_weight = sp->dlist[j].weight
+			+ ((j==0) ? 0 : sp->dlist[j-1].running_weight);
+		/* now the running weight for the active destinations */
+		if ( dst_is_active(sp->dlist[j]) ) {
+			sp->dlist[j].active_running_weight = sp->dlist[j].weight
+				+ ((i==-1) ? 0 : sp->dlist[i].active_running_weight);
+			i = j; /* last active destination */
+		} else {
+			sp->dlist[j].active_running_weight =
+				((i==-1) ? 0 : sp->dlist[i].active_running_weight);
+			sp->active_nr --;
+		}
+		LM_DBG("destination i=%d, j=%d , weight=%d, sum=%d, active_sum=%d\n",i,j,
+			sp->dlist[j].weight,
+			sp->dlist[j].running_weight,sp->dlist[j].active_running_weight);
+	}
+}
+
+
 /* compact destinations from sets for fast access */
 int reindex_dests(int list_idx, int setn)
 {
 	int j;
-	int weight;
 	ds_set_p  sp = NULL;
 	ds_dest_p dp = NULL, dp0= NULL;
 
-	for( sp=ds_lists[list_idx] ; sp!= NULL ; sp->dlist=dp0, sp=sp->next )
+	for( sp=ds_lists[list_idx]; sp!= NULL ; sp=sp->next )
 	{
 		if (sp->nr == 0) {
 			dp0 = NULL;
@@ -296,15 +332,9 @@ int reindex_dests(int list_idx, int setn)
 			dp=NULL;
 		}
 
-		/* updated the weights (pre-calculate the weight limits)*/
-		for( j=0,weight=0 ; j<sp->nr ; j++ ) {
-			if (ds_use_default && dp0[j].next==NULL)
-				/* skip the last default record */
-				break;
-			dp0[j].weight += weight;
-			weight = dp0[j].weight;
-		}
-		sp->weight_sum = weight;
+		sp->dlist=dp0;
+
+		re_calculate_active_dsts(sp);
 
 	}
 
@@ -1025,12 +1055,13 @@ static inline int push_ds_2_avps( ds_dest_t *ds )
  */
 int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_results)
 {
-	int i, cnt, i_unwrapped;
-	unsigned int ds_hash;
+	int i, j, cnt, i_unwrapped, set_size;
+	unsigned int ds_hash, ds_rand;
 	int_str avp_val;
 	int ds_id;
 	ds_set_p idx = NULL;
 	int inactive_dst_count = 0;
+	ds_dest_p selected = NULL;
 	int destination_entries_to_skip = 0;
 
 	if(msg==NULL)
@@ -1052,7 +1083,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 				msg->dst_uri.s);
 		return -1;
 	}
-	
+
 
 	/* get the index of the set */
 	if(ds_get_index(set, &idx)!=0)
@@ -1065,10 +1096,22 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 		LM_DBG("destination set [%d] is empty!\n", idx->id);
 		return -1;
 	}
-	
-	LM_DBG("set [%d]\n", set);
 
+	if (idx->active_nr == 0) {
+		LM_DBG("no active destinations in set [%d] !\n", idx->id);
+		return -1;
+	}
+
+	/* calculate the real size of the set, depending on the USE_DEFAULT value
+	 * This size will be all the time higher than 0 (>=1) */
+	set_size =  (ds_flags&DS_USE_DEFAULT && idx->nr>1) ? idx->nr-1 : idx->nr ;
+
+	/* at this point we know for sure that we have
+	 * at least one  active destination */
+
+	/* hash value used for picking the destination */
 	ds_hash = 0;
+	/* id of the destination candidate (still to check if active) */
 	ds_id = -1;
 	switch(alg)
 	{
@@ -1101,8 +1144,8 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 			}
 		break;
 		case 4:
-			ds_id = idx->last;
-			idx->last = (idx->last+1) % idx->nr;
+			/* round robin */
+			ds_id = (idx->last+1) % set_size;
 		break;
 		case 5:
 			i = ds_hash_authusername(msg, &ds_hash);
@@ -1114,7 +1157,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 				case 1:
 					/* No Authorization found: Use round robin */
 					ds_id = idx->last;
-					idx->last = (idx->last+1) % idx->nr;
+					idx->last = (idx->last+1) % set_size;
 				break;
 				default:
 					LM_ERR("can't get authorization hash\n");
@@ -1140,43 +1183,78 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 			ds_id = 0;
 	}
 
-	if (ds_id==-1) {
-		/* no destination yet actually selected -> do it based on hash */
-		if (idx->weight_sum==0) {
-			ds_id = ds_hash % idx->nr;
-		} else {
-			ds_hash = ds_hash%idx->weight_sum;
-			/* get the ds id based on weights */
-			for( ds_id=0 ; ds_id<idx->nr ; ds_id++ )
-				if (ds_hash<idx->dlist[ds_id].weight)
-					break;
-		}
-	}
+	/* any destination selected yet? */
+	if (selected==NULL) {
 
-	LM_DBG("alg hash [%u], id [%u]\n", ds_hash, ds_id);
-	cnt = 0;
+		LM_DBG("hash [%u], candidate [%d], weight sum [%u]\n",
+			ds_hash, ds_id, idx->dlist[set_size-1].running_weight);
 
-	i=ds_id;
-	while ( idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST) )
-	{
-		if(ds_use_default!=0) {
-			if (idx->nr>1)
-				i = (i+1)%(idx->nr-1);
-		} else {
-			i = (i+1)%idx->nr;
-		}
-		if(i==ds_id)
-		{
-			if(ds_use_default!=0)
-			{
-				i = idx->nr-1;
-				if (idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST))
-					return -1;
-				break;
+		/* any candidate selected yet */
+		if (ds_id==-1) {
+			/* no candidate yet -> do it based on hash and weights */
+			if (idx->dlist[set_size-1].running_weight) {
+				ds_rand = ds_hash % idx->dlist[set_size-1].running_weight;
+				/* get the ds id based on weights */
+				for( ds_id=0 ; ds_id<set_size ; ds_id++ )
+					if (ds_rand<idx->dlist[ds_id].running_weight)
+						break;
 			} else {
-				return -1;
+				/* get a candidate simply based on hash */
+				ds_id = ds_hash % set_size;
 			}
 		}
+
+		LM_DBG("candidate is [%u]\n",ds_id);
+
+		i=ds_id;
+		while ( idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST) )
+		{
+			if(ds_use_default!=0) {
+				if (idx->nr>1)
+					i = (i+1)%(idx->nr-1);
+			} else {
+				/* use the hash and weights over active destinations only ;
+				 * if USE_DEFAULT is set, do a -1 if the default (last)
+				 * destination is active (we want to skip it) */
+				cnt = idx->active_nr - (ds_flags&DS_USE_DEFAULT &&
+					dst_is_active(idx->dlist[idx->nr-1]))?1:0 ;
+				if (cnt) {
+					/* weights or not ? */
+					if (idx->dlist[set_size-1].active_running_weight) {
+						ds_rand = ds_hash %
+							idx->dlist[set_size-1].active_running_weight;
+						/* get the ds id based on active weights */
+						for( i=0 ; i<set_size ; i++ )
+							if ( dst_is_active(idx->dlist[i]) &&
+							(ds_rand<idx->dlist[i].active_running_weight) )
+								break;
+					} else {
+						j = ds_hash % cnt;
+						/* translate this index to the full set of dsts */
+						for ( i=0 ; i<set_size ; i++ ) {
+							if ( dst_is_active(idx->dlist[i]) ) j--;
+							if (j<0) break;
+						}
+					}
+				}
+				/* i reflects the new candidate */
+			}
+			if(i==ds_id)
+			{
+				if(ds_use_default!=0)
+				{
+					i = idx->nr-1;
+					if (!dst_is_active(idx->dlist[i]))
+						return -1;
+					break;
+				} else {
+					return -1;
+				}
+			}
+		}
+		LM_DBG("using destination [%u]\n",i);
+		ds_id = i;
+		selected = &idx->dlist[ds_id];
 	}
 	ds_id = i;
 
@@ -1342,7 +1420,8 @@ int ds_mark_dst(struct sip_msg *msg, int mode)
 		return -1; /* dst avp deleted -- strange */
 	
 	if(mode==1) {
-		ret = ds_set_state(group, &avp_value.s, 
+		/* set as "active" */
+		ret = ds_set_state(group, &avp_value.s,
 				DS_INACTIVE_DST|DS_PROBING_DST, 0);
 	} else if(mode==2) {
 		ret = ds_set_state(group, &avp_value.s, DS_PROBING_DST, 1);
@@ -1372,6 +1451,7 @@ int ds_set_state(int group, str *address, int state, int type)
 	int i=0;
 	ds_set_p idx = NULL;
 	evi_params_p list = NULL;
+	int old_flags;
 
 	if(_ds_list==NULL || _ds_list_nr<=0)
 	{
@@ -1417,11 +1497,25 @@ int ds_set_state(int group, str *address, int state, int type)
 				idx->dlist[i].failure_count = 0;
 				state &= ~DS_RESET_FAIL_DST;
 			}
+
+			/* set the new state of the destination */
+			old_flags = idx->dlist[i].flags;
 			
 			if(type)
 				idx->dlist[i].flags |= state;
 			else
 				idx->dlist[i].flags &= ~state;
+			if ( idx->dlist[i].flags != old_flags) {
+				/* state actually changed -> do all updates */
+				idx->dlist[i].flags |= DS_STATE_DIRTY_DST;
+				/* update info on active destinations */
+				if ( ((old_flags&(DS_PROBING_DST|DS_INACTIVE_DST))?0:1) !=
+				((idx->dlist[i].flags&(DS_PROBING_DST|DS_INACTIVE_DST))?0:1) )
+					/* this destination switched state between disabled <> enabled
+					   -> update active info */
+					re_calculate_active_dsts( idx );
+			}
+
 			if (dispatch_evi_id == EVI_ERROR) {
 				LM_ERR("event not registered %d\n", dispatch_evi_id);
 			} else if (evi_probe_event(dispatch_evi_id)) {
@@ -1556,8 +1650,7 @@ int ds_is_in_list(struct sip_msg *_m, pv_spec_t *pv_ip, pv_spec_t *pv_port,
 					|| port==list->dlist[j].ports[k]) &&
 					ip_addr_cmp( ip, &list->dlist[j].ips[k]) ) {
 						/* matching destination */
-						if (active_only &&
-						(list->dlist[j].flags&(DS_INACTIVE_DST|DS_PROBING_DST)) )
+						if (active_only && !dst_is_active(list->dlist[j]) )
 							continue;
 						if(set==-1 && ds_setid_pvname.s!=0) {
 							val.ri = list->id;

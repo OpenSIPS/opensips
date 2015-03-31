@@ -45,10 +45,13 @@
 
 #define DS_HASH_USER_ONLY	1  /* use only the uri user part for hashing */
 #define DS_FAILOVER_ON		2  /* store the other dest in avps */
+#define DS_USE_DEFAULT		4  /* use last address in destination set as last option */
+#define DS_FORCE_DST		8  /* force overwriting the destination address */
 
 #define DS_INACTIVE_DST		1  /* inactive destination */
 #define DS_PROBING_DST		2  /* checking destination */
 #define DS_RESET_FAIL_DST	4  /* Reset-Failure-Counter */
+#define DS_STATE_DIRTY_DST	8  /* STATE is dirty */
 
 extern str ds_db_url;
 extern str ds_table_name;
