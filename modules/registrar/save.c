@@ -458,6 +458,13 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 				} else {
 					e_max = e;
 				}
+				if (_m->flags&tcp_persistent_flag && _m->via1->alias && tcp_accept_aliases) {
+
+					if (tcpconn_add_alias(_m->rcv.proto_reserved1, uri.port_no ? uri.port_no : SIP_PORT, uri.proto))
+						LM_ERR("tcp alias failed\n");
+					else
+						LM_DBG("tcp alias contact port %d\n", uri.port_no ? uri.port_no : SIP_PORT);
+				}
 			}
 		}
 #endif
@@ -668,6 +675,12 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 					LM_WARN("multiple TCP contacts on single REGISTER\n");
 				}
 				if (e>e_max) e_max = e;
+				if (_m->flags&tcp_persistent_flag && _m->via1->alias && tcp_accept_aliases) {
+					if (tcpconn_add_alias(_m->rcv.proto_reserved1, uri.port_no ? uri.port_no : SIP_PORT, uri.proto))
+						LM_ERR("tcp alias failed\n");
+					else
+						LM_DBG("tcp alias contact port %d\n", uri.port_no ? uri.port_no : SIP_PORT);
+				}
 			}
 		}
 #endif
