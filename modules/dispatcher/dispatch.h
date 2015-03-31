@@ -46,10 +46,13 @@
 
 #define DS_HASH_USER_ONLY	1  /* use only the uri user part for hashing */
 #define DS_FAILOVER_ON		2  /* store the other dest in avps */
+#define DS_USE_DEFAULT		4  /* use last address in destination set as last option */
+#define DS_FORCE_DST		8  /* force overwriting the destination address */
 
 #define DS_INACTIVE_DST		1  /* inactive destination */
 #define DS_PROBING_DST		2  /* checking destination */
 #define DS_RESET_FAIL_DST	4  /* Reset-Failure-Counter */
+#define DS_STATE_DIRTY_DST	8  /* STATE is dirty */
 
 #define DS_PV_ALGO_MARKER	"%u"	/* Marker to indicate where the URI should
 									   be inserted in the pvar */
@@ -66,7 +69,10 @@ typedef struct _ds_dest
 	str uri;
 	str attrs;
 	int flags;
-	int weight;
+	unsigned short weight;
+	unsigned short running_weight;
+	unsigned short active_running_weight;
+	unsigned short priority;
 	struct socket_info *sock;
 	struct ip_addr ips[DS_MAX_IPS]; /* IP-Address of the entry */
 	unsigned short int ports[DS_MAX_IPS]; /* Port of the request URI */
@@ -80,8 +86,8 @@ typedef struct _ds_set
 {
 	int id;				/* id of dst set */
 	int nr;				/* number of items in dst set */
+	int active_nr;		/* number of active items in dst set */
 	int last;			/* last used item in dst set */
-	int weight_sum;		/* sum of the weights from dst set */
 	ds_dest_p dlist;
 	struct _ds_set *next;
 } ds_set_t, *ds_set_p;
