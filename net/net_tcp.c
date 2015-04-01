@@ -92,8 +92,8 @@ int unix_tcp_sock = -1;
 /*!< current number of open connections */
 static int tcp_connections_no = 0;
 
-/*!< by default don't accept aliases */
-int tcp_accept_aliases=0;
+/*!< by default accept aliases */
+int tcp_accept_aliases=1;
 int tcp_connect_timeout=DEFAULT_TCP_CONNECT_TIMEOUT;
 int tcp_con_lifetime=DEFAULT_TCP_CONNECTION_LIFETIME;
 int tcp_listen_backlog=DEFAULT_TCP_LISTEN_BACKLOG;
