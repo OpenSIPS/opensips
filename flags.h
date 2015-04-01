@@ -40,7 +40,7 @@ typedef unsigned int flag_t;
 
 #define fix_flag_name(_s, _flag) \
      do { \
-		if (!_s && _flag > 0) { \
+		if (!_s && (int)(_flag) > 0) { \
 			LM_WARN("Integer flags are now deprecated! " \
 			        "Use unique quoted strings!\n"); \
 			_s = int2str(_flag, NULL); \
