@@ -26,6 +26,8 @@ fi
 if [ $TEST = "true" ]; then
 	if [ -f ./opensipsctlrc ]; then
 		. ./opensipsctlrc
+	elif [ -f scripts/opensipsctlrc ]; then
+		. scripts/opensipsctlrc
 	fi
 fi
 
