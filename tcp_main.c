@@ -278,20 +278,24 @@ static int tcp_blocking_connect(int fd, const struct sockaddr *servaddr, socklen
 #endif
 	int elapsed;
 	int to;
-	int ticks;
 	int err;
 	unsigned int err_len;
 	int poll_err;
+	struct timeval begin;
+
+	if (gettimeofday(&(begin), NULL)) {
+		LM_ERR("failed to get tcp connect start time\n");
+		goto error;
+	}
 	
 	poll_err=0;
-	to=tcp_connect_timeout;
-	ticks=get_ticks();
+	to=tcp_connect_timeout*1000;
 again:
 	n=connect(fd, servaddr, addrlen);
 	if (n==-1){
 		if (errno==EINTR){
-			elapsed=(get_ticks()-ticks)*TIMER_TICK;
-			if (elapsed<to)		goto again;
+			elapsed=get_time_diff(&begin);
+			if (elapsed<to) goto again;
 			else goto error_timeout;
 		}
 		if (errno!=EINPROGRESS && errno!=EALREADY){
@@ -309,18 +313,18 @@ again:
 		pf.events=POLLOUT;
 #endif
 	while(1){
-		elapsed=(get_ticks()-ticks)*TIMER_TICK;
+		elapsed = get_time_diff(&begin);
 		if (elapsed<to)
 			to-=elapsed;
 		else 
 			goto error_timeout;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 		sel_set=orig_set;
-		timeout.tv_sec=to;
-		timeout.tv_usec=0;
+		timeout.tv_sec=to/1000000;
+		timeout.tv_usec=to%1000000;
 		n=select(fd+1, 0, &sel_set, 0, &timeout);
 #else
-		n=poll(&pf, 1, to*1000);
+		n=poll(&pf, 1, to/1000);
 #endif
 		if (n<0){
 			if (errno==EINTR) continue;
@@ -348,7 +352,7 @@ again:
 	}
 error_timeout:
 	/* timeout */
-	LM_ERR("timeout %d s elapsed from %d s\n", elapsed, tcp_connect_timeout);
+	LM_ERR("timeout %d ms elapsed from %d ms\n", elapsed, tcp_connect_timeout);
 error:
 	return -1;
 end:
@@ -850,7 +854,7 @@ send_it:
 	{
 		/* n=tcp_blocking_write(c, fd, buf, len); */
 		start_expire_timer(snd,tcpthreshold);
-		n=tsend_stream(fd, buf, len, tcp_send_timeout*1000); 
+		n=tsend_stream(fd, buf, len, tcp_send_timeout);
 		get_time_difference(snd,tcpthreshold,tcp_timeout_send);
 		stop_expire_timer(get,tcpthreshold,"tcp ops",buf,(int)len,1);
 	}
