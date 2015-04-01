@@ -1457,11 +1457,10 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 
 		/* now we have a candidate, so we need to check if active or not */
 		i=ds_id;
-		while ( idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST) )
-		{
-			if(ds_use_default!=0) {
-				if (idx->nr>1)
-					i = (i+1)%(idx->nr-1);
+		while ( idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST) ) {
+			if (ds_hash==0) {
+				/* for algs with no hash, simple get the next in the list */
+				i = (i+1) % set_size;
 			} else {
 				/* use the hash and weights over active destinations only ;
 				 * if USE_DEFAULT is set, do a -1 if the default (last)
@@ -1519,9 +1518,6 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 		LM_ERR("cannot set dst addr\n");
 		goto error;
 	}
-	/* if alg is round-robin then update the shortcut to next to be used */
-	if(ds_select_ctl->alg==4)
-		idx->last = (ds_id+1) % idx->nr;
 
 	LM_DBG("selected [%d-%d/%d] <%.*s>\n", ds_select_ctl->alg, ds_select_ctl->set, ds_id,
 			selected->uri.len, selected->uri.s);
