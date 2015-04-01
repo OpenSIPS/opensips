@@ -133,7 +133,7 @@ struct tcp_child {
 };
 
 
-int tcp_accept_aliases=0;		/*!< by default don't accept aliases */
+int tcp_accept_aliases=1;		/*!< by default accept aliases */
 int tcp_connect_timeout=DEFAULT_TCP_CONNECT_TIMEOUT;
 int tcp_send_timeout=DEFAULT_TCP_SEND_TIMEOUT;
 int tcp_con_lifetime=DEFAULT_TCP_CONNECTION_LIFETIME;
