@@ -135,7 +135,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		/* check if necessary to add receive?->moved to forward_req */
 		/* check for the alias stuff */
 #ifdef USE_TCP
-		if (msg->via1->alias && tcp_accept_aliases &&
+		if (tcp_accept_aliases && 
 				(((rcv_info->proto==PROTO_TCP) && !tcp_disable)
 #ifdef USE_TLS
 					|| ((rcv_info->proto==PROTO_TLS) && !tls_disable)
