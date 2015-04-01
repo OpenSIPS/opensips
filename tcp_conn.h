@@ -47,8 +47,8 @@
 #define TCP_BUF_SIZE 65535			/*!< TCP buffer size */
 #define DEFAULT_TCP_CONNECTION_LIFETIME 120 	/*!< TCP connection lifetime, in seconds */
 #define DEFAULT_TCP_LISTEN_BACKLOG 10          /*!< TCP listen backlog count */
-#define DEFAULT_TCP_SEND_TIMEOUT 10 		/*!< If a send can't write for more then 10s, timeout */
-#define DEFAULT_TCP_CONNECT_TIMEOUT 10		/*!< If a connect doesn't complete in this time, timeout */
+#define DEFAULT_TCP_SEND_TIMEOUT 100 		/*!< If a send can't write for more then 100 ms, timeout */
+#define DEFAULT_TCP_CONNECT_TIMEOUT 100		/*!< If a connect doesn't complete in 100 ms, timeout */
 #define DEFAULT_TCP_MAX_CONNECTIONS 2048	/*!< Maximum number of connections */
 #define TCP_CHILD_TIMEOUT 5 			/*!< After 5 seconds, the child "returns"
 							 the connection to the tcp master process */

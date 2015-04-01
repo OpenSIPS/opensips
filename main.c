@@ -195,11 +195,11 @@ int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;	/* Max number of seconds that
 												   will lead to the connection to
 												   closed */
 int tcp_async = 0;	/* 1 if TCP connect & write should be async */
-int tcp_async_local_connect_timeout = 10000; /* Number of microseconds that a
+int tcp_async_local_connect_timeout = 100; /* Number of miliseconds that a
 									worker will block waiting for a local
 									connect - if connect op exceeds this, it
 									will get passed to TCP main*/
-int tcp_async_local_write_timeout = 10000; /* Number of microseconds that a
+int tcp_async_local_write_timeout = 10; /* Number of miliseconds that a
 									worker will block waiting for a local
 									write - if write op exceeds this, it
 									will get passed to TCP main*/
