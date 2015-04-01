@@ -1333,11 +1333,10 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 		LM_DBG("candidate is [%u]\n",ds_id);
 
 		i=ds_id;
-		while ( idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST) )
-		{
-			if(ds_use_default!=0) {
-				if (idx->nr>1)
-					i = (i+1)%(idx->nr-1);
+		while ( idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST) ) {
+			if (ds_hash==0) {
+				/* for algs with no hash, simple get the next in the list */
+				i = (i+1) % set_size;
 			} else {
 				/* use the hash and weights over active destinations only ;
 				 * if USE_DEFAULT is set, do a -1 if the default (last)
@@ -1383,15 +1382,18 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 		selected = &idx->dlist[ds_id];
 	}
 
+	/* remember the last used destination */
+	idx->last = ds_id;
+
+	/* start pushing the destinations to SIP level */
+	cnt = 0;
+
 	if(ds_update_dst(msg, &selected->uri, selected->sock, mode)!=0)
 	{
 		LM_ERR("cannot set dst addr\n");
 		return -1;
 	}
-	/* if alg is round-robin then update the shortcut to next to be used */
-	if(alg==4)
-		idx->last = (ds_id+1) % idx->nr;
-	
+
 	LM_DBG("selected [%d-%d/%d] <%.*s>\n", alg, set, ds_id,
 			selected->uri.len, selected->uri.s);
 
