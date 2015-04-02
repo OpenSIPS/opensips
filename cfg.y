@@ -2306,7 +2306,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 									SOCKID_ST, 0, $3, 0);
 								}
 		| FORCE_SEND_SOCKET LPAREN error RPAREN { $$=0; yyerror("bad argument,"
-								" [proto:]host[:port] expected");
+								" proto:host[:port] expected");
 								}
 		| FORCE_SEND_SOCKET error {$$=0; yyerror("missing '(' or ')' ?"); }
 		| SERIALIZE_BRANCHES LPAREN NUMBER RPAREN {
