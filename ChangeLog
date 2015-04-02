@@ -1,3 +1,392 @@
+=========================== Release 1.8.7 ==============================
+
+2015-04-02  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [aa1494d] :
+
+	Maintain rport and received in VIA header of replies when doing topology hiding
+	(cherry picked from commit 622755017064c7d4b3ca86a893e92177e5a0af40)
+
+
+2015-04-02  Razvan Crainea  <razvan at opensips dot org>
+	* [5ad4e89] :
+
+	Increase versioning to 1.8.7
+
+
+2015-04-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9a9a032] :
+
+	Fix changing proto via force_send_socket().
+	If the RURI does not request any protocol, use the proto of the forced socket (if any).
+	Related to #420
+	(cherry picked from commit ac8c2e6845ecea7d01d267b61720d332ee571e1d)
+
+	Conflicts:
+		modules/tm/uac.c
+
+
+2015-04-01  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [d56b0af] :
+
+	Changed TCP write and connect timeouts to milliseconds Changed default TCP values of sync connect and write timeouts to 100ms
+
+
+2015-04-01  Liviu Chircu  <liviu at opensips dot org>
+	* [71f717b] :
+
+	opensipsctl: Improve error reporting
+	- test READ permission for fifo dir
+	- test existence of fifo
+	- test WRITE permission for fifo
+	(cherry picked from commit d205f017c8b0475837f5cd4096e026ab6f773d6c)
+
+	Conflicts:
+		scripts/opensipsctl.fifo
+
+	(cherry picked from commit 69db8bc19955dc2dd1615113c2527508e212c588)
+
+
+2015-04-01  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [faa32f7] :
+
+	Accept TCP aliases by default Do not rely on the previous hop signaling alias via param
+
+
+2015-04-01  Razvan Crainea  <razvan at opensips dot org>
+	* [4481290] :
+
+	opensipsctl: properly enclose strings when checking their values
+	(cherry picked from commit 711fa8c6cf80d4806ecf6befc7ea7f4d897b32ad)
+
+
+2015-04-01  Liviu Chircu  <liviu at opensips dot org>
+	* [d5a22d4] :
+
+	opensipsctl: Fix TLS certificate generation in dev mode
+	    * you can now run scripts/opensipsctl tls ...
+	    * no need to specify ETCDIR
+	    * do not throw error when giving no command
+	    * add template for explicit ETCDIR in opensipsctlrc
+
+	Fixes #369
+	(cherry picked from commit 7fefe50be5696dc740405a67edf868fd3546744a)
+
+
+2015-04-01  Liviu Chircu  <liviu at opensips dot org>
+	* [270edb5] :
+
+	opensipsdbctl: allow running from root dir for _all_ SQL backends
+	(cherry picked from commit 49ed85a252d2b1f6b36eff56709bf73fcbca6d38)
+	(cherry picked from commit 9f316e228f933e8cc601c89411f454d79c869b12)
+
+
+2015-04-01  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [fd0606a] :
+
+	Fix param.valueat at param.name - params are stored in the same order
+	(cherry picked from commit 1f517c315c6cffe28e6c6743e6b292835af35219)
+
+	Conflicts:
+		transformations.c
+
+
+2015-04-01  Liviu Chircu  <liviu at opensips dot org>
+	* [da65137] :
+
+	dispatcher: fix merging bug
+	Commit 4cb026c83 actually made Round-Robin dispatching behave
+	incorrectly should one or more destinations be down
+	(cherry picked from commit 85ffd49dca80e2dcd89ac61f096cd20f13a1229f)
+
+	Conflicts:
+		modules/dispatcher/dispatch.c
+
+	(cherry picked from commit 374f68834a22a14a002889a7696f2c60d3734077)
+
+	Conflicts:
+		modules/dispatcher/dispatch.c
+
+
+2015-03-31  Liviu Chircu  <liviu at opensips dot org>
+	* [07265c9] :
+
+	Fix balancing on failover.
+	First, the way the calls were re-distributed if the calculated destination is
+	inactive was completely unbalanced and did not respect the hashing concepts
+	(same hash hits the same destination). Along with this problem, the fix covers
+	the re-balancing problem - if a destination becomes inactive, the balancing over
+	the remaining destination should not be affected (if hash H1 hits destination D1,
+	after D2 goes inactive, H1 must still hit D1).
+
+	The use_default concept was reworked to properly work with all algorithms and in
+	all cases (with or without weights).
+
+	Closes #387.
+	(cherry picked from commit 444b6802980edd4931106b4db1d8c99dd479bb32)
+
+	Conflicts:
+	    modules/dispatcher/dispatch.c
+	    modules/dispatcher/dispatch.h
+	    modules/dispatcher/dispatcher.c
+
+	(cherry picked from commit 4cb026c83f929b6e4d75611605c8f34dd0e25f9d)
+
+	Conflicts:
+	    modules/dispatcher/dispatch.c
+
+	(cherry picked from commit 1087d50afad803fc14744eb9d925962814034ff8)
+
+	Conflicts:
+		modules/dispatcher/dispatch.c
+		modules/dispatcher/dispatch.h
+
+
+2015-03-24  Liviu Chircu  <liviu at opensips dot org>
+	* [2e35bd7] :
+
+	TCP child startup: do not generate corefile on failure
+	(cherry picked from commit cbaf5699a1866c4546b982e6c68ab9ec89ae3f50)
+
+
+2015-03-23  Răzvan Crainea  <razvan at opensips dot org>
+	* [84627c6] :
+
+	python: add documentation
+	(cherry picked from commit 1dd83cfa6a99ce10876f2391d4baf5a7a986b11e)
+
+
+2015-03-23  Razvan Crainea  <razvan at opensips dot org>
+	* [1756c8c] :
+
+	python: properly parse the script name
+	(cherry picked from commit 593f26913228678d02ee5c5d6a749ed5a52fc846)
+
+
+2015-03-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cb46672] :
+
+	Put back code accidentaly removed in prev commit.
+	(cherry picked from commit 96aca846c4f8b208088691bd43881c60d8ce1fe9)
+
+
+2015-03-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8439323] :
+
+	Remove NO_ZERO_CHECKS as it is bogus wuth bin content.
+	Reported by @jamesabravo on GH, closing #419
+	(cherry picked from commit 5daef76d3eb7848330b0b21c15163b58dcb985a5)
+
+	Conflicts:
+		bin_interface.c
+
+	(cherry picked from commit b2f3658497946498aa804d07961f5ef69e6db781)
+
+	Conflicts:
+		bin_interface.c
+
+
+2015-02-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [47faa4b] :
+
+	Fix parser error - URI in Contact hdr is mandatory
+	(cherry picked from commit 1fa6a230e499347b29003826790917d44576bda3)
+
+	Conflicts:
+		parser/contact/contact.c
+
+	(cherry picked from commit 33ea837374aad6ad4c9c4c2e14880cdbc1edb36d)
+
+
+2015-02-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [82ac9b8] :
+
+	Fix SCTP proto dection in TM module.
+	Credits go to @jamesabravo on GITHUB
+	Closes #413 .
+	(cherry picked from commit 5c3b2a63dbc47398b12bfa72eea8d00b6eacfa8c)
+
+
+2015-02-18  Razvan Crainea  <razvan at opensips dot org>
+	* [55ab73e] :
+
+	rabbitmq: set the connected flag only after socket is created
+	Credits go to Ovidiu Sas for detecting, debugging and solving this issue
+
+	(cherry picked from commit 465c4be1383fa9073164d10052386e580bbc333b)
+	(cherry picked from commit 1ced6e881f867ceb5c2a8bc8f66bffca483e25af)
+	(cherry picked from commit 4bdfcc0965f9d76ee5d2edee585c823ccb70155d)
+
+
+2015-02-09  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e872716] :
+
+	Sip-wisely Content-Type parsing
+
+
+2015-02-04  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [4bd648f] :
+
+	avoid memory leak by not making all the table list null when removing only one table
+
+
+2015-02-03  Aron Podrigal  <aronp at guaranteedplus dot com>
+	* [c7055bd] :
+
+	fixes #406
+	Fix segfault caused by referencing uninitialized pointer
+	in dispatcher module.
+	(cherry picked from commit b71f6de9ea21d0f9c39ec92f4df0e6d56e2a9753)
+
+
+2015-01-30  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [d541d93] :
+
+	Made null table parameter after being freed to avoid double free ( individual free from each module and group free from db_text in destroy function of each module)
+	Conflicts:
+		modules/db_text/dbt_lib.c
+
+
+2015-01-22  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [8880acf] :
+
+	fixed load_credentials avp default name when no name is specified
+	(cherry picked from commit b69ae3258faff194c28a6277d52fa318c24ed37a)
+
+
+2015-01-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d8dc224] :
+
+	Fix updating contact records in DB.
+	If Contact-only matching mode is used, the callid is not part of the key in DB query, but part of the updated values (as callid may change).
+	Closes #402.
+	(cherry picked from commit 2fdeba6fa8ee56d256e465f63317785798f7826d)
+
+	Conflicts:
+		modules/usrloc/ucontact.c
+
+
+2014-12-30  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [2ac0b8c] :
+
+	Merge pull request #20 from dsandras/ds-fix-presentity-naming
+	Fixed presentity naming.
+
+	'Calling' is disturbing especially when the given peer is receiving a
+	call.
+
+
+2014-12-16  Razvan Crainea  <razvan at opensips dot org>
+	* [036f230] :
+
+	rtpproxy: properly handle ipv6 IPs
+	Close #394
+	(cherry picked from commit 71eb827831a10b6b78d409628aa1692b4d4edef2)
+
+	Conflicts:
+		modules/rtpproxy/rtpproxy.c
+
+	(cherry picked from commit 68b42bba4561b8e16e23d8ba065843169e523e30)
+
+
+2014-12-15  Razvan Crainea  <razvan at opensips dot org>
+	* [22b3977] :
+
+	ds_is_in_list: properly pass -1 for all sets
+	Closes #389
+	(cherry picked from commit 3729badaf9f23a37f37962a04306b7b7c843f200)
+
+
+2014-12-15  Razvan Crainea  <razvan at opensips dot org>
+	* [7453a0a] :
+
+	tm: check if the reply transaction is defined
+	closes #388
+	(cherry picked from commit 6150e8971c7c269a6a36e973ef2ee5435a7b0fb6)
+
+
+2014-12-10  Liviu Chircu  <liviu at opensips dot org>
+	* [d90b038] :
+
+	dispatcher: fix several issues with empty destination sets
+	Upon (re)load, a dispatching set may be empty if none of its destinations
+	can be resolved. This patch fixes a couple of crashes which are directly
+	related to empty destination sets:
+
+	    * fix a bug in reindex_dests() where a single bogus destination
+	      would be allocated for each empty set
+	    * prevent ds_select_dst() from routing to empty sets
+	(cherry picked from commit 127b456a874499b6295008425144ca29b5e69d75)
+
+	Conflicts:
+		modules/dispatcher/dispatch.c
+
+	(cherry picked from commit 0ef55ed992bfd7121771ffec79ec51273a29a1c6)
+
+
+2014-11-27  Razvan Crainea  <razvan at opensips dot org>
+	* [3ce3c9d] :
+
+	permissions: raise the proper error when the IP is not provided
+	(cherry picked from commit a4f849d3e6553182205fabd1dfbdf5c21005e188)
+
+
+2014-11-05  David Sanders  <dsanders11 at ucsbalum dot com>
+	* [3460293] :
+
+	Changes to stop keepalives on unregisters
+	Observed cases where keepalives from `nat_traversal` continued after unregister were traced back to a few lines of code which prevented stopping keepalives on unregister events.
+	(cherry picked from commit f4ed457bc10d6ddfcd6dc77dcc9e460e767bdc4b)
+
+	(cherry picked from commit 8187a92d48abe24643f8ea2f1b0988857f0ccb1b)
+
+
+2014-10-28  Razvan Crainea  <razvan at opensips dot org>
+	* [f124ebb] :
+
+	exec: properly handle exec replies
+	when using exec on replies, populate the reply code and reason instead of
+	R-URI variables
+	(cherry picked from commit 7e5bbcf4e522eece1222cb49d2a69790a9992957)
+
+	Conflicts:
+		modules/exec/exec_hf.c
+
+	(cherry picked from commit e6a36b5324e18c3f473b393b1290f2af3e29868a)
+
+
+2014-10-22  Razvan Crainea  <razvan at opensips dot org>
+	* [6ca4e9f] :
+
+	update ChangeLog for 1.8.6
+
+
+2014-10-22  Razvan Crainea  <razvan at opensips dot org>
+	* [784ecf1] :
+
+	increase version to 1.8.6
+
+
+2014-10-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [050cd28] :
+
+	Fix restoring route type and AVP list when droping branch.
+	Closes #365.
+	(cherry picked from commit 9e033465cb2328dd10b6e0ac0d09bf92136dfd33)
+
+
+2014-10-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6af4b30] :
+
+	Fix bogus unsigned to signed int conversion.
+	This leads to failures of computing VIA branches when hash label is higer than 2^31
+	(cherry picked from commit 2759890fcf41c1af1237206a0f97957cca1f635c)
+
+
+2014-10-16  Nick Altmann  <nick.altmann at gmail dot com>
+	* [a2e7612] :
+
+	RPM spec: support for el7
+
 =========================== Release 1.8.6 ==============================
 
 2014-10-15  Razvan Crainea  <razvan at opensips dot org>
