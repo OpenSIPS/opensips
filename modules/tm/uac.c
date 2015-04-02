@@ -229,7 +229,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 
 	/* calculate the socket corresponding to next hop */
 	send_sock = uri2sock(0, dialog->hooks.next_hop, &to_su,
-			PROTO_NONE);
+		dialog->send_sock ? dialog->send_sock->proto : PROTO_NONE );
 	if (send_sock==0) {
 		ret=ser_error;
 		LM_ERR("no socket found\n");
