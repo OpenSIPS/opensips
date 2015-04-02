@@ -1498,7 +1498,7 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 		} while (len == -1 && errno == EINTR);
 		if (len <= 0) {
 			close(fd);
-			LM_ERR("can't send command to a RTP proxy\n");
+			LM_ERR("can't send command to a RTP proxy (%s)\n",strerror(errno));
 			goto badproxy;
 		}
 		do {
