@@ -370,7 +370,9 @@ static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 		do_free_proxy = 0;
 	}else {
 		proxy=uri2proxy( request->dst_uri.len ?
-			&request->dst_uri:&request->new_uri, PROTO_NONE );
+			&request->dst_uri:&request->new_uri,
+			request->force_send_socket ?
+				request->force_send_socket->proto : PROTO_NONE );
 		if (proxy==0)  {
 			ret=E_BAD_ADDRESS;
 			goto error01;

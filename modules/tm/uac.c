@@ -199,7 +199,8 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			dialog->hooks.next_hop->s);
 
 	/* calculate the socket corresponding to next hop */
-	proxy = uri2proxy( dialog->hooks.next_hop, PROTO_NONE );
+	proxy = uri2proxy( dialog->hooks.next_hop,
+		dialog->send_sock ? dialog->send_sock->proto : PROTO_NONE );
 	if (proxy==0)  {
 		ret=E_BAD_ADDRESS;
 		goto error3;
