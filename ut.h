@@ -563,6 +563,7 @@ static inline int str_strcmp(const str *stra, const str *strb)
 	blen = strb->len;
 	minlen = (alen < blen ? alen : blen);
 
+
 	for (i = 0; i < minlen; i++) {
 		const char a = stra->s[i];
 		const char b = strb->s[i];
@@ -578,6 +579,50 @@ static inline int str_strcmp(const str *stra, const str *strb)
 	else
 		return 0;
 }
+
+/*
+ * search strb in stra
+ */
+static inline char* str_strstr(const str *stra, const str *strb)
+{
+	int i;
+	int len;
+
+	if (stra==NULL || strb==NULL || stra->s==NULL || strb->s==NULL
+			|| stra->len<=0 || strb->len<=0) {
+		LM_ERR("bad parameters\n");
+		return NULL;
+	}
+
+	if (strb->len > stra->len) {
+		LM_ERR("str to find should be smaller\n");
+		return NULL;
+	}
+
+
+	len=0;
+	while (stra->len-len >= strb->len){
+		if (stra->s[len] != strb->s[0]) {
+			len++;
+			continue;
+		}
+
+		for (i=1; i<strb->len; i++)
+			if (stra->s[len+i]!=strb->s[i]) {
+				len++;
+				break;
+			}
+
+		if (i != strb->len)
+			continue;
+
+		return stra->s+len;
+	}
+
+
+	return NULL;
+}
+
 
 /*
  * case-insensitive compare two str's
