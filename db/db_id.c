@@ -233,10 +233,14 @@ struct db_id* new_db_id(const str* url)
 	}
 	memset(ptr, 0, sizeof(struct db_id));
 
+
 	if (parse_db_url(ptr, url) < 0) {
 		LM_ERR("error while parsing database URL: '%.*s' \n", url->len, url->s);
 		goto err;
 	}
+
+	/* store the original url */
+	ptr->url = url->s;
 
 	return ptr;
 
