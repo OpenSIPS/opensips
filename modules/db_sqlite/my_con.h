@@ -1,0 +1,89 @@
+/**
+ *
+ * Copyright (C) 2015 OpenSIPS Foundation
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History
+ * -------
+ *  2015-02-18  initial version (Ionut Ionita)
+*/
+#ifndef MY_CON_H_
+#define MY_CON_H_
+#define PREP_STMT_VAL_LEN	1024
+
+#include <sqlite3.h>
+
+
+struct my_con {
+	struct db_id* id;        /**< Connection identifier */
+	unsigned int ref;        /**< Reference count */
+	struct pool_con *async_pool; /**< Subpool of identical database handles */
+	int no_transfers;        /**< Number of async queries to this backend */
+	struct db_transfer *transfers; /**< Array of ongoing async operations */
+	struct pool_con *next;   /**< Next element in the pool (different db_id) */
+
+
+	sqlite3* con;              /* Connection representation */
+	unsigned int init;       /* If the mysql conn was initialized */
+
+	struct prep_stmt *ps_list; /* list of prepared statements */
+	unsigned int disconnected; /* (CR_CONNECTION_ERROR) was detected */
+};
+
+struct my_stmt_ctx {
+	sqlite3_stmt *stmt;
+	str table;
+	str query;
+	int query_rows;
+	int has_out;
+	struct my_stmt_ctx *next;
+};
+
+struct prep_stmt {
+	struct my_stmt_ctx *stmts;
+	struct my_stmt_ctx *ctx;
+
+	struct prep_stmt *next;
+};
+
+
+#define CON_RESULT(db_con)     (((struct my_con*)((db_con)->tail))->res)
+#define CON_CONNECTION(db_con) (((struct my_con*)((db_con)->tail))->con)
+#define CON_ROW(db_con)        (((struct my_con*)((db_con)->tail))->row)
+#define CON_PS_LIST(db_con)    (((struct my_con*)((db_con)->tail))->ps_list)
+#define CON_DISCON(db_con)     (((struct my_con*)((db_con)->tail))->disconnected)
+
+#define CON_SQLITE_PS(db_con) \
+	((struct prep_stmt*)(CON_CURR_PS(db_con)))
+#define CON_PS_STMT(db_con) \
+	(CON_SQLITE_PS(db_con)->ctx->stmt)
+#define CON_PS_ROWS(db_con) \
+	(CON_SQLITE_PS(db_con)->ctx->query_rows)
+#define CON_PS_STMTS(db_con) \
+	(CON_SQLITE_PS(db_con)->stmts)
+#define CON_PS_OUTCOL(_db_con, _i) \
+	((CON_SQLITE_PS(_db_con)->out_bufs)[_i])
+
+
+
+
+int db_sqlite_connect(struct my_con* ptr);
+struct my_con* db_sqlite_new_connection(const struct db_id* id);
+void db_sqlite_free_connection(struct pool_con* con);
+
+#endif
