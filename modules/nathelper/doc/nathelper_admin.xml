@@ -165,7 +165,7 @@ modparam("nathelper", "ping_nated_only", 1)
 		<title>Set <varname>natping_partitions</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("nathelper", "natping_processes", 4)
+modparam("nathelper", "natping_partitions", 4)
 ...
 </programlisting>
 		</example>
