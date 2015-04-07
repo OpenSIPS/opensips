@@ -252,11 +252,11 @@ inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 	del_notflaged_lumps( &(faked_req->body_lumps), LUMPFLAG_SHMEM );
 	del_nonshm_lump_rpl( &(faked_req->reply_lump) );
 
-        if (faked_req->add_rm != t->uas.request->add_rm)
+        if (faked_req->add_rm && faked_req->add_rm != t->uas.request->add_rm)
        		shm_free(faked_req->add_rm);
-        if (faked_req->body_lumps != t->uas.request->body_lumps)
+        if (faked_req->body_lumps && faked_req->body_lumps != t->uas.request->body_lumps)
        		shm_free(faked_req->body_lumps);
-        if (faked_req->reply_lump != t->uas.request->reply_lump)
+        if (faked_req->reply_lump && faked_req->reply_lump != t->uas.request->reply_lump)
        		shm_free(faked_req->reply_lump);
 
 	clean_msg_clone( faked_req, t->uas.request, t->uas.end_request);
