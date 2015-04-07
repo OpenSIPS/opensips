@@ -1005,7 +1005,7 @@ int t_newtran( struct sip_msg* p_msg, int full_uas )
 	LM_DBG("transaction on entrance=%p\n",T);
 
 	if ( T && T!=T_UNDEFINED  ) {
-		LM_ERR("transaction already in process %p\n", T );
+		LM_DBG("transaction already in process %p\n", T );
 		return E_SCRIPT;
 	}
 
