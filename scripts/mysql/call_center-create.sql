@@ -38,7 +38,7 @@ CREATE TABLE cc_cdrs (
 ) ENGINE=MyISAM;
 
 CREATE TABLE cc_calls (
-    id INT(10) UNSIGNED AUTO_INCREMENT NOT NULL,
+    id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     state INT(11) NOT NULL,
     ig_cback INT(11) NOT NULL,
     no_rej INT(11) NOT NULL,
@@ -48,9 +48,9 @@ CREATE TABLE cc_calls (
     recv_time INT(11) NOT NULL,
     caller_dn CHAR(128) NOT NULL,
     caller_un CHAR(128) NOT NULL,
-    b2buaid CHAR(128) PRIMARY KEY DEFAULT '' NOT NULL,
+    b2buaid CHAR(128) DEFAULT '' NOT NULL,
     flow CHAR(128) NOT NULL,
     agent CHAR(128) NOT NULL,
-    CONSTRAINT unique_id UNIQUE (id)
+    CONSTRAINT unique_id UNIQUE (b2buaid)
 ) ENGINE=MyISAM;
 

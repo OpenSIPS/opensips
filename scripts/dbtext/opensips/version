@@ -33,7 +33,6 @@ imc_rooms:2
 load_balancer:2
 location:1009
 missed_calls:5
-pdt:2
 presentity:5
 pua:8
 re_grp:2
