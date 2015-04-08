@@ -31,8 +31,10 @@
 #include "../../mi/mi.h"
 
 #define MI_PIKE_LIST      "pike_list"
+#define MI_PIKE_RM      "pike_rm"
 
 struct mi_root* mi_pike_list(struct mi_root* cmd_tree, void* param);
+struct mi_root* mi_pike_rm(struct mi_root *cmd, void *param);
 
 #endif
 

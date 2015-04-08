@@ -93,6 +93,8 @@ static param_export_t params[]={
 static mi_export_t mi_cmds [] = {
 	{MI_PIKE_LIST, "lists the nodes in the pike tree",
 		mi_pike_list,   MI_NO_INPUT_FLAG,  0,  0 },
+	{MI_PIKE_RM, "remove a node from the tree",
+		mi_pike_rm,     0,                 0,  0 },
 	{0,0,0,0,0,0}
 };
 
