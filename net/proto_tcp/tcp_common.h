@@ -387,7 +387,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			if (_tcp_common_write( con, con->fd, CRLF, CRLF_LEN) < 0) {
 				LM_ERR("CRLF pong - _tcp_common_write() failed\n");
 			}
-		} else {
+		} else if (req->state!=H_SKIP_EMPTY) {
 			msg_buf = req->start;
 			msg_len = req->parsed-req->start;
 			local_rcv = con->rcv;
