@@ -239,27 +239,23 @@ int db_sqlite_allocate_rows(db_res_t* res, const unsigned int rows)
 	unsigned int i;
 
 	/* first allocate the rows */
-	RES_ROWS(res) = (struct db_row*)pkg_malloc(rows * (sizeof(db_row_t)));
-	memset( RES_ROWS(res), 0 ,
-		rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(res)));
-
-	if (!RES_ROWS(res))
+	res->rows = (struct db_row*)pkg_malloc(rows * (sizeof(db_row_t)));
+	if (!res->rows)
 		goto out;
 
+	memset( res->rows, 0 , rows * (sizeof(db_row_t)));
 
 	/* and then the values */
-	ROW_VALUES( &(RES_ROWS(res)[0]) ) =
-		pkg_malloc(rows * sizeof(db_val_t) * RES_COL_N(res));
-//	memset( ROW_VALUES( &(RES_ROWS(res)[0]) ), 0,
-//				sizeof(db_val_t) * RES_COL_N(res));
-
-	if (! ROW_VALUES( &(RES_ROWS(res)[0]) ))
+	res->rows[0].values = pkg_malloc(rows * sizeof(db_val_t) * RES_COL_N(res));
+	if (!res->rows[0].values)
 		goto out;
 
-	for( i=1 ; i<rows ; i++ )
+	memset( res->rows[0].values, 0, rows * sizeof(db_val_t) * RES_COL_N(res));
+	for( i=1 ; i<rows ; i++ ) {
 		/* the values of the row i */
-		ROW_VALUES( &(RES_ROWS(res)[i]) ) =
-				ROW_VALUES( &(RES_ROWS(res)[0]) )+RES_COL_N(res)*i;
+		res->rows[i].values = res->rows[0].values + RES_COL_N(res) * i;
+		res->rows[i].n = RES_COL_N(res);
+	}
 
 	return 0;
 out:
@@ -274,31 +270,33 @@ out:
 int db_sqlite_realloc_rows(db_res_t* res, const unsigned int rows)
 {
 	unsigned int i;
+	struct db_row* res_rows;
 
-	RES_ROWS(res) = pkg_realloc(RES_ROWS(res),rows * (sizeof(db_row_t)));
-	memset( RES_ROWS(res) + RES_ROW_N(res), 0 ,
+	res->rows = pkg_realloc(RES_ROWS(res),rows * (sizeof(db_row_t)));
+	memset( res->rows + RES_ROW_N(res), 0 ,
 			(rows - RES_ROW_N(res)) * (sizeof(db_row_t)));
 
-	if (!RES_ROWS(res)) {
+	res_rows = res->rows;
+	if (!res_rows) {
 		LM_ERR("no memory left\n");
 		return -1;
 	}
 
-	ROW_VALUES( &(RES_ROWS(res)[0]) ) =
-		pkg_realloc(ROW_VALUES( &(RES_ROWS(res)[0]) ),
-				rows * sizeof(db_val_t) * RES_COL_N(res));
-//	memset( ROW_VALUES( &(RES_ROWS(res)[RES_ROW_N(res)]) ), 0,
-//		(rows - RES_ROW_N(res)) * sizeof(db_val_t) * RES_COL_N(res));
+	res_rows[0].values =
+		pkg_realloc(res_rows[0].values, rows * sizeof(db_val_t) * RES_COL_N(res));
+	memset( res_rows[0].values + RES_COL_N(res)*sizeof(db_val_t)*RES_ROW_N(res),
+			0, (rows - RES_ROW_N(res)) * sizeof(db_val_t) * RES_COL_N(res));
 
-	if (! ROW_VALUES( &(RES_ROWS(res)[0]) )) {
+	if (! res_rows[0].values) {
 		LM_ERR("no memory left\n");
 		return -1;
 	}
 
-	for( i=RES_ROW_N(res) ; i<rows ; i++ )
+	for( i=RES_ROW_N(res) ; i<rows ; i++ ) {
 		/* the values of the row i */
-		ROW_VALUES( &(RES_ROWS(res)[i]) ) =
-				ROW_VALUES( &(RES_ROWS(res)[0]) )+RES_COL_N(res)*i;
+		res_rows[i].values = res_rows[0].values + RES_COL_N(res)*i;
+		res->rows[i].n = RES_COL_N(res);
+	}
 
 	return 0;
 
@@ -389,7 +387,6 @@ int db_sqlite_convert_result(const db_con_t* _h, db_res_t* _r)
 		return -3;
 	}
 
-	LM_INFO("fetching columns\n");
 	return 0;
 }
 

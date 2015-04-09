@@ -1797,7 +1797,7 @@
 			<db_table_id>cc_calls</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>id</field></col>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>state</field></col>
 				<col><field>ig_cback</field></col>
 				<col><field>no_rej</field></col>
@@ -1807,7 +1807,7 @@
 				<col><field>recv_time</field></col>
 				<col><field>caller_dn</field></col>
 				<col><field>caller_un</field></col>
-				<col><field>b2buaid</field><link_cmd>update</link_cmd></col>
+				<col><field>b2buaid</field></col>
 				<col><field>flow</field></col>
 				<col><field>agent</field></col>
 			</query_cols>
@@ -1834,10 +1834,9 @@
 			<db_table_id>cc_calls</db_table_id>
 			<cmd_type>DB_UPDATE</cmd_type>
 			<clause_cols>
-				<col><field>b2buaid</field><operator>=</operator></col>
+				<col><field>id</field><operator>=</operator></col>
 			</clause_cols>
 			<query_cols>
-				<col><field>id</field></col>
 				<col><field>state</field></col>
 				<col><field>ig_cback</field></col>
 				<col><field>no_rej</field></col>
@@ -1847,6 +1846,7 @@
 				<col><field>recv_time</field></col>
 				<col><field>caller_dn</field></col>
 				<col><field>caller_un</field></col>
+				<col><field>b2buaid</field></col>
 				<col><field>flow</field></col>
 				<col><field>agent</field></col>
 			</query_cols>
@@ -1855,7 +1855,7 @@
 			<db_table_id>cc_calls</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
-				<col><field>b2buaid</field><operator>=</operator></col>
+				<col><field>id</field><operator>=</operator></col>
 			</clause_cols>
 		</cmd>
 	</mod>

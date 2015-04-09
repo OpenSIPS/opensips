@@ -95,6 +95,7 @@ static inline void reset_all_statements(const db_con_t* conn)
 				pq_ptr,ctx->stmt, ctx, ctx->table.len,ctx->table.s);
 			if (ctx->stmt) {
 				sqlite3_clear_bindings(ctx->stmt);
+				sqlite3_finalize(ctx->stmt);
 				ctx->stmt = NULL;
 				ctx->has_out = 0;
 			}
@@ -118,11 +119,14 @@ static inline int wrapper_single_sqlite_stmt_prepare(const db_con_t *conn,
 	if (CON_DISCON(conn))
 		return -1;
 
+again:
 	code = sqlite3_prepare_v2(CON_CONNECTION(conn), ctx->query.s,
 						ctx->query.len, &ctx->stmt, NULL);
 
 	if (code == SQLITE_OK)
 		return 0;
+	if (code == SQLITE_BUSY)
+		goto again;
 
 	LM_ERR("Can't create sqlite3 statement: %s\n",
 			sqlite3_errmsg((sqlite3*)CON_CONNECTION(conn)));
@@ -181,6 +185,7 @@ static inline int db_copy_rest_of_count(const str* query_holder, str* count_quer
 	char* found;
 	const str searched_str = {" from ", sizeof(" from ")-1};
 
+	count_query->len = sizeof(COUNT_QUERY)-1;
 	if ((found=str_strstr(query_holder, &searched_str)) != NULL) {
 		const int len=query_holder->len-(found-query_holder->s);
 		memcpy(count_query->s+count_query->len, found, len);
@@ -412,6 +417,7 @@ int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 	int ret=-1;
 	char* errmsg;
 	db_ps_t* ps;
+	str select_str={"select", 6};
 
 
 	if (!CON_PS_REFERENCE(_h)) {
@@ -427,7 +433,7 @@ int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 		*((void***)&_h->curr_ps) = ps;
 	}
 
-	if (db_copy_rest_of_count(&query_holder, &count_str)) {
+	if (!str_strstr(_s, &select_str)) {
 		/* not a select statement; can execute the query and exit*/
 		if (sqlite3_exec(CON_CONNECTION(_h),
 							query_holder.s, NULL, NULL, &errmsg)) {
@@ -440,6 +446,10 @@ int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 	}
 
 
+	if (db_copy_rest_of_count(_s, &count_str)) {
+		LM_ERR("failed to build count str!\n");
+		return -1;
+	}
 
 	ret = db_sqlite_prepare_query(_h,_s, NULL, 0, NULL, 0);
 	if (ret != 0) {
@@ -789,7 +799,6 @@ error:
  */
 int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 {
-	int i;
 
 	if ((!_h) || (!_r)) {
 		LM_ERR("invalid parameter value\n");
@@ -798,12 +807,9 @@ int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 
 
 	if (RES_ROWS(_r)) {
-		for(i = 0; i < RES_ROW_N(_r); i++)
-			db_free_row(&(RES_ROWS(_r)[i]));
-
 		LM_DBG("freeing rows at %p\n", RES_ROWS(_r));
-		pkg_free(ROW_VALUES ( &(RES_ROWS(_r)[0]) ));
-		pkg_free(RES_ROWS(_r));
+		pkg_free(_r->rows[0].values);
+		pkg_free(_r->rows);
 		RES_ROWS(_r) = NULL;
 	}
 
@@ -1095,7 +1101,6 @@ static int db_sqlite_store_result(const db_con_t* _h,
 	rows=db_sqlite_get_query_rows(_h, _v, _n, &count_str);
 
 	/* reset the length to initial for future uses */
-	count_str.len = sizeof(COUNT_QUERY)-1;
 	if (rows < 0) {
 		LM_ERR("failed to fetch number of rows\n");
 		return -1;
