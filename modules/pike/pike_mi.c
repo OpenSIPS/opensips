@@ -27,7 +27,6 @@
 #include <assert.h>
 
 #include "../../resolve.h"
-#include "../../timer.h"
 
 #include "ip_tree.h"
 #include "pike_mi.h"
@@ -39,9 +38,6 @@
 
 static struct 		 ip_node *ip_stack[MAX_IP_LEN];
 extern int    		 pike_log_level;
-extern int               timeout;
-extern struct list_link* timer;
-extern gen_lock_t*	 timer_lock;
 
 
 static inline void print_ip_stack( int level, struct mi_node *node)
@@ -99,7 +95,6 @@ struct mi_root* mi_pike_rm(struct mi_root *cmd, void *param)
 {
     struct mi_node   *mn;
     struct ip_node   *node;
-    struct ip_node   *dad;
     struct ip_node   *kid;
     struct ip_addr   *ip;
     int byte_pos;
@@ -139,23 +134,13 @@ struct mi_root* mi_pike_rm(struct mi_root *cmd, void *param)
 	return init_mi_tree( 400, "IP not blocked", 14);
     }
 
-    /* pilfered from pike_funcs.c:clean_routine(..) */
-    if (node->prev!=0) {
-	if (node->prev->kids==node && node->next==0) {
-	    dad = node->prev;
-	    if ( !(dad->flags&NODE_IPLEAF_FLAG) ) {
-		lock_get(timer_lock);
-		dad->expires = get_ticks() + timeout;
-		assert( !has_timer_set(&(dad->timer_ll)) );
-		append_to_timer( timer, &(dad->timer_ll));
-		dad->flags |= NODE_INTIMER_FLAG;
-		lock_release(timer_lock);
-	    } else {
-		assert( has_timer_set(&(dad->timer_ll)) );
-	    }
-	}
-    }
-    remove_node(node);
+    /* reset the node block flag and counters */
+    node->flags &= ~(NODE_ISRED_FLAG);
+
+    node->hits[PREV_POS] = 0;
+    node->hits[CURR_POS] = 0;
+    node->leaf_hits[PREV_POS] = 0;
+    node->leaf_hits[CURR_POS] = 0;
 
     LM_GEN1(pike_log_level,
 	    "PIKE - UNBLOCKing ip %s, node=%p\n",ip_addr2a(ip),node);
