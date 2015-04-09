@@ -49,11 +49,11 @@ Chapter 1. Admin Guide
    compliant with the RFC 7118, thus allowing browsers to act as
    SIP clients for the OpenSIPS proxy.
 
-   The current implementation can only act as a WebSocket server,
-   meaning that it can only accept connections from WebSocket
-   clients and cannot initiate connections to another WebSocket
-   server. After the connection is established, messages can flow
-   in both directions.
+   The current implementation acts both as WebSocket server and
+   client, thus it can accept connections from WebSocket clients
+   and can also initiate connections to another WebSocket server.
+   After the connection is established, messages can flow in both
+   directions.
 
    OpenSIPS supports the following WebSocket operations:
      * text and binary - can both send and receive WebSocket
@@ -139,7 +139,8 @@ Chapter 2. Frequently Asked Questions
 
        Can OpenSIPS act as a WebSocket client?
 
-       No, currently OpenSIPS can only behave as a Websocket server.
+       Yes, starting with OpenSIPS 2.2, it can act as a WebSocket
+       client.
 
    2.2.
 
