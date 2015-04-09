@@ -61,39 +61,10 @@ int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 		_v = &(ROW_VALUES(_r)[col]);
 
 		if (sqlite3_column_type(CON_PS_STMT(_h), col) == SQLITE_NULL) {
-			switch (RES_TYPES(_res)[col]) {
-				case DB_INT:
-					VAL_INT(_v) = 0;
-					VAL_TYPE(_v) = DB_INT;
-
-					continue;
-				case DB_DATETIME:
-					VAL_INT(_v) = 0;
-					VAL_TYPE(_v) = DB_DATETIME;
-
-					continue;
-				case DB_DOUBLE:
-					VAL_DOUBLE(_v) = 0.0f;
-					VAL_TYPE(_v) = DB_DOUBLE;
-
-					continue;
-				case DB_BLOB:
-					VAL_BLOB(_v).len = 0;
-					VAL_BLOB(_v).s   = 0;
-					VAL_TYPE(_v) = DB_BLOB;
-
-					continue;
-				case DB_STRING:
-					VAL_STR(_v).len = 0;
-					VAL_STR(_v).s	= 0;
-					VAL_TYPE(_v) = DB_STR;
-
-					continue;
-				default:
-					LM_ERR("invalid type for sqlite!\n");
-					return -1;
-			}
+			VAL_NULL(_v) = 1;
+			continue;
 		}
+
 		switch (RES_TYPES(_res)[col]) {
 			case DB_INT:
 				VAL_INT(_v) = sqlite3_column_int(CON_PS_STMT(_h), col);
@@ -113,14 +84,20 @@ int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 			case DB_BLOB:
 				VAL_BLOB(_v).len = sqlite3_column_bytes(CON_PS_STMT(_h), col);
 				db_value = sqlite3_column_blob(CON_PS_STMT(_h), col);
-				VAL_BLOB(_v).s = *((char**)&db_value);
+
+				VAL_BLOB(_v).s = pkg_malloc(VAL_BLOB(_v).len);
+				memcpy(VAL_BLOB(_v).s, db_value, VAL_BLOB(_v).len);
+
 				VAL_TYPE(_v) = DB_BLOB;
 
 				break;
 			case DB_STRING:
 				VAL_STR(_v).len = sqlite3_column_bytes(CON_PS_STMT(_h), col);
 				db_value = (char *)sqlite3_column_text(CON_PS_STMT(_h), col);
-				VAL_STR(_v).s = *((char**)&db_value);
+
+				VAL_STR(_v).s = pkg_malloc(VAL_STR(_v).len);
+				memcpy(VAL_STR(_v).s, db_value, VAL_STR(_v).len);
+
 				VAL_TYPE(_v) = DB_STR;
 
 				break;

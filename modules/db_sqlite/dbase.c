@@ -41,12 +41,12 @@
 #include "dbase.h"
 
 #define COUNT_QUERY "select count(*)"
+#define COUNT_BUF_SIZE 2048
 
 static str query_holder = {NULL,0};
 extern int db_sqlite_alloc_limit;
 
-/* TODO set this value somehow(200) */
-char count_buf[200]="select count(*)";
+char count_buf[COUNT_BUF_SIZE]="select count(*)";
 str count_str = {count_buf, sizeof(COUNT_QUERY)-1};
 
 static int db_sqlite_prepare_query(const db_con_t* conn, const str *query,
@@ -188,6 +188,13 @@ static inline int db_copy_rest_of_count(const str* query_holder, str* count_quer
 	count_query->len = sizeof(COUNT_QUERY)-1;
 	if ((found=str_strstr(query_holder, &searched_str)) != NULL) {
 		const int len=query_holder->len-(found-query_holder->s);
+		/* check for overflow */
+		if (len > COUNT_BUF_SIZE-(sizeof(COUNT_QUERY)-1)) {
+			LM_ERR("query too big! try reducing the size of your query!"
+					"Current max size [%d]!\n", COUNT_BUF_SIZE);
+			return -1;
+		}
+
 		memcpy(count_query->s+count_query->len, found, len);
 		count_query->len += len;
 
@@ -203,7 +210,15 @@ static inline int db_sqlite_get_query_rows(const db_con_t* _h,
 	int ret;
 	sqlite3_stmt* stmt;
 
-	sqlite3_prepare_v2(CON_CONNECTION(_h), query->s, query->len, &stmt, NULL);
+again:
+	ret=sqlite3_prepare_v2(CON_CONNECTION(_h), query->s, query->len, &stmt, NULL);
+	if (ret == SQLITE_BUSY)
+		goto again;
+
+	if (ret != SQLITE_OK) {
+		LM_ERR("failed to prepare query\n");
+		return -1;
+	}
 
 	if (_n && _v) {
 		ret=db_sqlite_bind_values(stmt, _v, _n);
@@ -214,10 +229,10 @@ static inline int db_sqlite_get_query_rows(const db_con_t* _h,
 	}
 
 
-again:
+again2:
 	ret=sqlite3_step(stmt);
 	if (ret == SQLITE_BUSY)
-		goto again;
+		goto again2;
 
 	if (ret != SQLITE_ROW) {
 		LM_ERR("failed to fetch query size\n");
@@ -799,6 +814,10 @@ error:
  */
 int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 {
+	int i;
+	int j;
+	db_val_t* v;
+	db_row_t* res_col;
 
 	if ((!_h) || (!_r)) {
 		LM_ERR("invalid parameter value\n");
@@ -808,6 +827,19 @@ int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 
 	if (RES_ROWS(_r)) {
 		LM_DBG("freeing rows at %p\n", RES_ROWS(_r));
+		for (i = 0; i < RES_ROW_N(_r); i++) {
+			for (j = 0; j < RES_COL_N(_r); j++) {
+				res_col = &_r->rows[i];
+				v = &res_col->values[j];
+
+				/* only allocated types; STR and BLOB;*/
+				if (v->type == DB_STR)
+					pkg_free(VAL_STR(v).s);
+				if (v->type == DB_BLOB)
+					pkg_free(VAL_BLOB(v).s);
+			}
+		}
+
 		pkg_free(_r->rows[0].values);
 		pkg_free(_r->rows);
 		RES_ROWS(_r) = NULL;
