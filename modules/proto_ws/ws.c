@@ -608,6 +608,7 @@ again:
 
 			newreq->op = req->op;
 			newreq->mask = req->mask;
+			newreq->is_masked = req->is_masked;
 
 			con->con_req = (struct tcp_req *)newreq;
 		}
@@ -619,6 +620,10 @@ done:
 	return size;
 error:
 	WS_CODE(con) = ret_code;
+	if (WS_CODE(con) != WS_ERR_NONE) {
+		ws_send_close(con);
+		WS_CODE(con) = WS_ERR_NOSEND;
+	}
 	return -1;
 }
 

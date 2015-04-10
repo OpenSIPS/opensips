@@ -150,14 +150,16 @@ static void ws_conn_clean(struct tcp_connection* c)
 	if (!d)
 		return;
 
-	switch (d->code) {
-	case WS_ERR_NOSEND:
-		break;
-	case WS_ERR_NONE:
-		WS_CODE(c) = WS_ERR_NORMAL;
-	default:
-		ws_close(c);
-		break;
+	if (c->state == S_CONN_OK) {
+		switch (d->code) {
+		case WS_ERR_NOSEND:
+			break;
+		case WS_ERR_NONE:
+			WS_CODE(c) = WS_ERR_NORMAL;
+		default:
+			ws_close(c);
+			break;
+		}
 	}
 
 	shm_free(d);
