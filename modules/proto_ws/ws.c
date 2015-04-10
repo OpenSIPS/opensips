@@ -620,6 +620,10 @@ done:
 	return size;
 error:
 	WS_CODE(con) = ret_code;
+	if (WS_CODE(con) != WS_ERR_NONE) {
+		ws_send_close(con);
+		WS_CODE(con) = WS_ERR_NOSEND;
+	}
 	return -1;
 }
 
