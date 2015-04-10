@@ -1,0 +1,35 @@
+#
+# $Id$
+#
+# opensips control tool for maintaining opensips
+#
+#===================================================================
+
+##### ----------------------------------------------- #####
+### MySQL specific variables and functions
+#
+
+##### ----------------------------------------------- #####
+### load SQL base
+#
+if [ -f "$MYLIBDIR/opensipsctl.sqlbase" ]; then
+	. "$MYLIBDIR/opensipsctl.sqlbase"
+else
+	echo "Cannot load SQL core functions '$MYLIBDIR/opensipsctl.sqlbase' - exiting ..."
+	exit -1
+fi
+
+##### ----------------------------------------------- #####
+### binaries
+if [ -z "$SQLITE" ] ; then
+	locate_tool mysql
+	if [ -z "$TOOLPATH" ] ; then
+		echo "error: 'mysql' tool not found: set MYSQL variable to correct tool path"
+		exit
+	fi
+	SQLITE="$TOOLPATH"
+fi
+
+DBCMD=sqlite3
+DBRAWPARAMS=""
+

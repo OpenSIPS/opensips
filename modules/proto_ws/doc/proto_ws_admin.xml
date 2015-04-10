@@ -21,8 +21,8 @@
 	to act as SIP clients for the &osips; proxy.
 	</para>
 	<para>
-	The current implementation can only act as a WebSocket server, meaning that it can only
-	accept connections from WebSocket clients and cannot initiate connections to another
+	The current implementation acts both as WebSocket server and client, thus it can 
+	accept connections from WebSocket clients and can also initiate connections to another
 	WebSocket server. After the connection is established, messages can flow  in
 	both directions.
 	</para>

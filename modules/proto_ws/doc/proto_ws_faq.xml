@@ -12,7 +12,7 @@
 		</question>
 		<answer>
 		<para>
-			No, currently &osips; can only behave as a Websocket server.
+			Yes, starting with &osips; 2.2, it can act as a WebSocket client.
 		</para>
 		</answer>
 	</qandaentry>

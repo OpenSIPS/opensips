@@ -29,8 +29,12 @@ DB_BERKELEY_XSL = $(STYLESHEETS)/db_berkeley.xsl
 # Stylesheet used to generate oracle database schema
 ORACLE_XSL = $(STYLESHEETS)/oracle.xsl
 
+#Stylesheet used to generate sqlite database schema
+SQLITE_XSL = $(STYLESHEETS)/sqlite.xsl
+
 # Stylesheet used to generate docbook documentation
 DOCBOOK_XSL = $(STYLESHEETS)/docbook.xsl
+
 
 # Enable/disable DTD validation
 VALIDATE = 0
@@ -91,6 +95,21 @@ mysql:
 
 mysql_clean:
 	-@rm -f $(ROOT)/scripts/mysql/*
+
+.PHONY: sqlite sqlite_clean
+mysql:
+	for FILE in $(TABLES); do \
+		XML_CATALOG_FILES=$(CATALOG) $(XSLTPROC) $(XSLTPROC_FLAGS) \
+		--stringparam dir "$(ROOT)/scripts/sqlite" \
+		--stringparam prefix "$$FILE-" \
+		--stringparam db "sqlite" \
+		$(SQLITE_XSL) opensips-"$$FILE".xml ; \
+	done
+
+mysql_clean:
+	-@rm -f $(ROOT)/scripts/sqlite/*
+
+
 
 .PHONY: postgres postgres_clean
 postgres:

@@ -120,6 +120,16 @@ case $DBENGINE in
 			merr "could not load the script in $MYLIBDIR/opensipsdbctl.db_berkeley for database engine $DBENGINE"
 		fi
 		;;
+	DB_SQLITE|db_sqlite|SQLITE|sqlite)
+		if [ -f "$MYLIBDIR/opensipsdbctl.sqlite" ]; then
+			. "$MYLIBDIR/opensipsdbctl.sqlite"
+			USED_DBENGINE="sqlite"
+			DBNAME=$DB_PATH
+		else
+			merr "could not load the script in $MYLIBDIR/opensipsdbctl.db_berkeley for database engine $DBENGINE"
+		fi
+		;;
+
 esac
 
 if [ -z "$USED_DBENGINE" ] ; then
@@ -160,6 +170,8 @@ opensips_restore() #pars: <database name> <filename>
 	fi
 	if [ "$USED_DBENGINE" = "oracle" ]; then
 		oracle_restore $1 $2
+	elif [ "$USED_DBENGINE" = "sqlite" ]; then
+		sql_query $1 "$2"
 	else
 		sql_query $1 < $2
 	fi
