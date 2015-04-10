@@ -608,6 +608,7 @@ again:
 
 			newreq->op = req->op;
 			newreq->mask = req->mask;
+			newreq->is_masked = req->is_masked;
 
 			con->con_req = (struct tcp_req *)newreq;
 		}
