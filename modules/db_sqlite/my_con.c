@@ -46,7 +46,7 @@ int db_sqlite_connect(struct my_con* ptr)
 	sqlite3* con;
 	char* url;
 	char* errmsg;
-	struct db_sqlite_extension_list *foo;
+	struct db_sqlite_extension_list *iter;
 
 	/* if connection already in use, close it first*/
 	if (ptr->init)
@@ -70,22 +70,18 @@ int db_sqlite_connect(struct my_con* ptr)
 			return -1;
 		}
 
-		while (extension_list) {
-			if (sqlite3_load_extension(con, extension_list->ldpath,
-						extension_list->entry_point, &errmsg)) {
+		iter=extension_list;
+		for (iter=extension_list; iter; iter=iter->next) {
+			if (sqlite3_load_extension(con, iter->ldpath,
+						iter->entry_point, &errmsg)) {
 				LM_ERR("failed to load!"
 						"Extension [%s]! Entry point [%s]!"
 						"Errmsg [%s]!\n",
-						extension_list->ldpath, extension_list->entry_point,
+						iter->ldpath, iter->entry_point,
 						errmsg);
 				goto out_free;
 			}
-
-			LM_INFO("Extension [%s] loaded!\n", extension_list->ldpath);
-
-			foo=extension_list;
-			extension_list=extension_list->next;
-			pkg_free(foo);
+			LM_INFO("Extension [%s] loaded!\n", iter->ldpath);
 		}
 
 		if (sqlite3_enable_load_extension(con, 0)) {
@@ -102,9 +98,9 @@ int db_sqlite_connect(struct my_con* ptr)
 
 out_free:
 	while (extension_list) {
-		foo=extension_list;
+		iter=extension_list;
 		extension_list=extension_list->next;
-		pkg_free(foo);
+		pkg_free(iter);
 	}
 	return -1;
 }
@@ -193,6 +189,13 @@ void db_sqlite_free_connection(struct pool_con* con)
 
 	struct my_con * _c;
 	_c = (struct my_con*) con;
+	struct db_sqlite_extension_list *foo=NULL;
+
+	while (extension_list) {
+		foo=extension_list;
+		extension_list=extension_list->next;
+		pkg_free(foo);
+	}
 
 	if (_c->ps_list) db_sqlite_free_stmt_list(_c->ps_list);
 	if (_c->id) free_db_id(_c->id);
