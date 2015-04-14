@@ -535,11 +535,6 @@ static int mod_init( void )
 	/* ------------ SQL INIT SECTION ----------- */
 
 	if (db_url.s) {
-		if ( parse_avp_spec( &acc_created_avp_name, &acc_created_avp_id)<0 ) {
-			LM_ERR("failed to register AVP name <%s>\n", acc_created_avp_name.s);
-			return -1;
-		}
-
 		/* parse the extra string, if any */
 		if (db_extra_str && (db_extra=parse_acc_extra(db_extra_str, 1))==0 ) {
 			LM_ERR("failed to parse db_extra param\n");
@@ -691,11 +686,16 @@ static int mod_init( void )
 	}
 
 	/* load callbacks */
-	if (cdr_flag && dlg_api.get_dlg && dlg_api.register_dlgcb(NULL,
+	if (cdr_flag) {
+		if (parse_avp_spec( &acc_created_avp_name, &acc_created_avp_id) < 0) {
+			LM_ERR("failed to register AVP name <%s>\n", acc_created_avp_name.s);
+			return -1;
+		}
+		if (dlg_api.get_dlg && dlg_api.register_dlgcb(NULL,
 				DLGCB_LOADED,acc_loaded_callback, NULL, NULL) < 0)
 			LM_ERR("cannot register callback for dialog loaded - accounting "
 					"for ongoing calls will be lost after restart\n");
-
+	}
 
 	return 0;
 }
