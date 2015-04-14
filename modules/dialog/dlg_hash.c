@@ -1179,6 +1179,9 @@ static inline struct mi_root* process_mi_params(struct mi_root *cmd_tree,
 
 	*idx = *cnt = 0;
 
+        if (!p1->s)
+                return init_mi_tree( 400, "Invalid Call-ID specified", 25);
+
 	h_entry = dlg_hash( p1/*callid*/ );
 
 	d_entry = &(d_table->entries[h_entry]);
