@@ -553,6 +553,9 @@ struct lump* restore_vias_from_req(struct sip_msg *req,struct sip_msg *rpl)
 	struct hdr_field *it;
 	str via_str;
 	char *p,*buf = rpl->buf;
+	char *received_buf=0,*rport_buf=0;
+	unsigned int rport_len=0,received_len=0;
+	int size;
 
 	lmp = anchor_lump(rpl,rpl->headers->name.s - buf,0);
 	if (lmp == 0)
@@ -561,39 +564,203 @@ struct lump* restore_vias_from_req(struct sip_msg *req,struct sip_msg *rpl)
 		return NULL;
 	}
 
-	it = req->h_via1;
-	via_str.len = 0;
-	while (it) {
-		via_str.len += it->len;
-		it = it->sibling;
-	}
+	if ((req->msg_flags&FL_FORCE_RPORT)||(req->via1->rport)) {
+		if ((received_buf=received_builder(req,&received_len))==0){
+			LM_ERR("received_builder failed\n");
+			return NULL;
+		}
 
-	if (via_str.len == 0)
-		return lmp;
+		if ((rport_buf=rport_builder(req, &rport_len))==0){
+			LM_ERR("rport_builder failed\n");
+			return NULL;
+		}
+		
+		/* take care of via1 + rest of VIA headers in h_via1 */
+		via_str.len = rport_len + received_len + req->h_via1->len;
+		LM_DBG("via len = %d\n",via_str.len);
+		if (req->via1->received) {
+			via_str.len -= req->via1->received->size+1;
+			LM_INFO(" have received will remove %d \n",req->via1->received->size+1);
+		}
+		if (req->via1->rport) {
+			via_str.len -= req->via1->rport->size+1;
+			LM_INFO(" have rport will remove %d \n",req->via1->rport->size+1);
+		}
 
-	via_str.s = pkg_malloc(via_str.len);
-	if (!via_str.s) {
-		LM_ERR("no more pkg mem\n");
-		return NULL;
-	}
+		/* copy rest of VIA headers */
+		it = req->h_via1->sibling;
+		while (it) {
+			via_str.len += it->len;
+			it = it->sibling;
+		}
 
-	it = req->h_via1;
-	p = via_str.s;
-	while (it) {
-		memcpy(p,it->name.s,it->len);
-		p+=it->len;
-		it = it->sibling;
-	}
+		via_str.s = pkg_malloc(via_str.len);
+		if (!via_str.s) {
+			LM_ERR("No more pkg mem\n");
+			goto err_free_rport;
+		}
 
-	LM_DBG("inserting via headers - [%.*s]\n",via_str.len,via_str.s);
+		/* take care of via1 + rest of VIA headers in h_via1 */
+		if (req->via1->params.s){
+			size= req->via1->params.s-req->via1->hdr.s-1; /*compensate for ';' */
+		}else{
+			size= req->via1->host.s-req->via1->hdr.s+req->via1->host.len;
+			if (req->via1->port!=0){
+				size += req->via1->port_str.len + 1; /* +1 for ':'*/
+			}
+		}
 
-	if ((lmp = insert_new_lump_after(lmp, via_str.s, via_str.len, 0)) == 0) {
-		LM_ERR("failed inserting new old vias\n");
-		pkg_free(via_str.s);
-		return NULL;
+		p = via_str.s;
+		memcpy(p,req->via1->hdr.s,size);
+		p += size;
+		memcpy(p,received_buf,received_len);
+		p += received_len;
+		memcpy(p,rport_buf,rport_len);
+		p += rport_len;
+
+		int bytes_before = 0;
+		int bytes_after = 0;
+		int bytes_between = 0;
+		char *between = NULL;
+		char *after = NULL;
+
+		if (req->via1->received) {
+			if (!req->via1->rport) {
+				bytes_before = req->via1->received->start-req->via1->hdr.s-size-1;
+				memcpy(p,
+				req->via1->hdr.s+size,
+				bytes_before);
+				p += bytes_before;
+				
+				bytes_after = req->h_via1->len - size - req->via1->received->size -
+						bytes_before - 1; 
+				memcpy(p,
+				req->via1->received->start+req->via1->received->size,
+				bytes_after);
+				p += bytes_after;
+			} else {
+				/* we have both :( */
+				if (req->via1->rport->start > req->via1->received->start) {
+					bytes_before = req->via1->received->start-req->via1->hdr.s-size-1;
+					bytes_between = req->via1->rport->start - req->via1->received->start - req->via1->received->size - 1;
+					between = req->via1->received->start + req->via1->received->size;
+					after = req->via1->rport->start+req->via1->rport->size;
+
+					bytes_after = req->h_via1->len - size - req->via1->rport->size -
+							bytes_before - 1 - bytes_between - req->via1->received->size  - 1; 
+					LM_DBG("1 both , before = %d, between = %d, after = %d\n",bytes_before,bytes_between,bytes_after);
+				} else {
+					bytes_before = req->via1->rport->start-req->via1->hdr.s-size-1;
+					bytes_between = req->via1->received->start - req->via1->rport->start - req->via1->rport->size - 1;
+					between = req->via1->rport->start + req->via1->rport->size;
+
+					after = req->via1->received->start+req->via1->received->size;
+
+					bytes_after = req->h_via1->len - size - req->via1->rport->size -
+							bytes_before - 1 - bytes_between - req->via1->received->size -1 ; 
+					LM_DBG("2 both , before = %d, between = %d, after = %d\n",bytes_before,bytes_between,bytes_after);
+				}
+
+				memcpy(p,
+				req->via1->hdr.s+size,
+				bytes_before);
+				p += bytes_before;	
+
+				memcpy(p,
+				between,
+				bytes_between);
+				p += bytes_between;	
+
+				memcpy(p,
+				after,
+				bytes_after);
+				p += bytes_after;	
+			}
+		} else if (req->via1->rport) {
+			if (!req->via1->received) {
+				bytes_before = req->via1->rport->start-req->via1->hdr.s-size-1;
+				memcpy(p,
+				req->via1->hdr.s+size,
+				bytes_before);
+				p += bytes_before;
+				
+				bytes_after = req->h_via1->len - size - req->via1->rport->size -
+						bytes_before - 1; 
+				memcpy(p,
+				req->via1->rport->start+req->via1->rport->size,
+				bytes_after);
+				p += bytes_after;
+			}
+		} else {
+			/* no rport or received already present */
+			memcpy(p,req->via1->hdr.s+size,req->h_via1->len-size);
+			p+= req->h_via1->len-size;
+		}
+
+		/* copy rest of VIA headers */
+		it = req->h_via1->sibling;
+		while (it) {
+			memcpy(p,it->name.s,it->len);
+			p+=it->len;
+			it = it->sibling;
+		}
+
+		LM_DBG("built [%.*s], %d %d\n",(int)(p-via_str.s),via_str.s,(int)(p-via_str.s),via_str.len);
+
+		if ((lmp = insert_new_lump_after(lmp, via_str.s, via_str.len, 0)) == 0) {
+			LM_ERR("failed inserting new old vias\n");
+			pkg_free(via_str.s);
+			goto err_free_rport;
+		}
+			
+		pkg_free(rport_buf);
+		pkg_free(received_buf);
+	} else {
+		/* no need to add received/rport , just copy the headers altogether */
+		it = req->h_via1;
+		via_str.len = 0;
+
+		while (it) {
+			via_str.len += it->len;
+			it = it->sibling;
+		}
+
+		LM_DBG("via len = %d\n",via_str.len);
+
+		if (via_str.len == 0)
+			return lmp;
+
+		via_str.s = pkg_malloc(via_str.len);
+		if (!via_str.s) {
+			LM_ERR("no more pkg mem\n");
+			return NULL;
+		}
+
+		LM_DBG("allocated via_str %p\n",via_str.s);
+
+		it = req->h_via1;
+		p = via_str.s;
+		while (it) {
+			memcpy(p,it->name.s,it->len);
+			p+=it->len;
+			it = it->sibling;
+		}
+
+		LM_DBG("inserting via headers - [%.*s]\n",via_str.len,via_str.s);
+
+		if ((lmp = insert_new_lump_after(lmp, via_str.s, via_str.len, 0)) == 0) {
+			LM_ERR("failed inserting new old vias\n");
+			pkg_free(via_str.s);
+			return NULL;
+		}
 	}
 
 	return lmp;
+
+err_free_rport:
+	pkg_free(rport_buf);
+	pkg_free(received_buf);
+	return NULL;
 }
 
 #define RECORD_ROUTE "Record-Route: "
