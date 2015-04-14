@@ -122,4 +122,10 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 void process_lumps(	struct sip_msg* msg, struct lump* lumps, char* new_buf,
 		unsigned int* new_buf_offs, unsigned int* orig_offs, struct socket_info* send_sock);
 
+int is_del_via1_lump(struct sip_msg* msg);
+
+char* received_builder(struct sip_msg *msg, unsigned int *received_len);
+
+char* rport_builder(struct sip_msg *msg, unsigned int *rport_len);
+
 #endif
