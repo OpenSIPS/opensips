@@ -306,6 +306,70 @@ error:
 }
 
 
+int udp_start_nofork(void)
+{
+	struct socket_info *si;
+	stat_var *load_p = NULL;
+	int rc, p;
+
+	if (udp_disabled || (si=protos[PROTO_UDP].listeners)==NULL) {
+		LM_ERR("configuration error: no UDP listener in NO FORK mode\n");
+		return -1;
+	}
+
+	/* only one address, we ignore all the others */
+	if (si->next) {
+		LM_WARN("using only the first UDP listen address (no fork)\n");
+	}
+	for( p=PROTO_FIRST ; p<PROTO_LAST ; p++ )
+		if (p!=PROTO_UDP && protos[p].listeners)
+			LM_WARN("discarding all listen addresses for protocol %s\n",
+				protos[p].name);
+
+	if (udp_init_listener(si)<0) {
+		LM_ERR("failed to init the single UDP listener\n");
+		return -1;
+	}
+
+	if (register_udp_load_stat(&si->sock_str,&load_p,1/*children*/)!=0){
+		LM_ERR("failed to init load statistics\n");
+		return -1;
+	}
+	pt[process_no].load = load_p;
+
+	/* main process, receive loop */
+	set_proc_attrs("stand-alone SIP receiver %.*s",
+		si->sock_str.len, si->sock_str.s );
+
+	bind_address = si; /* shortcut */
+	protos[PROTO_UDP].sendipv4 = si;
+	protos[PROTO_UDP].sendipv6 = si; /*FIXME*/
+
+	/* We will call child_init even if we
+	 * do not fork - and it will be called with rank 1 because
+	 * in fact we behave like a child, not like main process */
+	if (init_child(1) < 0) {
+		LM_ERR("init_child failed in don't fork\n");
+		return -1;
+	}
+
+	if (startup_rlist.a)
+		run_startup_route();
+
+	is_main=1;
+
+	clean_write_pipeend();
+	LM_DBG("waiting for status code from children\n");
+	rc = wait_for_all_children();
+	if (rc < 0) {
+		LM_ERR("failed to succesfully init children\n");
+		return rc;
+	}
+
+	return udp_rcv_loop( si );
+}
+
+
 /* starts all UDP related processes */
 int udp_start_processes(int *chd_rank, int *startup_done)
 {
