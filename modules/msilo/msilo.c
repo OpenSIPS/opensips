@@ -232,6 +232,7 @@ static stat_export_t msilo_stats[] = {
 	{"failed_reminders" , 0,  &ms_failed_rmds  },
 	{0,0,0}
 };
+#endif
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
@@ -244,7 +245,6 @@ static dep_export_t deps = {
 	},
 };
 
-#endif
 /** module exports */
 struct module_exports exports= {
 	"msilo",    /* module id */

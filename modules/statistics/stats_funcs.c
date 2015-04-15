@@ -91,12 +91,13 @@ error:
 
 int register_all_mod_stats(void)
 {
-	stat_var  *stat;
 	stat_elem *se;
 	stat_elem *se_tmp;
+#ifdef STATISTICS
+	stat_var  *stat = NULL;
+#endif
 
 	se = stat_list;
-	stat = NULL;
 	while( se ) {
 		se_tmp = se;
 		se = se->next;
