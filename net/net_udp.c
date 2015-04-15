@@ -356,8 +356,6 @@ int udp_start_nofork(void)
 	if (startup_rlist.a)
 		run_startup_route();
 
-	is_main=1;
-
 	clean_write_pipeend();
 	LM_DBG("waiting for status code from children\n");
 	rc = wait_for_all_children();
