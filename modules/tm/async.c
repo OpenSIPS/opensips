@@ -213,7 +213,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	ctx->kr = get_kr();
 
 	current_processing_ctx = NULL;
-	set_t(NULL);
+	set_t(T_UNDEFINED);
 
 	/* place the FD + resume function (as param) into reactor */
 	if (reactor_add_reader( fd, F_SCRIPT_ASYNC, RCT_PRIO_ASYNC, (void*)ctx)<0 ) {
