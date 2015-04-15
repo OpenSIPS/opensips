@@ -352,8 +352,14 @@ static void kill_all_children(int signum)
 	int r;
 	if (own_pgid) kill(0, signum);
 	else if (pt)
-		for (r=1; r<counted_processes; r++)
-			if (pt[r].pid) kill(pt[r].pid, signum);
+		for (r=1; r<counted_processes; r++) {
+			/* as the PIDs are filled in by child processes, a 0 PID means
+			 * an un-initalized procees; killing an uninitialized proc is 
+			 * very dangerous, so better wait for it to finish its init
+			 * sequance by checking when the pid is populated */
+			while (pt[r].pid==0) usleep(1000);
+			kill(pt[r].pid, signum);
+		}
 }
 
 
@@ -655,7 +661,14 @@ static int main_loop(void)
 
 		is_main=1;
 
-		return udp_start_nofork();
+		udp_start_nofork();
+		/* udp_start_nofork() returns only if error */
+
+		/* in case of failed startup, behave as "attendant" to trigger
+		 * proper cleanup sequance (and proper signal handler !!!).
+		 * So, reset the dont_fork (as it will force inline signal handling)*/
+		dont_fork = 0;
+		return -1;
 
 	} else {  /* don't fork */
 
@@ -1234,7 +1247,6 @@ try_again:
 	ret=main_loop();
 
 error:
-
 	/*kill everything*/
 	kill_all_children(SIGTERM);
 	/*clean-up*/
