@@ -840,10 +840,10 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 				fi ;\
 			done ;\
 		fi
-		# install sqlite stuff
+		# install SQLITE stuff
 		if [ "$(SQLITEON)" = "yes" ]; then \
 			mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl ; \
-			sed -e "s#/usr/local/share/opensips/#$(data-target)#g" \
+			sed -e "s#/usr/local/sbin#$(bin-target)#g" \
 				< scripts/opensipsctl.sqlite > /tmp/opensipsctl.sqlite ; \
 			$(INSTALL_CFG) /tmp/opensipsctl.sqlite \
 				$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.sqlite ; \
@@ -853,16 +853,15 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbctl.sqlite ; \
 			$(INSTALL_CFG) /tmp/opensipsdbctl.sqlite $(modules-prefix)/$(lib-dir)/opensipsctl/ ; \
 			rm -fr /tmp/opensipsdbctl.sqlite ; \
-			mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl/sqlite ; \
-			mkdir -p $(data-prefix)/$(data-dir)/sqlite/opensips ; \
-			for FILE in $(wildcard scripts/sqlite/opensips/*) ; do \
+			mkdir -p $(data-prefix)/$(data-dir)/sqlite ; \
+			for FILE in $(wildcard scripts/sqlite/*) ; do \
 				if [ -f $$FILE ] ; then \
-					$(INSTALL_TOUCH) $$FILE \
-						$(data-prefix)/$(data-dir)/sqlite/opensips/`basename "$$FILE"` ; \
-					$(INSTALL_CFG) $$FILE \
-						$(data-prefix)/$(data-dir)/sqlite/opensips/`basename "$$FILE"` ; \
+				$(INSTALL_TOUCH) $$FILE \
+					$(data-prefix)/$(data-dir)/sqlite/`basename "$$FILE"` ; \
+				$(INSTALL_CFG) $$FILE \
+					$(data-prefix)/$(data-dir)/sqlite/`basename "$$FILE"` ; \
 				fi ;\
-			done ;\
+			done ; \
 		fi
 
 
