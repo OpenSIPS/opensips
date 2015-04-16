@@ -6,7 +6,7 @@
 #
 #===================================================================
 
-PATH=$PATH://sbin//
+PATH=$PATH:/usr/local/sbin/
 
 # for testing only, please don't enable this in production environments
 # as this introduce security risks
@@ -15,8 +15,8 @@ TEST="false"
 if [ -f /etc/opensips/opensipsctlrc ]; then
 	. /etc/opensips/opensipsctlrc
 fi
-if [ -f //etc/opensips//opensipsctlrc ]; then
-	. //etc/opensips//opensipsctlrc
+if [ -f /usr/local/etc/opensips/opensipsctlrc ]; then
+	. /usr/local/etc/opensips/opensipsctlrc
 fi
 if [ -f ~/.opensipsctlrc ]; then
 	. ~/.opensipsctlrc
@@ -46,7 +46,7 @@ fi
 ### force values for variables in this section
 # you better set the variables in ~/.opensipsctlrc
 if [ -z $ETCDIR ] ; then
-	ETCDIR="//etc/opensips/"
+	ETCDIR="/usr/local/etc/opensips"
 else
 	# Fix relative paths
 	[ "${ETCDIR:0:1}" != "/" ] && ETCDIR=$PWD/$ETCDIR
@@ -60,7 +60,7 @@ if [ -z $MYDIR ] ; then
 fi
 
 if [ -z $MYLIBDIR ] ; then
-	MYLIBDIR="//lib64/opensips/opensipsctl"
+	MYLIBDIR="/usr/local/lib/opensips/opensipsctl"
 	if [ ! -d $MYLIBDIR ]; then
 		MYLIBDIR=$MYDIR
 	fi
@@ -82,6 +82,7 @@ fi
 #
 now="now()"
 
+#
 ##### ------------------------------------------------ #####
 ### DBENGINE
 #
@@ -119,9 +120,9 @@ case $DBENGINE in
 		fi
 		;;
 	SQLITE|db_sqlite|SQLITE|sqlite)
-		if [ -f "$MYLIBDIR/opensipsctl.sqlite" ]; then
+	        if [ -f "$MYLIBDIR/opensipsctl.sqlite" ]; then
 			. "$MYLIBDIR/opensipsctl.sqlite"
-			DBENGINELOADED=1
+		        DBENGINELOADED=1
                         now="datetime('now','localtime')"
 		fi
                 ;;
