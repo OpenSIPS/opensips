@@ -9,7 +9,8 @@
 ## your SIP domain
 # SIP_DOMAIN=opensips.org
 
-## database type: MYSQL, PGSQL, ORACLE, DB_BERKELEY, SQLITE, or DBTEXT (default: none)
+## database type: MYSQL, PGSQL, ORACLE, DB_BERKELEY, DBTEXT, or SQLITE
+## by default none is loaded
 # If you want to setup a database with opensipsdbctl, you must at least specify
 # this parameter.
 # DBENGINE=MYSQL
