@@ -421,6 +421,7 @@ tar: $(NEWREVISION)
 		--exclude=.svn* \
 		--exclude=.git \
 		--exclude=.gitignore \
+		--exclude=Makefile.conf \
 		--exclude=*.[do] \
 		--exclude=*.so \
 		--exclude=*.il \
