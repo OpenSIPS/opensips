@@ -99,7 +99,6 @@ static db_type_t get_type_from_decltype(const char *decltype)
 		case TINY:
 		case SMAL:
 		case MEDI:
-		case BIGI:
 		case UNSI:
 		case INT2:
 		case INT8:
@@ -107,6 +106,8 @@ static db_type_t get_type_from_decltype(const char *decltype)
 		case BOOL:
 		case DECI:
 			return DB_INT;
+		case BIGI:
+			return DB_BIGINT;
 		case CHAR:
 		case VARC:
 		case VARY:

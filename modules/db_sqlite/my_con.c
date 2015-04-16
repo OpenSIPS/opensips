@@ -81,7 +81,7 @@ int db_sqlite_connect(struct my_con* ptr)
 						errmsg);
 				goto out_free;
 			}
-			LM_INFO("Extension [%s] loaded!\n", iter->ldpath);
+			LM_DBG("Extension [%s] loaded!\n", iter->ldpath);
 		}
 
 		if (sqlite3_enable_load_extension(con, 0)) {
@@ -141,40 +141,6 @@ err:
 	return 0;
 }
 
-/*
- *	Actually free prep_stmt structure
-*/
-static void db_sqlite_free_pq(struct prep_stmt *pq_ptr)
-{
-	struct my_stmt_ctx *ctx;
-	struct my_stmt_ctx *ctx2;
-
-	if ( pq_ptr == NULL )
-		return;
-
-	for(ctx=pq_ptr->stmt_list ; ctx ; ) {
-		ctx2 = ctx;
-		ctx = ctx->next;
-		if (ctx2->stmt)
-			sqlite3_finalize(ctx2->stmt);
-		pkg_free(ctx2);
-	}
-
-
-	/* free in part and the struct */
-	pkg_free(pq_ptr);
-}
-
-
-/*
-**	Free all allocated prep_stmt structures
- */
-void db_sqlite_free_stmt_list(struct prep_stmt *head)
-{
-	if (head)
-		db_sqlite_free_pq(head);
-}
-
 /**
  * Close the connection and release memory
  */
@@ -184,15 +150,7 @@ void db_sqlite_free_connection(struct pool_con* con)
 
 	struct my_con * _c;
 	_c = (struct my_con*) con;
-	struct db_sqlite_extension_list *foo=NULL;
 
-	while (extension_list) {
-		foo=extension_list;
-		extension_list=extension_list->next;
-		pkg_free(foo);
-	}
-
-	if (_c->ps_list) db_sqlite_free_stmt_list(_c->ps_list);
 	if (_c->id) free_db_id(_c->id);
 	if (_c->con) {
 		sqlite3_close(_c->con);
