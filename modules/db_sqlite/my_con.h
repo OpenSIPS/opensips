@@ -39,45 +39,33 @@ struct my_con {
 
 
 	sqlite3* con;              /* Connection representation */
+	sqlite3_stmt* curr_ps;
+	int			curr_ps_rows;
 	unsigned int init;       /* If the mysql conn was initialized */
 
 	struct prep_stmt *ps_list; /* list of prepared statements */
-	unsigned int disconnected; /* (CR_CONNECTION_ERROR) was detected */
 };
 
 struct my_stmt_ctx {
 	sqlite3_stmt *stmt;
-	str table;
 	str query;
 	int query_rows;
-	int has_out;
+
 	struct my_stmt_ctx *next;
 };
 
 struct prep_stmt {
-	struct my_stmt_ctx *stmts;
+	struct my_stmt_ctx *stmt_list;
 	struct my_stmt_ctx *ctx;
-
-	struct prep_stmt *next;
 };
 
 
-#define CON_RESULT(db_con)     (((struct my_con*)((db_con)->tail))->res)
 #define CON_CONNECTION(db_con) (((struct my_con*)((db_con)->tail))->con)
 #define CON_ROW(db_con)        (((struct my_con*)((db_con)->tail))->row)
-#define CON_PS_LIST(db_con)    (((struct my_con*)((db_con)->tail))->ps_list)
+#define CON_SQLITE_PS(db_con)  (((struct my_con*)((db_con)->tail))->curr_ps)
+#define CON_PS_ROWS(db_con)  (((struct my_con*)((db_con)->tail))->curr_ps_rows)
 #define CON_DISCON(db_con)     (((struct my_con*)((db_con)->tail))->disconnected)
 
-#define CON_SQLITE_PS(db_con) \
-	((struct prep_stmt*)(CON_CURR_PS(db_con)))
-#define CON_PS_STMT(db_con) \
-	(CON_SQLITE_PS(db_con)->ctx->stmt)
-#define CON_PS_ROWS(db_con) \
-	(CON_SQLITE_PS(db_con)->ctx->query_rows)
-#define CON_PS_STMTS(db_con) \
-	(CON_SQLITE_PS(db_con)->stmts)
-#define CON_PS_OUTCOL(_db_con, _i) \
-	((CON_SQLITE_PS(_db_con)->out_bufs)[_i])
 
 
 

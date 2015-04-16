@@ -206,10 +206,12 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 			return -4;
 		}
 		else
-		{	LM_DBG("Converted string to string\n");
-			strncpy(_s, VAL_STRING(_v) , l);
-			_s[l] = 0;
-			*_len = l+1; /* count the 0 also */
+		{
+			LM_DBG("Converted string to string\n");
+			_s[0] = '\'';
+			strncpy(_s+1, VAL_STRING(_v) , l);
+			_s[l+1] = '\'';
+			*_len = l+2;
 			return 0;
 		}
 		break;
@@ -225,8 +227,10 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 		else
 		{
 			LM_DBG("Converted str to string\n");
-			strncpy(_s, VAL_STR(_v).s , l);
-			*_len = l;
+			_s[0] = '\'';
+			strncpy(_s+1, VAL_STR(_v).s , l);
+			_s[l+1] = '\'';
+			*_len = l+2;
 			return 0;
 		}
 		break;
@@ -254,9 +258,11 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 		}
 		else
 		{
-			strncpy(_s, VAL_BLOB(_v).s , l);
+			_s[0] = '\'';
+			strncpy(_s+1, VAL_BLOB(_v).s , l);
+			_s[l+1] = '\'';
 			LM_DBG("Converting BLOB [%.*s]\n", l,_s);
-			*_len = l;
+			*_len = l+2;
 			return 0;
 		}
 		break;

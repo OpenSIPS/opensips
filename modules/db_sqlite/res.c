@@ -191,10 +191,7 @@ int db_sqlite_get_columns(const db_con_t* _h, db_res_t* _r)
 		return -1;
 	}
 
-	if (CON_HAS_PS(_h))
-		RES_COL_N(_r) = sqlite3_column_count(CON_PS_STMT(_h));
-	else
-		goto ps_err;
+	RES_COL_N(_r) = sqlite3_column_count(CON_SQLITE_PS(_h));
 
 	if (!RES_COL_N(_r)) {
 		LM_ERR("no columns returned from the query\n");
@@ -211,11 +208,11 @@ int db_sqlite_get_columns(const db_con_t* _h, db_res_t* _r)
 	for(col = 0; col < RES_COL_N(_r); col++) {
 		/* The pointer that is here returned is part of the result structure */
 
-		name = sqlite3_column_name(CON_PS_STMT(_h), col);
+		name = sqlite3_column_name(CON_SQLITE_PS(_h), col);
 		RES_NAMES(_r)[col]->s = *((char**)&name);
 		RES_NAMES(_r)[col]->len = strlen(RES_NAMES(_r)[col]->s);
 
-		decltype = sqlite3_column_decltype(CON_PS_STMT(_h), col);
+		decltype = sqlite3_column_decltype(CON_SQLITE_PS(_h), col);
 		RES_TYPES(_r)[col]	= get_type_from_decltype(decltype);
 
 		LM_DBG("RES_NAMES(%p)[%d]=[%.*s]\n", RES_NAMES(_r)[col], col,
@@ -224,9 +221,6 @@ int db_sqlite_get_columns(const db_con_t* _h, db_res_t* _r)
 		/* types will be determined at runtime */
 	}
 	return 0;
-ps_err:
-	LM_ERR("conn has no query! invalid usage\n");
-	return -1;
 }
 
 
@@ -316,7 +310,7 @@ static inline int db_sqlite_convert_rows(const db_con_t* _h, db_res_t* _r)
 		return -1;
 	}
 
-	if (!CON_HAS_PS(_h)) {
+	if (!CON_SQLITE_PS(_h)) {
 		LM_ERR(" all sqlite queries should have a ps!\n");
 		return -1;
 	}
@@ -337,13 +331,14 @@ static inline int db_sqlite_convert_rows(const db_con_t* _h, db_res_t* _r)
 
 
 	while (ret != SQLITE_DONE) {
-		ret = sqlite3_step(CON_PS_STMT(_h));
-		if (row == 0 && ret == SQLITE_BUSY)
+		ret = sqlite3_step(CON_SQLITE_PS(_h));
+		if (ret == SQLITE_BUSY)
 			continue;
 
 		if (ret == SQLITE_DONE) {
 			RES_ROW_N(_r) = RES_LAST_ROW(_r) = RES_NUM_ROWS(_r) = row;
-			sqlite3_reset(CON_PS_STMT(_h));
+			sqlite3_reset(CON_SQLITE_PS(_h));
+			sqlite3_clear_bindings(CON_SQLITE_PS(_h));
 			break;
 		}
 
@@ -356,7 +351,7 @@ static inline int db_sqlite_convert_rows(const db_con_t* _h, db_res_t* _r)
 			LM_ERR("error while converting row #%d\n", row);
 			RES_ROW_N(_r) = row;
 			db_free_rows(_r);
-			return -4;
+			return -1;
 		}
 
 		row++;

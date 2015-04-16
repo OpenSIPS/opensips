@@ -152,7 +152,7 @@ static void db_sqlite_free_pq(struct prep_stmt *pq_ptr)
 	if ( pq_ptr == NULL )
 		return;
 
-	for(ctx=pq_ptr->stmts ; ctx ; ) {
+	for(ctx=pq_ptr->stmt_list ; ctx ; ) {
 		ctx2 = ctx;
 		ctx = ctx->next;
 		if (ctx2->stmt)
@@ -171,13 +171,8 @@ static void db_sqlite_free_pq(struct prep_stmt *pq_ptr)
  */
 void db_sqlite_free_stmt_list(struct prep_stmt *head)
 {
-	struct prep_stmt *pq_ptr;
-
-	while ( head!= NULL ) {
-		pq_ptr = head;
-		head = head->next;
-		db_sqlite_free_pq(pq_ptr);
-	}
+	if (head)
+		db_sqlite_free_pq(head);
 }
 
 /**
