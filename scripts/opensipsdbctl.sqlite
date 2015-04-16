@@ -1,6 +1,6 @@
 # $Id$
 #
-# Script for adding and dropping OpenSIPS MySQL tables
+# Script for adding and dropping OpenSIPS SQLITE tables
 #
 # History:
 # 2006-04-07  removed gen_ha1 dependency - use md5sum;
@@ -18,7 +18,7 @@
 
 # path to the database schemas
 DATA_DIR="/usr/local/share/opensips"
-if [ -d "$DATA_DIR/sqlie" ]; then
+if [ -d "$DATA_DIR/sqlite" ]; then
 	DB_SCHEMA="$DATA_DIR/sqlite"
 elif [ -d "scripts/mysql" ]; then
 	DB_SCHEMA="scripts/sqlite"
@@ -30,25 +30,9 @@ fi
 # config vars
 #################################################################
 
-# full privileges MySQL user
-if [ -z "$DBROOTUSER" ]; then
-	DBROOTUSER="root"
-fi
-
-
 # path to the db_sqlite database
 if [ -z "$DB_PATH" ]; then
 	DB_PATH="/usr/local/etc/opensips/sqlite"
-fi
-# Uncomment this to set the database root password if you want to run this 
-# script without any user prompt. This is unsafe, but useful e.g. for 
-# automatic testing.
-#PW=""
-
-if ! [ -z "$DBPORT" ]; then
-	PORT_OPT="-P$DBPORT"
-else
-	PORT_OPT=
 fi
 
 CMD="sqlite3"
@@ -59,13 +43,6 @@ DUMP_CMD=".dump"
 # read password
 prompt_pw()
 {
-#	savetty=`stty -g`
-#	echo -n "SQLITE password for $DBROOTUSER: "
-#	stty -echo
-#	read PW
-#	stty $savetty
-#	echo
-#	export PW
 	echo "SQLITE does not use password"
 }
 
@@ -75,23 +52,13 @@ sql_query()
 {
 	if [ $# -gt 1 ] ; then
 		if [ -n "$1" ]; then
-			DB="$1" # no quoting, mysql client don't like this
+			DB="$1"
 		else
 			DB=""
 		fi
 		shift
-#		if [ -n "$PW" ]; then
-#			$CMD "-p$PW" $DB -Bse "$@"
-#		else
-#			$CMD $DB -Bse "$@"
-#		fi
 		$CMD $DB "$@"
 	else
-#		if [ -n "$PW" ]; then
-#			$CMD "-p$PW" -Bs "$@"
-#		else
-#			$CMD -Bs "$@"
-#		fi
 		merr "sqlite3 requires db name"
 	fi
 }

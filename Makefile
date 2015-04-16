@@ -143,6 +143,12 @@ ifeq (,$(MODULE_DBTEXT_INCLUDED))
 else
 	DBTEXTON=yes
 endif
+MODULE_SQLITE_INCLUDED=$(shell echo $(modules)| grep db_sqlite )
+ifeq (,$(MODULE_SQLITE_INCLUDED))
+	SQLITEON=no
+else
+	SQLITEON=yes
+endif
 MODULE_RADIUSDEP_INCLUDED=$(shell echo $(modules)| grep _radius )
 ifeq (,$(MODULE_RADIUSDEP_INCLUDED))
 	RADIUSDEPON=no
@@ -831,6 +837,30 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 						$(data-prefix)/$(data-dir)/dbtext/opensips/`basename "$$FILE"` ; \
 					$(INSTALL_CFG) $$FILE \
 						$(data-prefix)/$(data-dir)/dbtext/opensips/`basename "$$FILE"` ; \
+				fi ;\
+			done ;\
+		fi
+		# install sqlite stuff
+		if [ "$(SQLITEON)" = "yes" ]; then \
+			mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl ; \
+			sed -e "s#/usr/local/share/opensips/#$(data-target)#g" \
+				< scripts/opensipsctl.sqlite > /tmp/opensipsctl.sqlite ; \
+			$(INSTALL_CFG) /tmp/opensipsctl.sqlite \
+				$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.sqlite ; \
+			rm -fr /tmp/opensipsctl.sqlite ; \
+			sed -e "s#/usr/local/share/opensips#$(data-target)#g" \
+				< scripts/opensipsdbctl.sqlite > /tmp/opensipsdbctl.sqlite ; \
+			$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbctl.sqlite ; \
+			$(INSTALL_CFG) /tmp/opensipsdbctl.sqlite $(modules-prefix)/$(lib-dir)/opensipsctl/ ; \
+			rm -fr /tmp/opensipsdbctl.sqlite ; \
+			mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl/sqlite ; \
+			mkdir -p $(data-prefix)/$(data-dir)/sqlite/opensips ; \
+			for FILE in $(wildcard scripts/sqlite/opensips/*) ; do \
+				if [ -f $$FILE ] ; then \
+					$(INSTALL_TOUCH) $$FILE \
+						$(data-prefix)/$(data-dir)/sqlite/opensips/`basename "$$FILE"` ; \
+					$(INSTALL_CFG) $$FILE \
+						$(data-prefix)/$(data-dir)/sqlite/opensips/`basename "$$FILE"` ; \
 				fi ;\
 			done ;\
 		fi
