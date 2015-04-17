@@ -76,6 +76,12 @@ else
 	exit -1
 fi
 
+##### ------------------------------------------------ #####
+### define default parameters that may be overridden by
+### different database engines
+#
+now="now()"
+
 #
 ##### ------------------------------------------------ #####
 ### DBENGINE
@@ -113,6 +119,13 @@ case $DBENGINE in
 			DBENGINELOADED=1
 		fi
 		;;
+	SQLITE|db_sqlite|SQLITE|sqlite)
+	        if [ -f "$MYLIBDIR/opensipsctl.sqlite" ]; then
+			. "$MYLIBDIR/opensipsctl.sqlite"
+		        DBENGINELOADED=1
+                        now="datetime('now','localtime')"
+		fi
+                ;;
 
 esac
 
@@ -305,7 +318,7 @@ acl() {
 
 				QUERY="insert into $ACL_TABLE ($ACL_USER_COLUMN,\
 $ACL_GROUP_COLUMN,$ACL_MODIFIED_COLUMN,$ACL_DOMAIN_COLUMN ) values \
-('$OSIPSUSER','$1', now(), '$OSIPSDOMAIN' );"
+('$OSIPSUSER','$1', $now, '$OSIPSDOMAIN' );"
 				$DBCMD "$QUERY"
 				if [ $? -ne 0 ] ; then
 					merr "acl - SQL Error"
@@ -1007,7 +1020,7 @@ domain() {
 				exit 0
 			fi
 			QUERY="insert into $DOMAIN_TABLE ($DO_DOMAIN_COLUMN, \
-			$DO_LAST_MODIFIED_COLUMN) VALUES ('$1',now());"
+			$DO_LAST_MODIFIED_COLUMN) VALUES ('$1',$now);"
 			$DBCMD "$QUERY"
 			if [ $? -ne 0 ] ; then
 				merr "domain - SQL Error"
