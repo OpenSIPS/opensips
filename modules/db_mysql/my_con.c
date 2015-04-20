@@ -39,6 +39,11 @@ int db_mysql_connect(struct my_con* ptr)
 	mysql_init(ptr->con);
 	ptr->init = 1;
 
+	/* set connect, read and write timeout, the value counts three times */
+	mysql_options(ptr->con, MYSQL_OPT_CONNECT_TIMEOUT, &db_mysql_timeout_interval);
+	mysql_options(ptr->con, MYSQL_OPT_READ_TIMEOUT, &db_mysql_timeout_interval);
+	mysql_options(ptr->con, MYSQL_OPT_WRITE_TIMEOUT, &db_mysql_timeout_interval);
+
 	if (ptr->id->port) {
 		LM_DBG("opening connection: mysql://xxxx:xxxx@%s:%d/%s\n",
 			ZSW(ptr->id->host), ptr->id->port, ZSW(ptr->id->database));
@@ -100,14 +105,6 @@ struct my_con* db_mysql_new_connection(const struct db_id* id)
 		LM_ERR("no private memory left\n");
 		goto err;
 	}
-
-	/* set connect, read and write timeout, the value counts three times */
-	mysql_options(ptr->con, MYSQL_OPT_CONNECT_TIMEOUT,
-			(const char *)&db_mysql_timeout_interval);
-	mysql_options(ptr->con, MYSQL_OPT_READ_TIMEOUT,
-			(const char *)&db_mysql_timeout_interval);
-	mysql_options(ptr->con, MYSQL_OPT_WRITE_TIMEOUT,
-			(const char *)&db_mysql_timeout_interval);
 
 	ptr->id = (struct db_id*)id;
 
