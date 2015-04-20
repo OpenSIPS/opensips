@@ -439,7 +439,10 @@ get_redirects("*");
 			</para>
 			<para>
 				The accounting records will be mark by the 
-				<emphasis>reason</emphasis> phrase.
+				<emphasis>reason</emphasis> phrase.  This phrase shall be in the same format
+				as the <varname>reason</varname> parameter that would be passed to the
+				accounting function set by the <varname>acc_function</varname> module parameter.
+				See the ACC module documentation for more information.
 			</para>
 			<para>
 				If this function appears in the script, at startup, the module
@@ -452,7 +455,8 @@ get_redirects("*");
 				<title><function>get_redirects</function> usage</title>
 				<programlisting format="linespecific">
 ...
-get_redirects("4:1","Redirected");
+get_redirects("4:1","300"); # Record 300, using the default reason string for a 300
+get_redirects("4:1","302 Redirected"); # Record as 302, with custom "Redirected" reason string
 ...
 				</programlisting>
 			</example>
@@ -503,7 +507,7 @@ failure_route[1] {
 }
 
 failure_route[2] {
-	get_redirects("6:2","redirect");
+	get_redirects("6:2", "300 redirect");
 	t_relay();
 }
 				</programlisting>

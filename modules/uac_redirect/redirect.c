@@ -60,8 +60,8 @@ char *def_filter_s = 0;
 static int redirect_init(void);
 static int w_set_deny(struct sip_msg* msg, char *dir, char *foo);
 static int w_set_accept(struct sip_msg* msg, char *dir, char *foo);
-static int w_get_redirect1(struct sip_msg* msg, char *dir, char *foo);
-static int w_get_redirect2(struct sip_msg* msg, char *dir, char *foo);
+static int w_get_redirect1(struct sip_msg* msg, char *max_c);
+static int w_get_redirect2(struct sip_msg* msg, char *max_c, pv_elem_t *reason);
 static int regexp_compile(char *re_s, regex_t **re);
 static int get_redirect_fixup(void** param, int param_no);
 static int setf_fixup(void** param, int param_no);
@@ -137,62 +137,59 @@ int get_nr_max(char *s, unsigned char *max)
 static int get_redirect_fixup(void** param, int param_no)
 {
 	unsigned char maxb,maxt;
-	struct acc_param *accp;
+	pv_elem_t *reason;
 	cmd_function fct;
 	char *p;
-	char *s;
+	str s;
 
-	s = (char*)*param;
-	if (param_no==1) {
-		if ( (p=strchr(s,':'))!=0 ) {
+	s.s = (char*)*param;
+	if (param_no == 1) {
+		if ( (p = strchr(s.s, ':')) != 0 ) {
 			/* have max branch also */
 			*p = 0;
-			if (get_nr_max(p+1, &maxb)!=0)
+			if (get_nr_max(p + 1, &maxb) != 0)
 				return E_UNSPEC;
 		} else {
 			maxb = 0; /* infinit */
 		}
 
 		/* get max total */
-		if (get_nr_max(s, &maxt)!=0)
+		if (get_nr_max(s.s, &maxt) != 0)
 			return E_UNSPEC;
 
 		pkg_free(*param);
-		*param=(void*)(long)( (((unsigned short)maxt)<<8) | maxb);
+		*param = (void*)(long)( (((unsigned short)maxt) << 8) | maxb);
 
-	} else if (param_no==2) {
+	} else if (param_no == 2) {
 		/* acc function loaded? */
-		if (rd_acc_fct!=0)
+		if (rd_acc_fct != 0)
 			return 0;
 		/* must import the acc stuff */
-		if (acc_fct_s==0 || acc_fct_s[0]==0) {
+		if (acc_fct_s == 0 || acc_fct_s[0] == 0) {
 			LM_ERR("acc support enabled, but no acc function defined\n");
 			return E_UNSPEC;
 		}
 		fct = find_export(acc_fct_s, 2, REQUEST_ROUTE);
-		if ( fct==0 )
+		if (fct == 0)
 			fct = find_export(acc_fct_s, 1, REQUEST_ROUTE);
-		if ( fct==0 ) {
+		if (fct == 0) {
 			LM_ERR("cannot import %s function; is acc loaded and proper "
 				"compiled?\n", acc_fct_s);
 			return E_UNSPEC;
 		}
 		rd_acc_fct = fct;
-		/* set the reason str */
-		accp = (struct acc_param*)pkg_malloc(sizeof(struct acc_param));
-		if (accp==0) {
-			LM_ERR("no more pkg mem\n");
-			return E_UNSPEC;
-		}
-		memset( accp, 0, sizeof(struct acc_param));
-		if (s!=0 && *s!=0) {
-			accp->reason.s = s;
-			accp->reason.len = strlen(s);
+		/* Convert reason into pv_elem_t */
+		if (s.s == 0 || s.s[0] == 0) {
+			s.s = "n/a";
+			s.len = 3;
 		} else {
-			accp->reason.s = "n/a";
-			accp->reason.len = 3;
+			s.len = strlen(s.s);
 		}
-		*param=(void*)accp;
+		if (pv_parse_format(&s, &reason) < 0) {
+			LM_ERR("pv_parse_format failed\n");
+			return E_OUT_OF_MEM;
+		}
+		*param = (void*)reason;
 	}
 
 	return 0;
@@ -336,7 +333,7 @@ static int w_set_accept(struct sip_msg* msg, char *re, char *flags)
 }
 
 
-static int w_get_redirect2(struct sip_msg* msg, char *max_c, char *reason)
+static int w_get_redirect2(struct sip_msg* msg, char *max_c, pv_elem_t *reason)
 {
 	int n;
 	unsigned short max;
@@ -344,7 +341,7 @@ static int w_get_redirect2(struct sip_msg* msg, char *max_c, char *reason)
 	msg_tracer( msg, 0);
 	/* get the contacts */
 	max = (unsigned short)(long)max_c;
-	n = get_redirect(msg , (max>>8)&0xff, max&0xff, (struct acc_param*)reason);
+	n = get_redirect(msg , (max>>8)&0xff, max&0xff, reason);
 	reset_filters();
 	/* reset the tracer */
 	msg_tracer( msg, 1);
@@ -353,7 +350,7 @@ static int w_get_redirect2(struct sip_msg* msg, char *max_c, char *reason)
 }
 
 
-static int w_get_redirect1(struct sip_msg* msg, char *max_c, char *foo)
+static int w_get_redirect1(struct sip_msg* msg, char *max_c)
 {
 	return w_get_redirect2(msg, max_c, 0);
 }

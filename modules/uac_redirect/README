@@ -2,9 +2,19 @@ UAC_REDIRECT Module
 
 Bogdan-Andrei Iancu
 
+   <bogdan@opensips.org>
+
 Edited by
 
 Bogdan-Andrei Iancu
+
+   <bogdan@opensips.org>
+
+Edited by
+
+Robert Gagnon
+
+   Telepoint Global Hosting Services, LLC
 
    Copyright © 2005 Voice Sistem
    Revision History
@@ -284,7 +294,11 @@ get_redirects("*");
    The function has same functionality as get_redirects(max)
    function, but it will produce accounting records.
 
-   The accounting records will be mark by the reason phrase.
+   The accounting records will be mark by the reason phrase. This
+   phrase shall be in the same format as the reason parameter that
+   would be passed to the accounting function set by the
+   acc_function module parameter. See the ACC module documentation
+   for more information.
 
    If this function appears in the script, at startup, the module
    will import the accounting function. Otherwise not.
@@ -293,7 +307,10 @@ get_redirects("*");
 
    Example 1.9. get_redirects usage
 ...
-get_redirects("4:1","Redirected");
+get_redirects("4:1","300"); # Record 300, using the default reason stri
+ng for a 300
+get_redirects("4:1","302 Redirected"); # Record as 302, with custom "Re
+directed" reason string
 ...
 
 1.6. Script Example
@@ -338,6 +355,6 @@ failure_route[1] {
 }
 
 failure_route[2] {
-        get_redirects("6:2","redirect");
+        get_redirects("6:2", "300 redirect");
         t_relay();
 }
