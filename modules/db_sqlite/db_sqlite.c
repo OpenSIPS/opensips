@@ -41,6 +41,7 @@ int db_sqlite_alloc_limit=ALLOC_LIMIT;
 
 
 static int sqlite_mod_init(void);
+static void sqlite_mod_destroy(void);
 static int db_sqlite_add_extension(modparam_t type, void *val);
 struct db_sqlite_extension_list *extension_list=0;
 
@@ -78,13 +79,23 @@ struct module_exports exports = {
 	0,               /* extra processes */
 	sqlite_mod_init,  /* module initialization function */
 	0,               /* response function*/
-	0,               /* destroy function */
+	sqlite_mod_destroy,               /* destroy function */
 	0                /* per-child init function */
 };
 
 static int sqlite_mod_init(void)
 {
 	return 0;
+}
+
+static void sqlite_mod_destroy(void)
+{
+	struct db_sqlite_extension_list *foo=NULL;
+	while (extension_list) {
+		foo=extension_list;
+		extension_list=extension_list->next;
+		pkg_free(foo);
+	}
 }
 
 

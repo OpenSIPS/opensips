@@ -27,6 +27,8 @@
 #if !defined(HP_MALLOC_H) && !defined(f_malloc_h) && !defined(VQ_MALLOC)
 #define HP_MALLOC_H
 
+#include <sys/time.h>
+
 #include "../statistics.h"
 #include "../config.h"
 #include "../globals.h"

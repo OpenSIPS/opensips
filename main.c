@@ -352,8 +352,14 @@ static void kill_all_children(int signum)
 	int r;
 	if (own_pgid) kill(0, signum);
 	else if (pt)
-		for (r=1; r<counted_processes; r++)
-			if (pt[r].pid) kill(pt[r].pid, signum);
+		for (r=1; r<counted_processes; r++) {
+			/* as the PIDs are filled in by child processes, a 0 PID means
+			 * an un-initalized procees; killing an uninitialized proc is 
+			 * very dangerous, so better wait for it to finish its init
+			 * sequance by checking when the pid is populated */
+			while (pt[r].pid==0) usleep(1000);
+			kill(pt[r].pid, signum);
+		}
 }
 
 
@@ -622,7 +628,6 @@ error:
 static int main_loop(void)
 {
 	static int chd_rank;
-	int  rc;
 	int* startup_done = NULL;
 
 	chd_rank=0;
@@ -637,19 +642,6 @@ static int main_loop(void)
 		if (create_status_pipe() < 0) {
 			LM_ERR("failed to create status pipe");
 			goto error;
-		}
-
-		if (protos[PROTO_UDP].listeners==NULL){
-			LM_ERR("no fork mode requires at least one"
-					" udp listen address, exiting...\n");
-			goto error;
-		}
-		/* only one address, we ignore all the others */
-		// FIXME UDP
-		//if (udp_init(udp_listen)==-1) goto error;
-		bind_address=protos[PROTO_UDP].listeners;
-		if (protos[PROTO_UDP].listeners->next) {
-			LM_WARN("using only the first listen address (no fork)\n");
 		}
 
 		/* try to drop privileges */
@@ -667,39 +659,17 @@ static int main_loop(void)
 			goto error;
 		}
 
-		/* main process, receive loop */
-		set_proc_attrs("stand-alone SIP receiver %.*s",
-			 bind_address->sock_str.len, bind_address->sock_str.s );
-
-		/* We will call child_init even if we
-		 * do not fork - and it will be called with rank 1 because
-		 * in fact we behave like a child, not like main process */
-		if (init_child(1) < 0) {
-			LM_ERR("init_child failed in don't fork\n");
-			goto error;
-		}
-
-		if (startup_rlist.a)
-			run_startup_route();
-
 		is_main=1;
 
-		if (register_udp_load_stat(&protos[PROTO_UDP].listeners->sock_str,
-		&pt[process_no].load, 1)!=0) {
-			LM_ERR("failed to init udp load statistics\n");
-			goto error;
-		}
+		udp_start_nofork();
+		/* udp_start_nofork() returns only if error */
 
-		clean_write_pipeend();
-		LM_DBG("waiting for status code from children\n");
-		rc = wait_for_all_children();
-		if (rc < 0) {
-			LM_ERR("failed to succesfully init children\n");
-			return rc;
-		}
-
-		// FIXME return udp_rcv_loop();
+		/* in case of failed startup, behave as "attendant" to trigger
+		 * proper cleanup sequance (and proper signal handler !!!).
+		 * So, reset the dont_fork (as it will force inline signal handling)*/
+		dont_fork = 0;
 		return -1;
+
 	} else {  /* don't fork */
 
 		if (trans_init_all_listeners()<0) {
@@ -1277,7 +1247,6 @@ try_again:
 	ret=main_loop();
 
 error:
-
 	/*kill everything*/
 	kill_all_children(SIGTERM);
 	/*clean-up*/

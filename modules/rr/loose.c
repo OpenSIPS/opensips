@@ -865,7 +865,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 	status = RR_DRIVEN;
 
 done:
-	if (force_ss)
+	if (force_ss && !preloaded)
 		_m->force_send_socket = _m->rcv.bind_address;
 	/* run RR callbacks -bogdan */
 	run_rr_callbacks( _m, &puri.params );

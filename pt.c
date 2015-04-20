@@ -156,7 +156,10 @@ pid_t internal_fork(char *proc_desc)
 		return 0;
 	}else{
 		/* parent process */
-		pt[process_counter].pid = pid;
+		/* Do not set PID for child in the main process. Let the child do
+		 * that as this will act as a marker to tell us that the init 
+		 * sequance of the child proc was completed.
+		 * pt[process_counter].pid = pid; */
 		tcp_connect_proc_to_tcp_main( process_counter, 0);
 		process_counter++;
 		return pid;
