@@ -396,6 +396,12 @@ int tls_conn_shutdown(struct tcp_connection *c)
 					err;
 	SSL            *ssl;
 
+	/* If EOF or other error on connection, no point in attempting to
+	 * do further writing & reading on the con */
+	if (c->state == S_CONN_BAD ||
+		c->state == S_CONN_ERROR ||
+		c->state == S_CONN_EOF)
+		return 0;
 	/*
 	* we do not implement full ssl shutdown
 	*/
@@ -417,6 +423,7 @@ int tls_conn_shutdown(struct tcp_connection *c)
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
 				c->state = S_CONN_EOF;
+
 				return 0;
 
 			case SSL_ERROR_WANT_READ:
@@ -425,7 +432,7 @@ int tls_conn_shutdown(struct tcp_connection *c)
 				return 0;
 
 			default:
-				LM_ERR("something wrong in SSL:\n");
+				LM_ERR("something wrong in SSL: %d, %d, %s\n",err,errno,strerror(errno));
 				c->state = S_CONN_BAD;
 				tls_print_errstack();
 				return -1;
@@ -504,6 +511,10 @@ static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
 	if (ret > 0) {
 		LM_DBG("%d bytes read\n", ret);
 		return ret;
+	} else if (ret == 0) {
+		/* unclean shutdown of the other peer */
+		c->state = S_CONN_EOF;
+		return 0;
 	} else {
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
