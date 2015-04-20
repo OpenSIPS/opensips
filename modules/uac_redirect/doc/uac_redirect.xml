@@ -20,16 +20,17 @@
 		<author>
 			<firstname>Bogdan-Andrei</firstname>
 			<surname>Iancu</surname>
-			<address>
-				<email>bogdan@opensips.org</email>
-			</address>
+			<email>bogdan@opensips.org</email>
 		</author>
 		<editor>
 			<firstname>Bogdan-Andrei</firstname>
 			<surname>Iancu</surname>
-			<address>
-				<email>bogdan@opensips.org</email>
-			</address>
+			<email>bogdan@opensips.org</email>
+		</editor>
+		<editor>
+			<firstname>Robert</firstname>
+			<surname>Gagnon</surname>
+			<affiliation><orgname>Telepoint Global Hosting Services, LLC</orgname></affiliation>
 		</editor>
 	</authorgroup>
 	<copyright>
