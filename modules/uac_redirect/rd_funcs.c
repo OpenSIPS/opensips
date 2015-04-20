@@ -41,11 +41,11 @@
 #define DEFAULT_Q_VALUE          10
 
 static int shmcontact2dset(struct sip_msg *req, struct sip_msg *shrpl,
-		long max, struct acc_param *reason);
+		long max, pv_elem_t *reason);
 
 
 int get_redirect( struct sip_msg *msg , int maxt, int maxb,
-												struct acc_param *reason)
+												pv_elem_t *reason)
 {
 	struct cell *t;
 	int max;
@@ -159,7 +159,7 @@ static void sort_contacts(contact_t *ct_list, str *ct_array,
  *            n - ok and n contacts added
  */
 static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
-											long max, struct acc_param *reason)
+											long max, pv_elem_t *reason)
 {
 	static struct sip_msg  dup_rpl;
 	static str scontacts[MAX_CONTACTS_PER_REPLY];
