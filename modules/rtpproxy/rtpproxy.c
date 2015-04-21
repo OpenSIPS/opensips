@@ -3420,6 +3420,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 	};
 	char *v1p, *v2p, *c1p, *c2p, *m1p, *m2p, *bodylimit, *o1p, *r2p;
 	char medianum_buf[20];
+	char buf[32];
 	int medianum, media_multi;
 	str medianum_str, tmpstr1;
 	int c1p_altered;
@@ -3624,7 +3625,6 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 	if(enable_notification && opts.s.s[0] == 'U')
 	{
 		struct dlg_cell * dlg;
-		char buf[32];
 		str notify_tag;
 
 		dlg = dlg_api.get_dlg();
