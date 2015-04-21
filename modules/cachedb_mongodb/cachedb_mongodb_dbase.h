@@ -34,7 +34,7 @@
 #include <mongo.h>
 #include <bson.h>
 
-#include <json/json.h>
+#include <json.h>
 #include <stdint.h>
 
 extern int mongo_op_timeout;
