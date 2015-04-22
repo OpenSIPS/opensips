@@ -454,6 +454,7 @@ int estimate_available_rows( int payload_size, int column_count);
 		} else {\
 			_db_url.len = strlen(_db_url.s); \
 		} \
+		_db_url.s[_db_url.len+1] = '\0'; \
 	}while(0)
 
 
