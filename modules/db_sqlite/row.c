@@ -106,7 +106,6 @@ int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 
 				VAL_STR(_v).s[VAL_STR(_v).len]='\0';
 				VAL_TYPE(_v) = DB_STR;
-
 				break;
 			default:
 				LM_ERR("invalid type for sqlite!\n");

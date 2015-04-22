@@ -32,6 +32,7 @@
 #
 
 #FREERADIUS=1
+#SQLITE_BIND=1
 NICER?=1
 auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
 

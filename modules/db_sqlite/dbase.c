@@ -50,7 +50,10 @@ char count_buf[COUNT_BUF_SIZE]="select count(*)";
 str count_str = {count_buf, sizeof(COUNT_QUERY)-1};
 
 static inline int db_copy_rest_of_count(const str* query_holder, str* count_query);
-static int db_sqlite_store_result(const db_con_t* _h, db_res_t** _r);
+static int db_sqlite_store_result(const db_con_t* _h, db_res_t** _r, const db_val_t* v, const int n);
+#ifdef SQLITE_BIND
+static int db_sqlite_bind_values(sqlite3_stmt* stmt, const db_val_t* _v, const int _n);
+#endif
 
 static int db_sqlite_submit_dummy_query(const db_con_t* _h, const str* _s)
 {
@@ -106,7 +109,8 @@ static inline int db_copy_rest_of_count(const str* query_holder, str* count_quer
 	return -1;
 }
 
-static inline int db_sqlite_get_query_rows(const db_con_t* _h, const str* query)
+static inline int
+db_sqlite_get_query_rows(const db_con_t* _h, const str* query, const db_val_t* _v, const int _n)
 {
 	int ret;
 	sqlite3_stmt* stmt;
@@ -120,6 +124,13 @@ again:
 		LM_ERR("failed to prepare query\n");
 		return -1;
 	}
+
+#ifdef SQLITE_BIND
+	if (db_sqlite_bind_values(stmt, _v, _n) != SQLITE_OK) {
+		LM_ERR("failed to bind values\n");
+		return -1;
+	}
+#endif
 
 again2:
 	ret=sqlite3_step(stmt);
@@ -143,8 +154,13 @@ int db_sqlite_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	     const db_key_t _o, db_res_t** _r)
 {
 	int ret=-1;
+#ifdef SQLITE_BIND
+	db_ps_t ps;
 
+	CON_SET_CURR_PS(_h, &ps);
+#else
 	CON_RESET_CURR_PS(_h);
+#endif
 	ret = db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, NULL,
 		db_sqlite_val2str, db_sqlite_submit_dummy_query, NULL);
 	if (ret != 0) {
@@ -158,6 +174,7 @@ int db_sqlite_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 		return -1;
 	}
 
+
 again:
 	ret=sqlite3_prepare_v2(CON_CONNECTION(_h),
 				query_holder.s, query_holder.len, &CON_SQLITE_PS(_h), NULL);
@@ -167,14 +184,20 @@ again:
 	if (ret!=SQLITE_OK)
 		LM_ERR("failed to prepare: (%s)\n", sqlite3_errmsg(CON_CONNECTION(_h)));
 
+#ifdef SQLITE_BIND
+	if (db_sqlite_bind_values(CON_SQLITE_PS(_h), _v, _n) != SQLITE_OK) {
+		LM_ERR("failed to bind values\n");
+		return -1;
+	}
+#endif
 
 	if (_r) {
-		ret = db_sqlite_store_result(_h, _r);
+		ret = db_sqlite_store_result(_h, _r, _v, _n);
 		CON_SQLITE_PS(_h) = NULL;
 	} else {
 		/* need to fetch now the total number of rows in query
 		 * because later won't have the query string */
-		CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str);
+		CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, _v, _n);
 	}
 
 	return ret;
@@ -334,11 +357,11 @@ again:
 				sqlite3_errmsg(CON_CONNECTION(_h)));
 
 	if (_r) {
-		ret = db_sqlite_store_result(_h, _r);
+		ret = db_sqlite_store_result(_h, _r, NULL, 0);
 	} else {
 		/* need to fetch now the total number of rows in query
 		 * because later won't have the query string */
-		CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str);
+		CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, NULL, 0);
 	}
 
 
@@ -358,9 +381,13 @@ int db_sqlite_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 {
 	int ret=-1;
 	sqlite3_stmt* stmt;
+#ifdef SQLITE_BIND
+	db_ps_t ps;
 
+	CON_SET_CURR_PS(_h, &ps);
+#else
 	CON_RESET_CURR_PS(_h);
-
+#endif
 	ret = db_do_insert(_h, _k, _v, _n, db_sqlite_val2str,
 								db_sqlite_submit_dummy_query);
 	if (ret != 0) {
@@ -375,6 +402,13 @@ again:
 	if (ret!=SQLITE_OK)
 		LM_ERR("failed to prepare: (%s)\n",
 				sqlite3_errmsg(CON_CONNECTION(_h)));
+
+#ifdef SQLITE_BIND
+	if ((ret=db_sqlite_bind_values(stmt, _v, _n)) != SQLITE_OK) {
+		LM_ERR("failed to bind values (%d)\n", ret);
+		return -1;
+	}
+#endif
 
 again2:
 	ret = sqlite3_step(stmt);
@@ -406,8 +440,13 @@ int db_sqlite_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 {
 	int ret;
 	sqlite3_stmt* stmt;
+#ifdef SQLITE_BIND
+	db_ps_t ps;
 
+	CON_SET_CURR_PS(_h, &ps);
+#else
 	CON_RESET_CURR_PS(_h);
+#endif
 	ret = db_do_delete(_h, _k, _o, _v, _n, db_sqlite_val2str,
 		db_sqlite_submit_dummy_query);
 	if (ret != 0) {
@@ -424,6 +463,12 @@ again:
 		LM_ERR("failed to prepare: (%s)\n",
 				sqlite3_errmsg(CON_CONNECTION(_h)));
 
+#ifdef SQLITE_BIND
+	if (db_sqlite_bind_values(stmt, _v, _n) != SQLITE_OK) {
+		LM_ERR("failed to bind values\n");
+		return -1;
+	}
+#endif
 
 again2:
 	ret = sqlite3_step(stmt);
@@ -458,8 +503,13 @@ int db_sqlite_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 {
 	int ret;
 	sqlite3_stmt* stmt;
+#ifdef SQLITE_BIND
+	db_ps_t ps;
 
+	CON_SET_CURR_PS(_h, &ps);
+#else
 	CON_RESET_CURR_PS(_h);
+#endif
 	ret = db_do_update(_h, _k, _o, _v, _uk, _uv, _n, _un,
 			db_sqlite_val2str, db_sqlite_submit_dummy_query);
 	if (ret != 0) {
@@ -474,6 +524,14 @@ again:
 	if (ret!=SQLITE_OK)
 		LM_ERR("failed to prepare: (%s)\n",
 				sqlite3_errmsg(CON_CONNECTION(_h)));
+
+#ifdef SQLITE_BIND
+	if (db_sqlite_bind_values(stmt, _uv, _un) != SQLITE_OK
+			&& db_sqlite_bind_values(stmt, _v, _n)) {
+		LM_ERR("failed to bind values\n");
+		return -1;
+	}
+#endif
 
 again2:
 	ret = sqlite3_step(stmt);
@@ -502,8 +560,13 @@ int db_sqlite_replace(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v
 {
 	int ret;
 	sqlite3_stmt* stmt;
+#ifdef SQLITE_BIND
+	db_ps_t ps;
 
+	CON_SET_CURR_PS(_h, &ps);
+#else
 	CON_RESET_CURR_PS(_h);
+#endif
 	ret = db_do_replace(_h, _k, _v, _n, db_sqlite_val2str,
 			db_sqlite_submit_dummy_query);
 	if (ret != 0) {
@@ -519,6 +582,12 @@ again:
 		LM_ERR("failed to prepare: (%s)\n",
 				sqlite3_errmsg(CON_CONNECTION(_h)));
 
+#ifdef SQLITE_BIND
+	if (db_sqlite_bind_values(stmt, _v, _n) != SQLITE_OK) {
+		LM_ERR("failed to bind values\n");
+		return -1;
+	}
+#endif
 
 again2:
 	ret = sqlite3_step(stmt);
@@ -562,17 +631,19 @@ int db_last_inserted_id(const db_con_t* _h)
  {
 #define SQL_BUF_LEN 65536
 	int off, ret;
-	char *errmsg;
 	static str  sql_str;
 	static char sql_buf[SQL_BUF_LEN];
+	sqlite3_stmt* stmt;
 
 	if ((!_h) || (!_k) || (!_v) || (!_n)) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
+#ifdef SQLITE_BIND
+	db_ps_t ps;
 
-	CON_RESET_CURR_PS(_h); /* no prepared statements support */
-
+	CON_SET_CURR_PS(_h, &ps);
+#endif
 	ret = snprintf(sql_buf, SQL_BUF_LEN, "insert into %.*s (",
 		CON_TABLE(_h)->len, CON_TABLE(_h)->s);
 	if (ret < 0 || ret >= SQL_BUF_LEN) goto error;
@@ -605,13 +676,32 @@ int db_last_inserted_id(const db_con_t* _h)
 	sql_str.len = off;
 
 again:
-	ret=sqlite3_exec(CON_CONNECTION(_h), sql_str.s, NULL, NULL, &errmsg);
+	ret=sqlite3_prepare_v2(CON_CONNECTION(_h),
+			sql_str.s, sql_str.len, &stmt, NULL);
 	if (ret==SQLITE_BUSY)
 		goto again;
-	if (ret) {
-		LM_ERR("query failed: %s\n", errmsg);
-		return -2;
+	if (ret!=SQLITE_OK)
+		LM_ERR("failed to prepare: (%s)\n",
+				sqlite3_errmsg(CON_CONNECTION(_h)));
+
+#ifdef SQLITE_BIND
+	if (db_sqlite_bind_values(stmt, _v, _n) != SQLITE_OK) {
+		LM_ERR("failed to bind values\n");
+		return -1;
 	}
+#endif
+
+again2:
+	ret = sqlite3_step(stmt);
+	if (ret==SQLITE_BUSY)
+		goto again2;
+
+	if (ret != SQLITE_DONE) {
+		LM_ERR("insert query failed %s\n", sqlite3_errmsg(CON_CONNECTION(_h)));
+		return -1;
+	}
+
+	sqlite3_finalize(stmt);
 
 	return 0;
 
@@ -647,11 +737,17 @@ int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 				res_col = &_r->rows[i];
 				v = &res_col->values[j];
 
+				if (VAL_NULL(v))
+					continue;
+
 				/* only allocated types; STR and BLOB;*/
-				if (v->type == DB_STR)
+				if (VAL_TYPE(v) == DB_STR) {
 					pkg_free(VAL_STR(v).s);
-				if (v->type == DB_BLOB)
+					VAL_STR(v).s = 0;
+				} else if (VAL_TYPE(v) == DB_BLOB) {
 					pkg_free(VAL_BLOB(v).s);
+					VAL_BLOB(v).s = 0;
+				}
 			}
 		}
 
@@ -676,7 +772,7 @@ int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
  * \return zero on success, negative value on failure
  */
 
-static int db_sqlite_store_result(const db_con_t* _h, db_res_t** _r)
+static int db_sqlite_store_result(const db_con_t* _h, db_res_t** _r, const db_val_t* _v, const int _n)
 {
 	int rows;
 
@@ -691,7 +787,7 @@ static int db_sqlite_store_result(const db_con_t* _h, db_res_t** _r)
 		return -2;
 	}
 
-	rows=db_sqlite_get_query_rows(_h, &count_str);
+	rows=db_sqlite_get_query_rows(_h, &count_str, _v, _n);
 
 	/* reset the length to initial for future uses */
 	if (rows < 0) {
@@ -724,3 +820,62 @@ int db_sqlite_use_table(db_con_t* _h, const str* _t)
 {
 	return db_use_table(_h, _t);
 }
+
+#ifdef SQLITE_BIND
+static int db_sqlite_bind_values(sqlite3_stmt* stmt, const db_val_t* v, const int n)
+{
+	int i, ret;
+
+	if (n>0 && v) {
+		for (i=0; i<n; i++) {
+			if (VAL_NULL(v+i)) {
+				ret=sqlite3_bind_null(stmt, i+1);
+				goto check_ret;
+			}
+
+
+			switch(VAL_TYPE(v+i)) {
+				/* every param has '+1' index because in sqlite the leftmost
+				 * parameter has index '1' */
+				case DB_INT:
+					ret=sqlite3_bind_int(stmt, i+1, VAL_INT(v+i));
+					break;
+				case DB_BIGINT:
+					ret=sqlite3_bind_int64(stmt, i+1, VAL_BIGINT(v+i));
+					break;
+				case DB_DOUBLE:
+					ret=sqlite3_bind_double(stmt, i+1, VAL_DOUBLE(v+i));
+					break;
+				case DB_STRING:
+					ret=sqlite3_bind_text(stmt, i+1, VAL_STRING(v+i),
+											strlen(VAL_STRING(v+i)), SQLITE_STATIC);
+					break;
+				case DB_STR:
+					ret=sqlite3_bind_text(stmt, i+1, VAL_STR(v+i).s,
+											VAL_STR(v+i).len, SQLITE_STATIC);
+					break;
+				case DB_DATETIME:
+					ret=sqlite3_bind_int64(stmt, i+1, (long int)VAL_TIME(v+i));
+					break;
+				case DB_BLOB:
+					ret=sqlite3_bind_blob(stmt, i+1, (void*)VAL_BLOB(v+i).s,
+											VAL_BLOB(v+i).len, SQLITE_STATIC);
+					break;
+				case DB_BITMAP:
+					ret=sqlite3_bind_int(stmt, i+1, (int)VAL_BITMAP(v+i));
+					break;
+				default:
+					LM_BUG("invalid db type\n");
+					return 1;
+			}
+
+check_ret:
+			if (ret != SQLITE_OK) {
+				return ret;
+			}
+		}
+	}
+
+	return SQLITE_OK;
+}
+#endif

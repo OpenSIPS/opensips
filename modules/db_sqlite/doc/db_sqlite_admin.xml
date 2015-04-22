@@ -25,6 +25,14 @@
 			</para>
 			</listitem>
 			</itemizedlist>
+			Also this module provides two ways of creating the query. One is to use
+		sqlite3_bind_* functions after opensips creates the prepared statement query.
+		The second one directly uses only sqlite3_snprintf function to print the
+		values into the opensips created query. In theory, the second one should
+		be faster and should allow you to make more queries to the database in
+		the same time, so by default this one will be active. You can use the
+		sqlite3_bind_* interface by simply uncommenting the SQLITE_BIND line
+		the Makefile.
 		</para>
 	</section>
 	<section>

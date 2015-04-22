@@ -515,6 +515,10 @@ else
 	RADIUS_LIB= -lradiusclient-ng
 endif
 
+ifneq ($(SQLITE_BIND),)
+	DEFS+= -DSQLITE_BIND
+endif
+
 ifeq ($(mode),)
 	mode = release
 endif
