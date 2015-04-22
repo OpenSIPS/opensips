@@ -1,5 +1,427 @@
 =========================== Release 2.1.0 ==============================
 
+2015-04-22  Razvan Crainea  <razvan at opensips dot org>
+	* [cb3ec27] :
+
+	Increase version to 2.1-rc2
+
+
+2015-04-22  Liviu Chircu  <liviu at opensips dot org>
+	* [692ae66] :
+
+	F_MALLOC: suppress warnings for free(NULL)
+	(cherry picked from commit 17d639b9f11b415d51062005aadb86dd6c2375e2)
+
+
+2015-04-21  Razvan Crainea  <razvan at opensips dot org>
+	* [112b2fe] :
+
+	rtpproxy: store the notification buffer in the main stack frame
+	Thanks go to Hamid Elaosta for reporting and helping me debug this bug
+	(cherry picked from commit cb9f46ba80ccb4da9f362e4c686be6e497d0ee9e)
+
+
+2015-04-21  Razvan Crainea  <razvan at opensips dot org>
+	* [0eac1c1] :
+
+	rtpproxy: properly parse rtpproxy timeout notifications
+	(cherry picked from commit c26a4a34fcf790741918224ce9557eb4d1f51edf)
+
+
+2015-04-21  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [30fd659] :
+
+	Fixed json lib dependency
+	(cherry picked from commit 138813faf7a72f6580ebb5f7c0959c86634ccf88)
+
+
+2015-04-21  Liviu Chircu  <liviu at opensips dot org>
+	* [4138759] :
+
+	proto_tcp: fix "microsec" -> "millisec" doc typo
+	(cherry picked from commit 0e80ba3c06d6c449819f3572ece792e56773a7b1)
+
+
+2015-04-20  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [5a0552e] :
+
+	don't log errors in case connection closed by the other peer; don't call SSL_shutdown when connection is bad/eof
+
+
+2015-04-20  Liviu Chircu  <liviu at opensips dot org>
+	* [a6fa182] :
+
+	db_mysql: properly set TCP-related timeouts
+	According to official documentation,  mysql_options() must be used _after_
+	mysql_init()
+	(cherry picked from commit 1f154c01fc3d064f1cf4f9c333775d857afb6528)
+
+
+2015-04-20  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [9d366cd] :
+
+	Do not leak the dialog in case there's an error on creation, after linking
+	(cherry picked from commit 57f331fee808f1a039c02d477ebf0048e32ad08c)
+
+
+2015-04-20  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [ed8c21c] :
+
+	Merge pull request #442 from rgagnon24/redirect_fix
+	Fix get_redirects(max, reason)
+	(cherry picked from commit ead10331a2f5b024f885f1f69e160c78c9d8eb7b)
+
+
+2015-04-16  Liviu Chircu  <liviu at opensips dot org>
+	* [a18fae9] :
+
+	sipmsgops: fix buffer management issue
+	is_present_hf() and remove_hf() would sometimes misbehave
+	when used with pseudo-variables (commit 6e88f653702).
+
+	Reported by Eric Werkhoven
+
+	Also fix a couple of noisy log messages.
+	(cherry picked from commit 445d90bc794887f6e0d8ce7716a5480bb50e3b51)
+
+
+2015-04-16  Razvan Crainea  <razvan at opensips dot org>
+	* [f4287b3] :
+
+	do not add Makefile.conf to the tarball
+	Since every tarball install is independent, Makefile.conf should not be
+	inherited
+	(cherry picked from commit 0a3803244c1ccfa8598c8d82c15e11b8d89bb015)
+
+
+2015-04-15  Liviu Chircu  <liviu at opensips dot org>
+	* [0d04e75] :
+
+	hp_malloc.h: properly include sys/time.h
+	Prevents compilation issues with some modules
+
+	Credits to Hamid Elaosta for reporting
+	(cherry picked from commit 00cdfc6bd5943c8b31de2960ec70e95137ee465a)
+
+
+2015-04-15  Liviu Chircu  <liviu at opensips dot org>
+	* [17c078e] :
+
+	fix compilation issues with no -DSTATISTICS
+	(cherry picked from commit 008fba152f3e399e6bd1f95bb33095beacba7f12)
+
+
+2015-04-15  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [6c0625e] :
+
+	Set T to T_UNDEFINED
+
+
+2015-04-15  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [15ab1dd] :
+
+	Set the current transaction to NULL when adding FD to reactor for async jump
+	(cherry picked from commit eeff37fe495104011e7eae05e03d6a6f2c78b63e)
+
+
+2015-04-15  Razvan Crainea  <razvan at opensips dot org>
+	* [fe9281d] :
+
+	replace libmysqlclient*-dev with metapackage libmysqlclient-dev
+	Credits go to Leo for reporting this
+	(cherry picked from commit e5b793e2411826a23138298721879f6749f597ac)
+
+
+2015-04-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4b393f5] :
+
+	Removed useless var setting.
+	(cherry picked from commit 1ebf8139332069cacddbfe95fb66ebf300d0fb27)
+
+
+2015-04-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [fcf8a93] :
+
+	Fix race condition on terminating child procs.
+	There is a race condition between a child getting initalized (and properly setting all its vars like is_main, pid, etc) and main process trying to terminate that child proc (due a failed startup).
+	Use the pt[].pid as a marker to know when the child is init (to be filled only by child). Main proc (when delivering signals) will do a busy waiting if a proc haven't set its pid (still doing init).
+
+	Closes #463
+	(cherry picked from commit 4884d6c921695c588b8076ded186665504550773)
+
+
+2015-04-15  Razvan Crainea  <razvan at opensips dot org>
+	* [eed3d77] :
+
+	acc: always populate the created AVP
+	(cherry picked from commit 3ac458f968a0503f55cc23a18ab61b7ffd90ae0e)
+
+
+2015-04-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1a1d72c] :
+
+	Fix dont_fork mode.
+	Closes #445.
+	(cherry picked from commit dbf2aec66c9294d7ea0270e9e5e94447d5fbdad4)
+
+
+2015-04-14  Razvan Crainea  <razvan at opensips dot org>
+	* [3459128] :
+
+	rr: do not force send socket on preloaded routes
+	(cherry picked from commit b8c0740a63f80577bff8314b4cf0e17867a1fda4)
+
+
+2015-04-14  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [fa2f5f6] :
+
+	Maintain rport and received in VIA header of replies when doing topology hiding
+	(cherry picked from commit 521bfc00a01eb5a7b4d5ee5494212412bcad0597)
+
+
+2015-04-14  Răzvan Crainea  <razvan at opensips dot org>
+	* [a1382a2] :
+
+	Merge pull request #462 from jarrodb/dlg_hash
+	Verify the dialog mi parameter is not null before passing to dlg_hash
+	(cherry picked from commit 432c9cc5dcbfadf69c1b9b1fee44a0fcad8cb8f6)
+
+
+2015-04-09  Razvan Crainea  <razvan at opensips dot org>
+	* [5863cda] :
+
+	tcp: drop CRLF TCP messages
+	(cherry picked from commit 111df6804b5a58f26767674c30bed369dd0209ca)
+
+
+2015-04-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [9e9818f] :
+
+	Silence t_newtrani log error in case transaction was already created
+
+
+2015-04-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [2247d90] :
+
+	Do not crash when faked req has no lumps added to it
+	(cherry picked from commit 210a09608e8591b618bf0d82984816e814e1df47)
+
+
+2015-04-06  Ovidiu Sas  <osas at voipembedded dot com>
+	* [18c3c71] :
+
+	parser: fix memory leak  - add Supported header to the list of headers that performs memory allocation
+	(cherry picked from commit b52b2b9239bd59e7515fa35c29e5d6d8c3f6dc2c)
+
+
+2015-04-06  Ovidiu Sas  <osas at voipembedded dot com>
+	* [087f706] :
+
+	nathelper: fix documentation typo
+	(cherry picked from commit 0a404a709cb105cb16617fb4ed8e8a6fd3ae60e0)
+
+
+2015-04-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2284294] :
+
+	Fix changing proto via force_send_socket().
+	If the RURI does not request any protocol, use the proto of the forced socket (if any).
+	Related to #420
+	(cherry picked from commit ac8c2e6845ecea7d01d267b61720d332ee571e1d)
+
+
+2015-04-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a9ea0a1] :
+
+	Better err logging
+
+
+2015-04-01  Liviu Chircu  <liviu at opensips dot org>
+	* [ef6a375] :
+
+	force_send_socket(): update error message on bad parameter
+	The transport protocol is now mandatory
+
+	Reported by @hydrosine
+	Closes #447
+	(cherry picked from commit 5a346da223071201e4e9b04d462ee1219d8e5f2d)
+
+
+2015-04-01  Liviu Chircu  <liviu at opensips dot org>
+	* [f1053ec] :
+
+	flag fixups: fix a sign conversion bug
+	Reported by @hydrosine
+	Fixes #448
+	(cherry picked from commit bc160a7bab3fb2d0eb979bfedac8f67db05d42b2)
+
+
+2015-04-01  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [ccb3777] :
+
+	Accept TCP aliases by default Do not rely on the previous hop signaling alias via param
+	(cherry picked from commit d62bc967b0d6784d2baced88b895da57f3f4ab9a)
+
+
+2015-03-31  Eric Tamme  <eric at uphreak dot com>
+	* [e696f6f] :
+
+	fixed flex sub version check to include unistd.h for anything subversion 36 or higher
+	(cherry picked from commit 9393492307b85a91031a5f4f35338eac44af4f5d)
+
+
+2015-03-31  Eric Tamme  <eric at uphreak dot com>
+	* [f1ffe77] :
+
+	fixed flex sub version check for isatty definition - isatty was removed in .36
+	(cherry picked from commit 4015747f3d0771e2f71cc7897fbd28dd3e49de9f)
+
+
+2015-03-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a09487b] :
+
+	Fix documentation typo.
+	Credits go to Antonis Psaras.
+	(cherry picked from commit 3da2b0dfcb9e59025da6052972dc5ee3bcbeec02)
+
+
+2015-03-27  Razvan Crainea  <razvan at opensips dot org>
+	* [77b9d64] :
+
+	proto_ws: prevent buffer overflow when masking
+	(cherry picked from commit 9a4ae5c2f655cba57c4a542b07ad7a9da9d4e011)
+
+
+2015-03-25  Razvan Crainea  <razvan at opensips dot org>
+	* [9aeb470] :
+
+	rename modules_obsolete to obsolete_modules
+	this makes tree browsing easier using autocompletion
+	(cherry picked from commit adc4455d9223ddbe75dd899fbb3a8e4cafcb22c7)
+
+
+2015-03-24  Razvan Crainea  <razvan at opensips dot org>
+	* [f26c7e6] :
+
+	tcp & tls: preserve fd after connect succeeds
+	Credits go to Peter Kelly for reporting this and helping with the testing
+	(cherry picked from commit a3051522e5f9350cf690e0f2686d44838ae20308)
+
+
+2015-03-24  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [f3b03dc] :
+
+	Fixed TLS CRLF pingpong regression
+	Properly handle CRLFCRLF pings over TLS
+	(cherry picked from commit 558a4f133d12d2590075550be3094b697c57db1e)
+
+
+2015-03-23  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [9ee5093] :
+
+	Fixed TLS connection closing Update the SSL library with the TCP main socket before running SSL_Shutdown
+	Thanks to Lirakis for the help in debugging this
+
+
+2015-03-23  Răzvan Crainea  <razvan at opensips dot org>
+	* [867bf99] :
+
+	python: add documentation
+	(cherry picked from commit 1dd83cfa6a99ce10876f2391d4baf5a7a986b11e)
+
+
+2015-03-23  Razvan Crainea  <razvan at opensips dot org>
+	* [454852a] :
+
+	python: properly parse the script name
+	(cherry picked from commit 593f26913228678d02ee5c5d6a749ed5a52fc846)
+
+
+2015-03-23  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [97db6e7] :
+
+	removed unecessary rootCA files
+
+
+2015-03-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [525bd70] :
+
+	Have tcp_async by default ON.
+
+
+2015-03-23  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [3eb5f2b] :
+
+	opensipsdbctl : Fixed creating Postgres database
+
+
+2015-03-23  Liviu Chircu  <liviu at opensips dot org>
+	* [3283130] :
+
+	fix typo in previous commit
+	(cherry picked from commit eed1c0ad0798902bc76f2955eb1ad11f2bfe4ca2)
+
+
+2015-03-23  Liviu Chircu  <liviu at opensips dot org>
+	* [645094b] :
+
+	opensipsdbctl: allow running from root dir for _all_ SQL backends
+	(completes commit 31c472c)
+	(cherry picked from commit 49ed85a252d2b1f6b36eff56709bf73fcbca6d38)
+
+
+2015-03-23  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [4c6d3f0] :
+
+	Added compression and emergency to excluded modules list They depend on zlib and respectively libcurl for compiling
+	(cherry picked from commit 8cc812dac2abe1206522e24d369d34f9dc9c231a)
+
+
+2015-03-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a1ea06b] :
+
+	Fix compile err/warn on redhat.
+	Reported by Nick Altmann.
+	Credits go to Liviu Chircu.
+
+
+2015-03-18  Eric Tamme  <eric at uphreak dot com>
+	* [25d47d8] :
+
+	fix rtpstat for rtpengine - thanks to jarrod for tracking down the fix
+	(cherry picked from commit d10e6796aa312374592892e58af98a017f6925d5)
+
+
+2015-03-18  Razvan Crainea  <razvan at opensips dot org>
+	* [936e93b] :
+
+	update version name
+
+
+2015-03-18  Razvan Crainea  <razvan at opensips dot org>
+	* [d1c151a] :
+
+	update ChangeLog for 2.1
+
+
+2015-03-18  Ovidiu Sas  <osas at voipembedded dot com>
+	* [f1652d2] :
+
+	mi_http: update copyright
+
+
+2015-03-18  Ovidiu Sas  <osas at voipembedded dot com>
+	* [b7e2137] :
+
+	pi_http: fix compiler warning
+
+
+2015-03-18  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [75c8154] :
+
+	Fix route_to_carrier and route_to_gw Duplicate the RURI before pushing GWs for usage ( first gw will overwrite the actual URI )
+
+
 2015-03-18  Liviu Chircu  <liviu@opensips.org>
 	* [3c6873c] :
 
@@ -5787,3 +6209,4 @@
 	* [4f5b87a] :
 
 	pua_usrloc: fix error: SCB_RUN_ALL undeclared (first use in this function)
+
