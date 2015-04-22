@@ -37,7 +37,7 @@ struct db_id {
 	char* host;          /**< Host or IP, case insensitive */
 	unsigned short port; /**< Port number */
 	char* database;      /**< Database, case sensitive */
-	char* url;			 /**< Pointer to the original url> */
+	str url;			 /**< Pointer to the original url> */
 };
 
 

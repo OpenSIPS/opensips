@@ -40,11 +40,12 @@
 extern struct db_sqlite_extension_list *extension_list;
 
 #define SQLITE_ID "sqlite:/"
+#define URL_BUFSIZ 1024
+char url_buf[URL_BUFSIZ];
 
 int db_sqlite_connect(struct my_con* ptr)
 {
 	sqlite3* con;
-	char* url;
 	char* errmsg;
 	struct db_sqlite_extension_list *iter;
 
@@ -54,11 +55,11 @@ int db_sqlite_connect(struct my_con* ptr)
 
 	ptr->init = 1;
 
-	url = ptr->id->url;
-	/* parsing has already been done we know that we've got "sqlite:/" there*/
-	url += sizeof(SQLITE_ID) - 1;
+	memcpy(url_buf, ptr->id->url.s+sizeof(SQLITE_ID)-1,
+				ptr->id->url.len - (sizeof(SQLITE_ID)-1));
+	url_buf[ptr->id->url.len - (sizeof(SQLITE_ID)-1)] = '\0';
 
-	if (sqlite3_open(url, &con) != SQLITE_OK) {
+	if (sqlite3_open(url_buf, &con) != SQLITE_OK) {
 		LM_ERR("Can't open database: %s\n", sqlite3_errmsg((sqlite3*)ptr->con));
 		return -1;
 	}
