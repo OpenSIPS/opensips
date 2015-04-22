@@ -430,7 +430,7 @@ void fm_free(struct fm_block* qm, void* p)
 	}
 	#endif
 	if (p==0) {
-		LM_WARN("free(0) called\n");
+		LM_DBG("free(0) called\n");
 		return;
 	}
 	f=(struct fm_frag*) ((char*)p-sizeof(struct fm_frag));
