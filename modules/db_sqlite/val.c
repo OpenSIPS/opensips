@@ -99,7 +99,7 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 		}
 		else
 		{
-			sqlite3_snprintf(SQL_BUF_LEN, _s, "'%*q'",
+			sqlite3_snprintf(SQL_BUF_LEN, _s, "'%q'",
 						VAL_STRING(_v));
 			*_len = strlen(_s);
 			_s += strlen(_s);
