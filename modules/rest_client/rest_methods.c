@@ -385,6 +385,20 @@ int rest_get_method(struct sip_msg *msg, char *url,
 		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
 
 	rc = curl_easy_perform(handle);
+
+	if (code_pv) {
+		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
+		LM_DBG("Last response code: %ld\n", http_rc);
+
+		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
+		pv_val.ri = (int)http_rc;
+
+		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
+			LM_ERR("Set code pv value failed!\n");
+			goto cleanup;
+		}
+	}
+
 	if (rc != CURLE_OK) {
 		LM_ERR("curl_easy_perform: %s\n", curl_easy_strerror(rc));
 		goto cleanup;
@@ -413,19 +427,6 @@ int rest_get_method(struct sip_msg *msg, char *url,
 		}
 
 		pkg_free(st.s);
-	}
-
-	if (code_pv) {
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
-		LM_DBG("Last response code: %ld\n", http_rc);
-
-		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
-		pv_val.ri = (int)http_rc;
-
-		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
-			LM_ERR("Set code pv value failed!\n");
-			goto cleanup;
-		}
 	}
 
 	curl_easy_cleanup(handle);
@@ -499,6 +500,19 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	rc = curl_easy_perform(handle);
 	curl_slist_free_all(list);
 
+	if (code_pv) {
+		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
+		LM_DBG("Last response code: %ld\n", http_rc);
+
+		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
+		pv_val.ri = (int)http_rc;
+
+		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
+			LM_ERR("Set code pv value failed!\n");
+			goto cleanup;
+		}
+	}
+
 	if (rc != CURLE_OK) {
 		LM_ERR("curl_easy_perform: %s\n", curl_easy_strerror(rc));
 		goto cleanup;
@@ -527,19 +541,6 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 		}
 
 		pkg_free(st.s);
-	}
-
-	if (code_pv) {
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
-		LM_DBG("Last response code: %ld\n", http_rc);
-
-		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
-		pv_val.ri = (int)http_rc;
-
-		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
-			LM_ERR("Set code pv value failed!\n");
-			goto cleanup;
-		}
 	}
 
 	curl_easy_cleanup(handle);
