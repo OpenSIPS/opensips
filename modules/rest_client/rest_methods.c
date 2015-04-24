@@ -75,6 +75,20 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	curl_easy_setopt(handle, CURLOPT_WRITEHEADER, &st);
 
 	rc = curl_easy_perform(handle);
+
+	if (code_pv) {
+		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
+		LM_DBG("Last response code: %ld\n", http_rc);
+
+		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
+		pv_val.ri = (int)http_rc;
+
+		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
+			LM_ERR("Set code pv value failed!\n");
+			goto error;
+		}
+	}
+
 	if (rc != CURLE_OK) {
 		LM_ERR("Error [%i] while performing curl operation\n", rc);
 		LM_ERR("[%s]\n", err_buff);
@@ -101,19 +115,6 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");
-			goto error;
-		}
-	}
-
-	if (code_pv) {
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
-		LM_DBG("Last response code: %ld\n", http_rc);
-
-		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
-		pv_val.ri = (int)http_rc;
-
-		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
-			LM_ERR("Set code pv value failed!\n");
 			goto error;
 		}
 	}
@@ -179,6 +180,19 @@ int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
 	curl_easy_setopt(handle, CURLOPT_WRITEHEADER, &st);
 
 	rc = curl_easy_perform(handle);
+	if (code_pv) {
+		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
+		LM_DBG("Last response code: %ld\n", http_rc);
+
+		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
+		pv_val.ri = (int)http_rc;
+
+		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
+			LM_ERR("Set code pv value failed!\n");
+			goto error;
+		}
+	}
+
 	curl_slist_free_all(list);
 
 	if (rc != CURLE_OK) {
@@ -207,19 +221,6 @@ int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");
-			goto error;
-		}
-	}
-
-	if (code_pv) {
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
-		LM_DBG("Last response code: %ld\n", http_rc);
-
-		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
-		pv_val.ri = (int)http_rc;
-
-		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
-			LM_ERR("Set code pv value failed!\n");
 			goto error;
 		}
 	}
