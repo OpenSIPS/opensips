@@ -271,6 +271,6 @@ minfo "Extra tables succesfully created."
 }  # end extra_create
 
 export PGPASSWORD
-if [ "$#" -ne 0 ] && [ "$PW" = "" ]; then
+if [ "$#" -ne 0 ] && [ "$PGPASSWORD" = "" ]; then
         prompt_pw
 fi
