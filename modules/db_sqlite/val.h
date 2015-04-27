@@ -25,23 +25,13 @@
 #ifndef VAL_H
 #define VAL_H
 
-#include <mysql/mysql.h>
 #include "../../db/db_val.h"
 #include "../../db/db.h"
-
-
-/**
- * Does not copy strings
- */
-int db_sqlite_str2val(const db_type_t _t, db_val_t* _v, const char* _s,
-	const int _l);
-
 
 /**
  * Used when converting result from a query
  */
 int db_sqlite_val2str(const db_con_t* _con, const db_val_t* _v, char* _s,
 		int* _len);
-int db_sqlite_val2bind(const db_val_t* v, MYSQL_BIND *binds, unsigned int i);
 
 #endif /* VAL_H */

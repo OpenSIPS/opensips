@@ -240,7 +240,8 @@ struct db_id* new_db_id(const str* url)
 	}
 
 	/* store the original url */
-	ptr->url = url->s;
+	ptr->url.s = url->s;
+	ptr->url.len = url->len;
 
 	return ptr;
 

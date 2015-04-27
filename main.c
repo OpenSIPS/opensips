@@ -353,6 +353,7 @@ static void kill_all_children(int signum)
 	if (own_pgid) kill(0, signum);
 	else if (pt)
 		for (r=1; r<counted_processes; r++) {
+			if (pt[r].pid==-1) continue;
 			/* as the PIDs are filled in by child processes, a 0 PID means
 			 * an un-initalized procees; killing an uninitialized proc is 
 			 * very dangerous, so better wait for it to finish its init

@@ -37,6 +37,7 @@ typedef void * db_ps_t;
 #define CON_PS_REFERENCE(cn)      ((cn)->curr_ps)
 
 #define CON_RESET_CURR_PS(cn)    *((void***)&cn->curr_ps)=NULL
+#define CON_SET_CURR_PS(cn, ptr)    *((void***)&cn->curr_ps)=ptr
 
 #endif
 

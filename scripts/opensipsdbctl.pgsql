@@ -61,6 +61,17 @@ CMD="psql -q -h $DBHOST $PORT_OPT -U $DBROOTUSER "
 DUMP_CMD="pg_dump -h $DBHOST $PORT_OPT -U $DBROOTUSER -c"
 #################################################################
 
+# read password and export PGPASSWORD
+prompt_pw()
+{
+        savetty=`stty -g`
+        echo -n "PGSQL password for $DBROOTUSER: "
+        stty -echo
+        read PGPASSWORD
+        stty $savetty
+        echo
+        export PGPASSWORD
+}
 
 # execute sql command with optional db name
 sql_query()
@@ -263,3 +274,8 @@ done
 
 minfo "Extra tables succesfully created."
 }  # end extra_create
+
+export PGPASSWORD
+if [ "$#" -ne 0 ] && [ "$PGPASSWORD" = "" ]; then
+        prompt_pw
+fi

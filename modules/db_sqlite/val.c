@@ -25,119 +25,12 @@
 
 #include "../../dprint.h"
 #include "../../db/db_ut.h"
+#include "../../db/db_query.h"
 #include "val.h"
 #include "my_con.h"
 
 #include <string.h>
 #include <stdio.h>
-
-
-/*
- * Convert str to db value, does not copy strings
- */
-int db_sqlite_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const int _l)
-{
-	static str dummy_string = {"", 0};
-
-	if (!_v) {
-		LM_ERR("invalid parameter value\n");
-		return -1;
-	}
-
-	if (!_s) {
-		memset(_v, 0, sizeof(db_val_t));
-			/* Initialize the string pointers to a dummy empty
-			 * string so that we do not crash when the NULL flag
-			 * is set but the module does not check it properly
-			 */
-		VAL_STRING(_v) = dummy_string.s;
-		VAL_STR(_v) = dummy_string;
-		VAL_BLOB(_v) = dummy_string;
-		VAL_TYPE(_v) = _t;
-		VAL_NULL(_v) = 1;
-		return 0;
-	}
-	VAL_NULL(_v) = 0;
-
-	switch(_t) {
-	case DB_INT:
-		LM_DBG("converting INT [%s]\n", _s);
-		if (db_str2int(_s, &VAL_INT(_v)) < 0) {
-			LM_ERR("error while converting integer value from string\n");
-			return -2;
-		} else {
-			VAL_TYPE(_v) = DB_INT;
-			return 0;
-		}
-		break;
-
-	case DB_BIGINT:
-		LM_DBG("converting INT BIG[%s]\n", _s);
-		if (db_str2bigint(_s, &VAL_BIGINT(_v)) < 0) {
-			LM_ERR("error while converting big integer value from string\n");
-			return -2;
-		} else {
-			VAL_TYPE(_v) = DB_BIGINT;
-			return 0;
-		}
-		break;
-
-	case DB_BITMAP:
-		LM_DBG("converting BITMAP [%s]\n", _s);
-		if (db_str2int(_s, &VAL_INT(_v)) < 0) {
-			LM_ERR("error while converting bitmap value from string\n");
-			return -3;
-		} else {
-			VAL_TYPE(_v) = DB_BITMAP;
-			return 0;
-		}
-		break;
-
-	case DB_DOUBLE:
-		LM_DBG("converting DOUBLE [%s]\n", _s);
-		if (db_str2double(_s, &VAL_DOUBLE(_v)) < 0) {
-			LM_ERR("error while converting double value from string\n");
-			return -4;
-		} else {
-			VAL_TYPE(_v) = DB_DOUBLE;
-			return 0;
-		}
-		break;
-
-	case DB_STRING:
-		LM_DBG("converting STRING [%s]\n", _s);
-		VAL_STRING(_v) = _s;
-		VAL_TYPE(_v) = DB_STRING;
-		return 0;
-
-	case DB_STR:
-		LM_DBG("converting STR [%.*s]\n", _l, _s);
-		VAL_STR(_v).s = (char*)_s;
-		VAL_STR(_v).len = _l;
-		VAL_TYPE(_v) = DB_STR;
-		return 0;
-
-	case DB_DATETIME:
-		LM_DBG("converting DATETIME [%s]\n", _s);
-		if (db_str2time(_s, &VAL_TIME(_v)) < 0) {
-			LM_ERR("error while converting datetime value from string\n");
-			return -5;
-		} else {
-			VAL_TYPE(_v) = DB_DATETIME;
-			return 0;
-		}
-		break;
-
-	case DB_BLOB:
-		LM_DBG("converting BLOB [%.*s]\n", _l, _s);
-		VAL_BLOB(_v).s = (char*)_s;
-		VAL_BLOB(_v).len = _l;
-		VAL_TYPE(_v) = DB_BLOB;
-		return 0;
-	}
-	return -6;
-}
-
 
 /*
  * Used when converting values to be used in a DB query
@@ -199,7 +92,6 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 		break;
 
 	case DB_STRING:
-		/* TODO check escpaing */
 		l = strlen(VAL_STRING(_v));
 		if (*_len < l )
 		{	LM_ERR("Destination buffer too short for string\n");
@@ -207,17 +99,16 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 		}
 		else
 		{
-			LM_DBG("Converted string to string\n");
-			_s[0] = '\'';
-			strncpy(_s+1, VAL_STRING(_v) , l);
-			_s[l+1] = '\'';
-			*_len = l+2;
+			sqlite3_snprintf(SQL_BUF_LEN, _s, "'%q'",
+						VAL_STRING(_v));
+			*_len = strlen(_s);
+			_s += strlen(_s);
+
 			return 0;
 		}
 		break;
 
 	case DB_STR:
-		/* TODO check escpaing */
 		l = VAL_STR(_v).len;
 		if (*_len < l)
 		{
@@ -226,16 +117,13 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 		}
 		else
 		{
-			LM_DBG("Converted str to string\n");
-			_s[0] = '\'';
-			strncpy(_s+1, VAL_STR(_v).s , l);
-			_s[l+1] = '\'';
-			*_len = l+2;
+			sqlite3_snprintf(SQL_BUF_LEN, _s, "'%.*q'",
+						VAL_STR(_v).len, VAL_STR(_v).s);
+			*_len = strlen(_s);
+			_s += strlen(_s);
+
 			return 0;
 		}
-		break;
-
-
 		break;
 
 	case DB_DATETIME:
@@ -248,8 +136,6 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 		break;
 
 	case DB_BLOB:
-		/* TODO check escpaing */
-
 		l = VAL_BLOB(_v).len;
 		if (*_len < l)
 		{
@@ -258,11 +144,11 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 		}
 		else
 		{
-			_s[0] = '\'';
-			strncpy(_s+1, VAL_BLOB(_v).s , l);
-			_s[l+1] = '\'';
-			LM_DBG("Converting BLOB [%.*s]\n", l,_s);
-			*_len = l+2;
+			sqlite3_snprintf(SQL_BUF_LEN, _s, "'%.*q'",
+						VAL_BLOB(_v).len, VAL_BLOB(_v).s);
+			*_len = strlen(_s);
+			_s += strlen(_s);
+
 			return 0;
 		}
 		break;
@@ -272,109 +158,3 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 		return -9;
 	}
 }
-
-
-#if 0
-int db_sqlite_val2bind(const db_val_t* v, MYSQL_BIND *binds, unsigned int i)
-{
-	struct tm *t;
-	MYSQL_TIME *mt;
-
-	if (VAL_NULL(v)) {
-		*(binds[i].is_null) = 1;
-		*(binds[i].length) = 0;
-		binds[i].buffer= NULL;
-		switch(VAL_TYPE(v)) {
-			case DB_INT:
-				binds[i].buffer_type= MYSQL_TYPE_LONG; break;
-			case DB_BIGINT:
-				binds[i].buffer_type= MYSQL_TYPE_LONGLONG; break;
-			case DB_BITMAP:
-				binds[i].buffer_type= MYSQL_TYPE_LONG; break;
-			case DB_DOUBLE:
-				binds[i].buffer_type= MYSQL_TYPE_DOUBLE; break;
-			case DB_STRING:
-				binds[i].buffer_type= MYSQL_TYPE_STRING; break;
-			case DB_STR:
-				binds[i].buffer_type= MYSQL_TYPE_STRING; break;
-			case DB_DATETIME:
-				binds[i].buffer_type= MYSQL_TYPE_DATETIME; break;
-			case DB_BLOB:
-				binds[i].buffer_type= MYSQL_TYPE_BLOB; break;
-			default:
-				LM_ERR("unknown NULL data type (%d)\n",VAL_TYPE(v));
-				return -10;
-		}
-		return 0;
-	} else {
-		*(binds[i].is_null) = 0;
-	}
-
-	switch(VAL_TYPE(v)) {
-		case DB_INT:
-			binds[i].buffer_type= MYSQL_TYPE_LONG;
-			binds[i].buffer= (char*)&(VAL_INT(v));
-			*binds[i].length= sizeof(VAL_INT(v));
-			break;
-
-		case DB_BIGINT:
-			binds[i].buffer_type= MYSQL_TYPE_LONGLONG;
-			binds[i].buffer= (char*)&(VAL_BIGINT(v));
-			*binds[i].length= sizeof(VAL_BIGINT(v));
-			break;
-
-
-		case DB_BITMAP:
-			binds[i].buffer_type= MYSQL_TYPE_LONG;
-			binds[i].buffer= (char*)&(VAL_BITMAP(v));
-			*binds[i].length= sizeof(VAL_BITMAP(v));
-			break;
-
-		case DB_DOUBLE:
-			binds[i].buffer_type= MYSQL_TYPE_DOUBLE;
-			binds[i].buffer= (char*)&(VAL_DOUBLE(v));
-			*binds[i].length= sizeof(VAL_DOUBLE(v));
-			break;
-
-		case DB_STRING:
-			binds[i].buffer_type= MYSQL_TYPE_STRING;
-			binds[i].buffer= (char*)VAL_STRING(v);
-			*binds[i].length= strlen(VAL_STRING(v));
-			break;
-
-		case DB_STR:
-			binds[i].buffer_type= MYSQL_TYPE_STRING;
-			binds[i].buffer= VAL_STR(v).s;
-			*binds[i].length= VAL_STR(v).len;
-			break;
-
-		case DB_DATETIME:
-			binds[i].buffer_type= MYSQL_TYPE_DATETIME;
-			t = localtime( &VAL_TIME(v) );
-			mt = (MYSQL_TIME*)binds[i].buffer;
-			mt->year = 1900 + t->tm_year;
-			mt->month = (t->tm_mon)+1;
-			mt->day = t->tm_mday;
-			mt->hour = t->tm_hour;
-			mt->minute = t->tm_min;
-			mt->second = t->tm_sec;
-			*binds[i].length= sizeof(MYSQL_TIME);
-			break;
-
-		case DB_BLOB:
-			binds[i].buffer_type= MYSQL_TYPE_BLOB;
-			binds[i].buffer= VAL_BLOB(v).s;
-			*binds[i].length= VAL_BLOB(v).len;
-			break;
-
-		default:
-			LM_ERR("unknown data type (%d)\n",VAL_TYPE(v));
-			return -9;
-	}
-
-	LM_DBG("added val (%d): len=%ld; type=%d; is_null=%d\n", i,
-		*(binds[i].length), binds[i].buffer_type, *(binds[i].is_null));
-
-	return 0;
-}
-#endif
