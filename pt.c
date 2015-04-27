@@ -83,6 +83,7 @@ int init_multi_proc_support(void)
 	for( i=0 ; i<proc_no ; i++ ) {
 		pt[i].unix_sock = -1;
 		pt[i].idx = -1;
+		pt[i].pid = -1;
 	}
 
 	/* set the pid for the starter process */
@@ -138,6 +139,8 @@ pid_t internal_fork(char *proc_desc)
 		LM_CRIT("cannot fork \"%s\" process\n",proc_desc);
 		return -1;
 	}
+
+	pt[process_counter].pid = 0;
 
 	if (pid==0){
 		/* child process */
