@@ -173,6 +173,9 @@ int  check_ip_address(struct ip_addr* ip, str *name,
 struct hostent* sip_resolvehost(str* name, unsigned short* port,
 		unsigned short *proto, int is_sips, struct dns_node **dn);
 
+inline struct hostent* do_srv_lookup(char *name,
+		 unsigned short* port, struct dns_node **dn);
+
 inline struct hostent* resolvehost(char* name, int no_ip_test);
 
 inline struct hostent* rev_resolvehost(struct ip_addr *ip);

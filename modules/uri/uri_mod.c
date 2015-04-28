@@ -34,11 +34,13 @@
 #include "../../pvar.h"
 #include "../../mod_fix.h"
 #include "../../aaa/aaa.h"
+#include "../../resolve.h"
+#include "../../config.h"
 #include "uri_mod.h"
 #include "checks.h"
 #include "aaa_checks.h"
 #include "db_checks.h"
-
+#include "methods.h"
 
 
 /*
@@ -61,6 +63,7 @@ aaa_prot proto;
 static int mod_init(void); /* Module initialization function */
 static void destroy(void);       /* Module destroy function */
 static int child_init(int rank); /* Per-child initialization function */
+
 
 #define URI_TABLE "uri"
 
@@ -94,6 +97,7 @@ int use_domain = 0;        /* Should does_uri_exist honor the domain part ? */
 static int db_checks_fixup1(void** param, int param_no);
 static int db_checks_fixup2(void** param, int param_no);
 static int db_fixup_get_auth_id(void** param, int param_no);
+static int fixup_uri_resolve(void** param, int param_no);
 
 static int aaa_fixup_0(void** param, int param_no);
 static int aaa_fixup_1(void** param, int param_no);
@@ -160,6 +164,9 @@ static cmd_export_t cmds[] = {
 	{"is_uri_user_e164", (cmd_function)is_uri_user_e164, 1,
 			fixup_pvar_null, fixup_free_pvar_null,
 			REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"uri_resolve", (cmd_function) uri_resolve, 2,
+			fixup_uri_resolve, 0,
+			REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -338,8 +345,6 @@ static int mod_init(void)
 	return 0;
 }
 
-
-
 /**
  * Module initialization function callee in each child separately
  */
@@ -480,3 +485,28 @@ static int aaa_fixup_1(void** param, int param_no) {
 }
 
 
+static int fixup_uri_resolve(void** param, int param_no)
+{
+	pv_spec_t *sp;
+	int ret;
+
+	if (param_no > 0 && param_no <= 2) {
+		switch (param_no) {
+		case 1:		// pv to store the destination sip:host:port:protocol ($du)
+		case 2:		// pv to store the protocol preference (null = resolvehost)
+			ret = fixup_pvar(param);
+			if (ret < 0) return ret;
+			sp = (pv_spec_t*) (*param);
+			if (sp->type != PVT_AVP && sp->type != PVT_SCRIPTVAR) {
+				LM_ERR("argument must be an AVP or SCRIPT VAR!\n");
+				return E_SCRIPT;
+			}
+			break;
+		}
+	} else {
+		LM_ERR("wrong number of parameters\n");
+		return E_UNSPEC;
+	}
+
+	return 0;
+}

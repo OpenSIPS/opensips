@@ -1480,7 +1480,7 @@ static inline void sort_srvs(struct rdata **head)
 }
 
 
-static inline struct hostent* do_srv_lookup(char *name, unsigned short* port, struct dns_node **dn)
+inline struct hostent* do_srv_lookup(char *name, unsigned short* port, struct dns_node **dn)
 {
 	struct hostent *he;
 	struct srv_rdata *srv;
