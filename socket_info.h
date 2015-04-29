@@ -359,7 +359,7 @@ static inline char* socket2str(struct socket_info *sock, char *s, int* len, int 
 
 
 #define get_sock_info_list(_proto) \
-	&protos[_proto].listeners
+	((_proto>=PROTO_FIRST && _proto<PROTO_LAST)?&protos[_proto].listeners:0)
 
 
 int probe_max_sock_buff( int sock, int buff_choice, int buff_max,
