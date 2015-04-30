@@ -124,7 +124,7 @@ static int mod_init(void)
 		LM_WARN("heartbeat is disabled according to the modparam configuration\n");
 		heartbeat = 0;
 	} else {
-		LM_WARN("heartbeat is enabled for [%d] seconds\n", heartbeat);
+		LM_NOTICE("heartbeat is enabled for [%d] seconds\n", heartbeat);
 	}
 
 	return 0;
