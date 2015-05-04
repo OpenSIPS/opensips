@@ -82,6 +82,7 @@ dbt_result_p dbt_result_new(dbt_table_p _dtp, int *_lres, int _sz)
 	_dres->nrcols = _sz;
 	_dres->nrrows = 0;
 	_dres->rows = NULL;
+	_dres->last = NULL;
 
 	return _dres;
 clean:
@@ -291,10 +292,14 @@ int dbt_result_extract_fields(dbt_table_p _dtp, dbt_row_p _drp,
 		}
 	}
 
-	if(_dres->rows)
-		(_dres->rows)->prev = _rp;
-	_rp->next = _dres->rows;
-	_dres->rows = _rp;
+	_rp->next = NULL;
+	if (_dres->last) {
+		_dres->last->next = _rp;
+		_rp->prev = _dres->last;
+	} else {
+		_dres->rows = _rp;
+	}
+	_dres->last = _rp;
 	_dres->nrrows++;
 
 	return 0;

@@ -42,6 +42,7 @@ typedef struct _dbt_result
 	int nrrows;
 	dbt_column_p colv;
 	dbt_row_p rows;
+	dbt_row_p last;
 } dbt_result_t, *dbt_result_p;
 
 //typedef db_res_t dbt_result_t, *dbt_result_p;
