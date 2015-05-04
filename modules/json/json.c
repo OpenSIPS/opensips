@@ -404,9 +404,9 @@ int pv_get_json (struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 
 	if( json_object_is_type(obj, json_type_int) )
 	{
-		val->rs.s = int2str(json_object_get_int(obj), &val->rs.len);
+		val->rs.s = sint2str(json_object_get_int(obj), &val->rs.len);
 		val->ri = json_object_get_int(obj);;
-		val->flags |= PV_VAL_INT|PV_TYPE_INT;
+		val->flags |= PV_VAL_INT|PV_TYPE_INT|PV_VAL_STR;
 
 	}
 	else if( json_object_is_type(obj, json_type_string))
