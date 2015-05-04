@@ -188,7 +188,7 @@ int w_acc_log_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 	env_set_to( rq->to );
 	env_set_comment( &accp );
 	env_set_text( ACC_REQUEST, ACC_REQUEST_LEN);
-	return acc_log_request( rq, NULL, is_cdr_acc_on(rq));
+	return acc_log_request( rq, NULL, 0);
 }
 
 
@@ -208,7 +208,7 @@ int w_acc_aaa_request(struct sip_msg *rq, pv_elem_t* comment, char* foo)
 
 	env_set_to( rq->to );
 	env_set_comment( &accp );
-	return acc_aaa_request( rq, NULL, is_cdr_acc_on(rq));
+	return acc_aaa_request( rq, NULL, 0);
 }
 
 
@@ -234,14 +234,14 @@ int w_acc_db_request(struct sip_msg *rq, pv_elem_t* comment, char *table)
 	env_set_text(table, table_len);
 
 	if (table_len == db_table_mc.len && (strncmp(table, db_table_mc.s, table_len) == 0)) {
-		return acc_db_request(rq, NULL, &mc_ins_list, is_cdr_acc_on(rq));
+		return acc_db_request(rq, NULL, &mc_ins_list, 0);
 	}
 
 	if (table_len == db_table_acc.len && (strncmp(table, db_table_acc.s, table_len) == 0)) {
-		return acc_db_request(rq, NULL, &acc_ins_list, is_cdr_acc_on(rq));
+		return acc_db_request(rq, NULL, &acc_ins_list, 0);
 	}
 
-	return acc_db_request( rq, NULL,NULL, is_cdr_acc_on(rq));
+	return acc_db_request( rq, NULL,NULL, 0);
 }
 
 #ifdef DIAM_ACC
@@ -272,7 +272,7 @@ int w_acc_evi_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 	env_set_to( rq->to );
 	env_set_comment( &accp );
 
-	return acc_evi_request( rq, NULL, is_cdr_acc_on(rq));
+	return acc_evi_request( rq, NULL, 0);
 }
 
 int acc_pvel_to_acc_param(struct sip_msg* rq, pv_elem_t* pv_el, struct acc_param* accp)
@@ -605,20 +605,20 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		/* do old accounting */
 		if ( is_evi_acc_on(req) ) {
 			env_set_event(acc_event);
-			acc_evi_request( req, reply, is_cdr_acc_on(req) );
+			acc_evi_request( req, reply, 0 );
 		}
 
 		if ( is_log_acc_on(req) ) {
 			env_set_text( ACC_ANSWERED, ACC_ANSWERED_LEN);
-			acc_log_request( req, reply, is_cdr_acc_on(req) );
+			acc_log_request( req, reply, 0 );
 		}
 
 		if (is_aaa_acc_on(req))
-			acc_aaa_request( req, reply, is_cdr_acc_on(req) );
+			acc_aaa_request( req, reply, 0 );
 
 		if (is_db_acc_on(req)) {
 			env_set_text( table.s.s, table.s.len);
-			acc_db_request( req, reply, &acc_ins_list, is_cdr_acc_on(req));
+			acc_db_request( req, reply, &acc_ins_list, 0);
 		}
 	}
 
