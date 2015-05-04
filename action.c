@@ -427,7 +427,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 	str name_s;
 	struct timeval start;
 	int end_time;
-	int aux_counter;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
