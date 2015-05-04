@@ -327,7 +327,7 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 	}
 
 	pkg_free(param->body.s);
-	if (param->ctype_pv)
+	if (param->ctype_pv && param->ctype.s)
 		pkg_free(param->ctype.s);
 	curl_easy_cleanup(param->handle);
 	pkg_free(param);
@@ -426,7 +426,8 @@ int rest_get_method(struct sip_msg *msg, char *url,
 			goto cleanup;
 		}
 
-		pkg_free(st.s);
+		if (st.s)
+			pkg_free(st.s);
 	}
 
 	curl_easy_cleanup(handle);
@@ -540,7 +541,8 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 			goto cleanup;
 		}
 
-		pkg_free(st.s);
+		if (st.s)
+			pkg_free(st.s);
 	}
 
 	curl_easy_cleanup(handle);
