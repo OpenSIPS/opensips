@@ -76,7 +76,7 @@ size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata)
 	len = left = size * nmemb;
 
 	if (len > CONTENT_TYPE_HDR_LEN && *ptr == 'C' &&
-	    memcmp(ptr, HTTP_HDR_CONTENT_TYPE, CONTENT_TYPE_HDR_LEN) == 0) {
+	    strncasecmp(ptr, HTTP_HDR_CONTENT_TYPE, CONTENT_TYPE_HDR_LEN) == 0) {
 
 		ptr += CONTENT_TYPE_HDR_LEN + 1;
 		left -= CONTENT_TYPE_HDR_LEN + 1;
