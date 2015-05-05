@@ -45,6 +45,9 @@ CURLM *multi_handle;
 		} \
 	} while (0)
 
+/* global parameter for HTTP headers */
+static struct curl_slist *list = NULL;
+
 /* simultaneous ongoing transfers within this process */
 static int transfers;
 static int read_fds[FD_SETSIZE];
@@ -107,7 +110,6 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	CURL *handle;
 	CURLcode rc;
 	CURLMcode mrc;
-	struct curl_slist *list = NULL;
 	fd_set rset, wset, eset;
 	int max_fd, fd, i;
 	long lim, check_time;
@@ -137,6 +139,9 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	default:
 		LM_ERR("Unsupported rest_client_method: %d, defaulting to GET\n", method);
 	}
+
+	if (list)
+		w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, list);
 
 	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
 	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
@@ -210,13 +215,18 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	goto error;
 
 success:
-	if (method == REST_CLIENT_POST)
+	if (list) {
 		curl_slist_free_all(list);
-
+		list = NULL;
+	}
 	*out_handle = handle;
 	return fd;
 
 error:
+	if (list) {
+		curl_slist_free_all(list);
+		list = NULL;
+	}
 	mrc = curl_multi_remove_handle(multi_handle, handle);
 	if (mrc != CURLM_OK)
 		LM_ERR("curl_multi_remove_handle: %s\n", curl_multi_strerror(mrc));
@@ -360,6 +370,9 @@ int rest_get_method(struct sip_msg *msg, char *url,
 		return -1;
 	}
 
+	if (list)
+		w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, list);
+
 	w_curl_easy_setopt(handle, CURLOPT_URL, url);
 
 	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
@@ -385,6 +398,10 @@ int rest_get_method(struct sip_msg *msg, char *url,
 		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
 
 	rc = curl_easy_perform(handle);
+	if (list) {
+		curl_slist_free_all(list);
+		list = NULL;
+	}
 
 	if (code_pv) {
 		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
@@ -454,7 +471,6 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	CURLcode rc;
 	CURL *handle = NULL;
 	long http_rc;
-	struct curl_slist *list = NULL;
 	str st = { 0, 0 };
 	str res_body = { 0, 0 };
 	pv_value_t pv_val;
@@ -468,8 +484,10 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	if (ctype) {
 		sprintf(print_buff, "Content-Type: %s", ctype);
 		list = curl_slist_append(list, print_buff);
-		w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, list);
 	}
+
+	if (list)
+		w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, list);
 
 	w_curl_easy_setopt(handle, CURLOPT_URL, url);
 
@@ -499,7 +517,10 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
 
 	rc = curl_easy_perform(handle);
-	curl_slist_free_all(list);
+	if (list) {
+		curl_slist_free_all(list);
+		list = NULL;
+	}
 
 	if (code_pv) {
 		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
@@ -551,4 +572,27 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 cleanup:
 	curl_easy_cleanup(handle);
 	return -1;
+}
+
+/**
+ * rest_append_hf - add a custom HTTP header before a rest call
+ * @msg:		sip message struct
+ * @hfv:		HTTP header field and value
+ */
+int rest_append_hf_method(struct sip_msg *msg, str *hfv)
+{
+	char buf[MAX_HEADER_FIELD_LEN];
+
+	if (hfv->len > MAX_HEADER_FIELD_LEN) {
+		LM_ERR("header field buffer too small\n");
+		return -1;
+	}	
+
+	/* TODO: header validation */
+
+	/* append the header to the global list */
+	strncpy(buf, hfv->s, hfv->len);
+	list = curl_slist_append(list, buf);
+
+	return 1;		
 }
