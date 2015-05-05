@@ -35,6 +35,7 @@
 #define HTTP_HDR_CONTENT_TYPE    "Content-Type"
 #define CONTENT_TYPE_HDR_LEN     12
 #define MAX_CONTENT_TYPE_LEN     64
+#define MAX_HEADER_FIELD_LEN	 1024 /* arbitrary */
 
 size_t write_func(char *ptr, size_t size, size_t nmemb, void *userdata);
 size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata);

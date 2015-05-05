@@ -76,6 +76,7 @@ static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f
 					 void **resume_param, char *gp_url, char *gp_body,
 					 char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv);
 
+static int w_rest_append_hf(struct sip_msg *msg, char *gp_hfv);
 
 static acmd_export_t acmds[] = {
 	{ "rest_get",  (acmd_function)w_async_rest_get,  2, fixup_rest_get },
@@ -108,6 +109,9 @@ static cmd_export_t cmds[] = {
 		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
 	{ "rest_post",(cmd_function)w_rest_post, 6, fixup_rest_post, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
+		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
+	{ "rest_append_hf",(cmd_function)w_rest_append_hf, 1, fixup_spve_null, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
 		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
 	{ 0, 0, 0, 0, 0, 0 }
 };
@@ -405,3 +409,14 @@ static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f
 	return 1;
 }
 
+static int w_rest_append_hf(struct sip_msg *msg, char *gp_hfv)
+{
+	str hfv;
+
+	if (fixup_get_svalue(msg, (gparam_p)gp_hfv, &hfv) != 0) {
+		LM_ERR("cannot retrieve header field value\n");
+		return -1;
+	}
+
+	return rest_append_hf_method(msg, &hfv);
+}

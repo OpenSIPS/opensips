@@ -66,5 +66,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 					     CURL **out_handle, str *body, str *ctype);
 enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *param);
 
+int rest_append_hf_method(struct sip_msg *msg, str *hfv);
+
 #endif /* _REST_METHODS_ */
 
