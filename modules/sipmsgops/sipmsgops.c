@@ -531,7 +531,7 @@ static int is_present_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 	struct hdr_field *hf;
 	pv_value_t pval;
 
-	pval.flags = PV_VAL_NONE;
+	memset(&pval, '\0', sizeof pval);
 
 	if (((gparam_p)str_hf)->type == GPARAM_TYPE_INT) {
 		pval.flags = PV_VAL_INT;
@@ -556,7 +556,7 @@ static int is_present_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 				return 1;
 	}
 
-	LM_DBG("header '%.*s' not found\n", pval.rs.len, pval.rs.s);
+	LM_DBG("header '%.*s'(%d) not found\n", pval.rs.len, pval.rs.s, pval.ri);
 
 	return -1;
 }
