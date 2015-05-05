@@ -666,7 +666,11 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 #endif
 				if (erase) {
 					n=epoll_ctl(h->epfd, EPOLL_CTL_DEL, fd, &ep_event);
-					if (n==-1){
+					/*
+					 * in some cases (fds managed by external libraries),
+					 * the fd may have already been closed
+					 */
+					if (n==-1 && errno != EBADF) {
 						LM_ERR("[%s] removing fd from epoll (%d from %d) "
 							"list failed: %s [%d]\n",h->name, fd, h->epfd,
 							strerror(errno), errno);
