@@ -440,6 +440,11 @@ void qm_free(struct qm_block* qm, void* p)
 	unsigned long size;
 #endif
 
+	if (!p) {
+		LM_DBG("free(NULL) called\n");
+		return;
+	}
+
 #ifdef DBG_QM_MALLOC
 	LM_GEN1( memlog, "params(%p, %p), called from %s: %s(%d)\n",
 		qm, p, file, func, line);
@@ -448,10 +453,7 @@ void qm_free(struct qm_block* qm, void* p)
 		abort();
 	}
 #endif
-	if (p==0) {
-		LM_WARN("free(0) called\n");
-		return;
-	}
+
 	f=(struct qm_frag*) ((char*)p-sizeof(struct qm_frag));
 #ifdef DBG_QM_MALLOC
 	qm_debug_frag(qm, f);
@@ -524,16 +526,6 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 	struct qm_frag* n;
 	void* ptr;
 
-
-#ifdef DBG_QM_MALLOC
-	LM_GEN1( memlog, "params (%p, %p, %lu), called from %s: %s(%d)\n",
-		qm, p, size, file, func, line);
-	if ((p)&&(p>(void*)qm->last_frag_end || p<(void*)qm->first_frag)){
-		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
-		abort();
-	}
-#endif
-
 	if (size==0) {
 		if (p)
 #ifdef DBG_QM_MALLOC
@@ -550,6 +542,16 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 #else
 		return qm_malloc(qm, size);
 #endif
+
+#ifdef DBG_QM_MALLOC
+	LM_GEN1( memlog, "params (%p, %p, %lu), called from %s: %s(%d)\n",
+		qm, p, size, file, func, line);
+	if ((p)&&(p>(void*)qm->last_frag_end || p<(void*)qm->first_frag)){
+		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
+		abort();
+	}
+#endif
+
 	f=(struct qm_frag*) ((char*)p-sizeof(struct qm_frag));
 #ifdef DBG_QM_MALLOC
 	qm_debug_frag(qm, f);
