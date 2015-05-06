@@ -229,7 +229,9 @@ static void tcp_conn_clean(struct tcp_connection* c)
 		shm_free(d->async_chunks[r]);
 	}
 
+	shm_free(d->async_chunks);
 	shm_free(d);
+
 	c->proto_data = NULL;
 }
 
