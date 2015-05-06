@@ -192,8 +192,10 @@ static int parse_week_days(const str *week_days, unsigned short *day_set)
 			/* We increase the size of the days set */
 			n += (j - i + 7) % 7 + 1;
 
-			for (; i <= j; i = (i + 1) % 7)
+			for (; i != j; i = (i + 1) % 7)
 				*day_set |= 1 << i;
+
+			*day_set |= 1 << j;
 		}
 		else {
 			/* Just one value */

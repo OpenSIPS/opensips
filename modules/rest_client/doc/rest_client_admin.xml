@@ -1,14 +1,14 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
 
 	<section id="sec-overview">
 	<title>Overview</title>
 	<para>
 	The <emphasis>rest_client</emphasis> module provides a means of interacting
-	with an HTTP server by doing RESTful queries, such as GET and POST. 
+	with an HTTP server by doing RESTful queries, such as GET and POST.
 	</para>
 	</section>
 
@@ -31,7 +31,7 @@
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
-		The following libraries or applications must be installed before 
+		The following libraries or applications must be installed before
 		running &osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
@@ -213,7 +213,7 @@ if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)", "$var(ct)", "$va
 		<para>
 			Issues an HTTP POST request to the specified <emphasis>url</emphasis>. The request body will
 		be copied from the <emphasis>send_body_pv</emphasis> pseudo-variable. The MIME Content-Type
-		header for the request will be taken from <emphasis>send_ctype_pv</emphasis> (default is 
+		header for the request will be taken from <emphasis>send_ctype_pv</emphasis> (default is
 		<emphasis>"application/x-www-form-urlencoded"</emphasis>)
 		</para>
 		<para>
@@ -257,6 +257,43 @@ if (!rest_post("http://myserver.org/register_user", "$fU", , "$var(body)", "$var
 }
 ...
 </programlisting>
+		</example>
+	</section>
+	<section id="rest_append_hf" xreflabel="rest_append_hf">
+		<title>
+		<function moreinfo="none">rest_append_hf(txt)</function>
+		</title>
+		<para>
+		Appends 'txt' to the HTTP headers of the subsequent request.
+                Multiple headers can be appended by making multiple calls
+                before executing a request.
+		</para>
+		<para>
+		The contents of <emphasis>txt</emphasis> should adhere to the
+                specification for HTTP headers (ex. Field: Value)
+		</para>
+		<para>Parameter types</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>txt</emphasis> - String, pseudo-variable, or a String which includes pseudo-variables. (useful for specifying additional attribute-value fields in the URL)
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from the <emphasis>startup, branch, failure, request</emphasis> and <emphasis>timer</emphasis> routes.
+		</para>
+		<example>
+		<title><function moreinfo="none">rest_append_hf</function> usage</title>
+		<programlisting format="linespecific">
+...
+# Example of querying a REST service requiring additional headers
+
+rest_append_hf("Authorization: Bearer mF_9.B5f-4.1JqM");
+if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)")) {
+				...
+}
+...
+		</programlisting>
 		</example>
 	</section>
 	</section>
@@ -333,4 +370,3 @@ route [resume]
 
 
 </chapter>
-
