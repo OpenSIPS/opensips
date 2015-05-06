@@ -831,6 +831,7 @@ void _tcpconn_rm(struct tcp_connection* c)
 		shm_free(c->async_chunks[r]);
 	}
 
+	shm_free(c->async_chunks);
 	shm_free(c);
 }
 
