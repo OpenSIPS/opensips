@@ -135,7 +135,11 @@ char *build_cancel(struct cell *Trans,unsigned int branch,
 		extra = &_extra_cancel_hdrs;
 	}
 	return build_local( Trans, branch, &method, extra,
-		Trans->uac[branch].reply , len );
+		NULL /*reply*/ , len );
+	/* ^^^^ when CANCELing, there are 0 chances to have a reply stored into
+	 * transaction ; set it NULL to avoid using the temporary stored reply 
+	 * (by t_should_relay_response) which may lead into races ( building the
+	 * cancel versus handling a final response in a different process )*/
 }
 
 
