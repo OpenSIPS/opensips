@@ -1,5 +1,235 @@
 =========================== Release 2.1.0 ==============================
 
+2015-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [d4c402a] :
+
+	Update packaging to 2.1.0
+
+
+2015-05-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [ef3c253] :
+
+	While doing retransmissions, set the current processing transaction - in case anybody uses it
+
+
+2015-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [75106d9] :
+
+	Fix crash on building CANCEL requests.
+	Avoid the race condition between building a local cancel and handling a negative reply (for the same branch, in different processes). The build_local mya use the temporary uac->reply and end up with a dnagling pointer. Anyhow, in CANCEL situation, you never have a stored reply in transaction (storing is done only during parallel forking for nagative branches - which are not to be cancelled anyhow).
+	(cherry picked from commit 156fba8d5eeedaa3bbb5cd89a525e1591a288123)
+
+
+2015-05-06  Liviu Chircu  <liviu at opensips dot org>
+	* [c26b5a5] :
+
+	DBG_QM_MALLOC: do not abort() on NULL pointer free/realloc
+
+
+2015-05-05  Liviu Chircu  <liviu at opensips dot org>
+	* [d77b5e2] :
+
+	sipmsgops: fix possible crash with debug=4
+	Introduced in commit 445d90bc7
+	Reported by Hieu Ta
+	(cherry picked from commit 2e9b36c0031e619899aa2544c7e23caff5b49b80)
+
+
+2015-05-05  Liviu Chircu  <liviu at opensips dot org>
+	* [56cca87] :
+
+	core fd management: suppress DEL errors for closed fds (EBADF)
+	Reasons:
+	    * library-specific corner-case (e.g. libcurl with async ops)
+	    * network core removes the fds anyway
+	(cherry picked from commit 21344d1f78bcb7b492b8f07f7f34e21f1dc3a337)
+
+
+2015-05-05  Liviu Chircu  <liviu at opensips dot org>
+	* [dac81ff] :
+
+	core fd management: properly remove fds on DEL errors
+	Also improve debug printing
+	(cherry picked from commit 82eded80cb49b8c82406f2e4385998b3d09cd90e)
+
+
+2015-05-05  Razvan Crainea  <razvan at opensips dot org>
+	* [f3ffd09] :
+
+	acc: when doing no-cdr accounting, do not use CDR-generated info
+	Related to ticket #495
+	(cherry picked from commit 89eb9dc5f9f30e07ff8a40cd1b1c000f8eaf33f0)
+
+
+2015-05-05  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [904e00c] :
+
+	Merge pull request #498 from olivermt/master
+	Make rtpengine retry sending command on UDP fragmentation
+	(cherry picked from commit a91de4c461e4c9ce94cdc7a513a7191cb7fd249f)
+
+
+2015-05-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [acfed21] :
+
+	Fix order of rows during query; respect file order
+	When buidling the response to a select query, respect the order of rows as given by the file; before the selected rows were given in the reverted order.
+	Reported by @jockmckechnie on github.
+	Closes bug #479 .
+	(cherry picked from commit 54f6c22303f0d258c9e5f24520bba342aeb11ac3)
+
+
+2015-05-04  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [3bf8b49] :
+
+	Fixed json results for negative integers
+
+
+2015-05-04  Liviu Chircu  <liviu at opensips dot org>
+	* [65d3c88] :
+
+	rest_client: caseless matching when searching for Content-Type
+	Also properly handle missing "Content-Type"
+	(cherry picked from commit 4d651f4a868e26fb93674950e6f4654a329d3beb)
+
+
+2015-05-01  Jarrod Baumann  <j at rrod dot org>
+	* [59d7d48] :
+
+	Updated log macro used for reporting event_rabbitmq heartbeat modparam
+	(cherry picked from commit 25fc10c1379358de6a25e7ee664d9fd911f7ab0b)
+
+
+2015-04-29  Razvan Crainea  <razvan at opensips dot org>
+	* [f187657] :
+
+	socket_info: return socket list only for known protocols
+	(cherry picked from commit bf3ae34f6af4e680ca43f2f352540898cd3e98e3)
+
+
+2015-04-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7ebd184] :
+
+	Docs updated and refurbished.
+	(cherry picked from commit d154fe2749bd28cb8ace20df6ec88d7a9808b86b)
+
+
+2015-04-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [28031c7] :
+
+	Fix: do not try to kill procs which were not created.
+	(cherry picked from commit ed82ac8b6445104eaec6de84d7c57e7fe601fa30)
+
+
+2015-04-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c3f551f] :
+
+	Fix name of variable in passwd test
+	(cherry picked from commit 4588f843c7ba81e7b679df9abeadc38f1c08c174)
+
+
+2015-04-25  satishdotpatel  <satish.lx at gmail dot com>
+	* [460f33e] :
+
+	Fix reading password from prompt for PGSQ
+	root@dopensips:/etc/opensips# opensipsdbctl create
+	INFO: creating database opensips ...
+	Password for user postgres:
+	Password for user postgres:
+	Password for user postgres:
+	NOTICE:  CREATE TABLE / UNIQUE will create implicit index "version_t_name_idx" for table "version"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "acc_id_seq" for serial column "acc.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "acc_pkey" for table "acc"
+	NOTICE:  CREATE TABLE will create implicit sequence "missed_calls_id_seq" for serial column "missed_calls.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "missed_calls_pkey" for table "missed_calls"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "domain_id_seq" for serial column "domain.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "domain_pkey" for table "domain"
+	NOTICE:  CREATE TABLE / UNIQUE will create implicit index "domain_domain_idx" for table "domain"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "grp_id_seq" for serial column "grp.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "grp_pkey" for table "grp"
+	NOTICE:  CREATE TABLE / UNIQUE will create implicit index "grp_account_group_idx" for table "grp"
+	NOTICE:  CREATE TABLE will create implicit sequence "re_grp_id_seq" for serial column "re_grp.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "re_grp_pkey" for table "re_grp"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "address_id_seq" for serial column "address.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "address_pkey" for table "address"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "aliases_id_seq" for serial column "aliases.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "aliases_pkey" for table "aliases"
+	NOTICE:  CREATE TABLE / UNIQUE will create implicit index "aliases_alias_idx" for table "aliases"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "location_id_seq" for serial column "location.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "location_pkey" for table "location"
+	NOTICE:  CREATE TABLE / UNIQUE will create implicit index "location_account_contact_idx" for table "location"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "silo_id_seq" for serial column "silo.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "silo_pkey" for table "silo"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "dbaliases_id_seq" for serial column "dbaliases.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dbaliases_pkey" for table "dbaliases"
+	NOTICE:  CREATE TABLE / UNIQUE will create implicit index "dbaliases_alias_idx" for table "dbaliases"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "uri_id_seq" for serial column "uri.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "uri_pkey" for table "uri"
+	NOTICE:  CREATE TABLE / UNIQUE will create implicit index "uri_account_idx" for table "uri"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "rtpproxy_sockets_id_seq" for serial column "rtpproxy_sockets.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "rtpproxy_sockets_pkey" for table "rtpproxy_sockets"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "speed_dial_id_seq" for serial column "speed_dial.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "speed_dial_pkey" for table "speed_dial"
+	NOTICE:  CREATE TABLE / UNIQUE will create implicit index "speed_dial_speed_dial_idx" for table "speed_dial"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "usr_preferences_id_seq" for serial column "usr_preferences.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "usr_preferences_pkey" for table "usr_preferences"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "subscriber_id_seq" for serial column "subscriber.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "subscriber_pkey" for table "subscriber"
+	NOTICE:  CREATE TABLE / UNIQUE will create implicit index "subscriber_account_idx" for table "subscriber"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "pdt_id_seq" for serial column "pdt.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "pdt_pkey" for table "pdt"
+	NOTICE:  CREATE TABLE / UNIQUE will create implicit index "pdt_sdomain_prefix_idx" for table "pdt"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dialog_pkey" for table "dialog"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "dispatcher_id_seq" for serial column "dispatcher.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dispatcher_pkey" for table "dispatcher"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "dialplan_id_seq" for serial column "dialplan.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dialplan_pkey" for table "dialplan"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "dr_gateways_id_seq" for serial column "dr_gateways.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dr_gateways_pkey" for table "dr_gateways"
+	NOTICE:  CREATE TABLE / UNIQUE will create implicit index "dr_gateways_dr_gw_idx" for table "dr_gateways"
+	NOTICE:  CREATE TABLE will create implicit sequence "dr_rules_ruleid_seq" for serial column "dr_rules.ruleid"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dr_rules_pkey" for table "dr_rules"
+	NOTICE:  CREATE TABLE will create implicit sequence "dr_carriers_id_seq" for serial column "dr_carriers.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dr_carriers_pkey" for table "dr_carriers"
+	NOTICE:  CREATE TABLE / UNIQUE will create implicit index "dr_carriers_dr_carrier_idx" for table "dr_carriers"
+	NOTICE:  CREATE TABLE will create implicit sequence "dr_groups_id_seq" for serial column "dr_groups.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "dr_groups_pkey" for table "dr_groups"
+	Password for user postgres:
+	NOTICE:  CREATE TABLE will create implicit sequence "load_balancer_id_seq" for serial column "load_balancer.id"
+	NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "load_balancer_pkey" for table "load_balancer"
+	Password for user postgres:
+	Password for user postgres:
+	Password for user postgres:
+	Password for user postgres:
+	Password for user postgres:
+	(cherry picked from commit e0ab1ce8e538fd81356c2cd5feb96658d7517430)
+
+
+2015-04-24  Jarrod Baumann  <jarrod at unixc dot org>
+	* [f97f5ce] :
+
+	Populate the rcode pval in rest get/post methods before returning error
+	(cherry picked from commit 9945b9da3b9eb89f0a80392f8d04ac568eade8a5)
+
+
 2015-04-22  Razvan Crainea  <razvan at opensips dot org>
 	* [cb3ec27] :
 
