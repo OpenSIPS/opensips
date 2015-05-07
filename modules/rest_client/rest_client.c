@@ -325,9 +325,6 @@ static void set_output_pv_params(struct sip_msg *msg, str *body_in, pv_spec_p bo
 		val.rs = *ctype_in;
 		if (pv_set_value(msg, (pv_spec_p)ctype_pv, 0, &val) != 0)
 			LM_ERR("failed to set output ctype pv\n");
-
-		if (ctype_in->s)
-			pkg_free(ctype_in->s);
 	}
 
 	if (code_pv) {
