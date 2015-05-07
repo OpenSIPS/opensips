@@ -1,10 +1,51 @@
 =========================== Release 2.1.0 ==============================
 
-2015-05-07  Razvan Crainea  <razvan at opensips dot org>
-	* [d4c402a] :
+commit 47e9a077c0aa59b92cbe5d1a042268a822d51f4c
+Author: Razvan Crainea <razvan@opensips.org>
+Date:   Thu May 7 17:31:36 2015 +0300
+
+	Update ChangeLog to 2.1.0
+
+commit bb5b3de94f6998439d715a613c4771ee21c612af
+Author: Razvan Crainea <razvan@opensips.org>
+Date:   Thu May 7 17:19:22 2015 +0300
 
 	Update packaging to 2.1.0
 
+commit e3222cf4e95b3f77754bc5889817eeab1edf6bcc
+Author: Liviu Chircu <liviu@opensips.org>
+Date:   Thu May 7 19:18:19 2015 +0300
+
+	rest_client: properly free ctype buffer
+
+	(cherry picked from commit 2ef34a582fd6bd02725fe71a36ab72177829680b)
+
+commit 9958b2280de540b16a743b20998143ab86d7f890
+Author: Liviu Chircu <liviu@opensips.org>
+Date:   Thu May 7 19:06:15 2015 +0300
+
+	rest_client: update doc & README
+
+	(cherry picked from commit 910990c21d252f21060b45e61974020f60aac33c)
+
+commit 17d82244c6e7aeb5c1e4f22f03b252c5d237fc5a
+Author: Liviu Chircu <liviu@opensips.org>
+Date:   Thu May 7 18:46:07 2015 +0300
+
+	rest_client: properly handle async calls in local deployments
+
+	Proper libcurl usage is to poll for handle status updates after
+	each perform operation.
+
+	This patch also fixes a few cleanup issues with the global list of
+	pending HTTP headers
+
+	Thanks to Dan Bogos for reporting and helping with troubleshooting
+
+	(cherry picked from commit a614e21b2d7982b4d56d7acbb99aee1b51f632ec)
+
+	Conflicts:
+		modules/rest_client/rest_methods.c
 
 2015-05-07  Vlad Paiu  <vladpaiu at opensips dot org>
 	* [ef3c253] :
