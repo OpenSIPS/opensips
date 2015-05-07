@@ -1,3 +1,159 @@
+=========================== Release 1.10.5 ==============================
+
+2015-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [72ae6f6] :
+
+	Update packaging to 1.10.5
+
+
+2015-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6457b80] :
+
+	Fix crash on building CANCEL requests.
+	Avoid the race condition between building a local cancel and handling a negative reply (for the same branch, in different processes). The build_local mya use the temporary uac->reply and end up with a dnagling pointer. Anyhow, in CANCEL situation, you never have a stored reply in transaction (storing is done only during parallel forking for nagative branches - which are not to be cancelled anyhow).
+	(cherry picked from commit 156fba8d5eeedaa3bbb5cd89a525e1591a288123)
+
+
+2015-05-06  Liviu Chircu  <liviu at opensips dot org>
+	* [31cd5b3] :
+
+	async TCP: fix memory leak
+	Also free the array of chunk pointers when freeing up TCP conns
+	(cherry picked from commit 8a42143eea0b478ad817e428a48410142f01b103)
+
+
+2015-05-06  Liviu Chircu  <liviu at opensips dot org>
+	* [afd7de6] :
+
+	DBG_QM_MALLOC: do not abort() on NULL pointer free/realloc
+	(cherry picked from commit c26b5a55c22a7533fd52bfe9db3a3418ca09ec70)
+	(cherry picked from commit a704d79d6cb4aaa45dd04021f5b83832a442bd2d)
+
+	Conflicts:
+		mem/q_malloc.c
+
+
+2015-05-05  Liviu Chircu  <liviu at opensips dot org>
+	* [a30c966] :
+
+	sipmsgops: fix possible crash with debug=4
+	Introduced in commit 445d90bc7
+	Reported by Hieu Ta
+	(cherry picked from commit 2e9b36c0031e619899aa2544c7e23caff5b49b80)
+
+
+2015-05-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8547c06] :
+
+	Removed unused variable.
+
+
+2015-05-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [54f6c22] :
+
+	Fix order of rows during query; respect file order
+	When buidling the response to a select query, respect the order of rows as given by the file; before the selected rows were given in the reverted order.
+	Reported by @jockmckechnie on github.
+	Closes bug #479 .
+
+
+2015-05-04  Liviu Chircu  <liviu at opensips dot org>
+	* [a77895c] :
+
+	rest_client: caseless matching when searching for Content-Type
+	Also properly handle missing "Content-Type"
+	(cherry picked from commit 4d651f4a868e26fb93674950e6f4654a329d3beb)
+
+	Conflicts:
+		modules/rest_client/rest_methods.c
+
+	(cherry picked from commit dcd8fc463544751e583e0c006f6eb52ff55dfb37)
+
+
+2015-04-24  Jarrod Baumann  <jarrod at unixc dot org>
+	* [8fe7793] :
+
+	Populate the rcode pval in rest get/post methods before returning error
+	(cherry picked from commit fa37b3dd8df4a02d42503cf5ab8c8de8be528c33)
+
+
+2015-04-22  Liviu Chircu  <liviu at opensips dot org>
+	* [015a3b9] :
+
+	F_MALLOC: suppress warnings for free(NULL)
+	(cherry picked from commit 17d639b9f11b415d51062005aadb86dd6c2375e2)
+
+
+2015-04-20  Liviu Chircu  <liviu at opensips dot org>
+	* [ba5a0be] :
+
+	db_mysql: properly set TCP-related timeouts
+	According to official documentation,  mysql_options() must be used _after_
+	mysql_init()
+	(cherry picked from commit 1f154c01fc3d064f1cf4f9c333775d857afb6528)
+
+
+2015-04-20  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [fea655a] :
+
+	Merge pull request #431 from dsandras/ds-fix-sst-avp
+	dialog: Update dlg lifetime whe re-evaluating the AVP after the callback...
+	(cherry picked from commit 2cf99baad363c0c5ba3aa9966214a63fb5fb195a)
+
+
+2015-04-20  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [6c04ebb] :
+
+	Merge pull request #442 from rgagnon24/redirect_fix
+	Fix get_redirects(max, reason)
+	(cherry picked from commit ead10331a2f5b024f885f1f69e160c78c9d8eb7b)
+
+
+2015-04-16  Liviu Chircu  <liviu at opensips dot org>
+	* [a981f00] :
+
+	sipmsgops: fix buffer management issue
+	is_present_hf() and remove_hf() would sometimes misbehave
+	when used with pseudo-variables (commit 6e88f653702).
+
+	Reported by Eric Werkhoven
+
+	Also fix a couple of noisy log messages.
+	(cherry picked from commit 0d5edcda13189bb7c06b13b154110b90387a27a0)
+
+	Conflicts:
+		modules/sipmsgops/sipmsgops.c
+
+
+2015-04-15  Razvan Crainea  <razvan at opensips dot org>
+	* [8423751] :
+
+	replace libmysqlclient*-dev with metapackage libmysqlclient-dev
+	Credits go to Leo for reporting this
+	(cherry picked from commit e5b793e2411826a23138298721879f6749f597ac)
+
+
+2015-04-14  Răzvan Crainea  <razvan at opensips dot org>
+	* [b38d2a5] :
+
+	Merge pull request #462 from jarrodb/dlg_hash
+	Verify the dialog mi parameter is not null before passing to dlg_hash
+	(cherry picked from commit 432c9cc5dcbfadf69c1b9b1fee44a0fcad8cb8f6)
+
+
+2015-04-07  Ovidiu Sas  <osas at voipembedded dot com>
+	* [728d540] :
+
+	parser: fix memory leak  - add Supported header to the list of headers that performs memory allocation
+	(cherry picked from commit b52b2b9239bd59e7515fa35c29e5d6d8c3f6dc2c)
+
+
+2015-04-02  Razvan Crainea  <razvan at opensips dot org>
+	* [2a01e72] :
+
+	Update ChangeLog
+
+
 =========================== Release 1.10.4 ==============================
 
 2015-04-02  Vlad Paiu  <vladpaiu at opensips dot org>
