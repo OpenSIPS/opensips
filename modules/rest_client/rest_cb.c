@@ -48,6 +48,7 @@ size_t write_func(char *ptr, size_t size, size_t nmemb, void *body)
 
 	buff->s = pkg_realloc(buff->s, buff->len + len + 1);
 	if (!buff->s) {
+		buff->len = 0;
 		LM_ERR("No more pkg memory!\n");
 		return E_OUT_OF_MEM;
 	}

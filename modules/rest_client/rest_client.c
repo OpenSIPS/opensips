@@ -40,6 +40,7 @@
  * Module parameters
  */
 long connection_timeout = 20;
+long connection_timeout_ms;
 long curl_timeout = 20;
 
 char *ssl_capath;
@@ -199,6 +200,8 @@ static int mod_init(void)
 {
 	LM_DBG("Initializing...\n");
 
+	connection_timeout_ms = connection_timeout * 1000L;
+
 	curl_global_init_mem(CURL_GLOBAL_ALL,
 						 osips_malloc,
 						 osips_free,
@@ -309,6 +312,42 @@ static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
 	                        (pv_spec_p)ctype_pv, (pv_spec_p)code_pv);
 }
 
+static void set_output_pv_params(struct sip_msg *msg, str *body_in, pv_spec_p body_pv, str *ctype_in,
+								 pv_spec_p ctype_pv, CURL *handle, pv_spec_p code_pv)
+{
+	pv_value_t val;
+	long http_rc;
+	CURLcode rc;
+
+	val.flags = PV_VAL_STR;
+	val.rs = *body_in;
+
+	if (pv_set_value(msg, (pv_spec_p)body_pv, 0, &val) != 0)
+		LM_ERR("failed to set output body pv\n");
+
+	if (ctype_pv) {
+		val.rs = *ctype_in;
+		if (pv_set_value(msg, (pv_spec_p)ctype_pv, 0, &val) != 0)
+			LM_ERR("failed to set output ctype pv\n");
+
+		if (ctype_in->s)
+			pkg_free(ctype_in->s);
+	}
+
+	if (code_pv) {
+		rc = curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
+		if (rc != CURLE_OK)
+			LM_ERR("curl_easy_getinfo: %s\n", curl_easy_strerror(rc));
+
+		LM_DBG("Last response code: %ld\n", http_rc);
+
+		val.flags = PV_VAL_INT|PV_TYPE_INT;
+		val.ri = (int)http_rc;
+		if (pv_set_value(msg, (pv_spec_p)code_pv, 0, &val) != 0)
+			LM_ERR("failed to set output code pv\n");
+	}
+}
+
 static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
 							void **resume_param, char *gp_url,
 							char *body_pv, char *ctype_pv, char *code_pv)
@@ -334,11 +373,26 @@ static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
 	read_fd = start_async_http_req(msg, REST_CLIENT_GET, url.s, NULL, NULL,
 				&param->handle, &param->body, ctype_pv ? &param->ctype : NULL);
 
-	if (read_fd < 0) {
+	/* error occurred; no transfer done */
+	if (read_fd == ASYNC_NO_IO) {
 		*resume_param = NULL;
 		*resume_f = NULL;
 		/* keep default async status of NO_IO */
 		return -1;
+
+	/* no need for async - transfer already completed! */
+	} else if (read_fd == ASYNC_SYNC) {
+		set_output_pv_params(msg, &param->body, (pv_spec_p)body_pv,
+							 &param->ctype, (pv_spec_p)ctype_pv,
+							 param->handle, (pv_spec_p)code_pv);
+
+		pkg_free(param->body.s);
+		if (ctype_pv && param->ctype.s)
+			pkg_free(param->ctype.s);
+		curl_easy_cleanup(param->handle);
+		pkg_free(param);
+
+		return ASYNC_SYNC;
 	}
 
 	*resume_f = resume_async_http_req;
@@ -389,11 +443,26 @@ static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f
 	read_fd = start_async_http_req(msg, REST_CLIENT_POST, url.s, body.s, ctype.s,
 				&param->handle, &param->body, ctype_pv ? &param->ctype : NULL);
 
-	if (read_fd < 0) {
+	/* error occurred; no transfer done */
+	if (read_fd == ASYNC_NO_IO) {
 		*resume_param = NULL;
 		*resume_f = NULL;
 		/* keep default async status of NO_IO */
 		return -1;
+
+	/* no need for async - transfer already completed! */
+	} else if (read_fd == ASYNC_SYNC) {
+		set_output_pv_params(msg, &param->body, (pv_spec_p)body_pv,
+							 &param->ctype, (pv_spec_p)ctype_pv,
+							 param->handle, (pv_spec_p)code_pv);
+
+		pkg_free(param->body.s);
+		if (ctype_pv && param->ctype.s)
+			pkg_free(param->ctype.s);
+		curl_easy_cleanup(param->handle);
+		pkg_free(param);
+
+		return ASYNC_SYNC;
 	}
 
 	*resume_f = resume_async_http_req;
