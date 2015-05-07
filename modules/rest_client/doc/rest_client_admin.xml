@@ -168,7 +168,8 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 		</para>
 		<para>
 		The optional <emphasis>retcode_pv</emphasis> pseudo-var is used to retain the
-		HTTP status code of the response message.
+		HTTP status code of the response message. Since the module is based on libcurl,
+		a <emphasis role='bold'>0</emphasis> value means no HTTP reply arrived at all.
 		</para>
 
 		<para>Possible parameter types</para>
@@ -226,7 +227,9 @@ if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)", "$var(ct)", "$va
 		</para>
 		<para>
 		The optional <emphasis>retcode_pv</emphasis> pseudo-var parameter can be given
-		in order to retrieve the HTTP status code of the response message.
+		in order to retrieve the HTTP status code of the response message. Since
+		the module based on libcurl, a <emphasis role='bold'>0</emphasis> value
+		means no HTTP reply arrived at all.
 		</para>
 		<para>Possible parameter types</para>
 		<itemizedlist>

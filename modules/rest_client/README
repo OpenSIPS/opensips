@@ -155,7 +155,8 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
    "Content-Type:" header.
 
    The optional retcode_pv pseudo-var is used to retain the HTTP
-   status code of the response message.
+   status code of the response message. Since the module is based
+   on libcurl, a 0 value means no HTTP reply arrived at all.
 
    Possible parameter types
      * url - String, pseudo-variable, or a String which includes
@@ -194,6 +195,8 @@ if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)", "$var(ct
 
    The optional retcode_pv pseudo-var parameter can be given in
    order to retrieve the HTTP status code of the response message.
+   Since the module based on libcurl, a 0 value means no HTTP
+   reply arrived at all.
 
    Possible parameter types
      * url, send_body_pv, send_type_pv - String, pseudo-variable,
