@@ -303,16 +303,20 @@ inline static void retransmission_handler( struct timer_link *retr_tl )
 		|| r_buf->activ_type==TYPE_REQUEST ) {
 			LM_DBG("retransmission_handler : request resending"
 				" (t=%p, %.9s ... )\n", r_buf->my_T, r_buf->buffer.s);
+			set_t(r_buf->my_T);
 			SEND_BUFFER( r_buf );
 			/*if (SEND_BUFFER( r_buf )==-1) {
 				reset_timer( &r_buf->fr_timer );
 				fake_reply(r_buf->my_T, r_buf->branch, 503 );
 				return;
 			}*/
+			set_t(T_UNDEFINED);
 	} else {
 			LM_DBG("retransmission_handler : reply resending "
 				"(t=%p, %.9s ... )\n", r_buf->my_T, r_buf->buffer.s);
+			set_t(r_buf->my_T);
 			t_retransmit_reply(r_buf->my_T);
+			set_t(T_UNDEFINED);
 	}
 
 	id = r_buf->retr_list;
