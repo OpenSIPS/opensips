@@ -1,3 +1,113 @@
+=========================== Release 1.8.8 ==============================
+
+2015-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [928eeb9] :
+
+	Update packaging to 1.8.8
+
+
+2015-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e5ab624] :
+
+	Fix crash on building CANCEL requests.
+	Avoid the race condition between building a local cancel and handling a negative reply (for the same branch, in different processes). The build_local mya use the temporary uac->reply and end up with a dnagling pointer. Anyhow, in CANCEL situation, you never have a stored reply in transaction (storing is done only during parallel forking for nagative branches - which are not to be cancelled anyhow).
+	(cherry picked from commit 156fba8d5eeedaa3bbb5cd89a525e1591a288123)
+
+
+2015-05-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [20f6b13] :
+
+	Fix order of rows during query; respect file order
+	When buidling the response to a select query, respect the order of rows as given by the file; before the selected rows were given in the reverted order.
+	Reported by @jockmckechnie on github.
+	Closes bug #479 .
+	(cherry picked from commit 54f6c22303f0d258c9e5f24520bba342aeb11ac3)
+
+
+2015-04-22  Liviu Chircu  <liviu at opensips dot org>
+	* [6081ec9] :
+
+	F_MALLOC: suppress warnings for free(NULL)
+	(cherry picked from commit 17d639b9f11b415d51062005aadb86dd6c2375e2)
+
+
+2015-04-20  Liviu Chircu  <liviu at opensips dot org>
+	* [358e99d] :
+
+	db_mysql: properly set TCP-related timeouts
+	According to official documentation,  mysql_options() must be used _after_
+	mysql_init()
+	(cherry picked from commit 1f154c01fc3d064f1cf4f9c333775d857afb6528)
+
+
+2015-04-20  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [2cf99ba] :
+
+	Merge pull request #431 from dsandras/ds-fix-sst-avp
+	dialog: Update dlg lifetime whe re-evaluating the AVP after the callback...
+
+
+2015-04-20  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [b800d74] :
+
+	Merge pull request #442 from rgagnon24/redirect_fix
+	Fix get_redirects(max, reason)
+	(cherry picked from commit ead10331a2f5b024f885f1f69e160c78c9d8eb7b)
+
+
+2015-04-15  Razvan Crainea  <razvan at opensips dot org>
+	* [89eb9fd] :
+
+	replace libmysqlclient*-dev with metapackage libmysqlclient-dev
+	Credits go to Leo for reporting this
+	(cherry picked from commit e5b793e2411826a23138298721879f6749f597ac)
+
+
+2015-04-14  Răzvan Crainea  <razvan at opensips dot org>
+	* [977b0de] :
+
+	Merge pull request #462 from jarrodb/dlg_hash
+	Verify the dialog mi parameter is not null before passing to dlg_hash
+	(cherry picked from commit 432c9cc5dcbfadf69c1b9b1fee44a0fcad8cb8f6)
+
+
+2015-04-07  Ovidiu Sas  <osas at voipembedded dot com>
+	* [65ee6379] :
+
+	parser: fix memory leak  - add Supported header to the list of headers that performs memory allocation
+	(cherry picked from commit b52b2b9239bd59e7515fa35c29e5d6d8c3f6dc2c)
+
+
+2015-04-02  Razvan Crainea  <razvan at opensips dot org>
+	* [f30c6f3] :
+
+	Update ChangeLog
+
+
+2015-04-02  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [aa1494d] :
+
+	Maintain rport and received in VIA header of replies when doing topology hiding
+	(cherry picked from commit 622755017064c7d4b3ca86a893e92177e5a0af40)
+
+
+2015-04-02  Razvan Crainea  <razvan at opensips dot org>
+	* [5ad4e89] :
+
+	Increase versioning to 1.8.7
+
+
+2015-04-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9a9a032] :
+
+	Fix changing proto via force_send_socket().
+	If the RURI does not request any protocol, use the proto of the forced socket (if any).
+	Related to #420
+	(cherry picked from commit ac8c2e6845ecea7d01d267b61720d332ee571e1d)
+
+	Conflicts:
+		modules/tm/uac.c
+
 =========================== Release 1.8.7 ==============================
 
 2015-04-02  Vlad Paiu  <vladpaiu at opensips dot org>
