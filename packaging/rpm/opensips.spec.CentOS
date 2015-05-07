@@ -1,5 +1,5 @@
 %define name    opensips
-%define ver     1.10.4
+%define ver     1.10.5
 %define rel     1
 %define _sharedir %{_prefix}/share
 
