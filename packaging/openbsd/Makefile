@@ -8,7 +8,7 @@
 COMMENT= "OpenSIPS"
 
 PORTNAME= opensips
-PORTVERSION= 2.1.rc2
+PORTVERSION= 2.1.0
 CATEGORIES= net
 MASTER_SITES= http://opensips.org/pub/opensips/2.1.0/src/
 
