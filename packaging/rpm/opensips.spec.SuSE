@@ -1,6 +1,6 @@
 %define name    opensips
 %define ver     2.1
-%define rel     rc2
+%define rel     0
 
 %define EXCLUDED_MODULES	aaa_radius b2b_entities b2b_logic db_http json memcached jabber cpl-c xmpp rls mi_xmlrpc xcap_client db_mysql db_postgres db_unixodbc db_oracle db_berkeley osp perl snmpstats db_perlvdb peering carrierroute mmgeoip presence presence_xml presence_mwi presence_dialoginfo pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo xcap xcap_client ldap h350 identity regex
 %define MYSQL_MODULES		modules/db_mysql
@@ -459,6 +459,9 @@ sbin/insserv etc/init.d/
 
 
 %changelog
+* Fri May 08 2015 Razvan Crainea <razvan@opensips.org>
+- Update spec to OpenSIPS version 2.1.0.
+
 * Mon Oct 12 2009 Bogdan-Andrei Iancu <bogdan@opensips.org>
 - Update spec to OpenSIPS version 1.6.0.
 

@@ -1,6 +1,6 @@
 %define name    opensips
 %define ver     2.1
-%define rel     rc2
+%define rel     0
 %define _sharedir %{_prefix}/share
 
 Summary:      OpenSIPS, very fast and flexible SIP Server
@@ -913,6 +913,9 @@ fi
 
 
 %changelog
+* Fri May 08 2015 Razvan Crainea <razvan@opensips.org>
+- Update spec to OpenSIPS version 2.1.0.
+
 * Sun Apr 13 2014 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Fix x64_86 compilation problems
 
