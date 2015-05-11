@@ -88,10 +88,7 @@
 #include "dprint.h"
 
 #include "poll_types.h" /* poll_types*/
-#ifdef HAVE_SIGIO_RT
 #include "pt.h" /* mypid() */
-#endif
-
 
 #ifndef FD_TYPE_DEFINED
 typedef int fd_type;
