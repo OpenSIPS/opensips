@@ -130,7 +130,7 @@ OSREL = $(shell uname -r)
 # numerical version (good for comparisons: A.B.C => A*1000000+B*1000+C)
 OSREL_N= $(shell echo $(OSREL) | sed -e 's/^[^0-9]*//' \
 		-e 's/^\([0-9][0-9]*\(\.[0-9][0-9]*\)*\).*$$/\1/g' | \
-		(IFS=. read A B C D; R=0; \
+		(IFS=. read A B C D; [ -z "$$B" ] && B=0; [ -z "$$C" ] && C=0; R=0; \
 		[ -n "$$A" ] && R=`expr $$R \* 1000 + $$A` && \
 		[ -n "$$B" ] && R=`expr $$R \* 1000 + $$B` && \
 		[ -n "$$C" ] && R=`expr $$R \* 1000 + $$C`; echo $$R ) )
