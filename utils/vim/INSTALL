@@ -1,0 +1,13 @@
+		opensips.vim installation + auto filetype detection
+	-----------------------------------------------------------
+
+* Place "opensips.vim" in ~/.vim/syntax/opensips.vim
+
+* Enable auto filetype detection in your ~/.vimrc with the following two lines:
+
+set filetype=on
+au BufNewFile,BufRead *opensips*.cfg,*.{os,osips,opensips} set filetype=opensips
+
+
+For any questions / suggestions, please write us at:
+users@lists.opensips.org
