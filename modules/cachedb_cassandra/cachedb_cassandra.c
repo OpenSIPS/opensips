@@ -102,6 +102,8 @@ static int mod_init(void)
 	if (wr_consistency_level<1 || wr_consistency_level > 8)
 		wr_consistency_level=1;
 
+	memset(&cde, 0, sizeof(cachedb_engine));
+
 	cde.name = cache_mod_name;
 
 	cde.cdb_func.init = cassandra_init;
