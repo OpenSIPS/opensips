@@ -791,6 +791,11 @@ dp_connection_list_p dp_get_connection(str * partition)
 	return el;
 }
 
+dp_connection_list_p dp_get_connections(void)
+{
+	return dp_conns;
+}
+
 /* Adds a new separate partition and loads all rules from database in shm */
 dp_connection_list_p dp_add_connection(dp_head_p head)
 {
