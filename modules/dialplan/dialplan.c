@@ -957,6 +957,8 @@ static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param)
 			if( node == NULL) goto error;
 			attr = add_mi_attr(node, 0, "table", 5, el->table_name.s, el->table_name.len);
 			if(attr == NULL) goto error;
+			attr = add_mi_attr(node, 0, "db_url", 6, el->db_url.s, el->db_url.len);
+			if(attr == NULL) goto error;
 			el = el->next;
 		}
 	} else {
@@ -966,6 +968,8 @@ static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param)
 		node = add_mi_node_child(root, 0, "Partition", 9, el->partition.s, el->partition.len);
 		if( node == NULL) goto error;
 		attr = add_mi_attr(node, 0, "table", 5, el->table_name.s, el->table_name.len);
+		if(attr == NULL) goto error;
+		attr = add_mi_attr(node, 0, "db_url", 6, el->db_url.s, el->db_url.len);
 		if(attr == NULL) goto error;
 	}
 
