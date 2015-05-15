@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <netinet/tcp.h>
 #include <poll.h>
+#include <fcntl.h>
 
 #include "../../pt.h"
 #include "../../timer.h"
@@ -109,7 +110,7 @@ static int proto_udp_init_listener(struct socket_info *si)
 {
 	/* we do not do anything particular to UDP plain here, so
 	 * transparently use the generic listener init from net UDP layer */
-	return udp_init_listener(si);
+	return udp_init_listener(si, O_NONBLOCK);
 }
 
 
