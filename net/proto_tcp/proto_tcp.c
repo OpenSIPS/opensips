@@ -230,6 +230,7 @@ static void tcp_conn_clean(struct tcp_connection* c)
 	}
 
 	shm_free(d);
+
 	c->proto_data = NULL;
 }
 

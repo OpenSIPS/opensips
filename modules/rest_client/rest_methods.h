@@ -33,6 +33,7 @@
 extern CURLM *multi_handle;
 
 extern long connection_timeout;
+extern long connection_timeout_ms;
 extern long curl_timeout;
 
 extern char *ssl_capath;
@@ -65,6 +66,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 					     char *url, char *req_body, char *req_ctype,
 					     CURL **out_handle, str *body, str *ctype);
 enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *param);
+
+int rest_append_hf_method(struct sip_msg *msg, str *hfv);
 
 #endif /* _REST_METHODS_ */
 

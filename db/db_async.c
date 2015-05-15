@@ -65,7 +65,7 @@ struct pool_con *db_switch_to_async(db_con_t *_h, get_con_fd_f get_fd, int **fd_
 	con->transfers[con->no_transfers].fd = get_fd(new);
 	con->transfers[con->no_transfers].con = new;
 
-	LM_INFO("    %d/%d transfers: (%d - %p)\n", con->no_transfers + 1,
+	LM_DBG(">>    %d/%d transfers: (%d - %p)\n", con->no_transfers + 1,
 			db_max_async_connections, con->transfers[con->no_transfers].fd,
 			con->transfers[con->no_transfers].con);
 
@@ -98,7 +98,7 @@ void db_store_async_con(db_con_t *_h, struct pool_con *con)
 	con->next = tail->async_pool;
 	tail->async_pool = con;
 
-	LM_INFO("XXXXXXXXXXXXXXXXXX RESTORE CONNNN: %p <<<<<<<<<<<<<<<\n", con);
+	LM_DBG(">> restore conn %p\n", con);
 
 	for (i = 0; i < tail->no_transfers; i++) {
 		if (tail->transfers[i].con == con) {
@@ -119,7 +119,7 @@ struct pool_con *db_match_async_con(int fd, db_con_t *_h)
 	int i, max;
 	struct db_transfer *transfers;
 
-	LM_INFO("XXX MATCH fd %d\n", fd);
+	LM_DBG(">> match fd %d\n", fd);
 
 	transfers = ((struct pool_con *)_h->tail)->transfers;
 	max = ((struct pool_con *)_h->tail)->no_transfers;

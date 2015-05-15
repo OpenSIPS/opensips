@@ -325,6 +325,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	if (gmtime_r(&se->stats.last_matched_time, &then) == NULL
 			|| gmtime_r(&nowt, &now) == NULL) {
 		LM_ERR ("Cannot use gmtime function. Will exit\n");
+		lock_release(&se->lock);
 		return rc_ok_thr;
 	}
 

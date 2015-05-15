@@ -65,6 +65,7 @@ static int mi_child_init();
 
 static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree,void *param);
 static struct mi_root * mi_translate(struct mi_root *cmd_tree, void *param);
+static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param);
 static int dp_translate_f(struct sip_msg *m, char *id, char *out, char *attrs);
 static int dp_trans_fixup(void ** param, int param_no);
 static int dp_set_partition(modparam_t type, void* val);
@@ -96,6 +97,7 @@ static param_export_t mod_params[]={
 static mi_export_t mi_cmds[] = {
 	{ "dp_reload",  0, mi_reload_rules,   0,       0,  mi_child_init},
 	{ "dp_translate",  0, mi_translate,   0,       0,              0},
+	{ "dp_show_partition",  0, mi_show_partition,   0,       0,              0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -933,6 +935,50 @@ error:
 	return E_INVALID_PARAMS;
 }
 
+
+static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param)
+{
+	struct mi_node *node = NULL;
+	struct mi_root *rpl_tree = NULL;
+	struct mi_node* root= NULL;
+	struct mi_attr* attr;
+	dp_connection_list_t *el;
+
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==NULL) return NULL;
+
+	if (cmd_tree) node = cmd_tree->node.kids;
+	if (node == NULL) {
+		el = dp_get_connections();
+		root = &rpl_tree->node;
+		while (el) {
+			node = add_mi_node_child(root, 0, "Partition", 9, el->partition.s, el->partition.len);
+			if( node == NULL) goto error;
+			attr = add_mi_attr(node, 0, "table", 5, el->table_name.s, el->table_name.len);
+			if(attr == NULL) goto error;
+			attr = add_mi_attr(node, 0, "db_url", 6, el->db_url.s, el->db_url.len);
+			if(attr == NULL) goto error;
+			el = el->next;
+		}
+	} else {
+		el = dp_get_connection(&node->value);
+		if (!el) goto error;
+		root = &rpl_tree->node;
+		node = add_mi_node_child(root, 0, "Partition", 9, el->partition.s, el->partition.len);
+		if( node == NULL) goto error;
+		attr = add_mi_attr(node, 0, "table", 5, el->table_name.s, el->table_name.len);
+		if(attr == NULL) goto error;
+		attr = add_mi_attr(node, 0, "db_url", 6, el->db_url.s, el->db_url.len);
+		if(attr == NULL) goto error;
+	}
+
+	return rpl_tree;
+
+error:
+	if(rpl_tree) free_mi_tree(rpl_tree);
+	return NULL;
+}
 
 static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree, void *param)
 {

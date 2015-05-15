@@ -18,6 +18,9 @@
 # this parameter.
 # DBENGINE=MYSQL
 
+## database port (PostgreSQL=5432 default; MYSQL=3306 default)
+# DBPORT=3306
+
 ## database host
 # DBHOST=localhost
 

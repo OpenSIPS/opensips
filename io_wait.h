@@ -88,10 +88,7 @@
 #include "dprint.h"
 
 #include "poll_types.h" /* poll_types*/
-#ifdef HAVE_SIGIO_RT
 #include "pt.h" /* mypid() */
-#endif
-
 
 #ifndef FD_TYPE_DEFINED
 typedef int fd_type;
@@ -342,9 +339,9 @@ inline static int io_watch_add(	io_wait_h* h,
 		goto error;
 	}
 	/* check if not too big */
-	if (fd>=h->max_fd_no){
-		LM_CRIT("[%s] maximum fd number exceeded: %d/%d\n",
-			h->name, fd, h->max_fd_no);
+	if (h->fd_no >= h->max_fd_no || fd >= h->max_fd_no) {
+		LM_CRIT("[%s] maximum fd number exceeded: %d, %d/%d\n",
+			h->name, fd, h->fd_no, h->max_fd_no);
 		goto error;
 	}
 	if (prio > h->max_prio) {
@@ -352,8 +349,8 @@ inline static int io_watch_add(	io_wait_h* h,
 			h->name, prio, h->max_prio);
 		goto error;
 	}
-	LM_DBG("[%s] io_watch_add op on %d (%p, %d, %d, %p,%d), fd_no=%d\n",
-			h->name,fd,h,fd,type,data,flags,h->fd_no);
+	LM_DBG("[%s] io_watch_add op (%d on %d) (%p, %d, %d, %p,%d), fd_no=%d/%d\n",
+			h->name,fd,h->epfd, h,fd,type,data,flags,h->fd_no,h->max_fd_no);
 	//fd_array_print;
 	/*  hash sanity check */
 	e=get_fd_map(h, fd);
@@ -591,7 +588,7 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 
 	if ((fd<0) || (fd>=h->max_fd_no)){
 		LM_CRIT("[%s] invalid fd %d, not in [0, %d)\n", h->name, fd, h->fd_no);
-		goto error;
+		goto error0;
 	}
 	LM_DBG("[%s] io_watch_del op on index %d %d (%p, %d, %d, 0x%x,0x%x) "
 		"fd_no=%d called\n", h->name,idx,fd, h, fd, idx, flags,
@@ -602,19 +599,19 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 	/* more sanity checks */
 	if (e==0){
 		LM_CRIT("[%s] no corresponding hash entry for %d\n",h->name, fd);
-		goto error;
+		goto error0;
 	}
 	if (e->type==0 /*F_NONE*/){
 		LM_ERR("[%s] trying to delete already erased"
 				" entry %d in the hash(%d, %d, %p) )\n",
 				h->name,fd, e->fd, e->type, e->data);
-		goto error;
+		goto error0;
 	}
 
 	if ((e->flags & sock_flags) == 0) {
 		LM_ERR("BUG - [%s] trying to del fd %d with flags %d %d\n",
 			h->name, fd, e->flags,sock_flags);
-		goto error;
+		goto error0;
 	}
 
 	unhash_fd_map(e,flags,sock_flags,erase);
@@ -666,9 +663,14 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 #endif
 				if (erase) {
 					n=epoll_ctl(h->epfd, EPOLL_CTL_DEL, fd, &ep_event);
-					if (n==-1){
-						LM_ERR("[%s] removing fd from epoll "
-							"list failed: %s [%d]\n",h->name, strerror(errno), errno);
+					/*
+					 * in some cases (fds managed by external libraries),
+					 * the fd may have already been closed
+					 */
+					if (n==-1 && errno != EBADF) {
+						LM_ERR("[%s] removing fd from epoll (%d from %d) "
+							"list failed: %s [%d]\n",h->name, fd, h->epfd,
+							strerror(errno), errno);
 						goto error;
 					}
 				} else {
@@ -725,6 +727,12 @@ again_devpoll:
 
 	return 0;
 error:
+	/*
+	 * although the DEL operation failed, both
+	 * "fd_hash" and "fd_array" must remain consistent
+	 */
+	fix_fd_array;
+error0:
 	return -1;
 #undef fix_fd_array
 }
