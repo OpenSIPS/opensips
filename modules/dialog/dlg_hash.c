@@ -70,16 +70,20 @@ extern struct tm_binds d_tmb;
 struct dlg_table *d_table = NULL;
 int ctx_dlg_idx = 0;
 
-static inline void raise_state_changed_event(unsigned int ostate, unsigned int nstate);
+static inline void raise_state_changed_event(
+	unsigned int h_entry, unsigned int h_id,
+	unsigned int ostate, unsigned int nstate);
 static str ei_st_ch_name = str_init("E_DLG_STATE_CHANGED");
 static evi_params_p event_params;
 
+static str ei_h_entry = str_init("hash_entry");
+static str ei_h_id = str_init("hash_id");
 static str ei_old_state = str_init("old_state");
 static str ei_new_state = str_init("new_state");
 
 static event_id_t ei_st_ch_id = EVI_ERROR;
 
-static evi_param_p ostate_p, nstate_p;
+static evi_param_p hentry_p, hid_p, ostate_p, nstate_p;
 
 
 int dialog_cleanup( struct sip_msg *msg, void *param )
@@ -778,12 +782,20 @@ int state_changed_event_init(void)
 	}
 	memset(event_params, 0, sizeof(evi_params_t));
 
+	hentry_p = evi_param_create(event_params, &ei_h_entry);
+	if (hentry_p == NULL)
+		goto create_error;
+
+	hid_p = evi_param_create(event_params, &ei_h_id);
+	if (hid_p == NULL)
+		goto create_error;
+
 	ostate_p = evi_param_create(event_params, &ei_old_state);
-	if (event_params == NULL)
+	if (ostate_p == NULL)
 		goto create_error;
 
 	nstate_p = evi_param_create(event_params, &ei_new_state);
-	if (event_params == NULL)
+	if (nstate_p == NULL)
 		goto create_error;
 
 	return 0;
@@ -804,8 +816,28 @@ void state_changed_event_destroy(void)
 /*
  * raise DLG_STATE_CHANGED event
  */
-static void raise_state_changed_event(unsigned int ostate, unsigned int nstate)
+static void raise_state_changed_event(unsigned int h_entry, unsigned int h_id,
+									unsigned int ostate, unsigned int nstate)
 {
+	char b1[INT2STR_MAX_LEN], b2[INT2STR_MAX_LEN];
+	str s1, s2;
+
+	s1.s = int2bstr( (unsigned long)h_entry, b1, &s1.len );
+	s2.s = int2bstr( (unsigned long)h_id, b2, &s2.len );
+	if (s1.s==NULL || s2.s==NULL) {
+		LM_ERR("cannot convert hash params\n");
+		return;
+	}
+	if (evi_param_set_str(hentry_p, &s1) < 0) {
+		LM_ERR("cannot set hash entry parameter\n");
+		return;
+	}
+
+	if (evi_param_set_str(hid_p, &s2) < 0) {
+		LM_ERR("cannot set hash id parameter\n");
+		return;
+	}
+
 	if (evi_param_set_int(ostate_p, &ostate) < 0) {
 		LM_ERR("cannot set old state parameter\n");
 		return;
@@ -985,12 +1017,12 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 	dlg_unlock( d_table, d_entry);
 
 	if (*old_state != *new_state)
-		raise_state_changed_event((unsigned int)(*old_state),
-							(unsigned int)(*new_state));
+		raise_state_changed_event(  dlg->h_entry, dlg->h_id,
+			(unsigned int)(*old_state), (unsigned int)(*new_state) );
 
-	 if (!is_replicated && replication_dests &&
-	(*old_state == DLG_STATE_CONFIRMED_NA || *old_state == DLG_STATE_CONFIRMED) &&
-	dlg->state == DLG_STATE_DELETED)
+	 if ( !is_replicated && replication_dests &&
+	(*old_state==DLG_STATE_CONFIRMED_NA || *old_state==DLG_STATE_CONFIRMED) &&
+	dlg->state==DLG_STATE_DELETED )
 		replicate_dialog_deleted(dlg);
 
 
