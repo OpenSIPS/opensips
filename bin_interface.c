@@ -331,18 +331,9 @@ static int has_valid_checksum(char *buf, int len)
 static void bin_receive_loop(void)
 {
 	int rcv_bytes;
-	unsigned int from_len;
-	union sockaddr_union* from;
 	struct receive_info ri;
 	struct packet_cb_list *p;
 	str name;
-
-	from = pkg_malloc(sizeof(*from));
-	if (!from) {
-		LM_ERR("No more pkg memory!\n");
-		goto exit;
-	}
-	memset(from, 0, sizeof(*from));
 
 	ri.bind_address = bind_address;
 	ri.dst_port = bind_address->port_no;
@@ -352,7 +343,7 @@ static void bin_receive_loop(void)
 
 	for (;;) {
 		rcv_bytes = recvfrom(bind_address->socket, rcv_buf, BUF_SIZE,
-							 0, &from->s, &from_len);
+							 0, NULL, NULL);
 		if (rcv_bytes == -1) {
 			if (errno == EAGAIN) {
 				LM_DBG("packet with bad checksum received\n");
@@ -362,8 +353,8 @@ static void bin_receive_loop(void)
 			LM_ERR("recvfrom: [%d] %s\n", errno, strerror(errno));
 			if (errno == EINTR || errno == EWOULDBLOCK || errno == ECONNREFUSED)
 				continue;
-			else
-				goto exit;
+
+			return;
 		}
 
 		rcv_end = rcv_buf + rcv_bytes;
@@ -401,10 +392,6 @@ static void bin_receive_loop(void)
 			}
 		}
 	}
-
-exit:
-	if (from)
-		pkg_free(from);
 }
 
 /*
@@ -418,7 +405,7 @@ int start_bin_receivers(void)
 	pid_t pid;
 	int i;
 
-	if (udp_init_listener(bin) != 0)
+	if (udp_init_listener(bin, 0) != 0)
 		return -1;
 
 	for (i = 1; i <= bin_children; i++) {
