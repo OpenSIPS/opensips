@@ -22,6 +22,9 @@
  * History:
  * --------
  *  2014-10-14 initial version (Villaron/Tesini)
+ *  2015-03-21 implementing subscriber function (Villaron/Tesini)
+ *  2015-04-29 implementing notifier function (Villaron/Tesini)
+ *  
  */
 
 #include <stdio.h>
@@ -52,7 +55,7 @@ int send_esct(str callid_ori){
     memcpy(callidHeader, callid_ori.s, callid_ori.len);
 
     // extract call cell with same callid from list linked eme_calls
-    LM_INFO(" --- BYE  callid=%s \n", callidHeader);
+    LM_DBG(" --- BYE  callid=%s \n", callidHeader);
     info_call = find_and_delete_esct(callidHeader);
     if (info_call->esct == NULL) {
         LM_ERR(" --- BYE DID NOT FIND CALLID \n");
@@ -62,7 +65,7 @@ int send_esct(str callid_ori){
     if (strlen(info_call->esct->esqk) > 0){
 
         // if VPC provide ESQK then opensips need send esct to free this key
-        LM_INFO(" --- SEND ESQK =%s\n \n",info_call->esct->esqk);
+        LM_DBG(" --- SEND ESQK =%s\n \n",info_call->esct->esqk);
 
         if(info_call->esct->datetimestamp){
             shm_free (info_call->esct->datetimestamp);
@@ -72,7 +75,7 @@ int send_esct(str callid_ori){
         timeinfo = localtime(&rawtime);
         strftime(formated_time, 80, "%Y-%m-%dT%H:%M:%S%Z", timeinfo);        
         info_call->esct->datetimestamp = formated_time;
-        LM_INFO(" --- TREAT BYE - XML ESCT %s \n \n", xml);
+        LM_DBG(" --- TREAT BYE - XML ESCT %s \n \n", xml);
 
         xml = buildXmlFromModel(info_call->esct);    
 
@@ -169,15 +172,15 @@ ESCT* find_esct(char* callId) {
 
     while (current) {
 
-        LM_INFO(" --- CALL_LIST callId  = %s \n", current->esct->callid);
+        LM_DBG(" --- CALL_LIST callId  = %s \n", current->esct->callid);
         if (same_callid(current->esct->callid, callId) == 0) {
-            LM_INFO(" --- FOUND ESCT with callId key = %s ", callId);
+            LM_DBG(" --- FOUND ESCT with callId key = %s ", callId);
             ESCT* esct = current->esct;
             return esct;
         }
         current = current->next;
     }
-    LM_INFO("Did not find\n");
+    LM_DBG("Did not find\n");
     return NULL;
 }
 
@@ -530,7 +533,7 @@ int get_lro_in_contact(char *contact_lro, ESCT *call_cell) {
     call_cell->lro[pt_contact_lro.len] = 0;
     call_cell->disposition = "none";
 
-    LM_INFO ("CONTEUDO TRANS REPLY LRO %.*s \n", pt_contact_lro.len, pt_contact_lro.s);  
+    LM_DBG ("CONTEUDO TRANS REPLY LRO %.*s \n", pt_contact_lro.len, pt_contact_lro.s);  
     pkg_free(contact_lro_aux);
     pkg_free(contact_lro);
 
@@ -556,7 +559,7 @@ int get_esqk_in_contact(char *contact_esgwri, ESCT *call_cell){
     pt_contact_esqk.s = contact_esqk_aux;
     pt_contact_esqk.len = len_contact_esgwri;
 
-    pattern_contact_esqk.s = "Asserted_Identity:=<(sips?:)*[+]*1?([-0-9]+)@";        
+    pattern_contact_esqk.s = "Asserted-Identity:=<(sips?:)*[+]*1?([-0-9]+)@";        
     pattern_contact_esqk.len = strlen(pattern_contact_esqk.s);
     replacement_contact_esqk.s = "\\2";
     replacement_contact_esqk.len = strlen(replacement_contact_esqk.s);
@@ -583,7 +586,7 @@ int get_esqk_in_contact(char *contact_esgwri, ESCT *call_cell){
     memcpy(call_cell->esqk, pt_contact_esqk.s, pt_contact_esqk.len);
     call_cell->esqk[pt_contact_esqk.len] = 0;
 
-    LM_INFO ("CONTEUDO TRANS REPLY ESQK %.*s \n", pt_contact_esqk.len, pt_contact_esqk.s);
+    LM_DBG ("CONTEUDO TRANS REPLY ESQK %.*s \n", pt_contact_esqk.len, pt_contact_esqk.s);
     pkg_free(contact_esqk_aux);
 
     return 1;
@@ -608,14 +611,14 @@ int get_esgwri_ert_in_contact(char *contact_esgwri, ESCT *call_cell){
 
     int len_contact_esgwri =  strlen(contact_esgwri);
 
-    char *p = strstr(contact_esgwri, "P-Asserted_Identity");
+    char *p = strstr(contact_esgwri, "P-Asserted-Identity");
     len_contact_routing = p - contact_esgwri -1;
     contact_routing = pkg_malloc(sizeof (char)*len_contact_routing);
     char *p_aux = contact_esgwri;
     memcpy(contact_routing, ++p_aux, len_contact_routing-1 );
     pkg_free(contact_esgwri);
-    LM_INFO ("CONTEUDO TRANS ESGWRI II %d \n", len_contact_routing); 
-    LM_INFO ("CONTEUDO TRANS ESGWRI II %s \n", contact_routing); 
+    LM_DBG ("CONTEUDO TRANS ESGWRI II %d \n", len_contact_routing); 
+    LM_DBG ("CONTEUDO TRANS ESGWRI II %s \n", contact_routing); 
 
     contact_routing_aux = pkg_malloc(sizeof (char)*len_contact_esgwri);
     if (contact_routing_aux == NULL) {
@@ -632,7 +635,7 @@ int get_esgwri_ert_in_contact(char *contact_esgwri, ESCT *call_cell){
     replacement_contact_routing.len = strlen(replacement_contact_routing.s);
 
     if (reg_replace(pattern_contact_routing.s, replacement_contact_routing.s, contact_routing, &pt_contact_routing) == 1) { 
-        LM_INFO ("CONTEUDO TRANS REPLY ESGWRI %s \n",contact_routing);
+        LM_DBG ("CONTEUDO TRANS REPLY ESGWRI %s \n",contact_routing);
         call_cell->esgwri = shm_malloc(sizeof (char)* len_contact_routing + 1);
         if (call_cell->esgwri == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
@@ -665,7 +668,7 @@ int get_esgwri_ert_in_contact(char *contact_esgwri, ESCT *call_cell){
             return -1;
         }
 
-        LM_INFO ("CONTEUDO TRANS REPLY ERT %.*s \n", pt_contact_routing.len, pt_contact_routing.s);
+        LM_DBG ("CONTEUDO TRANS REPLY ERT %.*s \n", pt_contact_routing.len, pt_contact_routing.s);
         pt_aux = pt_contact_routing.s;
         pt_a = strchr(pt_aux,'.');
         int len_srid = pt_a - pt_contact_routing.s;
@@ -698,9 +701,9 @@ int get_esgwri_ert_in_contact(char *contact_esgwri, ESCT *call_cell){
         npa_aux[len_npa] = 0;
         memcpy(npa_aux, pt_aux, len_npa);  
 
-        LM_INFO ("CONTEUDO TRANS REPLY SRID %s \n",srid_aux);
-        LM_INFO ("CONTEUDO TRANS REPLY RESN %s \n",resn_aux);
-        LM_INFO ("CONTEUDO TRANS REPLY NPA %s \n",npa_aux); 
+        LM_DBG ("CONTEUDO TRANS REPLY SRID %s \n",srid_aux);
+        LM_DBG ("CONTEUDO TRANS REPLY RESN %s \n",resn_aux);
+        LM_DBG ("CONTEUDO TRANS REPLY NPA %s \n",npa_aux); 
         int npa = atoi(npa_aux);
         int resn = atoi(resn_aux);
         int srid_len = strlen(srid_aux);

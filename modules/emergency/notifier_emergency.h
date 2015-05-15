@@ -27,6 +27,7 @@
  *  
  */
 
+
 #include "../../sr_module.h"
 #include "../../dprint.h"
 #include "../../mem/mem.h"
@@ -53,52 +54,20 @@
 #include "../rr/api.h"
 #include "../tm/tm_load.h" /*load_tm_api*/
 
-#include "http_emergency.h" 
+#include "subscriber_emergency.h" 
 
- #define TIMER_N				30
- #define MAXNUMBERLEN 			31
+#define INIT                    0
+#define RESP_WAIT               1
+#define PENDING                 2 
+#define ACTIVE                  3  
+#define TERMINATED              4 
 
-struct sm_subscriber **subs_pt;
-struct tm_binds eme_tm;
+#define TIME_DEFAULT_SUBS		3000
+#define TIMER_MIN_SUBS			200
 
-
-struct dialog_id{
-	str callid;
-	str local_tag;
-	str rem_tag; 
-	int status;
-};
-
-struct sm_subscriber{
-	struct dialog_id dlg_id;
-	struct dialog_id call_dlg_id;
-	str loc_uri;
-	str rem_uri;
-	str contact;
-	str event;
-	int expires;
-	int timeout;
-	int version;
-	struct sm_subscriber *prev;	
-	struct sm_subscriber *next;
-};
-
-struct parms_cb{
-	str callid_ori;
-	str event;
-};
-
-int send_subscriber(struct sip_msg* msg, char* callidHeader, int expires);
-int send_subscriber_within(struct sip_msg* msg, struct sm_subscriber* subs, int expires);
-int get_uris_to_subscribe(struct sip_msg* msg, str* contact, str* notifier, str* subscriber );
-int build_params_cb(struct sip_msg* msg, char* callidHeader,  struct parms_cb* params_cb );
-str* add_hdr_subscriber(int expires, str event);
-void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *params);
-int extract_reply_headers(struct sip_msg* reply, str* callid, int expires);
-int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb);
-int treat_notify(struct sip_msg *msg); 
-struct sm_subscriber* get_subs_cell(struct sip_msg *msg);
-void subs_cback_func_II(struct cell *t, int cb_type, struct tmcb_params *params);
-dlg_t* build_dlg(struct sm_subscriber* subscriber);
-struct sm_subscriber* find_subscriber_cell(str* callId, str* to_tag, str* method);
-int same_dialog_id(struct dialog_id dialog_identy, str* callId, str* to_tag);
+int treat_subscribe(struct sip_msg *msg); 
+int send_notifier_within(struct sip_msg* msg, struct sm_subscriber* notify);
+void notif_cback_func(struct cell *t, int cb_type, struct tmcb_params *params);
+struct sm_subscriber* build_notify_cell(struct sip_msg *msg, int expires);
+str* add_hdr_notifier(struct sm_subscriber* notifier);
+str* add_body_notifier(struct sm_subscriber* notifier);

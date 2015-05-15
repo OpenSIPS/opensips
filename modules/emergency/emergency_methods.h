@@ -22,6 +22,9 @@
  * History:
  * --------
  *  2014-10-14 initial version (Villaron/Tesini)
+ *  2015-03-21 implementing subscriber function (Villaron/Tesini)
+ *  2015-04-29 implementing notifier function (Villaron/Tesini)
+ *  
  */
 
 #include <string.h>
@@ -59,7 +62,7 @@
 
 #include "model.h"
 
-#include "subscriber_emergency.h"
+#include "notifier_emergency.h"
 
 
 #define MAXNUMBERLEN 31

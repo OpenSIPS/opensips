@@ -22,7 +22,9 @@
  * History:
  * --------
  *  2014-10-14 initial version (Villaron/Tesini)
- *  2013-03-21 implementing subscriber function (Villaron/Tesini)
+ *  2015-03-21 implementing subscriber function (Villaron/Tesini)
+ *  2015-04-29 implementing notifier function (Villaron/Tesini)
+ *  
  */
 
 
