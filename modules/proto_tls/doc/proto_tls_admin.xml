@@ -742,7 +742,7 @@ route{
 		<title>Set <varname>tls_crlf_pingpong</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_tcp", "tls_crlf_pingpong", 0)
+modparam("proto_tls", "tls_crlf_pingpong", 0)
 ...
 </programlisting>
 		</example>
@@ -764,7 +764,7 @@ modparam("proto_tcp", "tls_crlf_pingpong", 0)
 		<title>Set <varname>tls_crlf_drop</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_tcp", "tls_crlf_drop", 1)
+modparam("proto_tls", "tls_crlf_drop", 1)
 ...
 </programlisting>
 		</example>
@@ -789,7 +789,7 @@ modparam("proto_tcp", "tls_crlf_drop", 1)
 		<title>Set <varname>tls_max_msg_chunks</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_tcp", "tls_max_msg_chunks", 8)
+modparam("proto_tls", "tls_max_msg_chunks", 8)
 ...
 </programlisting>
 		</example>

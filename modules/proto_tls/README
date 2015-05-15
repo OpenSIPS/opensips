@@ -680,7 +680,7 @@ route{
 
    Example 1.15. Set tls_crlf_pingpong parameter
 ...
-modparam("proto_tcp", "tls_crlf_pingpong", 0)
+modparam("proto_tls", "tls_crlf_pingpong", 0)
 ...
 
 1.6.16. tls_crlf_drop (integer)
@@ -694,7 +694,7 @@ modparam("proto_tcp", "tls_crlf_pingpong", 0)
 
    Example 1.16. Set tls_crlf_drop parameter
 ...
-modparam("proto_tcp", "tls_crlf_drop", 1)
+modparam("proto_tls", "tls_crlf_drop", 1)
 ...
 
 1.6.17. tls_max_msg_chunks (integer)
@@ -710,7 +710,7 @@ modparam("proto_tcp", "tls_crlf_drop", 1)
 
    Example 1.17. Set tls_max_msg_chunks parameter
 ...
-modparam("proto_tcp", "tls_max_msg_chunks", 8)
+modparam("proto_tls", "tls_max_msg_chunks", 8)
 ...
 
 1.7. Pseudo-Variables
