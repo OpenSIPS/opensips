@@ -982,11 +982,11 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 	}
 	*new_state = dlg->state;
 
+	dlg_unlock( d_table, d_entry);
+
 	if (*old_state != *new_state)
 		raise_state_changed_event((unsigned int)(*old_state),
 							(unsigned int)(*new_state));
-
-	dlg_unlock( d_table, d_entry);
 
 	 if (!is_replicated && replication_dests &&
 	(*old_state == DLG_STATE_CONFIRMED_NA || *old_state == DLG_STATE_CONFIRMED) &&
