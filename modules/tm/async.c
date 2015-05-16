@@ -71,6 +71,7 @@ int t_resume_async(int fd, void *param)
 	struct usr_avp **backup_list;
 	struct socket_info* backup_si;
 	struct cell *t= ctx->t;
+	int route;
 
 	LM_DBG("resuming on fd %d, transaction %p \n",fd, t);
 
@@ -119,8 +120,10 @@ int t_resume_async(int fd, void *param)
 	if (async_status == ASYNC_DONE_CLOSE_FD)
 		close(fd);
 
-	/* run the resume_route[] */
+	/* run the resume_route */
+	swap_route_type(route, REQUEST_ROUTE);
 	run_resume_route( ctx->resume_route, &faked_req);
+	set_route_type(route);
 
 	/* no need for the context anymore */
 	shm_free(ctx);
