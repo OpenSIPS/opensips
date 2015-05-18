@@ -39,6 +39,8 @@ typedef struct _async_ctx {
 	void *resume_param;
 	/* the script route to be used to continue after the resume function */
 	int resume_route;
+	/* the type of the route where the suspend was done */
+	int route_type;
 	/* the processing context for the handled message */
 	context_p msg_ctx;
 	/* the transaction for the handled message */
@@ -120,8 +122,8 @@ int t_resume_async(int fd, void *param)
 	if (async_status == ASYNC_DONE_CLOSE_FD)
 		close(fd);
 
-	/* run the resume_route */
-	swap_route_type(route, REQUEST_ROUTE);
+	/* run the resume_route (some type as the original one) */
+	swap_route_type(route, ctx->route_type);
 	run_resume_route( ctx->resume_route, &faked_req);
 	set_route_type(route);
 
@@ -165,21 +167,26 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		}
 		t=get_t();
 	} else {
-		/* update the cloned UAS (from transaction) with data from current msg */
+		/* update the cloned UAS (from transaction)
+		 * with data from current msg */
 		update_cloned_msg_from_msg( t->uas.request, msg);
 	}
 
-	/* run the function (the action) and get back from it the FD, resume function and param */
-	if ( a->type!=AMODULE_T || a->elem[0].type!=ACMD_ST || a->elem[0].u.data==NULL ) {
-		LM_CRIT("BUG - invalid action for async I/O - it must a MODULE_T ACMD_ST \n");
+	/* run the function (the action) and get back from it the FD,
+	 * resume function and param */
+	if ( a->type!=AMODULE_T || a->elem[0].type!=ACMD_ST ||
+	a->elem[0].u.data==NULL ) {
+		LM_CRIT("BUG - invalid action for async I/O - it must be"
+			" a MODULE_T ACMD_ST \n");
 		goto failure;
 	}
 
 	async_status = ASYNC_NO_IO; /*assume defauly status "no IO done" */
-	return_code = ((acmd_export_t*)(a->elem[0].u.data))->function(msg, &ctx_f, &ctx_p,
-			 (char*)a->elem[1].u.data, (char*)a->elem[2].u.data,
-			 (char*)a->elem[3].u.data, (char*)a->elem[4].u.data,
-			 (char*)a->elem[5].u.data, (char*)a->elem[6].u.data );
+	return_code = ((acmd_export_t*)(a->elem[0].u.data))->function(msg,
+			&ctx_f, &ctx_p,
+			(char*)a->elem[1].u.data, (char*)a->elem[2].u.data,
+			(char*)a->elem[3].u.data, (char*)a->elem[4].u.data,
+			(char*)a->elem[5].u.data, (char*)a->elem[6].u.data );
 	/* what to do now ? */
 	if (async_status>=0) {
 		/* async I/O was succesfully launched */
@@ -211,6 +218,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	ctx->resume_f = ctx_f;
 	ctx->resume_param = ctx_p;
 	ctx->resume_route = resume_route;
+	ctx->route_type = route_type;
 	ctx->msg_ctx = current_processing_ctx;
 	ctx->t = t;
 	ctx->kr = get_kr();
