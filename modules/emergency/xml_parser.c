@@ -22,6 +22,9 @@
  * History:
  * --------
  *  2014-10-14 initial version (Villaron/Tesini)
+ *  2015-03-21 implementing subscriber function (Villaron/Tesini)
+ *  2015-04-29 implementing notifier function (Villaron/Tesini)
+ *  
  */
  
 #include <stdio.h>
@@ -236,7 +239,7 @@ char* check_dialog_init_tags( char* str_total){
     complete_tag_begin = "<dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\"";     
     complete_tag_end = "</dialog-info>";
 
-    LM_INFO(" --- CHECK DIALOG FLAGS \n");  
+    LM_DBG(" --- CHECK DIALOG FLAGS \n");  
 
 
     ptr1 = strstr(str_total,complete_tag_begin);
@@ -290,7 +293,7 @@ struct notify_body* parse_notify(char* xml){
     char* target_info;
     char* dialog_body;
 
-    LM_INFO(" --- PARSES NOTYFY BODY \n"); 
+    LM_DBG(" --- PARSES NOTYFY BODY \n"); 
 
     dialog_body = check_dialog_init_tags(xml);
     if (dialog_body == NULL)
@@ -307,22 +310,35 @@ struct notify_body* parse_notify(char* xml){
     pt_dlg_state = strstr(dialog_body,dlg_state);   
     pt_entity = strstr(dialog_body,entity);
     pt_end_entity = strstr(dialog_body,">"); 
-    notify->params->version = copy_str_between_tow_pointers_simple(pt_version + strlen(version), pt_dlg_state);
-    notify->params->state = copy_str_between_tow_pointers_simple(pt_dlg_state + strlen(dlg_state), pt_entity);
-    notify->params->entity = copy_str_between_tow_pointers_simple(pt_entity + strlen(entity), pt_end_entity);
-   
+
+    if (pt_version == NULL || pt_dlg_state == NULL || pt_entity == NULL || pt_end_entity == NULL)
+        return NULL;
+
     target_info = copy_str_between_tow_tags_simple(dialog,dialog_body);
+    if (target_info == NULL)
+        return NULL;
+
+    notify->state = copy_str_between_tow_tags(state,dialog_body);
+    if (notify->state == NULL)
+        return NULL;
+   
     pt_dialog_id = strstr(target_info,dialog_id);
     pt_callid = strstr(target_info,callid);
     pt_local_tag = strstr(target_info,local_tag);
     pt_direction = strstr(target_info,direction);   
     pt_end_direction = strstr(target_info,">");
+
+    if (pt_dialog_id == NULL || pt_callid == NULL || pt_local_tag == NULL || pt_direction == NULL || pt_end_direction == NULL)
+        return NULL;
+
+    notify->params->version = copy_str_between_tow_pointers_simple(pt_version + strlen(version), pt_dlg_state);
+    notify->params->state = copy_str_between_tow_pointers_simple(pt_dlg_state + strlen(dlg_state), pt_entity);
+    notify->params->entity = copy_str_between_tow_pointers_simple(pt_entity + strlen(entity), pt_end_entity);
+
     notify->target->dialog_id = copy_str_between_tow_pointers_simple(pt_dialog_id + strlen(dialog_id), pt_callid);
     notify->target->callid = copy_str_between_tow_pointers_simple(pt_callid + strlen(callid), pt_local_tag);
     notify->target->local_tag = copy_str_between_tow_pointers_simple(pt_local_tag + strlen(local_tag), pt_direction);
     notify->target->direction = copy_str_between_tow_pointers_simple(pt_direction + strlen(direction), pt_end_direction);
-
-    notify->state = copy_str_between_tow_tags(state,dialog_body);
 
     return notify; 
 
@@ -349,12 +365,12 @@ PARSED* parse_xml(char* xml){
     char* npa = "npa";
     
     char *new_vpc, *new_destination, *new_ert;
-    //LM_INFO(" --- STEP 1");
+    //LM_DBG(" --- STEP 1");
     PARSED *parsed = pkg_malloc(sizeof(PARSED));
     parsed->vpc =pkg_malloc(sizeof(NENA));
     parsed->destination =pkg_malloc(sizeof(NENA));
     parsed->ert =pkg_malloc(sizeof(ERT));
-    //LM_INFO(" --- STEP 2");
+    //LM_DBG(" --- STEP 2");
 
     if (check_str_between_init_tags(xml))
         return NULL;       
@@ -418,7 +434,7 @@ PARSED* parse_xml(char* xml){
 
 int isNotBlank(char *str){
     if(str == NULL){
-        //LM_INFO("STR NULL...\n");
+        //LM_DBG("STR NULL...\n");
         return -1;
     }
     if (strcmp(str, "") == 0){
@@ -432,48 +448,28 @@ int isNotBlank(char *str){
 char* buildXmlFromModel(ESCT* esct){
 
     int len_buf = findOutSize(esct);
-    LM_INFO("AQUI I %d \n", len_buf);
     char* resp = pkg_malloc(sizeof(char)* len_buf);
     if (resp == NULL) {
         LM_ERR("--------------------------------------------------no more pkg memory\n");
         return NULL;
     }           
-    LM_INFO("AQUI II VPC ORG %s \n", esct->vpc->organizationname);
-    LM_INFO("AQUI II VPC HOST %s \n", esct->vpc->hostname);
-    LM_INFO("AQUI II SOURCE ORG %s \n", esct->source->organizationname);
-    LM_INFO("AQUI II SOURCE HOST %s \n", esct->source->hostname);        
-    LM_INFO("AQUI II SOURCE NENA %s \n", esct->source->nenaid);
-    LM_INFO("AQUI II SOURCE CONTACT %s \n", esct->source->contact); 
-    LM_INFO("AQUI II SOURCE CERTURI %s \n", esct->source->certuri); 
-    LM_INFO("AQUI II ESGW %s \n", esct->esgwri);    
-    LM_INFO("AQUI II ESQK %s \n", esct->esqk); 
-    LM_INFO("AQUI II CALLID %s \n", esct->callid); 
-    LM_INFO("AQUI II TIME %s \n", esct->datetimestamp);
 
     sprintf(resp, XML_MODEL_ESCT ,esct->vpc->organizationname, esct->vpc->hostname,
             esct->source->organizationname , esct->source->hostname, esct->source->nenaid ,
             esct->source->contact, esct->source->certuri ,
-            esct->esgwri , esct->esqk , esct->callid , esct->datetimestamp); 
-        LM_INFO("AQUI III \n");               
+            esct->esgwri , esct->esqk , esct->callid , esct->datetimestamp);               
     return resp;
 }
 
 unsigned long findOutSize(ESCT* esct){
     unsigned long resp = 0;
-    LM_INFO("AQUI X \n");
     resp = strlen(XML_MODEL_ESCT);
-    if(esct != NULL){
-        LM_INFO("AQUI XI \n");        
+    if(esct != NULL){      
         resp += esct->callid != NULL ? strlen(esct->callid) : 0;
-        LM_INFO("AQUI I \n");
         resp += esct->esgwri != NULL ? strlen(esct->esgwri) : 0;
-        LM_INFO("AQUI II \n");
-        resp += esct->esqk != NULL ? strlen(esct->esqk) : 0;
-        LM_INFO("AQUI III \n");       
-        resp += esct->datetimestamp != NULL ? strlen(esct->datetimestamp) : 0;
-        LM_INFO("AQUI XII \n");        
-        resp += findOutNenaSize(esct->vpc);
-        LM_INFO("AQUI XIII \n");         
+        resp += esct->esqk != NULL ? strlen(esct->esqk) : 0;      
+        resp += esct->datetimestamp != NULL ? strlen(esct->datetimestamp) : 0;        
+        resp += findOutNenaSize(esct->vpc);       
         resp += findOutNenaSize(esct->source);
     }
     return resp;

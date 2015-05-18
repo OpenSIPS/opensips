@@ -125,8 +125,10 @@ static int setup_mcast_rcvr(int sock, union sockaddr_union* addr)
  * Initialize a UDP socket, supports multicast, IPv4 and IPv6.
  * \param si socket that should be bind
  * \return zero on success, -1 otherwise
+ *
+ * @status_flags - extra status flags to be set for the socket fd
  */
-int udp_init_listener(struct socket_info *si)
+int udp_init_listener(struct socket_info *si, int status_flags)
 {
 	union sockaddr_union* addr;
 	int optval;
@@ -146,17 +148,21 @@ int udp_init_listener(struct socket_info *si)
 		LM_ERR("socket: %s\n", strerror(errno));
 		goto error;
 	}
+
 	/* make socket non-blocking */
-	optval=fcntl(si->socket, F_GETFL);
-	if (optval==-1){
-		LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
-		goto error;
+	if (status_flags) {
+		optval=fcntl(si->socket, F_GETFL);
+		if (optval==-1){
+			LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+			goto error;
+		}
+		if (fcntl(si->socket,F_SETFL,optval|status_flags)==-1){
+			LM_ERR("set non-blocking failed: (%d) %s\n",
+				errno, strerror(errno));
+			goto error;
+		}
 	}
-	if (fcntl(si->socket,F_SETFL,optval|O_NONBLOCK)==-1){
-		LM_ERR("set non-blocking failed: (%d) %s\n",
-			errno, strerror(errno));
-		goto error;
-	}
+
 	/* set sock opts? */
 	optval=1;
 	if (setsockopt(si->socket, SOL_SOCKET, SO_REUSEADDR ,
@@ -326,7 +332,7 @@ int udp_start_nofork(void)
 			LM_WARN("discarding all listen addresses for protocol %s\n",
 				protos[p].name);
 
-	if (udp_init_listener(si)<0) {
+	if (udp_init_listener(si, O_NONBLOCK) < 0) {
 		LM_ERR("failed to init the single UDP listener\n");
 		return -1;
 	}

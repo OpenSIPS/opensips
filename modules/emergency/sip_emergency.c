@@ -22,7 +22,9 @@
  * History:
  * --------
  *  2014-10-14 initial version (Villaron/Tesini)
- *  2013-03-21 implementing subscriber function (Villaron/Tesini)
+ *  2015-03-21 implementing subscriber function (Villaron/Tesini)
+ *  2015-04-29 implementing notifier function (Villaron/Tesini)
+ *  
  */
 
 #include <stdio.h>
@@ -45,7 +47,7 @@ const char *SUBSCRIPTION_STATE_PARAM = ";expires=";
 const char *EVENT_TYPE = "dialog";
 
 const char *CALLID_PARAM = "call-id=";
-const char *FROMTAG_PARAM = "; from-tag=";
+const char *FROMTAG_PARAM = ";from-tag=";
 
 #define PAI_SUFFIX               ";user=phone;CBN="
 #define PAI_SUFFIX_LEN           (sizeof(PAI_SUFFIX)-1)
@@ -103,11 +105,17 @@ int check_geolocation_header(struct sip_msg *msg) {
 *  - extracts state and expire values from Subscription_state header from Notify
 */
 int get_subscription_state_header(struct sip_msg *msg, char** subs_state, char** expires) {
-    char* p;
-    int size_status;
-    int size_expires;
 
-    LM_INFO(" --- get_subscription_state_header\n\n");
+    char *state_aux;
+    char *expires_aux;
+    char *body;       
+    str pt_state;
+    str pt_expires;
+    str pattern_state;
+    str replacement_state;
+    str replacement_expires;
+
+    LM_DBG(" --- get_subscription_state_header\n\n");
     if (parse_headers(msg, HDR_OTHER_F, 0) == -1) {
         LM_ERR("NO HEADER header\n");
         return 0;
@@ -117,27 +125,61 @@ int get_subscription_state_header(struct sip_msg *msg, char** subs_state, char**
     while (atual != NULL) {
         LM_DBG(" --- HEADERS: %.*s\n\n",  atual->name.len, atual->name.s );
         if ( strncmp(atual->name.s , SUBSCRIPTION_STATE, atual->name.len) == 0){
-
-            p = strstr(atual->body.s, SUBSCRIPTION_STATE_PARAM);
-            size_status = p - atual->body.s;
-            *subs_state = pkg_malloc(sizeof (char) * size_status + 1);
-            if (*subs_state == NULL) {
-                LM_ERR("NO MEMORY\n");
+            
+            body = pkg_malloc(sizeof (char)*atual->body.len + 1);
+            if (body == NULL) {
+                LM_ERR("no more pkg memory\n");
                 return 0;
             }
-            memset(*subs_state, '\0', size_status + 1);
-            strncpy(*subs_state, atual->body.s, size_status);
-
-            size_expires = atual->body.len - size_status - 9;
-            *expires = pkg_malloc(sizeof (char) * size_expires + 1);
-            if (*expires == NULL) {
-                LM_ERR("NO MEMORY\n");
-                return 0;
+            memcpy( body, atual->body.s, atual->body.len); 
+            body[atual->body.len] = 0;
+            if ( strstr(body , "terminated") != NULL){               
+                state_aux = "terminated";
+                *subs_state = state_aux; 
+                *expires = NULL;
+                return 1;
             }
-            memset(*expires, '\0', size_expires + 1);
-            strncpy(*expires, p + 9, size_expires);  
 
-            return 1;
+            LM_INFO(" --- Subscription_state body: %.*s\n\n", atual->body.len, atual->body.s);
+            state_aux = pkg_malloc(sizeof (char)*MAXNUMBERLEN);
+            if (state_aux == NULL) {
+                LM_ERR("no more pkg memory\n");
+                return 0;
+            } 
+
+            memset(state_aux, 0,MAXNUMBERLEN);
+            pt_state.s = state_aux;
+            pt_state.len = MAXNUMBERLEN - 1;
+
+            pattern_state.s = "^\s*([a-z]+)\s*;\s*expires\s*=\s*([0-9]+)";                
+            pattern_state.len = strlen(pattern_state.s);
+            replacement_state.s = "\\1";
+            replacement_state.len = strlen(replacement_state.s);
+
+            if (reg_replace(pattern_state.s, replacement_state.s, atual->body.s, &pt_state) == 1) { 
+                LM_INFO(" --- REPLACE OK\n\n");
+                *subs_state = state_aux;           
+
+                expires_aux = pkg_malloc(sizeof (char)*MAXNUMBERLEN);
+                if (expires_aux == NULL) {
+                    LM_ERR("no more pkg memory\n");
+                    return 0;
+                }
+                memset(expires_aux, 0,MAXNUMBERLEN);
+                pt_expires.s = expires_aux;
+                pt_expires.len = MAXNUMBERLEN - 1;
+
+                replacement_expires.s = "\\2";
+                replacement_expires.len = strlen(replacement_expires.s);       
+                if (reg_replace(pattern_state.s, replacement_expires.s, atual->body.s, &pt_expires) == 1) {        
+                    *expires = expires_aux;
+                    return 1;
+                }
+
+            }
+
+            LM_INFO(" --- REPLACE NOK\n\n");
+            return 0;
 
         }
         atual = atual->next;
@@ -151,12 +193,11 @@ int get_subscription_state_header(struct sip_msg *msg, char** subs_state, char**
 */
 int get_expires_header(struct sip_msg *msg, char** expires) {
 
-    LM_INFO(" --- get_expires_header\n\n");
+    LM_DBG(" --- get_expires_header\n\n");
 
-    LM_INFO("EVENT: %.*s \n", msg->expires->body.len, msg->expires->body.s);
+    LM_DBG("EVENT: %.*s \n", msg->expires->body.len, msg->expires->body.s);
 
     if (msg->expires->body.len > 0){
-
         *expires = pkg_malloc(sizeof (char) * msg->expires->body.len + 1);
         if (*expires == NULL) {
             LM_ERR("NO MEMORY\n");
@@ -178,9 +219,15 @@ int get_expires_header(struct sip_msg *msg, char** expires) {
 *  - extracts state and expire values from Subscription_state header from Notify
 */
 int get_event_header(struct sip_msg *msg, char** subs_callid, char** from_tag) {
-    char *p, *q, *r;
-    int size_callid;
-    int size_fromtag;  
+
+    char* callid_aux;
+    char* ftag_aux; 
+    str pt_callid;
+    str pt_ftag;
+    str pattern_callid;
+    str replacement_callid;
+    str replacement_ftag;
+
 
     LM_INFO(" --- get_event_header\n\n");
     if (parse_headers(msg, HDR_OTHER_F, 0) == -1) {
@@ -192,58 +239,49 @@ int get_event_header(struct sip_msg *msg, char** subs_callid, char** from_tag) {
 
     if (msg->event->body.len > 0){
 
-        p = strstr(msg->event->body.s, CALLID_PARAM);
-        if (p == NULL){
-            return 0;            
-        }
-        p += 8;
 
-        // extract \" e delimiter field
-        r = strchr (p, '\x22');
-        if (r != NULL){
-            r++;
-            p = r;
-        }
-        r = strchr (p, ';');
-        if (r == NULL){
-            LM_ERR("NOT found from-tag parm \n"); 
+
+        LM_INFO(" --- Event body: %.*s\n\n",msg->event->body.len, msg->event->body.s);
+        callid_aux = pkg_malloc(sizeof (char)*MAXNUMBERLEN);
+        if (callid_aux == NULL) {
+            LM_ERR("no more pkg memory\n");
             return 0;
         }
-        size_callid = r - p;
-        r = strchr (p, '\x22');
-        if (r != NULL){
-            size_callid = r - p;
+        memset(callid_aux, 0,MAXNUMBERLEN);
+        pt_callid.s = callid_aux;
+        pt_callid.len = MAXNUMBERLEN - 1;
+
+        //pattern_callid.s = "^\s*dialog\s*;\s*call\-id\s*=\s*([\x21-\x7E]+)\s*;\s*from\-tag\s*=\s*([-a-z0-9]+)"; 
+        pattern_callid.s = "call-id\s*=\s*[\x22]?([\x23-\x7E]+)\s*[\x22]?\s*;\s*from-tag\s*=\s*([-a-z0-9]+)"; 
+        pattern_callid.len = strlen(pattern_callid.s);
+        replacement_callid.s = "\\1";
+        replacement_callid.len = strlen(replacement_callid.s);
+
+        if (reg_replace(pattern_callid.s, replacement_callid.s, msg->event->body.s, &pt_callid) == 1) { 
+            LM_INFO(" --- REPLACE OK\n\n");
+            *subs_callid = callid_aux;           
+
+            ftag_aux = pkg_malloc(sizeof (char)*MAXNUMBERLEN);
+            if (ftag_aux == NULL) {
+                LM_ERR("no more pkg memory\n");
+                return 0;
+            }
+            memset(ftag_aux, 0,MAXNUMBERLEN);
+            pt_ftag.s = ftag_aux;
+            pt_ftag.len = MAXNUMBERLEN - 1;
+
+            replacement_ftag.s = "\\2";
+            replacement_ftag.len = strlen(replacement_ftag.s);       
+            if (reg_replace(pattern_callid.s, replacement_ftag.s, msg->event->body.s, &pt_ftag) == 1) {  
+                LM_INFO(" --- REPLACE OK II\n\n");                 
+                *from_tag = ftag_aux;
+                return 1;
+            }
+
         }
-
-        LM_INFO("SIZE_CALLID %d \n", size_callid); 
-
-        // looking for from-tag param
-        q = strstr(msg->event->body.s, FROMTAG_PARAM);
-        if (q == NULL){
-            return 0;            
-        } 
-
-        *subs_callid = pkg_malloc(sizeof (char) * size_callid + 1);
-        if (*subs_callid == NULL) {
-            LM_ERR("NO MEMORY\n");
-            return 0;
-        }
-        memset(*subs_callid, '\0', size_callid + 1);
-        strncpy(*subs_callid, p, size_callid);
-
-        q += 10;
-        size_fromtag = (msg->event->body.s + msg->event->body.len) - q;
-        LM_INFO("SIZE_FROM %d \n", size_fromtag);  
-
-        *from_tag = pkg_malloc(sizeof (char) * size_fromtag + 1);
-        if (*from_tag == NULL) {
-            LM_ERR("NO MEMORY\n");
-            return 0;
-        }
-        memset(*from_tag, '\0', size_fromtag + 1);
-        strncpy(*from_tag, q, size_fromtag);  
-       
-        return 1;
+        LM_INFO(" --- REPLACE NOK\n\n");
+      
+        return 0;
 
     }
 
@@ -441,13 +479,13 @@ int found_CBN(struct sip_msg *msg, char** cbn_aux) {
 */
 int check_event_header(struct sip_msg *msg) {
 
-    LM_INFO(" --- get_event_header\n\n");
+    LM_DBG(" --- get_event_header\n\n");
     if (parse_headers(msg, HDR_OTHER_F, 0) == -1) {
         LM_ERR("NO HEADER header\n");
         return 0;
     }
 
-    LM_INFO(" -----------EVENT HEADER %.*s \n \n", msg->event->body.len, msg->event->body.s);
+    LM_DBG(" -----------EVENT HEADER %.*s \n \n", msg->event->body.len, msg->event->body.s);
     if(strncmp(msg->event->body.s,EVENT_TYPE,6) == 0)
         return 1;
 
@@ -692,6 +730,7 @@ int add_headers(char *esqk, struct sip_msg *msg, str cbn) {
     LM_DBG(" --- F (CALLBACK) \n \n");
     int resp = 1;
 
+
     // get ip address of opensips server in port that receive INVITE 
     if (get_ip_socket(msg, &s_addr) == -1){
         pkg_free(cbn.s);
@@ -702,12 +741,12 @@ int add_headers(char *esqk, struct sip_msg *msg, str cbn) {
 
     // if package has already PAI header that delete this header
     if (msg->pai) {
-        LM_INFO("PAI: [%.*s]\n", msg->pai->body.len, msg->pai->body.s);
-        LM_INFO("PAI: %d \n", msg->pai->len); 
+        LM_DBG("PAI: [%.*s]\n", msg->pai->body.len, msg->pai->body.s);
+        LM_DBG("PAI: %d \n", msg->pai->len); 
 
 
         l = del_lump( msg, msg->pai->name.s - msg->buf, msg->pai->len, HDR_PAI_T);
-         if (l==NULL) {
+        if (l==NULL) {
             LM_ERR("failed to add del lump\n");
             resp = -1;
             goto end;
@@ -715,8 +754,8 @@ int add_headers(char *esqk, struct sip_msg *msg, str cbn) {
 
     }
 
-    l = anchor_lump(msg, msg->from->body.s+msg->from->body.len-msg->buf+1,
--                                               HDR_USERAGENT_T);
+
+    l = anchor_lump(msg, msg->from->body.s+msg->from->body.len-msg->buf+1,HDR_USERAGENT_T);
     if (l == NULL) {
         LM_ERR("failed to create anchor lump\n");
         resp = -1;
@@ -731,8 +770,8 @@ int add_headers(char *esqk, struct sip_msg *msg, str cbn) {
         return -1;
     }
 
-    LM_INFO(" --- CBN_NUMBER = %.*s \n \n", cbn.len, cbn.s);
-    LM_INFO(" --- CBN_NUMBER_LEN = %d \n \n", cbn.len);
+    LM_DBG(" --- CBN_NUMBER = %.*s \n \n", cbn.len, cbn.s);
+    LM_DBG(" --- CBN_NUMBER_LEN = %d \n \n", cbn.len);
 
     p = s;
     memcpy(p, P_ASSERTED_HDR, P_ASSERTED_HDR_LEN);
@@ -801,8 +840,7 @@ int add_hdr_PAI(struct sip_msg *msg, str cbn) {
 
     }
 
-    l = anchor_lump(msg, msg->from->body.s+msg->from->body.len-msg->buf+2,
--                                               HDR_USERAGENT_T);
+    l = anchor_lump(msg, msg->from->body.s+msg->from->body.len-msg->buf+2,HDR_USERAGENT_T);
     if (l == NULL) {
         resp = -1;
         goto end;
@@ -911,6 +949,7 @@ int proxy_request(struct sip_msg *msg,char *call_server_hostname) {
         LM_ERR("emergency call server not defined\n");
         return -1;
     }
+
     if ((parse_sip_msg_uri(msg) < 0) ||
             (!msg->parsed_uri.user.s) ||
             (msg->parsed_uri.user.len > MAXNUMBERLEN)) {
@@ -918,7 +957,7 @@ int proxy_request(struct sip_msg *msg,char *call_server_hostname) {
         return -1;
     }
 
-    LM_DBG(" ---USER: %.*s \n\n", msg->parsed_uri.user.len, msg->parsed_uri.user.s);
+    LM_INFO(" ---USER: %.*s \n\n", msg->parsed_uri.user.len, msg->parsed_uri.user.s);
     int server_host_len = strlen(call_server_hostname);
     size_new_uri = server_host_len + msg->parsed_uri.user.len + 6;
 
@@ -936,8 +975,8 @@ int proxy_request(struct sip_msg *msg,char *call_server_hostname) {
     *ack_aux = '@';
     ack_aux++;
     memcpy(ack_aux, call_server_hostname, server_host_len);
-    LM_INFO(" ---NEW_URI: %s \n\n", ack_uri);
-    LM_INFO(" ---NEW_URI -TAM : %d \n\n", size_new_uri);
+    LM_DBG(" ---NEW_URI: %s \n\n", ack_uri);
+    LM_DBG(" ---NEW_URI -TAM : %d \n\n", size_new_uri);
     
     if(new_uri_proxy(msg, ack_uri) == -1){
         LM_ERR(" ---ERRO EM NEW_URI_PROXY");
@@ -979,6 +1018,8 @@ int extract_contact_hdrs(struct sip_msg *reply, char **contact_esgwri, char **co
 
     struct hdr_field *contact_hdr;    
     struct hdr_field *contact_hdr_II;
+    char* contact_aux;
+    char* contact_lro_aux;
 
     LM_INFO ("TRANS REPLY %.*s \n", reply->first_line.u.reply.reason.len, reply->first_line.u.reply.reason.s); 
     LM_INFO ("TRANS REPLY CODE%d \n", reply->first_line.u.reply.statuscode);
@@ -999,48 +1040,53 @@ int extract_contact_hdrs(struct sip_msg *reply, char **contact_esgwri, char **co
         return -1;
     }
     contact_hdr = reply->contact;
-    LM_INFO ("TRANS REPLY %.*s \n", contact_hdr->body.len, contact_hdr->body.s);   
+    LM_DBG ("TRANS REPLY %.*s \n", contact_hdr->body.len, contact_hdr->body.s);   
     // verify if exist another contact header
     if (contact_hdr->sibling != NULL){
         contact_hdr_II =  contact_hdr->sibling;
-        LM_INFO ("TRANS REPLY II %.*s \n", contact_hdr_II->body.len, contact_hdr_II->body.s); 
+        LM_DBG ("TRANS REPLY II %.*s \n", contact_hdr_II->body.len, contact_hdr_II->body.s); 
     }else{
         contact_hdr_II = NULL;
     }
     // match de contact headers with information about esgwri and lro
-    if (strstr(contact_hdr->body.s, "P-Asserted_Identity") != NULL){
-        LM_INFO("CONTACT_HDR %d \n", contact_hdr->body.len);
-        *contact_esgwri = pkg_malloc(sizeof (char)*contact_hdr->body.len + 1);
-        *contact_esgwri[contact_hdr->body.len] = 0;
-        memcpy(*contact_esgwri,contact_hdr->body.s,contact_hdr->body.len);
-        if (contact_hdr_II != NULL){
-            LM_INFO("CONTACT_HDR %d \n", contact_hdr_II->body.len);            
-            *contact_lro = pkg_malloc(sizeof (char)*contact_hdr_II->body.len + 1);
-            *contact_lro[contact_hdr_II->body.len] = 0;          
-            memcpy(*contact_lro,contact_hdr_II->body.s,contact_hdr_II->body.len);
+    if (strstr(contact_hdr->body.s, "P-Asserted-Identity") != NULL){
+        LM_DBG("CONTACT_HDR %d \n", contact_hdr->body.len);       
+        contact_aux = pkg_malloc(contact_hdr->body.len + 1);      
+        contact_aux[contact_hdr->body.len] = 0;
+        memcpy(contact_aux,contact_hdr->body.s,contact_hdr->body.len);
+        *contact_esgwri = contact_aux;
+        if (contact_hdr_II != NULL){           
+            LM_DBG("CONTACT_HDR %d \n", contact_hdr_II->body.len);            
+            contact_lro_aux = pkg_malloc(sizeof (char)*contact_hdr_II->body.len + 1);
+            contact_lro_aux[contact_hdr_II->body.len] = 0;          
+            memcpy(contact_lro_aux,contact_hdr_II->body.s,contact_hdr_II->body.len);
+            *contact_lro = contact_lro_aux;
         }     
 
     }else{
         if (contact_hdr_II != NULL){
-            if (strstr(contact_hdr_II->body.s, "P-Asserted_Identity") != NULL){
-                *contact_esgwri = pkg_malloc(sizeof (char)*contact_hdr_II->body.len + 1);
-                *contact_esgwri[contact_hdr_II->body.len] = 0;
-                memcpy(*contact_esgwri,contact_hdr_II->body.s,contact_hdr_II->body.len);
+            if (strstr(contact_hdr_II->body.s, "P-Asserted-Identity") != NULL){
+                contact_aux = pkg_malloc(sizeof (char)*contact_hdr_II->body.len + 1);
+                contact_aux[contact_hdr_II->body.len] = 0;
+                memcpy(contact_aux,contact_hdr_II->body.s,contact_hdr_II->body.len);
+                *contact_esgwri = contact_aux;
 
-                *contact_lro = pkg_malloc(sizeof (char)*contact_hdr->body.len + 1);
-                *contact_lro[contact_hdr->body.len] = 0;
-                memcpy(*contact_lro,contact_hdr->body.s,contact_hdr->body.len);  
+                contact_lro_aux = pkg_malloc(sizeof (char)*contact_hdr->body.len + 1);
+                contact_lro_aux[contact_hdr->body.len] = 0;
+                memcpy(contact_lro_aux,contact_hdr->body.s,contact_hdr->body.len); 
+                *contact_lro = contact_lro_aux;                
             }else{  
                 return -1;
             }
         }else{
-            *contact_lro = pkg_malloc(sizeof (char)*contact_hdr->body.len + 1);
-            *contact_lro[contact_hdr->body.len] = 0;
-            memcpy(*contact_lro,contact_hdr->body.s,contact_hdr->body.len);        
+            contact_lro_aux = pkg_malloc(sizeof (char)*contact_hdr->body.len + 1);
+            contact_lro_aux[contact_hdr->body.len] = 0;
+            memcpy(contact_lro_aux,contact_hdr->body.s,contact_hdr->body.len);
+            *contact_lro = contact_lro_aux;                    
         }
     }
-    LM_INFO ("TRANS LRO %s \n", *contact_lro);
-    LM_INFO ("TRANS ESGWRI %s \n", *contact_esgwri); 
+    LM_DBG ("TRANS LRO %s \n", *contact_lro);
+    LM_DBG ("TRANS ESGWRI %s \n", *contact_esgwri); 
 
     return 1; 
 

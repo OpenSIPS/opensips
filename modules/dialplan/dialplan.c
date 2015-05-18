@@ -65,6 +65,7 @@ static int mi_child_init();
 
 static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree,void *param);
 static struct mi_root * mi_translate(struct mi_root *cmd_tree, void *param);
+static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param);
 static int dp_translate_f(struct sip_msg *m, char *id, char *out, char *attrs);
 static int dp_trans_fixup(void ** param, int param_no);
 static int dp_set_partition(modparam_t type, void* val);
@@ -96,6 +97,7 @@ static param_export_t mod_params[]={
 static mi_export_t mi_cmds[] = {
 	{ "dp_reload",  0, mi_reload_rules,   0,       0,  mi_child_init},
 	{ "dp_translate",  0, mi_translate,   0,       0,              0},
+	{ "dp_show_partition",  0, mi_show_partition,   0,       0,              0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -187,8 +189,8 @@ static dp_head_p dp_get_head(str part_name){
 
 	dp_head_p start;
 
-	for (start = dp_hlist; start && 
-				str_strcmp(&part_name, &start->partition); 
+	for (start = dp_hlist; start &&
+				str_strcmp(&part_name, &start->partition);
 							  start = start->next);
 
 	return start;
@@ -284,7 +286,7 @@ static inline str* get_param(const char ch_type, str* main_str)
 	char* end;
 	int ptr;
 
-	
+
 	while ( is_space( main_str->s )) {
 		main_str->s++;
 		main_str->len--;
@@ -314,59 +316,66 @@ static inline str* get_param(const char ch_type, str* main_str)
 static int dp_create_head(str part_desc)
 {
 
-	str tmp = { part_desc.s, part_desc.len };
-	str* partition = NULL, *param_type = NULL, *param_value = NULL;
+	str tmp;
+	str *partition;
+	str param_type, param_value;
 
-	char* end;
-	int ptr, ulen = strlen(PARAM_URL), tlen = strlen(PARAM_TABLE);
+	char* end, *start;
+	int ulen = strlen(PARAM_URL), tlen = strlen(PARAM_TABLE);
 
-	while (is_space( tmp.s)) {
-		tmp.s++;
-		tmp.len--;
-	}
+	tmp.s = part_desc.s;
+	end = q_memchr(part_desc.s, DP_CHAR_COLON, part_desc.len);
+	if (end == NULL)
+		goto out_err;
 
-	end = memchr( tmp.s, DP_CHAR_COLON, tmp.len);
-	ptr = end - part_desc.s;
+	tmp.len = end - tmp.s;
+	str_trim_spaces_lr(tmp);
 
-	tmp.len -= ptr+1;
-
-	while ( is_space( part_desc.s + ptr - 1))
-		ptr--; 
-
-	partition = str_n_dup( &tmp, ptr);
-
-	tmp.s = end;
-
-	if (!tmp.s) {
-		LM_ERR("Invalid partition string definition\n");
-		return -1;
-	}
-
-	tmp.s++;
+	partition = str_n_dup( &tmp, tmp.len);
+	if (partition == NULL)
+		goto mem_err;
 
 	do {
-		if(! (param_type = get_param(DP_CHAR_EQUAL , &tmp))){
-			LM_ERR("In getting parameter type\n");
-			return -1;
-		}
-		if(! (param_value = get_param(DP_CHAR_SCOLON, &tmp))){
-			LM_ERR("In getting parameter value\n");
-			return -1;
-		}
+		start = ++end;
 
-		if ( !memcmp(param_type->s, PARAM_URL, ulen)) {
-			dp_head_insert( DP_TYPE_URL, *param_value,
+		end = q_memchr(start, DP_CHAR_SCOLON,
+				part_desc.s + part_desc.len - start);
+		if (end == NULL)
+			break;
+
+		param_type.s = start;
+		param_value.s = q_memchr(start, DP_CHAR_EQUAL,
+				part_desc.len + part_desc.s - start);
+
+		if (param_value.s == 0)
+			goto out_err;
+
+		param_type.len = (param_value.s - 1) - param_type.s;
+		param_value.len = end - (++param_value.s);
+
+		str_trim_spaces_lr(param_type);
+		str_trim_spaces_lr(param_value);
+
+		if ( !memcmp(param_type.s, PARAM_URL, ulen)) {
+			dp_head_insert( DP_TYPE_URL, param_value,
 								*partition);
-		} else if ( !memcmp( param_type->s, PARAM_TABLE, tlen)) {
-			dp_head_insert( DP_TYPE_TABLE, *param_value, 
+		} else if ( !memcmp( param_type.s, PARAM_TABLE, tlen)) {
+			dp_head_insert( DP_TYPE_TABLE, param_value,
 								*partition);
 		} else {
 			LM_ERR("Invalid parameter type\n");
 			return -1;
 		}
-	} while(tmp.len > 0);
+	} while(1);
 
 	return 0;
+
+out_err:
+	LM_ERR("invalid partition param definition\n");
+	return -1;
+mem_err:
+	LM_ERR("no more memory\n");
+	return -1;
 }
 
 
@@ -528,11 +537,11 @@ static void mod_destroy(void)
 	LM_DBG("Disconnecting from all databases\n");
 	for(el = dp_conns; el ; el = el->next){
 		dp_disconnect_db(el);
-		
+
 		LM_DBG("Succesfully disconnected from DB %.*s\n" ,
 						 el->db_url.len, el->db_url.s);
 	}
-	
+
 
 	destroy_data();
 }
@@ -659,14 +668,14 @@ static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
 
 	switch( id_par->type ) {
 		case DP_VAL_INT :
-			if (dp_get_svalue(msg, id_par->v.pv_id.partition, 
+			if (dp_get_svalue(msg, id_par->v.pv_id.partition,
 							    &partition_name)) {
 				LM_ERR("invalid partition\n");
 				return -1;
 			}
 			goto GET_CONN;
 		case DP_VAL_SPEC :
-			if (dp_get_svalue(msg, id_par->v.sp[1], 
+			if (dp_get_svalue(msg, id_par->v.sp[1],
 							    &partition_name)) {
 				LM_ERR("invalid partition\n");
 				return -1;
@@ -682,7 +691,7 @@ static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
 			break;
 	}
 
-	LM_DBG("dpid is %i partition is %.*s\n", dpid, 
+	LM_DBG("dpid is %i partition is %.*s\n", dpid,
 			id_par->hash->partition.len, id_par->hash->partition.s);
 
 	repl_par = (str2!=NULL) ? ((dp_param_p)str2) : default_par2;
@@ -877,8 +886,8 @@ static int dp_trans_fixup(void ** param, int param_no){
 		} else {
 			if (dp_par->type == DP_VAL_STR) {
 				/*pv dpid and str partition_name*/
-				dp_par->type = DP_VAL_STR_SPEC; 
-			} else { 
+				dp_par->type = DP_VAL_STR_SPEC;
+			} else {
 				/*DP_VAL_SPEC remains DP_VAL_SPEC
 					    ( pv dpid and pv partition_name) */
 				if( !pv_parse_spec( &partition_name,
@@ -933,6 +942,50 @@ error:
 	return E_INVALID_PARAMS;
 }
 
+
+static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param)
+{
+	struct mi_node *node = NULL;
+	struct mi_root *rpl_tree = NULL;
+	struct mi_node* root= NULL;
+	struct mi_attr* attr;
+	dp_connection_list_t *el;
+
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==NULL) return NULL;
+
+	if (cmd_tree) node = cmd_tree->node.kids;
+	if (node == NULL) {
+		el = dp_get_connections();
+		root = &rpl_tree->node;
+		while (el) {
+			node = add_mi_node_child(root, 0, "Partition", 9, el->partition.s, el->partition.len);
+			if( node == NULL) goto error;
+			attr = add_mi_attr(node, 0, "table", 5, el->table_name.s, el->table_name.len);
+			if(attr == NULL) goto error;
+			attr = add_mi_attr(node, 0, "db_url", 6, el->db_url.s, el->db_url.len);
+			if(attr == NULL) goto error;
+			el = el->next;
+		}
+	} else {
+		el = dp_get_connection(&node->value);
+		if (!el) goto error;
+		root = &rpl_tree->node;
+		node = add_mi_node_child(root, 0, "Partition", 9, el->partition.s, el->partition.len);
+		if( node == NULL) goto error;
+		attr = add_mi_attr(node, 0, "table", 5, el->table_name.s, el->table_name.len);
+		if(attr == NULL) goto error;
+		attr = add_mi_attr(node, 0, "db_url", 6, el->db_url.s, el->db_url.len);
+		if(attr == NULL) goto error;
+	}
+
+	return rpl_tree;
+
+error:
+	if(rpl_tree) free_mi_tree(rpl_tree);
+	return NULL;
+}
 
 static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree, void *param)
 {
@@ -1011,7 +1064,7 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 	if (partition_str.s == NULL || partition_str.len == 0) {
 		partition_str.s = DEFAULT_PARTITION;
 		partition_str.len = sizeof(DEFAULT_PARTITION) - 1;
-	} 
+	}
 
 	connection = dp_get_connection(&partition_str);
 

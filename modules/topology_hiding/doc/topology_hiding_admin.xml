@@ -106,7 +106,7 @@ modparam("topology_hiding", "th_callid_prefix", "MYCALLIDPREFIX_")
 		<title>Set <varname>th_passed_contact_uri_params</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("topology_hding", "th_passed_contact_uri_params", "paramname1;myparam;custom_param")
+modparam("topology_hiding", "th_passed_contact_uri_params", "paramname1;myparam;custom_param")
 ...
 </programlisting>
 		</example>
