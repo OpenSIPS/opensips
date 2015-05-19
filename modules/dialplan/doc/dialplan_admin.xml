@@ -298,7 +298,8 @@
 		<title> Set <varname>partition</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialplan", "partition", " part2 : table_name = dialplan ; db_url = mysql://user:passwb@localhost/db;")
+modparam("dialplan", "partition",
+  "part2:table_name=dialplan;db_url=mysql://user:pw@localhost/db;")
 ...
 		</programlisting>
 		</example>
@@ -307,7 +308,8 @@ modparam("dialplan", "partition", " part2 : table_name = dialplan ; db_url = mys
 		<title> Set <varname>default partition</varname> with partition parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialplan", "partition", "   default : table_name = dialplan ; db_url = mysql://user:passwb@localhost/db;")
+modparam("dialplan", "partition",
+  "default:table_name=dialplan;db_url=mysql://user:pw@localhost/db;")
 ...
 		</programlisting>
 		</example>

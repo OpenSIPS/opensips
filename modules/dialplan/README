@@ -226,14 +226,14 @@ Chapter 1. Admin Guide
 
    Example 1.1.  Set partition parameter
 ...
-modparam("dialplan", "partition", " part2 : table_name = dialplan ; db_u
-rl = mysql://user:passwb@localhost/db;")
+modparam("dialplan", "partition",
+  "part2:table_name=dialplan;db_url=mysql://user:pw@localhost/db;")
 ...
 
    Example 1.2.  Set default partition with partition parameter
 ...
-modparam("dialplan", "partition", "   default : table_name = dialplan ;
-db_url = mysql://user:passwb@localhost/db;")
+modparam("dialplan", "partition",
+  "default:table_name=dialplan;db_url=mysql://user:pw@localhost/db;")
 ...
 
 1.6.2. db_url (string)
