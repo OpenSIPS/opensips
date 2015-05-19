@@ -52,6 +52,7 @@ Andreea-Ancuta Onofrei
 
               1.8.1. dp_reload
               1.8.2. dp_translate
+              1.8.3. dp_show_partiton
 
         1.9. Installation
 
@@ -472,6 +473,21 @@ xlog("translate to var $var(y) partition $var(partition)")
         :dp_translate:
         dpid
         input
+        _empty_line_
+
+1.8.3. dp_show_partiton
+
+   Display partition(s) details.
+
+   Name: dp_show_partiton
+
+   Parameters: 2
+     * Partition Name - The partition name. If no partition is
+       specified, all known partitions will be listed.
+
+   MI DATAGRAM Command Format:
+        :dp_translate:
+        default
         _empty_line_
 
 1.9. Installation
