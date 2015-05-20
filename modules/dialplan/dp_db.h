@@ -77,6 +77,7 @@ int init_db_data();
 struct dp_connection_list * dp_add_connection(dp_head_p head );
 struct dp_connection_list * dp_get_connection(str * partition);
 struct dp_connection_list * dp_get_default_connection();
+int dp_connect_db(dp_connection_list_p conn);
 void dp_disconnect_db();
 
 #endif
