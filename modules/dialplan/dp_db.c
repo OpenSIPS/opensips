@@ -58,7 +58,6 @@ str timerec_column              =   str_init(TIMEREC_COL);
 		(_res).len = strlen(VAL_STR((_values)+ (_index)).s);\
 	}while(0);
 
-int dp_connect_db(dp_connection_list_p conn);
 void destroy_rule(dpl_node_t * rule);
 void destroy_hash(dpl_id_t **rules_hash);
 
@@ -87,7 +86,7 @@ int test_db(dp_connection_list_p dp_connection){
 		return -1;
 
 
-	if (db_check_table_version(&dp_connection->dp_dbf, 
+	if (db_check_table_version(&dp_connection->dp_dbf,
 		 *dp_connection->dp_db_handle, &dp_connection->table_name,
 			 DP_TABLE_VERSION) < 0) {
 		LM_ERR("error during table version check.\n");
@@ -116,7 +115,7 @@ int init_db_data(dp_connection_list_p dp_connection)
 		return -1;
 
 
-	if (db_check_table_version(&dp_connection->dp_dbf, 
+	if (db_check_table_version(&dp_connection->dp_dbf,
 		*dp_connection->dp_db_handle, &dp_connection->table_name,
 			DP_TABLE_VERSION) < 0) {
 		LM_ERR("error during table version check.\n");
@@ -164,13 +163,13 @@ void dp_disconnect_db(dp_connection_list_p dp_conn)
 
 int init_data(void)
 {
-	dp_head_p start, tmp = NULL; 
+	dp_head_p start, tmp = NULL;
 
 	for (start = dp_hlist ; start; start = start->next) {
 		if(tmp)
 			pkg_free(tmp);
 
-		LM_DBG("Adding partition with name [%.*s]\n", 
+		LM_DBG("Adding partition with name [%.*s]\n",
 				start->partition.len, start->partition.s);
 		if (!dp_add_connection(start)) {
 			LM_ERR("failed to initialize partition '%.*s'\n",
@@ -212,6 +211,14 @@ int dp_load_all_db(void)
 			}
 	}
 	return 0;
+}
+
+void dp_disconnect_all_db(void)
+{
+	dp_connection_list_t *el;
+
+	for (el = dp_conns; el; el = el->next)
+		dp_disconnect_db(el);
 }
 
 /*load rules from DB*/
@@ -266,7 +273,7 @@ int dp_load_db(dp_connection_list_p dp_conn)
 		no_rows = estimate_available_rows( 4+4+4+64+4+64+64+128,
 			DP_TABLE_COL_NO);
 		if (no_rows==0) no_rows = 10;
-		if(dp_conn->dp_dbf.fetch_result(*dp_conn->dp_db_handle, 
+		if(dp_conn->dp_dbf.fetch_result(*dp_conn->dp_db_handle,
 						&res, no_rows)<0) {
 			LM_ERR("failed to fetch\n");
 			if (res)
@@ -314,7 +321,7 @@ int dp_load_db(dp_connection_list_p dp_conn)
 
 
 		if (DB_CAPABILITY(dp_conn->dp_dbf, DB_CAP_FETCH)) {
-			if(dp_conn->dp_dbf.fetch_result(*dp_conn->dp_db_handle, 
+			if(dp_conn->dp_dbf.fetch_result(*dp_conn->dp_db_handle,
 							&res, no_rows)<0) {
 				LM_ERR("failure while fetching!\n");
 				if (res)
@@ -546,8 +553,8 @@ dpl_node_t * build_rule(db_val_t * values)
 			goto err;
 
 		new_rule->parsed_timerec = parsed_timerec;
-	
-		LM_DBG("timerecs are %.*s\n", 
+
+		LM_DBG("timerecs are %.*s\n",
 			new_rule->timerec.len, new_rule->timerec.s);
 	}
 
@@ -806,9 +813,9 @@ dp_connection_list_p dp_add_connection(dp_head_p head)
 	}
 
 	int all_size = sizeof(dp_connection_list_t) +head->dp_table_name.len
-				+ head->partition.len + head->dp_db_url.len; 
+				+ head->partition.len + head->dp_db_url.len;
 	el = shm_malloc(all_size);
-	
+
 	if(!el)
 		LM_ERR("No more shm\n");
 
@@ -861,7 +868,7 @@ dp_connection_list_p dp_add_connection(dp_head_p head)
 	dp_conns = el;
 
 	LM_DBG("Added dialplan partition [%.*s] table [%.*s].\n",
-		 head->partition.len, head->partition.s, 
+		 head->partition.len, head->partition.s,
 				head->dp_table_name.len, head->dp_table_name.s);
 
 	return el;

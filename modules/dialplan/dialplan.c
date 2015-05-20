@@ -60,6 +60,7 @@
 
 static int mod_init(void);
 static int child_init(int rank);
+static int mi_child_init(void);
 static void mod_destroy();
 
 static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree,void *param);
@@ -94,7 +95,7 @@ static param_export_t mod_params[]={
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "dp_reload",  0, mi_reload_rules,   0,       0,  0},
+	{ "dp_reload",  0, mi_reload_rules,   0,       0,  mi_child_init},
 	{ "dp_translate",  0, mi_translate,   0,       0,              0},
 	{ "dp_show_partition",  0, mi_show_partition,   0,       0,              0},
 	{ 0, 0, 0, 0, 0, 0}
@@ -535,9 +536,27 @@ static int child_init(int rank)
 		}
 	}
 
+	dp_disconnect_all_db();
 
 	return 0;
 }
+static int mi_child_init(void)
+{
+
+	dp_connection_list_p el;
+
+	/*Connect to DB s and get rules*/
+	for(el = dp_conns; el; el = el->next){
+		if (dp_connect_db(el) != 0) {
+			LM_ERR("Unable to init db data\n");
+			shm_free(el);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 
 
 static void mod_destroy(void)
