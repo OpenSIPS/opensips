@@ -24,7 +24,7 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
- *  
+*  2015-05-20 change callcell identity
  */
 
 #include "../../sr_module.h"
@@ -85,8 +85,10 @@ struct sm_subscriber{
 
 struct parms_cb{
 	str callid_ori;
+	str from_tag;
 	str event;
 };
+
 
 int send_subscriber(struct sip_msg* msg, char* callidHeader, int expires);
 int send_subscriber_within(struct sip_msg* msg, struct sm_subscriber* subs, int expires);

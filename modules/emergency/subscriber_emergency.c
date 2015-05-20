@@ -24,7 +24,7 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
- *  
+ *  2015-05-20 change callcell identity
  */
 
 #include <stdio.h>
@@ -103,7 +103,7 @@ int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb){
     LM_DBG("TIME : %d \n", (int)rawtime );
 
     /* build subscriber cell */
-    size_subs_cell = sizeof (struct sm_subscriber) + callid->len + pfrom->tag_value.len + pto->tag_value.len + pfrom->uri.len + pto->uri.len + params_cb->callid_ori.len +  params_cb->event.len + vsp_addr_len + 10 ;
+    size_subs_cell = sizeof (struct sm_subscriber) + callid->len + pfrom->tag_value.len + pto->tag_value.len + pfrom->uri.len + pto->uri.len + params_cb->callid_ori.len +  params_cb->event.len + params_cb->from_tag.len + vsp_addr_len + 10 ;
     subs_cell = shm_malloc(size_subs_cell + 1);
     if (!subs_cell) {
         LM_ERR("no more shm\n");
@@ -146,13 +146,18 @@ int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb){
     memcpy(subs_cell->call_dlg_id.callid.s, params_cb->callid_ori.s, params_cb->callid_ori.len);        
     LM_INFO("SUBS_CALLID_ORI: %.*s \n ", subs_cell->call_dlg_id.callid.len, subs_cell->call_dlg_id.callid.s );  
 
+    subs_cell->call_dlg_id.local_tag.len= params_cb->from_tag.len;
+    subs_cell->call_dlg_id.local_tag.s = (char *) (subs_cell + 1) + callid->len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len + pto->uri.len + params_cb->callid_ori.len;
+    memcpy(subs_cell->call_dlg_id.local_tag.s, params_cb->from_tag.s, params_cb->from_tag.len);        
+    LM_INFO("SUBS_FROMTAG_event: %.*s \n ", subs_cell->call_dlg_id.local_tag.len, subs_cell->call_dlg_id.local_tag.s ); 
+
     subs_cell->event.len= params_cb->event.len;
-    subs_cell->event.s = (char *) (subs_cell + 1) + callid->len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len + pto->uri.len + params_cb->callid_ori.len;
+    subs_cell->event.s = (char *) (subs_cell + 1) + callid->len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len + pto->uri.len + params_cb->callid_ori.len + params_cb->from_tag.len;
     memcpy(subs_cell->event.s, params_cb->event.s, params_cb->event.len);        
     LM_DBG("SUBS_EVENT: %.*s \n ", subs_cell->event.len, subs_cell->event.s );  
 
     subs_cell->contact.len = vsp_addr_len + 10;
-    subs_cell->contact.s = (char *) (subs_cell + 1) + callid->len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len + pto->uri.len + params_cb->callid_ori.len + params_cb->event.len;
+    subs_cell->contact.s = (char *) (subs_cell + 1) + callid->len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len + pto->uri.len + params_cb->callid_ori.len + params_cb->from_tag.len + params_cb->event.len;
     memcpy(subs_cell->contact.s, "sip:teste@", 10);  
     memcpy(subs_cell->contact.s + 10, vsp_addr, vsp_addr_len);              
     LM_DBG("SUBS_CONTACT: %.*s \n ", subs_cell->contact.len, subs_cell->contact.s );
@@ -247,7 +252,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *params){
     }else{
         /* Response NOK send esct to clear esqk in VPC*/
         LM_ERR("reply to SUBSCRIBER NOK - revisa\n");
-        if(send_esct(params_cb->callid_ori) == 0){
+        if(send_esct(params_cb->callid_ori, params_cb->from_tag) == 0){
             LM_ERR("error in send to esct\n"); 
         }       
     }
@@ -359,12 +364,23 @@ int build_params_cb(struct sip_msg* msg, char* callidHeader,  struct parms_cb* p
     }
     call_aux[size_callid] = 0;
 
-    memcpy(call_aux, callidHeader, size_callid);  
+    memcpy(call_aux, callidHeader, size_callid); 
+
+    char *ftag = shm_malloc (from_tag.len + 1);
+    if (ftag == NULL) {
+        LM_ERR("--------------------------------------------------no more pkg memory\n");
+        return 0;
+    }
+    ftag[from_tag.len] = 0;
+    memcpy(ftag, from_tag.s, from_tag.len); 
 
     params_cb->callid_ori.s = call_aux;
     params_cb->callid_ori.len = size_callid; 
+    params_cb->from_tag.s = from_tag.s;
+    params_cb->from_tag.len = from_tag.len;   
     params_cb->event.s = dialog;
-    params_cb->event.len = size_dialog;  
+    params_cb->event.len = size_dialog; 
+
 
     return 1; 
 
@@ -802,6 +818,7 @@ int treat_notify(struct sip_msg *msg) {
     int expires= 0;
     char *subs_state, *subs_expires;
     str callid_orig;
+    str from_tag;
     struct notify_body* notify_body = NULL;
     struct sm_subscriber* next;
     struct sm_subscriber* previous;
@@ -867,9 +884,11 @@ int treat_notify(struct sip_msg *msg) {
                 then pull cell of the list linked and send esct to VPC*/
                 LM_DBG(" --- CLEAR CELL \n");  
                 callid_orig = cell_subs->call_dlg_id.callid;
+                from_tag = cell_subs->call_dlg_id.local_tag;
+
                 LM_INFO(" --- CALLID_ORIG %.*s \n", callid_orig.len, callid_orig.s);
 
-                if(send_esct(callid_orig) == 0){
+                if(send_esct(callid_orig, from_tag) == 0){
                     LM_ERR("error in send to esct\n"); 
                 }
 

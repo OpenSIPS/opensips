@@ -24,7 +24,7 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
- *  
+ *  2015-05-20 change callcell identity
  */
 
 
@@ -55,7 +55,16 @@ typedef struct parsed_xml_resp{
     ERT  *ert;
 }PARSED;
 
+
+struct dialog_set{
+    char* call_id;
+    char* local_tag;
+    char* rem_tag; 
+    int status;
+};
+
 typedef struct esct{
+    struct dialog_set *eme_dlg_id;
     NENA *source;
     NENA *vpc;
     char* esgwri;
@@ -84,7 +93,7 @@ struct dialog_params{
 };
 
 struct target_info{
-    char* dialog_id;
+    char* dlg_id;
     char* callid;
     char* local_tag;
     char* direction;
@@ -95,6 +104,7 @@ struct notify_body{
     struct target_info* target;
     char* state;
 };
+
 
 char* copy_str_between_tow_pointers(char* str_begin, char* str_end);
 char* copy_str_between_tow_pointers_simple(char* str_begin, char* str_end);

@@ -24,6 +24,7 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
+ *  2015-05-20 change callcell identity
  *  
  */
 
@@ -158,7 +159,7 @@ unsigned long get_xml_size(char* lie, char* formated_time, char* callidHeader, c
 char* formatted_xml(char* lie, char* callidHeader, char* cbn);
 int routing_by_ert( struct sip_msg *msg, ESCT *call_cell);
 int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeader, str cbn);
-int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str cbn);
+int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str cbn, char* from_tag);
 
 
 

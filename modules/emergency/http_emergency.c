@@ -24,7 +24,7 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
- *  
+ *  2015-05-20 change callcell identity  
  */
 
 #include <stdio.h>
@@ -34,7 +34,7 @@
 /* finish the emergency call frees resources:
     - pull call cell this call from list linked eme_calls 
     - send esct to VPC to release ESQK Key*/
-int send_esct(str callid_ori){
+int send_esct(str callid_ori, str from_tag){
 
     char* esct_callid;
     NODE* info_call;
@@ -45,6 +45,7 @@ int send_esct(str callid_ori){
     char* response;
     int resp;
     char* callidHeader;
+    char* ftag;
 
     callidHeader = pkg_malloc(callid_ori.len + 1);
     if(callidHeader == NULL){
@@ -54,9 +55,19 @@ int send_esct(str callid_ori){
     memset(callidHeader, 0, callid_ori.len + 1); 
     memcpy(callidHeader, callid_ori.s, callid_ori.len);
 
+
+    ftag = pkg_malloc(from_tag.len + 1);
+    if(ftag == NULL){
+        LM_ERR("No memory left\n");
+        return -1;
+    }
+    memset(ftag, 0, from_tag.len + 1); 
+    memcpy(ftag, from_tag.s, from_tag.len);
+
+
     // extract call cell with same callid from list linked eme_calls
     LM_DBG(" --- BYE  callid=%s \n", callidHeader);
-    info_call = find_and_delete_esct(callidHeader);
+    info_call = find_and_delete_esct(callidHeader, ftag);
     if (info_call->esct == NULL) {
         LM_ERR(" --- BYE DID NOT FIND CALLID \n");
         return -1;
@@ -115,38 +126,40 @@ int send_esct(str callid_ori){
 
 
 */
-NODE* find_and_delete_esct(char* callId) {
+NODE* find_and_delete_esct(char* callId, char* from_tag) {
     struct node* list_eme = *calls_eme;
     NODE *current = list_eme;
     NODE *previous = NULL;
       
     while (current) {       
-        if (same_callid(current->esct->callid, callId) == 0) {            
-            NODE* node = current;
-            NODE* next = current->next;           
-            if (collect_data(current, db_url, *db_table) == 1) {
-                LM_DBG("****** REPORT OK\n");
-            } else {
-                LM_DBG("****** REPORT NOK\n");
-            }                      
-            if (previous == NULL){
-                if (next == NULL){;        
-                    *calls_eme = NULL;
-                }else{      
-                    *calls_eme = next;
+        if (same_callid(current->esct->eme_dlg_id.call_id, callId) == 0) {  
+            if (same_callid(current->esct->eme_dlg_id.local_tag, from_tag) == 0) {           
+                NODE* node = current;
+                NODE* next = current->next;           
+                if (collect_data(current, db_url, *db_table) == 1) {
+                    LM_INFO("****** REPORT OK\n");
+                } else {
+                    LM_INFO("****** REPORT NOK\n");
+                }                      
+                if (previous == NULL){
+                    if (next == NULL){;        
+                        *calls_eme = NULL;
+                    }else{      
+                        *calls_eme = next;
+                    }
+                }else{               
+                    current = next;
+                    previous->next = current;
                 }
-            }else{               
-                current = next;
-                previous->next = current;
+               
+                return node;
             }
-           
-            return node;
         }
         previous = current;
         current = current->next;
     }
     
-    printf("Not found\n");
+    LM_INFO("Not found\n");
     return NULL;
 }
 
@@ -163,8 +176,9 @@ int same_callid(char* callIdEsct, char* callId) {
 /* Search the cell with callid key in list linked calls_eme, 
 *  if found returns the pointer of this cell
 */
-ESCT* find_esct(char* callId) {
-    LM_DBG(" --- find_esct to calid  = %s ", callId);
+ESCT* find_esct(char* callId, char* from_tag) {
+    LM_INFO(" --- find_esct to calid  = %s ", callId);
+    LM_INFO(" --- find_esct to from tag  = %s ", from_tag);
 
     struct node* list_eme = *calls_eme;
 
@@ -172,15 +186,18 @@ ESCT* find_esct(char* callId) {
 
     while (current) {
 
-        LM_DBG(" --- CALL_LIST callId  = %s \n", current->esct->callid);
-        if (same_callid(current->esct->callid, callId) == 0) {
-            LM_DBG(" --- FOUND ESCT with callId key = %s ", callId);
-            ESCT* esct = current->esct;
-            return esct;
+        LM_INFO(" --- CALL_LIST callId  = %s \n", current->esct->eme_dlg_id.call_id);
+        LM_INFO(" --- CALL_LIST from tag  = %s \n", current->esct->eme_dlg_id.local_tag);
+        if (same_callid(current->esct->eme_dlg_id.call_id, callId) == 0) {
+            if (same_callid(current->esct->eme_dlg_id.local_tag, from_tag) == 0) {            
+                LM_INFO(" --- FOUND ESCT with callId key = %s ", callId);
+                ESCT* esct = current->esct;
+                return esct;
+            }
         }
         current = current->next;
     }
-    LM_DBG("Did not find\n");
+    LM_INFO("Did not find\n");
     return NULL;
 }
 

@@ -24,7 +24,7 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
- *  
+ *  2015-05-20 change callcell identity
  */
 
 #include "../../sr_module.h"
@@ -64,9 +64,9 @@ str db_url;
 str *db_table;
 char *empty;
 
-int send_esct(str callid_ori);
-NODE* find_and_delete_esct(char* callId);
-ESCT* find_esct(char* callId);
+int send_esct(str callid_ori, str from_tag);
+NODE* find_and_delete_esct(char* callId, char* from_tag);
+ESCT* find_esct(char* callId, char* from_tag);
 int same_callid(char* callIdEsct, char* callId);
 int faixa_result(int result); 
 int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_cell_vpc, NENA *call_cell_source, PARSED *parsed, int proxy_hole);
