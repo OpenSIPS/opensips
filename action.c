@@ -731,14 +731,17 @@ int do_action(struct action* a, struct sip_msg* msg)
 					break;
 				}
 				route_rec_level++;
-
 				route_params[route_rec_level] = (action_elem_t *)a->elem[2].u.data;
 				route_params_number[route_rec_level] = a->elem[1].u.number;
 				return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
 
 				route_rec_level--;
 			} else {
+				route_rec_level++;
+				route_params[route_rec_level] = NULL;
+				route_params_number[route_rec_level] = 0;
 				return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
+				route_rec_level--;
 			}
 			ret=return_code;
 			break;
