@@ -64,7 +64,7 @@ struct dialog_set{
 };
 
 typedef struct esct{
-    struct dialog_set *eme_dlg_id;
+    struct dialog_set eme_dlg_id;
     NENA *source;
     NENA *vpc;
     char* esgwri;
