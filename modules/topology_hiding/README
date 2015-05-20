@@ -123,8 +123,8 @@ modparam("topology_hiding", "th_callid_prefix", "MYCALLIDPREFIX_")
 
    Example 1.3. Set th_passed_contact_uri_params parameter
 ...
-modparam("topology_hding", "th_passed_contact_uri_params", "paramname1;m
-yparam;custom_param")
+modparam("topology_hiding", "th_passed_contact_uri_params", "paramname1;
+myparam;custom_param")
 ...
 
 1.3.4. th_passed_contact_params (string)

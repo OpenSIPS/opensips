@@ -2,12 +2,12 @@
 
 <chapter>
     <title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
 	This module implements generic string translations based on matching and
-	replacement rules. It can be used to manipulate R-URI or a PV and to 
+	replacement rules. It can be used to manipulate R-URI or a PV and to
 	translated to a new format/value.
 	</para>
 	</section>
@@ -15,19 +15,19 @@
 	<section>
 	<title>How it works</title>
 	<para>
-	At startup, the module will load a set of transformation rules from multiple 
+	At startup, the module will load a set of transformation rules from multiple
 	databases. Each database will be stored in a partition which will have db_url
-	and table_name parameters. Every database row will be stored in memory as a 
-	translation rule. Each rule will describe how the matching should be made, how the 
-	input value should be modified and which attributes should be set for 
+	and table_name parameters. Every database row will be stored in memory as a
+	translation rule. Each rule will describe how the matching should be made, how the
+	input value should be modified and which attributes should be set for
 	the matching transformation.
 	</para>
 	<para>
 	The module expects an input value which will be matched against a rules
 	via regexp or string matching. Overlapping matching expressions can be
-	controlled via priorities. Once a rule is matched, the defined 
-	transformation (if any) is applied and the result is returned as output 
-	value. Also, if any string attribute is associated to the rule, this will 
+	controlled via priorities. Once a rule is matched, the defined
+	transformation (if any) is applied and the result is returned as output
+	value. Also, if any string attribute is associated to the rule, this will
 	be returned to the script along with the output value.
 	</para>
 	<para>
@@ -38,17 +38,17 @@
 	<section>
 	<title>Usage cases</title>
 	<para>
-	The module can be used to implement dialplans - do to auto completion of 
-	the dial numbers (like national to international), to convert generic 
+	The module can be used to implement dialplans - do to auto completion of
+	the dial numbers (like national to international), to convert generic
 	numbers to specific numbers (like for emergency numbers).
 	</para>
 	<para>
-	Also the module can be used for detecting range or sets of numbers mapped 
-	on a service/case - attributes string can be used here to store extra 
+	Also the module can be used for detecting range or sets of numbers mapped
+	on a service/case - attributes string can be used here to store extra
 	information about the service/case.
 	</para>
 	<para>
-	Non-SIP string translation can be implemented - like converting country 
+	Non-SIP string translation can be implemented - like converting country
 	names from all possible formats to a canonical format:
 	(UK, England, United Kingdom) -> GB.
 	</para>
@@ -104,7 +104,7 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>repl_exp</emphasis> = "40\2" ; second part of the 
+				<emphasis>repl_exp</emphasis> = "40\2" ; second part of the
 				subst (output) - linked to the subst_exp field; when both
 				defined, they work as a subst()
 			</para>
@@ -140,13 +140,13 @@
 			<listitem>
 			<para>
 				<emphasis>subst_exp</emphasis> = NULL ;
-				when translation is actually a replacement, this field must 
+				when translation is actually a replacement, this field must
 				be NULL.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>repl_exp</emphasis> = "DE" ; static string to 
+				<emphasis>repl_exp</emphasis> = "DE" ; static string to
 				replace the input - whenever this rule will match, it will
 				return this string as output.
 			</para>
@@ -157,7 +157,7 @@
 		<section>
 		<title>Number detection (regexp detection, no replacement)</title>
 			<para>
-			Recognize a block of numbers as belong to a single service and 
+			Recognize a block of numbers as belong to a single service and
 			signalize this via an attribute.
 			</para>
 			<itemizedlist>
@@ -187,14 +187,14 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>repl_exp</emphasis> = NULL ; 
+				<emphasis>repl_exp</emphasis> = NULL ;
 				no translation
 				</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>attrs</emphasis> = "serviceX" ; 
-				whatever string you will get into OpenSIPS script and it will 
+				<emphasis>attrs</emphasis> = "serviceX" ;
+				whatever string you will get into OpenSIPS script and it will
 				provide you more information (totally custom)
 				</para>
 			</listitem>
@@ -232,7 +232,7 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>repl_exp</emphasis> = "OpenSIPS" ; 
+				<emphasis>repl_exp</emphasis> = "OpenSIPS" ;
 				output string
 				</para>
 			</listitem>
@@ -265,7 +265,7 @@
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
-		The following libraries or applications must be installed before 
+		The following libraries or applications must be installed before
 		running &osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
@@ -298,7 +298,8 @@
 		<title> Set <varname>partition</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialplan", "partition", " part2 : table_name = dialplan ; db_url = mysql://user:passwb@localhost/db;")
+modparam("dialplan", "partition",
+  "part2:table_name=dialplan;db_url=mysql://user:pw@localhost/db;")
 ...
 		</programlisting>
 		</example>
@@ -307,7 +308,8 @@ modparam("dialplan", "partition", " part2 : table_name = dialplan ; db_url = mys
 		<title> Set <varname>default partition</varname> with partition parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialplan", "partition", "   default : table_name = dialplan ; db_url = mysql://user:passwb@localhost/db;")
+modparam("dialplan", "partition",
+  "default:table_name=dialplan;db_url=mysql://user:pw@localhost/db;")
 ...
 		</programlisting>
 		</example>
@@ -334,7 +336,7 @@ modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
 		<para>
 		The table's name from which to load the translation rules.This
 		will be the table_name parameter value for the default partition.
-		The db_url must be defined for the default partition in order to 
+		The db_url must be defined for the default partition in order to
 		be able to define it's table name.
 		</para>
 		<para>
@@ -558,13 +560,13 @@ modparam("dialplan", "attrs_col", "column_name")
 
 	<section>
 	<title>Exported Functions</title>
-	
+
 	<section>
 	<title>
 		<function moreinfo="none">dp_translate([partition:]id, src/dest[, attrs_pvar])</function>
 	</title>
 	<para>
-	Will try to translate the src string into dest string according to 
+	Will try to translate the src string into dest string according to
 	the translation rules with dialplan ID equal to id.
 	</para>
 	<para>Meaning of the parameters is as follows:</para>
@@ -576,7 +578,7 @@ modparam("dialplan", "attrs_col", "column_name")
 		</para>
 		<itemizedlist>
 			<listitem>
-			<para><emphasis>integer</emphasis> - the dialplan id is statically 
+			<para><emphasis>integer</emphasis> - the dialplan id is statically
 			assigned </para>
 			</listitem>
 
@@ -593,12 +595,12 @@ modparam("dialplan", "attrs_col", "column_name")
 		<para>
 		<emphasis>partition</emphasis> - Specifies the partition where the search will
 		take place. This parameter can be ommited. If the paramater is omitted the default
-		partition will be used if exists. 
+		partition will be used if exists.
 		The <emphasis>partition</emphasis> parameter can have the following types:
 		</para>
 		<itemizedlist>
 			<listitem>
-			<para><emphasis>string</emphasis> - the table name is statically 
+			<para><emphasis>string</emphasis> - the table name is statically
 			assigned </para>
 			</listitem>
 
@@ -614,15 +616,15 @@ modparam("dialplan", "attrs_col", "column_name")
 	<listitem>
 		<para>
 		<emphasis>src/dest</emphasis> - input and output of the function.
-		If this parameter is missing the default parameter 
-		<quote>ruri.user/ruri.user</quote> will be used, thus translating 
+		If this parameter is missing the default parameter
+		<quote>ruri.user/ruri.user</quote> will be used, thus translating
 		the request uri.
 		</para>
 		<para>
 		The <quote>src</quote> variable can be any type of pseudo-variable.
 		</para>
 		<para>
-		The <quote>dest</quote> variable  can be also any type of 
+		The <quote>dest</quote> variable  can be also any type of
 		pseudo-variable, but it must be a writable one.
 		</para>
 	</listitem>
@@ -710,7 +712,7 @@ xlog("translate to var $var(y) partition $var(partition)")
 		_empty_line_
 		</programlisting>
 		</section>
-    
+
     <section>
 			<title><varname>dp_translate</varname></title>
 			<para>
@@ -739,12 +741,37 @@ xlog("translate to var $var(y) partition $var(partition)")
         _empty_line_
 		</programlisting>
 		</section>
+
+    <section>
+			<title><varname>dp_show_partiton</varname></title>
+			<para>
+                Display partition(s) details.
+			</para>
+		<para>
+		Name: <emphasis>dp_show_partiton</emphasis>
+		</para>
+        <para>Parameters: <emphasis>2</emphasis></para>
+        	<itemizedlist>
+                <listitem>
+                <para><emphasis>Partition Name</emphasis> - The partition name.
+                If no partition is specified, all known partitions will be listed.</para>
+                </listitem>
+            </itemizedlist>
+ 		<para>
+		MI DATAGRAM Command Format:
+		</para>
+        <programlisting  format="linespecific">
+        :dp_translate:
+        default
+        _empty_line_
+		</programlisting>
+		</section>
 	</section>
 
 	<section>
 		<title>Installation</title>
 		<para>
-		The modules requires one table in OpenSIPS database: dialplan.The SQL 
+		The modules requires one table in OpenSIPS database: dialplan.The SQL
 		syntax to create them can be found in dialplan-create.sql
 		script in the database directories in the opensips/scripts folder.
 		You can also find the complete database documentation on the

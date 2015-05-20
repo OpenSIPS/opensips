@@ -52,6 +52,7 @@ Andreea-Ancuta Onofrei
 
               1.8.1. dp_reload
               1.8.2. dp_translate
+              1.8.3. dp_show_partiton
 
         1.9. Installation
 
@@ -226,14 +227,14 @@ Chapter 1. Admin Guide
 
    Example 1.1.  Set partition parameter
 ...
-modparam("dialplan", "partition", " part2 : table_name = dialplan ; db_u
-rl = mysql://user:passwb@localhost/db;")
+modparam("dialplan", "partition",
+  "part2:table_name=dialplan;db_url=mysql://user:pw@localhost/db;")
 ...
 
    Example 1.2.  Set default partition with partition parameter
 ...
-modparam("dialplan", "partition", "   default : table_name = dialplan ;
-db_url = mysql://user:passwb@localhost/db;")
+modparam("dialplan", "partition",
+  "default:table_name=dialplan;db_url=mysql://user:pw@localhost/db;")
 ...
 
 1.6.2. db_url (string)
@@ -472,6 +473,21 @@ xlog("translate to var $var(y) partition $var(partition)")
         :dp_translate:
         dpid
         input
+        _empty_line_
+
+1.8.3. dp_show_partiton
+
+   Display partition(s) details.
+
+   Name: dp_show_partiton
+
+   Parameters: 2
+     * Partition Name - The partition name. If no partition is
+       specified, all known partitions will be listed.
+
+   MI DATAGRAM Command Format:
+        :dp_translate:
+        default
         _empty_line_
 
 1.9. Installation
