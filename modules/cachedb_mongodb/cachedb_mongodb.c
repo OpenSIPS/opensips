@@ -137,7 +137,7 @@ static int mod_init(void)
 	}
 
 	if (register_cachedb(&cde) < 0) {
-		LM_ERR("failed to initialize cachedb_redis\n");
+		LM_ERR("failed to initialize cachedb_mongo\n");
 		return -1;
 	}
 
