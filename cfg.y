@@ -2495,6 +2495,11 @@ route_param: STRING {
 						route_elems[0].u.data = (void*)(long)$1;
 						$$=1;
 			}
+		| NULLV {
+						route_elems[0].type = NULLV_ST;
+						route_elems[0].u.data = 0;
+						$$=1;
+			}
 		| script_var {
 						route_elems[0].type = SCRIPTVAR_ST;
 						route_elems[0].u.data = $1;

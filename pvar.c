@@ -4687,6 +4687,12 @@ static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
 	switch (route_params[route_rec_level][index].type)
 	{
 
+	case NULLV_ST:
+		res->rs.s = NULL;
+		res->rs.len = res->ri = 0;
+		res->flags = PV_VAL_NULL;
+		break;
+
 	case STRING_ST:
 		res->rs.s = route_params[route_rec_level][index].u.string;
 		res->rs.len = strlen(res->rs.s);
