@@ -152,7 +152,7 @@ loadmodule "auth.so"
 loadmodule "auth_db.so"
 modparam("auth_db", "calculate_ha1", yes)
 modparam("auth_db", "password_column", "password")
-modparam("auth_db", "db_url",
+modparam("auth_db|uri", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
 modparam("auth_db", "load_credentials", "")
 ', `')
