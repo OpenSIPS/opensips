@@ -24,7 +24,7 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
- *  
+ *  2015-05-20 change callcell identity
  */
  
 #include <stdio.h>
@@ -335,7 +335,7 @@ struct notify_body* parse_notify(char* xml){
     notify->params->state = copy_str_between_tow_pointers_simple(pt_dlg_state + strlen(dlg_state), pt_entity);
     notify->params->entity = copy_str_between_tow_pointers_simple(pt_entity + strlen(entity), pt_end_entity);
 
-    notify->target->dialog_id = copy_str_between_tow_pointers_simple(pt_dialog_id + strlen(dialog_id), pt_callid);
+    notify->target->dlg_id = copy_str_between_tow_pointers_simple(pt_dialog_id + strlen(dialog_id), pt_callid);
     notify->target->callid = copy_str_between_tow_pointers_simple(pt_callid + strlen(callid), pt_local_tag);
     notify->target->local_tag = copy_str_between_tow_pointers_simple(pt_local_tag + strlen(local_tag), pt_direction);
     notify->target->direction = copy_str_between_tow_pointers_simple(pt_direction + strlen(direction), pt_end_direction);

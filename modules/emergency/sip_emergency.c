@@ -24,7 +24,7 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
- *  
+ *  2015-05-20 change callcell identity
  */
 
 #include <stdio.h>
@@ -490,33 +490,6 @@ int check_event_header(struct sip_msg *msg) {
         return 1;
 
     return 0;
-}
-
-
-/* get CALLID header fro INVITE
-*/
-int get_callid_header(struct sip_msg *msg, char** callidHeader) {
-    char* code;
-    char* p;
-    int len;
-
-    if (!msg->callid && ((parse_headers(msg, HDR_CALLID_F, 0) == -1) || !msg->callid)) {
-        LM_ERR("Message has no Call-ID header\n");
-        return -1;
-    }
-    LM_DBG(" -----------CALL ID HEADER %.*s \n \n", msg->callid->body.len, msg->callid->body.s);
-    code = msg->callid->body.s;
-    len = msg->callid->body.len;
-    p = memchr(code, '@', len);
-    if (p) {
-        len = p - code;
-    }
-    LM_DBG(" -----------LEN without after @ in CALLID HEADER %d \n \n", len);
-    *callidHeader = pkg_malloc(sizeof (char) * len + 1);
-    memset(*callidHeader, '\0', len + 1);
-    strncpy(*callidHeader, msg->callid->body.s, len);
-    LM_DBG(" -----------CALL ID extract after @ in CALLID HEADER %s \n \n", *callidHeader);
-    return 1;
 }
 
 

@@ -1125,6 +1125,8 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 	bson_append_finish_object(&cmd);
 	bson_append_finish_object(&cmd);
 
+	bson_append_bool(&cmd,"upsert",1);
+
 	bson_finish(&cmd);
 
 	for (j=0;j<2;j++) {

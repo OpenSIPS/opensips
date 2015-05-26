@@ -92,15 +92,6 @@ static str str_5060   = { _str_5060_hlp, 4 };
 static char _str_udp_hlp[4]  = {'u','d','p',0};
 static str str_udp    = { _str_udp_hlp, 3 };
 
-static char _str_tcp_hlp[4]  = {'t','c','p',0};
-static str str_tcp    = { _str_tcp_hlp, 3 };
-
-static char _str_tls_hlp[4]  = {'t','l','s',0};
-static str str_tls    = { _str_tls_hlp, 3 };
-
-static char _str_sctp_hlp[5]  = {'s','c','t','p',0};
-static str str_sctp    = { _str_sctp_hlp, 4 };
-
 static char _str_request_route_hlp[] = {'r','e','q','u','e','s','t','_','r','o','u','t','e',0};
 static str str_request_route    = { _str_request_route_hlp, 13 };
 
@@ -1347,22 +1338,12 @@ static int pv_get_proto(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL)
 		return -1;
 
-	switch(msg->rcv.proto)
-	{
-		case PROTO_UDP:
-			s = str_udp;
-		break;
-		case PROTO_TCP:
-			s = str_tcp;
-		break;
-		case PROTO_TLS:
-			s = str_tls;
-		break;
-		case PROTO_SCTP:
-			s = str_sctp;
-		break;
-		default:
-			s = str_null;
+	if ( msg->rcv.proto>=PROTO_FIRST && msg->rcv.proto<PROTO_LAST &&
+	protos[msg->rcv.proto].id ) {
+		s.s = protos[msg->rcv.proto].name;
+		s.len = strlen(s.s);
+	} else {
+		s = str_null;
 	}
 
 	return pv_get_strintval(msg, param, res, &s, (int)msg->rcv.proto);
@@ -4909,6 +4890,12 @@ static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
 	index--;
 	switch (route_params[route_rec_level][index].type)
 	{
+
+	case NULLV_ST:
+		res->rs.s = NULL;
+		res->rs.len = res->ri = 0;
+		res->flags = PV_VAL_NULL;
+		break;
 
 	case STRING_ST:
 		res->rs.s = route_params[route_rec_level][index].u.string;

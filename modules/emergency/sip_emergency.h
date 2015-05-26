@@ -24,7 +24,7 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
- *  
+ *  2015-05-20 change callcell identity
  */
 
 
@@ -58,7 +58,6 @@
 int check_geolocation_header(struct sip_msg *msg);
 int get_geolocation_header(struct sip_msg *msg, char** locationHeader);
 int found_CBN(struct sip_msg *msg, char** cbn);
-int get_callid_header(struct sip_msg *msg, char** callidHeader);
 int get_expires_header(struct sip_msg *msg, char** expires);
 int check_event_header(struct sip_msg *msg);
 int add_hdr_rpl(struct esct *call_cell,struct sip_msg *msg); 

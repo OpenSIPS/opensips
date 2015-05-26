@@ -24,6 +24,7 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
+ *  2015-05-20 change callcell identity
  *  
  */
 
@@ -382,31 +383,28 @@ void reply_in_redirect( struct cell* t, int type, struct tmcb_params *params){
     char *contact_lro = NULL;
     struct sip_msg *reply = params->rpl;
     struct sip_msg *msg_retran = params->req;
-    char* callidHeader;
 
     if (extract_contact_hdrs(reply, &contact_esgwri, &contact_lro) == -1){
         return;
     }
 
-    if (get_callid_header(msg_retran, &callidHeader) == -1){;
-        pkg_free(contact_esgwri);
-        pkg_free(contact_lro); 
+    if( msg_retran->callid==NULL || msg_retran->callid->body.s==NULL){
+        LM_ERR("reply without callid header\n");
         return;
-    }
+    }   
+
     call_cell = shm_malloc(sizeof (ESCT));
     if (call_cell == NULL) {
         LM_ERR("--------------------------------------------------no more shm memory\n");       
-        return;
     }
 
-    int len_callid = strlen(callidHeader);
-    call_cell->callid = shm_malloc(sizeof (char)* len_callid + 1);
+    call_cell->callid = shm_malloc(sizeof (char)* reply->callid->body.len + 1);
     if (call_cell->callid == NULL) {
         LM_ERR("--------------------------------------------------no more shm memory\n");        
         return;
     }
-    memcpy(call_cell->callid, callidHeader, len_callid);
-    call_cell->callid[len_callid] = 0;
+    memcpy(call_cell->callid, reply->callid->body.s, reply->callid->body.len);
+    call_cell->callid[reply->callid->body.len] = 0;
 
     call_cell->esqk = empty;
     call_cell->lro = empty;
@@ -618,8 +616,6 @@ int emergency_call(struct sip_msg *msg) {
                     return -1;
                 }
 
-                LM_INFO(" --- AQUI I-----  \n \n"); 
-
                 if(dlgb.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED, indialog_ua ,0,0)!=0) {
                     LM_ERR("failed to register dialog callback\n");
                     return -1;
@@ -670,25 +666,69 @@ static int failure(struct sip_msg *msg) {
     char* new_to;
     char* cbn_aux;
     str cbn;
+    char* from_tag;
+    struct to_body *pfrom = NULL;
 
     LM_INFO(" --- FAILURE  treatment \n \n");
 
     // comando failure so sera tratado pelo opensips com o paler de Call Proxy no cenario I
     if (proxy_hole == 1) {
         LM_DBG(" ---Hole: proxy routing \n");
-        return - 1;
+        return -1;
     }
 
     // get callid of the message
-    resp = get_callid_header(msg, &callidHeader);
+
+    if ( parse_headers(msg,HDR_EOH_F, 0) == -1 ){
+        LM_ERR("error in parsing headers\n");
+        return -1;
+    }
+
+    if( msg->callid==NULL || msg->callid->body.s==NULL){
+        LM_ERR("msg without callid header\n");
+        return -1;
+    } 
+
+    callidHeader = pkg_malloc(sizeof (char) * msg->callid->body.len + 1);
+    if (callidHeader == NULL) {
+        LM_ERR("no more pkg memory\n");
+        return -1 ;
+    }
+    memset(callidHeader, '\0', msg->callid->body.len + 1);
+    strncpy(callidHeader, msg->callid->body.s, msg->callid->body.len);
+
+
+    if (msg->from->parsed == NULL){
+        if ( parse_from_header( msg )<0 ){
+            LM_ERR("subscribe without From header\n");
+            return -1;
+        }
+    }
+    pfrom = get_from(msg);
+    LM_INFO("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
+
+    if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0){
+        LM_ERR("INVITE without from_tag value \n");
+        return -1;
+    }
+    from_tag = pkg_malloc(sizeof (char)* pfrom->tag_value.len + 1);
+    if (from_tag == NULL) {
+        LM_ERR("no more pkg memory\n");
+        return -1;
+    }
+    memset(from_tag, 0, pfrom->tag_value.len + 1);
+    strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
+    LM_INFO("PFROM_TAGIII: %s \n ", from_tag );
+
+
     LM_DBG(" --- FAILURE treatment HEADER RESP %d ", resp);
     if (resp == -1)
         return resp;
 
-    LM_DBG(" ---FAILURE treatment  callid=%s", callidHeader);
+    LM_INFO(" ---FAILURE treatment  callid=%s", callidHeader);
 
     // find the cell with the callid from the list calls_cell
-    info_call = find_esct(callidHeader);
+    info_call = find_esct(callidHeader, from_tag);
     if (info_call == NULL) {
         LM_ERR(" ---FAILURE treatment did not find the CALLID");
         goto error;
@@ -887,6 +927,8 @@ int send_request_vpc(struct sip_msg *msg) {
     char* lie;
     str cbn;
     char *cbn_aux;
+    struct to_body *pfrom = NULL;
+    char *from_tag;
 
     cbn_aux = pkg_malloc(sizeof (char)* MAX_URI_SIZE);
     if (cbn_aux == NULL) {
@@ -898,7 +940,7 @@ int send_request_vpc(struct sip_msg *msg) {
     found_CBN(msg, &cbn_aux);  
     cbn.s = cbn_aux;
     cbn.len = strlen(cbn.s);
-    LM_DBG(" --- FOUND CBN%.*s \n \n", cbn.len, cbn.s);
+    LM_INFO(" --- FOUND CBN%.*s \n \n", cbn.len, cbn.s);
 
     if (proxy_hole == 1) {
         LM_DBG(" ---Hole: proxy routing \n");
@@ -937,10 +979,48 @@ int send_request_vpc(struct sip_msg *msg) {
         return -1;
     }
     LM_DBG(" --- INIT  get_callid_header\n \n");
-    if ( get_callid_header(msg, &callidHeader) == -1){
-        LM_ERR("Failed to get callid header\n");
-        return -1;     
+
+    if ( parse_headers(msg,HDR_EOH_F, 0) == -1 ){
+        LM_ERR("error in parsing headers\n");
+        return -1;
     }
+
+    if( msg->callid==NULL || msg->callid->body.s==NULL){
+        LM_ERR("msg without callid header\n");
+        return -1;
+    } 
+
+    callidHeader = pkg_malloc(sizeof (char) * msg->callid->body.len + 1);
+    if (callidHeader == NULL) {
+        LM_ERR("no more pkg memory\n");
+        return -1 ;
+    }
+    memset(callidHeader, '\0', msg->callid->body.len + 1);
+    strncpy(callidHeader, msg->callid->body.s, msg->callid->body.len);
+    
+    if (msg->from->parsed == NULL){
+        if ( parse_from_header( msg )<0 ){
+            LM_ERR("subscribe without From header\n");
+            return -1;
+        }
+    }
+    pfrom = get_from(msg);
+    LM_INFO("PFROM_TAG_LEN %d \n ", pfrom->tag_value.len ); 
+    LM_INFO("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
+
+    if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0){
+        LM_ERR("INVITE without from_tag value \n");
+        return -1;
+    }
+    from_tag = pkg_malloc(sizeof (char)* pfrom->tag_value.len + 1);
+    if (from_tag == NULL) {
+        LM_ERR("no more pkg memory\n");
+        return -1;
+    }
+    memset(from_tag, 0, pfrom->tag_value.len + 1);
+    strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
+    LM_INFO("PFROM_TAGIII: %s \n ", from_tag );  
+
     if(pidf_body && strlen(pidf_body)>1) {     
         if(locationHeader && strlen(locationHeader)>1){   
             int size_lie =  strlen(pidf_body) + strlen(locationHeader) + 2;
@@ -960,8 +1040,8 @@ int send_request_vpc(struct sip_msg *msg) {
             return -1;     
         }  
     } 
-
-    xml = formatted_xml(lie, callidHeader, cbn.s);
+ 
+    xml = formatted_xml(lie, callidHeader, cbn.s); 
 
     //  HTTP POST to VPC
     resp = post(url_vpc, xml, &response);
@@ -970,10 +1050,10 @@ int send_request_vpc(struct sip_msg *msg) {
         LM_ERR(" --- PROBLEM IN POST \n \n");
         goto error;
     }
-    
+     
     parsed = parse_xml(response);
     if (parsed != NULL) {;       
-        if(create_call_cell(parsed, msg, callidHeader, cbn) == -1){
+        if(create_call_cell(parsed, msg, callidHeader, cbn, from_tag) == -1){
             pkg_free(response);
             goto error;
         }       
@@ -1009,7 +1089,7 @@ error :
 }
 
 
-int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str cbn) {
+int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str cbn, char* from_tag) {
 
     LM_DBG(" ---PARSED ");
     if ((parsed->callid == NULL || parsed->result == NULL || parsed->vpc->nenaid == NULL || parsed->vpc->contact == NULL)) {
@@ -1040,6 +1120,23 @@ int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
         }
+
+        call_cell->eme_dlg_id.local_tag = shm_malloc(sizeof (char)*strlen(from_tag)+1);
+        if (call_cell->eme_dlg_id.local_tag == NULL) {
+            LM_ERR("--------------------------------------------------no more shm memory\n");
+            return -1;
+        }
+        strcpy(call_cell->eme_dlg_id.local_tag, from_tag);
+
+        call_cell->eme_dlg_id.call_id  = shm_malloc(sizeof (char)*strlen(callidHeader)+1);
+        if (call_cell->eme_dlg_id.call_id  == NULL) {
+            LM_ERR("--------------------------------------------------no more shm memory\n");
+            return -1;
+        }
+        strcpy(call_cell->eme_dlg_id.call_id , callidHeader);
+
+        LM_INFO("PFROM_TAGII: %s \n ", call_cell->eme_dlg_id.local_tag ); 
+        LM_INFO("CALL_IDII: %s \n ", call_cell->eme_dlg_id.call_id );
        
         // obtem campos do esrResponse e guarda na celula na lista ligada calls_eme
         if(treat_parse_esrResponse(msg, call_cell , call_cell_source , call_cell_vpc , parsed, proxy_hole) == -1){
@@ -1271,8 +1368,10 @@ int contingency(struct sip_msg *msg, ESCT *call_cell){
 */
 int routing_ack(struct sip_msg *msg) {
     char* callidHeader;
+    char* from_tag;
     int resp = 1;
     ESCT* info_call;
+    struct to_body *pfrom = NULL;
 
     LM_INFO(" --- START TREATMENT ACK \n \n");
     if (proxy_hole == 1) {
@@ -1291,11 +1390,52 @@ int routing_ack(struct sip_msg *msg) {
         return -1;
     }
 
-    if (get_callid_header(msg, &callidHeader) == -1)
+    if ( parse_headers(msg,HDR_EOH_F, 0) == -1 ){
+        LM_ERR("error in parsing headers\n");
         return -1;
+    }
+
+    if( msg->callid==NULL || msg->callid->body.s==NULL){
+        LM_ERR("msg without callid header\n");
+        return -1;
+    } 
+
+    callidHeader = pkg_malloc(sizeof (char) * msg->callid->body.len + 1);
+    if (callidHeader == NULL) {
+        LM_ERR("no more pkg memory\n");
+        return -1 ;
+    }
+    memset(callidHeader, '\0', msg->callid->body.len + 1);
+    strncpy(callidHeader, msg->callid->body.s, msg->callid->body.len);
+
+
+
+    if (msg->from->parsed == NULL){
+        if ( parse_from_header( msg )<0 ){
+            LM_ERR("subscribe without From header\n");
+            return -1;
+        }
+    }
+    pfrom = get_from(msg);
+    LM_INFO("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
+
+    if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0){
+        LM_ERR("INVITE without from_tag value \n");
+        return -1;
+    }
+    from_tag = pkg_malloc(sizeof (char)* pfrom->tag_value.len + 1);
+    if (from_tag == NULL) {
+        LM_ERR("no more pkg memory\n");
+        return -1;
+    }
+    memset(from_tag, 0, pfrom->tag_value.len + 1);
+    strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
+    LM_INFO("PFROM_TAGIII: %s \n ", from_tag );
+
+
 
     LM_INFO(" ---TREATMENT ACK  callid=%s \n", callidHeader);   
-    info_call = find_esct(callidHeader);
+    info_call = find_esct(callidHeader, from_tag);
     if (info_call == NULL) {
         LM_INFO(" ---TREATMENT ACK - NOT FIND CALLID \n");
         resp = -1;
@@ -1343,6 +1483,9 @@ int bye(struct sip_msg *msg, int dir) {
     struct sm_subscriber*  cell_notif;
     int time_now;
 
+    char* from_tag;
+    struct to_body *pfrom = NULL;
+
     LM_DBG(" --- BYE \n \n");
 
     time(&rawtime);
@@ -1377,12 +1520,54 @@ int bye(struct sip_msg *msg, int dir) {
         send_notifier_within(msg, cell_notif); 
     }
 
-
-    if (get_callid_header(msg, &callidHeader) == -1)
+    if ( parse_headers(msg,HDR_EOH_F, 0) == -1 ){
+        LM_ERR("error in parsing headers\n");
         return -1;
+    }
+
+    if( msg->callid==NULL || msg->callid->body.s==NULL){
+        LM_ERR("msg without callid header\n");
+        return -1;
+    } 
+
+    callidHeader = pkg_malloc(sizeof (char) * msg->callid->body.len + 1);
+    if (callidHeader == NULL) {
+        LM_ERR("no more pkg memory\n");
+        return -1 ;
+    }
+    memset(callidHeader, '\0', msg->callid->body.len + 1);
+    strncpy(callidHeader, msg->callid->body.s, msg->callid->body.len);
+
+    if (msg->from->parsed == NULL){
+        if ( parse_from_header( msg )<0 ){
+            LM_ERR("subscribe without From header\n");
+            return -1;
+        }
+    }
+    pfrom = get_from(msg);
+    LM_INFO("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
+
+    if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0){
+        LM_ERR("INVITE without from_tag value \n");
+        return -1;
+    }
+    from_tag = pkg_malloc(sizeof (char)* pfrom->tag_value.len + 1);
+    if (from_tag == NULL) {
+        LM_ERR("no more pkg memory\n");
+        return -1;
+    }
+    memset(from_tag, 0, pfrom->tag_value.len + 1);
+    strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
+    LM_INFO("PFROM_TAGIII: %s \n ", from_tag );
+
+
+
+
+
+
 
     LM_INFO(" --- BYE  callid=%s \n", callidHeader);
-    info_call = find_and_delete_esct(callidHeader);
+    info_call = find_and_delete_esct(callidHeader, from_tag);
     if (info_call->esct == NULL) {
         LM_ERR(" --- BYE DID NOT FIND CALLID \n");
         resp = -1;

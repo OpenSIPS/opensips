@@ -340,7 +340,7 @@ DIALPLAN_DPID_COLUMN=dpid
 DIALPLAN_PR_COLUMN=pr
 DIALPLAN_MATCH_OP_COLUMN=match_op
 DIALPLAN_MATCH_EXP_COLUMN=match_exp
-DIALPLAN_MATCH_LEN_COLUMN=match_len
+DIALPLAN_MATCH_FLAGS_COLUMN=match_flags
 DIALPLAN_SUBST_EXP_COLUMN=subst_exp
 DIALPLAN_REPL_EXP_COLUMN=repl_exp
 DIALPLAN_ATTRS_COLUMN=attrs
@@ -526,7 +526,7 @@ cat <<EOF
  dialplan show <dpid> .............. show dialplan tables
  dialplan reload ................... reload dialplan tables
  dialplan addrule <dpid> <prio> <match_op> <match_exp>
- 		<match_len> <subst_exp> <repl_exp> <attrs>
+ 		<match_flags> <subst_exp> <repl_exp> <attrs>
 		.................... add a rule
  dialplan rm ....................... removes the entire dialplan table
  dialplan rmdpid <dpid> ............ removes all the gived dpid entries

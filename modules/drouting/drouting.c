@@ -1047,11 +1047,13 @@ static int cleanup_head_db( struct head_db *hd) {
 	return 0;
 }
 
-#define head_from_extern_param( dst, src, msg)\
-	if( src.len != 0 ) \
-if( shm_str_dup( &dst, &src)!=0 ) {\
-	LM_ERR(" Fail duplicating extern_param to head (%s)\n",msg); \
-}
+#define head_from_extern_param( _dst, _src, _name)\
+	do { \
+		if( (_src).s && ((_src).len=strlen((_src).s))!=0 ) {\
+			if( shm_str_dup( &(_dst), &(_src))!=0 ) \
+				LM_ERR(" Fail duplicating extern param (%s) to head\n",_name);\
+		}\
+	}while(0)
 
 void init_head_w_extern_params(void) {
 
@@ -1076,6 +1078,9 @@ void init_head_w_extern_params(void) {
 	head_from_extern_param( head_start->gw_attrs_avp_spec,
 			gw_attrs_avp_spec, "gw_attrs_avp_spec");
 
+	head_from_extern_param( head_start->gw_priprefix_avp_spec,
+			gw_priprefix_avp_spec, "gw_priprefix_avp_spec");
+
 	head_from_extern_param( head_start->rule_attrs_avp_spec,
 			rule_attrs_avp_spec, "rule_attrs_avp_spec");
 
@@ -1099,10 +1104,10 @@ static int dr_init(void)
 
 	name_w_part.s = shm_malloc( MAX_LEN_NAME_W_PART /* length of
 													   fixed string */);
-		if( name_w_part.s == 0 ) {
-			LM_ERR(" No more shm memory [drouting:name_w_part.s]\n");
-			goto error;
-		}
+	if( name_w_part.s == 0 ) {
+		LM_ERR(" No more shm memory [drouting:name_w_part.s]\n");
+		goto error;
+	}
 
 	if( use_partitions == 1 ) { /* loading configurations from db */
 		if( get_config_from_db() == -1 ) {
@@ -1119,57 +1124,53 @@ static int dr_init(void)
 		if (drd_table.s[0]==0) {
 			LM_CRIT("mandatory parameter \"DRD_TABLE\" found empty\n");
 			goto error;
-		} else {
-			head_start->drd_table.s = shm_malloc( drd_table.len * sizeof(char) );
-			if( head_start->drd_table.s == 0 ) {
-				LM_ERR(" no more shm memory [drouting:head_start->drd_table.s]\n");
-				goto error;
-			}
-			memcpy( head_start->drd_table.s, drd_table.s, drd_table.len );
-			head_start->drd_table.len = drd_table.len;
 		}
+		head_start->drd_table.s = shm_malloc( drd_table.len * sizeof(char) );
+		if( head_start->drd_table.s == 0 ) {
+			LM_ERR(" no more shm memory [drouting:head_start->drd_table.s]\n");
+			goto error;
+		}
+		memcpy( head_start->drd_table.s, drd_table.s, drd_table.len );
+		head_start->drd_table.len = drd_table.len;
 
 		drr_table.len = strlen(drr_table.s);
 		if (drr_table.s[0]==0) {
 			LM_CRIT("mandatory parameter \"DRR_TABLE\" found empty\n");
 			goto error;
-		} else {
-			head_start->drr_table.s = shm_malloc( drr_table.len * sizeof(char) );
-			if( head_start->drr_table.s == 0 ) {
-				LM_ERR(" no more shm memory [drouting:head_start->drr_table.s]\n");
-				goto error;
-			}
-			memcpy( head_start->drr_table.s, drr_table.s, drr_table.len);
-			head_start->drr_table.len = drr_table.len;
 		}
+		head_start->drr_table.s = shm_malloc( drr_table.len * sizeof(char) );
+		if( head_start->drr_table.s == 0 ) {
+			LM_ERR(" no more shm memory [drouting:head_start->drr_table.s]\n");
+			goto error;
+		}
+		memcpy( head_start->drr_table.s, drr_table.s, drr_table.len);
+		head_start->drr_table.len = drr_table.len;
 
 		drg_table.len = strlen(drg_table.s);
 		if (drg_table.s[0]==0) {
 			LM_CRIT("mandatory parameter \"DRG_TABLE\" found empty\n");
 			goto error;
-		} else {
-			head_start->drg_table.s = shm_malloc( drg_table.len * sizeof(char) );
-			if( head_start->drg_table.s == 0 ) {
-				LM_ERR(" no more shm memory [drouting:head_start->drg_table.s]\n");
-				goto error;
-			}
-			memcpy( head_start->drg_table.s, drg_table.s, drg_table.len);
-			head_start->drg_table.len = drg_table.len;
 		}
+		head_start->drg_table.s = shm_malloc( drg_table.len * sizeof(char) );
+		if( head_start->drg_table.s == 0 ) {
+			LM_ERR(" no more shm memory [drouting:head_start->drg_table.s]\n");
+			goto error;
+		}
+		memcpy( head_start->drg_table.s, drg_table.s, drg_table.len);
+		head_start->drg_table.len = drg_table.len;
 
 		drc_table.len = strlen(drc_table.s);
 		if ( drc_table.s[0]==0 ) {
 			LM_CRIT("mandatory parameter \"DRC_TABLE\" found empty\n");
 			goto error;
-		} else {
-			head_start->drc_table.s = shm_malloc( drc_table.len * sizeof(char) );
-			if( head_start->drc_table.s == 0 ) {
-				LM_ERR(" no more shm memory [drouting:head_start->drc_table.s]\n");
-				goto error;
-			}
-			memcpy( head_start->drc_table.s, drc_table.s, drc_table.len);
-			head_start->drc_table.len = drc_table.len;
 		}
+		head_start->drc_table.s = shm_malloc( drc_table.len * sizeof(char) );
+		if( head_start->drc_table.s == 0 ) {
+			LM_ERR(" no more shm memory [drouting:head_start->drc_table.s]\n");
+			goto error;
+		}
+		memcpy( head_start->drc_table.s, drc_table.s, drc_table.len);
+		head_start->drc_table.len = drc_table.len;
 
 		head_start->db_url.len = db_url.len;
 		head_start->db_url.s = shm_malloc( db_url.len * sizeof(char));
@@ -1262,7 +1263,8 @@ static int dr_init(void)
 		add_partition_to_avp_name( name, it_head_config->partition,
 				name_w_part);
 
-		if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_ruri))!=0 ) {
+		if ( parse_avp_spec( &name_w_part,
+		&(head_db_end->avpID_store_ruri))!=0 ) {
 			LM_ERR("failed to init internal AVP for ruri\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
@@ -1271,7 +1273,8 @@ static int dr_init(void)
 		name.s = "_dr_fb_prefix_"; name.len=14;
 		add_partition_to_avp_name( name, it_head_config->partition,
 				name_w_part);
-		if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_prefix))!=0 ) {
+		if ( parse_avp_spec( &name_w_part,
+		&(head_db_end->avpID_store_prefix))!=0 ) {
 			LM_ERR("failed to init internal AVP for prefix\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
@@ -1280,7 +1283,8 @@ static int dr_init(void)
 		name.s = "_dr_fb_index_"; name.len=13;
 		add_partition_to_avp_name( name, it_head_config->partition,
 				name_w_part);
-		if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_index))!=0 ) {
+		if ( parse_avp_spec( &name_w_part,
+		&(head_db_end->avpID_store_index))!=0 ) {
 			LM_ERR("failed to init internal AVP for index\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
@@ -1289,7 +1293,8 @@ static int dr_init(void)
 		name.s = "_dr_fb_whitelist_"; name.len=17;
 		add_partition_to_avp_name( name, it_head_config->partition,
 				name_w_part);
-		if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_whitelist))!=0 ) {
+		if ( parse_avp_spec( &name_w_part,
+		&(head_db_end->avpID_store_whitelist))!=0 ) {
 			LM_ERR("failed to init internal AVP for whitelist\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
@@ -1298,7 +1303,8 @@ static int dr_init(void)
 		name.s = "_dr_fb_group_"; name.len=13;
 		add_partition_to_avp_name( name, it_head_config->partition,
 				name_w_part);
-		if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_group))!=0 ) {
+		if ( parse_avp_spec( &name_w_part,
+		&(head_db_end->avpID_store_group))!=0 ) {
 			LM_ERR("failed to init internal AVP for group\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
@@ -1307,7 +1313,8 @@ static int dr_init(void)
 		name.s = "_dr_fb_flags_"; name.len=13;
 		add_partition_to_avp_name( name, it_head_config->partition,
 				name_w_part);
-		if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_flags))!=0 ) {
+		if ( parse_avp_spec( &name_w_part,
+		&(head_db_end->avpID_store_flags))!=0 ) {
 			LM_ERR("failed to init internal AVP for flags\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
@@ -1358,9 +1365,6 @@ static int dr_init(void)
 					head_db_end->carrier_id_avp, "CARRIER ID");
 		}
 
-
-
-
 		/* data pointer in shm */
 		head_db_end->rdata = (rt_data_t**)shm_malloc( sizeof(rt_data_t*) );
 		if ( head_db_end->rdata==0 ) {
@@ -1381,8 +1385,8 @@ static int dr_init(void)
 		head_db_end->db_con = pkg_malloc(sizeof(db_con_t **));
 		(*(head_db_end->db_con)) = 0;
 
-		/* bind to the mysql module */
-		if (db_bind_mod( &(head_db_end->db_url), &( head_db_end->db_funcs ) )) {
+		/* bind to the SQL module */
+		if (db_bind_mod( &(head_db_end->db_url), &( head_db_end->db_funcs ))) {
 			LM_CRIT("cannot bind to database module! "
 					"Did you forget to load a database module ? (%.*s)\n",
 					db_url.len, db_url.s);
@@ -2382,7 +2386,8 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current
 	if (current_partition->gw_priprefix_avp!=-1) {
 		val.s = gw->pri.s? gw->pri : attrs_empty;
 		LM_DBG("setting GW priprefix [%.*s] as avp\n",val.s.len,val.s.s);
-		if (add_avp_last(AVP_VAL_STR, current_partition->gw_priprefix_avp, val)!=0){
+		if (add_avp_last(AVP_VAL_STR, current_partition->gw_priprefix_avp,
+					val)!=0){
 			LM_ERR("failed to insert priprefix avp\n");
 			goto error;
 		}
@@ -2391,17 +2396,20 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current
 	if (current_partition->carrier_id_avp!=-1) {
 		val.s = (c_id && c_id->s)? *c_id : attrs_empty ;
 		LM_DBG("setting CR Id [%.*s] as avp\n",val.s.len,val.s.s);
-		if (add_avp_last(AVP_VAL_STR, current_partition->carrier_id_avp, val)!=0){
+		if (add_avp_last(AVP_VAL_STR, current_partition->carrier_id_avp,
+					val)!=0){
 			LM_ERR("failed to insert attrs avp\n");
 			goto error;
 		}
 	}
 
-	/* add internal carrier attrs avp if requested at least once in the script */
+	/* add internal carrier attrs avp if requested at least once
+	 * in the script */
 	if (populate_carrier_attrs) {
 		val.s = (c_attrs && c_attrs->s)? *c_attrs : attrs_empty;
 		LM_DBG("setting CR attr [%.*s] as avp\n", val.s.len, val.s.s);
-		if (add_avp_last(AVP_VAL_STR, current_partition->carrier_attrs_avp, val)!=0) {
+		if (add_avp_last(AVP_VAL_STR, current_partition->carrier_attrs_avp,
+					val)!=0) {
 			LM_ERR("failed to insert carrier attrs avp\n");
 			goto error;
 		}
@@ -2415,7 +2423,8 @@ error:
 }
 
 
-static inline int is_dst_in_list(void* dst, pgw_list_t *list, unsigned short len)
+static inline int is_dst_in_list(void* dst, pgw_list_t *list,
+															unsigned short len)
 {
 	unsigned short i;
 
@@ -2427,6 +2436,7 @@ static inline int is_dst_in_list(void* dst, pgw_list_t *list, unsigned short len
 	}
 	return 0;
 }
+
 
 struct head_db * get_partition(const str *name) {
 	struct head_db * it = head_db_start;
@@ -2478,12 +2488,13 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 	rt_info = NULL;
 
 	if(use_partitions) {
-		if(part_group == NULL || part_group->dr_part == NULL || part_group->dr_part->type == DR_NO_PART) {
+		if(part_group == NULL || part_group->dr_part == NULL ||
+		part_group->dr_part->type == DR_NO_PART) {
 			LM_ERR("Partition name is mandatory for do_routing\n");
 			return -1;
 		}
 		if(part_group->dr_part->type == DR_GPARAM_PART) {
-			if(to_partition(msg, part_group->dr_part, &current_partition) < 0) {
+			if (to_partition(msg, part_group->dr_part, &current_partition)<0) {
 				return -1;
 			}
 		} else if(part_group->dr_part->type == DR_PTR_PART) {
@@ -2499,14 +2510,12 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 	drg = part_group->group;
 
 
-
 	/* allow no GWs if we're only trying to use DR for checking purposes */
 	if ( *(current_partition->rdata)==0 || ((flags & DR_PARAM_ONLY_CHECK) == 0
 				&& (*(current_partition->rdata))->pgw_l==0 )) {
 		LM_DBG("empty routing table\n");
 		goto error1;
 	}
-
 
 	/* do some cleanup first */
 	destroy_avps( 0, current_partition->ruri_avp, 1);
@@ -2550,7 +2559,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 				grp_id = (int)drg->u.grp_id;
 			else if(drg->type==1) {
 				grp_id = 0; /* call get avp here */
-				if((avp=search_first_avp( 0, drg->u.avp_name, &val, 0))==NULL ||
+				if((avp=search_first_avp(0, drg->u.avp_name, &val, 0))==NULL ||
 						(avp->flags&AVP_VAL_STR) ) {
 					LM_ERR( "failed to get group id from avp\n");
 					goto error1;
@@ -2602,7 +2611,8 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 		if (username.len==0) return -1;
 
 		/* original RURI to be used when building RURIs for new attempts */
-		if (search_first_avp( AVP_VAL_STR, current_partition->avpID_store_ruri, &val, 0)==NULL) {
+		if (search_first_avp( AVP_VAL_STR, current_partition->avpID_store_ruri,
+		&val, 0)==NULL) {
 			LM_ERR("Cannot find ruri AVP during a fallback\n");
 			goto error1;
 		}
@@ -2753,8 +2763,9 @@ search_again:
 					/*ignore it*/
 				} else {
 					/* add gateway to usage list */
-					if ( push_gw_for_usage(msg, current_partition, &uri, cdst->dst.gw ,
-								&dst->dst.carrier->id, &dst->dst.carrier->attrs, n ) ) {
+					if ( push_gw_for_usage(msg, current_partition,
+					&uri, cdst->dst.gw ,
+					&dst->dst.carrier->id, &dst->dst.carrier->attrs, n ) ) {
 						LM_ERR("failed to use gw <%.*s>, skipping\n",
 								cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 					} else {
@@ -3909,7 +3920,7 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 		pgwa = (*current_partition->rdata)->pgw_l;
 		while(pgwa) {
 			if( (type<0 || type==pgwa->type) &&
-					gw_matches_ip( pgwa, ip, (flags&DR_IFG_IGNOREPORT_FLAG)?0:port ) ) {
+			gw_matches_ip( pgwa, ip, (flags&DR_IFG_IGNOREPORT_FLAG)?0:port )) {
 				/* strip ? */
 				if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
 					strip_username(msg, pgwa->strip);
@@ -3918,7 +3929,8 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 					/* pri prefix ? */
 					if (current_partition->gw_priprefix_avp!=-1) {
 						val.s = pgwa->pri.s ? pgwa->pri : attrs_empty ;
-						if (add_avp(AVP_VAL_STR, current_partition->gw_priprefix_avp, val)!=0)
+						if (add_avp(AVP_VAL_STR,
+						current_partition->gw_priprefix_avp, val)!=0)
 							LM_ERR("failed to insert GW pri prefix avp\n");
 					}
 					prefix_username(msg, &pgwa->pri);
@@ -3934,13 +3946,15 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 
 				if ( flags & DR_IFG_IDS_FLAG ) {
 					val.s = pgwa->id;
-					if (add_avp(AVP_VAL_STR, current_partition->gw_id_avp, val)!=0)
+					if (add_avp(AVP_VAL_STR,
+					current_partition->gw_id_avp, val)!=0)
 						LM_ERR("failed to insert GW attrs avp\n");
 				}
 
 				if ( flags & DR_IFG_CARRIERID_FLAG ) {
 					/* lookup first carrier that contains this gw */
-					for (pcr=(*current_partition->rdata)->carriers;pcr;pcr=pcr->next) {
+					for (pcr=(*current_partition->rdata)->carriers;pcr;
+					pcr=pcr->next) {
 						for (i=0;i<pcr->pgwa_len;i++) {
 							if (pcr->pgwl[i].is_carrier == 0 &&
 									pcr->pgwl[i].dst.gw == pgwa ) {
@@ -3948,8 +3962,9 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 								if (current_partition->carrier_id_avp!=-1) {
 									val.s = pcr->id;
 									if (add_avp_last(AVP_VAL_STR,
-												current_partition->carrier_id_avp, val)!=0) {
-										LM_ERR("failed to add carrier id AVP\n");
+									current_partition->carrier_id_avp,val)!=0){
+										LM_ERR("failed to add carrier id "
+											"AVP\n");
 									}
 								}
 								goto end;
@@ -4415,14 +4430,18 @@ int add_head_db(void) {
 }
 
 /* use_partitions: use configurations from database */
-int add_head_config(void) { /* expand linked list */
+int add_head_config(void)
+{
+	/* expand linked list */
 	struct head_config *new;
+
 	new = ( struct head_config* )shm_malloc( sizeof( struct head_config ) );
 	if( new == NULL ) {
 		LM_ERR("no more shm memory\n");
 		return -1;
 	}
-	memset(new, 0, sizeof( struct head_config ) ); /* ->next will be null too */
+	memset(new, 0, sizeof( struct head_config ) );
+	/* ->next will be null too */
 
 	if( head_start == NULL) {
 		head_start = new;
