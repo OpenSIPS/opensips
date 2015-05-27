@@ -241,7 +241,7 @@ static int avpops_child_init(int rank)
 }
 
 
-static int fixup_db_url(void ** param, int flags)
+static int fixup_db_url(void ** param, int require_raw_query)
 {
 	struct db_url* url;
 	unsigned int ui;
@@ -261,7 +261,14 @@ static int fixup_db_url(void ** param, int flags)
 		return E_CFG;
 	}
 
-	url->flags |= flags;
+	/*
+	 * Since mod_init() is run before function fixups, all DB structs
+	 * are initialized and all DB capabilities are populated
+	 */
+	if (require_raw_query && !DB_CAPABILITY(url->dbf, DB_CAP_RAW_QUERY)) {
+		LM_ERR("driver for DB URL [%u] does not support raw queries\n", ui);
+		return -1;
+	}
 
 	pkg_free(*param);
 	*param=(void *)url;
@@ -475,7 +482,7 @@ static int fixup_db_query_avp(void** param, int param_no)
 		*param = (void*)anlist;
 		return 0;
 	} else if (param_no==3) {
-		return fixup_db_url(param, DBFL_CAP_RAW_QUERY);
+		return fixup_db_url(param, 1);
 	}
 
 	return 0;

@@ -146,27 +146,24 @@ int avpops_db_bind(void)
 				db_urls[i].url.len,db_urls[i].url.s);
 			return -1;
 		}
-
-		if ((db_urls[i].flags & DBFL_CAP_RAW_QUERY) &&
-			 !DB_CAPABILITY(db_urls[i].dbf, DB_CAP_RAW_QUERY)) {
-			LM_ERR("DB driver for '%.*s' does not support raw queries!\n",
-					db_urls[i].url.len,db_urls[i].url.s);
-			return -1;
-		}
 	}
 
-	/* we cannot catch the default DB url usage & flag it; do a low-level check :( */
+	/*
+	 * we cannot catch the default DB url usage at fixup time
+	 * as we do with the other bunch of extra avpops DB URLs
+	 *
+	 * so just dig through the whole script tree
+	 */
 	if (is_script_func_used("avp_db_query", 1) ||
 		is_script_func_used("avp_db_query", 2)) {
 		if (!DB_CAPABILITY(default_db_url->dbf, DB_CAP_RAW_QUERY)) {
-			LM_ERR("DB driver for '%.*s' does not support raw queries!\n",
-					default_db_url->url.len, default_db_url->url.s);
+			LM_ERR("driver for DB URL [default] does not support "
+				   "raw queries!\n");
 			return -1;
 		}
 	}
 
 	return 0;
-
 }
 
 

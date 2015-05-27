@@ -36,8 +36,6 @@
 #include "../../sr_module.h"
 #include "../../pvar.h"
 
-#define DBFL_CAP_RAW_QUERY 1
-
 extern struct db_url *default_db_url;
 
 struct db_url
@@ -46,7 +44,6 @@ struct db_url
 	unsigned int idx;
 	db_con_t  *hdl;     /* DB handler */
 	db_func_t dbf;  /* DB functions */
-	int flags;      /* avpops-specific flags */
 };
 
 /* definition of a DB scheme*/
