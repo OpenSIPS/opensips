@@ -596,13 +596,13 @@ error:
  * receive_binary_packet (callback) - receives a cmd_type, specifying the
  * purpose of the data encoded in the received UDP packet
  */
-void receive_binary_packet(int info_type)
+void receive_binary_packet(int packet_type, struct receive_info *ri)
 {
 	int rc;
 
 	LM_DBG("Received a binary packet!\n");
 
-	switch (info_type) {
+	switch (packet_type) {
 	case REPLICATION_DLG_CREATED:
 		rc = dlg_replicated_create(NULL, NULL, NULL, 1);
 		if_update_stat(dlg_enable_stats, create_recv, 1);
@@ -620,7 +620,7 @@ void receive_binary_packet(int info_type)
 
 	default:
 		rc = -1;
-		LM_ERR("Invalid dialog binary packet command: %d\n", info_type);
+		LM_ERR("Invalid dialog binary packet command: %d\n", packet_type);
 	}
 
 	if (rc != 0)

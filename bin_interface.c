@@ -289,7 +289,7 @@ again:
  *
  * @return:   0 on success
  */
-int bin_register_cb(char *mod_name, void (*cb)(int))
+int bin_register_cb(char *mod_name, void (*cb)(int, struct receive_info *))
 {
 	struct packet_cb_list *new_mod;
 
@@ -330,10 +330,11 @@ static int has_valid_checksum(char *buf, int len)
  */
 static void bin_receive_loop(void)
 {
-	int rcv_bytes;
 	struct receive_info ri;
+	socklen_t addrlen;
 	struct packet_cb_list *p;
 	str name;
+	int rcv_bytes;
 
 	ri.bind_address = bind_address;
 	ri.dst_port = bind_address->port_no;
@@ -342,8 +343,9 @@ static void bin_receive_loop(void)
 	ri.proto_reserved1 = ri.proto_reserved2 = 0;
 
 	for (;;) {
+		addrlen = sizeof ri.src_su;
 		rcv_bytes = recvfrom(bind_address->socket, rcv_buf, BUF_SIZE,
-							 0, NULL, NULL);
+							 0, &ri.src_su.s, &addrlen);
 		if (rcv_bytes == -1) {
 			if (errno == EAGAIN) {
 				LM_DBG("packet with bad checksum received\n");
@@ -356,6 +358,9 @@ static void bin_receive_loop(void)
 
 			return;
 		}
+
+		if (addrlen > sizeof ri.src_su)
+			LM_CRIT("src addr truncated! (%u -> %zu)\n", addrlen, sizeof ri.src_su);
 
 		rcv_end = rcv_buf + rcv_bytes;
 
@@ -386,7 +391,7 @@ static void bin_receive_loop(void)
 				LM_DBG("binary Packet CMD: %d. Module: %.*s\n",
 						bin_rcv_type, name.len, name.s);
 
-				p->cbf(bin_rcv_type);
+				p->cbf(bin_rcv_type, &ri);
 
 				break;
 			}

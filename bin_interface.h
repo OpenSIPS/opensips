@@ -61,8 +61,9 @@ extern struct socket_info *bin;
 extern int bin_children;
 
 struct packet_cb_list {
-	str module;                /* registered module */
-	void (*cbf)(int cmd_type); /* module callback */
+	str module;							/* registered module */
+	void (*cbf)(int packet_type,		/* module callback */
+				struct receive_info *ri);
 
 	struct packet_cb_list *next;
 };
@@ -72,7 +73,7 @@ struct packet_cb_list {
  * registers a callback function to be triggered on a received
  * binary packet marked with the @mod_name module name
  */
-int bin_register_cb(char *mod_name, void (*)(int packet_type));
+int bin_register_cb(char *mod_name, void (*)(int packet_type, struct receive_info *ri));
 
 
 /**
