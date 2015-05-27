@@ -38,14 +38,9 @@
  * specific time interval.
  *
  */
+#include <stdlib.h>
+#include <sys/timerfd.h>  /* for timer FD */
 
-
-/* FIFO action protocol names */
-#define FIFO_SET_PROB   "rand_set_prob"
-#define FIFO_RESET_PROB "rand_reset_prob"
-#define FIFO_GET_PROB   "rand_get_prob"
-#define FIFO_GET_HASH   "get_config_hash"
-#define FIFO_CHECK_HASH "check_config_hash"
 
 #include "../../sr_module.h"
 #include "../../error.h"
@@ -58,10 +53,17 @@
 #include "../../md5utils.h"
 #include "../../globals.h"
 #include "../../time_rec.h"
-#include <stdlib.h>
 #include "shvar.h"
 #include "env_var.h"
 #include "script_locks.h"
+
+
+/* FIFO action protocol names */
+#define FIFO_SET_PROB   "rand_set_prob"
+#define FIFO_RESET_PROB "rand_reset_prob"
+#define FIFO_GET_PROB   "rand_get_prob"
+#define FIFO_GET_HASH   "get_config_hash"
+#define FIFO_CHECK_HASH "check_config_hash"
 
 
 static int set_prob(struct sip_msg*, char *, char *);
@@ -88,6 +90,14 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 static int ts_usec_delta(struct sip_msg *msg, char *_t1s,
 		char *_t1u, char *_t2s, char *_t2u, char *_res);
 static int check_time_rec(struct sip_msg*, char *);
+
+static int async_sleep(struct sip_msg* msg,
+		async_resume_module **resume_f, void **resume_param,
+		char *duration);
+
+static int async_usleep(struct sip_msg* msg,
+		async_resume_module **resume_f, void **resume_param,
+		char *duration);
 
 static int fixup_prob( void** param, int param_no);
 static int fixup_pv_set(void** param, int param_no);
@@ -170,6 +180,14 @@ static cmd_export_t cmds[]={
 	{0, 0, 0, 0, 0, 0}
 };
 
+static acmd_export_t acmds[] = {
+	{"sleep",  (acmd_function)async_sleep,  1, fixup_spve_null },
+	{"usleep", (acmd_function)async_usleep, 1, fixup_spve_null },
+	{0, 0, 0, 0}
+};
+
+
+
 static param_export_t params[]={
 	{"initial_probability", INT_PARAM, &initial},
 	{"hash_file",           STR_PARAM, &hash_file        },
@@ -210,7 +228,7 @@ struct module_exports exports = {
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	NULL,            /* OpenSIPS module dependencies */
 	cmds,        /* exported functions */
-	0,           /* exported async functions */
+	acmds,       /* exported async functions */
 	params,      /* exported parameters */
 	0,           /* exported statistics */
 	mi_cmds,     /* exported MI functions */
@@ -470,7 +488,6 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 
 static int m_sleep(struct sip_msg *msg, char *time, char *str2)
 {
-
 	str time_s={NULL,0};
 	long seconds;
 
@@ -504,6 +521,110 @@ static int m_usleep(struct sip_msg *msg, char *time, char *str2)
 
 	return 1;
 }
+
+
+int resume_async_sleep(int fd, struct sip_msg *msg, void *param)
+{
+	close (fd);
+	async_status = ASYNC_DONE;
+
+	return 1;
+}
+
+
+static int async_sleep(struct sip_msg* msg, async_resume_module **resume_f,
+										void **resume_param, char *time)
+{
+	str time_s={NULL,0};
+	unsigned int seconds;
+	struct itimerspec its;
+	int fd;
+
+	if(time == NULL || fixup_get_svalue(msg, (gparam_p)time, &time_s)!=0) {
+		LM_ERR("Invalid time argument\n");
+		return -1;
+	}
+
+	if ( str2int( &time_s, &seconds) != 0 ) {
+		LM_ERR("time to sleep <%.*s> is not integer\n",
+			time_s.len,time_s.s);
+		return -1;
+	}
+	LM_DBG("sleep %d seconds\n", seconds);
+
+	/* create the timer fd */
+	if ( (fd=timerfd_create( CLOCK_REALTIME, 0))<0 ) {
+		LM_ERR("failed to create new timer FD (%d) <%s>\n",
+			errno, strerror(errno));
+		return -1;
+	}
+
+	/* set the time */
+	its.it_value.tv_sec = seconds;
+	its.it_value.tv_nsec = 0;
+	its.it_interval.tv_sec = 0;
+	its.it_interval.tv_nsec = 0;
+	if (timerfd_settime( fd, 0, &its, NULL)<0) {
+		LM_ERR("failed to set timer FD (%d) <%s>\n",
+			errno, strerror(errno));
+		return -1;
+	}
+
+	/* start the async wait */
+	*resume_param = NULL;
+	*resume_f = resume_async_sleep;
+	async_status = fd;
+
+	return 1;
+}
+
+
+static int async_usleep(struct sip_msg* msg, async_resume_module **resume_f,
+										void **resume_param, char *time)
+{
+	str time_s={NULL,0};
+	unsigned int useconds;
+	struct itimerspec its;
+	int fd;
+
+	if(time == NULL || fixup_get_svalue(msg, (gparam_p)time, &time_s)!=0) {
+		LM_ERR("Invalid time argument\n");
+		return -1;
+	}
+
+	if ( str2int( &time_s, &useconds) != 0 ) {
+		LM_ERR("time to sleep <%.*s> is not integer\n",
+			time_s.len,time_s.s);
+		return -1;
+	}
+	LM_DBG("sleep %d useconds\n", useconds);
+
+	/* create the timer fd */
+	if ( (fd=timerfd_create( CLOCK_REALTIME, 0))<0 ) {
+		LM_ERR("failed to create new timer FD (%d) <%s>\n",
+			errno, strerror(errno));
+		return -1;
+	}
+
+	/* set the time */
+	its.it_value.tv_sec = (useconds / 1000000);
+	its.it_value.tv_nsec = (useconds % 1000000) * 1000;
+	its.it_interval.tv_sec = 0;
+	its.it_interval.tv_nsec = 0;
+	if (timerfd_settime( fd, 0, &its, NULL)<0) {
+		LM_ERR("failed to set timer FD (%d) <%s>\n",
+			errno, strerror(errno));
+		return -1;
+	}
+
+	/* start the async wait */
+	*resume_param = NULL;
+	*resume_f = resume_async_sleep;
+	async_status = fd;
+
+	return 1;
+}
+
 
 static int dbg_abort(struct sip_msg* msg, char* foo, char* bar)
 {
