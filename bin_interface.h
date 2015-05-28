@@ -90,14 +90,18 @@ int bin_init(str *mod_name, int packet_type);
  * adds a new string value to the packet being currently built
  * @info: may also be NULL
  *
- * @return: 0 on success, otherwise buffer limit reached
+ * @return:
+ *		> 0: success, number of added bytes
+ *		< 0: internal buffer limit reached
  */
 int bin_push_str(const str *info);
 
 /*
  * adds a new integer value to the packet being currently built
  *
- * @return: 0 on success, otherwise buffer limit reached
+ * @return:
+ *		> 0: success, number of added bytes
+ *		< 0: internal buffer limit reached
  */
 int bin_push_int(int info);
 

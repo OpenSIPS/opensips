@@ -83,7 +83,9 @@ int bin_init(str *mod_name, int cmd_type)
  * copies the given string at the 'cpos' position in the buffer
  * allows null strings (NULL content or NULL param)
  *
- * @return: 0 on success
+ * @return:
+ *		> 0: success, number of added bytes
+ *		< 0: internal buffer limit reached
  */
 int bin_push_str(const str *info)
 {
@@ -94,7 +96,7 @@ int bin_push_str(const str *info)
 	if (!info || info->len == 0 || !info->s) {
 		memset(cpos, 0, LEN_FIELD_SIZE);
 		cpos += LEN_FIELD_SIZE;
-		return 0;
+		return (int)LEN_FIELD_SIZE;
 	}
 
 	memcpy(cpos, &info->len, LEN_FIELD_SIZE);
@@ -102,13 +104,15 @@ int bin_push_str(const str *info)
 	memcpy(cpos, info->s, info->len);
 	cpos += info->len;
 
-	return 0;
+	return (int)LEN_FIELD_SIZE + info->len;
 }
 
 /*
  * adds a new integer value at the 'cpos' position in the buffer
  *
- * @return: 0 on success
+ * @return:
+ *		> 0: success, number of added bytes
+ *		< 0: internal buffer limit reached
  */
 int bin_push_int(int info)
 {
@@ -118,7 +122,7 @@ int bin_push_int(int info)
 	memcpy(cpos, &info, sizeof(info));
 	cpos += sizeof(info);
 
-	return 0;
+	return sizeof(info);
 }
 
 /*
