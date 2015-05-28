@@ -109,7 +109,10 @@ int bin_push_int(int info);
  * pops a str structure from a received binary packet
  * @info:   pointer to store the result
  *
- * @return: 0 on success
+ * @return:
+ *		0 (success): info retrieved
+ *		1 (success): nothing returned, all data has been consumed!
+ *		< 0: error
  *
  * Note: The pointer returned in @info is only valid for the duration of
  *       the callback. Don't forget to copy the data into a safe buffer!
@@ -122,7 +125,10 @@ int bin_pop_str(str *info);
  * pops an integer from a received binary packet
  * @info:   pointer to store the result
  *
- * @return: 0 on success
+ * @return:
+ *		0 (success): info retrieved
+ *		1 (success): nothing returned, all data has been consumed!
+ *		< 0: error
  *
  * Note: Information is retrieved in the same order it was stored
  */

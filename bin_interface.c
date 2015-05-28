@@ -189,13 +189,19 @@ error:
  * pops an str from the current position in the buffer
  * @info:   pointer to store the result
  *
- * @return: 0 on success
+ * @return:
+ *		0 (success): info retrieved
+ *		1 (success): nothing returned, all data has been consumed!
+ *		< 0: error
  *
  * Note: The pointer returned in @info str is only valid for the duration of
  *       the callback. Don't forget to copy the info into a safe buffer!
  */
 int bin_pop_str(str *info)
 {
+	if (cpos == rcv_end)
+		return 1;
+
 	if (child_index == 0) {
 		LM_ERR("Non bin processes cannot do pop operations!\n");
 		return -2;
@@ -230,10 +236,16 @@ error:
  * pops an integer value from the current position in the buffer
  * @info:   pointer to store the result
  *
- * @return: 0 on success
+ * @return:
+ *		0 (success): info retrieved
+ *		1 (success): nothing returned, all data has been consumed!
+ *		< 0: error
  */
 int bin_pop_int(void *info)
 {
+	if (cpos == rcv_end)
+		return 1;
+
 	if (child_index == 0) {
 		LM_ERR("Non bin processes cannot do pop operations!\n");
 		return -2;
