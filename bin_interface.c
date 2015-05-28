@@ -128,11 +128,14 @@ int bin_push_int(int info)
 /*
  * skips @count integers from the current position in the received binary packet
  *
- * @return: 0 on success
+ * @return:
+ *		>= 0: success, number of skipped bytes
+ *		<  0: error, buffer limit reached
  */
 int bin_skip_int(int count)
 {
 	int i;
+	char *in = cpos;
 
 	if (child_index == 0) {
 		LM_ERR("Non bin processes cannot do pop operations!\n");
@@ -148,17 +151,20 @@ int bin_skip_int(int count)
 		cpos += LEN_FIELD_SIZE;
 	}
 
-	return 0;
+	return (int)(cpos - in);
 }
 
 /*
  * skips @count strings from the current position in a received binary packet
  *
- * @return: 0 on success
+ * @return:
+ *		>= 0: success, number of skipped bytes
+ *		<  0: error, buffer limit reached
  */
 int bin_skip_str(int count)
 {
 	int i, len;
+	char *in = cpos;
 
 	if (child_index == 0) {
 		LM_ERR("Non bin processes cannot do pop operations!\n");
@@ -178,7 +184,7 @@ int bin_skip_str(int count)
 		cpos += len;
 	}
 
-	return 0;
+	return (int)(cpos - in);
 
 error:
 	LM_ERR("Receive binary packet buffer overflow");

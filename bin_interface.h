@@ -137,14 +137,18 @@ int bin_pop_int(void *info);
 /*
  * skips @count integers from a received binary packet
  *
- * @return: 0 on success
+ * @return:
+ *		>= 0: success, number of skipped bytes
+ *		<  0: error, buffer limit reached
  */
 int bin_skip_int(int count);
 
 /*
  * skips @count strings from a received binary packet
  *
- * @return: 0 on success
+ * @return:
+ *		>= 0: success, number of skipped bytes
+ *		<  0: error, buffer limit reached
  */
 int bin_skip_str(int count);
 
