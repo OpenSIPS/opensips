@@ -474,11 +474,18 @@ int redis_raw_query_handle_reply(redisReply *reply,cdb_raw_entry ***ret,
 			(*ret)[current_size][0].type = CDB_INT;
 			current_size++;
 			break;
+		case REDIS_REPLY_NIL:
+			(*ret)[current_size][0].type = CDB_NULL;
+			(*ret)[current_size][0].val.s.s = NULL;
+			(*ret)[current_size][0].val.s.len = 0;
+			current_size++;
+			break;
 		case REDIS_REPLY_ARRAY:
 			for (i=0;i<reply->elements;i++) {
 				switch (reply->element[i]->type) {
 					case REDIS_REPLY_STRING:
 					case REDIS_REPLY_INTEGER:
+					case REDIS_REPLY_NIL:
 						if (current_size > 0) {
 							*ret = pkg_realloc(*ret,(current_size + 1) * sizeof(cdb_raw_entry *));
 							if (*ret == NULL) {
@@ -496,6 +503,11 @@ int redis_raw_query_handle_reply(redisReply *reply,cdb_raw_entry ***ret,
 						if (reply->element[i]->type == REDIS_REPLY_INTEGER) {
 							(*ret)[current_size][0].val.n = reply->element[i]->integer;
 							(*ret)[current_size][0].type = CDB_INT;
+                                                } else if (reply->element[i]->type == REDIS_REPLY_NIL) {
+							(*ret)[current_size][0].val.s.s = NULL;
+							(*ret)[current_size][0].val.s.len = 0;
+							(*ret)[current_size][0].type = CDB_NULL;
+							
 						} else {
 							(*ret)[current_size][0].val.s.s = pkg_malloc(reply->element[i]->len);
 							if (! (*ret)[current_size][0].val.s.s ) {

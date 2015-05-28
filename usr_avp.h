@@ -72,6 +72,7 @@ struct usr_avp {
 
 #define AVP_NAME_STR     (1<<0)
 #define AVP_VAL_STR      (1<<1)
+#define AVP_VAL_NULL     (1<<2)
 
 #define is_avp_str_name(a)	(a->flags&AVP_NAME_STR)
 #define is_avp_str_val(a)	(a->flags&AVP_VAL_STR)
