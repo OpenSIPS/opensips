@@ -189,7 +189,11 @@ int db_cachedb_use_table(db_con_t* _h, const str* _t)
 
 int db_cachedb_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 {
-	/* This will most likely never be supported :( */
-	LM_ERR("RAW query not support by db_cachedb \n");
-	return -1;
+        struct db_cachedb_con* ptr = (struct db_cachedb_con *)_h->tail;
+
+        if (ptr->cdbf.db_raw_trans == NULL) {
+                LM_ERR("The selected NoSQL driver cannot convert raw queries\n");
+                return -1;
+        }
+        return ptr->cdbf.db_raw_trans(ptr->cdbc, _s, _r);
 }

@@ -74,6 +74,7 @@ typedef int(cachedb_free_trans_f)(cachedb_con* con, db_res_t* _r);
 typedef int(cachedb_insert_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k, const db_val_t* _v,const int _n);
 typedef int(cachedb_delete_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const int _n);
 typedef int (cachedb_update_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const db_key_t* _uk, const db_val_t* _uv, const int _n,const int _un);
+typedef int(cachedb_raw_trans_f)(cachedb_con* con, const str *_s, db_res_t** _r);
 
 typedef struct cachedb_funcs_t {
 	cachedb_init_f			*init;
@@ -90,6 +91,7 @@ typedef struct cachedb_funcs_t {
 	cachedb_insert_trans_f	*db_insert_trans;
 	cachedb_delete_trans_f	*db_delete_trans;
 	cachedb_update_trans_f	*db_update_trans;
+        cachedb_raw_trans_f     *db_raw_trans;
 	int capability;
 } cachedb_funcs;
 
