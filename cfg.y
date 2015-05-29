@@ -1590,7 +1590,7 @@ assign_cmd: script_var assignop assignexp {
 			if(!pv_is_w($1))
 				yyerror("invalid left operand in assignment");
 			if($1->trans!=0)
-				yyerror("transformations not accepted in right side "
+				yyerror("transformations not accepted in left side "
 					"of assignment");
 
 			mk_action2( $$, $2,
@@ -1603,7 +1603,7 @@ assign_cmd: script_var assignop assignexp {
 			if(!pv_is_w($1))
 				yyerror("invalid left operand in assignment");
 			if($1->trans!=0)
-				yyerror("transformations not accepted in right side "
+				yyerror("transformations not accepted in left side "
 					"of assignment");
 
 			mk_action2( $$, EQ_T,
@@ -1623,7 +1623,7 @@ assign_cmd: script_var assignop assignexp {
 					yyerror("invalid left operand in NULL assignment");
 			}
 			if($1->trans!=0)
-				yyerror("transformations not accepted in right side "
+				yyerror("transformations not accepted in left side "
 					"of assignment");
 
 			mk_action2( $$, COLONEQ_T,
