@@ -32,6 +32,7 @@
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_from.h"
 #include "../../usr_avp.h"
+#include "partitions.h"
 
 #define PERM_HASH_SIZE 128
 
@@ -86,7 +87,8 @@ int hash_match(struct sip_msg *msg, struct address_list** table,
  * Print entries stored in hash table
  */
 //void hash_print(struct address_list** hash_table, FILE* reply_file);
-int hash_mi_print(struct address_list **table, struct mi_node* rpl);
+int hash_mi_print(struct address_list **table, struct mi_node* rpl,
+		struct pm_part_struct *pm);
 
 /*
  * Empty hash table
@@ -164,7 +166,8 @@ int subnet_table_insert(struct subnet* table, unsigned int grp,
  * Print subnets stored in subnet table
  */
 /*void subnet_table_print(struct subnet* table, FILE* reply_file);*/
-int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl);
+int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl,
+		struct pm_part_struct *pm);
 
 
 

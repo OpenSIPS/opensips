@@ -242,14 +242,20 @@ int find_group_in_hash_table(struct address_list** table,
 
 
 
-int hash_mi_print(struct address_list **table, struct mi_node* rpl) {
+int hash_mi_print(struct address_list **table, struct mi_node* rpl,
+		struct pm_part_struct *pm) {
 	int i;
     struct address_list *node;
+
+	if (addf_mi_node_child(rpl, 0, 0, 0,
+				"%.*s\n",
+				pm->name.len, pm->name.s) == 0)
+		return -1;
 
     for (i = 0; i < PERM_HASH_SIZE; i++)
 		for (node = table[i]; node; node=node->next)
 	    	if (addf_mi_node_child(rpl, 0, 0, 0,
-				   "%4d <%s,%u, %u, %d, %s, %s>",
+				   "\t%4d <%s,%u, %u, %d, %s, %s>",
 				   i,
 				   ip_addr2a(node->ip),
 				   node->grp,
@@ -465,12 +471,18 @@ int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int g
 /*
  * Print subnets stored in subnet table
  */
-int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl)
+int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl,
+		struct pm_part_struct *pm)
 {
     unsigned int count, i;
 	char *ip, *mask;
 	static char ip_buff[IP_ADDR_MAX_STR_SIZE];
     count = table[PERM_MAX_SUBNETS].grp;
+
+	if (addf_mi_node_child(rpl, 0, 0, 0,
+				   "%.*s\n",
+				   pm->name.len, pm->name.s) == 0)
+		return -1;
 
     for (i = 0; i < count; i++) {
 		ip = ip_addr2a(&table[i].subnet->ip);
@@ -485,7 +497,7 @@ int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl)
 			continue;
 		}
 		if (addf_mi_node_child(rpl, 0, 0, 0,
-			       "%4d <%u, %s, %s, %u>",
+			       "\t%4d <%u, %s, %s, %u>",
 			       i, table[i].grp, ip_buff, mask,
 				   table[i].port) == 0)
 	    	return -1;
