@@ -725,8 +725,7 @@ static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
 		goto error;
 	}
 
-	LM_DBG("Checking %.*s with dpid %i => output %.*s\n",
-		input.len, input.s, idp->dp_id, output.len, output.s);
+	LM_DBG("Checking with dpid %i\n", idp->dp_id);
 
 	attrs_par =  attr_spec ? &attrs : NULL;
 	if (translate(msg, input, &output, idp, attrs_par) != 0) {
