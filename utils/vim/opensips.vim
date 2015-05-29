@@ -1,7 +1,7 @@
 " Vim syntax file
 " Language:	OpenSIPS 2.x script
 " Maintainer:	Liviu Chircu <liviu@opensips.org>
-" Last Change:	2015 May 29
+" Last Change:	2015 May 30
 
 " Quit when a (custom) syntax file was already loaded
 "if exists("b:current_syntax")
@@ -53,28 +53,42 @@ syn keyword osGlobalParam disable_503_translation import_file server_header
 syn keyword osGlobalParam tcp_max_msg_time abort_on_assert
 
 " String constants
-syn match	osSpecial		display contained "\\\(x\x\+\|\o\{1,3}\|.\|$\)"
-syn match	osScriptVarC	/\$(\=[a-zA-Z_0-9]*/ contained
-syn match	osScriptVar		/\$(\=[a-zA-Z_0-9]*/
-syn region	osString	start=+"+ skip=+\\\\\|\\"+ end=+"+ extend contains=osSpecial,osScriptVarC
+syn match	osSpecial	contained 	display "\\\(x\x\+\|\o\{1,3}\|.\|$\)"
 
 " OpenSIPS-specific constructs
-syn match osLogFacility /LOG_\(AUTH\|CRON\|DAEMON\|KERN\|LOCAL[0-7]\|LPR\|MAIL\|NEWS\|USER\|UUCP\|AUTHPRIV\|FTP\|SYSLOG\)/
-syn match osRouteStmt /^\s*\(\(onreply\|failure\|branch\|local\|startup\|timer\|event\|error\)_\)\=route\(\s\|\n\)*\(\[\|{\)/he=e-1
+syn match	osLogFacility	/LOG_\(AUTH\|CRON\|DAEMON\|KERN\|LOCAL[0-7]\|LPR\|MAIL\|NEWS\|USER\|UUCP\|AUTHPRIV\|FTP\|SYSLOG\)/
+syn match	osRouteStmt	/^\s*\(\(onreply\|failure\|branch\|local\|startup\|timer\|event\|error\)_\)\=route\(\s\|\n\)*\(\[\|{\)/he=e-1
+syn match	osTransfm	contained /{[a-zA-Z][a-zA-Z0-9]*\.[a-zA-Z]\+[a-zA-Z0-9]*[^}]*}\+/
+syn region	osVarCtx	contained	matchgroup=ctxHi start="<" end="\(request\|reply\)>"
+syn region	osVarIndex	contained	start="\[" end="]" contains=osNumber,osVarNamed,osVarNamedS,osVarCon,osVarCtx,osTransfm
+
+" OpenSIPS variables
+"	TODO: fix me with full list of OS vars (for better validation!)
+syn region	osVarCon	contained matchgroup=varHi start="[a-zA-Z_0-9]\+(" end=")"
+
+syn region	osVar		matchgroup=varHi start="\$(" end=")" contains=osVarCtx,osVarCon,osTransfm,osVarIndex
+syn region	osVarNamed	matchgroup=varHi start="\$[a-zA-Z_0-9]\+(" end=")"
+syn match	osVarNamedS	/\$[a-zA-Z_0-9]\+[^a-zA-Z_0-9(]/me=e-1,he=e-1
+
+syn region	osString	start=+"+ skip=+\\\\\|\\"+ end=+"+ extend contains=osSpecial,osVar,osVarNamed,osVarNamedS
 
 " Comments
-syn region osCommentL start="#"		skip="\\$"	end="$" keepend
-syn region osComment  start="/\*"				end="\*/" extend
+syn region	osCommentL	keepend start="#"	skip="\\$"	end="$"
+syn region	osComment	extend start="/\*"				end="\*/"
 
-"syn region osInteger start="/[0-9]+/" end="/[^\d]+/" keepend extend
-syn match   osNumber     display "\<\d\+\>"
-"syn region osIpAddr start="/[0-9]\{1,3}\.[0-9]\{1,3}\.[0-9]\{1,3}\.[0-9]\{1,3}/" end="" keepend extend
+syn match	osNumber	display "\<\d\+\>"
 
 " Define the default highlighting.
 " Only used when an item doesn't have highlighting yet
+hi def link varHi			Type
+hi def link ctxHi			Comment
+hi def link osVarSimple		Type
+hi def link osVar			Type
+hi def link osVarNamedS   	Type
+hi def link osVarIndex   	Type
 hi def link osRouteStmt		Type
 hi def link osLogFacility	specialOperand
-"hi def link osIpAddr		String
+hi def link osTransfm		Special
 hi def link osCommentL		osComment
 hi def link osAction		osStatement
 hi def link osStatement		Statement
@@ -86,8 +100,6 @@ hi def link osComment		Comment
 hi def link osString		String
 hi def link osNumber		String
 hi def link specialOperand	String
-hi def link osScriptVarC	Type
-hi def link osScriptVar   	Type
 hi def link osSpecial   	SpecialChar
 
 
