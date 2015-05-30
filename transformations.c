@@ -2188,7 +2188,12 @@ error:
 
 #define _tr_parse_sparam(_p, _p0, _tp, _spec, _ps, _in, _s) \
 	while(is_in_str(_p, _in) && (*_p==' ' || *_p=='\t' || *_p=='\n')) _p++; \
-	if(*_p==PV_MARKER) \
+        if (*_p==TR_PARAM_MARKER) \
+        { \
+		LM_ERR("invalid spec in transformation: %.*s!\n",\
+			_in->len, _in->s); \
+		goto error; \
+	} else if(*_p==PV_MARKER) \
 	{ /* pseudo-variable */ \
 		_spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t)); \
 		if(_spec==NULL) \
