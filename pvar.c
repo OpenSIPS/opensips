@@ -3514,7 +3514,7 @@ done_inm:
 			goto error;
 		}
 		s.len = p - s.s;
-		if(pte->parse_name(e, &s)!=0)
+		if(pte->parse_name == NULL || pte->parse_name(e, &s)!=0)
 		{
 			LM_ERR("pvar \"%.*s\" has an invalid name param [%.*s]\n",
 					pvname.len, pvname.s, s.len, s.s);
