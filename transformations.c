@@ -742,15 +742,14 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				/* width cant be greater than buffer */
 				return -1;
 
-			j = i - val->rs.len;
+			j = i - val->rs.len; /* calc extra length */
 			p = _tr_buffer;
+
+			/* copy existing string to buffer and append j spaces */
 			memcpy(p, val->rs.s, val->rs.len);
 			memset(p+val->rs.len, ' ', j);
-			/*snprintf(_tr_buffer, i, "%*s%*s",
-						val->rs.len, val->rs.s,
-						j-1, " "); 
-			*/
 			memset(val, 0, sizeof(pv_value_t));
+
 			val->flags = PV_VAL_STR;
 			val->rs.s = _tr_buffer;
 			val->rs.len = i;
