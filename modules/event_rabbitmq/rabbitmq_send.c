@@ -330,6 +330,11 @@ static inline int amqp_check_status(rmq_params_t *rmqp, int r)
 			LM_ERR("TCP error: %s(%d)\n", strerror(errno), errno);
 			break;
 
+		/* This is happening on rabbitmq server restart */
+		case AMQP_STATUS_SOCKET_ERROR:
+			LM_ERR("Socket error\n");
+			break;
+
 		default:
 			LM_ERR("Unknown AMQP error[%d]: %s(%d)\n", r, strerror(errno), errno);
 			break;
