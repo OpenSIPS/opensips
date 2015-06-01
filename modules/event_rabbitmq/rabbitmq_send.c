@@ -331,7 +331,7 @@ static inline int amqp_check_status(rmq_params_t *rmqp, int r)
 			break;
 
 		default:
-			LM_ERR("Unknown error: %s(%d)\n", strerror(errno), errno);
+			LM_ERR("Unknown AMQP error[%d]: %s(%d)\n", r, strerror(errno), errno);
 			break;
 	}
 	/* we close the connection here to be able to re-connect later */
@@ -343,7 +343,7 @@ no_close:
 static inline int amqp_check_status(rmq_params_t *rmqp, int r)
 {
 	if (r != 0) {
-		LM_ERR("Unknown error while sending\n");
+		LM_ERR("Unknown AMQP error [%d] while sending\n", r);
 		/* we close the connection here to be able to re-connect later */
 		rmq_destroy_param(rmqp);
 		return -1;
