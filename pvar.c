@@ -2011,9 +2011,10 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 
 	if (idxf!=PV_IDX_ALL && idx==0)
 	{
-		if(avp->flags & AVP_VAL_STR)
-		{
+		if(avp->flags & AVP_VAL_STR) {
 			res->rs = avp_value.s;
+		} else if(avp->flags & AVP_VAL_NULL) {
+			res->flags |= PV_VAL_NULL;
 		} else {
 			res->rs.s = sint2str(avp_value.n, &res->rs.len);
 			res->ri = avp_value.n;
@@ -2028,9 +2029,10 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		p = pv_local_buf;
 
 		/* separately handle the first AVP */
-		if(avp->flags & AVP_VAL_STR)
-		{
+		if(avp->flags & AVP_VAL_STR) {
 			res->rs = avp_value.s;
+		} else if(avp->flags & AVP_VAL_NULL) {
+			res->rs.s = NULL;
 		} else {
 			res->rs.s = sint2str(avp_value.n, &res->rs.len);
 		}
@@ -2046,9 +2048,10 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		/* print subsequent AVPs as [DELIM AVP]* */
 		while ((avp = search_first_avp(name_type, avp_name, &avp_value, avp)))
 		{
-			if(avp->flags & AVP_VAL_STR)
-			{
+			if(avp->flags & AVP_VAL_STR) {
 				res->rs = avp_value.s;
+			} else if(avp->flags & AVP_VAL_STR) {
+				res->rs.s = NULL;
 			} else {
 				res->rs.s = sint2str(avp_value.n, &res->rs.len);
 			}
@@ -2092,9 +2095,10 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		idx = n - idx;
 		if(idx==0)
 		{
-			if(avp->flags & AVP_VAL_STR)
-			{
+			if(avp->flags & AVP_VAL_STR) {
 				res->rs = avp_value.s;
+			} else if(avp->flags & AVP_VAL_NULL) {
+				res->flags |= PV_VAL_NULL;
 			} else {
 				res->rs.s = sint2str(avp_value.n, &res->rs.len);
 				res->ri = avp_value.n;
@@ -2110,9 +2114,10 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 
 	if(avp!=0)
 	{
-		if(avp->flags & AVP_VAL_STR)
-		{
+		if(avp->flags & AVP_VAL_STR) {
 			res->rs = avp_value.s;
+		} else if(avp->flags & AVP_VAL_NULL) {
+			res->flags |= PV_VAL_NULL;
 		} else {
 			res->rs.s = sint2str(avp_value.n, &res->rs.len);
 			res->ri = avp_value.n;

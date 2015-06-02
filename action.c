@@ -1580,6 +1580,10 @@ int do_action(struct action* a, struct sip_msg* msg)
 									avp_type |= AVP_VAL_STR;
 									avp_val.s = cdb_reply[i][j].val.s;
 									break;
+								case CDB_NULL:
+									avp_type |= AVP_VAL_NULL;
+									avp_val.s = cdb_reply[i][j].val.s;
+									break;
 								default:
 									LM_WARN("Unknown type %d\n",cdb_reply[i][j].type);
 									goto next_avp;
