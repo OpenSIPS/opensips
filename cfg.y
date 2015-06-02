@@ -2561,29 +2561,29 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				mk_action1($$, XLOG_T, STR_ST, $3); }
 		| XLOG LPAREN STRING COMMA STRING RPAREN {
 				mk_action2($$, XLOG_T, STR_ST, STR_ST, $3, $5); }
-		| XLOG LPAREN STRING COMMA STRING COMMA STRING RPAREN {
-				mk_action3($$, XLOG_T, STR_ST, STR_ST, STR_ST, $3, $5, $7); }
-		| XLOG LPAREN STRING COMMA STRING COMMA STRING COMMA STRING RPAREN {
+		| XLOG LPAREN STRING COMMA STRING STRING RPAREN {
+				mk_action3($$, XLOG_T, STR_ST, STR_ST, STR_ST, $3, $5, $6); }
+		| XLOG LPAREN STRING COMMA STRING STRING STRING RPAREN {
 				elems[0].type = STR_ST;
 				elems[0].u.data = $3;
 				elems[1].type = STR_ST;
 				elems[1].u.data = $5;
 				elems[2].type = STR_ST;
-				elems[2].u.data = $7;
+				elems[2].u.data = $6;
 				elems[3].type = STR_ST;
-				elems[3].u.data = $9;
+				elems[3].u.data = $7;
 				mk_action_($$, XLOG_T, 4, elems); }
-		| XLOG LPAREN STRING COMMA STRING COMMA STRING COMMA STRING COMMA STRING RPAREN {
+		| XLOG LPAREN STRING COMMA STRING STRING STRING STRING RPAREN {
 				elems[0].type = STR_ST;
 				elems[0].u.data = $3;
 				elems[1].type = STR_ST;
 				elems[1].u.data = $5;
 				elems[2].type = STR_ST;
-				elems[2].u.data = $7;
+				elems[2].u.data = $6;
 				elems[3].type = STR_ST;
-				elems[3].u.data = $9;
+				elems[3].u.data = $7;
 				elems[4].type = STR_ST;
-				elems[4].u.data = $11;
+				elems[4].u.data = $8;
 				mk_action_($$, XLOG_T, 5, elems); }
 		| RAISE_EVENT LPAREN STRING RPAREN {
 				mk_action1($$, RAISE_EVENT_T, STR_ST, $3); }
