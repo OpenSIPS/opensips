@@ -707,6 +707,53 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				trans_fill_right(val, st, i);
 
 			break;
+		case TR_S_WIDTH:
+			if(tp==NULL || tp->next!=NULL)
+			{
+				LM_ERR("width invalid parameters\n");
+				return -1;
+			}
+			if(!(val->flags&PV_VAL_STR))
+				val->rs.s = int2str(val->ri, &val->rs.len);
+			if(tp->type==TR_PARAM_NUMBER)
+			{
+				i = tp->v.n;
+			} else {
+				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
+						|| (!(v.flags&PV_VAL_INT)))
+				{
+					LM_ERR("substr cannot get p1\n");
+					return -1;
+				}
+				i = v.ri;
+			}
+			if (i <= 0) {
+				LM_ERR("width invalid (must be >= 1)\n");
+				return -1;
+			}
+			if (i <= val->rs.len) {
+				/* since the requested width is less than
+				   the value length, just update the length */
+				val->rs.len = i;
+				break;
+			}
+
+			if(i>TR_BUFFER_SIZE-1)
+				/* width cant be greater than buffer */
+				return -1;
+
+			j = i - val->rs.len; /* calc extra length */
+			p = _tr_buffer;
+
+			/* copy existing string to buffer and append j spaces */
+			memcpy(p, val->rs.s, val->rs.len);
+			memset(p+val->rs.len, ' ', j);
+			memset(val, 0, sizeof(pv_value_t));
+
+			val->flags = PV_VAL_STR;
+			val->rs.s = _tr_buffer;
+			val->rs.len = i;
+			break;
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
@@ -2539,6 +2586,30 @@ char* tr_parse_string(str* in, trans_t *t)
 		if (*p != TR_RBRACKET)
 		{
 			LM_ERR("invalid fill transformation: %.*s!!\n", in->len, in->s);
+			goto error;
+		}
+		return p;
+	} else if(name.len==5 && strncasecmp(name.s, "width", 5)==0) {
+		t->subtype = TR_S_WIDTH;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid substr transformation: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		p++;
+		_tr_parse_nparam(p, p0, tp, spec, n, sign, in, s);
+		t->params = tp;
+		if(tp->type==TR_PARAM_NUMBER && tp->v.n<0)
+		{
+			LM_ERR("width negative\n");
+			goto error;
+		}
+		tp = 0;
+		while(is_in_str(p, in) && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid width transformation: %.*s!!\n",
+				in->len, in->s);
 			goto error;
 		}
 		return p;
