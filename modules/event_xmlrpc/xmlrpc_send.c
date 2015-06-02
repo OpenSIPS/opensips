@@ -91,8 +91,7 @@ int xmlrpc_send(xmlrpc_send_t* xmlrpcs)
 
 	do {
 		rc = write(xmlrpc_pipe[1], &xmlrpcs, sizeof(xmlrpc_send_t *));
-	} while ((rc < 0 && (IS_ERR(EINTR)||IS_ERR(EAGAIN)||IS_ERR(EWOULDBLOCK)))
-			|| retries-- > 0);
+	} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
 
 	if (rc < 0) {
 		LM_ERR("unable to send xmlrpc send struct to worker\n");
@@ -114,7 +113,7 @@ static xmlrpc_send_t * xmlrpc_receive(void)
 
 	do {
 		rc = read(xmlrpc_pipe[0], &recv, sizeof(xmlrpc_send_t*));
-	} while ((rc < 0 && IS_ERR(EINTR)) || retries-- > 0);
+	} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
 
 	if (rc < 0) {
 		LM_ERR("cannot receive send param\n");
