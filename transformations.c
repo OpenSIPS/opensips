@@ -2598,12 +2598,12 @@ char* tr_parse_string(str* in, trans_t *t)
 		}
 		p++;
 		_tr_parse_nparam(p, p0, tp, spec, n, sign, in, s);
-		t->params = tp;
 		if(tp->type==TR_PARAM_NUMBER && tp->v.n<0)
 		{
 			LM_ERR("width negative\n");
 			goto error;
 		}
+		t->params = tp;
 		tp = 0;
 		while(is_in_str(p, in) && (*p==' ' || *p=='\t' || *p=='\n')) p++;
 		if(*p!=TR_RBRACKET)
