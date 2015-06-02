@@ -688,12 +688,12 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			/* padded final length parameter */
 			i = tp->next->v.n;
 
-			if (val->flags & PV_VAL_INT)
+			if (val->flags & PV_VAL_STR)
+			{
+				i -= val->rs.len;
+			} else if (val->flags & PV_VAL_INT)
 			{
 				val->rs.s = int2str(val->ri, &val->rs.len);
-				i -= val->rs.len;
-			} else if (val->flags & PV_VAL_STR)
-			{
 				i -= val->rs.len;
 			}
 
