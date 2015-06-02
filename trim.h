@@ -24,6 +24,22 @@
 
 #include "str.h"
 
+/* whitespace */
+#define is_ws(c) ((c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\t')
+
+/*
+ * trim leading ws
+ *
+ * Input: (char *)
+ */
+#define trim_ws(p) while (*(p) && is_ws(*(p))) p++
+
+/*
+ * trim trailing ws
+ *
+ * Input: (char *)
+ */
+#define trim_trail_ws(p) while (*(p) && is_ws(*(p))) p--
 
 /*
  * This switch-case statement is used in
