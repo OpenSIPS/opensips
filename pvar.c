@@ -2050,7 +2050,7 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		{
 			if(avp->flags & AVP_VAL_STR) {
 				res->rs = avp_value.s;
-			} else if(avp->flags & AVP_VAL_STR) {
+			} else if(avp->flags & AVP_VAL_NULL) {
 				res->rs.s = NULL;
 			} else {
 				res->rs.s = sint2str(avp_value.n, &res->rs.len);
