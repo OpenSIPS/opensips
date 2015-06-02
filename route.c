@@ -772,15 +772,15 @@ static int fix_actions(struct action* a)
 					t->elem[i].u.data = model;
 					t->elem[i].type = SCRIPTVAR_ELEM_ST;
 
-					/* set pointer to primary element */
-					ep0 = t->elem[1].u.data;
-
-					if (i > 1) {
-						ep1 = t->elem[i].u.data;
+					if (i == 1) {
+						/* set pointer to primary element */
+						ep0 = t->elem[1].u.data;
 
 						/* seek to the end of the ll */
 						while (ep0->next != NULL)
 							ep0 = ep0->next;
+					} else {
+						ep1 = t->elem[i].u.data;
 
 						/* append additional elements to primary structure */
 						while (ep1 != NULL) {
