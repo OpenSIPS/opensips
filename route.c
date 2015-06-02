@@ -96,7 +96,6 @@ struct script_event_route event_rlist[EVENT_RT_NO];
 
 int route_type = REQUEST_ROUTE;
 
-
 static int fix_actions(struct action* a); /*fwd declaration*/
 
 extern int return_code;
@@ -257,6 +256,7 @@ static int fix_actions(struct action* a)
 	str s;
 	pv_elem_t *model=NULL;
 	pv_elem_t *models[5];
+	struct _pv_elem *ep0=NULL, *ep1=NULL;
 	xl_level_p xlp;
 	event_id_t ev_id;
 
@@ -741,75 +741,26 @@ static int fix_actions(struct action* a)
 				break;
 			case XDBG_T:
 			case XLOG_T:
-				s.s = (char*)t->elem[1].u.data;
-				if (s.s == NULL)
-				{
-					/* commands have only one parameter */
+				if (t->elem[1].u.data == NULL) {
+					/* command has a single parameter */
 					s.s = (char *)t->elem[0].u.data;
 					s.len = strlen(s.s);
-					if(s.len==0)
-					{
+					if (s.len==0) {
 						LM_ERR("param is empty string!\n");
 						return E_CFG;
 					}
-
-					if(pv_parse_format(&s ,&model) || model==NULL)
-					{
+					if(pv_parse_format(&s ,&model) || model==NULL) {
 						LM_ERR("wrong format [%s] for value param!\n", s.s);
 						ret=E_BUG;
 						goto error;
 					}
-
 					t->elem[0].u.data = (void*)model;
 					t->elem[0].type = SCRIPTVAR_ELEM_ST;
+					break;
 				}
-				else
-				{
-					/* there are two parameters */
-					s.s = (char *)t->elem[0].u.data;
-					s.len = strlen(s.s);
-					if (s.len == 0)
-					{
-						LM_ERR("param is empty string\n");
-						return E_CFG;
-					}
-					xlp = (xl_level_p)pkg_malloc(sizeof(xl_level_t));
-					if(xlp == NULL)
-					{
-						LM_ERR("no more memory\n");
-						return E_UNSPEC;
-					}
 
-					memset(xlp, 0, sizeof(xl_level_t));
-					if(s.s[0]==PV_MARKER)
-					{
-						xlp->type = 1;
-						if(pv_parse_spec(&s, &xlp->v.sp)==NULL)
-						{
-							LM_ERR("invalid level param\n");
-							return E_UNSPEC;
-						}
-					}
-					else
-					{
-						xlp->type = 0;
-						switch(s.s[2])
-						{
-							case 'A': xlp->v.level = L_ALERT; break;
-							case 'C': xlp->v.level = L_CRIT; break;
-							case 'E': xlp->v.level = L_ERR; break;
-							case 'W': xlp->v.level = L_WARN; break;
-							case 'N': xlp->v.level = L_NOTICE; break;
-							case 'I': xlp->v.level = L_INFO; break;
-							case 'D': xlp->v.level = L_DBG; break;
-							default:
-								LM_ERR("unknown log level\n");
-								return E_UNSPEC;
-						}
-					}
-					t->elem[0].u.data = xlp;
-
-					s.s = t->elem[1].u.data;
+				for (i=1; t->elem[i].u.data != NULL && i < LONGEST_ACTION_SIZE; i++) {
+					s.s = t->elem[i].u.data;
 					s.len = strlen(s.s);
 					if (pv_parse_format(&s, &model) || model == NULL)
 					{
@@ -818,9 +769,71 @@ static int fix_actions(struct action* a)
 						goto error;
 					}
 
-					t->elem[1].u.data = model;
-					t->elem[1].type = SCRIPTVAR_ELEM_ST;
+					t->elem[i].u.data = model;
+					t->elem[i].type = SCRIPTVAR_ELEM_ST;
+
+					/* set pointer to primary element */
+					ep0 = t->elem[1].u.data;
+
+					if (i > 1) {
+						ep1 = t->elem[i].u.data;
+
+						/* seek to the end of the ll */
+						while (ep0->next != NULL)
+							ep0 = ep0->next;
+
+						/* append additional elements to primary structure */
+						while (ep1 != NULL) {
+							ep0->next = ep1;
+							ep0 = ep0->next;
+							ep1 = ep1->next;
+						}
+					}
 				}
+
+				/* populate/verify first parameter is loglevel */
+				s.s = (char *)t->elem[0].u.data;
+				s.len = strlen(s.s);
+				if (s.len == 0)
+				{
+					LM_ERR("param is empty string\n");
+					return E_CFG;
+				}
+				xlp = (xl_level_p)pkg_malloc(sizeof(xl_level_t));
+				if(xlp == NULL)
+				{
+					LM_ERR("no more memory\n");
+					return E_UNSPEC;
+				}
+
+				memset(xlp, 0, sizeof(xl_level_t));
+				if(s.s[0]==PV_MARKER)
+				{
+					xlp->type = 1;
+					if(pv_parse_spec(&s, &xlp->v.sp)==NULL)
+					{
+						LM_ERR("invalid level param\n");
+						return E_UNSPEC;
+					}
+				}
+				else
+				{
+					xlp->type = 0;
+					switch(s.s[2])
+					{
+						case 'A': xlp->v.level = L_ALERT; break;
+						case 'C': xlp->v.level = L_CRIT; break;
+						case 'E': xlp->v.level = L_ERR; break;
+						case 'W': xlp->v.level = L_WARN; break;
+						case 'N': xlp->v.level = L_NOTICE; break;
+						case 'I': xlp->v.level = L_INFO; break;
+						case 'D': xlp->v.level = L_DBG; break;
+						default:
+							LM_ERR("unknown log level\n");
+							return E_UNSPEC;
+					}
+				}
+				t->elem[0].u.data = xlp;
 				break;
 			case RAISE_EVENT_T:
 				s.s = t->elem[0].u.data;
