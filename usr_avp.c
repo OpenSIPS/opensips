@@ -131,7 +131,6 @@ struct usr_avp* new_avp(unsigned short flags, int id, int_str val)
 		memcpy( s->s, val.s.s , s->len);
 		s->s[s->len] = 0;
 	} else if (flags & AVP_VAL_NULL) {
-		LM_ERR("id: %d s- NULL VALUE!\n", id);
                 avp->data = NULL;
 	} else {
 		avp->data = (void *)(long)val.n;
