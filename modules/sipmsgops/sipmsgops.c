@@ -1588,7 +1588,6 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 			case HDR_PAI_T:
 			case HDR_RPID_T:
 			case HDR_REFER_TO_T:
-			case HDR_DIVERSION_T:
 				/* these are similar */
 				if (!(to = pkg_malloc(sizeof(struct to_body)))) {
 					LM_ERR("out of pkg_memory\n");
@@ -1635,6 +1634,7 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 			case HDR_PATH_T:
 			case HDR_ROUTE_T:
 			case HDR_RECORDROUTE_T:
+			case HDR_DIVERSION_T:
 				CHECK_HDR_FUNC(parse_rr, hf);
 				break;
 
