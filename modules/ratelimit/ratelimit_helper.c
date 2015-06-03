@@ -29,6 +29,8 @@
 #include "../../mod_fix.h"
 #include "../../timer.h"
 #include "../../socket_info.h"
+#include "../../resolve.h"
+#include "../../bin_interface.h"
 
 #include "../../cachedb/cachedb.h"
 #include "../../cachedb/cachedb_cap.h"
@@ -52,11 +54,16 @@ static rl_algo_t get_rl_algo(str);
 /* big hash table */
 rl_big_htable rl_htable;
 
+static int rl_dests_nr;
+static rl_repl_dst_t *rl_dests;
+
 /* feedback algorithm */
 static int *rl_feedback_limit;
 
 static cachedb_funcs cdbf;
 static cachedb_con *cdbc = 0;
+
+int rl_buffer_th = RL_BUF_THRESHOLD;
 
 /* returnes the idex of the pipe in our hash */
 #define RL_GET_INDEX(_n)		core_hash(&(_n), NULL, rl_htable.size);
@@ -368,12 +375,14 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 
 	if (!*pipe) {
 		/* allocate new pipe */
-		*pipe = shm_malloc(sizeof(rl_pipe_t));
+		*pipe = shm_malloc(sizeof(rl_pipe_t) +
+				rl_dests_nr * sizeof(rl_repl_counter_t));
 		if (!*pipe) {
 			LM_ERR("no more shm memory\n");
 			goto release;
 		}
-		memset(*pipe, 0, sizeof(rl_pipe_t));
+		memset(*pipe, 0, sizeof(rl_pipe_t) + rl_dests_nr * sizeof(rl_repl_counter_t));
+		(*pipe)->dsts = (rl_repl_counter_t *)((*pipe) + 1);
 		LM_DBG("Pipe %.*s doens't exist, but was created %p\n",
 				name.len, name.s, *pipe);
 		if (algo == PIPE_ALGO_NETWORK)
@@ -507,7 +516,7 @@ void rl_timer(unsigned int ticks, void *param)
 					default:
 						break;
 				}
-				(*pipe)->last_counter = (*pipe)->counter;
+				(*pipe)->last_counter = rl_get_all_counters(*pipe);
 				if (RL_USE_CDB(*pipe)) {
 					if (rl_change_counter(key, *pipe, 0) < 0) {
 						LM_ERR("cannot reset counter\n");
@@ -515,9 +524,6 @@ void rl_timer(unsigned int ticks, void *param)
 				} else {
 					(*pipe)->counter = 0;
 				}
-				/* TODO delete this */
-				LM_DBG("Pipe \"%.*s\" load updated to %d\n",
-						key->len, key->s, (*pipe)->load);
 			}
 next_pipe:
 			if (iterator_next(&it) < 0)
@@ -638,6 +644,34 @@ error:
 	return -1;
 }
 
+int rl_bin_status(struct mi_root *rpl_tree)
+{
+	int index = 0;
+	struct mi_node *node;
+	char* p;
+	int len;
+
+	for (index = 0; index < rl_dests_nr; index++) {
+		if (!(node = add_mi_node_child(&rpl_tree->node, 0, "Instance", 8,
+					rl_dests[index].dst.s, rl_dests[index].dst.len))) {
+			LM_ERR("cannot add a new instance\n");
+			return -1;
+		}
+
+		if (*rl_dests[index].last_msg) {
+			p = int2str((unsigned long)(*rl_dests[index].last_msg), &len);
+		} else {
+			p = "never";
+			len = 5;
+		}
+		if (!add_mi_attr(node, MI_DUP_VALUE, "timestamp", 9, p, len)) {
+			LM_ERR("cannot add last update\n");
+			return -1;
+		}
+
+	}
+	return 0;
+}
 
 int w_rl_set_count(str key, int val)
 {
@@ -703,3 +737,281 @@ int w_rl_reset(struct sip_msg *_m, char *_n)
 	return w_rl_change_counter(_m, _n, 0);
 }
 
+void rl_rcv_bin(int packet_type, struct receive_info *ri)
+{
+	rl_algo_t algo;
+	int limit;
+	int counter;
+	str name;
+	int index;
+	char *ip;
+	unsigned short port;
+	rl_pipe_t **pipe;
+	unsigned int hash_idx;
+	time_t now;
+
+	if (packet_type != RL_PIPE_COUNTER)
+		return;
+
+	/* match the server */
+	for (index = 0; index < rl_dests_nr; index++) {
+		 if (su_cmp(&ri->src_su, &rl_dests[index].to))
+			break;
+	}
+
+	if (index == rl_dests_nr) {
+		get_su_info(&ri->src_su.s, ip, port);
+		LM_WARN("received bin packet from unknown source: %s:%hu\n",
+				ip, port);
+		return;
+	}
+	now = time(0);
+	*rl_dests[index].last_msg = now;
+
+	for (;;) {
+		if (bin_pop_str(&name) == 1)
+			break; /* pop'ed all pipes */
+
+		if (bin_pop_int(&algo) < 0) {
+			LM_ERR("cannot pop pipe's algorithm\n");
+			return;
+		}
+
+		if (bin_pop_int(&limit) < 0) {
+			LM_ERR("cannot pop pipe's limit\n");
+			return;
+		}
+
+		if (bin_pop_int(&counter) < 0) {
+			LM_ERR("cannot pop pipe's counter\n");
+			return;
+		}
+
+		hash_idx = RL_GET_INDEX(name);
+		RL_GET_LOCK(hash_idx);
+
+		/* try to get the value */
+		pipe = RL_GET_PIPE(hash_idx, name);
+		if (!pipe) {
+			LM_ERR("cannot get the index\n");
+			goto release;
+		}
+
+		if (!*pipe) {
+			/* if the pipe does not exist, alocate it in case we need it later */
+			*pipe = shm_malloc(sizeof(rl_pipe_t) +
+					rl_dests_nr * sizeof(rl_repl_counter_t));
+			if (!*pipe) {
+				LM_ERR("no more shm memory\n");
+				goto release;
+			}
+			memset(*pipe, 0, sizeof(rl_pipe_t) +
+					rl_dests_nr * sizeof(rl_repl_counter_t));
+			(*pipe)->dsts = (rl_repl_counter_t *)((*pipe) + 1);
+			LM_DBG("Pipe %.*s doesn't exist, but was created %p\n",
+					name.len, name.s, *pipe);
+			(*pipe)->algo = algo;
+			(*pipe)->limit = limit;
+		} else {
+			LM_DBG("Pipe %.*s found: %p - last used %lu\n",
+					name.len, name.s, *pipe, (*pipe)->last_used);
+			if ((*pipe)->algo != algo)
+				LM_WARN("algorithm %d different from the initial one %d for "
+						"pipe %.*s", algo, (*pipe)->algo, name.len, name.s);
+			if ((*pipe)->limit != limit)
+				LM_WARN("limit %d different from the initial one %d for "
+						"pipe %.*s", limit, (*pipe)->limit, name.len, name.s);
+		}
+		/* set the destination's counter */
+		(*pipe)->dsts[index].counter = counter;
+		(*pipe)->dsts[index].update = now;
+
+		RL_RELEASE_LOCK(hash_idx);
+	}
+	return;
+
+release:
+	RL_RELEASE_LOCK(hash_idx);
+}
+
+int rl_repl_init(void)
+{
+	int index;
+
+	if (rl_buffer_th > (BUF_SIZE * 0.9)) {
+		LM_WARN("Buffer size too big %d - pipe information might get lost",
+				rl_buffer_th);
+		return -1;
+	}
+
+	if (rl_dests_nr &&
+		bin_register_cb("ratelimit", rl_rcv_bin) < 0) {
+		LM_ERR("Cannot register binary packet callback!\n");
+		return -1;
+	}
+	
+	/* alocate the last_message counter in shared memory */
+	for (index = 0; index < rl_dests_nr; index++) {
+		rl_dests[index].last_msg = shm_malloc(sizeof(time_t));
+		if (!rl_dests[index].last_msg) {
+			LM_ERR("OOM shm\n");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+int rl_add_repl_dst(modparam_t type, void *val)
+{
+	char *host;
+	int hlen, port;
+	int proto;
+	struct hostent *he;
+	str st;
+
+	rl_dests = pkg_realloc(rl_dests, (rl_dests_nr + 1) * sizeof(rl_repl_dst_t));
+	if (!rl_dests) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	if (parse_phostport(val, strlen(val), &host, &hlen, &port, &proto) < 0) {
+		LM_ERR("Bad replication destination IP!\n");
+		return -1;
+	}
+
+	if (proto == PROTO_NONE)
+		proto = PROTO_UDP;
+
+	st.s = host;
+	st.len = hlen;
+	he = sip_resolvehost(&st, (unsigned short *)&port,
+							  (unsigned short *)&proto, 0, 0);
+	if (!he) {
+		LM_ERR("Cannot resolve host: %.*s\n", hlen, host);
+		return -1;
+	}
+	if (!port) {
+		LM_ERR("no port specified for host %.*s\n", hlen, host);
+		return -1;
+	}
+
+	rl_dests[rl_dests_nr].id = rl_dests_nr;
+	rl_dests[rl_dests_nr].dst.s = (char *)val;
+	rl_dests[rl_dests_nr].dst.len = strlen(rl_dests[rl_dests_nr].dst.s);
+	hostent2su(&rl_dests[rl_dests_nr].to, he, 0, port);
+
+	LM_DBG("Added destination <%.*s>\n",
+			rl_dests[rl_dests_nr].dst.len, rl_dests[rl_dests_nr].dst.s);
+
+	/* init done */
+	rl_dests_nr++;
+
+	return 1;
+}
+
+static inline void rl_replicate(void)
+{
+	unsigned i;
+
+	for (i = 0; i < rl_dests_nr; i++)
+		bin_send(&rl_dests[i].to);
+}
+
+void rl_timer_repl(utime_t ticks, void *param)
+{
+	static str module_name = str_init("ratelimit");
+	unsigned int i = 0;
+	map_iterator_t it;
+	rl_pipe_t **pipe;
+	str *key;
+	int nr = 0;
+	int ret;
+
+	if (bin_init(&module_name, RL_PIPE_COUNTER) < 0) {
+		LM_ERR("cannot initiate bin buffer\n");
+		return;
+	}
+
+	/* iterate through each map */
+	for (i = 0; i < rl_htable.size; i++) {
+		RL_GET_LOCK(i);
+		/* iterate through all the entries */
+		if (map_first(rl_htable.maps[i], &it) < 0) {
+			LM_ERR("map doesn't exist\n");
+			goto next_map;
+		}
+		for (; iterator_is_valid(&it);) {
+			pipe = (rl_pipe_t **)iterator_val(&it);
+			if (!pipe || !*pipe) {
+				LM_ERR("[BUG] bogus map[%d] state\n", i);
+				goto next_pipe;
+			}
+			/* ignore cachedb replicated stuff */
+			if (RL_USE_CDB(*pipe))
+				goto next_pipe;
+
+			key = iterator_key(&it);
+			if (!key) {
+				LM_ERR("cannot retrieve pipe key\n");
+				goto next_pipe;
+			}
+
+			if (bin_push_str(key) < 0)
+				goto error;
+
+			if (bin_push_int((*pipe)->algo) < 0)
+				goto error;
+
+			if (bin_push_int((*pipe)->limit) < 0)
+				goto error;
+
+			if ((ret = bin_push_int((*pipe)->counter)) < 0)
+				goto error;
+			nr++;
+
+			if (ret > rl_buffer_th) {
+				/* send the buffer */
+				if (nr)
+					rl_replicate();
+				if (bin_init(&module_name, RL_PIPE_COUNTER) < 0) {
+					LM_ERR("cannot initiate bin buffer\n");
+					RL_RELEASE_LOCK(i);
+					return;
+				}
+				nr = 0;
+			}
+
+next_pipe:
+			if (iterator_next(&it) < 0)
+				break;
+			}
+next_map:
+		RL_RELEASE_LOCK(i);
+	}
+	/* if there is anything else to send, do it now */
+	if (nr)
+		rl_replicate();
+	return;
+error:
+	LM_ERR("cannot add pipe info in buffer\n");
+	RL_RELEASE_LOCK(i);
+	if (nr)
+		rl_replicate();
+}
+
+int rl_get_all_counters(rl_pipe_t *pipe)
+{
+	unsigned i;
+	unsigned counter = 0;
+	time_t now = time(0);
+
+	for (i = 0; i < rl_dests_nr; i++) {
+		/* if the replication expired, reset its counter */
+		if (pipe->dsts[i].update + (rl_repl_timer_expire * rl_timer_interval) < now)
+			pipe->dsts[i].counter = 0;
+		counter += pipe->dsts[i].counter;
+	}
+	return counter + pipe->counter;
+}

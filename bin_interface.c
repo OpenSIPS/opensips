@@ -278,6 +278,8 @@ int bin_send(union sockaddr_union *dest)
 {
 	int rc, destlen;
 	str st;
+	char *ip;
+	unsigned short port;
 
 	if (!dest)
 		return 0;
@@ -298,7 +300,9 @@ again:
 	rc=sendto(bin->socket, send_buffer, bin_send_size, 0, &dest->s, destlen);
 	if (rc==-1){
 		if (errno==EINTR) goto again;
-		LM_ERR("sendto() failed with %s(%d)\n", strerror(errno),errno);
+		get_su_info(&dest->s, ip, port);
+		LM_ERR("sendto() failed with %s(%d) - destination  %s:%hu\n",
+				strerror(errno), errno, ip, port);
 	}
 
 	return rc;

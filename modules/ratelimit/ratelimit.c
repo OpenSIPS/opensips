@@ -44,6 +44,7 @@
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
 #include "../../socket_info.h"
+#include "../../bin_interface.h"
 #include "../signaling/signaling.h"
 #include "ratelimit.h"
 
@@ -64,6 +65,9 @@ int rl_timer_interval = RL_TIMER_INTERVAL;
 
 static str db_url = {0,0};
 str db_prefix = str_init("rl_pipe_");
+
+unsigned int rl_repl_timer_expire = RL_TIMER_INTERVAL;
+static unsigned int rl_repl_timer_interval = RL_TIMER_INTERVAL;
 
 /* === */
 
@@ -95,6 +99,7 @@ struct mi_root* mi_stats(struct mi_root* cmd_tree, void* param);
 struct mi_root* mi_reset_pipe(struct mi_root* cmd_tree, void* param);
 struct mi_root* mi_set_pid(struct mi_root* cmd_tree, void* param);
 struct mi_root* mi_get_pid(struct mi_root* cmd_tree, void* param);
+struct mi_root* mi_bin_status(struct mi_root* cmd_tree, void* param);
 
 
 static cmd_export_t cmds[] = {
@@ -120,6 +125,10 @@ static param_export_t params[] = {
 	{ "default_algorithm",	STR_PARAM,				 &rl_default_algo_s.s},
 	{ "cachedb_url",		STR_PARAM,				 &db_url.s},
 	{ "db_prefix",			STR_PARAM,				 &db_prefix.s},
+	{ "repl_buffer_threshold",INT_PARAM,			 &rl_buffer_th},
+	{ "repl_timer_interval",INT_PARAM,				 &rl_repl_timer_interval},
+	{ "repl_timer_expire",	INT_PARAM,				 &rl_repl_timer_expire},
+	{ "replicate_pipes_to", STR_PARAM|USE_FUNC_PARAM, (void *)rl_add_repl_dst},
 	{ 0,					0,						0}
 };
 
@@ -129,12 +138,14 @@ static param_export_t params[] = {
 #define RLH3 "Params: ki kp kd ; Sets the PID Controller parameters for the " \
 	"Feedback Algorithm."
 #define RLH4 "Params: none ; Gets the list of in use PID Controller parameters."
+#define RLH5 "Params: none ; Shows the status of the other SIP instances."
 
 static mi_export_t mi_cmds [] = {
 	{"rl_list",       RLH1, mi_stats,      0,                0, 0},
 	{"rl_reset_pipe", RLH2, mi_reset_pipe, 0,                0, 0},
 	{"rl_set_pid",    RLH3, mi_set_pid,    0,                0, 0},
 	{"rl_get_pid",    RLH4, mi_get_pid,    MI_NO_INPUT_FLAG, 0, 0},
+	{"rl_bin_status", RLH5, mi_bin_status, MI_NO_INPUT_FLAG, 0, 0},
 	{0,0,0,0,0,0}
 };
 
@@ -281,6 +292,12 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (rl_repl_timer_interval < 0) {
+		LM_ERR("invalid replication time\n");
+		return -1;
+	}
+
+
 	if (db_url.s) {
 		db_url.len = strlen(db_url.s);
 		db_prefix.len = strlen(db_prefix.s);
@@ -318,6 +335,13 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (register_utimer("rl-utimer", rl_timer_repl, NULL,
+			rl_repl_timer_interval * 1000, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
+		LM_ERR("failed to register utimer\n");
+		return -1;
+	}
+
+
 	/* if db_url is not used */
 	for( n=0 ; n < 8 * sizeof(unsigned int) ; n++) {
 		if (rl_hash_size==(1<<n))
@@ -332,6 +356,11 @@ static int mod_init(void)
 
 	if (init_rl_table(rl_hash_size) < 0) {
 		LM_ERR("cannot allocate the table\n");
+		return -1;
+	}
+
+	if (rl_repl_init() < 0) {
+		LM_ERR("cannot init bin replication\n");
 		return -1;
 	}
 
@@ -400,21 +429,23 @@ int hash[100] = {18, 50, 51, 39, 49, 68, 8, 78, 61, 75, 53, 32, 45, 77, 31,
  */
 int rl_pipe_check(rl_pipe_t *pipe)
 {
+	unsigned counter = rl_get_all_counters(pipe);
+
 	switch (pipe->algo) {
 		case PIPE_ALGO_NOP:
 			LM_ERR("no algorithm defined for this pipe\n");
 			return 1;
 		case PIPE_ALGO_TAILDROP:
-			return (pipe->counter <= pipe->limit * rl_timer_interval) ?
+			return (counter <= pipe->limit * rl_timer_interval) ?
 				1 : -1;
 		case PIPE_ALGO_RED:
 			if (!pipe->load)
 				return 1;
-			return pipe->counter % pipe->load ? -1 : 1;
+			return counter % pipe->load ? -1 : 1;
 		case PIPE_ALGO_NETWORK:
 			return pipe->load;
 		case PIPE_ALGO_FEEDBACK:
-			return (hash[pipe->counter % 100] < *drop_rate) ? -1 : 1;
+			return (hash[counter % 100] < *drop_rate) ? -1 : 1;
 		default:
 			LM_ERR("ratelimit algorithm %d not implemented\n", pipe->algo);
 	}
@@ -445,7 +476,7 @@ struct mi_root* mi_stats(struct mi_root* cmd_tree, void* param)
 	rpl->flags |= MI_IS_ARRAY;
 
 	if (rl_stats(rpl_tree, &node->value)) {
-		LM_ERR("cannoti mi print values\n");
+		LM_ERR("cannot mi print values\n");
 		goto free;
 	}
 
@@ -554,6 +585,27 @@ struct mi_root* mi_reset_pipe(struct mi_root* cmd_tree, void* param)
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 }
 
+struct mi_root* mi_bin_status(struct mi_root* cmd_tree, void* param)
+{
+	struct mi_root *rpl_tree;
+	struct mi_node *rpl=NULL;
+
+	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
+		return 0;
+	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
+
+	if (rl_bin_status(rpl_tree) < 0) {
+		LM_ERR("cannot print status\n");
+		goto free;
+	}
+
+	return rpl_tree;
+free:
+	free_mi_tree(rpl_tree);
+	return 0;
+}
 
 /* fixup functions */
 static int fixup_rl_check(void **param, int param_no)
