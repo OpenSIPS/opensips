@@ -473,6 +473,7 @@ fi
 %doc %{_docdir}/opensips/README.pdt
 %doc %{_docdir}/opensips/README.permissions
 %doc %{_docdir}/opensips/README.pike
+%doc %{_docdir}/opensips/README.python
 %doc %{_docdir}/opensips/README.qos
 %doc %{_docdir}/opensips/README.ratelimit
 %doc %{_docdir}/opensips/README.registrar
