@@ -312,11 +312,11 @@ error:
 }
 
 
-int udp_start_nofork(void)
+int udp_init_nofork(void)
 {
 	struct socket_info *si;
 	stat_var *load_p = NULL;
-	int rc, p;
+	int p;
 
 	if (udp_disabled || (si=protos[PROTO_UDP].listeners)==NULL) {
 		LM_ERR("configuration error: no UDP listener in NO FORK mode\n");
@@ -337,19 +337,32 @@ int udp_start_nofork(void)
 		return -1;
 	}
 
+	protos[PROTO_UDP].sendipv4 = si;
+	protos[PROTO_UDP].sendipv6 = si; /*FIXME*/
+
 	if (register_udp_load_stat(&si->sock_str,&load_p,1/*children*/)!=0){
 		LM_ERR("failed to init load statistics\n");
 		return -1;
 	}
 	pt[process_no].load = load_p;
 
+	return 0;
+}
+
+
+int udp_start_nofork(void)
+{
+	struct socket_info *si;
+	int rc;
+
+	/* this was tested by udp_init_nofork !!! */
+	si = protos[PROTO_UDP].listeners;
+
 	/* main process, receive loop */
 	set_proc_attrs("stand-alone SIP receiver %.*s",
 		si->sock_str.len, si->sock_str.s );
 
 	bind_address = si; /* shortcut */
-	protos[PROTO_UDP].sendipv4 = si;
-	protos[PROTO_UDP].sendipv6 = si; /*FIXME*/
 
 	/* We will call child_init even if we
 	 * do not fork - and it will be called with rank 1 because
