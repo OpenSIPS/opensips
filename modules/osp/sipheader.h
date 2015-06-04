@@ -57,10 +57,12 @@
 #define OSP_MNC_SIZE        3
 
 void ospCopyStrToBuffer(str* source, char* buffer, int bufsize);
+int ospGetFromDisplay(struct sip_msg* msg, char* fromdisplay, int bufsize);
 int ospGetFromUserpart(struct sip_msg* msg, char* fromuser, int bufsize);
 int ospGetRpidUserpart(struct sip_msg* msg, char* rpiduser, int bufsize);
 int ospGetPaiUserpart(struct sip_msg* msg, char* paiuser, int bufsize);
 int ospGetPChargeInfoUserpart(struct sip_msg* msg, char* paiuser, int bufsize);
+int ospGetToDisplay(struct sip_msg* msg, char* todisplay, int bufsize);
 int ospGetToUserpart(struct sip_msg* msg, char* touser, int bufsize);
 int ospGetToHostpart(struct sip_msg* msg, char* tohost, int bufsize);
 int ospGetUriUserpart(struct sip_msg* msg, char* uriuser, int bufsize);
@@ -76,6 +78,7 @@ int ospGetNextHop(struct sip_msg* msg, char* nexthop, int bufsize);
 int ospGetNpParameters(struct sip_msg* msg, char* rn, int rnbufsize, char* cic, int cicbufsize, int* npdi);
 int ospGetOperatorName(struct sip_msg* msg, OSPE_OPERATOR_NAME type, char* name, int namebufsize);
 int ospGetDiversion(struct sip_msg* msg, char* user, int userbufsize, char* host, int hostbufsize);
+int ospGetUserAgent(struct sip_msg* msg, char* useragent, int bufsize);
 
 #endif /* _OSP_MOD_SIPHEADER_H_ */
 

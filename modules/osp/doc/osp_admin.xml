@@ -23,22 +23,49 @@
     <para>The OSP module depends on the following modules which must be loaded before the OSP module.</para>
     <itemizedlist>
       <listitem>
-        <para><emphasis>sl</emphasis> -- stateless replier</para>
+        <para><emphasis>auth</emphasis> -- Authentication Framework module</para>
       </listitem>
       <listitem>
-        <para><emphasis>tm</emphasis> -- stateful processing</para>
+        <para><emphasis>avpops</emphasis> -- AVP operation module</para>
       </listitem>
       <listitem>
-        <para><emphasis>rr</emphasis> -- Record-Route/Route operation</para>
+        <para><emphasis>maxfwd</emphasis> -- Max-Forward processor module</para>
       </listitem>
       <listitem>
-        <para><emphasis>textops</emphasis> -- text based operation</para>
+        <para><emphasis>mi_fifo</emphasis> -- FIFO support for Management Interface</para>
       </listitem>
       <listitem>
-        <para><emphasis>auth</emphasis> -- Remote-Party-ID operattion</para>
+        <para><emphasis>options</emphasis> -- OPTIONS server replier module</para>
       </listitem>
       <listitem>
-        <para><emphasis>OSP Toolkit</emphasis> -- The OSP Toolkit, available from http://sourceforge.net/projects/osp-toolkit, must be built before building OpenSIPS with the OSP module.  For instructions on building OpenSIPS with the OSP Toolkit, see http://www.transnexus.com/White%20Papers/Multi-Lateral_Peering_with_OpenSIPS_V1.6.pdf</para>
+        <para><emphasis>registrar</emphasis> -- SIP Registrar implementation module</para>
+      </listitem>
+      <listitem>
+        <para><emphasis>rr</emphasis> -- Record-Route and Route module</para>
+      </listitem>
+      <listitem>
+        <para><emphasis>signaling</emphasis> -- SIP signaling module</para>
+      </listitem>
+      <listitem>
+        <para><emphasis>sipmsgops</emphasis> -- SIP operations module</para>
+      </listitem>
+      <listitem>
+        <para><emphasis>sl</emphasis> -- Stateless replier module</para>
+      </listitem>
+      <listitem>
+        <para><emphasis>tm</emphasis> -- Transaction (stateful) module</para>
+      </listitem>
+      <listitem>
+        <para><emphasis>uac</emphasis> -- UAC functionalies (FROM mangling and UAC auth)</para>
+      </listitem>
+      <listitem>
+        <para><emphasis>uac_auth</emphasis> -- UAC Authentication functionality</para>
+      </listitem>
+      <listitem>
+        <para><emphasis>usrloc</emphasis> -- User location implementation module</para>
+      </listitem>
+      <listitem>
+        <para><emphasis>OSP Toolkit</emphasis> -- The OSP Toolkit, available from http://sourceforge.net/projects/osp-toolkit, must be built before building OpenSIPS with the OSP module. For instructions on building OpenSIPS with the OSP Toolkit, see http://www.http://transnexus.com/wp-content/uploads/OSP-Routing-and-CDR-Collection-Server-with-OpenSIPS-1.7.2.pdf. For OpenSIPS 1.11.5, OSP Toolkit 4.5.0 or later versions should be used.</para>
       </listitem>
     </itemizedlist>
   </section>

@@ -72,7 +72,7 @@ const int OSP_NEXT_ROUTE = 0;
 const int OSP_MAIN_ROUTE = 1;
 const int OSP_BRANCH_ROUTE = 0;
 
-static int ospLoadRoutes(OSPTTRANHANDLE trans, int destcount, char* source, char* srcdev, char* snid, char* origcalled, time_t authtime, char* rpid, char* pai, char* divuser, char* divhost, char* pci);
+static int ospLoadRoutes(OSPTTRANHANDLE trans, int destcount, time_t authtime, char* origcalled, osp_inbound* inbound);
 static int ospPrepareDestination(struct sip_msg* msg, int isfirst, int type, int redirect);
 static int ospSetCalling(struct sip_msg* msg, osp_dest* dest);
 
@@ -80,31 +80,17 @@ static int ospSetCalling(struct sip_msg* msg, osp_dest* dest);
  * Get routes from AuthRsp
  * param transaction Transaction handle
  * param destcount Expected destination count
- * param source Source IP
- * param srcdev Source device IP
- * param snid Source network ID
- * param origcalled Original called number
  * param authtime Request authorization time
- * param rpid Remote-Party-ID
- * param pai P-Asserted_Identify
- * param divuser User of Diversion
- * param divhost Host of Diversion
- * param pci P-Charge-Info
+ * param origcalled Original called number
+ * param inbound Inbound info
  * return 0 success, -1 failure
  */
 static int ospLoadRoutes(
     OSPTTRANHANDLE trans,
     int destcount,
-    char* source,
-    char* srcdev,
-    char* snid,
-    char* origcalled,
     time_t authtime,
-    char* rpid,
-    char* pai,
-    char* divuser,
-    char* divhost,
-    char* pci)
+    char* origcalled,
+    osp_inbound* inbound)
 {
     int count;
     int errcode;
@@ -126,8 +112,9 @@ static int ospLoadRoutes(
         }
 
         dest->destcount = count + 1;
+        dest->authtime = authtime;
         strncpy(dest->origcalled, origcalled, sizeof(dest->origcalled) - 1);
-        strncpy(dest->snid, snid, sizeof(dest->snid) - 1);
+        strncpy(dest->snid, inbound->snid, sizeof(dest->snid) - 1);
 
         if (count == 0) {
             errcode = OSPPTransactionGetFirstDestination(
@@ -251,16 +238,16 @@ static int ospLoadRoutes(
             dest->dnid[0] = '\0';
         }
 
-        strncpy(dest->source, source, sizeof(dest->source) - 1);
-        strncpy(dest->srcdev, srcdev, sizeof(dest->srcdev) - 1);
         dest->type = OSPC_ROLE_SOURCE;
+        strncpy(dest->source, inbound->source, sizeof(dest->source) - 1);
+        strncpy(dest->srcdev, inbound->srcdev, sizeof(dest->srcdev) - 1);
         dest->transid = ospGetTransactionId(trans);
-        dest->authtime = authtime;
-        strncpy(dest->rpid, rpid, sizeof(dest->rpid) - 1);
-        strncpy(dest->pai, pai, sizeof(dest->pai) - 1);
-        strncpy(dest->divuser, divuser, sizeof(dest->divuser) - 1);
-        strncpy(dest->divhost, divhost, sizeof(dest->divhost) - 1);
-        strncpy(dest->pci, pci, sizeof(dest->pci) - 1);
+        strncpy(dest->display, inbound->display, sizeof(dest->display) - 1);
+        strncpy(dest->rpid, inbound->rpid, sizeof(dest->rpid) - 1);
+        strncpy(dest->pai, inbound->pai, sizeof(dest->pai) - 1);
+        strncpy(dest->divuser, inbound->divuser, sizeof(dest->divuser) - 1);
+        strncpy(dest->divhost, inbound->divhost, sizeof(dest->divhost) - 1);
+        strncpy(dest->pci, inbound->pci, sizeof(dest->pci) - 1);
 
         LM_INFO("get destination '%d': "
             "valid after '%s' "
@@ -352,19 +339,13 @@ int ospRequestRouting(
     int npdi;
     OSPE_OPERATOR_NAME type;
     char opname[OSPC_OPNAME_NUMBER][OSP_STRBUF_SIZE];
-    char source[OSP_STRBUF_SIZE];
+    osp_inbound inbound;
     char sourcebuf[OSP_STRBUF_SIZE];
-    char srcdev[OSP_STRBUF_SIZE];
     char srcdevbuf[OSP_STRBUF_SIZE];
-    char rpid[OSP_STRBUF_SIZE];
-    char pai[OSP_STRBUF_SIZE];
-    char divuser[OSP_STRBUF_SIZE];
-    char divhost[OSP_STRBUF_SIZE];
     char divhostbuf[OSP_STRBUF_SIZE];
-    char pci[OSP_STRBUF_SIZE];
+    char useragent[OSP_STRBUF_SIZE];
     struct usr_avp* snidavp = NULL;
     int_str snidval;
-    char snid[OSP_STRBUF_SIZE];
     struct usr_avp* cinfoavp = NULL;
     int_str cinfoval;
     unsigned int cinfonum = 0, i;
@@ -390,15 +371,15 @@ int ospRequestRouting(
         LM_ERR("failed to extract called number\n");
     } else if (ospGetCallId(msg, &(callids[0])) != 0) {
         LM_ERR("failed to extract call id\n");
-    } else if (ospGetSource(msg, source, sizeof(source)) != 0) {
+    } else if (ospGetSource(msg, inbound.source, sizeof(inbound.source)) != 0) {
         LM_ERR("failed to extract source address\n");
-    } else if (ospGetSourceDevice(msg, srcdev, sizeof(srcdev)) != 0) {
+    } else if (ospGetSourceDevice(msg, inbound.srcdev, sizeof(inbound.srcdev)) != 0) {
         LM_ERR("failed to extract source deivce address\n");
     } else {
         authtime = time(NULL);
 
-        ospConvertToOutAddress(source, sourcebuf, sizeof(sourcebuf));
-        ospConvertToOutAddress(srcdev, srcdevbuf, sizeof(srcdevbuf));
+        ospConvertToOutAddress(inbound.source, sourcebuf, sizeof(sourcebuf));
+        ospConvertToOutAddress(inbound.srcdev, srcdevbuf, sizeof(srcdevbuf));
 
         switch (_osp_service_type) {
         case 1:
@@ -428,36 +409,44 @@ int ospRequestRouting(
             }
         }
 
-        if (ospGetRpidUserpart(msg, rpid, sizeof(rpid)) == 0) {
-            OSPPTransactionSetRemotePartyId(trans, OSPC_NFORMAT_E164, rpid);
+        if (ospGetFromDisplay(msg, inbound.display, sizeof(inbound.display)) == 0) {
+            OSPPTransactionSetFrom(trans, OSPC_NFORMAT_DISPLAYNAME, inbound.display);
         }
 
-        if (ospGetPaiUserpart(msg, pai, sizeof(pai)) == 0) {
-            OSPPTransactionSetAssertedId(trans, OSPC_NFORMAT_E164, pai);
+        if (ospGetRpidUserpart(msg, inbound.rpid, sizeof(inbound.rpid)) == 0) {
+            OSPPTransactionSetRemotePartyId(trans, OSPC_NFORMAT_E164, inbound.rpid);
         }
 
-        if (ospGetDiversion(msg, divuser, sizeof(divuser), divhost, sizeof(divhost)) == 0) {
-            ospConvertToOutAddress(divhost, divhostbuf, sizeof(divhostbuf));
+        if (ospGetPaiUserpart(msg, inbound.pai, sizeof(inbound.pai)) == 0) {
+            OSPPTransactionSetAssertedId(trans, OSPC_NFORMAT_E164, inbound.pai);
+        }
+
+        if (ospGetDiversion(msg, inbound.divuser, sizeof(inbound.divuser), inbound.divhost, sizeof(inbound.divhost)) == 0) {
+            ospConvertToOutAddress(inbound.divhost, divhostbuf, sizeof(divhostbuf));
         } else {
             divhostbuf[0] = '\0';
         }
-        OSPPTransactionSetDiversion(trans, divuser, divhostbuf);
+        OSPPTransactionSetDiversion(trans, inbound.divuser, divhostbuf);
+
+        if (ospGetPChargeInfoUserpart(msg, inbound.pci, sizeof(inbound.pci)) == 0) {
+            OSPPTransactionSetChargeInfo(trans, OSPC_NFORMAT_E164, inbound.pci);
+        }
+
+        if (ospGetUserAgent(msg, useragent, sizeof(useragent)) == 0) {
+            OSPPTransactionSetUserAgent(trans, useragent);
+        }
 
         OSPPTransactionSetProtocol(trans, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
-
-        if (ospGetPChargeInfoUserpart(msg, pci, sizeof(pci)) == 0) {
-            OSPPTransactionSetChargeInfo(trans, OSPC_NFORMAT_E164, pci);
-        }
 
         if ((_osp_snid_avpid >= 0) &&
             ((snidavp = search_first_avp(_osp_snid_avptype, _osp_snid_avpid, &snidval, 0)) != NULL) &&
             (snidavp->flags & AVP_VAL_STR) && (snidval.s.s && snidval.s.len))
         {
-            snprintf(snid, sizeof(snid), "%.*s", snidval.s.len, snidval.s.s);
-            snid[sizeof(snid) - 1] = '\0';
-            OSPPTransactionSetNetworkIds(trans, snid, "");
+            snprintf(inbound.snid, sizeof(inbound.snid), "%.*s", snidval.s.len, snidval.s.s);
+            inbound.snid[sizeof(inbound.snid) - 1] = '\0';
+            OSPPTransactionSetNetworkIds(trans, inbound.snid, "");
         } else {
-            snid[0] = '\0';
+            inbound.snid[0] = '\0';
         }
 
         if (_osp_cinfo_avpid >= 0) {
@@ -504,6 +493,7 @@ int ospRequestRouting(
             "mcc '%s' "
             "mnc '%s' "
             */
+            "display '%s' "
             "rpid '%s' "
             "pai '%s' "
             "div_user '%s' "
@@ -515,7 +505,7 @@ int ospRequestRouting(
             _osp_service_type,
             sourcebuf,
             srcdevbuf,
-            snid,
+            inbound.snid,
             calling,
             called,
             (preferred[0] == NULL) ? "" : preferred[0],
@@ -530,11 +520,12 @@ int ospRequestRouting(
             opname[OSPC_OPNAME_MCC],
             opname[OSPC_OPNAME_MNC],
             */
-            rpid,
-            pai,
-            divuser,
+            inbound.display,
+            inbound.rpid,
+            inbound.pai,
+            inbound.divuser,
             divhostbuf,
-            pci,
+            inbound.pci,
             callids[0]->Length,
             callids[0]->Value,
             destcount,
@@ -565,7 +556,7 @@ int ospRequestRouting(
         LM_INFO("authreq cost = %lu.%06lu for call-id '%.*s'\n", td.tv_sec, td.tv_usec, callids[0]->Length, callids[0]->Value);
 
         if ((errcode == OSPC_ERR_NO_ERROR) &&
-            (ospLoadRoutes(trans, destcount, source, srcdev, snid, called, authtime, rpid, pai, divuser, divhostbuf, pci) == 0))
+            (ospLoadRoutes(trans, destcount, authtime, called, &inbound) == 0))
         {
             LM_INFO("there are '%d' OSP routes, call_id '%.*s'\n",
                 destcount,
@@ -578,20 +569,47 @@ int ospRequestRouting(
                 callids[0]->Length,
                 callids[0]->Value);
             switch (errcode) {
-                case OSPC_ERR_TRAN_ROUTE_BLOCKED:
-                    result = -403;
+                case OSPC_ERR_HTTP_BAD_REQUEST:
+                    result = -4000;
                     break;
-                case OSPC_ERR_TRAN_ROUTE_NOT_FOUND:
-                    result = -404;
+                case OSPC_ERR_TRAN_BAD_REQUEST:
+                    result = -4001;
                     break;
-                case OSPC_ERR_TRAN_CALLING_INVALID:
-                    result = -428;
-                    break;
-                case OSPC_ERR_TRAN_CALLED_FILTERING:
-                    result = -484;
+                case OSPC_ERR_HTTP_UNAUTHORIZED:
+                    result = -4010;
                     break;
                 case OSPC_ERR_TRAN_UNAUTHORIZED:
-                    result = -401;
+                    result = -4011;
+                    break;
+                case OSPC_ERR_TRAN_ROUTE_BLOCKED:
+                    result = -4030;
+                    break;
+                case OSPC_ERR_TRAN_ROUTE_NOT_FOUND:
+                    result = -4040;
+                    break;
+                case OSPC_ERR_TRAN_MAY_NOT_ORIGINATE:
+                    result = -4050;
+                    break;
+                case OSPC_ERR_TRAN_CALLING_INVALID:
+                    result = -4280;
+                    break;
+                case OSPC_ERR_SOCK_CONNECT_FAILED:
+                    result = -4800;
+                    break;
+                case OSPC_ERR_SOCK_SELECT_FAILED:
+                    result = -4801;
+                    break;
+                case OSPC_ERR_HTTP_SERVER_NOT_READY:
+                    result = -4802;
+                    break;
+                case OSPC_ERR_TRAN_CALLED_FILTERING:
+                    result = -4840;
+                    break;
+                case OSPC_ERR_HTTP_SERVICE_UNAVAILABLE:
+                    result = -5030;
+                    break;
+                case OSPC_ERR_TRAN_DECLINE:
+                    result = -6030;
                     break;
                 case OSPC_ERR_NO_ERROR:
                     /* AuthRsp ok but ospLoadRoutes fails */
@@ -777,7 +795,9 @@ static int ospPrepareDestination(
         }
     } else {
         LM_DBG("there is no more routes\n");
-        ospReportOrigSetupUsage();
+        if (!redirect) {
+            ospReportOrigSetupUsage();
+        }
     }
 
     return result;

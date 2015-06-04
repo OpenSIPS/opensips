@@ -164,3 +164,15 @@ Added support for called number digit filtering.
 Added support for calling number invalid.
 Fixed network ID reporting issue.
 Fixed t_relay check issue in sample configuration file.
+
+2015 June 4
+Updated to support more OSP server response codes.
+Fixed the bug of source network ID in OSP cookie.
+Updated to support 603 Decline status code.
+Different timeout values for receiving 18x and not receiving 18x.
+Hardcoded not to report redirect CDRs.
+Support CDRProxy
+Support FromDisplayName
+Support User-Agent
+Support TotalSetupAttempts for completed calls.
+

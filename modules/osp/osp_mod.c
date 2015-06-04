@@ -264,6 +264,7 @@ static int ospVerifyParameters(void)
     int i;
     pv_spec_t avp_spec;
     str avp_str;
+    char hostname[OSP_STRBUF_SIZE];
     int result = 0;
 
     if ((_osp_work_mode < 0) || (_osp_work_mode > 1)) {
@@ -295,13 +296,12 @@ static int ospVerifyParameters(void)
         }
     }
 
-    if (_osp_device_ip != NULL) {
-        ospConvertToInAddress(_osp_device_ip, _osp_in_device, sizeof(_osp_in_device));
-        ospConvertToOutAddress(_osp_device_ip, _osp_out_device, sizeof(_osp_out_device));
-    } else {
-        _osp_in_device[0] = '\0';
-        _osp_out_device[0] = '\0';
+    if (_osp_device_ip == NULL) {
+        gethostname(hostname, sizeof(hostname));
+        _osp_device_ip = hostname;
     }
+    ospConvertToOutAddress(_osp_device_ip, _osp_out_device, sizeof(_osp_out_device));
+    ospConvertToInAddress(_osp_device_ip, _osp_in_device, sizeof(_osp_in_device));
 
     if (_osp_max_dests > OSP_DEF_DESTS || _osp_max_dests < 1) {
         _osp_max_dests = OSP_DEF_DESTS;

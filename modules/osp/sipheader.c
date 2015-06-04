@@ -102,6 +102,43 @@ static void ospSkipUserParam(
 }
 
 /*
+ * Get display name from From header
+ * param msg SIP message
+ * param fromdisplay Display name of From header
+ * param bufsize Size of fromdisplay buffer
+ * return 0 success, -1 failure
+ */
+int ospGetFromDisplay(
+    struct sip_msg* msg,
+    char* fromdisplay,
+    int bufsize)
+{
+    struct to_body* from;
+    int result = -1;
+
+    if ((fromdisplay != NULL) && (bufsize > 0)) {
+        fromdisplay[0] = '\0';
+        if (msg->from != NULL) {
+            if (parse_from_header(msg) == 0) {
+                from = get_from(msg);
+                if ((from->display.s != NULL) && (from->display.len > 0)) {
+                    ospCopyStrToBuffer(&from->display, fromdisplay, bufsize);
+                    result = 0;
+                }
+            } else {
+                LM_ERR("failed to parse From header\n");
+            }
+        } else {
+            LM_ERR("failed to find From header\n");
+        }
+    } else {
+        LM_ERR("bad parameters to parse display name from From header\n");
+    }
+
+    return result;
+}
+
+/*
  * Get user part from From header
  * param msg SIP message
  * param fromuser User part of From header
@@ -117,7 +154,7 @@ int ospGetFromUserpart(
     struct sip_uri uri;
     int result = -1;
 
-    if (bufsize > 0) {
+    if ((fromuser != NULL) && (bufsize > 0)) {
         fromuser[0] = '\0';
 
         if (msg->from != NULL) {
@@ -290,6 +327,43 @@ int ospGetPChargeInfoUserpart(
 }
 
 /*
+ * Get display name from To header
+ * param msg SIP message
+ * param todisplay Display name of To header
+ * param bufsize Size of todisplay buffer
+ * return 0 success, -1 failure
+ */
+int ospGetToDisplay(
+    struct sip_msg* msg,
+    char* todisplay,
+    int bufsize)
+{
+    struct to_body* to;
+    int result = -1;
+
+    if ((todisplay != NULL) && (bufsize > 0)) {
+        todisplay[0] = '\0';
+        if (msg->to != NULL) {
+            if (parse_headers(msg, HDR_TO_F, 0) == 0) {
+                to = get_to(msg);
+                if ((to->display.s != NULL) && (to->display.len > 0)) {
+                    ospCopyStrToBuffer(&to->display, todisplay, bufsize);
+                    result = 0;
+                }
+            } else {
+                LM_ERR("failed to parse To header\n");
+            }
+        } else {
+            LM_ERR("failed to find To header\n");
+        }
+    } else {
+        LM_ERR("bad parameters to parse display name from To header\n");
+    }
+
+    return result;
+}
+
+/*
  * Get user part from To header
  * param msg SIP message
  * param touser User part of To header
@@ -305,7 +379,7 @@ int ospGetToUserpart(
     struct sip_uri uri;
     int result = -1;
 
-    if (bufsize > 0) {
+    if ((touser != NULL) && (bufsize > 0)) {
         touser[0] = '\0';
 
         if (msg->to != NULL) {
@@ -347,7 +421,7 @@ int ospGetToHostpart(
     struct sip_uri uri;
     int result = -1;
 
-    if (bufsize > 0) {
+    if ((tohost != NULL) && (bufsize > 0)) {
         tohost[0] = '\0';
 
         if (msg->to != NULL) {
@@ -391,7 +465,7 @@ int ospGetUriUserpart(
 {
     int result = -1;
 
-    if (bufsize > 0) {
+    if ((uriuser != NULL) && (bufsize > 0)) {
         uriuser[0] = '\0';
 
         if (parse_sip_msg_uri(msg) >= 0) {
@@ -472,7 +546,7 @@ int ospAddOspHeader(
     unsigned int encodedtokensize = sizeof(encodedtoken);
     int errorcode, result = -1;
 
-    if (tokensize == 0) {
+    if ((token == NULL) || (tokensize == 0)) {
         LM_DBG("destination is not OSP device\n");
         result = 0;
     } else {
@@ -520,7 +594,7 @@ int ospGetOspHeader(
     int result = -1;
 
     if (parse_headers(msg, HDR_EOH_F, 0) != 0) {
-        LM_ERR("failed to parse all headers");
+        LM_ERR("failed to parse all headers\n");
     } else {
         hf = get_header_by_name(msg, OSP_TOKEN_HEADER, OSP_HEADER_SIZE);
         if (hf) {
@@ -553,7 +627,7 @@ int ospGetViaAddress(
     struct via_body* via;
     int result = -1;
 
-    if (bufsize > 0) {
+    if ((viaaddr != NULL) && (bufsize > 0)) {
         /*
          * No need to call parse_headers, called already and VIA is parsed
          * anyway by default
@@ -576,6 +650,8 @@ int ospGetViaAddress(
                 break;
             }
         }
+    } else {
+        LM_ERR("bad parameters to parse host from VIA header\n");
     }
 
     return result;
@@ -597,7 +673,7 @@ int ospGetSourceDevice(
     int_str value;
     int result = -1;
 
-    if (bufsize > 0) {
+    if ((srcdev != NULL) && (bufsize > 0)) {
         switch (_osp_work_mode) {
         case 1:
             if ((_osp_srcdev_avpid >= 0) &&
@@ -616,6 +692,8 @@ int ospGetSourceDevice(
             result = ospGetViaAddress(msg, srcdev, bufsize);
             break;
         }
+    } else {
+        LM_ERR("bad parameters to parse source device\n");
     }
 
     return result;
@@ -635,7 +713,7 @@ int ospGetSource(
 {
     int result = -1;
 
-    if (bufsize > 0) {
+    if ((source != NULL) && (bufsize > 0)) {
         switch (_osp_work_mode) {
         case 1:
             result = ospGetViaAddress(msg, source, bufsize);
@@ -646,6 +724,8 @@ int ospGetSource(
             result = 0;
             break;
         }
+    } else {
+        LM_ERR("bad parameters to parse source\n");
     }
 
     return result;
@@ -696,7 +776,7 @@ int ospGetRouteParameters(
     struct sip_uri uri;
     int result = -1;
 
-    if (bufsize > 0) {
+    if ((routeparameters != NULL) && (bufsize > 0)) {
         LM_DBG("parsed uri host '%.*s' port '%d' vars '%.*s'\n",
             msg->parsed_uri.host.len,
             msg->parsed_uri.host.s,
@@ -727,6 +807,8 @@ int ospGetRouteParameters(
             routeparameters[msg->parsed_uri.params.len] = '\0';
             result = 0;
         }
+    } else {
+        LM_ERR("bad parameters to parse parameters from Route header\n");
     }
 
     return result;
@@ -924,7 +1006,7 @@ int ospGetNextHop(
     int found = 0;
     int result = -1;
 
-    if (bufsize > 0) {
+    if ((nexthop != NULL) && (bufsize > 0)) {
         result = 0;
 
         for (hf = msg->headers; hf; hf = hf->next) {
@@ -973,6 +1055,8 @@ int ospGetNextHop(
             }
             found = 1;
         }
+    } else {
+        LM_ERR("bad parameters to get next hop\n");
     }
 
     return result;
@@ -1225,6 +1309,37 @@ int ospGetDiversion(
         }
     } else {
         LM_ERR("bad paraneters to parse number from Diversion\n");
+    }
+
+    return result;
+}
+
+/*
+ * Get User-Agent header
+ * param msg SIP message
+ * param useragent User-Agent buffer
+ * param bufsize Size of useragent
+ * return 0 success, -1 failure
+ */
+int ospGetUserAgent(
+    struct sip_msg* msg, 
+    char* useragent, 
+    int bufsize)
+{
+    int result = -1;
+
+    if ((useragent != NULL) && (bufsize > 0)) {
+        useragent[0] = '\0';
+        if (parse_headers(msg, HDR_USERAGENT_F, 0) == 0) {
+            if ((msg->user_agent != NULL) && (msg->user_agent->body.s != NULL) && (msg->user_agent->body.len > 0)) {
+                ospCopyStrToBuffer(&msg->user_agent->body, useragent, bufsize);
+            }            
+            result = 0;
+        } else {
+            LM_ERR("failed to parse User-Agent header\n");
+        }    
+    } else {
+        LM_ERR("bad paraneters to parse User-Agent header\n");
     }
 
     return result;
