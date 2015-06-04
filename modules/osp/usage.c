@@ -72,8 +72,11 @@
 #define OSP_REPORT_SNID         (1<<0)
 #define OSP_REPORT_DNID         (1<<1)
 
+#define OSP_OPENSIPS            "opensips"
+
 extern int _osp_report_nid;
 extern int _osp_origdest_avpid;
+extern char _osp_in_device[];
 extern char _osp_out_device[];
 extern OSPTPROVHANDLE _osp_provider;
 extern str OSP_ORIGDEST_NAME;
@@ -220,16 +223,19 @@ static int ospReportUsageFromCookie(
     int cookieflags = 0;
     unsigned releasecode;
     char firstvia[OSP_STRBUF_SIZE];
+    char fromdisplay[OSP_STRBUF_SIZE];
     char from[OSP_STRBUF_SIZE];
     char rpid[OSP_STRBUF_SIZE];
     char pai[OSP_STRBUF_SIZE];
     char divuser[OSP_STRBUF_SIZE];
     char divhost[OSP_STRBUF_SIZE];
     char pci[OSP_STRBUF_SIZE];
+    char todisplay[OSP_STRBUF_SIZE];
     char to[OSP_STRBUF_SIZE];
     char nexthop[OSP_STRBUF_SIZE];
     char* snid = NULL;
     char* dnid = NULL;
+    char* display;
     char* calling;
     char* called;
     char* originator = NULL;
@@ -316,11 +322,13 @@ static int ospReportUsageFromCookie(
     }
 
     ospGetViaAddress(msg, firstvia, sizeof(firstvia));
+    ospGetFromDisplay(msg, fromdisplay, sizeof(fromdisplay));
     ospGetFromUserpart(msg, from, sizeof(from));
     ospGetRpidUserpart(msg, rpid, sizeof(rpid));
     ospGetPaiUserpart(msg, pai, sizeof(pai));
     ospGetDiversion(msg, divuser, sizeof(divuser), divhost, sizeof(divhost));
     ospGetPChargeInfoUserpart(msg, pci, sizeof(pci));
+    ospGetToDisplay(msg, todisplay, sizeof(todisplay));
     ospGetToUserpart(msg, to, sizeof(to));
     ospGetNextHop(msg, nexthop, sizeof(nexthop));
 
@@ -339,6 +347,7 @@ static int ospReportUsageFromCookie(
         if (originator == NULL) {
             originator = nexthop;
         }
+        display = todisplay;
         calling = to;
         called = from;
         terminator = firstvia;
@@ -359,6 +368,7 @@ static int ospReportUsageFromCookie(
         if (originator == NULL) {
             originator = firstvia;
         }
+        display = fromdisplay;
         calling = from;
         called = to;
         terminator = nexthop;
@@ -413,6 +423,10 @@ static int ospReportUsageFromCookie(
         errorcode = OSPPTransactionSetDestinationCount(
             transaction,
             destcount);
+
+        errorcode = OSPPTransactionSetTotalSetupAttempts(
+            transaction,
+            destcount);
     }
 
     if (errorcode == OSPC_ERR_NO_ERROR) {
@@ -422,10 +436,14 @@ static int ospReportUsageFromCookie(
         OSPPTransactionSetSrcNetworkId(transaction, snid);
         OSPPTransactionSetDestNetworkId(transaction, dnid);
 
+        OSPPTransactionSetFrom(transaction, OSPC_NFORMAT_DISPLAYNAME, display);
+
         OSPPTransactionSetRemotePartyId(transaction, OSPC_NFORMAT_E164, rpid);
         OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, pai);
         OSPPTransactionSetDiversion(transaction, divuser, divhost);
         OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, pci);
+
+        OSPPTransactionSetCDRProxy(transaction, _osp_in_device, OSP_OPENSIPS, NULL);
 
         ospReportUsageWrapper(
             transaction,
@@ -574,10 +592,14 @@ static int ospReportUsageFromDestination(
     OSPTTRANHANDLE transaction,
     osp_dest* dest)
 {
+    OSPPTransactionSetFrom(transaction, OSPC_NFORMAT_DISPLAYNAME, dest->display);
+
     OSPPTransactionSetRemotePartyId(transaction, OSPC_NFORMAT_E164, dest->rpid);
     OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, dest->pai);
     OSPPTransactionSetDiversion(transaction, dest->divuser, dest->divhost);
     OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, dest->pci);
+
+    OSPPTransactionSetCDRProxy(transaction, _osp_in_device, OSP_OPENSIPS, NULL);
 
     ospReportUsageWrapper(
         transaction,                                          /* In - Transaction handle */

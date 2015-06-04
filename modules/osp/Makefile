@@ -1,3 +1,4 @@
+
 # osp module makefile
 
 # WARNING: do not run this directly, it should be run by the master Makefile
@@ -32,7 +33,7 @@ include ../../Makefile.modules
 install_module_custom: 
 	echo "OSP module overwrites the default configuration file"
 	sed  \
-		-e "s#/usr/local/lib/opensips#$(modules-target)/$(lib-dir)#g" \
+		-e "s#/usr/local/lib/opensips#$(modules-prefix)/$(lib-dir)#g" \
 		< etc/sample-osp-opensips.cfg \
 		> $(cfg-prefix)/$(cfg-dir)/opensips.cfg
 
