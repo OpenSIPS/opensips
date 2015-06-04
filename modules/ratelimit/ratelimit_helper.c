@@ -822,6 +822,8 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri)
 				LM_WARN("limit %d different from the initial one %d for "
 						"pipe %.*s", limit, (*pipe)->limit, name.len, name.s);
 		}
+		/* set the last used time */
+		(*pipe)->last_used = time(0);
 		/* set the destination's counter */
 		(*pipe)->dsts[index].counter = counter;
 		(*pipe)->dsts[index].update = now;
