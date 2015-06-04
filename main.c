@@ -641,7 +641,12 @@ static int main_loop(void)
 	if (dont_fork){
 
 		if (create_status_pipe() < 0) {
-			LM_ERR("failed to create status pipe");
+			LM_ERR("failed to create status pipe\n");
+			goto error;
+		}
+
+		if (udp_init_nofork() < 0) {
+			LM_ERR("failed to init UDP for no fork mode\n");
 			goto error;
 		}
 
