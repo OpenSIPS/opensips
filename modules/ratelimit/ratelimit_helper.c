@@ -1011,7 +1011,7 @@ int rl_get_all_counters(rl_pipe_t *pipe)
 
 	for (i = 0; i < rl_dests_nr; i++) {
 		/* if the replication expired, reset its counter */
-		if (pipe->dsts[i].update + (rl_repl_timer_expire * rl_timer_interval) < now)
+		if ((pipe->dsts[i].update + rl_repl_timer_expire) < now)
 			pipe->dsts[i].counter = 0;
 		counter += pipe->dsts[i].counter;
 	}
