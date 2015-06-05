@@ -462,6 +462,7 @@ extern char *finame;
 %type <intval> snumber
 %type <strval> route_name
 %type <intval> route_param
+%type <strval> folded_string
 
 /*
  * since "if_cmd" is inherently ambiguous,
@@ -1114,6 +1115,25 @@ ipv6addr:	IPV6ADDR {
 ipv6:	ipv6addr { $$=$1; }
 	| LBRACK ipv6addr RBRACK {$$=$2; }
 ;
+
+folded_string:	STRING STRING {
+				$$ = pkg_malloc( strlen($1) + strlen($2) + 1);
+				if ($$==0){
+					LM_CRIT("ERROR: cfg. parser: out of memory.\n");
+				} else {
+					strcpy($$,$1); strcat($$,$2);
+					pkg_free($1); pkg_free($2);
+				}
+			}
+		| folded_string STRING {
+				$$ = pkg_malloc( strlen($1) + strlen($2) + 1);
+				if ($$==0){
+					LM_CRIT("ERROR: cfg. parser: out of memory.\n");
+				} else {
+					strcpy($$,$1); strcat($$,$2);
+					pkg_free($1); pkg_free($2);
+				}
+			}
 
 route_name:  ID {
 				$$ = $1;
@@ -2557,9 +2577,15 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 			}
 		| XDBG LPAREN STRING RPAREN {
 				mk_action1($$, XDBG_T, STR_ST, $3);	}
+		| XDBG LPAREN folded_string RPAREN {
+				mk_action1($$, XDBG_T, STR_ST, $3);	}
 		| XLOG LPAREN STRING RPAREN {
 				mk_action1($$, XLOG_T, STR_ST, $3); }
+		| XLOG LPAREN folded_string RPAREN {
+				mk_action1($$, XLOG_T, STR_ST, $3); }
 		| XLOG LPAREN STRING COMMA STRING RPAREN {
+				mk_action2($$, XLOG_T, STR_ST, STR_ST, $3, $5); }
+		| XLOG LPAREN STRING COMMA folded_string RPAREN {
 				mk_action2($$, XLOG_T, STR_ST, STR_ST, $3, $5); }
 		| RAISE_EVENT LPAREN STRING RPAREN {
 				mk_action1($$, RAISE_EVENT_T, STR_ST, $3); }
