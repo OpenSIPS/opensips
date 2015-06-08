@@ -646,7 +646,7 @@ static int double_fixup(void** param, int param_no)
  */
 static int mod_init(void)
 {
-	struct pm_partition *it, *foo;
+	struct pm_partition *el, *prev_el=NULL;
 
 	LM_DBG("initializing...\n");
 
@@ -679,25 +679,22 @@ static int mod_init(void)
 	}
 
 
-	foo = NULL;
-	for (it = get_partitions(); it; it = it->next) {
-		if (foo)
-			pkg_free(foo);
-
+	el = get_partitions();
+	while (el) {
 		/* initialize table name if not done from script */
-		if (it->table.s == NULL) {
-			it->table.s = "address";
-			it->table.len = strlen(it->table.s);
+		if (el->table.s == NULL) {
+			el->table.s = "address";
+			el->table.len = strlen(el->table.s);
 		}
 
-		if (init_address(it) != 0) {
+		if (init_address(el) != 0) {
 			LM_ERR("failed to initialize the allow_address function\n");
 			return -1;
 		}
+		prev_el = el;
+		el = el->next;
+		pkg_free(prev_el);
 	}
-
-	if (foo)
-		pkg_free(foo);
 
 	rules_num = 1;
 	return 0;

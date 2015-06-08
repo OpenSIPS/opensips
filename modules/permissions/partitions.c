@@ -161,10 +161,10 @@ int parse_partition(modparam_t t, void *val)
 		if (el == NULL)
 			goto out_memfault;
 		memset(el, 0, sizeof(struct pm_partition));
-	}
 
-	for (it=get_partitions(); it->next; it=it->next);
-	it->next = el;
+		for (it=get_partitions(); it->next; it=it->next);
+		it->next = el;
+	}
 
 	tok_end = q_memchr(decl.s, ':', decl.len);
 	if (tok_end == NULL)
@@ -174,6 +174,7 @@ int parse_partition(modparam_t t, void *val)
 	value.len = tok_end - decl.s;
 
 	str_trim_spaces_lr(value);
+
 	el->name = value;
 
 	decl.len = decl.len - (++tok_end - decl.s);
