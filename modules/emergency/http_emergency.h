@@ -25,6 +25,7 @@
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
  */
 
 #include "../../sr_module.h"
@@ -56,24 +57,24 @@
 
 #include "post_curl.h"
 
-struct node *list_call;
-struct node **calls_eme;
+struct call_htable* call_htable;
+struct subs_htable* subs_htable;
 
 char *url_vpc;
 str db_url;
 str *db_table;
 char *empty;
 
-int send_esct(str callid_ori, str from_tag);
-NODE* find_and_delete_esct(char* callId, char* from_tag);
-ESCT* find_esct(char* callId, char* from_tag);
-int same_callid(char* callIdEsct, char* callId);
+int emet_size;
+int subst_size;
+
+int send_esct(struct sip_msg *msg, str callid_ori, str from_tag);
 int faixa_result(int result); 
 int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_cell_vpc, NENA *call_cell_source, PARSED *parsed, int proxy_hole);
 int get_lro_in_contact(char *contact_lro, ESCT *call_cell);
 int get_esqk_in_contact(char *contact_lro, ESCT *call_cell);
 int get_esgwri_ert_in_contact(char *contact_esgwri, ESCT *call_cell);
-void insert_call_cell_in_list(ESCT *call_cell);
-void free_call_cell(NODE *info_call);
+void free_call_cell(ESCT *info_call);
+void free_subs_cell(struct sm_subscriber* subs_cell);
 void free_nena(NENA *nena);
 void free_parsed(PARSED *parsed);

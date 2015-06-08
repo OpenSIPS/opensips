@@ -57,12 +57,14 @@ int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb){
     int expires= 0;
     struct to_body *pto= NULL, *pfrom = NULL;
     int size_subs_cell;
-    struct sm_subscriber *new_cell = NULL;
     int vsp_addr_len;
     char *vsp_addr = "@vsp.com"; 
+    str vsp_str;
     time_t rawtime;
     int time_now;
     struct sm_subscriber *subs_cell = NULL;
+    char *p;
+    unsigned int hash_code;
 
     callid= (str*) pkg_malloc (sizeof (str));
     if (callid == NULL) {
@@ -103,8 +105,10 @@ int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb){
     LM_DBG("TIME : %d \n", (int)rawtime );
 
     /* build subscriber cell */
-    size_subs_cell = sizeof (struct sm_subscriber) + callid->len + pfrom->tag_value.len + pto->tag_value.len + pfrom->uri.len + pto->uri.len + params_cb->callid_ori.len +  params_cb->event.len + params_cb->from_tag.len + vsp_addr_len + 10 ;
-    subs_cell = shm_malloc(size_subs_cell + 1);
+    size_subs_cell = sizeof (struct sm_subscriber) + (2 * sizeof(struct dialog_id)) 
+                    + callid->len + pfrom->tag_value.len + pto->tag_value.len + pfrom->uri.len + pto->uri.len 
+                    + params_cb->callid_ori.len +  params_cb->event.len + params_cb->from_tag.len + vsp_addr_len + 10 ;
+    subs_cell = pkg_malloc(size_subs_cell + 1);
     if (!subs_cell) {
         LM_ERR("no more shm\n");
         return 0;
@@ -116,62 +120,71 @@ int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb){
     LM_DBG("SUBS_TIMEOUT: %d \n ", subs_cell->timeout );  
     subs_cell->version =  -1; 
 
-    subs_cell->dlg_id.callid.len = callid->len;
-    subs_cell->dlg_id.callid.s = (char *) (subs_cell + 1); 
-    memcpy(subs_cell->dlg_id.callid.s, callid->s, callid->len);
-    LM_DBG("SUBS_CALLID: %.*s \n ", subs_cell->dlg_id.callid.len, subs_cell->dlg_id.callid.s );  
+    subs_cell->dlg_id = (struct dialog_id*)(subs_cell + 1);
 
-    subs_cell->dlg_id.local_tag.len = pfrom->tag_value.len;
-    subs_cell->dlg_id.local_tag.s = (char *) (subs_cell + 1) + callid->len; 
-    memcpy(subs_cell->dlg_id.local_tag.s, pfrom->tag_value.s, pfrom->tag_value.len);
-    LM_DBG("SUBS_FROM_TAG: %.*s \n ", subs_cell->dlg_id.local_tag.len, subs_cell->dlg_id.local_tag.s ); 
+    subs_cell->dlg_id->callid.len = callid->len;
+    subs_cell->dlg_id->callid.s = (char *) (subs_cell->dlg_id + 1); 
+    memcpy(subs_cell->dlg_id->callid.s, callid->s, callid->len);
+    LM_DBG("SUBS_CALLID: %.*s \n ", subs_cell->dlg_id->callid.len, subs_cell->dlg_id->callid.s );  
 
-    subs_cell->dlg_id.rem_tag.len = pto->tag_value.len;
-    subs_cell->dlg_id.rem_tag.s = (char *) (subs_cell + 1) + callid->len + pfrom->tag_value.len; 
-    memcpy(subs_cell->dlg_id.rem_tag.s, pto->tag_value.s, pto->tag_value.len);
-    LM_DBG("SUBS_TO_TAG: %.*s \n ", subs_cell->dlg_id.rem_tag.len, subs_cell->dlg_id.rem_tag.s );
+    subs_cell->dlg_id->local_tag.len = pfrom->tag_value.len;
+    subs_cell->dlg_id->local_tag.s = (char *) (subs_cell->dlg_id + 1) + callid->len; 
+    memcpy(subs_cell->dlg_id->local_tag.s, pfrom->tag_value.s, pfrom->tag_value.len);
+    LM_INFO("SUBS_FROM_TAG: %.*s \n ", subs_cell->dlg_id->local_tag.len, subs_cell->dlg_id->local_tag.s ); 
+
+    subs_cell->dlg_id->rem_tag.len = pto->tag_value.len;
+    subs_cell->dlg_id->rem_tag.s = (char *) (subs_cell->dlg_id + 1) + callid->len + pfrom->tag_value.len; 
+    memcpy(subs_cell->dlg_id->rem_tag.s, pto->tag_value.s, pto->tag_value.len);
+    LM_DBG("SUBS_TO_TAG: %.*s \n ", subs_cell->dlg_id->rem_tag.len, subs_cell->dlg_id->rem_tag.s );
+
+    p = (char *)(subs_cell->dlg_id + 1) + callid->len + pfrom->tag_value.len + pto->tag_value.len;   
+    subs_cell->call_dlg_id = (struct dialog_id*)p;
+
+    subs_cell->call_dlg_id->callid.len= params_cb->callid_ori.len;
+    subs_cell->call_dlg_id->callid.s = (char *) (subs_cell->call_dlg_id + 1);
+    memcpy(subs_cell->call_dlg_id->callid.s, params_cb->callid_ori.s, params_cb->callid_ori.len);        
+    LM_INFO("SUBS_CALLID_ORI: %.*s \n ", subs_cell->call_dlg_id->callid.len, subs_cell->call_dlg_id->callid.s );  
+
+    subs_cell->call_dlg_id->local_tag.len= params_cb->from_tag.len;
+    subs_cell->call_dlg_id->local_tag.s = (char *) (subs_cell->call_dlg_id + 1) + params_cb->callid_ori.len;
+    memcpy(subs_cell->call_dlg_id->local_tag.s, params_cb->from_tag.s, params_cb->from_tag.len);        
+    LM_INFO("SUBS_FROMTAG_event: %.*s \n ", subs_cell->call_dlg_id->local_tag.len, subs_cell->call_dlg_id->local_tag.s );
 
     subs_cell->loc_uri.len = pfrom->uri.len;
-    subs_cell->loc_uri.s = (char *) (subs_cell + 1) + callid->len + pfrom->tag_value.len + pto->tag_value.len;
+    subs_cell->loc_uri.s = (char *) (subs_cell->call_dlg_id + 1) + params_cb->callid_ori.len + params_cb->from_tag.len;
     memcpy(subs_cell->loc_uri.s,pfrom->uri.s,pfrom->uri.len);
     LM_DBG("SUBS_LOC_URI: %.*s \n ", subs_cell->loc_uri.len, subs_cell->loc_uri.s );
 
     subs_cell->rem_uri.len= pto->uri.len;
-    subs_cell->rem_uri.s = (char *) (subs_cell + 1) + callid->len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len;
+    subs_cell->rem_uri.s = (char *) (subs_cell->call_dlg_id + 1) + params_cb->callid_ori.len + params_cb->from_tag.len + pfrom->uri.len;
     memcpy(subs_cell->rem_uri.s, pto->uri.s, pto->uri.len);        
     LM_DBG("SUBS_REM_URI: %.*s \n ", subs_cell->rem_uri.len, subs_cell->rem_uri.s ); 
 
-    subs_cell->call_dlg_id.callid.len= params_cb->callid_ori.len;
-    subs_cell->call_dlg_id.callid.s = (char *) (subs_cell + 1) + callid->len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len + pto->uri.len;
-    memcpy(subs_cell->call_dlg_id.callid.s, params_cb->callid_ori.s, params_cb->callid_ori.len);        
-    LM_INFO("SUBS_CALLID_ORI: %.*s \n ", subs_cell->call_dlg_id.callid.len, subs_cell->call_dlg_id.callid.s );  
-
-    subs_cell->call_dlg_id.local_tag.len= params_cb->from_tag.len;
-    subs_cell->call_dlg_id.local_tag.s = (char *) (subs_cell + 1) + callid->len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len + pto->uri.len + params_cb->callid_ori.len;
-    memcpy(subs_cell->call_dlg_id.local_tag.s, params_cb->from_tag.s, params_cb->from_tag.len);        
-    LM_INFO("SUBS_FROMTAG_event: %.*s \n ", subs_cell->call_dlg_id.local_tag.len, subs_cell->call_dlg_id.local_tag.s ); 
-
     subs_cell->event.len= params_cb->event.len;
-    subs_cell->event.s = (char *) (subs_cell + 1) + callid->len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len + pto->uri.len + params_cb->callid_ori.len + params_cb->from_tag.len;
+    subs_cell->event.s = (char *) (subs_cell->call_dlg_id + 1) + params_cb->callid_ori.len + params_cb->from_tag.len + pfrom->uri.len + pto->uri.len;
     memcpy(subs_cell->event.s, params_cb->event.s, params_cb->event.len);        
     LM_DBG("SUBS_EVENT: %.*s \n ", subs_cell->event.len, subs_cell->event.s );  
 
     subs_cell->contact.len = vsp_addr_len + 10;
-    subs_cell->contact.s = (char *) (subs_cell + 1) + callid->len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len + pto->uri.len + params_cb->callid_ori.len + params_cb->from_tag.len + params_cb->event.len;
+    subs_cell->contact.s = (char *) (subs_cell->call_dlg_id + 1) + params_cb->callid_ori.len + params_cb->from_tag.len + pfrom->uri.len + pto->uri.len + params_cb->event.len;
     memcpy(subs_cell->contact.s, "sip:teste@", 10);  
     memcpy(subs_cell->contact.s + 10, vsp_addr, vsp_addr_len);              
     LM_DBG("SUBS_CONTACT: %.*s \n ", subs_cell->contact.len, subs_cell->contact.s );
 
-    subs_cell->dlg_id.status = NOTIFY_WAIT;
+    subs_cell->dlg_id->status = NOTIFY_WAIT;
 
-    /* push cell in Subscriber list linked */
-    if (new_cell != NULL) {
-        new_cell->next = subs_cell;
-        new_cell = subs_cell;
-    } else {
-        new_cell = subs_cell;
-        *subs_pt = new_cell;
+    vsp_str.s = vsp_addr;
+    vsp_str.len = vsp_addr_len;
+            LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_str.len, vsp_str.s);
+
+    hash_code= core_hash(&vsp_str, 0, subst_size);
+            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+
+    if(insert_shtable(subs_htable, hash_code,subs_cell)< 0){
+        LM_ERR("inserting new record in subs_htable\n");
     }
+
+    pkg_free(subs_cell);
 
     pkg_free(callid);
 
@@ -240,6 +253,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *params){
     LM_DBG("REPLY: %.*s \n ", reply->first_line.u.reply.version.len, reply->first_line.u.reply.version.s );
     LM_DBG("CODE: %d \n ", code); 
     LM_DBG("CALLID_INVITE: %.*s \n ",params_cb->callid_ori.len,params_cb->callid_ori.s); 
+    LM_INFO("FROM_TAG_INVITE: %.*s \n ",params_cb->from_tag.len,params_cb->from_tag.s);
 
     /* verify if response is OK*/
     if (code < 300){
@@ -252,7 +266,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *params){
     }else{
         /* Response NOK send esct to clear esqk in VPC*/
         LM_ERR("reply to SUBSCRIBER NOK - revisa\n");
-        if(send_esct(params_cb->callid_ori, params_cb->from_tag) == 0){
+        if(send_esct(reply, params_cb->callid_ori, params_cb->from_tag) == 0){
             LM_ERR("error in send to esct\n"); 
         }       
     }
@@ -334,8 +348,8 @@ int build_params_cb(struct sip_msg* msg, char* callidHeader,  struct parms_cb* p
     }
 
     from_tag = get_from(msg)->tag_value;  
-    LM_DBG("****** FROM_TAG: %.*s\n", from_tag.len, from_tag.s); 
-    LM_DBG("************  CALLID = %s \n", callidHeader);
+    LM_INFO("****** FROM_TAG: %.*s\n", from_tag.len, from_tag.s); 
+    LM_INFO("************  CALLID = %s \n", callidHeader);
 
     size_callid = strlen(callidHeader);
 
@@ -376,10 +390,10 @@ int build_params_cb(struct sip_msg* msg, char* callidHeader,  struct parms_cb* p
 
     params_cb->callid_ori.s = call_aux;
     params_cb->callid_ori.len = size_callid; 
-    params_cb->from_tag.s = from_tag.s;
+    params_cb->from_tag.s = ftag;
     params_cb->from_tag.len = from_tag.len;   
     params_cb->event.s = dialog;
-    params_cb->event.len = size_dialog; 
+    params_cb->event.len = size_dialog;   
 
 
     return 1; 
@@ -497,15 +511,13 @@ void subs_cback_func_II(struct cell *t, int cb_type, struct tmcb_params *params)
     int code = params->code;
     str callid;
     struct sip_msg *reply = params->rpl;
-    struct sm_subscriber* params_subs = (struct sm_subscriber*)(*params->param); 
-
-    struct sm_subscriber* next;
-    struct sm_subscriber* previous;
+    struct sm_subscriber* params_subs = (struct sm_subscriber*)(*params->param);
+    str vsp_addr;
+    unsigned int hash_code; 
 
     LM_DBG("TREAT SUBSCRIBE TERMINATED REPLY \n");   
     LM_DBG("REPLY: %.*s \n ", reply->first_line.u.reply.version.len, reply->first_line.u.reply.version.s );
     LM_DBG("CODE: %d \n ", code); 
-
 
     if (code < 300){
         time_t rawtime;
@@ -532,17 +544,16 @@ void subs_cback_func_II(struct cell *t, int cb_type, struct tmcb_params *params)
     }else{
         LM_ERR("reply to subscribe terminated NOK\n ");
 
-        next = params_subs->next; 
-        previous = params_subs->prev;                                   
-        if (previous == NULL){
-            if (next == NULL){;        
-                *subs_pt = NULL;
-            }else{      
-                *subs_pt = next;
-            }
-        }else{               
-            previous->next = next;
-        }
+        vsp_addr.s = ip_addr2a(&reply->rcv.src_ip);
+        vsp_addr.len = strlen(vsp_addr.s);
+                LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+
+        hash_code= core_hash(&vsp_addr, 0, subst_size);
+                LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+            LM_INFO("********************************************CALLID_STR%.*s\n", vsp_addr.len, vsp_addr.s);
+
+        delete_shtable(subs_htable, hash_code,params_subs);
+
     }
 
     return;
@@ -555,8 +566,8 @@ dlg_t* build_dlg(struct sm_subscriber* subscriber){
     dlg_t* dialog = NULL;
     int size;
 
-    size= sizeof(dlg_t)+ subscriber->dlg_id.callid.len+ subscriber->dlg_id.rem_tag.len+
-        subscriber->dlg_id.local_tag.len+ subscriber->loc_uri.len+
+    size= sizeof(dlg_t)+ subscriber->dlg_id->callid.len+ subscriber->dlg_id->rem_tag.len+
+        subscriber->dlg_id->local_tag.len+ subscriber->loc_uri.len+
         subscriber->rem_uri.len + subscriber->contact.len;;
 
     dialog = (dlg_t*)pkg_malloc(size);
@@ -569,19 +580,19 @@ dlg_t* build_dlg(struct sm_subscriber* subscriber){
     size= sizeof(dlg_t);
 
     dialog->id.call_id.s = (char*)dialog+ size;
-    memcpy(dialog->id.call_id.s, subscriber->dlg_id.callid.s, subscriber->dlg_id.callid.len);
-    dialog->id.call_id.len= subscriber->dlg_id.callid.len;
-    size+= subscriber->dlg_id.callid.len;
+    memcpy(dialog->id.call_id.s, subscriber->dlg_id->callid.s, subscriber->dlg_id->callid.len);
+    dialog->id.call_id.len= subscriber->dlg_id->callid.len;
+    size+= subscriber->dlg_id->callid.len;
 
     dialog->id.rem_tag.s = (char*)dialog+ size;
-    memcpy(dialog->id.rem_tag.s, subscriber->dlg_id.rem_tag.s, subscriber->dlg_id.rem_tag.len);
-    dialog->id.rem_tag.len = subscriber->dlg_id.rem_tag.len;
-    size+= subscriber->dlg_id.rem_tag.len;
+    memcpy(dialog->id.rem_tag.s, subscriber->dlg_id->rem_tag.s, subscriber->dlg_id->rem_tag.len);
+    dialog->id.rem_tag.len = subscriber->dlg_id->rem_tag.len;
+    size+= subscriber->dlg_id->rem_tag.len;
 
     dialog->id.loc_tag.s = (char*)dialog+ size;
-    memcpy(dialog->id.loc_tag.s, subscriber->dlg_id.local_tag.s, subscriber->dlg_id.local_tag.len);
-    dialog->id.loc_tag.len =subscriber->dlg_id.local_tag.len;
-    size+= subscriber->dlg_id.local_tag.len;
+    memcpy(dialog->id.loc_tag.s, subscriber->dlg_id->local_tag.s, subscriber->dlg_id->local_tag.len);
+    dialog->id.loc_tag.len =subscriber->dlg_id->local_tag.len;
+    size+= subscriber->dlg_id->local_tag.len;
 
     dialog->loc_uri.s = (char*)dialog+ size;
     memcpy(dialog->loc_uri.s, subscriber->loc_uri.s, subscriber->loc_uri.len) ;
@@ -645,7 +656,8 @@ int send_subscriber(struct sip_msg* msg, char* callidHeader, int expires){
     if (params_cb == NULL) {
         LM_ERR("--------------------------------------------------no more shm memory\n");
         return 0;
-    }   
+    }  
+
     if( !build_params_cb(msg, callidHeader, params_cb )){
         LM_ERR("**** fail in build parameters to cb \n");
         shm_free(params_cb);
@@ -655,6 +667,8 @@ int send_subscriber(struct sip_msg* msg, char* callidHeader, int expires){
 
     /* add new header (Event, Expires) in SUBSCRIBE request */   
     pt_hdr = add_hdr_subscriber( expires, params_cb->event);
+  
+    LM_INFO("****** PARAMS FROM TAG: %.*s\n", params_cb->from_tag.len, params_cb->from_tag.s);  
 
     /* send SUBSCRIBER */
     sending= eme_tm.t_request
@@ -751,11 +765,13 @@ int send_subscriber_within(struct sip_msg* msg, struct sm_subscriber* subs, int 
 }
 
 /* look for subscriber cell using callid and to_tag of Notify*/
-struct sm_subscriber* get_subs_cell(struct sip_msg *msg) {
-
+struct sm_subscriber* get_subs_cell(struct sip_msg *msg, str callid_event) {
     str callid;
     str method;
     struct to_body *pto= NULL, *pfrom = NULL;
+    struct sm_subscriber* s;
+    str vsp_addr;
+    unsigned int hash_code;
 
     method.s = msg->first_line.u.request.method.s;
     method.len = msg->first_line.u.request.method.len;
@@ -806,7 +822,23 @@ struct sm_subscriber* get_subs_cell(struct sip_msg *msg) {
     LM_DBG("PTO: %.*s \n ", pto->uri.len, pto->uri.s ); 
     LM_DBG("PTO_TAG: %.*s \n ", pto->tag_value.len, pto->tag_value.s ); 
 
-    return find_subscriber_cell(&callid, &pfrom->tag_value, &method);
+    if (proxy_hole_aux == 3) {
+        hash_code= core_hash(&callid_event, 0, subst_size);
+                LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+                LM_INFO("********************************************CALLID_STR%.*s\n", callid_event.len, callid_event.s);
+    }else{
+        vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
+        vsp_addr.len = strlen(vsp_addr.s);
+                LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+        hash_code= core_hash(&vsp_addr, 0, subst_size);               
+    }
+
+    s= search_shtable(subs_htable, &callid, &pfrom->tag_value, hash_code, &method);
+    if (s == NULL) {
+        LM_ERR(" ---FAILURE SUB_CELL NOT FOUND IN SHTABLE\n");
+    }
+
+    return s;
 }
 
 
@@ -820,13 +852,14 @@ int treat_notify(struct sip_msg *msg) {
     str callid_orig;
     str from_tag;
     struct notify_body* notify_body = NULL;
-    struct sm_subscriber* next;
-    struct sm_subscriber* previous;
     time_t rawtime;
     int time_now;
     int version;
     char *version_init, *version_end, *version_aux;
     int size_version;
+    str vsp_addr;
+    unsigned int hash_code;
+    str callid_event;
     static str msg200={"OK Notify",sizeof("OK Notify")-1};
     static str msg481={"Subscription does not exist",sizeof("Subscription does not exist")-1};
     static str msg489={"Bad Event",sizeof("Bad Event")-1};
@@ -840,15 +873,19 @@ int treat_notify(struct sip_msg *msg) {
         return 0;
     }
 
+    callid_event.s = NULL;
+    callid_event.len = 0;
+
     /* look for cell in list linked subs_pt with same dialog Id*/
-    cell_subs = get_subs_cell(msg);
+    cell_subs = get_subs_cell(msg, callid_event);
     if(cell_subs == NULL){
         if(!eme_tm.t_reply(msg,481,&msg481)){
             LM_ERR("t_reply (481)\n");                
         } 
         return 0;             
     }
-    LM_DBG("STATUS: %d \n ", cell_subs->dlg_id.status); 
+
+    LM_DBG("STATUS: %d \n ", cell_subs->dlg_id->status); 
     LM_DBG("TIMEOUT: %d \n ", cell_subs->timeout);
 
     /* get in Subscription_state header: state and expire */
@@ -868,13 +905,13 @@ int treat_notify(struct sip_msg *msg) {
 
     /* analise state value*/
     if (strcmp(subs_state, "active") == 0){
-       cell_subs->dlg_id.status = ACTIVE;
+       cell_subs->dlg_id->status = ACTIVE;
        cell_subs->expires = atoi(subs_expires); 
        cell_subs->timeout =  cell_subs->expires + time_now; 
         LM_DBG("TIMEOUT: %d \n ", cell_subs->timeout);  
     }else{
         if (strcmp(subs_state, "pending") == 0){  
-            cell_subs->dlg_id.status = PENDING ;
+            cell_subs->dlg_id->status = PENDING ;
             cell_subs->expires = atoi(subs_expires); 
             cell_subs->timeout =  TIMER_N + time_now;                                
         }else{
@@ -883,26 +920,25 @@ int treat_notify(struct sip_msg *msg) {
                 /* state is terminated indicate that subcriber dialog finish 
                 then pull cell of the list linked and send esct to VPC*/
                 LM_DBG(" --- CLEAR CELL \n");  
-                callid_orig = cell_subs->call_dlg_id.callid;
-                from_tag = cell_subs->call_dlg_id.local_tag;
+                callid_orig = cell_subs->call_dlg_id->callid;
+                from_tag = cell_subs->call_dlg_id->local_tag;
 
                 LM_INFO(" --- CALLID_ORIG %.*s \n", callid_orig.len, callid_orig.s);
+                LM_INFO(" --- FROM_TAG_ORIG %.*s \n", from_tag.len, from_tag.s);
 
-                if(send_esct(callid_orig, from_tag) == 0){
+                if(send_esct(msg, callid_orig, from_tag) == 0){
                     LM_ERR("error in send to esct\n"); 
                 }
 
-                next = cell_subs->next; 
-                previous = cell_subs->prev;                                   
-                if (previous == NULL){
-                    if (next == NULL){;        
-                        *subs_pt = NULL;
-                    }else{      
-                        *subs_pt = next;
-                    }
-                }else{               
-                    previous->next = next;
-                }
+                vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
+                vsp_addr.len = strlen(vsp_addr.s);
+                        LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+
+                hash_code= core_hash(&vsp_addr, 0, subst_size);
+                        LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+                        LM_INFO("********************************************CALLID_STR%.*s\n", vsp_addr.len, vsp_addr.s);
+
+                delete_shtable(subs_htable, hash_code, cell_subs);
 
                 /* Reply OK to Notify*/
                 if(!eme_tm.t_reply(msg,200,&msg200)){
@@ -924,7 +960,7 @@ int treat_notify(struct sip_msg *msg) {
         }              
     }
 
-    LM_DBG("STATUS: %d \n ", cell_subs->dlg_id.status);               
+    LM_DBG("STATUS: %d \n ", cell_subs->dlg_id->status);               
     LM_DBG(" --- NOTIFY BODY %s", msg->eoh);   
 
     notify_body = parse_notify(msg->eoh);
@@ -983,61 +1019,3 @@ end:
     return resp; 
 }
 
-
-/* check Notify's callid/to_tag with data cell*/
-int same_dialog_id(struct dialog_id dialog_identy, str* callId, str* to_tag) {
-
-    if (callId->len == 0||to_tag->len == 0||dialog_identy.callid.len == 0 ||dialog_identy.rem_tag.len == 0 )                     
-        return 0;
-    
-    LM_INFO(" --- Match Callid %.*s ", callId->len, callId->s);
-    LM_INFO(" --- Match to_tag %.*s ", to_tag->len, to_tag->s);
-    LM_INFO(" --- Match subscriber_cell->callid %.*s ", dialog_identy.callid.len, dialog_identy.callid.s);
-    LM_INFO(" --- Match subscriber_cell->from_tag %.*s ", dialog_identy.rem_tag.len, dialog_identy.rem_tag.s);    
-    if (dialog_identy.callid.len != callId->len)
-        return 0;
-    if (strncmp(dialog_identy.callid.s, callId->s, dialog_identy.callid.len) == 0){
-        if (dialog_identy.rem_tag.len != to_tag->len)
-            return 0;
-        if (strncmp(dialog_identy.rem_tag.s, to_tag->s, dialog_identy.rem_tag.len ) == 0){ 
-            return 1;
-        }
-    }
-    return 0;
-}
-
-
-
-/* Search the cell with callid and to_tag keys in list linked subs_pt, 
-*  if found returns the pointer of this cell
-*/
-struct sm_subscriber* find_subscriber_cell(str* callId, str* to_tag, str* method) {
-
-    struct sm_subscriber* previous = NULL;
-    struct dialog_id dlg_id;
-    struct sm_subscriber* current = *subs_pt;
-
-    LM_INFO(" --- find subscriber cell to dialog id  = %.*s ", callId->len, callId->s);
-    LM_INFO(" --- find subscriber cell to dialog id  = %.*s ", to_tag->len, to_tag->s); 
-
-    if (memcmp(method->s,"BYE", method->len) == 0) {
-        dlg_id = current->call_dlg_id;
-    }else{
-        dlg_id = current->dlg_id;         
-    }
-
-    while (current) {
-        LM_INFO(" --- SUBS_LIST callId  = %.*s \n", dlg_id.callid.len, dlg_id.callid.s);
-        LM_INFO(" --- SUBS_LIST callId  = %.*s \n", dlg_id.rem_tag.len, dlg_id.rem_tag.s);        
-
-        if (same_dialog_id(dlg_id, callId, to_tag) == 1) {
-            LM_INFO(" --- FOUND NOTIFIER CELL with same dialog id: callid %.*s, to_tag %.*s ", callId->len, callId->s, to_tag->len, to_tag->s);
-            current->prev = previous;
-            return current;
-        }
-        previous = current;
-        current = current->next;      
-    }
-    LM_INFO("Did not find\n");
-    return NULL;
-}

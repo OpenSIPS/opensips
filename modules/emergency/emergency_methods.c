@@ -25,6 +25,7 @@
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  
  */
 
@@ -87,11 +88,12 @@ static param_export_t params[] = {
     { "vsp_nena_id", STR_PARAM, &vsp_nena_id},
     { "vsp_contact", STR_PARAM, &vsp_contact},
     { "vsp_cert_uri", STR_PARAM, &vsp_cert_uri},
-    { "flag_empresa_terceira", INT_PARAM, &flag_empresa_terceira},
     { "contingency_hostname", STR_PARAM, &contingency_hostname},
     { "emergency_call_server", STR_PARAM, &call_server_hostname},
     { "proxy_hole", INT_PARAM, &proxy_hole},
     { "callorigin", STR_PARAM, &call_origin},
+    { "call_htable_size", INT_PARAM, &emetable_size},
+    { "subs_htable_size", INT_PARAM, &substable_size},    
     { 0, 0, 0}
 };
 
@@ -194,15 +196,16 @@ static int mod_init(void) {
 
     LM_DBG("Initializing module\n");
 
+    proxy_hole_aux = proxy_hole;
+
     // checks for mandatory fields
     if (source_hostname == NULL || source_contact == NULL) {
         LM_ERR("source_hostname and source_contact are mandatory \n");
         mandatory_parm = 1;
     }
-    LM_DBG("TEST flag_empresa_terceira <> 0 %d\n", flag_empresa_terceira);
-    if (flag_empresa_terceira != 0 &&
-            (vsp_hostname == NULL || vsp_nena_id == NULL)) {
-        LM_ERR("vsp_hostname and vsp_nena_id are mandatory when flag_empresa_terceira <> 0 %d\n", flag_empresa_terceira);
+    LM_DBG("TEST proxy_hole == 1 %d\n", proxy_hole);
+    if (proxy_hole == 1 && (vsp_hostname == NULL || vsp_nena_id == NULL)) {
+        LM_ERR("vsp_hostname and vsp_nena_id are mandatory when opensips hole as routing proxy in scenario II\n");
         mandatory_parm = 1;
     }
 
@@ -276,30 +279,40 @@ static int mod_init(void) {
     }
     *db_esrn_esgwri = NULL;
 
-    subs_pt = shm_malloc(sizeof (struct sm_subscriber *));
-    if (!subs_pt) {
-        LM_ERR("no more memory");
-        return -1;
-    }
-    *subs_pt = NULL;
-
     if (register_timer("emer_rout_table", routing_timer, 0,
           timer_interval, 0) < 0) {
         LM_ERR("failed to register timer \n");
         return -1;
     }
 
-    calls_eme = shm_malloc(sizeof (struct node *));
-    if (!calls_eme) {
-        LM_ERR("no more memory");
-        return -1;
-    }
-    *calls_eme = NULL;
-
     if ((ref_lock = lock_init_rw()) == NULL) {
         LM_ERR("failed to init lock\n");
         return -1;
     }
+
+    if(emetable_size< 1)
+        emet_size= 512;
+    else
+        emet_size= 1<< emetable_size;
+
+    call_htable= new_ehtable(emet_size);
+    if(call_htable== NULL)
+    {
+        LM_ERR(" initializing emergency_call hash table\n");
+        return -1;
+    }
+
+    if(substable_size< 1)
+        subst_size= 512;
+    else
+        subst_size= 1<< substable_size;
+
+    subs_htable= new_shtable(subst_size);
+    if(subs_htable== NULL)
+    {
+        LM_ERR(" initializing emergency_call hash table\n");
+        return -1;
+    }    
 
     /* data */
 
@@ -344,6 +357,12 @@ static void mod_destroy(void) {
         lock_destroy_rw( ref_lock );
         ref_lock = NULL;
     }
+
+    if(call_htable)
+        destroy_ehtable(call_htable, emet_size);
+
+    if(subs_htable)
+        destroy_shtable(subs_htable, subst_size);    
 }
 
 
@@ -383,30 +402,86 @@ void reply_in_redirect( struct cell* t, int type, struct tmcb_params *params){
     char *contact_lro = NULL;
     struct sip_msg *reply = params->rpl;
     struct sip_msg *msg_retran = params->req;
+    char* from_tag;
+    struct to_body *pfrom = NULL;
+    str vsp_addr;
+    unsigned int hash_code;
 
     if (extract_contact_hdrs(reply, &contact_esgwri, &contact_lro) == -1){
         return;
     }
+
+    if (msg_retran->from->parsed == NULL){
+        if ( parse_from_header( reply )<0 ){
+            LM_ERR("subscribe without From header\n");
+            return;
+        }
+    }
+    pfrom = get_from(msg_retran);
+    LM_INFO("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
+
+    if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0){
+        LM_ERR("INVITE without from_tag value \n");
+        return;
+    }
+
+    from_tag = pkg_malloc(sizeof (char)* pfrom->tag_value.len + 1);
+    if (from_tag == NULL) {
+        LM_ERR("no more pkg memory\n");
+        return;
+    }
+
+    memset(from_tag, 0, pfrom->tag_value.len + 1);
+    strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
+    LM_INFO("PFROM_TAGIII: %s \n ", from_tag );
 
     if( msg_retran->callid==NULL || msg_retran->callid->body.s==NULL){
         LM_ERR("reply without callid header\n");
         return;
     }   
 
-    call_cell = shm_malloc(sizeof (ESCT));
+    call_cell = pkg_malloc(sizeof (ESCT));
     if (call_cell == NULL) {
         LM_ERR("--------------------------------------------------no more shm memory\n");       
     }
 
-    call_cell->callid = shm_malloc(sizeof (char)* reply->callid->body.len + 1);
+    call_cell->callid = pkg_malloc(sizeof (char)* reply->callid->body.len + 1);
     if (call_cell->callid == NULL) {
         LM_ERR("--------------------------------------------------no more shm memory\n");        
         return;
     }
+
     memcpy(call_cell->callid, reply->callid->body.s, reply->callid->body.len);
     call_cell->callid[reply->callid->body.len] = 0;
 
+    call_cell->eme_dlg_id = pkg_malloc(sizeof (struct dialog_set));
+    if (call_cell->eme_dlg_id == NULL) {
+        LM_ERR("--------------------------------------------------no more shm memory\n");
+        return;
+    } 
+
+    call_cell->eme_dlg_id->local_tag = pkg_malloc(sizeof (char)*strlen(from_tag)+1);
+    if (call_cell->eme_dlg_id->local_tag == NULL) {
+        LM_ERR("--------------------------------------------------no more shm memory\n");
+        return;
+    }
+    strcpy(call_cell->eme_dlg_id->local_tag, from_tag);
+
+    call_cell->eme_dlg_id->call_id  = pkg_malloc(sizeof (char)*reply->callid->body.len+1);
+    if (call_cell->eme_dlg_id->call_id  == NULL) {
+        LM_ERR("--------------------------------------------------no more shm memory\n");
+        return;
+    }
+    memcpy(call_cell->eme_dlg_id->call_id, reply->callid->body.s, reply->callid->body.len);       
+    call_cell->eme_dlg_id->call_id[reply->callid->body.len] = 0;
+
+    call_cell->eme_dlg_id->rem_tag = "";
+
+    LM_INFO("PFROM_TAGIII: %s \n ", call_cell->eme_dlg_id->local_tag ); 
+    LM_INFO("CALL_IDIII: %s \n ", call_cell->eme_dlg_id->call_id );
+
     call_cell->esqk = empty;
+    call_cell->esgw = empty;    
     call_cell->lro = empty;
     call_cell->ert_srid = empty;
     call_cell->esgwri = empty;    
@@ -414,15 +489,35 @@ void reply_in_redirect( struct cell* t, int type, struct tmcb_params *params){
     call_cell->datetimestamp = empty;     
     call_cell->ert_npa = 0;
     call_cell->ert_resn = 0;
+    call_cell->disposition = empty;
+    call_cell->datetimestamp = empty;
 
-    call_cell_vpc = shm_malloc(sizeof (NENA));
+    call_cell_source = pkg_malloc(sizeof (NENA));
+    if (call_cell_source == NULL) {
+        LM_ERR("--------------------------------------------------no more shm memory\n");
+        return;
+    }
+
+    call_cell->source = call_cell_source;  
+    call_cell->source->organizationname = empty;
+    call_cell->source->hostname = empty;
+    call_cell->source->nenaid = empty;
+    call_cell->source->contact = empty;
+    call_cell->source->certuri = empty;  
+
+    call_cell_vpc = pkg_malloc(sizeof (NENA));
     if (call_cell_vpc == NULL) {
         LM_ERR("--------------------------------------------------no more shm memory\n");
         return;
     }
+
     call_cell->vpc = call_cell_vpc;
     call_cell->vpc->organizationname = empty;
     call_cell->vpc->hostname = empty;
+    call_cell->vpc->nenaid = empty;
+    call_cell->vpc->contact = empty;
+    call_cell->vpc->certuri = empty;
+
     if (contact_lro){
         if(get_lro_in_contact(contact_lro, call_cell) == -1){
             return;
@@ -436,7 +531,21 @@ void reply_in_redirect( struct cell* t, int type, struct tmcb_params *params){
             return;            
         }
     }
-    insert_call_cell_in_list(call_cell);
+  
+
+    vsp_addr.s = ip_addr2a(&msg_retran->rcv.src_ip);
+    vsp_addr.len = strlen(vsp_addr.s);
+            LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+
+    hash_code= core_hash(&vsp_addr, 0, emet_size);
+            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+
+    if(insert_ehtable(call_htable,hash_code,call_cell)< 0){
+            LM_ERR("inserting new record in subs_htable\n");
+    }
+
+    //free_call_cell(call_cell);
+
     return;    
 }
 
@@ -459,7 +568,11 @@ static void libera_esqk(void) {
     NODE *previous = NULL;
     NODE *free_cell;
 
-    current = *calls_eme;
+    lock_get(&call_htable[0].lock);
+
+    previous= call_htable[0].entries;
+    current= previous->next;
+
     while (current) {
 
         current->esct->timeout --;
@@ -468,27 +581,17 @@ static void libera_esqk(void) {
         if (current->esct->timeout <= 0 ){
             LM_INFO("time fires\n");              
             free_cell = current;
-
-            if (previous == NULL){
-                if (next == NULL){                
-                    *calls_eme = NULL;              
-                }else{
-                    *calls_eme = next;
-                }
-            }else{
-                current = next;
-                previous->next = current;
-            } 
-
-
-            if ((proxy_hole == 0) || (proxy_hole == 2)){
+            previous->next = next; 
+ 
+ 
+            if ((proxy_hole == 0) || (proxy_hole == 1) ||(proxy_hole == 4)){
                 //sends ESCT only if VPC provided key ESQK
                 if (strlen(free_cell->esct->esqk) > 0){
                     LM_DBG(" --- SEND ESQK=%s \n \n",free_cell->esct->esqk);
 
                     //send esctRequest to the VPC
                     if(free_cell->esct->datetimestamp){
-                        shm_free (free_cell->esct->datetimestamp);
+                        //shm_free (free_cell->esct->datetimestamp);
                         LM_DBG(" --- FREE_CELL->TIME");                                
                     }
                     time(&rawtime);
@@ -517,14 +620,16 @@ static void libera_esqk(void) {
                 }
             }
 
-            free_call_cell(free_cell);
+            shm_free(current);
             
         }else{
             previous = current;           
         }  
-        current = current->next;
+        current = next;
     }
+    lock_release(&call_htable[0].lock);
 }
+
 
 static void free_subs(void) {
 
@@ -539,31 +644,35 @@ static void free_subs(void) {
     time_C = (int)rawtime;
     LM_DBG("TIME : %d \n", (int)rawtime );
 
-    current = *subs_pt;
+    lock_get(&subs_htable[0].lock);
+
+    previous= subs_htable[0].entries;
+    current= previous->next;
+
     while (current) {
 
         next = current->next;
-        LM_DBG("timeout %d\n", current->timeout);   
+        LM_INFO("timeout %d\n", current->timeout);   
         if (current->timeout <= time_C ){
-            LM_DBG("time fires %d\n", current->timeout);              
+            LM_INFO("time fires %d\n", current->timeout);              
             free_cell = current;
+            previous->next = next; 
 
-            if (previous == NULL){
-                if (next == NULL){                
-                    *subs_pt = NULL;              
-                }else{
-                    *subs_pt = next;
-                }
-            }else{
-                current = next;
-                previous->next = current;
-            } 
+            if (proxy_hole == 3) {
+                if ( free_cell->dlg_id->local_tag.s)
+                    shm_free(free_cell->dlg_id->local_tag.s);
+            }
+
+            shm_free(free_cell);
             
         }else{
             previous = current;           
         }  
-        current = current->next;
+        current = next;
     }
+
+    lock_release(&subs_htable[0].lock);  
+    
 }
 
 
@@ -646,7 +755,7 @@ int emergency_call(struct sip_msg *msg) {
                 return 1; 
             } 
              
-            return 1;                      
+            return -1;                      
         }
         
     }
@@ -668,11 +777,14 @@ static int failure(struct sip_msg *msg) {
     str cbn;
     char* from_tag;
     struct to_body *pfrom = NULL;
+    struct node* s;
+    str vsp_addr;
+    unsigned int hash_code;
 
     LM_INFO(" --- FAILURE  treatment \n \n");
 
     // comando failure so sera tratado pelo opensips com o paler de Call Proxy no cenario I
-    if (proxy_hole == 1) {
+    if (proxy_hole == 2) {
         LM_DBG(" ---Hole: proxy routing \n");
         return -1;
     }
@@ -727,12 +839,20 @@ static int failure(struct sip_msg *msg) {
 
     LM_INFO(" ---FAILURE treatment  callid=%s", callidHeader);
 
+    vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
+    vsp_addr.len = strlen(vsp_addr.s);
+            LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+
+    hash_code= core_hash(&vsp_addr, 0, emet_size);
+            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+
     // find the cell with the callid from the list calls_cell
-    info_call = find_esct(callidHeader, from_tag);
-    if (info_call == NULL) {
+    s= search_ehtable(call_htable, callidHeader, from_tag, hash_code, 0);
+    if (s == NULL) {
         LM_ERR(" ---FAILURE treatment did not find the CALLID");
         goto error;
     }
+    info_call = s->esct;
 
     if (proxy_hole == 3) {
 
@@ -942,7 +1062,7 @@ int send_request_vpc(struct sip_msg *msg) {
     cbn.len = strlen(cbn.s);
     LM_INFO(" --- FOUND CBN%.*s \n \n", cbn.len, cbn.s);
 
-    if (proxy_hole == 1) {
+    if (proxy_hole == 2) {
         LM_DBG(" ---Hole: proxy routing \n");
         if (add_hdr_PAI(msg, cbn) == -1) {
             LM_ERR("FAILURE IN ADD PAI");
@@ -957,9 +1077,9 @@ int send_request_vpc(struct sip_msg *msg) {
     if (proxy_hole == 3) {        
         // Call Server SCENARIO III      
         LM_INFO(" ---Hole: proxy redirect \n");
-        //if (add_hdr_PAI(msg) == -1) {
-            //LM_ERR("FAILURE IN ADD PAI");
-        //}
+        if (add_hdr_PAI(msg, cbn) == -1) {
+            LM_ERR("FAILURE IN ADD PAI");
+        }
         if (proxy_request(msg,call_server_hostname) == -1) {
             LM_ERR("ERROR IN ROUTING EMERGENCY REQUEST");
             return -1;
@@ -1069,6 +1189,8 @@ int send_request_vpc(struct sip_msg *msg) {
     
     if(callidHeader)
         pkg_free(callidHeader);
+    if(from_tag)
+        pkg_free(from_tag);
     
      if(lie)
         pkg_free(lie); 
@@ -1091,6 +1213,9 @@ error :
 
 int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str cbn, char* from_tag) {
 
+    str vsp_addr;
+    unsigned int hash_code;
+
     LM_DBG(" ---PARSED ");
     if ((parsed->callid == NULL || parsed->result == NULL || parsed->vpc->nenaid == NULL || parsed->vpc->contact == NULL)) {
         LM_ERR("MANDATORY FIELDS ARE BLANK \n");
@@ -1104,48 +1229,70 @@ int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str
 
         LM_DBG(" --- PARSE OK MANDATORY FIELDS \n \n");
         //lock_start_write( ref_lock );
-        call_cell = shm_malloc(sizeof (ESCT));
+        call_cell = pkg_malloc(sizeof (ESCT));
         if (call_cell == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
         }
-        call_cell_vpc = shm_malloc(sizeof (NENA));
+        call_cell_vpc = pkg_malloc(sizeof (NENA));
         if (call_cell_vpc == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
         }
 
-        call_cell_source = shm_malloc(sizeof (NENA));
+        call_cell_source = pkg_malloc(sizeof (NENA));
         if (call_cell_source == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
         }
 
-        call_cell->eme_dlg_id.local_tag = shm_malloc(sizeof (char)*strlen(from_tag)+1);
-        if (call_cell->eme_dlg_id.local_tag == NULL) {
+        call_cell->eme_dlg_id = pkg_malloc(sizeof (struct dialog_set));
+        if (call_cell->eme_dlg_id == NULL) {
+            LM_ERR("--------------------------------------------------no more shm memory\n");
+            return -1;
+        }       
+
+        call_cell->eme_dlg_id->local_tag = pkg_malloc(sizeof (char)*strlen(from_tag)+1);
+        if (call_cell->eme_dlg_id->local_tag == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
         }
-        strcpy(call_cell->eme_dlg_id.local_tag, from_tag);
+        strcpy(call_cell->eme_dlg_id->local_tag, from_tag);
 
-        call_cell->eme_dlg_id.call_id  = shm_malloc(sizeof (char)*strlen(callidHeader)+1);
-        if (call_cell->eme_dlg_id.call_id  == NULL) {
+        call_cell->eme_dlg_id->call_id  = pkg_malloc(sizeof (char)*strlen(callidHeader)+1);
+        if (call_cell->eme_dlg_id->call_id  == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
         }
-        strcpy(call_cell->eme_dlg_id.call_id , callidHeader);
+        strcpy(call_cell->eme_dlg_id->call_id , callidHeader);
 
-        LM_INFO("PFROM_TAGII: %s \n ", call_cell->eme_dlg_id.local_tag ); 
-        LM_INFO("CALL_IDII: %s \n ", call_cell->eme_dlg_id.call_id );
-       
+        call_cell->eme_dlg_id->rem_tag = "";
+
+        LM_INFO("PFROM_TAGII: %s \n ", call_cell->eme_dlg_id->local_tag ); 
+        LM_INFO("CALL_IDII: %s \n ", call_cell->eme_dlg_id->call_id );
+          
         // obtem campos do esrResponse e guarda na celula na lista ligada calls_eme
         if(treat_parse_esrResponse(msg, call_cell , call_cell_source , call_cell_vpc , parsed, proxy_hole) == -1){
             return -1;
         }
-        
+       
         if (treat_routing(msg, call_cell, callidHeader, cbn) == -1){
             return -1;
         }
+
+        vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
+        vsp_addr.len = strlen(vsp_addr.s);
+                LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+
+        hash_code= core_hash(&vsp_addr, 0, emet_size);
+            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+
+        if(insert_ehtable(call_htable, hash_code,call_cell)< 0){
+            LM_ERR("inserting new record in subs_htable\n");
+        }
+
+        free_call_cell(call_cell);
+       
         return 1;
     }
 }
@@ -1176,7 +1323,7 @@ int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeade
         goto error;
     }
  
-    if (proxy_hole == 0){  
+    if ((proxy_hole == 0) || (proxy_hole == 1)){  
 
         if (faixa == 2) {
             // result NOK mas o VPC mandou o numero de contingencia para escoar a chamada
@@ -1233,7 +1380,7 @@ int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeade
         }
 
     }else{
-        if (proxy_hole == 2){
+        if (proxy_hole == 4){
             LM_DBG(" ---TRATA REDIRECT\n \n");   
             if(add_hdr_rpl(call_cell, msg)==-1){
                 return -1;
@@ -1281,7 +1428,7 @@ int routing_by_ert( struct sip_msg *msg, ESCT *call_cell) {
         int esgwri_db_len = strlen(esgwri_db);
 
         LM_INFO("DB_ESGWRI %s \n", esgwri_db);               
-        call_cell->esgwri = shm_malloc(sizeof (char)* esgwri_db_len + 1);
+        call_cell->esgwri = pkg_malloc(sizeof (char)* esgwri_db_len + 1);
         if (call_cell->esgwri == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -1338,7 +1485,7 @@ int contingency(struct sip_msg *msg, ESCT *call_cell){
     new_to = pkg_malloc(sizeof (char)* tamanho_new_to);
     sprintf(new_to, "sip:%s@%s;user=phone", lro, contingency_hostname);
     
-    call_cell->esgwri = shm_malloc(sizeof (char)* tamanho_new_to + 1);
+    call_cell->esgwri = pkg_malloc(sizeof (char)* tamanho_new_to + 1);
     if (call_cell->esgwri == NULL) {
         LM_ERR("--------------------------------------------------no more shm memory\n");
         return -1;
@@ -1372,19 +1519,21 @@ int routing_ack(struct sip_msg *msg) {
     int resp = 1;
     ESCT* info_call;
     struct to_body *pfrom = NULL;
+    struct node* s;
+    str vsp_addr;
+    unsigned int hash_code;
 
     LM_INFO(" --- START TREATMENT ACK \n \n");
-    if (proxy_hole == 1) {
+    if (proxy_hole == 2) {
         // Call Server scenario II        
         if (proxy_request(msg,call_server_hostname) == -1) {
             LM_INFO("ERROR IN ROUTING EMERGENCY REQUEST \n");
-            resp = -1;
-            goto end;
+            return -1;
         }
         return -1;
     }
 
-    if (proxy_hole == 2) {
+    if (proxy_hole == 4) {
         // Redirect Proxy scenario III 
         LM_INFO(" ---Hole: proxy redirect \n");
         return -1;
@@ -1432,15 +1581,21 @@ int routing_ack(struct sip_msg *msg) {
     strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
     LM_INFO("PFROM_TAGIII: %s \n ", from_tag );
 
+    vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
+    vsp_addr.len = strlen(vsp_addr.s);
+            LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
 
+    hash_code= core_hash(&vsp_addr, 0, emet_size);
+            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
 
     LM_INFO(" ---TREATMENT ACK  callid=%s \n", callidHeader);   
-    info_call = find_esct(callidHeader, from_tag);
-    if (info_call == NULL) {
+    s= search_ehtable(call_htable, callidHeader, from_tag, hash_code, 0);
+    if (s == NULL) {
         LM_INFO(" ---TREATMENT ACK - NOT FIND CALLID \n");
         resp = -1;
         goto end;
     }
+    info_call = s->esct;                 
 
     if (strlen(info_call->esgwri) > 0) {
         LM_INFO(" ---Routing ACK %s \n\n", info_call->esgwri);       
@@ -1455,9 +1610,11 @@ int routing_ack(struct sip_msg *msg) {
     resp = 1;
 
 end : 
-        if(callidHeader)
-            pkg_free(callidHeader);
-        return resp;
+    if(callidHeader)
+        pkg_free(callidHeader);
+    if(from_tag)
+        pkg_free(from_tag);
+    return resp;
 }
 
 
@@ -1485,6 +1642,9 @@ int bye(struct sip_msg *msg, int dir) {
 
     char* from_tag;
     struct to_body *pfrom = NULL;
+    str vsp_addr;
+    unsigned int hash_code;
+
 
     LM_DBG(" --- BYE \n \n");
 
@@ -1492,7 +1652,7 @@ int bye(struct sip_msg *msg, int dir) {
     timeinfo = localtime(&rawtime);
     time_now = (int)rawtime;
 
-    if (proxy_hole == 1) {
+    if (proxy_hole == 2) {
        // Call Server scenario II 
        LM_DBG(" ---Hole: proxy routing \n");
         if (proxy_request(msg,call_server_hostname) == -1) {
@@ -1502,23 +1662,12 @@ int bye(struct sip_msg *msg, int dir) {
         return 1;
     }
 
-    if (proxy_hole == 2) {
+    if (proxy_hole == 4) {
         // Redirect Proxy scenario III 
         LM_DBG(" ---Hole: proxy redirect \n");
         return -1;
     }
 
-
-    if (proxy_hole == 3) {
-        // Redirect proxy scenario III
-        // NOT YET IMPLEMENTED    
-        LM_INFO(" ---Hole: proxy redirect \n");
-        cell_notif = get_subs_cell(msg);
-        //LM_DBG("STATUS: %d \n ", cell_subs->status); 
-        cell_notif->call_dlg_id.status = TERMINATED;
-        cell_notif->timeout =  TIMER_N + time_now;
-        send_notifier_within(msg, cell_notif); 
-    }
 
     if ( parse_headers(msg,HDR_EOH_F, 0) == -1 ){
         LM_ERR("error in parsing headers\n");
@@ -1560,18 +1709,36 @@ int bye(struct sip_msg *msg, int dir) {
     strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
     LM_INFO("PFROM_TAGIII: %s \n ", from_tag );
 
+    if (proxy_hole == 3) {
+        // Redirect proxy scenario III
+        // NOT YET IMPLEMENTED    
+        LM_INFO(" ---Hole: proxy redirect \n");
+        cell_notif = get_subs_cell(msg, msg->callid->body);
+        //LM_DBG("STATUS: %d \n ", cell_subs->status); 
+        cell_notif->call_dlg_id->status = TERMINATED;
+        cell_notif->timeout =  TIMER_N + time_now;
+        send_notifier_within(msg, cell_notif); 
+    }
 
+    vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
+    vsp_addr.len = strlen(vsp_addr.s);
+            LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
 
-
-
-
+    hash_code= core_hash(&vsp_addr, 0, emet_size);
+            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
 
     LM_INFO(" --- BYE  callid=%s \n", callidHeader);
-    info_call = find_and_delete_esct(callidHeader, from_tag);
-    if (info_call->esct == NULL) {
+    info_call= search_ehtable(call_htable, callidHeader, from_tag, hash_code, 1);
+    if (info_call == NULL) {
         LM_ERR(" --- BYE DID NOT FIND CALLID \n");
         resp = -1;
         goto end;
+    }else{
+        if (collect_data(info_call, db_url, *db_table) == 1) {
+            LM_INFO("****** REPORT OK\n");
+        } else {
+            LM_INFO("****** REPORT NOK\n");
+        }        
     }
 
     if (dir == 1) {
@@ -1579,7 +1746,7 @@ int bye(struct sip_msg *msg, int dir) {
             LM_DBG(" ---Routing BYE %s \n\n", info_call->esct->esgwri);       
             if(new_uri_proxy(msg, info_call->esct->esgwri) == -1){
                 LM_ERR(" ---ERROR IN NEW_URI_PROXY");
-                free_call_cell(info_call);
+                shm_free(info_call);
                 resp = -1;
                 goto end;
             }
@@ -1588,13 +1755,13 @@ int bye(struct sip_msg *msg, int dir) {
 
 
     // sends ESCT only if VPC provided key ESQK
-    if (proxy_hole == 0) {
+    if ((proxy_hole == 0) || (proxy_hole == 1)){
         if (strlen(info_call->esct->esqk) > 0){
 
             LM_DBG(" --- SEND ESQK =%s\n \n",info_call->esct->esqk);
 
             if(info_call->esct->datetimestamp){
-                shm_free (info_call->esct->datetimestamp);
+                //shm_free (info_call->esct->datetimestamp);
                 LM_DBG(" ---  FREE INFO_CALL->TIME");                                
             }
 
@@ -1608,7 +1775,7 @@ int bye(struct sip_msg *msg, int dir) {
             resp = post(url_vpc, xml, &response);
             if (resp == -1) {
                 LM_ERR(" --- PROBLEM IN POST DO BYE\n \n");
-                free_call_cell(info_call);            
+                shm_free(info_call);            
                 pkg_free(xml); 
                 resp = -1;           
                 goto end;
@@ -1629,12 +1796,15 @@ int bye(struct sip_msg *msg, int dir) {
         }
     }
 
-    //free_call_cell(info_call);
+    shm_free(info_call);
     resp = 1;
 
 end : 
     if(callidHeader)
         pkg_free(callidHeader);
+    if(from_tag)
+        pkg_free(from_tag);
+
     return resp;
 }
 
@@ -1657,7 +1827,7 @@ int fill_blank_space(void) {
     resp = fill_parm_with_BS(&source_nena_id);
     resp = fill_parm_with_BS(&source_cert_uri);
     resp = fill_parm_with_BS(&vsp_organization_name);
-    if (flag_empresa_terceira == 0) {
+    if (proxy_hole == 0) {
         resp = fill_parm_with_BS(&vsp_hostname);
         resp = fill_parm_with_BS(&vsp_nena_id);
     }

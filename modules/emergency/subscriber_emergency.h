@@ -24,7 +24,8 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
-*  2015-05-20 change callcell identity
+ *  2015-05-20 change callcell identity
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
  */
 
 #include "../../sr_module.h"
@@ -58,30 +59,9 @@
  #define TIMER_N				30
  #define MAXNUMBERLEN 			31
 
-struct sm_subscriber **subs_pt;
+int proxy_hole_aux;
+
 struct tm_binds eme_tm;
-
-
-struct dialog_id{
-	str callid;
-	str local_tag;
-	str rem_tag; 
-	int status;
-};
-
-struct sm_subscriber{
-	struct dialog_id dlg_id;
-	struct dialog_id call_dlg_id;
-	str loc_uri;
-	str rem_uri;
-	str contact;
-	str event;
-	int expires;
-	int timeout;
-	int version;
-	struct sm_subscriber *prev;	
-	struct sm_subscriber *next;
-};
 
 struct parms_cb{
 	str callid_ori;
@@ -99,8 +79,6 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *params);
 int extract_reply_headers(struct sip_msg* reply, str* callid, int expires);
 int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb);
 int treat_notify(struct sip_msg *msg); 
-struct sm_subscriber* get_subs_cell(struct sip_msg *msg);
+struct sm_subscriber* get_subs_cell(struct sip_msg *msg, str callid_event);
 void subs_cback_func_II(struct cell *t, int cb_type, struct tmcb_params *params);
 dlg_t* build_dlg(struct sm_subscriber* subscriber);
-struct sm_subscriber* find_subscriber_cell(str* callId, str* to_tag, str* method);
-int same_dialog_id(struct dialog_id dialog_identy, str* callId, str* to_tag);
