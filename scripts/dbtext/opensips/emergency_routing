@@ -1,0 +1,2 @@
+id(int,auto) selectiveRoutingID(string) routingESN(int) "npa(int) esgwri(string) 
+emergency_routing:1
