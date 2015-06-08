@@ -197,7 +197,6 @@ int parse_partition(modparam_t t, void *val)
 		value.s = tok_end + 1;
 		value.len = (token.s + token.len) - value.s;
 
-		LM_INFO("VALUE %.*s\n", value.len, value.s);
 		decl.s += token.len + 1;
 		decl.len -= (token.len + 1);
 
@@ -207,7 +206,7 @@ int parse_partition(modparam_t t, void *val)
 		if (!str_strcmp( &type, &part_db_url))
 			el->url = value;
 		 else if (!str_strcmp( &type, &part_table_name))
-			el->table = type;
+			el->table = value;
 		else
 			goto out_invdef;
 	}
