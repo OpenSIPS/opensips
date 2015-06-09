@@ -26,10 +26,6 @@ URL := http://opensips.org/pub/opensips/$(UPVERSION)/src/opensips-$(UPVERSION)-t
 # Uncomment this to turn on verbose mode.
 # export DH_VERBOSE=1
 
-# Include dpatch rules
-include /usr/share/dpatch/dpatch.make
-
-
 # Do we want the TLS version ?
 # Disabled by default due to license issues, set to non-void to enable
 TLS=
@@ -41,7 +37,7 @@ ALL_MODPKG_LIST := \
 	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
 	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
 	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
-	REDIS RABBITMQ LUA HTTP
+	REDIS RABBITMQ HTTP
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
 override BUILD_MODPKG_LIST :=
@@ -184,7 +180,7 @@ configure-stamp:
 
 
 build: build-stamp
-build-stamp: patch-stamp configure-stamp 
+build-stamp: configure-stamp 
 	dh_testdir
 
 	# Add here commands to compile the package.
