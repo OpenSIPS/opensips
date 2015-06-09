@@ -32,6 +32,13 @@
 #
 
 #FREERADIUS=1
+# freeradius libs check (must be done in toplevel makefile)
+ifneq ("$(wildcard /usr/include/freeradius-client.h)","")
+FREERADIUS=1
+else
+#FREERADIUS=0
+endif
+
 NICER?=1
 auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
 
@@ -51,6 +58,13 @@ tls_overwrite_certs?=
 makefile_defs=0
 DEFS:=
 DEBUG_PARSER?=
+
+# json libs check
+ifneq ("$(wildcard /usr/include/json-c/json.h)","")
+DEFS += -I/usr/include/json-c
+else
+DEFS += -I/usr/include/json
+endif
 
 # create the template only if the file is not yet created
 ifeq (,$(wildcard Makefile.conf))
