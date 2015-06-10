@@ -737,6 +737,7 @@ int w_rl_reset(struct sip_msg *_m, char *_n)
 	return w_rl_change_counter(_m, _n, 0);
 }
 
+
 void rl_rcv_bin(int packet_type, struct receive_info *ri)
 {
 	rl_algo_t algo;
@@ -1016,4 +1017,33 @@ int rl_get_all_counters(rl_pipe_t *pipe)
 		counter += pipe->dsts[i].counter;
 	}
 	return counter + pipe->counter;
+}
+
+int rl_get_counter_value(str *key)
+{
+	unsigned int hash_idx;
+	rl_pipe_t **pipe;
+	int ret = -1;
+
+	hash_idx = RL_GET_INDEX(*key);
+	RL_GET_LOCK(hash_idx);
+
+	/* try to get the value */
+	pipe = RL_FIND_PIPE(hash_idx, *key);
+	if (!pipe || !*pipe) {
+		LM_DBG("cannot find any pipe named %.*s\n", key->len, key->s);
+		goto release;
+	}
+
+	if (RL_USE_CDB(*pipe)) {
+		if (rl_get_counter(key, *pipe) < 0) {
+			LM_ERR("cannot get the counter's value\n");
+			goto release;
+		}
+	}
+	ret = rl_get_all_counters(*pipe);
+
+release:
+	RL_RELEASE_LOCK(hash_idx);
+	return ret;
 }

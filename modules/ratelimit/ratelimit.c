@@ -101,6 +101,9 @@ struct mi_root* mi_set_pid(struct mi_root* cmd_tree, void* param);
 struct mi_root* mi_get_pid(struct mi_root* cmd_tree, void* param);
 struct mi_root* mi_bin_status(struct mi_root* cmd_tree, void* param);
 
+static int pv_get_rl_count(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+static int pv_parse_rl_count(pv_spec_p sp, str *in);
 
 static cmd_export_t cmds[] = {
 	{"rl_check", (cmd_function)w_rl_check_2, 2,
@@ -149,6 +152,12 @@ static mi_export_t mi_cmds [] = {
 	{0,0,0,0,0,0}
 };
 
+static pv_export_t mod_items[] = {
+	{ {"rl_count", sizeof("rl_count")-1}, 1010, pv_get_rl_count, 0,
+		 pv_parse_rl_count, 0, 0, 0 },
+	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
+};
+
 struct module_exports exports= {
 	"ratelimit",
 	MOD_TYPE_DEFAULT,/* class of this module */
@@ -160,7 +169,7 @@ struct module_exports exports= {
 	params,
 	0,					/* exported statistics */
 	mi_cmds,			/* exported MI functions */
-	0,					/* exported pseudo-variables */
+	mod_items,			/* exported pseudo-variables */
 	0,					/* extra processes */
 	mod_init,			/* module initialization function */
 	0,
@@ -627,3 +636,59 @@ static int fixup_rl_check(void **param, int param_no)
 	return E_UNSPEC;
 }
 
+/* pseudo-variable functions */
+static int pv_get_rl_count(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	int counter;
+
+	if (!param)
+		return pv_get_null(msg, param, res);
+
+	if(pv_get_spec_name(msg, param, res)!=0 || (!(res->flags&PV_VAL_STR))) {
+		LM_ERR("invalid name\n");
+		return -1;
+	}
+
+	counter = rl_get_counter_value(&res->rs);
+	if (counter < 0) {
+		LM_ERR("Cannot get counter's value\n");
+		return pv_get_null(msg, param, res);
+	}
+
+	return pv_get_uintval(msg, param, res, counter);
+}
+
+static int pv_parse_rl_count(pv_spec_p sp, str *in)
+{
+	char *p;
+	char *s;
+	pv_spec_p nsp = 0;
+
+	if(in==NULL || in->s==NULL || sp==NULL)
+		return -1;
+	p = in->s;
+	if(*p==PV_MARKER)
+	{
+		nsp = (pv_spec_p)pkg_malloc(sizeof(pv_spec_t));
+		if(nsp==NULL)
+		{
+			LM_ERR("no more memory\n");
+			return -1;
+		}
+		s = pv_parse_spec(in, nsp);
+		if(s==NULL)
+		{
+			LM_ERR("invalid name [%.*s]\n", in->len, in->s);
+			pv_spec_free(nsp);
+			return -1;
+		}
+		sp->pvp.pvn.type = PV_NAME_PVAR;
+		sp->pvp.pvn.u.dname = (void*)nsp;
+		return 0;
+	}
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	sp->pvp.pvn.u.isname.name.s = *in;
+	return 0;
+
+}

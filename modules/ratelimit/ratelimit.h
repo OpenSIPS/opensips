@@ -96,6 +96,7 @@ int w_rl_reset(struct sip_msg*, char *);
 int w_rl_set_count(str, int);
 int rl_stats(struct mi_root *, str *);
 int rl_pipe_check(rl_pipe_t *);
+int rl_get_counter_value(str *);
 /* update load */
 int get_cpuload(void);
 void do_update_load(void);

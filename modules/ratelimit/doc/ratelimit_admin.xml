@@ -674,5 +674,20 @@ modparam("ratelimit", "replicate_pipes_to", "udp:127.0.0.1:5555")
 		</programlisting>
 	</section>
 	</section>
+
+	<section>
+	<title>Exported pseudo-variables</title>
+
+		<section>
+			<title><varname>$rl_count(name)</varname></title>
+			<para>
+			Returns the counter of a pipe. The variable is read-only.
+			</para>
+			<para>
+			NULL will be returned if the pipe does not exist.
+			</para>
+		</section>
+
+	</section>
 </chapter>
 
