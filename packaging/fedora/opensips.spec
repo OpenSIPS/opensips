@@ -9,7 +9,7 @@
 
 Summary:  Open Source SIP Server
 Name:     opensips
-Version:  2.1.0
+Version:  2.2.0
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -27,6 +27,7 @@ BuildRequires:  radiusclient-ng-devel
 BuildRequires:  mysql-devel
 BuildRequires:  postgresql-devel
 
+Requires: m4
 # required by snmpstats module
 %if %{undefined disable_snmpstats}
 BuildRequires:  lm_sensors-devel
@@ -132,7 +133,7 @@ A module which provides routing, balancing and blacklisting capabilities.
 Summary:  Message compression and compaction
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-BuildRequires:	zlib-devel
+BuildRequires: zlib-devel
 
 %description  compression
 This module implements message compression/decompression and base64 encoding
@@ -783,6 +784,7 @@ done
 # install systemd files
 install -D -m 0644 -p packaging/fedora/%{name}.service $RPM_BUILD_ROOT%{_unitdir}/%{name}.service
 install -D -m 0644 -p packaging/fedora/%{name}.tmpfiles.conf $RPM_BUILD_ROOT%{_sysconfdir}/tmpfiles.d/%{name}.conf
+install -D -m 0755 -p packaging/fedora/%{name}.m4cfg $RPM_BUILD_ROOT%{_sbindir}/%{name}-m4cfg
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/run/%{name}
 %else
 install -p -D -m 755 packaging/fedora/opensips.init $RPM_BUILD_ROOT%{_initrddir}/opensips
@@ -864,6 +866,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 %{_unitdir}/%{name}.service
 %{_sysconfdir}/tmpfiles.d/%{name}.conf
+%{_sbindir}/%{name}-m4cfg
 %dir %attr(0755, %{name}, %{name}) %{_localstatedir}/run/%{name}
 %else
 %attr(755,root,root) %{_initrddir}/opensips
