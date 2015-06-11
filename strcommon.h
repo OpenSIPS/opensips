@@ -41,6 +41,8 @@ int escape_common(char *dst, char *src, int src_len);
  */
 int unescape_common(char *dst, char *src, int src_len);
 
+int unescape_xml(char *dst, char *src, int src_len);
+
 void compute_md5(char *dst, char *src, int src_len);
 
 int escape_user(str *sin, str *sout);

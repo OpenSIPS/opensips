@@ -110,6 +110,30 @@ int unescape_common(char *dst, char *src, int src_len)
 	return j;
 }
 
+/*! \brief
+ * replace &#xx; with ascii character
+ */
+int unescape_xml(char *dst, char *src, int src_len)
+{
+	int i, j;
+
+	if(dst==0 || src==0 || src_len<=0)
+		return 0;
+	j = 0;
+	i = 0;
+	while(i<src_len)
+	{
+		if(src[i]=='&' && i+4<src_len && src[i+1]=='#' && src[i+4]==';' &&
+			src[i+2]>='0' && src[i+2]<='9' && src[i+3]>='0' && src[i+3]<='9') {
+			dst[j++] = (src[i+2]-'0')*10 + src[i+3] - '0';
+			i += 5;
+		} else {
+			dst[j++] = src[i++];
+		}
+	}
+	return j;
+}
+
 /*! \brief Compute MD5 checksum */
 void compute_md5(char *dst, char *src, int src_len)
 {
