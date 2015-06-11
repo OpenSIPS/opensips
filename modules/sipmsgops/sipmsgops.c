@@ -780,6 +780,7 @@ static int is_method_f(struct sip_msg *msg, char *meth, char *str2 )
 static int hname_fixup(void** param, int param_no)
 {
 	char *c;
+	int len;
 	struct hdr_field hdr;
 	gparam_p gp = NULL;
 
@@ -793,21 +794,23 @@ static int hname_fixup(void** param, int param_no)
 
 	if (gp->type == GPARAM_TYPE_STR)
 	{
-		c = pkg_malloc(gp->v.sval.len + 1);
+		/* parse_hname2() accepts a minimum 4 bytes len buffer
+		 * for parsing, so whatever is the len of the header name,
+		 * fill it up to 4 */
+		len = (gp->v.sval.len<3) ? (4) : (gp->v.sval.len+1) ;
+		c = pkg_malloc( len );
 		if (!c)
 			return E_OUT_OF_MEM;
 
 		memcpy(c, gp->v.sval.s, gp->v.sval.len);
 		c[gp->v.sval.len] = ':';
-		gp->v.sval.len++;
 
-		if (parse_hname2(c, c + gp->v.sval.len, &hdr) == 0)
+		if (parse_hname2(c, c + len, &hdr) == 0)
 		{
 			LM_ERR("error parsing header name\n");
 			return E_UNSPEC;
 		}
-		
-		gp->v.sval.len--;
+
 		pkg_free(c);
 
 		if (hdr.type != HDR_OTHER_T && hdr.type != HDR_ERROR_T)
