@@ -75,6 +75,12 @@ Vladut-Stefan Paiu
               1.6.43. profile_timeout (int)
               1.6.44. accept_replicated_dialogs (int)
               1.6.45. replicate_dialogs_to (string)
+              1.6.46. accept_replicated_profiles (int)
+              1.6.47. replicate_profiles_to (string)
+              1.6.48. replicate_profiles_buffer (string)
+              1.6.49. replicate_profiles_check (string)
+              1.6.50. replicate_profiles_timer (string)
+              1.6.51. replicate_profiles_expire (string)
 
         1.7. Exported Functions
 
@@ -119,6 +125,7 @@ Vladut-Stefan Paiu
               1.9.7. dlg_db_sync
               1.9.8. dlg_restore_db
               1.9.9. list_all_profiles
+              1.9.10. profile_bin_status
 
         1.10. Exported pseudo-variables
 
@@ -192,21 +199,27 @@ Vladut-Stefan Paiu
    1.43. Set profile_timeout parameter
    1.44. Set accept_replicated_dialogs parameter
    1.45. Set replicate_dialogs_to parameter
-   1.46. create_dialog() usage
-   1.47. match_dialog() usage
-   1.48. validate_dialog() usage
-   1.49. fix_route_dialog() usage
-   1.50. get_dialog_info usage
-   1.51. set_dlg_profile usage
-   1.52. unset_dlg_profile usage
-   1.53. is_in_profile usage
-   1.54. get_profile_size usage
-   1.55. set_dlg_flag usage
-   1.56. test_and_set_dlg_flag usage
-   1.57. reset_dlg_flag usage
-   1.58. is_dlg_flag_set usage
-   1.59. store_dlg_value usage
-   1.60. fetch_dlg_value usage
+   1.46. Set accept_replicated_profiles parameter
+   1.47. Set replicate_profiles_to parameter
+   1.48. Set replicate_profiles_buffer parameter
+   1.49. Set replicate_profiles_check parameter
+   1.50. Set replicate_profiles_timer parameter
+   1.51. Set replicate_profiles_expire parameter
+   1.52. create_dialog() usage
+   1.53. match_dialog() usage
+   1.54. validate_dialog() usage
+   1.55. fix_route_dialog() usage
+   1.56. get_dialog_info usage
+   1.57. set_dlg_profile usage
+   1.58. unset_dlg_profile usage
+   1.59. is_in_profile usage
+   1.60. get_profile_size usage
+   1.61. set_dlg_flag usage
+   1.62. test_and_set_dlg_flag usage
+   1.63. reset_dlg_flag usage
+   1.64. is_dlg_flag_set usage
+   1.65. store_dlg_value usage
+   1.66. fetch_dlg_value usage
 
 Chapter 1. Admin Guide
 
@@ -292,6 +305,10 @@ Chapter 1. Admin Guide
    of the module. In addition to this, the module also exports
    several statistics regarding the number of replication packets
    sent/received.
+
+   Profiles replication can also be achieved using the
+   accept_replicated_profiles and replicate_profiles_to
+   parameters.
 
 1.5. Dependencies
 
@@ -887,6 +904,86 @@ modparam("dialog", "accept_replicated_dialogs", 1)
 modparam("dialog", "replicate_dialogs_to", "10.0.0.150:5062")
 ...
 
+1.6.46. accept_replicated_profiles (int)
+
+   Registers the dialog module to the OpenSIPS Binary Internal
+   Interface for profiles replication.
+
+   Default value is 0 (not registered).
+
+   Example 1.46. Set accept_replicated_profiles parameter
+...
+modparam("dialog", "accept_replicated_profiles", 1)
+...
+
+1.6.47. replicate_profiles_to (string)
+
+   Adds a new profiles replication destination. The destination
+   will receive all dialog-related events (creation, updating and
+   deletion) over UDP, using the Binary Internal Interface.
+
+   Default value is “null” (no replication destinations).
+
+   Example 1.47. Set replicate_profiles_to parameter
+...
+modparam("dialog", "replicate_profiles_to", "10.0.0.150:5062")
+...
+
+1.6.48. replicate_profiles_buffer (string)
+
+   Used to specify the length of the buffer used by the binary
+   replication, in bytes. Usually this should be big enough to
+   hold as much data as possible, but small enough to avoid UDP
+   fragmentation. The recommended value is the smallest MTU
+   between all the replication instances.
+
+   Default value is 1400 bytes.
+
+   Example 1.48. Set replicate_profiles_buffer parameter
+...
+modparam("dialog", "replicate_profiles_buffer", 500)
+...
+
+1.6.49. replicate_profiles_check (string)
+
+   Timer in seconds, used to specify how often the module should
+   check whether old, replicated profiles values are obsolete and
+   should be removed. should replicate its profiles to the other
+   instances.
+
+   Default value is 10 s.
+
+   Example 1.49. Set replicate_profiles_check parameter
+...
+modparam("dialog", "replicate_profiles_check", 100)
+...
+
+1.6.50. replicate_profiles_timer (string)
+
+   Timer in milliseconds, used to specify how often the module
+   should replicate its profiles to the other instances.
+
+   Default value is 10 ms.
+
+   Example 1.50. Set replicate_profiles_timer parameter
+...
+modparam("dialog", "replicate_profiles_timer", 100)
+...
+
+1.6.51. replicate_profiles_expire (string)
+
+   Timer in seconds, used to specify when the profiles counters
+   received from a different instance should no longer be taken
+   into account. This is used to prevent obsolete values, in case
+   an instance stops replicating its counters.
+
+   Default value is 10 s.
+
+   Example 1.51. Set replicate_profiles_expire parameter
+...
+modparam("dialog", "replicate_profiles_expire", 10)
+...
+
 1.7. Exported Functions
 
 1.7.1.  create_dialog()
@@ -907,7 +1004,7 @@ modparam("dialog", "replicate_dialogs_to", "10.0.0.150:5062")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.46. create_dialog() usage
+   Example 1.52. create_dialog() usage
 ...
 create_dialog();
 ...
@@ -942,7 +1039,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.47. match_dialog() usage
+   Example 1.53. match_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -972,7 +1069,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.48. validate_dialog() usage
+   Example 1.54. validate_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -994,7 +1091,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.49. fix_route_dialog() usage
+   Example 1.55. fix_route_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1032,7 +1129,7 @@ create_dialog("B");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 
-   Example 1.50. get_dialog_info usage
+   Example 1.56. get_dialog_info usage
 ...
 if ( get_dialog_info("callee","$var(x)","caller","$fu") ) {
         xlog("caller $fU has another ongoing, talking to callee $var(x)\
@@ -1065,7 +1162,7 @@ $dlg_val(callee) = $ru;
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.51. set_dlg_profile usage
+   Example 1.57. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller","$fu");
@@ -1087,7 +1184,7 @@ set_dlg_profile("caller","$fu");
    This function can be used from BRANCH_ROUTE, REPLY_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.52. unset_dlg_profile usage
+   Example 1.58. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller","$fu");
@@ -1114,7 +1211,7 @@ unset_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.53. is_in_profile usage
+   Example 1.59. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -1145,7 +1242,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.54. get_profile_size usage
+   Example 1.60. get_profile_size usage
 ...
 get_profile_size("inbound_call","$avp(size)");
 xlog("currently there are $avp(size) inbound calls\n");
@@ -1168,7 +1265,7 @@ xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.55. set_dlg_flag usage
+   Example 1.61. set_dlg_flag usage
 ...
 set_dlg_flag("3");
 ...
@@ -1189,7 +1286,7 @@ set_dlg_flag("3");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.56. test_and_set_dlg_flag usage
+   Example 1.62. test_and_set_dlg_flag usage
 ...
 test_and_set_dlg_flag("3", "0");
 ...
@@ -1208,7 +1305,7 @@ test_and_set_dlg_flag("3", "0");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.57. reset_dlg_flag usage
+   Example 1.63. reset_dlg_flag usage
 ...
 reset_dlg_flag("16");
 ...
@@ -1227,7 +1324,7 @@ reset_dlg_flag("16");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.58. is_dlg_flag_set usage
+   Example 1.64. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set("16")) {
         xlog("dialog flag 16 is set\n");
@@ -1252,7 +1349,7 @@ if (is_dlg_flag_set("16")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.59. store_dlg_value usage
+   Example 1.65. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip","$si");
 store_dlg_value("account type","prepaid");
@@ -1278,7 +1375,7 @@ $dlg_val(account_type) = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.60. fetch_dlg_value usage
+   Example 1.66. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip","$avp(2)");
 fetch_dlg_value("account type","$var(account)");
@@ -1521,6 +1618,19 @@ $var(account) = $dlg_val(account_type);
 
    MI FIFO Command Format:
                 :list_all_profiles:_reply_fifo_file_
+                _empty_line_
+
+1.9.10.  profile_bin_status
+
+   Dumps each destination used for profiles replication, as well
+   as the timestamp of the last message received from them.
+
+   Name: profile_bin_status
+
+   Parameters: none
+
+   MI FIFO Command Format:
+                :profile_bin_status:_reply_fifo_file_
                 _empty_line_
 
 1.10. Exported pseudo-variables
