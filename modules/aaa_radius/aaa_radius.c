@@ -72,7 +72,6 @@ int init_radius_handle(void);
 void destroy(void);
 int aaa_radius_bind_api(aaa_prot *rad_prot);
 
-#define RADIUS_ASYNC_SUPPORT
 int send_auth_func(struct sip_msg* msg, str* s1, str* s2);
 #ifdef RADIUS_ASYNC_SUPPORT
 int send_auth_func_async(struct sip_msg* msg, async_resume_module **resume_f,
@@ -88,6 +87,16 @@ int send_acct_func_async(struct sip_msg* msg, async_resume_module **resume_f,
 int send_acct_fixup(void** param, int param_no);
 
 int parse_sets_func(unsigned int type, void *val);
+
+#ifdef RADIUS_ASYNC_SUPPORT
+struct rad_ctx {
+	int index2;
+	VALUE_PAIR *send;
+	SEND_CONTEXT *ctx;
+};
+#endif
+
+
 
 static acmd_export_t acmds[] = {
 #ifdef RADIUS_ASYNC_SUPPORT

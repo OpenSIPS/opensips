@@ -29,12 +29,6 @@
 
 #include "../../aaa/aaa.h"
 
-struct rad_ctx {
-	int index2;
-	VALUE_PAIR *send;
-	SEND_CONTEXT *ctx;
-};
-
 aaa_conn* rad_init_prot(str* aaa_url);
 
 aaa_message* rad_create_message(aaa_conn* rh, int flag);
