@@ -1050,13 +1050,15 @@ static inline int add_val_to_rpl(void * param, str key, void * val)
 	struct mi_attr* attr;
 	int len;
 	char *p;
+	int counter;
 
 	node = add_mi_node_child(rpl, MI_DUP_VALUE, "value", 5, key.s , key.len );
 
 	if( node == NULL )
 		return -1;
 
-	p= int2str((unsigned long)val, &len);
+	counter = repl_prof_get_all(&val);
+	p= int2str((unsigned long)counter, &len);
 	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5,  p, len );
 
 	if( attr == NULL )
