@@ -3,7 +3,7 @@ CREATE TABLE emergency_routing (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     selectiveRoutingID CHAR(11) NOT NULL,
     routingESN INTEGER DEFAULT 0 NOT NULL,
-    "npa INTEGER DEFAULT 0 NOT NULL,
+    npa INTEGER DEFAULT 0 NOT NULL,
     esgwri CHAR(50) NOT NULL
 );
 
@@ -13,7 +13,7 @@ CREATE TABLE emergency_report (
     callid CHAR(25) NOT NULL,
     selectiveRoutingID CHAR(11) NOT NULL,
     routingESN INTEGER DEFAULT 0 NOT NULL,
-    "npa INTEGER DEFAULT 0 NOT NULL,
+    npa INTEGER DEFAULT 0 NOT NULL,
     esgwri CHAR(50) NOT NULL,
     lro CHAR(20) NOT NULL,
     VPC_organizationName CHAR(50) NOT NULL,

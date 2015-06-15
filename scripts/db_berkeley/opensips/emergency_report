@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-id(int) callid(str) selectiveRoutingID(str) routingESN(int) "npa(int) esgwri(str) lro(str) VPC_organizationName(str) VPC_hostname(str) VPC_timestamp(str) result(str) disposition(str)
+id(int) callid(str) selectiveRoutingID(str) routingESN(int) npa(int) esgwri(str) lro(str) VPC_organizationName(str) VPC_hostname(str) VPC_timestamp(str) result(str) disposition(str)
 METADATA_KEY
 0 
 METADATA_READONLY
@@ -8,5 +8,3 @@ METADATA_LOGFLAGS
 0
 METADATA_DEFAULTS
 NIL|NIL|NIL|0|0|NIL|NIL|NIL|NIL|NIL|NIL|NIL
-emergency_report|
-emergency_report|1

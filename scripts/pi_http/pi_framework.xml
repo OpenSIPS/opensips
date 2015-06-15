@@ -505,7 +505,7 @@
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>selectiveRoutingID</field><type>DB_STR</type></column>
 		<column><field>routingESN</field><type>DB_INT</type></column>
-		<column><field>"npa</field><type>DB_INT</type></column>
+		<column><field>npa</field><type>DB_INT</type></column>
 		<column><field>esgwri</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of emergency_report table-->
@@ -516,7 +516,7 @@
 		<column><field>callid</field><type>DB_STR</type></column>
 		<column><field>selectiveRoutingID</field><type>DB_STR</type></column>
 		<column><field>routingESN</field><type>DB_INT</type></column>
-		<column><field>"npa</field><type>DB_INT</type></column>
+		<column><field>npa</field><type>DB_INT</type></column>
 		<column><field>esgwri</field><type>DB_STR</type></column>
 		<column><field>lro</field><type>DB_STR</type></column>
 		<column><field>VPC_organizationName</field><type>DB_STR</type></column>
@@ -2745,7 +2745,7 @@
 				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>selectiveRoutingID</field></col>
 				<col><field>routingESN</field></col>
-				<col><field>"npa</field></col>
+				<col><field>npa</field></col>
 				<col><field>esgwri</field></col>
 			</query_cols>
 		</cmd>
@@ -2755,7 +2755,7 @@
 			<query_cols>
 				<col><field>selectiveRoutingID</field></col>
 				<col><field>routingESN</field></col>
-				<col><field>"npa</field></col>
+				<col><field>npa</field></col>
 				<col><field>esgwri</field></col>
 			</query_cols>
 		</cmd>
@@ -2768,7 +2768,7 @@
 			<query_cols>
 				<col><field>selectiveRoutingID</field></col>
 				<col><field>routingESN</field></col>
-				<col><field>"npa</field></col>
+				<col><field>npa</field></col>
 				<col><field>esgwri</field></col>
 			</query_cols>
 		</cmd>
@@ -2790,7 +2790,7 @@
 				<col><field>callid</field></col>
 				<col><field>selectiveRoutingID</field></col>
 				<col><field>routingESN</field></col>
-				<col><field>"npa</field></col>
+				<col><field>npa</field></col>
 				<col><field>esgwri</field></col>
 				<col><field>lro</field></col>
 				<col><field>VPC_organizationName</field></col>
@@ -2807,7 +2807,7 @@
 				<col><field>callid</field></col>
 				<col><field>selectiveRoutingID</field></col>
 				<col><field>routingESN</field></col>
-				<col><field>"npa</field></col>
+				<col><field>npa</field></col>
 				<col><field>esgwri</field></col>
 				<col><field>lro</field></col>
 				<col><field>VPC_organizationName</field></col>
@@ -2827,7 +2827,7 @@
 				<col><field>callid</field></col>
 				<col><field>selectiveRoutingID</field></col>
 				<col><field>routingESN</field></col>
-				<col><field>"npa</field></col>
+				<col><field>npa</field></col>
 				<col><field>esgwri</field></col>
 				<col><field>lro</field></col>
 				<col><field>VPC_organizationName</field></col>

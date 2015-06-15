@@ -5,7 +5,7 @@
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>selectiveRoutingID</field><type>DB_STR</type></column>
 		<column><field>routingESN</field><type>DB_INT</type></column>
-		<column><field>"npa</field><type>DB_INT</type></column>
+		<column><field>npa</field><type>DB_INT</type></column>
 		<column><field>esgwri</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of emergency_report table-->
@@ -16,7 +16,7 @@
 		<column><field>callid</field><type>DB_STR</type></column>
 		<column><field>selectiveRoutingID</field><type>DB_STR</type></column>
 		<column><field>routingESN</field><type>DB_INT</type></column>
-		<column><field>"npa</field><type>DB_INT</type></column>
+		<column><field>npa</field><type>DB_INT</type></column>
 		<column><field>esgwri</field><type>DB_STR</type></column>
 		<column><field>lro</field><type>DB_STR</type></column>
 		<column><field>VPC_organizationName</field><type>DB_STR</type></column>

@@ -57,7 +57,7 @@
 	</column>
 
 	<column id="npa">
-		<name>"npa</name>
+		<name>npa</name>
 		<type>unsigned int</type>
 		<size>3</size>
 		<default>0</default>
