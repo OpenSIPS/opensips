@@ -9,7 +9,7 @@
       <para>The following features are offered by the LDAP module:</para>
       <itemizedlist>
         <listitem>
-            <para>LDAP search function taking an LDAP URL as input</para>
+            <para>LDAP search function taking an LDAP URL as input both synchronous and asynchronous</para>
         </listitem>
         <listitem>
             <para>LDAP result parsing functions to store LDAP data as AVP</para>
@@ -1088,6 +1088,155 @@ if (ldap_search(
         </example>
       </section>
     </section>
+
+    <section>
+      <title>Exported Async Functions</title>
+
+      <section id="ldap-search-async-fn">
+        <title>ldap_search(ldap_url)</title>
+
+        <para>Performs an LDAP search operation using given LDAP URL and stores result
+        internally for later retrieval by <varname>ldap_result*</varname> functions. If one ore
+        more LDAP entries are found the function returns the number of found
+        entries which evaluates to TRUE in the OpenSIPS configuration script.
+        It returns <varname>-1</varname> (<varname>FALSE</varname>) in case no
+        LDAP entry was found, and <varname>-2</varname>
+        (<varname>FALSE</varname>) if an internal error like e.g. an LDAP
+        error occurred.</para>
+
+        <variablelist>
+          <title>Function Parameters:</title>
+
+          <varlistentry>
+            <term><parameter>ldap_url</parameter></term>
+
+            <listitem>
+              <para>An LDAP URL defining the LDAP search operation (refer to
+			  <xref linkend="ldap-urls"/> for a description of the LDAP URL
+              format). The hostport part must be one of the LDAP session names
+              declared in the LDAP configuration script.</para>
+
+              <para>OpenSIPS pseudo variables and AVPs included in
+              <varname>ldap_url</varname> do get substituted with their
+              value.</para>
+
+              <example>
+                <title>Example Usage of ldap_url</title>
+
+                <para>Search with LDAP session named
+                <varname>sipaccounts</varname>, base
+                <varname>ou=sip,dc=example,dc=com</varname>,
+                <varname>one</varname> level deep using search filter
+                <varname>(cn=schlatter)</varname> and returning all
+                attributes:</para>
+
+                <programlisting>ldap://sipaccounts/ou=sip,dc=example,dc=com??one?(cn=schlatter)</programlisting>
+
+                <para>Subtree search with LDAP session named
+                <varname>ldap1</varname>, base
+                <varname>dc=example,dc=com</varname> using search filter
+                <varname>(cn=$(avp(name)))</varname> and returning
+                <varname>SIPIdentityUserName</varname> and
+                <varname>SIPIdentityServiceLevel</varname> attributes</para>
+
+                <programlisting>
+ldap://ldap_1/dc=example,dc=com?
+       SIPIdentityUserName,SIPIdentityServiceLevel?sub?(cn=$(avp(name)))
+	        </programlisting>
+              </example>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <variablelist>
+          <title>Return Values:</title>
+
+          <varlistentry>
+            <term><varname>n</varname> &gt; 0 (TRUE):</term>
+
+            <listitem>
+              <itemizedlist>
+                <listitem>
+                  <para>Found <varname>n</varname> matching LDAP
+                  entries</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><constant>-1</constant> (FALSE):</term>
+
+            <listitem>
+              <itemizedlist>
+                <listitem>
+                  <para>No matching LDAP entries found</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><constant>-2</constant> (FALSE):</term>
+
+            <listitem>
+              <itemizedlist>
+                <listitem>
+                  <para>LDAP error (e.g. LDAP server unavailable), or</para>
+                </listitem>
+
+                <listitem>
+                  <para>internal error</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+	<para>
+        This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE, and ONREPLY_ROUTE.
+	</para>
+
+        <example>
+          <title>Example Usage</title>
+
+          <programlisting>
+...
+# ldap search
+
+route {
+	async( ldap_search("ldap://sipaccounts/ou=sip,dc=example,dc=com??one?(cn=$rU)"), resume);
+}
+....
+route[resume] {
+{
+    switch ($rc)
+    {
+    case -1:
+        # no LDAP entry found
+        sl_send_reply("404", "User Not Found");
+        exit;
+    case -2:
+        # internal error
+        sl_send_reply("500", "Internal server error");
+        exit;
+    default:
+        exit;
+    }
+    xlog("L_INFO", "ldap_search: found [$retcode] entries for (cn=$rU)");
+
+    # save telephone number in $avp(tel_number)
+    ldap_result("telephoneNumber/$avp(tel_number)");
+...
+}
+			</programlisting>
+        </example>
+      </section>
+
+
+    </section>
+
+
 
     <section>
       <title>Installation &amp; Running</title>

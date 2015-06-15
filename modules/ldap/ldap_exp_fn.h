@@ -36,6 +36,7 @@
 #include "../../pvar.h"
 #include "../../parser/msg_parser.h"
 #include "../../re.h"
+#include "ld_session.h"
 
 struct ldap_result_params
 {
@@ -49,6 +50,17 @@ struct ldap_result_check_params
 	str          ldap_attr_name;
 	pv_elem_p    check_str_elem_p;
 };
+
+struct ldap_async_params {
+	int msgid;
+	struct ld_session *lds;
+};
+
+int ldap_search_impl_async(
+	struct sip_msg* _msg,
+	async_resume_module **resume_f,
+	void **resume_param,
+	pv_elem_t* _ldap_url);
 
 int ldap_search_impl(
 	struct sip_msg* _msg,
