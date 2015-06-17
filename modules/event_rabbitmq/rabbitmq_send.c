@@ -298,7 +298,7 @@ destroy_rmqp:
 }
 
 #ifdef AMQP_VERSION_v04
-static inline int amqp_check_status(rmq_params_t *rmqp, int r)
+static inline int amqp_check_status(rmq_params_t *rmqp, int r, int* re_publish)
 {
 	switch (r) {
 		case AMQP_STATUS_OK:
@@ -331,7 +331,8 @@ static inline int amqp_check_status(rmq_params_t *rmqp, int r)
 
 		/* This is happening on rabbitmq server restart */
 		case AMQP_STATUS_SOCKET_ERROR:
-			LM_ERR("Socket error\n");
+			LM_WARN("Socket error\n");
+			if (*re_publish == 0) *re_publish = 1;
 			break;
 
 		default:
@@ -344,7 +345,7 @@ no_close:
 	return r;
 }
 #else
-static inline int amqp_check_status(rmq_params_t *rmqp, int r)
+static inline int amqp_check_status(rmq_params_t *rmqp, int r, int* re_publish)
 {
 	if (r != 0) {
 		LM_ERR("Unknown AMQP error [%d] while sending\n", r);
@@ -360,7 +361,8 @@ static inline int amqp_check_status(rmq_params_t *rmqp, int r)
 static int rmq_sendmsg(rmq_send_t *rmqs)
 {
 	rmq_params_t * rmqp = (rmq_params_t *)rmqs->sock->params;
-	int ret;
+	int ret,rtrn;
+	int re_publish = 0;
 
 	if (!(rmqp->flags & RMQ_PARAM_CONN))
 		return 0;
@@ -377,7 +379,28 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 			0,
 			amqp_cstring_bytes(rmqs->msg));
 
-	return amqp_check_status(rmqp, ret);
+	rtrn = amqp_check_status(rmqp, ret, &re_publish);
+
+	if (rtrn != 0 && re_publish != 0) {
+		if (rmq_reconnect(rmqs->sock) < 0) {
+			LM_ERR("cannot reconnect socket\n");
+			return rtrn;
+		}
+		/* all checks should be already done */
+		ret = amqp_basic_publish(rmqp->conn,
+				rmqp->channel,
+				rmqp->flags&RMQ_PARAM_EKEY?
+					amqp_cstring_bytes(rmqp->exchange.s) :
+					AMQP_EMPTY_BYTES ,
+				amqp_cstring_bytes(rmqp->routing_key.s),
+				0,
+				0,
+				0,
+				amqp_cstring_bytes(rmqs->msg));
+		rtrn = amqp_check_status(rmqp, ret, &re_publish);
+	}
+
+	return rtrn;
 }
 
 void rmq_process(int rank)
