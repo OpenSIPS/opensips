@@ -685,13 +685,8 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 
 	/* get all CONTACT headers */
-	if(msg->contact==NULL && parse_headers(msg, HDR_EOH_F, 0)==-1)
-	{
-		LM_DBG("no contact header\n");
-		return pv_get_null(msg, param, res);
-	}
-
-	if(!msg->contact || !msg->contact->body.s || msg->contact->body.len<=0)
+	if(parse_headers(msg, HDR_EOH_F, 0)==-1 || msg->contact==NULL ||
+	!msg->contact->body.s || msg->contact->body.len<=0)
 	{
 		LM_DBG("no contact header!\n");
 		return pv_get_null(msg, param, res);
