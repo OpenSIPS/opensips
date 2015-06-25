@@ -600,6 +600,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 {
 	int total, nr_vals, i, ret, res = -1, nr_bye_vals = 0, j;
+	int remaining_bye_vals;
 	time_t created, start_time;
 	str core_s, leg_s, extra_s, table;
 	short nr_legs;
@@ -676,10 +677,10 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 				LM_ERR("failed inserting into database\n");
 				goto end;
 			}
-			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
+			remaining_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
 		}
-		/* there were no Invite legs */
-		while (!nr_legs && nr_bye_vals) {
+		/* check if there is any other extra info */
+		while (remaining_bye_vals) {
 			/* drain all the values */
 			for (j = ret+nr_vals; j<ret+nr_bye_vals+nr_vals; j++)
 				VAL_STR(db_vals+j+1) = val_arr[j];
@@ -689,7 +690,7 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 				LM_ERR("failed inserting into database\n");
 				goto end;
 			}
-			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
+			remaining_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
 		}
 	}
 
