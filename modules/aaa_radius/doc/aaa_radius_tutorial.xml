@@ -1,0 +1,51 @@
+<chapter>
+	<title>Using radius async</title>
+	<section>
+		<title>Downloading radius-client library</title>
+		<para>
+			You can download the last freeRADIUS Client Library sources from
+			<ulink
+			url='ftp://ftp.freeradius.org/pub/freeradius/freeradius-client-1.1.7.tar.gz'>
+			here </ulink>.
+			So the first step would be to download these sources in any folder you want.
+			In this exaple we will consider this folder generically called
+			<emphasis>freeRADIUS-client</emphasis>. After you download the sources,
+			extract the contents of the archive.
+		</para>
+		<example>
+		<title> downloading the library </title>
+		<programlisting format="linespecific">
+........
+mkdir freeRADIUS-client; cd freeRADIUS-client
+wget ftp://ftp.freeradius.org/pub/freeradius/freeradius-client-1.1.7.tar.gz
+tar -xzvf freeradius-client-1.1.7.tar.gz
+........
+		</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title> Applying the patch </title>
+		<para>
+			After you extracted the contents of the archive, you can apply the patch
+			called <emphasis>radius_async_support.patch</emphasis> that you can find in
+			<emphasis>modules/aaa_radius/</emphasis> inside &osips; sources folder.
+			You must apply this patch to the freeRADIUS-client library and after this
+			you can install the radius library as usual using configure and make
+			commands and free to use the library.
+		</para>
+		<example>
+		<title> How to apply the patch</title>
+		<programlisting format="linespecific">
+........
+cd freeRADIUS-client/freeradius-client-1.1.7.tar.gz
+patch -p1 &lt; /path/to/opensips/modules/aaa_radius/radius_async_support.patch
+./configure --any-options-you-want
+make
+sudo make install
+........
+		</programlisting>
+		</example>
+	</section>
+
+</chapter>

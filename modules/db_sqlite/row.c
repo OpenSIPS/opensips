@@ -77,9 +77,12 @@ int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 
 				break;
 			case DB_DATETIME:
-				VAL_INT(_v) = sqlite3_column_int(CON_SQLITE_PS(_h), col);
+				db_value = (char *)sqlite3_column_text(CON_SQLITE_PS(_h), col);
+				if (db_str2time(db_value, &VAL_TIME(_v)) < 0) {
+					LM_ERR("error while converting datetime value from string\n");
+					return -1;
+				}
 				VAL_TYPE(_v) = DB_DATETIME;
-
 				break;
 			case DB_DOUBLE:
 				VAL_DOUBLE(_v) = sqlite3_column_double(CON_SQLITE_PS(_h), col);

@@ -25,8 +25,34 @@
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
  */
 
+#include "../../sr_module.h"
+#include "../../dprint.h"
+#include "../../mem/mem.h"
+#include "../../mem/shm_mem.h"
+#include "../../mod_fix.h"
+#include "../../socket_info.h"
+#include "../../route_struct.h"
+#include "../../ip_addr.h"
+#include "../../parser/msg_parser.h"
+#include "../../parser/parse_uri.h"
+#include "../../parser/parse_pai.h"
+#include "../../parser/parse_ppi.h"
+#include "../../parser/parse_rpid.h"
+#include "../../parser/parse_from.h"
+#include "../../regexp.h"
+#include "../../data_lump.h"
+#include "../../data_lump_rpl.h" 
+#include "../../ut.h"
+#include "../../rw_locking.h"
+#include "../../timer.h"
+#include "../../db/db.h"
+#include "../../db/db_insertq.h"
+#include "../../forward.h"
+#include "../rr/api.h"
+#include "../tm/tm_load.h" /*load_tm_api*/
 
 typedef struct parsed_xml_vpc {
     char* organizationname;
@@ -64,7 +90,7 @@ struct dialog_set{
 };
 
 typedef struct esct{
-    struct dialog_set eme_dlg_id;
+    struct dialog_set *eme_dlg_id;
     NENA *source;
     NENA *vpc;
     char* esgwri;
@@ -105,6 +131,27 @@ struct notify_body{
     char* state;
 };
 
+
+struct dialog_id{
+    str callid;
+    str local_tag;
+    str rem_tag; 
+    int status;
+};
+
+struct sm_subscriber{
+    struct dialog_id *dlg_id;
+    struct dialog_id *call_dlg_id;
+    str loc_uri;
+    str rem_uri;
+    str contact;
+    str event;
+    int expires;
+    int timeout;
+    int version;
+    struct sm_subscriber *prev; 
+    struct sm_subscriber *next;
+};
 
 char* copy_str_between_tow_pointers(char* str_begin, char* str_end);
 char* copy_str_between_tow_pointers_simple(char* str_begin, char* str_end);

@@ -25,6 +25,7 @@
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
  */
 
 #include <stdio.h>
@@ -849,7 +850,7 @@ int add_hdr_PAI(struct sip_msg *msg, str cbn) {
         goto end;
     }
 
-    //rr_api.record_route(msg, NULL);
+    rr_api.record_route(msg, NULL);
     resp = 1;
 end:
     pkg_free(cbn.s);

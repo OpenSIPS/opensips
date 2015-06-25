@@ -25,6 +25,7 @@
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity  
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
  */
 
 #include <stdio.h>
@@ -34,7 +35,7 @@
 /* finish the emergency call frees resources:
     - pull call cell this call from list linked eme_calls 
     - send esct to VPC to release ESQK Key*/
-int send_esct(str callid_ori, str from_tag){
+int send_esct(struct sip_msg *msg, str callid_ori, str from_tag){
 
     char* esct_callid;
     NODE* info_call;
@@ -46,6 +47,8 @@ int send_esct(str callid_ori, str from_tag){
     int resp;
     char* callidHeader;
     char* ftag;
+    str vsp_addr;
+    unsigned int hash_code;
 
     callidHeader = pkg_malloc(callid_ori.len + 1);
     if(callidHeader == NULL){
@@ -67,10 +70,28 @@ int send_esct(str callid_ori, str from_tag){
 
     // extract call cell with same callid from list linked eme_calls
     LM_DBG(" --- BYE  callid=%s \n", callidHeader);
-    info_call = find_and_delete_esct(callidHeader, ftag);
-    if (info_call->esct == NULL) {
+
+
+
+    vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
+    vsp_addr.len = strlen(vsp_addr.s);
+            LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+
+    hash_code= core_hash(&vsp_addr, 0, emet_size);
+            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+
+    info_call= search_ehtable(call_htable, callidHeader, ftag, hash_code, 1);
+    if (info_call == NULL) {
         LM_ERR(" --- BYE DID NOT FIND CALLID \n");
         return -1;
+    }else{
+        /*
+        if (collect_data(info_call, db_url, *db_table) == 1) {
+            LM_INFO("****** REPORT OK\n");
+        } else {
+            LM_INFO("****** REPORT NOK\n");
+        } 
+        */       
     }
 
     if (strlen(info_call->esct->esqk) > 0){
@@ -79,7 +100,7 @@ int send_esct(str callid_ori, str from_tag){
         LM_DBG(" --- SEND ESQK =%s\n \n",info_call->esct->esqk);
 
         if(info_call->esct->datetimestamp){
-            shm_free (info_call->esct->datetimestamp);
+            //shm_free (info_call->esct->datetimestamp);
             LM_DBG(" ---  FREE INFO_CALL->TIME");                                
         }
         time(&rawtime);
@@ -94,7 +115,7 @@ int send_esct(str callid_ori, str from_tag){
         resp = post(url_vpc, xml, &response);
         if (resp == -1) {
             LM_ERR(" --- PROBLEM IN POST DO BYE\n \n");
-            free_call_cell(info_call);            
+            shm_free(info_call);            
             pkg_free(xml); 
             return -1;
         }
@@ -115,90 +136,10 @@ int send_esct(str callid_ori, str from_tag){
         
     }
 
+    shm_free(info_call);
+
     return 1;
 
-}
-
-/* search and delete call cell with callid key
-*   - search cell with callid in list linked calls_eme
-*   - if found returns the pointer of this cell and free cell 
-*   - report call datas in emergency_report table
-
-
-*/
-NODE* find_and_delete_esct(char* callId, char* from_tag) {
-    struct node* list_eme = *calls_eme;
-    NODE *current = list_eme;
-    NODE *previous = NULL;
-      
-    while (current) {       
-        if (same_callid(current->esct->eme_dlg_id.call_id, callId) == 0) {  
-            if (same_callid(current->esct->eme_dlg_id.local_tag, from_tag) == 0) {           
-                NODE* node = current;
-                NODE* next = current->next;           
-                if (collect_data(current, db_url, *db_table) == 1) {
-                    LM_INFO("****** REPORT OK\n");
-                } else {
-                    LM_INFO("****** REPORT NOK\n");
-                }                      
-                if (previous == NULL){
-                    if (next == NULL){;        
-                        *calls_eme = NULL;
-                    }else{      
-                        *calls_eme = next;
-                    }
-                }else{               
-                    current = next;
-                    previous->next = current;
-                }
-               
-                return node;
-            }
-        }
-        previous = current;
-        current = current->next;
-    }
-    
-    LM_INFO("Not found\n");
-    return NULL;
-}
-
-int same_callid(char* callIdEsct, char* callId) {
-    if (callIdEsct == NULL || callId == NULL) {
-        return 0;
-    } else {
-        LM_DBG(" --- Comparing callId  = %s com %s", callId, callIdEsct);
-        return strcmp(callIdEsct, callId);
-    }
-}
-
-
-/* Search the cell with callid key in list linked calls_eme, 
-*  if found returns the pointer of this cell
-*/
-ESCT* find_esct(char* callId, char* from_tag) {
-    LM_INFO(" --- find_esct to calid  = %s ", callId);
-    LM_INFO(" --- find_esct to from tag  = %s ", from_tag);
-
-    struct node* list_eme = *calls_eme;
-
-    NODE* current = list_eme;
-
-    while (current) {
-
-        LM_INFO(" --- CALL_LIST callId  = %s \n", current->esct->eme_dlg_id.call_id);
-        LM_INFO(" --- CALL_LIST from tag  = %s \n", current->esct->eme_dlg_id.local_tag);
-        if (same_callid(current->esct->eme_dlg_id.call_id, callId) == 0) {
-            if (same_callid(current->esct->eme_dlg_id.local_tag, from_tag) == 0) {            
-                LM_INFO(" --- FOUND ESCT with callId key = %s ", callId);
-                ESCT* esct = current->esct;
-                return esct;
-            }
-        }
-        current = current->next;
-    }
-    LM_INFO("Did not find\n");
-    return NULL;
 }
 
 
@@ -239,8 +180,7 @@ int faixa_result(int result) {
 *   - result
 *   - datetimestamp
 */
-int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_cell_vpc, NENA *call_cell_source, PARSED *parsed, int proxy_hole)
-{
+int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_cell_vpc, NENA *call_cell_source, PARSED *parsed, int proxy_hole){
     char *p;
     int vsp_addr_len;
     char *vsp_addr = "@vsp.com"; 
@@ -268,12 +208,14 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
     call_cell->ert_resn = 0;
 
     call_cell->esqk = empty;
+    call_cell->esgw = empty;
     call_cell->lro = empty;
+    call_cell->disposition = empty;
     call_cell->datetimestamp = empty;
 
     LM_DBG(" --- TREAT PARSE ESRRESPONSE...");
     if (parsed->destination->organizationname != NULL) {
-        char* field = shm_malloc(sizeof (char)*strlen(parsed->destination->organizationname)+1);
+        char* field = pkg_malloc(sizeof (char)*strlen(parsed->destination->organizationname)+1);
         if (field == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -282,7 +224,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
         call_cell_source->organizationname = field;          
     }
     if (parsed->destination->hostname != NULL ) {
-        char* field = shm_malloc(sizeof (char)*strlen(parsed->destination->hostname)+1);
+        char* field = pkg_malloc(sizeof (char)*strlen(parsed->destination->hostname)+1);
         if (field == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -291,7 +233,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
         call_cell_source->hostname = field;
     }
     if (parsed->destination->nenaid != NULL ) {
-        char* field = shm_malloc(sizeof (char)*strlen(parsed->destination->nenaid)+1);
+        char* field = pkg_malloc(sizeof (char)*strlen(parsed->destination->nenaid)+1);
         if (field == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -300,7 +242,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
         call_cell_source->nenaid = field;
     }
     if (parsed->destination->contact != NULL ) {
-        char* field = shm_malloc(sizeof (char)*strlen(parsed->destination->contact)+1);
+        char* field = pkg_malloc(sizeof (char)*strlen(parsed->destination->contact)+1);
         if (field == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -310,7 +252,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
     }
 
     if (parsed->destination->certuri != NULL ) {
-        char* field = shm_malloc(sizeof (char)*strlen(parsed->destination->certuri)+1);
+        char* field = pkg_malloc(sizeof (char)*strlen(parsed->destination->certuri)+1);
         if (field == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -320,7 +262,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
     }
 
     if (parsed->vpc->organizationname != NULL ) {
-        char* field = shm_malloc(sizeof (char)*strlen(parsed->vpc->organizationname)+1);
+        char* field = pkg_malloc(sizeof (char)*strlen(parsed->vpc->organizationname)+1);
         if (field == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -329,7 +271,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
         call_cell_vpc->organizationname = field;
     }
     if (parsed->vpc->hostname != NULL ) {
-        char* field = shm_malloc(sizeof (char)*strlen(parsed->vpc->hostname)+1);
+        char* field = pkg_malloc(sizeof (char)*strlen(parsed->vpc->hostname)+1);
         if (field == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -338,7 +280,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
         call_cell_vpc->hostname = field;
     }
     if (parsed->vpc->nenaid != NULL ) {
-        char* field = shm_malloc(sizeof (char)*strlen(parsed->vpc->nenaid)+1);
+        char* field = pkg_malloc(sizeof (char)*strlen(parsed->vpc->nenaid)+1);
         if (field == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -347,7 +289,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
         call_cell_vpc->nenaid = field;
     }
     if (parsed->vpc->contact != NULL ) {
-        char* field = shm_malloc(sizeof (char)*strlen(parsed->vpc->contact)+1);
+        char* field = pkg_malloc(sizeof (char)*strlen(parsed->vpc->contact)+1);
         if (field == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -356,7 +298,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
         call_cell_vpc->contact = field;
     }
     if (parsed->vpc->certuri != NULL ) {
-        char* field = shm_malloc(sizeof (char)*strlen(parsed->vpc->certuri)+1);
+        char* field = pkg_malloc(sizeof (char)*strlen(parsed->vpc->certuri)+1);
         if (field == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -366,7 +308,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
     }
 
     if (parsed-> esqk!= NULL ) {
-        call_cell->esqk = shm_malloc(sizeof (char)*strlen(parsed->esqk)+1);
+        call_cell->esqk = pkg_malloc(sizeof (char)*strlen(parsed->esqk)+1);
         if (call_cell->esqk == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -374,7 +316,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
         strcpy(call_cell->esqk, parsed->esqk);
     }
 
-    call_cell->callid = shm_malloc(sizeof (char)*strlen(parsed->callid)+1);
+    call_cell->callid = pkg_malloc(sizeof (char)*strlen(parsed->callid)+1);
     if (call_cell->callid == NULL) {
         LM_ERR("--------------------------------------------------no more shm memory\n");
         return -1;
@@ -383,7 +325,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
 
     if (parsed->esgwri != NULL && strlen(parsed->esgwri) > 0) {
 
-        call_cell->esgwri = shm_malloc(sizeof (char)*strlen(parsed->esgwri));
+        call_cell->esgwri = pkg_malloc(sizeof (char)*strlen(parsed->esgwri));
         if (call_cell->esgwri == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -404,7 +346,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
             call_cell->ert_npa = npa;
             call_cell->ert_resn = resn;
 
-            call_cell->ert_srid = shm_malloc(sizeof (char)* srid_len + 1);
+            call_cell->ert_srid = pkg_malloc(sizeof (char)* srid_len + 1);
             if (call_cell->ert_srid == NULL) {
                 LM_ERR("--------------------------------------------------no more shm memory\n");
                 return -1;
@@ -412,14 +354,14 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
             strcpy(call_cell->ert_srid, parsed->ert->selectiveRoutingID);
             call_cell->ert_srid[srid_len] = 0;
 
-            if (proxy_hole == 2){
+            if (proxy_hole == 4){
 
                 // get source ip address that send INVITE
                 vsp_addr = ip_addr2a(&msg->rcv.src_ip);
                 vsp_addr_len = strlen(vsp_addr); 
 
                 int esgw_len = strlen(parsed->ert->selectiveRoutingID) + strlen(parsed->ert->routingESN) + strlen(parsed->ert->npa) + vsp_addr_len + 4;
-                p = shm_malloc(sizeof (char)*esgw_len);
+                p = pkg_malloc(sizeof (char)*esgw_len);
                 if (p == NULL) {
                     LM_ERR("--------------------------------------------------no more shm memory\n");
                     return -1;
@@ -473,7 +415,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
         }
         pt_lro.len = strlen(pt_lro.s);
         LM_DBG("****** PATTERN LRO OK II %.*s\n",pt_lro.len,pt_lro.s);
-        call_cell->lro = shm_malloc(sizeof (char)*pt_lro.len+1);
+        call_cell->lro = pkg_malloc(sizeof (char)*pt_lro.len+1);
 
         if (call_cell->lro == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
@@ -486,7 +428,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
     }
 
     if (parsed->datetimestamp != NULL ) {
-        call_cell->datetimestamp = shm_malloc(sizeof (char)*strlen(parsed->datetimestamp)+1);
+        call_cell->datetimestamp = pkg_malloc(sizeof (char)*strlen(parsed->datetimestamp)+1);
         if (call_cell->datetimestamp == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -494,14 +436,12 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
         strcpy(call_cell->datetimestamp, parsed->datetimestamp);
     }
     
-    call_cell->result = shm_malloc(sizeof (char)*strlen(parsed->result)+1);
+    call_cell->result = pkg_malloc(sizeof (char)*strlen(parsed->result)+1);
     if (call_cell->result == NULL) {
         LM_ERR("--------------------------------------------------no more shm memory\n");
         return -1;
     }
     strcpy(call_cell->result, parsed->result);
-
-    insert_call_cell_in_list(call_cell);
 
     return 1;
 }
@@ -540,7 +480,7 @@ int get_lro_in_contact(char *contact_lro, ESCT *call_cell) {
     }
     pt_contact_lro.len = strlen(pt_contact_lro.s);
 
-    call_cell->lro = shm_malloc(sizeof (char)* pt_contact_lro.len + 1);
+    call_cell->lro = pkg_malloc(sizeof (char)* pt_contact_lro.len + 1);
     if (call_cell->lro == NULL) {
         LM_ERR("--------------------------------------------------no more shm memory\n");
         return -1;
@@ -594,7 +534,7 @@ int get_esqk_in_contact(char *contact_esgwri, ESCT *call_cell){
     }
     pt_contact_esqk.len = strlen(pt_contact_esqk.s);
 
-    call_cell->esqk = shm_malloc(sizeof (char)* pt_contact_esqk.len + 1);
+    call_cell->esqk = pkg_malloc(sizeof (char)* pt_contact_esqk.len + 1);
     if (call_cell->esqk == NULL) {
         LM_ERR("--------------------------------------------------no more shm memory\n");           
         return -1;
@@ -653,7 +593,7 @@ int get_esgwri_ert_in_contact(char *contact_esgwri, ESCT *call_cell){
 
     if (reg_replace(pattern_contact_routing.s, replacement_contact_routing.s, contact_routing, &pt_contact_routing) == 1) { 
         LM_DBG ("CONTEUDO TRANS REPLY ESGWRI %s \n",contact_routing);
-        call_cell->esgwri = shm_malloc(sizeof (char)* len_contact_routing + 1);
+        call_cell->esgwri = pkg_malloc(sizeof (char)* len_contact_routing + 1);
         if (call_cell->esgwri == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -727,7 +667,7 @@ int get_esgwri_ert_in_contact(char *contact_esgwri, ESCT *call_cell){
 
         call_cell->ert_npa = npa;
         call_cell->ert_resn = resn;
-        call_cell->ert_srid = shm_malloc(sizeof (char)* srid_len + 1);
+        call_cell->ert_srid = pkg_malloc(sizeof (char)* srid_len + 1);
         if (call_cell->ert_srid == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
             return -1;
@@ -748,146 +688,127 @@ int get_esgwri_ert_in_contact(char *contact_esgwri, ESCT *call_cell){
 }
 
 
-void insert_call_cell_in_list(ESCT *call_cell){
+void free_call_cell(ESCT *info_call){
+  
+    if(info_call){
 
-    NODE *newNode = shm_malloc(sizeof (NODE));
-    if (newNode == NULL) {
-        LM_ERR("--------------------------------------------------no more shm memory\n");
-    }
-
-    newNode->esct = call_cell;
-    newNode->next = NULL;   
-    if (*calls_eme == NULL){
-        LM_DBG("---FIRST IN THE LIST \n");
-        list_call = newNode;       
-    } else {
-        LM_DBG("---UPDATE LIST \n");
-        list_call = *calls_eme;
-        NODE *current = list_call;
-        while (current->next != NULL) {
-            current = current->next;
-        }
-        current->next = newNode;
-    }
-    *calls_eme = list_call;
-
-    return;
-
-}
-
-
-void free_call_cell(NODE *info_call){
-
-    if(info_call){    
-        if(info_call->esct){
-
-            if (info_call->esct->source){
-                if(info_call->esct->source->organizationname){
-                    if (strlen(info_call->esct->source->organizationname)!= 0){
-                        shm_free (info_call->esct->source->organizationname);
-                        LM_DBG(" ---  FREE INFO_CALL->SOURCE->ORG");                
-                    }                 
-                } 
-                if(info_call->esct->source->hostname){
-                    if (strlen(info_call->esct->source->hostname)!= 0){
-                        shm_free (info_call->esct->source->hostname);
-                        LM_DBG(" ---  FREE INFO_CALL->SOURCE->HOST");  
-                    }                 
-                }   
-                if(info_call->esct->source->nenaid){
-                    if (strlen(info_call->esct->source->nenaid)!= 0){
-                        shm_free (info_call->esct->source->nenaid);
-                         LM_DBG(" ---  FREE INFO_CALL->SOURCE->NENA");               
-                    }                 
-                }             
-                if(info_call->esct->source->contact){
-                    if (strlen(info_call->esct->source->contact)!= 0){
-                        shm_free (info_call->esct->source->contact);
-                         LM_DBG(" ---  FREE INFO_CALL->SOURCE->CONTACT");                
-                    }                 
-                }
-                if(info_call->esct->source->certuri){
-                    if (strlen(info_call->esct->source->certuri)!= 0){
-                        shm_free (info_call->esct->source->certuri);
-                         LM_DBG(" ---  FREE INFO_CALL->SOURCE->CERTURI");                
-                    }                 
-                }  
-                shm_free (info_call->esct->source);
+        if (info_call->source){
+            if(info_call->source->organizationname){
+                if (strlen(info_call->source->organizationname)!= 0){
+                    pkg_free (info_call->source->organizationname);
+                    LM_DBG(" ---  FREE INFO_CALL->SOURCE->ORG");                
+                }                 
+            } 
+            if(info_call->source->hostname){
+                if (strlen(info_call->source->hostname)!= 0){
+                    pkg_free (info_call->source->hostname);
+                    LM_DBG(" ---  FREE INFO_CALL->SOURCE->HOST");  
+                }                 
+            }   
+            if(info_call->source->nenaid){
+                if (strlen(info_call->source->nenaid)!= 0){
+                    pkg_free (info_call->source->nenaid);
+                     LM_DBG(" ---  FREE INFO_CALL->SOURCE->NENA");               
+                }                 
+            }             
+            if(info_call->source->contact){
+                if (strlen(info_call->source->contact)!= 0){
+                    pkg_free (info_call->source->contact);
+                     LM_DBG(" ---  FREE INFO_CALL->SOURCE->CONTACT");                
+                }                 
             }
-
-            if (info_call->esct->vpc){
-                if(info_call->esct->vpc->organizationname){
-                    if (strlen(info_call->esct->vpc->organizationname)!= 0){
-                        shm_free (info_call->esct->vpc->organizationname);
-                        LM_DBG(" ---  FREE INFO_CALL->VPC->ORG");               
-                    }                 
-                }
-                if(info_call->esct->vpc->hostname){
-                    if (strlen(info_call->esct->vpc->hostname)!= 0){
-                        shm_free (info_call->esct->vpc->hostname);
-                        LM_DBG(" ---  FREE INFO_CALL->VPC->HOST");                
-                    }                 
-                } 
-                if(info_call->esct->vpc->nenaid){
-                    if (strlen(info_call->esct->vpc->nenaid)!= 0){
-                        shm_free (info_call->esct->vpc->nenaid);
-                        LM_DBG(" ---  FREE INFO_CALL->VPC->NENA");               
-                    }                 
-                } 
-                if(info_call->esct->vpc->contact){
-                    if (strlen(info_call->esct->vpc->contact)!= 0){
-                        shm_free (info_call->esct->vpc->contact);
-                        LM_DBG(" ---  FREE INFO_CALL->VPC->CONTACT");                
-                    }                 
-                }
-                if(info_call->esct->vpc->certuri){
-                    if (strlen(info_call->esct->vpc->certuri)!= 0){
-                        shm_free (info_call->esct->vpc->certuri);
-                        LM_DBG(" ---  FREE INFO_CALL->VPC->CERTURI");                
-                    }                 
-                } 
-                shm_free (info_call->esct->vpc);
-            } 
-            
-            if((info_call->esct->esqk)&&(strlen(info_call->esct->esqk) > 1)){
-                shm_free (info_call->esct->esqk);
-                LM_DBG(" ---  FREE INFO_CALL->ESQK");                                
-            } 
-            
-            if(info_call->esct->callid){
-                shm_free (info_call->esct->callid);
-                LM_DBG(" ---  FREE INFO_CALL->CALLID");                                
+            if(info_call->source->certuri){
+                if (strlen(info_call->source->certuri)!= 0){
+                    pkg_free (info_call->source->certuri);
+                     LM_DBG(" ---  FREE INFO_CALL->SOURCE->CERTURI");                
+                }                 
             }  
-            if((info_call->esct->lro)&&(strlen(info_call->esct->lro) > 1)){
-                shm_free (info_call->esct->lro);
-                LM_DBG(" ---  FREE INFO_CALL->LRO");                                  
-            }
-           
-           
-            if((info_call->esct->esgwri)&&(strlen(info_call->esct->esgwri) > 1)){
-                shm_free (info_call->esct->esgwri);
-                LM_DBG(" ---  FREE INFO_CALL->ESGW"); 
-            } 
-
-            
-            if((info_call->esct->ert_srid)&&(strlen(info_call->esct->ert_srid) > 1)){
-                LM_DBG(" ---  FREE INFO_CALL->ERT_SRID");              
-                shm_free (info_call->esct->ert_srid);                                                    
-            } 
-            
-
-            if((info_call->esct->result)&&(strlen(info_call->esct->result) > 1)){
-                shm_free (info_call->esct->result);
-                LM_DBG(" ---  FREE INFO_CALL->RESULT");                                 
-            }
-            
-            
-            
-            shm_free (info_call->esct); 
+            pkg_free (info_call->source);
         }
-        shm_free (info_call);        
-    }
 
+        if (info_call->vpc){
+            if(info_call->vpc->organizationname){
+                if (strlen(info_call->vpc->organizationname)!= 0){
+                    pkg_free (info_call->vpc->organizationname);
+                    LM_DBG(" ---  FREE INFO_CALL->VPC->ORG");               
+                }                 
+            }
+            if(info_call->vpc->hostname){
+                if (strlen(info_call->vpc->hostname)!= 0){
+                    pkg_free (info_call->vpc->hostname);
+                    LM_DBG(" ---  FREE INFO_CALL->VPC->HOST");                
+                }                 
+            } 
+            if(info_call->vpc->nenaid){
+                if (strlen(info_call->vpc->nenaid)!= 0){
+                    pkg_free (info_call->vpc->nenaid);
+                    LM_DBG(" ---  FREE INFO_CALL->VPC->NENA");               
+                }                 
+            } 
+            if(info_call->vpc->contact){
+                if (strlen(info_call->vpc->contact)!= 0){
+                    pkg_free (info_call->vpc->contact);
+                    LM_DBG(" ---  FREE INFO_CALL->VPC->CONTACT");                
+                }                 
+            }
+            if(info_call->vpc->certuri){
+                if (strlen(info_call->vpc->certuri)!= 0){
+                    pkg_free (info_call->vpc->certuri);
+                    LM_DBG(" ---  FREE INFO_CALL->VPC->CERTURI");                
+                }                 
+            } 
+            pkg_free (info_call->vpc);
+        } 
+
+        if (info_call->eme_dlg_id){
+            if(info_call->eme_dlg_id->call_id){
+                pkg_free (info_call->eme_dlg_id->call_id);
+                LM_DBG(" ---  FREE INFO_CALL->CALLID");
+            }                                
+
+            if(info_call->eme_dlg_id->local_tag){
+                pkg_free (info_call->eme_dlg_id->local_tag);
+                LM_DBG(" ---  FREE INFO_CALL->LOCAL_TAG");                                
+            }
+            pkg_free (info_call->eme_dlg_id);
+        }
+        
+        if((info_call->esqk)&&(strlen(info_call->esqk) > 1)){
+            pkg_free (info_call->esqk);
+            LM_DBG(" ---  FREE INFO_CALL->ESQK");                                
+        } 
+
+        if(info_call->callid){
+            pkg_free (info_call->callid);
+            LM_DBG(" ---  FREE INFO_CALL->CALLID");                                
+        } 
+
+
+        if((info_call->lro)&&(strlen(info_call->lro) > 1)){
+            pkg_free (info_call->lro);
+            LM_DBG(" ---  FREE INFO_CALL->LRO");                                  
+        }
+       
+       
+        if((info_call->esgwri)&&(strlen(info_call->esgwri) > 1)){
+            pkg_free (info_call->esgwri);
+            LM_DBG(" ---  FREE INFO_CALL->ESGW"); 
+        } 
+
+        
+        if((info_call->ert_srid)&&(strlen(info_call->ert_srid) > 1)){
+            LM_DBG(" ---  FREE INFO_CALL->ERT_SRID");              
+            pkg_free (info_call->ert_srid);                                                    
+        } 
+        
+
+        if((info_call->result)&&(strlen(info_call->result) > 1)){
+            pkg_free (info_call->result);
+            LM_DBG(" ---  FREE INFO_CALL->RESULT");                                 
+        }           
+        
+        pkg_free (info_call); 
+    }
 }
 
 /* frees the memory from the struct NENA

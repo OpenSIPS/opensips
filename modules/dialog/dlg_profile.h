@@ -52,6 +52,7 @@ struct dlg_profile_link {
 
 
 
+struct repl_prof_novalue;
 
 struct dlg_profile_table {
 	str name;
@@ -74,6 +75,10 @@ struct dlg_profile_table {
 
 	int * counts;
 
+	/*
+	 * information used for profile replication without values
+	 */
+	struct repl_prof_novalue *repl;
 
 	struct dlg_profile_table *next;
 };
@@ -103,6 +108,7 @@ int add_profile_definitions( char* profiles, unsigned int has_value);
 void destroy_dlg_profiles();
 
 struct dlg_profile_table* search_dlg_profile(str *name);
+struct dlg_profile_table *get_dlg_profile(str *name);
 
 void destroy_linkers(struct dlg_profile_link *linker, char is_replicated);
 
@@ -133,6 +139,8 @@ extern str cdb_noval_prefix;
 extern str cdb_size_prefix;
 extern str cdb_url;
 extern int profile_timeout;
+
+extern struct dlg_profile_table *profiles;
 
 int init_cachedb();
 void destroy_cachedb(int);

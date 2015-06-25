@@ -25,6 +25,7 @@
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  
  */
 
@@ -117,8 +118,9 @@ char *vsp_cert_uri;
 char *contingency_hostname;
 char *call_origin = NULL;
 char *call_server_hostname = NULL;
-int flag_empresa_terceira = 0;
 int proxy_hole = 0;
+int emetable_size = 9;
+int substable_size = 9;
 
 struct code_number *codes = NULL;
 
@@ -135,7 +137,6 @@ int timer_interval=10;
 str table_name=str_init("emergency_routing");
 str table_report=str_init("emergency_report");
 static rw_lock_t *ref_lock = NULL;
-
 
 str callid_invite;
 

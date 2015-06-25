@@ -83,7 +83,9 @@ int bin_init(str *mod_name, int cmd_type)
  * copies the given string at the 'cpos' position in the buffer
  * allows null strings (NULL content or NULL param)
  *
- * @return: 0 on success
+ * @return:
+ *		> 0: success, number of added bytes
+ *		< 0: internal buffer limit reached
  */
 int bin_push_str(const str *info)
 {
@@ -94,7 +96,7 @@ int bin_push_str(const str *info)
 	if (!info || info->len == 0 || !info->s) {
 		memset(cpos, 0, LEN_FIELD_SIZE);
 		cpos += LEN_FIELD_SIZE;
-		return 0;
+		return (int)LEN_FIELD_SIZE;
 	}
 
 	memcpy(cpos, &info->len, LEN_FIELD_SIZE);
@@ -102,13 +104,15 @@ int bin_push_str(const str *info)
 	memcpy(cpos, info->s, info->len);
 	cpos += info->len;
 
-	return 0;
+	return (int)LEN_FIELD_SIZE + info->len;
 }
 
 /*
  * adds a new integer value at the 'cpos' position in the buffer
  *
- * @return: 0 on success
+ * @return:
+ *		> 0: success, number of added bytes
+ *		< 0: internal buffer limit reached
  */
 int bin_push_int(int info)
 {
@@ -118,17 +122,20 @@ int bin_push_int(int info)
 	memcpy(cpos, &info, sizeof(info));
 	cpos += sizeof(info);
 
-	return 0;
+	return sizeof(info);
 }
 
 /*
  * skips @count integers from the current position in the received binary packet
  *
- * @return: 0 on success
+ * @return:
+ *		>= 0: success, number of skipped bytes
+ *		<  0: error, buffer limit reached
  */
 int bin_skip_int(int count)
 {
 	int i;
+	char *in = cpos;
 
 	if (child_index == 0) {
 		LM_ERR("Non bin processes cannot do pop operations!\n");
@@ -144,17 +151,20 @@ int bin_skip_int(int count)
 		cpos += LEN_FIELD_SIZE;
 	}
 
-	return 0;
+	return (int)(cpos - in);
 }
 
 /*
  * skips @count strings from the current position in a received binary packet
  *
- * @return: 0 on success
+ * @return:
+ *		>= 0: success, number of skipped bytes
+ *		<  0: error, buffer limit reached
  */
 int bin_skip_str(int count)
 {
 	int i, len;
+	char *in = cpos;
 
 	if (child_index == 0) {
 		LM_ERR("Non bin processes cannot do pop operations!\n");
@@ -174,7 +184,7 @@ int bin_skip_str(int count)
 		cpos += len;
 	}
 
-	return 0;
+	return (int)(cpos - in);
 
 error:
 	LM_ERR("Receive binary packet buffer overflow");
@@ -185,13 +195,19 @@ error:
  * pops an str from the current position in the buffer
  * @info:   pointer to store the result
  *
- * @return: 0 on success
+ * @return:
+ *		0 (success): info retrieved
+ *		1 (success): nothing returned, all data has been consumed!
+ *		< 0: error
  *
  * Note: The pointer returned in @info str is only valid for the duration of
  *       the callback. Don't forget to copy the info into a safe buffer!
  */
 int bin_pop_str(str *info)
 {
+	if (cpos == rcv_end)
+		return 1;
+
 	if (child_index == 0) {
 		LM_ERR("Non bin processes cannot do pop operations!\n");
 		return -2;
@@ -226,10 +242,16 @@ error:
  * pops an integer value from the current position in the buffer
  * @info:   pointer to store the result
  *
- * @return: 0 on success
+ * @return:
+ *		0 (success): info retrieved
+ *		1 (success): nothing returned, all data has been consumed!
+ *		< 0: error
  */
 int bin_pop_int(void *info)
 {
+	if (cpos == rcv_end)
+		return 1;
+
 	if (child_index == 0) {
 		LM_ERR("Non bin processes cannot do pop operations!\n");
 		return -2;
@@ -256,6 +278,8 @@ int bin_send(union sockaddr_union *dest)
 {
 	int rc, destlen;
 	str st;
+	char *ip;
+	unsigned short port;
 
 	if (!dest)
 		return 0;
@@ -276,7 +300,9 @@ again:
 	rc=sendto(bin->socket, send_buffer, bin_send_size, 0, &dest->s, destlen);
 	if (rc==-1){
 		if (errno==EINTR) goto again;
-		LM_ERR("sendto() failed with %s(%d)\n", strerror(errno),errno);
+		get_su_info(&dest->s, ip, port);
+		LM_ERR("sendto() failed with %s(%d) - destination  %s:%hu\n",
+				strerror(errno), errno, ip, port);
 	}
 
 	return rc;
@@ -289,7 +315,7 @@ again:
  *
  * @return:   0 on success
  */
-int bin_register_cb(char *mod_name, void (*cb)(int))
+int bin_register_cb(char *mod_name, void (*cb)(int, struct receive_info *))
 {
 	struct packet_cb_list *new_mod;
 
@@ -330,10 +356,11 @@ static int has_valid_checksum(char *buf, int len)
  */
 static void bin_receive_loop(void)
 {
-	int rcv_bytes;
 	struct receive_info ri;
+	socklen_t addrlen;
 	struct packet_cb_list *p;
 	str name;
+	int rcv_bytes;
 
 	ri.bind_address = bind_address;
 	ri.dst_port = bind_address->port_no;
@@ -342,8 +369,9 @@ static void bin_receive_loop(void)
 	ri.proto_reserved1 = ri.proto_reserved2 = 0;
 
 	for (;;) {
+		addrlen = sizeof ri.src_su;
 		rcv_bytes = recvfrom(bind_address->socket, rcv_buf, BUF_SIZE,
-							 0, NULL, NULL);
+							 0, &ri.src_su.s, &addrlen);
 		if (rcv_bytes == -1) {
 			if (errno == EAGAIN) {
 				LM_DBG("packet with bad checksum received\n");
@@ -356,6 +384,9 @@ static void bin_receive_loop(void)
 
 			return;
 		}
+
+		if (addrlen > sizeof ri.src_su)
+			LM_CRIT("src addr truncated! (%u -> %zu)\n", addrlen, sizeof ri.src_su);
 
 		rcv_end = rcv_buf + rcv_bytes;
 
@@ -386,7 +417,7 @@ static void bin_receive_loop(void)
 				LM_DBG("binary Packet CMD: %d. Module: %.*s\n",
 						bin_rcv_type, name.len, name.s);
 
-				p->cbf(bin_rcv_type);
+				p->cbf(bin_rcv_type, &ri);
 
 				break;
 			}

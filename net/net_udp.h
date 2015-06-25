@@ -41,6 +41,7 @@ void udp_destroy(void);
 int udp_count_processes(void);
 
 /* starts one UDP process for NO FORK mode */
+int udp_init_nofork(void);
 int udp_start_nofork(void);
 
 /* starts all UDP related processes */

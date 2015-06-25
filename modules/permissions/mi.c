@@ -37,12 +37,42 @@
  */
 struct mi_root* mi_address_reload(struct mi_root *cmd_tree, void *param)
 {
-	if (hash_table == NULL)
-		return init_mi_tree( 200, MI_SSTR(MI_OK));
+	struct mi_node *node = NULL;
+	struct pm_part_struct *it, *ps;
+	char errbuf[100] = "failed to reload partition ";
+	int errlen = strlen(errbuf);
 
-	if (reload_address_table () == 1)
-		return init_mi_tree( 200, MI_SSTR(MI_OK));
+	if (cmd_tree)
+		node = cmd_tree->node.kids;
 
+	if (node == NULL) {
+		/* reload all partitions */
+		for (it=get_part_structs(); it; it = it->next) {
+			if (it->hash_table == NULL)
+				continue;
+
+			sprintf(errbuf + errlen, " %.*s!", it->name.len, it->name.s);
+			LM_DBG("trying to reload address table for %.*s\n",
+										it->name.len, it->name.s);
+			if (reload_address_table(it) != 1)
+				return init_mi_tree( 400, MI_SSTR(errbuf));
+		}
+
+		return init_mi_tree( 200, MI_SSTR(MI_OK));
+	} else {
+		/* reload requested partition */
+		ps = get_part_struct(&node->value);
+		if (ps == NULL)
+			goto err;
+		if (ps->hash_table == NULL)
+			return init_mi_tree( 200, MI_SSTR(MI_OK));
+		LM_INFO("trying to reload address table for %.*s\n",
+										ps->name.len, ps->name.s);
+		if (reload_address_table(ps) == 1)
+			return init_mi_tree( 200, MI_SSTR(MI_OK));
+	}
+
+err:
 	return init_mi_tree( 400, MI_SSTR("Trusted table reload failed"));
 }
 
@@ -53,18 +83,37 @@ struct mi_root* mi_address_reload(struct mi_root *cmd_tree, void *param)
 struct mi_root* mi_address_dump(struct mi_root *cmd_tree, void *param)
 {
 	struct mi_root* rpl_tree;
+	struct mi_node *node = NULL;
+	struct pm_part_struct *it, *ps;
 
-	if (hash_table == NULL)
-		return init_mi_tree( 500, MI_SSTR("Trusted-module not in use"));
+	if (cmd_tree)
+		node = cmd_tree->node.kids;
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree == NULL) return 0;
-	rpl_tree->node.flags |= MI_IS_ARRAY;
+	if (node == NULL) {
+		/* dump all partitions */
+		for (it=get_part_structs(); it; it = it->next) {
+			if (it->hash_table == NULL)
+				continue;
 
-	if(hash_mi_print(*hash_table, &rpl_tree->node)< 0) {
-		LM_ERR("failed to add a node\n");
-		free_mi_tree(rpl_tree);
-		return 0;
+			if(hash_mi_print(*it->hash_table, &rpl_tree->node, it)< 0) {
+				LM_ERR("failed to add a node\n");
+				free_mi_tree(rpl_tree);
+				return 0;
+			}
+		}
+	} else {
+		/* dump only requested partition */
+		ps = get_part_struct(&node->value);
+		if (ps == NULL)
+			return init_mi_tree(404, MI_SSTR("No such partition"));
+		if (ps->hash_table == NULL)
+			return init_mi_tree( 200, MI_SSTR(MI_OK));
+		if(hash_mi_print(*ps->hash_table, &rpl_tree->node, ps)< 0) {
+			LM_ERR("failed to add a node\n");
+			free_mi_tree(rpl_tree);
+			return 0;
+		}
 	}
 
 	return rpl_tree;
@@ -131,15 +180,38 @@ struct mi_root* mi_allow_uri(struct mi_root *cmd, void *param)
 struct mi_root* mi_subnet_dump(struct mi_root *cmd_tree, void *param)
 {
 	struct mi_root* rpl_tree;
+	struct mi_node *node = NULL;
+	struct pm_part_struct *it, *ps;
 
-    rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-    if (rpl_tree == NULL) return 0;
-	rpl_tree->node.flags |= MI_IS_ARRAY;
+	if (cmd_tree)
+		node = cmd_tree->node.kids;
 
-    if (subnet_table_mi_print(*subnet_table, &rpl_tree->node) <  0) {
-	    LM_ERR("failed to add a node\n");
-	    free_mi_tree(rpl_tree);
-		return 0;
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+	if (node == NULL) {
+		/* dump all subnets */
+		for (it=get_part_structs(); it; it = it->next) {
+			if (it->subnet_table == NULL)
+				continue;
+
+			if (subnet_table_mi_print(*it->subnet_table, &rpl_tree->node, it) <  0) {
+				LM_ERR("failed to add a node\n");
+				 free_mi_tree(rpl_tree);
+				return 0;
+			}
+		}
+	} else {
+		ps = get_part_struct(&node->value);
+		if (ps == NULL)
+			return init_mi_tree(404, MI_SSTR("No such partition"));
+		if (ps->subnet_table == NULL)
+			return init_mi_tree( 200, MI_SSTR(MI_OK));
+
+		/* dump requested subnet*/
+		if (subnet_table_mi_print(*ps->subnet_table, &rpl_tree->node, ps) <  0) {
+			LM_ERR("failed to add a node\n");
+			 free_mi_tree(rpl_tree);
+			return 0;
+		}
 	}
 
 	return rpl_tree;

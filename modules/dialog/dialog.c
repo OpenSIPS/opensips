@@ -67,6 +67,7 @@
 #include "dlg_profile.h"
 #include "dlg_vals.h"
 #include "dlg_replication.h"
+#include "dlg_repl_profile.h"
 
 static int mod_init(void);
 static int child_init(int rank);
@@ -115,6 +116,7 @@ str cdb_url = {0,0};
 
 /* dialog replication using the bpi interface */
 int accept_replicated_dlg=0;
+int accept_repl_profiles=0;
 struct replication_dest *replication_dests=NULL;
 
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
@@ -266,6 +268,13 @@ static param_export_t mod_params[]={
 	{ "accept_replicated_dialogs",INT_PARAM, &accept_replicated_dlg },
 	{ "replicate_dialogs_to",     STR_PARAM|USE_FUNC_PARAM,
 								(void *)add_replication_dest        },
+	{ "accept_replicated_profiles",INT_PARAM, &accept_repl_profiles },
+	{ "replicate_profiles_timer", INT_PARAM, &repl_prof_utimer      },
+	{ "replicate_profiles_check", INT_PARAM, &repl_prof_timer_check },
+	{ "replicate_profiles_buffer",INT_PARAM, &repl_prof_buffer_th   },
+	{ "replicate_profiles_expire",INT_PARAM, &repl_prof_timer_expire},
+	{ "replicate_profiles_to",    STR_PARAM|USE_FUNC_PARAM,
+								(void *)repl_prof_dest              },
 	{ 0,0,0 }
 };
 
@@ -296,6 +305,8 @@ static mi_export_t mi_cmds[] = {
 	{ "profile_list_dlgs",  0, mi_profile_list,       0,  0,  0},
 	{ "profile_get_values", 0, mi_get_profile_values, 0,  0,  0},
 	{ "list_all_profiles",  0, mi_list_all_profiles,  0,  0,  0},
+	{ "profile_bin_status", 0, mi_profiles_bin_status,
+		MI_NO_INPUT_FLAG,  0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -808,7 +819,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (accept_replicated_dlg &&
+	if ((accept_replicated_dlg || accept_repl_profiles) &&
 		bin_register_cb("dialog", receive_binary_packet) < 0) {
 		LM_ERR("Cannot register binary packet callback!\n");
 		return -1;
@@ -855,6 +866,11 @@ static int mod_init(void)
 
 	if ( init_dlg_table(dlg_hash_size)<0 ) {
 		LM_ERR("failed to create hash table\n");
+		return -1;
+	}
+
+	if (repl_prof_init() < 0) {
+		LM_ERR("cannot initialize profile replication\n");
 		return -1;
 	}
 

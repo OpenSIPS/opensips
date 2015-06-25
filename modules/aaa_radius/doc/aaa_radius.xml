@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "aaa_radius_admin.xml">
+<!ENTITY tutorial SYSTEM "aaa_radius_tutorial.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -47,6 +48,7 @@
     <toc></toc>
     
     &admin;
+	&tutorial;
 </book>
 
 

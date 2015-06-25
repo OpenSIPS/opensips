@@ -25,6 +25,7 @@
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
  */
 
 
@@ -53,7 +54,7 @@
 #include "../../forward.h"
 #include "../rr/api.h"
 
-#include "xml_parser.h" 
+#include "hash.h" 
 
 int check_geolocation_header(struct sip_msg *msg);
 int get_geolocation_header(struct sip_msg *msg, char** locationHeader);

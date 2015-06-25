@@ -27,6 +27,7 @@
 #include "../../sr_module.h"
 #include "permissions.h"
 #include "parse_config.h"
+#include "partitions.h"
 
 #include "address.h"
 #include "hash.h"
@@ -161,8 +162,12 @@ static param_export_t params[] = {
 	{"check_all_branches", INT_PARAM, &check_all_branches},
 	{"allow_suffix",       STR_PARAM, &allow_suffix      },
 	{"deny_suffix",        STR_PARAM, &deny_suffix       },
-	{"db_url",             STR_PARAM, &db_url.s          },
-	{"address_table",      STR_PARAM, &address_table.s   },
+	{"partition",		   STR_PARAM|USE_FUNC_PARAM,
+							(void *)parse_partition      },
+	{"db_url",			   STR_PARAM|USE_FUNC_PARAM,
+						    (void *)set_default_db_url   },
+	{"address_table",      STR_PARAM|USE_FUNC_PARAM,
+							(void *)set_default_table    },
 	{"ip_col",             STR_PARAM, &ip_col.s          },
 	{"proto_col",          STR_PARAM, &proto_col.s       },
 	{"pattern_col",        STR_PARAM, &pattern_col.s     },
@@ -177,10 +182,9 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ MI_ADDRESS_RELOAD,  0, mi_address_reload,  MI_NO_INPUT_FLAG,  0,
-													mi_address_child_init },
-	{ MI_ADDRESS_DUMP,    0, mi_address_dump,    MI_NO_INPUT_FLAG,  0,  0 },
-	{ MI_SUBNET_DUMP,     0, mi_subnet_dump,     MI_NO_INPUT_FLAG,  0,  0 },
+	{ MI_ADDRESS_RELOAD,  0, mi_address_reload,  0,  0, mi_address_child_init },
+	{ MI_ADDRESS_DUMP,    0, mi_address_dump,    0,  0,  0 },
+	{ MI_SUBNET_DUMP,     0, mi_subnet_dump,     0,  0,  0 },
 	{ MI_ALLOW_URI,       0, mi_allow_uri,       0,  0,  0 },
 	{ 0, 0, 0, 0, 0, 0}
 };
@@ -208,13 +212,58 @@ struct module_exports exports = {
 
 static int get_src_grp_fixup(void** param, int param_no)
 {
-	if (!db_url.s || db_url.len == 0) {
-		LM_ERR("get_source_group() needs db_url to be set!\n");
+	int ret;
+	str s;
+	struct part_var *pv;
+	struct part_pvar *ppv;
+
+
+	if (get_part_structs() == NULL) {
+		LM_ERR("get_source_group() needs at least default partition!\n");
 		return E_UNSPEC;
 	}
 
-	if(param_no==1)
-		return fixup_pvar(param);
+
+	if(param_no==1) {
+		pv = pkg_malloc(sizeof(struct part_var));
+		if (pv == NULL) {
+			LM_ERR("no more pkg mem\n");
+			return -1;
+		}
+
+		s.s = *param;
+		s.len = strlen(s.s);
+		if (check_addr_param1(&s, pv))
+			return -1;
+
+
+		ppv = pkg_malloc(sizeof(struct part_pvar));
+		if (ppv == NULL) {
+			LM_ERR("no more pkg mem\n");
+			return -1;
+		}
+
+		ppv->sp = (pv_spec_t *)pv->u.parsed_part.v.sval.s;
+		ret=fixup_pvar((void **)&ppv->sp);
+		if (ret)
+			return E_UNSPEC;
+
+		if (pv->u.parsed_part.partition.s) {
+			pv->u.parsed_part.partition.s[pv->u.parsed_part.partition.len] = '\0';
+			if (fixup_sgp((void **)&pv->u.parsed_part.partition.s))
+				return E_UNSPEC;
+
+			ppv->part = (gparam_p)pv->u.parsed_part.partition.s;
+
+		} else {
+			ppv->part = NULL;
+		}
+
+		*param = ppv;
+		pkg_free(pv);
+
+		return 0;
+	}
 
 	return E_UNSPEC;
 }
@@ -597,10 +646,10 @@ static int double_fixup(void** param, int param_no)
  */
 static int mod_init(void)
 {
+	struct pm_partition *el, *prev_el=NULL;
+
 	LM_DBG("initializing...\n");
 
-	init_db_url( db_url , 1 /*can be null*/);
-	address_table.len = strlen(address_table.s);
 	ip_col.len = strlen(ip_col.s);
 	proto_col.len = strlen(proto_col.s);
 	pattern_col.len = strlen(pattern_col.s);
@@ -629,9 +678,22 @@ static int mod_init(void)
 			deny[0].filename);
 	}
 
-	if (init_address() != 0) {
-		LM_ERR("failed to initialize the allow_address function\n");
-		return -1;
+
+	el = get_partitions();
+	while (el) {
+		/* initialize table name if not done from script */
+		if (el->table.s == NULL) {
+			el->table.s = "address";
+			el->table.len = strlen(el->table.s);
+		}
+
+		if (init_address(el) != 0) {
+			LM_ERR("failed to initialize the allow_address function\n");
+			return -1;
+		}
+		prev_el = el;
+		el = el->next;
+		pkg_free(prev_el);
 	}
 
 	rules_num = 1;
@@ -663,6 +725,7 @@ static int mi_addr_child_init(void)
 static void mod_exit(void)
 {
 	int i;
+	struct pm_part_struct *it;
 
 	for(i = 0; i < rules_num; i++) {
 		free_rule(allow[i].rules);
@@ -672,7 +735,8 @@ static void mod_exit(void)
 		pkg_free(deny[i].filename);
 	}
 
-	clean_address();
+	for (it=get_part_structs(); it; it=it->next)
+		clean_address(it);
 //	clean_addresses();
 }
 
@@ -952,16 +1016,40 @@ int allow_test(char *file, char *uri, char *contact)
 
 
 static int check_addr_fixup(void** param, int param_no) {
+	int ret;
+	gparam_p gp;
+	struct part_var *pv;
 
-	if (!db_url.s || db_url.len == 0) {
-		LM_ERR("check_address needs db_url to be set!\n");
+	if (get_part_structs() == NULL) {
+		LM_ERR("check_source_address needs db_url to be set!\n");
 		return E_UNSPEC;
 	}
 
 	/* grp ip port proto info pattern*/
 	switch (param_no) {
 		case 1:
-			return fixup_igp(param);
+			ret = fixup_spve(param);
+
+			if (0 == ret) {
+				gp = *param;
+				pv = pkg_malloc(sizeof(struct part_var));
+				if (pv == NULL) {
+					LM_ERR("no more pkg mem\n");
+					return -1;
+				}
+
+				if (gp->type == GPARAM_TYPE_STR) {
+					pv->type = TYPE_PARSED;
+					ret = check_addr_param1(&gp->v.sval, pv);
+				} else {
+					pv->type = TYPE_PARSED;
+					pv->type = TYPE_PV;
+					pv->u.gp = gp;
+				}
+				*param = pv;
+			}
+
+			return ret;
 		case 2:
 		case 3:
 		case 4:
@@ -982,8 +1070,11 @@ static int check_addr_fixup(void** param, int param_no) {
 
 
 static int check_src_addr_fixup(void** param, int param_no) {
+	int ret;
+	gparam_p gp;
+	struct part_var *pv;
 
-	if (!db_url.s || db_url.len == 0) {
+	if (get_part_structs() == NULL) {
 		LM_ERR("check_source_address needs db_url to be set!\n");
 		return E_UNSPEC;
 	}
@@ -991,7 +1082,28 @@ static int check_src_addr_fixup(void** param, int param_no) {
 	/* grp info pattern */
 	switch (param_no) {
 		case 1:
-			return fixup_igp_null(param, param_no);
+			ret = fixup_spve(param);
+
+			if (0 == ret) {
+				gp = *param;
+				pv = pkg_malloc(sizeof(struct part_var));
+				if (pv == NULL) {
+					LM_ERR("no more pkg mem\n");
+					return -1;
+				}
+
+				if (gp->type == GPARAM_TYPE_STR) {
+					pv->type = TYPE_PARSED;
+					ret = check_addr_param1(&gp->v.sval, pv);
+				} else {
+					pv->type = TYPE_PV;
+					pv->u.gp = gp;
+				}
+
+				*param = pv;
+			}
+
+			return ret;
 		case 2:
 			if (*param && strlen((char*)*param))
 				return fixup_pvar(param);

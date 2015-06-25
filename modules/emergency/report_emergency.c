@@ -303,13 +303,13 @@ int collect_data(struct node *current, str db_url, str table_report) {
 
     LM_DBG(" --- TABLE_REPORT %.*s \n\n", table_report.len, table_report.s);   
 
-/*
+
     if (report(report_eme, db_url, table_report) != 1) {
         LM_DBG("****** INSERT NOK\n");
         pkg_free(report_eme);
         return -1;
     }
-*/
+
     
     LM_DBG("****** INSERT OK\n");
     pkg_free(report_eme);

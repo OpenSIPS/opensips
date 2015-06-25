@@ -42,6 +42,11 @@ typedef enum {
 	PIPE_ALGO_NETWORK
 } rl_algo_t;
 
+typedef struct rl_repl_counter {
+	int counter;
+	time_t update;
+} rl_repl_counter_t;
+
 typedef struct rl_pipe {
 	int limit;					/* limit used by algorithm */
 	int counter;				/* countes the accesses */
@@ -50,7 +55,15 @@ typedef struct rl_pipe {
 	int load;					/* countes the accesses */
 	rl_algo_t algo;				/* the algorithm used */
 	unsigned long last_used;	/* timestamp when the pipe was last accessed */
+	rl_repl_counter_t *dsts;	/* counters per destination */
 } rl_pipe_t;
+
+typedef struct rl_repl_dst {
+	int id;
+	str dst;
+	time_t *last_msg;
+	union sockaddr_union to;
+} rl_repl_dst_t;
 
 /* big hashtable */
 typedef struct {
@@ -83,6 +96,7 @@ int w_rl_reset(struct sip_msg*, char *);
 int w_rl_set_count(str, int);
 int rl_stats(struct mi_root *, str *);
 int rl_pipe_check(rl_pipe_t *);
+int rl_get_counter_value(str *);
 /* update load */
 int get_cpuload(void);
 void do_update_load(void);
@@ -90,8 +104,22 @@ void pid_setpoint_limit(int);
 
 /* timer */
 void rl_timer(unsigned int, void *);
+void rl_timer_repl(utime_t, void *);
 
 /* cachedb functions */
 int init_cachedb(str*);
 void destroy_cachedb(void);
+
+/* bin functions */
+extern int rl_buffer_th;
+extern unsigned int rl_repl_timer_expire;
+int rl_repl_init(void);
+int rl_get_all_counters(rl_pipe_t *pipe);
+int rl_add_repl_dst(modparam_t type, void *val);
+int rl_bin_status(struct mi_root *);
+
+#define RL_PIPE_COUNTER		0
+#define RL_EXPIRE_TIMER		10
+#define RL_BUF_THRESHOLD	1400
+
 #endif /* _RATELIMIT_H_ */

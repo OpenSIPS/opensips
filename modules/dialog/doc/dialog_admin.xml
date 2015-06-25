@@ -113,6 +113,11 @@
 	module. In addition to this, the module also exports several statistics
 	regarding the number of replication packets sent/received.
 	</para>
+	<para>
+		Profiles replication can also be achieved using the
+	<emphasis role='bold'>accept_replicated_profiles</emphasis> and
+	<emphasis role='bold'>replicate_profiles_to</emphasis> parameters.
+	</para>
 	</section>
 
 	<section>
@@ -1149,7 +1154,134 @@ modparam("dialog", "replicate_dialogs_to", "10.0.0.150:5062")
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>accept_replicated_profiles</varname> (int)</title>
+		<para>
+		Registers the <emphasis>dialog</emphasis> module to the &osips; Binary
+		Internal Interface for profiles replication.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0 (not registered).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>accept_replicated_profiles</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "accept_replicated_profiles", 1)
+...
+</programlisting>
+		</example>
+	</section>
 
+	<section>
+		<title><varname>replicate_profiles_to</varname> (string)</title>
+		<para>
+			Adds a new profiles replication destination. The destination will
+		receive all dialog-related events (creation, updating and deletion)
+		over UDP, using the Binary Internal Interface.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>null</quote> (no replication destinations).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>replicate_profiles_to</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "replicate_profiles_to", "10.0.0.150:5062")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>replicate_profiles_buffer</varname> (string)</title>
+		<para>
+		Used to specify the length of the buffer used by the binary
+		replication, in bytes. Usually this should be big enough to hold
+		as much data as possible, but small enough to avoid UDP
+		fragmentation. The recommended value is the smallest MTU between
+		all the replication instances.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 1400 bytes.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>replicate_profiles_buffer</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "replicate_profiles_buffer", 500)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>replicate_profiles_check</varname> (string)</title>
+		<para>
+		Timer in seconds, used to specify how often the module should check
+		whether old, replicated profiles values are obsolete and should be removed.
+		should replicate its profiles to the other instances.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 10 s.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>replicate_profiles_check</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "replicate_profiles_check", 100)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>replicate_profiles_timer</varname> (string)</title>
+		<para>
+		Timer in milliseconds, used to specify how often the module
+		should replicate its profiles to the other instances.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 10 ms.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>replicate_profiles_timer</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "replicate_profiles_timer", 100)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>replicate_profiles_expire</varname> (string)</title>
+		<para>
+		Timer in seconds, used to specify when the profiles counters received
+		from a different instance should no longer be taken into account.
+		This is used to prevent obsolete values, in case an instance stops
+		replicating its counters.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 10 s.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>replicate_profiles_expire</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "replicate_profiles_expire", 10)
+...
+</programlisting>
+		</example>
+	</section>
 
 	</section>
 
@@ -2148,6 +2280,26 @@ $var(account) = $dlg_val(account_type);
 		</para>
 		<programlisting  format="linespecific">
 		:list_all_profiles:_reply_fifo_file_
+		_empty_line_
+		</programlisting>
+		</section>
+		<section>
+		<title>
+		<function moreinfo="none">profile_bin_status</function>
+		</title>
+		<para>
+		Dumps each destination used for profiles replication, as well as
+		the timestamp of the last message received from them.
+		</para>
+		<para>
+		Name: <emphasis>profile_bin_status</emphasis>
+		</para>
+		<para>Parameters: <emphasis>none</emphasis></para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:profile_bin_status:_reply_fifo_file_
 		_empty_line_
 		</programlisting>
 		</section>

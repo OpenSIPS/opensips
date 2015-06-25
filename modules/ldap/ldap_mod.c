@@ -66,6 +66,8 @@ static int ldap_result_check_fixup(void** param, int param_no);
 * exported functions
 */
 
+static int w_ldap_search_async(struct sip_msg* msg, async_resume_module **resume_f,
+		void **resume_param, char* ldap_url, char* param);
 static int w_ldap_search(struct sip_msg* msg, char* ldap_url, char* param);
 static int w_ldap_result1(struct sip_msg* msg, char* src, char* param);
 static int w_ldap_result2(struct sip_msg* msg, char* src, char* subst);
@@ -90,6 +92,10 @@ static int w_ldap_result_check_2(struct sip_msg* msg,
 str ldap_config = str_init(DEF_LDAP_CONFIG);
 static dictionary* config_vals = NULL;
 
+static acmd_export_t acmds[] = {
+	{"ldap_search", (acmd_function) w_ldap_search_async, 1, ldap_search_fixup},
+	{0, 0, 0, 0}
+};
 /*
 * Exported functions
 */
@@ -142,7 +148,7 @@ struct module_exports exports = {
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	NULL,            /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
-	NULL,       /* Exported async functions */
+	acmds,       /* Exported async functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
@@ -268,6 +274,12 @@ static void destroy(void)
 /*
 * EXPORTED functions
 */
+
+static int w_ldap_search_async(struct sip_msg* msg, async_resume_module **resume_f,
+		void **resume_param, char* ldap_url, char* param)
+{
+	return ldap_search_impl_async(msg, resume_f, resume_param, (pv_elem_t*)ldap_url);
+}
 
 static int w_ldap_search(struct sip_msg* msg, char* ldap_url, char* param)
 {

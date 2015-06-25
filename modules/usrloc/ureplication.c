@@ -522,7 +522,7 @@ error:
 	return -1;
 }
 
-void receive_binary_packet(int packet_type)
+void receive_binary_packet(int packet_type, struct receive_info *ri)
 {
 	int rc;
 

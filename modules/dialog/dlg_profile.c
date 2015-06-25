@@ -34,10 +34,11 @@
 #include "../../ut.h"
 #include "dlg_hash.h"
 #include "dlg_profile.h"
+#include "dlg_repl_profile.h"
 
 #define PROFILE_HASH_SIZE 16
 
-static struct dlg_profile_table *profiles = NULL;
+struct dlg_profile_table *profiles = NULL;
 static struct lock_set_list * all_locks = NULL;
 static struct lock_set_list * cur_lock = NULL;
 static int finished_allocating_locks = 0;
@@ -374,6 +375,19 @@ int init_cachedb_utils(void)
 	return 0;
 }
 
+/* faster method to match a profile by name, no other checks */
+struct dlg_profile_table *get_dlg_profile(str *name)
+{
+	struct dlg_profile_table *profile;
+	for (profile=profiles ;profile ;profile=profile->next) {
+		if (name->len == profile->name.len &&
+				memcmp(name->s, profile->name.s, name->len) == 0)
+			return profile;
+	}
+
+	return NULL;
+}
+
 struct dlg_profile_table* search_dlg_profile(str *name)
 {
 	struct dlg_profile_table *profile;
@@ -441,8 +455,11 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 		LM_ERR("no more shm mem\n");
 		return NULL;
 	}
-
 	memset( profile , 0 , len);
+
+	if (!has_value)
+		profile->repl = repl_prof_allocate();
+
 	profile->size = size;
 	profile->has_value = (has_value==0)?0:1;
 	profile->use_cached = use_cached;
@@ -470,7 +487,7 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 
 		for( i= 0; i < size; i++)
 		{
-			profile->entries[i] = map_create(1);
+			profile->entries[i] = map_create(AVLMAP_SHARED);
 			if( !profile->entries[i] )
 			{
 				LM_ERR("Unable to create a map\n");
@@ -560,11 +577,14 @@ void destroy_linkers(struct dlg_profile_link *linker, char is_replicated)
 				dest = map_find( entry, l->value );
 				if( dest )
 				{
-					(*dest) = (void*) ( (long)(*dest) - 1 );
+					repl_prof_dec(dest);
 
 					if( *dest == 0 )
 					{
-						map_remove( entry,l->value );
+						/* warn everybody we are deleting */
+						/* XXX: we should queue these */
+						repl_prof_remove(&l->profile->name, &l->value);
+						map_remove(entry,l->value );
 					}
 				}
 			}
@@ -665,7 +685,9 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 		{
 			p_entry = linker->profile->entries[hash];
 			dest = map_get( p_entry, linker->value );
-			(*dest) = (void*) ( (long)(*dest) + 1 );
+			/* if we accept replicated stuff, we have to allocate the
+			 * structure for it and treat the counter differently */
+			repl_prof_inc(dest);
 		}
 		else
 			linker->profile->counts[hash]++;
@@ -867,6 +889,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 			}
 
 		}
+		n += replicate_profiles_count(profile->repl);
 
 	} else {
 
@@ -918,7 +941,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 
 				dest = map_find(entry,*value);
 				if( dest )
-					n = (int)(long) *dest;
+					n = repl_prof_get_all(dest);
 
 				lock_set_release( profile->locks, i);
 
@@ -1027,13 +1050,15 @@ static inline int add_val_to_rpl(void * param, str key, void * val)
 	struct mi_attr* attr;
 	int len;
 	char *p;
+	int counter;
 
 	node = add_mi_node_child(rpl, MI_DUP_VALUE, "value", 5, key.s , key.len );
 
 	if( node == NULL )
 		return -1;
 
-	p= int2str((unsigned long)val, &len);
+	counter = repl_prof_get_all(&val);
+	p= int2str((unsigned long)counter, &len);
 	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5,  p, len );
 
 	if( attr == NULL )

@@ -61,8 +61,9 @@ extern struct socket_info *bin;
 extern int bin_children;
 
 struct packet_cb_list {
-	str module;                /* registered module */
-	void (*cbf)(int cmd_type); /* module callback */
+	str module;							/* registered module */
+	void (*cbf)(int packet_type,		/* module callback */
+				struct receive_info *ri);
 
 	struct packet_cb_list *next;
 };
@@ -72,7 +73,7 @@ struct packet_cb_list {
  * registers a callback function to be triggered on a received
  * binary packet marked with the @mod_name module name
  */
-int bin_register_cb(char *mod_name, void (*)(int packet_type));
+int bin_register_cb(char *mod_name, void (*)(int packet_type, struct receive_info *ri));
 
 
 /**
@@ -89,14 +90,18 @@ int bin_init(str *mod_name, int packet_type);
  * adds a new string value to the packet being currently built
  * @info: may also be NULL
  *
- * @return: 0 on success, otherwise buffer limit reached
+ * @return:
+ *		> 0: success, number of added bytes
+ *		< 0: internal buffer limit reached
  */
 int bin_push_str(const str *info);
 
 /*
  * adds a new integer value to the packet being currently built
  *
- * @return: 0 on success, otherwise buffer limit reached
+ * @return:
+ *		> 0: success, number of added bytes
+ *		< 0: internal buffer limit reached
  */
 int bin_push_int(int info);
 
@@ -104,7 +109,10 @@ int bin_push_int(int info);
  * pops a str structure from a received binary packet
  * @info:   pointer to store the result
  *
- * @return: 0 on success
+ * @return:
+ *		0 (success): info retrieved
+ *		1 (success): nothing returned, all data has been consumed!
+ *		< 0: error
  *
  * Note: The pointer returned in @info is only valid for the duration of
  *       the callback. Don't forget to copy the data into a safe buffer!
@@ -117,7 +125,10 @@ int bin_pop_str(str *info);
  * pops an integer from a received binary packet
  * @info:   pointer to store the result
  *
- * @return: 0 on success
+ * @return:
+ *		0 (success): info retrieved
+ *		1 (success): nothing returned, all data has been consumed!
+ *		< 0: error
  *
  * Note: Information is retrieved in the same order it was stored
  */
@@ -126,14 +137,18 @@ int bin_pop_int(void *info);
 /*
  * skips @count integers from a received binary packet
  *
- * @return: 0 on success
+ * @return:
+ *		>= 0: success, number of skipped bytes
+ *		<  0: error, buffer limit reached
  */
 int bin_skip_int(int count);
 
 /*
  * skips @count strings from a received binary packet
  *
- * @return: 0 on success
+ * @return:
+ *		>= 0: success, number of skipped bytes
+ *		<  0: error, buffer limit reached
  */
 int bin_skip_str(int count);
 

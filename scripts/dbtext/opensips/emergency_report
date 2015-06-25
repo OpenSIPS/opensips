@@ -1,0 +1,1 @@
+id(int,auto) callid(string) selectiveRoutingID(string) routingESN(int) npa(int) esgwri(string) lro(string) VPC_organizationName(string) VPC_hostname(string) VPC_timestamp(string) result(string) disposition(string) 

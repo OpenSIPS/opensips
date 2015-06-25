@@ -24,6 +24,7 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  
  */
  
@@ -52,7 +53,6 @@ struct sm_subscriber* build_notify_cell(struct sip_msg *msg, int expires){
     str callid;
     struct to_body *pto= NULL, *pfrom = NULL;
     int size_notify_cell;
-    struct sm_subscriber *new_cell = NULL;
     int vsp_addr_len;
     char *vsp_addr = "@vsp.com"; 
     int vsp_port = 5060;
@@ -61,6 +61,8 @@ struct sm_subscriber* build_notify_cell(struct sip_msg *msg, int expires){
     struct sm_subscriber *notify_cell = NULL;
     time_t rawtime;
     int time_now;
+    char *p;
+    unsigned int hash_code;
 
     // get data from SUBSCRIBE request
     // get callid from Subscribe
@@ -126,7 +128,9 @@ struct sm_subscriber* build_notify_cell(struct sip_msg *msg, int expires){
     LM_INFO("SRC_PORT : %s \n", str_vsp_port);
 
     /* build notifier cell */
-    size_notify_cell = sizeof(struct sm_subscriber) + callid.len + pfrom->tag_value.len + pto->tag_value.len + pfrom->uri.len + pto->uri.len + callid_event.len +  fromtag_event.len + vsp_addr_len + size_vsp_port + 11  ;
+    size_notify_cell = sizeof(struct sm_subscriber) + (2 * sizeof(struct dialog_id)) 
+                    + callid.len + pfrom->tag_value.len + pto->tag_value.len + pfrom->uri.len + pto->uri.len 
+                    + callid_event.len +  fromtag_event.len + vsp_addr_len + size_vsp_port + 11  ;
     notify_cell = shm_malloc(size_notify_cell + 1);
     if (!notify_cell) {
         LM_ERR("no more shm\n");
@@ -141,53 +145,58 @@ struct sm_subscriber* build_notify_cell(struct sip_msg *msg, int expires){
     notify_cell->version =  0; 
     LM_INFO("SUBS_VERSION: %d \n ", notify_cell->version );
 
-    notify_cell->dlg_id.callid.len = callid.len;
-    notify_cell->dlg_id.callid.s = (char *) (notify_cell + 1); 
-    memcpy(notify_cell->dlg_id.callid.s, callid.s, callid.len);
-    LM_INFO("SUBS_CALLID: %.*s \n ", notify_cell->dlg_id.callid.len, notify_cell->dlg_id.callid.s );  
+    notify_cell->dlg_id = (struct dialog_id*)(notify_cell + 1);    
 
-    notify_cell->dlg_id.rem_tag.len = pfrom->tag_value.len;
-    notify_cell->dlg_id.rem_tag.s = (char *) (notify_cell + 1) + callid.len + pto->tag_value.len; 
-    memcpy(notify_cell->dlg_id.rem_tag.s, pfrom->tag_value.s, pfrom->tag_value.len);
-    LM_INFO("SUBS_FROM_TAG: %.*s \n ", notify_cell->dlg_id.rem_tag.len, notify_cell->dlg_id.rem_tag.s );
+    notify_cell->dlg_id->callid.len = callid.len;
+    notify_cell->dlg_id->callid.s = (char *) (notify_cell->dlg_id + 1); 
+    memcpy(notify_cell->dlg_id->callid.s, callid.s, callid.len);
+    LM_INFO("SUBS_CALLID: %.*s \n ", notify_cell->dlg_id->callid.len, notify_cell->dlg_id->callid.s );  
+
+    notify_cell->dlg_id->rem_tag.len = pfrom->tag_value.len;
+    notify_cell->dlg_id->rem_tag.s = (char *) (notify_cell->dlg_id + 1) + callid.len;    
+    memcpy(notify_cell->dlg_id->rem_tag.s, pfrom->tag_value.s, pfrom->tag_value.len);
+    LM_INFO("SUBS_FROM_TAG: %.*s \n ", notify_cell->dlg_id->rem_tag.len, notify_cell->dlg_id->rem_tag.s );
+
+    p = (char *)(notify_cell->dlg_id + 1) + callid.len + pfrom->tag_value.len;   
+    notify_cell->call_dlg_id = (struct dialog_id*)p;
+
+    notify_cell->call_dlg_id->callid.len= callid_event.len;
+    notify_cell->call_dlg_id->callid.s = (char *) (notify_cell->call_dlg_id + 1);
+    memcpy(notify_cell->call_dlg_id->callid.s, callid_event.s, callid_event.len);
+    LM_INFO("SUBS_CALLID_event: %.*s \n ", notify_cell->call_dlg_id->callid.len, notify_cell->call_dlg_id->callid.s );  
+
+    notify_cell->call_dlg_id->rem_tag.len= fromtag_event.len;
+    notify_cell->call_dlg_id->rem_tag.s = (char *) (notify_cell->call_dlg_id + 1) + callid_event.len;  
+    memcpy(notify_cell->call_dlg_id->rem_tag.s, fromtag_event.s, fromtag_event.len);        
+    LM_INFO("SUBS_FROMTAG_event: %.*s \n ", notify_cell->call_dlg_id->rem_tag.len, notify_cell->call_dlg_id->rem_tag.s );  
 
     notify_cell->loc_uri.len = pto->uri.len;
-    notify_cell->loc_uri.s = (char *) (notify_cell + 1) + callid.len + pfrom->tag_value.len + pto->tag_value.len;
+    notify_cell->loc_uri.s = (char *) (notify_cell->call_dlg_id + 1) + callid_event.len + fromtag_event.len;    
     memcpy(notify_cell->loc_uri.s,pto->uri.s,pto->uri.len);
     LM_INFO("SUBS_LOC_URI: %.*s \n ", notify_cell->loc_uri.len, notify_cell->loc_uri.s );
 
     notify_cell->rem_uri.len= pfrom->uri.len;
-    notify_cell->rem_uri.s = (char *) (notify_cell + 1) + callid.len + pfrom->tag_value.len + pto->uri.len + pto->tag_value.len;
+    notify_cell->rem_uri.s = (char *) (notify_cell->call_dlg_id + 1) + callid_event.len + fromtag_event.len + pto->uri.len;
     memcpy(notify_cell->rem_uri.s, pfrom->uri.s, pfrom->uri.len);        
     LM_INFO("SUBS_REM_URI: %.*s \n ", notify_cell->rem_uri.len, notify_cell->rem_uri.s ); 
 
-    notify_cell->call_dlg_id.callid.len= callid_event.len;
-    notify_cell->call_dlg_id.callid.s = (char *) (notify_cell + 1) + callid.len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len + pto->uri.len;
-    memcpy(notify_cell->call_dlg_id.callid.s, callid_event.s, callid_event.len);        
-    LM_INFO("SUBS_CALLID_event: %.*s \n ", notify_cell->call_dlg_id.callid.len, notify_cell->call_dlg_id.callid.s );  
-
-    notify_cell->call_dlg_id.rem_tag.len= fromtag_event.len;
-    notify_cell->call_dlg_id.rem_tag.s = (char *) (notify_cell + 1) + callid.len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len + pto->uri.len + callid_event.len;
-    memcpy(notify_cell->call_dlg_id.rem_tag.s, fromtag_event.s, fromtag_event.len);        
-    LM_INFO("SUBS_FROMTAG_event: %.*s \n ", notify_cell->call_dlg_id.rem_tag.len, notify_cell->call_dlg_id.rem_tag.s );  
-
     notify_cell->contact.len = vsp_addr_len + size_vsp_port +11;
-    notify_cell->contact.s = (char *) (notify_cell + 1) + callid.len + pfrom->tag_value.len + pfrom->uri.len + pto->tag_value.len + pto->uri.len + callid_event.len + fromtag_event.len;
+    notify_cell->contact.s = (char *) (notify_cell->call_dlg_id + 1) +  pfrom->uri.len + pto->uri.len + callid_event.len + fromtag_event.len;
+
     memcpy(notify_cell->contact.s, "sip:teste@", 10);  
     memcpy(notify_cell->contact.s + 10, vsp_addr, vsp_addr_len); 
     memcpy(notify_cell->contact.s + 10 + vsp_addr_len, ":", 1); 
     memcpy(notify_cell->contact.s + 11 + vsp_addr_len, str_vsp_port, size_vsp_port);                    
     LM_INFO("SUBS_CONTACT: %.*s \n ", notify_cell->contact.len, notify_cell->contact.s );
 
-    notify_cell->dlg_id.status =  RESP_WAIT;        
+    notify_cell->dlg_id->status =  RESP_WAIT;        
 
-    /* push cell in Notifier list linked */
-    if (new_cell != NULL) {
-        new_cell->next = notify_cell;
-        new_cell = notify_cell;
-    } else {
-        new_cell = notify_cell;
-        *subs_pt = new_cell;
+    hash_code= core_hash(&callid_event, 0, subst_size);
+    LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+    LM_INFO("********************************************CALLID_STR%.*s\n", callid_event.len, callid_event.s);
+
+    if(insert_shtable(subs_htable, hash_code, notify_cell)< 0){
+        LM_ERR("inserting new record in subs_htable\n");
     }
 
     return notify_cell;
@@ -206,6 +215,8 @@ int treat_subscribe(struct sip_msg *msg) {
     struct sm_subscriber *notify_cell = NULL;
     char  *subs_expires;
     int expires= 0;
+    char *subs_callid, *subs_fromtag;
+    str callid_event;
 
     if(!check_event_header(msg)){
         LM_ERR("event header type not allow\n");
@@ -233,9 +244,17 @@ int treat_subscribe(struct sip_msg *msg) {
         }   
     }
 
+    if(get_event_header(msg, &subs_callid, &subs_fromtag) == 1){
+        callid_event.s = subs_callid;
+        callid_event.len = strlen(subs_callid);         
+    }else{
+        LM_ERR("**** error in Evenrt Header od Subscriber");
+        return 0;
+    }
+
 
     if (expires == 0){
-        notify_cell = get_subs_cell(msg);
+        notify_cell = get_subs_cell(msg, callid_event);
         if (notify_cell == NULL){
             LM_ERR("**** notify cell not found");
             if(!eme_tm.t_reply(msg,481,&msg481)){
@@ -243,7 +262,7 @@ int treat_subscribe(struct sip_msg *msg) {
             } 
             return 0;
         }
-        notify_cell->dlg_id.status =  TERMINATED;
+        notify_cell->dlg_id->status =  TERMINATED;
         notify_cell->expires =  0;        
     }else{
         notify_cell =  build_notify_cell(msg, expires);
@@ -261,22 +280,22 @@ int treat_subscribe(struct sip_msg *msg) {
         goto end;                
     } 
 
-    if(notify_cell->dlg_id.status != TERMINATED){
+    if(notify_cell->dlg_id->status != TERMINATED){
 
         t = eme_tm.t_gett();
       
         LM_INFO(" --- TO TAG %.*s \n", t->uas.local_totag.len, t->uas.local_totag.s);
 
-        notify_cell->dlg_id.local_tag.s = shm_malloc(t->uas.local_totag.len);
-        if (!notify_cell->dlg_id.local_tag.s) {
+        notify_cell->dlg_id->local_tag.s = shm_malloc(t->uas.local_totag.len);
+        if (!notify_cell->dlg_id->local_tag.s) {
             LM_ERR("no more shm\n");
             resp = 0;
             goto end;
         }
 
-        notify_cell->dlg_id.local_tag.len = t->uas.local_totag.len; 
-        memcpy(notify_cell->dlg_id.local_tag.s, t->uas.local_totag.s, t->uas.local_totag.len);
-        LM_INFO("SUBS_FROM_TAG: %.*s \n ", notify_cell->dlg_id.local_tag.len, notify_cell->dlg_id.local_tag.s ); 
+        notify_cell->dlg_id->local_tag.len = t->uas.local_totag.len; 
+        memcpy(notify_cell->dlg_id->local_tag.s, t->uas.local_totag.s, t->uas.local_totag.len);
+        LM_INFO("SUBS_FROM_TAG: %.*s \n ", notify_cell->dlg_id->local_tag.len, notify_cell->dlg_id->local_tag.s ); 
 
     }
 
@@ -287,6 +306,7 @@ int treat_subscribe(struct sip_msg *msg) {
 
     resp = 1;
 end:
+    //shm_free(notify_cell);
     //pkg_free(subs_state);
     //pkg_free(subs_expires);    
     return resp; 
@@ -356,9 +376,7 @@ int send_notifier_within(struct sip_msg* msg, struct sm_subscriber* notify){
 void notif_cback_func(struct cell *t, int cb_type, struct tmcb_params *params){
     int code = params->code; 
     struct sm_subscriber* params_notify = (struct sm_subscriber*)(*params->param);
-
-    struct sm_subscriber* next;
-    struct sm_subscriber* previous;
+    unsigned int hash_code;
 
     LM_INFO("TREAT NOTIFY REPLY \n");   
     //LM_INFO("REPLY: %.*s \n ", reply->first_line.u.reply.version.len, reply->first_line.u.reply.version.s );
@@ -380,18 +398,15 @@ void notif_cback_func(struct cell *t, int cb_type, struct tmcb_params *params){
             LM_INFO("TIMEOUT: %d \n ", params_notify->timeout);
             return;
         }
-        if (params_notify->dlg_id.status == TERMINATED){ 
-            next = params_notify->next; 
-            previous = params_notify->prev;                                   
-            if (previous == NULL){
-                if (next == NULL){;        
-                    *subs_pt = NULL;
-                }else{      
-                    *subs_pt = next;
-                }
-            }else{               
-                previous->next = next;
-            }  
+        if (params_notify->dlg_id->status == TERMINATED){ 
+
+            hash_code= core_hash(&params_notify->call_dlg_id->callid, 0, subst_size);
+            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+            LM_INFO("********************************************CALLID_STR%.*s\n", params_notify->call_dlg_id->callid.len, params_notify->call_dlg_id->callid.s);
+
+            shm_free(params_notify->dlg_id->local_tag.s); 
+            delete_shtable(subs_htable, hash_code, params_notify);
+
         }    
 
     }else{
@@ -414,7 +429,7 @@ str* add_body_notifier(struct sm_subscriber* notifier){
     str* pt_body= NULL;
     char* version;
 
-    if (notifier->dlg_id.status == TERMINATED ){
+    if (notifier->dlg_id->status == TERMINATED ){
         LM_INFO("finesh notify\n");
         return NULL;
     }
@@ -425,7 +440,7 @@ str* add_body_notifier(struct sm_subscriber* notifier){
         return NULL;
     }
 
-    if (notifier->call_dlg_id.status == TERMINATED ){
+    if (notifier->call_dlg_id->status == TERMINATED ){
         call_status = "terminated";
         size_status = 10;
         //version = "\"2\"";
@@ -445,7 +460,7 @@ str* add_body_notifier(struct sm_subscriber* notifier){
     }
     notifier->version++;
 
-    size_body = size_status + size_version + notifier->call_dlg_id.rem_tag.len + notifier->loc_uri.len + notifier->dlg_id.callid.len + notifier->call_dlg_id.callid.len + 197 + 11*CRLF_LEN;
+    size_body = size_status + size_version + notifier->call_dlg_id->rem_tag.len + notifier->loc_uri.len + notifier->dlg_id->callid.len + notifier->call_dlg_id->callid.len + 197 + 11*CRLF_LEN;
 
     aux_body= pkg_malloc(sizeof(char)* size_body + 1);
     if(aux_body== NULL){
@@ -486,20 +501,20 @@ str* add_body_notifier(struct sm_subscriber* notifier){
     aux_body += CRLF_LEN; 
     memcpy(aux_body, "<dialog id=", 11);
     aux_body+= 11;
-    memcpy(aux_body, notifier->dlg_id.callid.s, notifier->dlg_id.callid.len);
-    aux_body += notifier->dlg_id.callid.len;
+    memcpy(aux_body, notifier->dlg_id->callid.s, notifier->dlg_id->callid.len);
+    aux_body += notifier->dlg_id->callid.len;
     memcpy(aux_body, CRLF, CRLF_LEN); 
     aux_body += CRLF_LEN;
     memcpy(aux_body, "call-id=", 8);
     aux_body+= 8;  
-    memcpy(aux_body, notifier->call_dlg_id.callid.s, notifier->call_dlg_id.callid.len);
-    aux_body += notifier->call_dlg_id.callid.len;   
+    memcpy(aux_body, notifier->call_dlg_id->callid.s, notifier->call_dlg_id->callid.len);
+    aux_body += notifier->call_dlg_id->callid.len;   
     memcpy(aux_body, CRLF, CRLF_LEN); 
     aux_body += CRLF_LEN;       
     memcpy(aux_body, "local-tag=\"", 11);
     aux_body+= 11;   
-    memcpy(aux_body, notifier->call_dlg_id.rem_tag.s, notifier->call_dlg_id.rem_tag.len);
-    aux_body += notifier->call_dlg_id.rem_tag.len;
+    memcpy(aux_body, notifier->call_dlg_id->rem_tag.s, notifier->call_dlg_id->rem_tag.len);
+    aux_body += notifier->call_dlg_id->rem_tag.len;
     memcpy(aux_body, "\" direction=\"initiator\">", 24);
     aux_body+= 24;
     memcpy(aux_body, CRLF, CRLF_LEN); 
@@ -554,7 +569,7 @@ str* add_hdr_notifier(struct sm_subscriber* notifier){
         return NULL;
     } 
 
-    if (notifier->dlg_id.status == TERMINATED ){
+    if (notifier->dlg_id->status == TERMINATED ){
         status = "terminated";
         size_status = 10;
         size_expires = 0;

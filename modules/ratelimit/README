@@ -62,6 +62,10 @@ Razvan Crainea
               1.6.4. default_algorithm (string)
               1.6.5. cachedb_url (string)
               1.6.6. db_prefix (string)
+              1.6.7. repl_buffer_threshold (string)
+              1.6.8. repl_timer_interval (string)
+              1.6.9. repl_timer_expire (string)
+              1.6.10. replicate_pipes_to (string)
 
         1.7. Exported Functions
 
@@ -75,6 +79,11 @@ Razvan Crainea
               1.8.2. rl_reset_pipe
               1.8.3. rl_set_pid
               1.8.4. rl_get_pid
+              1.8.5. rl_bin_status
+
+        1.9. Exported pseudo-variables
+
+              1.9.1. $rl_count(name)
 
    List of Examples
 
@@ -84,9 +93,13 @@ Razvan Crainea
    1.4. Set default_algorithm parameter
    1.5. Set cachedb_url parameter
    1.6. Set db_prefix parameter
-   1.7. rl_check usage
-   1.8. rl_dec_count usage
-   1.9. rl_reset_count usage
+   1.7. Set repl_buffer_threshold parameter
+   1.8. Set repl_timer_interval parameter
+   1.9. Set repl_timer_expire parameter
+   1.10. Set replicate_pipes_to parameter
+   1.11. rl_check usage
+   1.12. rl_dec_count usage
+   1.13. rl_reset_count usage
 
 Chapter 1. Admin Guide
 
@@ -103,6 +116,11 @@ Chapter 1. Admin Guide
    This module is also integrated with the OpenSIPS Key-Value
    Interface, providing support for distributed rate limiting
    using Redis or Memcached CacheDB backends.
+
+   To achieve a distributed ratelimit feature, the module can
+   replicate its pipes counters to different OpenSIPS interfaces
+   using the binary replicate interface (BIN). To do that, define
+   the repl_* parameters in your configuration script.
 
 1.2. Use Cases
 
@@ -304,6 +322,60 @@ modparam("ratelimit", "cachedb_url", "redis://root:root@127.0.0.1/")
 modparam("ratelimit", "db_prefix", "ratelimit_")
 ...
 
+1.6.7. repl_buffer_threshold (string)
+
+   Used to specify the length of the buffer used by the binary
+   replication, in bytes. Usually this should be big enough to
+   hold as much data as possible, but small enough to avoid UDP
+   fragmentation. The recommended value is the smallest MTU
+   between all the replication instances.
+
+   Default value is 1400 bytes.
+
+   Example 1.7. Set repl_buffer_threshold parameter
+...
+modparam("ratelimit", "repl_buffer_threshold", 500)
+...
+
+1.6.8. repl_timer_interval (string)
+
+   Timer in milliseconds, used to specify how often the module
+   should replicate its counters to the other instances.
+
+   Default value is 10 ms.
+
+   Example 1.8. Set repl_timer_interval parameter
+...
+modparam("ratelimit", "repl_timer_interval", 100)
+...
+
+1.6.9. repl_timer_expire (string)
+
+   Timer in seconds, used to specify when the counter received
+   from a different instance should no longer be taken into
+   account. This is used to prevent obsolete values, in case an
+   instance stops replicating its counters.
+
+   Default value is 10 s.
+
+   Example 1.9. Set repl_timer_expire parameter
+...
+modparam("ratelimit", "repl_timer_expire", 10)
+...
+
+1.6.10. replicate_pipes_to (string)
+
+   Used to specify the instances where the pipes should be
+   replicated. This parameter can be specified multiple times, for
+   each destination.
+
+   No default value. If not specified, nothing is replicated.
+
+   Example 1.10. Set replicate_pipes_to parameter
+...
+modparam("ratelimit", "replicate_pipes_to", "udp:127.0.0.1:5555")
+...
+
 1.7. Exported Functions
 
 1.7.1.  rl_check(name, limit[, algorithm])
@@ -335,7 +407,7 @@ modparam("ratelimit", "db_prefix", "ratelimit_")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.7. rl_check usage
+   Example 1.11. rl_check usage
 ...
         # perform a pipe match for all INVITE methods using RED algorith
 m
@@ -364,7 +436,7 @@ m
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.8. rl_dec_count usage
+   Example 1.12. rl_dec_count usage
 ...
         if (!rl_check("gw_$ru", "100", "TAILDROP")) {
                 exit;
@@ -383,7 +455,7 @@ m
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.9. rl_reset_count usage
+   Example 1.13. rl_reset_count usage
 ...
         if (!rl_check("gw_$ru", "100", "TAILDROP")) {
                 exit;
@@ -457,3 +529,24 @@ m
    MI FIFO Command Format:
                 :rl_get_pid:_reply_fifo_file_
                 _empty_line_
+
+1.8.5.  rl_bin_status
+
+   Dumps each destination used for replication, as well as the
+   timestamp of the last message received from them.
+
+   Name: rl_bin_status
+
+   Parameters: none
+
+   MI FIFO Command Format:
+                :rl_bin_status:_reply_fifo_file_
+                _empty_line_
+
+1.9. Exported pseudo-variables
+
+1.9.1. $rl_count(name)
+
+   Returns the counter of a pipe. The variable is read-only.
+
+   NULL will be returned if the pipe does not exist.

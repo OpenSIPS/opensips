@@ -470,7 +470,9 @@ int store_log_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
  ********************************************/
 
 /* caution: keys need to be aligned to core format */
+static db_key_t db_keys_cdrs[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 static db_key_t db_keys[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
+static db_val_t db_vals_cdrs[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 static db_val_t db_vals[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 
 
@@ -480,45 +482,51 @@ static void acc_db_init_keys(void)
 	int time_idx;
 	int i;
 	int n;
+	int m;
 
 	/* init the static db keys */
 	n = 0;
+	m = 0;
 	/* caution: keys need to be aligned to core format */
-	db_keys[n++] = &acc_method_col;
-	db_keys[n++] = &acc_fromtag_col;
-	db_keys[n++] = &acc_totag_col;
-	db_keys[n++] = &acc_callid_col;
-	db_keys[n++] = &acc_sipcode_col;
-	db_keys[n++] = &acc_sipreason_col;
-	db_keys[n++] = &acc_time_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_method_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_fromtag_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_totag_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_callid_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_sipcode_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_sipreason_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_time_col;
 	time_idx = n-1;
 
 	/* init the extra db keys */
 	for(extra=db_extra; extra ; extra=extra->next)
-		db_keys[n++] = &extra->name;
+		db_keys_cdrs[n++] = db_keys[m++] = &extra->name;
 	for(extra=db_extra_bye; extra ; extra=extra->next)
-		db_keys[n++] = &extra->name;
+		db_keys_cdrs[n++] = &extra->name;
 
 	/* multi leg call columns */
 	for( extra=leg_info ; extra ; extra=extra->next)
-		db_keys[n++] = &extra->name;
+		db_keys_cdrs[n++] = db_keys[m++] = &extra->name;
 	for( extra=leg_bye_info ; extra ; extra=extra->next)
-		db_keys[n++] = &extra->name;
+		db_keys_cdrs[n++] = &extra->name;
 
 	/* init the values */
 	for(i = 0; i < n; i++) {
+		VAL_TYPE(db_vals_cdrs + i)=DB_STR;
+		VAL_NULL(db_vals_cdrs + i)=0;
+	}
+	for(i = 0; i < m; i++) {
 		VAL_TYPE(db_vals + i)=DB_STR;
 		VAL_NULL(db_vals + i)=0;
 	}
-	VAL_TYPE(db_vals+time_idx)=DB_DATETIME;
+	VAL_TYPE(db_vals_cdrs+time_idx)=VAL_TYPE(db_vals+time_idx)=DB_DATETIME;
 
 	if (dlg_api.get_dlg) {
-		db_keys[n++] = &acc_setuptime_col;
-		db_keys[n++] = &acc_created_col;
-		db_keys[n++] = &acc_duration_col;
-		VAL_TYPE(db_vals + n-1) = DB_INT;
-		VAL_TYPE(db_vals + n-2) = DB_DATETIME;
-		VAL_TYPE(db_vals + n-3) = DB_INT;
+		db_keys_cdrs[n++] = db_keys[m++] = &acc_setuptime_col;
+		db_keys_cdrs[n++] = db_keys[m++] = &acc_created_col;
+		db_keys_cdrs[n++] = &acc_duration_col;
+		VAL_TYPE(db_vals_cdrs + n-1) = VAL_TYPE(db_vals+m-1) = DB_INT;
+		VAL_TYPE(db_vals_cdrs + n-2) = VAL_TYPE(db_vals+m-2) = DB_DATETIME;
+		VAL_TYPE(db_vals_cdrs + n-3) = DB_INT;
 	}
 
 }
@@ -614,9 +622,10 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	for( i++; i < m; i++)
 		VAL_STR(db_vals+i) = val_arr[i];
 
+	n = legs2strar(leg_info,rq,val_arr+m,1);
 	if (cdr_flag) {
-		VAL_INT(db_vals+(m++)) = _setup_time;
-		VAL_TIME(db_vals+(m++)) = _created;
+		VAL_INT(db_vals+(m+n)) = _setup_time;
+		VAL_TIME(db_vals+(m+n+1)) = _created;
 	}
 
 	acc_dbf.use_table(db_handle, &acc_env.text/*table*/);
@@ -624,20 +633,19 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 
 	/* multi-leg columns */
 	if ( !leg_info ) {
-		if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m) < 0 )
+		if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+(cdr_flag?2:0)) < 0 )
 			CON_RESET_INSLIST(db_handle);
-		if (acc_dbf.insert(db_handle, db_keys, db_vals, m) < 0) {
+		if (acc_dbf.insert(db_handle, db_keys, db_vals, m+(cdr_flag?2:0)) < 0) {
 			LM_ERR("failed to insert into database\n");
 			return -1;
 		}
 	} else {
-		n = legs2strar(leg_info,rq,val_arr+m,1);
 		do {
 			for ( i = m; i < m + n; i++)
 				VAL_STR(db_vals+i)=val_arr[i];
-			if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+n) < 0 )
+			if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+n+(cdr_flag?2:0)) < 0 )
 				CON_RESET_INSLIST(db_handle);
-			if (acc_dbf.insert(db_handle, db_keys, db_vals, m+n) < 0) {
+			if (acc_dbf.insert(db_handle, db_keys, db_vals, m+n+(cdr_flag?2:0)) < 0) {
 				LM_ERR("failed to insert into database\n");
 				return -1;
 			}
@@ -650,6 +658,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 {
 	int total, nr_vals, i, ret, res = -1, nr_bye_vals = 0, j;
+	int remaining_bye_vals;
 	time_t created, start_time;
 	str core_s, leg_s, extra_s, table;
 	short nr_legs;
@@ -689,27 +698,27 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	}
 
 	for (i=0;i<ACC_CORE_LEN;i++)
-		VAL_STR(db_vals+i) = val_arr[i];
+		VAL_STR(db_vals_cdrs+i) = val_arr[i];
 	for (i=ACC_CORE_LEN; i<ret; i++)
-		VAL_STR(db_vals+i+1) = val_arr[i];
+		VAL_STR(db_vals_cdrs+i+1) = val_arr[i];
 
 	if (leg_bye_info) {
 		nr_bye_vals = legs2strar(leg_bye_info, msg, val_arr+ret+nr_vals, 1);
 	}
 
-	VAL_TIME(db_vals+ACC_CORE_LEN) = start_time;
-	VAL_INT(db_vals+ret+nr_vals+nr_bye_vals+1) = start_time - created;
-	VAL_TIME(db_vals+ret+nr_vals+nr_bye_vals+2) = created;
-	VAL_INT(db_vals+ret+nr_vals+nr_bye_vals+3) = time(NULL) - start_time;
+	VAL_TIME(db_vals_cdrs+ACC_CORE_LEN) = start_time;
+	VAL_INT(db_vals_cdrs+ret+nr_vals+nr_bye_vals+1) = start_time - created;
+	VAL_TIME(db_vals_cdrs+ret+nr_vals+nr_bye_vals+2) = created;
+	VAL_INT(db_vals_cdrs+ret+nr_vals+nr_bye_vals+3) = time(NULL) - start_time;
 
 	total = ret + 4;
 	acc_dbf.use_table(db_handle, &table);
 	CON_PS_REFERENCE(db_handle) = &my_ps;
 
 	if (!leg_info && !leg_bye_info) {
-		if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total) < 0 )
+		if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys_cdrs,total) < 0 )
 			CON_RESET_INSLIST(db_handle);
-		if (acc_dbf.insert(db_handle, db_keys, db_vals, total) < 0) {
+		if (acc_dbf.insert(db_handle, db_keys_cdrs, db_vals_cdrs, total) < 0) {
 			LM_ERR("failed to insert into database\n");
 			goto end;
 		}
@@ -719,27 +728,27 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 		for (i=0;i<nr_legs;i++) {
 			complete_dlg_values(&leg_s,val_arr+ret,nr_vals);
 			 for (j = 0; j<nr_vals+nr_bye_vals; j++)
-				VAL_STR(db_vals+ret+j+1) = val_arr[ret+j];
-			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total+nr_bye_vals) < 0 )
+				VAL_STR(db_vals_cdrs+ret+j+1) = val_arr[ret+j];
+			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys_cdrs,total+nr_bye_vals) < 0 )
 				CON_RESET_INSLIST(db_handle);
-			if (acc_dbf.insert(db_handle,db_keys,db_vals,total+nr_bye_vals) < 0) {
+			if (acc_dbf.insert(db_handle,db_keys_cdrs,db_vals_cdrs,total+nr_bye_vals) < 0) {
 				LM_ERR("failed inserting into database\n");
 				goto end;
 			}
-			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
+			remaining_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
 		}
-		/* there were no Invite legs */
-		while (!nr_legs && nr_bye_vals) {
+		/* check if there is any other extra info */
+		while (remaining_bye_vals) {
 			/* drain all the values */
 			for (j = ret+nr_vals; j<ret+nr_bye_vals+nr_vals; j++)
-				VAL_STR(db_vals+j+1) = val_arr[j];
-			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total+nr_bye_vals) < 0 )
+				VAL_STR(db_vals_cdrs+j+1) = val_arr[j];
+			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys_cdrs,total+nr_bye_vals) < 0 )
 				CON_RESET_INSLIST(db_handle);
-			if (acc_dbf.insert(db_handle,db_keys,db_vals,total+nr_bye_vals) < 0) {
+			if (acc_dbf.insert(db_handle,db_keys_cdrs,db_vals_cdrs,total+nr_bye_vals) < 0) {
 				LM_ERR("failed inserting into database\n");
 				goto end;
 			}
-			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
+			remaining_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
 		}
 	}
 

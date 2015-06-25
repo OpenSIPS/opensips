@@ -42,6 +42,7 @@ struct cachedb_url
 typedef enum {
 	CDB_INT,
 	CDB_STR,
+	CDB_NULL,
 } cdb_raw_type_t;
 
 typedef struct {
