@@ -190,8 +190,9 @@ export cfg-target modules-target data-dir data-prefix data-target
 export INSTALL INSTALL_CFG INSTALL_BIN INSTALL_MODULES INSTALL_DOC INSTALL_MAN 
 export INSTALL_TOUCH
 
-tar_extra_args+=--exclude=$(notdir $(CURDIR))/tls* \
-	--exclude=$(notdir $(CURDIR))/etc/tls*
+# extra excludes for tar
+tar_extra_args+=
+
 # include the common rules
 include Makefile.rules
 
