@@ -28,6 +28,7 @@
 
 #include "../../sr_module.h"
 #include "../../evi/evi_transport.h"
+#include "../../mem/shm_mem.h"
 
 static int mod_init(void);
 static void destroy(void);
@@ -41,6 +42,13 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 					 evi_reply_sock *sock, evi_params_t * params);
 static void flat_free(evi_reply_sock *sock);
 static str flat_print(evi_reply_sock *sock);
+
+unsigned int *opened_fds;
+unsigned int *rotate_version;
+
+struct flat_socket **list_files;
+struct deleted **list_deleted_files;
+
 
 static mi_export_t mi_cmds[] = {
 	{ "rotate","make processes ",mi_rotate,MI_NO_INPUT_FLAG,0,0},
@@ -77,12 +85,36 @@ static evi_export_t trans_export_flat = {
 };
 
 
-static int mod_init(void){
+static int mod_init(void) {
+	LM_NOTICE("initializing module ...\n");
+
+	if (register_event_mod(&trans_export_flat)) {
+		LM_ERR("cannot register transport functions for SCRIPTROUTE\n");
+		return -1;
+	}
+
+	opened_fds = NULL;
+    rotate_version = NULL;
+
+	list_files =  shm_malloc(sizeof(struct flat_socket*));
+
+	if (!list_files) {
+		LM_ERR("no more memory for list pointer\n");
+		return -1;
+	}
+
+	list_deleted_files = shm_malloc(sizeof(struct deleted*));
+
+	if (!list_deleted_files) {
+		LM_ERR("no more memory for list pointer\n");
+		return -1;
+	}
+
 	return 0;
 }
 
 static void destroy(void){
-	return;
+	LM_NOTICE("destroying module ...\n");
 }
 static int child_init(int rank){
 	return 0;
