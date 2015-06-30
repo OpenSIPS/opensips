@@ -66,9 +66,16 @@ struct deleted **list_deleted_files;
 
 static gen_lock_t *global_lock;
 
+static int initial_capacity;
+
 static mi_export_t mi_cmds[] = {
 	{ "rotate","make processes ",mi_rotate,MI_NO_INPUT_FLAG,0,0},
 	{0,0,0,0,0,0}
+};
+
+static param_export_t mod_params[] = {
+	{"max_open_sockets",INT_PARAM, &initial_capacity},
+	{0,0,0}
 };
 
 struct module_exports exports= {
@@ -79,7 +86,7 @@ struct module_exports exports= {
 	NULL,            /* OpenSIPS module dependencies */
 	0,							/* exported functions */
 	0,							/* exported async functions */
-	0,							/* exported parameters */
+	mod_params,							/* exported parameters */
 	0,							/* exported statistics */
 	mi_cmds,							/* exported MI functions */
 	0,							/* exported pseudo-variables */
@@ -100,7 +107,7 @@ static evi_export_t trans_export_flat = {
 	FLAT_FLAG					/* flags */
 };
 
-
+/* initialize function */
 static int mod_init(void) {
 	LM_NOTICE("initializing module ...\n");
 
@@ -118,7 +125,10 @@ static int mod_init(void) {
 	buff_convert_len = 0;
 	io_param = NULL;
 	cap_params = 10;
-
+        if ( initial_capacity <= 0 || initial_capacity > 65535) {
+		LM_WARN("wrong maximum open sockets according to the modparam configuration\n");
+		initial_capacity = 100;
+	}
 
 	if (!list_files) {
 		LM_ERR("no more memory for list pointer\n");
@@ -131,17 +141,45 @@ static int mod_init(void) {
 		LM_ERR("no more memory for list pointer\n");
 		return -1;
 	}
-		global_lock = lock_alloc();
-		global_lock = lock_init(global_lock);
-		
-	return 0;
+	global_lock = lock_alloc();
+	global_lock = lock_init(global_lock);
+        
+        /*
+        opened_fds = pkg_malloc(initial_capacity * sizeof(int));
+        rotate_version = pkg_malloc(initial_capacity * sizeof(int));
+        */	
+	
+        return 0;
 }
 
+/* free allocated memory */
 static void destroy(void){
 	LM_NOTICE("destroying module ...\n");
+        /* lock destroy and deallocate */
 	lock_destroy(global_lock);
 	lock_dealloc(global_lock);
+        /* free opened file descriptors list */
+        pkg_free(opened_fds);
+        /* free rotate version list */
+        pkg_free(rotate_version);
+        /* free io_params structure used for raise event */
+        pkg_free(io_param);
+        /* free buffer used for raise event */
+        pkg_free(buff);
+        /* free file descriptors list from shared memory */
+        struct flat_socket* list_header = *list_files;
+        while(list_header!=NULL){
+            struct flat_socket* tmp = list_header;
+            list_header = list_header->next;
+            shm_free(tmp->path.s);
+            shm_free(tmp);
+        }
+        shm_free(list_files);
+        /* free deleted files from shared memory */
+        shm_free(list_deleted_files);
 }
+
+/* it does not do nothing */
 static int child_init(int rank){
 	return 0;
 }
@@ -153,6 +191,7 @@ static int str_cmp(str a , str b){
 	return 0;
 }
 
+/* search for a file descriptor using the file's path */
 static struct flat_socket *search_for_fd(str value){
 	struct flat_socket *list = *list_files;
 	while(list!=NULL){
@@ -462,6 +501,8 @@ static void flat_free(evi_reply_sock *sock) {
 	head = new;
 
 	lock_release(global_lock);
+        
+        verify_delete();
 
 }
 
@@ -475,7 +516,7 @@ static void verify_delete(void) {
 	struct deleted *head = *list_deleted_files;
 	struct deleted *aux, *prev, *tmp;
 
-	if (head != NULL)
+	if (head == NULL && opened_fds == NULL)
 		return;
 
 	lock_get(global_lock);
