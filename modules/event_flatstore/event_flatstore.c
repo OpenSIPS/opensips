@@ -33,6 +33,8 @@
 #include "../../sr_module.h"
 #include "../../evi/evi_transport.h"
 #include "../../mem/shm_mem.h"
+#include "../../locking.h"
+
 
 static int mod_init(void);
 static void destroy(void);
@@ -327,10 +329,71 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
     return 0;
 }
 
-static void flat_free(evi_reply_sock *sock){
-	return ;
+static void flat_free(evi_reply_sock *sock) {
+	struct deleted *head = *list_deleted_files;
+	struct deleted *new, *aux;
+
+	if(sock->params == NULL) {
+		LM_ERR("socket not found\n");
+	}
+
+	new = shm_malloc(sizeof(struct deleted));
+	new->socket = (struct flat_socket*)params;
+	new->next = NULL;
+
+	lock_get(global_lock);
+
+	if(head	!= NULL)
+		new->next = head;
+
+	head = new;
+
+	lock_release(global_lock);
+
 }
+
 static str flat_print(evi_reply_sock *sock){
+
     struct flat_socket * fs = (struct flat_socket *)sock->params;
     return fs->path;
+}
+
+static void verify_delete() {
+	struct deleted *head = *list_deleted_files;
+	struct deleted *aux, *prev, *tmp;
+
+	if (head != NULL)
+		return;
+	
+	lock_get(global_lock);
+
+	/* close fd if necessary */
+	aux = head;
+	prev = NULL;
+	while (aux != NULL) {
+		if(opened_fds[aux->socket->file_index_process] != -1) {
+			close(opened_fds[aux->socket->file_index_process]);
+			aux->socket->counter_open--;
+			opened_fds[aux->socket->file_index_process] = -1;
+		}
+
+		/* free file from lists if all other processes closed it */
+		if(aux->counter_open == 0) {
+			aux->socket->prev->next = aux->socket->next;
+			aux->socket->next->prev = aux->socket->prev;
+			shm_free(aux->socket->path->s);
+			shm_free(aux->socket);
+
+			if(prev	!= NULL)
+				prev->next = aux->next;
+			tmp = aux;
+			aux = aux->next;
+			shm_free(tmp);
+		} else {
+			prev = aux;
+			aux = aux->next;
+		}
+	}
+
+	lock_release(global_lock);
 }
