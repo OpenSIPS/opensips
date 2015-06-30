@@ -112,7 +112,7 @@ static int mod_init(void) {
 	opened_fds = NULL;
 	rotate_version = NULL;
 
-	list_files =  shm_malloc(sizeof(struct flat_socket*));
+	list_files =  shm_malloc(sizeof(struct flat_socket*) + sizeof(struct deleted*));
 	*list_files = NULL;
 	buff = NULL;
 	buff_convert_len = 0;
@@ -125,14 +125,21 @@ static int mod_init(void) {
 		return -1;
 	}
 
-	list_deleted_files = shm_malloc(sizeof(struct deleted*));
+	list_deleted_files = (struct deleted**)(list_files + 1);
 
-	if (!list_deleted_files) {
-		LM_ERR("no more memory for list pointer\n");
+	global_lock = lock_alloc();
+
+	if (global_lock == NULL) {
+		LM_ERR("Failed to allocate lock \n");
 		return -1;
 	}
-		global_lock = lock_alloc();
-		global_lock = lock_init(global_lock);
+
+	if (lock_init(global_lock) == NULL) {
+		LM_ERR("Failed to init lock \n");
+		return -1;
+	}
+
+	global_lock = lock_init(global_lock);
 		
 	return 0;
 }
@@ -173,8 +180,8 @@ static struct mi_root* mi_rotate(struct mi_root* root, void *param){
 	
 	/* sanity checks */
 	if (!return_root) {
-	LM_ERR("failed initializing MI return root tree\n");
-	return NULL;
+		LM_ERR("failed initializing MI return root tree\n");
+		return NULL;
 	}
 	if(!root){
 		LM_ERR("empty root tree\n");
@@ -200,12 +207,11 @@ static struct mi_root* mi_rotate(struct mi_root* root, void *param){
 	found_fd->rotate_version++;
 	lock_release(global_lock);
 	
-	
 	/* return a mi_root structure with a success return code*/
 	return return_root;
 }
 
-static int flat_match(evi_reply_sock *sock1, evi_reply_sock *sock2){
+static int flat_match (evi_reply_sock *sock1, evi_reply_sock *sock2) {
 	struct flat_socket *fs1;
 	struct flat_socket *fs2;
 	   
@@ -267,6 +273,7 @@ static void insert_in_list(struct flat_socket *entry){
 		return;
 	}
 
+	lock_release(global_lock);
 
 	LM_ERR("no more free sockets\n");		
 
@@ -296,8 +303,6 @@ static evi_reply_sock* flat_parse(str socket){
 	entry->rotate_version = 0;
 	entry->counter_open = 0;
 
-
-
 	sock = (evi_reply_sock *)((char*)(entry + 1) + socket.len + 1);
 	memset(sock, 0, sizeof(evi_reply_sock));
 	sock->address.s = (char *)(entry + 1);
@@ -316,6 +321,7 @@ static evi_reply_sock* flat_parse(str socket){
 static void rotating(struct flat_socket *fs){
 	int index = fs->file_index_process;
 	int rc;
+
 
 	lock_get(global_lock);
 	if(rotate_version[index] != fs->rotate_version && opened_fds[index] != -1){
