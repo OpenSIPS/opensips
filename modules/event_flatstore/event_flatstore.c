@@ -24,8 +24,12 @@
  */
 
 
-#include "event_flatstore.h"
+#include <fcntl.h>
+#include <unistd.h>
 
+#include "event_flatstore.h"
+#include "../../mem/mem.h"
+#include "../../locking.h"
 #include "../../sr_module.h"
 #include "../../evi/evi_transport.h"
 #include "../../mem/shm_mem.h"
@@ -49,6 +53,7 @@ unsigned int *rotate_version;
 struct flat_socket **list_files;
 struct deleted **list_deleted_files;
 
+static gen_lock_t *global_lock;
 
 static mi_export_t mi_cmds[] = {
 	{ "rotate","make processes ",mi_rotate,MI_NO_INPUT_FLAG,0,0},
@@ -109,7 +114,9 @@ static int mod_init(void) {
 		LM_ERR("no more memory for list pointer\n");
 		return -1;
 	}
-
+        global_lock = lock_alloc();
+        global_lock = lock_init(global_lock);
+        
 	return 0;
 }
 
@@ -120,25 +127,210 @@ static int child_init(int rank){
 	return 0;
 }
 
+/* compare two str values */
+static int str_cmp(str a , str b){
+    if(strcmp(a.s,b.s)==0 && a.len == b.len)
+        return 1;
+    return 0;
+}
+
+static struct flat_socket *search_for_fd(str value){
+    struct flat_socket *list = *list_files;
+    while(list!=NULL){
+        if(str_cmp(list->path, value)){
+            /* file descriptor found */
+            return list;
+        }
+        list = list->next;
+    }
+    /* file descriptor not found */
+    return NULL;
+}
+
+
 static struct mi_root* mi_rotate(struct mi_root* root, void *param){
-	return 0;
+    int rc;
+    
+    struct mi_root *return_root = init_mi_tree( 200, MI_SSTR(MI_OK));
+    
+    /* sanity checks */
+    if (!return_root) {
+	LM_ERR("failed initializing MI return root tree\n");
+	return NULL;
+    }
+    if(!root){
+        LM_ERR("empty root tree\n");
+	return NULL;
+    }
+    if(root->node.value.s == NULL || root->node.value.len == 0){
+        LM_ERR("Missing value\n");
+	return NULL;
+    }
+    
+    /* search for a flat_socket structure that contains the file descriptor
+     * we need to rotate
+     */
+    lock_get(global_lock);
+    struct flat_socket *found_fd = search_for_fd(root->node.value);
+    
+    if(found_fd == NULL){
+        LM_ERR("Bad file descriptor\n");
+        lock_release(global_lock);
+	return NULL;
+    }
+    
+    found_fd->rotate_version++;
+    lock_release(global_lock);
+    /* updating the rotate version */
+    /*unsigned int index = found_fd->file_index_process;
+    if(found_fd->rotate_version != rotate_version[index]){
+        rotate_version[index] = found_fd->rotate_version; 
+    }else{
+        found_fd->rotate_version++;
+        rotate_version[index]++;
+    }
+    
+    /* verify that the socket is opened */
+    /*if(opened_fds[index]==-1){
+        LM_ERR("Socket not opened\n");
+	return NULL;
+    }
+    
+    
+    */
+    
+    /* return a mi_root structure with a success return code*/
+    return return_root;
 }
 
 static int flat_match(evi_reply_sock *sock1, evi_reply_sock *sock2){
-	return 0;
+    struct flat_socket *fs1;
+    struct flat_socket *fs2;
+       
+    if(sock1 != NULL && sock2 != NULL
+                && sock1->params != NULL && sock2->params != NULL){
+        
+        fs1 = (struct flat_socket *) sock1->params;
+        fs2 = (struct flat_socket *) sock2->params;
+        /* if the path is equal then the file descriptor structures are equal*/
+        return str_cmp(fs1->path, fs2->path);
+    }
+    /* not equal */
+    return 0;
 }
 static evi_reply_sock* flat_parse(str socket){
 	return 0;
 }
+
+static void rotating(struct flat_socket *fs){
+   int index = fs->file_index_process;
+   int rc;
+   
+   if(rotate_version[index] != fs->rotate_version){
+        
+       /* update version */
+        rotate_version[index] = fs->rotate_version;
+        
+        /* rotate */
+        rc = close(opened_fds[index]);
+        if(rc < 0){
+            LM_ERR("Closing socket error\n");
+            return;
+        }    
+        
+        opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, 0644);
+        if(opened_fds[index] < 0){
+            LM_ERR("Opening socket error\n");
+            return;
+        }
+        
+   }
+}
+
 static int flat_raise(struct sip_msg *msg, str* ev_name,
 					 evi_reply_sock *sock, evi_params_t * params){
-	return 0;
+    
+    flat_iov = pkg_malloc(IOV_LEN * sizeof(struct iovec));
+    struct flat_socket *fs = (struct flat_socket *)sock->params;
+    int index = fs->file_index_process;
+    int rc;
+    rotating(fs);
+    
+    int fd = opened_fds[index];
+    if(fd == -1){
+        LM_ERR("Bad file descriptor\n");
+        return -1;
+    }
+    //flat_iov = pkg_malloc(100 * sizoef(struct iovec));
+    char buffer[BUF_LEN];
+    str delim={",",1};
+    
+    int cnt = 0;
+    int max_len = IOV_LEN;
+    
+    flat_iov[cnt].iov_base= ev_name->s;
+    flat_iov[cnt].iov_len= ev_name->len;
+    cnt++;
+    //strncat(buffer,ev_name->s,ev_name->len);
+    
+    //write(fd, ev_name->s, ev_name->len);
+    //writev()
+    
+    evi_param_p param = params->first;
+ 
+    if(params == NULL){
+        while((rc = writev(fd, flat_iov, cnt))>0);
+        if(rc == -1){
+            LM_ERR("write error\n");
+            return -1;
+        }
+        return 0;
+    }
+    
+    
+    
+    
+    do{
+        if(cnt + 1 > max_len){
+            flat_iov = pkg_realloc(flat_iov,max_len * 2);
+            max_len = max_len * 2;
+        }
+        
+        flat_iov[cnt].iov_base= delim.s;
+        flat_iov[cnt].iov_len= delim.len;
+        cnt++;
+        
+        /* de gandit */
+        if(param->flags==EVI_INT_VAL){            
+            int len = strlen(buffer);
+            sprintf(buffer, "%s%d", buffer,param->val.n);
+            
+            flat_iov[cnt].iov_base = buffer + len;
+            flat_iov[cnt].iov_len = strlen(buffer) - len;
+            cnt++;
+        }else{
+            flat_iov[cnt].iov_base = param->val.s.s;
+            flat_iov[cnt].iov_len = param->val.s.len;
+            cnt++;
+        }
+        
+        param = param->next;
+        
+    }while(param != params->last);
+    
+    while((rc = writev(fd, flat_iov, cnt))>0);
+    if(rc == -1){
+        LM_ERR("write error\n");
+        return -1;
+    }
+    
+    return 0;
 }
 
 static void flat_free(evi_reply_sock *sock){
 	return ;
 }
 static str flat_print(evi_reply_sock *sock){
-	str ret = {0,0};
-	return ret;
+    struct flat_socket * fs = (struct flat_socket *)sock->params;
+    return fs->path;
 }
