@@ -14,8 +14,6 @@
 #define BUF_LEN 1024
 #define IOV_LEN 1024
 
-static struct iovec *flat_iov = 0;
-
 struct flat_socket {
     str path;
     unsigned int file_index_process;

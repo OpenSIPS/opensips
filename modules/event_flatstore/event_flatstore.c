@@ -34,6 +34,7 @@
 #include "../../evi/evi_transport.h"
 #include "../../mem/shm_mem.h"
 #include "../../locking.h"
+#include "../../ut.h"
 
 
 static int mod_init(void);
@@ -49,11 +50,16 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 static void flat_free(evi_reply_sock *sock);
 static str flat_print(evi_reply_sock *sock);
 
-unsigned int *opened_fds;
-unsigned int *rotate_version;
+static void verify_delete(void);
+
+int *opened_fds;
+int *rotate_version;
 int buff_convert_len;
+int cap_params;
 
 char *buff;
+static struct iovec *io_param ;
+
 
 struct flat_socket **list_files;
 struct deleted **list_deleted_files;
@@ -110,6 +116,9 @@ static int mod_init(void) {
 	*list_files = NULL;
 	buff = NULL;
 	buff_convert_len = 0;
+	io_param = NULL;
+	cap_params = 10;
+
 
 	if (!list_files) {
 		LM_ERR("no more memory for list pointer\n");
@@ -130,6 +139,8 @@ static int mod_init(void) {
 
 static void destroy(void){
 	LM_NOTICE("destroying module ...\n");
+	lock_destroy(global_lock);
+	lock_dealloc(global_lock);
 }
 static int child_init(int rank){
 	return 0;
@@ -137,7 +148,7 @@ static int child_init(int rank){
 
 /* compare two str values */
 static int str_cmp(str a , str b){
-	if(strcmp(a.s,b.s)==0 && a.len == b.len)
+	if(a.len == b.len && strncmp(a.s,b.s,a.len)==0)
 		return 1;
 	return 0;
 }
@@ -188,23 +199,7 @@ static struct mi_root* mi_rotate(struct mi_root* root, void *param){
 	
 	found_fd->rotate_version++;
 	lock_release(global_lock);
-	/* updating the rotate version */
-	/*unsigned int index = found_fd->file_index_process;
-	if(found_fd->rotate_version != rotate_version[index]){
-		rotate_version[index] = found_fd->rotate_version; 
-	}else{
-		found_fd->rotate_version++;
-		rotate_version[index]++;
-	}
 	
-	/* verify that the socket is opened */
-	/*if(opened_fds[index]==-1){
-		LM_ERR("Socket not opened\n");
-	return NULL;
-	}
-	
-	
-	*/
 	
 	/* return a mi_root structure with a success return code*/
 	return return_root;
@@ -226,17 +221,17 @@ static int flat_match(evi_reply_sock *sock1, evi_reply_sock *sock2){
 	return 0;
 }
 
-static void insert(struct flat_socket *entry){
+static void insert_in_list(struct flat_socket *entry){
 	struct flat_socket *head = *list_files, *aux, *parent = NULL;
 	int expected = CAPACITY - 1; 
 
-	lock_get(gen_lock);
+	lock_get(global_lock);
 	if (head == NULL) {
 		entry->file_index_process = 0;
 		*list_files = entry;
 		entry->prev = NULL;
 		entry->next = NULL;
-		lock_release(gen_lock);
+		lock_release(global_lock);
 		return;
 	}
 
@@ -246,7 +241,7 @@ static void insert(struct flat_socket *entry){
 		entry->next = head;
 		head->prev = entry;
 		*list_files = entry;
-		lock_release(gen_lock);
+		lock_release(global_lock);
 		return;
 	}
 
@@ -256,8 +251,8 @@ static void insert(struct flat_socket *entry){
 			entry->prev = aux->prev;
 			entry->next = aux;
 			aux->prev =entry;
-			entr->prev->next = entry;
-			lock_release(gen_lock);
+			entry->prev->next = entry;
+			lock_release(global_lock);
 			return;
 		}
 		parent = aux;
@@ -268,7 +263,7 @@ static void insert(struct flat_socket *entry){
 		entry->prev = parent;
 		entry->next = NULL;
 		parent->next = entry;
-		lock_release(gen_lock);
+		lock_release(global_lock);
 		return;
 	}
 
@@ -280,7 +275,6 @@ static void insert(struct flat_socket *entry){
 static evi_reply_sock* flat_parse(str socket){
 	evi_reply_sock *sock;
 	struct flat_socket* entry;
-	int full_vec = 0;
 
 	if(!socket.s || !socket.len){
 		LM_ERR("no socket specified\n");
@@ -294,13 +288,13 @@ static evi_reply_sock* flat_parse(str socket){
 	}
 	entry->path.s = (char *)(entry + 1);
 	entry->path.len = socket.len + 1;
-	memcpy(entry->address.s, socket.s, socket.len);
-	entry->address.s[socket.len] = '\0';
+	memcpy(entry->path.s, socket.s, socket.len);
+	entry->path.s[socket.len] = '\0';
 
 	insert_in_list(entry);
 	
 	entry->rotate_version = 0;
-	entry->counter_version = 0;
+	entry->counter_open = 0;
 
 
 
@@ -316,19 +310,55 @@ static evi_reply_sock* flat_parse(str socket){
 	return 0;
 }
 
+/*  check if the local 'version' of the file descriptor asociated with entry fs
+	is different from the global version, if it is different reopen the file
+*/
+static void rotating(struct flat_socket *fs){
+	int index = fs->file_index_process;
+	int rc;
+
+	lock_get(global_lock);
+	if(rotate_version[index] != fs->rotate_version && opened_fds[index] != -1){
+		
+	   /* update version */
+		rotate_version[index] = fs->rotate_version;
+		lock_release(global_lock);
+
+		/* rotate */
+		rc = close(opened_fds[index]);
+		if(rc < 0){
+			LM_ERR("Closing socket error\n");
+			return;
+		}
+		
+		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, 0644);
+		if(opened_fds[index] < 0){
+			LM_ERR("Opening socket error\n");
+			return;
+		}
+		
+	} else {
+		lock_release(global_lock);
+	}
+}
+
 static int flat_raise(struct sip_msg *msg, str* ev_name,
 					 evi_reply_sock *sock, evi_params_t *params){
 
-	int SIZE = 1024, cap_params = 10, idx = 0, offset_buff = 0, tmp, 
-		required_length, nwritten;
+	int idx = 0, offset_buff = 0, tmp, 
+		required_length = 0, nwritten;
 	char delim = ',', points = ':', equals = '=';
 	char delim_len = 1;
-	struct iovec *io_param;
 	evi_param_p param;
-	struct flat_socket *entry = (struct flat_socket*) sock->param;
+	struct flat_socket *entry = (struct flat_socket*) sock->params;
+	int index = entry->file_index_process;
 
-	//check version
-	//check deleted
+	verify_delete();
+
+	if(opened_fds[index] == -1)
+		return -1;
+
+	rotating(entry);
 
 	if(!sock || !(sock->params)){
 		LM_ERR("invalid socket specification\n");
@@ -336,10 +366,10 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 	}
 
 	
-	
-	io_param = pkg_malloc(cap_params * sizeof(struct iovec));
+	if(io_param == NULL)
+		io_param = pkg_malloc(cap_params * sizeof(struct iovec));
 
-	if(ev_name && ev_name.s){
+	if(ev_name && ev_name->s){
 		io_param[idx].iov_base = ev_name->s;
 		io_param[idx].iov_len = ev_name->len;
 		idx++;
@@ -361,7 +391,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 			buff_convert_len = required_length;
 		}
 
-		memset(buff, 0, SIZE);
+		memset(buff, 0, buff_convert_len);
 		
 		for (param = params->first; param; param = param->next) {
 
@@ -396,36 +426,19 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 		}
 	}
 
-	nwritten = writev(opened_fds[entry->file_index_process], iov, 2);
+
+	do {
+		nwritten = writev(opened_fds[entry->file_index_process], io_param, idx);
+	} while (nwritten < 0 && errno == EINTR);
+
+	
 
 	if(nwritten < 0){
 		LM_ERR("cannot write to socket\n");
 		return -1;
 	}
 
-static void rotating(struct flat_socket *fs){
-   int index = fs->file_index_process;
-   int rc;
-   
-   if(rotate_version[index] != fs->rotate_version){
-		
-	   /* update version */
-		rotate_version[index] = fs->rotate_version;
-		
-		/* rotate */
-		rc = close(opened_fds[index]);
-		if(rc < 0){
-			LM_ERR("Closing socket error\n");
-			return;
-		}    
-		
-		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, 0644);
-		if(opened_fds[index] < 0){
-			LM_ERR("Opening socket error\n");
-			return;
-		}
-		
-   }
+	return 0;
 }
 
 
