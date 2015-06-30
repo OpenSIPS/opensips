@@ -11,20 +11,24 @@
 #define CAPACITY 100
 #define DUMMY_PORT 10001
 
+#define BUF_LEN 1024
+#define IOV_LEN 1024
+
+static struct iovec *flat_iov = 0;
 
 struct flat_socket {
-	str path;
-	unsigned int file_index_process;
-	unsigned int counter_open;
-	unsigned int rotate_version;
-	struct flat_socket *next;
-	struct flat_socket *prev;
+    str path;
+    unsigned int file_index_process;
+    unsigned int counter_open;
+    unsigned int rotate_version;
+    struct flat_socket *next;
+    struct flat_socket *prev;
 
 };
 
 struct deleted {
-	struct flat_socket *socket;
-	struct deleted *next;
+    struct flat_socket *socket;
+    struct deleted *next;
 };
 
 
