@@ -59,7 +59,7 @@ static int *opened_fds;
 static int *rotate_version;
 static int buff_convert_len;
 static int cap_params;
-static str delimiter;
+static str delimiter; 
 static char *dirc;
 static int dir_size;
 
@@ -73,15 +73,19 @@ struct flat_deleted **list_deleted_files;
 static gen_lock_t *global_lock;
 
 static int initial_capacity;
+static str file_permissions;
+static mode_t file_permissions_oct;
 
 static mi_export_t mi_cmds[] = {
 	{ "evi_flat_rotate","rotates the files the module dumps events into",mi_rotate,0,0,0},
+	{ "evi_flat_rotate","rotates the files",mi_rotate,0,0,0},
 	{0,0,0,0,0,0}
 };
 
 static param_export_t mod_params[] = {
 	{"max_open_sockets",INT_PARAM, &initial_capacity},
 	{"delimiter",STR_PARAM, &delimiter.s},
+	{"file_permissions", STR_PARAM, &file_permissions.s},
 	{0,0,0}
 };
 
@@ -134,13 +138,13 @@ static int mod_init(void) {
 	cap_params = 10;
 	dirc = NULL;
 
-	if(!delimiter.s || !delimiter.len) {
+	if(!delimiter.s) {
 		delimiter.s = pkg_malloc(sizeof(char));
 		delimiter.s[0] = ',';
 		delimiter.len = 1;
 	} else {
 		delimiter.len = strlen(delimiter.s);
-		LM_DBG("The delimiter for separating columns in files was set at: %.*s\n", delimiter.len, delimiter.s);
+		LM_DBG("The delimiter for separating columns in files was set at %.*s\n", delimiter.len, delimiter.s);
 	}
 
     if ( initial_capacity <= 0 || initial_capacity > 65535) {
@@ -149,6 +153,19 @@ static int mod_init(void) {
 	} else {
 		LM_DBG("Number of files descriptors was set at %d\n", initial_capacity);
 	}
+
+	if (!file_permissions.s)
+		file_permissions_oct = 0644;
+	else {
+		char *endptr = NULL;
+		file_permissions_oct = strtol(file_permissions.s, &endptr, 8);
+		if (*endptr != '\0') {
+			LM_DBG("file permissions invalid\n");
+			file_permissions_oct = 0644;
+		}
+	}
+
+	LM_DBG("file permissions set to: %o\n", file_permissions_oct);
 
 	if (!list_files) {
 		LM_ERR("no more memory for list pointer\n");
@@ -451,7 +468,7 @@ static void rotating(struct flat_socket *fs){
 	lock_get(global_lock);
 
 	if(opened_fds[index] == -1){
-		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, 0644);
+		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
 		if(opened_fds[index] < 0){
 			LM_ERR("Opening socket error\n");
 			lock_release(global_lock);
@@ -478,7 +495,7 @@ static void rotating(struct flat_socket *fs){
 			return;
 		}
 		
-		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, 0644);
+		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
 		if(opened_fds[index] < 0){
 			LM_ERR("Opening socket error\n");
 			return;
