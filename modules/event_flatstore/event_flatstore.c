@@ -244,11 +244,11 @@ static struct mi_root* mi_rotate(struct mi_root* root, void *param){
 	}
 	if(!root){
 		LM_ERR("empty root tree\n");
-	return NULL;
+		return NULL;
 	}
 	if(root->node.value.s == NULL || root->node.value.len == 0){
 		LM_ERR("Missing value\n");
-	return NULL;
+		return NULL;
 	}
 	
 	/* search for a flat_socket structure that contains the file descriptor
@@ -260,11 +260,14 @@ static struct mi_root* mi_rotate(struct mi_root* root, void *param){
 	if(found_fd == NULL){
 		LM_ERR("Bad file descriptor\n");
 		lock_release(global_lock);
-	return NULL;
+		return NULL;
 	}
+	
+	LM_DBG("Found file descriptor and updating rotating version for %s\n",found_fd->path.s);
 	
 	found_fd->rotate_version++;
 	lock_release(global_lock);
+	
 	
 	/* return a mi_root structure with a success return code*/
 	return return_root;
@@ -449,6 +452,9 @@ static void rotating(struct flat_socket *fs){
 		}
 		rotate_version[index] = fs->rotate_version;
 		fs->counter_open++;
+		LM_DBG("Open file %s\n",fs->path.s);
+		LM_DBG("File %s is opened %d time\n", fs->path.s, fs->counter_open);
+		
 		lock_release(global_lock);
 		return;
 	}
@@ -471,6 +477,7 @@ static void rotating(struct flat_socket *fs){
 			LM_ERR("Opening socket error\n");
 			return;
 		}
+		LM_DBG("Rotating file %s\n",fs->path.s);
 		
 	} else {
 		lock_release(global_lock);
@@ -570,9 +577,10 @@ static void flat_free(evi_reply_sock *sock) {
 	if(sock->params == NULL) {
 		LM_ERR("socket not found\n");
 	}
-
+	
 	new = shm_malloc(sizeof(struct flat_deleted));
 	new->socket = (struct flat_socket*)sock->params;
+	LM_DBG("File %s is being deleted...\n",new->socket->path.s);
 	new->next = NULL;	
 
 	lock_get(global_lock);
@@ -615,7 +623,7 @@ static void verify_delete(void) {
 
 		/* free file from lists if all other processes closed it */
 		if(aux->socket->counter_open == 0) {
-
+			LM_DBG("File %s is deleted\n", aux->socket->path.s);
 			if(aux->socket->prev)
 				aux->socket->prev->next = aux->socket->next;
 			else
