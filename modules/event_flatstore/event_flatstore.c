@@ -75,7 +75,7 @@ static gen_lock_t *global_lock;
 static int initial_capacity;
 
 static mi_export_t mi_cmds[] = {
-	{ "rotate","make processes ",mi_rotate,MI_NO_INPUT_FLAG,0,0},
+	{ "evi_flat_rotate","rotates the files the module dumps events into",mi_rotate,0,0,0},
 	{0,0,0,0,0,0}
 };
 
@@ -238,33 +238,29 @@ static struct flat_socket *search_for_fd(str value){
 
 
 static struct mi_root* mi_rotate(struct mi_root* root, void *param){
-
-	struct mi_root *return_root = init_mi_tree( 200, MI_SSTR(MI_OK));
-	
 	/* sanity checks */
-	if (!return_root) {
-		LM_ERR("failed initializing MI return root tree\n");
-		return NULL;
-	}
-	if(!root){
+
+	if(!root || !root->node.kids){
 		LM_ERR("empty root tree\n");
-		return NULL;
+		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
 	}
-	if(root->node.value.s == NULL || root->node.value.len == 0){
+
+	if(root->node.kids->value.s == NULL || root->node.kids->value.len == 0){
 		LM_ERR("Missing value\n");
-		return NULL;
+		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
 	}
+
 	
 	/* search for a flat_socket structure that contains the file descriptor
 	 * we need to rotate
 	 */
 	lock_get(global_lock);
-	struct flat_socket *found_fd = search_for_fd(root->node.value);
+	struct flat_socket *found_fd = search_for_fd(root->node.kids->value);
 	
 	if(found_fd == NULL){
-		LM_ERR("Bad file descriptor\n");
+		LM_DBG("Not found path %*.s [lung : %d]\n",root->node.kids->value.len, root->node.kids->value.s, root->node.kids->value.len);
 		lock_release(global_lock);
-		return NULL;
+		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));;
 	}
 	
 	LM_DBG("Found file descriptor and updating rotating version for %s, to %d\n",found_fd->path.s, found_fd->rotate_version + 1);
@@ -274,7 +270,7 @@ static struct mi_root* mi_rotate(struct mi_root* root, void *param){
 	
 	
 	/* return a mi_root structure with a success return code*/
-	return return_root;
+	return init_mi_tree( 200, MI_SSTR(MI_OK));
 }
 
 static int flat_match (evi_reply_sock *sock1, evi_reply_sock *sock2) {
@@ -517,7 +513,6 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 		io_param = pkg_malloc(cap_params * sizeof(struct iovec));
 
 	if(ev_name && ev_name->s){
-		LM_DBG("raised event: %.*s", ev_name->len, ev_name->s);
 		io_param[idx].iov_base = ev_name->s;
 		io_param[idx].iov_len = ev_name->len;
 		idx++;
@@ -562,8 +557,6 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 				idx++;
 			}
 		}
-	} else {
-		LM_DBG("no parameters for raised event: %.*s", ev_name->len, ev_name->s);
 	}
 
 	io_param[idx].iov_base = &endline;
@@ -574,7 +567,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 		nwritten = writev(opened_fds[entry->file_index_process], io_param, idx);
 	} while (nwritten < 0 && errno == EINTR);
 
-	LM_DBG("raised event: %.*s has %d parameters", ev_name->len, ev_name->s, nr_params);
+	LM_DBG("raised event: %.*s has %d parameters\n", ev_name->len, ev_name->s, nr_params);
 
 	if(nwritten < 0){
 		LM_ERR("cannot write to socket\n");
