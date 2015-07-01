@@ -489,38 +489,41 @@ static void rotating(struct flat_socket *fs){
 }
 
 static int flat_raise(struct sip_msg *msg, str* ev_name,
-					 evi_reply_sock *sock, evi_params_t *params){
+					 evi_reply_sock *sock, evi_params_t *params) {
 
 	int idx = 0, offset_buff = 0, len, required_length = 0, nwritten;
 	evi_param_p param;
 	struct flat_socket *entry = (struct flat_socket*) sock->params;
 	char endline = '\n';
 	char *ptr_buff;
+	int nr_params = 0;
 
 	rotating(entry);
 
 	verify_delete();
 
-	if(!sock || !(sock->params)){
+	if(!sock || !(sock->params)) {
 		LM_ERR("invalid socket specification\n");
 		return -1;
 	}
 
-	
 	if(io_param == NULL)
 		io_param = pkg_malloc(cap_params * sizeof(struct iovec));
 
 	if(ev_name && ev_name->s){
+		LM_DBG("raised event: %.*s", ev_name->len, ev_name->s);
 		io_param[idx].iov_base = ev_name->s;
 		io_param[idx].iov_len = ev_name->len;
 		idx++;
 	}
 
-	if(params){
-		for (param = params->first; param; param = param->next) 
+	if(params) {
+		for (param = params->first; param; param = param->next) {
 			if (param->flags & EVI_INT_VAL){
 				required_length += INT2STR_MAX_LEN;
 			}
+			nr_params++;
+		}
 
 		if(buff == NULL || required_length > buff_convert_len){
 			buff = pkg_realloc(buff, required_length * sizeof(char) + 1);
@@ -553,6 +556,8 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 				idx++;
 			}
 		}
+	} else {
+		LM_DBG("no parameters for raised event: %.*s", ev_name->len, ev_name->s);
 	}
 
 	io_param[idx].iov_base = &endline;
@@ -563,7 +568,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 		nwritten = writev(opened_fds[entry->file_index_process], io_param, idx);
 	} while (nwritten < 0 && errno == EINTR);
 
-	
+	LM_DBG("raised event: %.*s has %d parameters", ev_name->len, ev_name->s, nr_params);
 
 	if(nwritten < 0){
 		LM_ERR("cannot write to socket\n");
