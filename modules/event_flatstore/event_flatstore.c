@@ -267,7 +267,7 @@ static struct mi_root* mi_rotate(struct mi_root* root, void *param){
 		return NULL;
 	}
 	
-	LM_DBG("Found file descriptor and updating rotating version for %s\n",found_fd->path.s);
+	LM_DBG("Found file descriptor and updating rotating version for %s, to %d\n",found_fd->path.s, found_fd->rotate_version + 1);
 	
 	found_fd->rotate_version++;
 	lock_release(global_lock);
@@ -463,7 +463,6 @@ static void rotating(struct flat_socket *fs){
 		}
 		rotate_version[index] = fs->rotate_version;
 		fs->counter_open++;
-		LM_DBG("Open file %s\n",fs->path.s);
 		LM_DBG("File %s is opened %d time\n", fs->path.s, fs->counter_open);
 		
 		lock_release(global_lock);
@@ -632,6 +631,7 @@ static void verify_delete(void) {
 	prev = NULL;
 	while (aux != NULL) {
 		if(opened_fds[aux->socket->file_index_process] != -1) {
+			LM_DBG("File %s is closed locally, open_counter is %d\n", aux->socket->path.s, aux->socket->counter_open - 1);
 			close(opened_fds[aux->socket->file_index_process]);
 			aux->socket->counter_open--;
 			opened_fds[aux->socket->file_index_process] = -1;
@@ -639,7 +639,7 @@ static void verify_delete(void) {
 
 		/* free file from lists if all other processes closed it */
 		if(aux->socket->counter_open == 0) {
-			LM_DBG("File %s is deleted\n", aux->socket->path.s);
+			LM_DBG("File %s is deleted globally, count open reached 0\n", aux->socket->path.s);
 			if(aux->socket->prev)
 				aux->socket->prev->next = aux->socket->next;
 			else
