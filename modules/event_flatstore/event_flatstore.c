@@ -26,6 +26,9 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <libgen.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "event_flatstore.h"
 #include "../../mem/mem.h"
@@ -52,11 +55,13 @@ static str flat_print(evi_reply_sock *sock);
 
 static void verify_delete(void);
 
-int *opened_fds;
-int *rotate_version;
-int buff_convert_len;
-int cap_params;
-str delimiter;
+static int *opened_fds;
+static int *rotate_version;
+static int buff_convert_len;
+static int cap_params;
+static str delimiter;
+static char *dirc;
+static int dir_size;
 
 char *buff;
 static struct iovec *io_param ;
@@ -127,6 +132,8 @@ static int mod_init(void) {
 	buff_convert_len = 0;
 	io_param = NULL;
 	cap_params = 10;
+	dirc = NULL;
+
 	if(!delimiter.s || !delimiter.len) {
 		delimiter.s = pkg_malloc(sizeof(char));
 		delimiter.s[0] = ',';
@@ -335,9 +342,10 @@ static int insert_in_list(struct flat_socket *entry){
 static evi_reply_sock* flat_parse(str socket){
 	evi_reply_sock *sock;
 	struct flat_socket* entry;
-	//struct stat st_buf;
+	struct stat st_buf;
 	struct flat_deleted *head = *list_deleted_files;
 	struct flat_deleted *aux, *tmp;
+	char *dname;
 
 	if(!socket.s || !socket.len){
 		LM_ERR("no socket specified\n");
@@ -346,8 +354,6 @@ static evi_reply_sock* flat_parse(str socket){
 
 	/* if not all processes finished closing the file
 	   find the structure and reuse it */
-	
-	
 	if(head){
 		if(str_cmp(socket, head->socket->path)){
 			*list_deleted_files = head->next;
@@ -376,6 +382,32 @@ static evi_reply_sock* flat_parse(str socket){
 	entry->path.len = socket.len;
 	memcpy(entry->path.s, socket.s, socket.len);
 	entry->path.s[socket.len] = '\0';
+
+	/* verify if the path is valid (not a directory) and a file can be created
+	*/
+	if(dirc == NULL || dir_size < (socket.len + 1)){
+		dirc = pkg_realloc(dirc, (socket.len + 1) * sizeof(char));
+		dir_size = socket.len + 1;
+	}
+
+	memcpy(dirc, entry->path.s, socket.len + 1);
+
+	dname = dirname(dirc);
+	
+	if(stat(dname, &st_buf) < 0){
+		LM_ERR("invalid directory name\n");
+		shm_free(entry);
+		return NULL;
+	}
+
+	memset(&st_buf, 0, sizeof(struct stat));
+
+
+	if(stat(entry->path.s, &st_buf) == 0 && S_ISDIR (st_buf.st_mode)){
+		LM_ERR("path is a directory\n");
+		shm_free(entry);
+		return NULL;
+	}
 
 	if (insert_in_list(entry) < 0) {
 		shm_free(entry);
