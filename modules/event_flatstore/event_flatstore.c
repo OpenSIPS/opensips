@@ -138,12 +138,16 @@ static int mod_init(void) {
 		delimiter.s = pkg_malloc(sizeof(char));
 		delimiter.s[0] = ',';
 		delimiter.len = 1;
-	} else
+	} else {
 		delimiter.len = strlen(delimiter.s);
+		LM_DBG("The delimiter for separating columns in files was set at: %.*s\n", delimiter.len, delimiter.s);
+	}
 
     if ( initial_capacity <= 0 || initial_capacity > 65535) {
 		LM_WARN("wrong maximum open sockets according to the modparam configuration\n");
 		initial_capacity = 100;
+	} else {
+		LM_DBG("Number of files descriptors was set at %d\n", initial_capacity);
 	}
 
 	if (!list_files) {
@@ -295,6 +299,7 @@ static int insert_in_list(struct flat_socket *entry){
 
 	lock_get(global_lock);
 	if (head == NULL) {
+		LM_DBG("Its the single entry in list [%*.s]\n", entry->path.len, entry->path.s);
 		entry->file_index_process = 0;
 		*list_files = entry;
 		entry->prev = NULL;
@@ -304,6 +309,7 @@ static int insert_in_list(struct flat_socket *entry){
 	}
 
 	if (head->file_index_process < initial_capacity - 1) {
+		LM_DBG("Inserting [%*.s] at the head of the list, index: [%d]\n", entry->path.len, entry->path.s, head->file_index_process + 1);
 		entry->file_index_process = head->file_index_process + 1;
 		entry->prev = NULL;
 		entry->next = head;
@@ -315,6 +321,7 @@ static int insert_in_list(struct flat_socket *entry){
 
 	for (aux = head; aux != NULL; aux = aux->next, expected--) {
 		if(aux->file_index_process != expected){
+			LM_DBG("Inserting [%*.s] in a gap, index: [%d]\n", entry->path.len, entry->path.s, expected);
 			entry->file_index_process = expected;
 			entry->prev = aux->prev;
 			entry->next = aux;
@@ -327,6 +334,7 @@ static int insert_in_list(struct flat_socket *entry){
 	}
 
 	if(expected != 0){
+		LM_DBG("Inserting [%*.s] at end of list, index: [%d]\n", entry->path.len, entry->path.s, expected);
 		entry->file_index_process = expected;
 		entry->prev = parent;
 		entry->next = NULL;
@@ -359,6 +367,7 @@ static evi_reply_sock* flat_parse(str socket){
 	   find the structure and reuse it */
 	if(head){
 		if(str_cmp(socket, head->socket->path)){
+			LM_DBG("Found structure at head of deleted list, reusing it [%*.s]\n", socket.len, socket.s);
 			*list_deleted_files = head->next;
 			entry = head->socket;
 			shm_free(head);
@@ -366,6 +375,7 @@ static evi_reply_sock* flat_parse(str socket){
 		} else {
 			for(aux = head; aux->next != NULL; aux=aux->next)
 				if(str_cmp(socket, aux->next->socket->path)){
+					LM_DBG("Found structure inside deleted list, reusing it [%*.s]\n", socket.len, socket.s);
 					tmp = aux->next;
 					aux->next = aux->next->next;
 					entry = tmp->socket;
@@ -381,6 +391,7 @@ static evi_reply_sock* flat_parse(str socket){
 		LM_ERR("not enough shared memory\n");
 		return NULL;
 	}
+
 	entry->path.s = (char *)(entry + 1);
 	entry->path.len = socket.len;
 	memcpy(entry->path.s, socket.s, socket.len);
@@ -485,38 +496,41 @@ static void rotating(struct flat_socket *fs){
 }
 
 static int flat_raise(struct sip_msg *msg, str* ev_name,
-					 evi_reply_sock *sock, evi_params_t *params){
+					 evi_reply_sock *sock, evi_params_t *params) {
 
 	int idx = 0, offset_buff = 0, len, required_length = 0, nwritten;
 	evi_param_p param;
 	struct flat_socket *entry = (struct flat_socket*) sock->params;
 	char endline = '\n';
 	char *ptr_buff;
+	int nr_params = 0;
 
 	rotating(entry);
 
 	verify_delete();
 
-	if(!sock || !(sock->params)){
+	if(!sock || !(sock->params)) {
 		LM_ERR("invalid socket specification\n");
 		return -1;
 	}
 
-	
 	if(io_param == NULL)
 		io_param = pkg_malloc(cap_params * sizeof(struct iovec));
 
 	if(ev_name && ev_name->s){
+		LM_DBG("raised event: %.*s", ev_name->len, ev_name->s);
 		io_param[idx].iov_base = ev_name->s;
 		io_param[idx].iov_len = ev_name->len;
 		idx++;
 	}
 
-	if(params){
-		for (param = params->first; param; param = param->next) 
+	if(params) {
+		for (param = params->first; param; param = param->next) {
 			if (param->flags & EVI_INT_VAL){
 				required_length += INT2STR_MAX_LEN;
 			}
+			nr_params++;
+		}
 
 		if(buff == NULL || required_length > buff_convert_len){
 			buff = pkg_realloc(buff, required_length * sizeof(char) + 1);
@@ -549,6 +563,8 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 				idx++;
 			}
 		}
+	} else {
+		LM_DBG("no parameters for raised event: %.*s", ev_name->len, ev_name->s);
 	}
 
 	io_param[idx].iov_base = &endline;
@@ -559,7 +575,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 		nwritten = writev(opened_fds[entry->file_index_process], io_param, idx);
 	} while (nwritten < 0 && errno == EINTR);
 
-	
+	LM_DBG("raised event: %.*s has %d parameters", ev_name->len, ev_name->s, nr_params);
 
 	if(nwritten < 0){
 		LM_ERR("cannot write to socket\n");
