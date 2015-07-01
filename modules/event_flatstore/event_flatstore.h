@@ -7,10 +7,6 @@
 #define FLAT_STR		{ FLAT_NAME, sizeof(FLAT_NAME) - 1}
 #define FLAT_FLAG (1<<25)
 
-
-#define CAPACITY 100
-#define DUMMY_PORT 10001
-
 #define BUF_LEN 1024
 #define IOV_LEN 1024
 
@@ -24,9 +20,9 @@ struct flat_socket {
 
 };
 
-struct deleted {
+struct flat_deleted {
     struct flat_socket *socket;
-    struct deleted *next;
+    struct flat_deleted *next;
 };
 
 
