@@ -78,7 +78,6 @@ static mode_t file_permissions_oct;
 
 static mi_export_t mi_cmds[] = {
 	{ "evi_flat_rotate","rotates the files the module dumps events into",mi_rotate,0,0,0},
-	{ "evi_flat_rotate","rotates the files",mi_rotate,0,0,0},
 	{0,0,0,0,0,0}
 };
 
@@ -452,6 +451,7 @@ static evi_reply_sock* flat_parse(str socket){
 
 	sock->flags |= EVI_PARAMS;
 	sock->flags |= EVI_ADDRESS;
+	sock->flags |= EVI_EXPIRE;
 
 	return sock;
 }
@@ -613,7 +613,7 @@ static void flat_free(evi_reply_sock *sock) {
 	if(head	!= NULL)
 		new->next = head;
 
-	head = new;
+	*list_deleted_files = new;
 
 	lock_release(global_lock);
         
