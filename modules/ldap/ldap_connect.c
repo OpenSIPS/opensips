@@ -117,6 +117,7 @@ int ldap_connect(char* _ld_name)
 	int rc;
 	int ldap_proto_version;
 	int req_cert_value;
+	char *errmsg;
 	struct ld_session* lds;
 	struct berval ldap_cred;
 	struct berval* ldap_credp;
@@ -273,16 +274,29 @@ int ldap_connect(char* _ld_name)
 				return -1;
 		}
 
-		int ret =
-		ldap_start_tls_s(lds->handle, NULL, NULL);
-		if (ret != LDAP_SUCCESS) {
-			LM_ERR("ERROR %d %s\n", ret, ldap_err2string(ret));
-			LM_ERR("cannot start tls! Check certificates and"
-				" keyfile path and access rights\n");
+		int ret = ldap_start_tls_s(lds->handle, NULL, NULL);
+
+		switch (ret) {
+		case LDAP_SUCCESS:
+			LM_INFO("Using StartTLS for session [%s]\n", _ld_name);
+
+			break;
+
+		case LDAP_CONNECT_ERROR:
+			ldap_get_option(lds->handle,
+						LDAP_OPT_DIAGNOSTIC_MESSAGE, (void *)&errmsg);
+			LM_ERR("ldap_Start_tls_s(): %s\n", errmsg);
+			ldap_memfree(errmsg);
+			ldap_unbind_ext_s(lds->handle, NULL, NULL);
+
+			return -1;
+
+		default:
+			LM_ERR("ldap_start_tls_s(): %s\n", ldap_err2string(ret));
+			ldap_unbind_ext_s(lds->handle, NULL,NULL);
 			return -1;
 		}
 
-		LM_INFO("Using StartTLS for session [%s]\n", _ld_name);
 	} else if (*lds->cacertfile || *lds->certfile || *lds->keyfile) {
 		LM_WARN("ldap_ca_certfile, ldap_cert_file and ldap_key_file"
 				" must be set in order to use StartTLS. "
