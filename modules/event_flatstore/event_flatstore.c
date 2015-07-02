@@ -23,7 +23,6 @@
  *  2015-06-20  created  
  */
 
-
 #include <fcntl.h>
 #include <unistd.h>
 #include <libgen.h>
@@ -39,21 +38,17 @@
 #include "../../locking.h"
 #include "../../ut.h"
 
-
 static int mod_init(void);
 static void destroy(void);
 static int child_init(int rank);
-
-static struct mi_root* mi_rotate(struct mi_root* root, void *param);
-
-static int flat_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
-static evi_reply_sock* flat_parse(str socket);
-static int flat_raise(struct sip_msg *msg, str* ev_name,
-					 evi_reply_sock *sock, evi_params_t * params);
+static void verify_delete(void);
 static void flat_free(evi_reply_sock *sock);
 static str flat_print(evi_reply_sock *sock);
-
-static void verify_delete(void);
+static int flat_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
+static evi_reply_sock* flat_parse(str socket);
+static struct mi_root* mi_rotate(struct mi_root* root, void *param);
+static int flat_raise(struct sip_msg *msg, str* ev_name,
+					 evi_reply_sock *sock, evi_params_t * params);
 
 static int *opened_fds;
 static int *rotate_version;
@@ -62,16 +57,11 @@ static int cap_params;
 static str delimiter; 
 static char *dirc;
 static int dir_size;
-
 static char *buff;
 static struct iovec *io_param ;
-
-
 static struct flat_socket **list_files;
 static struct flat_deleted **list_deleted_files;
-
 static gen_lock_t *global_lock;
-
 static int initial_capacity;
 static str file_permissions;
 static mode_t file_permissions_oct;
@@ -119,25 +109,27 @@ static evi_export_t trans_export_flat = {
 
 /* initialize function */
 static int mod_init(void) {
-	LM_NOTICE("initializing module ...\n");
-
-	if (register_event_mod(&trans_export_flat)) {
-		LM_ERR("cannot register transport functions for SCRIPTROUTE\n");
-		return -1;
-	}
 	int i;
+
 	opened_fds = NULL;
 	rotate_version = NULL;
-
-	list_files =  shm_malloc(sizeof(struct flat_socket*) + sizeof(struct flat_deleted*));
-	*list_files = NULL;
 	buff = NULL;
 	buff_convert_len = 0;
 	io_param = NULL;
 	cap_params = 20;
 	dirc = NULL;
 
-	if(!delimiter.s) {
+	LM_NOTICE("initializing module ...\n");
+
+	if (register_event_mod(&trans_export_flat)) {
+		LM_ERR("cannot register transport functions for SCRIPTROUTE\n");
+		return -1;
+	}
+
+	list_files =  shm_malloc(sizeof(struct flat_socket*) + sizeof(struct flat_deleted*));
+	*list_files = NULL;
+
+	if (!delimiter.s) {
 		delimiter.s = pkg_malloc(sizeof(char));
 		delimiter.s[0] = ',';
 		delimiter.len = 1;
@@ -146,12 +138,11 @@ static int mod_init(void) {
 		LM_DBG("The delimiter for separating columns in files was set at %.*s\n", delimiter.len, delimiter.s);
 	}
 
-    if ( initial_capacity <= 0 || initial_capacity > 65535) {
+    if (initial_capacity <= 0 || initial_capacity > 65535) {
 		LM_WARN("wrong maximum open sockets according to the modparam configuration\n");
 		initial_capacity = 100;
-	} else {
+	} else
 		LM_DBG("Number of files descriptors was set at %d\n", initial_capacity);
-	}
 
 	if (!file_permissions.s)
 		file_permissions_oct = 0644;
@@ -194,12 +185,12 @@ static int mod_init(void) {
 		opened_fds[i] = -1;
 
 	return 0;
-
 }
 
 /* free allocated memory */
 static void destroy(void){
 	LM_NOTICE("destroying module ...\n");
+
 	/* lock destroy and deallocate */
 	lock_destroy(global_lock);
 	lock_dealloc(global_lock);
@@ -207,7 +198,8 @@ static void destroy(void){
 	/* free file descriptors list from shared memory */
 	struct flat_socket* list_header = *list_files;
 	struct flat_socket* tmp;
-	while(list_header!=NULL){
+
+	while (list_header != NULL) {
 		tmp = list_header;
 		list_header = list_header->next;
 		shm_free(tmp);
@@ -216,7 +208,7 @@ static void destroy(void){
 	/* free deleted files from shared memory */
 	struct flat_deleted *deleted_header = *list_deleted_files;
 	struct flat_deleted *aux;
-	while(deleted_header!=NULL){
+	while (deleted_header != NULL) {
 		aux = deleted_header;
 		deleted_header = deleted_header->next;
 		shm_free(aux);
@@ -241,8 +233,8 @@ static int str_cmp(str a , str b){
 /* search for a file descriptor using the file's path */
 static struct flat_socket *search_for_fd(str value){
 	struct flat_socket *list = *list_files;
-	while(list!=NULL){
-		if(str_cmp(list->path, value)){
+	while (list != NULL) {
+		if (str_cmp(list->path, value)) {
 			/* file descriptor found */
 			return list;
 		}
@@ -252,39 +244,38 @@ static struct flat_socket *search_for_fd(str value){
 	return NULL;
 }
 
-
 static struct mi_root* mi_rotate(struct mi_root* root, void *param){
 	/* sanity checks */
 
-	if(!root || !root->node.kids){
+	if (!root || !root->node.kids) {
 		LM_ERR("empty root tree\n");
 		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
 	}
 
-	if(root->node.kids->value.s == NULL || root->node.kids->value.len == 0){
+	if (root->node.kids->value.s == NULL || root->node.kids->value.len == 0) {
 		LM_ERR("Missing value\n");
 		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
 	}
 
-	
 	/* search for a flat_socket structure that contains the file descriptor
 	 * we need to rotate
 	 */
 	lock_get(global_lock);
+
 	struct flat_socket *found_fd = search_for_fd(root->node.kids->value);
-	
-	if(found_fd == NULL){
+
+	if (found_fd == NULL) {
 		LM_DBG("Not found path %*.s [lung : %d]\n",root->node.kids->value.len, root->node.kids->value.s, root->node.kids->value.len);
 		lock_release(global_lock);
 		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));;
 	}
-	
+
 	LM_DBG("Found file descriptor and updating rotating version for %s, to %d\n",found_fd->path.s, found_fd->rotate_version + 1);
-	
+
 	found_fd->rotate_version++;
+
 	lock_release(global_lock);
-	
-	
+
 	/* return a mi_root structure with a success return code*/
 	return init_mi_tree( 200, MI_SSTR(MI_OK));
 }
@@ -293,11 +284,11 @@ static int flat_match (evi_reply_sock *sock1, evi_reply_sock *sock2) {
 	struct flat_socket *fs1;
 	struct flat_socket *fs2;
 	   
-	if(sock1 != NULL && sock2 != NULL
-				&& sock1->params != NULL && sock2->params != NULL){
-		
-		fs1 = (struct flat_socket *) sock1->params;
-		fs2 = (struct flat_socket *) sock2->params;
+	if (sock1 != NULL && sock2 != NULL
+			&& sock1->params != NULL && sock2->params != NULL) {
+
+		fs1 = (struct flat_socket *)sock1->params;
+		fs2 = (struct flat_socket *)sock2->params;
 		/* if the path is equal then the file descriptor structures are equal*/
 		return str_cmp(fs1->path, fs2->path);
 	}
@@ -305,11 +296,12 @@ static int flat_match (evi_reply_sock *sock1, evi_reply_sock *sock2) {
 	return 0;
 }
 
-static int insert_in_list(struct flat_socket *entry){
+static int insert_in_list(struct flat_socket *entry) {
 	struct flat_socket *head = *list_files, *aux, *parent = NULL;
-	int expected = initial_capacity - 1; 
+	int expected = initial_capacity - 1;
 
 	lock_get(global_lock);
+
 	if (head == NULL) {
 		LM_DBG("Its the single entry in list [%s]\n", entry->path.s);
 		entry->file_index_process = 0;
@@ -345,7 +337,7 @@ static int insert_in_list(struct flat_socket *entry){
 		parent = aux;
 	}
 
-	if(expected >= 0){
+	if (expected >= 0) {
 		LM_DBG("Inserting [%s] at end of list, index: [%d]\n", entry->path.s, expected);
 		entry->file_index_process = expected;
 		entry->prev = parent;
@@ -359,7 +351,6 @@ static int insert_in_list(struct flat_socket *entry){
 
 	LM_ERR("no more free sockets\n");	
 	return -1;	
-
 }
 
 static evi_reply_sock* flat_parse(str socket){
@@ -370,23 +361,23 @@ static evi_reply_sock* flat_parse(str socket){
 	struct flat_deleted *aux, *tmp;
 	char *dname;
 
-	if(!socket.s || !socket.len){
+	if (!socket.s || !socket.len) {
 		LM_ERR("no socket specified\n");
 		return NULL;
 	}
 
 	/* if not all processes finished closing the file
 	   find the structure and reuse it */
-	if(head){
-		if(str_cmp(socket, head->socket->path)){
+	if (head) {
+		if (str_cmp(socket, head->socket->path)) {
 			LM_DBG("Found structure at head of deleted list, reusing it [%s]\n", head->socket->path.s);
 			*list_deleted_files = head->next;
 			entry = head->socket;
 			shm_free(head);
 			return (evi_reply_sock *)((char*)(entry + 1) + socket.len + 1);
 		} else {
-			for(aux = head; aux->next != NULL; aux=aux->next)
-				if(str_cmp(socket, aux->next->socket->path)){
+			for (aux = head; aux->next != NULL; aux=aux->next)
+				if (str_cmp(socket, aux->next->socket->path)) {
 					LM_DBG("Found structure inside deleted list, reusing it [%s]\n", aux->next->socket->path.s);
 					tmp = aux->next;
 					aux->next = aux->next->next;
@@ -399,7 +390,7 @@ static evi_reply_sock* flat_parse(str socket){
 
 	entry = shm_malloc(sizeof(struct flat_socket) + socket.len + 1 + sizeof(evi_reply_sock));
 
-	if (!entry){
+	if (!entry) {
 		LM_ERR("not enough shared memory\n");
 		return NULL;
 	}
@@ -411,7 +402,7 @@ static evi_reply_sock* flat_parse(str socket){
 
 	/* verify if the path is valid (not a directory) and a file can be created
 	*/
-	if(dirc == NULL || dir_size < (socket.len + 1)){
+	if (dirc == NULL || dir_size < (socket.len + 1)) {
 		dirc = pkg_realloc(dirc, (socket.len + 1) * sizeof(char));
 		dir_size = socket.len + 1;
 	}
@@ -420,7 +411,7 @@ static evi_reply_sock* flat_parse(str socket){
 
 	dname = dirname(dirc);
 	
-	if(stat(dname, &st_buf) < 0){
+	if (stat(dname, &st_buf) < 0) {
 		LM_ERR("invalid directory name\n");
 		shm_free(entry);
 		return NULL;
@@ -428,8 +419,7 @@ static evi_reply_sock* flat_parse(str socket){
 
 	memset(&st_buf, 0, sizeof(struct stat));
 
-
-	if(stat(entry->path.s, &st_buf) == 0 && S_ISDIR (st_buf.st_mode)){
+	if (stat(entry->path.s, &st_buf) == 0 && S_ISDIR (st_buf.st_mode)) {
 		LM_ERR("path is a directory\n");
 		shm_free(entry);
 		return NULL;
@@ -463,13 +453,11 @@ static void rotating(struct flat_socket *fs){
 	int index = fs->file_index_process;
 	int rc;
 
-
-
 	lock_get(global_lock);
 
-	if(opened_fds[index] == -1){
+	if (opened_fds[index] == -1) {
 		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
-		if(opened_fds[index] < 0){
+		if (opened_fds[index] < 0) {
 			LM_ERR("Opening socket error\n");
 			lock_release(global_lock);
 			return;
@@ -477,13 +465,13 @@ static void rotating(struct flat_socket *fs){
 		rotate_version[index] = fs->rotate_version;
 		fs->counter_open++;
 		LM_DBG("File %s is opened %d time\n", fs->path.s, fs->counter_open);
-		
+
 		lock_release(global_lock);
 		return;
 	}
 
-	if(rotate_version[index] != fs->rotate_version && opened_fds[index] != -1){
-		
+	if (rotate_version[index] != fs->rotate_version && opened_fds[index] != -1) {
+
 	   /* update version */
 		rotate_version[index] = fs->rotate_version;
 		lock_release(global_lock);
@@ -494,17 +482,16 @@ static void rotating(struct flat_socket *fs){
 			LM_ERR("Closing socket error\n");
 			return;
 		}
-		
+
 		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
-		if(opened_fds[index] < 0){
+		if (opened_fds[index] < 0) {
 			LM_ERR("Opening socket error\n");
 			return;
 		}
 		LM_DBG("Rotating file %s\n",fs->path.s);
-		
-	} else {
+
+	} else
 		lock_release(global_lock);
-	}
 }
 
 static int flat_raise(struct sip_msg *msg, str* ev_name,
@@ -521,25 +508,24 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 
 	verify_delete();
 
-	if(!sock || !(sock->params)) {
+	if (!sock || !(sock->params)) {
 		LM_ERR("invalid socket specification\n");
 		return -1;
 	}
 
-	if(io_param == NULL)
+	if (io_param == NULL)
 		io_param = pkg_malloc(cap_params * sizeof(struct iovec));
 
-	if(ev_name && ev_name->s){
+	if (ev_name && ev_name->s) {
 		io_param[idx].iov_base = ev_name->s;
 		io_param[idx].iov_len = ev_name->len;
 		idx++;
 	}
 
-	if(params) {
+	if (params) {
 		for (param = params->first; param; param = param->next) {
-			if (param->flags & EVI_INT_VAL){
+			if (param->flags & EVI_INT_VAL)
 				required_length += INT2STR_MAX_LEN;
-			}
 			nr_params++;
 		}
 
@@ -549,11 +535,11 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 		}
 
 		memset(buff, 0, buff_convert_len);
-		
+
 		for (param = params->first; param; param = param->next) {
 
 			if(idx + 3 > cap_params){
-				pkg_realloc(io_param, cap_params * 2 * sizeof(struct iovec));
+				pkg_realloc(io_param, (cap_params + 20) * sizeof(struct iovec));
 				cap_params += 20;
 			}
 
@@ -586,7 +572,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 
 	LM_DBG("raised event: %.*s has %d parameters\n", ev_name->len, ev_name->s, nr_params);
 
-	if(nwritten < 0){
+	if (nwritten < 0){
 		LM_ERR("cannot write to socket\n");
 		return -1;
 	}
@@ -594,15 +580,14 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 	return 0;
 }
 
-
 static void flat_free(evi_reply_sock *sock) {
 	struct flat_deleted *head = *list_deleted_files;
 	struct flat_deleted *new;
 
-	if(sock->params == NULL) {
+	if (sock->params == NULL) {
 		LM_ERR("socket not found\n");
 	}
-	
+
 	new = shm_malloc(sizeof(struct flat_deleted));
 	new->socket = (struct flat_socket*)sock->params;
 	LM_DBG("File %s is being deleted...\n",new->socket->path.s);
@@ -616,13 +601,11 @@ static void flat_free(evi_reply_sock *sock) {
 	*list_deleted_files = new;
 
 	lock_release(global_lock);
-        
-    verify_delete();
 
+    verify_delete();
 }
 
 static str flat_print(evi_reply_sock *sock){
-
 	struct flat_socket * fs = (struct flat_socket *)sock->params;
 	return fs->path;
 }
@@ -640,7 +623,7 @@ static void verify_delete(void) {
 	aux = head;
 	prev = NULL;
 	while (aux != NULL) {
-		if(opened_fds[aux->socket->file_index_process] != -1) {
+		if (opened_fds[aux->socket->file_index_process] != -1) {
 			LM_DBG("File %s is closed locally, open_counter is %d\n", aux->socket->path.s, aux->socket->counter_open - 1);
 			close(opened_fds[aux->socket->file_index_process]);
 			aux->socket->counter_open--;
@@ -648,19 +631,19 @@ static void verify_delete(void) {
 		}
 
 		/* free file from lists if all other processes closed it */
-		if(aux->socket->counter_open == 0) {
+		if (aux->socket->counter_open == 0) {
 			LM_DBG("File %s is deleted globally, count open reached 0\n", aux->socket->path.s);
-			if(aux->socket->prev)
+			if (aux->socket->prev)
 				aux->socket->prev->next = aux->socket->next;
 			else
 				*list_files = aux->socket->next;
 
-			if(aux->socket->next)
+			if (aux->socket->next)
 				aux->socket->next->prev = aux->socket->prev;
 
 			shm_free(aux->socket);
 
-			if(prev	!= NULL)
+			if (prev != NULL)
 				prev->next = aux->next;
 			else
 				*list_deleted_files = aux->next;
