@@ -1106,6 +1106,7 @@ static int dlg_th_decode_callid(struct sip_msg *msg)
 	struct lump *del;
 	str new_callid;
 	int i,max_size;
+	char *p;
 
 	if (msg->callid == NULL) {
 		LM_ERR("Message with no callid\n");
@@ -1119,9 +1120,16 @@ static int dlg_th_decode_callid(struct sip_msg *msg)
 		return -1;
 	}
 
+	p = msg->callid->body.s + msg->callid->body.len - 1;
+	while (*p == '-') {
+		*p = '=';
+		p--;
+	}
+
 	new_callid.len = base64decode((unsigned char *)(new_callid.s),
 			(unsigned char *)(msg->callid->body.s + topo_hiding_prefix.len),
 			msg->callid->body.len - topo_hiding_prefix.len);
+	
 	for (i=0;i<new_callid.len;i++)
 		new_callid.s[i] ^= topo_hiding_seed.s[i%topo_hiding_seed.len];
 
@@ -1139,23 +1147,22 @@ static int dlg_th_decode_callid(struct sip_msg *msg)
 	}
 
 	return 0;
-
-	return 0;
 }
 
 static int dlg_th_encode_callid(struct sip_msg *msg)
 {
 	struct lump *del;
 	str new_callid;
-	int i;
+	int i,base64_enc_len;
+	char *p;
 
 	if (msg->callid == NULL) {
 		LM_ERR("Message with no callid\n");
 		return -1;
 	}
 
-	new_callid.len = calc_base64_encode_len(msg->callid->body.len);
-	new_callid.len += topo_hiding_prefix.len;
+	base64_enc_len = calc_base64_encode_len(msg->callid->body.len);
+	new_callid.len = base64_enc_len + topo_hiding_prefix.len;
 	new_callid.s = pkg_malloc(new_callid.len);
 	if (new_callid.s==NULL) {
 		LM_ERR("Failed to allocate callid len\n");
@@ -1173,6 +1180,11 @@ static int dlg_th_encode_callid(struct sip_msg *msg)
 
 	base64encode((unsigned char *)(new_callid.s+topo_hiding_prefix.len),
 		     (unsigned char *)(msg->callid->body.s),msg->callid->body.len);
+	p = new_callid.s+topo_hiding_prefix.len+base64_enc_len - 1;
+	while (*p == '=') {
+		*p = '-';
+		p++;
+	}
 
 	/* reset the callid back to original value - some might still need it ( eg. post script )
 	FIXME : use bigger buffer here ? mem vs cpu */
