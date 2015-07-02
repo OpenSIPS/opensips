@@ -63,12 +63,12 @@ static str delimiter;
 static char *dirc;
 static int dir_size;
 
-char *buff;
+static char *buff;
 static struct iovec *io_param ;
 
 
-struct flat_socket **list_files;
-struct flat_deleted **list_deleted_files;
+static struct flat_socket **list_files;
+static struct flat_deleted **list_deleted_files;
 
 static gen_lock_t *global_lock;
 
@@ -134,7 +134,7 @@ static int mod_init(void) {
 	buff = NULL;
 	buff_convert_len = 0;
 	io_param = NULL;
-	cap_params = 10;
+	cap_params = 20;
 	dirc = NULL;
 
 	if(!delimiter.s) {
@@ -311,7 +311,7 @@ static int insert_in_list(struct flat_socket *entry){
 
 	lock_get(global_lock);
 	if (head == NULL) {
-		LM_DBG("Its the single entry in list [%*.s]\n", entry->path.len, entry->path.s);
+		LM_DBG("Its the single entry in list [%s]\n", entry->path.s);
 		entry->file_index_process = 0;
 		*list_files = entry;
 		entry->prev = NULL;
@@ -321,7 +321,7 @@ static int insert_in_list(struct flat_socket *entry){
 	}
 
 	if (head->file_index_process < initial_capacity - 1) {
-		LM_DBG("Inserting [%*.s] at the head of the list, index: [%d]\n", entry->path.len, entry->path.s, head->file_index_process + 1);
+		LM_DBG("Inserting [%s] at the head of the list, index: [%d]\n",entry->path.s, head->file_index_process + 1);
 		entry->file_index_process = head->file_index_process + 1;
 		entry->prev = NULL;
 		entry->next = head;
@@ -333,7 +333,7 @@ static int insert_in_list(struct flat_socket *entry){
 
 	for (aux = head; aux != NULL; aux = aux->next, expected--) {
 		if(aux->file_index_process != expected){
-			LM_DBG("Inserting [%*.s] in a gap, index: [%d]\n", entry->path.len, entry->path.s, expected);
+			LM_DBG("Inserting [%s] in a gap, index: [%d]\n", entry->path.s, expected);
 			entry->file_index_process = expected;
 			entry->prev = aux->prev;
 			entry->next = aux;
@@ -345,8 +345,8 @@ static int insert_in_list(struct flat_socket *entry){
 		parent = aux;
 	}
 
-	if(expected != 0){
-		LM_DBG("Inserting [%*.s] at end of list, index: [%d]\n", entry->path.len, entry->path.s, expected);
+	if(expected >= 0){
+		LM_DBG("Inserting [%s] at end of list, index: [%d]\n", entry->path.s, expected);
 		entry->file_index_process = expected;
 		entry->prev = parent;
 		entry->next = NULL;
@@ -379,7 +379,7 @@ static evi_reply_sock* flat_parse(str socket){
 	   find the structure and reuse it */
 	if(head){
 		if(str_cmp(socket, head->socket->path)){
-			LM_DBG("Found structure at head of deleted list, reusing it [%*.s]\n", socket.len, socket.s);
+			LM_DBG("Found structure at head of deleted list, reusing it [%s]\n", head->socket->path.s);
 			*list_deleted_files = head->next;
 			entry = head->socket;
 			shm_free(head);
@@ -387,7 +387,7 @@ static evi_reply_sock* flat_parse(str socket){
 		} else {
 			for(aux = head; aux->next != NULL; aux=aux->next)
 				if(str_cmp(socket, aux->next->socket->path)){
-					LM_DBG("Found structure inside deleted list, reusing it [%*.s]\n", socket.len, socket.s);
+					LM_DBG("Found structure inside deleted list, reusing it [%s]\n", aux->next->socket->path.s);
 					tmp = aux->next;
 					aux->next = aux->next->next;
 					entry = tmp->socket;
@@ -554,7 +554,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 
 			if(idx + 3 > cap_params){
 				pkg_realloc(io_param, cap_params * 2 * sizeof(struct iovec));
-				cap_params *= 2;
+				cap_params += 20;
 			}
 
 			io_param[idx].iov_base = delimiter.s;

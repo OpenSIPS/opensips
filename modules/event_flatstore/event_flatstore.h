@@ -7,9 +7,6 @@
 #define FLAT_STR		{ FLAT_NAME, sizeof(FLAT_NAME) - 1}
 #define FLAT_FLAG (1<<25)
 
-#define BUF_LEN 1024
-#define IOV_LEN 1024
-
 struct flat_socket {
     str path;
     unsigned int file_index_process;
