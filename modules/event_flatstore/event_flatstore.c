@@ -543,7 +543,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 			nr_params++;
 		}
 
-		if(buff == NULL || required_length > buff_convert_len){
+		if (buff == NULL || required_length > buff_convert_len) {
 			buff = pkg_realloc(buff, required_length * sizeof(char) + 1);
 			buff_convert_len = required_length;
 		}
@@ -567,7 +567,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 				io_param[idx].iov_base = buff + offset_buff;
 				io_param[idx].iov_len = len;
 				offset_buff += len;
-
+				idx++;
 			} else if ((param->flags & EVI_STR_VAL) && param->val.s.len && param->val.s.s) {
 				io_param[idx].iov_base = param->val.s.s;
 				io_param[idx].iov_len = param->val.s.len;
