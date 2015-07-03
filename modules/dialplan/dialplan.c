@@ -74,6 +74,7 @@ static void dp_print_list(void);
 str default_param_s = str_init(DEFAULT_PARAM);
 str default_dp_partition = {NULL, 0};
 dp_param_p default_par2 = NULL;
+static str database_url = {NULL, 0};
 
 
 static param_export_t mod_params[]={
@@ -958,70 +959,64 @@ error:
 }
 
 /* creates an url string without password field*/
-static str db_get_url(const str* url){
-	str db_url;
+static void db_get_url(const str* url){
 	struct db_id* id = new_db_id(url);
-	str scheme_delimiter={"://",3};
-	str port_delimiter={":",1};
-	str host_delimiter={"@",1};
-	str database_delimiter={"/",1};
+	static str scheme_delimiter={"://",3};
+	static str port_delimiter={":",1};
+	static str host_delimiter={"@",1};
+	static str database_delimiter={"/",1};
 	str port;
 
 	/* allocate memory for the database url if necessary*/
-	db_url.len = 0;
+	database_url.len = 0;
 
 	/* sanity checks */
 	if (id == NULL)
-		return db_url;
+		return;
 
-	/* shortest DB_URL is s://a/b so we always need the scheme delimiter*/
+	database_url.s = pkg_realloc(database_url.s, url->len * sizeof(char));
+
+	if(database_url.s == NULL)
+		return;
+
+	/* shortest database_url is s://a/b so we always need the scheme delimiter*/
 	if (id->scheme != NULL) {
-		db_url.s = pkg_realloc(db_url.s,
-			db_url.len +strlen(id->scheme) + scheme_delimiter.len);
-		memcpy(db_url.s + db_url.len, id->scheme, strlen(id->scheme));
-		db_url.len += strlen(id->scheme);
-		memcpy(db_url.s + db_url.len, scheme_delimiter.s, scheme_delimiter.len);
-		db_url.len += scheme_delimiter.len;
+		memcpy(database_url.s + database_url.len, id->scheme, strlen(id->scheme));
+		database_url.len += strlen(id->scheme);
+		memcpy(database_url.s + database_url.len, scheme_delimiter.s, scheme_delimiter.len);
+		database_url.len += scheme_delimiter.len;
 	}
 
 	if (id->username != NULL) {
-		db_url.s = pkg_realloc(db_url.s, db_url.len + strlen(id->username));
-		memcpy(db_url.s + db_url.len, id->username, strlen(id->username));
-		db_url.len += strlen(id->username);	
+		memcpy(database_url.s + database_url.len, id->username, strlen(id->username));
+		database_url.len += strlen(id->username);
 	}
 
 	if (id->host != NULL) {
-		db_url.s = pkg_realloc(db_url.s,
-			db_url.len + strlen(id->host) + host_delimiter.len);
-		memcpy(db_url.s + db_url.len, host_delimiter.s, host_delimiter.len);
-		db_url.len += host_delimiter.len;
-		memcpy(db_url.s + db_url.len, id->host, strlen(id->host));
-		db_url.len += strlen(id->host);
+		memcpy(database_url.s + database_url.len, host_delimiter.s, host_delimiter.len);
+		database_url.len += host_delimiter.len;
+		memcpy(database_url.s + database_url.len, id->host, strlen(id->host));
+		database_url.len += strlen(id->host);
 	}
 
 	if (id->port > 0) {
 		port.s = int2str(id->port,&port.len);
-		db_url.s = pkg_realloc(db_url.s, db_url.len + port.len + port_delimiter.len);
-		memcpy(db_url.s + db_url.len, port_delimiter.s, port_delimiter.len);
-		db_url.len += port_delimiter.len;
-		memcpy(db_url.s + db_url.len, port.s, port.len);
-		db_url.len += port.len;
+		memcpy(database_url.s + database_url.len, port_delimiter.s, port_delimiter.len);
+		database_url.len += port_delimiter.len;
+		memcpy(database_url.s + database_url.len, port.s, port.len);
+		database_url.len += port.len;
 	}
 
 	if (id->database != NULL){
-		db_url.s = pkg_realloc(db_url.s, db_url.len +
-			strlen(id->database) + database_delimiter.len);
-		memcpy(db_url.s + db_url.len,
+		memcpy(database_url.s + database_url.len,
 			database_delimiter.s, database_delimiter.len);
-		db_url.len += database_delimiter.len;
-		memcpy(db_url.s + db_url.len, id->database, strlen(id->database));
-		db_url.len += strlen(id->database);
+		database_url.len += database_delimiter.len;
+		memcpy(database_url.s + database_url.len, id->database, strlen(id->database));
+		database_url.len += strlen(id->database);
 	}
 
 	/* free alocated memory */
 	free_db_id(id);
-
-	return db_url;
 }
 
 static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param)
@@ -1031,7 +1026,6 @@ static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param)
 	struct mi_node* root= NULL;
 	struct mi_attr* attr;
 	dp_connection_list_t *el;
-	str db_url;
 
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
@@ -1046,9 +1040,9 @@ static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param)
 			if( node == NULL) goto error;
 			attr = add_mi_attr(node, 0, "table", 5, el->table_name.s, el->table_name.len);
 			if(attr == NULL) goto error;
-			db_url = db_get_url(&el->db_url);
-			if(db_url.len == 0) goto error;
-			attr = add_mi_attr(node, 0, "db_url", 6, db_url.s, db_url.len);
+			db_get_url(&el->db_url);
+			if(database_url.len == 0) goto error;
+			attr = add_mi_attr(node, MI_DUP_VALUE, "db_url", 6, database_url.s, database_url.len);
 			if(attr == NULL) goto error;
 			el = el->next;
 		}
@@ -1060,9 +1054,9 @@ static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param)
 		if( node == NULL) goto error;
 		attr = add_mi_attr(node, 0, "table", 5, el->table_name.s, el->table_name.len);
 		if(attr == NULL) goto error;
-		db_url = db_get_url(&el->db_url);
-		if(db_url.len == 0) goto error;
-		attr = add_mi_attr(node, 0, "db_url", 6, db_url.s, db_url.len);
+		db_get_url(&el->db_url);
+		if(database_url.len == 0) goto error;
+		attr = add_mi_attr(node, MI_DUP_VALUE, "db_url", 6, database_url.s, database_url.len);
 		if(attr == NULL) goto error;
 	}
 
