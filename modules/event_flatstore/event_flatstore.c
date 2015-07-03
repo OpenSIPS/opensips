@@ -20,7 +20,7 @@
  *
  * history:
  * ---------
- *  2015-06-20  created  
+ *  2015-06-20  created  by Ionel Cerghit, Robert-Vladut Patrascu, Marius Cristian Eseanu
  */
 
 #include <fcntl.h>
@@ -189,6 +189,11 @@ static int mod_init(void) {
 
 /* free allocated memory */
 static void destroy(void){
+	struct flat_socket* list_header = *list_files;
+	struct flat_socket* tmp;
+	struct flat_deleted *deleted_header = *list_deleted_files;
+	struct flat_deleted *aux;
+
 	LM_NOTICE("destroying module ...\n");
 
 	/* lock destroy and deallocate */
@@ -196,9 +201,6 @@ static void destroy(void){
 	lock_dealloc(global_lock);
 
 	/* free file descriptors list from shared memory */
-	struct flat_socket* list_header = *list_files;
-	struct flat_socket* tmp;
-
 	while (list_header != NULL) {
 		tmp = list_header;
 		list_header = list_header->next;
@@ -206,8 +208,6 @@ static void destroy(void){
 	}
 
 	/* free deleted files from shared memory */
-	struct flat_deleted *deleted_header = *list_deleted_files;
-	struct flat_deleted *aux;
 	while (deleted_header != NULL) {
 		aux = deleted_header;
 		deleted_header = deleted_header->next;
