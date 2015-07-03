@@ -92,7 +92,8 @@ static int compute_next_hop(ucontact_t *contact)
 /*! \brief
  * Create a new contact structure
  */
-ucontact_t* new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
+ucontact_t* new_ucontact(str* _dom, str* _aor, str* _contact,
+							unsigned int label, ucontact_info_t* _ci)
 {
 	ucontact_t *c;
 
@@ -134,6 +135,7 @@ ucontact_t* new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _
 	c->cflags = _ci->cflags;
 	c->methods = _ci->methods;
 	c->last_modified = _ci->last_modified;
+	c->label = label;
 
 	if (compute_next_hop(c) != 0) {
 		LM_ERR("failed to resolve next hop\n");
