@@ -289,6 +289,7 @@ extern char *finame;
 %token XLOG
 %token XLOG_BUF_SIZE
 %token XLOG_FORCE_COLOR
+%token XLOG_DEFAULT_LEVEL
 %token RAISE_EVENT
 %token SUBSCRIBE_EVENT
 %token CONSTRUCT_URI
@@ -868,8 +869,10 @@ assign_stm: DEBUG EQUAL snumber {
 		| USER_AGENT_HEADER EQUAL error { yyerror("string value expected"); }
 		| XLOG_BUF_SIZE EQUAL NUMBER { xlog_buf_size = $3; }
 		| XLOG_FORCE_COLOR EQUAL NUMBER { xlog_force_color = $3; }
+		| XLOG_DEFAULT_LEVEL EQUAL NUMBER { xlog_default_level = $3; }
 		| XLOG_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| XLOG_FORCE_COLOR EQUAL error { yyerror("boolean value expected"); }
+		| XLOG_DEFAULT_LEVEL EQUAL error { yyerror("number expected"); }
 		| LISTEN EQUAL listen_def {
 							if (add_listener($3, 0)!=0){
 								LM_CRIT("cfg. parser: failed"
