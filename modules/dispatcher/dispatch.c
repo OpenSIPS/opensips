@@ -1368,6 +1368,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selecte
 	ds_dest_p dest = NULL;
 	ds_dest_p selected = NULL;
 	static ds_dest_p *sorted_set = NULL;
+	int rc;
 
 	if(msg==NULL) {
 		LM_ERR("bad parameters\n");
@@ -1589,13 +1590,19 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selecte
 
 	/* start pushing the destinations to SIP level */
 	cnt = 0;
-
+	rc = 1;
 	if(ds_select_ctl->set_destination
-		&& ds_update_dst(msg, &selected->dst_uri, selected->sock, ds_select_ctl->mode)!=0)
+		&& ((rc = ds_update_dst(msg, &selected->dst_uri, selected->sock, ds_select_ctl->mode)) != 0) )
 	{
 		LM_ERR("cannot set dst addr\n");
 		goto error;
 	}
+
+	if(rc == 0){
+		selected->chosen_count++;
+		LM_DBG("aici_intrat [%hu]\n", selected->chosen_count);
+	}
+
 
 	/* Save the selected destination for multilist failover */
 	if (selected_dst->uri.s != NULL) {
@@ -1745,7 +1752,7 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 	}
 
 	LM_DBG("using [%.*s]\n", avp_value.s.len, avp_value.s.s);
-	if(ds_update_dst(msg, &avp_value.s, sock, mode)!=0)
+	if( ds_update_dst(msg, &avp_value.s, sock, mode) != 0)
 	{
 		LM_ERR("cannot set dst addr\n");
 		return -1;
@@ -2054,6 +2061,11 @@ int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition)
 			else
 				attr = add_mi_attr (node, 0, "state",5, "Active", 6);
 
+			if(attr == NULL)
+				goto error;
+
+			p = int2str(list->dlist[j].chosen_count, &len);
+			attr = add_mi_attr (node, MI_DUP_VALUE, "first_hit_counter",17, p, len);
 			if(attr == NULL)
 				goto error;
 
