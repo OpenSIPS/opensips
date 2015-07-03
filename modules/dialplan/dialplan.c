@@ -976,8 +976,10 @@ static void db_get_url(const str* url){
 
 	database_url.s = pkg_realloc(database_url.s, url->len * sizeof(char));
 
-	if(database_url.s == NULL)
+	if (database_url.s == NULL) {
+		free_db_id(id);
 		return;
+	}
 
 	/* shortest database_url is s://a/b so we always need the scheme delimiter*/
 	if (id->scheme != NULL) {
