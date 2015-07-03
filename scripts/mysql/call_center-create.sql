@@ -54,3 +54,5 @@ CREATE TABLE cc_calls (
     CONSTRAINT unique_id UNIQUE (b2buaid)
 ) ENGINE=MyISAM;
 
+CREATE INDEX b2buaid_idx ON cc_calls (b2buaid);
+
