@@ -96,8 +96,10 @@ static inline int find_dlist(str* _n, dlist_t** _d)
 	return 1;
 }
 
-static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
-                                unsigned int part_idx, unsigned int part_max)
+
+static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
+		unsigned int flags, unsigned int part_idx,
+		unsigned int part_max, char zero_end)
 {
 	static char query_buf[512];
 	static str query_str;
@@ -108,7 +110,6 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 	db_res_t *res = NULL;
 	db_row_t *row;
 	db_val_t *val;
-	dlist_t *dom;
 	str uri, host, flag_list;
 	int i, no_rows = 10;
 	int now_len;
@@ -119,9 +120,9 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 	int needed;
 	int shortage = 0;
 
-	shortage = 0;
 	/* Reserve space for terminating 0000 */
-	len -= sizeof p_len;
+	if (zero_end)
+		*len -= sizeof p_len;
 
 	/* get the current time in DB format */
 	now_len = 25;
@@ -132,206 +133,205 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 
 	LM_DBG("buf: %p. flags: %d\n", buf, flags);
 
-	/* for each table */
-	for (dom = root; dom; dom = dom->next) {
-		if (db_check_table_version(&ul_dbf, ul_dbh, dom->d->name, UL_TABLE_VERSION))
-			goto error;
+	/* read the destinations */
+	if (ul_dbf.use_table(ul_dbh, d->name) < 0) {
+		LM_ERR("cannot select table \"%.*s\"\n", d->name->len,
+		       d->name->s);
+		goto error;
+	}
 
-		/* read the destinations */
-		if (ul_dbf.use_table(ul_dbh, dom->d->name) < 0) {
-			LM_ERR("cannot select table \"%.*s\"\n", dom->d->name->len,
-			       dom->d->name->s);
-			goto error;
-		}
-
-		i = snprintf(query_buf, sizeof query_buf, "select %.*s, %.*s, %.*s,"
+	i = snprintf(query_buf, sizeof query_buf, "select %.*s, %.*s, %.*s,"
 #ifdef ORACLE_USRLOC
-		" %.*s, %.*s from %s where %.*s > %.*s and mod(id, %u) = %u",
+	" %.*s, %.*s from %s where %.*s > %.*s and mod(id, %u) = %u",
 #else
-		" %.*s, %.*s from %s where %.*s > %.*s and id %% %u = %u",
+	" %.*s, %.*s from %s where %.*s > %.*s and id %% %u = %u",
 #endif
-			received_col.len, received_col.s,
-			contact_col.len, contact_col.s,
-			sock_col.len, sock_col.s,
-			cflags_col.len, cflags_col.s,
-			path_col.len, path_col.s,
-			dom->d->name->s,
-			expires_col.len, expires_col.s,
-			now_len, now_s,
-			part_max, part_idx);
+		received_col.len, received_col.s,
+		contact_col.len, contact_col.s,
+		sock_col.len, sock_col.s,
+		cflags_col.len, cflags_col.s,
+		path_col.len, path_col.s,
+		d->name->s,
+		expires_col.len, expires_col.s,
+		now_len, now_s,
+		part_max, part_idx);
 
-		LM_DBG("query: %.*s\n", (int)(sizeof query_buf), query_buf);
-		if (i >= sizeof query_buf) {
-			LM_ERR("DB query too long\n");
-			goto error;
-		}
+	LM_DBG("query: %.*s\n", (int)(sizeof query_buf), query_buf);
+	if (i >= sizeof query_buf) {
+		LM_ERR("DB query too long\n");
+		goto error;
+	}
 
-		query_str.s = query_buf;
-		query_str.len = i;
+	query_str.s = query_buf;
+	query_str.len = i;
 
-		if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
-			if (ul_dbf.raw_query(ul_dbh, &query_str, 0) < 0) {
-				LM_ERR("raw_query failed\n");
-				goto error;
-			}
-
-			no_rows = estimate_available_rows(20+128+20+128+64, 5);
-			if (no_rows == 0)
-				no_rows = 10;
-
-			LM_DBG("fetching %d rows\n", no_rows);
-
-			if (ul_dbf.fetch_result(ul_dbh, &res, no_rows) < 0) {
-				LM_ERR("Error fetching rows\n");
-				goto error;
-			}
-		} else if (ul_dbf.raw_query(ul_dbh, &query_str, &res) < 0) {
+	if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
+		if (ul_dbf.raw_query(ul_dbh, &query_str, 0) < 0) {
 			LM_ERR("raw_query failed\n");
 			goto error;
 		}
 
-		do {
-			for (i = 0; i < RES_ROW_N(res); i++) {
-				row = RES_ROWS(res) + i;
-				val = ROW_VALUES(row) + 3; /* cflags */
-				flag_list.s   = (char *)VAL_STRING(val);
-				flag_list.len = strlen(flag_list.s);
+		no_rows = estimate_available_rows(20+128+20+128+64, 5);
+		if (no_rows == 0)
+			no_rows = 10;
 
-				LM_DBG("contact cflags: '%.*s'\n", flag_list.len, flag_list.s);
+		LM_DBG("fetching %d rows\n", no_rows);
 
-				/* contact is not flagged at all */
-				if (flags && (val->nul || !flag_list.s))
-					continue;
-
-				dbflags = flag_list_to_bitmask(&flag_list,
-				                FLAG_TYPE_BRANCH, FLAG_DELIM);
-
-				LM_DBG("masks: param: %d --- %d :db\n", flags, dbflags);
-
-				/* check if contact flags match the given bitmask */
-				if ((dbflags & flags) != flags)
-					continue;
-
-				/* received */
-				p = (char*)VAL_STRING(ROW_VALUES(row));
-				if (VAL_NULL(ROW_VALUES(row)) || !p || !p[0]) {
-					/* contact */
-					p = (char*)VAL_STRING(ROW_VALUES(row) + 1);
-					if (VAL_NULL(ROW_VALUES(row) + 1) || !p || *p == '\0') {
-						LM_ERR("empty contact -> skipping\n");
-						continue;
-					}
-				}
-				p_len = strlen(p);
-
-				/* path */
-				p1 = (char*)VAL_STRING(ROW_VALUES(row) + 4);
-				if (VAL_NULL(ROW_VALUES(row) + 4) || !p1 || *p1 == '\0') {
-					p1 = NULL;
-					p1_len = 0;
-				} else
-					p1_len = strlen(p1);
-
-				needed = (int)(p_len + sizeof p_len + p1_len + sizeof p1_len +
-				               sizeof sock + sizeof dbflags + sizeof next_hop);
-
-				LM_DBG("len: %d, needed: %d\n", len, needed);
-
-				if (len < needed) {
-					shortage += needed;
-					continue;
-				}
-
-				/* determine and parse the URI of this contact's next hop */
-				if (p1_len > 0) {
-					/* send to first URI in path */
-					host.s   = p1;
-					host.len = p1_len;
-					if (get_path_dst_uri(&host, &uri) < 0) {
-						LM_ERR("failed to get dst_uri for Path\n");
-						continue;
-					}
-					if (parse_uri(uri.s, uri.len, &puri) < 0) {
-						LM_ERR("failed to parse path URI of next hop: '%*.s'\n",
-						        p1_len, p1);
-						return -1;
-					}
-				} else {
-					if (parse_uri(p, p_len, &puri) < 0) {
-						LM_ERR("failed to parse contact of next hop: '%*.s'\n",
-						        p_len, p);
-						return -1;
-					}
-				}
-
-				/* write received/contact */
-				memcpy(buf, &p_len, sizeof p_len);
-				buf += sizeof p_len;
-				memcpy(buf, p, p_len);
-				buf += p_len;
-
-				/* write path */
-				memcpy(buf, &p1_len, sizeof p1_len);
-				buf += sizeof p1_len;
-				memcpy(buf, p1, p1_len);
-				buf += p1_len;
-
-				/* sock */
-				p  = (char*)VAL_STRING(ROW_VALUES(row) + 2);
-				if (VAL_NULL(ROW_VALUES(row)+2) || !p || *p == '\0') {
-					sock = NULL;
-				} else {
-					if (parse_phostport(p, strlen(p), &host.s, &host.len,
-					    &port, &proto) != 0) {
-						LM_ERR("bad socket <%s>...ignoring\n", p);
-						sock = NULL;
-					} else {
-						sock = grep_sock_info(&host, (unsigned short)port, proto);
-						if (!sock)
-							LM_DBG("non-local socket <%s>...ignoring\n", p);
-					}
-				}
-
-				/* write sock and flags */
-				memcpy(buf, &sock, sizeof sock);
-				buf += sizeof sock;
-				memcpy(buf, &dbflags, sizeof dbflags);
-				buf += sizeof dbflags;
-
-				memset(&next_hop, 0, sizeof next_hop);
-				next_hop.port  = puri.port_no;
-				next_hop.proto = puri.proto;
-				next_hop.name  = puri.host;
-
-				/* write the next hop */
-				memcpy(buf, &next_hop, sizeof next_hop);
-				buf += sizeof next_hop;
-
-				len -= needed;
-			}
-
-			if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
-				if (ul_dbf.fetch_result(ul_dbh, &res, no_rows) < 0) {
-					LM_ERR("fetching rows (1)\n");
-					goto error;
-				}
-			} else
-				break;
-
-		} while (RES_ROW_N(res) > 0);
-
-		ul_dbf.free_result(ul_dbh, res);
+		if (ul_dbf.fetch_result(ul_dbh, &res, no_rows) < 0) {
+			LM_ERR("Error fetching rows\n");
+			goto error;
+		}
+	} else if (ul_dbf.raw_query(ul_dbh, &query_str, &res) < 0) {
+		LM_ERR("raw_query failed\n");
+		goto error;
 	}
 
+
+
+	do {
+		for (i = 0; i < RES_ROW_N(res); i++) {
+			row = RES_ROWS(res) + i;
+			val = ROW_VALUES(row) + 3; /* cflags */
+			flag_list.s   = (char *)VAL_STRING(val);
+			flag_list.len = strlen(flag_list.s);
+
+			LM_DBG("contact cflags: '%.*s'\n", flag_list.len, flag_list.s);
+
+			/* contact is not flagged at all */
+			if (flags && (val->nul || !flag_list.s))
+				continue;
+
+			dbflags = flag_list_to_bitmask(&flag_list,
+			                FLAG_TYPE_BRANCH, FLAG_DELIM);
+
+			LM_DBG("masks: param: %d --- %d :db\n", flags, dbflags);
+
+			/* check if contact flags match the given bitmask */
+			if ((dbflags & flags) != flags)
+				continue;
+
+			/* received */
+			p = (char*)VAL_STRING(ROW_VALUES(row));
+			if (VAL_NULL(ROW_VALUES(row)) || !p || !p[0]) {
+				/* contact */
+				p = (char*)VAL_STRING(ROW_VALUES(row) + 1);
+				if (VAL_NULL(ROW_VALUES(row) + 1) || !p || *p == '\0') {
+					LM_ERR("empty contact -> skipping\n");
+					continue;
+				}
+			}
+			p_len = strlen(p);
+
+			/* path */
+			p1 = (char*)VAL_STRING(ROW_VALUES(row) + 4);
+			if (VAL_NULL(ROW_VALUES(row) + 4) || !p1 || *p1 == '\0') {
+				p1 = NULL;
+				p1_len = 0;
+			} else
+				p1_len = strlen(p1);
+
+
+			needed = (int)(p_len + sizeof p_len + p1_len + sizeof p1_len +
+			               sizeof sock + sizeof dbflags + sizeof next_hop);
+
+			LM_DBG("len: %d, needed: %d\n", *len, needed);
+
+			if (*len < needed) {
+				shortage += needed;
+				continue;
+			}
+
+			/* determine and parse the URI of this contact's next hop */
+			if (p1_len > 0) {
+				/* send to first URI in path */
+				host.s   = p1;
+				host.len = p1_len;
+				if (get_path_dst_uri(&host, &uri) < 0) {
+					LM_ERR("failed to get dst_uri for Path\n");
+					continue;
+				}
+				if (parse_uri(uri.s, uri.len, &puri) < 0) {
+					LM_ERR("failed to parse path URI of next hop: '%*.s'\n",
+					        p1_len, p1);
+					return -1;
+				}
+			} else {
+				if (parse_uri(p, p_len, &puri) < 0) {
+					LM_ERR("failed to parse contact of next hop: '%*.s'\n",
+					        p_len, p);
+					return -1;
+				}
+			}
+
+			/* write received/contact */
+			memcpy(buf, &p_len, sizeof p_len);
+			buf += sizeof p_len;
+			memcpy(buf, p, p_len);
+			buf += p_len;
+
+			/* write path */
+			memcpy(buf, &p1_len, sizeof p1_len);
+			buf += sizeof p1_len;
+			memcpy(buf, p1, p1_len);
+			buf += p1_len;
+
+			/* sock */
+			p  = (char*)VAL_STRING(ROW_VALUES(row) + 2);
+			if (VAL_NULL(ROW_VALUES(row)+2) || !p || *p == '\0') {
+				sock = NULL;
+			} else {
+				if (parse_phostport(p, strlen(p), &host.s, &host.len,
+				    &port, &proto) != 0) {
+					LM_ERR("bad socket <%s>...ignoring\n", p);
+					sock = NULL;
+				} else {
+					sock = grep_sock_info(&host, (unsigned short)port, proto);
+					if (!sock)
+						LM_DBG("non-local socket <%s>...ignoring\n", p);
+				}
+			}
+
+			/* write sock and flags */
+			memcpy(buf, &sock, sizeof sock);
+			buf += sizeof sock;
+			memcpy(buf, &dbflags, sizeof dbflags);
+			buf += sizeof dbflags;
+
+			memset(&next_hop, 0, sizeof next_hop);
+			next_hop.port  = puri.port_no;
+			next_hop.proto = puri.proto;
+			next_hop.name  = puri.host;
+
+			/* write the next hop */
+			memcpy(buf, &next_hop, sizeof next_hop);
+			buf += sizeof next_hop;
+			memcpy(&next_hop, (char *)buf - sizeof next_hop, sizeof next_hop);
+
+
+			*len -= needed;
+		}
+
+		if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
+			if (ul_dbf.fetch_result(ul_dbh, &res, no_rows) < 0) {
+				LM_ERR("fetching rows (1)\n");
+				goto error;
+			}
+		} else
+			break;
+
+	} while (RES_ROW_N(res) > 0);
+
+	ul_dbf.free_result(ul_dbh, res);
+
 	/* len < 0 is possible, if size of the buffer < sizeof c->c.len */
-	if (len >= 0)
+	if (zero_end && *len >= 0)
 		memset(buf, 0, sizeof p_len);
 
 	/* Shouldn't happen */
-	if (shortage > 0 && len > shortage)
+	if (shortage > 0 && *len > shortage)
 		abort();
 
-	shortage -= len;
+	shortage -= *len;
 
 	return shortage > 0 ? shortage : 0;
 
@@ -341,11 +341,11 @@ error:
 	return -1;
 }
 
-
-static inline int get_all_mem_ucontacts(void *buf, int len, unsigned int flags,
-								unsigned int part_idx, unsigned int part_max)
+static inline int
+get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
+								unsigned int part_idx, unsigned int part_max,
+								char zero_end)
 {
-	dlist_t *p;
 	urecord_t *r;
 	ucontact_t *c;
 	void *cp;
@@ -358,119 +358,120 @@ static inline int get_all_mem_ucontacts(void *buf, int len, unsigned int flags,
 	cp = buf;
 	shortage = 0;
 	/* Reserve space for terminating 0000 */
-	len -= sizeof(c->c.len);
+	if (zero_end)
+		*len -= sizeof(c->c.len);
 
-	for (p = root; p != NULL; p = p->next) {
+	for(i=0; i<d->size; i++) {
 
-		for(i=0; i<p->d->size; i++) {
+		if ( (i % part_max) != part_idx )
+			continue;
 
-			if ( (i % part_max) != part_idx )
-				continue;
+		lock_ulslot( d, i);
+		count = map_size(d->table[i].records);
 
-			lock_ulslot( p->d, i);
-			count = map_size(p->d->table[i].records);
+		if( count <= 0 )
+		{
+			unlock_ulslot(d, i);
+			continue;
+		}
 
-			if( count <= 0 )
-			{
-				unlock_ulslot(p->d, i);
-				continue;
+		for ( map_first( d->table[i].records, &it);
+			iterator_is_valid(&it);
+			iterator_next(&it) ) {
+
+
+			dest = iterator_val(&it);
+			if( dest == NULL ) {
+				unlock_ulslot(d, i);
+				return -1;
 			}
-
-			for ( map_first( p->d->table[i].records, &it);
-				iterator_is_valid(&it);
-				iterator_next(&it) ) {
-
-
-				dest = iterator_val(&it);
-				if( dest == NULL ) {
-					unlock_ulslot(p->d, i);
-					return -1;
-				}
-				r =( urecord_t * ) *dest;
+			r =( urecord_t * ) *dest;
 
 
 
-				for (c = r->contacts; c != NULL; c = c->next) {
-					if (c->c.len <= 0)
-						continue;
-					/*
-					 * List only contacts that have all requested
-					 * flags set
-					 */
-					if ((c->cflags & flags) != flags)
-						continue;
+			for (c = r->contacts; c != NULL; c = c->next) {
+				if (c->c.len <= 0)
+					continue;
+				/*
+				 * List only contacts that have all requested
+				 * flags set
+				 */
+				if ((c->cflags & flags) != flags)
+					continue;
 
-					if (c->received.s) {
-						needed = (int)
-						          (sizeof(c->received.len) + c->received.len +
-						           sizeof(c->path.len) + c->path.len +
-						           sizeof(c->sock) + sizeof(c->cflags) +
-						           sizeof(c->next_hop));
+				if (c->received.s) {
+					needed = (int)
+					          (sizeof(c->received.len) + c->received.len +
+					           sizeof(c->path.len) + c->path.len +
+					           sizeof(c->sock) + sizeof(c->cflags) +
+					           sizeof(c->next_hop));
 
-						if (len >= needed) {
-							memcpy(cp,&c->received.len,sizeof(c->received.len));
-							cp = (char*)cp + sizeof(c->received.len);
-							memcpy(cp, c->received.s, c->received.len);
-							cp = (char*)cp + c->received.len;
-							memcpy(cp, &c->path.len, sizeof(c->path.len));
-							cp = (char*)cp + sizeof(c->path.len);
-							memcpy(cp, c->path.s, c->path.len);
-							cp = (char*)cp + c->path.len;
-							memcpy(cp, &c->sock, sizeof(c->sock));
-							cp = (char*)cp + sizeof(c->sock);
-							memcpy(cp, &c->cflags, sizeof(c->cflags));
-							cp = (char*)cp + sizeof(c->cflags);
-							memcpy(cp, &c->next_hop, sizeof(c->next_hop));
-							cp = (char*)cp + sizeof(c->next_hop);
-							len -= needed;
-						} else {
-							shortage += needed;
-						}
+					if (*len >= needed) {
+						memcpy(cp,&c->received.len,sizeof(c->received.len));
+						cp = (char*)cp + sizeof(c->received.len);
+						memcpy(cp, c->received.s, c->received.len);
+						cp = (char*)cp + c->received.len;
+						memcpy(cp, &c->path.len, sizeof(c->path.len));
+						cp = (char*)cp + sizeof(c->path.len);
+						memcpy(cp, c->path.s, c->path.len);
+						cp = (char*)cp + c->path.len;
+						memcpy(cp, &c->sock, sizeof(c->sock));
+						cp = (char*)cp + sizeof(c->sock);
+						memcpy(cp, &c->cflags, sizeof(c->cflags));
+						cp = (char*)cp + sizeof(c->cflags);
+						memcpy(cp, &c->next_hop, sizeof(c->next_hop));
+						cp = (char*)cp + sizeof(c->next_hop);
+
+						*len -= needed;
 					} else {
-						needed = (int)
-						          (sizeof(c->c.len) + c->c.len +
-						           sizeof(c->path.len) + c->path.len +
-						           sizeof(c->sock) + sizeof(c->cflags) +
-						           sizeof(c->next_hop));
+						shortage += needed;
+					}
+				} else {
+					needed = (int)
+					          (sizeof(c->c.len) + c->c.len +
+					           sizeof(c->path.len) + c->path.len +
+					           sizeof(c->sock) + sizeof(c->cflags) +
+					           sizeof(c->next_hop));
 
-						if (len >= needed) {
-							memcpy(cp, &c->c.len, sizeof(c->c.len));
-							cp = (char*)cp + sizeof(c->c.len);
-							memcpy(cp, c->c.s, c->c.len);
-							cp = (char*)cp + c->c.len;
-							memcpy(cp, &c->path.len, sizeof(c->path.len));
-							cp = (char*)cp + sizeof(c->path.len);
-							memcpy(cp, c->path.s, c->path.len);
-							cp = (char*)cp + c->path.len;
-							memcpy(cp, &c->sock, sizeof(c->sock));
-							cp = (char*)cp + sizeof(c->sock);
-							memcpy(cp, &c->cflags, sizeof(c->cflags));
-							cp = (char*)cp + sizeof(c->cflags);
-							memcpy(cp, &c->next_hop, sizeof(c->next_hop));
-							cp = (char*)cp + sizeof(c->next_hop);
-							len -= needed;
-						} else {
-							shortage += needed;
-						}
+					if (*len >= needed) {
+						memcpy(cp, &c->c.len, sizeof(c->c.len));
+						cp = (char*)cp + sizeof(c->c.len);
+						memcpy(cp, c->c.s, c->c.len);
+						cp = (char*)cp + c->c.len;
+						memcpy(cp, &c->path.len, sizeof(c->path.len));
+						cp = (char*)cp + sizeof(c->path.len);
+						memcpy(cp, c->path.s, c->path.len);
+						cp = (char*)cp + c->path.len;
+						memcpy(cp, &c->sock, sizeof(c->sock));
+						cp = (char*)cp + sizeof(c->sock);
+						memcpy(cp, &c->cflags, sizeof(c->cflags));
+						cp = (char*)cp + sizeof(c->cflags);
+						memcpy(cp, &c->next_hop, sizeof(c->next_hop));
+						cp = (char*)cp + sizeof(c->next_hop);
+
+						*len -= needed;
+					} else {
+						shortage += needed;
 					}
 				}
 			}
-			unlock_ulslot(p->d, i);
 		}
+		unlock_ulslot(d, i);
 	}
 	/* len < 0 is possible, if size of the buffer < sizeof(c->c.len) */
-	if (len >= 0)
+	if (zero_end && *len >= 0)
 		memset(cp, 0, sizeof(c->c.len));
 
 	/* Shouldn't happen */
-	if (shortage > 0 && len > shortage) {
+	if (shortage > 0 && *len > shortage) {
 		abort();
 	}
 
-	shortage -= len;
+	shortage -= *len;
 
 	return shortage > 0 ? shortage : 0;
 }
+
 
 
 
@@ -500,11 +501,79 @@ static inline int get_all_mem_ucontacts(void *buf, int len, unsigned int flags,
 int get_all_ucontacts(void *buf, int len, unsigned int flags,
 								unsigned int part_idx, unsigned int part_max)
 {
-	if (db_mode==DB_ONLY)
-		return get_all_db_ucontacts( buf, len, flags, part_idx, part_max);
-	else
-		return get_all_mem_ucontacts( buf, len, flags, part_idx, part_max);
+	dlist_t *p;
+	ucontact_t c;
+	int shortage=0;
+	int res, ini_len, cur_pos=0;
+
+
+	/* Reserve space for terminating 0000 */
+	len -= sizeof(c.c.len);
+
+	for (p = root; p != NULL; p = p->next) {
+		ini_len = len;
+		if (db_mode != DB_ONLY) {
+			shortage +=
+				get_domain_mem_ucontacts(p->d, buf+cur_pos, &len, flags,
+					part_idx, part_max, 0 /* don't add zeroed contact*/);
+		} else {
+			res =
+				get_domain_db_ucontacts(p->d, buf+cur_pos, &len, flags,
+					part_idx, part_max, 0);
+			if (res >= 0) {
+				shortage += res;
+			} else {
+				LM_ERR("get db ucontacts failed; domain %.*s\n",
+						p->d->name->len, p->d->name->s);
+				return -1;
+			}
+		}
+		cur_pos += ini_len - len;
+	}
+	/* len < 0 is possible, if size of the buffer < sizeof(c->c.len) */
+	if (!shortage && len >= 0)
+		memset(buf + cur_pos, 0, sizeof(c.c.len));
+
+	return shortage > 0 ? shortage : 0;
 }
+
+
+
+/*! \brief
+ * Return list of all contacts for all currently registered
+ * users in given domain. Caller must provide buffer of
+ * sufficient length for fitting all those contacts. In the
+ * case when buffer was exhausted, the function returns
+ * estimated amount of additional space needed, in this
+ * case the caller is expected to repeat the call using
+ * this value as the hint.
+ *
+ * Information is packed into the buffer as follows:
+ *
+ * +------------+----------+-----+------+-----+
+ * |contact1.len|contact1.s|sock1|flags1|path1|
+ * +------------+----------+-----+------+-----+
+ * |contact2.len|contact2.s|sock2|flags2|path1|
+ * +------------+----------+-----+------+-----+
+ * |..........................................|
+ * +------------+----------+-----+------+-----+
+ * |contactN.len|contactN.s|sockN|flagsN|pathN|
+ * +------------+----------+-----+------+-----+
+ * |000000000000|
+ * +------------+
+ */
+
+int get_domain_ucontacts(udomain_t *d, void *buf, int len, unsigned int flags,
+								unsigned int part_idx, unsigned int part_max)
+{
+	if (db_mode == DB_ONLY)
+		return get_domain_db_ucontacts(d, buf, &len, flags, part_idx, part_max, 1);
+	else
+		return get_domain_mem_ucontacts(d, buf, &len, flags, part_idx, part_max, 1);
+
+}
+
+
 
 
 

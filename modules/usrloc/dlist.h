@@ -89,6 +89,15 @@ typedef int  (*get_all_ucontacts_t) (void* buf, int len, unsigned int flags,
 int get_all_ucontacts(void *, int, unsigned int,
 		unsigned int part_idx, unsigned int part_max);
 
+/*! \brief
+ * Get contacts structures to all registered users
+ */
+typedef int  (*get_domain_ucontacts_t) (udomain_t *d, void* buf, int len,
+		unsigned int flags, unsigned int part_idx, unsigned int part_max);
+int get_domain_ucontacts(udomain_t *d,void *buf, int len, unsigned int flags,
+								unsigned int part_idx, unsigned int part_max);
+
+
 
 /* Sums up the total number of users in memory, over all domains. */
 unsigned long get_number_of_users(void *);
