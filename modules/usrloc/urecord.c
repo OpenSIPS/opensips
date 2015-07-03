@@ -76,6 +76,7 @@ int new_urecord(str* _dom, str* _aor, urecord_t** _r)
 	(*_r)->aor.len = _aor->len;
 	(*_r)->domain = _dom;
 	(*_r)->aorhash = core_hash(_aor, 0, 0);
+	(*_r)->next_clabel = rand();
 	return 0;
 }
 
@@ -140,7 +141,7 @@ ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci)
 	ucontact_t* ptr, *prev = 0;
 	ucontact_t* c;
 
-	if ( (c=new_ucontact(_r->domain, &_r->aor, _c, _ci)) == 0) {
+	if ( (c=new_ucontact(_r->domain, &_r->aor, _c, _r->next_clabel++, _ci)) == 0) {
 		LM_ERR("failed to create new contact\n");
 		return 0;
 	}
