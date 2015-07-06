@@ -1183,7 +1183,7 @@ static int dlg_th_encode_callid(struct sip_msg *msg)
 	p = new_callid.s+topo_hiding_prefix.len+base64_enc_len - 1;
 	while (*p == '=') {
 		*p = '-';
-		p++;
+		p--;
 	}
 
 	/* reset the callid back to original value - some might still need it ( eg. post script )
