@@ -31,6 +31,8 @@
 
 extern unsigned int db_mysql_timeout_interval;
 extern unsigned int db_mysql_exec_query_threshold;
+extern int max_db_retries;
+extern int max_db_queries;
 
 int mysql_register_event(void);
 

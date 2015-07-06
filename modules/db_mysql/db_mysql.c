@@ -38,6 +38,8 @@
 unsigned int db_mysql_timeout_interval = 2;   /* Default is 6 seconds */
 unsigned int db_mysql_exec_query_threshold = 0;   /* Warning in case DB query
 											takes too long disabled by default*/
+int max_db_retries = 3;
+int max_db_queries = 2;
 
 static int mysql_mod_init(void);
 
@@ -60,6 +62,8 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"timeout_interval", INT_PARAM, &db_mysql_timeout_interval},
 	{"exec_query_threshold", INT_PARAM, &db_mysql_exec_query_threshold},
+	{"max_db_retries", INT_PARAM, &max_db_retries},
+	{"max_db_queries", INT_PARAM, &max_db_queries},
 	{0, 0, 0}
 };
 
@@ -92,6 +96,17 @@ static int mysql_mod_init(void)
 		LM_ERR("Cannot register mysql event\n");
 		return -1;
 	}
+	
+	if(max_db_queries < 1){
+		LM_WARN("Invalid number for max_db_queries\n");
+		max_db_queries = 2;
+	}
+	
+	if(max_db_retries < 0){
+		LM_WARN("Invalid number for max_db_retries\n");
+		max_db_retries = 3;
+	}
+	
 	return 0;
 }
 
