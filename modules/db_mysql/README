@@ -29,6 +29,8 @@ Daniel-Constantin Mierla
 
               1.3.1. exec_query_threshold (integer)
               1.3.2. timeout_interval (integer)
+              1.3.3. max_db_queries (integer)
+              1.3.4. max_db_retries (integer)
 
         1.4. Exported Functions
         1.5. Installation
@@ -40,6 +42,8 @@ Daniel-Constantin Mierla
 
    1.1. Set exec_query_threshold parameter
    1.2. Set timeout_interval parameter
+   1.3. Set max_db_queries parameter
+   1.4. Set max_db_retries parameter
 
 Chapter 1. Admin Guide
 
@@ -93,6 +97,30 @@ modparam("db_mysql", "exec_query_threshold", 60000)
    Example 1.2. Set timeout_interval parameter
 ...
 modparam("db_mysql", "timeout_interval", 2)
+...
+
+1.3.3. max_db_queries (integer)
+
+   The maximum number of database queries to be executed. If this
+   parameter is set improperly, it is set to default value.
+
+   Default value is 2.
+
+   Example 1.3. Set max_db_queries parameter
+...
+modparam("db_mysql", "max_db_queries", 2)
+...
+
+1.3.4. max_db_retries (integer)
+
+   The maximum number of database connection retries. If this
+   parameter is set improperly, it is set to default value.
+
+   Default value is 3.
+
+   Example 1.4. Set max_db_retries parameter
+...
+modparam("db_mysql", "max_db_retries", 2)
 ...
 
 1.4. Exported Functions

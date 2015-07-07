@@ -86,6 +86,7 @@ typedef struct _ds_dest
 	unsigned short int ports[DS_MAX_IPS]; /* Port of the request URI */
 	unsigned short ips_cnt;
 	unsigned short failure_count;
+	unsigned short chosen_count;
 	void *param;
 	struct _ds_dest *next;
 } ds_dest_t, *ds_dest_p;

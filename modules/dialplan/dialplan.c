@@ -56,7 +56,7 @@
 #define DP_TYPE_URL 	    0
 #define DP_TYPE_TABLE 	    1
 #define is_space(p) (*(p) == ' ' || *(p) == '\t' || \
-		             *(p) == '\r' || *(p) == '\n')
+					 *(p) == '\r' || *(p) == '\n')
 
 static int mod_init(void);
 static int child_init(int rank);
@@ -74,6 +74,7 @@ static void dp_print_list(void);
 str default_param_s = str_init(DEFAULT_PARAM);
 str default_dp_partition = {NULL, 0};
 dp_param_p default_par2 = NULL;
+static str database_url = {NULL, 0};
 
 
 static param_export_t mod_params[]={
@@ -474,7 +475,7 @@ static int mod_init(void)
 		//db_url must be set
 		if (!el->dp_db_url.s) {
 			LM_ERR("DB URL is not defined for partition %.*s!\n",
-					    el->partition.len,el->partition.s);
+						el->partition.len,el->partition.s);
 			return -1;
 		}
 
@@ -642,7 +643,7 @@ static int dp_get_svalue(struct sip_msg * msg, pv_spec_t spec, str* val)
 
 
 static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
-                     str * repl)
+					 str * repl)
 {
 	pv_value_t val;
 
@@ -659,7 +660,7 @@ static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
 }
 
 static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
-                          char *attr_spec)
+						  char *attr_spec)
 {
 
 	int dpid;
@@ -685,14 +686,14 @@ static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
 	switch( id_par->type ) {
 		case DP_VAL_INT :
 			if (dp_get_svalue(msg, id_par->v.pv_id.partition,
-							    &partition_name)) {
+								&partition_name)) {
 				LM_ERR("invalid partition\n");
 				return -1;
 			}
 			goto GET_CONN;
 		case DP_VAL_SPEC :
 			if (dp_get_svalue(msg, id_par->v.sp[1],
-							    &partition_name)) {
+								&partition_name)) {
 				LM_ERR("invalid partition\n");
 				return -1;
 			}
@@ -754,7 +755,7 @@ static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
 
 		if (pv_set_value(msg, (pv_spec_p)attr_spec, 0, &pval) != 0) {
 			LM_ERR("failed to set value '%.*s' for the attr pvar!\n",
-			        attrs.len, attrs.s);
+					attrs.len, attrs.s);
 			goto error;
 		}
 	}
@@ -904,7 +905,7 @@ static int dp_trans_fixup(void ** param, int param_no){
 				dp_par->type = DP_VAL_STR_SPEC;
 			} else {
 				/*DP_VAL_SPEC remains DP_VAL_SPEC
-					    ( pv dpid and pv partition_name) */
+						( pv dpid and pv partition_name) */
 				if( !pv_parse_spec( &partition_name,
 							 &dp_par->v.sp[1]))
 					goto error;
@@ -957,6 +958,68 @@ error:
 	return E_INVALID_PARAMS;
 }
 
+/* creates an url string without password field*/
+static void db_get_url(const str* url){
+	struct db_id* id = new_db_id(url);
+	static str scheme_delimiter={"://",3};
+	static str port_delimiter={":",1};
+	static str host_delimiter={"@",1};
+	static str database_delimiter={"/",1};
+	str port;
+
+	/* allocate memory for the database url if necessary*/
+	database_url.len = 0;
+
+	/* sanity checks */
+	if (id == NULL)
+		return;
+
+	database_url.s = pkg_realloc(database_url.s, url->len * sizeof(char));
+
+	if (database_url.s == NULL) {
+		free_db_id(id);
+		return;
+	}
+
+	/* shortest database_url is s://a/b so we always need the scheme delimiter*/
+	if (id->scheme != NULL) {
+		memcpy(database_url.s + database_url.len, id->scheme, strlen(id->scheme));
+		database_url.len += strlen(id->scheme);
+		memcpy(database_url.s + database_url.len, scheme_delimiter.s, scheme_delimiter.len);
+		database_url.len += scheme_delimiter.len;
+	}
+
+	if (id->username != NULL) {
+		memcpy(database_url.s + database_url.len, id->username, strlen(id->username));
+		database_url.len += strlen(id->username);
+	}
+
+	if (id->host != NULL) {
+		memcpy(database_url.s + database_url.len, host_delimiter.s, host_delimiter.len);
+		database_url.len += host_delimiter.len;
+		memcpy(database_url.s + database_url.len, id->host, strlen(id->host));
+		database_url.len += strlen(id->host);
+	}
+
+	if (id->port > 0) {
+		port.s = int2str(id->port,&port.len);
+		memcpy(database_url.s + database_url.len, port_delimiter.s, port_delimiter.len);
+		database_url.len += port_delimiter.len;
+		memcpy(database_url.s + database_url.len, port.s, port.len);
+		database_url.len += port.len;
+	}
+
+	if (id->database != NULL){
+		memcpy(database_url.s + database_url.len,
+			database_delimiter.s, database_delimiter.len);
+		database_url.len += database_delimiter.len;
+		memcpy(database_url.s + database_url.len, id->database, strlen(id->database));
+		database_url.len += strlen(id->database);
+	}
+
+	/* free alocated memory */
+	free_db_id(id);
+}
 
 static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param)
 {
@@ -979,7 +1042,9 @@ static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param)
 			if( node == NULL) goto error;
 			attr = add_mi_attr(node, 0, "table", 5, el->table_name.s, el->table_name.len);
 			if(attr == NULL) goto error;
-			attr = add_mi_attr(node, 0, "db_url", 6, el->db_url.s, el->db_url.len);
+			db_get_url(&el->db_url);
+			if(database_url.len == 0) goto error;
+			attr = add_mi_attr(node, MI_DUP_VALUE, "db_url", 6, database_url.s, database_url.len);
 			if(attr == NULL) goto error;
 			el = el->next;
 		}
@@ -991,7 +1056,9 @@ static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param)
 		if( node == NULL) goto error;
 		attr = add_mi_attr(node, 0, "table", 5, el->table_name.s, el->table_name.len);
 		if(attr == NULL) goto error;
-		attr = add_mi_attr(node, 0, "db_url", 6, el->db_url.s, el->db_url.len);
+		db_get_url(&el->db_url);
+		if(database_url.len == 0) goto error;
+		attr = add_mi_attr(node, MI_DUP_VALUE, "db_url", 6, database_url.s, database_url.len);
 		if(attr == NULL) goto error;
 	}
 

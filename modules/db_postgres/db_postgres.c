@@ -35,6 +35,7 @@
 
 int db_postgres_exec_query_threshold = 0;   /* Warning in case DB query
 											takes too long disabled by default*/
+int max_db_queries = 2;
 
 int db_postgres_bind_api(const str* mod, db_func_t *dbb);
 
@@ -54,6 +55,7 @@ static cmd_export_t cmds[]={
  */
 static param_export_t params[] = {
 	{"exec_query_threshold", INT_PARAM, &db_postgres_exec_query_threshold},
+	{"max_db_queries", INT_PARAM, &max_db_queries},
 	{0, 0, 0}
 };
 
@@ -80,6 +82,12 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
+	
+	if(max_db_queries < 1){
+		LM_WARN("Invalid number for max_db_queries\n");
+		max_db_queries = 2;
+	}
+	
 	return 0;
 }
 

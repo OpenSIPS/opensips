@@ -34,6 +34,7 @@ typedef struct _xl_level
 
 extern int xlog_buf_size;
 extern int xlog_force_color;
+extern int xlog_default_level;
 
 int xlog_1(struct sip_msg*, char*, char*);
 int xlog_2(struct sip_msg*, char*, char*);
