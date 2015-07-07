@@ -390,9 +390,10 @@ ifneq (,$(findstring gcc, $(CC_LONGVER)))
 				 sed -e 's/[^0-9]*-\(.*\)/\1/'| \
 				 sed -e 's/\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/' )
 	#transform gcc version into 2.9x, 3.x or 4.x
+	#XXX: for now treag 5.x the same as 4.x
 	CC_CLASS=$(shell echo "$(CC_SHORTVER)" | \
 				 sed -e 's/2\.9.*/2.9x/' -e 's/3\.[0-9]/3.x/' \
-				 -e 's/4\.[0-9]/4.x/')
+				 -e 's/4\.[0-9]/4.x/' -e 's/5\.[0-9]/4.x/')
 endif
 
 ifneq (, $(findstring Sun, $(CC_LONGVER)))

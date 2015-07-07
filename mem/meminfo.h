@@ -44,7 +44,7 @@ struct mem_info{
 // threshold percentage checked
 extern long event_pkg_threshold;
 // events are used only if STATISTICS are used
-inline void pkg_threshold_check(void);
+extern inline void pkg_threshold_check(void);
 #else
  #define pkg_threshold_check()
 #endif /* STATISTICS */
