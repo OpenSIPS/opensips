@@ -117,21 +117,21 @@ void dprint (char* format, ...);
 int str2facility(char *s);
 
 /* set the current and default log levels for all OpenSIPS processes */
-inline void set_global_debug_level(int level);
+extern inline void set_global_debug_level(int level);
 
 /* set the log level of the current process */
-inline void set_proc_debug_level(int level);
+extern inline void set_proc_debug_level(int level);
 
 /*
  * set the (default) log level of a given process
  *
  * Note: the index param is not validated!
  */
-inline void __set_proc_debug_level(int proc_idx, int level);
-inline void __set_proc_default_debug(int proc_idx, int level);
+extern inline void __set_proc_debug_level(int proc_idx, int level);
+extern inline void __set_proc_default_debug(int proc_idx, int level);
 
 /* changes the logging level to the default value for the current process */
-inline void reset_proc_debug_level(void);
+extern inline void reset_proc_debug_level(void);
 
 inline static char* dp_time(void)
 {

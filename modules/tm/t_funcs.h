@@ -128,9 +128,9 @@ int send_pr_buffer( struct retr_buf *rb, void *buf, int len, void* ctx);
 #define unset_timeout(timeout) ((timeout) = 0)
 #define is_timeout_set(timeout) ((timeout) != 0)
 
-inline void set_fr_retr(struct retr_buf *rb, int retr );
-inline void start_retr(struct retr_buf *rb);
-inline void force_retr(struct retr_buf *rb);
+extern inline void set_fr_retr(struct retr_buf *rb, int retr );
+extern inline void start_retr(struct retr_buf *rb);
+extern inline void force_retr(struct retr_buf *rb);
 
 void tm_shutdown();
 

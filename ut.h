@@ -807,7 +807,7 @@ int parse_reply_codes( str *options_reply_codes_str,
 void base64encode(unsigned char *out, unsigned char *in, int inlen);
 int base64decode(unsigned char *out,unsigned char *in,int len);
 
-inline int calc_base64_encode_len(int len);
-inline int calc_max_base64_decode_len(int len);
+extern inline int calc_base64_encode_len(int len);
+extern inline int calc_max_base64_decode_len(int len);
 
 #endif
