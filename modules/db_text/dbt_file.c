@@ -78,7 +78,8 @@ int dbt_check_mtime(const str *tbn, const str *dbn, time_t *mt)
 			LM_DBG("[%.*s] was updated\n", tbn->len, tbn->s);
 		}
 	} else {
-		LM_DBG("stat failed on [%.*s]\n", tbn->len, tbn->s);
+		LM_DBG("stat failed [%d, %s] on [%.*s]\n",
+			errno, strerror(errno), tbn->len, tbn->s);
 		ret = -1;
 	}
 	return ret;
