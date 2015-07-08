@@ -30,7 +30,7 @@ The emergency module allows the OpenSIPS play the role of a Call Server, a Proxy
 		1.2. Scenario I: The VSP that originating the call is the same as handle the call and sends the routing information request to the VPC. 
 	
 		The emergency module through emergency_call() command  will check if the INVITE received is an emergency call. In this case, the OpenSIPS will get caller location information from specific headers and body in the INVITE. With this information along configuration parameters defined for this module, the opensips implements the v2 interface that queries the VPC for routing information (i.e., ESQK, LRO, and either the ERT or ESGWRI), selects the proper ESGW based on the ESGWRI. When the call ends the OpenSIPS receives BYE request, it warns the VPC for clean your data that is based on the call.	
-		The opensips through failure() command  will try to route the calls via the PSTN using a national contingency number(LRO) if normal routing fails.
+		The &osips; through failure() command  will try to route the calls via the PSTN using a national contingency number(LRO) if normal routing fails.
 
 	</para>
 	<para>
@@ -39,8 +39,16 @@ The emergency module allows the OpenSIPS play the role of a Call Server, a Proxy
 		The emergency module through emergency_call() command  will check if the INVITE received is an emergency call. In this case, it will forward the call to a Routing Proxy that will interface with the VPC and route the call.		
 		The OpenSIPS will leave the call, and all the request of this dialog received by the opensips will be forwarded to the Routing Server.
 
- 		&osips;.
 	</para>
+	<para>
+		1.4.Scenario III: The VSP requests routing information for the Redirect Server
+
+		The emergency module through emergency_call() command  will check if the INVITE received is an emergency call. In this case, it requests routing information to Redirect Server. The Redirect has interface with the VPC and return to VSP's Call Server response whith routing informations on Contact header.		
+		The Call Server uses this information to treat the call. When the emergency call ends, it must notify the Redirect Server that inform to VPC to release the resources.
+	</para>
+		To use this module should informs the mandatory parameters in script and make the correct filling out of the emergency module tables, in accordance with the role chosen within the described scenarios. For more details check the "Emergency calls using OpenSIPS".
+
+
 	</section>
 	
 	<section>
@@ -55,6 +63,11 @@ The emergency module allows the OpenSIPS play the role of a Call Server, a Proxy
 				<emphasis> Dialog - Dialoge module.</emphasis>.
 			</para>
 			</listitem>
+			<listitem>
+			<para>
+				<emphasis> TM - Transaction module.</emphasis>.
+			</para>
+			</listitem>			
 			<listitem>
 			<para>
 				<emphasis> RR - Record-Route module.</emphasis>.
@@ -144,32 +157,61 @@ modparam("emergency", "db_table_report", "emergency_report")
 	</section>
 
 	<section>
-		<title><varname>proxy_hole</varname> (integer)</title>
+		<title><varname>db_table_provider</varname> (string)</title>
+		<para>
+		The name of the db table that stores the nodes information of organization involved in emergency calls.
+
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>emergency_service_provider</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>db_table_provider</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("emergency", "db_table_provider", "emergency_service_provider")
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>proxy_role</varname> (integer)</title>
 		<para>
 		This parameter define what role the opensips will take to treat emergency   
    		call:
-
-	    0 – The opensips is the Call Server in scenario I or the Routing Proxy in 
-	        scenario II depend on flag_third_enterprise parameter. In this hole the 
-	        opensips implements the V2 interface, directly queries the VPC for 
-	        ESGWRI/ESQK, selects the proper ESGW given the ESGWRI and routes calls 
-	        Via the PSTN using the LRO if routing fails.
-
-	    1 – The opensips is the Call Server in scenario II that sends the INVITE on 
-	        emergency call to a Routing Proxy provider. The Routing Proxy provider 
-	        implements the V2 interface.
-
-	    2 - The opensips is the Call Server in scenario III that sends the INVITE on 
-	 		emergency call to a Redirect Server. The Redirect Server obtains the 
-	 		ESGWRI/ESQK from the VPC. It returns the call to the opensips with the 
-	 		ESGWRI/ESQK in the header contact in the SIP response. The opensips  
-	 		selects the proper ESGW based on the ESGWRI.
-
-	    3 - The opensips is the Redirect Proxy in scenario III that receives the 
-	        INVITE on emergency call from Call Server. The Redirect Server obtains 
-	        the ESGWRI/ESQK from the VPC and sends in the SIP 3xx response to the 
-	        Call Server.
-
+			<para>
+		    0 – The opensips is the Call Server in scenario I. In this role the 
+		        opensips implements the V2 interface, directly queries the VPC for 
+		        ESGWRI/ESQK, selects the proper ESGW given the ESGWRI and routes calls 
+		        Via the PSTN using the LRO if routing fails.
+			</para>
+			<para>
+		    1 – The opensips is the Call Server in scenario II that sends the INVITE on 
+		        emergency call to a Routing Proxy provider. The Routing Proxy provider 
+		        implements the V2 interface.
+			</para>
+			<para>
+		    2 - The opensips is the Routing Proxy in scenario II. In this role the 
+		        opensips implements the V2 interface, directly queries the VPC for 
+		        ESGWRI/ESQK, selects the proper ESGW given the ESGWRI and routes calls 
+		        Via the PSTN using the LRO if routing fails.
+			</para>
+			<para>
+		    3 - The opensips is the Redirect Proxy in scenario III that receives the 
+		        INVITE on emergency call from Call Server. The Redirect Server obtains 
+		        the ESGWRI/ESQK from the VPC and sends in the SIP 3xx response to the 
+		        Call Server.
+			</para>	        
+			<para>
+		    4 - The opensips is the Call Server in scenario III that sends the INVITE on 
+		 		emergency call to a Redirect Server. The Redirect Server obtains the 
+		 		ESGWRI/ESQK from the VPC. It returns the call to the opensips with the 
+		 		ESGWRI/ESQK in the header contact in the SIP response. The opensips  
+		 		selects the proper ESGW based on the ESGWRI.
+			</para>
 		</para>
 		<para>
 		<emphasis>
@@ -177,39 +219,14 @@ modparam("emergency", "db_table_report", "emergency_report")
 		</emphasis>
 		</para>
 		<example>
-		<title>Setting the <varname>proxy_hole</varname> parameter</title>
+		<title>Setting the <varname>proxy_role</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("emergency", "proxy_hole", 0))
+modparam("emergency", "proxy_role", 0))
 ...
 		</programlisting>
 		</example>
 	</section>
-
-
-
-	<section>
-		<title><varname>flag_third_enterprise</varname> (integer)</title>
-		<para>
-	    Indicates whether OpenSIPS is the VSP Call Server in Scenario I    
-	    (flag_third_enterprise = 0) or is the Routing Proxy of a third company in 
-	    scenario II (flag_third_enterprise = 1).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>flag_third_enterprise</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", "flag_third_enterprise ", 0)
-...
-		</programlisting>
-		</example>
-	</section>
-
 
 	<section>
 		<title><varname>url_vpc</varname> (string)</title>
@@ -255,362 +272,6 @@ modparam("emergency", "emergency_codes", “911-us emegency code”)
 		</programlisting>
 		</example>
 	</section>
-
-	<section>
-		<title><varname>vsp_organization_name</varname> (string)</title>
-		<para>
-   		The vsp_organization_name is VSP company name’s. VSP is the caller's voice 
-   		service provider. This parameter is optional field in the NENA v2 interface
-   		(call server - VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>vsp_organization_name</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", "vsp_organization_name", “Exemple provider VSP”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
-	<section>
-		<title><varname>vsp_hostname</varname> (string)</title>
-		<para>
-   		The vsp_hostname is VSP hostname’s. VSP is the caller's voice service provider. 
-   		This parameter is  mandatory field in the NENA v2 interface(call server - VPC) 
-   		in cases where the VSP is not the same entity as the one requesting routing 
-   		information over the v2 interface, otherwise it is optional.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>vsp_hostname</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", "vsp_hostname", “exemple_vsp.com”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
-	<section>
-		<title><varname>vsp_nena_id</varname> (string)</title>
-		<para>
-   		The nena-id is the NENA administered company identifier (NENA Company ID) 
-   		of VSP. VSP is the caller's voice service provider. This parameter is 
-   		optional field in the NENA v2 interface(call server - VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>vsp_nena_id</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", "vsp_nena_id", “nena1”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>vsp_contact</varname> (string)</title>
-		<para>
-   		The contact is a telephone number by which the VSP operator can be reached 
-   		24 hours a day, 7 days a week. VSP is the caller's voice service provider. 
-   		This parameter is  mandatory field in the NENA v2interface (call server - VPC) 
-   		in cases where the VSP is not the same entity the one requesting routing 
-   		information over the v2 interface, otherwise it is optional.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>vsp_contact</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", " vsp_contact", “tel:+398348975439823”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
-	<section>
-		<title><varname>vsp_cert_uri</varname> (string)</title>
-		<para>
-   		The cert-uri provides a means of directly obtaining the VESA(Valid 
-   		Emergency Services Authority) issued certificate for the VSP. VSP is 
-   		the caller's voice service provider. This parameter is optional 
-   		field in the NENA v2 interface(call server - VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>vsp_cert_uri</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", " vsp_cert_uri",“https://cs34.exam.com/certificate.crt”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
-	<section>
-		<title><varname>vpc_organization_name</varname> (string)</title>
-		<para>
-	    The vpc_organization_name is VPC company name’s. VPC is the routing  
-	    information provider to emengency call. This parameter is optional field in 
-	    the NENA v2 interface(call server - VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>vpc_organization_name</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", " vpc_organization_name", “Exemple VPC”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
-
-	<section>
-		<title><varname>vpc_hostname</varname> (string)</title>
-		<para>
-	    The vpc_hostname is VSP hostname’s. VPC is the routing information provider 
-	    to emengency call. This parameter is optional field in the NENA v2 interface 
-	    (call server - VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>vpc_hostname</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", "vpc_hostname", “exemple_vpc.com”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
-	<section>
-		<title><varname>vpc_nena_id</varname> (string)</title>
-		<para>
-	    The vpc_nena-id is the NENA administered company identifier (NENA Company 
-	    ID) of the VPC. VPC is the routing information provider to emengency call. 
-	    This parameter is optional field in the NENA v2 interface(call server – VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>vpc_nena_id</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", "vpc_nena_id", “nena2”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
-
-	<section>
-		<title><varname>vpc_contact</varname> (string)</title>
-		<para>
-	   	The vpc_contact is a telephone number by which the directly VPC operator 
-	    can be reached 24 hours a day, 7 days a week. VPC is the routing information 
-	    provider to emengency call. This parameter is optional field in the NENA v2
-	    interface(call server - VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>source_contact</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", "vpc_contact", “tel:+398348975439823”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
-	<section>
-		<title><varname>vpc_cert_uri</varname> (string)</title>
-		<para>
-	    The vpc_cert_uri_vpc provides a means of directly obtaining the VESA(Valid 
-	    Emergency Services Authority) issued certificate for the VPC. VPC is the 
-	    Routing information provider to emengency call. This parameter is optional
-	    field in the NENA v2 interface(call server - VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>vpc_cert_uri</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", "vpc_cert_uri",“https://cs98.examvpc.com/certificate.crt”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>source_organization_name</varname> (string)</title>
-		<para>
-   		The source_organization_name is Source company name’s. Source is node 
-   		directly requesting emergency call routing from the VPC. This parameter is  
-   		optional field in the NENA v2 interface(call server - VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>source_organization_name</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", "source_organization_name", “Exemple Routing Source”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
-
-	<section>
-		<title><varname>source_hostname</varname> (string)</title>
-		<para>
-	    The sorce_hostname is Source hostname’s. Source is node directly requesting 
-	    emergency call routing from the VPC. This parameter is  mandatory field in 
-	    the NENA v2 interface(call server - VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>source_hostname</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", "source_hostname", “exemple_source.com”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
-	<section>
-		<title><varname>source_nena_id</varname> (string)</title>
-		<para>
-   		The source_nena-id is the NENA administered company identifier (NENA Company 
-   		ID) of the source. Source is node directly requesting emergency call routing 
-   		from the VPC. This parameter is optional field in the NENA v2 interface
-   		(call server - VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>source_nena_id</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", "source_nena_id", “nena3”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
-
-	<section>
-		<title><varname>source_contact</varname> (string)</title>
-		<para>
-   		The source_contact is a telephone number by which the directly source operator 
-   		can be reached 24 hours a day, 7 days a week. Source is node directly 
-   		requesting emergency call routing from the VPC. This parameter is  mandatory 
-   		field in the NENA v2 interface(call server - VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>source_contact</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency", "source_contact", “tel:+398348975439823”)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
-	<section>
-		<title><varname>source_cert_uri</varname> (string)</title>
-		<para>
-   		The source_cert_uri provides a means of directly obtaining the VESA(Valid 
-   		Emergency Services Authority) issued certificate for the source. Source is 
-   		node directly requesting emergency call routing from the VPC. This parameter 
-   		is optional field in the NENA v2 interface(call server - VPC).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>source_cert_uri</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("emergency","source_cert_uri",“https://cs67.exsource.com/certificate.crt”
-...
-		</programlisting>
-		</example>
-	</section>
-
 
 	<section>
 		<title><varname>timer_interval</varname> (interger)</title>
@@ -660,8 +321,8 @@ modparam("emergency","contingency_hostname",“176.34,29.102:5060”)
 		<para>
 		The emergency_call_server is the url of the Routing Proxy/Redirect Server
 		that will handle  the emergency call in cenario II. Its is mandatory if Opensips 
-		act as Call Server in scenario II (proxy_hole = 1 and flag_third_enterprise = 0) 
-		or Call Server in scenario III (proxy_hole = 2).
+		act as Call Server in scenario II (proxy_role = 1 and flag_third_enterprise = 0) 
+		or Call Server in scenario III (proxy_role = 2).
 		</para>
 		<para>
 		<emphasis>

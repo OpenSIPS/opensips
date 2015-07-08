@@ -24,6 +24,8 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  
  */
 
@@ -51,6 +53,14 @@ static str srid_col=str_init("selectiveRoutingID");
 static str resn_col=str_init("routingESN");
 static str npa_col=str_init("npa");
 static str esgwri_col=str_init("esgwri");
+
+static str organizationName_col=str_init("organizationName");
+static str hostId_col=str_init("hostId");
+static str nenaId_col=str_init("nenaId");
+static str contact_col=str_init("contact");
+static str certUri_col=str_init("certUri");
+static str nodeIP_col=str_init("nodeIP");
+static str attribution_col=str_init("attribution");
 
 /* store data in the table emergency_report
 */
@@ -354,6 +364,56 @@ int emergency_routing(char *srid, int resn, int npa, char** esgwri, rw_lock_t *r
     return -1;
 }
 
+
+struct service_provider* get_provider(struct sip_msg *msg, int attr, rw_lock_t *ref_lock ) {
+
+    int vsp_addr_len;
+    char *vsp_addr;
+
+    //lock_start_read(ref_lock);
+    LM_DBG("***************************attr\n ");
+
+
+    struct service_provider* provider = *db_service_provider;
+    while (provider != NULL) {
+
+        LM_DBG("***************************attr:%d\n ", provider->attribution);
+
+        if (provider->attribution == attr ){
+            if (provider->attribution == 2){
+                // busca ip
+                vsp_addr = ip_addr2a(&msg->rcv.src_ip);
+                vsp_addr_len = strlen(vsp_addr);
+
+        LM_DBG("***************************vsp_addr:%s\n ", vsp_addr);
+        LM_DBG("***************************provider IP:%.*s\n ", provider->nodeIP.len, provider->nodeIP.s);        
+
+
+                if ( (provider->nodeIP.len == vsp_addr_len) && (strncmp(vsp_addr, provider->nodeIP.s, vsp_addr_len) == 0)) {
+        LM_DBG("***************************achou ip\n ");
+                return provider;
+        
+                }
+
+
+
+            }else{
+                return provider;
+            }
+
+        }
+        provider = provider->next;
+    }
+    //lock_stop_read(ref_lock);
+
+    return NULL;    
+}
+
+
+/* select data from emergency_routing and put in memory
+* coluns keys: srid(selectiveRoutingID), resn(routingESN) and npa.
+* coluns translate: esgwri 
+*/
 int get_db_routing(str table_name, rw_lock_t *ref_lock ){
     db_key_t query_cols[] = {&id_col, &srid_col, &resn_col, &npa_col, &esgwri_col};
     db_res_t * res;
@@ -366,7 +426,6 @@ int get_db_routing(str table_name, rw_lock_t *ref_lock ){
     int nr_rows, i, size, id;
     struct esrn_routing *esrn_cell, *old_list, *it, *aux, *new_list;
     struct esrn_routing *init_esrn = NULL;
-
 
     db_funcs.use_table(db_con, &table_name);
 
@@ -383,8 +442,7 @@ int get_db_routing(str table_name, rw_lock_t *ref_lock ){
     rows = RES_ROWS(res);
 
     new_list = NULL;
-    LM_DBG("NUMBER OF LINES %d \n", nr_rows);
-
+    LM_DBG("NUMBER OF LINES ROUTING %d \n", nr_rows);
 
     for (i = 0; i < nr_rows; i++) {
         values = ROW_VALUES(rows + i);
@@ -439,29 +497,30 @@ int get_db_routing(str table_name, rw_lock_t *ref_lock ){
             esgwri.len = strlen(esgwri.s);
         }
 
-
         size = sizeof (struct esrn_routing)+SRID.len + esgwri.len;
         esrn_cell = shm_malloc(size);
         if (!esrn_cell) {
             LM_ERR("no more shm\n");
             goto end;
-        }
+        }           
 
         memset(esrn_cell, 0, size);
 
         esrn_cell->srid.len = SRID.len;
         esrn_cell->srid.s = (char *) (esrn_cell + 1);
         memcpy(esrn_cell->srid.s, SRID.s, SRID.len);
+      
         esrn_cell->resn = RESN;
         esrn_cell->npa = NPA;
         esrn_cell->esgwri.len = esgwri.len;
         esrn_cell->esgwri.s = (char *) (esrn_cell + 1) + SRID.len;
-        memcpy(esrn_cell->esgwri.s, esgwri.s, esgwri.len);
+        memcpy(esrn_cell->esgwri.s, esgwri.s, esgwri.len);       
 
         LM_DBG("-SRID %.*s \n", SRID.len, SRID.s);
         LM_DBG("-RESN %d \n", RESN);
         LM_DBG("-NPA %d \n", NPA);
-        LM_DBG("-esgwri %.*s \n", esgwri.len, esgwri.s);        
+        LM_DBG("-esgwri %.*s \n", esgwri.len, esgwri.s); 
+
 
         if (new_list != NULL) {
             new_list->next = esrn_cell;
@@ -485,7 +544,6 @@ int get_db_routing(str table_name, rw_lock_t *ref_lock ){
     while (it) {
         aux = it;
         it = it->next;
-
         shm_free(aux);
     }
 
@@ -494,4 +552,203 @@ end:
 
     return 1;
 
+}
+
+/* select data from emergency_service_prvider for put in xml to VPC
+* coluns key: attribution and nodeIP.
+* coluns attributs: OrganizationName, hostId, nenaId, contact, certUri. 
+*/
+int get_db_provider(str table_name, rw_lock_t *ref_lock ){
+    db_key_t query_cols[] = {&id_col, &organizationName_col, &hostId_col, &nenaId_col, &contact_col, &certUri_col, &nodeIP_col, &attribution_col};
+    db_res_t * res;
+    db_val_t * values;
+    db_row_t * rows;
+    str OrganizationName;
+    str hostId;
+    str nenaId;
+    str contact;
+    str certUri;
+    str nodeIP;
+    int attribution;
+    int nr_rows, i, size, id;
+    struct service_provider *provider_cell, *old_list, *it, *aux, *new_list;
+    struct service_provider *init_provider = NULL;
+
+    db_funcs.use_table(db_con, &table_name);
+
+    if (db_funcs.query(db_con, 0, 0, 0, query_cols, 0, 8, 0, &res) != 0) {
+        LM_ERR("Failure to issue query\n");
+        return -1;
+    }
+
+    nr_rows = RES_ROW_N(res);
+    rows = RES_ROWS(res);
+    new_list = NULL;
+    LM_DBG("NUMBER OF LINES %d \n", nr_rows);
+
+    for (i = 0; i < nr_rows; i++) {
+        values = ROW_VALUES(rows + i);
+
+        if (VAL_NULL(values) ||
+                (VAL_TYPE(values) != DB_INT)) {
+            LM_ERR("Invalid value returned 1\n");
+            goto end;
+        }
+
+        id = VAL_INT(values);
+
+        if (VAL_NULL(values + 1) ||
+                (VAL_TYPE(values + 1) != DB_STR && VAL_TYPE(values + 1) != DB_STRING)) {
+            LM_ERR("Invalid translated returned 2\n");
+            goto end;
+        }
+
+        if (VAL_TYPE(values + 1) == DB_STR) {
+            OrganizationName = VAL_STR(values + 1);
+        } else {
+            OrganizationName.s = (char*) VAL_STRING(values + 1);
+            OrganizationName.len = strlen(OrganizationName.s);
+        }
+
+        if (VAL_NULL(values + 2) ||
+                (VAL_TYPE(values + 2) != DB_STR && VAL_TYPE(values + 2) != DB_STRING)) {
+            LM_ERR("Invalid translated returned 2\n");
+            goto end;
+        }
+
+        if (VAL_TYPE(values + 2) == DB_STR) {
+            hostId = VAL_STR(values + 2);
+        } else {
+            hostId.s = (char*) VAL_STRING(values + 2);
+            hostId.len = strlen(hostId.s);
+        }
+
+        if (VAL_NULL(values + 3) ||
+                (VAL_TYPE(values + 3) != DB_STR && VAL_TYPE(values + 3) != DB_STRING)) {
+            LM_ERR("Invalid translated returned 3\n");
+            goto end;
+        }
+
+        if (VAL_TYPE(values + 3) == DB_STR) {
+            nenaId = VAL_STR(values + 3);
+        } else {
+            nenaId.s = (char*) VAL_STRING(values + 3);
+            nenaId.len = strlen(nenaId.s);
+        }
+
+        if (VAL_NULL(values + 4) ||
+                (VAL_TYPE(values + 4) != DB_STR && VAL_TYPE(values + 4) != DB_STRING)) {
+            LM_ERR("Invalid translated returned 4\n");
+            goto end;
+        }
+
+        if (VAL_TYPE(values + 4) == DB_STR) {
+            contact = VAL_STR(values + 4);
+        } else {
+            contact.s = (char*) VAL_STRING(values + 4);
+            contact.len = strlen(contact.s);
+        }        
+
+        if (VAL_NULL(values + 5) ||
+                (VAL_TYPE(values + 5) != DB_STR && VAL_TYPE(values + 5) != DB_STRING)) {
+            LM_ERR("Invalid translated returned 3\n");
+            goto end;
+        }
+
+        if (VAL_TYPE(values + 5) == DB_STR) {
+            certUri = VAL_STR(values + 5);
+        } else {
+            certUri.s = (char*) VAL_STRING(values + 5);
+            certUri.len = strlen(certUri.s);
+        }
+
+        if (VAL_NULL(values + 6) ||
+                (VAL_TYPE(values + 6) != DB_STR && VAL_TYPE(values + 6) != DB_STRING)) {
+            LM_ERR("Invalid translated returned 6\n");
+            goto end;
+        }
+
+        if (VAL_TYPE(values + 6) == DB_STR) {
+            nodeIP = VAL_STR(values + 6);
+        } else {
+            nodeIP.s = (char*) VAL_STRING(values + 6);
+            nodeIP.len = strlen(nodeIP.s);
+        } 
+
+        if (VAL_NULL(values + 7) ||
+                (VAL_TYPE(values + 7) != DB_INT)) {
+            LM_ERR("Invalid translated returned 7\n");
+            goto end;
+        }
+        attribution = VAL_INT(values + 7);
+
+        if (attribution == 0){
+            if (hostId.len == 0 || contact.len == 0) {
+                LM_ERR("source_hostname and source_contact are mandatory \n");
+                mandatory_parm = 1;
+            }
+        }       
+
+        size = sizeof (struct service_provider)+ nodeIP.len + OrganizationName.len + hostId.len + nenaId.len + contact.len + certUri.len;
+        provider_cell = shm_malloc(size);
+        if (!provider_cell) {
+            LM_ERR("no more shm\n");
+            goto end;
+        }
+
+        memset(provider_cell, 0, size);
+
+        provider_cell->nodeIP.len = nodeIP.len;
+        provider_cell->nodeIP.s = (char *) (provider_cell + 1);
+        memcpy(provider_cell->nodeIP.s, nodeIP.s, nodeIP.len);
+
+        provider_cell->OrganizationName.len = OrganizationName.len;
+        provider_cell->OrganizationName.s = (char *) (provider_cell + 1) + nodeIP.len;
+        memcpy(provider_cell->OrganizationName.s, OrganizationName.s, OrganizationName.len);
+
+        provider_cell->hostId.len = hostId.len;
+        provider_cell->hostId.s = (char *) (provider_cell + 1) + nodeIP.len + OrganizationName.len;
+        memcpy(provider_cell->hostId.s, hostId.s, hostId.len); 
+
+        provider_cell->nenaId.len = nenaId.len;
+        provider_cell->nenaId.s = (char *) (provider_cell + 1) + nodeIP.len + OrganizationName.len + hostId.len;
+        memcpy(provider_cell->nenaId.s, nenaId.s, nenaId.len);
+
+        provider_cell->contact.len = contact.len;
+        provider_cell->contact.s = (char *) (provider_cell + 1) + nodeIP.len + OrganizationName.len + hostId.len + nenaId.len;
+        memcpy(provider_cell->contact.s, contact.s, contact.len);  
+
+        provider_cell->certUri.len = certUri.len;
+        provider_cell->certUri.s = (char *) (provider_cell + 1) + nodeIP.len + OrganizationName.len + hostId.len + nenaId.len + contact.len;
+        memcpy(provider_cell->certUri.s, certUri.s, certUri.len); 
+
+        provider_cell->attribution = attribution;             
+   
+        if (new_list != NULL) {
+            new_list->next = provider_cell;
+            new_list = provider_cell;
+        } else {
+            new_list = provider_cell;
+            init_provider = new_list;
+        }       
+    }
+    
+    new_list = init_provider;
+
+    lock_start_write(ref_lock);
+    old_list = *db_service_provider;
+    *db_service_provider = init_provider;
+    lock_stop_write(ref_lock);
+
+    it = old_list;
+    while (it) {
+        aux = it;
+        it = it->next;
+        shm_free(aux);
+    }
+
+end:
+    db_funcs.free_result(db_con, res);
+
+    return 1;
 }

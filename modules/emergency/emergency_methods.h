@@ -63,8 +63,22 @@
 #include "../dialog/dlg_load.h"
 
 #include "model.h"
-
 #include "notifier_emergency.h"
+
+//str str_source;
+//char *char_dest;
+
+
+#define CP_STR_CHAR(str_source, char_dest)\
+	do{	\
+	    char_dest = (char *)pkg_malloc( str_source.len + 1);\
+	    if (!char_dest) {\
+	        LM_ERR("no more shm\n");\
+	        goto error;\
+	    }\
+	    memcpy(char_dest, str_source.s, str_source.len);\
+	    char_dest[str_source.len] = 0;\
+	} while(0)
 
 
 #define MAXNUMBERLEN 31
@@ -100,25 +114,27 @@ size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata);
  */
 
 char *emergency_codes;
-char *vpc_organization_name;
-char *vpc_hostname;
-char *vpc_nena_id;
-char *vpc_contact;
-char *vpc_cert_uri;
-char *source_organization_name;
-char *source_hostname;
-char *source_nena_id;
-char *source_contact;
-char *source_cert_uri;
 char *vsp_organization_name;
 char *vsp_hostname;
 char *vsp_nena_id;
 char *vsp_contact;
 char *vsp_cert_uri;
+
+char *source_organization_name;
+char *source_hostname;
+char *source_nena_id;
+char *source_contact;
+char *source_cert_uri;
+char *vpc_organization_name;
+char *vpc_hostname;
+char *vpc_nena_id;
+char *vpc_contact;
+char *vpc_cert_uri;
+
 char *contingency_hostname;
 char *call_origin = NULL;
 char *call_server_hostname = NULL;
-int proxy_hole = 0;
+int proxy_role = 0;
 int emetable_size = 9;
 int substable_size = 9;
 
@@ -132,13 +148,15 @@ struct esct *call_cell;
 struct parsed_xml_vpc *call_cell_vpc, *call_cell_source;
 struct lump *l;
 
-int mandatory_parm = 0;
 int timer_interval=10;
 str table_name=str_init("emergency_routing");
 str table_report=str_init("emergency_report");
+str table_provider=str_init("emergency_service_provider");
 static rw_lock_t *ref_lock = NULL;
 
 str callid_invite;
+
+char* inicialized;
 
 /*
  * Function headers
@@ -150,6 +168,8 @@ static int bye(struct sip_msg *msg, int dir);
 static int emergency_call(struct sip_msg *msg);
 static int failure(struct sip_msg *msg);
 static int set_codes(unsigned int type, void *val);
+static void libera_esqk(void);
+static void free_subs(void);
 
 void routing_timer(unsigned int ticks,void *attr);
 int check_myself(struct sip_msg *msg);
@@ -157,10 +177,10 @@ int contingency(struct sip_msg *msg, ESCT *call_cell);
 int fill_blank_space(void);
 int fill_parm_with_BS(char** var);
 unsigned long get_xml_size(char* lie, char* formated_time, char* callidHeader, char* cbn);
-char* formatted_xml(char* lie, char* callidHeader, char* cbn);
+char* formatted_xml(struct sip_msg *msg, char* lie, char* callidHeader, char* cbn);
 int routing_by_ert( struct sip_msg *msg, ESCT *call_cell);
 int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeader, str cbn);
 int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str cbn, char* from_tag);
-
+void destroy_codes(struct code_number *codes); 
 
 
