@@ -84,6 +84,22 @@ struct esrn_routing {
 
 struct esrn_routing **db_esrn_esgwri;
 
+struct service_provider {
+	str nodeIP;	
+	str OrganizationName;
+	str hostId;	
+	str nenaId;
+	str contact;	
+	str certUri;
+	int attribution;
+
+	struct service_provider *next;
+};
+
+struct service_provider **db_service_provider;
+
+int mandatory_parm;
+
 #define ACK_TIME 				 3
 #define BYE_TIME 				 10
 
@@ -91,3 +107,5 @@ int report(struct emergency_report *report, str db_url, str table_report);
 int collect_data(struct node *current, str db_url, str table_report);
 int emergency_routing(char *srid, int resn, int npa, char** esgwri, rw_lock_t *ref_lock );
 int get_db_routing(str table_name, rw_lock_t *ref_lock );
+int get_db_provider(str table_name, rw_lock_t *ref_lock );
+struct service_provider* get_provider(struct sip_msg *msg, int attr, rw_lock_t *ref_lock );

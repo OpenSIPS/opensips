@@ -70,7 +70,7 @@ int subst_size;
 
 int send_esct(struct sip_msg *msg, str callid_ori, str from_tag);
 int faixa_result(int result); 
-int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_cell_vpc, NENA *call_cell_source, PARSED *parsed, int proxy_hole);
+int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_cell_vpc, NENA *call_cell_source, PARSED *parsed, int proxy_role);
 int get_lro_in_contact(char *contact_lro, ESCT *call_cell);
 int get_esqk_in_contact(char *contact_lro, ESCT *call_cell);
 int get_esgwri_ert_in_contact(char *contact_esgwri, ESCT *call_cell);

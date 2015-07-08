@@ -59,7 +59,7 @@
  #define TIMER_N				30
  #define MAXNUMBERLEN 			31
 
-int proxy_hole_aux;
+int proxy_role_aux;
 
 struct tm_binds eme_tm;
 

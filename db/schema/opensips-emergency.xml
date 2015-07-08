@@ -11,4 +11,5 @@
 	<name>Emergency</name>
 	<xi:include href="emergency_routing.xml"/>
 	<xi:include href="emergency_report.xml"/>
+	<xi:include href="emergency_service_provider.xml"/>
 </database>

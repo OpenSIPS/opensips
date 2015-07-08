@@ -75,10 +75,10 @@ int send_esct(struct sip_msg *msg, str callid_ori, str from_tag){
 
     vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
     vsp_addr.len = strlen(vsp_addr.s);
-            LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+            LM_DBG("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
 
     hash_code= core_hash(&vsp_addr, 0, emet_size);
-            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+            LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
     info_call= search_ehtable(call_htable, callidHeader, ftag, hash_code, 1);
     if (info_call == NULL) {
@@ -87,9 +87,9 @@ int send_esct(struct sip_msg *msg, str callid_ori, str from_tag){
     }else{
         /*
         if (collect_data(info_call, db_url, *db_table) == 1) {
-            LM_INFO("****** REPORT OK\n");
+            LM_DBG("****** REPORT OK\n");
         } else {
-            LM_INFO("****** REPORT NOK\n");
+            LM_DBG("****** REPORT NOK\n");
         } 
         */       
     }
@@ -180,7 +180,7 @@ int faixa_result(int result) {
 *   - result
 *   - datetimestamp
 */
-int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_cell_vpc, NENA *call_cell_source, PARSED *parsed, int proxy_hole){
+int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_cell_vpc, NENA *call_cell_source, PARSED *parsed, int proxy_role){
     char *p;
     int vsp_addr_len;
     char *vsp_addr = "@vsp.com"; 
@@ -352,9 +352,9 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_ce
                 return -1;
             }
             strcpy(call_cell->ert_srid, parsed->ert->selectiveRoutingID);
-            call_cell->ert_srid[srid_len] = 0;
+            //call_cell->ert_srid[srid_len] = 0;
 
-            if (proxy_hole == 4){
+            if (proxy_role == 4){
 
                 // get source ip address that send INVITE
                 vsp_addr = ip_addr2a(&msg->rcv.src_ip);

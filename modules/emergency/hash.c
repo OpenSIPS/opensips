@@ -21,7 +21,7 @@
  *
  * History:
  * --------
- *  2014-10-14 initial version (Villaron/Tesini)
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  
  */
 #include <stdio.h>
@@ -62,6 +62,7 @@ emetable_t new_ehtable(int hash_size){
 	}
 
 	return htable;
+
 error:
 	if(htable){
 		for(j=0; j< i; j++){
@@ -72,6 +73,7 @@ error:
 	}
 	return NULL;
 }
+
 
 sbtable_t new_shtable(int hash_size){
 	sbtable_t htable= NULL;
@@ -186,7 +188,7 @@ int insert_ehtable(emetable_t htable, unsigned int hash_code, ESCT* call_eme){
 
 	htable[hash_code].entries->next= new_rec;
 
-	LM_INFO("******************************END ENTRADA DO HASH %p\n",(void*)new_rec);
+	LM_DBG("******************************END ENTRADA DO HASH %p\n",(void*)new_rec);
 
 	lock_release(&htable[hash_code].lock);
 
@@ -305,8 +307,8 @@ NODE* mem_copy_call_noc(ESCT* s){
 	CONT_COPY(dest_atr, dest->esct->disposition, s->disposition);
 	CONT_COPY(dest_atr, dest->esct->result, s->result);
 
-	LM_INFO(" ---INSERT HASH %s \n\n", dest->esct->esgwri); 
-	LM_INFO(" ---INSERT ESGWRI %s \n\n", s->esgwri);
+	LM_DBG(" ---INSERT HASH %s \n\n", dest->esct->esgwri); 
+	LM_DBG(" ---INSERT ESGWRI %s \n\n", s->esgwri);
 
 	dest->esct->ert_resn= s->ert_resn;
 	dest->esct->ert_npa= s->ert_npa;
@@ -337,7 +339,7 @@ int insert_shtable(sbtable_t htable, unsigned int hash_code, struct sm_subscribe
 
 	htable[hash_code].entries->next= new_rec;
 
-	LM_INFO("******************************END ENTRADA DO HASH %p\n",(void*)new_rec);
+	LM_DBG("******************************END ENTRADA DO HASH %p\n",(void*)new_rec);
 
 	lock_release(&htable[hash_code].lock);
 
@@ -425,10 +427,10 @@ NODE* search_ehtable(emetable_t htable, char* callid, char* from_tag, unsigned i
 	size_callid_m = strlen(callid);
 	size_from_tag_m = strlen(from_tag);
 
-        LM_INFO(" --------------------CALLID M%s\n",callid); 
-        LM_INFO(" --------------------FROM TAG M%s\n",from_tag); 	
-        LM_INFO(" --------------------CALLID T%s\n",s->esct->eme_dlg_id->call_id); 
-        LM_INFO(" --------------------FROM TAG T%s\n",s->esct->eme_dlg_id->local_tag); 
+        LM_DBG(" --------------------CALLID M%s\n",callid); 
+        LM_DBG(" --------------------FROM TAG M%s\n",from_tag); 	
+        LM_DBG(" --------------------CALLID T%s\n",s->esct->eme_dlg_id->call_id); 
+        LM_DBG(" --------------------FROM TAG T%s\n",s->esct->eme_dlg_id->local_tag); 
 
 	while(s)
 	{
@@ -436,13 +438,13 @@ NODE* search_ehtable(emetable_t htable, char* callid, char* from_tag, unsigned i
 			strncmp(s->esct->eme_dlg_id->call_id, callid, size_callid_m)==0 &&
 			size_from_tag_t == size_from_tag_m &&
 			strncmp(s->esct->eme_dlg_id->local_tag, from_tag, size_from_tag_m)== 0){
-        		LM_INFO(" --------------------found EHTABLE \n"); 
+        		LM_DBG(" --------------------found EHTABLE \n"); 
 
         		if(delete){
 
 					lock_get(&htable[hash_code].lock);
 
-         			LM_INFO(" --------------------DELETOU\n");        			
+         			LM_DBG(" --------------------DELETOU\n");        			
 					ps->next = s->next;	
 
 					lock_release(&htable[hash_code].lock);
@@ -456,7 +458,7 @@ NODE* search_ehtable(emetable_t htable, char* callid, char* from_tag, unsigned i
 		ps = s;
 		s= s->next;
 	}
-    LM_INFO("Did not find\n");
+    LM_DBG("Did not find\n");
 	return NULL;
 }       
 
@@ -467,11 +469,11 @@ struct sm_subscriber* search_shtable(sbtable_t htable, str* callid, str* from_ta
 	struct dialog_id* dlg_id;	
 
 	ps= htable[hash_code].entries;
-         			LM_INFO(" --------------------END HTABLE ENTRIES %p\n", (void*)ps); 
+         			LM_DBG(" --------------------END HTABLE ENTRIES %p\n", (void*)ps); 
 
 	s= ps->next;
 
-	LM_INFO("******************************METODO %.*s\n", method->len, method->s);	
+	LM_DBG("******************************METODO %.*s\n", method->len, method->s);	
 
     if (memcmp(method->s,"BYE", method->len) == 0) {
         dlg_id = s->call_dlg_id;
@@ -479,10 +481,10 @@ struct sm_subscriber* search_shtable(sbtable_t htable, str* callid, str* from_ta
         dlg_id = s->dlg_id;         
     }		 
 
-        LM_INFO(" --------------------CALLID M%.*s\n", callid->len, callid->s); 
-        LM_INFO(" --------------------FROM TAG M%.*s\n", from_tag->len, from_tag->s); 	
-        LM_INFO(" --------------------CALLID T%.*s\n",dlg_id->callid.len,dlg_id->callid.s); 
-        LM_INFO(" --------------------FROM TAG T%.*s\n",dlg_id->rem_tag.len,dlg_id->rem_tag.s); 
+        LM_DBG(" --------------------CALLID M%.*s\n", callid->len, callid->s); 
+        LM_DBG(" --------------------FROM TAG M%.*s\n", from_tag->len, from_tag->s); 	
+        LM_DBG(" --------------------CALLID T%.*s\n",dlg_id->callid.len,dlg_id->callid.s); 
+        LM_DBG(" --------------------FROM TAG T%.*s\n",dlg_id->rem_tag.len,dlg_id->rem_tag.s); 
 
 	while(s)
 	{
@@ -490,7 +492,7 @@ struct sm_subscriber* search_shtable(sbtable_t htable, str* callid, str* from_ta
 			strncmp(dlg_id->callid.s, callid->s, callid->len)==0 &&
 			dlg_id->rem_tag.len == from_tag->len &&
 			strncmp(dlg_id->rem_tag.s, from_tag->s, from_tag->len)== 0){
-        		LM_INFO(" --------------------found SHTABLE \n"); 
+        		LM_DBG(" --------------------found SHTABLE \n"); 
         	    s->prev = ps;
 
 				return s;
@@ -500,7 +502,7 @@ struct sm_subscriber* search_shtable(sbtable_t htable, str* callid, str* from_ta
 		ps = s;
 		s= s->next;
 	}
-    LM_INFO("Did not find\n");
+    LM_DBG("Did not find\n");
 	return NULL;
 }
 
@@ -511,8 +513,8 @@ int delete_shtable(sbtable_t htable, unsigned int hash_code, struct sm_subscribe
 
     previous = subs->prev;                                                            
     previous->next = subs->next;
-
-	//LM_INFO("******************************END ENTRADA DO HASH %p\n",(void*)new_rec);
+    shm_free(subs);
+	//LM_DBG("******************************END ENTRADA DO HASH %p\n",(void*)new_rec);
 
 	lock_release(&htable[hash_code].lock);
 
