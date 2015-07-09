@@ -157,6 +157,7 @@ void print_action(struct action* a);
 void print_expr(struct expr* exp);
 void print_actions(struct action* a);
 int is_mod_func_used(struct action *a, char *name, int param_no);
+int is_mod_async_func_used(struct action *a, char *name, int param_no);
 
 
 

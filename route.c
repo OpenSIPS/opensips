@@ -2364,6 +2364,54 @@ int is_script_func_used( char *name, int param_no)
 	return 0;
 }
 
+int is_script_async_func_used( char *name, int param_no)
+{
+	unsigned int i;
+
+	for( i=0; i<RT_NO ; i++ )
+		if (rlist[i].a && is_mod_async_func_used(rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<ONREPLY_RT_NO ; i++ )
+		if (onreply_rlist[i].a &&
+		is_mod_async_func_used(onreply_rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<FAILURE_RT_NO ; i++ )
+		if (failure_rlist[i].a &&
+		is_mod_async_func_used(failure_rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<BRANCH_RT_NO ; i++ )
+		if (branch_rlist[i].a &&
+		is_mod_async_func_used(branch_rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<TIMER_RT_NO ; i++ )
+		if (timer_rlist[i].a &&
+		is_mod_async_func_used(timer_rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<EVENT_RT_NO ; i++ )
+		if (event_rlist[i].a &&
+		is_mod_async_func_used(event_rlist[i].a,name,param_no) )
+			return 1;
+
+	if (error_rlist.a &&
+	is_mod_async_func_used(error_rlist.a,name,param_no) )
+		return 1;
+
+	if (local_rlist.a &&
+	is_mod_async_func_used(local_rlist.a,name,param_no) )
+		return 1;
+
+	if (startup_rlist.a &&
+	is_mod_async_func_used(startup_rlist.a,name,param_no) )
+		return 1;
+
+	return 0;
+}
+
 
 int run_startup_route(void)
 {
