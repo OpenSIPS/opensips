@@ -153,12 +153,19 @@ int avpops_db_bind(void)
 	 * so just dig through the whole script tree
 	 */
 	if (is_script_func_used("avp_db_query", 1) ||
-		is_script_func_used("avp_db_query", 2)) {
+	    is_script_func_used("avp_db_query", 2)) {
 		if (!DB_CAPABILITY(default_db_url->dbf, DB_CAP_RAW_QUERY)) {
 			LM_ERR("driver for DB URL [default] does not support "
 				   "raw queries!\n");
 			return -1;
 		}
+	}
+
+	if (is_script_async_func_used("avp_db_query", 1) ||
+	    is_script_async_func_used("avp_db_query", 2)) {
+		if (!DB_CAPABILITY(default_db_url->dbf, DB_CAP_ASYNC_RAW_QUERY))
+			LM_WARN("async() calls for DB URL [default] will work "
+			        "in normal mode due to driver limitations\n");
 	}
 
 	return 0;
@@ -414,11 +421,10 @@ int db_delete_avp(struct db_url *url, str *uuid, str *username, str *domain,
 }
 
 
-int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
+int db_query_avp(struct db_url *url, struct sip_msg *msg, str *query,
 														pvname_list_t* dest)
 {
 	db_res_t* db_res = NULL;
-	static str query_str;
 
 	if(query==NULL)
 	{
@@ -426,15 +432,13 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 		return -1;
 	}
 
-	query_str.s = query;
-	query_str.len = strlen(query);
-
-	if(url->dbf.raw_query( url->hdl, &query_str, &db_res)!=0)
+	if(url->dbf.raw_query( url->hdl, query, &db_res)!=0)
 	{
 		const str *t = url->hdl&&url->hdl->table&&url->hdl->table->s
 			? url->hdl->table : 0;
-		LM_ERR("raw_query failed: db%d(%.*s) %.40s...\n",
-		  url->idx, t?t->len:0, t?t->s:"", query);
+		LM_ERR("raw_query failed: db%d(%.*s) %.*s...\n",
+		  url->idx, t?t->len:0, t?t->s:"", query->len > 40 ? 40 : query->len,
+		  query->s);
 		return -1;
 	}
 
