@@ -1200,6 +1200,7 @@ out:
 int db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r)
 {
 	struct pool_con *con;
+	int rc;
 
 	con = db_match_async_con(fd, _h);
 	if (!con) {
@@ -1207,25 +1208,38 @@ int db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r)
 		abort();
 	}
 
-	if (mysql_read_query_result(CON_CONNECTION(_h)) == 0) {
-		if (_r) {
-			if (db_mysql_store_result(_h, _r) != 0) {
-				LM_ERR("failed to store result\n");
-				return -1;
-			}
-		}
+	rc = mysql_read_query_result(CON_CONNECTION(_h));
+	LM_DBG("mysql_read_query_result: %d, %s - \"%s\"\n",
+	       mysql_errno(CON_CONNECTION(_h)), mysql_sqlstate(CON_CONNECTION(_h)),
+		   mysql_error(CON_CONNECTION(_h)));
 
+	/* error status (most likely from a bad query) */
+	if (rc != 0) {
+		LM_ERR("error [%d, %s]: %s\n", mysql_errno(CON_CONNECTION(_h)),
+		       mysql_sqlstate(CON_CONNECTION(_h)),
+		       mysql_error(CON_CONNECTION(_h)));
 		mysql_free_result(CON_RESULT(_h));
 		CON_RESULT(_h) = NULL;
 
 		db_switch_to_sync(_h);
 		db_store_async_con(_h, con);
-		return 0;
+		return -1;
 	}
+
+	if (_r) {
+		if (db_mysql_store_result(_h, _r) != 0) {
+			LM_ERR("failed to store result\n");
+			db_switch_to_sync(_h);
+			db_store_async_con(_h, con);
+			return -2;
+		}
+	}
+
+	mysql_free_result(CON_RESULT(_h));
+	CON_RESULT(_h) = NULL;
 
 	db_switch_to_sync(_h);
 	db_store_async_con(_h, con);
-	async_status = ASYNC_CONTINUE;
 	return 0;
 }
 
