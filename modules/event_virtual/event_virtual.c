@@ -1,0 +1,353 @@
+/*
+ * Copyright (C) 2011 OpenSIPS Project
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *
+ *
+ * history:
+ * ---------
+ *  2015-07-xx created
+ */
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <libgen.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include "event_virtual.h"
+#include "../../mem/mem.h"
+#include "../../locking.h"
+#include "../../sr_module.h"
+#include "../../mem/shm_mem.h"
+#include "../../locking.h"
+#include "../../ut.h"
+
+static int mod_init(void);
+static void destroy(void);
+static int child_init(int rank);
+static void virtual_free(evi_reply_sock *sock);
+static str virtual_print(evi_reply_sock *sock);
+static int virtual_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
+static evi_reply_sock* virtual_parse(str socket);
+static int virtual_raise(struct sip_msg *msg, str* ev_name,
+					 evi_reply_sock *sock, evi_params_t * params);
+
+static struct virtual_socket **list_sockets;
+
+static gen_lock_t *global_lock;
+
+struct module_exports exports = {
+	"event_virtual",			/* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
+	MODULE_VERSION,
+	DEFAULT_DLFLAGS,			/* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
+	0,							/* exported functions */
+	0,							/* exported async functions */
+	0,							/* exported parameters */
+	0,							/* exported statistics */
+	0,							/* exported MI functions */
+	0,							/* exported pseudo-variables */
+	0,						/* extra processes */
+	mod_init,					/* module initialization function */
+	0,							/* response handling function */
+	destroy,					/* destroy function */
+	child_init					/* per-child init function */
+};
+
+static evi_export_t trans_export_virtual = {
+	VIRT_STR,					/* transport module name */
+	virtual_raise,					/* raise function */
+	virtual_parse,					/* parse function */
+	virtual_match,					/* sockets match function */
+	virtual_free,					/* free function */
+	virtual_print,					/* print socket */
+	VIRT_FLAG					/* flags */
+};
+
+/* initialize function */
+static int mod_init(void) {	
+	LM_NOTICE("initializing module ...\n");
+
+	if (register_event_mod(&trans_export_virtual)) {
+		LM_ERR("cannot register transport functions for SCRIPTROUTE\n");
+		return -1;
+	}
+
+	list_sockets =  shm_malloc(sizeof(struct virtual_socket*));
+	*list_sockets = NULL;
+
+	if (!list_sockets) {
+		LM_ERR("no more memory for list_sockets header\n");
+		return -1;
+	}
+
+	global_lock = lock_alloc();
+
+	if (global_lock == NULL) {
+		LM_ERR("Failed to allocate lock\n");
+		return -1;
+	}
+
+	if (lock_init(global_lock) == NULL) {
+		LM_ERR("Failed to init lock\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/* free allocated memory */
+static void destroy(void) {
+	struct virtual_socket* header = *list_sockets;
+	struct virtual_socket* tmp;
+
+	LM_NOTICE("destroying module ...\n");
+
+	lock_destroy(global_lock);
+	lock_dealloc(global_lock);
+
+	while (header != NULL) {
+		tmp = header;
+		header = header->next;
+		shm_free(tmp);
+	}
+
+	shm_free(list_sockets);
+}
+
+/* it does not do nothing */
+static int child_init(int rank) {
+	return 0;
+}
+
+/* compare two str values */
+inline static int str_cmp(str a , str b) {
+	if (a.len == b.len && strncmp(a.s, b.s, a.len) == 0)
+		return 1;
+	return 0;
+}
+
+static int virtual_match (evi_reply_sock *sock1, evi_reply_sock *sock2) {
+	struct virtual_socket *vsock1, *vsock2;
+	struct sub_socket *h_list1, *h_list2;
+	unsigned int found_sock;
+
+	if (!sock1 || !sock2 || !sock1->params || !sock2->params)
+		return 0;
+	else {
+		vsock1 = sock1->params;
+		vsock2 = sock2->params;
+	}
+
+	if ((vsock1->type != vsock2->type) ||
+		(vsock1->nr_sockets != vsock2->nr_sockets))
+		return 0;
+
+	h_list1 = vsock1->list_sockets;
+
+	if (vsock1->type ==	FAILOVER_TYPE || vsock1->type == RROBIN_TYPE) {
+		h_list2 = vsock2->list_sockets;
+		for (; h_list1 != NULL && h_list2 != NULL;
+				h_list1 = h_list1->next, h_list2 = h_list2->next)
+			if (!str_cmp(h_list1->sock_str, h_list2->sock_str))
+				return 0;
+		return 1;
+	} else {
+		for (; h_list1 != NULL; h_list1 = h_list1->next) {
+			h_list2 = vsock2->list_sockets;
+			found_sock = 0;
+			for (; h_list2 != NULL; h_list2 = h_list2->next) {
+				if (str_cmp(h_list1->sock_str, h_list2->sock_str)) {
+					found_sock = 1;
+					break;
+				}
+			}
+			if (!found_sock) {
+				return 0;
+			}
+		}
+		return 1;
+	}
+}
+
+static void insert_in_list_sockets(struct virtual_socket *new) {
+	struct virtual_socket *head = *list_sockets;
+
+	new->next = NULL;
+
+	lock_get(global_lock);
+
+	if(head	!= NULL)
+		new->next = head;
+	
+	*list_sockets = new;
+	
+	lock_release(global_lock);
+}
+
+static struct sub_socket *insert_sub_socket(struct virtual_socket *vsock) {
+	struct sub_socket *new_entry, *head;
+
+	new_entry = shm_malloc(sizeof(struct sub_socket));
+	if (!new_entry) {
+		return NULL;
+	}
+
+	new_entry->trans_mod = NULL;
+	new_entry->sock = NULL;
+	new_entry->next = NULL;
+
+	if (!vsock->list_sockets) {
+		vsock->list_sockets = new_entry;
+		return new_entry;
+	}
+
+	head = vsock->list_sockets;
+	
+	if (!head->next) {
+		head->next = new_entry;
+		return new_entry;
+	}
+
+	while (head->next->next) {
+		head = head->next;
+	}
+	head->next->next = new_entry;
+	return new_entry;
+}
+
+static evi_reply_sock* virtual_parse(str socket) {
+	evi_reply_sock *ret_sock;
+	struct virtual_socket *new_vsocket;
+	struct sub_socket *socket_entry;
+	char *p1, *p_token = NULL;
+	unsigned int tmp_len, pos;
+	unsigned int token_is_socket;
+
+	if (!socket.s || !socket.len) {
+		LM_ERR("no socket specified\n");
+		return NULL;
+	}
+
+	new_vsocket = shm_malloc(sizeof(struct virtual_socket) + socket.len + sizeof(evi_reply_sock));
+	if (!new_vsocket) {
+		LM_ERR("no memory for new list_sockets entry\n");
+		return NULL;
+	}
+
+	new_vsocket->list_sockets = NULL;
+	new_vsocket->nr_sockets = 0;
+	new_vsocket->idx = 0;
+
+	for (p1 = socket.s, pos = 0; (*p1 == ' ' || *p1 == '\t') && pos < socket.len; p1++, pos++) {}
+
+	/* parse the virtual socket type ("PARALLEL" etc.) */
+	if (!memcmp(p1, PARALLEL_STR, PARALLEL_LEN)) {
+		new_vsocket->type = PARALLEL_TYPE;
+		p1 = p1 + PARALLEL_LEN;
+		pos += PARALLEL_LEN;
+	} else
+	if (!memcmp(p1, FAILOVER_STR, FAILOVER_LEN)) {
+		new_vsocket->type = FAILOVER_TYPE;
+		p1 = p1 + FAILOVER_LEN;
+		pos += FAILOVER_LEN;
+	} else
+	if (!memcmp(p1, RROBIN_STR, RROBIN_LEN)) {
+		new_vsocket->type = RROBIN_TYPE;
+		p1 = p1 + RROBIN_LEN;
+		pos += RROBIN_LEN;
+	} else {
+		LM_ERR("invalid virtual socket type\n");
+		shm_free(new_vsocket);
+		return NULL;
+	}
+
+	tmp_len = 0;
+	token_is_socket = 0;
+
+	while (pos < socket.len) {
+		if (*p1 == SEP_SPACE || *p1 == SEP_TAB) {
+			if (token_is_socket) {
+				socket_entry = insert_sub_socket(new_vsocket);
+				if(!socket_entry) {
+					LM_ERR("no memory for sub_socket entry\n");
+					shm_free(new_vsocket);
+					return NULL;
+				}
+				new_vsocket->nr_sockets++;
+				socket_entry->sock_str.len = tmp_len;
+				socket_entry->sock_str.s = shm_malloc(tmp_len);
+				memcpy(socket_entry->sock_str.s, p_token, tmp_len);
+				LM_DBG("parsed_socket=%.*s\n", tmp_len, socket_entry->sock_str.s);
+				
+				token_is_socket = 0;
+				tmp_len = 0;
+			}
+		} else {
+			if (!token_is_socket)
+				p_token = p1;
+			token_is_socket = 1;
+			tmp_len++;
+		}
+		p1++; pos++;	
+	}
+
+	if (token_is_socket) {
+		socket_entry = insert_sub_socket(new_vsocket);
+		if(!socket_entry) {
+			LM_ERR("no memory for sub_socket entry\n");
+			shm_free(new_vsocket);
+			return NULL;
+		}
+		new_vsocket->nr_sockets++;
+		socket_entry->sock_str.len = tmp_len;
+		socket_entry->sock_str.s = shm_malloc(tmp_len);
+		memcpy(socket_entry->sock_str.s, p_token, tmp_len);
+		LM_DBG("parsed_socket=%.*s\n", tmp_len, socket_entry->sock_str.s);
+	}
+
+	ret_sock = (evi_reply_sock *)((char *)(new_vsocket + 1) + socket.len);
+	memset(ret_sock, 0, sizeof(evi_reply_sock));
+
+	ret_sock->address.s = (char *)(new_vsocket + 1);
+	ret_sock->address.len = socket.len;
+	memcpy(ret_sock->address.s, socket.s, socket.len);
+
+	ret_sock->params = new_vsocket;
+
+	ret_sock->flags |= EVI_PARAMS;
+	ret_sock->flags |= EVI_ADDRESS;
+	ret_sock->flags |= EVI_EXPIRE;
+
+	insert_in_list_sockets(new_vsocket);
+
+	return ret_sock;
+}
+
+static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock, evi_params_t *params) {
+	return 0;
+}
+
+static void virtual_free(evi_reply_sock *sock) {
+	return;
+}
+
+static str virtual_print(evi_reply_sock *sock) {
+	return sock->address;
+}
