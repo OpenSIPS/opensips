@@ -68,6 +68,7 @@ static int fixup_db_load_avp(void** param, int param_no);
 static int fixup_db_delete_avp(void** param, int param_no);
 static int fixup_db_store_avp(void** param, int param_no);
 static int fixup_db_query_avp(void** param, int param_no);
+static int fixup_async_db_query_avp(void** param, int param_no);
 static int fixup_delete_avp(void** param, int param_no);
 static int fixup_copy_avp(void** param, int param_no);
 static int fixup_pushto_avp(void** param, int param_no);
@@ -97,9 +98,12 @@ static int w_subst(struct sip_msg* msg, char* src, char *subst);
 static int w_is_avp_set(struct sip_msg* msg, char* param, char *foo);
 
 static acmd_export_t acmds[] = {
-	{ "avp_db_query", (acmd_function)w_async_dbquery_avps, 1, fixup_db_query_avp },
-	{ "avp_db_query", (acmd_function)w_async_dbquery_avps, 2, fixup_db_query_avp },
-	{ "avp_db_query", (acmd_function)w_async_dbquery_avps, 3, fixup_db_query_avp },
+	{ "avp_db_query", (acmd_function)w_async_dbquery_avps, 1,
+		fixup_async_db_query_avp },
+	{ "avp_db_query", (acmd_function)w_async_dbquery_avps, 2,
+	  fixup_async_db_query_avp },
+	{ "avp_db_query", (acmd_function)w_async_dbquery_avps, 3,
+	  fixup_async_db_query_avp },
 	{ 0, 0, 0, 0 }
 };
 
@@ -260,7 +264,7 @@ static int avpops_child_init(int rank)
 }
 
 
-static int fixup_db_url(void ** param, int require_raw_query)
+static int fixup_db_url(void ** param, int require_raw_query, int is_async)
 {
 	struct db_url* url;
 	unsigned int ui;
@@ -288,6 +292,10 @@ static int fixup_db_url(void ** param, int require_raw_query)
 		LM_ERR("driver for DB URL [%u] does not support raw queries\n", ui);
 		return -1;
 	}
+
+	if (is_async && !DB_CAPABILITY(url->dbf, DB_CAP_ASYNC_RAW_QUERY))
+		LM_WARN("async() calls for DB URL [%u] will work "
+		        "in normal mode due to driver limitations\n", ui);
 
 	pkg_free(*param);
 	*param=(void *)url;
@@ -431,7 +439,7 @@ static int fixup_db_avp(void** param, int param_no, int allow_scheme)
 		dbp_fixup = dbp;
 		*param=(void*)dbp;
 	} else if (param_no==3) {
-		return fixup_db_url(param, 0);
+		return fixup_db_url(param, 0, 0);
 	} else if (param_no==4) {
 		return fixup_avp_prefix(param);
 	}
@@ -456,7 +464,11 @@ static int fixup_db_store_avp(void** param, int param_no)
 	return fixup_db_avp( param, param_no, 0/*no scheme*/);
 }
 
-static int fixup_db_query_avp(void** param, int param_no)
+/**
+ * @is_async - if set, a warning will be thrown if the underlying
+ *	driver does not support async operations, and will run queries in sync mode
+ */
+static int __fixup_db_query_avp(void** param, int param_no, int is_async)
 {
 	pv_elem_t *model = NULL;
 	pvname_list_t *anlist = NULL;
@@ -501,12 +513,21 @@ static int fixup_db_query_avp(void** param, int param_no)
 		*param = (void*)anlist;
 		return 0;
 	} else if (param_no==3) {
-		return fixup_db_url(param, 1);
+		return fixup_db_url(param, 1, is_async);
 	}
 
 	return 0;
 }
 
+static int fixup_db_query_avp(void** param, int param_no)
+{
+	return __fixup_db_query_avp(param, param_no, 0);
+}
+
+static int fixup_async_db_query_avp(void** param, int param_no)
+{
+	return __fixup_db_query_avp(param, param_no, 1);
+}
 
 static int fixup_delete_avp(void** param, int param_no)
 {

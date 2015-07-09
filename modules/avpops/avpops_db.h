@@ -79,7 +79,7 @@ int db_store_avp( struct db_url *url, db_key_t *keys, db_val_t *vals,
 int db_delete_avp( struct db_url *url, str *uuid, str *username, str *domain,
 		char *attr, const str *table);
 
-int db_query_avp(struct db_url *url, struct sip_msg* msg, char *query,
+int db_query_avp(struct db_url *url, struct sip_msg* msg, str *query,
 		pvname_list_t* dest);
 
 int avp_add_db_scheme( modparam_t type, void* val);

@@ -764,11 +764,13 @@ error:
 
 
 
+/* @return : non-zero */
 int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 									struct db_url *url, pvname_list_t* dest)
 {
 	int printbuf_len;
 	int ret;
+	str qstr;
 
 	if(msg==NULL || query==NULL)
 	{
@@ -783,9 +785,11 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 		return -1;
 	}
 
-	LM_DBG("query [%s]\n", printbuf);
+	qstr.s = printbuf;
+	qstr.len = printbuf_len;
 
-	ret = db_query_avp(url, msg, printbuf, dest);
+	LM_DBG("query [%.*s]\n", printbuf_len, printbuf);
+	ret = db_query_avp(url, msg, &qstr, dest);
 
 	//Empty return set
 	if(ret==1)
@@ -803,7 +807,7 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 		void **rparam,  pv_elem_t *query, struct db_url *url, pvname_list_t *dest)
 {
 	int printbuf_len;
-	int read_fd;
+	int rc, read_fd;
 	query_async_param *param;
 	str qstr;
 
@@ -822,16 +826,22 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 
 	LM_DBG("query [%s]\n", printbuf);
 
-	param = pkg_malloc(sizeof *param);
-	if (!param)
-	{
-		LM_ERR("no more pkg mem\n");
-		return E_OUT_OF_MEM;
-	}
-	memset(param, '\0', sizeof *param);
-
 	qstr.s = printbuf;
 	qstr.len = printbuf_len;
+
+	/* No async capabilities - just run it in blocking mode */
+	if (!DB_CAPABILITY(url->dbf, DB_CAP_ASYNC_RAW_QUERY))
+	{
+		rc = db_query_avp(url, msg, &qstr, dest);
+		LM_DBG("sync query \"%.*s\" returned: %d\n", qstr.len, qstr.s, rc);
+
+		*rparam = NULL;
+		*rfunc = NULL;
+		async_status = ASYNC_NO_IO;
+
+		/* Empty_set / Other_errors / Success */
+		return rc == 1 ? -2 : (rc != 0 ? -1 : 1);
+	}
 
 	read_fd = url->dbf.async_raw_query(url->hdl, &qstr);
 	if (read_fd < 0)
@@ -840,6 +850,14 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 		*rfunc = NULL;
 		return -1;
 	}
+
+	param = pkg_malloc(sizeof *param);
+	if (!param)
+	{
+		LM_ERR("no more pkg mem\n");
+		return E_OUT_OF_MEM;
+	}
+	memset(param, '\0', sizeof *param);
 
 	*rparam = param;
 	*rfunc = resume_async_dbquery;
@@ -864,13 +882,22 @@ int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
 	}
 
 	if (rc != 0) {
-		LM_ERR("Error geting final result: %d\n", rc);
+		LM_ERR("async query returned error\n");
+		pkg_free(param);
 		return -1;
+	}
+
+	if (!res || RES_ROW_N(res) <= 0 || RES_COL_N(res) <= 0) {
+		LM_DBG("query returned no results\n");
+		db_free_result(res);
+		pkg_free(param);
+		return -2;
 	}
 
 	if (db_query_avp_print_results(msg, res, param->output_avps) != 0) {
 		LM_ERR("failed to print results\n");
 		db_free_result(res);
+		pkg_free(param);
 		return -1;
 	}
 
