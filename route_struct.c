@@ -690,3 +690,21 @@ int is_mod_func_used(struct action *a, char *name, int param_no)
 
 	return 0;
 }
+
+int is_mod_async_func_used(struct action *a, char *name, int param_no)
+{
+	acmd_export_t *acmd;
+
+	for (; a; a = a->next) {
+		if (a->type == ASYNC_T) {
+			acmd = ((struct action *)(a->elem[0].u.data))->elem[0].u.data;
+
+			LM_DBG("checking %s against %s\n", name, acmd->name);
+			if (strcasecmp(acmd->name, name) == 0
+				&& (param_no == acmd->param_no || param_no == -1))
+				return 1;
+		}
+	}
+
+	return 0;
+}
