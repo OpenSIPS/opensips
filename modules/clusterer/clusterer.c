@@ -286,10 +286,17 @@ error:
 	return -1;
 }
 
+static db_key_t *clusterer_machine_id_key = NULL;
+static db_val_t *clusterer_machine_id_value = NULL;
+static db_op_t op = OP_EQ;
+static db_key_t *clusterer_cluster_id_key = NULL;
+static db_val_t *clusterer_cluster_id_value = NULL;
+
 table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 {
 	int int_vals[3];
 	char *str_vals[2];
+	int no_of_results;
 
 	/* the columns from the db table */
 	db_key_t columns[5];
@@ -299,6 +306,30 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 	db_row_t* row;
 	/* the processed result */
 	table_entry_t *data;
+
+	CON_OR_RESET(db_hdl);
+
+	if (!clusterer_machine_id_key) {
+		clusterer_machine_id_key = pkg_malloc(sizeof(db_key_t));
+
+		if (!clusterer_machine_id_key) {
+			LM_ERR("no more pkg memory\n");
+			goto error;
+		}
+		clusterer_machine_id_key[0] = &machine_id_col;
+	}
+
+	if (!clusterer_machine_id_value) {
+		clusterer_machine_id_value = pkg_malloc(sizeof(db_val_t));
+		if (!clusterer_machine_id_value) {
+			LM_ERR("no more pkg memory\n");
+			goto error;
+		}
+		VAL_TYPE(clusterer_machine_id_value) = DB_INT;
+		VAL_NULL(clusterer_machine_id_value) = 0;
+		VAL_INT(clusterer_machine_id_value) = server_id;
+	}
+
 
 	int i, n;
 	int no_rows = 5;
@@ -323,10 +354,51 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 	columns[3] = &description_col;
 	columns[4] = &url_col;
 
+	/* first we see in which clusters the specified server runs*/
+	if (dr_dbf->query(db_hdl, clusterer_machine_id_key, &op,
+		clusterer_machine_id_value, columns, 1, 1, 0, &res) < 0) {
+		LM_ERR("DB query 1 failed\n");
+		goto error;
+	}
+
+	clusterer_cluster_id_key = pkg_realloc(clusterer_cluster_id_key,
+		RES_ROW_N(res) * sizeof(db_key_t));
+	if (!clusterer_cluster_id_key) {
+		LM_ERR("no more pkg memory\n");
+		goto error;
+	}
+	for (i = 0; i < RES_ROW_N(res); i++)
+		clusterer_cluster_id_key[i] = &cluster_id_col;
+
+	clusterer_cluster_id_value = pkg_realloc(clusterer_cluster_id_value,
+		RES_ROW_N(res) * sizeof(db_val_t));
+	if (!clusterer_cluster_id_value) {
+		LM_ERR("no more pkg memory\n");
+		goto error;
+	}
+	for (i = 0; i < RES_ROW_N(res); i++) {
+		VAL_TYPE(clusterer_cluster_id_value + i) = DB_INT;
+		VAL_NULL(clusterer_cluster_id_value + i) = 0;
+	}
+
+	for (i = 0; i < RES_ROW_N(res); i++) {
+		row = RES_ROWS(res) + i;
+
+		check_val(cluster_id_col, ROW_VALUES(row), DB_INT, 1, 0);
+		VAL_INT(clusterer_cluster_id_value + i) = VAL_INT(ROW_VALUES(row));
+	}
+
+	no_of_results = RES_ROW_N(res);
+	dr_dbf->free_result(db_hdl, res);
+	res = 0;
+
 	/* fetch is the best strategy */
+	CON_USE_OR_OP(db_hdl);
 	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-		if (dr_dbf->query(db_hdl, 0, 0, 0, columns, 0, db_cols, 0, 0) < 0) {
-			LM_ERR("DB query failed\n");
+
+		if (dr_dbf->query(db_hdl, clusterer_cluster_id_key, 0,
+			clusterer_cluster_id_value, columns, no_of_results, db_cols, 0, 0) < 0) {
+			LM_ERR("DB query 2 failed\n");
 			goto error;
 		}
 		no_rows = estimate_available_rows(4 + 4 + 4 + 64 + 45, db_cols);
@@ -336,14 +408,15 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 			goto error;
 		}
 	} else {
-		if (dr_dbf->query(db_hdl, 0, 0, 0, columns, 0, db_cols, 0, &res) < 0) {
-			LM_ERR("DB query failed\n");
+		if (dr_dbf->query(db_hdl, clusterer_cluster_id_key, 0,
+			clusterer_cluster_id_value, columns, no_of_results, db_cols, 0, &res) < 0) {
+			LM_ERR("DB query 3 failed\n");
 			goto error;
 		}
 	}
 
 	LM_DBG("%d records found in %.*s\n",
-		RES_ROW_N(res), db_table->len, db_table->s);
+		no_of_results, db_table->len, db_table->s);
 
 	n = 0;
 	do {
@@ -397,9 +470,6 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 
 	dr_dbf->free_result(db_hdl, res);
 	res = 0;
-
-	LM_DBG("%d total records loaded from table %.*s\n", n,
-		db_table->len, db_table->s);
 
 	return data;
 error:
