@@ -23,8 +23,8 @@
 
 struct virtual_socket {
 	unsigned int type;
-	unsigned int idx;
 	unsigned int nr_sockets;
+	struct sub_socket *current_sock;
 	struct sub_socket *list_sockets;
 	struct virtual_socket *next;
 };

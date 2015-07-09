@@ -252,8 +252,8 @@ static evi_reply_sock* virtual_parse(str socket) {
 	}
 
 	new_vsocket->list_sockets = NULL;
+	new_vsocket->current_sock = NULL;
 	new_vsocket->nr_sockets = 0;
-	new_vsocket->idx = 0;
 
 	for (p1 = socket.s, pos = 0; (*p1 == ' ' || *p1 == '\t') && pos < socket.len; p1++, pos++) {}
 
@@ -340,7 +340,119 @@ static evi_reply_sock* virtual_parse(str socket) {
 	return ret_sock;
 }
 
+static int parse_socket(struct sub_socket *socket) {
+	socket->trans_mod = get_trans_mod(&(socket->sock_str));
+	if (!socket->trans_mod) {
+		LM_ERR("couldn't find a protocol to support %.*s\n",
+				socket->sock_str.len, socket->sock_str.s);
+		return 0;
+	}
+
+	socket->sock_str.s += socket->trans_mod->proto.len + 1;
+	socket->sock_str.len -= (socket->trans_mod->proto.len + 1);
+
+	/* parse socket and get the evi_reply_sock */
+	socket->sock = socket->trans_mod->parse(socket->sock_str);
+	if (!socket->sock) {
+		return 0;
+	}
+
+	socket->sock_str.s -= socket->trans_mod->proto.len + 1;
+	socket->sock_str.len += (socket->trans_mod->proto.len + 1);
+
+	return 1;
+}
+
 static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock, evi_params_t *params) {
+	struct virtual_socket *vsock;
+	struct sub_socket *h_list;
+
+	if (!sock || !(sock->params)) {
+		LM_ERR("invalid socket\n");
+		return -1;
+	}
+
+	vsock = (struct virtual_socket *)sock->params;
+	h_list = vsock->list_sockets;
+
+	switch (vsock->type) {
+		case PARALLEL_TYPE : {
+			while (h_list) {
+				if (!h_list->trans_mod && !parse_socket(h_list)) {
+					LM_ERR("unable to parse socket %.*s\n",
+							h_list->sock_str.len, h_list->sock_str.s);
+					return -1;
+				}
+
+				if (h_list->trans_mod->raise(msg, ev_name, h_list->sock, params)) {
+					LM_ERR("unable to raise socket %.*s\n",
+							h_list->sock_str.len, h_list->sock_str.s);
+					return -1;
+				}
+
+				h_list = h_list->next;
+			}
+			
+			break;
+		}
+
+		case FAILOVER_TYPE : {
+			while (h_list) {
+				if (!h_list->trans_mod && !parse_socket(h_list)) {
+					LM_DBG("unable to parse socket %.*s trying next socket\n",
+							h_list->sock_str.len, h_list->sock_str.s);
+					h_list = h_list->next;
+					continue;
+				}
+
+				if (h_list->trans_mod->raise(msg, ev_name, h_list->sock, params)) {
+					LM_DBG("unable to raise socket %.*s trying next socket\n",
+							h_list->sock_str.len, h_list->sock_str.s);
+					h_list = h_list->next;
+					continue;
+				}
+
+				break;
+			}
+
+			if (!h_list) {
+				LM_ERR("unable to raise any socket\n");
+				return -1;
+			}
+
+			break;
+		}
+
+		case RROBIN_TYPE : {
+			if (!vsock->current_sock) {
+				vsock->current_sock = h_list;
+			}
+
+			if (!vsock->current_sock->trans_mod && !parse_socket(vsock->current_sock)) {
+					LM_ERR("unable to parse socket %.*s\n",
+							vsock->current_sock->sock_str.len,
+							vsock->current_sock->sock_str.s);
+					return -1;
+			}
+
+			if (vsock->current_sock->trans_mod->raise(msg, ev_name,
+												vsock->current_sock->sock, params)) {
+					LM_ERR("unable to raise socket %.*s\n",
+							vsock->current_sock->sock_str.len, vsock->current_sock->sock_str.s);
+					return -1;
+			}
+
+			vsock->current_sock = vsock->current_sock->next;
+
+			break;
+		}
+
+		default : {
+			LM_ERR("invalid virtual socket type\n");
+			return -1;
+		}
+	}
+
 	return 0;
 }
 
