@@ -20,6 +20,7 @@ extern str db_url;
 extern str db_table;
 extern str cluster_id_col;
 extern str machine_id_col;
+extern int server_id;
 
 enum machine_state {
     UP,
