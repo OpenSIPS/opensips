@@ -15,35 +15,38 @@
 #define INT_VALS_STATE_COL          2
 #define STR_VALS_DESCRIPTION_COL    0
 #define STR_VALS_URL_COL            1
+#define INT_VALS_CLUSTERER_ID_COL   3
 
 extern str db_url;
 extern str db_table;
 extern str cluster_id_col;
 extern str machine_id_col;
 extern int server_id;
-
-enum machine_state {
-    UP,
-    DOWN
-};
+extern int persistent_state;
+extern str clusterer_id_col;
 
 typedef struct table_entry_ table_entry_t;
-/* list of clusters */
+
+/* data list */
 struct table_entry_ {
-	/* machine id */
-	int machine_id;
-	/* cluster id */
-	int cluster_id;
-	/* state */
-        int state;
-	/* description string */
-	str description;
-        /* protocol user */
-        str proto;
-        /* path */
-        str path;
-	/* linker in list */
-	table_entry_t *next;
+    /*clusterer_id*/
+    int clusterer_id;
+    /* machine id */
+    int machine_id;
+    /* cluster id */
+    int cluster_id;
+    /* state */
+    int state;
+    /* dirty bit */
+    int dirty_bit;
+    /* description string */
+    str description;
+    /* protocol user */
+    str proto;
+    /* path */
+    str path;
+    /* linker in list */
+    table_entry_t *next;
 };
 
 #endif	/* CLUSTERER_H */
