@@ -50,6 +50,7 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name,
 static struct virtual_socket **list_sockets;
 
 static gen_lock_t *global_lock;
+static gen_lock_t *rrobin_lock;
 
 struct module_exports exports = {
 	"event_virtual",			/* module name */
@@ -98,14 +99,15 @@ static int mod_init(void) {
 	}
 
 	global_lock = lock_alloc();
+	rrobin_lock = lock_alloc();
 
-	if (global_lock == NULL) {
-		LM_ERR("Failed to allocate lock\n");
+	if (!global_lock || !rrobin_lock) {
+		LM_ERR("Failed to allocate locks\n");
 		return -1;
 	}
 
-	if (lock_init(global_lock) == NULL) {
-		LM_ERR("Failed to init lock\n");
+	if (!lock_init(global_lock) || !lock_init(rrobin_lock)) {
+		LM_ERR("Failed to init locks\n");
 		return -1;
 	}
 
@@ -116,18 +118,29 @@ static int mod_init(void) {
 static void destroy(void) {
 	struct virtual_socket* header = *list_sockets;
 	struct virtual_socket* tmp;
+	struct sub_socket *sub_list, *tmp_s;
 
 	LM_NOTICE("destroying module ...\n");
 
 	lock_destroy(global_lock);
+	lock_destroy(rrobin_lock);
 	lock_dealloc(global_lock);
+	lock_dealloc(rrobin_lock);
 
-	while (header != NULL) {
+	/* free the list of virtual sockets */
+	while (header) {
+		/* free the list of sockets for this virtual socket */
+		sub_list = header->list_sockets;
+		while (sub_list) {
+			tmp_s = sub_list;
+			sub_list = sub_list->next;
+			shm_free(tmp_s);	
+		}
+
 		tmp = header;
 		header = header->next;
 		shm_free(tmp);
 	}
-
 	shm_free(list_sockets);
 }
 
@@ -190,11 +203,14 @@ static void insert_in_list_sockets(struct virtual_socket *new) {
 	struct virtual_socket *head = *list_sockets;
 
 	new->next = NULL;
+	new->prev = NULL;
 
 	lock_get(global_lock);
 
-	if(head	!= NULL)
+	if (head != NULL) {
+		head->prev = new;
 		new->next = head;
+	}
 	
 	*list_sockets = new;
 	
@@ -237,7 +253,7 @@ static evi_reply_sock* virtual_parse(str socket) {
 	struct virtual_socket *new_vsocket;
 	struct sub_socket *socket_entry;
 	char *p1, *p_token = NULL;
-	unsigned int tmp_len, pos;
+	unsigned int tmp_len, tmp_len_addr, pos;
 	unsigned int token_is_socket;
 
 	if (!socket.s || !socket.len) {
@@ -254,6 +270,18 @@ static evi_reply_sock* virtual_parse(str socket) {
 	new_vsocket->list_sockets = NULL;
 	new_vsocket->current_sock = NULL;
 	new_vsocket->nr_sockets = 0;
+
+	ret_sock = (evi_reply_sock *)((char *)(new_vsocket + 1) + socket.len);
+	memset(ret_sock, 0, sizeof(evi_reply_sock));
+
+	ret_sock->address.s = (char *)(new_vsocket + 1);
+	ret_sock->address.len = socket.len;
+
+	ret_sock->params = new_vsocket;
+
+	ret_sock->flags |= EVI_PARAMS;
+	ret_sock->flags |= EVI_ADDRESS;
+	ret_sock->flags |= EVI_EXPIRE;
 
 	for (p1 = socket.s, pos = 0; (*p1 == ' ' || *p1 == '\t') && pos < socket.len; p1++, pos++) {}
 
@@ -279,9 +307,11 @@ static evi_reply_sock* virtual_parse(str socket) {
 	}
 
 	tmp_len = 0;
+	tmp_len_addr = 0;
 	token_is_socket = 0;
 
-	while (pos < socket.len) {
+	
+	for (; pos < socket.len; p1++, pos++) {
 		if (*p1 == SEP_SPACE || *p1 == SEP_TAB) {
 			if (token_is_socket) {
 				socket_entry = insert_sub_socket(new_vsocket);
@@ -294,8 +324,14 @@ static evi_reply_sock* virtual_parse(str socket) {
 				socket_entry->sock_str.len = tmp_len;
 				socket_entry->sock_str.s = shm_malloc(tmp_len);
 				memcpy(socket_entry->sock_str.s, p_token, tmp_len);
+
+				memcpy(ret_sock->address.s + tmp_len_addr, p_token, tmp_len);
+				tmp_len_addr += tmp_len;
+				memcpy(ret_sock->address.s + tmp_len_addr, " ", 1);
+				tmp_len_addr++;
+
 				LM_DBG("parsed_socket=%.*s\n", tmp_len, socket_entry->sock_str.s);
-				
+
 				token_is_socket = 0;
 				tmp_len = 0;
 			}
@@ -305,7 +341,6 @@ static evi_reply_sock* virtual_parse(str socket) {
 			token_is_socket = 1;
 			tmp_len++;
 		}
-		p1++; pos++;	
 	}
 
 	if (token_is_socket) {
@@ -319,21 +354,14 @@ static evi_reply_sock* virtual_parse(str socket) {
 		socket_entry->sock_str.len = tmp_len;
 		socket_entry->sock_str.s = shm_malloc(tmp_len);
 		memcpy(socket_entry->sock_str.s, p_token, tmp_len);
+
+		memcpy(ret_sock->address.s + tmp_len_addr, p_token, tmp_len);
+		tmp_len_addr += tmp_len;
+
 		LM_DBG("parsed_socket=%.*s\n", tmp_len, socket_entry->sock_str.s);
 	}
 
-	ret_sock = (evi_reply_sock *)((char *)(new_vsocket + 1) + socket.len);
-	memset(ret_sock, 0, sizeof(evi_reply_sock));
-
-	ret_sock->address.s = (char *)(new_vsocket + 1);
-	ret_sock->address.len = socket.len;
-	memcpy(ret_sock->address.s, socket.s, socket.len);
-
-	ret_sock->params = new_vsocket;
-
-	ret_sock->flags |= EVI_PARAMS;
-	ret_sock->flags |= EVI_ADDRESS;
-	ret_sock->flags |= EVI_EXPIRE;
+	ret_sock->address.len = tmp_len_addr;
 
 	insert_in_list_sockets(new_vsocket);
 
@@ -392,7 +420,6 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 
 				h_list = h_list->next;
 			}
-			
 			break;
 		}
 
@@ -419,11 +446,12 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 				LM_ERR("unable to raise any socket\n");
 				return -1;
 			}
-
 			break;
 		}
 
 		case RROBIN_TYPE : {
+			lock_get(rrobin_lock);
+
 			if (!vsock->current_sock) {
 				vsock->current_sock = h_list;
 			}
@@ -444,6 +472,7 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 
 			vsock->current_sock = vsock->current_sock->next;
 
+			lock_release(rrobin_lock);
 			break;
 		}
 
@@ -457,9 +486,42 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 }
 
 static void virtual_free(evi_reply_sock *sock) {
-	return;
+	struct virtual_socket *vsock;
+	struct sub_socket *sub_list, *tmp_s;
+
+	lock_get(global_lock);
+
+	vsock = (struct virtual_socket *)sock->params;
+	if (!vsock)
+		return;
+
+	/* free the list of sockets for this virtual socket */
+	sub_list = vsock->list_sockets;
+	while (sub_list) {
+		/* call the free function of the subscriber */
+		if (sub_list->trans_mod) {
+			sub_list->trans_mod->free(sub_list->sock);
+		}
+		tmp_s = sub_list;
+		sub_list = sub_list->next;
+		shm_free(tmp_s->sock_str.s);
+		shm_free(tmp_s);	
+	}
+
+	/* free the virtual socket from the global list */
+	if (vsock->next)
+			vsock->next->prev = vsock->prev;
+	if (vsock == *list_sockets) {
+		*list_sockets = vsock->next;
+	} else {
+		vsock->prev->next = vsock->next;
+	}
+
+	shm_free(vsock);
+
+	lock_release(global_lock);
 }
 
 static str virtual_print(evi_reply_sock *sock) {
-	return sock->address;
+	 return sock->address;
 }
