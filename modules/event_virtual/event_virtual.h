@@ -27,6 +27,7 @@ struct virtual_socket {
 	struct sub_socket *current_sock;
 	struct sub_socket *list_sockets;
 	struct virtual_socket *next;
+	struct virtual_socket *prev;
 };
 
 struct sub_socket {
