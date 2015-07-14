@@ -15,7 +15,7 @@
 #define FAILOVER_STR "FAILOVER"
 #define FAILOVER_LEN 8
 #define RROBIN_TYPE 2
-#define RROBIN_STR 	"ROUND_ROBIN"
+#define RROBIN_STR 	"ROUND-ROBIN"
 #define RROBIN_LEN 11
 
 #define SEP_SPACE	' '
@@ -24,8 +24,8 @@
 struct virtual_socket {
 	unsigned int type;
 	unsigned int nr_sockets;
-	struct sub_socket *current_sock;
-	struct sub_socket *list_sockets;
+	struct sub_socket *current_sock;	/* current socket to raise */
+	struct sub_socket *list_sockets;	/* list of actual sockets */
 	struct virtual_socket *next;
 	struct virtual_socket *prev;
 };

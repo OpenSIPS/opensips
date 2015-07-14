@@ -20,26 +20,18 @@
  *
  * history:
  * ---------
- *  2015-07-xx created
+ *  2015-07-xx created (rvlad-patrascu)
  */
-
-#include <fcntl.h>
-#include <unistd.h>
-#include <libgen.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #include "event_virtual.h"
 #include "../../mem/mem.h"
 #include "../../locking.h"
 #include "../../sr_module.h"
 #include "../../mem/shm_mem.h"
-#include "../../locking.h"
 #include "../../ut.h"
 
 static int mod_init(void);
 static void destroy(void);
-static int child_init(int rank);
 static void virtual_free(evi_reply_sock *sock);
 static str virtual_print(evi_reply_sock *sock);
 static int virtual_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
@@ -68,7 +60,7 @@ struct module_exports exports = {
 	mod_init,					/* module initialization function */
 	0,							/* response handling function */
 	destroy,					/* destroy function */
-	child_init					/* per-child init function */
+	0					/* per-child init function */
 };
 
 static evi_export_t trans_export_virtual = {
@@ -134,7 +126,7 @@ static void destroy(void) {
 		while (sub_list) {
 			tmp_s = sub_list;
 			sub_list = sub_list->next;
-			shm_free(tmp_s);	
+			shm_free(tmp_s);
 		}
 
 		tmp = header;
@@ -142,11 +134,6 @@ static void destroy(void) {
 		shm_free(tmp);
 	}
 	shm_free(list_sockets);
-}
-
-/* it does not do nothing */
-static int child_init(int rank) {
-	return 0;
 }
 
 /* compare two str values */
@@ -181,7 +168,7 @@ static int virtual_match (evi_reply_sock *sock1, evi_reply_sock *sock2) {
 			if (!str_cmp(h_list1->sock_str, h_list2->sock_str))
 				return 0;
 		return 1;
-	} else {
+	} else {	/* if the virtual socket type is parallel, match two virtual sockets that have the same actual sockets in any order*/
 		for (; h_list1 != NULL; h_list1 = h_list1->next) {
 			h_list2 = vsock2->list_sockets;
 			found_sock = 0;
@@ -199,6 +186,7 @@ static int virtual_match (evi_reply_sock *sock1, evi_reply_sock *sock2) {
 	}
 }
 
+/* insert entry in global list of virtual sockets */
 static void insert_in_list_sockets(struct virtual_socket *new) {
 	struct virtual_socket *head = *list_sockets;
 
@@ -217,6 +205,8 @@ static void insert_in_list_sockets(struct virtual_socket *new) {
 	lock_release(global_lock);
 }
 
+/* insert an actual socket in the list of sockets of one virtual socket */
+/* returns a newly created sub_socket structure*/
 static struct sub_socket *insert_sub_socket(struct virtual_socket *vsock) {
 	struct sub_socket *new_entry, *head;
 
@@ -253,7 +243,7 @@ static evi_reply_sock* virtual_parse(str socket) {
 	struct virtual_socket *new_vsocket;
 	struct sub_socket *socket_entry;
 	char *p1, *p_token = NULL;
-	unsigned int tmp_len, tmp_len_addr, pos;
+	unsigned int tmp_len, tmp_len_addr = 0, pos;
 	unsigned int token_is_socket;
 
 	if (!socket.s || !socket.len) {
@@ -279,10 +269,10 @@ static evi_reply_sock* virtual_parse(str socket) {
 
 	ret_sock->params = new_vsocket;
 
-	ret_sock->flags |= EVI_PARAMS;
 	ret_sock->flags |= EVI_ADDRESS;
 	ret_sock->flags |= EVI_EXPIRE;
 
+	/* jump over initial whitespaces */
 	for (p1 = socket.s, pos = 0; (*p1 == ' ' || *p1 == '\t') && pos < socket.len; p1++, pos++) {}
 
 	/* parse the virtual socket type ("PARALLEL" etc.) */
@@ -290,16 +280,25 @@ static evi_reply_sock* virtual_parse(str socket) {
 		new_vsocket->type = PARALLEL_TYPE;
 		p1 = p1 + PARALLEL_LEN;
 		pos += PARALLEL_LEN;
+		memcpy(ret_sock->address.s, PARALLEL_STR, PARALLEL_LEN);
+		memcpy(ret_sock->address.s + PARALLEL_LEN, " ", 1);
+		tmp_len_addr = PARALLEL_LEN + 1;
 	} else
 	if (!memcmp(p1, FAILOVER_STR, FAILOVER_LEN)) {
 		new_vsocket->type = FAILOVER_TYPE;
 		p1 = p1 + FAILOVER_LEN;
 		pos += FAILOVER_LEN;
+		memcpy(ret_sock->address.s, FAILOVER_STR, FAILOVER_LEN);
+		memcpy(ret_sock->address.s + FAILOVER_LEN, " ", 1);
+		tmp_len_addr = FAILOVER_LEN + 1;
 	} else
 	if (!memcmp(p1, RROBIN_STR, RROBIN_LEN)) {
 		new_vsocket->type = RROBIN_TYPE;
 		p1 = p1 + RROBIN_LEN;
 		pos += RROBIN_LEN;
+		memcpy(ret_sock->address.s, RROBIN_STR, RROBIN_LEN);
+		memcpy(ret_sock->address.s + RROBIN_LEN, " ", 1);
+		tmp_len_addr = RROBIN_LEN + 1;
 	} else {
 		LM_ERR("invalid virtual socket type\n");
 		shm_free(new_vsocket);
@@ -307,11 +306,11 @@ static evi_reply_sock* virtual_parse(str socket) {
 	}
 
 	tmp_len = 0;
-	tmp_len_addr = 0;
 	token_is_socket = 0;
 
-	
+	/* parse the actual sockets of this virtual socket */
 	for (; pos < socket.len; p1++, pos++) {
+		/* jump over whitespaces and parse the last socket before whitespaces*/
 		if (*p1 == SEP_SPACE || *p1 == SEP_TAB) {
 			if (token_is_socket) {
 				socket_entry = insert_sub_socket(new_vsocket);
@@ -330,7 +329,7 @@ static evi_reply_sock* virtual_parse(str socket) {
 				memcpy(ret_sock->address.s + tmp_len_addr, " ", 1);
 				tmp_len_addr++;
 
-				LM_DBG("parsed_socket=%.*s\n", tmp_len, socket_entry->sock_str.s);
+				LM_DBG("parsed socket %.*s\n", tmp_len, socket_entry->sock_str.s);
 
 				token_is_socket = 0;
 				tmp_len = 0;
@@ -343,6 +342,7 @@ static evi_reply_sock* virtual_parse(str socket) {
 		}
 	}
 
+	/* parse the last socket */
 	if (token_is_socket) {
 		socket_entry = insert_sub_socket(new_vsocket);
 		if(!socket_entry) {
@@ -358,7 +358,7 @@ static evi_reply_sock* virtual_parse(str socket) {
 		memcpy(ret_sock->address.s + tmp_len_addr, p_token, tmp_len);
 		tmp_len_addr += tmp_len;
 
-		LM_DBG("parsed_socket=%.*s\n", tmp_len, socket_entry->sock_str.s);
+		LM_DBG("parsed socket %.*s\n", tmp_len, socket_entry->sock_str.s);
 	}
 
 	ret_sock->address.len = tmp_len_addr;
@@ -368,6 +368,7 @@ static evi_reply_sock* virtual_parse(str socket) {
 	return ret_sock;
 }
 
+/* get the transport module of an actual socket and call the parse function */
 static int parse_socket(struct sub_socket *socket) {
 	socket->trans_mod = get_trans_mod(&(socket->sock_str));
 	if (!socket->trans_mod) {
@@ -404,6 +405,7 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 	h_list = vsock->list_sockets;
 
 	switch (vsock->type) {
+		/* raise all the sockets at once*/
 		case PARALLEL_TYPE : {
 			while (h_list) {
 				if (!h_list->trans_mod && !parse_socket(h_list)) {
@@ -422,7 +424,7 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 			}
 			break;
 		}
-
+		/* try to raise all sockets until first successful raise*/
 		case FAILOVER_TYPE : {
 			while (h_list) {
 				if (!h_list->trans_mod && !parse_socket(h_list)) {
@@ -448,13 +450,12 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 			}
 			break;
 		}
-
+		/* raise the sockets alternatively (in the order they have been parsed) */
 		case RROBIN_TYPE : {
 			lock_get(rrobin_lock);
 
-			if (!vsock->current_sock) {
+			if (!vsock->current_sock)
 				vsock->current_sock = h_list;
-			}
 
 			if (!vsock->current_sock->trans_mod && !parse_socket(vsock->current_sock)) {
 					LM_ERR("unable to parse socket %.*s\n",
@@ -489,6 +490,8 @@ static void virtual_free(evi_reply_sock *sock) {
 	struct virtual_socket *vsock;
 	struct sub_socket *sub_list, *tmp_s;
 
+	LM_DBG("freeing socket %.*s\n", sock->address.len ,sock->address.s);
+
 	lock_get(global_lock);
 
 	vsock = (struct virtual_socket *)sock->params;
@@ -505,17 +508,19 @@ static void virtual_free(evi_reply_sock *sock) {
 		tmp_s = sub_list;
 		sub_list = sub_list->next;
 		shm_free(tmp_s->sock_str.s);
-		shm_free(tmp_s);	
+		shm_free(tmp_s);
 	}
 
 	/* free the virtual socket from the global list */
 	if (vsock->next)
 			vsock->next->prev = vsock->prev;
-	if (vsock == *list_sockets) {
+	if (vsock == *list_sockets)
 		*list_sockets = vsock->next;
-	} else {
+	else
 		vsock->prev->next = vsock->next;
-	}
+
+	if (!vsock->next && !vsock->prev)
+		*list_sockets = NULL;
 
 	shm_free(vsock);
 
@@ -523,5 +528,5 @@ static void virtual_free(evi_reply_sock *sock) {
 }
 
 static str virtual_print(evi_reply_sock *sock) {
-	 return sock->address;
+	return sock->address;
 }
