@@ -334,6 +334,7 @@ int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 	unsigned short c_proto;
 
 	c_proto=(proto)?proto:PROTO_UDP;
+	LM_INFO("XXX - c_proto = %d\n",c_proto);
 	do{
 		list=get_sock_info_list(c_proto);
 		if (list==0){

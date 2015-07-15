@@ -248,7 +248,7 @@ int fix_all_socket_lists(void)
 			*p = '\0';
 
 			LM_ERR("listeners found for protocol %s, but no module "
-					"can handle it\n", buf);
+					"can handle it, %d, %d \n", buf,i,protos[i].id);
 			goto error;
 		}
 	}

@@ -175,6 +175,9 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 				*proto=PROTO_SCTP; return 0;
 			}
 			break;
+		case PROTO2UINT('b', 'i', 'n'):
+			if(len==3) { *proto=PROTO_BIN; return 0; }
+			break;
 
 		default:
 			if(len==2 && (s[0]|0x20)=='w' && (s[1]|0x20)=='s') {
@@ -307,6 +310,11 @@ static inline char* proto2str(int proto, char *p)
 		case PROTO_WS:
 			*(p++) = 'w';
 			*(p++) = 's';
+			break;
+		case PROTO_BIN:
+			*(p++) = 'b';
+			*(p++) = 'i';
+			*(p++) = 'n';
 			break;
 		default:
 			LM_CRIT("unsupported proto %d\n", proto);
