@@ -887,12 +887,13 @@ assign_stm: DEBUG EQUAL snumber {
 						"expected (use quotes if the hostname includes"
 						" config keywords)"); }
 		| BIN_LISTEN EQUAL listen_id COLON port {
+					// TODO - think it should be remoevd
 					if (bin) {
 						yyerror("can only define one binary packet interface");
 						YYABORT;
 					}
 
-					lst_tmp = mk_listen_id($3, PROTO_UDP, $5);
+					lst_tmp = mk_listen_id($3, PROTO_BIN, $5);
 					bin = new_sock_info(lst_tmp->name,
 										lst_tmp->port,
 										lst_tmp->proto,

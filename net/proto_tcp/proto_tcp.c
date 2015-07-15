@@ -600,7 +600,7 @@ poll_loop:
 			/* we have succesfully added async write chunk
 			 * tell MAIN to poll out for us */
 			LM_DBG("Data still pending for write on conn %p\n",c);
-			return len;
+			return 0;
 		}
 	}
 

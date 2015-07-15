@@ -26,6 +26,7 @@
 
 #include "ureplication.h"
 #include "dlist.h"
+#include "../../forward.h"
 
 str repl_module_name = str_init("ul");
 
@@ -37,6 +38,7 @@ int skip_replicated_db_ops;
 void replicate_urecord_insert(urecord_t *r)
 {
 	struct replication_dest *d;
+	str send_buffer;
 
 	if (bin_init(&repl_module_name, REPL_URECORD_INSERT) != 0) {
 		LM_ERR("failed to replicate this event\n");
@@ -46,13 +48,16 @@ void replicate_urecord_insert(urecord_t *r)
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
 
+	bin_get_buffer(&send_buffer);
+
 	for (d = replication_dests; d; d = d->next)
-		bin_send(&d->to);
+		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
 }
 
 void replicate_urecord_delete(urecord_t *r)
 {
 	struct replication_dest *d;
+	str send_buffer;
 
 	if (bin_init(&repl_module_name, REPL_URECORD_DELETE) != 0) {
 		LM_ERR("failed to replicate this event\n");
@@ -62,13 +67,16 @@ void replicate_urecord_delete(urecord_t *r)
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
 
+	bin_get_buffer(&send_buffer);
+
 	for (d = replication_dests; d; d = d->next)
-		bin_send(&d->to);
+		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
 }
 
 void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 {
 	struct replication_dest *d;
+	str send_buffer;
 	str st;
 
 	if (bin_init(&repl_module_name, REPL_UCONTACT_INSERT) != 0) {
@@ -104,13 +112,16 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.len = sizeof ci->last_modified;
 	bin_push_str(&st);
 
+	bin_get_buffer(&send_buffer);
+
 	for (d = replication_dests; d; d = d->next)
-		bin_send(&d->to);
+		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
 }
 
 void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 {
 	struct replication_dest *d;
+	str send_buffer;
 	str st;
 
 	if (bin_init(&repl_module_name, REPL_UCONTACT_UPDATE) != 0) {
@@ -146,13 +157,16 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.len = sizeof ci->last_modified;
 	bin_push_str(&st);
 
+	bin_get_buffer(&send_buffer);
+
 	for (d = replication_dests; d; d = d->next)
-		bin_send(&d->to);
+		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
 }
 
 void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 {
 	struct replication_dest *d;
+	str send_buffer;
 
 	if (bin_init(&repl_module_name, REPL_UCONTACT_DELETE) != 0) {
 		LM_ERR("failed to replicate this event\n");
@@ -165,8 +179,10 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 	bin_push_str(&c->callid);
 	bin_push_int(c->cseq);
 
+	bin_get_buffer(&send_buffer);
+
 	for (d = replication_dests; d; d = d->next)
-		bin_send(&d->to);
+		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
 }
 
 /* packet receiving */
