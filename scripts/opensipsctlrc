@@ -109,7 +109,7 @@
 # CTLENGINE=xmlrpc
 
 ## path to FIFO file
-OSIPS_FIFO="/tmp/opensips_fifo_bkp"
+# OSIPS_FIFO="/tmp/opensips_fifo_bkp"
 
 ## MI_CONNECTOR control engine: FIFO, UNIXSOCK, UDP, XMLRPC
 # MI_CONNECTOR=FIFO:/tmp/opensips_fifo
