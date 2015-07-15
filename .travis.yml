@@ -1,3 +1,3 @@
 language: c
 compiler: gcc
-script: make all
+script: make exclude_modules= all
