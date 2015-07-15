@@ -34,6 +34,7 @@
 static struct tcp_connection* tcp_conn_lst=0;
 
 static int tcpmain_sock=-1;
+extern int unix_tcp_sock;
 
 
 static void tcpconn_release(struct tcp_connection* c, long state,int writer)
@@ -58,7 +59,9 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 	/* errno==EINTR, EWOULDBLOCK a.s.o todo */
 	response[0]=(long)c;
 	response[1]=state;
-	if (send_all(tcpmain_sock, response, sizeof(response))<=0)
+	
+	if (send_all((state==ASYNC_WRITE)?unix_tcp_sock:tcpmain_sock, response, 
+	sizeof(response))<=0)
 		LM_ERR("send_all failed\n");
 }
 
@@ -76,8 +79,9 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
 		tcpconn_release(c, CONN_ERROR,1);
 		return;
 	}
-	if (pending_data)
+	if (pending_data) {
 		tcpconn_release(c, ASYNC_WRITE,1);
+	}
 	tcpconn_put(c);
 	return;
 }

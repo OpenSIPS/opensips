@@ -69,6 +69,13 @@ struct packet_cb_list {
 };
 
 
+/**
+	calls all the registered functions
+
+	@buffer: buffer containing a complete bin message
+	@rcv:    information about the sender of the message
+ */
+void call_callbacks(char* buffer, struct receive_info *rcv);
 /*
  * registers a callback function to be triggered on a received
  * binary packet marked with the @mod_name module name
@@ -104,6 +111,9 @@ int bin_push_str(const str *info);
  *		< 0: internal buffer limit reached
  */
 int bin_push_int(int info);
+
+/* TODO - comment, lol */
+int bin_get_buffer(str *buffer);
 
 /*
  * pops a str structure from a received binary packet
