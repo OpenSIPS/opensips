@@ -261,22 +261,20 @@ static evi_reply_sock* scriptroute_parse(str socket)
 	else
 		mode_pos++;
 
-	if (!strncmp(mode_pos, "sync", 4)) {
-		mode = 0;
-	} else if (!strncmp(mode_pos, "async", 5)) {
-		mode = 1;
-	} else {
-		LM_ERR("invalid sync/async mode\n");
-		return NULL;
-	}
-
-	name_len = socket.len-(mode/*if async add 1*/+4/*sync len*/+1/*'/'*/);
-
-	/* try to normalize the route name */
-	if (mode_pos)
+	if (mode_pos) {
+		if (!strncmp(mode_pos, "sync", 4)) {
+			mode = 0;
+		} else if (!strncmp(mode_pos, "async", 5)) {
+			mode = 1;
+		} else {
+			LM_ERR("invalid sync/async mode\n");
+			return NULL;
+		}
+		name_len = socket.len-(mode/*if async add 1*/+4/*sync len*/+1/*'/'*/);
 		name = pkg_realloc(dummy_buffer, name_len + 1);
-	else
+	} else {
 		name = pkg_realloc(dummy_buffer, socket.len+1);
+	}
 
 	if (!name) {
 		LM_ERR("no more pkg memory\n");
@@ -288,7 +286,8 @@ static evi_reply_sock* scriptroute_parse(str socket)
 		memcpy(name, socket.s, name_len);
 		name[name_len] = '\0';
 	} else {
-		memcpy(name, socket.s, socket.len + 1);
+		memcpy(name, socket.s, socket.len);
+		name[socket.len] = '\0';
 	}
 
 	dummy_buffer = name;

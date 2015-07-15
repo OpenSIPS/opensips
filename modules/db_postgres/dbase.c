@@ -77,6 +77,7 @@
 #include "res.h"
 
 extern int db_postgres_exec_query_threshold;
+extern int max_db_queries;
 
 static int submit_func_called;
 
@@ -170,7 +171,7 @@ static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 			return -1;
 	}
 
-	for (i=0;i<2;i++) {
+	for (i=0;i<max_db_queries;i++) {
 		/* free any previous query that is laying about */
 		if(CON_RESULT(_con)) {
 			free_query(_con);

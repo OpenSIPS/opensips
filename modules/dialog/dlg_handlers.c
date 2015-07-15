@@ -1375,8 +1375,8 @@ regular_indlg_req:
 	}
 
 early_check:
-	if ( (event==DLG_EVENT_REQPRACK || event == DLG_EVENT_REQ)
-			&& new_state==DLG_STATE_EARLY) {
+	if ( (event==DLG_EVENT_REQPRACK || event == DLG_EVENT_REQ ||
+			event == DLG_EVENT_REQBYE) && new_state==DLG_STATE_EARLY) {
 		/* within dialog request */
 		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
 

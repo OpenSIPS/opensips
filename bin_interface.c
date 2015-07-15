@@ -32,12 +32,11 @@ struct socket_info *bin;
 
 int bin_children = 1;
 
-static int child_index;
 
 static char *send_buffer;
 static char *cpos;
 
-static char rcv_buf[BUF_SIZE];
+static char *rcv_buf;
 static char *rcv_end;
 
 static struct packet_cb_list *reg_modules;
@@ -53,6 +52,13 @@ static struct packet_cb_list *reg_modules;
  *
  * @param: { LEN, MOD_NAME } + CMD
  */
+
+void set_len(char *send_buffer, char *cpos){
+	unsigned short len = cpos - send_buffer, *px;
+	px = (unsigned short *) (send_buffer + BIN_PACKET_MARKER_SIZE);
+	*px = len;
+}
+
 int bin_init(str *mod_name, int cmd_type)
 {
 	if (!send_buffer) {
@@ -75,6 +81,7 @@ int bin_init(str *mod_name, int cmd_type)
 
 	memcpy(cpos, &cmd_type, sizeof(cmd_type));
 	cpos += sizeof(cmd_type);
+	set_len(send_buffer, cpos);
 
 	return 0;
 }
@@ -103,6 +110,7 @@ int bin_push_str(const str *info)
 	cpos += LEN_FIELD_SIZE;
 	memcpy(cpos, info->s, info->len);
 	cpos += info->len;
+	set_len(send_buffer, cpos);
 
 	return (int)LEN_FIELD_SIZE + info->len;
 }
@@ -122,7 +130,20 @@ int bin_push_int(int info)
 	memcpy(cpos, &info, sizeof(info));
 	cpos += sizeof(info);
 
+	set_len(send_buffer, cpos);
+	
 	return sizeof(info);
+}
+
+int bin_get_buffer(str *buffer)
+{
+	if (!buffer)
+		return -1;
+
+	buffer->s = send_buffer;
+	buffer->len = bin_send_size;
+
+	return 1;
 }
 
 /*
@@ -136,11 +157,6 @@ int bin_skip_int(int count)
 {
 	int i;
 	char *in = cpos;
-
-	if (child_index == 0) {
-		LM_ERR("Non bin processes cannot do pop operations!\n");
-		return -2;
-	}
 
 	for (i = 0; i < count; i++) {
 		if (cpos + LEN_FIELD_SIZE > rcv_end) {
@@ -166,10 +182,6 @@ int bin_skip_str(int count)
 	int i, len;
 	char *in = cpos;
 
-	if (child_index == 0) {
-		LM_ERR("Non bin processes cannot do pop operations!\n");
-		return -2;
-	}
 
 	for (i = 0; i < count; i++) {
 		if (cpos + LEN_FIELD_SIZE > rcv_end)
@@ -207,11 +219,6 @@ int bin_pop_str(str *info)
 {
 	if (cpos == rcv_end)
 		return 1;
-
-	if (child_index == 0) {
-		LM_ERR("Non bin processes cannot do pop operations!\n");
-		return -2;
-	}
 
 	if (cpos + LEN_FIELD_SIZE > rcv_end)
 		goto error;
@@ -252,10 +259,6 @@ int bin_pop_int(void *info)
 	if (cpos == rcv_end)
 		return 1;
 
-	if (child_index == 0) {
-		LM_ERR("Non bin processes cannot do pop operations!\n");
-		return -2;
-	}
 
 	if (cpos + sizeof(int) > rcv_end) {
 		LM_ERR("Receive binary packet buffer overflow");
@@ -336,94 +339,36 @@ int bin_register_cb(char *mod_name, void (*cb)(int, struct receive_info *))
 	return 0;
 }
 
-static int has_valid_checksum(char *buf, int len)
-{
-	unsigned int crc, real_crc;
-	str st;
-
-	crc = *(unsigned int *)(buf + BIN_PACKET_MARKER_SIZE);
-
-	st.s = buf + HEADER_SIZE;
-	st.len = len - HEADER_SIZE;
-
-	crc32_uint(&st, &real_crc);
-
-	return crc == real_crc;
-}
 
 /*
  * main binary packet UDP receiver loop
  */
-static void bin_receive_loop(void)
-{
-	struct receive_info ri;
-	socklen_t addrlen;
-	struct packet_cb_list *p;
+
+
+void call_callbacks(char* buffer, struct receive_info *rcv){
 	str name;
-	int rcv_bytes;
+	struct packet_cb_list *p;
+	rcv_buf = buffer;
+	get_name(rcv_buf, name);
+	rcv_end = rcv_buf + *(unsigned short*)(buffer + BIN_PACKET_MARKER_SIZE);
 
-	ri.bind_address = bind_address;
-	ri.dst_port = bind_address->port_no;
-	ri.dst_ip = bind_address->address;
-	ri.proto = PROTO_UDP;
-	ri.proto_reserved1 = ri.proto_reserved2 = 0;
+	cpos = name.s + name.len + CMD_FIELD_SIZE;
 
-	for (;;) {
-		addrlen = sizeof ri.src_su;
-		rcv_bytes = recvfrom(bind_address->socket, rcv_buf, BUF_SIZE,
-							 0, &ri.src_su.s, &addrlen);
-		if (rcv_bytes == -1) {
-			if (errno == EAGAIN) {
-				LM_DBG("packet with bad checksum received\n");
-				continue;
-			}
+	/* packet will be now processed by a specific module */
+	for (p = reg_modules; p; p = p->next) {
+		if (p->module.len == name.len &&
+		    memcmp(name.s, p->module.s, name.len) == 0) {
 
-			LM_ERR("recvfrom: [%d] %s\n", errno, strerror(errno));
-			if (errno == EINTR || errno == EWOULDBLOCK || errno == ECONNREFUSED)
-				continue;
+			LM_DBG("binary Packet CMD: %d. Module: %.*s\n",
+					bin_rcv_type, name.len, name.s);
 
-			return;
-		}
+			p->cbf(bin_rcv_type, rcv);
 
-		if (addrlen > sizeof ri.src_su)
-			LM_CRIT("src addr truncated! (%u -> %zu)\n", addrlen, sizeof ri.src_su);
-
-		rcv_end = rcv_buf + rcv_bytes;
-
-		if (rcv_bytes < MIN_BIN_PACKET_SIZE) {
-			LM_INFO("received invalid packet: len = %d\n", rcv_bytes);
-			continue;
-		}
-
-		if (!is_valid_bin_packet(rcv_buf)) {
-			LM_WARN("Invalid binary packet header! First 10 bytes: %.*s\n",
-					10, rcv_buf);
-			continue;
-		}
-
-		if (!has_valid_checksum(rcv_buf, rcv_bytes)) {
-			LM_WARN("binary packet checksum test failed!\n");
-			continue;
-		}
-
-		get_name(rcv_buf, name);
-		cpos = name.s + name.len + CMD_FIELD_SIZE;
-
-		/* packet will be now processed by a specific module */
-		for (p = reg_modules; p; p = p->next) {
-			if (p->module.len == name.len &&
-			    memcmp(name.s, p->module.s, name.len) == 0) {
-
-				LM_DBG("binary Packet CMD: %d. Module: %.*s\n",
-						bin_rcv_type, name.len, name.s);
-
-				p->cbf(bin_rcv_type, &ri);
-
-				break;
-			}
+			break;
 		}
 	}
 }
+
 
 /*
  * called in the OpenSIPS initialization phase by the main process.
@@ -431,41 +376,4 @@ static void bin_receive_loop(void)
  *
  * @return: 0 on success
  */
-int start_bin_receivers(void)
-{
-	pid_t pid;
-	int i;
-
-	if (udp_init_listener(bin, 0) != 0)
-		return -1;
-
-	for (i = 1; i <= bin_children; i++) {
-		if ((pid = internal_fork("BIN receiver")) < 0) {
-			LM_CRIT("Cannot fork binary packet receiver process!\n");
-			return -1;
-		}
-
-		if (pid == 0) {
-			LM_DBG("CHILD sock: %d\n", bin->socket);
-
-			child_index = i;
-			set_proc_attrs("BIN receiver %.*s ",
-							bin->sock_str.len,
-							bin->sock_str.s);
-			bind_address = bin;
-
-			if (init_child(PROC_BIN) < 0) {
-				LM_ERR("init_child failed for BIN listener\n");
-				report_failure_status();
-				exit(-1);
-			}
-
-			bin_receive_loop();
-			exit(-1);
-		} else
-			LM_DBG("PARENT sock: %d\n", bin->socket);
-	}
-
-	return 0;
-}
 

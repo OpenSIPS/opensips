@@ -25,7 +25,6 @@
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
- *  2015-06-08 change from list to hash (Villaron/Tesini)
  */
  
 #include <stdio.h>
@@ -57,29 +56,17 @@ const char *XML_MODEL_ESCT= "<esct xmlns=\"urn:nena:xml:ns:es:v2\" \n  \
             </esct> ";
 
 
-char* copy_str_between_tow_pointers(char* str_begin, char* str_end){
-    //size_t tamanho =0;
-    //char *resp, *new_begin;
-    char *new_begin;    
+char* copy_str_between_two_pointers(char* str_begin, char* str_end){
+    char *new_begin;  
+
     new_begin = strstr (str_begin,">");
     new_begin +=1;
 
-    return copy_str_between_tow_pointers_simple(new_begin, str_end);
-    /*
-    tamanho = (str_end) - new_begin;
-    if (tamanho == 0)
-        return NULL;
-    resp = pkg_malloc(sizeof(char)*(tamanho+1));
-    if(resp ==NULL)
-        return resp;
-    memcpy ( resp, new_begin, tamanho );
-    resp[tamanho]='\0';
-    return resp;
-    */
+    return copy_str_between_two_pointers_simple(new_begin, str_end);
 }
 
 
-char* copy_str_between_tow_pointers_simple(char* str_begin, char* str_end){
+char* copy_str_between_two_pointers_simple(char* str_begin, char* str_end){
     size_t tamanho =0;
     char *resp;
     tamanho = str_end - str_begin;
@@ -93,16 +80,19 @@ char* copy_str_between_tow_pointers_simple(char* str_begin, char* str_end){
     return resp;
 }
 
-char* copy_str_between_tow_tags(char* tag_begin, char* str_total){
+char* copy_str_between_two_tags(char* tag_begin, char* str_total){
     char *ptr1,*ptr2;
     char *complete_tag_begin, *complete_tag_end;
-    //char* resp = pkg_malloc(sizeof(char));
-    //memset(resp,'\0',1);
+    int size_begin, size_end;
     
-    complete_tag_begin =  pkg_malloc(sizeof(char) * (strlen(tag_begin)+ strlen("<") + strlen(">")));
-    complete_tag_end =  pkg_malloc(sizeof(char) * (strlen(tag_begin)+ strlen("</") + strlen(">")));
+    size_begin =  sizeof(char) * (strlen(tag_begin)+ strlen("<") + strlen(">")) + 1;
+    size_end = sizeof(char) * (strlen(tag_begin)+ strlen("</") + strlen(">")) + 1;
+    complete_tag_begin =  pkg_malloc(size_begin);
+    complete_tag_end =  pkg_malloc(size_end);
+    memset(complete_tag_begin, 0, size_begin);
+    memset(complete_tag_end, 0, size_end);    
+
     if(complete_tag_begin == NULL || complete_tag_end == NULL)
-        //return resp;
         return NULL;
 
     strcpy (complete_tag_begin,"<");
@@ -116,23 +106,22 @@ char* copy_str_between_tow_tags(char* tag_begin, char* str_total){
     ptr1 = strstr(str_total,complete_tag_begin);
     ptr2 = strstr(str_total,complete_tag_end);
     if(ptr1 != NULL && ptr2 != NULL){
-        LM_DBG(" --- ENCONTROU A TAG %s",str_total);
+        LM_DBG(" --- FOUND TAG %s",str_total);
         pkg_free(complete_tag_begin);
         pkg_free(complete_tag_end);        
-        return copy_str_between_tow_pointers(ptr1,ptr2);
+        return copy_str_between_two_pointers(ptr1,ptr2);
     }else{
-        LM_DBG(" --- NAO ENCONTROU A TAG %s",str_total);
+        LM_DBG(" --- NOT FOUND TAG %s",str_total);
     }
     
     pkg_free(complete_tag_begin);
     pkg_free(complete_tag_end);
     
-    //return resp;
     return NULL;
 
 }
 
-char* copy_str_between_tow_tags_simple(char* tag_begin, char* str_total){
+char* copy_str_between_two_tags_simple(char* tag_begin, char* str_total){
     char *ptr1,*ptr2;
     char *complete_tag_begin, *complete_tag_end;
     //char* resp = pkg_malloc(sizeof(char));
@@ -157,7 +146,7 @@ char* copy_str_between_tow_tags_simple(char* tag_begin, char* str_total){
         LM_DBG(" --- ENCONTROU A TAG %s",str_total);
         pkg_free(complete_tag_begin);
         pkg_free(complete_tag_end);        
-        return copy_str_between_tow_pointers_simple(ptr1 + strlen(tag_begin) + 1,ptr2);
+        return copy_str_between_two_pointers_simple(ptr1 + strlen(tag_begin) + 1,ptr2);
     }else{
         LM_DBG(" --- NAO ENCONTROU A TAG %s",str_total);
     }
@@ -217,9 +206,9 @@ char* parse_xml_esct(char* xml){
     if (check_ectAck_init_tags(xml))
         return NULL;       
     
-    new_callid = copy_str_between_tow_tags(callid,xml);
-    //new_datetimestamp = copy_str_between_tow_tags(datetimestamp,xml);
-    new_vpc = copy_str_between_tow_tags(vpc,xml);
+    new_callid = copy_str_between_two_tags(callid,xml);
+    //new_datetimestamp = copy_str_between_two_tags(datetimestamp,xml);
+    new_vpc = copy_str_between_two_tags(vpc,xml);
 
     if(new_vpc != NULL){
         pkg_free(new_vpc);  
@@ -315,11 +304,11 @@ struct notify_body* parse_notify(char* xml){
     if (pt_version == NULL || pt_dlg_state == NULL || pt_entity == NULL || pt_end_entity == NULL)
         return NULL;
 
-    target_info = copy_str_between_tow_tags_simple(dialog,dialog_body);
+    target_info = copy_str_between_two_tags_simple(dialog,dialog_body);
     if (target_info == NULL)
         return NULL;
 
-    notify->state = copy_str_between_tow_tags(state,dialog_body);
+    notify->state = copy_str_between_two_tags(state,dialog_body);
     if (notify->state == NULL)
         return NULL;
    
@@ -332,14 +321,14 @@ struct notify_body* parse_notify(char* xml){
     if (pt_dialog_id == NULL || pt_callid == NULL || pt_local_tag == NULL || pt_direction == NULL || pt_end_direction == NULL)
         return NULL;
 
-    notify->params->version = copy_str_between_tow_pointers_simple(pt_version + strlen(version), pt_dlg_state);
-    notify->params->state = copy_str_between_tow_pointers_simple(pt_dlg_state + strlen(dlg_state), pt_entity);
-    notify->params->entity = copy_str_between_tow_pointers_simple(pt_entity + strlen(entity), pt_end_entity);
+    notify->params->version = copy_str_between_two_pointers_simple(pt_version + strlen(version), pt_dlg_state);
+    notify->params->state = copy_str_between_two_pointers_simple(pt_dlg_state + strlen(dlg_state), pt_entity);
+    notify->params->entity = copy_str_between_two_pointers_simple(pt_entity + strlen(entity), pt_end_entity);
 
-    notify->target->dlg_id = copy_str_between_tow_pointers_simple(pt_dialog_id + strlen(dialog_id), pt_callid);
-    notify->target->callid = copy_str_between_tow_pointers_simple(pt_callid + strlen(callid), pt_local_tag);
-    notify->target->local_tag = copy_str_between_tow_pointers_simple(pt_local_tag + strlen(local_tag), pt_direction);
-    notify->target->direction = copy_str_between_tow_pointers_simple(pt_direction + strlen(direction), pt_end_direction);
+    notify->target->dlg_id = copy_str_between_two_pointers_simple(pt_dialog_id + strlen(dialog_id), pt_callid);
+    notify->target->callid = copy_str_between_two_pointers_simple(pt_callid + strlen(callid), pt_local_tag);
+    notify->target->local_tag = copy_str_between_two_pointers_simple(pt_local_tag + strlen(local_tag), pt_direction);
+    notify->target->direction = copy_str_between_two_pointers_simple(pt_direction + strlen(direction), pt_end_direction);
 
     return notify; 
 
@@ -366,12 +355,11 @@ PARSED* parse_xml(char* xml){
     char* npa = "npa";
     
     char *new_vpc, *new_destination, *new_ert;
-    //LM_DBG(" --- STEP 1");
+
     PARSED *parsed = pkg_malloc(sizeof(PARSED));
     parsed->vpc =pkg_malloc(sizeof(NENA));
     parsed->destination =pkg_malloc(sizeof(NENA));
     parsed->ert =pkg_malloc(sizeof(ERT));
-    //LM_DBG(" --- STEP 2");
 
     if (check_str_between_init_tags(xml))
         return NULL;       
@@ -379,20 +367,20 @@ PARSED* parse_xml(char* xml){
     if(parsed == NULL || parsed->vpc == NULL || parsed->destination == NULL || parsed->ert == NULL)
         return NULL;
     
-    parsed->result = copy_str_between_tow_tags(result,xml);
-    parsed->esgwri = copy_str_between_tow_tags(esgwri,xml);
-    parsed->esqk = copy_str_between_tow_tags(esqk,xml);
-    parsed->lro = copy_str_between_tow_tags(lro,xml);
-    parsed->callid = copy_str_between_tow_tags(callid,xml);
-    parsed->datetimestamp = copy_str_between_tow_tags(datetimestamp,xml);
+    parsed->result = copy_str_between_two_tags(result,xml);
+    parsed->esgwri = copy_str_between_two_tags(esgwri,xml);
+    parsed->esqk = copy_str_between_two_tags(esqk,xml);
+    parsed->lro = copy_str_between_two_tags(lro,xml);
+    parsed->callid = copy_str_between_two_tags(callid,xml);
+    parsed->datetimestamp = copy_str_between_two_tags(datetimestamp,xml);
 
-    new_vpc = copy_str_between_tow_tags(vpc,xml);
+    new_vpc = copy_str_between_two_tags(vpc,xml);
     if(new_vpc != NULL){
-        parsed->vpc->organizationname = copy_str_between_tow_tags(organizationname,new_vpc);
-        parsed->vpc->hostname = copy_str_between_tow_tags(hostname,new_vpc);
-        parsed->vpc->nenaid = copy_str_between_tow_tags(nenaid,new_vpc);
-        parsed->vpc->contact = copy_str_between_tow_tags(contact,new_vpc);
-        parsed->vpc->certuri = copy_str_between_tow_tags(certuri,new_vpc);  
+        parsed->vpc->organizationname = copy_str_between_two_tags(organizationname,new_vpc);
+        parsed->vpc->hostname = copy_str_between_two_tags(hostname,new_vpc);
+        parsed->vpc->nenaid = copy_str_between_two_tags(nenaid,new_vpc);
+        parsed->vpc->contact = copy_str_between_two_tags(contact,new_vpc);
+        parsed->vpc->certuri = copy_str_between_two_tags(certuri,new_vpc);  
         pkg_free(new_vpc);
     }else{
         parsed->vpc->organizationname = NULL;
@@ -402,13 +390,13 @@ PARSED* parse_xml(char* xml){
         parsed->vpc->certuri = NULL;
     }
 
-    new_destination = copy_str_between_tow_tags(destination,xml);
+    new_destination = copy_str_between_two_tags(destination,xml);
     if(new_destination!= NULL){
-        parsed->destination->organizationname = copy_str_between_tow_tags(organizationname,new_destination);
-        parsed->destination->hostname = copy_str_between_tow_tags(hostname,new_destination);
-        parsed->destination->nenaid = copy_str_between_tow_tags(nenaid,new_destination);
-        parsed->destination->contact = copy_str_between_tow_tags(contact,new_destination);
-        parsed->destination->certuri = copy_str_between_tow_tags(certuri,new_destination);
+        parsed->destination->organizationname = copy_str_between_two_tags(organizationname,new_destination);
+        parsed->destination->hostname = copy_str_between_two_tags(hostname,new_destination);
+        parsed->destination->nenaid = copy_str_between_two_tags(nenaid,new_destination);
+        parsed->destination->contact = copy_str_between_two_tags(contact,new_destination);
+        parsed->destination->certuri = copy_str_between_two_tags(certuri,new_destination);
         pkg_free(new_destination);
     }else{
         parsed->destination->organizationname = NULL;
@@ -418,11 +406,11 @@ PARSED* parse_xml(char* xml){
         parsed->destination->certuri = NULL;       
     }
     
-    new_ert = copy_str_between_tow_tags(ert,xml);
+    new_ert = copy_str_between_two_tags(ert,xml);
     if(new_ert != NULL){  
-        parsed->ert->selectiveRoutingID = copy_str_between_tow_tags(selectiveRoutingID,new_ert);
-        parsed->ert->routingESN = copy_str_between_tow_tags(routingESN,new_ert);
-        parsed->ert->npa = copy_str_between_tow_tags(npa,new_ert);
+        parsed->ert->selectiveRoutingID = copy_str_between_two_tags(selectiveRoutingID,new_ert);
+        parsed->ert->routingESN = copy_str_between_two_tags(routingESN,new_ert);
+        parsed->ert->npa = copy_str_between_two_tags(npa,new_ert);
         pkg_free(new_ert);
     }else{
         parsed->ert->selectiveRoutingID = NULL;

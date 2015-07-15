@@ -289,6 +289,7 @@ extern char *finame;
 %token XLOG
 %token XLOG_BUF_SIZE
 %token XLOG_FORCE_COLOR
+%token XLOG_DEFAULT_LEVEL
 %token RAISE_EVENT
 %token SUBSCRIBE_EVENT
 %token CONSTRUCT_URI
@@ -505,6 +506,7 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 								$$=pkg_malloc(strlen(tmp)+1);
 								if ($$==0){
 									LM_CRIT("cfg. parser: out of memory.\n");
+									YYABORT;
 								}else{
 									strncpy($$, tmp, strlen(tmp)+1);
 								}
@@ -513,6 +515,7 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 		|	STRING			{	$$=pkg_malloc(strlen($1)+1);
 							if ($$==0){
 									LM_CRIT("cfg. parser: out of memory.\n");
+									YYABORT;
 							}else{
 									strncpy($$, $1, strlen($1)+1);
 							}
@@ -523,6 +526,7 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 								$$=pkg_malloc(strlen($1)+1);
 								if ($$==0){
 									LM_CRIT("cfg. parser: out of memory.\n");
+									YYABORT;
 								}else{
 									strncpy($$, $1, strlen($1)+1);
 								}
@@ -868,8 +872,10 @@ assign_stm: DEBUG EQUAL snumber {
 		| USER_AGENT_HEADER EQUAL error { yyerror("string value expected"); }
 		| XLOG_BUF_SIZE EQUAL NUMBER { xlog_buf_size = $3; }
 		| XLOG_FORCE_COLOR EQUAL NUMBER { xlog_force_color = $3; }
+		| XLOG_DEFAULT_LEVEL EQUAL NUMBER { xlog_default_level = $3; }
 		| XLOG_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| XLOG_FORCE_COLOR EQUAL error { yyerror("boolean value expected"); }
+		| XLOG_DEFAULT_LEVEL EQUAL error { yyerror("number expected"); }
 		| LISTEN EQUAL listen_def {
 							if (add_listener($3, 0)!=0){
 								LM_CRIT("cfg. parser: failed"
@@ -881,12 +887,13 @@ assign_stm: DEBUG EQUAL snumber {
 						"expected (use quotes if the hostname includes"
 						" config keywords)"); }
 		| BIN_LISTEN EQUAL listen_id COLON port {
+					// TODO - think it should be remoevd
 					if (bin) {
 						yyerror("can only define one binary packet interface");
 						YYABORT;
 					}
 
-					lst_tmp = mk_listen_id($3, PROTO_UDP, $5);
+					lst_tmp = mk_listen_id($3, PROTO_BIN, $5);
 					bin = new_sock_info(lst_tmp->name,
 										lst_tmp->port,
 										lst_tmp->proto,
@@ -928,7 +935,7 @@ assign_stm: DEBUG EQUAL snumber {
 									pkg_realloc(default_global_port.s, i_tmp);
 								if (!default_global_port.s) {
 									LM_CRIT("cfg. parser: out of memory.\n");
-									default_global_port.len = 0;
+									YYABORT;
 								} else {
 									default_global_port.len = i_tmp;
 									memcpy(default_global_port.s, tmp,
@@ -1067,9 +1074,9 @@ ipv4:	NUMBER DOT NUMBER DOT NUMBER DOT NUMBER {
 											$$=pkg_malloc(
 													sizeof(struct ip_addr));
 											if ($$==0){
-												LM_CRIT("cfg. "
-													"parser: out of memory.\n"
-													);
+												LM_CRIT("cfg. parser: "
+												        "out of memory\n");
+												YYABORT;
 											}else{
 												memset($$, 0,
 													sizeof(struct ip_addr));
@@ -1101,6 +1108,7 @@ ipv6addr:	IPV6ADDR {
 					$$=pkg_malloc(sizeof(struct ip_addr));
 					if ($$==0){
 						LM_CRIT("ERROR: cfg. parser: out of memory.\n");
+						YYABORT;
 					}else{
 						memset($$, 0, sizeof(struct ip_addr));
 						$$->af=AF_INET6;
@@ -1119,7 +1127,8 @@ ipv6:	ipv6addr { $$=$1; }
 folded_string:	STRING STRING {
 				$$ = pkg_malloc( strlen($1) + strlen($2) + 1);
 				if ($$==0){
-					LM_CRIT("ERROR: cfg. parser: out of memory.\n");
+					yyerror("cfg. parser: out of memory");
+					YYABORT;
 				} else {
 					strcpy($$,$1); strcat($$,$2);
 					pkg_free($1); pkg_free($2);
@@ -1129,6 +1138,7 @@ folded_string:	STRING STRING {
 				$$ = pkg_malloc( strlen($1) + strlen($2) + 1);
 				if ($$==0){
 					LM_CRIT("ERROR: cfg. parser: out of memory.\n");
+					YYABORT;
 				} else {
 					strcpy($$,$1); strcat($$,$2);
 					pkg_free($1); pkg_free($2);
@@ -1140,8 +1150,10 @@ route_name:  ID {
 				}
 		| NUMBER {
 				tmp=int2str($1, &i_tmp);
-				if (($$=pkg_malloc(i_tmp+1))==0)
+				if (($$=pkg_malloc(i_tmp+1))==0) {
 					yyerror("cfg. parser: out of memory.\n");
+					YYABORT;
+				}
 				memcpy( $$, tmp, i_tmp);
 				$$[i_tmp] = 0;
 				}
@@ -1365,6 +1377,7 @@ script_var:	SCRIPTVAR	{
 				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
 				if (spec==NULL){
 					yyerror("no more pkg memory\n");
+					YYABORT;
 				}
 				memset(spec, 0, sizeof(pv_spec_t));
 				tstr.s = $1;
@@ -1539,6 +1552,7 @@ host:	ID				{ $$=$1; }
 						  if ($$==0){
 							LM_CRIT("cfg. parser: memory allocation"
 										" failure while parsing host\n");
+							YYABORT;
 						  }else{
 							memcpy($$, $1, strlen($1));
 							$$[strlen($1)]=*$2;
@@ -2150,7 +2164,10 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 
 						/* duplicate the list */
 						a_tmp = pkg_malloc($5 * sizeof(action_elem_t));
-						if (!a_tmp) yyerror("no more pkg memory");
+						if (!a_tmp) {
+							yyerror("no more pkg memory");
+							YYABORT;
+						}
 						memcpy(a_tmp, route_elems, $5*sizeof(action_elem_t));
 
 						mk_action3( $$, ROUTE_T, NUMBER_ST,	/* route idx */
@@ -2311,6 +2328,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								if (!(tmp = pkg_malloc(tstr.len + 1))) {
 										LM_CRIT("out of pkg memory\n");
 										$$ = 0;
+										YYABORT;
 								} else {
 									memcpy(tmp, tstr.s, tstr.len);
 									tmp[tstr.len] = '\0';

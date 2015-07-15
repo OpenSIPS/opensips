@@ -701,17 +701,6 @@ static int main_loop(void)
 			*startup_done = 0;
 		}
 
-		if (fix_socket_list(&bin) != 0) {
-			LM_ERR("failed to initialize binary interface socket list!\n");
-			goto error;
-		}
-
-		/* OpenSIPS <--> OpenSIPS communication interface */
-		if (bin && start_bin_receivers() != 0) {
-			LM_CRIT("cannot start binary interface receiver processes!\n");
-			goto error;
-		}
-
 		/* fork for the timer process*/
 		if (start_timer_processes()!=0) {
 			LM_CRIT("cannot start timer process(es)\n");

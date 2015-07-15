@@ -290,14 +290,14 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 	 * LM_DBG("submit_query(): %.*s\n", _s->len, _s->s);
 	 */
 
-	for (i=0; i<2; i++) {
+	for (i=0; i<max_db_queries; i++) {
 		start_expire_timer(start,db_mysql_exec_query_threshold);
 		code = wrapper_single_mysql_real_query(_h, _s);
 		stop_expire_timer(start,db_mysql_exec_query_threshold,"mysql query",_s->s,_s->len,0);
 		if (code < 0) {
 			/* got disconnected during call */
 			switch_state_to_disconnected(_h);
-			if (connect_with_retry(_h, 3) != 0) {
+			if (connect_with_retry(_h, max_db_retries) != 0) {
 				/* mysql reconnection problem */
 				LM_ERR("failed to reconnect before trying "
 					"mysql_stmt_prepare()\n");
@@ -394,7 +394,7 @@ static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
 	LM_DBG(" query  is <%.*s>, ptr=%p\n",
 		ctx->query.len, ctx->query.s, ctx->stmt);
 
-	for( i=0 ; i<2 ; i++ ) {
+	for( i=0 ; i< max_db_queries ; i++ ) {
 		/* re-init the statement */
 		if ( !(ctx->stmt=mysql_stmt_init(CON_CONNECTION(conn))) ) {
 			LM_ERR("failed while mysql_stmt_init()\n");
@@ -405,7 +405,7 @@ static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
 		if (code < 0) {
 			/* got disconnected during call */
 			switch_state_to_disconnected(conn);
-			if (connect_with_retry(conn, 3) != 0) {
+			if (connect_with_retry(conn, max_db_retries) != 0) {
 				/* mysql reconnection problem */
 				LM_ERR("failed to reconnect before trying "
 					"mysql_stmt_prepare()\n");
@@ -719,7 +719,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		if (code < 0) {
 			/* got disconnected during call */
 			switch_state_to_disconnected(conn);
-			if (connect_with_retry(conn, 3) != 0) {
+			if (connect_with_retry(conn, max_db_retries) != 0) {
 				/* mysql reconnection problem */
 				LM_ERR("failed to reconnect before trying mysql_stmt_prepare()\n");
 				break;
@@ -737,7 +737,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 			cleanup_rows(buffered_rows);
 			return -1;
 		}
-	} while (code!=0 && i<2 );
+	} while (code!=0 && i< max_db_queries );
 
 	mysql_raise_event(conn);
 	if (code != 0) {
@@ -1146,7 +1146,7 @@ int db_mysql_async_raw_query(db_con_t *_h, const str *_s)
 	/* no prepared statements support */
 	CON_RESET_CURR_PS(_h);
 
-	for (i = 0; i < 2; i++) {
+	for (i = 0; i < max_db_queries; i++) {
 		start_expire_timer(start, db_mysql_exec_query_threshold);
 
 		/* async mode */
@@ -1161,7 +1161,7 @@ int db_mysql_async_raw_query(db_con_t *_h, const str *_s)
 		if (code < 0) {
 			/* got disconnected during call */
 			switch_state_to_disconnected(_h);
-			if (connect_with_retry(_h, 3) != 0) {
+			if (connect_with_retry(_h, max_db_retries) != 0) {
 				/* mysql reconnection problem */
 				LM_ERR("failed to reconnect before trying "
 					"mysql_stmt_prepare()\n");
@@ -1200,6 +1200,7 @@ out:
 int db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r)
 {
 	struct pool_con *con;
+	int rc;
 
 	con = db_match_async_con(fd, _h);
 	if (!con) {
@@ -1207,25 +1208,38 @@ int db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r)
 		abort();
 	}
 
-	if (mysql_read_query_result(CON_CONNECTION(_h)) == 0) {
-		if (_r) {
-			if (db_mysql_store_result(_h, _r) != 0) {
-				LM_ERR("failed to store result\n");
-				return -1;
-			}
-		}
+	rc = mysql_read_query_result(CON_CONNECTION(_h));
+	LM_DBG("mysql_read_query_result: %d, %s - \"%s\"\n",
+	       mysql_errno(CON_CONNECTION(_h)), mysql_sqlstate(CON_CONNECTION(_h)),
+		   mysql_error(CON_CONNECTION(_h)));
 
+	/* error status (most likely from a bad query) */
+	if (rc != 0) {
+		LM_ERR("error [%d, %s]: %s\n", mysql_errno(CON_CONNECTION(_h)),
+		       mysql_sqlstate(CON_CONNECTION(_h)),
+		       mysql_error(CON_CONNECTION(_h)));
 		mysql_free_result(CON_RESULT(_h));
 		CON_RESULT(_h) = NULL;
 
 		db_switch_to_sync(_h);
 		db_store_async_con(_h, con);
-		return 0;
+		return -1;
 	}
+
+	if (_r) {
+		if (db_mysql_store_result(_h, _r) != 0) {
+			LM_ERR("failed to store result\n");
+			db_switch_to_sync(_h);
+			db_store_async_con(_h, con);
+			return -2;
+		}
+	}
+
+	mysql_free_result(CON_RESULT(_h));
+	CON_RESULT(_h) = NULL;
 
 	db_switch_to_sync(_h);
 	db_store_async_con(_h, con);
-	async_status = ASYNC_CONTINUE;
 	return 0;
 }
 

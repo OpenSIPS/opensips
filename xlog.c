@@ -41,6 +41,7 @@ char *log_buf = NULL;
 
 int xlog_buf_size = 4096;
 int xlog_force_color = 0;
+int xlog_default_level = L_ERR;
 
 static int buf_init(void)
 {
@@ -115,7 +116,7 @@ int xlog_1(struct sip_msg* msg, char* frm, char* str2)
 		return -1;
 
 	/* log_buf[log_len] = '\0'; */
-	LM_GEN1(L_ERR, "%.*s", log_len, log_buf);
+	LM_GEN1(xlog_default_level, "%.*s", log_len, log_buf);
 
 	return 1;
 }

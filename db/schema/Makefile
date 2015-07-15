@@ -56,7 +56,7 @@ ifeq ($(VERBOSE), 1)
 	override XSLTPROC := $(XSLTPROC) --verbose
 endif
 
-all: mysql postgres dbtext db_berkeley docbook oracle pi_framework
+all: mysql postgres dbtext db_berkeley docbook oracle pi_framework sqlite
 
 .PHONY: pi_framework pi_framework_clean
 pi_framework:
@@ -97,7 +97,7 @@ mysql_clean:
 	-@rm -f $(ROOT)/scripts/mysql/*
 
 .PHONY: sqlite sqlite_clean
-mysql:
+sqlite:
 	for FILE in $(TABLES); do \
 		XML_CATALOG_FILES=$(CATALOG) $(XSLTPROC) $(XSLTPROC_FLAGS) \
 		--stringparam dir "$(ROOT)/scripts/sqlite" \
@@ -106,7 +106,7 @@ mysql:
 		$(SQLITE_XSL) opensips-"$$FILE".xml ; \
 	done
 
-mysql_clean:
+sqlite_clean:
 	-@rm -f $(ROOT)/scripts/sqlite/*
 
 

@@ -171,7 +171,6 @@ static int w_ds_count(struct sip_msg*, char*, const char *, char*);
 
 static int w_ds_is_in_list(struct sip_msg*, char*, char*, char*, char*);
 
-
 static void destroy(void);
 
 static struct mi_root* ds_mi_set(struct mi_root* cmd, void* param);

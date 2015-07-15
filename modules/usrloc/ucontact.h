@@ -86,6 +86,7 @@ typedef struct ucontact {
 	unsigned int methods;   /*!< Supported methods */
 	str attr;               /*!< Additional registration info  */
 	struct proxy_l next_hop;/*!< SIP-wise determined next hop */
+	unsigned int label;     /*!< label to find the contact in contact list>*/
 
 	struct ucontact* next;  /*!< Next contact in the linked list */
 	struct ucontact* prev;  /*!< Previous contact in the linked list */
@@ -123,7 +124,7 @@ typedef struct ucontact_info {
  * Create a new contact structure
  */
 ucontact_t* new_ucontact(str* _dom, str* _aor, str* _contact,
-		ucontact_info_t* _ci);
+		unsigned int label, ucontact_info_t* _ci);
 
 
 /*! \brief

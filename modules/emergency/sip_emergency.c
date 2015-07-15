@@ -141,7 +141,7 @@ int get_subscription_state_header(struct sip_msg *msg, char** subs_state, char**
                 return 1;
             }
 
-            LM_INFO(" --- Subscription_state body: %.*s\n\n", atual->body.len, atual->body.s);
+            LM_DBG(" --- Subscription_state body: %.*s\n\n", atual->body.len, atual->body.s);
             state_aux = pkg_malloc(sizeof (char)*MAXNUMBERLEN);
             if (state_aux == NULL) {
                 LM_ERR("no more pkg memory\n");
@@ -158,7 +158,7 @@ int get_subscription_state_header(struct sip_msg *msg, char** subs_state, char**
             replacement_state.len = strlen(replacement_state.s);
 
             if (reg_replace(pattern_state.s, replacement_state.s, atual->body.s, &pt_state) == 1) { 
-                LM_INFO(" --- REPLACE OK\n\n");
+                LM_DBG(" --- REPLACE OK\n\n");
                 *subs_state = state_aux;           
 
                 expires_aux = pkg_malloc(sizeof (char)*MAXNUMBERLEN);
@@ -179,7 +179,7 @@ int get_subscription_state_header(struct sip_msg *msg, char** subs_state, char**
 
             }
 
-            LM_INFO(" --- REPLACE NOK\n\n");
+            LM_DBG(" --- REPLACE NOK\n\n");
             return 0;
 
         }
@@ -230,19 +230,19 @@ int get_event_header(struct sip_msg *msg, char** subs_callid, char** from_tag) {
     str replacement_ftag;
 
 
-    LM_INFO(" --- get_event_header\n\n");
+    LM_DBG(" --- get_event_header\n\n");
     if (parse_headers(msg, HDR_OTHER_F, 0) == -1) {
         LM_ERR("NO HEADER header\n");
         return 0;
     }
 
-    LM_INFO("EVENT: %.*s \n", msg->event->body.len, msg->event->body.s);
+    LM_DBG("EVENT: %.*s \n", msg->event->body.len, msg->event->body.s);
 
     if (msg->event->body.len > 0){
 
 
 
-        LM_INFO(" --- Event body: %.*s\n\n",msg->event->body.len, msg->event->body.s);
+        LM_DBG(" --- Event body: %.*s\n\n",msg->event->body.len, msg->event->body.s);
         callid_aux = pkg_malloc(sizeof (char)*MAXNUMBERLEN);
         if (callid_aux == NULL) {
             LM_ERR("no more pkg memory\n");
@@ -259,7 +259,7 @@ int get_event_header(struct sip_msg *msg, char** subs_callid, char** from_tag) {
         replacement_callid.len = strlen(replacement_callid.s);
 
         if (reg_replace(pattern_callid.s, replacement_callid.s, msg->event->body.s, &pt_callid) == 1) { 
-            LM_INFO(" --- REPLACE OK\n\n");
+            LM_DBG(" --- REPLACE OK\n\n");
             *subs_callid = callid_aux;           
 
             ftag_aux = pkg_malloc(sizeof (char)*MAXNUMBERLEN);
@@ -274,13 +274,13 @@ int get_event_header(struct sip_msg *msg, char** subs_callid, char** from_tag) {
             replacement_ftag.s = "\\2";
             replacement_ftag.len = strlen(replacement_ftag.s);       
             if (reg_replace(pattern_callid.s, replacement_ftag.s, msg->event->body.s, &pt_ftag) == 1) {  
-                LM_INFO(" --- REPLACE OK II\n\n");                 
+                LM_DBG(" --- REPLACE OK II\n\n");                 
                 *from_tag = ftag_aux;
                 return 1;
             }
 
         }
-        LM_INFO(" --- REPLACE NOK\n\n");
+        LM_DBG(" --- REPLACE NOK\n\n");
       
         return 0;
 
@@ -327,8 +327,8 @@ int get_geolocation_header(struct sip_msg *msg, char** locationHeader) {
         
         char* geo = strstr(name, GEO_LOCATION);
         char* httpBody = strstr(body, "http");
-        char* geoRouting = strstr(name, GEO_LOCATION_ROUTING);        
-        
+        char* geoRouting = strstr(name, GEO_LOCATION_ROUTING);    
+
         pkg_free(name);
         pkg_free(body);
         
@@ -342,17 +342,17 @@ int get_geolocation_header(struct sip_msg *msg, char** locationHeader) {
             if (aux == NULL) {
                 LM_ERR("NO MEMORY\n");
                 return -1;
-            }
-             
+            }   
+
             strcpy(aux, locationTotalHeader);
             strcat(aux, LOCATION_TAG_BEGIN);
             strncat(aux, atual->body.s, atual->body.len);
             strcat(aux, LOCATION_TAG_END);
             strcat(aux, NEW_LINE);
             aux[new_size - 1] = 0;
-            if (TotalHeader_len != 0)               
+            if (TotalHeader_len != 0)                          
                 pkg_free(locationTotalHeader);
-            
+
             locationTotalHeader = aux;
             LM_DBG(" --- get_geolocation_header ATUAL %s \n\n", locationTotalHeader);
         }
@@ -775,6 +775,7 @@ int add_headers(char *esqk, struct sip_msg *msg, str cbn) {
     rr_api.record_route(msg, NULL);
     resp = 1;
 end:
+    LM_INFO(" *************************  END free cbn%p \n", cbn.s);
     pkg_free(cbn.s);
     pkg_free(s_addr);
     return resp;
@@ -850,7 +851,7 @@ int add_hdr_PAI(struct sip_msg *msg, str cbn) {
         goto end;
     }
 
-    rr_api.record_route(msg, NULL);
+    //rr_api.record_route(msg, NULL);
     resp = 1;
 end:
     pkg_free(cbn.s);
@@ -893,6 +894,7 @@ int find_body_pidf(struct sip_msg *msg, char** pidf_body) {
                 LM_ERR("no more pkg memory\n");
                 return -1;
             }
+
             memcpy(body_aux, body_start, size_body - 1);
             body_aux[size_body - 1] = 0;
             *pidf_body = body_aux;
@@ -918,7 +920,7 @@ int proxy_request(struct sip_msg *msg,char *call_server_hostname) {
     char *ack_aux;
     int   size_new_uri;
     
-    LM_DBG(" ---Hole: proxy routing \n");
+    LM_DBG(" ---role: proxy routing \n");
     if (call_server_hostname == NULL) {
         LM_ERR("emergency call server not defined\n");
         return -1;
@@ -931,7 +933,7 @@ int proxy_request(struct sip_msg *msg,char *call_server_hostname) {
         return -1;
     }
 
-    LM_INFO(" ---USER: %.*s \n\n", msg->parsed_uri.user.len, msg->parsed_uri.user.s);
+    LM_DBG(" ---USER: %.*s \n\n", msg->parsed_uri.user.len, msg->parsed_uri.user.s);
     int server_host_len = strlen(call_server_hostname);
     size_new_uri = server_host_len + msg->parsed_uri.user.len + 6;
 
@@ -969,7 +971,7 @@ int new_uri_proxy(struct sip_msg *req_msg, char* new_uri ){
 
     int new_uri_len;
     
-    LM_INFO("NEW_URI_PROXY %s\n", new_uri);   
+    LM_DBG("NEW_URI_PROXY %s\n", new_uri);   
     new_uri_len = strlen (new_uri);
     
     req_msg->new_uri.s = (char*)pkg_malloc(new_uri_len+1);
@@ -995,8 +997,8 @@ int extract_contact_hdrs(struct sip_msg *reply, char **contact_esgwri, char **co
     char* contact_aux;
     char* contact_lro_aux;
 
-    LM_INFO ("TRANS REPLY %.*s \n", reply->first_line.u.reply.reason.len, reply->first_line.u.reply.reason.s); 
-    LM_INFO ("TRANS REPLY CODE%d \n", reply->first_line.u.reply.statuscode);
+    LM_DBG ("TRANS REPLY %.*s \n", reply->first_line.u.reply.reason.len, reply->first_line.u.reply.reason.s); 
+    LM_DBG ("TRANS REPLY CODE%d \n", reply->first_line.u.reply.statuscode);
 
     // check if is 300/302 reply
     if ((reply->first_line.u.reply.statuscode != 300)&&(reply->first_line.u.reply.statuscode != 302)){

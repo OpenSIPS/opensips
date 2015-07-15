@@ -117,6 +117,7 @@ int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val);
 int run_startup_route(void);
 
 int is_script_func_used( char *name, int param_no);
+int is_script_async_func_used( char *name, int param_no);
 
 
 #endif

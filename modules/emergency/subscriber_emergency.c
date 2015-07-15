@@ -25,6 +25,7 @@
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
  */
 
 #include <stdio.h>
@@ -130,7 +131,7 @@ int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb){
     subs_cell->dlg_id->local_tag.len = pfrom->tag_value.len;
     subs_cell->dlg_id->local_tag.s = (char *) (subs_cell->dlg_id + 1) + callid->len; 
     memcpy(subs_cell->dlg_id->local_tag.s, pfrom->tag_value.s, pfrom->tag_value.len);
-    LM_INFO("SUBS_FROM_TAG: %.*s \n ", subs_cell->dlg_id->local_tag.len, subs_cell->dlg_id->local_tag.s ); 
+    LM_DBG("SUBS_FROM_TAG: %.*s \n ", subs_cell->dlg_id->local_tag.len, subs_cell->dlg_id->local_tag.s ); 
 
     subs_cell->dlg_id->rem_tag.len = pto->tag_value.len;
     subs_cell->dlg_id->rem_tag.s = (char *) (subs_cell->dlg_id + 1) + callid->len + pfrom->tag_value.len; 
@@ -143,12 +144,12 @@ int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb){
     subs_cell->call_dlg_id->callid.len= params_cb->callid_ori.len;
     subs_cell->call_dlg_id->callid.s = (char *) (subs_cell->call_dlg_id + 1);
     memcpy(subs_cell->call_dlg_id->callid.s, params_cb->callid_ori.s, params_cb->callid_ori.len);        
-    LM_INFO("SUBS_CALLID_ORI: %.*s \n ", subs_cell->call_dlg_id->callid.len, subs_cell->call_dlg_id->callid.s );  
+    LM_DBG("SUBS_CALLID_ORI: %.*s \n ", subs_cell->call_dlg_id->callid.len, subs_cell->call_dlg_id->callid.s );  
 
     subs_cell->call_dlg_id->local_tag.len= params_cb->from_tag.len;
     subs_cell->call_dlg_id->local_tag.s = (char *) (subs_cell->call_dlg_id + 1) + params_cb->callid_ori.len;
     memcpy(subs_cell->call_dlg_id->local_tag.s, params_cb->from_tag.s, params_cb->from_tag.len);        
-    LM_INFO("SUBS_FROMTAG_event: %.*s \n ", subs_cell->call_dlg_id->local_tag.len, subs_cell->call_dlg_id->local_tag.s );
+    LM_DBG("SUBS_FROMTAG_event: %.*s \n ", subs_cell->call_dlg_id->local_tag.len, subs_cell->call_dlg_id->local_tag.s );
 
     subs_cell->loc_uri.len = pfrom->uri.len;
     subs_cell->loc_uri.s = (char *) (subs_cell->call_dlg_id + 1) + params_cb->callid_ori.len + params_cb->from_tag.len;
@@ -175,10 +176,11 @@ int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb){
 
     vsp_str.s = vsp_addr;
     vsp_str.len = vsp_addr_len;
-            LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_str.len, vsp_str.s);
+            LM_DBG("********************************************IP DE ORIGEM%.*s\n", vsp_str.len, vsp_str.s);
 
     hash_code= core_hash(&vsp_str, 0, subst_size);
-            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+            LM_DBG("********************************************HASH_CODE%d\n", hash_code);
+
 
     if(insert_shtable(subs_htable, hash_code,subs_cell)< 0){
         LM_ERR("inserting new record in subs_htable\n");
@@ -253,7 +255,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *params){
     LM_DBG("REPLY: %.*s \n ", reply->first_line.u.reply.version.len, reply->first_line.u.reply.version.s );
     LM_DBG("CODE: %d \n ", code); 
     LM_DBG("CALLID_INVITE: %.*s \n ",params_cb->callid_ori.len,params_cb->callid_ori.s); 
-    LM_INFO("FROM_TAG_INVITE: %.*s \n ",params_cb->from_tag.len,params_cb->from_tag.s);
+    LM_DBG("FROM_TAG_INVITE: %.*s \n ",params_cb->from_tag.len,params_cb->from_tag.s);
 
     /* verify if response is OK*/
     if (code < 300){
@@ -348,8 +350,8 @@ int build_params_cb(struct sip_msg* msg, char* callidHeader,  struct parms_cb* p
     }
 
     from_tag = get_from(msg)->tag_value;  
-    LM_INFO("****** FROM_TAG: %.*s\n", from_tag.len, from_tag.s); 
-    LM_INFO("************  CALLID = %s \n", callidHeader);
+    LM_DBG("****** FROM_TAG: %.*s\n", from_tag.len, from_tag.s); 
+    LM_DBG("************  CALLID = %s \n", callidHeader);
 
     size_callid = strlen(callidHeader);
 
@@ -546,11 +548,11 @@ void subs_cback_func_II(struct cell *t, int cb_type, struct tmcb_params *params)
 
         vsp_addr.s = ip_addr2a(&reply->rcv.src_ip);
         vsp_addr.len = strlen(vsp_addr.s);
-                LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+                LM_DBG("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
 
         hash_code= core_hash(&vsp_addr, 0, subst_size);
-                LM_INFO("********************************************HASH_CODE%d\n", hash_code);
-            LM_INFO("********************************************CALLID_STR%.*s\n", vsp_addr.len, vsp_addr.s);
+                LM_DBG("********************************************HASH_CODE%d\n", hash_code);
+            LM_DBG("********************************************CALLID_STR%.*s\n", vsp_addr.len, vsp_addr.s);
 
         delete_shtable(subs_htable, hash_code,params_subs);
 
@@ -668,7 +670,7 @@ int send_subscriber(struct sip_msg* msg, char* callidHeader, int expires){
     /* add new header (Event, Expires) in SUBSCRIBE request */   
     pt_hdr = add_hdr_subscriber( expires, params_cb->event);
   
-    LM_INFO("****** PARAMS FROM TAG: %.*s\n", params_cb->from_tag.len, params_cb->from_tag.s);  
+    LM_DBG("****** PARAMS FROM TAG: %.*s\n", params_cb->from_tag.len, params_cb->from_tag.s);  
 
     /* send SUBSCRIBER */
     sending= eme_tm.t_request
@@ -822,14 +824,14 @@ struct sm_subscriber* get_subs_cell(struct sip_msg *msg, str callid_event) {
     LM_DBG("PTO: %.*s \n ", pto->uri.len, pto->uri.s ); 
     LM_DBG("PTO_TAG: %.*s \n ", pto->tag_value.len, pto->tag_value.s ); 
 
-    if (proxy_hole_aux == 3) {
+    if (proxy_role_aux == 3) {
         hash_code= core_hash(&callid_event, 0, subst_size);
-                LM_INFO("********************************************HASH_CODE%d\n", hash_code);
-                LM_INFO("********************************************CALLID_STR%.*s\n", callid_event.len, callid_event.s);
+                LM_DBG("********************************************HASH_CODE%d\n", hash_code);
+                LM_DBG("********************************************CALLID_STR%.*s\n", callid_event.len, callid_event.s);
     }else{
         vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
         vsp_addr.len = strlen(vsp_addr.s);
-                LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+                LM_DBG("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
         hash_code= core_hash(&vsp_addr, 0, subst_size);               
     }
 
@@ -896,8 +898,8 @@ int treat_notify(struct sip_msg *msg) {
         }
         return 0;
     }
-    LM_INFO("STATE: %s\n ", subs_state); 
-    LM_INFO("SUBS_EXPIRES: %s\n ", subs_expires);
+    LM_DBG("STATE: %s\n ", subs_state); 
+    LM_DBG("SUBS_EXPIRES: %s\n ", subs_expires);
 
     time(&rawtime);
     time_now = (int)rawtime;
@@ -923,8 +925,8 @@ int treat_notify(struct sip_msg *msg) {
                 callid_orig = cell_subs->call_dlg_id->callid;
                 from_tag = cell_subs->call_dlg_id->local_tag;
 
-                LM_INFO(" --- CALLID_ORIG %.*s \n", callid_orig.len, callid_orig.s);
-                LM_INFO(" --- FROM_TAG_ORIG %.*s \n", from_tag.len, from_tag.s);
+                LM_DBG(" --- CALLID_ORIG %.*s \n", callid_orig.len, callid_orig.s);
+                LM_DBG(" --- FROM_TAG_ORIG %.*s \n", from_tag.len, from_tag.s);
 
                 if(send_esct(msg, callid_orig, from_tag) == 0){
                     LM_ERR("error in send to esct\n"); 
@@ -932,11 +934,11 @@ int treat_notify(struct sip_msg *msg) {
 
                 vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
                 vsp_addr.len = strlen(vsp_addr.s);
-                        LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+                        LM_DBG("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
 
                 hash_code= core_hash(&vsp_addr, 0, subst_size);
-                        LM_INFO("********************************************HASH_CODE%d\n", hash_code);
-                        LM_INFO("********************************************CALLID_STR%.*s\n", vsp_addr.len, vsp_addr.s);
+                        LM_DBG("********************************************HASH_CODE%d\n", hash_code);
+                        LM_DBG("********************************************CALLID_STR%.*s\n", vsp_addr.len, vsp_addr.s);
 
                 delete_shtable(subs_htable, hash_code, cell_subs);
 
@@ -987,7 +989,7 @@ int treat_notify(struct sip_msg *msg) {
     version = atoi(version_aux);
     pkg_free(version_aux);
     LM_DBG(" --- STATE %s", notify_body->state);
-    LM_INFO(" --- VERSION %d", version);
+    LM_DBG(" --- VERSION %d", version);
 
     if(cell_subs->version >= version){
          LM_ERR(" --- ERRO IN VERSION PARAMETER IN NOTIFY BODY");   

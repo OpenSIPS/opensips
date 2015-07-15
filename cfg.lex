@@ -208,6 +208,7 @@ CACHE_RAW_QUERY		"cache_raw_query"
 XDBG			"xdbg"
 XLOG_BUF_SIZE	"xlog_buf_size"
 XLOG_FORCE_COLOR	"xlog_force_color"
+XLOG_DEFAULT_LEVEL	"xlog_default_level"
 XLOG			"xlog"
 RAISE_EVENT		"raise_event"
 SUBSCRIBE_EVENT	"subscribe_event"
@@ -527,6 +528,8 @@ IMPORTFILE      "import_file"
 									return XLOG_BUF_SIZE; }
 <INITIAL>{XLOG_FORCE_COLOR}	{	count(); yylval.strval=yytext;
 									return XLOG_FORCE_COLOR;}
+<INITIAL>{XLOG_DEFAULT_LEVEL}	{	count(); yylval.strval=yytext;
+									return XLOG_DEFAULT_LEVEL;}
 <INITIAL>{RAISE_EVENT}		{	count(); yylval.strval=yytext;
 									return RAISE_EVENT;}
 <INITIAL>{SUBSCRIBE_EVENT}		{	count(); yylval.strval=yytext;

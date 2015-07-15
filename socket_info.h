@@ -43,7 +43,7 @@
 int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 							char *adv_name, unsigned short adv_port,
 							unsigned short children, enum si_flags flags);
-inline struct socket_info *
+extern inline struct socket_info *
 new_sock_info(char* name, unsigned short port, unsigned short proto,
 							char *adv_name, unsigned short adv_port,
 							unsigned short children, enum si_flags flags);
@@ -174,6 +174,9 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 			if(len==4 && (s[3]=='p' || s[3]=='P')) {
 				*proto=PROTO_SCTP; return 0;
 			}
+			break;
+		case PROTO2UINT('b', 'i', 'n'):
+			if(len==3) { *proto=PROTO_BIN; return 0; }
 			break;
 
 		default:
@@ -307,6 +310,11 @@ static inline char* proto2str(int proto, char *p)
 		case PROTO_WS:
 			*(p++) = 'w';
 			*(p++) = 's';
+			break;
+		case PROTO_BIN:
+			*(p++) = 'b';
+			*(p++) = 'i';
+			*(p++) = 'n';
 			break;
 		default:
 			LM_CRIT("unsupported proto %d\n", proto);

@@ -754,6 +754,80 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->rs.s = _tr_buffer;
 			val->rs.len = i;
 			break;
+		case TR_S_B64ENCODE:
+			if(!(val->flags&PV_VAL_STR))
+			{
+				val->rs.s = int2str(val->ri, &val->rs.len);
+				val->flags |= PV_VAL_STR;
+				break;
+			}
+			if(val->rs.len>TR_BUFFER_SIZE-1) {
+				LM_ERR("b64encode value larger than buffer\n");
+				return -1;
+			}
+			st.s = _tr_buffer;
+			st.len = calc_base64_encode_len(val->rs.len);
+
+			base64encode((unsigned char *)st.s,
+				     (unsigned char *)val->rs.s,
+				     val->rs.len);
+
+			memset(val, 0, sizeof(pv_value_t));
+			val->flags = PV_VAL_STR;
+			val->rs = st;
+			break;
+		case TR_S_B64DECODE:
+			if(!(val->flags&PV_VAL_STR))
+			{
+				val->rs.s = int2str(val->ri, &val->rs.len);
+				val->flags |= PV_VAL_STR;
+				break;
+			}
+			if(val->rs.len>TR_BUFFER_SIZE-1) {
+				LM_ERR("b64decode value larger than buffer\n");
+				return -1;
+			}
+                        st.s = _tr_buffer;
+                        st.len = base64decode((unsigned char *)st.s, 
+                                              (unsigned char *)val->rs.s,
+                                              val->rs.len);
+                        memset(val, 0, sizeof(pv_value_t));
+                        val->flags = PV_VAL_STR;
+                        val->rs = st;
+                        break;
+		case TR_S_XOR:
+			/* ensure string format */
+			if(!(val->flags&PV_VAL_STR))
+			{
+				val->rs.s = int2str(val->ri, &val->rs.len);
+				val->flags |= PV_VAL_STR;
+			}
+			if(val->rs.len>TR_BUFFER_SIZE-1) {
+				LM_ERR("xor value larger than buffer\n");
+				return -1;
+			}
+			/* secret to use */
+			if(tp->type==TR_PARAM_STRING)
+			{
+				st = tp->v.s;
+			} else {
+				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
+                                                || (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
+				{
+					LM_ERR("xor cannot get p1\n");
+					return -1;
+				}
+				st = v.rs;
+			}
+			
+			p = _tr_buffer;
+			for (i=0; i<val->rs.len; i++) {
+				*p = val->rs.s[i] ^ st.s[i % st.len];
+				p++;
+			}
+			/* leave val flags and length in tact and update with result */
+                        val->rs.s = _tr_buffer;
+			break;
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
@@ -2609,6 +2683,33 @@ char* tr_parse_string(str* in, trans_t *t)
 		if(*p!=TR_RBRACKET)
 		{
 			LM_ERR("invalid width transformation: %.*s!!\n",
+				in->len, in->s);
+			goto error;
+		}
+		return p;
+	} else if(name.len==9 && strncasecmp(name.s, "b64encode", 9)==0) {
+		t->subtype = TR_S_B64ENCODE;
+		return p;
+	} else if(name.len==9 && strncasecmp(name.s, "b64decode", 9)==0) {
+		t->subtype = TR_S_B64DECODE;
+		return p;
+	} else if(name.len==3 && strncasecmp(name.s, "xor", 3)==0) {
+		t->subtype = TR_S_XOR;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid xor transformation: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		p++;
+		tr_parse_sparam(p, p0, tp, spec, ps, in, s);
+		t->params = tp;
+		tp = 0;
+		trim_ws(p);
+
+		while(is_in_str(p, in) && is_ws(*p)) p++;
+		if(*p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid xor transformation: %.*s!!\n",
 				in->len, in->s);
 			goto error;
 		}

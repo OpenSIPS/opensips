@@ -43,6 +43,7 @@ struct urecord;
 typedef struct hslot {
 
 	map_t records;
+	unsigned int next_label;
 
 	struct udomain* d;      /*!< Domain we belong to */
 #ifdef GEN_LOCK_T_PREFERED

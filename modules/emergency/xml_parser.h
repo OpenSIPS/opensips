@@ -153,9 +153,9 @@ struct sm_subscriber{
     struct sm_subscriber *next;
 };
 
-char* copy_str_between_tow_pointers(char* str_begin, char* str_end);
-char* copy_str_between_tow_pointers_simple(char* str_begin, char* str_end);
-char* copy_str_between_tow_tags(char* tag_begin, char* str_total);
+char* copy_str_between_two_pointers(char* str_begin, char* str_end);
+char* copy_str_between_two_pointers_simple(char* str_begin, char* str_end);
+char* copy_str_between_two_tags(char* tag_begin, char* str_total);
 int check_str_between_init_tags( char* str_total);
 int check_ectAck_init_tags( char* str_total);
 PARSED* parse_xml(char* xml);

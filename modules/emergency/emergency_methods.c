@@ -35,8 +35,9 @@
 #include <curl/curl.h>
 #include "emergency_methods.h"
 
-#define TABLE_ROUTING_VERSION   1
-#define TABLE_REPORT_VERSION   1
+#define TABLE_ROUTING_VERSION    1
+#define TABLE_REPORT_VERSION     1
+#define TABLE_PROVIDER_VERSION   1
 
 /*
  * Module initialization and cleanup
@@ -72,25 +73,11 @@ static param_export_t params[] = {
     { "db_url", STR_PARAM, &db_url.s},
     { "db_table_routing", STR_PARAM, &table_name},
     { "db_table_report", STR_PARAM, &table_report},
+    { "db_table_provider", STR_PARAM, &table_provider},    
     { "url_vpc", STR_PARAM, &url_vpc},
-    { "vpc_organization_name", STR_PARAM, &vpc_organization_name},
-    { "vpc_hostname", STR_PARAM, &vpc_hostname},
-    { "vpc_nena_id", STR_PARAM, &vpc_nena_id},
-    { "vpc_contact", STR_PARAM, &vpc_contact},
-    { "vpc_cert_uri", STR_PARAM, &vpc_cert_uri},
-    { "source_organization_name", STR_PARAM, &source_organization_name},
-    { "source_hostname", STR_PARAM, &source_hostname},
-    { "source_nena_id", STR_PARAM, &source_nena_id},
-    { "source_contact", STR_PARAM, &source_contact},
-    { "source_cert_uri", STR_PARAM, &source_cert_uri},
-    { "vsp_organization_name", STR_PARAM, &vsp_organization_name},
-    { "vsp_hostname", STR_PARAM, &vsp_hostname},
-    { "vsp_nena_id", STR_PARAM, &vsp_nena_id},
-    { "vsp_contact", STR_PARAM, &vsp_contact},
-    { "vsp_cert_uri", STR_PARAM, &vsp_cert_uri},
     { "contingency_hostname", STR_PARAM, &contingency_hostname},
     { "emergency_call_server", STR_PARAM, &call_server_hostname},
-    { "proxy_hole", INT_PARAM, &proxy_hole},
+    { "proxy_role", INT_PARAM, &proxy_role},
     { "callorigin", STR_PARAM, &call_origin},
     { "call_htable_size", INT_PARAM, &emetable_size},
     { "subs_htable_size", INT_PARAM, &substable_size},    
@@ -169,6 +156,8 @@ static int set_codes(unsigned int type, void *val) {
     }
     LM_DBG(" --- CODE  -----> %.*s\n", code_len, code);
     LM_DBG(" --- DESC  -----> %.*s\n", description_len, description);
+    LM_INFO(" *************************  END new_code%p \n", new_code);
+    LM_INFO(" *************************  TAM new_code%d \n", sizeof (struct code_number));        
 
     new_code->code.s = code;
     new_code->code.len = code_len;
@@ -184,6 +173,18 @@ static int set_codes(unsigned int type, void *val) {
     return 0;
 }
 
+void destroy_codes(struct code_number *codes){
+    struct code_number *c;
+
+    while(codes){
+        c= codes;
+        codes= codes->next;
+        LM_INFO(" *************************  END free codes%p \n", c);
+        pkg_free(c);
+    }
+}
+
+
 /* 
 *   This function is responsible for :
 *   - load api from modules dialog and rr
@@ -196,18 +197,14 @@ static int mod_init(void) {
 
     LM_DBG("Initializing module\n");
 
-    proxy_hole_aux = proxy_hole;
+    proxy_role_aux = proxy_role;
 
     // checks for mandatory fields
-    if (source_hostname == NULL || source_contact == NULL) {
-        LM_ERR("source_hostname and source_contact are mandatory \n");
-        mandatory_parm = 1;
-    }
-    LM_DBG("TEST proxy_hole == 1 %d\n", proxy_hole);
-    if (proxy_hole == 1 && (vsp_hostname == NULL || vsp_nena_id == NULL)) {
-        LM_ERR("vsp_hostname and vsp_nena_id are mandatory when opensips hole as routing proxy in scenario II\n");
-        mandatory_parm = 1;
-    }
+    mandatory_parm = 0;
+
+    inicialized = shm_malloc(2);
+    inicialized[0] = '0';
+    inicialized[1] = 0; 
 
     LM_DBG(" ---fill parameters not config with blank_space \n");
     if (fill_blank_space() == -1)
@@ -249,28 +246,36 @@ static int mod_init(void) {
         }
 
 
-        if (!DB_CAPABILITY(db_funcs, DB_CAP_INSERT)) {
+        if (!DB_CAPABILITY(db_funcs, DB_CAP_ALL)) {
             LM_ERR("database modules does not provide all functions needed by module\n");
             return -1;
         }
 
         if (db_check_table_version(&db_funcs, db_con, &table_name, TABLE_ROUTING_VERSION) < 0) {
-            LM_ERR("error during table version check.\n");
+            LM_ERR("error during routing table version check.\n");
             return -1;
         }
+
+        if (db_check_table_version(&db_funcs, db_con, &table_report, TABLE_REPORT_VERSION) < 0) {
+            LM_ERR("error during report table version check.\n");
+            return -1;
+        }   
+
+        if (db_check_table_version(&db_funcs, db_con, &table_provider, TABLE_PROVIDER_VERSION) < 0) {
+            LM_ERR("error during provider table version check.\n");
+            return -1;
+        }            
 
         db_funcs.close(db_con);
         db_con = 0;
     }
 
-    db_table = (str *)shm_malloc(sizeof (str*));
+    db_table = (str *)shm_malloc(sizeof (str));
     if (!db_table) {
         LM_ERR("no more memory");
         return -1;
     }
     db_table = &table_report;
-
-
 
     db_esrn_esgwri = shm_malloc(sizeof (struct esrn_routing *));
     if (!db_esrn_esgwri) {
@@ -279,8 +284,14 @@ static int mod_init(void) {
     }
     *db_esrn_esgwri = NULL;
 
-    if (register_timer("emer_rout_table", routing_timer, 0,
-          timer_interval, 0) < 0) {
+    db_service_provider = shm_malloc(sizeof (struct service_provider *));
+    if (!db_service_provider) {
+        LM_ERR("no more memory");
+        return -1;
+    }
+    *db_service_provider = NULL; 
+
+    if (register_timer("emer_rout_table", routing_timer, 0, timer_interval, 0) < 0) {
         LM_ERR("failed to register timer \n");
         return -1;
     }
@@ -315,10 +326,9 @@ static int mod_init(void) {
     }    
 
     /* data */
-
     curl_global_init(CURL_GLOBAL_ALL);
 
-    LM_INFO("EMERGENCY Module initialized!\n");
+    LM_DBG("EMERGENCY Module initialized!\n");
     return 0;
 }
 
@@ -328,30 +338,37 @@ static int mod_init(void) {
 *   - initialize polling routing timer
 */
 static int child_init(int rank) {
-    LM_INFO("Initializing child\n");
+    LM_DBG("Initializing child\n");
+
     if (db_url.s && rank>PROC_MAIN) {           
         /* open a test connection */
+
         if ((db_con = db_funcs.init(&db_url)) == 0) {
             LM_ERR("cannot init connection to DB\n");
             return -1;
         }
 
-        routing_timer(0, 0);
-    }
+        if (strcmp(inicialized, "0") == 0){
+            inicialized[0] = '1';
+            inicialized[1] = 0;
 
+            routing_timer(0, 0);        
+        }
+
+    }
     return 0;
 }
 
 
 /*
-*  
 *  - close database connection 
 *  - terminate lock (ref_lock)
 */
 static void mod_destroy(void) {
     curl_global_cleanup();
 
-    db_funcs.close(db_con);
+    if (db_con != NULL && db_funcs.close != 0)
+        db_funcs.close(db_con);
 
     if(ref_lock){
         lock_destroy_rw( ref_lock );
@@ -362,9 +379,169 @@ static void mod_destroy(void) {
         destroy_ehtable(call_htable, emet_size);
 
     if(subs_htable)
-        destroy_shtable(subs_htable, subst_size);    
+        destroy_shtable(subs_htable, subst_size);
+
+    shm_free(inicialized);
+    shm_free(db_service_provider);
+    shm_free(db_esrn_esgwri);   
+    shm_free(empty);
+    destroy_codes(codes); 
+
+
 }
 
+
+/* 
+* - copying data from the routing table to the list db_esrn_domain (performance improvement)
+*/
+void routing_timer(unsigned int ticks, void *attr) {
+
+    if (get_db_routing(table_name, ref_lock ) != 1)
+        LM_ERR("ERROR IN GET ROUTING OF DB \n");
+
+    if (get_db_provider(table_provider, ref_lock ) != 1)
+        LM_ERR("ERROR IN GET SERVICE PROVIDER OF DB \n");    
+
+    libera_esqk();
+
+    free_subs();    
+}
+
+
+/* 
+* - verifying the expiration for packet loss ( timing values are diferent for ACK and BYE)
+* - if there is an expiration the module sends a POST informing the VPC to exclude the number
+*   the key ESQK is retreived from the list calls_eme
+*/
+static void libera_esqk(void) {
+
+    time_t rawtime;
+    struct tm * timeinfo;
+    char formated_time[80];
+    int resp = 1;
+    char* response;
+    char* esct_callid;
+    char* xml;
+    struct node* current;
+    NODE *previous = NULL;
+    NODE *free_cell;
+    int i;
+
+    for(i= 0; i< emet_size; i++){
+
+        lock_get(&call_htable[i].lock);
+
+        previous= call_htable[i].entries;
+        current= previous->next;
+
+        while (current) {
+
+            current->esct->timeout --;
+            NODE* next = current->next;
+            LM_DBG("TIMEOUT:%d\n", current->esct->timeout);
+            if (current->esct->timeout <= 0 ){
+                LM_DBG("time fires\n");              
+                free_cell = current;
+                previous->next = next; 
+         
+                if ((proxy_role == 0) || (proxy_role == 1) ||(proxy_role == 4)){
+                    //sends ESCT only if VPC provided key ESQK
+                    if (strlen(free_cell->esct->esqk) > 0){
+                        LM_DBG(" --- SEND ESQK=%s \n \n",free_cell->esct->esqk);
+
+                        //send esctRequest to the VPC
+                        time(&rawtime);
+                        timeinfo = localtime(&rawtime);
+                        strftime(formated_time, 80, "%Y-%m-%dT%H:%M:%S%Z", timeinfo);
+                        free_cell->esct->datetimestamp = formated_time;
+
+                        xml = buildXmlFromModel(free_cell->esct);
+                        resp = post(url_vpc, xml, &response);
+                        if (resp == -1) {
+                            LM_ERR(" --- PROBLEM OF THE BYE POST\n \n");
+                        }
+
+                        esct_callid = parse_xml_esct(response);
+                        if (esct_callid== NULL) {
+                            LM_ERR(" --- esctAck invalid format or without mandatory field \n \n");        
+                        } else {
+                            if (strcmp(esct_callid, free_cell->esct->callid)){                    
+                                LM_ERR(" --- callid in esctAck different from asctRequest \n \n");             
+                            }
+                            if(esct_callid)
+                                pkg_free(esct_callid);
+                        }
+                        pkg_free(response);
+                        pkg_free(xml);
+                    }
+                }
+                shm_free(current);
+                
+            }else{
+                previous = current;           
+            }  
+            current = next;
+        }
+        lock_release(&call_htable[i].lock);
+    }
+}
+
+/* 
+* - verifying the expiration for subscribe
+* - free subscriber cell
+*/
+static void free_subs(void) {
+
+    time_t rawtime;
+    struct sm_subscriber* current;
+    struct sm_subscriber* previous = NULL;
+    struct sm_subscriber* free_cell;
+    struct sm_subscriber* next;
+    int time_C;
+    int i;
+
+    time(&rawtime);
+    time_C = (int)rawtime;
+    LM_DBG("TIME : %d \n", (int)rawtime );
+
+    for(i= 0; i< subst_size; i++){
+
+        lock_get(&subs_htable[i].lock);
+
+        previous= subs_htable[i].entries;
+        current= previous->next;
+
+        while (current) {
+
+            next = current->next;
+            LM_DBG("timeout %d\n", current->timeout);   
+            if (current->timeout <= time_C ){
+                LM_DBG("time fires %d\n", current->timeout);              
+                free_cell = current;
+                previous->next = next; 
+
+                if (proxy_role == 3) {
+                    if ( free_cell->dlg_id->local_tag.s)
+                        shm_free(free_cell->dlg_id->local_tag.s);
+                }
+
+                shm_free(free_cell);
+                
+            }else{
+                previous = current;           
+            }  
+            current = next;
+        }
+        lock_release(&subs_htable[i].lock); 
+
+    } 
+    
+}
+
+
+/*
+ * Callback Functions
+ */
 
 /* 
 *   - treats the request within the dialog forwarding to the INVITE that first created the dialog
@@ -375,20 +552,20 @@ void indialog_ua(struct dlg_cell* dlg, int type, struct dlg_cb_params * params){
     int dir = params->direction;
     int resp;
 
-    LM_INFO(" New sequential request received:%d !! \n",dir);
-    LM_INFO(" New sequential request method:%.*s \n",msg->first_line.u.request.method.len,msg->first_line.u.request.method.s);
+    LM_DBG(" New sequential request received:%d !! \n",dir);
+    LM_DBG(" New sequential request method:%.*s \n",msg->first_line.u.request.method.len,msg->first_line.u.request.method.s);
 
     if (memcmp(msg->first_line.u.request.method.s,"BYE", msg->first_line.u.request.method.len) == 0) { 
-        LM_INFO(" --- TREAT BYE  -----  \n \n");  
+        LM_DBG(" --- TREAT BYE  -----  \n \n");  
 
         resp = bye(msg,dir);
-        LM_INFO(" ---TREATMENT DIALOG BYE:%d", resp);        
+        LM_DBG(" ---TREATMENT DIALOG BYE:%d", resp);        
         //return resp;
     }else{
         if (dir == 1){
-            LM_INFO(" --- TREAT DOWNSTREAM  -----  \n \n"); 
+            LM_DBG(" --- TREAT DOWNSTREAM  -----  \n \n"); 
             resp = routing_ack(msg);
-            LM_INFO(" ---TREATMENT DIALOG ACK:%d", resp);
+            LM_DBG(" ---TREATMENT DIALOG ACK:%d", resp);
             //return resp;
         }
     }
@@ -418,7 +595,7 @@ void reply_in_redirect( struct cell* t, int type, struct tmcb_params *params){
         }
     }
     pfrom = get_from(msg_retran);
-    LM_INFO("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
+    LM_DBG("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
 
     if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0){
         LM_ERR("INVITE without from_tag value \n");
@@ -433,7 +610,6 @@ void reply_in_redirect( struct cell* t, int type, struct tmcb_params *params){
 
     memset(from_tag, 0, pfrom->tag_value.len + 1);
     strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
-    LM_INFO("PFROM_TAGIII: %s \n ", from_tag );
 
     if( msg_retran->callid==NULL || msg_retran->callid->body.s==NULL){
         LM_ERR("reply without callid header\n");
@@ -476,9 +652,6 @@ void reply_in_redirect( struct cell* t, int type, struct tmcb_params *params){
     call_cell->eme_dlg_id->call_id[reply->callid->body.len] = 0;
 
     call_cell->eme_dlg_id->rem_tag = "";
-
-    LM_INFO("PFROM_TAGIII: %s \n ", call_cell->eme_dlg_id->local_tag ); 
-    LM_INFO("CALL_IDIII: %s \n ", call_cell->eme_dlg_id->call_id );
 
     call_cell->esqk = empty;
     call_cell->esgw = empty;    
@@ -535,10 +708,10 @@ void reply_in_redirect( struct cell* t, int type, struct tmcb_params *params){
 
     vsp_addr.s = ip_addr2a(&msg_retran->rcv.src_ip);
     vsp_addr.len = strlen(vsp_addr.s);
-            LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+            LM_DBG("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
 
     hash_code= core_hash(&vsp_addr, 0, emet_size);
-            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+            LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
     if(insert_ehtable(call_htable,hash_code,call_cell)< 0){
             LM_ERR("inserting new record in subs_htable\n");
@@ -550,145 +723,7 @@ void reply_in_redirect( struct cell* t, int type, struct tmcb_params *params){
 }
 
 
-/* 
-* - verifying the expiration for packet loss ( timing values are diferent for ACK and BYE)
-* - if there is an expiration the module sends a POST informing the VPC to exclude the number
-*   the key ESQK is retreived from the list calls_eme
-*/
-static void libera_esqk(void) {
 
-    time_t rawtime;
-    struct tm * timeinfo;
-    char formated_time[80];
-    int resp = 1;
-    char* response;
-    char* esct_callid;
-    char* xml;
-    struct node* current;
-    NODE *previous = NULL;
-    NODE *free_cell;
-
-    lock_get(&call_htable[0].lock);
-
-    previous= call_htable[0].entries;
-    current= previous->next;
-
-    while (current) {
-
-        current->esct->timeout --;
-        NODE* next = current->next;
-        LM_INFO("TIMEOUT:%d\n", current->esct->timeout);
-        if (current->esct->timeout <= 0 ){
-            LM_INFO("time fires\n");              
-            free_cell = current;
-            previous->next = next; 
- 
- 
-            if ((proxy_hole == 0) || (proxy_hole == 1) ||(proxy_hole == 4)){
-                //sends ESCT only if VPC provided key ESQK
-                if (strlen(free_cell->esct->esqk) > 0){
-                    LM_DBG(" --- SEND ESQK=%s \n \n",free_cell->esct->esqk);
-
-                    //send esctRequest to the VPC
-                    if(free_cell->esct->datetimestamp){
-                        //shm_free (free_cell->esct->datetimestamp);
-                        LM_DBG(" --- FREE_CELL->TIME");                                
-                    }
-                    time(&rawtime);
-                    timeinfo = localtime(&rawtime);
-                    strftime(formated_time, 80, "%Y-%m-%dT%H:%M:%S%Z", timeinfo);
-                    free_cell->esct->datetimestamp = formated_time;
-
-                    xml = buildXmlFromModel(free_cell->esct);
-                    resp = post(url_vpc, xml, &response);
-                    if (resp == -1) {
-                        LM_ERR(" --- PROBLEM OF THE BYE POST\n \n");
-                    }
-
-                    esct_callid = parse_xml_esct(response);
-                    if (esct_callid== NULL) {
-                        LM_ERR(" --- esctAck invalid format or without mandatory field \n \n");        
-                    } else {
-                        if (strcmp(esct_callid, free_cell->esct->callid)){                    
-                            LM_ERR(" --- callid in esctAck different from asctRequest \n \n");             
-                        }
-                        if(esct_callid)
-                            pkg_free(esct_callid);
-                    }
-                    pkg_free(response);
-                    pkg_free(xml);
-                }
-            }
-
-            shm_free(current);
-            
-        }else{
-            previous = current;           
-        }  
-        current = next;
-    }
-    lock_release(&call_htable[0].lock);
-}
-
-
-static void free_subs(void) {
-
-    time_t rawtime;
-    struct sm_subscriber* current;
-    struct sm_subscriber* previous = NULL;
-    struct sm_subscriber* free_cell;
-    struct sm_subscriber* next;
-    int time_C;
-
-    time(&rawtime);
-    time_C = (int)rawtime;
-    LM_DBG("TIME : %d \n", (int)rawtime );
-
-    lock_get(&subs_htable[0].lock);
-
-    previous= subs_htable[0].entries;
-    current= previous->next;
-
-    while (current) {
-
-        next = current->next;
-        LM_INFO("timeout %d\n", current->timeout);   
-        if (current->timeout <= time_C ){
-            LM_INFO("time fires %d\n", current->timeout);              
-            free_cell = current;
-            previous->next = next; 
-
-            if (proxy_hole == 3) {
-                if ( free_cell->dlg_id->local_tag.s)
-                    shm_free(free_cell->dlg_id->local_tag.s);
-            }
-
-            shm_free(free_cell);
-            
-        }else{
-            previous = current;           
-        }  
-        current = next;
-    }
-
-    lock_release(&subs_htable[0].lock);  
-    
-}
-
-
-/* 
-* - copying data from the routing table to the list db_esrn_domain (performance improvement)
-*/
-void routing_timer(unsigned int ticks, void *attr) {
-
-    if (get_db_routing(table_name, ref_lock ) != 1)
-        LM_ERR("ERROR IN GET ROUTING OF DB \n");
-
-    libera_esqk();
-
-    free_subs();
-
-}
 
 
 /*
@@ -711,10 +746,10 @@ int emergency_call(struct sip_msg *msg) {
      // the emergency call treatment start with INVITE    
     if (memcmp(msg->first_line.u.request.method.s,"INVITE", msg->first_line.u.request.method.len) == 0) {
         if (is_emergency_call(msg)) {
-            LM_INFO(" --- IT IS AN EMERGECY -----  \n \n"); 
+            LM_DBG(" --- IT IS AN EMERGECY -----  \n \n"); 
             // It is, forward the INVITE            
             if(send_request_vpc(msg) == 1){
-                LM_INFO(" --- CRIA DIALOGO -----  \n \n"); 
+
                 if (dlgb.create_dlg(msg,0)<1) {
                     LM_ERR("failed to create dialog\n");
                     return -1;
@@ -731,10 +766,7 @@ int emergency_call(struct sip_msg *msg) {
                 }
 
                 return 1;
-            }
-
-        } else {
-            LM_INFO(" --- IT IS NOT AN EMERGENCY  -----  \n \n");           
+            }           
         }
     }else{
         if (memcmp(msg->first_line.u.request.method.s,"NOTIFY", msg->first_line.u.request.method.len) == 0){
@@ -784,8 +816,8 @@ static int failure(struct sip_msg *msg) {
     LM_INFO(" --- FAILURE  treatment \n \n");
 
     // comando failure so sera tratado pelo opensips com o paler de Call Proxy no cenario I
-    if (proxy_hole == 2) {
-        LM_DBG(" ---Hole: proxy routing \n");
+    if (proxy_role == 2) {
+        LM_DBG(" ---role: proxy routing \n");
         return -1;
     }
 
@@ -817,7 +849,7 @@ static int failure(struct sip_msg *msg) {
         }
     }
     pfrom = get_from(msg);
-    LM_INFO("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
+    LM_DBG("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
 
     if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0){
         LM_ERR("INVITE without from_tag value \n");
@@ -830,21 +862,20 @@ static int failure(struct sip_msg *msg) {
     }
     memset(from_tag, 0, pfrom->tag_value.len + 1);
     strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
-    LM_INFO("PFROM_TAGIII: %s \n ", from_tag );
 
 
     LM_DBG(" --- FAILURE treatment HEADER RESP %d ", resp);
     if (resp == -1)
         return resp;
 
-    LM_INFO(" ---FAILURE treatment  callid=%s", callidHeader);
+    LM_DBG(" ---FAILURE treatment  callid=%s", callidHeader);
 
     vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
     vsp_addr.len = strlen(vsp_addr.s);
-            LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+            LM_DBG("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
 
     hash_code= core_hash(&vsp_addr, 0, emet_size);
-            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+            LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
     // find the cell with the callid from the list calls_cell
     s= search_ehtable(call_htable, callidHeader, from_tag, hash_code, 0);
@@ -854,11 +885,11 @@ static int failure(struct sip_msg *msg) {
     }
     info_call = s->esct;
 
-    if (proxy_hole == 3) {
+    if (proxy_role == 3) {
 
         if (strstr(info_call->disposition, "processes") != NULL) {
 
-            LM_INFO(" ---Hole: proxy routing \n");
+            LM_DBG(" ---role: proxy routing \n");
             cbn_aux = pkg_malloc(sizeof (char)* MAX_URI_SIZE);
             if (cbn_aux == NULL) {
                 LM_ERR("no more pkg memory\n");
@@ -903,7 +934,7 @@ static int failure(struct sip_msg *msg) {
         }
     }  
 
-    LM_INFO("treat lro \n");
+    LM_DBG("treat lro \n");
     // verfifica se o parametro contingency_hostname foi definido no script, caso contrario failure não sera tratado
     if ( contingency_hostname == NULL) {
         LM_ERR("contingency_hostname not defined\n");
@@ -946,7 +977,7 @@ static int failure(struct sip_msg *msg) {
     }
     
     error : 
-        LM_INFO(" ---FAILURE JA TRANSMITIU LRO");  
+        LM_DBG(" ---FAILURE JA TRANSMITIU LRO");  
         if(callidHeader)
             pkg_free(callidHeader);
         return -1;
@@ -964,15 +995,21 @@ static int failure(struct sip_msg *msg) {
         or if there is a field Geolocation_routing = 'yes"
 */
 int is_emergency_call(struct sip_msg *msg) {
+
+    char *request_uri;
     LM_DBG(" --- emergency_call \n \n");
 
     // verify if the field uri has a urn standard for emergency call
-    if (strstr(msg->first_line.u.request.uri.s, "urn:service:sos") != NULL) {
+
+    CP_STR_CHAR(msg->first_line.u.request.uri, request_uri);
+    if (strstr(request_uri, "urn:service:sos") != NULL){
         LM_INFO(" --- IT IS EMERGENCY  -----  \n \n");
+        pkg_free(request_uri);
         return 1;
     } else {
         // don't have URN standard for emergency call, verify USER field in RURI bind with some code in emergency_code
-        LM_INFO(" --- verifying code \n \n");
+        LM_DBG(" --- verifying code \n \n");
+        pkg_free(request_uri);
         if ((parse_sip_msg_uri(msg) < 0) ||
                 (!msg->parsed_uri.user.s) ||
                 (msg->parsed_uri.user.len > MAXNUMBERLEN)) {
@@ -982,15 +1019,15 @@ int is_emergency_call(struct sip_msg *msg) {
         struct code_number* codigo = codes;
         while (codigo != NULL) {
 
-            LM_INFO(" --- verify CODE %.*s\n \n", codigo->code.len, codigo->code.s);
-            LM_INFO(" --- verify CODE USER %.*s\n \n", msg->parsed_uri.user.len, msg->parsed_uri.user.s);
-            LM_INFO(" --- verify CODE CODE SIZE %d\n \n", codigo->code.len);
-            LM_INFO(" --- verify CODE USER SIZE %d\n \n", msg->parsed_uri.user.len);
+            LM_DBG(" --- verify CODE %.*s\n \n", codigo->code.len, codigo->code.s);
+            LM_DBG(" --- verify CODE USER %.*s\n \n", msg->parsed_uri.user.len, msg->parsed_uri.user.s);
+            LM_DBG(" --- verify CODE CODE SIZE %d\n \n", codigo->code.len);
+            LM_DBG(" --- verify CODE USER SIZE %d\n \n", msg->parsed_uri.user.len);
 
             if (codigo->code.len == msg->parsed_uri.user.len){
                 if (strncmp(codigo->code.s, msg->parsed_uri.user.s , codigo->code.len) == 0) {
                 
-                    LM_INFO(" ---> CODIGO -- OK %.*s\n\n", codigo->code.len, codigo->code.s);
+                    LM_DBG(" ---> CODIGO -- OK %.*s\n\n", codigo->code.len, codigo->code.s);
                     
                     if (check_myself(msg)) {                   
                         return 1;
@@ -1007,6 +1044,9 @@ int is_emergency_call(struct sip_msg *msg) {
         return 0;
     }
     LM_INFO(" --- IT IS NOT EMERGENCY \n \n");
+    return 0;
+
+error:
     return 0;
 }
 
@@ -1043,12 +1083,13 @@ int send_request_vpc(struct sip_msg *msg) {
     char* locationHeader;
     char* callidHeader;
     PARSED *parsed=NULL;
-    int resp =1;
+    int resp_post =1;
     char* lie;
     str cbn;
     char *cbn_aux;
     struct to_body *pfrom = NULL;
     char *from_tag;
+    int resp =1;
 
     cbn_aux = pkg_malloc(sizeof (char)* MAX_URI_SIZE);
     if (cbn_aux == NULL) {
@@ -1056,14 +1097,17 @@ int send_request_vpc(struct sip_msg *msg) {
         return -1;
     }
     memset(cbn_aux, 0, MAX_URI_SIZE);
+    LM_INFO(" *************************  END cbn%p \n", cbn_aux);
+    LM_INFO(" *************************  TAM cbn%d \n", sizeof (char)* MAX_URI_SIZE); 
 
-    found_CBN(msg, &cbn_aux);  
+    if (found_CBN(msg, &cbn_aux) == -1)
+        return -1;  
     cbn.s = cbn_aux;
     cbn.len = strlen(cbn.s);
-    LM_INFO(" --- FOUND CBN%.*s \n \n", cbn.len, cbn.s);
+    LM_DBG(" --- FOUND CBN%.*s \n \n", cbn.len, cbn.s);
 
-    if (proxy_hole == 2) {
-        LM_DBG(" ---Hole: proxy routing \n");
+    if (proxy_role == 2) {
+        LM_DBG(" ---role: proxy routing \n");
         if (add_hdr_PAI(msg, cbn) == -1) {
             LM_ERR("FAILURE IN ADD PAI");
         }
@@ -1074,9 +1118,9 @@ int send_request_vpc(struct sip_msg *msg) {
         return 1;
     }
 
-    if (proxy_hole == 3) {        
+    if (proxy_role == 3) {        
         // Call Server SCENARIO III      
-        LM_INFO(" ---Hole: proxy redirect \n");
+        LM_DBG(" ---role: proxy redirect \n");
         if (add_hdr_PAI(msg, cbn) == -1) {
             LM_ERR("FAILURE IN ADD PAI");
         }
@@ -1110,13 +1154,7 @@ int send_request_vpc(struct sip_msg *msg) {
         return -1;
     } 
 
-    callidHeader = pkg_malloc(sizeof (char) * msg->callid->body.len + 1);
-    if (callidHeader == NULL) {
-        LM_ERR("no more pkg memory\n");
-        return -1 ;
-    }
-    memset(callidHeader, '\0', msg->callid->body.len + 1);
-    strncpy(callidHeader, msg->callid->body.s, msg->callid->body.len);
+    CP_STR_CHAR(msg->callid->body, callidHeader);
     
     if (msg->from->parsed == NULL){
         if ( parse_from_header( msg )<0 ){
@@ -1125,28 +1163,20 @@ int send_request_vpc(struct sip_msg *msg) {
         }
     }
     pfrom = get_from(msg);
-    LM_INFO("PFROM_TAG_LEN %d \n ", pfrom->tag_value.len ); 
-    LM_INFO("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
-
+    LM_DBG("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
     if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0){
         LM_ERR("INVITE without from_tag value \n");
         return -1;
     }
-    from_tag = pkg_malloc(sizeof (char)* pfrom->tag_value.len + 1);
-    if (from_tag == NULL) {
-        LM_ERR("no more pkg memory\n");
-        return -1;
-    }
-    memset(from_tag, 0, pfrom->tag_value.len + 1);
-    strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
-    LM_INFO("PFROM_TAGIII: %s \n ", from_tag );  
+
+    CP_STR_CHAR(pfrom->tag_value, from_tag);       
 
     if(pidf_body && strlen(pidf_body)>1) {     
         if(locationHeader && strlen(locationHeader)>1){   
             int size_lie =  strlen(pidf_body) + strlen(locationHeader) + 2;
             lie = pkg_malloc(sizeof (char)* size_lie);
-            memset(lie, 0, size_lie);
-            sprintf(lie, "%s %s", locationHeader, pidf_body);
+            memset(lie, 0, size_lie);           
+            sprintf(lie, "%s %s", locationHeader, pidf_body);               
             pkg_free(pidf_body);  
             pkg_free(locationHeader);
         }else{
@@ -1161,52 +1191,55 @@ int send_request_vpc(struct sip_msg *msg) {
         }  
     } 
  
-    xml = formatted_xml(lie, callidHeader, cbn.s); 
+    xml = formatted_xml(msg, lie, callidHeader, cbn.s); 
+    if(xml == NULL){
+        LM_ERR(" --- PROBLEM IN FORMATTED XML \n \n");
+        resp = -1;
+        goto end;       
+    }
 
     //  HTTP POST to VPC
-    resp = post(url_vpc, xml, &response);
+    resp_post = post(url_vpc, xml, &response);
     pkg_free(xml);
-    if (resp == -1) {
+    if (resp_post == -1) {
         LM_ERR(" --- PROBLEM IN POST \n \n");
-        goto error;
+        resp = -1;
+        goto end; 
     }
      
     parsed = parse_xml(response);
+    pkg_free(response);    
     if (parsed != NULL) {;       
         if(create_call_cell(parsed, msg, callidHeader, cbn, from_tag) == -1){
-            pkg_free(response);
-            goto error;
+            resp = -1;
+            goto end; 
         }       
-        //free_parsed(parsed);
     } else {
-        LM_ERR("PARSER ERROR\n");
-        goto error;
+        LM_ERR("PARSER ERROR\n");       
+        resp = -1;
+        goto end; 
     }
 
 
-    LM_INFO("END EMERGENCY");
-    pkg_free(response);
-    
+    LM_DBG("END EMERGENCY");
+    resp = 1;
+
+ end:   
     if(callidHeader)
         pkg_free(callidHeader);
+
     if(from_tag)
         pkg_free(from_tag);
-    
+
      if(lie)
         pkg_free(lie); 
 
+
     free_parsed(parsed);          
        
-    return 1;
+    return resp;
     
 error : 
-    if(callidHeader)
-        pkg_free(callidHeader);
-
-    if(lie)
-        pkg_free(lie);   
-        
-    free_parsed(parsed);
     return -1;            
 }
 
@@ -1268,11 +1301,11 @@ int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str
 
         call_cell->eme_dlg_id->rem_tag = "";
 
-        LM_INFO("PFROM_TAGII: %s \n ", call_cell->eme_dlg_id->local_tag ); 
-        LM_INFO("CALL_IDII: %s \n ", call_cell->eme_dlg_id->call_id );
+        LM_DBG("PFROM_TAGII: %s \n ", call_cell->eme_dlg_id->local_tag ); 
+        LM_DBG("CALL_IDII: %s \n ", call_cell->eme_dlg_id->call_id );
           
         // obtem campos do esrResponse e guarda na celula na lista ligada calls_eme
-        if(treat_parse_esrResponse(msg, call_cell , call_cell_source , call_cell_vpc , parsed, proxy_hole) == -1){
+        if(treat_parse_esrResponse(msg, call_cell , call_cell_source , call_cell_vpc , parsed, proxy_role) == -1){
             return -1;
         }
        
@@ -1282,10 +1315,10 @@ int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str
 
         vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
         vsp_addr.len = strlen(vsp_addr.s);
-                LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+                LM_DBG("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
 
         hash_code= core_hash(&vsp_addr, 0, emet_size);
-            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+            LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
         if(insert_ehtable(call_htable, hash_code,call_cell)< 0){
             LM_ERR("inserting new record in subs_htable\n");
@@ -1323,7 +1356,7 @@ int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeade
         goto error;
     }
  
-    if ((proxy_hole == 0) || (proxy_hole == 1)){  
+    if ((proxy_role == 0) || (proxy_role == 1)){  
 
         if (faixa == 2) {
             // result NOK mas o VPC mandou o numero de contingencia para escoar a chamada
@@ -1380,7 +1413,7 @@ int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeade
         }
 
     }else{
-        if (proxy_hole == 4){
+        if (proxy_role == 4){
             LM_DBG(" ---TRATA REDIRECT\n \n");   
             if(add_hdr_rpl(call_cell, msg)==-1){
                 return -1;
@@ -1399,7 +1432,7 @@ int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeade
                 return -1;
 
         }else{
-            LM_ERR("proxy_hole invalid\n");
+            LM_ERR("proxy_role invalid\n");
             goto error;
         }        
     }  
@@ -1427,7 +1460,7 @@ int routing_by_ert( struct sip_msg *msg, ESCT *call_cell) {
 
         int esgwri_db_len = strlen(esgwri_db);
 
-        LM_INFO("DB_ESGWRI %s \n", esgwri_db);               
+        LM_DBG("DB_ESGWRI %s \n", esgwri_db);               
         call_cell->esgwri = pkg_malloc(sizeof (char)* esgwri_db_len + 1);
         if (call_cell->esgwri == NULL) {
             LM_ERR("--------------------------------------------------no more shm memory\n");
@@ -1523,19 +1556,19 @@ int routing_ack(struct sip_msg *msg) {
     str vsp_addr;
     unsigned int hash_code;
 
-    LM_INFO(" --- START TREATMENT ACK \n \n");
-    if (proxy_hole == 2) {
+    LM_DBG(" --- START TREATMENT ACK \n \n");
+    if (proxy_role == 2) {
         // Call Server scenario II        
         if (proxy_request(msg,call_server_hostname) == -1) {
-            LM_INFO("ERROR IN ROUTING EMERGENCY REQUEST \n");
+            LM_DBG("ERROR IN ROUTING EMERGENCY REQUEST \n");
             return -1;
         }
         return -1;
     }
 
-    if (proxy_hole == 4) {
+    if (proxy_role == 4) {
         // Redirect Proxy scenario III 
-        LM_INFO(" ---Hole: proxy redirect \n");
+        LM_DBG(" ---role: proxy redirect \n");
         return -1;
     }
 
@@ -1566,7 +1599,7 @@ int routing_ack(struct sip_msg *msg) {
         }
     }
     pfrom = get_from(msg);
-    LM_INFO("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
+    LM_DBG("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
 
     if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0){
         LM_ERR("INVITE without from_tag value \n");
@@ -1579,26 +1612,26 @@ int routing_ack(struct sip_msg *msg) {
     }
     memset(from_tag, 0, pfrom->tag_value.len + 1);
     strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
-    LM_INFO("PFROM_TAGIII: %s \n ", from_tag );
+    LM_DBG("PFROM_TAGIII: %s \n ", from_tag );
 
     vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
     vsp_addr.len = strlen(vsp_addr.s);
-            LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+            LM_DBG("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
 
     hash_code= core_hash(&vsp_addr, 0, emet_size);
-            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+            LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
-    LM_INFO(" ---TREATMENT ACK  callid=%s \n", callidHeader);   
+    LM_DBG(" ---TREATMENT ACK  callid=%s \n", callidHeader);   
     s= search_ehtable(call_htable, callidHeader, from_tag, hash_code, 0);
     if (s == NULL) {
-        LM_INFO(" ---TREATMENT ACK - NOT FIND CALLID \n");
+        LM_DBG(" ---TREATMENT ACK - NOT FIND CALLID \n");
         resp = -1;
         goto end;
     }
     info_call = s->esct;                 
 
     if (strlen(info_call->esgwri) > 0) {
-        LM_INFO(" ---Routing ACK %s \n\n", info_call->esgwri);       
+        LM_DBG(" ---Routing ACK %s \n\n", info_call->esgwri);       
         if(new_uri_proxy(msg, info_call->esgwri) == -1){
             LM_ERR(" ---ERROR IN NEW_URI_PROXY");
             resp = -1;
@@ -1652,9 +1685,9 @@ int bye(struct sip_msg *msg, int dir) {
     timeinfo = localtime(&rawtime);
     time_now = (int)rawtime;
 
-    if (proxy_hole == 2) {
+    if (proxy_role == 2) {
        // Call Server scenario II 
-       LM_DBG(" ---Hole: proxy routing \n");
+       LM_DBG(" ---role: proxy routing \n");
         if (proxy_request(msg,call_server_hostname) == -1) {
             LM_ERR("ERROR IN ROUTING EMERGENCY REQUEST");
             return -1;
@@ -1662,9 +1695,9 @@ int bye(struct sip_msg *msg, int dir) {
         return 1;
     }
 
-    if (proxy_hole == 4) {
+    if (proxy_role == 4) {
         // Redirect Proxy scenario III 
-        LM_DBG(" ---Hole: proxy redirect \n");
+        LM_DBG(" ---role: proxy redirect \n");
         return -1;
     }
 
@@ -1694,7 +1727,7 @@ int bye(struct sip_msg *msg, int dir) {
         }
     }
     pfrom = get_from(msg);
-    LM_INFO("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
+    LM_DBG("PFROM_TAG: %.*sxxx \n ", pfrom->tag_value.len, pfrom->tag_value.s ); 
 
     if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0){
         LM_ERR("INVITE without from_tag value \n");
@@ -1707,12 +1740,12 @@ int bye(struct sip_msg *msg, int dir) {
     }
     memset(from_tag, 0, pfrom->tag_value.len + 1);
     strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
-    LM_INFO("PFROM_TAGIII: %s \n ", from_tag );
+    LM_DBG("PFROM_TAGIII: %s \n ", from_tag );
 
-    if (proxy_hole == 3) {
+    if (proxy_role == 3) {
         // Redirect proxy scenario III
         // NOT YET IMPLEMENTED    
-        LM_INFO(" ---Hole: proxy redirect \n");
+        LM_DBG(" ---role: proxy redirect \n");
         cell_notif = get_subs_cell(msg, msg->callid->body);
         //LM_DBG("STATUS: %d \n ", cell_subs->status); 
         cell_notif->call_dlg_id->status = TERMINATED;
@@ -1722,12 +1755,12 @@ int bye(struct sip_msg *msg, int dir) {
 
     vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
     vsp_addr.len = strlen(vsp_addr.s);
-            LM_INFO("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
+            LM_DBG("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
 
     hash_code= core_hash(&vsp_addr, 0, emet_size);
-            LM_INFO("********************************************HASH_CODE%d\n", hash_code);
+            LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
-    LM_INFO(" --- BYE  callid=%s \n", callidHeader);
+    LM_DBG(" --- BYE  callid=%s \n", callidHeader);
     info_call= search_ehtable(call_htable, callidHeader, from_tag, hash_code, 1);
     if (info_call == NULL) {
         LM_ERR(" --- BYE DID NOT FIND CALLID \n");
@@ -1735,9 +1768,9 @@ int bye(struct sip_msg *msg, int dir) {
         goto end;
     }else{
         if (collect_data(info_call, db_url, *db_table) == 1) {
-            LM_INFO("****** REPORT OK\n");
+            LM_DBG("****** REPORT OK\n");
         } else {
-            LM_INFO("****** REPORT NOK\n");
+            LM_DBG("****** REPORT NOK\n");
         }        
     }
 
@@ -1755,7 +1788,7 @@ int bye(struct sip_msg *msg, int dir) {
 
 
     // sends ESCT only if VPC provided key ESQK
-    if ((proxy_hole == 0) || (proxy_hole == 1)){
+    if ((proxy_role == 0) || (proxy_role == 1)){
         if (strlen(info_call->esct->esqk) > 0){
 
             LM_DBG(" --- SEND ESQK =%s\n \n",info_call->esct->esqk);
@@ -1827,7 +1860,7 @@ int fill_blank_space(void) {
     resp = fill_parm_with_BS(&source_nena_id);
     resp = fill_parm_with_BS(&source_cert_uri);
     resp = fill_parm_with_BS(&vsp_organization_name);
-    if (proxy_hole == 0) {
+    if (proxy_role == 0) {
         resp = fill_parm_with_BS(&vsp_hostname);
         resp = fill_parm_with_BS(&vsp_nena_id);
     }
@@ -1860,9 +1893,8 @@ int check_myself(struct sip_msg *msg) {
         LM_ERR("cannot parse msg URI\n");
         return 0;
     }
-    LM_DBG(" --- emergency_call TRADUCAO %.*s \n \n", msg->parsed_uri.host.len, msg->parsed_uri.host.s);
+    LM_DBG(" --- opensips host %.*s \n \n", msg->parsed_uri.host.len, msg->parsed_uri.host.s);
     ret = check_self_op(EQUAL_OP, &msg->parsed_uri.host, 0);
-    LM_DBG(" --- emergency_call retorno  check_self_op %d \n \n", ret);
     return ret;
 }
 
@@ -1890,22 +1922,56 @@ unsigned long get_xml_size(char* lie, char* formated_time, char* callidHeader, c
 
 /* format the xml to send POST -> esrRequest
 */
-char* formatted_xml(char* lie, char* callidHeader, char* cbn) {
+char* formatted_xml(struct sip_msg *msg, char* lie, char* callidHeader, char* cbn) {
     char* xml;
     char formated_time[80];
     time_t rawtime;
     struct tm * timeinfo;
+    struct service_provider* source_provider;
+    struct service_provider* vpc_provider;    
+    struct service_provider* vsp_provider;
 
     time(&rawtime);
     timeinfo = localtime(&rawtime);
     strftime(formated_time, 80, "%Y-%m-%dT%H:%M:%S%Z", timeinfo);
     LM_DBG(" --- INIT  send_request_vpc\n \n");
+    LM_DBG(" --- FORMAT XML \n \n");
 
-    LM_DBG(" --- FORMATANDO XML \n \n");
+    source_provider = get_provider(msg, 0, ref_lock);  
+
+    CP_STR_CHAR(source_provider->OrganizationName, source_organization_name);
+    CP_STR_CHAR(source_provider->hostId, source_hostname);
+    CP_STR_CHAR(source_provider->nenaId, source_nena_id);
+    CP_STR_CHAR(source_provider->contact, source_contact);
+    CP_STR_CHAR(source_provider->certUri, source_cert_uri);
+
+    vpc_provider = get_provider(msg, 1, ref_lock);
+
+    CP_STR_CHAR(vpc_provider->OrganizationName, vpc_organization_name);
+    CP_STR_CHAR(vpc_provider->hostId, vpc_hostname);
+    CP_STR_CHAR(vpc_provider->nenaId, vpc_nena_id);
+    CP_STR_CHAR(vpc_provider->contact, vpc_contact);
+    CP_STR_CHAR(vpc_provider->certUri, vpc_cert_uri);
+
+    vsp_provider = get_provider(msg, 2, ref_lock);
+  
+    CP_STR_CHAR(vsp_provider->OrganizationName, vsp_organization_name);
+    CP_STR_CHAR(vsp_provider->hostId, vsp_hostname);
+    CP_STR_CHAR(vsp_provider->nenaId, vsp_nena_id);
+    CP_STR_CHAR(vsp_provider->contact, vsp_contact);
+    CP_STR_CHAR(vsp_provider->certUri, vsp_cert_uri);
+
+    LM_DBG("TEST proxy_role == 1 %d\n", proxy_role);
+    if (proxy_role == 1 && (vsp_hostname == NULL || vsp_nena_id == NULL)) {
+        LM_ERR("vsp_hostname and vsp_nena_id are mandatory when opensips role as routing proxy in scenario II\n");
+        return NULL;;
+    }
+
     int size_xml = get_xml_size(lie, formated_time, callidHeader, cbn) + 1;
-    LM_DBG(" --- TAMANHO XML %d \n \n", size_xml);    
+    LM_DBG(" --- LEN XML %d \n \n", size_xml);    
     xml = pkg_malloc(sizeof (char) * size_xml);
     memset(xml, 0, size_xml);
+
     sprintf(xml, MODEL,\
      vpc_organization_name, vpc_hostname, vpc_nena_id, vpc_contact, vpc_cert_uri, \
      source_organization_name, source_hostname, source_nena_id, source_contact, source_cert_uri, \
@@ -1914,4 +1980,6 @@ char* formatted_xml(char* lie, char* callidHeader, char* cbn) {
      call_origin, formated_time);
     LM_DBG(" --- INIT  xml %s\n \n", xml);
     return xml;
+error:
+    return NULL;    
 }
