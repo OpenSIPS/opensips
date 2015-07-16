@@ -49,10 +49,6 @@
 #include <json_object_private.h>
 
 
-
-
-
-#define PV_JSON_ID  8888
 #define JSON_BUFF_SIZE 4096
 
 enum
@@ -126,7 +122,7 @@ static cmd_export_t cmds[]={
 
 
 static pv_export_t mod_items[] = {
-	{ {"json",  sizeof("json")-1},    PV_JSON_ID, pv_get_json,
+	{ {"json",  sizeof("json")-1},    PVT_JSON, pv_get_json,
 		pv_set_json, pv_parse_json_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
@@ -212,7 +208,7 @@ int fixup_json_bind(void** param, int param_no)
 			return -1;
 		}
 
-		if( var->type != PV_JSON_ID )
+		if( var->type != PVT_JSON )
 		{
 			LM_ERR("Parameter no: %d must be a json variable\n",param_no);
 			return -1;
@@ -955,7 +951,7 @@ int pv_parse_json_name (pv_spec_p sp, str *in)
 
 
 	sp->pvp.pvn.u.dname = id ;
-	sp->type = PV_JSON_ID;
+	sp->type = PVT_JSON;
 	sp->getf = pv_get_json;
 	sp->setf = pv_set_json;
 

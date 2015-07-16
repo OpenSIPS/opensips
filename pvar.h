@@ -108,6 +108,10 @@ enum _pv_type {
 	PVT_HDRCNT,           PVT_AUTH_NONCE_COUNT,  PVT_AUTH_QOP,
 	PVT_AUTH_ALGORITHM,   PVT_AUTH_OPAQUE,       PVT_AUTH_CNONCE,
 	PVT_RU_Q,             PVT_ROUTE_PARAM,       PVT_ROUTE_TYPE,
+
+	/* registered by json module */
+	PVT_JSON,
+
 	PVT_EXTRA /* keep it last */
 };
 

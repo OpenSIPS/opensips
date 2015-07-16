@@ -1723,9 +1723,10 @@ while_cmd:		WHILE exp stm				{ mk_action2( $$, WHILE_T,
 
 foreach_cmd:	FOR LPAREN script_var IN script_var RPAREN stm {
 					if ($3->type != PVT_SCRIPTVAR &&
-					    $3->type != PVT_AVP) {
-						yyerror("\nfor-each statement: only \"var\" "
-					            "and \"avp\" iterators are supported");
+					    $3->type != PVT_AVP &&
+						$3->type != PVT_JSON) {
+						yyerror("\nfor-each statement: only \"var\", \"avp\" "
+					            "and \"json\" iterators are supported!");
 					}
 
 					mk_action3( $$, FOR_EACH_T,

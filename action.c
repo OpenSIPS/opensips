@@ -2069,12 +2069,14 @@ error_fwd_uri:
 
 static int for_each_handler(struct sip_msg *msg, struct action *a)
 {
-	pv_spec_p spec;
+	pv_spec_p iter, spec;
 	pv_param_t pvp;
 	pv_value_t val;
 	int ret = 1;
+	int op = 0;
 
 	if (a->elem[2].type == ACTIONS_ST && a->elem[2].u.data) {
+		iter = a->elem[0].u.data;
 		spec = a->elem[1].u.data;
 
 		/*
@@ -2090,6 +2092,14 @@ static int for_each_handler(struct sip_msg *msg, struct action *a)
 		pvp.pvi.type = PV_IDX_INT;
 		pvp.pvn = spec->pvp.pvn;
 
+		/*
+		 * for $json iterators, better to assume script writer
+		 * wants data to be interpreted, rather than not
+		 *    (i.e. ":=" script operator, and not simply "=")
+		 */
+		if (iter->type == PVT_JSON)
+			op = COLONEQ_T;
+
 		for (;;) {
 			if (spec->getf(msg, &pvp, &val) != 0) {
 				LM_ERR("failed to get spec value\n");
@@ -2099,9 +2109,7 @@ static int for_each_handler(struct sip_msg *msg, struct action *a)
 			if (val.flags & PV_VAL_NULL)
 				break;
 
-			if (((pv_spec_p)a->elem[0].u.data)->
-					setf(msg, &((pv_spec_p)a->elem[0].u.data)->pvp,
-			             0, &val) != 0) {
+			if (iter->setf(msg, &iter->pvp, op, &val) != 0) {
 				LM_ERR("failed to set scriptvar value\n");
 				return E_BUG;
 			}
