@@ -582,7 +582,7 @@ void free_int_list(int_list_t *start, int_list_t *end)
  * Get a partition and a set from a general ds_param structure
 */
 
-inline int fixup_get_partition_set(struct sip_msg *msg, const ds_param_t *param,
+int fixup_get_partition_set(struct sip_msg *msg, const ds_param_t *param,
 		ds_partition_t **partition, unsigned int *uset)
 {
 	if (fixup_get_partition(msg, &param->partition, partition) != 0)

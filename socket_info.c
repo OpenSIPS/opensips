@@ -101,7 +101,7 @@
 
 
 /* another helper function, it just creates a socket_info struct */
-inline struct socket_info* new_sock_info(	char* name,
+struct socket_info* new_sock_info(	char* name,
 								unsigned short port, unsigned short proto,
 								char *adv_name, unsigned short adv_port,
 								unsigned short children,enum si_flags flags)

@@ -313,7 +313,7 @@ error:
  * 	0 on success
  * 	-1 on error
  */
-inline int init_pingtable(struct ha *table,int timeout,int maxpings)
+int init_pingtable(struct ha *table,int timeout,int maxpings)
 {
    if(maxpings<=0)
       maxpings=1;
@@ -341,7 +341,7 @@ error:
    return -1;
 }
 
-inline void destroy_pingtable(struct ha *table)
+void destroy_pingtable(struct ha *table)
 {
    if(table->mutex){
       lock_dealloc(table->mutex);

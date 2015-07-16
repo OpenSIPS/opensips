@@ -69,21 +69,36 @@ extern struct statstable *seas_stats_table;
  * Initialize and destroy statistics table
  */
 struct statstable* init_seas_stats_table();
-extern inline int stop_stats_server();
-extern inline void destroy_seas_stats_table();
+int stop_stats_server();
+static inline void destroy_seas_stats_table(void)
+{
+   /*deallocs the table*/
+   if(seas_stats_table){
+      lock_destroy(seas_stats_table->mutex);
+      shm_free(seas_stats_table);
+      seas_stats_table=(struct statstable *)0;
+   }
+}
 /** Statistics server process
  * functions
  */
 void serve_stats(int fd);
 int start_stats_server(char *socket);
-extern inline int print_stats_info(int f,int sock);
+int print_stats_info(int f,int sock);
 /**
  * Statistics functions
  */
-extern inline void as_relay_stat(struct cell *t);
-extern inline void event_stat(struct cell *t);
-extern inline void action_stat(struct cell *t);
-extern inline void stats_reply();
+void as_relay_stat(struct cell *t);
+void event_stat(struct cell *t);
+void action_stat(struct cell *t);
+
+static inline void stats_reply(void)
+{
+   lock_get(seas_stats_table->mutex);
+   seas_stats_table->received_replies++;
+   lock_release(seas_stats_table->mutex);
+}
+
 #define receivedplus() \
    do{ \
       lock_get(seas_stats_table->mutex); \

@@ -36,7 +36,9 @@
  */
 
 
+#include "ip_addr.h"
 #include "io_wait.h"
+#include "globals.h"
 
 struct worker_io_data {
 	/* source info buffer */

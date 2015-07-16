@@ -84,7 +84,7 @@ void free_int_list(int_list_t *start, int_list_t *end);
 
 int fixup_get_partition(struct sip_msg *msg, const gpartition_t *gpart,
 		ds_partition_t **partition);
-extern inline int fixup_get_partition_set(struct sip_msg *msg, const ds_param_t *param,
+int fixup_get_partition_set(struct sip_msg *msg, const ds_param_t *param,
 		ds_partition_t **partition, unsigned int *uset);
 int fixup_partition_sets(void **param);
 int fixup_partition_one_set(void **param);

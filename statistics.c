@@ -46,6 +46,7 @@
 #include "statistics.h"
 #include "pt.h"
 #include "atomic.h"
+#include "globals.h"
 #include "rw_locking.h"
 
 #ifdef STATISTICS

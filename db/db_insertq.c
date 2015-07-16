@@ -468,7 +468,7 @@ next_query:
  *
  * also takes care of initialisation of this is the first process
  * attempting to execute this type of query */
-inline int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
+int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
 							db_key_t *cols,int col_no)
 {
 	query_list_t *entry;
@@ -534,7 +534,7 @@ inline int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
 }
 
 /* clean shm memory used by the rows */
-inline void cleanup_rows(db_val_t **rows)
+void cleanup_rows(db_val_t **rows)
 {
 	int i;
 
@@ -606,7 +606,7 @@ void ql_timer_routine(unsigned int ticks,void *param)
 	}
 }
 
-inline int ql_flush_rows(db_func_t *dbf,db_con_t *conn,query_list_t *entry)
+int ql_flush_rows(db_func_t *dbf,db_con_t *conn,query_list_t *entry)
 {
 	if (query_buffer_size <= 1 || !entry)
 		return 0;

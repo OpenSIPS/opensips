@@ -25,8 +25,6 @@
 #ifndef SR_MODULE_DEPS_H
 #define SR_MODULE_DEPS_H
 
-#include "sr_module.h"
-
 /*
  * Description:
  *
@@ -58,7 +56,10 @@
  *		- it is up to the module writers to prevent such side effects
  */
 
+#include "str.h"
+
 #define MAX_MOD_DEPS 10
+typedef struct param_export_ param_export_t;
 
 /* core + module level structures */
 enum module_type {

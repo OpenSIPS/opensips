@@ -302,7 +302,7 @@ error:
 
 
 
-inline int send_error(struct sms_msg *sms_messg, char *msg1_s, int msg1_len,
+static inline int send_error(struct sms_msg *sms_messg, char *msg1_s, int msg1_len,
 													char *msg2_s, int msg2_len)
 {
 	str  body;

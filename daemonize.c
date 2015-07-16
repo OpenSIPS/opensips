@@ -54,7 +54,9 @@
 #include <sys/prctl.h>
 #endif
 
+#include "mem/shm_mem.h"
 #include "daemonize.h"
+#include "sr_module.h"
 #include "globals.h"
 #include "dprint.h"
 #include "pt.h"
@@ -95,7 +97,7 @@ retry:
 	return rc;
 }
 
-inline void inc_init_timer(void)
+void inc_init_timer(void)
 {
 	LM_DBG("incrementing init timer no\n");
 	(*init_timer_no)++;

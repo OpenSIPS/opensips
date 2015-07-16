@@ -36,7 +36,7 @@ int send_status_code(char val);
 void clean_write_pipeend(void);
 int create_status_pipe(void);
 int wait_for_all_children(void);
-extern inline void inc_init_timer(void);
+void inc_init_timer(void);
 
 
 #define report_failure_status() \

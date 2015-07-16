@@ -26,8 +26,10 @@
 
 #include "../timer.h"
 #include "../reactor.h"
+#include "../async.h"
 #include "tcp_conn.h"
 #include "tcp_passfd.h"
+#include "trans.h"
 
 
 /*!< list of tcp connections handled by this process */

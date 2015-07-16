@@ -37,6 +37,7 @@
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../receive.h"
+#include "../../timer.h"
 #include "proto_ws.h"
 #include "ws.h"
 

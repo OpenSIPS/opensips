@@ -148,7 +148,7 @@ struct ws_req {
 #define ROTATE32(_k) ((((_k) & 0xFF) << 24) | ((_k) >> 8))
 #define MASK8(_k) ((unsigned char)((_k) & 0xFF))
 
-void inline ws_print_masked(char *buf, int len)
+static inline void ws_print_masked(char *buf, int len)
 {
 	static char *print_buf;
 	static long print_buf_len = 0;
@@ -201,7 +201,7 @@ void inline ws_mask(char *buf, int len, unsigned int mask)
 }
 
 
-int inline ws_send(struct tcp_connection *con, int fd, int op,
+static inline int ws_send(struct tcp_connection *con, int fd, int op,
 		char *body, unsigned int len)
 {
 	/*
@@ -259,13 +259,13 @@ int inline ws_send(struct tcp_connection *con, int fd, int op,
 	return ws_raw_writev(con, fd, v, 2);
 }
 
-int inline ws_send_pong(struct tcp_connection *con, struct ws_req *req)
+static inline int ws_send_pong(struct tcp_connection *con, struct ws_req *req)
 {
 	return ws_send(con, con->fd, WS_OP_PONG,
 			req->tcp.body, req->tcp.content_len);
 }
 
-static int inline ws_send_close(struct tcp_connection *con)
+static inline int ws_send_close(struct tcp_connection *con)
 {
 	uint16_t code;
 	int len;
@@ -291,7 +291,7 @@ int ws_req_write(struct tcp_connection *con, int fd, char *buf, int len)
 
 static struct ws_req ws_current_req;
 
-enum ws_close_code inline ws_parse(struct ws_req *req)
+static enum ws_close_code inline ws_parse(struct ws_req *req)
 {
 
 	uint64_t clen;
@@ -335,7 +335,7 @@ enum ws_close_code inline ws_parse(struct ws_req *req)
 			clen = WS_ELENC(req);
 			if ((clen+WS_MIN_HDR_LEN+WS_ELENC_SIZE+WS_IF_MASK_SIZE(req))>
 					TCP_BUF_SIZE) {
-				LM_ERR("packet too large, can't fit: %llu\n", clen);
+				LM_ERR("packet too large, can't fit: %lu\n", clen);
 				req->tcp.error = TCP_REQ_OVERRUN;
 				return WS_ERR_TOO_BIG;
 			}

@@ -166,7 +166,7 @@ end:
 	event_pkg_pending = 0;
 }
 
-inline void pkg_threshold_check(void)
+void pkg_threshold_check(void)
 {
 	long pkg_perc, used, size;
 

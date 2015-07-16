@@ -40,8 +40,10 @@
 #include "sr_module.h"
 #include "dprint.h"
 #include "error.h"
+#include "globals.h"
 #include "mem/mem.h"
 #include "pt.h"
+#include "ut.h"
 #include "daemonize.h"
 
 #include <strings.h>
@@ -52,6 +54,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "net/api_proto.h"
 #include "net/proto_udp/proto_udp_handler.h"
 #include "net/proto_tcp/proto_tcp_handler.h"
 

@@ -63,7 +63,6 @@ struct unc_as unc_as_t[2*MAX_UNC_AS_NR];
 
 /*this is for the Action Dispatcher Process */
 struct as_entry *my_as;
-extern int process_no;
 extern int sig_flag;
 
 static int process_event_reply(as_p as);

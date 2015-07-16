@@ -125,6 +125,7 @@
 #include "ut.h"
 #include "pt.h"
 #include "context.h"
+#include "net/trans.h"
 
 int disable_503_translation = 0;
 

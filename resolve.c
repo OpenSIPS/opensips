@@ -595,7 +595,7 @@ query:
 }
 
 
-inline struct hostent* rev_resolvehost(struct ip_addr *ip)
+struct hostent* rev_resolvehost(struct ip_addr *ip)
 {
 	if (dnscache_fetch_func != NULL) {
 		return own_gethostbyaddr((char*)(ip)->u.addr, (ip)->len, (ip)->af);
