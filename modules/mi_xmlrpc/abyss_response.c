@@ -587,7 +587,7 @@ MIMETypeGuessFromFile(const char * const fileName) {
 ** Base64
 *********************************************************************/
 
-void Base64Encode(char *s,char *d)
+void Base64Encode(const char *s,char *d)
 {
     /* Conversion table. */
     static char tbl[64] = {

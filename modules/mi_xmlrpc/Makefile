@@ -5,7 +5,7 @@ auto_gen=
 NAME=mi_xmlrpc.so
 LIBS=
 
-NEW_VERSION_THRESHOLD_UP=10642         # 1.06.42
+NEW_VERSION_THRESHOLD_UP=11630         # 1.16.30
 NEW_VERSION_THRESHOLD_DOWN=10310       # 1.03.10
 
 OLD_VERSION_THRESHOLD_UP=910           # 0.09.10
@@ -58,7 +58,7 @@ endif
 ifeq ($(HAS_XMLRPC-C-CONFIG),YES)
 	# use autodetection
 	MY_DEFS=$(shell xmlrpc-c-config abyss-server --cflags)
-	MY_LIBS=$(shell xmlrpc-c-config abyss-server --libs)
+	MY_LIBS=$(shell xmlrpc-c-config abyss-server --libs) -lxmlrpc -lxmlrpc_server
 else
 	# use standard know paths
 	MY_DEFS=-I$(LOCALBASE)/include -I$(LOCALBASE)/include/xmlrpc-c \

@@ -41,9 +41,11 @@
 
 #include <xmlrpc-c/abyss.h>
 
+#include "abyss_extra.h"
 #include "abyss_token.h"
 
 #include "abyss_data.h"
+
 
 /*********************************************************************
 ** List

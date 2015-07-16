@@ -941,13 +941,15 @@ uriPathParm(const xmlrpc_server_abyss_parms * const parmsP,
 }
 
 
+#if 0
 
 static xmlrpc_server_shutdown_fn shutdownAbyss;
 
 static void
 shutdownAbyss(xmlrpc_env * const envP,
               void *       const context,
-              const char * const comment ATTR_UNUSED) {
+              const char * const comment ATTR_UNUSED,
+		/*void * callinfo ATTR_UNUSED*/) {
 /*----------------------------------------------------------------------------
    Tell Abyss to wrap up whatever it's doing and shut down.
 
@@ -968,6 +970,7 @@ shutdownAbyss(xmlrpc_env * const envP,
     
     ServerTerminate(serverP);
 }
+#endif
 
 
 
@@ -997,12 +1000,14 @@ normalLevelAbyssRun(xmlrpc_env *                      const envP,
 
         ServerUseSigchld(&server);
         
+#if 0
         if (0)
             /* Too much of a security risk.  In 1.07, there is a server
                parameter to enable this.
             */
             xmlrpc_registry_set_shutdown(parmsP->registryP,
                                          &shutdownAbyss, &server);
+#endif
         
         ServerRun(&server);
 

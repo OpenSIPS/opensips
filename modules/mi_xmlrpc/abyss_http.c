@@ -545,7 +545,7 @@ RequestRead(TSession * const sessionP) {
 
 
 
-char *RequestHeaderValue(TSession *r,char *name)
+char *RequestHeaderValue(TSession *r,const char *name)
 {
     return (TableFind(&r->request_headers,name));
 }

@@ -4,6 +4,7 @@
 #include <xmlrpc-c/abyss.h>
 #include "abyss_date.h"
 #include "abyss_data.h"
+#include "abyss_extra.h"
 
 typedef struct {
     uint8_t major;
