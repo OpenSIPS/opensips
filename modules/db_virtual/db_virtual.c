@@ -255,6 +255,11 @@ int init_global(void){//str *info_set_mapping){
                 count++;
             }
             else{
+				if (count == -1) {
+					LM_ERR("db_virtual module cannot start with no DB sets defined!\n");
+					return -1;
+				}
+
                 /* mysql:........ */
                 LM_DBG("db = %s\n", s);
                 add_url(count, s);
