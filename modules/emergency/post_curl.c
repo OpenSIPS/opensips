@@ -89,7 +89,7 @@ int post(char*  url, char* xml, char** response){
     if(curl) {
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, xml);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, (curl_write_callback)write_data);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data);
         long http_code = 0;
         res = curl_easy_perform(curl);
