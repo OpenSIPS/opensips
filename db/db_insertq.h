@@ -63,11 +63,10 @@ extern gen_lock_t *ql_lock;
 int init_ql_support(void);
 int ql_row_add(query_list_t *entry,const db_val_t *row,db_val_t ***ins_rows);
 int ql_detach_rows_unsafe(query_list_t *entry,db_val_t ***ins_rows);
-extern inline int con_set_inslist(db_func_t *dbf,db_con_t *con,
+int con_set_inslist(db_func_t *dbf,db_con_t *con,
 							query_list_t **list,db_key_t *cols,int col_no);
 void ql_timer_routine(unsigned int ticks,void *param);
-extern inline int ql_flush_rows(db_func_t *dbf,
-							db_con_t *conn,query_list_t *entry);
+int ql_flush_rows(db_func_t *dbf, db_con_t *conn,query_list_t *entry);
 
 #define CON_RESET_INSLIST(con) \
 	do { \
@@ -93,7 +92,7 @@ extern inline int ql_flush_rows(db_func_t *dbf,
 		lock_release((entry)->lock); \
 	} while (0)
 
-extern inline void cleanup_rows(db_val_t **rows);
+void cleanup_rows(db_val_t **rows);
 void handle_ql_shutdown(void);
 
 #endif

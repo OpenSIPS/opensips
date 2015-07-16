@@ -31,10 +31,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "globals.h"
-#include "timer.h"
-#include "socket_info.h"
-#include "atomic.h"
+#include "statistics.h"
 
 #define MAX_PT_DESC	128
 

@@ -24,13 +24,16 @@
 
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
+
+#include "sr_module_deps.h"
 
 #include "dprint.h"
 #include "error.h"
 #include "mem/mem.h"
-#include "pt.h"
 
-#include "sr_module_deps.h"
+#include "sr_module.h"
+#include "pt.h"
 
 /* the list head of unsolved module dependencies: struct sr_module ----> "module_name" */
 static struct sr_module_dep unsolved_deps;

@@ -67,19 +67,19 @@ context_p context_alloc(void);
  *
  * - they reserve and return a position in the context buffer of the given type
  */
-extern inline int context_register_int(enum osips_context type);
-extern inline int context_register_str(enum osips_context type);
-extern inline int context_register_ptr(enum osips_context type);
+int context_register_int(enum osips_context type);
+int context_register_str(enum osips_context type);
+int context_register_ptr(enum osips_context type);
 
-extern inline void context_put_int(enum osips_context type, context_p ctx,
+void context_put_int(enum osips_context type, context_p ctx,
 									 int pos, int data);
-extern inline void context_put_str(enum osips_context type, context_p ctx,
+void context_put_str(enum osips_context type, context_p ctx,
 									 int pos, str *data);
-extern inline void context_put_ptr(enum osips_context type, context_p ctx,
+void context_put_ptr(enum osips_context type, context_p ctx,
 									 int pos, void *data);
 
-extern inline int   context_get_int(enum osips_context type, context_p ctx, int pos);
-extern inline str  *context_get_str(enum osips_context type, context_p ctx, int pos);
-extern inline void *context_get_ptr(enum osips_context type, context_p ctx, int pos);
+int   context_get_int(enum osips_context type, context_p ctx, int pos);
+str  *context_get_str(enum osips_context type, context_p ctx, int pos);
+void *context_get_ptr(enum osips_context type, context_p ctx, int pos);
 
 #endif /* __CONTEXT_H */

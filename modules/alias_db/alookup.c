@@ -217,7 +217,7 @@ err_server:
 }
 
 
-inline int set_alias_to_ruri(struct sip_msg* _msg, str *alias, int no, void *p)
+static inline int set_alias_to_ruri(struct sip_msg* _msg, str *alias, int no, void *p)
 {
 	/* set the RURI */
 	if(no==0) {
@@ -248,7 +248,7 @@ int alias_db_lookup(struct sip_msg* _msg, char* _table, char *flags)
 }
 
 
-inline int set_alias_to_pvar(struct sip_msg* _msg, str *alias, int no, void *p)
+static inline int set_alias_to_pvar(struct sip_msg* _msg, str *alias, int no, void *p)
 {
 	pv_value_t val;
 	pv_spec_t *pvs=(pv_spec_t*)p;

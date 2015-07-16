@@ -128,9 +128,34 @@ int send_pr_buffer( struct retr_buf *rb, void *buf, int len, void* ctx);
 #define unset_timeout(timeout) ((timeout) = 0)
 #define is_timeout_set(timeout) ((timeout) != 0)
 
-extern inline void set_fr_retr(struct retr_buf *rb, int retr );
-extern inline void start_retr(struct retr_buf *rb);
-extern inline void force_retr(struct retr_buf *rb);
+static inline void _set_fr_retr( struct retr_buf *rb, int retr )
+{
+	utime_t timer;
+
+	if (retr && !rb->retr_timer.deleted) {
+		rb->retr_list=RT_T1_TO_1;
+		set_timer( &rb->retr_timer, RT_T1_TO_1, NULL );
+	}
+
+	if (!rb->my_T || !is_timeout_set(rb->my_T->fr_timeout))
+		set_1timer(&rb->fr_timer, FR_TIMER_LIST, NULL);
+	else {
+		timer = rb->my_T->fr_timeout;
+		set_1timer(&rb->fr_timer, FR_TIMER_LIST, &timer);
+	}
+}
+
+
+static inline void start_retr(struct retr_buf *rb)
+{
+	_set_fr_retr(rb, rb->dst.proto==PROTO_UDP);
+}
+
+
+static inline void force_retr(struct retr_buf *rb)
+{
+	_set_fr_retr(rb, 1);
+}
 
 void tm_shutdown();
 

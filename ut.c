@@ -298,13 +298,3 @@ int base64decode(unsigned char *out,unsigned char *in,int len)
 	return out_len;
 }
 
-inline int calc_base64_encode_len(int len)
-{
-	return (len/3 + (len%3?1:0))*4;
-}
-
-inline int calc_max_base64_decode_len(int len)
-{
-	return len*3/4;
-}
-

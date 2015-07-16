@@ -25,8 +25,6 @@
 #ifndef SR_MODULE_DEPS_H
 #define SR_MODULE_DEPS_H
 
-#include "sr_module.h"
-
 /*
  * Description:
  *

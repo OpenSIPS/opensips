@@ -112,35 +112,8 @@ void cleanup_debug(void)
 	debug = &debug_level;
 }
 
-/* change the default log level of a given process */
-inline void __set_proc_default_debug(int proc_idx, int level)
-{
-	pt[proc_idx].default_debug = level;
-}
 
-/* change the actual log level of the current process */
-inline void set_proc_debug_level(int level)
-{
-	__set_proc_debug_level(process_no, level);
-}
-
-/* change the actual log level of a given process */
-inline void __set_proc_debug_level(int proc_idx, int level)
-{
-	pt[proc_idx].debug = level;
-}
-
-inline void set_global_debug_level(int level)
-{
-	int i;
-
-	for (i = 0; i < counted_processes; i++) {
-		__set_proc_default_debug(i, level);
-		__set_proc_debug_level(i, level);
-	}
-}
-
-inline void reset_proc_debug_level(void)
+void reset_proc_debug_level(void)
 {
 	*debug = *default_debug;
 }

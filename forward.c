@@ -71,6 +71,7 @@
 #include "sr_module.h"
 #include "ip_addr.h"
 #include "resolve.h"
+#include "net/trans.h"
 #include "name_alias.h"
 #include "socket_info.h"
 #include "core_stats.h"

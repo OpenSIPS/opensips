@@ -36,6 +36,7 @@
 #include "statistics.h"
 #include "globals.h"
 #include "pt.h"
+#include "timer.h"
 #include <sys/types.h>
 #include <signal.h>
 #include "socket_info.h"
@@ -69,8 +70,7 @@ stat_export_t core_stats[] = {
 	{"bad_URIs_rcvd",         0,  &bad_URIs              },
 	{"unsupported_methods",   0,  &unsupported_methods   },
 	{"bad_msg_hdr",           0,  &bad_msg_hdr           },
-	{"timestamp",  STAT_IS_FUNC, (stat_var**)get_ticks   },
-	{0,0,0}
+	{"timestamp",  STAT_IS_FUNC, (stat_var**)get_ticks   }, {0,0,0}
 };
 
 

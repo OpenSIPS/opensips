@@ -173,9 +173,9 @@ int  check_ip_address(struct ip_addr* ip, str *name,
 struct hostent* sip_resolvehost(str* name, unsigned short* port,
 		unsigned short *proto, int is_sips, struct dns_node **dn);
 
-extern inline struct hostent* resolvehost(char* name, int no_ip_test);
+struct hostent* resolvehost(char* name, int no_ip_test);
 
-extern inline struct hostent* rev_resolvehost(struct ip_addr *ip);
+struct hostent* rev_resolvehost(struct ip_addr *ip);
 
 /*! \brief free the DNS resolver state machine */
 void free_dns_res( struct proxy_l *p );

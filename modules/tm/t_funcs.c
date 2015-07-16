@@ -268,31 +268,3 @@ done:
 	return ret;
 }
 
-inline void _set_fr_retr( struct retr_buf *rb, int retr )
-{
-	utime_t timer;
-
-	if (retr && !rb->retr_timer.deleted) {
-		rb->retr_list=RT_T1_TO_1;
-		set_timer( &rb->retr_timer, RT_T1_TO_1, NULL );
-	}
-
-	if (!rb->my_T || !is_timeout_set(rb->my_T->fr_timeout))
-		set_1timer(&rb->fr_timer, FR_TIMER_LIST, NULL);
-	else {
-		timer = rb->my_T->fr_timeout;
-		set_1timer(&rb->fr_timer, FR_TIMER_LIST, &timer);
-	}
-}
-
-
-inline void start_retr(struct retr_buf *rb)
-{
-	_set_fr_retr(rb, rb->dst.proto==PROTO_UDP);
-}
-
-
-inline void force_retr(struct retr_buf *rb)
-{
-	_set_fr_retr(rb, 1);
-}

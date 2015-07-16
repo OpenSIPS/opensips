@@ -222,8 +222,8 @@ static inline str* dlg_leg_to_uri(struct dlg_cell *dlg,int leg_no)
 	return &dlg->to_uri;
 }
 
-extern inline void unlink_unsafe_dlg(struct dlg_entry *d_entry, struct dlg_cell *dlg);
-extern inline void destroy_dlg(struct dlg_cell *dlg);
+void unlink_unsafe_dlg(struct dlg_entry *d_entry, struct dlg_cell *dlg);
+void destroy_dlg(struct dlg_cell *dlg);
 
 #define ref_dlg_unsafe(_dlg,_cnt)     \
 	do { \

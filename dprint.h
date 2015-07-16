@@ -52,6 +52,8 @@
 #include <syslog.h>
 #include <time.h>
 
+#include "pt.h"
+
 #define L_ALERT -3	/*!< Alert level */
 #define L_CRIT  -2	/*!< Critical level */
 #define L_ERR   -1	/*!< Error level */
@@ -116,24 +118,43 @@ void dprint (char* format, ...);
 
 int str2facility(char *s);
 
-/* set the current and default log levels for all OpenSIPS processes */
-extern inline void set_global_debug_level(int level);
-
-/* set the log level of the current process */
-extern inline void set_proc_debug_level(int level);
-
 /*
  * set the (default) log level of a given process
  *
  * Note: the index param is not validated!
  */
-extern inline void __set_proc_debug_level(int proc_idx, int level);
-extern inline void __set_proc_default_debug(int proc_idx, int level);
+static inline void __set_proc_debug_level(int proc_idx, int level)
+{
+	pt[proc_idx].debug = level;
+}
+
+static inline void __set_proc_default_debug(int proc_idx, int level)
+{
+	pt[proc_idx].default_debug = level;
+}
+
+/* set the current and default log levels for all OpenSIPS processes */
+static inline void set_global_debug_level(int level)
+{
+	int i;
+
+	for (i = 0; i < counted_processes; i++) {
+		__set_proc_default_debug(i, level);
+		__set_proc_debug_level(i, level);
+	}
+}
+
+/* set the log level of the current process */
+static inline void set_proc_debug_level(int level)
+{
+	__set_proc_debug_level(process_no, level);
+}
+
 
 /* changes the logging level to the default value for the current process */
-extern inline void reset_proc_debug_level(void);
+void reset_proc_debug_level(void);
 
-inline static char* dp_time(void)
+static inline char* dp_time(void)
 {
 	time_t ltime;
 

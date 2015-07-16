@@ -89,6 +89,7 @@
 
 #include "poll_types.h" /* poll_types*/
 #include "pt.h" /* mypid() */
+#include "error.h"
 
 #ifndef FD_TYPE_DEFINED
 typedef int fd_type;

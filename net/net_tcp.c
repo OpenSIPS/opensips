@@ -47,6 +47,7 @@
 #include "../pt.h"
 #include "../daemonize.h"
 #include "../reactor.h"
+#include "../timer.h"
 #include "tcp_passfd.h"
 #include "net_tcp_proc.h"
 #include "net_tcp.h"

@@ -47,7 +47,7 @@ context_p context_alloc(void)
 	return ctx;
 }
 
-inline int context_register_int(enum osips_context type)
+int context_register_int(enum osips_context type)
 {
 	context_sizes[type] += sizeof(int);
 	type_offsets[type][1] += sizeof(int);
@@ -56,7 +56,7 @@ inline int context_register_int(enum osips_context type)
 	return type_sizes[type][0]++;
 }
 
-inline int context_register_str(enum osips_context type)
+int context_register_str(enum osips_context type)
 {
 	context_sizes[type] += sizeof(str);
 	type_offsets[type][2] += sizeof(str);
@@ -64,14 +64,14 @@ inline int context_register_str(enum osips_context type)
 	return type_sizes[type][1]++;
 }
 
-inline int context_register_ptr(enum osips_context type)
+int context_register_ptr(enum osips_context type)
 {
 	context_sizes[type] += sizeof(void *);
 
 	return type_sizes[type][2]++;
 }
 
-inline void context_put_int(enum osips_context type, context_p ctx,
+void context_put_int(enum osips_context type, context_p ctx,
 									 int pos, int data)
 {
 #ifdef DBG_QM_MALLOC
@@ -87,7 +87,7 @@ inline void context_put_int(enum osips_context type, context_p ctx,
 	((int *)ctx)[pos] = data;
 }
 
-inline void context_put_str(enum osips_context type, context_p ctx,
+void context_put_str(enum osips_context type, context_p ctx,
 									 int pos, str *data)
 {
 #ifdef DBG_QM_MALLOC
@@ -103,7 +103,7 @@ inline void context_put_str(enum osips_context type, context_p ctx,
 	((str *)((char *)ctx + type_offsets[type][1]))[pos] = *data;
 }
 
-inline void context_put_ptr(enum osips_context type, context_p ctx,
+void context_put_ptr(enum osips_context type, context_p ctx,
 									 int pos, void *data)
 {
 #ifdef DBG_QM_MALLOC
@@ -119,7 +119,7 @@ inline void context_put_ptr(enum osips_context type, context_p ctx,
 	((void **)((char *)ctx + type_offsets[type][2]))[pos] = data;
 }
 
-inline int context_get_int(enum osips_context type, context_p ctx, int pos)
+int context_get_int(enum osips_context type, context_p ctx, int pos)
 {
 #ifdef DBG_QM_MALLOC
 	if (pos < 0 || pos >= type_sizes[type][0]) {
@@ -134,7 +134,7 @@ inline int context_get_int(enum osips_context type, context_p ctx, int pos)
 	return ((int *)ctx)[pos];
 }
 
-inline str *context_get_str(enum osips_context type, context_p ctx, int pos)
+str *context_get_str(enum osips_context type, context_p ctx, int pos)
 {
 #ifdef DBG_QM_MALLOC
 	if (pos < 0 || pos >= type_sizes[type][1]) {
@@ -149,7 +149,7 @@ inline str *context_get_str(enum osips_context type, context_p ctx, int pos)
 	return &((str *)((char *)ctx + type_offsets[type][1]))[pos];
 }
 
-inline void *context_get_ptr(enum osips_context type, context_p ctx, int pos)
+void *context_get_ptr(enum osips_context type, context_p ctx, int pos)
 {
 #ifdef DBG_QM_MALLOC
 	if (pos < 0 || pos >= type_sizes[type][2]) {
