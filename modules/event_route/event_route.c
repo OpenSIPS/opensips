@@ -273,6 +273,7 @@ static evi_reply_sock* scriptroute_parse(str socket)
 		name_len = socket.len-(mode/*if async add 1*/+4/*sync len*/+1/*'/'*/);
 		name = pkg_realloc(dummy_buffer, name_len + 1);
 	} else {
+		name_len = 0;
 		name = pkg_realloc(dummy_buffer, socket.len+1);
 	}
 
