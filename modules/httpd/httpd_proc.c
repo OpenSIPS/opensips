@@ -636,7 +636,7 @@ send_response:
 		LM_DBG("MHD_create_response_from_callback\n");
 		response = MHD_create_response_from_callback (MHD_SIZE_UNKNOWN,
 							buffer.len,
-							cb->flush_data_callback,
+							(MHD_ContentReaderCallback)cb->flush_data_callback,
 							(void*)async_data,
 							NULL);
 	}
