@@ -33,6 +33,7 @@
 #include "../../config.h"
 #include "../../globals.h"
 #include "../../locking.h"
+#include "../../strcommon.h"
 
 #include "http_fnc.h"
 
