@@ -20,6 +20,7 @@
 #define _XOPEN_SOURCE
 #include <stdlib.h>
 #include <string.h>
+#define __USE_MISC /* for timegm() */
 #include <time.h>
 
 #include <lua.h>

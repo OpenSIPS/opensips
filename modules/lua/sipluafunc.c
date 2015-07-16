@@ -57,7 +57,8 @@ void siplua_log(int lev, const char *format, ...)
   if (!(is_printable(lev) | lua_user_debug))
     return;
   va_start(ap, format);
-  vasprintf(&ret, format, ap);
+  if (vasprintf(&ret, format, ap) < 0)
+    return;
   va_end(ap);
   LM_GEN1(lev, "siplua: %s", ret);
   if (lua_user_debug)
