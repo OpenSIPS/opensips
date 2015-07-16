@@ -39,6 +39,7 @@
 #include "../../db/db.h"
 #include "../../dprint.h"
 #include "../../error.h"
+#include "../../timer.h"
 #include "../../ut.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
