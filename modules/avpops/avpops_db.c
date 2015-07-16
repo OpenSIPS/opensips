@@ -32,6 +32,7 @@
 #include "../../db/db.h"
 #include "../../db/db_insertq.h"
 #include "../../dprint.h"
+#include "../../route.h"
 #include "avpops_parse.h"
 #include "avpops_db.h"
 
