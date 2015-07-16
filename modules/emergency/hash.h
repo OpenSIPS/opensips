@@ -24,7 +24,7 @@
 *  2015-06-08 change from list to hash (Villaron/Tesini)
  */
 #include "../../lock_ops.h"
-#include "xml_parser.h" 
+#include "xml_parser.h"
 
 #define PKG_MEM_STR       "pkg"
 #define SHARE_MEM         "share"

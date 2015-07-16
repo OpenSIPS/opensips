@@ -26,12 +26,12 @@
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-06-08 change from list to hash (Villaron/Tesini)
- *  
+ *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "report_emergency.h" 
+#include "report_emergency.h"
 
 #define NR_KEYS 				 12
 
@@ -171,7 +171,7 @@ int report(struct emergency_report *report, str db_url, str table_report) {
     LM_DBG("DISPOSITION_REPORT_LEN %d \n", report->disposition.len);
 
 
-    // no field can be null 
+    // no field can be null
     int i = 0;
 
     for (i = 0; i < NR_KEYS; i++)
@@ -190,7 +190,7 @@ int report(struct emergency_report *report, str db_url, str table_report) {
 
     db_funcs.close(db_con);
     db_con = 0;
-    
+
     return 1;
 }
 
@@ -199,20 +199,20 @@ int report(struct emergency_report *report, str db_url, str table_report) {
 *   - CALLID
 *   - ESGWRI
 *   - ERT-RESN
-*   - ERT-NPA 
-*   - ERT-SRID 
-*   - LRO 
-*   - VPC - NAME 
-*   - VPC - HOST 
-*   - TIMESTAMP 
-*   - RESULT 
-*   - DISPOSITION 
+*   - ERT-NPA
+*   - ERT-SRID
+*   - LRO
+*   - VPC - NAME
+*   - VPC - HOST
+*   - TIMESTAMP
+*   - RESULT
+*   - DISPOSITION
 */
 int collect_data(struct node *current, str db_url, str table_report) {
 
     int callid_len, esgwri_len, srid_len, lro_len, vpc_name_len, vpc_host_len, time_len, result_len, disposition_len;
     int size_report;
-    struct emergency_report *report_eme; 
+    struct emergency_report *report_eme;
     callid_len = strlen(current->esct->callid);
     esgwri_len = strlen(current->esct->esgwri);
     srid_len = strlen(current->esct->ert_srid);
@@ -222,14 +222,14 @@ int collect_data(struct node *current, str db_url, str table_report) {
     disposition_len = strlen(current->esct->disposition);
     vpc_name_len = strlen(current->esct->vpc->organizationname);
     vpc_host_len = strlen(current->esct->vpc->hostname);
-    
+
     size_report = sizeof (struct emergency_report) +callid_len + esgwri_len + srid_len + lro_len + vpc_name_len + vpc_host_len + time_len + result_len + disposition_len;
     report_eme = pkg_malloc(size_report);
     if (report_eme == NULL) {
         LM_ERR("no more pkg memory\n");
         return -1;
     }
- 
+
     memset(report_eme, 0, size_report);
 
     report_eme->callid.len = callid_len;
@@ -247,7 +247,7 @@ int collect_data(struct node *current, str db_url, str table_report) {
 
     report_eme->ert_resn = current->esct->ert_resn;
     report_eme->ert_npa = current->esct->ert_npa;
- 
+
     report_eme->esgwri.len = esgwri_len;
     if (esgwri_len == 0) {
         report_eme->esgwri.s = " ";
@@ -285,8 +285,8 @@ int collect_data(struct node *current, str db_url, str table_report) {
     }
     report_eme->result.len = result_len;
     report_eme->result.s = (char *) (report_eme + 1) + callid_len + srid_len + esgwri_len + lro_len + vpc_name_len + vpc_host_len + time_len;
-    memcpy(report_eme->result.s, current->esct->result, result_len);          
- 
+    memcpy(report_eme->result.s, current->esct->result, result_len);
+
     report_eme->timestamp.len = time_len;
     if (time_len == 0) {
         report_eme->timestamp.s = " ";
@@ -294,7 +294,7 @@ int collect_data(struct node *current, str db_url, str table_report) {
     } else {
         report_eme->timestamp.s = (char *) (report_eme + 1) + callid_len + srid_len + esgwri_len + lro_len + vpc_name_len + vpc_host_len;
         memcpy(report_eme->timestamp.s, current->esct->datetimestamp, time_len);
-    }  
+    }
     report_eme->disposition.len = disposition_len;
     report_eme->disposition.s = (char *) (report_eme + 1) + callid_len + srid_len + esgwri_len + lro_len + vpc_name_len + vpc_host_len + time_len + result_len;
     memcpy(report_eme->disposition.s, current->esct->disposition, disposition_len);
@@ -311,7 +311,7 @@ int collect_data(struct node *current, str db_url, str table_report) {
     LM_DBG(" --- REPORT - RESULT %.*s \n\n", report_eme->result.len, report_eme->result.s);
     LM_DBG(" --- REPORT - DISPOSITION %.*s \n\n", report_eme->disposition.len, report_eme->disposition.s);
 
-    LM_DBG(" --- TABLE_REPORT %.*s \n\n", table_report.len, table_report.s);   
+    LM_DBG(" --- TABLE_REPORT %.*s \n\n", table_report.len, table_report.s);
 
 
     if (report(report_eme, db_url, table_report) != 1) {
@@ -320,7 +320,7 @@ int collect_data(struct node *current, str db_url, str table_report) {
         return -1;
     }
 
-    
+
     LM_DBG("****** INSERT OK\n");
     pkg_free(report_eme);
     return 1;
@@ -328,7 +328,7 @@ int collect_data(struct node *current, str db_url, str table_report) {
 
 
 /* retreives esgwrifrom the list db_esrn_esgwri
-* using  srid(selectiveRoutingID), resn(routingESN) and npa. 
+* using  srid(selectiveRoutingID), resn(routingESN) and npa.
 */
 int emergency_routing(char *srid, int resn, int npa, char** esgwri, rw_lock_t *ref_lock ) {
 
@@ -339,7 +339,7 @@ int emergency_routing(char *srid, int resn, int npa, char** esgwri, rw_lock_t *r
     while (esrn_domain != NULL) {
         LM_DBG("CMP SRID= %.*s \n", esrn_domain->srid.len, esrn_domain->srid.s);
         LM_DBG("CMP RESN= %d \n", esrn_domain->resn);
-        LM_DBG("CMP NPA = %d \n", esrn_domain->npa);                
+        LM_DBG("CMP NPA = %d \n", esrn_domain->npa);
         if (strncmp(esrn_domain->srid.s, srid, esrn_domain->srid.len) == 0) {
             if ((esrn_domain->resn == resn)&&(esrn_domain->npa == npa)) {
                 char* temp = pkg_malloc(sizeof (char) * esrn_domain->esgwri.len + 1);
@@ -386,13 +386,13 @@ struct service_provider* get_provider(struct sip_msg *msg, int attr, rw_lock_t *
                 vsp_addr_len = strlen(vsp_addr);
 
         LM_DBG("***************************vsp_addr:%s\n ", vsp_addr);
-        LM_DBG("***************************provider IP:%.*s\n ", provider->nodeIP.len, provider->nodeIP.s);        
+        LM_DBG("***************************provider IP:%.*s\n ", provider->nodeIP.len, provider->nodeIP.s);
 
 
                 if ( (provider->nodeIP.len == vsp_addr_len) && (strncmp(vsp_addr, provider->nodeIP.s, vsp_addr_len) == 0)) {
         LM_DBG("***************************achou ip\n ");
                 return provider;
-        
+
                 }
 
 
@@ -406,13 +406,13 @@ struct service_provider* get_provider(struct sip_msg *msg, int attr, rw_lock_t *
     }
     //lock_stop_read(ref_lock);
 
-    return NULL;    
+    return NULL;
 }
 
 
 /* select data from emergency_routing and put in memory
 * coluns keys: srid(selectiveRoutingID), resn(routingESN) and npa.
-* coluns translate: esgwri 
+* coluns translate: esgwri
 */
 int get_db_routing(str table_name, rw_lock_t *ref_lock ){
     db_key_t query_cols[] = {&id_col, &srid_col, &resn_col, &npa_col, &esgwri_col};
@@ -423,7 +423,7 @@ int get_db_routing(str table_name, rw_lock_t *ref_lock ){
     str SRID;
     int RESN;
     int NPA;
-    int nr_rows, i, size, id;
+    int nr_rows, i, size;
     struct esrn_routing *esrn_cell, *old_list, *it, *aux, *new_list;
     struct esrn_routing *init_esrn = NULL;
 
@@ -452,8 +452,6 @@ int get_db_routing(str table_name, rw_lock_t *ref_lock ){
             LM_ERR("Invalid value returned 1\n");
             goto end;
         }
-
-        id = VAL_INT(values);
 
         if (VAL_NULL(values + 1) ||
                 (VAL_TYPE(values + 1) != DB_STR && VAL_TYPE(values + 1) != DB_STRING)) {
@@ -502,24 +500,24 @@ int get_db_routing(str table_name, rw_lock_t *ref_lock ){
         if (!esrn_cell) {
             LM_ERR("no more shm\n");
             goto end;
-        }           
+        }
 
         memset(esrn_cell, 0, size);
 
         esrn_cell->srid.len = SRID.len;
         esrn_cell->srid.s = (char *) (esrn_cell + 1);
         memcpy(esrn_cell->srid.s, SRID.s, SRID.len);
-      
+
         esrn_cell->resn = RESN;
         esrn_cell->npa = NPA;
         esrn_cell->esgwri.len = esgwri.len;
         esrn_cell->esgwri.s = (char *) (esrn_cell + 1) + SRID.len;
-        memcpy(esrn_cell->esgwri.s, esgwri.s, esgwri.len);       
+        memcpy(esrn_cell->esgwri.s, esgwri.s, esgwri.len);
 
         LM_DBG("-SRID %.*s \n", SRID.len, SRID.s);
         LM_DBG("-RESN %d \n", RESN);
         LM_DBG("-NPA %d \n", NPA);
-        LM_DBG("-esgwri %.*s \n", esgwri.len, esgwri.s); 
+        LM_DBG("-esgwri %.*s \n", esgwri.len, esgwri.s);
 
 
         if (new_list != NULL) {
@@ -556,7 +554,7 @@ end:
 
 /* select data from emergency_service_prvider for put in xml to VPC
 * coluns key: attribution and nodeIP.
-* coluns attributs: OrganizationName, hostId, nenaId, contact, certUri. 
+* coluns attributs: OrganizationName, hostId, nenaId, contact, certUri.
 */
 int get_db_provider(str table_name, rw_lock_t *ref_lock ){
     db_key_t query_cols[] = {&id_col, &organizationName_col, &hostId_col, &nenaId_col, &contact_col, &certUri_col, &nodeIP_col, &attribution_col};
@@ -570,7 +568,7 @@ int get_db_provider(str table_name, rw_lock_t *ref_lock ){
     str certUri;
     str nodeIP;
     int attribution;
-    int nr_rows, i, size, id;
+    int nr_rows, i, size;
     struct service_provider *provider_cell, *old_list, *it, *aux, *new_list;
     struct service_provider *init_provider = NULL;
 
@@ -594,8 +592,6 @@ int get_db_provider(str table_name, rw_lock_t *ref_lock ){
             LM_ERR("Invalid value returned 1\n");
             goto end;
         }
-
-        id = VAL_INT(values);
 
         if (VAL_NULL(values + 1) ||
                 (VAL_TYPE(values + 1) != DB_STR && VAL_TYPE(values + 1) != DB_STRING)) {
@@ -647,7 +643,7 @@ int get_db_provider(str table_name, rw_lock_t *ref_lock ){
         } else {
             contact.s = (char*) VAL_STRING(values + 4);
             contact.len = strlen(contact.s);
-        }        
+        }
 
         if (VAL_NULL(values + 5) ||
                 (VAL_TYPE(values + 5) != DB_STR && VAL_TYPE(values + 5) != DB_STRING)) {
@@ -673,7 +669,7 @@ int get_db_provider(str table_name, rw_lock_t *ref_lock ){
         } else {
             nodeIP.s = (char*) VAL_STRING(values + 6);
             nodeIP.len = strlen(nodeIP.s);
-        } 
+        }
 
         if (VAL_NULL(values + 7) ||
                 (VAL_TYPE(values + 7) != DB_INT)) {
@@ -687,7 +683,7 @@ int get_db_provider(str table_name, rw_lock_t *ref_lock ){
                 LM_ERR("source_hostname and source_contact are mandatory \n");
                 mandatory_parm = 1;
             }
-        }       
+        }
 
         size = sizeof (struct service_provider)+ nodeIP.len + OrganizationName.len + hostId.len + nenaId.len + contact.len + certUri.len;
         provider_cell = shm_malloc(size);
@@ -708,7 +704,7 @@ int get_db_provider(str table_name, rw_lock_t *ref_lock ){
 
         provider_cell->hostId.len = hostId.len;
         provider_cell->hostId.s = (char *) (provider_cell + 1) + nodeIP.len + OrganizationName.len;
-        memcpy(provider_cell->hostId.s, hostId.s, hostId.len); 
+        memcpy(provider_cell->hostId.s, hostId.s, hostId.len);
 
         provider_cell->nenaId.len = nenaId.len;
         provider_cell->nenaId.s = (char *) (provider_cell + 1) + nodeIP.len + OrganizationName.len + hostId.len;
@@ -716,23 +712,23 @@ int get_db_provider(str table_name, rw_lock_t *ref_lock ){
 
         provider_cell->contact.len = contact.len;
         provider_cell->contact.s = (char *) (provider_cell + 1) + nodeIP.len + OrganizationName.len + hostId.len + nenaId.len;
-        memcpy(provider_cell->contact.s, contact.s, contact.len);  
+        memcpy(provider_cell->contact.s, contact.s, contact.len);
 
         provider_cell->certUri.len = certUri.len;
         provider_cell->certUri.s = (char *) (provider_cell + 1) + nodeIP.len + OrganizationName.len + hostId.len + nenaId.len + contact.len;
-        memcpy(provider_cell->certUri.s, certUri.s, certUri.len); 
+        memcpy(provider_cell->certUri.s, certUri.s, certUri.len);
 
-        provider_cell->attribution = attribution;             
-   
+        provider_cell->attribution = attribution;
+
         if (new_list != NULL) {
             new_list->next = provider_cell;
             new_list = provider_cell;
         } else {
             new_list = provider_cell;
             init_provider = new_list;
-        }       
+        }
     }
-    
+
     new_list = init_provider;
 
     lock_start_write(ref_lock);

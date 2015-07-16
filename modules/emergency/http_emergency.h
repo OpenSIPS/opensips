@@ -44,7 +44,7 @@
 #include "../../parser/parse_from.h"
 #include "../../regexp.h"
 #include "../../data_lump.h"
-#include "../../data_lump_rpl.h" 
+#include "../../data_lump_rpl.h"
 #include "../../ut.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
@@ -53,7 +53,7 @@
 #include "../../forward.h"
 #include "../rr/api.h"
 
-#include "report_emergency.h" 
+#include "report_emergency.h"
 
 #include "post_curl.h"
 
@@ -69,7 +69,7 @@ int emet_size;
 int subst_size;
 
 int send_esct(struct sip_msg *msg, str callid_ori, str from_tag);
-int faixa_result(int result); 
+int faixa_result(int result);
 int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_cell_vpc, NENA *call_cell_source, PARSED *parsed, int proxy_role);
 int get_lro_in_contact(char *contact_lro, ESCT *call_cell);
 int get_esqk_in_contact(char *contact_lro, ESCT *call_cell);

@@ -44,7 +44,7 @@
 #include "../../parser/parse_from.h"
 #include "../../regexp.h"
 #include "../../data_lump.h"
-#include "../../data_lump_rpl.h" 
+#include "../../data_lump_rpl.h"
 #include "../../ut.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
@@ -54,7 +54,7 @@
 #include "../rr/api.h"
 #include "../tm/tm_load.h" /*load_tm_api*/
 
-#include "http_emergency.h" 
+#include "http_emergency.h"
 
  #define TIMER_N				30
  #define MAXNUMBERLEN 			31
@@ -78,7 +78,7 @@ str* add_hdr_subscriber(int expires, str event);
 void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *params);
 int extract_reply_headers(struct sip_msg* reply, str* callid, int expires);
 int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb);
-int treat_notify(struct sip_msg *msg); 
+int treat_notify(struct sip_msg *msg);
 struct sm_subscriber* get_subs_cell(struct sip_msg *msg, str callid_event);
 void subs_cback_func_II(struct cell *t, int cb_type, struct tmcb_params *params);
 dlg_t* build_dlg(struct sm_subscriber* subscriber);

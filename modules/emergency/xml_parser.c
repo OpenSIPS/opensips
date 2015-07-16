@@ -26,7 +26,7 @@
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
  */
- 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,7 +57,7 @@ const char *XML_MODEL_ESCT= "<esct xmlns=\"urn:nena:xml:ns:es:v2\" \n  \
 
 
 char* copy_str_between_two_pointers(char* str_begin, char* str_end){
-    char *new_begin;  
+    char *new_begin;
 
     new_begin = strstr (str_begin,">");
     new_begin +=1;
@@ -84,13 +84,13 @@ char* copy_str_between_two_tags(char* tag_begin, char* str_total){
     char *ptr1,*ptr2;
     char *complete_tag_begin, *complete_tag_end;
     int size_begin, size_end;
-    
+
     size_begin =  sizeof(char) * (strlen(tag_begin)+ strlen("<") + strlen(">")) + 1;
     size_end = sizeof(char) * (strlen(tag_begin)+ strlen("</") + strlen(">")) + 1;
     complete_tag_begin =  pkg_malloc(size_begin);
     complete_tag_end =  pkg_malloc(size_end);
     memset(complete_tag_begin, 0, size_begin);
-    memset(complete_tag_end, 0, size_end);    
+    memset(complete_tag_end, 0, size_end);
 
     if(complete_tag_begin == NULL || complete_tag_end == NULL)
         return NULL;
@@ -98,25 +98,25 @@ char* copy_str_between_two_tags(char* tag_begin, char* str_total){
     strcpy (complete_tag_begin,"<");
     strcat (complete_tag_begin,tag_begin);
     strcat (complete_tag_begin,">");
-    
+
     strcpy (complete_tag_end,"</");
     strcat (complete_tag_end,tag_begin);
     strcat (complete_tag_end,">");
-    
+
     ptr1 = strstr(str_total,complete_tag_begin);
     ptr2 = strstr(str_total,complete_tag_end);
     if(ptr1 != NULL && ptr2 != NULL){
         LM_DBG(" --- FOUND TAG %s",str_total);
         pkg_free(complete_tag_begin);
-        pkg_free(complete_tag_end);        
+        pkg_free(complete_tag_end);
         return copy_str_between_two_pointers(ptr1,ptr2);
     }else{
         LM_DBG(" --- NOT FOUND TAG %s",str_total);
     }
-    
+
     pkg_free(complete_tag_begin);
     pkg_free(complete_tag_end);
-    
+
     return NULL;
 
 }
@@ -126,7 +126,7 @@ char* copy_str_between_two_tags_simple(char* tag_begin, char* str_total){
     char *complete_tag_begin, *complete_tag_end;
     //char* resp = pkg_malloc(sizeof(char));
     //memset(resp,'\0',1);
-    
+
     complete_tag_begin =  pkg_malloc(sizeof(char) * (strlen(tag_begin)+ strlen("<")));
     complete_tag_end =  pkg_malloc(sizeof(char) * (strlen(tag_begin)+ strlen("</") + strlen(">")));
     if(complete_tag_begin == NULL || complete_tag_end == NULL)
@@ -135,25 +135,25 @@ char* copy_str_between_two_tags_simple(char* tag_begin, char* str_total){
 
     strcpy (complete_tag_begin,"<");
     strcat (complete_tag_begin,tag_begin);
-    
+
     strcpy (complete_tag_end,"</");
     strcat (complete_tag_end,tag_begin);
     strcat (complete_tag_end,">");
-    
+
     ptr1 = strstr(str_total,complete_tag_begin);
     ptr2 = strstr(str_total,complete_tag_end);
     if(ptr1 != NULL && ptr2 != NULL){
         LM_DBG(" --- ENCONTROU A TAG %s",str_total);
         pkg_free(complete_tag_begin);
-        pkg_free(complete_tag_end);        
+        pkg_free(complete_tag_end);
         return copy_str_between_two_pointers_simple(ptr1 + strlen(tag_begin) + 1,ptr2);
     }else{
         LM_DBG(" --- NAO ENCONTROU A TAG %s",str_total);
     }
-    
+
     pkg_free(complete_tag_begin);
     pkg_free(complete_tag_end);
-    
+
     //return resp;
     return NULL;
 
@@ -162,34 +162,34 @@ char* copy_str_between_two_tags_simple(char* tag_begin, char* str_total){
 int check_str_between_init_tags( char* str_total){
     char *ptr1,*ptr2;
     char *complete_tag_begin, *complete_tag_end;
-    
-    complete_tag_begin = "<esrResponse";   
+
+    complete_tag_begin = "<esrResponse";
     complete_tag_end = "</esrResponse";
-   
+
     ptr1 = strstr(str_total,complete_tag_begin);
     ptr2 = strstr(str_total,complete_tag_end);
     if(ptr1 != NULL && ptr2 != NULL)
         return 0;
-    
 
-    LM_ERR(" --- NAO ENCONTROU INICIO \n");    
+
+    LM_ERR(" --- NAO ENCONTROU INICIO \n");
     return 1;
 }
 
 int check_ectAck_init_tags( char* str_total){
     char *ptr1,*ptr2;
     char *complete_tag_begin, *complete_tag_end;
-    
-    complete_tag_begin = "<esctAck";   
+
+    complete_tag_begin = "<esctAck";
     complete_tag_end = "</esctAck";
-   
+
     ptr1 = strstr(str_total,complete_tag_begin);
     ptr2 = strstr(str_total,complete_tag_end);
     if(ptr1 != NULL && ptr2 != NULL)
         return 0;
-    
 
-    LM_ERR(" --- NAO ENCONTROU INICIO \n");    
+
+    LM_ERR(" --- NAO ENCONTROU INICIO \n");
     return 1;
 }
 
@@ -197,25 +197,25 @@ char* parse_xml_esct(char* xml){
     char* callid = "callId";
     //char* datetimestamp = "datetimestamp";
     char* vpc = "vpc";
-    
+
     char *new_vpc;
     char *new_callid;
     //char *new_datetimestamp;
 
 
     if (check_ectAck_init_tags(xml))
-        return NULL;       
-    
+        return NULL;
+
     new_callid = copy_str_between_two_tags(callid,xml);
     //new_datetimestamp = copy_str_between_two_tags(datetimestamp,xml);
     new_vpc = copy_str_between_two_tags(vpc,xml);
 
     if(new_vpc != NULL){
-        pkg_free(new_vpc);  
+        pkg_free(new_vpc);
 
-        if (new_callid != NULL){      
-            return new_callid;  
-        }     
+        if (new_callid != NULL){
+            return new_callid;
+        }
     }
 
     return NULL;
@@ -225,11 +225,11 @@ char* parse_xml_esct(char* xml){
 char* check_dialog_init_tags( char* str_total){
     char *ptr1,*ptr2;
     char *complete_tag_begin, *complete_tag_end;
-    
-    complete_tag_begin = "<dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\"";     
+
+    complete_tag_begin = "<dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\"";
     complete_tag_end = "</dialog-info>";
 
-    LM_DBG(" --- CHECK DIALOG FLAGS \n");  
+    LM_DBG(" --- CHECK DIALOG FLAGS \n");
 
 
     ptr1 = strstr(str_total,complete_tag_begin);
@@ -239,8 +239,8 @@ char* check_dialog_init_tags( char* str_total){
         return ptr1;
 
     }
-    
-    LM_ERR(" --- INIT FLAGS NOT FOUND \n");    
+
+    LM_ERR(" --- INIT FLAGS NOT FOUND \n");
     return NULL;
 }
 
@@ -251,7 +251,7 @@ char* check_dialog_init_tags( char* str_total){
     - params:
         .version
         .state
-        .entity 
+        .entity
     - target:
         .dialog_id
         .callid
@@ -261,19 +261,19 @@ char* check_dialog_init_tags( char* str_total){
 */
 struct notify_body* parse_notify(char* xml){
     char* version = "version=";
-    char* dlg_state = "state="; 
+    char* dlg_state = "state=";
     char* entity = "entity=";
     char* dialog = "dialog";
-    char* dialog_id = "id="; 
-    char* callid = "call-id";           
-    char* local_tag = "local-tag"; 
+    char* dialog_id = "id=";
+    char* callid = "call-id";
+    char* local_tag = "local-tag";
     char* direction = "direction";
-    char* state = "state";    
+    char* state = "state";
 
     char* pt_version;
-    char* pt_dlg_state; 
+    char* pt_dlg_state;
     char* pt_entity;
-    char* pt_end_entity;      
+    char* pt_end_entity;
     char* pt_dialog_id;
     char* pt_callid;
     char* pt_local_tag;
@@ -283,11 +283,11 @@ struct notify_body* parse_notify(char* xml){
     char* target_info;
     char* dialog_body;
 
-    LM_DBG(" --- PARSES NOTYFY BODY \n"); 
+    LM_DBG(" --- PARSES NOTYFY BODY \n");
 
     dialog_body = check_dialog_init_tags(xml);
     if (dialog_body == NULL)
-        return NULL; 
+        return NULL;
 
     struct notify_body *notify = pkg_malloc(sizeof(struct notify_body));
     notify->params = pkg_malloc(sizeof(struct dialog_params));
@@ -296,10 +296,10 @@ struct notify_body* parse_notify(char* xml){
     if(notify == NULL || notify->params == NULL || notify->target == NULL)
         return NULL;
 
-    pt_version = strstr(dialog_body,version);   
-    pt_dlg_state = strstr(dialog_body,dlg_state);   
+    pt_version = strstr(dialog_body,version);
+    pt_dlg_state = strstr(dialog_body,dlg_state);
     pt_entity = strstr(dialog_body,entity);
-    pt_end_entity = strstr(dialog_body,">"); 
+    pt_end_entity = strstr(dialog_body,">");
 
     if (pt_version == NULL || pt_dlg_state == NULL || pt_entity == NULL || pt_end_entity == NULL)
         return NULL;
@@ -311,11 +311,11 @@ struct notify_body* parse_notify(char* xml){
     notify->state = copy_str_between_two_tags(state,dialog_body);
     if (notify->state == NULL)
         return NULL;
-   
+
     pt_dialog_id = strstr(target_info,dialog_id);
     pt_callid = strstr(target_info,callid);
     pt_local_tag = strstr(target_info,local_tag);
-    pt_direction = strstr(target_info,direction);   
+    pt_direction = strstr(target_info,direction);
     pt_end_direction = strstr(target_info,">");
 
     if (pt_dialog_id == NULL || pt_callid == NULL || pt_local_tag == NULL || pt_direction == NULL || pt_end_direction == NULL)
@@ -330,7 +330,7 @@ struct notify_body* parse_notify(char* xml){
     notify->target->local_tag = copy_str_between_two_pointers_simple(pt_local_tag + strlen(local_tag), pt_direction);
     notify->target->direction = copy_str_between_two_pointers_simple(pt_direction + strlen(direction), pt_end_direction);
 
-    return notify; 
+    return notify;
 
 }
 
@@ -353,7 +353,7 @@ PARSED* parse_xml(char* xml){
     char* selectiveRoutingID = "selectiveRoutingID";
     char* routingESN = "routingESN";
     char* npa = "npa";
-    
+
     char *new_vpc, *new_destination, *new_ert;
 
     PARSED *parsed = pkg_malloc(sizeof(PARSED));
@@ -362,11 +362,11 @@ PARSED* parse_xml(char* xml){
     parsed->ert =pkg_malloc(sizeof(ERT));
 
     if (check_str_between_init_tags(xml))
-        return NULL;       
-    
+        return NULL;
+
     if(parsed == NULL || parsed->vpc == NULL || parsed->destination == NULL || parsed->ert == NULL)
         return NULL;
-    
+
     parsed->result = copy_str_between_two_tags(result,xml);
     parsed->esgwri = copy_str_between_two_tags(esgwri,xml);
     parsed->esqk = copy_str_between_two_tags(esqk,xml);
@@ -380,7 +380,7 @@ PARSED* parse_xml(char* xml){
         parsed->vpc->hostname = copy_str_between_two_tags(hostname,new_vpc);
         parsed->vpc->nenaid = copy_str_between_two_tags(nenaid,new_vpc);
         parsed->vpc->contact = copy_str_between_two_tags(contact,new_vpc);
-        parsed->vpc->certuri = copy_str_between_two_tags(certuri,new_vpc);  
+        parsed->vpc->certuri = copy_str_between_two_tags(certuri,new_vpc);
         pkg_free(new_vpc);
     }else{
         parsed->vpc->organizationname = NULL;
@@ -403,11 +403,11 @@ PARSED* parse_xml(char* xml){
         parsed->destination->hostname = NULL;
         parsed->destination->nenaid = NULL;
         parsed->destination->contact = NULL;
-        parsed->destination->certuri = NULL;       
+        parsed->destination->certuri = NULL;
     }
-    
+
     new_ert = copy_str_between_two_tags(ert,xml);
-    if(new_ert != NULL){  
+    if(new_ert != NULL){
         parsed->ert->selectiveRoutingID = copy_str_between_two_tags(selectiveRoutingID,new_ert);
         parsed->ert->routingESN = copy_str_between_two_tags(routingESN,new_ert);
         parsed->ert->npa = copy_str_between_two_tags(npa,new_ert);
@@ -415,9 +415,9 @@ PARSED* parse_xml(char* xml){
     }else{
         parsed->ert->selectiveRoutingID = NULL;
         parsed->ert->routingESN = NULL;
-        parsed->ert->npa = NULL;   
+        parsed->ert->npa = NULL;
     }
-    
+
     return parsed;
 }
 
@@ -441,24 +441,24 @@ char* buildXmlFromModel(ESCT* esct){
     if (resp == NULL) {
         LM_ERR("--------------------------------------------------no more pkg memory\n");
         return NULL;
-    }           
+    }
 
     sprintf(resp, XML_MODEL_ESCT ,esct->vpc->organizationname, esct->vpc->hostname,
             esct->source->organizationname , esct->source->hostname, esct->source->nenaid ,
             esct->source->contact, esct->source->certuri ,
-            esct->esgwri , esct->esqk , esct->callid , esct->datetimestamp);               
+            esct->esgwri , esct->esqk , esct->callid , esct->datetimestamp);
     return resp;
 }
 
 unsigned long findOutSize(ESCT* esct){
     unsigned long resp = 0;
     resp = strlen(XML_MODEL_ESCT);
-    if(esct != NULL){      
+    if(esct != NULL){
         resp += esct->callid != NULL ? strlen(esct->callid) : 0;
         resp += esct->esgwri != NULL ? strlen(esct->esgwri) : 0;
-        resp += esct->esqk != NULL ? strlen(esct->esqk) : 0;      
-        resp += esct->datetimestamp != NULL ? strlen(esct->datetimestamp) : 0;        
-        resp += findOutNenaSize(esct->vpc);       
+        resp += esct->esqk != NULL ? strlen(esct->esqk) : 0;
+        resp += esct->datetimestamp != NULL ? strlen(esct->datetimestamp) : 0;
+        resp += findOutNenaSize(esct->vpc);
         resp += findOutNenaSize(esct->source);
     }
     return resp;
@@ -473,6 +473,6 @@ unsigned long findOutNenaSize(NENA* nena){
     resp += nena->nenaid != NULL ? strlen(nena->nenaid) : 0;
     resp += nena->contact != NULL ? strlen(nena->contact) : 0;
     resp += nena->certuri != NULL ? strlen(nena->certuri) : 0;
-    
+
     return resp;
 }
