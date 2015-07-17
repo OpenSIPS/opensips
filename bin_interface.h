@@ -162,16 +162,5 @@ int bin_skip_int(int count);
  */
 int bin_skip_str(int count);
 
-/**
- * bin_send - computes the checksum of the current packet and then
- * sends the packet over UDP to the @dest destination
- *
- * @return: number of bytes sent, or -1 on error
- */
-int bin_send(union sockaddr_union *dest);
-
-/* at OpenSIPS startup */
-int start_bin_receivers(void);
-
 #endif /* __BINARY_INTERFACE__ */
 
