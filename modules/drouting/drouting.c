@@ -597,7 +597,7 @@ static inline int dr_reload_data( void )
 		&drd_table, &drc_table, &drr_table, dr_persistent_state);
 	if ( new_data==0 ) {
 		LM_CRIT("failed to load routing info\n");
-		return -1;
+		goto error;
 	}
 
 	lock_start_write( ref_lock );
@@ -637,8 +637,12 @@ static inline int dr_reload_data( void )
 
 	if (no_concurrent_reload)
 		*ongoing_reload = 0;
-
 	return 0;
+
+error:
+	if (no_concurrent_reload)
+		*ongoing_reload = 0;
+	return -1;
 }
 
 
