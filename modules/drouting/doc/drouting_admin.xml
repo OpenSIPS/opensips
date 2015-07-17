@@ -814,6 +814,35 @@ modparam("drouting", "persistent_state", 0)
 	</section>
 
 	<section>
+		<title><varname>no_concurrent_reload</varname> (int)</title>
+		<para>
+			If enabled, the module will not allow do run multiple dr_reload
+			MI commands in parallel (with overlapping)  Any new reload will
+			be rejected (and discarded) while an existing reload is in 
+			progress.
+			</para>
+			<para>
+			If you have a large routing set (millions of rules/prefixes), you
+			should consider disabling concurrent reload as they will exhaust
+			the shared memory (by reloading into memory, in the same time,
+			multiple instances of routing data).
+			</para>
+		<para>
+		<emphasis>Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>no_concurrent_reload</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# do not allow parallel reload operations
+modparam("drouting", "no_concurrent_reload", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>probing_interval</varname> (integer)</title>
 		<para>
 		How often (in seconds) the probing of a destination should be done. If

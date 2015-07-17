@@ -77,7 +77,8 @@ str dr_probe_from = str_init("sip:prober@localhost");
 static int* probing_reply_codes = NULL;
 static int probing_codes_no = 0;
 
-
+/* reload controll parametere */
+static int no_concurrent_reload = 0;
 
 /*** DB relatede stuff ***/
 /* parameters  */
@@ -397,6 +398,7 @@ static param_export_t params[] = {
 	{"probing_from",     STR_PARAM, &dr_probe_from.s          },
 	{"probing_reply_codes",STR_PARAM, &dr_probe_replies.s     },
 	{"persistent_state", INT_PARAM, &dr_persistent_state      },
+	{"no_concurrent_reload",INT_PARAM, &no_concurrent_reload  },
 	{0, 0, 0}
 };
 
@@ -834,10 +836,21 @@ static inline int dr_reload_data_head( struct head_db *hd )
 	pcr_t *cr, *old_cr;
 	time_t rawtime;
 
+	if (no_concurrent_reload) {
+		lock_get( hd->ref_lock->lock );
+		if (hd->ongoing_reload) {
+			lock_release( hd->ref_lock->lock );
+			LM_WARN("Reload already in progress, discarding this one\n");
+			return -2;
+		}
+		hd->ongoing_reload = 1;
+		lock_release( hd->ref_lock->lock );
+	}
+
 	new_data = dr_load_routing_info(hd, dr_persistent_state);
 	if ( new_data==0 ) {
 		LM_CRIT("failed to load routing info\n");
-		return -1;
+		goto error;
 	}
 
 	lock_start_write( hd->ref_lock );
@@ -878,7 +891,14 @@ static inline int dr_reload_data_head( struct head_db *hd )
 	/* generate new blacklist from the routing info */
 	populate_dr_bls((*(hd->rdata))->pgw_l);
 
+	if (no_concurrent_reload)
+		hd->ongoing_reload = 0;
 	return 0;
+
+error:
+	if (no_concurrent_reload)
+		hd->ongoing_reload = 0;
+	return -1;
 }
 
 static inline int dr_reload_data( void ) {
@@ -1732,9 +1752,10 @@ static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param)
 	if(cmd_tree!=NULL)
 		node = cmd_tree->node.kids;
 
-	if(node==NULL || use_partitions==0) { /* no parameter supplied */
-
-		if ( (n=dr_reload_data())!=0 ) { /* load the data for all the partitions */
+	if(node==NULL || use_partitions==0) {
+		/* no parameter supplied
+		 * -> load the data for all the partitions */
+		if ( (n=dr_reload_data())!=0 ) {
 			LM_CRIT("failed to load routing data\n");
 			goto error;
 		}

@@ -77,6 +77,7 @@ struct head_db {
 	int carrier_attrs_avp;
 	rt_data_t **rdata;
 	rw_lock_t *ref_lock;
+	int ongoing_reload;
 	struct head_db *next;
 };
 
