@@ -54,14 +54,15 @@ Anca-Maria Vamanu
               1.3.13. default_group (int)
               1.3.14. force_dns (int)
               1.3.15. persistent_state (int)
-              1.3.16. probing_interval (integer)
-              1.3.17. probing_method (string)
-              1.3.18. probing_from (string)
-              1.3.19. probing_reply_codes (string)
-              1.3.20. use_domain (int)
-              1.3.21. drg_user_col (str)
-              1.3.22. drg_domain_col (str)
-              1.3.23. drg_grpid_col (str)
+              1.3.16. no_concurrent_reload (int)
+              1.3.17. probing_interval (integer)
+              1.3.18. probing_method (string)
+              1.3.19. probing_from (string)
+              1.3.20. probing_reply_codes (string)
+              1.3.21. use_domain (int)
+              1.3.22. drg_user_col (str)
+              1.3.23. drg_domain_col (str)
+              1.3.24. drg_grpid_col (str)
 
         1.4. Exported Functions
 
@@ -111,24 +112,25 @@ Anca-Maria Vamanu
    1.13. Set default_group parameter
    1.14. Set force_dns parameter
    1.15. Set the persistent_state parameter
-   1.16. Set probing_interval parameter
-   1.17. Set probing_method parameter
-   1.18. Set probing_from parameter
-   1.19. Set probing_reply_codes parameter
-   1.20. Set use_domain parameter
-   1.21. Set drg_user_col parameter
-   1.22. Set drg_domain_col parameter
-   1.23. Set drg_grpid_col parameter
-   1.24. do_routing usage
-   1.25. route_to_carrier usage
-   1.26. route_to_gw usage
-   1.27. use_next_gw usage
-   1.28. goes_to_gw usage
-   1.29. is_from_gw usage
-   1.30. dr_is_gw usage
-   1.31. dr_disable() usage
-   1.32. dr_gw_status usage
-   1.33. dr_carrier_status usage
+   1.16. Set no_concurrent_reload parameter
+   1.17. Set probing_interval parameter
+   1.18. Set probing_method parameter
+   1.19. Set probing_from parameter
+   1.20. Set probing_reply_codes parameter
+   1.21. Set use_domain parameter
+   1.22. Set drg_user_col parameter
+   1.23. Set drg_domain_col parameter
+   1.24. Set drg_grpid_col parameter
+   1.25. do_routing usage
+   1.26. route_to_carrier usage
+   1.27. route_to_gw usage
+   1.28. use_next_gw usage
+   1.29. goes_to_gw usage
+   1.30. is_from_gw usage
+   1.31. dr_is_gw usage
+   1.32. dr_disable() usage
+   1.33. dr_gw_status usage
+   1.34. dr_carrier_status usage
 
 Chapter 1. Admin Guide
 
@@ -578,7 +580,27 @@ modparam("drouting", "force_dns", 0)
 modparam("drouting", "persistent_state", 0)
 ...
 
-1.3.16. probing_interval (integer)
+1.3.16. no_concurrent_reload (int)
+
+   If enabled, the module will not allow do run multiple dr_reload
+   MI commands in parallel (with overlapping) Any new reload will
+   be rejected (and discarded) while an existing reload is in
+   progress.
+
+   If you have a large routing set (millions of rules/prefixes),
+   you should consider disabling concurrent reload as they will
+   exhaust the shared memory (by reloading into memory, in the
+   same time, multiple instances of routing data).
+
+   Default value is “0 (disabled)”.
+
+   Example 1.16. Set no_concurrent_reload parameter
+...
+# do not allow parallel reload operations
+modparam("drouting", "no_concurrent_reload", 1)
+...
+
+1.3.17. probing_interval (integer)
 
    How often (in seconds) the probing of a destination should be
    done. If set to 0, the probing will be disabled as
@@ -586,34 +608,34 @@ modparam("drouting", "persistent_state", 0)
 
    Default value is “30”.
 
-   Example 1.16. Set probing_interval parameter
+   Example 1.17. Set probing_interval parameter
 ...
 modparam("drouting", "probing_interval", 60)
 ...
 
-1.3.17. probing_method (string)
+1.3.18. probing_method (string)
 
    The SIP method to be used for the probing requests.
 
    Default value is “"OPTIONS"”.
 
-   Example 1.17. Set probing_method parameter
+   Example 1.18. Set probing_method parameter
 ...
 modparam("drouting", "probing_method", "INFO")
 ...
 
-1.3.18. probing_from (string)
+1.3.19. probing_from (string)
 
    The FROM SIP URI to be advertised in the SIP probing requests.
 
    Default value is “"sip:prober@localhost"”.
 
-   Example 1.18. Set probing_from parameter
+   Example 1.19. Set probing_from parameter
 ...
 modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 ...
 
-1.3.19. probing_reply_codes (string)
+1.3.20. probing_reply_codes (string)
 
    A comma separted list of SIP reply codes. The codes defined
    here will be considered as valid reply codes for probing
@@ -621,55 +643,55 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 
    Default value is “NULL”.
 
-   Example 1.19. Set probing_reply_codes parameter
+   Example 1.20. Set probing_reply_codes parameter
 ...
 modparam("drouting", "probing_reply_codes", "501, 403")
 ...
 
-1.3.20. use_domain (int)
+1.3.21. use_domain (int)
 
    Flag to configure whether to use domain match when querying
    database for user's routing group.
 
    Default value is “1”.
 
-   Example 1.20. Set use_domain parameter
+   Example 1.21. Set use_domain parameter
 ...
 modparam("drouting", "use_domain", 0)
 ...
 
-1.3.21. drg_user_col (str)
+1.3.22. drg_user_col (str)
 
    The name of the column in group db table where the username is
    stored.
 
    Default value is “username”.
 
-   Example 1.21. Set drg_user_col parameter
+   Example 1.22. Set drg_user_col parameter
 ...
 modparam("drouting", "drg_user_col", "user")
 ...
 
-1.3.22. drg_domain_col (str)
+1.3.23. drg_domain_col (str)
 
    The name of the column in group db table where the domain is
    stored.
 
    Default value is “domain”.
 
-   Example 1.22. Set drg_domain_col parameter
+   Example 1.23. Set drg_domain_col parameter
 ...
 modparam("drouting", "drg_domain_col", "host")
 ...
 
-1.3.23. drg_grpid_col (str)
+1.3.24. drg_grpid_col (str)
 
    The name of the column in group db table where the group id is
    stored.
 
    Default value is “groupid”.
 
-   Example 1.23. Set drg_grpid_col parameter
+   Example 1.24. Set drg_grpid_col parameter
 ...
 modparam("drouting", "drg_grpid_col", "grpid")
 ...
@@ -724,7 +746,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
        pseudo-variable which will be populated with the attributes
        of the matched carrier.
 
-   Example 1.24. do_routing usage
+   Example 1.25. do_routing usage
 ...
 # all groups, sort on order
 do_routing();
@@ -763,7 +785,7 @@ do_routing("2", "F", , , "$var(gw_attributes)");
        pseudo-variable which will be populated with the attributes
        of this carrier.
 
-   Example 1.25. route_to_carrier usage
+   Example 1.26. route_to_carrier usage
 ...
 if ( route_to_carrier("my_top_carrier", , "$var(carrier_att)") ) {
         xlog("Routing to \"my_top_carrier\" - $var(carrier_att)\n");
@@ -788,7 +810,7 @@ if ( route_to_carrier("my_top_carrier", , "$var(carrier_att)") ) {
        pseudo-variable which will be populated with the attributes
        of the currently matched gateway.
 
-   Example 1.26. route_to_gw usage
+   Example 1.27. route_to_gw usage
 ...
 if ( route_to_gw("gw_europe") ) {
         t_relay();
@@ -831,7 +853,7 @@ if ( route_to_gw("gw1,gw2,gw3", "$var(gw_attrs)") ) {
        pseudo-variable which will be populated with the attributes
        of the matched carrier.
 
-   Example 1.27. use_next_gw usage
+   Example 1.28. use_next_gw usage
 ...
 if (use_next_gw()) {
         t_relay();
@@ -881,7 +903,7 @@ if (use_next_gw(, , "$var(carrier_attrs)")) {
        pseudo-variable which will be populated with the attributes
        of the matched gateway.
 
-   Example 1.28. goes_to_gw usage
+   Example 1.29. goes_to_gw usage
 ...
 if (goes_to_gw("1", , "$var(gw_attrs)")) {
         sl_send_reply("403","Forbidden");
@@ -919,7 +941,7 @@ if (goes_to_gw("1", , "$var(gw_attrs)")) {
        pseudo-variable which will be populated with the attributes
        of the matched gateway.
 
-   Example 1.29. is_from_gw usage
+   Example 1.30. is_from_gw usage
 ...
 if (is_from_gw("3","1") {
 }
@@ -955,7 +977,7 @@ if (is_from_gw("3","1") {
        pseudo-variable which will be populated with the attributes
        of the matched gateway.
 
-   Example 1.30. dr_is_gw usage
+   Example 1.31. dr_is_gw usage
 ...
 if (dr_is_gw("$avp(uac)","3") {
 }
@@ -971,7 +993,7 @@ if (dr_is_gw("$avp(uac)","3") {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.31. dr_disable() usage
+   Example 1.32. dr_disable() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         dr_disable();
@@ -1009,7 +1031,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
                 status (optional)
                 _empty_line_
 
-   Example 1.32. dr_gw_status usage
+   Example 1.33. dr_gw_status usage
 $ ./opensipsctl fifo dr_gw_status 2
 Enabled:: no
 $ ./opensipsctl fifo dr_gw_status 2 1
@@ -1033,7 +1055,7 @@ Enabled:: yes
                 status (optional)
                 _empty_line_
 
-   Example 1.33. dr_carrier_status usage
+   Example 1.34. dr_carrier_status usage
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status CR1 1

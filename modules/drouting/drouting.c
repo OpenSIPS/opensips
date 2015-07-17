@@ -93,6 +93,7 @@ static db_func_t dr_dbf;        /* DB functions */
 
 /* current dr data - pointer to a pointer in shm */
 static rt_data_t **rdata = 0;
+static unsigned int* ongoing_reload = 0;
 
 
 /* internal AVP used to store serial RURIs */
@@ -164,6 +165,7 @@ int tree_size = 0;
 int inode = 0;
 int unode = 0;
 static str attrs_empty = str_init("");
+static int no_concurrent_reload = 0;
 
 /* reader-writers lock for reloading the data */
 static rw_lock_t *ref_lock = NULL;
@@ -305,8 +307,9 @@ static param_export_t params[] = {
 	{"probing_interval", INT_PARAM, &dr_prob_interval         },
 	{"probing_method",   STR_PARAM, &dr_probe_method.s        },
 	{"probing_from",     STR_PARAM, &dr_probe_from.s          },
-	{"probing_reply_codes",STR_PARAM, &dr_probe_replies.s     },
-	{"persistent_state", INT_PARAM, &dr_persistent_state      },
+	{"probing_reply_codes", STR_PARAM, &dr_probe_replies.s       },
+	{"persistent_state",    INT_PARAM, &dr_persistent_state      },
+	{"no_concurrent_reload",INT_PARAM, &no_concurrent_reload     },
 	{0, 0, 0}
 };
 
@@ -579,6 +582,17 @@ static inline int dr_reload_data( void )
 	pgw_t *gw, *old_gw;
 	pcr_t *cr, *old_cr;
 
+	if (no_concurrent_reload) {
+		lock_get( ref_lock->lock );
+		if (*ongoing_reload) {
+			lock_release( ref_lock->lock );
+			LM_WARN("Reload already in progress, discarding this one\n");
+			return -2;
+		}
+		*ongoing_reload = 1;
+		lock_release( ref_lock->lock );
+	}
+
 	new_data = dr_load_routing_info( &dr_dbf, db_hdl,
 		&drd_table, &drc_table, &drr_table, dr_persistent_state);
 	if ( new_data==0 ) {
@@ -620,6 +634,9 @@ static inline int dr_reload_data( void )
 
 	/* generate new blacklist from the routing info */
 	populate_dr_bls((*rdata)->pgw_l);
+
+	if (no_concurrent_reload)
+		*ongoing_reload = 0;
 
 	return 0;
 }
@@ -746,6 +763,15 @@ static int dr_init(void)
 		return E_CFG;
 	}
 
+	if (no_concurrent_reload) {
+		ongoing_reload = (unsigned int *)shm_malloc( sizeof(unsigned int) );
+		if (ongoing_reload==NULL) {
+			LM_CRIT("failed to get shm mem for reload tracker\n");
+			goto error;
+		}
+		*ongoing_reload = 0;
+	}
+
 	/* data pointer in shm */
 	rdata = (rt_data_t**)shm_malloc( sizeof(rt_data_t*) );
 	if (rdata==0) {
@@ -817,6 +843,10 @@ static int dr_init(void)
 
 	return 0;
 error:
+	if (ongoing_reload) {
+		shm_free(ongoing_reload);
+		ongoing_reload = 0;
+	}
 	if (ref_lock) {
 		lock_destroy_rw( ref_lock );
 		ref_lock = 0;
@@ -891,6 +921,12 @@ static int dr_exit(void)
 		ref_lock = 0;
 	}
 
+	/* destroy tracker for reloads */
+	if (ongoing_reload) {
+		shm_free(ongoing_reload);
+		ongoing_reload = 0;
+	}
+
 	/* destroy blacklists */
 	destroy_dr_bls();
 
@@ -905,14 +941,14 @@ static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param)
 
 	LM_INFO("dr_reload MI command received!\n");
 
-	if ( (n=dr_reload_data())!=0 ) {
+	if ( (n=dr_reload_data())<0 ) {
+		if (n==-2)
+			return init_mi_tree(500, MI_SSTR("Reload already in progress") );
 		LM_CRIT("failed to load routing data\n");
-		goto error;
+		return init_mi_tree( 500, MI_SSTR("Failed to reload"));
 	}
 
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-error:
-	return init_mi_tree( 500, "Failed to reload",16);
 }
 
 
