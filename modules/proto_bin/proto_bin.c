@@ -242,7 +242,6 @@ static int async_tsend_stream(struct tcp_connection *c,
 	written=0;
 
 again:
-	goto async_write;
 	n=send(fd, buf, len,0);
 
 	if (n<0){
@@ -275,8 +274,6 @@ poll_loop:
 				strerror(errno), errno);
 		return -1;
 	} else if (n == 0) {
-		async_write:
-
 		LM_DBG("timeout -> do an async write (add it to conn)\n");
 		/* timeout - let's just pass to main */
 		if (add_write_chunk(c,buf,len,0) < 0) {
@@ -389,7 +386,6 @@ static int tcpconn_async_connect(struct socket_info* send_sock,
 
 again:
 	n = connect(fd, &server->s, sockaddru_len(*server));
-	goto async_connect;
 	if (n == -1) {
 		if (errno == EINTR){
 			elapsed=get_time_diff(&begin);
