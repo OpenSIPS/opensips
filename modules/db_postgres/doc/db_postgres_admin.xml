@@ -82,7 +82,7 @@ modparam("db_postgres", "exec_query_threshold", 60000)
 		<title>Set <varname>max_db_queries</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("db_mysql", "max_db_queries", 2)
+modparam("db_postgres", "max_db_queries", 2)
 ...
 </programlisting>
 		</example>
