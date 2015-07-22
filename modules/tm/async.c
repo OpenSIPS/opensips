@@ -240,7 +240,7 @@ sync:
 	/* run the resume function */
 	do {
 		return_code = ctx_f( fd, msg, ctx_p );
-	} while(async_status!=ASYNC_CONTINUE);
+	} while(async_status==ASYNC_CONTINUE);
 	/* run the resume route in sync mode */
 	run_resume_route( resume_route, msg);
 	/* break original script */
