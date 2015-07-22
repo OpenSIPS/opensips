@@ -47,6 +47,7 @@ static void destroy(void);
  * module parameters
  */
 static unsigned int heartbeat = 0;
+extern unsigned rmq_sync_mode;
 
 /**
  * exported functions
@@ -67,6 +68,7 @@ static proc_export_t procs[] = {
 /* module parameters */
 static param_export_t mod_params[] = {
 	{"heartbeat",					INT_PARAM, &heartbeat},
+	{"sync_mode",		INT_PARAM, &rmq_sync_mode},
 	{0,0,0}
 };
 
@@ -575,7 +577,6 @@ static int rmq_raise(struct sip_msg *msg, str* ev_name,
 
 	if (rmq_send(rmqs) < 0) {
 		LM_ERR("cannot send message\n");
-		shm_free(rmqs);
 		return -1;
 	}
 
