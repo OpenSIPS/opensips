@@ -36,11 +36,14 @@ typedef struct _xmlrpc_send {
 	str method;
 	str host;
 	str event;
+	int process_idx;
 } xmlrpc_send_t;
 
 void xmlrpc_process(int rank);
 int xmlrpc_create_pipe(void);
+int xmlrpc_create_status_pipes(void);
 void xmlrpc_destroy_pipe(void);
+void xmlrpc_destroy_status_pipes(void);
 int xmlrpc_init_writer(void);
 int xmlrpc_init_buffers(void);
 int xmlrpc_send(xmlrpc_send_t * xmlrpcs);
@@ -52,10 +55,12 @@ int xmlrpc_build_buffer(str *,
 #define XMLRPC_DEFAULT_BUFFER_SIZE 8192
 #define XMLRPC_IOVEC_MAX_SIZE 32
 #define XMLRPC_DEFAULT_PORT 8080
+#define XMLRPC_SEND_SUCCESS 0
+#define XMLRPC_SEND_FAIL -1
 
 /* string macros */
 /* computes a macro len */
-#define LENOF(m)	(sizeof(m) - 1)
+#define LENOF(m)	(sizeof(m) - 1)	
 
 /* xmlrpc http header */
 #define XMLRPC_HTTP_CONST "POST /RPC2 HTTP/1.1\r\nHost: "

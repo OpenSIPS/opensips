@@ -27,6 +27,7 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../ut.h"
+#include "../../pt.h"
 #include "xmlrpc_send.h"
 #include "event_xmlrpc.h"
 #include <fcntl.h>
@@ -35,6 +36,7 @@
 #define IS_ERR(_err) (errno == _err)
 
 unsigned xmlrpc_struct_on = 0;
+unsigned xmlrpc_sync_mode = 0;
 static char * xmlrpc_body_buf = 0;
 static struct iovec xmlrpc_iov[XMLRPC_IOVEC_MAX_SIZE];
 static unsigned xmlrpc_iov_len = 0;
@@ -44,6 +46,7 @@ static unsigned xmlrpc_met_name_index = 0;
 static unsigned xmlrpc_ev_name_index = 0;
 static unsigned xmlrpc_params_index = 0;
 static unsigned xmlrpc_xmlbody_index = 0;
+static unsigned nr_procs = 0;
 
 int xmlrpc_init_buffers(void)
 {
@@ -56,8 +59,10 @@ int xmlrpc_init_buffers(void)
 	return 0;
 }
 
-	/* used to communicate with the sending process */
+/* used to communicate with the sending process */
 static int xmlrpc_pipe[2];
+/* used to communicate the status of the send (success or fail) from the sending process back to the requesting ones */
+static int (*xmlrpc_status_pipes)[2];
 
 /* creates communication pipe */
 int xmlrpc_create_pipe(void)
@@ -74,6 +79,39 @@ int xmlrpc_create_pipe(void)
 		LM_ERR("cannot create status pipe [%d:%s]\n", errno, strerror(errno));
 		return -1;
 	}
+
+	if (xmlrpc_sync_mode && xmlrpc_create_status_pipes() < 0) {
+		LM_ERR("cannot create communication status pipes\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/* creates status pipes */
+int xmlrpc_create_status_pipes(void) {
+	int rc, i;
+
+	nr_procs = count_init_children(0) + 2;	/* + 2 timer processes */
+
+	xmlrpc_status_pipes = shm_malloc(nr_procs * sizeof(xmlrpc_pipe));
+
+	if (!xmlrpc_status_pipes) {
+		LM_ERR("cannot allocate xmlrpc_status_pipes\n");
+		return -1;
+	}
+
+	/* create pipes */
+	for (i = 0; i < nr_procs; i++) {
+		do {
+			rc = pipe(xmlrpc_status_pipes[i]);
+		} while (rc < 0 && IS_ERR(EINTR));
+
+		if (rc < 0) {
+			LM_ERR("cannot create status pipe [%d:%s]\n", errno, strerror(errno));
+			return -1;
+		}
+	}
 	return 0;
 }
 
@@ -83,11 +121,29 @@ void xmlrpc_destroy_pipe(void)
 		close(xmlrpc_pipe[0]);
 	if (xmlrpc_pipe[1] != -1)
 		close(xmlrpc_pipe[1]);
+
+	if (xmlrpc_sync_mode)
+		xmlrpc_destroy_status_pipes();
+}
+
+void xmlrpc_destroy_status_pipes(void)
+{
+	int i;
+
+	for(i = 0; i < nr_procs; i++) {
+		close(xmlrpc_status_pipes[i][0]);
+		close(xmlrpc_status_pipes[i][1]);
+	}
+
+	shm_free(xmlrpc_status_pipes);
 }
 
 int xmlrpc_send(xmlrpc_send_t* xmlrpcs)
 {
 	int rc, retries = XMLRPC_SEND_RETRY;
+	int send_status;
+
+	xmlrpcs->process_idx = process_no;
 
 	do {
 		rc = write(xmlrpc_pipe[1], &xmlrpcs, sizeof(xmlrpc_send_t *));
@@ -95,11 +151,27 @@ int xmlrpc_send(xmlrpc_send_t* xmlrpcs)
 
 	if (rc < 0) {
 		LM_ERR("unable to send xmlrpc send struct to worker\n");
-		return -1;
+		shm_free(xmlrpcs);
+		return XMLRPC_SEND_FAIL;
 	}
 	/* give a change to the writer :) */
 	sched_yield();
-	return 0;
+
+	if (xmlrpc_sync_mode) {
+		retries = XMLRPC_SEND_RETRY;
+
+		do {
+			rc = read(xmlrpc_status_pipes[process_no][0], &send_status, sizeof(int));
+		} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
+
+		if (rc < 0) {
+			LM_ERR("cannot receive send status\n");
+			send_status = XMLRPC_SEND_FAIL;
+		}
+
+		return send_status;
+	} else
+		return XMLRPC_SEND_SUCCESS;
 }
 
 static xmlrpc_send_t * xmlrpc_receive(void)
@@ -131,6 +203,9 @@ int xmlrpc_init_writer(void)
 		xmlrpc_pipe[0] = -1;
 	}
 
+	if (xmlrpc_sync_mode)
+		close(xmlrpc_status_pipes[process_no][1]);
+
 	/* Turn non-blocking mode on for sending*/
 	flags = fcntl(xmlrpc_pipe[1], F_GETFL);
 	if (flags == -1) {
@@ -151,10 +226,30 @@ error:
 
 static void xmlrpc_init_reader(void)
 {
+	int i, flags;
+
 	if (xmlrpc_pipe[1] != -1) {
 		close(xmlrpc_pipe[1]);
 		xmlrpc_pipe[1] = -1;
 	}
+
+	if (xmlrpc_sync_mode)
+		for(i = 0; i < nr_procs; i++) {
+			close(xmlrpc_status_pipes[i][0]);
+
+			/* Turn non-blocking mode on for sending*/
+			flags = fcntl(xmlrpc_status_pipes[i][1], F_GETFL);
+			if (flags == -1) {
+				LM_ERR("fcntl failed: %s\n", strerror(errno));
+				close(xmlrpc_status_pipes[i][1]);
+				return;
+			}
+			if (fcntl(xmlrpc_status_pipes[i][1], F_SETFL, flags | O_NONBLOCK) == -1) {
+				LM_ERR("fcntl: set non-blocking failed: %s\n", strerror(errno));
+				close(xmlrpc_status_pipes[i][1]);
+				return;
+			}
+		}
 }
 
 /* sends the buffer */
@@ -482,6 +577,9 @@ static void xmlrpc_init_send_buf(void)
 
 void xmlrpc_process(int rank)
 {
+	int retries, rc;
+	int send_status;
+
 	/* init blocking reader */
 	xmlrpc_init_reader();
 	xmlrpc_init_send_buf();
@@ -496,8 +594,22 @@ void xmlrpc_process(int rank)
 		}
 
 		/* send msg */
-		if (xmlrpc_sendmsg(xmlrpcs))
+		if (xmlrpc_sendmsg(xmlrpcs)) {
 			LM_ERR("cannot send message\n");
+			send_status = XMLRPC_SEND_FAIL;
+		} else
+			send_status = XMLRPC_SEND_SUCCESS;
+
+		if (xmlrpc_sync_mode) {
+			retries = XMLRPC_SEND_RETRY;
+
+			do {
+				rc = write(xmlrpc_status_pipes[xmlrpcs->process_idx][1], &send_status, sizeof(int));
+			} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
+
+			if (rc < 0)
+				LM_ERR("cannot send status back to requesting process\n");
+		}
 end:
 		if (xmlrpcs)
 			shm_free(xmlrpcs);

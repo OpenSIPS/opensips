@@ -35,12 +35,14 @@
 #include <arpa/inet.h>
 
 extern unsigned xmlrpc_struct_on;
+extern unsigned xmlrpc_sync_mode;
 
 /**
  * module functions
  */
 static int mod_init(void);
 static void destroy(void);
+static int child_init(int);
 
 /**
  * exported functions
@@ -63,14 +65,14 @@ static proc_export_t procs[] = {
 /* module parameters */
 static param_export_t mod_params[] = {
 	{"use_struct_param",		INT_PARAM, &xmlrpc_struct_on},
+	{"sync_mode",		INT_PARAM, &xmlrpc_sync_mode},
 	{0,0,0}
 };
-
 
 /**
  * module exports
  */
-struct module_exports exports= {
+struct module_exports exports = {
 	"event_xmlrpc",				/* module name */
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
@@ -86,9 +88,8 @@ struct module_exports exports= {
 	mod_init,					/* module initialization function */
 	0,							/* response handling function */
 	destroy,					/* destroy function */
-	0							/* per-child init function */
+	child_init							/* per-child init function */
 };
-
 
 /**
  * exported functions for core event interface
@@ -103,6 +104,13 @@ static evi_export_t trans_export_xmlrpc = {
 	XMLRPC_FLAG					/* flags */
 };
 
+static int child_init(int rank) {
+	if (xmlrpc_init_writer() < 0) {
+		LM_ERR("cannot init writing pipe\n");
+		return -1;
+	}
+	return 0;
+}
 
 /**
  * init module function
@@ -128,7 +136,6 @@ static int mod_init(void)
 
 	return 0;
 }
-
 
 /* returns 0 if sockets match */
 static int xmlrpc_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
@@ -357,7 +364,6 @@ static int xmlrpc_raise(struct sip_msg *dummy_msg, str* ev_name,
 
 	if (xmlrpc_send(msg) < 0) {
 		LM_ERR("cannot send message\n");
-		shm_free(msg);
 		return -1;
 	}
 
