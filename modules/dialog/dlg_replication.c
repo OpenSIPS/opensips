@@ -32,6 +32,7 @@
 #include "dlg_repl_profile.h"
 
 #include "../../resolve.h"
+#include "../../forward.h"
 
 extern int active_dlgs_cnt;
 extern int early_dlgs_cnt;
@@ -448,8 +449,10 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 	static str module_name = str_init("dialog");
 	int callee_leg;
 	str *vars, *profiles;
+	str send_buffer;
 
-	if (bin_init(&module_name, REPLICATION_DLG_CREATED) != 0)
+
+	if (bin_init(&module_name, REPLICATION_DLG_CREATED, BIN_VERSION) != 0)
 		goto error;
 
 	callee_leg = callee_idx(dlg);
@@ -495,8 +498,10 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 	bin_push_int(dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(dlg->legs[callee_leg].last_gen_cseq);
 
+	bin_get_buffer(&send_buffer);
+
 	for (d = replication_dests; d; d = d->next)
-		bin_send(&d->to);
+		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
 
 	if_update_stat(dlg_enable_stats,create_sent,1);
 	return;
@@ -515,8 +520,9 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 	static str module_name = str_init("dialog");
 	int callee_leg;
 	str *vars, *profiles;
+	str send_buffer;
 
-	if (bin_init(&module_name, REPLICATION_DLG_UPDATED) != 0)
+	if (bin_init(&module_name, REPLICATION_DLG_UPDATED, BIN_VERSION) != 0)
 		goto error;
 
 	callee_leg = callee_idx(dlg);
@@ -562,8 +568,10 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 	bin_push_int(dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(dlg->legs[callee_leg].last_gen_cseq);
 
+	bin_get_buffer(&send_buffer);
+
 	for (d = replication_dests; d; d = d->next)
-		bin_send(&d->to);
+		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
 
 	if_update_stat(dlg_enable_stats,update_sent,1);
 	return;
@@ -580,16 +588,19 @@ void replicate_dialog_deleted(struct dlg_cell *dlg)
 {
 	struct replication_dest *d;
 	static str module_name = str_init("dialog");
+	str send_buffer;
 
-	if (bin_init(&module_name, REPLICATION_DLG_DELETED) != 0)
+	if (bin_init(&module_name, REPLICATION_DLG_DELETED, BIN_VERSION) != 0)
 		goto error;
 
 	bin_push_str(&dlg->callid);
 	bin_push_str(&dlg->legs[DLG_CALLER_LEG].tag);
 	bin_push_str(&dlg->legs[callee_idx(dlg)].tag);
 
+	bin_get_buffer(&send_buffer);
+
 	for (d = replication_dests; d; d = d->next)
-		bin_send(&d->to);
+		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
 
 	if_update_stat(dlg_enable_stats,delete_sent,1);
 	return;
@@ -608,6 +619,11 @@ void receive_binary_packet(int packet_type, struct receive_info *ri)
 	unsigned short port;
 
 	LM_DBG("Received a binary packet!\n");
+
+	if(get_bin_pkg_version() != BIN_VERSION){
+		LM_ERR("incompatible bin protocol version\n");
+		return;
+	}
 
 	if (accept_repl_profiles && packet_type == REPLICATION_DLG_PROFILE) {
 		/* TODO: handle this */
@@ -782,9 +798,12 @@ int repl_prof_dest(modparam_t type, void *val)
 static inline void dlg_replicate_profiles(void)
 {
 	unsigned i;
+	str send_buffer;
+
+	bin_get_buffer(&send_buffer);
 
 	for (i = 0; i < repl_prof_dests_nr; i++)
-		bin_send(&repl_prof_dests[i].to);
+		msg_send(0,PROTO_BIN,&repl_prof_dests[i].to,0,send_buffer.s,send_buffer.len,0);
 }
 
 static void dlg_replicated_profiles(struct receive_info *ri)
@@ -930,7 +949,7 @@ int repl_prof_remove(str *name, str *value)
 	static str module_name = str_init("dialog");
 	if (!repl_prof_dests_nr)
 		return 0;
-	if (bin_init(&module_name, REPLICATION_DLG_PROFILE) < 0) {
+	if (bin_init(&module_name, REPLICATION_DLG_PROFILE, BIN_VERSION) < 0) {
 		LM_ERR("cannot initiate bin buffer\n");
 		return -1;
 	}
@@ -1022,7 +1041,7 @@ static void repl_prof_utimer_f(utime_t ticks, void *param)
 				dlg_replicate_profiles(); \
 				LM_DBG("sent %d records\n", nr); \
 			} \
-			if (bin_init(&module_name, REPLICATION_DLG_PROFILE) < 0) { \
+			if (bin_init(&module_name, REPLICATION_DLG_PROFILE, BIN_VERSION) < 0) { \
 				LM_ERR("cannot initiate bin buffer\n"); \
 				return; \
 			} \
@@ -1040,7 +1059,7 @@ static void repl_prof_utimer_f(utime_t ticks, void *param)
 	void **dst;
 	str *value;
 
-	if (bin_init(&module_name, REPLICATION_DLG_PROFILE) < 0) {
+	if (bin_init(&module_name, REPLICATION_DLG_PROFILE, BIN_VERSION) < 0) {
 		LM_ERR("cannot initiate bin buffer\n");
 		return;
 	}

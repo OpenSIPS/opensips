@@ -36,6 +36,8 @@
 #define REPLICATION_DLG_UPDATED		2
 #define REPLICATION_DLG_DELETED		3
 
+#define BIN_VERSION 1
+
 extern int accept_replicated_dlg;
 extern struct replication_dest *replication_dests;
 

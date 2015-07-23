@@ -41,6 +41,8 @@
 #define REPL_UCONTACT_UPDATE 4
 #define REPL_UCONTACT_DELETE 5
 
+#define BIN_VERSION 1
+
 extern int accept_replicated_udata;
 extern struct replication_dest *replication_dests;
 extern str repl_module_name;

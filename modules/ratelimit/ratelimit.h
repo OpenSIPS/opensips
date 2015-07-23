@@ -30,6 +30,8 @@
 #define RL_HASHSIZE			1024
 #define RL_TIMER_INTERVAL	10
 #define RL_PIPE_PENDING		(1<<0)
+#define BIN_VERSION         1
+
 
 #include "../../map.h"
 
