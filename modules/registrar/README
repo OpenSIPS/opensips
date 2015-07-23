@@ -579,6 +579,18 @@ remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
             tm for forking. If the flag is set, only Request-URI
             will be overwritten with the highest-q rated contact
             and the rest will be left unprocessed.
+          + 'r' (bRanch lookup) - this flag enables searching
+            through existing branches for aor's and expanding them
+            to contacts. For example, you have got AOR A in your
+            ruri but you also want to forward your calls to AOR B.
+            In order to do this, you must put AOR B in a branch,
+            and if this flag enabled, the function will also
+            expand AOR B to contacts, which will be put back into
+            the branches. The AOR's that were in branches before
+            the function call shall be removed.
+            WARNING: if you want this flag activated, the 'b' (no
+            Branches) flag must not be set, because by setting
+            that flag you won't allow lookup to write in a branch.
           + 'm' (Method filtering) - this flag tells if the
             contact filtering based on supported methods should be
             performed during lookup.
@@ -606,6 +618,11 @@ remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
 lookup("location");  # simple lookup
    #or
 lookup("location","m"); # lookup with method filtering
+   #or
+lookup("location","r"); #lookup with aor branch search;
+                                                #all contacts except the
+ first one shall be put
+                                                #in the branches
    #or
 lookup("location","u/phone/i"); # lookup with user-agent filtering
    #or

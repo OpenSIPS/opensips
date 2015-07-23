@@ -61,6 +61,12 @@
 		*(ptr->user_agent.s+ptr->user_agent.len) = tmp; \
 	}
 
+unsigned int nbranches;
+
+static char urimem[MAX_BRANCHES-1][MAX_URI_SIZE];
+static str branch_uris[MAX_BRANCHES-1];
+
+
 /*! \brief
  * Lookup contact in the database and rewrite Request-URI
  * \return: -1 : not found
@@ -88,6 +94,15 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	int_str istr;
 	str sip_instance = {0,0},call_id = {0,0};
 
+	/* branch index */
+	int idx;
+
+	/* temporary branch values*/
+	int tlen;
+	char *turi;
+
+	qvalue_t tq;
+
 	flags = 0;
 	if (_f && _f[0]!=0) {
 		if (fixup_get_svalue( _m, (gparam_p)_f, &flags_s)!=0) {
@@ -98,6 +113,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 			switch (flags_s.s[res]) {
 				case 'm': flags |= REG_LOOKUP_METHODFILTER_FLAG; break;
 				case 'b': flags |= REG_LOOKUP_NOBRANCH_FLAG; break;
+				case 'r': flags |= REG_BRANCH_AOR_LOOKUP_FLAG; break;
 				case 'u':
 					if (flags_s.s[res+1] != '/') {
 						LM_ERR("no regexp after 'u' flag");
@@ -125,6 +141,28 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 			}
 		}
 	}
+	if (flags&REG_BRANCH_AOR_LOOKUP_FLAG) {
+		/* extract all the branches for further usage */
+		nbranches = 0;
+		while (
+			(turi=get_branch(nbranches, &tlen, &tq, NULL, NULL, NULL, NULL))
+				) {
+			/* copy uri */
+			branch_uris[nbranches].s = urimem[nbranches];
+			if (tlen) {
+				memcpy(branch_uris[nbranches].s, turi, tlen);
+				branch_uris[nbranches].len = tlen;
+			} else {
+				*branch_uris[nbranches].s  = '\0';
+				branch_uris[nbranches].len = 0;
+			}
+
+			nbranches++;
+		}
+		clear_branches();
+		idx=0;
+	}
+
 
 	if (_s) {
 		if (pv_get_spec_value( _m, (pv_spec_p)_s, &val)!=0) {
@@ -166,6 +204,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		}
 		*(ua+re_len) = tmp;
 	}
+
 
 	ptr = r->contacts;
 	ret = -1;
@@ -296,36 +335,68 @@ search_valid_contact:
 	if ( flags&REG_LOOKUP_NOBRANCH_FLAG || (sip_instance.len && sip_instance.s) ) goto done;
 	LM_DBG("looking for branches\n");
 
-	for( ; ptr ; ptr = ptr->next ) {
-		if (VALID_CONTACT(ptr, act_time) && allowed_method(_m,ptr,flags)) {
-			path_dst.len = 0;
-			if(ptr->path.s && ptr->path.len
-			&& get_path_dst_uri(&ptr->path, &path_dst) < 0) {
-				LM_ERR("failed to get dst_uri for Path\n");
-				continue;
-			}
+	do {
+		for( ; ptr ; ptr = ptr->next ) {
+			if (VALID_CONTACT(ptr, act_time) && allowed_method(_m,ptr,flags)) {
+				path_dst.len = 0;
+				if(ptr->path.s && ptr->path.len
+				&& get_path_dst_uri(&ptr->path, &path_dst) < 0) {
+					LM_ERR("failed to get dst_uri for Path\n");
+					continue;
+				}
 
-			ua_re_check(continue);
+				ua_re_check(continue);
 
-			/* The same as for the first contact applies for branches
-			 * regarding path vs. received. */
-			LM_DBG("setting branch <%.*s>\n",ptr->c.len,ptr->c.s);
-			if (append_branch(_m,&ptr->c,path_dst.len?&path_dst:&ptr->received,
-			&ptr->path, ptr->q, ptr->cflags, ptr->sock) == -1) {
-				LM_ERR("failed to append a branch\n");
-				/* Also give a chance to the next branches*/
-				continue;
-			}
+				/* The same as for the first contact applies for branches
+				 * regarding path vs. received. */
+				LM_DBG("setting branch <%.*s>\n",ptr->c.len,ptr->c.s);
+				if (append_branch(_m,&ptr->c,path_dst.len?&path_dst:&ptr->received,
+				&ptr->path, ptr->q, ptr->cflags, ptr->sock) == -1) {
+					LM_ERR("failed to append a branch\n");
+					/* Also give a chance to the next branches*/
+					continue;
+				}
 
-			/* populate the 'attributes' avp */
-			if (attr_avp_name != -1) {
-				istr.s = ptr->attr;
-				if (add_avp_last(AVP_VAL_STR, attr_avp_name, istr) != 0) {
-					LM_ERR("Failed to populate attr avp!\n");
+				/* populate the 'attributes' avp */
+				if (attr_avp_name != -1) {
+					istr.s = ptr->attr;
+					if (add_avp_last(AVP_VAL_STR, attr_avp_name, istr) != 0) {
+						LM_ERR("Failed to populate attr avp!\n");
+					}
 				}
 			}
 		}
-	}
+		/* 0 branches condition also filled; idx initially -1*/
+		if (!(flags&REG_BRANCH_AOR_LOOKUP_FLAG) || idx == nbranches)
+			goto done;
+
+
+		/* relsease old aor lock */
+		ul.unlock_udomain((udomain_t*)_t, &aor);
+		ul.release_urecord(r, 0);
+
+		/* idx starts from -1 */
+		uri = branch_uris[idx];
+		if (extract_aor(&uri, &aor, NULL, &call_id) < 0) {
+			LM_ERR("failed to extract address of record for branch uri\n");
+			return -3;
+		}
+
+		/* release old urecord */
+
+		/* get lock on new aor */
+		LM_DBG("getting contacts from aor [%.*s]"
+					"in branch %d\n", aor.len, aor.s, idx);
+		ul.lock_udomain((udomain_t*)_t, &aor);
+		res = ul.get_urecord((udomain_t*)_t, &aor, &r);
+
+		if (res > 0) {
+			LM_DBG("'%.*s' Not found in usrloc\n", aor.len, ZSW(aor.s));
+			goto done;
+		}
+		idx++;
+		ptr = r->contacts;
+	} while (1);
 
 done:
 	ul.release_urecord(r, 0);
