@@ -30,10 +30,11 @@
 
 #define BIN_PACKET_MARKER      "P4CK"
 #define BIN_PACKET_MARKER_SIZE 4
-#define CRC_FIELD_SIZE         4
+#define PKG_LEN_FIELD_SIZE     4
+#define VERSION_FIELD_SIZE     4
 #define LEN_FIELD_SIZE         sizeof(int)
 #define CMD_FIELD_SIZE         sizeof(int)
-#define HEADER_SIZE            (BIN_PACKET_MARKER_SIZE + CRC_FIELD_SIZE)
+#define HEADER_SIZE            (BIN_PACKET_MARKER_SIZE + PKG_LEN_FIELD_SIZE + VERSION_FIELD_SIZE)
 #define MIN_BIN_PACKET_SIZE \
 	(HEADER_SIZE + LEN_FIELD_SIZE + CMD_FIELD_SIZE + 2) /* e.g. >tm<.so */
 
@@ -57,9 +58,6 @@
 		name.s = _p + HEADER_SIZE + LEN_FIELD_SIZE; \
 	} while (0)
 
-extern struct socket_info *bin;
-extern int bin_children;
-
 struct packet_cb_list {
 	str module;							/* registered module */
 	void (*cbf)(int packet_type,		/* module callback */
@@ -68,6 +66,11 @@ struct packet_cb_list {
 	struct packet_cb_list *next;
 };
 
+
+/**
+	returns the version of the bin protocol from the received message
+*/
+short get_bin_pkg_version(void);
 
 /**
 	calls all the registered functions
@@ -91,7 +94,7 @@ int bin_register_cb(char *mod_name, void (*)(int packet_type, struct receive_inf
  *
  * @return: 0 on success
  */
-int bin_init(str *mod_name, int packet_type);
+int bin_init(str *mod_name, int packet_type, short version);
 
 /*
  * adds a new string value to the packet being currently built
@@ -161,17 +164,6 @@ int bin_skip_int(int count);
  *		<  0: error, buffer limit reached
  */
 int bin_skip_str(int count);
-
-/**
- * bin_send - computes the checksum of the current packet and then
- * sends the packet over UDP to the @dest destination
- *
- * @return: number of bytes sent, or -1 on error
- */
-int bin_send(union sockaddr_union *dest);
-
-/* at OpenSIPS startup */
-int start_bin_receivers(void);
 
 #endif /* __BINARY_INTERFACE__ */
 

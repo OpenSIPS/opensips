@@ -1,4 +1,4 @@
-/*
+/*:
  * Copyright (C) 2011 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -34,6 +34,7 @@
 
 #include "../../cachedb/cachedb.h"
 #include "../../cachedb/cachedb_cap.h"
+#include "../../forward.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -751,6 +752,11 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri)
 	unsigned int hash_idx;
 	time_t now;
 
+	if(get_bin_pkg_version() != BIN_VERSION){
+		LM_ERR("incompatible bin protocol version\n");
+		return;
+	}
+
 	if (packet_type != RL_PIPE_COUNTER)
 		return;
 
@@ -917,9 +923,12 @@ int rl_add_repl_dst(modparam_t type, void *val)
 static inline void rl_replicate(void)
 {
 	unsigned i;
+	str send_buffer;
+
+	bin_get_buffer(&send_buffer);
 
 	for (i = 0; i < rl_dests_nr; i++)
-		bin_send(&rl_dests[i].to);
+		msg_send(0,PROTO_BIN,&rl_dests[i].to,0,send_buffer.s,send_buffer.len,0);
 }
 
 void rl_timer_repl(utime_t ticks, void *param)
@@ -932,7 +941,7 @@ void rl_timer_repl(utime_t ticks, void *param)
 	int nr = 0;
 	int ret;
 
-	if (bin_init(&module_name, RL_PIPE_COUNTER) < 0) {
+	if (bin_init(&module_name, RL_PIPE_COUNTER, BIN_VERSION) < 0) {
 		LM_ERR("cannot initiate bin buffer\n");
 		return;
 	}
@@ -978,7 +987,7 @@ void rl_timer_repl(utime_t ticks, void *param)
 				/* send the buffer */
 				if (nr)
 					rl_replicate();
-				if (bin_init(&module_name, RL_PIPE_COUNTER) < 0) {
+				if (bin_init(&module_name, RL_PIPE_COUNTER, BIN_VERSION) < 0) {
 					LM_ERR("cannot initiate bin buffer\n");
 					RL_RELEASE_LOCK(i);
 					return;

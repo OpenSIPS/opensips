@@ -64,7 +64,6 @@ int init_multi_proc_support(void)
 	}
 
 	/* info packet UDP receivers */
-	proc_no += bin ? bin_children : 0;
 
 	/* timer processes */
 	proc_no += 2 /* timer keeper + timer trigger */;

@@ -30,8 +30,6 @@
 
 struct socket_info *bin;
 
-int bin_children = 1;
-
 
 static char *send_buffer;
 static char *cpos;
@@ -40,18 +38,23 @@ static char *rcv_buf;
 static char *rcv_end;
 
 static struct packet_cb_list *reg_modules;
-
 /**
  * bin_init - begins the construction of a new binary packet (header part):
  *
- * +-------------------+------------------------------------------------------+
- * |  8-byte HEADER    |                 BODY                max 65535 bytes  |
- * +-------------------+------------------------------------------------------+
- * | PK_MARKER |  CRC  | LEN | MOD_NAME | CMD | LEN | FIELD | LEN | FIELD |...|
- * +-------------------+------------------------------------------------------+
+ * +-------------------+-----------------------------------------------------------------+
+ * |    12-byte HEADER           |       BODY                max 65535 bytes             |
+ * +-------------------+-----------------------------------------------------------------+
+ * | PK_MARKER |PGK LEN| Version | LEN | MOD_NAME | CMD | LEN | FIELD | LEN | FIELD |....|
+ * +-------------------+-----------------------------------------------------------------+
  *
  * @param: { LEN, MOD_NAME } + CMD
  */
+
+short get_bin_pkg_version(void)
+{
+	return  *(short *)(rcv_buf + BIN_PACKET_MARKER_SIZE + PKG_LEN_FIELD_SIZE);
+}
+
 
 void set_len(char *send_buffer, char *cpos){
 	unsigned short len = cpos - send_buffer, *px;
@@ -59,7 +62,7 @@ void set_len(char *send_buffer, char *cpos){
 	*px = len;
 }
 
-int bin_init(str *mod_name, int cmd_type)
+int bin_init(str *mod_name, int cmd_type, short version)
 {
 	if (!send_buffer) {
 		send_buffer = pkg_malloc(BUF_SIZE);
@@ -69,9 +72,14 @@ int bin_init(str *mod_name, int cmd_type)
 		}
 	}
 
-	/* binary packet header: marker + crc */
+	/* binary packet header: marker + pkg_len */
 	memcpy(send_buffer, BIN_PACKET_MARKER, BIN_PACKET_MARKER_SIZE);
-	cpos = send_buffer + HEADER_SIZE;
+	cpos = send_buffer + BIN_PACKET_MARKER_SIZE + PKG_LEN_FIELD_SIZE;
+
+	
+	/* bin version */
+	memcpy(cpos, &version, sizeof(version));
+	cpos += VERSION_FIELD_SIZE;
 
 	/* module name */
 	memcpy(cpos, &mod_name->len, LEN_FIELD_SIZE);
@@ -272,46 +280,6 @@ int bin_pop_int(void *info)
 }
 
 /**
- * bin_send - computes the checksum of the current packet and then
- * sends the packet over UDP to the @dest destination
- *
- * @return: number of bytes sent, or -1 on error
- */
-int bin_send(union sockaddr_union *dest)
-{
-	int rc, destlen;
-	str st;
-	char *ip;
-	unsigned short port;
-
-	if (!dest)
-		return 0;
-
-	st.s = send_buffer + HEADER_SIZE;
-	st.len = bin_send_size - HEADER_SIZE;
-
-	/* compute a checksum of the binary packet content */
-	crc32_uint(&st, (unsigned int *)(send_buffer + BIN_PACKET_MARKER_SIZE));
-
-	LM_DBG("sending packet {'%.*s', %d}: %.*s [%d B] from socket %d\n",
-	        *(int *)(send_buffer + HEADER_SIZE), send_buffer + HEADER_SIZE +
-	        LEN_FIELD_SIZE, bin_send_type, bin_send_size, send_buffer, bin_send_size,
-	        bin->socket);
-
-	destlen=sockaddru_len(*dest);
-again:
-	rc=sendto(bin->socket, send_buffer, bin_send_size, 0, &dest->s, destlen);
-	if (rc==-1){
-		if (errno==EINTR) goto again;
-		get_su_info(&dest->s, ip, port);
-		LM_ERR("sendto() failed with %s(%d) - destination  %s:%hu\n",
-				strerror(errno), errno, ip, port);
-	}
-
-	return rc;
-}
-
-/**
  * bin_register_cb - registers a module handler for specific packets
  * @mod_name: used to classify the incoming packets
  * @cb:       the handler function, called once for each matched packet
@@ -348,7 +316,9 @@ int bin_register_cb(char *mod_name, void (*cb)(int, struct receive_info *))
 void call_callbacks(char* buffer, struct receive_info *rcv){
 	str name;
 	struct packet_cb_list *p;
+
 	rcv_buf = buffer;
+
 	get_name(rcv_buf, name);
 	rcv_end = rcv_buf + *(unsigned short*)(buffer + BIN_PACKET_MARKER_SIZE);
 

@@ -40,7 +40,7 @@ void replicate_urecord_insert(urecord_t *r)
 	struct replication_dest *d;
 	str send_buffer;
 
-	if (bin_init(&repl_module_name, REPL_URECORD_INSERT) != 0) {
+	if (bin_init(&repl_module_name, REPL_URECORD_INSERT, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -59,7 +59,7 @@ void replicate_urecord_delete(urecord_t *r)
 	struct replication_dest *d;
 	str send_buffer;
 
-	if (bin_init(&repl_module_name, REPL_URECORD_DELETE) != 0) {
+	if (bin_init(&repl_module_name, REPL_URECORD_DELETE, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -79,7 +79,7 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	str send_buffer;
 	str st;
 
-	if (bin_init(&repl_module_name, REPL_UCONTACT_INSERT) != 0) {
+	if (bin_init(&repl_module_name, REPL_UCONTACT_INSERT, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -124,7 +124,7 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	str send_buffer;
 	str st;
 
-	if (bin_init(&repl_module_name, REPL_UCONTACT_UPDATE) != 0) {
+	if (bin_init(&repl_module_name, REPL_UCONTACT_UPDATE, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -168,7 +168,7 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 	struct replication_dest *d;
 	str send_buffer;
 
-	if (bin_init(&repl_module_name, REPL_UCONTACT_DELETE) != 0) {
+	if (bin_init(&repl_module_name, REPL_UCONTACT_DELETE, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -543,6 +543,12 @@ void receive_binary_packet(int packet_type, struct receive_info *ri)
 	int rc;
 
 	LM_DBG("received a binary packet [%d]!\n", packet_type);
+
+	if(get_bin_pkg_version() != BIN_VERSION){
+		LM_ERR("incompatible bin protocol version\n");
+		return;
+	}
+
 
 	switch (packet_type) {
 	case REPL_URECORD_INSERT:
