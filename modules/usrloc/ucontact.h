@@ -67,6 +67,12 @@ typedef enum flags {
  * Main structure for handling of registered Contact: data
  */
 typedef struct ucontact {
+	uint64_t contact_id;	/*!< 64 bit Contact identifier
+							  0-------0-------------0---------------0
+							  |0 - 15 |   16 - 47   |    48 - 63    |
+							  |aorhash| record label| contact label |
+							  0-------0-------------0---------------0
+							*/
 	str* domain;            /*!< Pointer to domain name (NULL terminated) */
 	str* aor;               /*!< Pointer to the AOR string in record structure*/
 	str c;                  /*!< Contact address */
@@ -93,6 +99,12 @@ typedef struct ucontact {
 } ucontact_t;
 
 typedef struct ucontact_info {
+	uint64_t contact_id;	/*!< 64 bit Contact identifier
+							  0-------0-------------0---------------0
+							  |0 - 15 |   16 - 47   |    48 - 63    |
+							  |aorhash| record label| contact label |
+							  0-------0-------------0---------------0
+							*/
 	str received;
 	str* path;
 	time_t expires;
@@ -123,8 +135,8 @@ typedef struct ucontact_info {
 /*! \brief
  * Create a new contact structure
  */
-ucontact_t* new_ucontact(str* _dom, str* _aor, str* _contact,
-		unsigned int label, ucontact_info_t* _ci);
+ucontact_t*
+new_ucontact(str* _dom, str* _aor, str* _contact,  ucontact_info_t* _ci);
 
 
 /*! \brief

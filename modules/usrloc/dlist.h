@@ -115,5 +115,32 @@ int find_domain(str* _d, udomain_t** _p);
 typedef udomain_t* (*get_next_udomain_t) (udomain_t* _d);
 udomain_t* get_next_udomain(udomain_t *_d);
 
+#define CID_GET_CLABEL(_cid) (_cid&0xFFFF)
+#define CID_NEXT_RLABEL(_dom, _sl) (_dom->table[_sl].next_label++)
+
+static inline uint64_t
+pack_indexes(unsigned short aorhash, unsigned int rlabel, unsigned short clabel)
+{
+
+	return clabel + ((uint64_t)rlabel << 16) + ((uint64_t)aorhash << 48);
+
+}
+
+
+static inline int
+unpack_indexes(uint64_t v,
+		unsigned short *aorhash, unsigned int *rlabel, unsigned short *clabel)
+{
+	if (aorhash == NULL || rlabel == NULL || clabel == NULL) {
+		LM_ERR("invalid arguments\n");
+		return -1;
+	}
+
+	*clabel  = v & 0xFFFF;
+	*rlabel  = (v >> 16) & 0xFFFFFFFF;
+	*aorhash = (v >> 48);
+
+	return 0;
+}
 
 #endif /* UDLIST_H */

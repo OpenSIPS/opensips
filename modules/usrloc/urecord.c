@@ -44,6 +44,7 @@
 #include "ul_callback.h"
 #include "ureplication.h"
 #include "udomain.h"
+#include "dlist.h"
 
 
 int matching_mode = CONTACT_ONLY;
@@ -76,7 +77,7 @@ int new_urecord(str* _dom, str* _aor, urecord_t** _r)
 	(*_r)->aor.len = _aor->len;
 	(*_r)->domain = _dom;
 	(*_r)->aorhash = core_hash(_aor, 0, 0);
-	(*_r)->next_clabel = rand();
+
 	return 0;
 }
 
@@ -135,16 +136,19 @@ void print_urecord(FILE* _f, urecord_t* _r)
  * Add a new contact
  * Contacts are ordered by: 1) q
  *                          2) descending modification time
+ * before calling this function one must calculate the
+ * contact_id inside the ucontact_info structure
  */
 ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci)
 {
 	ucontact_t* ptr, *prev = 0;
 	ucontact_t* c;
 
-	if ( (c=new_ucontact(_r->domain, &_r->aor, _c, _r->next_clabel++, _ci)) == 0) {
+	if ( (c=new_ucontact(_r->domain, &_r->aor, _c, _ci)) == 0) {
 		LM_ERR("failed to create new contact\n");
 		return 0;
 	}
+
 	if_update_stat( _r->slot, _r->slot->d->contacts, 1);
 
 	ptr = _r->contacts;
@@ -442,6 +446,11 @@ void release_urecord(urecord_t* _r, char is_replicated)
 int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
                     ucontact_t** _c, char is_replicated)
 {
+
+	_ci->contact_id =
+		pack_indexes((unsigned short)_r->aorhash,
+									 _r->label,
+					 ((unsigned short)_r->next_clabel++));
 	if ( ((*_c)=mem_insert_ucontact(_r, _contact, _ci)) == 0) {
 		LM_ERR("failed to insert contact\n");
 		return -1;

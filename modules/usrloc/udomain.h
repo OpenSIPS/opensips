@@ -110,7 +110,6 @@ int db_timer_udomain(udomain_t* _d);
  */
 int mem_timer_udomain(udomain_t* _d);
 
-
 /*! \brief
  * Insert record into domain
  */
@@ -160,7 +159,6 @@ typedef int (*insert_urecord_t)(udomain_t* _d, str* _aor, struct urecord** _r,
                                 char is_replicated);
 int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
                    char is_replicated);
-
 
 /*! \brief
  * Obtain a urecord pointer if the urecord exists in domain

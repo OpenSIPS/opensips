@@ -522,6 +522,7 @@ struct mi_root* mi_usrloc_add(struct mi_root *cmd, void *param)
 	if ( n==1) {
 		if (insert_urecord( dom, aor, &r, 0) < 0)
 			goto lock_error;
+
 		c = 0;
 	} else {
 		if (get_simple_ucontact( r, contact, &c) < 0)
