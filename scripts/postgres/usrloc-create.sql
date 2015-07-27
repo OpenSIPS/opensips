@@ -1,6 +1,6 @@
 INSERT INTO version (table_name, table_version) values ('location','1009');
 CREATE TABLE location (
-    id SERIAL PRIMARY KEY NOT NULL,
+    contact_id BIGINTSERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) DEFAULT '' NOT NULL,
     domain VARCHAR(64) DEFAULT '' NOT NULL,
     contact VARCHAR(255) DEFAULT '' NOT NULL,
@@ -21,4 +21,4 @@ CREATE TABLE location (
     CONSTRAINT location_account_contact_idx UNIQUE (username, domain, contact, callid)
 );
 
-ALTER SEQUENCE location_id_seq MAXVALUE 2147483647 CYCLE;
+ALTER SEQUENCE location_contact_id_seq MAXVALUE 2147483647 CYCLE;

@@ -525,6 +525,19 @@
 		<column><field>result</field><type>DB_STR</type></column>
 		<column><field>disposition</field><type>DB_STR</type></column>
 	</db_table>
+	<!-- Declaration of emergency_service_provider table-->
+	<db_table id="emergency_service_provider">
+		<table_name>emergency_service_provider</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>organizationName</field><type>DB_STR</type></column>
+		<column><field>hostId</field><type>DB_STR</type></column>
+		<column><field>nenaId</field><type>DB_STR</type></column>
+		<column><field>contact</field><type>DB_STR</type></column>
+		<column><field>certUri</field><type>DB_STR</type></column>
+		<column><field>nodeIP</field><type>DB_STR</type></column>
+		<column><field>nodeIP</field><type>DB_INT</type></column>
+	</db_table>
 	<!-- Declaration of fraud_detection table-->
 	<db_table id="fraud_detection">
 		<table_name>fraud_detection</table_name>
@@ -876,7 +889,7 @@
 	<db_table id="location">
 		<table_name>location</table_name>
 		<db_url_id>mysql</db_url_id>
-		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>contact_id</field><type>DB_BIGINT</type></column>
 		<column><field>username</field><type>DB_STR</type></column>
 		<column><field>domain</field><type>DB_STR</type></column>
 		<column><field>contact</field><type>DB_STR</type></column>
@@ -2845,6 +2858,59 @@
 			</clause_cols>
 		</cmd>
 	</mod>
+	<!-- emergency_service_provider provisionning -->
+	<mod><mod_name>emergency_service_provider</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>emergency_service_provider</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>organizationName</field></col>
+				<col><field>hostId</field></col>
+				<col><field>nenaId</field></col>
+				<col><field>contact</field></col>
+				<col><field>certUri</field></col>
+				<col><field>nodeIP</field></col>
+				<col><field>nodeIP</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>emergency_service_provider</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>organizationName</field></col>
+				<col><field>hostId</field></col>
+				<col><field>nenaId</field></col>
+				<col><field>contact</field></col>
+				<col><field>certUri</field></col>
+				<col><field>nodeIP</field></col>
+				<col><field>nodeIP</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>emergency_service_provider</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>organizationName</field></col>
+				<col><field>hostId</field></col>
+				<col><field>nenaId</field></col>
+				<col><field>contact</field></col>
+				<col><field>certUri</field></col>
+				<col><field>nodeIP</field></col>
+				<col><field>nodeIP</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>emergency_service_provider</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
 	<!-- fraud_detection provisionning -->
 	<mod><mod_name>fraud_detection</mod_name>
 		<cmd><cmd_name>show</cmd_name>
@@ -4212,7 +4278,7 @@
 			<db_table_id>location</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>contact_id</field><link_cmd>update</link_cmd></col>
 				<col><field>username</field></col>
 				<col><field>domain</field></col>
 				<col><field>contact</field></col>
@@ -4259,7 +4325,7 @@
 			<db_table_id>location</db_table_id>
 			<cmd_type>DB_UPDATE</cmd_type>
 			<clause_cols>
-				<col><field>id</field><operator>=</operator></col>
+				<col><field>contact_id</field><operator>=</operator></col>
 			</clause_cols>
 			<query_cols>
 				<col><field>username</field></col>
@@ -4285,7 +4351,7 @@
 			<db_table_id>location</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
-				<col><field>id</field><operator>=</operator></col>
+				<col><field>contact_id</field><operator>=</operator></col>
 			</clause_cols>
 		</cmd>
 	</mod>

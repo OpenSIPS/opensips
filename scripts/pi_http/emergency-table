@@ -25,3 +25,16 @@
 		<column><field>result</field><type>DB_STR</type></column>
 		<column><field>disposition</field><type>DB_STR</type></column>
 	</db_table>
+	<!-- Declaration of emergency_service_provider table-->
+	<db_table id="emergency_service_provider">
+		<table_name>emergency_service_provider</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>organizationName</field><type>DB_STR</type></column>
+		<column><field>hostId</field><type>DB_STR</type></column>
+		<column><field>nenaId</field><type>DB_STR</type></column>
+		<column><field>contact</field><type>DB_STR</type></column>
+		<column><field>certUri</field><type>DB_STR</type></column>
+		<column><field>nodeIP</field><type>DB_STR</type></column>
+		<column><field>nodeIP</field><type>DB_INT</type></column>
+	</db_table>

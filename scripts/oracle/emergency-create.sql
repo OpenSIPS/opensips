@@ -39,3 +39,23 @@ END emergency_report_tr;
 /
 BEGIN map2users('emergency_report'); END;
 /
+INSERT INTO version (table_name, table_version) values ('emergency_service_provider','1');
+CREATE TABLE emergency_service_provider (
+    id NUMBER(10) PRIMARY KEY,
+    organizationName VARCHAR2(50),
+    hostId VARCHAR2(30),
+    nenaId VARCHAR2(50),
+    contact VARCHAR2(20),
+    certUri VARCHAR2(50),
+    nodeIP VARCHAR2(20),
+    nodeIP NUMBER(10)
+);
+
+CREATE OR REPLACE TRIGGER emergency_service_provider_tr
+before insert on emergency_service_provider FOR EACH ROW
+BEGIN
+  auto_id(:NEW.id);
+END emergency_service_provider_tr;
+/
+BEGIN map2users('emergency_service_provider'); END;
+/

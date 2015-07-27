@@ -107,3 +107,56 @@
 			</clause_cols>
 		</cmd>
 	</mod>
+	<!-- emergency_service_provider provisionning -->
+	<mod><mod_name>emergency_service_provider</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>emergency_service_provider</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>organizationName</field></col>
+				<col><field>hostId</field></col>
+				<col><field>nenaId</field></col>
+				<col><field>contact</field></col>
+				<col><field>certUri</field></col>
+				<col><field>nodeIP</field></col>
+				<col><field>nodeIP</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>emergency_service_provider</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>organizationName</field></col>
+				<col><field>hostId</field></col>
+				<col><field>nenaId</field></col>
+				<col><field>contact</field></col>
+				<col><field>certUri</field></col>
+				<col><field>nodeIP</field></col>
+				<col><field>nodeIP</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>emergency_service_provider</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>organizationName</field></col>
+				<col><field>hostId</field></col>
+				<col><field>nenaId</field></col>
+				<col><field>contact</field></col>
+				<col><field>certUri</field></col>
+				<col><field>nodeIP</field></col>
+				<col><field>nodeIP</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>emergency_service_provider</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
