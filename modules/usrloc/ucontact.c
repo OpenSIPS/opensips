@@ -491,7 +491,12 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	keys[16] = &attr_col;
 	keys[17] = &domain_col;
 
-	vals[0].nul  = 0;
+	if (db_mode == DB_ONLY)
+		/* in db only mode we want autoincrement */
+		vals[0].nul = 1;
+	else
+		vals[0].nul  = 0;
+
 	vals[0].type = DB_BIGINT;
 	vals[0].val.bigint_val = _c->contact_id;
 

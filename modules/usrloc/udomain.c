@@ -310,7 +310,6 @@ void free_udomain(udomain_t* _d)
 static inline void
 get_static_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 {
-	int sl;
 	static struct urecord r;
 
 	free_urecord( &r );
@@ -318,13 +317,6 @@ get_static_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 	r.aor = *_aor;
 	r.domain = _d->name;
 	r.aorhash = core_hash(_aor, 0, 0)&(_d->size-1);
-
-	/* FIXME - not safe; conflicts may appear if shared DB
-	 * no usage for labels, but we must avoid db duplicate entries */
-	sl = r.aorhash&(_d->size-1);
-
-	r.label = CID_NEXT_RLABEL(_d, sl);
-	r.next_clabel = rand();
 
 	*_r = &r;
 }

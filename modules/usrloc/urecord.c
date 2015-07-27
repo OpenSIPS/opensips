@@ -447,6 +447,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
                     ucontact_t** _c, char is_replicated)
 {
 
+	/* not used in db only mode */
 	_ci->contact_id =
 		pack_indexes((unsigned short)_r->aorhash,
 									 _r->label,
