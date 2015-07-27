@@ -650,45 +650,19 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 int db_update_ucontact(ucontact_t* _c)
 {
 	static db_ps_t my_ps = NULL;
-	char* dom;
-	db_key_t keys1[4];
-	db_val_t vals1[4];
+	db_key_t keys1[1];
+	db_val_t vals1[1];
 	db_key_t keys2[13];
 	db_val_t vals2[13];
-	int keys1_no;
 	int keys2_no;
 
 	if (_c->flags & FL_MEM) {
 		return 0;
 	}
 
-	keys1[0] = &contact_col;
-	vals1[0].type = DB_STR;
-	vals1[0].nul = 0;
-	vals1[0].val.str_val = _c->c;
-
-	keys1[1] = &user_col;
-	vals1[1].type = DB_STR;
-	vals1[1].nul = 0;
-	vals1[1].val.str_val = *_c->aor;
-
-	if (use_domain) {
-		keys1[2] = &domain_col;
-		vals1[2].type = DB_STR;
-		vals1[2].nul = 0;
-		dom = q_memchr(_c->aor->s, '@', _c->aor->len);
-		if (dom==0) {
-			vals1[1].val.str_val.len = 0;
-			vals1[2].val.str_val = *_c->aor;
-		} else {
-			vals1[1].val.str_val.len = dom - _c->aor->s;
-			vals1[2].val.str_val.s = dom + 1;
-			vals1[2].val.str_val.len = _c->aor->s + _c->aor->len - dom - 1;
-		}
-		keys1_no = 3;
-	} else {
-		keys1_no = 2;
-	}
+	keys1[0] = &contactid_col;
+	vals1[0].type = DB_BIGINT;
+	vals1[0].val.bigint_val = _c->contact_id;
 
 	keys2[0] = &expires_col;
 	keys2[1] = &q_col;
@@ -773,14 +747,7 @@ int db_update_ucontact(ucontact_t* _c)
 	}
 	keys2_no = 12;
 
-	if (matching_mode==CONTACT_CALLID) {
-		/* callid is part of the matching key */
-		keys1[keys1_no] = &callid_col;
-		vals1[keys1_no].type = DB_STR;
-		vals1[keys1_no].nul = 0;
-		vals1[keys1_no].val.str_val = _c->callid;
-		keys1_no++;
-	} else {
+	if (matching_mode!=CONTACT_CALLID) {
 		/* callid is part of the update */
 		keys2[keys2_no] = &callid_col;
 		vals2[keys2_no].type = DB_STR;
@@ -797,7 +764,7 @@ int db_update_ucontact(ucontact_t* _c)
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 
 	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2,
-	keys1_no, keys2_no) < 0) {
+				1, keys2_no) < 0) {
 		LM_ERR("updating database failed\n");
 		return -1;
 	}
@@ -806,50 +773,26 @@ int db_update_ucontact(ucontact_t* _c)
 }
 
 
+
+
 /*! \brief
  * Delete contact from the database
  */
 int db_delete_ucontact(ucontact_t* _c)
 {
 	static db_ps_t my_ps = NULL;
-	char* dom;
-	db_key_t keys[4];
-	db_val_t vals[4];
+	db_key_t keys[1];
+	db_val_t vals[1];
 
-	if (_c->flags & FL_MEM) {
+	if (_c->flags & FL_MEM)
 		return 0;
-	}
 
-	keys[0] = &user_col;
-	keys[1] = &contact_col;
-	keys[2] = &callid_col;
-	keys[3] = &domain_col;
+	keys[0] = &contactid_col;
 
-	vals[0].type = DB_STR;
-	vals[0].nul = 0;
-	vals[0].val.str_val = *_c->aor;
+	VAL_TYPE(vals) = DB_BIGINT;
+	VAL_NULL(vals) = 0;
+	VAL_BIGINT(vals) = (long long)_c->contact_id;
 
-	vals[1].type = DB_STR;
-	vals[1].nul = 0;
-	vals[1].val.str_val = _c->c;
-
-	vals[2].type = DB_STR;
-	vals[2].nul = 0;
-	vals[2].val.str_val = _c->callid;
-
-	if (use_domain) {
-		vals[3].type = DB_STR;
-		vals[3].nul = 0;
-		dom = q_memchr(_c->aor->s, '@', _c->aor->len);
-		if (dom==0) {
-			vals[0].val.str_val.len = 0;
-			vals[3].val.str_val = *_c->aor;
-		} else {
-			vals[0].val.str_val.len = dom - _c->aor->s;
-			vals[3].val.str_val.s = dom + 1;
-			vals[3].val.str_val.len = _c->aor->s + _c->aor->len - dom - 1;
-		}
-	}
 
 	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
 		LM_ERR("sql use_table failed\n");
@@ -858,7 +801,7 @@ int db_delete_ucontact(ucontact_t* _c)
 
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 
-	if (ul_dbf.delete(ul_dbh, keys, 0, vals, (use_domain) ? (4) : (3)) < 0) {
+	if (ul_dbf.delete(ul_dbh, keys, 0, vals, 1) < 0) {
 		LM_ERR("deleting from database failed\n");
 		return -1;
 	}
