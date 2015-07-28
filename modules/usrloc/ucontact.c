@@ -462,6 +462,9 @@ int st_flush_ucontact(ucontact_t* _c)
  */
 int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 {
+	int nr_vals = 17;
+	int start = 0;
+
 	static db_ps_t myI_ps = NULL;
 	static db_ps_t myR_ps = NULL;
 	char* dom;
@@ -470,6 +473,11 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 
 	if (_c->flags & FL_MEM) {
 		return 0;
+	}
+
+	if (db_mode == DB_ONLY) {
+		start++;
+		nr_vals--;
 	}
 
 	keys[0] = &contactid_col;
@@ -490,12 +498,6 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	keys[15] = &sip_instance_col;
 	keys[16] = &attr_col;
 	keys[17] = &domain_col;
-
-	if (db_mode == DB_ONLY)
-		/* in db only mode we want autoincrement */
-		vals[0].nul = 1;
-	else
-		vals[0].nul  = 0;
 
 	vals[0].type = DB_BIGINT;
 	vals[0].val.bigint_val = _c->contact_id;
@@ -611,6 +613,8 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 			vals[17].val.str_val.s = dom + 1;
 			vals[17].val.str_val.len = _c->aor->s + _c->aor->len - dom - 1;
 		}
+
+		nr_vals++;
 	}
 
 	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
@@ -622,19 +626,19 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		/* do simple insert */
 		CON_PS_REFERENCE(ul_dbh) = &myI_ps;
 		if (ins_list) {
-			if (con_set_inslist(&ul_dbf,ul_dbh,ins_list,keys,
-						(use_domain) ? (18) : (17)) < 0 )
+			if (con_set_inslist(&ul_dbf,ul_dbh,ins_list,&keys[start],
+						nr_vals) < 0 )
 				CON_RESET_INSLIST(ul_dbh);
 		}
 
-		if (ul_dbf.insert(ul_dbh, keys, vals, (use_domain) ? (18) : (17)) < 0) {
+		if (ul_dbf.insert(ul_dbh, &keys[start], &vals[start], nr_vals) < 0) {
 			LM_ERR("inserting contact in db failed\n");
 			return -1;
 		}
 	} else {
 		/* do insert-update / replace */
 		CON_PS_REFERENCE(ul_dbh) = &myR_ps;
-		if (ul_dbf.insert_update(ul_dbh, keys, vals, (use_domain) ? (18) : (17)) < 0) {
+		if (ul_dbf.insert_update(ul_dbh, &keys[start], &vals[start], nr_vals) < 0) {
 			LM_ERR("inserting contact in db failed\n");
 			return -1;
 		}

@@ -619,7 +619,6 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 				}
 			}
 
-
 			if (unpack_indexes(ci->contact_id, &aorhash, &rlabel, &clabel)) {
 				LM_ERR("unpacking failed\n");
 				return -1;
@@ -643,22 +642,24 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 				r->label = CID_NEXT_RLABEL(_d, sl);
 				r->next_clabel = clabel+1;
 			} else if (ret < 0) {
+				unlock_udomain(_d, &user);
 				goto error;
 			} else {
 				if (r->next_clabel <= clabel)
 					r->next_clabel = clabel+1;
 			}
 
-			if (r->aorhash != aorhash) {
+			if ((unsigned short)r->aorhash != aorhash) {
 				LM_ERR("failed to match aorhashes for user %.*s,"
-						"db aorhash [%d] new aorhash [%d],"
+						"db aorhash [%u] new aorhash [%u],"
 						"db contactid [%llu]\n",
-						user.len, user.s, aorhash, r->aorhash,
+						user.len, user.s, aorhash, (unsigned short)(r->aorhash&(_d->size-1)),
 						ci->contact_id);
 				if (ret > 0) {
 					LM_DBG("release bogus urecord\n");
 					release_urecord(r, 0);
 				}
+				unlock_udomain(_d, &user);
 				continue;
 			}
 

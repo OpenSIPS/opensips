@@ -93,6 +93,7 @@ extern int ul_locks_no;
 extern rw_lock_t *sync_lock;
 extern int skip_replicated_db_ops;
 
+
 /*
  * Module parameters and their default values
  */
@@ -279,7 +280,6 @@ static int mod_init(void)
 		LM_WARN("hash too big! max 2 ^ 16\n");
 		return -1;
 	}
-
 
 	if(ul_hash_size<=1)
 		ul_hash_size = 512;
