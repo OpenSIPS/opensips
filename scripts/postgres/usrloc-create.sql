@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('location','1009');
+INSERT INTO version (table_name, table_version) values ('location','1010');
 CREATE TABLE location (
     contact_id BIGINTSERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) DEFAULT '' NOT NULL,
