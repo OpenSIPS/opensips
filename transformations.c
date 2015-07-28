@@ -828,6 +828,33 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			/* leave val flags and length in tact and update with result */
                         val->rs.s = _tr_buffer;
 			break;
+		case TR_S_TRIM:
+			if (!(val->flags & PV_VAL_STR))
+			{
+				val->rs.s = int2str(val->ri, &val->rs.len);
+				val->flags |= PV_VAL_STR;
+			}
+
+			trim(&val->rs);
+			break;
+		case TR_S_TRIMR:
+			if (!(val->flags & PV_VAL_STR))
+			{
+				val->rs.s = int2str(val->ri, &val->rs.len);
+				val->flags |= PV_VAL_STR;
+			}
+
+			trim_trailing(&val->rs);
+			break;
+		case TR_S_TRIML:
+			if (!(val->flags & PV_VAL_STR))
+			{
+				val->rs.s = int2str(val->ri, &val->rs.len);
+				val->flags |= PV_VAL_STR;
+			}
+
+			trim_leading(&val->rs);
+			break;
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
@@ -2713,6 +2740,19 @@ char* tr_parse_string(str* in, trans_t *t)
 				in->len, in->s);
 			goto error;
 		}
+		return p;
+	} else if (strncasecmp(name.s, "trim", 4) == 0) {
+		if (name.len == 4)
+			t->subtype = TR_S_TRIM;
+		else if (name.len > 4 && strncasecmp(name.s, "trimr", 5) == 0)
+			t->subtype = TR_S_TRIMR;
+		else if (name.len > 4 && strncasecmp(name.s, "triml", 5) == 0)
+			t->subtype = TR_S_TRIML;
+		else {
+			LM_ERR("bad trim transformation!\n");
+			goto error;
+		}
+
 		return p;
 	}
 
