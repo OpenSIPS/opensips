@@ -66,8 +66,17 @@ int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 		}
 
 		switch (RES_TYPES(_res)[col]) {
+			case DB_BITMAP:
+				/* value considered to be int; but stored as bigint;
+				 * can be used as VAL_INT() to be called
+				 * also can be used as VAL_BIGINT() */
+				VAL_BIGINT(_v) = sqlite3_column_int64(CON_SQLITE_PS(_h), col);
+				VAL_TYPE(_v) = DB_INT;
+
+				break;
 			case DB_INT:
-				VAL_INT(_v) = sqlite3_column_int(CON_SQLITE_PS(_h), col);
+
+				VAL_INT(_v) =sqlite3_column_int(CON_SQLITE_PS(_h), col);
 				VAL_TYPE(_v) = DB_INT;
 
 				break;

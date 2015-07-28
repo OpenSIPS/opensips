@@ -184,6 +184,7 @@ static db_type_t get_type_from_decltype(const char *decltype)
 int db_sqlite_get_columns(const db_con_t* _h, db_res_t* _r)
 {
 	int col;
+	int autoincrement;
 	const char *decltype;
 	const char* name;
 
@@ -212,6 +213,25 @@ int db_sqlite_get_columns(const db_con_t* _h, db_res_t* _r)
 		name = sqlite3_column_name(CON_SQLITE_PS(_h), col);
 		RES_NAMES(_r)[col]->s = *((char**)&name);
 		RES_NAMES(_r)[col]->len = strlen(RES_NAMES(_r)[col]->s);
+
+		/* check if column is autoincrement */
+		if (sqlite3_table_column_metadata(
+			CON_CONNECTION(_h),
+			NULL, /* db name*/
+			CON_TABLE(_h)->s, /* table name */
+			name, /* column name */
+			NULL, NULL, NULL, NULL,
+			&autoincrement) != 0) {
+			LM_ERR("failed to fetch column metadata\n");
+			return -1;
+		}
+
+		/* since DB_BITMAP not used in SQLITE we will use it
+		 * here to know if value is PRIMARY KEY AUTOINCREMENT */
+		if (autoincrement) {
+			RES_TYPES(_r)[col] = DB_BITMAP;
+			continue;
+		}
 
 		decltype = sqlite3_column_decltype(CON_SQLITE_PS(_h), col);
 		RES_TYPES(_r)[col]	= get_type_from_decltype(decltype);
