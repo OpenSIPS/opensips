@@ -817,7 +817,8 @@ modparam("usrloc", "skip_replicated_db_ops", 1)
 		<para>
 		The number of entries of the hash table used by usrloc to store the
 		location records is 2^hash_size. For hash_size=4, the number of entries
-		of the hash table is 16.
+		of the hash table is 16. Since version 2.2, the maximu size of this
+		parameter is 16, meaning that the hash supports maximum 65536 entries.
 		</para>
 		<para>
 		<emphasis>

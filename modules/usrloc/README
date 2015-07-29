@@ -114,14 +114,20 @@ Ovidiu Sas
               2.1.9. ul_delete_ucontact (record, contact,
                       is_replicated)
 
-              2.1.10. ul_get_ucontact(record, contact)
-              2.1.11. ul_get_all_ucontacts (buf, len, flags)
-              2.1.12. ul_update_ucontact(record, contact,
+              2.1.10. ul_delete_ucontact_from_id (domain,
+                      contact_id)
+
+              2.1.11. ul_get_ucontact(record, contact)
+              2.1.12. ul_get_domain_ucontacts (domain, buf, len,
+                      flags)
+
+              2.1.13. ul_get_all_ucontacts (buf, len, flags)
+              2.1.14. ul_update_ucontact(record, contact,
                       contact_info, is_replicated)
 
-              2.1.13. ul_bind_ursloc( api )
-              2.1.14. ul_register_ulcb(type ,callback, param)
-              2.1.15. ul_get_num_users()
+              2.1.15. ul_bind_ursloc( api )
+              2.1.16. ul_register_ulcb(type ,callback, param)
+              2.1.17. ul_get_num_users()
 
    List of Examples
 
@@ -479,8 +485,8 @@ modparam("usrloc", "timer_interval", 120)
 
    Example 1.21. Set db_url parameter
 ...
-modparam("usrloc", "db_url", "dbdriver://username:password@dbhost/dbnam
-e")
+modparam("usrloc", "db_url", "dbdriver://username:password@dbhost/dbname
+")
 ...
 
 1.3.22. db_mode (integer)
@@ -627,7 +633,9 @@ modparam("usrloc", "skip_replicated_db_ops", 1)
 
    The number of entries of the hash table used by usrloc to store
    the location records is 2^hash_size. For hash_size=4, the
-   number of entries of the hash table is 16.
+   number of entries of the hash table is 16. Since version 2.2,
+   the maximu size of this parameter is 16, meaning that the hash
+   supports maximum 65536 entries.
 
    Default value is “9”.
 
@@ -931,7 +939,18 @@ is_replicated)
        be called from the context of a Binary Interface callback.
        If uncertain, simply use 0.
 
-2.1.10.  ul_get_ucontact(record, contact)
+2.1.10.  ul_delete_ucontact_from_id (domain, contact_id)
+
+   The function deletes a contact with the given contact_id from
+   the given domain.
+
+   Meaning of the parameters is as follows:
+     * udomain_t* domain - Domain where the contact can be found.
+
+     * uint64_t contact_id - Contact_id identifying the contact to
+       be deleted.
+
+2.1.11.  ul_get_ucontact(record, contact)
 
    The function tries to find contact with given Contact URI and
    returns pointer to structure representing the contact.
@@ -941,7 +960,31 @@ is_replicated)
 
      * str_t* contact - URI of the request contact.
 
-2.1.11.  ul_get_all_ucontacts (buf, len, flags)
+2.1.12.  ul_get_domain_ucontacts (domain, buf, len, flags)
+
+   The function retrieves all contacts of all registered users
+   from the given doamin and returns them in the caller-supplied
+   buffer. If the buffer is too small, the function returns
+   positive value indicating how much additional space would be
+   necessary to accommodate all of them. Please note that the
+   positive return value should be used only as a “hint”, as there
+   is no guarantee that during the time between two subsequent
+   calls number of registered contacts will remain the same.
+
+   If flag parameter is set to non-zero value then only contacts
+   that have the specified flags set will be returned. It is, for
+   example, possible to list only contacts that are behind NAT.
+
+   Meaning of the parameters is as follows:
+     * udomaint_t* domain - Domain from which to get the contacts
+
+     * void* buf - Buffer for returning contacts.
+
+     * int len - Length of the buffer.
+
+     * unsigned int flags - Flags that must be set.
+
+2.1.13.  ul_get_all_ucontacts (buf, len, flags)
 
    The function retrieves all contacts of all registered users and
    returns them in the caller-supplied buffer. If the buffer is
@@ -963,7 +1006,7 @@ is_replicated)
 
      * unsigned int flags - Flags that must be set.
 
-2.1.12.  ul_update_ucontact(record, contact, contact_info,
+2.1.14.  ul_update_ucontact(record, contact, contact_info,
 is_replicated)
 
    The function updates contact with new values.
@@ -978,7 +1021,7 @@ is_replicated)
        be called from the context of a Binary Interface callback.
        If uncertain, simply use 0.
 
-2.1.13.  ul_bind_ursloc( api )
+2.1.15.  ul_bind_ursloc( api )
 
    The function imports all functions that are exported by the
    USRLOC module. Overs for other modules which want to user the
@@ -988,7 +1031,7 @@ is_replicated)
    Meaning of the parameters is as follows:
      * usrloc_api_t* api - USRLOC API
 
-2.1.14.  ul_register_ulcb(type ,callback, param)
+2.1.16.  ul_register_ulcb(type ,callback, param)
 
    The function register with USRLOC a callback function to be
    called when some event occures inside USRLOC.
@@ -1001,7 +1044,7 @@ is_replicated)
      * void *param - some parameter to be passed to the callback
        each time when it is called.
 
-2.1.15.  ul_get_num_users()
+2.1.17.  ul_get_num_users()
 
    The function loops through all domains summing up the number of
    users.
