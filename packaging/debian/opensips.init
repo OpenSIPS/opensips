@@ -15,6 +15,8 @@
 # Should-Start:      postgresql mysql radius
 # Should-Stop:       postgresql mysql radius
 
+set -e
+
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/opensips
 NAME=opensips
@@ -26,6 +28,20 @@ HOMEDIR=/var/run/opensips
 PIDFILE=$HOMEDIR/$NAME.pid
 DEFAULTS=/etc/default/opensips
 RUN_OPENSIPS=no
+
+test -f $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+# Load startup options if available
+if [ -f $DEFAULTS ]; then
+   . $DEFAULTS || true
+fi
+
+if [ "$RUN_OPENSIPS" != "yes" ]; then
+    echo "OpenSIPS not yet configured. Edit /etc/default/opensips first."
+    exit 0
+fi
 
 # Do not start opensips if fork=no is set in the config file
 # otherwise the boot process will just stop
@@ -74,19 +90,6 @@ create_radius_seqfile ()
     fi
 }
 
-test -f $DAEMON || exit 0
-
-# Load startup options if available
-if [ -f $DEFAULTS ]; then
-   . $DEFAULTS || true
-fi
-
-if [ "$RUN_OPENSIPS" != "yes" ]; then
-    echo "OpenSIPS not yet configured. Edit /etc/default/opensips first."
-    exit 0
-fi
-
-set -e
 
 S_MEMORY=$((`echo $S_MEMORY | sed -e 's/[^0-9]//g'`))
 P_MEMORY=$((`echo $P_MEMORY | sed -e 's/[^0-9]//g'`))
@@ -117,7 +120,7 @@ case "$1" in
 	    check_fork
 	fi
 
-	# dirs under /var/run can go away on reboots.
+	# dirs under /var/run will go away on reboot.
 	mkdir -p "$HOMEDIR"
 	chmod 775 "$HOMEDIR"
 	chown "$USER:$GROUP" "$HOMEDIR" >/dev/null 2>&1 || true
@@ -139,47 +142,37 @@ case "$1" in
 			mv "$CFGFILE" "$M4ARCHIVEDIR/$NAME.cfg-`date +%Y%m%d_%H%M%S`"
 		fi
 
+
 		mv "$CFGFILE.tmp" "$CFGFILE"
 		chown $USER:$GROUP $CFGFILE
 		chmod 640 $CFGFILE
 	fi
 
-	echo -n "Starting $DESC: $NAME"
+	log_daemon_msg "Starting $DESC" "$NAME"
 	start-stop-daemon --start --quiet --pidfile $PIDFILE \
 		--exec $DAEMON -- $OPTIONS || echo -n " already running"
-	echo "."
+	log_end_msg $?
 	;;
   stop)
-	echo -n "Stopping $DESC: $NAME"
+	log_daemon_msg "Stopping $DESC" "$NAME"
 	start-stop-daemon --oknodo --stop --quiet --pidfile $PIDFILE \
 		--exec $DAEMON
-	echo "."
+	log_end_msg $?
 	;;
   restart|force-reload)
 	check_opensips_config
 	create_radius_seqfile
 
-	echo -n "Restarting $DESC: $NAME"
+	log_daemon_msg "Restarting $DESC" "$NAME"
 	start-stop-daemon --oknodo --stop --quiet --pidfile \
 		$PIDFILE --exec $DAEMON
 	sleep 1
 	start-stop-daemon --start --quiet --pidfile \
 		$PIDFILE --exec $DAEMON  -- $OPTIONS
-	echo "."
+	log_end_msg $?
 	;;
   status)
-	echo -n "Status of $DESC: "
-	if [ ! -r "$PIDFILE" ]; then
-		echo "$NAME is not running."
-		exit 3
-	fi
-	if read pid < "$PIDFILE" && ps -p "$pid" > /dev/null 2>&1; then
-		echo "$NAME is running."
-		exit 0
-	else
-		echo "$NAME is not running but $PIDFILE exists."
-		exit 1
-	fi
+	status_of_proc -p $PIDFILE "$DAEMON" "$NAME"
 	;;
   *)
 	N=/etc/init.d/$NAME
