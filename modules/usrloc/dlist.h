@@ -143,4 +143,9 @@ unpack_indexes(uint64_t v,
 	return 0;
 }
 
+typedef int (*delete_ucontact_from_id_t)(udomain_t *d,
+					uint64_t contact_id, char is_replicated);
+int delete_ucontact_from_id(udomain_t *d,
+		uint64_t contact_id, char is_replicated);
+
 #endif /* UDLIST_H */

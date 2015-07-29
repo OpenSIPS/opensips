@@ -48,6 +48,8 @@
 #include "udomain.h"           /* new_udomain, free_udomain */
 #include "utime.h"
 #include "ul_mod.h"
+#include "ul_callback.h"
+#include "ureplication.h"
 
 
 /*! \brief
@@ -779,3 +781,98 @@ int find_domain(str* _d, udomain_t** _p)
 
 	return 1;
 }
+
+/*
+ * retrieve the ucontact from a domain using the contact id
+ */
+ucontact_t* get_ucontact_from_id(udomain_t *d, uint64_t contact_id, urecord_t **_r)
+{
+	int count;
+	void **dest;
+	unsigned int sl;
+	unsigned int rlabel;
+	unsigned short aorhash, clabel;
+
+	urecord_t *r;
+	ucontact_t *c;
+
+	map_iterator_t it;
+
+	unpack_indexes(contact_id, &aorhash, &rlabel, &clabel);
+
+	sl = aorhash&(d->size-1);
+	lock_ulslot(d, sl);
+
+	count = map_size(d->table[sl].records);
+	if (count <= 0) {
+		unlock_ulslot(d, sl);
+		return NULL;
+	}
+
+	for (map_first( d->table[sl].records, &it);
+			iterator_is_valid(&it);
+			iterator_next(&it) ) {
+
+		dest = iterator_val(&it);
+		if (dest == NULL) {
+			unlock_ulslot(d, sl);
+			return NULL;
+		}
+
+		r = (urecord_t *)*dest;
+		if (r->label != rlabel)
+			continue;
+
+		for (c = r->contacts; c != NULL; c = c->next)
+			if (c->label == clabel) {
+				*_r = r;
+				unlock_ulslot(d, sl);
+				return c;
+			}
+	}
+
+	unlock_ulslot(d, sl);
+	return NULL;
+}
+
+int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicated)
+{
+	ucontact_t *c, virt_c;
+	urecord_t *r;
+
+
+	/* if contact only in database */
+	if (db_mode == DB_ONLY) {
+		virt_c.contact_id = contact_id;
+		virt_c.domain = d->name;
+
+		if (db_delete_ucontact(&virt_c) < 0) {
+			LM_ERR("failed to remove contact from db\n");
+			return -1;
+		}
+		return 0;
+	}
+
+	c = get_ucontact_from_id(d, contact_id, &r);
+
+	if (!is_replicated && replication_dests)
+		replicate_ucontact_delete(r, c);
+
+	if (exists_ulcb_type(UL_CONTACT_DELETE)) {
+		run_ul_callbacks( UL_CONTACT_DELETE, c);
+	}
+
+	if (st_delete_ucontact(c) > 0) {
+		if (db_mode == WRITE_THROUGH) {
+			if (db_delete_ucontact(c) < 0) {
+				LM_ERR("failed to remove contact from database\n");
+			}
+		}
+
+		mem_delete_ucontact(r, c);
+	}
+
+	return 0;
+}
+
+

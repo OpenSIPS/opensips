@@ -35,7 +35,6 @@
 #include "ucontact.h"
 #include "ul_callback.h"
 
-
 typedef struct usrloc_api {
 	int           use_domain;
 	int           db_mode;
@@ -45,24 +44,25 @@ typedef struct usrloc_api {
 	get_all_ucontacts_t    get_all_ucontacts;
 	get_domain_ucontacts_t get_domain_ucontacts;
 
-	insert_urecord_t       insert_urecord;
-	delete_urecord_t       delete_urecord;
-	get_urecord_t          get_urecord;
-	lock_udomain_t         lock_udomain;
-	unlock_udomain_t       unlock_udomain;
+	insert_urecord_t          insert_urecord;
+	delete_urecord_t          delete_urecord;
+	get_urecord_t             get_urecord;
+	lock_udomain_t            lock_udomain;
+	unlock_udomain_t          unlock_udomain;
 
-	release_urecord_t      release_urecord;
-	insert_ucontact_t      insert_ucontact;
-	delete_ucontact_t      delete_ucontact;
-	get_ucontact_t         get_ucontact;
+	release_urecord_t         release_urecord;
+	insert_ucontact_t         insert_ucontact;
+	delete_ucontact_t         delete_ucontact;
+	delete_ucontact_from_id_t delete_ucontact_from_id;
+	get_ucontact_t            get_ucontact;
 
-	update_ucontact_t      update_ucontact;
+	update_ucontact_t         update_ucontact;
 
-	get_next_udomain_t     get_next_udomain;
-	lock_ulslot_t          lock_ulslot;
-	unlock_ulslot_t        unlock_ulslot;
+	get_next_udomain_t        get_next_udomain;
+	lock_ulslot_t             lock_ulslot;
+	unlock_ulslot_t           unlock_ulslot;
 
-	register_ulcb_t        register_ulcb;
+	register_ulcb_t           register_ulcb;
 } usrloc_api_t;
 
 
