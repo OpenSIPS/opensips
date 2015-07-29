@@ -105,10 +105,7 @@ Description: very fast and configurable SIP server [debug symbols]
 
 Package: opensips-mysql-module
 Architecture: any
-Depends: mysql-client,
-         opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
 Description: MySQL database connectivity module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
