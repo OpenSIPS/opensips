@@ -85,17 +85,18 @@ int synchronize_all_udomains(void);
  * Get contacts to all registered users
  */
 typedef int  (*get_all_ucontacts_t) (void* buf, int len, unsigned int flags,
-		unsigned int part_idx, unsigned int part_max);
+		unsigned int part_idx, unsigned int part_max, int pack_cid);
 int get_all_ucontacts(void *, int, unsigned int,
-		unsigned int part_idx, unsigned int part_max);
+		unsigned int part_idx, unsigned int part_max, int pack_cid);
 
 /*! \brief
  * Get contacts structures to all registered users
  */
 typedef int  (*get_domain_ucontacts_t) (udomain_t *d, void* buf, int len,
-		unsigned int flags, unsigned int part_idx, unsigned int part_max);
+		unsigned int flags, unsigned int part_idx, unsigned int part_max,
+		int pack_cid);
 int get_domain_ucontacts(udomain_t *d,void *buf, int len, unsigned int flags,
-								unsigned int part_idx, unsigned int part_max);
+					unsigned int part_idx, unsigned int part_max, int pack_cid);
 
 
 
