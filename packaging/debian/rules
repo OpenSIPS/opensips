@@ -295,7 +295,9 @@ binary-arch: build install
 	dh_installdocs
 	dh_installexamples --exclude=".svn"
 #	dh_installlogrotate
+	dh_systemd_enable -popensips
 	dh_installinit -popensips -- defaults 23
+	dh_systemd_start -popensips
 	dh_installcron
 	dh_installman
 	dh_installinfo

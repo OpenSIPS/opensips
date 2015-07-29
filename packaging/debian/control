@@ -6,6 +6,7 @@ Uploaders: Bogdan Iancu <bogdan@opensips.org>
 Build-Depends:
  bison,
  debhelper (>= 9),
+ dh-systemd (>= 1.5),
  dpatch,
  dpkg-dev (>= 1.13.19),
  flex,
