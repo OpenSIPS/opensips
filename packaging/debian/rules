@@ -33,6 +33,9 @@ TLS=
 
 # List of all debian module packages we will build
 # Used to index the make variable below, which has details about each package
+#
+# LUA has been removed due to libmemcache dependency.
+#     See https://github.com/OpenSIPS/opensips/issues/580
 ALL_MODPKG_LIST := \
 	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
 	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
@@ -73,7 +76,7 @@ PRESENCE_PKGNAME = opensips-presence-modules
 PRESENCE_MODULES = presence presence_callinfo presence_dialoginfo presence_xml presence_mwi presence_xcapdiff pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap xcap_client
 PRESENCE_MOD_PATH=$(addprefix modules/, $(PRESENCE_MODULES))
 XMLRPC_PKGNAME = opensips-xmlrpc-module
-XMLRPC_MODULES = mi_xmlrpc
+XMLRPC_MODULES = mi_xmlrpc_ng
 XMLRPC_MOD_PATH=$(addprefix modules/, $(XMLRPC_MODULES))
 PERL_PKGNAME = opensips-perl-modules
 PERL_MODULES = perl db_perlvdb
@@ -179,6 +182,9 @@ endif
 
 # force lib (versus lib64) and SMP support all the time
 VARS = LIBDIR=lib ISSMP=yes TLS=$(TLS)
+
+# Debian Jessie doesn't package radius-ng, so use freeradius instead
+VARS += FREERADIUS=yes
 
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
