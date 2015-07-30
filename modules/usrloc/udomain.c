@@ -47,6 +47,10 @@
 #include "ureplication.h"
 
 
+extern int max_contact_delete;
+extern db_key_t *cid_keys;
+extern db_val_t *cid_vals;
+int cid_len=0;
 
 /*! \brief
  * Create a new domain structure
@@ -929,6 +933,7 @@ int mem_timer_udomain(udomain_t* _d)
 	int i,ret=0,flush=0;
 	map_iterator_t it,prev;
 
+	cid_len = 0;
 	for(i=0; i<_d->size; i++)
 	{
 		lock_ulslot(_d, i);
@@ -968,6 +973,15 @@ int mem_timer_udomain(udomain_t* _d)
 
 		unlock_ulslot(_d, i);
 	}
+
+	/* delete all the remaining contacts */
+	if (cid_len &&
+			db_multiple_ucontact_delete(_d->name, cid_keys, cid_vals, cid_len) < 0) {
+		LM_ERR("failed to delete contacts from database\n");
+		return -1;
+	}
+
+
 
 	if (flush) {
 		LM_DBG("usrloc timer attempting to flush rows to DB\n");

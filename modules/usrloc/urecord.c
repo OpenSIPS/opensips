@@ -46,6 +46,10 @@
 #include "udomain.h"
 #include "dlist.h"
 
+extern int max_contact_delete;
+extern db_key_t *cid_keys;
+extern db_val_t *cid_vals;
+extern int cid_len;
 
 int matching_mode = CONTACT_ONLY;
 
@@ -319,13 +323,22 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 			ptr = ptr->next;
 
 			/* Should we remove the contact from the database ? */
-			if (st_expired_ucontact(t) == 1) {
-				if (db_delete_ucontact(t) < 0) {
-					LM_ERR("failed to delete contact from the database\n");
-					/* do not delete from memory now - if we do, we'll get
-					 * a stuck record in DB. Future registrations will not be
-					 * able to get inserted due to index collision */
-					continue;
+			if (st_expired_ucontact(t) == 1 && (!(t->flags)&FL_MEM)) {
+				VAL_BIGINT(cid_vals+cid_len) = t->contact_id;
+				if ((++cid_len) == max_contact_delete) {
+					if (db_multiple_ucontact_delete(_r->domain, cid_keys,
+												cid_vals, cid_len) < 0) {
+						LM_ERR("failed to delete contacts from database\n");
+						/* pass over these contacts; we will try to delete
+						 * them later */
+						cid_len = 0;
+
+						/* do not delete from memory now - if we do, we'll get
+						 * a stuck record in DB. Future registrations will not be
+						 * able to get inserted due to index collision */
+						continue;
+					}
+					cid_len = 0;
 				}
 			}
 
@@ -359,6 +372,7 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 			ptr = ptr->next;
 		}
 	}
+
 
 	return ins_done;
 }

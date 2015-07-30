@@ -214,6 +214,15 @@ int db_update_ucontact(ucontact_t* _c);
  */
 int db_delete_ucontact(ucontact_t* _c);
 
+/*! \brief
+ * Delete multiple contacts from the database
+ * having the cids
+ * WARNING: FL_MEM flag for a contact MUST be checked before
+ * append a contact id to cids list
+ */
+int db_multiple_ucontact_delete(str *domain, db_key_t *keys,
+										db_val_t *vals, int clen);
+
 
 /* ====== Module interface ====== */
 

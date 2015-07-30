@@ -812,6 +812,29 @@ modparam("usrloc", "skip_replicated_db_ops", 1)
 		</example>
 	</section>
 
+	<section id='max_contact_delete'
+	         xreflabel="max_contact_delete">
+		<title><varname>max_contact_delete</varname> (int)</title>
+		<para>
+			Relevant only in WRITE_THROUGH or RIGHT_BACK schemes. The maximum
+		number of contacts to be deleted from the database at once. Will delete
+		all of them, if fewer after passing through all the contacts.
+		</para>
+		<para>
+		Default value is "10"
+		</para>
+		<example>
+		<title>Setting the <varname>max_contact_delete</varname>
+			parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "max_contact_delete", 10)
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	<section>
 		<title><varname>hash_size</varname> (integer)</title>
 		<para>

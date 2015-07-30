@@ -626,19 +626,19 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		/* do simple insert */
 		CON_PS_REFERENCE(ul_dbh) = &myI_ps;
 		if (ins_list) {
-			if (con_set_inslist(&ul_dbf,ul_dbh,ins_list,&keys[start],
+			if (con_set_inslist(&ul_dbf,ul_dbh,ins_list,keys + start,
 						nr_vals) < 0 )
 				CON_RESET_INSLIST(ul_dbh);
 		}
 
-		if (ul_dbf.insert(ul_dbh, &keys[start], &vals[start], nr_vals) < 0) {
+		if (ul_dbf.insert(ul_dbh, keys + start, vals + start, nr_vals) < 0) {
 			LM_ERR("inserting contact in db failed\n");
 			return -1;
 		}
 	} else {
 		/* do insert-update / replace */
 		CON_PS_REFERENCE(ul_dbh) = &myR_ps;
-		if (ul_dbf.insert_update(ul_dbh, &keys[start], &vals[start], nr_vals) < 0) {
+		if (ul_dbf.insert_update(ul_dbh, keys + start, vals + start, nr_vals) < 0) {
 			LM_ERR("inserting contact in db failed\n");
 			return -1;
 		}
@@ -806,6 +806,37 @@ int db_delete_ucontact(ucontact_t* _c)
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 
 	if (ul_dbf.delete(ul_dbh, keys, 0, vals, 1) < 0) {
+		LM_ERR("deleting from database failed\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+ * Delete multiple contacts from the database
+ * having the cids; cids are stored in vals param
+ * WARNING: FL_MEM flag for a contact MUST be checked before
+ * append a contact id to cids list */
+int db_multiple_ucontact_delete(str *domain, db_key_t *keys,
+											db_val_t *vals, int clen)
+{
+	static db_ps_t my_ps = NULL;
+
+	if (keys == NULL || vals == NULL) {
+		LM_ERR("null params\n");
+		return -1;
+	}
+
+	if (ul_dbf.use_table(ul_dbh, domain) < 0) {
+		LM_ERR("sql use_table failed\n");
+		return -1;
+	}
+
+	CON_USE_OR_OP(ul_dbh);
+	CON_PS_REFERENCE(ul_dbh) = &my_ps;
+
+	if (ul_dbf.delete(ul_dbh, keys, 0, vals, clen) < 0) {
 		LM_ERR("deleting from database failed\n");
 		return -1;
 	}
