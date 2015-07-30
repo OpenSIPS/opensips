@@ -4,6 +4,7 @@ opensips (2.1.0-2) stable; urgency=low
   * Update dependencies for Jessie.
   * Remove mysql-client dependency on opensips-modules-mysql.
   * Add systemd unit file.
+  * Add new package opensips-rest-module
 
  -- Steve Frécinaux <sfrecinaux@beip.be>  Wed, 29 Jul 2015 14:57:06 +0200
 
