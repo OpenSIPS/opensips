@@ -1,23 +1,48 @@
+/*
+ * Copyright (C) 2011 OpenSIPS Project
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *
+ *
+ * history:
+ * ---------
+ *  2015-07-07  created  by Marius Cristian Eseanu
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <unistd.h>
-
 #include "../../sr_module.h"
 #include "../../str.h"
 #include "../../dprint.h"
 #include "../../usr_avp.h"
 #include "../../db/db.h"
+#include "../../socket_info.h"
+#include "../../resolve.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../rw_locking.h"
-/* for errors like bad ip */
 #include "../../error.h"
-/* int2str */
 #include "../../ut.h"
 #include "../../mi/mi.h"
 #include "../../timer.h"
 #include "clusterer.h"
+#include "api.h"
 
 #define DB_CAP DB_CAP_QUERY | DB_CAP_UPDATE
 
@@ -44,6 +69,9 @@ static rw_lock_t *ref_lock = NULL;
 /* time interval */
 static unsigned int prob_interval = 30;
 
+
+struct clusterer_binds clusterer_api;
+
 /* Database variables */
 
 /* DB handler */
@@ -52,7 +80,7 @@ static db_con_t *db_hdl = 0;
 static db_func_t dr_dbf;
 
 /* DB URL */
-str db_url = str_init("mysql://root:admin@localhost/opensips"); //{NULL, 0};
+str clusterer_db_url = {NULL, 0};
 /* DB TABLE */
 str db_table = str_init("clusterer");
 
@@ -64,6 +92,11 @@ str cluster_id_col = str_init("cluster_id");
 str machine_id_col = str_init("machine_id");
 str url_col = str_init("url");
 str state_col = str_init("state");
+
+str last_attempt_col = str_init("last_attempt");
+str duration_col = str_init("duration");
+str failed_attempts_col = str_init("failed_attempts");
+str no_tries_col = str_init("no_tries");
 
 str description_col = str_init("description");
 static db_key_t *clusterer_machine_id_key = NULL;
@@ -100,18 +133,65 @@ static int reload_data();
 
 /* sets a connection state */
 static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param);
-static int set_state(int cluster_id, int machine_id, int state, str *proto);
+static int set_state(int cluster_id, int machine_id, int state, int proto);
 
 /* lists the available connections for the specified server*/
 static struct mi_root * clusterer_list(struct mi_root *root, void *param);
 static void update_db_handler(unsigned int ticks, void* param);
+static clusterer_node_t* get_nodes(int cluster_id,int proto);
+static int clusterer_check(int cluster_id,union sockaddr_union *su, int server_id, int proto);
+static void free_nodes(clusterer_node_t *nodes);
+static int su_ip_cmp(union sockaddr_union* s1, union sockaddr_union* s2);
+static int get_my_id(void);
 
+static int su_ip_cmp(union sockaddr_union* s1, union sockaddr_union* s2)
+{
+	if (s1->s.sa_family!=s2->s.sa_family) return 0;
+	switch(s1->s.sa_family){
+		case AF_INET:
+			return (memcmp(&s1->sin.sin_addr, &s2->sin.sin_addr, 4)==0);
+		case AF_INET6:
+			return (memcmp(&s1->sin6.sin6_addr, &s2->sin6.sin6_addr, 16)==0);
+		default:
+			LM_CRIT("unknown address family %d\n",
+						s1->s.sa_family);
+			return 0;
+	}
+}
+
+
+int str_to_shm(str src, str * dest)
+{
+	if (src.len ==0 || src.s ==0)
+		return 0;
+
+	dest->s = (char*)shm_malloc((src.len+1) * sizeof(char));
+	if (!dest->s) {
+		LM_ERR("out of shm memory\n");
+		return -1;
+	}
+
+	memcpy(dest->s, src.s, src.len);
+	dest->s[src.len] = '\0';
+	dest->len = src.len;
+
+	return 0;
+}
+
+
+/*
+ * Exported functions
+ */
+static cmd_export_t cmds[]={
+	{"load_clusterer",  (cmd_function)load_clusterer, 0, 0, 0, 0},
+	{0,0,0,0,0,0}
+};
 
 /*
  * Exported parameters
  */
 static param_export_t params[] = {
-	{"db_url",		STR_PARAM,	&db_url.s		},
+	{"db_url",		STR_PARAM,	&clusterer_db_url.s		},
 	{"db_table",		STR_PARAM,	&db_table.s		},
 	{"server_id",		INT_PARAM,	&server_id		},
 	{"persistent_state",	INT_PARAM,	&persistent_state	},
@@ -121,6 +201,10 @@ static param_export_t params[] = {
 	{"state_col",		STR_PARAM,	&state_col.s		},
 	{"url_col",		STR_PARAM,	&url_col.s		},
 	{"description_col",	STR_PARAM,	&description_col.s	},
+	{"last_attempt_col",	STR_PARAM,	&last_attempt_col.s	},
+	{"duration_col",	STR_PARAM,	&duration_col.s		},
+	{"failed_attempts_col",	STR_PARAM,	&failed_attempts_col.s	},
+	{"no_tries_col",	STR_PARAM,	&no_tries_col.s		},
 	{0, 0, 0}
 };	
 	
@@ -143,7 +227,7 @@ struct module_exports exports= {
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
 	NULL,            /* OpenSIPS module dependencies */
-	0,							/* exported functions */
+	cmds,							/* exported functions */
 	0,							/* exported async functions */
 	params,							/* exported parameters */
 	0,							/* exported statistics */
@@ -162,7 +246,7 @@ static int mod_init(void)
 	LM_INFO("Cluster-Info  - initializing\n");
 
 	/* check the module params */
-	init_db_url(db_url, 0 /*cannot be null*/);
+	init_db_url(clusterer_db_url, 0 /*cannot be null*/);
 
 	if (server_id < 1) {
 		LM_ERR("invalid machine id\n");
@@ -181,6 +265,11 @@ static int mod_init(void)
 	state_col.len = strlen(state_col.s);
 	url_col.len = strlen(url_col.s);
 	description_col.len = strlen(description_col.s);
+	last_attempt_col.len =  strlen(last_attempt_col.s);
+	duration_col.len = strlen(duration_col.s);
+	failed_attempts_col.len = strlen(failed_attempts_col.s);
+	no_tries_col.len = strlen(no_tries_col.s);
+	
 
 	LM_INFO("LOCK  - initializing\n");
 	/* create & init lock */
@@ -200,7 +289,7 @@ static int mod_init(void)
 
 	LM_INFO("BINDING\n");
 	/* bind to the mysql module */
-	if (db_bind_mod(&db_url, &dr_dbf)) {
+	if (db_bind_mod(&clusterer_db_url, &dr_dbf)) {
 		LM_CRIT("cannot bind to database module! "
 			"Did you forget to load a database module ?\n");
 		goto error;
@@ -222,6 +311,7 @@ static int mod_init(void)
 			goto error;
 		}
 	}
+
 	/* everything is OK */
 	return 0;
 error:
@@ -244,13 +334,13 @@ error:
 /* initialize child */
 static int child_init(int rank)
 {
-	LM_DBG("initializing child %d", rank);
+	LM_DBG("initializing child %d\n", rank);
 
 	if (rank == PROC_TCP_MAIN || rank == PROC_BIN)
 		return 0;
 
 	/* init DB connection */
-	if ((db_hdl = dr_dbf.init(&db_url)) == 0) {
+	if ((db_hdl = dr_dbf.init(&clusterer_db_url)) == 0) {
 		LM_CRIT("cannot initialize database connection\n");
 		return -1;
 	}
@@ -279,10 +369,11 @@ static void update_db_handler(unsigned int ticks, void* param)
 	db_key_t key_cmp;
 	/* with values */
 	db_val_t val_cmp;
-	/* columns to be set ( state_col )*/
-	db_key_t key_set;
+	/* columns to be set */
+	db_key_t key_set[3];
 	/* with values */
-	db_val_t val_set;
+	db_val_t val_set[3];
+	int i;
 
 	CON_OR_RESET(db_hdl);
 
@@ -295,12 +386,21 @@ static void update_db_handler(unsigned int ticks, void* param)
 	val_cmp.type = DB_INT;
 	val_cmp.nul = 0;
 
-	val_set.type = DB_INT;
-	val_set.nul = 0;
+	for ( i = 0; i<2; ++i) {
+		val_set[i].type = DB_INT;
+		val_set[i].nul = 0;
+	}
+
+	val_set[2].type = DB_BIGINT;
+	val_set[2].nul = 0;
 
 	key_cmp = &clusterer_id_col;
-	key_set = &state_col;
-
+	
+	key_set[0] = &state_col;
+	key_set[1] = &no_tries_col;
+	key_set[2] = &last_attempt_col;
+	
+	
 	lock_start_write(ref_lock);
 
 	head_table = *tdata;
@@ -312,10 +412,12 @@ static void update_db_handler(unsigned int ticks, void* param)
 				head_table->clusterer_id, head_table->state);
 
 			val_cmp.val.int_val = head_table->clusterer_id;
-			val_set.val.int_val = head_table->state;
+			val_set[0].val.int_val = head_table->state;
+			val_set[1].val.int_val = head_table->no_tries;
+			val_set[2].val.int_val = head_table->last_attempt;
 
 			/* updating */
-			if (dr_dbf.update(db_hdl, &key_cmp, &op, &val_cmp, &key_set, &val_set, 1, 1) < 0) {
+			if (dr_dbf.update(db_hdl, &key_cmp, &op, &val_cmp, key_set, val_set, 1, 3) < 0) {
 				LM_ERR("DB update failed\n");
 			}
 
@@ -330,13 +432,18 @@ static void update_db_handler(unsigned int ticks, void* param)
 }
 
 /* add a new information in the backend list*/
-int add_info(table_entry_t **data, int clusterer_id, int cluster_id, int machine_id, int state,
-	char *description, char* url)
+int add_info(table_entry_t **data, int *int_vals, unsigned long last_attempt, char **str_vals)
 {
-	/* path */
-	char *path;
-	/* protocol length */
-	int prot_len;
+	char *host;
+	int hlen, port;
+	struct hostent *he;
+	str st;
+	char *url;
+	char *description;
+	
+	if (int_vals[INT_VALS_MACHINE_ID_COL] == server_id) {
+		return 0;
+	}
 
 	/* allocating memory*/
 	table_entry_t *new_entry = shm_malloc(sizeof(table_entry_t));
@@ -345,53 +452,63 @@ int add_info(table_entry_t **data, int clusterer_id, int cluster_id, int machine
 		goto error;
 	}
 
-	new_entry->cluster_id = cluster_id;
-	new_entry->machine_id = machine_id;
-	new_entry->clusterer_id = clusterer_id;
-	new_entry->state = state;
+	new_entry->cluster_id = int_vals[INT_VALS_CLUSTER_ID_COL];
+	new_entry->machine_id = int_vals[INT_VALS_MACHINE_ID_COL];
+	new_entry->clusterer_id = int_vals[INT_VALS_CLUSTERER_ID_COL];
+	new_entry->state = int_vals[INT_VALS_STATE_COL];
+	new_entry->last_attempt = last_attempt;
+	new_entry->duration = int_vals[INT_VALS_DURATION_COL];
+	new_entry->failed_attempts = int_vals[INT_VALS_FAILED_ATTEMPTS_COL];
+	new_entry->no_tries = int_vals[INT_VALS_NO_TRIES_COL];
 	new_entry->dirty_bit = 0;
-
-	path = memchr(url, ':', strlen(url));
-
-	if (path == NULL || strlen(path + 1) == 0) {
+	new_entry->prev_no_tries = -1;
+	new_entry->att = NULL;
+	
+	url = str_vals[STR_VALS_URL_COL];
+	description = str_vals[STR_VALS_DESCRIPTION_COL];
+	
+	if (url == NULL) {
 		LM_ERR("no path specified\n");
 		goto error;
 	}
 
-	prot_len = path - url;
-
-	if (prot_len == 0) {
-		LM_ERR("no protocol specified\n");
+	if (parse_phostport(url, strlen(url), &host, &hlen, &port, &new_entry->proto) < 0) {
+		LM_ERR("Bad replication destination IP!\n");
 		goto error;
 	}
 
-	/* allocate memory fot the protocol*/
-	new_entry->proto.s = shm_malloc(prot_len * sizeof(char*));
+	if (new_entry->proto == PROTO_NONE)
+		new_entry->proto = PROTO_UDP;
 
-	if (new_entry->proto.s == NULL) {
-		LM_ERR("insufficient shm memory\n");
-		goto error;
-	}
-
-	new_entry->proto.len = prot_len;
-	memcpy(new_entry->proto.s, url, prot_len);
-
-	/* exclude delimiter from path */
-	path++;
-
-	new_entry->path.len = strlen(path);
-	new_entry->path.s = shm_malloc(new_entry->path.len * sizeof(char*));
+	new_entry->path.s = shm_malloc(strlen(url) * sizeof(char));
 
 	if (new_entry->path.s == NULL) {
 		LM_ERR("insufficient shm memory\n");
 		goto error;
 	}
 
-	memcpy(new_entry->path.s, path, new_entry->path.len);
+	st.s = host;
+	st.len = hlen;
+	
+	LM_INFO("AAAAAAAAAAA hoat %s port %d proto %d",host, port, new_entry->proto);
+	
+	he = sip_resolvehost(&st, (unsigned short *) &port,
+		(unsigned short *) &new_entry->proto, 0, 0);
+	if (!he) {
+		LM_ERR("Cannot resolve host: %.*s\n", hlen, host);
+		goto error;
+	}
+	
+	LM_INFO(" type %d %s \n",he->h_addrtype, he->h_addr_list[0]);
+	
+	hostent2su(&new_entry->addr, he, 0, port);
 
-	if (description) {
+	new_entry->path.len = strlen(url);
+	memcpy(new_entry->path.s, url, new_entry->path.len);
+
+	if (strlen(description) != 0 ) {
 		new_entry->description.len = strlen(description);
-		new_entry->description.s = shm_malloc(new_entry->description.len * sizeof(char*));
+		new_entry->description.s = shm_malloc(new_entry->description.len * sizeof(char));
 		memcpy(new_entry->description.s, description, new_entry->description.len);
 	} else {
 		new_entry->description.s = NULL;
@@ -408,8 +525,10 @@ int add_info(table_entry_t **data, int clusterer_id, int cluster_id, int machine
 	return 0;
 error:
 	if (new_entry) {
-		if (new_entry->proto.s)
-			shm_free(new_entry->proto.s);
+		if (new_entry->path.s)
+			shm_free(new_entry->path.s);
+		if (new_entry->description.s)
+			shm_free(new_entry->description.s);
 		shm_free(new_entry);
 	}
 	return -1;
@@ -418,15 +537,16 @@ error:
 /* loads data from the db */
 table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 {
-	int int_vals[4];
+	int int_vals[7];
 	char *str_vals[2];
 	int no_of_results;
 	int i, n;
 	int no_rows = 5;
-	int db_cols = 6;
+	int db_cols = 10;
+	unsigned long last_attempt;
 
 	/* the columns from the db table */
-	db_key_t columns[6];
+	db_key_t columns[10];
 	/* result from a db query */
 	db_res_t* res;
 	/* a row from the db table */
@@ -443,6 +563,10 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 	columns[3] = &description_col;
 	columns[4] = &url_col;
 	columns[5] = &clusterer_id_col;
+	columns[6] = &last_attempt_col;
+	columns[7] = &failed_attempts_col;
+	columns[8] = &no_tries_col;
+	columns[9] = &duration_col;
 
 	CON_OR_RESET(db_hdl);
 
@@ -467,6 +591,7 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 		VAL_TYPE(clusterer_machine_id_value) = DB_INT;
 		VAL_NULL(clusterer_machine_id_value) = 0;
 		VAL_INT(clusterer_machine_id_value) = server_id;
+
 	}
 
 	/* checking if the table version is up to date*/
@@ -539,7 +664,7 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 			LM_ERR("DB query failed - retrieve valid connections \n");
 			goto error;
 		}
-		no_rows = estimate_available_rows(4 + 4 + 4 + 64 + 45 + 4, db_cols);
+		no_rows = estimate_available_rows(4 + 4 + 4 + 64 + 4 + 45 + 4 + 8 + 4 + 4, db_cols);
 		if (no_rows == 0) no_rows = 5;
 		if (dr_dbf->fetch_result(db_hdl, &res, no_rows) < 0) {
 			LM_ERR("Error fetching rows\n");
@@ -578,14 +703,22 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 			/* CLUSTERER_ID column */
 			check_val(clusterer_id_col, ROW_VALUES(row) + 5, DB_INT, 1, 0);
 			int_vals[INT_VALS_CLUSTERER_ID_COL] = VAL_INT(ROW_VALUES(row) + 5);
-
+			/* LAST_ATTEMPT column */
+			check_val(last_attempt_col, ROW_VALUES(row) + 6, DB_BIGINT, 1, 0);
+			last_attempt = VAL_BIGINT(ROW_VALUES(row) + 6);
+			/* FAILED_ATTEMPTS column */
+			check_val(failed_attempts_col, ROW_VALUES(row) + 7, DB_INT, 1, 0);
+			int_vals[INT_VALS_FAILED_ATTEMPTS_COL] = VAL_INT(ROW_VALUES(row) + 7);
+			/* NO_TRIES column */
+			check_val(no_tries_col, ROW_VALUES(row) + 8, DB_INT, 1, 0);
+			int_vals[INT_VALS_NO_TRIES_COL] = VAL_INT(ROW_VALUES(row) + 8);
+			/* DURATIOH column */
+			check_val(duration_col, ROW_VALUES(row) + 9, DB_INT, 1, 0);
+			int_vals[INT_VALS_DURATION_COL] = VAL_INT(ROW_VALUES(row) + 9);
+			
+			
 			/* store data */
-			if (add_info(&data, int_vals[INT_VALS_CLUSTERER_ID_COL],
-				int_vals[INT_VALS_CLUSTER_ID_COL],
-				int_vals[INT_VALS_MACHINE_ID_COL],
-				int_vals[INT_VALS_STATE_COL],
-				str_vals[STR_VALS_DESCRIPTION_COL],
-				str_vals[STR_VALS_URL_COL]) < 0) {
+			if (add_info(&data, int_vals, last_attempt, str_vals) < 0) {
 				LM_DBG("error while adding info to shm\n");
 				goto error;
 			}
@@ -635,8 +768,6 @@ void free_data(table_entry_t *data)
 		data = data->next;
 		if (tmp->path.s)
 			shm_free(tmp->path.s);
-		if (tmp->proto.s)
-			shm_free(tmp->proto.s);
 		if (tmp->description.s)
 			shm_free(tmp->description.s);
 
@@ -685,7 +816,7 @@ static void destroy(void)
 	if (tdata) {
 		if (*tdata)
 			free_data(*tdata);
-		free(tdata);
+		shm_free(tdata);
 		tdata = 0;
 	}
 
@@ -714,43 +845,56 @@ static struct mi_root* clusterer_reload(struct mi_root* root, void *param)
 	return init_mi_tree(200, MI_SSTR(MI_OK));
 }
 
+
+static void temp_disable_machine(table_entry_t *head_table)
+{
+	head_table->dirty_bit = 1;
+	head_table->no_tries++;
+	head_table->last_attempt = time(0);
+	if(head_table->no_tries == head_table->failed_attempts){
+		head_table->state = 2;
+		//head_table->no_tries = 0;
+		LM_ERR("NNNNNNN state is 0 \n");
+	}
+}
+
 /* setting a connection status */
-static int set_state(int cluster_id, int machine_id, int state, str *proto)
+static int set_state(int cluster_id, int machine_id, int state, int proto)
 {
 	table_entry_t *head_table;
 	int is_ok = 1;
-
+	LM_DBG("XXXXXXXXXXXXXXX AAAAAAAAAAAAA\n");
+	LM_DBG("setting node with c_id %d m_id %d proto %d with state %d\n", cluster_id,
+		machine_id, proto, state);
 	/* finding the machine */
 	lock_start_write(ref_lock);
 
 	head_table = *tdata;
 
 	/* if the protocol is not specified */
-	if (proto == NULL) {
-		while (head_table != NULL) {
-			if (head_table->cluster_id == cluster_id
-				&& head_table->machine_id == machine_id) {
+	while (head_table != NULL) {
+		if (head_table->cluster_id == cluster_id
+			&& head_table->machine_id == machine_id && proto == head_table->proto) {
+			head_table->dirty_bit = 1;
+			
+			LM_ERR("NNNNNNN no_tries %d\n",head_table->no_tries);
+			if (state == 2) {
+				head_table->no_tries++;
+				head_table->last_attempt = time(0);
+				if(head_table->no_tries == head_table->failed_attempts){
+					head_table->state = 2;
+					//head_table->no_tries = 0;
+					LM_ERR("NNNNNNN state is 0 \n");
+				}
+			}else{
 				head_table->state = state;
-				head_table->dirty_bit = 1;
-				is_ok = 0;
 			}
-			head_table = head_table->next;
-		}
-	} else {
-		while (head_table != NULL) {
-			if (head_table->cluster_id == cluster_id
-				&& head_table->machine_id == machine_id
-				&& proto->len == head_table->proto.len
-				&& memcmp(proto->s, head_table->proto.s, proto->len) == 0) {
-				head_table->state = state;
-				head_table->dirty_bit = 1;
-				is_ok = 0;
+			is_ok = 0;
+			if (proto)
 				break;
-			}
-			head_table = head_table->next;
 		}
+		head_table = head_table->next;
 	}
-
 	lock_stop_write(ref_lock);
 	return is_ok;
 }
@@ -761,9 +905,10 @@ static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param)
 	unsigned int cluster_id;
 	unsigned int machine_id;
 	unsigned int state;
+	int proto;
 	int rc;
 	struct mi_node* node;
-	struct mi_node* state_node;
+	struct mi_node* prot_node;
 
 	LM_INFO("set status MI command received!\n");
 
@@ -803,11 +948,18 @@ static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param)
 		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM));
 	}
 
-	state_node = node->next->next->next;
-	if (state_node && state_node->value.len != 0)
-		rc = set_state(cluster_id, machine_id, state, &state_node->value);
-	else
-		rc = set_state(cluster_id, machine_id, state, NULL);
+	prot_node = node->next->next->next;
+	if (prot_node == NULL || prot_node->value.s == NULL) {
+		LM_DBG("the protocol parameter is missing\n");
+		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM));
+	}
+
+	if (parse_proto((unsigned char*) prot_node->value.s, prot_node->value.len, &proto) < 0) {
+		LM_DBG("the protocol parameter is not valid\n");
+		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM));
+	}
+
+	rc = set_state(cluster_id, machine_id, state, proto);
 
 	if (rc == -1) {
 		LM_DBG("cluster id or machine id are not smaller than 1\n");
@@ -832,6 +984,10 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 	str cluster_id;
 	str machine_id;
 	str state;
+	str no_tries;
+	str duration;
+	str last_attempt;
+	str failed_attempts;
 
 	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree == NULL)
@@ -857,17 +1013,37 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 		attr = add_mi_attr(node, MI_DUP_VALUE, "STATE", 5,
 			state.s, state.len);
 		if (attr == NULL) goto error;
-
-		attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
-			head_table->description.s, head_table->description.len);
+		
+		last_attempt.s = int2str(head_table->last_attempt, &last_attempt.len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, "LAST_FAILED_ATTEMPT", 19,
+			last_attempt.s, last_attempt.len);
 		if (attr == NULL) goto error;
-
-		attr = add_mi_attr(node, MI_DUP_VALUE, "PROTOCOL", 8,
-			head_table->proto.s, head_table->proto.len);
+		
+		failed_attempts.s = int2str(head_table->failed_attempts, &failed_attempts.len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, "MAX_FAILED_ATTEMPTS", 19,
+			failed_attempts.s, failed_attempts.len);
 		if (attr == NULL) goto error;
-
+		
+		no_tries.s = int2str(head_table->no_tries, &no_tries.len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, "NO_TRIES", 8,
+			no_tries.s, no_tries.len);
+		if (attr == NULL) goto error;
+		
+		duration.s = int2str(head_table->duration, &duration.len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, "SECONDS_UNTIL_ENABLING", 22,
+			duration.s, duration.len);
+		if (attr == NULL) goto error;
+		
 		attr = add_mi_attr(node, MI_DUP_VALUE, "PATH", 4,
 			head_table->path.s, head_table->path.len);
+		if (attr == NULL) goto error;
+		
+		if (head_table->description.s)
+			attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
+				head_table->description.s, head_table->description.len);
+		else
+			attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
+				"none", 4);
 		if (attr == NULL) goto error;
 
 		head_table = head_table->next;
@@ -881,4 +1057,213 @@ error:
 	lock_stop_read(ref_lock);
 	if (rpl_tree) free_mi_tree(rpl_tree);
 	return NULL;
+}
+
+static void free_node(clusterer_node_t *node)
+{
+	if (node) {
+		if (node->description.s)
+			pkg_free(node->description.s);
+		pkg_free(node);
+	}
+
+}
+
+static int add_node(clusterer_node_t **nodes, table_entry_t *head)
+{
+	clusterer_node_t *new_node = NULL;
+	struct ip_addr ip;
+	new_node = pkg_malloc(sizeof(clusterer_node_t));
+	if (new_node == NULL) {
+		LM_ERR("X no more pkg memory\n");
+		goto error;
+	}
+
+	new_node->next = NULL;
+	new_node->description.s = NULL;
+	//new_node->cluster_id = head->cluster_id;
+	new_node->machine_id = head->machine_id;
+	new_node->state = head->state;
+	new_node->proto = head->proto;
+
+	//new_node->att = head->att;
+
+	memcpy(&new_node->addr, &head->addr, sizeof(head->addr));
+	new_node->description.s = pkg_malloc(head->description.len * sizeof(char));
+	if (new_node->description.s == NULL) {
+		LM_ERR("XX no more pkg memory\n");
+		goto error;
+	}
+
+	memcpy(new_node->description.s, head->description.s, head->description.len);
+	
+	su2ip_addr(&ip, &new_node->addr);
+	LM_DBG("IIIIIIIIIII %s %d\n", ip_addr2a(&ip),su_getport(&new_node->addr));
+	new_node->description.len = head->description.len;
+	LM_DBG("add node c_id %d m_id %d state %d proto %d\n", head->cluster_id, new_node->machine_id,
+				new_node->state, new_node->proto);
+	if (*nodes)
+		new_node->next = *nodes;
+
+	*nodes = new_node;
+	return 0;
+error:
+	free_node(new_node);
+	return -1;
+}
+
+static void free_nodes(clusterer_node_t *nodes)
+{
+	clusterer_node_t* tmp;
+	LM_DBG("freeing all the nodes\n");
+	while (nodes != NULL) {
+		tmp = nodes;
+		nodes = nodes->next;
+		free_node(tmp);
+	}
+}
+
+static clusterer_node_t* get_nodes(int cluster_id, int proto)
+{
+	clusterer_node_t* tmp;
+	clusterer_node_t* nodes = NULL;
+	table_entry_t* head;
+	unsigned long ctime = time(0);
+	
+	LM_INFO("get nodes \n");
+	
+	lock_start_read(ref_lock);
+
+	head = *tdata;
+	while (head != NULL) {
+		if (head->cluster_id == cluster_id && proto == head->proto) {
+			
+			if(head->state == 1){
+				if(head->prev_no_tries != -1 && 
+					head->no_tries > 0 &&
+					head->prev_no_tries == head->no_tries){
+					head->no_tries = 0;
+				}
+				head->prev_no_tries = head->no_tries;
+			}
+			
+			if (head->state == 2) {
+				if ((ctime - head->last_attempt) >= head->duration) {
+					LM_DBG("PPPPPPPP here\n");
+					head->last_attempt = ctime;
+					head->state = 1;
+					head->no_tries = 0;
+				}
+			}
+			if (head->state == 1 && add_node(&nodes, head) < 0) {
+				goto error;
+			}
+		}
+		head = head->next;
+	}
+
+	lock_stop_read(ref_lock);
+
+	return nodes;
+error:
+	lock_stop_read(ref_lock);
+	while (nodes != NULL) {
+		tmp = nodes;
+		nodes = nodes->next;
+		free_node(tmp);
+	}
+	return NULL;
+}
+
+int clusterer_check(int cluster_id, union sockaddr_union* su, int server_id, int proto)
+{
+	int rc = 0;
+	table_entry_t *head;
+
+	LM_INFO("checking connection\n");
+
+	lock_start_read(ref_lock);
+
+	head = *tdata;
+	while (head != NULL) {
+		if (head->cluster_id == cluster_id && head->proto == proto 
+			&& su_ip_cmp(su, &head->addr)
+			&& head->machine_id == server_id) {
+				rc = 1;
+				break;
+		}
+		head = head->next;
+	}
+
+	lock_stop_read(ref_lock);
+
+	return rc;
+}
+
+static int get_my_id(void)
+{
+	return server_id;
+}
+
+
+static int send_to(int cluster_id, int proto)
+{
+	table_entry_t* head;
+	str send_buffer;
+	unsigned long ctime = time(0);
+	
+	LM_INFO("get nodes \n");
+	
+	if(proto == PROTO_BIN)
+		bin_get_buffer(&send_buffer);
+	
+	lock_start_read(ref_lock);
+
+	head = *tdata;
+	while (head != NULL) {
+		if (head->cluster_id == cluster_id && proto == head->proto) {
+			
+			if(head->state == 1){
+				if(head->prev_no_tries != -1 && 
+					head->no_tries > 0 &&
+					head->prev_no_tries == head->no_tries){
+					head->no_tries = 0;
+				}
+				head->prev_no_tries = head->no_tries;
+			}
+			
+			if (head->state == 2) {
+				if ((ctime - head->last_attempt) >= head->duration) {
+					head->last_attempt = ctime;
+					head->state = 1;
+					head->no_tries = 0;
+				}
+			}
+			if (head->state == 1) {
+				if(proto == PROTO_BIN){
+					if(msg_send(NULL, PROTO_BIN, &head->addr, 0, send_buffer.s,send_buffer.len,0) != 0){
+						LM_ERR("cannot send message\n");
+						//clusterer_api.set_state(ul_replicate_cluster, d->machine_id, 2, PROTO_BIN);
+						temp_disable_machine(head);
+					}
+				}
+					
+			}
+		}
+		head = head->next;
+	}
+
+	lock_stop_read(ref_lock);
+}
+
+
+int load_clusterer(struct clusterer_binds *binds)
+{
+	binds->get_nodes = get_nodes;
+	binds->set_state = set_state;
+	binds->free_nodes = free_nodes;
+	binds->check = clusterer_check;
+	binds->get_my_id = get_my_id;
+	/* everything ok*/
+	return 1;
 }
