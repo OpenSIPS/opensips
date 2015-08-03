@@ -1,0 +1,340 @@
+diff a/modules/dialog/dlg_replication.c b/modules/dialog/dlg_replication.c	(rejected hunks)
+@@ -445,16 +445,18 @@ int dlg_replicated_delete(void)
+  */
+ void replicate_dialog_created(struct dlg_cell *dlg)
+ {
+-	struct replication_dest *d;
+ 	static str module_name = str_init("dialog");
+ 	int callee_leg;
+ 	str *vars, *profiles;
++	clusterer_node_t *nodes;
++	clusterer_node_t *d;
++	str send_buffer;
+ 
+ 	if (bin_init(&module_name, REPLICATION_DLG_CREATED) != 0)
+ 		goto error;
+ 
+ 	callee_leg = callee_idx(dlg);
+-
++	bin_push_int(clusterer_api.get_my_id());
+ 	bin_push_str(&dlg->callid);
+ 	bin_push_str(&dlg->legs[DLG_CALLER_LEG].tag);
+ 	bin_push_str(&dlg->legs[callee_leg].tag);
+@@ -494,10 +497,23 @@ void replicate_dialog_created(struct dlg_cell *dlg)
+ 	bin_push_int((unsigned int)time(0) + dlg->tl.timeout - get_ticks());
+ 	bin_push_int(dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
+ 	bin_push_int(dlg->legs[callee_leg].last_gen_cseq);
++	
++	nodes = clusterer_api.get_nodes(dialog_replicate_cluster, PROTO_BIN);
++	if(nodes == NULL)
++		goto error;
+ 
+-	for (d = replication_dests; d; d = d->next)
+-		bin_send(&d->to);
+-
++	bin_get_buffer(&send_buffer);
++	
++	for (d = nodes; d; d = d->next){
++		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0)){
++			LM_ERR("cannot send message\n");
++			clusterer_api.set_state(dialog_replicate_cluster, d->machine_id, 2, PROTO_BIN);
++		}
++		
++	}
++	
++	clusterer_api.free_nodes(nodes);
++	
+ 	if_update_stat(dlg_enable_stats,create_sent,1);
+ 	return;
+ 
+@@ -511,16 +527,19 @@ error:
+  */
+ void replicate_dialog_updated(struct dlg_cell *dlg)
+ {
+-	struct replication_dest *d;
+ 	static str module_name = str_init("dialog");
+ 	int callee_leg;
+ 	str *vars, *profiles;
++	clusterer_node_t *nodes;
++	clusterer_node_t *d;
++	str send_buffer;
+ 
+ 	if (bin_init(&module_name, REPLICATION_DLG_UPDATED) != 0)
+ 		goto error;
+ 
+ 	callee_leg = callee_idx(dlg);
+ 
++	bin_push_int(clusterer_api.get_my_id());
+ 	bin_push_str(&dlg->callid);
+ 	bin_push_str(&dlg->legs[DLG_CALLER_LEG].tag);
+ 	bin_push_str(&dlg->legs[callee_leg].tag);
+@@ -562,8 +581,21 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
+ 	bin_push_int(dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
+ 	bin_push_int(dlg->legs[callee_leg].last_gen_cseq);
+ 
+-	for (d = replication_dests; d; d = d->next)
+-		bin_send(&d->to);
++	nodes = clusterer_api.get_nodes(dialog_replicate_cluster, PROTO_BIN);
++	if(nodes == NULL)
++		goto error;
++
++	bin_get_buffer(&send_buffer);
++	
++	for (d = nodes; d; d = d->next){
++		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0)){
++			LM_ERR("cannot send message\n");
++			clusterer_api.set_state(dialog_replicate_cluster, d->machine_id, 2, PROTO_BIN);
++		}
++		
++	}
++	
++	clusterer_api.free_nodes(nodes);
+ 
+ 	if_update_stat(dlg_enable_stats,update_sent,1);
+ 	return;
+@@ -578,18 +610,34 @@ error:
+  */
+ void replicate_dialog_deleted(struct dlg_cell *dlg)
+ {
+-	struct replication_dest *d;
+ 	static str module_name = str_init("dialog");
++	clusterer_node_t *nodes;
++	clusterer_node_t *d;
++	str send_buffer;
+ 
+ 	if (bin_init(&module_name, REPLICATION_DLG_DELETED) != 0)
+ 		goto error;
+ 
++	bin_push_int(clusterer_api.get_my_id());
+ 	bin_push_str(&dlg->callid);
+ 	bin_push_str(&dlg->legs[DLG_CALLER_LEG].tag);
+ 	bin_push_str(&dlg->legs[callee_idx(dlg)].tag);
+ 
+-	for (d = replication_dests; d; d = d->next)
+-		bin_send(&d->to);
++	nodes = clusterer_api.get_nodes(dialog_replicate_cluster, PROTO_BIN);
++	if(nodes == NULL)
++		goto error;
++
++	bin_get_buffer(&send_buffer);
++	
++	for (d = nodes; d; d = d->next){
++		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0)){
++			LM_ERR("cannot send message\n");
++			clusterer_api.set_state(dialog_replicate_cluster, d->machine_id, 2, PROTO_BIN);
++		}
++		
++	}
++	
++	clusterer_api.free_nodes(nodes);
+ 
+ 	if_update_stat(dlg_enable_stats,delete_sent,1);
+ 	return;
+@@ -605,13 +653,23 @@ void receive_binary_packet(int packet_type, struct receive_info *ri)
+ {
+ 	int rc;
+ 	char *ip;
++	int server_id;
+ 	unsigned short port;
+ 
+ 	LM_DBG("Received a binary packet!\n");
+ 
++	rc = bin_pop_int(&server_id);
++	if (rc < 0)
++		return;
++	
++	if(packet_type == REPLICATION_DLG_PROFILE)
++		LM_DBG("DDDD REPLICATED PROFILE");
++	
++
++
+ 	if (accept_repl_profiles && packet_type == REPLICATION_DLG_PROFILE) {
+ 		/* TODO: handle this */
+-		dlg_replicated_profiles(ri);
++		dlg_replicated_profiles(ri, server_id);
+ 		return;
+ 	}
+ 	if (!accept_replicated_dlg) {
+@@ -717,79 +789,72 @@ int repl_prof_init(void)
+ 		return -1;
+ 	}
+ 
+-	/* alocate the last_message counter in shared memory */
+-	for (index = 0; index < repl_prof_dests_nr; index++) {
+-		repl_prof_dests[index].last_msg = shm_malloc(sizeof(time_t));
+-		if (!repl_prof_dests[index].last_msg) {
+-			LM_ERR("OOM shm\n");
+-			return -1;
+-		}
+-	}
+-
+ 	return 0;
+ }
+ 
+-/* profiles replication */
+-int repl_prof_dest(modparam_t type, void *val)
++static inline void dlg_replicate_profiles(void)
+ {
+-	char *host;
+-	int hlen, port;
+-	int proto;
+-	struct hostent *he;
+-	str st;
++	//unsigned i;
++	clusterer_node_t *nodes;
++	clusterer_node_t *d;
++	str send_buffer;
+ 
+-	repl_prof_dests = pkg_realloc(repl_prof_dests, (repl_prof_dests_nr + 1) * sizeof(repl_prof_repl_dst_t));
+-	if (!repl_prof_dests) {
+-		LM_ERR("oom\n");
+-		return -1;
+-	}
+-
+-	if (parse_phostport(val, strlen(val), &host, &hlen, &port, &proto) < 0) {
+-		LM_ERR("Bad replication destination IP!\n");
+-		return -1;
+-	}
++	LM_INFO("XXX \n");
+ 
+-	if (proto == PROTO_NONE)
+-		proto = PROTO_UDP;
++	nodes = clusterer_api.get_nodes(profile_replicate_cluster, PROTO_BIN);
++	if(nodes == NULL)
++		goto error;
+ 
+-	st.s = host;
+-	st.len = hlen;
+-	he = sip_resolvehost(&st, (unsigned short *)&port,
+-							  (unsigned short *)&proto, 0, 0);
+-	if (!he) {
+-		LM_ERR("Cannot resolve host: %.*s\n", hlen, host);
+-		return -1;
+-	}
+-	if (!port) {
+-		LM_ERR("no port specified for host %.*s\n", hlen, host);
+-		return -1;
++	bin_get_buffer(&send_buffer);
++	
++	LM_INFO("send buffer %d %*.s\n",send_buffer.len, send_buffer.len, send_buffer.s + BIN_PACKET_MARKER_SIZE);
++	
++	for (d = nodes; d; d = d->next){
++		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0)){
++			LM_ERR("cannot send message\n");
++			clusterer_api.set_state(profile_replicate_cluster, d->machine_id, 2, PROTO_BIN);
++		}
++		
+ 	}
+-
+-	repl_prof_dests[repl_prof_dests_nr].id = repl_prof_dests_nr;
+-	repl_prof_dests[repl_prof_dests_nr].dst.s = (char *)val;
+-	repl_prof_dests[repl_prof_dests_nr].dst.len = strlen(repl_prof_dests[repl_prof_dests_nr].dst.s);
+-	hostent2su(&repl_prof_dests[repl_prof_dests_nr].to, he, 0, port);
+-
+-	LM_DBG("Added destination <%.*s>\n",
+-			repl_prof_dests[repl_prof_dests_nr].dst.len, repl_prof_dests[repl_prof_dests_nr].dst.s);
+-
+-	/* init done */
+-	repl_prof_dests_nr++;
+-
+-	return 1;
++	
++	clusterer_api.free_nodes(nodes);
++	
++	return;
++error:
++	LM_ERR("Failed to replicate profile dialog\n");
+ }
+ 
+-static inline void dlg_replicate_profiles(void)
++static repl_prof_count_t* find_destination(repl_prof_novalue_t *noval, int machine_id)
+ {
+-	unsigned i;
++	repl_prof_count_t *head;
++	
++	head = noval->dsts;
++	while(head != NULL){
++		if( head->machine_id ==  machine_id )
++			break;
++		head=head->next;
++	}
++	
++	if(head == NULL){
++		head = shm_malloc(sizeof(repl_prof_count_t));
++		if(head == NULL){
++			LM_ERR("no more shm memory\n");
++			goto error;
++		}
++		head->machine_id = machine_id;
++		head->next = noval->dsts;
++		noval->dsts = head;
++	}
+ 
+-	for (i = 0; i < repl_prof_dests_nr; i++)
+-		bin_send(&repl_prof_dests[i].to);
++	return head;
++
++error:
++	return NULL;
+ }
+ 
+-static void dlg_replicated_profiles(struct receive_info *ri)
++static void dlg_replicated_profiles(struct receive_info *ri,int server_id)
+ {
+-	int index;
++	LM_INFO("dlg replicate profiles\n");
+ 	time_t now;
+ 	str name;
+ 	str value;
+@@ -927,37 +998,38 @@ static int repl_prof_add(str *name, int has_value, str *value, unsigned int coun
+ 
+ int repl_prof_remove(str *name, str *value)
+ {
++	LM_INFO("CCCCCC repl_prof_remove %*.s\n",name->len, name->s );
+ 	static str module_name = str_init("dialog");
+-	if (!repl_prof_dests_nr)
++	if (profile_replicate_cluster <= 0)
+ 		return 0;
+ 	if (bin_init(&module_name, REPLICATION_DLG_PROFILE) < 0) {
+-		LM_ERR("cannot initiate bin buffer\n");
++		LM_ERR("CCC cannot initiate bin buffer\n");
+ 		return -1;
+ 	}
++	
++	bin_push_int(clusterer_api.get_my_id());
++	
+ 	if (repl_prof_add(name, value?1:0, value, 0) < 0)
+ 		return -1;
+ 	dlg_replicate_profiles();
+ 	return 0;
+ }
+ 
+-
+-int replicate_profiles_nr(void)
+-{
+-	return repl_prof_dests_nr;
+-}
+-
+ int replicate_profiles_count(repl_prof_novalue_t *rp)
+ {
+-	unsigned i;
++	LM_INFO("replicate profiles_count\n");
+ 	int counter = 0;
+ 	time_t now = time(0);
++	repl_prof_count_t *head;
+ 
+ 	lock_get(&rp->lock);
+-	for (i = 0; i < repl_prof_dests_nr; i++) {
++	head = rp->dsts;
++	while(head != NULL){
+ 		/* if the replication expired, reset its counter */
+-		if ((rp->dsts[i].update + repl_prof_timer_expire) < now)
+-			rp->dsts[i].counter = 0;
+-		counter += rp->dsts[i].counter;
++		if ((head->update + repl_prof_timer_expire) < now)
++			head->counter = 0;
++		counter += head->counter;
++		head = head->next;
+ 	}
+ 	lock_release(&rp->lock);
+ 	return counter;
