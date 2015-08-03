@@ -28,6 +28,7 @@
 #include "../../bin_interface.h"
 #include "../../socket_info.h"
 #include "../../timer.h"
+#include "../clusterer/api.h"
 
 #ifndef _DIALOG_DLG_REPLICATION_H_
 #define _DIALOG_DLG_REPLICATION_H_
@@ -37,12 +38,10 @@
 #define REPLICATION_DLG_DELETED		3
 
 extern int accept_replicated_dlg;
-extern struct replication_dest *replication_dests;
+extern int dialog_replicate_cluster;
+extern int profile_replicate_cluster;
 
-struct replication_dest {
-	union sockaddr_union to;
-	struct replication_dest *next;
-};
+struct clusterer_binds clusterer_api;
 
 void replicate_dialog_created(struct dlg_cell *dlg);
 void replicate_dialog_updated(struct dlg_cell *dlg);

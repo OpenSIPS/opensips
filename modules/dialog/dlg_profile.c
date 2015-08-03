@@ -464,6 +464,8 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 	profile->has_value = (has_value==0)?0:1;
 	profile->use_cached = use_cached;
 
+	profile->repl = NULL;
+
 	/* init locks */
 	if (!use_cached) {
 		profile->locks = get_a_lock_set(size) ;
@@ -531,7 +533,7 @@ static void destroy_dlg_profile(struct dlg_profile_table *profile)
 	if( profile -> has_value && !profile -> use_cached )
 	{
 		for( i= 0; i < profile->size; i++)
-			map_destroy( profile->entries[i], NULL );
+			map_destroy( profile->entries[i], free_profile_val);
 	}
 
 	shm_free( profile );

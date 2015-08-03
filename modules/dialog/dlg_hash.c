@@ -1020,7 +1020,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 		raise_state_changed_event(  dlg->h_entry, dlg->h_id,
 			(unsigned int)(*old_state), (unsigned int)(*new_state) );
 
-	 if ( !is_replicated && replication_dests &&
+	 if ( !is_replicated && dialog_replicate_cluster &&
 	(*old_state==DLG_STATE_CONFIRMED_NA || *old_state==DLG_STATE_CONFIRMED) &&
 	dlg->state==DLG_STATE_DELETED )
 		replicate_dialog_deleted(dlg);
