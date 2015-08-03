@@ -58,6 +58,7 @@
 #include "parser/parse_uri.h"
 #include "ut.h"
 #include "sr_module.h"
+#include "socket_info.h"
 #include "mem/mem.h"
 #include "globals.h"
 #include "dset.h"
@@ -371,6 +372,48 @@ static int do_action_set_adv_port(struct sip_msg *msg, struct action *a)
 	}
 	memcpy(msg->set_global_port.s, adv_port.s, adv_port.len);
 	msg->set_global_port.len = adv_port.len;
+
+out:
+	return ret;
+}
+
+static int do_action_set_force_send_address(struct sip_msg *msg, struct action *a)
+{
+	str addr;
+	struct hostent* he;
+	struct ip_addr ip;
+	struct socket_info* si;
+	int ret = 1; /* continue processing */
+
+	if (a->elem[0].type != STR_ST) {
+		report_programming_bug("force_send_address type %d", a->elem[0].type);
+		ret = E_BUG;
+		goto out;
+	}
+
+	if (pv_printf_s(msg, (pv_elem_t *)a->elem[0].u.data, &addr) != 0
+	    || addr.len <= 0) {
+		LM_WARN("cannot get string for value (%s:%d)\n",a->file, a->line);
+		ret = E_BUG;
+		goto out;
+	}
+
+	LM_DBG("setting force send address = [%.*s]\n", addr.len, addr.s);
+
+	he = resolvehost(addr.s, 0);
+	if (he == 0) {
+		LM_ERR("could not resolve %.*s\n", addr.len, addr.s);
+		ret = E_BAD_ADDRESS;
+		goto out;
+	}
+	hostent2ip_addr(&ip, he, 0);
+	si = find_si(&ip, 0, 0);
+	if (si == NULL) {
+		LM_ERR("bad force send address: %.*s (opensips doesn't listen on it)\n", addr.len, addr.s);
+		ret = E_BAD_ADDRESS;
+		goto out;
+	}
+	msg->force_send_socket = si;
 
 out:
 	return ret;
@@ -1904,6 +1947,16 @@ next_avp:
 			}
 			msg->force_send_socket=(struct socket_info*)a->elem[0].u.data;
 			ret=1; /* continue processing */
+			break;
+		case FORCE_SEND_ADDRESS_T:
+			script_trace("core", "force_send_address", msg, a->file, a->line) ;
+			if (a->elem[0].type!=STR_ST){
+				LM_ALERT("BUG in force_send_address argument"
+					 " type: %d\n", a->elem[0].type);
+				ret=E_BUG;
+				break;
+			}
+			ret = do_action_set_force_send_address(msg, a);
 			break;
 		case SERIALIZE_BRANCHES_T:
 			script_trace("core", "serialize_branches", msg, a->file, a->line) ;
