@@ -63,6 +63,9 @@ int * rl_network_count;	/* flag for counting network algo users */
 /* these only change in the mod_init() process -- no locking needed */
 int rl_timer_interval = RL_TIMER_INTERVAL;
 
+int accept_repl_pipes = 0;
+int rl_repl_cluster = 0;
+
 static str db_url = {0,0};
 str db_prefix = str_init("rl_pipe_");
 
@@ -122,17 +125,18 @@ static cmd_export_t cmds[] = {
 };
 
 static param_export_t params[] = {
-	{ "timer_interval",		INT_PARAM,				 &rl_timer_interval},
-	{ "expire_time",		INT_PARAM,				 &rl_expire_time},
-	{ "hash_size",			INT_PARAM,				 &rl_hash_size},
-	{ "default_algorithm",	STR_PARAM,				 &rl_default_algo_s.s},
-	{ "cachedb_url",		STR_PARAM,				 &db_url.s},
-	{ "db_prefix",			STR_PARAM,				 &db_prefix.s},
-	{ "repl_buffer_threshold",INT_PARAM,			 &rl_buffer_th},
-	{ "repl_timer_interval",INT_PARAM,				 &rl_repl_timer_interval},
-	{ "repl_timer_expire",	INT_PARAM,				 &rl_repl_timer_expire},
-	{ "replicate_pipes_to", STR_PARAM|USE_FUNC_PARAM, (void *)rl_add_repl_dst},
-	{ 0,					0,						0}
+	{ "timer_interval",		INT_PARAM,	&rl_timer_interval	},
+	{ "expire_time",		INT_PARAM,	&rl_expire_time		},
+	{ "hash_size",			INT_PARAM,	&rl_hash_size		},
+	{ "default_algorithm",		STR_PARAM,	&rl_default_algo_s.s	},
+	{ "cachedb_url",		STR_PARAM,	&db_url.s		},
+	{ "db_prefix",			STR_PARAM,	&db_prefix.s		},
+	{ "repl_buffer_threshold",	INT_PARAM,	&rl_buffer_th		},
+	{ "repl_timer_interval",	INT_PARAM,	&rl_repl_timer_interval	},
+	{ "repl_timer_expire",		INT_PARAM,	&rl_repl_timer_expire	},
+	{ "accept_pipes_from",		INT_PARAM,	&accept_repl_pipes	},
+	{ "replicate_pipes_to",		INT_PARAM,	&rl_repl_cluster	},
+	{ 0, 0, 0}
 };
 
 #define RLH1 "Params: [pipe] ; Lists the parameters and variabiles in the " \
@@ -306,6 +310,16 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if( rl_repl_cluster < 0 )
+		rl_repl_cluster = 0;
+	
+	if( accept_repl_pipes < 0 )
+		accept_repl_pipes = 0;
+	
+	if ( (rl_repl_cluster || accept_repl_pipes) && load_clusterer_api(&clusterer_api) != 0 ){
+		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
+		return -1;
+	}
 
 	if (db_url.s) {
 		db_url.len = strlen(db_url.s);
@@ -343,7 +357,7 @@ static int mod_init(void)
 		LM_ERR("could not register timer function\n");
 		return -1;
 	}
-
+	if(rl_repl_cluster)
 	if (register_utimer("rl-utimer", rl_timer_repl, NULL,
 			rl_repl_timer_interval * 1000, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
 		LM_ERR("failed to register utimer\n");
@@ -372,6 +386,8 @@ static int mod_init(void)
 		LM_ERR("cannot init bin replication\n");
 		return -1;
 	}
+	
+	
 
 	return 0;
 }
