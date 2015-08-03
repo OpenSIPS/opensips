@@ -60,7 +60,6 @@
 #include "usrloc.h"
 
 
-
 #define USER_COL       "username"
 #define DOMAIN_COL     "domain"
 #define CONTACT_COL    "contact"
@@ -86,7 +85,7 @@ static void timer(unsigned int ticks, void* param); /*!< Timer handler */
 static int child_init(int rank);                    /*!< Per-child init function */
 static int mi_child_init(void);
 
-static int add_replication_dest(modparam_t type, void *val);
+//static int add_replication_dest(modparam_t type, void *val);
 
 extern int bind_usrloc(usrloc_api_t* api);
 extern int ul_locks_no;
@@ -137,6 +136,7 @@ unsigned int init_flag = 0;
 /* usrloc data replication using the bin interface */
 int accept_replicated_udata;
 struct replication_dest *replication_dests;
+int ul_replicate_cluster = 0;
 
 db_con_t* ul_dbh = 0; /* Database connection handle */
 db_func_t ul_dbf;
@@ -184,8 +184,7 @@ static param_export_t params[] = {
 	{"nat_bflag",          INT_PARAM, &nat_bflag         },
     /* data replication through UDP binary packets */
 	{ "accept_replicated_contacts",INT_PARAM, &accept_replicated_udata },
-	{ "replicate_contacts_to",     STR_PARAM|USE_FUNC_PARAM,
-	                            (void *)add_replication_dest           },
+	{ "replicate_contacts_to",	INT_PARAM, &ul_replicate_cluster   },
 	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops     },
 	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{0, 0, 0}
@@ -381,7 +380,16 @@ static int mod_init(void)
 		LM_ERR("cannot register binary packet callback!\n");
 		return -1;
 	}
-
+	
+	if(ul_replicate_cluster > 0 && load_clusterer_api(&clusterer_api)!=0){
+		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
+		return -1;	
+	}
+	
+	if(ul_replicate_cluster < 0){
+		ul_replicate_cluster = 0;
+	}
+	
 	init_flag = 1;
 
 	return 0;
@@ -490,6 +498,7 @@ static void timer(unsigned int ticks, void* param)
 		lock_stop_read(sync_lock);
 }
 
+/*
 static int add_replication_dest(modparam_t type, void *val)
 {
 	struct replication_dest *rd;
@@ -531,4 +540,4 @@ static int add_replication_dest(modparam_t type, void *val)
 
 	return 1;
 }
-
+*/

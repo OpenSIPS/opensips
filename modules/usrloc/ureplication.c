@@ -37,52 +37,79 @@ int skip_replicated_db_ops;
 
 void replicate_urecord_insert(urecord_t *r)
 {
-	struct replication_dest *d;
 	str send_buffer;
+	clusterer_node_t *nodes;
+	clusterer_node_t *d;
 
 	if (bin_init(&repl_module_name, REPL_URECORD_INSERT, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
+	bin_push_int(clusterer_api.get_my_id());
+
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
 
+	nodes = clusterer_api.get_nodes(ul_replicate_cluster, PROTO_BIN);
+	if(nodes == NULL)
+		return;
 	bin_get_buffer(&send_buffer);
 
-	for (d = replication_dests; d; d = d->next)
-		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
+	for (d = nodes; d; d = d->next){
+		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0) != 0){
+			LM_ERR("cannot send message\n");
+			clusterer_api.set_state(ul_replicate_cluster, d->machine_id, 2, PROTO_BIN);
+		}
+		
+	}
+	
+	clusterer_api.free_nodes(nodes);
 }
 
 void replicate_urecord_delete(urecord_t *r)
 {
-	struct replication_dest *d;
 	str send_buffer;
+	clusterer_node_t *nodes;
+	clusterer_node_t *d;
 
 	if (bin_init(&repl_module_name, REPL_URECORD_DELETE, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
+	bin_push_int(clusterer_api.get_my_id());
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
 
+	nodes = clusterer_api.get_nodes(ul_replicate_cluster, PROTO_BIN);
+	if(nodes == NULL)
+		return;
+
 	bin_get_buffer(&send_buffer);
 
-	for (d = replication_dests; d; d = d->next)
-		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
+	for (d = nodes; d; d = d->next){
+		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0) != 0){
+			LM_ERR("cannot send message\n");
+			clusterer_api.set_state(ul_replicate_cluster, d->machine_id, 2, PROTO_BIN);
+		}		
+	}
+	
+	clusterer_api.free_nodes(nodes);
 }
 
 void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 {
-	struct replication_dest *d;
 	str send_buffer;
 	str st;
+	clusterer_node_t *nodes;
+	clusterer_node_t *d;
 
 	if (bin_init(&repl_module_name, REPL_UCONTACT_INSERT, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
+	bin_push_int(clusterer_api.get_my_id());
 
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
@@ -111,24 +138,37 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.s   = (char *)&ci->last_modified;
 	st.len = sizeof ci->last_modified;
 	bin_push_str(&st);
-
+	
+	nodes = clusterer_api.get_nodes(ul_replicate_cluster, PROTO_BIN);
+	if(nodes == NULL)
+		return;
 	bin_get_buffer(&send_buffer);
 
-	for (d = replication_dests; d; d = d->next)
-		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
+	for (d = nodes; d; d = d->next){
+		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0) != 0){
+			LM_ERR("cannot send message\n");
+			clusterer_api.set_state(ul_replicate_cluster, d->machine_id, 2, PROTO_BIN);
+		}
+		
+	}
+	
+	clusterer_api.free_nodes(nodes);
+
 }
 
 void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 {
-	struct replication_dest *d;
 	str send_buffer;
 	str st;
+	clusterer_node_t *nodes;
+	clusterer_node_t *d;
 
 	if (bin_init(&repl_module_name, REPL_UCONTACT_UPDATE, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
+	bin_push_int(clusterer_api.get_my_id());
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
 	bin_push_str(contact);
@@ -156,33 +196,58 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.s   = (char *)&ci->last_modified;
 	st.len = sizeof ci->last_modified;
 	bin_push_str(&st);
+	
+	nodes = clusterer_api.get_nodes(ul_replicate_cluster, PROTO_BIN);
+	if(nodes == NULL)
+		return;
 
 	bin_get_buffer(&send_buffer);
 
-	for (d = replication_dests; d; d = d->next)
-		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
+	for (d = nodes; d; d = d->next){
+		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0) != 0){
+			LM_ERR("cannot send message\n");
+			clusterer_api.set_state(ul_replicate_cluster, d->machine_id, 2, PROTO_BIN);
+		}
+		
+	}
+	
+	clusterer_api.free_nodes(nodes);
+
 }
 
 void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 {
-	struct replication_dest *d;
 	str send_buffer;
+	clusterer_node_t *nodes;
+	clusterer_node_t *d;
 
 	if (bin_init(&repl_module_name, REPL_UCONTACT_DELETE, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
-
+	
+	bin_push_int(clusterer_api.get_my_id());
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
 	bin_push_str(&c->c);
 	bin_push_str(&c->callid);
 	bin_push_int(c->cseq);
 
+	nodes = clusterer_api.get_nodes(ul_replicate_cluster, PROTO_BIN);
+	if(nodes == NULL)
+		return;
+
 	bin_get_buffer(&send_buffer);
 
-	for (d = replication_dests; d; d = d->next)
-		msg_send(0,PROTO_BIN,&d->to,0,send_buffer.s,send_buffer.len,0);
+	for (d = nodes; d; d = d->next){
+		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0) != 0){
+			LM_ERR("cannot send message\n");
+			clusterer_api.set_state(ul_replicate_cluster, d->machine_id, 2, PROTO_BIN);
+		}
+		
+	}
+	
+	clusterer_api.free_nodes(nodes);
 }
 
 /* packet receiving */
@@ -541,6 +606,7 @@ error:
 void receive_binary_packet(int packet_type, struct receive_info *ri)
 {
 	int rc;
+	int server_id;
 
 	LM_DBG("received a binary packet [%d]!\n", packet_type);
 
@@ -548,7 +614,14 @@ void receive_binary_packet(int packet_type, struct receive_info *ri)
 		LM_ERR("incompatible bin protocol version\n");
 		return;
 	}
-
+	
+	rc = bin_pop_int(&server_id);
+	if (rc < 0)
+		return;
+	
+	rc = clusterer_api.check(accept_replicated_udata, &ri->src_su, server_id, ri->proto);
+	if (rc == 0)
+		return;
 
 	switch (packet_type) {
 	case REPL_URECORD_INSERT:
