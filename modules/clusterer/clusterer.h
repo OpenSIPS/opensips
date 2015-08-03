@@ -1,10 +1,3 @@
-/* 
- * File:   clusterer.h
- * Author: cristi
- *
- * Created on July 7, 2015, 3:40 PM
- */
-
 #ifndef CLUSTERER_H
 #define	CLUSTERER_H
 
@@ -16,16 +9,29 @@
 #define STR_VALS_DESCRIPTION_COL    0
 #define STR_VALS_URL_COL            1
 #define INT_VALS_CLUSTERER_ID_COL   3
+#define INT_VALS_FAILED_ATTEMPTS_COL    4
+#define INT_VALS_NO_TRIES_COL           5
+#define INT_VALS_DURATION_COL           6
 
-extern str db_url;
+extern str clusterer_db_url;
 extern str db_table;
 extern str cluster_id_col;
 extern str machine_id_col;
 extern int server_id;
 extern int persistent_state;
 extern str clusterer_id_col;
+extern str last_attempt_col;
+extern str duration_col;
+extern str failed_attempts_col;
+extern str no_tries_col;
 
 typedef struct table_entry_ table_entry_t;
+
+struct attachment{
+    str module;
+    void *ptr;
+    struct attachment *next;
+};
 
 /* data list */
 struct table_entry_ {
@@ -41,10 +47,24 @@ struct table_entry_ {
     int dirty_bit;
     /* description string */
     str description;
-    /* protocol user */
-    str proto;
     /* path */
     str path;
+    /* protocol */
+    int proto;
+    /* timestamp */
+    uint64_t last_attempt;
+    /* duration */
+    int duration;
+    /* previous number of tries */
+    int prev_no_tries;
+    /* no of tries */
+    int no_tries;
+    /* failed attempts */
+    int failed_attempts;
+    /* sock address */   
+    union sockaddr_union addr;
+    /* modules attachments */
+    struct attachment* att;
     /* linker in list */
     table_entry_t *next;
 };
