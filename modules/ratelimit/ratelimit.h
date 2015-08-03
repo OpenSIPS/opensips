@@ -34,6 +34,8 @@
 
 
 #include "../../map.h"
+#include "../clusterer/api.h"
+#include "../../forward.h"
 
 /* copied from old ratelimit module */
 typedef enum {
@@ -47,6 +49,8 @@ typedef enum {
 typedef struct rl_repl_counter {
 	int counter;
 	time_t update;
+        int machine_id;
+        struct rl_repl_counter *next;
 } rl_repl_counter_t;
 
 typedef struct rl_pipe {
@@ -85,6 +89,10 @@ extern int *rl_network_count;
 extern int *rl_network_load;
 extern str rl_default_algo_s;
 extern str db_prefix;
+extern int accept_repl_pipes;
+extern int rl_repl_cluster;
+
+struct clusterer_binds clusterer_api;
 
 /* helper funcs */
 void mod_destroy(void);

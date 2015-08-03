@@ -55,9 +55,6 @@ static rl_algo_t get_rl_algo(str);
 /* big hash table */
 rl_big_htable rl_htable;
 
-static int rl_dests_nr;
-static rl_repl_dst_t *rl_dests;
-
 /* feedback algorithm */
 static int *rl_feedback_limit;
 
@@ -376,14 +373,12 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 
 	if (!*pipe) {
 		/* allocate new pipe */
-		*pipe = shm_malloc(sizeof(rl_pipe_t) +
-				rl_dests_nr * sizeof(rl_repl_counter_t));
+		*pipe = shm_malloc(sizeof(rl_pipe_t));
 		if (!*pipe) {
 			LM_ERR("no more shm memory\n");
 			goto release;
 		}
-		memset(*pipe, 0, sizeof(rl_pipe_t) + rl_dests_nr * sizeof(rl_repl_counter_t));
-		(*pipe)->dsts = (rl_repl_counter_t *)((*pipe) + 1);
+		memset(*pipe, 0, sizeof(rl_pipe_t));
 		LM_DBG("Pipe %.*s doens't exist, but was created %p\n",
 				name.len, name.s, *pipe);
 		if (algo == PIPE_ALGO_NETWORK)
@@ -645,33 +640,85 @@ error:
 	return -1;
 }
 
+static int bin_status_aux(struct mi_node *root, clusterer_node_t *nodes,int type,int cluster_id){
+	clusterer_node_t *d;
+	struct mi_node *node = NULL;
+	struct mi_attr* attr;
+	str cluster_id_s;
+	str machine_id_s;
+	str state;
+
+	for (d = nodes; d; d = d->next){
+		cluster_id_s.s = int2str(cluster_id, &cluster_id_s.len);
+		node = add_mi_node_child(root, MI_DUP_VALUE, "Cluster ID", 10,
+			cluster_id_s.s, cluster_id_s.len);
+		if (node == NULL) goto error;
+
+		machine_id_s.s = int2str(d->machine_id, &machine_id_s.len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, "Machine ID", 10,
+			machine_id_s.s, machine_id_s.len);
+		if (attr == NULL) goto error;
+
+		state.s = int2str(d->state, &state.len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, "STATE", 5,
+			state.s, state.len);
+		if (attr == NULL) goto error;
+
+		if (d->description.s)
+			attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
+				d->description.s, d->description.len);
+		else
+			attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
+				"none", 4);
+		if (attr == NULL) goto error;
+		
+		if(type)
+			attr = add_mi_attr(node, MI_DUP_VALUE, "TYPE", 4,
+			"server", 6);
+		else
+			attr = add_mi_attr(node, MI_DUP_VALUE, "TYPE", 4,
+			"client", 6);
+		if (attr == NULL) goto error;
+	}
+	
+	return 0;
+error:
+	return -1;
+}
+
+
 int rl_bin_status(struct mi_root *rpl_tree)
 {
-	int index = 0;
-	struct mi_node *node;
-	char* p;
-	int len;
+	clusterer_node_t *nodes;
+	struct mi_node *root = NULL;
 
-	for (index = 0; index < rl_dests_nr; index++) {
-		if (!(node = add_mi_node_child(&rpl_tree->node, 0, "Instance", 8,
-					rl_dests[index].dst.s, rl_dests[index].dst.len))) {
-			LM_ERR("cannot add a new instance\n");
+	if(rpl_tree == NULL)
+		return -1;
+
+	root = &rpl_tree->node;	
+	if(rl_repl_cluster){
+		nodes = clusterer_api.get_nodes(rl_repl_cluster, PROTO_BIN);
+		if(nodes == NULL)
 			return -1;
-		}
-
-		if (*rl_dests[index].last_msg) {
-			p = int2str((unsigned long)(*rl_dests[index].last_msg), &len);
-		} else {
-			p = "never";
-			len = 5;
-		}
-		if (!add_mi_attr(node, MI_DUP_VALUE, "timestamp", 9, p, len)) {
-			LM_ERR("cannot add last update\n");
-			return -1;
-		}
-
+		if(bin_status_aux(root, nodes, 1, rl_repl_cluster) < 0)
+			goto error;
+		clusterer_api.free_nodes(nodes);
 	}
+	
+	if(accept_repl_pipes){
+		nodes = clusterer_api.get_nodes(accept_repl_pipes, PROTO_BIN);
+		if(nodes == NULL)
+			return -1;
+		if(bin_status_aux(root, nodes, 0, accept_repl_pipes) < 0)
+			goto error;
+		clusterer_api.free_nodes(nodes);
+	}
+	
+	
 	return 0;
+error:
+	clusterer_api.free_nodes(nodes);					
+	return -1;	
 }
 
 int w_rl_set_count(str key, int val)
@@ -738,19 +785,51 @@ int w_rl_reset(struct sip_msg *_m, char *_n)
 	return w_rl_change_counter(_m, _n, 0);
 }
 
+static rl_repl_counter_t* find_destination(rl_pipe_t *pipe, int machine_id)
+{
+	rl_repl_counter_t *head;
+	
+	head = pipe->dsts;
+	while(head != NULL){
+		if( head->machine_id ==  machine_id )
+			break;
+		head=head->next;
+	}
+	
+	if(head == NULL){
+		head = shm_malloc(sizeof(rl_repl_counter_t));
+		if(head == NULL){
+			LM_ERR("no more shm memory\n");
+			goto error;
+		}
+		head->machine_id = machine_id;
+		head->next = pipe->dsts;
+		pipe->dsts = head;
+	}
+
+	return head;
+
+error:
+	return NULL;
+}
+
+
+
 
 void rl_rcv_bin(int packet_type, struct receive_info *ri)
 {
 	rl_algo_t algo;
 	int limit;
 	int counter;
+	int rc;
+	int server_id;
 	str name;
-	int index;
 	char *ip;
 	unsigned short port;
 	rl_pipe_t **pipe;
 	unsigned int hash_idx;
 	time_t now;
+	rl_repl_counter_t *destination;
 
 	if(get_bin_pkg_version() != BIN_VERSION){
 		LM_ERR("incompatible bin protocol version\n");
@@ -760,20 +839,17 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri)
 	if (packet_type != RL_PIPE_COUNTER)
 		return;
 
-	/* match the server */
-	for (index = 0; index < rl_dests_nr; index++) {
-		 if (su_cmp(&ri->src_su, &rl_dests[index].to))
-			break;
-	}
-
-	if (index == rl_dests_nr) {
+	rc = bin_pop_int(&server_id);
+	if (rc < 0)
+		return;
+	
+	if (!clusterer_api.check(accept_repl_pipes, &ri->src_su, server_id, ri->proto)){
 		get_su_info(&ri->src_su.s, ip, port);
 		LM_WARN("received bin packet from unknown source: %s:%hu\n",
 				ip, port);
 		return;
 	}
 	now = time(0);
-	*rl_dests[index].last_msg = now;
 
 	for (;;) {
 		if (bin_pop_str(&name) == 1)
@@ -806,15 +882,12 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri)
 
 		if (!*pipe) {
 			/* if the pipe does not exist, alocate it in case we need it later */
-			*pipe = shm_malloc(sizeof(rl_pipe_t) +
-					rl_dests_nr * sizeof(rl_repl_counter_t));
+			*pipe = shm_malloc(sizeof(rl_pipe_t));
 			if (!*pipe) {
 				LM_ERR("no more shm memory\n");
 				goto release;
 			}
-			memset(*pipe, 0, sizeof(rl_pipe_t) +
-					rl_dests_nr * sizeof(rl_repl_counter_t));
-			(*pipe)->dsts = (rl_repl_counter_t *)((*pipe) + 1);
+			memset(*pipe, 0, sizeof(rl_pipe_t));
 			LM_DBG("Pipe %.*s doesn't exist, but was created %p\n",
 					name.len, name.s, *pipe);
 			(*pipe)->algo = algo;
@@ -832,9 +905,9 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri)
 		/* set the last used time */
 		(*pipe)->last_used = time(0);
 		/* set the destination's counter */
-		(*pipe)->dsts[index].counter = counter;
-		(*pipe)->dsts[index].update = now;
-
+		destination = find_destination(*pipe, server_id);
+		destination->counter = counter;
+		destination->update = now;
 		RL_RELEASE_LOCK(hash_idx);
 	}
 	return;
@@ -845,7 +918,6 @@ release:
 
 int rl_repl_init(void)
 {
-	int index;
 
 	if (rl_buffer_th > (BUF_SIZE * 0.9)) {
 		LM_WARN("Buffer size too big %d - pipe information might get lost",
@@ -853,82 +925,36 @@ int rl_repl_init(void)
 		return -1;
 	}
 
-	if (rl_dests_nr &&
+	if (accept_repl_pipes &&
 		bin_register_cb("ratelimit", rl_rcv_bin) < 0) {
 		LM_ERR("Cannot register binary packet callback!\n");
 		return -1;
-	}
-	
-	/* alocate the last_message counter in shared memory */
-	for (index = 0; index < rl_dests_nr; index++) {
-		rl_dests[index].last_msg = shm_malloc(sizeof(time_t));
-		if (!rl_dests[index].last_msg) {
-			LM_ERR("OOM shm\n");
-			return -1;
-		}
 	}
 
 	return 0;
 }
 
-int rl_add_repl_dst(modparam_t type, void *val)
-{
-	char *host;
-	int hlen, port;
-	int proto;
-	struct hostent *he;
-	str st;
-
-	rl_dests = pkg_realloc(rl_dests, (rl_dests_nr + 1) * sizeof(rl_repl_dst_t));
-	if (!rl_dests) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-
-	if (parse_phostport(val, strlen(val), &host, &hlen, &port, &proto) < 0) {
-		LM_ERR("Bad replication destination IP!\n");
-		return -1;
-	}
-
-	if (proto == PROTO_NONE)
-		proto = PROTO_UDP;
-
-	st.s = host;
-	st.len = hlen;
-	he = sip_resolvehost(&st, (unsigned short *)&port,
-							  (unsigned short *)&proto, 0, 0);
-	if (!he) {
-		LM_ERR("Cannot resolve host: %.*s\n", hlen, host);
-		return -1;
-	}
-	if (!port) {
-		LM_ERR("no port specified for host %.*s\n", hlen, host);
-		return -1;
-	}
-
-	rl_dests[rl_dests_nr].id = rl_dests_nr;
-	rl_dests[rl_dests_nr].dst.s = (char *)val;
-	rl_dests[rl_dests_nr].dst.len = strlen(rl_dests[rl_dests_nr].dst.s);
-	hostent2su(&rl_dests[rl_dests_nr].to, he, 0, port);
-
-	LM_DBG("Added destination <%.*s>\n",
-			rl_dests[rl_dests_nr].dst.len, rl_dests[rl_dests_nr].dst.s);
-
-	/* init done */
-	rl_dests_nr++;
-
-	return 1;
-}
-
 static inline void rl_replicate(void)
 {
-	unsigned i;
 	str send_buffer;
+	clusterer_node_t *nodes;
+	clusterer_node_t *d;
+
+	nodes = clusterer_api.get_nodes(rl_repl_cluster, PROTO_BIN);
+	if(nodes == NULL)
+		return;
 
 	bin_get_buffer(&send_buffer);
-
-	for (i = 0; i < rl_dests_nr; i++)
-		msg_send(0,PROTO_BIN,&rl_dests[i].to,0,send_buffer.s,send_buffer.len,0);
+	
+	for (d = nodes; d; d = d->next){
+		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0) != 0){
+			LM_ERR("cannot send message\n");
+			clusterer_api.set_state(rl_repl_cluster, d->machine_id, 2, PROTO_BIN);
+		}
+		
+	}
+	
+	clusterer_api.free_nodes(nodes);	
 }
 
 void rl_timer_repl(utime_t ticks, void *param)
@@ -945,6 +971,7 @@ void rl_timer_repl(utime_t ticks, void *param)
 		LM_ERR("cannot initiate bin buffer\n");
 		return;
 	}
+	bin_push_int(clusterer_api.get_my_id());
 
 	/* iterate through each map */
 	for (i = 0; i < rl_htable.size; i++) {
@@ -992,6 +1019,7 @@ void rl_timer_repl(utime_t ticks, void *param)
 					RL_RELEASE_LOCK(i);
 					return;
 				}
+				bin_push_int(clusterer_api.get_my_id());
 				nr = 0;
 			}
 
@@ -1015,15 +1043,16 @@ error:
 
 int rl_get_all_counters(rl_pipe_t *pipe)
 {
-	unsigned i;
 	unsigned counter = 0;
 	time_t now = time(0);
+	rl_repl_counter_t *nodes = pipe->dsts;
+	rl_repl_counter_t *d;
 
-	for (i = 0; i < rl_dests_nr; i++) {
+	for (d = nodes; d; d = d->next){
 		/* if the replication expired, reset its counter */
-		if ((pipe->dsts[i].update + rl_repl_timer_expire) < now)
-			pipe->dsts[i].counter = 0;
-		counter += pipe->dsts[i].counter;
+		if ((d->update + rl_repl_timer_expire) < now)
+			d->counter = 0;
+		counter += d->counter;
 	}
 	return counter + pipe->counter;
 }
