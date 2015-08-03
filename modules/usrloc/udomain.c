@@ -1002,7 +1002,7 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 			return -1;
 		}
 
-		if (!is_replicated && replication_dests)
+		if (!is_replicated && ul_replicate_cluster)
 			replicate_urecord_insert(*_r);
 	} else {
 		get_static_urecord( _d, _aor, _r);
@@ -1076,7 +1076,7 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 		}
 	}
 
-	if (!is_replicated && replication_dests)
+	if (!is_replicated && ul_replicate_cluster)
 		replicate_urecord_delete(_r);
 
 	c = _r->contacts;
