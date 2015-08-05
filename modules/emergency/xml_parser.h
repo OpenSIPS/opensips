@@ -26,6 +26,7 @@
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
  *  2015-06-08 change from list to hash (Villaron/Tesini)
+ *  2015-08-05 code review (Villaron/Tesini)
  */
 
 #include "../../sr_module.h"
@@ -44,7 +45,7 @@
 #include "../../parser/parse_from.h"
 #include "../../regexp.h"
 #include "../../data_lump.h"
-#include "../../data_lump_rpl.h"
+#include "../../data_lump_rpl.h" 
 #include "../../ut.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
@@ -54,7 +55,11 @@
 #include "../rr/api.h"
 #include "../tm/tm_load.h" /*load_tm_api*/
 
-typedef struct parsed_xml_vpc {
+char *empty;
+#define MAX_TIME_SIZE            80
+#define MAX_DISPOSITION_SIZE     20
+
+typedef struct parsed_xml_vpc{
     char* organizationname;
     char* hostname;
     char* nenaid;
@@ -75,7 +80,7 @@ typedef struct parsed_xml_resp{
     char* lro;
     char* callid;
     char* datetimestamp;
-
+    
     NENA *vpc;
     NENA *destination;
     ERT  *ert;
@@ -85,7 +90,7 @@ typedef struct parsed_xml_resp{
 struct dialog_set{
     char* call_id;
     char* local_tag;
-    char* rem_tag;
+    char* rem_tag; 
     int status;
 };
 
@@ -103,7 +108,7 @@ typedef struct esct{
     char* datetimestamp;
     char* lro;
     char* disposition;
-    char* result;
+    char* result; 
     int   timeout;
 }ESCT;
 
@@ -135,7 +140,7 @@ struct notify_body{
 struct dialog_id{
     str callid;
     str local_tag;
-    str rem_tag;
+    str rem_tag; 
     int status;
 };
 
@@ -149,7 +154,7 @@ struct sm_subscriber{
     int expires;
     int timeout;
     int version;
-    struct sm_subscriber *prev;
+    struct sm_subscriber *prev; 
     struct sm_subscriber *next;
 };
 

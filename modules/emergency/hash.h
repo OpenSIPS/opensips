@@ -21,10 +21,11 @@
  *
  * History:
  * --------
-*  2015-06-08 change from list to hash (Villaron/Tesini)
+ *  2015-06-08 change from list to hash (Villaron/Tesini)
+ *  2015-08-05 code review (Villaron/Tesini)
  */
 #include "../../lock_ops.h"
-#include "xml_parser.h"
+#include "xml_parser.h" 
 
 #define PKG_MEM_STR       "pkg"
 #define SHARE_MEM         "share"
@@ -68,7 +69,7 @@ void free_subs_list(struct sm_subscriber* s_array);
 NODE* mem_copy_call_noc(ESCT* s);
 int insert_ehtable(emetable_t htable, unsigned int hash_code, ESCT* call_eme);
 struct sm_subscriber* mem_copy_subs_noc(struct sm_subscriber* s);
-int insert_shtable(sbtable_t htable, unsigned int hash_code, struct sm_subscriber* call_eme);
+struct sm_subscriber* insert_shtable(sbtable_t htable, unsigned int hash_code, struct sm_subscriber* call_eme);
 NODE* search_ehtable(emetable_t htable, char* callid, char* from_tag, unsigned int hash_code, int delete);
 struct sm_subscriber* search_shtable(sbtable_t htable, str* callid, str* from_tag, unsigned int hash_code, str* method);
 int delete_shtable(sbtable_t htable, unsigned int hash_code, struct sm_subscriber* subs);

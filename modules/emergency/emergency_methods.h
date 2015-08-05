@@ -26,8 +26,8 @@
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
  *  2015-06-08 change from list to hash (Villaron/Tesini)
- *
- */
+ *  2015-08-05 code review (Villaron/Tesini)
+*/
 
 #include <string.h>
 #include <stdio.h>
@@ -52,7 +52,7 @@
 #include "../../parser/parse_from.h"
 #include "../../regexp.h"
 #include "../../data_lump.h"
-#include "../../data_lump_rpl.h"
+#include "../../data_lump_rpl.h" 
 #include "../../ut.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
@@ -81,7 +81,7 @@
 	} while(0)
 
 
-#define MAXNUMBERLEN 31
+#define MAXNUMBERLEN 			 31	
 #define HTTP_HDR_CONTENT_TYPE    "Content-Type"
 #define CONTENT_TYPE_HDR_LEN     12
 #define MAX_CONTENT_TYPE_LEN     64
@@ -145,7 +145,6 @@ struct code_number *codes = NULL;
 
 struct multi_body *mbody;
 struct esct *call_cell;
-struct parsed_xml_vpc *call_cell_vpc, *call_cell_source;
 struct lump *l;
 
 int timer_interval=10;
@@ -178,9 +177,9 @@ int fill_blank_space(void);
 int fill_parm_with_BS(char** var);
 unsigned long get_xml_size(char* lie, char* formated_time, char* callidHeader, char* cbn);
 char* formatted_xml(struct sip_msg *msg, char* lie, char* callidHeader, char* cbn);
-int routing_by_ert( struct sip_msg *msg, ESCT *call_cell);
+int routing_by_ert( struct sip_msg *msg, ESCT *call_cell, int failure);
 int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeader, str cbn);
 int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str cbn, char* from_tag);
-void destroy_codes(struct code_number *codes);
+void destroy_codes(struct code_number *codes); 
 
 

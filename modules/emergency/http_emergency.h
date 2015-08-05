@@ -26,6 +26,7 @@
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
  *  2015-06-08 change from list to hash (Villaron/Tesini)
+ *  2015-08-05 code review (Villaron/Tesini)
  */
 
 #include "../../sr_module.h"
@@ -44,7 +45,7 @@
 #include "../../parser/parse_from.h"
 #include "../../regexp.h"
 #include "../../data_lump.h"
-#include "../../data_lump_rpl.h"
+#include "../../data_lump_rpl.h" 
 #include "../../ut.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
@@ -53,7 +54,7 @@
 #include "../../forward.h"
 #include "../rr/api.h"
 
-#include "report_emergency.h"
+#include "report_emergency.h" 
 
 #include "post_curl.h"
 
@@ -63,14 +64,13 @@ struct subs_htable* subs_htable;
 char *url_vpc;
 str db_url;
 str *db_table;
-char *empty;
 
 int emet_size;
 int subst_size;
 
 int send_esct(struct sip_msg *msg, str callid_ori, str from_tag);
-int faixa_result(int result);
-int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell , NENA *call_cell_vpc, NENA *call_cell_source, PARSED *parsed, int proxy_role);
+int range_result(int result); 
+int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell, PARSED *parsed, int proxy_role);
 int get_lro_in_contact(char *contact_lro, ESCT *call_cell);
 int get_esqk_in_contact(char *contact_lro, ESCT *call_cell);
 int get_esgwri_ert_in_contact(char *contact_esgwri, ESCT *call_cell);

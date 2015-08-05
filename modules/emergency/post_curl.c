@@ -24,7 +24,7 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
- *
+ *  2015-08-05 code review (Villaron/Tesini) 
  */
 
 
@@ -46,14 +46,14 @@ size_t write_data(void *ptr, size_t size, size_t nmemb, struct url_data *data) {
     size_t index = data->size;
     size_t n = (size * nmemb);
     char* tmp;
-
+    
     data->size += (size * nmemb);
-
+    
 #ifdef DEBUG
     fprintf(stderr, "data at %p size=%ld nmemb=%ld\n", ptr, size, nmemb);
 #endif
     tmp = realloc(data->data, data->size + 1); /* +1 for '\0' */
-
+    
     if(tmp) {
         data->data = tmp;
     } else {
@@ -63,10 +63,10 @@ size_t write_data(void *ptr, size_t size, size_t nmemb, struct url_data *data) {
         fprintf(stderr, "Failed to allocate memory.\n");
         return 0;
     }
-
+    
     memcpy((data->data + index), ptr, n);
     data->data[data->size] = '\0';
-
+    
     return size * nmemb;
 }
 
@@ -89,7 +89,7 @@ int post(char*  url, char* xml, char** response){
     if(curl) {
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, xml);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, (curl_write_callback)write_data);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data);
         long http_code = 0;
         res = curl_easy_perform(curl);

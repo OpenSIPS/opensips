@@ -24,40 +24,39 @@
  *  2014-10-14 initial version (Villaron/Tesini)
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
- *
+ *  2015-08-05 code review (Villaron/Tesini)
  */
 
-const char *MODEL = "<esrRequest xmlns=\"urn:nena:xml:ns:es:v2\" \n "	\
-	"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n "		\
-	"xsi:schemaLocation=\"urn:nena:xml:ns:es:v2 v2.xsd\"> \n "			\
-	"<vpc> \n "															\
-	"	<organizationName>%s</organizationName> \n "					\
-	"	<hostId>%s</hostId> \n "										\
-	"	<nenaId>%s</nenaId> \n "										\
-	"	<contact>%s</contact> \n "										\
-	"	<certUri>%s</certUri> \n "										\
-	"</vpc> \n "														\
-	"<source> \n "														\
-	"	<organizationName>%s</organizationName> \n "					\
-	"	<hostId>%s</hostId> \n "										\
-	"	<nenaId>%s</nenaId> \n "										\
-	"	<contact>%s</contact> \n "										\
-	"	<certUri>%s</certUri> \n "										\
-	"</source> \n "														\
-	"<vsp> \n "															\
-	"	<organizationName>%s</organizationName> \n "					\
-	"	<hostId>%s</hostId> \n "										\
-	"	<nenaId>%s</nenaId> \n "										\
-	"	<contact>%s</contact> \n "										\
-	"	<certUri>%s</certUri> \n "										\
-	"</vsp> \n "														\
-	"<callId>%s</callId> \n "											\
-	"<callback>%s</callback> \n "										\
-	"<lie> \n "															\
-	"	%s \n "															\
-	"</lie> \n "														\
-	"<callOrigin>%s</callOrigin> \n "									\
-	"<datetimestamp>%s</datetimestamp> \n "								\
-	"<customer>0</customer> \n "										\
-	"</esrRequest>";
-
+const char *MODEL = "<esrRequest xmlns=\"urn:nena:xml:ns:es:v2\" \n \
+xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n \
+xsi:schemaLocation=\"urn:nena:xml:ns:es:v2 v2.xsd\"> \n \
+<vpc> \n \
+	<organizationName>%s</organizationName> \n \
+	<hostId>%s</hostId> \n \
+	<nenaId>%s</nenaId> \n \
+	<contact>%s</contact> \n \
+	<certUri>%s</certUri> \n \
+</vpc> \n \
+<source> \n \
+	<organizationName>%s</organizationName> \n \
+	<hostId>%s</hostId> \n \
+	<nenaId>%s</nenaId> \n \
+	<contact>%s</contact> \n \
+	<certUri>%s</certUri> \n \
+</source> \n \
+<vsp> \n \
+	<organizationName>%s</organizationName> \n \
+	<hostId>%s</hostId> \n \
+	<nenaId>%s</nenaId> \n \
+	<contact>%s</contact> \n \
+	<certUri>%s</certUri> \n \
+</vsp> \n \
+<callId>%s</callId> \n \
+<callback>%s</callback> \n \
+<lie> \n \
+	%s \n \
+</lie> \n \
+<callOrigin>%s</callOrigin> \n \
+<datetimestamp>%s</datetimestamp> \n \
+<customer>0</customer> \n \
+</esrRequest>";
