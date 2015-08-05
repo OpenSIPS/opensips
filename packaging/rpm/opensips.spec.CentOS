@@ -28,8 +28,8 @@ provides full control over the server's behaviour. It's modular
 architecture allows only required functionality to be loaded.
 Currently the following modules are available: digest authentication,
 CPL scripts, instant messaging, MySQL and UNIXODBC support, a presence agent,
-radius authentication, record routing, an SMS gateway, a jabber gateway, a 
-transaction and dialog module, OSP module, statistics support, 
+radius authentication, record routing, an SMS gateway, a jabber gateway, a
+transaction and dialog module, OSP module, statistics support,
 registrar and user location, SNMP, SIMPLE Presence and Perl programming
 interface.
 
@@ -133,7 +133,7 @@ BuildRequires:  openldap-devel
 %description ldap
 The LDAP module implements an LDAP search interface for OpenSIPS.
 It exports script functions to perform an LDAP search operation and to store the search results as OpenSIPS AVPs.
-This allows for using LDAP directory data in the OpenSIPS SIP message routing script. 
+This allows for using LDAP directory data in the OpenSIPS SIP message routing script.
 
 
 %package  identity
@@ -153,7 +153,7 @@ Requires: opensips = %ver
 BuildRequires:  pcre-devel
 
 %description regex
-This module offers matching operations against regular expressions using the powerful PCRE library. 
+This module offers matching operations against regular expressions using the powerful PCRE library.
 
 
 %package  mmgeoip
@@ -174,7 +174,7 @@ Requires: opensips = %ver
 BuildRequires:  json-c-devel
 
 %description json
-This module introduces a new type of variable that provides both serialization and de-serialization from JSON format. 
+This module introduces a new type of variable that provides both serialization and de-serialization from JSON format.
 
 
 %package  carrierroute
@@ -196,7 +196,7 @@ BuildRequires:  libconfuse-devel libmemcached-devel
 %description cachedb_memcached
 This module is an implementation of a cache system designed to work with a memcached server.
 It uses libmemcached client library to connect to several memcached servers that store data.
-It registers the three functions for storing, fetching and removing a value to the core memcache management interface. 
+It registers the three functions for storing, fetching and removing a value to the core memcache management interface.
 
 
 %package  cachedb_couchbase
@@ -208,7 +208,7 @@ BuildRequires:  libcouchbase-devel
 %description cachedb_couchbase
 This module is an implementation of a cache system designed to work with a Couchbase server.
 It uses the libcouchbase client library to connect to the server instance,
-It uses the Key-Value interface exported from the core.  
+It uses the Key-Value interface exported from the core.
 
 
 %package  event_rabbitmq
@@ -219,7 +219,7 @@ BuildRequires:  librabbitmq-devel
 
 %description event_rabbitmq
 This module provides the implementation of a RabbitMQ client for the Event Interface.
-It is used to send AMQP messages to a RabbitMQ server each time the Event Interface triggers an event subscribed for.  
+It is used to send AMQP messages to a RabbitMQ server each time the Event Interface triggers an event subscribed for.
 
 
 %package  cachedb_redis
@@ -232,7 +232,7 @@ BuildRequires:  hiredis-devel
 This module is an implementation of a cache system designed to work with a Redis server.
 It uses hiredis client library to connect to either a single Redis server instance,
 or to a Redis Server inside a Redis Cluster.
-It uses the Key-Value interface exported from the core.  
+It uses the Key-Value interface exported from the core.
 
 
 %package  db_berkeley
@@ -242,7 +242,7 @@ Requires: opensips = %ver
 BuildRequires:  db4-devel
 
 %description db_berkeley
-This is a module which integrates the Berkeley DB into OpenSIPS. It implements the DB API defined in OpenSIPS.  
+This is a module which integrates the Berkeley DB into OpenSIPS. It implements the DB API defined in OpenSIPS.
 
 
 %package  db_oracle
@@ -257,7 +257,7 @@ This is a module which provides Oracle connectivity for OpenSIPS.
 It implements the DB API defined in OpenSIPS.
 If you want to use the nathelper module,
 or any other modules that calls the get_all_ucontacts API export from usrloc,
-then you need to set the DORACLE_USRLOC define in the Makefile.defs file before compilation.  
+then you need to set the DORACLE_USRLOC define in the Makefile.defs file before compilation.
 
 
 %package  mi_xmlrpc
@@ -268,7 +268,7 @@ BuildRequires:  xmlrpc-c-devel
 
 %description mi_xmlrpc
 This module implements a xmlrpc server that handles xmlrpc requests and generates xmlrpc responses.
-When a xmlrpc message is received a default method is executed.  
+When a xmlrpc message is received a default method is executed.
 
 
 %package  mi_xmlrpc_ng
@@ -279,7 +279,7 @@ BuildRequires:  xmlrpc-c-devel
 
 %description mi_xmlrpc_ng
 This module implements a xmlrpc_ng server that handles xmlrpc_ng requests and generates xmlrpc_ng responses.
-When a xmlrpc_ng message is received a default method is executed.  
+When a xmlrpc_ng message is received a default method is executed.
 
 
 %package  db_http
@@ -291,7 +291,7 @@ BuildRequires:  libcurl-devel libmicrohttpd-devel
 %description db_http
 This module provides access to a database that is implemented as a HTTP server.
 It may be used in special cases where traversing firewalls is a problem,
-or where data encryption is required. 
+or where data encryption is required.
 
 %package  cachedb_cassandra
 Summary:  Cassandra connector
@@ -369,6 +369,15 @@ The opensips-tlsops package implements TLS related functions to use in the
 routing script, and exports pseudo variables with certificate and TLS
 parameters.
 
+%package  rest_client
+Summary:  opensips rest client implementation.
+Group:    System Environment/Daemons
+Requires: opensips = %ver
+BuildRequires:  libcurl-devel
+
+%description rest_client
+This module provides REST client capabilities for OpenSIPS to query a REST
+server.
 
 
 %prep
@@ -381,7 +390,7 @@ if [ "$ARCH" == "x86_64" ]; then
 else
 	ORACLIENT=
 fi
-	
+
 make all exclude_modules="" ORAVERSION=11.2/client$ORACLIENT cfg-target=%{_sysconfdir}/opensips/
 
 
@@ -392,7 +401,7 @@ make install exclude_modules="" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
 		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
+		cfg-target=/%{_sysconfdir}/opensips/
 
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/rc.d/init.d
 install -m755 $RPM_SOURCE_DIR/opensips.init \
@@ -910,8 +919,17 @@ fi
 
 %{_libdir}/opensips/modules/tlsops.so
 
+%files rest_client
+%defattr(-,root,root,-)
+%doc %{_docdir}/opensips/README.rest_client
+
+%{_libdir}/opensips/modules/rest_client.so
+
 
 %changelog
+* Wed Aug 05 2015 Razvan Crainea <razvan@opensips.org>
+- Add rest_client specs
+
 * Sun Apr 13 2014 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Fix x64_86 compilation problems
 

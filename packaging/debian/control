@@ -381,3 +381,13 @@ Description: SCTP transport module for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides the SCTP support for OpenSIPS.
+
+Package: opensips-restclient-module
+Architecture: any
+Depends: opensips (= ${binary:Version}), libcurl4-gnutls-dev
+Description: REST client module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the REST client support for OpenSIPS.

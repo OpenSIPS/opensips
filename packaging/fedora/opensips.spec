@@ -734,6 +734,14 @@ This modules is a gateway between Openser and a jabber server. It enables
 the exchange of instant messages between SIP clients and XMPP(jabber)
 clients.
 
+%package  rest_client
+Summary:  REST client for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  rest_client
+This modules consists of a REST client for OpenSIPS.
+
 %prep
 %setup -q -n %{name}-%{version}-tls
 
@@ -1358,7 +1366,14 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/xmpp.so
 %doc docdir/README.xmpp
 
+%files rest_client
+%{_libdir}/opensips/modules/rest_client.so
+%doc docdir/README.rest_client
+
 %changelog
+* Wed Aug 05 2015 Razvan Crainea <razvan@opensips.org> - 2.1.0-2
+- Add rest_client specs
+
 * Sat Mar 14 2015 Nick Altmann <nick.altmann@gmail.com> - 2.1.0-1
 - Specification updated for opensips 2.1
 - Removed packages: auth_diameter, tlsops
