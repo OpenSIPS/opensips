@@ -787,7 +787,8 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 	}
 
 	if (RES_ROW_N(res) == 0) {
-		LM_DBG("aor %.*s not found in table %.*s\n",_aor->len, _aor->s, _d->name->len, _d->name->s);
+		LM_DBG("aor %.*s not found in table %.*s\n",_aor->len, _aor->s,
+			_d->name->len, _d->name->s);
 		ul_dbf.free_result(_c, res);
 		return 0;
 	}
@@ -974,14 +975,12 @@ int mem_timer_udomain(udomain_t* _d)
 		unlock_ulslot(_d, i);
 	}
 
-	/* delete all the remaining contacts */
+	/* delete all the contacts left pending in the "to-be-delete" buffer */
 	if (cid_len &&
-			db_multiple_ucontact_delete(_d->name, cid_keys, cid_vals, cid_len) < 0) {
+	db_multiple_ucontact_delete(_d->name, cid_keys, cid_vals, cid_len) < 0) {
 		LM_ERR("failed to delete contacts from database\n");
 		return -1;
 	}
-
-
 
 	if (flush) {
 		LM_DBG("usrloc timer attempting to flush rows to DB\n");

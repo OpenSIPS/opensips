@@ -552,14 +552,17 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				if (_sctx->flags&REG_SAVE_FORCE_REG_FLAG) {
 					/* we are overflowing the number of maximum contacts,
 					   so remove the oldest valid one to prevent this */
-					for( c_it=_r->contacts,c_last=NULL ; c_it ; c_it=c_it->next )
-						if (VALID_CONTACT(c_it, act_time)) c_last=c_it;
+					for( c_it=_r->contacts,c_last=NULL ; c_it ;
+					c_it=c_it->next )
+						if (VALID_CONTACT(c_it, act_time))
+							c_last=c_it;
 					if (c_last==NULL) {
-						LM_CRIT("BUG - overflow detected but no valid contacts found :( \n");
+						LM_CRIT("BUG - overflow detected but no valid "
+							"contacts found :( \n");
 						goto error;
 					}
-					LM_DBG("overflow on inserting new contact -> removing <%.*s>\n",
-						c_last->c.len, c_last->c.s);
+					LM_DBG("overflow on inserting new contact -> removing "
+						"<%.*s>\n", c_last->c.len, c_last->c.s);
 					if (ul.delete_ucontact( _r, c_last, 0)!=0) {
 						LM_ERR("failed to remove contact\n");
 						goto error;
@@ -601,23 +604,26 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				}
 			} else {
 				/* do update */
-				/* if the contact to be updated is not valid, it will be after update, so need
-				*  to compensate the total number of contact */
+				/* if the contact to be updated is not valid, it will be after
+				 * update, so need to compensate the total number of contact */
 				if ( !VALID_CONTACT(c,act_time) )
 					num++;
 				while ( _sctx->max_contacts && num>_sctx->max_contacts ) {
 					if (_sctx->flags&REG_SAVE_FORCE_REG_FLAG) {
 						/* we are overflowing the number of maximum contacts,
-						   so remove the first (oldest) one to prevent this (but not the one
-						   to be updated !) */
-						for( c_it=_r->contacts,c_last=NULL ; c_it ; c_it=c_it->next )
-							if (VALID_CONTACT(c_it, act_time) && c_it!=c) c_last=c_it;
+						   so remove the first (oldest) one to prevent this 
+						   (but not the one to be updated !) */
+						for( c_it=_r->contacts,c_last=NULL ; c_it ;
+						c_it=c_it->next )
+							if (VALID_CONTACT(c_it, act_time) && c_it!=c)
+								c_last=c_it;
 						if (c_last==NULL) {
-							LM_CRIT("BUG - overflow detected but no valid contacts found :( \n");
+							LM_CRIT("BUG - overflow detected but no "
+								"valid contacts found :( \n");
 							goto error;
 						}
-						LM_DBG("overflow on update -> removing contact <%.*s>\n",
-							c_last->c.len, c_last->c.s);
+						LM_DBG("overflow on update -> removing contact "
+							"<%.*s>\n", c_last->c.len, c_last->c.s);
 						if (ul.delete_ucontact( _r, c_last, 0)!=0) {
 							LM_ERR("failed to remove contact\n");
 							goto error;

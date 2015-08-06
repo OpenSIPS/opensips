@@ -911,7 +911,7 @@ static inline void update_contact_pos(struct urecord* _r, ucontact_t* _c)
  * Update ucontact with new values
  */
 int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
-                    char is_replicated)
+															char is_replicated)
 {
 	int ret;
 

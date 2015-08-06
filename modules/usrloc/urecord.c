@@ -334,8 +334,8 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 						cid_len = 0;
 
 						/* do not delete from memory now - if we do, we'll get
-						 * a stuck record in DB. Future registrations will not be
-						 * able to get inserted due to index collision */
+						 * a stuck record in DB. Future registrations will not
+						 * be able to get inserted due to index collision */
 						continue;
 					}
 					cid_len = 0;
@@ -458,9 +458,8 @@ void release_urecord(urecord_t* _r, char is_replicated)
  * into urecord
  */
 int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
-                    ucontact_t** _c, char is_replicated)
+										ucontact_t** _c, char is_replicated)
 {
-
 	/* not used in db only mode */
 	_ci->contact_id =
 		pack_indexes((unsigned short)_r->aorhash,
