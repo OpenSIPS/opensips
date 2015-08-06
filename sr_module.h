@@ -53,8 +53,6 @@
 #include "route.h"
 #include "async.h"
 
-typedef struct param_export_ param_export_t;
-
 #include "sr_module_deps.h"
 
 typedef  struct module_exports* (*module_register)();
