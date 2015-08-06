@@ -39,8 +39,7 @@
  *
  */
 #include <stdlib.h>
-#include <sys/timerfd.h>  /* for timer FD */
-
+#include <features.h>     /* for GLIBC version testing */
 
 #include "../../sr_module.h"
 #include "../../error.h"
@@ -57,6 +56,12 @@
 #include "env_var.h"
 #include "script_locks.h"
 
+#if (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 8)
+	#include <sys/timerfd.h>  /* for timer FD */
+	#define HAVE_TIMER_FD 1
+#else
+	#warning Your GLIB is too old, disabling async sleep functions!!!
+#endif
 
 /* FIFO action protocol names */
 #define FIFO_SET_PROB   "rand_set_prob"
@@ -91,6 +96,7 @@ static int ts_usec_delta(struct sip_msg *msg, char *_t1s,
 		char *_t1u, char *_t2s, char *_t2u, char *_res);
 static int check_time_rec(struct sip_msg*, char *);
 
+#ifdef HAVE_TIMER_FD
 static int async_sleep(struct sip_msg* msg,
 		async_resume_module **resume_f, void **resume_param,
 		char *duration);
@@ -98,6 +104,7 @@ static int async_sleep(struct sip_msg* msg,
 static int async_usleep(struct sip_msg* msg,
 		async_resume_module **resume_f, void **resume_param,
 		char *duration);
+#endif
 
 static int fixup_prob( void** param, int param_no);
 static int fixup_pv_set(void** param, int param_no);
@@ -181,8 +188,10 @@ static cmd_export_t cmds[]={
 };
 
 static acmd_export_t acmds[] = {
+#ifdef HAVE_TIMER_FD
 	{"sleep",  (acmd_function)async_sleep,  1, fixup_spve_null },
 	{"usleep", (acmd_function)async_usleep, 1, fixup_spve_null },
+#endif
 	{0, 0, 0, 0}
 };
 
@@ -523,6 +532,7 @@ static int m_usleep(struct sip_msg *msg, char *time, char *str2)
 }
 
 
+#ifdef HAVE_TIMER_FD
 int resume_async_sleep(int fd, struct sip_msg *msg, void *param)
 {
 	close (fd);
@@ -624,6 +634,7 @@ static int async_usleep(struct sip_msg* msg, async_resume_module **resume_f,
 
 	return 1;
 }
+#endif
 
 
 static int dbg_abort(struct sip_msg* msg, char* foo, char* bar)
