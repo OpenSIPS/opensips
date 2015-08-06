@@ -52,6 +52,7 @@
 #include "../../md5utils.h"
 #include "../../globals.h"
 #include "../../time_rec.h"
+#include "../../timer.h"
 #include "shvar.h"
 #include "env_var.h"
 #include "script_locks.h"
@@ -535,6 +536,14 @@ static int m_usleep(struct sip_msg *msg, char *time, char *str2)
 #ifdef HAVE_TIMER_FD
 int resume_async_sleep(int fd, struct sip_msg *msg, void *param)
 {
+	unsigned long now = (unsigned long)
+		(((unsigned long)-1) & get_uticks());
+
+	/* apply a sync correction if (for whatever reasons) the sleep
+	 * did not cover the whole interval so far */
+	if ( ((unsigned long)param) > (now+UTIMER_TICK) )
+		sleep_us((unsigned int)((unsigned long)param - now));
+
 	close (fd);
 	async_status = ASYNC_DONE;
 
@@ -581,7 +590,8 @@ static int async_sleep(struct sip_msg* msg, async_resume_module **resume_f,
 	}
 
 	/* start the async wait */
-	*resume_param = NULL;
+	*resume_param = (void*)(unsigned long)
+		(((unsigned long)-1) & (get_uticks()+1000000*seconds));
 	*resume_f = resume_async_sleep;
 	async_status = fd;
 
@@ -628,7 +638,8 @@ static int async_usleep(struct sip_msg* msg, async_resume_module **resume_f,
 	}
 
 	/* start the async wait */
-	*resume_param = NULL;
+	*resume_param = (void*)(unsigned long)
+		(((unsigned long)-1) & (get_uticks()+useconds));
 	*resume_f = resume_async_sleep;
 	async_status = fd;
 
