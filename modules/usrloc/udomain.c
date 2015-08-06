@@ -32,9 +32,10 @@
  *  \ingroup usrloc
  */
 
+#include <string.h>
+#include <inttypes.h>
 #include "udomain.h"
 #include "dlist.h"
-#include <string.h>
 #include "../../parser/parse_methods.h"
 #include "../../mem/shm_mem.h"
 #include "../../dprint.h"
@@ -656,8 +657,9 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 			if ((unsigned short)r->aorhash != aorhash) {
 				LM_ERR("failed to match aorhashes for user %.*s,"
 						"db aorhash [%u] new aorhash [%u],"
-						"db contactid [%llu]\n",
-						user.len, user.s, aorhash, (unsigned short)(r->aorhash&(_d->size-1)),
+						"db contactid [%" PRIu64 "]\n",
+						user.len, user.s, aorhash,
+						(unsigned short)(r->aorhash&(_d->size-1)),
 						ci->contact_id);
 				if (ret > 0) {
 					LM_DBG("release bogus urecord\n");
