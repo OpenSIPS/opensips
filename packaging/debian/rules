@@ -38,7 +38,7 @@ ALL_MODPKG_LIST := \
 	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
 	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
 	REDIS RABBITMQ HTTP COMPRESSION EMERGENCY \
-	PROTO_SCTP PROTO_TLS
+	PROTO_SCTP PROTO_TLS REST_CLIENT
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
 override BUILD_MODPKG_LIST :=
@@ -132,18 +132,21 @@ HTTP_MOD_PATH=$(addprefix modules/, $(HTTP_MODULES))
 JSON_PKGNAME = opensips-json-module
 JSON_MODULES = json
 JSON_MOD_PATH=$(addprefix modules/, $(JSON_MODULES))
-COMPRESSION_PKGNAME = opensips-compression-modules
+COMPRESSION_PKGNAME = opensips-compression-module
 COMPRESSION_MODULES = compression
 COMPRESSION_MOD_PATH=$(addprefix modules/, $(COMPRESSION_MODULES))
-EMERGENCY_PKGNAME = opensips-emergency-modules
+EMERGENCY_PKGNAME = opensips-emergency-module
 EMERGENCY_MODULES = emergency
 EMERGENCY_MOD_PATH=$(addprefix modules/, $(EMERGENCY_MODULES))
-PROTO_SCTP_PKGNAME = opensips-sctp-modules
+PROTO_SCTP_PKGNAME = opensips-sctp-module
 PROTO_SCTP_MODULES = proto_sctp
 PROTO_SCTP_MOD_PATH=$(addprefix modules/, $(PROTO_SCTP_MODULES))
-PROTO_TLS_PKGNAME = opensips-tls-modules
+PROTO_TLS_PKGNAME = opensips-tls-module
 PROTO_TLS_MODULES = proto_tls
 PROTO_TLS_MOD_PATH=$(addprefix modules/, $(PROTO_TLS_MODULES))
+REST_CLIENT_PKGNAME = opensips-restclient-module
+REST_CLIENT_MODULES = rest_client
+REST_CLIENT_MOD_PATH=$(addprefix modules/, $(REST_CLIENT_MODULES))
 
 
 # Need this per-package variables available in environment so accessible
