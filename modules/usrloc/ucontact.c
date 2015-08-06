@@ -329,13 +329,13 @@ void st_update_ucontact(ucontact_t* _c)
 		break;
 
 	case CS_SYNC:
-			 /* For db mode 1 & 2 a modified contact needs to be
+			 /* For db mode 1 & 2 & 3 a modified contact needs to be
 			  * updated also in the database, so transit into
 			  * CS_DIRTY and let the timer to do the update
 			  * again. For db mode 1 we try to update right
 			  * now and if fails, let the timer to do the job
 			  */
-		if (db_mode == WRITE_BACK || db_mode == WRITE_THROUGH) {
+		if (db_mode != NO_DB) {
 			_c->state = CS_DIRTY;
 		}
 		break;
@@ -373,11 +373,11 @@ int st_delete_ucontact(ucontact_t* _c)
 		      * the contact from the memory as well as
 		      * from the database
 		      */
-		if (db_mode == WRITE_BACK) {
+		if (db_mode != WRITE_THROUGH) {
 			_c->expires = UL_EXPIRED_TIME;
 			return 0;
 		} else {
-			     /* WRITE_THROUGH or NO_DB -- we can
+			     /* WRITE_THROUGH -- we can
 			      * remove it from memory immediately and
 			      * the calling function would also remove
 			      * it from the database if needed
@@ -821,8 +821,6 @@ int db_delete_ucontact(ucontact_t* _c)
 int db_multiple_ucontact_delete(str *domain, db_key_t *keys,
 											db_val_t *vals, int clen)
 {
-	static db_ps_t my_ps = NULL;
-
 	if (keys == NULL || vals == NULL) {
 		LM_ERR("null params\n");
 		return -1;
@@ -834,7 +832,6 @@ int db_multiple_ucontact_delete(str *domain, db_key_t *keys,
 	}
 
 	CON_USE_OR_OP(ul_dbh);
-	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 
 	if (ul_dbf.delete(ul_dbh, keys, 0, vals, clen) < 0) {
 		LM_ERR("deleting from database failed\n");
@@ -937,9 +934,8 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 
 	st_update_ucontact(_c);
 
-	if (db_mode == WRITE_THROUGH || db_mode==DB_ONLY) {
-		ret = (db_mode==DB_ONLY && DB_CAPABILITY(ul_dbf, DB_CAP_INSERT_UPDATE))?
-			db_insert_ucontact(_c,NULL,1) : db_update_ucontact(_c) ;
+	if (db_mode == WRITE_THROUGH) {
+		ret = db_update_ucontact(_c) ;
 		if (ret < 0) {
 			LM_ERR("failed to update database\n");
 		} else {

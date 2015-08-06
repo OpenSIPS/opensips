@@ -442,6 +442,10 @@ int db_delete_urecord(urecord_t* _r)
 void release_urecord(urecord_t* _r, char is_replicated)
 {
 	if (db_mode==DB_ONLY) {
+		/* force flushing to DB*/
+		if (wb_timer(_r, 0) < 0)
+			LM_ERR("failed to sync with db\n");
+		/* now simply free everything */
 		free_urecord(_r);
 	} else if (_r->contacts == 0) {
 
@@ -477,7 +481,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 		run_ul_callbacks( UL_CONTACT_INSERT, *_c);
 	}
 
-	if (db_mode == WRITE_THROUGH || db_mode==DB_ONLY) {
+	if (db_mode == WRITE_THROUGH) {
 		if (db_insert_ucontact(*_c,0,0) < 0) {
 			LM_ERR("failed to insert in database\n");
 		} else {
@@ -502,7 +506,7 @@ int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated)
 	}
 
 	if (st_delete_ucontact(_c) > 0) {
-		if (db_mode == WRITE_THROUGH || db_mode==DB_ONLY) {
+		if (db_mode == WRITE_THROUGH) {
 			if (db_delete_ucontact(_c) < 0) {
 				LM_ERR("failed to remove contact from database\n");
 			}
