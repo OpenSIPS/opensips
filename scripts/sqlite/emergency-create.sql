@@ -23,3 +23,15 @@ CREATE TABLE emergency_report (
     disposition CHAR(10) NOT NULL
 );
 
+INSERT INTO version (table_name, table_version) values ('emergency_service_provider','1');
+CREATE TABLE emergency_service_provider (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    organizationName CHAR(50) NOT NULL,
+    hostId CHAR(30) NOT NULL,
+    nenaId CHAR(50) NOT NULL,
+    contact CHAR(20) NOT NULL,
+    certUri CHAR(50) NOT NULL,
+    nodeIP CHAR(20) NOT NULL,
+    nodeIP INTEGER NOT NULL
+);
+

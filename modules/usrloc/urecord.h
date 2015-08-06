@@ -53,7 +53,7 @@ typedef struct urecord {
 	str aor;                       /*!< Address of record */
 	unsigned int aorhash;          /*!< Hash over address of record */
 	unsigned int label;            /*!< Labels over AVL tree */
-	unsigned int next_clabel;      /*!< Labels to be assigned to contacts */
+	unsigned short next_clabel;      /*!< Labels to be assigned to contacts */
 	ucontact_t* contacts;          /*!< One or more contact fields */
 
 	struct hslot* slot;            /*!< Collision slot in the hash table

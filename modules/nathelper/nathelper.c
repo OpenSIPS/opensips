@@ -1271,7 +1271,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	}
 	rval = ul.get_all_ucontacts(buf, cblen, (ping_nated_only?ul.nat_flag:0),
 		((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
-		natping_partitions*natping_interval);
+		natping_partitions*natping_interval, 0/* no contact id */);
 	if (rval<0) {
 		LM_ERR("failed to fetch contacts\n");
 		goto done;
@@ -1287,7 +1287,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 		}
 		rval = ul.get_all_ucontacts(buf,cblen,(ping_nated_only?ul.nat_flag:0),
 		   ((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
-		   natping_partitions*natping_interval);
+		   natping_partitions*natping_interval, 0/* no contact id */);
 		if (rval != 0) {
 			goto done;
 		}

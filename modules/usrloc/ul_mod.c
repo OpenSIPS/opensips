@@ -78,6 +78,7 @@
 #define ATTR_COL       "attr"
 #define LAST_MOD_COL   "last_modified"
 #define SIP_INSTANCE_COL   "sip_instance"
+#define CONTACTID_COL  "contact_id"
 
 static int mod_init(void);                          /*!< Module initialization function */
 static void destroy(void);                          /*!< Module destroy function */
@@ -91,6 +92,12 @@ extern int bind_usrloc(usrloc_api_t* api);
 extern int ul_locks_no;
 extern rw_lock_t *sync_lock;
 extern int skip_replicated_db_ops;
+
+int max_contact_delete=10;
+db_key_t *cid_keys=NULL;
+db_val_t *cid_vals=NULL;
+
+
 
 /*
  * Module parameters and their default values
@@ -113,6 +120,7 @@ str methods_col     = str_init(METHODS_COL);		/*!< Name of column containing the
 str last_mod_col    = str_init(LAST_MOD_COL);		/*!< Name of column containing the last modified date */
 str attr_col        = str_init(ATTR_COL);		/*!< Name of column containing additional info */
 str sip_instance_col = str_init(SIP_INSTANCE_COL);
+str contactid_col   = str_init(CONTACTID_COL);
 str db_url          = {NULL, 0};					/*!< Database URL */
 int timer_interval  = 60;				/*!< Timer interval in seconds */
 int db_mode         = 0;				/*!< Database sync scheme: 0-no db, 1-write through, 2-write back, 3-only db */
@@ -147,6 +155,7 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
+	{"contactid_column",   STR_PARAM, &contactid_col.s   },
 	{"user_column",        STR_PARAM, &user_col.s        },
 	{"domain_column",      STR_PARAM, &domain_col.s      },
 	{"contact_column",     STR_PARAM, &contact_col.s     },
@@ -178,6 +187,7 @@ static param_export_t params[] = {
 	{ "replicate_contacts_to",     STR_PARAM|USE_FUNC_PARAM,
 	                            (void *)add_replication_dest           },
 	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops     },
+	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{0, 0, 0}
 };
 
@@ -249,10 +259,13 @@ struct module_exports exports = {
  */
 static int mod_init(void)
 {
+	int idx;
+
 	LM_DBG("initializing\n");
 
 	/* Compute the lengths of string parameters */
 	init_db_url( db_url , 1 /*can be null*/);
+	contactid_col.len = strlen(contactid_col.s);
 	user_col.len = strlen(user_col.s);
 	domain_col.len = strlen(domain_col.s);
 	contact_col.len = strlen(contact_col.s);
@@ -271,11 +284,32 @@ static int mod_init(void)
 	attr_col.len = strlen(attr_col.s);
 	last_mod_col.len = strlen(last_mod_col.s);
 
+	if (ul_hash_size > 16) {
+		LM_WARN("hash too big! max 2 ^ 16\n");
+		return -1;
+	}
+
 	if(ul_hash_size<=1)
 		ul_hash_size = 512;
 	else
 		ul_hash_size = 1<<ul_hash_size;
 	ul_locks_no = ul_hash_size;
+
+	if (db_mode == WRITE_THROUGH || db_mode == WRITE_BACK) {
+		cid_keys = pkg_malloc(max_contact_delete *
+				(sizeof(db_key_t) * sizeof(db_val_t)));
+		if (cid_keys == NULL) {
+			LM_ERR("no more pkg memory\n");
+			return -1;
+		}
+
+		cid_vals = (db_val_t *)(cid_keys + max_contact_delete);
+		for (idx=0; idx < max_contact_delete; idx++) {
+			VAL_TYPE(cid_vals+idx) = DB_BIGINT;
+			VAL_NULL(cid_vals+idx) = 0;
+			cid_keys[idx] = &contactid_col;
+		}
+	}
 
 	/* check matching mode */
 	switch (matching_mode) {

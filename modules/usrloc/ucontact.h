@@ -67,6 +67,12 @@ typedef enum flags {
  * Main structure for handling of registered Contact: data
  */
 typedef struct ucontact {
+	uint64_t contact_id;	/*!< 64 bit Contact identifier
+							  0-------0-------------0---------------0
+							  |0 - 15 |   16 - 47   |    48 - 63    |
+							  |aorhash| record label| contact label |
+							  0-------0-------------0---------------0
+							*/
 	str* domain;            /*!< Pointer to domain name (NULL terminated) */
 	str* aor;               /*!< Pointer to the AOR string in record structure*/
 	str c;                  /*!< Contact address */
@@ -93,6 +99,12 @@ typedef struct ucontact {
 } ucontact_t;
 
 typedef struct ucontact_info {
+	uint64_t contact_id;	/*!< 64 bit Contact identifier
+							  0-------0-------------0---------------0
+							  |0 - 15 |   16 - 47   |    48 - 63    |
+							  |aorhash| record label| contact label |
+							  0-------0-------------0---------------0
+							*/
 	str received;
 	str* path;
 	time_t expires;
@@ -123,8 +135,8 @@ typedef struct ucontact_info {
 /*! \brief
  * Create a new contact structure
  */
-ucontact_t* new_ucontact(str* _dom, str* _aor, str* _contact,
-		unsigned int label, ucontact_info_t* _ci);
+ucontact_t*
+new_ucontact(str* _dom, str* _aor, str* _contact,  ucontact_info_t* _ci);
 
 
 /*! \brief
@@ -201,6 +213,15 @@ int db_update_ucontact(ucontact_t* _c);
  * Delete contact from the database
  */
 int db_delete_ucontact(ucontact_t* _c);
+
+/*! \brief
+ * Delete multiple contacts from the database
+ * having the cids
+ * WARNING: FL_MEM flag for a contact MUST be checked before
+ * append a contact id to cids list
+ */
+int db_multiple_ucontact_delete(str *domain, db_key_t *keys,
+										db_val_t *vals, int clen);
 
 
 /* ====== Module interface ====== */

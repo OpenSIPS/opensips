@@ -48,6 +48,8 @@
 #include "udomain.h"           /* new_udomain, free_udomain */
 #include "utime.h"
 #include "ul_mod.h"
+#include "ul_callback.h"
+#include "ureplication.h"
 
 
 /*! \brief
@@ -99,7 +101,7 @@ static inline int find_dlist(str* _n, dlist_t** _d)
 
 static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 		unsigned int flags, unsigned int part_idx,
-		unsigned int part_max, char zero_end)
+		unsigned int part_max, char zero_end, int pack_cid)
 {
 	static char query_buf[512];
 	static str query_str;
@@ -119,6 +121,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 	unsigned int dbflags;
 	int needed;
 	int shortage = 0;
+	uint64_t contact_id;
 
 	/* Reserve space for terminating 0000 */
 	if (zero_end)
@@ -142,15 +145,16 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 
 	i = snprintf(query_buf, sizeof query_buf, "select %.*s, %.*s, %.*s,"
 #ifdef ORACLE_USRLOC
-	" %.*s, %.*s from %s where %.*s > %.*s and mod(id, %u) = %u",
+	" %.*s, %.*s, %.*s from %s where %.*s > %.*s and mod(contact_id, %u) = %u",
 #else
-	" %.*s, %.*s from %s where %.*s > %.*s and id %% %u = %u",
+	" %.*s, %.*s, %.*s from %s where %.*s > %.*s and contact_id %% %u = %u",
 #endif
 		received_col.len, received_col.s,
 		contact_col.len, contact_col.s,
 		sock_col.len, sock_col.s,
 		cflags_col.len, cflags_col.s,
 		path_col.len, path_col.s,
+		contactid_col.len, contactid_col.s,
 		d->name->s,
 		expires_col.len, expires_col.s,
 		now_len, now_s,
@@ -230,9 +234,14 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 			} else
 				p1_len = strlen(p1);
 
+			/* contact id*/
+			contact_id = VAL_BIGINT(ROW_VALUES(row) + 5);
 
 			needed = (int)(p_len + sizeof p_len + p1_len + sizeof p1_len +
 			               sizeof sock + sizeof dbflags + sizeof next_hop);
+
+			if (pack_cid)
+				needed += sizeof contact_id;
 
 			LM_DBG("len: %d, needed: %d\n", *len, needed);
 
@@ -307,8 +316,13 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 			buf += sizeof next_hop;
 			memcpy(&next_hop, (char *)buf - sizeof next_hop, sizeof next_hop);
 
-
 			*len -= needed;
+			if (!pack_cid)
+				continue;
+
+			/* write the contact id */
+			memcpy(buf, &contact_id, sizeof contact_id);
+			buf += sizeof contact_id;
 		}
 
 		if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
@@ -341,10 +355,11 @@ error:
 	return -1;
 }
 
+
 static inline int
 get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 								unsigned int part_idx, unsigned int part_max,
-								char zero_end)
+								char zero_end, int pack_cid)
 {
 	urecord_t *r;
 	ucontact_t *c;
@@ -405,6 +420,8 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 					           sizeof(c->path.len) + c->path.len +
 					           sizeof(c->sock) + sizeof(c->cflags) +
 					           sizeof(c->next_hop));
+					if (pack_cid)
+						needed += sizeof(c->contact_id);
 
 					if (*len >= needed) {
 						memcpy(cp,&c->received.len,sizeof(c->received.len));
@@ -423,6 +440,12 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 						cp = (char*)cp + sizeof(c->next_hop);
 
 						*len -= needed;
+						if (!pack_cid)
+							continue;
+
+						memcpy(cp, &c->contact_id, sizeof(c->contact_id));
+						cp = (char*)cp + sizeof(c->contact_id);
+
 					} else {
 						shortage += needed;
 					}
@@ -432,6 +455,8 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 					           sizeof(c->path.len) + c->path.len +
 					           sizeof(c->sock) + sizeof(c->cflags) +
 					           sizeof(c->next_hop));
+					if (pack_cid)
+						needed += sizeof(c->contact_id);
 
 					if (*len >= needed) {
 						memcpy(cp, &c->c.len, sizeof(c->c.len));
@@ -450,6 +475,12 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 						cp = (char*)cp + sizeof(c->next_hop);
 
 						*len -= needed;
+						if (!pack_cid)
+							continue;
+
+						memcpy(cp, &c->contact_id, sizeof(c->contact_id));
+						cp = (char*)cp + sizeof(c->contact_id);
+
 					} else {
 						shortage += needed;
 					}
@@ -473,8 +504,6 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 }
 
 
-
-
 /*! \brief
  * Return list of all contacts for all currently registered
  * users in all domains. Caller must provide buffer of
@@ -486,20 +515,22 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
  *
  * Information is packed into the buffer as follows:
  *
- * +------------+----------+-----+------+-----+
- * |contact1.len|contact1.s|sock1|flags1|path1|
- * +------------+----------+-----+------+-----+
- * |contact2.len|contact2.s|sock2|flags2|path1|
- * +------------+----------+-----+------+-----+
- * |..........................................|
- * +------------+----------+-----+------+-----+
- * |contactN.len|contactN.s|sockN|flagsN|pathN|
- * +------------+----------+-----+------+-----+
+ * +------------+----------+-----+------+-----+-------------+
+ * |contact1.len|contact1.s|sock1|flags1|path1| contact_id1 |
+ * +------------+----------+-----+------+-----+-------------+
+ * |contact2.len|contact2.s|sock2|flags2|path1| contact_id2 |
+ * +------------+----------+-----+------+-----+-------------+
+ * |..........................................|.............|
+ * +------------+----------+-----+------+-----+-------------+
+ * |contactN.len|contactN.s|sockN|flagsN|pathN| contact_idN |
+ * +------------+----------+-----+------+-----+-------------+
  * |000000000000|
  * +------------+
+ *
+ * if pack_cid not set, contact id will not be put into the buffer
  */
 int get_all_ucontacts(void *buf, int len, unsigned int flags,
-								unsigned int part_idx, unsigned int part_max)
+					unsigned int part_idx, unsigned int part_max, int pack_cid)
 {
 	dlist_t *p;
 	ucontact_t c;
@@ -515,11 +546,12 @@ int get_all_ucontacts(void *buf, int len, unsigned int flags,
 		if (db_mode != DB_ONLY) {
 			shortage +=
 				get_domain_mem_ucontacts(p->d, buf+cur_pos, &len, flags,
-					part_idx, part_max, 0 /* don't add zeroed contact*/);
+					part_idx, part_max, 0 /* don't add zeroed contact*/,
+					pack_cid);
 		} else {
 			res =
 				get_domain_db_ucontacts(p->d, buf+cur_pos, &len, flags,
-					part_idx, part_max, 0);
+					part_idx, part_max, 0, pack_cid);
 			if (res >= 0) {
 				shortage += res;
 			} else {
@@ -550,26 +582,31 @@ int get_all_ucontacts(void *buf, int len, unsigned int flags,
  *
  * Information is packed into the buffer as follows:
  *
- * +------------+----------+-----+------+-----+
- * |contact1.len|contact1.s|sock1|flags1|path1|
- * +------------+----------+-----+------+-----+
- * |contact2.len|contact2.s|sock2|flags2|path1|
- * +------------+----------+-----+------+-----+
- * |..........................................|
- * +------------+----------+-----+------+-----+
- * |contactN.len|contactN.s|sockN|flagsN|pathN|
- * +------------+----------+-----+------+-----+
+ * +------------+----------+-----+------+-----+-------------+
+ * |contact1.len|contact1.s|sock1|flags1|path1| contact_id1 |
+ * +------------+----------+-----+------+-----+-------------+
+ * |contact2.len|contact2.s|sock2|flags2|path1| contact_id2 |
+ * +------------+----------+-----+------+-----+-------------+
+ * |..........................................|.............|
+ * +------------+----------+-----+------+-----+-------------+
+ * |contactN.len|contactN.s|sockN|flagsN|pathN| contact_idN |
+ * +------------+----------+-----+------+-----+-------------+
  * |000000000000|
  * +------------+
+ *
+ * if pack_cid not set, contact id will not be put into the buffer
  */
 
+
 int get_domain_ucontacts(udomain_t *d, void *buf, int len, unsigned int flags,
-								unsigned int part_idx, unsigned int part_max)
+					unsigned int part_idx, unsigned int part_max, int pack_cid)
 {
 	if (db_mode == DB_ONLY)
-		return get_domain_db_ucontacts(d, buf, &len, flags, part_idx, part_max, 1);
+		return get_domain_db_ucontacts(d, buf, &len,
+							flags, part_idx, part_max, 1, pack_cid);
 	else
-		return get_domain_mem_ucontacts(d, buf, &len, flags, part_idx, part_max, 1);
+		return get_domain_mem_ucontacts(d, buf, &len, flags,
+											part_idx, part_max, 1, pack_cid);
 
 }
 
@@ -779,3 +816,98 @@ int find_domain(str* _d, udomain_t** _p)
 
 	return 1;
 }
+
+/*
+ * retrieve the ucontact from a domain using the contact id
+ */
+ucontact_t* get_ucontact_from_id(udomain_t *d, uint64_t contact_id, urecord_t **_r)
+{
+	int count;
+	void **dest;
+	unsigned int sl;
+	unsigned int rlabel;
+	unsigned short aorhash, clabel;
+
+	urecord_t *r;
+	ucontact_t *c;
+
+	map_iterator_t it;
+
+	unpack_indexes(contact_id, &aorhash, &rlabel, &clabel);
+
+	sl = aorhash&(d->size-1);
+	lock_ulslot(d, sl);
+
+	count = map_size(d->table[sl].records);
+	if (count <= 0) {
+		unlock_ulslot(d, sl);
+		return NULL;
+	}
+
+	for (map_first( d->table[sl].records, &it);
+			iterator_is_valid(&it);
+			iterator_next(&it) ) {
+
+		dest = iterator_val(&it);
+		if (dest == NULL) {
+			unlock_ulslot(d, sl);
+			return NULL;
+		}
+
+		r = (urecord_t *)*dest;
+		if (r->label != rlabel)
+			continue;
+
+		for (c = r->contacts; c != NULL; c = c->next)
+			if (c->label == clabel) {
+				*_r = r;
+				unlock_ulslot(d, sl);
+				return c;
+			}
+	}
+
+	unlock_ulslot(d, sl);
+	return NULL;
+}
+
+int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicated)
+{
+	ucontact_t *c, virt_c;
+	urecord_t *r;
+
+
+	/* if contact only in database */
+	if (db_mode == DB_ONLY) {
+		virt_c.contact_id = contact_id;
+		virt_c.domain = d->name;
+
+		if (db_delete_ucontact(&virt_c) < 0) {
+			LM_ERR("failed to remove contact from db\n");
+			return -1;
+		}
+		return 0;
+	}
+
+	c = get_ucontact_from_id(d, contact_id, &r);
+
+	if (!is_replicated && replication_dests)
+		replicate_ucontact_delete(r, c);
+
+	if (exists_ulcb_type(UL_CONTACT_DELETE)) {
+		run_ul_callbacks( UL_CONTACT_DELETE, c);
+	}
+
+	if (st_delete_ucontact(c) > 0) {
+		if (db_mode == WRITE_THROUGH) {
+			if (db_delete_ucontact(c) < 0) {
+				LM_ERR("failed to remove contact from database\n");
+			}
+		}
+
+		mem_delete_ucontact(r, c);
+	}
+
+	return 0;
+}
+
+

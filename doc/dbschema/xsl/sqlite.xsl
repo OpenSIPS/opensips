@@ -51,6 +51,10 @@
 	</xsl:variable>
 
 	<xsl:choose>
+			<!--transform bigint primary key autoincrement to integer -->
+		<xsl:when test="$type='long' and primary and autoincrement">
+		    <xsl:text> INTEGER PRIMARY KEY AUTOINCREMENT </xsl:text>
+		</xsl:when>
 	    <xsl:when test="type[@db=$db]">
 		<xsl:value-of select="normalize-space(type[@db=$db])"/>
 	    </xsl:when>

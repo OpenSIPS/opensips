@@ -44,7 +44,12 @@
 #include "ul_callback.h"
 #include "ureplication.h"
 #include "udomain.h"
+#include "dlist.h"
 
+extern int max_contact_delete;
+extern db_key_t *cid_keys;
+extern db_val_t *cid_vals;
+extern int cid_len;
 
 int matching_mode = CONTACT_ONLY;
 
@@ -76,7 +81,7 @@ int new_urecord(str* _dom, str* _aor, urecord_t** _r)
 	(*_r)->aor.len = _aor->len;
 	(*_r)->domain = _dom;
 	(*_r)->aorhash = core_hash(_aor, 0, 0);
-	(*_r)->next_clabel = rand();
+
 	return 0;
 }
 
@@ -135,16 +140,19 @@ void print_urecord(FILE* _f, urecord_t* _r)
  * Add a new contact
  * Contacts are ordered by: 1) q
  *                          2) descending modification time
+ * before calling this function one must calculate the
+ * contact_id inside the ucontact_info structure
  */
 ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci)
 {
 	ucontact_t* ptr, *prev = 0;
 	ucontact_t* c;
 
-	if ( (c=new_ucontact(_r->domain, &_r->aor, _c, _r->next_clabel++, _ci)) == 0) {
+	if ( (c=new_ucontact(_r->domain, &_r->aor, _c, _ci)) == 0) {
 		LM_ERR("failed to create new contact\n");
 		return 0;
 	}
+
 	if_update_stat( _r->slot, _r->slot->d->contacts, 1);
 
 	ptr = _r->contacts;
@@ -315,13 +323,22 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 			ptr = ptr->next;
 
 			/* Should we remove the contact from the database ? */
-			if (st_expired_ucontact(t) == 1) {
-				if (db_delete_ucontact(t) < 0) {
-					LM_ERR("failed to delete contact from the database\n");
-					/* do not delete from memory now - if we do, we'll get
-					 * a stuck record in DB. Future registrations will not be
-					 * able to get inserted due to index collision */
-					continue;
+			if (st_expired_ucontact(t) == 1 && (!(t->flags)&FL_MEM)) {
+				VAL_BIGINT(cid_vals+cid_len) = t->contact_id;
+				if ((++cid_len) == max_contact_delete) {
+					if (db_multiple_ucontact_delete(_r->domain, cid_keys,
+												cid_vals, cid_len) < 0) {
+						LM_ERR("failed to delete contacts from database\n");
+						/* pass over these contacts; we will try to delete
+						 * them later */
+						cid_len = 0;
+
+						/* do not delete from memory now - if we do, we'll get
+						 * a stuck record in DB. Future registrations will not
+						 * be able to get inserted due to index collision */
+						continue;
+					}
+					cid_len = 0;
 				}
 			}
 
@@ -355,6 +372,7 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 			ptr = ptr->next;
 		}
 	}
+
 
 	return ins_done;
 }
@@ -424,6 +442,10 @@ int db_delete_urecord(urecord_t* _r)
 void release_urecord(urecord_t* _r, char is_replicated)
 {
 	if (db_mode==DB_ONLY) {
+		/* force flushing to DB*/
+		if (wb_timer(_r, 0) < 0)
+			LM_ERR("failed to sync with db\n");
+		/* now simply free everything */
 		free_urecord(_r);
 	} else if (_r->contacts == 0) {
 
@@ -440,8 +462,13 @@ void release_urecord(urecord_t* _r, char is_replicated)
  * into urecord
  */
 int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
-                    ucontact_t** _c, char is_replicated)
+										ucontact_t** _c, char is_replicated)
 {
+	/* not used in db only mode */
+	_ci->contact_id =
+		pack_indexes((unsigned short)_r->aorhash,
+									 _r->label,
+					 ((unsigned short)_r->next_clabel++));
 	if ( ((*_c)=mem_insert_ucontact(_r, _contact, _ci)) == 0) {
 		LM_ERR("failed to insert contact\n");
 		return -1;
@@ -454,7 +481,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 		run_ul_callbacks( UL_CONTACT_INSERT, *_c);
 	}
 
-	if (db_mode == WRITE_THROUGH || db_mode==DB_ONLY) {
+	if (db_mode == WRITE_THROUGH) {
 		if (db_insert_ucontact(*_c,0,0) < 0) {
 			LM_ERR("failed to insert in database\n");
 		} else {
@@ -479,7 +506,7 @@ int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated)
 	}
 
 	if (st_delete_ucontact(_c) > 0) {
-		if (db_mode == WRITE_THROUGH || db_mode==DB_ONLY) {
+		if (db_mode == WRITE_THROUGH) {
 			if (db_delete_ucontact(_c) < 0) {
 				LM_ERR("failed to remove contact from database\n");
 			}

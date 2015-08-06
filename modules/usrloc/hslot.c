@@ -105,7 +105,7 @@ void ul_release_idx(int idx)
 int init_slot(struct udomain* _d, hslot_t* _s, int n)
 {
 	_s->records = map_create( AVLMAP_SHARED | AVLMAP_NO_DUPLICATE);
-	_s->next_label = rand();
+	_s->next_label = 0;
 
 	if( _s->records == NULL )
 		return -1;
@@ -145,7 +145,6 @@ int slot_add(hslot_t* _s, struct urecord* _r)
 
 	void ** dest;
 
-	_r->label = _s->next_label++;
 	dest = map_get( _s->records, _r->aor );
 
 	if( dest == NULL )
