@@ -33,12 +33,20 @@
 #include "../../str.h"
 #include "../../ut.h"
 #include "../../ip_addr.h"
+#include "nh_table.h"
 
 /* size of buffer used for building SIP PING req */
 #define MAX_SIPPING_SIZE 65536
 
 /* maximum number of hops */
 #define MAX_FORWARD "70"
+
+/* branch magic */
+#define BMAGIC "z9hG4bK"
+#define BMAGIC_LEN (sizeof(BMAGIC) - 1)
+
+#define BSTART ";branch="
+
 
 /* helping macros for building SIP PING ping request */
 #define append_str( _p, _s) \
@@ -62,7 +70,6 @@ static str  sipping_from = {0,0};
 static str  sipping_method = {"OPTIONS",7};
 
 
-
 static void init_sip_ping(void)
 {
 	int len;
@@ -81,6 +88,37 @@ static void init_sip_ping(void)
 }
 
 
+static int parse_branch(str branch)
+{
+	int hash_id, label;
+	char *end;
+
+	if (branch.len < BMAGIC_LEN
+			&& memcmp(branch.s, BMAGIC, BMAGIC_LEN)) {
+		LM_ERR("invalid branch\n");
+		return -1;
+	}
+
+	branch.s += BMAGIC_LEN;
+	branch.len -= BMAGIC_LEN;
+
+	end = q_memchr(branch.s, '.', branch.len);
+	if (0 == end)
+		return 1;
+
+	hash_id = reverse_hex2int(branch.s, end-branch.s);
+
+	branch.len -= (end-branch.s + 1);
+	branch.s = end+1;
+
+	label = reverse_hex2int(branch.s, branch.len);
+
+	if (label > 0)
+		/* removes also the current cell */
+		remove_older_cells(hash_id, label);
+
+	return 0;
+}
 
 static int sipping_rpl_filter(struct sip_msg *rpl)
 {
@@ -114,6 +152,9 @@ static int sipping_rpl_filter(struct sip_msg *rpl)
 	LM_DBG("reply for SIP natping filtered\n");
 	/* it's a reply to a SIP NAT ping -> absorb it and stop any
 	 * further processing of it */
+	if (parse_branch(rpl->via1->branch->value))
+			goto skip;
+
 	return 0;
 skip:
 	return 1;
@@ -122,20 +163,76 @@ error:
 }
 
 
+/*
+ */
+
+static inline int
+build_branch(char *branch, int *size,
+		str *curi, udomain_t *d, uint64_t contact_id, int rm_on_to)
+{
+
+	int hash_id;
+	int label;
+	struct ping_cell *p_cell;
+
+	/* we want all contact pings from a contact in one bucket*/
+	hash_id = core_hash(curi, 0, 0) & (NH_TABLE_ENTRIES-1);
+
+	if (rm_on_to) {
+		if (0 == (p_cell = build_p_cell(d, contact_id)))
+			goto out_memfault;
+		insert_into_hash(p_cell, hash_id);
+		label = p_cell->label;
+	} else {
+		label = 0;
+	}
+
+	memcpy( branch, BMAGIC, BMAGIC_LEN);
+
+	branch += BMAGIC_LEN;
+
+	int2reverse_hex(&branch, size, hash_id);
+
+	*branch = '.';
+	branch++;
+
+	int2reverse_hex(&branch, size, label);
+	*branch = '\0';
+
+	return 0;
+
+out_memfault:
+	LM_ERR("no more shared memory\n");
+	return -1;
+}
+
+
 
 /* build the buffer of a SIP ping request */
-static inline char* build_sipping(str *curi, struct socket_info* s, str *path,
-																int *len_p)
+static inline char*
+build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
+		int *len_p, uint64_t contact_id, int rm_on_to)
 {
 #define s_len(_s) (sizeof(_s)-1)
-#define MAX_BRANCHID 9999999
-#define MIN_BRANCHID 1000000
-#define LEN_BRANCHID 7  /* NOTE: this must be sync with the MX and MIN values !! */
 	static char buf[MAX_SIPPING_SIZE];
 	char *p, proto_str[4];
 	str address, port;
 	str st;
 	int len;
+
+	int  bsize = 100;
+	str  sbranch;
+	char branch[100];
+	char *bbuild = branch;
+
+	memcpy(bbuild, BSTART, sizeof(BSTART) - 1);
+	bbuild += sizeof(BSTART) - 1;
+	bsize -= (bbuild - branch);
+
+	build_branch( bbuild, &bsize, curi, d, contact_id, rm_on_to);
+
+	sbranch.s = branch;
+	sbranch.len = strlen(branch);
 
 	p = proto2str(s->proto, proto_str);
 	*(p++) = ' ';
@@ -160,7 +257,7 @@ static inline char* build_sipping(str *curi, struct socket_info* s, str *path,
 
 	if ( sipping_method.len + 1 + curi->len + s_len(" SIP/2.0"CRLF) +
 		s_len("Via: SIP/2.0/") + st.len + address.len +
-		1 + port.len + s_len(";branch=z9hG4bK") + LEN_BRANCHID +
+		1 + port.len + strlen(branch) +
 		(path->len ? (s_len(CRLF"Route: ") + path->len) : 0) +
 		s_len(CRLF"From: ") +  sipping_from.len + s_len(";tag=") + 8 +
 		s_len(CRLF"To: ") + curi->len +
@@ -184,11 +281,7 @@ static inline char* build_sipping(str *curi, struct socket_info* s, str *path,
 	append_str( p, address);
 	*(p++) = ':';
 	append_str( p, port);
-	append_fix( p, ";branch=z9hG4bK");
-	int2bstr(
-		(long)(rand()/(float)RAND_MAX * (MAX_BRANCHID-MIN_BRANCHID) + MIN_BRANCHID),
-		p+LEN_BRANCHID-INT2STR_MAX_LEN+1, NULL);
-	p += LEN_BRANCHID;
+	append_str( p, sbranch);
 	if (path->len) {
 		append_fix( p, CRLF"Route: ");
 		append_str( p, *path);
@@ -218,6 +311,5 @@ static inline char* build_sipping(str *curi, struct socket_info* s, str *path,
 	*len_p = p - buf;
 	return buf;
 }
-
 
 #endif
