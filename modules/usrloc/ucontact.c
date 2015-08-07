@@ -502,7 +502,6 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	vals[0].type = DB_BIGINT;
 	vals[0].val.bigint_val = _c->contact_id;
 
-
 	vals[1].type = DB_STR;
 	vals[1].nul = 0;
 	vals[1].val.str_val.s = _c->aor->s;
@@ -606,10 +605,10 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 
 		dom = q_memchr(_c->aor->s, '@', _c->aor->len);
 		if (dom==0) {
-			vals[0].val.str_val.len = 0;
+			vals[1].val.str_val.len = 0;
 			vals[17].val.str_val = *_c->aor;
 		} else {
-			vals[0].val.str_val.len = dom - _c->aor->s;
+			vals[1].val.str_val.len = dom - _c->aor->s;
 			vals[17].val.str_val.s = dom + 1;
 			vals[17].val.str_val.len = _c->aor->s + _c->aor->len - dom - 1;
 		}
