@@ -62,6 +62,10 @@ dr_partitions|
 dr_partitions|1
 dr_rules|
 dr_rules|3
+emergency_report|
+emergency_report|1
+emergency_routing|
+emergency_routing|1
 fraud_detection|
 fraud_detection|1
 globalblacklist|

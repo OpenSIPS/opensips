@@ -5,5 +5,5 @@ CREATE TABLE pdt (
     prefix CHAR(32) NOT NULL,
     domain CHAR(128) DEFAULT '' NOT NULL,
     CONSTRAINT sdomain_prefix_idx UNIQUE (sdomain, prefix)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
