@@ -194,6 +194,8 @@ ifelse(USE_NAT,`yes',`####  NAT modules
 loadmodule "nathelper.so"
 modparam("nathelper", "natping_interval", 10)
 modparam("nathelper", "ping_nated_only", 1)
+modparam("nathelper", "sipping_bflag", "SIP_PING_FLAG")
+modparam("nathelper", "sipping_from", "sip:pinger@127.0.0.1") #CUSTOMIZE ME
 modparam("nathelper", "received_avp", "$avp(received_nh)")
 
 loadmodule "rtpproxy.so"
@@ -386,8 +388,7 @@ route{
 
 	if (is_method("REGISTER"))
 	{
-		ifelse(USE_AUTH,`yes',`
-		# authenticate the REGISTER requests
+		ifelse(USE_AUTH,`yes',`# authenticate the REGISTER requests
 		if (!www_authorize("", "subscriber"))
 		{
 			www_challenge("", "0");
@@ -401,6 +402,10 @@ route{
 		}',`')
 
 		if ( ifelse(ENABLE_TCP,`yes',`proto==TCP ||',`') ifelse(ENABLE_TLS,`yes',`proto==TLS ||',`') 0 ) setflag(TCP_PERSISTENT);
+
+		ifelse(USE_NAT,`yes',`if (isflagset(NAT)) {
+			setbflag(SIP_PING_FLAG);
+		}',`')
 
 		if (!save("location"))
 			sl_reply_error();
