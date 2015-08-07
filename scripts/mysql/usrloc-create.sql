@@ -19,5 +19,5 @@ CREATE TABLE location (
     sip_instance CHAR(255) DEFAULT NULL,
     attr CHAR(255) DEFAULT NULL,
     CONSTRAINT account_contact_idx UNIQUE (username, domain, contact, callid)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 

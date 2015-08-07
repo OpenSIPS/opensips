@@ -10,7 +10,7 @@ CREATE TABLE rls_presentity (
     auth_state INT(11) NOT NULL,
     reason CHAR(64) NOT NULL,
     CONSTRAINT rls_presentity_idx UNIQUE (rlsubs_did, resource_uri)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX updated_idx ON rls_presentity (updated);
 
@@ -38,5 +38,5 @@ CREATE TABLE rls_watchers (
     socket_info CHAR(64) NOT NULL,
     local_contact CHAR(128) NOT NULL,
     CONSTRAINT rls_watcher_idx UNIQUE (presentity_uri, callid, to_tag, from_tag)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 

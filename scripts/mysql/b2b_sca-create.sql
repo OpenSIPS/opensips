@@ -54,5 +54,5 @@ CREATE TABLE b2b_sca (
     app10_call_info_appearance_uri CHAR(128) DEFAULT NULL,
     app10_b2bl_key CHAR(64) DEFAULT NULL,
     CONSTRAINT sca_idx UNIQUE (shared_line)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 

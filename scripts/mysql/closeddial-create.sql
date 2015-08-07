@@ -8,7 +8,7 @@ CREATE TABLE closeddial (
     group_id CHAR(64) DEFAULT '' NOT NULL,
     new_uri CHAR(128) DEFAULT '' NOT NULL,
     CONSTRAINT cd_idx1 UNIQUE (username, domain, cd_domain, cd_username, group_id)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX cd_idx2 ON closeddial (group_id);
 CREATE INDEX cd_idx3 ON closeddial (cd_username);

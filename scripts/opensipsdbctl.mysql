@@ -158,7 +158,11 @@ minfo "creating database $1 ..."
 
 # Users: opensips is the regular user, opensipsro only for reading
 sql_query "" "create database $1 character set $CHARSET;"
-    
+if [ $? -ne 0 ] ; then
+	merr "Creating database $1 failed!"
+	exit 1
+fi
+
 if [ "$DBROOTUSER" != "$DBRWUSER" ] ; then
 sql_query "" "
 	GRANT ALL PRIVILEGES ON $1.* TO '$DBRWUSER' IDENTIFIED  BY '$DBRWPW';
@@ -166,15 +170,19 @@ sql_query "" "
 "
 fi
 
-
 if [ $? -ne 0 ] ; then
 	merr "Creating core database and grant privileges failed!"
 	exit 1
 fi
 
+if [ "$MYSQL_ENGINE" == "" ] ; then
+	MYSQL_ENGINE="InnoDB"
+fi
+minfo "Using table engine $MYSQL_ENGINE."
+
 for TABLE in $STANDARD_MODULES; do
 	mdbg "Creating core table: $TABLE"
-	sql_query $1 < $DB_SCHEMA/$TABLE-create.sql
+	$SED "s/ENGINE=[A-Za-z]\+/ENGINE=$MYSQL_ENGINE/g" $DB_SCHEMA/$TABLE-create.sql | sql_query $1
 	if [ $? -ne 0 ] ; then
 		merr "Creating core tables failed!"
 		exit 1

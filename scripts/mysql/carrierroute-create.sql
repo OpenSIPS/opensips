@@ -12,7 +12,7 @@ CREATE TABLE carrierroute (
     rewrite_prefix CHAR(64) DEFAULT '' NOT NULL,
     rewrite_suffix CHAR(64) DEFAULT '' NOT NULL,
     description CHAR(255) DEFAULT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('carrierfailureroute','2');
 CREATE TABLE carrierfailureroute (
@@ -26,11 +26,11 @@ CREATE TABLE carrierfailureroute (
     mask INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     next_domain CHAR(64) DEFAULT '' NOT NULL,
     description CHAR(255) DEFAULT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('route_tree','2');
 CREATE TABLE route_tree (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     carrier CHAR(64) DEFAULT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 

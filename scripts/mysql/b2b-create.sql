@@ -28,7 +28,7 @@ CREATE TABLE b2b_entities (
     leg_contact CHAR(128),
     leg_sockinfo CHAR(128),
     CONSTRAINT b2b_entities_idx UNIQUE (type, tag0, tag1, callid)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX b2b_entities_param ON b2b_entities (param);
 
@@ -62,5 +62,5 @@ CREATE TABLE b2b_logic (
     e3_to CHAR(128),
     e3_key CHAR(64),
     CONSTRAINT b2b_logic_idx UNIQUE (si_key)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
