@@ -11,7 +11,7 @@ CREATE TABLE acc (
     duration INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     setuptime INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     created DATETIME DEFAULT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX callid_idx ON acc (callid);
 
@@ -27,7 +27,7 @@ CREATE TABLE missed_calls (
     time DATETIME NOT NULL,
     setuptime INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     created DATETIME DEFAULT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX callid_idx ON missed_calls (callid);
 

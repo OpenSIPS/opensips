@@ -5,7 +5,7 @@ CREATE TABLE emergency_routing (
     routingESN INT(5) UNSIGNED DEFAULT 0 NOT NULL,
     npa INT(3) UNSIGNED DEFAULT 0 NOT NULL,
     esgwri CHAR(50) NOT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('emergency_report','1');
 CREATE TABLE emergency_report (
@@ -21,7 +21,7 @@ CREATE TABLE emergency_report (
     VPC_timestamp CHAR(30) NOT NULL,
     result CHAR(4) NOT NULL,
     disposition CHAR(10) NOT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('emergency_service_provider','1');
 CREATE TABLE emergency_service_provider (
@@ -33,5 +33,5 @@ CREATE TABLE emergency_service_provider (
     certUri CHAR(50) NOT NULL,
     nodeIP CHAR(20) NOT NULL,
     nodeIP INT(2) UNSIGNED NOT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 

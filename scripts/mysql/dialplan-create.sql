@@ -11,5 +11,5 @@ CREATE TABLE dialplan (
     timerec CHAR(255) NOT NULL,
     disabled INT(11) DEFAULT 0 NOT NULL,
     attrs CHAR(32) NOT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 

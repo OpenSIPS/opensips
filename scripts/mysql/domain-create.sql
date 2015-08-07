@@ -5,5 +5,5 @@ CREATE TABLE domain (
     attrs CHAR(255) DEFAULT NULL,
     last_modified DATETIME DEFAULT '1900-01-01 00:00:01' NOT NULL,
     CONSTRAINT domain_idx UNIQUE (domain)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 

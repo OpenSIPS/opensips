@@ -5,7 +5,7 @@ CREATE TABLE userblacklist (
     domain CHAR(64) DEFAULT '' NOT NULL,
     prefix CHAR(64) DEFAULT '' NOT NULL,
     whitelist TINYINT(1) DEFAULT 0 NOT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX userblacklist_idx ON userblacklist (username, domain, prefix);
 
@@ -15,7 +15,7 @@ CREATE TABLE globalblacklist (
     prefix CHAR(64) DEFAULT '' NOT NULL,
     whitelist TINYINT(1) DEFAULT 0 NOT NULL,
     description CHAR(255) DEFAULT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX globalblacklist_idx ON globalblacklist (prefix);
 

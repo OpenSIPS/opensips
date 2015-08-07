@@ -11,7 +11,7 @@ CREATE TABLE presentity (
     extra_hdrs BLOB DEFAULT '' NOT NULL,
     sender CHAR(128) NOT NULL,
     CONSTRAINT presentity_idx UNIQUE (username, domain, event, etag)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('active_watchers','10');
 CREATE TABLE active_watchers (
@@ -37,7 +37,7 @@ CREATE TABLE active_watchers (
     socket_info CHAR(64) NOT NULL,
     local_contact CHAR(128) NOT NULL,
     CONSTRAINT active_watchers_idx UNIQUE (presentity_uri, callid, to_tag, from_tag)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('watchers','4');
 CREATE TABLE watchers (
@@ -50,7 +50,7 @@ CREATE TABLE watchers (
     reason CHAR(64),
     inserted_time INT(11) NOT NULL,
     CONSTRAINT watcher_idx UNIQUE (presentity_uri, watcher_username, watcher_domain, event)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('xcap','4');
 CREATE TABLE xcap (
@@ -64,7 +64,7 @@ CREATE TABLE xcap (
     doc_uri CHAR(128) NOT NULL,
     port INT(11) NOT NULL,
     CONSTRAINT account_doc_type_idx UNIQUE (username, domain, doc_type, doc_uri)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX source_idx ON xcap (source);
 
@@ -90,7 +90,7 @@ CREATE TABLE pua (
     remote_contact CHAR(128),
     version INT(11),
     extra_headers TEXT
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX del1_idx ON pua (pres_uri, event);
 CREATE INDEX del2_idx ON pua (expires);

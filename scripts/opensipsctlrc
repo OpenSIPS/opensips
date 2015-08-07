@@ -36,6 +36,9 @@
 ## password for database read/write user
 # DBRWPW="opensipsrw"
 
+## engine type for the MySQL/MariaDB tabels (default InnoDB)
+# MYSQL_ENGINE="MyISAM"
+
 ## database super user (for ORACLE this is 'scheme-creator' user)
 # DBROOTUSER="root"
 

@@ -16,5 +16,5 @@ CREATE TABLE fraud_detection (
     concurrent_calls_critical INT(5) UNSIGNED NOT NULL,
     sequential_calls_warning INT(5) UNSIGNED NOT NULL,
     sequential_calls_critical INT(5) UNSIGNED NOT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 

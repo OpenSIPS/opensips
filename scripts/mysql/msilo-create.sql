@@ -10,7 +10,7 @@ CREATE TABLE silo (
     snd_time INT DEFAULT 0 NOT NULL,
     ctype CHAR(255) DEFAULT NULL,
     body BLOB DEFAULT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX account_idx ON silo (username, domain);
 

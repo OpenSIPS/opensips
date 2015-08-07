@@ -8,7 +8,7 @@ CREATE TABLE cc_flows (
     message_welcome CHAR(128) DEFAULT NULL,
     message_queue CHAR(128) NOT NULL,
     CONSTRAINT unique_flowid UNIQUE (flowid)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('cc_agents','1');
 CREATE TABLE cc_agents (
@@ -19,7 +19,7 @@ CREATE TABLE cc_agents (
     skills CHAR(255) NOT NULL,
     last_call_end INT(11) DEFAULT 0 NOT NULL,
     CONSTRAINT unique_agentid UNIQUE (agentid)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('cc_cdrs','1');
 CREATE TABLE cc_cdrs (
@@ -35,7 +35,7 @@ CREATE TABLE cc_cdrs (
     rejected INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     fstats INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     cid INT(11) UNSIGNED DEFAULT 0
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE TABLE cc_calls (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE cc_calls (
     flow CHAR(128) NOT NULL,
     agent CHAR(128) NOT NULL,
     CONSTRAINT unique_id UNIQUE (b2buaid)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX b2buaid_idx ON cc_calls (b2buaid);
 

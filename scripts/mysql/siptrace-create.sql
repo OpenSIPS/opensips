@@ -15,7 +15,7 @@ CREATE TABLE sip_trace (
     to_port INT(5) UNSIGNED NOT NULL,
     fromtag CHAR(64) DEFAULT '' NOT NULL,
     direction CHAR(4) DEFAULT '' NOT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX traced_user_idx ON sip_trace (traced_user);
 CREATE INDEX date_idx ON sip_trace (time_stamp);

@@ -12,7 +12,7 @@ CREATE TABLE dr_gateways (
     socket CHAR(128) DEFAULT NULL,
     description CHAR(128) DEFAULT '' NOT NULL,
     CONSTRAINT dr_gw_idx UNIQUE (gwid)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('dr_rules','3');
 CREATE TABLE dr_rules (
@@ -25,7 +25,7 @@ CREATE TABLE dr_rules (
     gwlist CHAR(255) NOT NULL,
     attrs CHAR(255) DEFAULT NULL,
     description CHAR(128) DEFAULT '' NOT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('dr_carriers','2');
 CREATE TABLE dr_carriers (
@@ -37,7 +37,7 @@ CREATE TABLE dr_carriers (
     attrs CHAR(255) DEFAULT '',
     description CHAR(128) DEFAULT '' NOT NULL,
     CONSTRAINT dr_carrier_idx UNIQUE (carrierid)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('dr_groups','2');
 CREATE TABLE dr_groups (
@@ -46,7 +46,7 @@ CREATE TABLE dr_groups (
     domain CHAR(128) DEFAULT '' NOT NULL,
     groupid INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     description CHAR(128) DEFAULT '' NOT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('dr_partitions','1');
 CREATE TABLE dr_partitions (
@@ -64,5 +64,5 @@ CREATE TABLE dr_partitions (
     rule_id_avp CHAR(255),
     rule_prefix_avp CHAR(255),
     carrier_id_avp CHAR(255)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
