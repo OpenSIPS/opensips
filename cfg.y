@@ -306,8 +306,6 @@ extern char *finame;
 %token LOGNAME
 %token AVP_ALIASES
 %token LISTEN
-%token BIN_LISTEN
-%token BIN_CHILDREN
 %token ALIAS
 %token AUTO_ALIASES
 %token DNS
@@ -886,31 +884,6 @@ assign_stm: DEBUG EQUAL snumber {
 		| LISTEN EQUAL  error { yyerror("ip address or hostname "
 						"expected (use quotes if the hostname includes"
 						" config keywords)"); }
-		| BIN_LISTEN EQUAL listen_id COLON port {
-					// TODO - think it should be remoevd
-					if (bin) {
-						yyerror("can only define one binary packet interface");
-						YYABORT;
-					}
-
-					lst_tmp = mk_listen_id($3, PROTO_BIN, $5);
-					bin = new_sock_info(lst_tmp->name,
-										lst_tmp->port,
-										lst_tmp->proto,
-										lst_tmp->adv_name,
-										lst_tmp->adv_port,
-										lst_tmp->children,
-										0);
-					if (!bin) {
-						LM_CRIT("Failed to create new socket info!\n");
-						YYABORT;
-					}
-							}
-		| BIN_LISTEN EQUAL  error { yyerror("ip address or hostname "
-						"expected (use quotes if the hostname includes"
-						" config keywords)"); }
-		| BIN_CHILDREN EQUAL NUMBER { bin_children=$3; }
-		| BIN_CHILDREN EQUAL error { yyerror("number expected"); }
 		| ALIAS EQUAL  id_lst {
 							for(lst_tmp=$3; lst_tmp; lst_tmp=lst_tmp->next)
 								add_alias(lst_tmp->name, strlen(lst_tmp->name),

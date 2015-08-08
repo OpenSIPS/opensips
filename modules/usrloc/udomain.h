@@ -43,6 +43,7 @@
 #include "../../db/db_insertq.h"
 #include "urecord.h"
 #include "hslot.h"
+#include "ucontact.h"
 
 struct hslot;   /*!< Hash table slot */
 struct urecord; /*!< Usrloc record */
@@ -176,8 +177,6 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
                    char is_replicated);
 
 
-
-void ul_raise_contact_event(event_id_t _e, str *addr, str *callid, str *recv,
-		str *aor, int cseq);
+void ul_raise_contact_event(event_id_t _e, ucontact_t* c);
 
 #endif /* UDOMAIN_H */

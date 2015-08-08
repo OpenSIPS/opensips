@@ -149,6 +149,19 @@ static evi_param_p ul_c_aor_param;
 static evi_param_p ul_c_recv_param;
 static evi_param_p ul_c_cseq_param;
 
+static str ei_domain_name = str_init("domain");
+static str ei_user_agent_name = str_init("user_agent");
+static str ei_path_name = str_init("path");
+static str ei_attr_name = str_init("attr");
+static str ei_instance_name = str_init("instance");
+static str ei_sock_str_name = str_init("sock_str");
+static str ei_cflags_name = str_init("cflags");
+static str ei_expires_name = str_init("expires");
+
+static evi_param_p ul_c_domain_param, ul_c_user_agent_param, ul_c_path_param,
+		ul_c_attr_param, ul_c_instance_param, ul_c_sock_str_param, ul_c_cflags_param, ul_c_expires_param;
+
+
 /*! \brief
  * Initialize event structures
  */
@@ -233,6 +246,55 @@ int ul_event_init(void)
 		return -1;
 	}
 
+	ul_c_domain_param = evi_param_create(ul_contact_event_params, &ei_domain_name);
+	if (!ul_c_domain_param) {
+		LM_ERR("cannot create domain parameter\n");
+		return -1;
+	}
+
+	ul_c_user_agent_param = evi_param_create(ul_contact_event_params, &ei_user_agent_name);
+	if (!ul_c_user_agent_param) {
+		LM_ERR("cannot create user_agent parameter\n");
+		return -1;
+	}
+
+	ul_c_path_param = evi_param_create(ul_contact_event_params, &ei_path_name);
+	if (!ul_c_path_param) {
+		LM_ERR("cannot create path parameter\n");
+		return -1;
+	}
+
+	ul_c_attr_param = evi_param_create(ul_contact_event_params, &ei_attr_name);
+	if (!ul_c_attr_param) {
+		LM_ERR("cannot create attr parameter\n");
+		return -1;
+	}
+
+	ul_c_instance_param = evi_param_create(ul_contact_event_params, &ei_instance_name);
+	if (!ul_c_instance_param) {
+		LM_ERR("cannot create instance parameter\n");
+		return -1;
+	}
+
+	ul_c_sock_str_param = evi_param_create(ul_contact_event_params, &ei_sock_str_name);
+	if (!ul_c_sock_str_param) {
+		LM_ERR("cannot create sock_str parameter\n");
+		return -1;
+	}
+
+	ul_c_cflags_param = evi_param_create(ul_contact_event_params, &ei_cflags_name);
+	if (!ul_c_cflags_param) {
+		LM_ERR("cannot create cflags parameter\n");
+		return -1;
+	}
+
+	ul_c_expires_param = evi_param_create(ul_contact_event_params, &ei_expires_name);
+	if (!ul_c_expires_param) {
+		LM_ERR("cannot create expires parameter\n");
+		return -1;
+	}
+
+
 	return 0;
 }
 
@@ -253,40 +315,84 @@ static void ul_raise_event(event_id_t _e, struct urecord* _r)
 		LM_ERR("cannot raise event\n");
 }
 
-void ul_raise_contact_event(event_id_t _e, str *addr, str *callid, str *recv,
-		str *aor, int cseq)
-{
+
+void ul_raise_contact_event(event_id_t _e, ucontact_t* c){
 	if (_e == EVI_ERROR) {
 		LM_ERR("event not yet registered %d\n", _e);
 		return;
 	}
-	if (evi_param_set_str(ul_c_addr_param, addr) < 0) {
+
+	if(evi_param_set_str(ul_c_domain_param, c->domain)){
+		LM_ERR("cannot set contact domain parameter\n");
+		return;
+	}
+
+
+
+	if (evi_param_set_str(ul_c_addr_param, &c->c) < 0) {
 		LM_ERR("cannot set contact address parameter\n");
 		return;
 	}
 
-	if (evi_param_set_str(ul_c_aor_param, aor) < 0) {
+	if (evi_param_set_str(ul_c_aor_param, c->aor) < 0) {
 		LM_ERR("cannot set contact aor parameter\n");
 		return;
 	}
 
-	if (evi_param_set_str(ul_c_callid_param, callid) < 0) {
+	if (evi_param_set_str(ul_c_callid_param, &c->callid) < 0) {
 		LM_ERR("cannot set callid parameter\n");
 		return;
 	}
 
-	if (evi_param_set_str(ul_c_recv_param, recv) < 0) {
+
+	if(evi_param_set_str(ul_c_user_agent_param, &c->user_agent)){
+		LM_ERR("cannot set contact user agent parameter\n");
+		return;
+	}
+
+	if(evi_param_set_str(ul_c_path_param, &c->path)){
+		LM_ERR("cannot set contact path parameter\n");
+		return;
+	}
+
+	if(evi_param_set_str(ul_c_attr_param, &c->attr)){
+		LM_ERR("cannot set contact attr parameter\n");
+		return;
+	}
+
+	if (evi_param_set_str(ul_c_recv_param, &c->received) < 0) {
 		LM_ERR("cannot set received parameter\n");
 		return;
 	}
 
-	if (evi_param_set_int(ul_c_cseq_param, &cseq) < 0) {
+	if (evi_param_set_int(ul_c_cseq_param, &c->cseq) < 0) {
 		LM_ERR("cannot set cseq parameter\n");
+		return;
+	}
+
+	if (evi_param_set_int(ul_c_expires_param, &c->expires) < 0) {
+		LM_ERR("cannot set expires parameter\n");
+		return;
+	}
+
+	if(evi_param_set_str(ul_c_instance_param, &c->instance)){
+		LM_ERR("cannot set instance parameter\n");
+		return;
+	}
+
+	if (evi_param_set_str(ul_c_sock_str_param, &c->sock->sock_str) < 0) {
+		LM_ERR("cannot set sock_str parameter\n");
+		return;
+	}
+
+	if (evi_param_set_int(ul_c_cflags_param, &c->cflags) < 0) {
+		LM_ERR("cannot set cflags parameter\n");
 		return;
 	}
 
 	if (evi_raise_event(_e, ul_contact_event_params) < 0)
 		LM_ERR("cannot raise event\n");
+
 }
 
 
