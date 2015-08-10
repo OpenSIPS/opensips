@@ -183,35 +183,50 @@ static int mi_child_init(void);
 static int set_partition_arguments(unsigned int type, void * val);
 
 static cmd_export_t cmds[]={
-	{"ds_select_dst",    (cmd_function)w_ds_select_dst, 2, ds_select_fixup, 0,
+	{"ds_select_dst",    (cmd_function)w_ds_select_dst, 2,
+		ds_select_fixup,  NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_select_dst",    (cmd_function)w_ds_select_dst_limited, 3, ds_select_fixup, 0,
+	{"ds_select_dst",    (cmd_function)w_ds_select_dst_limited, 3,
+		ds_select_fixup,  NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_select_domain", (cmd_function)w_ds_select_domain, 2, ds_select_fixup, 0,
+	{"ds_select_domain", (cmd_function)w_ds_select_domain, 2,
+		ds_select_fixup,  NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_select_domain", (cmd_function)w_ds_select_domain_limited, 3, ds_select_fixup, 0,
+	{"ds_select_domain", (cmd_function)w_ds_select_domain_limited, 3,
+		ds_select_fixup,  NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      0, NULL        , 0,
+	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      0,
+		NULL , NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      1, ds_next_fixup, 0,
+	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      1,
+		ds_next_fixup, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_next_domain",   (cmd_function)w_ds_next_domain,   0, NULL          , 0,
+	{"ds_next_domain",   (cmd_function)w_ds_next_domain,   0,
+		NULL , NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_next_domain",   (cmd_function)w_ds_next_domain,   1, ds_next_fixup, 0,
+	{"ds_next_domain",   (cmd_function)w_ds_next_domain,   1,
+		ds_next_fixup,  NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst,      0, NULL           , 0,
+	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst,      0,
+		NULL , NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst1,     1, fixup_sgp_null, 0,
+	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst1,     1,
+		fixup_sgp_null, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst,      2, ds_mark_fixup, 0,
+	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst,      2,
+		ds_mark_fixup, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list,    2, in_list_fixup, 0,
+	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list,    2,
+		in_list_fixup, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list,    3, in_list_fixup, 0,
+	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list,    3,
+		in_list_fixup, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list,    4, in_list_fixup, 0,
+	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list,    4,
+		in_list_fixup, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"ds_count",    (cmd_function)w_ds_count,   3, ds_count_fixup, 0,
+	{"ds_count",    (cmd_function)w_ds_count,   3,
+		ds_count_fixup, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{0,0,0,0,0,0}
 };
@@ -257,9 +272,9 @@ static module_dependency_t *get_deps_ds_ping_interval(param_export_t *param)
 }
 
 static mi_export_t mi_cmds[] = {
-	{ "ds_set_state",   0, ds_mi_set,     0,                 0,  0            },
-	{ "ds_list",        0, ds_mi_list,    MI_NO_INPUT_FLAG,  0,  0            },
-	{ "ds_reload",      0, ds_mi_reload,  0,                 0,  mi_child_init},
+	{ "ds_set_state",   0, ds_mi_set,     0,                0,  0            },
+	{ "ds_list",        0, ds_mi_list,    MI_NO_INPUT_FLAG, 0,  0            },
+	{ "ds_reload",      0, ds_mi_reload,  0,                0,  mi_child_init},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -692,7 +707,7 @@ static int mod_init(void)
 	ds_dest_attrs_col.len = strlen(ds_dest_attrs_col.s);
 
 
-	if (hash_pvar_param.s && (hash_pvar_param.len=strlen(hash_pvar_param.s))>0 ) {
+	if(hash_pvar_param.s && (hash_pvar_param.len=strlen(hash_pvar_param.s))>0){
 		if(pv_parse_format(&hash_pvar_param, &hash_param_model) < 0
 				|| hash_param_model==NULL) {
 			LM_ERR("malformed PV string: %s\n", hash_pvar_param.s);
@@ -702,7 +717,7 @@ static int mod_init(void)
 		hash_param_model = NULL;
 	}
 
-	if (ds_setid_pvname.s && (ds_setid_pvname.len=strlen(ds_setid_pvname.s))>0 ) {
+	if(ds_setid_pvname.s && (ds_setid_pvname.len=strlen(ds_setid_pvname.s))>0){
 		if(pv_parse_spec(&ds_setid_pvname, &ds_setid_pv)==NULL
 				|| !pv_is_w(&ds_setid_pv))
 		{
@@ -777,7 +792,7 @@ static int mod_init(void)
 		/* parse the list of reply codes to be counted as success */
 		if(options_reply_codes_str.s) {
 			options_reply_codes_str.len = strlen(options_reply_codes_str.s);
-			if(parse_reply_codes( &options_reply_codes_str, &options_reply_codes,
+			if(parse_reply_codes(&options_reply_codes_str,&options_reply_codes,
 			&options_codes_no )< 0) {
 				LM_ERR("Bad format for options_reply_code parameter"
 						" - Need a code list separated by commas\n");
@@ -927,7 +942,8 @@ static void destroy(void)
 /**
  *
  */
-static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max_results_flags, int mode)
+static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg,
+											char* max_results_flags, int mode)
 {
 	int ret = -1;
 	int _ret;
@@ -989,7 +1005,8 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	ds_select_ctl.set_destination = 0;
 
 	/* Parse the params in reverse order.
-	 * We need to runt the first entry last to properly populate ds_select_dst AVPs.
+	 * We need to runt the first entry last to properly populate ds_select_dst
+	 *  AVPs.
 	 * On the first ds_select_dst run we need to reset AVPs.
 	 * On the last ds_select_dst run we need to set destination.  */
 	do {
@@ -1006,9 +1023,12 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 
 		if (run_prev_ds_select) {
 			LM_DBG("ds_select: %d %d %d %d %d\n",
-				prev_ds_select_ctl.set, prev_ds_select_ctl.alg, prev_ds_select_ctl.max_results,
-				prev_ds_select_ctl.reset_AVP, prev_ds_select_ctl.set_destination);
-			_ret = ds_select_dst(msg, &prev_ds_select_ctl, &selected_dst, prev_ds_select_ctl.ds_flags);
+				prev_ds_select_ctl.set, prev_ds_select_ctl.alg,
+				prev_ds_select_ctl.max_results,
+				prev_ds_select_ctl.reset_AVP,
+				prev_ds_select_ctl.set_destination);
+			_ret = ds_select_dst(msg, &prev_ds_select_ctl, &selected_dst,
+				prev_ds_select_ctl.ds_flags);
 			if (_ret>=0) ret = _ret;
 			/* stop resetting AVPs. */
 			ds_select_ctl.reset_AVP = 0;
@@ -1057,20 +1077,22 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	LM_DBG("ds_select: %d %d %d %d %d\n",
 		ds_select_ctl.set, ds_select_ctl.alg, ds_select_ctl.max_results,
 		ds_select_ctl.reset_AVP, ds_select_ctl.set_destination);
-	_ret = ds_select_dst(msg, &ds_select_ctl, &selected_dst, ds_select_ctl.ds_flags);
+	_ret = ds_select_dst(msg, &ds_select_ctl, &selected_dst,
+		ds_select_ctl.ds_flags);
 	if (_ret>=0) {
 		ret = _ret;
 	}
 	else {
 		if (selected_dst.uri.s != NULL) {
 			if (selected_dst.socket.len != 0) {
-				if (sscanf( selected_dst.socket.s, "%p", (void**)&sock ) != 1) {
+				if (sscanf( selected_dst.socket.s, "%p", (void**)&sock ) != 1){
 					LM_ERR("unable to read forced destination socket\n");
 					ret = -4;
 					goto error;
 				}
 			}
-			if (ds_update_dst(msg, &selected_dst.uri, sock, ds_select_ctl.mode) != 0) {
+			if (ds_update_dst(msg, &selected_dst.uri, sock, ds_select_ctl.mode)
+			!= 0) {
 				LM_ERR("cannot set dst addr\n");
 				ret = -3;
 				goto error;
@@ -1098,7 +1120,8 @@ static int w_ds_select_all(struct sip_msg* msg, char* set, char* alg, int mode)
 /**
  * max_results can also mean the flags parameter
  */
-static int w_ds_select_limited(struct sip_msg* msg, char* set, char* alg, char* max_results, int mode)
+static int w_ds_select_limited(struct sip_msg* msg, char* set, char* alg,
+												char* max_results, int mode)
 {
 	return w_ds_select(msg, set, alg, max_results, mode);
 }
@@ -1115,7 +1138,8 @@ static int w_ds_select_dst(struct sip_msg* msg, char* set, char* alg)
  * same wrapper as w_ds_select_dst, but it allows cutting down the result set
  * max_results can also mean flags
  */
-static int w_ds_select_dst_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
+static int w_ds_select_dst_limited(struct sip_msg* msg, char* set, char* alg,
+															char* max_results)
 {
 	return w_ds_select_limited(msg, set, alg, max_results, 0);
 }
@@ -1129,10 +1153,12 @@ static int w_ds_select_domain(struct sip_msg* msg, char* set, char* alg)
 }
 
 /**
- * same wrapper as w_ds_select_domain, but it allows cutting down the result set
+ * same wrapper as w_ds_select_domain, but it allows cutting down the
+ *   result set
  * max_results can also mean the flags parameter
  */
-static int w_ds_select_domain_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
+static int w_ds_select_domain_limited(struct sip_msg* msg, char* set,
+												char* alg, char* max_results)
 {
 	return w_ds_select_limited(msg, set, alg, max_results, 1);
 }
@@ -1141,7 +1167,8 @@ static int w_ds_select_domain_limited(struct sip_msg* msg, char* set, char* alg,
 	do {\
 		if (_param_ == NULL) \
 			_part_ = default_partition; \
-		else if (fixup_get_partition(msg, (gpartition_t *)_param_, &_part_) != 0) \
+		else \
+			if(fixup_get_partition(msg, (gpartition_t *)_param_, &_part_)!=0) \
 			return -1; \
 		if (_part_ == NULL) { \
 			LM_ERR("Unknown partition\n"); \
@@ -1332,7 +1359,7 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 
 	ds_partition_t *part_it;
 	for (part_it = partitions; part_it; part_it = part_it->next) {
-		part_node = add_mi_node_child(&rpl_tree->node, MI_IS_ARRAY, "PARTITION",
+		part_node = add_mi_node_child(&rpl_tree->node, MI_IS_ARRAY,"PARTITION",
 				9, part_it->name.s, part_it->name.len);
 
 		if (part_node == NULL
@@ -1392,7 +1419,8 @@ static int w_ds_is_in_list(struct sip_msg *msg,char *ip,char *port,char *set,
 				}
 			}
 			else {
-				int_list_t *tmp_lst = set_list_from_pvs(msg, setparam->sets->v.pvs, NULL);
+				int_list_t *tmp_lst =
+					set_list_from_pvs(msg, setparam->sets->v.pvs, NULL);
 				if (tmp_lst == NULL){
 					LM_ERR("Wrong set var value\n");
 					return -1;
@@ -1419,7 +1447,8 @@ wrong_set_arg:
 }
 
 
-static int w_ds_count(struct sip_msg* msg, char *set, const char *cmp, char *res)
+static int w_ds_count(struct sip_msg* msg, char *set, const char *cmp,
+																	char *res)
 {
 	unsigned int s = 0;
 	gparam_p ret = (gparam_p) res;
