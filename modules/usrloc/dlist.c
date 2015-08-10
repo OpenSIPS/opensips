@@ -323,6 +323,7 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 		} while (RES_ROW_N(res) > 0);
 
 		ul_dbf.free_result(ul_dbh, res);
+		res = NULL;
 	}
 
 	/* len < 0 is possible, if size of the buffer < sizeof c->c.len */
