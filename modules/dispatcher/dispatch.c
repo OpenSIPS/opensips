@@ -1236,7 +1236,7 @@ static int count_inactive_destinations(ds_set_p idx) {
 	int count = 0, i;
 
 	for(i=0; i<idx->nr; i++)
-		if(idx->dlist[i].flags & DS_INACTIVE_DST)
+		if( !dst_is_active(idx->dlist[i]) )
 			/* only count inactive entries that are not default */
 			if(!is_default_destination_entry(idx, i))
 				count++;
@@ -1556,8 +1556,8 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 		i = i_unwrapped % idx->nr;
 		dest = (ds_select_ctl->alg == 9 ? sorted_set[i] : &idx->dlist[i]);
 
-		if((dest->flags & DS_INACTIVE_DST)
-				|| (ds_use_default!=0 && i==(idx->nr-1)))
+		if ( !dst_is_active(*dest) ||
+		(ds_use_default!=0 && i==(idx->nr-1)) )
 			continue;
 		if(destination_entries_to_skip > 0) {
 			LM_DBG("skipped entry [%d/%d] (would create more than %i results)\n",
