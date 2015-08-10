@@ -761,10 +761,10 @@ error_not_found:
 	LM_ERR("no connection found for id %d\n",id);
 	return -1;
 error_sec:
-	TCPCONN_UNLOCK(id);
 	LM_WARN("possible port hijack attempt\n");
 	LM_WARN("alias already present and points to another connection "
 			"(%d : %d and %d : %d)\n", a->parent->id,  port, c->id, port);
+	TCPCONN_UNLOCK(id);
 	return -1;
 }
 
