@@ -1064,8 +1064,7 @@ done:
  */
 int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp)
 {
-	static struct sip_uri puri;
-
+	struct sip_uri puri;
 	struct hostent delete_he, *he;
 	urecord_t *record;
 	ucontact_t *contact, *it;
@@ -1081,12 +1080,10 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp)
 		return E_UNSPEC;
 	}
 
-	if (parse_uri(uri.s, uri.len, &puri) != 0) {
-		LM_ERR("failed to parse aor: '%.*s'\n", uri.len, uri.s);
+	if (extract_aor( &uri, &aor_user,0,0) < 0) {
+		LM_ERR("failed to extract Address Of Record\n");
 		return E_BAD_URI;
 	}
-
-	aor_user = puri.user;
 
 	ul.lock_udomain((udomain_t *)udomain, &aor_user);
 
@@ -1129,7 +1126,7 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp)
 
 		delete_by_hostname = 1;
 
-		he = sip_resolvehost(&uri, &delete_port, &puri.proto, 0, NULL);
+		he = sip_resolvehost(&uri, &delete_port, NULL, 0, NULL);
 		if (!he) {
 			LM_ERR("cannot resolve given host: '%.*s'\n", uri.len, uri.s);
 			err = E_UNSPEC;
