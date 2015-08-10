@@ -213,7 +213,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	else {
 		dp->dst_uri.len = uri_typestrlen(puri.type) + 1 + puri.host.len
 						+ (puri.port.len ? puri.port.len + 1 : 0);
-		dp->uri.s = shm_malloc(uri.len + 1 + dp->dst_uri.len + 1 + attrs.len + 1);
+		dp->uri.s = shm_malloc(uri.len+1 + dp->dst_uri.len + 1 + attrs.len+1);
 		if(dp->uri.s==NULL){
 			LM_ERR("no more shm memory!\n");
 			goto err;
@@ -355,8 +355,8 @@ static inline void re_calculate_active_dsts(ds_set_p sp)
 				((i==-1) ? 0 : sp->dlist[i].active_running_weight);
 			sp->active_nr --;
 		}
-		LM_DBG("destination i=%d, j=%d , weight=%d, sum=%d, active_sum=%d\n",i,j,
-			sp->dlist[j].weight,
+		LM_DBG("destination i=%d, j=%d, weight=%d, sum=%d, active_sum=%d\n",
+			i,j, sp->dlist[j].weight,
 			sp->dlist[j].running_weight,sp->dlist[j].active_running_weight);
 	}
 }
@@ -469,7 +469,8 @@ ds_pvar_param_p ds_get_pvar_param(str uri)
 		return NULL;
 	}
 
-	if (!pv_parse_spec(ds_has_pattern ? &name : &ds_pattern_prefix, &param->pvar)) {
+	if (!pv_parse_spec(ds_has_pattern ? &name : &ds_pattern_prefix,
+	&param->pvar)) {
 		LM_ERR("cannot parse pattern spec\n");
 		shm_free(param);
 		return NULL;
@@ -479,7 +480,8 @@ ds_pvar_param_p ds_get_pvar_param(str uri)
 }
 
 
-int ds_pvar_algo(struct sip_msg *msg, ds_set_p set, ds_dest_p **sorted_set, int ds_use_default)
+int ds_pvar_algo(struct sip_msg *msg, ds_set_p set, ds_dest_p **sorted_set,
+															int ds_use_default)
 {
 	pv_value_t val;
 	int i, j, k, end_idx, cnt;
@@ -603,7 +605,7 @@ int init_ds_db(ds_partition_t *partition)
 		return -1;
 	}
 
-	_ds_table_version = db_table_version(&partition->dbf, *partition->db_handle,
+	_ds_table_version = db_table_version(&partition->dbf,*partition->db_handle,
 											&partition->table_name);
 	if (_ds_table_version < 0) {
 		LM_ERR("failed to query table version\n");
@@ -687,9 +689,9 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 
 		if (*partition->data) {
 			/* Iterate over the groups and the entries of each group */
-			for(list = (*partition->data)->sets; list!= NULL; list= list->next) {
+			for(list = (*partition->data)->sets; list!= NULL; list=list->next){
 				for(j=0; j<list->nr; j++) {
-					/* If the Flag of the entry is STATE_DIRTY -> flush do db */
+					/* If the Flag of the entry is STATE_DIRTY -> flush do db*/
 					if ( (list->dlist[j].flags&DS_STATE_DIRTY_DST)==0 )
 						/* nothing to do for this destination */
 						continue;
@@ -705,8 +707,8 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 						list->dlist[j].uri.len, list->dlist[j].uri.s,
 							val_set.val.int_val);
 
-					if ( partition->dbf.update(*partition->db_handle,&key_cmp,0,
-								&val_cmp,&key_set,&val_set,1,1)<0 ) {
+					if (partition->dbf.update(*partition->db_handle,&key_cmp,0,
+					&val_cmp,&key_set,&val_set,1,1)<0 ) {
 						LM_ERR("DB update failed\n");
 					} else {
 						list->dlist[j].flags &= ~DS_STATE_DIRTY_DST;
@@ -749,7 +751,8 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 			return NULL;
 	}
 
-	if (partition->dbf.use_table(*partition->db_handle, &partition->table_name) < 0) {
+	if (partition->dbf.use_table(*partition->db_handle, &partition->table_name)
+	< 0) {
 		LM_ERR("error in use_table\n");
 		return NULL;
 	}
@@ -762,7 +765,8 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	memset( d_data, 0, sizeof(ds_data_t));
 
 	/*select the whole table and all the columns*/
-	if(partition->dbf.query(*partition->db_handle,0,0,0,query_cols,0,nr_cols,0,&res) < 0) {
+	if(partition->dbf.query(*partition->db_handle,0,0,0,query_cols,0,nr_cols,
+	0,&res) < 0) {
 		LM_ERR("error while querying database\n");
 		goto error;
 	}
@@ -834,8 +838,10 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		else
 			state = VAL_INT(values+6);
 
-		if (add_dest2list(id, uri, sock, state, weight, prio, attrs, d_data) != 0) {
-			LM_WARN("failed to add destination <%.*s> in group %d\n",uri.len,uri.s,id);
+		if (add_dest2list(id, uri, sock, state, weight, prio, attrs, d_data)
+		!= 0) {
+			LM_WARN("failed to add destination <%.*s> in group %d\n",
+				uri.len,uri.s,id);
 			continue;
 		} else {
 			cnt++;
@@ -1239,7 +1245,8 @@ int ds_hash_pvar(struct sip_msg *msg, unsigned int *hash)
 }
 
 
-static inline int ds_get_index(int group, ds_set_p *index, ds_partition_t *partition)
+static inline int ds_get_index(int group, ds_set_p *index,
+													ds_partition_t *partition)
 {
 	ds_set_p si = NULL;
 
@@ -1264,7 +1271,8 @@ static inline int ds_get_index(int group, ds_set_p *index, ds_partition_t *parti
 }
 
 
-int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock, int mode)
+int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock,
+																	int mode)
 {
 	struct action act;
 	uri_type utype;
@@ -1303,7 +1311,8 @@ int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock, int m
 	return 0;
 }
 
-static int is_default_destination_entry(ds_set_p idx, int i, int ds_use_default) {
+static int is_default_destination_entry(ds_set_p idx,int i, int ds_use_default)
+{
 	return ds_use_default!=0 && i==(idx->nr-1);
 }
 
@@ -1355,7 +1364,8 @@ static inline int push_ds_2_avps( ds_dest_t *ds, ds_partition_t *partition )
 /**
  *
  */
-int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selected_dst_p selected_dst, int ds_flags)
+int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
+								ds_selected_dst_p selected_dst, int ds_flags)
 {
 	int i, j, cnt, i_unwrapped, set_size;
 	unsigned int ds_hash, ds_rand;
@@ -1497,7 +1507,8 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selecte
 				ds_select_ctl->alg = 8;
 				break;
 			}
-			if (ds_pvar_algo(msg, idx, &sorted_set, ds_flags&DS_USE_DEFAULT) <= 0)
+			if (ds_pvar_algo(msg, idx, &sorted_set, ds_flags&DS_USE_DEFAULT)
+			<= 0)
 			{
 				LM_ERR("can't get destination index\n");
 				goto error;
@@ -1614,14 +1625,16 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selecte
 		goto error;
 	}
 	if (selected->sock) {
-		selected_dst->socket.len = 1 + snprintf( selected_dst->socket.s, PTR_STR_SIZE, "%p", selected->sock );
+		selected_dst->socket.len = 1 +
+		snprintf( selected_dst->socket.s, PTR_STR_SIZE, "%p", selected->sock );
 	}
 	else {
 		selected_dst->socket.len = 0;
 	}
 
-	LM_DBG("selected [%d-%d/%d] <%.*s>\n", ds_select_ctl->alg, ds_select_ctl->set, ds_id,
-			selected->dst_uri.len, selected->dst_uri.s);
+	LM_DBG("selected [%d-%d/%d] <%.*s>\n",
+		ds_select_ctl->alg, ds_select_ctl->set, ds_id,
+		selected->dst_uri.len, selected->dst_uri.s);
 
 	if(!(ds_flags&DS_FAILOVER_ON))
 		goto done;
@@ -1629,10 +1642,10 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selecte
 	if(ds_select_ctl->reset_AVP)
 	{
 		/* do some AVP cleanup before start populating new ones */
-		destroy_avps( 0 /*all types*/, ds_select_ctl->partition->dst_avp_name, 1);
-		destroy_avps( 0 /*all types*/, ds_select_ctl->partition->grp_avp_name, 1);
-		destroy_avps( 0 /*all types*/, ds_select_ctl->partition->cnt_avp_name, 1);
-		destroy_avps( 0 /*all types*/,ds_select_ctl->partition->sock_avp_name, 1);
+		destroy_avps(0/*all types*/, ds_select_ctl->partition->dst_avp_name,1);
+		destroy_avps(0/*all types*/, ds_select_ctl->partition->grp_avp_name,1);
+		destroy_avps(0/*all types*/, ds_select_ctl->partition->cnt_avp_name,1);
+		destroy_avps(0/*all types*/,ds_select_ctl->partition->sock_avp_name,1);
 		if (ds_select_ctl->partition->attrs_avp_name>0)
 			destroy_avps( 0 /*all types*/,
 					ds_select_ctl->partition->attrs_avp_name, 1 /*all*/);
@@ -1641,14 +1654,17 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selecte
 
 	if((ds_flags&DS_USE_DEFAULT) && ds_id!=idx->nr-1)
 	{
-		if (push_ds_2_avps( &idx->dlist[idx->nr-1], ds_select_ctl->partition ) != 0 )
+		if (push_ds_2_avps( &idx->dlist[idx->nr-1], ds_select_ctl->partition )
+		!= 0 )
 			goto error;
 		cnt++;
 	}
 
-	inactive_dst_count = count_inactive_destinations(idx, ds_flags&DS_USE_DEFAULT);
+	inactive_dst_count =
+		count_inactive_destinations(idx, ds_flags&DS_USE_DEFAULT);
 	/* don't count inactive and default entries into total */
-	destination_entries_to_skip = idx->nr - inactive_dst_count - (ds_flags&DS_USE_DEFAULT?1:0);
+	destination_entries_to_skip = idx->nr - inactive_dst_count
+		- (ds_flags&DS_USE_DEFAULT?1:0);
 	destination_entries_to_skip -= ds_select_ctl->max_results;
 
 	/* add to avp */
@@ -1661,7 +1677,8 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selecte
 				|| ((ds_flags&DS_USE_DEFAULT) && i==(idx->nr-1)))
 			continue;
 		if(destination_entries_to_skip > 0) {
-			LM_DBG("skipped entry [%d/%d] (would create more than %i results)\n",
+			LM_DBG("skipped entry [%d/%d] (would create more than %i "
+				"results)\n",
 				ds_select_ctl->set, i, ds_select_ctl->max_results);
 			destination_entries_to_skip--;
 			continue;
@@ -1719,8 +1736,8 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 	int_str avp_value;
 	int_str sock_avp_value;
 
-	tmp_avp = search_first_avp(partition->dst_avp_type, partition->dst_avp_name,
-			NULL, 0);
+	tmp_avp = search_first_avp(partition->dst_avp_type,
+		partition->dst_avp_name, NULL, 0);
 	if(tmp_avp==NULL)
 		return -1; /* used avp deleted -- strange */
 
@@ -1740,8 +1757,8 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 		return -1; /* no more avps or value is int */
 
 	/* get AVP with next destination socket */
-	tmp_avp = search_first_avp(partition->sock_avp_type, partition->sock_avp_name,
-			&sock_avp_value, 0);
+	tmp_avp = search_first_avp(partition->sock_avp_type,
+		partition->sock_avp_name, &sock_avp_value, 0);
 	if (!tmp_avp) {
 		/* this shuold not happen, it is a bogus state */
 		sock = NULL;
@@ -1768,15 +1785,15 @@ int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 	struct usr_avp *prev_avp;
 	int_str avp_value;
 
-	prev_avp = search_first_avp(partition->grp_avp_type, partition->grp_avp_name,
-			&avp_value, 0);
+	prev_avp = search_first_avp(partition->grp_avp_type,
+		partition->grp_avp_name, &avp_value, 0);
 
 	if(prev_avp==NULL || prev_avp->flags&AVP_VAL_STR)
 		return -1; /* grp avp deleted -- strange */
 	group = avp_value.n;
 
-	prev_avp = search_first_avp(partition->dst_avp_type, partition->dst_avp_name,
-			&avp_value, 0);
+	prev_avp = search_first_avp(partition->dst_avp_type,
+		partition->dst_avp_name, &avp_value, 0);
 
 	if(prev_avp==NULL || !(prev_avp->flags&AVP_VAL_STR))
 		return -1; /* dst avp deleted -- strange */
@@ -1882,8 +1899,8 @@ int ds_set_state(int group, str *address, int state, int type,
 				/* update info on active destinations */
 				if ( ((old_flags&(DS_PROBING_DST|DS_INACTIVE_DST))?0:1) !=
 				((idx->dlist[i].flags&(DS_PROBING_DST|DS_INACTIVE_DST))?0:1) )
-					/* this destination switched state between disabled <> enabled
-					   -> update active info */
+					/* this destination switched state between 
+					 * disabled <> enabled -> update active info */
 					re_calculate_active_dsts( idx );
 			}
 
@@ -1895,7 +1912,7 @@ int ds_set_state(int group, str *address, int state, int type,
 					return 0;
 				}
 				if (partition != default_partition
-					&& evi_param_add_str(list, &partition_str, &partition->name)){
+				&& evi_param_add_str(list,&partition_str,&partition->name)){
 					LM_ERR("unable to add partition parameter\n");
 					evi_free_params(list);
 					lock_stop_read( partition->lock );
@@ -2065,7 +2082,8 @@ int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition)
 				goto error;
 
 			p = int2str(list->dlist[j].chosen_count, &len);
-			attr = add_mi_attr (node, MI_DUP_VALUE, "first_hit_counter",17, p, len);
+			attr = add_mi_attr (node, MI_DUP_VALUE, "first_hit_counter",
+				17, p, len);
 			if(attr == NULL)
 				goto error;
 
@@ -2196,7 +2214,8 @@ void ds_check_timer(unsigned int ticks, void* param)
 			{
 				/* If the Flag of the entry has "Probing set, send a probe:	*/
 				if ( ((list->dlist[j].flags&DS_INACTIVE_DST)==0) &&
-				(ds_probing_mode==1 || (list->dlist[j].flags&DS_PROBING_DST)!=0) )
+				(ds_probing_mode==1 || (list->dlist[j].flags&DS_PROBING_DST)!=0
+				))
 				{
 					LM_DBG("probing set #%d, URI %.*s\n", list->id,
 							list->dlist[j].uri.len, list->dlist[j].uri.s);
@@ -2204,9 +2223,9 @@ void ds_check_timer(unsigned int ticks, void* param)
 					/* Execute the Dialog using the "request"-Method of the
 					 * TM-Module.*/
 					if (tmb.new_auto_dlg_uac(&ds_ping_from,
-							&list->dlist[j].uri,
-							list->dlist[j].sock?list->dlist[j].sock:probing_sock,
-							&dlg) != 0 ) {
+					&list->dlist[j].uri,
+					list->dlist[j].sock?list->dlist[j].sock:probing_sock,
+					&dlg) != 0 ) {
 						LM_ERR("failed to create new TM dlg\n");
 						continue;
 					}
@@ -2241,7 +2260,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 
 
 int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
-				ds_partition_t *partition)
+													ds_partition_t *partition)
 {
 	pv_value_t pv_val;
 	ds_set_p set;
