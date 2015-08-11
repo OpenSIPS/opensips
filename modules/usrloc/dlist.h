@@ -116,15 +116,16 @@ int find_domain(str* _d, udomain_t** _p);
 typedef udomain_t* (*get_next_udomain_t) (udomain_t* _d);
 udomain_t* get_next_udomain(udomain_t *_d);
 
-#define CID_GET_CLABEL(_cid) (_cid&0xFFFF)
+/*contact label may not be higher than 14 bits*/
+#define CLABEL_MASK ((1<<14)-1)
+#define CLABEL_INC_AND_TEST(_clabel_) ((_clabel_+1)&CLABEL_MASK)
+#define CID_GET_CLABEL(_cid) (_cid&CLABEL_MASK)
 #define CID_NEXT_RLABEL(_dom, _sl) (_dom->table[_sl].next_label++)
 
 static inline uint64_t
 pack_indexes(unsigned short aorhash, unsigned int rlabel, unsigned short clabel)
 {
-
-	return clabel + ((uint64_t)rlabel << 16) + ((uint64_t)aorhash << 48);
-
+	return clabel + ((uint64_t)rlabel << 14) + ((uint64_t)aorhash << 46);
 }
 
 
@@ -137,9 +138,12 @@ unpack_indexes(uint64_t v,
 		return -1;
 	}
 
-	*clabel  = v & 0xFFFF;
-	*rlabel  = (v >> 16) & 0xFFFFFFFF;
-	*aorhash = (v >> 48);
+	/* first 14 bits 0-13 */
+	*clabel  = v & 0x7FFF;
+	/* middle 32 bits 14-45 */
+	*rlabel  = (v >> 14) & 0xFFFFFFFF;
+	/* last 16 bits 46-61 */
+	*aorhash = (v >> 46);
 
 	return 0;
 }

@@ -69,7 +69,7 @@ typedef enum flags {
 typedef struct ucontact {
 	uint64_t contact_id;	/*!< 64 bit Contact identifier
 							  0-------0-------------0---------------0
-							  |0 - 15 |   16 - 47   |    48 - 63    |
+							  |0 - 13 |   14 - 45   |    46 - 61    |
 							  |aorhash| record label| contact label |
 							  0-------0-------------0---------------0
 							*/

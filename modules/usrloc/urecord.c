@@ -468,7 +468,9 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 	_ci->contact_id =
 		pack_indexes((unsigned short)_r->aorhash,
 									 _r->label,
-					 ((unsigned short)_r->next_clabel++));
+					 ((unsigned short)_r->next_clabel));
+	_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
+
 	if ( ((*_c)=mem_insert_ucontact(_r, _contact, _ci)) == 0) {
 		LM_ERR("failed to insert contact\n");
 		return -1;

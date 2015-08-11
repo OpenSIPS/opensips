@@ -645,13 +645,13 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 					_d->table[sl].next_label = rand();
 
 				r->label = CID_NEXT_RLABEL(_d, sl);
-				r->next_clabel = clabel+1;
+				r->next_clabel = CLABEL_INC_AND_TEST(clabel);
 			} else if (ret < 0) {
 				unlock_udomain(_d, &user);
 				goto error;
 			} else {
 				if (r->next_clabel <= clabel)
-					r->next_clabel = clabel+1;
+					r->next_clabel = CLABEL_INC_AND_TEST(clabel);
 			}
 
 			if ((unsigned short)r->aorhash != aorhash) {
@@ -674,6 +674,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 				unlock_udomain(_d, &user);
 				goto error1;
 			}
+
 
 			/* We have to do this, because insert_ucontact sets state to CS_NEW
 			 * and we have the contact in the database already */
@@ -1077,7 +1078,8 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 			LM_ERR("inserting record failed\n");
 			return -1;
 		}
-		(*_r)->next_clabel = rand();
+		/* make sure it does not overflows 14 bits */
+		(*_r)->next_clabel = (rand()&CLABEL_MASK);
 		sl = (*_r)->aorhash&(_d->size-1);
 
 		(*_r)->label = CID_NEXT_RLABEL(_d, sl);
