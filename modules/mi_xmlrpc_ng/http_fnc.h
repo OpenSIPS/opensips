@@ -25,15 +25,25 @@
 #ifndef _MI_XMLRPC_HTTP_HTTP_FNC_H
 #define _MI_XMLRPC_HTTP_HTTP_FNC_H
 
-#define MI_XMLRPC_XML_START		"<?xml version=\"1.0\" "	\
+ #define MI_XMLRPC_XML_START            "<?xml version=\"1.0\" "        \
+       "encoding=\"UTF-8\"?>\r\n<methodResponse>\r\n<params>"  \
+       "\r\n<param><value><string>"
+#define MI_XMLRPC_XML_STOP             "</string></value></param>"     \
+       "\r\n</params>\r\n</methodResponse>\r\n"
+
+
+#define MI_XMLRPC_XML_START_VER2		"<?xml version=\"1.0\" "	\
 	"encoding=\"UTF-8\"?>\r\n<methodResponse>\r\n<params><param>"	\
 	"\r\n"
-#define MI_XMLRPC_XML_STOP	"</param></params>\r\n</methodResponse>\r\n"
+#define MI_XMLRPC_XML_STOP_VER2	"</param></params>\r\n</methodResponse>\r\n"
 
 
 #define MI_XMLRPC_START_OBJECT   		(1<<0)
 #define MI_XMLRPC_END_OBJECT  		(1<<1)
 #define MI_XMLRPC_FULL_OBJECT        3
+
+#define MI_XMLRPC_FORMATED_OUTPUT 2
+#define MI_XMLRPC_UNFORMATED_OUTPUT 1
 
 typedef struct mi_xmlrpc_http_html_page_data_ {
 	str page;

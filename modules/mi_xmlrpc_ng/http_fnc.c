@@ -48,6 +48,7 @@
 
 
 extern str http_root;
+extern int version;
 
 mi_xmlrpc_http_page_data_t html_page_data;
 
@@ -230,7 +231,15 @@ static int mi_xmlrpc_http_recur_write_tree(char** pointer, char *buf, int max_pa
 					struct mi_node *tree, int level, unsigned int flags, int flush, struct mi_node *parent, int object_flags);
 static int mi_xmlrpc_http_recur_write_node(char** pointer, char* buf, int max_page_len,
 					struct mi_node *node, int level, int dump_name, int flush);
+static int mi_xmlrpc_http_recur_write_tree_old(char** pointer, char *buf, int max_page_len,
+					struct mi_node *tree, int level);
 
+static int mi_xmlrpc_http_recur_flush_tree(char** pointer, char *buf, int max_page_len,
+					struct mi_node *tree, int level);
+static int mi_xmlrpc_http_build_content_old(str *page, int max_page_len,
+				struct mi_root* tree);
+static int mi_xmlrpc_http_write_node_old(char** pointer, char* buf, int max_page_len,
+					struct mi_node *node, int level);
 
 static const str MI_XMLRPC_HTTP_CR = str_init("\n");
 static const str MI_XMLRPC_HTTP_SLASH = str_init("/");
@@ -243,6 +252,8 @@ static const str MI_XMLRPC_HTTP_ATTR_VAL_SEPARATOR = str_init("=");
 
 static const str MI_XMLRPC_HTTP_XML_START = str_init(MI_XMLRPC_XML_START);
 static const str MI_XMLRPC_HTTP_XML_STOP = str_init(MI_XMLRPC_XML_STOP);
+static const str MI_XMLRPC_HTTP_XML_START_VER2 = str_init(MI_XMLRPC_XML_START_VER2);
+static const str MI_XMLRPC_HTTP_XML_STOP_VER2 = str_init(MI_XMLRPC_XML_STOP_VER2);
 
 static const str MI_XMLRPC_HTTP_ESC_LT =    str_init("&lt;");   /* < */
 static const str MI_XMLRPC_HTTP_ESC_GT =    str_init("&gt;");   /* > */
@@ -336,7 +347,8 @@ void mi_xmlrpc_http_destroy_async_lock(void)
 
 int mi_xmlrpc_http_flush_content(str *page, int max_page_len,
 				struct mi_root* tree);
-
+int mi_xmlrpc_http_flush_content_old(str *page, int max_page_len,
+				struct mi_root* tree);
 
 
 int mi_xmlrpc_http_flush_tree(void* param, struct mi_root *tree)
@@ -347,9 +359,21 @@ int mi_xmlrpc_http_flush_tree(void* param, struct mi_root *tree)
 	}
 
 	mi_xmlrpc_http_page_data_t* html_p_data = (mi_xmlrpc_http_page_data_t*)param;
-	mi_xmlrpc_http_flush_content(&html_p_data->page,
-				html_p_data->buffer.len,
-				tree);
+
+	switch(version) {
+	case MI_XMLRPC_FORMATED_OUTPUT:
+		mi_xmlrpc_http_flush_content(&html_p_data->page,
+				html_p_data->buffer.len, tree);
+		break;
+	case MI_XMLRPC_UNFORMATED_OUTPUT:
+		mi_xmlrpc_http_flush_content_old(&html_p_data->page,
+				html_p_data->buffer.len, tree);
+		break;
+	default:
+		LM_ERR("Version param not set acordingly");
+		return -1;
+	
+	}
 	return 0;
 }
 
@@ -679,44 +703,6 @@ error:
 	return -1;
 }
 
-/*
-static int mi_xmlrpc_http_recur_flush_tree(char** pointer, char *buf, int max_page_len,
-					struct mi_node *tree, int level)
-{
-	struct mi_node *kid, *tmp;
-	int ret;
-	LM_DBG("flushing tree");
-
-	for(kid = tree->kids ; kid ; ){
-		if (!(kid->flags & MI_WRITTEN)) {
-			if (mi_xmlrpc_http_recur_write_node(pointer, buf, max_page_len,
-							kid, level, 1)!=0)
-				return -1;
-			kid->flags |= MI_WRITTEN;
-		}
-		if ((ret = mi_xmlrpc_http_recur_flush_tree(pointer, buf, max_page_len,
-							tree->kids, level+1))<0){
-			return -1;
-		} else if (ret > 0) {
-			return ret;
-		}
-		if (!(kid->flags & MI_NOT_COMPLETED)){
-			tmp = kid;
-			kid = kid->next;
-			tree->kids = kid;
-
-			if(!tmp->kids){
-		
-				free_mi_node(tmp);
-			}
-		} else {
-		
-			return 1;
-		}
-	}
-	return 0;
-} */
-
 void flush_node (struct mi_node *parent, struct mi_node *prev) {
 	struct mi_node *freed;
 
@@ -815,48 +801,6 @@ error:
 
 }
 
-/*
-int mi_xmlrpc_http_build_header(str *page, int max_page_len,
-				struct mi_root *tree, int flush)
-{
-	char *p, *buf;
-	LM_DBG("in build header inceput\n");
-	if (page->s == NULL) {
-		LM_ERR("Please provide a valid page\n");
-		return -1;
-	}
-	p = buf = page->s;
-
-	if (tree) {
-		LM_DBG("return code: %d\n", tree->code);
-		if (!(tree->node.flags & MI_WRITTEN)) {
-			MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_START);
-			tree->node.flags |= MI_WRITTEN;
-		}
-		if (flush) {
-				LM_DBG("UN INCEPUT flush_treexx build header\n");
-			if (mi_xmlrpc_http_recur_write_tree(&p, buf, max_page_len,
-							tree->node.kids, 0, tree->node.flags, 1, &tree->node)<0)
-				return -1;
-		} else {
-			LM_DBG("UN INCEPUT scris_fara_free build header\n");
-			if (mi_xmlrpc_http_recur_write_tree(&p, buf, max_page_len,
-							tree->node.kids, 0, tree->node.flags, 0, NULL)<0)
-				return -1;
-		}
-		MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_STOP);
-	}
-	LM_DBG("in build header sfarsit\n");
-
-	page->len = p - page->s;
-	return 0;
-error:
-	LM_ERR("buffer 2 small\n");
-	page->len = p - page->s;
-	return -1;
-}*/
-
-
 int mi_xmlrpc_http_build_content(str *page, int max_page_len,
 				struct mi_root* tree)
 {
@@ -864,11 +808,11 @@ int mi_xmlrpc_http_build_content(str *page, int max_page_len,
 
 	if (page->len==0) {
 		p = buf = page->s;
-		MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_START);
+		MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_START_VER2);
 		if (mi_xmlrpc_http_recur_write_tree(&p, buf, max_page_len,
 							tree->node.kids, 0, tree->node.flags, 0, NULL,MI_XMLRPC_FULL_OBJECT)<0)
 				return -1;
-		MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_STOP);
+		MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_STOP_VER2);
 		page->len = p - page->s;
 	} else {
 		buf = page->s;
@@ -877,7 +821,7 @@ int mi_xmlrpc_http_build_content(str *page, int max_page_len,
 			if (mi_xmlrpc_http_recur_write_tree(&p, buf, max_page_len,
 							tree->node.kids, 0, tree->node.flags, 0, NULL, MI_XMLRPC_END_OBJECT) < 0)
 				return -1;
-			MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_STOP);
+			MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_STOP_VER2);
 			page->len = p - page->s;
 		}
 	}
@@ -894,9 +838,20 @@ error:
 int mi_xmlrpc_http_build_page(str *page, int max_page_len,
 				struct mi_root *tree)
 {
-	if (0!=mi_xmlrpc_http_build_content(page, max_page_len, tree))
+	switch(version) {
+	case MI_XMLRPC_FORMATED_OUTPUT:
+		if (0!=mi_xmlrpc_http_build_content(page, max_page_len, tree))
+			return -1;
+		break;
+	case MI_XMLRPC_UNFORMATED_OUTPUT:
+		if (0!=mi_xmlrpc_http_build_content_old(page, max_page_len, tree))
+			return -1;
+		break;
+	default:
+		LM_ERR("Version param not set acordingly");
 		return -1;
-
+	
+	}
 	return 0;
 }
 
@@ -907,7 +862,7 @@ int mi_xmlrpc_http_flush_content(str *page, int max_page_len,
 	char *p, *buf;
 	if (page->len==0){
 		p = buf = page->s;
-		MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_START);
+		MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_START_VER2);
 		if (mi_xmlrpc_http_recur_write_tree(&p, buf, max_page_len,
 							tree->node.kids, 0, tree->node.flags, 1, &tree->node,MI_XMLRPC_START_OBJECT)<0)
 			return -1;
@@ -930,3 +885,197 @@ error:
 	page->len = p - page->s;
 	return -1;
 }
+
+
+/* old implementations for less formated ouput */
+
+int mi_xmlrpc_http_build_header(str *page, int max_page_len,
+				struct mi_root *tree, int flush)
+{
+	char *p, *buf;
+
+	if (page->s == NULL) {
+		LM_ERR("Please provide a valid page\n");
+		return -1;
+	}
+	p = buf = page->s;
+
+	if (tree) {
+		LM_DBG("return code: %d\n", tree->code);
+		if (!(tree->node.flags & MI_WRITTEN)) {
+			MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_START);
+			tree->node.flags |= MI_WRITTEN;
+		}
+		if (flush) {
+			if (mi_xmlrpc_http_recur_flush_tree(&p, buf, max_page_len,
+							&tree->node, 0)<0)
+				return -1;
+		} else {
+			if (mi_xmlrpc_http_recur_write_tree_old(&p, buf, max_page_len,
+							tree->node.kids, 0)<0)
+				return -1;
+		}
+		MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_STOP);
+	}
+
+	page->len = p - page->s;
+	return 0;
+error:
+	LM_ERR("buffer 2 small\n");
+	page->len = p - page->s;
+	return -1;
+}
+
+static int mi_xmlrpc_http_build_content_old(str *page, int max_page_len,
+				struct mi_root* tree)
+{
+	char *p, *buf;
+
+	if (page->len==0) {
+		if (0!=mi_xmlrpc_http_build_header(page, max_page_len, tree, 0))
+			return -1;
+	} else {
+		buf = page->s;
+		p = page->s + page->len;
+
+		if (tree) { /* Build mi reply */
+			if (mi_xmlrpc_http_recur_write_tree_old(&p, buf, max_page_len,
+							tree->node.kids, 0)<0)
+				return -1;
+			page->len = p - page->s;
+		}
+	}
+	return 0;
+}
+
+int mi_xmlrpc_http_flush_content_old(str *page, int max_page_len,
+				struct mi_root* tree)
+{
+	char *p, *buf;
+
+	if (page->len==0)
+		if (0!=mi_xmlrpc_http_build_header(page, max_page_len, tree, 1))
+			return -1;
+	buf = page->s;
+	p = page->s + page->len;
+
+	if (tree) { /* Build mi reply */
+		if (mi_xmlrpc_http_recur_flush_tree(&p, buf, max_page_len,
+						&tree->node, 0)<0)
+			return -1;
+		page->len = p - page->s;
+	}
+	return 0;
+}
+
+static int mi_xmlrpc_http_recur_flush_tree(char** pointer, char *buf, int max_page_len,
+					struct mi_node *tree, int level)
+{
+	struct mi_node *kid, *tmp;
+	int ret;
+	LM_DBG("flushing tree");
+
+	for(kid = tree->kids ; kid ; ){
+		if (!(kid->flags & MI_WRITTEN)) {
+			if (mi_xmlrpc_http_write_node_old(pointer, buf, max_page_len,
+							kid, level)!=0)
+				return -1;
+			kid->flags |= MI_WRITTEN;
+		}
+		if ((ret = mi_xmlrpc_http_recur_flush_tree(pointer, buf, max_page_len,
+							tree->kids, level+1))<0){
+			return -1;
+		} else if (ret > 0) {
+			return ret;
+		}
+		if (!(kid->flags & MI_NOT_COMPLETED)){
+			tmp = kid;
+			kid = kid->next;
+			tree->kids = kid;
+
+			if(!tmp->kids){
+		
+				free_mi_node(tmp);
+			}
+		} else {
+		
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static int mi_xmlrpc_http_write_node_old(char** pointer, char* buf, int max_page_len,
+					struct mi_node *node, int level)
+{
+	struct mi_attr *attr;
+	str temp_holder;
+	int temp_counter;
+	int insert_node_separator;
+
+	/* name and value */
+	if (node->name.s!=NULL) {
+		for(;level>0;level--) {
+			MI_XMLRPC_HTTP_COPY(*pointer,
+				MI_XMLRPC_HTTP_NODE_INDENT);
+		}
+		MI_XMLRPC_HTTP_COPY(*pointer,
+				node->name);
+		insert_node_separator = 1;
+	} else {
+		insert_node_separator = 0;
+	}
+	if (node->value.s!=NULL) {
+		if (insert_node_separator) {
+			MI_XMLRPC_HTTP_COPY(*pointer,
+				MI_XMLRPC_HTTP_NODE_SEPARATOR);
+			insert_node_separator = 0;
+		}
+		MI_XMLRPC_HTTP_ESC_COPY(*pointer, node->value,
+				temp_holder, temp_counter);
+	}
+	/* attributes */
+	for(attr=node->attributes;attr!=NULL;attr=attr->next) {
+		if (insert_node_separator) {
+			MI_XMLRPC_HTTP_COPY(*pointer,
+				MI_XMLRPC_HTTP_NODE_SEPARATOR);
+			insert_node_separator = 0;
+		}
+		if (attr->name.s!=NULL) {
+			MI_XMLRPC_HTTP_COPY_3(*pointer,
+					MI_XMLRPC_HTTP_ATTR_SEPARATOR,
+					attr->name,
+					MI_XMLRPC_HTTP_ATTR_VAL_SEPARATOR);
+			MI_XMLRPC_HTTP_ESC_COPY(*pointer, attr->value,
+					temp_holder, temp_counter);
+		}
+	}
+	MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_CR);
+	return 0;
+error:
+	LM_ERR("buffer 2 small: *pointer=[%p] buf=[%p] max_page_len=[%d]\n",
+			*pointer, buf, max_page_len);
+	return -1;
+}
+
+static int mi_xmlrpc_http_recur_write_tree_old(char** pointer, char *buf, int max_page_len,
+					struct mi_node *tree, int level)
+{
+	for( ; tree ; tree=tree->next ) {
+		if (!(tree->flags & MI_WRITTEN)) {
+			if (mi_xmlrpc_http_write_node_old(pointer, buf, max_page_len,
+									tree, level)!=0){
+				return -1;
+			}
+		}
+		if (tree->kids) {
+			if (mi_xmlrpc_http_recur_write_tree_old(pointer, buf, max_page_len,
+						tree->kids, level+1)<0){
+				return -1;
+			}
+		}
+	}
+	return 0;
+}
+
+

@@ -45,6 +45,7 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 static ssize_t mi_xmlrpc_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max);
 
 str http_root = str_init("RPC2");
+int version = 2;
 httpd_api_t httpd_api;
 
 
@@ -57,6 +58,7 @@ static const str MI_XMLRPC_U_METHOD = str_init(MI_XMLRPC_XML_START
 /* module parameters */
 static param_export_t mi_params[] = {
 	{"mi_xmlrpc_ng_root",   STR_PARAM, &http_root.s},
+	{"mi_xmlrpc_ng_format_version",   INT_PARAM, &version},
 	{0,0,0}
 };
 
