@@ -26,6 +26,7 @@ Razvan Crainea
         1.5. Exported Parameters
 
               1.5.1. heartbeat (integer)
+              1.5.2. sync_mode (integer)
 
         1.6. Exported Functions
         1.7. Example
@@ -38,9 +39,10 @@ Razvan Crainea
    List of Examples
 
    1.1. Set heartbeat parameter
-   1.2. E_PIKE_BLOCKED event
-   1.3. RabbitMQ socket
-   1.4. OpenSIPS config script - sample event_rabbitmq usage
+   1.2. Set sync_mode parameter
+   1.3. E_PIKE_BLOCKED event
+   1.4. RabbitMQ socket
+   1.5. OpenSIPS config script - sample event_rabbitmq usage
    2.1. Event subscription
    2.2. Event subscription
 
@@ -130,6 +132,22 @@ Chapter 1. Admin Guide
 modparam("event_rabbitmq", "heartbeat", 3)
 ...
 
+1.5.2. sync_mode (integer)
+
+   Specifies whether an event raise operates synchronous or
+   asynchronous relative to the process where the raise is
+   triggered.In synchronous mode the process waits for the status
+   of the raise from the actual worker process.In asynchronous
+   mode the process continues its operation without receiving any
+   confirmation.
+
+   Default value is “0 (asynchronous)”.
+
+   Example 1.2. Set sync_mode parameter
+...
+modparam("event_rabbitmq", "sync_mode", 1)
+...
+
 1.6. Exported Functions
 
    No function exported to be used from configuration file.
@@ -139,13 +157,13 @@ modparam("event_rabbitmq", "heartbeat", 3)
    This is an example of an event raised by the pike module when
    it decides an ip should be blocked:
 
-   Example 1.2. E_PIKE_BLOCKED event
+   Example 1.3. E_PIKE_BLOCKED event
 
         E_PIKE_BLOCKED
         ip::192.168.2.11
 
 
-   Example 1.3. RabbitMQ socket
+   Example 1.4. RabbitMQ socket
 
         rabbitmq:guest:guest@127.0.0.1:5672/pike
 
@@ -163,7 +181,7 @@ modparam("event_rabbitmq", "heartbeat", 3)
    The parameters passed to the server are the R-URI username and
    the message body.
 
-   Example 1.4. OpenSIPS config script - sample event_rabbitmq
+   Example 1.5. OpenSIPS config script - sample event_rabbitmq
    usage
 ...
 loadmodule "signaling.so"

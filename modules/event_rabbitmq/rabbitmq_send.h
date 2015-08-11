@@ -30,19 +30,23 @@
 #include "event_rabbitmq.h"
 
 #define RMQ_SEND_RETRY 3
+#define RMQ_SEND_SUCCESS 0
+#define RMQ_SEND_FAIL -1
 
 typedef struct _rmq_send {
 	evi_reply_sock *sock;
 	char msg[0];
+	int process_idx;
 } rmq_send_t;
 
 void rmq_process(int rank);
 int rmq_create_pipe(void);
+int rmq_create_status_pipes(void);
 void rmq_destroy_pipe(void);
+void rmq_destroy_status_pipes(void);
 int rmq_init_writer(void);
 int rmq_send(rmq_send_t * rmqs);
 void rmq_free_param(rmq_params_t *rmqp);
 void rmq_destroy(evi_reply_sock *sock);
 
 #endif
-
