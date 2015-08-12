@@ -121,7 +121,6 @@ int accept_replicated_dlg=0;
 int dialog_replicate_cluster = 0;
 int profile_replicate_cluster = 0;
 int accept_repl_profiles=0;
-struct replication_dest *replication_dests=NULL;
 
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
@@ -823,11 +822,12 @@ static int mod_init(void)
 	if( accept_repl_profiles < 0 )
 		accept_repl_profiles = 0;
 	
-	if ((accept_replicated_dlg || accept_repl_profiles) &&
-		bin_register_cb("dialog", receive_binary_packet) < 0) {
+	if (accept_replicated_dlg &&
+		bin_register_cb("dialog", receive_dlg_binary_packet, NULL) < 0) {
 		LM_ERR("Cannot register binary packet callback!\n");
 		return -1;
 	}
+	
 	
 	if ( (dialog_replicate_cluster > 0 || profile_replicate_cluster>0 ||
 		accept_replicated_dlg || accept_repl_profiles ) 
@@ -835,6 +835,13 @@ static int mod_init(void)
 		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
 		return -1;
 	}
+	
+	if(accept_repl_profiles && clusterer_api.register_module("dialog", PROTO_BIN, receive_prof_binary_packet,
+			10, 1, accept_repl_profiles) < 0){
+		LM_ERR("Cannot register binary packet callback!\n");
+		return -1;
+	}
+	
 	
 	if( dialog_replicate_cluster < 0 )
 		dialog_replicate_cluster = 0;
@@ -1685,8 +1692,7 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 		if (db_update)
 			update_dialog_timeout_info(dlg);
 
-		if (replication_dests)
-			replicate_dialog_updated(dlg);
+		replicate_dialog_updated(dlg);
 
 		if (timer_update && update_dlg_timer(&dlg->tl, timeout) < 0) {
 			LM_ERR("failed to update timer\n");

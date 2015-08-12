@@ -51,7 +51,9 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 int dlg_replicated_update(void);
 int dlg_replicated_delete(void);
 
-void receive_binary_packet(int packet_type, struct receive_info *ri);
+void receive_dlg_binary_packet(int packet_type, struct receive_info *ri,void *att);
+
+void receive_prof_binary_packet(int packet_type, struct receive_info *ri, int server_id);
 
 #endif /* _DIALOG_DLG_REPLICATION_H_ */
 
