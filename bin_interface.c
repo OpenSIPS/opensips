@@ -318,7 +318,7 @@ again:
  *
  * @return:   0 on success
  */
-int bin_register_cb(char *mod_name, void (*cb)(int, struct receive_info *))
+int bin_register_cb(char *mod_name, void (*cb)(int, struct receive_info *, void * atr), void *att)
 {
 	struct packet_cb_list *new_mod;
 
@@ -332,6 +332,7 @@ int bin_register_cb(char *mod_name, void (*cb)(int, struct receive_info *))
 	new_mod->cbf = cb;
 	new_mod->module.len = strlen(mod_name);
 	new_mod->module.s = mod_name;
+	new_mod->att = att;
 
 	new_mod->next = reg_modules;
 	reg_modules = new_mod;
@@ -362,7 +363,7 @@ void call_callbacks(char* buffer, struct receive_info *rcv){
 			LM_DBG("binary Packet CMD: %d. Module: %.*s\n",
 					bin_rcv_type, name.len, name.s);
 
-			p->cbf(bin_rcv_type, rcv);
+			p->cbf(bin_rcv_type, rcv,p->att);
 
 			break;
 		}
