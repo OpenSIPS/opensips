@@ -816,7 +816,7 @@ modparam("usrloc", "skip_replicated_db_ops", 1)
 	         xreflabel="max_contact_delete">
 		<title><varname>max_contact_delete</varname> (int)</title>
 		<para>
-			Relevant only in WRITE_THROUGH or RIGHT_BACK schemes. The maximum
+			Relevant only in WRITE_THROUGH or WRITE_BACK schemes. The maximum
 		number of contacts to be deleted from the database at once. Will delete
 		all of them, if fewer after passing through all the contacts.
 		</para>
