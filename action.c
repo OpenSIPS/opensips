@@ -1006,7 +1006,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			/* passwd */
 			tmp = uri.passwd.s;
 			len = uri.passwd.len;
-			if (user || tmp) {
+			if (tmp) {
 				if (crt+len+1>end) goto error_uri;
 				*crt++=':';
 				memcpy(crt, tmp, len);
