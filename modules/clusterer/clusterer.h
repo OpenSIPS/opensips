@@ -27,10 +27,22 @@ extern str no_tries_col;
 
 typedef struct table_entry_ table_entry_t;
 
-struct attachment{
-    str module;
-    void *ptr;
-    struct attachment *next;
+struct module_list{
+   str mod_name;
+   int proto;
+   void (*cb)(int, struct receive_info *, int);
+   int timeout;
+   int duration;
+   int auth_check;
+   int accept_cluster_id;
+   struct module_list *next;
+};
+
+struct module_timestamp{
+    int state;
+    uint64_t timestamp;
+    struct module_list *up;
+    struct module_timestamp *next;
 };
 
 /* data list */
@@ -43,6 +55,7 @@ struct table_entry_ {
     int cluster_id;
     /* state */
     int state;
+    int in_state;
     /* dirty bit */
     int dirty_bit;
     /* description string */
@@ -63,8 +76,8 @@ struct table_entry_ {
     int failed_attempts;
     /* sock address */   
     union sockaddr_union addr;
-    /* modules attachments */
-    struct attachment* att;
+    /* module list */
+    struct module_timestamp *in_timestamps;
     /* linker in list */
     table_entry_t *next;
 };
