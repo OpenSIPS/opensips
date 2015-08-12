@@ -49,7 +49,7 @@ extern stat_var *create_recv;
 extern stat_var *update_recv;
 extern stat_var *delete_recv;
 
-static void dlg_replicated_profiles(struct receive_info *ri,int server_id);
+static void dlg_replicated_profiles(struct receive_info *ri, int server_id);
 
 static struct socket_info * fetch_socket_info(str *addr)
 {
@@ -61,12 +61,12 @@ static struct socket_info * fetch_socket_info(str *addr)
 		return NULL;
 
 	if (parse_phostport(addr->s, addr->len, &host.s, &host.len,
-						&port, &proto) != 0) {
+		&port, &proto) != 0) {
 		LM_ERR("bad socket <%.*s>\n", addr->len, addr->s);
 		return NULL;
 	}
 
-	sock = grep_sock_info(&host, (unsigned short)port, (unsigned short)proto);
+	sock = grep_sock_info(&host, (unsigned short) port, (unsigned short) proto);
 	if (!sock) {
 		LM_WARN("non-local socket <%.*s>...ignoring\n", addr->len, addr->s);
 	}
@@ -75,7 +75,6 @@ static struct socket_info * fetch_socket_info(str *addr)
 }
 
 /*  Binary Packet receiving functions   */
-
 
 /**
  * replicates a confirmed dialog from another OpenSIPS instance
@@ -86,7 +85,7 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 	int next_id, h_entry;
 	unsigned int dir, dst_leg;
 	str callid, from_uri, to_uri, from_tag, to_tag;
-	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
+	str cseq1, cseq2, contact1, contact2, rroute1, rroute2, mangled_fu, mangled_tu;
 	str sock, vars, profiles;
 	struct dlg_cell *dlg = NULL;
 	struct socket_info *caller_sock, *callee_sock;
@@ -112,7 +111,7 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 
 		if (dlg) {
 			LM_DBG("Dialog with ci '%.*s' is already created\n",
-			       callid.len, callid.s);
+				callid.len, callid.s);
 			unref_dlg_unsafe(dlg, 1, d_entry);
 			dlg_unlock(d_table, d_entry);
 			return 0;
@@ -170,9 +169,9 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 
 	/* add the 2 legs */
 	if (dlg_add_leg_info(dlg, &from_tag, &rroute1, &contact1,
-				&cseq1, caller_sock, 0, 0) != 0 ||
+		&cseq1, caller_sock, 0, 0) != 0 ||
 		dlg_add_leg_info(dlg, &to_tag, &rroute2, &contact2,
-				&cseq2, callee_sock, &mangled_fu, &mangled_tu) != 0) {
+		&cseq2, callee_sock, &mangled_fu, &mangled_tu) != 0) {
 		LM_ERR("dlg_set_leg_info failed\n");
 		goto pre_linking_error;
 	}
@@ -195,17 +194,17 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 	bin_pop_str(&profiles);
 	bin_pop_int(&dlg->user_flags);
 	bin_pop_int(&dlg->flags);
-	bin_pop_int((void *)&dlg->tl.timeout);
+	bin_pop_int((void *) &dlg->tl.timeout);
 	bin_pop_int(&dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_pop_int(&dlg->legs[callee_idx(dlg)].last_gen_cseq);
 
-	if (dlg->tl.timeout <= (unsigned int)time(0))
+	if (dlg->tl.timeout <= (unsigned int) time(0))
 		dlg->tl.timeout = 0;
 	else
-		dlg->tl.timeout -= (unsigned int)time(0);
+		dlg->tl.timeout -= (unsigned int) time(0);
 
 	/* restore the timer values */
-	if (insert_dlg_timer(&dlg->tl, (int)dlg->tl.timeout) != 0) {
+	if (insert_dlg_timer(&dlg->tl, (int) dlg->tl.timeout) != 0) {
 		LM_CRIT("Unable to insert dlg %p [%u:%u] "
 			"with clid '%.*s' and tags '%.*s' '%.*s'\n",
 			dlg, dlg->h_entry, dlg->h_id,
@@ -218,13 +217,13 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 	}
 
 	if (dlg->state == DLG_STATE_CONFIRMED_NA ||
-	    dlg->state == DLG_STATE_CONFIRMED)
+		dlg->state == DLG_STATE_CONFIRMED)
 		active_dlgs_cnt++;
 
 	/* reference the dialog as kept in the timer list */
 	ref_dlg_unsafe(dlg, 1);
 
-	LM_DBG("Received initial timeout of %d for dialog %.*s, safe = %d\n",dlg->tl.timeout,callid.len,callid.s,safe);
+	LM_DBG("Received initial timeout of %d for dialog %.*s, safe = %d\n", dlg->tl.timeout, callid.len, callid.s, safe);
 
 	dlg->lifetime = 0;
 
@@ -238,7 +237,7 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 			ref_dlg_unsafe(dlg, 1);
 		}
 	}
-	*/
+	 */
 
 	if (dlg_db_mode == DB_MODE_DELAYED) {
 		/* to be later removed by timer */
@@ -293,8 +292,8 @@ int dlg_replicated_update(void)
 	bin_pop_str(&to_uri);
 
 	LM_DBG("replicated update for ['%.*s' '%.*s' '%.*s' '%.*s' '%.*s']\n",
-	call_id.len, call_id.s, from_tag.len, from_tag.s, to_tag.len, to_tag.s,
-	from_uri.len, from_uri.s, to_uri.len, to_uri.s);
+		call_id.len, call_id.s, from_tag.len, from_tag.s, to_tag.len, to_tag.s,
+		from_uri.len, from_uri.s, to_uri.len, to_uri.s);
 
 	dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &dst_leg);
 
@@ -342,7 +341,7 @@ int dlg_replicated_update(void)
 	bin_skip_int(2);
 
 	timeout -= time(0);
-	LM_DBG("Received updated timeout of %d for dialog %.*s\n",timeout,call_id.len,call_id.s);
+	LM_DBG("Received updated timeout of %d for dialog %.*s\n", timeout, call_id.len, call_id.s);
 
 	if (dlg->lifetime != timeout) {
 		dlg->lifetime = timeout;
@@ -386,9 +385,9 @@ int dlg_replicated_delete(void)
 
 	dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &dst_leg);
 	if (!dlg) {
-	        LM_ERR("dialog not found (callid: |%.*s| ftag: |%.*s|\n",
-	                call_id.len, call_id.s, from_tag.len, from_tag.s);
-	        return -1;
+		LM_ERR("dialog not found (callid: |%.*s| ftag: |%.*s|\n",
+			call_id.len, call_id.s, from_tag.len, from_tag.s);
+		return -1;
 	}
 
 	dlg_lock_dlg(dlg);
@@ -398,11 +397,11 @@ int dlg_replicated_delete(void)
 
 	/* simulate BYE received from caller */
 	next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state,
-	               &new_state, &unref, dlg->legs_no[DLG_LEG_200OK], 1);
+		&new_state, &unref, dlg->legs_no[DLG_LEG_200OK], 1);
 
 	if (old_state == new_state) {
 		LM_ERR("duplicate dialog delete request (callid: |%.*s|"
-		       "ftag: |%.*s|\n", call_id.len, call_id.s, from_tag.len, from_tag.s);
+			"ftag: |%.*s|\n", call_id.len, call_id.s, from_tag.len, from_tag.s);
 		return -1;
 	}
 
@@ -448,9 +447,6 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 	static str module_name = str_init("dialog");
 	int callee_leg;
 	str *vars, *profiles;
-	str send_buffer;
-	clusterer_node_t *nodes;
-	clusterer_node_t *d;	
 
 	if (bin_init(&module_name, REPLICATION_DLG_CREATED, BIN_VERSION) != 0)
 		goto error;
@@ -499,21 +495,10 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 	bin_push_int((unsigned int)time(0) + dlg->tl.timeout - get_ticks());
 	bin_push_int(dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(dlg->legs[callee_leg].last_gen_cseq);
-	nodes = clusterer_api.get_nodes(dialog_replicate_cluster, PROTO_BIN);
-	if(nodes == NULL)
-		goto error;
 
-	bin_get_buffer(&send_buffer);
+	if (clusterer_api.send_to(dialog_replicate_cluster, PROTO_BIN) < 0)
+ 		goto error;
 
-	for (d = nodes; d; d = d->next){
-		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0)){
-			LM_ERR("cannot send message\n");
-			clusterer_api.set_state(dialog_replicate_cluster, d->machine_id, 2, PROTO_BIN);
-		}
-	}
-
-	clusterer_api.free_nodes(nodes);
-	
 	if_update_stat(dlg_enable_stats,create_sent,1);
 	return;
 
@@ -529,10 +514,7 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 {
 	static str module_name = str_init("dialog");
 	int callee_leg;
-	str *vars, *profiles;
-	str send_buffer;	
-	clusterer_node_t *nodes;
-	clusterer_node_t *d;	
+	str *vars, *profiles;	
 
 	if (bin_init(&module_name, REPLICATION_DLG_UPDATED, BIN_VERSION) != 0)
 		goto error;
@@ -581,21 +563,10 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 	bin_push_int(dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(dlg->legs[callee_leg].last_gen_cseq);
 	
-	nodes = clusterer_api.get_nodes(dialog_replicate_cluster, PROTO_BIN);
-
-	if(nodes == NULL)
-		goto error;
-
-	bin_get_buffer(&send_buffer);
-	for (d = nodes; d; d = d->next){
-		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0)){
-			LM_ERR("cannot send message\n");
-			clusterer_api.set_state(dialog_replicate_cluster, d->machine_id, 2, PROTO_BIN);
-		}
-		
-	}
-
-	clusterer_api.free_nodes(nodes);
+	if (clusterer_api.send_to(dialog_replicate_cluster, PROTO_BIN) < 0) {
+		LM_ERR("replicate dialog updated failed\n");
+		return;
+ 	}
 
 	if_update_stat(dlg_enable_stats,update_sent,1);
 	return;
@@ -611,9 +582,6 @@ error:
 void replicate_dialog_deleted(struct dlg_cell *dlg)
 {
 	static str module_name = str_init("dialog");
-	str send_buffer;
-	clusterer_node_t *nodes;
-	clusterer_node_t *d;
 	
 	if (bin_init(&module_name, REPLICATION_DLG_DELETED, BIN_VERSION) != 0)
 		goto error;
@@ -622,21 +590,11 @@ void replicate_dialog_deleted(struct dlg_cell *dlg)
 	bin_push_str(&dlg->callid);
 	bin_push_str(&dlg->legs[DLG_CALLER_LEG].tag);
 	bin_push_str(&dlg->legs[callee_idx(dlg)].tag);
-
-	nodes = clusterer_api.get_nodes(dialog_replicate_cluster, PROTO_BIN);
-	if(nodes == NULL)
-		goto error;
-
-	bin_get_buffer(&send_buffer);
 	
-	for (d = nodes; d; d = d->next){
-		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0)){
-			LM_ERR("cannot send message\n");
-			clusterer_api.set_state(dialog_replicate_cluster, d->machine_id, 2, PROTO_BIN);
-		}
-		
-	}	
-	clusterer_api.free_nodes(nodes);
+	if (clusterer_api.send_to(dialog_replicate_cluster, PROTO_BIN) < 0) {
+		goto error;
+ 	}
+	
 	return;
 error:
 	LM_ERR("Failed to replicate deleted dialog\n");
@@ -646,7 +604,30 @@ error:
  * receive_binary_packet (callback) - receives a cmd_type, specifying the
  * purpose of the data encoded in the received UDP packet
  */
-void receive_binary_packet(int packet_type, struct receive_info *ri)
+void receive_prof_binary_packet(int packet_type, struct receive_info *ri, int server_id)
+{
+	char *ip;
+	unsigned short port;
+
+	if (packet_type == SERVER_TEMP_DISABLED) {
+		get_su_info(&ri->src_su.s, ip, port);
+		LM_WARN("server: %s:%hu temporary disabled\n", ip, port);
+		return;
+	}
+
+	if (packet_type == SERVER_TIMEOUT) {
+		LM_WARN("server with clusterer id %d timeout\n", server_id);
+		return;
+	}
+
+	if (packet_type != REPLICATION_DLG_PROFILE) {
+		LM_WARN("bad packet type\n");
+		return;
+	}
+	dlg_replicated_profiles(ri, server_id);
+}
+
+void receive_dlg_binary_packet(int packet_type, struct receive_info *ri, void *att)
 {
 	int rc;
 	char *ip;
@@ -664,11 +645,6 @@ void receive_binary_packet(int packet_type, struct receive_info *ri)
 		return;
 	}
 
-	if (accept_repl_profiles && packet_type == REPLICATION_DLG_PROFILE) {
-		/* TODO: handle this */
-		dlg_replicated_profiles(ri, server_id);
-		return;
-	}
 	if (!accept_replicated_dlg) {
 		get_su_info(&ri->src_su.s, ip, port);
 		LM_WARN("Unwanted dialog packet received from %s:%hu (type=%d)\n",
@@ -702,7 +678,7 @@ void receive_binary_packet(int packet_type, struct receive_info *ri)
 		rc = -1;
 		get_su_info(&ri->src_su.s, ip, port);
 		LM_WARN("Invalid dialog binary packet command: %d (from %s:%hu)\n",
-				packet_type, ip, port);
+			packet_type, ip, port);
 	}
 
 	if (rc != 0)
@@ -740,21 +716,21 @@ int repl_prof_init(void)
 {
 	if (!profile_replicate_cluster && !accept_repl_profiles)
 		return 0;
-	
+
 	if (repl_prof_timer_check < 0) {
 		LM_ERR("negative replicate timer for profiles check %d\n",
-				repl_prof_timer_check);
+			repl_prof_timer_check);
 		return -1;
 	}
 
 	if (repl_prof_timer_expire < 0) {
 		LM_ERR("negative replicate expire timer for profiles %d\n",
-				repl_prof_timer_expire);
+			repl_prof_timer_expire);
 		return -1;
 	}
 
 	if (register_timer("dialog-repl-profiles-timer", repl_prof_timer_f, NULL,
-			repl_prof_timer_check, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
+		repl_prof_timer_check, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
 		LM_ERR("failed to register profiles utimer\n");
 		return -1;
 	}
@@ -769,20 +745,20 @@ int repl_prof_init(void)
 
 	if (repl_prof_buffer_th < 0) {
 		LM_ERR("negative replicate buffer threshold for profiles %d\n",
-				repl_prof_buffer_th);
+			repl_prof_buffer_th);
 		return -1;
 	}
 
 	if (register_utimer("dialog-repl-profiles-utimer", repl_prof_utimer_f, NULL,
-			repl_prof_utimer * 1000, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
+		repl_prof_utimer * 1000, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
 		LM_ERR("failed to register profiles utimer\n");
 		return -1;
 	}
-	
+
 
 	if (repl_prof_buffer_th > (BUF_SIZE * 0.9)) {
 		LM_WARN("Buffer size too big %d - profiles information might get lost",
-				repl_prof_buffer_th);
+			repl_prof_buffer_th);
 		return -1;
 	}
 
@@ -792,26 +768,10 @@ int repl_prof_init(void)
 /* profiles replication */
 static inline void dlg_replicate_profiles(void)
 {
-	str send_buffer;
-	clusterer_node_t *nodes;
-	clusterer_node_t *d;
-	
-	nodes = clusterer_api.get_nodes(profile_replicate_cluster, PROTO_BIN);
-	if(nodes == NULL)
-		goto error;
-	
-	bin_get_buffer(&send_buffer);
+	if (clusterer_api.send_to(profile_replicate_cluster, PROTO_BIN) < 0) {
+ 		goto error;
+	}
 
-	for (d = nodes; d; d = d->next){
-		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0)){
-			LM_ERR("cannot send message\n");
-			clusterer_api.set_state(profile_replicate_cluster, d->machine_id, 2, PROTO_BIN);
-		}
-		
- 	}
-
-	clusterer_api.free_nodes(nodes);	
-	
 	return;
 error:
 	LM_ERR("Failed to replicate profile dialog\n");	
@@ -860,13 +820,11 @@ static void dlg_replicated_profiles(struct receive_info *ri, int server_id)
 	repl_prof_value_t *rp;
 	repl_prof_count_t *destination;
 
-	if(!clusterer_api.check(accept_repl_profiles, &ri->src_su, server_id, ri->proto))
-		return;
 
 	/* optimize profile search */
 	struct dlg_profile_table *old_profile = NULL;
 	str old_name;
-	
+
 	now = time(0);
 	//*repl_prof_dests[index].last_msg = now;
 
@@ -876,12 +834,12 @@ static void dlg_replicated_profiles(struct receive_info *ri, int server_id)
 
 		/* check if the same profile was sent */
 		if (!old_profile || old_name.len != name.len ||
-				memcmp(name.s, old_name.s, name.len) != 0) {
+			memcmp(name.s, old_name.s, name.len) != 0) {
 			old_profile = get_dlg_profile(&name);
 			if (!old_profile) {
 				get_su_info(&ri->src_su.s, ip, port);
 				LM_WARN("received unknown profile <%.*s> from %s:%hu\n",
-						name.len, name.s, ip, port);
+					name.len, name.s, ip, port);
 			}
 			old_name = name;
 		}
@@ -891,12 +849,12 @@ static void dlg_replicated_profiles(struct receive_info *ri, int server_id)
 			LM_ERR("cannot pop profile's has_value int\n");
 			return;
 		}
-		
+
 		if (has_value) {
 			if (!profile->has_value) {
 				get_su_info(&ri->src_su.s, ip, port);
 				LM_WARN("The other end does not have a value for this profile:"
-						"<%.*s> [%s:%hu]\n", profile->name.len, profile->name.s, ip, port);
+					"<%.*s> [%s:%hu]\n", profile->name.len, profile->name.s, ip, port);
 				profile = NULL;
 			}
 			if (bin_pop_str(&value)) {
@@ -942,14 +900,14 @@ static void dlg_replicated_profiles(struct receive_info *ri, int server_id)
 					memset(rp, 0, sizeof(repl_prof_value_t));
 					*dst = rp;
 				} else {
-					rp = (repl_prof_value_t *)*dst;
+					rp = (repl_prof_value_t *) * dst;
 				}
 				if (!rp->noval)
 					rp->noval = repl_prof_allocate();
 				if (rp->noval) {
 					lock_release(&rp->noval->lock);
 					destination = find_destination(rp->noval, server_id);
-					if(destination == NULL){
+					if (destination == NULL) {
 						lock_release(&rp->noval->lock);
 						lock_set_release(profile->locks, i);
 						return;
@@ -968,10 +926,10 @@ release:
 
 static int repl_prof_add(str *name, int has_value, str *value, unsigned int count)
 {
-	LM_INFO("repl prof add %*.s\n",name->len , name->s);
-	
+	LM_INFO("repl prof add %*.s\n", name->len, name->s);
+
 	int ret = 0;
-	
+
 	if (bin_push_str(name) < 0)
 		return -1;
 	/* extra size to add the value indication but it's good
@@ -1014,7 +972,7 @@ int replicate_profiles_count(repl_prof_novalue_t *rp)
 
 	lock_get(&rp->lock);
 	head = rp->dsts;
-	while(head != NULL){
+	while (head != NULL) {
 		/* if the replication expired, reset its counter */
 		if ((head->update + repl_prof_timer_expire) < now)
 			head->counter = 0;
@@ -1055,7 +1013,7 @@ static void repl_prof_timer_f(unsigned int ticks, void *param)
 					del = it;
 					if (iterator_next(&it) < 0)
 						LM_DBG("cannot find next iterator\n");
-					rp = (repl_prof_value_t *)iterator_delete(&del);
+					rp = (repl_prof_value_t *) iterator_delete(&del);
 					if (rp) {
 						free_profile_val_t(rp);
 						/*if (rp->noval)
@@ -1076,7 +1034,7 @@ next_entry:
 
 static void repl_prof_utimer_f(utime_t ticks, void *param)
 {
-LM_INFO("repl_prof_utimer\n");
+	LM_INFO("repl_prof_utimer\n");
 #define REPL_PROF_TRYSEND() \
 	do { \
 		nr++; \
