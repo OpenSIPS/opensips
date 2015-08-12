@@ -37,10 +37,6 @@ int skip_replicated_db_ops;
 
 void replicate_urecord_insert(urecord_t *r)
 {
-	str send_buffer;
-	clusterer_node_t *nodes;
-	clusterer_node_t *d;
-
 	if (bin_init(&repl_module_name, REPL_URECORD_INSERT, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
@@ -51,27 +47,13 @@ void replicate_urecord_insert(urecord_t *r)
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
 
-	nodes = clusterer_api.get_nodes(ul_replicate_cluster, PROTO_BIN);
-	if(nodes == NULL)
-		return;
-	bin_get_buffer(&send_buffer);
-
-	for (d = nodes; d; d = d->next){
-		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0) != 0){
-			LM_ERR("cannot send message\n");
-			clusterer_api.set_state(ul_replicate_cluster, d->machine_id, 2, PROTO_BIN);
-		}
-		
-	}
-	
-	clusterer_api.free_nodes(nodes);
+	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
+		LM_ERR("replicate urecord insert failed\n");
+ 	}
 }
 
 void replicate_urecord_delete(urecord_t *r)
 {
-	str send_buffer;
-	clusterer_node_t *nodes;
-	clusterer_node_t *d;
 
 	if (bin_init(&repl_module_name, REPL_URECORD_DELETE, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
@@ -82,28 +64,14 @@ void replicate_urecord_delete(urecord_t *r)
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
 
-	nodes = clusterer_api.get_nodes(ul_replicate_cluster, PROTO_BIN);
-	if(nodes == NULL)
-		return;
-
-	bin_get_buffer(&send_buffer);
-
-	for (d = nodes; d; d = d->next){
-		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0) != 0){
-			LM_ERR("cannot send message\n");
-			clusterer_api.set_state(ul_replicate_cluster, d->machine_id, 2, PROTO_BIN);
-		}		
-	}
-	
-	clusterer_api.free_nodes(nodes);
+	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
+		LM_ERR("replicate urecord delete failed\n");
+ 	}	
 }
 
 void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 {
-	str send_buffer;
 	str st;
-	clusterer_node_t *nodes;
-	clusterer_node_t *d;
 
 	if (bin_init(&repl_module_name, REPL_UCONTACT_INSERT, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
@@ -121,11 +89,11 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	bin_push_str(&ci->received);
 	bin_push_str(&ci->instance);
 
-	st.s   = (char *)&ci->expires;
+	st.s = (char *) &ci->expires;
 	st.len = sizeof ci->expires;
 	bin_push_str(&st);
 
-	st.s   = (char *)&ci->q;
+	st.s = (char *) &ci->q;
 	st.len = sizeof ci->q;
 	bin_push_str(&st);
 
@@ -138,30 +106,16 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.s   = (char *)&ci->last_modified;
 	st.len = sizeof ci->last_modified;
 	bin_push_str(&st);
-	
-	nodes = clusterer_api.get_nodes(ul_replicate_cluster, PROTO_BIN);
-	if(nodes == NULL)
-		return;
-	bin_get_buffer(&send_buffer);
 
-	for (d = nodes; d; d = d->next){
-		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0) != 0){
-			LM_ERR("cannot send message\n");
-			clusterer_api.set_state(ul_replicate_cluster, d->machine_id, 2, PROTO_BIN);
-		}
-		
-	}
-	
-	clusterer_api.free_nodes(nodes);
+	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
+		LM_ERR("replicate ucontact insert failed\n");
+ 	}
 
 }
 
 void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 {
-	str send_buffer;
 	str st;
-	clusterer_node_t *nodes;
-	clusterer_node_t *d;
 
 	if (bin_init(&repl_module_name, REPL_UCONTACT_UPDATE, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
@@ -179,11 +133,11 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	bin_push_str(&ci->received);
 	bin_push_str(&ci->instance);
 
-	st.s   = (char *)&ci->expires;
+	st.s = (char *) &ci->expires;
 	st.len = sizeof ci->expires;
 	bin_push_str(&st);
 
-	st.s   = (char *)&ci->q;
+	st.s = (char *) &ci->q;
 	st.len = sizeof ci->q;
 	bin_push_str(&st);
 
@@ -196,31 +150,14 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.s   = (char *)&ci->last_modified;
 	st.len = sizeof ci->last_modified;
 	bin_push_str(&st);
-	
-	nodes = clusterer_api.get_nodes(ul_replicate_cluster, PROTO_BIN);
-	if(nodes == NULL)
-		return;
 
-	bin_get_buffer(&send_buffer);
-
-	for (d = nodes; d; d = d->next){
-		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0) != 0){
-			LM_ERR("cannot send message\n");
-			clusterer_api.set_state(ul_replicate_cluster, d->machine_id, 2, PROTO_BIN);
-		}
-		
-	}
-	
-	clusterer_api.free_nodes(nodes);
-
+	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
+		LM_ERR("replicate ucontact delete failed\n");
+ 	}
 }
 
 void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 {
-	str send_buffer;
-	clusterer_node_t *nodes;
-	clusterer_node_t *d;
-
 	if (bin_init(&repl_module_name, REPL_UCONTACT_DELETE, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
@@ -233,21 +170,9 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 	bin_push_str(&c->callid);
 	bin_push_int(c->cseq);
 
-	nodes = clusterer_api.get_nodes(ul_replicate_cluster, PROTO_BIN);
-	if(nodes == NULL)
-		return;
-
-	bin_get_buffer(&send_buffer);
-
-	for (d = nodes; d; d = d->next){
-		if(msg_send(NULL, PROTO_BIN, &d->addr, 0, send_buffer.s,send_buffer.len,0) != 0){
-			LM_ERR("cannot send message\n");
-			clusterer_api.set_state(ul_replicate_cluster, d->machine_id, 2, PROTO_BIN);
-		}
-		
-	}
-	
-	clusterer_api.free_nodes(nodes);
+	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
+		LM_ERR("replicate ucontact delete failed\n");
+ 	}
 }
 
 /* packet receiving */
@@ -286,7 +211,7 @@ out:
 
 out_err:
 	LM_ERR("failed to replicate event locally. dom: '%.*s', aor: '%.*s'\n",
-	        d.len, d.s, aor.len, aor.s);
+		d.len, d.s, aor.len, aor.s);
 	return -1;
 }
 
@@ -316,7 +241,7 @@ static int receive_urecord_delete(void)
 
 out_err:
 	LM_ERR("failed to process replication event. dom: '%.*s', aor: '%.*s'\n",
-	        d.len, d.s, aor.len, aor.s);
+		d.len, d.s, aor.len, aor.s);
 	return -1;
 }
 
@@ -324,9 +249,9 @@ static int receive_ucontact_insert(void)
 {
 	static ucontact_info_t ci;
 	static str d, aor, host, contact_str, callid,
-			   user_agent, path, attr, st, sock;
-	udomain_t  *domain;
-	urecord_t  *record;
+		user_agent, path, attr, st, sock;
+	udomain_t *domain;
+	urecord_t *record;
 	ucontact_t *contact;
 	int port, proto;
 
@@ -369,12 +294,12 @@ static int receive_ucontact_insert(void)
 	}
 
 	if (parse_phostport(sock.s, sock.len, &host.s, &host.len,
-						&port, &proto) != 0) {
+		&port, &proto) != 0) {
 		LM_ERR("bad socket <%.*s>\n", sock.len, sock.s);
 		goto error;
 	}
 
-	ci.sock = grep_sock_info(&host, (unsigned short)port, (unsigned short)proto);
+	ci.sock = grep_sock_info(&host, (unsigned short) port, (unsigned short) proto);
 	if (!ci.sock) {
 		LM_ERR("non-local socket <%.*s>\n", sock.len, sock.s);
 		goto error;
@@ -395,7 +320,7 @@ static int receive_ucontact_insert(void)
 
 	if (get_urecord(domain, &aor, &record) != 0) {
 		LM_INFO("failed to fetch local urecord - creating new one "
-				"(ci: '%.*s') \n", callid.len, callid.s);
+			"(ci: '%.*s') \n", callid.len, callid.s);
 
 		if (insert_urecord(domain, &aor, &record, 1) != 0) {
 			LM_ERR("failed to insert new record\n");
@@ -416,7 +341,7 @@ static int receive_ucontact_insert(void)
 
 error:
 	LM_ERR("failed to process replication event. dom: '%.*s', aor: '%.*s'\n",
-	        d.len, d.s, aor.len, aor.s);
+		d.len, d.s, aor.len, aor.s);
 	return -1;
 }
 
@@ -424,9 +349,9 @@ static int receive_ucontact_update(void)
 {
 	static ucontact_info_t ci;
 	static str d, aor, host, contact_str, callid,
-	           user_agent, path, attr, st, sock;
-	udomain_t  *domain;
-	urecord_t  *record;
+		user_agent, path, attr, st, sock;
+	udomain_t *domain;
+	urecord_t *record;
 	ucontact_t *contact;
 	int port, proto;
 	int rc;
@@ -470,12 +395,12 @@ static int receive_ucontact_update(void)
 	}
 
 	if (parse_phostport(sock.s, sock.len, &host.s, &host.len,
-						&port, &proto) != 0) {
+		&port, &proto) != 0) {
 		LM_ERR("bad socket <%.*s>\n", sock.len, sock.s);
 		goto error;
 	}
 
-	ci.sock = grep_sock_info(&host, (unsigned short)port, (unsigned short)proto);
+	ci.sock = grep_sock_info(&host, (unsigned short) port, (unsigned short) proto);
 	if (!ci.sock) {
 		LM_ERR("non-local socket <%.*s>\n", sock.len, sock.s);
 		goto error;
@@ -498,7 +423,7 @@ static int receive_ucontact_update(void)
 	 * is not guaranteed, so update commands may arrive before inserts */
 	if (get_urecord(domain, &aor, &record) != 0) {
 		LM_INFO("failed to fetch local urecord - create new record and contact"
-				" (ci: '%.*s')\n", callid.len, callid.s);
+			" (ci: '%.*s')\n", callid.len, callid.s);
 
 		if (insert_urecord(domain, &aor, &record, 1) != 0) {
 			LM_ERR("failed to insert urecord\n");
@@ -515,18 +440,18 @@ static int receive_ucontact_update(void)
 		rc = get_ucontact(record, &contact_str, &callid, ci.cseq + 1, &contact);
 		if (rc != 0 && rc != -2) {
 			LM_INFO("contact '%.*s' not found, inserting new (ci: '%.*s')\n",
-			         contact_str.len, contact_str.s, callid.len, callid.s);
+				contact_str.len, contact_str.s, callid.len, callid.s);
 
 			if (insert_ucontact(record, &contact_str, &ci, &contact, 1) != 0) {
 				LM_ERR("failed to insert ucontact (ci: '%.*s')\n",
-				        callid.len, callid.s);
+					callid.len, callid.s);
 				unlock_udomain(domain, &aor);
 				goto error;
 			}
 		} else {
 			if (update_ucontact(record, contact, &ci, 1) != 0) {
 				LM_ERR("failed to update ucontact '%.*s' (ci: '%.*s')\n",
-				        contact_str.len, contact_str.s, callid.len, callid.s);
+					contact_str.len, contact_str.s, callid.len, callid.s);
 				unlock_udomain(domain, &aor);
 				goto error;
 			}
@@ -539,14 +464,14 @@ static int receive_ucontact_update(void)
 
 error:
 	LM_ERR("failed to process replication event. dom: '%.*s', aor: '%.*s'\n",
-	        d.len, d.s, aor.len, aor.s);
+		d.len, d.s, aor.len, aor.s);
 	return -1;
 }
 
 static int receive_ucontact_delete(void)
 {
-	udomain_t  *domain;
-	urecord_t  *record;
+	udomain_t *domain;
+	urecord_t *record;
 	ucontact_t *contact;
 	str d, aor, contact_str, callid;
 	int cseq, rc;
@@ -569,7 +494,7 @@ static int receive_ucontact_delete(void)
 	 * ucontact_delete's */
 	if (get_urecord(domain, &aor, &record) != 0) {
 		LM_INFO("failed to fetch local urecord - ignoring request "
-				"(ci: '%.*s')\n", callid.len, callid.s);
+			"(ci: '%.*s')\n", callid.len, callid.s);
 		unlock_udomain(domain, &aor);
 		return 0;
 	}
@@ -578,7 +503,7 @@ static int receive_ucontact_delete(void)
 	rc = get_ucontact(record, &contact_str, &callid, cseq + 1, &contact);
 	if (rc != 0 && rc != 2) {
 		LM_ERR("contact '%.*s' not found: (ci: '%.*s')\n", contact_str.len,
-		        contact_str.s, callid.len, callid.s);
+			contact_str.s, callid.len, callid.s);
 		unlock_udomain(domain, &aor);
 		goto error;
 	}
@@ -588,7 +513,7 @@ static int receive_ucontact_delete(void)
 
 	if (delete_ucontact(record, contact, 1) != 0) {
 		LM_ERR("failed to delete ucontact '%.*s' (ci: '%.*s')\n",
-		        contact_str.len, contact_str.s, callid.len, callid.s);
+			contact_str.len, contact_str.s, callid.len, callid.s);
 		unlock_udomain(domain, &aor);
 		goto error;
 	}
@@ -603,10 +528,12 @@ error:
 	return -1;
 }
 
-void receive_binary_packet(int packet_type, struct receive_info *ri)
+void receive_binary_packet(int packet_type, struct receive_info *ri, void *att)
 {
 	int rc;
 	int server_id;
+	char *ip;
+	unsigned short port;
 
 	LM_DBG("received a binary packet [%d]!\n", packet_type);
 
@@ -619,9 +546,12 @@ void receive_binary_packet(int packet_type, struct receive_info *ri)
 	if (rc < 0)
 		return;
 	
-	rc = clusterer_api.check(accept_replicated_udata, &ri->src_su, server_id, ri->proto);
-	if (rc == 0)
-		return;
+	if (!clusterer_api.check(accept_replicated_udata, &ri->src_su, server_id, ri->proto)) {
+			get_su_info(&ri->src_su.s, ip, port);
+			LM_WARN("received bin packet from unknown source: %s:%hu\n",
+				ip, port);
+			return;
+	}
 
 	switch (packet_type) {
 	case REPL_URECORD_INSERT:
