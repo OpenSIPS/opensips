@@ -501,6 +501,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 
 	vals[0].type = DB_BIGINT;
 	vals[0].val.bigint_val = _c->contact_id;
+	vals[0].nul = 0;
 
 	vals[1].type = DB_STR;
 	vals[1].nul = 0;
