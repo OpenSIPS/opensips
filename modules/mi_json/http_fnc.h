@@ -24,6 +24,8 @@
 #ifndef _MI_JSON_HTTP_FNC_H
 #define _MI_JSON_HTTP_FNC_H
 
+#define MI_JSON_ASYNC_FAILED   ((void*)-2)
+#define MI_JSON_ASYNC_EXPIRED  ((void*)-3)
 
 typedef struct mi_json_html_page_data_ {
   str page;
@@ -32,7 +34,6 @@ typedef struct mi_json_html_page_data_ {
 
 typedef struct mi_json_async_resp_data_ {
   gen_lock_t* lock;
-  struct mi_root* tree;
 }mi_json_async_resp_data_t;
 
 
