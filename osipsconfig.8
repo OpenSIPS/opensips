@@ -1,0 +1,65 @@
+.TH osipsconfig 8 18.08.2015 opensips-menuconfig "OpenSIPS" 
+.\" Process with
+.\" groff -man -Tascii osipsconfig.8 
+.\"
+.SH NAME
+osipsconfig \- utility for configuring OpenSIPS
+.SH SYNOPSIS
+.B osipsconfig
+
+.B osipsconfig
+[
+.BI --local
+]
+
+.SH DESCRIPTION
+.B osipsconfig
+is a ncurses utility for configuring
+.B OpenSIPS SIP server.
+It is a graphical tool that allows in an easy way to configure,
+compile and generate OpenSIPS configuration files - all by simply
+running make menuconfig.
+
+.SH FILES
+.PD 0
+.I /etc/menuconfig/configs/opensips_loadbalancer_def.m4
+.br
+.I /etc/menuconfig/configs/opensips_loadbalancer.m4
+.br
+.I /etc/menuconfig/configs/opensips_residential_def.m4
+.br
+.I /etc/menuconfig/configs/opensips_residential.m4
+.br
+.I /etc/menuconfig/configs/opensips_trunking_def.m4
+.br
+.I /etc/menuconfig/configs/opensips_trunking.m4
+.br
+
+.SH COMMANDS
+.TP 12
+.B --local
+Indicates that menuconfig should be run in the sources' root.
+
+
+
+
+.SH AUTHORS
+
+see 
+.B /usr/share/doc/opensips/AUTHORS
+.PP
+This manual page was written by Razvan Crainea <razvan@opensips.org>
+based on osipsconsole manpage by Alejandro Rios P. <alerios@debian.org>,
+for the Debian project (and may be used by others).
+
+.SH SEE ALSO
+.BR opensips(8), opensips.cfg(5), opensipsctl(8), osipsconsole(8)
+.PP
+Full documentation on opensips is available at
+.I http://www.opensips.org/.
+.PP
+Mailing lists:
+.nf 
+users@lists.opensips.org - opensips user community
+.nf 
+devel@lists.opensips.org - opensips development, new features and unstable version
