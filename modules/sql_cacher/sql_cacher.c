@@ -15,10 +15,12 @@ static str delimiter;
 
 static cache_entry_t **entry_list;
 static struct parse_entry *to_parse_list = NULL;
+static int fetch_nr_rows = DEFAULT_FETCH_NR_ROWS;
 
 /* module parameters */
 static param_export_t mod_params[] = {
 	{"delimiter", STR_PARAM, &delimiter.s},
+	{"sql_fetch_nr_rows", INT_PARAM, &fetch_nr_rows},
 	{"cache_table", STR_PARAM|USE_FUNC_PARAM, (void *)&cache_new_table},
 	{0,0,0}
 };
@@ -309,7 +311,7 @@ end_parsing:
 	return rc;
 }
 
-/* count the number of integers and strings from the db */
+/* count the number of integers and strings from the SQL db query */
 static int get_column_types(cache_entry_t *c_entry, db_val_t *values, int nr_columns) {
 	unsigned int i;
 	db_type_t val_type;
@@ -366,11 +368,16 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_val_t *key, db_val_t *va
 	char *int_key_buf = NULL;
 	str str_val;
 	db_type_t val_type;
+	str str_key;
 	str cdb_val;
 	str cdb_key;
 
 	cdb_val.len = cdb_val_total_len(c_entry, values, nr_columns);
 	cdb_val.s = pkg_malloc(cdb_val.len);
+	if (!cdb_val.s) {
+		LM_ERR("No more pkg memory\n");
+		return -1;
+	}
 
 	/* store the integer values first (base64 encoded) */
 	for (i = 0; i < nr_columns; i++) {
@@ -390,8 +397,13 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_val_t *key, db_val_t *va
 			default: continue;
 		}
 
-		memcpy(int_buf, &int_val, 4);
-		base64encode((unsigned char *)int_enc_buf, (unsigned char *)int_buf, 4);
+		if (VAL_NULL(values + i)) {
+			memset(int_enc_buf, 0, INT_B64_ENC_LEN);
+		} else {
+			memcpy(int_buf, &int_val, 4);
+			base64encode((unsigned char *)int_enc_buf, (unsigned char *)int_buf, 4);
+		}
+
 		memcpy(cdb_val.s + offset, int_enc_buf, INT_B64_ENC_LEN);
 
 		memset(int_enc_buf, 0, INT_B64_ENC_LEN);
@@ -400,7 +412,7 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_val_t *key, db_val_t *va
 
 	/* store the string values and their offsets as integers (base64 encoded) */
 	strs_offset = offset + c_entry->nr_strs * INT_B64_ENC_LEN;
-	
+
 	for (i = 0; i < nr_columns; i++) {
 		val_type = VAL_TYPE(values + i);
 
@@ -415,7 +427,11 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_val_t *key, db_val_t *va
 			default: continue;
 		}
 
-		int_val = strs_offset;
+		if (VAL_NULL(values + i) || !str_val.len)
+			int_val = 0;
+		else
+			int_val = strs_offset;
+
 		memcpy(int_buf, &int_val, 4);
 		base64encode((unsigned char *)int_enc_buf, (unsigned char *)int_buf, 4);
 		memcpy(cdb_val.s + offset, int_enc_buf, INT_B64_ENC_LEN);
@@ -431,11 +447,11 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_val_t *key, db_val_t *va
 	val_type = VAL_TYPE(key);
 	switch (val_type) {
 		case DB_STRING:
-			cdb_key.s = (char *)VAL_STRING(key);
-			cdb_key.len = strlen(cdb_key.s);
+			str_key.s = (char *)VAL_STRING(key);
+			str_key.len = strlen(str_key.s);
 			break;
 		case DB_STR:
-			cdb_key = VAL_STR(key);
+			str_key = VAL_STR(key);
 			break;
 		case DB_INT:
 			int_key_buf = sint2str(VAL_INT(key), &int_key_len);
@@ -450,26 +466,31 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_val_t *key, db_val_t *va
 			break;
 		default:
 			LM_ERR("Unsupported type for SQL DB key column\n");
-			free(cdb_val.s);
 			return -1;
 	}
-
 	if (int_key_len) {
-		cdb_key.s = int_key_buf;
-		cdb_key.len = int_key_len;
+		str_key.s = int_key_buf;
+		str_key.len = int_key_len;
 	}
+
+	cdb_key.len = c_entry->id.len + str_key.len;
+	cdb_key.s = pkg_malloc(cdb_key.len);
+	if (!cdb_key.s) {
+		LM_ERR("No more pkg memory\n");
+		return -1;
+	}
+	memcpy(cdb_key.s, c_entry->id.s, c_entry->id.len);
+	memcpy(cdb_key.s + c_entry->id.len, str_key.s, str_key.len);
 
 	if (c_entry->cdbf.set(c_entry->cdbcon, &cdb_key, &cdb_val, c_entry->expire) < 0) {
 		LM_ERR("Failed to insert in cachedb\n");
-		free(cdb_val.s);
 		return -1;
 	}
 
 	return 0;
 }
 
-static int mod_init(void) {
-	cache_entry_t *c_entry;
+static int db_init_test_conn(cache_entry_t *c_entry) {
 	str test_query_key_str = str_init(TEST_QUERY_STR);
 	str cdb_test_key = str_init(CDB_TEST_KEY_STR);
 	str cdb_test_val = str_init(CDB_TEST_VAL_STR);
@@ -477,10 +498,166 @@ static int mod_init(void) {
 	db_key_t *query_cols = NULL;
 	db_val_t query_key_val;
 	db_res_t *sql_res;
-	db_row_t *rows;
-	db_val_t *values;
 	str cachedb_res;
-	int i, nr_rows;
+	unsigned int i;
+
+	/* cachedb init and test connection */
+	if (cachedb_bind_mod(&c_entry->cachedb_url, &c_entry->cdbf) < 0) {
+		LM_ERR("Unable to bind to a cachedb database driver\n");
+		return -1;
+	}
+	/* open a test connection */
+	c_entry->cdbcon = c_entry->cdbf.init(&c_entry->cachedb_url);
+	if (c_entry->cdbcon == NULL) {
+		LM_ERR("Cannot init connection to cachedb\n");
+		return -1;
+	}
+	/* setting and geting a test key in cachedb */
+	if (c_entry->cdbf.set(c_entry->cdbcon, &cdb_test_key, &cdb_test_val, 0) < 0) {
+		LM_ERR("Failed to set test key in cachedb\n");
+		c_entry->cdbf.destroy(c_entry->cdbcon);
+		c_entry->cdbcon = 0;
+		return -1;
+	}
+	if (c_entry->cdbf.get(c_entry->cdbcon, &cdb_test_key, &cachedb_res) < 0) {
+		LM_ERR("Failed to get test key from cachedb\n");
+		c_entry->cdbf.destroy(c_entry->cdbcon);
+		c_entry->cdbcon = 0;
+		return -1;
+	}
+	if (str_strcmp(&cachedb_res, &cdb_test_val) != 0) {
+		LM_ERR("Cachedb inconsistent test key\n");
+		c_entry->cdbf.destroy(c_entry->cdbcon);
+		c_entry->cdbcon = 0;
+		return -1;
+	}
+
+	/* SQL DB init and test connection */
+	if (db_bind_mod(&c_entry->db_url, &c_entry->db_funcs) < 0){
+		LM_ERR("Unable to bind to a SQL database driver\n");
+		return -1;
+	}
+	/* open a test connection */
+	if ((c_entry->db_con = c_entry->db_funcs.init(&c_entry->db_url)) == 0) {
+		LM_ERR("Cannot init connection to SQL DB\n");
+		return -1;
+	}
+
+	/* verify the column names by running a test query with a bogus key */
+	if (c_entry->db_funcs.use_table(c_entry->db_con, &c_entry->table) < 0) {
+		LM_ERR("Invalid table name\n");
+		c_entry->db_funcs.close(c_entry->db_con);
+		c_entry->db_con = 0;
+		return -1;
+	}
+
+	VAL_NULL(&query_key_val) = 0;
+	VAL_TYPE(&query_key_val) = DB_STR;
+	VAL_STR(&query_key_val) = test_query_key_str;
+
+	query_key_col = &c_entry->key;
+
+	query_cols = pkg_malloc(c_entry->nr_columns * sizeof(db_key_t));
+	if (!query_cols) {
+		LM_ERR("No more pkg memory\n");
+		c_entry->db_funcs.close(c_entry->db_con);
+		c_entry->db_con = 0;
+		return -1;
+	}
+
+	for (i = 0; i < c_entry->nr_columns; i++)
+		query_cols[i] = &(c_entry->columns[i]);
+
+	if (c_entry->db_funcs.query(c_entry->db_con, &query_key_col, 0, &query_key_val,
+					query_cols, 1, c_entry->nr_columns, 0, &sql_res) != 0) {
+		LM_ERR("Failure to issuse test query to SQL DB\n");
+		c_entry->db_funcs.close(c_entry->db_con);
+		c_entry->db_con = 0;
+		return -1;
+	}
+
+	c_entry->db_funcs.free_result(c_entry->db_con, sql_res);
+	return 0;
+}
+
+static int load_entire_table(cache_entry_t *c_entry) {
+	db_key_t *query_cols = NULL;
+	db_res_t *sql_res = NULL;
+	db_row_t *row;
+	db_val_t *values;
+	int i;
+
+	query_cols = pkg_malloc((c_entry->nr_columns + 1) * sizeof(db_key_t));
+	if (!query_cols) {
+		LM_ERR("No more pkg memory\n");
+		return -1;
+	}
+	query_cols[0] = &(c_entry->key);
+	for (i=0; i < c_entry->nr_columns; i++) {
+		query_cols[i+1] = &(c_entry->columns[i]);
+	}
+
+	/* query the entire table */
+	if (DB_CAPABILITY(c_entry->db_funcs, DB_CAP_FETCH)) {
+		if (c_entry->db_funcs.query(c_entry->db_con, NULL, 0, NULL,
+						query_cols, 0, c_entry->nr_columns + 1, 0, 0) != 0) {
+			LM_ERR("Failure to issue query to SQL DB\n");
+			goto error;
+		}
+
+		if (c_entry->db_funcs.fetch_result(c_entry->db_con,&sql_res,fetch_nr_rows)<0) {
+			LM_ERR("Error fetching rows\n");
+			goto error;
+		}
+	} else {
+		if (c_entry->db_funcs.query(c_entry->db_con, NULL, 0, NULL,
+						query_cols, 0, c_entry->nr_columns + 1, 0, &sql_res) != 0) {
+			LM_ERR("Failure to issue query to SQL DB\n");
+			goto error;
+		}
+	}
+
+	if (RES_ROW_N(sql_res) == 0) {
+		LM_DBG("Table is empty!\n");
+		goto error;
+	}
+	row = RES_ROWS(sql_res);
+	values = ROW_VALUES(row);
+	if (get_column_types(c_entry, values + 1, ROW_N(row) - 1) < 0) {
+		LM_ERR("SQL column has unsupported type\n");
+		goto error;
+	}
+
+	/* load the rows into the cahchedb */
+	do {
+		for (i=0; i < RES_ROW_N(sql_res); i++) {
+			row = RES_ROWS(sql_res) + i;
+			values = ROW_VALUES(row);
+			if (!VAL_NULL(values)) {
+				insert_in_cachedb(c_entry, values ,values + 1, ROW_N(row) - 1);
+			}
+		}
+
+		if (DB_CAPABILITY(c_entry->db_funcs, DB_CAP_FETCH)) {
+			if (c_entry->db_funcs.fetch_result(c_entry->db_con,&sql_res,fetch_nr_rows)<0) {
+				LM_ERR("Error fetching rows (1)\n");
+				goto error;
+			}
+		} else {
+			break;
+		}
+	} while (RES_ROW_N(sql_res) > 0);
+
+	c_entry->db_funcs.free_result(c_entry->db_con, sql_res);
+	return 0;
+error:
+	if (sql_res)
+		c_entry->db_funcs.free_result(c_entry->db_con, sql_res);
+	return -1;
+}
+
+static int mod_init(void) {
+	cache_entry_t *c_entry;
 
 	LM_NOTICE("initializing module......\n");
 
@@ -496,121 +673,32 @@ static int mod_init(void) {
 		delimiter.len = strlen(delimiter.s);
 
 	entry_list =  shm_malloc(sizeof(cache_entry_t*));
-	*entry_list = NULL;
-	
 	if (!entry_list) {
 		LM_ERR("No more memory for cache entries list\n");
 		return -1;
 	}
+	*entry_list = NULL;
 
 	if (parse_cache_entries() < 0) {
-		LM_ERR("Unable to parse any cache entry");
+		LM_ERR("Unable to parse any cache entry\n");
 		return -1;
 	}
 
-	VAL_NULL(&query_key_val) = 0;
-	VAL_TYPE(&query_key_val) = DB_STR;
-	VAL_STR(&query_key_val) = test_query_key_str;
-
 	for (c_entry = *entry_list; c_entry != NULL; c_entry = c_entry->next) {
-		/* NoSQL DB init, test connection and query */
-		if (cachedb_bind_mod(&c_entry->cachedb_url, &c_entry->cdbf) < 0) {
-			LM_ERR("Unable to bind to a cache database driver\n");
+		if (db_init_test_conn(c_entry) < 0)
 			continue;
-		}
-		/* open a test connection */
-		c_entry->cdbcon = c_entry->cdbf.init(&c_entry->cachedb_url);
-		if (c_entry->cdbcon == NULL) {
-			LM_ERR("Cannot init connection to cache DB\n");
-			continue;
-		}
-
-		/* setting and geting a test key in cachedb */
-		if (c_entry->cdbf.set(c_entry->cdbcon, &cdb_test_key, &cdb_test_val, 0) < 0) {
-			LM_ERR("Failed to set test cachedb key\n");
-			continue;
-		}
-		if (c_entry->cdbf.get(c_entry->cdbcon, &cdb_test_key, &cachedb_res) < 0) {
-			LM_ERR("Failed to get cachedb key\n");
-			continue;
-		}
-		if (str_strcmp(&cachedb_res, &cdb_test_val) != 0) {
-			LM_ERR("Cachedb inconsistent test key\n");
-			continue;
-		}
-
-		/* SQL DB init, test connection and query */
-		if (db_bind_mod(&c_entry->db_url, &c_entry->db_funcs) < 0){
-			LM_ERR("Unable to bind to a SQL database driver\n");
-			continue;
-		}
-		/* open a test connection */
-		if ((c_entry->db_con = c_entry->db_funcs.init(&c_entry->db_url)) == 0) {
-			LM_ERR("Cannot init connection to SQL DB\n");
-			continue;
-		}
-
-		if (c_entry->db_funcs.use_table(c_entry->db_con, &c_entry->table) < 0) {
-			LM_ERR("Invalid table name\n");
-			continue;
-		}
-		/* verify the column names by running a test query with a bogus key */
-		query_key_col = &c_entry->key;
-		query_cols = pkg_malloc((c_entry->nr_columns + 1) * sizeof(db_key_t));
-		if (!query_cols) {
-			LM_ERR("No more memory for test query columns array\n");
-			continue;
-		}
-		query_cols[0] = &(c_entry->key);
-		for (i = 0; i < c_entry->nr_columns; i++) {
-			query_cols[i+1] = &(c_entry->columns[i]);
-		}
-
-		if (c_entry->db_funcs.query(c_entry->db_con, &query_key_col, 0, &query_key_val,
-						query_cols + 1, 1, c_entry->nr_columns, 0, &sql_res) != 0) {
-			LM_ERR("Failure to issuse test query to SQL DB\n");
-			continue;
-		}
-
-		c_entry->db_funcs.free_result(c_entry->db_con, sql_res);
 
 		/* cache the entire table if on demand is not set*/
 		if (!c_entry->on_demand) {
 			c_entry->expire = 0;
-			
-			if (c_entry->db_funcs.query(c_entry->db_con, NULL, 0, NULL,
-							query_cols, 0, c_entry->nr_columns + 1, 0, &sql_res) != 0) {
-				LM_ERR("Failure to issue query to SQL DB\n");
-				continue;
-			}
-
-			nr_rows = RES_ROW_N(sql_res);
-			if (nr_rows == 0) {
-				LM_DBG("Table is empty!\n");
-			}
-			rows = RES_ROWS(sql_res);
-
-			values = ROW_VALUES(rows);
-			if (get_column_types(c_entry, values + 1, ROW_N(rows) - 1) < 0) {
-				LM_ERR("SQL column has unsupported type\n");
-				c_entry->db_funcs.free_result(c_entry->db_con, sql_res);
-				continue;
-			}
-
-			for (i = 0; i < nr_rows; i++) {
-				values = ROW_VALUES(rows + i);
-				if (!VAL_NULL(values)) {
-					insert_in_cachedb(c_entry, values ,values + 1, ROW_N(rows + i) - 1);
-				}
-			}
-
-			LM_DBG("Cached the entire table\n");
-			c_entry->db_funcs.free_result(c_entry->db_con, sql_res);
+			if (load_entire_table(c_entry) < 0)
+				LM_ERR("Failed to cache the entire table %s\n", c_entry->table.s);
+			else
+				LM_DBG("Cached the entire table %s\n", c_entry->table.s);
 		}
 
 		c_entry->db_funcs.close(c_entry->db_con);
 		c_entry->db_con = 0;
-
 		c_entry->cdbf.destroy(c_entry->cdbcon);
 		c_entry->cdbcon = 0;
 	}
@@ -623,7 +711,6 @@ static int child_init(int rank) {
 	return 0;
 }
 
-static void destroy(void)
-{
+static void destroy(void) {
 	LM_NOTICE("destroy module ...\n");
 }
