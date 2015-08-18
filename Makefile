@@ -467,11 +467,21 @@ bin:
 	$(TAR) -C tmp/$(NAME)/ -zcf ../$(NAME)-$(RELEASE)_$(OS)_$(ARCH).tar.gz .
 	rm -rf tmp/$(NAME)
 
+.PHONY: deb-orig-tar
+deb-orig-tar:
+	tar_extra_args=--exclude=packaging make tar
+	mv "$(NAME)-$(RELEASE)_src".tar.gz ../$(NAME)_$(RELEASE).orig.tar.gz
+
 .PHONY: deb
 deb:
 	rm -f debian
 	ln -sf packaging/debian
-	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
+	dpkg-buildpackage \
+		-I.git -I.gitignore \
+		-IMakefile.conf \
+		-I*.swp -I*~ \
+		-iMakefile.conf -i.git -i*.swp \
+		-rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
 	rm -f debian
 
 
@@ -503,7 +513,8 @@ install-modules-all: install-modules install-modules-doc
 install: install-app install-console install-modules-all
 
 opensipsmc: $(cfg-prefix)/$(cfg-dir) $(data-prefix)/$(data-dir)
-	cd menuconfig;$(MAKE) proper;$(MAKE) \
+	$(MAKE) -C menuconfig proper
+	$(MAKE) -C menuconfig \
 		MENUCONFIG_CFG_PATH=$(data-target)/menuconfig_templates/ \
 		MENUCONFIG_GEN_PATH=$(cfg-target) MENUCONFIG_HAVE_SOURCES=0
 	mkdir -p $(data-prefix)/$(data-dir)/menuconfig_templates/
@@ -944,6 +955,6 @@ doxygen:
 	-@echo "Doxygen documentation created"
 
 comp_menuconfig:
-	cd menuconfig; $(MAKE) ; cd ..
+	$(MAKE) -C menuconfig
 menuconfig: comp_menuconfig
 	./menuconfig/configure --local

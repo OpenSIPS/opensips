@@ -1,7 +1,6 @@
 #!/usr/bin/make -f
-# Sample debian/rules that uses debhelper.
-# GNU copyright 1997 to 1999 by Joey Hess.
 # 2010/08/24: Allow building of individual modules (kennard)
+# 2015/08/14: Change URL to github sources
 
 # To control which packages get built, set BUILD_MODPKG_LIST to list
 # of packages to build (see ALL_MODPKG_LIST for candiate names).  Set to
@@ -20,8 +19,7 @@ DEBVERSION:=$(shell head -n 1 debian/changelog \
 UPVERSION:=$(shell echo $(DEBVERSION) | sed -e 's/^.*://' -e 's/-[0-9.]*$$//' -e 's/.dfsg$$//')
 
 FILENAME := opensips_$(UPVERSION).orig.tar.gz
-UPFILENAME := opensips-$(UPVERSION)-tls_src.tar.gz
-URL := http://opensips.org/pub/opensips/$(UPVERSION)/src/opensips-$(UPVERSION)-tls_src.tar.gz
+URL := https://github.com/OpenSIPS/opensips/archive/$(UPVERSION).tar.gz
 
 # Uncomment this to turn on verbose mode.
 # export DH_VERBOSE=1
@@ -38,7 +36,7 @@ ALL_MODPKG_LIST := \
 	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
 	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
 	REDIS RABBITMQ HTTP COMPRESSION EMERGENCY \
-	PROTO_SCTP PROTO_TLS REST_CLIENT
+	PROTO_SCTP PROTO_TLS REST_CLIENT LUA
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
 override BUILD_MODPKG_LIST :=
@@ -73,7 +71,7 @@ PRESENCE_PKGNAME = opensips-presence-modules
 PRESENCE_MODULES = presence presence_callinfo presence_dialoginfo presence_xml presence_mwi presence_xcapdiff pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap xcap_client
 PRESENCE_MOD_PATH=$(addprefix modules/, $(PRESENCE_MODULES))
 XMLRPC_PKGNAME = opensips-xmlrpc-module
-XMLRPC_MODULES = mi_xmlrpc
+XMLRPC_MODULES = mi_xmlrpc_ng
 XMLRPC_MOD_PATH=$(addprefix modules/, $(XMLRPC_MODULES))
 PERL_PKGNAME = opensips-perl-modules
 PERL_MODULES = perl db_perlvdb
@@ -180,11 +178,24 @@ else
 endif
 endif
 
+# inherit variables from dpkg-builder
+CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
+CFLAGS += $(shell dpkg-buildflags --get CFLAGS) $(CPPFLAGS)
+CXXFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
+LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
+
+
 # force lib (versus lib64) and SMP support all the time
 VARS = LIBDIR=lib ISSMP=yes TLS=$(TLS)
 
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
+endif
+
+# support parallel compiling
+ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+         NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+         MAKEFLAGS += -j$(NUMJOBS)
 endif
 
 configure: configure-stamp
@@ -239,7 +250,7 @@ show-mod-info:
 install: build
 	dh_testdir
 	dh_testroot
-	dh_clean -k
+	dh_prep
 	dh_installdirs
 
 	# Add here commands to install the package into debian/opensips
@@ -291,16 +302,16 @@ binary-arch: build install
 	dh_testroot
 	dh_installdocs
 	dh_installexamples --exclude=".svn"
-#	dh_installlogrotate
 	dh_installinit -popensips -- defaults 23
 	dh_installcron
-	dh_installman
+	dh_installman -popensips
 	dh_installinfo
 	dh_installchangelogs
 	dh_link
 	dh_strip --dbg-package=opensips-dbg
 	dh_compress 
 	dh_fixperms
+	dh_python2
 	dh_installdeb
 	dh_shlibdeps
 	dh_gencontrol
@@ -319,8 +330,7 @@ print-version:
 
 get-orig-source:
 	@@dh_testdir
-	@@[ -d ../tarballs/. ]||mkdir -p ../tarballs
 	@@echo Downloading $(FILENAME) from $(URL) ...
-	@@wget -N -nv -T10 -t3 -O ../tarballs/$(FILENAME) $(URL)
+	@@wget -N -nv -T10 -t3 -O ../$(FILENAME) $(URL)
 
 .PHONY: build clean binary-indep binary-arch binary install configure patch unpatch real-clean

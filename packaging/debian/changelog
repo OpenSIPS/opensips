@@ -2,7 +2,9 @@ opensips (2.1.0-1) stable; urgency=low
 
   * Major Public Release.
 
- -- Bogdan-Andrei Iancu <bogdan@opensips.org>  Thu, 07 May 2015 17:15:44 +0300
+  * Initial Release (Closes: #556131)
+
+ -- Razvan Crainea <razvan@opensips.org>  Fri, 14 Aug 2015 12:00:00 +0300
 
 
 opensips (2.1-rc2) stable; urgency=low
