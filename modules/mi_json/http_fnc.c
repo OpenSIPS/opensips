@@ -161,15 +161,15 @@ static void mi_json_close_async(struct mi_root *mi_rpl, struct mi_handler *hdl, 
   struct mi_root *shm_rpl = NULL;
   gen_lock_t* lock;
   mi_json_async_resp_data_t *async_resp_data;
+  int x;
 
   if (hdl==NULL) {
     LM_CRIT("null mi handler\n");
     return;
   }
 
-  LM_DBG("mi_root [%p], hdl [%p], hdl->param [%p], "
-    "*hdl->param [%p] and done [%u]\n",
-    mi_rpl, hdl, hdl->param, *(struct mi_root **)hdl->param, done);
+  LM_DBG("mi_root [%p], hdl [%p], hdl->param [%p] and done [%u]\n",
+    mi_rpl, hdl, hdl->param, done);
 
   if (!done) {
     /* we do not pass provisional stuff (yet) */
@@ -177,23 +177,33 @@ static void mi_json_close_async(struct mi_root *mi_rpl, struct mi_handler *hdl, 
     return;
   }
 
-  async_resp_data =
-    (mi_json_async_resp_data_t*)((char*)hdl+sizeof(struct mi_handler));
+  async_resp_data = (mi_json_async_resp_data_t*)(hdl+1);
   lock = async_resp_data->lock;
-  lock_get(lock);
-  if (mi_rpl!=NULL && (shm_rpl=clone_mi_tree( mi_rpl, 1))!=NULL) {
-    *(struct mi_root **)hdl->param = shm_rpl;
-  } else {
+
+  if (mi_rpl==NULL || (shm_rpl=clone_mi_tree( mi_rpl, 1))==NULL) {
     LM_WARN("Unable to process async reply [%p]\n", mi_rpl);
     /* mark it as invalid */
-    hdl->param = NULL;
+    shm_rpl = MI_JSON_ASYNC_FAILED;
   }
-  LM_DBG("shm_rpl [%p], hdl [%p], hdl->param [%p], *hdl->param [%p]\n",
-    shm_rpl, hdl, hdl->param,
-    (hdl->param)?*(struct mi_root **)hdl->param:NULL);
+  if (mi_rpl) free_mi_tree(mi_rpl);
+
+  lock_get(lock);
+  if (hdl->param==NULL) {
+    hdl->param = shm_rpl;
+    x = 0;
+  } else {
+    x = 1;
+  }
+  LM_DBG("shm_rpl [%p], hdl [%p], hdl->param [%p]\n",
+    shm_rpl, hdl, hdl->param);
   lock_release(lock);
 
-  if (mi_rpl) free_mi_tree(mi_rpl);
+  if (x) {
+    if (shm_rpl!=MI_JSON_ASYNC_FAILED)
+      free_shm_mi_tree(shm_rpl);
+    shm_free(hdl);
+  }
+
 
   return;
 }
@@ -212,17 +222,15 @@ static inline struct mi_handler* mi_json_build_async_handler(void)
   }
 
   memset(hdl, 0, len);
-  async_resp_data =
-    (mi_json_async_resp_data_t*)((char*)hdl+sizeof(struct mi_handler));
+  async_resp_data = (mi_json_async_resp_data_t*)(hdl+1);
 
   hdl->handler_f = mi_json_close_async;
-  hdl->param = (void*)&async_resp_data->tree;
+  hdl->param = NULL;
 
   async_resp_data->lock = mi_json_lock;
 
-  LM_DBG("hdl [%p], hdl->param [%p], *hdl->param [%p] mi_json_lock=[%p]\n",
-    hdl, hdl->param, (hdl->param)?*(struct mi_root **)hdl->param:NULL,
-    async_resp_data->lock);
+  LM_DBG("hdl [%p], hdl->param [%p], mi_json_lock=[%p]\n",
+    hdl, hdl->param, async_resp_data->lock);
 
   return hdl;
 }
@@ -232,9 +240,9 @@ struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
 {
   struct mi_cmd *f;
   struct mi_node *node;
-  struct mi_root *mi_cmd;
-  struct mi_root *mi_rpl;
-  struct mi_handler *hdl;
+  struct mi_root *mi_cmd = NULL;
+  struct mi_root *mi_rpl = NULL;
+  struct mi_handler *hdl = NULL;
   str val;
   int i, j;
 
@@ -257,7 +265,6 @@ struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
   } else {
     hdl = NULL;
   }
-  *async_hdl = hdl;
 
   if (f->flags&MI_NO_INPUT_FLAG) {
     LM_DBG("command=%.*s requires no parameters\n", miCmd->len, miCmd->s);
@@ -320,15 +327,20 @@ struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
     LM_ERR("failed to process the command\n");
     if (mi_cmd) free_mi_tree(mi_cmd);
     goto error;
-  } else if (mi_rpl != MI_ROOT_ASYNC_RPL) {
+  } else {
     *page = html_page_data.page;
   }
   LM_DBG("got mi_rpl=[%p]\n",mi_rpl);
+
+  *async_hdl = hdl;
 
   if (mi_cmd) free_mi_tree(mi_cmd);
   return mi_rpl;
 
 error:
+  if (mi_cmd) free_mi_tree(mi_cmd);
+  if (hdl) shm_free(hdl);
+  *async_hdl  = NULL;
   return NULL;
 }
 
