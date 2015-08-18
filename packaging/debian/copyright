@@ -1,29 +1,150 @@
-This package was debianized by Andrei Pelinescu-Onciul
-<pelinescu-onciul@fokus.fraunhofer.de> on Tue, 16 Jul 2002 15:41:31 +0200.
-This package was debianized by Julien BLACHE <jblache@debian.org>
-on Thu, 29 Jun 2006 09:55:24 +0200, based on Andrei's work.
-This package was debianized by Bogdan IANCU <bogan@opensips.org>
-on Thu, 15 Oct 2009 21:14:24 +0200
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: opensips
+Source: https://github.com/OpenSIPS/opensips
 
-It was downloaded from: http://opensips.org
+Files: *
+Copyright: 2001-2003 FhG Fokus
+           2005-2006 Voice Sistem S.R.L
+License: GPL-2+
 
-Upstream Authors:
-       Andrei Pelinescu-Onciul <pelinescu-onciul@fokus.fraunhofer.de>
-       Bogdan-Andrei Iancu <bogdan@opensips.org>
-       Daniel-Constantin Mierla <daniel@voice-system.ro>
-       Jan Janak <jan@iptel.org>
-       Jiri Kuthan <jiri@iptel.org>
-       Juha Heinanen
-       Ramona-Elena Modroiu
-       Maxim Sobolev
-       Miklos Tirpak
-       Nils Ohlmeier
-       and others ; see the AUTHORS file in the source code tree for details
+Files: sha1.?
+Copyright: 2006-2014 ARM Limited, All Rights Reserved
+License: GPL-2+
 
-This software is copyright (c) 2002-2003 by FhG Fokus
+Files: sliblist.?
+Copyright: 2013 VoIP Embedded, Inc.
+License: GPL-3+
 
-You are free to distribute this software under the terms of
-the GNU General Public License.
+Files: modules/sms/*
+Copyright: 2000-2002 Stefan Frings
+           2001-2003 FhG Fokus
+License: GPL-2+
 
-On Debian systems, the complete text of the GNU General Public
-License can be found in the file `/usr/share/common-licenses/GPL.
+Files: modules/perl/*
+Copyright: 2006 Collax GmbH
+License: GPL-2+
+
+Files: modules/python/*
+Copyright: 2009 Sippy Software, Inc., http://www.sippysoft.com
+License: GPL-2+
+
+Files: modules/rtpproxy/*
+Copyright: 2001-2003 FhG Fokus
+           2003-2008 Sippy Software, Inc., http://www.sippysoft.com
+           2010 Sippy Software, Inc., http://www.sippysoft.com
+License: GPL-2+
+
+Files: modules/rtpproxy/timeout_process.c
+Copyright: 2010 Voice Sistem S.R.L
+License: GPL-2+
+
+Files: modules/seas/*
+Copyright: 2006 VozTelecom Sistemas
+License: GPL-2+
+
+Files: modules/snmpstats/*
+Copyright: 2006 SOMA Networks, Inc.
+License: GPL-2+
+
+Files: utils/db_berkeley/bdb_recover.?
+Copyright: 2007 Cisco Systems
+License: GPL-2+
+
+Files: reactor*
+Copyright: 2014 OpenSIPS Solutions
+License: GPL-2+
+
+Files: modules/rtpengine/*
+Copyright: 2003-2008 Sippy Software, Inc.
+           2005 Voice Sistem S.R.L
+           2009-2014 TuTPro Inc.
+           2010 VoIPEmbedded Inc.
+           2013-2014 Sipwise GmbH
+           2003 Porta Software Ltd
+License: GPL-2+
+
+Files: modules/proto_tls/*
+Copyright: 2001-2003 FhG Fokus
+           2004,2005 Free Software Foundation, Inc.
+           2005 Voice Sistem S.R.L
+           2005 Cesc Santasusana
+           2006 enum.at
+           2013 Secusmart GmbH
+           2015 OpenSIPS Solutions
+License: GPL-2+ with OpenSSL exception
+ This program is free software; you can redistribute it
+ and/or modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later
+ version.
+ .
+ In addition, as a special exception, the author of this
+ program gives permission to link the code of its
+ release with the OpenSSL project's "OpenSSL" library (or
+ with modified versions of it that use the same license as
+ the "OpenSSL" library), and distribute the linked
+ executables. You must obey the GNU General Public
+ License in all respects for all of the code used other
+ than "OpenSSL".  If you modify this file, you may extend
+ this exception to your version of the file, but you are
+ not obligated to do so.  If you do not wish to do so,
+ delete this exception statement from your version.
+ .
+ This program is distributed in the hope that it will be
+ useful, but WITHOUT ANY WARRANTY; without even the implied
+ warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ PURPOSE.  See the GNU General Public License for more
+ details.
+ .
+ You should have received a copy of the GNU General Public
+ License along with this package; if not, write to the Free
+ Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+ Boston, MA  02110-1301 USA
+ .
+ On Debian systems, the full text of the GNU General Public
+ License version 2 can be found in the file
+ `/usr/share/common-licenses/GPL-2'.
+
+License: GPL-2+
+ This program is free software; you can redistribute it
+ and/or modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later
+ version.
+ .
+ This program is distributed in the hope that it will be
+ useful, but WITHOUT ANY WARRANTY; without even the implied
+ warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ PURPOSE.  See the GNU General Public License for more
+ details.
+ .
+ You should have received a copy of the GNU General Public
+ License along with this package; if not, write to the Free
+ Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+ Boston, MA  02110-1301 USA
+ .
+ On Debian systems, the full text of the GNU General Public
+ License version 2 can be found in the file
+ `/usr/share/common-licenses/GPL-2'.
+
+License: GPL-3+
+ This program is free software; you can redistribute it
+ and/or modify it under the terms of the GNU General Public
+ License as published by the Free Software Foundation; either
+ version 3 of the License, or (at your option) any later
+ version.
+ .
+ This program is distributed in the hope that it will be
+ useful, but WITHOUT ANY WARRANTY; without even the implied
+ warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ PURPOSE.  See the GNU General Public License for more
+ details.
+ .
+ You should have received a copy of the GNU General Public
+ License along with this package; if not, write to the Free
+ Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+ Boston, MA  02110-1301 USA
+ .
+ On Debian systems, the full text of the GNU General Public
+ License version 2 can be found in the file
+ `/usr/share/common-licenses/GPL-3'.

@@ -1,0 +1,3 @@
+version=3
+
+https://github.com/OpenSIPS/opensips/releases /OpenSIPS/opensips/archive/(.+)\.tar\.gz
