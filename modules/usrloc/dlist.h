@@ -117,7 +117,7 @@ typedef udomain_t* (*get_next_udomain_t) (udomain_t* _d);
 udomain_t* get_next_udomain(udomain_t *_d);
 
 /*contact label may not be higher than 14 bits*/
-#define CLABEL_MASK ((1<<15)-1)
+#define CLABEL_MASK ((1<<14)-1)
 #define CLABEL_INC_AND_TEST(_clabel_) ((_clabel_+1)&CLABEL_MASK)
 #define CID_GET_CLABEL(_cid) (_cid&CLABEL_MASK)
 #define CID_NEXT_RLABEL(_dom, _sl) (_dom->table[_sl].next_label++)
@@ -139,7 +139,7 @@ unpack_indexes(uint64_t v,
 	}
 
 	/* first 14 bits 0-13 */
-	*clabel  = v & 0x7FFF;
+	*clabel  = v & CLABEL_MASK;
 	/* middle 32 bits 14-45 */
 	*rlabel  = (v >> 14) & 0xFFFFFFFF;
 	/* last 16 bits 46-61 */
