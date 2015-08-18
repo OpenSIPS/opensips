@@ -191,6 +191,48 @@ static ssize_t mi_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max
 	return -1;
 }
 
+#define MI_HTTP_MAX_WAIT       2*60*4
+static inline struct mi_root* mi_http_wait_async_reply(struct mi_handler *hdl)
+{
+	mi_http_async_resp_data_t *async_resp_data =
+		(mi_http_async_resp_data_t*)(hdl+1);
+	struct mi_root *mi_rpl;
+	int i;
+	int x;
+
+	for( i=0 ; i<MI_HTTP_MAX_WAIT ; i++ ) {
+		if (hdl->param)
+			break;
+		sleep_us(1000*500);
+	}
+
+	if (i==MI_HTTP_MAX_WAIT) {
+		/* no more waiting ....*/
+		lock_get(async_resp_data->lock);
+		if (hdl->param==NULL) {
+			hdl->param = MI_HTTP_ASYNC_EXPIRED;
+			x = 0;
+		} else {
+			x = 1;
+		}
+		lock_release(async_resp_data->lock);
+		if (x==0) {
+			LM_INFO("exiting before receiving reply\n");
+			return NULL;
+		}
+	}
+
+	mi_rpl = (struct mi_root *)hdl->param;
+	if (mi_rpl==MI_HTTP_ASYNC_FAILED)
+		mi_rpl = NULL;
+
+	/* free the async handler*/
+	shm_free(hdl);
+
+	return mi_rpl;
+}
+
+
 void mi_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
@@ -202,6 +244,7 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 	str arg = {NULL, 0};
 	struct mi_root *tree = NULL;
 	struct mi_handler *async_hdl;
+	int is_shm = 0;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 		"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
@@ -214,21 +257,23 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 				LM_DBG("arg [%p]->[%.*s]\n", arg.s, arg.len, arg.s);
 				tree = mi_http_run_mi_cmd(mod, cmd, &arg,
 							page, buffer, &async_hdl);
+				if (tree == MI_ROOT_ASYNC_RPL) {
+					LM_DBG("got an async reply\n");
+					tree = mi_http_wait_async_reply(async_hdl);
+					async_hdl = NULL;
+					is_shm = 1;
+				}
+
 				if (tree == NULL) {
 					LM_ERR("no reply\n");
 					*page = MI_HTTP_U_ERROR;
-				} else if (tree == MI_ROOT_ASYNC_RPL) {
-					LM_DBG("got an async reply\n");
-					tree = NULL;
 				} else {
 					LM_DBG("building on page [%p:%d]\n",
 						page->s, page->len);
-					if(0!=mi_http_build_page(page, buffer->len,
-								mod, cmd, tree)){
-						LM_ERR("unable to build response "
+					if(0!=mi_http_build_page(page,buffer->len,mod,cmd,tree)){
+						LM_ERR("unable to build response"
 							"for cmd [%d] w/ args [%.*s]\n",
-							cmd,
-							arg.len, arg.s);
+							cmd, arg.len, arg.s);
 						*page = MI_HTTP_U_ERROR;
 					}
 				}
@@ -241,7 +286,7 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 				}
 			}
 			if (tree) {
-				free_mi_tree(tree);
+				is_shm?free_shm_mi_tree(tree):free_mi_tree(tree);
 				tree = NULL;
 			}
 		} else {

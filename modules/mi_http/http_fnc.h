@@ -28,6 +28,9 @@
 #ifndef _MI_HTTP_HTTP_FNC_H
 #define _MI_HTTP_HTTP_FNC_H
 
+#define MI_HTTP_ASYNC_FAILED   ((void*)-2)
+#define MI_HTTP_ASYNC_EXPIRED  ((void*)-3)
+
 typedef struct http_mi_cmd_ {
 	struct mi_cmd* cmds;
 	int size;
