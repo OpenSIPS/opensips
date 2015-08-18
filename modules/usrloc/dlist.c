@@ -859,7 +859,7 @@ ucontact_t* get_ucontact_from_id(udomain_t *d, uint64_t contact_id, urecord_t **
 			continue;
 
 		for (c = r->contacts; c != NULL; c = c->next)
-			if (c->label == clabel) {
+			if ((unsigned short)c->label == clabel) {
 				*_r = r;
 				unlock_ulslot(d, sl);
 				return c;
@@ -889,6 +889,10 @@ int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicate
 	}
 
 	c = get_ucontact_from_id(d, contact_id, &r);
+	if (c == NULL) {
+		LM_WARN("contact with contact id %llu not found\n", contact_id);
+		return 0;
+	}
 
 	if (!is_replicated && replication_dests)
 		replicate_ucontact_delete(r, c);

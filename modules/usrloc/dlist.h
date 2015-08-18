@@ -117,7 +117,7 @@ typedef udomain_t* (*get_next_udomain_t) (udomain_t* _d);
 udomain_t* get_next_udomain(udomain_t *_d);
 
 /*contact label may not be higher than 14 bits*/
-#define CLABEL_MASK ((1<<14)-1)
+#define CLABEL_MASK ((1<<15)-1)
 #define CLABEL_INC_AND_TEST(_clabel_) ((_clabel_+1)&CLABEL_MASK)
 #define CID_GET_CLABEL(_cid) (_cid&CLABEL_MASK)
 #define CID_NEXT_RLABEL(_dom, _sl) (_dom->table[_sl].next_label++)
