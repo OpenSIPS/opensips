@@ -45,6 +45,9 @@
 #define MI_XMLRPC_FORMATED_OUTPUT 2
 #define MI_XMLRPC_UNFORMATED_OUTPUT 1
 
+#define MI_XMLRPC_ASYNC_FAILED   ((void*)-2)
+#define MI_XMLRPC_ASYNC_EXPIRED  ((void*)-3)
+
 typedef struct mi_xmlrpc_http_html_page_data_ {
 	str page;
 	str buffer;
@@ -52,7 +55,6 @@ typedef struct mi_xmlrpc_http_html_page_data_ {
 
 typedef struct mi_xmlrpc_http_async_resp_data_ {
 	gen_lock_t* lock;
-	struct mi_root* tree;
 }mi_xmlrpc_http_async_resp_data_t;
 
 
