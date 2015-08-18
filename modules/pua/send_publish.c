@@ -477,7 +477,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 
 	LM_DBG("cback param = %ld\n", pres_id);
 
-	tmb.t_request(&met,						/* Type of the message */
+	if (tmb.t_request(&met,						/* Type of the message */
 			publ->pres_uri,							/* Request-URI */
 			publ->pres_uri,							/* To */
 			publ->pres_uri,							/* From */
@@ -487,7 +487,13 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 			publ->expires?publ_cback_func:0,		/* Callback function */
 			(void*)pres_id,							/* Callback parameter */
 			0
-			);
+			) < 0 )
+	{
+		LM_ERR("failed to send PUBLISH\n");
+		ret = -1;
+		goto error;
+	}
+
 	pkg_free(str_hdr);
 
 	if(body && ev->process_body)
