@@ -829,15 +829,7 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri, int server_id)
 	unsigned int hash_idx;
 	time_t now;
 	rl_repl_counter_t *destination;
-
-	if(get_bin_pkg_version() != BIN_VERSION){
-		LM_ERR("incompatible bin protocol version\n");
-		return;
-	}
-
-	if (packet_type != RL_PIPE_COUNTER)
-		return;
-
+	
 	if (packet_type == SERVER_TEMP_DISABLED) {
  		get_su_info(&ri->src_su.s, ip, port);
 		LM_WARN("server: %s:%hu temporary disabled\n", ip, port);
@@ -848,6 +840,14 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri, int server_id)
 		LM_WARN("server with clustererer id %d timeout\n", server_id);
 		return;
 	}
+	
+	if(get_bin_pkg_version() != BIN_VERSION){
+		LM_ERR("incompatible bin protocol version\n");
+		return;
+	}
+
+	if (packet_type != RL_PIPE_COUNTER)
+		return;
 
 	if (packet_type != RL_PIPE_COUNTER)
 		return;
