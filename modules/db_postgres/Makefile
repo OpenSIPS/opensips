@@ -6,6 +6,7 @@ include ../../Makefile.defs
 auto_gen=
 NAME=db_postgres.so
 
+SCRIPTS_DIR?=../../scripts/
 
 # set CROSS_COMPILE to true if you want to skip
 # the autodetection
@@ -35,3 +36,25 @@ else
 endif
 
 include ../../Makefile.modules
+
+install_module_custom: 
+	mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl ; \
+	sed -e "s#/usr/local/sbin#$(bin-target)#g" \
+		< $(SCRIPTS_DIR)/opensipsctl.pgsql > /tmp/opensipsctl.pgsql ; \
+	$(INSTALL_CFG) /tmp/opensipsctl.pgsql \
+		$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.pgsql ; \
+	rm -fr /tmp/opensipsctl.pgsql ; \
+	sed -e "s#/usr/local/share/opensips#$(data-target)#g" \
+		< $(SCRIPTS_DIR)/opensipsdbctl.pgsql > /tmp/opensipsdbctl.pgsql ; \
+	$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbctl.pgsql ; \
+	$(INSTALL_CFG) /tmp/opensipsdbctl.pgsql $(modules-prefix)/$(lib-dir)/opensipsctl/ ; \
+	rm -fr /tmp/opensipsdbctl.pgsql ; \
+	mkdir -p $(data-prefix)/$(data-dir)/postgres ; \
+	for FILE in $(wildcard $(SCRIPTS_DIR)/postgres/*) ; do \
+		if [ -f $$FILE ] ; then \
+		$(INSTALL_TOUCH) $$FILE \
+			$(data-prefix)/$(data-dir)/postgres/`basename "$$FILE"` ; \
+		$(INSTALL_CFG) $$FILE \
+			$(data-prefix)/$(data-dir)/postgres/`basename "$$FILE"` ; \
+		fi ;\
+	done ; \

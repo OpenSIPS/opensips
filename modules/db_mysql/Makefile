@@ -6,6 +6,8 @@ include ../../Makefile.defs
 auto_gen=
 NAME=db_mysql.so
 
+SCRIPTS_DIR?=../../scripts/
+
 # set CROSS_COMPILE to true if you want to skip
 # the autodetection
 # CROSS_COMPILE=true
@@ -39,3 +41,25 @@ else
 endif
 
 include ../../Makefile.modules
+
+install_module_custom: 
+	mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl ; \
+	sed -e "s#/usr/local/sbin#$(bin-target)#g" \
+		< $(SCRIPTS_DIR)/opensipsctl.mysql > /tmp/opensipsctl.mysql ; \
+	$(INSTALL_CFG) /tmp/opensipsctl.mysql \
+		$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.mysql ; \
+	rm -fr /tmp/opensipsctl.mysql ; \
+	sed -e "s#/usr/local/share/opensips#$(data-target)#g" \
+	< $(SCRIPTS_DIR)/opensipsdbctl.mysql > /tmp/opensipsdbctl.mysql ; \
+	$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbctl.mysql ; \
+	$(INSTALL_CFG) /tmp/opensipsdbctl.mysql $(modules-prefix)/$(lib-dir)/opensipsctl/ ; \
+	rm -fr /tmp/opensipsdbctl.mysql ; \
+	mkdir -p $(data-prefix)/$(data-dir)/mysql ; \
+	for FILE in $(wildcard $(SCRIPTS_DIR)/mysql/*) ; do \
+		if [ -f $$FILE ] ; then \
+		$(INSTALL_TOUCH) $$FILE \
+			$(data-prefix)/$(data-dir)/mysql/`basename "$$FILE"` ; \
+		$(INSTALL_CFG) $$FILE \
+			$(data-prefix)/$(data-dir)/mysql/`basename "$$FILE"` ; \
+		fi ;\
+	done ; \
