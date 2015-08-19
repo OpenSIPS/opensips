@@ -41,7 +41,6 @@
 #include "../../mod_fix.h"
 #include "../../socket_info.h"
 #include "../../route_struct.h"
-#include "../../route.c"
 #include "../rr/api.h"
 #include "../../ip_addr.h"
 #include "../../parser/msg_parser.h"

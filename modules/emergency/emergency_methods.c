@@ -1918,7 +1918,7 @@ int check_myself(struct sip_msg *msg) {
         return 0;
     }
     LM_DBG(" --- opensips host %.*s \n \n", msg->parsed_uri.host.len, msg->parsed_uri.host.s);
-    ret = check_self_op(EQUAL_OP, &msg->parsed_uri.host, 0);
+    ret = check_self(&msg->parsed_uri.host, 0, 0);
     return ret;
 }
 
