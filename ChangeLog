@@ -1,3 +1,897 @@
+=========================== Release 2.1.1 ==============================
+
+2015-08-19  Razvan Crainea  <razvan at opensips dot org>
+	* [d695567] :
+
+	packaging: update version to 2.1.1
+
+
+2015-08-19  Razvan Crainea  <razvan at opensips dot org>
+	* [4dcacf7] :
+
+	tm: fix bavp leaks in case of error
+	Thanks go to Mickael Marrache for spotting and debugging
+	(cherry picked from commit 70a34b9e974132c6c5269c0c02b2311566bddd12)
+
+
+2015-08-19  Razvan Crainea  <razvan at opensips dot org>
+	* [87a6660] :
+
+	fix previous commit
+	(cherry picked from commit dcd3ec4433548db469492e8a3c96df5c70d81a3f)
+
+
+2015-08-19  Razvan Crainea  <razvan at opensips dot org>
+	* [9481f7a] :
+
+	Makefile.defs: print target info only if changed
+	(cherry picked from commit 14b3bb69ea1d98f5ce06a27e010964f4fac48fbb)
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [53e7ae8] :
+
+	mi_xmlrpc_ng: fix include warning
+	(cherry picked from commit 668533eb9a4320dfd4ddc3c0f3cb35eecde326dc)
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [d32f1ca] :
+
+	debian: change from native to quilt
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [857857c] :
+
+	remove useless route.c include
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [6f07dab] :
+
+	fix EXPRESSION typo
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [f537612] :
+
+	debian/rules: add build-{arch,indep} rules
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [ac3ce34] :
+
+	update github watch file
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [d094f09] :
+
+	fix http package description
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [39bccea] :
+
+	fix some spellchecks detected by lintian
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [4afbfef] :
+
+	install-modules: each module install its own custom files
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [2ac0d08] :
+
+	man: fix hyphens
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [7524b2b] :
+
+	init: add LSB functions support
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [2d1a5d9] :
+
+	debian: add python dependency for opensips
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [064d562] :
+
+	Makefile: do not install docs on debian installs
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [979ee74] :
+
+	Fix man pages
+	* add osipsconfig man page
+	* fix lists info for opensipsconsole and opensipsdbctl
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [d4a5a6a] :
+
+	fix debian packaging
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [fbcfb2a] :
+
+	Merge pull request #605 from saghul/makefile-target-master
+	makefile: detect target architecture using the compiler
+	(cherry picked from commit 87a195823abf123630d06b71cae1150c3ef76ee0)
+
+
+2015-08-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [65b94e2] :
+
+	Fix infinit loopin in TCP reactor.
+	When connection is S_CONN_CONNECTING (async pending connect), some READ events may be delivered by the reactor (still not fully understood way). This is a temporary fix (fixing the effect and not the cause) following Rahul Gupta's suggestion in #591
+
+
+2015-08-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9843504] :
+
+	Fix handling of ASYNC MI commands
+	Similar to report #552.
+	(cherry picked from commit 2b3a3ea9588854be5d7b64d4c04b48f6907a91ba)
+
+	Conflicts:
+		modules/mi_http/mi_http.c
+
+
+2015-08-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cc03352] :
+
+	Fix restoring/freeing the path_vec in failure route.
+	The path_vec (array holding the PATH string) was not properly pushed into the faked requests before calling the failure route. This was generating a mixture of shm/pkg memory when the faked request had to be freed.
+	This crash was trigger only if PATH support was used and requests were looked up with PATH header.
+
+	Reported by @AVFedorov and @petekelly.
+	Closes #484
+
+	Many thanks to @AVFedorov for his details information and to @petekelly for support in investigating and testing.
+
+
+2015-08-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c8c8410] :
+
+	Fix handling of ASYNC MI commands
+	Part of fixing #552.
+	Reported by @mqandeel .
+
+	Closes #552
+	(cherry picked from commit c08b03310b9d8001b346ff3ba5a45996b1a5dc45)
+
+	Conflicts:
+		modules/mi_xmlrpc_ng/http_fnc.h
+		modules/mi_xmlrpc_ng/mi_xmlrpc_http.c
+
+
+2015-08-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b1ee3a5] :
+
+	Fix handling of ASYNC MI commands
+	Part of fixing #552.
+	Reported by Damien Sandras.
+	(cherry picked from commit 5244b54afe63bba02fe45f82b736c327672b221a)
+
+	Conflicts:
+		modules/mi_json/mi_json.c
+
+
+2015-08-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a3c2569] :
+
+	Fix reporting if t_request() failed.
+	Capture and report futher if the t_request() failed to send out the PUBLISH request.
+	(cherry picked from commit 4791a506912d67f90dfe66e7292500046d59ef4a)
+
+
+2015-08-12  Jarrod Baumann  <jarrod at unixc dot org>
+	* [f4a411d] :
+
+	Do not append colon if uri password is NULL
+	(cherry picked from commit 76dc734df0926dbfa5cb6d463dcbf5a82ea6dc2a)
+
+
+2015-08-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f2f5808] :
+
+	Free double pointer.
+	While looping over all location-like tables, set to NULL the result pointer after each iteration.
+	Reported by @ionutrazvanionita
+	Closes  #566 .
+	(cherry picked from commit 719f298d5ad3300b790f64cfed40e797eeb23225)
+
+
+2015-08-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [089284b] :
+
+	Fix use_domain, escaping, cases in remove()
+	Use extract_aor() in script function remove() ; extract_aor() takes into account the use_domain and cases settings and is also able to deal with escaped chars.
+
+	Closes #557 .
+	(cherry picked from commit 0e1fabbc71c6c315b1f00d3ea58d1796054f2590)
+
+
+2015-08-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3634b86] :
+
+	Proper test on active destinatins for failover.
+	Test both INACTIVE and PROBING flags before considering a destination suitable for failover.
+	Reported by @gergelypeli
+	Closes #564 .
+
+
+2015-08-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [22f4c1a] :
+
+	Fix race condition - the log must be under lock
+	As information from the alias strucuture is printed, this must be done under lock protection.
+	Closes #589 by @dbeskoek.
+
+
+2015-08-07  Razvan Crainea  <razvan at opensips dot org>
+	* [3de6036] :
+
+	add mi_xmlrpc dependency for travis
+
+
+2015-08-07  Razvan Crainea  <razvan at opensips dot org>
+	* [6355644] :
+
+	add travis support
+
+
+2015-08-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0bbd42f] :
+
+	DBschema regenerated
+
+
+2015-08-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9bde2df] :
+
+	MyISAM no longer default table engine.
+	InnoDB is now the default, and this value can now be changed via MYSQL_ENGINE env variable in opensipsctlrc.
+
+	Closes #399
+	(cherry picked from commit 6112b8bd3a40d1266c448bf508ede8b9193c35e9)
+
+	Conflicts:
+		scripts/mysql/call_center-create.sql
+		scripts/mysql/emergency-create.sql
+
+
+2015-08-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f6e1513] :
+
+	Use SIP pinging when NAT traversal is on
+	(cherry picked from commit 67c2c91844641980970d8445291242bdd5ec5310)
+
+
+2015-08-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ad08a0d] :
+
+	Fix missing typedef.
+	It seems the code is a bit different from 2.2 , so fixing a8a487
+
+
+2015-08-06  Răzvan Crainea  <razvan at opensips dot org>
+	* [2671738] :
+
+	fix debian packaging
+	(cherry picked from commit 2d15060e48333ab3cad2e9cf3cafb7a006324185)
+
+
+2015-08-06  Razvan Crainea  <razvan at opensips dot org>
+	* [b7524e2] :
+
+	add rest_client specs for debian, fedora and rpms
+	Closes #587
+	(cherry picked from commit 3dfc83cb254f150d2e6dbbb49f48ec9927be3a3c)
+
+
+2015-08-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a8a4875] :
+
+	Remove double define.
+	param_export_t is already defined by sr_module_deps.h which is included from here.
+	(cherry picked from commit 0ff15f63e7002e58385228a16bb4e43dbf75a400)
+
+
+2015-07-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [eaf3ca5] :
+
+	Fix broken condition in handling ASYNC_CONTINUE.
+
+
+2015-07-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4480d11] :
+
+	Fixed memeory exhausting during concurrent reloads.
+	Add a new module parameter no_concurrent_reload to prevent multiple reloads in the same time.
+	If you have a large routing set (millions of rules/prefixes), you should consider disabling concurrent reload as they will exhaust the shared memory (by reloading into memory, in the same time, multiple instances of routing data).
+
+
+2015-07-16  Liviu Chircu  <liviu at opensips dot org>
+	* [9982088] :
+
+	db_virtual: Do not crash if no DB sets are defined
+	(cherry picked from commit b391ea3d25dbe286ddd12d4ffc5f53b32cfdc268)
+
+
+2015-07-10  Liviu Chircu  <liviu at opensips dot org>
+	* [7c0b087] :
+
+	config parser: Exit if no more memory available
+	Otherwise, some code paths would generate segmentation faults
+	(cherry picked from commit 5415531a162093a070990bae6e23af68a0137618)
+
+	Conflicts:
+		cfg.y
+
+
+2015-07-10  Liviu Chircu  <liviu at opensips dot org>
+	* [2b50281] :
+
+	db_virtual: Do not crash if no DB URLs are defined
+	(cherry picked from commit 5a832d94bd2af95929a5b8451ee6895a585d6989)
+
+
+2015-07-10  Liviu Chircu  <liviu at opensips dot org>
+	* [3aa7bbc] :
+
+	avpops: Proper handling for async with non-async drivers
+	Fallback to normal mode in case of no async capabilities.
+	If this behaviour is employed, a startup warning will be issued.
+	(cherry picked from commit 1e675ac0ae07e4dfd4d795beb2eacd0fff8346da)
+
+
+2015-07-10  Liviu Chircu  <liviu at opensips dot org>
+	* [244140c] :
+
+	db_mysql: Improve error handling in async mode
+	i.e. Logging and error handling in case of bad async queries
+	(cherry picked from commit aad94dadec71c0cd3fcefa25ce2dec800b4f089b)
+
+
+2015-07-10  Liviu Chircu  <liviu at opensips dot org>
+	* [b523dc9] :
+
+	core API: Add detection for async script function usage
+	(cherry picked from commit 87acbbca4ad1f26000bf8bd59f4076100d250438)
+
+
+2015-07-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8fefc91] :
+
+	More verbous logging.
+	Log the error reported by stat() when it fails.
+
+
+2015-07-06  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [f610f3c] :
+
+	Fixed typo in encoding the callid
+	(cherry picked from commit 43a2619f59b30782a5aa6bf310088365895b04cb)
+
+
+2015-07-02  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [3adfb0e] :
+
+	Fixed generated callid
+	= is not a valid character in a callid, so replaced it with a hyphen
+	(cherry picked from commit a0ec25a4f52d181e02b92aeada322eaa76d14e20)
+
+
+2015-06-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2ef8cd0] :
+
+	Expose unset_dlg_profile() to Request Route.
+	Related to issue #554.
+	(cherry picked from commit 23f2322db56540be4d0b36a099a02e380aeafe19)
+
+
+2015-06-26  Cerghit Ionel  <ionel.cerghit at gmail dot com>
+	* [1c6e619] :
+
+	event_route: fix route name when no sync/async
+	(cherry picked from commit 996fadff4c0935caee71e9315a0564decebd8a5e)
+
+
+2015-06-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b0f52d5] :
+
+	Fix TH for BYEs used as CANCEL
+	Trigger the dialog callbacks (used by TH) for BYEs which do not terminate the call (BYEs in early state can be used as CANCELs).
+	Reported by Antonis Psaras.
+	Closes #555
+
+
+2015-06-26  Razvan Crainea  <razvan at opensips dot org>
+	* [4a2e29c] :
+
+	always create tar with TLS files
+	(cherry picked from commit 31f46c244a92e5aa49ae80b4fedb7f1efb4f4e20)
+
+
+2015-06-26  Razvan Crainea  <razvan at opensips dot org>
+	* [6ed37de] :
+
+	acc: fix column type mismatch for db missed calls
+	This bug was making OpenSIPS crash when a missed call was inserted in DB
+
+	Thanks go to Peter Baines for reporting it (Issue #559)
+	(cherry picked from commit ea2a04155f9a37460b2f0476a35a64309b57bb77)
+
+
+2015-06-25  Razvan Crainea  <razvan at opensips dot org>
+	* [b98687d] :
+
+	acc: fix multi_leg_bye info behavior
+	This bug was making the ACC module to print less information in case there
+	were no AVPs populated for the BYE multi_leg_info
+	(cherry picked from commit 307388d7499fe2cf4f1ea7f54f2ef11a628e327d)
+
+
+2015-06-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [19d0f60] :
+
+	Fix $ct and $ct.fields variables.
+	Force parsing of all Contact headers.
+	Reported by Nick Altmann.
+
+
+2015-06-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d3409fe] :
+
+	Added DB schema for emergency module
+
+
+2015-06-12  Ovidiu Sas  <osas at voipembedded dot com>
+	* [fb9a475] :
+
+	mi_xmlrpc_ng: unescape xml strings  - related to bug #537
+	(cherry picked from commit 8450630617b2504ffdc4089f2500a26b4187e078)
+
+
+2015-06-12  Ovidiu Sas  <osas at voipembedded dot com>
+	* [db9a16e] :
+
+	core: adding unescape_xml() function helper to strcommon.[ch]
+	(cherry picked from commit f6386ca9029fb56233ef1ac0b2cc2034d88e0928)
+
+
+2015-06-11  Nick Altmann  <nick.altmann at gmail dot com>
+	* [badb86e] :
+
+	RPM spec: enabled restart feature (in case of crash) in systemd service
+	(cherry picked from commit 611b9bb55135b899746a0c71f21f25b0561a81b4)
+
+
+2015-06-11  Nick Altmann  <nick.altmann at gmail dot com>
+	* [7e1fa37] :
+
+	RPM spec: returned missed m4 feature, corrected version numbering
+
+
+2015-06-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8b1bd12] :
+
+	Fix documentation on loose_route().
+	loose_route() returns FALSE only if there is no Route header or if preloaded local Route only.
+	Reported by @gergelypeli on github
+	Closes #550
+	(cherry picked from commit 2421034845068bbc243a8bd5de8aeebd071fc729)
+
+
+2015-06-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c0df4e9] :
+
+	Revert "Fix parsing for Diversion header."
+	This reverts commit 518b2c12192fcc018bedf5f1ad714697966bbdb4.
+
+
+2015-06-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1f7bae0] :
+
+	Fix fixing hdr names shorter than 3 chars.
+	The fixup function fails to identify header names shorter than 3 (like To or short formats). This affected script functions like is_present_hf() or remove_hf().
+	Reported by Nick Altmann
+
+
+2015-06-09  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [bffeee0] :
+
+	Merge pull request #546 from dynamicpacket/2.1
+	fixes for Debian packaging
+
+
+2015-06-09  User  <user at Users-Mac-Pro dot local>
+	* [ec6a1ec] :
+
+	* Check for freeradius libs in Makefile * Check for json lib include paths in Makefile * Update debian/control with new dependency names and standards * Update debian/rules to remove deprecated dpatch
+
+
+2015-06-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ca0cb37] :
+
+	Add emergency tables to TABLES_EXTRA
+	(cherry picked from commit 84e78f238cc5374c42f7d84a0892d4653bdd54ef)
+
+	Conflicts:
+		scripts/opensipsdbctl.base
+
+
+2015-06-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [00862dc] :
+
+	Fix init of UDP listener in nofork mode.
+	Init the UDP listener before forking the MI procs, otherwise they will not be aware of the network sockets.
+	Closes #541
+	Self reported.
+	(cherry picked from commit c14659471bc0fc61b59ce3c8518cf228cd1a3b7d)
+
+
+2015-06-04  Di-Shi Sun  <di-shi at transnexus dot com>
+	* [b9a4e43] :
+
+	Updated for OSP Toolkit 4.5.0.
+
+
+2015-06-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [518b2c1] :
+
+	Fix parsing for Diversion header.
+	As Diversion header may be a multi-body header, do not use the parse_to() function as it does not accept multiple bodies. Use parse_rr() function.
+	Reported by Nick Altmann.
+	(cherry picked from commit 36384927a5d2fd1d900ac36adc2ee15b2acad0c9)
+
+
+2015-06-03  Razvan Crainea  <razvan at opensips dot org>
+	* [895614e] :
+
+	event_rabbitmq: EINTR is not an error and should not be considered for retry
+	(cherry picked from commit 008b42363fc7294a169924be350c512f8c32e26d)
+
+
+2015-06-03  Eric Tamme  <eric.tamme at onsip dot com>
+	* [90f836a] :
+
+	do not always retry write to pipe if we get blocking errors as this causes the proxy to lock up and consume cpu
+	(cherry picked from commit ac419bc0a1e87fe3e0750a983e61b9fcbe4daedd)
+
+
+2015-06-03  Razvan Crainea  <razvan at opensips dot org>
+	* [9904dc6] :
+
+	event_xmlrpc: only retry send/recv a couple of times if there are errors
+	Credits go to Joseph Frazier (onsip) for spotting this
+	(cherry picked from commit 05bc754133dd7fe02dc0c780a7f625a83bfef61f)
+
+
+2015-06-03  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [2033360] :
+
+	Merge pull request #534 from seanchann/1.11
+	fix rpm build error on centos
+	(cherry picked from commit 715914848153678c473dc3d4211b8b534bf66fa1)
+
+
+2015-06-02  Liviu Chircu  <liviu at opensips dot org>
+	* [cfdc74e] :
+
+	s.fill transformation: Prioritize string pvars over integer ones
+	Reason for this is that a pvar which holds a string is a more
+	particular occurrence than an int one, since integers can be
+	easily stringified.
+
+	This fixes some issues with pvars which have multiple internal
+	representations (e.g. $rm is "INVITE" and 1 at the same time)
+
+	Reported by Eric Tamme
+	(cherry picked from commit 0db7e0e38c0974ec393446237aa09bc5658c0d24)
+
+
+2015-06-02  Liviu Chircu  <liviu at opensips dot org>
+	* [cc91b1e] :
+
+	s.fill transformations: Allow whitespace in quoted params
+	This patch actually fixes several issues:
+	    * allows the "s.fill" functions to be used for alignment purposes
+	    * bugfix: possible "s.fill" usage which caused infinite loop
+	    * new: trim.h string trimming macros
+	    * some code refactoring
+
+	Fixes #531
+	(cherry picked from commit ee4374f97d7f7fc8628ca0dfe1a50fedce8bebaf)
+
+
+2015-06-02  Jarrod Baumann  <jarrod at unixc dot org>
+	* [5f442bf] :
+
+	verify pv_export_t parse_name function is set before calling
+	(cherry picked from commit 3c47edd9b007aa60e36d6a094e995956509f1da4)
+
+
+2015-06-01  Ovidiu Sas  <osas at voipembedded dot com>
+	* [ad4070c] :
+
+	event_rabbitmq: add specif error probe for AMQP_STATUS_SOCKET_ERROR  - triggered after rabbitmq server restart
+	(cherry picked from commit 1288d269e5fdf7506298d9e0b904050b601c8e32)
+
+
+2015-06-01  Ovidiu Sas  <osas at voipembedded dot com>
+	* [1edbca6] :
+
+	event_rabbitmq: enhance AMQP connection error probe
+	(cherry picked from commit b5165107d493eedda8b63616db189a044dd18848)
+
+
+2015-05-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [59d0f33] :
+
+	Fix debug log.
+	Do not print un-initialized variables.
+
+	Reported by miha- on IRC.
+
+
+2015-05-27  Liviu Chircu  <liviu at opensips dot org>
+	* [de2b113] :
+
+	avpops: Fix possible runtime crash
+	The patch corrects a bug in commit 685da74670, since mod_init() is
+	actually run _before_ module function fixups.
+
+	Detection for raw SQL function calls is now done (properly) at fixup time,
+	rather than at module initialization.
+
+	Reported by Antonis Psaras
+	Closes #523
+	(cherry picked from commit 91d1b4f4b65b4bf70d8db93d956a42d2f58500f9)
+
+
+2015-05-26  Liviu Chircu  <liviu at opensips dot org>
+	* [a5cf2ca] :
+
+	residential cfg: Set db_url for "uri" module when doing auth
+	(cherry picked from commit 724d16d99f9ae46cbeaa6894f45afbb0b4fd650a)
+
+
+2015-05-26  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [bdbf504] :
+
+	Set the upsert flag when incrementing / decrementing counters This way the counters don't need to be pre-populated in the DB ( eg. when using them for dialog profiles )
+	(cherry picked from commit 74a52d0da12395367019028034c6c20b5cff5b38)
+
+
+2015-05-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [293a127] :
+
+	Fix "dialplan addrule" command.
+	The match_len column was replaced with match_flags
+	Closes #513
+	(cherry picked from commit 607fb3e78c9d39b7c0b97fbd5be615369f5a1ef1)
+
+
+2015-05-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [5a3af0b] :
+
+	Closed connection in child init after data load; Connected to db from mi process in mi_child_init
+	(cherry picked from commit 6164d1c3cab077957e91118c8094cfa97b2bfc7b)
+
+
+2015-05-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [52554da] :
+
+	move db data initialization from mi_child_init to child init
+	(cherry picked from commit fa14431830bde1c8ede30bf77a609197e7d002fa)
+
+
+2015-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9cd6e6f] :
+
+	Fix NULL value as route param.
+	Closes #516, open by @liviuchircu.
+	(cherry picked from commit 032c425424846045227d57e88b506c4603315bc4)
+
+
+2015-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3870a57] :
+
+	Fix handling of gw_priprefix_avp param.
+	Closes #518, reported by @apsaras.
+
+
+2015-05-20  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [33c1415] :
+
+	Merge pull request #517 from staskobzar/1.11
+	Make sure httpd can recognize Content-Type headers with parameters.
+	(cherry picked from commit a8971c2fcb0207a34005a2ee586de97ecf759638)
+
+	Conflicts:
+		modules/httpd/httpd_proc.c
+
+
+2015-05-20  Liviu Chircu  <liviu at opensips dot org>
+	* [8e95b8d] :
+
+	route params: increment nesting level on no-param routes
+	Completes commit f3ed4db99
+	(cherry picked from commit 564acbe638fab63deb2d39462b667b2d83a75f05)
+
+
+2015-05-20  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [5aae5ab] :
+
+	fixed partition parsing
+
+
+2015-05-20  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [320c825] :
+
+	Expose API for setting connection attributes in WS module Fix so that tcp_persistent_flag in registrar also works for WS connections
+	(cherry picked from commit a57d67f3609237ad2b5480b8924f701681002fcf)
+
+
+2015-05-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [59145d2] :
+
+	Fix $proto to read from loaded protocols
+	(cherry picked from commit 1c1d7321324b229aeb948fb88b6a6028cba13643)
+
+
+2015-05-18  Jarrod Baumann  <jarrod at unixc dot org>
+	* [6d33b02] :
+
+	set local variable memory to 0 to prevent core dump
+	(cherry picked from commit d84df1900267516b30e560d20e225abbe2aea071)
+
+
+2015-05-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [da8ec88] :
+
+	Fix restoring the route type after async jump.
+	A more accurate fix on preserving the route type after an async jump - see commit 950966.
+	(cherry picked from commit 9597bc9ec4f3c49eddd8d23c2fc5f7e2f94eca48)
+
+
+2015-05-18  Liviu Chircu  <liviu at opensips dot org>
+	* [d0f5acb] :
+
+	async: set route type before running resume routes
+	(cherry picked from commit 9509665640782b197feec34acd1e7b66935e66f4)
+
+
+2015-05-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d82e26e] :
+
+	Fix - DLG_STATE_CHANGED event contains the DID too
+	Reported by Dan Bogos.
+	This is a bug, as without the Dialog ID, the DLG_STATE_CHANGED event is useless.
+	(cherry picked from commit e461b65c10486c9f2d7504ab446eaf7335851a3d)
+
+
+2015-05-18  Razvan Crainea  <razvan at opensips dot org>
+	* [a9a4ffb] :
+
+	dialog: do not raise event under lock
+	This allows nested dialog operations and prevents opensips from dialog
+	deadlock
+	(cherry picked from commit a63d6fe983ef461af9965e1874aff76bb874f28f)
+
+
+2015-05-16  Liviu Chircu  <liviu at opensips dot org>
+	* [02b93b3] :
+
+	fix doc typo
+	Reported by Nick Altmann
+	(cherry picked from commit be873729874b2b68ab779666374e2996a7ace727)
+
+
+2015-05-15  Razvan Crainea  <razvan at opensips dot org>
+	* [e502fac] :
+
+	proto_tls: fix README tcp typo
+	(cherry picked from commit a5d16d29a626becb120518534b23204090c4bdf0)
+
+
+2015-05-15  Liviu Chircu  <liviu at opensips dot org>
+	* [43b8fda] :
+
+	fraud_detection: fix "daysoftheweek" parsing bug
+	Parsing was incorrect for sequences such as "Fri-Mon", "Thu-Wed" etc.
+	(cherry picked from commit 3e82c485d939df8153c4b2833941a8ed2f64e8aa)
+
+
+2015-05-15  Liviu Chircu  <liviu at opensips dot org>
+	* [a519c83] :
+
+	fraud_detection: properly release stats lock on error
+	(cherry picked from commit 2d5dcadd4029bbbadd9ddcbf842d22f03a2d32ea)
+
+
+2015-05-15  Liviu Chircu  <liviu at opensips dot org>
+	* [66ab6ca] :
+
+	bin_interface: use blocking I/O
+	The 2.1 code uses non-blocking UDP socket init primitives.
+	This specifically made the binary interface workers do a lot of busy-waiting
+
+	Reported by Rik Broers
+	Fixes #502
+	(cherry picked from commit df2c030d1408a7d886cf13e3772af81f6deae9a7)
+
+
+2015-05-11  Liviu Chircu  <liviu at opensips dot org>
+	* [47aab17] :
+
+	io_wait.h: always include pt.h
+	pt.h is required even without HAVE_SIGIO_RT
+
+	Reported by @narunask
+	Fixes #505
+	(cherry picked from commit 4d6baa5c4f6c05eec26688df63489176c676d377)
+
+
+2015-05-11  Liviu Chircu  <liviu at opensips dot org>
+	* [f894ed0] :
+
+	build system: properly parse "uname -r" output
+	Also handle "MAJOR.MINOR-SUB" types of strings
+	(cherry picked from commit 999364ed550c7fe8031820cadd2db800fa95aae6)
+
+
+2015-05-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9c066e6] :
+
+	Fix bogus jump to "error" label.
+	if unhash_fd_map() is not done, do not try to do fix_fd_array() .
+
+
+2015-05-08  Liviu Chircu  <liviu at opensips dot org>
+	* [e16ab48] :
+
+	async DB core: fix noisy logs
+	(cherry picked from commit fd8fc60212e8e43f27a3411470d56f7f707a8652)
+
+
+2015-05-08  Razvan Crainea  <razvan at opensips dot org>
+	* [d1428f9] :
+
+	fix RPM versioning for 2.1.0
+
+
+2015-05-08  Razvan Crainea  <razvan at opensips dot org>
+	* [647d798] :
+
+	Revert "Fix RPM packages for 2.1.0"
+	This reverts commit c772cea7c37810463d5ee8592c57dae57f01e0b7.
+
+
+2015-05-08  Razvan Crainea  <razvan at opensips dot org>
+	* [c772cea] :
+
+	Fix RPM packages for 2.1.0
+
+
+2015-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [b365aed] :
+
+	Update ChangeLog with latest commits for 2.1.0
+
+
 =========================== Release 2.1.0 ==============================
 
 commit 47e9a077c0aa59b92cbe5d1a042268a822d51f4c
