@@ -930,8 +930,7 @@ int rl_repl_init(void)
 
 	if (accept_repl_pipes &&
 		clusterer_api.register_module("ratelimit", PROTO_BIN, rl_rcv_bin,
-		10, 1, accept_repl_pipes) < 0) {
-		//bin_register_cb("ratelimit", rl_rcv_bin) < 0) {
+		accept_repl_pipes_timeout, repl_pipes_auth_check, accept_repl_pipes) < 0) {
 		LM_ERR("Cannot register binary packet callback!\n");
 		return -1;
 	}

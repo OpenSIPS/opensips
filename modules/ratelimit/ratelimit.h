@@ -90,6 +90,8 @@ extern int *rl_network_load;
 extern str rl_default_algo_s;
 extern str db_prefix;
 extern int accept_repl_pipes;
+extern int accept_repl_pipes_timeout;
+extern int repl_pipes_auth_check;
 extern int rl_repl_cluster;
 
 struct clusterer_binds clusterer_api;
