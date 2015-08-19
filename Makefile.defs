@@ -501,7 +501,7 @@ endif # predefined macros tests (x86_macros, ...)
 endif # gcc
 
 ifdef CC_ARCH
-ifeq ($(CC_ARCH),$(HOST_ARCH))
+ifneq ($(CC_ARCH),$(HOST_ARCH))
 $(info Target architecture <$(CC_ARCH)>, host architecture <$(HOST_ARCH)>)
 endif
 ARCH:=$(CC_ARCH)
