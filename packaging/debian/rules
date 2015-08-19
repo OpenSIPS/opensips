@@ -261,12 +261,11 @@ install: build
 		prefix=/usr \
 		cfg-prefix=$(CURDIR)/debian/opensips \
 		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips
+		doc-dir=share/doc/opensips \
+		skip-install-doc=yes # skip INSTALL.gz on debian systems
 
 	find $(CURDIR)/debian/opensips/etc/opensips -type f -exec chmod -x {} \;
 	sed -i -e "s/^PATH.*//" $(CURDIR)/debian/opensips/usr/sbin/opensipsctl
-	# not needed anymore with makefile restructring
-	#rm -f  $(CURDIR)/debian/opensips/usr/sbin/osipsconsole
 
 	set -e;\
 	for pkg in $(BUILD_MODPKG_LIST) ; do\
@@ -288,10 +287,6 @@ install: build
 	$(MAKE) install-console \
 		basedir=$(CURDIR)/debian/opensips-console \
 		prefix=/usr
-
-	# the modules packages all ship an empty /usr/sbin directory. clean it up
-	# not needed anymore with makefile restructuring
-	#-rmdir $(patsubst %,$(CURDIR)/debian/%/usr/sbin,$(ALL_PACKAGES))
 
 # This single target is used to build all the packages, all at once, or
 # one at a time. So keep in mind: any options passed to commands here will
