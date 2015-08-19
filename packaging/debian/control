@@ -423,7 +423,7 @@ Depends: libmicrohttpd5|libmicrohttpd10,
          opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
-Description: HTTP transport layer and Management Interface for OpenSIPS.
+Description: HTTP transport layer and Management Interface for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
