@@ -18,9 +18,9 @@ is an utility to recover data from db_berkeley files created by
 .B OpenSIPS SIP server
 The db_berkeley module uses the Concurrent Data Store (CDS) architecture. As such, no transaction or journaling is provided by the DB natively. The application bdb_recover is specifically written to recover data from journal files that OpenSIPS creates. The bdb_recover application requires an additional text file that contains the table schema.
 
-The schema is loaded with the '-s' option and is required for all operations. Provide the path to the db_berkeley plain-text schema files. By default, these install to '/usr/local/share/opensips/db_berkeley/opensips/'.
+The schema is loaded with the '\-s' option and is required for all operations. Provide the path to the db_berkeley plain-text schema files. By default, these install to '/usr/local/share/opensips/db_berkeley/opensips/'.
 
-The '-h' home option is the DB_PATH path. Unlike the Berkeley utilities, this application does not look for the DB_PATH environment variable, so you have to specify it. If not specified, it will assume the current working directory. The last argument is the operation. There are fundamentally only two operations- create and recover. 
+The '\-h' home option is the DB_PATH path. Unlike the Berkeley utilities, this application does not look for the DB_PATH environment variable, so you have to specify it. If not specified, it will assume the current working directory. The last argument is the operation. There are fundamentally only two operations - create and recover. 
 
 
 .SH FILES
@@ -29,19 +29,19 @@ The '-h' home option is the DB_PATH path. Unlike the Berkeley utilities, this ap
 
 .SH USAGE
 .TP 12
-.B bdb_recover -s schemadir [-h home] [-c tablename]
+.B bdb_recover \-s schemadir [\-h home] [\-c tablename]
 This will create a brand new DB file with metadata.
 .TP
 
-.B bdb_recover -s schemadir [-h home] [-C all]
+.B bdb_recover \-s schemadir [\-h home] [\-C all]
 This will create all the core tables, each with metadata.
 .TP
 
-.B bdb_recover -s schemadir [-h home] [-r journal-file]
+.B bdb_recover \-s schemadir [\-h home] [\-r journal-file]
 This will rebuild a DB and populate it with operation from journal-file. The table name is embedded in the journal-file name by convention.
 .TP
 
-.B bdb_recover -s schemadir [-h home] [-R lastN]
+.B bdb_recover \-s schemadir [\-h home] [\-R lastN]
 This will iterate over all core tables enumerated. If journal files exist in 'home', 
 a new DB file will be created and populated with the data found in the last N files. 
 The files are 'replayed' in chronological order (oldest to newest). This 
