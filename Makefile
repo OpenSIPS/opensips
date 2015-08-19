@@ -166,6 +166,12 @@ endif
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf
 
+
+install_docs := README-MODULES AUTHORS NEWS README
+ifneq ($(skip-install-doc),yes)
+	install_docs += INSTALL
+endif
+
 #include general defs (like CC, CFLAGS  a.s.o)
 # hack to force makefile.defs re-inclusion (needed when make calls itself with
 # other options -- e.g. make bin)
@@ -866,16 +872,10 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 install-doc: install-app-doc install-modules-doc
 
 install-app-doc: $(doc-prefix)/$(doc-dir)
-	$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/INSTALL 
-	$(INSTALL_DOC) INSTALL $(doc-prefix)/$(doc-dir)
-	$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/README-MODULES 
-	$(INSTALL_DOC) README-MODULES $(doc-prefix)/$(doc-dir)
-	$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/AUTHORS 
-	$(INSTALL_DOC) AUTHORS $(doc-prefix)/$(doc-dir)
-	$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/NEWS
-	$(INSTALL_DOC) NEWS $(doc-prefix)/$(doc-dir)
-	$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/README 
-	$(INSTALL_DOC) README $(doc-prefix)/$(doc-dir)
+	-@for d in $(install_docs) ""; do \
+		$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/"$$d" ; \
+		$(INSTALL_DOC) "$$d" $(doc-prefix)/$(doc-dir) ; \
+	done
 
 
 install-modules-doc: $(doc-prefix)/$(doc-dir)
