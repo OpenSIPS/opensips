@@ -149,7 +149,7 @@ int parse_uri_headers(str headers, str h_name[], str h_val[], int h_size)
 }
 
 
-/* buf= pointer to begining of uri (sip:x@foo.bar:5060;a=b?h=i)
+/* buf= pointer to beginning of uri (sip:x@foo.bar:5060;a=b?h=i)
  * len= len of uri
  * returns: fills uri & returns <0 on error or 0 if ok
  */
@@ -1471,7 +1471,7 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
                 strncasecmp(first.u_name[i].s,second.u_name[j].s,
 							first.u_name[i].len) == 0))
 				{
-                    /* point of no return - matching unkown parameter values */
+                    /* point of no return - matching unknown parameter values */
 					if (first.u_val[i].len != second.u_val[j].len)
 					{
 						LM_DBG("Different URI param value for param %.*s\n",

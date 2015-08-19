@@ -313,7 +313,7 @@ modparam("registrar", "received_param", "rcv")
 
    This is the default value and will be used only if no other
    value (for max_contacts) is passed as parameter to the save()
-   function. That's it - the function paramter overwride this
+   function. That's it - the function parameter overwride this
    global parameter.
 
    Default value is 0.

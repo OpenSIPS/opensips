@@ -1291,7 +1291,7 @@ if (dr_is_gw("my_partition","$avp(uac)","3") {
    current call. The disabling done via this function will prevent
    the destination to be used for usage from now on. The probing
    mechanism can re-enable this peer (see the probing section in
-   the begining)
+   the beginning)
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 

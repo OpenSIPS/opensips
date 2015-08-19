@@ -71,7 +71,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 			case ' ':
 			case '\t':
 				switch(state){
-					case START: /*allow space at the begining, although not
+					case START: /*allow space at the beginning, although not
 								  legal*/
 						break;
 					case L_URI:

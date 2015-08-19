@@ -451,7 +451,7 @@ if (is_direction("upstream")) {
 		<title>$rr_params</title>
 			<para>
 			<emphasis>$rr_params</emphasis> - the whole string of the Route
-			paramters - this is available only after calling loose_route()
+			parameters - this is available only after calling loose_route()
 			</para>
 		</section>
 	</section>

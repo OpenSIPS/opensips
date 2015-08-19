@@ -218,7 +218,7 @@ modparam("topology_hiding", "th_contact_encode_param", "customparam")
 			The in-dialog topology requests are requests with a to tag,
 			RURI pointing to opensips and with a method specific to a
 			Invite dialog. For this kind of requests you should call
-			topology_hiding_match() function. If the request is succesfully matched and fixed as according to the topology hiding logic,the function returns success.
+			topology_hiding_match() function. If the request is successfully matched and fixed as according to the topology hiding logic,the function returns success.
 		</para>
 		<para>
 			Optionally,the function also receives a string parameter, which holds string flags.
@@ -281,7 +281,7 @@ if (has_totag())
 		belong to an existing topology hiding dialog.
 		</para>
 		<para>
-		The function returns true if a topology hiding dialog exists for the request and the request has been succesfully fixed.
+		The function returns true if a topology hiding dialog exists for the request and the request has been successfully fixed.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.

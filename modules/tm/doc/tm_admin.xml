@@ -1002,7 +1002,7 @@ if ( is_method("CANCEL") ) {
 		<function moreinfo="none">t_check_status(re)</function>
 		</title>
 		<para>
-		Returns true if the regualr expresion <quote>re</quote> match the 
+		Returns true if the regualr expression <quote>re</quote> match the 
 		reply code of the response message as follows:
 		<itemizedlist>
 		<listitem>

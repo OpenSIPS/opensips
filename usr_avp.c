@@ -323,7 +323,7 @@ inline static struct usr_avp *internal_search_ID_avp( struct usr_avp *avp,
 
 
 /**
- * search first avp begining with 'start->next'
+ * search first avp beginning with 'start->next'
  * if start==NULL, beging from head of avp list
  */
 struct usr_avp *search_first_avp( unsigned short flags,

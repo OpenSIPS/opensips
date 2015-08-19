@@ -51,7 +51,7 @@ int perl_checkfnc(char *fnc) {
 }
 
 /*
- * Run function without paramters
+ * Run function without parameters
  */
 
 int perl_exec_simple(char* fnc, char* args[], int flags) {

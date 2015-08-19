@@ -1875,9 +1875,9 @@ $var(account) = $dlg_val(account_type);
 		<section>
 		<title><varname>dlg_list</varname></title>
 		<para>
-		Lists the description of the dialogs (calls). If no paramter is given,
+		Lists the description of the dialogs (calls). If no parameter is given,
 		all dialogs will be listed. If a dialog identifier is passed
-		as paramter (callid and fromtag), only that dialog will be listed. If
+		as parameter (callid and fromtag), only that dialog will be listed. If
 		a index and conter parameter is passed, it will list only a number of
 		"counter" dialogs starting with index (as offset) - this is used to
 		get only section of dialogs.
@@ -1893,7 +1893,7 @@ $var(account) = $dlg_val(account_type);
 			</para></listitem>
 			<listitem><para>
 				<emphasis>from_tag</emphasis> (optional, but cannot be present
-				without the callid paramter) - fromtag (as per initial request)
+				without the callid parameter) - fromtag (as per initial request)
 				of the dialog to be listed.
 				entry
 			</para></listitem>
@@ -2097,7 +2097,7 @@ $var(account) = $dlg_val(account_type);
 		<title><varname>dlg_db_sync</varname></title>
 		<para>
 		Will synchronize the information about the dialogs from the database
-		with the OpenSIPS internal memory. To be used mainly for transfering
+		with the OpenSIPS internal memory. To be used mainly for transferring
 		OpenSIPS dialog information from one server to another.
 		</para>
 		<para>

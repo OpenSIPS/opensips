@@ -190,7 +190,7 @@ then
 	fi
 fi
 
-minfo "Core OpenSIPS tables succesfully created."
+minfo "Core OpenSIPS tables successfully created."
 
 get_answer $INSTALL_PRESENCE_TABLES "Install presence related tables? (y/n): "
 if [ $ANSWER = "y" ]; then
@@ -236,7 +236,7 @@ for TABLE in $PRESENCE_TABLES; do
 	fi
 done
 
-minfo "Presence tables succesfully created."
+minfo "Presence tables successfully created."
 }  # end presence_create
 
 
@@ -273,7 +273,7 @@ for TABLE in $EXTRA_TABLES; do
 	fi
 done
 
-minfo "Extra tables succesfully created."
+minfo "Extra tables successfully created."
 }  # end extra_create
 
 export PGPASSWORD

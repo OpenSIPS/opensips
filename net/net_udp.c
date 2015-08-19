@@ -379,7 +379,7 @@ int udp_start_nofork(void)
 	LM_DBG("waiting for status code from children\n");
 	rc = wait_for_all_children();
 	if (rc < 0) {
-		LM_ERR("failed to succesfully init children\n");
+		LM_ERR("failed to successfully init children\n");
 		return rc;
 	}
 

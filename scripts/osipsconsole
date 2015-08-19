@@ -5569,7 +5569,7 @@ sub mysql_opensips_create() {
 		}
 	}
 
-	print "Core OpenSIPS tables succesfully created.\n";
+	print "Core OpenSIPS tables successfully created.\n";
 
 	if ( -e $DB_SCHEMA."/extensions-create.sql" ) {
 		print "Creating custom extensions tables\n";
@@ -5706,7 +5706,7 @@ sub pgsql_opensips_create() {	# pars: <database name>
 		}
 	}
 
-	print "Core OpenSIPS tables succesfully created.\n";
+	print "Core OpenSIPS tables successfully created.\n";
 
 	print "Install presence related tables? (y/n): ";
 	if ( ( $ans = <STDIN> ) =~ /[(^y)(^Y)]$/ ) {
@@ -5897,7 +5897,7 @@ sub pgsql_presence_create(){ # pars: <database name>
 		}
 	}
 
-	print "Presence tables succesfully created.\n";
+	print "Presence tables successfully created.\n";
 } 
 
 sub dbtext_presence_create () { # pars: <database name>
@@ -6038,7 +6038,7 @@ sub pgsql_extra_create() { # pars: <database name>
 			&pgsql_query($db, $query[$i]);
 		}
 	}
-	print "Extra tables succesfully created.\n";
+	print "Extra tables successfully created.\n";
 
 
 	foreach $TABLE ( @EXTRA_TABLES ) {

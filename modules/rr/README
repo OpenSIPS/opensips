@@ -366,7 +366,7 @@ if (is_direction("upstream")) {
 
 1.5.7.1. $rr_params
 
-   $rr_params - the whole string of the Route paramters - this is
+   $rr_params - the whole string of the Route parameters - this is
    available only after calling loose_route()
 
 Chapter 2. Developer Guide

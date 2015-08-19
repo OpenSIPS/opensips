@@ -292,7 +292,7 @@ flag   : a flag specifying the type of search in the AVPs list (from the start
 	 or from the current position)
 
 There are two possible values for the flag:
-AAA_GET_FROM_START : the search should start from the begining of the AVPs list
+AAA_GET_FROM_START : the search should start from the beginning of the AVPs list
 AAA_GET_FROM_CURRENT : the search should start from the current search position
 
 2.6.4 Return Value

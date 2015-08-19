@@ -452,13 +452,13 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 				if (msg->rcv.bind_address){ \
 					new_len+=rcv_address_str->len; \
 				} else \
-					report_programming_bug("null bind adress 1"); \
+					report_programming_bug("null bind address 1"); \
 				break; \
 			case SUBST_RCV_PORT: \
 				if (msg->rcv.bind_address){ \
 					new_len+=rcv_port_str->len; \
 				} else \
-					report_programming_bug("null bind adress 2"); \
+					report_programming_bug("null bind address 2"); \
 				break; \
 			case SUBST_RCV_PROTO: \
 				if (msg->rcv.bind_address){ \
@@ -481,7 +481,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								msg->rcv.bind_address->proto); \
 					}\
 				} else \
-					report_programming_bug("null bind adress 3"); \
+					report_programming_bug("null bind address 3"); \
 				break; \
 			case SUBST_RCV_ALL: \
 				if (msg->rcv.bind_address){ \
@@ -510,7 +510,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								msg->rcv.bind_address->proto); \
 					}\
 				} else \
-					report_programming_bug("null bind adress 4"); \
+					report_programming_bug("null bind address 4"); \
 				break; \
 			case SUBST_SND_IP: \
 				if (send_sock){ \

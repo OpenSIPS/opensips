@@ -2607,7 +2607,7 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 			LM_DBG("[%.*s] has flags [%d]\n", key->len, key->s, flags);
 			if(flags){
 				PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
-					"Unkown validation [%d] for %s.",
+					"Unknown validation [%d] for %s.",
 					table->cols[i].validation, key->s);
 				goto done;
 			}

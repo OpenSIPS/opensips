@@ -425,7 +425,7 @@ Master Agent
 1.6.4.  Testing for a proper Configuration
 
    As a quick test to make sure that the SNMPStats module
-   sub-agent can succesfully connect to the SNMP Master agent, be
+   sub-agent can successfully connect to the SNMP Master agent, be
    sure the snmpd service is stopped (/etc/init.d/snmpd stop) and
    manually start snmpd with the following:
     snmpd -f -Dagentx -x tcp:localhost:705 2>&1 | less

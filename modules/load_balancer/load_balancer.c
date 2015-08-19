@@ -275,7 +275,7 @@ static int fixup_resources(void** param, int param_no)
 		if (lbp->type & RES_TEXT) {
 			lb_rl = parse_resources_list( (char *)(*param), 0);
 			if (lb_rl==NULL) {
-				LM_ERR("invalid paramter %s\n",(char *)(*param));
+				LM_ERR("invalid parameter %s\n",(char *)(*param));
 				return E_CFG;
 			}
 			pkg_free(*param);

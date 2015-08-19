@@ -570,7 +570,7 @@ static void mod_destroy(void)
 	for(el = dp_conns; el ; el = el->next){
 		dp_disconnect_db(el);
 
-		LM_DBG("Succesfully disconnected from DB %.*s\n" ,
+		LM_DBG("Successfully disconnected from DB %.*s\n" ,
 						 el->db_url.len, el->db_url.s);
 	}
 

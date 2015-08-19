@@ -326,7 +326,7 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 		}
 
 	} else if (FD_ISSET(fd, &rset)) {
-		LM_DBG("fd %d still transfering...\n", fd);
+		LM_DBG("fd %d still transferring...\n", fd);
 		async_status = ASYNC_CONTINUE;
 		return 1;
 	}

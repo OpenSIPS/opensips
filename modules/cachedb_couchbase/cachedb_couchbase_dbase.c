@@ -173,7 +173,7 @@ couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 					id->host, id->database, lcb_strerror(instance, rc));
 			}
 		} else {
-			LM_DBG("Succesfully connected to Couchbase Server. Host: %s Bucket: %s\n", id->host, id->database);
+			LM_DBG("Successfully connected to Couchbase Server. Host: %s Bucket: %s\n", id->host, id->database);
 		}
 	}
 
@@ -291,7 +291,7 @@ int couchbase_set(cachedb_con *connection,str *attr,
 		}
 		LM_ERR("Set command successfully retried\n");
 	}
-	LM_DBG("Succesfully stored\n");
+	LM_DBG("Successfully stored\n");
 	stop_expire_timer(start,couch_exec_threshold,
 	"cachedb_couchbase set",attr->s,attr->len,0);
 	return 1;
@@ -345,7 +345,7 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 		LM_ERR("Remove command successfully retried\n");
 	}
 
-	LM_DBG("Succesfully removed\n");
+	LM_DBG("Successfully removed\n");
 	stop_expire_timer(start,couch_exec_threshold,
 	"cachedb_couchbase remove",attr->s,attr->len,0);
 	return 1;

@@ -324,7 +324,7 @@ int get_auth_id(struct sip_msg* _msg, char* _uri, char* _auth_user, char* _auth_
 	}
 
 	/* if more than one matching db entry is found, there is either a duplicate or a
-	   wrong tuple in the database. or maybe just the 'use_domain' paramter should be set. */
+	   wrong tuple in the database. or maybe just the 'use_domain' parameter should be set. */
 	if (RES_ROW_N(dbres) > 1) {
 		LM_WARN("Multiple entries are matching the given uri. Consider setting the 'use_domain' param.");
 	}

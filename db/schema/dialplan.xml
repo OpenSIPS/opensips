@@ -52,7 +52,7 @@
         <name>match_exp</name>
         <type>string</type>
         <size>64</size>
-        <description>Matching expresion (regexp or string).</description>
+        <description>Matching expression (regexp or string).</description>
     </column>
 
      <column id="match_flags">
@@ -66,14 +66,14 @@
         <name>subst_exp</name>
         <type>string</type>
         <size>64</size>
-        <description>Substitution expresion.</description>
+        <description>Substitution expression.</description>
     </column>
     
     <column id="repl_exp">
         <name>repl_exp</name>
         <type>string</type>
         <size>32</size>
-        <description>Replacement expresion (sed like).</description>
+        <description>Replacement expression (sed like).</description>
     </column>
 
     <column id="timerec">

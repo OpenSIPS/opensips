@@ -824,7 +824,7 @@ static void dr_state_timer(unsigned int ticks, void* param)
 }
 
 /*
- * if none is succesfully loaded return
+ * if none is successfully loaded return
  * -1, else return 0
  */
 

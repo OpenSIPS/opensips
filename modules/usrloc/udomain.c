@@ -916,7 +916,7 @@ int mem_timer_udomain(udomain_t* _d)
 		LM_DBG("usrloc timer attempting to flush rows to DB\n");
 		/* flush everything to DB
 		 * so that next-time timer fires
-		 * we are sure that DB updates will be succesful */
+		 * we are sure that DB updates will be successful */
 		if (ql_flush_rows(&ul_dbf,ul_dbh,_d->ins_list) < 0)
 			LM_ERR("failed to flush rows to DB\n");
 	}

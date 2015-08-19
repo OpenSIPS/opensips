@@ -1333,7 +1333,7 @@ int raw_capture_socket(struct ip_addr* ip, str* iface, int port_start, int port_
         }
 #endif
         else {
-                LM_ERR("LSF currently suppoted only on linux\n");
+                LM_ERR("LSF currently supported only on linux\n");
                 goto error;
         }
 
