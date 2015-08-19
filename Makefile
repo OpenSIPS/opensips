@@ -439,15 +439,16 @@ deb-orig-tar:
 
 .PHONY: deb
 deb:
-	rm -f debian
-	ln -sf packaging/debian
+	rm -rf debian
+	# dpkg-source cannot use links for debian source
+	cp -r packaging/debian debian
 	dpkg-buildpackage \
 		-I.git -I.gitignore \
 		-IMakefile.conf \
 		-I*.swp -I*~ \
-		-iMakefile.conf -i.git -i*.swp \
+		-i\\.git\|Makefile\\.conf\|packaging\|debian\|^\\.\\w+\\.swp\|lex\\.yy\\.c\|cfg\\.tab\\.\(c\|h\) \
 		-rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
-	rm -f debian
+	rm -rf debian
 
 
 .PHONY: sunpkg
