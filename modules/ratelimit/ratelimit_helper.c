@@ -592,7 +592,7 @@ static int rl_map_print(void *param, str key, void *value)
 	if (!(attr = add_mi_attr(node, MI_DUP_VALUE, "limit", 5, p, len)))
 		return -1;
 
-	p = int2str((unsigned long)rl_get_all_counters(pipe), &len);
+	p = int2str((unsigned long)(pipe->last_counter), &len);
 	if (!(attr = add_mi_attr(node, MI_DUP_VALUE, "counter", 7, p, len)))
 		return -1;
 
