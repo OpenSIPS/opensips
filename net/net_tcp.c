@@ -1007,8 +1007,17 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 	if (event_type == IO_WATCH_READ) {
 		/* pass it to child, so remove it from the io watch list */
 		LM_DBG("data available on %p %d\n", tcpconn, tcpconn->s);
-		if (reactor_del_reader(tcpconn->s, fd_i, 0)==-1)
-			return -1;
+		/* this is a temporary hack, a workaround to deal with strange 
+		 * cases were some READ even is reported by reactor while the
+		 * the conn is in SYN_SENT (or S_CONN_CONNECTING internal state) 
+		 * For more see #591 ; fix based on Rahul Gupta suggestion */
+		if(tcpconn->state==S_CONN_CONNECTING) {
+			if (reactor_del_writer(tcpconn->s, fd_i, 0)==-1)
+				return -1;
+		} else {
+			if (reactor_del_reader(tcpconn->s, fd_i, 0)==-1)
+				return -1;
+		}
 		tcpconn->flags|=F_CONN_REMOVED;
 		tcpconn_ref(tcpconn); /* refcnt ++ */
 		if (send2child(tcpconn,IO_WATCH_READ)<0){
