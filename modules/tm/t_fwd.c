@@ -418,6 +418,17 @@ error02:
 	}
 error01:
 	post_print_uac_request( request, uri, next_hop);
+	if (ret < 0) {
+		/* destroy all the bavps added, the path vector and the destination,
+		 * since this branch will never be properly added to
+		 * the UAC list, otherwise we'll have memory leaks - razvanc */
+		if (t->uac[branch].user_avps)
+			destroy_avp_list(&t->uac[branch].user_avps);
+		if (t->uac[branch].path_vec.s)
+			shm_free(t->uac[branch].path_vec.s);
+		if (t->uac[branch].duri.s)
+			shm_free(t->uac[branch].duri.s);
+	}
 error:
 	return ret;
 }
