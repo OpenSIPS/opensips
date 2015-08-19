@@ -93,7 +93,7 @@ modparam("maxfwd", "max_limit", 32)
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>2 (true)</emphasis> - header was not found and
-			a new header was succesfully added.
+			a new header was successfully added.
 			</para>
 		</listitem>
 		<listitem>

@@ -59,7 +59,7 @@
 		<type>unsigned int</type>
 		<size>11</size>
 		<default>0</default>
-		<description>Number of digits to be striped out for the begining 
+		<description>Number of digits to be striped out for the beginning 
 			of the username when using this GW/destination</description>
 	</column>
 

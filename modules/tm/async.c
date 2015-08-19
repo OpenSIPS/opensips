@@ -189,7 +189,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 			(char*)a->elem[5].u.data, (char*)a->elem[6].u.data );
 	/* what to do now ? */
 	if (async_status>=0) {
-		/* async I/O was succesfully launched */
+		/* async I/O was successfully launched */
 		fd = async_status;
 	} else if (async_status==ASYNC_NO_IO) {
 		/* no IO, so simply go for resume route */

@@ -31,7 +31,7 @@
 #include "../str.h"
 #include "../parser/msg_parser.h"
 
-/* buf= pointer to begining of uri (sip:x@foo.bar:5060;a=b?h=i)
+/* buf= pointer to beginning of uri (sip:x@foo.bar:5060;a=b?h=i)
  * len= len of uri
  * returns: fills uri & returns <0 on error or 0 if ok
  */

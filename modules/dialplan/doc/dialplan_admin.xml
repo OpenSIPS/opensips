@@ -85,7 +85,7 @@
 			<listitem>
 			<para>
 				<emphasis>match_exp</emphasis> = "^(0040|\+40|0|40)21[0-9]+" ;
-				regular expresion that will be used to match with this rule (if
+				regular expression that will be used to match with this rule (if
 				the rule should be applied for the input string)
 			</para>
 			</listitem>
@@ -98,7 +98,7 @@
 			<listitem>
 			<para>
 				<emphasis>subst_exp</emphasis> = "^(0040|\+40|0|40)(.+)" ;
-				regular expresion used to do the transformation (first part
+				regular expression used to do the transformation (first part
 				of the subst operation)
 			</para>
 			</listitem>
@@ -127,7 +127,7 @@
 			<listitem>
 			<para>
 				<emphasis>match_exp</emphasis> = "^((Germany)|(Germania)|(Deutschland)|(DE))" ;
-				regular expresion that will be used to match with this rule (if
+				regular expression that will be used to match with this rule (if
 				the rule should be applied for the input string)
 			</para>
 			</listitem>
@@ -169,7 +169,7 @@
 			<listitem>
 			<para>
 				<emphasis>match_exp</emphasis> = "^021456[0-9]{5}" ;
-				regular expresion that will be used to match with this rule (if
+				regular expression that will be used to match with this rule (if
 				the rule should be applied for the input string)
 			</para>
 			</listitem>

@@ -480,7 +480,7 @@ if (t_check_status("(5[0-9][0-9])")) {
 		Marks as disabled the last destination that was used for the current
 		call. The disabling done via this function will prevent the 
 		destination to be used for usage from now on. The probing mechanism
-		can re-enable this peer (see the probing section in the begining)
+		can re-enable this peer (see the probing section in the beginning)
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.

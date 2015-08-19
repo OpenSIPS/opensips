@@ -695,7 +695,7 @@ int do_http_op (  const db_con_t* h, const db_key_t* k, const db_op_t* op,
 
 	conn = (http_conn_t*) h->tail;
 
-	/* put the http adress */
+	/* put the http address */
 	CHECK( append_str(&q,conn->start), 0, error);
 
 

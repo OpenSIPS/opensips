@@ -491,7 +491,7 @@ append_rpid_hf();  # Append Remote-Party-ID header field
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>prefix</emphasis> - Prefix of the 
-			Remote-Party-ID URI. The string will be added at the begining of 
+			Remote-Party-ID URI. The string will be added at the beginning of 
 			body of the header field, just before the URI.
 			</para>
 		</listitem>

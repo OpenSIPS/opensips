@@ -407,7 +407,7 @@ memcached_con* memcached_new_connection(struct cachedb_id *id)
 		return 0;
 	}
 
-	LM_DBG("succesfully inited memcached connection\n");
+	LM_DBG("successfully inited memcached connection\n");
 	return con;
 }
 
@@ -459,7 +459,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	LM_DBG("succesfully inited cachedb_memcached\n");
+	LM_DBG("successfully inited cachedb_memcached\n");
 	return 0;
 }
 

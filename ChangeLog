@@ -858,7 +858,7 @@
 	* [fac0275] :
 
 	TLS final & major cleanup in core.
-	Move all TLS related paramters from core to proto_tls module.
+	Move all TLS related parameters from core to proto_tls module.
 	Remove USE_TLS from all code.
 	Make mandatory to specify the proto in the definition of a listener (in cfg file).
 
@@ -3002,7 +3002,7 @@
 2014-10-01  Ionut Ionita  <ionutrazvan.ionita@gmail.com>
 	* [e3d37f4] :
 
-	added in script sync/async suport for event_route
+	added in script sync/async support for event_route
 
 2014-10-01  Ionut Ionita  <ionutrazvan.ionita@gmail.com>
 	* [10083ed] :
@@ -4126,7 +4126,7 @@
 2014-07-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
 	* [2c7e33e] :
 
-	Fix broken dlg_val assigment when value is NULL.
+	Fix broken dlg_val assignment when value is NULL.
 
 2014-07-09  Andrei Datcu  <datcuandrei@gmail.com>
 	* [7a58426] :

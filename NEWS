@@ -171,7 +171,7 @@ Documentation can be found here: http://www.opensips.org/html/docs/modules/devel
 2.12  ALIAS_DB module
 
     * new function alias_db_find("table","input_var","output_var") - similar to alias_db_lookup(), but instead of using fixed input (RURI) and output (RURI) is able to get the input SIP URI from a pseudo-variable and place the result back also in a pseudo-variable.
-      The function is usefull as the alias lookup does not affect the request it self (no RURI changes), can be used in a reply context (as it does not work with RURI only) and can be used for others URI than the RURI ( To URI, From URI, custom URI).
+      The function is useful as the alias lookup does not affect the request it self (no RURI changes), can be used in a reply context (as it does not work with RURI only) and can be used for others URI than the RURI ( To URI, From URI, custom URI).
       The function returns TRUE any alias mapping was found and returned.
       ->See http://www.opensips.org/html/docs/modules/1.6.x/alias_db.html#id228302
     * both alias_db_lookup() and alias_db_find() may take an optional param, a list of flags (char based flags):

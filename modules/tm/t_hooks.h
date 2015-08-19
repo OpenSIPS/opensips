@@ -85,7 +85,7 @@ struct cell;
  *
  * TMCB_RESPONSE_PRE_OUT -- a final reply is about to be sent out
  *  (either local or proxied); you cannnot change the reply, but
- *  it is usefull to update your state before putting the reply on
+ *  it is useful to update your state before putting the reply on
  *  the network and to avoid any races (receiving an ACK before
  *  updating with the status of the reply)
  *

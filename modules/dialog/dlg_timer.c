@@ -350,7 +350,7 @@ static inline void detach_node_unsafe(struct dlg_ping_list *it)
 }
 
 /* returns:
- * 0 if removed succesfully
+ * 0 if removed successfully
  * 1 if dlg not found in list
  */
 int remove_ping_timer(struct dlg_cell *dlg)

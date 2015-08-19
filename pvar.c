@@ -2525,7 +2525,7 @@ int pv_set_dsturi(struct sip_msg* msg, pv_param_t *param,
 	}
 	if(!(val->flags&PV_VAL_STR))
 	{
-		LM_ERR("error - str value requred to set dst uri\n");
+		LM_ERR("error - str value required to set dst uri\n");
 		goto error;
 	}
 
@@ -2846,7 +2846,7 @@ int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 	}
 
 	if(idxf==PV_IDX_ALL) {
-		LM_ERR("SCRIPT BUG - * not allowed in branch assigment\n");
+		LM_ERR("SCRIPT BUG - * not allowed in branch assignment\n");
 		return -1;
 	}
 
@@ -2855,7 +2855,7 @@ int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 	}
 
 	if (idx<0 || idx>=nr_branches) {
-		LM_ERR("SCRIPT BUG - inexisting branch assigment [%d/%d]\n",
+		LM_ERR("SCRIPT BUG - inexisting branch assignment [%d/%d]\n",
 			nr_branches, idx);
 		return -1;
 	}
@@ -4222,7 +4222,7 @@ int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len)
 					goto overflow;
 				}
 			} else {
-				LM_ERR("unkown type %x\n", tok.flags);
+				LM_ERR("unknown type %x\n", tok.flags);
 				return -1;
 			}
 		}

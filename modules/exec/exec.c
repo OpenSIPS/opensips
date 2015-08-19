@@ -633,7 +633,7 @@ int resume_async_exec(int fd, struct sip_msg *msg, void *param)
 			}
 			break;
 		}
-		/* succesful reading  ( n>0 ) */
+		/* successful reading  ( n>0 ) */
 		LM_DBG(" having %d [%.*s] \n", len+n, len+n, buf);
 		if (n+len==MAX_LINE_SIZE) {
 			/* we have full buffer, pack it as a line */

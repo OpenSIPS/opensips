@@ -452,7 +452,7 @@ query_list_t *find_query_list_unsafe(const str *table,db_key_t *cols,int col_no)
 
 		/* got here, we have found our match */
 		entry = it;
-		LM_DBG("succesful match on %p\n",entry);
+		LM_DBG("successful match on %p\n",entry);
 		break;
 
 next_query:
@@ -529,7 +529,7 @@ int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
 		con->ins_list = *list;
 	}
 
-	LM_DBG("succesfully returned from con_set_inslist\n");
+	LM_DBG("successfully returned from con_set_inslist\n");
 	return 0;
 }
 

@@ -265,7 +265,7 @@ if(has_body() && replace_body_atonce("^.+$", ""))
      * '/re/repl/flags' - sed like regular expression. flags can
        be a combination of i (case insensitive), g (global) or s
        (match newline don't treat it as end of line).
-       're' - is regular expresion
+       're' - is regular expression
        'repl' - is replacement string - may contain
        pseudo-variables
        'flags' - substitution flags (i - ignore case, g - global)
@@ -294,7 +294,7 @@ if ( subst('/^To:(.*)sip:[^@]*@[a-zA-Z0-9.]+(.*)$/t:\1$avp(sip_address)\
      * '/re/repl/flags' - sed like regular expression. flags can
        be a combination of i (case insensitive), g (global) or s
        (match newline don't treat it as end of line).
-       're' - is regular expresion
+       're' - is regular expression
        'repl' - is replacement string - may contain
        pseudo-variables
        'flags' - substitution flags (i - ignore case, g - global)
@@ -325,7 +325,7 @@ if (subst_uri('/^sip:([0-9]+)@(.*)$/sip:$avp(uri_prefix)\1@\2;orig_uri=\
      * '/re/repl/flags' - sed like regular expression. flags can
        be a combination of i (case insensitive), g (global) or s
        (match newline don't treat it as end of line).
-       're' - is regular expresion
+       're' - is regular expression
        'repl' - is replacement string - may contain
        pseudo-variables
        'flags' - substitution flags (i - ignore case, g - global)
@@ -353,7 +353,7 @@ if (subst_user('/(.*)3642$/$avp(user_prefix)\13642/')){$
      * '/re/repl/flags' - sed like regular expression. flags can
        be a combination of i (case insensitive), g (global) or s
        (match newline don't treat it as end of line).
-       're' - is regular expresion
+       're' - is regular expression
        'repl' - is replacement string - may contain
        pseudo-variables
        'flags' - substitution flags (i - ignore case, g - global)

@@ -463,7 +463,7 @@ void handle_sigs(void)
 				for( i=0 ; i<counted_processes ; i++ )
 					if (pt[i].pid==chld) break;
 				if (i==counted_processes) {
-					LM_DBG("unkown child process %d ended. Ignoring\n",chld);
+					LM_DBG("unknown child process %d ended. Ignoring\n",chld);
 					continue;
 				}
 				do_exit = 1;

@@ -561,7 +561,7 @@ modparam("presence", "end_sub_on_timeout", 0)
 		<para>
 		The function may take on parameter that controlls what is the default 
 		policy (of the presentity) on accepting new subscriptions (accept or reject)
-		 - of course, this paramter makes sense only when using
+		 - of course, this parameter makes sense only when using
 		a presence configuration with privacy rules enabled (force_active parameter
 		in presence_xml module is not set).
 		</para>

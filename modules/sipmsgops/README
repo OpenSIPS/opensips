@@ -307,7 +307,7 @@ if (is_present_hf("From")) log(1, "From HF Present");
      * %M minutes
      * %S seconds
 
-   Return true if a header was succesfully appended.
+   Return true if a header was successfully appended.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
@@ -397,7 +397,7 @@ remove_hf("^X-g.+[0-9]", "r");
    attached. The checked includes also the “Content-Lenght” header
    presence and value.
 
-   If a paramter is given, the mime described will be also checked
+   If a parameter is given, the mime described will be also checked
    against the “Content-Type” header.
 
    If the SIP message has a multipart body and mime is not a

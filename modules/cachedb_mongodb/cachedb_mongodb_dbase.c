@@ -1614,7 +1614,7 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 		i++;
 	}
 
-	LM_DBG("Succesfully ran query\n");
+	LM_DBG("Successfully ran query\n");
 	bson_destroy(&query);
 	bson_destroy(&fields);
 	stop_expire_timer(start,mongo_exec_threshold,

@@ -706,7 +706,7 @@ static int l_siplua_scriptVarSet(lua_State *L)
   switch (lua_type(L, 2))
     {
     case LUA_TNIL: /* no way currently exists to drop a script variable */
-      /* well, set_var_value(it, NULL, 0) API exists but won't do anything usefull */
+      /* well, set_var_value(it, NULL, 0) API exists but won't do anything useful */
       val.n = 0;
       break;
     case LUA_TNUMBER:
@@ -746,7 +746,7 @@ static int l_siplua_add_lump_rpl(lua_State *L)
 }
 
 /*
- * It could be usefull to keep all fixup'ed parameters into a hash table, so that it would
+ * It could be useful to keep all fixup'ed parameters into a hash table, so that it would
  * permit to call function modules missing free_fixup, as long as parameters don't change.
  */
 static int siplua_unsafemodfnc = 1;

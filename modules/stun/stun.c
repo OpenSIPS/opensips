@@ -561,7 +561,7 @@ int getTlvAttribute(IN_OUT Buffer* buf, IN_OUT StunMsg* msg){
 
 		}
 
-		/* adress the buffer as a T16 array */
+		/* address the buffer as a T16 array */
 		b2 = (T16*) msg->unknownAttributes->buffer;
 		if(msg->unknownAttributes->size / sizeof(T16)
 			< MAX_UNKNOWN_ATTRIBUTES){

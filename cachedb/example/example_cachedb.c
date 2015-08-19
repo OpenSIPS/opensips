@@ -129,7 +129,7 @@ static int mod_init(void)
 	LM_DBG("Destroying connection to back-end\n");
 	cdbf.destroy(con);
 
-	LM_INFO("succesfully loaded cachedb_example module\n");
+	LM_INFO("successfully loaded cachedb_example module\n");
 	return 0;
 }
 

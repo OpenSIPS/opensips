@@ -1787,7 +1787,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 		}
 	}
 
-	LM_DBG("Remote contact succesfully validated\n");
+	LM_DBG("Remote contact successfully validated\n");
 
 	/* check the route set - is the the same as in original request */
 	/* the route set (without the first Route) must be the same as the
@@ -1832,7 +1832,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 		}
 	}
 
-	LM_DBG("Route Headers succesfully validated\n");
+	LM_DBG("Route Headers successfully validated\n");
 
 	return 0;
 }

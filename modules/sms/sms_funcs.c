@@ -573,7 +573,7 @@ int send_sms_as_sip( struct incame_sms *sms )
 	/* the rest of the sms (if any ;-)) is the body! */
 	sip_body.s = p;
 	sip_body.len = sms->ascii + sms->userdatalength - p;
-	/* let's trim out all \n an \r from begining */
+	/* let's trim out all \n an \r from beginning */
 	while ( sip_body.len && sip_body.s
 	&& (sip_body.s[0]=='\n' || sip_body.s[0]=='\r') ) {
 		sip_body.s++;

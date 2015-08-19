@@ -37,7 +37,7 @@ struct dlg_cell;
 struct dlg_cb_params {
 	struct sip_msg* msg;       /* sip msg related to the callback event */
 	unsigned int direction;    /* direction of the sip msg */
-	void *dlg_data;            /* generic paramter, specific to callback */
+	void *dlg_data;            /* generic parameter, specific to callback */
 	void **param;              /* parameter passed at callback registration*/
 };
 

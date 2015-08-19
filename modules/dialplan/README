@@ -143,12 +143,12 @@ Chapter 1. Admin Guide
    Recognize a number block in all forms (international, national)
    and convert it to a canonical format (e.164)
      * match_op = 1 (regexp)
-     * match_exp = "^(0040|\+40|0|40)21[0-9]+" ; regular expresion
+     * match_exp = "^(0040|\+40|0|40)21[0-9]+" ; regular expression
        that will be used to match with this rule (if the rule
        should be applied for the input string)
      * match_flags = 0 (0 - case sensitive, 1 - case insensitive
        matching)
-     * subst_exp = "^(0040|\+40|0|40)(.+)" ; regular expresion
+     * subst_exp = "^(0040|\+40|0|40)(.+)" ; regular expression
        used to do the transformation (first part of the subst
        operation)
      * repl_exp = "40\2" ; second part of the subst (output) -
@@ -161,7 +161,7 @@ Chapter 1. Admin Guide
    convert it to a single fix value
      * match_op = 1 (regexp)
      * match_exp = "^((Germany)|(Germania)|(Deutschland)|(DE))" ;
-       regular expresion that will be used to match with this rule
+       regular expression that will be used to match with this rule
        (if the rule should be applied for the input string)
      * match_flags = 0 (0 - case sensitive, 1 - case insensitive
        matching)
@@ -176,7 +176,7 @@ Chapter 1. Admin Guide
    Recognize a block of numbers as belong to a single service and
    signalize this via an attribute.
      * match_op = 1 (regexp)
-     * match_exp = "^021456[0-9]{5}" ; regular expresion that will
+     * match_exp = "^021456[0-9]{5}" ; regular expression that will
        be used to match with this rule (if the rule should be
        applied for the input string)
      * match_flags = 0 (0 - case sensitive, 1 - case insensitive

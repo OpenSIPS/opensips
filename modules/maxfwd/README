@@ -90,7 +90,7 @@ modparam("maxfwd", "max_limit", 32)
 
    Retuning codes:
      * 2 (true) - header was not found and a new header was
-       succesfully added.
+       successfully added.
      * 1 (true) - header was found and its value was successfully
        decremented (had a non-0 value).
      * -1 (false) - the header was found and its value is 0

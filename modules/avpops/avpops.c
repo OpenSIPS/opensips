@@ -837,7 +837,7 @@ static int fixup_check_avp(void** param, int param_no)
 			LM_ERR(" failed to parse checked value \n");
 			return E_UNSPEC;
 		}
-		/* if REGEXP op -> compile the expresion */
+		/* if REGEXP op -> compile the expression */
 		if (ap->ops&AVPOPS_OP_RE)
 		{
 			if ( (ap->opd&AVPOPS_VAL_STR)==0 )

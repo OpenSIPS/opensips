@@ -45,7 +45,7 @@ auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
 
 
 # whether or not to install opensips.cfg or just opensips.cfg.default
-# (opensips.cfg will never be overwritten by make install, this is usefull
+# (opensips.cfg will never be overwritten by make install, this is useful
 #  when creating packages)
 skip_cfg_install?=
 

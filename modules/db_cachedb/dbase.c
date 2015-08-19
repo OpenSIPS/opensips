@@ -91,7 +91,7 @@ db_con_t* db_cachedb_init(const str* _url)
 			ptr->cdbf = cdbf;
 
 			res->tail = (unsigned long)ptr;
-			LM_DBG("Succesfully initiated connection to [%.*s] \n",len,p);
+			LM_DBG("Successfully initiated connection to [%.*s] \n",len,p);
 
 			return res;
 		}

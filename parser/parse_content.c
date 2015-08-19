@@ -231,7 +231,7 @@ char* parse_content_length( char* buffer, char* end, int* length)
 	int  size;
 
 	p = buffer;
-	/* search the begining of the number */
+	/* search the beginning of the number */
 	while ( p<end && (*p==' ' || *p=='\t' ||
 	(*p=='\n' && (*(p+1)==' '||*(p+1)=='\t')) ))
 		p++;
@@ -281,7 +281,7 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_
 
 	LM_DBG("Decoding MIME type for:[%.*s]\n",(int)(end-start),start);
 
-	/* search the begining of the type */
+	/* search the beginning of the type */
 	while ( p<end && (*p==' ' || *p=='\t' ||
 	(*p=='\n' && (*(p+1)==' '||*(p+1)=='\t')) ))
 		p++;
@@ -318,7 +318,7 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_
 	if ( p==end || *(p++)!='/')
 		goto error;
 
-	/* search the begining of the sub-type */
+	/* search the beginning of the sub-type */
 	while ( p<end && (*p==' ' || *p=='\t' ||
 	(*p=='\n' && (*(p+1)==' '||*(p+1)=='\t')) ))
 		p++;

@@ -68,7 +68,7 @@ enum conn_cmds { CONN_DESTROY=-3, CONN_ERROR=-2, CONN_EOF=-1, CONN_RELEASE,
  * list head, new element, next member, prev member */
 #define tcpconn_listadd(head, c, next, prev) \
 	do{ \
-		/* add it at the begining of the list*/ \
+		/* add it at the beginning of the list*/ \
 		(c)->next=(head); \
 		(c)->prev=0; \
 		if ((head)) (head)->prev=(c); \

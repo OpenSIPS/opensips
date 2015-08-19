@@ -539,7 +539,7 @@ modparam("snmpstats", "snmpCommunity", "customCommunityString")
 	</title>
 	<para>
 	As a quick test to make sure that the SNMPStats module sub-agent can 
-	succesfully connect to the SNMP Master agent, be sure the snmpd service
+	successfully connect to the SNMP Master agent, be sure the snmpd service
 	is stopped (/etc/init.d/snmpd stop) and manually start snmpd with the 
 	following:
 	<programlisting format="linespecific">

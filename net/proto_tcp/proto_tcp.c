@@ -168,7 +168,7 @@ static int proto_tcp_init(struct proto_info *pi)
 	pi->net.write			= (proto_net_write_f)tcp_write_async_req;
 
 	if (tcp_async && !tcp_has_async_write()) {
-		LM_WARN("TCP network layer does not have suport for ASYNC write, "
+		LM_WARN("TCP network layer does not have support for ASYNC write, "
 			"disabling it for TCP plain\n");
 		tcp_async = 0;
 	}
@@ -577,8 +577,8 @@ again:
 		buf+=n;
 		len-=n;
 	} else {
-		/* succesful write from the first try */
-		LM_DBG("Async succesful write from first try on %p\n",c);
+		/* successful write from the first try */
+		LM_DBG("Async successful write from first try on %p\n",c);
 		return len;
 	}
 
@@ -597,7 +597,7 @@ poll_loop:
 			LM_ERR("Failed to add write chunk to connection \n");
 			return -1;
 		} else {
-			/* we have succesfully added async write chunk
+			/* we have successfully added async write chunk
 			 * tell MAIN to poll out for us */
 			LM_DBG("Data still pending for write on conn %p\n",c);
 			return 0;
@@ -685,7 +685,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				/* connect is still in progress, break the sending
 				 * flow now (the actual write will be done when 
 				 * connect will be completed */
-				LM_DBG("Succesfully started async connection \n");
+				LM_DBG("Successfully started async connection \n");
 				tcp_conn_release(c, 0);
 				return len;
 			}
@@ -723,7 +723,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				return -1;
 			}
 
-			/* we succesfully added our write chunk - success */
+			/* we successfully added our write chunk - success */
 			tcp_conn_release(c, 0);
 			return len;
 		} else {

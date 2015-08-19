@@ -162,7 +162,7 @@ void handleContactCallbacks(ucontact_t *contactInfo, int type, void *param)
 	/* We need to maintain our own copies of the AOR and contact address to
 	 * prevent the corruption of our internal data structures.
 	 *
-	 * If we do not maintain our own copies, then the AOR and contact adress
+	 * If we do not maintain our own copies, then the AOR and contact address
 	 * pointed to could be removed and reallocated to another thread before
 	 * we get a chance to consume our interprocess buffer.  */
 	currentBufferElement->stringName =  p;

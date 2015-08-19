@@ -345,7 +345,7 @@ int ws_server_handshake(struct tcp_connection *con)
 #endif
 		}
 
-		/* update the timeout - we succesfully read the request */
+		/* update the timeout - we successfully read the request */
 		tcp_conn_set_lifetime( con, tcp_con_lifetime);
 		con->timeout=con->lifetime;
 
