@@ -1378,7 +1378,7 @@ static inline const char *expr_type_2_string(int expr_type)
 		case PROXY_ST:
 			return "PROXY";
 		case EXPR_ST:
-			return "EXPRESION";
+			return "EXPRESSION";
 		case ACTIONS_ST:
 			return "ACTION";
 		case CMD_ST:
