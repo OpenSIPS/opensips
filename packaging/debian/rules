@@ -220,6 +220,9 @@ build-stamp: configure-stamp
 
 	touch build-stamp
 
+build-arch: build
+build-indep: build
+
 clean: real-clean unpatch
 real-clean:
 	dh_testdir
