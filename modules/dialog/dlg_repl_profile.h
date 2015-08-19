@@ -51,6 +51,8 @@ typedef struct repl_prof_value {
 
 /* profiles functions */
 extern int accept_repl_profiles;
+extern int accept_replicated_profile_timeout;
+extern int repl_prof_auth_check;
 extern int repl_prof_buffer_th;
 extern int repl_prof_utimer;
 extern int repl_prof_timer_check;

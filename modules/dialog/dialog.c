@@ -121,6 +121,8 @@ int accept_replicated_dlg=0;
 int dialog_replicate_cluster = 0;
 int profile_replicate_cluster = 0;
 int accept_repl_profiles=0;
+int accept_replicated_profile_timeout = 10;
+int repl_prof_auth_check = 0;
 
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
@@ -274,6 +276,8 @@ static param_export_t mod_params[]={
 	{ "replicate_profiles_buffer",INT_PARAM, &repl_prof_buffer_th   },
 	{ "replicate_profiles_expire",INT_PARAM, &repl_prof_timer_expire},
 	{ "replicate_profiles_to", INT_PARAM,	&profile_replicate_cluster            },
+	{ "accept_replicated_profile_timeout", INT_PARAM, &accept_replicated_profile_timeout},
+	{ "auth_check", INT_PARAM, &repl_prof_auth_check},
 	{ 0,0,0 }
 };
 
@@ -836,8 +840,14 @@ static int mod_init(void)
 		return -1;
 	}
 	
+	if (repl_prof_auth_check < 0)
+		repl_prof_auth_check = 0;
+	
+	if (accept_replicated_profile_timeout <= 0)
+		accept_replicated_profile_timeout = 10;
+	
 	if(accept_repl_profiles && clusterer_api.register_module("dialog", PROTO_BIN, receive_prof_binary_packet,
-			10, 1, accept_repl_profiles) < 0){
+			accept_replicated_profile_timeout, repl_prof_auth_check, accept_repl_profiles) < 0){
 		LM_ERR("Cannot register binary packet callback!\n");
 		return -1;
 	}
