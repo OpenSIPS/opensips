@@ -5,6 +5,13 @@ include ../../Makefile.defs
 auto_gen=
 NAME=proto_tls.so
 
+ETC_DIR?=../../etc/
+
+tls_configs=$(patsubst $(ETC_DIR)/%, %, $(wildcard $(ETC_DIR)/tls/*) \
+		$(wildcard $(ETC_DIR)/tls/rootCA/*) $(wildcard $(ETC_DIR)/tls/rootCA/certs/*) \
+		$(wildcard $(ETC_DIR)/tls/rootCA/private/*) $(wildcard $(ETC_DIR)/tls/user/*))
+
+
 ifeq ($(CROSS_COMPILE),)
 SSL_BUILDER=$(shell \
 	if pkg-config --exists libssl; then \
@@ -25,3 +32,20 @@ endif
 
 include ../../Makefile.modules
 
+install_module_custom: 
+	mkdir -p $(cfg-prefix)/$(cfg-dir)/tls ; \
+	mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA ; \
+	mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs ; \
+	mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private ; \
+	mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/user ; \
+	for FILE in $(tls_configs) ; do \
+		if [ -f $(ETC_DIR)/$$FILE ]; then \
+			if [ "$(tls_overwrite_certs)" != "" -o \
+					 ! -f $(cfg-prefix)/$(cfg-dir)/$$FILE ] ; then \
+				$(INSTALL_TOUCH) $(ETC_DIR)/$$FILE \
+					$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
+				$(INSTALL_CFG) $(ETC_DIR)/$$FILE \
+					$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
+			fi; \
+		fi ;\
+	done ; \

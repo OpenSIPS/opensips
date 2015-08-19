@@ -61,6 +61,27 @@ Makefile.conf: Makefile.conf.template
 		cp $< $@; \
 	fi
 
+$(cfg-prefix)/$(cfg-dir): 
+		mkdir -p $(cfg-prefix)/$(cfg-dir)
+
+$(bin-prefix)/$(bin-dir):
+		mkdir -p $(bin-prefix)/$(bin-dir)
+
+$(modules-prefix)/$(modules-dir):
+		mkdir -p $(modules-prefix)/$(modules-dir)
+
+$(doc-prefix)/$(doc-dir):
+		mkdir -p $(doc-prefix)/$(doc-dir)
+
+$(man-prefix)/$(man-dir)/man8:
+		mkdir -p $(man-prefix)/$(man-dir)/man8
+
+$(man-prefix)/$(man-dir)/man5:
+		mkdir -p $(man-prefix)/$(man-dir)/man5
+
+$(data-prefix)/$(data-dir):
+		mkdir -p $(data-prefix)/$(data-dir)
+
 
 .PHONY: dosetrev
 dosetrev:
