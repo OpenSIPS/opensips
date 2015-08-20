@@ -517,17 +517,6 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			mv -f $(cfg-prefix)/$(cfg-dir)$(NAME).cfg.sample \
 				$(cfg-prefix)/$(cfg-dir)$(NAME).cfg; \
 		fi
-		# radius dictionary
-		if [ "$(RADIUSDEPON)" = "yes" ]; then \
-			$(INSTALL_TOUCH) \
-				$(cfg-prefix)/$(cfg-dir)/dictionary.opensips.sample ; \
-			$(INSTALL_CFG) etc/dictionary.opensips \
-				$(cfg-prefix)/$(cfg-dir)/dictionary.opensips.sample ; \
-			if [ ! -f $(cfg-prefix)/$(cfg-dir)/dictionary.opensips ]; then \
-				mv -f $(cfg-prefix)/$(cfg-dir)/dictionary.opensips.sample \
-					$(cfg-prefix)/$(cfg-dir)/dictionary.opensips; \
-			fi; \
-		fi
 		# opensipsctl config
 		$(INSTALL_TOUCH)   $(cfg-prefix)/$(cfg-dir)/opensipsctlrc.sample
 		$(INSTALL_CFG) scripts/opensipsctlrc \
