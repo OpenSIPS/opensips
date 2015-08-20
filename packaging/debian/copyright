@@ -4,12 +4,174 @@ Source: https://github.com/OpenSIPS/opensips
 
 Files: *
 Copyright: 2001-2003 FhG Fokus
-           2005-2006 Voice Sistem S.R.L
+           2005 iptelorg GmbH
+           2004-2011 Voice System SRL voice-system.ro
+           2006 Andreas Granig <agranig@linguin.org>
+           2007-2008 1&1 Internet AG
+           2007 Sipwise <support@sipwise.com>
+           2006 Inode GmbH
+           2002-2008 Juha Heinanen
+           2009 Irina-Maria Stanescu
+           2003-2010 Sippy Software, Inc. http://www.sippysoft.com
+           2006-2008 SOMA Networks, INC
+           2009 Andrei Dragus
+           2008-2009 Iñaki Baz Castill
+           2004,2005,2009,2011 Free Software Fundation
+           2009 Anca-Maria Vamanu
+           2004-2008 Dan Pascu
+           2008,2010,2011 VoIP Embedded Inc. <http://www.voipembedded.com/>
+           2003 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+           2006 nic.at
+           2006 enum.at
+           2001-2005 iptel.org
+           2003 Miklós Tirpák <mtirpak@sztaki.hu>
+           2007 University of North Carolina
+           2000 Nicolas Devillard <ndevilla AT free DOT fr>
+           2007 Alexander Christ, Cologne University of Applied Sciences
+           2006 Otmar Lendl
+           2006,2008 Klaus Darilion, IPCom
+           2003 August.Net Services, LLC
+           2006 Norman Brandinger
+           2003 Greg Fausak
+           2006-2007 Collax GmbH
+           2007 Cisco Systems
+           2009 Razvan
+           1998-1999 The Jabber Team http://jabber.org/
+           1999-2000 Dave Smith & Julian Missig
+           1999 Scott G. Miller
+           2007-2008 Elena-Ramona Modroiu
+           2005-2006 Marco Lorrai
+           2006 Hendrik Scholz <hscholz@raisdorf.net>
+           2008,2010 Ovidiu Sas <osas@voipembedded.com>
+           2006 Freenet Cityline GmbH
+           2007,2008 TRUNK MOBILE
+           2006 The Internet Society
+           2008 SightSpeed, Inc
+           2006-2007 VozTelecom Sistemas S.L
+           2008 AG Projects
+           2007-2008 BASIS AudioNet GmbH
+           2000-2002 Stefan Frings
+           2006 kernel.org
+           2008 Google Inc, Herman Sheremetyev <herman@google.com>
+           2005 Cesc Santasusana
+           1983 Regents of the University of California
 License: GPL-2+
+
+Files: debian/*
+Copyright: 2002 Andrei Pelinescu-Onciul <pelinescu-onciul@fokus.fraunhofer.de>
+           2006 Julien Blache <jblache@debian.org>
+           2009 Bjoern Boschman <bjoern@boschman.de>
+           2009 Bogdan Iancu <bogan@voice-system.ro>
+           2011 Julián Moreno Patiño <darkjunix@gmail.com>
+           2011 Daniel Echeverry <epsilon77@gmail.com>
+           2011 Alejandro Rios P. <alerios@debian.org>
+License: GPL-2+
+
+Files: packaging/gentoo/opensips-*.ebuild
+Copyright: 1999-2005 Gentoo Foundation
+License: GPL-2.0
+
+License: GPL-2.0
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation.
+ .
+ This package is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General
+ Public License version 2 can be found in "/usr/share/common-licenses/GPL-2".
+
+Files: modules/xmpp/xsnprintf.c
+Copyright: 1995-1998 The Apache Group
+License: Apache-1.0
+
+License: Apache-1.0
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ .
+   1. Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer. 
+ .
+   2. Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in
+      the documentation and/or other materials provided with the
+      distribution.
+ .
+   3. All advertising materials mentioning features or use of this
+      software must display the following acknowledgment:
+      "This product includes software developed by the Apache Group
+      for use in the Apache HTTP server project (http://www.apache.org/)."
+ .
+   4. The names "Apache Server" and "Apache Group" must not be used to
+      endorse or promote products derived from this software without
+      prior written permission.
+ .
+   5. Redistributions of any form whatsoever must retain the following
+      acknowledgment:
+      "This product includes software developed by the Apache Group
+      for use in the Apache HTTP server project (http://www.apache.org/)."
+ .
+ THIS SOFTWARE IS PROVIDED BY THE APACHE GROUP ``AS IS'' AND ANY
+ EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE APACHE GROUP OR
+ ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ OF THE POSSIBILITY OF SUCH DAMAGE.
+ .
+ This software consists of voluntary contributions made by many
+ individuals on behalf of the Apache Group and was originally based
+ on public domain software written at the National Center for
+ Supercomputing Applications, University of Illinois, Urbana-Champaign.
+ For more information on the Apache Group and the Apache HTTP server
+ project, please see <http://www.apache.org/>.
+ .
+ This code is based on, and used with the permission of, the
+ SIO stdio-replacement strx_* functions by Panos Tsirigotis
+ <panos@alumni.cs.colorado.edu> for xinetd.
 
 Files: sha1.?
 Copyright: 2006-2014 ARM Limited, All Rights Reserved
 License: GPL-2+
+
+Files: md5.c md5.h
+Copyright: 1991-1992, RSA Data Security, Inc
+License:
+ License to copy and use this software is granted provided that it
+ is identified as the "RSA Data Security, Inc. MD5 Message-Digest
+ Algorithm" in all material mentioning or referencing this software
+ or this function.
+ .
+ License is also granted to make and use derivative works provided
+ that such works are identified as "derived from the RSA Data
+ Security, Inc. MD5 Message-Digest Algorithm" in all material
+ mentioning or referencing the derived work.
+ .
+ RSA Data Security, Inc. makes no representations concerning either
+ the merchantability of this software or the suitability of this
+ software for any particular purpose. It is provided "as is"
+ without express or implied warranty of any kind.
+ .
+ These notices must be retained in any copies of any part of this
+ documentation and/or software.
+
+Files: crc.c crc.h
+Copyright: 1986 Gary S. Brown
+License:
+ You may use this program, or code or tables extracted from it, 
+ as desired without restriction.
 
 Files: sliblist.?
 Copyright: 2013 VoIP Embedded, Inc.
