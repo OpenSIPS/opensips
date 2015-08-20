@@ -89,9 +89,9 @@ License: GPL-2.0
 
 Files: modules/xmpp/xsnprintf.c
 Copyright: 1995-1998 The Apache Group
-License: Apache-1.0
+License: Apache
 
-License: Apache-1.0
+License: Apache
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions
  are met:
@@ -146,9 +146,9 @@ Files: sha1.?
 Copyright: 2006-2014 ARM Limited, All Rights Reserved
 License: GPL-2+
 
-Files: md5.c md5.h
-Copyright: 1991-1992, RSA Data Security, Inc
-License:
+Files: md5.*
+Copyright: 1991-1992 RSA Data Security, Inc
+License: RSA
  License to copy and use this software is granted provided that it
  is identified as the "RSA Data Security, Inc. MD5 Message-Digest
  Algorithm" in all material mentioning or referencing this software
@@ -167,9 +167,9 @@ License:
  These notices must be retained in any copies of any part of this
  documentation and/or software.
 
-Files: crc.c crc.h
+Files: crc.*
 Copyright: 1986 Gary S. Brown
-License:
+License: GB
  You may use this program, or code or tables extracted from it, 
  as desired without restriction.
 
@@ -227,17 +227,17 @@ License: GPL-2+
 
 Files: obsolete_modules/mi_xmlrpc/abyss_*
 Copyright: 2000 Moez Mahfoudh
-Licence: BSD (3 clause)
+License: BSD-3-clause
 
 Files: obsolete_modules/mi_xmlrpc/xr_parser_lib.h
 Copyright: 2001 First Peer Inc.
            2001 Eric Kidd
-Licence: BSD (3 clause)
+License: BSD-3-clause
 
 Files: modules/lua/*
 Copyright: 2008,2009: Eric Gouyer
            2008-2011: Arnaud Chong
-Licence: ISC
+License: ISC
 
 Files: modules/lua/sipmysql.*
        modules/lua/sipdatetime.*
@@ -247,7 +247,7 @@ License: ISC
 
 Files: modules/lua/crc32.*
 Copyright: 2003 Markus Friedl
-License: BSD (2 clause)
+License: BSD-2-clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions
  are met:
@@ -270,7 +270,7 @@ License: BSD (2 clause)
 
 Files: modules/jabber/tree234.*
 Copyright: 1999-2001 Simon Tatham
-License: MIT/X11
+License: X11
  Permission is hereby granted, free of charge, to any person
  obtaining a copy of this software and associated documentation
  files (the "Software"), to deal in the Software without
@@ -334,7 +334,7 @@ License: GPL-2+ with OpenSSL exception
  License version 2 can be found in the file
  `/usr/share/common-licenses/GPL-2'.
 
-Licence: ISC
+License: ISC
  Permission to use, copy, modify, and distribute this software for any
  purpose with or without fee is hereby granted, provided that the above
  copyright notice and this permission notice appear in all copies.
@@ -391,7 +391,7 @@ License: GPL-3+
  License version 2 can be found in the file
  `/usr/share/common-licenses/GPL-3'.
 
-Licence: BSD (3 clause)
+License: BSD-3-clause
  Copyright (c) The Regents of the University of California.
  All rights reserved.
  .
@@ -418,6 +418,3 @@ Licence: BSD (3 clause)
  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  SUCH DAMAGE.
- .
- On Debian systems, the full text of the Berkeley Software Distribution
- License can be found in the file `/usr/share/common-licenses/BSD'.
