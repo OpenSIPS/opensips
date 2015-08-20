@@ -32,7 +32,8 @@ Build-Depends: bison,
                xsltproc,
                zlib1g-dev,
                python,
-               dh-python
+               dh-python,
+               pkg-config
 Standards-Version: 3.9.6
 Homepage: http://www.opensips.org/
 
