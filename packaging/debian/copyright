@@ -67,26 +67,6 @@ Copyright: 2002 Andrei Pelinescu-Onciul <pelinescu-onciul@fokus.fraunhofer.de>
            2011 Alejandro Rios P. <alerios@debian.org>
 License: GPL-2+
 
-Files: packaging/gentoo/opensips-*.ebuild
-Copyright: 1999-2005 Gentoo Foundation
-License: GPL-2.0
-
-License: GPL-2.0
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation.
- .
- This package is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- .
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- .
- On Debian systems, the complete text of the GNU General
- Public License version 2 can be found in "/usr/share/common-licenses/GPL-2".
-
 Files: modules/xmpp/xsnprintf.c
 Copyright: 1995-1998 The Apache Group
 License: Apache
