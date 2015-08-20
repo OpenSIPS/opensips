@@ -173,9 +173,6 @@ else
 endif
 endif
 
-# don't run any tests
-set DEB_BUILD_OPTIONS=nocheck
-
 # inherit variables from dpkg-builder
 CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
 CFLAGS += $(shell dpkg-buildflags --get CFLAGS) $(CPPFLAGS)
