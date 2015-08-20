@@ -24,11 +24,6 @@ URL := https://github.com/OpenSIPS/opensips/archive/$(UPVERSION).tar.gz
 # Uncomment this to turn on verbose mode.
 # export DH_VERBOSE=1
 
-# Do we want the TLS version ?
-# Disabled by default due to license issues, set to non-void to enable
-TLS=
-
-
 # List of all debian module packages we will build
 # Used to index the make variable below, which has details about each package
 ALL_MODPKG_LIST := \
@@ -178,6 +173,9 @@ else
 endif
 endif
 
+# don't run any tests
+set DEB_BUILD_OPTIONS=nocheck
+
 # inherit variables from dpkg-builder
 CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
 CFLAGS += $(shell dpkg-buildflags --get CFLAGS) $(CPPFLAGS)
@@ -186,7 +184,7 @@ LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
 
 
 # force lib (versus lib64) and SMP support all the time
-VARS = LIBDIR=lib ISSMP=yes TLS=$(TLS)
+VARS = LIBDIR=lib ISSMP=yes
 
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
@@ -198,18 +196,7 @@ ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
          MAKEFLAGS += -j$(NUMJOBS)
 endif
 
-configure: configure-stamp
-configure-stamp:
-	dh_testdir
-	# Add here commands to configure the package.
-
-	touch configure-stamp
-
-
-build: build-stamp
-build-stamp: configure-stamp 
-	dh_testdir
-
+override_dh_auto_build:
 	# Add here commands to compile the package.
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) app \
 	  modules skip_modules="$(NONCORE_MODULES)" cfg-target=/etc/opensips/
@@ -220,22 +207,11 @@ build-stamp: configure-stamp
 
 	touch build-stamp
 
-build-arch: build
-build-indep: build
-
-clean: real-clean unpatch
-real-clean:
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp configure-stamp
-
-	# Add here commands to clean up after the build process.
-	$(MAKE) $(VARS) include_modules="$(ALL_MODULES)" proper
+override_dh_auto_clean:
+	dh_auto_clean -- $(VARS) include_modules="$(ALL_MODULES)" proper
 	rm -f cfg.tab.h
 	rm -f utils/opensipsunix/opensipsunix.o utils/opensipsunix/opensipsunix
 	rm -f utils/db_berkeley/bdb_recover.o utils/db_berkeley/bdb_recover
-
-	dh_clean
 
 show-env:
 	env
@@ -250,12 +226,7 @@ show-mod-info:
 	done
 	@echo "ALL_MOD_PATHS: $(ALL_MODULE_PATHS)"
 
-install: build
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
-
+override_dh_auto_install:
 	# Add here commands to install the package into debian/opensips
 	# opensips base package
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-app \
@@ -291,44 +262,20 @@ install: build
 		basedir=$(CURDIR)/debian/opensips-console \
 		prefix=/usr
 
-# This single target is used to build all the packages, all at once, or
-# one at a time. So keep in mind: any options passed to commands here will
-# affect _all_ packages. Anything you want to only affect one package
-# should be put in another target, such as the install target.
-binary-arch: build install
-	dh_testdir
-	dh_testroot
-	dh_installdocs
-	dh_installexamples --exclude=".svn"
-	dh_installinit -popensips -- defaults 23
-	dh_installcron
-	dh_installman -popensips
-	dh_installinfo
-	dh_installchangelogs
-	dh_link
+override_dh_strip:
 	dh_strip --dbg-package=opensips-dbg
-	dh_compress 
-	dh_fixperms
-	dh_python2
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-# Build architecture-independent packages using the common target
-binary-indep: build install
-# We have nothing to do by default.
-
-binary: binary-indep binary-arch
 
 print-version:
 	@@echo "Debian version:          $(DEBVERSION)"
 	@@echo "Upstream version:        $(UPVERSION)"
+	@@echo "Upstream URL:            $(URL)"
 
 get-orig-source:
 	@@dh_testdir
 	@@echo Downloading $(FILENAME) from $(URL) ...
 	@@wget -N -nv -T10 -t3 -O ../$(FILENAME) $(URL)
 
-.PHONY: build clean binary-indep binary-arch binary install configure patch unpatch real-clean
+# generic rule
+%:
+	dh $@ --with python2
+

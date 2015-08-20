@@ -442,7 +442,7 @@ deb:
 	rm -rf debian
 	# dpkg-source cannot use links for debian source
 	cp -r packaging/debian debian
-	dpkg-buildpackage \
+	DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage \
 		-I.git -I.gitignore \
 		-IMakefile.conf \
 		-I*.swp -I*~ \
