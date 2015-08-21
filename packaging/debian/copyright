@@ -1420,7 +1420,21 @@ License: GPL-2+
 
 Files: regexp.c regexp.h serialize.c serialize.h
 Copyright: 2001-2008, Juha Heinanen
-License: CPL-2+
+License: GPL-2+
+
+Files: packaging/debian/*
+Copyright: 2002 Andrei Pelinescu-Onciul <pelinescu-onciul@fokus.fraunhofer.de>
+ 2006 Julien Blache <jblache@debian.org>
+ 2009 Bjoern Boschman <bjoern@boschman.de>
+ 2009 Bogdan Iancu <bogan@voice-system.ro>
+ 2011 JuliÃ¡n Moreno PatiÃ±o <darkjunix@gmail.com>
+ 2011 Daniel Echeverry <epsilon77@gmail.com>
+ 2011 Alejandro Rios P. <alerios@debian.org>
+License: GPL-2+
+
+Files: packaging/gentoo/opensips-*.ebuild
+Copyright: 1999-2005 Gentoo Foundation
+License: GPL-2
 
 License: Apache
  Redistribution and use in source and binary forms, with or without
@@ -1641,3 +1655,19 @@ License: ISC
  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+License: GPL-2
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation.
+ .
+ This package is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General
+ Public License version 2 can be found in "/usr/share/common-licenses/GPL-2".
