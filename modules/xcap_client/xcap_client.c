@@ -40,6 +40,7 @@
 #include "../../dprint.h"
 #include "../../error.h"
 #include "../../ut.h"
+#include "../../timer.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../xcap/api.h"
