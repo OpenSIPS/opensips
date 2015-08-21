@@ -433,8 +433,7 @@ bin:
 	rm -rf tmp/$(NAME)
 
 .PHONY: deb-orig-tar
-deb-orig-tar:
-	tar_extra_args=--exclude=packaging make tar
+deb-orig-tar: tar
 	mv "$(NAME)-$(RELEASE)_src".tar.gz ../$(NAME)_$(RELEASE).orig.tar.gz
 
 .PHONY: deb
@@ -445,7 +444,7 @@ deb:
 	dpkg-buildpackage \
 		-I.git -I.gitignore \
 		-I*.swp -I*~ \
-		-i\\.git\|packaging\|debian\|^\\.\\w+\\.swp\|lex\\.yy\\.c\|cfg\\.tab\\.\(c\|h\) \
+		-i\\.git\|debian\|^\\.\\w+\\.swp\|lex\\.yy\\.c\|cfg\\.tab\\.\(c\|h\) \
 		-rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
 	rm -rf debian
 
