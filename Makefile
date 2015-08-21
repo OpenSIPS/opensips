@@ -443,11 +443,10 @@ deb:
 	rm -rf debian
 	# dpkg-source cannot use links for debian source
 	cp -r packaging/debian debian
-	DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage \
+	dpkg-buildpackage \
 		-I.git -I.gitignore \
-		-IMakefile.conf \
 		-I*.swp -I*~ \
-		-i\\.git\|Makefile\\.conf\|packaging\|debian\|^\\.\\w+\\.swp\|lex\\.yy\\.c\|cfg\\.tab\\.\(c\|h\) \
+		-i\\.git\|packaging\|debian\|^\\.\\w+\\.swp\|lex\\.yy\\.c\|cfg\\.tab\\.\(c\|h\) \
 		-rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
 	rm -rf debian
 

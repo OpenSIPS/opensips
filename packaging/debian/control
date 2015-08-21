@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Razvan Crainea <razvan@opensips.org>
 Build-Depends: bison,
                debhelper (>= 9),
+               dh-python,
                dpkg-dev (>= 1.16.1.1),
                flex,
                libconfuse-dev,
@@ -16,6 +17,7 @@ Build-Depends: bison,
                libjson0-dev,
                libldap2-dev,
                liblua5.1-dev,
+               libmemcache-dev,
                libmemcached-dev,
                libmicrohttpd-dev,
                libmysqlclient-dev,
@@ -28,12 +30,11 @@ Build-Depends: bison,
                libsnmp-dev,
                libxml2-dev,
                libxmlrpc-core-c3-dev,
+               pkg-config,
+               python,
                unixodbc-dev,
                xsltproc,
-               zlib1g-dev,
-               python,
-               dh-python,
-               pkg-config
+               zlib1g-dev
 Standards-Version: 3.9.6
 Homepage: http://www.opensips.org/
 
