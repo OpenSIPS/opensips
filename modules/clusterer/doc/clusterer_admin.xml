@@ -10,7 +10,34 @@
 		<emphasis>Clusterer</emphasis>
 		module stores information about the status of a server belonging 
                 to a cluster. The module ,via an internal API, provides a way to
-                access and manipulate stored data.
+                access and manipulate stored data. If this module is used for
+                replication purposes, it tries to send to all available servers
+                necessary information and marks the server, which has modified
+                information (like number of tries, last attempt) and it has an api
+                function that can check the authenticity of an incoming connexion.
+                If the necessary information cannot be sent, the number of tries
+                are increased. If the number of tries does not match the maximum number
+                of tries and the necessary information can be send, the number of tries
+                resets to the default value (0). If the number of tries match the maximum
+                number of allowed tries, the server state is marked as temporary disabled and
+                the number of allowed tries is resetted. After the disabled period has passed
+                the server is up again.
+                The others module can register to the clusterer module, specifying
+                the protocol, timeout interval, callback function, authenticity check
+                enabled/disabled and the cluster id. Clusterer acts like an
+                intermediary and registers to the specified protocol, so that
+                every incoming connexion should arrive first in a clusterer function,
+                which does the necessary checks accordingly to the specified parameters
+                of the register function and calls the registered module callback
+                function. If a timeout interval has passed and a server has not
+                received any packets, the server is marked as temporary disabled
+                and a timeout notification is sent to the registered module.
+                If a packey has arrived for a temporary disabled server, the packet
+                is dropped and a temporary disabled notification is sent to the
+                registered module. After the disabled period ( 2 * timeout ) has passed
+                the server is up again.
+                If the persistent mode is activated, the local data are synchronized
+                with the database.
 	</para>
 	</section>
         
@@ -49,7 +76,7 @@
         <section>
 	<title>Exported Parameters</title>
 	<section>
-            <title><varname>db_url</varname> (integer)</title>
+            <title><varname>db_url</varname></title>
 		<para>
 		The database url.
 		</para>
@@ -352,108 +379,7 @@ modparam("clusterer", "no_tries_col",
         
         <section>
 	<title>Exported Functions</title>
-	<section id="get-nodes-id">
-		<title>
-		<function moreinfo="none">get_nodes(cluster_id, proto)</function>
-		</title>
-		<para>
-                The function will return all a copy of all the needed information
-                from the nodes (machine_id, state, description, sock address)
-                stored in shm, whos state is up(1) and have a certain cluster_id and
-                protocol.
-		</para>
-		<para>
-		This function is usually used for replication purposes. 
-		</para>
-		<para>
-		This function returns NULL on error.
-		</para>
-		<example>
-		<title><function>get_nodes</function> usage</title>
-		<programlisting format="linespecific">
-...
-get_nodes(1,PROTO_BIN);
-...
-</programlisting>
-		</example>
-	</section>
-        
-        <section id="free-nodes-id">
-		<title>
-		<function moreinfo="none">free_nodes(nodes)</function>
-		</title>
-		<para>
-                This function will free the allocated data for the copy.
-		</para>
-		<example>
-		<title><function>free_nodes</function> usage</title>
-		<programlisting format="linespecific">
-...
-free_nodes(nodes);
-...
-</programlisting>
-		</example>
-	</section>
-        
-        <section id="set-state-id">
-		<title>
-		<function moreinfo="none">set_state(cluster_id, machine_id, state, proto)</function>
-		</title>
-		<para>
-                The function sets the state of a machine belonging to a certain cluster,
-                which have the specified protocol.
-		</para>
-		<para>
-		This function is usually used for replication purposes. 
-		</para>
-		<example>
-		<title><function>set_state</function> usage</title>
-		<programlisting format="linespecific">
-...
-set_state(1,1,2,PROTO_BIN);
-...
-</programlisting>
-		</example>
-	</section>
-        
-        <section id="check">
-		<title>
-		<function moreinfo="none">check(cluster_id, sockaddr, server_id, proto)</function>
-		</title>
-		<para>
-                This function is used to check if the source of a receiving packet
-                is known. 
-		</para>
-		<para>
-		It returns 1 if the source is known, else it returns 0.
-		</para>
-		<example>
-		<title><function>check</function> usage</title>
-		<programlisting format="linespecific">
-...
-check(1, sockaddr, 2, PROTO_BIN)
-...
-</programlisting>
-		</example>
-	</section>
-        
-        <section id="get-my-id-id">
-		<title>
-		<function moreinfo="none">get_my_id()</function>
-		</title>
-		<para>
-                This function will return the server id's.
-		</para>
-		<example>
-		<title><function>get_my_id</function> usage</title>
-		<programlisting format="linespecific">
-...
-get_my_id()
-...
-</programlisting>
-		</example>
-	</section>
-        
+	<para>none</para>        
         </section>
         
         <section>
