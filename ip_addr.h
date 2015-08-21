@@ -230,6 +230,8 @@ static inline void sockaddr2ip_addr(struct ip_addr* ip, struct sockaddr* sa)
 			break;
 	default:
 			LM_CRIT("unknown address family %d\n", sa->sa_family);
+			/* clear the structure to prevent uninitialized warnings */
+			ip->af=sa->sa_family;
 	}
 }
 
