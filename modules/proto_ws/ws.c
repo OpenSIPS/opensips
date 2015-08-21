@@ -210,7 +210,7 @@ void inline ws_mask(char *buf, int len, unsigned int mask)
 
 
 static inline int ws_send(struct tcp_connection *con, int fd, int op,
-		char *body, unsigned int len)
+		int should_mask, unsigned int mask, char *body, unsigned int len)
 {
 	static unsigned char hdr_buf[WS_MAX_HDR_LEN];
 	static struct iovec v[2] = { {hdr_buf, 0}, {0, 0}};
@@ -259,7 +259,7 @@ static inline int ws_send_pong(struct tcp_connection *con, struct ws_req *req)
 			req->tcp.body, req->tcp.content_len);
 }
 
-static inline int ws_send_close(struct tcp_connection *con)
+static inline int ws_send_close(struct tcp_connection *con, int ret)
 {
 	uint16_t code;
 	int len;
@@ -287,7 +287,7 @@ int ws_req_write(struct tcp_connection *con, int fd, char *buf, int len)
 
 static struct ws_req ws_current_req;
 
-static enum ws_close_code inline ws_parse(struct ws_req *req)
+static inline int ws_parse(struct ws_req *req)
 {
 
 	uint64_t clen;
