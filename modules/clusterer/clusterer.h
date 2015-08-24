@@ -26,6 +26,9 @@ extern str failed_attempts_col;
 extern str no_tries_col;
 
 typedef struct table_entry_ table_entry_t;
+typedef struct table_entry_info_ table_entry_info_t;
+typedef struct table_entry_value_ table_entry_value_t;
+
 
 struct module_list{
    str mod_name;
@@ -35,6 +38,7 @@ struct module_list{
    int duration;
    int auth_check;
    int accept_cluster_id;
+   table_entry_value_t *values;
    struct module_list *next;
 };
 
@@ -45,25 +49,19 @@ struct module_timestamp{
     struct module_timestamp *next;
 };
 
-/* data list */
-struct table_entry_ {
-    /*clusterer_id*/
-    int clusterer_id;
+struct table_entry_value_{
     /* machine id */
     int machine_id;
     /* cluster id */
-    int cluster_id;
+    int clusterer_id;
     /* state */
     int state;
-    int in_state;
     /* dirty bit */
     int dirty_bit;
     /* description string */
     str description;
     /* path */
     str path;
-    /* protocol */
-    int proto;
     /* timestamp */
     uint64_t last_attempt;
     /* duration */
@@ -78,6 +76,27 @@ struct table_entry_ {
     union sockaddr_union addr;
     /* module list */
     struct module_timestamp *in_timestamps;
+    /* linker in list */
+    table_entry_value_t *next;
+};
+
+struct table_entry_info_{
+    /* protocol */
+    int proto;
+    /* data */
+    table_entry_value_t *value;
+    /* linker in the list */
+    table_entry_info_t *next;
+    
+};
+
+
+/* data list */
+struct table_entry_ {
+    /* clusterer_id */
+    int cluster_id;
+    /* entry info */
+    table_entry_info_t *info;
     /* linker in list */
     table_entry_t *next;
 };
