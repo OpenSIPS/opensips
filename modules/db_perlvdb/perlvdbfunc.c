@@ -36,7 +36,7 @@
  * including decreasing ref cnt
  */
 
-inline long IV2int(SV *in) {
+static inline long IV2int(SV *in) {
 	int ret = -1;
 
 	if (SvOK(in)) {

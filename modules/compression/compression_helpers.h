@@ -41,6 +41,6 @@ int fixup_compression_flags(void**);
 int free_whitelist(mc_whitelist_p* whitelist);
 int free_hdr_list(struct hdr_field** hdr_lst_p);
 int free_hdr_mask(struct hdr_field** hdr_mask);
-extern inline int check_zlib_rc(int rc);
-extern inline int wrap_realloc(str* buf, int new_len);
+int check_zlib_rc(int rc);
+int wrap_realloc(str* buf, int new_len);
 #endif

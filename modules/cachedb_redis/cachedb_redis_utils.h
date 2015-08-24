@@ -29,7 +29,7 @@
 #include "cachedb_redis_dbase.h"
 
 int build_cluster_nodes(redis_con *con,char *info,int size);
-extern inline cluster_node *get_redis_connection(redis_con *con,str *key);
+cluster_node *get_redis_connection(redis_con *con,str *key);
 void destroy_cluster_nodes(redis_con *con);
 
 #endif
