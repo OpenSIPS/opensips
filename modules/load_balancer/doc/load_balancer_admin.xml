@@ -333,6 +333,16 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 				computing the load of each pear/resource.
 				</para>
 			</listitem>
+			<listitem>
+				<para><emphasis>s</emphasis> - Pick a random destination if
+				multiple destinations with the same load are found, instead
+				of always picking first matched destination.
+				This could help to offload an excessive load from the first
+				destination and distribute load in situations when failed
+				calls always routed to first destination, since they almost
+				does not affect load counters of destinations.
+				</para>
+			</listitem>
 			</itemizedlist>
 		</listitem>
 		</itemizedlist>
