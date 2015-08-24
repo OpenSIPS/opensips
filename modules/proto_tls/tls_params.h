@@ -52,9 +52,13 @@ int tlsp_set_verify(modparam_t type, void *val);
 
 int tlsp_set_require(modparam_t type, void *val);
 
+int tlsp_set_crl_check(modparam_t type, void *val);
+
 int tlsp_set_certificate(modparam_t type, void *val);
 
 int tlsp_set_pk(modparam_t type, void *val);
+
+int tlsp_set_crldir(modparam_t type, void *val);
 
 int tlsp_set_calist(modparam_t type, void *val);
 

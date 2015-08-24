@@ -46,6 +46,7 @@
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
@@ -127,6 +128,8 @@ static param_export_t params[] = {
 	{ "require_cert",  STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_require    },
 	{ "certificate",   STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_certificate},
 	{ "private_key",   STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_pk         },
+	{ "crl_check_all", STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_crl_check  },
+	{ "crl_dir",       STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_crldir     },
 	{ "ca_list",       STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_calist     },
 	{ "ca_dir",        STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_cadir      },
 	{ "ciphers_list",  STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_cplist     },
@@ -832,6 +835,87 @@ static int load_certificate(SSL_CTX * ctx, char *filename)
 	return 0;
 }
 
+static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
+{
+       DIR *d;
+       struct dirent *dir;
+       int crl_added = 0;
+       LM_DBG("Loading CRL from directory\n");
+
+       /*Get X509 store from SSL context*/
+       X509_STORE *store = SSL_CTX_get_cert_store(ctx);
+       if(!store) {
+               LM_ERR("Unable to get X509 store from ssl context\n");
+               return -1;
+       }
+
+       /*Parse directory*/
+       d = opendir(crl_directory);
+       if(!d) {
+               LM_ERR("Unable to open crl directory '%s'\n", crl_directory);
+               return -1;
+       }
+
+       while ((dir = readdir(d)) != NULL) {
+               /*Skip if not regular file*/
+               if (dir->d_type != DT_REG)
+                       continue;
+
+               /*Create filename*/
+               char* filename = (char*) pkg_malloc(sizeof(char)*(strlen(crl_directory)+strlen(dir->d_name)+2));
+               if (!filename) {
+                       LM_ERR("Unable to allocate crl filename\n");
+                       closedir(d);
+                       return -1;
+               }
+               strcpy(filename,crl_directory);
+               if(filename[strlen(filename)-1] != '/')
+                       strcat(filename,"/");
+               strcat(filename,dir->d_name);
+
+               /*Get CRL content*/
+               FILE *fp = fopen(filename,"r");
+               pkg_free(filename);
+               if(!fp)
+                       continue;
+
+               X509_CRL *crl = PEM_read_X509_CRL(fp, NULL, NULL, NULL);
+               fclose(fp);
+               if(!crl)
+                       continue;
+
+               /*Add CRL to X509 store*/
+               if (X509_STORE_add_crl(store, crl) == 1)
+                       crl_added++;
+               else
+                       LM_ERR("Unable to add crl to ssl context\n");
+
+               X509_CRL_free(crl);
+       }
+       closedir(d);
+
+       if (!crl_added) {
+               LM_ERR("No suitable CRL files found in directory %s\n", crl_directory);
+               return -1;
+       }
+
+       /*Enable CRL checking*/
+       X509_VERIFY_PARAM *param;
+       param = X509_VERIFY_PARAM_new();
+
+       int flags =  X509_V_FLAG_CRL_CHECK;
+       if(crl_check_all)
+               flags |= X509_V_FLAG_CRL_CHECK_ALL;
+
+       X509_VERIFY_PARAM_set_flags(param, flags);
+
+       SSL_CTX_set1_param(ctx, param);
+       X509_VERIFY_PARAM_free(param);
+
+       return 0;
+}
+
+
 
 /*
  * Load a caList, to be used to verify the client's certificate.
@@ -979,6 +1063,16 @@ static int init_tls_domains(struct tls_domain *d)
 		}
 		if (load_certificate(d->ctx, d->cert_file) < 0)
 			return -1;
+
+               /**
+               * load crl from directory
+               */
+		if (!d->crl_directory) {
+			LM_NOTICE("no crl for tls, using none");
+		} else {
+			if(load_crl(d->ctx, d->crl_directory, d->crl_check_all) < 0)
+				return -1;
+		}
 
 		/*
 		* load ca
