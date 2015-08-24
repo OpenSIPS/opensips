@@ -195,7 +195,7 @@ int dbt_cache_check_db(str *_s)
 	while(_dcache)
 	{
 		if(_dcache->name.len == _s->len &&
-			strncasecmp(_dcache->name.s, _s->s, _s->len))
+			!strncasecmp(_dcache->name.s, _s->s, _s->len))
 		{
 			lock_release(_dbt_cachesem);
 			return 0;

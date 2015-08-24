@@ -136,7 +136,9 @@ static struct mi_root* mi_dbt_dump(struct mi_root* cmd, void* param)
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
-	if (dbt_cache_print(0)!=0)
+	if (dbt_cache_print(0)!=0) {
+		free_mi_tree(rpl_tree);
 		return NULL;
+	}
 	return rpl_tree;
 }
