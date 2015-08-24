@@ -42,6 +42,7 @@ static int mod_init(void);
 static void destroy(void);
 
 static struct mi_root* mi_dbt_dump(struct mi_root* cmd, void* param);
+static struct mi_root* mi_dbt_reload(struct mi_root* cmd, void* param);
 
 /*
  * Module parameter variables
@@ -71,6 +72,7 @@ static param_export_t params[] = {
 /** MI commands */
 static mi_export_t mi_cmds[] = {
 	{"dbt_dump", 0, mi_dbt_dump, 0, 0, 0},
+	{"dbt_reload", 0, mi_dbt_reload, 0, 0, 0},
 	{0,          0,           0, 0, 0, 0}
 };
 
@@ -142,4 +144,31 @@ static struct mi_root* mi_dbt_dump(struct mi_root* cmd, void* param)
 		return NULL;
 	}
 	return rpl_tree;
+}
+
+static struct mi_root* mi_dbt_reload(struct mi_root* cmd, void* param)
+{
+	struct mi_node *node;
+	str *dbname, *name;
+	int res;
+
+	dbname = name = NULL;
+	if( (node = cmd->node.kids) ) {
+		dbname = &(node->value);
+
+		if( (node = node->next) ) {
+			name = &(node->value);
+
+			if( node->next )
+				return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM_S));
+		}
+	}
+
+	if( (res = dbt_cache_reload(dbname, name)) >= 0 ) {
+		return init_mi_tree(200, MI_SSTR(MI_OK_S));
+	} else if( res == -1 ) {
+		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM_S));
+	} else {
+		return init_mi_tree(500, MI_SSTR(MI_INTERNAL_ERR_S));
+	}
 }

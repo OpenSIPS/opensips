@@ -232,7 +232,7 @@ suser:supasswd:xxx:alpha.org:xxx
 	<title>Exported Parameters</title>
 		<para>
 			<emphasis>None</emphasis>.
-	   	</para>
+		</para>
 		<section>
 			<title><varname>db_mode</varname> (integer)</title>
 		<para>
@@ -260,7 +260,7 @@ modparam("db_text", "db_mode", 1)
 	<title>Exported Functions</title>
 		<para>
 			<emphasis>None</emphasis>.
-	   	</para>
+		</para>
 	</section>
 	<section>
 	<title>Exported MI Functions</title>
@@ -268,16 +268,57 @@ modparam("db_text", "db_mode", 1)
 		<title><varname>dbt_dump</varname></title>
 		<para>
 			Write back to hard drive modified tables.
-	   	</para>
+		</para>
 		<para>
 		Name: <emphasis>dbt_dump</emphasis>.
-	   	</para>
-	   	<para>Parameters: none</para>
-	   	<para>
-	   	MI FIFO Command Format:
-	   	</para>
-	   	<programlisting  format="linespecific">
+		</para>
+		<para>Parameters: none</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
 :dbt_dump:_reply_fifo_file_
+_empty_line_
+		</programlisting>
+	</section>
+	<section>
+		<title><varname>dbt_reload</varname></title>
+		<para>
+			Causes db_text module to reload cached tables from disk.
+			Depending on parameters it could be a whole cache or a specified
+			database or a single table.
+			If any table cannot be reloaded from disk - the old version
+			preserved and error reported.
+		</para>
+		<para>
+		Name: <emphasis>dbt_reload</emphasis>.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>db_name</emphasis> (optional) - database name to reload.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>table_name</emphasis> (optional, but cannot be present
+				without the db_name parameter) - specific table to reload.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+:dbt_reload:_reply_fifo_file_
+_empty_line_
+		</programlisting>
+		<programlisting  format="linespecific">
+:dbt_reload:_reply_fifo_file_
+/path/to/dbtext/database
+_empty_line_
+		</programlisting>
+		<programlisting  format="linespecific">
+:dbt_reload:_reply_fifo_file_
+/path/to/dbtext/database
+table_name
 _empty_line_
 		</programlisting>
 	</section>
