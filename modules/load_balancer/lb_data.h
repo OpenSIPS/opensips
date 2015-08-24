@@ -37,6 +37,7 @@
 
 #define LB_FLAGS_RELATIVE (1<<0) /* do relative versus absolute estimation. default is absolute */
 #define LB_FLAGS_NEGATIVE (1<<1) /* do not skip negative loads. default to skip */
+#define LB_FLAGS_RANDOM   (1<<2) /* pick a random destination among all selected dsts with equal load */
 #define LB_FLAGS_DEFAULT  0
 
 #define LB_DST_PING_DSBL_FLAG   (1<<0)

@@ -27,6 +27,7 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "../../proxy.h"
 #include "../../parser/parse_uri.h"
@@ -418,11 +419,16 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 	/* probed destinations bitmap */
 	static unsigned int *dst_bitmap = NULL;
 	static unsigned int bitmap_size = 0;
+	/* selected destinations buffer */
+	static struct lb_dst **dsts = NULL;
+	static unsigned int dsts_size = 0;
 
 	/* control vars */
 	struct lb_resource **res_cur;
 	int res_prev_n, res_new_n, res_cur_n;
+	struct lb_dst **dsts_cur;
 	struct lb_dst *last_dst, *dst;
+	unsigned int dsts_size_cur, dsts_size_max;
 	unsigned int *dst_bitmap_cur;
 	unsigned int bitmap_size_cur;
 	struct dlg_cell *dlg;
@@ -648,6 +654,28 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 		}
 	}
 
+	/* init selected destinations buff */
+	dsts_cur = NULL;
+	dsts_size_max = (flags & LB_FLAGS_RANDOM) ? data->dst_no : 1;
+	if( dsts_size_max > 1 ) {
+		if( dsts_size_max > dsts_size ) {
+			dsts = (struct lb_dst **)pkg_realloc
+				(dsts, (dsts_size_max * sizeof(struct lb_dst *)));
+			if( dsts == NULL ) {
+				dsts_size_max = dsts_size = 0;
+				LM_WARN("no more pkg mem - dsts buffer realloc failed\n");
+			}
+			else
+				dsts_size = dsts_size_max;
+		}
+		dsts_cur = dsts;
+	}
+	if( dsts_cur == NULL ) {
+		/* fallback to no-buffer / 'select first' scenario */
+		dsts_cur = &dst;
+		dsts_size_max = 1;
+	}
+
 	/* be sure the dialog is created */
 	if ( (dlg=lb_dlg_binds.get_dlg())==NULL ) {
 		if( lb_dlg_binds.create_dlg(req, 0) != 1 ) {
@@ -680,28 +708,42 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 		lock_get(res_cur[i]->lock);
 
 	/* do the load-balancing */
+
+	/*  select destinations */
 	cond = 0; /* use it here as a 'first iteration' flag */
 	load = it_l = 0;
+	dsts_size_cur = 0;
 	for( it_d=data->dsts,i=0,j=0 ; it_d ; it_d=it_d->next ) {
 		if( it_d->group == group ) {
 			if( (dst_bitmap_cur[i] & (1 << j)) &&
 			((it_d->flags & LB_DST_STAT_DSBL_FLAG) == 0) ) {
 				/* valid destination (group & resources & status) */
 				if( get_dst_load(res_cur, res_cur_n, it_d, flags, &it_l) ) {
-					if(
-						((it_l > 0) || (flags & LB_FLAGS_NEGATIVE)) &&
-						(!cond/*first pass*/ || (it_l > load)/*new max*/)
-					) {
-						/* computing a max, or first pass */
-						load = it_l;
-						dst = it_d;
-						cond = 1;
+					/* only valid load here */
+					if( (it_l > 0) || (flags & LB_FLAGS_NEGATIVE) ) {
+						/* only allowed load here */
+						if( !cond/*first pass*/ || (it_l > load)/*new max*/ ) {
+							cond = 1;
+							/* restart buffer */
+							dsts_size_cur = 0;
+						} else if( it_l < load ) {
+							/* lower availability -> new iteration */
+							continue;
+						}
+
+						/* add destination to to selected destinations buffer,
+						 * if we have a room for it */
+						if( dsts_size_cur < dsts_size_max ) {
+							load = it_l;
+							dsts[dsts_size_cur++] = it_d;
+
+							LM_DBG("%s call of LB - destination %d <%.*s> "
+								"selected for LB set with free=%d\n",
+								(reuse ? "sequential" : "initial"),
+								it_d->id, it_d->uri.len, it_d->uri.s, it_l
+							);
+						}
 					}
-					LM_DBG("%s call of LB - destination %d <%.*s> selected "
-						"for LB set with free=%d\n",
-						(reuse ? "sequential" : "initial"),
-						it_d->id, it_d->uri.len, it_d->uri.s, it_l
-					);
 				} else {
 					LM_WARN("%s call of LB - skipping destination %d <%.*s> - "
 						"unable to calculate free resources\n",
@@ -722,6 +764,15 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 		}
 		if( ++j == (8 * sizeof(unsigned int)) ) { i++; j=0; }
 	}
+	/* choose one destination among selected */
+	if( dsts_size_cur > 0 ) {
+		if( (dsts_size_cur > 1) && (flags & LB_FLAGS_RANDOM) ) {
+			dst = dsts[rand() % dsts_size_cur];
+		} else {
+			dst = dsts[0];
+		}
+	}
+
 
 	if( dst != NULL ) {
 		LM_DBG("%s call of LB - winning destination %d <%.*s> selected "
@@ -842,6 +893,7 @@ int do_lb_reset(struct sip_msg *req, struct lb_data *data)
 	struct usr_avp *res_avp, *del_res_avp;
 	int_str id_val;
 	int_str res_val;
+
 	struct dlg_cell *dlg;
 	struct lb_dst *it_d, *last_dst;
 	struct lb_resource *it_r;
