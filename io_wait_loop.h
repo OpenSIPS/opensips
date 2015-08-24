@@ -214,7 +214,7 @@ again:
 		if (n==-1){
 			if (errno==EINTR) goto again; /* signal, ignore it */
 			else{
-				LM_ERR("[%s] kevent: %s [%d]\n", strerror(errno), errno);
+				LM_ERR("[%s] kevent: %s [%d]\n", h->name, strerror(errno), errno);
 				goto error;
 			}
 		}
