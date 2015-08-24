@@ -350,8 +350,13 @@ inline static int io_watch_add(	io_wait_h* h,
 			h->name, prio, h->max_prio);
 		goto error;
 	}
+#if defined (HAVE_EPOLL)
 	LM_DBG("[%s] io_watch_add op (%d on %d) (%p, %d, %d, %p,%d), fd_no=%d/%d\n",
 			h->name,fd,h->epfd, h,fd,type,data,flags,h->fd_no,h->max_fd_no);
+#else
+	LM_DBG("[%s] io_watch_add op (%d) (%p, %d, %d, %p,%d), fd_no=%d/%d\n",
+			h->name,fd, h,fd,type,data,flags,h->fd_no,h->max_fd_no);
+#endif
 	//fd_array_print;
 	/*  hash sanity check */
 	e=get_fd_map(h, fd);
