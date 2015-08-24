@@ -111,6 +111,7 @@ typedef struct _dbt_cache
 int dbt_init_cache();
 int dbt_cache_destroy();
 int dbt_cache_print(int);
+int dbt_cache_reload(const str *dbname, const str *name);
 
 dbt_cache_p dbt_cache_get_db(str*);
 int dbt_cache_check_db(str*);
