@@ -1134,22 +1134,22 @@ modparam("dialog", "accept_replicated_dialogs", 1)
 	</section>
 
 	<section>
-		<title><varname>replicate_dialogs_to</varname> (string)</title>
+		<title><varname>replicate_dialogs_to</varname> (int)</title>
 		<para>
-			Adds a new dialog replication destination. The destination will
-		receive all dialog-related events (creation, updating and deletion)
-		over UDP, using the Binary Internal Interface.
+			Adds dialog replication destinations,that belong to the
+		specified cluster id. The destination will receive all dialog-related events
+		(creation, updating and deletion) over TCP, using the Binary Internal Interface.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>null</quote> (no replication destinations).
+			Default value is <quote>0</quote> (no replication destinations).
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>replicate_dialogs_to</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "replicate_dialogs_to", "10.0.0.150:5062")
+modparam("dialog", "replicate_dialogs_to", 1)
 ...
 </programlisting>
 		</example>
@@ -1176,26 +1176,67 @@ modparam("dialog", "accept_replicated_profiles", 1)
 	</section>
 
 	<section>
-		<title><varname>replicate_profiles_to</varname> (string)</title>
+		<title><varname>replicate_profiles_to</varname> (int)</title>
 		<para>
-			Adds a new profiles replication destination. The destination will
-		receive all dialog-related events (creation, updating and deletion)
-		over UDP, using the Binary Internal Interface.
+			Adds profiles replication destinations, that belong  to the
+		specified cluster id. The destination will receive all dialog-related events 
+		(creation, updating and deletion) over TCP, using the Binary Internal Interface.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>null</quote> (no replication destinations).
+			Default value is <quote>0</quote> (no replication destinations).
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>replicate_profiles_to</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "replicate_profiles_to", "10.0.0.150:5062")
+modparam("dialog", "replicate_profiles_to", 1)
 ...
 </programlisting>
 		</example>
 	</section>
+        
+        <section>
+		<title><varname>accept_replicated_profile_timeout</varname> (int)</title>
+		<para>
+			The time between two succesive incoming packets.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>10</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>accept_replicated_profile_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "accept_replicated_profile_timeout", 30)
+...
+</programlisting>
+		</example>
+	</section>
+        
+         <section>
+		<title><varname>auth_check</varname> (int)</title>
+		<para>
+			Authentication check for incoming packets.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>auth_check</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "auth_check", 1)
+...
+</programlisting>
+		</example>
+	</section>
+        
 	<section>
 		<title><varname>replicate_profiles_buffer</varname> (string)</title>
 		<para>
