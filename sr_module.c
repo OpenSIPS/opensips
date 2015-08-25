@@ -673,11 +673,6 @@ int init_modules(void)
 {
 	int ret;
 
-	if (solve_module_dependencies(modules) != 0) {
-		LM_ERR("failed to solve module dependencies\n");
-		return -1;
-	}
-
 	ret = init_mod(modules, 0);
 
 	free_module_dependencies(modules);

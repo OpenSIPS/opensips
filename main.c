@@ -1033,6 +1033,12 @@ try_again:
 		LM_ERR("bad function call in config file\n");
 		return ret;
 	}
+
+	if (solve_module_dependencies(modules) != 0) {
+		LM_ERR("failed to solve module dependencies\n");
+		return -1;
+	}
+
 #ifdef EXTRA_DEBUG
 	print_rl();
 #endif
