@@ -48,6 +48,8 @@ int             tls_method = TLS_USE_SSLv23;
 int             tls_verify_client_cert  = 1;
 int             tls_verify_server_cert  = 1;
 int             tls_require_client_cert = 1;
+/* disable CRL validation for all the certificates from the chain */
+int crl_check_all = 0;
 /* default location of certificates */
 char           *tls_cert_file = TLS_CERT_FILE;
 char           *tls_pkey_file = TLS_PKEY_FILE;

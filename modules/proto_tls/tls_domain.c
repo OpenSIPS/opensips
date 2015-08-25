@@ -216,6 +216,7 @@ struct tls_domain *tls_new_domain( str *id, int type)
 	memcpy( d->id.s, id->s, id->len);
 
 	d->type = type;
+	d->crl_check_all = crl_check_all;
 
 	if (type & TLS_DOMAIN_SRV) {
 		d->verify_cert         = tls_verify_client_cert;

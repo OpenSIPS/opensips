@@ -53,6 +53,7 @@ extern int      tls_method;
 extern int      tls_verify_client_cert;
 extern int      tls_verify_server_cert;
 extern int      tls_require_client_cert;
+extern int	crl_check_all;
 extern char    *tls_cert_file;
 extern char    *tls_pkey_file;
 extern char    *tls_ca_file;
