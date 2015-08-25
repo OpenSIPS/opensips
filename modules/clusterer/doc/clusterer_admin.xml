@@ -1,0 +1,469 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		<emphasis>Clusterer</emphasis>
+		module stores information about the status of a server belonging 
+                to a cluster. The module ,via an internal API, provides a way to
+                access and manipulate stored data. If this module is used for
+                replication purposes, it tries to send to all available servers
+                necessary information and marks the server, which has modified
+                information (like number of tries, last attempt) and it has an api
+                function that can check the authenticity of an incoming connexion.
+                If the necessary information cannot be sent, the number of tries
+                are increased. If the number of tries does not match the maximum number
+                of tries and the necessary information can be send, the number of tries
+                resets to the default value (0). If the number of tries match the maximum
+                number of allowed tries, the server state is marked as temporary disabled and
+                the number of allowed tries is resetted. After the disabled period has passed
+                the server is up again.
+                The others module can register to the clusterer module, specifying
+                the protocol, timeout interval, callback function, authenticity check
+                enabled/disabled and the cluster id. Clusterer acts like an
+                intermediary and registers to the specified protocol, so that
+                every incoming connexion should arrive first in a clusterer function,
+                which does the necessary checks accordingly to the specified parameters
+                of the register function and calls the registered module callback
+                function. If a timeout interval has passed and a server has not
+                received any packets, the server is marked as temporary disabled
+                and a timeout notification is sent to the registered module.
+                If a packey has arrived for a temporary disabled server, the packet
+                is dropped and a temporary disabled notification is sent to the
+                registered module. After the disabled period ( 2 * timeout ) has passed
+                the server is up again.
+                If the persistent mode is activated, the local data are synchronized
+                with the database.
+	</para>
+	</section>
+        
+        <section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+                    <itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>a database module</emphasis>.
+			</para>
+			</listitem>
+                    </itemizedlist>
+		</para>
+	</section>
+        
+        <section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+        
+        <section>
+	<title>Exported Parameters</title>
+	<section>
+            <title><varname>db_url</varname></title>
+		<para>
+		The database url.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "db_url",
+	"mysql://opensips:opensipsrw@localhost/opensips")
+...
+</programlisting>
+		</example>
+        </section>
+        
+        <section>
+            <title><varname>db_table</varname></title>
+            <para>
+                The name of the table storing the clustering information.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>clusterer</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "db_table",
+	"clusterer")
+...
+</programlisting>
+		</example>
+        </section>
+        
+        <section>
+            <title><varname>server_id</varname></title>
+            <para>
+                It specifies this server id.
+            </para>
+            <para>
+		<emphasis>
+			Default value is 0.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>server_id</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "server_id",
+	2)
+...
+</programlisting>
+		</example>
+        </section>
+        
+        <section>
+            <title><varname>persistent_mode</varname></title>
+            <para>
+                If persistent mode is enabled, it is used a timer for synchronization
+                between information used by the clusterer module and the information
+                stored in the database.
+            </para>
+            <para>
+		<emphasis>
+			Default value is 0 (disabled).
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>persistent_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "persistent_mode",
+	1)
+...
+</programlisting>
+		</example>
+        </section>
+
+        <section>
+            <title><varname>cluster_id_col</varname></title>
+            <para>
+                The name of the column in the db_table where the cluster_id is stored.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>cluster_id</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>cluster_id_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "cluster_id_col",
+	"cluster_id")
+...
+</programlisting>
+		</example>
+        </section>
+        
+        <section>
+            <title><varname>machine_id_col</varname></title>
+            <para>
+                The name of the column in the db_table where the machine_id is stored.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>machine_id</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>machine_id_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "machine_id_col",
+	"machine_id")
+...
+</programlisting>
+		</example>
+        </section>
+
+           <section>
+            <title><varname>clusterer_id_col</varname></title>
+            <para>
+                The name of the column in the db_table where the machine_id is stored.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>clusterer_id</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>clusterer_id_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "clusterer_id_col",
+	"clusterer_id")
+...
+</programlisting>
+		</example>
+        </section>
+        
+        <section>
+            <title><varname>state_col</varname></title>
+            <para>
+                The name of the column in the db_table where the state is stored.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>state</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>state_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "state_col",
+	"state")
+...
+</programlisting>
+		</example>
+        </section>
+        
+        <section>
+            <title><varname>url_col</varname></title>
+            <para>
+                The name of the column in the db_table where the url is stored.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>url</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>url_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "url_col",
+	"url")
+...
+</programlisting>
+		</example>
+        </section>
+        
+        <section>
+            <title><varname>description_col</varname></title>
+            <para>
+                The name of the column in the db_table where the machine's description is stored.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>description</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>description_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "description_col",
+	"description")
+...
+</programlisting>
+		</example>
+        </section>
+        
+        <section>
+            <title><varname>failed_attempts_col</varname></title>
+            <para>
+                The name of the column in the db_table where the maximum allowed number
+                of failed attempts is stored.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>failed_attempts</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>failed_attempts_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "failed_attempts_col",
+	"failed_attempts")
+...
+</programlisting>
+		</example>
+        </section>
+        
+        <section>
+            <title><varname>last_attempt_col</varname></title>
+            <para>
+                The name of the column in the db_table where the unix time of last 
+                last failed attempt is stored.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>last_attempt</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>last_attempt_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "last_attempt_col",
+	"last_attempt")
+...
+</programlisting>
+		</example>
+        </section>
+        
+        <section>
+            <title><varname>duration_col</varname></title>
+            <para>
+                The name of the column in the db_table where the duration of a
+                machine belonging to a certain cluster temporary disabled state
+                is stored.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>duration</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>duration_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "duration_col",
+	"duration")
+...
+</programlisting>
+		</example>
+        </section>
+        
+        <section>
+            <title><varname>no_tries_col</varname></title>
+            <para>
+                The name of the column in the db_table where the number of failed
+                connecting tries is stored.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>no_tries</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>no_tries_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "no_tries_col",
+	"no_tries")
+...
+</programlisting>
+		</example>
+        </section>
+        </section>
+        
+        <section>
+	<title>Exported Functions</title>
+	<para>none</para>        
+        </section>
+        
+        <section>
+	<title>Exported MI Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">clusterer_reload</function>
+		</title>
+		<para>
+                    Reloads data from the clusterer database. If the persistent
+                    mode is disabled the changes made to the the locally stored
+                    data are lost. 
+		</para>
+		<para>
+		Name: <emphasis>clusterer_reload</emphasis>
+		</para>
+		<para>Parameters:<emphasis>none</emphasis> </para>
+ 		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:clusterer_reload
+		_empty_line_
+		</programlisting>
+	</section>
+        
+        <section>
+		<title>
+		<function moreinfo="none">clusterer_list</function>
+		</title>
+		<para>
+                    Lists in a table format the locally stored data.
+		</para>
+		<para>
+		Name: <emphasis>clusterer_list</emphasis>
+		</para>
+		<para>Parameters:<emphasis>none</emphasis> </para>
+ 		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:clusterer_list
+		_empty_line_
+		</programlisting>
+	</section>
+        
+        <section>
+		<title>
+		<function moreinfo="none">clusterer_set_status</function>
+		</title>
+		<para>
+                Sets the status(UP, DOWN) of a machine belonging to a certain cluster.
+                </para>
+		<para>
+		Name: <emphasis>clusterer_set_status</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>cluster_id</emphasis> - indicates the id of the cluster. 
+			</para></listitem>
+                        <listitem><para>
+			<emphasis>machine_id</emphasis> - indicates the id of the machibe. 
+			</para></listitem>
+                        <listitem><para>
+			<emphasis>status</emphasis> - indicates the new status( 0 - permanent down, 1 - up). 
+			</para></listitem>
+                        <listitem><para>
+			<emphasis>protocol</emphasis> - indicates the protocol. 
+			</para></listitem>
+		</itemizedlist>
+ 		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:clusterer_set_status:
+		1
+                2
+                0
+                bin 
+		_empty_line_
+		</programlisting>
+	</section>
+
+        </section>
+        
+</chapter>           

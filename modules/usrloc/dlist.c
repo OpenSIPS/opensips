@@ -894,7 +894,7 @@ int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicate
 		return 0;
 	}
 
-	if (!is_replicated && replication_dests)
+	if (!is_replicated && ul_replicate_cluster)
 		replicate_ucontact_delete(r, c);
 
 	if (exists_ulcb_type(UL_CONTACT_DELETE)) {

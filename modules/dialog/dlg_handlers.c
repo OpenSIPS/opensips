@@ -460,7 +460,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		return;
 	}
 	if (type==TMCB_RESPONSE_OUT) {
-		if (dlg->state == DLG_STATE_CONFIRMED_NA && replication_dests)
+		if (dlg->state == DLG_STATE_CONFIRMED_NA && dialog_replicate_cluster)
 			replicate_dialog_created(dlg);
 		return;
 	}
@@ -903,7 +903,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	types = TMCB_RESPONSE_PRE_OUT|TMCB_RESPONSE_FWDED|TMCB_TRANS_CANCELLED;
 	/* replicate dialogs after the 200 OK was fwded - speed & after all msg
 	 * processing was done ( eg. ACC ) */
-	if (replication_dests)
+	if (dialog_replicate_cluster)
 		types |= TMCB_RESPONSE_OUT;
 
 	if ( d_tmb.register_tmcb( req, t,types,dlg_onreply, 
@@ -1288,7 +1288,7 @@ after_unlock5:
 				if ( dlg_db_mode==DB_MODE_REALTIME )
 					update_dialog_dbinfo(dlg);
 
-				if (replication_dests)
+				if (dialog_replicate_cluster)
 					replicate_dialog_updated(dlg);
 			}
 		}
@@ -1391,7 +1391,7 @@ early_check:
 		if(dlg_db_mode == DB_MODE_REALTIME)
 			update_dialog_dbinfo(dlg);
 
-		if (replication_dests)
+		if (dialog_replicate_cluster)
 			replicate_dialog_updated(dlg);
 	}
 

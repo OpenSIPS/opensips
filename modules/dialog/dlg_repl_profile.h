@@ -35,11 +35,13 @@
 typedef struct repl_prof_count {
 	int counter;
 	time_t update;
+        int machine_id;
+        struct repl_prof_count *next;
 } repl_prof_count_t;
 
 typedef struct repl_prof_novalue {
 	gen_lock_t lock;
-	struct repl_prof_count dsts[0];
+	struct repl_prof_count *dsts;
 } repl_prof_novalue_t;
 
 typedef struct repl_prof_value {
@@ -49,6 +51,8 @@ typedef struct repl_prof_value {
 
 /* profiles functions */
 extern int accept_repl_profiles;
+extern int accept_replicated_profile_timeout;
+extern int repl_prof_auth_check;
 extern int repl_prof_buffer_th;
 extern int repl_prof_utimer;
 extern int repl_prof_timer_check;
@@ -56,31 +60,43 @@ extern int repl_prof_timer_expire;
 int repl_prof_init(void);
 int repl_prof_remove(str *name, str *value);
 int repl_prof_dest(modparam_t type, void *val);
-int replicate_profiles_nr(void);
 int replicate_profiles_count(repl_prof_novalue_t *rp);
-struct mi_root * mi_profiles_bin_status(struct mi_root *, void *);
+
 
 #define REPLICATION_DLG_PROFILE		4
 #define DLG_REPL_PROF_TIMER			10
 #define DLG_REPL_PROF_EXPIRE_TIMER	10
 #define DLG_REPL_PROF_BUF_THRESHOLD	1400
 
+static void free_profile_val_t (repl_prof_value_t *val){
+    repl_prof_count_t *head = val->noval->dsts;
+    repl_prof_count_t *tmp;
+    while(head){
+        tmp = head;
+        head = head->next;
+        shm_free(tmp);
+    }
+    shm_free(val);
+}
+
+static inline void free_profile_val(void *val){
+    free_profile_val_t(( repl_prof_value_t*) val);
+}
+
+
 static inline repl_prof_novalue_t *repl_prof_allocate(void)
 {
 	repl_prof_novalue_t *rp;
-	int repl_len = replicate_profiles_nr();
 
-	if (!repl_len)
-		return NULL;
-	rp = shm_malloc(sizeof(repl_prof_novalue_t) +
-			repl_len * sizeof(repl_prof_count_t));
+	rp = shm_malloc(sizeof(repl_prof_novalue_t));
 	if (!rp) {
 		/* if there is no more shm memory, there's not much that you can do
 		 * anyway */
 		LM_WARN("no more shm mem\n");
 		return NULL;
 	}
-	memset(rp, 0, sizeof(repl_prof_novalue_t) + repl_len * sizeof(repl_prof_count_t));
+
+	memset(rp, 0, sizeof(repl_prof_novalue_t));
 	lock_init(&rp->lock);
 
 	return rp;

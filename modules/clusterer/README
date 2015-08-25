@@ -1,0 +1,495 @@
+event_flatstore Module
+
+Marius Cristian Eseanu
+
+   OpenSIPS Solutions
+
+   Copyright © 2015 www.opensips-solutions.com
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. db_url
+              1.3.2. db_table
+              1.3.3. server_id
+              1.3.4. persistent_mode
+              1.3.5. cluster_id_col
+              1.3.6. machine_id_col
+              1.3.7. clusterer_id_col
+              1.3.8. state_col
+              1.3.9. url_col
+              1.3.10. description_col
+              1.3.11. failed_attempts_col
+              1.3.12. last_attempt_col
+              1.3.13. duration_col
+              1.3.14. no_tries_col
+
+        1.4. Exported Functions
+        1.5. Exported MI Functions
+
+              1.5.1. clusterer_reload
+              1.5.2. clusterer_list
+              1.5.3. clusterer_set_status
+
+   2. Developer Guide
+
+        2.1. Available Functions
+
+              2.1.1. get_nodes(cluster_id, proto)
+              2.1.2. free_nodes(nodes)
+              2.1.3. set_state(cluster_id, machine_id, state,
+                      proto)
+
+              2.1.4. check(cluster_id, sockaddr, server_id, proto)
+
+              2.1.5. get_my_id()
+              2.1.6. send_to(cluster_id, protocol)
+              2.1.7. register_module(module_name, protocol,
+                      callback_function, timeout, auth_check,
+                      cluster_id)
+
+   List of Examples
+
+   1.1. Set db_url parameter
+   1.2. Set db_table parameter
+   1.3. Set server_id parameter
+   1.4. Set persistent_mode parameter
+   1.5. Set cluster_id_col parameter
+   1.6. Set machine_id_col parameter
+   1.7. Set clusterer_id_col parameter
+   1.8. Set state_col parameter
+   1.9. Set url_col parameter
+   1.10. Set description_col parameter
+   1.11. Set failed_attempts_col parameter
+   1.12. Set last_attempt_col parameter
+   1.13. Set duration_col parameter
+   1.14. Set no_tries_col parameter
+   2.1. get_nodes usage
+   2.2. free_nodes usage
+   2.3. set_state usage
+   2.4. check usage
+   2.5. get_my_id usage
+   2.6. send_to usage
+   2.7. register_module usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   Clusterer module stores information about the status of a
+   server belonging to a cluster. The module ,via an internal API,
+   provides a way to access and manipulate stored data. If this
+   module is used for replication purposes, it tries to send to
+   all available servers necessary information and marks the
+   server, which has modified information (like number of tries,
+   last attempt) and it has an api function that can check the
+   authenticity of an incoming connexion. If the necessary
+   information cannot be sent, the number of tries are increased.
+   If the number of tries does not match the maximum number of
+   tries and the necessary information can be send, the number of
+   tries resets to the default value (0). If the number of tries
+   match the maximum number of allowed tries, the server state is
+   marked as temporary disabled and the number of allowed tries is
+   resetted. After the disabled period has passed the server is up
+   again. The others module can register to the clusterer module,
+   specifying the protocol, timeout interval, callback function,
+   authenticity check enabled/disabled and the cluster id.
+   Clusterer acts like an intermediary and registers to the
+   specified protocol, so that every incoming connexion should
+   arrive first in a clusterer function, which does the necessary
+   checks accordingly to the specified parameters of the register
+   function and calls the registered module callback function. If
+   a timeout interval has passed and a server has not received any
+   packets, the server is marked as temporary disabled and a
+   timeout notification is sent to the registered module. If a
+   packey has arrived for a temporary disabled server, the packet
+   is dropped and a temporary disabled notification is sent to the
+   registered module. After the disabled period ( 2 * timeout )
+   has passed the server is up again. If the persistent mode is
+   activated, the local data are synchronized with the database.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * a database module.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported Parameters
+
+1.3.1. db_url
+
+   The database url.
+
+   Default value is “NULL”.
+
+   Example 1.1. Set db_url parameter
+...
+modparam("clusterer", "db_url",
+        "mysql://opensips:opensipsrw@localhost/opensips")
+...
+
+1.3.2. db_table
+
+   The name of the table storing the clustering information.
+
+   Default value is “clusterer”.
+
+   Example 1.2. Set db_table parameter
+...
+modparam("clusterer", "db_table",
+        "clusterer")
+...
+
+1.3.3. server_id
+
+   It specifies this server id.
+
+   Default value is 0.
+
+   Example 1.3. Set server_id parameter
+...
+modparam("clusterer", "server_id",
+        2)
+...
+
+1.3.4. persistent_mode
+
+   If persistent mode is enabled, it is used a timer for
+   synchronization between information used by the clusterer
+   module and the information stored in the database.
+
+   Default value is 0 (disabled).
+
+   Example 1.4. Set persistent_mode parameter
+...
+modparam("clusterer", "persistent_mode",
+        1)
+...
+
+1.3.5. cluster_id_col
+
+   The name of the column in the db_table where the cluster_id is
+   stored.
+
+   Default value is “cluster_id”.
+
+   Example 1.5. Set cluster_id_col parameter
+...
+modparam("clusterer", "cluster_id_col",
+        "cluster_id")
+...
+
+1.3.6. machine_id_col
+
+   The name of the column in the db_table where the machine_id is
+   stored.
+
+   Default value is “machine_id”.
+
+   Example 1.6. Set machine_id_col parameter
+...
+modparam("clusterer", "machine_id_col",
+        "machine_id")
+...
+
+1.3.7. clusterer_id_col
+
+   The name of the column in the db_table where the machine_id is
+   stored.
+
+   Default value is “clusterer_id”.
+
+   Example 1.7. Set clusterer_id_col parameter
+...
+modparam("clusterer", "clusterer_id_col",
+        "clusterer_id")
+...
+
+1.3.8. state_col
+
+   The name of the column in the db_table where the state is
+   stored.
+
+   Default value is “state”.
+
+   Example 1.8. Set state_col parameter
+...
+modparam("clusterer", "state_col",
+        "state")
+...
+
+1.3.9. url_col
+
+   The name of the column in the db_table where the url is stored.
+
+   Default value is “url”.
+
+   Example 1.9. Set url_col parameter
+...
+modparam("clusterer", "url_col",
+        "url")
+...
+
+1.3.10. description_col
+
+   The name of the column in the db_table where the machine's
+   description is stored.
+
+   Default value is “description”.
+
+   Example 1.10. Set description_col parameter
+...
+modparam("clusterer", "description_col",
+        "description")
+...
+
+1.3.11. failed_attempts_col
+
+   The name of the column in the db_table where the maximum
+   allowed number of failed attempts is stored.
+
+   Default value is “failed_attempts”.
+
+   Example 1.11. Set failed_attempts_col parameter
+...
+modparam("clusterer", "failed_attempts_col",
+        "failed_attempts")
+...
+
+1.3.12. last_attempt_col
+
+   The name of the column in the db_table where the unix time of
+   last last failed attempt is stored.
+
+   Default value is “last_attempt”.
+
+   Example 1.12. Set last_attempt_col parameter
+...
+modparam("clusterer", "last_attempt_col",
+        "last_attempt")
+...
+
+1.3.13. duration_col
+
+   The name of the column in the db_table where the duration of a
+   machine belonging to a certain cluster temporary disabled state
+   is stored.
+
+   Default value is “duration”.
+
+   Example 1.13. Set duration_col parameter
+...
+modparam("clusterer", "duration_col",
+        "duration")
+...
+
+1.3.14. no_tries_col
+
+   The name of the column in the db_table where the number of
+   failed connecting tries is stored.
+
+   Default value is “no_tries”.
+
+   Example 1.14. Set no_tries_col parameter
+...
+modparam("clusterer", "no_tries_col",
+        "no_tries")
+...
+
+1.4. Exported Functions
+
+   none
+
+1.5. Exported MI Functions
+
+1.5.1.  clusterer_reload
+
+   Reloads data from the clusterer database. If the persistent
+   mode is disabled the changes made to the the locally stored
+   data are lost.
+
+   Name: clusterer_reload
+
+   Parameters:none
+
+   MI FIFO Command Format:
+                :clusterer_reload
+                _empty_line_
+
+1.5.2.  clusterer_list
+
+   Lists in a table format the locally stored data.
+
+   Name: clusterer_list
+
+   Parameters:none
+
+   MI FIFO Command Format:
+                :clusterer_list
+                _empty_line_
+
+1.5.3.  clusterer_set_status
+
+   Sets the status(UP, DOWN) of a machine belonging to a certain
+   cluster.
+
+   Name: clusterer_set_status
+
+   Parameters:
+     * cluster_id - indicates the id of the cluster.
+     * machine_id - indicates the id of the machibe.
+     * status - indicates the new status( 0 - permanent down, 1 -
+       up).
+     * protocol - indicates the protocol.
+
+   MI FIFO Command Format:
+                :clusterer_set_status:
+                1
+                2
+                0
+                bin
+                _empty_line_
+
+Chapter 2. Developer Guide
+
+2.1. Available Functions
+
+2.1.1.  get_nodes(cluster_id, proto)
+
+   The function will return all a copy of all the needed
+   information from the nodes (machine_id, state, description,
+   sock address) stored in shm, whos state is up(1) and have a
+   certain cluster_id and protocol.
+
+   This function is usually used for replication purposes.
+
+   This function returns NULL on error.
+
+   Meaning of the parameters is as follows:
+     * int cluster_id - the cluster id
+     * int proto - the protocol
+
+   Example 2.1. get_nodes usage
+...
+get_nodes(cluster_id, proto);
+...
+
+2.1.2.  free_nodes(nodes)
+
+   This function will free the allocated data for the copy.
+
+   Meaning of the parameters is as follows:
+     * clusterer_node_t *nodes - the data returned by the
+       get_nodes function
+
+   Example 2.2. free_nodes usage
+...
+free_nodes(nodes);
+...
+
+2.1.3.  set_state(cluster_id, machine_id, state, proto)
+
+   The function sets the state of a machine belonging to a certain
+   cluster, which have the specified protocol.
+
+   This function is usually used for replication purposes.
+
+   Meaning of the parameters is as follows:
+     * int cluster_id - cluster_id
+     * int machine_id - machine_id
+     * int state - the server state
+     * int proto - protocol
+
+   Example 2.3. set_state usage
+...
+set_state(1,1,2,PROTO_BIN);
+...
+
+2.1.4.  check(cluster_id, sockaddr, server_id, proto)
+
+   This function is used to check if the source of a receiving
+   packet is known.
+
+   It returns 1 if the source is known, else it returns 0.
+
+   Meaning of the parameters is as follows:
+     * int cluster_id - cluster id
+     * union sockaddr_union* sockaddr - incoming connexion socket
+       address
+     * int server_id - incoming connexion server_id
+     * int proto - protocol
+
+   Example 2.4. check usage
+...
+check(1, sockaddr, 2, PROTO_BIN)
+...
+
+2.1.5.  get_my_id()
+
+   This function will return the server id's.
+
+   Example 2.5. get_my_id usage
+...
+get_my_id()
+...
+
+2.1.6.  send_to(cluster_id, protocol)
+
+   This function will replicate information to the nodes belonging
+   to a cluster_id that have a specific protocol.
+
+   Meaning of the parameters is as follows:
+     * int cluster_id - cluster_id
+     * int protocol - protocol
+
+   Example 2.6. send_to usage
+...
+send_to(cluster_id, protocol)
+...
+
+2.1.7.  register_module(module_name, protocol, callback_function,
+timeout, auth_check, cluster_id)
+
+   This function registers a module to a certain protocol. It acts
+   like an intermediary: when a valid packet has arrived, if the
+   auth_check parameter is specified then it is checked for
+   authenticity. After that, the timestamps are updated and the
+   callback function from the registered module is called. The
+   clusterer module checks for every registered module if the
+   duration between the last receiving packet and the current time
+   is greater than the module specified timeout. If it is, the
+   servers are temporary disabled for a period of timestamp * 2.
+   If any packets are received for the temporary disabled servers
+   the registered module is notified.
+
+   Meaning of the parameters is as follows:
+     * char *module_name - module name
+     * int protocol - protocol
+     * void (*callback_function)(int, struct receive_info *, int)
+       - the registered module callback function
+     * int timeout - timeput
+     * int auth_check - 0 if the authentication check is disabled,
+       1 if the authentication check is enabled
+     * int cluster_id - cluster_id
+
+   Example 2.7. register_module usage
+...
+register_module(dialog, PROTO_BIN, cb, timeout, auth_check, cluster_id)
+...
