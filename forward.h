@@ -94,6 +94,9 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 		return -1;
 	}
 
+	out_buff.len = len;
+	out_buff.s = buf;
+
 	/* determin the send socket */
 	if (send_sock==0)
 		send_sock=get_send_socket(0, to, proto);
@@ -102,13 +105,11 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 		goto error;
 	}
 
-	out_buff.len = len;
-	out_buff.s = buf;
-
 	/* the raw processing callbacks are free to change whatever inside
 	 * the buffer further use out_buff.s and at the end try to free out_buff.s
 	 * if changed by callbacks */
-	run_post_raw_processing_cb(POST_RAW_PROCESSING,&out_buff, msg);
+	if (proto != PROTO_BIN)
+		run_post_raw_processing_cb(POST_RAW_PROCESSING,&out_buff, msg);
 
 	/* update the length for further processing */
 	len = out_buff.len;
