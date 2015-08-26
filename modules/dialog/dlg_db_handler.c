@@ -1615,7 +1615,7 @@ static int sync_dlg_db_mem(void)
 					 * and replace with new one */
 					if (!VAL_NULL(values+18))
 						read_dialog_vars( VAL_STR(values+18).s,
-							VAL_STR(values+18).len, known_dlg);
+							strlen(VAL_STR(values+18).s), known_dlg);
 
 					/* profiles - do not insert into a profile
 					 * is dlg is already in that profile*/
