@@ -222,12 +222,24 @@ static module_dependency_t *get_deps_db_mode(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
 }
 
+static module_dependency_t *get_deps_clusterer(param_export_t *param)
+{
+	int cluster_id = *(int *)param->param_pointer;
+
+	if (cluster_id <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer", DEP_ABORT);
+}
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "db_mode", get_deps_db_mode },
+		{ "db_mode",			get_deps_db_mode	},
+		{ "accept_replicated_contacts",	get_deps_clusterer	},
+		{ "replicate_contacts_to",	get_deps_clusterer	},
 		{ NULL, NULL },
 	},
 };
@@ -500,47 +512,3 @@ static void timer(unsigned int ticks, void* param)
 	if (sync_lock)
 		lock_stop_read(sync_lock);
 }
-
-/*
-static int add_replication_dest(modparam_t type, void *val)
-{
-	struct replication_dest *rd;
-	char *host;
-	int hlen, port;
-	int proto;
-	struct hostent *he;
-	str st;
-
-	rd = pkg_malloc(sizeof *rd);
-	memset(rd, 0, sizeof *rd);
-
-	if (parse_phostport(val, strlen(val), &host, &hlen, &port, &proto) < 0) {
-		LM_ERR("bad replication destination IP: '%s'!\n", (char *)val);
-		return -1;
-	}
-
-	if (proto == PROTO_NONE)
-		proto = PROTO_UDP;
-
-	if (proto != PROTO_UDP) {
-		LM_ERR("usrloc replication only supports UDP packets!\n");
-		return -1;
-	}
-
-	st.s = host;
-	st.len = hlen;
-	he = sip_resolvehost(&st, (unsigned short *)&port,
-	                          (unsigned short *)&proto, 0, 0);
-	if (!he) {
-		LM_ERR("cannot resolve host: %.*s\n", hlen, host);
-		return -1;
-	}
-
-	hostent2su(&rd->to, he, 0, port);
-
-	rd->next = replication_dests;
-	replication_dests = rd;
-
-	return 1;
-}
-*/
