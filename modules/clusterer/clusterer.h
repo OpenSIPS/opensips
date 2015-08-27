@@ -19,7 +19,7 @@ extern str cluster_id_col;
 extern str machine_id_col;
 extern int server_id;
 extern int persistent_state;
-extern str clusterer_id_col;
+extern str id_col;
 extern str last_attempt_col;
 extern str duration_col;
 extern str failed_attempts_col;
@@ -53,7 +53,7 @@ struct table_entry_value_{
     /* machine id */
     int machine_id;
     /* cluster id */
-    int clusterer_id;
+    int id;
     /* state */
     int state;
     /* dirty bit */

@@ -89,7 +89,7 @@ str db_table = str_init("clusterer");
 /* db_table columns */
 
 /* PK column */
-str clusterer_id_col = str_init("clusterer_id");
+str id_col = str_init("id");
 str cluster_id_col = str_init("cluster_id");
 str machine_id_col = str_init("machine_id");
 str url_col = str_init("url");
@@ -203,7 +203,7 @@ static param_export_t params[] = {
 	{"persistent_state",	INT_PARAM,	&persistent_state	},
 	{"cluster_id_col",	STR_PARAM,	&cluster_id_col.s	},
 	{"machine_id_col",	STR_PARAM,	&machine_id_col.s	},
-	{"clusterer_id_col",	INT_PARAM,	&clusterer_id_col.s	},
+	{"clusterer_id_col",	INT_PARAM,	&id_col.s	},
 	{"state_col",		STR_PARAM,	&state_col.s		},
 	{"url_col",		STR_PARAM,	&url_col.s		},
 	{"description_col",	STR_PARAM,	&description_col.s	},
@@ -224,6 +224,16 @@ static mi_export_t mi_cmds[] = {
 	{0, 0, 0, 0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /**
  * module exports
  */
@@ -232,7 +242,7 @@ struct module_exports exports= {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,            /* OpenSIPS module dependencies */
 	cmds,							/* exported functions */
 	0,							/* exported async functions */
 	params,							/* exported parameters */
@@ -267,7 +277,7 @@ static int mod_init(void)
 	db_table.len = strlen(db_table.s);
 	cluster_id_col.len = strlen(cluster_id_col.s);
 	machine_id_col.len = strlen(machine_id_col.s);
-	clusterer_id_col.len = strlen(clusterer_id_col.s);
+	id_col.len = strlen(id_col.s);
 	state_col.len = strlen(state_col.s);
 	url_col.len = strlen(url_col.s);
 	description_col.len = strlen(description_col.s);
@@ -393,7 +403,7 @@ static void update_nodes_handler(unsigned int ticks, void *param)
 				head = value->in_timestamps;
 				while (head != NULL) {
 					if (head->state == 1 && (ctime - head->timestamp) > head->up->timeout) {
-						head->up->cb(SERVER_TIMEOUT, NULL, value->clusterer_id);
+						head->up->cb(SERVER_TIMEOUT, NULL, value->id);
 						head->timestamp = head->timestamp + head->up->timeout;
 						head->state = 2;
 					}
@@ -449,7 +459,7 @@ static void update_db_handler(unsigned int ticks, void* param)
 	val_set[2].type = DB_BIGINT;
 	val_set[2].nul = 0;
 
-	key_cmp = &clusterer_id_col;
+	key_cmp = &id_col;
 
 	key_set[0] = &state_col;
 	key_set[1] = &no_tries_col;
@@ -468,9 +478,9 @@ static void update_db_handler(unsigned int ticks, void* param)
 			while (value != NULL) {
 				if (value->dirty_bit == 1) {
 					LM_DBG("setting row with primary key %d the status %d\n",
-						value->clusterer_id, value->state);
+						value->id, value->state);
 
-					val_cmp.val.int_val = value->clusterer_id;
+					val_cmp.val.int_val = value->id;
 					val_set[0].val.int_val = value->state;
 					val_set[1].val.int_val = value->no_tries;
 					val_set[2].val.int_val = value->last_attempt;
@@ -587,7 +597,7 @@ int add_info(table_entry_t **data, int *int_vals, unsigned long last_attempt, ch
 	}
 
 	value->machine_id = int_vals[INT_VALS_MACHINE_ID_COL];
-	value->clusterer_id = int_vals[INT_VALS_CLUSTERER_ID_COL];
+	value->id = int_vals[INT_VALS_CLUSTERER_ID_COL];
 	value->state = int_vals[INT_VALS_STATE_COL];
 	value->last_attempt = last_attempt;
 	value->duration = int_vals[INT_VALS_DURATION_COL];
@@ -703,7 +713,7 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 	columns[2] = &state_col;
 	columns[3] = &description_col;
 	columns[4] = &url_col;
-	columns[5] = &clusterer_id_col;
+	columns[5] = &id_col;
 	columns[6] = &last_attempt_col;
 	columns[7] = &failed_attempts_col;
 	columns[8] = &no_tries_col;
@@ -842,7 +852,7 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 			check_val(url_col, ROW_VALUES(row) + 4, DB_STRING, 1, 1);
 			str_vals[STR_VALS_URL_COL] = (char*) VAL_STRING(ROW_VALUES(row) + 4);
 			/* CLUSTERER_ID column */
-			check_val(clusterer_id_col, ROW_VALUES(row) + 5, DB_INT, 1, 0);
+			check_val(id_col, ROW_VALUES(row) + 5, DB_INT, 1, 0);
 			int_vals[INT_VALS_CLUSTERER_ID_COL] = VAL_INT(ROW_VALUES(row) + 5);
 			/* LAST_ATTEMPT column */
 			check_val(last_attempt_col, ROW_VALUES(row) + 6, DB_BIGINT, 1, 0);
@@ -1126,7 +1136,7 @@ static int set_in_timestamp(struct module_list *module, int machine_id)
 			while (head != NULL) {
 				if (head->up == module) {
 					if (head->state == 2) {
-						LM_DBG("state for node with clusterer_id %d is 2\n", values->clusterer_id);
+						LM_DBG("state for node with clusterer_id %d is 2\n", values->id);
 						is_ok = -1;
 					} else
 						head->timestamp = ctime;
@@ -1280,7 +1290,7 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 	for (head_table = *tdata; head_table != NULL; head_table = head_table->next) {
 		for (info = head_table->info; info != NULL; info = info->next) {
 			for (value = info->value; value != NULL; value = value->next) {
-				clusterer_id.s = int2str(value->clusterer_id, &clusterer_id.len);
+				clusterer_id.s = int2str(value->id, &clusterer_id.len);
 				node = add_mi_node_child(root, MI_DUP_VALUE, "Clusterer ID", 12,
 					clusterer_id.s, clusterer_id.len);
 				if (node == NULL) goto error;
@@ -1596,7 +1606,7 @@ static int cl_register_module(char *mod_name, int proto, void (*cb)(int, struct 
 	int timeout, int auth_check, int accept_cluster_id)
 {
 
-	LM_ERR("register module %s\n", mod_name);
+	LM_DBG("register module %s\n", mod_name);
 	struct module_list *new_module;
 
 	if (auth_check && !accept_cluster_id) {
@@ -1621,7 +1631,6 @@ static int cl_register_module(char *mod_name, int proto, void (*cb)(int, struct 
 
 	switch (proto) {
 	case PROTO_BIN:
-		LM_ERR("proto_bin\n");
 		bin_register_cb(mod_name, bin_receive_packets, new_module);
 		break;
 	default:

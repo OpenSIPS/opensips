@@ -1,0 +1,10 @@
+METADATA_COLUMNS
+id(int) cluster_id(int) machine_id(int) url(str) state(int) last_attempt(int) failed_attempts(int) no_tries(int) duration(int) description(str)
+METADATA_KEY
+
+METADATA_READONLY
+0
+METADATA_LOGFLAGS
+0
+METADATA_DEFAULTS
+NIL|NIL|NIL|NIL|1|0|3|0|30|NIL

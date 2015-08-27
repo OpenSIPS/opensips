@@ -38,6 +38,8 @@ cc_flows|
 cc_flows|1
 closeddial|
 closeddial|1
+METADATA_DEFAULTS
+NIL|NIL|NIL|NIL|1|0|3|0|30|NIL
 cpl|
 cpl|2
 dbaliases|
