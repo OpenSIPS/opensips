@@ -357,6 +357,16 @@ static module_dependency_t *get_deps_cachedb_url(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_CACHEDB, NULL, DEP_ABORT);
 }
 
+static module_dependency_t *get_deps_clusterer(param_export_t *param)
+{
+	int cluster_id = *(int *)param->param_pointer;
+
+	if (cluster_id <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer", DEP_ABORT);
+}
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
@@ -364,8 +374,12 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "db_mode",     get_deps_db_mode     },
-		{ "cachedb_url", get_deps_cachedb_url },
+		{ "db_mode",			get_deps_db_mode	},
+		{ "cachedb_url",		get_deps_cachedb_url	},
+		{ "accept_replicated_dialogs",	get_deps_clusterer	},
+		{ "replicate_dialogs_to",	get_deps_clusterer	},
+		{ "accept_replicated_profiles",	get_deps_clusterer	},
+		{ "replicate_profiles_to",	get_deps_clusterer	},
 		{ NULL, NULL },
 	},
 };
