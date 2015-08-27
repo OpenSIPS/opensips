@@ -31,4 +31,4 @@ addons:
             - libncurses5-dev
             - libjson0-dev
             - libmemcache-dev
-script: make exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase cachedb_mongodb" all
+script: FASTER=1 make -j exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase cachedb_mongodb" all
