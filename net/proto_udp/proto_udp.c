@@ -213,7 +213,7 @@ again:
 	if (n==-1){
 		LM_ERR("sendto(sock,%p,%d,0,%p,%d): %s(%d)\n", buf,len,to,tolen,
 				strerror(errno),errno);
-		if (errno==EINTR) goto again;
+		if (errno==EINTR || errno==EAGAIN) goto again;
 		if (errno==EINVAL) {
 			LM_CRIT("invalid sendtoparameters\n"
 			"one possible reason is the server is bound to localhost and\n"
