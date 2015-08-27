@@ -50,11 +50,6 @@ Files: cachedb/*
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+
 
-Files: cfg.tab.c
-  cfg.tab.h
-Copyright: 1984, 1989, 1990, 2000-2011, Free Software Foundation, Inc
-License: GPL-3+
-
 Files: crc.c
 Copyright: 2001-2003, FhG Fokus
   1986, Gary S. Brown.
