@@ -55,10 +55,23 @@
 #endif
 
 /*! The actual lock */
+#ifndef DBG_LOCK
 typedef  volatile int fl_lock_t;
+#else
+typedef struct fl_lock_t_{
+	volatile int lock;
+	char* file;
+	char* func;
+	unsigned long line;
+} fl_lock_t;
+#endif
 
 /*! Initialize a lock, zero is unlocked. */
-#define init_lock( l ) (l)=0
+#ifndef DBG_LOCK
+	#define init_lock( l ) (l)=0
+#else 
+	#define init_lock( l ) (l).lock = 0
+#endif
 
 
 
@@ -68,7 +81,11 @@ typedef  volatile int fl_lock_t;
  * \return 1 if the lock is held by someone else, 0 otherwise
  * \see get_lock
  */
+#ifndef DBG_LOCK
 inline static int tsl(fl_lock_t* lock)
+#else
+inline static int tsl(volatile int* lock)
+#endif
 {
 	int val;
 
@@ -167,8 +184,15 @@ inline static int tsl(fl_lock_t* lock)
  * \param lock the lock that should be set
  * \see tsl
  */
+#ifndef DBG_LOCK
 inline static void get_lock(fl_lock_t* lock)
 {
+#else
+inline static void get_lock(fl_lock_t* lock_struct,  const char* file, const char* func, unsigned int line)
+{
+	volatile int *lock = &lock_struct->lock;
+#endif
+
 #ifdef ADAPTIVE_WAIT
 	int i=ADAPTIVE_WAIT_LOOPS;
 #endif
@@ -182,6 +206,13 @@ inline static void get_lock(fl_lock_t* lock)
 		sched_yield();
 #endif
 	}
+
+#ifdef DBG_LOCK
+	lock_struct->file = (char*)file;
+	lock_struct->func = (char*)func;
+	lock_struct->line = line;
+#endif
+
 }
 
 
@@ -189,8 +220,18 @@ inline static void get_lock(fl_lock_t* lock)
  * Release a lock
  * \param lock the lock that should be released
  */
+#ifndef DBG_LOCK
 inline static void release_lock(fl_lock_t* lock)
 {
+#else 
+inline static void release_lock(fl_lock_t* lock_struct)
+{
+	volatile int *lock = &lock_struct->lock;
+	lock_struct->file = 0;
+	lock_struct->func = 0;
+	lock_struct->line = 0;
+#endif
+
 #if defined(__CPU_i386) || defined(__CPU_x86_64)
 /*	char val;
 	val=0; */
@@ -200,9 +241,9 @@ inline static void release_lock(fl_lock_t* lock)
 	);
 #elif defined(__CPU_sparc64) || defined(__CPU_sparc)
 	asm volatile(
-#ifndef NOSMP
-			"membar #LoadStore | #StoreStore \n\t" /*is this really needed?*/
-#endif
+	#ifndef NOSMP
+				"membar #LoadStore | #StoreStore \n\t" /*is this really needed?*/
+	#endif
 			"stb %%g0, [%0] \n\t"
 			: /*no output*/
 			: "r" (lock)
@@ -245,6 +286,7 @@ inline static void release_lock(fl_lock_t* lock)
 #else
 #error "unknown architecture"
 #endif
+
 }
 
 
