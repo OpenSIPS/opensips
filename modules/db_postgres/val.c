@@ -123,6 +123,7 @@ int db_postgres_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 	case DB_STRING:
 		LM_DBG("converting STRING [%s]\n", _s);
 		VAL_STRING(_v) = _s;
+		VAL_STR(_v).len = _l; // Set the len field so that DB_STRING type could be used as DB_STR type when needed
 		VAL_TYPE(_v) = DB_STRING;
 		VAL_FREE(_v) = 1;
 		return 0;
