@@ -33,7 +33,7 @@
  */
 
 
-#include "dlist.h"
+#include <inttypes.h>
 #include <stdlib.h>	       /* abort */
 #include <string.h>            /* strlen, memcmp */
 #include <stdio.h>             /* printf */
@@ -45,6 +45,7 @@
 #include "../../socket_info.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
+#include "dlist.h"
 #include "udomain.h"           /* new_udomain, free_udomain */
 #include "utime.h"
 #include "ul_mod.h"
@@ -890,7 +891,8 @@ int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicate
 
 	c = get_ucontact_from_id(d, contact_id, &r);
 	if (c == NULL) {
-		LM_WARN("contact with contact id %llu not found\n", contact_id);
+		LM_WARN("contact with contact id [%" PRIu64 "] not found\n",
+			contact_id);
 		return 0;
 	}
 
