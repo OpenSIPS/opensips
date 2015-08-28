@@ -1413,10 +1413,6 @@ Files: scripts/dbtextdb/*
 Copyright: 2008 Google Inc
 License: GPL-2+
 
-Files: regexp.c regexp.h serialize.c serialize.h
-Copyright: 2001-2008, Juha Heinanen
-License: GPL-2+
-
 Files: packaging/debian/*
 Copyright: 2002 Andrei Pelinescu-Onciul <pelinescu-onciul@fokus.fraunhofer.de>
  2006 Julien Blache <jblache@debian.org>
