@@ -578,7 +578,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			/* profiles */
 			if (!VAL_NULL(values+19))
 				read_dialog_profiles( VAL_STR(values+19).s,
-					strlen(VAL_STR(values+19).s), dlg,0);
+					VAL_STR(values+19).len, dlg,0);
 
 
 			/* script flags */
@@ -1383,7 +1383,7 @@ static int sync_dlg_db_mem(void)
 				/* profiles */
 				if (!VAL_NULL(values+19))
 					read_dialog_profiles( VAL_STR(values+19).s,
-						strlen(VAL_STR(values+19).s), dlg,0);
+						VAL_STR(values+19).len, dlg,0);
 
 
 				/* script flags */
@@ -1544,7 +1544,7 @@ static int sync_dlg_db_mem(void)
 					 * is dlg is already in that profile*/
 					if (!VAL_NULL(values+19))
 						read_dialog_profiles( VAL_STR(values+19).s,
-							strlen(VAL_STR(values+19).s), known_dlg,1);
+							VAL_STR(values+19).len, known_dlg,1);
 
 					dlg_unlock( d_table, d_entry);
 				} else {
@@ -1621,7 +1621,7 @@ static int sync_dlg_db_mem(void)
 					 * is dlg is already in that profile*/
 					if (!VAL_NULL(values+19))
 						read_dialog_profiles( VAL_STR(values+19).s,
-							strlen(VAL_STR(values+19).s), known_dlg,1);
+							VAL_STR(values+19).len, known_dlg,1);
 
 					dlg_unlock( d_table, d_entry);
 				}
