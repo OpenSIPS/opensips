@@ -573,7 +573,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			/* script variables */
 			if (!VAL_NULL(values+18))
 				read_dialog_vars( VAL_STR(values+18).s,
-					strlen(VAL_STR(values+18).s), dlg);
+					VAL_STR(values+18).len, dlg);
 
 			/* profiles */
 			if (!VAL_NULL(values+19))
@@ -1378,7 +1378,7 @@ static int sync_dlg_db_mem(void)
 				/* script variables */
 				if (!VAL_NULL(values+18))
 					read_dialog_vars( VAL_STR(values+18).s,
-						strlen(VAL_STR(values+18).s), dlg);
+						VAL_STR(values+18).len, dlg);
 
 				/* profiles */
 				if (!VAL_NULL(values+19))
@@ -1536,7 +1536,7 @@ static int sync_dlg_db_mem(void)
 					 * and replace with new one */
 					if (!VAL_NULL(values+18))
 						read_dialog_vars( VAL_STR(values+18).s,
-							strlen(VAL_STR(values+18).s), known_dlg);
+							VAL_STR(values+18).len, known_dlg);
 
 					/* skip flags - keep what we have - anyway can't tell which is new */
 
@@ -1615,7 +1615,7 @@ static int sync_dlg_db_mem(void)
 					 * and replace with new one */
 					if (!VAL_NULL(values+18))
 						read_dialog_vars( VAL_STR(values+18).s,
-							strlen(VAL_STR(values+18).s), known_dlg);
+							VAL_STR(values+18).len, known_dlg);
 
 					/* profiles - do not insert into a profile
 					 * is dlg is already in that profile*/
