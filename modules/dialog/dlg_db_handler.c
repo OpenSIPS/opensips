@@ -44,7 +44,6 @@
 #include "dlg_cb.h"
 #include "dlg_profile.h"
 
-
 str call_id_column			=	str_init(CALL_ID_COL);
 str from_uri_column			=	str_init(FROM_URI_COL);
 str from_tag_column			=	str_init(FROM_TAG_COL);
@@ -84,6 +83,8 @@ extern stat_var *active_dlgs;
 extern stat_var *early_dlgs;
 
 static inline void set_final_update_cols(db_val_t *, struct dlg_cell *, int);
+static int decode_string(str *sin, str *sout);
+static int encode_string(str *dst, str *src);
 
 #define SET_INT_VALUE(_val, _int)\
 	do{\
@@ -349,9 +350,20 @@ static void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 	str name, val;
 	char *end;
 	char *p;
+	str input;
+	str output = {NULL,0};
+	input.s = b;
+	input.len = l;
 
-	end = b + l;
-	p = b;
+	output.s = pkg_malloc(l *sizeof(char));
+	if (output.s == NULL){
+		LM_ERR("no more pkg memory\n");
+		return;
+	}
+	decode_string(&input,&output);
+
+	end = output.s + output.len;
+	p = output.s;
 	do {
 		/* read a new pair from input string */
 		p = read_pair( p, end, &name, &val);
@@ -366,6 +378,7 @@ static void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 			LM_ERR("failed to add val, skipping...\n");
 	} while(p!=end);
 
+	pkg_free(output.s);
 }
 
 
@@ -378,9 +391,20 @@ static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double
 	char *p,*s,*e;
 	char bk;
 	int use_cached;
+	str input;
+	str output = {NULL,0};
+	input.s = b;
+	input.len = l;
 
-	end = b + l;
-	p = b;
+	output.s = pkg_malloc(l *sizeof(char));
+	if (output.s == NULL){
+		LM_ERR("no more pkg memory\n");
+		return;
+	}
+	decode_string(&input,&output);
+
+	end = output.s + output.len;
+	p = output.s;
 	current_dlg_pointer = dlg;
 
 	do {
@@ -447,6 +471,8 @@ static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double
 	} while(p!=end);
 
 	current_dlg_pointer = NULL;
+
+	pkg_free(output.s);
 }
 
 
@@ -898,6 +924,77 @@ static inline unsigned int write_pair( char *b, str *name, str *name_suffix,
 	return j;
 }
 
+static int decode_string(str *sin, str *sout)
+{
+	char *p, c, *at;
+
+	int j = 0;
+
+	if (sin == NULL || sout == NULL || sin->s == NULL || sout->s == NULL ||
+		sin->len == 0)
+		return -1;
+	at = sout->s;
+	p = sin->s;
+	while (j != sin->len) {
+
+		if (*p == '\\') {
+			p++;
+			if (*p <= '9') {
+				c = (*p - '0') << 4;
+			} else {
+				c = (*p - 'a' + 10) << 4;
+			}
+			p++;
+			if (*p <= '9') {
+				c = c + (*p - '0');
+			} else {
+				c = c + (*p - 'a' + 10);
+			}
+			*at++ = c;
+			j += 2;
+		} else {
+			*at++ = *p;
+		}
+		p++;
+		j++;
+	}
+	*at = 0;
+	sout->len = at - sout->s;
+
+	return 0;
+}
+
+static int encode_string(str *dst, str *src)
+{
+	unsigned char x;
+	int j = 0;
+	char *at = dst->s;
+	char *p = src->s;
+	while (j <= src->len) {
+		if (*p < 32 || *p > 127 || *p == '#' || *p == '|' || *p == '\\') {
+			*at++ = '\\';
+			x = (*p) >> 4;
+			if (x < 10) {
+				*at++ = x + '0';
+			} else {
+				*at++ = x - 10 + 'a';
+			}
+			x = (*p) & 0x0f;
+			if (x < 10) {
+				*at = x + '0';
+			} else {
+				*at = x - 10 + 'a';
+			}
+		} else {
+			*at = *p;
+		}
+		p++;
+		at++;
+		j++;
+	}
+	dst->len = at - dst->s;
+	return 0;
+}
 
 static str* write_dialog_vars( struct dlg_val *vars)
 {
@@ -905,19 +1002,21 @@ static str* write_dialog_vars( struct dlg_val *vars)
 	static int o_l=0;
 	struct dlg_val *v;
 	unsigned int l,i;
+	static str dst = {NULL,0};
 	char *p;
-
 	/* compute the required len */
-	for ( v=vars,l=0 ; v ; v=v->next) {
+	for ( v=vars,l=0; v ; v=v->next) {
 		l += v->name.len + 1 + v->val.len + 1;
-		for( i=0 ; i<v->name.len ; i++ )
+		for( i=0 ; i<v->name.len ; i++ ) {
 			if (v->name.s[i]=='|' || v->name.s[i]=='#' || v->name.s[i]=='\\') l++;
-		for( i=0 ; i<v->val.len ; i++ )
+		}
+		for( i=0 ; i<v->val.len ; i++ ) {
 			if (v->val.s[i]=='|' || v->val.s[i]=='#' || v->val.s[i]=='\\') l++;
+		}
 	}
 
 	/* allocate the string to be stored */
-	if ( o.s==NULL || o_l<l) {
+	if (o.s==NULL || o_l<l) {
 		if (o.s) pkg_free(o.s);
 		o.s = (char*)pkg_malloc(l);
 		if (o.s==NULL) {
@@ -925,6 +1024,11 @@ static str* write_dialog_vars( struct dlg_val *vars)
 			return NULL;
 		}
 		o_l = l;
+		dst.s = (char*) pkg_realloc(dst.s, l * 3);
+		if (dst.s == NULL) {
+			LM_ERR("not enough pkg mem (req=%d)\n", l * 3);
+			return NULL;
+		}
 	}
 
 	/* write the stuff into it */
@@ -938,9 +1042,12 @@ static str* write_dialog_vars( struct dlg_val *vars)
 			o.len,(int)(p-o.s));
 		return NULL;
 	}
-	LM_DBG("var string is <%.*s>(%d)\n", l,o.s,l);
 
-	return &o;
+	encode_string(&dst, &o);
+
+	LM_DBG("var string is <%.*s>(%d)\n", dst.len,dst.s,dst.len);
+
+	return &dst;
 }
 
 
@@ -950,6 +1057,7 @@ static str* write_dialog_profiles( struct dlg_profile_link *links)
 	static int o_l = 0;
 	struct dlg_profile_link *link;
 	unsigned int l,i;
+	static str dst = {NULL,0};
 	char *p;
 
 	/* compute the required len */
@@ -974,6 +1082,11 @@ static str* write_dialog_profiles( struct dlg_profile_link *links)
 			return NULL;
 		}
 		o_l = l;
+		dst.s = (char*) pkg_realloc(dst.s, l * 3);
+		if (dst.s == NULL) {
+			LM_ERR("not enough pkg mem (req=%d)\n", l * 3);
+			return NULL;
+		}
 	}
 
 	/* write the stuff into it */
@@ -991,9 +1104,12 @@ static str* write_dialog_profiles( struct dlg_profile_link *links)
 			o.len,(int)(p-o.s));
 		return NULL;
 	}
-	LM_DBG("profile string is <%.*s>(%d)\n", l,o.s,l);
 
-	return &o;
+	encode_string(&dst, &o);
+
+	LM_DBG("profile string is <%.*s>(%d)\n", dst.len,dst.s,dst.len);
+
+	return &dst;
 }
 
 
