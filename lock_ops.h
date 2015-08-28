@@ -319,8 +319,6 @@ tryagain:
 			LM_CRIT("%s (%d)\n", strerror(errno), errno);
 		}
 	}
-
-s
 }
 
 inline static void lock_set_release(gen_lock_set_t* s, int n)
