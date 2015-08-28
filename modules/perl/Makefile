@@ -47,16 +47,16 @@ perl.d: opensipsxs.o
 perl.o: perl.c opensipsxs.o
 
 opensipsxs.o: opensipsxs.c opensipsxs.d
-	$(CC) $(MOD_CFLAGS) $(DEFS) -c -o opensipsxs.o opensipsxs.c
+	$(Q)$(CC) $(MOD_CFLAGS) $(DEFS) -c -o opensipsxs.o opensipsxs.c
 
 opensipsxs.c: opensipsxs.xs typemap
-	$(PERLBINDIR)xsubpp -typemap $(TYPEMAP) -typemap typemap opensipsxs.xs > opensipsxs.c
+	$(Q)$(PERLBINDIR)xsubpp -typemap $(TYPEMAP) -typemap typemap opensipsxs.xs > opensipsxs.c
 
 clean:	clean-special
 
 .PHONY: clean-special
 clean-special:
-	rm -f opensipsxs.c opensipsxs.o opensipsxs.d
+	-rm -f opensipsxs.c opensipsxs.o opensipsxs.d
 
 .PHONY: perlpod
 perlpod: doc/perl_pod.sgml
