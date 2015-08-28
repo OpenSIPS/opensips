@@ -101,7 +101,7 @@ endif
 # additional check for architecture on solaris
 ifeq ($(OS),solaris)
 	ifeq ($(shell isainfo -k),amd64)
-		ARCH := x86_64
+		HOST_ARCH := x86_64
 	endif
 endif
 
