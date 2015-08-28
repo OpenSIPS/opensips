@@ -1073,9 +1073,9 @@ replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip)
 		body2.s = oldip.s + oldip.len;
 		body2.len = bodylimit - body2.s;
 		if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf,
-					! (get_field_flag(line[0])&skip_oldip) /*if flag set do not
-															 set oldmediaip field*/,
+					!(get_field_flag(line[0])&skip_oldip),
 					line[0]) == -1) {
+					/*if flag set do not set oldmediaip field*/
 			LM_ERR("can't alter '%s' IP\n",line);
 			return -1;
 		}
