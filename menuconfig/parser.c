@@ -349,7 +349,7 @@ int parse_defs_m4(select_menu *curr_menu,cfg_gen_t *curr_cfg)
 enum dep_states { PARSE_DEPENDENCIES, PARSE_INCLUDE_MODULES,
 				PARSE_COMPILE_DEFS, PARSE_PREFIX };
 
-int parse_make_conf()
+int parse_make_conf(void)
 {
 	enum dep_states state;
 	FILE *conf = fopen(MAKE_CONF_FILE,"r");
