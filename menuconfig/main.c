@@ -45,7 +45,7 @@ char *prev_prefix=NULL;
 int run_locally=0;
 
 /* Init all the menus. Logic is hardcoded */
-int init_main_menu()
+int init_main_menu(void)
 {
 	select_menu *aux;
 

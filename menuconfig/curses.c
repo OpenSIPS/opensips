@@ -38,7 +38,7 @@ volatile int max_y = 0;
  * Mandatory to be called on all permanent exits from menuconfig
  * Otherwise, console will be messed up
 */
-void cleanup()
+void cleanup(void)
 {
 	delwin(stdscr);
 	endwin();
