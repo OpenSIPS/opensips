@@ -241,6 +241,8 @@ build_branch(char *branch, int *size,
 		/* we get the label that assures us that the via is unique */
 		label = htable->entries[hash_id].next_via_label++;
 		lock_release(&htable->timer_list.mutex);
+	} else {
+		label = sipping_callid_cnt;
 	}
 
 	memcpy( branch, BMAGIC, BMAGIC_LEN);
