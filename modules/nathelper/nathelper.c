@@ -69,8 +69,12 @@
 #include "../../mod_fix.h"
 #include "../registrar/sip_msg.h"
 #include "../usrloc/usrloc.h"
+#include "../usrloc/ul_mod.h"
 #include "sip_pinger.h"
 #include "../../parser/parse_content.h"
+#include "../../sr_module.h"
+
+#include "nh_table.h"
 
 
 /* NAT UAC test constants */
@@ -90,6 +94,7 @@
 
 #define SKIP_OLDORIGIP		(1<<0)
 #define SKIP_OLDMEDIAIP		(1<<1)
+#define REMOVE_ON_TIMEOUT (sipping_flag && rm_on_to_flag)
 
 
 static int nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2);
@@ -102,17 +107,25 @@ static int add_rcv_param_f(struct sip_msg *, char *, char *);
 static int get_oldip_fields_value(modparam_t type, void* val);
 
 static void nh_timer(unsigned int, void *);
+static void
+ping_checker_timer(unsigned int ticks, void *timer_idx);
 static int mod_init(void);
 static void mod_destroy(void);
 
 /*mi commands*/
 static struct mi_root* mi_enable_natping(struct mi_root* cmd_tree,
 		void* param );
-static usrloc_api_t ul;
+//static
+usrloc_api_t ul;
 static int cblen = 0;
 static str nortpproxy_str = str_init("a=nortpproxy:yes");
 static int natping_interval = 0;
 struct socket_info* force_socket = 0;
+
+/* */
+int ping_checker_interval = 1;
+int ping_threshold = 3;
+int max_pings_lost=3;
 
 static struct {
 	const char *cnetaddr;
@@ -179,6 +192,8 @@ static const char sbuf[4] = {0, 0, 0, 0};
 static char *force_socket_str = 0;
 static int sipping_flag = -1;
 static char *sipping_flag_str = 0;
+static int rm_on_to_flag = -1;
+static char *rm_on_to_flag_str = 0;
 static int natping_tcp = 0;
 static int natping_partitions = 1;
 
@@ -225,21 +240,24 @@ static cmd_export_t cmds[] = {
 };
 
 static param_export_t params[] = {
-	{"natping_interval",      INT_PARAM, &natping_interval      },
-	{"ping_nated_only",       INT_PARAM, &ping_nated_only       },
-	{"nortpproxy_str",        STR_PARAM, &nortpproxy_str.s      },
-	{"received_avp",          STR_PARAM, &rcv_avp_param         },
-	{"force_socket",          STR_PARAM, &force_socket_str      },
-	{"sipping_from",          STR_PARAM, &sipping_from.s        },
-	{"sipping_method",        STR_PARAM, &sipping_method.s      },
-	{"sipping_bflag",         STR_PARAM, &sipping_flag_str      },
-	{"sipping_bflag",         INT_PARAM, &sipping_flag          },
-	{"natping_tcp",           INT_PARAM, &natping_tcp           },
-	{"natping_partitions",    INT_PARAM, &natping_partitions    },
-	{"natping_socket",        STR_PARAM, &natping_socket        },
-	{"oldip_skip",			  STR_PARAM|USE_FUNC_PARAM,
+	{"natping_interval",		 INT_PARAM, &natping_interval      },
+	{"ping_nated_only",          INT_PARAM, &ping_nated_only       },
+	{"nortpproxy_str",           STR_PARAM, &nortpproxy_str.s      },
+	{"received_avp",             STR_PARAM, &rcv_avp_param         },
+	{"force_socket",             STR_PARAM, &force_socket_str      },
+	{"sipping_from",             STR_PARAM, &sipping_from.s        },
+	{"sipping_method",           STR_PARAM, &sipping_method.s      },
+	{"sipping_bflag",            STR_PARAM, &sipping_flag_str      },
+	{"sipping_bflag",            INT_PARAM, &sipping_flag          },
+	{"remove_on_timeout_bflag",  STR_PARAM, &rm_on_to_flag_str     },
+	{"remove_on_timeout_bflag",  INT_PARAM, &rm_on_to_flag         },
+	{"natping_tcp",              INT_PARAM, &natping_tcp           },
+	{"natping_partitions",       INT_PARAM, &natping_partitions    },
+	{"natping_socket",           STR_PARAM, &natping_socket        },
+	{"oldip_skip",			     STR_PARAM|USE_FUNC_PARAM,
 								   (void*)get_oldip_fields_value},
-
+	{"ping_threshold",		     INT_PARAM, &ping_threshold		},
+	{"max_pings_lost",		     INT_PARAM, &max_pings_lost		},
 	{0, 0, 0}
 };
 
@@ -533,6 +551,11 @@ mod_init(void)
 
 		sipping_flag = (sipping_flag==-1)?0:(1<<sipping_flag);
 
+		fix_flag_name(rm_on_to_flag_str, rm_on_to_flag);
+		rm_on_to_flag = get_flag_id_by_name(FLAG_TYPE_BRANCH, rm_on_to_flag_str);
+
+		rm_on_to_flag = (rm_on_to_flag==-1)?0:(1<<rm_on_to_flag);
+
 		/* set reply function if SIP natping is enabled */
 		if (sipping_flag) {
 			if (sipping_from.s==0 || sipping_from.s[0]==0) {
@@ -547,6 +570,28 @@ mod_init(void)
 			sipping_from.len = strlen(sipping_from.s);
 			exports.response_f = sipping_rpl_filter;
 			init_sip_ping();
+		}
+
+		if (REMOVE_ON_TIMEOUT &&
+				0 == init_hash_table()) {
+			LM_ERR("failed to create hash table\n");
+			return -1;
+		}
+
+		if (REMOVE_ON_TIMEOUT &&
+				register_timer("pg-chk-timer", ping_checker_timer,
+					NULL, ping_checker_interval, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
+			LM_ERR("failed to register ping checker timer\n");
+			return -1;
+		}
+
+		if (REMOVE_ON_TIMEOUT) {
+			if (ping_checker_interval > natping_interval) {
+				LM_WARN("The interval between two checks must be smaller than "
+						"the interval between two pings! Setting timer "
+						"interval to half the ping interval!\n");
+				ping_checker_interval = natping_interval/2;
+			}
 		}
 
 		for( i=0 ; i<natping_partitions ; i++ ) {
@@ -576,6 +621,8 @@ static void mod_destroy(void)
 	if (natping_state)
 		shm_free(natping_state);
 
+	if (get_htable())
+		free_hash_table();
 }
 
 
@@ -1258,6 +1305,9 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	struct socket_info* send_sock;
 	unsigned int flags;
 	struct proxy_l next_hop;
+	uint64_t contact_id=0;
+
+	udomain_t *d;
 
 	if ((*natping_state) == 0)
 		goto done;
@@ -1269,93 +1319,105 @@ nh_timer(unsigned int ticks, void *timer_idx)
 			goto done;
 		}
 	}
-	rval = ul.get_all_ucontacts(buf, cblen, (ping_nated_only?ul.nat_flag:0),
-		((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
-		natping_partitions*natping_interval, 0/* no contact id */);
-	if (rval<0) {
-		LM_ERR("failed to fetch contacts\n");
-		goto done;
-	}
-	if (rval > 0) {
-		if (buf != NULL)
-			pkg_free(buf);
-		cblen += rval + 128 /*some extra*/;
-		buf = pkg_malloc(cblen);
-		if (buf == NULL) {
-			LM_ERR("out of pkg memory\n");
+
+	for ( d=ul.get_next_udomain(NULL); d; d=ul.get_next_udomain(d)) {
+		rval = ul.get_domain_ucontacts(d, buf, cblen, (ping_nated_only?ul.nat_flag:0),
+			((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
+			natping_partitions*natping_interval,
+			rm_on_to_flag?1:0);
+
+		if (rval<0) {
+			LM_ERR("failed to fetch contacts\n");
 			goto done;
 		}
-		rval = ul.get_all_ucontacts(buf,cblen,(ping_nated_only?ul.nat_flag:0),
-		   ((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
-		   natping_partitions*natping_interval, 0/* no contact id */);
-		if (rval != 0) {
-			goto done;
+		if (rval > 0) {
+			if (buf != NULL)
+				pkg_free(buf);
+			cblen += rval + 128 /*some extra*/;
+			buf = pkg_malloc(cblen);
+			if (buf == NULL) {
+				LM_ERR("out of pkg memory\n");
+				goto done;
+			}
+
+			rval = ul.get_domain_ucontacts(d, buf, cblen, (ping_nated_only?ul.nat_flag:0),
+				((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
+				natping_partitions*natping_interval,
+				rm_on_to_flag?1:0);
+			if (rval != 0) {
+				goto done;
+			}
 		}
-	}
 
-	if (buf == NULL)
-		goto done;
+		if (buf == NULL)
+			goto done;
 
-	tcp_no_new_conn = 1;
+		tcp_no_new_conn = 1;
 
-	cp = buf;
-	while (1) {
-		memcpy(&(c.len), cp, sizeof(c.len));
-		if (c.len == 0)
-			break;
+		cp = buf;
+		while (1) {
+			memcpy(&(c.len), cp, sizeof(c.len));
+			if (c.len == 0)
+				break;
 
-		c.s = (char*)cp + sizeof(c.len);
-		cp = (char*)cp + sizeof(c.len) + c.len;
-		memcpy(&path.len, cp, sizeof(path.len));
-		path.s = path.len ? ((char*)cp + sizeof(path.len)) : NULL;
-		cp = (char*)cp + sizeof(path.len) + path.len;
-		memcpy(&send_sock, cp, sizeof(send_sock));
-		cp = (char*)cp + sizeof(send_sock);
-		memcpy(&flags, cp, sizeof(flags));
-		cp = (char*)cp + sizeof(flags);
-		memcpy(&next_hop, cp, sizeof(next_hop));
-		cp = (char*)cp + sizeof(next_hop);
+			c.s = (char*)cp + sizeof(c.len);
+			cp = (char*)cp + sizeof(c.len) + c.len;
+			memcpy(&path.len, cp, sizeof(path.len));
+			path.s = path.len ? ((char*)cp + sizeof(path.len)) : NULL;
+			cp = (char*)cp + sizeof(path.len) + path.len;
+			memcpy(&send_sock, cp, sizeof(send_sock));
+			cp = (char*)cp + sizeof(send_sock);
+			memcpy(&flags, cp, sizeof(flags));
+			cp = (char*)cp + sizeof(flags);
+			memcpy(&next_hop, cp, sizeof(next_hop));
+			cp = (char*)cp + sizeof(next_hop);
 
-		if (next_hop.proto != PROTO_NONE && next_hop.proto != PROTO_UDP &&
-		    (natping_tcp == 0 || (next_hop.proto != PROTO_TCP &&
-		                          next_hop.proto != PROTO_TLS &&
-								  next_hop.proto != PROTO_WS)))
-			continue;
+			if (REMOVE_ON_TIMEOUT)
+				memcpy(&contact_id, cp, sizeof(contact_id));
+				cp = (char*)cp + sizeof(contact_id);
 
-		LM_DBG("resolving next hop: '%.*s'\n",
-		        next_hop.name.len, next_hop.name.s);
-		he = sip_resolvehost(&next_hop.name, &next_hop.port,
-		                     &next_hop.proto, 0, NULL);
-		if (!he) {
-			LM_ERR("failed to resolve next hop: '%.*s'\n",
+			if (next_hop.proto != PROTO_NONE && next_hop.proto != PROTO_UDP &&
+			    (natping_tcp == 0 || (next_hop.proto != PROTO_TCP &&
+									 next_hop.proto != PROTO_TLS &&
+									  next_hop.proto != PROTO_WS)))
+				continue;
+
+			LM_DBG("resolving next hop: '%.*s'\n",
 			        next_hop.name.len, next_hop.name.s);
-			continue;
-		}
-
-		hostent2su(&to, he, 0, next_hop.port);
-
-		if (!send_sock) {
-			send_sock = force_socket ? force_socket :
-			                           get_send_socket(0, &to, next_hop.proto);
-			if (!send_sock) {
-				LM_ERR("can't get sending socket\n");
+			he = sip_resolvehost(&next_hop.name, &next_hop.port,
+			                     &next_hop.proto, 0, NULL);
+			if (!he) {
+				LM_ERR("failed to resolve next hop: '%.*s'\n",
+				        next_hop.name.len, next_hop.name.s);
 				continue;
 			}
-		}
 
-		if ((flags & sipping_flag) &&
-		    (opt.s = build_sipping(&c, send_sock, &path, &opt.len))) {
-			if (msg_send(send_sock, next_hop.proto, &to, 0, opt.s, opt.len, NULL) < 0) {
-				LM_ERR("sip msg_send failed\n");
+			hostent2su(&to, he, 0, next_hop.port);
+
+			if (!send_sock) {
+				send_sock = force_socket ? force_socket :
+				                           get_send_socket(0, &to, next_hop.proto);
+				if (!send_sock) {
+					LM_ERR("can't get sending socket\n");
+					continue;
+				}
 			}
-		} else if (raw_ip && next_hop.proto == PROTO_UDP) {
-			if (send_raw((char*)sbuf, sizeof(sbuf), &to, raw_ip, raw_port)<0) {
-				LM_ERR("send_raw failed\n");
-			}
-		} else {
-			if (msg_send(send_sock, next_hop.proto, &to, 0,
-			             (char *)sbuf, sizeof(sbuf), NULL) < 0) {
-				LM_ERR("sip msg_send failed!\n");
+
+			if ((flags & sipping_flag) &&
+			    (opt.s = build_sipping(d, &c, send_sock, &path, &opt.len,
+									   contact_id ,flags&rm_on_to_flag))) {
+				if (msg_send(send_sock, next_hop.proto, &to, 0, opt.s, opt.len, NULL) < 0) {
+					LM_ERR("sip msg_send failed\n");
+				}
+			} else if (raw_ip && next_hop.proto == PROTO_UDP) {
+				if (send_raw((char*)sbuf, sizeof(sbuf), &to, raw_ip, raw_port)<0) {
+					LM_ERR("send_raw failed\n");
+				}
+			} else {
+				if (msg_send(send_sock, next_hop.proto, &to, 0,
+				             (char *)sbuf, sizeof(sbuf), NULL) < 0) {
+					LM_ERR("sip msg_send failed!\n");
+				}
 			}
 		}
 	}
@@ -1560,3 +1622,95 @@ fix_nated_register_f(struct sip_msg* msg, char* str1, char* str2)
 
 	return 1;
 }
+
+/*
+ * timer which checks entries that responded or
+ * did not responded to pings
+ */
+static void
+ping_checker_timer(unsigned int ticks, void *timer_idx)
+{
+	time_t ctime;
+	uint64_t _contact_id;
+
+	udomain_t *_d;
+	struct nh_table *table;
+	struct ping_cell *cell, *first, *last, *prev;
+
+	table = get_htable();
+	ctime=now;
+
+	/* detect cells for which threshold has been exceeded */
+	lock_get(&table->timer_list.mutex);
+	first = last = table->timer_list.first;
+
+	while (last != table->timer_list.last
+			&& ((ctime - last->timestamp) > ping_threshold))
+		last = last->tnext;
+
+	if (last == table->timer_list.last)
+		table->timer_list.first = table->timer_list.last = NULL;
+	else
+		table->timer_list.first = last->tnext;
+
+	/* last will be the first valid element in timer list */
+	last = table->timer_list.first;
+
+	lock_release(&table->timer_list.mutex);
+
+
+	cell = first;
+	while (cell &&  cell != last) {
+		if (cell->timestamp == 0) {
+			/* ping confirmed and unlinked from hash; only free the cell */
+			prev = cell;
+			cell = cell->tnext;
+			shm_free(prev);
+			continue;
+		}
+
+
+		/* we need lock since we don't know whether we will remove this
+		 * cell from the list or not */
+		lock_hash(cell->hash_id);
+
+		/* for these cells threshold has been exceeded */
+		LM_DBG("cell with cid %llu has %d unresponded pings\n",
+				cell->contact_id, cell->not_responded);
+		cell->not_responded++;
+
+		if (cell->not_responded >= max_pings_lost) {
+			LM_DBG("cell with cid %llu exceeded max pings threshold! removing...\n",
+					cell->contact_id);
+			_contact_id = cell->contact_id;
+			_d = cell->d;
+
+			remove_given_cell(cell, &table->entries[cell->hash_id]);
+
+			prev = cell;
+			cell = cell->tnext;
+
+			/* we put the lock on cell which now moved into prev */
+			unlock_hash(prev->hash_id);
+
+			shm_free(prev);
+
+			if (ul.delete_ucontact_from_id &&
+				ul.delete_ucontact_from_id(_d, _contact_id, 0) < 0) {
+				/* we keep going since it might work for other contacts */
+				LM_ERR("failed to remove ucontact from db\n");
+			}
+		} else {
+			prev = cell;
+			cell = cell->tnext;
+
+			/* allow cell to be reintroduced in timer list */
+			prev->tnext = NULL;
+
+			/* we put the lock on cell which now moved into prev */
+			unlock_hash(prev->hash_id);
+		}
+	}
+}
+
+
