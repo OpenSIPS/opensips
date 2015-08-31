@@ -586,11 +586,11 @@ mod_init(void)
 		}
 
 		if (REMOVE_ON_TIMEOUT) {
-			if (ping_checker_interval > natping_interval) {
-				LM_WARN("The interval between two checks must be smaller than "
-						"the interval between two pings! Setting timer "
-						"interval to half the ping interval!\n");
-				ping_checker_interval = natping_interval/2;
+			if (ping_threshold > natping_interval) {
+				LM_WARN("Maximum ping threshold must be smaller than "
+						"the interval between two pings! Setting threshold "
+						"to half the ping interval!\n");
+				ping_threshold = natping_interval/2;
 			}
 		}
 
