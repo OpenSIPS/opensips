@@ -66,17 +66,18 @@
 
 #ifdef FAST_LOCK
 
-#ifdef USE_FUTEX
-#include "futex_lock.h"
+	#ifdef USE_FUTEX
+		#include "futex_lock.h"
 
-typedef fx_lock_t gen_lock_t;
+		typedef fx_lock_t gen_lock_t;
 
-#elif defined FAST_LOCK
-#include "fastlock.h"
+	#elif defined FAST_LOCK
 
-typedef fl_lock_t gen_lock_t;
+		#include "fastlock.h"
 
-#endif
+		typedef fl_lock_t gen_lock_t;
+
+	#endif
 
 #define lock_destroy(lock) /* do nothing */
 
@@ -86,8 +87,13 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 	return lock;
 }
 
-#define lock_get(lock) get_lock(lock)
 #define lock_release(lock) release_lock(lock)
+
+#ifndef DBG_LOCK
+	#define lock_get(lock) get_lock(lock)
+#else
+	#define lock_get(lock) get_lock(lock, __FILE__, __FUNCTION__, __LINE__)
+#endif
 
 #elif defined USE_PTHREAD_MUTEX
 #include <pthread.h>
@@ -102,10 +108,9 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 	else return 0;
 }
 
+
 #define lock_get(lock) pthread_mutex_lock(lock)
 #define lock_release(lock) pthread_mutex_unlock(lock)
-
-
 
 #elif defined USE_POSIX_SEM
 #include <semaphore.h>
@@ -116,13 +121,13 @@ typedef sem_t gen_lock_t;
 
 inline static gen_lock_t* lock_init(gen_lock_t* lock)
 {
+	
 	if (sem_init(lock, 1, 1)<0) return 0;
 	return lock;
 }
 
 #define lock_get(lock) sem_wait(lock)
 #define lock_release(lock) sem_post(lock)
-
 
 #elif defined USE_SYSV_SEM
 #include <sys/ipc.h>
@@ -150,9 +155,6 @@ extern int uid; /* from main.c */
 
 typedef int gen_lock_t;
 
-
-
-
 inline static gen_lock_t* lock_init(gen_lock_t* lock)
 {
 	union semun su;
@@ -170,13 +172,15 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 		/* init error*/
 		return 0;
 	}
+
 	return lock;
+
 }
 
+//TODO if is init
 inline static void lock_destroy(gen_lock_t* lock)
 {
 	union semun su;
-
 	su.val = 0;
 	semctl(*lock, 0, IPC_RMID, su);
 }
@@ -198,6 +202,7 @@ tryagain:
 			LM_CRIT("%s (%d)\n", strerror(errno), errno);
 		}
 	}
+
 }
 
 inline static void lock_release(gen_lock_t* lock)
@@ -208,6 +213,7 @@ inline static void lock_release(gen_lock_t* lock)
 	sop.sem_op=1; /* up */
 	sop.sem_flg=0;
 tryagain:
+
 	if (semop(*lock, &sop, 1)==-1){
 		if (errno==EINTR){
 			/* very improbable*/
@@ -331,6 +337,7 @@ tryagain:
 			LM_CRIT("%s (%d)\n", strerror(errno), errno);
 		}
 	}
+
 }
 #else
 #error "no lock set method selected"
