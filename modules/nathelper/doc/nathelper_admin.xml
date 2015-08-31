@@ -15,6 +15,15 @@
 		0x01) and updates source &ip; address too (flag 0x02).
 	</para>
 	<para>
+		Since version 2.2, stateful ping(only SIP Pings) for nathelper is available.
+		This allows you to remove contacts from usrloc location table when
+		<emphasis>max_pings_lost</emphasis> pings are not responded to, each ping
+		having a response timeout of <emphasis>ping_threshold</emphasis> seconds.
+		In order to have this functionality, contacts must have
+		<emphasis>remove_on_timeout_bflag</emphasis> flag set when inserted into
+		the location table.
+	</para>
+	<para>
 		Works with multipart messages that contain an SDP part,
 		but not with multi-layered multipart messages.
 	</para>
@@ -57,6 +66,8 @@
 				through NAT, since each PING request from &osips; (inbound
 				traffic) will force the SIP client to generate a SIP reply
 				(outbound traffic) - the NAT bind will be surely kept open.
+				Since version 2.2, one can also choose to remove contacts
+				from the location table if a certain threshold is detected.
 				</para>
 				</listitem>
 				<listitem>
@@ -266,6 +277,31 @@ modparam("nathelper", "sipping_bflag", "SIP_PING_FLAG")
 		</example>
 	</section>
 	<section>
+		<title><varname>remove_on_timeout_bflag</varname> (string/integer)</title>
+		<para>
+		What flag to be used in order to activate usrloc contact removal when
+		<emphasis>ping_threshold</emphasis> is exceeded.
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
+		</para>
+		<para>
+		<emphasis>
+			Default value is "NULL" (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>remove_on_timeout_bflag</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("nathelper", "remove_on_timeout_bflag", "RM_ONTO_FLAG")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>sipping_from</varname> (string)</title>
 		<para>
 		The parameter sets the SIP URI to be used in generating the SIP
@@ -377,6 +413,52 @@ modparam("nathelper", "oldip_skip", "oc")
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>ping_threshold</varname> (int)</title>
+		<para>
+			If a contact does not respond in <emphasis>ping_threshold</emphasis>
+			seconds since the ping has been sent, the contact shall be removed
+			after <emphasis>max_pings_lost</emphasis> unresponded pings.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 3 (seconds).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ping_threshold</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("nathelper", "ping_threshold", 10)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>max_pings_lost</varname> (int)</title>
+		<para>
+			Number of unresponded pings after which the contact shall be removed
+		from the location table.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 3 (pings).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ping_threshold</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("nathelper", "max_pings_lost", 5)
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
 
 </section>
 
