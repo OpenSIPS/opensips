@@ -63,6 +63,9 @@
 #define OSP_DEF_SNIDAVP                 "$avp(_osp_source_networkid_)"
 #define OSP_DEF_CINFOS                  8
 #define OSP_DEF_CINFOAVP                "$avp(_osp_custom_info_)"
+#define OSP_DEF_CNAMAVP                 "$avp(_osp_cnam_)"
+#define OSP_DEF_SRCMEDIAAVP             "$avp(_osp_source_media_address_)"
+#define OSP_DEF_DESTMEDIAAVP            "$avp(_osp_destination_media_address_)"
 
 #define OSP_STRBUF_SIZE                 256
 #define OSP_KEYBUF_SIZE                 1024

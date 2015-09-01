@@ -57,6 +57,7 @@
 #define OSP_MNC_SIZE        3
 
 void ospCopyStrToBuffer(str* source, char* buffer, int bufsize);
+int ospGetLocalAddress(struct sip_msg*, char*, char*);
 int ospGetFromDisplay(struct sip_msg* msg, char* fromdisplay, int bufsize);
 int ospGetFromUserpart(struct sip_msg* msg, char* fromuser, int bufsize);
 int ospGetRpidUserpart(struct sip_msg* msg, char* rpiduser, int bufsize);

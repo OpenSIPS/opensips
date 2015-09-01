@@ -43,6 +43,7 @@
 #include "usage.h"
 #include "tm.h"
 #include "provider.h"
+#include "sipheader.h"
 
 extern int _osp_work_mode;
 extern int _osp_service_type;
@@ -85,6 +86,15 @@ extern unsigned short _osp_snid_avptype;
 extern char* _osp_cinfo_avp;
 extern int _osp_cinfo_avpid;
 extern unsigned short _osp_cinfo_avptype;
+extern char* _osp_cnam_avp;
+extern int _osp_cnam_avpid;
+extern unsigned short _osp_cnam_avptype;
+extern char* _osp_srcmedia_avp;
+extern int _osp_srcmedia_avpid;
+extern unsigned short _osp_srcmedia_avptype;
+extern char* _osp_destmedia_avp;
+extern int _osp_destmedia_avpid;
+extern unsigned short _osp_destmedia_avptype;
 extern OSPTPROVHANDLE _osp_provider;
 
 struct rr_binds osp_rr;
@@ -94,17 +104,19 @@ int osp_index[OSP_DEF_SPS];
 static int ospInitMod(void);
 static void ospDestMod(void);
 static int ospInitChild(int);
-static int  ospVerifyParameters(void);
+static int ospVerifyParameters(void);
 static void ospDumpParameters(void);
 
 static cmd_export_t cmds[]={
     { "checkospheader",           (cmd_function)ospCheckHeader,           0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
     { "validateospheader",        (cmd_function)ospValidateHeader,        0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "getlocaladdress",          (cmd_function)ospGetLocalAddress,       0, 0, 0, REQUEST_ROUTE|ONREPLY_ROUTE },
     { "requestosprouting",        (cmd_function)ospRequestRouting,        0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
     { "checkosproute",            (cmd_function)ospCheckRoute,            0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
     { "prepareosproute",          (cmd_function)ospPrepareRoute,          0, 0, 0, BRANCH_ROUTE },
     { "prepareredirectosproutes", (cmd_function)ospPrepareRedirectRoutes, 0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
     { "prepareallosproutes",      (cmd_function)ospPrepareAllRoutes,      0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "preparecnamresponse",      (cmd_function)ospPrepareCNAMResponse,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
     { "checkcallingtranslation",  (cmd_function)ospCheckCalling,          0, 0, 0, BRANCH_ROUTE },
     { "reportospusage",           (cmd_function)ospReportUsage,           1, 0, 0, REQUEST_ROUTE },
     { 0, 0, 0, 0, 0, 0 }
@@ -170,6 +182,9 @@ static param_export_t params[]={
     { "source_device_avp",                STR_PARAM, &_osp_srcdev_avp },
     { "source_networkid_avp",             STR_PARAM, &_osp_snid_avp },
     { "custom_info_avp",                  STR_PARAM, &_osp_cinfo_avp },
+    { "cnam_avp",                         STR_PARAM, &_osp_cnam_avp },
+    { "source_media_avp",                 STR_PARAM, &_osp_srcmedia_avp },
+    { "destination_media_avp",            STR_PARAM, &_osp_destmedia_avp },
     { 0,0,0 }
 };
 
@@ -272,7 +287,7 @@ static int ospVerifyParameters(void)
         LM_WARN("work mode is out of range, reset to %d\n", OSP_DEF_MODE);
     }
 
-    if ((_osp_service_type < 0) || (_osp_service_type > 1)) {
+    if ((_osp_service_type < 0) || (_osp_service_type > 2)) {
         _osp_service_type = OSP_DEF_SERVICE;
         LM_WARN("service type is out of range, reset to %d\n", OSP_DEF_SERVICE);
     }
@@ -403,6 +418,54 @@ static int ospVerifyParameters(void)
         _osp_cinfo_avptype = 0;
     }
 
+    if (_osp_cnam_avp && *_osp_cnam_avp) {
+        avp_str.s = _osp_cnam_avp;
+        avp_str.len = strlen(_osp_cnam_avp);
+        if (pv_parse_spec(&avp_str, &avp_spec) == NULL ||
+            avp_spec.type != PVT_AVP ||
+            pv_get_avp_name(0, &(avp_spec.pvp), &_osp_cnam_avpid, &_osp_cnam_avptype) != 0)
+        {
+            LM_WARN("'%s' invalid AVP definition\n", _osp_cnam_avp);
+            _osp_cnam_avpid = OSP_DEF_AVP;
+            _osp_cnam_avptype = 0;
+        }
+    } else {
+        _osp_cnam_avpid = OSP_DEF_AVP;
+        _osp_cnam_avptype = 0;
+    }
+
+    if (_osp_srcmedia_avp && *(_osp_srcmedia_avp)) {
+        avp_str.s = _osp_srcmedia_avp;
+        avp_str.len = strlen(_osp_srcmedia_avp);
+        if (pv_parse_spec(&avp_str, &avp_spec) == NULL ||
+            avp_spec.type != PVT_AVP ||
+            pv_get_avp_name(0, &(avp_spec.pvp), &_osp_srcmedia_avpid, &_osp_srcmedia_avptype) != 0)
+        {
+            LM_WARN("'%s' invalid AVP definition\n", _osp_srcmedia_avp);
+            _osp_srcmedia_avpid = OSP_DEF_AVP;
+            _osp_srcmedia_avptype = 0;
+        }
+    } else {
+        _osp_srcmedia_avpid = OSP_DEF_AVP;
+        _osp_srcmedia_avptype = 0;
+    }
+
+    if (_osp_destmedia_avp && *(_osp_destmedia_avp)) {
+        avp_str.s = _osp_destmedia_avp;
+        avp_str.len = strlen(_osp_destmedia_avp);
+        if (pv_parse_spec(&avp_str, &avp_spec) == NULL ||
+            avp_spec.type != PVT_AVP ||
+            pv_get_avp_name(0, &(avp_spec.pvp), &_osp_destmedia_avpid, &_osp_destmedia_avptype) != 0)
+        {
+            LM_WARN("'%s' invalid AVP definition\n", _osp_destmedia_avp);
+            _osp_destmedia_avpid = OSP_DEF_AVP;
+            _osp_destmedia_avptype = 0;
+        }
+    } else {
+        _osp_destmedia_avpid = OSP_DEF_AVP;
+        _osp_destmedia_avptype = 0;
+    }
+
     ospDumpParameters();
 
     return result;
@@ -450,5 +513,7 @@ static void ospDumpParameters(void)
     LM_INFO("    source device IP AVP ID '%d'\n", _osp_srcdev_avpid);
     LM_INFO("    source network ID AVP ID '%d'\n", _osp_snid_avpid);
     LM_INFO("    custom info AVP ID '%d'\n", _osp_cinfo_avpid);
+    LM_INFO("    cnam AVP ID '%d'\n", _osp_cnam_avpid);
+    LM_INFO("    meida AVP ID '%d/%d'\n", _osp_srcmedia_avpid, _osp_destmedia_avpid);
 }
 

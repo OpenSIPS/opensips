@@ -53,7 +53,7 @@ int ospCheckHeader(
     char* ignore2)
 {
     unsigned char buffer[OSP_TOKENBUF_SIZE];
-    unsigned int  bufsize = sizeof(buffer);
+    unsigned int bufsize = sizeof(buffer);
 
     if (ospGetOspHeader(msg, buffer, &bufsize) != 0) {
         return MODULE_RETURNCODE_FALSE;
@@ -68,7 +68,7 @@ int ospCheckHeader(
  * param ignore2
  * return  MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure MODULE_RETURNCODE_ERROR error
  */
-int ospValidateHeader (
+int ospValidateHeader(
     struct sip_msg* msg,
     char* ignore1,
     char* ignore2)

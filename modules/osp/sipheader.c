@@ -85,6 +85,28 @@ void ospCopyStrToBuffer(
 }
 
 /*
+ * Get local egress address
+ * param ignore1
+ * param ignore2
+ * return  MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure MODULE_RETURNCODE_ERROR error
+ */
+int ospGetLocalAddress(
+    struct sip_msg* msg,
+    char* ignore1,
+    char* ignore2)
+{
+    osp_dest* dest;
+
+    if(msg->rcv.bind_address && msg->rcv.bind_address->address_str.s) {
+        if ((dest = ospGetLastOrigDestination())) {
+            ospCopyStrToBuffer(&msg->rcv.bind_address->address_str, dest->egress, sizeof(dest->egress));
+        }
+    }
+
+    return MODULE_RETURNCODE_TRUE;
+}
+
+/*
  * Remove user parameters from userinfo
  * param userinfo User info
  */
@@ -1322,8 +1344,8 @@ int ospGetDiversion(
  * return 0 success, -1 failure
  */
 int ospGetUserAgent(
-    struct sip_msg* msg, 
-    char* useragent, 
+    struct sip_msg* msg,
+    char* useragent,
     int bufsize)
 {
     int result = -1;
@@ -1333,15 +1355,14 @@ int ospGetUserAgent(
         if (parse_headers(msg, HDR_USERAGENT_F, 0) == 0) {
             if ((msg->user_agent != NULL) && (msg->user_agent->body.s != NULL) && (msg->user_agent->body.len > 0)) {
                 ospCopyStrToBuffer(&msg->user_agent->body, useragent, bufsize);
-            }            
+            }
             result = 0;
         } else {
             LM_ERR("failed to parse User-Agent header\n");
-        }    
+        }
     } else {
         LM_ERR("bad paraneters to parse User-Agent header\n");
     }
 
     return result;
 }
-
