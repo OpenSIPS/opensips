@@ -538,6 +538,7 @@ struct mi_root* mi_usrloc_add(struct mi_root *cmd, void *param)
 
 	if (c) {
 		/* update contact record */
+		ci.callid = &mi_ul_cid;
 		ci.cseq = c->cseq;
 		if (update_ucontact( r, c, &ci, 0) < 0)
 			goto release_error;
