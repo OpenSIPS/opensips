@@ -35,6 +35,7 @@
 #include "osp_mod.h"
 
 typedef struct _osp_inbound {
+    char ingress[OSP_STRBUF_SIZE];
     char source[OSP_STRBUF_SIZE];
     char srcdev[OSP_STRBUF_SIZE];
     char snid[OSP_STRBUF_SIZE];
@@ -44,6 +45,7 @@ typedef struct _osp_inbound {
     char divuser[OSP_STRBUF_SIZE];
     char divhost[OSP_STRBUF_SIZE];
     char pci[OSP_STRBUF_SIZE];
+    char srcmedia[OSP_STRBUF_SIZE];
 } osp_inbound;
 
 int ospRequestRouting(struct sip_msg*, char*, char*);
@@ -51,6 +53,7 @@ int ospCheckRoute(struct sip_msg*, char*, char*);
 int ospPrepareRoute(struct sip_msg*, char*, char*);
 int ospPrepareRedirectRoutes(struct sip_msg*, char*, char*);
 int ospPrepareAllRoutes(struct sip_msg*, char*, char*);
+int ospPrepareCNAMResponse(struct sip_msg*, char*, char*);
 int ospCheckCalling(struct sip_msg*, char*, char*);
 
 #endif /* _OSP_MOD_ORIG_TRANSACTION_H_ */

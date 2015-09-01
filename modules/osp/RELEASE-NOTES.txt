@@ -176,3 +176,7 @@ Support FromDisplayName
 Support User-Agent
 Support TotalSetupAttempts for completed calls.
 
+2015 September 1
+Updated to support media addresses, local address and provider post dial delay.
+Updated to support CNAM.
+

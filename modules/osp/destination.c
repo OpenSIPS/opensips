@@ -42,6 +42,8 @@
 extern int _osp_origdest_avpid;
 extern int _osp_termdest_avpid;
 extern int _osp_calling_avpid;
+extern int _osp_destmedia_avpid;
+extern unsigned short _osp_destmedia_avptype;
 
 /* Name of AVP of OSP */
 static str OSP_ORIGDEST_NAME = {"_osp_orig_dests_", 16};
@@ -317,6 +319,9 @@ static void ospRecordCode(
     int code,
     osp_dest* dest)
 {
+    struct usr_avp* destmediaavp = NULL;
+    int_str destmediaval;
+
     LM_DBG("code '%d'\n", code);
     dest->lastcode = code;
 
@@ -334,6 +339,12 @@ static void ospRecordCode(
         case 183:
             if (!dest->time180) {
                 dest->time180 = time(NULL);
+
+                if (!dest->endtime) {
+                    dest->endtime = time(NULL);
+                } else {
+                    LM_DBG("180, 181, 182 or 183 end allready recorded\n");
+                }
             } else {
                 LM_DBG("180, 181, 182 or 183 allready recorded\n");
             }
@@ -342,12 +353,33 @@ static void ospRecordCode(
         case 202:
             if (!dest->time200) {
                 dest->time200 = time(NULL);
+
+                if ((_osp_destmedia_avpid >= 0) &&
+                    ((destmediaavp = search_first_avp(_osp_destmedia_avptype, _osp_destmedia_avpid, &destmediaval, 0)) != NULL) &&
+                    (destmediaavp->flags & AVP_VAL_STR) && (destmediaval.s.s && destmediaval.s.len))
+                {
+                    snprintf(dest->destmedia, sizeof(dest->destmedia), "%.*s", destmediaval.s.len, destmediaval.s.s);
+                    dest->destmedia[sizeof(dest->destmedia) - 1] = '\0';
+                } else {
+                    dest->destmedia[0] = '\0';
+                }
             } else {
                 LM_DBG("200 or 202 allready recorded\n");
             }
             break;
+        case 408:
+        case 487:
+            if (!dest->endtime) {
+                dest->endtime = time(NULL);
+            } else {
+                LM_DBG("408 or 487 end allready recorded\n");
+            }
+            break;
         default:
-            LM_DBG("will not record time for '%d'\n", code);
+            /* It may overwrite existing end time, it is the expected behavior */
+            if ((code >= 400) && (code <= 699)) {
+                dest->endtime = time(NULL);
+            }
     }
 }
 

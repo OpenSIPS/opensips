@@ -53,7 +53,7 @@ void ospRecordOrigTransaction(struct sip_msg* msg, osp_dest* dest);
 void ospRecordTermTransaction(struct sip_msg* msg, osp_dest* dest);
 void ospReportOrigSetupUsage(void);
 void ospReportTermSetupUsage(void);
-int  ospReportUsage(struct sip_msg* msg, char* whorelease, char* ignore2);
+int ospReportUsage(struct sip_msg* msg, char* whorelease, char* ignore2);
 
 #endif /* _OSP_MOD_USAGE_H_ */
 
