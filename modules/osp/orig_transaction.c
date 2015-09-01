@@ -64,6 +64,10 @@ extern int _osp_snid_avpid;
 extern unsigned short _osp_snid_avptype;
 extern int _osp_cinfo_avpid;
 extern unsigned short _osp_cinfo_avptype;
+extern int _osp_cnam_avpid;
+extern unsigned short _osp_cnam_avptype;
+extern int _osp_srcmedia_avpid;
+extern unsigned short _osp_srcmedia_avptype;
 extern OSPTPROVHANDLE _osp_provider;
 extern auth_api_t osp_auth;
 
@@ -113,6 +117,7 @@ static int ospLoadRoutes(
 
         dest->destcount = count + 1;
         dest->authtime = authtime;
+        strncpy(dest->ingress, inbound->ingress, sizeof(dest->ingress) - 1);
         strncpy(dest->origcalled, origcalled, sizeof(dest->origcalled) - 1);
         strncpy(dest->snid, inbound->snid, sizeof(dest->snid) - 1);
 
@@ -238,6 +243,12 @@ static int ospLoadRoutes(
             dest->dnid[0] = '\0';
         }
 
+        errcode = OSPPTransactionGetCNAM(trans, sizeof(dest->cnam), dest->cnam);
+        if (errcode != OSPC_ERR_NO_ERROR) {
+            LM_DBG("cannot get CNAM (%d)\n", errcode);
+            dest->cnam[0] = '\0';
+        }
+
         dest->type = OSPC_ROLE_SOURCE;
         strncpy(dest->source, inbound->source, sizeof(dest->source) - 1);
         strncpy(dest->srcdev, inbound->srcdev, sizeof(dest->srcdev) - 1);
@@ -248,6 +259,7 @@ static int ospLoadRoutes(
         strncpy(dest->divuser, inbound->divuser, sizeof(dest->divuser) - 1);
         strncpy(dest->divhost, inbound->divhost, sizeof(dest->divhost) - 1);
         strncpy(dest->pci, inbound->pci, sizeof(dest->pci) - 1);
+        strncpy(dest->srcmedia, inbound->srcmedia, sizeof(dest->srcmedia) - 1);
 
         LM_INFO("get destination '%d': "
             "valid after '%s' "
@@ -268,6 +280,7 @@ static int ospLoadRoutes(
             "mcc '%s' "
             "mnc '%s' "
             */
+            "cnam '%s' "
             "protocol '%d' "
             "supported '%d' "
             "network id '%s' "
@@ -292,6 +305,7 @@ static int ospLoadRoutes(
             dest->opname[OSPC_OPNAME_MCC],
             dest->opname[OSPC_OPNAME_MNC],
             */
+            dest->cnam,
             dest->protocol,
             dest->supported,
             dest->dnid,
@@ -351,6 +365,8 @@ int ospRequestRouting(
     unsigned int cinfonum = 0, i;
     char cinfo[OSP_DEF_CINFOS][OSP_STRBUF_SIZE];
     char cinfostr[OSP_STRBUF_SIZE];
+    struct usr_avp* srcmediaavp = NULL;
+    int_str srcmediaval;
     unsigned int callidnumber = 1;
     OSPT_CALL_ID* callids[callidnumber];
     unsigned int logsize = 0;
@@ -378,12 +394,17 @@ int ospRequestRouting(
     } else {
         authtime = time(NULL);
 
+        if(msg->rcv.bind_address && msg->rcv.bind_address->address_str.s) {
+            ospCopyStrToBuffer(&msg->rcv.bind_address->address_str, inbound.ingress, sizeof(inbound.ingress));
+        }
+
         ospConvertToOutAddress(inbound.source, sourcebuf, sizeof(sourcebuf));
         ospConvertToOutAddress(inbound.srcdev, srcdevbuf, sizeof(srcdevbuf));
 
         switch (_osp_service_type) {
         case 1:
-            OSPPTransactionSetServiceType(trans, OSPC_SERVICE_NPQUERY);
+        case 2:
+            OSPPTransactionSetServiceType(trans, (_osp_service_type == 1) ? OSPC_SERVICE_NPQUERY : OSPC_SERVICE_CNAMQUERY);
 
             ospGetToHostpart(msg, tohost, sizeof(tohost));
             ospConvertToOutAddress(tohost, tohostbuf, sizeof(tohostbuf));
@@ -474,6 +495,17 @@ int ospRequestRouting(
             cinfostr[sizeof(cinfostr) - 1] = '\0';
         }
 
+        if ((_osp_srcmedia_avpid >= 0) &&
+            ((srcmediaavp = search_first_avp(_osp_srcmedia_avptype, _osp_srcmedia_avpid, &srcmediaval, 0)) != NULL) &&
+            (srcmediaavp->flags & AVP_VAL_STR) && (srcmediaval.s.s && srcmediaval.s.len))
+        {
+            snprintf(inbound.srcmedia, sizeof(inbound.srcmedia), "%.*s", srcmediaval.s.len, srcmediaval.s.s);
+            inbound.srcmedia[sizeof(inbound.srcmedia) - 1] = '\0';
+            OSPPTransactionSetSrcAudioAddr(trans, inbound.srcmedia);
+        } else {
+            inbound.srcmedia[0] = '\0';
+        }
+
         LM_INFO("request auth and routing for: "
             "service_type '%d' "
             "source '%s' "
@@ -499,6 +531,7 @@ int ospRequestRouting(
             "div_user '%s' "
             "div_host '%s' "
             "pci '%s' "
+            "srcmedia '%s' "
             "call_id '%.*s' "
             "dest_count '%d' "
             "%s\n",
@@ -526,6 +559,7 @@ int ospRequestRouting(
             inbound.divuser,
             divhostbuf,
             inbound.pci,
+            inbound.srcmedia,
             callids[0]->Length,
             callids[0]->Value,
             destcount,
@@ -789,6 +823,9 @@ static int ospPrepareDestination(
             /* Handle calling number translation */
             ospSetCalling(msg, dest);
 
+            /* Set call attempt start time */
+            dest->starttime = time(NULL);
+
             result = MODULE_RETURNCODE_TRUE;
         } else {
             LM_ERR("unsupported route block type\n");
@@ -873,3 +910,38 @@ int ospPrepareAllRoutes(
     return MODULE_RETURNCODE_TRUE;
 }
 
+/*
+ * Prepare CNAM response
+ *     This function does not work in branch route block.
+ * param msg SIP message
+ * param ignore1
+ * param ignore2
+ * return MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure
+ */
+int ospPrepareCNAMResponse(
+    struct sip_msg* msg,
+    char* ignore1,
+    char* ignore2)
+{
+    str cnam;
+    osp_dest* dest = ospGetNextOrigDestination();
+
+    if (dest != NULL) {
+        LM_INFO("prepare CNAM for call_id '%.*s' transaction_id '%llu'\n",
+            dest->callidsize,
+            dest->callid,
+            dest->transid);
+
+        if (dest->cnam[0] != '\0') {
+            cnam.s = dest->cnam;
+            cnam.len = strlen(dest->cnam);
+            add_avp(_osp_cnam_avptype | AVP_VAL_STR, _osp_cnam_avpid, (int_str)cnam);
+        }
+
+        dest->lastcode = 380;
+    } else {
+        LM_DBG("there is no route\n");
+    }
+
+    return MODULE_RETURNCODE_TRUE;
+}
