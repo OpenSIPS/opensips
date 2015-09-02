@@ -51,7 +51,7 @@ int db_sqlite_connect(struct my_con* ptr)
 
 	/* if connection already in use, close it first*/
 	if (ptr->init)
-		sqlite3_close_v2(ptr->con);
+		sqlite3_close(ptr->con);
 
 	ptr->init = 1;
 
