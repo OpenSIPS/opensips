@@ -4,8 +4,9 @@
 #include "../../db/db.h"
 #include "../../cachedb/cachedb.h"
 
-#define DEFAULT_DELIM ' '
+#define DEFAULT_SPEC_DELIM ' '
 #define COLUMN_NAMES_DELIM ','
+#define DEFAULT_PVAR_DELIM ':'
 
 #define ID_STR "id"
 #define ID_STR_LEN 2
@@ -42,6 +43,7 @@ typedef struct _cache_entry {
 	unsigned int on_demand;
 	unsigned int expire;
 	unsigned int nr_ints, nr_strs;
+	long long column_types;
 	db_func_t db_funcs;
 	db_con_t *db_con;
 	cachedb_funcs cdbf;
@@ -53,5 +55,15 @@ struct parse_entry {
 	str to_parse_str;
 	struct parse_entry *next;
 };
+
+typedef struct _pv_name_fix
+{
+	str id;
+	str col;
+	str key;
+	cache_entry_t *c_entry;
+	pv_elem_t *pv_elem_list;
+	int col_offset;
+} pv_name_fix_t;
 
 #endif

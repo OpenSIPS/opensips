@@ -2,6 +2,7 @@
 #include "../../dprint.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"
+#include "../../pvar.h"
 
 #include "sql_cacher.h"
 
@@ -11,18 +12,30 @@ static int child_init(int rank);
 
 static int cache_new_table(unsigned int type, void *val);
 
-static str delimiter;
+int pv_parse_name(pv_spec_p sp, str *in);
+int pv_init_param(pv_spec_p sp, int param);
+int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
+
+static str spec_delimiter;
+static str pvar_delimiter;
+static int fetch_nr_rows = DEFAULT_FETCH_NR_ROWS;
 
 static cache_entry_t **entry_list;
 static struct parse_entry *to_parse_list = NULL;
-static int fetch_nr_rows = DEFAULT_FETCH_NR_ROWS;
 
 /* module parameters */
 static param_export_t mod_params[] = {
-	{"delimiter", STR_PARAM, &delimiter.s},
+	{"spec_delimiter", STR_PARAM, &spec_delimiter.s},
+	{"pvar_delimiter", STR_PARAM, &pvar_delimiter.s},
 	{"sql_fetch_nr_rows", INT_PARAM, &fetch_nr_rows},
 	{"cache_table", STR_PARAM|USE_FUNC_PARAM, (void *)&cache_new_table},
 	{0,0,0}
+};
+
+static pv_export_t mod_items[] = {
+	{{"sql_cached_value", sizeof("sql_cached_value") - 1}, 1000,
+		pv_get_sql_cached_value, 0, pv_parse_name, 0, 0, 0},
+	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
 /**
@@ -39,7 +52,7 @@ struct module_exports exports = {
 	mod_params,					/* exported parameters */
 	0,							/* exported statistics */
 	0,							/* exported MI functions */
-	0,							/* exported pseudo-variables */
+	mod_items,					/* exported pseudo-variables */
 	0,							/* extra processes */
 	mod_init,					/* module initialization function */
 	0,							/* response handling function */
@@ -106,6 +119,7 @@ static int parse_cache_entries(void) {
 		new_entry->expire = DEFAULT_CACHEDB_EXPIRE;
 		new_entry->nr_ints = 0;
 		new_entry->nr_strs = 0;
+		new_entry->column_types = 0;
 		new_entry->db_con = 0;
 		new_entry->cdbcon = 0;
 
@@ -115,7 +129,7 @@ static int parse_cache_entries(void) {
 		if (!p2)
 			goto parse_err;
 		if (!memcmp(p1, ID_STR, ID_STR_LEN)) {
-			tmp = memchr(p2 + 1, delimiter.s[0], it->to_parse_str.len - (p2 - p1));
+			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - p1));
 			if (!tmp) {
 				goto parse_err;
 			}
@@ -134,7 +148,7 @@ static int parse_cache_entries(void) {
 		if (!p2)
 			goto parse_err;
 		if (!memcmp(p1, DB_URL_STR, DB_URL_LEN)) {
-			tmp = memchr(p2 + 1, delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
+			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
 			if (!tmp)
 				goto parse_err;
 			new_entry->db_url.len = tmp - p2 - 1;
@@ -151,7 +165,7 @@ static int parse_cache_entries(void) {
 		if (!p2)
 			goto parse_err;
 		if (!memcmp(p1, CACHEDB_URL_STR, CACHEDB_URL_LEN)) {
-			tmp = memchr(p2 + 1, delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
+			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
 			if (!tmp)
 				goto parse_err;
 			new_entry->cachedb_url.len = tmp - p2 - 1;
@@ -168,7 +182,7 @@ static int parse_cache_entries(void) {
 		if (!p2)
 			goto parse_err;
 		if (!memcmp(p1, TABLE_STR, TABLE_STR_LEN)) {
-			tmp = memchr(p2 + 1, delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
+			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
 			if (!tmp)
 				goto parse_err;
 			new_entry->table.len = tmp - p2 - 1;
@@ -185,7 +199,7 @@ static int parse_cache_entries(void) {
 		if (!p2)
 			goto parse_err;
 		if (!memcmp(p1, KEY_STR, KEY_STR_LEN)) {
-			tmp = memchr(p2 + 1, delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
+			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
 			if (!tmp) /* delimiter not found, reached the end of the string to parse */
 				new_entry->key.len = it->to_parse_str.len - (p2 - it->to_parse_str.s + 1);
 			else
@@ -209,7 +223,7 @@ static int parse_cache_entries(void) {
 			goto parse_err;
 		if (!memcmp(p1, COLUMNS_STR, COLUMNS_STR_LEN)) {
 			col_idx = 0;
-			tmp = memchr(p2 + 1, delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
+			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
 
 			/* just count how many columns there are */
 			new_entry->nr_columns = 1;
@@ -217,6 +231,11 @@ static int parse_cache_entries(void) {
 			while (c_tmp1) {
 				new_entry->nr_columns++;
 				c_tmp1 = memchr(c_tmp1 + 1, COLUMN_NAMES_DELIM, it->to_parse_str.len - (c_tmp1 - it->to_parse_str.s + 1));
+			}
+
+			if (new_entry->nr_columns > sizeof(long long)) {
+				LM_ERR("Too many columns, maximum number is %ld\n", sizeof(long long));
+				goto parse_err;
 			}
 
 			/* allocate array of columns and actually parse */
@@ -258,7 +277,7 @@ static int parse_cache_entries(void) {
 
 		/* parse on demand parameter */
 		if (!memcmp(p1, ONDEMAND_STR, ONDEMAND_STR_LEN)) {
-			tmp = memchr(p2 + 1, delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
+			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
 			str str_val;
 			if (!tmp) { /* delimiter not found, reached the end of the string to parse */
 				str_val.len = it->to_parse_str.len - (p2 - it->to_parse_str.s + 1);
@@ -314,6 +333,7 @@ end_parsing:
 /* count the number of integers and strings from the SQL db query */
 static int get_column_types(cache_entry_t *c_entry, db_val_t *values, int nr_columns) {
 	unsigned int i;
+	long long one = 1;
 	db_type_t val_type;
 
 	for (i = 0; i < nr_columns; i++) {
@@ -323,10 +343,12 @@ static int get_column_types(cache_entry_t *c_entry, db_val_t *values, int nr_col
 			case DB_BIGINT:
 			case DB_DOUBLE:
 				c_entry->nr_ints++;
+				c_entry->column_types &= ~(one << i);
 				break;
 			case DB_STRING:
 			case DB_STR:
 				c_entry->nr_strs++;
+				c_entry->column_types |= (one << i);
 				break;
 			default:
 				return -1;
@@ -661,16 +683,24 @@ static int mod_init(void) {
 
 	LM_NOTICE("initializing module......\n");
 
-	if (!delimiter.s) {
-		delimiter.s = pkg_malloc(sizeof(char));	
-		if (!delimiter.s) {
-			LM_ERR("No more memory for delimiter\n");
+	if (!spec_delimiter.s) {
+		spec_delimiter.s = pkg_malloc(sizeof(char));	
+		if (!spec_delimiter.s) {
+			LM_ERR("No more memory for spec_delimiter\n");
 			return -1;
 		}
-		delimiter.s[0] = DEFAULT_DELIM;
-		delimiter.len = 1;
+		spec_delimiter.s[0] = DEFAULT_SPEC_DELIM;
+	}
+
+	if (!pvar_delimiter.s) {
+		pvar_delimiter.s = pkg_malloc(sizeof(char));	
+		if (!pvar_delimiter.s) {
+			LM_ERR("No more memory for pvar_delimiter\n");
+			return -1;
+		}
+		pvar_delimiter.s[0] = DEFAULT_PVAR_DELIM;
 	} else
-		delimiter.len = strlen(delimiter.s);
+		pvar_delimiter.len = strlen(pvar_delimiter.s);
 
 	entry_list =  shm_malloc(sizeof(cache_entry_t*));
 	if (!entry_list) {
@@ -707,8 +737,185 @@ static int mod_init(void) {
 }
 
 static int child_init(int rank) {
-	LM_NOTICE("initializing child......\n");
+	cache_entry_t *c_entry;
+
+	for (c_entry = *entry_list; c_entry != NULL; c_entry = c_entry->next) {
+		c_entry->cdbcon = c_entry->cdbf.init(&c_entry->cachedb_url);
+		if (c_entry->cdbcon == NULL) {
+			LM_ERR("Cannot connect to cachedb from child\n");
+			return -1;
+		}
+
+		if (c_entry->on_demand &&
+				(c_entry->db_con = c_entry->db_funcs.init(&c_entry->db_url)) == 0) {
+			LM_ERR("Cannot connect to SQL DB from child\n");
+			return -1;
+		}
+	}
+
 	return 0;
+}
+
+static int parse_pv_name_s(pv_name_fix_t *pv_name, str *name_s) {
+	char *p1 = NULL, *p2 = NULL;
+	char last;
+
+#define PARSE_TOKEN(_ptr1, _ptr2, type, delim) \
+	do { \
+		(_ptr2) = memchr((_ptr1), (delim), \
+					name_s->len - ((_ptr1) - name_s->s) + 1); \
+		if (!(_ptr2)) { \
+			LM_ERR("Invalid syntax for pvar name\n"); \
+			return -1; \
+		} \
+		int prev_len = pv_name->type.len; \
+		pv_name->type.len = (_ptr2) - (_ptr1); \
+		if (!pv_name->type.s) { \
+			pv_name->type.s = pkg_malloc(pv_name->type.len); \
+			if (!pv_name->type.s) { \
+				LM_ERR("No more pkg memory\n"); \
+				return -1; \
+			} \
+			memcpy(pv_name->type.s, (_ptr1), pv_name->type.len); \
+		} else if (memcmp(pv_name->type.s, (_ptr1), pv_name->type.len)) { \
+			if (prev_len != pv_name->type.len) { \
+				pv_name->type.s = pkg_realloc(pv_name->type.s, pv_name->type.len); \
+				if (!pv_name->type.s) { \
+					LM_ERR("No more pkg memory\n"); \
+					return -1; \
+				} \
+			} \
+			memcpy(pv_name->type.s, (_ptr1), pv_name->type.len); \
+		} \
+	} while (0)
+
+		last = name_s->s[name_s->len];
+		p1 = name_s->s;
+		PARSE_TOKEN(p1, p2, id, DEFAULT_PVAR_DELIM);
+		p1 = p2 + 1;
+		PARSE_TOKEN(p1, p2, col, DEFAULT_PVAR_DELIM);
+		p1 = p2 + 1;
+		PARSE_TOKEN(p1, p2, key, last);
+
+#undef PARSE_TOKEN
+
+	return 0;
+}
+
+int pv_parse_name(pv_spec_p sp, str *in) {
+	pv_elem_t *model = NULL, *it;
+	pv_name_fix_t *pv_name;
+
+	if (in == NULL || in->s == NULL || sp == NULL)
+		return -1;
+
+	pv_name = pkg_malloc(sizeof(pv_name_fix_t));
+	if (!pv_name) {
+		LM_ERR("No more pkg memory\n");
+		return -1;
+	}
+	pv_name->id.s = NULL;
+	pv_name->id.len = 0;
+	pv_name->col.s = NULL;
+	pv_name->col.len = 0;
+	pv_name->key.s = NULL;
+	pv_name->key.len = 0;
+	pv_name->c_entry = NULL;
+	pv_name->pv_elem_list = NULL;
+	pv_name->col_offset = -1;
+
+	sp->pvp.pvn.type = PV_NAME_PVAR;
+	sp->pvp.pvn.u.dname = (void *)pv_name;
+
+	if (pv_parse_format(in, &model) < 0) {
+		LM_ERR("Wrong format for pvar name\n");
+		return -1;
+	}
+
+	for (it = model; it != NULL; it = it->next) {
+		if (it->spec.type != PVT_NONE)
+			break;
+	}
+	if (it != NULL) { /* if there are variables in the name, parse later */
+		pv_name->pv_elem_list = model;
+	} else {
+		if (parse_pv_name_s(pv_name, &(model->text)) < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
+int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res) {
+	pv_name_fix_t *pv_name;
+	str name_s;
+	cache_entry_t *it;
+	int i, j, prev_cols;
+	char col_type1, col_type2;
+	long long one = 1;
+
+	if (param == NULL || param->pvn.type != PV_NAME_PVAR ||
+		param->pvn.u.dname == NULL) {
+		LM_CRIT("Bad pvar get function parameters\n");
+		return -1;
+	}
+
+	pv_name = (pv_name_fix_t *)param->pvn.u.dname;
+	if (!pv_name) {
+		LM_ERR("Unable to get name struct from dname\n");
+		return -1;
+	}
+
+	if (pv_name->pv_elem_list) {
+		/* there are variables in the name which need to be evaluated, then parse */
+		if (pv_printf_s(msg, pv_name->pv_elem_list, &name_s) != 0 ||
+			name_s.len == 0 || name_s.s == NULL) {
+			LM_ERR("Unable to evaluate variables in pv name");
+			return pv_get_null(msg, param, res);
+		}
+		if (parse_pv_name_s(pv_name, &name_s) < 0)
+			return pv_get_null(msg, param, res);
+	} else {
+		/* already parsed */
+		name_s = pv_name->id;
+	}
+
+	/* save pointer to cache entries list and collumn offset in the pv spec */
+	if (!pv_name->c_entry) {
+		for (it = *entry_list; it != NULL; it = it->next) {
+			if (!memcmp(it->id.s, pv_name->id.s, pv_name->id.len)) {
+				pv_name->c_entry = it;
+
+				for (i = 0; i < it->nr_columns; i++) {
+					if (!memcmp(it->columns[i].s, pv_name->col.s, pv_name->col.len)) {
+						prev_cols = 0;
+						col_type1 = ((it->column_types & (one << i)) != 0);
+						for (j = 0; j < i; j++) {
+							col_type2 = ((it->column_types & (one << j)) != 0);
+							if (col_type1 == col_type2)
+								prev_cols++;
+						}
+						if (col_type1)
+							pv_name->col_offset = it->nr_ints * INT_B64_ENC_LEN +
+													prev_cols * INT_B64_ENC_LEN;
+						else
+							pv_name->col_offset = prev_cols * INT_B64_ENC_LEN;
+						break;
+					}
+				}
+				if (i == it->nr_columns)
+					pv_name->col_offset = -1;
+				break;
+			}
+		}
+
+		if (!it) {
+			LM_ERR("Unknown caching id\n");
+			return pv_get_null(msg, param, res);
+		}
+	}
+
+	return pv_get_null(msg, param, res);
 }
 
 static void destroy(void) {
