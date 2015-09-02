@@ -135,7 +135,7 @@ static int parse_branch(str branch)
 	lock_hash(hash_id);
 	if ((p_cell=get_cell(hash_id, contact_id))==NULL) {
 		LM_WARN("received ping response for a removed contact"
-				" with contact id %llu\n", contact_id);
+				" with contact id %llu\n", (long long unsigned int)contact_id);
 		unlock_hash(hash_id);
 		return 0;
 	}

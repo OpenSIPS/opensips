@@ -1676,12 +1676,12 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 
 		/* for these cells threshold has been exceeded */
 		LM_DBG("cell with cid %llu has %d unresponded pings\n",
-				cell->contact_id, cell->not_responded);
+				(long long unsigned int)cell->contact_id, cell->not_responded);
 		cell->not_responded++;
 
 		if (cell->not_responded >= max_pings_lost) {
 			LM_DBG("cell with cid %llu exceeded max pings threshold! removing...\n",
-					cell->contact_id);
+					(long long unsigned int)cell->contact_id);
 			_contact_id = cell->contact_id;
 			_d = cell->d;
 
