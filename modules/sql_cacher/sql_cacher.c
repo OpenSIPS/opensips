@@ -112,7 +112,6 @@ static int parse_cache_entries(void) {
 			LM_ERR("No more memory for cache entry struct\n");
 			return -1;
 		}
-
 		new_entry->columns = NULL;
 		new_entry->nr_columns = 0;
 		new_entry->on_demand = 0;
@@ -123,75 +122,43 @@ static int parse_cache_entries(void) {
 		new_entry->db_con = 0;
 		new_entry->cdbcon = 0;
 
+#define PARSE_TOKEN(_ptr1, _ptr2, field, field_name_str, field_name_len) \
+	do { \
+		(_ptr2) = memchr((_ptr1), '=', it->to_parse_str.len - \
+											((_ptr1) - it->to_parse_str.s)); \
+		if (!(_ptr2)) \
+			goto parse_err; \
+		if (!memcmp((_ptr1), (field_name_str), (field_name_len))) { \
+			tmp = memchr((_ptr2) + 1, spec_delimiter.s[0], it->to_parse_str.len - \
+													((_ptr2) - it->to_parse_str.s)); \
+			if (!tmp) \
+				goto parse_err; \
+			new_entry->field.len = tmp - (_ptr2) - 1; \
+			if (new_entry->field.len <= 0) \
+				goto parse_err; \
+			new_entry->field.s = shm_malloc(new_entry->field.len); \
+			memcpy(new_entry->field.s, p2 + 1, new_entry->field.len); \
+		} else \
+			goto parse_err; \
+	} while (0)
+
 		/* parse the id */
 		p1 = it->to_parse_str.s;
-		p2 = memchr(p1, '=', it->to_parse_str.len);
-		if (!p2)
-			goto parse_err;
-		if (!memcmp(p1, ID_STR, ID_STR_LEN)) {
-			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - p1));
-			if (!tmp) {
-				goto parse_err;
-			}
-			new_entry->id.len = tmp - p2 - 1;
-			if (new_entry->id.len <= 0)
-				goto parse_err;
-			new_entry->id.s = shm_malloc(new_entry->id.len);
-			memcpy(new_entry->id.s, p2 + 1, new_entry->id.len);
-		} else {
-			goto parse_err;
-		}
+		PARSE_TOKEN(p1, p2, id, ID_STR, ID_STR_LEN);
 
 		/* parse the db_url */
 		p1 = tmp + 1;
-		p2 = memchr(p1, '=', it->to_parse_str.len - (p1 - it->to_parse_str.s));
-		if (!p2)
-			goto parse_err;
-		if (!memcmp(p1, DB_URL_STR, DB_URL_LEN)) {
-			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
-			if (!tmp)
-				goto parse_err;
-			new_entry->db_url.len = tmp - p2 - 1;
-			if (new_entry->db_url.len <= 0)
-				goto parse_err;
-			new_entry->db_url.s = shm_malloc(new_entry->db_url.len);
-			memcpy(new_entry->db_url.s, p2 + 1, new_entry->db_url.len);
-		} else
-			goto parse_err;
+		PARSE_TOKEN(p1, p2, db_url, DB_URL_STR, DB_URL_LEN);
 
 		/* parse the cachedb_url */
 		p1 = tmp + 1;
-		p2 = memchr(p1, '=', it->to_parse_str.len - (p1 - it->to_parse_str.s));
-		if (!p2)
-			goto parse_err;
-		if (!memcmp(p1, CACHEDB_URL_STR, CACHEDB_URL_LEN)) {
-			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
-			if (!tmp)
-				goto parse_err;
-			new_entry->cachedb_url.len = tmp - p2 - 1;
-			if (new_entry->cachedb_url.len <= 0)
-				goto parse_err;
-			new_entry->cachedb_url.s = shm_malloc(new_entry->cachedb_url.len);
-			memcpy(new_entry->cachedb_url.s, p2 + 1, new_entry->cachedb_url.len);
-		} else
-			goto parse_err;
+		PARSE_TOKEN(p1, p2, cachedb_url, CACHEDB_URL_STR, CACHEDB_URL_LEN);
 
 		/* parse the table name */
 		p1 = tmp + 1;
-		p2 = memchr(p1, '=', it->to_parse_str.len - (p1 - it->to_parse_str.s));
-		if (!p2)
-			goto parse_err;
-		if (!memcmp(p1, TABLE_STR, TABLE_STR_LEN)) {
-			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
-			if (!tmp)
-				goto parse_err;
-			new_entry->table.len = tmp - p2 - 1;
-			if (new_entry->table.len <= 0)
-				goto parse_err;
-			new_entry->table.s = shm_malloc(new_entry->table.len);
-			memcpy(new_entry->table.s, p2 + 1, new_entry->table.len);
-		} else
-			goto parse_err;
+		PARSE_TOKEN(p1, p2, table, TABLE_STR, TABLE_STR_LEN);
+
+#undef PARSE_TOKEN
 
 		/* parse the key column name */
 		p1 = tmp + 1;
