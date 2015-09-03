@@ -175,6 +175,9 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 				*proto=PROTO_SCTP; return 0;
 			}
 			break;
+		case PROTO2UINT('w', 's', 's'):
+			if(len==3) { *proto=PROTO_WSS; return 0; }
+			break;
 		case PROTO2UINT('b', 'i', 'n'):
 			if(len==3) { *proto=PROTO_BIN; return 0; }
 			break;

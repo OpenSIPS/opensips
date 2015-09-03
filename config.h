@@ -118,6 +118,9 @@
 #define SRV_WS_PREFIX "_ws._tcp."
 #define SRV_WS_PREFIX_LEN (sizeof(SRV_WS_PREFIX) - 1)
 
+#define SRV_WSS_PREFIX "_wss._tcp."
+#define SRV_WSS_PREFIX_LEN (sizeof(SRV_WSS_PREFIX) - 1)
+
 #define SRV_MAX_PREFIX_LEN SRV_TLS_PREFIX_LEN
 
 #ifdef HP_MALLOC
