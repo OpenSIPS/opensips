@@ -39,8 +39,12 @@
 
 #include "../../str.h"
 #include "../../ip_addr.h"
-#include "tls_config.h"
 #include <openssl/ssl.h>
+
+#include "tls_config.h"
+#include "tls_helper.h"
+
+
 
 /*
  * TLS configuration domain type
@@ -55,27 +59,7 @@ enum tls_domain_type {
 /*
  * separate configuration per ip:port
  */
-struct tls_domain {
-	str             id;
-	int             type;
-	struct ip_addr  addr;
-	unsigned short  port;
-	SSL_CTX        *ctx;
-	int             verify_cert;
-	int             require_client_cert;
-	int             crl_check_all;
-	char           *cert_file;
-	char           *pkey_file;
-	char           *crl_directory;
-	char           *ca_file;
-	char           *tmp_dh_file;
-	char           *tls_ec_curve;
-	char	       *ca_directory;
-	char           *ciphers_list;
-	enum tls_method method;
-	struct tls_domain *next;
-	str name;
-};
+
 
 extern struct tls_domain *tls_server_domains;
 extern struct tls_domain *tls_client_domains;

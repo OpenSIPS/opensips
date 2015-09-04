@@ -45,6 +45,9 @@
 #include <openssl/opensslv.h>
 #include <openssl/err.h>
 
+#include "tls_helper.h"
+#include "../../locking.h"
+
 #define OS_SSL_SESS_ID ((unsigned char*)NAME "-" VERSION)
 #define OS_SSL_SESS_ID_LEN (sizeof(OS_SSL_SESS_ID)-1)
 
@@ -232,8 +235,6 @@ init_ssl_methods(void)
 #endif
 }
 
-
-
 static inline int tls_mod_init(void)
 {
 	int n;
@@ -266,8 +267,7 @@ static inline int tls_mod_init(void)
 
 	SSL_library_init();
 	SSL_load_error_strings();
-	init_ssl_methods();
-
+        
 	n = check_for_krb();
 	if (n==-1) {
 		LM_ERR("kerberos check failed\n");
