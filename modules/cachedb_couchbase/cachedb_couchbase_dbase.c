@@ -38,20 +38,14 @@ extern int couch_exec_threshold;
 
 volatile str get_res = {0,0};
 volatile int arithmetic_res = 0;
-
-static void couchbase_error_cb(lcb_t instance,
-		lcb_error_t error,
-		const char *errinfo)
-{
-	LM_ERR("Error %d occured. Extra info : [%s]\n",error,
-		errinfo?errinfo:"");
-
-}
+volatile lcb_error_t op_error  = LCB_SUCCESS;
 
 static void couchbase_get_cb(lcb_t instance,
 		const void *cookie, lcb_error_t error,
 		const lcb_get_resp_t *item)
 {
+	op_error = error;
+
 	if (error != LCB_SUCCESS) {
 		if (error != LCB_KEY_ENOENT) {
 			LM_ERR("Failure to get %.*s - %s\n",(int)item->v.v0.nkey,(char*)item->v.v0.key,lcb_strerror(instance, error));
@@ -75,6 +69,9 @@ static void couchbase_store_cb(lcb_t instance, const void *cookie,
 							lcb_error_t err,
 							const lcb_store_resp_t *item)
 {
+
+	op_error = err;
+
 	if (err != LCB_SUCCESS) {
 		LM_ERR("Failure to store %.*s - %s\n",(int)item->v.v0.nkey,(char*)item->v.v0.key,lcb_strerror(instance, err));
 	}
@@ -85,6 +82,8 @@ static void couchbase_remove_cb(lcb_t instance,
 							lcb_error_t err,
 							const lcb_remove_resp_t *item)
 {
+	op_error = err;
+
 	if (err != LCB_SUCCESS) {
 		if (err != LCB_KEY_ENOENT) {
 			LM_ERR("Failure to remove %.*s - %s\n",(int)item->v.v0.nkey,(char*)item->v.v0.key,lcb_strerror(instance, err));
@@ -97,6 +96,8 @@ static void couchbase_arithmetic_cb(lcb_t instance,
 								lcb_error_t error,
 								const lcb_arithmetic_resp_t *item)
 {
+	op_error = error;
+
 	if (error != LCB_SUCCESS) {
 		LM_ERR("Failure to perform arithmetic %.*s - %s\n",(int)item->v.v0.nkey,(char*)item->v.v0.key,lcb_strerror(instance, error));
 		return;
@@ -105,10 +106,103 @@ static void couchbase_arithmetic_cb(lcb_t instance,
 	arithmetic_res = item->v.v0.value;
 }
 
+lcb_error_t cb_connect(lcb_t instance) {
+	lcb_error_t rc;
+
+	rc = lcb_connect(instance);
+
+	if (rc != LCB_SUCCESS) {
+		return rc;
+	}
+
+	rc = lcb_wait(instance);
+
+	if (rc != LCB_SUCCESS) {
+		return rc;
+	}
+
+	rc = lcb_get_bootstrap_status(instance);
+
+	return rc;
+}
+
+lcb_error_t cb_get(lcb_t instance, const void *command_cookie, lcb_size_t num, const lcb_get_cmd_t *const *commands) {
+	lcb_error_t rc;
+
+	rc = lcb_get(instance, command_cookie, num, commands);
+
+	if (rc != LCB_SUCCESS) {
+		return rc;
+	}
+
+	rc = lcb_wait(instance);
+
+	if (rc != LCB_SUCCESS) {
+		return rc;
+	}
+
+	return op_error;
+}
+
+lcb_error_t cb_store(lcb_t instance, const void *command_cookie, lcb_size_t num, const lcb_store_cmd_t *const *commands) {
+	lcb_error_t rc;
+
+	rc = lcb_store(instance, command_cookie, num, commands);
+
+	if (rc != LCB_SUCCESS) {
+		return rc;
+	}
+
+	rc = lcb_wait(instance);
+
+	if (rc != LCB_SUCCESS) {
+		return rc;
+	}
+
+	return op_error;
+}
+
+lcb_error_t cb_arithmetic(lcb_t instance, const void *command_cookie, lcb_size_t num, const lcb_arithmetic_cmd_t *const *commands) {
+	lcb_error_t rc;
+
+	rc = lcb_arithmetic(instance, command_cookie, num, commands);
+
+	if (rc != LCB_SUCCESS) {
+		return rc;
+	}
+
+	rc = lcb_wait(instance);
+
+	if (rc != LCB_SUCCESS) {
+		return rc;
+	}
+
+	return op_error;
+}
+
+lcb_error_t cb_remove(lcb_t instance, const void *command_cookie, lcb_size_t num, const lcb_remove_cmd_t *const *commands) {
+	lcb_error_t rc;
+
+	rc = lcb_remove(instance, command_cookie, num, commands);
+
+	if (rc != LCB_SUCCESS) {
+		return rc;
+	}
+
+	rc = lcb_wait(instance);
+
+	if (rc != LCB_SUCCESS) {
+		return rc;
+	}
+
+	return op_error;
+}
+
 couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 {
 	couchbase_con *con;
 	struct lcb_create_st options;
+	lcb_uint32_t tmo = 0;
 	lcb_t instance;
 	lcb_error_t rc;
 
@@ -141,9 +235,6 @@ couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 		return 0;
 	}
 
-
-	(void)lcb_set_error_callback(instance,
-			couchbase_error_cb);
 	(void)lcb_set_get_callback(instance,
 			couchbase_get_cb);
 	(void)lcb_set_store_callback(instance,
@@ -151,13 +242,13 @@ couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 	(void)lcb_set_remove_callback(instance,
 			couchbase_remove_cb);
 	(void)lcb_set_arithmetic_callback(instance,couchbase_arithmetic_cb);
-	(void)lcb_set_timeout(instance,couch_timeout_usec);
 
-	//Set to synchronous mode
-	lcb_behavior_set_syncmode(instance, LCB_SYNCHRONOUS);
+	//Set Timeout
+	tmo = (lcb_uint32_t)couch_timeout_usec;
+	lcb_cntl(instance, LCB_CNTL_SET, LCB_CNTL_OP_TIMEOUT, &tmo);
 
 	if (couch_lazy_connect == 0 || is_reconnect == 1) {
-		rc=lcb_connect(instance);
+		rc=cb_connect(instance);
 
 		/*Check connection*/
 		if (rc != LCB_SUCCESS) {
@@ -268,7 +359,7 @@ int couchbase_set(cachedb_con *connection,str *attr,
 	cmd.v.v0.nbytes = val->len;
 	cmd.v.v0.exptime = expires;
 
-	oprc = lcb_store(instance, NULL, 1, commands);
+	oprc = cb_store(instance, NULL, 1, commands);
 
 	if (oprc != LCB_SUCCESS) {
 		LM_ERR("Set request failed - %s\n", lcb_strerror(instance, oprc));
@@ -281,7 +372,7 @@ int couchbase_set(cachedb_con *connection,str *attr,
 
 		//Try again
 		instance = COUCHBASE_CON(connection);
-		oprc = lcb_store(instance, NULL, 1, commands);
+		oprc = cb_store(instance, NULL, 1, commands);
 
 		if (oprc != LCB_SUCCESS) {
 			LM_ERR("Set command retry failed - %s\n", lcb_strerror(instance, oprc));
@@ -311,7 +402,7 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 	memset(&cmd, 0, sizeof(cmd));
 	cmd.v.v0.key = attr->s;
 	cmd.v.v0.nkey = attr->len;
-	oprc = lcb_remove(instance, NULL, 1, commands);
+	oprc = cb_remove(instance, NULL, 1, commands);
 
 	if (oprc != LCB_SUCCESS) {
 		if (oprc == LCB_KEY_ENOENT) {
@@ -328,7 +419,7 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 		};
 
 		instance = COUCHBASE_CON(connection);
-		oprc = lcb_remove(instance, NULL, 1, commands);
+		oprc = cb_remove(instance, NULL, 1, commands);
 
 		if (oprc != LCB_SUCCESS) {
 			if (oprc == LCB_KEY_ENOENT) {
@@ -366,7 +457,7 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 	memset(&cmd, 0, sizeof(cmd));
 	cmd.v.v0.key = attr->s;
 	cmd.v.v0.nkey = attr->len;
-	oprc = lcb_get(instance, NULL, 1, commands);
+	oprc = cb_get(instance, NULL, 1, commands);
 
 	if (oprc != LCB_SUCCESS) {
 		/* Key not present, record does not exist */
@@ -385,7 +476,7 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 
 		//Try Again
 		instance = COUCHBASE_CON(connection);
-		oprc = lcb_get(instance, NULL, 1, commands);
+		oprc = cb_get(instance, NULL, 1, commands);
 		if (oprc != LCB_SUCCESS) {
 			if (oprc == LCB_KEY_ENOENT) {
 				LM_ERR("Get command successfully retried\n");
@@ -433,7 +524,7 @@ int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 	cmd.v.v0.create = 1;
 	cmd.v.v0.initial = val;
 	cmd.v.v0.exptime = expires;
-	oprc = lcb_arithmetic(instance, NULL, 1, commands);
+	oprc = cb_arithmetic(instance, NULL, 1, commands);
 
 	if (oprc != LCB_SUCCESS) {
 		if (oprc == LCB_KEY_ENOENT) {
@@ -452,7 +543,7 @@ int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 
 		//Try again
 		instance = COUCHBASE_CON(connection);
-		oprc = lcb_arithmetic(instance, NULL, 1, commands);
+		oprc = cb_arithmetic(instance, NULL, 1, commands);
 
 		if (oprc != LCB_SUCCESS) {
 			if (oprc == LCB_KEY_ENOENT) {
@@ -497,7 +588,7 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 	memset(&cmd, 0, sizeof(cmd));
 	cmd.v.v0.key = attr->s;
 	cmd.v.v0.nkey = attr->len;
-	oprc = lcb_get(instance, NULL, 1, commands);
+	oprc = cb_get(instance, NULL, 1, commands);
 
 	if (oprc != LCB_SUCCESS) {
 		/* Key not present, record does not exist */
@@ -516,7 +607,7 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 
 		//Try Again
 		instance = COUCHBASE_CON(connection);
-		oprc = lcb_get(instance, NULL, 1, commands);
+		oprc = cb_get(instance, NULL, 1, commands);
 		if (oprc != LCB_SUCCESS) {
 			if (oprc == LCB_KEY_ENOENT) {
 				LM_ERR("Get counter command successfully retried\n");
