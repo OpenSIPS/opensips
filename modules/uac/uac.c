@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005-2009 Voice Sistem SRL
- *
+*
  * This file is part of opensips, a free SIP server.
  *
  * UAC OpenSIPS-module is free software; you can redistribute it and/or
@@ -195,6 +195,7 @@ static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
 	int rr_api_loaded=0;
+	int dlg_api_loaded=0;
 
 	if ( is_script_func_used("uac_auth", -1) ) {
 		/* load the UAC_AUTH API as uac_auth() is invoked from script */
@@ -265,6 +266,8 @@ static int mod_init(void)
 					}
 					LM_DBG("failed to find dialog API - is dialog module loaded?\n");
 				} else {
+					dlg_api_loaded=1;
+
 					if ( (parse_store_bavp(&store_to_bavp, &to_bavp_spec) ||
 					parse_store_bavp(&store_from_bavp, &from_bavp_spec))) {
 						LM_ERR("cannot set correct store parameters\n");
@@ -297,6 +300,12 @@ static int mod_init(void)
 				goto error;
 			}
 		}
+		if (!dlg_api_loaded) {
+			if (load_dlg_api(&dlg_api)!=0) {
+				LM_ERR("Can't load dlg API \n");
+			}	
+		}
+
 		if (!uac_rrb.append_fromtag) {
 			LM_ERR("'append_fromtag' RR param is not enabled!"
 			" - required by uac_auth() restore mode\n");
