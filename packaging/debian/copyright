@@ -1421,6 +1421,8 @@ Copyright: 2002 Andrei Pelinescu-Onciul <pelinescu-onciul@fokus.fraunhofer.de>
  2011 JuliÃ¡n Moreno PatiÃ±o <darkjunix@gmail.com>
  2011 Daniel Echeverry <epsilon77@gmail.com>
  2011 Alejandro Rios P. <alerios@debian.org>
+ 2015 Razvan Crainea <razvan@opensips.org>
+ 2015 Steve Frécinaux <sfrecinaux@beip.be>
 License: GPL-2+
 
 Files: packaging/gentoo/opensips-*.ebuild

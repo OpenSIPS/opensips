@@ -201,9 +201,9 @@ endif
 
 override_dh_auto_build:
 	# Add here commands to compile the package.
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) app \
+	FASTER=1 CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) app \
 	  modules skip_modules="$(NONCORE_MODULES)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) \
+	FASTER=1 CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) \
 	  modules modules="$(BUILD_MODULE_PATHS)" cfg-target=/etc/opensips/
 	# generate the utils db_berkeley
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) utils include_modules="db_berkeley"

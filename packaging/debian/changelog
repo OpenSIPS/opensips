@@ -1,12 +1,8 @@
-opensips (2.1.0-2) stable; urgency=low
+opensips (2.2.0-1) stable; urgency=low
 
-  * Modify init script to use LSB functions.
-  * Update dependencies for Jessie.
-  * Remove mysql-client dependency on opensips-modules-mysql.
-  * Add systemd unit file.
-  * Add new package opensips-rest-module
+  * Major Release
 
- -- Steve Frécinaux <sfrecinaux@beip.be>  Wed, 29 Jul 2015 14:57:06 +0200
+ -- Razvan Crainea <razvan@opensips.org>  Fri, 04 Sep 2015 13:44:06 +0200
 
 
 opensips (2.1.0) stable; urgency=low
