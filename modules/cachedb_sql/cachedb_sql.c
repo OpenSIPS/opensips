@@ -273,7 +273,7 @@ static int dbcache_get(cachedb_con *con, str* attr, str* res)
 	}
 
 	if (RES_ROW_N(db_res) <= 0 || RES_ROWS(db_res)[0].values[0].nul != 0) {
-		LM_DBG("no value found for keyI\n");
+		LM_DBG("no value found for key\n");
 		if (db_res != NULL && CACHEDBSQL_FUNC(con).free_result(CACHEDBSQL_CON(con),db_res) < 0)
 			LM_DBG("failed to free result of query\n");
 		return -2;
@@ -440,10 +440,12 @@ static int dbcache_fetch_counter(cachedb_con *con,str *attr,int *ret_val)
 	}
 
 	if (RES_ROW_N(db_res) <= 0 || RES_ROWS(db_res)[0].values[0].nul != 0) {
-		LM_DBG("no value found for keyI\n");
+		LM_DBG("no value found for counter key, assuming 0\n");
+		if (ret_val)
+			*ret_val = 0;
 		if (db_res != NULL && CACHEDBSQL_FUNC(con).free_result(CACHEDBSQL_CON(con), db_res) < 0)
 			LM_DBG("failed to free result of query\n");
-		return -2;
+		return 1;
 	}
 
 	switch(RES_ROWS(db_res)[0].values[0].type) {
