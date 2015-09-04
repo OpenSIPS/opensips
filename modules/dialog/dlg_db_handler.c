@@ -44,7 +44,6 @@
 #include "dlg_cb.h"
 #include "dlg_profile.h"
 
-
 str call_id_column			=	str_init(CALL_ID_COL);
 str from_uri_column			=	str_init(FROM_URI_COL);
 str from_tag_column			=	str_init(FROM_TAG_COL);
@@ -84,6 +83,9 @@ extern stat_var *active_dlgs;
 extern stat_var *early_dlgs;
 
 static inline void set_final_update_cols(db_val_t *, struct dlg_cell *, int);
+static int decode_string(str *sin);
+static int encode_string(char *dst, int *dst_len, char *src, int *src_len);
+
 
 #define SET_INT_VALUE(_val, _int)\
 	do{\
@@ -307,14 +309,13 @@ static inline char* read_pair(char *b, char *end, str *name, str *val)
 {
 	/* read name */
 	name->s = b;
-	while( b<end && !( (*b=='|'|| *b=='#') &&
-				(*(b-1)!='\\' || *(b-2)=='\\')) )
+	while( b<end && !( (*b=='|'|| *b=='#')) )
 		b++;
 	if (b==end) return NULL;
 	if (*b=='|') goto skip;
 	name->len = b - name->s;
 	if (name->len==0) goto skip;
-	strip_esc(name);
+	decode_string(name);
 	/*LM_DBG("-----read name <%.*s>(%d)\n",name->len,name->s,name->len);*/
 
 	/* read # */
@@ -322,14 +323,13 @@ static inline char* read_pair(char *b, char *end, str *name, str *val)
 
 	/* read value */
 	val->s = b;
-	while( b<end && !( (*b=='|'|| *b=='#') &&
-				(*(b-1)!='\\' || *(b-2)=='\\')) )
+	while( b<end && !( (*b=='|'|| *b=='#')) )
 		b++;
 	if (b==end) return NULL;
 	if (*b=='#') goto skip;
 	val->len = b - val->s;
 	if (val->len==0) val->s = 0;
-	strip_esc(val);
+	decode_string(val);
 	/*LM_DBG("-----read value <%.*s>(%d)\n",val->len,val->s,val->len);*/
 
 	/* read | */
@@ -876,48 +876,103 @@ error:
 static inline unsigned int write_pair( char *b, str *name, str *name_suffix,
 				str *val)
 {
-	int i,j;
+	int j;
+	int b_len = 0;
 
-	for( i=0,j=0 ; i<name->len ; i++) {
-		if (name->s[i]=='|' || name->s[i]=='#' || name->s[i]=='\\')
-			b[j++] = '\\';
-		b[j++] = name->s[i];
-	}
+	encode_string(b, &j, name->s, &name->len);
 	if (name_suffix) {
 		memcpy(b+j,name_suffix->s,name_suffix->len);
 		j+=name_suffix->len;
 	}
 	b[j++] = '#';
-	for( i=0 ; val && i<val->len ; i++) {
-		if (val->s[i]=='|' || val->s[i]=='#' || val->s[i]=='\\')
-			b[j++] = '\\';
-		b[j++] = val->s[i];
-	}
-	b[j++] = '|';
 
+	if (val)
+		encode_string(b + j, &b_len, val->s, &val->len);
+	j += b_len;
+
+	b[j++] = '|';
 	return j;
 }
 
+static int decode_string(str *sin)
+{
+	char *p, c;
+
+	int j = sin->len;
+
+	if (sin == NULL || sin->s == NULL || sin->len == 0)
+		return -1;
+	p = sin->s;
+	for( ; j > 0; j--, p++) {
+		if (*p == '\\') {
+			p++;
+			if (*p <= '9') {
+				c = (*p - '0') << 4;
+			} else {
+				c = (*p - 'a' + 10) << 4;
+			}
+			p++;
+			if (*p <= '9') {
+				c = c + (*p - '0');
+			} else {
+				c = c + (*p - 'a' + 10);
+			}
+			p = p-2;
+			memmove(p, p + 2, j - 2);
+			*p = c;
+			j -= 2;
+			sin->len = sin->len - 2;
+		}
+	}
+	return 0;
+}
+
+static int encode_string(char *dst, int *dst_len, char *src, int *src_len)
+{
+	unsigned char x;
+	int j = 0;
+	char *at = dst;
+	char *p = src;
+	while (j <= *src_len) {
+		if (*p < 32 || *p > 126 || *p == '#' || *p == '|' || *p == '\\') {
+			*at++ = '\\';
+			x = (*p) >> 4;
+			if (x < 10) {
+				*at++ = x + '0';
+			} else {
+				*at++ = x - 10 + 'a';
+			}
+			x = (*p) & 0x0f;
+			if (x < 10) {
+				*at = x + '0';
+			} else {
+				*at = x - 10 + 'a';
+			}
+		} else {
+			*at = *p;
+		}
+		p++;
+		at++;
+		j++;
+	}
+	*dst_len = at - dst;
+	return 0;
+}
 
 static str* write_dialog_vars( struct dlg_val *vars)
 {
 	static str o = {NULL,0};
 	static int o_l=0;
 	struct dlg_val *v;
-	unsigned int l,i;
+	unsigned int l;
 	char *p;
-
 	/* compute the required len */
-	for ( v=vars,l=0 ; v ; v=v->next) {
-		l += v->name.len + 1 + v->val.len + 1;
-		for( i=0 ; i<v->name.len ; i++ )
-			if (v->name.s[i]=='|' || v->name.s[i]=='#' || v->name.s[i]=='\\') l++;
-		for( i=0 ; i<v->val.len ; i++ )
-			if (v->val.s[i]=='|' || v->val.s[i]=='#' || v->val.s[i]=='\\') l++;
+	for ( v=vars,l=0; v ; v=v->next) {
+		l += v->name.len * 3 + 1 + v->val.len * 3 + 1;
 	}
 
 	/* allocate the string to be stored */
-	if ( o.s==NULL || o_l<l) {
+	if (o.s==NULL || o_l<l) {
 		if (o.s) pkg_free(o.s);
 		o.s = (char*)pkg_malloc(l);
 		if (o.s==NULL) {
@@ -928,17 +983,14 @@ static str* write_dialog_vars( struct dlg_val *vars)
 	}
 
 	/* write the stuff into it */
-	o.len = l;
 	p = o.s;
 	for ( v=vars ; v ; v=v->next) {
 		p += write_pair( p, &v->name,NULL, &v->val);
 	}
-	if (o.len!=p-o.s) {
-		LM_CRIT("BUG - buffer overflow allocated %d, written %d\n",
-			o.len,(int)(p-o.s));
-		return NULL;
-	}
-	LM_DBG("var string is <%.*s>(%d)\n", l,o.s,l);
+
+	o.len = p - o.s;
+
+	LM_DBG("var string is <%.*s>(%d)\n", o.len,o.s,o.len);
 
 	return &o;
 }
@@ -949,20 +1001,14 @@ static str* write_dialog_profiles( struct dlg_profile_link *links)
 	static str o = {NULL,0},cached_marker={"/s",2};
 	static int o_l = 0;
 	struct dlg_profile_link *link;
-	unsigned int l,i;
+	unsigned int l;
 	char *p;
 
 	/* compute the required len */
 	for ( link=links,l=0 ; link ; link=link->next) {
-		l += link->profile->name.len + 1 + link->value.len + 1;
-		for( i=0 ; i<link->profile->name.len ; i++ )
-			if (link->profile->name.s[i]=='|' || link->profile->name.s[i]=='#'
-					|| link->profile->name.s[i]=='\\') l++;
-		for( i=0 ; i<link->value.len ; i++ )
-			if (link->value.s[i]=='|' || link->value.s[i]=='#'
-					|| link->value.s[i]=='\\') l++;
+		l += link->profile->name.len * 3 + 1 + link->value.len * 3 + 1;
 		if (link->profile->use_cached)
-			l+=cached_marker.len;
+			l+=cached_marker.len * 3;
 	}
 
 	/* allocate the string to be stored */
@@ -977,7 +1023,6 @@ static str* write_dialog_profiles( struct dlg_profile_link *links)
 	}
 
 	/* write the stuff into it */
-	o.len = l;
 	p = o.s;
 	for ( link=links; link ; link=link->next) {
 		if (link->profile->use_cached)
@@ -986,12 +1031,17 @@ static str* write_dialog_profiles( struct dlg_profile_link *links)
 		else
 			p += write_pair( p, &link->profile->name, NULL, &link->value);
 	}
+
+	o.len = p - o.s;
+	/*
 	if (o.len!=p-o.s) {
 		LM_CRIT("BUG - buffer overflow allocated %d, written %d\n",
 			o.len,(int)(p-o.s));
 		return NULL;
 	}
-	LM_DBG("profile string is <%.*s>(%d)\n", l,o.s,l);
+	*/
+
+	LM_DBG("profile string is <%.*s>(%d)\n", o.len,o.s,o.len);
 
 	return &o;
 }
