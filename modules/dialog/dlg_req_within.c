@@ -72,7 +72,8 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dst_leg, int src_leg)
 	memset(td, 0, sizeof(dlg_t));
 
 	if ((dst_leg == DLG_CALLER_LEG && (cell->flags & DLG_FLAG_PING_CALLER)) ||
-		(dst_leg == callee_idx(cell) && (cell->flags & DLG_FLAG_PING_CALLEE)))
+		(dst_leg == callee_idx(cell) && (cell->flags & DLG_FLAG_PING_CALLEE)) || 
+		cell->flags & DLG_FLAG_CSEQ_ENFORCE)
 	{
 		dlg_lock_dlg(cell);
 		if (cell->legs[dst_leg].last_gen_cseq == 0)
