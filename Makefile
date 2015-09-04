@@ -445,7 +445,7 @@ deb:
 	dpkg-buildpackage \
 		-I.git -I.gitignore \
 		-I*.swp -I*~ \
-		-i\\.git\|debian\|^\\.\\w+\\.swp\|lex\\.yy\\.c\|cfg\\.tab\\.\(c\|h\) \
+		-i\\.git\|debian\|^\\.\\w+\\.swp\|lex\\.yy\\.c\|cfg\\.tab\\.\(c\|h\)\|\\w+\\.patch \
 		-rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
 	rm -rf debian
 
