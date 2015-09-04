@@ -26,6 +26,9 @@ URL := https://github.com/OpenSIPS/opensips/archive/$(UPVERSION).tar.gz
 
 # List of all debian module packages we will build
 # Used to index the make variable below, which has details about each package
+#
+# LUA has been removed due to libmemcache dependency.
+#     See https://github.com/OpenSIPS/opensips/issues/580
 ALL_MODPKG_LIST := \
 	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
 	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
@@ -182,6 +185,9 @@ LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
 
 # force lib (versus lib64) and SMP support all the time
 VARS = LIBDIR=lib ISSMP=yes
+
+# Debian Jessie doesn't package radius-ng, so use freeradius instead
+VARS += FREERADIUS=yes
 
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
