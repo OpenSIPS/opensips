@@ -64,6 +64,8 @@ typedef struct _pv_name_fix
 	cache_entry_t *c_entry;
 	pv_elem_t *pv_elem_list;
 	int col_offset;
+	int col_nr;
+	char last_str;
 } pv_name_fix_t;
 
 #endif

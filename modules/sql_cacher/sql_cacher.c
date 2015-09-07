@@ -286,8 +286,8 @@ static int parse_cache_entries(void) {
 parse_err:
 		LM_ERR("Invalid cache entry specification\n");
 		if (new_entry->columns)
-			free(new_entry->columns);
-		free(new_entry);
+			shm_free(new_entry->columns);
+		shm_free(new_entry);
 		continue;
 end_parsing:
 		insert_cache_entry(new_entry);
@@ -416,8 +416,9 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_val_t *key, db_val_t *va
 			default: continue;
 		}
 
-		if (VAL_NULL(values + i) || !str_val.len)
+		if (VAL_NULL(values + i)) {
 			int_val = 0;
+		}
 		else
 			int_val = strs_offset;
 
@@ -723,6 +724,85 @@ static int child_init(int rank) {
 	return 0;
 }
 
+/* return value:
+*  0 - succes
+*  1 - succes, null value in db
+* -1 - error
+* -2 - not found
+*/
+static int get_from_cachedb(pv_name_fix_t *pv_name, str *str_res, int *int_res) {
+	str cdb_res, cdb_key;
+	long long one = 1;
+	int int_val, next_str_off, i, rc;
+	char int_buf[4];
+	const char zeroes[INT_B64_ENC_LEN] = {0};
+
+	cdb_key.len = pv_name->id.len + pv_name->key.len;
+	cdb_key.s = pkg_malloc(cdb_key.len);
+	if (!cdb_key.s) {
+		LM_ERR("No more pkg memory\n");
+		return -1;
+	}
+	memcpy(cdb_key.s, pv_name->id.s, pv_name->id.len);
+	memcpy(cdb_key.s + pv_name->id.len, pv_name->key.s, pv_name->key.len);
+
+	rc = pv_name->c_entry->cdbf.get(pv_name->c_entry->cdbcon, &cdb_key, &cdb_res); 
+	if (rc == -1)
+		goto error;
+	if (rc == -2)
+		return -2;
+
+	if (pv_name->col_offset == -1) {
+		LM_WARN("Unknown column %.*s\n", pv_name->col.len, pv_name->col.s);
+		return -1;
+	}
+
+	/* null integer value in db */
+	if (!memcmp(cdb_res.s + pv_name->col_offset, zeroes, INT_B64_ENC_LEN))
+		return 1;
+
+	/* decode the integer value or the offset of the string value */
+	if (base64decode((unsigned char *)int_buf,
+		(unsigned char *)(cdb_res.s + pv_name->col_offset), INT_B64_ENC_LEN) != 4)
+		goto error;
+	memcpy(&int_val, int_buf, 4);
+
+	if ((pv_name->c_entry->column_types & (one << pv_name->col_nr)) != 0) {
+		/* null string value in db */
+		if (int_val == 0)
+			return 1;
+
+		str_res->s = cdb_res.s + int_val;
+		if (pv_name->last_str)
+			str_res->len = cdb_res.len - int_val;
+		else {
+			/* calculate the length of the current string using the offset of the next not null string */
+			i = 1;
+			do {
+				rc = base64decode((unsigned char *)int_buf, (unsigned char *)(cdb_res.s +
+					pv_name->col_offset + i * INT_B64_ENC_LEN), INT_B64_ENC_LEN);
+				if (rc != 4)
+					goto error;
+				memcpy(&next_str_off, int_buf, 4);
+				i++;
+			} while (next_str_off == 0 && pv_name->col_offset + i*INT_B64_ENC_LEN <
+						pv_name->c_entry->nr_columns * INT_B64_ENC_LEN);
+
+			if (next_str_off == 0)
+				str_res->len = cdb_res.len - int_val;
+			else
+				str_res->len = next_str_off - int_val;
+		}
+	} else {
+		*int_res = int_val;
+	}
+
+	return 0;
+error:
+	LM_ERR("Failed to get value from cachedb\n");
+	return -1;
+}
+
 static int parse_pv_name_s(pv_name_fix_t *pv_name, str *name_s) {
 	char *p1 = NULL, *p2 = NULL;
 	char last;
@@ -817,9 +897,11 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	pv_name_fix_t *pv_name;
 	str name_s;
 	cache_entry_t *it;
-	int i, j, prev_cols;
-	char col_type1, col_type2;
+	int i, j, prev_cols, rc;
+	char col_type1, col_type2, *ch = NULL;
 	long long one = 1;
+	int int_res = 0, l = 0;
+	str str_res = {NULL, 0};
 
 	if (param == NULL || param->pvn.type != PV_NAME_PVAR ||
 		param->pvn.u.dname == NULL) {
@@ -842,12 +924,9 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 		}
 		if (parse_pv_name_s(pv_name, &name_s) < 0)
 			return pv_get_null(msg, param, res);
-	} else {
-		/* already parsed */
-		name_s = pv_name->id;
 	}
 
-	/* save pointer to cache entries list and collumn offset in the pv spec */
+	/* save pointer to cache entries list and column offset in the pv spec */
 	if (!pv_name->c_entry) {
 		for (it = *entry_list; it != NULL; it = it->next) {
 			if (!memcmp(it->id.s, pv_name->id.s, pv_name->id.len)) {
@@ -855,6 +934,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 
 				for (i = 0; i < it->nr_columns; i++) {
 					if (!memcmp(it->columns[i].s, pv_name->col.s, pv_name->col.len)) {
+						pv_name->col_nr = i;
 						prev_cols = 0;
 						col_type1 = ((it->column_types & (one << i)) != 0);
 						for (j = 0; j < i; j++) {
@@ -862,27 +942,63 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 							if (col_type1 == col_type2)
 								prev_cols++;
 						}
-						if (col_type1)
+						if (col_type1) {
 							pv_name->col_offset = it->nr_ints * INT_B64_ENC_LEN +
 													prev_cols * INT_B64_ENC_LEN;
+							if (prev_cols == it->nr_strs - 1)
+								pv_name->last_str = 1;
+							else
+								pv_name->last_str = 0;
+						}
 						else
 							pv_name->col_offset = prev_cols * INT_B64_ENC_LEN;
+
 						break;
 					}
 				}
-				if (i == it->nr_columns)
+				if (i == it->nr_columns) {
+					pv_name->col_nr = -1;
 					pv_name->col_offset = -1;
+				}
+
 				break;
 			}
 		}
 
 		if (!it) {
-			LM_ERR("Unknown caching id\n");
+			LM_WARN("Unknown caching id %.*s\n", pv_name->id.len, pv_name->id.s);
 			return pv_get_null(msg, param, res);
 		}
 	}
 
-	return pv_get_null(msg, param, res);
+	rc = get_from_cachedb(pv_name, &str_res, &int_res);
+	switch (rc) {
+		case -1:
+			return pv_get_null(msg, param, res);
+			break;
+		case -2:
+			LM_DBG("Key: %.*s not found\n", pv_name->key.len, pv_name->key.s);
+			return pv_get_null(msg, param, res);
+			break;
+		case 1:
+			LM_DBG("NULL value in SQL db\n");
+			return pv_get_null(msg, param, res);
+			break;
+		case 0:
+			if ((pv_name->c_entry->column_types & (one << pv_name->col_nr)) != 0) {
+				res->flags = PV_VAL_STR;
+				res->rs.s = str_res.s;
+				res->rs.len = str_res.len;
+			} else {
+				res->ri = int_res;
+				ch = int2str(int_res, &l);
+				res->rs.s = ch;
+				res->rs.len = l;
+				res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+			}
+	}
+
+	return 0;
 }
 
 static void destroy(void) {
