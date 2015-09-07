@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -27,6 +27,7 @@
  *  2015-05-20 change callcell identity
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-08-05 code review (Villaron/Tesini)
+ *  2015-09-07 final test cases (Villaron/Tesini)   
  */
 
 #include <stdio.h>
@@ -194,9 +195,9 @@ int get_subscription_state_header(struct sip_msg *msg, char** subs_state, char**
 */
 int get_expires_header(struct sip_msg *msg, char** expires) {
 
-    LM_DBG("EXPIRES: %.*s \n", msg->expires->body.len, msg->expires->body.s);
+    if (msg->expires!=NULL && msg->expires->body.len > 0){
 
-    if (msg->expires->body.len > 0){
+        LM_DBG("EXPIRES: %.*s \n", msg->expires->body.len, msg->expires->body.s);       
         *expires = pkg_malloc(sizeof (char) * msg->expires->body.len + 1);
         if (*expires == NULL) {
             LM_ERR("NO MEMORY\n");
@@ -233,7 +234,7 @@ int get_event_header(struct sip_msg *msg, char** subs_callid, char** from_tag) {
         return 0;
     }
 
-    if (msg->event->body.len > 0){
+    if (msg->event != NULL && msg->event->body.len > 0){
 
         LM_DBG(" --- Event body: %.*s\n\n",msg->event->body.len, msg->event->body.s);
         callid_aux = pkg_malloc(sizeof (char)*MAXNUMBERLEN);
@@ -367,6 +368,7 @@ int found_CBN(struct sip_msg *msg, char** cbn_aux) {
     str cbn;
     str pattern, pattern_sip, replacement;
     int found_cbn;
+    char* header_aux;
 
     cbn.s = *cbn_aux;
     cbn.len = MAX_URI_SIZE;
@@ -384,15 +386,16 @@ int found_CBN(struct sip_msg *msg, char** cbn_aux) {
     // First lookup CBN in P-Asserted-Identity header
     if (parse_pai_header(msg) == 0) {
         LM_DBG("****** PAI: %.*s\n", msg->pai->body.len, msg->pai->body.s);
+        CP_STR_CHAR(msg->pai->body, header_aux);
 
-        if (reg_replace(pattern.s, replacement.s, msg->pai->body.s, &cbn) == 1) {
+        if (reg_replace(pattern.s, replacement.s, header_aux, &cbn) == 1) {
 
             found_cbn = 1;
             LM_DBG("****** PATTERN OK\n");
             LM_DBG("****** REG_REPLACE: %.*s\n", cbn.len, cbn.s);          
         } else {
 
-            if (reg_replace(pattern_sip.s, replacement.s, msg->pai->body.s, &cbn) == 1) {
+            if (reg_replace(pattern_sip.s, replacement.s, header_aux, &cbn) == 1) {
                     found_cbn = 1;
                     LM_DBG("****** PATTERN OK\n");
                     LM_DBG("****** REG_REPLACE: %.*s\n", cbn.len, cbn.s);
@@ -402,6 +405,7 @@ int found_CBN(struct sip_msg *msg, char** cbn_aux) {
             }
 
         }
+        pkg_free(header_aux);
 
     }
 
@@ -409,8 +413,9 @@ int found_CBN(struct sip_msg *msg, char** cbn_aux) {
     if (found_cbn == 0) {
         if (parse_ppi_header(msg) == 0) {
             LM_DBG("****** PPI: %.*s\n", msg->ppi->body.len, msg->ppi->body.s);
+            CP_STR_CHAR(msg->ppi->body, header_aux);
 
-            if (reg_replace(pattern.s, replacement.s, msg->ppi->body.s, &cbn) == 1) {
+            if (reg_replace(pattern.s, replacement.s, header_aux, &cbn) == 1) {
                 found_cbn = 1;
                 LM_DBG("****** PATTERN OK\n");
                 LM_DBG("****** REG_REPLACE: %.*s\n", cbn.len, cbn.s);
@@ -418,6 +423,7 @@ int found_CBN(struct sip_msg *msg, char** cbn_aux) {
                 memset(cbn.s, 0, MAX_URI_SIZE);
                 LM_DBG("****** PATTERN NAO OK \n");
             }
+            pkg_free(header_aux);
         }
     }
 
@@ -425,8 +431,8 @@ int found_CBN(struct sip_msg *msg, char** cbn_aux) {
     if (found_cbn == 0) {
         if (parse_rpid_header(msg) == 0) {
             LM_DBG("****** RPID: %.*s\n", msg->rpid->body.len, msg->rpid->body.s);
-
-            if (reg_replace(pattern.s, replacement.s, msg->rpid->body.s, &cbn) == 1) {
+            CP_STR_CHAR(msg->rpid->body, header_aux);
+            if (reg_replace(pattern.s, replacement.s, header_aux, &cbn) == 1) {
                 found_cbn = 1;
                 LM_DBG("****** PATTERN OK\n");
                 LM_DBG("****** REG_REPLACE: %.*s\n", cbn.len, cbn.s);
@@ -434,6 +440,7 @@ int found_CBN(struct sip_msg *msg, char** cbn_aux) {
                 memset(cbn.s, 0, MAX_URI_SIZE);
                 LM_DBG("****** PATTERN NAO OK \n");
             }
+            pkg_free(header_aux);
         }
     }
 
@@ -442,14 +449,15 @@ int found_CBN(struct sip_msg *msg, char** cbn_aux) {
 
         if (parse_from_header(msg) == 0) {
             LM_DBG("****** FROM: %.*s\n", msg->from->body.len, msg->from->body.s);
+            CP_STR_CHAR(msg->from->body, header_aux);            
 
-            if (reg_replace(pattern.s, replacement.s, msg->from->body.s, &cbn) == 1) {
+            if (reg_replace(pattern.s, replacement.s, header_aux, &cbn) == 1) {
                 found_cbn = 1;
                 LM_DBG("****** PATTERN OK\n");
                 LM_DBG("****** REG_REPLACE: %.*s\n", cbn.len, cbn.s);
             } else {
 
-                if (reg_replace(pattern_sip.s, replacement.s, msg->from->body.s, &cbn) == 1) {
+                if (reg_replace(pattern_sip.s, replacement.s, header_aux, &cbn) == 1) {
                     found_cbn = 1;
                     LM_DBG("****** PATTERN OK\n");
                     LM_DBG("****** REG_REPLACE: %.*s\n", cbn.len, cbn.s);
@@ -459,6 +467,7 @@ int found_CBN(struct sip_msg *msg, char** cbn_aux) {
                     cbn.len = 0;
                 }
             }
+            pkg_free(header_aux);
 
         } else {
             LM_ERR("****** FROM: ERRO");
@@ -468,6 +477,9 @@ int found_CBN(struct sip_msg *msg, char** cbn_aux) {
     }
 
     return 1;
+
+error:
+    return -1;
 }
 
 
@@ -481,7 +493,13 @@ int check_event_header(struct sip_msg *msg) {
         return 0;
     }
 
+    if( msg->event==NULL || msg->event->body.s==NULL){
+        LM_ERR("msg without event header\n");
+        return 0;
+    }
+
     LM_DBG(" -----------EVENT HEADER %.*s \n \n", msg->event->body.len, msg->event->body.s);
+
     if(strncmp(msg->event->body.s,EVENT_TYPE,6) == 0)
         return 1;
 
@@ -564,7 +582,11 @@ int add_hdr_rpl(struct esct *call_cell, struct sip_msg *msg) {
         return -1;
     rp_addr_len = strlen(rp_addr);
 
-    if (call_cell->esgwri != empty && strlen(call_cell->esgwri) > 0) {
+    int result = atoi(call_cell->result);
+    int range = range_result(result);
+    LM_DBG(" --- range %d", range);
+
+    if ( (range == 0) && (call_cell->esgwri != empty && strlen(call_cell->esgwri) > 0) && (call_cell->esqk != empty && strlen(call_cell->esqk) > 0)) {
 
         len = CONTACT_HDR_LEN + strlen(call_cell->esqk) + strlen(call_cell->esgwri) + rp_addr_len + CONTACT_SUFFIX_LEN + CONTACT_MIDLE_LEN + 9;
 
@@ -762,14 +784,13 @@ int add_headers(char *esqk, struct sip_msg *msg, str cbn) {
     *p = 0;
 
     l = insert_new_lump_after(l, s, len, HDR_PAI_T);
-    if (l == NULL) {
-        pkg_free(s);       
+    if (l == NULL) {     
         LM_ERR("failed to insert new lump\n");
         resp = -1;
         goto end;
     }
 
-    rr_api.record_route(msg, NULL);
+    //rr_api.record_route(msg, NULL);
     resp = 1;
 end:   
     pkg_free(cbn.s);
@@ -841,7 +862,6 @@ int add_hdr_PAI(struct sip_msg *msg, str cbn) {
 
     l = insert_new_lump_after(l, s, len, HDR_PAI_T);
     if (l == NULL) {
-        pkg_free(s);
         LM_ERR("failed to insert new lump\n");
         resp = -1;
         goto end;
@@ -996,7 +1016,7 @@ int extract_contact_hdrs(struct sip_msg *reply, char **contact_esgwri, char **co
 
     // check if is 300/302 reply
     if ((reply->first_line.u.reply.statuscode != 300)&&(reply->first_line.u.reply.statuscode != 302)){
-        LM_ERR("NO redirect response\n");
+        LM_DBG("NO redirect response\n");
         return -1;        
     }
 
@@ -1044,7 +1064,9 @@ int extract_contact_hdrs(struct sip_msg *reply, char **contact_esgwri, char **co
             if (strstr(contact_hdr_II, "P-Asserted-Identity") != NULL){
                 *contact_esgwri = contact_hdr_II; 
                 *contact_lro = contact_hdr;                
-            }else{  
+            }else{ 
+                pkg_free(contact_hdr);
+                pkg_free(contact_hdr_II); 
                 return -1;
             }
         }else{

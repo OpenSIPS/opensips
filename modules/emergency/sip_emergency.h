@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -27,6 +27,7 @@
  *  2015-05-20 change callcell identity
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-08-05 code review (Villaron/Tesini)
+ *  2015-09-07 final test cases (Villaron/Tesini)   
  */
 
 
@@ -57,6 +58,17 @@
 
 #include "hash.h" 
 
+#define CP_STR_CHAR(str_source, char_dest)\
+	do{	\
+	    char_dest = (char *)pkg_malloc( str_source.len + 1);\
+	    if (!char_dest) {\
+	        LM_ERR("no more shm\n");\
+	        goto error;\
+	    }\
+	    memcpy(char_dest, str_source.s, str_source.len);\
+	    char_dest[str_source.len] = 0;\
+	} while(0)
+
 int check_geolocation_header(struct sip_msg *msg);
 int get_geolocation_header(struct sip_msg *msg, char** locationHeader);
 int found_CBN(struct sip_msg *msg, char** cbn);
@@ -72,3 +84,4 @@ int get_ip_socket(struct sip_msg *msg, char** s_addr);
 int extract_contact_hdrs(struct sip_msg *reply, char **contact_esgwri, char **contact_lro);
 int get_subscription_state_header(struct sip_msg *msg, char** subs_state, char** expires);
 int get_event_header(struct sip_msg *msg, char** subs_state, char** expires);
+int range_result(int result); 

@@ -17,12 +17,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-08-05 code review (Villaron/Tesini)
+ *  2015-09-07 final test cases (Villaron/Tesini)
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -491,19 +492,20 @@ struct sm_subscriber* search_shtable(sbtable_t htable, str* callid, str* from_ta
 
 	LM_DBG("******************************METODO %.*s\n", method->len, method->s);	
 
-    if (memcmp(method->s,"BYE", method->len) == 0) {
-        dlg_id = s->call_dlg_id;
-    }else{
-        dlg_id = s->dlg_id;         
-    }		 
+	while(s)
+	{
+	    if (memcmp(method->s,"BYE", method->len) == 0) {
+	        dlg_id = s->call_dlg_id;
+	    }else{
+	        dlg_id = s->dlg_id;         
+	    }		 
 
         LM_DBG(" --------------------CALLID M%.*s\n", callid->len, callid->s); 
         LM_DBG(" --------------------FROM TAG M%.*s\n", from_tag->len, from_tag->s); 	
         LM_DBG(" --------------------CALLID T%.*s\n",dlg_id->callid.len,dlg_id->callid.s); 
-        LM_DBG(" --------------------FROM TAG T%.*s\n",dlg_id->rem_tag.len,dlg_id->rem_tag.s); 
+        LM_DBG(" --------------------FROM TAG T%.*s\n",dlg_id->rem_tag.len,dlg_id->rem_tag.s);
 
-	while(s)
-	{
+
 		if(dlg_id->callid.len == callid->len &&
 			strncmp(dlg_id->callid.s, callid->s, callid->len)==0 &&
 			dlg_id->rem_tag.len == from_tag->len &&

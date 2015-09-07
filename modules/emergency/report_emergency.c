@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -27,6 +27,7 @@
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-08-05 code review (Villaron/Tesini) 
+ *  2015-09-07 final test cases (Villaron/Tesini)   
  */
 
 #include <stdio.h>
@@ -392,7 +393,6 @@ struct service_provider* get_provider(struct sip_msg *msg, int attr, rw_lock_t *
         provider = provider->next;
     }
     lock_stop_read(ref_lock);
-
     return NULL;    
 }
 
@@ -671,7 +671,6 @@ int get_db_provider(str table_name, rw_lock_t *ref_lock ){
 
         if (attribution == 0){
             if (hostId.len == 0 || contact.len == 0) {
-                LM_ERR("source_hostname and source_contact are mandatory \n");
                 mandatory_parm[0] = '1';
                 mandatory_parm[1] = 0;
             } else{

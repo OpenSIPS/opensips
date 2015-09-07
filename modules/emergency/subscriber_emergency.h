@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -27,6 +27,7 @@
  *  2015-05-20 change callcell identity
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-08-05 code review (Villaron/Tesini)
+ *  2015-09-07 final test cases (Villaron/Tesini)   
  */
 
 #include "../../sr_module.h"
@@ -57,10 +58,8 @@
 
 #include "http_emergency.h" 
 
- #define TIMER_N				30
+ #define TIMER_N				132  // Timer N = 64*T1      T1 = (0,5s)
  #define MAXNUMBERLEN 			31
-
-int proxy_role_aux;
 
 struct tm_binds eme_tm;
 

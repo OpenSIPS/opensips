@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -26,6 +26,8 @@
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-05-20 change callcell identity
  *  2015-06-08 change from list to hash (Villaron/Tesini)
+ *  2015-08-05 code review (Villaron/Tesini)
+ *  2015-09-07 final test cases (Villaron/Tesini)   
  */
 
 #include <stdio.h>
@@ -60,7 +62,6 @@ int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb){
     int size_subs_cell;
     int vsp_addr_len;
     char *vsp_addr = "@vsp.com"; 
-    str vsp_str;
     time_t rawtime;
     int time_now;
     struct sm_subscriber *subs_cell = NULL;
@@ -174,10 +175,6 @@ int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb){
 
     subs_cell->dlg_id->status = NOTIFY_WAIT;
 
-    vsp_str.s = vsp_addr;
-    vsp_str.len = vsp_addr_len;
-            LM_DBG("********************************************IP DE ORIGEM%.*s\n", vsp_str.len, vsp_str.s);
-
     hash_code= core_hash(&subs_cell->dlg_id->callid, 0, subst_size);
     LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
@@ -228,7 +225,7 @@ int extract_reply_headers(struct sip_msg* reply, str* callid, int expires){
         LM_ERR("reply without Expires header\n");
         return 0;       
     }
-    /* extract the other necesary information for inserting a new record */
+    /* extract the other necessary information for inserting a new record */
     if(reply->expires && reply->expires->body.len > 0){
         expires = atoi(reply->expires->body.s);
         LM_DBG("expires= %d\n", expires);
@@ -514,7 +511,7 @@ void subs_cback_func_II(struct cell *t, int cb_type, struct tmcb_params *params)
 
     int code = params->code;
     struct sip_msg *reply = params->rpl;
-    struct sm_subscriber* params_subs = (struct sm_subscriber*)(*params->param); 
+    //struct sm_subscriber* params_subs = (struct sm_subscriber*)(*params->param); 
 
     LM_DBG("TREAT SUBSCRIBE TERMINATED REPLY \n");   
     LM_DBG("REPLY: %.*s \n ", reply->first_line.u.reply.version.len, reply->first_line.u.reply.version.s );
@@ -523,10 +520,11 @@ void subs_cback_func_II(struct cell *t, int cb_type, struct tmcb_params *params)
     if (code < 300){
         time_t rawtime;
         time(&rawtime);
-        int time_now = (int)rawtime;
-        LM_DBG("TIME : %d \n", (int)rawtime );
+        //int time_now = (int)rawtime;
 
-        params_subs->timeout =  TIMER_N + time_now; 
+        //params_subs->timeout =  TIMER_N + time_now; 
+        //LM_DBG("TIMEOUT REPLY SUBSCRIBE: %d\n ", params_subs->timeout);
+
 
     }else{
         LM_ERR("reply to subscribe terminated NOK\n ");
@@ -683,7 +681,6 @@ end_02:
     pkg_free(contact_pt);
     pkg_free(subscriber_pt);
  
-
     return resp;
 
 }
@@ -695,7 +692,6 @@ int send_subscriber_within(struct sip_msg* msg, struct sm_subscriber* subs, int 
     dlg_t* dialog =NULL;
     str met= {"SUBSCRIBE", 9};
     int sending;
-    char* event;
     str* pt_hdr= NULL;
     struct sm_subscriber* params_cb;
 
@@ -712,6 +708,7 @@ int send_subscriber_within(struct sip_msg* msg, struct sm_subscriber* subs, int 
     LM_DBG(" --- DIALOG LOCURI%.*s \n", dialog->loc_uri.len, dialog->loc_uri.s);
     LM_DBG(" --- DIALOG CONTACT%.*s \n", dialog->rem_target.len, dialog->rem_target.s);
 
+/*
     event = pkg_malloc(sizeof (char)* subs->event.len +1);
     if (event == NULL) {
         LM_ERR("no more pkg memory\n");
@@ -722,7 +719,7 @@ int send_subscriber_within(struct sip_msg* msg, struct sm_subscriber* subs, int 
 
     LM_DBG(" --- EXPIRES = %d \n", expires);    
     LM_DBG(" --- EVENT = %.*s \n", subs->event.len, subs->event.s); 
-
+*/
     params_cb = subs;
 
     pt_hdr = add_hdr_subscriber(expires, subs->event);
@@ -744,7 +741,7 @@ int send_subscriber_within(struct sip_msg* msg, struct sm_subscriber* subs, int 
         pkg_free(pt_hdr->s);  
         pkg_free(pt_hdr);
     }
-    pkg_free(event);    
+    //pkg_free(event);    
     pkg_free(dialog);
     return 1;
 }
@@ -803,8 +800,7 @@ struct sm_subscriber* get_subs_cell(struct sip_msg *msg, str callid_event) {
         LM_ERR("reply without tag value \n");
     }           
     LM_DBG("PTO: %.*s \n ", pto->uri.len, pto->uri.s ); 
-    LM_DBG("PTO_TAG: %.*s \n ", pto->tag_value.len, pto->tag_value.s ); 
-    LM_DBG("proxy_role_aux: %d \n ", proxy_role_aux );    
+    LM_DBG("PTO_TAG: %.*s \n ", pto->tag_value.len, pto->tag_value.s );   
     LM_DBG("********************************************CALLID_STR%.*s\n", callid_event.len, callid_event.s);
     hash_code= core_hash(&callid_event, 0, subst_size);
     LM_DBG("********************************************HASH_CODE%d\n", hash_code);
@@ -873,7 +869,7 @@ int treat_notify(struct sip_msg *msg) {
     }
 
     LM_DBG("STATUS: %d \n ", cell_subs->dlg_id->status); 
-    LM_DBG("TIMEOUT: %d \n ", cell_subs->timeout);
+    LM_DBG("TIMEOUT NOTIFY: %d \n ", cell_subs->timeout);
 
     /* get in Subscription_state header: state and expire */
     if(!get_subscription_state_header(msg, &subs_state, &subs_expires)){
@@ -888,14 +884,12 @@ int treat_notify(struct sip_msg *msg) {
 
     time(&rawtime);
     time_now = (int)rawtime;
-    LM_DBG("TIME : %d \n", (int)rawtime );
 
     /* analise state value*/
     if (strcmp(subs_state, "active") == 0){
-       cell_subs->dlg_id->status = ACTIVE;
-       cell_subs->expires = atoi(subs_expires); 
-       cell_subs->timeout =  cell_subs->expires + time_now; 
-        LM_DBG("TIMEOUT: %d \n ", cell_subs->timeout);  
+        cell_subs->dlg_id->status = ACTIVE;
+        cell_subs->expires = atoi(subs_expires); 
+        cell_subs->timeout =  cell_subs->expires + time_now;   
     }else{
         if (strcmp(subs_state, "pending") == 0){  
             cell_subs->dlg_id->status = PENDING ;
