@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -27,6 +27,7 @@
  *  2015-05-20 change callcell identity  
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-08-05 code review (Villaron/Tesini)
+ *  2015-09-07 final test cases (Villaron/Tesini)
  */
 
 #include <stdio.h>
@@ -47,7 +48,6 @@ int send_esct(struct sip_msg *msg, str callid_ori, str from_tag){
     int resp;
     char* callidHeader;
     char* ftag;
-    str vsp_addr;
     unsigned int hash_code;
     str callid;
 
@@ -71,12 +71,6 @@ int send_esct(struct sip_msg *msg, str callid_ori, str from_tag){
 
     // extract call cell with same callid from list linked eme_calls
     LM_DBG(" --- BYE  callid=%s \n", callidHeader);
-
-
-
-    vsp_addr.s = ip_addr2a(&msg->rcv.src_ip);
-    vsp_addr.len = strlen(vsp_addr.s);
-            LM_DBG("********************************************IP DE ORIGEM%.*s\n", vsp_addr.len, vsp_addr.s);
 
     callid.s = callidHeader,
     callid.len = strlen(callidHeader); 
@@ -328,8 +322,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell, PARSED *parsed
         memcpy(call_cell->lro, pt_lro.s, pt_lro.len);  
         call_cell->lro[pt_lro.len] = 0;    
         pkg_free(lro_aux);
-        pkg_free(parsed->lro);        
-
+        pkg_free(parsed->lro);               
     }
 
 end:        
@@ -360,9 +353,9 @@ int get_lro_in_contact(char *contact_lro, ESCT *call_cell) {
     pt_contact_lro.s = contact_lro_aux;
     pt_contact_lro.len = len_contact_lro;
 
-    pattern_contact_lro.s = "(sips?:)*+?1?-?([0-9]+)@";
+    pattern_contact_lro.s = "sips?:[+]*1?-?([0-9]+)@";
     pattern_contact_lro.len = strlen(pattern_contact_lro.s);
-    replacement_contact_lro.s = "\\2";
+    replacement_contact_lro.s = "\\1";
     replacement_contact_lro.len = strlen(replacement_contact_lro.s);
 
     if (reg_replace(pattern_contact_lro.s, replacement_contact_lro.s, contact_lro, &pt_contact_lro) != 1) {
@@ -417,12 +410,7 @@ int get_esqk_in_contact(char *contact_esgwri, ESCT *call_cell){
         LM_ERR("****** PATTERN ESQK NAO OK \n");
         pkg_free(contact_esqk_aux);
         pkg_free(contact_esgwri);
-
-        if (strlen(call_cell->lro) <= 1){            
-            pkg_free(call_cell->callid);                            
-            pkg_free(call_cell);               
-        }
-        return -1;
+        return 0;
     }
     pt_contact_esqk.len = strlen(pt_contact_esqk.s);
 
@@ -501,13 +489,7 @@ int get_esgwri_ert_in_contact(char *contact_esgwri, ESCT *call_cell){
             LM_ERR("****** PATTERN ERT NAO OK \n");
             pkg_free(contact_routing_aux);
             pkg_free(contact_routing);                
-
-            if (strlen(call_cell->lro) <= 1){
-                pkg_free(call_cell->callid);
-                pkg_free(call_cell->esqk);                            
-                pkg_free(call_cell);               
-            }
-            return -1;
+            return 0;
         }
 
         LM_DBG ("CONTEUDO TRANS REPLY ERT %.*s \n", pt_contact_routing.len, pt_contact_routing.s);

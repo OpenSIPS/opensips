@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -26,6 +26,7 @@
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-08-05 code review (Villaron/Tesini)  
+ *  2015-09-07 final test cases (Villaron/Tesini)
  */
  
 #include <stdio.h>
@@ -65,6 +66,7 @@ struct sm_subscriber* build_notify_cell(struct sip_msg *msg, int expires){
     unsigned int hash_code;
     static str msg489={"Bad Event",sizeof("Bad Event")-1}; 
 
+
     // get data from SUBSCRIBE request
     // get callid from Subscribe
     if( msg->callid==NULL || msg->callid->body.s==NULL){
@@ -99,10 +101,7 @@ struct sm_subscriber* build_notify_cell(struct sip_msg *msg, int expires){
         LM_ERR("failed to parse TO header\n");
         return NULL;
     } 
-    if( pto->tag_value.s ==NULL || pto->tag_value.len == 0){
-        LM_ERR("subscribe without to_tag value \n");
-        //return 0;
-    }           
+          
     LM_DBG("PTO: %.*s \n ", pto->uri.len, pto->uri.s ); 
     LM_DBG("PTO_TAG: %.*s \n ", pto->tag_value.len, pto->tag_value.s ); 
 
@@ -230,7 +229,7 @@ int treat_subscribe(struct sip_msg *msg) {
     int expires= 0;
     char *subs_callid, *subs_fromtag;
     str callid_event;
-    unsigned int hash_code;
+    unsigned int hash_code;  
 
     if(!check_event_header(msg)){
         LM_ERR("event header type not allow\n");
@@ -258,7 +257,7 @@ int treat_subscribe(struct sip_msg *msg) {
         }   
     }
 
-    if (expires == 0){
+    if (expires == 0){       
 
         if(get_event_header(msg, &subs_callid, &subs_fromtag) == 1){
             callid_event.s = subs_callid;
@@ -290,13 +289,14 @@ int treat_subscribe(struct sip_msg *msg) {
         }
 
     }else{
-
         notify_cell =  build_notify_cell(msg, expires);
         if (notify_cell == NULL){
             LM_ERR("**** error in build notify cell");
+            if(!eme_tm.t_reply(msg,489,&msg489)){
+                LM_ERR("t_reply (489)\n");                
+            } 
             return 0;
         }
-
         /* Reply OK to Notify*/
         if(!eme_tm.t_reply(msg,200,&msg200)){
             LM_DBG("t_reply (200)\n");
@@ -416,7 +416,7 @@ void notif_cback_func(struct cell *t, int cb_type, struct tmcb_params *params){
     LM_DBG("CODE: %d \n ", code); 
 
     // verify if response is OK
-    if (code < 300){
+    if (code >= 200 && code < 300){
         // response OK(2XX)
         if (params_notify->expires > 0){
             LM_DBG("REPLY OK timeout %d \n", params_notify->timeout);
@@ -429,7 +429,7 @@ void notif_cback_func(struct cell *t, int cb_type, struct tmcb_params *params){
 
             // update timeout
             params_notify->timeout =  params_notify->expires + time_now; 
-            LM_DBG("TIMEOUT: %d \n ", params_notify->timeout);
+            LM_DBG("TIMEOUT_NOTIFY: %d \n ", params_notify->timeout);
             return;
         }
         if (params_notify->dlg_id->status == TERMINATED){ 

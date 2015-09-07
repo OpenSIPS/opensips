@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -27,6 +27,7 @@
  *  2015-05-20 change callcell identity
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-08-05 code review (Villaron/Tesini)
+ *  2015-09-07 final test cases (Villaron/Tesini)
 */
 
 #include <string.h>
@@ -41,6 +42,7 @@
 #include "../../mod_fix.h"
 #include "../../socket_info.h"
 #include "../../route_struct.h"
+#include "../../route.c"
 #include "../rr/api.h"
 #include "../../ip_addr.h"
 #include "../../parser/msg_parser.h"
@@ -67,17 +69,9 @@
 //str str_source;
 //char *char_dest;
 
-
-#define CP_STR_CHAR(str_source, char_dest)\
-	do{	\
-	    char_dest = (char *)pkg_malloc( str_source.len + 1);\
-	    if (!char_dest) {\
-	        LM_ERR("no more shm\n");\
-	        goto error;\
-	    }\
-	    memcpy(char_dest, str_source.s, str_source.len);\
-	    char_dest[str_source.len] = 0;\
-	} while(0)
+#define FREE_BUF(buf)\
+	if(buf != empty)\
+    	pkg_free(buf);
 
 
 #define MAXNUMBERLEN 			 31	
@@ -90,6 +84,8 @@
 #define PATTERN_TEL_LEN			 (sizeof(PATTERN_TEL)-1)
 #define ACK_TIME 				 3
 #define BYE_TIME 				 10
+
+#define	EXPIRES_SUBSCRIBE		300
 
 const char *BLANK_SPACE = " ";
 
@@ -174,7 +170,7 @@ int check_myself(struct sip_msg *msg);
 int contingency(struct sip_msg *msg, ESCT *call_cell);
 int fill_blank_space(void);
 int fill_parm_with_BS(char** var);
-unsigned long get_xml_size(char* lie, char* formated_time, char* callidHeader, char* cbn);
+unsigned long get_xml_size(char* lie, char* formated_time, char* callidHeader, char* cbn, char* call_origin);
 char* formatted_xml(struct sip_msg *msg, char* lie, char* callidHeader, char* cbn);
 int routing_by_ert( struct sip_msg *msg, ESCT *call_cell, int failure);
 int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeader, str cbn);
