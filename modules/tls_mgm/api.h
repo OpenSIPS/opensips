@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   api.h
  * Author: cristi
  *
@@ -36,7 +36,7 @@ static inline int load_tls_mgm_api(struct tls_mgm_binds *binds) {
     /* import the DLG auto-loading function */
     if (!(load_tls = (load_tls_mgm_f) find_export("load_tls_mgm", 0, 0)))
         return -1;
- 
+
     /* let the auto-loading function load all DLG stuff */
     if (load_tls(binds) == -1)
         return -1;
