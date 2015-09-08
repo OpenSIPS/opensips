@@ -64,7 +64,8 @@ static param_export_t params[] = {
 
 static cmd_export_t cmds[] = {
 	{"is_peer_verified", (cmd_function)is_peer_verified,   0, 0, 0,
-			REQUEST_ROUTE},
+		REQUEST_ROUTE},
+	{"load_tls_mgm", (cmd_function)load_tls_mgm,   0, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
 
@@ -181,11 +182,11 @@ static pv_export_t mod_items[] = {
 		850, tlsops_comp, 0,
 		0, 0, pv_init_iname, CERT_LOCAL | CERT_SUBJECT | COMP_OU },
 	{{"tls_my_subject_serial", sizeof("tls_my_subject_serial")-1},
-               850, tlsops_comp, 0,
-               0, 0, pv_init_iname, CERT_LOCAL | CERT_SUBJECT | COMP_SUBJECT_SERIAL },
+		850, tlsops_comp, 0,
+		0, 0, pv_init_iname, CERT_LOCAL | CERT_SUBJECT | COMP_SUBJECT_SERIAL },
 	{{"tls_peer_subject_serial", sizeof("tls_peer_subject_serial")-1},
-               850, tlsops_comp, 0,
-               0, 0, pv_init_iname, CERT_PEER | CERT_SUBJECT | COMP_SUBJECT_SERIAL },
+		850, tlsops_comp, 0,
+		0, 0, pv_init_iname, CERT_PEER | CERT_SUBJECT | COMP_SUBJECT_SERIAL },
 	{{"tls_my_issuer_unit", sizeof("tls_my_issuer_unit")-1},
 		850, tlsops_comp, 0,
 		0, 0, pv_init_iname, CERT_LOCAL | CERT_ISSUER  | COMP_OU },
@@ -320,8 +321,8 @@ static int set_ec_params(SSL_CTX * ctx, const char* curve_name)
 #endif
 
 /* This callback is called during each verification process,
-at each step during the chain of certificates (this function
-is not the certificate_verification one!). */
+   at each step during the chain of certificates (this function
+   is not the certificate_verification one!). */
 int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 	char buf[256];
 	X509 *err_cert;
@@ -345,13 +346,13 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 
 	LM_NOTICE("subject = %s\n", buf);
 	LM_NOTICE("verify error:num=%d:%s\n",
-		err, X509_verify_cert_error_string(err));
+			err, X509_verify_cert_error_string(err));
 	LM_NOTICE("error code is %d\n", ctx->error);
 
 	switch (ctx->error) {
 		case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
 			X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert),
-				buf,sizeof buf);
+					buf,sizeof buf);
 			LM_NOTICE("issuer= %s\n",buf);
 			break;
 		case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
@@ -365,11 +366,11 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 		case X509_V_ERR_CERT_SIGNATURE_FAILURE:
 		case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
 			LM_NOTICE("unable to decrypt cert "
-				"signature\n");
+					"signature\n");
 			break;
 		case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
 			LM_NOTICE("unable to decode issuer "
-				"public key\n");
+					"public key\n");
 			break;
 		case X509_V_ERR_OUT_OF_MEM:
 			LM_NOTICE("out of memory \n");
@@ -377,7 +378,7 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 		case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
 		case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
 			LM_NOTICE("Self signed certificate "
-				"issue\n");
+					"issue\n");
 			break;
 		case X509_V_ERR_CERT_CHAIN_TOO_LONG:
 			LM_NOTICE("certificate chain too long\n");
@@ -400,7 +401,7 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 
 		default:
 			LM_NOTICE("something wrong with the cert"
-				" ... error code is %d (check x509_vfy.h)\n", ctx->error);
+					" ... error code is %d (check x509_vfy.h)\n", ctx->error);
 			break;
 	}
 
@@ -421,13 +422,13 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 	 * set dh params
 	 */
 	if (!d->tmp_dh_file) {
-			LM_DBG("no DH params file for tls[%s:%d] defined, "
-					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
-					tls_tmp_dh_file);
-			d->tmp_dh_file = tls_tmp_dh_file;
+		LM_DBG("no DH params file for tls[%s:%d] defined, "
+				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
+				tls_tmp_dh_file);
+		d->tmp_dh_file = tls_tmp_dh_file;
 	}
 	if (d->tmp_dh_file && set_dh_params(d->ctx, d->tmp_dh_file) < 0)
-			return -1;
+		return -1;
 
 	if (d->tls_ec_curve) {
 		if (set_ec_params(d->ctx, d->tls_ec_curve) < 0) {
@@ -447,7 +448,7 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 	if( d->ciphers_list != 0 ) {
 		if( SSL_CTX_set_cipher_list(d->ctx, d->ciphers_list) == 0 ) {
 			LM_ERR("failure to set SSL context "
-				"cipher list '%s'\n", d->ciphers_list);
+					"cipher list '%s'\n", d->ciphers_list);
 			return -1;
 		} else {
 			LM_NOTICE("cipher list set to %s\n", d->ciphers_list);
@@ -462,9 +463,9 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 	 *     choose cipher according to server's preference's*/
 
 	SSL_CTX_set_options(d->ctx,
-		SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
-		SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
-		SSL_OP_CIPHER_SERVER_PREFERENCE);
+			SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
+			SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
+			SSL_OP_CIPHER_SERVER_PREFERENCE);
 
 	/* Set verification procedure
 	 * The verification can be made null with SSL_VERIFY_NONE, or
@@ -502,11 +503,11 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 			verify_mode = SSL_VERIFY_PEER;
 			if( d->require_client_cert ) {
 				LM_WARN("client verification activated. Client "
-					"certificates are mandatory.\n");
+						"certificates are mandatory.\n");
 				verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 			} else
 				LM_WARN("client verification activated. Client "
-					"certificates are NOT mandatory.\n");
+						"certificates are NOT mandatory.\n");
 		} else {
 			verify_mode = SSL_VERIFY_NONE;
 			LM_WARN("client verification NOT activated. Weaker security.\n");
@@ -546,7 +547,7 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 
 	SSL_CTX_set_session_cache_mode( d->ctx, SSL_SESS_CACHE_SERVER );
 	SSL_CTX_set_session_id_context( d->ctx, OS_SSL_SESS_ID,
-		OS_SSL_SESS_ID_LEN );
+			OS_SSL_SESS_ID_LEN );
 
 	return 0;
 }
@@ -563,7 +564,7 @@ static int load_certificate(SSL_CTX * ctx, char *filename)
 	LM_DBG("entered\n");
 	if (!SSL_CTX_use_certificate_chain_file(ctx, filename)) {
 		LM_ERR("unable to load certificate file '%s'\n",
-			filename);
+				filename);
 		return -1;
 	}
 
@@ -573,82 +574,82 @@ static int load_certificate(SSL_CTX * ctx, char *filename)
 
 static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
 {
-       DIR *d;
-       struct dirent *dir;
-       int crl_added = 0;
-       LM_DBG("Loading CRL from directory\n");
+	DIR *d;
+	struct dirent *dir;
+	int crl_added = 0;
+	LM_DBG("Loading CRL from directory\n");
 
-       /*Get X509 store from SSL context*/
-       X509_STORE *store = SSL_CTX_get_cert_store(ctx);
-       if(!store) {
-               LM_ERR("Unable to get X509 store from ssl context\n");
-               return -1;
-       }
+	/*Get X509 store from SSL context*/
+	X509_STORE *store = SSL_CTX_get_cert_store(ctx);
+	if(!store) {
+		LM_ERR("Unable to get X509 store from ssl context\n");
+		return -1;
+	}
 
-       /*Parse directory*/
-       d = opendir(crl_directory);
-       if(!d) {
-               LM_ERR("Unable to open crl directory '%s'\n", crl_directory);
-               return -1;
-       }
+	/*Parse directory*/
+	d = opendir(crl_directory);
+	if(!d) {
+		LM_ERR("Unable to open crl directory '%s'\n", crl_directory);
+		return -1;
+	}
 
-       while ((dir = readdir(d)) != NULL) {
-               /*Skip if not regular file*/
-               if (dir->d_type != DT_REG)
-                       continue;
+	while ((dir = readdir(d)) != NULL) {
+		/*Skip if not regular file*/
+		if (dir->d_type != DT_REG)
+			continue;
 
-               /*Create filename*/
-               char* filename = (char*) pkg_malloc(sizeof(char)*(strlen(crl_directory)+strlen(dir->d_name)+2));
-               if (!filename) {
-                       LM_ERR("Unable to allocate crl filename\n");
-                       closedir(d);
-                       return -1;
-               }
-               strcpy(filename,crl_directory);
-               if(filename[strlen(filename)-1] != '/')
-                       strcat(filename,"/");
-               strcat(filename,dir->d_name);
+		/*Create filename*/
+		char* filename = (char*) pkg_malloc(sizeof(char)*(strlen(crl_directory)+strlen(dir->d_name)+2));
+		if (!filename) {
+			LM_ERR("Unable to allocate crl filename\n");
+			closedir(d);
+			return -1;
+		}
+		strcpy(filename,crl_directory);
+		if(filename[strlen(filename)-1] != '/')
+			strcat(filename,"/");
+		strcat(filename,dir->d_name);
 
-               /*Get CRL content*/
-               FILE *fp = fopen(filename,"r");
-               pkg_free(filename);
-               if(!fp)
-                       continue;
+		/*Get CRL content*/
+		FILE *fp = fopen(filename,"r");
+		pkg_free(filename);
+		if(!fp)
+			continue;
 
-               X509_CRL *crl = PEM_read_X509_CRL(fp, NULL, NULL, NULL);
-               fclose(fp);
-               if(!crl)
-                       continue;
+		X509_CRL *crl = PEM_read_X509_CRL(fp, NULL, NULL, NULL);
+		fclose(fp);
+		if(!crl)
+			continue;
 
-               /*Add CRL to X509 store*/
-               if (X509_STORE_add_crl(store, crl) == 1)
-                       crl_added++;
-               else
-                       LM_ERR("Unable to add crl to ssl context\n");
+		/*Add CRL to X509 store*/
+		if (X509_STORE_add_crl(store, crl) == 1)
+			crl_added++;
+		else
+			LM_ERR("Unable to add crl to ssl context\n");
 
-               X509_CRL_free(crl);
-       }
-       closedir(d);
+		X509_CRL_free(crl);
+	}
+	closedir(d);
 
-       if (!crl_added) {
-               LM_ERR("No suitable CRL files found in directory %s\n", crl_directory);
-               return -1;
-       }
+	if (!crl_added) {
+		LM_ERR("No suitable CRL files found in directory %s\n", crl_directory);
+		return -1;
+	}
 
-       /*Enable CRL checking*/
-       X509_VERIFY_PARAM *param;
-       param = X509_VERIFY_PARAM_new();
+	/*Enable CRL checking*/
+	X509_VERIFY_PARAM *param;
+	param = X509_VERIFY_PARAM_new();
 
-       int flags =  X509_V_FLAG_CRL_CHECK;
-       if(crl_check_all)
-               flags |= X509_V_FLAG_CRL_CHECK_ALL;
+	int flags =  X509_V_FLAG_CRL_CHECK;
+	if(crl_check_all)
+		flags |= X509_V_FLAG_CRL_CHECK_ALL;
 
-       X509_VERIFY_PARAM_set_flags(param, flags);
+	X509_VERIFY_PARAM_set_flags(param, flags);
 
-       SSL_CTX_set1_param(ctx, param);
-       X509_VERIFY_PARAM_free(param);
+	SSL_CTX_set1_param(ctx, param);
+	X509_VERIFY_PARAM_free(param);
 
-       return 0;
+	return 0;
 }
 
 /*
@@ -724,21 +725,21 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 			break;
 		} else {
 			LM_ERR("unable to load private key file '%s'. \n"
-				"Retry (%d left) (check password case)\n",
-				filename, (NUM_RETRIES - idx -1) );
+					"Retry (%d left) (check password case)\n",
+					filename, (NUM_RETRIES - idx -1) );
 			continue;
 		}
 	}
 
 	if( ! ret_pwd ) {
 		LM_ERR("unable to load private key file '%s'\n",
-			filename);
+				filename);
 		return -1;
 	}
 
 	if (!SSL_CTX_check_private_key(ctx)) {
 		LM_ERR("key '%s' does not match the public key of the certificate\n",
-			filename);
+				filename);
 		return -1;
 	}
 
@@ -758,36 +759,36 @@ static int init_tls_domains(struct tls_domain *d)
 	while (d) {
 		if (d->name.len) {
 			LM_INFO("Processing TLS domain '%.*s'\n",
-				d->name.len, ZSW(d->name.s));
+					d->name.len, ZSW(d->name.s));
 		} else {
 			LM_INFO("Processing TLS domain [%s:%d]\n",
-				ip_addr2a(&d->addr), d->port);
+					ip_addr2a(&d->addr), d->port);
 		}
 
 		/*
-		* set method
-		*/
+		 * set method
+		 */
 		if (d->method == TLS_METHOD_UNSPEC) {
 			LM_DBG("no method for tls[%s:%d], using default\n",
-				ip_addr2a(&d->addr), d->port);
+					ip_addr2a(&d->addr), d->port);
 			d->method = tls_method;
 		}
 
 		/*
-		* create context
-		*/
+		 * create context
+		 */
 		d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
 		if (d->ctx == NULL) {
 			LM_ERR("cannot create ssl context for "
-				"tls[%s:%d]\n", ip_addr2a(&d->addr), d->port);
+					"tls[%s:%d]\n", ip_addr2a(&d->addr), d->port);
 			return -1;
 		}
 		if (init_ssl_ctx_behavior( d ) < 0)
 			return -1;
 
 		/*
-		* load certificate
-		*/
+		 * load certificate
+		 */
 		if (!d->cert_file) {
 			LM_NOTICE("no certificate for tls[%s:%d] defined, using default"
 					"'%s'\n", ip_addr2a(&d->addr), d->port,	tls_cert_file);
@@ -796,9 +797,9 @@ static int init_tls_domains(struct tls_domain *d)
 		if (load_certificate(d->ctx, d->cert_file) < 0)
 			return -1;
 
-               /**
-               * load crl from directory
-               */
+		/**
+		 * load crl from directory
+		 */
 		if (!d->crl_directory) {
 			LM_NOTICE("no crl for tls, using none");
 		} else {
@@ -807,25 +808,25 @@ static int init_tls_domains(struct tls_domain *d)
 		}
 
 		/*
-		* load ca
-		*/
+		 * load ca
+		 */
 		if (!d->ca_file) {
 			LM_NOTICE("no CA for tls[%s:%d] defined, "
-				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
-				tls_ca_file);
+					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
+					tls_ca_file);
 			d->ca_file = tls_ca_file;
 		}
 		if (d->ca_file && load_ca(d->ctx, d->ca_file) < 0)
 			return -1;
 
 		/*
-		* load ca from directory
-		*/
+		 * load ca from directory
+		 */
 		if (!d->ca_directory) {
 
 			LM_NOTICE("no CA for tls[%s:%d] defined, "
-				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
-				 tls_ca_dir);
+					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
+					tls_ca_dir);
 			d->ca_directory = tls_ca_dir;
 		}
 
@@ -836,8 +837,8 @@ static int init_tls_domains(struct tls_domain *d)
 	}
 
 	/*
-	* load all private keys as the last step (may prompt for password)
-	*/
+	 * load all private keys as the last step (may prompt for password)
+	 */
 	d = dom;
 	while (d) {
 		if (!d->pkey_file) {
@@ -851,6 +852,83 @@ static int init_tls_domains(struct tls_domain *d)
 	}
 	return 0;
 }
+
+static int check_for_krb(void)
+{
+	SSL_CTX *xx;
+	int j;
+
+	xx = SSL_CTX_new(ssl_methods[tls_method - 1]);
+	if (xx==NULL)
+		return -1;
+
+	for( j=0 ; j<sk_SSL_CIPHER_num(xx->cipher_list) ; j++) {
+		SSL_CIPHER *yy = sk_SSL_CIPHER_value(xx->cipher_list,j);
+		if ( yy->id>=SSL3_CK_KRB5_DES_64_CBC_SHA &&
+			yy->id<=SSL3_CK_KRB5_RC4_40_MD5 ) {
+			LM_INFO("KRB5 cipher %s found\n", yy->name);
+			SSL_CTX_free(xx);
+			return 1;
+		}
+	}
+
+	SSL_CTX_free(xx);
+	return 0;
+}
+
+static int tls_init_multithread(void)
+{
+	/* init static locks support */
+	tls_static_locks_no = CRYPTO_num_locks();
+
+	if (tls_static_locks_no>0) {
+		/* init a lock set & pass locking function to SSL */
+		tls_static_locks = lock_set_alloc(tls_static_locks_no);
+		if (tls_static_locks == NULL) {
+			LM_ERR("Failed to alloc static locks\n");
+			return -1;
+		}
+		if (lock_set_init(tls_static_locks)==0) {
+				LM_ERR("Failed to init static locks\n");
+				lock_set_dealloc(tls_static_locks);
+				return -1;
+		}
+		CRYPTO_set_locking_callback(tls_static_locks_ops);
+	}
+
+	CRYPTO_set_id_callback(tls_get_id);
+
+	/* dynamic locks support*/
+	CRYPTO_set_dynlock_create_callback(tls_dyn_lock_create);
+	CRYPTO_set_dynlock_lock_callback(tls_dyn_lock_ops);
+	CRYPTO_set_dynlock_destroy_callback(tls_dyn_lock_destroy);
+
+	return 0;
+}
+
+/*
+ * initialize ssl methods
+ */
+static void
+init_ssl_methods(void)
+{
+	LM_DBG("entered\n");
+
+	ssl_methods[TLS_USE_TLSv1_cli-1] = (SSL_METHOD*)TLSv1_client_method();
+	ssl_methods[TLS_USE_TLSv1_srv-1] = (SSL_METHOD*)TLSv1_server_method();
+	ssl_methods[TLS_USE_TLSv1-1] = (SSL_METHOD*)TLSv1_method();
+
+	ssl_methods[TLS_USE_SSLv23_cli-1] = (SSL_METHOD*)SSLv23_client_method();
+	ssl_methods[TLS_USE_SSLv23_srv-1] = (SSL_METHOD*)SSLv23_server_method();
+	ssl_methods[TLS_USE_SSLv23-1] = (SSL_METHOD*)SSLv23_method();
+
+#if OPENSSL_VERSION_NUMBER >= 0x10001000L
+	ssl_methods[TLS_USE_TLSv1_2_cli-1] = (SSL_METHOD*)TLSv1_2_client_method();
+	ssl_methods[TLS_USE_TLSv1_2_srv-1] = (SSL_METHOD*)TLSv1_2_server_method();
+	ssl_methods[TLS_USE_TLSv1_2-1] = (SSL_METHOD*)TLSv1_2_method();
+#endif
+}
+
 
 static int mod_init(void){
 	str s;
@@ -866,9 +944,56 @@ static int mod_init(void){
 			return -1;
 		}
 	}
-	
+
+	/*
+	 * this has to be called before any function calling CRYPTO_malloc,
+	 * CRYPTO_malloc will set allow_customize in openssl to 0
+	 */
+	if (!CRYPTO_set_mem_functions(os_malloc, os_realloc, os_free)) {
+		LM_ERR("unable to set the memory allocation functions\n");
+		return -1;
+	}
+
+#if !defined(OPENSSL_NO_COMP)
+	STACK_OF(SSL_COMP)* comp_methods;
+	/* disabling compression */
+	LM_WARN("disabling compression due ZLIB problems\n");
+	comp_methods = SSL_COMP_get_compression_methods();
+	if (comp_methods==0) {
+		LM_INFO("openssl compression already disabled\n");
+	} else {
+		sk_SSL_COMP_zero(comp_methods);
+	}
+#endif
+
+	if (tls_init_multithread() < 0) {
+		LM_ERR("failed to init multi-threading support\n");
+		return -1;
+	}
+
+	SSL_library_init();
+	SSL_load_error_strings();
 	init_ssl_methods();
-	
+
+	n = check_for_krb();
+	if (n==-1) {
+		LM_ERR("kerberos check failed\n");
+		return -1;
+	}
+
+	if ( ( n ^
+#ifndef OPENSSL_NO_KRB5
+			1
+#else
+			0
+#endif
+		 )!=0 ) {
+		LM_ERR("compiled agaist an openssl with %s"
+				"kerberos, but run with one with %skerberos\n",
+				(n==1)?"":"no ",(n!=1)?"no ":"");
+		return -1;
+	}
+
 	/*
 	 * finish setting up the tls default domains
 	 */
@@ -956,8 +1081,8 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 
 	LM_DBG("trying to find TCP connection of received message...\n");
 	/* what if we have multiple connections to the same remote socket? e.g. we can have
-	     connection 1: localIP1:localPort1 <--> remoteIP:remotePort
-	     connection 2: localIP2:localPort2 <--> remoteIP:remotePort
+	   connection 1: localIP1:localPort1 <--> remoteIP:remotePort
+	   connection 2: localIP2:localPort2 <--> remoteIP:remotePort
 	   but I think the is very unrealistic */
 	tcp_conn_get(0, &(msg->rcv.src_ip), msg->rcv.src_port, &c, NULL/*fd*/);
 	if (c==NULL) {
@@ -988,7 +1113,7 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 	x509_cert = SSL_get_peer_certificate(ssl);
 	if ( x509_cert == NULL ) {
 		LM_WARN("tlsops:is_peer_verified: WARNING: peer did not presented "
-			"a certificate. Thus it could not be verified... return -1\n");
+				"a certificate. Thus it could not be verified... return -1\n");
 		goto error;
 	}
 
@@ -997,7 +1122,7 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 	tcp_conn_release(c, 0);
 
 	LM_DBG("tlsops:is_peer_verified: peer is successfuly verified"
-		"...done\n");
+			"...done\n");
 	return 1;
 error:
 	tcp_conn_release(c, 0);
@@ -1020,7 +1145,7 @@ int load_tls_mgm(struct tls_mgm_binds *binds)
 	binds->find_client_domain = tls_find_client_domain;
 	binds->get_handshake_timeout = tls_get_handshake_timeout;
 	binds->get_send_timeout = tls_get_send_timeout;
-	binds->mod_init = tls_mod_init;
+
 	/* everything ok*/
 	return 1;
 }
