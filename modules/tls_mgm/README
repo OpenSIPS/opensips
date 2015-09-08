@@ -112,7 +112,6 @@ Ionut-Razvan Ionita
               2.1.2. find_client_domain
               2.1.3. get_handshake_timeout
               2.1.4. get_send_timeout
-              2.1.5. mod_init
 
         2.2. TLS_CONFIG
         2.3. TLS_INIT
@@ -1123,12 +1122,6 @@ Chapter 2. Developer Guide
    int get_send_timeout(void);
 
    Returns the send timeout.
-
-2.1.5. mod_init
-
-   int mod_init(void);
-
-   Initialization function.
 
 2.2. TLS_CONFIG
 
