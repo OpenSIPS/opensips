@@ -43,7 +43,8 @@
 
 #include "tls_config.h"
 #include "tls_helper.h"
-
+#include "../../usr_avp.h"
+#include "../../ut.h"
 
 
 /*
@@ -78,10 +79,14 @@ struct tls_domain *tls_find_domain_by_id( str *id);
 struct tls_domain *tls_find_server_domain(struct ip_addr *ip,
 				   unsigned short port);
 
+/* find client domain */
+struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
+				   unsigned short port);
+
 /*
  * find client with given ip and port
  */
-struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
+struct tls_domain *tls_find_client_domain_addr(struct ip_addr *ip,
 				   unsigned short port);
 
 /*
