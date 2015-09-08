@@ -155,11 +155,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (tls_mgm_api.mod_init() < 0) {
-		LM_ERR("could not initialize TLS engine\n");
-		return -1;
-	}
-
 	return 0;
 }
 
