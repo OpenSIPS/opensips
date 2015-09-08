@@ -84,7 +84,7 @@ tls_find_server_domain(struct ip_addr *ip, unsigned short port)
  * return default domain if virtual domain not found
  */
 struct tls_domain *
-tls_find_client_domain(struct ip_addr *ip, unsigned short port)
+tls_find_client_domain_addr(struct ip_addr *ip, unsigned short port)
 {
 	struct tls_domain *p = tls_client_domains;
 	while (p) {
@@ -118,6 +118,50 @@ tls_find_client_domain_name(str name)
 	return 0;
 }
 
+/*
+ * find client domain
+ * return 0 if virtual domain not found
+ */
+struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
+				   unsigned short port){
+	struct tls_domain *dom;
+	struct usr_avp *avp;
+	int_str val;
+
+	avp = NULL;
+
+	if (tls_client_domain_avp > 0) {
+		avp = search_first_avp(0, tls_client_domain_avp, &val, 0);
+	} else {
+		LM_DBG("name based TLS client domains are disabled\n");
+	}
+	if (!avp) {
+		LM_DBG("no TLS client doman AVP set, looking "
+			"for socket based TLS client domain\n");
+		dom = tls_find_client_domain_addr(ip, port);
+		if (dom) {
+			LM_DBG("found socket based TLS client domain "
+				"[%s:%d]\n", ip_addr2a(&dom->addr), dom->port);
+		}
+	} else {
+		LM_DBG("TLS client domain AVP found = '%.*s'\n",
+			val.s.len, ZSW(val.s.s));
+		dom = tls_find_client_domain_name(val.s);
+		if (dom) {
+			LM_DBG("found name based TLS client domain "
+				"'%.*s'\n", val.s.len, ZSW(val.s.s));
+		} else {
+			LM_DBG("no name based TLS client domain found, "
+				"trying socket based TLS client domains\n");
+			dom = tls_find_client_domain_addr(ip, port);
+			if (dom) {
+				LM_DBG("found socket based TLS client domain [%s:%d]\n",
+					ip_addr2a(&dom->addr), dom->port);
+			}
+		}
+	}
+	return dom;
+}
 
 /*
  * create a new server domain (identified by a socket)
