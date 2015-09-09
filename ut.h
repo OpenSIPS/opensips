@@ -627,7 +627,7 @@ static inline int str_strcmp(const str *stra, const str *strb)
 }
 
 /*
- * search strb in stra
+ * search strb in stra case sensitive
  */
 static inline char* str_strstr(const str *stra, const str *strb)
 {
@@ -655,6 +655,49 @@ static inline char* str_strstr(const str *stra, const str *strb)
 
 		for (i=1; i<strb->len; i++)
 			if (stra->s[len+i]!=strb->s[i]) {
+				len++;
+				break;
+			}
+
+		if (i != strb->len)
+			continue;
+
+		return stra->s+len;
+	}
+
+
+	return NULL;
+}
+
+/*
+ * search strb in stra case insensitive
+ */
+static inline char* str_strcasestr(const str *stra, const str *strb)
+{
+	int i;
+	int len;
+
+	if (stra==NULL || strb==NULL || stra->s==NULL || strb->s==NULL
+			|| stra->len<=0 || strb->len<=0) {
+		LM_ERR("bad parameters\n");
+		return NULL;
+	}
+
+	if (strb->len > stra->len) {
+		LM_ERR("str to find should be smaller\n");
+		return NULL;
+	}
+
+
+	len=0;
+	while (stra->len-len >= strb->len){
+		if (tolower(stra->s[len]) != tolower(strb->s[0])) {
+			len++;
+			continue;
+		}
+
+		for (i=1; i<strb->len; i++)
+			if (tolower(stra->s[len+i])!=tolower(strb->s[i])) {
 				len++;
 				break;
 			}
