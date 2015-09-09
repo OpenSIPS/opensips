@@ -328,7 +328,7 @@ int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 	int ret=-1;
 	char* errmsg;
 	str select_str={"select", 6};
-	str from_str={" from ", 6};
+	str from_str={"from", 4};
 	str table_name;
 	char *from_start;
 
@@ -369,12 +369,12 @@ again:
 	table_name.s = from_start + from_str.len;
 	/* search for table name begin */
 
-	while (isspace(table_name.s[0]))
+	while (!isalpha(table_name.s[0]))
 		table_name.s++;
 
 	/* search for table name end */
 	table_name.len = 0;
-	while (!isspace(table_name.s[table_name.len]))
+	while (isalpha(table_name.s[table_name.len]))
 		table_name.len++;
 
 	db_sqlite_use_table(*((db_con_t**)&_h), &table_name);

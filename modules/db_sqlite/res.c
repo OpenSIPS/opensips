@@ -222,9 +222,7 @@ int db_sqlite_get_columns(const db_con_t* _h, db_res_t* _r)
 			name, /* column name */
 			NULL, NULL, NULL, NULL,
 			&autoincrement) != 0) {
-			LM_ERR("failed to fetch metadata for column [%s];"
-					"table name [%.*s]\n", name,
-					CON_TABLE(_h)->len, CON_TABLE(_h)->s);
+			LM_ERR("failed to fetch metadata for column [%s]\n", name);
 			return -1;
 		}
 
