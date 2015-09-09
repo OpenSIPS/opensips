@@ -30,7 +30,7 @@ DEFAULTS=/etc/default/opensips
 RUN_OPENSIPS=no
 
 
-[-e "/lib/lsb/init-functions" ] && . /lib/lsb/init-functions
+[ -e "/lib/lsb/init-functions" ] && . /lib/lsb/init-functions
 test -f $DAEMON || exit 0
 
 # Load startup options if available
