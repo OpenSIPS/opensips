@@ -46,7 +46,7 @@
 #include "../../parser/parse_from.h"
 #include "../../regexp.h"
 #include "../../data_lump.h"
-#include "../../data_lump_rpl.h" 
+#include "../../data_lump_rpl.h"
 #include "../../ut.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
@@ -55,7 +55,7 @@
 #include "../../forward.h"
 #include "../rr/api.h"
 
-#include "report_emergency.h" 
+#include "report_emergency.h"
 
 #include "post_curl.h"
 
