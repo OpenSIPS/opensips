@@ -26,7 +26,7 @@
  *  2015-09-07 final test cases (Villaron/Tesini)
  */
 #include "../../lock_ops.h"
-#include "xml_parser.h" 
+#include "xml_parser.h"
 
 #define PKG_MEM_STR       "pkg"
 #define SHARE_MEM         "share"
@@ -43,9 +43,9 @@
 
 #define CONT_COPY_STR(buf, dest, source)\
 	do{	dest.s= (char*)buf+ size;\
-	memcpy(dest.s, source.s, source.len);\
-	dest.len= source.len;\
-	size+= source.len;\
+		memcpy(dest.s, source.s, source.len);\
+		dest.len= source.len;\
+		size+= source.len;\
 	} while(0)
 
 typedef struct call_htable

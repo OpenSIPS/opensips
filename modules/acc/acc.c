@@ -658,7 +658,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 {
 	int total, nr_vals, i, ret, res = -1, nr_bye_vals = 0, j;
-	int remaining_bye_vals;
+	int remaining_bye_vals = 0;
 	time_t created, start_time;
 	str core_s, leg_s, extra_s, table;
 	short nr_legs;

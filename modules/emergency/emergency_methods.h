@@ -28,7 +28,7 @@
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-08-05 code review (Villaron/Tesini)
  *  2015-09-07 final test cases (Villaron/Tesini)
-*/
+ */
 
 #include <string.h>
 #include <stdio.h>
@@ -53,7 +53,7 @@
 #include "../../parser/parse_from.h"
 #include "../../regexp.h"
 #include "../../data_lump.h"
-#include "../../data_lump_rpl.h" 
+#include "../../data_lump_rpl.h"
 #include "../../ut.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
@@ -71,10 +71,10 @@
 
 #define FREE_BUF(buf)\
 	if(buf != empty)\
-    	pkg_free(buf);
+pkg_free(buf);
 
 
-#define MAXNUMBERLEN 			 31	
+#define MAXNUMBERLEN 			 31
 #define HTTP_HDR_CONTENT_TYPE    "Content-Type"
 #define CONTENT_TYPE_HDR_LEN     12
 #define MAX_CONTENT_TYPE_LEN     64
@@ -97,9 +97,9 @@ struct code_number {
 
 
 /*
-static char err_buff[CURL_ERROR_SIZE];
-static char print_buff[MAX_CONTENT_TYPE_LEN];
-*/
+   static char err_buff[CURL_ERROR_SIZE];
+   static char print_buff[MAX_CONTENT_TYPE_LEN];
+   */
 
 size_t write_func(char *ptr, size_t size, size_t nmemb, void *userdata);
 size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata);
@@ -175,6 +175,6 @@ char* formatted_xml(struct sip_msg *msg, char* lie, char* callidHeader, char* cb
 int routing_by_ert( struct sip_msg *msg, ESCT *call_cell, int failure);
 int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeader, str cbn);
 int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str cbn, char* from_tag);
-void destroy_codes(struct code_number *codes); 
+void destroy_codes(struct code_number *codes);
 
 

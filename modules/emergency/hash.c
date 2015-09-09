@@ -41,7 +41,7 @@ emetable_t new_ehtable(int hash_size){
 	htable= (call_table_t*)shm_malloc(hash_size* sizeof(call_table_t));
 	if(htable== NULL)
 	{
-        LM_ERR("--------------------------------------------------no more shm memory\n");  
+		LM_ERR("--------------------------------------------------no more shm memory\n");
 	}
 	memset(htable, 0, hash_size* sizeof(call_table_t));
 
@@ -56,7 +56,7 @@ emetable_t new_ehtable(int hash_size){
 		if(htable[i].entries== NULL)
 		{
 			lock_destroy(&htable[i].lock);
-        	LM_ERR("--------------------------------------------------no more shm memory\n");  
+			LM_ERR("--------------------------------------------------no more shm memory\n");
 		}
 		memset(htable[i].entries, 0, sizeof(NODE));
 		htable[i].entries->next= NULL;
@@ -84,7 +84,7 @@ sbtable_t new_shtable(int hash_size){
 	htable= (subs_table_t*)shm_malloc(hash_size* sizeof(subs_table_t));
 	if(htable== NULL)
 	{
-        LM_ERR("--------------------------------------------------no more shm memory\n");  
+		LM_ERR("--------------------------------------------------no more shm memory\n");
 	}
 	memset(htable, 0, hash_size* sizeof(subs_table_t));
 
@@ -99,7 +99,7 @@ sbtable_t new_shtable(int hash_size){
 		if(htable[i].entries== NULL)
 		{
 			lock_destroy(&htable[i].lock);
-        	LM_ERR("--------------------------------------------------no more shm memory\n");  
+			LM_ERR("--------------------------------------------------no more shm memory\n");
 		}
 		memset(htable[i].entries, 0, sizeof(struct sm_subscriber));
 		htable[i].entries->next= NULL;
@@ -208,56 +208,56 @@ NODE* mem_copy_call_noc(ESCT* s){
 	NODE* dest_atr;
 
 	int   size_esgwri;
-    int   size_esgw;
-    int   size_esqk;
-    int   size_callid;
-    int   size_ert_srid;
-    int   size_datetimestamp;
-    int   size_lro;
-    int   size_disposition;
-    int   size_result; 
-    int   size_source_organizationname;
-    int   size_source_hostname;    
-    int   size_source_nenaid;
-    int   size_source_contact;
-    int   size_source_certuri;
-    int   size_vpc_organizationname;
-    int   size_vpc_hostname;    
-    int   size_vpc_nenaid;
-    int   size_vpc_contact;
-    int   size_vpc_certuri;
-    int   size_call_id;
-    int   size_local_tag;
-    int   size_rem_tag;
-    char *p;
+	int   size_esgw;
+	int   size_esqk;
+	int   size_callid;
+	int   size_ert_srid;
+	//int   size_datetimestamp;
+	int   size_lro;
+	//int   size_disposition;
+	int   size_result;
+	int   size_source_organizationname;
+	int   size_source_hostname;
+	int   size_source_nenaid;
+	int   size_source_contact;
+	int   size_source_certuri;
+	int   size_vpc_organizationname;
+	int   size_vpc_hostname;
+	int   size_vpc_nenaid;
+	int   size_vpc_contact;
+	int   size_vpc_certuri;
+	int   size_call_id;
+	int   size_local_tag;
+	int   size_rem_tag;
+	char *p;
 
 	size_esgwri = s->esgwri? strlen(s->esgwri)+1:1;
-   	size_esgw = s->esgw?strlen(s->esgw)+1:1;  	
-    size_esqk = s->esqk? strlen(s->esqk)+1:1;
-    size_callid = s->callid? strlen(s->callid)+1:1;   
-    size_ert_srid = s->ert_srid? strlen(s->ert_srid)+1:1;
-    size_datetimestamp = s->datetimestamp? strlen(s->datetimestamp)+1:1;
-    size_lro = s->lro? strlen(s->lro)+1:1;   
-    size_disposition = s->disposition? strlen(s->disposition)+1:1;
-    size_result = s->result? strlen(s->result)+1:1;    
-    size_source_organizationname = s->source->organizationname? strlen(s->source->organizationname)+1:1;
-    size_source_hostname = s->source->hostname? strlen(s->source->hostname)+1:1;    
-    size_source_nenaid = s->source->nenaid? strlen(s->source->nenaid)+1:1;
-    size_source_contact = s->source->contact? strlen(s->source->contact)+1:1;
-    size_source_certuri = s->source->certuri? strlen(s->source->certuri)+1:1;    
-    size_vpc_organizationname = s->vpc->organizationname? strlen(s->vpc->organizationname)+1:1;
-    size_vpc_hostname = s->vpc->hostname? strlen(s->vpc->hostname)+1:1;    
-    size_vpc_nenaid = s->vpc->nenaid? strlen(s->vpc->nenaid)+1:1;
-    size_vpc_contact = s->vpc->contact? strlen(s->vpc->contact)+1:1;
-    size_vpc_certuri = s->vpc->certuri? strlen(s->vpc->certuri)+1:1;
-    size_call_id = s->eme_dlg_id->call_id? strlen(s->eme_dlg_id->call_id)+1:1;
-    size_local_tag = s->eme_dlg_id->local_tag? strlen(s->eme_dlg_id->local_tag)+1:1;
-    size_rem_tag = s->eme_dlg_id->rem_tag? strlen(s->eme_dlg_id->rem_tag)+1:1;    
+	size_esgw = s->esgw?strlen(s->esgw)+1:1;
+	size_esqk = s->esqk? strlen(s->esqk)+1:1;
+	size_callid = s->callid? strlen(s->callid)+1:1;
+	size_ert_srid = s->ert_srid? strlen(s->ert_srid)+1:1;
+	//size_datetimestamp = s->datetimestamp? strlen(s->datetimestamp)+1:1;
+	size_lro = s->lro? strlen(s->lro)+1:1;
+	//size_disposition = s->disposition? strlen(s->disposition)+1:1;
+	size_result = s->result? strlen(s->result)+1:1;
+	size_source_organizationname = s->source->organizationname? strlen(s->source->organizationname)+1:1;
+	size_source_hostname = s->source->hostname? strlen(s->source->hostname)+1:1;
+	size_source_nenaid = s->source->nenaid? strlen(s->source->nenaid)+1:1;
+	size_source_contact = s->source->contact? strlen(s->source->contact)+1:1;
+	size_source_certuri = s->source->certuri? strlen(s->source->certuri)+1:1;
+	size_vpc_organizationname = s->vpc->organizationname? strlen(s->vpc->organizationname)+1:1;
+	size_vpc_hostname = s->vpc->hostname? strlen(s->vpc->hostname)+1:1;
+	size_vpc_nenaid = s->vpc->nenaid? strlen(s->vpc->nenaid)+1:1;
+	size_vpc_contact = s->vpc->contact? strlen(s->vpc->contact)+1:1;
+	size_vpc_certuri = s->vpc->certuri? strlen(s->vpc->certuri)+1:1;
+	size_call_id = s->eme_dlg_id->call_id? strlen(s->eme_dlg_id->call_id)+1:1;
+	size_local_tag = s->eme_dlg_id->local_tag? strlen(s->eme_dlg_id->local_tag)+1:1;
+	size_rem_tag = s->eme_dlg_id->rem_tag? strlen(s->eme_dlg_id->rem_tag)+1:1;
 
-	size= sizeof(NODE)+ sizeof(ESCT)+ (2 * sizeof(NENA)) + sizeof(struct dialog_set) + size_esgw + size_esqk+ size_callid + size_ert_srid 
-	      + MAX_TIME_SIZE + size_lro + MAX_DISPOSITION_SIZE + size_result + size_call_id + size_local_tag + size_rem_tag + size_source_organizationname 
-	      + size_source_hostname + size_source_nenaid + size_source_contact + size_source_certuri + size_vpc_organizationname + size_vpc_hostname 
-	      + size_vpc_nenaid + size_vpc_contact + size_vpc_certuri; 
+	size= sizeof(NODE)+ sizeof(ESCT)+ (2 * sizeof(NENA)) + sizeof(struct dialog_set) + size_esgw + size_esqk+ size_callid + size_ert_srid
+		+ MAX_TIME_SIZE + size_lro + MAX_DISPOSITION_SIZE + size_result + size_call_id + size_local_tag + size_rem_tag + size_source_organizationname
+		+ size_source_hostname + size_source_nenaid + size_source_contact + size_source_certuri + size_vpc_organizationname + size_vpc_hostname
+		+ size_vpc_nenaid + size_vpc_contact + size_vpc_certuri;
 
 	p= (char*)shm_malloc(size);
 	if(p== NULL){
@@ -266,20 +266,20 @@ NODE* mem_copy_call_noc(ESCT* s){
 	}
 	memset(p, 0, size);
 
-	dest = (NODE*)p;	
+	dest = (NODE*)p;
 	p = p + sizeof(NODE);
-	dest->esct = (ESCT*)p;		
+	dest->esct = (ESCT*)p;
 	p = p + sizeof(ESCT);
-	dest->esct->eme_dlg_id = (struct dialog_set*)p;	
+	dest->esct->eme_dlg_id = (struct dialog_set*)p;
 
-	size= sizeof(struct dialog_set );	
+	size= sizeof(struct dialog_set );
 	CONT_COPY(dest->esct->eme_dlg_id, dest->esct->eme_dlg_id->call_id, s->eme_dlg_id->call_id);
 	CONT_COPY(dest->esct->eme_dlg_id, dest->esct->eme_dlg_id->local_tag, s->eme_dlg_id->local_tag);
 	CONT_COPY(dest->esct->eme_dlg_id, dest->esct->eme_dlg_id->rem_tag, s->eme_dlg_id->rem_tag);
 
 	p = p + size;
 	dest->esct->source = (NENA*)p;
-	size= sizeof(NENA);	
+	size= sizeof(NENA);
 	CONT_COPY(dest->esct->source, dest->esct->source->organizationname, s->source->organizationname);
 	CONT_COPY(dest->esct->source, dest->esct->source->hostname, s->source->hostname);
 	CONT_COPY(dest->esct->source, dest->esct->source->nenaid, s->source->nenaid);
@@ -303,7 +303,7 @@ NODE* mem_copy_call_noc(ESCT* s){
 	CONT_COPY(dest_atr, dest->esct->callid, s->callid);
 	CONT_COPY(dest_atr, dest->esct->ert_srid, s->ert_srid);
 
-	if(s->datetimestamp){	
+	if(s->datetimestamp){
 		dest->esct->datetimestamp= (char*)dest_atr+ size;
 		memcpy(dest->esct->datetimestamp, s->datetimestamp, strlen(s->datetimestamp));
 		size+=  MAX_TIME_SIZE;
@@ -311,7 +311,7 @@ NODE* mem_copy_call_noc(ESCT* s){
 
 	CONT_COPY(dest_atr, dest->esct->lro, s->lro);
 
-	if(s->disposition){	
+	if(s->disposition){
 		dest->esct->disposition= (char*)dest_atr+ size;
 		memcpy(dest->esct->disposition, s->disposition, strlen(s->disposition));
 		size+=  MAX_DISPOSITION_SIZE;
@@ -335,7 +335,7 @@ NODE* mem_copy_call_noc(ESCT* s){
 
 error:
 	if(dest)
-			shm_free(dest);
+		shm_free(dest);
 	return NULL;
 }
 
@@ -366,25 +366,25 @@ struct sm_subscriber* mem_copy_subs_noc(struct sm_subscriber* s){
 	int size;
 	struct sm_subscriber* dest = NULL;
 	struct sm_subscriber* dest_atr;
-    char *p;
-   
-	size= sizeof(struct sm_subscriber) + (2 * sizeof(struct dialog_id)) 
-	+ s->loc_uri.len + s->rem_uri.len + s->contact.len + s->event.len 
-	+ s->call_dlg_id->callid.len + s->call_dlg_id->local_tag.len + s->call_dlg_id->rem_tag.len
-	+ s->dlg_id->callid.len + s->dlg_id->local_tag.len + s->dlg_id->rem_tag.len; 
+	char *p;
+
+	size= sizeof(struct sm_subscriber) + (2 * sizeof(struct dialog_id))
+		+ s->loc_uri.len + s->rem_uri.len + s->contact.len + s->event.len
+		+ s->call_dlg_id->callid.len + s->call_dlg_id->local_tag.len + s->call_dlg_id->rem_tag.len
+		+ s->dlg_id->callid.len + s->dlg_id->local_tag.len + s->dlg_id->rem_tag.len;
 
 	p= (char*)shm_malloc(size);
 	if(p== NULL){
-        LM_ERR("no more shm\n");
+		LM_ERR("no more shm\n");
 		goto error;
 	}
 	memset(p, 0, size);
 
-	dest = (struct sm_subscriber*)p;	
+	dest = (struct sm_subscriber*)p;
 	p = p + sizeof(struct sm_subscriber);
-	dest->dlg_id = (struct dialog_id*)p;	
- 
-	size= sizeof(struct dialog_id);	 
+	dest->dlg_id = (struct dialog_id*)p;
+
+	size= sizeof(struct dialog_id);
 	CONT_COPY_STR(dest->dlg_id, dest->dlg_id->callid, s->dlg_id->callid);
 	CONT_COPY_STR(dest->dlg_id, dest->dlg_id->local_tag, s->dlg_id->local_tag);
 	CONT_COPY_STR(dest->dlg_id, dest->dlg_id->rem_tag, s->dlg_id->rem_tag);
@@ -392,8 +392,8 @@ struct sm_subscriber* mem_copy_subs_noc(struct sm_subscriber* s){
 	p = p + size;
 	dest->call_dlg_id = (struct dialog_id*)p;
 
-	size= sizeof(struct dialog_id);	
-	CONT_COPY_STR(dest->call_dlg_id, dest->call_dlg_id->callid, s->call_dlg_id->callid);	
+	size= sizeof(struct dialog_id);
+	CONT_COPY_STR(dest->call_dlg_id, dest->call_dlg_id->callid, s->call_dlg_id->callid);
 	CONT_COPY_STR(dest->call_dlg_id, dest->call_dlg_id->local_tag, s->call_dlg_id->local_tag);
 	CONT_COPY_STR(dest->call_dlg_id, dest->call_dlg_id->rem_tag, s->call_dlg_id->rem_tag);
 
@@ -413,7 +413,7 @@ struct sm_subscriber* mem_copy_subs_noc(struct sm_subscriber* s){
 
 error:
 	if(dest)
-			shm_free(dest);
+		shm_free(dest);
 	return NULL;
 }
 
@@ -425,14 +425,14 @@ NODE* search_ehtable(emetable_t htable, char* callid, char* from_tag, unsigned i
 	int size_callid_t;
 	int size_from_tag_t;
 	int size_callid_m;
-	int size_from_tag_m;	
+	int size_from_tag_m;
 
 	ps= htable[hash_code].entries;
 	s= ps->next;
 
 	if (s == NULL){
-	    LM_DBG("Did not find\n");
-		return NULL;		
+		LM_DBG("Did not find\n");
+		return NULL;
 	}
 
 	size_callid_t = strlen(s->esct->eme_dlg_id->call_id);
@@ -440,10 +440,10 @@ NODE* search_ehtable(emetable_t htable, char* callid, char* from_tag, unsigned i
 	size_callid_m = strlen(callid);
 	size_from_tag_m = strlen(from_tag);
 
-        LM_DBG(" --------------------CALLID M%s\n",callid); 
-        LM_DBG(" --------------------FROM TAG M%s\n",from_tag); 	
-        LM_DBG(" --------------------CALLID T%s\n",s->esct->eme_dlg_id->call_id); 
-        LM_DBG(" --------------------FROM TAG T%s\n",s->esct->eme_dlg_id->local_tag); 
+	LM_DBG(" --------------------CALLID M%s\n",callid);
+	LM_DBG(" --------------------FROM TAG M%s\n",from_tag);
+	LM_DBG(" --------------------CALLID T%s\n",s->esct->eme_dlg_id->call_id);
+	LM_DBG(" --------------------FROM TAG T%s\n",s->esct->eme_dlg_id->local_tag);
 
 	while(s)
 	{
@@ -451,87 +451,87 @@ NODE* search_ehtable(emetable_t htable, char* callid, char* from_tag, unsigned i
 			strncmp(s->esct->eme_dlg_id->call_id, callid, size_callid_m)==0 &&
 			size_from_tag_t == size_from_tag_m &&
 			strncmp(s->esct->eme_dlg_id->local_tag, from_tag, size_from_tag_m)== 0){
-        		LM_DBG(" --------------------found EHTABLE \n"); 
+			LM_DBG(" --------------------found EHTABLE \n");
 
-        		if(delete){
+			if(delete){
 
-					lock_get(&htable[hash_code].lock);
+				lock_get(&htable[hash_code].lock);
 
-         			LM_DBG(" --------------------DELETOU\n");        			
-					ps->next = s->next;	
+				LM_DBG(" --------------------DELETOU\n");
+				ps->next = s->next;
 
-					lock_release(&htable[hash_code].lock);
+				lock_release(&htable[hash_code].lock);
 
-				}
+			}
 
-				return s;
+			return s;
 		}
 
 
 		ps = s;
 		s= s->next;
 	}
-    LM_DBG("Did not find\n");
+	LM_DBG("Did not find\n");
 	return NULL;
-}       
+}
 
 
 struct sm_subscriber* search_shtable(sbtable_t htable, str* callid, str* from_tag, unsigned int hash_code, str* method){
 	struct sm_subscriber* s;
 	struct sm_subscriber* ps;
-	struct dialog_id* dlg_id;	
+	struct dialog_id* dlg_id;
 
 	ps= htable[hash_code].entries;
-         			LM_DBG(" --------------------END HTABLE ENTRIES %p\n", (void*)ps); 
+	LM_DBG(" --------------------END HTABLE ENTRIES %p\n", (void*)ps);
 	s= ps->next;
 
 	if (s == NULL){
-	    LM_DBG("Did not find\n");
-		return NULL;		
+		LM_DBG("Did not find\n");
+		return NULL;
 	}
 
-	LM_DBG("******************************METODO %.*s\n", method->len, method->s);	
+	LM_DBG("******************************METODO %.*s\n", method->len, method->s);
 
 	while(s)
 	{
-	    if (memcmp(method->s,"BYE", method->len) == 0) {
-	        dlg_id = s->call_dlg_id;
-	    }else{
-	        dlg_id = s->dlg_id;         
-	    }		 
+		if (memcmp(method->s,"BYE", method->len) == 0) {
+			dlg_id = s->call_dlg_id;
+		}else{
+			dlg_id = s->dlg_id;
+		}
 
-        LM_DBG(" --------------------CALLID M%.*s\n", callid->len, callid->s); 
-        LM_DBG(" --------------------FROM TAG M%.*s\n", from_tag->len, from_tag->s); 	
-        LM_DBG(" --------------------CALLID T%.*s\n",dlg_id->callid.len,dlg_id->callid.s); 
-        LM_DBG(" --------------------FROM TAG T%.*s\n",dlg_id->rem_tag.len,dlg_id->rem_tag.s);
+		LM_DBG(" --------------------CALLID M%.*s\n", callid->len, callid->s);
+		LM_DBG(" --------------------FROM TAG M%.*s\n", from_tag->len, from_tag->s);
+		LM_DBG(" --------------------CALLID T%.*s\n",dlg_id->callid.len,dlg_id->callid.s);
+		LM_DBG(" --------------------FROM TAG T%.*s\n",dlg_id->rem_tag.len,dlg_id->rem_tag.s);
 
 
 		if(dlg_id->callid.len == callid->len &&
 			strncmp(dlg_id->callid.s, callid->s, callid->len)==0 &&
 			dlg_id->rem_tag.len == from_tag->len &&
 			strncmp(dlg_id->rem_tag.s, from_tag->s, from_tag->len)== 0){
-        		LM_DBG(" --------------------found SHTABLE \n"); 
-        	    s->prev = ps;
+			LM_DBG(" --------------------found SHTABLE \n");
+			s->prev = ps;
 
-				return s;
+			return s;
 		}
 
 
 		ps = s;
 		s= s->next;
 	}
-    LM_DBG("Did not find\n");
+	LM_DBG("Did not find\n");
 	return NULL;
 }
 
 int delete_shtable(sbtable_t htable, unsigned int hash_code, struct sm_subscriber* subs){
-    struct sm_subscriber* previous;
+	struct sm_subscriber* previous;
 
 	lock_get(&htable[hash_code].lock);
 
-    previous = subs->prev;                                                            
-    previous->next = subs->next;
-    shm_free(subs);
+	previous = subs->prev;
+	previous->next = subs->next;
+	shm_free(subs);
 
 	lock_release(&htable[hash_code].lock);
 

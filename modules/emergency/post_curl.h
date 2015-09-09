@@ -25,7 +25,7 @@
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-08-05 code review (Villaron/Tesini)
- *  2015-09-07 final test cases (Villaron/Tesini)   
+ *  2015-09-07 final test cases (Villaron/Tesini)
  */
 
 
