@@ -328,9 +328,6 @@ int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 	int ret=-1;
 	char* errmsg;
 	str select_str={"select", 6};
-	str from_str={"from", 4};
-	str table_name;
-	char *from_start;
 
 	CON_RESET_CURR_PS(_h);
 	if (!str_strstr(_s, &select_str)) {
@@ -358,26 +355,6 @@ again:
 	if (ret!=SQLITE_OK)
 		LM_ERR("failed to prepare: (%s)\n",
 				sqlite3_errmsg(CON_CONNECTION(_h)));
-
-	/* fetch table name */
-	from_start = str_strcasestr(_s, &from_str);
-	if (!from_start) {
-		LM_ERR("failed to fetch table name\n");
-		return -1;
-	}
-
-	table_name.s = from_start + from_str.len;
-	/* search for table name begin */
-
-	while (!isalpha(table_name.s[0]))
-		table_name.s++;
-
-	/* search for table name end */
-	table_name.len = 0;
-	while (isalpha(table_name.s[table_name.len]))
-		table_name.len++;
-
-	db_sqlite_use_table(*((db_con_t**)&_h), &table_name);
 
 	if (_r) {
 		ret = db_sqlite_store_result(_h, _r, NULL, 0);
