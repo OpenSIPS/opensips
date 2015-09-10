@@ -1324,7 +1324,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 		rval = ul.get_domain_ucontacts(d, buf, cblen, (ping_nated_only?ul.nat_flag:0),
 			((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
 			natping_partitions*natping_interval,
-			rm_on_to_flag?1:0);
+			REMOVE_ON_TIMEOUT?1:0);
 
 		if (rval<0) {
 			LM_ERR("failed to fetch contacts\n");
@@ -1343,7 +1343,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 			rval = ul.get_domain_ucontacts(d, buf, cblen, (ping_nated_only?ul.nat_flag:0),
 				((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
 				natping_partitions*natping_interval,
-				rm_on_to_flag?1:0);
+				REMOVE_ON_TIMEOUT?1:0);
 			if (rval != 0) {
 				goto done;
 			}
@@ -1372,9 +1372,10 @@ nh_timer(unsigned int ticks, void *timer_idx)
 			memcpy(&next_hop, cp, sizeof(next_hop));
 			cp = (char*)cp + sizeof(next_hop);
 
-			if (REMOVE_ON_TIMEOUT)
+			if (REMOVE_ON_TIMEOUT) {
 				memcpy(&contact_id, cp, sizeof(contact_id));
 				cp = (char*)cp + sizeof(contact_id);
+			}
 
 			if (next_hop.proto != PROTO_NONE && next_hop.proto != PROTO_UDP &&
 			    (natping_tcp == 0 || (next_hop.proto != PROTO_TCP &&
