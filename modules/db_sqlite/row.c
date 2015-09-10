@@ -75,8 +75,7 @@ int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 
 				break;
 			case DB_INT:
-
-				VAL_INT(_v) =sqlite3_column_int(CON_SQLITE_PS(_h), col);
+				VAL_BIGINT(_v) =sqlite3_column_int64(CON_SQLITE_PS(_h), col);
 				VAL_TYPE(_v) = DB_INT;
 
 				break;
