@@ -272,20 +272,16 @@ static inline int set_alias_to_pvar(struct sip_msg* _msg, str *alias, int no, vo
 int alias_db_find(struct sip_msg* _msg, char* _table, char* _in, char* _out,
 															char* flags)
 {
-	pv_value_t val;
+	str _in_s;
 	struct sip_uri puri;
 
 	/* get the input value */
-	if (pv_get_spec_value(_msg, (pv_spec_t*)_in, &val)!=0) {
-		LM_ERR("failed to get PV value\n");
+	if(_in==NULL || fixup_get_svalue(_msg, (gparam_p)_in, &_in_s)!=0) {
+		LM_ERR("invalid input parameter\n");
 		return -1;
 	}
-	if ( (val.flags&PV_VAL_STR)==0 ) {
-		LM_ERR("PV vals is not string\n");
-		return -1;
-	}
-	if (parse_uri(val.rs.s, val.rs.len, &puri)<0) {
-		LM_ERR("failed to parse uri %.*s\n",val.rs.len,val.rs.s);
+	if (parse_uri(_in_s.s, _in_s.len, &puri)<0) {
+		LM_ERR("failed to parse uri %.*s\n",_in_s.len,_in_s.s);
 		return -1;
 	}
 

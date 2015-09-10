@@ -75,9 +75,9 @@ static cmd_export_t cmds[] = {
 	{"alias_db_lookup", (cmd_function)alias_db_lookup, 2, lookup_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"alias_db_find", (cmd_function)alias_db_find, 3, find_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE},
 	{"alias_db_find", (cmd_function)alias_db_find, 4, find_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -158,7 +158,7 @@ static int lookup_fixup(void** param, int param_no)
 {
 	if (param_no==1) {
 		/* string or pseudo-var - table name */
-		return fixup_spve_null(param, 1);
+		return fixup_spve(param);
 	} else if (param_no==2) {
 		/* string - flags ? */
 		return alias_flags_fixup(param);
@@ -175,10 +175,10 @@ static int find_fixup(void** param, int param_no)
 
 	if (param_no==1) {
 		/* string or pseudo-var - table name */
-		return fixup_spve_null(param, 1);
+		return fixup_spve(param);
 	} else if(param_no==2) {
-		/* pseudo-var - source URI */
-		return fixup_pvar(param);
+		/* string or pseudo-var - source URI */
+		return fixup_spve(param);
 	} else if(param_no==3) {
 		/* pvar (AVP or VAR) - destination URI */
 		if (fixup_pvar(param))
