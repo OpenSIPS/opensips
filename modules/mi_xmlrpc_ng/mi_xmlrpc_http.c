@@ -57,8 +57,8 @@ static const str MI_XMLRPC_U_METHOD = str_init(MI_XMLRPC_XML_START
 
 /* module parameters */
 static param_export_t mi_params[] = {
-	{"mi_xmlrpc_ng_root",   STR_PARAM, &http_root.s},
-	{"mi_xmlrpc_ng_format_version",   INT_PARAM, &version},
+	{"http_root",        STR_PARAM, &http_root.s},
+	{"format_version",   INT_PARAM, &version},
 	{0,0,0}
 };
 

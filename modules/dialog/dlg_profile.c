@@ -464,6 +464,8 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 	profile->has_value = (has_value==0)?0:1;
 	profile->use_cached = use_cached;
 
+	profile->repl = NULL;
+
 	/* init locks */
 	if (!use_cached) {
 		profile->locks = get_a_lock_set(size) ;
@@ -531,7 +533,7 @@ static void destroy_dlg_profile(struct dlg_profile_table *profile)
 	if( profile -> has_value && !profile -> use_cached )
 	{
 		for( i= 0; i < profile->size; i++)
-			map_destroy( profile->entries[i], NULL );
+			map_destroy( profile->entries[i], free_profile_val);
 	}
 
 	shm_free( profile );
@@ -861,6 +863,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 	unsigned int n = 0, i;
 	map_t entry ;
 	void ** dest;
+	int ret;
 
 	if (profile->has_value==0)
 	{
@@ -870,7 +873,10 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 			if (dlg_fill_name(&profile->name) < 0)
 				goto failed;
 
-			if (cdbf.get_counter(cdbc, &dlg_prof_noval_buf, (int *)&n) < 0) {
+			ret = cdbf.get_counter(cdbc, &dlg_prof_noval_buf, (int *)&n);
+			if (ret == -2) {
+				n = 0;
+			} else if (ret < 0) {
 				LM_ERR("cannot fetch profile from CacheDB\n");
 				goto failed;
 			}
@@ -899,7 +905,10 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 				if (dlg_fill_size(&profile->name) < 0)
 					goto failed;
 
-				if (cdbf.get_counter(cdbc, &dlg_prof_size_buf, (int *)&n) < 0) {
+				ret = cdbf.get_counter(cdbc, &dlg_prof_size_buf, (int *)&n);
+				if (ret == -2) {
+					n = 0;
+				} else if (ret < 0) {
 					LM_ERR("cannot fetch profile from CacheDB\n");
 					goto failed;
 				}
@@ -926,7 +935,10 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 				if (dlg_fill_value(&profile->name, value) < 0)
 					goto failed;
 
-				if (cdbf.get_counter(cdbc, &dlg_prof_val_buf, (int *)&n) < 0) {
+				ret = cdbf.get_counter(cdbc, &dlg_prof_val_buf, (int *)&n);
+				if (ret == -2) {
+					n = 0;
+				} else if (ret < 0) {
 					LM_ERR("cannot fetch profile from CacheDB\n");
 					goto failed;
 				}

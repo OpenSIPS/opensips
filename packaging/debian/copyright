@@ -50,11 +50,6 @@ Files: cachedb/*
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+
 
-Files: cfg.tab.c
-  cfg.tab.h
-Copyright: 1984, 1989, 1990, 2000-2011, Free Software Foundation, Inc
-License: GPL-3+
-
 Files: crc.c
 Copyright: 2001-2003, FhG Fokus
   1986, Gary S. Brown.
@@ -1418,10 +1413,6 @@ Files: scripts/dbtextdb/*
 Copyright: 2008 Google Inc
 License: GPL-2+
 
-Files: regexp.c regexp.h serialize.c serialize.h
-Copyright: 2001-2008, Juha Heinanen
-License: GPL-2+
-
 Files: packaging/debian/*
 Copyright: 2002 Andrei Pelinescu-Onciul <pelinescu-onciul@fokus.fraunhofer.de>
  2006 Julien Blache <jblache@debian.org>
@@ -1430,6 +1421,8 @@ Copyright: 2002 Andrei Pelinescu-Onciul <pelinescu-onciul@fokus.fraunhofer.de>
  2011 JuliÃ¡n Moreno PatiÃ±o <darkjunix@gmail.com>
  2011 Daniel Echeverry <epsilon77@gmail.com>
  2011 Alejandro Rios P. <alerios@debian.org>
+ 2015 Razvan Crainea <razvan@opensips.org>
+ 2015 Steve Frécinaux <sfrecinaux@beip.be>
 License: GPL-2+
 
 Files: packaging/gentoo/opensips-*.ebuild

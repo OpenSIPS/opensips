@@ -1,4 +1,11 @@
-opensips (2.0.0-1) unstable; urgency=low
+opensips (2.2.0-1) stable; urgency=low
+
+  * Major Release
+
+ -- Razvan Crainea <razvan@opensips.org>  Fri, 04 Sep 2015 13:44:06 +0200
+
+
+opensips (2.1.0) stable; urgency=low
 
   * Major Public Release.
 

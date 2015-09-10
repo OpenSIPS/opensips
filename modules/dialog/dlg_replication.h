@@ -28,6 +28,7 @@
 #include "../../bin_interface.h"
 #include "../../socket_info.h"
 #include "../../timer.h"
+#include "../clusterer/api.h"
 
 #ifndef _DIALOG_DLG_REPLICATION_H_
 #define _DIALOG_DLG_REPLICATION_H_
@@ -39,12 +40,10 @@
 #define BIN_VERSION 1
 
 extern int accept_replicated_dlg;
-extern struct replication_dest *replication_dests;
+extern int dialog_replicate_cluster;
+extern int profile_replicate_cluster;
 
-struct replication_dest {
-	union sockaddr_union to;
-	struct replication_dest *next;
-};
+struct clusterer_binds clusterer_api;
 
 void replicate_dialog_created(struct dlg_cell *dlg);
 void replicate_dialog_updated(struct dlg_cell *dlg);
@@ -54,7 +53,9 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 int dlg_replicated_update(void);
 int dlg_replicated_delete(void);
 
-void receive_binary_packet(int packet_type, struct receive_info *ri);
+void receive_dlg_binary_packet(int packet_type, struct receive_info *ri,void *att);
+
+void receive_prof_binary_packet(int packet_type, struct receive_info *ri, int server_id);
 
 #endif /* _DIALOG_DLG_REPLICATION_H_ */
 

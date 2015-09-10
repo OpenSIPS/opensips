@@ -56,18 +56,22 @@ Di-Shi Sun
               1.3.25. source_device_avp
               1.3.26. source_networkid_avp
               1.3.27. custom_info_avp
+              1.3.28. cnam_avp
+              1.3.29. source_media_avp, destination_media_avp
 
         1.4. Exported Functions
 
               1.4.1. checkospheader()
               1.4.2. validateospheader()
-              1.4.3. requestosprouting()
-              1.4.4. checkosproute()
-              1.4.5. prepareosproute()
-              1.4.6. prepareredirectosproutes()
-              1.4.7. prepareallosproutes()
-              1.4.8. checkcallingtranslation()
-              1.4.9. reportospusage()
+              1.4.3. getlocaladdress()
+              1.4.4. requestosprouting()
+              1.4.5. checkosproute()
+              1.4.6. prepareosproute()
+              1.4.7. prepareredirectosproutes()
+              1.4.8. prepareallosproutes()
+              1.4.9. preparecnamresponse()
+              1.4.10. checkcallingtranslation()
+              1.4.11. reportospusage()
 
    2. Developer Guide
 
@@ -102,15 +106,19 @@ Di-Shi Sun
    1.25. Setting the source device IP AVP
    1.26. Setting the source network ID AVP
    1.27. Setting the custom info AVP
-   1.28. checkospheader usage
-   1.29. validateospheader usage
-   1.30. requestosprouting usage
-   1.31. checkosproute usage
-   1.32. prepareosproute usage
-   1.33. prepareredirectosproutes usage
-   1.34. prepareallosproutes usage
-   1.35. checkcallingtranslation usage
-   1.36. reportospusage usage
+   1.28. Setting the CNAM AVP
+   1.29. Setting the media address AVPs
+   1.30. checkospheader usage
+   1.31. validateospheader usage
+   1.32. getlocaladress usage
+   1.33. requestosprouting usage
+   1.34. checkosproute usage
+   1.35. prepareosproute usage
+   1.36. prepareredirectosproutes usage
+   1.37. prepareallosproutes usage
+   1.38. preparecnamresponse usage
+   1.39. checkcallingtranslation usage
+   1.40. reportospusage usage
 
 Chapter 1. Admin Guide
 
@@ -170,8 +178,9 @@ modparam("osp","work_mode",0)
    The service_type (integer) parameter instructs the OSP module
    what services it should provide. If this value is set to 0, the
    OSP module provides normal voice service. If this value is set
-   to 1, the OSP module provides ported number query service. The
-   default value is 0.
+   to 1, the OSP module provides ported number query service. If
+   this value is set to 2, the OSP module provides CNAM query
+   service. The default value is 0.
 
    Example 1.2. Instructing the module to provide normal voice
    service
@@ -524,6 +533,29 @@ modparam("osp","source_networkid_avp","$avp(snid)")
    Example 1.27. Setting the custom info AVP
 modparam("osp","custom_info_avp","$avp(cinfo)")
 
+1.3.28. cnam_avp
+
+   The cnam_avp (string) parameter instructs the OSP module to use
+   the defined AVP to pass the CNAM values. The default value is
+   "$avp(_osp_cnam_)". Then the CNAM can be used by
+   "$avp(_osp_cnam_)". All pseudo variables are described in
+   http://www.opensips.org/Resources/DocsCoreVar.
+
+   Example 1.28. Setting the CNAM AVP
+modparam("osp","cnam_avp","$avp(cnam)")
+
+1.3.29. source_media_avp, destination_media_avp
+
+   These parameters are used to tell the OSP module which AVPs are
+   used to store media addresses. The default values are
+   "$avp(_osp_source_media_address_)" and
+   "$avp(_osp_destination_media_address_)". All pseudo variables
+   are described in http://www.opensips.org/Resources/DocsCoreVar.
+
+   Example 1.29. Setting the media address AVPs
+modparam("osp", "source_media_avp", "$avp(srcmedia)")
+modparam("osp", "destination_media_avp", "$avp(destmedia)")
+
 1.4. Exported Functions
 
 1.4.1. checkospheader()
@@ -533,7 +565,7 @@ modparam("osp","custom_info_avp","$avp(cinfo)")
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.28. checkospheader usage
+   Example 1.30. checkospheader usage
 ...
 if (checkospheader()) {
   log(1,"OSP header field found.\n");
@@ -552,7 +584,7 @@ if (checkospheader()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.29. validateospheader usage
+   Example 1.31. validateospheader usage
 ...
 if (validateospheader()) {
   log(1,"valid OSP header found\n");
@@ -561,7 +593,23 @@ if (validateospheader()) {
 };
 ...
 
-1.4.3. requestosprouting()
+1.4.3. getlocaladdress()
+
+   This function gets the receiving IP address of SIP response and
+   stores it as proxy egress address.
+
+   This function can be used from ONREPLY_ROUTE.
+
+   Example 1.32. getlocaladress usage
+...
+if (getlocaladdress()) {
+  log(1,"Obtain proxy local egress address\n");
+} else {
+  log(1,"Failed to get proxy local egress address\n");
+};
+...
+
+1.4.4. requestosprouting()
 
    This function launches a query to the peering server requesting
    the IP address of one or more destination peers serving the
@@ -581,7 +629,7 @@ if (validateospheader()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.30. requestosprouting usage
+   Example 1.33. requestosprouting usage
 ...
 if (requestosprouting()) {
   log(1,"successfully queried OSP server, now relaying call\n");
@@ -590,14 +638,14 @@ if (requestosprouting()) {
 };
 ...
 
-1.4.4. checkosproute()
+1.4.5. checkosproute()
 
    This function is used to check if there is any route for the
    call.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.31. checkosproute usage
+   Example 1.34. checkosproute usage
 ...
 if (checkosproute()) {
   log(1,"There is at least one route for the call\n");
@@ -606,7 +654,7 @@ if (checkosproute()) {
 };
 ...
 
-1.4.5. prepareosproute()
+1.4.6. prepareosproute()
 
    This function tries to prepare the INVITE to be forwarded using
    the destination in the list returned by the peering server. If
@@ -620,7 +668,7 @@ if (checkosproute()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.32. prepareosproute usage
+   Example 1.35. prepareosproute usage
 ...
 if (prepareosproute()) {
   log(1,"successfully prepared the route, now relaying call\n");
@@ -629,7 +677,7 @@ if (prepareosproute()) {
 };
 ...
 
-1.4.6. prepareredirectosproutes()
+1.4.7. prepareredirectosproutes()
 
    This function tries to prepare all the routes in the list
    returned by the peering server into a SIP 300 Redirect message.
@@ -639,7 +687,7 @@ if (prepareosproute()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.33. prepareredirectosproutes usage
+   Example 1.36. prepareredirectosproutes usage
 ...
 if (prepareredirectosproutes()) {
   log(1,"Routes are prepared, now redirecting the call\n");
@@ -648,7 +696,7 @@ if (prepareredirectosproutes()) {
 };
 ...
 
-1.4.7. prepareallosproutes()
+1.4.8. prepareallosproutes()
 
    This function tries to prepare all the routes in the list
    returned by the peering server. The message is then forked off
@@ -657,7 +705,7 @@ if (prepareredirectosproutes()) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.34. prepareallosproutes usage
+   Example 1.37. prepareallosproutes usage
 ...
 if (prepareallosproutes()) {
   log(1,"Routes are prepared, now forking the call\n");
@@ -666,7 +714,24 @@ if (prepareallosproutes()) {
 };
 ...
 
-1.4.8. checkcallingtranslation()
+1.4.9. preparecnamresponse()
+
+   This function tries to prepare the CNAM returned by the peering
+   server. If unsuccessful in preparing the routes a SIP 500 is
+   sent back and a trace message is logged.
+
+   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+
+   Example 1.38. preparecnamresponse usage
+...
+if (preparecnamresponse()) {
+  log(1,"CNAM is prepared, new sending the response\n");
+} else {
+  log(1,"Could not prepare CNAM\n");
+};
+...
+
+1.4.10. checkcallingtranslation()
 
    This function is used to check if the calling number is
    translated. Before calling checkcallingtranslation,
@@ -679,7 +744,7 @@ if (prepareallosproutes()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.35. checkcallingtranslation usage
+   Example 1.39. checkcallingtranslation usage
 ...
 if (checkcallingtranslation()) {
   # Remove the Remote_Party-ID from the received message
@@ -691,7 +756,7 @@ if (checkcallingtranslation()) {
 }
 ...
 
-1.4.9. reportospusage()
+1.4.11. reportospusage()
 
    This function should be called after receiving a BYE message.
    If the message contains an OSP cookie, the function will
@@ -708,7 +773,7 @@ if (checkcallingtranslation()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.36. reportospusage usage
+   Example 1.40. reportospusage usage
 ...
 if (is_direction("downstream")) {
   log(1,"This BYE message is from SOURCE\n");

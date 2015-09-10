@@ -86,7 +86,7 @@ modparam("osp","work_mode",0)
     </section>
     <section>
       <title><varname>service_type</varname></title>
-      <para>The service_type (integer) parameter instructs the OSP module what services it should provide. If this value is set to 0, the OSP module provides normal voice service. If this value is set to 1, the OSP module provides ported number query service. The default value is 0.</para>
+      <para>The service_type (integer) parameter instructs the OSP module what services it should provide. If this value is set to 0, the OSP module provides normal voice service. If this value is set to 1, the OSP module provides ported number query service. If this value is set to 2, the OSP module provides CNAM query service. The default value is 0.</para>
       <example>
         <title>Instructing the module to provide normal voice service</title>
         <programlisting format="linespecific">
@@ -371,6 +371,27 @@ modparam("osp","custom_info_avp","$avp(cinfo)")
         </programlisting>
       </example>
     </section>
+    <section>
+      <title><varname>cnam_avp</varname></title>
+      <para>The cnam_avp (string) parameter instructs the OSP module to use the defined AVP to pass the CNAM values. The default value is "$avp(_osp_cnam_)".  Then the CNAM can be used by "$avp(_osp_cnam_)".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <example>
+        <title>Setting the CNAM AVP</title>
+        <programlisting format="linespecific">
+modparam("osp","cnam_avp","$avp(cnam)")
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><varname>source_media_avp, destination_media_avp</varname></title>
+      <para>These parameters are used to tell the OSP module which AVPs are used to store media addresses. The default values are "$avp(_osp_source_media_address_)" and "$avp(_osp_destination_media_address_)".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <example>
+        <title>Setting the media address AVPs</title>
+        <programlisting format="linespecific">
+modparam("osp", "source_media_avp", "$avp(srcmedia)")
+modparam("osp", "destination_media_avp", "$avp(destmedia)")
+        </programlisting>
+      </example>
+    </section>
   </section>
   <section>
     <title>Exported Functions</title>
@@ -403,6 +424,23 @@ if (validateospheader()) {
   log(1,"valid OSP header found\n");
 } else {
   log(1,"OSP header not found, invalid or expired\n");
+};
+...
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><function moreinfo="none">getlocaladdress()</function></title>
+      <para>This function gets the receiving IP address of SIP response and stores it as proxy egress address.</para>
+      <para>This function can be used from ONREPLY_ROUTE.</para>
+      <example>
+        <title>getlocaladress usage</title>
+        <programlisting format="linespecific">
+...
+if (getlocaladdress()) {
+  log(1,"Obtain proxy local egress address\n");
+} else {
+  log(1,"Failed to get proxy local egress address\n");
 };
 ...
         </programlisting>
@@ -489,6 +527,23 @@ if (prepareallosproutes()) {
   log(1,"Routes are prepared, now forking the call\n");
 } else {
   log(1,"Could not prepare the routes. No destination available\n");
+};
+...
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><function moreinfo="none">preparecnamresponse()</function></title>
+      <para>This function tries to prepare the CNAM returned by the peering server. If unsuccessful in preparing the routes a SIP 500 is sent back and a trace message is logged.</para>
+      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para>
+      <example>
+        <title>preparecnamresponse usage</title>
+        <programlisting format="linespecific">
+...
+if (preparecnamresponse()) {
+  log(1,"CNAM is prepared, new sending the response\n");
+} else {
+  log(1,"Could not prepare CNAM\n");
 };
 ...
         </programlisting>

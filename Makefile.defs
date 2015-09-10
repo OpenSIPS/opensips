@@ -105,7 +105,7 @@ endif
 # additional check for architecture on solaris
 ifeq ($(OS),solaris)
 	ifeq ($(shell isainfo -k),amd64)
-		ARCH := x86_64
+		HOST_ARCH := x86_64
 	endif
 endif
 
@@ -124,6 +124,152 @@ else
 	else
 		ISSMP ?= yes
 	endif
+endif
+
+#set some vars from the environment (and not make builtins)
+CC   := $(shell echo "$${CC}")
+LEX  := $(shell echo "$${LEX}")
+YACC := $(shell echo "$${YACC}")
+
+# find compiler name & version
+ifeq ($(CC),)
+ 	CC=gcc
+endif
+LD= $(CC)
+CC_LONGVER=$(shell if  $(CC) -v 2>/dev/null; then \
+						$(CC) -v 2>&1 ;\
+					else \
+						$(CC) -V 2>&1 ; \
+					fi )
+
+#find-out the compiler's name
+
+ifneq (,$(findstring gcc, $(CC_LONGVER)))
+	CC_NAME=gcc
+	CC_VER=$(word 1,$(CC)) $(shell $(CC) - -dumpversion|head -n 1|cut -d" " -f 3|\
+			 sed -e 's/^.*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/' \
+			 	 -e 's/^[^0-9].*\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/')
+	# sun sed is a little brain damaged => this complicated expression
+	MKDEP=$(CC) -MM 
+	CC_SHORTVER=$(shell echo "$(CC_VER)" | cut -d" " -f 2| \
+				 sed -e 's/[^0-9]*-\(.*\)/\1/'| \
+				 sed -e 's/\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/' )
+	#transform gcc version into 2.9x, 3.x or 4.x
+	#XXX: for now treag 5.x the same as 4.x
+	CC_CLASS=$(shell echo "$(CC_SHORTVER)" | \
+				 sed -e 's/2\.9.*/2.9x/' -e 's/3\.[0-9]/3.x/' \
+				 -e 's/4\.[0-9]/4.x/' -e 's/5\.[0-9]/4.x/')
+endif
+
+ifneq (, $(findstring Sun, $(CC_LONGVER)))
+	CC_NAME=suncc
+	CC_SHORTVER=$(shell echo "$(CC_LONGVER)"|head -n 1| \
+					sed -e 's/.*\([0-9]\.[0-9]\).*/\1/g' )
+	CC_VER=$(CC) $(CC_SHORTVER)
+	MKDEP=$(CC) -xM1 
+endif
+
+ifneq (, $(findstring Intel(R) C++ Compiler, $(CC_LONGVER)))
+	# very nice: gcc compatible
+	CC_NAME=icc
+	CC_FULLVER=$(shell echo "$(CC_LONGVER)"|head -n 1| \
+					sed -e 's/.*Version \([0-9]\.[0-9]\.[0-9]*\).*/\1/g' )
+	CC_SHORTVER=$(shell echo "$(CC_FULLVER)" | cut -d. -f1,2 )
+	CC_VER=$(CC) $(CC_FULLVER)
+	MKDEP=$(CC) -MM 
+endif
+
+
+ifeq (,$(CC_NAME))
+#not found
+	CC_NAME=$(CC)
+	CC_SHORTVER=unknown
+	CC_VER=unknown
+	MKDEP=gcc -MM 
+$(warning	Unknown compiler $(CC)\; supported compilers: \
+			gcc, sun cc, intel icc )
+endif
+export CC_NAME
+
+# ARCH detection
+# predefined compiler macros for different architectures
+# (see http://predef.sourceforge.net/prearch.html for a more complete list)
+i386_macros= i386 __i386__ __i486__ __i586__ __i686__ \
+			__i386 _M_IX86 __X86__ _X86_
+x86_64_macros= __amd64__ __amd64 __x86_64__ __x86_64 _M_X64
+
+sparc_macros= __sparc__ __sparc __sparcv8
+sparc64_macros= __sparcv9 __sparc_v9__
+
+arm_macros= __arm__ __thumb__
+arm6_macros= __ARM_ARCH_6__
+
+ppc_macros= __powerpc __powerpc__ __POWERPC__ __ppc__ _ARCH_PPC
+ppc64_macros= __ppc64__ _ARCH_PPC64
+
+mips_macros= __mips__ __mips _MIPS_ARCH_MIPS1
+mips2_macros= _MIPS_ISA_MIPS2 _MIPS_ISA_MIPS3 _MIPS_ISA_MIPS4 \
+			_MIPS_ARCH_MIPS2 _MIPS_ARCH_MIPS3 _MIPS_ARCH_MIPS4
+mips64_macros= _MIPS_ISA_MIPS64 _MIPS_ARCH_MIPS64
+
+alpha_macros= __alpha__ __alpha _M_ALPHA_
+
+ifeq ($(CC_NAME),gcc)
+#if gcc use gcc arch
+predef_macros:=$(shell $(CC) -dM -E -x c $(CC_EXTRA_OPTS) $(extra_defs) \
+					$(CFLAGS) /dev/null)
+
+ifneq ($(strip $(filter $(i386_macros), $(predef_macros))),)
+CC_ARCH=i386
+else ifneq ($(strip $(filter $(x86_64_macros), $(predef_macros))),)
+CC_ARCH=x86_64
+else ifneq ($(strip $(filter $(sparc_macros), $(predef_macros))),)
+
+ifneq ($(strip $(filter $(sparc64_macros), $(predef_macros))),)
+CC_ARCH=sparc64
+else # sparc64_macros
+CC_ARCH=sparc
+endif # sparc64_macros
+
+else ifneq ($(strip $(filter $(arm_macros), $(predef_macros))),)
+
+ifneq ($(strip $(filter $(arm6_macros), $(predef_macros))),)
+CC_ARCH=arm6
+else # arm6_macros
+CC_ARCH=arm
+endif # arm6_macros
+
+else ifneq ($(strip $(filter $(ppc64_macros), $(predef_macros))),)
+CC_ARCH=ppc64
+else ifneq ($(strip $(filter $(ppc_macros), $(predef_macros))),)
+CC_ARCH=ppc
+else ifneq ($(strip $(filter $(mips_macros), $(predef_macros))),)
+
+ifneq ($(strip $(filter $(mips64_macros), $(predef_macros))),)
+CC_ARCH=mips64
+else ifneq ($(strip $(filter $(mips2_macros), $(predef_macros))),)
+CC_ARCH=mips2
+else # mips2_macros
+CC_ARCH=mips
+endif # mips64_macros
+
+else ifneq ($(strip $(filter $(alpha_macros), $(predef_macros))),)
+CC_ARCH=alpha
+else
+
+$(warn "Unknown target compiler architecture")
+
+endif # predefined macros tests (x86_macros, ...)
+
+endif # gcc
+
+ifdef CC_ARCH
+ifneq ($(CC_ARCH),$(HOST_ARCH))
+$(info Target architecture <$(CC_ARCH)>, host architecture <$(HOST_ARCH)>)
+endif
+ARCH:=$(CC_ARCH)
+else
+ARCH:=$(HOST_ARCH)
 endif
 
 OSREL = $(shell uname -r)
@@ -274,11 +420,7 @@ INSTALL_MODULES = $(INSTALL) -m 755
 INSTALL_DOC = $(INSTALL) -m 644
 INSTALL_MAN = $(INSTALL) -m 644
 
-#set some vars from the environment (and not make builtins)
-CC   := $(shell echo "$${CC}")
-LEX  := $(shell echo "$${LEX}")
-YACC := $(shell echo "$${YACC}")
- 
+
 ifeq ($(VERSIONTYPE),)
 VERSIONTYPE = $(shell if [ -d ".svn" ]; then \
 			  		echo "svn"; \
@@ -365,148 +507,7 @@ ifeq ($(DBXML2PDF),)
 DBXML2PDF = $(shell which docbook2pdf)
 endif
 
-# find compiler name & version
-ifeq ($(CC),)
-	CC=gcc
-endif
-LD= $(CC)
-CC_LONGVER=$(shell if  $(CC) -v 2>/dev/null; then \
-						$(CC) -v 2>&1 ;\
-					else \
-						$(CC) -V 2>&1 ; \
-					fi )
 MKTAGS=ctags -R .
-
-#find-out the compiler's name
-
-ifneq (,$(findstring gcc, $(CC_LONGVER)))
-	CC_NAME=gcc
-	CC_VER=$(word 1,$(CC)) $(shell $(CC) - -dumpversion|head -n 1|cut -d" " -f 3|\
-			 sed -e 's/^.*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/' \
-			 	 -e 's/^[^0-9].*\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/')
-	# sun sed is a little brain damaged => this complicated expression
-	MKDEP=$(CC) -MM 
-	CC_SHORTVER=$(shell echo "$(CC_VER)" | cut -d" " -f 2| \
-				 sed -e 's/[^0-9]*-\(.*\)/\1/'| \
-				 sed -e 's/\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/' )
-	#transform gcc version into 2.9x, 3.x or 4.x
-	#XXX: for now treag 5.x the same as 4.x
-	CC_CLASS=$(shell echo "$(CC_SHORTVER)" | \
-				 sed -e 's/2\.9.*/2.9x/' -e 's/3\.[0-9]/3.x/' \
-				 -e 's/4\.[0-9]/4.x/' -e 's/5\.[0-9]/4.x/')
-endif
-
-ifneq (, $(findstring Sun, $(CC_LONGVER)))
-	CC_NAME=suncc
-	CC_SHORTVER=$(shell echo "$(CC_LONGVER)"|head -n 1| \
-					sed -e 's/.*\([0-9]\.[0-9]\).*/\1/g' )
-	CC_VER=$(CC) $(CC_SHORTVER)
-	MKDEP=$(CC) -xM1 
-endif
-
-ifneq (, $(findstring Intel(R) C++ Compiler, $(CC_LONGVER)))
-	# very nice: gcc compatible
-	CC_NAME=icc
-	CC_FULLVER=$(shell echo "$(CC_LONGVER)"|head -n 1| \
-					sed -e 's/.*Version \([0-9]\.[0-9]\.[0-9]*\).*/\1/g' )
-	CC_SHORTVER=$(shell echo "$(CC_FULLVER)" | cut -d. -f1,2 )
-	CC_VER=$(CC) $(CC_FULLVER)
-	MKDEP=$(CC) -MM 
-endif
-
-
-ifeq (,$(CC_NAME))
-#not found
-	CC_NAME=$(CC)
-	CC_SHORTVER=unknown
-	CC_VER=unknown
-	MKDEP=gcc -MM 
-$(warning	Unknown compiler $(CC)\; supported compilers: \
-			gcc, sun cc, intel icc )
-endif
-export CC_NAME
-
-# ARCH detection
-# predefined compiler macros for different architectures
-# (see http://predef.sourceforge.net/prearch.html for a more complete list)
-i386_macros= i386 __i386__ __i486__ __i586__ __i686__ \
-			__i386 _M_IX86 __X86__ _X86_
-x86_64_macros= __amd64__ __amd64 __x86_64__ __x86_64 _M_X64
-
-sparc_macros= __sparc__ __sparc __sparcv8
-sparc64_macros= __sparcv9 __sparc_v9__
-
-arm_macros= __arm__ __thumb__
-arm6_macros= __ARM_ARCH_6__
-
-ppc_macros= __powerpc __powerpc__ __POWERPC__ __ppc__ _ARCH_PPC
-ppc64_macros= __ppc64__ _ARCH_PPC64
-
-mips_macros= __mips__ __mips _MIPS_ARCH_MIPS1
-mips2_macros= _MIPS_ISA_MIPS2 _MIPS_ISA_MIPS3 _MIPS_ISA_MIPS4 \
-			_MIPS_ARCH_MIPS2 _MIPS_ARCH_MIPS3 _MIPS_ARCH_MIPS4
-mips64_macros= _MIPS_ISA_MIPS64 _MIPS_ARCH_MIPS64
-
-alpha_macros= __alpha__ __alpha _M_ALPHA_
-
-ifeq ($(CC_NAME),gcc)
-#if gcc use gcc arch
-predef_macros:=$(shell $(CC) -dM -E -x c $(CC_EXTRA_OPTS) $(extra_defs) \
-					$(CFLAGS) /dev/null)
-
-ifneq ($(strip $(filter $(i386_macros), $(predef_macros))),)
-CC_ARCH=i386
-else ifneq ($(strip $(filter $(x86_64_macros), $(predef_macros))),)
-CC_ARCH=x86_64
-else ifneq ($(strip $(filter $(sparc_macros), $(predef_macros))),)
-
-ifneq ($(strip $(filter $(sparc64_macros), $(predef_macros))),)
-CC_ARCH=sparc64
-else # sparc64_macros
-CC_ARCH=sparc
-endif # sparc64_macros
-
-else ifneq ($(strip $(filter $(arm_macros), $(predef_macros))),)
-
-ifneq ($(strip $(filter $(arm6_macros), $(predef_macros))),)
-CC_ARCH=arm6
-else # arm6_macros
-CC_ARCH=arm
-endif # arm6_macros
-
-else ifneq ($(strip $(filter $(ppc64_macros), $(predef_macros))),)
-CC_ARCH=ppc64
-else ifneq ($(strip $(filter $(ppc_macros), $(predef_macros))),)
-CC_ARCH=ppc
-else ifneq ($(strip $(filter $(mips_macros), $(predef_macros))),)
-
-ifneq ($(strip $(filter $(mips64_macros), $(predef_macros))),)
-CC_ARCH=mips64
-else ifneq ($(strip $(filter $(mips2_macros), $(predef_macros))),)
-CC_ARCH=mips2
-else # mips2_macros
-CC_ARCH=mips
-endif # mips64_macros
-
-else ifneq ($(strip $(filter $(alpha_macros), $(predef_macros))),)
-CC_ARCH=alpha
-else
-
-$(warn "Unknown target compiler architecture")
-
-endif # predefined macros tests (x86_macros, ...)
-
-endif # gcc
-
-ifdef CC_ARCH
-ifneq ($(CC_ARCH),$(HOST_ARCH))
-$(info Target architecture <$(CC_ARCH)>, host architecture <$(HOST_ARCH)>)
-endif
-ARCH:=$(CC_ARCH)
-else
-ARCH:=$(HOST_ARCH)
-endif
-
 
 # compile-time options
 #

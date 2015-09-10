@@ -279,6 +279,52 @@ inline static int int2reverse_hex( char **c, int *size, unsigned int nr )
 	return nr ? -1 /* number not processed; too little space */ : 1;
 }
 
+/* same functions, higher representation 64 bit*/
+/* if unsafe requested when first non numerical character shall be
+ * met the number shall be returned; avoid giving the
+ * exact len of the number */
+inline static int64_t reverse_hex2int64( char *c, int len, int unsafe)
+{
+	char *pc;
+	int64_t r;
+	char mychar;
+
+	r=0;
+	for (pc=c+len-1; len>0; pc--, len--) {
+		r <<= 4 ;
+		mychar=*pc;
+		if ( mychar >='0' && mychar <='9') r+=mychar -'0';
+		else if (mychar >='a' && mychar <='f') r+=mychar -'a'+10;
+		else if (mychar  >='A' && mychar <='F') r+=mychar -'A'+10;
+		else if (unsafe)
+			return r;
+		else return -1;
+	}
+	return r;
+}
+
+inline static int64_t int64_2reverse_hex( char **c, int *size, uint64_t nr )
+{
+	unsigned short digit;
+
+	if (*size && nr==0) {
+		**c = '0';
+		(*c)++;
+		(*size)--;
+		return 1;
+	}
+
+	while (*size && nr ) {
+		digit = nr & 0xf ;
+		**c= digit >= 10 ? digit + 'a' - 10 : digit + '0';
+		nr >>= 4;
+		(*c)++;
+		(*size)--;
+	}
+	return nr ? -1 /* number not processed; too little space */ : 1;
+}
+
+
 inline static int hexstr2int(char *c, int len, unsigned int *val)
 {
 	char *pc;

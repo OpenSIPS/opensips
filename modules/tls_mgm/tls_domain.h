@@ -39,8 +39,13 @@
 
 #include "../../str.h"
 #include "../../ip_addr.h"
-#include "tls_config.h"
 #include <openssl/ssl.h>
+
+#include "tls_config.h"
+#include "tls_helper.h"
+#include "../../usr_avp.h"
+#include "../../ut.h"
+
 
 /*
  * TLS configuration domain type
@@ -55,25 +60,7 @@ enum tls_domain_type {
 /*
  * separate configuration per ip:port
  */
-struct tls_domain {
-	str             id;
-	int             type;
-	struct ip_addr  addr;
-	unsigned short  port;
-	SSL_CTX        *ctx;
-	int             verify_cert;
-	int             require_client_cert;
-	char           *cert_file;
-	char           *pkey_file;
-	char           *ca_file;
-	char           *tmp_dh_file;
-	char           *tls_ec_curve;
-	char	       *ca_directory;
-	char           *ciphers_list;
-	enum tls_method method;
-	struct tls_domain *next;
-	str name;
-};
+
 
 extern struct tls_domain *tls_server_domains;
 extern struct tls_domain *tls_client_domains;
@@ -92,10 +79,14 @@ struct tls_domain *tls_find_domain_by_id( str *id);
 struct tls_domain *tls_find_server_domain(struct ip_addr *ip,
 				   unsigned short port);
 
+/* find client domain */
+struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
+				   unsigned short port);
+
 /*
  * find client with given ip and port
  */
-struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
+struct tls_domain *tls_find_client_domain_addr(struct ip_addr *ip,
 				   unsigned short port);
 
 /*

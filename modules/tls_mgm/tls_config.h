@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2015 OpenSIPS Solutions
+ * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2004,2005 Free Software Foundation, Inc.
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -29,42 +30,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- *
- * History:
- * -------
- *  2015-02-18  first version (bogdan)
  */
 
+#ifndef tls_config_h
+#define tls_config_h
 
-#ifndef _MOD_PROTO_TLS_tls_params_h
-#define _MOD_PROTO_TLS_tls_params_h
+#include "tls_config_helper.h"
 
-#include "../../sr_module.h"
+extern int      tls_method;
 
-int tlsp_add_srv_domain(modparam_t type, void *val);
-
-int tlsp_add_cli_domain(modparam_t type, void *val);
-
-int tlsp_set_method(modparam_t type, void *val);
-
-int tlsp_set_verify(modparam_t type, void *val);
-
-int tlsp_set_require(modparam_t type, void *val);
-
-int tlsp_set_certificate(modparam_t type, void *val);
-
-int tlsp_set_pk(modparam_t type, void *val);
-
-int tlsp_set_calist(modparam_t type, void *val);
-
-int tlsp_set_cadir(modparam_t type, void *val);
-
-int tlsp_set_cplist(modparam_t type, void *val);
-
-int tlsp_set_dhparams(modparam_t type, void *val);
-
-int tlsp_set_eccurve(modparam_t type, void *val);
+extern int      tls_verify_client_cert;
+extern int      tls_verify_server_cert;
+extern int      tls_require_client_cert;
+extern int	crl_check_all;
+extern char    *tls_cert_file;
+extern char    *tls_pkey_file;
+extern char    *tls_ca_file;
+extern char    *tls_ca_dir;
+extern char    *tls_tmp_dh_file;
+extern char    *tls_ciphers_list;
+extern int      tls_handshake_timeout;
+extern int      tls_send_timeout;
+extern int      tls_client_domain_avp;
 
 #endif
-

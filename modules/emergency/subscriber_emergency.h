@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -27,6 +27,7 @@
  *  2015-05-20 change callcell identity
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-08-05 code review (Villaron/Tesini)
+ *  2015-09-07 final test cases (Villaron/Tesini)
  */
 
 #include "../../sr_module.h"
@@ -45,7 +46,7 @@
 #include "../../parser/parse_from.h"
 #include "../../regexp.h"
 #include "../../data_lump.h"
-#include "../../data_lump_rpl.h" 
+#include "../../data_lump_rpl.h"
 #include "../../ut.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
@@ -55,12 +56,10 @@
 #include "../rr/api.h"
 #include "../tm/tm_load.h" /*load_tm_api*/
 
-#include "http_emergency.h" 
+#include "http_emergency.h"
 
- #define TIMER_N				30
- #define MAXNUMBERLEN 			31
-
-int proxy_role_aux;
+#define TIMER_N				132  // Timer N = 64*T1      T1 = (0,5s)
+#define MAXNUMBERLEN 			31
 
 struct tm_binds eme_tm;
 
@@ -79,7 +78,7 @@ str* add_hdr_subscriber(int expires, str event);
 void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *params);
 int extract_reply_headers(struct sip_msg* reply, str* callid, int expires);
 int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb);
-int treat_notify(struct sip_msg *msg); 
+int treat_notify(struct sip_msg *msg);
 struct sm_subscriber* get_subs_cell(struct sip_msg *msg, str callid_event);
 void subs_cback_func_II(struct cell *t, int cb_type, struct tmcb_params *params);
 dlg_t* build_dlg(struct sm_subscriber* subscriber);

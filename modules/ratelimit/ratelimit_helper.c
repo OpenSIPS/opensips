@@ -55,9 +55,6 @@ static rl_algo_t get_rl_algo(str);
 /* big hash table */
 rl_big_htable rl_htable;
 
-static int rl_dests_nr;
-static rl_repl_dst_t *rl_dests;
-
 /* feedback algorithm */
 static int *rl_feedback_limit;
 
@@ -91,12 +88,13 @@ int rl_buffer_th = RL_BUF_THRESHOLD;
 
 
 static str rl_name_buffer = {0, 0};
+
 static inline int rl_set_name(str * name)
 {
 	if (name->len + db_prefix.len > rl_name_buffer.len) {
 		rl_name_buffer.len = name->len + db_prefix.len;
 		rl_name_buffer.s = pkg_realloc(rl_name_buffer.s,
-				rl_name_buffer.len);
+			rl_name_buffer.len);
 		if (!rl_name_buffer.s) {
 			LM_ERR("cannot realloc buffer\n");
 			rl_name_buffer.len = 0;
@@ -107,7 +105,6 @@ static inline int rl_set_name(str * name)
 	rl_name_buffer.len = name->len + db_prefix.len;
 	return 0;
 }
-
 
 /* NOTE: assumes that the pipe has been locked. If fails, releases the lock */
 static int rl_change_counter(str *name, rl_pipe_t *pipe, int c)
@@ -131,7 +128,7 @@ static int rl_change_counter(str *name, rl_pipe_t *pipe, int c)
 	} else {
 		if (pipe->my_counter) {
 			ret = cdbf.sub(cdbc, &rl_name_buffer, pipe->my_counter, rl_expire_time,
-					&new_counter);
+				&new_counter);
 		} else {
 			ret = cdbf.get_counter(cdbc, &rl_name_buffer, &new_counter);
 		}
@@ -139,14 +136,14 @@ static int rl_change_counter(str *name, rl_pipe_t *pipe, int c)
 
 	if (ret < 0) {
 		LM_ERR("cannot change counter for pipe %.*s with %d\n",
-				name->len, name->s, c);
+			name->len, name->s, c);
 		return -1;
 	}
 
 	pipe->my_counter = c ? pipe->my_counter + c : 0;
 	pipe->counter = new_counter;
 	LM_DBG("changed with %d; my_counter: %d; counter: %d\n",
-			c, pipe->my_counter, new_counter);
+		c, pipe->my_counter, new_counter);
 
 	return 0;
 }
@@ -171,11 +168,11 @@ int init_cachedb(str * db_url)
 {
 	if (cachedb_bind_mod(db_url, &cdbf) < 0) {
 		LM_ERR("cannot bind functions for db_url %.*s\n",
-				db_url->len, db_url->s);
+			db_url->len, db_url->s);
 		return -1;
 	}
 	if (!CACHEDB_CAPABILITY(&cdbf,
-				CACHEDB_CAP_GET|CACHEDB_CAP_ADD|CACHEDB_CAP_SUB)) {
+		CACHEDB_CAP_GET | CACHEDB_CAP_ADD | CACHEDB_CAP_SUB)) {
 		LM_ERR("not enough capabilities\n");
 		return -1;
 	}
@@ -234,15 +231,15 @@ int init_rl_table(unsigned int size)
 	rl_default_algo = get_rl_algo(rl_default_algo_s);
 	if (rl_default_algo < 0) {
 		LM_ERR("unknown algoritm <%.*s>\n", rl_default_algo_s.len,
-				rl_default_algo_s.s);
+			rl_default_algo_s.s);
 		return -1;
 	}
 	LM_DBG("default algorithm is %.*s [ %d ]\n",
-			rl_default_algo_s.len, rl_default_algo_s.s, rl_default_algo);
+		rl_default_algo_s.len, rl_default_algo_s.s, rl_default_algo);
 
 	/* if at least 25% of the size locks can't be allocated
 	 * we return an error */
-	for ( i = size; i > size / 4; i--) {
+	for (i = size; i > size / 4; i--) {
 		rl_htable.locks = lock_set_alloc(i);
 		if (!rl_htable.locks)
 			continue;
@@ -256,13 +253,13 @@ int init_rl_table(unsigned int size)
 
 	if (!rl_htable.locks) {
 		LM_ERR("unable to allocted at least %d locks for the hash table\n",
-				size/4);
+			size / 4);
 		goto error;
 	}
 	rl_htable.locks_no = i;
 
 	LM_DBG("%d locks allocated for %d hashsize\n",
-			rl_htable.locks_no, rl_htable.size);
+		rl_htable.locks_no, rl_htable.size);
 
 	return 0;
 error:
@@ -275,12 +272,14 @@ struct {
 	str name;
 	rl_algo_t algo;
 } rl_algo_names[] = {
-	{ str_init("NOP"),		PIPE_ALGO_NOP},
-	{ str_init("RED"),		PIPE_ALGO_RED},
-	{ str_init("TAILDROP"),	PIPE_ALGO_TAILDROP},
-	{ str_init("FEEDBACK"),	PIPE_ALGO_FEEDBACK},
-	{ str_init("NETWORK"),	PIPE_ALGO_NETWORK},
-	{ { 0, 0 },				0},
+	{ str_init("NOP"), PIPE_ALGO_NOP},
+	{ str_init("RED"), PIPE_ALGO_RED},
+	{ str_init("TAILDROP"), PIPE_ALGO_TAILDROP},
+	{ str_init("FEEDBACK"), PIPE_ALGO_FEEDBACK},
+	{ str_init("NETWORK"), PIPE_ALGO_NETWORK},
+	{
+		{ 0, 0}, 0
+	},
 };
 
 static rl_algo_t get_rl_algo(str name)
@@ -289,9 +288,9 @@ static rl_algo_t get_rl_algo(str name)
 	if (!name.s || !name.len)
 		return -1;
 
-	for ( i = 0 ; rl_algo_names[i].name.s ; i++) {
+	for (i = 0; rl_algo_names[i].name.s; i++) {
 		if (rl_algo_names[i].name.len == name.len &&
-				strncasecmp(rl_algo_names[i].name.s, name.s, name.len) == 0)
+			strncasecmp(rl_algo_names[i].name.s, name.s, name.len) == 0)
 			return rl_algo_names[i].algo;
 	}
 	return -1;
@@ -300,12 +299,11 @@ static rl_algo_t get_rl_algo(str name)
 static str * get_rl_algo_name(rl_algo_t algo)
 {
 	int i;
-	for (i = 0; rl_algo_names[i].name.s ; i++)
+	for (i = 0; rl_algo_names[i].name.s; i++)
 		if (rl_algo_names[i].algo == algo)
 			return &rl_algo_names[i].name;
 	return NULL;
 }
-
 
 int w_rl_check_2(struct sip_msg *_m, char *_n, char *_l)
 {
@@ -327,17 +325,17 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 		LM_ERR("invalid parameters\n");
 		goto end;
 	}
-	if (fixup_get_svalue(_m, (gparam_p)_n, &name) < 0) {
+	if (fixup_get_svalue(_m, (gparam_p) _n, &name) < 0) {
 		LM_ERR("cannot retrieve identifier\n");
 		goto end;
 	}
-	if (fixup_get_ivalue(_m, (gparam_p)_l, &limit) < 0) {
+	if (fixup_get_ivalue(_m, (gparam_p) _l, &limit) < 0) {
 		LM_ERR("cannot retrieve limit\n");
 		goto end;
 	}
 	algorithm.s = 0;
-	if (!_a || fixup_get_svalue(_m, (gparam_p)_a, &algorithm) < 0 ||
-			(algo = get_rl_algo(algorithm)) < 0) {
+	if (!_a || fixup_get_svalue(_m, (gparam_p) _a, &algorithm) < 0 ||
+		(algo = get_rl_algo(algorithm)) < 0) {
 		algo = PIPE_ALGO_NOP;
 	}
 
@@ -347,8 +345,8 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 		if (*rl_feedback_limit) {
 			if (*rl_feedback_limit != limit) {
 				LM_WARN("FEEDBACK limit should be the same for all pipes, but"
-						" new limit %d differs - setting to %d\n",
-						limit, *rl_feedback_limit);
+					" new limit %d differs - setting to %d\n",
+					limit, *rl_feedback_limit);
 				limit = *rl_feedback_limit;
 			}
 		} else {
@@ -376,25 +374,23 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 
 	if (!*pipe) {
 		/* allocate new pipe */
-		*pipe = shm_malloc(sizeof(rl_pipe_t) +
-				rl_dests_nr * sizeof(rl_repl_counter_t));
+		*pipe = shm_malloc(sizeof(rl_pipe_t));
 		if (!*pipe) {
 			LM_ERR("no more shm memory\n");
 			goto release;
 		}
-		memset(*pipe, 0, sizeof(rl_pipe_t) + rl_dests_nr * sizeof(rl_repl_counter_t));
-		(*pipe)->dsts = (rl_repl_counter_t *)((*pipe) + 1);
+		memset(*pipe, 0, sizeof(rl_pipe_t));
 		LM_DBG("Pipe %.*s doens't exist, but was created %p\n",
-				name.len, name.s, *pipe);
+			name.len, name.s, *pipe);
 		if (algo == PIPE_ALGO_NETWORK)
 			should_update = 1;
 		(*pipe)->algo = (algo == PIPE_ALGO_NOP) ? rl_default_algo : algo;
 	} else {
 		LM_DBG("Pipe %.*s found: %p - last used %lu\n",
-				name.len, name.s, *pipe, (*pipe)->last_used);
+			name.len, name.s, *pipe, (*pipe)->last_used);
 		if (algo != PIPE_ALGO_NOP && (*pipe)->algo != algo) {
 			LM_WARN("algorithm %d different from the initial one %d for pipe "
-					"%.*s", algo, (*pipe)->algo, name.len, name.s);
+				"%.*s", algo, (*pipe)->algo, name.len, name.s);
 		}
 	}
 
@@ -415,8 +411,8 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 
 	ret = rl_pipe_check(*pipe);
 	LM_DBG("Pipe %.*s counter:%d load:%d limit:%d should %sbe blocked (%p)\n",
-			name.len, name.s, (*pipe)->counter, (*pipe)->load,
-			(*pipe)->limit, ret == 1? "NOT " : "", *pipe);
+		name.len, name.s, (*pipe)->counter, (*pipe)->load,
+		(*pipe)->limit, ret == 1 ? "NOT " : "", *pipe);
 
 
 release:
@@ -466,7 +462,7 @@ void rl_timer(unsigned int ticks, void *param)
 			goto next_map;
 		}
 		for (; iterator_is_valid(&it);) {
-			pipe = (rl_pipe_t **)iterator_val(&it);
+			pipe = (rl_pipe_t **) iterator_val(&it);
 			if (!pipe || !*pipe) {
 				LM_ERR("[BUG] bogus map[%d] state\n", i);
 				goto next_pipe;
@@ -488,7 +484,7 @@ void rl_timer(unsigned int ticks, void *param)
 					lock_release(rl_lock);
 				}
 				LM_DBG("Deleting ratelimit pipe key \"%.*s\"\n",
-						key->len, key->s);
+					key->len, key->s);
 				value = iterator_delete(&del);
 				/* free resources */
 				if (value)
@@ -503,19 +499,19 @@ void rl_timer(unsigned int ticks, void *param)
 					}
 				}
 				switch ((*pipe)->algo) {
-					case PIPE_ALGO_NETWORK:
-						/* handle network algo */
-						(*pipe)->load =
-							(*rl_network_load > (*pipe)->limit) ? -1 : 1;
-						break;
+				case PIPE_ALGO_NETWORK:
+					/* handle network algo */
+					(*pipe)->load =
+						(*rl_network_load > (*pipe)->limit) ? -1 : 1;
+					break;
 
-					case PIPE_ALGO_RED:
-						if ((*pipe)->limit && rl_timer_interval)
-							(*pipe)->load = (*pipe)->counter /
-								((*pipe)->limit * rl_timer_interval);
-						break;
-					default:
-						break;
+				case PIPE_ALGO_RED:
+					if ((*pipe)->limit && rl_timer_interval)
+						(*pipe)->load = (*pipe)->counter /
+						((*pipe)->limit * rl_timer_interval);
+					break;
+				default:
+					break;
 				}
 				(*pipe)->last_counter = rl_get_all_counters(*pipe);
 				if (RL_USE_CDB(*pipe)) {
@@ -529,7 +525,7 @@ void rl_timer(unsigned int ticks, void *param)
 next_pipe:
 			if (iterator_next(&it) < 0)
 				break;
-			}
+		}
 next_map:
 		RL_RELEASE_LOCK(i);
 	}
@@ -546,9 +542,9 @@ static int rl_map_print(void *param, str key, void *value)
 	struct mi_attr* attr;
 	char* p;
 	int len;
-	struct rl_param_t * rl_param = (struct rl_param_t *)param;
+	struct rl_param_t * rl_param = (struct rl_param_t *) param;
 	struct mi_node * rpl;
-	rl_pipe_t *pipe = (rl_pipe_t *)value;
+	rl_pipe_t *pipe = (rl_pipe_t *) value;
 	struct mi_node * node;
 	str *alg;
 
@@ -584,11 +580,11 @@ static int rl_map_print(void *param, str key, void *value)
 	}
 
 	if (!(attr = add_mi_attr(node, MI_DUP_VALUE, "algorithm", 9,
-					alg->s, alg->len)))
+		alg->s, alg->len)))
 		return -1;
 
 
-	p = int2str((unsigned long)(pipe->limit), &len);
+	p = int2str((unsigned long) (pipe->limit), &len);
 	if (!(attr = add_mi_attr(node, MI_DUP_VALUE, "limit", 5, p, len)))
 		return -1;
 
@@ -624,7 +620,7 @@ int rl_stats(struct mi_root *rpl_tree, str * value)
 		}
 		if (rl_map_print(&param, *value, *pipe)) {
 			LM_ERR("cannot print value for key %.*s\n",
-					value->len, value->s);
+				value->len, value->s);
 			goto error;
 		}
 		RL_RELEASE_LOCK(i);
@@ -645,33 +641,85 @@ error:
 	return -1;
 }
 
+static int bin_status_aux(struct mi_node *root, clusterer_node_t *nodes, int type, int cluster_id)
+{
+	clusterer_node_t *d;
+	struct mi_node *node = NULL;
+	struct mi_attr* attr;
+	str cluster_id_s;
+	str machine_id_s;
+	str state;
+
+	for (d = nodes; d; d = d->next) {
+		cluster_id_s.s = int2str(cluster_id, &cluster_id_s.len);
+		node = add_mi_node_child(root, MI_DUP_VALUE, "Cluster ID", 10,
+			cluster_id_s.s, cluster_id_s.len);
+		if (node == NULL) goto error;
+
+		machine_id_s.s = int2str(d->machine_id, &machine_id_s.len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, "Machine ID", 10,
+			machine_id_s.s, machine_id_s.len);
+		if (attr == NULL) goto error;
+
+		state.s = int2str(d->state, &state.len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, "STATE", 5,
+			state.s, state.len);
+		if (attr == NULL) goto error;
+
+		if (d->description.s)
+			attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
+			d->description.s, d->description.len);
+		else
+			attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
+			"none", 4);
+		if (attr == NULL) goto error;
+
+		if (type)
+			attr = add_mi_attr(node, MI_DUP_VALUE, "TYPE", 4,
+			"server", 6);
+		else
+			attr = add_mi_attr(node, MI_DUP_VALUE, "TYPE", 4,
+			"client", 6);
+		if (attr == NULL) goto error;
+	}
+
+	return 0;
+error:
+	return -1;
+}
+
 int rl_bin_status(struct mi_root *rpl_tree)
 {
-	int index = 0;
-	struct mi_node *node;
-	char* p;
-	int len;
+	clusterer_node_t *nodes;
+	struct mi_node *root = NULL;
 
-	for (index = 0; index < rl_dests_nr; index++) {
-		if (!(node = add_mi_node_child(&rpl_tree->node, 0, "Instance", 8,
-					rl_dests[index].dst.s, rl_dests[index].dst.len))) {
-			LM_ERR("cannot add a new instance\n");
+	if (rpl_tree == NULL)
+		return -1;
+
+	root = &rpl_tree->node;
+	if (rl_repl_cluster) {
+		nodes = clusterer_api.get_nodes(rl_repl_cluster, PROTO_BIN);
+		if (nodes == NULL)
 			return -1;
-		}
-
-		if (*rl_dests[index].last_msg) {
-			p = int2str((unsigned long)(*rl_dests[index].last_msg), &len);
-		} else {
-			p = "never";
-			len = 5;
-		}
-		if (!add_mi_attr(node, MI_DUP_VALUE, "timestamp", 9, p, len)) {
-			LM_ERR("cannot add last update\n");
-			return -1;
-		}
-
+		if (bin_status_aux(root, nodes, 1, rl_repl_cluster) < 0)
+			goto error;
+		clusterer_api.free_nodes(nodes);
 	}
+
+	if (accept_repl_pipes) {
+		nodes = clusterer_api.get_nodes(accept_repl_pipes, PROTO_BIN);
+		if (nodes == NULL)
+			return -1;
+		if (bin_status_aux(root, nodes, 0, accept_repl_pipes) < 0)
+			goto error;
+		clusterer_api.free_nodes(nodes);
+	}
+
+
 	return 0;
+error:
+	clusterer_api.free_nodes(nodes);
+	return -1;
 }
 
 int w_rl_set_count(str key, int val)
@@ -704,7 +752,7 @@ int w_rl_set_count(str key, int val)
 	}
 
 	LM_DBG("new counter for key %.*s is %d\n",
-			key.len, key.s, (*pipe)->counter);
+		key.len, key.s, (*pipe)->counter);
 
 	ret = 0;
 
@@ -713,11 +761,11 @@ release:
 	return ret;
 }
 
-static inline int w_rl_change_counter(struct sip_msg *_m, char *_n, int  dec)
+static inline int w_rl_change_counter(struct sip_msg *_m, char *_n, int dec)
 {
 	str name;
 
-	if (!_n || fixup_get_svalue(_m, (gparam_p)_n, &name) < 0) {
+	if (!_n || fixup_get_svalue(_m, (gparam_p) _n, &name) < 0) {
 		LM_ERR("cannot retrieve identifier\n");
 		return -1;
 	}
@@ -738,20 +786,61 @@ int w_rl_reset(struct sip_msg *_m, char *_n)
 	return w_rl_change_counter(_m, _n, 0);
 }
 
+static rl_repl_counter_t* find_destination(rl_pipe_t *pipe, int machine_id)
+{
+	rl_repl_counter_t *head;
+	
+	head = pipe->dsts;
+	while(head != NULL){
+		if( head->machine_id ==  machine_id )
+			break;
+		head=head->next;
+	}
+	
+	if(head == NULL){
+		head = shm_malloc(sizeof(rl_repl_counter_t));
+		if(head == NULL){
+			LM_ERR("no more shm memory\n");
+			goto error;
+		}
+		head->machine_id = machine_id;
+		head->next = pipe->dsts;
+		pipe->dsts = head;
+	}
 
-void rl_rcv_bin(int packet_type, struct receive_info *ri)
+	return head;
+
+error:
+	return NULL;
+}
+
+
+
+
+void rl_rcv_bin(int packet_type, struct receive_info *ri, int server_id)
 {
 	rl_algo_t algo;
 	int limit;
 	int counter;
 	str name;
-	int index;
 	char *ip;
 	unsigned short port;
 	rl_pipe_t **pipe;
 	unsigned int hash_idx;
 	time_t now;
+	rl_repl_counter_t *destination;
+	
+	if (packet_type == SERVER_TEMP_DISABLED) {
+ 		get_su_info(&ri->src_su.s, ip, port);
+		LM_WARN("server: %s:%hu temporary disabled\n", ip, port);
+ 		return;
+ 	}
 
+	if (packet_type == SERVER_TIMEOUT) {
+		LM_WARN("server with clustererer id %d timeout\n", server_id);
+		return;
+	}
+	
 	if(get_bin_pkg_version() != BIN_VERSION){
 		LM_ERR("incompatible bin protocol version\n");
 		return;
@@ -760,20 +849,10 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri)
 	if (packet_type != RL_PIPE_COUNTER)
 		return;
 
-	/* match the server */
-	for (index = 0; index < rl_dests_nr; index++) {
-		 if (su_cmp(&ri->src_su, &rl_dests[index].to))
-			break;
-	}
-
-	if (index == rl_dests_nr) {
-		get_su_info(&ri->src_su.s, ip, port);
-		LM_WARN("received bin packet from unknown source: %s:%hu\n",
-				ip, port);
+	if (packet_type != RL_PIPE_COUNTER)
 		return;
-	}
+
 	now = time(0);
-	*rl_dests[index].last_msg = now;
 
 	for (;;) {
 		if (bin_pop_str(&name) == 1)
@@ -806,35 +885,32 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri)
 
 		if (!*pipe) {
 			/* if the pipe does not exist, alocate it in case we need it later */
-			*pipe = shm_malloc(sizeof(rl_pipe_t) +
-					rl_dests_nr * sizeof(rl_repl_counter_t));
+			*pipe = shm_malloc(sizeof(rl_pipe_t));
 			if (!*pipe) {
 				LM_ERR("no more shm memory\n");
 				goto release;
 			}
-			memset(*pipe, 0, sizeof(rl_pipe_t) +
-					rl_dests_nr * sizeof(rl_repl_counter_t));
-			(*pipe)->dsts = (rl_repl_counter_t *)((*pipe) + 1);
+			memset(*pipe, 0, sizeof(rl_pipe_t));
 			LM_DBG("Pipe %.*s doesn't exist, but was created %p\n",
-					name.len, name.s, *pipe);
+				name.len, name.s, *pipe);
 			(*pipe)->algo = algo;
 			(*pipe)->limit = limit;
 		} else {
 			LM_DBG("Pipe %.*s found: %p - last used %lu\n",
-					name.len, name.s, *pipe, (*pipe)->last_used);
+				name.len, name.s, *pipe, (*pipe)->last_used);
 			if ((*pipe)->algo != algo)
 				LM_WARN("algorithm %d different from the initial one %d for "
-						"pipe %.*s", algo, (*pipe)->algo, name.len, name.s);
+				"pipe %.*s", algo, (*pipe)->algo, name.len, name.s);
 			if ((*pipe)->limit != limit)
 				LM_WARN("limit %d different from the initial one %d for "
-						"pipe %.*s", limit, (*pipe)->limit, name.len, name.s);
+				"pipe %.*s", limit, (*pipe)->limit, name.len, name.s);
 		}
 		/* set the last used time */
 		(*pipe)->last_used = time(0);
 		/* set the destination's counter */
-		(*pipe)->dsts[index].counter = counter;
-		(*pipe)->dsts[index].update = now;
-
+		destination = find_destination(*pipe, server_id);
+		destination->counter = counter;
+		destination->update = now;
 		RL_RELEASE_LOCK(hash_idx);
 	}
 	return;
@@ -845,90 +921,28 @@ release:
 
 int rl_repl_init(void)
 {
-	int index;
 
 	if (rl_buffer_th > (BUF_SIZE * 0.9)) {
 		LM_WARN("Buffer size too big %d - pipe information might get lost",
-				rl_buffer_th);
+			rl_buffer_th);
 		return -1;
 	}
 
-	if (rl_dests_nr &&
-		bin_register_cb("ratelimit", rl_rcv_bin) < 0) {
+	if (accept_repl_pipes &&
+		clusterer_api.register_module("ratelimit", PROTO_BIN, rl_rcv_bin,
+		accept_repl_pipes_timeout, repl_pipes_auth_check, accept_repl_pipes) < 0) {
 		LM_ERR("Cannot register binary packet callback!\n");
 		return -1;
-	}
-	
-	/* alocate the last_message counter in shared memory */
-	for (index = 0; index < rl_dests_nr; index++) {
-		rl_dests[index].last_msg = shm_malloc(sizeof(time_t));
-		if (!rl_dests[index].last_msg) {
-			LM_ERR("OOM shm\n");
-			return -1;
-		}
 	}
 
 	return 0;
 }
 
-int rl_add_repl_dst(modparam_t type, void *val)
-{
-	char *host;
-	int hlen, port;
-	int proto;
-	struct hostent *he;
-	str st;
-
-	rl_dests = pkg_realloc(rl_dests, (rl_dests_nr + 1) * sizeof(rl_repl_dst_t));
-	if (!rl_dests) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-
-	if (parse_phostport(val, strlen(val), &host, &hlen, &port, &proto) < 0) {
-		LM_ERR("Bad replication destination IP!\n");
-		return -1;
-	}
-
-	if (proto == PROTO_NONE)
-		proto = PROTO_UDP;
-
-	st.s = host;
-	st.len = hlen;
-	he = sip_resolvehost(&st, (unsigned short *)&port,
-							  (unsigned short *)&proto, 0, 0);
-	if (!he) {
-		LM_ERR("Cannot resolve host: %.*s\n", hlen, host);
-		return -1;
-	}
-	if (!port) {
-		LM_ERR("no port specified for host %.*s\n", hlen, host);
-		return -1;
-	}
-
-	rl_dests[rl_dests_nr].id = rl_dests_nr;
-	rl_dests[rl_dests_nr].dst.s = (char *)val;
-	rl_dests[rl_dests_nr].dst.len = strlen(rl_dests[rl_dests_nr].dst.s);
-	hostent2su(&rl_dests[rl_dests_nr].to, he, 0, port);
-
-	LM_DBG("Added destination <%.*s>\n",
-			rl_dests[rl_dests_nr].dst.len, rl_dests[rl_dests_nr].dst.s);
-
-	/* init done */
-	rl_dests_nr++;
-
-	return 1;
-}
-
 static inline void rl_replicate(void)
 {
-	unsigned i;
-	str send_buffer;
-
-	bin_get_buffer(&send_buffer);
-
-	for (i = 0; i < rl_dests_nr; i++)
-		msg_send(0,PROTO_BIN,&rl_dests[i].to,0,send_buffer.s,send_buffer.len,0);
+	if (clusterer_api.send_to(rl_repl_cluster, PROTO_BIN) < 0) {
+		LM_INFO("ratelimit replicate failed\n");
+ 	}
 }
 
 void rl_timer_repl(utime_t ticks, void *param)
@@ -945,6 +959,7 @@ void rl_timer_repl(utime_t ticks, void *param)
 		LM_ERR("cannot initiate bin buffer\n");
 		return;
 	}
+	bin_push_int(clusterer_api.get_my_id());
 
 	/* iterate through each map */
 	for (i = 0; i < rl_htable.size; i++) {
@@ -955,7 +970,7 @@ void rl_timer_repl(utime_t ticks, void *param)
 			goto next_map;
 		}
 		for (; iterator_is_valid(&it);) {
-			pipe = (rl_pipe_t **)iterator_val(&it);
+			pipe = (rl_pipe_t **) iterator_val(&it);
 			if (!pipe || !*pipe) {
 				LM_ERR("[BUG] bogus map[%d] state\n", i);
 				goto next_pipe;
@@ -992,13 +1007,14 @@ void rl_timer_repl(utime_t ticks, void *param)
 					RL_RELEASE_LOCK(i);
 					return;
 				}
+				bin_push_int(clusterer_api.get_my_id());
 				nr = 0;
 			}
 
 next_pipe:
 			if (iterator_next(&it) < 0)
 				break;
-			}
+		}
 next_map:
 		RL_RELEASE_LOCK(i);
 	}
@@ -1015,15 +1031,16 @@ error:
 
 int rl_get_all_counters(rl_pipe_t *pipe)
 {
-	unsigned i;
 	unsigned counter = 0;
 	time_t now = time(0);
+	rl_repl_counter_t *nodes = pipe->dsts;
+	rl_repl_counter_t *d;
 
-	for (i = 0; i < rl_dests_nr; i++) {
+	for (d = nodes; d; d = d->next) {
 		/* if the replication expired, reset its counter */
-		if ((pipe->dsts[i].update + rl_repl_timer_expire) < now)
-			pipe->dsts[i].counter = 0;
-		counter += pipe->dsts[i].counter;
+		if ((d->update + rl_repl_timer_expire) < now)
+			d->counter = 0;
+		counter += d->counter;
 	}
 	return counter + pipe->counter;
 }

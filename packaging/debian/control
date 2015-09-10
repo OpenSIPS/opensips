@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Razvan Crainea <razvan@opensips.org>
 Build-Depends: bison,
                debhelper (>= 9),
+               dh-systemd (>= 1.5),
                dh-python,
                dpkg-dev (>= 1.16.1.1),
                flex,
@@ -66,6 +67,7 @@ Suggests: opensips-b2bua-module,
           opensips-radius-modules,
           opensips-redis-module,
           opensips-regex-module,
+          opensips-restclient-module,
           opensips-sctp-module,
           opensips-snmpstats-module,
           opensips-tls-module,
@@ -105,7 +107,7 @@ Description: very fast and configurable SIP server [debug symbols]
 
 Package: opensips-mysql-module
 Architecture: any
-Depends: mysql-client,
+Depends: libmysqlclient16 | libmysqlclient17 | libmysqlclient18,
          opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
@@ -458,6 +460,16 @@ Description: Emerrgency call module for OpenSIPS
  The emergency module provides emergency call treatment for OpenSIPS, following
  the architecture i2 specification of the american entity NENA. (National
  Emergency Number Association).
+
+Package: opensips-rest-module
+Architecture: any
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), libcurl3-gnutls
+Description: HTTP REST client for OpenSIPS.
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides an HTTP REST client for OpenSIPS.
 
 Package: opensips-tls-module
 Architecture: any

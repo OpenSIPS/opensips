@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2004,2005 Free Software Foundation, Inc.
+ * Copyright (C) 2015 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -30,37 +29,46 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
+ *
+ * History:
+ * -------
+ *  2015-02-18  first version (bogdan)
  */
 
-#ifndef tls_config_h
-#define tls_config_h
 
-enum tls_method {
-	TLS_METHOD_UNSPEC = 0,
-	TLS_USE_TLSv1_cli,
-	TLS_USE_TLSv1_srv,
-	TLS_USE_TLSv1,
-	TLS_USE_SSLv23_cli,
-	TLS_USE_SSLv23_srv,
-	TLS_USE_SSLv23,
-	TLS_USE_TLSv1_2_cli,
-	TLS_USE_TLSv1_2_srv,
-	TLS_USE_TLSv1_2
-};
+#ifndef _MOD_PROTO_TLS_tls_params_h
+#define _MOD_PROTO_TLS_tls_params_h
 
-extern int      tls_method;
+#include "../../sr_module.h"
 
-extern int      tls_verify_client_cert;
-extern int      tls_verify_server_cert;
-extern int      tls_require_client_cert;
-extern char    *tls_cert_file;
-extern char    *tls_pkey_file;
-extern char    *tls_ca_file;
-extern char    *tls_ca_dir;
-extern char    *tls_tmp_dh_file;
-extern char    *tls_ciphers_list;
-extern int      tls_handshake_timeout;
-extern int      tls_send_timeout;
-extern int      tls_client_domain_avp;
+int tlsp_add_srv_domain(modparam_t type, void *val);
+
+int tlsp_add_cli_domain(modparam_t type, void *val);
+
+int tlsp_set_method(modparam_t type, void *val);
+
+int tlsp_set_verify(modparam_t type, void *val);
+
+int tlsp_set_require(modparam_t type, void *val);
+
+int tlsp_set_crl_check(modparam_t type, void *val);
+
+int tlsp_set_certificate(modparam_t type, void *val);
+
+int tlsp_set_pk(modparam_t type, void *val);
+
+int tlsp_set_crldir(modparam_t type, void *val);
+
+int tlsp_set_calist(modparam_t type, void *val);
+
+int tlsp_set_cadir(modparam_t type, void *val);
+
+int tlsp_set_cplist(modparam_t type, void *val);
+
+int tlsp_set_dhparams(modparam_t type, void *val);
+
+int tlsp_set_eccurve(modparam_t type, void *val);
 
 #endif
+

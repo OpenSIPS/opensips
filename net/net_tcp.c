@@ -26,6 +26,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
@@ -837,7 +838,7 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 
 error:
 	if (c) {
-		if (c->write_lock) lock_destroy(&c->write_lock);
+		lock_destroy(&c->write_lock);
 		shm_free(c);
 	}
 	return 0;

@@ -38,6 +38,7 @@
 #include "../../parser/parse_authenticate.h"
 #include "../tm/tm_load.h"
 #include "../uac_auth/uac_auth.h"
+#include "../dialog/dlg_load.h"
 #include "auth.h"
 
 
@@ -46,6 +47,7 @@ extern struct tm_binds uac_tmb;
 extern uac_auth_api_t uac_auth_api;
 extern str rr_uac_cseq_param;
 extern struct rr_binds uac_rrb;
+extern struct dlg_binds dlg_api;
 
 static inline int apply_urihdr_changes( struct sip_msg *req,
 													str *uri, str *hdr)
@@ -157,7 +159,7 @@ int apply_cseq_op(struct sip_msg *msg,int val)
 			((struct cseq_body *)msg->cseq->parsed)->number.s,pkg_cseq.len,
 			pkg_cseq.s);
 	
-	return 0;
+	return cseq_no;
 }
 
 void apply_cseq_decrement(struct cell* t, int type, struct tmcb_params *p)
@@ -182,12 +184,14 @@ int uac_auth( struct sip_msg *msg)
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
 	struct uac_credential *crd;
 	int code, branch;
+	unsigned int new_cseq;
 	struct sip_msg *rpl;
 	struct cell *t;
 	HASHHEX response;
 	str *new_hdr;
 	str param;
 	char *p;
+	struct dlg_cell *dlg;
 
 	/* get transaction */
 	t = uac_tmb.t_gett();
@@ -265,7 +269,7 @@ int uac_auth( struct sip_msg *msg)
 		goto error;
 	}
 
-	if ( apply_cseq_op(msg,1) < 0) {
+	if ( (new_cseq = apply_cseq_op(msg,1)) < 0) {
 		LM_WARN("Failure to increment the CSEQ header - continue \n");
 		goto error;
 	}
@@ -280,31 +284,36 @@ int uac_auth( struct sip_msg *msg)
 		}
 	}
 
-	param.len=rr_uac_cseq_param.len+3;
-	param.s=pkg_malloc(param.len);
-	if (!param.s) {
-		LM_ERR("No more pkg mem \n");
-		goto error;
-	}
+	if (dlg_api.get_dlg && (dlg = dlg_api.get_dlg())) {
+		/* dlg->legs[dlg->legs_no[DLG_LEGS_USED]-1].last_gen_cseq = new_cseq; */
+		dlg->flags |= DLG_FLAG_CSEQ_ENFORCE;
+	} else {
+		param.len=rr_uac_cseq_param.len+3;
+		param.s=pkg_malloc(param.len);
+		if (!param.s) {
+			LM_ERR("No more pkg mem \n");
+			goto error;
+		}
 
-	p = param.s;
-	*p++=';';
-	memcpy(p,rr_uac_cseq_param.s,rr_uac_cseq_param.len);
-	p+=rr_uac_cseq_param.len;
-	*p++='=';
-	*p++='1';
+		p = param.s;
+		*p++=';';
+		memcpy(p,rr_uac_cseq_param.s,rr_uac_cseq_param.len);
+		p+=rr_uac_cseq_param.len;
+		*p++='=';
+		*p++='1';
 
-	if (uac_rrb.add_rr_param( msg, &param)!=0) {
-		LM_ERR("add_RR_param failed\n");
+		if (uac_rrb.add_rr_param( msg, &param)!=0) {
+			LM_ERR("add_RR_param failed\n");
+			pkg_free(param.s);
+			goto error;
+		}
+
 		pkg_free(param.s);
-		goto error;
 	}
 
 	msg->msg_flags |= FL_USE_UAC_CSEQ;
 	t->uas.request->msg_flags |= FL_USE_UAC_CSEQ;
 
-	pkg_free(param.s);
-	new_hdr->s = NULL; new_hdr->len = 0;
 	return 0;
 error:
 	return -1;

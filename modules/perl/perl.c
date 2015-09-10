@@ -311,6 +311,9 @@ struct mi_root* perl_mi_reload(struct mi_root *cmd_tree, void *param)
 static int mod_init(void) {
 
 	int ret = 0;
+	static int argc = 1;
+	static char *argv_name = "opensips";
+	static char **argv = { &argv_name };
 
 	LM_INFO("initializing...\n");
 
@@ -330,7 +333,7 @@ static int mod_init(void) {
 		return -1;
 	}
 
-	PERL_SYS_INIT3(NULL, NULL, &environ);
+	PERL_SYS_INIT3(&argc, &argv, &environ);
 
 	if ((my_perl = parser_init())) {
 		ret = 0;

@@ -243,6 +243,9 @@ static int ospReportUsageFromCookie(
     char source[OSP_STRBUF_SIZE];
     char dest[OSP_STRBUF_SIZE];
     char srcdev[OSP_STRBUF_SIZE];
+    char receive[OSP_STRBUF_SIZE];
+    char* ingress = NULL;
+    char* egress = NULL;
     OSPTTRANHANDLE transaction = -1;
     int errorcode;
 
@@ -321,6 +324,10 @@ static int ospReportUsageFromCookie(
         destcount = 0;
     }
 
+    if(msg->rcv.bind_address && msg->rcv.bind_address->address_str.s) {
+        ospCopyStrToBuffer(&msg->rcv.bind_address->address_str, receive, sizeof(receive));
+    }
+
     ospGetViaAddress(msg, firstvia, sizeof(firstvia));
     ospGetFromDisplay(msg, fromdisplay, sizeof(fromdisplay));
     ospGetFromUserpart(msg, from, sizeof(from));
@@ -351,6 +358,7 @@ static int ospReportUsageFromCookie(
         calling = to;
         called = from;
         terminator = firstvia;
+        egress = receive;
     } else {
         if (release == OSPC_RELEASE_SOURCE) {
             LM_DBG("orig '%s' released the call, call_id '%.*s' transaction_id '%llu'\n",
@@ -372,6 +380,7 @@ static int ospReportUsageFromCookie(
         calling = from;
         called = to;
         terminator = nexthop;
+        ingress = receive;
     }
 
     errorcode = OSPPTransactionNew(_osp_provider, &transaction);
@@ -442,6 +451,9 @@ static int ospReportUsageFromCookie(
         OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, pai);
         OSPPTransactionSetDiversion(transaction, divuser, divhost);
         OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, pci);
+
+        OSPPTransactionSetProxyIngressAddr(transaction, ingress);
+        OSPPTransactionSetProxyEgressAddr(transaction, egress);
 
         OSPPTransactionSetCDRProxy(transaction, _osp_in_device, OSP_OPENSIPS, NULL);
 
@@ -579,6 +591,14 @@ static int ospBuildUsageFromDestination(
     OSPPTransactionSetSrcNetworkId(transaction, dest->snid);
     OSPPTransactionSetDestNetworkId(transaction, dest->dnid);
 
+    OSPPTransactionSetDestAudioAddr(transaction, dest->destmedia);
+
+    OSPPTransactionSetProxyEgressAddr(transaction, dest->egress);
+
+    if (dest->starttime && dest->endtime && (dest->starttime <= dest->endtime)) {
+        OSPPTransactionSetProviderPDD(transaction, (dest->endtime - dest->starttime) * 1000);
+    }
+
     return errorcode;
 }
 
@@ -598,6 +618,10 @@ static int ospReportUsageFromDestination(
     OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, dest->pai);
     OSPPTransactionSetDiversion(transaction, dest->divuser, dest->divhost);
     OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, dest->pci);
+
+    OSPPTransactionSetSrcAudioAddr(transaction, dest->srcmedia);
+
+    OSPPTransactionSetProxyIngressAddr(transaction, dest->ingress);
 
     OSPPTransactionSetCDRProxy(transaction, _osp_in_device, OSP_OPENSIPS, NULL);
 

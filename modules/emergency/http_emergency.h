@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -27,6 +27,7 @@
  *  2015-05-20 change callcell identity
  *  2015-06-08 change from list to hash (Villaron/Tesini)
  *  2015-08-05 code review (Villaron/Tesini)
+ *  2015-09-07 final test cases (Villaron/Tesini)
  */
 
 #include "../../sr_module.h"
@@ -45,7 +46,7 @@
 #include "../../parser/parse_from.h"
 #include "../../regexp.h"
 #include "../../data_lump.h"
-#include "../../data_lump_rpl.h" 
+#include "../../data_lump_rpl.h"
 #include "../../ut.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
@@ -54,7 +55,7 @@
 #include "../../forward.h"
 #include "../rr/api.h"
 
-#include "report_emergency.h" 
+#include "report_emergency.h"
 
 #include "post_curl.h"
 
@@ -69,7 +70,6 @@ int emet_size;
 int subst_size;
 
 int send_esct(struct sip_msg *msg, str callid_ori, str from_tag);
-int range_result(int result); 
 int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell, PARSED *parsed, int proxy_role);
 int get_lro_in_contact(char *contact_lro, ESCT *call_cell);
 int get_esqk_in_contact(char *contact_lro, ESCT *call_cell);

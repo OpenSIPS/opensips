@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -25,7 +25,8 @@
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-06-08 change from list to hash (Villaron/Tesini)
- *  2015-08-05 code review (Villaron/Tesini)  
+ *  2015-08-05 code review (Villaron/Tesini)
+ *  2015-09-07 final test cases (Villaron/Tesini)
  */
 
 
@@ -45,7 +46,7 @@
 #include "../../parser/parse_from.h"
 #include "../../regexp.h"
 #include "../../data_lump.h"
-#include "../../data_lump_rpl.h" 
+#include "../../data_lump_rpl.h"
 #include "../../ut.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
@@ -55,18 +56,18 @@
 #include "../rr/api.h"
 #include "../tm/tm_load.h" /*load_tm_api*/
 
-#include "subscriber_emergency.h" 
+#include "subscriber_emergency.h"
 
 #define INIT                    0
 #define RESP_WAIT               1
-#define PENDING                 2 
-#define ACTIVE                  3  
-#define TERMINATED              4 
+#define PENDING                 2
+#define ACTIVE                  3
+#define TERMINATED              4
 
 #define TIME_DEFAULT_SUBS		3000
 #define TIMER_MIN_SUBS			200
 
-int treat_subscribe(struct sip_msg *msg); 
+int treat_subscribe(struct sip_msg *msg);
 int send_notifier_within(struct sip_msg* msg, struct sm_subscriber* notify);
 void notif_cback_func(struct cell *t, int cb_type, struct tmcb_params *params);
 struct sm_subscriber* build_notify_cell(struct sip_msg *msg, int expires);

@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -25,7 +25,8 @@
  *  2015-03-21 implementing subscriber function (Villaron/Tesini)
  *  2015-04-29 implementing notifier function (Villaron/Tesini)
  *  2015-06-08 change from list to hash (Villaron/Tesini)
- *  2015-08-05 code review (Villaron/Tesini)  
+ *  2015-08-05 code review (Villaron/Tesini)
+ *  2015-09-07 final test cases (Villaron/Tesini)
  */
 
 
@@ -45,7 +46,7 @@
 #include "../../parser/parse_from.h"
 #include "../../regexp.h"
 #include "../../data_lump.h"
-#include "../../data_lump_rpl.h" 
+#include "../../data_lump_rpl.h"
 #include "../../ut.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
@@ -54,7 +55,7 @@
 #include "../../forward.h"
 #include "../rr/api.h"
 
-#include "sip_emergency.h" 
+#include "sip_emergency.h"
 
 db_func_t db_funcs;
 db_con_t *db_con;
@@ -85,11 +86,11 @@ struct esrn_routing {
 struct esrn_routing **db_esrn_esgwri;
 
 struct service_provider {
-	str nodeIP;	
+	str nodeIP;
 	str OrganizationName;
-	str hostId;	
+	str hostId;
 	str nenaId;
-	str contact;	
+	str contact;
 	str certUri;
 	int attribution;
 
@@ -103,7 +104,7 @@ char* mandatory_parm;
 #define ACK_TIME 				 3
 #define BYE_TIME 				 10
 
-int report(struct emergency_report *report, str db_url, str table_report); 
+int report(struct emergency_report *report, str db_url, str table_report);
 int collect_data(struct node *current, str db_url, str table_report);
 int emergency_routing(char *srid, int resn, int npa, char** esgwri, rw_lock_t *ref_lock );
 int get_db_routing(str table_name, rw_lock_t *ref_lock );

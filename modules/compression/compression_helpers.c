@@ -407,7 +407,7 @@ int free_hdr_mask(struct hdr_field** hdr_mask)
 	return 0;
 }
 
-inline int check_zlib_rc(int rc)
+int check_zlib_rc(int rc)
 {
 	switch (rc) {
 		case Z_OK:
@@ -431,7 +431,7 @@ inline int check_zlib_rc(int rc)
 	}
 }
 
-inline int wrap_realloc(str* buf, int new_len)
+int wrap_realloc(str* buf, int new_len)
 {
 	if (buf->s==NULL) {
 		buf->s = pkg_malloc(new_len);

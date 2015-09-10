@@ -601,6 +601,10 @@ static int w_lb_start(struct sip_msg *req, char *grp, char *rl, char *fl)
 					flags |= LB_FLAGS_NEGATIVE;
 					LM_DBG("do not skip negative loads\n");
 					break;
+				case 's':
+					flags |= LB_FLAGS_RANDOM;
+					LM_DBG("pick a random destination among all selected dsts with equal load\n");
+					break;
 				default:
 					LM_DBG("skipping unknown flag: [%c]\n", *f);
 			}

@@ -253,6 +253,33 @@ int tlsp_set_require(modparam_t type, void *in)
 	return 1;
 }
 
+int tlsp_set_crl_check(modparam_t type, void *in)
+{
+       str id;
+       str val;
+       unsigned int check;
+
+       split_param_val( (char*)in, &id, &val);
+
+       if (str2int( &val, &check)!=0) {
+               LM_ERR("option is not a number [%s]\n",val.s);
+               return -1;
+       }
+
+       set_domain_attr( id, crl_check_all, check);
+       return 1;
+}
+
+int tlsp_set_crldir(modparam_t type, void *in)
+{
+       str id;
+       str val;
+
+       split_param_val( (char*)in, &id, &val);
+
+       set_domain_attr( id, crl_directory, val.s);
+       return 1;
+}
 
 int tlsp_set_certificate(modparam_t type, void *in)
 {

@@ -60,7 +60,6 @@
 #include "usrloc.h"
 
 
-
 #define USER_COL       "username"
 #define DOMAIN_COL     "domain"
 #define CONTACT_COL    "contact"
@@ -86,7 +85,7 @@ static void timer(unsigned int ticks, void* param); /*!< Timer handler */
 static int child_init(int rank);                    /*!< Per-child init function */
 static int mi_child_init(void);
 
-static int add_replication_dest(modparam_t type, void *val);
+//static int add_replication_dest(modparam_t type, void *val);
 
 extern int bind_usrloc(usrloc_api_t* api);
 extern int ul_locks_no;
@@ -135,8 +134,8 @@ static char *nat_bflag_str = 0;
 unsigned int init_flag = 0;
 
 /* usrloc data replication using the bin interface */
-int accept_replicated_udata;
-struct replication_dest *replication_dests;
+int accept_replicated_udata = 0;
+int ul_replicate_cluster = 0;
 
 db_con_t* ul_dbh = 0; /* Database connection handle */
 db_func_t ul_dbf;
@@ -184,8 +183,7 @@ static param_export_t params[] = {
 	{"nat_bflag",          INT_PARAM, &nat_bflag         },
     /* data replication through UDP binary packets */
 	{ "accept_replicated_contacts",INT_PARAM, &accept_replicated_udata },
-	{ "replicate_contacts_to",     STR_PARAM|USE_FUNC_PARAM,
-	                            (void *)add_replication_dest           },
+	{ "replicate_contacts_to",	INT_PARAM, &ul_replicate_cluster   },
 	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops     },
 	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{0, 0, 0}
@@ -224,12 +222,24 @@ static module_dependency_t *get_deps_db_mode(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
 }
 
+static module_dependency_t *get_deps_clusterer(param_export_t *param)
+{
+	int cluster_id = *(int *)param->param_pointer;
+
+	if (cluster_id <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer", DEP_ABORT);
+}
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "db_mode", get_deps_db_mode },
+		{ "db_mode",			get_deps_db_mode	},
+		{ "accept_replicated_contacts",	get_deps_clusterer	},
+		{ "replicate_contacts_to",	get_deps_clusterer	},
 		{ NULL, NULL },
 	},
 };
@@ -375,13 +385,26 @@ static int mod_init(void)
 		return -1;
 	}
 
+	
+	
+	if( (ul_replicate_cluster > 0 || accept_replicated_udata > 0)
+		&& load_clusterer_api(&clusterer_api)!=0){
+		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
+		return -1;	
+	}
+	
 	/* register handler for processing usrloc packets from the bin interface */
-	if (accept_replicated_udata &&
-		bin_register_cb(repl_module_name.s, receive_binary_packet) < 0) {
+	if (accept_replicated_udata > 0 &&
+			bin_register_cb(repl_module_name.s, receive_binary_packet, NULL) < 0) {
 		LM_ERR("cannot register binary packet callback!\n");
 		return -1;
 	}
-
+	
+	
+	if(ul_replicate_cluster < 0){
+		ul_replicate_cluster = 0;
+	}
+	
 	init_flag = 1;
 
 	return 0;
@@ -489,46 +512,3 @@ static void timer(unsigned int ticks, void* param)
 	if (sync_lock)
 		lock_stop_read(sync_lock);
 }
-
-static int add_replication_dest(modparam_t type, void *val)
-{
-	struct replication_dest *rd;
-	char *host;
-	int hlen, port;
-	int proto;
-	struct hostent *he;
-	str st;
-
-	rd = pkg_malloc(sizeof *rd);
-	memset(rd, 0, sizeof *rd);
-
-	if (parse_phostport(val, strlen(val), &host, &hlen, &port, &proto) < 0) {
-		LM_ERR("bad replication destination IP: '%s'!\n", (char *)val);
-		return -1;
-	}
-
-	if (proto == PROTO_NONE)
-		proto = PROTO_UDP;
-
-	if (proto != PROTO_UDP) {
-		LM_ERR("usrloc replication only supports UDP packets!\n");
-		return -1;
-	}
-
-	st.s = host;
-	st.len = hlen;
-	he = sip_resolvehost(&st, (unsigned short *)&port,
-	                          (unsigned short *)&proto, 0, 0);
-	if (!he) {
-		LM_ERR("cannot resolve host: %.*s\n", hlen, host);
-		return -1;
-	}
-
-	hostent2su(&rd->to, he, 0, port);
-
-	rd->next = replication_dests;
-	replication_dests = rd;
-
-	return 1;
-}
-

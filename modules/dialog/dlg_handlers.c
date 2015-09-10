@@ -327,7 +327,7 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 				struct dlg_cell *dlg,str *mangled_from,str *mangled_to)
 {
 	str tag,contact,rr_set;
-	unsigned int leg, skip_rrs;
+	unsigned int leg, skip_rrs,cseq_no;
 
 	/* get to tag*/
 	if ( !rpl->to && ((parse_headers(rpl,HDR_TO_F,0)<0) || !rpl->to) ){
@@ -383,6 +383,17 @@ routing_info:
 		/* set this branch as primary */
 		if (!dlg->legs_no[DLG_LEG_200OK])
 			dlg->legs_no[DLG_LEG_200OK] = leg;
+
+		if (dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
+			/* increase all future requests going to this leg */
+			if (str2int(&(((struct cseq_body *)t->uas.request->cseq->parsed)->number),&cseq_no) < 0) {
+				LM_ERR("Failed to convert cseq to integer \n");
+			} else {
+				/* XXX - fix this */
+				dlg->legs[dlg->legs_no[DLG_LEG_200OK]].last_gen_cseq = cseq_no + 1;
+			}
+		}
+	
 		/* update routing info */
 		if(dlg->mod_flags & TOPOH_ONGOING)
 			skip_rrs = 0; /* changed here for contact - it was 1 */
@@ -460,7 +471,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		return;
 	}
 	if (type==TMCB_RESPONSE_OUT) {
-		if (dlg->state == DLG_STATE_CONFIRMED_NA && replication_dests)
+		if (dlg->state == DLG_STATE_CONFIRMED_NA && dialog_replicate_cluster)
 			replicate_dialog_created(dlg);
 		return;
 	}
@@ -903,7 +914,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	types = TMCB_RESPONSE_PRE_OUT|TMCB_RESPONSE_FWDED|TMCB_TRANS_CANCELLED;
 	/* replicate dialogs after the 200 OK was fwded - speed & after all msg
 	 * processing was done ( eg. ACC ) */
-	if (replication_dests)
+	if (dialog_replicate_cluster)
 		types |= TMCB_RESPONSE_OUT;
 
 	if ( d_tmb.register_tmcb( req, t,types,dlg_onreply, 
@@ -1149,7 +1160,8 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 
 		LM_DBG("BYE successfully processed - dst_leg = %d\n",dst_leg);
 
-		if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+		if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE || 
+		dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
 			dlg_lock (d_table,d_entry);
 
 			if (dlg->legs[dst_leg].last_gen_cseq) {
@@ -1265,7 +1277,8 @@ after_unlock5:
 			}
 
 			if (dlg->flags & DLG_FLAG_PING_CALLER ||
-					dlg->flags & DLG_FLAG_PING_CALLEE) {
+			dlg->flags & DLG_FLAG_PING_CALLEE || 
+			dlg->flags & DLG_FLAG_CSEQ_ENFORCE ) {
 
 				dlg_lock (d_table, d_entry);
 
@@ -1288,14 +1301,15 @@ after_unlock5:
 				if ( dlg_db_mode==DB_MODE_REALTIME )
 					update_dialog_dbinfo(dlg);
 
-				if (replication_dests)
+				if (dialog_replicate_cluster)
 					replicate_dialog_updated(dlg);
 			}
 		}
 		else
 		{
 			if (dlg->flags & DLG_FLAG_PING_CALLER ||
-					dlg->flags & DLG_FLAG_PING_CALLEE) {
+			dlg->flags & DLG_FLAG_PING_CALLEE ||
+			dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
 
 				dlg_lock (d_table, d_entry);
 
@@ -1315,7 +1329,9 @@ after_unlock5:
 		if ( event!=DLG_EVENT_REQACK) {
 			/* register callback for the replies of this request */
 
-			if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+			if (dlg->flags & DLG_FLAG_PING_CALLER ||
+			dlg->flags & DLG_FLAG_PING_CALLEE ||
+			dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
 				dlg_lock( d_table, d_entry);
 				if (dlg->legs[dst_leg].last_gen_cseq) {
 					/* ref the dialog as registered into the transaction callback.
@@ -1391,7 +1407,7 @@ early_check:
 		if(dlg_db_mode == DB_MODE_REALTIME)
 			update_dialog_dbinfo(dlg);
 
-		if (replication_dests)
+		if (dialog_replicate_cluster)
 			replicate_dialog_updated(dlg);
 	}
 

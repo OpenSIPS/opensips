@@ -72,6 +72,7 @@
 #define DLG_FLAG_TOPHIDING		(1<<7)
 #define DLG_FLAG_VP_CHANGED		(1<<8)
 #define DLG_FLAG_DB_DELETED		(1<<9)
+#define DLG_FLAG_CSEQ_ENFORCE		(1<<10)
 
 #define DLG_CALLER_LEG         0
 #define DLG_FIRST_CALLEE_LEG   1

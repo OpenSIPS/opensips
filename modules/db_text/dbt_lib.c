@@ -193,7 +193,7 @@ int dbt_cache_check_db(str *_s)
 	while(_dcache)
 	{
 		if(_dcache->name.len == _s->len &&
-			strncasecmp(_dcache->name.s, _s->s, _s->len))
+			!strncasecmp(_dcache->name.s, _s->s, _s->len))
 		{
 			lock_release(_dbt_cachesem);
 			return 0;
@@ -420,6 +420,116 @@ int dbt_cache_print(int _f)
 	}
 
 	return 0;
+}
+
+int dbt_cache_reload(const str *dbname, const str *name)
+{
+	dbt_cache_p _dc;
+	dbt_table_p _tbc, _tbc_new;
+	int hash, hashidx;
+	int i, res = 0;
+
+
+	if( !_dbt_cachesem || !_dbt_cachedb || !_dbt_cachetbl ) {
+		LM_ERR("dbtext cache is not initialized! Check if you loaded"
+			" dbtext before attempting to reload it\n");
+		return -2;
+	}
+	if( dbname && !(dbname->s && (dbname->len > 0)) ) {
+		LM_ERR("request to reload an invalid dbtext database.\n");
+		return -1;
+	}
+	if( name && !(name->s && (name->len > 0)) ) {
+		LM_ERR("request to reload an invalid dbtext table.\n");
+		return -1;
+	}
+
+
+	// lock to disable any cache modfifications while in reload
+	lock_get(_dbt_cachesem);
+
+	// resolve dbname in database cache if specified
+	_dc = NULL;
+	if( dbname ) {
+		_dc = *_dbt_cachedb;
+		while( _dc ) {
+			if( (_dc->name.len == dbname->len) && !strncasecmp(_dc->name.s, dbname->s, dbname->len) ) {
+				LM_DBG("resolved database [%.*s]\n", _dc->name.len, _dc->name.s);
+				break;
+			}
+			_dc = _dc->next;
+		}
+		if( !_dc ) {
+			LM_ERR("dbtext database [%.*s] not exists and cannot be reloaded!\n", dbname->len, dbname->s);
+			lock_release(_dbt_cachesem);
+			return -1;
+		}
+	}
+
+	// calculate hash & hashidx if dbname & name specified
+	hash = hashidx = -1;
+	if( _dc && name ) {
+		hash = core_hash(&_dc->name, name, DBT_CACHETBL_SIZE);
+		hashidx = hash % DBT_CACHETBL_SIZE;
+	}
+
+	for(i=0; i<DBT_CACHETBL_SIZE; i++) {
+		// iterate all table caches or only one if hashidx calculated
+		if( (hashidx < 0) || (hashidx == i) ) {
+			lock_get(&_dbt_cachetbl[i].sem);
+
+			_tbc = _dbt_cachetbl[i].dtp;
+			while( _tbc ) {
+				if(
+					// match hash if calcuated
+					((hashidx < 0) || (_tbc->hash == hash)) &&
+					// match table name if specified
+					(!name || ((_tbc->name.len == name->len) && !strncasecmp(_tbc->name.s, name->s, name->len))) &&
+					// match database name if specified
+					(!_dc || ((_tbc->dbname.len == _dc->name.len) && !strncasecmp(_tbc->dbname.s, _dc->name.s, _dc->name.len)))
+				) {
+					// load new version from disk
+					_tbc_new = dbt_load_file(&(_tbc->name), &(_tbc->dbname));
+					if( _tbc_new ) {
+						// inherit old version properties
+						_tbc_new->hash = _tbc->hash;
+						_tbc_new->prev = _tbc->prev;
+						_tbc_new->next = _tbc->next;
+
+						// update linked list links
+						if( _tbc_new->prev ) (_tbc_new->prev)->next = _tbc_new;
+						if( _tbc_new->next ) (_tbc_new->next)->prev = _tbc_new;
+						if( _dbt_cachetbl[i].dtp == _tbc ) _dbt_cachetbl[i].dtp = _tbc_new;
+
+						// delete old version and update iterator
+						dbt_table_free(_tbc);
+						_tbc = _tbc_new;
+
+						LM_INFO("dbtext table [%.*s]->[%.*s] successfully reloaded\n", _tbc->dbname.len, _tbc->dbname.s, _tbc->name.len, _tbc->name.s);
+					} else {
+						// report failure if any reload fails
+						res = -2;
+						LM_ERR("dbtext table [%.*s]->[%.*s] loading of a new version failed and old version preserved!\n", _tbc->dbname.len, _tbc->dbname.s, _tbc->name.len, _tbc->name.s);
+					}
+
+					// exit loop if name specified and in 'match only one' scenario
+					if( name ) break;
+				}
+				_tbc = _tbc->next;
+			}
+
+			lock_release(&_dbt_cachetbl[i].sem);
+
+			if( name && !_tbc ) {
+				LM_ERR("dbtext table [%.*s]->[%.*s] not exists and cannot be reloaded!\n", dbname->len, dbname->s, name->len, name->s);
+				lock_release(_dbt_cachesem);
+				return -1;
+			}
+		}
+	}
+
+	lock_release(_dbt_cachesem);
+	return res;
 }
 
 int dbt_is_neq_type(db_type_t _t0, db_type_t _t1)

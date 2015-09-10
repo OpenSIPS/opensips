@@ -56,6 +56,7 @@
 #include "../tm/tm_load.h"
 #include "../rr/api.h"
 #include "../../bin_interface.h"
+#include "../clusterer/api.h"
 
 #include "dlg_hash.h"
 #include "dlg_timer.h"
@@ -107,6 +108,7 @@ stat_var *delete_recv  = 0;
 struct tm_binds d_tmb;
 struct rr_binds d_rrb;
 
+
 /* db stuff */
 static str db_url = {NULL,0};
 static unsigned int db_update_period = DB_DEFAULT_UPDATE_PERIOD;
@@ -116,13 +118,14 @@ str cdb_url = {0,0};
 
 /* dialog replication using the bpi interface */
 int accept_replicated_dlg=0;
+int dialog_replicate_cluster = 0;
+int profile_replicate_cluster = 0;
 int accept_repl_profiles=0;
-struct replication_dest *replication_dests=NULL;
+int accept_replicated_profile_timeout = 10;
+int repl_prof_auth_check = 0;
 
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
-
-static int add_replication_dest(modparam_t type, void *val);
 
 /* commands wrappers and fixups */
 static int fixup_profile(void** param, int param_no);
@@ -266,15 +269,15 @@ static param_export_t mod_params[]={
 	{ "profile_timeout",         INT_PARAM, &profile_timeout        },
 	/* dialog replication through UDP binary packets */
 	{ "accept_replicated_dialogs",INT_PARAM, &accept_replicated_dlg },
-	{ "replicate_dialogs_to",     STR_PARAM|USE_FUNC_PARAM,
-								(void *)add_replication_dest        },
+	{ "replicate_dialogs_to",     INT_PARAM, &dialog_replicate_cluster       },
 	{ "accept_replicated_profiles",INT_PARAM, &accept_repl_profiles },
 	{ "replicate_profiles_timer", INT_PARAM, &repl_prof_utimer      },
 	{ "replicate_profiles_check", INT_PARAM, &repl_prof_timer_check },
 	{ "replicate_profiles_buffer",INT_PARAM, &repl_prof_buffer_th   },
 	{ "replicate_profiles_expire",INT_PARAM, &repl_prof_timer_expire},
-	{ "replicate_profiles_to",    STR_PARAM|USE_FUNC_PARAM,
-								(void *)repl_prof_dest              },
+	{ "replicate_profiles_to", INT_PARAM,	&profile_replicate_cluster            },
+	{ "accept_replicated_profile_timeout", INT_PARAM, &accept_replicated_profile_timeout},
+	{ "auth_check", INT_PARAM, &repl_prof_auth_check},
 	{ 0,0,0 }
 };
 
@@ -305,8 +308,6 @@ static mi_export_t mi_cmds[] = {
 	{ "profile_list_dlgs",  0, mi_profile_list,       0,  0,  0},
 	{ "profile_get_values", 0, mi_get_profile_values, 0,  0,  0},
 	{ "list_all_profiles",  0, mi_list_all_profiles,  0,  0,  0},
-	{ "profile_bin_status", 0, mi_profiles_bin_status,
-		MI_NO_INPUT_FLAG,  0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -356,6 +357,16 @@ static module_dependency_t *get_deps_cachedb_url(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_CACHEDB, NULL, DEP_ABORT);
 }
 
+static module_dependency_t *get_deps_clusterer(param_export_t *param)
+{
+	int cluster_id = *(int *)param->param_pointer;
+
+	if (cluster_id <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer", DEP_ABORT);
+}
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
@@ -363,8 +374,12 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "db_mode",     get_deps_db_mode     },
-		{ "cachedb_url", get_deps_cachedb_url },
+		{ "db_mode",			get_deps_db_mode	},
+		{ "cachedb_url",		get_deps_cachedb_url	},
+		{ "accept_replicated_dialogs",	get_deps_clusterer	},
+		{ "replicate_dialogs_to",	get_deps_clusterer	},
+		{ "accept_replicated_profiles",	get_deps_clusterer	},
+		{ "replicate_profiles_to",	get_deps_clusterer	},
 		{ NULL, NULL },
 	},
 };
@@ -819,12 +834,45 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if ((accept_replicated_dlg || accept_repl_profiles) &&
-		bin_register_cb("dialog", receive_binary_packet) < 0) {
+	if( accept_replicated_dlg < 0 )
+		accept_replicated_dlg = 0;
+	
+	if( accept_repl_profiles < 0 )
+		accept_repl_profiles = 0;
+	
+	if (accept_replicated_dlg &&
+		bin_register_cb("dialog", receive_dlg_binary_packet, NULL) < 0) {
 		LM_ERR("Cannot register binary packet callback!\n");
 		return -1;
 	}
-
+	
+	
+	if ( (dialog_replicate_cluster > 0 || profile_replicate_cluster>0 ||
+		accept_replicated_dlg || accept_repl_profiles ) 
+		&& load_clusterer_api(&clusterer_api) != 0 ){
+		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
+		return -1;
+	}
+	
+	if (repl_prof_auth_check < 0)
+		repl_prof_auth_check = 0;
+	
+	if (accept_replicated_profile_timeout <= 0)
+		accept_replicated_profile_timeout = 10;
+	
+	if(accept_repl_profiles && clusterer_api.register_module("dialog", PROTO_BIN, receive_prof_binary_packet,
+			accept_replicated_profile_timeout, repl_prof_auth_check, accept_repl_profiles) < 0){
+		LM_ERR("Cannot register binary packet callback!\n");
+		return -1;
+	}
+	
+	
+	if( dialog_replicate_cluster < 0 )
+		dialog_replicate_cluster = 0;
+	
+	if( profile_replicate_cluster < 0 )
+		profile_replicate_cluster = 0;
+	
 	if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1,
 	TIMER_FLAG_DELAY_ON_DELAY)<0 ) {
 		LM_ERR("failed to register timer\n");
@@ -896,7 +944,7 @@ static int mod_init(void)
 
 	mark_dlg_loaded_callbacks_run();
 	destroy_cachedb(0);
-
+	
 	return 0;
 }
 
@@ -1668,8 +1716,7 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 		if (db_update)
 			update_dialog_timeout_info(dlg);
 
-		if (replication_dests)
-			replicate_dialog_updated(dlg);
+		replicate_dialog_updated(dlg);
 
 		if (timer_update && update_dlg_timer(&dlg->tl, timeout) < 0) {
 			LM_ERR("failed to update timer\n");
@@ -1686,44 +1733,4 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 	return 0;
 }
 
-static int add_replication_dest(modparam_t type, void *val)
-{
-	struct replication_dest *rd;
-	char *host;
-	int hlen, port;
-	int proto;
-	struct hostent *he;
-	str st;
 
-	rd = pkg_malloc(sizeof(*rd));
-	memset(rd, 0, sizeof(*rd));
-
-	if (parse_phostport(val, strlen(val), &host, &hlen, &port, &proto) < 0) {
-		LM_ERR("Bad replication destination IP!\n");
-		return -1;
-	}
-
-	if (proto == PROTO_NONE)
-		proto = PROTO_UDP;
-
-	if (proto != PROTO_UDP) {
-		LM_ERR("Dialog replication only supports UDP packets!\n");
-		return -1;
-	}
-
-	st.s = host;
-	st.len = hlen;
-	he = sip_resolvehost(&st, (unsigned short *)&port,
-							  (unsigned short *)&proto, 0, 0);
-	if (!he) {
-		LM_ERR("Cannot resolve host: %.*s\n", hlen, host);
-		return -1;
-	}
-
-	hostent2su(&rd->to, he, 0, port);
-
-	rd->next = replication_dests;
-	replication_dests = rd;
-
-	return 1;
-}

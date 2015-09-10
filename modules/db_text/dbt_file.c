@@ -239,8 +239,8 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 						//LM_DBG("NULL flag set!\n");
 						colp->flag |= DBT_FLAG_NULL;
 					}
-					else if(colp->type==DB_INT && dtp->auto_col<0
-							&& (c=='A' || c=='a'))
+					else if((colp->type==DB_INT || colp->type==DB_BIGINT)
+							&& dtp->auto_col<0 && (c=='A' || c=='a'))
 					{
 						//LM_DBG("AUTO flag set!\n");
 						colp->flag |= DBT_FLAG_AUTO;
