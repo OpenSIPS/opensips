@@ -214,8 +214,10 @@ int db_sqlite_get_columns(const db_con_t* _h, db_res_t* _r)
 		RES_NAMES(_r)[col]->s = *((char**)&name);
 		RES_NAMES(_r)[col]->len = strlen(RES_NAMES(_r)[col]->s);
 
-		/* check if column is autoincrement */
-		if (sqlite3_table_column_metadata(
+		/* check if column is autoincrement only for normal queries;
+		 * for raw queries we can't know the table name */
+		if (!CON_RAW_QUERY(_h) &&
+			sqlite3_table_column_metadata(
 			CON_CONNECTION(_h),
 			NULL, /* db name*/
 			CON_TABLE(_h)->s, /* table name */
@@ -228,7 +230,7 @@ int db_sqlite_get_columns(const db_con_t* _h, db_res_t* _r)
 
 		/* since DB_BITMAP not used in SQLITE we will use it
 		 * here to know if value is PRIMARY KEY AUTOINCREMENT */
-		if (autoincrement) {
+		if (!CON_RAW_QUERY(_h) && autoincrement) {
 			RES_TYPES(_r)[col] = DB_BITMAP;
 			continue;
 		}

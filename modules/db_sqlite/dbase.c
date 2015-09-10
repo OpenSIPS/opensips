@@ -161,6 +161,8 @@ int db_sqlite_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 #else
 	CON_RESET_CURR_PS(_h);
 #endif
+	CON_RAW_QUERY(_h) = 0;
+
 	ret = db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, NULL,
 		db_sqlite_val2str, db_sqlite_submit_dummy_query, NULL);
 	if (ret != 0) {
@@ -341,6 +343,7 @@ int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 		return 0;
 	}
 
+	CON_RAW_QUERY(_h) = 1;
 
 	if (db_copy_rest_of_count(_s, &count_str)) {
 		LM_ERR("failed to build count str!\n");
