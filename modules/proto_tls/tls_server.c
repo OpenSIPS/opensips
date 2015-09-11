@@ -46,6 +46,8 @@
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "../../ut.h"
 #include "tls_server.h"
+#include "tls_config.h"
+#include "tls_domain.h"
 
 /*
  * Open questions:
@@ -587,7 +589,7 @@ size_t tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 	if (tls_update_fd(c, fd) < 0)
 		goto error;
 
-	timeout = tls_mgm_api.get_send_timeout();
+	timeout = tls_send_timeout;
 again:
 	n = 0;
 	pf.events = 0;
@@ -595,14 +597,14 @@ again:
 	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
 		if (tls_accept(c, &(pf.events)) < 0)
 			goto error;
-		timeout = tls_mgm_api.get_handshake_timeout();
+		timeout = tls_handshake_timeout;
 	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
 		if (tls_connect(c, &(pf.events)) < 0)
 			goto error;
-		timeout = tls_mgm_api.get_handshake_timeout();
+		timeout = tls_handshake_timeout;
 	} else {
 		n = tls_write(c, fd, buf, len, &(pf.events));
-		timeout = tls_mgm_api.get_send_timeout();
+		timeout = tls_send_timeout;
 	}
 
 	if (n < 0) {

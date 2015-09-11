@@ -37,12 +37,10 @@
 
 #include <stdio.h>
 #include "../../net/tcp_conn.h"
-#include "../tls_mgm/api.h"
+
 
 #define F_TLS_DO_ACCEPT  (1<<0)
 #define F_TLS_DO_CONNECT (1<<1)
-
-static struct tls_mgm_binds tls_mgm_api; 
 
 size_t tls_blocking_write(struct tcp_connection *c, int fd,
 		const char *buf, size_t len);
