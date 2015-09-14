@@ -452,6 +452,9 @@ static int load_pcres(int action)
 		pkg_free(pcres_tmp[i]);
 	}
 	pkg_free(pcres_tmp);
+	/* release the "non-existing" patterns */
+	for (i = num_pcres_tmp; i < max_groups; i++)
+		pkg_free(patterns[i]);
 	pkg_free(patterns);
 	lock_release(reload_lock);
 
