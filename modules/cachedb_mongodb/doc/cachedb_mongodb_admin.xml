@@ -121,12 +121,17 @@
 			<para>
 				<emphasis>mongo-c-driver</emphasis>
 			</para>
-			
+
 			<para>
-				The mongo C driver can be downloaded from https://github.com/mongodb/mongo-c-driver
-				Note : Please use the 0.6 version of the driver
+				The mongo C driver can be downloaded from MongoDB's GitHub
+				repository. Make sure to get the 0.6 version:
+				<para>
+					<emphasis>
+					"git clone https://github.com/mongodb/mongo-c-driver.git -b v0.6"
+					</emphasis>
+				</para>
 			</para>
-			
+
 			</listitem>
 
 			</itemizedlist>

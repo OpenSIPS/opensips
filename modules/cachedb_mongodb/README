@@ -88,9 +88,10 @@ Chapter 1. Admin Guide
        The libjson library can be downloaded from:
        http://oss.metaparadigm.com/json-c/
      * mongo-c-driver
-       The mongo C driver can be downloaded from
-       https://github.com/mongodb/mongo-c-driver Note : Please use
-       the 0.6 version of the driver
+       The mongo C driver can be downloaded from MongoDB's GitHub
+       repository. Make sure to get the 0.6 version:
+       "git clone https://github.com/mongodb/mongo-c-driver.git -b
+       v0.6"
 
 1.5. Exported Parameters
 
