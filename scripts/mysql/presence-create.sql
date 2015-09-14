@@ -57,7 +57,7 @@ CREATE TABLE xcap (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     username CHAR(64) NOT NULL,
     domain CHAR(64) NOT NULL,
-    doc BLOB NOT NULL,
+    doc LONGBLOB NOT NULL,
     doc_type INT(11) NOT NULL,
     etag CHAR(64) NOT NULL,
     source INT(11) NOT NULL,
