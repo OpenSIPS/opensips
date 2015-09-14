@@ -37,6 +37,8 @@ static int  mod_init(void);
 static void mod_destroy(void);
 static int tls_get_handshake_timeout(void);
 static int tls_get_send_timeout(void);
+static int load_tls_mgm(struct tls_mgm_binds *binds);
+
 
 /* definition of exported functions */
 static int is_peer_verified(struct sip_msg*, char*, char*);
@@ -1139,7 +1141,7 @@ static int tls_get_send_timeout(void)
 	return tls_send_timeout;
 }
 
-int load_tls_mgm(struct tls_mgm_binds *binds)
+static int load_tls_mgm(struct tls_mgm_binds *binds)
 {
 	binds->find_server_domain = tls_find_server_domain;
 	binds->find_client_domain = tls_find_client_domain;
