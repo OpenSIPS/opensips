@@ -491,6 +491,8 @@ DBHTMLXSL=$(shell \
 		echo "/usr/share/xml/docbook/stylesheet/nwalsh/html/docbook.xsl"; \
 	elif [ -e /usr/share/sgml/docbook/xsl-stylesheets/xhtml/docbook.xsl ]; then \
 		echo "/usr/share/sgml/docbook/xsl-stylesheets/xhtml/docbook.xsl"; \
+	elif [ -e /usr/share/xml/docbook/xsl-stylesheets*/xhtml/docbook.xsl ]; then \
+		ls -1 /usr/share/xml/docbook/xsl-stylesheets*/xhtml/docbook.xsl; \
 	fi)
 DBXML2HTMLPARAMS = --stringparam section.autolabel 1
 DBXML2HTMLPARAMS += --stringparam section.label.includes.component.label 1
