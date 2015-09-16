@@ -29,7 +29,6 @@
 #include "../../globals.h"
 #include "../../tsend.h"
 #include "ws_tcp.h"
-#include "ws.h"
 #include <unistd.h>
 
 /**************  READ related functions ***************/
@@ -78,7 +77,7 @@ again:
 /**************  WRITE related functions **************/
 
 int ws_raw_writev(struct tcp_connection *c, int fd,
-		const struct iovec *iov, int iovcnt)
+		const struct iovec *iov, int iovcnt, int tout)
 {
 	struct timeval snd;
 	int n;
@@ -86,26 +85,14 @@ int ws_raw_writev(struct tcp_connection *c, int fd,
 	start_expire_timer(snd,tcpthreshold);
 	lock_get(&c->write_lock);
 
-	n=tsend_stream_ev(fd, iov, iovcnt, ws_send_timeout);
+	/* optimize write for a single chunk */
+	if (iovcnt == 1)
+		n=tsend_stream(fd, iov[0].iov_base, iov[0].iov_len, tout);
+	else
+		n=tsend_stream_ev(fd, iov, iovcnt, tout);
 
 	lock_release(&c->write_lock);
-	get_time_difference(snd, tcpthreshold, tcp_timeout_send);
-
-	return n;
-}
-
-int ws_raw_write(struct tcp_connection *c, int fd, char *buf, int len)
-{
-	struct timeval snd;
-	int n;
-
-	start_expire_timer(snd, tcpthreshold);
-	lock_get(&c->write_lock);
-
-	n=tsend_stream(fd, buf, len, ws_send_timeout);
-
-	lock_release(&c->write_lock);
-	get_time_difference(snd, tcpthreshold, tcp_timeout_send);
+	get_time_difference(snd, tcpthreshold, tout);
 
 	return n;
 }

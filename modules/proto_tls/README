@@ -32,15 +32,15 @@ Edited by
 
 Ionut-Razvan Ionita
 
-   Copyright © 2005 Voice Sistem SRL
+   Copyright � 2005 Voice Sistem SRL
 
-   Copyright © 2005 Cesc Santasusana
+   Copyright � 2005 Cesc Santasusana
 
-   Copyright © 2006 enum.at
+   Copyright � 2006 enum.at
 
-   Copyright © 2013 Secusmart GmbH
+   Copyright � 2013 Secusmart GmbH
 
-   Copyright © 2015 OpenSIPS Solutions
+   Copyright � 2015 OpenSIPS Solutions
      __________________________________________________________
 
    Table of Contents
@@ -50,88 +50,27 @@ Ionut-Razvan Ionita
         1.1. Overview
         1.2. History
         1.3. Scenario
-        1.4. Dependencies of external libraries
-        1.5. Exported Functions
+        1.4. Dependencies
 
-              1.5.1. is_peer_verified
+              1.4.1. OpenSIPS Modules
 
-        1.6. OpenSIPS Exported parameters
+        1.5. OpenSIPS Exported parameters
 
-              1.6.1. listen=interface
-              1.6.2. tls_port (integer)
-              1.6.3. tls_method [(string):](string)
-              1.6.4. certificate [(string):](string)
-              1.6.5. private_key [(string):](string)
-              1.6.6. ca_list [(string):]((string)
-              1.6.7. ca_dir [(string):](string)
-              1.6.8. ciphers_list [(string):](string)
-              1.6.9. dh_params [(string):](string)
-              1.6.10. ec_curve[(string):](string)
-              1.6.11. verify_cert [(string):](string) and
-                      require_cert[(string):](string)
-
-              1.6.12. tls_handshake_timeout (integer) and
-                      tls_send_timeout (integer)
-
-              1.6.13. client_domain_avp (integer)
-              1.6.14. server_domain, client_domain (string)
-              1.6.15. tls_crlf_pingpong (integer)
-              1.6.16. tls_crlf_drop (integer)
-              1.6.17. tls_max_msg_chunks (integer)
-
-        1.7. Pseudo-Variables
-
-              1.7.1. $tls_version
-              1.7.2. $tls_description
-              1.7.3. $tls_cipher_info
-              1.7.4. $tls_cipher_bits
-              1.7.5. $tls_[peer|my]_version
-              1.7.6. $tls_[peer|my]_serial
-              1.7.7. $tls_[peer|my]_[subject|issuer]
-              1.7.8. $tls_[peer|my]_[subject|issuer]_cn
-              1.7.9. $tls_[peer|my]_[subject|issuer]_locality
-              1.7.10. $tls_[peer|my]_[subject|issuer]_country
-              1.7.11. $tls_[peer|my]_[subject|issuer]_state
-              1.7.12. $tls_[peer|my]_[subject|issuer]_organization
-              1.7.13. $tls_[peer|my]_[subject|issuer]_unit
-              1.7.14. $tls_[peer|my]_san_email
-              1.7.15. $tls_[peer|my]_san_hostname
-              1.7.16. $tls_[peer|my]_san_uri
-              1.7.17. $tls_[peer|my]_san_ip
-              1.7.18. $tls_peer_verified
-              1.7.19. $tls_peer_revoked
-              1.7.20. $tls_peer_expired
-              1.7.21. $tls_peer_selfsigned
-              1.7.22. $tls_peer_notBefore
-              1.7.23. $tls_peer_notAfter
-
-        1.8. OpenSIPS with TLS - script example
-        1.9. Debug TLS connections
+              1.5.1. listen=interface
+              1.5.2. tls_port (integer)
+              1.5.3. tls_crlf_pingpong (integer)
+              1.5.4. tls_crlf_drop (integer)
+              1.5.5. tls_max_msg_chunks (integer)
 
    2. Frequently Asked Questions
 
    List of Examples
 
-   1.1. is_peer_verified usage
-   1.2. Set listen variable
-   1.3. Set tls_port variable
-   1.4. Set tls_method variable
-   1.5. Set certificate variable
-   1.6. Set private_key variable
-   1.7. Set ca_list variable
-   1.8. Set ca_dir variable
-   1.9. Set ciphers_list variable
-   1.10. Set dh_params variable
-   1.11. Set verify_cert & require_cert variable
-   1.12. Set tls_handshake_timeout & tls_send_timeout variable
-   1.13. Set tls_client_domain_avp variable
-   1.14. Usage of tls_client_domain and tls_server_domain block
-   1.15. Set tls_crlf_pingpong parameter
-   1.16. Set tls_crlf_drop parameter
-   1.17. Set tls_max_msg_chunks parameter
-   1.18. Example of $tls_[peer|my]_[subject|issuer]
-   1.19. Script with TLS support
-   1.20. Example of TLS logging
+   1.1. Set listen variable
+   1.2. Set tls_port variable
+   1.3. Set tls_crlf_pingpong parameter
+   1.4. Set tls_crlf_drop parameter
+   1.5. Set tls_max_msg_chunks parameter
 
 Chapter 1. Admin Guide
 
@@ -141,9 +80,7 @@ Chapter 1. Admin Guide
    proxies and can be used to secure the SIP signalling on a
    hop-by-hop basis (not end-to-end). TLS works on top of TCP.
    DTLS, or TLS over UDP is already defined by IETF and may become
-   available in the future. This module also implements TLS
-   related functions to use in the routing script, and exports
-   pseudo variables with certificate and TLS parameters.
+   available in the future.
 
 1.2. History
 
@@ -153,11 +90,15 @@ Chapter 1. Admin Guide
    improvements were added.
 
    The TLS support was simultaneously added in both projects. In
-   SER, the support was committed in a separate “experimental” CVS
+   SER, the support was committed in a separate "experimental" CVS
    tree, as patch to the main CVS tree. In OpenSIPS, the support
    was integrated directly into the CVS tree, as a built-in
    component, and is part of stable OpenSIPS since release
    >=1.0.0.
+
+   Starting with OpenSIPS 2.1, the TLS has been moved to a
+   separate transport module, that implements the more generic
+   Transport Interface.
 
 1.3. Scenario
 
@@ -234,12 +175,12 @@ Chapter 1. Admin Guide
    This phones can change their ringing tone based on the present
    or content of the "Alert-Info" SIP header as follows:
      * CISCO ATA - it has 4 pre-defined ringing types. The
-       Alert-Info header must look like “Alert-info: Bellcore-drX
-       EOH"” where X can be between 1 and 4. Note that 1 is the
+       Alert-Info header must look like "Alert-info: Bellcore-drX
+       EOH"" where X can be between 1 and 4. Note that 1 is the
        phone default ringing tone.
      * CISCO 7960 - it has 2 pre-defined ringing types and the
-       possibility of uploading new ones. The “Alert-Info” header
-       must look like “Alert-info: X EOH” where X can be whatever
+       possibility of uploading new ones. The "Alert-Info" header
+       must look like "Alert-info: X EOH" where X can be whatever
        number. When this header is present, the phones will not
        change the ringing tone, but the ringing pattern. Normally,
        the phone rings like [ring.........ring..........ring]
@@ -249,14 +190,18 @@ Chapter 1. Admin Guide
        hear some difference between the two patterns (and not only
        as length), its strongly recommended to have a highly
        asymmetric ringing type (as the pre-defined are not!!).
-     * SNOM - The “Alert-Info” header must look like “Alert-info:
-       URL EOH"” where URL can be a HTTP URL (for example) from
+     * SNOM - The "Alert-Info" header must look like "Alert-info:
+       URL EOH"" where URL can be a HTTP URL (for example) from
        where the phone can retrieve a ringing tone.
 
-   A script example which implements this scenario can be found in
-   Section 1.8, “OpenSIPS with TLS - script example”.
+1.4. Dependencies
 
-1.4. Dependencies of external libraries
+1.4. Dependencies
+
+1.4.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * tls_mgm.
 
    OpenSIPS TLS v1.0 support requires the following packages:
      * openssl or libssl >= 0.9.6
@@ -266,424 +211,46 @@ Chapter 1. Admin Guide
      * openssl or libssl >= 1.0.1e
      * openssl-dev or libssl-dev
 
-1.5. Exported Functions
-
-1.5.1.  is_peer_verified
-
-   Returns 1 if the message is received via TLS and the peer was
-   verified during TLS connection handshake, otherwise it returns
-   -1
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.1. is_peer_verified usage
-...
-if (is_peer_verified()) {
-        xlog("L_INFO","request from verified TLS peer\n");
-} else {
-        xlog("L_INFO","request not verified\n");
-}
-...
-
-1.6. OpenSIPS Exported parameters
+1.5. OpenSIPS Exported parameters
 
    All these parameters can be used from the opensips.cfg file, to
    configure the behavior of OpenSIPS-TLS.
 
-1.6.1. listen=interface
+1.5.1. listen=interface
 
    Not specific to TLS. Allows to specify the protocol (udp, tcp,
    tls), the IP address and the port where the listening server
    will be.
 
-   Example 1.2. Set listen variable
+   Example 1.1. Set listen variable
 ...
 listen = tls:1.2.3.4:5061
 ...
 
-1.6.2. tls_port (integer)
+1.5.2. tls_port (integer)
 
    Sets the default TLS listening port.
 
    Default value is 5061.
 
-   Example 1.3. Set tls_port variable
+   Example 1.2. Set tls_port variable
 ...
 modparam("proto_tls", "tls_port", 5062)
 ...
 
-1.6.3. tls_method [(string):](string)
-
-   Sets the TLS protocol. The first parameter, if set, represents
-   the id of the domain. TLS method which can be:
-     * TLSv1_2 - means OpenSIPS will accept only TLSv1.2
-       connections (rfc3261 conformant).
-     * TLSv1 - means OpenSIPS will accept only TLSv1 connections
-       (rfc3261 conformant).
-     * SSLv3 - means OpenSIPS will accept only SSLv3 connections
-     * SSLv2 - means OpenSIPS will accept only SSLv2 connections
-       (almost all old clients support this).
-     * SSLv23 - means OpenSIPS will accept any of the above
-       methods, but the initial SSL hello must be v2 (in the
-       initial hello all the supported protocols are advertised
-       enabling switching to a higher and more secure version).
-       The initial v2 hello means it will not accept connections
-       from SSLv3 or TLSv1 only clients.
-
-   Default value is SSLv23.
-
-Warning
-
-   Best is to use SSLv23, for extended compatibility. Using any of
-   the other will restrict the version to just that one version.
-   In fact, SSLv2 is disabled in the source code; to use it, you
-   need to edit tls/tls_init.c
-
-   If you want RFC3261 conformance and all your clients support
-   TLSv1 (or you are planning to use encrypted "tunnels" only
-   between different OpenSIPS proxies) use TLSv1. If you want to
-   support older clients use SSLv23 (in fact most of the
-   applications with SSL support use the SSLv23 method).
-
-   Example 1.4. Set tls_method variable
-...
-modparam("proto_tls", "tls_method", "TLSv1")
-modparam("proto_tls", "tls_method", "dom:TLSv1")
-...
-
-1.6.4. certificate [(string):](string)
-
-   Public certificate file for OpenSIPS. It will be used as
-   server-side certificate for incoming TLS connections, and as a
-   client-side certificate for outgoing TLS connections. The first
-   parameter, if set, represents the id of the domain.
-
-   Default value is "CFG_DIR/cert.pem".
-
-   Example 1.5. Set certificate variable
-...
-modparam("proto_tls", "certificate", "/mycerts/certs/opensips_server_cer
-t.pem")
-modparam("proto_tls", "certificate", "dom:/mycerts/certs/opensips_server
-_cert.pem")
-...
-
-1.6.5. private_key [(string):](string)
-
-   Private key of the above certificate. I must be kept in a safe
-   place with tight permissions! The first parameter, if set,
-   represents the id of the domain.
-
-   Default value is "CFG_DIR/cert.pem".
-
-   Example 1.6. Set private_key variable
-...
-modparam("proto_tls", "private_key", "/mycerts/private/prik.pem")
-modparam("proto_tls", "private_key", "dom:/mycerts/private/prik.pem")
-...
-
-1.6.6. ca_list [(string):]((string)
-
-   List of trusted CAs. The file contains the certificates
-   accepted, one after the other. It MUST be a file, not a folder.
-   The first parameter, if set, represents the id of the domain.
-
-   Default value is "".
-
-   Example 1.7. Set ca_list variable
-...
-modparam("proto_tls", "ca_list", "/mycerts/certs/ca_list.pem")
-modparam("proto_tls", "ca_list", "dom:/mycerts/certs/ca_list.pem")
-...
-
-1.6.7. ca_dir [(string):](string)
-
-   Directory storing trusted CAs. The path contains the
-   certificates accepted, each as hash which is linked to
-   certificate file. The first parameter, if set, represents the
-   id of the domain.
-
-   Default value is "".
-
-   Example 1.8. Set ca_dir variable
-...
-modparam("proto_tls", "ca_dir", "/mycerts/certs")
-modparam("proto_tls", "ca_dir", "dom:/mycerts/certs")
-...
-
-1.6.8. ciphers_list [(string):](string)
-
-   You can specify the list of algorithms for authentication and
-   encryption that you allow. The first parameter, if set,
-   represents the id of the domain. To obtain a list of ciphers
-   and then choose, use the openssl application:
-     * openssl ciphers 'ALL:eNULL:!LOW:!EXPORT'
-
-Warning
-
-   Do not use the NULL algorithms (no encryption) ... only for
-   testing!!!
-
-   It defaults to the OpenSSL default ciphers.
-
-   Example 1.9. Set ciphers_list variable
-...
-modparam("proto_tls", "ciphers_list", "NULL")
-modparam("proto_tls", "ciphers_list", "dom:NULL")
-...
-
-1.6.9. dh_params [(string):](string)
-
-   You can specify a file which contains Diffie-Hellman parameters
-   as a PEM-file. This is needed if you would like to specify
-   ciphers including Diffie-Hellman mode. The first parameter, if
-   set, represents the id of the domain.
-
-   It defaults to not set a dh param file.
-
-   Example 1.10. Set dh_params variable
-...
-modparam("proto_tls", "dh_params", "/etc/pki/CA/dh1024.pem")
-modparam("proto_tls", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
-...
-
-1.6.10. ec_curve[(string):](string)
-
-   You can specify an elliptic curve which should be used for
-   ciphers which demand an elliptic curve. The first parameter, if
-   set, represents the id of the domain.
-
-   It's usable only if TLS v1.1/1.2 support was compiled. A list
-   of curves which can be used you can get by
-                                openssl ecparam -list_curve
-
-   It defaults to not set a elliptic curve.
-
-1.6.11. verify_cert [(string):](string) and
-require_cert[(string):](string)
-
-   Technically, verify_cert activates SSL_VERIFY_PEER in the
-   ssl_context. 'require_cert' does the same with
-   SSL_VERIFY_FAIL_IF_NO_PEER_CERT, which is only possible if
-   SSL_VERIFY_PEER is also turned on. Since version 2.1, these
-   parameters act have been reduced to only one. They act both on
-   client side and server side if no domain specified, elseway
-   they act on a specific domain, depending on the first
-   parameter.
-
-   These two parameters are used for incoming TLS connections,
-   where OpenSIPS acts as server.
-
-   It's usable only if TLS support was compiled.
-
-   Default value for both is 1.
-
-   Example 1.11. Set verify_cert & require_cert variable
-...
-# turn on the strictest and strongest authentication possible
-modparam("proto_tls", "require_cert", "1")
-modparam("proto_tls", "require_cert", "1:1")
-modparam("proto_tls", "verify_cert", "0")
-modparam("proto_tls", "verify_cert", "1:1")
-...
-
-1.6.12. tls_handshake_timeout (integer) and tls_send_timeout
-(integer)
-
-   Timeouts ... advanced users only
-
-   Default value for both is 30.
-
-   Example 1.12. Set tls_handshake_timeout & tls_send_timeout
-   variable
-...
-modparam("proto_tls", "tls_handshake_timeout", 119)             # number
- of seconds
-modparam("proto_tls", "tls_send_timeout", 121)                  # number
- of seconds
-...
-
-1.6.13. client_domain_avp (integer)
-
-   This sets the interger AVP used for name based TLS server
-   domains (please see tls_client_domain for more details).
-   Setting the value to 0 disables name based TLS client domains.
-
-   It's usable only if TLS support was compiled.
-
-   Default value is 0.
-
-   Example 1.13. Set tls_client_domain_avp variable
-...
-modparam("proto_tls", "tls_client_domain_avp", "400")           # only i
-nteger named AVPs are supported
-...
-
-1.6.14. server_domain, client_domain (string)
-
-   If you only run one domain, the main one is enough. If you are
-   running several TLS servers (that is, you have more than one
-   listen=tls:ip:port entry in the config file), you can specify
-   some parameters for each of them separately (not all the
-   above).
-
-   The wording 'TLS domain' means that this TLS connection will
-   have different parameters than another TLS connection (from
-   another TLS domain). Thus, TLS domains must are not directly
-   related to different SIP domains, although they are often used
-   in common. Depending on the direction of the TLS handshake, a
-   TLS domain is called 'client domain' (=outgouing TLS
-   connection) or 'server domain' (= incoming TLS connection).
-
-   For example, TLS domains can be used in virtual hosting
-   scenarios with TLS. OpenSIPS offers SIP service for multiple
-   domains, e.g. atlanta.com and biloxi.com. Altough both domains
-   will be hosted a single SIP proxy, the SIP proxy needs 2
-   certificates: One for atlanta.com and one for biloxi.com. For
-   incoming TLS connections, the SIP proxy has to present the
-   respective certificate during the TLS handshake. As the SIP
-   proxy does not have received a SIP message yet (this is done
-   after the TLS handshake), the SIP proxy can not retrieve the
-   target domain (which will be usually retrieved from the domain
-   in the request URI). Thus, distinction for these domains must
-   be done by using multiple sockets. The socket on which the TLS
-   connection is received, identifies the respective domain. Thus
-   the SIP proxy is able to present the proper certificate.
-
-   For outgoing TLS connections, the SIP proxy usually has to
-   provide a client certificate. In this scenario, socket based
-   distinction is not possible as there is no dedicated outgoing
-   socket. Thus, the certificate selection (selection of the
-   proper TLS client domain) will be name based. For this purpose,
-   TLS client domains can be associated with a name (e.g. the
-   domain can be used as name). If the SIP proxy establishes a new
-   outgoing TLS connection, it checks for the TLS client domain
-   AVP (parameter tls_client_domain_avp). If this AVP is set (e.g.
-   in OpenSIPS.cfg), OpenSIPS searches for a TLS client domain
-   with the same name and uses the certificates defined in the
-   respective tls_client_domain section.
-
-   TLS client domains can also be socket based. If name based
-   domains are disabled or no name based AVP is found, OpenSIPS
-   searches for socket based TLS client domains. In this case the
-   mapping between to the TLS client domain is done based on the
-   destination socket of the underlying outgoing TCP connection.
-
-   Note: If there is already an existing TLS connection to the
-   remote target, it will be reused wether the TLS client domain
-   AVP matches or not.
-
-   NOTE: Make sure to also configure OpenSIPS to listen on the
-   specified IP:port.
-
-   NOTE: Except tls_handshake_timeout and tls_send_timeout all TLS
-   parameters can be set per TLS domain. If a parameter is not
-   explicit set, the default value will be used.
-
-   It's usable only if TLS support was compiled.
-
-   Example 1.14. Usage of tls_client_domain and tls_server_domain
-   block
-...
-listen=tls:IP_2:port2
-listen=tls:IP_3:port3
-...
-# set the TLS client domain AVP
-modparam("proto_tls", "tls_client_domain_avp", "400")
-...
-
-# 'atlanta' server domain
-modparam("proto_tls", "server_domain", "1=IP_2:port2")
-
-modparam("proto_tls", "certificate", "1:/certs/atlanta.com/cert.pem")
-modparam("proto_tls", "private_key", "1:/certs/atlanta.com/privkey.pem")
-modparam("proto_tls", "ca_list", "1:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "1:tlsv1")
-modparam("proto_tls", "verify_cert", "1:1")
-modparam("proto_tls", "require_cert", "1:1")
-
-#'biloxy' server domain
-
-modparam("proto_tls", "server_domain", "2=IP_3:port3")
-
-modparam("proto_tls", "certificate", "2:/certs/biloxy.com/cert.pem")
-modparam("proto_tls", "private_key", "2:/certs/biloxy.com/privkey.pem")
-modparam("proto_tls", "ca_list", "2:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "2:tlsv1")
-modparam("proto_tls", "verify_cert", "2:1")
-modparam("proto_tls", "require_cert", "2:1")
-
-# 'atlanta' client domain
-modparam("proto_tls", "client_domain", "3=IP_2:port2")
-
-modparam("proto_tls", "certificate", "3:/certs/atlanta.com/cert.pem")
-modparam("proto_tls", "private_key", "3:/certs/atlanta.com/privkey.pem")
-modparam("proto_tls", "ca_list", "3:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "3:tlsv1")
-modparam("proto_tls", "verify_cert", "3:1")
-modparam("proto_tls", "require_cert", "3:1")
-
-#'biloxy' client domain
-modparam("proto_tls", "client_domain", "4=IP_3:port3")
-
-modparam("proto_tls", "certificate", "4:/certs/biloxy.com/cert.pem")
-modparam("proto_tls", "private_key", "4:/certs/biloxy.com/privkey.pem")
-modparam("proto_tls", "ca_list", "4:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "4:tlsv1")
-modparam("proto_tls", "verify_cert", "4:1")
-modparam("proto_tls", "require_cert", "4:1")
-
-
-
-
-# socket based TLS server domains (for TLS based downstream from GW prov
-ider)
-modparam("proto_tls", "client_domain", "5=IP_5:port5")
-
-modparam("proto_tls", "certificate", "5:/certs/atlanta.com/cert.pem")
-modparam("proto_tls", "private_key", "5:/certs/atlanta.com/privkey.pem")
-modparam("proto_tls", "ca_list", "5:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "5:tlsv1")
-modparam("proto_tls", "verify_cert", "5:0")
-
-# socket based TLS client domains (for TLS based upstream to GW provider
-)
-# GW IP: 1.2.3.4, GW port: 6677
-modparam("proto_tls", "client_domain", "6=1.2.3.4:6677")
-
-modparam("proto_tls", "certificate", "6:/certs/biloxy.com/cert.pem")
-modparam("proto_tls", "private_key", "6:/certs/biloxy.com/privkey.pem")
-modparam("proto_tls", "ca_list", "6:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "6:tlsv1")
-modparam("proto_tls", "verify_cert", "6:0")
-
-...
-route{
-...
-    # calls to other SIP domains
-    # set the proper SSL context (certificate) for local hosted domains
-    avp_write("$fd","$avp(fd)");
-    t_relay(); # uses NAPTR and SRV lookups
-    exit;
-...
-    # calls to the PSTN GW
-    t_relay("tls:1.2.3.4:6677");
-    exit;
-...
-
-1.6.15. tls_crlf_pingpong (integer)
+1.5.3. tls_crlf_pingpong (integer)
 
    Send CRLF pong (\r\n) to incoming CRLFCRLF ping messages over
    TLS. By default it is enabled (1).
 
    Default value is 1 (enabled).
 
-   Example 1.15. Set tls_crlf_pingpong parameter
+   Example 1.3. Set tls_crlf_pingpong parameter
 ...
 modparam("proto_tls", "tls_crlf_pingpong", 0)
 ...
 
-1.6.16. tls_crlf_drop (integer)
+1.5.4. tls_crlf_drop (integer)
 
    Drop CRLF (\r\n) ping messages. When this parameter is enabled,
    the TLS layer drops packets that contains a single CRLF
@@ -692,12 +259,12 @@ modparam("proto_tls", "tls_crlf_pingpong", 0)
 
    Default value is 0 (disabled).
 
-   Example 1.16. Set tls_crlf_drop parameter
+   Example 1.4. Set tls_crlf_drop parameter
 ...
 modparam("proto_tls", "tls_crlf_drop", 1)
 ...
 
-1.6.17. tls_max_msg_chunks (integer)
+1.5.5. tls_max_msg_chunks (integer)
 
    The maximum number of chunks that a SIP message is expected to
    arrive via TLS. If a packet is received more fragmented than
@@ -708,498 +275,84 @@ modparam("proto_tls", "tls_crlf_drop", 1)
 
    Default value is 4.
 
-   Example 1.17. Set tls_max_msg_chunks parameter
+   Example 1.5. Set tls_max_msg_chunks parameter
 ...
 modparam("proto_tls", "tls_max_msg_chunks", 8)
 ...
-
-1.7. Pseudo-Variables
-
-   This module exports the follong pseudo-variables:
-
-   Some pseudo variables are available for both, the peer'S
-   certificate and the local certificate. Further, some parameters
-   can be read from the “Subject” field or the “Issuer” field.
-
-1.7.1. $tls_version
-
-   $tls_version - the TLS/SSL version which is used on the TLS
-   connection from which the message was received. String type.
-
-1.7.2. $tls_description
-
-   $tls_description - the TLS/SSL description of the TLS
-   connection from which the message was received. String type.
-
-1.7.3. $tls_cipher_info
-
-   $tls_cipher_info - the TLS/SSL cipher which is used on the TLS
-   connection from which the message was received. String type.
-
-1.7.4. $tls_cipher_bits
-
-   $tls_cipher_bits - the number of cipher bits which are used on
-   the TLS connection from which the message was received. String
-   and Integer type.
-
-1.7.5. $tls_[peer|my]_version
-
-   $tls_[peer|my]_version - the version of the certificate. String
-   type.
-
-1.7.6. $tls_[peer|my]_serial
-
-   $tls_[peer|my]_serial - the serial number of the certificate.
-   String and Integer type.
-
-1.7.7. $tls_[peer|my]_[subject|issuer]
-
-   $tls_[peer|my]_[subject|issuer] - ASCII dump of the fields in
-   the issuer/subject section of the certificate. String type.
-
-   Example 1.18. Example of $tls_[peer|my]_[subject|issuer]
-/C=AT/ST=Vienna/L=Vienna/O=enum.at/CN=enum.at
-
-1.7.8. $tls_[peer|my]_[subject|issuer]_cn
-
-   $tls_[peer|my]_[subject|issuer]_cn - commonName in the
-   issuer/subject section of the certificate. String type.
-
-1.7.9. $tls_[peer|my]_[subject|issuer]_locality
-
-   $tls_[peer|my]_[subject|issuer]_locality - localityName in the
-   issuer/subject section of the certificate. String type.
-
-1.7.10. $tls_[peer|my]_[subject|issuer]_country
-
-   $tls_[peer|my]_[subject|issuer]_country - countryName in the
-   issuer/subject section of the certificate. String type.
-
-1.7.11. $tls_[peer|my]_[subject|issuer]_state
-
-   $tls_[peer|my]_[subject|issuer]_state - stateOrProvinceName in
-   the issuer/subject section of the certificate. String type.
-
-1.7.12. $tls_[peer|my]_[subject|issuer]_organization
-
-   $tls_[peer|my]_[subject|issuer]_organization - organizationName
-   in the issuer/subject section of the certificate. String type.
-
-1.7.13. $tls_[peer|my]_[subject|issuer]_unit
-
-   $tls_[peer|my]_[subject|issuer]_unit - organizationalUnitName
-   in the issuer/subject section of the certificate. String type.
-
-1.7.14. $tls_[peer|my]_san_email
-
-   $tls_[peer|my]_san_email - email address in the “subject
-   alternative name” extension. String type.
-
-1.7.15. $tls_[peer|my]_san_hostname
-
-   $tls_[peer|my]_san_hostname - hostname (DNS) in the “subject
-   alternative name” extension. String type.
-
-1.7.16. $tls_[peer|my]_san_uri
-
-   $tls_[peer|my]_san_uri - URI in the “subject alternative name”
-   extension. String type.
-
-1.7.17. $tls_[peer|my]_san_ip
-
-   $tls_[peer|my]_san_ip - ip address in the “subject alternative
-   name” extension. String type.
-
-1.7.18. $tls_peer_verified
-
-   $tls_peer_verified - Returns 1 if the peer's certificate was
-   successful verified. Otherwise it returns 0. String and Integer
-   type.
-
-1.7.19. $tls_peer_revoked
-
-   $tls_peer_revoked - Returns 1 if the peer's certificate was
-   revoked. Otherwise it returns 0. String and Integer type.
-
-1.7.20. $tls_peer_expired
-
-   $tls_peer_expired - Returns 1 if the peer's certificate is
-   expired. Otherwise it returns 0. String and Integer type.
-
-1.7.21. $tls_peer_selfsigned
-
-   $tls_peer_selfsigned - Returns 1 if the peer's certificate is
-   selfsigned. Otherwise it returns 0. String and Integer type.
-
-1.7.22. $tls_peer_notBefore
-
-   $tls_peer_notBefore - Returns the notBefore validity date of
-   the peer's certificate. String type.
-
-1.7.23. $tls_peer_notAfter
-
-   $tls_peer_notAfter - Returns the notAfter validity date of the
-   peer's certificate. String type.
-
-1.8. OpenSIPS with TLS - script example
-
-   IMPORTANT: The TLS support is based on TCP, and for allowing
-   OpenSIPS to use TCP, it must be started in multi-process mode.
-   So, there is a must to have the "fork" parameter set to "yes":
-
-   NOTE: Since the TLS engine is quite memory consuming, increase
-   the used memory by the run time parameter "-m" (see OpenSIPS -h
-   for more details).
-     * fork = yes
-
-   Example 1.19. Script with TLS support
-  # ----------- global configuration parameters ------------------------
-  debug=3
-  fork=yes
-  log_stderror=no
-
-  check_via=no
-  dns=no
-  rev_dns=no
-  listen=_your_serv_IP_
-  port=5060
-  children=4
-  fifo="/tmp/opensips_fifo"
-
-  # ------------------ module loading ----------------------------------
-
-  #TLS specific settings
-  loadmodule "proto_tls.so"
-
-  modparam("proto_tls", "certificate", "/path/opensipsX_cert.pem")
-  modparam("proto_tls", "private_key", "/path/privkey.pem")
-  modparam("proto_tls", "ca_list", "/path/calist.pem")
-  modparam("proto_tls", "ca_list", "/path/calist.pem")
-  modparam("proto_tls", "require_cert", "1")
-  modparam("proto_tls", "verify_cert", "1")
-
-  alias=_DNS_ALIAS_
-
-
-  loadmodule "modules/sl/sl.so"
-  loadmodule "modules/rr/rr.so"
-  loadmodule "modules/maxfwd/maxfwd.so"
-  loadmodule "modules/mysql/mysql.so"
-  loadmodule "modules/usrloc/usrloc.so"
-  loadmodule "modules/registrar/registrar.so"
-  loadmodule "modules/tm/tm.so"
-  loadmodule "modules/auth/auth.so"
-  loadmodule "modules/auth_db/auth_db.so"
-  loadmodule "modules/textops/textops.so"
-  loadmodule "modules/uri_db/uri_db.so"
-
-  # ----------------- setting module-specific parameters ---------------
-
-  # -- auth_db params --
-  modparam("auth_db", "db_url", "sql_url")
-  modparam("auth_db", "password_column", "password")
-  modparam("auth_db", "calculate_ha1", 1)
-
-  # -- registrar params --
-  # no multiple registrations
-  modparam("registrar", "append_branches", 0)
-
-  # -------------------------  request routing logic -------------------
-
-  # main routing logic
-
-  route{
-
-  # initial sanity checks
-  if (!mf_process_maxfwd_header("10")) {
-      sl_send_reply("483","Too Many Hops");
-      break;
-  };
-
-  # if somene claims to belong to our domain in From,
-  # challenge him (skip REGISTERs -- we will chalenge them later)
-  if (from_uri==myself) {
-      setflag(1);
-      if ( (method=="INVITE" || method=="SUBSCRIBE" || method=="MESSAGE"
-)
-      &&  !(src_ip==myself) ) {
-          if  (!(proxy_authorize( "domA.net", "subscriber" ))) {
-              proxy_challenge("domA.net","0"/*no-qop*/);
-              break;
-          };
-          if (!db_check_from()) {
-              log("LOG: From Cheating attempt in INVITE\n");
-              sl_send_reply("403",
-                  "That is ugly -- use From=id next time (OB)");
-              break;
-          };
-      }; # non-REGISTER from other domain
-  } else if ( method=="INVITE" && uri!=myself ) {
-      sl_send_reply("403", "No relaying");
-      break;
-  };
-
-  /* ********   do record-route and loose-route ******* */
-  if (!(method=="REGISTER"))
-      record_route();
-
-  if (loose_route()) {
-      append_hf("P-hint: rr-enforced\r\n");
-      route(1);
-      break;
-  };
-
-  /* ******* check for requests targeted out of our domain ******* */
-  if ( uri!=myself ) {
-      append_hf("P-hint: OUTBOUND\r\n");
-      if (uri=~".*@domB.net") {
-          t_relay_to_tls("domB.net","5061");
-      } else if (uri=~".*@domC.net") {
-          t_relay_to_tls("domC.net","5061");
-      } else {
-          route(1);
-      };
-      break;
-  };
-
-  /* ******* divert to other domain according to prefixes ******* */
-  if (method!="REGISTER") {
-      if ( uri=~"sip:201") {
-          strip(3);
-          sethost("domB.net");
-          t_relay_to_tls("domB.net","5061");
-          break;
-      } else if ( uri=~"sip:202" ) {
-          strip(3);
-          sethost("domC.net");
-          t_relay_to_tls("domC.net","5061");
-          break;
-      };
-  };
-
-  /* ************ requests for our domain ********** */
-  if (method=="REGISTER") {
-      if (!www_authorize( "domA.net", "subscriber" )) {
-          # challenge if none or invalid credentials
-          www_challenge( "domA.net" /* realm */,
-              "0" /* no qop -- some phones can't deal with it */);
-          break;
-      };
-      if (!db_check_to()) {
-          log("LOG: To Cheating attempt\n");
-          sl_send_reply("403", "That is ugly -- use To=id in REGISTERs")
-;
-          break;
-      };
-      # it is an authenticated request, update Contact database now
-      if (!save("location")) {
-          sl_reply_error();
-      };
-      break;
-  };
-
-  # native SIP destinations are handled using USRLOC DB
-  if (!lookup("location")) {
-      # handle user which was not found
-      sl_send_reply("404", "Not Found");
-      break;
-  };
-
-  # remove all present Alert-info headers
-  remove_hf("Alert-Info");
-
-  if (method=="INVITE" && (proto==tls || isflagset(1))) {
-      append_hf("Alert-info: 1\r\n");                     # cisco 7960
-      append_hf("Alert-info: Bellcore-dr4\r\n");          # cisco ATA
-      append_hf("Alert-info: http://foo.bar/x.wav\r\n");  # snom
-  };
-
-  # do forwarding
-  if (!t_relay()) {
-      sl_reply_error();
-  };
-
-  #end of script
-  }
-
-1.9. Debug TLS connections
-
-   If you want to debug TLS connections, put the following log
-   statements into your OpenSIPS.cfg. This will dump all available
-   TLS pseudo variables.
-
-   Example 1.20. Example of TLS logging
-xlog("L_INFO","==================== start TLS pseudo variables =========
-========='\n");
-xlog("L_INFO","$$tls_version                    = '$tls_version'\n");
-xlog("L_INFO","$$tls_description                = '$tls_description'\n")
-;
-xlog("L_INFO","$$tls_cipher_info                = '$tls_cipher_info'\n")
-;
-xlog("L_INFO","$$tls_cipher_bits                = '$tls_cipher_bits'\n")
-;
-xlog("L_INFO","$$tls_peer_subject               = '$tls_peer_subject'\n"
-);
-xlog("L_INFO","$$tls_peer_issuer                = '$tls_peer_issuer'\n")
-;
-xlog("L_INFO","$$tls_my_subject                 = '$tls_my_subject'\n");
-xlog("L_INFO","$$tls_my_issuer                  = '$tls_my_issuer'\n");
-xlog("L_INFO","$$tls_peer_version               = '$tls_peer_version'\n"
-);
-xlog("L_INFO","$$tls_my_version                 = '$tls_my_version'\n");
-xlog("L_INFO","$$tls_peer_serial                = '$tls_peer_serial'\n")
-;
-xlog("L_INFO","$$tls_my_serial                  = '$tls_my_serial'\n");
-xlog("L_INFO","$$tls_peer_subject_cn            = '$tls_peer_subject_cn'
-\n");
-xlog("L_INFO","$$tls_peer_issuer_cn             = '$tls_peer_issuer_cn'\
-n");
-xlog("L_INFO","$$tls_my_subject_cn              = '$tls_my_subject_cn'\n
-");
-xlog("L_INFO","$$tls_my_issuer_cn               = '$tls_my_issuer_cn'\n"
-);
-xlog("L_INFO","$$tls_peer_subject_locality      = '$tls_peer_subject_loc
-ality'\n");
-xlog("L_INFO","$$tls_peer_issuer_locality       = '$tls_peer_issuer_loca
-lity'\n");
-xlog("L_INFO","$$tls_my_subject_locality        = '$tls_my_subject_local
-ity'\n");
-xlog("L_INFO","$$tls_my_issuer_locality         = '$tls_my_issuer_locali
-ty'\n");
-xlog("L_INFO","$$tls_peer_subject_country       = '$tls_peer_subject_cou
-ntry'\n");
-xlog("L_INFO","$$tls_peer_issuer_country        = '$tls_peer_issuer_coun
-try'\n");
-xlog("L_INFO","$$tls_my_subject_country         = '$tls_my_subject_count
-ry'\n");
-xlog("L_INFO","$$tls_my_issuer_country          = '$tls_my_issuer_countr
-y'\n");
-xlog("L_INFO","$$tls_peer_subject_state         = '$tls_peer_subject_sta
-te'\n");
-xlog("L_INFO","$$tls_peer_issuer_state          = '$tls_peer_issuer_stat
-e'\n");
-xlog("L_INFO","$$tls_my_subject_state           = '$tls_my_subject_state
-'\n");
-xlog("L_INFO","$$tls_my_issuer_state            = '$tls_my_issuer_state'
-\n");
-xlog("L_INFO","$$tls_peer_subject_organization  = '$tls_peer_subject_org
-anization'\n");
-xlog("L_INFO","$$tls_peer_issuer_organization   = '$tls_peer_issuer_orga
-nization'\n");
-xlog("L_INFO","$$tls_my_subject_organization    = '$tls_my_subject_organ
-ization'\n");
-xlog("L_INFO","$$tls_my_issuer_organization     = '$tls_my_issuer_organi
-zation'\n");
-xlog("L_INFO","$$tls_peer_subject_unit          = '$tls_peer_subject_uni
-t'\n");
-xlog("L_INFO","$$tls_peer_issuer_unit           = '$tls_peer_issuer_unit
-'\n");
-xlog("L_INFO","$$tls_my_subject_unit            = '$tls_my_subject_unit'
-\n");
-xlog("L_INFO","$$tls_my_issuer_unit             = '$tls_my_issuer_unit'\
-n");
-xlog("L_INFO","$$tls_peer_san_email             = '$tls_peer_san_email'\
-n");
-xlog("L_INFO","$$tls_my_san_email               = '$tls_my_san_email'\n"
-);
-xlog("L_INFO","$$tls_peer_san_hostname          = '$tls_peer_san_hostnam
-e'\n");
-xlog("L_INFO","$$tls_my_san_hostname            = '$tls_my_san_hostname'
-\n");
-xlog("L_INFO","$$tls_peer_san_uri               = '$tls_peer_san_uri'\n"
-);
-xlog("L_INFO","$$tls_my_san_uri                 = '$tls_my_san_uri'\n");
-xlog("L_INFO","$$tls_peer_san_ip                = '$tls_peer_san_ip'\n")
-;
-xlog("L_INFO","$$tls_my_san_ip                  = '$tls_my_san_ip'\n");
-xlog("L_INFO","$$tls_peer_verified              = '$tls_peer_verified'\n
-");
-xlog("L_INFO","$$tls_peer_revoked               = '$tls_peer_revoked'\n"
-);
-xlog("L_INFO","$$tls_peer_expired               = '$tls_peer_expired'\n"
-);
-xlog("L_INFO","$$tls_peer_selfsigned            = '$tls_peer_selfsigned'
-\n");
-xlog("L_INFO","$$tls_peer_notBefore             = '$tls_peer_notBefore'\
-n");
-xlog("L_INFO","$$tls_peer_notAfter              = '$tls_peer_notAfter'\n
-");
-xlog("L_INFO","==================== end TLS pseudo variables ===========
-======='\n");
 
 Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Where can I post a question about TLS?
+   Where can I post a question about TLS?
 
-       Use one (the most appropriate) of the OpenSIPS mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   Use one (the most appropriate) of the OpenSIPS mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       Remember: first at all, check if your question wasn't already
-       answered.
+   Remember: first at all, check if your question wasn't already
+   answered.
 
    2.2.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Accumulate as much as possible information (OpenSIPS version,
-       opensips -V output, your OS (uname -a), OpenSIPS logs, network
-       dumps, core dump files, configuration file) and send a mail to
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   Accumulate as much as possible information (OpenSIPS version,
+   opensips -V output, your OS (uname -a), OpenSIPS logs, network
+   dumps, core dump files, configuration file) and send a mail to
+   http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       Also you may try OpenSIPS's bug report web page:
-       http://www.opensips.org/pmwiki.php?n=Development.Tracker
+   Also you may try OpenSIPS's bug report web page:
+   http://www.opensips.org/pmwiki.php?n=Development.Tracker
 
    2.3.
 
-       How can I debug ssl/tls problems?
+   How can I debug ssl/tls problems?
 
-       Increase the log level in opensips.cfg (debug=4) and watch the
-       log statements in syslog.
+   Increase the log level in opensips.cfg (debug=4) and watch the
+   log statements in syslog.
 
-       Install the ssldump utility and start it. This will give you a
-       trace of the ssl/tls connections.
+   Install the ssldump utility and start it. This will give you a
+   trace of the ssl/tls connections.
 
    2.4.
 
-       What is the difference between the TLS directory and the TLSOPS
-       module directory?
+   What is the difference between the TLS directory and the TLSOPS
+   module directory?
 
-       The code in the TLS directory implements the TLS transport
-       layer. The TLSOPS module implements TLS related functions which
-       can be used in the routing script.
+   The code in the TLS directory implements the TLS transport
+   layer. The TLSOPS module implements TLS related functions which
+   can be used in the routing script.
 
    2.5.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.6.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.7.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.

@@ -31,8 +31,7 @@
 #include "../../net/proto_tcp/tcp_common_defs.h"
 
 int ws_raw_read(struct tcp_connection *c, struct tcp_req *r);
-int ws_raw_write(struct tcp_connection *c, int fd, char *buf, int len);
 int ws_raw_writev(struct tcp_connection *c, int fd,
-		const struct iovec *iov, int iovcnt);
+		const struct iovec *iov, int iovcnt, int tout);
 
 #endif /* _WS_TCP_H_ */

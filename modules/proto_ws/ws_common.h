@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2015 - OpenSIPS Foundation
- * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -24,8 +23,10 @@
  *  2015-02-xx  first version (razvanc)
  */
 
+#ifndef _WS_COMMON_H_
+#define _WS_COMMON_H_
+
 #include "../../mem/shm_mem.h"
-#include "../../net/net_tcp.h"
 #include "../../globals.h"
 #include "../../receive.h"
 #include "../../dprint.h"
@@ -35,7 +36,7 @@
 #include "../../pt.h"
 #include "proto_ws.h"
 #include "ws_tcp.h"
-#include "ws.h"
+#include "ws_common_defs.h"
 
 
 /*
@@ -135,18 +136,18 @@
 /* Returns the size of the mask, if needed */
 #define WS_IF_MASK_SIZE(_r)	(WS_IS_MASKED(_r) ? WS_MASK_SIZE : 0)
 
-
-
-/* wrapper around tcp request to add ws info */
-struct ws_req {
-	struct tcp_req tcp;
-	unsigned int op;
-	unsigned int mask;
-	unsigned int is_masked;
-};
-
 #define ROTATE32(_k) ((((_k) & 0xFF) << 24) | ((_k) >> 8))
 #define MASK8(_k) ((unsigned char)((_k) & 0xFF))
+
+#ifndef _ws_common_current_req
+#error "_ws_common_current_req not defined!"
+#endif
+#ifndef _ws_common_writev
+#error "_ws_common_writev not defined!"
+#endif
+#ifndef _ws_common_write_tout
+#error "_ws_common_write_tout not defined!"
+#endif
 
 static inline void ws_print_masked(char *buf, int len)
 {
@@ -180,7 +181,7 @@ static inline void ws_print_masked(char *buf, int len)
 	LM_INFO("Print buffer\n%s", print_buf);
 }
 
-void inline ws_mask(char *buf, int len, unsigned int mask)
+static inline void ws_mask(char *buf, int len, unsigned int mask)
 {
 	char *p = buf;
 	char *end = buf + len;
@@ -219,7 +220,8 @@ static inline int ws_send(struct tcp_connection *con, int fd, int op,
 	if (len == 0) {
 		hdr_buf[1] = 0;
 		/* don't have any data, send only the heeader  */
-		return ws_raw_write(con, fd, (char *)hdr_buf, WS_MIN_HDR_LEN);
+		v[0].iov_len = WS_MIN_HDR_LEN;
+		return _ws_common_writev(con, fd, v, 1, _ws_common_write_tout);
 	} else if (len < WS_EXT_LEN) {
 		hdr_buf[1] = len;
 		v[0].iov_len = WS_MIN_HDR_LEN;
@@ -256,7 +258,7 @@ static inline int ws_send(struct tcp_connection *con, int fd, int op,
 
 	v[1].iov_len = len;
 
-	return ws_raw_writev(con, fd, v, 2);
+	return _ws_common_writev(con, fd, v, 2, _ws_common_write_tout);
 }
 
 static inline int ws_send_pong(struct tcp_connection *con, struct ws_req *req)
@@ -284,12 +286,10 @@ static inline int ws_send_close(struct tcp_connection *con)
 
 /* Public functions down here */
 
-int ws_req_write(struct tcp_connection *con, int fd, char *buf, int len)
+static int ws_req_write(struct tcp_connection *con, int fd, char *buf, int len)
 {
 	return ws_send(con, fd, WS_OP_TEXT, buf, len);
 }
-
-static struct ws_req ws_current_req;
 
 static enum ws_close_code inline ws_parse(struct ws_req *req)
 {
@@ -397,7 +397,7 @@ static enum ws_close_code inline ws_parse(struct ws_req *req)
 		(_req)->is_masked = 0; \
 	} while(0)
 
-int ws_process(struct tcp_connection *con)
+static int ws_process(struct tcp_connection *con)
 {
 	struct ws_req *req;
 	struct ws_req *newreq;
@@ -413,14 +413,14 @@ int ws_process(struct tcp_connection *con)
 		LM_DBG("Using the per connection buff \n");
 	} else {
 		LM_DBG("Using the global ( per process ) buff \n");
-		init_ws_req(&ws_current_req, 0);
-		req=&ws_current_req;
+		init_ws_req(&_ws_common_current_req, 0);
+		req=&_ws_common_current_req;
 	}
 
 again:
 	if (req->tcp.error == TCP_REQ_OK) {
 		if (req->tcp.parsed >= req->tcp.pos) {
-			if (ws_raw_read(con, &req->tcp) < 0) {
+			if (_ws_common_read(con, &req->tcp) < 0) {
 				LM_ERR("failed to read %d:%s\n", errno, strerror(errno));
 				goto error;
 			}
@@ -452,7 +452,7 @@ again:
 	if (req->tcp.complete) {
 
 		/* update the timeout - we successfully read the request */
-		tcp_conn_set_lifetime(con, ws_send_timeout);
+		tcp_conn_set_lifetime(con, _ws_common_write_tout);
 		con->timeout=con->lifetime;
 
 		/* if we are here everything is nice and ok*/
@@ -515,7 +515,7 @@ again:
 				 * the connection */
 				LM_DBG("We're releasing the connection in state %d \n",
 					con->state);
-				if (req != &ws_current_req) {
+				if (req != &_ws_common_current_req) {
 					/* we have the buffer in the connection tied buff -
 					 *	detach it , release the conn and free it afterwards */
 					con->con_req = NULL;
@@ -553,20 +553,20 @@ again:
 		if (size)
 			goto again;
 		/* cleanup the existing request */
-		if (req != &ws_current_req)
+		if (req != &_ws_common_current_req)
 			pkg_free(req);
 
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
 
 		con->msg_attempts++;
-		if (con->msg_attempts == ws_max_msg_chunks) {
+		if (con->msg_attempts == _ws_common_max_msg_chunks) {
 			LM_ERR("Made %u read attempts but message is not complete yet - "
 				   "closing connection \n",con->msg_attempts);
 			goto error;
 		}
 
-		if (req == &ws_current_req) {
+		if (req == &_ws_common_current_req) {
 			/* let's duplicate this - most likely another conn will come in */
 
 			LM_DBG("We didn't manage to read a full request\n");
@@ -627,7 +627,9 @@ error:
 	return -1;
 }
 
-void ws_close(struct tcp_connection *c)
+static void ws_close(struct tcp_connection *c)
 {
 	ws_send_close(c);
 }
+
+#endif /* _WS_COMMON_H_ */

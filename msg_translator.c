@@ -469,6 +469,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						case PROTO_UDP: \
 						case PROTO_TCP: \
 						case PROTO_TLS: \
+						case PROTO_WSS: \
 								new_len+=3; \
 								break; \
 						case PROTO_SCTP: \
@@ -498,6 +499,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								break; /* udp is the default */ \
 						case PROTO_TCP: \
 						case PROTO_TLS: \
+						case PROTO_WSS: \
 								new_len+=TRANSPORT_PARAM_LEN+3; \
 								break; \
 						case PROTO_SCTP: \
@@ -532,6 +534,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						case PROTO_UDP: \
 						case PROTO_TCP: \
 						case PROTO_TLS: \
+						case PROTO_WSS: \
 								new_len+=3; \
 								break; \
 						case PROTO_SCTP: \
@@ -562,6 +565,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								break; /* udp is the default */ \
 						case PROTO_TCP: \
 						case PROTO_TLS: \
+						case PROTO_WSS: \
 								new_len+=TRANSPORT_PARAM_LEN+3; \
 								break; \
 						case PROTO_SCTP: \
@@ -816,6 +820,13 @@ void process_lumps(	struct sip_msg* msg,
 						memcpy(new_buf+offset, "ws", 2); \
 						offset+=2; \
 						break; \
+					case PROTO_WSS: \
+						memcpy(new_buf+offset, TRANSPORT_PARAM, \
+								TRANSPORT_PARAM_LEN); \
+						offset+=TRANSPORT_PARAM_LEN; \
+						memcpy(new_buf+offset, "wss", 3); \
+						offset+=3; \
+						break; \
 					default: \
 						LM_CRIT("unknown proto %d\n", \
 								msg->rcv.bind_address->proto); \
@@ -891,6 +902,13 @@ void process_lumps(	struct sip_msg* msg,
 						memcpy(new_buf+offset, "ws", 2); \
 						offset+=2; \
 						break; \
+					case PROTO_WSS: \
+						memcpy(new_buf+offset, TRANSPORT_PARAM, \
+								TRANSPORT_PARAM_LEN); \
+						offset+=TRANSPORT_PARAM_LEN; \
+						memcpy(new_buf+offset, "wss", 3); \
+						offset+=3; \
+						break; \
 					default: \
 						LM_CRIT("unknown proto %d\n", \
 								send_sock->proto); \
@@ -924,6 +942,10 @@ void process_lumps(	struct sip_msg* msg,
 						memcpy(new_buf+offset, "ws", 2); \
 						offset+=2; \
 						break; \
+					case PROTO_WSS: \
+						memcpy(new_buf+offset, "wss", 3); \
+						offset+=3; \
+						break; \
 					default: \
 						LM_CRIT("unknown proto %d\n", \
 								msg->rcv.bind_address->proto); \
@@ -956,6 +978,10 @@ void process_lumps(	struct sip_msg* msg,
 					case PROTO_WS: \
 						memcpy(new_buf+offset, "ws", 2); \
 						offset+=2; \
+						break; \
+					case PROTO_WSS: \
+						memcpy(new_buf+offset, "wss", 3); \
+						offset+=3; \
 						break; \
 					default: \
 						LM_CRIT("unknown proto %d\n", \
@@ -2066,6 +2092,8 @@ char* via_builder( unsigned int *len,
 	}else if(proto==PROTO_WS){
 		memcpy(line_buf+local_via_len-4, "WS ", 3);
 		local_via_len--;
+	}else if(proto==PROTO_WSS){
+		memcpy(line_buf+local_via_len-4, "WSS ", 4);
 	}else{
 		LM_CRIT("unknown proto %d\n", proto);
 		return 0;
