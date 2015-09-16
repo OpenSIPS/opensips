@@ -25,7 +25,7 @@
 #define EXPIRE_STR "expire"
 #define EXPIRE_STR_LEN 6
 
-#define DEFAULT_CACHEDB_EXPIRE 60
+#define DEFAULT_CACHEDB_EXPIRE 3600
 #define DEFAULT_FETCH_NR_ROWS 100
 #define TEST_QUERY_STR "sql_cacher_test_query_key"
 #define CDB_TEST_KEY_STR "sql_cacher_cdb_test_key"
@@ -54,6 +54,13 @@ typedef struct _cache_entry {
 struct parse_entry {
 	str to_parse_str;
 	struct parse_entry *next;
+};
+
+struct queried_key {
+	str key;
+	int nr_waiting_procs;
+	gen_lock_t *wait_sql_query;
+	struct queried_key *next;
 };
 
 typedef struct _pv_name_fix
