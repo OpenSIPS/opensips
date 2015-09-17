@@ -44,12 +44,17 @@ typedef struct _cache_entry {
 	unsigned int expire;
 	unsigned int nr_ints, nr_strs;
 	long long column_types;
+	struct _cache_entry *next;
+} cache_entry_t;
+
+typedef struct _db_handlers {
+	cache_entry_t *c_entry;
 	db_func_t db_funcs;
 	db_con_t *db_con;
 	cachedb_funcs cdbf;
 	cachedb_con *cdbcon;
-	struct _cache_entry *next;
-} cache_entry_t;
+	struct _db_handlers *next;
+} db_handlers_t;
 
 struct parse_entry {
 	str to_parse_str;
@@ -69,6 +74,7 @@ typedef struct _pv_name_fix
 	str col;
 	str key;
 	cache_entry_t *c_entry;
+	db_handlers_t *db_hdls;
 	pv_elem_t *pv_elem_list;
 	int col_offset;
 	int col_nr;
