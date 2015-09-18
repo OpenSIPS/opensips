@@ -510,8 +510,8 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input,
 	FILE *pin, *pout;
 	int val;
 
-	if (input || outvar) {
-		pid =  __popen3(command->s, input ? &pin : NULL,
+	if ((input&&input->s&&input->len) || outvar) {
+		pid =  __popen3(command->s, (input&&input->s&&input->len) ? &pin : NULL,
 									outvar ? &pout : NULL,
 									NULL);
 	} else {
