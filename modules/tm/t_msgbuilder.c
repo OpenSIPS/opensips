@@ -856,17 +856,17 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 		append_string(w, user_agent_header.s, user_agent_header.len);
 		append_string(w, CRLF, CRLF_LEN);
 	}
-	if (headers) {
-		t->uac[branch].extra_headers.s = w;
-		t->uac[branch].extra_headers.len = headers->len;
+
+	/* extra headers (containing CRLF) */
+	if (headers)
 		append_string(w, headers->s, headers->len);
-	}
+
+	/* add CRLF between headers and body */
 	append_string(w, CRLF, CRLF_LEN);
-	if (body) {
-		t->uac[branch].body.s = w;
-		t->uac[branch].body.len = body->len;
+
+	/* add body (if required) */
+	if (body)
 		append_string(w, body->s, body->len);
-	}
 
 #ifdef EXTRA_DEBUG
 	if (w-buf != *len ) abort();

@@ -149,10 +149,6 @@ typedef struct ua_client
 	str              duri;
 	/* the path vector used for this branch */
 	str              path_vec;
-	/* the list of extra headers in the request sent out from a dlg structure */
-	str              extra_headers;
-	/* the body in the request sent out from a dlg structure */
-	str              body;
 	/* number of RR headers that were locally added for this branch */
 	unsigned int     added_rr;
 	/* if we store a reply (branch picking), this is where it is */
