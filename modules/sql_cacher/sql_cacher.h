@@ -51,6 +51,7 @@ typedef struct _db_handlers {
 	cache_entry_t *c_entry;
 	db_func_t db_funcs;
 	db_con_t *db_con;
+	db_ps_t query_ps;
 	cachedb_funcs cdbf;
 	cachedb_con *cdbcon;
 	struct _db_handlers *next;

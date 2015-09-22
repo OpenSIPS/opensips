@@ -496,6 +496,7 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry) {
 	}
 	new_db_hdls->c_entry = c_entry;
 	new_db_hdls->db_con = 0;
+	new_db_hdls->query_ps = NULL;
 	new_db_hdls->cdbcon = 0;
 	new_db_hdls->next = db_hdls_list;
 	db_hdls_list = new_db_hdls;
@@ -766,6 +767,7 @@ static int child_init(int rank) {
  */
 static int cdb_fetch(pv_name_fix_t *pv_name, str *cdb_res) {
 	str cdb_key;
+	int rc;
 
 	cdb_key.len = pv_name->id.len + pv_name->key.len;
 	cdb_key.s = pkg_malloc(cdb_key.len);
@@ -776,7 +778,9 @@ static int cdb_fetch(pv_name_fix_t *pv_name, str *cdb_res) {
 	memcpy(cdb_key.s, pv_name->id.s, pv_name->id.len);
 	memcpy(cdb_key.s + pv_name->id.len, pv_name->key.s, pv_name->key.len);
 
-	return pv_name->db_hdls->cdbf.get(pv_name->db_hdls->cdbcon, &cdb_key, cdb_res);
+	rc = pv_name->db_hdls->cdbf.get(pv_name->db_hdls->cdbcon, &cdb_key, cdb_res);
+	pkg_free(cdb_key.s);
+	return rc;
 }
 
 /* return:
@@ -878,16 +882,27 @@ static void optimize_cdb_decode(pv_name_fix_t *pv_name) {
 *  0 - succes
 *  1 - succes, null value in db
 * -1 - error
+* -2 - not found in sql db
 */
 static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, int *int_res) {
 	struct queried_key *it, *prev = NULL, *tmp, *new_key;
-	str src_key;
+	str src_key, null_val;
 	db_key_t *query_cols = NULL, key_col;
 	db_res_t *sql_res = NULL;
 	db_row_t *row;
 	db_val_t *values, key_val;
 	db_type_t val_type;
 	int i;
+
+	for (i = 0; i < pv_name->c_entry->nr_columns; i++)
+		if (!memcmp(pv_name->c_entry->columns[i].s, pv_name->col.s, pv_name->col.len)) {
+			pv_name->col_nr = i;
+			break;
+		}
+	if (i == pv_name->c_entry->nr_columns) {
+		LM_WARN("Unknown column %.*s\n", pv_name->col.len, pv_name->col.s);
+		return -1;
+	}
 
 	src_key.len = pv_name->id.len + pv_name->key.len;
 	src_key.s = shm_malloc(src_key.len);
@@ -908,6 +923,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 			/* wait for the query to complete */
 			lock_get(it->wait_sql_query);
 			lock_get(queries_lock);
+			shm_free(src_key.s);
 			if (it->nr_waiting_procs == 1) {
 				lock_release(it->wait_sql_query);
 				lock_destroy(it->wait_sql_query);
@@ -945,6 +961,8 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 		/* insert key in list */
 		new_key = shm_malloc(sizeof(struct queried_key));
 		if (!new_key) {
+			LM_ERR("No more shm memory\n");
+			lock_release(queries_lock);
 			return -1;
 		}
 		new_key->key = src_key;
@@ -952,10 +970,12 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 		new_key->wait_sql_query = lock_alloc();
 		if (!new_key->wait_sql_query) {
 			LM_ERR("No more memory for wait_sql_query lock\n");
+			lock_release(queries_lock);
 			return -1;
 		}
 		if (!lock_init(new_key->wait_sql_query)) {
 			LM_ERR("Failed to init wait_sql_query lock\n");
+			lock_release(queries_lock);
 			return -1;
 		}
 		new_key->next = NULL;
@@ -971,6 +991,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 		query_cols = pkg_malloc(pv_name->c_entry->nr_columns * sizeof(db_key_t));
 		if (!query_cols) {
 			LM_ERR("No more pkg memory\n");
+			lock_release(new_key->wait_sql_query);
 			return -1;
 		}
 		for (i=0; i < pv_name->c_entry->nr_columns; i++)
@@ -984,19 +1005,32 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 			LM_ERR("Invalid table name\n");
 			pv_name->db_hdls->db_funcs.close(pv_name->db_hdls->db_con);
 			pv_name->db_hdls->db_con = 0;
+			lock_release(new_key->wait_sql_query);
 			return -1;
 		}
+		CON_PS_REFERENCE(pv_name->db_hdls->db_con) = &pv_name->db_hdls->query_ps;
 		if (pv_name->db_hdls->db_funcs.query(pv_name->db_hdls->db_con,
 			&key_col, 0, &key_val, query_cols, 1,
 			pv_name->c_entry->nr_columns, 0, &sql_res) != 0) {
 			LM_ERR("Failure to issue query to SQL DB\n");
 			goto sql_error;
 		}
+		pkg_free(query_cols);
 
-		if (RES_ROW_N(sql_res) != 1) {
-			LM_ERR("Only one row should be loaded!\n");
+		if (RES_ROW_N(sql_res) == 0) {
+			LM_DBG("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
+			null_val.len = 0;
+			null_val.s = NULL;
+			if (pv_name->db_hdls->cdbf.set(pv_name->db_hdls->cdbcon, &src_key, &null_val, pv_name->c_entry->expire) < 0) {
+				LM_ERR("Failed to insert null in cachedb\n");
+				goto sql_error;
+			}
+			return -2;
+		} else if (RES_ROW_N(sql_res) > 1) {
+			LM_ERR("To many columns returned\n");
 			goto sql_error;
 		}
+
 		row = RES_ROWS(sql_res);
 		values = ROW_VALUES(row);
 
@@ -1016,14 +1050,11 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 			lock_destroy(new_key->wait_sql_query);
 			lock_dealloc(new_key->wait_sql_query);
 			*queries_in_progress = new_key->next;
+			shm_free(new_key->key.s);
 			shm_free(new_key);
 		}
 
 		lock_release(queries_lock);
-
-		for (i = 0; i < pv_name->c_entry->nr_columns; i++)
-			if (!memcmp(pv_name->c_entry->columns[i].s, pv_name->col.s, pv_name->col.len))
-				pv_name->col_nr = i;
 
 		if (VAL_NULL(values + pv_name->col_nr))
 			return 1;
@@ -1057,6 +1088,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 sql_error:
 	if (sql_res)
 		pv_name->db_hdls->db_funcs.free_result(pv_name->db_hdls->db_con, sql_res);
+	lock_release(new_key->wait_sql_query);
 	return -1;
 }
 
@@ -1208,7 +1240,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 
 	if (!pv_name->c_entry->on_demand) {
 		if (rc == -2) {
-			LM_DBG("key: %.*s not found\n", pv_name->key.len, pv_name->key.s);
+			LM_DBG("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
 			return pv_get_null(msg, param, res);
 		} else {
 			if (pv_name->last_str == -1)
@@ -1224,13 +1256,18 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	} else {
 		if (rc == -2) {
 			rc2 = on_demand_load(pv_name, &cdb_res, &str_res, &int_res);
-			if (rc2 == -1)
+			if (rc2 == -1 || rc2 == -2)
 				return pv_get_null(msg, param, res);
 			if (rc2 == 1) {
 				LM_WARN("NULL value in SQL db\n");
 				return pv_get_null(msg, param, res);
 			}
 		} else {
+			if (!cdb_res.len || !cdb_res.s) {
+				LM_DBG("key %.*s already searched and not found in SQL db\n", pv_name->key.len, pv_name->key.s);
+				return pv_get_null(msg, param, res);
+			}
+
 			if (pv_name->last_str == -1)
 				optimize_cdb_decode(pv_name);
 			rc2 = cdb_val_decode(pv_name, &cdb_res, &str_res, &int_res);
