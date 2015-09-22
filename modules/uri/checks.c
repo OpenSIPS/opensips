@@ -177,6 +177,95 @@ ok:
 
 
 /*
+ * Removes a given parameter from Request URI
+ */
+int del_uri_param(struct sip_msg* _msg, char* _param, char* _s)
+{
+	str *param;
+	str params;
+
+	char  *tok_end;
+	struct sip_uri *parsed_uri;
+
+	str    param_tok, key;
+	str    new_uri, old_uri;
+
+	int begin_len, end_len;
+
+	param = (str*)_param;
+
+	if (param->len == 0) {
+		return 1;
+	}
+
+	if (parse_sip_msg_uri(_msg) < 0) {
+	        LM_ERR("ruri parsing failed\n");
+	        return -1;
+	}
+
+	parsed_uri = &(_msg->parsed_uri);
+
+	params = parsed_uri->params;
+	if (0 == params.s || 0 == params.len) {
+		LM_WARN("RURI contains no params to delete! Returning...\n");
+		return 0;
+	}
+
+	while (params.len) {
+		tok_end = q_memchr(params.s, ';', params.len);
+
+		param_tok.s = params.s;
+		if (tok_end == NULL) {
+			param_tok.len = params.len;
+			params.len = 0;
+		} else {
+			param_tok.len = tok_end - params.s;
+			params.len -= (param_tok.len + 1/*';' char*/);
+			params.s   += (param_tok.len + 1);
+		}
+
+		tok_end = q_memchr(param_tok.s, '=', param_tok.len);
+		if (tok_end == NULL) {
+			key       = param_tok;
+		} else {
+			key.s     = param_tok.s;
+			key.len   = tok_end - param_tok.s;
+		}
+
+		if (!str_strcmp(param, &key)) {
+			/* found the param to remove */
+			old_uri = *GET_RURI(_msg);
+			new_uri.len = old_uri.len - param_tok.len;
+			new_uri.s = pkg_malloc(new_uri.len);
+			if (!new_uri.s) {
+				LM_ERR("no more pkg mem\n");
+				return -1;
+			}
+
+			begin_len = param_tok.s - old_uri.s - 1/*remove also the ';'
+													before the param */;
+			memcpy(new_uri.s, old_uri.s, begin_len);
+
+			end_len = old_uri.len - ((param_tok.s + param_tok.len) - old_uri.s);
+			if (end_len)
+				memcpy(new_uri.s + begin_len, param_tok.s + param_tok.len, end_len+1);
+
+			if (set_ruri(_msg, &new_uri) == 1) {
+				pkg_free(new_uri.s);
+				return  0;
+			} else {
+				pkg_free(new_uri.s);
+				return -1;
+			}
+		}
+	}
+
+	LM_DBG("requested key not found in RURI\n");
+
+	return 0;
+}
+
+/*
  * Adds a new parameter to Request URI
  */
 int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2)

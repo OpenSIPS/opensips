@@ -55,6 +55,10 @@ int uri_param_1(struct sip_msg* _msg, char* _param, char* _str2);
  */
 int uri_param_2(struct sip_msg* _msg, char* _param, char* _value);
 
+/*
+ * Removes a given parameter from Request URI
+ */
+int del_uri_param(struct sip_msg* _msg, char* _param, char* _s);
 
 /*
  * Adds a new parameter to Request URI
