@@ -65,7 +65,10 @@ Razvan Crainea
               1.6.7. repl_buffer_threshold (string)
               1.6.8. repl_timer_interval (string)
               1.6.9. repl_timer_expire (string)
-              1.6.10. replicate_pipes_to (string)
+              1.6.10. replicate_pipes_to (integer)
+              1.6.11. accept_pipes_from (integer)
+              1.6.12. accept_pipes_timeout (integer)
+              1.6.13. repl_pipes_auth_check (int)
 
         1.7. Exported Functions
 
@@ -97,9 +100,12 @@ Razvan Crainea
    1.8. Set repl_timer_interval parameter
    1.9. Set repl_timer_expire parameter
    1.10. Set replicate_pipes_to parameter
-   1.11. rl_check usage
-   1.12. rl_dec_count usage
-   1.13. rl_reset_count usage
+   1.11. Set accept_pipes_from parameter
+   1.12. Set accept_pipes_timeout parameter
+   1.13. Set repl_pipes_auth_check parameter
+   1.14. rl_check usage
+   1.15. rl_dec_count usage
+   1.16. rl_reset_count usage
 
 Chapter 1. Admin Guide
 
@@ -363,17 +369,50 @@ modparam("ratelimit", "repl_timer_interval", 100)
 modparam("ratelimit", "repl_timer_expire", 10)
 ...
 
-1.6.10. replicate_pipes_to (string)
+1.6.10. replicate_pipes_to (integer)
 
-   Used to specify the instances where the pipes should be
-   replicated. This parameter can be specified multiple times, for
-   each destination.
+   Used to specify the instances, that belong to a certain
+   cluster, where the pipes should be replicated.
 
-   No default value. If not specified, nothing is replicated.
+   Default value is 0. (no replication destinations)
 
    Example 1.10. Set replicate_pipes_to parameter
 ...
-modparam("ratelimit", "replicate_pipes_to", "udp:127.0.0.1:5555")
+modparam("ratelimit", "replicate_pipes_to", 1)
+...
+
+1.6.11. accept_pipes_from (integer)
+
+   Used to specify the instances, that belong to a certain
+   cluster, from which we should expect incoming packets.
+
+   Default value is 0. (disabled)
+
+   Example 1.11. Set accept_pipes_from parameter
+...
+modparam("ratelimit", "accept_pipes_from", 1)
+...
+
+1.6.12. accept_pipes_timeout (integer)
+
+   The time between two succesive incoming packets.
+
+   Default value is 10.
+
+   Example 1.12. Set accept_pipes_timeout parameter
+...
+modparam("ratelimit", "accept_pipes_timeout", 1)
+...
+
+1.6.13. repl_pipes_auth_check (int)
+
+   Authentication check for incoming packets.
+
+   Default value is “0” (disabled).
+
+   Example 1.13. Set repl_pipes_auth_check parameter
+...
+modparam("dialog", "repl_pipes_auth_check", 1)
 ...
 
 1.7. Exported Functions
@@ -407,7 +446,7 @@ modparam("ratelimit", "replicate_pipes_to", "udp:127.0.0.1:5555")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.11. rl_check usage
+   Example 1.14. rl_check usage
 ...
         # perform a pipe match for all INVITE methods using RED algorith
 m
@@ -436,7 +475,7 @@ m
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.12. rl_dec_count usage
+   Example 1.15. rl_dec_count usage
 ...
         if (!rl_check("gw_$ru", "100", "TAILDROP")) {
                 exit;
@@ -455,7 +494,7 @@ m
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.13. rl_reset_count usage
+   Example 1.16. rl_reset_count usage
 ...
         if (!rl_check("gw_$ru", "100", "TAILDROP")) {
                 exit;

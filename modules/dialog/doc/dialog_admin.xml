@@ -1116,7 +1116,8 @@ modparam("dialog", "profile_timeout", "43200")
 		<title><varname>accept_replicated_dialogs</varname> (int)</title>
 		<para>
 		Registers the <emphasis>dialog</emphasis> module to the &osips; Binary
-		Internal Interface.
+		Internal Interface. It specifies the instances, that belong
+                to a certain cluster, from which we should expect incoming packets.
 		</para>
 		<para>
 		<emphasis>
@@ -1158,7 +1159,9 @@ modparam("dialog", "replicate_dialogs_to", 1)
 		<title><varname>accept_replicated_profiles</varname> (int)</title>
 		<para>
 		Registers the <emphasis>dialog</emphasis> module to the &osips; Binary
-		Internal Interface for profiles replication.
+		Internal Interface for profiles replication. It specifies the
+                instances, that belong to a certain cluster, from which we should expect
+                incoming packets.
 		</para>
 		<para>
 		<emphasis>

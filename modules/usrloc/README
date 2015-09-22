@@ -64,7 +64,7 @@ Ovidiu Sas
               1.3.23. matching_mode (integer)
               1.3.24. cseq_delay (integer)
               1.3.25. accept_replicated_contacts (integer)
-              1.3.26. replicate_contacts_to (string)
+              1.3.26. replicate_contacts_to (integer)
               1.3.27. skip_replicated_db_ops (int)
               1.3.28. max_contact_delete (int)
               1.3.29. hash_size (integer)
@@ -579,12 +579,14 @@ modparam("usrloc", "cseq_delay", 5)
 
 1.3.25. accept_replicated_contacts (integer)
 
-   Set this to 1 in order to accept and process user-location
-   related information received from other OpenSIPS instances
-   through the Binary Interface.
+   Set this to a valid cluster id in order to accept and process
+   user-location related information received from other OpenSIPS
+   instances, that belong to the specified cluster id, through the
+   Binary Interface.
 
-   Default value is “0” - Binary Interface listeners (if any) will
-   simply ignore any usrloc-related packets
+   Default value is “0” (no cluster id specified) - Binary
+   Interface listeners (if any) will simply ignore any
+   usrloc-related packets
 
    More details on the user location replication mechanism are
    available in Section 1.1.2, “Contact replication”
@@ -594,24 +596,21 @@ modparam("usrloc", "cseq_delay", 5)
 modparam("usrloc", "accept_replicated_contacts", 1)
 ...
 
-1.3.26. replicate_contacts_to (string)
+1.3.26. replicate_contacts_to (integer)
 
-   Define a new OpenSIPS instance which will receive all the
-   user-location related information from this machine
-   (addresses-of-record, contacts), organized into specific events
-   (inserts, deletes or updates)
+   Defines the OpenSIPS instances that belong to a ceratin cluster
+   which will receive all the user-location related information
+   from this machine (addresses-of-record, contacts), organized
+   into specific events (inserts, deletes or updates)
 
-   This parameter may be set multiple times. It does not ignore
-   duplicate entries.
-
-   Default value is "none" (no replication destinations)
+   Default value is 0 (no cluster id specified)
 
    More details on the user location replication mechanism are
    available in Section 1.1.2, “Contact replication”
 
    Example 1.26. Setting the replicate_contacts_to parameter
 ...
-modparam("usrloc", "replicate_contacts_to", "192.168.2.182:5062")
+modparam("usrloc", "replicate_contacts_to", 1)
 ...
 
 1.3.27. skip_replicated_db_ops (int)
