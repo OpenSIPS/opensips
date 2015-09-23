@@ -1596,7 +1596,12 @@ int w_t_reply_body(struct sip_msg* msg, str* code, str *text,
 
 	t=get_t();
 	if ( t==0 || t==T_UNDEFINED ) {
-		r = t_newtran( msg, 0/*no full uas cloning*/ );
+		/* t_reply_with_body() is a bit of a weird function as it 
+		 * receiving as parameter the actual msg, but the transaction
+		 * (and uses the saved msg from transaction).
+		 * So we need to take care and save everything into transaction,
+		 * otherwise we will loose the rpl lumps. --bogdan */
+		r = t_newtran( msg, 1/*full uas cloning*/ );
 		if (r==0) {
 			/* retransmission -> break the script */
 			return 0;
