@@ -212,6 +212,23 @@ static int avpops_init(void)
 	domain_col.len = strlen(domain_col.s);
 
 	default_db_url = get_default_db_url();
+	if (default_db_url==NULL) {
+		if (db_default_url==NULL) {
+			LM_ERR("no DB URL provision into the module!\n");
+			return -1;
+		}
+		/* if nothing explicitly set as DB URL, add automatically
+		 * the default DB URL */
+		if (add_db_url(STR_PARAM, db_default_url)!=0) {
+			LM_ERR("failed to use the default DB URL!\n");
+			return -1;
+		}
+		default_db_url = get_default_db_url();
+		if (default_db_url==NULL) {
+			LM_BUG("Really ?!\n");
+			return -1;
+		}
+	}
 
 	/* bind to the DB module */
 	if (avpops_db_bind()<0)
