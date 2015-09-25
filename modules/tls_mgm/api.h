@@ -11,12 +11,18 @@ typedef struct tls_domain * (*tls_find_server_domain_f) (struct ip_addr *, unsig
 typedef struct tls_domain * (*tls_find_client_domain_f) (struct ip_addr *, unsigned short);
 typedef int (*get_send_timeout_f) (void);
 typedef int (*get_handshake_timeout_f) (void);
+typedef int (*tls_mod_init_f) (void);
+typedef void (*tls_acquire_domain_f) (struct tls_domain *);
+typedef void (*tls_release_domain_f) (struct tls_domain *);
 
 struct tls_mgm_binds {
     get_send_timeout_f get_send_timeout;
     get_handshake_timeout_f get_handshake_timeout;
     tls_find_server_domain_f find_server_domain;
     tls_find_client_domain_f find_client_domain;
+    tls_mod_init_f mod_init;
+    tls_acquire_domain_f acquire_domain;
+    tls_release_domain_f release_domain;
 };
 
 

@@ -36,8 +36,9 @@
 #define tls_config_h
 
 #include "tls_config_helper.h"
+#include "../../str.h"
 
-extern int      tls_method;
+extern int      tls_default_method;
 
 extern int      tls_verify_client_cert;
 extern int      tls_verify_server_cert;
@@ -49,6 +50,25 @@ extern char    *tls_ca_file;
 extern char    *tls_ca_dir;
 extern char    *tls_tmp_dh_file;
 extern char    *tls_ciphers_list;
+
+extern str     tls_db_url; 
+extern str     tls_db_table;
+extern str     id_col;
+extern str     type_col;
+extern str     address_col;
+extern str     method_col;
+extern str     verify_cert_col;
+extern str     require_cert_col;
+extern str     certificate_col;
+extern str     pk_col;
+extern str     crl_check_col;
+extern str     crl_dir_col;
+extern str     calist_col;
+extern str     cadir_col;
+extern str     cplist_col;
+extern str     dhparams_col;
+extern str     eccurve_col;
+
 extern int      tls_handshake_timeout;
 extern int      tls_send_timeout;
 extern int      tls_client_domain_avp;

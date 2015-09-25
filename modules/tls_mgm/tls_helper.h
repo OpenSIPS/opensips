@@ -27,6 +27,7 @@ struct tls_domain {
 	char           *tls_ec_curve;
 	char	       *ca_directory;
 	char           *ciphers_list;
+        int             refs;
 	enum tls_method method;
 	struct tls_domain *next;
 	str name;
