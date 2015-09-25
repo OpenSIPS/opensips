@@ -48,16 +48,6 @@
                      Returns the send timeout.
                  </para>
             </section>
-
-            <section id="mod-init-id">
-                 <title>mod_init</title>
-                 <para>
-                     int mod_init(void);
-                 </para>
-                 <para>
-                     Initialization function.
-                 </para>
-            </section>
         </section>    
 	<section>
 		<title>TLS_CONFIG</title>

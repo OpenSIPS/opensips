@@ -1179,6 +1179,8 @@ static int reload_data(void)
 static struct mi_root* tls_reload(struct mi_root* root, void *param)
 {
 	LM_INFO("reload data MI command received!\n");
+	if (!tls_db_enabled)
+		return init_mi_tree(500,"DB mode not enabled", 19);
 
 	if (reload_data() < 0) {
 		LM_CRIT("failed to load routing data\n");
@@ -1585,7 +1587,6 @@ static struct mi_root * tls_list(struct mi_root *cmd_tree, void *param)
 
 	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree == NULL) {
-		LM_ERR("AICI\n");
 		return NULL;
 	}
 

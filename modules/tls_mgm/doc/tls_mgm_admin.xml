@@ -115,7 +115,27 @@ if (is_peer_verified()) {
 		</example>
 	</section>
 	</section>
+        
+        <section>
+            <title>Exported MI Functions</title>
+            <section>
+                <title>
+		<function moreinfo="none">tls_list</function>
+                </title>
+                <para>
+                List all domains information.
+                </para>
+            </section>
 
+            <section>
+                <title>
+		<function moreinfo="none">tls_reload</function>
+                </title>
+                <para>
+                Reloads information from the database.
+                </para>
+            </section>
+        </section>
 
 	<section>
 		<title>&osips; Exported parameters</title>
