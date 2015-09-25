@@ -25,7 +25,9 @@
 #define EXPIRE_STR "expire"
 #define EXPIRE_STR_LEN 6
 
-#define DEFAULT_CACHEDB_EXPIRE 3600
+#define DEFAULT_ON_DEMAND_EXPIRE 3600
+#define DEFAULT_FULL_CACHING_EXPIRE 86400	/* 24h */
+#define DEFAULT_RELOAD_INTERVAL 5
 #define DEFAULT_FETCH_NR_ROWS 100
 #define TEST_QUERY_STR "sql_cacher_test_query_key"
 #define CDB_TEST_KEY_STR "sql_cacher_cdb_test_key"
