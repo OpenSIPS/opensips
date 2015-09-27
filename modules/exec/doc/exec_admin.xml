@@ -200,13 +200,14 @@ modparam("exec", "time_to_kill", 20)
 		</listitem>
 		</itemizedlist>
 		<para>
-		WARNING: any OpenSIPS pseudo-vars which may contain special bash
-		characters should be placed inside quotes, e.g. exec("update-stats.sh '$ct'");
+		WARNING: any OpenSIPS pseudo-vars which may contain special bourne shell (sh/bash)
+		characters should be placed inside quotes, e.g.
+		exec("update-stats.sh '$(ct{re.subst,/'//g})'");
 		</para>
 		<para>
-		WARNING: "stdin"/"stdout"/"stderr" parameters are not designed for a large amount of
-		data so one should be careful when using them because server could considerably be
-		slowed down.
+		WARNING: "stdin"/"stdout"/"stderr" parameters are not designed for large amounts of
+		data, so one should be careful when using them. Because of the basic implementation,
+		filled up pipes could cause a read deadlock.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,

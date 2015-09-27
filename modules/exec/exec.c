@@ -428,7 +428,7 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 {
 
 	pid_t pid;
-	int ret;
+	int ret = -1;
 	FILE *pin, *pout, *perr;
 
 	if ((input && input->len && input->s) || outvar || errvar) {
@@ -466,7 +466,6 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 	if (outvar) {
 		if (read_and_write2var(msg, &pout, outvar) < 0) {
 			LM_ERR("failed reading stdout from pipe\n");
-			ret = -1;
 			goto error;
 		}
 	}
@@ -474,7 +473,6 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 	if (errvar) {
 		if (read_and_write2var(msg, &perr, errvar) < 0) {
 			LM_ERR("failed reading stderr from pipe\n");
-			ret = -1;
 			goto error;
 		}
 	}
