@@ -160,12 +160,13 @@ modparam("exec", "time_to_kill", 20)
        OSIPS_EXEC_1 the second value.
 
    WARNING: any OpenSIPS pseudo-vars which may contain special
-   bash characters should be placed inside quotes, e.g.
-   exec("update-stats.sh '$ct'");
+   bourne shell (sh/bash) characters should be placed inside
+   quotes, e.g. exec("update-stats.sh '$(ct{re.subst,/'//g})'");
 
    WARNING: "stdin"/"stdout"/"stderr" parameters are not designed
-   for a large amount of data so one should be careful when using
-   them because server could considerably be slowed down.
+   for large amounts of data, so one should be careful when using
+   them. Because of the basic implementation, filled up pipes
+   could cause a read deadlock.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE,
