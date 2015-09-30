@@ -1000,9 +1000,6 @@ static int init_tls_domains(struct tls_domain *d)
 			LM_NOTICE("no certificate for tls[%s:%d] defined, using default"
 					"'%s'\n", ip_addr2a(&d->addr), d->port,	tls_cert_file);
 			d->cert_file = tls_cert_file;
-		}else{
-			LM_DBG("BBBBBBB\n");
-			LM_DBG("BBB %s\n", d->cert_file);
 		}
 
 		if (load_certificate(d->ctx, d->cert_file) < 0)

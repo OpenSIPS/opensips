@@ -402,7 +402,6 @@ int tls_new_client_domain_name( str *id, str *domain, struct tls_domain **dom)
 		LM_ERR("pkg memory allocation failure\n");
 		return -1;
 	}
-	LM_DBG("XXXAXXX %d\n", d->require_client_cert);
 	/* initialize name data */
 	d->name.s = shm_malloc(domain->len);
 	if (d->name.s == NULL) {
