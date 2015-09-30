@@ -15,7 +15,7 @@
 
 <book>
 	<bookinfo>
-	<title>TLS module</title>
+	<title>TLS_MGM module</title>
 	<productname class="trade">&osipsname;</productname>
 	<authorgroup>
 		<author>
@@ -75,6 +75,13 @@
 			<surname>Ionita</surname>
 			<address>
 				<email>ionutionita@opensips.org</email>
+			</address>
+		</editor>
+		<editor>
+			<firstname>Marius Cristian</firstname>
+			<surname>Eseanu</surname>
+			<address>
+				<email>eseanu.cristian@gmail.com</email>
 			</address>
 		</editor>
 	</authorgroup>

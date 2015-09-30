@@ -32,7 +32,7 @@
 		<para>
 			Starting from OpenSIPS 2.2, the certificates managemnet has been
 			decoupled from the TLS communication in two different modules:
-			<emphasis>proto_tls</emphasis> which handles the TLS communication
+			<emphasis>dh_params</emphasis> which handles the TLS communication
 			and <emphasis>tls_mgm</emphasis> which handles TLS handshake
 			(certificates and parameters).
 		</para>
@@ -115,7 +115,27 @@ if (is_peer_verified()) {
 		</example>
 	</section>
 	</section>
+        
+        <section>
+            <title>Exported MI Functions</title>
+            <section>
+                <title>
+		<function moreinfo="none">tls_list</function>
+                </title>
+                <para>
+                List all domains information.
+                </para>
+            </section>
 
+            <section>
+                <title>
+		<function moreinfo="none">tls_reload</function>
+                </title>
+                <para>
+                Reloads information from the database.
+                </para>
+            </section>
+        </section>
 
 	<section>
 		<title>&osips; Exported parameters</title>
@@ -200,8 +220,8 @@ listen = tls:1.2.3.4:5061
 				<title>Set <varname>tls_method</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("proto_tls", "tls_method", "TLSv1")
-modparam("proto_tls", "tls_method", "dom:TLSv1")
+modparam("tls_mgm", "tls_method", "TLSv1")
+modparam("tls_mgm", "tls_method", "dom:TLSv1")
 ...
 				</programlisting>
 			</example>
@@ -223,8 +243,8 @@ modparam("proto_tls", "tls_method", "dom:TLSv1")
 					</title>
 				<programlisting format="linespecific">
 ...
-modparam("proto_tls", "certificate", "/mycerts/certs/opensips_server_cert.pem")
-modparam("proto_tls", "certificate", "dom:/mycerts/certs/opensips_server_cert.pem")
+modparam("tls_mgm", "certificate", "/mycerts/certs/opensips_server_cert.pem")
+modparam("tls_mgm", "certificate", "dom:/mycerts/certs/opensips_server_cert.pem")
 ...
 				</programlisting>
 			</example>
@@ -245,8 +265,8 @@ modparam("proto_tls", "certificate", "dom:/mycerts/certs/opensips_server_cert.pe
 					</title>
 				<programlisting format="linespecific">
 ...
-modparam("proto_tls", "private_key", "/mycerts/private/prik.pem")
-modparam("proto_tls", "private_key", "dom:/mycerts/private/prik.pem")
+modparam("tls_mgm", "private_key", "/mycerts/private/prik.pem")
+modparam("tls_mgm", "private_key", "dom:/mycerts/private/prik.pem")
 ...
 				</programlisting>
 			</example>
@@ -267,8 +287,8 @@ modparam("proto_tls", "private_key", "dom:/mycerts/private/prik.pem")
 				<title>Set <varname>ca_list</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("proto_tls", "ca_list", "/mycerts/certs/ca_list.pem")
-modparam("proto_tls", "ca_list", "dom:/mycerts/certs/ca_list.pem")
+modparam("tls_mgm", "ca_list", "/mycerts/certs/ca_list.pem")
+modparam("tls_mgm", "ca_list", "dom:/mycerts/certs/ca_list.pem")
 ...
 				</programlisting>
 			</example>
@@ -289,8 +309,8 @@ modparam("proto_tls", "ca_list", "dom:/mycerts/certs/ca_list.pem")
 				<title>Set <varname>ca_dir</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("proto_tls", "ca_dir", "/mycerts/certs")
-modparam("proto_tls", "ca_dir", "dom:/mycerts/certs")
+modparam("tls_mgm", "ca_dir", "/mycerts/certs")
+modparam("tls_mgm", "ca_dir", "dom:/mycerts/certs")
 ...
 				</programlisting>
 			</example>
@@ -320,8 +340,8 @@ modparam("proto_tls", "ca_dir", "dom:/mycerts/certs")
 					</title>
 				<programlisting format="linespecific">
 ...
-modparam("proto_tls", "ciphers_list", "NULL")
-modparam("proto_tls", "ciphers_list", "dom:NULL")
+modparam("tls_mgm", "ciphers_list", "NULL")
+modparam("tls_mgm", "ciphers_list", "dom:NULL")
 ...
 				</programlisting>
 			</example>
@@ -343,8 +363,8 @@ modparam("proto_tls", "ciphers_list", "dom:NULL")
 					</title>
 				<programlisting format="linespecific">
 ...
-modparam("proto_tls", "dh_params", "/etc/pki/CA/dh1024.pem")
-modparam("proto_tls", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
+modparam("tls_mgm", "dh_params", "/etc/pki/CA/dh1024.pem")
+modparam("tls_mgm", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
 ...
 				</programlisting>
 			</example>
@@ -397,10 +417,10 @@ modparam("proto_tls", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
 				<programlisting format="linespecific">
 ...
 # turn on the strictest and strongest authentication possible
-modparam("proto_tls", "require_cert", "1")
-modparam("proto_tls", "require_cert", "1:1")
-modparam("proto_tls", "verify_cert", "0")
-modparam("proto_tls", "verify_cert", "1:1")
+modparam("tls_mgm", "require_cert", "1")
+modparam("tls_mgm", "require_cert", "1:1")
+modparam("tls_mgm", "verify_cert", "0")
+modparam("tls_mgm", "verify_cert", "1:1")
 ...
 				</programlisting>
 			</example>
@@ -420,8 +440,8 @@ modparam("proto_tls", "verify_cert", "1:1")
 					tls_send_timeout </varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("proto_tls", "tls_handshake_timeout", 119)		# number of seconds
-modparam("proto_tls", "tls_send_timeout", 121)			# number of seconds
+modparam("tls_mgm", "tls_handshake_timeout", 119)		# number of seconds
+modparam("tls_mgm", "tls_send_timeout", 121)			# number of seconds
 ...
 				</programlisting>
 			</example>
@@ -444,12 +464,320 @@ modparam("proto_tls", "tls_send_timeout", 121)			# number of seconds
 				<title>Set <varname>tls_client_domain_avp</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("proto_tls", "tls_client_domain_avp", "400")		# only integer named AVPs are supported
+modparam("tls_mgm", "tls_client_domain_avp", "400")		# only integer named AVPs are supported
 ...
 				</programlisting>
 			</example>
 		</section>
-
+                <section>
+                    <title>
+                        <varname>db_mode</varname> (integer)
+                    </title>
+                    <para>
+                        When db_mode is enabled (1), this module cannot accept new domains
+                        configuration from the script.
+                    </para>
+                    <para>Default value is 0. (not enabled)</para>
+                    <example>
+				<title>Usage of <varname>db_mode</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "db_mode", 1)
+                                </programlisting>
+                    </example>
+                </section>
+                
+                <section>
+                    <title>
+                        <varname>db_url</varname> (string)
+                    </title>
+                    <para>
+                        The database url. It cannot be NULL.
+                    </para>
+                    <example>
+				<title>Usage of <varname>db_url</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "db_url", "mysql://root:admin@localhost/opensips")
+                                </programlisting>
+                    </example>
+                </section>  
+                 
+                <section>
+                    <title>
+                        <varname>db_table</varname> (string)
+                    </title>
+                    <para>
+                        Sets the database table name.
+                    </para>
+                    <para>Default value is "tls_mgm".</para>
+                    <example>
+				<title>Usage of <varname>db_table</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "db_table", "tls_mgm")
+                                </programlisting>
+                    </example>
+                </section>              
+                           
+                <section>
+                    <title>
+                        <varname>id_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the id column name.
+                    </para>
+                    <para>Default value is "id".</para>
+                    <example>
+				<title>Usage of <varname>id_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "id_col", "id")
+                                </programlisting>
+                    </example>
+                </section>  
+                
+                <section>
+                    <title>
+                        <varname>address_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the address column name.
+                    </para>
+                    <para>Default value is "address".</para>
+                    <example>
+				<title>Usage of <varname>address_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "address_col", "addr")
+                                </programlisting>
+                    </example>
+                </section>                   
+                  
+                <section>
+                    <title>
+                        <varname>address_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the address column name.
+                    </para>
+                    <para>Default value is "address".</para>
+                    <example>
+				<title>Usage of <varname>address_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "address_col", "addr")
+                                </programlisting>
+                    </example>
+                </section>
+                                
+                <section>
+                    <title>
+                        <varname>tls_method_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the method column name.
+                    </para>
+                    <para>Default value is "method".</para>
+                    <example>
+				<title>Usage of <varname>tls_method_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "tls_method_col", "method")
+                                </programlisting>
+                    </example>
+                </section>  
+                                                                                                                                  
+                <section>
+                    <title>
+                        <varname>verify_cert_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the verrify certificate column name.
+                    </para>
+                    <para>Default value is "verify_cert".</para>
+                    <example>
+				<title>Usage of <varname>vertify_cert_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "verify_cert_col", "verify_cert")
+                                </programlisting>
+                    </example>
+                </section>
+                
+                <section>
+                    <title>
+                        <varname>require_cert_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the require certificate column name.
+                    </para>
+                    <para>Default value is "require_cert".</para>
+                    <example>
+				<title>Usage of <varname>require_cert_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "require_cert_col", "req")
+                                </programlisting>
+                    </example>
+                </section>                                                                                                                                                                                                                                                 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+                <section>
+                    <title>
+                        <varname>certificate_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the certificate column name.
+                    </para>
+                    <para>Default value is "certificate".</para>
+                    <example>
+				<title>Usage of <varname>certificate_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "certificate_col", "certificate")
+                                </programlisting>
+                    </example>
+                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+                <section>
+                    <title>
+                        <varname>private_key_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the private key column name.
+                    </para>
+                    <para>Default value is "private_key".</para>
+                    <example>
+				<title>Usage of <varname>private_key_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "private_key_col", "pk")
+                                </programlisting>
+                    </example>
+                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+                
+                <section>
+                    <title>
+                        <varname>crl_check_all_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the crl_check_all column name.
+                    </para>
+                    <para>Default value is "crl_check_all".</para>
+                    <example>
+				<title>Usage of <varname>crl_check_all</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "crl_check_all_col", "crl_check")
+                                </programlisting>
+                    </example>
+                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                <section>
+                    <title>
+                        <varname>crl_dir_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the crl directory column name.
+                    </para>
+                    <para>Default value is "crl_dir".</para>
+                    <example>
+				<title>Usage of <varname>crl_dir_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "crl_dir_col", "crl_dir")
+                                </programlisting>
+                    </example>
+                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+                            <section>
+                    <title>
+                        <varname>ca_list_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the CA list column name.
+                    </para>
+                    <para>Default value is "ca_list".</para>
+                    <example>
+				<title>Usage of <varname>ca_list_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "ca_list_col", "ca_list")
+                                </programlisting>
+                    </example>
+                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+                
+                <section>
+                    <title>
+                        <varname>ca_dir_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the CA directory column name.
+                    </para>
+                    <para>Default value is "ca_dir".</para>
+                    <example>
+				<title>Usage of <varname>ca_dir_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "ca_dir_col", "ca_dir")
+                                </programlisting>
+                    </example>
+                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+                
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+                 <section>
+                    <title>
+                        <varname>cipher_list_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the cipher list column name.
+                    </para>
+                    <para>Default value is "cipher_list".</para>
+                    <example>
+				<title>Usage of <varname>cipher_list_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "cipher_list_col", "cipher_list")
+                                </programlisting>
+                    </example>
+                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+                <section>
+                    <title>
+                        <varname>dh_params_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the Diffie-Hellmann parameters column name.
+                    </para>
+                    <para>Default value is "dh_params".</para>
+                    <example>
+				<title>Usage of <varname>dh_params_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "dh_params_col", "dh_parms")
+                                </programlisting>
+                    </example>
+                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+               <section>
+                    <title>
+                        <varname>ec_curve_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the ec_curve column name.
+                    </para>
+                    <para>Default value is "ec_curve".</para>
+                    <example>
+				<title>Usage of <varname>ec_curve_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "ec_curve_col", "ec_curve")
+                                </programlisting>
+                    </example>
+                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
 		<section>
 			<title><varname>server_domain, client_domain</varname> (string)</title>
 			<para>
@@ -524,67 +852,67 @@ modparam("proto_tls", "tls_client_domain_avp", "400")
 ...
 
 # 'atlanta' server domain
-modparam("proto_tls", "server_domain", "1=IP_2:port2")
+modparam("tls_mgm", "server_domain", "1=IP_2:port2")
 
-modparam("proto_tls", "certificate", "1:/certs/atlanta.com/cert.pem")
-modparam("proto_tls", "private_key", "1:/certs/atlanta.com/privkey.pem")
-modparam("proto_tls", "ca_list", "1:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "1:tlsv1")
-modparam("proto_tls", "verify_cert", "1:1")
-modparam("proto_tls", "require_cert", "1:1")
+modparam("tls_mgm", "certificate", "1:/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "1:/certs/atlanta.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "1:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "1:tlsv1")
+modparam("tls_mgm", "verify_cert", "1:1")
+modparam("tls_mgm", "require_cert", "1:1")
 
 #'biloxy' server domain
 
-modparam("proto_tls", "server_domain", "2=IP_3:port3")
+modparam("tls_mgm", "server_domain", "2=IP_3:port3")
 
-modparam("proto_tls", "certificate", "2:/certs/biloxy.com/cert.pem")
-modparam("proto_tls", "private_key", "2:/certs/biloxy.com/privkey.pem")
-modparam("proto_tls", "ca_list", "2:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "2:tlsv1")
-modparam("proto_tls", "verify_cert", "2:1")
-modparam("proto_tls", "require_cert", "2:1")
+modparam("tls_mgm", "certificate", "2:/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "2:/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "2:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "2:tlsv1")
+modparam("tls_mgm", "verify_cert", "2:1")
+modparam("tls_mgm", "require_cert", "2:1")
 
 # 'atlanta' client domain
-modparam("proto_tls", "client_domain", "3=IP_2:port2")
+modparam("tls_mgm", "client_domain", "3=IP_2:port2")
 
-modparam("proto_tls", "certificate", "3:/certs/atlanta.com/cert.pem")
-modparam("proto_tls", "private_key", "3:/certs/atlanta.com/privkey.pem")
-modparam("proto_tls", "ca_list", "3:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "3:tlsv1")
-modparam("proto_tls", "verify_cert", "3:1")
-modparam("proto_tls", "require_cert", "3:1")
+modparam("tls_mgm", "certificate", "3:/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "3:/certs/atlanta.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "3:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "3:tlsv1")
+modparam("tls_mgm", "verify_cert", "3:1")
+modparam("tls_mgm", "require_cert", "3:1")
 
 #'biloxy' client domain
-modparam("proto_tls", "client_domain", "4=IP_3:port3")
+modparam("tls_mgm", "client_domain", "4=IP_3:port3")
 
-modparam("proto_tls", "certificate", "4:/certs/biloxy.com/cert.pem")
-modparam("proto_tls", "private_key", "4:/certs/biloxy.com/privkey.pem")
-modparam("proto_tls", "ca_list", "4:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "4:tlsv1")
-modparam("proto_tls", "verify_cert", "4:1")
-modparam("proto_tls", "require_cert", "4:1")
+modparam("tls_mgm", "certificate", "4:/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "4:/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "4:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "4:tlsv1")
+modparam("tls_mgm", "verify_cert", "4:1")
+modparam("tls_mgm", "require_cert", "4:1")
 
 
 
 
 # socket based TLS server domains (for TLS based downstream from GW provider)
-modparam("proto_tls", "client_domain", "5=IP_5:port5")
+modparam("tls_mgm", "client_domain", "5=IP_5:port5")
 
-modparam("proto_tls", "certificate", "5:/certs/atlanta.com/cert.pem")
-modparam("proto_tls", "private_key", "5:/certs/atlanta.com/privkey.pem")
-modparam("proto_tls", "ca_list", "5:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "5:tlsv1")
-modparam("proto_tls", "verify_cert", "5:0")
+modparam("tls_mgm", "certificate", "5:/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "5:/certs/atlanta.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "5:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "5:tlsv1")
+modparam("tls_mgm", "verify_cert", "5:0")
 
 # socket based TLS client domains (for TLS based upstream to GW provider)
 # GW IP: 1.2.3.4, GW port: 6677
-modparam("proto_tls", "client_domain", "6=1.2.3.4:6677")
+modparam("tls_mgm", "client_domain", "6=1.2.3.4:6677")
 
-modparam("proto_tls", "certificate", "6:/certs/biloxy.com/cert.pem")
-modparam("proto_tls", "private_key", "6:/certs/biloxy.com/privkey.pem")
-modparam("proto_tls", "ca_list", "6:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "6:tlsv1")
-modparam("proto_tls", "verify_cert", "6:0")
+modparam("tls_mgm", "certificate", "6:/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "6:/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "6:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "6:tlsv1")
+modparam("tls_mgm", "verify_cert", "6:0")
 
 ...
 route{

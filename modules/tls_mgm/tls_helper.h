@@ -9,6 +9,7 @@
 #define	TLS_HELPER_H
 
 #include "tls_config_helper.h"
+#include "../../locking.h"
 
 struct tls_domain {
 	str             id;
@@ -27,6 +28,8 @@ struct tls_domain {
 	char           *tls_ec_curve;
 	char	       *ca_directory;
 	char           *ciphers_list;
+        int             refs;
+        gen_lock_t     *lock;
 	enum tls_method method;
 	struct tls_domain *next;
 	str name;
