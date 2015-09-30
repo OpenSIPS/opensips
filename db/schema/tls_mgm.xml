@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="tls_mgm" xmlns:db="http://docbook.org/ns/docbook">
+    <name>tls_mgm</name>
+    <version>1</version>
+    <type db="mysql">&MYSQL_TABLE_TYPE;</type>
+    <description>
+        <db:para>This table is used for defining domains.
+        </db:para>
+    </description>
+
+    <column id="id">
+        <name>id</name>
+        <type>string</type>
+        <size>&id_len;</size>
+        <primary/>
+        <description>unique ID</description>
+    </column>
+
+    <column id="address">
+        <name>address</name>
+        <type>string</type>
+        <size>&domain_len;</size>
+        <description>network location, like: "ip:port" or "name"</description>
+    </column>
+
+    <column id="type">
+        <name>type</name>
+        <type>int</type>
+        <size>1</size>
+        <type db="dbtext">int</type>
+        <description>specifies the type of a domain : client domain(0) or server domain (1)</description>
+    </column>
+
+    <column id="method">
+        <name>method</name>
+        <type>string</type>
+        <size>&method_len;</size>
+        <null/>
+        <description>SSL method used by a certain domain</description>
+    </column>
+
+    <column id="verify_cert">
+        <name>verify_cert</name>
+        <type>int</type>
+        <size>1</size>
+        <type db="dbtext">int</type>
+        <null/>
+        <description>verify certificate: 0 - no, 1 - yes</description>
+    </column>
+
+    <column id="require_cert">
+        <name>require_cert</name>
+        <type>int</type>
+        <size>1</size>
+        <type db="dbtext">int</type>
+        <null/>
+        <description>require certificate: 0 - no, 1 - yes</description>
+    </column>
+
+    <column id="certificate">
+        <name>certificate</name>
+        <type>string</type>
+        <size>255</size>
+        <type db="dbtext">string</type>
+        <null/>
+        <description>certificate associated with a certain domain</description>
+    </column>
+
+    <column id="private_key">
+        <name>private_key</name>
+        <type>string</type>
+        <size>255</size>
+        <type db="dbtext">int</type>
+        <null/>
+        <description>private_key</description>
+    </column>
+
+    <column id="crl_check_all">
+        <name>crl_check_all</name>
+        <type>int</type>
+        <size>1</size>
+        <type db="dbtext">int</type>
+        <null/>
+        <description>check all crl: 0 -no, 1 - yes</description>
+    </column>
+
+    <column id="crl_dir">
+        <name>crl_dir</name>
+        <type>string</type>
+        <size>255</size>
+        <null/>
+        <description>crl directory</description>
+    </column>
+
+    <column id="ca_list">
+        <name>ca_list</name>
+        <type>string</type>
+        <size>255</size>
+        <null/>
+        <description>CA list</description>
+    </column>
+    
+    <column id="ca_dir">
+        <name>ca_dir</name>
+        <type>string</type>
+        <size>255</size>
+        <null/>
+        <description>ca directory</description>
+    </column>
+    
+    <column id="cipher_list">
+        <name>cipher_list</name>
+        <type>string</type>
+        <size>255</size>
+        <null/>
+        <description>the list of algorithms used for authentication and encryption allowed</description>
+    </column>
+
+    <column id="dh_params">
+        <name>dh_params</name>
+        <type>string</type>
+        <size>255</size>
+        <null/>
+        <description>specifies the Diffie-Hellmann parameters</description>
+    </column>
+
+    <column id="ec_curve">
+        <name>ec_curve</name>
+        <type>string</type>
+        <size>255</size>
+        <null/>
+        <description>specifies an elliptic curve which should be used for
+        ciphers which demand an elliptic curve</description>
+    </column>
+
+</table>

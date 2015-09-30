@@ -110,6 +110,8 @@ speed_dial|
 speed_dial|3
 subscriber|
 subscriber|7
+tls_mgm|
+tls_mgm|1
 uri|
 uri|2
 userblacklist|
