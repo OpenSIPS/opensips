@@ -1363,12 +1363,16 @@ static void mod_destroy(void)
 	while (d) {
 		if (d->ctx)
 			SSL_CTX_free(d->ctx);
+		lock_destroy(d->lock);
+		lock_dealloc(d->lock);
 		d = d->next;
 	}
 	d = tls_client_domains;
 	while (d) {
 		if (d->ctx)
 			SSL_CTX_free(d->ctx);
+		lock_destroy(d->lock);
+		lock_dealloc(d->lock);
 		d = d->next;
 	}
 	if (tls_default_server_domain.ctx) {
@@ -1612,7 +1616,6 @@ static int load_tls_mgm(struct tls_mgm_binds *binds)
 	binds->find_client_domain = tls_find_client_domain;
 	binds->get_handshake_timeout = tls_get_handshake_timeout;
 	binds->get_send_timeout = tls_get_send_timeout;
-	binds->acquire_domain = tls_acquire_domain;
 	binds->release_domain = tls_release_domain;
 	/* everything ok*/
 	return 1;

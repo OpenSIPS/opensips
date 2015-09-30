@@ -48,28 +48,27 @@ rw_lock_t *dom_lock;
 struct tls_domain *tls_find_domain_by_id( str *id)
 {
 	struct tls_domain *d;
-	lock_start_read(dom_lock);
+	if (tls_db_enabled)
+		lock_start_read(dom_lock);
 	for (d=tls_server_domains ; d ; d=d->next ) {
-		if (id->len==d->id.len && memcmp(id->s,d->id.s,id->len)==0)
+		if (id->len==d->id.len && memcmp(id->s,d->id.s,id->len)==0) {
+			if (tls_db_enabled)
+				lock_stop_read(dom_lock);
 			return d;
+		}
 	}
 	for (d=tls_client_domains ; d ; d=d->next ) {
-		if (id->len==d->id.len && memcmp(id->s,d->id.s,id->len)==0)
+		if (id->len==d->id.len && memcmp(id->s,d->id.s,id->len)==0) {
+			if (tls_db_enabled)
+				lock_stop_read(dom_lock);
 			return d;
+		}
 	}
-	lock_stop_read(dom_lock);
+	if (tls_db_enabled)
+		lock_stop_read(dom_lock);
 	return NULL;
 }
 
-void tls_acquire_domain(struct tls_domain* dom)
-{
-	if (!dom || !tls_db_enabled || dom == &tls_default_server_domain ||
-		dom == &tls_default_client_domain)
-		return;
-	lock_start_write(dom_lock);
-	dom->refs++;
-	lock_stop_write(dom_lock);
-}
 
 void tls_release_domain_aux(struct tls_domain *dom)
 {
@@ -78,6 +77,8 @@ void tls_release_domain_aux(struct tls_domain *dom)
 		if (dom->name.s)
 			shm_free(dom->name.s);
 		SSL_CTX_free(dom->ctx);
+		lock_destroy(dom->lock);
+		lock_dealloc(dom->lock);
 		shm_free(dom);
 	}
 }
@@ -241,6 +242,12 @@ tls_find_server_domain(struct ip_addr *ip, unsigned short port)
 	while (p) {
 		if ((p->port == port) && ip_addr_cmp(&p->addr, ip)) {
 			LM_DBG("virtual TLS server domain found\n");
+			if (tls_db_enabled) {
+				lock_get(p->lock);
+				p->refs++;
+				lock_release(p->lock);
+				lock_stop_read(dom_lock);
+			}
 			return p;
 		}
 		p = p->next;
@@ -335,8 +342,17 @@ struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
 			}
 		}
 	}
-	if (tls_db_enabled)
+
+	if (tls_db_enabled) {
+
+		if (dom && dom != &tls_default_client_domain) {
+			lock_get(dom->lock);
+			dom->refs++;
+			lock_release(dom->lock);
+		}
+
 		lock_stop_read(dom_lock);
+	}
 	return dom;
 }
 
@@ -434,7 +450,22 @@ struct tls_domain *tls_new_domain( str *id, int type)
 		LM_ERR("pkg memory allocation failure\n");
 		return 0;
 	}
+	
 	memset( d, 0, sizeof(struct tls_domain));
+	
+	d->lock = lock_alloc();
+	
+	if (!d->lock){
+		LM_ERR("failed to allocate lock \n");
+		shm_free(d);
+		return 0;
+	}
+	
+	if (lock_init(d->lock) == NULL) {
+		LM_ERR("Failed to init lock \n");
+		shm_free(d);
+		return 0;
+	}
 
 	d->id.s = (char*)(d+1);
 	d->id.len = id->len;

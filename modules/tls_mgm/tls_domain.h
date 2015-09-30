@@ -123,9 +123,6 @@ struct tls_domain *tls_new_domain(str *id, int type);
  */
 void  tls_free_domains(void);
 
-void tls_acquire_domain(struct tls_domain* dom);
-
-
 void tls_release_domain(struct tls_domain* dom);
 
 void tls_release_all_domains(struct tls_domain* dom);
