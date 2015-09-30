@@ -523,15 +523,15 @@ static int child_init(int rank)
 {
 	dp_connection_list_p el;
 
-	/* only process with rank 0 loads data */
-	if (rank != 1)
+	/* only process with rank PROC_MAIN(0) loads data */
+	if (rank != PROC_MAIN)
 		return 0;
 
 	/*Connect to DB s and get rules*/
 	for(el = dp_conns; el; el = el->next){
 		if (init_db_data(el) != 0) {
+			/* all el shall be freed in mod destroy */
 			LM_ERR("Unable to init db data\n");
-			shm_free(el);
 			return -1;
 		}
 	}
@@ -548,8 +548,8 @@ static int mi_child_init(void)
 	/*Connect to DB s and get rules*/
 	for(el = dp_conns; el; el = el->next){
 		if (dp_connect_db(el) != 0) {
+			/* all el shall be freed in mod destroy */
 			LM_ERR("Unable to init db data\n");
-			shm_free(el);
 			return -1;
 		}
 	}
