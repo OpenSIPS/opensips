@@ -42,7 +42,7 @@
 #define MEM_WARMING_DEFAULT_PATTERN_FILE CFG_DIR "mem_warming_pattern"
 #define MEM_WARMING_DEFAULT_PERCENTAGE 75
 
-#define TLS_PKEY_FILE CFG_DIR "tls/cert.pem"
+#define TLS_PKEY_FILE CFG_DIR "tls/ckey.pem"
 #define TLS_CERT_FILE CFG_DIR "tls/cert.pem"
 #define TLS_CA_FILE 0 		/*!< no CA list file by default */
 #define TLS_CA_DIRECTORY      "/etc/pki/CA/"
