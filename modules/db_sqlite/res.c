@@ -187,6 +187,7 @@ int db_sqlite_get_columns(const db_con_t* _h, db_res_t* _r)
 	int autoincrement;
 	const char *decltype;
 	const char* name;
+	char stable[256];
 
 	if ((!_h) || (!_r)) {
 		LM_ERR("invalid parameter\n");
@@ -216,17 +217,25 @@ int db_sqlite_get_columns(const db_con_t* _h, db_res_t* _r)
 
 		/* check if column is autoincrement only for normal queries;
 		 * for raw queries we can't know the table name */
-		if (!CON_RAW_QUERY(_h) &&
-			sqlite3_table_column_metadata(
-			CON_CONNECTION(_h),
-			NULL, /* db name*/
-			CON_TABLE(_h)->s, /* table name */
-			name, /* column name */
-			NULL, NULL, NULL, NULL,
-			&autoincrement) != 0) {
-			LM_ERR("failed to fetch metadata for column [%s]\n", name);
-			return -1;
-		}
+		if (!CON_RAW_QUERY(_h)) {
+			/* sanity check */
+			if (CON_TABLE(_h)->len > 255) {
+				LM_ERR("table name too big [%d]\n", CON_TABLE(_h)->len);
+				return -1;
+			}
+
+			/* fix possible non '\0' terminated table name */
+			memcpy(stable, CON_TABLE(_h)->s, CON_TABLE(_h)->len);
+			stable[CON_TABLE(_h)->len] = '\0';
+
+			if (sqlite3_table_column_metadata(
+				CON_CONNECTION(_h), NULL, /* db name*/ stable, /* table name */
+				name, /* column name */ NULL, NULL, NULL, NULL,
+				&autoincrement) != 0) {
+					LM_ERR("failed to fetch metadata for column [%s]\n", name);
+					return -1;
+			}
+	}
 
 		/* since DB_BITMAP not used in SQLITE we will use it
 		 * here to know if value is PRIMARY KEY AUTOINCREMENT */
