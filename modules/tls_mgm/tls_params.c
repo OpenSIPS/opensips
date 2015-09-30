@@ -271,10 +271,10 @@ int tlsp_set_method(modparam_t type, void *in)
 	str val;
 	int method;
 
-	if (tls_db_enabled)
-		return -1;
-
 	split_param_val( (char*)in, &id, &val);
+
+	if (tls_db_enabled && id.s)
+		return -1;
 
 	if ( strcasecmp( val.s, "SSLV23")==0 || strcasecmp( val.s, "TLSany")==0 )
 		method = TLS_USE_SSLv23;
@@ -298,11 +298,11 @@ int tlsp_set_verify(modparam_t type, void *in)
 	str val;
 	unsigned int verify;
 
-	if (tls_db_enabled)
-		return -1;
-
 	split_param_val( (char*)in, &id, &val);
 
+	if (tls_db_enabled && id.s)
+		return -1;
+	
 	if (str2int( &val, &verify)!=0) {
 		LM_ERR("option is not a number [%s]\n",val.s);
 		return -1;
@@ -319,16 +319,16 @@ int tlsp_set_require(modparam_t type, void *in)
 	str val;
 	unsigned int req;
 
-	if (tls_db_enabled)
-		return -1;
-
 	split_param_val( (char*)in, &id, &val);
 
+	if (tls_db_enabled && id.s)
+		return -1;
+	
 	if (str2int( &val, &req)!=0) {
 		LM_ERR("option is not a number [%s]\n",val.s);
 		return -1;
 	}
-
+	
 	set_domain_attr( id, require_client_cert, req);
 	return 1;
 }
@@ -339,11 +339,11 @@ int tlsp_set_crl_check(modparam_t type, void *in)
        str val;
        unsigned int check;
 
-	if (tls_db_enabled)
-		return -1;
-
        split_param_val( (char*)in, &id, &val);
 
+       if (tls_db_enabled && id.s)
+		return -1;
+       
        if (str2int( &val, &check)!=0) {
                LM_ERR("option is not a number [%s]\n",val.s);
                return -1;
@@ -358,11 +358,11 @@ int tlsp_set_crldir(modparam_t type, void *in)
        str id;
        str val;
 
-	if (tls_db_enabled)
-		return -1;
-
        split_param_val( (char*)in, &id, &val);
 
+       if (tls_db_enabled && id.s)
+		return -1;
+       
        set_domain_attr( id, crl_directory, val.s);
        return 1;
 }
@@ -372,11 +372,11 @@ int tlsp_set_certificate(modparam_t type, void *in)
 	str id;
 	str val;
 
-	if (tls_db_enabled)
-		return -1;
-
 	split_param_val( (char*)in, &id, &val);
-
+	
+	if (tls_db_enabled && id.s)
+		return -1;
+	
 	set_domain_attr( id, cert_file, val.s);
 	return 1;
 }
@@ -387,10 +387,10 @@ int tlsp_set_pk(modparam_t type, void *in)
 	str id;
 	str val;
 
-	if (tls_db_enabled)
-		return -1;
-
 	split_param_val( (char*)in, &id, &val);
+
+	if (tls_db_enabled && id.s)
+		return -1;
 
 	set_domain_attr( id, pkey_file, val.s);
 	return 1;
@@ -402,10 +402,10 @@ int tlsp_set_calist(modparam_t type, void *in)
 	str id;
 	str val;
 
-	if (tls_db_enabled)
-		return -1;
-
 	split_param_val( (char*)in, &id, &val);
+
+	if (tls_db_enabled && id.s)
+		return -1;
 
 	set_domain_attr( id, ca_file, val.s);
 	return 1;
@@ -419,6 +419,9 @@ int tlsp_set_cadir(modparam_t type, void *in)
 
 	split_param_val( (char*)in, &id, &val);
 
+	if (tls_db_enabled && id.s)
+		return -1;
+
 	set_domain_attr( id, ca_directory, val.s);
 	return 1;
 }
@@ -429,11 +432,11 @@ int tlsp_set_cplist(modparam_t type, void *in)
 	str id;
 	str val;
 
-	if (tls_db_enabled)
-		return -1;
-
 	split_param_val( (char*)in, &id, &val);
 
+	if (tls_db_enabled && id.s)
+		return -1;
+	
 	set_domain_attr( id, ciphers_list, val.s);
 	return 1;
 }
@@ -444,11 +447,11 @@ int tlsp_set_dhparams(modparam_t type, void *in)
 	str id;
 	str val;
 
-	if (tls_db_enabled)
-		return -1;
-
 	split_param_val( (char*)in, &id, &val);
 
+	if (tls_db_enabled && id.s)
+		return -1;
+	
 	set_domain_attr( id, tmp_dh_file, val.s);
 	return 1;
 }
@@ -459,11 +462,11 @@ int tlsp_set_eccurve(modparam_t type, void *in)
 	str id;
 	str val;
 
-	if (tls_db_enabled)
-		return -1;
-
 	split_param_val( (char*)in, &id, &val);
 
+	if (tls_db_enabled && id.s)
+		return -1;
+	
 	set_domain_attr( id, tls_ec_curve, val.s);
 	return 1;
 }
