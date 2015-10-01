@@ -92,9 +92,9 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 void free_lb_data(struct lb_data *data);
 
 int do_lb_start(struct sip_msg *req, int group, struct lb_res_str_list *rl,
-		unsigned int flags, struct lb_data *data);
+		unsigned int flags, int *dsts_cnt, struct lb_data *data);
 
-int do_lb_next(struct sip_msg *req, struct lb_data *data);
+int do_lb_next(struct sip_msg *req, int *dsts_cnt, struct lb_data *data);
 
 int do_lb_reset(struct sip_msg *req, struct lb_data *data);
 

@@ -35,10 +35,10 @@ Bogdan-Andrei Iancu
 
         1.6. Exported Functions
 
-              1.6.1. lb_start(grp,resources[,flags])
-              1.6.2. lb_next()
-              1.6.3. lb_start_or_next(grp,resources[,flags])
-              1.6.4. load_balance(grp,resources[,flags])
+              1.6.1. lb_start(grp,resources[,flags[,dsts_cnt]])
+              1.6.2. lb_next([dsts_cnt])
+              1.6.3. lb_start_or_next(grp,resources[,flags[,dsts_cnt]])
+              1.6.4. load_balance(grp,resources[,flags[,dsts_cnt]])
               1.6.5. lb_reset()
               1.6.6. lb_is_started()
               1.6.7. lb_disable_dst()
@@ -249,7 +249,7 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 
 1.6. Exported Functions
 
-1.6.1.  lb_start(grp,resources[,flags])
+1.6.1.  lb_start(grp,resources[,flags[,dsts_cnt]])
 
    The function starts a new load-balancing session over the
    available destinations. This translates into finding the less
@@ -263,8 +263,8 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
        numerical value.
      * resources - string containing a semi-colon separated list
        of resources required by the current call.
-     * flags - various flags to controll the LB algorithm ( or
-       computing the available load on the system):
+     * flags - (optional) various flags to control the LB algorithm
+       (or computing the available load on the system):
           + n - Negative availability - use destinations with
             negative availability (exceeded capacity); do not
             ignore resources with negative availability, and thus
@@ -286,6 +286,12 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
             when failed calls always routed to first destination,
             since they almost does not affect load counters of
             destinations.
+     * dsts_cnt - (optional) string containing an integer PV
+       (pseudo-variable) where the total number of matching
+       destinations (regardless of their capacity) will be stored.
+       This could be used to distinguish between 'no capacity' and
+       'no destinations left' situations upon a failure to find out
+       an available destination.
 
    Returns true if a new destination URI is set, pointing to the
    selected destination. NOTE that the RURI will not be changed by
@@ -304,7 +310,7 @@ if (lb_start("1","trascoding;conference")) {
 }
 ...
 
-1.6.2.  lb_next()
+1.6.2.  lb_next([dsts_cnt])
 
    Function to be used to pull the next available (and less
    loaded) destination. You need to have an ongoing LB session
@@ -329,13 +335,13 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 ...
 
-1.6.3.  lb_start_or_next(grp,resources[,flags])
+1.6.3.  lb_start_or_next(grp,resources[,flags[,dsts_cnt]])
 
    This is just a wrapper function to simplify scripting. If there
    is no ongoing LB session, it acts as lb_start(); If there is an
    ongoing LB session, it acts as lb_next().
 
-1.6.4.  load_balance(grp,resources[,flags])
+1.6.4.  load_balance(grp,resources[,flags[,dsts_cnt]])
 
    Old name of the lb_start_or_next() function.
 

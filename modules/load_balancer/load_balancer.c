@@ -89,13 +89,14 @@ static struct mi_root* mi_lb_resize(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_lb_status(struct mi_root *cmd_tree, void *param);
 
-static int fixup_resources(void** param, int param_no);
+static int fixup_lb_start(void** param, int param_no);
+static int fixup_lb_next(void** param, int param_no);
 static int fixup_is_dst(void** param, int param_no);
 static int fixup_cnt_call(void** param, int param_no);
 
-static int w_lb_start(struct sip_msg *req, char *grp, char *rl, char *fl);
-static int w_lb_next(struct sip_msg *req);
-static int w_lb_start_or_next(struct sip_msg *req,char *grp,char *rl,char *fl);
+static int w_lb_start(struct sip_msg *req, char *grp, char *rl, char *fl, char *dsts_cnt_pvs);
+static int w_lb_next(struct sip_msg *req, char *dsts_cnt_pvs);
+static int w_lb_start_or_next(struct sip_msg *req, char *grp, char *rl, char *fl, char *dsts_cnt_pvs);
 static int w_lb_reset(struct sip_msg *req);
 static int w_lb_is_started(struct sip_msg *req);
 static int w_lb_disable_dst(struct sip_msg *req);
@@ -113,19 +114,27 @@ static void lb_prob_handler(unsigned int ticks, void* param);
 
 
 static cmd_export_t cmds[]={
-	{"lb_start",         (cmd_function)w_lb_start,         2, fixup_resources,
+	{"lb_start",         (cmd_function)w_lb_start,         2,  fixup_lb_start,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"lb_start",         (cmd_function)w_lb_start,         3, fixup_resources,
+	{"lb_start",         (cmd_function)w_lb_start,         3,  fixup_lb_start,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"load_balance",    (cmd_function)w_lb_start_or_next,  2, fixup_resources,
+	{"lb_start",         (cmd_function)w_lb_start,         4,  fixup_lb_start,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"load_balance",    (cmd_function)w_lb_start_or_next,  3, fixup_resources,
+	{"load_balance",    (cmd_function)w_lb_start_or_next,  2,  fixup_lb_start,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"lb_start_or_next",(cmd_function)w_lb_start_or_next,  2, fixup_resources,
+	{"load_balance",    (cmd_function)w_lb_start_or_next,  3,  fixup_lb_start,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"lb_start_or_next",(cmd_function)w_lb_start_or_next,  3, fixup_resources,
+	{"load_balance",    (cmd_function)w_lb_start_or_next,  4,  fixup_lb_start,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_start_or_next",(cmd_function)w_lb_start_or_next,  2,  fixup_lb_start,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_start_or_next",(cmd_function)w_lb_start_or_next,  3,  fixup_lb_start,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_start_or_next",(cmd_function)w_lb_start_or_next,  4,  fixup_lb_start,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"lb_next",          (cmd_function)w_lb_next,          0,               0,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_next",          (cmd_function)w_lb_next,          1,   fixup_lb_next,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"lb_reset",         (cmd_function)w_lb_reset,         0,               0,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
@@ -214,7 +223,7 @@ struct lb_grp_param {
 };
 
 
-static int fixup_resources(void** param, int param_no)
+static int fixup_lb_start(void** param, int param_no)
 {
 	struct lb_res_str_list *lb_rl;
 	struct lb_grp_param *lbgp;
@@ -290,9 +299,30 @@ static int fixup_resources(void** param, int param_no)
 		/* string with flags */
 		return fixup_sgp(param);
 
+	} else if (param_no==4) {
+
+		/* pvar string with variable to hold remaining enabled destinations counter */
+		if( *param && strlen((char *)*param) )
+			return fixup_pvar(param);
+		*param = NULL;
+		return 0;
+
 	}
 
 	return 0;
+}
+
+
+static int fixup_lb_next(void** param, int param_no)
+{
+
+	if (param_no==1) {
+		/* pvar string with variable to hold remaining enabled destinations counter */
+		return fixup_lb_start(param, 4);
+	}
+
+	LM_CRIT("bug - too many params (%d)\n",param_no);
+	return -1;
 }
 
 
@@ -334,10 +364,10 @@ static int fixup_cnt_call(void** param, int param_no)
 		return fixup_is_dst(param, 2);
 	if (param_no==3)
 		/* group id */
-		return fixup_resources(param, 1);
+		return fixup_lb_start(param, 1);
 	if (param_no==4)
 		/* resources */
-		return fixup_resources(param, 2);
+		return fixup_lb_start(param, 2);
 	if (param_no==5)
 		/* count or un-count */
 		return fixup_uint(param);
@@ -523,16 +553,29 @@ static void mod_destroy(void)
 }
 
 
-static int w_lb_next(struct sip_msg *req)
+static int w_lb_next(struct sip_msg *req, char *dsts_cnt_pvs)
 {
 	int ret;
+	int dsts_cnt;
+	pv_value_t val;
 
 	lock_start_read(ref_lock);
 
 	/* do lb */
-	ret = do_lb_next(req, *curr_data);
+	dsts_cnt = -1;
+	ret = do_lb_next(req, &dsts_cnt, *curr_data);
 
 	lock_stop_read(ref_lock);
+
+	if( dsts_cnt_pvs ) {
+		memset(&val, 0, sizeof(pv_value_t));
+		val.flags = PV_VAL_INT|PV_TYPE_INT;
+		val.ri = dsts_cnt;
+
+		if( pv_set_value(req, (pv_spec_t *)dsts_cnt_pvs, (int)EQ_T, &val) < 0 ) {
+			LM_ERR("setting of pvar failed\n");
+		}
+	}
 
 	if( ret < 0 )
 		return ret;
@@ -540,9 +583,10 @@ static int w_lb_next(struct sip_msg *req)
 }
 
 
-static int w_lb_start(struct sip_msg *req, char *grp, char *rl, char *fl)
+static int w_lb_start(struct sip_msg *req, char *grp, char *rl, char *fl, char *dsts_cnt_pvs)
 {
 	int ret;
+	int dsts_cnt;
 
 	int grp_no;
 	struct lb_grp_param *lbgp = (struct lb_grp_param *)grp;
@@ -614,24 +658,35 @@ static int w_lb_start(struct sip_msg *req, char *grp, char *rl, char *fl)
 	lock_start_read( ref_lock );
 
 	/* do lb */
-	ret = do_lb_start(req, grp_no, lb_rl, flags, *curr_data);
+	dsts_cnt = -1;
+	ret = do_lb_start(req, grp_no, lb_rl, flags, &dsts_cnt, *curr_data);
 
 	lock_stop_read( ref_lock );
 
 	if (lbp->type & RES_ELEM)
 		pkg_free(lb_rl);
 
-	if (ret<0)
+	if( dsts_cnt_pvs ) {
+		memset(&val, 0, sizeof(pv_value_t));
+		val.flags = PV_VAL_INT|PV_TYPE_INT;
+		val.ri = dsts_cnt;
+
+		if( pv_set_value(req, (pv_spec_t *)dsts_cnt_pvs, (int)EQ_T, &val) < 0 ) {
+			LM_ERR("setting of pvar failed\n");
+		}
+	}
+
+	if(ret<0)
 		return ret;
 	return 1;
 }
 
 
-static int w_lb_start_or_next(struct sip_msg *req,char *grp,char *rl,char *fl)
+static int w_lb_start_or_next(struct sip_msg *req, char *grp, char *rl, char *fl, char *dsts_cnt_pvs)
 {
 	return (do_lb_is_started(req) > 0) ?
-		w_lb_next(req) :
-		w_lb_start(req, grp, rl, fl)
+		w_lb_next(req, dsts_cnt_pvs) :
+		w_lb_start(req, grp, rl, fl, dsts_cnt_pvs)
 	;
 }
 

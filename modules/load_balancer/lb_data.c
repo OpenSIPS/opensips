@@ -408,7 +408,7 @@ static int get_dst_load(struct lb_resource **res, unsigned int res_no,
 
 
 int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
-						unsigned int flags, struct lb_data *data, int reuse)
+					unsigned int flags, struct lb_data *data, int reuse, int *dsts_cnt)
 {
 	/* resources for previous iteration */
 	static struct lb_resource **res_prev = NULL;
@@ -459,7 +459,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 	dst_bitmap_cur = NULL;
 
 	/* search and fill new resources references if we should not reuse
-	   previous iteration data */
+	 * previous iteration data */
 	if( !reuse ) {
 		res_new_n = rl->n;
 		/* adjust size of statically allocated buffer */
@@ -495,7 +495,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 	}
 
 	/* always search for previous iteration data,
-	   no matter if we will reuse it or not */
+	 * no matter if we will reuse it or not */
 	group_avp = search_first_avp(0, group_avp_name, &group_val, NULL);
 	flags_avp = search_first_avp(0, flags_avp_name, &flags_val, NULL);
 	mask_avp  = search_first_avp(0, mask_avp_name,  &mask_val,  NULL);
@@ -556,7 +556,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 			/* adjust size of statically allocated buffer */
 			if( res_prev_n > res_prev_size ) {
 				/* small hack: if we need to adjust 'res_prev' buffer adjust
-				 * it according to 'res_new' size to minimize 
+				 * it according to 'res_new' size to minimize
 				 * future pkg_realloc()'s */
 				if( !reuse && (res_prev_n < res_new_n) )
 					res_prev_n = res_new_n;
@@ -617,7 +617,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 		if( bitmap_size_cur > res_cur[i]->bitmap_size )
 			bitmap_size_cur = res_cur[i]->bitmap_size;
 	}
-	/* always try to reuse 'mask' buffer from AVP, even if we need 
+	/* always try to reuse 'mask' buffer from AVP, even if we need
 	 * to reinitialize it to avoid un-neded AVP ops */
 	if(mask_avp && (mask_val.s.len==(bitmap_size_cur*sizeof(unsigned int)))) {
 		dst_bitmap_cur = (unsigned int *)mask_val.s.s;
@@ -708,6 +708,9 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 		lock_get(res_cur[i]->lock);
 
 	/* do the load-balancing */
+	if( dsts_cnt )
+		/* initialize place holder for remaining enabled destinations counter variable */
+		*dsts_cnt = 0;
 
 	/*  select destinations */
 	cond = 0; /* use it here as a 'first iteration' flag */
@@ -720,6 +723,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 				/* valid destination (group & resources & status) */
 				if( get_dst_load(res_cur, res_cur_n, it_d, flags, &it_l) ) {
 					/* only valid load here */
+					if( dsts_cnt ) (*dsts_cnt)++; /* count destination */
 					if( (it_l > 0) || (flags & LB_FLAGS_NEGATIVE) ) {
 						/* only allowed load here */
 						if( !cond/*first pass*/ || (it_l > load)/*new max*/ ) {
@@ -875,15 +879,15 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 
 
 int do_lb_start(struct sip_msg *req, int group, struct lb_res_str_list *rl,
-									unsigned int flags, struct lb_data *data)
+						unsigned int flags, int *dsts_cnt, struct lb_data *data)
 {
-	return lb_route(req, group, rl, flags, data, 0/*no data reusage*/);
+	return lb_route(req, group, rl, flags, data, 0/*no data reusage*/, dsts_cnt);
 }
 
 
-int do_lb_next(struct sip_msg *req, struct lb_data *data)
+int do_lb_next(struct sip_msg *req, int *dsts_cnt, struct lb_data *data)
 {
-	return lb_route(req, -1, NULL, 0, data, 1/*reuse previous data*/);
+	return lb_route(req, -1, NULL, 0, data, 1/*reuse previous data*/, dsts_cnt);
 }
 
 
