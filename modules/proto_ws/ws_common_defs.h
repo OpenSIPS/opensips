@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2015 - OpenSIPS Foundation
- * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -24,22 +23,18 @@
  *  2015-02-xx  first version (razvanc)
  */
 
-#ifndef _WS_H_
-#define _WS_H_
+#ifndef _WS_COMMON_DEFS_H_
+#define _WS_COMMON_DEFS_H_
 
-/* borrow suff from proto_tcp - but don't use parse and common */
-#include "../../net/proto_tcp/tcp_common_defs.h"
+#include "../../net/net_tcp.h"
+
+/* wrapper around tcp request to add ws info */
+struct ws_req {
+	struct tcp_req tcp;
+	unsigned int op;
+	unsigned int mask;
+	unsigned int is_masked;
+};
 
 
-extern int ws_max_msg_chunks;
-extern int ws_send_timeout;
-extern str ws_resource;
-extern int ws_hs_read_tout;
-
-void ws_close(struct tcp_connection *con);
-int ws_process(struct tcp_connection *con);
-int ws_server_handshake(struct tcp_connection *con);
-int ws_client_handshake(struct tcp_connection *con);
-int ws_req_write(struct tcp_connection *con, int fd, char *buf, int len);
-
-#endif /* _WS_H_ */
+#endif /* _WS_COMMON_DEFS_H_ */

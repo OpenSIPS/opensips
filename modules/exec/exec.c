@@ -428,11 +428,11 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 {
 
 	pid_t pid;
-	int ret;
+	int ret = -1;
 	FILE *pin, *pout, *perr;
 
-	if (input || outvar || errvar) {
-		pid =  __popen3(command->s, input ? &pin : NULL,
+	if ((input && input->len && input->s) || outvar || errvar) {
+		pid =  __popen3(command->s, (input&&input->len&&input->s) ? &pin : NULL,
 									outvar ? &pout : NULL,
 									errvar ? &perr : NULL);
 	} else {
@@ -457,6 +457,7 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 			ser_error=E_EXEC;
 			goto error;
 		}
+
 		pclose(pin);
 	}
 
@@ -465,14 +466,14 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 	if (outvar) {
 		if (read_and_write2var(msg, &pout, outvar) < 0) {
 			LM_ERR("failed reading stdout from pipe\n");
-			return -1;
+			goto error;
 		}
 	}
 
 	if (errvar) {
 		if (read_and_write2var(msg, &perr, errvar) < 0) {
 			LM_ERR("failed reading stderr from pipe\n");
-			return -1;
+			goto error;
 		}
 	}
 
@@ -507,8 +508,8 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input,
 	FILE *pin, *pout;
 	int val;
 
-	if (input || outvar) {
-		pid =  __popen3(command->s, input ? &pin : NULL,
+	if ((input&&input->s&&input->len) || outvar) {
+		pid =  __popen3(command->s, (input&&input->s&&input->len) ? &pin : NULL,
 									outvar ? &pout : NULL,
 									NULL);
 	} else {
@@ -561,7 +562,7 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input,
 		goto error2;
 	}
 
-	fclose(pout);
+	pclose(pout);
 
 	/* async started with success */
 	return 1;

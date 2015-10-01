@@ -36,8 +36,9 @@
 
 #include "tls_config.h"
 #include "../../config.h"
+#include "../../ut.h"
 
-int             tls_method = TLS_USE_SSLv23;
+int             tls_default_method = TLS_USE_SSLv23;
 
 /*
  * These are the default values which will be used
@@ -63,4 +64,21 @@ int             tls_handshake_timeout = 100;
 int             tls_send_timeout      = 100;
 /* per default, the TLS domains do not have a name */
 int             tls_client_domain_avp = -1;
-
+	
+str    id_col = str_init("id");
+str    type_col = str_init("type");
+str    address_col = str_init("address");
+str    method_col = str_init("method");
+str    verify_cert_col = str_init("verify_cert");
+str    require_cert_col = str_init("require_cert");
+str    certificate_col = str_init("certificate");
+str    pk_col = str_init("private_key");
+str    crl_check_col = str_init("crl_check_all");
+str    crl_dir_col = str_init("crl_dir");
+str    calist_col = str_init("ca_list");
+str    cadir_col = str_init("ca_dir");
+str    cplist_col = str_init("cipher_list");
+str    dhparams_col = str_init("dh_params");
+str    eccurve_col = str_init("ec_curve");
+str    tls_db_table = str_init("tls_mgm");
+str    tls_db_url = {NULL, 0};

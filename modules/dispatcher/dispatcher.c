@@ -693,6 +693,8 @@ static int mod_init(void)
 
 	LM_DBG("initializing ...\n");
 
+	init_db_url( default_db_head.db_url , 0 /*can be null*/);
+
 	if (check_if_default_head_is_ok()) {
 		default_db_head.next = ds_db_heads;
 		ds_db_heads = &default_db_head;

@@ -886,7 +886,8 @@ modparam("dialog", "profile_timeout", "43200")
 1.6.44. accept_replicated_dialogs (int)
 
    Registers the dialog module to the OpenSIPS Binary Internal
-   Interface.
+   Interface. It specifies the instances, that belong to a certain
+   cluster, from which we should expect incoming packets.
 
    Default value is 0 (not registered).
 
@@ -912,7 +913,9 @@ modparam("dialog", "replicate_dialogs_to", 1)
 1.6.46. accept_replicated_profiles (int)
 
    Registers the dialog module to the OpenSIPS Binary Internal
-   Interface for profiles replication.
+   Interface for profiles replication. It specifies the instances,
+   that belong to a certain cluster, from which we should expect
+   incoming packets.
 
    Default value is 0 (not registered).
 
@@ -1471,8 +1474,8 @@ $var(account) = $dlg_val(account_type);
 
 1.9.1. dlg_list
 
-   Lists the description of the dialogs (calls). If no parameter is
-   given, all dialogs will be listed. If a dialog identifier is
+   Lists the description of the dialogs (calls). If no parameter
+   is given, all dialogs will be listed. If a dialog identifier is
    passed as parameter (callid and fromtag), only that dialog will
    be listed. If a index and conter parameter is passed, it will
    list only a number of "counter" dialogs starting with index (as

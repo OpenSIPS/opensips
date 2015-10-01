@@ -39,7 +39,32 @@
 #include "../../receive.h"
 #include "../../timer.h"
 #include "proto_ws.h"
-#include "ws.h"
+#include "ws_tcp.h"
+#include "ws_common_defs.h"
+
+/* parameters*/
+int ws_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
+
+static struct tcp_req tcp_current_req;
+
+static struct ws_req ws_current_req;
+
+/* in milliseconds */
+int ws_send_timeout = 100;
+
+/* in milliseconds */
+int ws_hs_read_tout = 100;
+
+#define _ws_common_module "ws"
+#define _ws_common_tcp_current_req tcp_current_req
+#define _ws_common_current_req ws_current_req
+#define _ws_common_max_msg_chunks ws_max_msg_chunks
+#define _ws_common_read ws_raw_read
+#define _ws_common_writev ws_raw_writev
+#define _ws_common_read_tout ws_hs_read_tout
+#define _ws_common_write_tout ws_send_timeout
+#include "ws_handshake_common.h"
+#include "ws_common.h"
 
 static int mod_init(void);
 static int proto_ws_init(struct proto_info *pi);
@@ -50,19 +75,7 @@ static int ws_read_req(struct tcp_connection* con, int* bytes_read);
 static int ws_conn_init(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
 
-/* parameters*/
-int ws_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
-
-/* in milliseconds */
-int ws_send_timeout = 100;
-
-/* in milliseconds */
-int ws_hs_read_tout = 100;
-
 static int ws_port = WS_DEFAULT_PORT;
-
-/* XXX: this information should be dynamically provided */
-str ws_resource = str_init("/");
 
 
 static cmd_export_t cmds[] = {

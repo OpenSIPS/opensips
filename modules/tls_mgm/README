@@ -1,4 +1,4 @@
-TLS module
+TLS_MGM module
 
 Peter Griffiths
 
@@ -32,6 +32,10 @@ Edited by
 
 Ionut-Razvan Ionita
 
+Edited by
+
+Marius Cristian Eseanu
+
    Copyright © 2005 Voice Sistem SRL
 
    Copyright © 2005 Cesc Santasusana
@@ -49,60 +53,83 @@ Ionut-Razvan Ionita
 
         1.1. Overview
         1.2. History
-        1.3. Scenario
+        1.3. Usage
         1.4. Dependencies of external libraries
         1.5. Exported Functions
 
               1.5.1. is_peer_verified
 
-        1.6. OpenSIPS Exported parameters
+        1.6. Exported MI Functions
 
-              1.6.1. listen=interface
-              1.6.2. tls_method [(string):](string)
-              1.6.3. certificate [(string):](string)
-              1.6.4. private_key [(string):](string)
-              1.6.5. ca_list [(string):]((string)
-              1.6.6. ca_dir [(string):](string)
-              1.6.7. ciphers_list [(string):](string)
-              1.6.8. dh_params [(string):](string)
-              1.6.9. ec_curve[(string):](string)
-              1.6.10. verify_cert [(string):](string) and
+              1.6.1. tls_list
+              1.6.2. tls_reload
+
+        1.7. OpenSIPS Exported parameters
+
+              1.7.1. listen=interface
+              1.7.2. tls_method [(string):](string)
+              1.7.3. certificate [(string):](string)
+              1.7.4. private_key [(string):](string)
+              1.7.5. ca_list [(string):]((string)
+              1.7.6. ca_dir [(string):](string)
+              1.7.7. ciphers_list [(string):](string)
+              1.7.8. dh_params [(string):](string)
+              1.7.9. ec_curve[(string):](string)
+              1.7.10. verify_cert [(string):](string) and
                       require_cert[(string):](string)
 
-              1.6.11. tls_handshake_timeout (integer) and
+              1.7.11. tls_handshake_timeout (integer) and
                       tls_send_timeout (integer)
 
-              1.6.12. client_domain_avp (integer)
-              1.6.13. server_domain, client_domain (string)
+              1.7.12. client_domain_avp (integer)
+              1.7.13. db_mode (integer)
+              1.7.14. db_url (string)
+              1.7.15. db_table (string)
+              1.7.16. id_col (string)
+              1.7.17. address_col (string)
+              1.7.18. address_col (string)
+              1.7.19. tls_method_col (string)
+              1.7.20. verify_cert_col (string)
+              1.7.21. require_cert_col (string)
+              1.7.22. certificate_col (string)
+              1.7.23. private_key_col (string)
+              1.7.24. crl_check_all_col (string)
+              1.7.25. crl_dir_col (string)
+              1.7.26. ca_list_col (string)
+              1.7.27. ca_dir_col (string)
+              1.7.28. cipher_list_col (string)
+              1.7.29. dh_params_col (string)
+              1.7.30. ec_curve_col (string)
+              1.7.31. server_domain, client_domain (string)
 
-        1.7. Pseudo-Variables
+        1.8. Pseudo-Variables
 
-              1.7.1. $tls_version
-              1.7.2. $tls_description
-              1.7.3. $tls_cipher_info
-              1.7.4. $tls_cipher_bits
-              1.7.5. $tls_[peer|my]_version
-              1.7.6. $tls_[peer|my]_serial
-              1.7.7. $tls_[peer|my]_[subject|issuer]
-              1.7.8. $tls_[peer|my]_[subject|issuer]_cn
-              1.7.9. $tls_[peer|my]_[subject|issuer]_locality
-              1.7.10. $tls_[peer|my]_[subject|issuer]_country
-              1.7.11. $tls_[peer|my]_[subject|issuer]_state
-              1.7.12. $tls_[peer|my]_[subject|issuer]_organization
-              1.7.13. $tls_[peer|my]_[subject|issuer]_unit
-              1.7.14. $tls_[peer|my]_san_email
-              1.7.15. $tls_[peer|my]_san_hostname
-              1.7.16. $tls_[peer|my]_san_uri
-              1.7.17. $tls_[peer|my]_san_ip
-              1.7.18. $tls_peer_verified
-              1.7.19. $tls_peer_revoked
-              1.7.20. $tls_peer_expired
-              1.7.21. $tls_peer_selfsigned
-              1.7.22. $tls_peer_notBefore
-              1.7.23. $tls_peer_notAfter
+              1.8.1. $tls_version
+              1.8.2. $tls_description
+              1.8.3. $tls_cipher_info
+              1.8.4. $tls_cipher_bits
+              1.8.5. $tls_[peer|my]_version
+              1.8.6. $tls_[peer|my]_serial
+              1.8.7. $tls_[peer|my]_[subject|issuer]
+              1.8.8. $tls_[peer|my]_[subject|issuer]_cn
+              1.8.9. $tls_[peer|my]_[subject|issuer]_locality
+              1.8.10. $tls_[peer|my]_[subject|issuer]_country
+              1.8.11. $tls_[peer|my]_[subject|issuer]_state
+              1.8.12. $tls_[peer|my]_[subject|issuer]_organization
+              1.8.13. $tls_[peer|my]_[subject|issuer]_unit
+              1.8.14. $tls_[peer|my]_san_email
+              1.8.15. $tls_[peer|my]_san_hostname
+              1.8.16. $tls_[peer|my]_san_uri
+              1.8.17. $tls_[peer|my]_san_ip
+              1.8.18. $tls_peer_verified
+              1.8.19. $tls_peer_revoked
+              1.8.20. $tls_peer_expired
+              1.8.21. $tls_peer_selfsigned
+              1.8.22. $tls_peer_notBefore
+              1.8.23. $tls_peer_notAfter
 
-        1.8. OpenSIPS with TLS - script example
-        1.9. Debug TLS connections
+        1.9. OpenSIPS with TLS - script example
+        1.10. Debug TLS connections
 
    2. Developer Guide
 
@@ -112,7 +139,6 @@ Ionut-Razvan Ionita
               2.1.2. find_client_domain
               2.1.3. get_handshake_timeout
               2.1.4. get_send_timeout
-              2.1.5. mod_init
 
         2.2. TLS_CONFIG
         2.3. TLS_INIT
@@ -151,17 +177,38 @@ Ionut-Razvan Ionita
    1.10. Set verify_cert & require_cert variable
    1.11. Set tls_handshake_timeout & tls_send_timeout variable
    1.12. Set tls_client_domain_avp variable
-   1.13. Usage of tls_client_domain and tls_server_domain block
-   1.14. Example of $tls_[peer|my]_[subject|issuer]
-   1.15. Script with TLS support
-   1.16. Example of TLS logging
+   1.13. Usage of db_mode block
+   1.14. Usage of db_url block
+   1.15. Usage of db_table block
+   1.16. Usage of id_col block
+   1.17. Usage of address_col block
+   1.18. Usage of address_col block
+   1.19. Usage of tls_method_col block
+   1.20. Usage of vertify_cert_col block
+   1.21. Usage of require_cert_col block
+   1.22. Usage of certificate_col block
+   1.23. Usage of private_key_col block
+   1.24. Usage of crl_check_all block
+   1.25. Usage of crl_dir_col block
+   1.26. Usage of ca_list_col block
+   1.27. Usage of ca_dir_col block
+   1.28. Usage of cipher_list_col block
+   1.29. Usage of dh_params_col block
+   1.30. Usage of ec_curve_col block
+   1.31. Usage of tls_client_domain and tls_server_domain block
+   1.32. Example of $tls_[peer|my]_[subject|issuer]
+   1.33. Script with TLS support
+   1.34. Example of TLS logging
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
-   This module is a management module for all modules that use the
-   TLS protocol.
+   This module is a management module for TLS certificates and
+   parameters. It provides an interfaces for all the modules that
+   use the TLS protocol. It also implements TLS related functions
+   to use in the routing script, and exports pseudo variables with
+   certificate and TLS parameters.
 
 1.2. History
 
@@ -177,102 +224,24 @@ Chapter 1. Admin Guide
    component, and is part of stable OpenSIPS since release
    >=1.0.0.
 
-1.3. Scenario
+   Starting from OpenSIPS 2.2, the certificates managemnet has
+   been decoupled from the TLS communication in two different
+   modules: dh_params which handles the TLS communication and
+   tls_mgm which handles TLS handshake (certificates and
+   parameters).
 
-   By the increased number of providers the SIP world is
-   continuously growing. More users means more calls and more
-   calls means a high probability for a user to receive calls from
-   totally unknown people or, in the worst case, to receive
-   unwanted calls. To prevent this, a defense mechanism must be
-   adopted by the SIP provider. Since only the called user is
-   fully able to classify a call as being unwanted, the SIP
-   server, based on all information regarding the call should
-   notify the user about the desirability of the call. Information
-   like the caller domain, the received source or the incoming
-   protocol can be very useful for a SIP server to establish the
-   nature of the call.
+1.3. Usage
 
-   As this information is quite limited, is very improbable for a
-   server to be able detect the unwanted calls - there are many
-   calls that it cannot predict anything about its status (neutral
-   calls). So, instead on alerting the called user about unwanted
-   calls, the server can notify the user about calls that are
-   considered trusted - calls for which the server is 100% sure
-   there are not unwanted.
+   This module is used to provision TLS certificates and
+   parameters for all the modules that use TLS transport
+   (currently only proto_tls). The module supports multiple
+   virtual domains that can be assigned to different listeners
+   (servers) or new connections (clients). Each TLS module that
+   uses this management module should assign itself to one or more
+   domains.
 
-   So, a trust concept must be defined for SIP servers. Which
-   calls are trusted and which are not? A call is trusted if the
-   caller can be identify as a trustable user - a user about we
-   have reliable information.
-
-   Since all the user from its domain are authenticated (or should
-   be), a SIP server can consider all the calls generated by its
-   user as trusted. Now we have to extend the trust concept to the
-   multi-domain level. A mutual agreement, between several
-   domains, can establish a trusting relationship. So, a domain
-   (called A) will consider also as trusted calls all the calls
-   generated by user from a different domain (called B) and
-   vice-versa. But just an agreement is not enough; since the
-   authentication information is strictly limited to a domain (a
-   domain can authenticate only its own user, not the user from
-   other domains), there is still the problem of checking the
-   authenticity of the caller - he can impersonate (by a false
-   FROM header) a user from a domain that is trusted.
-
-   The answer to this problem is TLS (Transport Layer Security).
-   All calls via domain A and domain B will be done via TLS.
-   Authentication in origin domain plus TLS transport between
-   domains will make the call 100% trusted for the target domain.
-
-   For such a mechanism to work, the following requirements must
-   be met:
-     * all UA must have set as outbound proxy their home server.
-     * all SIP servers must authenticated all the calls generated
-       by their own users.
-     * all SIP servers must relay the calls generated be their
-       user to a trusted domain via TLS.
-
-   Based on this, a server can classify as trusted a call for one
-   of its user only if the call is also generated by one of its
-   users or is the call is received from a trusted domain ( which
-   is equivalent with a call received via TLS). Untrusted call
-   will be calls received from users belonging to untrusted
-   domains or from users from trusted domains, but whose calls are
-   not routed via their home server (so, they are not
-   authenticated by there home servers).
-
-   Once the server is able to tell if the call is trusted or not,
-   the still open issue is about the mechanism used by server to
-   notify the called user about the nature of the incoming call.
-
-   One way to do it is by remotely changing the ringing type of
-   the called user's phone. This can be done by inserting special
-   header into the INVITE request. Such feature is supported by
-   now by several hardphones like CISCO ATA, CISCO 7960 and SNOM.
-   This phones can change their ringing tone based on the present
-   or content of the "Alert-Info" SIP header as follows:
-     * CISCO ATA - it has 4 pre-defined ringing types. The
-       Alert-Info header must look like “Alert-info: Bellcore-drX
-       EOH"” where X can be between 1 and 4. Note that 1 is the
-       phone default ringing tone.
-     * CISCO 7960 - it has 2 pre-defined ringing types and the
-       possibility of uploading new ones. The “Alert-Info” header
-       must look like “Alert-info: X EOH” where X can be whatever
-       number. When this header is present, the phones will not
-       change the ringing tone, but the ringing pattern. Normally,
-       the phone rings like [ring.........ring..........ring]
-       where [ring] is the ringing tone; if the header is present,
-       the ringing pattern will be
-       [ring.ring.........ring.ring........]. So, to be able to
-       hear some difference between the two patterns (and not only
-       as length), its strongly recommended to have a highly
-       asymmetric ringing type (as the pre-defined are not!!).
-     * SNOM - The “Alert-Info” header must look like “Alert-info:
-       URL EOH"” where URL can be a HTTP URL (for example) from
-       where the phone can retrieve a ringing tone.
-
-   A script example which implements this scenario can be found in
-   Section 1.8, “OpenSIPS with TLS - script example”.
+   A script example which details this module's usage can be found
+   in Section 1.9, “OpenSIPS with TLS - script example”.
 
 1.4. Dependencies of external libraries
 
@@ -303,12 +272,22 @@ if (is_peer_verified()) {
 }
 ...
 
-1.6. OpenSIPS Exported parameters
+1.6. Exported MI Functions
+
+1.6.1.  tls_list
+
+   List all domains information.
+
+1.6.2.  tls_reload
+
+   Reloads information from the database.
+
+1.7. OpenSIPS Exported parameters
 
    All these parameters can be used from the opensips.cfg file, to
    configure the behavior of OpenSIPS-TLS.
 
-1.6.1. listen=interface
+1.7.1. listen=interface
 
    Not specific to TLS. Allows to specify the protocol (udp, tcp,
    tls), the IP address and the port where the listening server
@@ -319,7 +298,7 @@ if (is_peer_verified()) {
 listen = tls:1.2.3.4:5061
 ...
 
-1.6.2. tls_method [(string):](string)
+1.7.2. tls_method [(string):](string)
 
    Sets the TLS protocol. The first parameter, if set, represents
    the id of the domain. TLS method which can be:
@@ -354,11 +333,11 @@ Warning
 
    Example 1.3. Set tls_method variable
 ...
-modparam("proto_tls", "tls_method", "TLSv1")
-modparam("proto_tls", "tls_method", "dom:TLSv1")
+modparam("tls_mgm", "tls_method", "TLSv1")
+modparam("tls_mgm", "tls_method", "dom:TLSv1")
 ...
 
-1.6.3. certificate [(string):](string)
+1.7.3. certificate [(string):](string)
 
    Public certificate file for OpenSIPS. It will be used as
    server-side certificate for incoming TLS connections, and as a
@@ -369,13 +348,13 @@ modparam("proto_tls", "tls_method", "dom:TLSv1")
 
    Example 1.4. Set certificate variable
 ...
-modparam("proto_tls", "certificate", "/mycerts/certs/opensips_server_cer
-t.pem")
-modparam("proto_tls", "certificate", "dom:/mycerts/certs/opensips_server
-_cert.pem")
+modparam("tls_mgm", "certificate", "/mycerts/certs/opensips_server_cert.
+pem")
+modparam("tls_mgm", "certificate", "dom:/mycerts/certs/opensips_server_c
+ert.pem")
 ...
 
-1.6.4. private_key [(string):](string)
+1.7.4. private_key [(string):](string)
 
    Private key of the above certificate. I must be kept in a safe
    place with tight permissions! The first parameter, if set,
@@ -385,11 +364,11 @@ _cert.pem")
 
    Example 1.5. Set private_key variable
 ...
-modparam("proto_tls", "private_key", "/mycerts/private/prik.pem")
-modparam("proto_tls", "private_key", "dom:/mycerts/private/prik.pem")
+modparam("tls_mgm", "private_key", "/mycerts/private/prik.pem")
+modparam("tls_mgm", "private_key", "dom:/mycerts/private/prik.pem")
 ...
 
-1.6.5. ca_list [(string):]((string)
+1.7.5. ca_list [(string):]((string)
 
    List of trusted CAs. The file contains the certificates
    accepted, one after the other. It MUST be a file, not a folder.
@@ -399,11 +378,11 @@ modparam("proto_tls", "private_key", "dom:/mycerts/private/prik.pem")
 
    Example 1.6. Set ca_list variable
 ...
-modparam("proto_tls", "ca_list", "/mycerts/certs/ca_list.pem")
-modparam("proto_tls", "ca_list", "dom:/mycerts/certs/ca_list.pem")
+modparam("tls_mgm", "ca_list", "/mycerts/certs/ca_list.pem")
+modparam("tls_mgm", "ca_list", "dom:/mycerts/certs/ca_list.pem")
 ...
 
-1.6.6. ca_dir [(string):](string)
+1.7.6. ca_dir [(string):](string)
 
    Directory storing trusted CAs. The path contains the
    certificates accepted, each as hash which is linked to
@@ -414,11 +393,11 @@ modparam("proto_tls", "ca_list", "dom:/mycerts/certs/ca_list.pem")
 
    Example 1.7. Set ca_dir variable
 ...
-modparam("proto_tls", "ca_dir", "/mycerts/certs")
-modparam("proto_tls", "ca_dir", "dom:/mycerts/certs")
+modparam("tls_mgm", "ca_dir", "/mycerts/certs")
+modparam("tls_mgm", "ca_dir", "dom:/mycerts/certs")
 ...
 
-1.6.7. ciphers_list [(string):](string)
+1.7.7. ciphers_list [(string):](string)
 
    You can specify the list of algorithms for authentication and
    encryption that you allow. The first parameter, if set,
@@ -435,11 +414,11 @@ Warning
 
    Example 1.8. Set ciphers_list variable
 ...
-modparam("proto_tls", "ciphers_list", "NULL")
-modparam("proto_tls", "ciphers_list", "dom:NULL")
+modparam("tls_mgm", "ciphers_list", "NULL")
+modparam("tls_mgm", "ciphers_list", "dom:NULL")
 ...
 
-1.6.8. dh_params [(string):](string)
+1.7.8. dh_params [(string):](string)
 
    You can specify a file which contains Diffie-Hellman parameters
    as a PEM-file. This is needed if you would like to specify
@@ -450,11 +429,11 @@ modparam("proto_tls", "ciphers_list", "dom:NULL")
 
    Example 1.9. Set dh_params variable
 ...
-modparam("proto_tls", "dh_params", "/etc/pki/CA/dh1024.pem")
-modparam("proto_tls", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
+modparam("tls_mgm", "dh_params", "/etc/pki/CA/dh1024.pem")
+modparam("tls_mgm", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
 ...
 
-1.6.9. ec_curve[(string):](string)
+1.7.9. ec_curve[(string):](string)
 
    You can specify an elliptic curve which should be used for
    ciphers which demand an elliptic curve. The first parameter, if
@@ -466,7 +445,7 @@ modparam("proto_tls", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
 
    It defaults to not set a elliptic curve.
 
-1.6.10. verify_cert [(string):](string) and
+1.7.10. verify_cert [(string):](string) and
 require_cert[(string):](string)
 
    Technically, verify_cert activates SSL_VERIFY_PEER in the
@@ -488,13 +467,13 @@ require_cert[(string):](string)
    Example 1.10. Set verify_cert & require_cert variable
 ...
 # turn on the strictest and strongest authentication possible
-modparam("proto_tls", "require_cert", "1")
-modparam("proto_tls", "require_cert", "1:1")
-modparam("proto_tls", "verify_cert", "0")
-modparam("proto_tls", "verify_cert", "1:1")
+modparam("tls_mgm", "require_cert", "1")
+modparam("tls_mgm", "require_cert", "1:1")
+modparam("tls_mgm", "verify_cert", "0")
+modparam("tls_mgm", "verify_cert", "1:1")
 ...
 
-1.6.11. tls_handshake_timeout (integer) and tls_send_timeout
+1.7.11. tls_handshake_timeout (integer) and tls_send_timeout
 (integer)
 
    Timeouts ... advanced users only
@@ -504,13 +483,13 @@ modparam("proto_tls", "verify_cert", "1:1")
    Example 1.11. Set tls_handshake_timeout & tls_send_timeout
    variable
 ...
-modparam("proto_tls", "tls_handshake_timeout", 119)             # number
+modparam("tls_mgm", "tls_handshake_timeout", 119)               # number
  of seconds
-modparam("proto_tls", "tls_send_timeout", 121)                  # number
+modparam("tls_mgm", "tls_send_timeout", 121)                    # number
  of seconds
 ...
 
-1.6.12. client_domain_avp (integer)
+1.7.12. client_domain_avp (integer)
 
    This sets the interger AVP used for name based TLS server
    domains (please see tls_client_domain for more details).
@@ -522,11 +501,172 @@ modparam("proto_tls", "tls_send_timeout", 121)                  # number
 
    Example 1.12. Set tls_client_domain_avp variable
 ...
-modparam("proto_tls", "tls_client_domain_avp", "400")           # only i
+modparam("tls_mgm", "tls_client_domain_avp", "400")             # only i
 nteger named AVPs are supported
 ...
 
-1.6.13. server_domain, client_domain (string)
+1.7.13.  db_mode (integer)
+
+   When db_mode is enabled (1), this module cannot accept new
+   domains configuration from the script.
+
+   Default value is 0. (not enabled)
+
+   Example 1.13. Usage of db_mode block
+modparam("tls_mgm", "db_mode", 1)
+
+1.7.14.  db_url (string)
+
+   The database url. It cannot be NULL.
+
+   Example 1.14. Usage of db_url block
+modparam("tls_mgm", "db_url", "mysql://root:admin@localhost/opensips")
+
+1.7.15.  db_table (string)
+
+   Sets the database table name.
+
+   Default value is "tls_mgm".
+
+   Example 1.15. Usage of db_table block
+modparam("tls_mgm", "db_table", "tls_mgm")
+
+1.7.16.  id_col (string)
+
+   Sets the id column name.
+
+   Default value is "id".
+
+   Example 1.16. Usage of id_col block
+modparam("tls_mgm", "id_col", "id")
+
+1.7.17.  address_col (string)
+
+   Sets the address column name.
+
+   Default value is "address".
+
+   Example 1.17. Usage of address_col block
+modparam("tls_mgm", "address_col", "addr")
+
+1.7.18.  address_col (string)
+
+   Sets the address column name.
+
+   Default value is "address".
+
+   Example 1.18. Usage of address_col block
+modparam("tls_mgm", "address_col", "addr")
+
+1.7.19.  tls_method_col (string)
+
+   Sets the method column name.
+
+   Default value is "method".
+
+   Example 1.19. Usage of tls_method_col block
+modparam("tls_mgm", "tls_method_col", "method")
+
+1.7.20.  verify_cert_col (string)
+
+   Sets the verrify certificate column name.
+
+   Default value is "verify_cert".
+
+   Example 1.20. Usage of vertify_cert_col block
+modparam("tls_mgm", "verify_cert_col", "verify_cert")
+
+1.7.21.  require_cert_col (string)
+
+   Sets the require certificate column name.
+
+   Default value is "require_cert".
+
+   Example 1.21. Usage of require_cert_col block
+modparam("tls_mgm", "require_cert_col", "req")
+
+1.7.22.  certificate_col (string)
+
+   Sets the certificate column name.
+
+   Default value is "certificate".
+
+   Example 1.22. Usage of certificate_col block
+modparam("tls_mgm", "certificate_col", "certificate")
+
+1.7.23.  private_key_col (string)
+
+   Sets the private key column name.
+
+   Default value is "private_key".
+
+   Example 1.23. Usage of private_key_col block
+modparam("tls_mgm", "private_key_col", "pk")
+
+1.7.24.  crl_check_all_col (string)
+
+   Sets the crl_check_all column name.
+
+   Default value is "crl_check_all".
+
+   Example 1.24. Usage of crl_check_all block
+modparam("tls_mgm", "crl_check_all_col", "crl_check")
+
+1.7.25.  crl_dir_col (string)
+
+   Sets the crl directory column name.
+
+   Default value is "crl_dir".
+
+   Example 1.25. Usage of crl_dir_col block
+modparam("tls_mgm", "crl_dir_col", "crl_dir")
+
+1.7.26.  ca_list_col (string)
+
+   Sets the CA list column name.
+
+   Default value is "ca_list".
+
+   Example 1.26. Usage of ca_list_col block
+modparam("tls_mgm", "ca_list_col", "ca_list")
+
+1.7.27.  ca_dir_col (string)
+
+   Sets the CA directory column name.
+
+   Default value is "ca_dir".
+
+   Example 1.27. Usage of ca_dir_col block
+modparam("tls_mgm", "ca_dir_col", "ca_dir")
+
+1.7.28.  cipher_list_col (string)
+
+   Sets the cipher list column name.
+
+   Default value is "cipher_list".
+
+   Example 1.28. Usage of cipher_list_col block
+modparam("tls_mgm", "cipher_list_col", "cipher_list")
+
+1.7.29.  dh_params_col (string)
+
+   Sets the Diffie-Hellmann parameters column name.
+
+   Default value is "dh_params".
+
+   Example 1.29. Usage of dh_params_col block
+modparam("tls_mgm", "dh_params_col", "dh_parms")
+
+1.7.30.  ec_curve_col (string)
+
+   Sets the ec_curve column name.
+
+   Default value is "ec_curve".
+
+   Example 1.30. Usage of ec_curve_col block
+modparam("tls_mgm", "ec_curve_col", "ec_curve")
+
+1.7.31. server_domain, client_domain (string)
 
    If you only run one domain, the main one is enough. If you are
    running several TLS servers (that is, you have more than one
@@ -589,7 +729,7 @@ nteger named AVPs are supported
 
    It's usable only if TLS support was compiled.
 
-   Example 1.13. Usage of tls_client_domain and tls_server_domain
+   Example 1.31. Usage of tls_client_domain and tls_server_domain
    block
 ...
 listen=tls:IP_2:port2
@@ -600,69 +740,69 @@ modparam("proto_tls", "tls_client_domain_avp", "400")
 ...
 
 # 'atlanta' server domain
-modparam("proto_tls", "server_domain", "1=IP_2:port2")
+modparam("tls_mgm", "server_domain", "1=IP_2:port2")
 
-modparam("proto_tls", "certificate", "1:/certs/atlanta.com/cert.pem")
-modparam("proto_tls", "private_key", "1:/certs/atlanta.com/privkey.pem")
-modparam("proto_tls", "ca_list", "1:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "1:tlsv1")
-modparam("proto_tls", "verify_cert", "1:1")
-modparam("proto_tls", "require_cert", "1:1")
+modparam("tls_mgm", "certificate", "1:/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "1:/certs/atlanta.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "1:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "1:tlsv1")
+modparam("tls_mgm", "verify_cert", "1:1")
+modparam("tls_mgm", "require_cert", "1:1")
 
 #'biloxy' server domain
 
-modparam("proto_tls", "server_domain", "2=IP_3:port3")
+modparam("tls_mgm", "server_domain", "2=IP_3:port3")
 
-modparam("proto_tls", "certificate", "2:/certs/biloxy.com/cert.pem")
-modparam("proto_tls", "private_key", "2:/certs/biloxy.com/privkey.pem")
-modparam("proto_tls", "ca_list", "2:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "2:tlsv1")
-modparam("proto_tls", "verify_cert", "2:1")
-modparam("proto_tls", "require_cert", "2:1")
+modparam("tls_mgm", "certificate", "2:/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "2:/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "2:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "2:tlsv1")
+modparam("tls_mgm", "verify_cert", "2:1")
+modparam("tls_mgm", "require_cert", "2:1")
 
 # 'atlanta' client domain
-modparam("proto_tls", "client_domain", "3=IP_2:port2")
+modparam("tls_mgm", "client_domain", "3=IP_2:port2")
 
-modparam("proto_tls", "certificate", "3:/certs/atlanta.com/cert.pem")
-modparam("proto_tls", "private_key", "3:/certs/atlanta.com/privkey.pem")
-modparam("proto_tls", "ca_list", "3:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "3:tlsv1")
-modparam("proto_tls", "verify_cert", "3:1")
-modparam("proto_tls", "require_cert", "3:1")
+modparam("tls_mgm", "certificate", "3:/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "3:/certs/atlanta.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "3:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "3:tlsv1")
+modparam("tls_mgm", "verify_cert", "3:1")
+modparam("tls_mgm", "require_cert", "3:1")
 
 #'biloxy' client domain
-modparam("proto_tls", "client_domain", "4=IP_3:port3")
+modparam("tls_mgm", "client_domain", "4=IP_3:port3")
 
-modparam("proto_tls", "certificate", "4:/certs/biloxy.com/cert.pem")
-modparam("proto_tls", "private_key", "4:/certs/biloxy.com/privkey.pem")
-modparam("proto_tls", "ca_list", "4:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "4:tlsv1")
-modparam("proto_tls", "verify_cert", "4:1")
-modparam("proto_tls", "require_cert", "4:1")
+modparam("tls_mgm", "certificate", "4:/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "4:/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "4:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "4:tlsv1")
+modparam("tls_mgm", "verify_cert", "4:1")
+modparam("tls_mgm", "require_cert", "4:1")
 
 
 
 
 # socket based TLS server domains (for TLS based downstream from GW prov
 ider)
-modparam("proto_tls", "client_domain", "5=IP_5:port5")
+modparam("tls_mgm", "client_domain", "5=IP_5:port5")
 
-modparam("proto_tls", "certificate", "5:/certs/atlanta.com/cert.pem")
-modparam("proto_tls", "private_key", "5:/certs/atlanta.com/privkey.pem")
-modparam("proto_tls", "ca_list", "5:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "5:tlsv1")
-modparam("proto_tls", "verify_cert", "5:0")
+modparam("tls_mgm", "certificate", "5:/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "5:/certs/atlanta.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "5:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "5:tlsv1")
+modparam("tls_mgm", "verify_cert", "5:0")
 
 # socket based TLS client domains (for TLS based upstream to GW provider
 )
 # GW IP: 1.2.3.4, GW port: 6677
-modparam("proto_tls", "client_domain", "6=1.2.3.4:6677")
+modparam("tls_mgm", "client_domain", "6=1.2.3.4:6677")
 
-modparam("proto_tls", "certificate", "6:/certs/biloxy.com/cert.pem")
-modparam("proto_tls", "private_key", "6:/certs/biloxy.com/privkey.pem")
-modparam("proto_tls", "ca_list", "6:/certs/wellknownCAs")
-modparam("proto_tls", "tls_method", "6:tlsv1")
-modparam("proto_tls", "verify_cert", "6:0")
+modparam("tls_mgm", "certificate", "6:/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "6:/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "6:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "6:tlsv1")
+modparam("tls_mgm", "verify_cert", "6:0")
 
 ...
 route{
@@ -678,7 +818,7 @@ route{
     exit;
 ...
 
-1.7. Pseudo-Variables
+1.8. Pseudo-Variables
 
    This module exports the follong pseudo-variables:
 
@@ -686,127 +826,127 @@ route{
    certificate and the local certificate. Further, some parameters
    can be read from the “Subject” field or the “Issuer” field.
 
-1.7.1. $tls_version
+1.8.1. $tls_version
 
    $tls_version - the TLS/SSL version which is used on the TLS
    connection from which the message was received. String type.
 
-1.7.2. $tls_description
+1.8.2. $tls_description
 
    $tls_description - the TLS/SSL description of the TLS
    connection from which the message was received. String type.
 
-1.7.3. $tls_cipher_info
+1.8.3. $tls_cipher_info
 
    $tls_cipher_info - the TLS/SSL cipher which is used on the TLS
    connection from which the message was received. String type.
 
-1.7.4. $tls_cipher_bits
+1.8.4. $tls_cipher_bits
 
    $tls_cipher_bits - the number of cipher bits which are used on
    the TLS connection from which the message was received. String
    and Integer type.
 
-1.7.5. $tls_[peer|my]_version
+1.8.5. $tls_[peer|my]_version
 
    $tls_[peer|my]_version - the version of the certificate. String
    type.
 
-1.7.6. $tls_[peer|my]_serial
+1.8.6. $tls_[peer|my]_serial
 
    $tls_[peer|my]_serial - the serial number of the certificate.
    String and Integer type.
 
-1.7.7. $tls_[peer|my]_[subject|issuer]
+1.8.7. $tls_[peer|my]_[subject|issuer]
 
    $tls_[peer|my]_[subject|issuer] - ASCII dump of the fields in
    the issuer/subject section of the certificate. String type.
 
-   Example 1.14. Example of $tls_[peer|my]_[subject|issuer]
+   Example 1.32. Example of $tls_[peer|my]_[subject|issuer]
 /C=AT/ST=Vienna/L=Vienna/O=enum.at/CN=enum.at
 
-1.7.8. $tls_[peer|my]_[subject|issuer]_cn
+1.8.8. $tls_[peer|my]_[subject|issuer]_cn
 
    $tls_[peer|my]_[subject|issuer]_cn - commonName in the
    issuer/subject section of the certificate. String type.
 
-1.7.9. $tls_[peer|my]_[subject|issuer]_locality
+1.8.9. $tls_[peer|my]_[subject|issuer]_locality
 
    $tls_[peer|my]_[subject|issuer]_locality - localityName in the
    issuer/subject section of the certificate. String type.
 
-1.7.10. $tls_[peer|my]_[subject|issuer]_country
+1.8.10. $tls_[peer|my]_[subject|issuer]_country
 
    $tls_[peer|my]_[subject|issuer]_country - countryName in the
    issuer/subject section of the certificate. String type.
 
-1.7.11. $tls_[peer|my]_[subject|issuer]_state
+1.8.11. $tls_[peer|my]_[subject|issuer]_state
 
    $tls_[peer|my]_[subject|issuer]_state - stateOrProvinceName in
    the issuer/subject section of the certificate. String type.
 
-1.7.12. $tls_[peer|my]_[subject|issuer]_organization
+1.8.12. $tls_[peer|my]_[subject|issuer]_organization
 
    $tls_[peer|my]_[subject|issuer]_organization - organizationName
    in the issuer/subject section of the certificate. String type.
 
-1.7.13. $tls_[peer|my]_[subject|issuer]_unit
+1.8.13. $tls_[peer|my]_[subject|issuer]_unit
 
    $tls_[peer|my]_[subject|issuer]_unit - organizationalUnitName
    in the issuer/subject section of the certificate. String type.
 
-1.7.14. $tls_[peer|my]_san_email
+1.8.14. $tls_[peer|my]_san_email
 
    $tls_[peer|my]_san_email - email address in the “subject
    alternative name” extension. String type.
 
-1.7.15. $tls_[peer|my]_san_hostname
+1.8.15. $tls_[peer|my]_san_hostname
 
    $tls_[peer|my]_san_hostname - hostname (DNS) in the “subject
    alternative name” extension. String type.
 
-1.7.16. $tls_[peer|my]_san_uri
+1.8.16. $tls_[peer|my]_san_uri
 
    $tls_[peer|my]_san_uri - URI in the “subject alternative name”
    extension. String type.
 
-1.7.17. $tls_[peer|my]_san_ip
+1.8.17. $tls_[peer|my]_san_ip
 
    $tls_[peer|my]_san_ip - ip address in the “subject alternative
    name” extension. String type.
 
-1.7.18. $tls_peer_verified
+1.8.18. $tls_peer_verified
 
    $tls_peer_verified - Returns 1 if the peer's certificate was
    successful verified. Otherwise it returns 0. String and Integer
    type.
 
-1.7.19. $tls_peer_revoked
+1.8.19. $tls_peer_revoked
 
    $tls_peer_revoked - Returns 1 if the peer's certificate was
    revoked. Otherwise it returns 0. String and Integer type.
 
-1.7.20. $tls_peer_expired
+1.8.20. $tls_peer_expired
 
    $tls_peer_expired - Returns 1 if the peer's certificate is
    expired. Otherwise it returns 0. String and Integer type.
 
-1.7.21. $tls_peer_selfsigned
+1.8.21. $tls_peer_selfsigned
 
    $tls_peer_selfsigned - Returns 1 if the peer's certificate is
    selfsigned. Otherwise it returns 0. String and Integer type.
 
-1.7.22. $tls_peer_notBefore
+1.8.22. $tls_peer_notBefore
 
    $tls_peer_notBefore - Returns the notBefore validity date of
    the peer's certificate. String type.
 
-1.7.23. $tls_peer_notAfter
+1.8.23. $tls_peer_notAfter
 
    $tls_peer_notAfter - Returns the notAfter validity date of the
    peer's certificate. String type.
 
-1.8. OpenSIPS with TLS - script example
+1.9. OpenSIPS with TLS - script example
 
    IMPORTANT: The TLS support is based on TCP, and for allowing
    OpenSIPS to use TCP, it must be started in multi-process mode.
@@ -817,7 +957,7 @@ route{
    for more details).
      * fork = yes
 
-   Example 1.15. Script with TLS support
+   Example 1.33. Script with TLS support
   # ----------- global configuration parameters ------------------------
   debug=3
   fork=yes
@@ -988,13 +1128,13 @@ route{
   #end of script
   }
 
-1.9. Debug TLS connections
+1.10. Debug TLS connections
 
    If you want to debug TLS connections, put the following log
    statements into your OpenSIPS.cfg. This will dump all available
    TLS pseudo variables.
 
-   Example 1.16. Example of TLS logging
+   Example 1.34. Example of TLS logging
 xlog("L_INFO","==================== start TLS pseudo variables =========
 ========='\n");
 xlog("L_INFO","$$tls_version                    = '$tls_version'\n");
@@ -1123,12 +1263,6 @@ Chapter 2. Developer Guide
    int get_send_timeout(void);
 
    Returns the send timeout.
-
-2.1.5. mod_init
-
-   int mod_init(void);
-
-   Initialization function.
 
 2.2. TLS_CONFIG
 

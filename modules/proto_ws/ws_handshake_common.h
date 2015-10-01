@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2015 - OpenSIPS Foundation
- * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -24,18 +23,8 @@
  *  2015-02-xx  first version (razvanc)
  */
 
-#include "../../mem/shm_mem.h"
-#include "../../net/net_tcp.h"
-#include "../../globals.h"
-#include "../../io_wait.h"
-#include "../../dprint.h"
-#include "../../tsend.h"
-#include "../../timer.h"
-#include "../../ut.h"
-#include "../../sha1.h"
-#include "proto_ws.h"
-#include "ws_tcp.h"
-#include "ws.h"
+#ifndef _WS_HANDSHAKE_H_
+#define _WS_HANDSHAKE_H_
 
 #define HTTP_SEP			"\r\n"
 #define HTTP_SEP_LEN		(sizeof(HTTP_SEP) - 1)
@@ -56,7 +45,80 @@
 #define HTTP_REPLY_REASON2	"Protocols"
 #define HTTP_REPLY_REASON2_LEN	(sizeof(HTTP_REPLY_REASON2) - 1)
 
+#define WS_HOST_F		(1 << 0)
+#define WS_UPGRADE_F	(1 << 1)
+#define WS_CONN_F		(1 << 2)
+#define WS_ORIGIN_F		(1 << 4)
+#define WS_KEY_F		(1 << 3)
+#define WS_VER_F		(1 << 5)
+/* for SIP connections, RFC7118 requires sip protocol */
+#define WS_PROTO_F		(1 << 6)
+#define WS_ACCEPT_F		(1 << 7)
 
+#define HDR_LEN(_s) (sizeof(_s) - 1)
+
+#define WS_HDR "websocket"
+#define WS_HDR_LEN (sizeof(WS_HDR) - 1)
+#define WS_PROTO_SIP "sip"
+#define WS_PROTO_SIP_LEN (sizeof(WS_PROTO_SIP) - 1)
+#define WS_UPGRADE_HDR "Upgrade"
+#define WS_UPGRADE_HDR_LEN (sizeof(WS_UPGRADE_HDR) - 1)
+
+/* all flags for req */
+#define WS_ALL_REQ_F (WS_HOST_F | \
+					WS_UPGRADE_F | \
+					WS_CONN_F | \
+					WS_ORIGIN_F | \
+					WS_KEY_F | \
+					WS_VER_F | \
+					WS_PROTO_F)
+
+/* all flags for reply */
+#define WS_ALL_RPL_F (WS_UPGRADE_F | \
+					WS_CONN_F | \
+					WS_ACCEPT_F | \
+					WS_PROTO_F)
+
+#define GET_LOWER(_p) \
+	((*(_p)) | 0x20)
+#define GET_LOWER_DWORD(_p) \
+	((*(_p) + (*((_p)+1)<<8) + (*((_p)+2)<<16) + (*((_p)+3)<<24)) | 0x20202020)
+#define GET_DWORD(_c0, _c1, _c2, _c3) \
+	((_c0) + ((_c1)<<8) + ((_c2)<<16) + ((_c3)<<24))
+
+#define WS_SHA1_KEY_LEN		20
+#define WS_ACCEPT_KEY_LEN	28 /* 20-bytes string BASE64 encoded */
+
+#define WS_GUID_KEY "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+#define WS_GUID_KEY_LEN (sizeof(WS_GUID_KEY) - 1)
+
+#define WS_HTTP_ACCEPT							\
+	HTTP_VERSION " " HTTP_REPLY_CODE " Switching Protocols" HTTP_SEP	\
+	"Upgrade: websocket" HTTP_SEP				\
+	"Connection: Upgrade" HTTP_SEP				\
+	"Sec-WebSocket-Protocol: sip" HTTP_SEP		\
+	"Sec-WebSocket-Accept: "
+#define WS_HTTP_ACCEPT_LEN (sizeof(WS_HTTP_ACCEPT) - 1)
+
+
+#define WS_HTTP_BAD_REQ						\
+	"HTTP/1.1 400 Bad Request" HTTP_SEP		\
+	"Sec-WebSocket-Version: 13" HTTP_END
+
+#define WS_HTTP_BAD_REQ_LEN (sizeof(WS_HTTP_BAD_REQ) - 1)
+
+
+/* TODO: protocol should be dynamic */
+#define HTTP_HANDSHAKE_END							\
+	"Upgrade: websocket" HTTP_SEP					\
+	"Connection: upgrade" HTTP_SEP					\
+	"Sec-WebSocket-Version: 13" HTTP_SEP			\
+	"Sec-WebSocket-Protocol: " WS_PROTO_SIP HTTP_END
+#define HTTP_HANDSHAKE_END_LEN (sizeof(HTTP_HANDSHAKE_END) - 1)
+
+#define MAX_HOST_LEN IP_ADDR_MAX_STR_SIZE /*IP*/ + 1 /*':'*/ + 5 /*65535*/
+
+#include "../../sha1.h"
 
 static int ws_read_http(struct tcp_connection *c, struct tcp_req *r);
 static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len);
@@ -65,7 +127,28 @@ static int ws_complete_handshake(struct tcp_connection *c);
 static int ws_start_handshake(struct tcp_connection *c);
 static int ws_bad_handshake(struct tcp_connection *c);
 
-static struct tcp_req ws_current_req;
+/* safety checks */
+#ifndef _ws_common_module
+#error "_ws_common_module not defined!"
+#endif
+#ifndef _ws_common_tcp_current_req
+#error "_ws_common_tcp_current_req not defined!"
+#endif
+#ifndef _ws_common_max_msg_chunks
+#error "_ws_common_max_msg_chunks not defined!"
+#endif
+#ifndef _ws_common_read
+#error "_ws_common_read not defined!"
+#endif
+#ifndef _ws_common_writev
+#error "_ws_common_writev not defined!"
+#endif
+#ifndef _ws_common_read_tout
+#error "_ws_common_read_tout not defined!"
+#endif
+#ifndef _ws_common_write_tout
+#error "_ws_common_write_tout not defined!"
+#endif
 
 
 #define WS_KEY_LEN 24
@@ -73,6 +156,10 @@ static char ws_key[WS_KEY_LEN];
 static const char base64alphabet[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 #define BASE64ALPHABET_LEN (sizeof base64alphabet)
+
+/* XXX: this information should be dynamically provided */
+static str ws_resource = str_init("/");
+
 
 /* we're using a completely random key - no reason yet for something else */
 static str ws_rand_key(void)
@@ -86,8 +173,7 @@ static str ws_rand_key(void)
 	return key;
 }
 
-
-int ws_client_handshake(struct tcp_connection *con)
+static inline int ws_client_handshake(struct tcp_connection *con)
 {
 
 	int bytes;
@@ -119,10 +205,10 @@ int ws_client_handshake(struct tcp_connection *con)
 		LM_BUG("there should not be any con req!\n");
 		goto error;
 	}
-	init_tcp_req(&ws_current_req, 0);
-	req=&ws_current_req;
+	init_tcp_req(&_ws_common_tcp_current_req, 0);
+	req=&_ws_common_tcp_current_req;
 
-	to = ws_hs_read_tout*1000;
+	to = _ws_common_read_tout*1000;
 	if (gettimeofday(&(begin), NULL)) {
 		LM_ERR("Failed to get TCP connect start time\n");
 		goto error;
@@ -198,7 +284,7 @@ int ws_client_handshake(struct tcp_connection *con)
 		}
 
 		con->msg_attempts++;
-		if (con->msg_attempts == ws_max_msg_chunks) {
+		if (con->msg_attempts == _ws_common_max_msg_chunks) {
 			LM_ERR("Made %u read attempts but message is not complete yet - "
 				   "closing connection \n",con->msg_attempts);
 			goto error;
@@ -275,7 +361,7 @@ error:
 	return -1;
 }
 
-int ws_server_handshake(struct tcp_connection *con)
+static int ws_server_handshake(struct tcp_connection *con)
 {
 	int bytes, total_bytes = 0;
 	long size = 0;
@@ -298,8 +384,8 @@ int ws_server_handshake(struct tcp_connection *con)
 		WS_TYPE(con) = WS_SERVER;
 		WS_STATE(con) = WS_CON_HANDSHAKE;
 		LM_DBG("Using the global ( per process ) buff \n");
-		init_tcp_req(&ws_current_req, 0);
-		req=&ws_current_req;
+		init_tcp_req(&_ws_common_tcp_current_req, 0);
+		req=&_ws_common_tcp_current_req;
 		/* first time here, mark the state as being SERVER */
 	}
 
@@ -365,7 +451,7 @@ int ws_server_handshake(struct tcp_connection *con)
 			 * the connection */
 			LM_DBG("We're releasing the connection in state %d \n",
 					con->state);
-			if (req != &ws_current_req) {
+			if (req != &_ws_common_tcp_current_req) {
 				/* we have the buffer in the connection tied buff -
 				 *	detach it , release the conn and free it afterwards */
 				con->con_req = NULL;
@@ -404,14 +490,14 @@ int ws_server_handshake(struct tcp_connection *con)
 		/* request not complete - check the if the thresholds are exceeded */
 
 		con->msg_attempts++;
-		if (con->msg_attempts == ws_max_msg_chunks) {
+		if (con->msg_attempts == _ws_common_max_msg_chunks) {
 			LM_ERR("Made %u read attempts but message is not complete yet - "
 				   "closing connection \n",con->msg_attempts);
 			goto error;
 		}
 	}
 
-	if (!req->complete && (req == &ws_current_req)) {
+	if (!req->complete && (req == &_ws_common_tcp_current_req)) {
 		/* let's duplicate this - most likely another conn will come in */
 
 		con->con_req = pkg_malloc(sizeof(struct tcp_req));
@@ -460,7 +546,7 @@ error:
 	/* connection will be released as ERROR */
 	if (WS_STATE(con) == WS_CON_BAD_REQ)
 		ws_bad_handshake(con);
-	if (req != &ws_current_req) {
+	if (req != &_ws_common_tcp_current_req) {
 		pkg_free(req);
 		con->con_req = NULL;
 	}
@@ -653,46 +739,6 @@ error:
 	return -1;
 }
 
-#define WS_HOST_F		(1 << 0)
-#define WS_UPGRADE_F	(1 << 1)
-#define WS_CONN_F		(1 << 2)
-#define WS_ORIGIN_F		(1 << 4)
-#define WS_KEY_F		(1 << 3)
-#define WS_VER_F		(1 << 5)
-/* for SIP connections, RFC7118 requires sip protocol */
-#define WS_PROTO_F		(1 << 6)
-#define WS_ACCEPT_F		(1 << 7)
-
-#define HDR_LEN(_s) (sizeof(_s) - 1)
-
-#define WS_HDR "websocket"
-#define WS_HDR_LEN (sizeof(WS_HDR) - 1)
-#define WS_PROTO_SIP "sip"
-#define WS_PROTO_SIP_LEN (sizeof(WS_PROTO_SIP) - 1)
-#define WS_UPGRADE_HDR "Upgrade"
-#define WS_UPGRADE_HDR_LEN (sizeof(WS_UPGRADE_HDR) - 1)
-
-/* all flags for req */
-#define WS_ALL_REQ_F (WS_HOST_F | \
-					WS_UPGRADE_F | \
-					WS_CONN_F | \
-					WS_ORIGIN_F | \
-					WS_KEY_F | \
-					WS_VER_F | \
-					WS_PROTO_F)
-
-/* all flags for reply */
-#define WS_ALL_RPL_F (WS_UPGRADE_F | \
-					WS_CONN_F | \
-					WS_ACCEPT_F | \
-					WS_PROTO_F)
-
-#define GET_LOWER(_p) \
-	((*(_p)) | 0x20)
-#define GET_LOWER_DWORD(_p) \
-	((*(_p) + (*((_p)+1)<<8) + (*((_p)+2)<<16) + (*((_p)+3)<<24)) | 0x20202020)
-#define GET_DWORD(_c0, _c1, _c2, _c3) \
-	((_c0) + ((_c1)<<8) + ((_c2)<<16) + ((_c3)<<24))
 
 static inline int ws_has_param(const char *p, int l, str ps)
 {
@@ -900,12 +946,6 @@ error:
 	return -1;
 }
 
-#define WS_SHA1_KEY_LEN		20
-#define WS_ACCEPT_KEY_LEN	28 /* 20-bytes string BASE64 encoded */
-
-#define WS_GUID_KEY "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-#define WS_GUID_KEY_LEN (sizeof(WS_GUID_KEY) - 1)
-
 unsigned char ws_key_buf[] = "xxxxxxxxxxxxxxxxxxxxxxxx" /* the key len: 24 */
 		WS_GUID_KEY /* the GUID */;
 unsigned char ws_sha1_buf[WS_SHA1_KEY_LEN];
@@ -924,14 +964,6 @@ static int ws_is_valid_key(str *key, str *accept)
 	return strncasecmp((char *)ws_accept_buf, accept->s, accept->len);
 }
 
-#define WS_HTTP_ACCEPT							\
-	HTTP_VERSION " " HTTP_REPLY_CODE " Switching Protocols" HTTP_SEP	\
-	"Upgrade: websocket" HTTP_SEP				\
-	"Connection: Upgrade" HTTP_SEP				\
-	"Sec-WebSocket-Protocol: sip" HTTP_SEP		\
-	"Sec-WebSocket-Accept: "
-#define WS_HTTP_ACCEPT_LEN (sizeof(WS_HTTP_ACCEPT) - 1)
-
 static int ws_complete_handshake(struct tcp_connection *c)
 {
 	int n;
@@ -948,27 +980,26 @@ static int ws_complete_handshake(struct tcp_connection *c)
 	/* compute the ws_key in ws_accept_buf */
 	ws_compute_key(&WS_KEY(c));
 
-	n = ws_raw_writev(c, c->fd, iov, 3);
-	stop_expire_timer(get, tcpthreshold, "ws handshake", "", 0, 1);
+	n = _ws_common_writev(c, c->fd, iov, 3, _ws_common_write_tout);
+	stop_expire_timer(get, tcpthreshold,
+			_ws_common_module " handshake", "", 0, 1);
 
 	return n;
 }
-
-#define WS_HTTP_BAD_REQ						\
-	"HTTP/1.1 400 Bad Request" HTTP_SEP		\
-	"Sec-WebSocket-Version: 13" HTTP_END
-
-#define WS_HTTP_BAD_REQ_LEN (sizeof(WS_HTTP_BAD_REQ) - 1)
 
 static int ws_bad_handshake(struct tcp_connection *c)
 {
 	int n;
 	struct timeval get;
+	static struct iovec iov[] = {
+		{ (void*)WS_HTTP_BAD_REQ, WS_HTTP_BAD_REQ_LEN },
+	};
 
 	reset_tcp_vars(tcpthreshold);
 	start_expire_timer(get, tcpthreshold);
-	n = ws_raw_write(c, c->fd, WS_HTTP_BAD_REQ, WS_HTTP_BAD_REQ_LEN);
-	stop_expire_timer(get, tcpthreshold, "ws handshake", "", 0, 1);
+	n = _ws_common_writev(c, c->fd, iov, 1, _ws_common_write_tout);
+	stop_expire_timer(get, tcpthreshold,
+			_ws_common_module " handshake", "", 0, 1);
 
 	return n;
 }
@@ -1144,15 +1175,6 @@ error:
 	return -1;
 }
 
-/* TODO: protocol should be dynamic */
-#define HTTP_HANDSHAKE_END							\
-	"Upgrade: websocket" HTTP_SEP					\
-	"Connection: upgrade" HTTP_SEP					\
-	"Sec-WebSocket-Version: 13" HTTP_SEP			\
-	"Sec-WebSocket-Protocol: " WS_PROTO_SIP HTTP_END
-#define HTTP_HANDSHAKE_END_LEN (sizeof(HTTP_HANDSHAKE_END) - 1)
-
-#define MAX_HOST_LEN IP_ADDR_MAX_STR_SIZE /*IP*/ + 1 /*':'*/ + 5 /*65535*/
 
 static int ws_start_handshake(struct tcp_connection *c)
 {
@@ -1200,8 +1222,9 @@ static int ws_start_handshake(struct tcp_connection *c)
 	iov[13].iov_base = WS_KEY(c).s;
 	iov[13].iov_len = WS_KEY(c).len;
 
-	n = ws_raw_writev(c, c->fd, iov, 16);
-	stop_expire_timer(get, tcpthreshold, "ws start handshake", "", 0, 1);
+	n = _ws_common_writev(c, c->fd, iov, 16, _ws_common_write_tout);
+	stop_expire_timer(get, tcpthreshold,
+			_ws_common_module " start handshake", "", 0, 1);
 
 	return n;
 }
@@ -1269,7 +1292,7 @@ static int ws_read_http(struct tcp_connection *c, struct tcp_req *r)
 	if (r->parsed<r->pos){
 		bytes=0;
 	}else{
-		bytes=ws_raw_read(c, r);
+		bytes=_ws_common_read(c, r);
 		if (bytes<=0) return bytes;
 	}
 	p=r->parsed;
@@ -1506,3 +1529,5 @@ skip:
 	r->parsed=p;
 	return bytes;
 }
+
+#endif /* _WS_HANDSHAKE_COMMON_H_ */

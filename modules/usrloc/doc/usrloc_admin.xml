@@ -733,13 +733,14 @@ modparam("usrloc", "cseq_delay", 5)
 	         xreflabel="accept_replicated_contacts">
 		<title><varname>accept_replicated_contacts</varname> (integer)</title>
 		<para>
-		Set this to 1 in order to accept and process user-location related
-		information received from other &osips; instances through the
-		<emphasis role='bold'>Binary Interface</emphasis>.
+		Set this to a valid cluster id in order to accept and process
+                user-location related information received from other &osips;
+                instances, that belong to the specified cluster id, through the
+                <emphasis role='bold'>Binary Interface</emphasis>.
 		</para>
 		<para>
-		Default value is <quote>0</quote> - Binary Interface listeners (if any)
-		will simply ignore any usrloc-related packets
+		Default value is <quote>0</quote> (no cluster id specified) -
+                Binary Interface listeners (if any) will simply ignore any usrloc-related packets
 		</para>
 		<para>
 			More details on the user location replication mechanism are available in <xref linkend="usrloc-replication"/>
@@ -757,19 +758,15 @@ modparam("usrloc", "accept_replicated_contacts", 1)
 
 	<section id='replicate_contacts_to'
 	         xreflabel="replicate_contacts_to">
-		<title><varname>replicate_contacts_to</varname> (string)</title>
+		<title><varname>replicate_contacts_to</varname> (integer)</title>
 		<para>
-		Define a new &osips; instance which will receive all the user-location
-		related information from this machine
-		(<emphasis>addresses-of-record</emphasis>, <emphasis>contacts</emphasis>),
+		Defines the &osips; instances that belong to a ceratin cluster
+                which will receive all the user-location related information from
+                this machine (<emphasis>addresses-of-record</emphasis>, <emphasis>contacts</emphasis>),
 		organized into specific events (inserts, deletes or updates)
 		</para>
 		<para>
-			This parameter may be set multiple times. It does
-		<emphasis role='bold'>not</emphasis> ignore duplicate entries.
-		</para>
-		<para>
-		Default value is "none" (no replication destinations)
+		Default value is 0 (no cluster id specified)
 		</para>
 		<para>
 			More details on the user location replication mechanism are available in <xref linkend="usrloc-replication"/>
@@ -779,7 +776,7 @@ modparam("usrloc", "accept_replicated_contacts", 1)
 			parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "replicate_contacts_to", "192.168.2.182:5062")
+modparam("usrloc", "replicate_contacts_to", 1)
 ...
 </programlisting>
 		</example>

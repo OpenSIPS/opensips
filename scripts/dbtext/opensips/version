@@ -48,6 +48,7 @@ silo:6
 sip_trace:4
 speed_dial:3
 subscriber:7
+tls_mgm:1
 uri:2
 userblacklist:2
 usr_preferences:3

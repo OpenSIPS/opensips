@@ -381,27 +381,87 @@ modparam("ratelimit", "repl_timer_expire", 10)
 		</example>
 	</section>
 	<section>
-		<title><varname>replicate_pipes_to</varname> (string)</title>
+		<title><varname>replicate_pipes_to</varname> (integer)</title>
 		<para>
-		Used to specify the instances where the pipes should be replicated.
-		This parameter can be specified multiple times, for each destination.
+                   Used to specify the instances, that belong to a certain cluster,
+                where the pipes should be replicated.
 		</para>
 		<para>
 		<emphasis>
-			No default value. If not specified, nothing is replicated.
+			Default value is 0. (no replication destinations)
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>replicate_pipes_to</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("ratelimit", "replicate_pipes_to", "udp:127.0.0.1:5555")
+modparam("ratelimit", "replicate_pipes_to", 1)
 ...
 </programlisting>
 		</example>
 	</section>
 
+        <section>
+		<title><varname>accept_pipes_from</varname> (integer)</title>
+		<para>
+                   Used to specify the instances, that belong to a certain cluster,
+                from which we should expect incoming packets.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0. (disabled)
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>accept_pipes_from</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("ratelimit", "accept_pipes_from", 1)
+...
+</programlisting>
+		</example>
+	</section>
 
+        <section>
+		<title><varname>accept_pipes_timeout</varname> (integer)</title>
+		<para>
+                   The time between two succesive incoming packets.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 10.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>accept_pipes_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("ratelimit", "accept_pipes_timeout", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+        <section>
+		<title><varname>repl_pipes_auth_check</varname> (int)</title>
+		<para>
+			Authentication check for incoming packets.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>repl_pipes_auth_check</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "repl_pipes_auth_check", 1)
+...
+</programlisting>
+		</example>
+	</section>
+        
 	</section>
 	<section>
 	<title>Exported Functions</title>

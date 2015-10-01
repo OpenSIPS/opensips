@@ -42,7 +42,7 @@
 #define MEM_WARMING_DEFAULT_PATTERN_FILE CFG_DIR "mem_warming_pattern"
 #define MEM_WARMING_DEFAULT_PERCENTAGE 75
 
-#define TLS_PKEY_FILE CFG_DIR "tls/cert.pem"
+#define TLS_PKEY_FILE CFG_DIR "tls/ckey.pem"
 #define TLS_CERT_FILE CFG_DIR "tls/cert.pem"
 #define TLS_CA_FILE 0 		/*!< no CA list file by default */
 #define TLS_CA_DIRECTORY      "/etc/pki/CA/"
@@ -115,8 +115,11 @@
 #define SRV_TLS_PREFIX "_sips._tcp."
 #define SRV_TLS_PREFIX_LEN (sizeof(SRV_TLS_PREFIX) - 1)
 
-#define SRV_WS_PREFIX "_sip._ws."
+#define SRV_WS_PREFIX "_ws._tcp."
 #define SRV_WS_PREFIX_LEN (sizeof(SRV_WS_PREFIX) - 1)
+
+#define SRV_WSS_PREFIX "_wss._tcp."
+#define SRV_WSS_PREFIX_LEN (sizeof(SRV_WSS_PREFIX) - 1)
 
 #define SRV_MAX_PREFIX_LEN SRV_TLS_PREFIX_LEN
 

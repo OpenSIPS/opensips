@@ -10,9 +10,6 @@
 		and can be used to secure the SIP signalling on a hop-by-hop basis
 		(not end-to-end). TLS works on top of TCP. DTLS, or TLS over UDP is
 		already defined by IETF and may become available in the future.
-		This module also implements TLS related functions to use in the
-		routing script, and exports pseudo variables with certificate and
-		TLS parameters.
 		</para>
 	</section>
 
@@ -30,6 +27,11 @@
 		CVS tree, as patch to the main CVS tree. In OpenSIPS, the support was
 		integrated directly into the CVS tree, as a built-in component, and is
 		part of stable OpenSIPS since release >=1.0.0.
+		</para>
+		<para>
+		Starting with OpenSIPS 2.1, the TLS has been moved to a separate
+		transport module, that implements the more generic Transport
+		Interface.
 		</para>
 	</section>
 

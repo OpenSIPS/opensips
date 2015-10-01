@@ -1865,6 +1865,11 @@ do_srv:
 			memcpy(tmp+SRV_WS_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_WS_PREFIX_LEN + name->len] = '\0';
 			break;
+		case PROTO_WSS:
+			memcpy(tmp, SRV_WSS_PREFIX, SRV_WSS_PREFIX_LEN);
+			memcpy(tmp+SRV_WSS_PREFIX_LEN, name->s, name->len);
+			tmp[SRV_WSS_PREFIX_LEN + name->len] = '\0';
+			break;
 		default:
 			goto err_proto;
 	}

@@ -816,13 +816,12 @@ dp_connection_list_p dp_add_connection(dp_head_p head)
 				+ head->partition.len + head->dp_db_url.len;
 	el = shm_malloc(all_size);
 
-	if(!el)
-		LM_ERR("No more shm\n");
-
 	if (!el) {
 		LM_ERR("No more shm mem\n");
 		return NULL;
 	}
+
+	memset(el, 0, sizeof(dp_connection_list_t));
 
 	/* create & init lock */
 	if((el->ref_lock = lock_init_rw()) == NULL) {

@@ -103,7 +103,7 @@
 	<toc></toc>
 
 	&admin;
-	&devel;
+	<!-- &devel; -->
 	&faq;
 
 </book>

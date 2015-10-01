@@ -138,7 +138,6 @@ int udp_init_listener(struct socket_info *si, int status_flags)
 #endif
 
 	addr=&si->su;
-	si->proto=PROTO_UDP;
 	if (init_su(addr, &si->address, si->port_no)<0){
 		LM_ERR("could not init sockaddr_union\n");
 		goto error;
@@ -286,6 +285,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
  */
 int udp_rcv_loop( struct socket_info *si )
 {
+
 	/* create the reactor for UDP proc */
 	if ( init_worker_reactor( "UDP_worker", 100/*max_fd*/, RCT_PRIO_MAX)<0 ) {
 		LM_ERR("failed to init reactor\n");
@@ -404,7 +404,6 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 			continue;
 
 		for(si=protos[p].listeners; si ; si=si->next ) {
-
 			if (register_udp_load_stat(&si->sock_str,&load_p,si->children)!=0){
 				LM_ERR("failed to init load statistics\n");
 				goto error;
