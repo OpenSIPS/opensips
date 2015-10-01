@@ -50,7 +50,7 @@
 #define FRAG_NEXT(f) \
 	((struct fm_frag*)((char*)(f)+sizeof(struct fm_frag)+(f)->size ))
 
-#define FRAG_OVERHEAD	(sizeof(struct fm_frag))
+
 
 
 /* ROUNDTO= 2^k so the following works */
@@ -83,6 +83,12 @@
 #define F_MALLOC_LARGE_LIMIT    F_MALLOC_OPTIMIZE
 #define F_MALLOC_DEFRAG_LIMIT (F_MALLOC_LARGE_LIMIT * 5)
 #define F_MALLOC_DEFRAG_PERCENT 5
+
+inline unsigned long frag_size(void* p){
+	if(!p)
+		return 0;
+	return (((struct fm_frag*) ((char*)p-sizeof(struct fm_frag)))->size);
+}
 
 static inline void free_minus(struct fm_block* qm, unsigned long size )
 {
@@ -240,6 +246,7 @@ void fm_split_frag(struct fm_block* qm, struct fm_frag* frag,
 
 /* init malloc and return a fm_block*/
 struct fm_block* fm_malloc_init(char* address, unsigned long size)
+
 {
 	char* start;
 	char* end;
@@ -271,12 +278,12 @@ struct fm_block* fm_malloc_init(char* address, unsigned long size)
 	qm=(struct fm_block*)start;
 	memset(qm, 0, sizeof(struct fm_block));
 	qm->size=size;
-
 	#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 
 	qm->used=size-init_overhead;
 	qm->real_used=size;
 	qm->max_real_used=init_overhead;
+	qm->fragments = 0;
 	#endif
 
 	qm->first_frag=(struct fm_frag*)(start+ROUNDUP(sizeof(struct fm_block)));
@@ -404,6 +411,7 @@ solved:
 	#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 	if (qm->max_real_used<qm->real_used)
 		qm->max_real_used=qm->real_used;
+	qm->fragments += 1;
 	#endif
 
 	pkg_threshold_check();
@@ -467,6 +475,9 @@ join:
 no_join:
 
 	fm_insert_free(qm, f);
+#if defined(DBG_F_MALLOC) || defined(STATISTICS)
+	qm->fragments -= 1;
+#endif
 	pkg_threshold_check();
 }
 

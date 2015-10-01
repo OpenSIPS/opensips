@@ -89,6 +89,7 @@ static void* shm_mempool=(void*)-1;
 	struct qm_block* shm_block;
 #endif
 
+
 /*
  * - the memory fragmentation pattern of OpenSIPS
  * - holds the total number of shm_mallocs requested for each
@@ -305,6 +306,53 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		shm_mem_destroy();
 		return -1;
 	}
+#ifdef SHM_EXTRA_STATS
+	int size_prealoc, j, one_full_entry, groups;
+	char *start;
+	if(mem_free_idx != 1){
+	#ifndef SHM_SHOW_DEFAULT_GROUP
+		groups = mem_free_idx - 1;
+	#else
+		groups = mem_free_idx;
+	#endif
+
+		one_full_entry = 3 * (sizeof(stat_var) + sizeof(stat_val));
+		size_prealoc = groups * sizeof(struct module_info) + groups * one_full_entry;
+
+	#ifndef DBG_QM_MALLOC
+		memory_mods_stats = MY_MALLOC_UNSAFE(shm_block, size_prealoc);
+	#else
+		memory_mods_stats = MY_MALLOC_UNSAFE(shm_block, size_prealoc, __FILE__, __FUNCTION__, __LINE__ );
+	#endif
+
+		if(!memory_mods_stats){
+			LM_CRIT("could not alloc shared memory");
+			return -1;
+		}
+		memset( (void*)memory_mods_stats, 0, size_prealoc);
+		start = (char*)memory_mods_stats + groups * sizeof(struct module_info);
+		for(j = 0; j < groups; j++){
+			memory_mods_stats[j].fragments = (stat_var *)(start + j * one_full_entry);
+			memory_mods_stats[j].memory_used = (stat_var *)(start + j * one_full_entry + sizeof(stat_var));
+			memory_mods_stats[j].real_used = (stat_var *)(start + j * one_full_entry + 2 * sizeof(stat_var));
+
+			memory_mods_stats[j].fragments->u.val = (stat_val*)(start + j * one_full_entry + 3 * sizeof(stat_var));
+			memory_mods_stats[j].memory_used->u.val = (stat_val*)(start + j * one_full_entry + 3 * sizeof(stat_var) + sizeof(stat_val));
+			memory_mods_stats[j].real_used->u.val = (stat_val*)(start + j * one_full_entry + 3 * sizeof(stat_var) + 2 * sizeof(stat_val));
+		}
+	#ifndef SHM_SHOW_DEFAULT_GROUP
+		if(core_index != 0){
+			update_stat(memory_mods_stats[core_index - 1].fragments, 1);
+			update_stat(memory_mods_stats[core_index - 1].memory_used, size_prealoc);
+			update_stat(memory_mods_stats[core_index - 1].real_used, size_prealoc + FRAG_OVERHEAD);
+		}
+	#else
+		update_stat(memory_mods_stats[core_index].fragments, 1);
+		update_stat(memory_mods_stats[core_index].memory_used, size_prealoc);
+		update_stat(memory_mods_stats[core_index].real_used, size_prealoc + FRAG_OVERHEAD);
+	#endif
+	}
+#endif
 
 #ifdef HP_MALLOC
 	/* lock_alloc cannot be used yet! */
@@ -414,6 +462,60 @@ void init_shm_statistics(void)
 	#ifdef HP_MALLOC
 	hp_init_shm_statistics(shm_block);
 	#endif
+
+#ifdef SHM_EXTRA_STATS
+	struct multi_str *mod_name;
+	int i, len;
+	char *full_name = NULL;
+
+	if(mem_free_idx != 1){
+
+#ifdef SHM_SHOW_DEFAULT_GROUP
+		if (register_stat("shmem_group_default", "fragments", (stat_var **)&memory_mods_stats[0].fragments, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+			LM_CRIT("can't add stat variable");
+			return;
+		}
+
+		if (register_stat("shmem_group_default", "memory_used", (stat_var **)&memory_mods_stats[0].memory_used, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+			LM_CRIT("can't add stat variable");
+			return;
+		}
+
+		if (register_stat("shmem_group_default", "real_used", (stat_var **)&memory_mods_stats[0].real_used, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+			LM_CRIT("can't add stat variable");
+			return;
+		}
+
+
+		i = mem_free_idx - 1;
+#else
+		i = mem_free_idx - 2;
+#endif
+		for(mod_name = mod_names; mod_name != NULL; mod_name = mod_name->next){
+			len = strlen(mod_name->s);
+			full_name = pkg_malloc((len + STAT_PREFIX_LEN + 1) * sizeof(char));
+
+			strcpy(full_name, STAT_PREFIX);
+			strcat(full_name, mod_name->s);
+			if (register_stat(full_name, "fragments", (stat_var **)&memory_mods_stats[i].fragments, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+				LM_CRIT("can't add stat variable");
+				return;
+			}
+
+			if (register_stat(full_name, "memory_used", (stat_var **)&memory_mods_stats[i].memory_used, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+				LM_CRIT("can't add stat variable");
+				return;
+			}
+
+			if (register_stat(full_name, "real_used", (stat_var **)&memory_mods_stats[i].real_used, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+				LM_CRIT("can't add stat variable");
+				return;
+			}
+			i--;
+		}
+	}
+#endif
+
 }
 
 void shm_mem_destroy(void)

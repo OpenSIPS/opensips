@@ -467,6 +467,11 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	}
 
 	name_len = strlen(name);
+
+	if(flags&STAT_ONLY_REGISTER){
+		stat = *pvar;
+		goto do_register;
+	}
 	stat = unsafe ?
 			(stat_var*)shm_malloc_unsafe(sizeof(stat_var) +
 			((flags&STAT_SHM_NAME)==0)*name_len)
@@ -499,6 +504,7 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	}
 
 	/* is the module already recorded? */
+do_register:
 	smodule.s = module;
 	smodule.len = strlen(module);
 	mods = get_stat_module(&smodule);
@@ -515,7 +521,11 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 
 	stat->name.len = name_len;
 	if ( (flags&STAT_SHM_NAME)==0 ) {
-		stat->name.s = (char*)(stat+1);
+		if(flags&STAT_ONLY_REGISTER)
+			stat->name.s = shm_malloc_unsafe(name_len);
+		else
+			stat->name.s = (char*)(stat+1);
+			
 		memcpy(stat->name.s, name, name_len);
 	} else {
 		stat->name.s = name;

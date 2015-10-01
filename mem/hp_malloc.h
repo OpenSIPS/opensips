@@ -191,6 +191,8 @@ struct hp_block {
 	struct hp_frag_lnk free_hash[HP_HASH_SIZE + HP_EXTRA_HASH_SIZE];
 };
 
+inline unsigned long frag_size(void* p);
+
 struct hp_block *hp_pkg_malloc_init(char *addr, unsigned long size);
 struct hp_block *hp_shm_malloc_init(char *addr, unsigned long size);
 
