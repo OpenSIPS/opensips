@@ -156,6 +156,7 @@ int set_list_from_string(str input, int_list_t **result)
 	str flg_tok;
 
 	unsigned int u_num;
+	int def_val = -1;
 	do{
 		delim = q_memchr(input.s, LIST_DELIM, input.len);
 		str s_tok = {input.s, delim ? delim - input.s : input.len};
@@ -180,7 +181,6 @@ int set_list_from_string(str input, int_list_t **result)
 				if ((flg_tok.s[flg_tok.len] >= 'a' && flg_tok.s[flg_tok.len] <= 'z') ||
 							(flg_tok.s[flg_tok.len] >= 'A' && flg_tok.s[flg_tok.len] <= 'Z'))
 					flg_tok.len=s_tok.len;
-				//	flg_tok.len++;
 				goto only_flags00;
 			}
 		}
@@ -209,12 +209,14 @@ only_flags00:
 			}
 
 			str_trim_spaces_lr(s_tok);
+
+			/* default value for max results */
+			def_val = 1000;
 		}
 
 only_max_res:
 		if (s_tok.len == 0) {
 			if (flags > 0) {
-				u_num = 0;
 				goto only_flags01;
 			} else
 				goto wrong_value;
@@ -258,7 +260,7 @@ only_max_res:
 				goto no_memory;
 
 only_flags01:
-			new_el->v.ival = u_num;
+			new_el->v.ival = def_val > 0 ? def_val : u_num;
 			new_el->type = GPARAM_TYPE_INT;
 			if (flags>0)
 				new_el->flags = flags;
