@@ -4,7 +4,7 @@
 
 include ../../Makefile.defs
 auto_gen=
-NAME=cpl-c.so
+NAME=cpl_c.so
 
 ifeq ($(CROSS_COMPILE),)
 XML2CFG=$(shell which xml2-config)

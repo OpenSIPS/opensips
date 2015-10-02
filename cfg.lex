@@ -294,6 +294,7 @@ LOGFACILITY	log_facility
 LOGNAME		log_name
 AVP_ALIASES	avp_aliases
 LISTEN		listen
+MEMGROUP	mem-group
 ALIAS		alias
 AUTO_ALIASES	auto_aliases
 DNS		 dns
@@ -565,6 +566,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }
 <INITIAL>{AVP_ALIASES}	{ yylval.strval=yytext; return AVP_ALIASES; }
 <INITIAL>{LISTEN}	{ count(); yylval.strval=yytext; return LISTEN; }
+<INITIAL>{MEMGROUP}	{ count(); yylval.strval=yytext; return MEMGROUP; }
 <INITIAL>{ALIAS}	{ count(); yylval.strval=yytext; return ALIAS; }
 <INITIAL>{AUTO_ALIASES}	{ count(); yylval.strval=yytext; return AUTO_ALIASES; }
 <INITIAL>{DNS}	{ count(); yylval.strval=yytext; return DNS; }

@@ -64,9 +64,6 @@
 	((struct qm_frag_end*)((char*)(f)-sizeof(struct qm_frag_end)))
 
 
-#define FRAG_OVERHEAD	(sizeof(struct qm_frag)+sizeof(struct qm_frag_end))
-
-
 #define ROUNDTO_MASK	(~((unsigned long)ROUNDTO-1))
 #define ROUNDUP(s)		(((s)+(ROUNDTO-1))&ROUNDTO_MASK)
 #define ROUNDDOWN(s)	((s)&ROUNDTO_MASK)
@@ -132,7 +129,6 @@ inline static unsigned long big_hash_idx(unsigned long s)
 #define END_CHECK_PATTERN2 0xabcdefed
 #endif
 
-
 static  void qm_debug_frag(struct qm_block* qm, struct qm_frag* f)
 {
 	if (f->check!=ST_CHECK_PATTERN){
@@ -165,7 +161,11 @@ static  void qm_debug_frag(struct qm_block* qm, struct qm_frag* f)
 }
 #endif
 
-
+inline unsigned long frag_size(void* p){
+	if(!p)
+		return 0;
+	return (((struct qm_frag*) ((char*)p-sizeof(struct qm_frag)))->size);
+}
 
 static inline void qm_insert_free(struct qm_block* qm, struct qm_frag* frag)
 {
@@ -189,7 +189,6 @@ static inline void qm_insert_free(struct qm_block* qm, struct qm_frag* frag)
 	qm->real_used-=frag->size;
 	qm->used-=frag->size;
 }
-
 
 
 /* init malloc and return a qm_block*/
@@ -227,6 +226,8 @@ struct qm_block* qm_malloc_init(char* address, unsigned long size)
 	memset(qm, 0, sizeof(struct qm_block));
 	qm->size=size;
 	qm->used=size-init_overhead;
+	qm->fragments = 0;
+
 	qm->real_used=size;
 	qm->max_real_used = 0;
 	size-=init_overhead;
@@ -417,6 +418,7 @@ void* qm_malloc(struct qm_block* qm, unsigned long size)
 			 qm, size, (char*)f+sizeof(struct qm_frag), f, f->size, list_cntr );
 #endif
 		pkg_threshold_check();
+		qm->fragments += 1;
 		return (char*)f+sizeof(struct qm_frag);
 	}
 	pkg_threshold_check();
@@ -501,6 +503,7 @@ void qm_free(struct qm_block* qm, void* p)
 	f->line=line;
 #endif
 	qm_insert_free(qm, f);
+	qm->fragments -= 1;
 	pkg_threshold_check();
 }
 

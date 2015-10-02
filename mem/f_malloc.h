@@ -71,6 +71,8 @@
  *                            ROUNDTO from bucket to bucket
  * +1 .... end -  size = 2^k, big buckets */
 
+#define FRAG_OVERHEAD	(sizeof(struct fm_frag))
+
 struct fm_frag{
 	unsigned long size;
 	union{
@@ -95,7 +97,7 @@ struct fm_block{
 	unsigned long size; /* total size */
         unsigned long large_space;
         unsigned long large_limit;
-
+    unsigned long fragments; /* number of fragments in use */
 #if defined(DBG_F_MALLOC) || defined(STATISTICS)
 	unsigned long used; /* alloc'ed size*/
 	unsigned long real_used; /* used+malloc overhead*/
@@ -109,7 +111,7 @@ struct fm_block{
 };
 
 
-
+inline unsigned long frag_size(void* p);
 struct fm_block* fm_malloc_init(char* address, unsigned long size);
 
 #ifdef DBG_F_MALLOC
@@ -160,12 +162,7 @@ static inline unsigned long fm_get_max_real_used(struct fm_block* qm)
 }
 static inline unsigned long fm_get_frags(struct fm_block* qm)
 {
-	unsigned long frags;
-	unsigned int r;
-	for(r=0,frags=0;r<F_HASH_SIZE; r++){
-		frags+=qm->free_hash[r].no;
-	}
-	return frags;
+	return qm->fragments;
 }
 #endif /*STATISTICS*/
 

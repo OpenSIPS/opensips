@@ -40,6 +40,6 @@ CFLAGS:=$(MOD_CFLAGS)
 LDFLAGS:=$(MOD_LDFLAGS)
 endif
 
-CFLAGS+=-DMOD_NAME='"$(MOD_NAME)"'
+CFLAGS+=-DMOD_NAME='$(MOD_NAME)'
 
 include ../../Makefile.rules

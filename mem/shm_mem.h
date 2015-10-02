@@ -39,6 +39,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 
+
 #ifndef SHM_MMAP
 
 #include <sys/shm.h>
@@ -65,6 +66,11 @@
 #include "../dprint.h"
 #include "../lock_ops.h" /* we don't include locking.h on purpose */
 #include "common.h"
+
+#ifdef SHM_EXTRA_STATS
+#include "module_info.h"
+#include "mem_stats.h"
+#endif
 
 #ifdef VQ_MALLOC
 #	include "vq_malloc.h"
@@ -203,12 +209,16 @@ inline static void shm_threshold_check(void)
 #define shm_unlock(i)  lock_release(&mem_lock[i])
 #endif
 
+#ifdef SHM_EXTRA_STATS
+	#define PASTER(_x, _y) _x ## _y
+	#define VAR_STAT(_n) PASTER(_n, _mem_stat)
+#endif
 
 #ifdef DBG_QM_MALLOC
 
-#ifdef __SUNPRO_C
-		#define __FUNCTION__ ""  /* gcc specific */
-#endif
+	#ifdef __SUNPRO_C
+			#define __FUNCTION__ ""  /* gcc specific */
+	#endif
 
 inline static void* _shm_malloc_unsafe(unsigned int size,
 	const char *file, const char *function, int line )
@@ -216,8 +226,12 @@ inline static void* _shm_malloc_unsafe(unsigned int size,
 	void *p;
 
 	p = MY_MALLOC_UNSAFE(shm_block, size, file, function, line);
-
 	shm_threshold_check();
+
+#ifdef SHM_EXTRA_STATS
+	unsigned long size_f = frag_size(p);
+	update_module_stats(size_f, size_f + FRAG_OVERHEAD, 1, VAR_STAT(MOD_NAME));
+#endif
 
 	return p;
 }
@@ -227,16 +241,21 @@ inline static void* _shm_malloc(unsigned int size,
 {
 	void *p;
 
-#ifndef HP_MALLOC
-	shm_lock();
-#endif
+	#ifndef HP_MALLOC
+		shm_lock();
+	#endif
 
 	p = MY_MALLOC(shm_block, size, file, function, line);
 	shm_threshold_check();
 
-#ifndef HP_MALLOC
-	shm_unlock();
-#endif
+	#ifndef HP_MALLOC
+		shm_unlock();
+	#endif
+
+	#ifdef SHM_EXTRA_STATS
+		unsigned long size_f = frag_size(p);
+		update_module_stats(size_f, size_f + FRAG_OVERHEAD, 1, VAR_STAT(MOD_NAME));
+	#endif
 
 	return p; 
 }
@@ -246,6 +265,10 @@ inline static void* _shm_realloc(void *ptr, unsigned int size,
 		const char* file, const char* function, int line )
 {
 	void *p;
+
+	#ifdef SHM_EXTRA_STATS
+		long size_f = frag_size(ptr);
+	#endif
 
 #ifndef HP_MALLOC
 	shm_lock();
@@ -258,6 +281,12 @@ inline static void* _shm_realloc(void *ptr, unsigned int size,
 	shm_unlock();
 #endif
 
+	#ifdef SHM_EXTRA_STATS
+	size_f = (frag_size(p) - size_f);
+	update_module_stats(size_f, size_f + (ptr)?(0):(FRAG_OVERHEAD), (ptr)?(0):(1), VAR_STAT(MOD_NAME));
+
+	#endif
+
 	return p;
 }
 
@@ -266,11 +295,21 @@ inline static void* _shm_realloc_unsafe(void *ptr, unsigned int size,
 {
 	void *p;
 
+	#ifdef SHM_EXTRA_STATS
+		long size_f = frag_size(ptr);
+	#endif
+
 	p = MY_REALLOC_UNSAFE(shm_block, ptr, size, file, function, line);
 	shm_threshold_check();
 
+	#ifdef SHM_EXTRA_STATS
+	size_f = (frag_size(p) - size_f);
+	update_module_stats(size_f, size_f + (ptr)?(0):(FRAG_OVERHEAD), (ptr)?(0):(1), VAR_STAT(MOD_NAME));
+	#endif
+
 	return p;
 }
+
 
 #define shm_malloc( _size ) _shm_malloc((_size), \
 	__FILE__, __FUNCTION__, __LINE__ )
@@ -285,12 +324,21 @@ inline static void* _shm_realloc_unsafe(void *ptr, unsigned int size,
 	__FILE__, __FUNCTION__, __LINE__ )
 
 
+#ifndef SHM_EXTRA_STATS
+	#define shm_free_unsafe( _p  ) \
+	do {\
+		MY_FREE( shm_block, (_p), __FILE__, __FUNCTION__, __LINE__ ); \
+		shm_threshold_check(); \
+	} while(0)
+#else
+	#define shm_free_unsafe( _p  ) \
+	do {\
+		update_module_stats(-frag_size(_p), -(frag_size(_p) + FRAG_OVERHEAD), -1, VAR_STAT(MOD_NAME)); \
+		MY_FREE( shm_block, (_p), __FILE__, __FUNCTION__, __LINE__ ); \
+		shm_threshold_check(); \
+	} while(0)
 
-#define shm_free_unsafe( _p  ) \
-do {\
-	MY_FREE( shm_block, (_p), __FILE__, __FUNCTION__, __LINE__ ); \
-	shm_threshold_check(); \
-} while(0)
+#endif
 
 #define shm_free(_p) \
 do { \
@@ -319,6 +367,11 @@ inline static void* shm_malloc_unsafe(unsigned int size)
 
 	shm_threshold_check();
 
+#ifdef SHM_EXTRA_STATS
+	unsigned long size_f = frag_size(p);
+	update_module_stats(size_f, size_f + FRAG_OVERHEAD, 1, VAR_STAT(MOD_NAME));
+#endif
+
 	return p;
 }
 
@@ -335,6 +388,11 @@ inline static void* shm_malloc(unsigned long size)
 
 #ifndef HP_MALLOC
 	shm_unlock();
+#endif
+
+#ifdef SHM_EXTRA_STATS
+	unsigned long size_f = frag_size(p);
+	update_module_stats(size_f, size_f + FRAG_OVERHEAD, 1, VAR_STAT(MOD_NAME));
 #endif
 
 	return p;
@@ -359,11 +417,20 @@ inline static void* shm_realloc(void *ptr, unsigned int size)
 #endif
 #endif
 
+#ifdef SHM_EXTRA_STATS
+	long size_f = frag_size(ptr);
+#endif
+
 	p = MY_REALLOC(shm_block, ptr, size);
 	shm_threshold_check();
 
 #ifndef HP_MALLOC
 	shm_unlock();
+#endif
+
+#ifdef SHM_EXTRA_STATS
+	size_f = (frag_size(p) - size_f);
+	update_module_stats(size_f, size_f + (ptr)?(0):(FRAG_OVERHEAD), (ptr)?(0):(1), VAR_STAT(MOD_NAME));
 #endif
 
 	return p;
@@ -372,18 +439,35 @@ inline static void* shm_realloc(void *ptr, unsigned int size)
 inline static void* shm_realloc_unsafe(void *ptr, unsigned int size)
 {
 	void *p;
+#ifdef SHM_EXTRA_STATS
+	long size_f = frag_size(ptr);
+#endif
 
 	p = MY_REALLOC_UNSAFE(shm_block, ptr, size);
 	shm_threshold_check();
 
+#ifdef SHM_EXTRA_STATS
+	size_f = (frag_size(p) - size_f);
+	update_module_stats(size_f, size_f + (ptr)?(0):(FRAG_OVERHEAD), (ptr)?(0):(1), VAR_STAT(MOD_NAME));
+#endif
 	return p;
 }
 
+#ifndef SHM_EXTRA_STATS
 #define shm_free_unsafe( _p ) \
 do { \
 	MY_FREE_UNSAFE(shm_block, (_p)); \
 	shm_threshold_check(); \
 } while(0)
+#else
+#define shm_free_unsafe( _p ) \
+do { \
+	update_module_stats(-frag_size(_p), -(frag_size(_p) + FRAG_OVERHEAD), -1, VAR_STAT(MOD_NAME)); \
+	MY_FREE_UNSAFE(shm_block, (_p)); \
+	shm_threshold_check(); \
+} while(0)
+
+#endif
 
 /**
  * FIXME: tmp hacks --liviu
@@ -406,6 +490,10 @@ inline static void shm_free(void *_p)
 #endif
 
 #ifdef HP_MALLOC
+	#ifdef SHM_EXTRA_STATS
+	long size_f = frag_size(_p);
+	update_module_stats(-size_f, -size_f - FRAG_OVERHEAD, -1, VAR_STAT(MOD_NAME));
+	#endif
 	MY_FREE(shm_block, _p);
 #else
 	shm_free_unsafe( (_p));

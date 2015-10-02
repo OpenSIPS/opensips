@@ -64,6 +64,7 @@
 #define QM_HASH_SIZE ((unsigned long)(QM_MALLOC_OPTIMIZE/ROUNDTO + \
 		(sizeof(long)*8-QM_MALLOC_OPTIMIZE_FACTOR)+1))
 
+#define FRAG_OVERHEAD	(sizeof(struct qm_frag)+sizeof(struct qm_frag_end))
 /* hash structure:
  * 0 .... QM_MALLOC_OPTIMIE/ROUNDTO  - small buckets, size increases with
  *                            ROUNDTO from bucket to bucket
@@ -108,6 +109,7 @@ struct qm_block{
 	unsigned long used; /* alloc'ed size*/
 	unsigned long real_used; /* used+malloc overhead*/
 	unsigned long max_real_used;
+	unsigned long fragments; /* number of fragments in use */
 
 	struct qm_frag* first_frag;
 	struct qm_frag_end* last_frag_end;
@@ -119,6 +121,7 @@ struct qm_block{
 
 
 struct qm_block* qm_malloc_init(char* address, unsigned long size);
+inline unsigned long frag_size(void* p);
 
 #ifdef DBG_QM_MALLOC
 void* qm_malloc(struct qm_block*, unsigned long size, const char* file,
@@ -173,12 +176,7 @@ static inline unsigned long qm_get_max_real_used(struct qm_block* qm)
 }
 static inline unsigned long qm_get_frags(struct qm_block* qm)
 {
-	int r;
-	unsigned long frags;
-	for(r=0,frags=0;r<QM_HASH_SIZE; r++){
-		frags+=qm->free_hash[r].no;
-	}
-	return frags;
+	return qm->fragments;
 }
 #endif /* STATISTICS */
 

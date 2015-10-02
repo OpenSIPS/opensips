@@ -88,7 +88,7 @@
 #define DPRINT_LEV   L_ERR
 
 #ifndef MOD_NAME
-	#define MOD_NAME "core"
+	#define MOD_NAME core
 #endif
 
 #ifndef NO_DEBUG
@@ -203,8 +203,9 @@ static inline char* dp_time(void)
 #else /* NO_LOG */
 
 	#ifdef __SUNPRO_C
-
-		#define LOG_PREFIX  MOD_NAME ": "
+		#define LOG_PREFIX_UTIL2(_n) #_n
+		#define LOG_PREFIX_UTIL(_n)  LOG_PREFIX_UTIL2(_n)
+		#define LOG_PREFIX  LOG_PREFIX_UTIL(MOD_NAME) ": "
 
 		#define MY_DPRINT( ...) \
 				dprint( LOG_PREFIX __VA_ARGS__ ) \
@@ -324,7 +325,9 @@ static inline char* dp_time(void)
 
 	#else /*SUN_PRO_C*/
 
-		#define LOG_PREFIX  MOD_NAME ":%s: "
+		#define LOG_PREFIX_UTIL2(_n) #_n
+		#define LOG_PREFIX_UTIL(_n)  LOG_PREFIX_UTIL2(_n)
+		#define LOG_PREFIX  LOG_PREFIX_UTIL(MOD_NAME) ":%s: "
 
 		#define MY_DPRINT( _prefix, _fmt, args...) \
 				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \

@@ -108,6 +108,10 @@
 #include "net/trans.h"
 #include "config.h"
 
+#ifdef SHM_EXTRA_STATS
+#include "mem/module_info.h"
+#endif
+
 #ifdef DEBUG_DMALLOC
 #include <dmalloc.h>
 #endif
@@ -140,11 +144,21 @@ action_elem_t *a_tmp;
 static inline void warn(char* s);
 static struct socket_id* mk_listen_id(char*, enum sip_protos, int);
 static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
+static struct multi_str *new_string(char *s);
 
 extern int line;
 extern int column;
 extern int startcolumn;
 extern char *finame;
+
+#ifndef SHM_EXTRA_STATS
+struct multi_str{
+	char *s;
+	struct multi_str* next;
+};
+#else 
+static struct multi_str *tmp_mod;
+#endif
 
 #define get_cfg_file_name \
 	((finame) ? finame : cfg_file ? cfg_file : "default")
@@ -196,6 +210,7 @@ extern char *finame;
 	struct ip_addr* ipaddr;
 	struct socket_id* sockid;
 	struct _pv_spec *specval;
+	struct multi_str* multistr;
 }
 
 /* terminals */
@@ -306,6 +321,7 @@ extern char *finame;
 %token LOGNAME
 %token AVP_ALIASES
 %token LISTEN
+%token MEMGROUP
 %token ALIAS
 %token AUTO_ALIASES
 %token DNS
@@ -462,6 +478,7 @@ extern char *finame;
 %type <strval> route_name
 %type <intval> route_param
 %type <strval> folded_string
+%type <multistr> multi_string
 
 /*
  * since "if_cmd" is inherently ambiguous,
@@ -594,6 +611,10 @@ listen_def:	phostport				{ $$=$1; }
 
 any_proto:	  ANY	{ $$=PROTO_NONE; }
 			| proto	{ $$=$1; }
+
+multi_string: 	STRING { $$=new_string($1); }
+		| STRING multi_string { $$=new_string($1); $$->next=$2; }
+		;
 
 blst_elem: LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 				s_tmp.s=$8;
@@ -884,6 +905,46 @@ assign_stm: DEBUG EQUAL snumber {
 		| LISTEN EQUAL  error { yyerror("ip address or hostname "
 						"expected (use quotes if the hostname includes"
 						" config keywords)"); }
+		| MEMGROUP EQUAL STRING COLON multi_string {
+							/* convert STIRNG ($3) to an ID */
+							/* update the memstats type for each module */
+							#ifndef SHM_EXTRA_STATS
+								LM_CRIT("SHM_EXTRA_STATS not defined");
+								YYABORT;
+							#else
+
+							#ifdef SHM_SHOW_DEFAULT_GROUP
+							if(strcmp($3, "default") == 0){
+								LM_CRIT("default group  name is not allowed");
+								YYABORT;
+							}
+							#endif
+
+							for(tmp_mod = mod_names; tmp_mod; tmp_mod=tmp_mod->next){
+								if(strcmp($3, tmp_mod->s) == 0){
+									LM_CRIT("The same mem-group name is used twice: [%s] [%s]\n", $3, tmp_mod->s);
+									YYABORT;
+								}
+							}
+
+							tmp_mod = pkg_malloc(sizeof(struct multi_str));
+							if(!tmp_mod){
+								LM_CRIT("out of pkg memory");
+								YYABORT;
+							}
+
+							tmp_mod->s = $3;
+							tmp_mod->next = mod_names;
+							mod_names = tmp_mod;
+							for (tmp_mod = $5; tmp_mod; tmp_mod = tmp_mod->next){
+								if(set_mem_idx(tmp_mod->s, mem_free_idx)){
+									YYABORT;
+								}
+							}
+							mem_free_idx++;
+							#endif
+						}
+		| MEMGROUP EQUAL STRING COLON error { yyerror("invalid or no module specified"); }
 		| ALIAS EQUAL  id_lst {
 							for(lst_tmp=$3; lst_tmp; lst_tmp=lst_tmp->next)
 								add_alias(lst_tmp->name, strlen(lst_tmp->name),
@@ -2687,6 +2748,18 @@ static struct socket_id* mk_listen_id(char* host, enum sip_protos proto,
 	}
 
 	return l;
+}
+
+static struct multi_str *new_string(char *s)
+{
+	struct multi_str *ms = pkg_malloc(sizeof(struct multi_str));
+	if (!ms) {
+		LM_CRIT("cfg. parser: out of memory.\n");
+	}else{
+		ms->s    = s;
+		ms->next = NULL;
+	}
+	return ms;
 }
 
 static struct socket_id* set_listen_id_adv(struct socket_id* sock,
