@@ -72,9 +72,9 @@ int gzip_compress(unsigned char* in, unsigned long ilen, str* out, unsigned long
 		return rc;
 	}
 
-	/* zlib doc states that dest buffer size must be 0.1% +12 larger than
+	/* zlib doc states that dest buffer size must be 10% +12 larger than
 		the input buffer */
-	neededSize = (int)((float)ilen * 1.01 + 12);
+	neededSize = (int)((float)ilen * 1.1 + 12);
 
 	if (!out->s) {
 		out->s = pkg_malloc(neededSize);

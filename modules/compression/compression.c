@@ -1337,7 +1337,7 @@ only_body:
 			bufcompressed.len = (int)temp;
 
 			if (check_zlib_rc(rc)) {
-				LM_ERR("Compression failed\n");
+				LM_ERR("Body compression failed\n");
 				goto free_mem_full;
 			}
 		}
@@ -1359,7 +1359,7 @@ only_body:
 			hdr_bufcompressed.len = temp;
 
 			if (check_zlib_rc(rc)) {
-				LM_ERR("Compression failed\n");
+				LM_ERR("Header compression failed\n");
 				goto free_mem_full;
 			}
 		}
@@ -1375,7 +1375,7 @@ only_body:
 					mc_level);
 
 			if (check_zlib_rc(rc)) {
-				LM_ERR("Compression failed\n");
+				LM_ERR("Body compression failed\n");
 				goto free_mem_full;
 			}
 
@@ -1392,7 +1392,7 @@ only_body:
 					mc_level);
 
 			if (check_zlib_rc(rc)) {
-				LM_ERR("Compression failed\n");
+				LM_ERR("Header compression failed\n");
 				goto free_mem_full;
 			}
 			hdr_bufcompressed.s = hdr_out.s;
@@ -1868,8 +1868,8 @@ static int mc_decompress(struct sip_msg* msg)
 							hdr_vec[1]->body.len
 					);
 	} else if (hdr_vec[1]) {
-		b64_decode.s = hdr_vec[1]->body.s;
-		b64_decode.len = hdr_vec[1]->body.len;
+		hdr_b64_decode.s = hdr_vec[1]->body.s;
+		hdr_b64_decode.len = hdr_vec[1]->body.len;
 	}
 
 	switch (hdrs_algo) {
@@ -1885,7 +1885,7 @@ static int mc_decompress(struct sip_msg* msg)
 			uncomp_hdrs.len = temp;
 
 			if (check_zlib_rc(rc)) {
-				LM_ERR("decompression failed\n");
+				LM_ERR("header decompression failed\n");
 				return -1;
 			}
 			break;
@@ -1897,7 +1897,7 @@ static int mc_decompress(struct sip_msg* msg)
 					&temp);
 
 			if (check_zlib_rc(rc)) {
-				LM_ERR("decompression failed\n");
+				LM_ERR("header decompression failed\n");
 				return -1;
 			}
 
@@ -1921,7 +1921,7 @@ static int mc_decompress(struct sip_msg* msg)
 					(unsigned long)b64_decode.len);
 
 			if (check_zlib_rc(rc)) {
-				LM_ERR("decompression failed\n");
+				LM_ERR("body decompression failed\n");
 				return -1;
 			}
 
@@ -1937,7 +1937,7 @@ static int mc_decompress(struct sip_msg* msg)
 					&temp);
 
 			if (check_zlib_rc(rc)) {
-				LM_ERR("decompression failed\n");
+				LM_ERR("body decompression failed\n");
 				return -1;
 			}
 
