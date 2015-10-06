@@ -175,6 +175,7 @@ str acc_sipcode_col    = str_init("sip_code");
 str acc_sipreason_col  = str_init("sip_reason");
 str acc_time_col       = str_init("time");
 str acc_duration_col   = str_init("duration");
+str acc_ms_duration_col= str_init("ms_duration");
 str acc_setuptime_col  = str_init("setuptime");
 str acc_created_col    = str_init("created");
 

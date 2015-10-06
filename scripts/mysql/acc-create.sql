@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('acc','6');
+INSERT INTO version (table_name, table_version) values ('acc','7');
 CREATE TABLE acc (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     method CHAR(16) DEFAULT '' NOT NULL,
@@ -9,6 +9,7 @@ CREATE TABLE acc (
     sip_reason CHAR(32) DEFAULT '' NOT NULL,
     time DATETIME NOT NULL,
     duration INT(11) UNSIGNED DEFAULT 0 NOT NULL,
+    ms_duration INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     setuptime INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     created DATETIME DEFAULT NULL
 ) ENGINE=InnoDB;

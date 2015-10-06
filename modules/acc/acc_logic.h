@@ -40,7 +40,7 @@ struct acc_enviroment {
 	str reason;
 	struct hdr_field *to;
 	str text;
-	time_t ts;
+	struct timeval ts;
   event_id_t event;
 };
 

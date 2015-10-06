@@ -75,6 +75,7 @@ extern str acc_sipcode_col;
 extern str acc_sipreason_col;
 extern str acc_time_col;
 extern str acc_duration_col;
+extern str acc_ms_duration_col;
 extern str acc_setuptime_col;
 extern str acc_created_col;
 

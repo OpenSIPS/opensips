@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('acc','6');
+INSERT INTO version (table_name, table_version) values ('acc','7');
 CREATE TABLE acc (
     id NUMBER(10) PRIMARY KEY,
     method VARCHAR2(16) DEFAULT '',
@@ -9,6 +9,7 @@ CREATE TABLE acc (
     sip_reason VARCHAR2(32) DEFAULT '',
     time DATE,
     duration NUMBER(10) DEFAULT 0 NOT NULL,
+    ms_duration NUMBER(10) DEFAULT 0 NOT NULL,
     setuptime NUMBER(10) DEFAULT 0 NOT NULL,
     created DATE DEFAULT NULL
 );
