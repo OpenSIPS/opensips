@@ -67,11 +67,10 @@ Di-Shi Sun
               1.4.4. requestosprouting()
               1.4.5. checkosproute()
               1.4.6. prepareosproute()
-              1.4.7. prepareredirectosproutes()
+              1.4.7. prepareospresponse()
               1.4.8. prepareallosproutes()
-              1.4.9. preparecnamresponse()
-              1.4.10. checkcallingtranslation()
-              1.4.11. reportospusage()
+              1.4.9. checkcallingtranslation()
+              1.4.10. reportospusage()
 
    2. Developer Guide
 
@@ -114,11 +113,10 @@ Di-Shi Sun
    1.33. requestosprouting usage
    1.34. checkosproute usage
    1.35. prepareosproute usage
-   1.36. prepareredirectosproutes usage
+   1.36. prepareospresponse usage
    1.37. prepareallosproutes usage
-   1.38. preparecnamresponse usage
-   1.39. checkcallingtranslation usage
-   1.40. reportospusage usage
+   1.38. checkcallingtranslation usage
+   1.39. reportospusage usage
 
 Chapter 1. Admin Guide
 
@@ -563,7 +561,7 @@ modparam("osp", "destination_media_avp", "$avp(destmedia)")
    This function checks for the existence of the OSP-Auth-Token
    header field.
 
-   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE.
 
    Example 1.30. checkospheader usage
 ...
@@ -582,7 +580,7 @@ if (checkospheader()) {
    header is found or the header token is invalid or expired, -1
    is returned; on successful validation 1 is returned.
 
-   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE.
 
    Example 1.31. validateospheader usage
 ...
@@ -627,7 +625,7 @@ if (getlocaladdress()) {
    authentication failed or there is no route to destination or
    the route is blocked) -1 is returned.
 
-   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE.
 
    Example 1.33. requestosprouting usage
 ...
@@ -643,7 +641,7 @@ if (requestosprouting()) {
    This function is used to check if there is any route for the
    call.
 
-   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE.
 
    Example 1.34. checkosproute usage
 ...
@@ -677,22 +675,22 @@ if (prepareosproute()) {
 };
 ...
 
-1.4.7. prepareredirectosproutes()
+1.4.7. prepareospresponse()
 
    This function tries to prepare all the routes in the list
-   returned by the peering server into a SIP 300 Redirect message.
-   The message is then replied to the source. If unsuccessful in
-   preparing the routes a SIP 500 is sent back and a trace message
-   is logged.
+   returned by the peering server into SIP 300 Redirect or SIP 380
+   Alternative Service message. The message is then replied to the
+   source. If unsuccessful in preparing the routes a SIP 500 is
+   sent back and a trace message is logged.
 
-   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE.
 
-   Example 1.36. prepareredirectosproutes usage
+   Example 1.36. prepareospresponse usage
 ...
-if (prepareredirectosproutes()) {
-  log(1,"Routes are prepared, now redirecting the call\n");
+if (prepareospresponse()) {
+  log(1,"Response is prepared.\n");
 } else {
-  log(1,"Could not prepare the routes. No destination available\n");
+  log(1,"Could not prepare the response.\n");
 };
 ...
 
@@ -703,7 +701,7 @@ if (prepareredirectosproutes()) {
    to the destinations. If unsuccessful in preparing the routes a
    SIP 500 is sent back and a trace message is logged.
 
-   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE.
 
    Example 1.37. prepareallosproutes usage
 ...
@@ -714,24 +712,7 @@ if (prepareallosproutes()) {
 };
 ...
 
-1.4.9. preparecnamresponse()
-
-   This function tries to prepare the CNAM returned by the peering
-   server. If unsuccessful in preparing the routes a SIP 500 is
-   sent back and a trace message is logged.
-
-   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
-
-   Example 1.38. preparecnamresponse usage
-...
-if (preparecnamresponse()) {
-  log(1,"CNAM is prepared, new sending the response\n");
-} else {
-  log(1,"Could not prepare CNAM\n");
-};
-...
-
-1.4.10. checkcallingtranslation()
+1.4.9. checkcallingtranslation()
 
    This function is used to check if the calling number is
    translated. Before calling checkcallingtranslation,
@@ -744,7 +725,7 @@ if (preparecnamresponse()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.39. checkcallingtranslation usage
+   Example 1.38. checkcallingtranslation usage
 ...
 if (checkcallingtranslation()) {
   # Remove the Remote_Party-ID from the received message
@@ -756,7 +737,7 @@ if (checkcallingtranslation()) {
 }
 ...
 
-1.4.11. reportospusage()
+1.4.10. reportospusage()
 
    This function should be called after receiving a BYE message.
    If the message contains an OSP cookie, the function will
@@ -773,7 +754,7 @@ if (checkcallingtranslation()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.40. reportospusage usage
+   Example 1.39. reportospusage usage
 ...
 if (is_direction("downstream")) {
   log(1,"This BYE message is from SOURCE\n");
