@@ -33,6 +33,7 @@
 #include "../../usr_avp.h"
 #include "osp_mod.h"
 
+int _osp_inbound_avpid = OSP_DEF_AVP;
 int _osp_origdest_avpid = OSP_DEF_AVP;
 int _osp_termdest_avpid = OSP_DEF_AVP;
 int _osp_calling_avpid = OSP_DEF_AVP;

@@ -39,6 +39,7 @@
 #include "destination.h"
 #include "usage.h"
 
+extern int _osp_inbound_avpid;
 extern int _osp_origdest_avpid;
 extern int _osp_termdest_avpid;
 extern int _osp_calling_avpid;
@@ -46,11 +47,12 @@ extern int _osp_destmedia_avpid;
 extern unsigned short _osp_destmedia_avptype;
 
 /* Name of AVP of OSP */
+static str OSP_INBOUND_NAME = {"_osp_inbound_", 13};
 static str OSP_ORIGDEST_NAME = {"_osp_orig_dests_", 16};
 static str OSP_TERMDEST_NAME = {"_osp_term_dests_", 16};
 static str OSP_CALLING_NAME = {"_osp_calling_translated_", 24};
 
-static int ospSaveDestination(osp_dest* dest, int name);
+static int ospSaveDestination(osp_dest* dest, int avpid);
 static void ospRecordCode(int code, osp_dest* dest);
 static int ospIsToReportUsage(int code);
 
@@ -60,6 +62,11 @@ static int ospIsToReportUsage(int code);
  */
 int ospParseAvps(void)
 {
+    if (parse_avp_spec(&OSP_INBOUND_NAME, &_osp_inbound_avpid)) {
+        LM_ERR("cannot get INBOUND AVP id\n");
+        return -1;
+    }
+
     if (parse_avp_spec(&OSP_ORIGDEST_NAME, &_osp_origdest_avpid)) {
         LM_ERR("cannot get ORIGDEST AVP id\n");
         return -1;
@@ -76,6 +83,67 @@ int ospParseAvps(void)
     }
 
     return 0;
+}
+
+/*
+ * Initialize inbound info structure
+ * param inbound Inbound info data structure
+ */
+void ospInitInboundInfo(
+    osp_inbound* inbound)
+{
+    memset(inbound, 0, sizeof(osp_inbound));
+}
+
+/*
+ * Save inbound info as an AVP
+ *     avpid - osp_inbound_avpid
+ *     value - osp_inbound wrapped in a string
+ * param inbound Inbound info structure
+ * return 0 success, -1 failure
+ */
+int ospSaveInboundInfo(
+    osp_inbound* inbound)
+{
+    str wrapper;
+    int result = -1;
+
+    wrapper.s = (char*)inbound;
+    wrapper.len = sizeof(osp_inbound);
+
+    /*
+     * add_avp will make a private copy of both the avpid and value in shared
+     * memory which will be released by TM at the end of the transaction
+     */
+    if (add_avp(AVP_VAL_STR, _osp_inbound_avpid, (int_str)wrapper) == 0) {
+        LM_DBG("inbound info saved\n");
+        result = 0;
+    } else {
+        LM_ERR("failed to save inbound info\n");
+    }
+
+    return result;
+}
+
+/*
+ * Retrieved the inbound info from an AVP
+ *     avpid - osp_inbound_avpid
+ *     value - osp_inbound wrapped in a string
+ *  return NULL on failure
+ */
+osp_inbound* ospGetInboundInfo(void)
+{
+    int_str inboundval;
+    osp_inbound* inbound = NULL;
+
+    if (search_first_avp(AVP_VAL_STR, _osp_inbound_avpid, &inboundval, 0) != NULL) {
+        /* OSP inbound info is wrapped in a string */
+        inbound = (osp_inbound*)inboundval.s.s;
+
+        LM_DBG("inbound info found\n");
+    }
+
+    return inbound;
 }
 
 /*
@@ -98,7 +166,7 @@ osp_dest* ospInitDestination(
 
 /*
  * Save destination as an AVP
- *     name - osp_origdest_id / osp_origdest_id
+ *     avpid - osp_origdest_avpid / osp_termdest_avpid
  *     value - osp_dest wrapped in a string
  * param dest Destination structure
  * param avpid ID of AVP
@@ -115,8 +183,8 @@ static int ospSaveDestination(
     wrapper.len = sizeof(osp_dest);
 
     /*
-     * add_avp will make a private copy of both the name and value in shared memory
-     * which will be released by TM at the end of the transaction
+     * add_avp will make a private copy of both the avpid and value in shared
+     * memory which will be released by TM at the end of the transaction
      */
     if (add_avp(AVP_VAL_STR, avpid, (int_str)wrapper) == 0) {
         LM_DBG("destination saved\n");
@@ -152,7 +220,7 @@ int ospSaveTermDestination(
 
 /*
  * Check if there is an unused and supported originate destination from an AVP
- *     name - OSP_ORIGDEST_NAME
+ *     avpid - osp_origdest_avpid
  *     value - osp_dest wrapped in a string
  *     search unused (used==0) & supported (support==1)
  * return 0 success, -1 failure
@@ -200,7 +268,7 @@ int ospCheckOrigDestination(void)
 
 /*
  * Retrieved an unused and supported originate destination from an AVP
- *     name - OSP_ORIGDEST_NAME
+ *     avpid - osp_origdest_avpid
  *     value - osp_dest wrapped in a string
  *     There can be 0, 1 or more originate destinations.
  *     Find the 1st unused destination (used==0) & supported (support==1),
@@ -250,7 +318,7 @@ osp_dest* ospGetNextOrigDestination(void)
 
 /*
  * Retrieved the last used originate destination from an AVP
- *    name - OSP_ORIGDEST_NAME
+ *    avpid - osp_origdest_avpid
  *    value - osp_dest wrapped in a string
  *    There can be 0, 1 or more destinations.
  *    Find the last used destination (used==1) & supported (support==1),
@@ -290,7 +358,7 @@ osp_dest* ospGetLastOrigDestination(void)
 
 /*
  * Retrieved the terminate destination from an AVP
- *     name - OSP_TERMDEST_NAME
+ *     avpid - osp_termdest_avpid
  *     value - osp_dest wrapped in a string
  *     There can be 0 or 1 term destinations. Find and return it.
  *  return NULL on failure (no terminate destination)

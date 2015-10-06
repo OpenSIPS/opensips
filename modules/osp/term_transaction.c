@@ -84,9 +84,11 @@ int ospValidateHeader(
     unsigned callidsize = 0;
     unsigned char token[OSP_TOKENBUF_SIZE];
     unsigned int tokensize = sizeof(token);
+    osp_inbound inbound;
     osp_dest dest;
     int result = MODULE_RETURNCODE_FALSE;
 
+    ospInitInboundInfo(&inbound);
     ospInitDestination(&dest);
 
     if ((errorcode = OSPPTransactionNew(_osp_provider, &transaction) != OSPC_ERR_NO_ERROR)) {
@@ -97,7 +99,7 @@ int ospValidateHeader(
         LM_ERR("failed to extract called number\n");
     } else if (ospGetCallId(msg, &callid) != 0) {
         LM_ERR("failed to extract call id\n");
-    } else if (ospGetViaAddress(msg, dest.source, sizeof(dest.source)) != 0) {
+    } else if (ospGetViaAddress(msg, inbound.source, sizeof(inbound.source)) != 0) {
         LM_ERR("failed to extract source device address\n");
     } else if (ospGetOspHeader(msg, token, &tokensize) != 0) {
         LM_ERR("failed to extract OSP authorization token\n");
@@ -150,9 +152,8 @@ int ospValidateHeader(
             dest.callid[dest.callidsize] = 0;
             dest.transid = ospGetTransactionId(transaction);
             dest.type = OSPC_ROLE_DESTINATION;
-            dest.authtime = time(NULL);
+            inbound.authtime = time(NULL);
             strncpy(dest.host, _osp_in_device, sizeof(dest.host) - 1);
-            strncpy(dest.origcalled, dest.called, sizeof(dest.origcalled) - 1);
 
             if (ospSaveTermDestination(&dest) == -1) {
                 LM_ERR("failed to save terminate destination\n");
@@ -164,7 +165,7 @@ int ospValidateHeader(
                     dest.callidsize,
                     dest.callid,
                     dest.transid);
-                ospRecordTermTransaction(msg, &dest);
+                ospRecordTermTransaction(msg, &inbound, &dest);
                 result = MODULE_RETURNCODE_TRUE;
             }
         } else {

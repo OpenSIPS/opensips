@@ -82,20 +82,22 @@ extern OSPTPROVHANDLE _osp_provider;
 extern str OSP_ORIGDEST_NAME;
 extern struct rr_binds osp_rr;
 
-static void ospRecordTransaction(struct sip_msg* msg, osp_dest* dest, int isorig);
-static int ospBuildUsageFromDestination(OSPTTRANHANDLE transaction, osp_dest* dest, int lastcode);
-static int ospReportUsageFromDestination(OSPTTRANHANDLE transaction, osp_dest* dest);
+static void ospRecordTransaction(struct sip_msg* msg, osp_inbound* inbound, osp_dest* dest, int isorig);
+static int ospBuildUsageFromDestination(OSPTTRANHANDLE transaction, osp_inbound* inbound, osp_dest* dest, int lastcode);
+static int ospReportUsageFromDestination(OSPTTRANHANDLE transaction, osp_inbound* inbound, osp_dest* dest);
 static int ospReportUsageFromCookie(struct sip_msg* msg, char* cooky, OSPT_CALL_ID* callid, int release, OSPE_ROLE type);
 
 /*
  * Create OSP cookie and insert it into Record-Route header
  * param msg SIP message
  * param tansid Transaction ID
+ * param inbound Inbound info
  * param dest Destination
  * param isorig Originate / Terminate
  */
 static void ospRecordTransaction(
     struct sip_msg* msg,
+    osp_inbound* inbound,
     osp_dest* dest,
     int isorig)
 {
@@ -119,9 +121,9 @@ static void ospRecordTransaction(
             OSP_COOKIE_TRANSID,
             dest->transid,
             OSP_COOKIE_SRCIP,
-            dest->srcdev,
+            inbound->srcdev,
             OSP_COOKIE_AUTHTIME,
-            (unsigned int)dest->authtime,
+            (unsigned int)inbound->authtime,
             OSP_COOKIE_DCOUNT,
             dest->destcount);
     } else {
@@ -133,18 +135,18 @@ static void ospRecordTransaction(
             OSP_COOKIE_TRANSID,
             dest->transid,
             OSP_COOKIE_SRCIP,
-            dest->source,
+            inbound->source,
             OSP_COOKIE_AUTHTIME,
-            (unsigned int)dest->authtime);
+            (unsigned int)inbound->authtime);
     }
-    if ((_osp_report_nid & OSP_REPORT_SNID) && dest->snid[0]) {
+    if ((_osp_report_nid & OSP_REPORT_SNID) && inbound->snid[0]) {
         cookie.len = snprintf(
             buffer2,
             sizeof(buffer2),
             "%s_%c%s",
             buffer1,
             OSP_COOKIE_SNID,
-            dest->snid);
+            inbound->snid);
         strncpy(buffer1, buffer2, sizeof(buffer1));
     }
     if ((_osp_report_nid & OSP_REPORT_DNID) && dest->dnid[0]) {
@@ -170,29 +172,33 @@ static void ospRecordTransaction(
 /*
  * Create OSP originate cookie and insert it into Record-Route header
  * param msg SIP message
+ * param inbound Inbound info
  * param dest Destination
  */
 void ospRecordOrigTransaction(
     struct sip_msg* msg,
+    osp_inbound* inbound,
     osp_dest* dest)
 {
     int isorig = 1;
 
-    ospRecordTransaction(msg, dest, isorig);
+    ospRecordTransaction(msg, inbound, dest, isorig);
 }
 
 /*
  * Create OSP terminate cookie and insert it into Record-Route header
  * param msg SIP message
+ * param inbound Inbound info
  * param dest Destination
  */
 void ospRecordTermTransaction(
     struct sip_msg* msg,
+    osp_inbound* inbound,
     osp_dest* dest)
 {
     int isorig = 0;
 
-    ospRecordTransaction(msg, dest, isorig);
+    ospRecordTransaction(msg, inbound, dest, isorig);
 }
 
 /*
@@ -550,12 +556,14 @@ int ospReportUsage(
 /*
  * Build OSP usage from destination
  * param transaction OSP transaction handle
+ * param inbound Inbound info
  * param dest Destination
  * param lastcode Destination status
  * return 0 success, others failure
  */
 static int ospBuildUsageFromDestination(
     OSPTTRANHANDLE transaction,
+    osp_inbound* inbound,
     osp_dest* dest,
     int lastcode)
 {
@@ -565,8 +573,8 @@ static int ospBuildUsageFromDestination(
     char host[OSP_STRBUF_SIZE];
     char destdev[OSP_STRBUF_SIZE];
 
-    ospConvertToOutAddress(dest->srcdev, srcdev, sizeof(srcdev));
-    ospConvertToOutAddress(dest->source, source, sizeof(source));
+    ospConvertToOutAddress(inbound->srcdev, srcdev, sizeof(srcdev));
+    ospConvertToOutAddress(inbound->source, source, sizeof(source));
     ospConvertToOutAddress(dest->host, host, sizeof(host));
     ospConvertToOutAddress(dest->destdev, destdev, sizeof(destdev));
 
@@ -580,7 +588,7 @@ static int ospBuildUsageFromDestination(
         destdev,
         dest->calling,
         OSPC_NFORMAT_E164,
-        dest->origcalled,       /* Report original called number */
+        inbound->called,    /* Report original called number */
         OSPC_NFORMAT_E164,
         dest->callidsize,
         dest->callid,
@@ -588,7 +596,7 @@ static int ospBuildUsageFromDestination(
         NULL,
         NULL);
 
-    OSPPTransactionSetSrcNetworkId(transaction, dest->snid);
+    OSPPTransactionSetSrcNetworkId(transaction, inbound->snid);
     OSPPTransactionSetDestNetworkId(transaction, dest->dnid);
 
     OSPPTransactionSetDestAudioAddr(transaction, dest->destmedia);
@@ -605,36 +613,38 @@ static int ospBuildUsageFromDestination(
 /*
  * Report OSP usage from destination
  * param transaction OSP transaction handle
+ * param inbound Inbound info
  * param dest Destination
  * return 0 success
  */
 static int ospReportUsageFromDestination(
     OSPTTRANHANDLE transaction,
+    osp_inbound* inbound,
     osp_dest* dest)
 {
-    OSPPTransactionSetFrom(transaction, OSPC_NFORMAT_DISPLAYNAME, dest->display);
+    OSPPTransactionSetFrom(transaction, OSPC_NFORMAT_DISPLAYNAME, inbound->display);
 
-    OSPPTransactionSetRemotePartyId(transaction, OSPC_NFORMAT_E164, dest->rpid);
-    OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, dest->pai);
-    OSPPTransactionSetDiversion(transaction, dest->divuser, dest->divhost);
-    OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, dest->pci);
+    OSPPTransactionSetRemotePartyId(transaction, OSPC_NFORMAT_E164, inbound->rpid);
+    OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, inbound->pai);
+    OSPPTransactionSetDiversion(transaction, inbound->divuser, inbound->divhost);
+    OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, inbound->pci);
 
-    OSPPTransactionSetSrcAudioAddr(transaction, dest->srcmedia);
+    OSPPTransactionSetSrcAudioAddr(transaction, inbound->srcmedia);
 
-    OSPPTransactionSetProxyIngressAddr(transaction, dest->ingress);
+    OSPPTransactionSetProxyIngressAddr(transaction, inbound->ingress);
 
     OSPPTransactionSetCDRProxy(transaction, _osp_in_device, OSP_OPENSIPS, NULL);
 
     ospReportUsageWrapper(
-        transaction,                                          /* In - Transaction handle */
-        dest->lastcode,                                       /* In - Release Code */
-        0,                                                    /* In - Length of call */
-        dest->authtime,                                       /* In - Call start time */
-        0,                                                    /* In - Call end time */
-        dest->time180,                                        /* In - Call alert time */
-        dest->time200,                                        /* In - Call connect time */
-        dest->time180 ? 1 : 0,                                /* In - Is PDD Info present */
-        dest->time180 ? dest->time180 - dest->authtime : 0,   /* In - Post Dial Delay */
+        transaction,                                            /* In - Transaction handle */
+        dest->lastcode,                                         /* In - Release Code */
+        0,                                                      /* In - Length of call */
+        inbound->authtime,                                      /* In - Call start time */
+        0,                                                      /* In - Call end time */
+        dest->time180,                                          /* In - Call alert time */
+        dest->time200,                                          /* In - Call connect time */
+        dest->time180 ? 1 : 0,                                  /* In - Is PDD Info present */
+        dest->time180 ? dest->time180 - inbound->authtime : 0,  /* In - Post Dial Delay */
         ((dest->lastcode == 200) || (dest->lastcode == 300)) ? OSPC_RELEASE_UNKNOWN : OSPC_RELEASE_INTERNAL);
 
     return 0;
@@ -645,6 +655,7 @@ static int ospReportUsageFromDestination(
  */
 void ospReportOrigSetupUsage(void)
 {
+    osp_inbound* inbound = ospGetInboundInfo();
     struct usr_avp* destavp = NULL;
     int_str destval;
     osp_dest* dest = NULL;
@@ -656,6 +667,10 @@ void ospReportOrigSetupUsage(void)
 
     errcode = OSPPTransactionNew(_osp_provider, &trans);
     if (errcode != OSPC_ERR_NO_ERROR) {
+        return;
+    }
+
+    if (inbound == NULL) {
         return;
     }
 
@@ -687,7 +702,7 @@ void ospReportOrigSetupUsage(void)
                 }
                 /* RoleInfo must be set before BuildUsageFromScratch */
                 OSPPTransactionSetRoleInfo(trans, rstate, OSPC_RFORMAT_OSP, OSPC_RVENDOR_OPENSIPS);
-                ospBuildUsageFromDestination(trans, dest, lastcode);
+                ospBuildUsageFromDestination(trans, inbound, dest, lastcode);
                 OSPPTransactionSetProtocol(trans, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
                 OSPPTransactionSetProtocol(trans, OSPC_PROTTYPE_DESTINATION, dest->protocol);
                 lastcode = dest->lastcode;
@@ -703,7 +718,7 @@ void ospReportOrigSetupUsage(void)
             lastused->callidsize,
             lastused->callid,
             lastused->transid);
-        ospReportUsageFromDestination(trans, lastused);
+        ospReportUsageFromDestination(trans, inbound, lastused);
     } else {
         /* If a Toolkit transaction handle was created, but we did not find
          * any destinations to report, we need to release the handle. Otherwise,
@@ -718,37 +733,42 @@ void ospReportOrigSetupUsage(void)
  */
 void ospReportTermSetupUsage(void)
 {
-    osp_dest* dest = NULL;
+    osp_inbound* inbound = ospGetInboundInfo();
+    osp_dest* dest = ospGetTermDestination();
     OSPTTRANHANDLE trans = -1;
     OSPE_ROLE_STATE rstate;
     int errorcode;
 
-    if ((dest = ospGetTermDestination())) {
-        if (dest->reported == 0) {
-            dest->reported = 1;
-            LM_INFO("report term setup for call_id '%.*s' transaction_id '%llu'\n",
-                dest->callidsize,
-                dest->callid,
-                dest->transid);
-            errorcode = OSPPTransactionNew(_osp_provider, &trans);
-            if (errorcode == OSPC_ERR_NO_ERROR) {
-                if (dest->lastcode == 200) {
-                    rstate = OSPC_RSTATE_START;
-                } else if (dest->lastcode == 300) {
-                    rstate = OSPC_RSTATE_REDIRECT;
-                } else {
-                    rstate = OSPC_RSTATE_STOP;
+    if (inbound == NULL) {
+        if (dest == NULL) {
+            if (dest->reported == 0) {
+                dest->reported = 1;
+                LM_INFO("report term setup for call_id '%.*s' transaction_id '%llu'\n",
+                    dest->callidsize,
+                    dest->callid,
+                    dest->transid);
+                errorcode = OSPPTransactionNew(_osp_provider, &trans);
+                if (errorcode == OSPC_ERR_NO_ERROR) {
+                    if (dest->lastcode == 200) {
+                        rstate = OSPC_RSTATE_START;
+                    } else if (dest->lastcode == 300) {
+                        rstate = OSPC_RSTATE_REDIRECT;
+                    } else {
+                        rstate = OSPC_RSTATE_STOP;
+                    }
+                    /* RoleInfo must be set before BuildUsageFromScratch */
+                    OSPPTransactionSetRoleInfo(trans, rstate, OSPC_RFORMAT_OSP, OSPC_RVENDOR_OPENSIPS);
+                    ospBuildUsageFromDestination(trans, inbound, dest, 0);
+                    OSPPTransactionSetProtocol(trans, OSPC_PROTTYPE_DESTINATION, OSPC_PROTNAME_SIP);
+                    ospReportUsageFromDestination(trans, inbound, dest);
                 }
-                /* RoleInfo must be set before BuildUsageFromScratch */
-                OSPPTransactionSetRoleInfo(trans, rstate, OSPC_RFORMAT_OSP, OSPC_RVENDOR_OPENSIPS);
-                ospBuildUsageFromDestination(trans, dest, 0);
-                OSPPTransactionSetProtocol(trans, OSPC_PROTTYPE_DESTINATION, OSPC_PROTNAME_SIP);
-                ospReportUsageFromDestination(trans, dest);
+            } else {
+                LM_DBG("term setup already reported\n");
             }
         } else {
-            LM_DBG("term setup already reported\n");
+            LM_ERR("without term setup to report\n");
         }
     } else {
-        LM_ERR("without term setup to report\n");
+        LM_ERR("internal error\n");
     }
 }
