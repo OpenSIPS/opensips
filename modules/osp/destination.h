@@ -35,6 +35,23 @@
 #include <osp/osp.h>
 #include "osp_mod.h"
 
+typedef struct _osp_inbound {
+    char ingress[OSP_STRBUF_SIZE];
+    char srcdev[OSP_STRBUF_SIZE];
+    char source[OSP_STRBUF_SIZE];
+    char snid[OSP_STRBUF_SIZE];
+    char calling[OSP_STRBUF_SIZE];
+    char called[OSP_STRBUF_SIZE];
+    char display[OSP_STRBUF_SIZE];
+    char rpid[OSP_STRBUF_SIZE];
+    char pai[OSP_STRBUF_SIZE];
+    char divuser[OSP_STRBUF_SIZE];
+    char divhost[OSP_STRBUF_SIZE];
+    char pci[OSP_STRBUF_SIZE];
+    char srcmedia[OSP_STRBUF_SIZE];
+    time_t authtime;
+} osp_inbound;
+
 typedef struct _osp_dest {
     int type;
     unsigned int destcount;
@@ -48,34 +65,22 @@ typedef struct _osp_dest {
     unsigned int callidsize;
     char calling[OSP_STRBUF_SIZE];
     char called[OSP_STRBUF_SIZE];
-    char origcalled[OSP_STRBUF_SIZE];
-    char srcdev[OSP_STRBUF_SIZE];
-    char source[OSP_STRBUF_SIZE];
     char host[OSP_STRBUF_SIZE];
     char destdev[OSP_STRBUF_SIZE];
-    char snid[OSP_STRBUF_SIZE];
     char dnid[OSP_STRBUF_SIZE];
     char nprn[OSP_STRBUF_SIZE];
     char npcic[OSP_STRBUF_SIZE];
     int npdi;
     char opname[OSPC_OPNAME_NUMBER][OSP_STRBUF_SIZE];
-    char display[OSP_STRBUF_SIZE];
     char cnam[OSP_STRBUF_SIZE];
-    char rpid[OSP_STRBUF_SIZE];
-    char pai[OSP_STRBUF_SIZE];
-    char divuser[OSP_STRBUF_SIZE];
-    char divhost[OSP_STRBUF_SIZE];
-    char pci[OSP_STRBUF_SIZE];
-    char srcmedia[OSP_STRBUF_SIZE];
     char destmedia[OSP_STRBUF_SIZE];
-    char ingress[OSP_STRBUF_SIZE];
     char egress[OSP_STRBUF_SIZE];
     unsigned char token[OSP_TOKENBUF_SIZE];
     unsigned int tokensize;
     unsigned int timelimit;
     OSPE_PROTOCOL_NAME protocol;
+    OSPE_SERVICE srvtype;
     int lastcode;
-    time_t authtime;
     time_t starttime;
     time_t endtime;
     time_t time100;
@@ -84,6 +89,9 @@ typedef struct _osp_dest {
 } osp_dest;
 
 int ospParseAvps(void);
+void ospInitInboundInfo(osp_inbound* inbound);
+int ospSaveInboundInfo(osp_inbound* inbound);
+osp_inbound* ospGetInboundInfo(void);
 osp_dest* ospInitDestination(osp_dest* dest);
 int ospSaveOrigDestination(osp_dest* dest);
 int ospSaveTermDestination(osp_dest* dest);

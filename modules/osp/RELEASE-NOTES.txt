@@ -180,3 +180,7 @@ Support TotalSetupAttempts for completed calls.
 Updated to support media addresses, local address and provider post dial delay.
 Updated to support CNAM.
 
+2015 September 15
+Updated to support CNAM diversion use case.
+
+
