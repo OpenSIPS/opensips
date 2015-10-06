@@ -173,7 +173,7 @@ static void set_lengths(void)
 
 static int mod_init(void)
 {
-	LM_INFO("Initializing module\n");
+	LM_DBG("Initializing module\n");
 	init_db_url(db_url, 0);
 
 	if ((frd_data_lock = lock_init_rw()) == NULL) {
