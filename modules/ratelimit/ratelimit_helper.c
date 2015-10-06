@@ -397,7 +397,7 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 		/* release the counter for a while */
 		if (rl_change_counter(&name, *pipe, 1) < 0) {
 			LM_ERR("cannot increase counter\n");
-			goto end;
+			goto release;
 		}
 	} else {
 		(*pipe)->counter++;
