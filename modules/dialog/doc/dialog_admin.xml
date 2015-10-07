@@ -2129,7 +2129,7 @@ $var(account) = $dlg_val(account_type);
 		</programlisting>
 		</section>
 
-		<section>
+		<section  id='dlg_end_dlg' xreflabel="dlg_end_dlg">
 			<title><varname>dlg_end_dlg</varname></title>
 			<para>
 				Terminates an ongoing dialog.
@@ -2268,7 +2268,34 @@ $var(account) = $dlg_val(account_type);
 		_empty_line_
 		</programlisting>
 		</section>
-
+		<section>
+		<title><varname>profile_end_dlgs</varname></title>
+		<para>
+		Terminate all ongoing dialogs from a specified profile, on a single dialog it
+		performs the same operations as the command <emphasis role='bold'><xref linkend="dlg_end_dlg"/></emphasis>
+		</para>
+		<para>
+		Name: <emphasis>profile_end_dlgs</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>profile</emphasis> - name of the profile that will have its dialogs termianted
+			</para></listitem>
+			<listitem><para>
+				<emphasis>value</emphasis> - (optional) if the profile supports values terminate only the dialogs
+				with the specified value
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:profile_end_dlgs:_reply_fifo_file_
+		inbound_calls
+		_empty_line_
+		</programlisting>
+		</section>
 		<section>
 		<title><varname>dlg_db_sync</varname></title>
 		<para>
