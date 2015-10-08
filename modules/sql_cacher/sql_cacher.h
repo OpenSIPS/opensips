@@ -1,3 +1,28 @@
+/**
+ *
+ * Copyright (C) 2015 OpenSIPS Foundation
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
+ * History
+ * -------
+ *  2015-09-xx  initial version (Vlad Patrascu)
+*/
+
 #ifndef _SQL_CACHER_H_
 #define _SQL_CACHER_H_
 
@@ -26,8 +51,8 @@
 #define EXPIRE_STR_LEN 6
 
 #define DEFAULT_ON_DEMAND_EXPIRE 3600
-#define DEFAULT_FULL_CACHING_EXPIRE 86400	/* 24h */
-#define DEFAULT_RELOAD_INTERVAL 5
+#define DEFAULT_FULL_CACHING_EXPIRE 86400 /* 24h */
+#define DEFAULT_RELOAD_INTERVAL 60
 #define DEFAULT_FETCH_NR_ROWS 100
 #define TEST_QUERY_STR "sql_cacher_test_query_key"
 #define CDB_TEST_KEY_STR "sql_cacher_cdb_test_key"
@@ -46,6 +71,7 @@ typedef struct _cache_entry {
 	unsigned int expire;
 	unsigned int nr_ints, nr_strs;
 	long long column_types;
+	rw_lock_t *ref_lock;
 	struct _cache_entry *next;
 } cache_entry_t;
 
