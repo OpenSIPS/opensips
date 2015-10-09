@@ -1,0 +1,300 @@
+<!-- cfgutils Module User's Guide -->
+
+<chapter>
+    
+    <title>&adminguide;</title>
+
+    <section>
+	<title>Overview</title>
+	<para>
+	The sql_cacher module introduces the possibility to cache data from a
+	SQL-based database (using different &osips; modules which implement the DB API)
+	into a cache system implemented in &osips; through the CacheDB Interface.
+	This is done by specifying the databases URLs, SQL table to be used, required
+	columns and other details in the &osips; configuration script.
+	</para>
+	<para>
+	The cached data is available in the script through the read-only pseudovariable
+	<quote>$sql_cached_value</quote> similar to a Key-Value system. A specified
+	column from the SQL table has the role of <quote>key</quote> therefore the value
+	of this column along with the name of the desired column are provided as
+	"parameters" to the pseudovariable returning the appropriate value of the column.
+	</para>
+	<para>
+	There are two types of caching available:
+	<itemizedlist>
+		<listitem><para>
+		<emphasis>full caching</emphasis> - the entire SQL table is loaded into the
+		cache at &osips; startup;
+		</para></listitem>
+		<listitem><para>
+		<emphasis>on demand</emphasis> - the rows of the SQL table are loaded at runtime
+		when certain columns from those rows are requested.
+		</para></listitem>
+	</itemizedlist>
+	</para>
+	<para>
+	For on demand caching, the stored values have a configurable expire period after
+	which they are permanently removed unless an MI reload function is called for a
+	specifc key. In the case of full caching the data is automatically reloaded at
+	a configurable interval. Consequently if the data in the SQL database changes
+	and a MI reload function is  called, the old data remains in cache only
+	until it expires.
+	</para>
+	</section>
+	<section>
+	<title>Dependencies</title>
+	<para>
+	    The following modules must be loaded before this module:
+	    <itemizedlist>
+		<listitem>
+		    <para><emphasis>The &osips; modules that offer actual database back-end
+		    	connection</emphasis></para>
+		</listitem>
+	    </itemizedlist>
+	</para>
+    </section>
+    <section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>cache_table</varname> (string)</title>
+		<para>
+		This parameter can be set multiple times in order to cache multiple SQL
+		tables or even the same table but with a different configuration. The module
+		distinguishes those different entries by an <quote>id</quote> string.
+		</para>
+		<para>
+		The caching entry is specified via this parameter that has it's own
+		subparameters. Each of those parameters are separted by a configurable
+		delimiter and have the following format:
+		<para><emphasis>param_name=param_value</emphasis></para>
+		The parameters are:
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>id</emphasis> : cache entry id
+			</para></listitem>
+			<listitem><para>
+			<emphasis>db_url</emphasis> : the URL of the SQL database
+			</para></listitem>
+			<listitem><para>
+			<emphasis>cachedb_url</emphasis> : the URL of the CacheDB database
+			</para></listitem>
+			<listitem><para>
+			<emphasis>table</emphasis> : SQL database table name
+			</para></listitem>
+			<listitem><para>
+			<emphasis>key</emphasis> : SQL database column name of the key column
+			</para></listitem>
+			<listitem><para>
+			<emphasis>columns</emphasis> : names of the desired columns from the
+			SQL database separated by <quote>,</quote>
+			</para></listitem>
+			<listitem><para>
+			<emphasis>on_demand</emphasis> : specifies the type of caching:
+			<itemizedlist>
+				<listitem><para>
+					0 : full caching
+				</para></listitem>
+				<listitem><para>
+					1 : on demand
+				</para></listitem>
+			</itemizedlist>
+			<para>If not present, default value is <quote>0</quote></para>
+			</para></listitem>
+			<listitem><para>
+			<emphasis>expire</emphasis> : expire period for the values stored
+			in the cache for the on demand caching type in seconds
+			<para>If not present, default value is <quote>1 hour</quote></para>
+			</para></listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		Overall, the parameter does not have a default value, it must be set at least once.
+		</para>
+		<example>
+		<title><varname>cache_table</varname> parameter usage</title>
+		<programlisting format="linespecific">
+   
+modparam("sql_cacher", "cache_table",
+"id=caching_name
+db_url=mysql://root:opensips@localhost/opensips_2_2
+cachedb_url=mongodb:mycluster://127.0.0.1:27017/db.col
+table=table_name
+key=column_name_0
+columns=column_name_1,column_name_2,column_name_3
+on_demand=0")
+   
+</programlisting>
+	    </example>
+	</section>
+
+	<section>
+		<title><varname>spec_delimiter</varname> (string)</title>
+		<para>
+		The delimiter to be used in the caching entry specification provided in the
+		<emphasis>cache_table</emphasis> parameter to separate the subparameters. It
+		must be a single character.
+		</para>
+		<para>
+		The default value is <quote> </quote>(space).
+		</para>
+		<example>
+		<title><varname>spec_delimiter</varname> parameter usage</title>
+		<programlisting format="linespecific">
+   
+modparam("sql_cacher", "spec_delimiter", "\n")
+   
+</programlisting>
+	    </example>
+	</section>
+
+	<section>
+		<title><varname>pvar_delimiter</varname> (string)</title>
+		<para>
+		The delimiter to be used in the <quote>$sql_cached_value</quote>
+		pseudovariable to separate the value of the key and the desired column name. It
+		must be a single character.
+		</para>
+		<para>
+		The default value is <quote>:</quote>.
+		</para>
+		<example>
+		<title><varname>pvar_delimiter</varname> parameter usage</title>
+		<programlisting format="linespecific">
+   
+modparam("sql_cacher", "pvar_delimiter", ";")
+   
+</programlisting>
+	    </example>
+	</section>
+
+	<section>
+		<title><varname>sql_fetch_nr_rows</varname> (integer)</title>
+		<para>
+		The number of rows to be fetched into &osips; private memory in one chunk from
+		the SQL database driver. When querying large tables, adjust this parameter
+		accordingly to avoid the filling of &osips; private memory. 
+		</para>
+		<para>
+		The default value is <quote>100</quote>.
+		</para>
+		<example>
+		<title><varname>sql_fetch_nr_rows</varname> parameter usage</title>
+		<programlisting format="linespecific">
+   
+modparam("sql_cacher", "sql_fetch_nr_rows", "1000")
+   
+</programlisting>
+	    </example>
+	</section>
+
+	<section>
+		<title><varname>full_caching_expire</varname> (integer)</title>
+		<para>
+		Expire period for the values stored in cache for the full caching type
+		in seconds. This is the longest time that deleted or modified data remains
+		in cache.
+		</para>
+		<para>
+		The default value is <quote>24 hours</quote>.
+		</para>
+		<example>
+		<title><varname>full_caching_expire</varname> parameter usage</title>
+		<programlisting format="linespecific">
+   
+modparam("sql_cacher", "full_caching_expire", "3600")
+   
+</programlisting>
+	    </example>
+	</section>
+
+	<section>
+		<title><varname>reload_interval</varname> (integer)</title>
+		<para>
+		This parameter represents how many seconds before the data expires (for full caching) the
+		automatic reloading is triggerd.
+		</para>
+		<para>
+		The default value is <quote>60 s</quote>.
+		</para>
+		<example>
+		<title><varname>reload_interval</varname> parameter usage</title>
+		<programlisting format="linespecific">
+   
+modparam("sql_cacher", "reload_interval", "5")
+   
+</programlisting>
+	    </example>
+	</section>
+</section>
+
+<section>
+	<title>Exported Functions</title>
+		<para>
+		No function exported to be used from configuration file.
+		</para>
+</section>
+
+<section>
+	<title><acronym>MI</acronym> Commands</title>
+	<section>
+		<title><function moreinfo="none">sql_cacher_reload</function></title>
+		<para>
+			Reloads the entire SQL table in cache for full caching or the specified
+			key for on demand caching.
+		</para>
+		<para>
+			The first parameter is the caching id.
+		</para>
+		<para>
+			The second parameter must be a value of the key column from the SQL table.
+			For full caching this parameter is not needed.
+		</para>
+		<example>
+			<title><function moreinfo="none">sql_cacher_reload</function> usage</title>
+			<programlisting format="linespecific">
+...
+$ opensipsctl fifo sql_cacher_reload caching_name
+...
+$ opensipsctl fifo sql_cacher_reload caching_name key
+...
+</programlisting>
+			</example>	
+	</section>
+</section>
+	
+<section>
+	<title>Exported pseudo-variables</title>
+		<section>
+			<title><varname>$sql_cached_value(id{sep}col{sep}key)</varname></title>
+			<para>
+				The cached data is available through this read-only PV.The format
+				is the following:
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>sep</emphasis> : separator configured by
+					<quote>pvar_delimiter</quote> parameter
+					</para></listitem>
+					<listitem><para>
+					<emphasis>id</emphasis> : cache entry id
+					</para></listitem>
+					<listitem><para>
+					<emphasis>col</emphasis> : name of the column
+					</para></listitem>
+					<listitem><para>
+					<emphasis>key</emphasis> : value of the key column from the SQL table
+					</para></listitem>
+				</itemizedlist>
+			</para>
+			<example>
+				<title><function moreinfo="none">sql_cached_value(id{sep}col{sep}key) pseudo-variable</function> usage</title>
+				<programlisting format="linespecific">
+...
+$avp(a) = $sql_cached_value(caching_name:column_name_1:key1);
+...
+				 </programlisting>
+			</example>
+		</section>
+
+</section>
+</chapter>

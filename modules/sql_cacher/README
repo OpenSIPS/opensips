@@ -1,0 +1,232 @@
+sql_cacher Module
+
+Robert-Vladut Patrascu
+
+   OpenSIPS Solutions
+
+   Copyright © 2015 www.opensips-solutions.com
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+        1.3. Exported Parameters
+
+              1.3.1. cache_table (string)
+              1.3.2. spec_delimiter (string)
+              1.3.3. pvar_delimiter (string)
+              1.3.4. sql_fetch_nr_rows (integer)
+              1.3.5. full_caching_expire (integer)
+              1.3.6. reload_interval (integer)
+
+        1.4. Exported Functions
+        1.5. MI Commands
+
+              1.5.1. sql_cacher_reload
+
+        1.6. Exported pseudo-variables
+
+              1.6.1. $sql_cached_value(id{sep}col{sep}key)
+
+   List of Examples
+
+   1.1. cache_table parameter usage
+   1.2. spec_delimiter parameter usage
+   1.3. pvar_delimiter parameter usage
+   1.4. sql_fetch_nr_rows parameter usage
+   1.5. full_caching_expire parameter usage
+   1.6. reload_interval parameter usage
+   1.7. sql_cacher_reload usage
+   1.8. sql_cached_value(id{sep}col{sep}key) pseudo-variable usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   The sql_cacher module introduces the possibility to cache data
+   from a SQL-based database (using different OpenSIPS modules
+   which implement the DB API) into a cache system implemented in
+   OpenSIPS through the CacheDB Interface. This is done by
+   specifying the databases URLs, SQL table to be used, required
+   columns and other details in the OpenSIPS configuration script.
+
+   The cached data is available in the script through the
+   read-only pseudovariable “$sql_cached_value” similar to a
+   Key-Value system. A specified column from the SQL table has the
+   role of “key” therefore the value of this column along with the
+   name of the desired column are provided as "parameters" to the
+   pseudovariable returning the appropriate value of the column.
+
+   There are two types of caching available:
+     * full caching - the entire SQL table is loaded into the
+       cache at OpenSIPS startup;
+     * on demand - the rows of the SQL table are loaded at runtime
+       when certain columns from those rows are requested.
+
+   For on demand caching, the stored values have a configurable
+   expire period after which they are permanently removed unless
+   an MI reload function is called for a specifc key. In the case
+   of full caching the data is automatically reloaded at a
+   configurable interval. Consequently if the data in the SQL
+   database changes and a MI reload function is called, the old
+   data remains in cache only until it expires.
+
+1.2. Dependencies
+
+   The following modules must be loaded before this module:
+     * The OpenSIPS modules that offer actual database back-end
+       connection
+
+1.3. Exported Parameters
+
+1.3.1. cache_table (string)
+
+   This parameter can be set multiple times in order to cache
+   multiple SQL tables or even the same table but with a different
+   configuration. The module distinguishes those different entries
+   by an “id” string.
+
+   The caching entry is specified via this parameter that has it's
+   own subparameters. Each of those parameters are separted by a
+   configurable delimiter and have the following format:
+
+   param_name=param_value
+
+   The parameters are:
+     * id : cache entry id
+     * db_url : the URL of the SQL database
+     * cachedb_url : the URL of the CacheDB database
+     * table : SQL database table name
+     * key : SQL database column name of the key column
+     * columns : names of the desired columns from the SQL
+       database separated by “,”
+     * on_demand : specifies the type of caching:
+          + 0 : full caching
+          + 1 : on demand
+       If not present, default value is “0”
+     * expire : expire period for the values stored in the cache
+       for the on demand caching type in seconds
+       If not present, default value is “1 hour”
+
+   Overall, the parameter does not have a default value, it must
+   be set at least once.
+
+   Example 1.1. cache_table parameter usage
+
+modparam("sql_cacher", "cache_table",
+"id=caching_name
+db_url=mysql://root:opensips@localhost/opensips_2_2
+cachedb_url=mongodb:mycluster://127.0.0.1:27017/db.col
+table=table_name
+key=column_name_0
+columns=column_name_1,column_name_2,column_name_3
+on_demand=0")
+
+
+1.3.2. spec_delimiter (string)
+
+   The delimiter to be used in the caching entry specification
+   provided in the cache_table parameter to separate the
+   subparameters. It must be a single character.
+
+   The default value is “ ”(space).
+
+   Example 1.2. spec_delimiter parameter usage
+
+modparam("sql_cacher", "spec_delimiter", "\n")
+
+
+1.3.3. pvar_delimiter (string)
+
+   The delimiter to be used in the “$sql_cached_value”
+   pseudovariable to separate the value of the key and the desired
+   column name. It must be a single character.
+
+   The default value is “:”.
+
+   Example 1.3. pvar_delimiter parameter usage
+
+modparam("sql_cacher", "pvar_delimiter", ";")
+
+
+1.3.4. sql_fetch_nr_rows (integer)
+
+   The number of rows to be fetched into OpenSIPS private memory
+   in one chunk from the SQL database driver. When querying large
+   tables, adjust this parameter accordingly to avoid the filling
+   of OpenSIPS private memory.
+
+   The default value is “100”.
+
+   Example 1.4. sql_fetch_nr_rows parameter usage
+
+modparam("sql_cacher", "sql_fetch_nr_rows", "1000")
+
+
+1.3.5. full_caching_expire (integer)
+
+   Expire period for the values stored in cache for the full
+   caching type in seconds. This is the longest time that deleted
+   or modified data remains in cache.
+
+   The default value is “24 hours”.
+
+   Example 1.5. full_caching_expire parameter usage
+
+modparam("sql_cacher", "full_caching_expire", "3600")
+
+
+1.3.6. reload_interval (integer)
+
+   This parameter represents how many seconds before the data
+   expires (for full caching) the automatic reloading is triggerd.
+
+   The default value is “60 s”.
+
+   Example 1.6. reload_interval parameter usage
+
+modparam("sql_cacher", "reload_interval", "5")
+
+
+1.4. Exported Functions
+
+   No function exported to be used from configuration file.
+
+1.5. MI Commands
+
+1.5.1. sql_cacher_reload
+
+   Reloads the entire SQL table in cache for full caching or the
+   specified key for on demand caching.
+
+   The first parameter is the caching id.
+
+   The second parameter must be a value of the key column from the
+   SQL table. For full caching this parameter is not needed.
+
+   Example 1.7. sql_cacher_reload usage
+...
+$ opensipsctl fifo sql_cacher_reload caching_name
+...
+$ opensipsctl fifo sql_cacher_reload caching_name key
+...
+
+1.6. Exported pseudo-variables
+
+1.6.1. $sql_cached_value(id{sep}col{sep}key)
+
+   The cached data is available through this read-only PV.The
+   format is the following:
+     * sep : separator configured by “pvar_delimiter” parameter
+     * id : cache entry id
+     * col : name of the column
+     * key : value of the key column from the SQL table
+
+   Example 1.8. sql_cached_value(id{sep}col{sep}key)
+   pseudo-variable usage
+...
+$avp(a) = $sql_cached_value(caching_name:column_name_1:key1);
+...
