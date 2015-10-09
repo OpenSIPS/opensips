@@ -188,7 +188,19 @@ int w_acc_log_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 	env_set_to( rq->to );
 	env_set_comment( &accp );
 	env_set_text( ACC_REQUEST, ACC_REQUEST_LEN);
-	return acc_log_request( rq, NULL, 0);
+
+	if (is_cdr_acc_on(rq) && is_log_acc_on(rq)) {
+		env_set_event(acc_cdr_event);
+	} else if (is_log_acc_on(rq)) {
+		env_set_event(acc_event);
+	} else if (is_log_mc_on(rq)) {
+		env_set_event(acc_missed_event);
+	} else {
+		LM_WARN("evi request flags not set\n");
+		return 1;
+	}
+
+	return acc_log_request( rq, NULL, is_cdr_acc_on(rq));
 }
 
 
@@ -208,7 +220,19 @@ int w_acc_aaa_request(struct sip_msg *rq, pv_elem_t* comment, char* foo)
 
 	env_set_to( rq->to );
 	env_set_comment( &accp );
-	return acc_aaa_request( rq, NULL, 0);
+
+	if (is_cdr_acc_on(rq) && is_aaa_acc_on(rq)) {
+		env_set_event(acc_cdr_event);
+	} else if (is_aaa_acc_on(rq)) {
+		env_set_event(acc_event);
+	} else if (is_aaa_mc_on(rq)) {
+		env_set_event(acc_missed_event);
+	} else {
+		LM_WARN("evi request flags not set\n");
+		return 1;
+	}
+
+	return acc_aaa_request( rq, NULL, is_cdr_acc_on(rq));
 }
 
 
@@ -233,6 +257,17 @@ int w_acc_db_request(struct sip_msg *rq, pv_elem_t* comment, char *table)
 	env_set_comment( &accp );
 	env_set_text(table, table_len);
 
+	if (is_cdr_acc_on(rq) && is_db_acc_on(rq)) {
+		env_set_event(acc_cdr_event);
+	} else if (is_db_acc_on(rq)) {
+		env_set_event(acc_event);
+	} else if (is_db_mc_on(rq)) {
+		env_set_event(acc_missed_event);
+	} else {
+		LM_WARN("evi request flags not set\n");
+		return 1;
+	}
+
 	if (table_len == db_table_mc.len && (strncmp(table, db_table_mc.s, table_len) == 0)) {
 		return acc_db_request(rq, NULL, &mc_ins_list, 0);
 	}
@@ -241,7 +276,7 @@ int w_acc_db_request(struct sip_msg *rq, pv_elem_t* comment, char *table)
 		return acc_db_request(rq, NULL, &acc_ins_list, 0);
 	}
 
-	return acc_db_request( rq, NULL,NULL, 0);
+	return acc_db_request( rq, NULL,NULL, is_cdr_acc_on(rq));
 }
 
 #ifdef DIAM_ACC
@@ -256,6 +291,17 @@ int w_acc_diam_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 
 	env_set_to( rq->to );
 	env_set_comment( &accp );
+	if (is_cdr_acc_on(rq) && is_diam_acc_on(rq)) {
+		env_set_event(acc_cdr_event);
+	} else if (is_diam_acc_on(rq)) {
+		env_set_event(acc_event);
+	} else if (is_diam_mc_on(rq)) {
+		env_set_event(acc_missed_event);
+	} else {
+		LM_WARN("evi request flags not set\n");
+		return 1;
+	}
+
 	return acc_diam_request( rq, NULL);
 }
 #endif
@@ -272,7 +318,18 @@ int w_acc_evi_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 	env_set_to( rq->to );
 	env_set_comment( &accp );
 
-	return acc_evi_request( rq, NULL, 0);
+	if (is_cdr_acc_on(rq) && is_evi_acc_on(rq)) {
+		env_set_event(acc_cdr_event);
+	} else if (is_evi_acc_on(rq)) {
+		env_set_event(acc_event);
+	} else if (is_evi_mc_on(rq)) {
+		env_set_event(acc_missed_event);
+	} else {
+		LM_WARN("evi request flags not set\n");
+		return 1;
+	}
+
+	return acc_evi_request( rq, NULL, is_cdr_acc_on(rq));
 }
 
 int acc_pvel_to_acc_param(struct sip_msg* rq, pv_elem_t* pv_el, struct acc_param* accp)
