@@ -195,6 +195,7 @@ static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 	str cseq;
 	str contact;
 	str rr_set;
+	str sdp;
 	int is_req;
 
 	is_req = (msg->first_line.type==SIP_REQUEST)?1:0;
@@ -229,6 +230,18 @@ static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		}
 	}
 
+	if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+	dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+		if (get_body(msg,&sdp) < 0) {
+			LM_ERR("Failed to extract SDP \n");
+			sdp.s = NULL;
+			sdp.len = 0;
+		}
+	} else {
+		sdp.s = NULL;
+		sdp.len = 0;
+	}
+
 	LM_DBG("route_set %.*s, contact %.*s, cseq %.*s and bind_addr %.*s\n",
 		rr_set.len, ZSW(rr_set.s), contact.len, ZSW(contact.s),
 		cseq.len, cseq.s,
@@ -236,7 +249,7 @@ static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		msg->rcv.bind_address->sock_str.s);
 
 	if (dlg_add_leg_info( dlg, tag, &rr_set, &contact, &cseq,
-	msg->rcv.bind_address,mangled_from,mangled_to)!=0) {
+	msg->rcv.bind_address,mangled_from,mangled_to,&sdp)!=0) {
 		LM_ERR("dlg_add_leg_info failed\n");
 		if (rr_set.s) pkg_free(rr_set.s);
 		goto error0;
@@ -326,7 +339,7 @@ static inline str* extract_mangled_fromuri(str *mangled_from_hdr)
 static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 				struct dlg_cell *dlg,str *mangled_from,str *mangled_to)
 {
-	str tag,contact,rr_set;
+	str tag,contact,rr_set,sdp;
 	unsigned int leg, skip_rrs,cseq_no;
 
 	/* get to tag*/
@@ -404,7 +417,20 @@ routing_info:
 
 		LM_DBG("Skipping %d ,%d, %d, %d \n",skip_rrs, dlg->from_rr_nb,t->relaied_reply_branch,t->uac[t->relaied_reply_branch].added_rr);
 		get_routing_info(rpl, 0, &skip_rrs, &contact, &rr_set);
-		dlg_update_routing( dlg, leg, &rr_set, &contact );
+
+		if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+		dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+			if (get_body(rpl,&sdp) < 0) {
+				LM_ERR("Failed to extract SDP \n");
+				sdp.s = NULL;
+				sdp.len = 0;
+			}
+		} else {
+			sdp.s = NULL;
+			sdp.len = 0;
+		}
+
+		dlg_update_routing( dlg, leg, &rr_set, &contact, &sdp );
 		if( rr_set.s )
 			pkg_free( rr_set.s);
 	}
@@ -535,6 +561,22 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 			}
 		}
 
+		if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER || dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+			if (0 != insert_reinvite_ping_timer( dlg)) {
+				LM_CRIT("Unable to insert ping dlg %p [%u:%u] on event %d [%d->%d] "
+					"with clid '%.*s' and tags '%.*s' '%.*s'\n",
+					dlg, dlg->h_entry, dlg->h_id, event, old_state, new_state,
+					dlg->callid.len, dlg->callid.s,
+					dlg->legs[DLG_CALLER_LEG].tag.len,
+					dlg->legs[DLG_CALLER_LEG].tag.s,
+					dlg->legs[callee_idx(dlg)].tag.len,
+					ZSW(dlg->legs[callee_idx(dlg)].tag.s));
+			} else {
+				/* reference dialog as kept in reinvite ping timer list */
+				ref_dlg(dlg,1);
+			}
+		}
+
 		/* save the settings to the database,
 		 * if realtime saving mode configured- save dialog now
 		 * else: the next time the timer will fire the update*/
@@ -656,6 +698,84 @@ static inline int update_msg_cseq(struct sip_msg *msg,str *new_cseq,
 	}
 
 	return 0;
+}
+
+static void dlg_update_sdp(struct dlg_leg *leg,struct sip_msg *msg)
+{
+	str sdp;
+
+	if (get_body(msg,&sdp) < 0) {
+		LM_ERR("Failed to extract SDP \n");
+		sdp.s = NULL;
+		sdp.len = 0;
+	}
+
+	if (leg->sdp.len < sdp.len) {
+		leg->sdp.s = shm_realloc(leg->sdp.s,sdp.len);
+		if (!leg->sdp.s) {
+			LM_ERR("Failed to reallocate sdp \n");
+			return;
+		}
+	}
+
+	leg->sdp.len = sdp.len;
+	memcpy(leg->sdp.s,sdp.s,sdp.len);
+}
+
+static void dlg_update_callee_sdp(struct cell* t, int type,
+		struct tmcb_params *ps) 
+{
+	struct sip_msg *rpl;
+	int statuscode;
+	struct dlg_cell *dlg;
+
+	if(ps == NULL || ps->rpl == NULL)
+	{
+			LM_ERR("Wrong tmcb params\n");
+			return;
+	}
+	if( ps->param== NULL )
+	{
+			LM_ERR("Null callback parameter\n");
+			return;
+	}
+
+	rpl = ps->rpl;
+	statuscode = ps->code;
+	dlg = *(ps->param);
+
+	LM_DBG("Status Code received =  [%d]\n", statuscode);
+
+	if (statuscode == 200) 
+		dlg_update_sdp(&dlg->legs[callee_idx(dlg)],rpl);
+}
+
+static void dlg_update_caller_sdp(struct cell* t, int type,
+		struct tmcb_params *ps) 
+{
+	struct sip_msg *rpl;
+	int statuscode;
+	struct dlg_cell *dlg;
+
+	if(ps == NULL || ps->rpl == NULL)
+	{
+			LM_ERR("Wrong tmcb params\n");
+			return;
+	}
+	if( ps->param== NULL )
+	{
+			LM_ERR("Null callback parameter\n");
+			return;
+	}
+
+	rpl = ps->rpl;
+	statuscode = ps->code;
+	dlg = *(ps->param);
+
+	LM_DBG("Status Code received =  [%d]\n", statuscode);
+
+	if (statuscode == 200) 
+		dlg_update_sdp(&dlg->legs[DLG_CALLER_LEG],rpl);
 }
 
 static void dlg_seq_up_onreply_mod_cseq(struct cell* t, int type,
@@ -1022,6 +1142,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	struct dlg_entry *d_entry;
 	str *msg_cseq;
 	char *final_cseq;
+	str sdp;
 
 	/* as this callback is triggered from loose_route, which can be
 	   accidentaly called more than once from script, we need to be sure
@@ -1161,6 +1282,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		LM_DBG("BYE successfully processed - dst_leg = %d\n",dst_leg);
 
 		if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE || 
+		dlg->flags & DLG_FLAG_REINVITE_PING_CALLER || dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE || 
 		dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
 			dlg_lock (d_table,d_entry);
 
@@ -1274,10 +1396,43 @@ after_unlock5:
 					ok=0;
 					LM_ERR("failed to update inv cseq on leg %d\n",src_leg);
 				}
+
+				if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER || 
+					dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE ) {
+					/* we need to update the SDP for this leg
+					and involve TM to update the SDP for the other side as well */
+					if (get_body(req,&sdp) < 0) {
+						LM_ERR("Failed to extract SDP \n");
+						sdp.s = NULL;
+						sdp.len = 0;
+					}
+
+					if (dlg->legs[src_leg].sdp.len < sdp.len) {
+						dlg->legs[src_leg].sdp.s = shm_realloc(dlg->legs[src_leg].sdp.s,sdp.len);
+						if (!dlg->legs[src_leg].sdp.s) {
+							LM_ERR("Failed to reallocate sdp \n");
+							ok = 0;
+						}
+					}
+
+					if (ok) {
+						dlg->legs[src_leg].sdp.len = sdp.len;
+						memcpy(dlg->legs[src_leg].sdp.s,sdp.s,sdp.len);
+						ref_dlg( dlg , 1);
+						if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+						(dir==DLG_DIR_UPSTREAM)?dlg_update_caller_sdp:dlg_update_callee_sdp,
+						(void*)dlg, unreference_dialog)<0 ) {
+							LM_ERR("failed to register TMCB (2)\n");
+								unref_dlg( dlg , 1);
+						}
+					}
+				}
 			}
 
 			if (dlg->flags & DLG_FLAG_PING_CALLER ||
 			dlg->flags & DLG_FLAG_PING_CALLEE || 
+			dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+			dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE ||
 			dlg->flags & DLG_FLAG_CSEQ_ENFORCE ) {
 
 				dlg_lock (d_table, d_entry);
@@ -1309,6 +1464,8 @@ after_unlock5:
 		{
 			if (dlg->flags & DLG_FLAG_PING_CALLER ||
 			dlg->flags & DLG_FLAG_PING_CALLEE ||
+			dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+			dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE ||
 			dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
 
 				dlg_lock (d_table, d_entry);
@@ -1331,6 +1488,8 @@ after_unlock5:
 
 			if (dlg->flags & DLG_FLAG_PING_CALLER ||
 			dlg->flags & DLG_FLAG_PING_CALLEE ||
+			dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+			dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE ||
 			dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
 				dlg_lock( d_table, d_entry);
 				if (dlg->legs[dst_leg].last_gen_cseq) {

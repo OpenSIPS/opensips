@@ -73,6 +73,8 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dst_leg, int src_leg)
 
 	if ((dst_leg == DLG_CALLER_LEG && (cell->flags & DLG_FLAG_PING_CALLER)) ||
 		(dst_leg == callee_idx(cell) && (cell->flags & DLG_FLAG_PING_CALLEE)) || 
+		(dst_leg == DLG_CALLER_LEG && (cell->flags & DLG_FLAG_REINVITE_PING_CALLER)) ||
+		(dst_leg == callee_idx(cell) && (cell->flags & DLG_FLAG_REINVITE_PING_CALLEE)) || 
 		cell->flags & DLG_FLAG_CSEQ_ENFORCE)
 	{
 		dlg_lock_dlg(cell);
@@ -140,7 +142,7 @@ error:
 
 
 
-dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
+dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,char *reply_marker)
 {
 	dlg_t* td = NULL;
 	str cseq;
@@ -165,7 +167,7 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
 	else
 		cell->legs[dst_leg].last_gen_cseq++;
 
-	cell->legs[dst_leg].reply_received = 0;
+	*reply_marker = 0;
 
 	td->loc_seq.value = cell->legs[dst_leg].last_gen_cseq -1;
 
@@ -513,7 +515,8 @@ error:
 }
 
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
-		str *hdrs,str *body,dlg_request_callback func,void *param,dlg_release_func release)
+	str *hdrs,str *body,dlg_request_callback func,
+	void *param,dlg_release_func release,char *reply_marker)
 {
 	context_p old_ctx;
 	dlg_t* dialog_info;
@@ -533,7 +536,7 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		return -1;
 	}
 
-	if ((dialog_info = build_dialog_info(dlg, dst_leg, src_leg)) == 0)
+	if ((dialog_info = build_dialog_info(dlg, dst_leg, src_leg,reply_marker)) == 0)
 	{
 		LM_ERR("failed to create dlg_t\n");
 		return -1;
@@ -546,7 +549,7 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	if (push_new_processing_context( dlg, &old_ctx, NULL)!=0)
 		return -1;
 
-	dialog_info->T_flags=T_NO_AUTOACK_FLAG;
+	//dialog_info->T_flags=T_NO_AUTOACK_FLAG;
 
 	result = d_tmb.t_request_within
 		(method,         /* method*/

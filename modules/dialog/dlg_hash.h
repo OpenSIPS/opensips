@@ -73,6 +73,8 @@
 #define DLG_FLAG_VP_CHANGED		(1<<8)
 #define DLG_FLAG_DB_DELETED		(1<<9)
 #define DLG_FLAG_CSEQ_ENFORCE		(1<<10)
+#define DLG_FLAG_REINVITE_PING_CALLER	(1<<11)
+#define DLG_FLAG_REINVITE_PING_CALLEE	(1<<12)
 
 #define DLG_CALLER_LEG         0
 #define DLG_FIRST_CALLEE_LEG   1
@@ -93,9 +95,11 @@ struct dlg_leg {
 	str route_set;
 	str contact;
 	str route_uris[64];
+	str sdp;	/* latest SDP provided by this leg ( full body ) */
 	int nr_uris;
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
 	char reply_received;
+	char reinvite_confirmed;
 	struct socket_info *bind_addr;
 };
 
@@ -131,6 +135,7 @@ struct dlg_cell
 	unsigned int         initial_t_label;
 	struct dlg_tl        tl;
 	struct dlg_ping_list *pl;
+	struct dlg_ping_list *reinvite_pl;
 	str                  terminate_reason;
 	str                  callid;
 	str                  from_uri;
@@ -278,6 +283,14 @@ void destroy_dlg(struct dlg_cell *dlg);
 					___flags |= DLG_FLAG_BYEONTIMEOUT; \
 					LM_DBG("bye on timeout activated\n"); \
 					break; \
+				case 'R': \
+					___flags |= DLG_FLAG_REINVITE_PING_CALLER; \
+					LM_DBG("re-invite ping caller activated\n"); \
+					break; \
+				case 'r': \
+					___flags |= DLG_FLAG_REINVITE_PING_CALLEE; \
+					LM_DBG("re-invite ping callee activated\n"); \
+					break; \
 				default: \
 					LM_DBG("unknown create_dialog flag : [%c] ." \
 						   "Skipping\n", *___p); \
@@ -297,13 +310,13 @@ struct dlg_cell* build_new_dlg(str *callid, str *from_uri,
 
 int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		str *contact,str *cseq, struct socket_info *sock,
-		str *mangled_from,str *mangled_to);
+		str *mangled_from,str *mangled_to,str *sdp);
 
 int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq,
 						int field_type);
 
 int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
-													str *rr, str *contact );
+													str *rr, str *contact, str *sdp);
 
 struct dlg_cell* lookup_dlg( unsigned int h_entry, unsigned int h_id);
 

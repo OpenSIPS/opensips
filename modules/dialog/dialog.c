@@ -80,7 +80,8 @@ str rr_param = {"did",3};
 static int dlg_hash_size = 4096;
 static str timeout_spec = {NULL, 0};
 static int default_timeout = 60 * 60 * 12;  /* 12 hours */
-static int ping_interval = 30; /* seconds */
+static int options_ping_interval = 30;      /* seconds */
+static int reinvite_ping_interval = 300;    /* seconds */
 static char* profiles_wv_s = NULL;
 static char* profiles_nv_s = NULL;
 
@@ -228,7 +229,8 @@ static param_export_t mod_params[]={
 	{ "log_profile_hash_size", INT_PARAM, &log_profile_hash_size    },
 	{ "rr_param",              STR_PARAM, &rr_param.s               },
 	{ "default_timeout",       INT_PARAM, &default_timeout          },
-	{ "ping_interval",         INT_PARAM, &ping_interval            },
+	{ "options_ping_interval", INT_PARAM, &options_ping_interval    },
+	{ "reinvite_ping_interval",INT_PARAM, &reinvite_ping_interval   },
 	{ "dlg_extra_hdrs",        STR_PARAM, &dlg_extra_hdrs.s         },
 	{ "dlg_match_mode",        INT_PARAM, &seq_match_mode           },
 	{ "db_url",                STR_PARAM, &db_url.s                 },
@@ -749,7 +751,7 @@ static int mod_init(void)
 	}
 
 
-	if (ping_interval<=0) {
+	if (options_ping_interval<=0 || reinvite_ping_interval<=0) {
 		LM_ERR("Non-positive ping interval not accepted!!\n");
 		return -1;
 	}
@@ -879,8 +881,14 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if ( register_timer( "dlg-pinger", dlg_ping_routine, NULL,
-	ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+	if ( register_timer( "dlg-options-pinger", dlg_options_routine, NULL,
+	options_ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+		LM_ERR("failed to register timer 2\n");
+		return -1;
+	}
+
+	if ( register_timer( "dlg-reinvite-pinger", dlg_reinvite_routine, NULL,
+	reinvite_ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 		LM_ERR("failed to register timer 2\n");
 		return -1;
 	}
@@ -895,6 +903,11 @@ static int mod_init(void)
 	}
 
 	if (init_dlg_ping_timer()!=0) {
+		LM_ERR("cannot init ping timer\n");
+		return -1;
+	}
+
+	if (init_dlg_reinvite_ping_timer()!=0) {
 		LM_ERR("cannot init ping timer\n");
 		return -1;
 	}
@@ -1033,7 +1046,8 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 	if ( (dlg=get_current_dialog())!=NULL  )
 	{
 		/*Clear current flags before setting new ones*/
-		dlg->flags &= ~(DLG_FLAG_PING_CALLER | DLG_FLAG_PING_CALLEE | DLG_FLAG_BYEONTIMEOUT);
+		dlg->flags &= ~(DLG_FLAG_PING_CALLER | DLG_FLAG_PING_CALLEE | 
+		DLG_FLAG_BYEONTIMEOUT | DLG_FLAG_REINVITE_PING_CALLER | DLG_FLAG_REINVITE_PING_CALLEE);
 		dlg->flags |= flags;
 		return 1;
 	}

@@ -168,10 +168,11 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 	bin_pop_str(&mangled_tu);
 
 	/* add the 2 legs */
+	/* TODO - sdp here */
 	if (dlg_add_leg_info(dlg, &from_tag, &rroute1, &contact1,
-		&cseq1, caller_sock, 0, 0) != 0 ||
+		&cseq1, caller_sock, 0, 0,0) != 0 ||
 		dlg_add_leg_info(dlg, &to_tag, &rroute2, &contact2,
-		&cseq2, callee_sock, &mangled_fu, &mangled_tu) != 0) {
+		&cseq2, callee_sock, &mangled_fu, &mangled_tu,0) != 0) {
 		LM_ERR("dlg_set_leg_info failed\n");
 		goto pre_linking_error;
 	}

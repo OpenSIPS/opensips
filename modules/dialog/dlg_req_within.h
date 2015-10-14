@@ -108,5 +108,6 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs);
 struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param );
 
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
-		str *hdrs,str *body,dlg_request_callback func,void *param,dlg_release_func release);
+		str *hdrs,str *body,dlg_request_callback func,void *param,
+		dlg_release_func release,char *reply_marker);
 #endif
