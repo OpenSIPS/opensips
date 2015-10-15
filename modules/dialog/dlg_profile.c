@@ -1282,12 +1282,12 @@ struct mi_root * mi_list_all_profiles(struct mi_root *cmd_tree, void *param )
 	return rpl_tree;
 }
 
-struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ){
+struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 	struct mi_node* node;
 	struct dlg_profile_table *profile;
 	str *profile_name;
 	str *value;
-	unsigned int i,found = 0;
+	unsigned int i;
 	struct dlg_entry *d_entry;
 	struct dlg_cell    *cur_dlg;
 	struct dlg_profile_link *cur_link;
@@ -1330,7 +1330,6 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ){
 					 && !strncmp(value->s,cur_link->value.s, value->len))
 					)) {
 					delete_entry = pkg_malloc(sizeof(struct dialog_list));
-					found = 1;
 					if (!delete_entry) {
 						LM_CRIT("no more pkg memory\n");
 						lock_set_release(d_table->locks,d_entry->lock_idx);
@@ -1375,10 +1374,5 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ){
 		deleted = NULL;
 	}
 
-	if(!found){
-		return init_mi_tree(404, MI_SSTR("No dialogs found in profile\n"));
-	} else {
-		return init_mi_tree(400, MI_SSTR(MI_OK));
-	}
-
+	return init_mi_tree(400, MI_SSTR(MI_OK));
 }
