@@ -80,12 +80,13 @@ static void mod_destroy(void);
 /*! \brief Fixup functions */
 static int registrar_fixup(void** param, int param_no);
 static int fixup_remove(void** param, int param_no);
-static int registered_fixup(void** param, int param_no);
 /*! \brief Functions */
 static int add_sock_hdr(struct sip_msg* msg, char *str, char *foo);
 
-static int fixup_domain_avp_param(void **param, int param_no);
-
+static int fixup_is_registered(void **param, int param_no);
+static int fixup_is_aor_registered(void **param, int param_no);
+static int fixup_is_contact_registered(void **param, int param_no);
+static int fixup_is_ip_registered(void **param, int param_no);
 
 int default_expires = 3600; 			/*!< Default expires value in seconds */
 qvalue_t default_q  = Q_UNSPECIFIED;	/*!< Default q value multiplied by 1000 */
@@ -157,16 +158,25 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE | FAILURE_ROUTE },
 	{"lookup",       (cmd_function)lookup,       3,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
-	{"registered",   (cmd_function)registered,   1,  registered_fixup, 0,
+	{"registered",   (cmd_function)registered,   1,  fixup_is_registered, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"registered",   (cmd_function)registered,   2,  registered_fixup, 0,
+	{"registered",   (cmd_function)registered,   2,  fixup_is_registered, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"registered",   (cmd_function)registered,   3,  registered_fixup, 0,
+	{"registered",   (cmd_function)registered,   3,  fixup_is_registered, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"add_sock_hdr", (cmd_function)add_sock_hdr, 1,  fixup_str_null,   0,
 		REQUEST_ROUTE },
 	{"is_other_contact",      (cmd_function)is_other_contact_f, 2,
-		fixup_domain_avp_param, 0, REQUEST_ROUTE},
+		fixup_is_aor_registered/*same # of params*/, 0, REQUEST_ROUTE},
+	{"is_registered",      (cmd_function)is_registered, 2,
+		fixup_is_aor_registered, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"is_contact_registered",      (cmd_function)is_contact_registered, 4,
+		fixup_is_contact_registered, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"is_ip_registered",      (cmd_function)is_ip_registered, 3,
+		fixup_is_ip_registered, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -428,22 +438,6 @@ static int registrar_fixup(void** param, int param_no)
 	}
 }
 
-static int registered_fixup(void** param, int param_no)
-{
-	if (param_no == 1) {
-		/* name of the table */
-		return domain_fixup(param);
-	} else if (param_no == 2) {
-		/* AOR - from PVAR */
-		return fixup_pvar(param);
-	} else if (param_no == 3) {
-		/* CALLID - from PVAR */
-		return fixup_pvar(param);
-	}
-	return 0;
-}
-
-
 static void mod_destroy(void)
 {
 	free_contact_buf();
@@ -518,16 +512,14 @@ error:
 	return -1;
 }
 
-static int fixup_domain_avp_param(void **param, int param_no)
-{
-	str s;
-	pv_spec_p spec;
-	udomain_t *d;
 
-	if (param_no > 2) {
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
+
+/*
+ * fixup for domain and aor
+ */
+static int fixup_is_registered(void **param, int param_no)
+{
+	udomain_t *d;
 
 	if (param_no == 1) {
 		if (ul.register_udomain((char*)*param, &d) < 0) {
@@ -538,18 +530,36 @@ static int fixup_domain_avp_param(void **param, int param_no)
 	    return 0;
 	}
 
-	spec = pkg_malloc(sizeof(pv_spec_t));
-	if (!spec) {
-		LM_ERR("no more pkg mem\n");
-		return E_OUT_OF_MEM;
-	}
-	s.s = (char*)(*param);
-	s.len = strlen(s.s);
-	if (!pv_parse_spec(&s, spec) || spec->type != PVT_AVP) {
-		LM_ERR("malformed avp definition %s\n", s.s);
+	return fixup_pvar(param);
+}
+
+static int fixup_is_aor_registered(void **param, int param_no)
+{
+	if (param_no > 2) {
+		LM_ERR("invalid param number\n");
 		return E_UNSPEC;
 	}
 
-	*param = (void*)spec;
-	return 0;
+	return fixup_is_registered(param, param_no);
+}
+
+static int fixup_is_contact_registered(void **param, int param_no)
+{
+	if (param_no > 4) {
+		LM_ERR("invalid param number\n");
+		return E_UNSPEC;
+	}
+
+	return fixup_is_registered(param, param_no);
+}
+
+
+static int fixup_is_ip_registered(void **param, int param_no)
+{
+	if (param_no > 3) {
+		LM_ERR("invalid param number\n");
+		return E_UNSPEC;
+	}
+
+	return fixup_is_registered(param, param_no);
 }
