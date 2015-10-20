@@ -503,7 +503,7 @@ int db_query_avp_print_results(struct sip_msg *msg, const db_res_t *db_res,
 					avp_val.s.s=
 						(char*)RES_ROWS(db_res)[i].values[j].val.string_val;
 					avp_val.s.len=strlen(avp_val.s.s);
-					if(avp_val.s.len<=0)
+					if(avp_val.s.len<0)
 						goto next_avp;
 				break;
 				case DB_STR:
@@ -512,7 +512,7 @@ int db_query_avp_print_results(struct sip_msg *msg, const db_res_t *db_res,
 						RES_ROWS(db_res)[i].values[j].val.str_val.len;
 					avp_val.s.s=
 						(char*)RES_ROWS(db_res)[i].values[j].val.str_val.s;
-					if(avp_val.s.len<=0)
+					if(avp_val.s.len<0)
 						goto next_avp;
 				break;
 				case DB_BLOB:
@@ -521,7 +521,7 @@ int db_query_avp_print_results(struct sip_msg *msg, const db_res_t *db_res,
 						RES_ROWS(db_res)[i].values[j].val.blob_val.len;
 					avp_val.s.s=
 						(char*)RES_ROWS(db_res)[i].values[j].val.blob_val.s;
-					if(avp_val.s.len<=0)
+					if(avp_val.s.len<0)
 						goto next_avp;
 				break;
 				case DB_INT:
