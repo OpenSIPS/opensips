@@ -305,7 +305,7 @@ static int mod_init(void)
 		ul_hash_size = 1<<ul_hash_size;
 	ul_locks_no = ul_hash_size;
 
-	if (db_mode == WRITE_THROUGH || db_mode == WRITE_BACK) {
+	if (db_mode != NO_DB) {
 		cid_keys = pkg_malloc(max_contact_delete *
 				(sizeof(db_key_t) * sizeof(db_val_t)));
 		if (cid_keys == NULL) {
@@ -385,26 +385,26 @@ static int mod_init(void)
 		return -1;
 	}
 
-	
-	
+
+
 	if( (ul_replicate_cluster > 0 || accept_replicated_udata > 0)
 		&& load_clusterer_api(&clusterer_api)!=0){
 		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
-		return -1;	
+		return -1;
 	}
-	
+
 	/* register handler for processing usrloc packets from the bin interface */
 	if (accept_replicated_udata > 0 &&
 			bin_register_cb(repl_module_name.s, receive_binary_packet, NULL) < 0) {
 		LM_ERR("cannot register binary packet callback!\n");
 		return -1;
 	}
-	
-	
+
+
 	if(ul_replicate_cluster < 0){
 		ul_replicate_cluster = 0;
 	}
-	
+
 	init_flag = 1;
 
 	return 0;
