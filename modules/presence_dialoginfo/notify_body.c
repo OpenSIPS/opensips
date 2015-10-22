@@ -422,7 +422,6 @@ str* build_dialoginfo(str* pres_user, str* pres_domain)
 	xmlDocDumpMemory(doc,(unsigned char**)(void*)&body->s,&body->len);
 
 	LM_DBG("new_body:\n%.*s\n",body->len, body->s);
-	pkg_free(pres_uri);
 	/*free the document */
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
