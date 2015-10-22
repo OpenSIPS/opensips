@@ -98,6 +98,7 @@ struct dlg_leg {
 	str sdp;	/* latest SDP provided by this leg ( full body ) */
 	int nr_uris;
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
+	unsigned int last_inv_gen_cseq; /* used when translating ACKs */
 	char reply_received;
 	char reinvite_confirmed;
 	struct socket_info *bind_addr;
