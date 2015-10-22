@@ -10,7 +10,7 @@ Homepage: http://www.opensips.org/
 Package: opensips
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
-Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-jabber-module, opensips-cpl-module, opensips-radius-modules, opensips-presence-modules, opensips-xmlrpcng-module, opensips-perl-modules, opensips-snmpstats-module, opensips-xmpp-module, opensips-carrierroute-module, opensips-berkeley-module, opensips-ldap-modules, opensips-geoip-module, opensips-regex-module, opensips-identity-module, opensips-b2bua-module, opensips-dbhttp-module, opensips-dialplan-module, opensips-memcached-module, opensips-json-module, opensips-console, opensips-redis-module, opensips-rabbitmq-module, opensips-lua-module, opensips-http-modules
+Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-jabber-module, opensips-cpl-module, opensips-radius-modules, opensips-presence-modules, opensips-xmlrpc-module, opensips-perl-modules, opensips-snmpstats-module, opensips-xmpp-module, opensips-carrierroute-module, opensips-berkeley-module, opensips-ldap-modules, opensips-geoip-module, opensips-regex-module, opensips-identity-module, opensips-b2bua-module, opensips-dbhttp-module, opensips-dialplan-module, opensips-memcached-module, opensips-json-module, opensips-console, opensips-redis-module, opensips-rabbitmq-module, opensips-lua-module, opensips-http-modules
 Description: very fast and configurable SIP server
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
@@ -115,7 +115,7 @@ Description: SIMPLE presence modules for OpenSIPS
  server and presence user agent for RICH presence, registrar-based presence,
  external triggered presence and XCAP support.
 
-Package: opensips-xmlrpcng-module
+Package: opensips-xmlrpc-module
 Architecture: any
 Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
 Description: XMLRPC support for OpenSIPS's Management Interface
@@ -284,7 +284,7 @@ Description: Support for JSON handling in OpenSIPS script
 Package: opensips-console
 Architecture: any
 Depends: opensips (= ${binary:Version}), libfrontier-rpc-perl, libnet-ip-perl, libberkeleydb-perl, libterm-readline-perl-perl
-Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-xmlrpcng-module, opensips-berkeley-module 
+Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-xmlrpc-module, opensips-berkeley-module 
 Description: Generic tool for OpenSIPS provisioning
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
