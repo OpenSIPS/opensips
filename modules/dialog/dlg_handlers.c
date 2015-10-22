@@ -1279,15 +1279,28 @@ after_unlock5:
 				if (dlg->legs[dst_leg].last_gen_cseq) {
 
 					update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
+
+					if (req->first_line.u.request.method_value == METHOD_INVITE) {
+						/* save INVITE cseq, in case any requests follow after this
+						( pings or other in-dialog requests until the ACK comes in */
+						dlg->legs[dst_leg].last_inv_gen_cseq = dlg->legs[dst_leg].last_gen_cseq;
+					}
+
 					dlg_unlock( d_table, d_entry );
 
 					if (update_msg_cseq(req,0,update_val) != 0) {
 						LM_ERR("failed to update sequential request msg cseq\n");
 						ok = 0;
 					}
-				}
-				else
+				} else {
+					if (req->first_line.u.request.method_value == METHOD_INVITE) {
+						/* we did not generate any pings yet - still we need to store the INV cseq,
+						in case there's a race between the ACK for the INVITE and sending of new pings */
+						str2int(&((struct cseq_body *)req->cseq->parsed)->number,
+						&dlg->legs[dst_leg].last_inv_gen_cseq);
+					}
 					dlg_unlock( d_table, d_entry );
+				}
 			}
 
 			if (ok) {
@@ -1298,23 +1311,24 @@ after_unlock5:
 				if (replication_dests)
 					replicate_dialog_updated(dlg);
 			}
-		}
-		else
-		{
+		} else {
 			if (dlg->flags & DLG_FLAG_PING_CALLER ||
 					dlg->flags & DLG_FLAG_PING_CALLEE) {
 
 				dlg_lock (d_table, d_entry);
 
-				if (dlg->legs[dst_leg].last_gen_cseq) {
-					update_val = dlg->legs[dst_leg].last_gen_cseq;
+				if (dlg->legs[dst_leg].last_gen_cseq ||
+				dlg->legs[dst_leg].last_inv_gen_cseq) {
+					if (dlg->legs[dst_leg].last_inv_gen_cseq)
+						update_val = dlg->legs[dst_leg].last_inv_gen_cseq;
+					else
+						update_val = dlg->legs[dst_leg].last_gen_cseq;
 					dlg_unlock( d_table, d_entry );
 
 					if (update_msg_cseq(req,0,update_val) != 0) {
 						LM_ERR("failed to update ACK msg cseq\n");
 					}
-				}
-				else
+				} else
 					dlg_unlock( d_table, d_entry );
 			}
 		}

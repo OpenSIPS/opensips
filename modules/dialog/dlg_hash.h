@@ -95,6 +95,7 @@ struct dlg_leg {
 	str route_uris[64];
 	int nr_uris;
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
+	unsigned int last_inv_gen_cseq; /* used when translating ACKs */
 	char reply_received;
 	struct socket_info *bind_addr;
 };
