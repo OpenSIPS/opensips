@@ -1599,6 +1599,7 @@ void dlg_ontimeout( struct dlg_tl *tl)
 {
 	struct sip_msg *fake_msg;
 	context_p old_ctx;
+	context_p *new_ctx;
 	struct dlg_cell *dlg;
 	int new_state;
 	int old_state;
@@ -1642,8 +1643,12 @@ void dlg_ontimeout( struct dlg_tl *tl)
 		dlg_unlock_dlg(dlg);
 
 		/* dialog timeout */
-		if (push_new_processing_context( dlg, &old_ctx, &fake_msg)==0) {
+		if (push_new_processing_context( dlg, &old_ctx, &new_ctx, &fake_msg)==0) {
 			run_dlg_callbacks( DLGCB_EXPIRED, dlg, fake_msg, DLG_DIR_NONE, 0);
+
+			if (current_processing_ctx == NULL)
+				*new_ctx = NULL;
+
 			/* reset the processing context */
 			current_processing_ctx = old_ctx;
 		}

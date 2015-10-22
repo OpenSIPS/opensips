@@ -213,6 +213,7 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 	int event, old_state, new_state, unref, ret;
 	struct sip_msg *fake_msg=NULL;
 	context_p old_ctx;
+	context_p *new_ctx;
 
 	event = DLG_EVENT_REQBYE;
 	next_state_dlg(dlg, event, DLG_DIR_DOWNSTREAM, &old_state, &new_state,
@@ -253,10 +254,12 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 
 		if (req==NULL) {
 			/* set new msg & processing context */
-			if (push_new_processing_context( dlg, &old_ctx, &fake_msg)==0) {
+			if (push_new_processing_context( dlg, &old_ctx, &new_ctx, &fake_msg)==0) {
 				/* dialog terminated (BYE) */
 				run_dlg_callbacks( DLGCB_TERMINATED, dlg, fake_msg, DLG_DIR_NONE, 0);
-				/* reset the processing contect */
+				/* reset the processing context */
+				if (current_processing_ctx == NULL)
+					*new_ctx = NULL;
 				current_processing_ctx = old_ctx;
 			} /* no CB run in case of failure FIXME */
 		} else {
@@ -349,6 +352,7 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 														str *extra_hdrs)
 {
 	context_p old_ctx;
+	context_p *new_ctx;
 	dlg_t* dialog_info;
 	str met = {"BYE", 3};
 	int result;
@@ -362,7 +366,7 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
 
 	/* set new processing context */
-	if (push_new_processing_context( cell, &old_ctx, NULL)!=0)
+	if (push_new_processing_context( cell, &old_ctx, &new_ctx, NULL)!=0)
 		goto err;
 
 	ctx_lastdstleg_set(dst_leg);
@@ -379,6 +383,8 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 		NULL);         /* release function*/
 
 	/* reset the processing contect */
+	if (current_processing_ctx == NULL)
+		*new_ctx = NULL;
 	current_processing_ctx = old_ctx;
 
 	if(result < 0){
@@ -519,6 +525,7 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	void *param,dlg_release_func release,char *reply_marker)
 {
 	context_p old_ctx;
+	context_p *new_ctx;
 	dlg_t* dialog_info;
 	int result;
 	unsigned int method_type;
@@ -546,7 +553,7 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
 
 	/* set new processing context */
-	if (push_new_processing_context( dlg, &old_ctx, NULL)!=0)
+	if (push_new_processing_context( dlg, &old_ctx, &new_ctx, NULL)!=0)
 		return -1;
 
 	//dialog_info->T_flags=T_NO_AUTOACK_FLAG;
@@ -561,6 +568,8 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		release);         /* release function*/
 
 	/* reset the processing contect */
+	if (current_processing_ctx == NULL)
+		*new_ctx = NULL;
 	current_processing_ctx = old_ctx;
 
 	if(result < 0)
