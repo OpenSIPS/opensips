@@ -53,7 +53,8 @@ typedef void (dlg_request_callback)(struct cell *t,int type,
 typedef void (dlg_release_func)(void *param);
 
 static inline int push_new_processing_context( struct dlg_cell *dlg,
-								context_p *old_ctx, struct sip_msg **fake_msg)
+								context_p *old_ctx, context_p **new_ctx,
+								struct sip_msg **fake_msg)
 {
 	static context_p my_ctx = NULL;
 	static struct sip_msg *my_msg = NULL;
@@ -95,6 +96,9 @@ static inline int push_new_processing_context( struct dlg_cell *dlg,
 
 	/* set the new CTX as current one */
 	current_processing_ctx = my_ctx;
+
+	/* store the value from the newly created context */
+	*new_ctx = &my_ctx;
 
 	/* set this dialog in the ctx */
 	ctx_dialog_set(dlg);

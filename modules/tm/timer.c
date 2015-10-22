@@ -275,6 +275,9 @@ static void fake_reply(struct cell *t, int branch, int code )
 			&cancel_bitmap );
 	}
 
+	if (current_processing_ctx==NULL)
+		my_ctx=NULL;
+
 	/* switch back to the old context */
 	current_processing_ctx = old_ctx;
 }
