@@ -61,7 +61,7 @@ static inline int push_new_processing_context( struct dlg_cell *dlg,
 
 	*old_ctx = current_processing_ctx;
 	if (my_ctx==NULL) {
-		my_ctx = context_alloc();
+		my_ctx = context_alloc(CONTEXT_GLOBAL);
 		if (my_ctx==NULL) {
 			LM_ERR("failed to alloc new ctx in pkg\n");
 			return -1;

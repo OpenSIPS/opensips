@@ -83,7 +83,7 @@ unsigned int get_next_msg_no(void)
 #define prepare_context( _ctx, _err ) \
 	do { \
 		if (_ctx==NULL) { \
-			_ctx = context_alloc();\
+			_ctx = context_alloc(CONTEXT_GLOBAL);\
 			if (_ctx==NULL) { \
 				LM_ERR("failed to allocated new context, skipping\n"); \
 				goto _err; \
@@ -199,6 +199,8 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		/* execute post request-script callbacks */
 		if (rc & SCB_RUN_POST_CBS)
 			exec_post_req_cb(msg);
+
+		context_destroy(CONTEXT_GLOBAL, ctx);
 
 	} else if (msg->first_line.type==SIP_REPLY) {
 		update_stat( rcv_rpls, 1);
