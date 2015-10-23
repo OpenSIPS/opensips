@@ -135,7 +135,7 @@ static int mod_init(void)
 	}
 
 	/* index in global context to keep the on/off state */
-	pul_status_idx = context_register_int(CONTEXT_GLOBAL);
+	pul_status_idx = context_register_int(CONTEXT_GLOBAL, NULL);
 
 	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
 	if (!bind_usrloc)

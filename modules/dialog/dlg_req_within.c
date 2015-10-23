@@ -260,6 +260,8 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 				/* reset the processing context */
 				if (current_processing_ctx == NULL)
 					*new_ctx = NULL;
+				else
+					context_destroy(CONTEXT_GLOBAL, *new_ctx);
 				current_processing_ctx = old_ctx;
 			} /* no CB run in case of failure FIXME */
 		} else {
@@ -385,6 +387,8 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 	/* reset the processing contect */
 	if (current_processing_ctx == NULL)
 		*new_ctx = NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, *new_ctx);
 	current_processing_ctx = old_ctx;
 
 	if(result < 0){
@@ -570,6 +574,8 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	/* reset the processing contect */
 	if (current_processing_ctx == NULL)
 		*new_ctx = NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, *new_ctx);
 	current_processing_ctx = old_ctx;
 
 	if(result < 0)

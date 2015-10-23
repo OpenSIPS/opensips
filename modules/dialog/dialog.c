@@ -691,6 +691,13 @@ static int pv_get_dlg_count(struct sip_msg *msg, pv_param_t *param,
 	return 0;
 }
 
+static void ctx_dlg_idx_destroy(void *v)
+{
+	unref_dlg((struct dlg_cell*)v, 1);
+	/* reset the pointer to make sure no-one is trying to free it anymore */
+	ctx_dialog_set(NULL);
+}
+
 
 static int mod_init(void)
 {
@@ -785,9 +792,9 @@ static int mod_init(void)
 	}
 
 	/* allocate a slot in the processing context */
-	ctx_dlg_idx = context_register_ptr(CONTEXT_GLOBAL);
-	ctx_timeout_idx = context_register_int(CONTEXT_GLOBAL);
-	ctx_lastdstleg_idx = context_register_int(CONTEXT_GLOBAL);
+	ctx_dlg_idx = context_register_ptr(CONTEXT_GLOBAL, ctx_dlg_idx_destroy);
+	ctx_timeout_idx = context_register_int(CONTEXT_GLOBAL, NULL);
+	ctx_lastdstleg_idx = context_register_int(CONTEXT_GLOBAL, NULL);
 
 	/* create dialog state changed event */
 	if (state_changed_event_init() < 0) {

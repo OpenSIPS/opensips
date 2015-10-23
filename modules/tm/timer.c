@@ -253,7 +253,7 @@ static void fake_reply(struct cell *t, int branch, int code )
 	   trigger from timer), a processing context must be attached to it */
 	old_ctx = current_processing_ctx;
 	if (my_ctx==NULL) {
-		my_ctx = context_alloc();
+		my_ctx = context_alloc(CONTEXT_GLOBAL);
 		if (my_ctx==NULL) {
 			LM_ERR("failed to alloc new ctx in pkg\n");
 		}
@@ -277,6 +277,8 @@ static void fake_reply(struct cell *t, int branch, int code )
 
 	if (current_processing_ctx==NULL)
 		my_ctx=NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, my_ctx);
 
 	/* switch back to the old context */
 	current_processing_ctx = old_ctx;

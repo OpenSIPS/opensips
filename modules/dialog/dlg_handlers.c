@@ -1648,6 +1648,8 @@ void dlg_ontimeout( struct dlg_tl *tl)
 
 			if (current_processing_ctx == NULL)
 				*new_ctx = NULL;
+			else
+				context_destroy(CONTEXT_GLOBAL, *new_ctx);
 
 			/* reset the processing context */
 			current_processing_ctx = old_ctx;
