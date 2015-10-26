@@ -111,7 +111,7 @@ struct fm_block{
 };
 
 
-inline unsigned long frag_size(void* p);
+unsigned long frag_size(void* p);
 struct fm_block* fm_malloc_init(char* address, unsigned long size);
 
 #ifdef DBG_F_MALLOC

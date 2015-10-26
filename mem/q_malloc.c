@@ -161,7 +161,7 @@ static  void qm_debug_frag(struct qm_block* qm, struct qm_frag* f)
 }
 #endif
 
-inline unsigned long frag_size(void* p){
+unsigned long frag_size(void* p){
 	if(!p)
 		return 0;
 	return (((struct qm_frag*) ((char*)p-sizeof(struct qm_frag)))->size);

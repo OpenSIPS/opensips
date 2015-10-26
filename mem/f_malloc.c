@@ -84,7 +84,7 @@
 #define F_MALLOC_DEFRAG_LIMIT (F_MALLOC_LARGE_LIMIT * 5)
 #define F_MALLOC_DEFRAG_PERCENT 5
 
-inline unsigned long frag_size(void* p){
+unsigned long frag_size(void* p){
 	if(!p)
 		return 0;
 	return (((struct fm_frag*) ((char*)p-sizeof(struct fm_frag)))->size);
