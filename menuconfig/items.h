@@ -39,6 +39,7 @@ typedef struct sel_item {
 	int dependency_no;			/* number of dependencies */
 	int enabled;				/* is item selected or not */
 	int prev_state;				/* previous item state, used for resetting */
+	int group_idx;				/* index of group of mutually exclusive items */
 	struct sel_item *next;			/* items that should be shown along this item */
 } select_item;
 

@@ -78,8 +78,11 @@ int reset_unsaved_compile(select_menu *menu,void *arg)
 	current->child_changed=CHILD_NO_CHANGES;
 
 	current=find_menu(CONF_COMPILE_FLAGS,main_menu);
-	for (it=current->item_list;it;it=it->next)
+	for (it=current->item_list;it;it=it->next) {
+		if (it->group_idx && it->prev_state != it->enabled)
+			it->group_idx = -it->group_idx;
 		it->enabled=it->prev_state;
+	}
 	current->child_changed=CHILD_NO_CHANGES;
 
 	current=find_menu(CONF_INSTALL_PREFIX,main_menu);
@@ -397,6 +400,7 @@ int dump_make_conf(select_menu *menu,void *arg)
 	select_menu *current;
 	select_item *it;
 	int i,k=0;
+	int start_grp=0, prev_grp=0;
 
 	FILE *f = fopen(MAKE_CONF_FILE,"w");
 	if (!f) {
@@ -441,10 +445,26 @@ int dump_make_conf(select_menu *menu,void *arg)
 	/* START compile DEFS related options */
 	current = find_menu(CONF_COMPILE_FLAGS,main_menu);
 	for (it=current->item_list;it;it=it->next) {
+		if (it->group_idx && !start_grp) {
+			start_grp = 1;
+			prev_grp = it->group_idx>0 ? it->group_idx : -it->group_idx;
+			fprintf(f, "%s\n", GRP_START_STR);
+		}
+		if (start_grp)
+			if ((it->group_idx>0 && (it->group_idx != prev_grp)) ||
+				(it->group_idx<0 && (-it->group_idx != prev_grp)) ||
+				it->group_idx==0) {
+				start_grp = 0;
+				fprintf(f, "%s\n", GRP_END_STR);
+			}
+
 		fprintf(f,"%sDEFS+= -D%s #%s",
 			it->enabled?"":"#",it->name,it->description);
 		it->prev_state=it->enabled;
 	}
+
+	if (!it && start_grp)
+		fprintf(f, "%s\n", GRP_END_STR);
 
 	current->child_changed=CHILD_NO_CHANGES;
 	/* END compile DEFS related options */
