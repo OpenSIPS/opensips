@@ -956,15 +956,15 @@ ok:
 	return 0;
 error_aliases:
 	TCPCONN_UNLOCK;
-	LM_ERR("too many aliases for connection %p (%d)\n", c, id);
+	LM_INFO("too many aliases for connection %p (%d)\n", c, id);
 	return -1;
 error_not_found:
 	TCPCONN_UNLOCK;
 	LM_ERR("no connection found for id %d\n",id);
 	return -1;
 error_sec:
-	LM_ERR("possible port hijack attempt\n");
-	LM_ERR("alias already present and points to another connection "
+	LM_INFO("possible port hijack attempt\n");
+	LM_INFO("alias already present and points to another connection "
 			"(%d : %d and %d : %d)\n", a->parent->id,  port, id, port);
 	TCPCONN_UNLOCK;
 	return -1;
