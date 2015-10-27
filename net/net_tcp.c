@@ -1342,7 +1342,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			break;
 		case ASYNC_WRITE:
 			if (tcpconn->state==S_CONN_BAD){
-				tcpconn_destroy(tcpconn);
+				tcpconn->lifetime=0;
 				break;
 			}
 			/* must be after the de-ref*/
