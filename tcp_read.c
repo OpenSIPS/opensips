@@ -431,7 +431,8 @@ skip:
 	return bytes;
 }
 
-void release_tcpconn(struct tcp_connection* c, long state, int unix_sock)
+void release_tcpconn(struct tcp_connection* c, long state, int unix_sock,
+                     int writer)
 {
 	long response[2];
 
@@ -439,7 +440,7 @@ void release_tcpconn(struct tcp_connection* c, long state, int unix_sock)
 			c, state, c->fd, c->id);
 	LM_DBG(" extra_data %p\n", c->extra_data);
 
-	if (c->con_req) {
+	if (!writer && c->con_req) {
 		pkg_free(c->con_req);
 		c->con_req = NULL;
 	}
@@ -490,7 +491,7 @@ again:
 		else if (errno==EAGAIN || errno==EWOULDBLOCK) {
 			LM_DBG("Can't finish to write chunk %p on conn %p\n",
 				   chunk,con);
-			release_tcpconn(con, ASYNC_WRITE, tcpmain_sock);
+			release_tcpconn(con, ASYNC_WRITE, tcpmain_sock, 1);
 			return 0;
 		} else {
 			LM_ERR("Error occured while sending async chunk %d (%s)\n",
@@ -510,7 +511,7 @@ again:
 		if (con->async_chunks_no == 0) {
 			LM_DBG("We have finished writing all our async chunks in %p\n",con);
 			con->oldest_chunk=0;
-			release_tcpconn(con, CONN_RELEASE, tcpmain_sock);
+			release_tcpconn(con, CONN_RELEASE, tcpmain_sock, 1);
 			return 0;
 		} else {
 			LM_DBG("We still have %d chunks pending on %p\n",
@@ -663,9 +664,9 @@ again:
 				io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING,IO_WATCH_READ);
 				tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 				if (con->state==S_CONN_EOF)
-					release_tcpconn(con, CONN_EOF, tcpmain_sock);
+					release_tcpconn(con, CONN_EOF, tcpmain_sock, 0);
 				else
-					release_tcpconn(con, CONN_RELEASE, tcpmain_sock);
+					release_tcpconn(con, CONN_RELEASE, tcpmain_sock, 0);
 			}
 		} else {
 			msg_buf = req->start;
@@ -687,9 +688,9 @@ again:
 				/* if we have EOF, signal that to MAIN as well
 				 * otherwise - just pass it back */
 				if (con->state==S_CONN_EOF)
-					release_tcpconn(con, CONN_EOF, tcpmain_sock);
+					release_tcpconn(con, CONN_EOF, tcpmain_sock, 0);
 				else
-					release_tcpconn(con, CONN_RELEASE, tcpmain_sock);
+					release_tcpconn(con, CONN_RELEASE, tcpmain_sock, 0);
 			} else {
 				LM_DBG("We still have things on the pipe - keeping connection \n");
 			}
@@ -861,7 +862,7 @@ void tcp_receive_loop(int unix_sock)
 					LM_ERR("read_fd: no fd read\n");
 					resp=CONN_ERROR;
 					con->state=S_CONN_BAD;
-					release_tcpconn(con, resp, unix_sock);
+					release_tcpconn(con, resp, unix_sock, 0);
 					goto skip;
 				}
 				con->timeout=get_ticks()+TCP_CHILD_TIMEOUT;
@@ -873,7 +874,7 @@ void tcp_receive_loop(int unix_sock)
 							" state %d (n=%d)\n", con, con->id, con->fd,
 							con->refcnt, con->state, n);
 					resp=CONN_ERROR;
-					release_tcpconn(con, resp, unix_sock);
+					release_tcpconn(con, resp, unix_sock, 0);
 					goto skip; /* try to recover */
 				}
 				tcpconn_listadd(list, con, c_next, c_prev);
@@ -892,7 +893,7 @@ skip:
 					FD_CLR(con->fd, &master_set);
 					tcpconn_listrm(list, con, c_next, c_prev);
 					con->state=S_CONN_BAD;
-					release_tcpconn(con, resp, unix_sock);
+					release_tcpconn(con, resp, unix_sock, 0);
 					continue;
 				}
 				if (nfds && FD_ISSET(con->fd, &sel_set)){
@@ -906,7 +907,7 @@ skip:
 						FD_CLR(con->fd, &master_set);
 						tcpconn_listrm(list, con, c_next, c_prev);
 						con->state=S_CONN_BAD;
-						release_tcpconn(con, resp, unix_sock);
+						release_tcpconn(con, resp, unix_sock, 0);
 					}else{
 						/* update timeout */
 						con->timeout=ticks+TCP_CHILD_TIMEOUT;
@@ -920,7 +921,7 @@ skip:
 						resp=CONN_RELEASE;
 						FD_CLR(con->fd, &master_set);
 						tcpconn_listrm(list, con, c_next, c_prev);
-						release_tcpconn(con, resp, unix_sock);
+						release_tcpconn(con, resp, unix_sock, 0);
 					}
 				}
 			}
@@ -989,7 +990,7 @@ again:
 							" connection received: %p, id %d, fd %d, refcnt %d"
 							" state %d (n=%d)\n", con, con->id, con->fd,
 							con->refcnt, con->state, n);
-				release_tcpconn(con, CONN_ERROR, tcpmain_sock);
+				release_tcpconn(con, CONN_ERROR, tcpmain_sock, 0);
 				break; /* try to recover */
 			}
 
@@ -1019,7 +1020,7 @@ again:
 					lock_release(&con->write_lock);
 					ret=-1; /* some error occured */
 					con->state=S_CONN_BAD;
-					release_tcpconn(con, resp, tcpmain_sock);
+					release_tcpconn(con, resp, tcpmain_sock, 1);
 					break;
 				}
 
@@ -1037,7 +1038,7 @@ again:
 								 IO_WATCH_READ|IO_WATCH_WRITE);
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->state=S_CONN_BAD;
-					release_tcpconn(con, resp, tcpmain_sock);
+					release_tcpconn(con, resp, tcpmain_sock, 0);
 					break;
 				}
 			}
@@ -1055,7 +1056,7 @@ again:
 	return ret;
 con_error:
 	con->state=S_CONN_BAD;
-	release_tcpconn(con, CONN_ERROR, fm->fd);
+	release_tcpconn(con, CONN_ERROR, fm->fd, 0);
 	return ret;
 error:
 	return -1;
@@ -1079,7 +1080,7 @@ static inline void tcp_receive_timeout(void)
 			io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING,IO_WATCH_READ);
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 			con->state=S_CONN_BAD;
-			release_tcpconn(con, CONN_ERROR, tcpmain_sock);
+			release_tcpconn(con, CONN_ERROR, tcpmain_sock, 0);
 			continue;
 		}
 		if (con->timeout<=ticks){
@@ -1089,9 +1090,9 @@ static inline void tcp_receive_timeout(void)
 			io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING,IO_WATCH_READ);
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 			if (con->msg_attempts)
-				release_tcpconn(con, CONN_ERROR, tcpmain_sock);
+				release_tcpconn(con, CONN_ERROR, tcpmain_sock, 0);
 			else
-				release_tcpconn(con, CONN_RELEASE, tcpmain_sock);
+				release_tcpconn(con, CONN_RELEASE, tcpmain_sock, 0);
 		}
 	}
 }
