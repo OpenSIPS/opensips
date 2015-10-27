@@ -1174,7 +1174,6 @@ get_fd:
 				if (n == -2) {
 					/* write chunk buffer reached max - close this
 					 * connection now */
-					tcpconn_put(c);
 					c->state=S_CONN_BAD;
 					c->timeout=0;
 					/* tell "main" it should drop this */
@@ -1910,7 +1909,7 @@ inline static int handle_ser_child(struct process_table* p, int fd_i)
 			break;
 		case ASYNC_WRITE:
 			if (tcpconn->state==S_CONN_BAD){
-				tcpconn_destroy(tcpconn);
+				tcpconn->timeout=0;
 				break;
 			}
 			/* update the timeout (lifetime) */
