@@ -751,12 +751,12 @@ ok:
 	TCPCONN_UNLOCK(id);
 #ifdef EXTRA_DEBUG
 	if (a) LM_DBG("alias already present\n");
-	else   LM_DBG("alias port %d for hash %d, id %d\n", port, hash, c->id);
+	else   LM_DBG("alias port %d for hash %d, id %d\n", port, hash, id);
 #endif
 	return 0;
 error_aliases:
 	TCPCONN_UNLOCK(id);
-	LM_ERR("too many aliases for connection %p (%d)\n", c, c->id);
+	LM_ERR("too many aliases for connection %p (%d)\n", c, id);
 	return -1;
 error_not_found:
 	TCPCONN_UNLOCK(id);
@@ -765,7 +765,7 @@ error_not_found:
 error_sec:
 	LM_WARN("possible port hijack attempt\n");
 	LM_WARN("alias already present and points to another connection "
-			"(%d : %d and %d : %d)\n", a->parent->id,  port, c->id, port);
+			"(%d : %d and %d : %d)\n", a->parent->id,  port, id, port);
 	TCPCONN_UNLOCK(id);
 	return -1;
 }
