@@ -103,14 +103,16 @@ again:
 	bytes_read=read(fd, r->pos, bytes_free);
 
 	if(bytes_read==-1){
-		if (errno == EWOULDBLOCK || errno == EAGAIN){
+		if (errno == EWOULDBLOCK || errno == EAGAIN)
 			return 0; /* nothing has been read */
-		}else if (errno == EINTR) goto again;
-		else{
-			LM_ERR("error reading: %s\n",strerror(errno));
-			r->error=TCP_READ_ERROR;
-			return -1;
-		}
+		else if (errno == EINTR)
+			goto again;
+		else if (errno != ECONNRESET)
+			LM_INFO("error reading: %s\n", strerror(errno));
+
+		r->error = TCP_READ_ERROR;
+		return -1;
+
 	}else if (bytes_read==0){
 		c->state=S_CONN_EOF;
 		LM_DBG("EOF on %p, FD %d\n", c, fd);
@@ -577,7 +579,7 @@ again:
 				req->start);
 //#endif
 		if (bytes==-1){
-			LM_ERR("failed to read \n");
+			LM_DBG("failed to read\n");
 			resp=CONN_ERROR;
 			goto end_req;
 		}
