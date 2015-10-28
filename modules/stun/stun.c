@@ -1289,6 +1289,8 @@ void freeStunBuf(IN_OUT Buffer** buffer){
 /* print */
 void printStunAddr(StunAddr* addr){
     struct in_addr ip;
+	UNUSED(ip);
+
     ip.s_addr = htonl(addr->ip4);
 
     LM_DBG("\t\t\tUnused = %02hX\n", addr->unused);
@@ -1307,6 +1309,8 @@ void printStunMsg(StunMsg* msg){
     char*   s;
     //char    s2[16];
     T16*    val;
+	UNUSED(s);
+	UNUSED(val);
 
     switch(msg->type){
 	case BINDING_REQUEST:
@@ -1400,6 +1404,7 @@ void printStunMsg(StunMsg* msg){
 void print_hex(IN char* buffer, IN int size){
     int	    i;
     T16*    t16 = (T16*) buffer;
+	UNUSED(t16);
 
     for(i=0; i<size/sizeof(T16); i++){
 	LM_DBG("%04hX", ntohs(t16[i]));

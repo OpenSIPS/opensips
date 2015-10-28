@@ -27,6 +27,7 @@
 #define __SNGTC_H__
 
 #include <sng_tc/sngtc_node.h>
+#include "../../locking.h"
 
 #define SDP_CONTENT_TYPE_LEN (sizeof("Content-Type: application/sdp\r\n") - 1)
 #define A_LINE_PREFIX_LEN    (sizeof("a=rtpmap:" - 1))

@@ -507,6 +507,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	int i;
 	int n;
 	int no_rows = 10;
+	UNUSED(n);
 
 	urecord_t* r;
 	ucontact_t* c;

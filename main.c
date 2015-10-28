@@ -528,6 +528,7 @@ static void sig_usr(int signo)
 {
 	int status;
 	pid_t pid;
+	UNUSED(pid);
 
 	if (is_main){
 		if (sig_flag==0) sig_flag=signo;

@@ -64,6 +64,12 @@
 			"https://github.com/OpenSIPS/opensips/issues\n\n", ##args);
 #define LM_BUG report_programming_bug
 
+/*
+ * portable macro which prevents "unused variable" compiler warnings
+ * when defining certain flags, e.g. NO_LOG, NO_DEBUG
+ */
+#define UNUSED(x) (void)(x)
+
 #define MAX_REASON_LEN	128
 
 #include "str.h"
