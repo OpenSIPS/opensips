@@ -147,7 +147,7 @@ restore:
 
 int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 {
-	async_ctx *ctx;
+	async_ctx *ctx = NULL;
 	async_resume_module *ctx_f;
 	void *ctx_p;
 	struct cell *t;
@@ -230,7 +230,6 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	/* place the FD + resume function (as param) into reactor */
 	if (reactor_add_reader( fd, F_SCRIPT_ASYNC, RCT_PRIO_ASYNC, (void*)ctx)<0 ) {
 		LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
-		shm_free(ctx);
 		goto sync;
 	}
 
@@ -238,6 +237,15 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	return 0;
 
 sync:
+	if (ctx) {
+		/*
+		 * the context was moved in reactor, but the reactor could not
+		 * fullfil the request - we have to restore the environment -- razvanc
+		 */
+		current_processing_ctx = ctx->msg_ctx;
+		set_t(t);
+		shm_free(ctx);
+	}
 	/* run the resume function */
 	do {
 		return_code = ctx_f( fd, msg, ctx_p );

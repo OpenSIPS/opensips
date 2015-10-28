@@ -695,7 +695,8 @@ static void ctx_dlg_idx_destroy(void *v)
 {
 	unref_dlg((struct dlg_cell*)v, 1);
 	/* reset the pointer to make sure no-one is trying to free it anymore */
-	ctx_dialog_set(NULL);
+	if (current_processing_ctx)
+		ctx_dialog_set(NULL);
 }
 
 
