@@ -1486,8 +1486,17 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 			}
 		break;
 		case 4:
-			/* round robin */
-			ds_id = (idx->last+1) % set_size;
+			/* round robin
+			   Each destination is selected a number of times equal to its weight before moving
+			   to the next destination
+			   the count is incremented after we verify that the destination is active
+			*/
+			if( idx->dlist[idx->last].rr_count < idx->dlist[idx->last].weight)
+				ds_id = idx->last;
+			else {
+				idx->dlist[idx->last].rr_count = 0;
+				ds_id = (idx->last+1) % set_size;
+			}
 		break;
 		case 5:
 			i = ds_hash_authusername(msg, &ds_hash);
@@ -1617,6 +1626,10 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 
 	/* remember the last used destination */
 	idx->last = ds_id;
+
+	/* increase  chosen count in round-robin algritm, now that we know the candidate is active*/
+	if(ds_select_ctl->alg == 4)
+		idx->dlist[ds_id].rr_count++;
 
 	/* start pushing the destinations to SIP level */
 	cnt = 0;
