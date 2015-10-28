@@ -200,8 +200,6 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		if (rc & SCB_RUN_POST_CBS)
 			exec_post_req_cb(msg);
 
-		context_destroy(CONTEXT_GLOBAL, ctx);
-
 	} else if (msg->first_line.type==SIP_REPLY) {
 		update_stat( rcv_rpls, 1);
 		/* sanity checks */
@@ -252,6 +250,14 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	}
 
 end:
+
+	/* if someone else set the context, then we should also "release" the
+	 * static ctx. */
+	if (current_processing_ctx == NULL)
+		ctx = NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, ctx);
+
 	current_processing_ctx = NULL;
 	stop_expire_timer( start, execmsgthreshold, "msg processing",
 		msg->buf, msg->len, 0);

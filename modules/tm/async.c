@@ -138,6 +138,7 @@ restore:
 	bind_address = backup_si;
 
 	free_faked_req( &faked_req, t);
+	context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
 	current_processing_ctx = NULL;
 
 	return 0;
