@@ -113,14 +113,12 @@ static inline unsigned short str2s(const char* s, unsigned int len,
 	unsigned short ret;
 	int i;
 	unsigned char *limit;
-	unsigned char *init;
-	unsigned char* str;
+	unsigned char *str;
 
 	/*init*/
 	str=(unsigned char*)s;
 	ret=i=0;
 	limit=str+len;
-	init=str;
 
 	for(;str<limit ;str++){
 		if ( (*str <= '9' ) && (*str >= '0') ){
@@ -136,11 +134,11 @@ static inline unsigned short str2s(const char* s, unsigned int len,
 	return ret;
 
 error_digits:
-	LM_DBG("too many letters in [%.*s]\n", (int)len, init);
+	LM_DBG("too many letters in [%.*s]\n", (int)len, s);
 	if (err) *err=1;
 	return 0;
 error_char:
-	LM_DBG("unexpected char %c in %.*s\n", *str, (int)len, init);
+	LM_DBG("unexpected char %c in %.*s\n", *str, (int)len, s);
 	if (err) *err=1;
 	return 0;
 }

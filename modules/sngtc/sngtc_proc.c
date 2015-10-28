@@ -27,6 +27,7 @@
 
 #include "../../str.h"
 #include "../../pt.h"
+#include "../../dprint.h"
 
 #include "sngtc.h"
 #include "sngtc_proc.h"

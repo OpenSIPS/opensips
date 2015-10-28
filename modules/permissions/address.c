@@ -82,6 +82,7 @@ int reload_address_table(struct pm_part_struct *part_struct)
 	struct net *subnet;
 	str str_pattern = {NULL,0}, str_info={NULL,0};
 	str str_src_ip, str_proto;
+	UNUSED(id);
 
 	cols[0] = &ip_col;
 	cols[1] = &grp_col;

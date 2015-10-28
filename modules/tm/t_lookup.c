@@ -1224,6 +1224,7 @@ int t_lookup_callid(struct cell ** trans, str callid, str cseq) {
 	char cseq_header[MAX_HEADER];
 	/* save return value of print_* functions here */
 	char* endpos;
+	UNUSED(endpos);
 
 	/* need method, which is always INVITE in our case */
 	/* CANCEL is only useful after INVITE */

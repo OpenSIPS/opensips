@@ -511,6 +511,7 @@ void subs_cback_func_II(struct cell *t, int cb_type, struct tmcb_params *params)
 
 	int code = params->code;
 	struct sip_msg *reply = params->rpl;
+	UNUSED(reply);
 	//struct sm_subscriber* params_subs = (struct sm_subscriber*)(*params->param);
 
 	LM_DBG("TREAT SUBSCRIBE TERMINATED REPLY \n");

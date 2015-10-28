@@ -524,6 +524,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	int no_rows = 10;
 	unsigned short aorhash, clabel;
 	unsigned int   rlabel;
+	UNUSED(n);
 
 	urecord_t* r;
 	ucontact_t* c;
