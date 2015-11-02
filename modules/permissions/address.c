@@ -255,10 +255,17 @@ int reload_address_table(struct pm_part_struct *part_struct)
 			if (subnet_table_insert(new_subnet_table, group, subnet,
 				port, proto, &str_pattern, &str_info) == -1) {
 					LM_ERR("subnet table problem\n");
+					if (subnet) {
+						pkg_free(subnet);
+					}
 					goto error;
 				}
 			LM_DBG("Tuple <%.*s, %u, %u, %u> inserted into subnet table\n",
 					str_src_ip.len, str_src_ip.s, group, mask, port);
+			/* subnet in pkg; needs to be freed since was copied to shm */
+			if (subnet) {
+				pkg_free(subnet);
+			}
 		}
 	}
 
