@@ -47,6 +47,12 @@ typedef struct _async_ctx {
 	struct cell *t;
 
 	enum kill_reason kr;
+
+	/* the transaction that was cancelled by this message */
+	struct cell *cancelled_t;
+	/* e2e ACK */
+	struct cell *e2eack_t;
+
 } async_ctx;
 
 extern int return_code; /* from action.c, return code */
@@ -70,6 +76,8 @@ int t_resume_async(int fd, void *param)
 	static struct ua_client uac;
 	async_ctx *ctx = (async_ctx *)param;
 	struct cell *backup_t;
+	struct cell *backup_cancelled_t;
+	struct cell *backup_e2eack_t;
 	struct usr_avp **backup_list;
 	struct socket_info* backup_si;
 	struct cell *t= ctx->t;
@@ -98,8 +106,12 @@ int t_resume_async(int fd, void *param)
 	/* enviroment setting */
 	current_processing_ctx = ctx->msg_ctx;
 	backup_t = get_t();
+	backup_e2eack_t = get_e2eack_t();
+	backup_cancelled_t = get_cancelled_t();
 	/* fake transaction */
 	set_t( t );
+	set_cancelled_t(ctx->cancelled_t);
+	set_e2eack_t(ctx->e2eack_t);
 	reset_kr();
 	set_kr(ctx->kr);
 	/* make available the avp list from transaction */
@@ -133,6 +145,8 @@ int t_resume_async(int fd, void *param)
 restore:
 	/* restore original environment */
 	set_t(backup_t);
+	set_cancelled_t(backup_cancelled_t);
+	set_e2eack_t(backup_e2eack_t);
 	/* restore original avp list */
 	set_avp_list( backup_list );
 	bind_address = backup_si;
@@ -226,8 +240,13 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	ctx->t = t;
 	ctx->kr = get_kr();
 
+	ctx->cancelled_t = get_cancelled_t();
+	ctx->e2eack_t = get_e2eack_t();
+
 	current_processing_ctx = NULL;
 	set_t(T_UNDEFINED);
+	reset_cancelled_t();
+	reset_e2eack_t();
 
 	/* place the FD + resume function (as param) into reactor */
 	if (reactor_add_reader( fd, F_SCRIPT_ASYNC, RCT_PRIO_ASYNC, (void*)ctx)<0 ) {
@@ -246,6 +265,8 @@ sync:
 		 */
 		current_processing_ctx = ctx->msg_ctx;
 		set_t(t);
+		set_cancelled_t(ctx->cancelled_t);
+		set_e2eack_t(ctx->e2eack_t);
 		shm_free(ctx);
 	}
 	/* run the resume function */
