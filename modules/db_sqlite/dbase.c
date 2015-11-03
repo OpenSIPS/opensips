@@ -327,6 +327,8 @@ int db_sqlite_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
  */
 int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 {
+#define SQL_BUF_LEN 65536
+	static char sql_str[SQL_BUF_LEN];
 	int ret=-1;
 	char* errmsg;
 	str select_str={"select", 6};
@@ -334,8 +336,15 @@ int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 	CON_RESET_CURR_PS(_h);
 	if (!str_strstr(_s, &select_str)) {
 		/* not a select statement; can execute the query and exit*/
+		if (_s->len + 1 > SQL_BUF_LEN) {
+			LM_ERR("query too big! try reducing the size of your query!"
+				"Current max size [%d]!\n", SQL_BUF_LEN);
+			return -1;
+		}
+		memcpy(sql_str, _s->s, _s->len);
+		sql_str[_s->len] = '\0';
 		if (sqlite3_exec(CON_CONNECTION(_h),
-							query_holder.s, NULL, NULL, &errmsg)) {
+			sql_str, NULL, NULL, &errmsg)) {
 			LM_ERR("query failed: %s\n", errmsg);
 			return -2;
 		}
