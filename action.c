@@ -1878,8 +1878,9 @@ next_avp:
 				script_trace("async", ((acmd_export_t*)(aitem->elem[0].u.data))->name,
 					msg, a->file, a->line) ;
 				ret = async_start_f( msg, aitem, a->elem[1].u.number);
+				if (ret>=0)
+					action_flags |= ACT_FL_TBCONT;
 			}
-			action_flags |= ACT_FL_TBCONT;
 			ret = 0;
 			break;
 		case FORCE_RPORT_T:

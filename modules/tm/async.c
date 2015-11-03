@@ -160,8 +160,10 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		/* create transaction */
 		r = t_newtran( msg , 1 /*full uas clone*/ );
 		if (r==0) {
-			/* retransmission -> break the script, no follow up */
-			return 0;
+			/* retransmission -> no follow up; we return a negative
+			 * code to indicate do_action that the top route is 
+			 * is completed (there no resume route to follow) */
+			return -1;
 		} else if (r<0) {
 			LM_ERR("could not create a new transaction\n");
 			goto failure;
