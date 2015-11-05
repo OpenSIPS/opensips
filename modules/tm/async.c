@@ -153,6 +153,7 @@ restore:
 
 	free_faked_req( &faked_req, t);
 	context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
+	pkg_free(current_processing_ctx);
 	current_processing_ctx = NULL;
 
 	return 0;
