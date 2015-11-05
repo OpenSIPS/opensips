@@ -38,6 +38,7 @@
 
 /* if the UDP network layer is used or not by some protos */
 static int udp_disabled = 1;
+int udp_max_sockets=DEFAULT_UDP_MAX_SOCKETS;
 
 extern void handle_sigs(void);
 
@@ -287,7 +288,7 @@ int udp_rcv_loop( struct socket_info *si )
 {
 
 	/* create the reactor for UDP proc */
-	if ( init_worker_reactor( "UDP_worker", 100/*max_fd*/, RCT_PRIO_MAX)<0 ) {
+	if ( init_worker_reactor( "UDP_worker", udp_max_sockets/*max_fd*/, RCT_PRIO_MAX)<0 ) {
 		LM_ERR("failed to init reactor\n");
 		goto error;
 	}
