@@ -200,6 +200,7 @@ static struct multi_str *tmp_mod;
 
 %}
 
+
 %union {
 	long intval;
 	unsigned long uval;
@@ -1420,6 +1421,7 @@ script_var:	SCRIPTVAR	{
 				{
 					yyerror("unknown script variable");
 				}
+
 				$$ = spec;
 			}
 		| SCRIPTVARERR {

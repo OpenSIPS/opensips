@@ -66,6 +66,9 @@
 
 #define is_in_str(p, in) (p<in->s+in->len && *p)
 
+extern int curr_action_line;
+extern char *curr_action_file;
+
 typedef struct _pv_extra
 {
 	pv_export_t pve;
@@ -3166,7 +3169,48 @@ int pv_init_iname(pv_spec_p sp, int param)
 	return 0;
 }
 
+int pv_get_line_number(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res){
+	int l;
+	char *ch;
 
+	if (param==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	if(res == NULL) {
+		return -1;
+	}
+
+	res->ri = curr_action_line;
+	ch = int2str( (unsigned long)res->ri, &l);
+
+	res->rs.s = ch;
+	res->rs.len = l;
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
+
+int pv_get_cfg_file_name(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res){
+
+	if (param==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	if(res == NULL) {
+		return -1;
+	}
+
+	res->rs.s = curr_action_file;
+	res->rs.len = (res->rs.s)?(strlen(res->rs.s)):(0);
+
+	res->flags = PV_VAL_STR;
+
+	return 0;
+}
 
 /**
  * the table with core pseudo-variables
@@ -3494,6 +3538,10 @@ static pv_export_t _pv_names_table[] = {
 		pv_parse_argv_name, 0, 0, 0 },
 	{{"param", sizeof("param")-1}, PVT_ROUTE_PARAM, pv_get_param, 0,
 		pv_parse_param_name, 0, 0, 0 },
+	{{"cfg_line", sizeof("cfg_line")-1}, PVT_LINE_NUMBER, pv_get_line_number, 0,
+		0, 0, 0, 0 },
+	{{"cfg_file", sizeof("cfg_file")-1}, PVT_CFG_FILE_NAME, pv_get_cfg_file_name, 0,
+	0, 0, 0, 0 },
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -4927,7 +4975,6 @@ static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
 
 	return 0;
 }
-
 
 void destroy_argv_list(void)
 {

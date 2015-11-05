@@ -106,6 +106,9 @@ action_elem_p route_params[MAX_REC_LEV];
 int route_params_number[MAX_REC_LEV];
 int route_rec_level = -1;
 
+int curr_action_line;
+char *curr_action_file;
+
 static int for_each_handler(struct sip_msg *msg, struct action *a);
 
 
@@ -436,6 +439,9 @@ int do_action(struct action* a, struct sip_msg* msg)
 	ser_error=E_UNSPEC;
 
 	start_expire_timer(start,execmsgthreshold);
+
+	curr_action_line = a->line;
+	curr_action_file = a->file;
 
 	ret=E_BUG;
 	switch ((unsigned char)a->type){
