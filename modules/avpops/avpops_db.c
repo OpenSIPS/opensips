@@ -477,9 +477,6 @@ int db_query_avp_print_results(struct sip_msg *msg, const db_res_t *db_res,
 		crt = dest;
 		for(j = 0; j < RES_COL_N(db_res); j++)
 		{
-			if(RES_ROWS(db_res)[i].values[j].nul)
-                                LM_DBG("column [%d] value is null\n", j);
-                                //goto next_avp;
 			avp_type = 0;
 			if(crt==NULL)
 			{
