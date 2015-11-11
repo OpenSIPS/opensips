@@ -318,6 +318,11 @@ static inline char* proto2str(int proto, char *p)
 			*(p++) = 'w';
 			*(p++) = 's';
 			break;
+		case PROTO_WSS:
+			*(p++) = 'w';
+			*(p++) = 's';
+			*(p++) = 's';
+			break;
 		case PROTO_BIN:
 			*(p++) = 'b';
 			*(p++) = 'i';
