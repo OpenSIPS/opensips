@@ -33,8 +33,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 #include <sys/poll.h>
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 #include <string.h>
 #include <errno.h>
 
@@ -46,6 +44,7 @@
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "../../ut.h"
 #include "tls_server.h"
+#include "../tls_mgm/tls_conn.h"
 
 /*
  * Open questions:
@@ -68,40 +67,8 @@
  *   and may be accessed simultaneously
  */
 
+struct tls_mgm_binds tls_mgm_api;
 
-/*
- * Update ssl structure with new fd
- */
-int tls_update_fd(struct tcp_connection *c, int fd)
-{
-	/*
-	* must be run from within a lock
-	*/
-	SSL            *ssl;
-
-	ssl = (SSL *) c->extra_data;
-
-	if (!SSL_set_fd(ssl, fd)) {
-		LM_ERR("failed to assign socket to ssl\n");
-		return -1;
-	}
-
-	LM_DBG("New fd is %d\n", fd);
-	return 0;
-}
-
-
-/*
- * dump ssl error stack
- */
-static void tls_print_errstack(void)
-{
-	int             code;
-
-	while ((code = ERR_get_error())) {
-		LM_ERR("TLS errstack: %s\n", ERR_error_string(code, 0));
-	}
-}
 
 static void tls_dump_cert_info(char* s,	X509* cert)
 {
@@ -398,61 +365,6 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 	return -1;
 }
 
-/*
- * wrapper around SSL_shutdown, returns -1 on error, 0 on success
- */
-int tls_conn_shutdown(struct tcp_connection *c)
-{
-	int             ret,
-					err;
-	SSL            *ssl;
-
-	/* If EOF or other error on connection, no point in attempting to
-	 * do further writing & reading on the con */
-	if (c->state == S_CONN_BAD ||
-		c->state == S_CONN_ERROR ||
-		c->state == S_CONN_EOF)
-		return 0;
-	/*
-	* we do not implement full ssl shutdown
-	*/
-	ssl = (SSL *) c->extra_data;
-	if (ssl == 0) {
-		LM_ERR("no ssl data\n");
-		return -1;
-	}
-
-	ret = SSL_shutdown(ssl);
-	if (ret == 1) {
-		LM_DBG("shutdown successful\n");
-		return 0;
-	} else if (ret == 0) {
-		LM_DBG("first phase of 2-way handshake completed succesfuly\n");
-		return 0;
-	} else {
-		err = SSL_get_error(ssl, ret);
-		switch (err) {
-			case SSL_ERROR_ZERO_RETURN:
-				c->state = S_CONN_EOF;
-
-				return 0;
-
-			case SSL_ERROR_WANT_READ:
-			case SSL_ERROR_WANT_WRITE:
-				c->state = S_CONN_EOF;
-				return 0;
-
-			default:
-				LM_ERR("something wrong in SSL: %d, %d, %s\n",err,errno,strerror(errno));
-				c->state = S_CONN_BAD;
-				tls_print_errstack();
-				return -1;
-		}
-	}
-
-	LM_ERR("bug\n");
-	return -1;
-}
 
 
 /*

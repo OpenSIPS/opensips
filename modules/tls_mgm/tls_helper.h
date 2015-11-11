@@ -6,8 +6,12 @@
  */
 
 #ifndef TLS_HELPER_H
-#define	TLS_HELPER_H
+#define TLS_HELPER_H
 
+#define F_TLS_DO_ACCEPT  (1<<0)
+#define F_TLS_DO_CONNECT (1<<1)
+
+#include <openssl/ssl.h>
 #include "tls_config_helper.h"
 #include "../../locking.h"
 
@@ -26,14 +30,14 @@ struct tls_domain {
 	char           *ca_file;
 	char           *tmp_dh_file;
 	char           *tls_ec_curve;
-	char	       *ca_directory;
+	char           *ca_directory;
 	char           *ciphers_list;
-        int             refs;
-        gen_lock_t     *lock;
+	int             refs;
+	gen_lock_t     *lock;
 	enum tls_method method;
 	struct tls_domain *next;
 	str name;
 };
 
-#endif	/* TLS_HELPER_H */
+#endif /* TLS_HELPER_H */
 
