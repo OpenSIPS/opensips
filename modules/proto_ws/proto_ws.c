@@ -55,6 +55,9 @@ int ws_send_timeout = 100;
 /* in milliseconds */
 int ws_hs_read_tout = 100;
 
+/* XXX: this information should be dynamically provided */
+static str ws_resource = str_init("/");
+
 #define _ws_common_module "ws"
 #define _ws_common_tcp_current_req tcp_current_req
 #define _ws_common_current_req ws_current_req
@@ -63,6 +66,7 @@ int ws_hs_read_tout = 100;
 #define _ws_common_writev ws_raw_writev
 #define _ws_common_read_tout ws_hs_read_tout
 #define _ws_common_write_tout ws_send_timeout
+#define _ws_common_resource ws_resource
 #include "ws_handshake_common.h"
 #include "ws_common.h"
 

@@ -157,9 +157,6 @@ static const char base64alphabet[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 #define BASE64ALPHABET_LEN (sizeof base64alphabet)
 
-/* XXX: this information should be dynamically provided */
-static str ws_resource = str_init("/");
-
 
 /* we're using a completely random key - no reason yet for something else */
 static str ws_rand_key(void)
@@ -1213,8 +1210,8 @@ static int ws_start_handshake(struct tcp_connection *c)
 	host_orig_buf[n] = ':';
 	memcpy(host_orig_buf + n + 1, port, port_len);
 
-	iov[2].iov_base = ws_resource.s;
-	iov[2].iov_len = ws_resource.len;
+	iov[2].iov_base = _ws_common_resource.s;
+	iov[2].iov_len = _ws_common_resource.len;
 
 	iov[7].iov_len = n + port_len + 1;
 	iov[10].iov_len = iov[7].iov_len;
