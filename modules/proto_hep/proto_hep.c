@@ -711,6 +711,7 @@ send_it:
 static void hep_parse_headers(struct tcp_req *req){
 	/* message length */
 	u_int16_t length=0;
+	hep_ctrl_t *ctrl;
 
 	if(req->content_len == 0 &&
 			req->pos - req->buf < HEP_HEADER_ID_LEN + sizeof(uint8_t)){
@@ -728,7 +729,9 @@ static void hep_parse_headers(struct tcp_req *req){
 
 	/* FIXME no need for this anymore */
 	hep_current_proto = 3;
-	length = ntohs(((hep_ctrl_t*)req->buf)->length);
+	//length = ntohs(((hep_ctrl_t*)req->buf)->length);
+	ctrl = (hep_ctrl_t *)req->buf;
+	length = ntohs(ctrl->length);
 
 	req->content_len = (unsigned short)length;
 	if(req->pos - req->buf == req->content_len){
