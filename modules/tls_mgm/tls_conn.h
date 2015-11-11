@@ -47,6 +47,5 @@ static int tls_update_fd(struct tcp_connection *c, int fd)
 	return 0;
 }
 
-
 #endif /* TLS_CONN_HELPER_H */
 

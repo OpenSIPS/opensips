@@ -44,8 +44,6 @@ extern struct tls_mgm_binds tls_mgm_api;
 size_t tls_blocking_write(struct tcp_connection *c, int fd,
 		const char *buf, size_t len);
 
-size_t tls_read(struct tcp_connection *c,struct tcp_req *r);
-
 int tls_fix_read_conn(struct tcp_connection *c);
 
 #endif

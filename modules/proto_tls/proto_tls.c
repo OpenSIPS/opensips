@@ -64,7 +64,7 @@
 
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "tls_server.h"
-#include "../tls_mgm/tls_conn_init.h"
+#include "../tls_mgm/tls_conn_ops.h"
 
 
 static int tls_port_no = SIPS_PORT;

@@ -5,15 +5,14 @@
  * Created on November 11, 2015, 5:26 PM
  */
 
-#ifndef TLS_CONN_INIT_H
-#define TLS_CONN_INIT_H
+#ifndef TLS_CONN_OPS_H
+#define TLS_CONN_OPS_H
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include "tls_helper.h"
+#include "tls_conn.h"
 #include "tls_config_helper.h"
 #include "../../locking.h"
-#include "tls_conn.h"
 
 /*
  * wrapper around SSL_shutdown, returns -1 on error, 0 on success
@@ -149,5 +148,97 @@ static void tls_conn_clean(struct tcp_connection* c)
 	}
 }
 
-#endif /* TLS_CONN_INIT_H */
+/*
+ * Wrapper around SSL_read
+ *
+ * returns number of bytes read, 0 on eof and transits into S_CONN_EOF, -1
+ * on error
+ */
+static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
+{
+	int ret, err;
+	SSL *ssl;
+
+	ssl = c->extra_data;
+
+	ret = SSL_read(ssl, buf, len);
+	if (ret > 0) {
+		LM_DBG("%d bytes read\n", ret);
+		return ret;
+	} else if (ret == 0) {
+		/* unclean shutdown of the other peer */
+		c->state = S_CONN_EOF;
+		return 0;
+	} else {
+		err = SSL_get_error(ssl, ret);
+		switch (err) {
+		case SSL_ERROR_ZERO_RETURN:
+			LM_DBG("TLS connection to %s:%d closed cleanly\n",
+				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+			/*
+			* mark end of file
+			*/
+			c->state = S_CONN_EOF;
+			return 0;
+
+		case SSL_ERROR_WANT_READ:
+		case SSL_ERROR_WANT_WRITE:
+			return 0;
+
+		case SSL_ERROR_SYSCALL:
+			LM_ERR("SYSCALL error -> (%d) <%s>\n",errno,strerror(errno));
+		default:
+			LM_ERR("TLS connection to %s:%d read failed\n",
+				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+			LM_ERR("TLS read error: %d\n",err);
+			c->state = S_CONN_BAD;
+			tls_print_errstack();
+			return -1;
+		}
+	}
+
+	LM_BUG("bug\n");
+	return -1;
+}
+
+
+
+/*
+ * called only when a connection is in S_CONN_OK, we do not have to care
+ * about accepting or connecting here, each modification of ssl data
+ * structures has to be protected, another process might ask for the same
+ * connection and attempt write to it which would result in updating the
+ * ssl structures
+ */
+static size_t tls_read(struct tcp_connection * c,struct tcp_req *r)
+{
+	int             bytes_free;
+	int             fd, read;
+
+	fd = c->fd;
+	bytes_free = TCP_BUF_SIZE - (int) (r->pos - r->buf);
+
+	if (bytes_free == 0) {
+		LM_ERR("TLS buffer overrun, dropping\n");
+		r->error = TCP_REQ_OVERRUN;
+		return -1;
+	}
+
+	/*
+	* ssl structures may be accessed from several processes, we need to
+	* protect each access and modification by a lock
+	*/
+	lock_get(&c->write_lock);
+	tls_update_fd(c, fd);
+	read = _tls_read(c, r->pos, bytes_free);
+	lock_release(&c->write_lock);
+	if (read > 0)
+		r->pos += read;
+	return read;
+}
+
+
+
+
+#endif /* TLS_CONN_OPS_H */
 
