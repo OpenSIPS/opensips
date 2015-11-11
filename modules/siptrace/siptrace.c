@@ -46,8 +46,6 @@
 #include "../proto_hep/hep.h"
 #include "../proto_hep/hep_cb.h"
 
-#include "../sipcapture/sipcapture.h"
-
 #define NR_KEYS 14
 #define SIPTRACE_TABLE_VERSION 4
 

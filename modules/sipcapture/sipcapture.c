@@ -75,7 +75,6 @@
 #include "../../str.h"
 #include "../../resolve.h"
 #include "../../receive.h"
-#include "sipcapture.h"
 
 #ifdef STATISTICS
 #include "../../statistics.h"

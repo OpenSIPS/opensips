@@ -21,6 +21,9 @@
  *
  */
 
+#ifndef _SIPCAPTURE_H_
+#define _SIPCAPTURE_H_
+
 typedef char        T8;
 #define BINDING_REQUEST	0x0001;
 
@@ -60,3 +63,4 @@ struct hep_ip6hdr {
 };
 #endif
 
+#endif /* _SIPCAPTURE_H_ */
