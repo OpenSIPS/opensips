@@ -1,3 +1,4 @@
+INSERT INTO version (table_name, table_version) values ('clusterer','1');
 CREATE TABLE clusterer (
     id SERIAL PRIMARY KEY NOT NULL,
     cluster_id INTEGER NOT NULL,
