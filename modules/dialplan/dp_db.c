@@ -467,7 +467,7 @@ dpl_node_t * build_rule(db_val_t * values)
 		match_comp = wrap_pcre_compile(match_exp.s, VAL_INT(values+4));
 
 		if(!match_comp){
-			LM_ERR("failed to compile match expression %.*s\n",
+			LM_ERR("failed to compile match expression \"%.*s\"\n",
 				match_exp.len, match_exp.s);
 			goto err;
 		}
@@ -479,7 +479,8 @@ dpl_node_t * build_rule(db_val_t * values)
 		/* subst regexp */
 		subst_comp = wrap_pcre_compile(subst_exp.s, VAL_INT(values+4));
 		if(subst_comp == NULL){
-			LM_ERR("failed to compile subst expression\n");
+			LM_ERR("failed to compile subst expression \"%.*s\"\n",
+					subst_exp.len, subst_exp.s);
 			goto err;
 		}
 	}
@@ -489,7 +490,7 @@ dpl_node_t * build_rule(db_val_t * values)
 	if(repl_exp.len && repl_exp.s){
 		repl_comp = repl_exp_parse(repl_exp);
 		if(!repl_comp){
-			LM_ERR("failed to compile replacing expression %.*s\n",
+			LM_ERR("failed to compile replacing expression \"%.*s\"\n",
 				repl_exp.len, repl_exp.s);
 			goto err;
 		}
