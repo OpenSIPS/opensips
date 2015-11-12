@@ -29,7 +29,7 @@
 #include "../../db/db.h"
 #include "../../cachedb/cachedb.h"
 
-#define DEFAULT_SPEC_DELIM ' '
+#define DEFAULT_SPEC_DELIM " "
 #define COLUMN_NAMES_DELIM ','
 #define DEFAULT_PVAR_DELIM ':'
 

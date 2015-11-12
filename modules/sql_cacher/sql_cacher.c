@@ -27,6 +27,7 @@
 #include "../../dprint.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"
+#include "../../trim.h"
 #include "../../pvar.h"
 #include "../../locking.h"
 #include "../../rw_locking.h"
@@ -52,11 +53,11 @@ static int full_caching_expire = DEFAULT_FULL_CACHING_EXPIRE;
 static int reload_interval = DEFAULT_RELOAD_INTERVAL;
 
 static cache_entry_t **entry_list;
-static struct parse_entry *to_parse_list = NULL;
+static struct parse_entry *to_parse_list;
 static struct queried_key **queries_in_progress;
 
 /* per process db handlers corresponding to cache entries in entry_list */
-static db_handlers_t *db_hdls_list = NULL;
+static db_handlers_t *db_hdls_list;
 
 gen_lock_t *queries_lock;
 
@@ -104,7 +105,8 @@ struct module_exports exports = {
 	child_init					/* per-child init function */
 };
 
-static int cache_new_table(unsigned int type, void *val) {
+static int cache_new_table(unsigned int type, void *val)
+{
 	struct parse_entry *new_entry;
 
 	new_entry = pkg_malloc(sizeof(struct parse_entry));
@@ -132,14 +134,17 @@ static int cache_new_table(unsigned int type, void *val) {
 	return 0;
 }
 
-static int parse_cache_entries(void) {
+static int parse_cache_entries(void)
+{
 	cache_entry_t *new_entry;
-	struct parse_entry *it;
+	struct parse_entry *it, *next;
 	char *p1, *p2, *tmp, *c_tmp1, *c_tmp2;
 	int col_idx;
 	int rc = -1;
+	str parse_str_copy;
 
-	for (it = to_parse_list; it != NULL; it = it->next) {
+	for (it = to_parse_list; it; it = next) {
+		next = it->next;
 
 		new_entry = shm_malloc(sizeof(cache_entry_t));
 		if (!new_entry) {
@@ -174,6 +179,9 @@ static int parse_cache_entries(void) {
 		} else \
 			goto parse_err; \
 	} while (0)
+
+		parse_str_copy = it->to_parse_str;
+		trim(&it->to_parse_str);
 
 		/* parse the id */
 		p1 = it->to_parse_str.s;
@@ -316,17 +324,22 @@ static int parse_cache_entries(void) {
 		goto end_parsing;
 
 parse_err:
-		LM_ERR("Invalid cache entry specification\n");
+		LM_ERR("Invalid cache entry specification: %.*s\n", it->to_parse_str.len, it->to_parse_str.s);
 		if (new_entry->columns)
 			shm_free(new_entry->columns);
 		shm_free(new_entry);
+
+		pkg_free(parse_str_copy.s);
+		pkg_free(it);
 		continue;
 end_parsing:
 		new_entry->next = NULL;
-		if (*entry_list != NULL)
+		if (*entry_list)
 			new_entry->next = *entry_list;
 		*entry_list = new_entry;
 
+		pkg_free(parse_str_copy.s);
+		pkg_free(it);
 		rc = 0;
 	}
 
@@ -334,7 +347,8 @@ end_parsing:
 }
 
 /* get the column types from the sql query result */
-static int get_column_types(cache_entry_t *c_entry, db_val_t *values, int nr_columns) {
+static int get_column_types(cache_entry_t *c_entry, db_val_t *values, int nr_columns)
+{
 	unsigned int i;
 	long long one = 1;
 	db_type_t val_type;
@@ -365,8 +379,9 @@ static int get_column_types(cache_entry_t *c_entry, db_val_t *values, int nr_col
 	return 0;
 }
 
-/* returns the total length of the actual value which will be stored in the cachedb*/
-static unsigned int cdb_val_total_len(cache_entry_t *c_entry, db_val_t *values, int nr_columns) {
+/* returns the total size of the actual value which will be stored in the cachedb*/
+static unsigned int get_cdb_val_size(cache_entry_t *c_entry, db_val_t *values, int nr_columns)
+{
 	unsigned int i, len = 0;
 	db_type_t val_type;
 
@@ -389,7 +404,8 @@ static unsigned int cdb_val_total_len(cache_entry_t *c_entry, db_val_t *values, 
 	return len;
 }
 
-static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls, db_val_t *key, db_val_t *values, int reload_version, int nr_columns) {
+static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls, db_val_t *key, db_val_t *values, int reload_version, int nr_columns)
+{
 	unsigned int i, offset = 0, strs_offset = 0;
 	int int_val;
 	int int_key_len = 0;
@@ -401,7 +417,7 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls, db_
 	str cdb_val;
 	str cdb_key;
 
-	cdb_val.len = cdb_val_total_len(c_entry, values, nr_columns);
+	cdb_val.len = get_cdb_val_size(c_entry, values, nr_columns);
 	cdb_val.s = pkg_malloc(cdb_val.len);
 	if (!cdb_val.s) {
 		LM_ERR("No more pkg memory\n");
@@ -514,14 +530,15 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls, db_
 	memcpy(cdb_key.s + c_entry->id.len, str_key.s, str_key.len);
 
 	if (db_hdls->cdbf.set(db_hdls->cdbcon, &cdb_key, &cdb_val, c_entry->expire) < 0) {
-		LM_ERR("Failed to insert in cachedb\n");
+		LM_ERR("Failed to insert the values for key: %.*s in cachedb\n", str_key.len, str_key.s);
 		return -1;
 	}
 
 	return 0;
 }
 
-static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry) {
+static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
+{
 	db_handlers_t *new_db_hdls;
 	str test_query_key_str = str_init(TEST_QUERY_STR);
 	str cdb_test_key = str_init(CDB_TEST_KEY_STR);
@@ -547,30 +564,35 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry) {
 
 	/* cachedb init and test connection */
 	if (cachedb_bind_mod(&c_entry->cachedb_url, &new_db_hdls->cdbf) < 0) {
-		LM_ERR("Unable to bind to a cachedb database driver\n");
+		LM_ERR("Unable to bind to a cachedb database driver for URL: %.*s\n",
+			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
 		return NULL;
 	}
 	/* open a test connection */
 	new_db_hdls->cdbcon = new_db_hdls->cdbf.init(&c_entry->cachedb_url);
-	if (new_db_hdls->cdbcon == NULL) {
-		LM_ERR("Cannot init connection to cachedb\n");
+	if (!new_db_hdls->cdbcon) {
+		LM_ERR("Cannot init connection to cachedb: %.*s\n",
+			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
 		return NULL;
 	}
 	/* setting and geting a test key in cachedb */
 	if (new_db_hdls->cdbf.set(new_db_hdls->cdbcon, &cdb_test_key, &cdb_test_val, 0) < 0) {
-		LM_ERR("Failed to set test key in cachedb\n");
+		LM_ERR("Failed to set test key in cachedb: %.*s\n",
+			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
 		new_db_hdls->cdbf.destroy(new_db_hdls->cdbcon);
 		new_db_hdls->cdbcon = 0;
 		return NULL;
 	}
 	if (new_db_hdls->cdbf.get(new_db_hdls->cdbcon, &cdb_test_key, &cachedb_res) < 0) {
-		LM_ERR("Failed to get test key from cachedb\n");
+		LM_ERR("Failed to get test key from cachedb: %.*s\n",
+			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
 		new_db_hdls->cdbf.destroy(new_db_hdls->cdbcon);
 		new_db_hdls->cdbcon = 0;
 		return NULL;
 	}
 	if (str_strcmp(&cachedb_res, &cdb_test_val) != 0) {
-		LM_ERR("Cachedb inconsistent test key\n");
+		LM_ERR("Inconsistent test key for cachedb: %.*s\n",
+			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
 		new_db_hdls->cdbf.destroy(new_db_hdls->cdbcon);
 		new_db_hdls->cdbcon = 0;
 		return NULL;
@@ -578,18 +600,20 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry) {
 
 	/* SQL DB init and test connection */
 	if (db_bind_mod(&c_entry->db_url, &new_db_hdls->db_funcs) < 0) {
-		LM_ERR("Unable to bind to a SQL database driver\n");
+		LM_ERR("Unable to bind to a SQL database driver for URL: %.*s\n",
+			c_entry->db_url.len, c_entry->db_url.s);
 		return NULL;
 	}
 	/* open a test connection */
 	if ((new_db_hdls->db_con = new_db_hdls->db_funcs.init(&c_entry->db_url)) == 0) {
-		LM_ERR("Cannot init connection to SQL DB\n");
+		LM_ERR("Cannot init connection to SQL DB: %.*s\n",
+			c_entry->db_url.len, c_entry->db_url.s);
 		return NULL;
 	}
 
 	/* verify the column names by running a test query with a bogus key */
 	if (new_db_hdls->db_funcs.use_table(new_db_hdls->db_con, &c_entry->table) < 0) {
-		LM_ERR("Invalid table name\n");
+		LM_ERR("Invalid table name: %.*s\n", c_entry->table.len, c_entry->table.s);
 		new_db_hdls->db_funcs.close(new_db_hdls->db_con);
 		new_db_hdls->db_con = 0;
 		return NULL;
@@ -614,7 +638,8 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry) {
 
 	if (new_db_hdls->db_funcs.query(new_db_hdls->db_con, &query_key_col, 0, &query_key_val,
 					query_cols, 1, c_entry->nr_columns, 0, &sql_res) != 0) {
-		LM_ERR("Failure to issuse test query to SQL DB\n");
+		LM_ERR("Failure to issuse test query to SQL DB: %.*s\n",
+			c_entry->db_url.len, c_entry->db_url.s);
 		new_db_hdls->db_funcs.close(new_db_hdls->db_con);
 		new_db_hdls->db_con = 0;
 		return NULL;
@@ -624,7 +649,8 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry) {
 	return new_db_hdls;
 }
 
-static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls, int reload_version) {
+static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls, int reload_version)
+{
 	db_key_t *query_cols = NULL;
 	db_res_t *sql_res = NULL;
 	db_row_t *row;
@@ -642,7 +668,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls, int
 
 	/* query the entire table */
 	if (db_hdls->db_funcs.use_table(db_hdls->db_con, &c_entry->table) < 0) {
-		LM_ERR("Invalid table name\n");
+		LM_ERR("Invalid table name: %.*s\n", c_entry->table.len, c_entry->table.s);
 		db_hdls->db_funcs.close(db_hdls->db_con);
 		db_hdls->db_con = 0;
 		return -1;
@@ -650,30 +676,33 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls, int
 	if (DB_CAPABILITY(db_hdls->db_funcs, DB_CAP_FETCH)) {
 		if (db_hdls->db_funcs.query(db_hdls->db_con, NULL, 0, NULL,
 						query_cols, 0, c_entry->nr_columns + 1, 0, 0) != 0) {
-			LM_ERR("Failure to issue query to SQL DB\n");
+			LM_ERR("Failure to issue query to SQL DB: %.*s\n",
+			c_entry->db_url.len, c_entry->db_url.s);
 			goto error;
 		}
 
 		if (db_hdls->db_funcs.fetch_result(db_hdls->db_con,&sql_res,fetch_nr_rows)<0) {
-			LM_ERR("Error fetching rows\n");
+			LM_ERR("Error fetching rows from SQL DB: %.*s\n",
+			c_entry->db_url.len, c_entry->db_url.s);
 			goto error;
 		}
 	} else {
 		if (db_hdls->db_funcs.query(db_hdls->db_con, NULL, 0, NULL,
 						query_cols, 0, c_entry->nr_columns + 1, 0, &sql_res) != 0) {
-			LM_ERR("Failure to issue query to SQL DB\n");
+			LM_ERR("Failure to issue query to SQL DB: %.*s\n",
+			c_entry->db_url.len, c_entry->db_url.s);
 			goto error;
 		}
 	}
 
 	if (RES_ROW_N(sql_res) == 0) {
-		LM_DBG("Table is empty!\n");
+		LM_DBG("Table: %.*s is empty!\n", c_entry->table.len, c_entry->table.s);
 		goto error;
 	}
 	row = RES_ROWS(sql_res);
 	values = ROW_VALUES(row);
 	if (get_column_types(c_entry, values + 1, ROW_N(row) - 1) < 0) {
-		LM_ERR("SQL column has unsupported type\n");
+		LM_ERR("One ore more SQL columns have an unsupported type\n");
 		goto error;
 	}
 
@@ -688,7 +717,8 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls, int
 
 		if (DB_CAPABILITY(db_hdls->db_funcs, DB_CAP_FETCH)) {
 			if (db_hdls->db_funcs.fetch_result(db_hdls->db_con,&sql_res,fetch_nr_rows)<0) {
-				LM_ERR("Error fetching rows (1)\n");
+				LM_ERR("Error fetching rows (1) from SQL DB: %.*s\n",
+				c_entry->db_url.len, c_entry->db_url.s);
 				goto error;
 			}
 		} else {
@@ -709,7 +739,8 @@ error:
  * -1 - error
  * -2 - not found in sql db
  */
-static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key, db_val_t **values, db_res_t **sql_res) {
+static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key, db_val_t **values, db_res_t **sql_res)
+{
 	db_key_t *query_cols = NULL, key_col;
 	db_row_t *row;
 	db_val_t key_val;
@@ -754,7 +785,7 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key, db_
 	pkg_free(query_cols);
 
 	if (RES_ROW_N(*sql_res) == 0) {
-		LM_DBG("key %.*s not found in SQL db\n", key.len, key.s);
+		LM_WARN("key %.*s not found in SQL db\n", key.len, key.s);
 		null_val.len = 0;
 		null_val.s = NULL;
 		if (db_hdls->cdbf.set(db_hdls->cdbcon, &src_key, &null_val, c_entry->expire) < 0) {
@@ -790,13 +821,14 @@ sql_error:
 	return -1;
 }
 
-void reload_timer(unsigned int ticks, void *param) {
+void reload_timer(unsigned int ticks, void *param)
+{
 	cache_entry_t *c_entry;
 	db_handlers_t *db_hdls;
 	str rld_vers_key;
 	int rld_vers = 0;
 
-	for (c_entry = *entry_list, db_hdls = db_hdls_list; c_entry != NULL;
+	for (c_entry = *entry_list, db_hdls = db_hdls_list; c_entry;
 		c_entry = c_entry->next, db_hdls = db_hdls->next) {
 		if (c_entry->on_demand)
 			continue;
@@ -828,7 +860,8 @@ void reload_timer(unsigned int ticks, void *param) {
 	}
 }
 
-static struct mi_root* mi_reload(struct mi_root *root, void *param) {
+static struct mi_root* mi_reload(struct mi_root *root, void *param)
+{
 	struct mi_node *node;
 	cache_entry_t *c_entry;
 	db_handlers_t *db_hdls;
@@ -847,7 +880,7 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param) {
 	}
 	entry_id = node->value;
 
-	for (c_entry = *entry_list, db_hdls = db_hdls_list; c_entry != NULL;
+	for (c_entry = *entry_list, db_hdls = db_hdls_list; c_entry;
 		c_entry = c_entry->next, db_hdls = db_hdls->next)
 		if (!memcmp(entry_id.s, c_entry->id.s, entry_id.len))
 			break;
@@ -878,7 +911,7 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param) {
 
 		lock_get(queries_lock);
 
-		for (it = *queries_in_progress; it != NULL; it = it->next)
+		for (it = *queries_in_progress; it; it = it->next)
 			if (!memcmp(it->key.s, src_key.s, src_key.len))
 				break;
 		pkg_free(src_key.s);
@@ -930,21 +963,17 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param) {
 	return init_mi_tree(200, MI_SSTR(MI_OK_S));
 }
 
-static int mod_init(void) {
+static int mod_init(void)
+{
 	cache_entry_t *c_entry;
 	db_handlers_t *db_hdls;
 	char use_timer = 0, entry_success = 0;
 	str rld_vers_key;
 	int reload_version = -1;
 
-	if (!spec_delimiter.s) {
-		spec_delimiter.s = pkg_malloc(sizeof(char));	
-		if (!spec_delimiter.s) {
-			LM_ERR("No more memory for spec_delimiter\n");
-			return -1;
-		}
-		spec_delimiter.s[0] = DEFAULT_SPEC_DELIM;
-	}
+	if (!spec_delimiter.s)
+		spec_delimiter.s = DEFAULT_SPEC_DELIM;
+
 	if (!pvar_delimiter.s) {
 		pvar_delimiter.s = pkg_malloc(sizeof(char));	
 		if (!pvar_delimiter.s) {
@@ -993,7 +1022,7 @@ static int mod_init(void) {
 		return -1;
 	}
 
-	for (c_entry = *entry_list; c_entry != NULL; c_entry = c_entry->next) {
+	for (c_entry = *entry_list; c_entry; c_entry = c_entry->next) {
 		if ((db_hdls = db_init_test_conn(c_entry)) == NULL)
 			continue;
 
@@ -1008,7 +1037,7 @@ static int mod_init(void) {
 			}
 
 			if (load_entire_table(c_entry, db_hdls, 0) < 0)
-				LM_ERR("Failed to cache the entire table %s\n", c_entry->table.s);
+				LM_ERR("Failed to cache the entire table: %s\n", c_entry->table.s);
 			else {
 				/* set up reload version counter for this entry in cachedb */
 				rld_vers_key.len = c_entry->id.len + 23;
@@ -1052,14 +1081,15 @@ static int mod_init(void) {
 	return 0;
 }
 
-static int child_init(int rank) {
+static int child_init(int rank)
+{
 	db_handlers_t *db_hdls;
 	cache_entry_t *c_entry;
 
-	for (db_hdls = db_hdls_list, c_entry = *entry_list; db_hdls != NULL;
+	for (db_hdls = db_hdls_list, c_entry = *entry_list; db_hdls;
 		db_hdls = db_hdls->next, c_entry = c_entry->next) {
 		db_hdls->cdbcon = db_hdls->cdbf.init(&c_entry->cachedb_url);
-		if (db_hdls->cdbcon == NULL) {
+		if (!db_hdls->cdbcon) {
 			LM_ERR("Cannot connect to cachedb from child\n");
 			return -1;
 		}
@@ -1078,7 +1108,8 @@ static int child_init(int rank) {
  * -2 - if not found
  * -1 - if error
  */
-static int cdb_fetch(pv_name_fix_t *pv_name, str *cdb_res, int *entry_rld_vers) {
+static int cdb_fetch(pv_name_fix_t *pv_name, str *cdb_res, int *entry_rld_vers)
+{
 	str cdb_key;
 	str rld_vers_key;
 	int rc;
@@ -1120,7 +1151,8 @@ static int cdb_fetch(pv_name_fix_t *pv_name, str *cdb_res, int *entry_rld_vers) 
  * -1 - error
  * -2 - does not match reload version (old value)
  */
-static int cdb_val_decode(pv_name_fix_t *pv_name, str *cdb_val, int reload_version, str *str_res, int *int_res) {
+static int cdb_val_decode(pv_name_fix_t *pv_name, str *cdb_val, int reload_version, str *str_res, int *int_res)
+{
 	long long one = 1;
 	int int_val, next_str_off, i, rc;
 	char int_buf[4];
@@ -1184,11 +1216,12 @@ static int cdb_val_decode(pv_name_fix_t *pv_name, str *cdb_val, int reload_versi
 
 	return 0;
 error:
-	LM_ERR("Failed to decode value from cachedb\n");
+	LM_ERR("Failed to decode value: %.*s from cachedb\n", cdb_val->len, cdb_val->s);
 	return -1;
 }
 
-static void optimize_cdb_decode(pv_name_fix_t *pv_name) {
+static void optimize_cdb_decode(pv_name_fix_t *pv_name)
+{
 	int i, j, prev_cols;
 	char col_type1, col_type2;
 	long long one = 1;
@@ -1227,7 +1260,8 @@ static void optimize_cdb_decode(pv_name_fix_t *pv_name) {
  * -1 - error
  * -2 - not found in sql db
  */
-static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, int *int_res) {
+static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, int *int_res)
+{
 	struct queried_key *it, *prev = NULL, *tmp, *new_key;
 	str src_key;
 	db_res_t *sql_res = NULL;
@@ -1257,7 +1291,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 	lock_get(queries_lock);
 
 	it = *queries_in_progress;
-	while (it != NULL) {
+	while (it) {
 		if (!memcmp(it->key.s, src_key.s, src_key.len)) { /* key is in list */
 			it->nr_waiting_procs++;
 			lock_release(queries_lock);
@@ -1320,7 +1354,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 			return -1;
 		}
 		new_key->next = NULL;
-		if (*queries_in_progress != NULL)
+		if (*queries_in_progress)
 			new_key->next = *queries_in_progress;
 		*queries_in_progress = new_key;
 
@@ -1384,7 +1418,8 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 	return -1;
 }
 
-static int parse_pv_name_s(pv_name_fix_t *pv_name, str *name_s) {
+static int parse_pv_name_s(pv_name_fix_t *pv_name, str *name_s)
+{
 	char *p1 = NULL, *p2 = NULL;
 	char last;
 
@@ -1396,7 +1431,7 @@ static int parse_pv_name_s(pv_name_fix_t *pv_name, str *name_s) {
 			LM_ERR("Invalid syntax for pvar name\n"); \
 			return -1; \
 		} \
-		int prev_len = pv_name->type.len; \
+		int _prev_len = pv_name->type.len; \
 		pv_name->type.len = (_ptr2) - (_ptr1); \
 		if (!pv_name->type.s) { \
 			pv_name->type.s = pkg_malloc(pv_name->type.len); \
@@ -1406,7 +1441,7 @@ static int parse_pv_name_s(pv_name_fix_t *pv_name, str *name_s) {
 			} \
 			memcpy(pv_name->type.s, (_ptr1), pv_name->type.len); \
 		} else if (memcmp(pv_name->type.s, (_ptr1), pv_name->type.len)) { \
-			if (prev_len != pv_name->type.len) { \
+			if (_prev_len != pv_name->type.len) { \
 				pv_name->type.s = pkg_realloc(pv_name->type.s, pv_name->type.len); \
 				if (!pv_name->type.s) { \
 					LM_ERR("No more pkg memory\n"); \
@@ -1430,11 +1465,12 @@ static int parse_pv_name_s(pv_name_fix_t *pv_name, str *name_s) {
 	return 0;
 }
 
-int pv_parse_name(pv_spec_p sp, str *in) {
+int pv_parse_name(pv_spec_p sp, str *in)
+{
 	pv_elem_t *model = NULL, *it;
 	pv_name_fix_t *pv_name;
 
-	if (in == NULL || in->s == NULL || sp == NULL)
+	if (!in || !in->s || !sp)
 		return -1;
 
 	pv_name = pkg_malloc(sizeof(pv_name_fix_t));
@@ -1461,11 +1497,11 @@ int pv_parse_name(pv_spec_p sp, str *in) {
 		return -1;
 	}
 
-	for (it = model; it != NULL; it = it->next) {
+	for (it = model; it; it = it->next) {
 		if (it->spec.type != PVT_NONE)
 			break;
 	}
-	if (it != NULL) { /* if there are variables in the name, parse later */
+	if (it) { /* if there are variables in the name, parse later */
 		pv_name->pv_elem_list = model;
 	} else {
 		if (parse_pv_name_s(pv_name, &(model->text)) < 0)
@@ -1475,7 +1511,8 @@ int pv_parse_name(pv_spec_p sp, str *in) {
 	return 0;
 }
 
-int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res) {
+int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
 	pv_name_fix_t *pv_name;
 	str name_s;
 	cache_entry_t *it_entries;
@@ -1486,8 +1523,8 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	str str_res = {NULL, 0}, cdb_res;
 	int entry_rld_vers;
 
-	if (param == NULL || param->pvn.type != PV_NAME_PVAR ||
-		param->pvn.u.dname == NULL) {
+	if (!param || param->pvn.type != PV_NAME_PVAR ||
+		!param->pvn.u.dname) {
 		LM_CRIT("Bad pvar get function parameters\n");
 		return -1;
 	}
@@ -1501,7 +1538,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	if (pv_name->pv_elem_list) {
 		/* there are variables in the name which need to be evaluated, then parse */
 		if (pv_printf_s(msg, pv_name->pv_elem_list, &name_s) != 0 ||
-			name_s.len == 0 || name_s.s == NULL) {
+			name_s.len == 0 || !name_s.s) {
 			LM_ERR("Unable to evaluate variables in pv name");
 			return pv_get_null(msg, param, res);
 		}
@@ -1510,7 +1547,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	}
 
 	if (!pv_name->c_entry) {
-		for (it_entries = *entry_list, it_db = db_hdls_list; it_entries != NULL;
+		for (it_entries = *entry_list, it_db = db_hdls_list; it_entries;
 			it_entries = it_entries->next, it_db = it_db->next)
 			if (!memcmp(it_entries->id.s, pv_name->id.s, pv_name->id.len)) {
 				pv_name->c_entry = it_entries;
@@ -1534,7 +1571,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 
 	if (!pv_name->c_entry->on_demand) {
 		if (rc == -2) {
-			LM_DBG("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
+			LM_WARN("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
 			lock_stop_read(pv_name->c_entry->ref_lock);
 			return pv_get_null(msg, param, res);
 		} else {
@@ -1548,7 +1585,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 			if (rc2 == -1)
 				return pv_get_null(msg, param, res);
 			if (rc2 == -2) {
-				LM_DBG("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
+				LM_WARN("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
 				return pv_get_null(msg, param, res);
 			}
 			if (rc2 == 1) {
@@ -1567,7 +1604,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 			}
 		} else {
 			if (!cdb_res.len || !cdb_res.s) {
-				LM_DBG("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
+				LM_WARN("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
 				return pv_get_null(msg, param, res);
 			}
 
@@ -1599,13 +1636,14 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	return 0;
 }
 
-static void destroy(void) {
+static void destroy(void)
+{
 	db_handlers_t *db_hdls;
 	struct queried_key *q_it, *q_tmp;
 	cache_entry_t *c_it, *c_tmp;
 	int i;
 
-	for(db_hdls = db_hdls_list; db_hdls != NULL; db_hdls = db_hdls->next) {
+	for(db_hdls = db_hdls_list; db_hdls; db_hdls = db_hdls->next) {
 		if (db_hdls->cdbcon)
 			db_hdls->cdbf.destroy(db_hdls->cdbcon);
 		if (db_hdls->db_con)
