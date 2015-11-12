@@ -166,7 +166,7 @@ int load_user_carrier(str * user, str * domain) {
 int load_route_data(struct rewrite_data * rd) {
 	db_res_t * res = NULL;
 	db_row_t * row = NULL;
-	int i, n, ret;
+	int i, n = 0, ret;
 	int carrier_count = 0;
 	struct carrier * carriers = NULL, * tmp = NULL;
 	static str query_str;
