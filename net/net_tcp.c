@@ -614,7 +614,7 @@ error:
 
 
 /* used to tune the tcp_connection attributes - not to be used inside the
-   network layer, but onlu from the above layer (otherwise we may end up 
+   network layer, but onlu from the above layer (otherwise we may end up
    in strange deadlocks!) */
 int tcp_conn_fcntl(struct receive_info *rcv, int attr, void *value)
 {
@@ -847,7 +847,7 @@ error:
 
 /* creates a new tcp connection structure and informs the TCP Main on that
  * a +1 ref is set for the new conn !
- * IMPORTANT - the function assumes you want to create a new TCP conn as 
+ * IMPORTANT - the function assumes you want to create a new TCP conn as
  * a result of a connect operation - the conn will be set as connect !!
  * Accepted connection are triggered internally only */
 struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
@@ -1720,7 +1720,8 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			if (init_child(*chd_rank) < 0) {
 				LM_ERR("init_children failed\n");
 				report_failure_status();
-				*startup_done = -1;
+				if (startup_done)
+					*startup_done = -1;
 				exit(-1);
 			}
 
