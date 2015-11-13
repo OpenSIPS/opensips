@@ -238,7 +238,5 @@ static size_t tls_read(struct tcp_connection * c,struct tcp_req *r)
 }
 
 
-
-
 #endif /* TLS_CONN_OPS_H */
 

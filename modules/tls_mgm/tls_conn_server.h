@@ -1,73 +1,20 @@
-/*
- * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2004,2005 Free Software Foundation, Inc.
- * Copyright (C) 2006 enum.at
+/* 
+ * File:   tls_conn.h
+ * Author: razvan
  *
- * This file is part of opensips, a free SIP server.
- *
- * opensips is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version
- *
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- * You must obey the GNU General Public License in all respects
- * for all of the code used other than OpenSSL.  If you modify
- * file(s) with this exception, you may extend this exception to your
- * version of the file(s), but you are not obligated to do so.  If you
- * do not wish to do so, delete this exception statement from your
- * version.  If you delete this exception statement from all source
- * files in the program, then also delete it here.
- *
- * opensips is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- */
-#include <sys/poll.h>
-#include <string.h>
-#include <errno.h>
-
-#include "../../dprint.h"
-#include "../../ip_addr.h"
-#include "../../mem/shm_mem.h"
-//#include "../timer.h"
-//#include "../usr_avp.h"
-#include "../../net/proto_tcp/tcp_common_defs.h"
-#include "../../ut.h"
-#include "tls_server.h"
-#include "../tls_mgm/tls_conn.h"
-
-/*
- * Open questions:
- *
- * - what would happen when select exits, connection is passed
- *   to reader to perform read, but another process would acquire
- *   the same connection meanwhile, performs a write and finishes
- *   accept/connect on behalf of the reader process, thus the
- *   reader process would have nothing to read ? (resolved)
- *
- * - What happens if SSL_accept or SSL_connect gets called on
- *   already established connection (c->S_CONN_OK) ? We could
- *   save some locking provided that the functions do not screw
- *   up the connection (in tcp_fix_read_conn we would not have
- *   to lock before the switch).
- *
- * - tls_blocking_write needs fixing..
- *
- * - we need to protect ctx by a lock -- it is in shared memory
- *   and may be accessed simultaneously
+ * Created on November 11, 2015, 5:26 PM
  */
 
-struct tls_mgm_binds tls_mgm_api;
+#ifndef TLS_CONN_SERVER_H
+#define TLS_CONN_SERVER_H
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <poll.h>
+#include "api.h"
+#include "tls_conn.h"
+#include "tls_config_helper.h"
+#include "../../locking.h"
 
 
 static void tls_dump_cert_info(char* s,	X509* cert)
@@ -366,6 +313,42 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 }
 
 
+/*
+ * called before tls_read, the this function should attempt tls_accept or
+ * tls_connect depending on the state of the connection, if this function
+ * does not transit a connection into S_CONN_OK then tcp layer would not
+ * call tcp_read
+ */
+static int tls_fix_read_conn(struct tcp_connection *c)
+{
+	/*
+	* no lock acquired
+	*/
+	int             ret;
+
+	ret = 0;
+
+	/*
+	* We have to acquire the lock before testing c->state, otherwise a
+	* writer could modify the structure if it gets preempted and has
+	* something to write
+	*/
+	lock_get(&c->write_lock);
+
+	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
+		ret = tls_update_fd(c, c->fd);
+		if (!ret)
+			ret = tls_accept(c, NULL);
+	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
+		ret = tls_update_fd(c, c->fd);
+		if (!ret)
+			ret = tls_connect(c, NULL);
+	}
+
+	lock_release(&c->write_lock);
+
+	return ret;
+}
 
 /*
  * Wrapper around SSL_write, returns number of bytes written on success, *
@@ -423,8 +406,8 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
 /*
  * fixme: probably does not work correctly
  */
-size_t tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
-																	size_t len)
+static size_t tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
+										size_t len, struct tls_mgm_binds *api)
 {
 	#define MAX_SSL_RETRIES 32
 	int             written, n;
@@ -445,7 +428,7 @@ size_t tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 	if (tls_update_fd(c, fd) < 0)
 		goto error;
 
-	timeout = tls_mgm_api.get_send_timeout();
+	timeout = api->get_send_timeout();
 again:
 	n = 0;
 	pf.events = 0;
@@ -453,14 +436,14 @@ again:
 	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
 		if (tls_accept(c, &(pf.events)) < 0)
 			goto error;
-		timeout = tls_mgm_api.get_handshake_timeout();
+		timeout = api->get_handshake_timeout();
 	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
 		if (tls_connect(c, &(pf.events)) < 0)
 			goto error;
-		timeout = tls_mgm_api.get_handshake_timeout();
+		timeout = api->get_handshake_timeout();
 	} else {
 		n = tls_write(c, fd, buf, len, &(pf.events));
-		timeout = tls_mgm_api.get_send_timeout();
+		timeout = api->get_send_timeout();
 	}
 
 	if (n < 0) {
@@ -539,39 +522,6 @@ error:
 }
 
 
-/*
- * called before tls_read, the this function should attempt tls_accept or
- * tls_connect depending on the state of the connection, if this function
- * does not transit a connection into S_CONN_OK then tcp layer would not
- * call tcp_read
- */
-int tls_fix_read_conn(struct tcp_connection *c)
-{
-	/*
-	* no lock acquired
-	*/
-	int             ret;
 
-	ret = 0;
+#endif /* TLS_CONN_SERVER_H */
 
-	/*
-	* We have to acquire the lock before testing c->state, otherwise a
-	* writer could modify the structure if it gets preempted and has
-	* something to write
-	*/
-	lock_get(&c->write_lock);
-
-	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
-		ret = tls_update_fd(c, c->fd);
-		if (!ret)
-			ret = tls_accept(c, NULL);
-	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
-		ret = tls_update_fd(c, c->fd);
-		if (!ret)
-			ret = tls_connect(c, NULL);
-	}
-
-	lock_release(&c->write_lock);
-
-	return ret;
-}

@@ -63,9 +63,32 @@
 #include "../../pvar.h"
 
 #include "../../net/proto_tcp/tcp_common_defs.h"
-#include "tls_server.h"
+#include "../tls_mgm/api.h"
 #include "../tls_mgm/tls_conn_ops.h"
+#include "../tls_mgm/tls_conn_server.h"
 
+/*
+ * Open questions:
+ *
+ * - what would happen when select exits, connection is passed
+ *   to reader to perform read, but another process would acquire
+ *   the same connection meanwhile, performs a write and finishes
+ *   accept/connect on behalf of the reader process, thus the
+ *   reader process would have nothing to read ? (resolved)
+ *
+ * - What happens if SSL_accept or SSL_connect gets called on
+ *   already established connection (c->S_CONN_OK) ? We could
+ *   save some locking provided that the functions do not screw
+ *   up the connection (in tcp_fix_read_conn we would not have
+ *   to lock before the switch).
+ *
+ * - tls_blocking_write needs fixing..
+ *
+ * - we need to protect ctx by a lock -- it is in shared memory
+ *   and may be accessed simultaneously
+ */
+
+struct tls_mgm_binds tls_mgm_api;
 
 static int tls_port_no = SIPS_PORT;
 
@@ -84,6 +107,12 @@ static int proto_tls_init_listener(struct socket_info *si);
 static int proto_tls_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
 
+static size_t w_tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
+																	size_t len)
+{
+	return tls_blocking_write(c, fd, buf, len, &tls_mgm_api);
+}
+
 /* buffer to be used for reading all TCP SIP messages
    detached from the actual con - in order to improve
    paralelism ( process the SIP message while the con
@@ -91,7 +120,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 static struct tcp_req tls_current_req;
 
 /* re-use similar and existing functions from the TCP-plain protocol */
-#define _tcp_common_write        tls_blocking_write
+#define _tcp_common_write        w_tls_blocking_write
 #define _tcp_common_current_req  tls_current_req
 #include "../../net/proto_tcp/tcp_common.h"
 
@@ -312,7 +341,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
-	n = tls_blocking_write(c, fd, buf, len);
+	n = tls_blocking_write(c, fd, buf, len, &tls_mgm_api);
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
@@ -423,3 +452,4 @@ error:
 	/* connection will be released as ERROR */
 	return -1;
 }
+
