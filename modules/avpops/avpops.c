@@ -41,9 +41,21 @@
 #include "../../dprint.h"
 #include "../../error.h"
 #include "../../ut.h"
+#include "../../mod_fix.h"
 #include "avpops_parse.h"
 #include "avpops_impl.h"
 #include "avpops_db.h"
+
+typedef enum {GPARAM=0, URL} db_id_type;
+
+struct db_url_container {
+	db_id_type type;
+	union {
+		struct db_url *url;
+		gparam_p gp;
+	} u;
+};
+
 
 char *printbuf = NULL;
 
@@ -319,6 +331,34 @@ static int fixup_db_url(void ** param, int require_raw_query, int is_async)
 	return 0;
 }
 
+static int id2db_url(int id, int require_raw_query, int is_async,
+		struct db_url** url)
+{
+
+	*url = get_db_url((unsigned int)id);
+	if (*url==NULL) {
+		LM_ERR("no db_url with id <%d>\n", id);
+		return E_CFG;
+	}
+
+	/*
+	 * Since mod_init() is run before function fixups, all DB structs
+	 * are initialized and all DB capabilities are populated
+	 */
+	if (require_raw_query && !DB_CAPABILITY((*url)->dbf, DB_CAP_RAW_QUERY)) {
+		LM_ERR("driver for DB URL [%u] does not support raw queries\n",
+				(unsigned int)id);
+		return -1;
+	}
+
+	if (is_async && !DB_CAPABILITY((*url)->dbf, DB_CAP_ASYNC_RAW_QUERY))
+		LM_WARN("async() calls for DB URL [%u] will work "
+		        "in normal mode due to driver limitations\n",
+				(unsigned int)id);
+
+	return 0;
+}
+
 /* parse the name avp again when adding an avp name prefix (param 4) */
 struct db_param *dbp_fixup;
 
@@ -487,6 +527,8 @@ static int fixup_db_store_avp(void** param, int param_no)
  */
 static int __fixup_db_query_avp(void** param, int param_no, int is_async)
 {
+	int type;
+
 	pv_elem_t *model = NULL;
 	pvname_list_t *anlist = NULL;
 	str s;
@@ -530,7 +572,54 @@ static int __fixup_db_query_avp(void** param, int param_no, int is_async)
 		*param = (void*)anlist;
 		return 0;
 	} else if (param_no==3) {
-		return fixup_db_url(param, 1, is_async);
+		struct db_url_container *db_id;
+
+		if (*param==NULL)
+			return 0;
+
+		if (fixup_igp(param) < 0) {
+			LM_ERR("fixup failed for param #3!\n");
+			return -1;
+		}
+
+		db_id=pkg_malloc(sizeof(struct db_url_container));
+		if (db_id==NULL) {
+			LM_ERR("no more pkg!\n");
+			return -1;
+		}
+
+		if ((type=((gparam_p)*param)->type) == GPARAM_TYPE_INT) {
+			db_id->type   = URL;
+
+			if (id2db_url(((gparam_p)*param)->v.ival,
+							1, is_async, &db_id->u.url) < 0) {
+				LM_ERR("failed to get db url!\n");
+
+				return E_CFG;
+			}
+		} else if (type == GPARAM_TYPE_STR) {
+			unsigned int int_id;
+			if (str2int(&((gparam_p)*param)->v.sval, &int_id) < 0) {
+				LM_ERR("failed to get db id!\n");
+				return -1;
+			}
+
+			db_id->type   = URL;
+
+			if (id2db_url(int_id, 1, is_async, &db_id->u.url) < 0) {
+				LM_ERR("failed to get db url!\n");
+				return E_CFG;
+			}
+		}
+		else if(type==GPARAM_TYPE_PVS||type==GPARAM_TYPE_PVE){
+			db_id->type   = GPARAM;
+			db_id->u.gp = (gparam_p)*param;
+		} else {
+			LM_ERR("invalid value for param #3!\n");
+			return E_CFG;
+		}
+
+		*param = db_id;
 	}
 
 	return 0;
@@ -1238,19 +1327,65 @@ static int w_dbstore_avps(struct sip_msg* msg, char* source,
 		use_domain);
 }
 
+
+static inline int get_url(struct sip_msg* msg, struct db_url_container* _url_struc,
+								struct db_url** parsed_url, int is_async)
+{
+	int id=0;
+	unsigned int gp_flags;
+
+	str sid;
+	gparam_p gp;
+
+	if (_url_struc) {
+		if (_url_struc->type == GPARAM) {
+			gp = _url_struc->u.gp;
+			if (fixup_get_isvalue(msg, gp, &id, &sid, &gp_flags) < 0
+					|| !(gp_flags&GPARAM_INT_VALUE_FLAG)) {
+				LM_ERR("Failed to fetch PVAR str value!\n");
+				return -1;
+			}
+
+			if (id2db_url(id,1, is_async, parsed_url)) {
+				LM_ERR("faild to get db url!\n");
+				return -1;
+			}
+		} else {
+			*parsed_url = _url_struc->u.url;
+		}
+	} else {
+		*parsed_url = default_db_url;
+	}
+
+	return 0;
+}
+
 static int w_dbquery_avps(struct sip_msg* msg, char* query,
 													char* dest, char *url)
 {
+	struct db_url *parsed_url;
+
+	if (get_url(msg, (struct db_url_container*)url, &parsed_url, 0) < 0) {
+		LM_ERR("failed to get db url\n");
+		return -1;
+	}
+
 	return ops_dbquery_avps ( msg, (pv_elem_t*)query,
-		url?(struct db_url*)url:default_db_url,
-		(pvname_list_t*)dest);
+		parsed_url, (pvname_list_t*)dest);
 }
 
 static int w_async_dbquery_avps(struct sip_msg* msg, async_resume_module **rf,
 		void **rparam, char* query, char* dest, char* url)
 {
+	struct db_url *parsed_url;
+
+	if (get_url(msg, (struct db_url_container*)url, &parsed_url, 1) < 0) {
+		LM_ERR("failed to get db url\n");
+		return -1;
+	}
+
 	return ops_async_dbquery(msg, rf, rparam, (pv_elem_t *)query,
-			url ? (struct db_url *)url : default_db_url, (pvname_list_t *)dest);
+			parsed_url, (pvname_list_t *)dest);
 }
 
 static int w_delete_avps(struct sip_msg* msg, char* param, char* foo)

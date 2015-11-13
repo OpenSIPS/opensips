@@ -401,7 +401,8 @@ avp_db_delete("$ru","$avp(1)","3");
        (string or integer) will be derived from the type of the
        columns.
      * db_id - reference to a defined DB URL (a numerical id) -
-       see the “db_url” module parameter.
+       see the “db_url” module parameter. It can be either a
+       constant, or a string/int variable.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
@@ -413,6 +414,10 @@ avp_db_query("select password, ha1 from subscriber where username='$tu'"
         "$avp(678);$avp(679)");
 avp_db_query("delete from subscriber");
 avp_db_query("delete from subscriber","","2");
+
+$avp(id)=2;#also works $avp(id)="2"
+avp_db_query("delete from subscriber","","$avp(id)");
+
 ...
 
 1.5.5.  avp_delete(name)
