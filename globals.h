@@ -67,6 +67,7 @@ extern int tcp_no_new_conn;
 extern int tcp_no_new_conn_bflag;
 
 extern int udp_max_sockets;
+extern int async_tcp_max_connections;
 
 extern int dont_fork;
 extern int no_daemon_mode;

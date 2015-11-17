@@ -1700,7 +1700,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			for(si=protos[n].listeners; si ; si=si->next,r++ );
 
 	tcp_max_fd_no=counted_processes*2 + r - 1/*timer*/ + 3/*stdin/out/err*/;
-	tcp_max_fd_no+=tcp_max_connections;
+	tcp_max_fd_no+=tcp_max_connections + async_tcp_max_connections;
 
 	if (register_tcp_load_stat( &load_p )!=0) {
 		LM_ERR("failed to init tcp load statistic\n");

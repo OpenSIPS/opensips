@@ -376,6 +376,7 @@ static struct multi_str *tmp_mod;
 %token TCP_LISTEN_BACKLOG
 %token TCP_MAX_CONNECTIONS
 %token UDP_MAX_SOCKETS
+%token ASYNC_TCP_MAX_CONNECTIONS
 %token TCP_NO_NEW_CONN_BFLAG
 %token TCP_KEEPALIVE
 %token TCP_KEEPCOUNT
@@ -835,6 +836,10 @@ assign_stm: DEBUG EQUAL snumber {
 				udp_max_sockets=$3;
 		}
 		| UDP_MAX_SOCKETS EQUAL error { yyerror("number expected"); }
+		| ASYNC_TCP_MAX_CONNECTIONS EQUAL NUMBER {
+				async_tcp_max_connections=$3;
+		}
+		| ASYNC_TCP_MAX_CONNECTIONS EQUAL error { yyerror("number expected"); }
 		| TCP_NO_NEW_CONN_BFLAG EQUAL NUMBER {
 				tmp = NULL;
 				fix_flag_name(tmp, $3);

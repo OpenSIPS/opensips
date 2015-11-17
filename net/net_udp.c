@@ -38,7 +38,11 @@
 
 /* if the UDP network layer is used or not by some protos */
 static int udp_disabled = 1;
-int udp_max_sockets=DEFAULT_UDP_MAX_SOCKETS;
+int udp_max_sockets = DEFAULT_UDP_MAX_SOCKETS;
+int udp_max_fd_no = 0;
+
+
+int async_tcp_max_connections;
 
 extern void handle_sigs(void);
 
@@ -288,7 +292,7 @@ int udp_rcv_loop( struct socket_info *si )
 {
 
 	/* create the reactor for UDP proc */
-	if ( init_worker_reactor( "UDP_worker", udp_max_sockets/*max_fd*/, RCT_PRIO_MAX)<0 ) {
+	if ( init_worker_reactor( "UDP_worker", udp_max_fd_no/*max_fd*/, RCT_PRIO_MAX)<0 ) {
 		LM_ERR("failed to init reactor\n");
 		goto error;
 	}
@@ -356,7 +360,6 @@ int udp_start_nofork(void)
 {
 	struct socket_info *si;
 	int rc;
-
 	/* this was tested by udp_init_nofork !!! */
 	si = protos[PROTO_UDP].listeners;
 
@@ -385,6 +388,9 @@ int udp_start_nofork(void)
 		return rc;
 	}
 
+	udp_max_fd_no= counted_processes + 1/*timer*/ + 3/*stdin/out/err*/;
+	udp_max_fd_no += udp_max_sockets + async_tcp_max_connections;
+
 	return udp_rcv_loop( si );
 }
 
@@ -395,10 +401,17 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 	struct socket_info *si;
 	stat_var *load_p = NULL;
 	pid_t pid;
-	int i,p;
+	int i,p, r, n;
 
 	if (udp_disabled)
 		return 0;
+
+	for( r=0,n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
+		if ( is_udp_based_proto(n) )
+			for(si=protos[n].listeners; si ; si=si->next,r++ );
+
+	udp_max_fd_no = counted_processes + r + 1/*timer*/ + 3/*stdin/out/err*/;
+	udp_max_fd_no += udp_max_sockets + async_tcp_max_connections;
 
 	for( p=PROTO_FIRST ; p<PROTO_LAST ; p++ ) {
 		if ( !is_udp_based_proto(p) )
