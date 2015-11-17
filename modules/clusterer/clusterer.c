@@ -1578,7 +1578,7 @@ static void bin_receive_packets(int packet_type, struct receive_info *ri, void *
 		return;
 
 	get_su_info(&ri->src_su.s, ip, port);
-	LM_WARN("received bin packet from source: %s:%hu\n",
+	LM_DBG("received bin packet from source: %s:%hu\n",
 		ip, port);
 
 	module = (struct module_list *) ptr;
