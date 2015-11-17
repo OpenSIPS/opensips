@@ -1494,7 +1494,8 @@ endif
 ifeq ($(YACC),)
 	YACC=$(DEFAULT_YACC)
 endif
-YACC_FLAGS=-d -b cfg
+YACC_FLAGS ?= -d -b cfg
+LEX_FLAGS ?= --never-interactive
 
 ifdef DEBUG_PARSER
 	CFLAGS+=-DYYDEBUG -DDEBUG_PARSER

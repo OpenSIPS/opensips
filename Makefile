@@ -143,7 +143,7 @@ NAME=$(MAIN_NAME)
 #export relevant variables to the sub-makes
 export DEFS PROFILE CC LD MKDEP MKTAGS CFLAGS LDFLAGS MOD_CFLAGS MOD_LDFLAGS
 export LIBS RADIUS_LIB
-export LEX YACC YACC_FLAGS
+export LEX LEX_FLAGS YACC YACC_FLAGS
 export PREFIX LOCALBASE SYSBASE
 # export relevant variables for recursive calls of this makefile
 # (e.g. make deb)
@@ -162,15 +162,21 @@ tar_extra_args+=
 # include the common rules
 include Makefile.rules
 
-#extra targets 
+#extra targets
 
 $(NAME): $(extra_objs) # static_modules
 
 lex.yy.c: cfg.lex cfg.tab.h $(ALLDEP)
-	$(LEX) $<
+ifeq (,$(FASTER))
+	@echo "Generating lexer"
+endif
+	$(Q)$(LEX) $(LEX_FLAGS) $<
 
 cfg.tab.c cfg.tab.h: cfg.y  $(ALLDEP)
-	$(YACC) $(YACC_FLAGS) $<
+ifeq (,$(FASTER))
+	@echo "Generating parser"
+endif
+	$(Q)$(YACC) $(YACC_FLAGS) $<
 
 .PHONY: all
 all: $(NAME) modules utils
