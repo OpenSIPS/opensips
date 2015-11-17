@@ -136,7 +136,7 @@ static int reload_data();
 
 /* sets a connection state */
 static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param);
-static int set_state(int cluster_id, int machine_id, int state, int proto);
+static int set_state(int cluster_id, int machine_id, enum cl_machine_state state, int proto);
 
 /* lists the available connections for the specified server*/
 static struct mi_root * clusterer_list(struct mi_root *root, void *param);
@@ -270,7 +270,7 @@ static int mod_init(void)
 	}
 
 	if (persistent_state > 1 && persistent_state < 0) {
-		LM_WARN("invalid value for persistent state - using the default value\n");
+		LM_WARN("invalid value for persistent state - presistence disabled\n");
 		persistent_state = 0;
 	}
 
@@ -402,14 +402,14 @@ static void update_nodes_handler(unsigned int ticks, void *param)
 			while (value != NULL) {
 				head = value->in_timestamps;
 				while (head != NULL) {
-					if (head->state == 1 && (ctime - head->timestamp) > head->up->timeout) {
+					if (head->state == CLUSTERER_STATE_PROBE && (ctime - head->timestamp) > head->up->timeout) {
 						head->up->cb(SERVER_TIMEOUT, NULL, value->id);
 						head->timestamp = head->timestamp + head->up->timeout;
-						head->state = 2;
+						head->state = CLUSTERER_STATE_OFF;
 					}
-					if (head->state == 2 && (ctime - head->timestamp) > head->up->duration) {
+					if (head->state == CLUSTERER_STATE_OFF && (ctime - head->timestamp) > head->up->duration) {
 						LM_DBG("node c_id %d m_id %d is up again\n", head_table->cluster_id, value->machine_id);
-						head->state = 1;
+						head->state = CLUSTERER_STATE_PROBE;
 						head->timestamp = ctime;
 					}
 					head = head->next;
@@ -1093,7 +1093,7 @@ static void temp_disable_machine(table_entry_value_t *head)
 	head->no_tries++;
 	head->last_attempt = time(0);
 	if (head->no_tries == head->failed_attempts) {
-		head->state = 2;
+		head->state = CLUSTERER_STATE_OFF;
 	}
 }
 
@@ -1105,7 +1105,7 @@ static struct module_timestamp* create_module_timestamp(int ctime, struct module
 		LM_ERR("not enough shm memory");
 		goto error;
 	}
-	new_node->state = 1;
+	new_node->state = CLUSTERER_STATE_PROBE;
 	new_node->timestamp = ctime;
 	new_node->up = module;
 	new_node->next = NULL;
@@ -1135,7 +1135,7 @@ static int set_in_timestamp(struct module_list *module, int machine_id)
 			head = values->in_timestamps;
 			while (head != NULL) {
 				if (head->up == module) {
-					if (head->state == 2) {
+					if (head->state == CLUSTERER_STATE_OFF) {
 						LM_DBG("state for node with clusterer_id %d is 2\n", values->id);
 						is_ok = -1;
 					} else
@@ -1153,7 +1153,7 @@ static int set_in_timestamp(struct module_list *module, int machine_id)
 }
 
 /* setting a connection status */
-static int set_state(int cluster_id, int machine_id, int state, int proto)
+static int set_state(int cluster_id, int machine_id, enum cl_machine_state state, int proto)
 {
 	table_entry_value_t *head_table;
 	int is_ok = 1;
@@ -1168,11 +1168,11 @@ static int set_state(int cluster_id, int machine_id, int state, int proto)
 	while (head_table != NULL) {
 		if (head_table->machine_id == machine_id) {
 			head_table->dirty_bit = 1;
-			if (state == 2) {
+			if (state == CLUSTERER_STATE_OFF) {
 				head_table->no_tries++;
 				head_table->last_attempt = time(0);
 				if (head_table->no_tries == head_table->failed_attempts) {
-					head_table->state = 2;
+					head_table->state = CLUSTERER_STATE_OFF;
 				}
 			} else {
 				head_table->state = state;
@@ -1230,7 +1230,7 @@ static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param)
 	}
 
 	rc = str2int(&node->next->next->value, &state);
-	if (rc == -1 || state < 0 || state > 1) {
+	if (rc == -1 || (state != CLUSTERER_STATE_ON && state != CLUSTERER_STATE_PROBE)) {
 		LM_DBG("the state parameter is not valid\n");
 		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM));
 	}

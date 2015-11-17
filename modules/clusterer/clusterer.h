@@ -2,6 +2,7 @@
 #define	CLUSTERER_H
 
 #include "../../str.h"
+#include "api.h"
 
 #define INT_VALS_CLUSTER_ID_COL     0
 #define INT_VALS_MACHINE_ID_COL     1
@@ -25,10 +26,11 @@ extern str duration_col;
 extern str failed_attempts_col;
 extern str no_tries_col;
 
+/* define proper state for the machine */
+
 typedef struct table_entry_ table_entry_t;
 typedef struct table_entry_info_ table_entry_info_t;
 typedef struct table_entry_value_ table_entry_value_t;
-
 
 struct module_list{
    str mod_name;
@@ -43,7 +45,7 @@ struct module_list{
 };
 
 struct module_timestamp{
-    int state;
+    enum cl_machine_state state;
     uint64_t timestamp;
     struct module_list *up;
     struct module_timestamp *next;
