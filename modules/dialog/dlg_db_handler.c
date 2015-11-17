@@ -1484,7 +1484,8 @@ static int sync_dlg_db_mem(void)
 	struct dlg_cell *it,*known_dlg,*dlg=NULL;
 	int i, nr_rows,callee_leg_idx,next_id,db_timeout;
 	int no_rows = 10;
-	unsigned int db_caller_cseq,db_callee_cseq,dlg_caller_cseq,dlg_callee_cseq;
+	unsigned int db_caller_cseq = 0, db_callee_cseq = 0;
+	unsigned int dlg_caller_cseq = 0, dlg_callee_cseq = 0;
 	struct socket_info *caller_sock,*callee_sock;
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;

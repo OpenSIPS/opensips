@@ -254,7 +254,7 @@ struct module_exports exports = {
 /**************************** fixup functions ******************************/
 static int fixup_prob( void** param, int param_no)
 {
-	unsigned int myint;
+	unsigned int myint = 0;
 	str param_str;
 
 	/* we only fix the parameter #1 */
