@@ -837,7 +837,7 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri, int server_id)
  	}
 
 	if (packet_type == SERVER_TIMEOUT) {
-		LM_WARN("server with clustererer id %d timeout\n", server_id);
+		LM_INFO("server with clustererer id %d timeout\n", server_id);
 		return;
 	}
 	

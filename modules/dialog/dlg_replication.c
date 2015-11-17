@@ -612,12 +612,12 @@ void receive_prof_binary_packet(int packet_type, struct receive_info *ri, int se
 
 	if (packet_type == SERVER_TEMP_DISABLED) {
 		get_su_info(&ri->src_su.s, ip, port);
-		LM_WARN("server: %s:%hu temporary disabled\n", ip, port);
+		LM_INFO("server: %s:%hu temporary disabled\n", ip, port);
 		return;
 	}
 
 	if (packet_type == SERVER_TIMEOUT) {
-		LM_WARN("server with clusterer id %d timeout\n", server_id);
+		LM_INFO("server with clusterer id %d timeout\n", server_id);
 		return;
 	}
 
