@@ -247,7 +247,7 @@ static evi_reply_sock* scriptroute_parse(str socket)
 
 	evi_reply_sock *sock = NULL;
 	static char *dummy_buffer = 0, *name;
-	int idx, mode=-1, name_len;
+	int idx, mode=-1, name_len = 0;
 	char* mode_pos;
 
 	if (!socket.len || !socket.s) {
