@@ -126,6 +126,17 @@ Description: XMLRPC support for OpenSIPS's Management Interface
  This package provides the XMLRPC transport implementation for OpenSIPS's
  Management Interface.
 
+Package: opensips-xmlrpcng-module
+Architecture: any
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
+Description: XMLRPC support for OpenSIPS's Management Interface
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides another XMLRPC transport implementation for OpenSIPS's
+ Management Interface.
+
 Package: opensips-perl-modules
 Architecture: any
 Depends: ${shlibs:Depends}, opensips (= ${binary:Version})

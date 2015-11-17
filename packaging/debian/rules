@@ -35,7 +35,7 @@ TLS=
 # Used to index the make variable below, which has details about each package
 ALL_MODPKG_LIST := \
 	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
-	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
+	PRESENCE XMLRPC XMLRPCNG PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
 	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
 	REDIS RABBITMQ HTTP REST_CLIENT
 
@@ -74,6 +74,9 @@ PRESENCE_MOD_PATH=$(addprefix modules/, $(PRESENCE_MODULES))
 XMLRPC_PKGNAME = opensips-xmlrpc-module
 XMLRPC_MODULES = mi_xmlrpc
 XMLRPC_MOD_PATH=$(addprefix modules/, $(XMLRPC_MODULES))
+XMLRPCNG_PKGNAME = opensips-xmlrpcng-module
+XMLRPCNG_MODULES = mi_xmlrpc_ng
+XMLRPCNG_MOD_PATH=$(addprefix modules/, $(XMLRPCNG_MODULES))
 PERL_PKGNAME = opensips-perl-modules
 PERL_MODULES = perl db_perlvdb
 PERL_MOD_PATH=$(addprefix modules/, $(PERL_MODULES))
