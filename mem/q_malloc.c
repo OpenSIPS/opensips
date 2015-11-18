@@ -44,6 +44,7 @@
 #include "../dprint.h"
 #include "../globals.h"
 #include "../statistics.h"
+#include "mem_dbg_hash.h"
 
 
 /*useful macros*/
@@ -639,32 +640,38 @@ void qm_status(struct qm_block* qm)
 	int i,j;
 	int h;
 	int unused;
+	mem_dbg_htable_t allocd;
+	struct mem_dbg_entry *it;
+
+	dbg_ht_init(allocd);
 
 	LM_GEN1(memdump, "qm_status (%p):\n", qm);
 	if (!qm) return;
-
 	LM_GEN1(memdump, " heap size= %lu\n", qm->size);
 	LM_GEN1(memdump, " used= %lu, used+overhead=%lu, free=%lu\n",
 			qm->used, qm->real_used, qm->size-qm->real_used);
 	LM_GEN1(memdump, " max used (+overhead)= %lu\n", qm->max_real_used);
 
-	LM_GEN1(memdump, "dumping all alloc'ed. fragments:\n");
-	for (f=qm->first_frag, i=0;(char*)f<(char*)qm->last_frag_end;f=FRAG_NEXT(f)
-			,i++){
-		if (! f->u.is_free){
-			LM_GEN1(memdump,"    %3d. %c  address=%p frag=%p size=%lu used=%d\n",
-				i,
-				(f->u.is_free)?'a':'N',
-				(char*)f+sizeof(struct qm_frag), f, f->size, FRAG_WAS_USED(f));
-#ifdef DBG_QM_MALLOC
-			LM_GEN1(memdump, "            %s from %s: %s(%ld)\n",
-				(f->u.is_free)?"freed":"alloc'd", f->file, f->func, f->line);
-			LM_GEN1(memdump, "        start check=%lx, end check= %lx, %lx\n",
-				f->check, FRAG_END(f)->check1, FRAG_END(f)->check2);
-#endif
+	for (f=qm->first_frag; (char*)f<(char*)qm->last_frag_end; f=FRAG_NEXT(f))
+		if (!f->u.is_free)
+			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
+				LM_ERR("Unable to update alloc'ed. memory summary\n");
+				return;
+			}
+
+	LM_GEN1(memdump, " dumping summary of all alloc'ed. fragments:\n");
+	for(i=0; i < DBG_HASH_SIZE; i++) {
+		it = allocd[i];
+		while (it) {
+			LM_GEN1(memdump, " %10lu : %lu x [%s: %s, line %lu]\n",
+				it->size, it->no_fragments, it->file, it->func, it->line);
+			it = it->next;
 		}
 	}
-	LM_GEN1(memdump, "dumping free list stats :\n");
+
+	dbg_ht_free(allocd);
+
+	LM_GEN1(memdump, " dumping free list stats :\n");
 	for(h=0,i=0;h<QM_HASH_SIZE;h++){
 		unused=0;
 		for (f=qm->free_hash[h].head.u.nxt_free,j=0;
