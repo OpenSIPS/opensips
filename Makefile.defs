@@ -1495,7 +1495,19 @@ ifeq ($(YACC),)
 	YACC=$(DEFAULT_YACC)
 endif
 YACC_FLAGS ?= -d -b cfg
-LEX_FLAGS ?= --never-interactive
+
+ifeq ($(LEX_FLAGS),)
+	LEX_VER=$(shell $(LEX) --version | \
+			tr -d "[a-zA-Z ]" | \
+			tr "\." " " | \
+			awk '{printf "%02d%02d%02d", $$1, $$2, $$3}')
+	# versions lower than 2.5.6 don't have never-interactive
+	ifeq ($(shell [ $(LEX_VER) -lt 020506 ] && echo old), old)
+		LEX_FLAGS = -B
+	else
+		LEX_FLAGS = --never-interactive
+	endif
+endif
 
 ifdef DEBUG_PARSER
 	CFLAGS+=-DYYDEBUG -DDEBUG_PARSER
