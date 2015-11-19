@@ -276,7 +276,7 @@ int w_acc_evi_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 
 	if (is_cdr_acc_on(rq) && is_evi_acc_on(rq)) {
 		env_set_event(acc_cdr_event);
-	} else if (is_evi_acc_on(rq)) {
+	} else if (is_evi_acc_on(rq) && acc_env.code < 300) {
 		env_set_event(acc_event);
 	} else if (is_evi_mc_on(rq)) {
 		env_set_event(acc_missed_event);
