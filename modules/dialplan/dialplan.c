@@ -404,9 +404,10 @@ static void dp_print_list(void)
 		LM_DBG("List is empty\n");
 
 	while (start != NULL) {
-		LM_DBG("Partition %.*s url %.*s table %.*s\n", start->partition.len,
-			start->partition.s, start->dp_db_url.len,start->dp_db_url.s,
-			 start->dp_table_name.len, start->dp_table_name.s);
+		LM_DBG("Partition=[%.*s] url=[%.*s] table=[%.*s] next=[%p]\n",
+			start->partition.len, start->partition.s,
+			start->dp_db_url.len, start->dp_db_url.s,
+			start->dp_table_name.len, start->dp_table_name.s, start->next);
 		start = (dp_head_p)start->next;
 	}
 }
