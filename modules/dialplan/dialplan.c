@@ -144,12 +144,17 @@ struct module_exports exports= {
 	child_init		/* per-child init function */
 };
 
-static inline void dp_str_copy(str* dest, str* source)
+static inline int dp_str_copy(str* dest, str* source)
 {
 
 	dest->len = source->len;
 	dest->s   = pkg_malloc(source->len);
+	if ((dest->s) == NULL) {
+		LM_ERR("oom\n");
+		return -1;
+	}
 	memcpy(dest->s, source->s, source->len);
+	return 0;
 
 }
 
@@ -206,9 +211,13 @@ static int dp_head_insert(int dp_insert_type, str content,
 #define h_insert(type, url_addr, table_addr, ins_addr ) \
 	do{  \
 		if( type == DP_TYPE_URL ) { \
-			dp_str_copy(url_addr, ins_addr); \
+			if (dp_str_copy(url_addr, ins_addr)!=0){	\
+				return -1;	\
+			}	\
 		} else { \
-			dp_str_copy(table_addr, ins_addr); \
+			if (dp_str_copy(table_addr, ins_addr)!=0){	\
+				return -1;	\
+			}	\
 		} \
 	}while(0);
 
@@ -224,7 +233,8 @@ static int dp_head_insert(int dp_insert_type, str content,
 		}
 		memset(dp_hlist, 0, sizeof *dp_hlist);
 
-		dp_str_copy(&dp_hlist->partition, &partition);
+		if (dp_str_copy(&dp_hlist->partition, &partition) != 0)
+			return -1;
 
 		h_insert( dp_insert_type, &dp_hlist->dp_db_url,
 				 &dp_hlist->dp_table_name, &content);
@@ -253,7 +263,8 @@ static int dp_head_insert(int dp_insert_type, str content,
 	}
 	memset(tmp, 0, sizeof(dp_head_t));
 
-	dp_str_copy(&tmp->partition, &partition);
+	if (dp_str_copy(&tmp->partition, &partition) != 0)
+		return -1;
 
 	h_insert( dp_insert_type, &tmp->dp_db_url,
 			 &tmp->dp_table_name, &content);
