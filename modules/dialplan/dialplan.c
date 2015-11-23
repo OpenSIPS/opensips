@@ -254,6 +254,7 @@ static int dp_head_insert(int dp_insert_type, str content,
 
 	h_insert( dp_insert_type, &tmp->dp_db_url,
 			 &tmp->dp_table_name, &content);
+	tmp->next = NULL;
 	start->next = (dp_head_p)tmp;
 	return 0;
 #undef h_insert
