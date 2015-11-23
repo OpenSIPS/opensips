@@ -251,8 +251,9 @@ static int dp_head_insert(int dp_insert_type, str content,
 	if (!tmp) {
 		LM_ERR("No more pkg mem\n");
 		return -1;
-
 	}
+	memset(tmp, 0, sizeof(dp_head_t));
+
 	dp_str_copy(&tmp->partition, &partition);
 
 	h_insert( dp_insert_type, &tmp->dp_db_url,
