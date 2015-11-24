@@ -735,7 +735,7 @@ ifeq	($(ARCH), i386)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-m32 -O0 -funroll-loops  -Wcast-align $(PROFILE) \
+				CFLAGS+=-m32 -O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall
 				LDFLAGS+=-m32
 			#if gcc 4.0+
@@ -809,7 +809,7 @@ ifeq	($(ARCH), x86_64)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O0 -funroll-loops  -Wcast-align $(PROFILE) \
+				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
@@ -868,7 +868,7 @@ ifeq	($(ARCH), sparc64)
 			#if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O0 -funroll-loops  $(PROFILE) \
+				CFLAGS+=-O9 -funroll-loops  $(PROFILE) \
 					-Wall\
 					#-Wcast-align \
 					#-Wmissing-prototypes
@@ -1009,7 +1009,7 @@ ifeq	($(ARCH), arm)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O0 -funroll-loops  -Wcast-align $(PROFILE) \
+				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall   
 			#if gcc 4.x+
 ifeq			($(CC_CLASS), 4.x)
@@ -1045,7 +1045,7 @@ ifeq	($(ARCH), mips)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O0 -funroll-loops  -Wcast-align $(PROFILE) \
+				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
@@ -1082,7 +1082,7 @@ ifeq	($(ARCH), mips2)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O0 -mips2 -funroll-loops $(PROFILE) \
+				CFLAGS+=-O9 -mips2 -funroll-loops $(PROFILE) \
 					-Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
@@ -1116,7 +1116,7 @@ ifeq	($(ARCH), alpha)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O0 -funroll-loops $(PROFILE)  -Wall 
+				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-minline-all-stringops
@@ -1149,7 +1149,7 @@ ifeq	($(ARCH), ppc)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O0 -funroll-loops $(PROFILE)  -Wall 
+				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall 
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CPU_TYPE ?= powerpc
@@ -1184,7 +1184,7 @@ ifeq	($(ARCH), ppc64)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O0 -funroll-loops $(PROFILE)  -Wall 
+				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall 
 ifeq			($(CC_CLASS), 4.x)
 					CPU_TYPE ?= powerpc64
 					CFLAGS+=-ftree-vectorize \
