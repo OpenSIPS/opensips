@@ -41,6 +41,7 @@ extern ph_framework_t *ph_framework_data;
 
 /* module functions */
 static int mod_init();
+static int child_init();
 static int destroy(void);
 int ph_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
@@ -106,7 +107,7 @@ struct module_exports exports = {
 	mod_init,                           /* module initialization function */
 	(response_function) 0,              /* response handling function */
 	(destroy_function) destroy,         /* destroy function */
-	NULL                                /* per-child init function */
+	(child_init_function)child_init     /* per-child init function */
 };
 
 
@@ -175,20 +176,44 @@ static int mod_init(void)
 
 	/* init db connections */
 	for(i=0;i<ph_framework_data->ph_db_urls_size;i++){
+		ph_framework_data->ph_db_urls[i].http_db_handle =
+								pkg_malloc(sizeof(db_con_t *));
+		*ph_framework_data->ph_db_urls[i].http_db_handle = 0;
+
 		LM_DBG("initializing db[%d] [%s]\n",
 			i, ph_framework_data->ph_db_urls[i].db_url.s);
 		if (init_http_db(ph_framework_data, i)!=0) {
 			LM_ERR("failed to initialize the DB support\n");
 			return -1;
 		}
+
+
+	}
+
+	/* Build async lock */
+	if (ph_init_async_lock() != 0) exit(-1);
+
+	return 0;
+}
+
+static int child_init(int rank)
+{
+	int i;
+
+	LM_DBG("Child initialization\n");
+	if (rank==PROC_TCP_MAIN || rank==PROC_BIN)
+		return 0;
+
+
+	for(i=0;i<ph_framework_data->ph_db_urls_size;i++){
+		LM_DBG("connecting to db[%d] [%s]\n",
+			i, ph_framework_data->ph_db_urls[i].db_url.s);
+
 		if (connect_http_db(ph_framework_data, i)) {
 			LM_ERR("failed to connect to database\n");
 			return -1;
 		}
 	}
-
-	/* Build async lock */
-	if (ph_init_async_lock() != 0) exit(-1);
 
 	return 0;
 }
