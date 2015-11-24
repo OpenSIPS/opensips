@@ -48,7 +48,7 @@ typedef short int ph_val_flags;
 typedef struct ph_db_url_ {
 	str id;
 	str db_url;
-	db_con_t *http_db_handle;
+	db_con_t **http_db_handle;
 	db_func_t http_dbf;
 }ph_db_url_t;
 
