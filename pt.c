@@ -156,6 +156,8 @@ pid_t internal_fork(char *proc_desc)
 	}
 	#endif
 
+	pt[process_counter].pid = 0;
+
 	if ( (pid=fork())<0 ){
 		LM_CRIT("cannot fork \"%s\" process\n",proc_desc);
 		return -1;
