@@ -1011,6 +1011,35 @@ try_again:
 		goto error;
 	}
 
+		/* get uid/gid */
+	if (user){
+		if (user2uid(&uid, &gid, user)<0){
+			LM_ERR("bad user name/uid number: -u %s\n", user);
+			goto error00;
+		}
+	}
+	if (group){
+		if (group2gid(&gid, group)<0){
+			LM_ERR("bad group name/gid number: -u %s\n", group);
+			goto error00;
+		}
+	}
+
+		/*init shm mallocs
+	 *  this must be here
+	 *     -to allow setting shm mem size from the command line
+	 *     -it must be also before init_timer and init_tcp
+	 *     -it must be after we know uid (so that in the SYSV sems case,
+	 *        the sems will have the correct euid)
+	 * --andrei */
+	if (init_shm_mallocs()==-1)
+		goto error;
+
+	if (init_stats_collector() < 0) {
+		LM_ERR("failed to initialize statistics\n");
+		goto error;
+	}
+
 	/* parse the config file, prior to this only default values
 	   e.g. for debugging settings will be used */
 	yyin=cfg_stream;
@@ -1058,19 +1087,6 @@ try_again:
 	/* fix parameters */
 	if (working_dir==0) working_dir="/";
 
-	/* get uid/gid */
-	if (user){
-		if (user2uid(&uid, &gid, user)<0){
-			LM_ERR("bad user name/uid number: -u %s\n", user);
-			goto error00;
-		}
-	}
-	if (group){
-		if (group2gid(&gid, group)<0){
-			LM_ERR("bad group name/gid number: -u %s\n", group);
-			goto error00;
-		}
-	}
 	if (fix_all_socket_lists()!=0){
 		LM_ERR("failed to initialize list addresses\n");
 		goto error00;
@@ -1097,24 +1113,9 @@ try_again:
 
 	time(&startup_time);
 
-	/*init shm mallocs
-	 *  this must be here
-	 *     -to allow setting shm mem size from the command line
-	 *       => if shm_mem should be settable from the cfg file move
-	 *       everything after
-	 *     -it must be also before init_timer and init_tcp
-	 *     -it must be after we know uid (so that in the SYSV sems case,
-	 *        the sems will have the correct euid)
-	 * --andrei */
-	if (init_shm_mallocs()==-1)
-		goto error;
+
 
 	/* Init statistics */
-	if (init_stats_collector()<0) {
-		LM_ERR("failed to initialize statistics\n");
-		goto error;
-	}
-
 	init_shm_statistics();
 
 	/*init UDP networking layer*/
