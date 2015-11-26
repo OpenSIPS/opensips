@@ -43,13 +43,16 @@
 #include "../../tcp_server.h"  /* tcpconn_get() */
 #include "../../sr_module.h"
 #include "../../pvar.h"
-
+#include "../../tls/tls_init.h"
 
 
 int tcp_con_lifetime=DEFAULT_TCP_CONNECTION_LIFETIME;
 
 /* definition of exported functions */
 static int is_peer_verified(struct sip_msg*, char*, char*);
+
+/* MI function to refresh all TLS CRL & CA configuration */
+static struct mi_root* mi_refresh_crl_ca(struct mi_root* cmd, void* param);
 
 /* definition of internal functions */
 static int mod_init(void);
@@ -73,6 +76,14 @@ static cmd_export_t cmds[]={
  */
 static param_export_t params[] = {
 	{0,0,0}
+};
+
+/*
+ * MI Commands
+ */
+static mi_export_t mi_cmds[] = {
+		{ "refresh_crl_ca",    0, mi_refresh_crl_ca,     0,  0,  0},
+		{  0,                  0, 0,                     0,  0,  0}
 };
 
 /*
@@ -249,7 +260,7 @@ struct module_exports exports = {
 	cmds,        /* Exported functions */
 	params,      /* Exported parameters */
 	0,           /* exported statistics */
-	0,           /* exported MI functions */
+	mi_cmds,     /* exported MI functions */
 	mod_items,   /* exported pseudo-variables */
 	0,           /* extra processes */
 	mod_init,    /* module initialization function */
@@ -333,4 +344,17 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 	LM_DBG("tlsops:is_peer_verified: peer is successfuly verified"
 		"...done\n");
 	return 1;
+}
+
+/*
+ *  mi cmd: refresh_crl_ca
+ *
+ */
+
+static struct mi_root* mi_refresh_crl_ca(struct mi_root* cmd, void* param)
+{
+	LM_INFO("mi_refresh_crl_ca:start\n");
+	reload_tls_domains_crl_ca_all();
+
+	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 }

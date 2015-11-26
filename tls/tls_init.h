@@ -56,4 +56,14 @@ int             init_tls(void);
  */
 int		init_tls_domains(struct tls_domain *d);
 
+/*
+ * reloads TLS configuration for given domain: CRL, CA list.
+ */
+int     reload_tls_domains_crl_ca(struct tls_domain *d);
+
+/*
+ * reloads TLS configuration for all domains: CRL, CA list.
+ */
+int     reload_tls_domains_crl_ca_all(void);
+
 #endif

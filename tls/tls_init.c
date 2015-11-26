@@ -450,6 +450,23 @@ load_ca(SSL_CTX * ctx, char *filename)
 	return 0;
 }
 
+/*
+ * Load a caList, to be used to verify the client's certificate.
+ * The list is to be stored in a single file, containing all
+ * the acceptable root certificates.
+ */
+static int
+load_ca_to_store(X509_STORE *store, char *filename)
+{
+	LM_DBG("Entered\n");
+	if (!X509_STORE_load_locations(store, filename, 0)) {
+		LM_ERR("unable to load ca '%s'\n", filename);
+		return -1;
+	}
+
+	LM_DBG("CA '%s' successfuly loaded\n", filename);
+	return 0;
+}
 
 /*
  * Load a caList from a directory instead of a single file.
@@ -467,6 +484,21 @@ load_ca_dir(SSL_CTX * ctx, char *directory)
         return 0;
 }
 
+/*
+ * Load a caList from a directory instead of a single file.
+ */
+static int
+load_ca_dir_to_store(X509_STORE * store, char *directory)
+{
+	LM_DBG("Entered\n");
+	if (!X509_STORE_load_locations(store, 0 , directory)) {
+		LM_ERR("unable to load ca directory '%s'\n", directory);
+		return -1;
+	}
+
+	LM_DBG("CA '%s' successfuly loaded from directory\n", directory);
+	return 0;
+}
 
 #if (OPENSSL_VERSION_NUMBER > 0x10001000L)
 /*
@@ -1016,6 +1048,119 @@ init_tls_domains(struct tls_domain *d)
 			return -1;
 		d = d->next;
 	}
+	return 0;
+}
+
+int
+reload_tls_domains_crl_ca(struct tls_domain *d)
+{
+	struct tls_domain *dom;
+
+	dom = d;
+	while (d) {
+		if (d->name.len) {
+			LM_INFO("Reloading TLS domain '%.*s'\n",
+					d->name.len, ZSW(d->name.s));
+		} else {
+			LM_INFO("Reloading TLS domain [%s:%d]\n",
+					ip_addr2a(&d->addr), d->port);
+		}
+
+		int crl_count = 0;
+		int crl_load_ok = 0;
+
+		/*
+		 * Create a new cert store.
+		 */
+		X509_STORE * new_store = X509_STORE_new();
+		if (new_store == NULL){
+			LM_ERR("Could not allocate new X509 store");
+			return -1;
+		}
+
+		/**
+		* load crl from directory
+		*/
+		if (!d->crl_directory) {
+			LM_NOTICE("no crl for tls, using none");
+		} else {
+			if (tls_load_crl_to_store(new_store, d->crl_directory, &crl_count) < 0){
+				return -1;
+			}
+			crl_load_ok = 1;
+		}
+
+		/*
+		* load ca
+		*/
+		if (!d->ca_file) {
+			LM_NOTICE("no CA for tls[%s:%d] defined, "
+							  "using default '%s'\n", ip_addr2a(&d->addr), d->port,
+					  tls_ca_file);
+			d->ca_file = tls_ca_file;
+		}
+		if (d->ca_file && load_ca_to_store(new_store, d->ca_file) < 0) {
+			return -1;
+		}
+
+		/*
+		* load ca from directory
+		*/
+		if (!d->ca_directory) {
+
+			LM_NOTICE("no CA for tls[%s:%d] defined, "
+							  "using default '%s'\n", ip_addr2a(&d->addr), d->port,
+					  tls_ca_dir);
+			d->ca_directory = tls_ca_dir;
+		}
+
+		if (d->ca_directory && load_ca_dir_to_store(new_store, d->ca_directory) < 0) {
+			return -1;
+		}
+
+		/*
+		 * set new store - critical place, here we replace the old store with the new one.
+		 * Locking mechanism may be needed to protect from race conditions.
+		 */
+		SSL_CTX_set_cert_store(d->ctx, new_store);
+
+		/*
+		 * CRL checking enable / disable
+		 */
+		tls_set_crl_checking(d->ctx, crl_load_ok>0 && crl_count>0, d->crl_check_all);
+
+		d = d->next;
+	}
+
+	return 0;
+}
+
+int
+reload_tls_domains_crl_ca_all(void)
+{
+	int i;
+
+	/*
+	 * now reinitialize tls default domains
+	 */
+	if ( (i=reload_tls_domains_crl_ca(tls_default_server_domain)) ) {
+		return i;
+	}
+	if ( (i=reload_tls_domains_crl_ca(tls_default_client_domain)) ) {
+		return i;
+	}
+	/*
+	 * now reinitialize tls virtual domains
+	 */
+	if ( (i=reload_tls_domains_crl_ca(tls_server_domains)) ) {
+		return i;
+	}
+	if ( (i=reload_tls_domains_crl_ca(tls_client_domains)) ) {
+		return i;
+	}
+	/*
+	 * we are all set
+	 */
 	return 0;
 }
 
