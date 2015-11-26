@@ -357,6 +357,7 @@ TLS_CERTIFICATE	"tls_certificate"
 TLS_PRIVATE_KEY "tls_private_key"
 TLS_CA_LIST		"tls_ca_list"
 TLS_CA_DIR		"tls_ca_dir"
+TLS_CRL_DIR		"tls_crl_dir"
 TLS_DH_PARAMS		"tls_dh_params"
 TLS_EC_CURVE		"tls_ec_curve"
 TLS_CIPHERS_LIST	"tls_ciphers_list"
@@ -678,6 +679,8 @@ IMPORTFILE      "import_file"
 										return TLS_CA_LIST; }
 <INITIAL>{TLS_CA_DIR}  { count(); yylval.strval=yytext;
                                                                                 return TLS_CA_DIR; }
+<INITIAL>{TLS_CRL_DIR}  { count(); yylval.strval=yytext;
+                                                                                return TLS_CRL_DIR; }
 <INITIAL>{TLS_DH_PARAMS}  { count(); yylval.strval=yytext;
 										return TLS_DH_PARAMS; }
 <INITIAL>{TLS_EC_CURVE}  { count(); yylval.strval=yytext;

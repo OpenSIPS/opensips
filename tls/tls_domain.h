@@ -51,8 +51,10 @@ struct tls_domain {
 	SSL_CTX        *ctx;
 	int             verify_cert;
 	int             require_client_cert;
+	int             crl_check_all;
 	char           *cert_file;
 	char           *pkey_file;
+	char           *crl_directory;
 	char           *ca_file;
 	char           *tmp_dh_file;
 	char           *tls_ec_curve;

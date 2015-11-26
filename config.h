@@ -48,6 +48,7 @@
 #define TLS_CERT_FILE CFG_DIR "tls/cert.pem"
 #define TLS_CA_FILE 0 		/*!< no CA list file by default */
 #define TLS_CA_DIRECTORY      "/etc/pki/CA/"
+#define TLS_CRL_DIRECTORY      NULL
 #define TLS_DH_PARAMS_FILE 0   /*!< no DH params file by default */
 
 #define MAX_LISTEN 16		/*!< maximum number of addresses on which we will listen */

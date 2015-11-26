@@ -42,6 +42,7 @@
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #define OS_SSL_SESS_ID ((unsigned char*)"opensips-tls-1.11.0")
 #define OS_SSL_SESS_ID_LEN (sizeof(OS_SSL_SESS_ID)-1)
@@ -260,6 +261,135 @@ load_certificate(SSL_CTX * ctx, char *filename)
 	return 0;
 }
 
+static int
+tls_load_crl_to_store(X509_STORE *store, char *crl_directory, int *p_crl_added)
+{
+	DIR *d;
+	struct dirent *dir;
+	int crl_added = 0;
+
+	if(!store) {
+		LM_ERR("Unable to get X509 store from ssl context\n");
+		return -1;
+	}
+
+	/*Parse directory*/
+	d = opendir(crl_directory);
+	if(!d) {
+		LM_ERR("Unable to open crl directory '%s'\n", crl_directory);
+		return -1;
+	}
+
+	while ((dir = readdir(d)) != NULL) {
+		/*Skip if not regular file*/
+		if (dir->d_type != DT_REG)
+			continue;
+
+		/*Create filename*/
+		char* filename = (char*) pkg_malloc(sizeof(char)*(strlen(crl_directory)+strlen(dir->d_name)+2));
+		if (!filename) {
+			LM_ERR("Unable to allocate crl filename\n");
+			closedir(d);
+			return -1;
+		}
+		strcpy(filename,crl_directory);
+		if(filename[strlen(filename)-1] != '/')
+			strcat(filename,"/");
+		strcat(filename,dir->d_name);
+
+		/*Get CRL content*/
+		FILE *fp = fopen(filename,"r");
+		pkg_free(filename);
+		if(!fp)
+			continue;
+
+		X509_CRL *crl = PEM_read_X509_CRL(fp, NULL, NULL, NULL);
+		fclose(fp);
+		if(!crl)
+			continue;
+
+		/*Add CRL to X509 store*/
+		if (X509_STORE_add_crl(store, crl) == 1)
+			crl_added++;
+		else
+			LM_ERR("Unable to add crl to ssl context\n");
+
+		X509_CRL_free(crl);
+	}
+	closedir(d);
+
+	if (p_crl_added != NULL){
+		*p_crl_added = crl_added;
+	}
+
+	if (!crl_added) {
+		LM_ERR("No suitable CRL files found in directory %s\n", crl_directory);
+		return 0;
+	} else {
+		LM_INFO("CRLs added: %d\n", crl_added);
+	}
+
+	return 0;
+}
+
+static int
+tls_set_crl_checking(SSL_CTX * ctx, int enable, int crl_check_all)
+{
+	X509_VERIFY_PARAM *param;
+	if (ctx == NULL){
+		LM_ERR("Passed SSL context is null");
+		return -1;
+	}
+
+	X509_VERIFY_PARAM *orig_param = ctx->param;
+	param = X509_VERIFY_PARAM_new();
+	if (param == NULL){
+		LM_ERR("Could not init a new param");
+		return -1;
+	}
+
+	unsigned long flags = orig_param != NULL ? X509_VERIFY_PARAM_get_flags(orig_param) : 0ul;
+	if (enable)
+		flags |= X509_V_FLAG_CRL_CHECK;
+	else
+		flags &= ~X509_V_FLAG_CRL_CHECK;
+	if(enable && crl_check_all)
+		flags |= X509_V_FLAG_CRL_CHECK_ALL;
+
+	X509_VERIFY_PARAM_set_flags(param, flags);
+
+	SSL_CTX_set1_param(ctx, param);
+	X509_VERIFY_PARAM_free(param);
+	return 0;
+}
+
+static int
+load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
+{
+	int crl_added = 0;
+	LM_DBG("Loading CRL from directory\n");
+
+	/*Get X509 store from SSL context*/
+	X509_STORE *store = SSL_CTX_get_cert_store(ctx);
+	if(!store) {
+		LM_ERR("Unable to get X509 store from ssl context\n");
+		return -1;
+	}
+
+	/*Load CRL to provided store*/
+	if (tls_load_crl_to_store(store, crl_directory, &crl_added) != 0){
+		LM_ERR("Could not load CRL");
+		return -1;
+	}
+
+	if (!crl_added) {
+		LM_ERR("No suitable CRL files found in directory %s\n", crl_directory);
+	}
+
+	/*Enable CRL checking*/
+	tls_set_crl_checking(ctx, crl_added > 0, crl_check_all);
+	return 0;
+}
 
 #define NUM_RETRIES 3
 /*
@@ -832,6 +962,16 @@ init_tls_domains(struct tls_domain *d)
 		}
 		if (load_certificate(d->ctx, d->cert_file) < 0)
 			return -1;
+
+		/**
+		* load crl from directory
+		*/
+		if (!d->crl_directory) {
+			LM_NOTICE("no crl for tls, using none");
+		} else {
+			if(load_crl(d->ctx, d->crl_directory, d->crl_check_all) < 0)
+				return -1;
+		}
 
 		/*
 		* load ca
