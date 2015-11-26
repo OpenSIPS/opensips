@@ -51,7 +51,8 @@ enum {
 	COMP_HOST = 1<<16,        /* hostname from subject/alternative */
 	COMP_URI  = 1<<17,        /* URI from subject/alternative */
 	COMP_E    = 1<<18,        /* Email address */
-	COMP_IP   = 1<<19         /* IP from subject/alternative */
+	COMP_IP   = 1<<19,         /* IP from subject/alternative */
+	COMP_SUBJECT_SERIAL = 1<<20    /*Serial name from Subject*/
 };
 
 
@@ -91,4 +92,6 @@ int tlsops_comp(struct sip_msg *msg, pv_param_t *param,
 int tlsops_alt(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
+int tlsops_get_peer_cn(struct sip_msg *msg, str *res,
+		char * buff, size_t buff_size);
 #endif
