@@ -761,9 +761,7 @@ inline static int mi_list_stat(struct mi_node *rpl, str *mod, stat_var *stat)
 		return -1;
 	}
 
-	if (stat->flags & STAT_IS_FUNC)
-		buf = "function";
-	if (stat->flags & STAT_NO_RESET)
+	if (stat->flags & (STAT_IS_FUNC|STAT_NO_RESET))
 		buf = "non-incremental";
 	else
 		buf = "incremental";
