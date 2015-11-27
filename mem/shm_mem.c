@@ -53,8 +53,8 @@ stat_export_t shm_stats[] = {
 	{"total_size" ,     STAT_IS_FUNC,    (stat_var**)shm_get_size  },
 
 #if defined(HP_MALLOC) && !defined(HP_MALLOC_FAST_STATS)
-	{"used_size" ,                 0,               &shm_used      },
-	{"real_used_size" ,            0,               &shm_rused     },
+	{"used_size" ,     STAT_NO_RESET,               &shm_used      },
+	{"real_used_size" ,STAT_NO_RESET,               &shm_rused     },
 #else
 	{"used_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_used  },
 	{"real_used_size" , STAT_IS_FUNC,    (stat_var**)shm_get_rused },
@@ -64,7 +64,7 @@ stat_export_t shm_stats[] = {
 	{"free_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_free  },
 
 #if defined(HP_MALLOC) && !defined(HP_MALLOC_FAST_STATS)
-	{"fragments" ,                 0,               &shm_frags     },
+	{"fragments" ,     STAT_NO_RESET,               &shm_frags     },
 #else
 	{"fragments" ,      STAT_IS_FUNC,    (stat_var**)shm_get_frags },
 #endif
