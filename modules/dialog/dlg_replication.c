@@ -605,7 +605,8 @@ error:
  * receive_binary_packet (callback) - receives a cmd_type, specifying the
  * purpose of the data encoded in the received UDP packet
  */
-void receive_prof_binary_packet(int packet_type, struct receive_info *ri, int server_id)
+void receive_prof_binary_packet(int packet_type, struct receive_info *ri,
+																int server_id)
 {
 	char *ip;
 	unsigned short port;
@@ -925,10 +926,9 @@ release:
 	return;
 }
 
-static int repl_prof_add(str *name, int has_value, str *value, unsigned int count)
+static int repl_prof_add(str *name, int has_value, str *value,
+													unsigned int count)
 {
-	LM_INFO("repl prof add %*.s\n", name->len, name->s);
-
 	int ret = 0;
 
 	if (bin_push_str(name) < 0)
@@ -986,7 +986,6 @@ int replicate_profiles_count(repl_prof_novalue_t *rp)
 
 static void repl_prof_timer_f(unsigned int ticks, void *param)
 {
-	LM_INFO("repl_prof_timer\n");
 	map_iterator_t it, del;
 	unsigned int count;
 	struct dlg_profile_table *profile;
@@ -1035,7 +1034,6 @@ next_entry:
 
 static void repl_prof_utimer_f(utime_t ticks, void *param)
 {
-	LM_INFO("repl_prof_utimer\n");
 #define REPL_PROF_TRYSEND() \
 	do { \
 		nr++; \
