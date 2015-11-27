@@ -432,7 +432,7 @@ int tlsops_get_peer_cn(struct sip_msg *msg, str *res, char * buff, size_t buff_s
 	e = X509_NAME_get_entry(name, index);
 	asn1 = X509_NAME_ENTRY_get_data(e);
 	text.len = ASN1_STRING_to_UTF8((unsigned char**)(void*)&text.s, asn1);
-	if (text.len < 0 || text.len >= 1024) {
+	if (text.len < 0 || text.len >= buff_size) {
 		LM_ERR("failed to convert ASN1 string\n");
 		goto err;
 	}
