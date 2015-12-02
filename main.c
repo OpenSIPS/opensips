@@ -986,11 +986,6 @@ try_again:
 	/*register builtin  modules*/
 	register_builtin_modules();
 
-	if (preinit_black_lists()!=0) {
-		LM_CRIT("failed to alloc black list's anchor\n");
-		goto error00;
-	}
-
 	/* init avps */
 	if (init_global_avps() != 0) {
 		LM_ERR("error while initializing avps\n");
@@ -1038,6 +1033,11 @@ try_again:
 	if (init_stats_collector() < 0) {
 		LM_ERR("failed to initialize statistics\n");
 		goto error;
+	}
+
+	if (preinit_black_lists()!=0) {
+		LM_CRIT("failed to alloc black list's anchor\n");
+		goto error00;
 	}
 
 	/* parse the config file, prior to this only default values

@@ -45,7 +45,6 @@ static unsigned int bl_default_marker = 0;
 
 static unsigned int max_heads  = 8*sizeof(bl_marker);
 static unsigned int used_heads = 0;
-static unsigned int no_shm = 1;
 
 
 static void delete_expired_routine(unsigned int ticks, void* param);
@@ -62,9 +61,9 @@ static mi_export_t mi_bl_cmds[] = {
 
 int preinit_black_lists(void)
 {
-	blst_heads = (struct bl_head*)pkg_malloc(max_heads*sizeof(struct bl_head));
+	blst_heads = (struct bl_head*)shm_malloc(max_heads*sizeof(struct bl_head));
 	if (blst_heads==NULL) {
-		LM_ERR("no more pkg memory!\n");
+		LM_ERR("no more shared memory!\n");
 		return -1;
 	}
 	memset( blst_heads, 0, max_heads*sizeof(struct bl_head));
@@ -79,60 +78,6 @@ int preinit_black_lists(void)
 
 int init_black_lists(void)
 {
-	struct bl_head *old_blst_heads;
-	struct bl_rule *head;
-	struct bl_rule *tail;
-	struct bl_rule *it, *it1;
-	unsigned int old_used_heads;
-	unsigned int i;
-
-	if (!no_shm) {
-		LM_CRIT("called twice\n");
-		return -1;
-	}
-	no_shm = 0;
-
-	old_blst_heads = blst_heads;
-	blst_heads = (struct bl_head*)shm_malloc(max_heads*sizeof(struct bl_head));
-	if (blst_heads==NULL) {
-		LM_ERR("no more shm memory!\n");
-		return -1;
-	}
-	memset( blst_heads, 0, max_heads * sizeof(struct bl_head));
-	old_used_heads = used_heads;
-
-	used_heads = 0;
-	bl_default_marker = 0;
-
-	/*for lists already created, init locks and move them into shm */
-	for( i=0 ; i<old_used_heads ; i++ ) {
-
-		/* duplicate in shm */
-		it = old_blst_heads[i].first;
-		head = tail = 0;
-
-		for( it1=it ; it ; it=it1 ) {
-			if (add_rule_to_list( &head, &tail, &it->ip_net,
-			&it->body, it->port, it->proto, it->flags)!=0) {
-				LM_ERR("failed to clone rule!\n");
-				return -1;
-			}
-
-			it1 = it->next;
-			pkg_free(it);
-		}
-
-		if (create_bl_head( old_blst_heads[i].owner, old_blst_heads[i].flags,
-		head, tail, &old_blst_heads[i].name )==NULL ) {
-				LM_ERR("failed to clone head!\n");
-				return -1;
-		}
-
-		pkg_free(old_blst_heads[i].name.s);
-	}
-
-	pkg_free(old_blst_heads);
-
 	/* register timer routine  */
 	if ( register_timer( "blcore-expire", delete_expired_routine, 0, 1,
 	TIMER_FLAG_SKIP_ON_DELAY)<0 ) {
@@ -173,12 +118,9 @@ struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 	}
 
 	/* copy list name */
-	if (no_shm)
-		blst_heads[i].name.s = (char*)pkg_malloc(name->len + 1);
-	else
-		blst_heads[i].name.s = (char*)shm_malloc(name->len + 1);
+	blst_heads[i].name.s = (char*)shm_malloc(name->len + 1);
 	if (blst_heads[i].name.s==NULL) {
-		LM_ERR("no more pkg memory!\n");
+		LM_ERR("no more shm memory!\n");
 		return NULL;
 	}
 	memcpy( blst_heads[i].name.s, name->s, name->len);
@@ -186,7 +128,7 @@ struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 	blst_heads[i].name.len = name->len;
 
 	/* build lock? */
-	if (!no_shm && !(flags&BL_READONLY_LIST)) {
+	if (!(flags&BL_READONLY_LIST)) {
 		if ( (blst_heads[i].lock=lock_alloc())==NULL ) {
 			LM_ERR("failed to create lock!\n");
 			shm_free(blst_heads[i].name.s);
@@ -219,9 +161,6 @@ void destroy_black_lists(void)
 {
 	unsigned int i;
 	struct bl_rule *p, *q;
-
-	if (no_shm)
-		return;
 
 	for(i = 0 ; i < used_heads ; i++){
 
@@ -366,14 +305,10 @@ int add_rule_to_list(struct bl_rule **first, struct bl_rule **last,
 
 
 	/* alloc memory */
-	if (no_shm)
-		p = (struct bl_rule*)pkg_malloc
-			(sizeof(struct bl_rule) + (body?(body->len + 1):0));
-	else
-		p = (struct bl_rule*)shm_malloc
+	p = (struct bl_rule*)shm_malloc
 			(sizeof(struct bl_rule) + (body?(body->len + 1):0));
 	if(!p){
-		LM_ERR("no more %s memory!\n", no_shm?"pkg":"shm");
+		LM_ERR("no more  shm memory!\n");
 		return -1;
 	}
 
@@ -429,13 +364,11 @@ static inline void rm_dups(struct bl_head *head,
 			if (q->next==NULL) *last=p;
 			if (p) {
 				p->next = q->next;
-				if (no_shm) pkg_free(q);
-				else shm_free(q);
+				shm_free(q);
 				q = p->next;
 			} else {
 				*first = q->next;
-				if (no_shm) pkg_free(q);
-				else shm_free(q);
+				shm_free(q);
 				q = *first;
 			}
 		} else {
