@@ -65,6 +65,8 @@ start() {
 		chmod 640 $configfile
 	fi
 
+	ulimit -n 262144
+
 	# there is something at end of this output which is needed to
 	# report proper [ OK ] status in Fedora scripts
 	daemon $opensips -u $prog -g $prog -P $pidfile -f $configfile $OPTIONS 2>/dev/null | tail -1
