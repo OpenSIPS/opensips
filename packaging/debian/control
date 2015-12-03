@@ -461,16 +461,6 @@ Description: Emerrgency call module for OpenSIPS
  the architecture i2 specification of the american entity NENA. (National
  Emergency Number Association).
 
-Package: opensips-rest-module
-Architecture: any
-Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), libcurl3-gnutls
-Description: HTTP REST client for OpenSIPS.
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides an HTTP REST client for OpenSIPS.
-
 Package: opensips-tls-module
 Architecture: any
 Depends: libssl-dev,
