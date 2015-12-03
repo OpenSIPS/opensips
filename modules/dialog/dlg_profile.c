@@ -35,6 +35,7 @@
 #include "dlg_hash.h"
 #include "dlg_profile.h"
 #include "dlg_repl_profile.h"
+#include "dlg_req_within.h"
 
 #define PROFILE_HASH_SIZE 16
 
@@ -1279,4 +1280,99 @@ struct mi_root * mi_list_all_profiles(struct mi_root *cmd_tree, void *param )
 	}
 
 	return rpl_tree;
+}
+
+struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
+	struct mi_node* node;
+	struct dlg_profile_table *profile;
+	str *profile_name;
+	str *value;
+	unsigned int i;
+	struct dlg_entry *d_entry;
+	struct dlg_cell    *cur_dlg;
+	struct dlg_profile_link *cur_link;
+	struct dialog_list *deleted = NULL, *delete_entry ;
+
+	node = cmd_tree->node.kids;
+	if (node==NULL || !node->value.s || !node->value.len)
+		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
+	profile_name = &node->value;
+
+	if (node->next) {
+		node = node->next;
+		if (!node->value.s || !node->value.len)
+			return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+		if (node->next)
+			return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
+		value = &node->value;
+	} else {
+		value = NULL;
+	}
+
+	profile = search_dlg_profile( profile_name );
+
+	if (profile==NULL)
+		return init_mi_tree( 404, MI_SSTR("Profile not found"));
+
+	for (i = 0; i < d_table->size; i++) {
+		d_entry = &(d_table->entries[i]);
+		lock_set_get(d_table->locks,d_entry->lock_idx);
+
+		cur_dlg = d_entry->first;
+		while( cur_dlg ) {
+
+			cur_link = cur_dlg ->profile_links;
+
+			while(cur_link) {
+				if( cur_link->profile == profile &&
+					( value == NULL ||
+					( value->len == cur_link->value.len
+					 && !strncmp(value->s,cur_link->value.s, value->len))
+					)) {
+					delete_entry = pkg_malloc(sizeof(struct dialog_list));
+					if (!delete_entry) {
+						LM_CRIT("no more pkg memory\n");
+						lock_set_release(d_table->locks,d_entry->lock_idx);
+						return init_mi_tree( 400, MI_SSTR(MI_INTERNAL_ERR));
+					}
+
+					delete_entry->dlg = cur_dlg;
+					delete_entry->next = deleted;
+					deleted = delete_entry;
+
+					ref_dlg_unsafe(cur_dlg, 1);
+
+					break;
+				}
+				cur_link = cur_link->next;
+			}
+			cur_dlg = cur_dlg->next;
+		}
+
+		lock_set_release(d_table->locks,d_entry->lock_idx);
+
+		delete_entry = deleted;
+		while(delete_entry){
+			init_dlg_term_reason(delete_entry->dlg,"MI Termination",sizeof("MI Termination")-1);
+
+			if ( dlg_end_dlg( delete_entry->dlg, NULL) ) {
+				while(delete_entry){
+					deleted = delete_entry;
+					delete_entry = delete_entry->next;
+					pkg_free(deleted);
+				}
+				LM_CRIT("eror while terminating dlg\n");
+				return init_mi_tree( 400, MI_SSTR("Dialog internal error"));
+			}
+
+			unref_dlg(delete_entry->dlg, 1);
+			deleted = delete_entry;
+			delete_entry = delete_entry->next;
+			pkg_free(deleted);
+		}
+
+		deleted = NULL;
+	}
+
+	return init_mi_tree(400, MI_SSTR(MI_OK));
 }
