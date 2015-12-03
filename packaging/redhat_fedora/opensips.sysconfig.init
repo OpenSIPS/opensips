@@ -1,6 +1,0 @@
-#
-# OpenSIPS variables
-#
-
-OPTIONS=""
-ulimit -n 262144

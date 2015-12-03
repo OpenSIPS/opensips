@@ -786,14 +786,14 @@ install -D -m 0644 -p packaging/redhat_fedora/%{name}.service $RPM_BUILD_ROOT%{_
 install -D -m 0644 -p packaging/redhat_fedora/%{name}.tmpfiles.conf $RPM_BUILD_ROOT%{_sysconfdir}/tmpfiles.d/%{name}.conf
 install -D -m 0755 -p packaging/redhat_fedora/%{name}.m4cfg $RPM_BUILD_ROOT%{_sbindir}/%{name}-m4cfg
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/run/%{name}
-install -D -p -m 644 packaging/redhat_fedora/%{name}.sysconfig.systemd $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/%{name}
 %else
 install -p -D -m 755 packaging/redhat_fedora/opensips.init $RPM_BUILD_ROOT%{_initrddir}/opensips
-install -D -p -m 644 packaging/redhat_fedora/%{name}.sysconfig.init $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/%{name}
 %endif
 echo -e "\nETCDIR=\"%{_sysconfdir}/opensips\"\n" \
   >> $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/opensipsctlrc
 
+#install sysconfig file
+install -D -p -m 644 packaging/fedora/%{name}.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/%{name}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
