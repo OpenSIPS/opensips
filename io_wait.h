@@ -838,13 +838,39 @@ again:
 			}
 		}
 #endif
+
 		for (r=0; r<n; r++) {
-			if (h->ep_array[r].events & EPOLLOUT) {
-				handle_io((struct fd_map*)h->ep_array[r].data.ptr,-1,IO_WATCH_WRITE);
-			} else if (h->ep_array[r].events & (EPOLLIN|EPOLLERR|EPOLLHUP)){
+			if (h->ep_array[r].events&EPOLLIN){
+				if (h->ep_array[r].events&EPOLLHUP) {
+					LM_NOTICE("EPOLLIN(read) event: epoll_wait() "
+							"set event EPOLLHUP - "
+							"connection closed by the remote peer!\n");
+				}
+
 				while((handle_io((struct fd_map*)h->ep_array[r].data.ptr,-1,IO_WATCH_READ)>0)
 					&& repeat);
-			}else{
+			}
+			else if (h->ep_array[r].events & EPOLLOUT) {
+				if (h->ep_array[r].events&EPOLLHUP) {
+					LM_NOTICE("EPOLLOUT(write) event: epoll_wait() "
+							"set event EPOLLHUP - "
+							"connection closed by the remote peer!\n");
+				}
+
+				handle_io((struct fd_map*)h->ep_array[r].data.ptr,-1,IO_WATCH_WRITE);
+			} else if (h->ep_array[r].events & EPOLLERR) {
+				LM_WARN("epoll_wait() set event EPOLLERR!"
+						"errno (%d): errmsg(%s)!"
+						"we still have to free the memory associated with this fd!\n",
+						errno, strerror(errno));
+
+				while((handle_io((struct fd_map*)h->ep_array[r].data.ptr,-1,IO_WATCH_READ)>0)
+					&& repeat);
+			} else {
+				if (h->ep_array[r].events & EPOLLHUP) {
+					LM_NOTICE("connection closed by the remote peer!\n");
+				}
+
 				LM_ERR("unexpected event %x on %d/%d, data=%p\n",
 					h->ep_array[r].events, r+1, n, h->ep_array[r].data.ptr);
 			}
