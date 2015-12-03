@@ -336,6 +336,8 @@ TCP_CONNECT_TIMEOUT	"tcp_connect_timeout"
 TCP_CON_LIFETIME    "tcp_connection_lifetime"
 TCP_LISTEN_BACKLOG   "tcp_listen_backlog"
 TCP_MAX_CONNECTIONS "tcp_max_connections"
+UDP_MAX_SOCKETS "udp_max_sockets"
+ASYNC_TCP_MAX_CONNECTIONS "tcp_async_max_connections"
 TCP_NO_NEW_CONN_BFLAG "tcp_no_new_conn_bflag"
 TCP_KEEPALIVE           "tcp_keepalive"
 TCP_KEEPCOUNT           "tcp_keepcount"
@@ -618,6 +620,10 @@ IMPORTFILE      "import_file"
 									return POLL_METHOD; }
 <INITIAL>{TCP_MAX_CONNECTIONS}  { count(); yylval.strval=yytext;
 									return TCP_MAX_CONNECTIONS; }
+<INITIAL>{UDP_MAX_SOCKETS}  { count(); yylval.strval=yytext;
+									return UDP_MAX_SOCKETS; }
+<INITIAL>{ASYNC_TCP_MAX_CONNECTIONS}  { count(); yylval.strval=yytext;
+									return ASYNC_TCP_MAX_CONNECTIONS; }
 <INITIAL>{TCP_KEEPALIVE}       { count(); yylval.strval=yytext; return TCP_KEEPALIVE; }
 <INITIAL>{TCP_KEEPCOUNT}       { count(); yylval.strval=yytext; return TCP_KEEPCOUNT; }
 <INITIAL>{TCP_KEEPIDLE}        { count(); yylval.strval=yytext; return TCP_KEEPIDLE; }

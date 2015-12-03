@@ -25,6 +25,7 @@
 
 #ifndef _NET_UDP_H_
 #define _NET_UDP_H_
+#define DEFAULT_UDP_MAX_SOCKETS 100 
 
 #include "../socket_info.h"
 
