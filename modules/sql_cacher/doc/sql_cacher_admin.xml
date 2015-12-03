@@ -1,4 +1,4 @@
-<!-- cfgutils Module User's Guide -->
+<!-- SQL Cacher Module User's Guide -->
 
 <chapter>
     
@@ -184,10 +184,10 @@ modparam("sql_cacher", "pvar_delimiter", " ")
 		The default value is <quote> </quote>(space).
 		</para>
 		<example>
-		<title><varname>spec_delimiter</varname> parameter usage</title>
+		<title><varname>columns_delimiter</varname> parameter usage</title>
 		<programlisting format="linespecific">
    
-modparam("sql_cacher", "spec_delimiter", ",")
+modparam("sql_cacher", "columns_delimiter", ",")
    
 </programlisting>
 	    </example>
@@ -322,4 +322,65 @@ $avp(a) = $sql_cached_value(caching_name:column_name_1:key1);
 		</section>
 
 </section>
+
+<section>
+	<title>Usage Example</title>
+	<para>
+	This section provides an usage example for the caching of an SQL table.
+	</para>
+	<para>
+	Suppose one in interested in caching the columns: <quote>host_name</quote>, 
+	<quote>reply_code</quote>, <quote>flags</quote> and <quote>next_domain</quote>
+	 from the <quote>carrierfailureroute</quote> table of the &osips; database.
+	</para>
+	<example>
+		<title>Example database content - carrierfailureroute table</title>
+		<programlisting format="linespecific">
+...
++----+---------+-----------+------------+--------+-----+-------------+
+| id | domain  | host_name | reply_code | flags | mask | next_domain |
++----+---------+-----------+------------+-------+------+-------------+
+|  1 |      99 |           | 408        |    16 |   16 |             |
+|  2 |      99 | gw1       | 404        |     0 |    0 | 100         |
+|  3 |      99 | gw2       | 50.        |     0 |    0 | 100         |
+|  4 |      99 |           | 404        |  2048 | 2112 | asterisk-1  |
++----+---------+-----------+------------+-------+------+-------------+
+...
+		</programlisting>
+	</example>
+	<para>
+		In the first place, the details of the caching must be provided by setting 
+		the module parameter <quote>cache_table</quote> in the &osips; configuration script.
+	</para>
+	<example>
+		<title>Setting the <varname>cache_table</varname> parameter</title>
+		<programlisting format="linespecific">
+modparam("sql_cacher", "cache_table",
+"id=carrier_fr_caching
+db_url=mysql://root:opensips@localhost/opensips
+cachedb_url=mongodb:mycluster://127.0.0.1:27017/my_db.col
+table=carrierfailureroute
+key=id
+columns=host_name reply_code flags next_domain")
+		</programlisting>
+	</example>
+	<para>
+		Next, the values of the cached columns ca be accessed through the <quote>$sql_cached_value</quote> PV.
+	</para>
+	<example>
+		<title>Accessing cached values</title>
+		<programlisting format="linespecific">
+...
+$avp(rc1) = $sql_cached_value(carrier_fr_caching:reply_code:1);
+$avp(rc2) = $sql_cached_value(carrier_fr_caching:reply_code:2);
+...
+var(some_id)=4;
+$avp(nd) = $sql_cached_value(carrier_fr_caching:next_domain:$var(some_id));
+...
+xlog("host name is: $sql_cached_value(carrier_fr_caching:host_name:2)");
+...
+		</programlisting>
+	</example>
+</section>
+
 </chapter>
