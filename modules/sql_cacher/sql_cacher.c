@@ -48,6 +48,7 @@ static struct mi_root* mi_reload(struct mi_root *cmd_tree, void *param);
 
 static str spec_delimiter;
 static str pvar_delimiter;
+static str columns_delimiter;
 static int fetch_nr_rows = DEFAULT_FETCH_NR_ROWS;
 static int full_caching_expire = DEFAULT_FULL_CACHING_EXPIRE;
 static int reload_interval = DEFAULT_RELOAD_INTERVAL;
@@ -65,6 +66,7 @@ gen_lock_t *queries_lock;
 static param_export_t mod_params[] = {
 	{"spec_delimiter", STR_PARAM, &spec_delimiter.s},
 	{"pvar_delimiter", STR_PARAM, &pvar_delimiter.s},
+	{"columns_delimiter", STR_PARAM, &columns_delimiter.s},
 	{"sql_fetch_nr_rows", INT_PARAM, &fetch_nr_rows},
 	{"full_caching_expire", INT_PARAM, &full_caching_expire},
 	{"reload_interval", INT_PARAM, &reload_interval},
@@ -141,6 +143,7 @@ static int parse_cache_entries(void)
 	char *p1, *p2, *tmp, *c_tmp1, *c_tmp2;
 	int col_idx;
 	int rc = -1;
+	int i;
 	str parse_str_copy;
 
 	for (it = to_parse_list; it; it = next) {
@@ -151,6 +154,7 @@ static int parse_cache_entries(void)
 			LM_ERR("No more memory for cache entry struct\n");
 			return -1;
 		}
+		new_entry->id.s = NULL;
 		new_entry->columns = NULL;
 		new_entry->nr_columns = 0;
 		new_entry->on_demand = 0;
@@ -164,20 +168,34 @@ static int parse_cache_entries(void)
 	do { \
 		(_ptr2) = memchr((_ptr1), '=', it->to_parse_str.len - \
 											((_ptr1) - it->to_parse_str.s)); \
-		if (!(_ptr2)) \
+		if (!(_ptr2)) { \
+			LM_ERR("expected: '=' after %.*s\n", (field_name_len), (field_name_str)); \
 			goto parse_err; \
+		} \
 		if (!memcmp((_ptr1), (field_name_str), (field_name_len))) { \
+			if (*((_ptr1)+(field_name_len)) != '=') { \
+				LM_ERR("expected: '=' after %.*s\n", (field_name_len), (field_name_str)); \
+				goto parse_err; \
+			} \
 			tmp = memchr((_ptr2) + 1, spec_delimiter.s[0], it->to_parse_str.len - \
 													((_ptr2) - it->to_parse_str.s)); \
-			if (!tmp) \
+			if (!tmp) { \
+				LM_ERR("expected: %c after value of %.*s\n", spec_delimiter.s[0], \
+					(field_name_len), (field_name_str)); \
 				goto parse_err; \
+			} \
 			new_entry->field.len = tmp - (_ptr2) - 1; \
-			if (new_entry->field.len <= 0) \
+			if (new_entry->field.len <= 0) { \
+				LM_ERR("expected value of: %.*s\n", (field_name_len), (field_name_str)); \
 				goto parse_err; \
+			} \
 			new_entry->field.s = shm_malloc(new_entry->field.len); \
 			memcpy(new_entry->field.s, p2 + 1, new_entry->field.len); \
-		} else \
+		} else { \
+			LM_ERR("expected: %.*s instead of: %.*s\n", (field_name_len), (field_name_str), \
+				(field_name_len), (_ptr1)); \
 			goto parse_err; \
+		} \
 	} while (0)
 
 		parse_str_copy = it->to_parse_str;
@@ -186,125 +204,163 @@ static int parse_cache_entries(void)
 		/* parse the id */
 		p1 = it->to_parse_str.s;
 		PARSE_TOKEN(p1, p2, id, ID_STR, ID_STR_LEN);
-
 		/* parse the db_url */
 		p1 = tmp + 1;
 		PARSE_TOKEN(p1, p2, db_url, DB_URL_STR, DB_URL_LEN);
-
 		/* parse the cachedb_url */
 		p1 = tmp + 1;
 		PARSE_TOKEN(p1, p2, cachedb_url, CACHEDB_URL_STR, CACHEDB_URL_LEN);
-
 		/* parse the table name */
 		p1 = tmp + 1;
 		PARSE_TOKEN(p1, p2, table, TABLE_STR, TABLE_STR_LEN);
-
 #undef PARSE_TOKEN
 
 		/* parse the key column name */
 		p1 = tmp + 1;
 		p2 = memchr(p1, '=', it->to_parse_str.len - (p1 - it->to_parse_str.s));
-		if (!p2)
+		if (!p2) {
+			LM_ERR("expected: '=' after %.*s\n", KEY_STR_LEN, KEY_STR);
 			goto parse_err;
+		}
 		if (!memcmp(p1, KEY_STR, KEY_STR_LEN)) {
-			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
+			if (*(p1+KEY_STR_LEN) != '=') { \
+				LM_ERR("expected: '=' after %.*s\n", KEY_STR_LEN, KEY_STR);
+				goto parse_err;
+			}
+
+			tmp = memchr(p2 + 1, spec_delimiter.s[0],
+						it->to_parse_str.len - (p2 - it->to_parse_str.s));
 			if (!tmp) /* delimiter not found, reached the end of the string to parse */
 				new_entry->key.len = it->to_parse_str.len - (p2 - it->to_parse_str.s + 1);
 			else
 				new_entry->key.len = tmp - p2 - 1;
 
-			if (new_entry->key.len <= 0)
+			if (new_entry->key.len <= 0) {
+				LM_ERR("expected value of: %.*s\n", KEY_STR_LEN, KEY_STR);
 				goto parse_err;
+			}
 
 			new_entry->key.s = shm_malloc(new_entry->key.len);
 			memcpy(new_entry->key.s, p2 + 1, new_entry->key.len);
 
 			if (!tmp)
 				goto end_parsing;
-		} else
+		} else {
+			LM_ERR("expected: %.*s instead of: %.*s\n", (KEY_STR_LEN), (KEY_STR), \
+				KEY_STR_LEN, p1);
 			goto parse_err;
+		}
 
 		/* parse the required column names if present */
 		p1 = tmp + 1;
 		p2 = memchr(p1, '=', it->to_parse_str.len - (p1 - it->to_parse_str.s));
-		if (!p2)
+		if (!p2) {
+			LM_ERR("expected: '='\n");
 			goto parse_err;
+		}
 		if (!memcmp(p1, COLUMNS_STR, COLUMNS_STR_LEN)) {
+			if (*(p1+COLUMNS_STR_LEN) != '=') { \
+				LM_ERR("expected: '=' after: %.*s\n", COLUMNS_STR_LEN, COLUMNS_STR);
+				goto parse_err;
+			}
 			col_idx = 0;
-			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
-
+			tmp = memchr(p2 + 1, spec_delimiter.s[0],
+						it->to_parse_str.len - (p2 - it->to_parse_str.s));
 			/* just count how many columns there are */
 			new_entry->nr_columns = 1;
-			c_tmp1 = memchr(p2 + 1, COLUMN_NAMES_DELIM, it->to_parse_str.len - (p2 - it->to_parse_str.s + 1));
+			c_tmp1 = memchr(p2 + 1, columns_delimiter.s[0],
+							it->to_parse_str.len - (p2 - it->to_parse_str.s + 1));
 			while (c_tmp1) {
 				new_entry->nr_columns++;
-				c_tmp1 = memchr(c_tmp1 + 1, COLUMN_NAMES_DELIM, it->to_parse_str.len - (c_tmp1 - it->to_parse_str.s + 1));
+				c_tmp1 = memchr(c_tmp1 + 1, columns_delimiter.s[0],
+								it->to_parse_str.len - (c_tmp1 - it->to_parse_str.s + 1));
 			}
 
 			if (new_entry->nr_columns > sizeof(long long)) {
-				LM_ERR("Too many columns, maximum number is %ld\n", sizeof(long long));
+				LM_WARN("Too many columns, maximum number is %ld\n", sizeof(long long));
 				goto parse_err;
 			}
-
 			/* allocate array of columns and actually parse */
-			new_entry->columns = shm_malloc(new_entry->nr_columns * sizeof(str));
+			new_entry->columns = shm_malloc(new_entry->nr_columns * sizeof(str*));
 
 			c_tmp1 = p2 + 1;
-			c_tmp2 = memchr(p2 + 1, COLUMN_NAMES_DELIM, it->to_parse_str.len - (p2 - it->to_parse_str.s + 1));
+			c_tmp2 = memchr(p2 + 1, columns_delimiter.s[0],
+						it->to_parse_str.len - (p2 - it->to_parse_str.s + 1));
 			while (c_tmp2) {
-				new_entry->columns[col_idx].len = c_tmp2 - c_tmp1;
-				if (new_entry->columns[col_idx].len <= 0)
+				new_entry->columns[col_idx] = shm_malloc(sizeof(str));
+				(*new_entry->columns[col_idx]).len = c_tmp2 - c_tmp1;
+				if ((*new_entry->columns[col_idx]).len <= 0) {
+					LM_ERR("expected name of column\n");
 					goto parse_err;
-				new_entry->columns[col_idx].s = shm_malloc(new_entry->columns[col_idx].len);
-				memcpy(new_entry->columns[col_idx].s, c_tmp1, new_entry->columns[col_idx].len);
+				}
+				(*new_entry->columns[col_idx]).s = shm_malloc((*new_entry->columns[col_idx]).len);
+				memcpy((*new_entry->columns[col_idx]).s, c_tmp1, (*new_entry->columns[col_idx]).len);
 
 				c_tmp1 = c_tmp2 + 1;
-				c_tmp2 = memchr(c_tmp1, COLUMN_NAMES_DELIM, it->to_parse_str.len - (c_tmp1 - it->to_parse_str.s + 1));
+				c_tmp2 = memchr(c_tmp1, columns_delimiter.s[0],
+							it->to_parse_str.len - (c_tmp1 - it->to_parse_str.s + 1));
 				col_idx++;
 			}
 
+			new_entry->columns[col_idx] = shm_malloc(sizeof(str));
 			if (!tmp)
-				new_entry->columns[col_idx].len = it->to_parse_str.len - (p2 - c_tmp1 + 1);		
+				(*new_entry->columns[col_idx]).len = it->to_parse_str.len - (p2 - c_tmp1 + 1);		
 			else
-				new_entry->columns[col_idx].len = tmp - c_tmp1;
+				(*new_entry->columns[col_idx]).len = tmp - c_tmp1;
 
-			if (new_entry->columns[col_idx].len <= 0)
-					goto parse_err;
-				new_entry->columns[col_idx].s = shm_malloc(new_entry->columns[col_idx].len);
-				memcpy(new_entry->columns[col_idx].s, c_tmp1, new_entry->columns[col_idx].len);
+			if ((*new_entry->columns[col_idx]).len <= 0) {
+				LM_ERR("expected name of column\n");
+				goto parse_err;
+			}
+			(*new_entry->columns[col_idx]).s = shm_malloc((*new_entry->columns[col_idx]).len);
+			memcpy((*new_entry->columns[col_idx]).s, c_tmp1, (*new_entry->columns[col_idx]).len);
 
 			if (!tmp) /* delimiter not found, reached the end of the string to parse */
 				goto end_parsing;
 			else {
 				p1 = tmp + 1;
 				p2 = memchr(p1, '=', it->to_parse_str.len - (p1 - it->to_parse_str.s));
-				if (!p2)
+				if (!p2) {
+					LM_ERR("expected: '='\n");
 					goto parse_err;
+				}
 			}
 		}
 
 		/* parse on demand parameter */
 		if (!memcmp(p1, ONDEMAND_STR, ONDEMAND_STR_LEN)) {
-			tmp = memchr(p2 + 1, spec_delimiter.s[0], it->to_parse_str.len - (p2 - it->to_parse_str.s));
+			if (*(p1+ONDEMAND_STR_LEN) != '=') { \
+				LM_ERR("expected: '=' after: %.*s\n", ONDEMAND_STR_LEN, ONDEMAND_STR);
+				goto parse_err;
+			}
+			tmp = memchr(p2 + 1, spec_delimiter.s[0],
+					it->to_parse_str.len - (p2 - it->to_parse_str.s));
 			str str_val;
 			if (!tmp) /* delimiter not found, reached the end of the string to parse */
 				str_val.len = it->to_parse_str.len - (p2 - it->to_parse_str.s + 1);
 			else
 				str_val.len = tmp - p2 - 1;
 
-			if (str_val.len <= 0)
+			if (str_val.len <= 0) {
+				LM_ERR("expected value of: %.*s\n", ONDEMAND_STR_LEN, ONDEMAND_STR);
 				goto parse_err;
+			}
 			str_val.s = p2 + 1; 
-			if(str2int(&str_val, &new_entry->on_demand))
+			if(str2int(&str_val, &new_entry->on_demand)) {
+				LM_ERR("expected integer value for: %.*s instead of: %.*s\n",
+						ONDEMAND_STR_LEN, ONDEMAND_STR, str_val.len, str_val.s);
 				goto parse_err;
+			}
 
 			if (!tmp) /* delimiter not found, reached the end of the string to parse */
 				goto end_parsing;
 			else {
 				p1 = tmp + 1;
 				p2 = memchr(p1, '=', it->to_parse_str.len - (p1 - it->to_parse_str.s));
-				if (!p2)
+				if (!p2) {
+					LM_ERR("expected: '='\n");
 					goto parse_err;
+				}
 			}
 		}
 
@@ -312,26 +368,22 @@ static int parse_cache_entries(void)
 		if (!memcmp(p1, EXPIRE_STR, EXPIRE_STR_LEN)) {
 			str str_val;
 			str_val.len = it->to_parse_str.len - (p2 - it->to_parse_str.s + 1);
-			if (str_val.len <= 0)
+			if (str_val.len <= 0) {
+				LM_ERR("expected value of: %.*s\n", EXPIRE_STR_LEN, EXPIRE_STR);
 				goto parse_err;
+			}
 			str_val.s = p2 + 1; 
-			if(str2int(&str_val, &new_entry->expire))
+			if(str2int(&str_val, &new_entry->expire)) {
+				LM_ERR("expected integer value for: %.*s instead of: %.*s\n",
+						EXPIRE_STR_LEN, EXPIRE_STR, str_val.len, str_val.s);
 				goto parse_err;
-
-			goto end_parsing;
+			}
+		} else {
+			LM_ERR("unknown parameter: %.*s\n",
+				(int)(it->to_parse_str.len - (p1 - it->to_parse_str.s)), p1);
+			goto parse_err;
 		}
 
-		goto end_parsing;
-
-parse_err:
-		LM_ERR("Invalid cache entry specification: %.*s\n", it->to_parse_str.len, it->to_parse_str.s);
-		if (new_entry->columns)
-			shm_free(new_entry->columns);
-		shm_free(new_entry);
-
-		pkg_free(parse_str_copy.s);
-		pkg_free(it);
-		continue;
 end_parsing:
 		new_entry->next = NULL;
 		if (*entry_list)
@@ -341,6 +393,27 @@ end_parsing:
 		pkg_free(parse_str_copy.s);
 		pkg_free(it);
 		rc = 0;
+		continue;
+parse_err:
+		if (!new_entry->id.s)
+			LM_WARN("invalid cache entry specification: %.*s\n",
+				it->to_parse_str.len, it->to_parse_str.s);
+		else
+			LM_WARN("invalid cache entry specification for id: %.*s\n",
+				new_entry->id.len, new_entry->id.s);
+
+		if (new_entry->columns) {
+			for (i=0; i < new_entry->nr_columns; i++)
+				if (new_entry->columns[i]) {
+					if ((*new_entry->columns[i]).s)
+						shm_free((*new_entry->columns[i]).s);
+					shm_free(new_entry->columns[i]);
+				}
+			shm_free(new_entry->columns);
+		}
+		shm_free(new_entry);
+		pkg_free(parse_str_copy.s);
+		pkg_free(it);
 	}
 
 	return rc;
@@ -530,9 +603,12 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls, db_
 	memcpy(cdb_key.s + c_entry->id.len, str_key.s, str_key.len);
 
 	if (db_hdls->cdbf.set(db_hdls->cdbcon, &cdb_key, &cdb_val, c_entry->expire) < 0) {
-		LM_ERR("Failed to insert the values for key: %.*s in cachedb\n", str_key.len, str_key.s);
+		LM_ERR("Failed to insert the values for key: %.*s in cachedb\n",
+			str_key.len, str_key.s);
 		return -1;
 	}
+	pkg_free(cdb_key.s);
+	pkg_free(cdb_val.s);
 
 	return 0;
 }
@@ -544,7 +620,6 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 	str cdb_test_key = str_init(CDB_TEST_KEY_STR);
 	str cdb_test_val = str_init(CDB_TEST_VAL_STR);
 	db_key_t query_key_col;
-	db_key_t *query_cols = NULL;
 	db_val_t query_key_val;
 	db_res_t *sql_res;
 	str cachedb_res;
@@ -625,24 +700,25 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 
 	query_key_col = &c_entry->key;
 
-	query_cols = pkg_malloc(c_entry->nr_columns * sizeof(db_key_t));
-	if (!query_cols) {
-		LM_ERR("No more pkg memory\n");
-		new_db_hdls->db_funcs.close(new_db_hdls->db_con);
-		new_db_hdls->db_con = 0;
-		return NULL;
-	}
-
-	for (i = 0; i < c_entry->nr_columns; i++)
-		query_cols[i] = &(c_entry->columns[i]);
-
 	if (new_db_hdls->db_funcs.query(new_db_hdls->db_con, &query_key_col, 0, &query_key_val,
-					query_cols, 1, c_entry->nr_columns, 0, &sql_res) != 0) {
+					c_entry->columns, 1, c_entry->nr_columns, 0, &sql_res) != 0) {
 		LM_ERR("Failure to issuse test query to SQL DB: %.*s\n",
 			c_entry->db_url.len, c_entry->db_url.s);
 		new_db_hdls->db_funcs.close(new_db_hdls->db_con);
 		new_db_hdls->db_con = 0;
 		return NULL;
+	}
+
+	/* no columns specified in cache entry -> cache entire table and get column names from the sql result */
+	if (!c_entry->columns) {
+		c_entry->nr_columns = RES_COL_N(sql_res);
+		c_entry->columns = shm_malloc(c_entry->nr_columns * sizeof(str*));
+		for (i = 0; i < c_entry->nr_columns; i++) {
+			c_entry->columns[i] = shm_malloc(sizeof(str));
+			(*c_entry->columns[i]).len = RES_NAMES(sql_res)[i]->len;
+			(*c_entry->columns[i]).s = shm_malloc((*c_entry->columns[i]).len);
+			memcpy((*c_entry->columns[i]).s, RES_NAMES(sql_res)[i]->s, (*c_entry->columns[i]).len);
+		}
 	}
 
 	new_db_hdls->db_funcs.free_result(new_db_hdls->db_con, sql_res);
@@ -664,7 +740,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls, int
 	}
 	query_cols[0] = &(c_entry->key);
 	for (i=0; i < c_entry->nr_columns; i++)
-		query_cols[i+1] = &(c_entry->columns[i]);
+		query_cols[i+1] = &((*c_entry->columns[i]));
 
 	/* query the entire table */
 	if (db_hdls->db_funcs.use_table(db_hdls->db_con, &c_entry->table) < 0) {
@@ -695,9 +771,12 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls, int
 		}
 	}
 
+	pkg_free(query_cols);
+
 	if (RES_ROW_N(sql_res) == 0) {
-		LM_DBG("Table: %.*s is empty!\n", c_entry->table.len, c_entry->table.s);
-		goto error;
+		LM_WARN("Table: %.*s is empty!\n", c_entry->table.len, c_entry->table.s);
+		db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
+		return 0;
 	}
 	row = RES_ROWS(sql_res);
 	values = ROW_VALUES(row);
@@ -712,7 +791,9 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls, int
 			row = RES_ROWS(sql_res) + i;
 			values = ROW_VALUES(row);
 			if (!VAL_NULL(values))
-				insert_in_cachedb(c_entry, db_hdls, values ,values + 1, reload_version, ROW_N(row) - 1);
+				if (insert_in_cachedb(c_entry, db_hdls, values ,values + 1,
+									reload_version, ROW_N(row) - 1) < 0)
+					return -1;
 		}
 
 		if (DB_CAPABILITY(db_hdls->db_funcs, DB_CAP_FETCH)) {
@@ -741,11 +822,10 @@ error:
  */
 static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key, db_val_t **values, db_res_t **sql_res)
 {
-	db_key_t *query_cols = NULL, key_col;
+	db_key_t key_col;
 	db_row_t *row;
 	db_val_t key_val;
 	str src_key, null_val;
-	int i;
 
 	src_key.len = c_entry->id.len + key.len;
 	src_key.s = pkg_malloc(src_key.len);
@@ -756,33 +836,25 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key, db_
 	memcpy(src_key.s, c_entry->id.s, c_entry->id.len);
 	memcpy(src_key.s + c_entry->id.len, key.s, key.len);
 
-	query_cols = pkg_malloc(c_entry->nr_columns * sizeof(db_key_t));
-	if (!query_cols) {
-		LM_ERR("No more pkg memory\n");
-		return -1;
-	}
-	for (i=0; i < c_entry->nr_columns; i++)
-		query_cols[i] = &(c_entry->columns[i]);
 	key_col = &(c_entry->key);
 	VAL_NULL(&key_val) = 0;
 	VAL_TYPE(&key_val) = DB_STR;
 	VAL_STR(&key_val) = key;
 
 	if (db_hdls->db_funcs.use_table(db_hdls->db_con, &c_entry->table) < 0) {
-		LM_ERR("Invalid table name\n");
+		LM_ERR("Invalid table name: %.*s\n", c_entry->table.len, c_entry->table.s);
 		db_hdls->db_funcs.close(db_hdls->db_con);
 		db_hdls->db_con = 0;
 		return -1;
 	}
 	CON_PS_REFERENCE(db_hdls->db_con) = &db_hdls->query_ps;
 	if (db_hdls->db_funcs.query(db_hdls->db_con,
-		&key_col, 0, &key_val, query_cols, 1,
+		&key_col, 0, &key_val, c_entry->columns, 1,
 		c_entry->nr_columns, 0, sql_res) != 0) {
-		LM_ERR("Failure to issue query to SQL DB\n");
+		LM_ERR("Failure to issue query to SQL DB: %.*s\n",
+			c_entry->db_url.len, c_entry->db_url.s);
 		goto sql_error;
 	}
-
-	pkg_free(query_cols);
 
 	if (RES_ROW_N(*sql_res) == 0) {
 		LM_WARN("key %.*s not found in SQL db\n", key.len, key.s);
@@ -811,7 +883,9 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key, db_
 		LM_ERR("SQL column has unsupported type\n");
 		goto sql_error;
 	}
-	insert_in_cachedb(c_entry, db_hdls, &key_val, *values, 0, ROW_N(row));
+
+	if (insert_in_cachedb(c_entry, db_hdls, &key_val, *values, 0, ROW_N(row)) < 0)
+		return -1;
 
 	return 0;
 
@@ -974,23 +1048,21 @@ static int mod_init(void)
 	if (!spec_delimiter.s)
 		spec_delimiter.s = DEFAULT_SPEC_DELIM;
 
-	if (!pvar_delimiter.s) {
-		pvar_delimiter.s = pkg_malloc(sizeof(char));	
-		if (!pvar_delimiter.s) {
-			LM_ERR("No more memory for pvar_delimiter\n");
-			return -1;
-		}
-		pvar_delimiter.s[0] = DEFAULT_PVAR_DELIM;
-	} else
-		pvar_delimiter.len = strlen(pvar_delimiter.s);
+	if (!pvar_delimiter.s)
+		pvar_delimiter.s = DEFAULT_PVAR_DELIM;
+
+	if (!columns_delimiter.s)
+		columns_delimiter.s = DEFAULT_COLUMNS_DELIM;
 
 	if (full_caching_expire <= 0) {
 		full_caching_expire = DEFAULT_FULL_CACHING_EXPIRE;
-		LM_WARN("Invalid full_caching_expire parameter, setting default value: %d sec\n", DEFAULT_FULL_CACHING_EXPIRE);
+		LM_WARN("Invalid full_caching_expire parameter, "
+			"setting default value: %d sec\n", DEFAULT_FULL_CACHING_EXPIRE);
 	}
 	if (reload_interval <= 0 || reload_interval >= full_caching_expire) {
 		reload_interval = DEFAULT_RELOAD_INTERVAL;
-		LM_WARN("Invalid reload_interval parameter, setting default value: %d sec\n", DEFAULT_RELOAD_INTERVAL);
+		LM_WARN("Invalid reload_interval parameter, "
+			"setting default value: %d sec\n", DEFAULT_RELOAD_INTERVAL);
 	}
 
 	entry_list =  shm_malloc(sizeof(cache_entry_t*));
@@ -1015,6 +1087,11 @@ static int mod_init(void)
 	if (!lock_init(queries_lock)) {
 		LM_ERR("Failed to init queries_lock\n");
 		return -1;
+	}
+
+	if (!to_parse_list) {
+		LM_WARN("No table to cache\n");
+		return 0;
 	}
 
 	if (parse_cache_entries() < 0) {
@@ -1227,7 +1304,7 @@ static void optimize_cdb_decode(pv_name_fix_t *pv_name)
 	long long one = 1;
 
 	for (i = 0; i < pv_name->c_entry->nr_columns; i++) {
-		if (!memcmp(pv_name->c_entry->columns[i].s, pv_name->col.s, pv_name->col.len)) {
+		if (!memcmp((*pv_name->c_entry->columns[i]).s, pv_name->col.s, pv_name->col.len)) {
 			pv_name->col_nr = i;
 
 			prev_cols = 0;
@@ -1270,7 +1347,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 	int i, rld_vers_dummy, rc;
 
 	for (i = 0; i < pv_name->c_entry->nr_columns; i++)
-		if (!memcmp(pv_name->c_entry->columns[i].s, pv_name->col.s, pv_name->col.len)) {
+		if (!memcmp((*pv_name->c_entry->columns[i]).s, pv_name->col.s, pv_name->col.len)) {
 			pv_name->col_nr = i;
 			break;
 		}
@@ -1454,9 +1531,9 @@ static int parse_pv_name_s(pv_name_fix_t *pv_name, str *name_s)
 
 		last = name_s->s[name_s->len];
 		p1 = name_s->s;
-		PARSE_TOKEN(p1, p2, id, DEFAULT_PVAR_DELIM);
+		PARSE_TOKEN(p1, p2, id, pvar_delimiter.s[0]);
 		p1 = p2 + 1;
-		PARSE_TOKEN(p1, p2, col, DEFAULT_PVAR_DELIM);
+		PARSE_TOKEN(p1, p2, col, pvar_delimiter.s[0]);
 		p1 = p2 + 1;
 		PARSE_TOKEN(p1, p2, key, last);
 
@@ -1670,8 +1747,10 @@ static void destroy(void)
 		shm_free(c_tmp->cachedb_url.s);
 		shm_free(c_tmp->table.s);
 		shm_free(c_tmp->key.s);
-		for (i = 0; i < c_tmp->nr_columns; i++)
-			shm_free(c_tmp->columns[i].s);
+		for (i = 0; i < c_tmp->nr_columns; i++) {
+			shm_free((*c_tmp->columns[i]).s);
+			shm_free(c_tmp->columns[i]);
+		}
 		shm_free(c_tmp->columns);
 		lock_destroy_rw(c_tmp->ref_lock);
 		shm_free(c_tmp);

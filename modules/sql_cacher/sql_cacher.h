@@ -29,26 +29,26 @@
 #include "../../db/db.h"
 #include "../../cachedb/cachedb.h"
 
-#define DEFAULT_SPEC_DELIM " "
-#define COLUMN_NAMES_DELIM ','
-#define DEFAULT_PVAR_DELIM ':'
+#define DEFAULT_SPEC_DELIM "\n"
+#define DEFAULT_COLUMNS_DELIM " "
+#define DEFAULT_PVAR_DELIM ":"
 
 #define ID_STR "id"
-#define ID_STR_LEN 2
+#define ID_STR_LEN ((int)(sizeof(ID_STR) - 1))
 #define DB_URL_STR "db_url"
-#define DB_URL_LEN 6
+#define DB_URL_LEN ((int)(sizeof(DB_URL_STR) - 1))
 #define CACHEDB_URL_STR "cachedb_url"
-#define CACHEDB_URL_LEN 6
+#define CACHEDB_URL_LEN ((int)(sizeof(CACHEDB_URL_STR) - 1))
 #define TABLE_STR "table"
-#define TABLE_STR_LEN 5
+#define TABLE_STR_LEN ((int)(sizeof(TABLE_STR) - 1))
 #define KEY_STR "key"
-#define KEY_STR_LEN 3
+#define KEY_STR_LEN ((int)(sizeof(KEY_STR) - 1))
 #define COLUMNS_STR "columns"
-#define COLUMNS_STR_LEN 7
+#define COLUMNS_STR_LEN ((int)(sizeof(COLUMNS_STR) - 1))
 #define ONDEMAND_STR "on_demand"
-#define ONDEMAND_STR_LEN 9
+#define ONDEMAND_STR_LEN ((int)(sizeof(ONDEMAND_STR) - 1))
 #define EXPIRE_STR "expire"
-#define EXPIRE_STR_LEN 6
+#define EXPIRE_STR_LEN ((int)(sizeof(EXPIRE_STR) - 1))
 
 #define DEFAULT_ON_DEMAND_EXPIRE 3600
 #define DEFAULT_FULL_CACHING_EXPIRE 86400 /* 24h */
@@ -65,7 +65,7 @@ typedef struct _cache_entry {
 	str cachedb_url;
 	str table;
 	str key;
-	str *columns;
+	str **columns;
 	unsigned int nr_columns;
 	unsigned int on_demand;
 	unsigned int expire;

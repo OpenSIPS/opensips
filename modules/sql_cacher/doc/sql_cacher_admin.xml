@@ -10,26 +10,26 @@
 	The sql_cacher module introduces the possibility to cache data from a
 	SQL-based database (using different &osips; modules which implement the DB API)
 	into a cache system implemented in &osips; through the CacheDB Interface.
-	This is done by specifying the databases URLs, SQL table to be used, required
-	columns and other details in the &osips; configuration script.
+	This is done by specifying the databases URLs, SQL table to be used, desired
+	columns to be cached and other details in the &osips; configuration script.
 	</para>
 	<para>
 	The cached data is available in the script through the read-only pseudovariable
 	<quote>$sql_cached_value</quote> similar to a Key-Value system. A specified
 	column from the SQL table has the role of <quote>key</quote> therefore the value
-	of this column along with the name of the desired column are provided as
+	of this column along with the name of a required column are provided as
 	"parameters" to the pseudovariable returning the appropriate value of the column.
 	</para>
 	<para>
 	There are two types of caching available:
 	<itemizedlist>
 		<listitem><para>
-		<emphasis>full caching</emphasis> - the entire SQL table is loaded into the
-		cache at &osips; startup;
+		<emphasis>full caching</emphasis> - the entire SQL table (all the rows) is loaded
+		into the cache at &osips; startup;
 		</para></listitem>
 		<listitem><para>
 		<emphasis>on demand</emphasis> - the rows of the SQL table are loaded at runtime
-		when certain columns from those rows are requested.
+		when appropriate keys are requested.
 		</para></listitem>
 	</itemizedlist>
 	</para>
@@ -83,11 +83,12 @@
 			<emphasis>table</emphasis> : SQL database table name
 			</para></listitem>
 			<listitem><para>
-			<emphasis>key</emphasis> : SQL database column name of the key column
+			<emphasis>key</emphasis> : SQL database column name of the <quote>key</quote> column
 			</para></listitem>
 			<listitem><para>
-			<emphasis>columns</emphasis> : names of the desired columns from the
-			SQL database separated by <quote>,</quote>
+			<emphasis>columns</emphasis> : names of the columns to be cached from the
+			SQL database, separated by a configurable delimiter
+			<para>If not present, all the columns from the table will be cached</para>
 			</para></listitem>
 			<listitem><para>
 			<emphasis>on_demand</emphasis> : specifies the type of caching:
@@ -109,7 +110,11 @@
 		</itemizedlist>
 		</para>
 		<para>
-		Overall, the parameter does not have a default value, it must be set at least once.
+		The parameters must be given in the exact order specified above.
+		</para>
+		<para>
+		Overall, the parameter does not have a default value, it must be set
+		at least once in order to cache any table.
 		</para>
 		<example>
 		<title><varname>cache_table</varname> parameter usage</title>
@@ -121,7 +126,7 @@ db_url=mysql://root:opensips@localhost/opensips_2_2
 cachedb_url=mongodb:mycluster://127.0.0.1:27017/db.col
 table=table_name
 key=column_name_0
-columns=column_name_1,column_name_2,column_name_3
+columns=column_name_1 column_name_2 column_name_3
 on_demand=0")
    
 </programlisting>
@@ -136,7 +141,7 @@ on_demand=0")
 		must be a single character.
 		</para>
 		<para>
-		The default value is <quote> </quote>(space).
+		The default value is newline.
 		</para>
 		<example>
 		<title><varname>spec_delimiter</varname> parameter usage</title>
@@ -152,8 +157,8 @@ modparam("sql_cacher", "spec_delimiter", "\n")
 		<title><varname>pvar_delimiter</varname> (string)</title>
 		<para>
 		The delimiter to be used in the <quote>$sql_cached_value</quote>
-		pseudovariable to separate the value of the key and the desired column name. It
-		must be a single character.
+		pseudovariable to separate the caching id, the desired column name
+		and the value of the key. It must be a single character.
 		</para>
 		<para>
 		The default value is <quote>:</quote>.
@@ -162,7 +167,27 @@ modparam("sql_cacher", "spec_delimiter", "\n")
 		<title><varname>pvar_delimiter</varname> parameter usage</title>
 		<programlisting format="linespecific">
    
-modparam("sql_cacher", "pvar_delimiter", ";")
+modparam("sql_cacher", "pvar_delimiter", " ")
+   
+</programlisting>
+	    </example>
+	</section>
+
+	<section>
+		<title><varname>columns_delimiter</varname> (string)</title>
+		<para>
+		The delimiter to be used in the <emphasis>columns</emphasis> subparameter of
+		the caching entry specification provided in the <emphasis>cache_table</emphasis>
+		parameter to separate the desired columns names. It must be a single character.
+		</para>
+		<para>
+		The default value is <quote> </quote>(space).
+		</para>
+		<example>
+		<title><varname>spec_delimiter</varname> parameter usage</title>
+		<programlisting format="linespecific">
+   
+modparam("sql_cacher", "spec_delimiter", ",")
    
 </programlisting>
 	    </example>
@@ -276,13 +301,13 @@ $ opensipsctl fifo sql_cacher_reload caching_name key
 					<quote>pvar_delimiter</quote> parameter
 					</para></listitem>
 					<listitem><para>
-					<emphasis>id</emphasis> : cache entry id
+					<emphasis>id</emphasis>  : cache entry id
 					</para></listitem>
 					<listitem><para>
-					<emphasis>col</emphasis> : name of the column
+					<emphasis>col</emphasis> : name of the required column
 					</para></listitem>
 					<listitem><para>
-					<emphasis>key</emphasis> : value of the key column from the SQL table
+					<emphasis>key</emphasis> : value of the <quote>key</quote> column
 					</para></listitem>
 				</itemizedlist>
 			</para>
