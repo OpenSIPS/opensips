@@ -258,39 +258,16 @@ static inline module_stats* __add_stat_module( char *module, int unsafe)
 
 /***************** Init / Destroy STATS support functions *******************/
 
-struct pending_stat_name {
-	str* name;
-	struct pending_stat_name *next;
-};
-struct pending_stat_name *pending_name_list = NULL;
 
 int clone_pv_stat_name(str *name, str *clone)
 {
-	struct pending_stat_name *psn;
-
-	if (collector) {
-		/* if collector init'ed, simply clone it in shm */
-		clone->s = (char*)shm_malloc(name->len);
-		if (clone->s==NULL) {
-			LM_ERR("failed to allocated more shm mem (%d)\n",name->len);
-			return -1;
-		}
-		clone->len = name->len;
-		memcpy(clone->s,name->s,name->len);
-	} else {
-		/* just link it, we will move it to shm when callector available */
-		*clone = *name;
-		/* add to pending list */
-		psn = (struct pending_stat_name *)pkg_malloc( sizeof(struct pending_stat_name) );
-		if (psn==NULL) {
-			LM_ERR("failed to allocated more shm mem (%u)\n",
-				(unsigned int)sizeof(struct pending_stat_name));
-			return -1;
-		}
-		psn->name = clone;
-		psn->next = pending_name_list;
-		pending_name_list = psn;
+	clone->s = (char*)shm_malloc(name->len);
+	if (clone->s==NULL) {
+		LM_ERR("failed to allocated more shm mem (%d)\n",name->len);
+		return -1;
 	}
+	clone->len = name->len;
+	memcpy(clone->s,name->s,name->len);
 
 	return 0;
 }
@@ -298,9 +275,7 @@ int clone_pv_stat_name(str *name, str *clone)
 
 int init_stats_collector(void)
 {
-	struct pending_stat_name *psn, *next;
 	module_stats *dy_mod;
-	char *s;
 
 	/* init the collector */
 	collector = (stats_collector*)shm_malloc_unsafe(sizeof(stats_collector));
@@ -309,21 +284,6 @@ int init_stats_collector(void)
 		goto error;
 	}
 	memset( collector, 0 , sizeof(stats_collector));
-
-	/* move pending stat names in shm */
-	for ( psn=pending_name_list ; psn ; psn=next ) {
-		next = psn->next;
-
-		s = (char*)shm_malloc_unsafe( psn->name->len );
-		if (s==NULL) {
-			LM_ERR("no more shm mem (%d)\n", psn->name->len);
-			goto error;
-		}
-		memcpy( s, psn->name->s, psn->name->len);
-		psn->name->s = s;
-
-		pkg_free(psn);
-	}
 
 	/*
 	 * register shm statistics in an unsafe manner, as some allocators

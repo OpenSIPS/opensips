@@ -326,8 +326,6 @@ SIP_WARNING sip_warning
 SERVER_SIGNATURE server_signature
 SERVER_HEADER server_header
 USER_AGENT_HEADER user_agent_header
-USER		"user"|"uid"
-GROUP		"group"|"gid"
 CHROOT		"chroot"
 WDIR		"workdir"|"wdir"
 MHOMED		mhomed
@@ -603,8 +601,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{QUERYBUFFERSIZE}	{ count(); yylval.strval=yytext; return QUERYBUFFERSIZE; }
 <INITIAL>{QUERYFLUSHTIME}	{ count(); yylval.strval=yytext; return QUERYFLUSHTIME; }
 <INITIAL>{SIP_WARNING}	{ count(); yylval.strval=yytext; return SIP_WARNING; }
-<INITIAL>{USER}		{ count(); yylval.strval=yytext; return USER; }
-<INITIAL>{GROUP}	{ count(); yylval.strval=yytext; return GROUP; }
 <INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
 <INITIAL>{MHOMED}	{ count(); yylval.strval=yytext; return MHOMED; }
