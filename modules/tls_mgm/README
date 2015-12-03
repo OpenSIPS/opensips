@@ -58,6 +58,8 @@ Marius Cristian Eseanu
         1.5. Exported Functions
 
               1.5.1. is_peer_verified
+              1.5.2. tls_check_to
+              1.5.3. tls_check_from
 
         1.6. Exported MI Functions
 
@@ -199,6 +201,8 @@ Marius Cristian Eseanu
    1.32. Example of $tls_[peer|my]_[subject|issuer]
    1.33. Script with TLS support
    1.34. Example of TLS logging
+   1.35. Example of tls_check_to
+   1.36. Example of tls_check_from
 
 Chapter 1. Admin Guide
 
@@ -269,6 +273,44 @@ if (is_peer_verified()) {
         xlog("L_INFO","request from verified TLS peer\n");
 } else {
         xlog("L_INFO","request not verified\n");
+}
+...
+
+1.5.2.  tls_check_to
+
+   Check To username against peer certificate CN.
+   Returns 1 on success, negative on failure.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.35. tls_check_to usage
+...
+# Authenticate for REGISTER
+if (proto==TLS && is_peer_verified()){
+    if (!tls_check_to()){
+        xlog("L_NOTICE","[$pr:$fU@$si:$sp]: Processing '$rm' auth TO check failed\n");
+        sl_send_reply("403","Forbidden auth ID");
+        exit;
+    }
+}
+...
+
+1.5.3.  tls_check_from
+
+   Check From username against peer certificate CN.
+   Returns 1 on success, negative on failure.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.35. is_peer_verified usage
+...
+# Authenticate for MESSAGE / INVITE
+if (proto==TLS && tls_check_from()){
+    if (!tls_check_from()){
+        xlog("L_NOTICE","[$pr:$fU@$si:$sp]: Processing '$rm' auth FROM check failed\n");
+        sl_send_reply("403","Forbidden auth ID");
+        exit;
+    }
 }
 ...
 

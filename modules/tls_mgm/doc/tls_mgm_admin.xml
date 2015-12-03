@@ -114,6 +114,60 @@ if (is_peer_verified()) {
 </programlisting>
 		</example>
 	</section>
+		<section>
+			<title>
+				<function moreinfo="none">tls_check_to</function>
+			</title>
+			<para>
+				Check To username against peer certificate CN.
+				Returns 1 on success, negative on failure.
+			</para>
+			<para>
+				This function can be used from REQUEST_ROUTE.
+			</para>
+			<example>
+				<title><function>tls_check_to</function> usage</title>
+				<programlisting format="linespecific">
+...
+# Authenticate for REGISTER
+if (proto==TLS && is_peer_verified()){
+	if (!tls_check_to()){
+		xlog("L_NOTICE","[$pr:$fU@$si:$sp]: Processing '$rm' auth TO check failed\n");
+		sl_send_reply("403","Forbidden auth ID");
+		exit;
+	}
+}
+...
+				</programlisting>
+			</example>
+		</section>
+	<section>
+		<title>
+		<function moreinfo="none">tls_check_from</function>
+		</title>
+		<para>
+			Check From username against peer certificate CN.
+			Returns 1 on success, negative on failure.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>tls_check_from</function> usage</title>
+		<programlisting format="linespecific">
+...
+# Authenticate for MESSAGE / INVITE
+if (proto==TLS && tls_check_from()){
+	if (!tls_check_from()){
+		xlog("L_NOTICE","[$pr:$fU@$si:$sp]: Processing '$rm' auth FROM check failed\n");
+		sl_send_reply("403","Forbidden auth ID");
+		exit;
+	}
+}
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
         <section>

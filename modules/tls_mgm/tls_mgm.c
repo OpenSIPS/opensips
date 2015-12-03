@@ -34,6 +34,7 @@
 #include "tls_select.h"
 #include "tls.h"
 #include "api.h"
+#include "../../parser/parse_from.h"
 
 #define DB_CAP DB_CAP_QUERY | DB_CAP_UPDATE 
 #define len(s)	s == NULL?0:strlen(s)
@@ -77,6 +78,11 @@ int tls_db_enabled = 0;
 
 /* definition of exported functions */
 static int is_peer_verified(struct sip_msg*, char*, char*);
+static int tls_check_to(struct sip_msg*, char*, char*);
+static int tls_check_from(struct sip_msg*, char*, char*);
+#define ERR_USERNOTFOUND  	-4		/* No found username error */
+#define ERR_SPOOFEDUSER   	-9		/* Spoofed User Error */
+#define ERR_NOMATCH	    	-10		/* No match Error */
 
 static param_export_t params[] = {
 	{ "client_domain_avp",     STR_PARAM,         &tls_domain_avp            },
@@ -118,6 +124,10 @@ static param_export_t params[] = {
 
 static cmd_export_t cmds[] = {
 	{"is_peer_verified", (cmd_function)is_peer_verified,   0, 0, 0,
+		REQUEST_ROUTE},
+	{"tls_check_to", (cmd_function)tls_check_to,   0, 0, 0,
+		REQUEST_ROUTE},
+	{"tls_check_from", (cmd_function)tls_check_from,   0, 0, 0,
 		REQUEST_ROUTE},
 	{"load_tls_mgm", (cmd_function)load_tls_mgm,   0, 0, 0, 0},	
 	{0,0,0,0,0,0}
@@ -1466,6 +1476,118 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 error:
 	tcp_conn_release(c, 0);
 	return -1;
+}
+
+#define USERNAME_BUFF_SIZE 256
+
+/*
+ * Check if the provided username matches certificate CN.
+ */
+static int tls_check_username(struct sip_msg* _m, const str *usr) {
+	str cn = {0,0};
+	char cn_buff[USERNAME_BUFF_SIZE];
+
+	/* Get CN from the peer certificate */
+	if (tlsops_get_peer_cn(_m, &cn, cn_buff, USERNAME_BUFF_SIZE) != 0) {
+		LM_ERR("Could not extract CN\n");
+		return -1;
+	}
+
+	/* Check URI match to the CN match */
+	if (usr->len == cn.len) {
+		if (!strncasecmp(usr->s, cn.s, (size_t)usr->len)) {
+			LM_DBG("Digest username and URI username match\n");
+			return 1;
+
+		} else {
+			LM_INFO("Spoofed user '%.*s' should be '%.*s' as in CN\n",
+					usr->len, usr->s,
+					cn.len, cn.s);
+			return ERR_SPOOFEDUSER;
+		}
+	}
+
+	LM_INFO("Digest username and URI username do NOT match, '%.*s' should be '%.*s' as in CN\n",
+			usr->len, usr->s,
+			cn.len, cn.s);
+	return ERR_NOMATCH;
+}
+
+/*
+ * Check if the provided uri matches peer CN.
+ * user@hostname is taken from the URI.
+ */
+static int tls_check_username_uri(struct sip_msg* _m, struct sip_uri *_uri) {
+	str usr = {0,0};
+	char usr_buff[USERNAME_BUFF_SIZE];
+
+	if (_uri == NULL) {
+		LM_ERR("Bad parameter\n");
+		return -1;
+	}
+
+	/* Parse To/From URI */
+	/* Make sure that the URI contains username */
+	if (_uri->user.len == 0 || _uri->host.len == 0) {
+		LM_ERR("Username not found in URI\n");
+		return ERR_USERNOTFOUND;
+	}
+
+	/* make CN like identifier */
+	if ((_uri->user.len + _uri->host.len + 4) >= USERNAME_BUFF_SIZE){
+		LM_ERR("Username buffer too short\n");
+		return -1;
+	}
+
+	snprintf(usr_buff, USERNAME_BUFF_SIZE, "%.*s@%.*s",
+			 _uri->user.len, _uri->user.s,
+			 _uri->host.len, _uri->host.s);
+	usr.s = usr_buff;
+	usr.len = _uri->user.len + _uri->host.len + 1;
+
+	return tls_check_username(_m, &usr);
+}
+
+/*
+ * Check username part in To header field matches peer certificate Common Name (CN).
+ */
+static int tls_check_to(struct sip_msg* _m, char* _s1, char* _s2)
+{
+	if (_m->rcv.proto != PROTO_TLS) {
+		LM_ERR("proto != TLS --> peer can't be verified, return -1\n");
+		return -1;
+	}
+	if (!_m->to && ((parse_headers(_m, HDR_TO_F, 0) == -1) || (!_m->to))) {
+		LM_ERR("Error while parsing To header field\n");
+		return -1;
+	}
+	if(parse_to_uri(_m)==NULL) {
+		LM_ERR("Error while parsing To header URI\n");
+		return -1;
+	}
+
+	return tls_check_username_uri(_m, &get_to(_m)->parsed_uri);
+}
+
+/*
+ * Check username part in From header field matches peer certificate Common Name (CN).
+ */
+static int tls_check_from(struct sip_msg* _m, char* _s1, char* _s2)
+{
+	if (_m->rcv.proto != PROTO_TLS) {
+		LM_ERR("proto != TLS --> peer can't be verified, return -1\n");
+		return -1;
+	}
+	if (parse_from_header(_m) < 0) {
+		LM_ERR("Error while parsing From header field\n");
+		return -1;
+	}
+	if(parse_from_uri(_m)==NULL) {
+		LM_ERR("Error while parsing From header URI\n");
+		return -1;
+	}
+
+	return tls_check_username_uri(_m, &get_from(_m)->parsed_uri);
 }
 
 static int tls_get_handshake_timeout(void)
