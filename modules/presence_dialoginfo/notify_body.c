@@ -415,7 +415,7 @@ str* build_dialoginfo(str* pres_user, str* pres_domain)
 	if(body == NULL)
 	{
 		LM_ERR("while allocating memory\n");
-		return NULL;
+		goto error;
 	}
 	memset(body, 0, sizeof(str));
 
