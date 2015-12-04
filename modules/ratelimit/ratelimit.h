@@ -56,7 +56,8 @@ typedef struct rl_repl_counter {
 typedef struct rl_pipe {
 	int limit;					/* limit used by algorithm */
 	int counter;				/* countes the accesses */
-	int my_counter;				/* contes the accesses of this instance */
+	int my_counter;				/* countes the accesses of this instance */
+	int my_last_counter;		/* countes the last accesses of this instance */
 	int last_counter;			/* last counter */
 	int load;					/* countes the accesses */
 	rl_algo_t algo;				/* the algorithm used */
