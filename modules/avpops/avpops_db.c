@@ -461,8 +461,6 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 		crt = dest;
 		for(j = 0; j < RES_COL_N(db_res); j++)
 		{
-			if(RES_ROWS(db_res)[i].values[j].nul)
-				goto next_avp;
 			avp_type = 0;
 			if(crt==NULL)
 			{
@@ -480,14 +478,20 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 					goto next_avp;
 				}
 			}
-			switch(RES_ROWS(db_res)[i].values[j].type)
-			{
+			if(RES_ROWS(db_res)[i].values[j].nul) {
+				avp_type |= AVP_VAL_STR;
+				/* keep the NULL value in sync with str_null as
+				 * defined in pvar.c !! */
+				avp_val.s.s = "<null>";
+				avp_val.s.len = 6;
+			} else {
+				switch(RES_ROWS(db_res)[i].values[j].type) {
 				case DB_STRING:
 					avp_type |= AVP_VAL_STR;
 					avp_val.s.s=
 						(char*)RES_ROWS(db_res)[i].values[j].val.string_val;
 					avp_val.s.len=strlen(avp_val.s.s);
-					if(avp_val.s.len<=0)
+					if(avp_val.s.len<0)
 						goto next_avp;
 				break;
 				case DB_STR:
@@ -496,36 +500,39 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 						RES_ROWS(db_res)[i].values[j].val.str_val.len;
 					avp_val.s.s=
 						(char*)RES_ROWS(db_res)[i].values[j].val.str_val.s;
-					if(avp_val.s.len<=0)
+					if(avp_val.s.len<0)
 						goto next_avp;
 				break;
 				case DB_BLOB:
 					avp_type |= AVP_VAL_STR;
-					avp_val.s.len=
+					avp_val.s.len =
 						RES_ROWS(db_res)[i].values[j].val.blob_val.len;
-					avp_val.s.s=
+					avp_val.s.s =
 						(char*)RES_ROWS(db_res)[i].values[j].val.blob_val.s;
-					if(avp_val.s.len<=0)
+					if(avp_val.s.len<0)
 						goto next_avp;
 				break;
 				case DB_INT:
-					avp_val.n
-						= (int)RES_ROWS(db_res)[i].values[j].val.int_val;
+					avp_val.n =
+						(int)RES_ROWS(db_res)[i].values[j].val.int_val;
 				break;
 				case DB_DATETIME:
-					avp_val.n
-						= (int)RES_ROWS(db_res)[i].values[j].val.time_val;
+					avp_val.n =
+						(int)RES_ROWS(db_res)[i].values[j].val.time_val;
 				break;
 				case DB_BITMAP:
-					avp_val.n
-						= (int)RES_ROWS(db_res)[i].values[j].val.bitmap_val;
+					avp_val.n =
+						(int)RES_ROWS(db_res)[i].values[j].val.bitmap_val;
 				break;
 				case DB_BIGINT:
-					avp_val.n = (int)RES_ROWS(db_res)[i].values[j].val.bigint_val;
+					avp_val.n =
+						(int)RES_ROWS(db_res)[i].values[j].val.bigint_val;
 				break;
 				default:
-					LM_WARN("Unknown type %d\n",RES_ROWS(db_res)[i].values[j].type);
+					LM_WARN("Unknown type %d\n",
+						RES_ROWS(db_res)[i].values[j].type);
 					goto next_avp;
+				}
 			}
 			if(add_avp(avp_type, avp_name.n, avp_val)!=0)
 			{
