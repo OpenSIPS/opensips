@@ -95,7 +95,7 @@ extern int accept_repl_pipes_timeout;
 extern int repl_pipes_auth_check;
 extern int rl_repl_cluster;
 
-struct clusterer_binds clusterer_api;
+extern struct clusterer_binds clusterer_api;
 
 /* helper funcs */
 void mod_destroy(void);

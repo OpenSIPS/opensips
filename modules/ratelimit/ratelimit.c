@@ -67,6 +67,7 @@ int accept_repl_pipes = 0;
 int rl_repl_cluster = 0;
 int accept_repl_pipes_timeout = 10;
 int repl_pipes_auth_check = 0;
+struct clusterer_binds clusterer_api;
 
 static str db_url = {0,0};
 str db_prefix = str_init("rl_pipe_");

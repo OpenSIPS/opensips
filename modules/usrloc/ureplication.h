@@ -47,7 +47,7 @@ extern int accept_replicated_udata;
 extern str repl_module_name;
 
 extern int ul_replicate_cluster;
-struct clusterer_binds clusterer_api;
+extern struct clusterer_binds clusterer_api;
 
 /* duplicate local events to other OpenSIPS instances */
 void replicate_urecord_insert(urecord_t *r);

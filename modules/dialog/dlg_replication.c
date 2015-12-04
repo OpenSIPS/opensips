@@ -49,6 +49,8 @@ extern stat_var *create_recv;
 extern stat_var *update_recv;
 extern stat_var *delete_recv;
 
+struct clusterer_binds clusterer_api;
+
 static void dlg_replicated_profiles(struct receive_info *ri, int server_id);
 
 static struct socket_info * fetch_socket_info(str *addr)
