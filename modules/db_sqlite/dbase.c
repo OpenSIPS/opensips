@@ -727,9 +727,14 @@ int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 	db_val_t* v;
 	db_row_t* res_col;
 
-	if ((!_h) || (!_r)) {
-		LM_ERR("invalid parameter value\n");
+	if (!_h) {
+		LM_ERR("invalid database handle\n");
 		return -1;
+	}
+
+	if (!_r) {
+		LM_DBG("nothing to free!\n");
+		return 0;
 	}
 
 
