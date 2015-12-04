@@ -2866,7 +2866,7 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 			goto error;
 		}
 
-		if(param_no > B2B_INIT_MAX_PARAMNO)
+		if(param_no > B2B_INIT_MAX_PARAMNO || param_no < 1)
 		{
 			LM_ERR("Scenary document not well formed. Client to param not valid [%d]\n", param_no);
 			goto error;
