@@ -477,8 +477,6 @@ int db_query_avp_print_results(struct sip_msg *msg, const db_res_t *db_res,
 		crt = dest;
 		for(j = 0; j < RES_COL_N(db_res); j++)
 		{
-			if(RES_ROWS(db_res)[i].values[j].nul)
-				goto next_avp;
 			avp_type = 0;
 			if(crt==NULL)
 			{
@@ -525,8 +523,13 @@ int db_query_avp_print_results(struct sip_msg *msg, const db_res_t *db_res,
 						goto next_avp;
 				break;
 				case DB_INT:
-					avp_val.n
-						= (int)RES_ROWS(db_res)[i].values[j].val.int_val;
+                                        if (RES_ROWS(db_res)[i].values[j].nul)
+						// DB_INT is the default type so process NULL values here
+						// so we keep the integrity of the db results in tact.
+						avp_type |= AVP_VAL_NULL;
+                                        else
+						avp_val.n
+							= (int)RES_ROWS(db_res)[i].values[j].val.int_val;
 				break;
 				case DB_DATETIME:
 					avp_val.n
