@@ -213,7 +213,7 @@ void clean_write_pipeend(void)
  */
 int daemonize(char* name, int * own_pgid)
 {
-	FILE *pid_stream;
+	FILE *pid_stream = NULL;
 	pid_t pid;
 	int r, p,rc;
 	int pid_items;
@@ -336,6 +336,7 @@ int daemonize(char* name, int * own_pgid)
 				if (r<=0)  {
 					LM_ERR("unable to write pgid to file %s: %s\n",
 						pid_file, strerror(errno));
+					fclose(pid_stream);
 					goto error;
 				}
 				fclose(pid_stream);
