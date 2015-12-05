@@ -2822,7 +2822,7 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 	}
 
 not_moved:
-	LM_DBG("nothing moved - message type %d\n", msg->first_line.type);
+	LM_DBG("nothing moved - message type %d\n", !msg ? -1 : msg->first_line.type);
 	if (rval1) rval1->len = 0;
 	if (rval2) rval2->len = 0;
 	if (setid) *setid = DEFAULT_RTPP_SET_ID;
