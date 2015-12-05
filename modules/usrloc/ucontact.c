@@ -60,7 +60,7 @@ extern event_id_t ei_c_update_id;
  */
 static int compute_next_hop(ucontact_t *contact)
 {
-	str uri;
+	str uri = {0,0};
 	struct sip_uri puri;
 
 	if (contact->path.s && contact->path.len > 0) {

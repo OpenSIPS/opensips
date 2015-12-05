@@ -145,7 +145,7 @@ static inline int challenge(struct sip_msg* _msg, gparam_p _realm, int _qop,
 						int _code, char* _message, char* _challenge_msg)
 {
 	int auth_hf_len;
-	struct hdr_field* h;
+	struct hdr_field* h = NULL;
 	auth_body_t* cred = 0;
 	char *auth_hf;
 	int ret;
