@@ -458,7 +458,7 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 				continue;
 		}
 
-		LM_DBG("mi_buf is %s and we have received %i bytes\n",mi_buf, ret);
+		LM_DBG("mi_buf is %.*s and we have received %i bytes\n", ret, mi_buf, ret); /*mi_buff is not null terminated */
 		dtgram.start 	= mi_buf;
 		dtgram.len 		= ret;
 		dtgram.current 	= dtgram.start;
