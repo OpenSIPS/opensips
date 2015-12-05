@@ -2070,7 +2070,7 @@ static int use_next_gw_w_part(struct sip_msg* msg,
 	pv_value_t pv_val;
 	str ruri;
 	dr_part_group_t * part_grp;
-	int ok;
+	int ok = 0;
 	pgw_t * dst;
 	struct socket_info *sock;
 
