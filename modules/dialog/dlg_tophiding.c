@@ -132,7 +132,7 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 		goto error;
 	}
 
-	memcpy(prefix,"<sip:",prefix_len);
+	memcpy(prefix,"<sip:",5); /* copy only "<sip:", no prefix_len, modified above */
 	if (dlg->flags & DLG_FLAG_TOPH_KEEP_USER && ct_username_len > 0) {
 		memcpy(prefix+5,ct_username,ct_username_len);
 		prefix[prefix_len-1] = '@';
