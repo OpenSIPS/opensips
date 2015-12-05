@@ -254,18 +254,17 @@ error:
  */
 db_con_t* db_do_init(const str* url, void* (*new_connection)())
 {
-	struct db_id* id;
-	void* con;
-	db_con_t* res;
-
-	int con_size = sizeof(db_con_t) + sizeof(void *) + url->len;
-	id = 0;
-	res = 0;
+	struct db_id* id = NULL;
+	void* con = NULL;
+	db_con_t* res = NULL;
+	int con_size = 0;
 
 	if (!url || !url->s || !new_connection) {
 		LM_ERR("invalid parameter value\n");
 		return 0;
 	}
+
+	con_size = sizeof(db_con_t) + sizeof(void *) + url->len;
 	if (url->len > MAX_URL_LENGTH)
 	{
 		LM_ERR("SQL URL too long\n");

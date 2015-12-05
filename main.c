@@ -1195,6 +1195,7 @@ int main(int argc, char** argv)
 					break;
 			case 'R':
 					received_dns|=DO_REV_DNS;
+				    break;
 			case 'd':
 #ifdef CHANGEABLE_DEBUG_LEVEL
 					(*debug)++;
