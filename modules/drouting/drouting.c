@@ -1138,7 +1138,7 @@ static int use_next_gw(struct sip_msg* msg,
 	int_str val;
 	pv_value_t pv_val;
 	str ruri;
-	int ok;
+	int ok=0;
 	pgw_t * dst;
 	struct socket_info *sock;
 
