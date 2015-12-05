@@ -119,7 +119,7 @@ static int alias_db_query(struct sip_msg* _msg, char* _table,
 		goto err_server;
 	}
 
-	if (RES_ROW_N(db_res)<=0 || RES_ROWS(db_res)[0].values[0].nul != 0) {
+	if (db_res == NULL || RES_ROW_N(db_res)<=0 || RES_ROWS(db_res)[0].values[0].nul != 0) {
 		LM_DBG("no alias found for R-URI\n");
 		if (db_res!=NULL && adbf.free_result(db_handle, db_res) < 0)
 			LM_DBG("failed to freeing result of query\n");

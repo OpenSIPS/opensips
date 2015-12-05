@@ -195,7 +195,7 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 				row = RES_ROWS(res) + i;
 				val = ROW_VALUES(row) + 3; /* cflags */
 				flag_list.s   = (char *)VAL_STRING(val);
-				flag_list.len = strlen(flag_list.s);
+				flag_list.len = (val->nul || !flag_list.s) ? 0 : strlen(flag_list.s);
 
 				LM_DBG("contact cflags: '%.*s'\n", flag_list.len, flag_list.s);
 
