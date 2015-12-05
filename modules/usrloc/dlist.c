@@ -191,14 +191,12 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 		goto error;
 	}
 
-
-
 	do {
 		for (i = 0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 			val = ROW_VALUES(row) + 3; /* cflags */
 			flag_list.s   = (char *)VAL_STRING(val);
-			flag_list.len = strlen(flag_list.s);
+			flag_list.len = flag_list.s ? strlen(flag_list.s) : 0;
 
 			LM_DBG("contact cflags: '%.*s'\n", flag_list.len, flag_list.s);
 

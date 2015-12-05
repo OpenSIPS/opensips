@@ -509,7 +509,7 @@ error:
 
 static int evi_print_subscriber(struct mi_node *rpl, evi_subs_p subs)
 {
-	evi_reply_sock *sock = subs->reply_sock;
+	evi_reply_sock *sock = subs != NULL ? subs->reply_sock : NULL;
 	struct mi_node *node = NULL;
 	str socket;
 
