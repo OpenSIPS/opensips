@@ -216,6 +216,7 @@ struct mi_root * xr_parse_tree( xmlrpc_env * env, xmlrpc_value * paramArray ) {
 				goto error;
 			}
 			free(byteStringValue);
+			byteStringValue = NULL;
 
 			#endif
 

@@ -1584,6 +1584,7 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 	}
 	ret = 1;
 end:
+	if (backup_idx!=-1) /* can be -1, jumped to end: label*/
 	evi_params[backup_idx]->next = evi_params[backup_idx + 1];
 
 	return ret;
