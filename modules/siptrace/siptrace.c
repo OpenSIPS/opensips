@@ -1390,7 +1390,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	struct usr_avp *avp;
 	struct ip_addr to_ip;
 	int len;
-	char statusbuf[5];
+	char statusbuf[INT2STR_MAX_LEN];
 
 	if(req==NULL || sl_param==NULL)
 	{

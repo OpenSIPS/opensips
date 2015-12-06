@@ -204,6 +204,7 @@ static inline struct ip_addr* str2ip(str* st)
 	static struct ip_addr ip;
 	unsigned char *s;
 
+	if (st == NULL || st->s == NULL) goto error_null;
 	s=(unsigned char*)st->s;
 
 	/*init*/
@@ -251,6 +252,9 @@ static inline struct ip_addr* str2ip(str* st)
 	ip.len=4;
 
 	return &ip;
+error_null:
+	LM_DBG("Null pointer detected\n");
+	return NULL;
 error_dots:
 	LM_DBG("too %s dots in [%.*s]\n", (i>3)?"many":"few",
 			st->len, st->s);
