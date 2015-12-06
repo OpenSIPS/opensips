@@ -400,6 +400,12 @@ int is_from_user_enum_2(struct sip_msg* _msg, char* _suffix, char* _service)
 			proto = PROTO_NONE;
 			he = sip_resolvehost(&luri.host, &zp, &proto,
 				(luri.type==SIPS_URI_T)?1:0 , 0);
+			if (he == NULL){
+				LM_ERR("Resolving URI <%.*s> failed\n",
+					   result.len, result.s);
+				free_rdata_list(head); /*clean up*/
+				return -9;
+			}
 
 			hostent2ip_addr(&addr, he, 0);
 
