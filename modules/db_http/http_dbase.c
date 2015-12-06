@@ -974,20 +974,20 @@ str url_encode(str s)
 db_con_t* db_http_init(const str* url)
 {
 
-
+#define DB_HTTP_BUFF_SIZE 1024
 	char* path;
-	char port [20];
-	char user_pass[1024];
-	char modified_url[1024];
+	char user_pass[DB_HTTP_BUFF_SIZE];
+	char modified_url[DB_HTTP_BUFF_SIZE];
 	str tmp;
+	int off, ret;
 
-	db_con_t * ans;
-	http_conn_t * curl;
+	db_con_t * ans = NULL;
+	http_conn_t * curl = NULL;
 	int i;
 	struct db_id * id;
 
 
-	memset(modified_url,0,1024);
+	memset(modified_url,0,DB_HTTP_BUFF_SIZE);
 	memcpy(modified_url,url->s,url->len);
 
 	strcat(modified_url,"/x");
@@ -997,7 +997,7 @@ db_con_t* db_http_init(const str* url)
 	user_pass[0] = 0;
 
 
-	path = (char*)pkg_malloc(1024);
+	path = (char*)pkg_malloc(DB_HTTP_BUFF_SIZE);
 
 	if( path == NULL )
 	{
@@ -1005,13 +1005,14 @@ db_con_t* db_http_init(const str* url)
 		return NULL;
 	}
 
-	memset(path,0,1024);
+	memset(path,0,DB_HTTP_BUFF_SIZE);
 
 
 	id = new_db_id( &tmp );
 
 	if( id == NULL)
 	{
+		pkg_free(path);
 		LM_ERR("Incorrect db_url\n");
 		return NULL;
 	}
@@ -1020,9 +1021,8 @@ db_con_t* db_http_init(const str* url)
 
 	if( id->username && id->password)
 	{
-		strcat(user_pass,id->username);
-		strcat(user_pass,":");
-		strcat(user_pass,id->password);
+		ret = snprintf(user_pass, DB_HTTP_BUFF_SIZE, "%s:%s", id->username, id->password);
+		if (ret < 0 || ret >= DB_HTTP_BUFF_SIZE) goto error;
 	}
 
 
@@ -1031,6 +1031,7 @@ db_con_t* db_http_init(const str* url)
 
 	if( curl == NULL )
 	{
+		pkg_free(path);
 		LM_ERR("Out of memory\n");
 		return NULL;
 	}
@@ -1048,26 +1049,37 @@ db_con_t* db_http_init(const str* url)
 	curl_easy_setopt(curl->handle,CURLOPT_TIMEOUT_MS,db_http_timeout);
 #endif
 
-	strcat(path,"http");
-	if ( use_ssl )
-		strcat(path,"s");
-	strcat(path,"://");
+	ret = snprintf(path, DB_HTTP_BUFF_SIZE, "http");
+	if (ret < 0 || ret >= DB_HTTP_BUFF_SIZE) goto error;
+	off = ret;
 
-
-	strcat(path,id->host);
-	if( id->port )
-	{
-		strcat(path,":");
-		sprintf(port,"%d",id->port);
-		strcat(path,port);
+	if (use_ssl) {
+		ret = snprintf(path + off, DB_HTTP_BUFF_SIZE - off, "s");
+		if (ret < 0 || ret >= (DB_HTTP_BUFF_SIZE - off)) goto error;
+		off += ret;
 	}
-	strcat(path,"/");
+
+	ret = snprintf(path + off, DB_HTTP_BUFF_SIZE - off, "://%s", id->host);
+	if (ret < 0 || ret >= (DB_HTTP_BUFF_SIZE - off)) goto error;
+	off += ret;
+
+	if (id->port) {
+		ret = snprintf(path + off, DB_HTTP_BUFF_SIZE - off, ":%d", id->port);
+		if (ret < 0 || ret >= (DB_HTTP_BUFF_SIZE - off)) goto error;
+		off += ret;
+	}
+
+	ret = snprintf(path + off, DB_HTTP_BUFF_SIZE - off, "/");
+	if (ret < 0 || ret >= (DB_HTTP_BUFF_SIZE - off)) goto error;
+	off += ret;
 
 	if( strlen(id->database) > 2 )
 	{
 		id->database[strlen(id->database)-2] = 0;
-		strcat(path,id->database);
-		strcat(path,"/");
+
+		ret = snprintf(path + off, DB_HTTP_BUFF_SIZE - off, "%s/", id->database);
+		if (ret < 0 || ret >= (DB_HTTP_BUFF_SIZE - off)) goto error;
+		off += ret;
 	}
 
 	curl->start.s = path;
@@ -1078,6 +1090,10 @@ db_con_t* db_http_init(const str* url)
 
 	if( ans == NULL )
 	{
+		pkg_free(path);
+		curl_easy_cleanup(curl->handle);
+		pkg_free(curl);
+
 		LM_ERR("Out of memory\n");
 		return NULL;
 	}
@@ -1099,7 +1115,15 @@ db_con_t* db_http_init(const str* url)
 	next_state[ ESC ][ (int) quote_delim ] = IN;
 
 	return ans;
-
+error:
+	if (path)
+		pkg_free(path);
+	if (curl) {
+		curl_easy_cleanup(curl->handle);
+		pkg_free(curl);
+	}
+	LM_CRIT("Initialization error\n");
+	return NULL;
 }
 
 
