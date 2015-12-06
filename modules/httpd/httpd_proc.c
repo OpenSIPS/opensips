@@ -216,7 +216,7 @@ static int post_iterator (void *cls,
 	pr = (struct post_request*)cls;
 	if (pr==NULL) {
 		LM_CRIT("corrupted data: null cls\n");
-		pr->status = -1; return MHD_NO;
+		return MHD_NO;
 	}
 
 	if (off!=0) {

@@ -823,7 +823,7 @@ void print_sdp_stream(sdp_stream_cell_t *stream, int log_level)
 
 void print_sdp_session(sdp_session_cell_t *session, int log_level)
 {
-	sdp_stream_cell_t *stream = session->streams;
+	sdp_stream_cell_t *stream = session==NULL ? NULL : session->streams;
 
 	if (session==NULL) {
 		LM_ERR("NULL session\n");
