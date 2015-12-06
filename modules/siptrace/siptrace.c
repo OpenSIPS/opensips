@@ -1268,7 +1268,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	struct sip_msg* req;
 	int_str        avp_value;
 	struct usr_avp *avp;
-	char statusbuf[8];
+	char statusbuf[INT2STR_MAX_LEN];
 	int len;
 
 	if(t==NULL || t->uas.request==0 || ps==NULL)
@@ -1325,7 +1325,9 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[2].val.str_val.s = t->method.s;
 	db_vals[2].val.str_val.len = t->method.len;
 
-	strcpy(statusbuf, int2str(ps->code, &len));
+	char * str_code = int2str(ps->code, &len);
+	statusbuf[INT2STR_MAX_LEN-1]=0;
+	strncpy(statusbuf, str_code, len >= INT2STR_MAX_LEN ? INT2STR_MAX_LEN-1 : len);
 	db_vals[3].val.str_val.s = statusbuf;
 	db_vals[3].val.str_val.len = len;
 
@@ -1576,7 +1578,9 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 			&msg->rcv.dst_ip, msg->rcv.dst_port, msg->rcv.proto);
 	}
 
-	strcpy(statusbuf, int2str(sl_param->code, &len));
+	char * str_code = int2str(sl_param->code, &len);
+	statusbuf[INT2STR_MAX_LEN-1]=0;
+	strncpy(statusbuf, str_code, len >= INT2STR_MAX_LEN ? INT2STR_MAX_LEN-1 : len);
 	db_vals[3].val.str_val.s = statusbuf;
 	db_vals[3].val.str_val.len = len;
 
