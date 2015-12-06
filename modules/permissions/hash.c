@@ -228,6 +228,10 @@ int find_group_in_hash_table(struct address_list** table,
 	struct address_list *node;
 	str str_ip;
 
+	if (ip == NULL){
+		return -1;
+	}
+
 	str_ip.len = ip->len;
 	str_ip.s = (char*) ip->u.addr;
 

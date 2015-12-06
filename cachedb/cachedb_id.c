@@ -269,12 +269,12 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 	return 0;
 
  err:
-	if (id->initial_url) pkg_free(id->initial_url);
-	if (id->scheme) pkg_free(id->scheme);
-	if (id->username) pkg_free(id->username);
-	if (id->password) pkg_free(id->password);
-	if (id->host) pkg_free(id->host);
-	if (id->database) pkg_free(id->database);
+	if (id && id->initial_url) pkg_free(id->initial_url);
+	if (id && id->scheme) pkg_free(id->scheme);
+	if (id && id->username) pkg_free(id->username);
+	if (id && id->password) pkg_free(id->password);
+	if (id && id->host) pkg_free(id->host);
+	if (id && id->database) pkg_free(id->database);
 	if (prev_token) pkg_free(prev_token);
 	return -1;
 }

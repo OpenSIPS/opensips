@@ -268,9 +268,10 @@ int db_postgres_fetch_result(const db_con_t* _con, db_res_t** _res, const int nr
 				LM_ERR("%p - invalid query, execution aborted\n", _con);
 				LM_ERR("%p - PQresultStatus(%s)\n",_con,PQresStatus(pqresult));
 				LM_ERR("%p: %s\n",_con,PQresultErrorMessage(CON_RESULT(_con)));
-				if (*_res)
+				if (*_res) {
 					db_free_result(*_res);
-				*_res = 0;
+					*_res = 0;
+				}
 				return -3;
 
 			case PGRES_EMPTY_QUERY:

@@ -1119,8 +1119,8 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 
 	return rpl_tree;
 error:
-
-	free_mi_tree(rpl_tree);
+	if (rpl_tree)
+		free_mi_tree(rpl_tree);
 	return NULL;
 }
 
