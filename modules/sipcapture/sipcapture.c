@@ -492,7 +492,7 @@ static int mod_init(void) {
 			return -1;
 		}
 
-		if(promisc_on && raw_interface.len) {
+		if(promisc_on && raw_interface.s && raw_interface.len) {
 
 			 memset(&ifr, 0, sizeof(ifr));
 			 memcpy(ifr.ifr_name, raw_interface.s, raw_interface.len);

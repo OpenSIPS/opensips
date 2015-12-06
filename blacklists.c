@@ -419,6 +419,7 @@ static inline void rm_dups(struct bl_head *head,
 			(r->proto==q->proto) &&
 			(ip_class_compare(&r->ip_net, &q->ip_net)==1) &&
 			((!r->body.s && !q->body.s) || ((r->body.len==q->body.len) &&
+                r->body.s!=NULL && q->body.s!=NULL &&
 				!strncmp(r->body.s,q->body.s,q->body.len)) )
 			) {
 				break;
