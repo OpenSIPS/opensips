@@ -284,6 +284,8 @@ static inline struct ip_addr* str2ip6(str* st)
 	unsigned char* limit;
 	unsigned char* s;
 
+	if (st == NULL || st->s == NULL) goto error_null;
+
 	/* init */
 	if ((st->len) && (st->s[0]=='[')){
 		/* skip over [ ] */
@@ -346,6 +348,9 @@ static inline struct ip_addr* str2ip6(str* st)
 			addr_start[6], addr_start[7] );
 */
 	return &ip;
+error_null:
+	LM_DBG("Null pointer detected\n");
+	return 0;
 
 error_too_many_colons:
 	LM_DBG("too many colons in [%.*s]\n", st->len, st->s);
