@@ -58,6 +58,7 @@ int db_postgres_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 
 	if (!_v) {
 		LM_ERR("invalid parameter value\n");
+		return -1;
 	}
 
 	if (!_s) {
