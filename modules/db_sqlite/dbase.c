@@ -345,7 +345,7 @@ int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 	}
 
 	if (_scpy.len >= select_str.len &&
-			memcmp(_scpy.s, select_str.s, select_str.len)) {
+		str_strncasecmp(&_scpy, &select_str, select_str.len)) {
 		/* not a select statement; can execute the query and exit*/
 		if (sqlite3_exec(CON_CONNECTION(_h),
 							query_holder.s, NULL, NULL, &errmsg)) {
