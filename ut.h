@@ -645,7 +645,8 @@ static inline char* str_strstr(const str *stra, const str *strb)
 	}
 
 	if (strb->len > stra->len) {
-		LM_ERR("str to find should be smaller\n");
+		LM_ERR("string to find should be smaller than the string"
+				"to search into\n");
 		return NULL;
 	}
 
@@ -673,6 +674,37 @@ static inline char* str_strstr(const str *stra, const str *strb)
 	return NULL;
 }
 
+/*
+ * case-insensitive compare n chars of two str's
+ */
+static inline int str_strncasecmp(const str *stra, const str *strb, int n)
+{
+	int i;
+
+	if(stra==NULL || strb==NULL || stra->s ==NULL || strb->s==NULL
+	|| stra->len<0 || strb->len<0)
+	{
+		LM_ERR("bad parameters\n");
+		return -2;
+	}
+
+	if (stra->len<n || strb->len<n) {
+		LM_ERR("input strings don't have at least [n=%d] characters\n", n);
+		return -2;
+	}
+
+	for (i = 0; i < n; i++) {
+		const char a = tolower(stra->s[i]);
+		const char b = tolower(strb->s[i]);
+		if (a < b)
+			return -1;
+		if (a > b)
+			return 1;
+	}
+
+	return 0;
+
+}
 
 /*
  * case-insensitive compare two str's
