@@ -1430,7 +1430,10 @@ static inline void __tcpconn_lifetime(int force)
 	unsigned h;
 	int fd;
 
-	ticks=get_ticks();
+	if (have_ticks())
+		ticks=get_ticks();
+	else
+		ticks=0;
 
 	for( part=0 ; part<TCP_PARTITION_SIZE ; part++ ) {
 		TCPCONN_LOCK(part); /* fixme: we can lock only on delete IMO */
