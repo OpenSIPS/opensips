@@ -714,37 +714,37 @@ static void hep_parse_headers(struct tcp_req *req){
 	hep_ctrl_t *ctrl;
 
 	if(req->content_len == 0 &&
-			req->pos - req->buf < HEP_HEADER_ID_LEN + sizeof(uint8_t)){
-		req->parsed = req->pos;
+			req->pos - req->buf < sizeof(hep_ctrl_t)){
+		/* not enough intel; keep watching son */
 		return;
 	}
 
-	/* check for hepV3 header id; if not found then version 1 or 2;
-	 * if 1 or 2, the difference shall be made later */
+	/* check for hepV3 header id; if tcp it's hepv3 */
 	if (memcmp(req->buf, HEP_HEADER_ID, HEP_HEADER_ID_LEN)) {
 		/* version 3*/
 		LM_ERR("not a hepV3 message\n");
 		return;
 	}
 
-	/* FIXME no need for this anymore */
 	hep_current_proto = 3;
-	//length = ntohs(((hep_ctrl_t*)req->buf)->length);
 	ctrl = (hep_ctrl_t *)req->buf;
 	length = ntohs(ctrl->length);
-
 	req->content_len = (unsigned short)length;
-	if(req->pos - req->buf == req->content_len){
+
+	if(req->pos - req->parsed == req->content_len){
 		LM_DBG("received a COMPLETE message\n");
 		req->complete = 1;
 		req->parsed = req->buf + req->content_len;
-	} else if(req->pos - req->buf > req->content_len){
+	} else if(req->pos - req->parsed > req->content_len){
 		LM_DBG("received MORE than a message\n");
 		req->complete = 1;
 		req->parsed = req->buf + req->content_len;
 	} else {
 		LM_DBG("received only PART of a message\n");
-		req->parsed = req->pos;
+		/* FIXME should we update parsed? we didn't receive the
+		 * full message; we wait for the full mesage and only
+		 * after that we update parsed */
+		//req->parsed = req->pos;
 	}
 }
 
@@ -838,12 +838,10 @@ static inline int hep_handle_req(struct tcp_req *req,
 			return -1;
 			}
 
-			/* remove the hep header; leave only the payload */
-			memmove(msg_buf, h.u.hepv3.payload_chunk.data,
-								/* also copy '\0' character */
-								strlen(h.u.hepv3.payload_chunk.data)+1);
 			msg_len = ntohs(h.u.hepv3.payload_chunk.chunk.length) -
-						sizeof(hep_chunk_t);
+											sizeof(hep_chunk_payload_t);
+			/* remove the hep header; leave only the payload */
+			msg_buf = h.u.hepv3.payload_chunk.data;
 		}
 
 
@@ -857,7 +855,12 @@ static inline int hep_handle_req(struct tcp_req *req,
 			pkg_free(req);
 		}
 
-		if (size) memmove(req->buf, req->parsed, size);
+		if (size) {
+			memmove(req->buf, req->parsed, size);
+			req->pos = req->buf + size;
+			/* anything that was parsed was already processed */
+			req->parsed = req->buf;
+		}
 
 		/* if we still have some unparsed bytes, try to  parse them too*/
 		if (size) return 1;
