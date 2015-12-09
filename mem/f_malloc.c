@@ -332,7 +332,7 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 	for(hash=GET_HASH(size);hash<F_HASH_SIZE;hash++){
 		frag=qm->free_hash[hash].first;
 		for( ; frag; frag = frag->u.nxt_free )
-			if ( frag->size >= size ) goto found;
+			if ( frag->size >= size && frag->prev ) goto found;
 		/* try in a bigger bucket */
 	}
 	/* not found, bad! */
