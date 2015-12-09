@@ -2533,6 +2533,7 @@ entity_search_done:
 		entity->stats.call_time = get_ticks();
 		entity->type = B2B_CLIENT;
 		entity->peer = bridge_entities[1];
+		entity->late_sdp = 1;
 		shm_free(bridge_entities[0]);
 
 		tuple->bridge_entities[0] = entity;
