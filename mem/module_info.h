@@ -51,4 +51,6 @@ struct multi_str{
 int set_mem_idx(char* mod_name, int  mem_free_idx);
 
 void update_module_stats(long mem_used, long real_used, int frags, int group_idx);
+
+int alloc_group_stat(void);
 #endif

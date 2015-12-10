@@ -28,6 +28,7 @@
 #include "module_info.h"
 #include "../dprint.h"
 #include "shm_mem.h"
+#include "common.h"
 
 char buff[60];
 
@@ -59,7 +60,7 @@ int set_mem_idx(char* mod_name, int  mem_free_idx){
 
 	if(!var){
 		LM_CRIT("The module %s was not found, be sure it is the same as the NAME variable from the module's Makefile"
-			    "(without .so) and run 'make generate-mem-stat'\n", mod_name);
+			    "(without .so) and run 'make generate-mem-stats'\n", mod_name);
 		return -1;
 	}
 
@@ -70,9 +71,9 @@ int set_mem_idx(char* mod_name, int  mem_free_idx){
 }
 
 inline void update_module_stats(long mem_used, long real_used, int frags, int group_idx){
-	if(mem_free_idx == 1)
-		return;
 #ifdef SHM_SHOW_DEFAULT_GROUP
+	if(!memory_mods_stats)
+		return;
 	update_stat(memory_mods_stats[group_idx].fragments, frags);
 	update_stat(memory_mods_stats[group_idx].memory_used, mem_used);
 	update_stat(memory_mods_stats[group_idx].real_used, real_used);
@@ -83,4 +84,61 @@ inline void update_module_stats(long mem_used, long real_used, int frags, int gr
 	update_stat(memory_mods_stats[group_idx - 1].memory_used, mem_used);
 	update_stat(memory_mods_stats[group_idx - 1].real_used, real_used);
 #endif
+}
+
+int alloc_group_stat(void) {
+	int size_prealoc, j, one_full_entry, groups;
+	char *start;
+	struct module_info* new_stats_vec;
+#ifndef SHM_SHOW_DEFAULT_GROUP
+	groups = mem_free_idx - 1;
+#else
+	groups = mem_free_idx;
+#endif
+
+	one_full_entry = 3 * (sizeof(stat_var) + sizeof(stat_val));
+	size_prealoc = groups * sizeof(struct module_info) + groups * one_full_entry;
+
+#ifndef DBG_QM_MALLOC
+	new_stats_vec = MY_MALLOC_UNSAFE(shm_block, size_prealoc);
+#else
+	new_stats_vec = MY_MALLOC_UNSAFE(shm_block, size_prealoc, __FILE__, __FUNCTION__, __LINE__ );
+#endif
+
+	if(!new_stats_vec){
+		LM_CRIT("could not alloc shared memory");
+		return -1;
+	}
+	memset( (void*)new_stats_vec, 0, size_prealoc);
+	start = (char*)new_stats_vec + groups * sizeof(struct module_info);
+	for(j = 0; j < groups; j++){
+		new_stats_vec[j].fragments = (stat_var *)(start + j * one_full_entry);
+		new_stats_vec[j].memory_used = (stat_var *)(start + j * one_full_entry + sizeof(stat_var));
+		new_stats_vec[j].real_used = (stat_var *)(start + j * one_full_entry + 2 * sizeof(stat_var));
+
+		new_stats_vec[j].fragments->u.val = (stat_val*)(start + j * one_full_entry + 3 * sizeof(stat_var));
+		new_stats_vec[j].memory_used->u.val = (stat_val*)(start + j * one_full_entry + 3 * sizeof(stat_var) + sizeof(stat_val));
+		new_stats_vec[j].real_used->u.val = (stat_val*)(start + j * one_full_entry + 3 * sizeof(stat_var) + 2 * sizeof(stat_val));
+	}
+#ifndef SHM_SHOW_DEFAULT_GROUP
+	if(core_index != 0) {
+		update_stat(new_stats_vec[core_index - 1].fragments, 1);
+		update_stat(new_stats_vec[core_index - 1].memory_used, size_prealoc);
+		update_stat(new_stats_vec[core_index - 1].real_used, size_prealoc + FRAG_OVERHEAD);
+	}
+#else
+	update_stat(new_stats_vec[0].fragments, get_stat_val(memory_mods_stats[0].fragments));
+	update_stat(new_stats_vec[0].memory_used, one_full_entry + get_stat_val(memory_mods_stats[0].memory_used));
+	update_stat(new_stats_vec[0].real_used, one_full_entry + get_stat_val(memory_mods_stats[0].real_used));
+#endif
+
+	if(memory_mods_stats){
+	#ifndef DBG_QM_MALLOC
+		MY_FREE_UNSAFE(shm_block, (void*)memory_mods_stats);
+	#else
+		MY_FREE_UNSAFE(shm_block, (void*)memory_mods_stats, __FILE__, __FUNCTION__, __LINE__ );
+	#endif
+	}
+	memory_mods_stats = new_stats_vec;
+	return 0;
 }

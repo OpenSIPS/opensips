@@ -943,7 +943,12 @@ assign_stm: DEBUG EQUAL snumber
 									YYABORT;
 								}
 							}
-							mem_free_idx++;
+
+							mem_free_idx++;	
+
+							if(alloc_group_stat()){
+								YYABORT;
+							}
 							#endif
 						}
 		| MEMGROUP EQUAL STRING COLON error { yyerror("invalid or no module specified"); }
