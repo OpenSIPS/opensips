@@ -62,9 +62,6 @@ struct bl_head{
 
 #define BL_CORE_ID        13
 
-
-int preinit_black_lists();
-
 int init_black_lists();
 
 void destroy_black_lists();

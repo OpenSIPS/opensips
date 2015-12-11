@@ -57,25 +57,6 @@ static mi_export_t mi_bl_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
-
-
-int preinit_black_lists(void)
-{
-	blst_heads = (struct bl_head*)shm_malloc(max_heads*sizeof(struct bl_head));
-	if (blst_heads==NULL) {
-		LM_ERR("no more shared memory!\n");
-		return -1;
-	}
-	memset( blst_heads, 0, max_heads*sizeof(struct bl_head));
-
-	used_heads = 0;
-
-	/* black lists were successfully allocated */
-	return 0;
-}
-
-
-
 int init_black_lists(void)
 {
 	/* register timer routine  */
@@ -101,6 +82,14 @@ struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 {
 	unsigned int i;
 
+	if(!blst_heads) {
+		blst_heads = (struct bl_head*)shm_malloc(max_heads*sizeof(struct bl_head));
+		if (blst_heads==NULL) {
+			LM_ERR("no more shared memory!\n");
+			return NULL;
+		}
+		memset( blst_heads, 0, max_heads*sizeof(struct bl_head));
+	}
 	i = used_heads;
 	if (i==max_heads) {
 		LM_ERR("too many lists\n");
@@ -181,7 +170,8 @@ void destroy_black_lists(void)
 		blst_heads[i].first = blst_heads[i].last = NULL;
 	}
 
-	shm_free(blst_heads);
+	if(blst_heads)
+		shm_free(blst_heads);
 }
 
 

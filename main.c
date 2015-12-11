@@ -1035,11 +1035,6 @@ try_again:
 		goto error;
 	}
 
-	if (preinit_black_lists()!=0) {
-		LM_CRIT("failed to alloc black list's anchor\n");
-		goto error00;
-	}
-
 	/* parse the config file, prior to this only default values
 	   e.g. for debugging settings will be used */
 	yyin=cfg_stream;
