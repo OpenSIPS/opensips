@@ -846,11 +846,9 @@ int run_compare_rec(void *e_data, void *data, void *r_data)
 int run_find_same_rec(void *e_data, void *data, void *r_data)
 {
 	reg_record_t *new_rec = (reg_record_t*)e_data;
-	int i;
+	int i = (int*)data;
 
-	for(i=0; i<reg_hsize; i++) {
-		slinkedl_traverse(reg_htable[i].p_list, &run_compare_rec, new_rec, NULL);
-	}
+	slinkedl_traverse(reg_htable[i].p_list, &run_compare_rec, new_rec, NULL);
 	return 0;
 }
 
@@ -888,7 +886,7 @@ static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param)
 	for(i=0; i<reg_hsize; i++) {
 		lock_get(&reg_htable[i].lock);
 
-		slinkedl_traverse(reg_htable[i].s_list, &run_find_same_rec, NULL, NULL);
+		slinkedl_traverse(reg_htable[i].s_list, &run_find_same_rec, &i, NULL);
 
 		slinkedl_list_destroy(reg_htable[i].p_list);
 		reg_htable[i].p_list = reg_htable[i].s_list;
