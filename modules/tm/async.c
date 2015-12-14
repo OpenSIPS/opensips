@@ -142,6 +142,9 @@ int t_resume_async(int fd, void *param)
 	/* no need for the context anymore */
 	shm_free(ctx);
 
+	context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
+	pkg_free(current_processing_ctx);
+
 restore:
 	/* restore original environment */
 	set_t(backup_t);
@@ -152,8 +155,6 @@ restore:
 	bind_address = backup_si;
 
 	free_faked_req( &faked_req, t);
-	context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
-	pkg_free(current_processing_ctx);
 	current_processing_ctx = NULL;
 
 	return 0;
@@ -176,7 +177,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		r = t_newtran( msg , 1 /*full uas clone*/ );
 		if (r==0) {
 			/* retransmission -> no follow up; we return a negative
-			 * code to indicate do_action that the top route is 
+			 * code to indicate do_action that the top route is
 			 * is completed (there no resume route to follow) */
 			return -1;
 		} else if (r<0) {
@@ -220,7 +221,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		goto resume;
 	}
 
-	/* do we have a reactor in this process, to handle this 
+	/* do we have a reactor in this process, to handle this
 	   asyn I/O ? */
 	if ( 0/*reactor_exists()*/ ) {
 		/* no reactor, so we directly call the resume function

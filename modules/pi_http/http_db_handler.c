@@ -36,11 +36,11 @@ int connect_http_db(ph_framework_t *framework_data, int index)
 {
 	ph_db_url_t *ph_db_urls = framework_data->ph_db_urls;
 
-	if (ph_db_urls[index].http_db_handle) {
+	if (*ph_db_urls[index].http_db_handle) {
 		LM_CRIT("BUG - db connection found already open\n");
 		return -1;
 	}
-	if ((ph_db_urls[index].http_db_handle =
+	if ((*ph_db_urls[index].http_db_handle =
 		ph_db_urls[index].http_dbf.init(&ph_db_urls[index].db_url)) == NULL) {
 		return -1;
 	}
@@ -60,11 +60,11 @@ int use_table(ph_db_table_t *db_table)
 		return -1;
 	}
 	db_url = db_table->db_url;
-	if(db_url->http_db_handle==NULL){
+	if(*db_url->http_db_handle==NULL){
 		LM_ERR("null db handle for table [%s]\n", db_table->name.s);
 		return -1;
 	}
-	db_table->db_url->http_dbf.use_table(db_table->db_url->http_db_handle,
+	db_table->db_url->http_dbf.use_table(*db_table->db_url->http_db_handle,
 						&db_table->name);
 	return 0;
 }
@@ -83,8 +83,8 @@ int init_http_db(ph_framework_t *framework_data, int index)
 		return -1;
 	}
 
-	ph_db_urls[index].http_dbf.close(ph_db_urls[index].http_db_handle);
-	ph_db_urls[index].http_db_handle = NULL;
+	ph_db_urls[index].http_dbf.close(*ph_db_urls[index].http_db_handle);
+	*ph_db_urls[index].http_db_handle = NULL;
 
 	return 0;
 }
@@ -97,9 +97,9 @@ void destroy_http_db(ph_framework_t *framework_data)
 
 	/* close the DB connections */
 	for(i=0;i<framework_data->ph_db_urls_size;i++){
-		if (ph_db_urls[i].http_db_handle) {
-			ph_db_urls[i].http_dbf.close(ph_db_urls[i].http_db_handle);
-			ph_db_urls[i].http_db_handle = NULL;
+		if (*ph_db_urls[i].http_db_handle) {
+			ph_db_urls[i].http_dbf.close(*ph_db_urls[i].http_db_handle);
+			*ph_db_urls[i].http_db_handle = NULL;
 		}
 	}
 }

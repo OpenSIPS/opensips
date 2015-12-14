@@ -1797,7 +1797,7 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 	int ret;
 	union sockaddr_union from_su;
 	union sockaddr_union to_su;
-	unsigned int proto;
+	unsigned int proto, osip_proto;
 	struct socket_info* send_sock;
 	union sockaddr_union* to = NULL;
 
@@ -1811,6 +1811,7 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 		return 0;
 
 	/* Convert proto:ip:port to sockaddress union SRC IP */
+	/* proto is going to be converted to netinet proto */
 	if (pipport2su(fromproto, fromip, fromport, &from_su, &proto)==-1 ||
 	(pipport2su(toproto, toip, toport, &to_su, &proto)==-1))
 		goto error;
@@ -1823,7 +1824,6 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 
 
 	/* create a temporary proxy*/
-	proto = PROTO_UDP;
 	p=mk_proxy(&dup_uri->host, (dup_uri->port_no)?dup_uri->port_no:SIP_PORT,proto, 0);
 	if (p==0){
 		LM_ERR("bad host name in uri\n");
@@ -1844,10 +1844,36 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 		return -1;
 	}
 
+	switch (proto) {
+		case IPPROTO_UDP:
+			osip_proto = PROTO_UDP;
+			break;
+
+		case IPPROTO_TCP:
+			osip_proto = PROTO_TCP;
+			break;
+
+		case IPPROTO_IDP:
+			osip_proto = PROTO_TLS;
+			break;
+
+		case IPPROTO_SCTP:
+			osip_proto = PROTO_SCTP;
+			break;
+
+		case IPPROTO_ESP:
+			osip_proto = PROTO_WS;
+			break;
+
+		default:
+			LM_ERR("Unknown protocol [%d]\n", proto);
+			return -1;
+	}
+
 	ret = -1;
 
 	do {
-		send_sock=get_send_socket(0, to, proto);
+		send_sock=get_send_socket(0, to, osip_proto);
 		if (send_sock==0){
 			LM_ERR("can't forward to af %d, proto %d no corresponding listening socket\n",
 					to->s.sa_family,proto);

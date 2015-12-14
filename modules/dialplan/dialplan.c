@@ -144,20 +144,6 @@ struct module_exports exports= {
 	child_init		/* per-child init function */
 };
 
-static inline int dp_str_copy(str* dest, str* source)
-{
-
-	dest->len = source->len;
-	dest->s   = pkg_malloc(source->len);
-	if ((dest->s) == NULL) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	memcpy(dest->s, source->s, source->len);
-	return 0;
-
-}
-
 static inline char* strchrchr(char* str, char c1, char c2)
 {
 
@@ -205,24 +191,26 @@ static dp_head_p dp_get_head(str part_name){
 
 
 /*Inserts table_name/db url into the list of heads*/
-static int dp_head_insert(int dp_insert_type, str content,
-				 str partition)
+static int dp_head_insert(int dp_insert_type, str *content,
+				 str *partition)
 {
-#define h_insert(type, url_addr, table_addr, ins_addr ) \
-	do{  \
-		if( type == DP_TYPE_URL ) { \
-			if (dp_str_copy(url_addr, ins_addr)!=0){	\
-				return -1;	\
-			}	\
-		} else { \
-			if (dp_str_copy(table_addr, ins_addr)!=0){	\
-				return -1;	\
-			}	\
-		} \
+#define h_insert(type, url_str, table_str, ins_str )    \
+	do{                                                 \
+		if( type == DP_TYPE_URL ) {                     \
+			url_str = ins_str;                          \
+		} else {                                        \
+			table_str = ins_str;                        \
+		}                                               \
 	}while(0);
 
 	dp_head_p start = dp_hlist;
 	dp_head_p tmp = NULL;
+
+	if ((!content && (!content->s || !content->len)) ||
+		(!partition && (!partition->s || !partition->len))) {
+		LM_ERR("invalid insert in partition!\n");
+		return -1;
+	}
 
 	/*First Insertion*/
 	if (!dp_hlist) {
@@ -233,27 +221,26 @@ static int dp_head_insert(int dp_insert_type, str content,
 		}
 		memset(dp_hlist, 0, sizeof *dp_hlist);
 
-		if (dp_str_copy(&dp_hlist->partition, &partition) != 0)
-			return -1;
+		dp_hlist->partition = *partition;
 
-		h_insert( dp_insert_type, &dp_hlist->dp_db_url,
-				 &dp_hlist->dp_table_name, &content);
-		dp_hlist->next = NULL;
+		h_insert( dp_insert_type, dp_hlist->dp_db_url,
+				 dp_hlist->dp_table_name, *content);
 		return 0;
 	}
 
-	while (start != NULL) {
-		if (!str_strcmp(&partition, &start->partition)) {
-			h_insert( dp_insert_type, &start->dp_db_url,
-					 &start->dp_table_name, &content);
-			start->next = NULL;
+
+	/* start can't be null here, should exit on first IF instruction
+	 * if null*/
+	do {
+		if (!str_strcmp(partition, &start->partition)) {
+			h_insert( dp_insert_type, start->dp_db_url,
+					 start->dp_table_name, *content);
 			return 0;
 		}
-		if (!start->next) {
-			break;
-		}
-		start = (dp_head_p)start->next;
-	}
+	/* always want second condition to be true since only the
+	 * first condition is valid; the second is just an assignment
+	 * in case the first one succeeds */
+	} while (start->next != NULL && (start=start->next,1));
 
 	tmp = pkg_malloc(sizeof(dp_head_t));
 
@@ -263,74 +250,21 @@ static int dp_head_insert(int dp_insert_type, str content,
 	}
 	memset(tmp, 0, sizeof(dp_head_t));
 
-	if (dp_str_copy(&tmp->partition, &partition) != 0)
-		return -1;
+	tmp->partition = *partition;
 
-	h_insert( dp_insert_type, &tmp->dp_db_url,
-			 &tmp->dp_table_name, &content);
-	tmp->next = NULL;
-	start->next = (dp_head_p)tmp;
+	h_insert( dp_insert_type, tmp->dp_db_url,
+			 tmp->dp_table_name, *content);
+	start->next = tmp;
 	return 0;
 #undef h_insert
 
 }
 
-
-static str* str_n_dup(const str* src, int size){
-
-	str* res;
-
-	if (!(res = pkg_malloc(sizeof(str) + size + 1))) {
-		LM_ERR("No more pkg mem\n");
-		return NULL;
-	}
-
-	res->s = (char*)res + sizeof(str);
-	memcpy(res->s, src->s, size);
-	res->len = size;
-
-	return res;
-}
-
-
-static inline str* get_param(const char ch_type, str* main_str)
-{
-	str* dst = NULL;
-	char* end;
-	int ptr;
-
-
-	while ( is_space( main_str->s )) {
-		main_str->s++;
-		main_str->len--;
-	}
-	end = memchr(main_str->s, ch_type, main_str->len);
-
-	if (!end) {
-		LM_ERR("Invalid partition string definition\n");
-		return NULL;
-	}
-
-	ptr = end - main_str->s;
-	main_str->len -= ptr + 1;
-
-	while (is_space(main_str->s + ptr - 1)) {
-		ptr--;
-	}
-
-	dst = str_n_dup(main_str, ptr);
-
-	main_str->s = end + 1;
-
-	return dst;
-}
-
-
 static int dp_create_head(str part_desc)
 {
 
 	str tmp;
-	str *partition;
+	str partition;
 	str param_type, param_value;
 
 	char* end, *start;
@@ -338,15 +272,15 @@ static int dp_create_head(str part_desc)
 
 	tmp.s = part_desc.s;
 	end = q_memchr(part_desc.s, DP_CHAR_COLON, part_desc.len);
-	if (end == NULL)
+	if (end == NULL) {
+		LM_ERR("[[%s]]\n", tmp.s);
 		goto out_err;
+	}
 
 	tmp.len = end - tmp.s;
 	str_trim_spaces_lr(tmp);
 
-	partition = str_n_dup( &tmp, tmp.len);
-	if (partition == NULL)
-		goto mem_err;
+	partition = tmp;
 
 	do {
 		start = ++end;
@@ -360,23 +294,28 @@ static int dp_create_head(str part_desc)
 		param_value.s = q_memchr(start, DP_CHAR_EQUAL,
 				part_desc.len + part_desc.s - start);
 
-		if (param_value.s == 0)
+		if (param_value.s == 0) {
+			LM_ERR("[[%s]]!\n", param_value.s);
 			goto out_err;
+		}
 
-		param_type.len = (param_value.s - 1) - param_type.s;
+		param_type.len = param_value.s - param_type.s;
 		param_value.len = end - (++param_value.s);
 
 		str_trim_spaces_lr(param_type);
 		str_trim_spaces_lr(param_value);
 
-		if ( !memcmp(param_type.s, PARAM_URL, ulen)) {
-			dp_head_insert( DP_TYPE_URL, param_value,
-								*partition);
-		} else if ( !memcmp( param_type.s, PARAM_TABLE, tlen)) {
-			dp_head_insert( DP_TYPE_TABLE, param_value,
-								*partition);
+		if (param_type.len == ulen &&
+				!memcmp(param_type.s, PARAM_URL, ulen)) {
+			dp_head_insert( DP_TYPE_URL, &param_value,
+								&partition);
+		} else if ( param_type.len == tlen &&
+				!memcmp( param_type.s, PARAM_TABLE, tlen)) {
+			dp_head_insert( DP_TYPE_TABLE, &param_value,
+								&partition);
 		} else {
-			LM_ERR("Invalid parameter type\n");
+			LM_ERR("Invalid parameter type definition [[%.*s]]\n",
+					param_type.len, param_type.s);
 			return -1;
 		}
 	} while(1);
@@ -385,9 +324,6 @@ static int dp_create_head(str part_desc)
 
 out_err:
 	LM_ERR("invalid partition param definition\n");
-	return -1;
-mem_err:
-	LM_ERR("no more memory\n");
 	return -1;
 }
 
@@ -464,14 +400,14 @@ static int mod_init(void)
 			default_dp_partition.len = el->partition.len;
 		}
 
-		dp_head_insert( DP_TYPE_URL, default_dp_db_url,
-							 default_dp_partition);
+		dp_head_insert( DP_TYPE_URL, &default_dp_db_url,
+							 &default_dp_partition);
 	}
 
 	if (default_dp_table.s) {
 		if (!default_dp_partition.s) {
 			if (!el) {
-				LM_ERR("DB URL not defined for partition default!\n");
+				LM_ERR("DB URL not defined for default partition!\n");
 				return -1;
 			} else {
 				default_dp_partition.s = el->partition.s;
@@ -480,8 +416,8 @@ static int mod_init(void)
 		}
 
 		default_dp_table.len = strlen(default_dp_table.s);
-		dp_head_insert( DP_TYPE_TABLE, default_dp_table,
-							 default_dp_partition);
+		dp_head_insert( DP_TYPE_TABLE, &default_dp_table,
+							 &default_dp_partition);
 	}
 
 	el = dp_hlist;
@@ -504,6 +440,7 @@ static int mod_init(void)
 			memcpy(el->dp_table_name.s, DP_TABLE_NAME,
 							 el->dp_table_name.len);
 		}
+
 	}
 
 	default_par2 = (dp_param_p)shm_malloc(sizeof(dp_param_t));
@@ -530,7 +467,6 @@ static int mod_init(void)
 		LM_ERR("could not initialize data\n");
 		return -1;
 	}
-
 	return 0;
 #undef init_db_url_part
 }
@@ -539,8 +475,8 @@ static int child_init(int rank)
 {
 	dp_connection_list_p el;
 
-	/* only process with rank PROC_MAIN(0) loads data */
-	if (rank != PROC_MAIN)
+	/* only process with rank 1 loads data */
+	if (rank != 1)
 		return 0;
 
 	/*Connect to DB s and get rules*/

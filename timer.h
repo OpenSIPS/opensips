@@ -91,6 +91,10 @@ int register_timer(char *label, timer_function f, void* param,
 int register_utimer(char *label, utimer_function f, void* param,
 		unsigned int interval, unsigned short flags);
 
+unsigned int have_ticks(void);
+
+unsigned int have_uticks(void);
+
 unsigned int get_ticks(void);
 
 utime_t get_uticks(void);

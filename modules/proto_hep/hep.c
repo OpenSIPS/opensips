@@ -132,31 +132,7 @@ static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su
 	/* Proto ID */
 	hg.ip_proto.chunk.vendor_id = htons(OSIP_VENDOR_ID);
 	hg.ip_proto.chunk.type_id   = htons(0x0002);
-	switch (proto) {
-		case PROTO_UDP:
-			hg.ip_proto.data = IPPROTO_UDP;
-			break;
-
-		case PROTO_TCP:
-			hg.ip_proto.data = IPPROTO_TCP;
-			break;
-
-		case PROTO_TLS:
-			hg.ip_proto.data = IPPROTO_IDP;
-			break;
-
-		case PROTO_SCTP:
-			hg.ip_proto.data = IPPROTO_SCTP;
-			break;
-
-		case PROTO_WS:
-			hg.ip_proto.data = IPPROTO_ESP;
-			break;
-
-		default:
-			LM_ERR("Unknown protocol [%d]\n", proto);
-			return -1;
-	}
+	hg.ip_proto.data = proto;
 	hg.ip_proto.chunk.length = htons(sizeof(hg.ip_proto));
 
 
@@ -332,32 +308,7 @@ static int pack_hepv2(union sockaddr_union* from_su, union sockaddr_union* to_su
 	/* Version && proto */
 	hdr.hp_v = hep_version;
 	hdr.hp_f = from_su->s.sa_family;
-	switch (proto) {
-		case PROTO_UDP:
-			hdr.hp_p = IPPROTO_UDP;
-			break;
-
-		case PROTO_TCP:
-			hdr.hp_p = IPPROTO_TCP;
-			break;
-
-		case PROTO_TLS:
-			hdr.hp_p = IPPROTO_IDP;
-			break;
-
-		case PROTO_SCTP:
-			hdr.hp_p = IPPROTO_SCTP;
-			break;
-
-		case PROTO_WS:
-			hdr.hp_p = IPPROTO_ESP;
-			break;
-
-		default:
-			LM_ERR("Unknown protocol [%d]\n", proto);
-			return -1;
-	}
-
+	hdr.hp_p = proto;
 
 	/* IP version */
 	switch (hdr.hp_f) {

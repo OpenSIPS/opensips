@@ -125,10 +125,11 @@ Vladut-Stefan Paiu
               1.9.4. profile_get_size
               1.9.5. profile_list_dlgs
               1.9.6. profile_get_values
-              1.9.7. dlg_db_sync
-              1.9.8. dlg_restore_db
-              1.9.9. list_all_profiles
-              1.9.10. profile_bin_status
+              1.9.7. profile_end_dlgs
+              1.9.8. dlg_db_sync
+              1.9.9. dlg_restore_db
+              1.9.10. list_all_profiles
+              1.9.11. profile_bin_status
 
         1.10. Exported pseudo-variables
 
@@ -1629,7 +1630,26 @@ $var(account) = $dlg_val(account_type);
                 inbound_calls
                 _empty_line_
 
-1.9.7. dlg_db_sync
+1.9.7. profile_end_dlgs
+
+   Terminate all ongoing dialogs from a specified profile, on a
+   single dialog it performs the same operations as the command
+   dlg_end_dlg
+
+   Name: profile_end_dlgs
+
+   Parameters:
+     * profile - name of the profile that will have its dialogs
+       termianted
+     * value - (optional) if the profile supports values terminate
+       only the dialogs with the specified value
+
+   MI FIFO Command Format:
+                :profile_end_dlgs:_reply_fifo_file_
+                inbound_calls
+                _empty_line_
+
+1.9.8. dlg_db_sync
 
    Will synchronize the information about the dialogs from the
    database with the OpenSIPS internal memory. To be used mainly
@@ -1644,7 +1664,7 @@ $var(account) = $dlg_val(account_type);
                 :dlg_db_sync:_reply_fifo_file_
                 _empty_line_
 
-1.9.8. dlg_restore_db
+1.9.9. dlg_restore_db
 
    Restores the dialog table after a potential desynchronization
    event. The table is truncated, then populated with CONFIRMED
@@ -1658,7 +1678,7 @@ $var(account) = $dlg_val(account_type);
                 :dlg_restore_db:_reply_fifo_file_
                 _empty_line_
 
-1.9.9. list_all_profiles
+1.9.10. list_all_profiles
 
    Lists all the dialog profiles, along with 1 or 0 if the given
    profile has/does not have an associated value.
@@ -1671,7 +1691,7 @@ $var(account) = $dlg_val(account_type);
                 :list_all_profiles:_reply_fifo_file_
                 _empty_line_
 
-1.9.10.  profile_bin_status
+1.9.11.  profile_bin_status
 
    Dumps each destination used for profiles replication, as well
    as the timestamp of the last message received from them.
