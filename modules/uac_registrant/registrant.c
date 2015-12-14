@@ -824,6 +824,34 @@ static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
 	return rpl_tree;
 }
 
+int run_compare_rec(void *e_data, void *data, void *r_data)
+{
+	reg_record_t *old_rec = (reg_record_t*)e_data;
+	reg_record_t *new_rec = (reg_record_t*)data;
+
+	if ((old_rec->state == REGISTERED_STATE) &&
+	    (str_strcmp(&old_rec->td.rem_uri, &new_rec->td.rem_uri) == 0)) {
+		memcpy(new_rec->td.id.call_id.s, old_rec->td.id.call_id.s,
+		    new_rec->td.id.call_id.len);
+		memcpy(new_rec->td.id.loc_tag.s, old_rec->td.id.loc_tag.s,
+		    new_rec->td.id.loc_tag.len);
+		new_rec->td.loc_seq.value = old_rec->td.loc_seq.value;
+		new_rec->last_register_sent = old_rec->last_register_sent;
+		new_rec->registration_timeout = old_rec->registration_timeout;
+		new_rec->state = old_rec->state;
+	}
+	return 0;
+}
+
+int run_find_same_rec(void *e_data, void *data, void *r_data)
+{
+	reg_record_t *new_rec = (reg_record_t*)e_data;
+	int i = (int*)data;
+
+	slinkedl_traverse(reg_htable[i].p_list, &run_compare_rec, new_rec, NULL);
+	return 0;
+}
+
 static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param)
 {
 	struct mi_root *rpl_tree;
@@ -857,6 +885,9 @@ static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param)
 	/* Swap the lists: secondary will become primary */
 	for(i=0; i<reg_hsize; i++) {
 		lock_get(&reg_htable[i].lock);
+
+		slinkedl_traverse(reg_htable[i].s_list, &run_find_same_rec, &i, NULL);
+
 		slinkedl_list_destroy(reg_htable[i].p_list);
 		reg_htable[i].p_list = reg_htable[i].s_list;
 		reg_htable[i].s_list = NULL;
