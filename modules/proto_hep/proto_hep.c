@@ -43,6 +43,7 @@
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "../../pt.h"
 #include "../../ut.h"
+#include "../compression/compression_api.h"
 #include "hep.h"
 #include "hep_cb.h"
 
@@ -74,6 +75,10 @@ static int hep_async_local_write_timeout = 10;
 
 int hep_version = 3;
 int hep_capture_id = 1;
+int payload_compression=0;
+
+compression_api_t compression_api;
+load_compression_f load_compression;
 
 static struct tcp_req hep_current_req;
 /* we consider that different messages may contain different versions of hep
@@ -119,7 +124,30 @@ static param_export_t params[] = {
 											&hep_async_local_connect_timeout},
 	{ "hep_async_local_write_timeout",   INT_PARAM,
 											&hep_async_local_write_timeout  },
+	{ "compressed_payload",				 INT_PARAM, &payload_compression},
 	{0, 0, 0}
+};
+
+
+static module_dependency_t *get_deps_compression(param_export_t *param)
+{
+	int do_compression= *(int *)param->param_pointer;
+
+	if (hep_version < 3 || do_compression == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "compression", DEP_ABORT);
+
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{"compressed_payload", get_deps_compression},
+		{ NULL, NULL },
+	},
 };
 
 
@@ -129,7 +157,7 @@ struct module_exports exports = {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,            /* OpenSIPS module dependencies */
 	cmds,       /* exported functions */
 	0,          /* exported async functions */
 	params,     /* module parameters */
@@ -152,6 +180,19 @@ static int mod_init(void)
 		hep_version = HEP_LAST;
 	}
 
+	if (payload_compression) {
+		load_compression =
+			(load_compression_f)find_export("load_compression", 1, 0);
+		if (!load_compression) {
+			LM_ERR("can't bind compression module!\n");
+			return -1;
+		}
+
+		if (load_compression(&compression_api)) {
+			LM_ERR("failed to load compression api!\n");
+			return -1;
+		}
+	}
 	return 0;
 }
 

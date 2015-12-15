@@ -39,12 +39,16 @@
 #include "../../pt.h"
 #include "../../ut.h"
 #include "hep.h"
+#include "../compression/compression_api.h"
 
 #define OSIP_VENDOR_ID 0x0003
 #define HEP_PROTO_SIP  0x01
 
 extern int hep_version;
 extern int hep_capture_id;
+extern int payload_compression;
+
+extern compression_api_t compression_api;
 
 static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su,
 		int proto, char *payload, int plen, char **retbuf, int *retlen);
@@ -106,11 +110,16 @@ int pack_hep(union sockaddr_union* from_su, union sockaddr_union* to_su,
 static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su,
 		int proto, char *payload, int plen, char **retbuf, int *retlen)
 {
+	int rc;
 	int buflen, iplen=0, tlen;
 	char* buffer;
 
 	struct hep_generic hg;
 	struct timeval tvb;
+
+	unsigned long compress_len;
+
+	str compressed_payload={NULL, 0};
 
 	hep_chunk_ip4_t src_ip4, dst_ip4;
 	hep_chunk_ip6_t src_ip6, dst_ip6;
@@ -220,13 +229,27 @@ static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su
 	hg.capt_id.chunk.length = htons(sizeof(hg.capt_id));
 
 	payload_chunk.vendor_id = htons(OSIP_VENDOR_ID);
-	payload_chunk.type_id   = htons(0x000f);
+	payload_chunk.type_id   = payload_compression ? htons(0x0010) : htons(0x000f);
+
+
+	/* compress the payload if requested */
+	if (payload_compression) {
+		rc=compression_api.compress((unsigned char*)payload, (unsigned long)plen,
+				&compressed_payload, &compress_len, compression_api.level);
+		if (compression_api.check_rc(rc)==0) {
+			plen = (int)compress_len;
+			/* we don't need the payload pointer in this function */
+			payload = compressed_payload.s;
+		} else {
+			LM_ERR("payload compression failed! will send the buffer uncompressed\n");
+			payload_chunk.type_id = htons(0x000f);
+		}
+	}
+
 	payload_chunk.length    = htons(sizeof(payload_chunk) + plen);
 
 	tlen = sizeof(struct hep_generic) + plen + iplen + sizeof(hep_chunk_t);
 
-
-	/* FIXME no zip support yet */
 	/* FIXME no tls support yet */
 
 	/* total */
@@ -264,8 +287,10 @@ static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su
 	}
 
 	/* PAYLOAD CHUNK */
+
 	memcpy((void*) buffer+buflen, &payload_chunk,  sizeof(struct hep_chunk));
 	buflen +=  sizeof(struct hep_chunk);
+
 
 	/* Now copying payload self */
 	memcpy((void*) buffer+buflen, payload, plen);
@@ -526,11 +551,17 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 		_len -= _off; \
 	} while (0);
 
+	int rc;
+
+	unsigned char *compressed_payload;
+	unsigned long compress_len;
 
 	struct hepv3 h3;
 	unsigned short tlen;
+	unsigned long decompress_len;
 
 	u_int16_t chunk_id;
+	str decompressed_payload={NULL, 0};
 
 	h->version = 3;
 
@@ -670,8 +701,38 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 			break;
 		case 0x0010:
 			/* captured compressed payload(GZIP/inflate)*/
-			LM_WARN("compressed payload with hep not implemented!\n");
-			goto safe_exit;
+			if (!payload_compression) {
+				LM_ERR("Received compressed payload but you don't have "
+						"\"payload\" parameter set! Can't do decompression!");
+				goto safe_exit;
+			}
+
+			h3.payload_chunk = *((hep_chunk_payload_t*)buf);
+			h3.payload_chunk.data = (char *)buf + sizeof(hep_chunk_t);
+
+			/* first update the buffer for further processing
+			 * and convert values to host byte order */
+			CONVERT_TO_HBO(h3.payload_chunk.chunk);
+			UPDATE_BUFFER(buf, tlen, h3.payload_chunk.chunk.length);
+
+			compressed_payload = (unsigned char *)h3.payload_chunk.data;
+			compress_len =(unsigned long)
+						(h3.payload_chunk.chunk.length - sizeof(hep_chunk_t));
+
+			rc=compression_api.decompress(compressed_payload, compress_len,
+								&decompressed_payload, &decompress_len);
+
+
+			if (compression_api.check_rc(rc)) {
+				LM_ERR("payload decompression failed!\n");
+				goto safe_exit;
+			}
+
+			/* update the length based on the new length */
+			h3.payload_chunk.chunk.length += (decompress_len - compress_len);
+			h3.payload_chunk.data = decompressed_payload.s;
+
+			break;
 		case 0x0011:
 			/* internal correlation id */
 			LM_WARN("keep alive timer not implemented!\n");
