@@ -53,6 +53,7 @@
 #include "compression.h"
 #include "compression_helpers.h"
 #include "gz_helpers.h"
+#include "compression_api.h"
 
 
 #define CL_NAME		"Content-Length: "
@@ -111,7 +112,7 @@ static int mod_init(void);
 static int child_init(int rank);
 static void mod_destroy();
 
-static int mc_level = 6;
+int mc_level = 6;
 unsigned char* mnd_hdrs_mask = NULL;
 unsigned char* compact_form_mask = NULL;
 struct tm_binds tm_api;
@@ -168,6 +169,7 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|FAILURE_ROUTE},
 	{"mc_decompress",	  (cmd_function)mc_decompress,  0,	NULL, 0,
 		REQUEST_ROUTE|LOCAL_ROUTE|FAILURE_ROUTE},
+	{"load_compression",			  (cmd_function)bind_compression,        1, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
 
