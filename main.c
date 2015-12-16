@@ -350,12 +350,19 @@ void cleanup(int show_status)
 static void kill_all_children(int signum)
 {
 	int r;
-	if (own_pgid) kill(0, signum);
-	else if (pt)
+	if (own_pgid) {
+		/* check that all processes initialized properly */
+		for (r=1; r<counted_processes; r++) {
+			while (pt[r].pid==0){
+				usleep(1000);
+			}
+		}
+		kill(0, signum);
+	} else if (pt)
 		for (r=1; r<counted_processes; r++) {
 			if (pt[r].pid==-1) continue;
 			/* as the PIDs are filled in by child processes, a 0 PID means
-			 * an un-initalized procees; killing an uninitialized proc is 
+			 * an un-initalized procees; killing an uninitialized proc is
 			 * very dangerous, so better wait for it to finish its init
 			 * sequance by checking when the pid is populated */
 			while (pt[r].pid==0) usleep(1000);
@@ -1191,7 +1198,7 @@ try_again:
 		LM_CRIT("failed to create DNS blacklist\n");
 		goto error;
 	}
-	
+
 	/* init modules */
 	if (init_modules() != 0) {
 		LM_ERR("error while initializing modules\n");
