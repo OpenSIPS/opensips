@@ -846,7 +846,7 @@ int run_compare_rec(void *e_data, void *data, void *r_data)
 int run_find_same_rec(void *e_data, void *data, void *r_data)
 {
 	reg_record_t *new_rec = (reg_record_t*)e_data;
-	int i = (int*)data;
+	int i = *(int*)data;
 
 	slinkedl_traverse(reg_htable[i].p_list, &run_compare_rec, new_rec, NULL);
 	return 0;
