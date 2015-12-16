@@ -58,8 +58,15 @@ extern unsigned int context_sizes[];
  *
  * Note: this will not change the "current_processing_ctx"
  */
-context_p context_alloc(void);
+context_p context_alloc(enum osips_context ctx);
 #define   context_free(context_p) pkg_free(context_p)
+
+/*
+ * destroys a context by calling each callback registered
+ */
+void context_destroy(enum osips_context type, context_p ctx);
+
+typedef void (*context_destroy_f)(void *);
 
 /*
  * - the register functions should be called before any forks are made
@@ -67,9 +74,9 @@ context_p context_alloc(void);
  *
  * - they reserve and return a position in the context buffer of the given type
  */
-int context_register_int(enum osips_context type);
-int context_register_str(enum osips_context type);
-int context_register_ptr(enum osips_context type);
+int context_register_int(enum osips_context type, context_destroy_f f);
+int context_register_str(enum osips_context type, context_destroy_f f);
+int context_register_ptr(enum osips_context type, context_destroy_f f);
 
 void context_put_int(enum osips_context type, context_p ctx,
 									 int pos, int data);

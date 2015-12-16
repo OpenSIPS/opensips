@@ -9,7 +9,7 @@
 #  --------
 #              created by andrei
 #  2003-02-24  make install no longer overwrites opensips.cfg  - patch provided
-#               by Maxim Sobolev   <sobomax@FreeBSD.org> and 
+#               by Maxim Sobolev   <sobomax@FreeBSD.org> and
 #                  Tomas Bjoerklund <tomas@webservices.se>
 #  2003-03-11  PREFIX & LOCALBASE must also be exported (andrei)
 #  2003-04-07  hacked to work with solaris install (andrei)
@@ -23,7 +23,7 @@
 #               in the cfg (re: /usr/.*lib/opensips/modules)
 #              opensips.cfg.default is installed only if there is a previous
 #               cfg. -- fixes packages containing opensips.cfg.default (andrei)
-#  2003-08-29  install-modules-doc split from install-doc, added 
+#  2003-08-29  install-modules-doc split from install-doc, added
 #               install-modules-all, removed README.cfg (andrei)
 #              added skip_cfg_install (andrei)
 #  2004-09-02  install-man will automatically "fix" the path of the files
@@ -141,19 +141,19 @@ endif
 NAME=$(MAIN_NAME)
 
 #export relevant variables to the sub-makes
-export DEFS PROFILE CC LD MKDEP MKTAGS CFLAGS LDFLAGS MOD_CFLAGS MOD_LDFLAGS 
+export DEFS PROFILE CC LD MKDEP MKTAGS CFLAGS LDFLAGS MOD_CFLAGS MOD_LDFLAGS
 export LIBS RADIUS_LIB
-export LEX YACC YACC_FLAGS
+export LEX LEX_FLAGS YACC YACC_FLAGS
 export PREFIX LOCALBASE SYSBASE
-# export relevant variables for recursive calls of this makefile 
+# export relevant variables for recursive calls of this makefile
 # (e.g. make deb)
 #export LIBS
-#export TAR 
-export NAME RELEASE OS ARCH 
+#export TAR
+export NAME RELEASE OS ARCH
 export cfg-prefix cfg-dir bin-prefix bin-dir modules-prefix modules-dir
 export doc-prefix doc-dir man-prefix man-dir ut-prefix ut-dir lib-dir
 export cfg-target modules-target data-dir data-prefix data-target
-export INSTALL INSTALL_CFG INSTALL_BIN INSTALL_MODULES INSTALL_DOC INSTALL_MAN 
+export INSTALL INSTALL_CFG INSTALL_BIN INSTALL_MODULES INSTALL_DOC INSTALL_MAN
 export INSTALL_TOUCH
 
 # extra excludes for tar
@@ -162,15 +162,21 @@ tar_extra_args+=
 # include the common rules
 include Makefile.rules
 
-#extra targets 
+#extra targets
 
 $(NAME): $(extra_objs) # static_modules
 
 lex.yy.c: cfg.lex cfg.tab.h $(ALLDEP)
-	$(LEX) $<
+ifeq (,$(FASTER))
+	@echo "Generating lexer"
+endif
+	$(Q)$(LEX) $(LEX_FLAGS) $<
 
 cfg.tab.c cfg.tab.h: cfg.y  $(ALLDEP)
-	$(YACC) $(YACC_FLAGS) $<
+ifeq (,$(FASTER))
+	@echo "Generating parser"
+endif
+	$(Q)$(YACC) $(YACC_FLAGS) $<
 
 .PHONY: all
 all: $(NAME) modules utils
@@ -375,7 +381,7 @@ dbschema-docbook: dbschema-docbook-txt dbschema-docbook-html dbschema-docbook-pd
 
 
 $(extra_objs):
-	-@echo "Extra objs: $(extra_objs)" 
+	-@echo "Extra objs: $(extra_objs)"
 	@set -e; \
 	for r in $(static_modules_path) "" ; do \
 		if [ -n "$$r" ]; then \
@@ -383,10 +389,10 @@ $(extra_objs):
 			echo  "Making static module $r" ; \
 			$(MAKE) -C $$r static ; \
 		fi ; \
-	done 
+	done
 
 
-	
+
 dbg: $(NAME)
 	gdb -command debug.gdb
 
@@ -429,7 +435,7 @@ tar: $(NEWREVISION)
 .PHONY: bin
 bin:
 	mkdir -p tmp/$(NAME)/usr/local
-	$(MAKE) install basedir=tmp/$(NAME) prefix=/usr/local 
+	$(MAKE) install basedir=tmp/$(NAME) prefix=/usr/local
 	$(TAR) -C tmp/$(NAME)/ -zcf ../$(NAME)-$(RELEASE)_$(OS)_$(ARCH).tar.gz .
 	rm -rf tmp/$(NAME)
 
@@ -499,7 +505,7 @@ mk-install-dirs: $(cfg-prefix)/$(cfg-dir) $(bin-prefix)/$(bin-dir) \
 			$(man-prefix)/$(man-dir)/man8 $(man-prefix)/$(man-dir)/man5 \
 			$(data-prefix)/$(data-dir)
 
-		
+
 # note: on solaris 8 sed: ? or \(...\)* (a.s.o) do not work
 install-cfg: $(cfg-prefix)/$(cfg-dir)
 		sed -e "s#/usr/.*lib/$(NAME)/modules/#$(modules-target)#g" \
@@ -547,7 +553,7 @@ install-console: $(bin-prefix)/$(bin-dir)
 
 install-bin: $(bin-prefix)/$(bin-dir) utils
 		# install opensips binary
-		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
+		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME)
 		$(INSTALL_BIN) $(NAME) $(bin-prefix)/$(bin-dir)
 		# install opensips menuconfig
 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/osipsconfig
@@ -562,7 +568,7 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 		rm -fr /tmp/opensipsctl
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
 			< scripts/opensipsctl.base > /tmp/opensipsctl.base
-		mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl 
+		mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl
 		$(INSTALL_TOUCH) \
 			$(modules-prefix)/$(lib-dir)/opensipsctl
 		$(INSTALL_CFG) /tmp/opensipsctl.base \
@@ -628,7 +634,7 @@ install-modules: modules $(modules-prefix)/$(modules-dir)
 				echo "ERROR: module $$r not compiled" ; \
 			fi ;\
 		fi ; \
-	done 
+	done
 
 
 .PHONY: install-doc install-app-doc install-modules-doc
@@ -650,7 +656,7 @@ install-modules-doc: $(doc-prefix)/$(doc-dir)
 									$(doc-prefix)/$(doc-dir)/README."$$r" ; \
 			fi ; \
 		fi ; \
-	done 
+	done
 
 
 install-man: $(man-prefix)/$(man-dir)/man8 $(man-prefix)/$(man-dir)/man5

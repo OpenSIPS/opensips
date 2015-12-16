@@ -513,6 +513,7 @@ void rl_timer(unsigned int ticks, void *param)
 				default:
 					break;
 				}
+				(*pipe)->my_last_counter = (*pipe)->counter;
 				(*pipe)->last_counter = rl_get_all_counters(*pipe);
 				if (RL_USE_CDB(*pipe)) {
 					if (rl_change_counter(key, *pipe, 0) < 0) {
@@ -837,7 +838,7 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri, int server_id)
  	}
 
 	if (packet_type == SERVER_TIMEOUT) {
-		LM_WARN("server with clustererer id %d timeout\n", server_id);
+		LM_INFO("server with clustererer id %d timeout\n", server_id);
 		return;
 	}
 	
@@ -994,7 +995,7 @@ void rl_timer_repl(utime_t ticks, void *param)
 			if (bin_push_int((*pipe)->limit) < 0)
 				goto error;
 
-			if ((ret = bin_push_int((*pipe)->counter)) < 0)
+			if ((ret = bin_push_int((*pipe)->my_last_counter)) < 0)
 				goto error;
 			nr++;
 

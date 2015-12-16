@@ -426,6 +426,7 @@ int tlsops_comp(struct sip_msg *msg, pv_param_t *param,
 	int nid = NID_commonName, index, my = 0, issuer = 0, ind_local;
 	char* elem;
 	str text;
+	UNUSED(elem);
 
 	text.s = 0;
 	/* copy callback value as we modify it */

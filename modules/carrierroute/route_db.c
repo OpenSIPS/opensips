@@ -166,7 +166,7 @@ int load_user_carrier(str * user, str * domain) {
 int load_route_data(struct rewrite_data * rd) {
 	db_res_t * res = NULL;
 	db_row_t * row = NULL;
-	int i, ret;
+	int i, n = 0, ret;
 	int carrier_count = 0;
 	struct carrier * carriers = NULL, * tmp = NULL;
 	static str query_str;
@@ -181,6 +181,7 @@ int load_route_data(struct rewrite_data * rd) {
 	str tmp_next_domain;
 	str tmp_comment;
 	int no_rows=10;
+	UNUSED(n);
 
 	if( (strlen("SELECT DISTINCT  FROM  WHERE = ")
 			+ db_table.len + columns[COL_DOMAIN]->len
@@ -253,7 +254,7 @@ int load_route_data(struct rewrite_data * rd) {
 			return -1;
 		}
 	}
-	int n = 0;
+
 	do {
 		LM_DBG("loading, cycle %d", n++);
 			for (i = 0; i < RES_ROW_N(res); ++i) {

@@ -101,8 +101,6 @@ str failed_attempts_col = str_init("failed_attempts");
 str no_tries_col = str_init("no_tries");
 
 str description_col = str_init("description");
-static db_key_t *clusterer_machine_id_key = NULL;
-static db_val_t *clusterer_machine_id_value = NULL;
 static db_key_t *clusterer_cluster_id_key = NULL;
 static db_val_t *clusterer_cluster_id_value = NULL;
 /* EQUAL OPERATOR*/
@@ -136,7 +134,7 @@ static int reload_data();
 
 /* sets a connection state */
 static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param);
-static int set_state(int cluster_id, int machine_id, int state, int proto);
+static int set_state(int cluster_id, int machine_id, enum cl_machine_state state, int proto);
 
 /* lists the available connections for the specified server*/
 static struct mi_root * clusterer_list(struct mi_root *root, void *param);
@@ -270,7 +268,7 @@ static int mod_init(void)
 	}
 
 	if (persistent_state > 1 && persistent_state < 0) {
-		LM_WARN("invalid value for persistent state - using the default value\n");
+		LM_WARN("invalid value for persistent state - presistence disabled\n");
 		persistent_state = 0;
 	}
 
@@ -287,14 +285,12 @@ static int mod_init(void)
 	no_tries_col.len = strlen(no_tries_col.s);
 
 
-	LM_INFO("LOCK  - initializing\n");
 	/* create & init lock */
 	if ((ref_lock = lock_init_rw()) == NULL) {
 		LM_CRIT("failed to init lock\n");
 		goto error;
 	}
 
-	LM_INFO("DATA  - initializing\n");
 	/* data pointer in shm */
 	tdata = (table_entry_t**) shm_malloc(sizeof(table_entry_t*));
 	if (tdata == 0) {
@@ -303,7 +299,6 @@ static int mod_init(void)
 	}
 	*tdata = 0;
 
-	LM_INFO("BINDING\n");
 	/* bind to the mysql module */
 	if (db_bind_mod(&clusterer_db_url, &dr_dbf)) {
 		LM_CRIT("cannot bind to database module! "
@@ -311,7 +306,6 @@ static int mod_init(void)
 		goto error;
 	}
 
-	LM_INFO("verifying db capabilities\n");
 	if (!DB_CAPABILITY(dr_dbf, DB_CAP)) {
 		LM_CRIT("database modules does not "
 			"provide QUERY functions needed by DRounting module\n");
@@ -402,14 +396,14 @@ static void update_nodes_handler(unsigned int ticks, void *param)
 			while (value != NULL) {
 				head = value->in_timestamps;
 				while (head != NULL) {
-					if (head->state == 1 && (ctime - head->timestamp) > head->up->timeout) {
+					if (head->state == CLUSTERER_STATE_PROBE && (ctime - head->timestamp) > head->up->timeout) {
 						head->up->cb(SERVER_TIMEOUT, NULL, value->id);
 						head->timestamp = head->timestamp + head->up->timeout;
-						head->state = 2;
+						head->state = CLUSTERER_STATE_OFF;
 					}
-					if (head->state == 2 && (ctime - head->timestamp) > head->up->duration) {
+					if (head->state == CLUSTERER_STATE_OFF && (ctime - head->timestamp) > head->up->duration) {
 						LM_DBG("node c_id %d m_id %d is up again\n", head_table->cluster_id, value->machine_id);
-						head->state = 1;
+						head->state = CLUSTERER_STATE_PROBE;
 						head->timestamp = ctime;
 					}
 					head = head->next;
@@ -695,6 +689,13 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 	int no_rows = 5;
 	int db_cols = 10;
 	unsigned long last_attempt;
+	static db_key_t clusterer_machine_id_key = &machine_id_col;
+	static db_val_t clusterer_machine_id_value = {
+		.type = DB_INT,
+		.nul = 0,
+	};
+
+	VAL_INT(&clusterer_machine_id_value) = server_id;
 
 	/* the columns from the db table */
 	db_key_t columns[10];
@@ -721,30 +722,6 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 
 	CON_OR_RESET(db_hdl);
 
-	/* allocating memory only once */
-	if (!clusterer_machine_id_key) {
-		clusterer_machine_id_key = pkg_malloc(sizeof(db_key_t));
-
-		if (!clusterer_machine_id_key) {
-			LM_ERR("no more pkg memory\n");
-			goto error;
-		}
-		clusterer_machine_id_key[0] = &machine_id_col;
-	}
-
-	/* allocating memory only once */
-	if (!clusterer_machine_id_value) {
-		clusterer_machine_id_value = pkg_malloc(sizeof(db_val_t));
-		if (!clusterer_machine_id_value) {
-			LM_ERR("no more pkg memory\n");
-			goto error;
-		}
-		VAL_TYPE(clusterer_machine_id_value) = DB_INT;
-		VAL_NULL(clusterer_machine_id_value) = 0;
-		VAL_INT(clusterer_machine_id_value) = server_id;
-
-	}
-
 	/* checking if the table version is up to date*/
 	if (db_check_table_version(dr_dbf, db_hdl, db_table, 1/*version*/) != 0)
 		goto error;
@@ -759,8 +736,8 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 		"in which the specified server runs\n");
 
 	/* first we see in which clusters the specified server runs*/
-	if (dr_dbf->query(db_hdl, clusterer_machine_id_key, &op,
-		clusterer_machine_id_value, columns, 1, 1, 0, &res) < 0) {
+	if (dr_dbf->query(db_hdl, &clusterer_machine_id_key, &op,
+		&clusterer_machine_id_value, columns, 1, 1, 0, &res) < 0) {
 		LM_ERR("DB query failed - cannot retrieve the clusters list in which"
 			" the specified server runs\n");
 		goto error;
@@ -769,9 +746,13 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 	LM_DBG("%d rows found in %.*s\n",
 		RES_ROW_N(res), db_table->len, db_table->s);
 
+	if (RES_ROW_N(res) == 0) {
+		LM_WARN("No machines found in cluster %d\n", server_id);
+		return 0;
+	}
+
 	clusterer_cluster_id_key = pkg_realloc(clusterer_cluster_id_key,
 		RES_ROW_N(res) * sizeof(db_key_t));
-
 	if (!clusterer_cluster_id_key) {
 		LM_ERR("no more pkg memory\n");
 		goto error;
@@ -883,6 +864,9 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 
 			n++;
 		}
+		if (n == 1)
+			LM_WARN("The server is the only one in the cluster\n");
+
 		if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
 			if (dr_dbf->fetch_result(db_hdl, &res, no_rows) < 0) {
 				LM_ERR("fetching rows (1)\n");
@@ -1036,7 +1020,6 @@ static int reload_data(void)
 /* destroy function */
 static void destroy(void)
 {
-	LM_INFO("destroy function\n");
 
 	struct module_list *tmp;
 	
@@ -1093,7 +1076,7 @@ static void temp_disable_machine(table_entry_value_t *head)
 	head->no_tries++;
 	head->last_attempt = time(0);
 	if (head->no_tries == head->failed_attempts) {
-		head->state = 2;
+		head->state = CLUSTERER_STATE_OFF;
 	}
 }
 
@@ -1105,7 +1088,7 @@ static struct module_timestamp* create_module_timestamp(int ctime, struct module
 		LM_ERR("not enough shm memory");
 		goto error;
 	}
-	new_node->state = 1;
+	new_node->state = CLUSTERER_STATE_PROBE;
 	new_node->timestamp = ctime;
 	new_node->up = module;
 	new_node->next = NULL;
@@ -1135,7 +1118,7 @@ static int set_in_timestamp(struct module_list *module, int machine_id)
 			head = values->in_timestamps;
 			while (head != NULL) {
 				if (head->up == module) {
-					if (head->state == 2) {
+					if (head->state == CLUSTERER_STATE_OFF) {
 						LM_DBG("state for node with clusterer_id %d is 2\n", values->id);
 						is_ok = -1;
 					} else
@@ -1153,7 +1136,7 @@ static int set_in_timestamp(struct module_list *module, int machine_id)
 }
 
 /* setting a connection status */
-static int set_state(int cluster_id, int machine_id, int state, int proto)
+static int set_state(int cluster_id, int machine_id, enum cl_machine_state state, int proto)
 {
 	table_entry_value_t *head_table;
 	int is_ok = 1;
@@ -1168,11 +1151,11 @@ static int set_state(int cluster_id, int machine_id, int state, int proto)
 	while (head_table != NULL) {
 		if (head_table->machine_id == machine_id) {
 			head_table->dirty_bit = 1;
-			if (state == 2) {
+			if (state == CLUSTERER_STATE_OFF) {
 				head_table->no_tries++;
 				head_table->last_attempt = time(0);
 				if (head_table->no_tries == head_table->failed_attempts) {
-					head_table->state = 2;
+					head_table->state = CLUSTERER_STATE_OFF;
 				}
 			} else {
 				head_table->state = state;
@@ -1230,7 +1213,7 @@ static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param)
 	}
 
 	rc = str2int(&node->next->next->value, &state);
-	if (rc == -1 || state < 0 || state > 1) {
+	if (rc == -1 || (state != CLUSTERER_STATE_ON && state != CLUSTERER_STATE_PROBE)) {
 		LM_DBG("the state parameter is not valid\n");
 		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM));
 	}
@@ -1465,8 +1448,6 @@ int clusterer_check(int cluster_id, union sockaddr_union* su, int machine_id, in
 	int rc = 0;
 	table_entry_value_t *head;
 
-	LM_INFO("checking connection\n");
-
 	lock_start_read(ref_lock);
 
 	head = clusterer_find_nodes(cluster_id, proto);
@@ -1522,7 +1503,6 @@ static int send_to(int cluster_id, int proto)
 	str send_buffer;
 	unsigned long ctime = time(0);
 	int ok = -1;
-	LM_INFO("get nodes \n");
 
 	if (proto == PROTO_BIN) {
 		bin_get_buffer(&send_buffer);
@@ -1578,7 +1558,7 @@ static void bin_receive_packets(int packet_type, struct receive_info *ri, void *
 		return;
 
 	get_su_info(&ri->src_su.s, ip, port);
-	LM_WARN("received bin packet from source: %s:%hu\n",
+	LM_DBG("received bin packet from source: %s:%hu\n",
 		ip, port);
 
 	module = (struct module_list *) ptr;

@@ -200,6 +200,7 @@ static struct multi_str *tmp_mod;
 
 %}
 
+
 %union {
 	long intval;
 	unsigned long uval;
@@ -363,8 +364,6 @@ static struct multi_str *tmp_mod;
 %token MPATH
 %token MODPARAM
 %token MAXBUFFER
-%token USER
-%token GROUP
 %token CHROOT
 %token WDIR
 %token MHOMED
@@ -771,12 +770,6 @@ assign_stm: DEBUG EQUAL snumber {
 		| QUERYFLUSHTIME EQUAL error { yyerror("int value expected"); }
 		| SIP_WARNING EQUAL NUMBER { sip_warning=$3; }
 		| SIP_WARNING EQUAL error { yyerror("boolean value expected"); }
-		| USER EQUAL STRING     { user=$3; }
-		| USER EQUAL ID         { user=$3; }
-		| USER EQUAL error      { yyerror("string value expected"); }
-		| GROUP EQUAL STRING     { group=$3; }
-		| GROUP EQUAL ID         { group=$3; }
-		| GROUP EQUAL error      { yyerror("string value expected"); }
 		| CHROOT EQUAL STRING     { chroot_dir=$3; }
 		| CHROOT EQUAL ID         { chroot_dir=$3; }
 		| CHROOT EQUAL error      { yyerror("string value expected"); }
@@ -1420,6 +1413,7 @@ script_var:	SCRIPTVAR	{
 				{
 					yyerror("unknown script variable");
 				}
+
 				$$ = spec;
 			}
 		| SCRIPTVARERR {

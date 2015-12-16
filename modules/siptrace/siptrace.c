@@ -43,8 +43,8 @@
 #include "../sl/sl_cb.h"
 #include "../../str.h"
 #include "../../script_cb.h"
-
-#include "../sipcapture/sipcapture.h"
+#include "../proto_hep/hep.h"
+#include "../proto_hep/hep_cb.h"
 
 #define NR_KEYS 14
 #define SIPTRACE_TABLE_VERSION 4
@@ -67,6 +67,9 @@ static query_list_t *ins_list = NULL;
 
 struct tm_binds tmb;
 struct dlg_binds dlgb;
+
+proto_hep_api_t hep_api;
+load_hep_f load_hep;
 
 /* module function prototypes */
 static int mod_init(void);
@@ -127,8 +130,6 @@ static char *trace_flag_str = 0;
 int trace_flag = -1;
 int trace_on   = 0;
 int trace_to_database = 1;
-int hep_version = 1;
-int hep_capture_id = 1;
 int duplicate_with_hep = 0;
 
 str    dup_uri_str      = {0, 0};
@@ -201,8 +202,6 @@ static param_export_t params[] = {
 	{"enable_ack_trace",   INT_PARAM, &enable_ack_trace     },
 	{"trace_to_database",  INT_PARAM, &trace_to_database 	},
 	{"duplicate_with_hep", INT_PARAM, &duplicate_with_hep   },
-	{"hep_version",        INT_PARAM, &hep_version          },
-	{"hep_capture_id",     INT_PARAM, &hep_capture_id  	},
 	{0, 0, 0}
 };
 
@@ -226,6 +225,17 @@ static stat_export_t siptrace_stats[] = {
 };
 #endif
 
+static module_dependency_t *get_deps_hep(param_export_t *param)
+{
+	int hep_on = *(int *)param->param_pointer;
+
+	if (hep_on == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "proto_hep", DEP_ABORT);
+}
+
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
@@ -234,6 +244,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{"duplicate_with_hep", get_deps_hep},
 		{ NULL, NULL },
 	},
 };
@@ -481,12 +492,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if(hep_version != 1 && hep_version != 2) {
-
-                LM_ERR("unsupported version of HEP");
-                return -1;
-	}
-
 	if(dup_uri_str.s!=0) {
 		dup_uri_str.len = strlen(dup_uri_str.s);
 		dup_uri = (struct sip_uri *)pkg_malloc(sizeof(struct sip_uri));
@@ -541,6 +546,21 @@ static int mod_init(void)
 		trace_table_avp = -1;
 		trace_table_avp_type = 0;
 	}
+
+	if (duplicate_with_hep) {
+		load_hep = (load_hep_f)find_export("load_hep", 1, 0);
+		if (!load_hep) {
+			LM_ERR("Can't bind proto hep!\n");
+			return -1;
+		}
+
+		if (load_hep(&hep_api)) {
+			LM_ERR("can't bind proto hep\n");
+			return -1;
+		}
+	}
+
+
 
 	/* init the DB keys for future queries */
 	db_keys[0] = &msg_column;
@@ -1774,19 +1794,15 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 		unsigned short fromport, str *toproto, str *toip, unsigned short toport)
 {
 	struct proxy_l * p=NULL /* make gcc happy */;
-	void* buffer = NULL;
 	int ret;
 	union sockaddr_union from_su;
 	union sockaddr_union to_su;
-	unsigned int len, buflen, proto;
+	unsigned int proto, osip_proto;
 	struct socket_info* send_sock;
 	union sockaddr_union* to = NULL;
-	struct hep_hdr hdr;
-	struct hep_iphdr hep_ipheader;
-	struct hep_timehdr hep_time;
-	struct timeval tvb;
-	struct timezone tz;
-	struct hep_ip6hdr hep_ip6header;
+
+	int heplen;
+	char *hepbuf;
 
 	if(body->s==NULL || body->len <= 0)
 		return -1;
@@ -1794,20 +1810,8 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 	if(dup_uri_str.s==0 || dup_uri==NULL)
 		return 0;
 
-	gettimeofday( &tvb, &tz );
-
-	/* message length */
-	len = body->len
-		+ sizeof(struct hep_ip6hdr)
-		+ sizeof(struct hep_hdr) + sizeof(struct hep_timehdr);
-
-
-	/* The packet is too big for us */
-	if (len>BUF_SIZE){
-		goto error;
-	}
-
 	/* Convert proto:ip:port to sockaddress union SRC IP */
+	/* proto is going to be converted to netinet proto */
 	if (pipport2su(fromproto, fromip, fromport, &from_su, &proto)==-1 ||
 	(pipport2su(toproto, toip, toport, &to_su, &proto)==-1))
 		goto error;
@@ -1820,7 +1824,6 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 
 
 	/* create a temporary proxy*/
-	proto = PROTO_UDP;
 	p=mk_proxy(&dup_uri->host, (dup_uri->port_no)?dup_uri->port_no:SIP_PORT,proto, 0);
 	if (p==0){
 		LM_ERR("bad host name in uri\n");
@@ -1835,103 +1838,59 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 
 	hostent2su(to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
 
-	/* Version && proto && length */
-	hdr.hp_l = sizeof(struct hep_hdr);
-	hdr.hp_v = hep_version;
-	hdr.hp_p = proto;
-
-	/* AND the last */
-	if (from_su.s.sa_family==AF_INET){
-		/* prepare the hep headers */
-
-		hdr.hp_f = AF_INET;
-		hdr.hp_sport = htons(from_su.sin.sin_port);
-		hdr.hp_dport = htons(to_su.sin.sin_port);
-
-		hep_ipheader.hp_src = from_su.sin.sin_addr;
-		hep_ipheader.hp_dst = to_su.sin.sin_addr;
-
-		len = sizeof(struct hep_iphdr);
-	}
-	else if (from_su.s.sa_family==AF_INET6){
-		/* prepare the hep6 headers */
-
-		hdr.hp_f = AF_INET6;
-
-		hdr.hp_sport = htons(from_su.sin6.sin6_port);
-		hdr.hp_dport = htons(to_su.sin6.sin6_port);
-
-		hep_ip6header.hp6_src = from_su.sin6.sin6_addr;
-		hep_ip6header.hp6_dst = to_su.sin6.sin6_addr;
-
-		len = sizeof(struct hep_ip6hdr);
-	}
-	else {
-		LM_ERR("ERROR: trace_send_hep_duplicate: Unsupported protocol family\n");
-		goto error;;
+	if (hep_api.pack_hep(&from_su, to, proto, body->s, body->len,
+				&hepbuf, &heplen)) {
+		LM_ERR("failed to do hep packing\n");
+		return -1;
 	}
 
-	hdr.hp_l +=len;
-	len += (sizeof(struct hep_hdr)+sizeof(struct hep_timehdr)+body->len);
-	buffer = (void *)pkg_malloc(len+1);
-	if (buffer==0){
-		LM_ERR("ERROR: trace_send_hep_duplicate: out of memory\n");
-		goto error;
+	switch (proto) {
+		case IPPROTO_UDP:
+			osip_proto = PROTO_UDP;
+			break;
+
+		case IPPROTO_TCP:
+			osip_proto = PROTO_TCP;
+			break;
+
+		case IPPROTO_IDP:
+			osip_proto = PROTO_TLS;
+			break;
+
+		case IPPROTO_SCTP:
+			osip_proto = PROTO_SCTP;
+			break;
+
+		case IPPROTO_ESP:
+			osip_proto = PROTO_WS;
+			break;
+
+		default:
+			LM_ERR("Unknown protocol [%d]\n", proto);
+			return -1;
 	}
-
-	/* Copy job */
-	memset(buffer, '\0', len+1);
-
-	/* copy hep_hdr */
-	memcpy((void*)buffer, &hdr, sizeof(struct hep_hdr));
-	buflen = sizeof(struct hep_hdr);
-
-	/* hep_ip_hdr */
-	if(from_su.s.sa_family==AF_INET) {
-		memcpy((void*)buffer + buflen, &hep_ipheader, sizeof(struct hep_iphdr));
-		buflen += sizeof(struct hep_iphdr);
-	}
-	else {
-		memcpy((void*)buffer+buflen, &hep_ip6header, sizeof(struct hep_ip6hdr));
-		buflen += sizeof(struct hep_ip6hdr);
-	}
-
-	if(hep_version == 2) {
-
-		hep_time.tv_sec = tvb.tv_sec;
-		hep_time.tv_usec = tvb.tv_usec;
-		hep_time.captid = hep_capture_id;
-
-		memcpy((void*)buffer+buflen, &hep_time, sizeof(struct hep_timehdr));
-		buflen += sizeof(struct hep_timehdr);
-	}
-
-	/* PAYLOAD */
-	memcpy((void*)(buffer + buflen) , (void*)body->s, body->len);
-	buflen +=body->len;
 
 	ret = -1;
 
 	do {
-		send_sock=get_send_socket(0, to, proto);
+		send_sock=get_send_socket(0, to, osip_proto);
 		if (send_sock==0){
 			LM_ERR("can't forward to af %d, proto %d no corresponding listening socket\n",
 					to->s.sa_family,proto);
 			continue;
 		}
 
-		if (msg_send(send_sock, proto, to, 0, buffer, buflen, NULL)<0){
+		if (msg_send(send_sock, PROTO_HEP, to, 0, hepbuf, heplen, NULL)<0){
 			LM_ERR("cannot send duplicate message\n");
 			continue;
 		}
 		ret = 0;
 		break;
 	}while( get_next_su( p, to, 0)==0 );
-
 	free_proxy(p); /* frees only p content, not p itself */
 	pkg_free(p);
-	pkg_free(buffer);
 	pkg_free(to);
+	pkg_free(hepbuf);
 
 	return ret;
 error:
@@ -1940,7 +1899,6 @@ error:
 		free_proxy(p); /* frees only p content, not p itself */
 		pkg_free(p);
 	}
-	if(buffer) pkg_free(buffer);
 	if(to) pkg_free(to);
 	return -1;
 }

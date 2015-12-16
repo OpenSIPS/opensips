@@ -129,7 +129,7 @@ inline static unsigned long big_hash_idx(unsigned long s)
 	return idx;
 }
 
-inline unsigned long frag_size(void* p){
+unsigned long frag_size(void* p){
 	if(!p)
 		return 0;
 	return ((struct hp_frag*) ((char*)p - sizeof(struct hp_frag)))->size;

@@ -39,6 +39,8 @@
 #include <netdb.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include "../proto_hep/hep.h"
+#include "../proto_hep/hep_cb.h"
 
 /* BPF structure */
 #ifdef __OS_linux
@@ -54,7 +56,6 @@
 
 #include "../../sr_module.h"
 #include "../../dprint.h"
-/*for register_udprecv_cb()*/
 #include "../../net/proto_udp/proto_udp.h"
 #include "../../ut.h"
 #include "../../ip_addr.h"
@@ -74,7 +75,6 @@
 #include "../../str.h"
 #include "../../resolve.h"
 #include "../../receive.h"
-#include "sipcapture.h"
 
 #ifdef STATISTICS
 #include "../../statistics.h"
@@ -127,13 +127,19 @@ struct _sipcapture_object {
 #define TABLE_LEN 256
 #define NR_KEYS 37
 
+db_key_t db_keys[NR_KEYS];
+
 /* module function prototypes */
 static int mod_init(void);
 static int child_init(int rank);
 static void raw_socket_process(int rank);
 static void destroy(void);
 static int sip_capture(struct sip_msg *msg, char *s1, char *s2);
-int hep_msg_received(int sockfd, struct receive_info *ri, str *msg, void* param);
+static int async_sip_capture(struct sip_msg* msg, async_resume_module **resume_f,
+		void **resume_param, str* s1, str* s2);
+static int w_sip_capture(struct sip_msg *msg,
+				async_resume_module **resume_f, void **resume_param);
+int hep_msg_received(struct hep_desc *h, struct receive_info *ri);
 int extract_host_port(void);
 int raw_capture_socket(struct ip_addr* ip, str* iface, int port_start, int port_end, int proto);
 int raw_capture_rcv_loop(int rsock, int port1, int port2, int ipip);
@@ -141,6 +147,10 @@ int sipcapture_db_init(const str* db_url);
 void sipcapture_db_close(void);
 
 static struct mi_root* sip_capture_mi(struct mi_root* cmd, void* param );
+static int db_sync_store(db_val_t* db_vals);
+static int db_async_store(db_val_t* db_vals,
+							async_resume_module **resume_f, void **resume_param);
+int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param);
 
 static str db_url		= {NULL, 0};
 static str table_name		= str_init("sip_capture");
@@ -185,6 +195,31 @@ static str msg_column 		= str_init("msg");
 static str capture_node 	= str_init("homer01");
 
 
+#define MAX_QUERY 65535
+#define VALUES_STR "(%d,%ld,%lld,'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
+					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
+					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s',%d,'%.*s',%d," \
+					"'%.*s',%d,'%.*s',%d,%d,%d,'%.*s',%d,'%.*s','%.*s')"
+
+int  max_async_queries=5;
+
+static int base_query_len;
+
+struct _async_query {
+	int curr_async_queries;
+
+	int  query_len;
+	char query_buf[65535];
+
+	gen_lock_t query_lock;
+} *async_query;
+
+#define query_buf    async_query->query_buf
+#define query_len    async_query->query_len
+#define query_lock   async_query->query_lock
+#define curr_queries async_query->curr_async_queries
+
+
 int raw_sock_desc = -1; /* raw socket used for ip packets */
 unsigned int raw_sock_children = 1;
 int capture_on   = 0;
@@ -224,6 +259,9 @@ static query_list_t *ins_list = NULL;
 
 struct hep_timehdr* heptime;
 
+proto_hep_api_t hep_api;
+load_hep_f load_hep;
+
 /*! \brief
  * Exported functions
  */
@@ -231,6 +269,12 @@ static cmd_export_t cmds[] = {
 	{"sip_capture", (cmd_function)sip_capture, 0, 0, 0,
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
+};
+
+static acmd_export_t acmds[] = {
+
+	{"sip_capture", (acmd_function)async_sip_capture, 0, 0},
+	{0, 0, 0, 0}
 };
 
 static proc_export_t procs[] = {
@@ -287,6 +331,7 @@ static param_export_t params[] = {
 	{"capture_node",     		STR_PARAM, &capture_node.s     	},
         {"raw_sock_children",  		INT_PARAM, &raw_sock_children   },
         {"hep_capture_on",  		INT_PARAM, &hep_capture_on   },
+    {"max_async_queries",  		INT_PARAM, &max_async_queries   },
 	{"raw_socket_listen",     	STR_PARAM, &raw_socket_listen.s   },
         {"raw_ipip_capture_on",  	INT_PARAM, &ipip_capture_on  },
         {"raw_moni_capture_on",  	INT_PARAM, &moni_capture_on  },
@@ -316,12 +361,25 @@ stat_export_t sipcapture_stats[] = {
 };
 #endif
 
+static module_dependency_t *get_deps_hep(param_export_t *param)
+{
+	int hep_on = *(int *)param->param_pointer;
+
+	if (hep_on == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "proto_hep", DEP_ABORT);
+}
+
+
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{"hep_capture_on", get_deps_hep},
 		{ NULL, NULL },
 	},
 };
@@ -334,7 +392,7 @@ struct module_exports exports = {
 	DEFAULT_DLFLAGS, /*!< dlopen flags */
 	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /*!< Exported functions */
-	0,          /*!< Exported async functions */
+	acmds,          /*!< Exported async functions */
 	params,     /*!< Exported parameters */
 #ifdef STATISTICS
 	sipcapture_stats,  /*!< exported statistics */
@@ -354,9 +412,50 @@ struct module_exports exports = {
 /*! \brief Initialize sipcapture module */
 static int mod_init(void) {
 
+	int i;
 	struct ip_addr *ip = NULL;
 
 	init_db_url(db_url, 0);
+
+	/* init db keys */
+	db_keys[0] = &id_column;
+	db_keys[1] = &date_column;
+	db_keys[2] = &micro_ts_column;
+	db_keys[3] = &method_column;
+	db_keys[4] = &reply_reason_column;
+	db_keys[5] = &ruri_column;
+	db_keys[6] = &ruri_user_column;
+	db_keys[7] = &from_user_column;
+	db_keys[8] = &from_tag_column;
+	db_keys[9] = &to_user_column;
+	db_keys[10] = &to_tag_column;
+	db_keys[11] = &pid_user_column;
+	db_keys[12] = &contact_user_column;
+	db_keys[13] = &auth_user_column;
+	db_keys[14] = &callid_column;
+	db_keys[15] = &callid_aleg_column;
+	db_keys[16] = &via_1_column;
+	db_keys[17] = &via_1_branch_column;
+	db_keys[18] = &cseq_column;
+	db_keys[19] = &reason_column;
+	db_keys[20] = &content_type_column;
+	db_keys[21] = &authorization_column;
+	db_keys[22] = &user_agent_column;
+	db_keys[23] = &source_ip_column;
+	db_keys[24] = &source_port_column;
+	db_keys[25] = &dest_ip_column;
+	db_keys[26] = &dest_port_column;
+	db_keys[27] = &contact_ip_column;
+	db_keys[28] = &contact_port_column;
+	db_keys[29] = &orig_ip_column;
+	db_keys[30] = &orig_port_column;
+	db_keys[31] = &proto_column;
+	db_keys[32] = &family_column;
+	db_keys[33] = &rtp_stat_column;
+	db_keys[34] = &type_column;
+	db_keys[35] = &node_column;
+	db_keys[36] = &msg_column;
+
 
 #ifdef STATISTICS
 	/* register statistics */
@@ -421,6 +520,25 @@ static int mod_init(void) {
 	if(raw_interface.s)
 		raw_interface.len = strlen(raw_interface.s);
 
+	if (hep_capture_on) {
+		load_hep = (load_hep_f)find_export("load_hep", 1, 0);
+		if (!load_hep) {
+			LM_ERR("Can't bind proto hep!\n");
+			return -1;
+		}
+
+		if (load_hep(&hep_api)) {
+			LM_ERR("can't bind proto hep\n");
+			return -1;
+		}
+
+		if (hep_api.register_hep_cb(hep_msg_received)) {
+			LM_ERR("failed to register hep callback\n");
+			return -1;
+		}
+	}
+
+
 	/* Find a database module */
 	if (db_bind_mod(&db_url, &db_funcs))
 	{
@@ -433,6 +551,27 @@ static int mod_init(void) {
 				" by module\n");
 		return -1;
 	}
+
+	if (DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
+		async_query = shm_malloc(sizeof(struct _async_query));
+		if (async_query == NULL) {
+			LM_ERR("no more shm");
+			return -1;
+		}
+		lock_init(&query_lock);
+
+		/* build first part of the async query; no overflow risk */
+		query_len = snprintf(query_buf, MAX_QUERY, "INSERT INTO %s(",
+															table_name.s);
+		for (i = 0; i < NR_KEYS-1; i++)
+			query_len += snprintf(query_buf+query_len, MAX_QUERY-query_len,
+									"%s,",db_keys[i]->s);
+		query_len += snprintf(query_buf+query_len, MAX_QUERY-query_len,
+									"%s) VALUES", db_keys[NR_KEYS-1]->s);
+		base_query_len = query_len;
+	}
+
+
 
 	/*Check the table name*/
 	if(!table_name.len) {
@@ -448,19 +587,6 @@ static int mod_init(void) {
 	}
 
 	*capture_on_flag = capture_on;
-
-	/* register DGRAM event IPv4 */
-        if (register_udprecv_cb(&hep_msg_received, 0, 16, 16) != 0) {
-                LM_ERR("failed to install failed to register homer recv callback IPv4\n");
-                return -1;
-        }
-
-        /* register DGRAM event IPv6 */
-        if (register_udprecv_cb(&hep_msg_received, 0, 40, 10) != 0) {
-                LM_ERR("failed to install failed to register homer recv callback IPv6\n");
-                return -1;
-        }
-
 
 	if(ipip_capture_on && moni_capture_on) {
 		LM_ERR("only one RAW mode is supported. Please disable ipip_capture_on or moni_capture_on\n");
@@ -630,8 +756,40 @@ static void raw_socket_process(int rank)
 
 static void destroy(void)
 {
+	str query_str;
+
+	/* execute the uninserted queries */
+	if (DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
+		if (curr_queries) {
+			if (!db_con) {
+				db_con = db_funcs.init(&db_url);
+				if (!db_con) {
+					LM_ERR("unable to connect database\n");
+					goto destroy_continue;
+				}
+
+				if (db_funcs.use_table(db_con, &table_name) < 0) {
+					LM_ERR("use_table failed\n");
+					goto destroy_continue;
+				}
+			}
+
+			query_str.s   = query_buf;
+			query_str.len = query_len;
+
+			if (db_funcs.raw_query(db_con, &query_str, NULL)) {
+				LM_ERR("failed to insert remaining queries\n");
+			}
+			lock_destroy(&query_lock);
+		}
+
+		shm_free(async_query);
+	}
+
 	/* Destroy DB socket */
 	sipcapture_db_close();
+
+destroy_continue:
 
 	if (capture_on_flag)
 		shm_free(capture_on_flag);
@@ -654,139 +812,130 @@ static void destroy(void)
 /**
  * HEP message
  */
-int hep_msg_received(int sockfd, struct receive_info *ri, str *msg, void* param)
+int hep_msg_received(struct hep_desc *h, struct receive_info *ri)
 {
 
-	char *buf;
-	int offset = 0, hl;
-        struct hep_hdr *heph;
-        struct ip_addr dst_ip, src_ip;
-        char *hep_payload, *end, *p, *hep_ip;
-        struct hep_iphdr *hepiph = NULL;
-        struct hep_timehdr* heptime_tmp;
-        struct hep_ip6hdr *hepip6h = NULL;
-
-        memset(heptime, 0, sizeof(struct hep_timehdr));
+	char ip_family, proto;
+	unsigned short sport, dport;
+	struct ip_addr dst_ip, src_ip;
 
 
 	if(!hep_capture_on) {
 		LM_ERR("HEP is not enabled\n");
-                return 0;
+		return 0;
 	}
 
+	switch (h->version) {
+		case 1:
+		case 2:
+			ip_family = h->u.hepv12.hdr.hp_f;
+			proto	  = h->u.hepv12.hdr.hp_p;
+			dport	  = h->u.hepv12.hdr.hp_dport;
+			sport	  = h->u.hepv12.hdr.hp_sport;
 
-	buf = msg->s;
+			switch (ip_family) {
+				case AF_INET:
+					dst_ip.af  = src_ip.af  = AF_INET;
+					dst_ip.len = src_ip.len = 4;
 
-	hl = offset = sizeof(struct hep_hdr);
-        end = buf + msg->len;
-        if (msg->len < offset) {
-        	LM_ERR("len less than offset [%i] vs [%i]\n", msg->len, offset);
-                return 0;
-        }
+					memcpy(&dst_ip.u.addr,
+								&h->u.hepv12.addr.hep_ipheader.hp_dst, 4);
+					memcpy(&src_ip.u.addr,
+								&h->u.hepv12.addr.hep_ipheader.hp_src, 4);
 
-	/* hep_hdr */
-        heph = (struct hep_hdr*) buf;
+					break;
 
-        switch(heph->hp_f){
-        	case AF_INET:
-                	hl += sizeof(struct hep_iphdr);
-                        break;
-		case AF_INET6:
-                	hl += sizeof(struct hep_ip6hdr);
-                        break;
+				case AF_INET6:
+					dst_ip.af  = src_ip.af  = AF_INET6;
+					dst_ip.len = src_ip.len = 16;
+
+					memcpy(&dst_ip.u.addr,
+								&h->u.hepv12.addr.hep_ip6header.hp6_dst, 16);
+					memcpy(&src_ip.u.addr,
+								&h->u.hepv12.addr.hep_ip6header.hp6_src, 16);
+
+					break;
+
+				default:
+					LM_ERR("unsupported family [%d]\n", ip_family);
+					return -1;
+			}
+
+			/* timestamp and capture id */
+			if (h->version == 2) {
+				heptime->tv_sec  = h->u.hepv12.hep_time.tv_sec;
+				heptime->tv_usec = h->u.hepv12.hep_time.tv_usec;
+				heptime->captid  = h->u.hepv12.hep_time.captid;
+			}
+
+			break;
+
+		case 3:
+			ip_family = h->u.hepv3.hg.ip_family.data;
+			proto	  = h->u.hepv3.hg.ip_proto.data;
+			dport	  = h->u.hepv3.hg.dst_port.data;
+			sport     = h->u.hepv3.hg.src_port.data;
+
+			switch (ip_family) {
+				case AF_INET:
+					dst_ip.af  = src_ip.af  = AF_INET;
+					dst_ip.len = src_ip.len = 4;
+
+					memcpy(&dst_ip.u.addr,
+								&h->u.hepv3.addr.ip4_addr.dst_ip4.data, 4);
+					memcpy(&src_ip.u.addr,
+								&h->u.hepv3.addr.ip4_addr.src_ip4.data, 4);
+
+					break;
+
+				case AF_INET6:
+					dst_ip.af  = src_ip.af  = AF_INET6;
+					dst_ip.len = src_ip.len = 16;
+
+					memcpy(&dst_ip.u.addr,
+								&h->u.hepv3.addr.ip6_addr.dst_ip6.data, 16);
+					memcpy(&src_ip.u.addr,
+								&h->u.hepv3.addr.ip6_addr.src_ip6.data, 16);
+
+					break;
+
+				default:
+					LM_ERR("unsupported family [%d]\n", ip_family);
+					return -1;
+			}
+
+			/* timestamp and capture id */
+			heptime->tv_sec  = h->u.hepv3.hg.time_sec.data;
+			heptime->tv_usec = h->u.hepv3.hg.time_usec.data;
+			heptime->captid  = h->u.hepv3.hg.capt_id.data;
+
+			break;
+
 		default:
-                        LM_ERR("unsupported family [%d]\n", heph->hp_f);
-                        return 0;
-                }
-
-	/* Check version */
-        if((heph->hp_v != 1 && heph->hp_v != 2) || hl != heph->hp_l) {
-        	LM_ERR("not supported version or bad length: v:[%d] l:[%d] vs [%d]\n",
-                                                heph->hp_v, heph->hp_l, hl);
-                return 0;
+			LM_ERR("unknown hep proto [%d]\n", h->version);
+			return -1;
 	}
 
-        /* PROTO */
-        if(heph->hp_p == IPPROTO_UDP) ri->proto=PROTO_UDP;
-        else if(heph->hp_p == IPPROTO_TCP) ri->proto=PROTO_TCP;
-        else if(heph->hp_p == IPPROTO_IDP) ri->proto=PROTO_TLS;
+	/* PROTO */
+	if(proto == IPPROTO_UDP) ri->proto=PROTO_UDP;
+	else if(proto == IPPROTO_TCP) ri->proto=PROTO_TCP;
+	else if(proto == IPPROTO_IDP) ri->proto=PROTO_TLS;
+											/* fake protocol */
+	else if(proto == IPPROTO_SCTP) ri->proto=PROTO_SCTP;
+	else if(proto == IPPROTO_ESP) ri->proto=PROTO_WS;
                                             /* fake protocol */
-        else if(heph->hp_p == IPPROTO_SCTP) ri->proto=PROTO_SCTP;
-        else if(heph->hp_p == IPPROTO_ESP) ri->proto=PROTO_WS;
-                                            /* fake protocol */
-        else {
-        	LM_ERR("unknow protocol [%d]\n",heph->hp_p);
-                ri->proto = PROTO_NONE;
+	else {
+		LM_ERR("unknown protocol [%d]\n",proto);
+		ri->proto = PROTO_NONE;
 	}
 
-        hep_ip = buf + sizeof(struct hep_hdr);
+	ri->src_ip = src_ip;
+	ri->src_port = ntohs(sport);
 
-        if (hep_ip > end){
-                LM_ERR("hep_ip is over buf+len\n");
-                return 0;
-        }
+	ri->dst_ip = dst_ip;
+	ri->dst_port = ntohs(dport);
 
-	switch(heph->hp_f){
-		case AF_INET:
-                	offset+=sizeof(struct hep_iphdr);
-                        hepiph = (struct hep_iphdr*) hep_ip;
-                        break;
-		case AF_INET6:
-                	offset+=sizeof(struct hep_ip6hdr);
-                        hepip6h = (struct hep_ip6hdr*) hep_ip;
-                        break;
-	}
-
-	/* VOIP payload */
-        hep_payload = buf + offset;
-
-        if (hep_payload > end){
-        	LM_ERR("hep_payload is over buf+len\n");
-                return 0;
-	}
-
-	/* timming */
-	if(heph->hp_v == 2) {
-	        offset+=sizeof(struct hep_timehdr);
-                heptime_tmp = (struct hep_timehdr*) hep_payload;
-
-                heptime->tv_sec = heptime_tmp->tv_sec;
-                heptime->tv_usec = heptime_tmp->tv_usec;
-                heptime->captid = heptime_tmp->captid;
-        }
-
-	/* fill ip from the packet to dst_ip && to */
-        switch(heph->hp_f){
-
-		case AF_INET:
-                	dst_ip.af = src_ip.af = AF_INET;
-                        dst_ip.len = src_ip.len = 4 ;
-                        memcpy(&dst_ip.u.addr, &hepiph->hp_dst, 4);
-                        memcpy(&src_ip.u.addr, &hepiph->hp_src, 4);
-                        break;
-
-		case AF_INET6:
-                	dst_ip.af = src_ip.af = AF_INET6;
-                        dst_ip.len = src_ip.len = 16 ;
-                        memcpy(&dst_ip.u.addr, &hepip6h->hp6_dst, 16);
-                        memcpy(&src_ip.u.addr, &hepip6h->hp6_src, 16);
-                        break;
-
-	}
-
-        ri->src_ip = src_ip;
-        ri->src_port = ntohs(heph->hp_sport);
-
-        ri->dst_ip = dst_ip;
-        ri->dst_port = ntohs(heph->hp_dport);
-
-	/* cut off the offset */
-        msg->len -= offset;
-        p = buf + offset;
-
-        memmove(buf, p, BUF_SIZE+1);
-
-	return -1;
+	return 0;
 }
 
 
@@ -801,11 +950,11 @@ static int sip_capture_prepare(struct sip_msg* msg)
 	return 0;
 }
 
-static int sip_capture_store(struct _sipcapture_object *sco)
+static int sip_capture_store(struct _sipcapture_object *sco,
+							async_resume_module **resume_f, void **resume_param)
 {
-	db_key_t db_keys[NR_KEYS];
 	db_val_t db_vals[NR_KEYS];
-        int i = 0;
+        int i = 0, ret;
 
 	if(sco==NULL)
 	{
@@ -813,151 +962,114 @@ static int sip_capture_store(struct _sipcapture_object *sco)
 		return -1;
 	}
 
-	db_keys[0] = &id_column;
-        db_vals[0].type = DB_INT;
-        db_vals[0].val.int_val = 0;
+    db_vals[0].type = DB_INT;
+    db_vals[0].val.int_val = 0;
 
-	db_keys[1] = &date_column;
 	db_vals[1].type = DB_DATETIME;
 	db_vals[1].val.time_val = time(NULL);
 
-	db_keys[2] = &micro_ts_column;
-        db_vals[2].type = DB_BIGINT;
-        db_vals[2].val.bigint_val = sco->tmstamp;
+	db_vals[2].type = DB_BIGINT;
+	db_vals[2].val.bigint_val = sco->tmstamp;
 
-	db_keys[3] = &method_column;
 	db_vals[3].type = DB_STR;
 	db_vals[3].val.str_val = sco->method;
 
-	db_keys[4] = &reply_reason_column;
 	db_vals[4].type = DB_STR;
 	db_vals[4].val.str_val = sco->reply_reason;
 
-	db_keys[5] = &ruri_column;
 	db_vals[5].type = DB_STR;
 	db_vals[5].val.str_val = sco->ruri;
 
-	db_keys[6] = &ruri_user_column;
 	db_vals[6].type = DB_STR;
 	db_vals[6].val.str_val = sco->ruri_user;
 
-	db_keys[7] = &from_user_column;
 	db_vals[7].type = DB_STR;
 	db_vals[7].val.str_val = sco->from_user;
 
-	db_keys[8] = &from_tag_column;
 	db_vals[8].type = DB_STR;
 	db_vals[8].val.str_val = sco->from_tag;
 
-	db_keys[9] = &to_user_column;
 	db_vals[9].type = DB_STR;
 	db_vals[9].val.str_val = sco->to_user;
 
-	db_keys[10] = &to_tag_column;
 	db_vals[10].type = DB_STR;
 	db_vals[10].val.str_val = sco->to_tag;
 
-	db_keys[11] = &pid_user_column;
 	db_vals[11].type = DB_STR;
 	db_vals[11].val.str_val = sco->pid_user;
 
-	db_keys[12] = &contact_user_column;
 	db_vals[12].type = DB_STR;
 	db_vals[12].val.str_val = sco->contact_user;
 
-	db_keys[13] = &auth_user_column;
 	db_vals[13].type = DB_STR;
 	db_vals[13].val.str_val = sco->auth_user;
 
-	db_keys[14] = &callid_column;
 	db_vals[14].type = DB_STR;
 	db_vals[14].val.str_val = sco->callid;
 
-	db_keys[15] = &callid_aleg_column;
 	db_vals[15].type = DB_STR;
 	db_vals[15].val.str_val = sco->callid_aleg;
 
-	db_keys[16] = &via_1_column;
 	db_vals[16].type = DB_STR;
 	db_vals[16].val.str_val = sco->via_1;
 
-	db_keys[17] = &via_1_branch_column;
 	db_vals[17].type = DB_STR;
 	db_vals[17].val.str_val = sco->via_1_branch;
 
-	db_keys[18] = &cseq_column;
 	db_vals[18].type = DB_STR;
 	db_vals[18].val.str_val = sco->cseq;
 
-	db_keys[19] = &reason_column;
 	db_vals[19].type = DB_STR;
 	db_vals[19].val.str_val = sco->reason;
 
-	db_keys[20] = &content_type_column;
 	db_vals[20].type = DB_STR;
 	db_vals[20].val.str_val = sco->content_type;
 
-	db_keys[21] = &authorization_column;
 	db_vals[21].type = DB_STR;
 	db_vals[21].val.str_val = sco->authorization;
 
-	db_keys[22] = &user_agent_column;
 	db_vals[22].type = DB_STR;
 	db_vals[22].val.str_val = sco->user_agent;
 
-	db_keys[23] = &source_ip_column;
 	db_vals[23].type = DB_STR;
 	db_vals[23].val.str_val = sco->source_ip;
 
-	db_keys[24] = &source_port_column;
-        db_vals[24].type = DB_INT;
-        db_vals[24].val.int_val = sco->source_port;
+	db_vals[24].type = DB_INT;
+	db_vals[24].val.int_val = sco->source_port;
 
-	db_keys[25] = &dest_ip_column;
 	db_vals[25].type = DB_STR;
 	db_vals[25].val.str_val = sco->destination_ip;
 
-	db_keys[26] = &dest_port_column;
-        db_vals[26].type = DB_INT;
-        db_vals[26].val.int_val = sco->destination_port;
+	db_vals[26].type = DB_INT;
+	db_vals[26].val.int_val = sco->destination_port;
 
-	db_keys[27] = &contact_ip_column;
 	db_vals[27].type = DB_STR;
 	db_vals[27].val.str_val = sco->contact_ip;
 
-	db_keys[28] = &contact_port_column;
-        db_vals[28].type = DB_INT;
-        db_vals[28].val.int_val = sco->contact_port;
+	db_vals[28].type = DB_INT;
+	db_vals[28].val.int_val = sco->contact_port;
 
-	db_keys[29] = &orig_ip_column;
 	db_vals[29].type = DB_STR;
 	db_vals[29].val.str_val = sco->originator_ip;
 
-	db_keys[30] = &orig_port_column;
-        db_vals[30].type = DB_INT;
-        db_vals[30].val.int_val = sco->originator_port;
+	db_vals[30].type = DB_INT;
+	db_vals[30].val.int_val = sco->originator_port;
 
-        db_keys[31] = &proto_column;
-        db_vals[31].type = DB_INT;
-        db_vals[31].val.int_val = sco->proto;
+	db_vals[31].type = DB_INT;
+	db_vals[31].val.int_val = sco->proto;
 
-        db_keys[32] = &family_column;
-        db_vals[32].type = DB_INT;
-        db_vals[32].val.int_val = sco->family;
+	db_vals[32].type = DB_INT;
+	db_vals[32].val.int_val = sco->family;
 
-        db_keys[33] = &rtp_stat_column;
-        db_vals[33].type = DB_STR;
-        db_vals[33].val.str_val = sco->rtp_stat;
+	db_vals[33].type = DB_STR;
+	db_vals[33].val.str_val = sco->rtp_stat;
 
-        db_keys[34] = &type_column;
-        db_vals[34].type = DB_INT;
-        db_vals[34].val.int_val = sco->type;
+	db_vals[34].type = DB_INT;
+	db_vals[34].val.int_val = sco->type;
 
-	db_keys[35] = &node_column;
 	db_vals[35].type = DB_STR;
 	db_vals[35].val.str_val = sco->node;
 
-	db_keys[36] = &msg_column;
 	db_vals[36].type = DB_BLOB;
 	db_vals[36].val.blob_val = sco->msg;
 
@@ -965,6 +1077,24 @@ static int sip_capture_store(struct _sipcapture_object *sco)
 	for (i=0;i<NR_KEYS;i++)
 	         db_vals[i].nul = 0;
 
+	ret=1;
+	if (!resume_f && db_sync_store(db_vals)) {
+		LM_ERR("failed to insert into database\n");
+		return -1;
+	} else if (resume_f) {
+		ret = db_async_store(db_vals, resume_f, resume_param);
+	}
+
+	#ifdef STATISTICS
+		update_stat(sco->stat, 1);
+	#endif
+
+	return ret;
+}
+
+
+static int db_sync_store(db_val_t* db_vals)
+{
 	LM_DBG("storing info...\n");
 
 	if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
@@ -976,16 +1106,147 @@ static int sip_capture_store(struct _sipcapture_object *sco)
                 goto error;
 	}
 
-#ifdef STATISTICS
-	update_stat(sco->stat, 1);
-#endif
-
 	return 1;
 error:
 	return -1;
 }
 
-static int sip_capture(struct sip_msg *msg, char *s1, char *s2)
+static int db_async_store(db_val_t* db_vals,
+							async_resume_module **resume_f, void **resume_param)
+{
+	int ret;
+	int read_fd;
+	str query_str;
+
+	if (!DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
+		LM_WARN("This database module does not have async queries!"
+				"Using sync insert!\n");
+		*resume_f     = NULL;
+		*resume_param = NULL;
+		async_status  = ASYNC_NO_IO;
+		return db_sync_store(db_vals);
+	}
+
+	lock_get(&query_lock);
+
+	if (curr_queries == 0) {
+		query_len = base_query_len;
+	} else {
+		/* VALUES delimiter*/
+		query_buf[query_len++]=',';
+	}
+
+	ret = snprintf(query_buf+query_len, MAX_QUERY-query_len, VALUES_STR,
+			VAL_INT(db_vals+0), VAL_TIME(db_vals+1), VAL_BIGINT(db_vals+2),
+			VAL_STR(db_vals+3).len, VAL_STR(db_vals+3).s,
+			VAL_STR(db_vals+4).len, VAL_STR(db_vals+4).s,
+			VAL_STR(db_vals+5).len, VAL_STR(db_vals+5).s,
+			VAL_STR(db_vals+6).len, VAL_STR(db_vals+6).s,
+			VAL_STR(db_vals+7).len, VAL_STR(db_vals+7).s,
+			VAL_STR(db_vals+8).len, VAL_STR(db_vals+8).s,
+			VAL_STR(db_vals+9).len, VAL_STR(db_vals+9).s,
+			VAL_STR(db_vals+10).len, VAL_STR(db_vals+10).s,
+			VAL_STR(db_vals+11).len, VAL_STR(db_vals+11).s,
+			VAL_STR(db_vals+12).len, VAL_STR(db_vals+12).s,
+			VAL_STR(db_vals+13).len, VAL_STR(db_vals+13).s,
+			VAL_STR(db_vals+14).len, VAL_STR(db_vals+14).s,
+			VAL_STR(db_vals+15).len, VAL_STR(db_vals+15).s,
+			VAL_STR(db_vals+16).len, VAL_STR(db_vals+16).s,
+			VAL_STR(db_vals+17).len, VAL_STR(db_vals+17).s,
+			VAL_STR(db_vals+18).len, VAL_STR(db_vals+18).s,
+			VAL_STR(db_vals+19).len, VAL_STR(db_vals+19).s,
+			VAL_STR(db_vals+20).len, VAL_STR(db_vals+20).s,
+			VAL_STR(db_vals+21).len, VAL_STR(db_vals+21).s,
+			VAL_STR(db_vals+22).len, VAL_STR(db_vals+22).s,
+			VAL_STR(db_vals+23).len, VAL_STR(db_vals+23).s,
+			VAL_INT(db_vals+24),
+			VAL_STR(db_vals+25).len, VAL_STR(db_vals+25).s,
+			VAL_INT(db_vals+26),
+			VAL_STR(db_vals+27).len, VAL_STR(db_vals+27).s,
+			VAL_INT(db_vals+28),
+			VAL_STR(db_vals+29).len, VAL_STR(db_vals+29).s,
+			VAL_INT(db_vals+30), VAL_INT(db_vals+31), VAL_INT(db_vals+30),
+			VAL_STR(db_vals+33).len, VAL_STR(db_vals+33).s,
+			VAL_INT(db_vals+34),
+			VAL_STR(db_vals+35).len, VAL_STR(db_vals+35).s,
+			VAL_BLOB(db_vals+36).len, VAL_BLOB(db_vals+36).s
+				);
+
+	if (ret < 0)
+		goto no_buffer;
+
+	query_len += ret;
+
+
+	if ((++curr_queries) == max_async_queries) {
+		curr_queries = 0;
+
+		query_str.s   = query_buf;
+		query_str.len = query_len;
+		read_fd = db_funcs.async_raw_query(db_con, &query_str);
+
+		lock_release(&query_lock);
+
+		if (read_fd < 0) {
+			*resume_param = NULL;
+			*resume_f     = NULL;
+			return -1;
+		}
+		*resume_param = (void*)((unsigned long int)read_fd);
+		*resume_f = resume_async_dbquery;
+		async_status = read_fd;
+
+		return 1;
+	}
+
+	lock_release(&query_lock);
+
+	LM_DBG("no query executed!\n");
+	async_status = ASYNC_NO_IO;
+
+	return 1;
+no_buffer:
+	LM_ERR("buffer size exceeded\n");
+	return -1;
+}
+
+
+int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
+{
+	int rc;
+	unsigned long int param_fd;
+
+	param_fd = (int)((unsigned long int)_param);
+
+	rc = db_funcs.async_raw_resume(db_con, (int)param_fd, NULL);
+	if (async_status == ASYNC_CONTINUE)
+		return rc;
+
+	if (rc != 0) {
+		LM_ERR("async query returned error!\n");
+		return -1;
+	}
+
+	LM_DBG("Async query executed with success!\n");
+	async_status = ASYNC_DONE;
+
+	return 1;
+}
+
+static int sip_capture(struct sip_msg *msg, char* s1, char* s2)
+{
+	return w_sip_capture(msg, NULL, NULL);
+}
+
+static int async_sip_capture(struct sip_msg* msg, async_resume_module **resume_f,
+		void **resume_param, str* s1, str* s2)
+{
+	return w_sip_capture(msg, resume_f, resume_param);
+}
+
+
+static int w_sip_capture(struct sip_msg *msg,
+				async_resume_module **resume_f, void **resume_param)
 {
 	struct _sipcapture_object sco;
 	struct sip_uri from, to, pai, contact;
@@ -1256,7 +1517,7 @@ static int sip_capture(struct sip_msg *msg, char *s1, char *s2)
 	}
 #endif
 	LM_DBG("DONE\n");
-	return sip_capture_store(&sco);
+	return sip_capture_store(&sco, resume_f, resume_param);
 }
 
 #define capture_is_off(_msg) \
@@ -1424,6 +1685,7 @@ int raw_capture_rcv_loop(int rsock, int port1, int port2, int ipip) {
 	unsigned short src_port;
 	struct ip_addr dst_ip, src_ip;
 
+
 	for(;;) {
 
 		len = recvfrom(rsock, buf, BUF_SIZE, 0, 0, 0);
@@ -1518,3 +1780,7 @@ error:
 
 }
 
+#undef query_buf
+#undef query_len
+#undef query_lock
+#undef curr_queries

@@ -53,14 +53,15 @@ typedef void (dlg_request_callback)(struct cell *t,int type,
 typedef void (dlg_release_func)(void *param);
 
 static inline int push_new_processing_context( struct dlg_cell *dlg,
-								context_p *old_ctx, struct sip_msg **fake_msg)
+								context_p *old_ctx, context_p **new_ctx,
+								struct sip_msg **fake_msg)
 {
 	static context_p my_ctx = NULL;
 	static struct sip_msg *my_msg = NULL;
 
 	*old_ctx = current_processing_ctx;
 	if (my_ctx==NULL) {
-		my_ctx = context_alloc();
+		my_ctx = context_alloc(CONTEXT_GLOBAL);
 		if (my_ctx==NULL) {
 			LM_ERR("failed to alloc new ctx in pkg\n");
 			return -1;
@@ -96,8 +97,13 @@ static inline int push_new_processing_context( struct dlg_cell *dlg,
 	/* set the new CTX as current one */
 	current_processing_ctx = my_ctx;
 
+	/* store the value from the newly created context */
+	*new_ctx = &my_ctx;
+
 	/* set this dialog in the ctx */
 	ctx_dialog_set(dlg);
+	/* ref it, and it will be unreffed in context destroy */
+	ref_dlg(dlg, 1);
 
 	return 0;
 }
@@ -108,5 +114,6 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs);
 struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param );
 
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
-		str *hdrs,str *body,dlg_request_callback func,void *param,dlg_release_func release);
+		str *hdrs,str *body,dlg_request_callback func,void *param,
+		dlg_release_func release,char *reply_marker);
 #endif

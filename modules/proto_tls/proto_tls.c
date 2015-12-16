@@ -64,7 +64,7 @@
 
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "tls_server.h"
-#include "../tls_mgm/tls_helper.h"
+#include "../tls_mgm/tls_conn_init.h"
 
 
 static int tls_port_no = SIPS_PORT;
@@ -98,8 +98,7 @@ static struct tcp_req tls_current_req;
 
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read);
-static int tls_conn_init(struct tcp_connection* c);
-static void tls_conn_clean(struct tcp_connection* c);
+static int proto_tls_conn_init(struct tcp_connection* c);
 
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_tls_init, 0, 0, 0, 0},
@@ -183,7 +182,7 @@ static int proto_tls_init(struct proto_info *pi)
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
 	pi->net.read			= (proto_net_read_f)tls_read_req;
-	pi->net.conn_init		= tls_conn_init;
+	pi->net.conn_init		= proto_tls_conn_init;
 	pi->net.conn_clean		= tls_conn_clean;
 
 	return 0;
@@ -212,81 +211,9 @@ error:
 }
 
 
-static int tls_conn_init(struct tcp_connection* c)
+static int proto_tls_conn_init(struct tcp_connection* c)
 {
-	struct tls_domain *dom;
-
-	/*
-	* new connection within a single process, no lock necessary
-	*/
-	LM_DBG("entered: Creating a whole new ssl connection\n");
-	
-	if ( c->flags&F_CONN_ACCEPTED ) {
-		/* connection created as a result of an accept -> server */
-		c->proto_flags = F_TLS_DO_ACCEPT;
-		LM_DBG("looking up socket based TLS server "
-			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
-		dom = tls_mgm_api.find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
-		if (dom) {
-			LM_DBG("found socket based TLS server domain "
-				"[%s:%d]\n", ip_addr2a(&dom->addr), dom->port);
-				c->extra_data = SSL_new(dom->ctx);
-				tls_mgm_api.release_domain(dom);
-		} else {
-			LM_ERR("no TLS server domain found\n");
-			return -1;
-		}
-	} else {
-		/* connection created as a result of a connect -> client */
-		c->proto_flags = F_TLS_DO_CONNECT;
-
-		dom = tls_mgm_api.find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
-		if (dom) {
-			c->extra_data = SSL_new(dom->ctx);
-			tls_mgm_api.release_domain(dom);
-		} else {
-			LM_ERR("no TLS client domain found\n");
-			return -1;
-		}
-	}
-	
-	if (!c->extra_data) {
-		LM_ERR("failed to create SSL structure\n");
-		return -1;
-	}
-
-#ifndef OPENSSL_NO_KRB5
-	if ( ((SSL *)c->extra_data)->kssl_ctx ) {
-		kssl_ctx_free( ((SSL *)c->extra_data)->kssl_ctx );
-		((SSL *)c->extra_data)->kssl_ctx = 0;
-	}
-#endif
-
-	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
-		LM_DBG("Setting in ACCEPT mode (server)\n");
-		SSL_set_accept_state((SSL *) c->extra_data);
-	} else {
-		LM_DBG("Setting in CONNECT mode (client)\n");
-		SSL_set_connect_state((SSL *) c->extra_data);
-	}
-	return 0;
-}
-
-
-static void tls_conn_clean(struct tcp_connection* c)
-{
-	/*
-	* runs within global tcp lock
-	*/
-	LM_DBG("entered\n");
-
-	if (c->extra_data) {
-		tls_update_fd(c,c->s);
-
-		tls_conn_shutdown(c);
-		SSL_free((SSL *) c->extra_data);
-		c->extra_data = 0;
-	}
+	return tls_conn_init(c, &tls_mgm_api);
 }
 
 

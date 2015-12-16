@@ -734,14 +734,6 @@ This modules is a gateway between Openser and a jabber server. It enables
 the exchange of instant messages between SIP clients and XMPP(jabber)
 clients.
 
-%package  rest_client
-Summary:  REST client for OpenSIPS
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  rest_client
-This modules consists of a REST client for OpenSIPS.
-
 %prep
 %setup -q -n %{name}-%{version}-tls
 
@@ -790,12 +782,12 @@ done
 
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 # install systemd files
-install -D -m 0644 -p packaging/fedora/%{name}.service $RPM_BUILD_ROOT%{_unitdir}/%{name}.service
-install -D -m 0644 -p packaging/fedora/%{name}.tmpfiles.conf $RPM_BUILD_ROOT%{_sysconfdir}/tmpfiles.d/%{name}.conf
-install -D -m 0755 -p packaging/fedora/%{name}.m4cfg $RPM_BUILD_ROOT%{_sbindir}/%{name}-m4cfg
+install -D -m 0644 -p packaging/redhat_fedora/%{name}.service $RPM_BUILD_ROOT%{_unitdir}/%{name}.service
+install -D -m 0644 -p packaging/redhat_fedora/%{name}.tmpfiles.conf $RPM_BUILD_ROOT%{_sysconfdir}/tmpfiles.d/%{name}.conf
+install -D -m 0755 -p packaging/redhat_fedora/%{name}.m4cfg $RPM_BUILD_ROOT%{_sbindir}/%{name}-m4cfg
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/run/%{name}
 %else
-install -p -D -m 755 packaging/fedora/opensips.init $RPM_BUILD_ROOT%{_initrddir}/opensips
+install -p -D -m 755 packaging/redhat_fedora/opensips.init $RPM_BUILD_ROOT%{_initrddir}/opensips
 %endif
 echo -e "\nETCDIR=\"%{_sysconfdir}/opensips\"\n" \
   >> $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/opensipsctlrc
@@ -1366,14 +1358,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/xmpp.so
 %doc docdir/README.xmpp
 
-%files rest_client
-%{_libdir}/opensips/modules/rest_client.so
-%doc docdir/README.rest_client
-
 %changelog
-* Wed Aug 05 2015 Razvan Crainea <razvan@opensips.org> - 2.1.0-2
-- Add rest_client specs
-
 * Sat Mar 14 2015 Nick Altmann <nick.altmann@gmail.com> - 2.1.0-1
 - Specification updated for opensips 2.1
 - Removed packages: auth_diameter, tlsops

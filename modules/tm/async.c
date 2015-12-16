@@ -47,6 +47,12 @@ typedef struct _async_ctx {
 	struct cell *t;
 
 	enum kill_reason kr;
+
+	/* the transaction that was cancelled by this message */
+	struct cell *cancelled_t;
+	/* e2e ACK */
+	struct cell *e2eack_t;
+
 } async_ctx;
 
 extern int return_code; /* from action.c, return code */
@@ -70,6 +76,8 @@ int t_resume_async(int fd, void *param)
 	static struct ua_client uac;
 	async_ctx *ctx = (async_ctx *)param;
 	struct cell *backup_t;
+	struct cell *backup_cancelled_t;
+	struct cell *backup_e2eack_t;
 	struct usr_avp **backup_list;
 	struct socket_info* backup_si;
 	struct cell *t= ctx->t;
@@ -98,8 +106,12 @@ int t_resume_async(int fd, void *param)
 	/* enviroment setting */
 	current_processing_ctx = ctx->msg_ctx;
 	backup_t = get_t();
+	backup_e2eack_t = get_e2eack_t();
+	backup_cancelled_t = get_cancelled_t();
 	/* fake transaction */
 	set_t( t );
+	set_cancelled_t(ctx->cancelled_t);
+	set_e2eack_t(ctx->e2eack_t);
 	reset_kr();
 	set_kr(ctx->kr);
 	/* make available the avp list from transaction */
@@ -130,9 +142,14 @@ int t_resume_async(int fd, void *param)
 	/* no need for the context anymore */
 	shm_free(ctx);
 
+	context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
+	pkg_free(current_processing_ctx);
+
 restore:
 	/* restore original environment */
 	set_t(backup_t);
+	set_cancelled_t(backup_cancelled_t);
+	set_e2eack_t(backup_e2eack_t);
 	/* restore original avp list */
 	set_avp_list( backup_list );
 	bind_address = backup_si;
@@ -146,7 +163,7 @@ restore:
 
 int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 {
-	async_ctx *ctx;
+	async_ctx *ctx = NULL;
 	async_resume_module *ctx_f;
 	void *ctx_p;
 	struct cell *t;
@@ -159,8 +176,10 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		/* create transaction */
 		r = t_newtran( msg , 1 /*full uas clone*/ );
 		if (r==0) {
-			/* retransmission -> break the script, no follow up */
-			return 0;
+			/* retransmission -> no follow up; we return a negative
+			 * code to indicate do_action that the top route is
+			 * is completed (there no resume route to follow) */
+			return -1;
 		} else if (r<0) {
 			LM_ERR("could not create a new transaction\n");
 			goto failure;
@@ -202,7 +221,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		goto resume;
 	}
 
-	/* do we have a reactor in this process, to handle this 
+	/* do we have a reactor in this process, to handle this
 	   asyn I/O ? */
 	if ( 0/*reactor_exists()*/ ) {
 		/* no reactor, so we directly call the resume function
@@ -223,13 +242,17 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	ctx->t = t;
 	ctx->kr = get_kr();
 
+	ctx->cancelled_t = get_cancelled_t();
+	ctx->e2eack_t = get_e2eack_t();
+
 	current_processing_ctx = NULL;
 	set_t(T_UNDEFINED);
+	reset_cancelled_t();
+	reset_e2eack_t();
 
 	/* place the FD + resume function (as param) into reactor */
 	if (reactor_add_reader( fd, F_SCRIPT_ASYNC, RCT_PRIO_ASYNC, (void*)ctx)<0 ) {
 		LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
-		shm_free(ctx);
 		goto sync;
 	}
 
@@ -237,6 +260,17 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	return 0;
 
 sync:
+	if (ctx) {
+		/*
+		 * the context was moved in reactor, but the reactor could not
+		 * fullfil the request - we have to restore the environment -- razvanc
+		 */
+		current_processing_ctx = ctx->msg_ctx;
+		set_t(t);
+		set_cancelled_t(ctx->cancelled_t);
+		set_e2eack_t(ctx->e2eack_t);
+		shm_free(ctx);
+	}
 	/* run the resume function */
 	do {
 		return_code = ctx_f( fd, msg, ctx_p );

@@ -83,6 +83,11 @@ struct dlg_profile_table {
 	struct dlg_profile_table *next;
 };
 
+struct dialog_list{
+	struct dlg_cell *dlg;
+	struct dialog_list *next;
+};
+
 typedef int (*set_dlg_profile_f)(struct dlg_cell *dlg, str *value,
                         struct dlg_profile_table *profile, char is_replicated);
 
@@ -130,6 +135,8 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param );
 struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param );
 
 struct mi_root * mi_list_all_profiles(struct mi_root *cmd_tree, void *param );
+
+struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param );
 
 void get_value_names(struct dlg_profile_table *profile, struct dlg_profile_value_name *);
 

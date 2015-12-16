@@ -43,8 +43,6 @@ Daniel-Constantin Mierla
               1.4.2. trace_dialog()
               1.4.3. trace_to_database (integer)
               1.4.4. duplicate_with_hep (integer)
-              1.4.5. hep_version (integer)
-              1.4.6. hep_capture_id (integer)
 
         1.5. Exported MI Functions
 
@@ -69,15 +67,15 @@ Daniel-Constantin Mierla
    1.11. trace_dialog() usage
    1.12. Set trace_to_databaseparameter
    1.13. Set duplicate_with_hep parameter
-   1.14. Set hep_version parameter
-   1.15. Set hep_capture_id parameter
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
    Offer a possibility to store incoming/outgoing SIP messages in
-   database.
+   database. Since version 2.2, proto_hep module needs to be
+   loaded in order to duplicate with hep. All hep parameters moved
+   inside proto_hep.
 
    There are two ways of storing information.
      * by calling explicitely the sip_trace() method in OpenSIPS
@@ -306,31 +304,6 @@ modparam("siptrace", "trace_to_database", 0)
    Example 1.13. Set duplicate_with_hep parameter
 ...
 modparam("siptrace", "duplicate_with_hep", 1)
-...
-
-1.4.5. hep_version (integer)
-
-   The parameter indicate the version of HEP protocol. Can be 1 or
-   2. In HEPv2 the timestamp and capture agent ID will be included
-   to HEP header.
-
-   Default value is "1".
-
-   Example 1.14. Set hep_version parameter
-...
-modparam("siptrace", "hep_version", 2)
-...
-
-1.4.6. hep_capture_id (integer)
-
-   The parameter indicate the capture agent ID for HEPv2 protocol.
-   Limitation: 16-bit integer.
-
-   Default value is "1".
-
-   Example 1.15. Set hep_capture_id parameter
-...
-modparam("siptrace", "hep_capture_id", 234)
 ...
 
 1.5. Exported MI Functions

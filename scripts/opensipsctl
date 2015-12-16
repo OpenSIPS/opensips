@@ -1853,7 +1853,7 @@ opensips_start() {
 	echo
 	minfo "Starting OpenSIPS : "
 	if [ -r $PID_FILE ] ; then
-		if [ -d /proc/$(<$PID_FILE) ] ; then
+		if [ -d /proc/$(cat $PID_FILE) ] ; then
 			ps -ef | $EGREP opensips
 			ls -l $PID_FILE
 			minfo "PID file exists ($PID_FILE)! OpenSIPS already running?"

@@ -781,6 +781,7 @@ static int load_certificate(SSL_CTX * ctx, char *filename)
 
 static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
 {
+#if OPENSSL_VERSION_NUMBER >= 0x10000000L
 	DIR *d;
 	struct dirent *dir;
 	int crl_added = 0;
@@ -857,6 +858,14 @@ static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
 	X509_VERIFY_PARAM_free(param);
 
 	return 0;
+#else
+	static int already_warned = 0;
+	if (!already_warned) {
+		LM_WARN("CRL not supported in %s\n", OPENSSL_VERSION_TEXT);
+		already_warned = 1;
+	}
+	return 0;
+#endif
 }
 
 /*

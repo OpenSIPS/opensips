@@ -155,7 +155,7 @@ int set_list_from_string(str input, int_list_t **result)
 	char * delim, *pvdelim, *flagsdelim=NULL;
 	str flg_tok;
 
-	unsigned int u_num;
+	unsigned int u_num=0;
 	int def_val = -1;
 	do{
 		delim = q_memchr(input.s, LIST_DELIM, input.len);

@@ -614,7 +614,7 @@ error:
 
 
 /* used to tune the tcp_connection attributes - not to be used inside the
-   network layer, but onlu from the above layer (otherwise we may end up 
+   network layer, but onlu from the above layer (otherwise we may end up
    in strange deadlocks!) */
 int tcp_conn_fcntl(struct receive_info *rcv, int attr, void *value)
 {
@@ -751,12 +751,12 @@ ok:
 	TCPCONN_UNLOCK(id);
 #ifdef EXTRA_DEBUG
 	if (a) LM_DBG("alias already present\n");
-	else   LM_DBG("alias port %d for hash %d, id %d\n", port, hash, c->id);
+	else   LM_DBG("alias port %d for hash %d, id %d\n", port, hash, id);
 #endif
 	return 0;
 error_aliases:
 	TCPCONN_UNLOCK(id);
-	LM_ERR("too many aliases for connection %p (%d)\n", c, c->id);
+	LM_ERR("too many aliases for connection %p (%d)\n", c, id);
 	return -1;
 error_not_found:
 	TCPCONN_UNLOCK(id);
@@ -765,7 +765,7 @@ error_not_found:
 error_sec:
 	LM_WARN("possible port hijack attempt\n");
 	LM_WARN("alias already present and points to another connection "
-			"(%d : %d and %d : %d)\n", a->parent->id,  port, c->id, port);
+			"(%d : %d and %d : %d)\n", a->parent->id,  port, id, port);
 	TCPCONN_UNLOCK(id);
 	return -1;
 }
@@ -847,7 +847,7 @@ error:
 
 /* creates a new tcp connection structure and informs the TCP Main on that
  * a +1 ref is set for the new conn !
- * IMPORTANT - the function assumes you want to create a new TCP conn as 
+ * IMPORTANT - the function assumes you want to create a new TCP conn as
  * a result of a connect operation - the conn will be set as connect !!
  * Accepted connection are triggered internally only */
 struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
@@ -1342,7 +1342,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			break;
 		case ASYNC_WRITE:
 			if (tcpconn->state==S_CONN_BAD){
-				tcpconn_destroy(tcpconn);
+				tcpconn->lifetime=0;
 				break;
 			}
 			/* must be after the de-ref*/
@@ -1430,7 +1430,10 @@ static inline void __tcpconn_lifetime(int force)
 	unsigned h;
 	int fd;
 
-	ticks=get_ticks();
+	if (have_ticks())
+		ticks=get_ticks();
+	else
+		ticks=0;
 
 	for( part=0 ; part<TCP_PARTITION_SIZE ; part++ ) {
 		TCPCONN_LOCK(part); /* fixme: we can lock only on delete IMO */
@@ -1736,7 +1739,8 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			if (init_child(*chd_rank) < 0) {
 				LM_ERR("init_children failed\n");
 				report_failure_status();
-				*startup_done = -1;
+				if (startup_done)
+					*startup_done = -1;
 				exit(-1);
 			}
 

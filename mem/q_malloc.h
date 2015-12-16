@@ -121,7 +121,7 @@ struct qm_block{
 
 
 struct qm_block* qm_malloc_init(char* address, unsigned long size);
-inline unsigned long frag_size(void* p);
+unsigned long frag_size(void* p);
 
 #ifdef DBG_QM_MALLOC
 void* qm_malloc(struct qm_block*, unsigned long size, const char* file,

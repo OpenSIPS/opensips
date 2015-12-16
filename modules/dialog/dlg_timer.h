@@ -60,11 +60,19 @@ struct dlg_ping_timer
 	gen_lock_t *lock;
 };
 
+struct dlg_reinvite_ping_timer
+{
+	struct dlg_ping_list *first;
+	gen_lock_t *lock;
+};
+
 typedef void (*dlg_timer_handler)(struct dlg_tl *);
 
 int init_dlg_timer( dlg_timer_handler );
 
 int init_dlg_ping_timer();
+
+int init_dlg_reinvite_ping_timer();
 
 void destroy_dlg_timer();
 
@@ -74,6 +82,8 @@ int insert_dlg_timer(struct dlg_tl *tl, int interval);
 
 int insert_ping_timer(struct dlg_cell *dlg);
 
+int insert_reinvite_ping_timer(struct dlg_cell *dlg);
+
 int remove_dlg_timer(struct dlg_tl *tl);
 
 int remove_ping_timer(struct dlg_cell *dlg);
@@ -82,6 +92,8 @@ int update_dlg_timer( struct dlg_tl *tl, int timeout );
 
 void dlg_timer_routine(unsigned int ticks , void * attr);
 
-void dlg_ping_routine(unsigned int ticks , void * attr);
+void dlg_options_routine(unsigned int ticks , void * attr);
+
+void dlg_reinvite_routine(unsigned int ticks , void * attr);
 
 #endif

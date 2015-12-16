@@ -165,10 +165,14 @@ int init_data(void)
 {
 	dp_head_p start, tmp = NULL;
 
-	for (start = dp_hlist ; start; start = start->next) {
-		if(tmp)
-			pkg_free(tmp);
+	start = dp_hlist;
+	if (!start) {
+		LM_BUG("not even default partition defined!"
+				"An error occured!\n");
+		return -1;
+	}
 
+	while (start) {
 		LM_DBG("Adding partition with name [%.*s]\n",
 				start->partition.len, start->partition.s);
 		if (!dp_add_connection(start)) {
@@ -177,9 +181,10 @@ int init_data(void)
 			return -1;
 		}
 
-		tmp = start;
+		tmp   = start;
+		start = start->next;
+		pkg_free(tmp);
 	}
-	pkg_free(tmp);
 
 	return 0;
 }
@@ -467,7 +472,7 @@ dpl_node_t * build_rule(db_val_t * values)
 		match_comp = wrap_pcre_compile(match_exp.s, VAL_INT(values+4));
 
 		if(!match_comp){
-			LM_ERR("failed to compile match expression %.*s\n",
+			LM_ERR("failed to compile match expression \"%.*s\"\n",
 				match_exp.len, match_exp.s);
 			goto err;
 		}
@@ -479,7 +484,8 @@ dpl_node_t * build_rule(db_val_t * values)
 		/* subst regexp */
 		subst_comp = wrap_pcre_compile(subst_exp.s, VAL_INT(values+4));
 		if(subst_comp == NULL){
-			LM_ERR("failed to compile subst expression\n");
+			LM_ERR("failed to compile subst expression \"%.*s\"\n",
+					subst_exp.len, subst_exp.s);
 			goto err;
 		}
 	}
@@ -489,7 +495,7 @@ dpl_node_t * build_rule(db_val_t * values)
 	if(repl_exp.len && repl_exp.s){
 		repl_comp = repl_exp_parse(repl_exp);
 		if(!repl_comp){
-			LM_ERR("failed to compile replacing expression %.*s\n",
+			LM_ERR("failed to compile replacing expression \"%.*s\"\n",
 				repl_exp.len, repl_exp.s);
 			goto err;
 		}
@@ -613,6 +619,10 @@ int add_rule2hash(dpl_node_t * rule, dp_connection_list_t *conn, int index)
 			break;
 
 		case EQUAL_OP:
+			if (rule->match_exp.s == NULL || rule->match_exp.len == 0) {
+				LM_ERR("NULL matching expressions in database not accepted!!!\n");
+				return -1;
+			}
 			bucket = core_case_hash(&rule->match_exp, NULL, DP_INDEX_HASH_SIZE);
 
 			indexp = &crt_idp->rule_hash[bucket];
@@ -812,9 +822,7 @@ dp_connection_list_p dp_add_connection(dp_head_p head)
 		return el;
 	}
 
-	int all_size = sizeof(dp_connection_list_t) +head->dp_table_name.len
-				+ head->partition.len + head->dp_db_url.len;
-	el = shm_malloc(all_size);
+	el = shm_malloc(sizeof(dp_connection_list_t));
 
 	if (!el) {
 		LM_ERR("No more shm mem\n");
@@ -830,22 +838,14 @@ dp_connection_list_p dp_add_connection(dp_head_p head)
 		return NULL;
 	}
 
-
 	/*Set table name*/
-	el->table_name.s = (char*)el + sizeof(*el);
-	el->table_name.len = head->dp_table_name.len;
-	memcpy(el->table_name.s, head->dp_table_name.s, head->dp_table_name.len);
-
+	el->table_name = head->dp_table_name;
 
 	/*Set partition*/
-	el->partition.s = el->table_name.s + el->table_name.len;
-	el->partition.len = head->partition.len;
-	memcpy(el->partition.s, head->partition.s, head->partition.len);
+	el->partition = head->partition;
 
 	/*Set db_url*/
-	el->db_url.s = el->partition.s + el->partition.len;
-	el->db_url.len = head->dp_db_url.len;
-	memcpy(el->db_url.s, head->dp_db_url.s, head->dp_db_url.len);
+	el->db_url = head->dp_db_url;
 
 	el->dp_db_handle = pkg_malloc(sizeof(db_con_t*));
 	if (!el->dp_db_handle) {
@@ -855,13 +855,13 @@ dp_connection_list_p dp_add_connection(dp_head_p head)
 
 	*el->dp_db_handle = 0;
 
+	/* *el->dp_db_handle is set to null at the end of test_db;
+	 * no need to do it again here */
 	if (test_db(el) != 0) {
 		LM_ERR("Unable to test db\n");
 		shm_free(el);
 		return NULL;
 	}
-
-	*el->dp_db_handle = 0;
 
 	el->next = dp_conns;
 	dp_conns = el;

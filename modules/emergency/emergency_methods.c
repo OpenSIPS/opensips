@@ -550,6 +550,7 @@ void indialog_ua(struct dlg_cell* dlg, int type, struct dlg_cb_params * params){
 	struct sip_msg *msg = params->msg;
 	int dir = params->direction;
 	int resp;
+	UNUSED(resp);
 
 	LM_DBG(" New sequential request received:%d !! \n",dir);
 	LM_DBG(" New sequential request method:%.*s \n",msg->first_line.u.request.method.len,msg->first_line.u.request.method.s);

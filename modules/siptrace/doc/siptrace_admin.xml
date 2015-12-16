@@ -8,6 +8,8 @@
 	<title>Overview</title>
 	<para>
 		Offer a possibility to store incoming/outgoing SIP messages in database.
+		Since version 2.2, proto_hep module needs to be loaded in order to duplicate
+		with hep. All hep parameters moved inside proto_hep.
 	</para>
 	<para>
 	There are two ways of storing information.
@@ -383,49 +385,6 @@ modparam("siptrace", "duplicate_with_hep", 1)
 </programlisting>
                 </example>
         </section>
-	<section>
-                <title><varname>hep_version</varname> (integer)</title>
-                <para>
-                The parameter indicate the version of HEP protocol.
-                Can be 1 or 2. In HEPv2 the timestamp and capture agent ID will
-                be included to HEP header.
-                </para>
-                <para>
-                <emphasis>
-                        Default value is "1".
-                </emphasis>
-                </para>
-                <example>
-                <title>Set <varname>hep_version</varname> parameter</title>
-                <programlisting format="linespecific">
-...
-modparam("siptrace", "hep_version", 2)
-...
-</programlisting>
-                </example>
-        </section>
-        <section>
-                <title><varname>hep_capture_id</varname> (integer)</title>
-                <para>
-                The parameter indicate the capture agent ID for HEPv2 protocol.
-                Limitation: 16-bit integer.
-                </para>
-                <para>
-                <emphasis>
-                        Default value is "1".
-                </emphasis>
-                </para>
-                <example>
-                <title>Set <varname>hep_capture_id</varname> parameter</title>
-                <programlisting format="linespecific">
-...
-modparam("siptrace", "hep_capture_id", 234)
-...
-</programlisting>
-                </example>
-        </section>
-
-
 	</section>
 
     <section>

@@ -151,9 +151,11 @@ void set_t(struct cell *t) { T=t; }
 void init_t(void) {set_t(T_UNDEFINED);}
 
 struct cell *get_cancelled_t(void) { return cancelled_T; }
+void set_cancelled_t(struct cell* t) { cancelled_T=t; }
 void reset_cancelled_t(void) { cancelled_T=T_UNDEFINED; }
 
 struct cell *get_e2eack_t(void) { return e2eack_T; }
+void set_e2eack_t(struct cell* t) { e2eack_T=t; }
 void reset_e2eack_t(void) { e2eack_T=T_UNDEFINED; }
 
 
@@ -1224,6 +1226,7 @@ int t_lookup_callid(struct cell ** trans, str callid, str cseq) {
 	char cseq_header[MAX_HEADER];
 	/* save return value of print_* functions here */
 	char* endpos;
+	UNUSED(endpos);
 
 	/* need method, which is always INVITE in our case */
 	/* CANCEL is only useful after INVITE */

@@ -113,14 +113,12 @@ static inline unsigned short str2s(const char* s, unsigned int len,
 	unsigned short ret;
 	int i;
 	unsigned char *limit;
-	unsigned char *init;
-	unsigned char* str;
+	unsigned char *str;
 
 	/*init*/
 	str=(unsigned char*)s;
 	ret=i=0;
 	limit=str+len;
-	init=str;
 
 	for(;str<limit ;str++){
 		if ( (*str <= '9' ) && (*str >= '0') ){
@@ -136,11 +134,11 @@ static inline unsigned short str2s(const char* s, unsigned int len,
 	return ret;
 
 error_digits:
-	LM_DBG("too many letters in [%.*s]\n", (int)len, init);
+	LM_DBG("too many letters in [%.*s]\n", (int)len, s);
 	if (err) *err=1;
 	return 0;
 error_char:
-	LM_DBG("unexpected char %c in %.*s\n", *str, (int)len, init);
+	LM_DBG("unexpected char %c in %.*s\n", *str, (int)len, s);
 	if (err) *err=1;
 	return 0;
 }
@@ -500,6 +498,9 @@ static inline int str2int(str* _s, unsigned int* _r)
 {
 	int i;
 
+	if (_s==0 || _s->s == 0 || _s->len == 0 || _r == 0)
+		return -1;
+
 	*_r = 0;
 	for(i = 0; i < _s->len; i++) {
 		if ((_s->s[i] >= '0') && (_s->s[i] <= '9')) {
@@ -520,6 +521,9 @@ static inline int str2sint(str* _s, int* _r)
 {
 	int i;
 	int s;
+
+	if (_s==0 || _s->s == 0 || _s->len == 0 || _r == 0)
+		return -1;
 
 	*_r = 0;
 	s = 1;
@@ -641,7 +645,8 @@ static inline char* str_strstr(const str *stra, const str *strb)
 	}
 
 	if (strb->len > stra->len) {
-		LM_ERR("str to find should be smaller\n");
+		LM_ERR("string to find should be smaller than the string"
+				"to search into\n");
 		return NULL;
 	}
 
@@ -669,6 +674,37 @@ static inline char* str_strstr(const str *stra, const str *strb)
 	return NULL;
 }
 
+/*
+ * case-insensitive compare n chars of two str's
+ */
+static inline int str_strncasecmp(const str *stra, const str *strb, int n)
+{
+	int i;
+
+	if(stra==NULL || strb==NULL || stra->s ==NULL || strb->s==NULL
+	|| stra->len<0 || strb->len<0)
+	{
+		LM_ERR("bad parameters\n");
+		return -2;
+	}
+
+	if (stra->len<n || strb->len<n) {
+		LM_ERR("input strings don't have at least [n=%d] characters\n", n);
+		return -2;
+	}
+
+	for (i = 0; i < n; i++) {
+		const char a = tolower(stra->s[i]);
+		const char b = tolower(strb->s[i]);
+		if (a < b)
+			return -1;
+		if (a > b)
+			return 1;
+	}
+
+	return 0;
+
+}
 
 /*
  * case-insensitive compare two str's

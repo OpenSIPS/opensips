@@ -46,5 +46,38 @@ int lookup(struct sip_msg* _m, char* _table, char* _flags, char* _aor);
  */
 int registered(struct sip_msg* _m, char* _t, char* _s, char* _c);
 
+/*! \brief the is_registered() function
+ * Return 1 if the AOR is registered, -1 otherwise
+ * AOR comes from:
+ *	- "from" header on REGISTER
+ *	- "to" header on any other SIP REQUEST
+ *	- aor parameter of the function
+ */
+int is_registered(struct sip_msg* _m, char *_d, char* _a);
 
+/*! \brief the is_contact_registered() function
+ * Return 1 if the contact and/or callid is registered
+ * for a given AOR, -1 when not found
+ * AOR comes from:
+ *	- "from" header on REGISTER
+ *	- "to" header on any other SIP REQUEST
+ *	- aor parameter of the function
+ *
+ * Contact comes from:
+ *  - first valid "Contact" header when neither contact nor
+ *  callid params are provided
+ *  - the contact parameter (third parameter)
+ */
+int is_contact_registered(struct sip_msg* _m, char *_d, char* _a,
+							char* _c, char* _cid);
+
+/*! \brief the is_ip_registered() function
+ * Return 1 if the IPs are registered for the received parameter
+ * for a contact inside the given AOR
+ * -1 when not found
+ *
+ * IPs comes from:
+ * - the IPs avp given as a third parameter
+ */
+int is_ip_registered(struct sip_msg* _m, char* _d, char* _a, char *_avp);
 #endif /* LOOKUP_H */

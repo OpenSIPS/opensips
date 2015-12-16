@@ -168,10 +168,11 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 	bin_pop_str(&mangled_tu);
 
 	/* add the 2 legs */
+	/* TODO - sdp here */
 	if (dlg_add_leg_info(dlg, &from_tag, &rroute1, &contact1,
-		&cseq1, caller_sock, 0, 0) != 0 ||
+		&cseq1, caller_sock, 0, 0,0) != 0 ||
 		dlg_add_leg_info(dlg, &to_tag, &rroute2, &contact2,
-		&cseq2, callee_sock, &mangled_fu, &mangled_tu) != 0) {
+		&cseq2, callee_sock, &mangled_fu, &mangled_tu,0) != 0) {
 		LM_ERR("dlg_set_leg_info failed\n");
 		goto pre_linking_error;
 	}
@@ -604,19 +605,20 @@ error:
  * receive_binary_packet (callback) - receives a cmd_type, specifying the
  * purpose of the data encoded in the received UDP packet
  */
-void receive_prof_binary_packet(int packet_type, struct receive_info *ri, int server_id)
+void receive_prof_binary_packet(int packet_type, struct receive_info *ri,
+																int server_id)
 {
 	char *ip;
 	unsigned short port;
 
 	if (packet_type == SERVER_TEMP_DISABLED) {
 		get_su_info(&ri->src_su.s, ip, port);
-		LM_WARN("server: %s:%hu temporary disabled\n", ip, port);
+		LM_INFO("server: %s:%hu temporary disabled\n", ip, port);
 		return;
 	}
 
 	if (packet_type == SERVER_TIMEOUT) {
-		LM_WARN("server with clusterer id %d timeout\n", server_id);
+		LM_INFO("server with clusterer id %d timeout\n", server_id);
 		return;
 	}
 
@@ -924,10 +926,9 @@ release:
 	return;
 }
 
-static int repl_prof_add(str *name, int has_value, str *value, unsigned int count)
+static int repl_prof_add(str *name, int has_value, str *value,
+													unsigned int count)
 {
-	LM_INFO("repl prof add %*.s\n", name->len, name->s);
-
 	int ret = 0;
 
 	if (bin_push_str(name) < 0)
@@ -985,7 +986,6 @@ int replicate_profiles_count(repl_prof_novalue_t *rp)
 
 static void repl_prof_timer_f(unsigned int ticks, void *param)
 {
-	LM_INFO("repl_prof_timer\n");
 	map_iterator_t it, del;
 	unsigned int count;
 	struct dlg_profile_table *profile;
@@ -1034,7 +1034,6 @@ next_entry:
 
 static void repl_prof_utimer_f(utime_t ticks, void *param)
 {
-	LM_INFO("repl_prof_utimer\n");
 #define REPL_PROF_TRYSEND() \
 	do { \
 		nr++; \

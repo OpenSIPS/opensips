@@ -188,6 +188,7 @@ int w_acc_log_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 	env_set_to( rq->to );
 	env_set_comment( &accp );
 	env_set_text( ACC_REQUEST, ACC_REQUEST_LEN);
+
 	return acc_log_request( rq, NULL, 0);
 }
 
@@ -208,6 +209,7 @@ int w_acc_aaa_request(struct sip_msg *rq, pv_elem_t* comment, char* foo)
 
 	env_set_to( rq->to );
 	env_set_comment( &accp );
+
 	return acc_aaa_request( rq, NULL, 0);
 }
 
@@ -271,6 +273,17 @@ int w_acc_evi_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 
 	env_set_to( rq->to );
 	env_set_comment( &accp );
+
+	if (is_cdr_acc_on(rq) && is_evi_acc_on(rq)) {
+		env_set_event(acc_cdr_event);
+	} else if (is_evi_acc_on(rq) && acc_env.code < 300) {
+		env_set_event(acc_event);
+	} else if (is_evi_mc_on(rq)) {
+		env_set_event(acc_missed_event);
+	} else {
+		LM_WARN("evi request flags not set\n");
+		return 1;
+	}
 
 	return acc_evi_request( rq, NULL, 0);
 }

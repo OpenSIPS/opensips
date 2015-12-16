@@ -255,6 +255,14 @@ int register_route_timers(void)
 }
 
 
+unsigned int have_ticks(void) {
+	return jiffies==NULL ? 0 : 1;
+}
+
+unsigned int have_uticks(void) {
+	return ujiffies==NULL ? 0 : 1;
+}
+
 unsigned int get_ticks(void)
 {
 	return *jiffies;
@@ -296,7 +304,7 @@ static inline void timer_ticker(struct os_timer *timer_list, utime_t *drift)
 					   until the prev one is done */
 					continue;
 				} else {
-					/* launch the task now, even if overlaping with the 
+					/* launch the task now, even if overlaping with the
 					   already running one */
 				}
 			}
@@ -343,7 +351,7 @@ static inline void utimer_ticker(struct os_timer *utimer_list, utime_t *drift)
 					   until the prev one is done */
 					continue;
 				} else {
-					/* launch the task now, even if overlaping with the 
+					/* launch the task now, even if overlaping with the
 					   already running one */
 				}
 			}

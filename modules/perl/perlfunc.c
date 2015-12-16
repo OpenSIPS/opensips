@@ -33,10 +33,44 @@
 #include "../../action.h"
 #include "../../config.h"
 #include "../../parser/parse_uri.h"
+#include "../../mod_fix.h"
 
 #include "perlfunc.h"
 #include "perl.h"
 
+
+
+int perl_fixup(void** param, int param_no)
+{
+	int ret=E_UNSPEC;
+	pv_elem_t* model;
+
+	if (param == NULL || (param_no < 1 || param_no > 2)) {
+		LM_ERR("invalid number of parameters\n");
+		return -1;
+	}
+
+	if (param_no == 1) {
+		/* simple fixup */
+		return fixup_spve(param);
+	} else {
+		/* can have more vars for each param */
+		str s = {*param, strlen(*param)};
+
+		ret = pv_parse_format(&s, &model);
+		if (ret) {
+			LM_ERR("wrong format [%s] for param no %d!\n",
+					(char*)*param, param_no);
+			pkg_free(s.s);
+			return E_UNSPEC;
+		}
+
+		*param = (void *)model;
+		ret = 0;
+	}
+
+	return ret;
+}
 
 /*
  * Check for existence of a function.
@@ -48,6 +82,37 @@ int perl_checkfnc(char *fnc) {
 	} else {
 		return 0;
 	}
+}
+
+/*
+ * parse function and parameters
+ * returns p(arsed)fnc name and p(arsed)prm parameters
+ * requiers output strs to be allocated
+ */
+int perl_parse_params(struct sip_msg *msg, char *fnc, char *prm,
+		str *pfnc, str *pprm)
+{
+	if (!pfnc && !pprm) {
+		LM_ERR("null output parameters given!\n");
+		return -1;
+	}
+
+	if (msg == 0 || fnc == 0) {
+		LM_ERR("null input parameters given!\n");
+		return -1;
+	}
+
+	if (fixup_get_svalue(msg, (gparam_p)fnc, pfnc) != 0) {
+		LM_ERR("invalid function name given\n");
+		return -1;
+	}
+
+	if (prm && pprm && pv_printf_s(msg, (pv_elem_p)prm, pprm)!=0) {
+		LM_ERR("invalid function paramters given!\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 /*
@@ -70,14 +135,29 @@ int perl_exec_simple(char* fnc, char* args[], int flags) {
 
 int perl_exec_simple1(struct sip_msg* _msg, char* fnc, char* str2) {
 	char *args[] = { NULL };
+	str pfnc;
 
-	return perl_exec_simple(fnc, args, G_DISCARD | G_NOARGS | G_EVAL);
+	if (perl_parse_params(_msg, fnc, NULL, &pfnc, NULL)) {
+		LM_ERR("failed to parse params\n");
+		return -1;
+	}
+
+
+
+	return perl_exec_simple(pfnc.s, args, G_DISCARD | G_NOARGS | G_EVAL);
 }
 
 int perl_exec_simple2(struct sip_msg* _msg, char* fnc, char* param) {
-	char *args[] = { param, NULL };
+	str pfnc, pparam;
 
-	return perl_exec_simple(fnc, args, G_DISCARD | G_EVAL);
+	if (perl_parse_params(_msg, fnc, param, &pfnc, &pparam)) {
+		LM_ERR("failed to parse params\n");
+		return -1;
+	}
+
+	char *args[] = { pparam.s, NULL };
+
+	return perl_exec_simple(pfnc.s, args, G_DISCARD | G_EVAL);
 }
 
 /*
@@ -91,6 +171,16 @@ int perl_exec2(struct sip_msg* _msg, char* fnc, char* mystr) {
 	int retval;
 	SV *m;
 	str reason;
+	str pfnc, pparam;
+
+
+	if (perl_parse_params(_msg, fnc, mystr, &pfnc, mystr?&pparam:NULL)) {
+		LM_ERR("failed to parse params\n");
+		return -1;
+	}
+
+	fnc = pfnc.s;
+	mystr = mystr ? pparam.s : NULL;
 
 	dSP;
 

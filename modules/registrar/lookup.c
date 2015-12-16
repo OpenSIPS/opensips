@@ -39,10 +39,12 @@
 #include "../../mod_fix.h"
 #include "../../parser/parse_rr.h"
 #include "../usrloc/usrloc.h"
+#include "../../parser/parse_from.h"
 #include "common.h"
 #include "regtime.h"
 #include "reg_mod.h"
 #include "lookup.h"
+#include "sip_msg.h"
 
 #define GR_E_PART_SIZE	22
 #define GR_A_PART_SIZE	14
@@ -408,97 +410,342 @@ done:
 }
 
 
+struct to_body* select_uri(struct sip_msg* _m)
+{
+	if (_m->REQ_METHOD != METHOD_REGISTER) {
+		if (parse_from_header(_m) < 0) {
+			LM_ERR("failed to parse from!\n");
+			return NULL;
+		}
+
+		return get_from(_m);
+
+	} else {
+		/* WARNING in msg_aor_parse the to header is checked in
+		 * parse_message so no need to check it; take care when
+		 * you use this function */
+		return get_to(_m);
+	}
+}
+
+
+/*
+ * shall be done for all three functions
+ * so why not use a macro
+ *
+ * USABLE VARS:
+ * ud  - udomain_t
+ * aor - extracted aor
+ */
+
+#define IS_FOUND  1
+#define NOT_FOUND  -1
+#define CHECK_DOMAIN(__d) \
+	if (!__d) { \
+		LM_ERR("no domain specified!\n"); \
+		return -2; \
+	}
+
+int msg_aor_parse(struct sip_msg* _m, char *_aor, str *_saor)
+{
+	str uri, aor;
+	pv_value_t val;
+	struct to_body *hdr;
+
+	if (parse_message(_m) < 0) {
+		LM_ERR("unable to parse message\n");
+		return -2;
+	}
+
+	/* we don't process replies */
+	if (_m->first_line.type != SIP_REQUEST) {
+		LM_ERR("message should be a request!\n");
+		return -2;
+	}
+
+	if (!_aor) {
+		hdr=select_uri(_m);
+		if (!hdr) {
+			LM_ERR("failed to get uri header!\n");
+			return -2;
+		}
+
+		uri = hdr->uri;
+	} else {
+		if (pv_get_spec_value(_m, (pv_spec_p)_aor, &val)) {
+			LM_ERR("failed to get aor PV value!\n");
+			return -1;
+		}
+
+		if ((val.flags&PV_VAL_STR) == 0) {
+			LM_ERR("aor PV vals is not string\n");
+			return -1;
+		}
+		uri = val.rs;
+	}
+
+	if (extract_aor(&uri, &aor, 0, 0) < 0) {
+		LM_ERR("failed to extract address of record!\n");
+		return -2;
+	}
+
+	*_saor = aor;
+
+	return 0;
+}
+
+
+
 /*! \brief the is_registered() function
+ * Return 1 if the AOR is registered, -1 otherwise
+ * AOR comes from:
+ *	- "from" header on REGISTER
+ *	- "to" header on any other SIP REQUEST
+ *	- aor parameter of the function
+ */
+int is_registered(struct sip_msg* _m, char *_d, char* _a)
+{
+	int ret=NOT_FOUND;
+	urecord_t* r;
+	udomain_t* ud = (udomain_t*)_d;
+	str aor;
+
+	if (msg_aor_parse(_m, _a, &aor)) {
+		LM_ERR("failed to parse!\n");
+		return -1;
+	}
+
+	CHECK_DOMAIN(ud);
+
+	ul.lock_udomain(ud, &aor);
+	if (ul.get_urecord(ud, &aor, &r) == 0)
+		ret = IS_FOUND;
+	ul.unlock_udomain(ud, &aor);
+
+	return ret;
+}
+
+/*! \brief the is_contact_registered() function
+ * Return 1 if the contact and/or callid is registered
+ * for a given AOR, -1 when not found
+ * AOR comes from:
+ *	- "from" header on REGISTER
+ *	- "to" header on any other SIP REQUEST
+ *	- aor parameter of the function
+ *
+ * Contact comes from:
+ *  - first valid "Contact" header when neither contact nor
+ *  callid params are provided
+ *  - the contact parameter (third parameter)
+ */
+int is_contact_registered(struct sip_msg* _m, char *_d, char* _a,
+							char* _c, char* _cid)
+{
+	int exp;
+
+	str aor;
+	str curi, callid;
+
+	udomain_t* ud = (udomain_t*)_d;
+	urecord_t* r;
+
+	contact_t* ct;
+	ucontact_t *c;
+
+
+	if (msg_aor_parse(_m, _a, &aor)) {
+		LM_ERR("failed to parse!\n");
+		return -1;
+	}
+
+	CHECK_DOMAIN(ud);
+
+	if (!_c && !_cid) {
+		LM_DBG("Neither contact nor callid supplied!"
+				"First valid contact from the message body shall be used!\n");
+		if (!_m->contact ||
+				!(ct=(((contact_body_t*)_m->contact->parsed)->contacts)))
+			goto out_no_contact;
+
+		/* getting first non expired contact */
+		while (ct) {
+			calc_contact_expires(_m, ct->expires, &exp, NULL);
+			if (exp)
+				break;
+			ct = ct->next;
+		}
+
+		if (!ct)
+			goto out_no_contact;
+
+		curi = ct->uri;
+	} else {
+		if (_c) {
+			if (fixup_get_svalue(_m, (gparam_p)_c, &curi) != 0) {
+				LM_ERR("failed to retrieve contact value from pv!\n");
+				return -1;
+			}
+		}
+
+		if (_cid) {
+			if (fixup_get_svalue(_m, (gparam_p)_cid, &callid) != 0) {
+				LM_ERR("failed to retrieve contact value from pv!\n");
+				return -1;
+			}
+		}
+	}
+
+	ul.lock_udomain(ud, &aor);
+	if (ul.get_urecord(ud, &aor, &r) == 1) {
+		LM_DBG("%.*s not found in usrloc!\n", aor.len, aor.s);
+		ul.unlock_udomain(ud, &aor);
+		return NOT_FOUND;
+	}
+
+	/* callid not defined; contact might be defined or not */
+	if (!_cid) {
+		for (c=r->contacts; c; c=c->next) {
+			if (!str_strcmp(&curi, &c->c))
+				goto out_found_unlock;
+		}
+	/* contact not defined; callid defined */
+	} else if (!_c && _cid) {
+		for (c=r->contacts; c; c=c->next) {
+			if (!str_strcmp(&callid, &c->callid))
+				goto out_found_unlock;
+		}
+	/* both callid and contact defined */
+	} else {
+		for (c=r->contacts; c; c=c->next) {
+			if (!str_strcmp(&curi, &c->c) &&
+					!str_strcmp(&callid, &c->callid))
+				goto out_found_unlock;
+		}
+	}
+
+	ul.unlock_udomain(ud, &aor);
+
+	return NOT_FOUND;
+
+out_no_contact:
+	LM_WARN("Contact and callid not provided!"
+			"Message does not have any valid contacts!\n");
+	return -1;
+
+out_found_unlock:
+	ul.unlock_udomain(ud, &aor);
+	return IS_FOUND;
+}
+
+/*! \brief the is_ip_registered() function
+ * Return 1 if the IPs are registered for the received parameter
+ * for a contact inside the given AOR
+ * -1 when not found
+ *
+ * IPs comes from:
+ * - the IPs avp given as a third parameter
+ */
+int is_ip_registered(struct sip_msg* _m, char* _d, char* _a, char *_out_pv)
+{
+	str aor;
+	str host, pv_host={NULL, 0};
+
+	int start;
+	char is_avp=1;
+
+	udomain_t* ud = (udomain_t*)_d;
+
+	urecord_t* r;
+
+	ucontact_t *c;
+
+	struct usr_avp *avp;
+	pv_spec_p spec = (pv_spec_p)_out_pv;
+	pv_value_t val;
+
+
+	if (msg_aor_parse(_m, _a, &aor)) {
+		LM_ERR("failed to parse!\n");
+		return -2;
+	}
+
+	CHECK_DOMAIN(ud);
+
+	if (spec == NULL) {
+		LM_NOTICE("nothing to compare! exiting...\n");
+		return -1;
+	} else if (spec->type != PVT_AVP) {
+		is_avp=0;
+		if (pv_get_spec_value( _m, spec, &val)!=0) {
+			LM_ERR("failed to get IP PV value!\n");
+			return -1;
+		}
+
+		if ((val.flags&PV_VAL_STR)==0) {
+			LM_ERR("IP should be a string!\n");
+			return -1;
+		}
+		pv_host = val.rs;
+	}
+
+	ul.lock_udomain(ud, &aor);
+	if (ul.get_urecord(ud, &aor, &r) == 1) {
+		LM_DBG("no contact found for aor=<%.*s>\n", aor.len, aor.s);
+		goto out_unlock_notfound;
+	}
+
+	for (c=r->contacts; c; c=c->next) {
+		if (!c->received.len || !c->received.s || c->received.len < 4)
+			continue;
+
+		/* 'sip:' or 'sips:' ?; is this sane? FIXME if problems */
+		start    = c->received.s[3]==':'?4:5;
+		host.s   = c->received.s   + start;
+		host.len = c->received.len - start;
+
+		if (!is_avp) {
+			if (pv_host.len <= host.len
+				&& !memcmp(host.s, pv_host.s, pv_host.len))
+				goto out_unlock_found;
+
+			/* skip the part with avp */
+			continue;
+		}
+
+		avp = NULL;
+		while ((avp=search_first_avp(spec->pvp.pvn.u.isname.type,
+					spec->pvp.pvn.u.isname.name.n, (int_str*)&pv_host,avp))) {
+			if (!(avp->flags&AVP_VAL_STR)) {
+				LM_NOTICE("avp value should be string\n");
+				continue;
+			}
+
+			if (pv_host.len <= host.len
+					&& !memcmp(host.s, pv_host.s, pv_host.len))
+				goto out_unlock_found;
+		}
+	}
+
+out_unlock_notfound:
+	ul.unlock_udomain(ud, &aor);
+	return NOT_FOUND;
+out_unlock_found:
+	ul.unlock_udomain(ud, &aor);
+	return IS_FOUND;
+}
+
+#undef CHECK_DOMAIN
+#undef IS_FOUND
+#undef NOT_FOUND
+
+
+/*! \brief the registered() function
  * Return true if the AOR in the Request-URI is registered,
  * it is similar to lookup but registered neither rewrites
  * the Request-URI nor appends branches
  */
 int registered(struct sip_msg* _m, char* _t, char* _s, char *_c)
 {
-	str uri, aor;
-	urecord_t* r;
-	ucontact_t* ptr;
-	pv_value_t val;
-	str callid;
-	int res;
-	int_str istr;
-
-	/* get the AOR */
-	if (_s) {
-		if (pv_get_spec_value( _m, (pv_spec_p)_s, &val)!=0) {
-			LM_ERR("failed to getAOR PV value\n");
-			return -1;
-		}
-		if ( (val.flags&PV_VAL_STR)==0 ) {
-			LM_ERR("AOR PV vals is not string\n");
-			return -1;
-		}
-		uri = val.rs;
-	} else {
-		if (_m->first_line.type!=SIP_REQUEST) {
-			LM_ERR("no AOR and called for a reply!");
-			return -1;
-		}
-		if (_m->new_uri.s) uri = _m->new_uri;
-		else uri = _m->first_line.u.request.uri;
-	}
-
-	if (extract_aor(&uri, &aor,0,0) < 0) {
-		LM_ERR("failed to extract address of record\n");
-		return -1;
-	}
-
-	/* get the callid */
-	if (_c) {
-		if (pv_get_spec_value( _m, (pv_spec_p)_c, &val)!=0) {
-			LM_ERR("failed to get callid PV value\n");
-			return -1;
-		}
-		if ( (val.flags&PV_VAL_STR)==0 ) {
-			LM_ERR("callid PV vals is not string\n");
-			return -1;
-		}
-		callid = val.rs;
-	} else {
-		callid.s = NULL;
-		callid.len = 0;
-	}
-
-	ul.lock_udomain((udomain_t*)_t, &aor);
-	res = ul.get_urecord((udomain_t*)_t, &aor, &r);
-
-	if (res < 0) {
-		ul.unlock_udomain((udomain_t*)_t, &aor);
-		LM_ERR("failed to query usrloc\n");
-		return -1;
-	}
-
-	if (res == 0) {
-		ptr = r->contacts;
-		while (ptr && !VALID_CONTACT(ptr, act_time)) {
-			ptr = ptr->next;
-		}
-
-		for( ; ptr ; ptr=ptr->next ) {
-			if (callid.len==0 || (callid.len==ptr->callid.len &&
-			memcmp(callid.s,ptr->callid.s,callid.len)==0 ) ) {
-
-				/* also populate the 'attributes' avp */
-				if (attr_avp_name != -1) {
-				    istr.s = ptr->attr;
-
-				    if (add_avp_last(AVP_VAL_STR, attr_avp_name, istr) != 0)
-				        LM_ERR("Failed to populate attr avp!\n");
-				}
-
-				ul.unlock_udomain((udomain_t*)_t, &aor);
-				LM_DBG("'%.*s' found in usrloc\n", aor.len, ZSW(aor.s));
-				return 1;
-			}
-		}
-	}
-
-	ul.unlock_udomain((udomain_t*)_t, &aor);
-	LM_DBG("'%.*s' not found in usrloc\n", aor.len, ZSW(aor.s));
-	return -1;
+	LM_WARN("Deprecated! Use is_contact_registered() instead!\n");
+	return is_contact_registered(_m, _t, _s, NULL, _c);
 }

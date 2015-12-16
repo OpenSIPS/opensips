@@ -659,8 +659,8 @@ static void ds_inherit_state( ds_data_t *old_data , ds_data_t *new_data)
 
 void ds_flusher_routine(unsigned int ticks, void* param)
 {
-	db_key_t key_cmp;
-	db_val_t val_cmp;
+	db_key_t key_cmp[2];
+	db_val_t val_cmp[2];
 	db_key_t key_set;
 	db_val_t val_set;
 	ds_set_p list;
@@ -671,8 +671,10 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 		if (*partition->db_handle==NULL)
 			continue;
 
-		val_cmp.type = DB_STR;
-		val_cmp.nul  = 0;
+		val_cmp[0].type = DB_INT;
+		val_cmp[0].nul  = 0;
+		val_cmp[1].type = DB_STR;
+		val_cmp[1].nul  = 0;
 
 		val_set.type = DB_INT;
 		val_set.nul  = 0;
@@ -684,7 +686,8 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 				partition->table_name.len, partition->table_name.s);
 			continue;
 		}
-		key_cmp = &ds_dest_uri_col;
+		key_cmp[0] = &ds_set_id_col;
+		key_cmp[1] = &ds_dest_uri_col;
 		key_set = &ds_dest_state_col;
 
 		if (*partition->data) {
@@ -697,7 +700,8 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 						continue;
 
 					/* populate the update */
-					val_cmp.val.str_val = list->dlist[j].uri;
+					val_cmp[0].val.int_val = list->id;
+					val_cmp[1].val.str_val = list->dlist[j].uri;
 					val_set.val.int_val =
 						(list->dlist[j].flags&DS_INACTIVE_DST) ? 1 :
 							((list->dlist[j].flags&DS_PROBING_DST)?2:0);
@@ -707,8 +711,8 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 						list->dlist[j].uri.len, list->dlist[j].uri.s,
 							val_set.val.int_val);
 
-					if (partition->dbf.update(*partition->db_handle,&key_cmp,0,
-					&val_cmp,&key_set,&val_set,1,1)<0 ) {
+					if (partition->dbf.update(*partition->db_handle,key_cmp,0,
+					val_cmp,&key_set,&val_set,2,1)<0 ) {
 						LM_ERR("DB update failed\n");
 					} else {
 						list->dlist[j].flags &= ~DS_STATE_DIRTY_DST;

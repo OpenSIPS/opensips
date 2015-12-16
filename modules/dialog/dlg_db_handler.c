@@ -599,10 +599,11 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			GET_STR_VALUE(mangled_tu, values, 24,0,1);
 
 			/* add the 2 legs */
+			/* TODO - store SDP */
 			if ( (dlg_add_leg_info( dlg, &from_tag, &rroute1, &contact1,
-			&cseq1, caller_sock,0,0)!=0) ||
+			&cseq1, caller_sock,0,0,0)!=0) ||
 			(dlg_add_leg_info( dlg, &to_tag, &rroute2, &contact2,
-			&cseq2, callee_sock,&mangled_fu,&mangled_tu)!=0) ) {
+			&cseq2, callee_sock,&mangled_fu,&mangled_tu,0)!=0) ) {
 				LM_ERR("dlg_set_leg_info failed\n");
 				/* destroy the dialog */
 				unref_dlg(dlg,1);
@@ -1483,7 +1484,8 @@ static int sync_dlg_db_mem(void)
 	struct dlg_cell *it,*known_dlg,*dlg=NULL;
 	int i, nr_rows,callee_leg_idx,next_id,db_timeout;
 	int no_rows = 10;
-	unsigned int db_caller_cseq,db_callee_cseq,dlg_caller_cseq,dlg_callee_cseq;
+	unsigned int db_caller_cseq = 0, db_callee_cseq = 0;
+	unsigned int dlg_caller_cseq = 0, dlg_callee_cseq = 0;
 	struct socket_info *caller_sock,*callee_sock;
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
@@ -1612,10 +1614,11 @@ static int sync_dlg_db_mem(void)
 				GET_STR_VALUE(mangled_tu, values, 24,0,1);
 
 				/* add the 2 legs */
+				/* TODO SDP here */
 				if ( (dlg_add_leg_info( dlg, &from_tag, &rroute1, &contact1,
-				&cseq1, caller_sock,0,0)!=0) ||
+				&cseq1, caller_sock,0,0,0)!=0) ||
 				(dlg_add_leg_info( dlg, &to_tag, &rroute2, &contact2,
-				&cseq2, callee_sock,&mangled_fu,&mangled_tu)!=0) ) {
+				&cseq2, callee_sock,&mangled_fu,&mangled_tu,0)!=0) ) {
 					LM_ERR("dlg_set_leg_info failed\n");
 					/* destroy the dialog */
 					unref_dlg(dlg,1);
