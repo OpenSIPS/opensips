@@ -45,13 +45,17 @@ typedef struct b2bl_entity_id
 	int disconnected;
 	int state;
 	unsigned short no;
-	unsigned short late_sdp;
+	unsigned short sdp_type;
 	enum b2b_entity_type type;
 	b2bl_dlg_stat_t stats;
 	struct b2bl_entity_id* peer;
 	struct b2bl_entity_id* prev;
 	struct b2bl_entity_id* next;
 }b2bl_entity_id_t;
+
+#define B2BL_SDP_NORMAL     0
+#define B2BL_SDP_LATE       1
+#define B2BL_SDP_RENEW      2
 
 #define NO_UPDATEDB_FLAG    0
 #define UPDATEDB_FLAG       1

@@ -92,6 +92,8 @@ typedef struct b2b_scenario
 	char use_init_sdp;
 	xmlDocPtr doc;
 	xmlNodePtr init_node;
+	str body;
+	str body_type;
 	b2b_rule_t* request_rules[B2B_METHODS_NO];
 	b2b_rule_t* reply_rules;
 

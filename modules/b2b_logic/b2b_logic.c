@@ -513,6 +513,10 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 	xmlNodePtr rules_node, rule_node, request_node;
 	int request_id = 0;
 	b2b_rule_t* rule_struct = NULL;
+	xmlNodePtr body_node;
+	char* body_content= 0;
+	char* body_type= 0;
+	int len;
 
 	doc = xmlParseFile(filename);
 	if(doc == NULL)
@@ -576,6 +580,28 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 	if(node)
 	{
 		scenario->use_init_sdp = 1;
+		body_node = xmlNodeGetChildByName(node, "body");
+		if(body_node)
+		{
+			body_type = (char *)xmlNodeGetAttrContentByName(body_node, "type");
+			if (body_type == NULL)
+			{
+				LM_ERR("Bad formated scenario document. Empty body content type\n");
+				goto error;
+			}
+			body_content = (char*)xmlNodeGetContent(body_node);
+			if(body_content == NULL)
+			{
+				LM_ERR("Bad formated scenario document. Empty body\n");
+				xmlFree(body_type);
+				goto error;
+			}
+			/* we move everything in pkg to be able to strip them */
+			scenario->body_type.len = strlen(body_type);
+			scenario->body_type.s = body_type;
+			scenario->body.len = strlen(body_content);
+			scenario->body.s = body_content;
+		}
 	}
 
 	/* go through the rules */
@@ -705,6 +731,10 @@ error:
 		}
 		if(scenario->id.s)
 			xmlFree(scenario->id.s);
+		if(scenario->body.s)
+			xmlFree(scenario->body.s);
+		if(scenario->body_type.s)
+			xmlFree(scenario->body_type.s);
 		pkg_free(scenario);
 	}
 
@@ -774,6 +804,11 @@ static void mod_destroy(void)
 		}
 		if(scenario->id.s)
 			xmlFree(scenario->id.s);
+		if (scenario->body.s)
+			xmlFree(scenario->body.s);
+		if (scenario->body_type.s)
+			xmlFree(scenario->body_type.s);
+
 		pkg_free(scenario);
 		scenario = next;
 	}

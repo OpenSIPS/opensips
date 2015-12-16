@@ -127,18 +127,6 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 
 	tuple->scenario = scenario;
 
-	if(body && (use_init_sdp || (scenario && scenario->use_init_sdp)))
-	{
-		/* alloc sepparate memory for sdp */
-		tuple->sdp.s = shm_malloc(body->len);
-		if (!tuple->sdp.s) {
-			LM_ERR("no more shm memory for sdp body\n");
-			goto error;
-		}
-		memcpy(tuple->sdp.s, body->s, body->len);
-		tuple->sdp.len = body->len;
-	}
-
 	if(msg)
 	{
 		if(b2b_extra_headers(msg, NULL, custom_hdrs, &extra_headers)< 0)
@@ -160,6 +148,46 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 			pkg_free(extra_headers.s);
 		}
 	}
+
+	if(use_init_sdp || (scenario && scenario->use_init_sdp))
+	{
+		if (!body && scenario->body.len)
+		{
+			body = &scenario->body;
+			/* we also have to add the content type here */
+			tuple->extra_headers = (str *)shm_realloc(tuple->extra_headers,
+					sizeof(str) + extra_headers.len +
+					14/* "Content-Type: " */ + 2/* "\r\n\" */ +
+					scenario->body_type.len);
+			if (!tuple->extra_headers)
+			{
+				LM_ERR("cannot add extra headers\n");
+				goto error;
+			}
+			/* restore initial data */
+			tuple->extra_headers->s = (char*)tuple->extra_headers + sizeof(str);
+			tuple->extra_headers->len = extra_headers.len;
+			memcpy(tuple->extra_headers->s + tuple->extra_headers->len,
+					"Content-Type: ", 14);
+			tuple->extra_headers->len += 14;
+			memcpy(tuple->extra_headers->s + tuple->extra_headers->len,
+					scenario->body_type.s, scenario->body_type.len);
+			tuple->extra_headers->len += scenario->body_type.len;
+			memcpy(tuple->extra_headers->s + tuple->extra_headers->len, "\r\n", 2);
+			tuple->extra_headers->len += 2;
+		}
+		if (body) {
+			/* alloc separate memory for sdp */
+			tuple->sdp.s = shm_malloc(body->len);
+			if (!tuple->sdp.s) {
+				LM_ERR("no more shm memory for sdp body\n");
+				goto error;
+			}
+			memcpy(tuple->sdp.s, body->s, body->len);
+			tuple->sdp.len = body->len;
+		}
+	}
+
 
 	/* copy the function parameters that customize the scenario */
 	memset(tuple->scenario_params, 0, MAX_SCENARIO_PARAMS* sizeof(str));
