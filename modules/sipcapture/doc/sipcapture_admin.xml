@@ -348,6 +348,28 @@ modparam("sipcapture", "capture_node", "homer03")
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>hep_store_no_script</varname> (int)</title>
+		<para>
+			Flag that specifies whether or not the HEP message should
+		pass through the script. If this flag set, the message will
+		be stored in the database just after it will be received.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0(passing through the script).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>hep_store_no_script</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sipcapture", "hep_store_no_script", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 </section>
 
 	<section>

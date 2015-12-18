@@ -31,6 +31,8 @@
 #define HEP_HEADER_ID "\x48\x45\x50\x33"
 #define HEP_HEADER_ID_LEN (sizeof(HEP_HEADER_ID) - 1)
 
+#define HEP_SCRIPT_SKIP 0xFF
+
 /* HEPv3 types */
 
 struct hep_chunk {

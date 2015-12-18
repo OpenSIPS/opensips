@@ -78,16 +78,22 @@ int register_hep_cb(hep_cb_t cb)
 
 int run_hep_cbs(struct hep_desc *h, struct receive_info *rcv)
 {
+	int ret, fret=-1;
 	struct hep_cb_list *cb_el;
 
 	for (cb_el=cb_list; cb_el; cb_el=cb_el->next) {
-		if (cb_el->cb(h, rcv) < 0) {
+		ret=cb_el->cb(h, rcv);
+		if (ret < 0) {
 			LM_ERR("hep callback failed! Continuing with the other ones!\n");
-			return -1;
+		} else if (ret == HEP_SCRIPT_SKIP) {
+			fret = HEP_SCRIPT_SKIP;
+		} else if (fret == -1) {
+			/* if at least one succeeds then it's ok */
+			fret = 0;
 		}
 	}
 
-	return 0;
+	return fret;
 }
 
 void free_hep_cbs(void)

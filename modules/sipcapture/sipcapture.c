@@ -232,6 +232,8 @@ int *capture_on_flag = NULL;
 int promisc_on = 0;
 int bpf_on = 0;
 
+int hep_store_no_script=0;
+
 str raw_socket_listen = { 0, 0 };
 str raw_interface = { 0, 0 };
 
@@ -338,6 +340,7 @@ static param_export_t params[] = {
 	{"raw_interface",     		STR_PARAM, &raw_interface.s   },
         {"promiscious_on",  		INT_PARAM, &promisc_on   },
         {"raw_moni_bpf_on",  		INT_PARAM, &bpf_on   },
+	{"hep_store_no_script",		INT_PARAM, &hep_store_no_script},
 	{0, 0, 0}
 };
 
@@ -819,6 +822,7 @@ int hep_msg_received(struct hep_desc *h, struct receive_info *ri)
 	unsigned short sport, dport;
 	struct ip_addr dst_ip, src_ip;
 
+	struct sip_msg msg;
 
 	if(!hep_capture_on) {
 		LM_ERR("HEP is not enabled\n");
@@ -934,6 +938,48 @@ int hep_msg_received(struct hep_desc *h, struct receive_info *ri)
 
 	ri->dst_ip = dst_ip;
 	ri->dst_port = ntohs(dport);
+
+	if (hep_store_no_script) {
+		memset(&msg, 0, sizeof(struct sip_msg));
+
+		switch (h->version) {
+		case 1:
+		case 2:
+			msg.buf = h->u.hepv12.payload;
+			msg.len = strlen(msg.buf);
+			break;
+		case 3:
+			msg.buf = h->u.hepv3.payload_chunk.data;
+			msg.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(struct hep_chunk);
+			break;
+		default:
+			LM_ERR("unknown hep proto [%d]\n", h->version);
+			return -1;
+		}
+
+		msg.rcv = *ri;
+
+		if (parse_msg(msg.buf,msg.len,&msg)!=0) {
+			LM_ERR("Unable to parse message in hep payload!"
+					"Hep version %d!\n", h->version);
+			return -1;
+		}
+
+		/* if message not parsed ok this helps with debugging */
+		LM_DBG("********************************* SIP MESSAGE ******************\n"
+				"%.*s\n"
+				"***************************************************************\n",
+				(int)msg.len, msg.buf);
+
+		/* we basically move the sip_capture() call from the scripts here */
+		if (w_sip_capture(&msg, NULL, NULL) < 0) {
+			LM_ERR("failed to store the message!\n");
+			return -1;
+		}
+
+		/* return a special code which will tell hep not to run the script */
+		return HEP_SCRIPT_SKIP;
+	}
 
 	return 0;
 }
@@ -1078,7 +1124,7 @@ static int sip_capture_store(struct _sipcapture_object *sco,
 	         db_vals[i].nul = 0;
 
 	ret=1;
-	if (!resume_f && db_sync_store(db_vals)) {
+	if (!resume_f && db_sync_store(db_vals) != 1) {
 		LM_ERR("failed to insert into database\n");
 		return -1;
 	} else if (resume_f) {

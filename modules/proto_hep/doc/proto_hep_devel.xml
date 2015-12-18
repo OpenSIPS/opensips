@@ -59,7 +59,8 @@
 			The function register callbacks to be called whenever a HEP message
 		is received. The callbacks parameters are struct hep_desc*(see hep.h for
 		details) a structure that holds all details about the hep header and the
-		receive_info* structure.
+		receive_info* structure. The callback can return HEP_SCRIPT_SKIP which
+		stops the HEP message from being passed thrrough scripts.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>

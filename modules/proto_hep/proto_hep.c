@@ -834,6 +834,8 @@ static inline int hep_handle_req(struct tcp_req *req,
 	int msg_len;
 	long size;
 
+	int ret=0;
+
 	if (req->complete){
 		/* update the timeout - we successfully read the request */
 		tcp_conn_set_lifetime( con, tcp_con_lifetime);
@@ -874,9 +876,10 @@ static inline int hep_handle_req(struct tcp_req *req,
 				return -1;
 			}
 
-			if (run_hep_cbs(&h, &local_rcv)) {
-			LM_ERR("failed to run hep callbacks\n");
-			return -1;
+			ret=run_hep_cbs(&h, &local_rcv);
+			if (ret < 0) {
+				LM_ERR("failed to run hep callbacks\n");
+				return -1;
 			}
 
 			msg_len = ntohs(h.u.hepv3.payload_chunk.chunk.length) -
@@ -885,9 +888,9 @@ static inline int hep_handle_req(struct tcp_req *req,
 			msg_buf = h.u.hepv3.payload_chunk.data;
 		}
 
-
-		if (receive_msg(msg_buf, msg_len,
-			&local_rcv) <0)
+		/* skip receive msg if we were told so from at least one callback */
+		if (ret != HEP_SCRIPT_SKIP &&
+				receive_msg(msg_buf, msg_len, &local_rcv) <0)
 				LM_ERR("receive_msg failed \n");
 
 		if (!size && req != &hep_current_req) {
@@ -1112,6 +1115,8 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 
 	struct hep_desc h;
 
+	int ret = 0;
+
 #ifdef DYN_BUF
 	buf=pkg_malloc(BUF_SIZE+1);
 	if (buf==0){
@@ -1161,7 +1166,8 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 
 	/* run hep callbacks if looks like non-SIP message*/
 	if( !isalpha(msg.s[0]) ) {    /* not-SIP related */
-		if (run_hep_cbs(&h, &ri)) {
+		ret=run_hep_cbs(&h, &ri);
+		if (ret < 0) {
 			LM_ERR("failed to run hep callbacks\n");
 			return -1;
 		}
@@ -1180,8 +1186,10 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 		return 0;
 	}
 
-	/* receive_msg must free buf too!*/
-	receive_msg( msg.s, msg.len, &ri);
+	if (ret != HEP_SCRIPT_SKIP) {
+		/* receive_msg must free buf too!*/
+		receive_msg( msg.s, msg.len, &ri);
+	}
 
 	return 0;
 }

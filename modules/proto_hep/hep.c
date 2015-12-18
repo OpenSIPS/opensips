@@ -246,9 +246,9 @@ static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su
 		}
 	}
 
-	payload_chunk.length    = htons(sizeof(payload_chunk) + plen);
+	payload_chunk.length    = htons(sizeof(hep_chunk_t) + plen);
 
-	tlen = sizeof(struct hep_generic) + plen + iplen + sizeof(hep_chunk_t);
+	tlen = sizeof(struct hep_generic) + iplen + payload_chunk.length;
 
 	/* FIXME no tls support yet */
 
