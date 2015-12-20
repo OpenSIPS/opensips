@@ -42,6 +42,9 @@
 #include "../globals.h"
 #include "../statistics.h"
 
+#ifdef DBG_F_MALLOC
+#include "mem_dbg_hash.h"
+#endif
 
 /*useful macros*/
 
@@ -158,6 +161,9 @@ static inline void fm_insert_free(struct fm_block* qm, struct fm_frag* frag)
 	frag->u.nxt_free=*f;
 	if( *f )
 		(*f)->prev = &(frag->u.nxt_free);
+
+	/* mark fragment as "free" */
+	frag->is_free = 1;
 
 	*f=frag;
 	qm->free_hash[hash].no++;
@@ -365,8 +371,11 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 				qm->used += FRAG_OVERHEAD;
 				#endif
 
-				if( frag->size >size )
+				if( frag->size >size ) {
+					/* mark it as "busy" */
+					frag->is_free = 0;
 					goto solved;
+				}
 
 				n = FRAG_NEXT(frag);
 			}
@@ -390,6 +399,9 @@ found:
 	/* we found it!*/
 
 	fm_remove_free(qm,frag);
+
+	/* mark it as "busy" */
+	frag->is_free = 0;
 
 	/*see if we'll use full frag, or we'll split it in 2*/
 
@@ -445,9 +457,6 @@ void fm_free(struct fm_block* qm, void* p)
 	#ifdef DBG_F_MALLOC
 	LM_DBG("freeing block alloc'ed from %s: %s(%ld)\n", f->file, f->func,
 			f->line);
-	f->file=file;
-	f->func=func;
-	f->line=line;
 	#endif
 
 join:
@@ -613,6 +622,8 @@ void fm_status(struct fm_block* qm)
 	unsigned int h;
 	int unused;
 	unsigned long size;
+	mem_dbg_htable_t allocd;
+	struct mem_dbg_entry *it;
 
 	LM_GEN1(memdump, "fm_status (%p):\n", qm);
 	if (!qm) return;
@@ -622,6 +633,29 @@ void fm_status(struct fm_block* qm)
 	LM_GEN1(memdump, " used= %lu, used+overhead=%lu, free=%lu\n",
 			qm->used, qm->real_used, qm->size-qm->used);
 	LM_GEN1(memdump, " max used (+overhead)= %lu\n", qm->max_real_used);
+#endif
+
+#if defined(DBG_F_MALLOC)
+	dbg_ht_init(allocd);
+
+	for (f=qm->first_frag; (char*)f<(char*)qm->last_frag; f=FRAG_NEXT(f))
+		if (!f->is_free)
+			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
+				LM_ERR("Unable to update alloc'ed. memory summary\n");
+				return;
+			}
+
+	LM_GEN1(memdump, " dumping summary of all alloc'ed. fragments:\n");
+	for(i=0; i < DBG_HASH_SIZE; i++) {
+		it = allocd[i];
+		while (it) {
+			LM_GEN1(memdump, " %10lu : %lu x [%s: %s, line %lu]\n",
+				it->size, it->no_fragments, it->file, it->func, it->line);
+			it = it->next;
+		}
+	}
+
+	dbg_ht_free(allocd);
 #endif
 
 	LM_GEN1(memdump, "dumping free list:\n");

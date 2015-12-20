@@ -87,6 +87,14 @@ void set_pkg_stats(pkg_status_holder*);
 #			define pkg_realloc(p, s) fm_realloc(mem_block, (p), (s),__FILE__, \
 				__FUNCTION__, __LINE__)
 #                       define pkg_info(i) fm_info(mem_block,i)
+#		elif defined HP_MALLOC
+#			define pkg_malloc(s) hp_pkg_malloc(mem_block, (s),__FILE__, \
+				__FUNCTION__, __LINE__)
+#			define pkg_free(p)   hp_pkg_free(mem_block, (p), __FILE__,  \
+				__FUNCTION__, __LINE__)
+#			define pkg_realloc(p, s) hp_pkg_realloc(mem_block, (p), (s),__FILE__, \
+				__FUNCTION__, __LINE__)
+#                       define pkg_info(i) hp_info(mem_block,i)
 #		else
 #			define pkg_malloc(s) qm_malloc(mem_block, (s),__FILE__, \
 				__FUNCTION__, __LINE__)

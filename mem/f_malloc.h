@@ -85,6 +85,7 @@ struct fm_frag{
 	const char* func;
 	unsigned long line;
 	unsigned long check;
+	char is_free;
 #endif
 };
 

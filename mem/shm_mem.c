@@ -434,7 +434,7 @@ int shm_mem_init(void)
 
 struct mi_root *mi_shm_check(struct mi_root *cmd, void *param)
 {
-#ifdef DBG_QM_MALLOC
+#ifdef q_malloc
 	struct mi_root *root;
 	int ret;
 
