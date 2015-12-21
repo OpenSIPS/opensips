@@ -94,6 +94,8 @@ static int compute_next_hop(ucontact_t *contact)
  */
 ucontact_t* new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 {
+	struct sip_uri tmp_uri;
+
 	ucontact_t *c;
 
 	c = (ucontact_t*)shm_malloc(sizeof(ucontact_t));
@@ -102,6 +104,13 @@ ucontact_t* new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _
 		return NULL;
 	}
 	memset(c, 0, sizeof(ucontact_t));
+
+	if (parse_uri(_contact->s, _contact->len, &tmp_uri) < 0) {
+		LM_ERR("contact [%.*s] is not valid! Will not store it!\n",
+			  _contact->len, _contact->s);
+		shm_free(c);
+		return NULL;
+	}
 
 	if (shm_str_dup( &c->c, _contact) < 0) goto mem_error;
 	if (shm_str_dup( &c->callid, _ci->callid) < 0) goto mem_error;

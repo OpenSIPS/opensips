@@ -617,9 +617,16 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 			}
 
 			if ( (c=mem_insert_ucontact(r, &contact, ci)) == 0) {
-				LM_ERR("inserting contact failed\n");
+				LM_ERR("inserting contact failed\n"
+						"Found a bad contact with "
+						"aor:[%.*s] contact:[%.*s] received:[%.*s]!\n"
+						"Will continue but that contact needs to be REMOVED!!\n",
+						r->aor.len, r->aor.s,
+						contact.len, contact.s,
+						ci->received.len, ci->received.s);
 				unlock_udomain(_d, &user);
-				goto error1;
+				free_ucontact(c);
+				continue;
 			}
 
 			/* We have to do this, because insert_ucontact sets state to CS_NEW
@@ -646,8 +653,6 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 #endif
 
 	return 0;
-error1:
-	free_ucontact(c);
 error:
 	ul_dbf.free_result(_c, res);
 	return -1;
