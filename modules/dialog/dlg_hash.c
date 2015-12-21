@@ -195,6 +195,8 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 				shm_free(dlg->legs[i].prev_cseq.s);
 			if (dlg->legs[i].contact.s)
 				shm_free(dlg->legs[i].contact.s); /* + route_set */
+			if (dlg->legs[i].th_sent_contact.s)
+				shm_free(dlg->legs[i].th_sent_contact.s);
 			if (dlg->legs[i].from_uri.s)
 				shm_free(dlg->legs[i].from_uri.s);
 			if (dlg->legs[i].to_uri.s)
@@ -439,9 +441,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		memcpy(leg->to_uri.s,mangled_to->s,mangled_to->len);
 	}
 
-	/* TODO - consider late negociation here and when handling the first ACK */
-	if (dlg->legs_no[DLG_LEGS_USED] == 0 && sdp && sdp->s && sdp->len) {
-		/* save this just for the caller leg here, for the callee leg we'll have to update anyway */
+	if (sdp && sdp->s && sdp->len) {
 		leg->sdp.s = shm_malloc(sdp->len);
 		if (!leg->sdp.s) {
 			LM_ERR("no more shm\n");
@@ -544,7 +544,7 @@ error:
 
 
 int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
-													str *rr, str *contact, str *sdp )
+	str *rr, str *contact)
 {
 	rr_t *head = NULL, *rrp;
 
@@ -583,17 +583,6 @@ int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
 			rrp = rrp->next;
 		}
 		free_rr(&head);
-	}
-
-	if (sdp && sdp->len && sdp->s) {
-		dlg->legs[leg].sdp.s = shm_realloc(dlg->legs[leg].sdp.s,sdp->len);
-		if (!dlg->legs[leg].sdp.s) {
-			LM_ERR("Failed to allocate mem for the SDP\n");
-			return -1;
-		}
-
-		dlg->legs[leg].sdp.len = sdp->len;
-		memcpy(dlg->legs[leg].sdp.s,sdp->s,sdp->len);
 	}
 
 	return 0;

@@ -195,7 +195,6 @@ static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 	str cseq;
 	str contact;
 	str rr_set;
-	str sdp;
 	int is_req;
 
 	is_req = (msg->first_line.type==SIP_REQUEST)?1:0;
@@ -230,18 +229,6 @@ static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		}
 	}
 
-	if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-	dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
-		if (get_body(msg,&sdp) < 0) {
-			LM_ERR("Failed to extract SDP \n");
-			sdp.s = NULL;
-			sdp.len = 0;
-		}
-	} else {
-		sdp.s = NULL;
-		sdp.len = 0;
-	}
-
 	LM_DBG("route_set %.*s, contact %.*s, cseq %.*s and bind_addr %.*s\n",
 		rr_set.len, ZSW(rr_set.s), contact.len, ZSW(contact.s),
 		cseq.len, cseq.s,
@@ -249,7 +236,7 @@ static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		msg->rcv.bind_address->sock_str.s);
 
 	if (dlg_add_leg_info( dlg, tag, &rr_set, &contact, &cseq,
-	msg->rcv.bind_address,mangled_from,mangled_to,&sdp)!=0) {
+	msg->rcv.bind_address,mangled_from,mangled_to,0)!=0) {
 		LM_ERR("dlg_add_leg_info failed\n");
 		if (rr_set.s) pkg_free(rr_set.s);
 		goto error0;
@@ -339,7 +326,7 @@ static inline str* extract_mangled_fromuri(str *mangled_from_hdr)
 static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 				struct dlg_cell *dlg,str *mangled_from,str *mangled_to)
 {
-	str tag,contact,rr_set,sdp;
+	str tag,contact,rr_set;
 	unsigned int leg, skip_rrs,cseq_no;
 
 	/* get to tag*/
@@ -418,19 +405,7 @@ routing_info:
 		LM_DBG("Skipping %d ,%d, %d, %d \n",skip_rrs, dlg->from_rr_nb,t->relaied_reply_branch,t->uac[t->relaied_reply_branch].added_rr);
 		get_routing_info(rpl, 0, &skip_rrs, &contact, &rr_set);
 
-		if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-		dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
-			if (get_body(rpl,&sdp) < 0) {
-				LM_ERR("Failed to extract SDP \n");
-				sdp.s = NULL;
-				sdp.len = 0;
-			}
-		} else {
-			sdp.s = NULL;
-			sdp.len = 0;
-		}
-
-		dlg_update_routing( dlg, leg, &rr_set, &contact, &sdp );
+		dlg_update_routing( dlg, leg, &rr_set, &contact);
 		if( rr_set.s )
 			pkg_free( rr_set.s);
 	}
@@ -725,17 +700,16 @@ static void dlg_update_sdp(struct dlg_leg *leg,struct sip_msg *msg)
 static void dlg_update_callee_sdp(struct cell* t, int type,
 		struct tmcb_params *ps) 
 {
-	struct sip_msg *rpl;
+	struct sip_msg *rpl,*msg;
 	int statuscode;
 	struct dlg_cell *dlg;
+	str buffer;
 
-	if(ps == NULL || ps->rpl == NULL)
-	{
+	if(ps == NULL || ps->rpl == NULL) {
 			LM_ERR("Wrong tmcb params\n");
 			return;
 	}
-	if( ps->param== NULL )
-	{
+	if( ps->param== NULL ) {
 			LM_ERR("Null callback parameter\n");
 			return;
 	}
@@ -744,26 +718,51 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 	statuscode = ps->code;
 	dlg = *(ps->param);
 
-	LM_DBG("Status Code received =  [%d]\n", statuscode);
+	if(rpl==NULL || rpl==FAKED_REPLY) {
+		/* we only care about actual replayed replies */
+		return;
+	}
 
-	if (statuscode == 200) 
-		dlg_update_sdp(&dlg->legs[callee_idx(dlg)],rpl);
+	LM_DBG("Status Code received =  [%d]\n", statuscode);
+	if (statuscode == 200) {
+		buffer.s = ((str*)ps->extra1)->s;
+		buffer.len = ((str*)ps->extra1)->len;
+
+		msg=pkg_malloc(sizeof(struct sip_msg));
+		if (msg==0) {
+			LM_ERR("no pkg mem left for sip_msg\n");
+			return;
+		}
+
+		memset(msg,0, sizeof(struct sip_msg));
+		msg->buf=buffer.s;
+	        msg->len=buffer.len;
+
+		if (parse_msg(buffer.s,buffer.len, msg)!=0) {
+			pkg_free(msg);
+			return;
+		}
+
+		dlg_update_sdp(&dlg->legs[callee_idx(dlg)],msg);
+
+		free_sip_msg(msg);
+		pkg_free(msg);
+	}
 }
 
 static void dlg_update_caller_sdp(struct cell* t, int type,
 		struct tmcb_params *ps) 
 {
-	struct sip_msg *rpl;
+	struct sip_msg *rpl,*msg;
 	int statuscode;
 	struct dlg_cell *dlg;
+	str buffer;
 
-	if(ps == NULL || ps->rpl == NULL)
-	{
+	if(ps == NULL || ps->rpl == NULL) {
 			LM_ERR("Wrong tmcb params\n");
 			return;
 	}
-	if( ps->param== NULL )
-	{
+	if( ps->param== NULL ) {
 			LM_ERR("Null callback parameter\n");
 			return;
 	}
@@ -772,10 +771,37 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 	statuscode = ps->code;
 	dlg = *(ps->param);
 
+	if(rpl==NULL || rpl==FAKED_REPLY) {
+		/* we only care about actual replayed replies */
+		return;
+	}
+
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
-	if (statuscode == 200) 
-		dlg_update_sdp(&dlg->legs[DLG_CALLER_LEG],rpl);
+	if (statuscode == 200) {
+		buffer.s = ((str*)ps->extra1)->s;
+		buffer.len = ((str*)ps->extra1)->len;
+
+		msg=pkg_malloc(sizeof(struct sip_msg));
+		if (msg==0) {
+			LM_ERR("no pkg mem left for sip_msg\n");
+			return;
+		}
+
+		memset(msg,0, sizeof(struct sip_msg));
+		msg->buf=buffer.s;
+	        msg->len=buffer.len;
+
+		if (parse_msg(buffer.s,buffer.len, msg)!=0) {
+			pkg_free(msg);
+			return;
+		}
+
+		dlg_update_sdp(&dlg->legs[DLG_CALLER_LEG],msg);
+
+		free_sip_msg(msg);
+		pkg_free(msg);
+	}	
 }
 
 static void dlg_seq_up_onreply_mod_cseq(struct cell* t, int type,
@@ -921,6 +947,141 @@ static void tmcb_unreference_dialog(struct cell* t, int type,
 		unref_dlg((struct dlg_cell*)*param->param, 1);
 }
 
+static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
+{
+	struct sip_msg *msg,*rpl;
+	struct dlg_cell *dlg;
+	str buffer,contact,sdp;
+
+	dlg = (struct dlg_cell *)(*ps->param);
+
+	rpl = ps->rpl;
+	if(rpl==NULL || rpl==FAKED_REPLY) {
+		/* we only care about actual replayed replies */
+		return;
+	}
+
+	if (ps->code == 200) {
+		buffer.s = ((str*)ps->extra1)->s;
+		buffer.len = ((str*)ps->extra1)->len;
+
+		msg=pkg_malloc(sizeof(struct sip_msg));
+		if (msg==0) {
+			LM_ERR("no pkg mem left for sip_msg\n");
+			return;
+		}
+
+		memset(msg,0, sizeof(struct sip_msg));
+		msg->buf=buffer.s;
+	        msg->len=buffer.len;
+
+		if (parse_msg(buffer.s,buffer.len, msg)!=0) {
+			pkg_free(msg);
+			return;
+		}
+
+		/* extract SDP */
+		if (get_body(msg,&sdp) < 0) {
+			LM_ERR("Failed to extract SDP from outgoing invite \n");
+			sdp.s = NULL;
+			sdp.len = 0;
+		}
+
+		dlg->legs[callee_idx(dlg)].sdp.s = shm_malloc(sdp.len);	
+		if (!dlg->legs[callee_idx(dlg)].sdp.s) {
+			LM_ERR("No more shm \n");
+			free_sip_msg(msg);
+			pkg_free(msg);
+			return;
+		}
+		dlg->legs[callee_idx(dlg)].sdp.len = sdp.len;
+		memcpy(dlg->legs[callee_idx(dlg)].sdp.s,sdp.s,sdp.len);
+
+		/* extract the contact address */
+		if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0||!msg->contact)){
+			LM_ERR("There is no contact header in the outgoing 200OK \n");
+		} else {
+			contact.s = msg->contact->name.s;
+			contact.len = msg->contact->len;
+
+			dlg->legs[callee_idx(dlg)].th_sent_contact.s = shm_malloc(contact.len);
+			if (!dlg->legs[callee_idx(dlg)].th_sent_contact.s) {
+				LM_ERR("No more shm mem for outgoing contact hdr\n");
+				free_sip_msg(msg);
+				pkg_free(msg);
+				return;	
+			}
+			dlg->legs[callee_idx(dlg)].th_sent_contact.len = contact.len;
+			memcpy(dlg->legs[callee_idx(dlg)].th_sent_contact.s,contact.s,contact.len);
+		}
+
+		free_sip_msg(msg);
+		pkg_free(msg);
+	}
+}
+
+static void dlg_caller_reinv_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
+{
+	struct sip_msg *msg;
+	struct dlg_cell *dlg;
+	str buffer;
+
+	buffer.s = ((str*)ps->extra1)->s;
+	buffer.len = ((str*)ps->extra1)->len;
+
+	dlg = (struct dlg_cell *)(*ps->param);
+
+	msg=pkg_malloc(sizeof(struct sip_msg));
+        if (msg==0) {
+                LM_ERR("no pkg mem left for sip_msg\n");
+                return;
+        }
+
+	memset(msg,0, sizeof(struct sip_msg));
+	msg->buf=buffer.s;
+	msg->len=buffer.len;
+
+        if (parse_msg(buffer.s,buffer.len, msg)!=0) {
+		pkg_free(msg);
+		return;
+	}
+
+	dlg_update_sdp(&dlg->legs[DLG_CALLER_LEG],msg);
+	free_sip_msg(msg);
+	pkg_free(msg);
+}
+
+static void dlg_callee_reinv_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
+{
+	struct sip_msg *msg;
+	struct dlg_cell *dlg;
+	str buffer;
+
+	buffer.s = ((str*)ps->extra1)->s;
+	buffer.len = ((str*)ps->extra1)->len;
+
+	dlg = (struct dlg_cell *)(*ps->param);
+
+	msg=pkg_malloc(sizeof(struct sip_msg));
+        if (msg==0) {
+                LM_ERR("no pkg mem left for sip_msg\n");
+                return;
+        }
+
+	memset(msg,0, sizeof(struct sip_msg));
+	msg->buf=buffer.s;
+	msg->len=buffer.len;
+
+        if (parse_msg(buffer.s,buffer.len, msg)!=0) {
+		pkg_free(msg);
+		return;
+	}
+
+	dlg_update_sdp(&dlg->legs[callee_idx(dlg)],msg);
+	free_sip_msg(msg);
+	pkg_free(msg);
+}
+
 
 void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 {
@@ -959,9 +1120,81 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 
 		/* dialog is fully initialized */
 		dlg->flags |= DLG_FLAG_ISINIT;
+
+		if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+		dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+			if(d_tmb.register_tmcb( 0, t, TMCB_RESPONSE_OUT, 
+			dlg_onreply_out, (void *)dlg, 0) <=0) {
+				LM_ERR("can't register trace_onreply_out\n");
+			}
+		}
 	}
 }
 
+static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
+{
+	struct sip_msg *msg;
+	struct dlg_cell *dlg;
+	str buffer,contact,sdp;
+
+	buffer.s = ((str*)ps->extra1)->s;
+	buffer.len = ((str*)ps->extra1)->len;
+
+	dlg = (struct dlg_cell *)(*ps->param);
+
+	msg=pkg_malloc(sizeof(struct sip_msg));
+        if (msg==0) {
+                LM_ERR("no pkg mem left for sip_msg\n");
+                return;
+        }
+
+	memset(msg,0, sizeof(struct sip_msg));
+        msg->buf=buffer.s;
+        msg->len=buffer.len;
+
+	if (parse_msg(buffer.s,buffer.len, msg)!=0) {
+		pkg_free(msg);
+		return;
+	}
+
+	/* extract SDP */
+	if (get_body(msg,&sdp) < 0) {
+		LM_ERR("Failed to extract SDP from outgoing invite \n");
+		sdp.s = NULL;
+		sdp.len = 0;
+	}
+	
+	dlg->legs[DLG_CALLER_LEG].sdp.s = shm_malloc(sdp.len);	
+	if (!dlg->legs[DLG_CALLER_LEG].sdp.s) {
+		LM_ERR("No more shm \n");
+		free_sip_msg(msg);
+		pkg_free(msg);
+		return;
+	}
+	dlg->legs[DLG_CALLER_LEG].sdp.len = sdp.len;
+	memcpy(dlg->legs[DLG_CALLER_LEG].sdp.s,sdp.s,sdp.len);
+
+        /* extract the contact address */
+	if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0||!msg->contact)){
+		LM_ERR("No outgoing contact in the initial INVITE \n");
+        } else {
+		contact.s = msg->contact->name.s;
+		contact.len = msg->contact->len;
+
+		dlg->legs[DLG_CALLER_LEG].th_sent_contact.s = shm_malloc(contact.len);
+		if (!dlg->legs[DLG_CALLER_LEG].th_sent_contact.s) {
+			LM_ERR("No more shm for INVITE outgoing contact \n");
+			free_sip_msg(msg);
+			pkg_free(msg);
+			return;
+		}
+		dlg->legs[DLG_CALLER_LEG].th_sent_contact.len = contact.len;
+		memcpy(dlg->legs[DLG_CALLER_LEG].th_sent_contact.s,contact.s,contact.len);
+	}
+
+	free_sip_msg(msg);
+	pkg_free(msg);
+}
 
 int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 {
@@ -1057,6 +1290,15 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	}
 	dlg->lifetime = get_dlg_timeout(req);
 
+	if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+	dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+		/* register out callback in order to save Contact and SDP */
+		if(d_tmb.register_tmcb( req, 0, TMCB_REQUEST_BUILT, dlg_onreq_out, (void *)dlg, 0) <=0) {
+			LM_ERR("can't register trace_onreq_out\n");
+			return -1;
+		}
+	}
+
 	if_update_stat( dlg_enable_stats, processed_dlgs, 1);
 
 	return 0;
@@ -1142,7 +1384,6 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	struct dlg_entry *d_entry;
 	str *msg_cseq;
 	char *final_cseq;
-	str sdp;
 
 	/* as this callback is triggered from loose_route, which can be
 	   accidentaly called more than once from script, we need to be sure
@@ -1401,25 +1642,16 @@ after_unlock5:
 					dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE ) {
 					/* we need to update the SDP for this leg
 					and involve TM to update the SDP for the other side as well */
-					if (get_body(req,&sdp) < 0) {
-						LM_ERR("Failed to extract SDP \n");
-						sdp.s = NULL;
-						sdp.len = 0;
-					}
-
-					if (dlg->legs[src_leg].sdp.len < sdp.len) {
-						dlg->legs[src_leg].sdp.s = shm_realloc(dlg->legs[src_leg].sdp.s,sdp.len);
-						if (!dlg->legs[src_leg].sdp.s) {
-							LM_ERR("Failed to reallocate sdp \n");
-							ok = 0;
-						}
+					if(d_tmb.register_tmcb( req, 0, TMCB_REQUEST_BUILT, 
+					(dir==DLG_DIR_UPSTREAM)?dlg_callee_reinv_onreq_out:dlg_caller_reinv_onreq_out, 
+					(void *)dlg, 0) <=0) {
+						LM_ERR("can't register trace_onreq_out\n");
+						ok = 0;
 					}
 
 					if (ok) {
-						dlg->legs[src_leg].sdp.len = sdp.len;
-						memcpy(dlg->legs[src_leg].sdp.s,sdp.s,sdp.len);
 						ref_dlg( dlg , 1);
-						if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+						if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_OUT,
 						(dir==DLG_DIR_UPSTREAM)?dlg_update_caller_sdp:dlg_update_callee_sdp,
 						(void*)dlg, unreference_dialog)<0 ) {
 							LM_ERR("failed to register TMCB (2)\n");

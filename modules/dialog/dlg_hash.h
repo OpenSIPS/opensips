@@ -94,8 +94,9 @@ struct dlg_leg {
 	str to_uri;		/* TO URI for this leg, in case of TO URI mangling */
 	str route_set;
 	str contact;
+	str th_sent_contact;	/* topology hiding advertised contact towards this leg - full header */
 	str route_uris[64];
-	str sdp;	/* latest SDP provided by this leg ( full body ) */
+	str sdp;		/* latest SDP provided by this leg ( full body ), after all OpenSIPS changes */
 	int nr_uris;
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
 	unsigned int last_inv_gen_cseq; /* used when translating ACKs */
@@ -316,8 +317,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq,
 						int field_type);
 
-int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
-													str *rr, str *contact, str *sdp);
+int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,str *rr, str *contact);
 
 struct dlg_cell* lookup_dlg( unsigned int h_entry, unsigned int h_id);
 
