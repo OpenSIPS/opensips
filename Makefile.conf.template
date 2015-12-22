@@ -57,21 +57,25 @@ exclude_modules?= aaa_radius b2b_logic cachedb_cassandra cachedb_couchbase cache
 
 include_modules?= 
 
-DEFS+= -DPKG_MALLOC #Uses a faster malloc (exclusive w/ USE_SHM_MEM)
+#DEFS_GROUP_START
+DEFS+= -DPKG_MALLOC #Uses a faster malloc
+#DEFS+= -DUSE_SHM_MEM #All PKG allocations are mapped to SHM
+#DEFS_GROUP_END
 DEFS+= -DSHM_MMAP #Use mmap instead of SYSV shared memory
 DEFS+= -DUSE_MCAST #Compile in support for IP Multicast
 DEFS+= -DDISABLE_NAGLE #Disabled the TCP NAgle Algorithm ( lower delay )
 DEFS+= -DSTATISTICS #Enables the statistics manager
 DEFS+= -DHAVE_RESOLV_RES #Support for changing some of the resolver parameters
-#DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
+#DEFS_GROUP_START
+#DEFS+= -DVQ_MALLOC #TODO ?
+#DEFS+= -DQM_MALLOC #Allocator recommended for debugging
 DEFS+= -DF_MALLOC #An even faster allocator. Not recommended for debugging
+#DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
+#DEFS_GROUP_END
+#DEFS+= -DDBG_MALLOC # Enables debugging for memory allocators
 #DEFS+= -DF_MALLOC_OPTIMIZATIONS #Remove all internal checks in F_MALLOC
-#DEFS+= -DDBG_QM_MALLOC #Allocator used for debugging information
-#DEFS+= -DUSE_SHM_MEM #All PKG allocations are mapped to SHM ( exclusive w/ PKG_MALLOC )
-#DEFS+= -DDBG_F_MALLOC #TODO ? 
 #DEFS+= -DNO_DEBUG #Turns off all debug messages
 #DEFS+= -DNO_LOG #Completely turns off all the logging
-#DEFS+= -DVQ_MALLOC #TODO ?
 #DEFS+= -DFAST_LOCK #Uses fast architecture specific locking
 #DEFS+= -DUSE_FUTEX #Uses linux futexs with fast architecture specific locking
 #DEFS+= -DUSE_SYSV_SEM #Uses SYSV sems for locking ( slower & limited number of locks

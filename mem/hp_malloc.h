@@ -24,7 +24,9 @@
  *  2014-01-19 initial version (liviu)
  */
 
-#if !defined(HP_MALLOC_H) && !defined(f_malloc_h) && !defined(VQ_MALLOC)
+#if !defined(HP_MALLOC_H) && !defined(VQ_MALLOC) && !defined(QM_MALLOC) && \
+	!defined(F_MALLOC)
+
 #define HP_MALLOC_H
 
 #include <sys/time.h>
@@ -150,7 +152,7 @@ struct hp_frag {
 		long reserved;
 	} u;
 	struct hp_frag **prev;
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	const char* file;
 	const char* func;
 	unsigned long line;
@@ -205,63 +207,63 @@ struct hp_block *hp_shm_malloc_init(char *addr, unsigned long size);
 int hp_mem_warming(struct hp_block *);
 void hp_update_mem_pattern_file(void);
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void *hp_shm_malloc(struct hp_block *, unsigned long size,
 						const char* file, const char* func, unsigned int line);
 #else
 void *hp_shm_malloc(struct hp_block *, unsigned long size);
 #endif
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void *hp_shm_malloc_unsafe(struct hp_block *, unsigned long size,
 							const char* file, const char* func, unsigned int line);
 #else
 void *hp_shm_malloc_unsafe(struct hp_block *, unsigned long size);
 #endif
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void *hp_pkg_malloc(struct hp_block *, unsigned long size,
 						const char* file, const char* func, unsigned int line);
 #else
 void *hp_pkg_malloc(struct hp_block *, unsigned long size);
 #endif
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void hp_shm_free(struct hp_block *, void *p,
 							const char* file, const char* func, unsigned int line);
 #else
 void hp_shm_free(struct hp_block *, void *p);
 #endif
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void hp_shm_free_unsafe(struct hp_block *, void *p,
 							const char* file, const char* func, unsigned int line);
 #else
 void hp_shm_free_unsafe(struct hp_block *, void *p);
 #endif
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void hp_pkg_free(struct hp_block *, void *p,
 					const char* file, const char* func, unsigned int line);
 #else
 void hp_pkg_free(struct hp_block *, void *p);
 #endif
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void *hp_shm_realloc(struct hp_block *, void *p, unsigned long size,
 						const char* file, const char* func, unsigned int line);
 #else
 void *hp_shm_realloc(struct hp_block *, void *p, unsigned long size);
 #endif
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void *hp_shm_realloc_unsafe(struct hp_block *, void *p, unsigned long size,
 								const char* file, const char* func, unsigned int line);
 #else
 void *hp_shm_realloc_unsafe(struct hp_block *, void *p, unsigned long size);
 #endif
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void *hp_pkg_realloc(struct hp_block *, void *p, unsigned long size,
 						const char* file, const char* func, unsigned int line);
 #else

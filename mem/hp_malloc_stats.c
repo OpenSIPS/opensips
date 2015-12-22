@@ -158,7 +158,7 @@ void hp_init_shm_statistics(struct hp_block *hpb)
 
 void hp_init_shm_statistics(struct hp_block *hpb)
 {
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	/* reset stats updated by mallocs before this init */
 	shm_used->flags &= ~STAT_NO_RESET;
 	shm_rused->flags &= ~STAT_NO_RESET;

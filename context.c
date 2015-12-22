@@ -161,7 +161,7 @@ int context_register_ptr(enum osips_context type, context_destroy_f f)
 void context_put_int(enum osips_context type, context_p ctx,
 									 int pos, int data)
 {
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	if (pos < 0 || pos >= type_sizes[type][CONTEXT_INT_TYPE]) {
 		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_INT_TYPE]);
 		abort();
@@ -177,7 +177,7 @@ void context_put_int(enum osips_context type, context_p ctx,
 void context_put_str(enum osips_context type, context_p ctx,
 									 int pos, str *data)
 {
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	if (pos < 0 || pos >= type_sizes[type][CONTEXT_STR_TYPE]) {
 		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_STR_TYPE]);
 		abort();
@@ -193,7 +193,7 @@ void context_put_str(enum osips_context type, context_p ctx,
 void context_put_ptr(enum osips_context type, context_p ctx,
 									 int pos, void *data)
 {
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	if (pos < 0 || pos >= type_sizes[type][CONTEXT_PTR_TYPE]) {
 		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_PTR_TYPE]);
 		abort();
@@ -208,7 +208,7 @@ void context_put_ptr(enum osips_context type, context_p ctx,
 
 int context_get_int(enum osips_context type, context_p ctx, int pos)
 {
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	if (pos < 0 || pos >= type_sizes[type][CONTEXT_INT_TYPE]) {
 		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_INT_TYPE]);
 		abort();
@@ -223,7 +223,7 @@ int context_get_int(enum osips_context type, context_p ctx, int pos)
 
 str *context_get_str(enum osips_context type, context_p ctx, int pos)
 {
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	if (pos < 0 || pos >= type_sizes[type][CONTEXT_STR_TYPE]) {
 		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_STR_TYPE]);
 		abort();
@@ -238,7 +238,7 @@ str *context_get_str(enum osips_context type, context_p ctx, int pos)
 
 void *context_get_ptr(enum osips_context type, context_p ctx, int pos)
 {
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	if (pos < 0 || pos >= type_sizes[type][CONTEXT_PTR_TYPE]) {
 		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_PTR_TYPE]);
 		abort();

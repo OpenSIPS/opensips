@@ -50,19 +50,6 @@
 #include <string.h>
 #include <errno.h>
 
-/* fix DBG MALLOC stuff */
-
-/* fix debug defines, DBG_F_MALLOC <=> DBG_QM_MALLOC */
-#ifdef F_MALLOC
-	#ifdef DBG_F_MALLOC
-		#ifndef DBG_QM_MALLOC
-			#define DBG_QM_MALLOC
-		#endif
-	#elif defined(DBG_QM_MALLOC)
-		#define DBG_F_MALLOC
-	#endif
-#endif
-
 #include "../dprint.h"
 #include "../lock_ops.h" /* we don't include locking.h on purpose */
 #include "common.h"
@@ -119,7 +106,7 @@
 #	define  shm_malloc_init hp_shm_malloc_init
 #	define  shm_mem_warming hp_mem_warming
 #	define  update_mem_pattern_file hp_update_mem_pattern_file
-#else
+#elif defined QM_MALLOC
 #	include "q_malloc.h"
 #	define MY_MALLOC qm_malloc
 #	define MY_FREE qm_free
@@ -138,6 +125,8 @@
 #		define MY_SHM_GET_FRAGS	qm_get_frags
 #	endif
 #	define  shm_malloc_init qm_malloc_init
+#else
+#	error "no memory allocator selected"
 #endif
 
 
@@ -214,7 +203,7 @@ inline static void shm_threshold_check(void)
 	#define VAR_STAT(_n) PASTER(_n, _mem_stat)
 #endif
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 
 	#ifdef __SUNPRO_C
 			#define __FUNCTION__ ""  /* gcc specific */
@@ -372,7 +361,7 @@ void* _shm_resize(void* ptr, unsigned int size, const char* f, const char* fn,
 
 
 
-#else /*DBQ_QM_MALLOC*/
+#else /*DBG_MALLOC*/
 
 inline static void* shm_malloc_unsafe(unsigned int size)
 {

@@ -36,10 +36,12 @@
 #		include "hp_malloc.h"
 		extern struct hp_block* mem_block;
 		extern struct hp_block* shm_block;
-#   else
+#   elif defined QM_MALLOC
 #		include "q_malloc.h"
 		extern struct qm_block* mem_block;
 		extern struct qm_block* shm_block;
+#	else
+#		error "no memory allocator selected"
 #	endif
 
 extern int mem_warming_enabled;
