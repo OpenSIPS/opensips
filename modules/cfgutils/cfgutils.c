@@ -707,12 +707,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if(init_shvars()<0)
-	{
-		LM_ERR("init shvars failed\n");
-		shm_free(probability);
-		return -1;
-	}
 	LM_INFO("module initialized, pid [%d]\n", getpid());
 
 	return 0;

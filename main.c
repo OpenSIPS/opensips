@@ -993,11 +993,6 @@ try_again:
 	/*register builtin  modules*/
 	register_builtin_modules();
 
-	if (preinit_black_lists()!=0) {
-		LM_CRIT("failed to alloc black list's anchor\n");
-		goto error00;
-	}
-
 	/* init avps */
 	if (init_global_avps() != 0) {
 		LM_ERR("error while initializing avps\n");
