@@ -41,7 +41,7 @@
 #include "../error.h"
 #include "../errinfo.h"
 #include "../core_stats.h"
-
+#include "../strcommon.h"
 
 int parse_uri_headers(str headers, str h_name[], str h_val[], int h_size)
 {
@@ -1387,6 +1387,12 @@ int parse_orig_ruri(struct sip_msg* msg)
 int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 					str *raw_uri_b,struct sip_uri *parsed_uri_b)
 {
+	#define UNESCAPED_BUF_LEN 1024
+	char unescaped_a[UNESCAPED_BUF_LEN], unescaped_b[UNESCAPED_BUF_LEN];
+
+	str unescaped_userA={unescaped_a, UNESCAPED_BUF_LEN};
+	str unescaped_userB={unescaped_b, UNESCAPED_BUF_LEN};
+
 	struct sip_uri first;
 	struct sip_uri second;
 	char matched[URI_MAX_U_PARAMS];
@@ -1442,6 +1448,15 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 		LM_DBG("Different uri types\n");
 		return 1;
 	}
+
+	if (unescape_user(&first.user, &unescaped_userA) < 0 ||
+			unescape_user(&second.user, &unescaped_userB) < 0) {
+		LM_ERR("Failed to unescape user!\n");
+		return -1;
+	}
+
+	first.user = unescaped_userA;
+	second.user = unescaped_userB;
 
 	compare_uri_val(user,strncmp);
 	compare_uri_val(passwd,strncmp);
