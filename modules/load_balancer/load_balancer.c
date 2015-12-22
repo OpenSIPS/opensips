@@ -284,7 +284,6 @@ static int fixup_resources(void** param, int param_no)
 			lbp->param = (void*)(unsigned long)model;
 		}
 		*param = (void *)(unsigned long)lbp;
-		return 0;
 
 	} else if (param_no==3) {
 
@@ -293,8 +292,7 @@ static int fixup_resources(void** param, int param_no)
 
 	}
 
-	LM_CRIT("error - wrong params count (%d)\n",param_no);
-	return -1;
+	return 0;
 }
 
 
@@ -319,10 +317,10 @@ static int fixup_is_dst(void** param, int param_no)
 	} else if (param_no==4) {
 		/*  active only check ? */
 		return fixup_uint(param);
+	} else {
+		LM_CRIT("bug - too many params (%d) in lb_is_dst()\n",param_no);
+		return -1;
 	}
-
-	LM_CRIT("error - wrong params count (%d)\n",param_no);
-	return -1;
 }
 
 
@@ -343,8 +341,6 @@ static int fixup_cnt_call(void** param, int param_no)
 	if (param_no==5)
 		/* count or un-count */
 		return fixup_uint(param);
-
-	LM_CRIT("error - wrong params count (%d)\n",param_no);
 	return -1;
 }
 
