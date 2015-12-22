@@ -833,7 +833,6 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 	}
 }
 
-
 int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 {
 	struct dlg_cell *dlg;
@@ -908,7 +907,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	if (replication_dests)
 		types |= TMCB_RESPONSE_OUT;
 
-	if ( d_tmb.register_tmcb( req, t,types,dlg_onreply, 
+	if ( d_tmb.register_tmcb( req, t,types,dlg_onreply,
 	(void*)dlg, unreference_dialog_create)<0 ) {
 		LM_ERR("failed to register TMCB\n");
 		goto error;
@@ -1772,7 +1771,11 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 		}
 	} else {
 		if ( str2int( &((get_cseq(req))->number), &n)!=0 ||
-		str2int( &(leg->prev_cseq), &m)!=0 || n<=m ) {
+		(leg->prev_cseq.s ?
+			str2int( &(leg->prev_cseq), &m)!=0 :
+			str2int( &(leg->r_cseq), &m)!=0
+		 ) ||
+		n<=m ) {
 			LM_DBG("cseq test falied recv=%d, old=%d\n",n,m);
 			return -1;
 		}
