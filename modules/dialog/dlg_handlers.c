@@ -1790,13 +1790,15 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 		}
 	} else {
 		if ( str2int( &((get_cseq(req))->number), &n)!=0 ||
-		str2int( &(leg->prev_cseq), &m)!=0 || n<=m ) {
+		(leg->prev_cseq.s ?
+			str2int( &(leg->prev_cseq), &m)!=0 :
+			str2int( &(leg->r_cseq), &m)!=0
+		) ||
+		n<=m ) {
 			LM_DBG("cseq test falied recv=%d, old=%d\n",n,m);
 			return -1;
 		}
 	}
-
-
 
 	LM_DBG("CSEQ validation passed\n");
 
