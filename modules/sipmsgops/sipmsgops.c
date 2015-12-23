@@ -1168,6 +1168,13 @@ static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 )
 		return -1;
 	}
 
+	if (msg->content_type == NULL || msg->content_type->name.s == NULL ||
+			msg->content_type->name.len == 0) {
+		LM_WARN("You have a body but you don't have Content-Type! This is"
+				"not a valid SIP message! The body WILL BE stripped!\n");
+		goto out;
+	}
+
 	/* add delete content-type header lump */
 	if(del_lump(msg, msg->content_type->name.s- msg->buf, msg->content_type->len,
 				HDR_CONTENTTYPE_T) == 0) {
@@ -1175,6 +1182,7 @@ static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 )
 		return -1;
 	}
 
+out:
 	return 1;
 }
 
