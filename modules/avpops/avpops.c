@@ -47,6 +47,7 @@
 #include "avpops_impl.h"
 #include "avpops_db.h"
 
+#define AVPDB "avp_db"
 char *printbuf = NULL;
 
 /* modules param variables */
@@ -60,6 +61,7 @@ static str username_col    = str_init("username");
 static str domain_col      = str_init("domain");
 static str* db_columns[6] = {&uuid_col, &attribute_col, &value_col,
                              &type_col, &username_col, &domain_col};
+static int need_db=0;
 
 unsigned buf_size=1024;
 
@@ -200,6 +202,8 @@ struct module_exports exports = {
 
 static int avpops_init(void)
 {
+	int i;
+
 	LM_INFO("initializing...\n");
 
 	if (db_table.s)
@@ -211,30 +215,41 @@ static int avpops_init(void)
 	username_col.len = strlen(username_col.s);
 	domain_col.len = strlen(domain_col.s);
 
-	default_db_url = get_default_db_url();
-	if (default_db_url==NULL) {
-		if (db_default_url==NULL) {
-			LM_ERR("no DB URL provision into the module!\n");
-			return -1;
-		}
-		/* if nothing explicitly set as DB URL, add automatically
-		 * the default DB URL */
-		if (add_db_url(STR_PARAM, db_default_url)!=0) {
-			LM_ERR("failed to use the default DB URL!\n");
-			return -1;
-		}
-		default_db_url = get_default_db_url();
-		if (default_db_url==NULL) {
-			LM_BUG("Really ?!\n");
-			return -1;
+	/* search if any avp_db_* function is used */
+	for (i=0; cmds[i].name != NULL; i++) {
+		if (strncasecmp(cmds[i].name, AVPDB, sizeof(AVPDB)-1) == 0 &&
+				(is_script_func_used(cmds[i].name, -1) ||
+					is_script_async_func_used(cmds[i].name, -1))) {
+			need_db=1;
 		}
 	}
 
-	/* bind to the DB module */
-	if (avpops_db_bind()<0)
-		goto error;
+	if (need_db) {
+		default_db_url = get_default_db_url();
+		if (default_db_url==NULL) {
+			if (db_default_url==NULL) {
+				LM_ERR("no DB URL provision into the module!\n");
+				return -1;
+			}
+			/* if nothing explicitly set as DB URL, add automatically
+			 * the default DB URL */
+			if (add_db_url(STR_PARAM, db_default_url)!=0) {
+				LM_ERR("failed to use the default DB URL!\n");
+				return -1;
+			}
+			default_db_url = get_default_db_url();
+			if (default_db_url==NULL) {
+				LM_BUG("Really ?!\n");
+				return -1;
+			}
+		}
 
-	init_store_avps(db_columns);
+		/* bind to the DB module */
+		if (avpops_db_bind()<0)
+			goto error;
+
+		init_store_avps(db_columns);
+	}
 
 	printbuf = (char*)pkg_malloc((buf_size+1)*sizeof(char));
 	if(printbuf==NULL) {
@@ -251,7 +266,7 @@ error:
 static int avpops_child_init(int rank)
 {
 	/* skip main process and TCP manager process */
-	if (rank==PROC_MAIN || rank==PROC_TCP_MAIN)
+	if (!need_db || rank==PROC_MAIN || rank==PROC_TCP_MAIN)
 		return 0;
 	/* init DB connection */
 	return avpops_db_init(&db_table, db_columns);
