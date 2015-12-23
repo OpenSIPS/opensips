@@ -454,15 +454,17 @@ void qm_free(struct qm_block* qm, void* p)
 #ifdef DBG_MALLOC
 	LM_GEN1( memlog, "params(%p, %p), called from %s: %s(%d)\n",
 		qm, p, file, func, line);
-	if (p>(void*)qm->last_frag_end || p<(void*)qm->first_frag){
-		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
-		abort();
-	}
 #endif
 	if (p==0) {
 		LM_WARN("free(0) called\n");
 		return;
 	}
+#ifdef DBG_MALLOC
+	if (p>(void*)qm->last_frag_end || p<(void*)qm->first_frag){
+		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
+		abort();
+	}
+#endif
 	f=(struct qm_frag*) ((char*)p-sizeof(struct qm_frag));
 #ifdef DBG_MALLOC
 	qm_debug_frag(qm, f);
