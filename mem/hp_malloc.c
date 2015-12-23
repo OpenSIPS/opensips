@@ -793,8 +793,13 @@ void *hp_pkg_malloc(struct hp_block *hpb, unsigned long size)
 	}
 
 	/* out of memory... we have to shut down */
-	LM_CRIT("not enough memory, please increase the \"-M\" parameter!\n");
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	LM_CRIT("not enough free memory (%lu), please increase the \"-M\" parameter!\n",
+		hpb->size - hpb->used);
 	abort();
+#else
+	LM_CRIT("not enough memory, please increase the \"-M\" parameter!\n")
+#endif
 
 found:
 	hp_frag_detach(hpb, frag);
@@ -883,8 +888,13 @@ void *hp_shm_malloc_unsafe(struct hp_block *hpb, unsigned long size)
 	}
 
 	/* out of memory... we have to shut down */
-	LM_CRIT("not enough shared memory, please increase the \"-m\" parameter!\n");
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	LM_CRIT("not enough free memory (%lu), please increase the \"-M\" parameter!\n",
+		hpb->size - hpb->used);
 	abort();
+#else
+	LM_CRIT("not enough memory, please increase the \"-M\" parameter!\n")
+#endif
 
 found:
 	hp_frag_detach(hpb, frag);
@@ -989,8 +999,13 @@ void *hp_shm_malloc(struct hp_block *hpb, unsigned long size)
 	}
 
 	/* out of memory... we have to shut down */
-	LM_CRIT("not enough shared memory, please increase the \"-m\" parameter!\n");
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	LM_CRIT("not enough free memory (%lu), please increase the \"-M\" parameter!\n",
+		hpb->size - hpb->used);
 	abort();
+#else
+	LM_CRIT("not enough memory, please increase the \"-M\" parameter!\n")
+#endif
 
 found:
 	hp_frag_detach(hpb, frag);

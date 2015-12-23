@@ -388,6 +388,7 @@ void* qm_malloc(struct qm_block* qm, unsigned long size)
 	/*size must be a multiple of 8*/
 	size=ROUNDUP(size);
 	if (size>(qm->size-qm->real_used)) {
+		LM_ERR("Not enough free memory (%lu)\n", qm->size-qm->real_used);
 		pkg_threshold_check();
 		return 0;
 	}
@@ -430,6 +431,8 @@ void* qm_malloc(struct qm_block* qm, unsigned long size)
 		qm->fragments += 1;
 		return (char*)f+sizeof(struct qm_frag);
 	}
+
+	LM_ERR("Not enough free memory (%lu)\n", qm->size-qm->real_used);
 	pkg_threshold_check();
 	return 0;
 }
