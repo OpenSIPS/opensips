@@ -723,41 +723,18 @@ void httpd_proc(int rank)
 		tv.tv_usec = 0;
 		//LM_DBG("select(%d,%p,%p,%p,%p)\n",max+1, &rs, &ws, &es, &tv);
 		status = select(max+1, &rs, &ws, &es, &tv);
-		switch(status){
-		case EBADF:
-			LM_ERR("error returned by select: EBADF [%d] "
-				"(Bad file descriptor)\n", status);
-			return;
-			break;
-		case EINTR:
-			LM_DBG("failure returned by select: EINTR [%d] "
-				"(Non blocked signal caught)\n", status);
-			break;
-		case EINVAL:
-			LM_ERR("error returned by select: EINVAL [%d] "
-				"(Invalid # of fd [%d] or timeout)\n",
-				status, max+1);
-			return;
-			break;
-		case ENOMEM:
-			LM_ERR("error returned by select: ENOMEM [%d] "
-				"(No more memory)\n", status);
-			return;
-			break;
-		default:
-			if(status<0){
-				switch(errno){
+		if (status < 0) {
+			switch(errno){
 				case EINTR:
-					LM_WARN("error returned by select:"
-						" [%d] [%d][%s]\n",
-						status, errno, strerror(errno));
+					LM_DBG("error returned by select:"
+							" [%d] [%d][%s]\n",
+							status, errno, strerror(errno));
 					break;
 				default:
 					LM_WARN("error returned by select:"
-						" [%d] [%d][%s]\n",
-						status, errno, strerror(errno));
+							" [%d] [%d][%s]\n",
+							status, errno, strerror(errno));
 					return;
-				}
 			}
 		}
 		//LM_DBG("select returned %d\n", status);
