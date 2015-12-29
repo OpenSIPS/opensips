@@ -710,6 +710,23 @@ int is_mod_async_func_used(struct action *a, char *name, int param_no)
 				&& (param_no == acmd->param_no || param_no == -1))
 				return 1;
 		}
+
+		/* follow all leads from actions than may have 
+		 * sub-blocks of instructions */
+		if (a->elem[0].type==ACTIONS_ST)
+				if (is_mod_async_func_used((struct action*)a->elem[0].u.data,
+				name,param_no)==1)
+					return 1;
+
+		if (a->elem[1].type==ACTIONS_ST)
+				if (is_mod_async_func_used((struct action*)a->elem[1].u.data,
+				name,param_no)==1)
+					return 1;
+
+		if (a->elem[2].type==ACTIONS_ST)
+				if (is_mod_async_func_used((struct action*)a->elem[2].u.data,
+				name,param_no)==1)
+					return 1;
 	}
 
 	return 0;
