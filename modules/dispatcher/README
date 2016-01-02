@@ -874,12 +874,14 @@ _empty_line_
 
 1.5.3.  ds_reload
 
-   It reloads the groups and included destinations for all
-   partitions.
+   It reloads the groups and included destinations for a specified
+   partition or all partitions.
 
    Name: ds_reload
 
-   Parameters: none
+   Parameters:
+     * partition (optional) - name of the partition to be
+       reloaded.
 
    MI DATAGRAM Command Format:
 ":ds_reload:\n."

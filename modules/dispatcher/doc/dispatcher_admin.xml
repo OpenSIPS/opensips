@@ -1171,12 +1171,19 @@ _empty_line_
 		<function moreinfo="none">ds_reload</function>
 		</title>
 		<para>
-		It reloads the groups and included destinations for all partitions.
+		It reloads the groups and included destinations for a
+		specified partition or all partitions.
 		</para>
 		<para>
 		Name: <emphasis>ds_reload</emphasis>
 		</para>
-		<para>Parameters: <emphasis>none</emphasis></para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>partition</emphasis> (optional) - name of
+				the partition to be reloaded.
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		MI DATAGRAM Command Format:
 		</para>
