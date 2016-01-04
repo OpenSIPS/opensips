@@ -206,7 +206,7 @@ inline static void* sh_realloc(void* p, unsigned int size)
     NULL
 */
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void* _shm_resize( void* p, unsigned int s, const char* file, const char* func,
 							int line)
 #else
@@ -220,7 +220,7 @@ void* _shm_resize( void* p , unsigned int s)
 		LM_DBG("resize(0) called\n");
 		return shm_malloc( s );
 	}
-#	ifdef DBG_QM_MALLOC
+#	ifdef DBG_MALLOC
 #	ifdef VQ_MALLOC
 	f=(struct  vqm_frag*) ((char*)p-sizeof(struct vqm_frag));
 	LM_DBG("params (%p, %d), called from %s: %s(%d)\n",
@@ -319,7 +319,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		one_full_entry = 3 * (sizeof(stat_var) + sizeof(stat_val));
 		size_prealoc = groups * sizeof(struct module_info) + groups * one_full_entry;
 
-	#ifndef DBG_QM_MALLOC
+	#ifndef DBG_MALLOC
 		memory_mods_stats = MY_MALLOC_UNSAFE(shm_block, size_prealoc);
 	#else
 		memory_mods_stats = MY_MALLOC_UNSAFE(shm_block, size_prealoc, __FILE__, __FUNCTION__, __LINE__ );
@@ -434,7 +434,7 @@ int shm_mem_init(void)
 
 struct mi_root *mi_shm_check(struct mi_root *cmd, void *param)
 {
-#ifdef DBG_QM_MALLOC
+#if defined(QM_MALLOC) && defined(DBG_MALLOC)
 	struct mi_root *root;
 	int ret;
 

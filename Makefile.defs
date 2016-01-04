@@ -527,8 +527,8 @@ MKTAGS=ctags -R .
 #		all pkg_malloc are mapped to shm_malloc (most mallocs use
 #		a common shared mem. segment); don't define PKG_MALLOC
 #		if you want this!
-# -DDBG_QM_MALLOC
-#		qm_malloc debug code, will cause pkg_malloc and shm_malloc
+# -DDBG_MALLOC
+#		inserts debug code, will cause pkg_malloc and shm_malloc
 #		to keep and display lot of debuging information: file name,
 #		function, line number of malloc/free call for each block,
 #		extra error checking (trying to free the same pointer
@@ -538,10 +538,10 @@ MKTAGS=ctags -R .
 #		additional option of PKG_MALLOC which utilizes faster then the
 #		QM version
 #		(this is not true anymore, q_malloc performs approx. the same)
+# -DQM_MALLOC
+#		memory allocator recommended for debugging
 # -DF_MALLOC
 #		an even faster malloc, not recommended for debugging
-# -DDBG_MALLOC
-#		issues additional debugging information if lock/unlock is called
 # -DFAST_LOCK
 #		uses fast architecture specific locking (see the arch. specific section)
 # -DUSE_FUTEX

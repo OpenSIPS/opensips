@@ -188,7 +188,7 @@ again:
 
 int draw_item_list(select_menu *menu)
 {
-	select_item *it;
+	select_item *it, *it_2;
 	int i=0,j=0,k=0,d,sc=0;
 	int c,curopt=0;
 	char buf[40];
@@ -214,7 +214,8 @@ again:
 			if (sc>=disp_start && i < max_display) {
 				wmove(menu_window, max_y/4+j++, max_x / 2 - 20);
 				i++;
-				snprintf(buf, sizeof(buf), "[%s] %s", it->enabled ? "*" : " ", it->name);
+				snprintf(buf, sizeof(buf), "%s%s%s %s", it->group_idx ? "(" : "[",
+					it->enabled ? "*" : " ", it->group_idx ? ")" : "]", it->name);
 				waddstr(menu_window, buf);
 				len=strlen(it->name);
 				if (len > max_len)
@@ -226,7 +227,8 @@ again:
 			/* draw everything */
 			wmove(menu_window, max_y/4+j++, max_x / 2 - 20);
 			i++;
-			snprintf(buf, sizeof(buf), "[%s] %s", it->enabled ? "*" : " ", it->name);
+			snprintf(buf, sizeof(buf), "%s%s%s %s", it->group_idx ? "(" : "[",
+					it->enabled ? "*" : " ", it->group_idx ? ")" : "]", it->name);
 			waddstr(menu_window, buf);
 			len=strlen(it->name);
 			if (len > max_len)
@@ -315,6 +317,16 @@ again:
 					if (k++ == curopt) {
 						it->enabled=it->enabled?0:1;
 						menu->child_changed=CHILD_CHANGED;
+
+						it->group_idx = it->group_idx ? -it->group_idx : 0;
+						if (it->group_idx<0)
+							for(it_2=menu->item_list;it_2;it_2=it_2->next)
+								if (it!=it_2 && it_2->group_idx<0 && it->group_idx==it_2->group_idx) {
+									it_2->group_idx = -it_2->group_idx;
+									it_2->enabled=0;
+									menu->child_changed=CHILD_CHANGED;
+									break;
+								}
 					}
 				}
 				break;

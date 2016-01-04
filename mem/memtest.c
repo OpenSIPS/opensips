@@ -19,7 +19,7 @@
  */
 
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 
 #include <stdio.h>
 #include <string.h>

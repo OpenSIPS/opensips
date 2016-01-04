@@ -158,6 +158,18 @@ void hp_init_shm_statistics(struct hp_block *hpb)
 
 void hp_init_shm_statistics(struct hp_block *hpb)
 {
+#ifdef DBG_MALLOC
+	/* reset stats updated by mallocs before this init */
+	shm_used->flags &= ~STAT_NO_RESET;
+	shm_rused->flags &= ~STAT_NO_RESET;
+	shm_frags->flags &= ~STAT_NO_RESET;
+	reset_stat(shm_used);
+	reset_stat(shm_rused);
+	reset_stat(shm_frags);
+	shm_used->flags |= STAT_NO_RESET;
+	shm_rused->flags |= STAT_NO_RESET;
+	shm_frags->flags |= STAT_NO_RESET;
+#endif
 	update_stat(shm_used, hpb->used);
 	update_stat(shm_rused, hpb->real_used);
 	update_stat(shm_frags, hpb->total_fragments);
