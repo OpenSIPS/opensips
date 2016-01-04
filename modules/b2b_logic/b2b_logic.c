@@ -516,7 +516,6 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 	xmlNodePtr body_node;
 	char* body_content= 0;
 	char* body_type= 0;
-	int len;
 
 	doc = xmlParseFile(filename);
 	if(doc == NULL)
