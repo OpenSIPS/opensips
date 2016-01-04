@@ -31,7 +31,7 @@ static inline unsigned int get_dbg_hash(const char *file, const char *func, unsi
 	s2.len = strlen(func);
 	memcpy(buf, func, s2.len);
 	buf[0] += line;
-	buf[1] += line;
+	buf[1] += line >> 4;
 	s2.s = buf;
 
 	return core_hash(&s1, &s2, DBG_HASH_SIZE);
