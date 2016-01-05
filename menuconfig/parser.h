@@ -31,6 +31,9 @@
 #define GRP_START_STR	"#DEFS_GROUP_START"
 #define GRP_END_STR		"#DEFS_GROUP_END"
 
+#define SKIP_LINE_STR "##"
+#define SKIP_LINE_STRL 2
+
 int parse_dep_line(char *line,select_menu *parent);
 int parse_include_line(char *line,select_menu *parent);
 int parse_defs_line(char *line,select_menu *parent,int *group_idx,int *start_grp);

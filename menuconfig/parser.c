@@ -167,6 +167,10 @@ int parse_defs_line(char *line,select_menu *parent,int *group_idx,int *start_grp
 	select_item *item;
 	int len = strlen(line);
 
+	/* allows commenting out menuconfig features */
+	if (!strncmp(line, SKIP_LINE_STR, SKIP_LINE_STRL))
+		return 0;
+
 	if (!strncmp(line,GRP_START_STR,17)) {
 		if (!(*start_grp)) {
 			*start_grp = 1;
