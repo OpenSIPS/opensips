@@ -188,7 +188,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					/* sctp */
 					VS_S, VS_C, VS_T, VS_P_FIN,
 					/* ws */
-					VW_W, VW_S_FIN
+					VW_W, VW_S, VW_S_FIN, VWS_S_FIN
 	};
 	register enum states state;
 	char* s;
@@ -820,8 +820,18 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			value_switch(VS_T, 'p', 'P', VS_P_FIN);
 			transport_fin(VS_P_FIN, PROTO_SCTP);
 			/* ws */
-			value_switch(VW_W, 's', 'S', VW_S_FIN);
+			value_switch(VW_W, 's', 'S', VW_S);
+			case VW_S:
+				if (*p == 's' || *p == 'S') {
+					state=(VWS_S_FIN);
+				} else {
+					state=(VW_S_FIN);
+					p--;
+				}
+				break;
+
 			transport_fin(VW_S_FIN, PROTO_WS);
+			transport_fin(VWS_S_FIN, PROTO_WSS);
 
 			/* ttl */
 			param_switch(PTTL_T2,  'l', 'L', PTTL_L);
@@ -1148,6 +1158,8 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->params.len=p-s;
 			param_set(b, v);
 			break;
+		case VW_S:
+			break;
 		/* fin value states */
 		case VU_P_FIN:
 			uri->params.s=s;
@@ -1178,6 +1190,12 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->params.len=p-s;
 			param_set(b, v);
 			uri->proto=PROTO_WS;
+			break;
+		case VWS_S_FIN:
+			uri->params.s=s;
+			uri->params.len=p-s;
+			param_set(b, v);
+			uri->proto=PROTO_WSS;
 			break;
 		/* headers */
 		case URI_HEADERS:
@@ -1303,6 +1321,7 @@ error_headers:
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bug:
+	LM_CRIT("here is VW_S: %d\n", VW_S);
 	LM_CRIT("bad state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
 			 state, (int)(p-buf), ZSW(buf), (int)(p-buf), len, ZSW(buf), len);
 error_exit:
