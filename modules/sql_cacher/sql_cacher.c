@@ -38,23 +38,21 @@ static int mod_init(void);
 static void destroy(void);
 static int child_init(int rank);
 
-static int cache_new_table(unsigned int type, void *val);
-
 int pv_parse_name(pv_spec_p sp, str *in);
 int pv_init_param(pv_spec_p sp, int param);
 int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
+static int parse_cache_entry(unsigned int type, void *val);
 
 static struct mi_root* mi_reload(struct mi_root *cmd_tree, void *param);
 
-static str spec_delimiter;
-static str pvar_delimiter;
-static str columns_delimiter;
+static str spec_delimiter = str_init(DEFAULT_SPEC_DELIM);
+static str pvar_delimiter = str_init(DEFAULT_PVAR_DELIM);
+static str columns_delimiter = str_init(DEFAULT_COLUMNS_DELIM);
 static int fetch_nr_rows = DEFAULT_FETCH_NR_ROWS;
 static int full_caching_expire = DEFAULT_FULL_CACHING_EXPIRE;
 static int reload_interval = DEFAULT_RELOAD_INTERVAL;
 
 static cache_entry_t **entry_list;
-static struct parse_entry *to_parse_list;
 static struct queried_key **queries_in_progress;
 
 /* per process db handlers corresponding to cache entries in entry_list */
@@ -70,7 +68,7 @@ static param_export_t mod_params[] = {
 	{"sql_fetch_nr_rows", INT_PARAM, &fetch_nr_rows},
 	{"full_caching_expire", INT_PARAM, &full_caching_expire},
 	{"reload_interval", INT_PARAM, &reload_interval},
-	{"cache_table", STR_PARAM|USE_FUNC_PARAM, (void *)&cache_new_table},
+	{"cache_table", STR_PARAM|USE_FUNC_PARAM, (void *)&parse_cache_entry},
 	{0,0,0}
 };
 
@@ -107,48 +105,31 @@ struct module_exports exports = {
 	child_init					/* per-child init function */
 };
 
-static int cache_new_table(unsigned int type, void *val)
-{
-	struct parse_entry *new_entry;
-
-	new_entry = pkg_malloc(sizeof(struct parse_entry));
-	if (!new_entry) {
-		LM_ERR("No more memory for to_parse list entry\n");
-		return -1;
-	}
-
-	new_entry->next = NULL;
-	new_entry->to_parse_str.len = strlen((char *)val);
-	new_entry->to_parse_str.s = pkg_malloc(new_entry->to_parse_str.len);
-	if (!new_entry->to_parse_str.s) {
-		LM_ERR("No more pkg memory\n");
-		return -1;
-	}
-	memcpy(new_entry->to_parse_str.s, (char *)val, new_entry->to_parse_str.len);
-
-	if (!to_parse_list)
-		to_parse_list = new_entry;
-	else {
-		new_entry->next = to_parse_list;
-		to_parse_list = new_entry;
-	}
-
-	return 0;
-}
-
-static int parse_cache_entries(void)
+static int parse_cache_entry(unsigned int type, void *val)
 {
 	cache_entry_t *new_entry;
-	struct parse_entry *it, *next;
 	char *p1, *p2, *tmp, *c_tmp1, *c_tmp2;
 	int col_idx;
 	int rc = -1;
 	int i;
-	str parse_str_copy;
+	str parse_str_copy, parse_str;
 
-	for (it = to_parse_list; it; it = next) {
-		next = it->next;
+	if(!entry_list){
+		entry_list =  shm_malloc(sizeof(cache_entry_t*));
+		if (!entry_list) {
+			LM_ERR("No more memory for cache entries list\n");
+			return -1;
+		}
+		*entry_list = NULL;
+	}
 
+	parse_str.len = strlen((char *)val);
+	parse_str.s = pkg_malloc(parse_str.len);
+	if(!parse_str.s){
+		LM_ERR("No more pkg memory\n");
+		return -1;
+	}
+	memcpy(parse_str.s, (char *)val, parse_str.len);
 		new_entry = shm_malloc(sizeof(cache_entry_t));
 		if (!new_entry) {
 			LM_ERR("No more memory for cache entry struct\n");
@@ -166,8 +147,8 @@ static int parse_cache_entries(void)
 
 #define PARSE_TOKEN(_ptr1, _ptr2, field, field_name_str, field_name_len) \
 	do { \
-		(_ptr2) = memchr((_ptr1), '=', it->to_parse_str.len - \
-											((_ptr1) - it->to_parse_str.s)); \
+		(_ptr2) = memchr((_ptr1), '=', parse_str.len - \
+											((_ptr1) - parse_str.s)); \
 		if (!(_ptr2)) { \
 			LM_ERR("expected: '=' after %.*s\n", (field_name_len), (field_name_str)); \
 			goto parse_err; \
@@ -177,8 +158,8 @@ static int parse_cache_entries(void)
 				LM_ERR("expected: '=' after %.*s\n", (field_name_len), (field_name_str)); \
 				goto parse_err; \
 			} \
-			tmp = memchr((_ptr2) + 1, spec_delimiter.s[0], it->to_parse_str.len - \
-													((_ptr2) - it->to_parse_str.s)); \
+			tmp = memchr((_ptr2) + 1, spec_delimiter.s[0], parse_str.len - \
+													((_ptr2) - parse_str.s)); \
 			if (!tmp) { \
 				LM_ERR("expected: %c after value of %.*s\n", spec_delimiter.s[0], \
 					(field_name_len), (field_name_str)); \
@@ -198,11 +179,10 @@ static int parse_cache_entries(void)
 		} \
 	} while (0)
 
-		parse_str_copy = it->to_parse_str;
-		trim(&it->to_parse_str);
-
+		parse_str_copy = parse_str;
+		trim(&parse_str);
 		/* parse the id */
-		p1 = it->to_parse_str.s;
+		p1 = parse_str.s;
 		PARSE_TOKEN(p1, p2, id, ID_STR, ID_STR_LEN);
 		/* parse the db_url */
 		p1 = tmp + 1;
@@ -217,7 +197,7 @@ static int parse_cache_entries(void)
 
 		/* parse the key column name */
 		p1 = tmp + 1;
-		p2 = memchr(p1, '=', it->to_parse_str.len - (p1 - it->to_parse_str.s));
+		p2 = memchr(p1, '=', parse_str.len - (p1 - parse_str.s));
 		if (!p2) {
 			LM_ERR("expected: '=' after %.*s\n", KEY_STR_LEN, KEY_STR);
 			goto parse_err;
@@ -229,9 +209,9 @@ static int parse_cache_entries(void)
 			}
 
 			tmp = memchr(p2 + 1, spec_delimiter.s[0],
-						it->to_parse_str.len - (p2 - it->to_parse_str.s));
+						parse_str.len - (p2 - parse_str.s));
 			if (!tmp) /* delimiter not found, reached the end of the string to parse */
-				new_entry->key.len = it->to_parse_str.len - (p2 - it->to_parse_str.s + 1);
+				new_entry->key.len = parse_str.len - (p2 - parse_str.s + 1);
 			else
 				new_entry->key.len = tmp - p2 - 1;
 
@@ -253,7 +233,7 @@ static int parse_cache_entries(void)
 
 		/* parse the required column names if present */
 		p1 = tmp + 1;
-		p2 = memchr(p1, '=', it->to_parse_str.len - (p1 - it->to_parse_str.s));
+		p2 = memchr(p1, '=', parse_str.len - (p1 - parse_str.s));
 		if (!p2) {
 			LM_ERR("expected: '='\n");
 			goto parse_err;
@@ -265,15 +245,15 @@ static int parse_cache_entries(void)
 			}
 			col_idx = 0;
 			tmp = memchr(p2 + 1, spec_delimiter.s[0],
-						it->to_parse_str.len - (p2 - it->to_parse_str.s));
+						parse_str.len - (p2 - parse_str.s));
 			/* just count how many columns there are */
 			new_entry->nr_columns = 1;
 			c_tmp1 = memchr(p2 + 1, columns_delimiter.s[0],
-							it->to_parse_str.len - (p2 - it->to_parse_str.s + 1));
+							parse_str.len - (p2 - parse_str.s + 1));
 			while (c_tmp1) {
 				new_entry->nr_columns++;
 				c_tmp1 = memchr(c_tmp1 + 1, columns_delimiter.s[0],
-								it->to_parse_str.len - (c_tmp1 - it->to_parse_str.s + 1));
+								parse_str.len - (c_tmp1 - parse_str.s + 1));
 			}
 
 			if (new_entry->nr_columns > sizeof(long long)) {
@@ -285,7 +265,7 @@ static int parse_cache_entries(void)
 
 			c_tmp1 = p2 + 1;
 			c_tmp2 = memchr(p2 + 1, columns_delimiter.s[0],
-						it->to_parse_str.len - (p2 - it->to_parse_str.s + 1));
+						parse_str.len - (p2 - parse_str.s + 1));
 			while (c_tmp2) {
 				new_entry->columns[col_idx] = shm_malloc(sizeof(str));
 				(*new_entry->columns[col_idx]).len = c_tmp2 - c_tmp1;
@@ -298,13 +278,13 @@ static int parse_cache_entries(void)
 
 				c_tmp1 = c_tmp2 + 1;
 				c_tmp2 = memchr(c_tmp1, columns_delimiter.s[0],
-							it->to_parse_str.len - (c_tmp1 - it->to_parse_str.s + 1));
+							parse_str.len - (c_tmp1 - parse_str.s + 1));
 				col_idx++;
 			}
 
 			new_entry->columns[col_idx] = shm_malloc(sizeof(str));
 			if (!tmp)
-				(*new_entry->columns[col_idx]).len = it->to_parse_str.len - (p2 - c_tmp1 + 1);		
+				(*new_entry->columns[col_idx]).len = parse_str.len - (p2 - c_tmp1 + 1);
 			else
 				(*new_entry->columns[col_idx]).len = tmp - c_tmp1;
 
@@ -319,7 +299,7 @@ static int parse_cache_entries(void)
 				goto end_parsing;
 			else {
 				p1 = tmp + 1;
-				p2 = memchr(p1, '=', it->to_parse_str.len - (p1 - it->to_parse_str.s));
+				p2 = memchr(p1, '=', parse_str.len - (p1 - parse_str.s));
 				if (!p2) {
 					LM_ERR("expected: '='\n");
 					goto parse_err;
@@ -334,10 +314,10 @@ static int parse_cache_entries(void)
 				goto parse_err;
 			}
 			tmp = memchr(p2 + 1, spec_delimiter.s[0],
-					it->to_parse_str.len - (p2 - it->to_parse_str.s));
+					parse_str.len - (p2 - parse_str.s));
 			str str_val;
 			if (!tmp) /* delimiter not found, reached the end of the string to parse */
-				str_val.len = it->to_parse_str.len - (p2 - it->to_parse_str.s + 1);
+				str_val.len = parse_str.len - (p2 - parse_str.s + 1);
 			else
 				str_val.len = tmp - p2 - 1;
 
@@ -356,7 +336,7 @@ static int parse_cache_entries(void)
 				goto end_parsing;
 			else {
 				p1 = tmp + 1;
-				p2 = memchr(p1, '=', it->to_parse_str.len - (p1 - it->to_parse_str.s));
+				p2 = memchr(p1, '=', parse_str.len - (p1 - parse_str.s));
 				if (!p2) {
 					LM_ERR("expected: '='\n");
 					goto parse_err;
@@ -367,7 +347,7 @@ static int parse_cache_entries(void)
 		/* parse expire parameter */
 		if (!memcmp(p1, EXPIRE_STR, EXPIRE_STR_LEN)) {
 			str str_val;
-			str_val.len = it->to_parse_str.len - (p2 - it->to_parse_str.s + 1);
+			str_val.len = parse_str.len - (p2 - parse_str.s + 1);
 			if (str_val.len <= 0) {
 				LM_ERR("expected value of: %.*s\n", EXPIRE_STR_LEN, EXPIRE_STR);
 				goto parse_err;
@@ -380,7 +360,7 @@ static int parse_cache_entries(void)
 			}
 		} else {
 			LM_ERR("unknown parameter: %.*s\n",
-				(int)(it->to_parse_str.len - (p1 - it->to_parse_str.s)), p1);
+				(int)(parse_str.len - (p1 - parse_str.s)), p1);
 			goto parse_err;
 		}
 
@@ -391,13 +371,11 @@ end_parsing:
 		*entry_list = new_entry;
 
 		pkg_free(parse_str_copy.s);
-		pkg_free(it);
-		rc = 0;
-		continue;
+		return 0;
 parse_err:
 		if (!new_entry->id.s)
 			LM_WARN("invalid cache entry specification: %.*s\n",
-				it->to_parse_str.len, it->to_parse_str.s);
+				parse_str.len, parse_str.s);
 		else
 			LM_WARN("invalid cache entry specification for id: %.*s\n",
 				new_entry->id.len, new_entry->id.s);
@@ -413,8 +391,7 @@ parse_err:
 		}
 		shm_free(new_entry);
 		pkg_free(parse_str_copy.s);
-		pkg_free(it);
-	}
+//	}
 
 	return rc;
 }
@@ -1045,15 +1022,6 @@ static int mod_init(void)
 	str rld_vers_key;
 	int reload_version = -1;
 
-	if (!spec_delimiter.s)
-		spec_delimiter.s = DEFAULT_SPEC_DELIM;
-
-	if (!pvar_delimiter.s)
-		pvar_delimiter.s = DEFAULT_PVAR_DELIM;
-
-	if (!columns_delimiter.s)
-		columns_delimiter.s = DEFAULT_COLUMNS_DELIM;
-
 	if (full_caching_expire <= 0) {
 		full_caching_expire = DEFAULT_FULL_CACHING_EXPIRE;
 		LM_WARN("Invalid full_caching_expire parameter, "
@@ -1064,14 +1032,14 @@ static int mod_init(void)
 		LM_WARN("Invalid reload_interval parameter, "
 			"setting default value: %d sec\n", DEFAULT_RELOAD_INTERVAL);
 	}
-
-	entry_list =  shm_malloc(sizeof(cache_entry_t*));
-	if (!entry_list) {
-		LM_ERR("No more memory for cache entries list\n");
-		return -1;
+	if(!entry_list){
+		entry_list =  shm_malloc(sizeof(cache_entry_t*));
+		if (!entry_list) {
+			LM_ERR("No more memory for cache entries list\n");
+			return -1;
+		}
+		*entry_list = NULL;
 	}
-	*entry_list = NULL;
-
 	queries_in_progress =  shm_malloc(sizeof(struct queried_key *));
 	if (!queries_in_progress) {
 		LM_ERR("No more memory for queries_in_progress list\n");
@@ -1086,16 +1054,6 @@ static int mod_init(void)
 	}
 	if (!lock_init(queries_lock)) {
 		LM_ERR("Failed to init queries_lock\n");
-		return -1;
-	}
-
-	if (!to_parse_list) {
-		LM_WARN("No table to cache\n");
-		return 0;
-	}
-
-	if (parse_cache_entries() < 0) {
-		LM_ERR("Unable to parse any cache entry\n");
 		return -1;
 	}
 
