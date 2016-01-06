@@ -158,33 +158,33 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	enum states  {	URI_INIT, URI_USER, URI_PASSWORD, URI_PASSWORD_ALPHA,
 					URI_HOST, URI_HOST_P,
 					URI_HOST6_P, URI_HOST6_END, URI_PORT,
-					URI_PARAM, URI_PARAM_P, URI_PARAM_VAL_P, URI_VAL_P, URI_HEADERS,
+					URI_PARAM, URI_PARAM_P, URI_PARAM_VAL_P,
+					URI_VAL_P, URI_HEADERS,
 					/* param states */
 					/* transport */
 					PT_T, PT_R, PT_A, PT_N, PT_S, PT_P, PT_O, PT_R2, PT_T2,
 					PT_eq,
 					/* ttl */
-					      PTTL_T2, PTTL_L, PTTL_eq,
+					PTTL_T2, PTTL_L, PTTL_eq,
 					/* user */
 					PU_U, PU_S, PU_E, PU_R, PU_eq,
 					/* method */
 					PM_M, PM_E, PM_T, PM_H, PM_O, PM_D, PM_eq,
 					/* maddr */
-					      PMA_A, PMA_D, PMA_D2, PMA_R, PMA_eq,
+					PMA_A, PMA_D, PMA_D2, PMA_R, PMA_eq,
 					/* lr */
 					PLR_L, PLR_R_FIN, PLR_eq,
 					/* gr */
 					PG_G, PG_G_FIN, PG_eq,
 					/* r2 */
 					PR2_R, PR2_2_FIN, PR2_eq,
-
 					/* transport values */
 					/* udp */
 					VU_U, VU_D, VU_P_FIN,
 					/* tcp */
 					VT_T, VT_C, VT_P_FIN,
 					/* tls */
-					      VTLS_L, VTLS_S_FIN,
+					VTLS_L, VTLS_S_FIN,
 					/* sctp */
 					VS_S, VS_C, VS_T, VS_P_FIN,
 					/* ws */
