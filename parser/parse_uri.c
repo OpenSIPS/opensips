@@ -824,12 +824,11 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			case VW_S:
 				if (*p == 's' || *p == 'S') {
 					state=(VWS_S_FIN);
-				} else {
-					state=(VW_S_FIN);
-					p--;
+					break;
 				}
-				break;
-
+				/* if not a 's' transiting to VWS_S_FIN, fallback
+				 * to testing as existing VW_S_FIN (NOTE the missing break) */
+				state=(VW_S_FIN);
 			transport_fin(VW_S_FIN, PROTO_WS);
 			transport_fin(VWS_S_FIN, PROTO_WSS);
 
@@ -1158,8 +1157,6 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->params.len=p-s;
 			param_set(b, v);
 			break;
-		case VW_S:
-			break;
 		/* fin value states */
 		case VU_P_FIN:
 			uri->params.s=s;
@@ -1185,6 +1182,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			param_set(b, v);
 			uri->proto=PROTO_SCTP;
 			break;
+		case VW_S:
 		case VW_S_FIN:
 			uri->params.s=s;
 			uri->params.len=p-s;
@@ -1321,7 +1319,6 @@ error_headers:
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bug:
-	LM_CRIT("here is VW_S: %d\n", VW_S);
 	LM_CRIT("bad state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
 			 state, (int)(p-buf), ZSW(buf), (int)(p-buf), len, ZSW(buf), len);
 error_exit:
