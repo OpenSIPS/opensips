@@ -570,7 +570,12 @@ modparam("dispatcher", "table_name", "my_dispatcher")
 		<title> Create a new partition called 'part2' </title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "partition", "part2 : db_url=mysql://user:passwd@localhost/database; table_name = ds_table; ds_define_blacklist= list2= 4,6;")
+modparam("dispatcher", "partition",
+                "part2:
+                    db_url = mysql://user:passwd@localhost/database;
+                    table_name = ds_table;
+                    attrs_avp = $avp(ds_attr_part2);
+                    ds_define_blacklist = list2 = 4,6;")
 ...
 </programlisting>
 		</example>
