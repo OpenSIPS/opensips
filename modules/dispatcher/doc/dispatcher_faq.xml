@@ -52,6 +52,30 @@
 
 	<qandaentry>
 		<question>
+			<para>How is weight and priority used by the dispatcher in selecting
+			a destination?</para>
+		</question>
+		<answer>
+			<para>
+			The <emphasis>weight</emphasis> of a destination is currently used in
+			the hashing algorithms and it increases the probability of it to be
+			chosen(if we have two destinations with weights 1 respectively
+			4 than the second one is 4 times more likely to be selected than the
+			other). The sum of all weights does not need to add up to a specific
+			number. It is important to understand that the weights are not used
+			in the round-robin algorithm at the moment.
+			</para>
+			<para>
+			The  <emphasis>priority</emphasis> field is used at ordering the
+			destinations from a set. It does not affect the overall probability
+			of a destination to be chosen.  It is reflected when listing the
+			destination, the field can definetly be used in further selecting algorithms.
+			</para>
+		</answer>
+	</qandaentry>
+
+	<qandaentry>
+		<question>
 			<para>What happened with the <emphasis>list_file</emphasis>
 			module parameter ?</para>
 		</question>

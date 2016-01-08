@@ -65,6 +65,7 @@
 #define DS_DEST_WEIGHT_COL	"weight"
 #define DS_DEST_PRIO_COL	"priority"
 #define DS_DEST_ATTRS_COL	"attrs"
+#define DS_DEST_DESCRIPTION_COL	"description"
 #define DS_TABLE_NAME 		"dispatcher"
 #define DS_PARTITION_DELIM  ':'
 
@@ -138,6 +139,7 @@ str ds_dest_state_col = str_init(DS_DEST_STATE_COL);
 str ds_dest_weight_col= str_init(DS_DEST_WEIGHT_COL);
 str ds_dest_prio_col = str_init(DS_DEST_PRIO_COL);
 str ds_dest_attrs_col = str_init(DS_DEST_ATTRS_COL);
+str ds_dest_description_col = str_init(DS_DEST_DESCRIPTION_COL);
 
 str ds_setid_pvname   = {NULL, 0};
 pv_spec_t ds_setid_pv;
@@ -243,6 +245,7 @@ static param_export_t params[]={
 	{"weight_col",      STR_PARAM, &ds_dest_weight_col.s},
 	{"priority_col",    STR_PARAM, &ds_dest_prio_col.s},
 	{"attrs_col",       STR_PARAM, &ds_dest_attrs_col.s},
+	{"description_col",       STR_PARAM, &ds_dest_description_col.s},
 	{"dst_avp",         STR_PARAM, &default_db_head.dst_avp.s},
 	{"grp_avp",         STR_PARAM, &default_db_head.grp_avp.s},
 	{"cnt_avp",         STR_PARAM, &default_db_head.cnt_avp.s},
@@ -273,7 +276,7 @@ static module_dependency_t *get_deps_ds_ping_interval(param_export_t *param)
 
 static mi_export_t mi_cmds[] = {
 	{ "ds_set_state",   0, ds_mi_set,     0,                0,  0            },
-	{ "ds_list",        0, ds_mi_list,    MI_NO_INPUT_FLAG, 0,  0            },
+	{ "ds_list",        0, ds_mi_list,    0,                0,  0            },
 	{ "ds_reload",      0, ds_mi_reload,  0,                0,  mi_child_init},
 	{ 0, 0, 0, 0, 0, 0}
 };
@@ -1353,6 +1356,15 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 {
 	struct mi_root* rpl_tree;
 	struct mi_node* part_node;
+	int explicit = 0;
+
+	if (cmd_tree->node.kids){
+		if(cmd_tree->node.kids->value.len == 4 && memcmp(cmd_tree->node.kids->value.s,"full",4)==0)
+			explicit = 1;
+		else
+			return init_mi_tree(400, MI_SSTR(MI_BAD_PARM_S));
+
+	}
 
 	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL)
@@ -1365,7 +1377,7 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 				9, part_it->name.s, part_it->name.len);
 
 		if (part_node == NULL
-			|| ds_print_mi_list(part_node, part_it) < 0) {
+			|| ds_print_mi_list(part_node, part_it, explicit) < 0) {
 		LM_ERR("failed to add node\n");
 		free_mi_tree(rpl_tree);
 		return 0;

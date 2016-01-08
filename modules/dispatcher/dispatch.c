@@ -148,7 +148,7 @@ void ds_destroy_data(ds_partition_t *partition)
 
 
 int add_dest2list(int id, str uri, struct socket_info *sock, int state,
-							int weight, int prio, str attrs, ds_data_t *d_data)
+							int weight, int prio, str attrs, str description, ds_data_t *d_data)
 {
 	ds_dest_p dp = NULL;
 	ds_set_p  sp = NULL;
@@ -202,23 +202,26 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 			&& puri.headers.len == 0) {
 
 		/* The uri from db is good for ds_select_dst */
-		dp->uri.s = shm_malloc(uri.len + 1 + attrs.len + 1);
+		dp->uri.s = shm_malloc(uri.len + 1 + attrs.len + 1 + description.len + 1);
 		if(dp->uri.s==NULL){
 			LM_ERR("no more shm memory!\n");
 			goto err;
 		}
 		dp->dst_uri = dp->uri;
 		dp->attrs.s = dp->uri.s + dp->uri.len + 1;
+		dp->description.s = dp->uri.s + dp->uri.len + 1 + attrs.len + 1;
 	}
 	else {
 		dp->dst_uri.len = uri_typestrlen(puri.type) + 1 + puri.host.len
 						+ (puri.port.len ? puri.port.len + 1 : 0);
-		dp->uri.s = shm_malloc(uri.len+1 + dp->dst_uri.len + 1 + attrs.len+1);
+		dp->uri.s = shm_malloc(uri.len+1 + dp->dst_uri.len + 1 + attrs.len+1
+								+ description.len + 1);
 		if(dp->uri.s==NULL){
 			LM_ERR("no more shm memory!\n");
 			goto err;
 		}
 
+		dp->description.s = dp->uri.s + dp->uri.len + 1 + dp->dst_uri.len + 1 + attrs.len + 1;
 		dp->attrs.s = dp->uri.s + dp->uri.len + 1 + dp->dst_uri.len + 1;
 		dp->dst_uri.s = dp->uri.s + dp->uri.len + 1;
 		char *p = uri_type2str(puri.type, dp->dst_uri.s);
@@ -242,6 +245,12 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 		dp->attrs.len = attrs.len;
 	}
 	else dp->attrs.s = NULL;
+
+	if(description.len){
+		memcpy(dp->description.s, description.s, description.len);
+		dp->description.s[description.len]='\0';
+		dp->description.len = description.len;
+	}
 
 	/* copy state, weight & socket */
 	dp->sock = sock;
@@ -730,7 +739,7 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 {
 	ds_data_t *d_data;
-	int i, id, nr_rows, cnt, nr_cols = 7;
+	int i, id, nr_rows, cnt, nr_cols = 8;
 	int state;
 	int weight;
 	int prio;
@@ -738,14 +747,15 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	str uri;
 	str attrs;
 	str host;
+	str description;
 	int port, proto;
 	db_res_t * res = NULL;
 	db_val_t * values;
 	db_row_t * rows;
 
-	db_key_t query_cols[7] = {&ds_set_id_col, &ds_dest_uri_col,
+	db_key_t query_cols[8] = {&ds_set_id_col, &ds_dest_uri_col,
 			&ds_dest_sock_col, &ds_dest_weight_col, &ds_dest_attrs_col,
-			&ds_dest_prio_col, &ds_dest_state_col};
+			&ds_dest_prio_col, &ds_dest_description_col, &ds_dest_state_col};
 
 	if (!use_state_col)
 		nr_cols--;
@@ -836,13 +846,16 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 			prio = VAL_INT(values+5);
 
 		/* state */
-		if (!use_state_col || VAL_NULL(values+6))
+		if (!use_state_col || VAL_NULL(values+7))
 			/* active state */
 			state = 0;
 		else
-			state = VAL_INT(values+6);
+			state = VAL_INT(values+7);
 
-		if (add_dest2list(id, uri, sock, state, weight, prio, attrs, d_data)
+		get_str_from_dbval( "DESCIPTION", values+6,
+			0/*not_null*/, 0/*not_empty*/, description, error2);
+
+		if (add_dest2list(id, uri, sock, state, weight, prio, attrs, description, d_data)
 		!= 0) {
 			LM_WARN("failed to add destination <%.*s> in group %d\n",
 				uri.len,uri.s,id);
@@ -2043,7 +2056,7 @@ error:
 }
 
 
-int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition)
+int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition, int flags)
 {
 	int len, j;
 	char* p;
@@ -2109,6 +2122,27 @@ int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition)
 					list->dlist[j].attrs.s, list->dlist[j].attrs.len);
 				if(node1 == NULL)
 					goto error;
+			}
+
+			if (flags & 1) {
+				p = int2str(list->dlist[j].weight, &len);
+				node1= add_mi_node_child(node, MI_DUP_VALUE, "weight", 6,
+					p, len);
+				if(node1 == NULL)
+					goto error;
+
+				p = int2str(list->dlist[j].priority, &len);
+				node1 = add_mi_node_child(node, MI_DUP_VALUE, "priority", 8,
+					p, len);
+				if(node1 == NULL)
+					goto error;
+
+				if (list->dlist[j].description.len) {
+					node1= add_mi_node_child(node, MI_DUP_VALUE, "description", 11,
+						list->dlist[j].description.s, list->dlist[j].description.len);
+					if(node1 == NULL)
+						goto error;
+				}
 			}
 		}
 	}

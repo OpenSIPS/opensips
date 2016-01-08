@@ -76,6 +76,7 @@ typedef struct _ds_dest
 	str uri;
 	str dst_uri;    /* Actual uri used in ds_select_dst ds_select_domain */
 	str attrs;
+	str description;
 	int flags;
 	unsigned short weight;
 	unsigned short running_weight;
@@ -175,6 +176,7 @@ extern str ds_dest_state_col;
 extern str ds_dest_weight_col;
 extern str ds_dest_prio_col;
 extern str ds_dest_attrs_col;
+extern str ds_dest_description_col;
 
 extern pv_elem_t * hash_param_model;
 
@@ -204,7 +206,7 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
 int ds_set_state(int group, str *address, int state, int type,
 		ds_partition_t *partition);
 int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
-int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition);
+int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition, int flags);
 int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
 				ds_partition_t *partition);
 

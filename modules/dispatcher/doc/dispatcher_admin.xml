@@ -1157,7 +1157,13 @@ _empty_line_
 		<para>
 		Name: <emphasis>ds_list</emphasis>
 		</para>
-		<para>Parameters: <emphasis>none</emphasis></para>
+		<para>Parameters:</para>
+		 <itemizedlist>
+			<listitem><para>
+				<emphasis>full</emphasis> (optional) - adds the weight,
+				priority and description fields to the listing
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
 		</para>
