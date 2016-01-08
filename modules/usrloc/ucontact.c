@@ -64,7 +64,7 @@ static int compute_next_hop(ucontact_t *contact)
 
 	if (contact->path.s && contact->path.len > 0) {
 		if (get_path_dst_uri(&contact->path, &uri) < 0) {
-			LM_ERR("failed to get dst_uri for Path '%*.s'\n",
+			LM_ERR("failed to get dst_uri for Path '%.*s'\n",
 			        contact->path.len, contact->path.s);
 			return -1;
 		}
@@ -75,7 +75,7 @@ static int compute_next_hop(ucontact_t *contact)
 		uri = contact->c;
 
 	if (parse_uri(uri.s, uri.len, &puri) < 0) {
-		LM_ERR("failed to parse URI of next hop: '%*.s'\n", uri.len, uri.s);
+		LM_ERR("failed to parse URI of next hop: '%.*s'\n", uri.len, uri.s);
 		return -1;
 	}
 
