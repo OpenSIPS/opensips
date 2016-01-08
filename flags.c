@@ -131,7 +131,7 @@ int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
 		return 0;
 
 #ifdef EXTRA_DEBUG
-	LM_DBG("flag_list -> '%*.s'\n", flags->len, flags->s);
+	LM_DBG("flag_list -> '%.*s'\n", flags->len, flags->s);
 #endif
 	lim = flags->s + flags->len;
 	crt_flag = flags->s;

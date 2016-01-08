@@ -325,7 +325,7 @@ int print_encoded_msg(int fd,char *code,char *prefix)
    fprintf(fp,"MESSAGE:\n[%.*s]\n",msglen,msg);
    r=(i<100)?1:0;
    if(r){
-      fprintf(fp,"%sREQUEST CODE=%d==%.*s,URI=%.*s,VERSION=%*.s\n",prefix,i,
+      fprintf(fp,"%sREQUEST CODE=%d==%.*s,URI=%.*s,VERSION=%.*s\n",prefix,i,
 	    payload[METHOD_CODE_IDX+1],&msg[payload[METHOD_CODE_IDX]],
 	    payload[URI_REASON_IDX+1],&msg[payload[URI_REASON_IDX]],
 	    payload[VERSION_IDX+1],&msg[payload[VERSION_IDX]]);

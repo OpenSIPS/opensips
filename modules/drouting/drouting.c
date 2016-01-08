@@ -492,12 +492,12 @@ static int dr_disable(struct sip_msg *req, char * param_part_name) {
 		if( (current_partition = get_partition(&part_name))!= NULL) {
 			return dr_disable_w_part(req, current_partition);
 		} else {
-			LM_ERR("Given partition name <%*.s> was not found\n", part_name.len, part_name.s);
+			LM_ERR("Given partition name <%.*s> was not found\n", part_name.len, part_name.s);
 			return -1;
 		}
 	} else {
 		if( use_partitions ) {
-			LM_ERR("Partition name is mandatory <%*.s>\n", part_name.len
+			LM_ERR("Partition name is mandatory <%.*s>\n", part_name.len
 					,part_name.s);
 			return -1;
 		} else {
