@@ -268,6 +268,9 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
 				LM_DBG("Fetched key %s\n",bson_iterator_key(&it));
@@ -621,6 +624,9 @@ int mongo_raw_find(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***repl
 				LM_ERR("We had error - can't tell what it was - we're really bogus - probably mongos down\n");
 				return -1;
 			}
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&i));
@@ -722,6 +728,9 @@ int mongo_raw_count(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***rep
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&i));
@@ -828,6 +837,9 @@ int mongo_raw_update(cachedb_con *connection,bson *raw_query)
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&i));
@@ -910,6 +922,9 @@ int mongo_raw_insert(cachedb_con *connection,bson *raw_query)
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&i));
@@ -994,6 +1009,9 @@ int mongo_raw_remove(cachedb_con *connection,bson *raw_query)
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&i));
@@ -1141,6 +1159,9 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&it));
@@ -1250,6 +1271,9 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
 				LM_DBG("Fetched key %s\n",bson_iterator_key(&it));
@@ -1461,6 +1485,9 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
 				LM_DBG("Fetched key %s\n",bson_iterator_key(&it));
@@ -1702,6 +1729,9 @@ int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, 
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&it));
@@ -1777,6 +1807,9 @@ int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&it));
@@ -1861,6 +1894,9 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&it));
