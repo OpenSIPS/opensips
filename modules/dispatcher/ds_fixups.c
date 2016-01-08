@@ -28,7 +28,7 @@
 
 
 #include "ds_fixups.h"
-#include "../../ut.h"
+#include "../../trim.h"
 
 #define LIST_DELIM ','
 #define FLAGS_DELIM 'M'
@@ -79,7 +79,7 @@ int_list_t *set_list_from_pvs(struct sip_msg *msg, pv_spec_t *pvs, int_list_t *e
 		str s_num = {sval.s, delim ? delim - sval.s : sval.len};
 		sval.len -= s_num.len + 1;
 		sval.s = delim + 1;
-		str_trim_spaces_lr(s_num);
+		trim(&s_num);
 
 		int u_num;
 		if (s_num.len == 0 || str2sint(&s_num, &u_num) != 0)
@@ -162,7 +162,7 @@ int set_list_from_string(str input, int_list_t **result)
 		str s_tok = {input.s, delim ? delim - input.s : input.len};
 		int full_tok_len = s_tok.len;
 
-		str_trim_spaces_lr(s_tok);
+		trim(&s_tok);
 
 		/* search if only max results */
 		if (s_tok.s[0] >= '0' && s_tok.s[0] <= '9') {
@@ -200,7 +200,7 @@ only_flags00:
 
 			memset(new_el, 0, sizeof(int_list_t));
 
-			str_trim_spaces_lr(flg_tok);
+			trim(&flg_tok);
 
 			/* must fixup flags string value */
 			if ((flags = fixup_flags(&flg_tok)) < 0) {
@@ -208,7 +208,7 @@ only_flags00:
 				return -1;
 			}
 
-			str_trim_spaces_lr(s_tok);
+			trim(&s_tok);
 
 			/* default value for max results */
 			def_val = 1000;
@@ -366,10 +366,10 @@ static int fixup_partition_sets_null(void **param)
 		part_name.len = delim - s_param.s;
 		s_param.s = delim + 1;
 		s_param.len -= part_name.len + 1;
-		str_trim_spaces_lr(part_name);
+		trim(&part_name);
 	}
 
-	str_trim_spaces_lr(s_param);
+	trim(&s_param);
 
 	ds_param_t *final_param = shm_malloc(sizeof (ds_param_t));
 
@@ -436,7 +436,7 @@ int fixup_partition(void **param)
 {
 	gpartition_t *partition = shm_malloc (sizeof(gpartition_t));
 	str input = {(char*)(*param), strlen((char*)(*param))};
-	str_trim_spaces_lr(input);
+	trim(&input);
 
 	if (get_gpart(&input, partition) != 0) {
 		shm_free(partition);

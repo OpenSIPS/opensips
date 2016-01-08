@@ -47,7 +47,7 @@
 #include "../../mi/mi.h"
 #include "../../dprint.h"
 #include "../../error.h"
-#include "../../ut.h"
+#include "../../trim.h"
 #include "../../route.h"
 #include "../../mem/mem.h"
 #include "../../mod_fix.h"
@@ -375,7 +375,7 @@ static int split_partition_argument(str *arg, str *partition_name)
 	arg->s = delim_pos + 1;
 	arg->len -= partition_name->len + 1;
 
-	str_trim_spaces_lr(*partition_name);
+	trim(partition_name);
 	for (;arg->s[0] == ' ' && arg->len; ++arg->s, --arg->len);
 	return 0;
 }
@@ -479,8 +479,8 @@ static int set_partition_arguments(unsigned int type, void *val)
 		arg.len = eq_pos - arg.s;
 		value.s = eq_pos + 1;
 		value.len = end_pair_pos - eq_pos - 1;
-		str_trim_spaces_lr(arg);
-		str_trim_spaces_lr(value);
+		trim(&arg);
+		trim(&value);
 
 		if (arg.len <= 0 || value.len <= 0) {
 			LM_ERR("Wrong format in partition arguments specifier at pos %d\n",
