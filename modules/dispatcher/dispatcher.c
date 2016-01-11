@@ -1356,11 +1356,11 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 {
 	struct mi_root* rpl_tree;
 	struct mi_node* part_node;
-	int explicit = 0;
+	int flags = 0;
 
 	if (cmd_tree->node.kids){
 		if(cmd_tree->node.kids->value.len == 4 && memcmp(cmd_tree->node.kids->value.s,"full",4)==0)
-			explicit = 1;
+			flags  |= MI_FULL_LISTING;
 		else
 			return init_mi_tree(400, MI_SSTR(MI_BAD_PARM_S));
 
@@ -1377,7 +1377,7 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 				9, part_it->name.s, part_it->name.len);
 
 		if (part_node == NULL
-			|| ds_print_mi_list(part_node, part_it, explicit) < 0) {
+			|| ds_print_mi_list(part_node, part_it, flags) < 0) {
 		LM_ERR("failed to add node\n");
 		free_mi_tree(rpl_tree);
 		return 0;

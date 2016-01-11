@@ -2124,7 +2124,7 @@ int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition, int flags)
 					goto error;
 			}
 
-			if (flags & 1) {
+			if (flags &  MI_FULL_LISTING) {
 				p = int2str(list->dlist[j].weight, &len);
 				node1= add_mi_node_child(node, MI_DUP_VALUE, "weight", 6,
 					p, len);
