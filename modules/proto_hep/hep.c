@@ -248,7 +248,7 @@ static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su
 
 	payload_chunk.length    = htons(sizeof(hep_chunk_t) + plen);
 
-	tlen = sizeof(struct hep_generic) + iplen + payload_chunk.length;
+	tlen = sizeof(struct hep_generic) + iplen + sizeof(hep_chunk_t) + plen;
 
 	/* FIXME no tls support yet */
 
@@ -290,7 +290,6 @@ static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su
 
 	memcpy((void*) buffer+buflen, &payload_chunk,  sizeof(struct hep_chunk));
 	buflen +=  sizeof(struct hep_chunk);
-
 
 	/* Now copying payload self */
 	memcpy((void*) buffer+buflen, payload, plen);
