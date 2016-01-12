@@ -589,6 +589,12 @@ Keepalive_Distributor_new(void)
     }
     memset(keepalive_distributor, 0, sizeof(NAT_Keepalive_Distributor));
 
+    if (!lock_init(&keepalive_distributor->iteration_lock)) {
+        LM_ERR("cannot initialize iterator lock\n");
+        lock_destroy(&keepalive_distributor->iteration_lock);
+
+        return NULL;
+    }
     return keepalive_distributor;
 }
 
