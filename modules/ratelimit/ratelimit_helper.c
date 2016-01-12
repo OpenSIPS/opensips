@@ -902,9 +902,13 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri, int server_id)
 			if ((*pipe)->algo != algo)
 				LM_WARN("algorithm %d different from the initial one %d for "
 				"pipe %.*s", algo, (*pipe)->algo, name.len, name.s);
+			/*
+			 * XXX: do not output these warnings since they can be triggered
+			 * when a custom limit is used
 			if ((*pipe)->limit != limit)
 				LM_WARN("limit %d different from the initial one %d for "
 				"pipe %.*s", limit, (*pipe)->limit, name.len, name.s);
+			 */
 		}
 		/* set the last used time */
 		(*pipe)->last_used = time(0);
