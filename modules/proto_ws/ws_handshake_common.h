@@ -474,8 +474,9 @@ static int ws_server_handshake(struct tcp_connection *con)
 			goto error;
 		}
 
-		init_tcp_req(req, 0);
 		con->msg_attempts = 0;
+		if (req != &_ws_common_tcp_current_req)
+			pkg_free(req);
 
 		/* handshake now completed, destroy the handshake data */
 		WS_STATE(con) = WS_CON_HANDSHAKE_DONE;
