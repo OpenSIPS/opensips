@@ -1,9 +1,9 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 		<title>Overview</title>
 
@@ -24,21 +24,20 @@
 			openserSIPProtocolVersion, openserSIPServiceStartTime, openserSIPEntityType,
 			openserSIPSummaryInRequests, openserSIPSummaryOutRequest, 
 			openserSIPSummaryInResponses, openserSIPSummaryOutResponses,
-			openserSIPSummaryTotalTransactions, openserSIPCurrentTransactions, 
-			openserSIPNumUnsupportedUris, openserSIPNumUnsupportedMethods, 
+			openserSIPSummaryTotalTransactions, openserSIPCurrentTransactions,
+			openserSIPNumUnsupportedUris, openserSIPNumUnsupportedMethods,
 			openserSIPOtherwiseDiscardedMsgs, openserSIPProxyStatefulness
 			openserSIPProxyRecordRoute, openserSIPProxyAuthMethod, 
 			openserSIPNumProxyRequireFailures, openserSIPRegMaxContactExpiryDuration,
 			openserSIPRegMaxUsers, openserSIPRegCurrentUsers, 
 			openserSIPRegDfltRegActiveInterval, openserSIPRegAcceptedRegistrations,
 			openserSIPRegRejectedRegistrations, openserMsgQueueDepth.
-			openserCurNumDialogs, openserCurNumDialogsInProgress, 
+			openserCurNumDialogs, openserCurNumDialogsInProgress,
 			openserCurNumDialogsInSetup, openserTotalNumFailedDialogSetups
 			</para>
 			<para>
 			There are also scalars associated with alarms.  They are as follows:
 			</para>
-
 			<para>
 			openserMsgQueueMinorThreshold, openserMsgQueueMajorThreshold,
 			openserMsgQueueDepthAlarmStatus, openserMsgQueueDepthMinorAlarm,
@@ -67,7 +66,7 @@
 			If enabled, the SNMPStats module will monitor for alarm conditions. 
 			Currently, there are two alarm types defined.  
 			</para>
-			
+
 			<orderedlist numeration="arabic">
 			<listitem>
 				<para>
@@ -77,9 +76,9 @@
 				check for this condition.
 				</para>
 				<para>
-				If a minor or major condition has occured, then a 
-				openserDialogLimitMinorEvent trap or a 
-				openserDialogLimitMajorEvent trap will be generated, 
+				If a minor or major condition has occured, then a
+				openserDialogLimitMinorEvent trap or a
+				openserDialogLimitMajorEvent trap will be generated,
 				respectively. The minor and major thresholds are
 				described in the parameters section below.
 				</para>
@@ -107,7 +106,7 @@
 		</section>
 	</section>
 
-	
+
 	<section>
 	<title>How it works</title>
 
@@ -134,7 +133,7 @@
 			providing the proc file system).
 			</para>
 		</listitem>
-	</orderedlist> 
+	</orderedlist>
 	</para>
 	</section>
 	<section>
@@ -179,7 +178,7 @@
 		<emphasis>hard/mandatory</emphasis> dependencies on other modules.  There are however,
 		<emphasis>soft</emphasis> dependencies, as follows:
 		<itemizedlist>
-		
+
 		<listitem>
 		<para>
 		<emphasis>usrloc</emphasis> - all scalars and tables relating to users and contacts are
@@ -187,7 +186,7 @@
 		will be empty. 
 		</para>
 		</listitem>
-		
+
 		<listitem>
 		<para>
 		<emphasis>dialog</emphasis> - all scalars relating to the number of dialogs are 
@@ -196,7 +195,7 @@
 		alarm will be disabled. 
 		</para>
 		</listitem>
-		
+
 		</itemizedlist>
 		The contents of the openserSIPMethodSupportedTable change depending on which modules
 		are loaded.  
@@ -280,7 +279,7 @@ modparam("snmpstats", "MsgQueueMinorThreshold", 2000)
 		If this parameter is not set, then there will be no minor alarm monitoring.
 		</para>
 	</section>
-	
+
 	<section>
 		<title><varname>MsgQueueMajorThreshold</varname> (Integer)</title>
 
@@ -379,7 +378,7 @@ modparam("snmpstats", "snmpgetPath",     "/my/custom/path/")
 		</programlisting>
 		</example>
 	</section>
-	
+
 	<section>
 		<title><varname>snmpCommunity</varname> (String)</title>
 
@@ -452,6 +451,12 @@ modparam("snmpstats", "snmpCommunity", "customCommunityString")
 	from source to avoid bringing in excessive dependencies to the SNMPStats
 	module.
 	</para>
+
+	<para>
+	IMPORTANT: By default, SNMP loads <emphasis>mibs</emphasis> from
+	<emphasis>/var/lib/mibs/ietf/</emphasis>.Keep in mind that you have to copy &osips;
+	<emphasis>mibs</emphasis> wherevere your mibs folder is.
+	</para>
 	</section>
 	
 	<section>
@@ -505,7 +510,7 @@ modparam("snmpstats", "snmpCommunity", "customCommunityString")
 	interface at port 705.  
 	</para>
 	</section>
-	
+
 	<section>
 	<title>
 	Configuring the SNMPStats module for communication with a Master Agent
@@ -535,7 +540,7 @@ modparam("snmpstats", "snmpCommunity", "customCommunityString")
 	machine as OpenSIPS.  localhost could be replaced with any other machine. 
 	</para>
 	</section>
-	
+
 	<section>
 	<title>
 	Testing for a proper Configuration

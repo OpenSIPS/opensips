@@ -380,6 +380,10 @@ snmp
    avoid bringing in excessive dependencies to the SNMPStats
    module.
 
+   IMPORTANT: By default, SNMP loads mibs from
+   /var/lib/mibs/ietf/.Keep in mind that you have to copy OpenSIPS
+   mibs wherevere your mibs folder is.
+
 1.6.2.  Configuring NetSNMP to allow connections from the SNMPStats
 module.
 
@@ -484,7 +488,9 @@ Chapter 2. Frequently Asked Questions
    nitty gritty details of the protocol, then please look at RFC
    3410. RFC 3410 maps out the many other RFCs that define SNMP,
    and can be found at
-   http://www.rfc-archive.org/getrfc.php?rfc=3410
+   http://www.rfc-archive.org/getrfc.php?rfc=3410 INFO: Also if
+   you want a nice tutorial for setting up snmpstats with OpenSIPS
+   try this one.
 
    2.2.
 
