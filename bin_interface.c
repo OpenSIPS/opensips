@@ -99,7 +99,7 @@ int bin_init(str *mod_name, int cmd_type, short version)
  * allows null strings (NULL content or NULL param)
  *
  * @return:
- *		> 0: success, number of added bytes
+ *		> 0: success, the size of the buffer
  *		< 0: internal buffer limit reached
  */
 int bin_push_str(const str *info)
@@ -120,14 +120,14 @@ int bin_push_str(const str *info)
 	cpos += info->len;
 	set_len(send_buffer, cpos);
 
-	return (int)LEN_FIELD_SIZE + info->len;
+	return (int)(cpos - send_buffer);
 }
 
 /*
  * adds a new integer value at the 'cpos' position in the buffer
  *
  * @return:
- *		> 0: success, number of added bytes
+ *		> 0: success, the size of the buffer
  *		< 0: internal buffer limit reached
  */
 int bin_push_int(int info)
@@ -140,7 +140,7 @@ int bin_push_int(int info)
 
 	set_len(send_buffer, cpos);
 	
-	return sizeof(info);
+	return (int)(cpos - send_buffer);
 }
 
 int bin_get_buffer(str *buffer)
