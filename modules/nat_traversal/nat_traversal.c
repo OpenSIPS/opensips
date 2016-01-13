@@ -1655,9 +1655,14 @@ again:
 
 
 static void
-keepalive_timer(unsigned int ticks, void *data)
+keepalive_timer(unsigned int ticks, void *counter)
 {
-    static unsigned iteration = 0;
+    // we do not need to worry on accessing the counter without lock from
+    // all the processes where this timer routine gets executed, as the 
+    // the routine is registered with TIMER_FLAG_DELAY_ON_DELAY and the 
+    // timer core will take care and avoid overlapping between the executions
+    // of this routine (only one execution at the time)
+    unsigned iteration = *(unsigned*)(unsigned long*)counter;
     NAT_Contact *contact;
     HashSlot *slot;
     time_t now;
@@ -1685,7 +1690,7 @@ keepalive_timer(unsigned int ticks, void *data)
         }
     }
 
-    iteration = (iteration+1) % keepalive_interval;
+    *(unsigned*)(unsigned long*)counter = (iteration+1) % keepalive_interval;
 }
 
 
@@ -1887,7 +1892,16 @@ mod_init(void)
         LM_NOTICE("using 10 seconds for keepalive_interval\n");
         keepalive_interval = 10;
     }
-    if (register_timer( "nt-pinger", keepalive_timer, NULL, 1, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+    // allocate a shm variable to keep the counter used by the keepalive
+    // timer routine - it must be shared as the routine get executed
+    // in different processes
+    if (NULL==(param=(int*) shm_malloc(sizeof(int)))) {
+        LM_ERR("cannot allocate shm memory for keepalive counter\n");
+        return -1;
+    }
+    *param = 0;
+    if (register_timer( "nt-pinger", keepalive_timer, (void*)(long)param, 1,
+    TIMER_FLAG_DELAY_ON_DELAY)<0) {
         LM_ERR("failed to register keepalive timer\n");
         return -1;
     }
