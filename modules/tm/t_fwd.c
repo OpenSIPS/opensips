@@ -551,6 +551,13 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	cancel_uacs(t_invite, cancel_bitmap );
 	set_cancel_extra_hdrs( NULL, 0);
 
+	/* Do not do anything about branches with no received reply;
+	 * continue the retransmission hoping to get something back;
+	 * if still not, we will generate the 408 Timeout based on FR
+	 * timer; this helps with better coping with missed/lated provisional
+	 * replies in the context of cancelling the transaction
+	 */
+#if 0
 	/* internally cancel branches with no received reply */
 	for (i=t_invite->first_branch; i<t_invite->nr_of_outgoings; i++) {
 		if (t_invite->uac[i].last_received==0){
@@ -561,6 +568,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 			relay_reply(t_invite,FAKED_REPLY,i,487,&dummy_bm);
 		}
 	}
+#endif
 }
 
 
