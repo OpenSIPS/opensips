@@ -111,6 +111,10 @@ typedef struct SIP_Dialog {
     struct SIP_Dialog *next;
 } SIP_Dialog;
 
+typedef struct NAT_Keepalive_Distributor {
+    unsigned   iteration_counter;        // Shared memory iteration counter distributes keepalives
+    gen_lock_t iteration_lock;           // hashed across 1 second buckets within the configured keepalive interval.
+} NAT_Keepalive_Distributor; 
 
 typedef struct NAT_Contact {
     char *uri;
@@ -198,6 +202,7 @@ static int pv_set_track_dialog(struct sip_msg *msg, pv_param_t *param, int op, p
 // Module global variables and state
 //
 static HashTable *nat_table = NULL;
+static NAT_Keepalive_Distributor *gKeepalive_distributor = NULL;
 
 static Bool keepalive_disabled = False;
 
@@ -570,6 +575,30 @@ HashTable_new(void)
 }
 
 
+// Construct a Keepalive Distributor struct and attibutes
+//
+static NAT_Keepalive_Distributor*
+Keepalive_Distributor_new(void)
+{
+    NAT_Keepalive_Distributor *keepalive_distributor = NULL;
+
+    keepalive_distributor = shm_malloc(sizeof(NAT_Keepalive_Distributor));
+    if (!keepalive_distributor) {
+        LM_ERR("cannot allocate shared memory for keepalive_distributor\n");
+        return NULL;
+    }
+    memset(keepalive_distributor, 0, sizeof(NAT_Keepalive_Distributor));
+
+    if (!lock_init(&keepalive_distributor->iteration_lock)) {
+        LM_ERR("cannot initialize iterator lock\n");
+        lock_destroy(&keepalive_distributor->iteration_lock);
+
+        return NULL;
+    }
+    return keepalive_distributor;
+}
+
+
 static void
 HashTable_del(HashTable *table)
 {
@@ -590,6 +619,16 @@ HashTable_del(HashTable *table)
 
     shm_free(table->slots);
     shm_free(table);
+}
+
+
+//  Destroy the Keepalive Distributor struct and attibutes
+//
+static void
+Keepalive_Distributor_del(NAT_Keepalive_Distributor *keepalive_distributor)
+{
+    lock_destroy(&keepalive_distributor->iteration_lock);
+    shm_free(keepalive_distributor);
 }
 
 
@@ -1647,6 +1686,8 @@ send_keepalive(NAT_Contact *contact)
 
 	tolen=sockaddru_len(to);
 again:
+    LM_DBG("send_keepalive pid: %d, %s, %.*s:%d\n", getpid( ), contact->uri, nat_ip.len, nat_ip.s, nat_port );
+
 	if (sendto(contact->socket->socket, buffer, len, 0, &to.s, tolen)==-1) {
 		if (errno==EINTR) goto again;
 		LM_ERR("sendto() failed with %s(%d)\n", strerror(errno),errno);
@@ -1657,7 +1698,13 @@ again:
 static void
 keepalive_timer(unsigned int ticks, void *data)
 {
-    static unsigned iteration = 0;
+    // Increment shared global counter modulo the keepalive interval in seconds
+    lock_get(&gKeepalive_distributor->iteration_lock);
+    unsigned* iteration_counter = &gKeepalive_distributor->iteration_counter;
+    *iteration_counter = (*iteration_counter + 1) % keepalive_interval;
+    unsigned iteration_counter_local = *iteration_counter;
+    lock_release(&gKeepalive_distributor->iteration_lock);
+
     NAT_Contact *contact;
     HashSlot *slot;
     time_t now;
@@ -1667,7 +1714,7 @@ keepalive_timer(unsigned int ticks, void *data)
 
     for (i=0; i<nat_table->size; i++) {
 
-        if ((i % keepalive_interval) != iteration)
+        if ((i % keepalive_interval) != iteration_counter_local)
             continue;
 
         slot = &nat_table->slots[i];
@@ -1684,8 +1731,6 @@ keepalive_timer(unsigned int ticks, void *data)
             contact = contact->next;
         }
     }
-
-    iteration = (iteration+1) % keepalive_interval;
 }
 
 
@@ -1873,6 +1918,13 @@ mod_init(void)
         return -1;
     }
 
+    // create gKeepalive_distributor to maintain a shared global iteration counter
+    gKeepalive_distributor = Keepalive_Distributor_new();
+    if (!gKeepalive_distributor) {
+        LM_ERR("cannot create hash table to store keepalive distributor\n");
+        return -1;
+    }
+
     // create hash table to hold NAT contacts
     nat_table = HashTable_new();
     if (!nat_table) {
@@ -1910,6 +1962,11 @@ mod_destroy(void)
         save_keepalive_state();
         HashTable_del(nat_table);
         nat_table = NULL;
+    }
+
+    if (gKeepalive_distributor) {
+        Keepalive_Distributor_del(gKeepalive_distributor);
+        gKeepalive_distributor = NULL;
     }
 }
 
