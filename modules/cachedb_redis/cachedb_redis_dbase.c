@@ -33,16 +33,48 @@
 #include <string.h>
 #include <hiredis/hiredis.h>
 
+int redis_query_tout = CACHEDB_REDIS_DEFAULT_TIMEOUT;
+int redis_connnection_tout = CACHEDB_REDIS_DEFAULT_TIMEOUT;
+
+redisContext *redis_get_ctx(char *ip, int port)
+{
+	struct timeval tv;
+	static char warned = 0;
+	redisContext *ctx;
+
+	if (!redis_connnection_tout) {
+		if (!warned++)
+			LM_WARN("Connecting to redis without timeout might block your server\n");
+		ctx = redisConnect(ip,port);
+	} else {
+		tv.tv_sec = redis_connnection_tout / 1000;
+		tv.tv_usec = (redis_connnection_tout * 1000) % 1000000;
+		ctx = redisConnectWithTimeout(ip,port,tv);
+	}
+	if (ctx && ctx->err != REDIS_OK) {
+		LM_ERR("failed to open redis connection %s:%hu - %s\n",ip,
+				port,ctx->errstr);
+		return NULL;
+	}
+
+	if (redis_query_tout) {
+		tv.tv_sec = redis_query_tout / 1000;
+		tv.tv_usec = (redis_query_tout * 1000) % 1000000;
+		if (redisSetTimeout(ctx, tv) != REDIS_OK) {
+			LM_ERR("Cannot set query timeout to %dms\n", redis_query_tout);
+			return NULL;
+		}
+	}
+	return ctx;
+}
+
 int redis_connect_node(redis_con *con,cluster_node *node)
 {
 	redisReply *rpl;
 
-	node->context = redisConnect(node->ip,node->port);
-	if (node->context->err != REDIS_OK) {
-		LM_ERR("failed to open redis connection %s:%hu - %s\n",node->ip,
-				node->port,node->context->errstr);
+	node->context = redis_get_ctx(node->ip,node->port);
+	if (!node->context)
 		return -1;
-	}
 
 	if (con->id->password) {
 		rpl = redisCommand(node->context,"AUTH %s",con->id->password);
@@ -93,11 +125,9 @@ int redis_connect(redis_con *con)
 	int len;
 
 	/* connect to redis DB */
-	ctx = redisConnect(con->id->host,con->id->port);
-	if (ctx->err != REDIS_OK) {
-		LM_ERR("failed to open redis connection - %s\n",ctx->errstr);
+	ctx = redis_get_ctx(con->id->host,con->id->port);
+	if (!ctx)
 		return -1;
-	}
 
 	/* auth using password, if any */
 	if (con->id->password) {
