@@ -1825,7 +1825,7 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	}
 
 	if ( dns_try_naptr==0 ) {
-		*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
+		if (proto) *proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		goto do_srv;
 	}
 	LM_DBG("no port, no proto -> do NAPTR lookup!\n");

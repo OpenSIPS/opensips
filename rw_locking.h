@@ -29,7 +29,7 @@ inline static rw_lock_t * lock_init_rw(void)
 
 	return new_lock;
 error:
-	if (new_lock->lock)
+	if (new_lock!=NULL && new_lock->lock)
 		lock_dealloc(new_lock->lock);
 	if (new_lock)
 		shm_free(new_lock);

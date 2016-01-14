@@ -204,6 +204,7 @@ static inline struct ip_addr* str2ip(str* st)
 	static struct ip_addr ip;
 	unsigned char *s;
 
+	if (st == NULL || st->s == NULL) goto error_null;
 	s=(unsigned char*)st->s;
 
 	/*init*/
@@ -251,6 +252,9 @@ static inline struct ip_addr* str2ip(str* st)
 	ip.len=4;
 
 	return &ip;
+error_null:
+	LM_DBG("Null pointer detected\n");
+	return NULL;
 error_dots:
 	LM_DBG("too %s dots in [%.*s]\n", (i>3)?"many":"few",
 			st->len, st->s);
@@ -279,6 +283,8 @@ static inline struct ip_addr* str2ip6(str* st)
 	unsigned short* addr;
 	unsigned char* limit;
 	unsigned char* s;
+
+	if (st == NULL || st->s == NULL) goto error_null;
 
 	/* init */
 	if ((st->len) && (st->s[0]=='[')){
@@ -342,6 +348,9 @@ static inline struct ip_addr* str2ip6(str* st)
 			addr_start[6], addr_start[7] );
 */
 	return &ip;
+error_null:
+	LM_DBG("Null pointer detected\n");
+	return 0;
 
 error_too_many_colons:
 	LM_DBG("too many colons in [%.*s]\n", st->len, st->s);

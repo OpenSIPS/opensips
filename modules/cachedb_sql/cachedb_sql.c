@@ -206,7 +206,7 @@ static int dbcache_get(cachedb_con *con, str* attr, str* res)
 		return -1;
 	}
 
-	if (RES_ROW_N(db_res) <= 0 || RES_ROWS(db_res)[0].values[0].nul != 0) {
+	if (db_res == NULL || RES_ROW_N(db_res) <= 0 || RES_ROWS(db_res)[0].values[0].nul != 0) {
 		LM_DBG("no value found for keyI\n");
 		if (db_res != NULL && cdb_dbf.free_result(cdb_db_handle, db_res) < 0)
 			LM_DBG("failed to free result of query\n");
@@ -373,7 +373,7 @@ static int dbcache_fetch_counter(cachedb_con *con,str *attr,int *ret_val)
 		return -1;
 	}
 
-	if (RES_ROW_N(db_res) <= 0 || RES_ROWS(db_res)[0].values[0].nul != 0) {
+	if (db_res == NULL || RES_ROW_N(db_res) <= 0 || RES_ROWS(db_res)[0].values[0].nul != 0) {
 		LM_DBG("no value found for keyI\n");
 		if (db_res != NULL && cdb_dbf.free_result(cdb_db_handle, db_res) < 0)
 			LM_DBG("failed to free result of query\n");

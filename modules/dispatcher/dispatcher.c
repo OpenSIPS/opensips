@@ -493,8 +493,12 @@ static void destroy(void)
 }while(0)
 
 #define CHECK_INVALID_PARAM(param) do{ \
+	if ((param).s == NULL || (param).len == 0) { \
+		LM_ERR("Empty slot in param [%.*s]\n", (param).len, (param).s); \
+		return -1; \
+	} \
 	str_trim_spaces_lr(param); \
-	if ((param).s[0] == ',' || (param).s[(param).len-1]==',') { \
+	if ((param).len == 0 || (param).s[0] == ',' || (param).s[(param).len-1]==',') { \
 		LM_ERR("Empty slot in param [%.*s]\n", (param).len, (param).s); \
 		return -1; \
 	} \

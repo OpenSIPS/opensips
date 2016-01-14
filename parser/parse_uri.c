@@ -1372,7 +1372,7 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 	char matched[URI_MAX_U_PARAMS];
 	int i,j;
 
-	if ( (!raw_uri_a && !parsed_uri_b) || (!raw_uri_b && !parsed_uri_b) )
+	if ( (!raw_uri_a && !parsed_uri_a) || (!raw_uri_b && !parsed_uri_b) )
 	{
 		LM_ERR("Provide either a raw or parsed form of a SIP URI\n");
 		return -1;

@@ -669,7 +669,7 @@ static inline str* build_displayname(str *prefix, struct to_body *fh)
 	l --;
 
 	n = prefix->len;
-	if (n>l) n = l;
+	if (n>=l) n = l;
 	
 	memcpy( p, prefix->s , n);
 	p += n;

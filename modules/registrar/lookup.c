@@ -165,7 +165,7 @@ search_valid_contact:
 		it = ptr->next;
 		while ( it ) {
 			if (VALID_CONTACT(it,act_time)) {
-				if (it->instance.len-2 == sip_instance.len &&
+				if (it->instance.len-2 == sip_instance.len && sip_instance.s &&
 						memcmp(it->instance.s+1,sip_instance.s,sip_instance.len) == 0)
 					if (it->last_modified > ptr->last_modified) {
 						/* same instance id, but newer modified -> expired GRUU, no match at all */

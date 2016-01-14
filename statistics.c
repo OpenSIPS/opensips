@@ -605,7 +605,7 @@ error1:
 		else
 			shm_free(stat);
 error:
-	if ( (flags&STAT_IS_FUNC)==0 )
+	if ( (flags&STAT_IS_FUNC)==0 && pvar!=NULL)
 		*pvar = 0;
 
 	return -1;

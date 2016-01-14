@@ -106,7 +106,7 @@ int publ_send200ok(struct sip_msg *msg, int lexpire, str etag)
 		LM_ERR("unsuccessful sprintf\n");
 		goto error;
 	}
-	if(hdr_append.len > buf_len)
+	if(hdr_append.len >= buf_len)
 	{
 		LM_ERR("buffer size overflown\n");
 		goto error;
