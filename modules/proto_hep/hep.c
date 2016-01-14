@@ -218,8 +218,11 @@ static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su
 	/* Protocol TYPE */
 	hg.proto_t.chunk.vendor_id = htons(OSIP_VENDOR_ID);
 	hg.proto_t.chunk.type_id   = htons(0x000b);
-	hg.proto_t.data = htons(HEP_PROTO_SIP);
+	hg.proto_t.data = HEP_PROTO_SIP;
 	hg.proto_t.chunk.length = htons(sizeof(hg.proto_t));
+
+
+
 
 	/* Capture ID */
 	hg.capt_id.chunk.vendor_id = htons(OSIP_VENDOR_ID);
@@ -666,8 +669,6 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 			h3.hg.proto_t = *((hep_chunk_uint8_t*)buf);
 
 			CONVERT_TO_HBO(h3.hg.proto_t.chunk);
-			h3.hg.proto_t.data = ntohs(h3.hg.proto_t.data);
-
 			UPDATE_BUFFER(buf, tlen, h3.hg.proto_t.chunk.length);
 
 			break;
