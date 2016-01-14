@@ -565,8 +565,9 @@ output file pointers.
 			snprintf(longkey, LONGKEYBUFF, "%s:%s", sec, key);
 		} else {
 			size_t len = strlen(sec);
-			strncpy(longkey, sec, len >= LONGKEYBUFF ? LONGKEYBUFF-1 : len);
-			longkey[LONGKEYBUFF-1]=0;
+			if (len > LONGKEYBUFF - 1)
+				len = LONGKEYBUFF - 1;
+			strncpy(longkey, sec, len + 1);
 		}
 
 		/* Add (key,val) to dictionary */
