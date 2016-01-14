@@ -149,7 +149,7 @@ int ws_handshake(struct tcp_connection *con)
 		}
 
 		con->msg_attempts = 0;
-		if (req != &_ws_common_tcp_current_req)
+		if (req != &ws_current_req)
 			pkg_free(req);
 
 		/* handshake now completed, destroy the handshake data */
