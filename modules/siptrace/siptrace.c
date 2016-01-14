@@ -1204,8 +1204,8 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[2].val.str_val.len = t->method.len;
 
 	char * str_code = int2str(ps->code, &len);
-	statusbuf[INT2STR_MAX_LEN-1]=0;
 	strncpy(statusbuf, str_code, len >= INT2STR_MAX_LEN ? INT2STR_MAX_LEN-1 : len);
+	statusbuf[INT2STR_MAX_LEN-1]=0;
 	db_vals[3].val.str_val.s = statusbuf;
 	db_vals[3].val.str_val.len = len;
 
@@ -1455,8 +1455,8 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	}
 
 	char * str_code = int2str(sl_param->code, &len);
-	statusbuf[INT2STR_MAX_LEN-1]=0;
 	strncpy(statusbuf, str_code, len >= INT2STR_MAX_LEN ? INT2STR_MAX_LEN-1 : len);
+	statusbuf[INT2STR_MAX_LEN-1]=0;
 	db_vals[3].val.str_val.s = statusbuf;
 	db_vals[3].val.str_val.len = len;
 
