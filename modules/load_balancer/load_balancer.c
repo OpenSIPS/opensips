@@ -284,15 +284,16 @@ static int fixup_resources(void** param, int param_no)
 			lbp->param = (void*)(unsigned long)model;
 		}
 		*param = (void *)(unsigned long)lbp;
+		return 0;
 
 	} else if (param_no==3) {
-
 		/* string with flags */
 		return fixup_sgp(param);
 
 	}
 
-	return 0;
+	LM_CRIT("error - wrong params count (%d)\n",param_no);
+	return -1;
 }
 
 
@@ -341,6 +342,8 @@ static int fixup_cnt_call(void** param, int param_no)
 	if (param_no==5)
 		/* count or un-count */
 		return fixup_uint(param);
+
+	LM_CRIT("error - wrong params count (%d)\n",param_no);
 	return -1;
 }
 
