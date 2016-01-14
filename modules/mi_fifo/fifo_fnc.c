@@ -140,9 +140,6 @@ FILE* mi_init_fifo_server(char *fifo_name, int fifo_mode,
 	mi_buf = pkg_malloc(MAX_MI_FIFO_BUFFER);
 	reply_fifo_s = pkg_malloc(MAX_MI_FILENAME);
 	if ( mi_buf==NULL|| reply_fifo_s==NULL) {
-		fclose(fifo_stream);
-		close(mi_fifo_read);
-		close(mi_fifo_write);
 		LM_ERR("no more private memory\n");
 		return 0;
 	}
