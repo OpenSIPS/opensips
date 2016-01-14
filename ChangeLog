@@ -1,3 +1,937 @@
+=========================== Release 1.11.6 ==============================
+
+2016-01-14  Liviu Chircu  <liviu at opensips dot org>
+	* [9750241] :
+
+	Coverity PR: minor refactorings
+
+
+2016-01-14  Liviu Chircu  <liviu at opensips dot org>
+	* [92f32a2] :
+
+	Merge branch 'coverity_scan_1_11_merge' of https://github.com/ph4r05/opensips into ph4r05-coverity_scan_1_11_merge
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [92c6928] :
+
+	Fixing non-null terminated string bug, found by @liviuchircu
+
+
+2016-01-14  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e4965d9] :
+
+	[sipcapture]completely remove mod_init mi_cmds registration
+	(cherry picked from commit 02defafe421fa1ff4ab0f05f63cc490fa1717ff3)
+
+
+2016-01-14  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [2c52d1e] :
+
+	[sipcapture]mi_cmds were registered twice
+	(cherry picked from commit e36453ee6c687975382c3125b1dad9a382be041a)
+
+
+2016-01-13  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [a533e72] :
+
+	[snmpstats]more hints for setting up in the docs
+	Conflicts:
+		modules/snmpstats/README
+		modules/snmpstats/doc/snmpstats_admin.xml
+
+	(cherry-picked from 6e7535207d5531e0fc2562d05b874acd30488368)
+
+
+2016-01-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0dfb46d] :
+
+	Allow retransmissions and wait for reply/timeout on canceled branches.
+	Do not do anything about branches with no received reply; better continue the retransmission hoping to get something back; if still not, we will generate the 408 Timeout based on FR timer; this helps with better coping with missed/lated provisional replies in the context of cancelling the transaction
+
+	Many thanks to Maxim Sobolev for bringing this under discussion.
+	More to be read:
+	http://lists.opensips.org/pipermail/devel/2015-November/018623.html
+	http://lists.opensips.org/pipermail/devel/2015-December/018810.html
+
+
+2016-01-08  Liviu Chircu  <liviu at opensips dot org>
+	* [4902336] :
+
+	cachedb_mongodb: Fix crash when losing DB connection
+	Tested with mongo-c-driver v0.6. It turns out that the driver's
+	mongo_cmd_get_last_error() does not always return an iterable bson
+	structure. This patch adds a safety check, so that iteration is skipped.
+
+	Reported by Sasmita Panda
+	Closes issue #747
+	(cherry picked from commit 2e5160e5e1d895a5694ba4297058e1ca587e787a)
+
+
+2016-01-08  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [f854a42] :
+
+	Merge pull request #746 from lemenkov/remove_has_sdp
+	rtpproxy: patch: has_sdp() does not exist
+	(cherry picked from commit 2e59ba930001593fcd8b60cf446979f69594bedf)
+
+
+2016-01-04  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [7e814b2] :
+
+	fix validate_dialog cseq checking
+	If prev_cseq from the dlg_leg is not set, check the
+	r_cseq
+
+	Conflicts:
+		modules/dialog/dlg_handlers.c
+
+
+2015-12-30  Razvan Crainea  <razvan at opensips dot org>
+	* [bb00e71] :
+
+	avpops: remove async undeclared function
+	Closes #738
+
+
+2015-12-23  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [398b029] :
+
+	avpops: start without db_url if no func is using DB
+	Conflicts:
+		modules/avpops/avpops.c
+
+
+2015-12-23  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [245b549] :
+
+	strip_body(): check if content-type exists
+
+
+2015-12-22  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [128b36c] :
+
+	comparse_uris: unescape all characters in user field
+
+
+2015-12-21  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [7f37f05] :
+
+	Usrloc: modify invalid contacts behaviour
+	* stop inserting a contact even though received is OK
+	(call parse_uri() for each contact)
+	* at startup, if a bogus contact is found continue processing,
+	letting the user know that he has to remove that contact from
+	the database
+
+
+2015-12-09  Razvan Crainea  <razvan at opensips dot org>
+	* [95f5f79] :
+
+	b2b_logic: set late SDP negociation flag
+	For the entity that initiates a call, late SDP negociation is used, because
+	the SDP of the first entity is not known. This patch sets the late_sdp flag
+	for that entity, to flag the b2b logic to send the ACK with SDP.
+
+	This bug was reported on the mailing list by Sebastian Sastre.
+	(cherry picked from commit 20df8362455a60aaded86daa9a79d189b73a1880)
+
+
+2015-12-06  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [4594e82] :
+
+	fixing coverity found defects - null dereference
+
+
+2015-12-06  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [fd57609] :
+
+	fixing coverity found defects - memory corruption, null dereference
+
+
+2015-12-06  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [81aeba4] :
+
+	fixing coverity found defects - null dereference & broken logic
+
+
+2015-12-06  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [906bb91] :
+
+	fixing coverity found defects - null dereference
+
+
+2015-12-06  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [b578dda] :
+
+	fixing coverity found defects - null dereference
+
+
+2015-12-06  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [d471234] :
+
+	fixing coverity found defects - copying into fixed size buffer without check, db_http
+
+
+2015-12-06  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [92a7361] :
+
+	fixing coverity found defects - copying into fixed size buffer
+
+
+2015-12-06  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [ef3d3de] :
+
+	fixing coverity found defects - null dereference in dispatcher
+
+
+2015-12-05  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [b8e2318] :
+
+	fixing coverity found defects - null dereference, invalid e164 number check
+
+
+2015-12-05  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [c004967] :
+
+	fixing coverity found defects - null dereference, break missing
+
+
+2015-12-05  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [aeedb7d] :
+
+	fixing coverity found defects - logical fix in ul callback check type, null dereference
+
+
+2015-12-05  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [b22844e] :
+
+	fixing coverity found defects - processing initialized variables, control flow, invalid expressions
+
+
+2015-12-05  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [e09f09a] :
+
+	fixing coverity found defects - resource leakage
+
+
+2015-12-05  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [c537cb8] :
+
+	fixing coverity found defects - invalid memory access / memory corruptions
+
+
+2015-12-04  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [39ed3dc] :
+
+	Merge pull request #681 from shiningstarj/dialoginfo-memory-leak
+	Presence_dialoginfo: Fix memory leaks in notify_body.c
+	(cherry picked from commit ab5cd613df4ef9831a33923ba5e51bf572203c8c)
+
+
+2015-12-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a622082] :
+
+	Return <null> value for missing AVPS.
+	Maintain database result integrity by supporting null column values.
+	Closes #693 and #677
+	(cherry picked from commit 88bd36bd8b200bfde902f2bb28c2be8ea0fb18f7)
+
+
+2015-12-04  Razvan Crainea  <razvan at opensips dot org>
+	* [9ce6c4a] :
+
+	b2b_logic: parameters cannot be lower than 1
+	(cherry picked from commit 152f22e63cc3f045492367b18ed5357cf5a89f2b)
+
+
+2015-12-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [1f5304c] :
+
+	properly handle epoll events
+
+
+2015-12-03  Nick Altmann  <nick.altmann at gmail dot com>
+	* [421f6c2] :
+
+	RPM spec: move ulimit to init-script
+
+
+2015-12-03  Nick Altmann  <nick.altmann at gmail dot com>
+	* [710f111] :
+
+	RPM spec: increase max files limit and add dependencies
+
+
+2015-11-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2ea921b] :
+
+	Fix proper reporting for the statistics types.
+	This fixes the charting of SHMEM related stats in Control Panel
+	(cherry picked from commit 52d5ef5bdf03aacb245420bc0193069a7b38322a)
+
+	Conflicts:
+		statistics.c
+
+
+2015-11-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4d32349] :
+
+	undo last cherry-pick
+
+
+2015-11-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c18a21b] :
+
+	Fix bug in populating the PIDs
+	(cherry picked from commit eccbf8d5d30bea765f19ab2b9816a57386091692)
+
+
+2015-11-23  Nick Altmann  <nick.altmann at gmail dot com>
+	* [1d8d3bf] :
+
+	RPM spec: remove excess rest client package
+
+
+2015-11-17  Răzvan Crainea  <razvan at opensips dot org>
+	* [f670634] :
+
+	Merge pull request #682 from telematico/1.11
+	1.11
+
+
+2015-11-13  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [469e2bf] :
+
+	fix str2int and str2sint input params check
+	* if a void string was given to the function ("") 0 value was returned which was not correct
+	* input values should be checked for NULL
+
+
+2015-11-02  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [3604ce7] :
+
+	fix mem leak in permissions
+
+
+2015-10-27  Liviu Chircu  <liviu at opensips dot org>
+	* [1dd0700] :
+
+	TCP aliases: Reduce log level of port hijacking alerts
+	Allows better log control in deployments where these errors are false positives.
+
+
+2015-10-27  Liviu Chircu  <liviu at opensips dot org>
+	* [85e0634] :
+
+	TCP read errors: Silently discard ECONNRESET
+	Also move TCP read errors down to a more disposable debugging level.
+
+
+2015-10-27  Liviu Chircu  <liviu at opensips dot org>
+	* [317af68] :
+
+	Prevent TCP writers from freeing reader structures
+	Since a TCP connection's "con_req" field is exclusively used by one reader
+	at a time, TCP writers should not attempt to free it when releasing
+	connections.
+
+	NB: Issue is fixed in OpenSIPS 2.1+
+
+
+2015-10-27  Liviu Chircu  <liviu at opensips dot org>
+	* [efed06c] :
+
+	TCP aliases: Fix more race conditions (issue #589)
+	_tcpconn_find() returns a pointer which should never be used outside of
+	TCP lock. This patch completes commit 22f4c1a2e05 by fixing two
+	additional issues of the same type in tcpconn_add_alias()
+
+
+2015-10-27  Liviu Chircu  <liviu at opensips dot org>
+	* [fa6034b] :
+
+	Fix potential memory corruption on TCP write errors
+	This patch fixes two well-hidden TCP connection referencing bugs which
+	would only reveal themselves upon running into failed TCP send() operations
+	due to various reasons (e.g. full send buffer) in high-traffic environments.
+
+	Credits to Hieu Ta and Don Steul from Jibe Mobile for detailed reporting
+	and providing an adequate replication environment
+
+
+2015-10-23  Carlos Oliva  <telematico at gmail dot com>
+	* [8a81628] :
+
+	updates Debian packaging files to include mi_xmlrpc_ng module as aditional package in default compilation
+
+
+2015-10-22  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [26a0a62] :
+
+	Fixed ACKs CSEQ number when doing in-dialog pinging
+	The ACK CSEQ number does not depend on the number of pings or other in-dialog requests since the INVITE transaction, it must be the same as the INVITE
+	Closes issue #680
+
+
+2015-10-22  Carlos Oliva  <telematico at gmail dot com>
+	* [ad1e249] :
+
+	Revert "packaging/debian: change MI_XMLRPC to MI_XMLRPC_NG in packaging"
+	This reverts commit 4600d259fbe1aabe7dd0f0c5f7880324b8dbd159.
+
+
+2015-10-20  wxf  <xiaofeng.wang at bqvision dot com>
+	* [8455798] :
+
+	fix: some sh(busybox) do not support syntax of `$(< file)'
+	(cherry picked from commit ffb25541b6bf4ee841072787f2a09c06c4885ab1)
+
+
+2015-10-13  Carlos Oliva  <telematico at gmail dot com>
+	* [4600d25] :
+
+	packaging/debian: change MI_XMLRPC to MI_XMLRPC_NG in packaging
+	mi_xmlrpc has some problems with multithreading and has been
+	superseeded by mi_xmlrpc_ng module. Aditionaly needs a very old
+	version of libxmlrpc-c3 that is not present in debian wheezy or
+	jessie
+
+	This commit change updates Debian packaging files
+
+
+2015-10-06  Razvan Crainea  <razvan at opensips dot org>
+	* [1f5df18] :
+
+	ratelimit: avoid deadlock if counter is not updated
+	(cherry picked from commit ec25c07c2e8b2baf792bd49f0044adb4a8f52573)
+
+
+2015-10-06  Di-Shi Sun  <di-shi at transnexus dot com>
+	* [2ef4444] :
+
+	Updated to support CNAM diversion use case.
+
+
+2015-09-28  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [1de872c] :
+
+	build: fix setting LIBDIR correctly
+	(cherry picked from commit 3d485cdff60080124a1257dfdfa68f25408f4114)
+
+
+2015-09-28  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [d980098] :
+
+	build: fix setting HOST_ARCH on Solaris
+	(cherry picked from commit 63bccb458d7a1ec59498439c5e3c952fff6c82c6)
+
+
+2015-09-28  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [9962f62] :
+
+	makefile: detect target architecture using the compiler
+	Fixes producing a 32bit build in a 64bit system.
+
+	Original patch by Andrei Pelinescu-Onciul:
+	https://github.com/kamailio/kamailio/commit/c46e79709216c4975abc83869fbce9fa696eac74
+	(cherry picked from commit 1161779ab91ac5bbd330ddf5dccc3f00d9e34f35)
+
+
+2015-09-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [64256bd] :
+
+	Check if at least one DB URL is provided in avpops
+	Reported by David Sanders (@dsanders11).
+	Closes #644 .
+	(cherry picked from commit 34fab0d51ffb473b25871eddd3acef88664c4ec4)
+
+
+2015-09-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a2b2eb1] :
+
+	Fix auth via B2B module.
+	Remove the bogus hooks placed by TM in the outbound SIP buffer (as the buffer may change in local route) and rebuild the B2B invite (with credentials) from the initial sent invite.
+	Reported by @DMOsipov and @xxReaper on GITHUB.
+	Closing #577 and #628 .
+
+
+2015-09-14  Razvan Crainea  <razvan at opensips dot org>
+	* [25c19b1] :
+
+	dbschema: re-generate SQL scripts
+	(cherry picked from commit 70a587fa372e17157c0a8dbb1b26e71620ab2ce4)
+
+
+2015-09-14  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [09f4be5] :
+
+	xcap: make the 'doc' column a LONGBLOB on MySQL
+	A normal-sized XCAP document with external references easily exceedes
+	the default column size, leading to all sorts of problems.
+	(cherry picked from commit d419f0543c79c12e0e01dc629dede2d872cc6637)
+
+
+2015-09-14  Razvan Crainea  <razvan at opensips dot org>
+	* [0d2535f] :
+
+	regex: release the memory for unused pattern strings
+	Thanks go to Federico Edorna <fedorna@anura.com.ar> for reporting and giving
+	the solution for this memory leak.
+	(cherry picked from commit aa7429e0124478f999ba3737b10ae39900e16b2c)
+
+
+2015-09-14  Liviu Chircu  <liviu at opensips dot org>
+	* [cc82969] :
+
+	cachedb_mongodb: update mongo-c-driver info
+	Partial cherry-pick from 7b96d7a7
+
+
+2015-09-04  Razvan Crainea  <razvan at opensips dot org>
+	* [8483800] :
+
+	dialog: return 0 profile size if no value in cache
+	Reported by Damien Sanders
+	Closes #562
+	(cherry picked from commit 7781342ce9366f2a7f9896d66dbc662a643d9d10)
+
+
+2015-09-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [02e886f] :
+
+	Fix callid for "ul_add" MI command.
+	As now the callid is updatable, we need to provide a callid string.
+	Reported by Stas Kobzar
+
+
+2015-09-01  Di-Shi Sun  <di-shi at transnexus dot com>
+	* [f2af0c2] :
+
+	1. Updated to support reporting media addresses, proxy local addresses and provider post dial delay. 2. Updated to support CNAM.
+
+
+2015-08-24  Sergey Khripchenko  <shripchenko at intermedia dot net>
+	* [f1fd422] :
+
+	two bugs fixed in db_text module + incorrect use of strncasecmp() + lost pkg_malloc
+	(cherry picked from commit de9224b29a4d304b3635818126fde1c234264092)
+
+
+2015-08-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d6f1b01] :
+
+	Proper handling of 0 ret code from SSL_read
+
+
+2015-08-19  Razvan Crainea  <razvan at opensips dot org>
+	* [0a473f0] :
+
+	tm: fix bavp leaks in case of error
+	Thanks go to Mickael Marrache for spotting and debugging
+	(cherry picked from commit 70a34b9e974132c6c5269c0c02b2311566bddd12)
+
+
+2015-08-19  Razvan Crainea  <razvan at opensips dot org>
+	* [c0243e9] :
+
+	fix previous commit
+	(cherry picked from commit dcd3ec4433548db469492e8a3c96df5c70d81a3f)
+
+
+2015-08-19  Razvan Crainea  <razvan at opensips dot org>
+	* [fb46bc9] :
+
+	Makefile.defs: print target info only if changed
+	(cherry picked from commit 14b3bb69ea1d98f5ce06a27e010964f4fac48fbb)
+
+
+2015-08-19  Răzvan Crainea  <razvan at opensips dot org>
+	* [77efd7a] :
+
+	Merge pull request #605 from saghul/makefile-target-master
+	makefile: detect target architecture using the compiler
+	(cherry picked from commit 87a195823abf123630d06b71cae1150c3ef76ee0)
+
+
+2015-08-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2b3a3ea] :
+
+	Fix handling of ASYNC MI commands
+	Similar to report #552.
+
+
+2015-08-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c08b033] :
+
+	Fix handling of ASYNC MI commands
+	Part of fixing #552.
+	Reported by @mqandeel .
+
+	Closes #552
+
+
+2015-08-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5244b54] :
+
+	Fix handling of ASYNC MI commands
+	Part of fixing #552.
+	Reported by Damien Sandras.
+
+
+2015-08-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4791a50] :
+
+	Fix reporting if t_request() failed.
+	Capture and report futher if the t_request() failed to send out the PUBLISH request.
+
+
+2015-08-12  Jarrod Baumann  <jarrod at unixc dot org>
+	* [f56a0aa] :
+
+	Do not append colon if uri password is NULL
+	(cherry picked from commit 76dc734df0926dbfa5cb6d463dcbf5a82ea6dc2a)
+
+
+2015-08-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [719f298] :
+
+	Free double pointer.
+	While looping over all location-like tables, set to NULL the result pointer after each iteration.
+	Reported by @ionutrazvanionita
+	Closes  #566 .
+
+
+2015-08-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b2e08eb] :
+
+	Fix use_domain, escaping, cases in remove()
+	Use extract_aor() in script function remove() ; extract_aor() takes into account the use_domain and cases settings and is also able to deal with escaped chars.
+
+	Closes #557 .
+	(cherry picked from commit 0e1fabbc71c6c315b1f00d3ea58d1796054f2590)
+
+
+2015-08-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [db92bfb] :
+
+	Proper test on active destinatins for failover.
+	Test both INACTIVE and PROBING flags before considering a destination suitable for failover.
+	Reported by @gergelypeli
+	Closes #564 .
+
+
+2015-08-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a0a6f7a] :
+
+	Fix race condition - the log must be under lock
+	As information from the alias strucuture is printed, this must be done under lock protection.
+	Closes #589 by @dbeskoek.
+
+
+2015-08-07  Razvan Crainea  <razvan at opensips dot org>
+	* [ad90850] :
+
+	add mi_xmlrpc dependency for travis
+	(cherry picked from commit 3de60365de262cc8e924f971509792086be176aa)
+
+
+2015-08-07  Razvan Crainea  <razvan at opensips dot org>
+	* [eeef2b6] :
+
+	add travis support
+	(cherry picked from commit 63556448a878c06de5b8d695d81d335b075752ff)
+
+
+2015-08-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3eba3a1] :
+
+	Use SIP pinging when NAT traversal is on
+	(cherry picked from commit 67c2c91844641980970d8445291242bdd5ec5310)
+
+
+2015-08-06  Răzvan Crainea  <razvan at opensips dot org>
+	* [235e3e4] :
+
+	fix debian packaging (cherry picked from commit 2d15060e48333ab3cad2e9cf3cafb7a006324185)
+	Conflicts:
+		packaging/debian/rules
+
+
+2015-08-06  Razvan Crainea  <razvan at opensips dot org>
+	* [2bdd10f] :
+
+	add rest_client specs for debian, fedora and rpms
+	Closes #587
+	(cherry picked from commit 3dfc83cb254f150d2e6dbbb49f48ec9927be3a3c)
+
+	Conflicts:
+		packaging/debian/control
+		packaging/fedora/opensips.spec
+
+
+2015-07-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1b5c86e] :
+
+	Fix  "reload done" marking if reload failed.
+
+
+2015-07-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ba6a3bd] :
+
+	Fixed memeory exhausting during concurrent reloads.
+	Add a new module parameter no_concurrent_reload to prevent multiple reloads in the same time.
+	If you have a large routing set (millions of rules/prefixes), you should consider disabling concurrent reload as they will exhaust the shared memory (by reloading into memory, in the same time, multiple instances of routing data).
+
+
+2015-07-16  Liviu Chircu  <liviu at opensips dot org>
+	* [02a7c06] :
+
+	db_virtual: Do not crash if no DB sets are defined
+	(cherry picked from commit b391ea3d25dbe286ddd12d4ffc5f53b32cfdc268)
+
+
+2015-07-10  Liviu Chircu  <liviu at opensips dot org>
+	* [636d721] :
+
+	db_virtual: Do not crash if no DB URLs are defined
+	(cherry picked from commit 5a832d94bd2af95929a5b8451ee6895a585d6989)
+
+
+2015-07-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2e0e084] :
+
+	More verbous logging.
+	Log the error reported by stat() when it fails.
+	(cherry picked from commit 8fefc911e643142b4206fa574896171dbdb1eb82)
+
+
+2015-06-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [23f2322] :
+
+	Expose unset_dlg_profile() to Request Route.
+	Related to issue #554.
+
+
+2015-06-25  Razvan Crainea  <razvan at opensips dot org>
+	* [3c29723] :
+
+	acc: fix multi_leg_bye info behavior
+	This bug was making the ACC module to print less information in case there
+	were no AVPs populated for the BYE multi_leg_info
+	(cherry picked from commit 307388d7499fe2cf4f1ea7f54f2ef11a628e327d)
+
+
+2015-06-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7728f70] :
+
+	Fix $ct and $ct.fields variables.
+	Force parsing of all Contact headers.
+	Reported by Nick Altmann.
+	(cherry picked from commit 19d0f608c8cb368a324af1a01d381035c0f4f9ad)
+
+
+2015-06-12  Ovidiu Sas  <osas at voipembedded dot com>
+	* [4b8aa79] :
+
+	mi_xmlrpc_ng: unescape xml strings  - related to bug #537
+	(cherry picked from commit 8450630617b2504ffdc4089f2500a26b4187e078)
+
+
+2015-06-12  Ovidiu Sas  <osas at voipembedded dot com>
+	* [15176cf] :
+
+	core: adding unescape_xml() function helper to strcommon.[ch]
+	(cherry picked from commit f6386ca9029fb56233ef1ac0b2cc2034d88e0928)
+
+
+2015-06-11  Nick Altmann  <nick.altmann at gmail dot com>
+	* [ca2711a] :
+
+	RPM spec: enabled restart feature (in case of crash) in systemd service
+	(cherry picked from commit 611b9bb55135b899746a0c71f21f25b0561a81b4)
+
+
+2015-06-11  Nick Altmann  <nick.altmann at gmail dot com>
+	* [f846b41] :
+
+	RPM spec: m4 dependence
+
+
+2015-06-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3e46982] :
+
+	Fix documentation on loose_route().
+	loose_route() returns FALSE only if there is no Route header or if preloaded local Route only.
+	Reported by @gergelypeli on github
+	Closes #550
+	(cherry picked from commit 2421034845068bbc243a8bd5de8aeebd071fc729)
+
+
+2015-06-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [48a7f21] :
+
+	Revert "Fix parsing for Diversion header."
+	This reverts commit 31ddc4942d624f4d4cb559c0daa078fcebe527fe.
+
+
+2015-06-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f3c2b03] :
+
+	Fix fixing hdr names shorter than 3 chars.
+	The fixup function fails to identify header names shorter than 3 (like To or short formats). This affected script functions like is_present_hf() or remove_hf().
+	Reported by Nick Altmann
+	(cherry picked from commit 1f7bae0915ac93ca231ede55c5540560e5489a7b)
+
+
+2015-06-09  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [3bb3583] :
+
+	Merge pull request #547 from dynamicpacket/1.11
+	fixes for Debian packaging
+
+
+2015-06-09  User  <user at Users-Mac-Pro dot local>
+	* [4027ab2] :
+
+	* Check for freeradius libs in Makefile * Check for json lib include paths in Makefile * Update debian/control with new dependency names and standards * Update debian/rules to remove deprecated dpatch
+
+
+2015-06-04  Di-Shi Sun  <di-shi at transnexus dot com>
+	* [e72d1ef] :
+
+	Updated for OSP Toolkit 4.5.0.
+
+
+2015-06-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [31ddc49] :
+
+	Fix parsing for Diversion header.
+	As Diversion header may be a multi-body header, do not use the parse_to() function as it does not accept multiple bodies. Use parse_rr() function.
+	Reported by Nick Altmann.
+	(cherry picked from commit 36384927a5d2fd1d900ac36adc2ee15b2acad0c9)
+
+
+2015-06-03  Razvan Crainea  <razvan at opensips dot org>
+	* [948208a] :
+
+	event_xmlrpc: only retry send/recv a couple of times if there are errors
+	Credits go to Joseph Frazier (onsip) for spotting this
+	(cherry picked from commit 05bc754133dd7fe02dc0c780a7f625a83bfef61f)
+
+
+2015-06-03  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [7159148] :
+
+	Merge pull request #534 from seanchann/1.11
+	fix rpm build error on centos
+
+
+2015-06-02  Jarrod Baumann  <jarrod at unixc dot org>
+	* [c1baacf] :
+
+	verify pv_export_t parse_name function is set before calling
+	(cherry picked from commit 3c47edd9b007aa60e36d6a094e995956509f1da4)
+
+
+2015-05-30  xqzhou  <zhouxiaoqiang.mstech at gmail dot com>
+	* [38402ff] :
+
+	fix rpm build error on centos
+
+
+2015-05-27  Liviu Chircu  <liviu at opensips dot org>
+	* [f09f478] :
+
+	avpops: Fix possible runtime crash
+	The patch corrects a bug in commit 685da74670, since mod_init() is
+	actually run _before_ module function fixups.
+
+	Detection for raw SQL function calls is now done (properly) at fixup time,
+	rather than at module initialization.
+
+	Reported by Antonis Psaras
+	Closes #523
+	(cherry picked from commit 91d1b4f4b65b4bf70d8db93d956a42d2f58500f9)
+
+
+2015-05-26  Liviu Chircu  <liviu at opensips dot org>
+	* [9c7e869] :
+
+	residential cfg: Set db_url for "uri" module when doing auth
+	(cherry picked from commit 724d16d99f9ae46cbeaa6894f45afbb0b4fd650a)
+
+
+2015-05-26  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [64e528d] :
+
+	Set the upsert flag when incrementing / decrementing counters This way the counters don't need to be pre-populated in the DB ( eg. when using them for dialog profiles )
+	(cherry picked from commit 74a52d0da12395367019028034c6c20b5cff5b38)
+
+
+2015-05-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [de477a4] :
+
+	Fix "dialplan addrule" command.
+	The match_len column was replaced with match_flags
+	Closes #513
+	(cherry picked from commit 607fb3e78c9d39b7c0b97fbd5be615369f5a1ef1)
+
+
+2015-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [980b680] :
+
+	Fix NULL value as route param.
+	Closes #516, open by @liviuchircu.
+	(cherry picked from commit 032c425424846045227d57e88b506c4603315bc4)
+
+
+2015-05-20  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [a8971c2] :
+
+	Merge pull request #517 from staskobzar/1.11
+	Make sure httpd can recognize Content-Type headers with parameters.
+
+
+2015-05-20  Liviu Chircu  <liviu at opensips dot org>
+	* [9d07e53] :
+
+	route params: increment nesting level on no-param routes
+	Completes commit f3ed4db99
+	(cherry picked from commit 564acbe638fab63deb2d39462b667b2d83a75f05)
+
+
+2015-05-20  Stas Kobzar  <stas at modulis dot ca>
+	* [876d297] :
+
+	Matching content type parameter value using strcasecmp instead of strncasecmp.
+
+
+2015-05-19  Stas Kobzar  <stas at modulis dot ca>
+	* [fa9e57c] :
+
+	Make sure httpd can recognize Content-Type headers with params (with improved memory management patch from bogdan-iancu).
+
+
+2015-05-19  Stas Kobzar  <stas at modulis dot ca>
+	* [bc8e865] :
+
+	httpd: Make sure httpd can recognize Content-Type headers with params.
+
+
+2015-05-18  Jarrod Baumann  <jarrod at unixc dot org>
+	* [1d9b3e9] :
+
+	set local variable memory to 0 to prevent core dump
+	(cherry picked from commit d84df1900267516b30e560d20e225abbe2aea071)
+
+
+2015-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [fc1a2eb] :
+
+	ChangeLog: update to 1.11.5
+
+
 =========================== Release 1.11.5 ==============================
 
 2015-05-07  Razvan Crainea  <razvan at opensips dot org>
