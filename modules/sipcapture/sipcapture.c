@@ -361,14 +361,6 @@ static int mod_init(void) {
 	/* check if we need to start extra process */
 	procs[0].no = (ipip_capture_on || moni_capture_on) ? raw_sock_children:0;
 
-#if 0
-	if(register_mi_mod(exports.name, mi_cmds)!=0)
-	{
-		LM_ERR("failed to register MI commands\n");
-		return -1;
-	}
-#endif
-
 	db_url.len = strlen(db_url.s);
 	table_name.len = strlen(table_name.s);
 	date_column.len = strlen(date_column.s);
