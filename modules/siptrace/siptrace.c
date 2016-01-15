@@ -1706,8 +1706,7 @@ static int trace_send_hep_duplicate(str *body, str *fromip, str *toip)
 
 
 	/* create a temporary proxy*/
-	proto = PROTO_UDP;
-	p=mk_proxy(&dup_uri->host, (dup_uri->port_no)?dup_uri->port_no:SIP_PORT,proto, 0);
+	p=mk_proxy(&dup_uri->host, (dup_uri->port_no)?dup_uri->port_no:SIP_PORT, PROTO_UDP, 0);
 	if (p==0){
 		LM_ERR("bad host name in uri\n");
 		return -1;
@@ -1724,7 +1723,12 @@ static int trace_send_hep_duplicate(str *body, str *fromip, str *toip)
 	/* Version && proto && length */
 	hdr.hp_l = sizeof(struct hep_hdr);
 	hdr.hp_v = hep_version;
+
+	/* set proto to PROTO_UDP after we set the proto in HEP header;
+	 * in hep header we need standard library format IPPROTO_* which is set by
+	 * pipport2su() function */
 	hdr.hp_p = proto;
+	proto = PROTO_UDP;
 
 	/* AND the last */
 	if (from_su.s.sa_family==AF_INET){
