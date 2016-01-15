@@ -254,8 +254,14 @@ static int avpops_init(void)
 	/* search if any avp_db_* function is used */
 	for (i=0; cmds[i].name != NULL; i++) {
 		if (strncasecmp(cmds[i].name, AVPDB, sizeof(AVPDB)-1) == 0 &&
-				(is_script_func_used(cmds[i].name, -1) ||
-					is_script_async_func_used(cmds[i].name, -1))) {
+				(is_script_func_used(cmds[i].name, cmds[i].param_no))) {
+			need_db=1;
+		}
+	}
+
+	for (i=0; acmds[i].name != NULL; i++) {
+		if (strncasecmp(cmds[i].name, AVPDB, sizeof(AVPDB)-1) == 0 &&
+				(is_script_async_func_used(acmds[i].name, acmds[i].param_no))) {
 			need_db=1;
 		}
 	}
