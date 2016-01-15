@@ -77,7 +77,7 @@ static int mod_init(void);
 static void mod_destroy(void);
 static int child_init(int rank);
 
-void timer_check(unsigned int ticks, void* param);
+void timer_check(unsigned int ticks, void* hash_counter);
 
 static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param);
 static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param);
@@ -93,7 +93,6 @@ unsigned int timer_interval = 100;
 
 reg_table_t reg_htable = NULL;
 unsigned int reg_hsize = 1;
-unsigned int hash_index = 0;
 
 static str db_url = {NULL, 0};
 
@@ -186,6 +185,7 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	unsigned int _timer;
+	int *param;
 
 	if(load_uac_auth_api(&uac_auth_api)<0){
 		LM_ERR("Failed to load uac_auth api\n");
@@ -234,9 +234,18 @@ static int mod_init(void)
 		return -1;
 	}
 
+	/* allocate a shm variable to keep the counter used by the timer
+	 * routine - it must be shared as the routine get executed
+	 * in different processes */
+	if (NULL==(param=(int*) shm_malloc(sizeof(int)))) {
+		LM_ERR("cannot allocate shm memory for keepalive counter\n");
+		return -1;
+	}
+	*param = 0;
+
 	_timer = timer_interval/reg_hsize;
 	if (_timer) {
-		register_timer("uac_reg_check", timer_check, 0, _timer,
+		register_timer("uac_reg_check", timer_check, (void*)(long)param, _timer,
 			TIMER_FLAG_DELAY_ON_DELAY);
 	} else {
 		LM_ERR("timer_interval=[%d] MUST be bigger then reg_hsize=[%d]\n",
@@ -625,15 +634,16 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 struct timer_check_data {
 	time_t now;
 	str *s_now;
+	int hash_counter;
 };
 
 int run_timer_check(void *e_data, void *data, void *r_data)
 {
-	unsigned int i=hash_index;
 	reg_record_t *rec = (reg_record_t*)e_data;
 	struct timer_check_data *t_check_data = (struct timer_check_data*)data;
 	time_t now = t_check_data->now;
 	str *s_now = t_check_data->s_now;
+	unsigned int i = t_check_data->hash_counter;
 
 	switch(rec->state){
 	case REGISTERING_STATE:
@@ -675,9 +685,9 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 }
 
 
-void timer_check(unsigned int ticks, void* param)
+void timer_check(unsigned int ticks, void* hash_counter)
 {
-	unsigned int i=hash_index;
+	unsigned int i=*(unsigned*)(unsigned long*)hash_counter;
 	char *p;
 	int len, ret;
 	time_t now;
@@ -685,6 +695,7 @@ void timer_check(unsigned int ticks, void* param)
 	struct timer_check_data t_check_data;
 
 	now = time(0);
+	*(unsigned*)(unsigned long*)hash_counter = (i+1)%reg_hsize;
 
 	p = int2str((unsigned long)(time(0)), &len);
 	if (p && len>0) {
@@ -701,6 +712,7 @@ void timer_check(unsigned int ticks, void* param)
 	/* Initialize slinkedl run traversal data */
 	t_check_data.now = now;
 	t_check_data.s_now = &str_now;
+	t_check_data.hash_counter = i;
 
 	LM_DBG("checking ... [%d] on htable[%d]\n", (unsigned int)now, i);
 	lock_get(&reg_htable[i].lock);
@@ -710,8 +722,6 @@ void timer_check(unsigned int ticks, void* param)
 	lock_release(&reg_htable[i].lock);
 
 	if (str_now.s) {pkg_free(str_now.s);}
-
-	hash_index = (++i)%reg_hsize;
 
 	return;
 }
