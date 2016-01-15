@@ -248,7 +248,7 @@ static int avpops_init(void)
 	}
 
 	for (i=0; acmds[i].name != NULL; i++) {
-		if (strncasecmp(cmds[i].name, AVPDB, sizeof(AVPDB)-1) == 0 &&
+		if (strncasecmp(acmds[i].name, AVPDB, sizeof(AVPDB)-1) == 0 &&
 				(is_script_async_func_used(acmds[i].name, acmds[i].param_no))) {
 			need_db=1;
 		}
