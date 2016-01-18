@@ -51,15 +51,17 @@ void siplua_log(int lev, const char *format, ...)
   va_list ap;
   char *ret;
   int priority;
+  int rc;
 
   if (!format)
     return;
   if (!(is_printable(lev) | lua_user_debug))
     return;
   va_start(ap, format);
-  if (vasprintf(&ret, format, ap) < 0)
-    return;
+  rc = vasprintf(&ret, format, ap);
   va_end(ap);
+  if (rc < 0)
+    return;
   LM_GEN1(lev, "siplua: %s", ret);
   if (lua_user_debug)
     {
