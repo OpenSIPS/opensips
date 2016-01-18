@@ -1,5 +1,27 @@
 =========================== Release 1.11.6 ==============================
 
+2016-01-17  Nick Altmann  <nick.altmann at gmail dot com>
+	* [71e1320] :
+
+	RPM spec: prepare for new build system - remove obsolete triggers - change tarball name and url
+
+
+2016-01-15  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [766f7ea] :
+
+	[siptrace]fix proto issues
+	leave IPPROTO_* format in hep header(which is returned by
+	pipport2su() function) and after setting it use OpenSIPS
+	format for sending(PROTO_UDP)
+	(cherry picked from commit 5a28baff06912a18193d734af5afee871f6d3502)
+
+
+2016-01-14  Razvan Crainea  <razvan at opensips dot org>
+	* [f6a3e52] :
+
+	1.11.6: update changelog and build version
+
+
 2016-01-14  Liviu Chircu  <liviu at opensips dot org>
 	* [9750241] :
 
