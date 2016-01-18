@@ -1,4 +1,184 @@
 =========================== Release 2.1.2 ==============================
+2016-01-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [0c26f91] :
+
+	fix calls per minute for fraud_detection module
+	Now the calls per minute parameter is build as consisting of an initial
+	time(t0) and a 60 seconds window(as was before). Each window slot holds the
+	calls received in that second(as before). The difference is that now
+	these parameters are updated based on three conditions:
+	* we receive the call between [t0; t0 + WINDOW_SIZE(60s)] - we only update
+	the number of calls for that slot(t0 + current time) and the calls per minute
+	parameter
+	* we receive the call in the interval of [t0+WINDOW_SIZE; t0+2*WINDOW_SIZE] -
+	we do the following: move t0 in current call time - WINDOW_SIZE, invalidate
+	all the calls we knew of from t0 to current t0 (current call time - WINDOW_SIZE)
+	* we receive a call after 2 * WINDOW_SIZE(60 seconds) + t0 - this invalidates
+	all the calls we knew of since the window is not does not contains calls newer
+	than the last 60 seconds;
+	(cherry picked from commit dd25c63adb8832d59861cf98b6fba1a2ad89a307)
+
+
+2016-01-18  Ovidiu Sas  <osas at voipembedded dot com>
+	* [bd3751b] :
+
+	uac_registrant: update timer handling  - closes #758 - uac_registrant wrong hash sequence
+	(cherry picked from commit be371dab7fa9b6fa495b99e69e623fed73500a74)
+
+
+2016-01-17  Nick Altmann  <nick.altmann at gmail dot com>
+	* [44cc594] :
+
+	RPM spec: prepare for new build system - remove obsolete triggers - change tarball name and url
+
+
+2016-01-15  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [5a28baf] :
+
+	[siptrace]fix proto issues
+	leave IPPROTO_* format in hep header(which is returned by
+	pipport2su() function) and after setting it use OpenSIPS
+	format for sending(PROTO_UDP)
+
+
+2016-01-15  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [ad32566] :
+
+	[avpops]fix acmds instead of cmds
+	(cherry picked from commit 9bd4c77ade737108aa45a755bb4e1055b4adca36)
+
+
+2016-01-15  Razvan Crainea  <razvan at opensips dot org>
+	* [c0a0408] :
+
+	function search: properly search through switch st
+	(cherry picked from commit 446dd5876b633c95000e7b80a0ef8a3058c018a1)
+
+
+2016-01-15  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [69aad41] :
+
+	[avpops]check if asyn funcs used in separate loop(on acmds struct)
+	(cherry picked from commit 939b3433f3fe4c0887b818e856ff6e857c9e60d0)
+
+
+2016-01-14  Nick Altmann  <nick.altmann at gmail dot com>
+	* [7023ade] :
+
+	RPM spec: update version to 2.1.2
+
+
+2016-01-14  Razvan Crainea  <razvan at opensips dot org>
+	* [02fde2a] :
+
+	2.1.2: update changelog and minor version
+
+
+2016-01-14  Liviu Chircu  <liviu at opensips dot org>
+	* [83f4597] :
+
+	Coverity PR: Fix bad conflict merge
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [56a7230] :
+
+	fixing coverity found defects - memory corruption, null dereference
+	(cherry picked from commit fd57609f5411e622dca593b729e1826269243c5b)
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [6b4a327] :
+
+	fixing coverity found defects - null dereference & broken logic
+	(cherry picked from commit 81aeba42ca04df7b3fc42ab2498717cc31227967)
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [37a7466] :
+
+	fixing coverity found defects - null dereference
+	(cherry picked from commit 906bb9172b4ce0ab0e7bf4eca7da58211aa8ac5b)
+
+	Conflicts:
+		cachedb/cachedb_id.c
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [19e5188] :
+
+	fixing coverity found defects - null dereference
+	(cherry picked from commit b578dda307f24e56f456e5b02c0c7591ed6746a4)
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [20004e4] :
+
+	fixing coverity found defects - copying into fixed size buffer without check, db_http
+	(cherry picked from commit d471234733de299c88f1036ba17a2406b8ae7a89)
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [c9aaae3] :
+
+	fixing coverity found defects - copying into fixed size buffer
+	(cherry picked from commit 92a7361eda2c6cd6e9ad637dab187cf87fefa987)
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [c48773c] :
+
+	fixing coverity found defects - null dereference, invalid e164 number check
+	(cherry picked from commit b8e2318ba58e56484294913e21a74a7cd79adf40)
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [ed699bf] :
+
+	fixing coverity found defects - null dereference, break missing
+	(cherry picked from commit c004967f7c272e5b9043f5f3e330827f0682a009)
+
+	Conflicts:
+		db/db.c
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [a152bdf] :
+
+	fixing coverity found defects - logical fix in ul callback check type, null dereference
+	(cherry picked from commit aeedb7d94439b774d35009899b04d2c6060437d0)
+
+	Conflicts:
+		modules/dispatcher/dispatcher.c
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [50737ff] :
+
+	fixing coverity found defects - processing initialized variables, control flow, invalid expressions
+	(cherry picked from commit b22844e0a1d4d54d0f8f836837f8447154799011)
+
+	Conflicts:
+		modules/drouting/drouting.c
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [21083e8] :
+
+	fixing coverity found defects - resource leakage
+	(cherry picked from commit e09f09ae89aff31393b04e40b4f82632fd4f50ff)
+
+
+2016-01-14  Dusan Klinec  <dusan.klinec at gmail dot com>
+	* [57a7bf0] :
+
+	fixing coverity found defects - invalid memory access / memory corruptions
+	(cherry picked from commit c537cb8151e9436d88a9410e02ef11a093008ff0)
+
+	Conflicts:
+		modules/dialog/dlg_tophiding.c
+
+
 2016-01-14  Razvan Crainea  <razvan at opensips dot org>
 	* [4b011be] :
 
