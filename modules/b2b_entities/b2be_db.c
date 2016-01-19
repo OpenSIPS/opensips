@@ -557,14 +557,13 @@ int b2b_entities_restore(void)
 			memset(&leg, 0, sizeof(dlg_leg_t));
 			leg.tag.s= (char*)row_vals[21].val.string_val;
 			if(!leg.tag.s)
-			{
 				continue;
-			}
 			leg.tag.len       = strlen(leg.tag.s);
+			leg.cseq          = row_vals[22].val.int_val;
 			leg.contact.s     = (char*)row_vals[23].val.string_val;
 			leg.contact.len   = leg.contact.s?strlen(leg.contact.s):0;
+			leg.route_set.s   = (char*)row_vals[24].val.string_val;
 			leg.route_set.len = leg.route_set.s?strlen(leg.route_set.s):0;
-			leg.cseq          = row_vals[22].val.int_val;
 
 			new_leg = b2b_dup_leg(&leg, SHM_MEM_TYPE);
 			if(new_leg== NULL)

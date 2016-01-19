@@ -644,7 +644,7 @@ static inline int mi_print_b2be_dlg(struct mi_node *rpl, b2b_table htable, unsig
 					if(attr == NULL) goto error;
 					if(leg->route_set.len)
 					{
-						attr = add_mi_attr(node1, MI_DUP_VALUE, "route_set", 8,
+						attr = add_mi_attr(node1, MI_DUP_VALUE, "route_set", 9,
 							leg->route_set.s, leg->route_set.len);
 						if(attr == NULL) goto error;
 					}
