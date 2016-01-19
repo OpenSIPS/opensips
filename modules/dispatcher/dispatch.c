@@ -1573,8 +1573,8 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 				/* use the hash and weights over active destinations only ;
 				 * if USE_DEFAULT is set, do a -1 if the default (last)
 				 * destination is active (we want to skip it) */
-				cnt = idx->active_nr - (ds_flags&DS_USE_DEFAULT &&
-					dst_is_active(idx->dlist[idx->nr-1]))?1:0 ;
+				cnt = idx->active_nr - ((ds_flags&DS_USE_DEFAULT &&
+					dst_is_active(idx->dlist[idx->nr-1]))?1:0);
 				if (cnt) {
 					/* weights or not ? */
 					if (idx->dlist[set_size-1].active_running_weight) {

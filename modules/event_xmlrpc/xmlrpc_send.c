@@ -255,7 +255,8 @@ static void xmlrpc_init_reader(void)
 /* sends the buffer */
 static int xmlrpc_sendmsg(xmlrpc_send_t *sock)
 {
-	unsigned long i, len = 0;
+	unsigned long i;
+	int len = 0;
 	int fd, ret = -1;
 	int aux;
 

@@ -210,7 +210,7 @@ static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
  * connection and attempt write to it which would result in updating the
  * ssl structures
  */
-static size_t tls_read(struct tcp_connection * c,struct tcp_req *r)
+static int tls_read(struct tcp_connection * c,struct tcp_req *r)
 {
 	int             bytes_free;
 	int             fd, read;

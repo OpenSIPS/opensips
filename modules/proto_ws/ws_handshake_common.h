@@ -181,7 +181,8 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 	int to;
 	int elapsed;
 	struct timeval begin;
-	unsigned int err_len, poll_err = 0, n, err;
+	unsigned int err_len, poll_err = 0, err;
+	int n;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 	fd_set sel_set;
 	fd_set orig_set;

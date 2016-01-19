@@ -527,7 +527,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				free_proxy(p); /* frees only p content, not p itself */
 				pkg_free(p);
 				if (ret==0) ret=1;
-			}else if ((a->elem[0].type==PROXY_ST)) {
+			}else if (a->elem[0].type==PROXY_ST) {
 				if (0==(p=clone_proxy((struct proxy_l*)a->elem[0].u.data))) {
 					LM_ERR("failed to clone proxy, dropping packet\n");
 					ret=E_OUT_OF_MEM;
@@ -1602,7 +1602,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 next_avp:
 							if (it) {
 								it = it->next;
-								if (it==NULL);
+								if (it==NULL)
 									break;
 							}
 						}

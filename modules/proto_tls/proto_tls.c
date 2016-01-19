@@ -107,7 +107,7 @@ static int proto_tls_init_listener(struct socket_info *si);
 static int proto_tls_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
 
-static size_t w_tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
+static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 																	size_t len)
 {
 	return tls_blocking_write(c, fd, buf, len, &tls_mgm_api);

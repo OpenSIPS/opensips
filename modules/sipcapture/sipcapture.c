@@ -812,7 +812,8 @@ destroy_continue:
 int hep_msg_received(struct hep_desc *h, struct receive_info *ri)
 {
 
-	char ip_family, proto;
+	char ip_family;
+	unsigned char proto;
 	unsigned short sport, dport;
 	struct ip_addr dst_ip, src_ip;
 

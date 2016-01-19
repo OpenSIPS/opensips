@@ -360,7 +360,8 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	table_p _tp = NULL;
 	char kbuf[MAX_ROW_SIZE];
 	char dbuf[MAX_ROW_SIZE];
-	u_int32_t i, ret;
+	u_int32_t i;
+	int ret;
 	int klen=MAX_ROW_SIZE;
 	int *lkey=NULL, *lres=NULL;
 	DBT key, data;

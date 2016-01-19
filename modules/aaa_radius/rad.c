@@ -150,7 +150,7 @@ int extract_avp(VALUE_PAIR* vp) {
 	unsigned short flags = 0;
 
 	/* empty? */
-	if (vp->lvalue == 0 || vp->strvalue == 0)
+	if (vp->lvalue == 0)
 		return -1;
 
 	p = vp->strvalue;

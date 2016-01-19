@@ -1293,11 +1293,11 @@ void printStunAddr(StunAddr* addr){
 
     ip.s_addr = htonl(addr->ip4);
 
-    LM_DBG("\t\t\tUnused = %02hX\n", addr->unused);
+    LM_DBG("\t\t\tUnused = %02X\n", addr->unused);
     if(addr->family == 0x01){
-	LM_DBG("\t\t\tFamily = %02hX (IPv4)\n", addr->family);
+	LM_DBG("\t\t\tFamily = %02X (IPv4)\n", addr->family);
     }else{
-	LM_DBG("\t\t\tFamily = %02hX\n", addr->family);
+	LM_DBG("\t\t\tFamily = %02X\n", addr->family);
     }
     LM_DBG("\t\t\tPort = %hu\n", addr->port);
     LM_DBG("\t\t\tIPv4 = %s\n", inet_ntoa(ip));
@@ -1385,8 +1385,8 @@ void printStunMsg(StunMsg* msg){
     if(msg->hasErrorCode){
 	LM_DBG("\t\tERROR_CODE\n");
 	if(msg->errorReason){
-	    LM_DBG("\t\t\tCLASS = %hu\n", msg->errorReason->buffer[2]);
-	    LM_DBG("\t\t\tNUMBER = %hu\n", msg->errorReason->buffer[3]);
+	    LM_DBG("\t\t\tCLASS = %u\n", msg->errorReason->buffer[2]);
+	    LM_DBG("\t\t\tNUMBER = %u\n", msg->errorReason->buffer[3]);
 	    LM_DBG("\t\t\tSTRING = %.*s\n", msg->errorReason->size - 4,
 		    &(msg->errorReason->buffer[4]));
 	}

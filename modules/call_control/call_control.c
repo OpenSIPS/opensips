@@ -1016,7 +1016,7 @@ __dialog_ended(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
     if ((int)(long)*_params->param == CCActive) {
         call_control_stop(_params->msg, dlg->callid);
-        *_params->param = CCInactive;
+        *_params->param = (void *)CCInactive;
     }
 }
 

@@ -406,7 +406,7 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
 /*
  * fixme: probably does not work correctly
  */
-static size_t tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
+static int tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 										size_t len, struct tls_mgm_binds *api)
 {
 	#define MAX_SSL_RETRIES 32

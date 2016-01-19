@@ -706,7 +706,7 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 				if (hf->type != HDR_OTHER_T &&
 					(c=get_compact_form(hf)) != NO_FORM) {
 
-					hf->name.s = COMPACT_FORMS+c;
+					hf->name.s = &COMPACT_FORMS[c];
 					hf->name.len = 1;
 				}
 
@@ -804,7 +804,7 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 	memset(hf, 0, sizeof(struct hdr_field));
 
 	hf->type = HDR_CONTENTLENGTH_T;
-	hf->name.s = COMPACT_FORMS + get_compact_form(hf);
+	hf->name.s = &COMPACT_FORMS[get_compact_form(hf)];
 	hf->name.len = 1;
 
 	if (new_body_len <= CRLF_LEN)

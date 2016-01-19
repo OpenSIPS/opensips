@@ -615,7 +615,7 @@ struct mi_root* db_set_info(struct mi_root* cmd, void* param){
         LM_ERR("invalid index1(not int)\n");
         return 0;
     }
-    if(nindex1 >= global->size || nindex1<0){
+    if(nindex1 >= global->size){
         LM_ERR("invalid index1 value\n");
         // fa un return la rezultat
         return 0;
@@ -637,7 +637,7 @@ struct mi_root* db_set_info(struct mi_root* cmd, void* param){
         LM_ERR("invalid index(not int)\n");
         return 0;
     }
-    if(nindex2 >= global->set_list[nindex1].size || nindex2<0){
+    if(nindex2 >= global->set_list[nindex1].size){
         LM_ERR("invalid index value\n");
         /* fa un return la rezultat */
         return 0;

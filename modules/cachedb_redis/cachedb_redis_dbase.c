@@ -53,7 +53,7 @@ redisContext *redis_get_ctx(char *ip, int port)
 	}
 	if (ctx && ctx->err != REDIS_OK) {
 		LM_ERR("failed to open redis connection %s:%hu - %s\n",ip,
-				port,ctx->errstr);
+				(unsigned short)port,ctx->errstr);
 		return NULL;
 	}
 

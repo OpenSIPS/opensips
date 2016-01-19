@@ -245,17 +245,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if(b2b_clean_period < 0)
-	{
-		LM_ERR("Wrong parameter - b2b_clean_period [%d]\n", b2b_clean_period);
-		return -1;
-	}
-	if(b2b_update_period < 0)
-	{
-		LM_ERR("Wrong parameter - b2b_update_period [%d]\n", b2b_update_period);
-		return -1;
-	}
-
 	if(b2bl_db_mode && db_url.s)
 	{
 		db_url.len = strlen(db_url.s);

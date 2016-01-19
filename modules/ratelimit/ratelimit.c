@@ -330,11 +330,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (rl_repl_timer_interval < 0) {
-		LM_ERR("invalid replication time\n");
-		return -1;
-	}
-
 	if (rl_repl_cluster < 0)
 		rl_repl_cluster = 0;
 

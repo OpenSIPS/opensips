@@ -36,6 +36,7 @@
 #include "../../net/net_tcp.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
+#include "tcp_common_defs.h"
 #include "proto_tcp_handler.h"
 
 static int mod_init(void);
@@ -46,7 +47,6 @@ static int proto_tcp_send(struct socket_info* send_sock,
 inline static int _tcp_write_on_socket(struct tcp_connection *c, int fd,
 		char *buf, int len);
 
-struct tcp_req;
 /* buffer to be used for reading all TCP SIP messages
    detached from the actual con - in order to improve
    paralelism ( process the SIP message while the con

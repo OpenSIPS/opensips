@@ -618,7 +618,7 @@ xml_error:
 	if (hdl) shm_free(hdl);
 	*async_hdl = NULL;
 	if(doc)xmlFree(doc);doc=NULL;
-	if(esc_val.s);shm_free(esc_val.s);
+	if(esc_val.s) shm_free(esc_val.s);
 	return NULL;
 }
 

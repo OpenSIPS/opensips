@@ -184,7 +184,7 @@ int uac_auth( struct sip_msg *msg)
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
 	struct uac_credential *crd;
 	int code, branch;
-	unsigned int new_cseq;
+	int new_cseq;
 	struct sip_msg *rpl;
 	struct cell *t;
 	HASHHEX response;

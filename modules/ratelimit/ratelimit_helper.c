@@ -229,7 +229,7 @@ int init_rl_table(unsigned int size)
 	}
 	/* resolve the default algorithm */
 	rl_default_algo = get_rl_algo(rl_default_algo_s);
-	if (rl_default_algo < 0) {
+	if (rl_default_algo == PIPE_ALGO_NOP) {
 		LM_ERR("unknown algoritm <%.*s>\n", rl_default_algo_s.len,
 			rl_default_algo_s.s);
 		return -1;
@@ -286,14 +286,14 @@ static rl_algo_t get_rl_algo(str name)
 {
 	int i;
 	if (!name.s || !name.len)
-		return -1;
+		return PIPE_ALGO_NOP;
 
 	for (i = 0; rl_algo_names[i].name.s; i++) {
 		if (rl_algo_names[i].name.len == name.len &&
 			strncasecmp(rl_algo_names[i].name.s, name.s, name.len) == 0)
 			return rl_algo_names[i].algo;
 	}
-	return -1;
+	return PIPE_ALGO_NOP;
 }
 
 static str * get_rl_algo_name(rl_algo_t algo)
@@ -335,7 +335,7 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 	}
 	algorithm.s = 0;
 	if (!_a || fixup_get_svalue(_m, (gparam_p) _a, &algorithm) < 0 ||
-		(algo = get_rl_algo(algorithm)) < 0) {
+		(algo = get_rl_algo(algorithm)) == PIPE_ALGO_NOP) {
 		algo = PIPE_ALGO_NOP;
 	}
 

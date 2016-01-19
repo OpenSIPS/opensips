@@ -1833,7 +1833,7 @@ __dialog_ended(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
     if ((int)(long)*_params->param == MPActive) {
         end_media_session(dlg->callid, dlg->legs[DLG_CALLER_LEG].tag, dlg->legs[DLG_FIRST_CALLEE_LEG].tag);
-        *_params->param = MPInactive;
+        *_params->param = (void *)MPInactive;
     }
 }
 

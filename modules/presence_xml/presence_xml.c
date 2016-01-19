@@ -374,7 +374,7 @@ static int pxml_add_xcap_server( modparam_t type, void* val)
 			LM_ERR("while converting string to int\n");
 			goto error;
 		}
-		if(port< 0 || port> 65535)
+		if(port> 65535)
 		{
 			LM_ERR("wrong port number\n");
 			goto error;

@@ -1946,7 +1946,7 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 	}
 	else{
 	/*the address contains a port number*/
-		if (port<1024  || port>65536)
+		if (port<1024)
 		{
 			LM_ERR("invalid port number; must be in [1024,65536]\n");
 			return -1;

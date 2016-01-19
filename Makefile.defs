@@ -144,7 +144,19 @@ CC_LONGVER=$(shell if  $(CC) -v 2>/dev/null; then \
 
 #find-out the compiler's name
 
-ifneq (,$(findstring gcc, $(CC_LONGVER)))
+# clang contains path to gcc
+ifneq (,$(findstring clang, $(CC_LONGVER)))
+	CC_NAME=clang
+	CC_VER=$(word 1,$(CC)) $(shell $(CC) - -dumpversion)
+	MKDEP=$(CC) -MM
+	CC_SHORTVER=$(shell echo "$(CC_VER)" | cut -d" " -f 2| \
+				 sed -e 's/[^0-9]*-\(.*\)/\1/'| \
+				 sed -e 's/\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/' )
+	CC_CLASS=$(shell echo "$(CC_SHORTVER)" | \
+				 sed -e 's/2\.9.*/2.9x/' -e 's/3\.[0-9]/3.x/' \
+				 -e 's/4\.[0-9]/4.x/' -e 's/5\.[0-9]/4.x/')
+
+else ifneq (,$(findstring gcc, $(CC_LONGVER)))
 	CC_NAME=gcc
 	CC_VER=$(word 1,$(CC)) $(shell $(CC) - -dumpversion|head -n 1|cut -d" " -f 3|\
 			 sed -e 's/^.*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/' \
@@ -793,8 +805,12 @@ ifeq		($(CC_NAME), suncc)
 					-xc99=no_lib # C99 support
 			# -Dinline="" # add this if cc < 5.3 (define inline as null)
 else
+ifeq		($(CC_NAME), clang)
+			CFLAGS+=-O3 -funroll-loops
+else
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
+endif		#CC_NAME, clang
 endif		#CC_NAME, suncc
 endif		#CC_NAME, icc
 endif		#CC_NAME, gcc
@@ -810,7 +826,7 @@ ifeq	($(ARCH), x86_64)
 ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
-					-Wall 
+					-Wall
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CPU_TYPE ?= nocona
@@ -856,8 +872,12 @@ ifeq		($(CC_NAME), suncc)
 				-xc99=no_lib # C99 support
 				# -Dinline="" # add this if cc < 5.3 (define inline as null)
 else
+ifeq		($(CC_NAME), clang)
+			CFLAGS+=-O3 -funroll-loops
+else
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
+endif		#CC_NAME, clang
 endif		#CC_NAME, icc
 endif		#CC_NAME, gcc
 endif		#CC_NAME, suncc
@@ -1010,7 +1030,7 @@ ifeq	($(ARCH), arm)
 ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
-					-Wall   
+					-Wall
 			#if gcc 4.x+
 ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-mcpu=strongarm1100 -minline-all-stringops \
@@ -1046,7 +1066,7 @@ ifeq	($(ARCH), mips)
 ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
-					-Wall 
+					-Wall
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-mcpu=r3000 -minline-all-stringops \
@@ -1083,7 +1103,7 @@ ifeq	($(ARCH), mips2)
 ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS+=-O9 -mips2 -funroll-loops $(PROFILE) \
-					-Wall 
+					-Wall
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-minline-all-stringops -ftree-vectorize
@@ -1116,7 +1136,7 @@ ifeq	($(ARCH), alpha)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall 
+				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-minline-all-stringops
@@ -1149,7 +1169,7 @@ ifeq	($(ARCH), ppc)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall 
+				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CPU_TYPE ?= powerpc
@@ -1184,7 +1204,7 @@ ifeq	($(ARCH), ppc64)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall 
+				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall
 ifeq			($(CC_CLASS), 4.x)
 					CPU_TYPE ?= powerpc64
 					CFLAGS+=-ftree-vectorize \
@@ -1231,6 +1251,10 @@ else
 		MOD_LDFLAGS=-shared $(LDFLAGS)
 endif
 endif
+ifeq    ($(CC_NAME), clang)
+		LDFLAGS+=-Wl,-O2 -Wl,-E $(PROFILE)
+		MOD_LDFLAGS=-shared -fPIC -DPIC $(LDFLAGS)
+endif
 ifeq	($(CC_NAME), icc)
 	#gcc and maybe others
 	LDFLAGS+=-Wl,-O2 -Wl,-E $(PROFILE)
@@ -1275,6 +1299,9 @@ endif #mode=release
 
 #*FLAGS used for compiling the modules
 ifeq	($(CC_NAME), gcc)
+MOD_CFLAGS=-fPIC -DPIC $(CFLAGS)
+endif
+ifeq	($(CC_NAME), clang)
 MOD_CFLAGS=-fPIC -DPIC $(CFLAGS)
 endif
 ifeq	($(CC_NAME), icc)

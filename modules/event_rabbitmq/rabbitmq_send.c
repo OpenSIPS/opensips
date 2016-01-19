@@ -286,11 +286,16 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 
 void rmq_free_param(rmq_params_t *rmqp)
 {
+	/* XXX: hack to make clang happy, because it _always_
+	 * warns when comparing two char * (even casted to void *)
+	 */
+	static void *dummy_holder = RMQ_DEFAULT_UP;
+
 	if ((rmqp->flags & RMQ_PARAM_USER) && rmqp->user.s &&
-			rmqp->user.s != (char *)RMQ_DEFAULT_UP)
+			rmqp->user.s != dummy_holder)
 		shm_free(rmqp->user.s);
 	if ((rmqp->flags & RMQ_PARAM_PASS) && rmqp->pass.s &&
-			rmqp->pass.s != (char *)RMQ_DEFAULT_UP)
+			rmqp->pass.s != dummy_holder)
 		shm_free(rmqp->pass.s);
 	if ((rmqp->flags & RMQ_PARAM_RKEY) && rmqp->routing_key.s)
 		shm_free(rmqp->routing_key.s);

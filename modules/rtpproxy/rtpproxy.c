@@ -1172,7 +1172,7 @@ inline static int parse_bavp(str *s, pv_spec_t *bavp)
 		return -1;
 	}
 	 /* check if there is a bavp type */
-	if (bavp->type != 903 + PVT_EXTRA) {
+	if (bavp->type != (pv_type_t)(903 + PVT_EXTRA)) {
 		LM_ERR("store parameter must be an bavp\n");
 		return -1;
 	}

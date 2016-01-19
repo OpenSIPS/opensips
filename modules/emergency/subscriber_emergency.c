@@ -312,7 +312,7 @@ str* add_hdr_subscriber(int expires, str event){
 		LM_ERR("no more memory\n");
 		return NULL;
 	}
-	//memset(aux_hdr, 0, size_hdr+1);
+	memset(aux_hdr, 0, size_hdr+1);
 	pt_hdr->s = aux_hdr;
 	pt_hdr->len = size_hdr;
 
@@ -329,7 +329,6 @@ str* add_hdr_subscriber(int expires, str event){
 	aux_hdr += size_expires;
 	memcpy(aux_hdr, CRLF, CRLF_LEN);
 	aux_hdr += CRLF_LEN;
-	aux_hdr = '\0';
 
 	LM_DBG("HDR: %.*s \n", pt_hdr->len, pt_hdr->s);
 	return pt_hdr;
