@@ -1021,7 +1021,6 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len)
 		LM_ERR("Invalid HTTP version: %u.%u\n", ver_maj, ver_min);
 		goto error;
 	}
-	return 0;
 
 	/* Parse the Headers */
 	memset(&tmp_msg, 0, sizeof(struct sip_msg));
