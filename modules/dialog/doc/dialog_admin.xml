@@ -1466,7 +1466,7 @@ set_dlg_profile("caller","$fu");
 		</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from BRANCH_ROUTE,
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 		</para>
 		<example>

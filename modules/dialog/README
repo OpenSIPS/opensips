@@ -1084,8 +1084,8 @@ set_dlg_profile("caller","$fu");
        the dialog to the profile - note that the profile must
        support values. Pseudo-variables are supported.
 
-   This function can be used from BRANCH_ROUTE, REPLY_ROUTE and
-   FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+   REPLY_ROUTE and FAILURE_ROUTE.
 
    Example 1.52. unset_dlg_profile usage
 ...
