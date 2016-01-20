@@ -7,7 +7,7 @@
 
 	<section>
 		<title>Overview</title>
-		<para>cpl-c modules implements a CPL (Call Processing Language) 
+		<para>cpl_c modules implements a CPL (Call Processing Language) 
 		interpreter. Support for uploading/downloading/removing scripts via 
 		SIP REGISTER method is present.
 		</para>
@@ -92,7 +92,7 @@
 				<title>Set <varname>db_url</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","db_url","&exampledb;")
+modparam("cpl_c","db_url","&exampledb;")
 ...
 </programlisting>
 			</example>
@@ -103,7 +103,7 @@ modparam("cpl-c","db_url","&exampledb;")
 				Indicates the name of the table that store the CPL scripts. 
 				This table must be locate into the database specified by 
 				<quote>db_url</quote> parameter. For more about the format of the CPL
-				table please see the modules/cpl-c/init.mysql file.
+				table please see the modules/cpl_c/init.mysql file.
 			</para>
 			<para>
 			<emphasis>
@@ -114,7 +114,7 @@ modparam("cpl-c","db_url","&exampledb;")
 				<title>Set <varname>db_table</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","cpl_table","cpl")
+modparam("cpl_c","cpl_table","cpl")
 ...
 </programlisting>
 			</example>
@@ -133,7 +133,7 @@ modparam("cpl-c","cpl_table","cpl")
 				<title>Set <varname>username_column</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","username_column","username")
+modparam("cpl_c","username_column","username")
 ...
 </programlisting>
 			</example>
@@ -152,7 +152,7 @@ modparam("cpl-c","username_column","username")
 				<title>Set <varname>domain_column</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","domain_column","domain")
+modparam("cpl_c","domain_column","domain")
 ...
 </programlisting>
 			</example>
@@ -172,7 +172,7 @@ modparam("cpl-c","domain_column","domain")
 				<title>Set <varname>cpl_xml_column</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","cpl_xml_column","cpl_xml")
+modparam("cpl_c","cpl_xml_column","cpl_xml")
 ...
 </programlisting>
 			</example>
@@ -192,7 +192,7 @@ modparam("cpl-c","cpl_xml_column","cpl_xml")
 				<title>Set <varname>cpl_bin_column</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","cpl_bin_column","cpl_bin")
+modparam("cpl_c","cpl_bin_column","cpl_bin")
 ...
 </programlisting>
 			</example>
@@ -214,7 +214,7 @@ modparam("cpl-c","cpl_bin_column","cpl_bin")
 				<title>Set <varname>cpl_dtd_file</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","cpl_dtd_file","/etc/opensips/cpl-06.dtd")
+modparam("cpl_c","cpl_dtd_file","/etc/opensips/cpl-06.dtd")
 ...
 </programlisting>
 			</example>
@@ -236,7 +236,7 @@ modparam("cpl-c","cpl_dtd_file","/etc/opensips/cpl-06.dtd")
 				<title>Set <varname>log_dir</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","log_dir","/var/log/opensips/cpl")
+modparam("cpl_c","log_dir","/var/log/opensips/cpl")
 ...
 </programlisting>
 			</example>
@@ -260,7 +260,7 @@ modparam("cpl-c","log_dir","/var/log/opensips/cpl")
 				<title>Set <varname>proxy_recurse</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","proxy_recurse",2)
+modparam("cpl_c","proxy_recurse",2)
 ...
 </programlisting>
 			</example>
@@ -281,7 +281,7 @@ modparam("cpl-c","proxy_recurse",2)
 				<title>Set <varname>proxy_route</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","proxy_route", "1")
+modparam("cpl_c","proxy_route", "1")
 ...
 </programlisting>
 			</example>
@@ -302,7 +302,7 @@ modparam("cpl-c","proxy_route", "1")
 				<title>Set <varname>case_sensitive</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","case_sensitive",1)
+modparam("cpl_c","case_sensitive",1)
 ...
 </programlisting>
 			</example>
@@ -322,7 +322,7 @@ modparam("cpl-c","case_sensitive",1)
 				<title>Set <varname>realm_prefix</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","realm_prefix","sip.")
+modparam("cpl_c","realm_prefix","sip.")
 ...
 </programlisting>
 			</example>
@@ -347,7 +347,7 @@ modparam("cpl-c","realm_prefix","sip.")
 				<title>Set <varname>lookup_domain</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","lookup_domain","location")
+modparam("cpl_c","lookup_domain","location")
 ...
 </programlisting>
 			</example>
@@ -370,7 +370,7 @@ modparam("cpl-c","lookup_domain","location")
 					parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","lookup_append_branches",1)
+modparam("cpl_c","lookup_append_branches",1)
 ...
 </programlisting>
 			</example>
@@ -391,7 +391,7 @@ modparam("cpl-c","lookup_append_branches",1)
 				<title>Set <varname>use_domain</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl-c","use_domain",1)
+modparam("cpl_c","use_domain",1)
 ...
 </programlisting>
 			</example>
@@ -658,7 +658,7 @@ if (method=="REGISTER") {
 		<section>
 			<title>Database setup</title>
 			<para>
-			Before running &osips; with cpl-c, you have to setup the database 
+			Before running &osips; with cpl_c, you have to setup the database 
 			table where the module will store the CPL scripts. For that, if 
 			the table was not created by the installation script or you choose
 			to install everything by yourself you can use the cpc-create.sql

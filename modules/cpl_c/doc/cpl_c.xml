@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
 
-<!ENTITY admin SYSTEM "cpl-c_admin.xml">
+<!ENTITY admin SYSTEM "cpl_c_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
 
 <!-- Include general documentation entities -->
@@ -14,7 +14,7 @@
 
 <book>
 	<bookinfo>
-	<title>cpl-c Module</title>
+	<title>cpl_c Module</title>
 	<productname class="trade">&osipsname;</productname>
 	<authorgroup>
 		<author>

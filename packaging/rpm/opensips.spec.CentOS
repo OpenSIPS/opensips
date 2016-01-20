@@ -655,9 +655,9 @@ fi
 
 %files cpl
 %defattr(-,root,root)
-%doc %{_docdir}/opensips/README.cpl-c
+%doc %{_docdir}/opensips/README.cpl_c
 
-%{_libdir}/opensips/modules/cpl-c.so
+%{_libdir}/opensips/modules/cpl_c.so
 
 %files presence
 %defattr(-,root,root)

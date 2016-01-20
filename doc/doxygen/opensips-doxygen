@@ -491,7 +491,7 @@ INPUT                  = ./ \
                          modules/avp_radius \
                          modules/benchmark \
                          modules/cfgutils \
-                         modules/cpl-c \
+                         modules/cpl_c \
                          modules/carrierroute \
                          modules/db_berkeley \
                          modules/db_text \

@@ -183,7 +183,7 @@ static dep_export_t deps = {
 };
 
 struct module_exports exports = {
-	"cpl-c",
+	"cpl_c",
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */

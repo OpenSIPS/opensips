@@ -108,7 +108,7 @@ Maturity:   alpha
 Depends on: db-module
 Purpose:    Group dialing (PBX like).
 
-Name:       cpl-c
+Name:       cpl_c
 Use:        regular
 Maturity:   stable
 Depends on: tm, sl, usrloc

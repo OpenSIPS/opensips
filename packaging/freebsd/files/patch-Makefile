@@ -4,7 +4,7 @@
  skip_modules?=
  
  # if not set on the cmd. line or the env, exclude this modules:
--exclude_modules?= jabber cpl-c mysql postgres osp unixodbc \
+-exclude_modules?= jabber cpl_c mysql postgres osp unixodbc \
 -	avp_radius auth_radius group_radius uri_radius xmpp \
 +exclude_modules?= 	$(MYSQL) $(POSTGRESQL) $(CPL) $(SNMPSTATS) $(TLSOPS) $(UNIXODBC) \
 +	jabber osp avp_radius auth_radius group_radius uri_radius xmpp \
