@@ -1,0 +1,66 @@
+proto_wss Module
+
+OpenSIPS Project
+
+Edited by
+
+Razvan Crainea
+
+   Copyright © 2016 OpenSIPS Project
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. Dependencies of external libraries
+
+        1.3. Exported Parameters
+
+   2. Frequently Asked Questions
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   TODO
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * tls_mgm.
+
+1.2.2. Dependencies of external libraries
+
+   OpenSIPS TLS v1.0 support requires the following packages:
+     * openssl or libssl >= 0.9.6
+     * openssl-dev or libssl-dev
+
+   OpenSIPS TLS v1.1/1.2 support requires the following packages:
+     * openssl or libssl >= 1.0.1e
+     * openssl-dev or libssl-dev
+
+1.3. Exported Parameters
+
+   TODO
+
+Chapter 2. Frequently Asked Questions
+
+   2.1.
+
+       Can OpenSIPS act as a WebSocket client?
+
+       Yes, starting with OpenSIPS 2.2, it can act as a WebSocket
+       client.
+
+   2.2.
+
+       Does OpenSIPS support WebSocket message fragmentation?
+
+       No, WebSocket fragmentation mechanims is not supported.

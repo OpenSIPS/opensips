@@ -1,0 +1,69 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+	TODO
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+		<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>tls_mgm</emphasis>.
+			</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+		</section>
+		<section>
+		<title>Dependencies of external libraries</title>
+		<para>
+			&osips; TLS v1.0 support requires the following packages:
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>openssl</emphasis> or
+					<emphasis>libssl</emphasis> >= 0.9.6
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>openssl-dev</emphasis> or
+					<emphasis>libssl-dev</emphasis>
+				</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			&osips; TLS v1.1/1.2 support requires the following packages:
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>openssl</emphasis> or
+					<emphasis>libssl</emphasis> >= 1.0.1e
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>openssl-dev</emphasis> or
+					<emphasis>libssl-dev</emphasis>
+				</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+		</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	TODO
+	</section>
+
+</chapter>
