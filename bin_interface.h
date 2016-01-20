@@ -30,8 +30,8 @@
 
 #define BIN_PACKET_MARKER      "P4CK"
 #define BIN_PACKET_MARKER_SIZE 4
-#define PKG_LEN_FIELD_SIZE     4
-#define VERSION_FIELD_SIZE     4
+#define PKG_LEN_FIELD_SIZE     2
+#define VERSION_FIELD_SIZE     2
 #define LEN_FIELD_SIZE         sizeof(int)
 #define CMD_FIELD_SIZE         sizeof(int)
 #define HEADER_SIZE            (BIN_PACKET_MARKER_SIZE + PKG_LEN_FIELD_SIZE + VERSION_FIELD_SIZE)
