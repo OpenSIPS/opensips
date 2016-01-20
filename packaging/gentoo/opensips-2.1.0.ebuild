@@ -42,7 +42,7 @@ pkg_setup() {
 		inc_mod="${inc_mod} jabber"
 
 	use cpl && \
-		inc_mod="${inc_mod} cpl-c"
+		inc_mod="${inc_mod} cpl_c"
 
 	use b2bua && \
 		inc_mod="${inc_mod} b2b_entities b2bua_logic"

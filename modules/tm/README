@@ -1264,7 +1264,7 @@ Chapter 2. Developer Guide
 
 2.1.1.  load_tm(*import_structure)
 
-   For programmatic use only--import the TM API. See the cpl-c,
+   For programmatic use only--import the TM API. See the cpl_c,
    acc or jabber modules to see how it works.
 
    Meaning of the parameters is as follows:
