@@ -286,7 +286,7 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">lb_start(grp,resources[,flags])</function>
+		<function moreinfo="none">lb_start(grp,resources[,flags[,dsts_cnt]])</function>
 		</title>
 		<para>
 		The function starts a new load-balancing session over the available
@@ -298,29 +298,30 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>grp</emphasis> - group id for the destinations; the
-			destination may be grouped in several groups you can you for 
+			destination may be grouped in several groups you can you for
 			differnet scenarios; this can be a number or a variable containing
 			a numerical value.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>resources</emphasis> - string containing a 
+			<para><emphasis>resources</emphasis> - string containing a
 			semi-colon separated list of resources required by the current
 			call.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>flags</emphasis> - various flags to controll the
-			LB algorithm ( or computing the available load on the system):
+			<para><emphasis>flags</emphasis> - (optional) various flags to
+			control the LB algorithm ( or computing the available load on the
+			system):
 			</para>
 			<itemizedlist>
 			<listitem>
 				<para><emphasis>n</emphasis> - Negative availability  - use
 				destinations with negative availability (exceeded capacity);
-				do not ignore resources with negative availability, and thus 
-				able to select for load balancing destinations with exceeded 
-				capacity. This might be needed in scenarios where we want to 
-				limit generic calls volume and always pass 
+				do not ignore resources with negative availability, and thus
+				able to select for load balancing destinations with exceeded
+				capacity. This might be needed in scenarios where we want to
+				limit generic calls volume and always pass
 				important/high-priority calls.
 				</para>
 			</listitem>
@@ -344,6 +345,15 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 				</para>
 			</listitem>
 			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>dsts_cnt</emphasis> - (optional) string containing
+			an integer PV (pseudo-variable) where the total number of matching
+			destinations (regardless of their capacity) will be stored.
+			This could be used to distinguish between 'no capacity' and
+			'no destinations left' situations upon a failure to find out
+			an available destination.
+			</para>
 		</listitem>
 		</itemizedlist>
 		<para>
@@ -372,7 +382,7 @@ if (lb_start("1","trascoding;conference")) {
 
 	<section>
 		<title>
-		<function moreinfo="none">lb_next()</function>
+		<function moreinfo="none">lb_next([dsts_cnt])</function>
 		</title>
 		<para>
 		Function to be used to pull the next available (and less loaded)
@@ -408,11 +418,11 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 	<section>
 		<title>
-		<function moreinfo="none">lb_start_or_next(grp,resources[,flags])</function>
+		<function moreinfo="none">lb_start_or_next(grp,resources[,flags[,dsts_cnt]])</function>
 		</title>
 		<para>
 		This is just a wrapper function to simplify scripting. If there is no
-		ongoing LB session, it acts as lb_start(); If there is an ongoing LB 
+		ongoing LB session, it acts as lb_start(); If there is an ongoing LB
 		session, it acts as lb_next().
 		</para>
 	</section>
@@ -420,7 +430,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 	<section>
 		<title>
-		<function moreinfo="none">load_balance(grp,resources[,flags])</function>
+		<function moreinfo="none">load_balance(grp,resources[,flags[,dsts_cnt]])</function>
 		</title>
 		<para>
 		Old name of the lb_start_or_next() function.
