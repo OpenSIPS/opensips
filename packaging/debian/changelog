@@ -1,3 +1,10 @@
+opensips (1.11.6-1) stable; urgency=low
+
+  * Major Public Release.
+
+ -- Razvan Crainea <razvan@opensips.org>  Thu, 21 Jan 2016 18:25:06 +0200
+
+
 opensips (1.11.5-1) stable; urgency=low
 
   * Major Public Release.
