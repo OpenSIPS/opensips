@@ -608,10 +608,9 @@ void xmlrpc_process(int rank)
 				do {
 					rc = write(xmlrpc_status_pipes[xmlrpcs->process_idx][1], &send_status, sizeof(int));
 				} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
+				if (rc < 0)
+					LM_ERR("cannot send status back to requesting process\n");
 			}
-
-			if (rc < 0)
-				LM_ERR("cannot send status back to requesting process\n");
 		}
 end:
 		if (xmlrpcs)

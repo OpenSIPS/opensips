@@ -438,7 +438,6 @@ error:
 static int wss_raw_writev(struct tcp_connection *c, int fd,
 		const struct iovec *iov, int iovcnt, int tout)
 {
-	struct timeval snd;
 	int i, n, ret = 0;
 #ifdef TLS_DONT_WRITE_FRAGMENTS
 	static char *buf = NULL;

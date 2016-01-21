@@ -550,10 +550,9 @@ send_status_reply:
 				do {
 					rc = write(rmq_status_pipes[rmqs->process_idx][1], &send_status, sizeof(int));
 				} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
+				if (rc < 0)
+					LM_ERR("cannot send status back to requesting process\n");
 			}
-
-			if (rc < 0)
-				LM_ERR("cannot send status back to requesting process\n");
 		}
 end:
 		if (rmqs)

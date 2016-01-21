@@ -79,10 +79,11 @@ again:
 int ws_raw_writev(struct tcp_connection *c, int fd,
 		const struct iovec *iov, int iovcnt, int tout)
 {
-	struct timeval snd;
 	int n;
 
 	/* we do not have any threosholds for ws
+	struct timeval snd;
+
 	start_expire_timer(snd,tcpthreshold);
 	*/
 	lock_get(&c->write_lock);
