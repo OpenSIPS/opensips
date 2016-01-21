@@ -527,7 +527,7 @@ ifneq (,$(findstring gcc, $(CC_LONGVER)))
 	#transform gcc version into 2.9x, 3.x or 4.x
 	CC_CLASS=$(shell echo "$(CC_SHORTVER)" | \
 				 sed -e 's/2\.9.*/2.9x/' -e 's/3\.[0-9]/3.x/' \
-				 -e 's/4\.[0-9]/4.x/')
+				 -e 's/4\.[0-9]/4.x/' -e 's/5\.[0-9]/5.x/')
 endif
 
 ifneq (, $(findstring Sun, $(CC_LONGVER)))
@@ -881,6 +881,10 @@ ifeq		($(CC_NAME), gcc)
 				CFLAGS+=-m32 -O9 -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall
 				LDFLAGS+=-m32
+			#if gcc 5.0+
+ifeq			($(CC_CLASS), 5.x)
+				CLFAGS+=-std=gnu89
+else
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					ARCH_VER=$(shell $(GETARCH))
@@ -921,6 +925,7 @@ $(warning			You are using an old and unsupported gcc \
 endif			# CC_CLASS, 2.9x
 endif			# CC_CLASS, 3.x
 endif			# CC_CLASS, 4.x
+endif			# CC_CLASS, 5.x
 
 else		# CC_NAME, gcc
 ifeq		($(CC_NAME), icc)
@@ -953,7 +958,11 @@ ifeq	($(ARCH), x86_64)
 ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
-					-Wall 
+					-Wall
+			#if gcc 5.0+
+ifeq			($(CC_CLASS), 5.x)
+				CFLAGS+=-std=gnu89
+else
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CPU_TYPE ?= nocona
@@ -984,6 +993,7 @@ $(warning			You are using an old and unsupported gcc \
 endif			# CC_CLASS, 2.9x
 endif			# CC_CLASS, 3.x
 endif			# CC_CLASS, 4.x
+endif			# CC_CLASS, 5.x
 
 else		# CC_NAME, gcc
 ifeq		($(CC_NAME), icc)
