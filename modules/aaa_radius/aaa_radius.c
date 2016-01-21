@@ -209,6 +209,7 @@ int parse_set_content(str content, rad_set_elem *elem) {
 		s->len = strlen(p);
 
 		p = pv_parse_spec(s, mp->pv);
+		CHECK_COND(p != NULL);
 
 		for (; isspace(*p); p++);
 		if (*p != '\0') {
@@ -289,7 +290,8 @@ int make_send_message(struct sip_msg* msg, int index, VALUE_PAIR **send) {
 	map_list *mp = sets[index]->parsed;
 
 	for (; mp; mp = mp->next) {
-		pv_get_spec_value(msg, mp->pv, &pt);
+		if (pv_get_spec_value(msg, mp->pv, &pt) < 0)
+			return -1;
 
 		if (pt.flags & PV_VAL_INT) {
 			//LM_DBG("%.*s---->%d---->%d---->%d\n",mp->name.len, mp->name.s,

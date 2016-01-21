@@ -578,6 +578,11 @@ void ql_timer_routine(unsigned int ticks,void *param)
 
 			if (it->conn[process_no] == NULL)
 			{
+				if (!it->dbf.init) {
+					LM_ERR("DB engine does not have init function\n");
+					lock_release(it->lock);
+					continue;
+				}
 				it->conn[process_no] = it->dbf.init(&it->url);
 				if (it->conn[process_no] == 0)
 				{

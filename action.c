@@ -240,7 +240,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 	if(a->elem[1].type != NULLV_ST)
 	{
 		ret = eval_expr((struct expr*)a->elem[1].u.data, msg, &val);
-		if(!(val.flags & (PV_VAL_STR | PV_VAL_INT | PV_VAL_NULL)))
+		if(ret < 0 || !(val.flags & (PV_VAL_STR | PV_VAL_INT | PV_VAL_NULL)))
 		{
 			LM_WARN("no value in right expression at %s:%d\n",
 				a->file, a->line);
@@ -472,7 +472,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case DROP_T:
 				script_trace("core", "drop", msg, a->file, a->line) ;
-				action_flags |= ACT_FL_DROP;
+				action_flags |= ACT_FL_DROP|ACT_FL_EXIT;
+			break;
 		case EXIT_T:
 				script_trace("core", "exit", msg, a->file, a->line) ;
 				ret=0;

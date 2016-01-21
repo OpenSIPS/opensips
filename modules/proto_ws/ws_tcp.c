@@ -82,7 +82,9 @@ int ws_raw_writev(struct tcp_connection *c, int fd,
 	struct timeval snd;
 	int n;
 
+	/* we do not have any threosholds for ws
 	start_expire_timer(snd,tcpthreshold);
+	*/
 	lock_get(&c->write_lock);
 
 	/* optimize write for a single chunk */
@@ -92,7 +94,9 @@ int ws_raw_writev(struct tcp_connection *c, int fd,
 		n=tsend_stream_ev(fd, iov, iovcnt, tout);
 
 	lock_release(&c->write_lock);
-	get_time_difference(snd, tcpthreshold, tout);
+	/*
+	 get_time_difference(snd, tcpthreshold, tout);
+	 */
 
 	return n;
 }

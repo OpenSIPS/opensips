@@ -207,6 +207,7 @@ int receive_fd(int unix_socket, void* data, int data_len, int* fd, int flags)
 	iov[0].iov_len=data_len;
 	msg.msg_iov=iov;
 	msg.msg_iovlen=1;
+	msg.msg_flags = 0;
 
 again:
 	ret=recvmsg(unix_socket, &msg, flags);

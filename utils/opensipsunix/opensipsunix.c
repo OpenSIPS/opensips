@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 	int sock, len;
 	socklen_t from_len;
 	struct sockaddr_un from, to;
-	char name[256];
+	char name[108];
 	static char buffer[BUF_SIZE];
 	char *chroot_dir;
 
@@ -75,7 +75,11 @@ int main(int argc, char** argv)
 	chroot_dir = getenv("CHROOT_DIR");
 	if (chroot_dir == NULL)
 		chroot_dir = "";
-	sprintf(name, "%s/tmp/OpenSIPS.%d.XXXXXX", chroot_dir, getpid());
+	len = snprintf(name, 108, "%s/tmp/OpenSIPS.%d.XXXXXX", chroot_dir, getpid());
+	if (len == 108 && name[len - 1] != '\0') {
+		fprintf(stderr, "tmpfile too long: %s/tmp/OpenSIPS.%d.XXXXXX\n", chroot_dir, getpid());
+		return -3;
+	}
 	umask(0); /* set mode to 0666 for when opensips is running as non-root user and opensipsctl is running as root */
 
 	if (mkstemp(name) == -1) {

@@ -925,7 +925,8 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 				tcpconn, tcpconn->flags);
 		fd=tcpconn->s;
 		_tcpconn_rm(tcpconn);
-		close(fd);
+		if (fd >= 0)
+			close(fd);
 		tcp_connections_no--;
 	}else{
 		/* force timeout */
@@ -1059,8 +1060,8 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 			/* we're coming from an async connect & write
 			 * let's see if we connected successfully*/
 			err_len=sizeof(err);
-			getsockopt(tcpconn->s, SOL_SOCKET, SO_ERROR, &err, &err_len);
-			if (err != 0) {
+			if (getsockopt(tcpconn->s, SOL_SOCKET, SO_ERROR, &err, &err_len) < 0 || \
+					err != 0) {
 				LM_DBG("Failed connection attempt\n");
 				tcpconn_ref(tcpconn);
 				reactor_del_all(tcpconn->s, fd_i, IO_FD_CLOSING);

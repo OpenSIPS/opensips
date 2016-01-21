@@ -2818,7 +2818,6 @@ char* tr_parse_uri(str* in, trans_t *t)
 		p++;
 		tr_parse_sparam(p, p0, tp, spec, ps, in, s);
 		t->params = tp;
-		tp = 0;
 		trim_ws(p);
 		if(*p!=TR_RBRACKET)
 		{
@@ -2858,8 +2857,6 @@ char* tr_parse_uri(str* in, trans_t *t)
 	LM_ERR("unknown transformation: %.*s/%.*s!\n", in->len,
 			in->s, name.len, name.s);
 error:
-	if(tp)
-		free_tr_param(tp);
 	if(spec)
 		pv_spec_free(spec);
 	return NULL;
@@ -2922,7 +2919,6 @@ char* tr_parse_via(str* in, trans_t *t)
 		p++;
 		tr_parse_sparam(p, p0, tp, spec, ps, in, s);
 		t->params = tp;
-		tp = 0;
 		trim_ws(p);
 		if(*p!=TR_RBRACKET)
 		{
@@ -2948,8 +2944,6 @@ char* tr_parse_via(str* in, trans_t *t)
 	LM_ERR("unknown transformation: %.*s/%.*s!\n", in->len,
 			in->s, name.len, name.s);
 error:
-	if(tp)
-		free_tr_param(tp);
 	if(spec)
 		pv_spec_free(spec);
 	return NULL;
@@ -2996,7 +2990,6 @@ char* tr_parse_paramlist(str* in, trans_t *t)
 		p++;
 		tr_parse_sparam(p, p0, tp, spec, ps, in, s);
 		t->params = tp;
-		tp = 0;
 		trim_ws(p);
 		if(*p!=TR_RBRACKET)
 		{
@@ -3017,7 +3010,6 @@ char* tr_parse_paramlist(str* in, trans_t *t)
 		p++;
 		tr_parse_sparam(p, p0, tp, spec, ps, in, s);
 		t->params = tp;
-		tp = 0;
 		trim_ws(p);
 		if(*p!=TR_RBRACKET)
 		{
@@ -3037,7 +3029,6 @@ char* tr_parse_paramlist(str* in, trans_t *t)
 		p++;
 		_tr_parse_nparam(p, p0, tp, spec, n, sign, in, s)
 		t->params = tp;
-		tp = 0;
 		while(is_in_str(p, in) && is_ws(*p)) p++;
 		if(*p!=TR_RBRACKET)
 		{
@@ -3057,7 +3048,6 @@ char* tr_parse_paramlist(str* in, trans_t *t)
 		p++;
 		_tr_parse_nparam(p, p0, tp, spec, n, sign, in, s)
 		t->params = tp;
-		tp = 0;
 		while(is_in_str(p, in) && is_ws(*p)) p++;
 		if(*p!=TR_RBRACKET)
 		{
@@ -3074,8 +3064,6 @@ char* tr_parse_paramlist(str* in, trans_t *t)
 	LM_ERR("unknown transformation: %.*s/%.*s!\n",
 			in->len, in->s, name.len, name.s);
 error:
-	if(tp)
-		free_tr_param(tp);
 	if(spec)
 		pv_spec_free(spec);
 	return NULL;

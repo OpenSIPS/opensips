@@ -195,8 +195,8 @@ static int child_init(int rank)
 		memcpy(buffer + sizeof(SCRIPTROUTE_NAME), event_name.s, event_name.len);
 		sock_name.len = event_name.len + sizeof(SCRIPTROUTE_NAME);
 
-		if (sock_name.len >= EV_SCRIPTROUTE_MAX_SOCK -
-			(event_rlist[idx].mode+4 /*"sync"*/ +1 /*'/'*/)) {
+		if (sock_name.len + event_rlist[idx].mode+4 /*"sync"*/
+				+1 /*'/'*/ > EV_SCRIPTROUTE_MAX_SOCK) {
 			LM_ERR("not enough room in socket name buffer\n");
 			return -1;
 		}
@@ -565,7 +565,7 @@ static int fixup_scriptroute_fetch(void **param, int param_no)
 			return E_OUT_OF_MEM;
 		}
 		memset(elem, 0, sizeof(struct scriptroute_params));
-		if (pv_parse_spec(&s, &elem->spec) < 0) {
+		if (pv_parse_spec(&s, &elem->spec) == NULL) {
 			LM_ERR("cannot parse spec <%.*s>\n", s.len, s.s);
 			shm_free(elem);
 			goto error;

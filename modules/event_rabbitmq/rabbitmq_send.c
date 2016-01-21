@@ -545,9 +545,12 @@ send_status_reply:
 		if (rmq_sync_mode) {
 			retries = RMQ_SEND_RETRY;
 
-			do {
-				rc = write(rmq_status_pipes[rmqs->process_idx][1], &send_status, sizeof(int));
-			} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
+			/* check rmqs->process_idx sanity */
+			if (rmqs->process_idx >= 0 && rmqs->process_idx < nr_procs) {
+				do {
+					rc = write(rmq_status_pipes[rmqs->process_idx][1], &send_status, sizeof(int));
+				} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
+			}
 
 			if (rc < 0)
 				LM_ERR("cannot send status back to requesting process\n");

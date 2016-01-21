@@ -1526,40 +1526,40 @@ static int list_domain(struct mi_node *root, struct tls_domain *d)
 			break;
 		default: goto error;
 		}
+		if (child == NULL) goto error;
 
 		if (d->verify_cert)
 			child = add_mi_node_child(node, 0, "VERIFY_CERT", 11, "yes", 3);
 		else
 			child = add_mi_node_child(node, 0, "VERIFY_CERT", 11, "no", 2);
+		if (child == NULL) goto error;
 
 		if (d->require_client_cert)
 			child = add_mi_node_child(node, 0, "REQ_CLI_CERT", 12, "yes", 3);
 		else
 			child = add_mi_node_child(node, 0, "REQ_CLI_CERT", 12, "no", 2);
+		if (child == NULL) goto error;
 
 		if (d->crl_check_all)
 			child = add_mi_node_child(node, 0, "CRL_CHECKALL", 12, "yes", 3);
 		else
 			child = add_mi_node_child(node, 0, "CRL_CHECKALL", 12, "no", 2);
+		if (child == NULL) goto error;
 
 		child = add_mi_node_child(node, MI_DUP_VALUE, "CERT_FILE", 9,
 			d->cert_file, len(d->cert_file));
-
 		if (child == NULL) goto error;
 
 		child = add_mi_node_child(node, MI_DUP_VALUE, "CRL_DIR", 7,
 			d->crl_directory, len(d->crl_directory));
-
 		if (child == NULL) goto error;
 
 		child = add_mi_node_child(node, MI_DUP_VALUE, "CA_FILE", 7,
 			d->ca_file, len(d->ca_file));
-
 		if (child == NULL) goto error;
 
 		child = add_mi_node_child(node, MI_DUP_VALUE, "CA_DIR", 6,
 			d->ca_directory, len(d->ca_directory));
-
 		if (child == NULL) goto error;
 
 		child = add_mi_node_child(node, MI_DUP_VALUE, "PKEY_FILE", 9,

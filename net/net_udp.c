@@ -424,7 +424,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 						report_failure_status();
 						if (*chd_rank == 1 && startup_done)
 							*startup_done = -1;
-							exit(-1);
+						exit(-1);
 					}
 
 					/* first UDP proc runs statup_route (if defined) */

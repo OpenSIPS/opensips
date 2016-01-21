@@ -250,8 +250,8 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 #endif
 		{
 			err_len=sizeof(err);
-			getsockopt(con->fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
-			if (err != 0 || poll_err != 0) {
+			if (getsockopt(con->fd, SOL_SOCKET, SO_ERROR, &err, &err_len) < 0 ||
+					err != 0 || poll_err != 0) {
 				if (err != EINPROGRESS && err != EALREADY)
 					goto error;
 				continue;
@@ -945,7 +945,11 @@ error:
 	return -1;
 }
 
-unsigned char ws_key_buf[] = "xxxxxxxxxxxxxxxxxxxxxxxx" /* the key len: 24 */
+/*
+ * The Polar library needs this to be 64 bytes, to avoid overflow
+ * when computing the SHA1 hash
+ */
+unsigned char ws_key_buf[64] = "xxxxxxxxxxxxxxxxxxxxxxxx" /* the key len: 24 */
 		WS_GUID_KEY /* the GUID */;
 unsigned char ws_sha1_buf[WS_SHA1_KEY_LEN];
 unsigned char ws_accept_buf[WS_ACCEPT_KEY_LEN];

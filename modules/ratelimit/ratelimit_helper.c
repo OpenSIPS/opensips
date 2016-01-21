@@ -44,7 +44,7 @@
 
 /* parameters */
 int rl_expire_time = RL_DEFAULT_EXPIRE;
-int rl_hash_size = RL_HASHSIZE;
+unsigned int rl_hash_size = RL_HASHSIZE;
 
 str rl_default_algo_s = str_init("TAILDROP");
 static rl_algo_t rl_default_algo = PIPE_ALGO_NOP;
@@ -846,9 +846,6 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri, int server_id)
 		LM_ERR("incompatible bin protocol version\n");
 		return;
 	}
-
-	if (packet_type != RL_PIPE_COUNTER)
-		return;
 
 	if (packet_type != RL_PIPE_COUNTER)
 		return;

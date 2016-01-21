@@ -1286,7 +1286,7 @@ static int fixup_insert_avp(void** param, int param_no)
 	{
 		unsigned int* index;
 
-		index = (unsigned int*)pkg_malloc(sizeof(unsigned int*));
+		index = (unsigned int*)pkg_malloc(sizeof(unsigned int));
 		if(index == NULL)
 		{
 			LM_ERR("No more memory\n");

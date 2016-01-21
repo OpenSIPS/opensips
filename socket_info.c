@@ -397,7 +397,7 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 			goto error;
 		}
 		if (ioctl(s, SIOCGIFCONF, &ifc)==-1){
-			if(errno==EBADF) return 0; /* invalid descriptor => no such ifs*/
+			if(errno==EBADF) goto error; /* invalid descriptor => no such ifs*/
 			LM_ERR("ioctl failed: %s\n", strerror(errno));
 			goto error;
 		}
@@ -478,7 +478,8 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 	return  ret;
 error:
 	if (ifc.ifc_req) pkg_free(ifc.ifc_req);
-	close(s);
+	if (s >= 0)
+		close(s);
 	return -1;
 }
 

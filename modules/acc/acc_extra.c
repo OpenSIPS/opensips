@@ -276,6 +276,7 @@ int extra2strar( struct acc_extra *extra, struct sip_msg *rq,
 		}
 		return n;
 	}
+	memset(&value, 0, sizeof(pv_value_t));
 
 	for( n=0,r=0 ; extra ; extra=extra->next,n++) {
 		/* get the value */

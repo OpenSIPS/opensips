@@ -85,7 +85,7 @@ extern gen_lock_t * rl_lock;
 extern rl_big_htable rl_htable;
 extern int rl_timer_interval;
 extern int rl_expire_time;
-extern int rl_hash_size;
+extern unsigned int rl_hash_size;
 extern int *rl_network_count;
 extern int *rl_network_load;
 extern str rl_default_algo_s;

@@ -307,12 +307,12 @@ int daemonize(char* name, int * own_pgid)
 			goto error;
 		}else{
 			r = fprintf(pid_stream, "%i\n", (int)pid);
+			fclose(pid_stream);
 			if (r<=0)  {
 				LM_ERR("unable to write pid to file %s: %s\n",
 					pid_file, strerror(errno));
 				goto error;
 			}
-			fclose(pid_stream);
 		}
 	}
 
@@ -333,13 +333,13 @@ int daemonize(char* name, int * own_pgid)
 				goto error;
 			}else{
 				r = fprintf(pid_stream, "%i\n", (int)pid);
+				fclose(pid_stream);
 				if (r<=0)  {
 					LM_ERR("unable to write pgid to file %s: %s\n",
 						pid_file, strerror(errno));
 					fclose(pid_stream);
 					goto error;
 				}
-				fclose(pid_stream);
 			}
 		}else{
 			LM_WARN("we don't have our own process so we won't save"
@@ -543,6 +543,9 @@ int set_core_dump(int enable, unsigned int size)
 					(unsigned long)lim.rlim_max);
 			}
 			goto error; /* it's an error we haven't got the size we wanted*/
+		} else {
+			/* using the same limit as before - disable uninitialized warning */
+			newlim.rlim_cur = lim.rlim_cur;
 		}
 		goto done; /*nothing to do */
 	}else{

@@ -168,9 +168,6 @@ void context_put_int(enum osips_context type, context_p ctx,
 	}
 #endif
 
-	if (!ctx)
-		LM_CRIT("NULL context given\n");
-
 	((int *)ctx)[pos] = data;
 }
 
@@ -183,9 +180,6 @@ void context_put_str(enum osips_context type, context_p ctx,
 		abort();
 	}
 #endif
-
-	if (!ctx)
-		LM_CRIT("NULL context given\n");
 
 	((str *)((char *)ctx + type_offsets[type][CONTEXT_STR_TYPE]))[pos] = *data;
 }
@@ -200,9 +194,6 @@ void context_put_ptr(enum osips_context type, context_p ctx,
 	}
 #endif
 
-	if (!ctx)
-		LM_CRIT("NULL context given\n");
-
 	((void **)((char *)ctx + type_offsets[type][CONTEXT_PTR_TYPE]))[pos] = data;
 }
 
@@ -214,9 +205,6 @@ int context_get_int(enum osips_context type, context_p ctx, int pos)
 		abort();
 	}
 #endif
-
-	if (!ctx)
-		LM_CRIT("NULL context given\n");
 
 	return ((int *)ctx)[pos];
 }
@@ -230,9 +218,6 @@ str *context_get_str(enum osips_context type, context_p ctx, int pos)
 	}
 #endif
 
-	if (!ctx)
-		LM_CRIT("NULL context given\n");
-
 	return &((str *)((char *)ctx + type_offsets[type][CONTEXT_STR_TYPE]))[pos];
 }
 
@@ -244,9 +229,6 @@ void *context_get_ptr(enum osips_context type, context_p ctx, int pos)
 		abort();
 	}
 #endif
-
-	if (!ctx)
-		LM_CRIT("NULL context given\n");
 
 	return ((void **)((char *)ctx + type_offsets[type][CONTEXT_PTR_TYPE]))[pos];
 }

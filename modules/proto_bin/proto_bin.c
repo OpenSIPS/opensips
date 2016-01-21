@@ -528,6 +528,10 @@ static int proto_bin_send(struct socket_info* send_sock,
 		if (tcp_no_new_conn) {
 			return -1;
 		}
+		if (!to) {
+			LM_ERR("Unknown destination - cannot open new tcp connection\n");
+			return -1;
+		}
 		LM_DBG("no open tcp connection found, opening new one, async = %d\n",bin_async);
 		/* create tcp connection */
 		if (bin_async) {

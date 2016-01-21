@@ -663,6 +663,10 @@ static int hep_tcp_send (struct socket_info* send_sock,
 		if (tcp_no_new_conn) {
 			return -1;
 		}
+		if (!to) {
+			LM_ERR("Unknown destination - cannot open new tcp connection\n");
+			return -1;
+		}
 		LM_DBG("no open tcp connection found, opening new one, async = %d\n",hep_async);
 		/* create tcp connection */
 		if (hep_async) {

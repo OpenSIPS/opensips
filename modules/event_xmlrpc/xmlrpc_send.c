@@ -604,9 +604,11 @@ void xmlrpc_process(int rank)
 		if (xmlrpc_sync_mode) {
 			retries = XMLRPC_SEND_RETRY;
 
-			do {
-				rc = write(xmlrpc_status_pipes[xmlrpcs->process_idx][1], &send_status, sizeof(int));
-			} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
+			if (xmlrpcs->process_idx >= 0 && xmlrpcs->process_idx < nr_procs) {
+				do {
+					rc = write(xmlrpc_status_pipes[xmlrpcs->process_idx][1], &send_status, sizeof(int));
+				} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
+			}
 
 			if (rc < 0)
 				LM_ERR("cannot send status back to requesting process\n");

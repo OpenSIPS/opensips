@@ -56,9 +56,6 @@ static struct tcp_req tcp_current_req;
 
 static struct ws_req wss_current_req;
 
-/* in milliseconds */
-int wss_send_timeout = 100;
-
 int wss_hs_read_tout = 100;
 
 /* XXX: this information should be dynamically provided */
@@ -74,7 +71,12 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #define _ws_common_read tls_read
 #define _ws_common_writev wss_raw_writev
 #define _ws_common_read_tout wss_hs_read_tout
-#define _ws_common_write_tout wss_send_timeout
+/*
+ * the timeout is only used by the _ws_common_writev function
+ * but in our case, the timeout specified in the TLS MGM
+ * module is used, so we no longer need this here
+ */
+#define _ws_common_write_tout 0
 #define _ws_common_resource wss_resource
 #include "../proto_ws/ws_handshake_common.h"
 #include "../proto_ws/ws_common.h"
@@ -82,7 +84,7 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 static int mod_init(void);
 static int proto_wss_init(struct proto_info *pi);
 static int proto_wss_init_listener(struct socket_info *si);
-static int proto_ws_send(struct socket_info* send_sock,
+static int proto_wss_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
 static int wss_read_req(struct tcp_connection* con, int* bytes_read);
 static int wss_conn_init(struct tcp_connection* c);
@@ -101,7 +103,6 @@ static param_export_t params[] = {
 	/* XXX: should we drop the ws prefix? */
 	{ "wss_port",           INT_PARAM, &wss_port           },
 	{ "wss_max_msg_chunks", INT_PARAM, &wss_max_msg_chunks },
-	{ "wss_send_timeout",   INT_PARAM, &wss_send_timeout   },
 	{ "wss_resource",       STR_PARAM, &wss_resource       },
 	{ "wss_handshake_timeout", INT_PARAM, &wss_hs_read_tout},
 	{0, 0, 0}
@@ -134,7 +135,7 @@ static int proto_wss_init(struct proto_info *pi)
 	pi->default_port		= wss_port;
 
 	pi->tran.init_listener	= proto_wss_init_listener;
-	pi->tran.send			= proto_ws_send;
+	pi->tran.send			= proto_wss_send;
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
@@ -304,7 +305,7 @@ error:
 
 
 /*! \brief Finds a tcpconn & sends on it */
-static int proto_ws_send(struct socket_info* send_sock,
+static int proto_wss_send(struct socket_info* send_sock,
 											char* buf, unsigned int len,
 											union sockaddr_union* to, int id)
 {
@@ -341,6 +342,10 @@ static int proto_ws_send(struct socket_info* send_sock,
 		if (tcp_no_new_conn) {
 			return -1;
 		}
+		if (!to) {
+			LM_ERR("Unknown destination - cannot open new tcp connection\n");
+			return -1;
+		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
 		if ((c=ws_connect(send_sock, to, &fd))==0) {
@@ -364,7 +369,7 @@ send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
 	n = ws_req_write(c, fd, buf, len);
-	stop_expire_timer(get, tcpthreshold, "WS ops",buf,(int)len,1);
+	stop_expire_timer(get, tcpthreshold, "WSS ops",buf,(int)len,1);
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
@@ -439,8 +444,6 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 	static char *buf = NULL;
 #endif
 
-	start_expire_timer(snd,tcpthreshold);
-
 #ifndef TLS_DONT_WRITE_FRAGMENTS
 	for (i = 0; i < iovcnt; i++) {
 		n = tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len, &tls_mgm_api);
@@ -469,6 +472,5 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #endif /* TLS_DONT_WRITE_FRAGMENTS */
 
 end:
-	get_time_difference(snd, tcpthreshold, tout);
 	return ret;
 }

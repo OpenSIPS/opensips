@@ -228,7 +228,7 @@ char* parse_method(char* start, char* end, unsigned int* method)
 
  			if((start[2]=='f' || start[2]=='F')
 					 && (start[3]=='e' || start[3]=='E')
-					 && (start[4]=='R' || start[4]=='R'))
+					 && (start[4]=='r' || start[4]=='R'))
 			{
  				*method = METHOD_REFER;
  				len = 5;

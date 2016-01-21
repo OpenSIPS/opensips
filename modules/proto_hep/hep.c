@@ -331,6 +331,7 @@ static int pack_hepv2(union sockaddr_union* from_su, union sockaddr_union* to_su
 
 
 	gettimeofday(&tvb, NULL);
+	memset(&hdr, 0, sizeof(struct hep_hdr));
 
 	/* Version && proto */
 	hdr.hp_v = hep_version;

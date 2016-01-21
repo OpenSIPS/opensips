@@ -1178,6 +1178,7 @@ static int pv_get_route_type(struct sip_msg *msg, pv_param_t *param,
 			break;
 		case EVENT_ROUTE:
 			s = str_event_route;
+			break;
 		default:
 			s = str_null;
 	}
