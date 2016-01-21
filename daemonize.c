@@ -337,7 +337,6 @@ int daemonize(char* name, int * own_pgid)
 				if (r<=0)  {
 					LM_ERR("unable to write pgid to file %s: %s\n",
 						pid_file, strerror(errno));
-					fclose(pid_stream);
 					goto error;
 				}
 			}
