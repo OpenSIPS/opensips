@@ -9,7 +9,7 @@
 
 Summary:  Open Source SIP Server
 Name:     opensips
-Version:  1.11.5
+Version:  1.11.6
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -662,7 +662,7 @@ clients.
 %setup -q -n %{name}-%{version}
 
 %build
-LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" %{?_with_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all %{?_smp_mflags} TLS=1 \
+LOCALBASE=/usr NICER=0 CFLAGS="%{optflags} -std=gnu89" %{?_with_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all %{?_smp_mflags} TLS=1 \
   exclude_modules="%EXCLUDE_MODULES" \
   cfg-target=%{_sysconfdir}/opensips/ \
   modules-prefix=%{buildroot}%{_prefix} \
