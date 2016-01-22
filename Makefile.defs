@@ -527,7 +527,7 @@ ifneq (,$(findstring gcc, $(CC_LONGVER)))
 	#transform gcc version into 2.9x, 3.x or 4.x
 	CC_CLASS=$(shell echo "$(CC_SHORTVER)" | \
 				 sed -e 's/2\.9.*/2.9x/' -e 's/3\.[0-9]/3.x/' \
-				 -e 's/4\.[0-9]/4.x/')
+				 -e 's/4\.[0-9]/4.x/' -e 's/5\.[0-9]/5.x/')
 endif
 
 ifneq (, $(findstring Sun, $(CC_LONGVER)))
@@ -861,6 +861,10 @@ endif
 
 CFLAGS=$(shell echo "$${CFLAGS}")
 LDFLAGS+=
+
+ifeq ($(CC_NAME)$(CC_CLASS), gcc5.x)
+	CFLAGS+=-std=gnu89
+endif
 
 ifeq (,$(CFLAGS))
 
