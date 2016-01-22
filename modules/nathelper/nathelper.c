@@ -569,7 +569,7 @@ mod_init(void)
 			sipping_method.len = strlen(sipping_method.s);
 			sipping_from.len = strlen(sipping_from.s);
 			exports.response_f = sipping_rpl_filter;
-			init_sip_ping();
+			init_sip_ping(rm_on_to_flag);
 		}
 
 		if (REMOVE_ON_TIMEOUT &&

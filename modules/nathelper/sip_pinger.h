@@ -68,9 +68,10 @@ static int  sipping_callid_cnt = 0;
 static str  sipping_callid = {0,0};
 static str  sipping_from = {0,0};
 static str  sipping_method = {"OPTIONS",7};
+static int  remove_on_timeout=0;
 
 
-static void init_sip_ping(void)
+static void init_sip_ping(int rto)
 {
 	int len;
 	char *p;
@@ -85,6 +86,7 @@ static void init_sip_ping(void)
 	sipping_callid.len = 8-len;
 	/* callid counter part */
 	sipping_callid_cnt = rand();
+	remove_on_timeout=(rto>0?1:0);
 }
 
 
@@ -186,7 +188,7 @@ static int sipping_rpl_filter(struct sip_msg *rpl)
 	LM_DBG("reply for SIP natping filtered\n");
 	/* it's a reply to a SIP NAT ping -> absorb it and stop any
 	 * further processing of it */
-	if (parse_branch(rpl->via1->branch->value))
+	if (remove_on_timeout && parse_branch(rpl->via1->branch->value))
 			goto skip;
 
 	return 0;
