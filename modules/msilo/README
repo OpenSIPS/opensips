@@ -519,8 +519,8 @@ m_store("$tu");
    Meaning of the parameters is as follows:
      * owner - is a string that must contain a SIP URI whose inbox
        will be dumped. It can have any pseudo variable. If "owner"
-       is missing, the SIP address is taken from To URI.
-     * maxmsg - is a maximum number of messages to be dumped.
+       is missing, the SIP address is taken from To URI. maxmsg -
+       is a maximum number of messages to be dumped.
 
    This function can be used from REQUEST_ROUTE.
 

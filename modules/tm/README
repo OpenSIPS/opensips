@@ -786,8 +786,8 @@ if ( is_method("CANCEL") ) {
 
 1.4.7.  t_check_status(re)
 
-   Returns true if the regualr expression “re” match the reply code
-   of the response message as follows:
+   Returns true if the regualr expression “re” match the reply
+   code of the response message as follows:
      * in routing block - the code of the last sent reply.
      * in on_reply block - the code of the current received reply.
      * in on_failure block - the code of the selected negative
