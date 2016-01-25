@@ -325,7 +325,6 @@ struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
         NULL, &html_page_data);
   if (mi_rpl == NULL) {
     LM_ERR("failed to process the command\n");
-    if (mi_cmd) free_mi_tree(mi_cmd);
     goto error;
   } else {
     *page = html_page_data.page;

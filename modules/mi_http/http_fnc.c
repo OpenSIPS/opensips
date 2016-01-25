@@ -621,7 +621,6 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 				(mi_flush_f *)mi_http_flush_tree, &html_page_data);
 	if (mi_rpl == NULL) {
 		LM_ERR("failed to process the command\n");
-		if (mi_cmd) free_mi_tree(mi_cmd);
 		goto error;
 	} else {
 		*page = html_page_data.page;
