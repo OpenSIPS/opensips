@@ -26,8 +26,8 @@ INSTALL_PRESENCE_TABLES=${INSTALL_PRESENCE_TABLES:-ask}
 
 # Used by dbtext and db_berkeley to define tables to be created, used by
 # postgres to do the grants
-STANDARD_TABLES=${STANDARD_TABLES:-version acc dbaliases domain grp uri speed_dial pdt subscriber location re_grp address address missed_calls usr_preferences aliases silo dialog dispatcher dialplan dr_gateways dr_rules dr_groups rtpproxy_sockets load_balancer}
-EXTRA_TABLES=${EXTRA_TABLES:-imc_members imc_rooms cpl sip_trace domainpolicy carrierroute route_tree carrierfailureroute userblacklist globalblacklist cachedb registrant cc_flows cc_agents cc_cdrs cc_calls}
+STANDARD_TABLES=${STANDARD_TABLES:-version acc dbaliases domain grp uri speed_dial pdt subscriber location re_grp address missed_calls usr_preferences aliases silo dialog dispatcher dialplan dr_gateways dr_rules dr_groups dr_carriers rtpproxy_sockets load_balancer}
+EXTRA_TABLES=${EXTRA_TABLES:-imc_members imc_rooms cpl sip_trace domainpolicy carrierroute route_tree carrierfailureroute userblacklist globalblacklist b2b_entities b2b_logic cachedb registrant cc_flows cc_agents cc_cdrs cc_calls}
 PRESENCE_TABLES=${PRESENCE_TABLES:-presentity active_watchers watchers xcap pua rls_presentity rls_watchers}
 
 # SQL definitions
