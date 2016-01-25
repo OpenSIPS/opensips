@@ -122,8 +122,6 @@ modules_names=$(patsubst modules/%, %.so, $(modules))
 modules_basenames=$(patsubst modules/%, %, $(modules))
 modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
 
-doc_modules_basenames=$(patsubst modules/%, %, $(patsubst net/%, %, $(doc_modules)))
-
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf
 
 
@@ -246,18 +244,14 @@ tool-xsltproc:
 .PHONY: modules-readme
 modules-readme: tool-lynx tool-xsltproc
 	@set -e; \
-	for r in $(doc_modules_basenames) ""; do \
-		if [ ! -d "modules/$$r/doc" -a ! -d "net/$$r/doc" ]; then \
+	for mod in $(doc_modules); do \
+		r=`basename $$mod`;\
+		echo "Reading directory $$mod for module $$r";\
+		if [ ! -d "$$mod/doc" ]; then \
 			continue; \
 		fi; \
-		if [ -d "modules/$$r/doc" ]; then \
-			cd "modules/$$r/doc"; \
-		elif [ -d "net/$$r/doc" ]; then \
-			cd "net/$$r/doc"; \
-		fi; \
-		\
+		cd "$$mod/doc"; \
 		if [ -f "$$r".xml ]; then \
-			echo ""; \
 			echo "docbook xml to html: $$r.xml"; \
 			$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
 						$$r.xml; \
@@ -274,16 +268,13 @@ modules-readme: tool-lynx tool-xsltproc
 .PHONY: modules-docbook-txt
 modules-docbook-txt: tool-lynx tool-xsltproc
 	@set -e; \
-	for r in $(doc_modules_basenames) ""; do \
-		if [ ! -d "modules/$$r/doc" -a ! -d "net/$$r/doc" ]; then \
+	for mod in $(doc_modules); do \
+		r=`basename $$mod`;\
+		echo "Reading directory $$mod for module $$r";\
+		if [ ! -d "$$mod/doc" ]; then \
 			continue; \
 		fi; \
-		if [ -d "modules/$$r/doc" ]; then \
-			cd "modules/$$r/doc"; \
-		elif [ -d "net/$$r/doc" ]; then \
-			cd "net/$$r/doc"; \
-		fi; \
-		\
+		cd "$$mod/doc"; \
 		if [ -f "$$r".xml ]; then \
 			echo ""; \
 			echo "docbook xml to html: $$r.xml"; \
@@ -300,16 +291,13 @@ modules-docbook-txt: tool-lynx tool-xsltproc
 .PHONY: modules-docbook-html
 modules-docbook-html: tool-xsltproc
 	@set -e; \
-	for r in $(doc_modules_basenames) ""; do \
-		if [ ! -d "modules/$$r/doc" -a ! -d "net/$$r/doc" ]; then \
+	for mod in $(doc_modules); do \
+		r=`basename $$mod`;\
+		echo "Reading directory $$mod for module $$r";\
+		if [ ! -d "$$mod/doc" ]; then \
 			continue; \
 		fi; \
-		if [ -d "modules/$$r/doc" ]; then \
-			cd "modules/$$r/doc"; \
-		elif [ -d "net/$$r/doc" ]; then \
-			cd "net/$$r/doc"; \
-		fi; \
-		\
+		cd "$$mod/doc"; \
 		if [ -f "$$r".xml ]; then \
 			echo ""; \
 			echo "docbook xml to html: $$r.xml"; \
@@ -323,15 +311,13 @@ modules-docbook-html: tool-xsltproc
 .PHONY: modules-docbook-pdf
 modules-docbook-pdf: tool-docbook2pdf
 	@set -e; \
-	for r in $(doc_modules_basenames) ""; do \
-		if [ ! -d "modules/$$r/doc" -a ! -d "net/$$r/doc" ]; then \
+	for mod in $(doc_modules); do \
+		r=`basename $$mod`;\
+		echo "Reading directory $$mod for module $$r";\
+		if [ ! -d "$$mod/doc" ]; then \
 			continue; \
 		fi; \
-		if [ -d "modules/$$r/doc" ]; then \
-			cd "modules/$$r/doc"; \
-		elif [ -d "net/$$r/doc" ]; then \
-			cd "net/$$r/doc"; \
-		fi; \
+		cd "$$mod/doc"; \
 		if [ -f "$$r".xml ]; then \
 			echo ""; \
 			echo "docbook xml to pdf: $$r.xml"; \
