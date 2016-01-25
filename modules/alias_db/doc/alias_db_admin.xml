@@ -213,8 +213,8 @@ modparam("alias_db", "append_branches", 1)
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>table_name</emphasis> - the name of the table
-				where to search for alias. It can include pseudo-variables.
+			<para><emphasis>table_name</emphasis> - any PV (string or PV or mix)
+				the name of the table where to search for alias.
 			</para>
 		</listitem>
 		<listitem>
@@ -275,17 +275,17 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>table_name</emphasis> - the name of the table
-				where to search for alias. It can include pseudo-variables.
+			<para><emphasis>table_name</emphasis> - any PV (string or PV or mix)
+				the name of the table where to search for alias.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>input</emphasis> - any PV (pseudo-variable) 
+			<para><emphasis>input</emphasis> - any PV (string or PV or mix)
 			carrying the SIP URI that needs to be looked up.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>ouput</emphasis> - PV (AVP or script VAR) 
+			<para><emphasis>output</emphasis> - PV (AVP or script VAR)
 			where to place the SIP URI resulting from the alias lookup.
 			</para>
 		</listitem>
@@ -312,7 +312,7 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			LOCAL_ROUTE, FAILURE_ROUTE and ONREPLY_ROUTE.
+			LOCAL_ROUTE, STARTUP_ROUTE, FAILURE_ROUTE and ONREPLY_ROUTE.
 		</para>
 		<example>
 		<title><function>alias_db_find()</function> usage</title>
