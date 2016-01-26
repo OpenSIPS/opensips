@@ -183,6 +183,9 @@ int uac_auth( struct sip_msg *msg)
 		new_hdr->s = NULL; new_hdr->len = 0;
 		goto error;
 	}
+	/* the Authorization hdr was already pushed into the message as a lump
+	 * along with the buffer, so detach the buffer from new_hdr var */
+	new_hdr->s = NULL; new_hdr->len = 0;
 
 	new_hdr->s = NULL; new_hdr->len = 0;
 	return 0;
