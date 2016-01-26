@@ -34,6 +34,12 @@
 #define XMLRPC_FLAG		(1 << 27)
 
 #define COLON_C			':'
+#define SLASH_C			'/'
+
+struct xmlrpc_sock_param {
+	str method;
+	str first_line;
+};
 
 #endif
 

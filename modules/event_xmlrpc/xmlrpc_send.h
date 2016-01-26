@@ -35,6 +35,7 @@ typedef struct _xmlrpc_send {
 	str body;
 	str method;
 	str host;
+	str first_line;
 	str event;
 	int process_idx;
 } xmlrpc_send_t;
@@ -60,10 +61,13 @@ int xmlrpc_build_buffer(str *,
 
 /* string macros */
 /* computes a macro len */
-#define LENOF(m)	(sizeof(m) - 1)	
+#define LENOF(m)	(sizeof(m) - 1)
 
 /* xmlrpc http header */
 #define XMLRPC_HTTP_CONST "POST /RPC2 HTTP/1.1\r\nHost: "
+
+#define XMLRPC_HTTP_METHOD "POST "
+#define XMLRPC_HTTP_PROTO_HOST " HTTP/1.1\r\nHost:"
 
 #define XMLRPC_HTTP_HEADER \
 	"\r\nConnection: close\r\n" \

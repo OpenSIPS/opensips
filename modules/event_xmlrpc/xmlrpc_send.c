@@ -40,6 +40,7 @@ unsigned xmlrpc_sync_mode = 0;
 static char * xmlrpc_body_buf = 0;
 static struct iovec xmlrpc_iov[XMLRPC_IOVEC_MAX_SIZE];
 static unsigned xmlrpc_iov_len = 0;
+static unsigned xmlrpc_first_line_index = 0;
 static unsigned xmlrpc_host_index = 0;
 static unsigned xmlrpc_ct_len_index = 0;
 static unsigned xmlrpc_met_name_index = 0;
@@ -63,6 +64,7 @@ int xmlrpc_init_buffers(void)
 static int xmlrpc_pipe[2];
 /* used to communicate the status of the send (success or fail) from the sending process back to the requesting ones */
 static int (*xmlrpc_status_pipes)[2];
+/* more than enought for http first line */
 
 /* creates communication pipe */
 int xmlrpc_create_pipe(void)
@@ -260,7 +262,9 @@ static int xmlrpc_sendmsg(xmlrpc_send_t *sock)
 	int fd, ret = -1;
 	int aux;
 
-	/* host */
+	xmlrpc_iov[xmlrpc_first_line_index].iov_base = sock->first_line.s;
+	xmlrpc_iov[xmlrpc_first_line_index].iov_len = sock->first_line.len;
+
 	xmlrpc_iov[xmlrpc_host_index].iov_base = sock->host.s;
 	xmlrpc_iov[xmlrpc_host_index].iov_len = sock->host.len;
 
@@ -315,8 +319,8 @@ static xmlrpc_send_t * xmlrpc_build_send_t(evi_reply_sock *sock,
 		char *params, int params_len, str *ev_name)
 {
 	char * p, *aux;
-	str * method = (str *)(&sock->params);
-	int len = sizeof(xmlrpc_send_t) + params_len + method->len +
+	struct xmlrpc_sock_param *sock_params=sock->params;
+	int len = sizeof(xmlrpc_send_t) + params_len + sock_params->method.len +
 		ev_name->len + sock->address.len + 6 /* : port */;
 
 	xmlrpc_send_t *msg = shm_malloc(len);
@@ -333,8 +337,11 @@ static xmlrpc_send_t * xmlrpc_build_send_t(evi_reply_sock *sock,
 
 	/* next is method */
 	msg->method.s = msg->body.s + params_len;
-	memcpy(msg->method.s, method->s, method->len);
-	msg->method.len = method->len;
+	memcpy(msg->method.s, sock_params->method.s, sock_params->method.len);
+	msg->method.len = sock_params->method.len;
+
+	/* first line */
+	msg->first_line = sock_params->first_line;
 
 	/* event */
 	msg->event.s = msg->method.s + msg->method.len;
@@ -478,9 +485,8 @@ int xmlrpc_build_buffer(str *event_name, evi_reply_sock *sock,
  */
 static void xmlrpc_init_send_buf(void)
 {
-	xmlrpc_iov[xmlrpc_iov_len].iov_base = XMLRPC_HTTP_CONST;
-	xmlrpc_iov[xmlrpc_iov_len].iov_len = LENOF(XMLRPC_HTTP_CONST);
-	xmlrpc_iov_len++;
+	/*First Line: POST /... HTTP... */
+	xmlrpc_first_line_index = xmlrpc_iov_len++;
 
 	/* host */
 	xmlrpc_host_index = xmlrpc_iov_len++;
