@@ -1739,7 +1739,8 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 		if (db_update)
 			update_dialog_timeout_info(dlg);
 
-		replicate_dialog_updated(dlg);
+		if (dialog_replicate_cluster)
+			replicate_dialog_updated(dlg);
 
 		if (timer_update && update_dlg_timer(&dlg->tl, timeout) < 0) {
 			LM_ERR("failed to update timer\n");
