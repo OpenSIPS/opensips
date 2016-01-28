@@ -452,7 +452,7 @@ error:
  * \param target target that should be reached
  * \return return 0 on success, -1 on error
  */
-int increase_open_fds(unsigned int target)
+int set_open_fds_limit(void)
 {
 	struct rlimit lim, orig;
 
@@ -464,18 +464,23 @@ int increase_open_fds(unsigned int target)
 	orig=lim;
 	LM_DBG("current open file limits: %lu/%lu\n",
 			(unsigned long)lim.rlim_cur, (unsigned long)lim.rlim_max);
-	if ((lim.rlim_cur==RLIM_INFINITY) || (target<=lim.rlim_cur))
-		/* nothing to do */
+	if (open_files_limit<=0) {
+		/* if not set from cfg, we just read the existing value */
+		open_files_limit = lim.rlim_cur;
 		goto done;
-	else if ((lim.rlim_max==RLIM_INFINITY) || (target<=lim.rlim_max)){
-		lim.rlim_cur=target; /* increase soft limit to target */
-	}else{
+	}
+	if ((lim.rlim_cur==RLIM_INFINITY) || (open_files_limit<=lim.rlim_cur))
+		/* nothing to do (we do no reduce the limit) */
+		goto done;
+	if ((lim.rlim_max==RLIM_INFINITY) || (open_files_limit<=lim.rlim_max)) {
+		lim.rlim_cur=open_files_limit; /* increase soft limit to target */
+	} else {
 		/* more than the hard limit */
 		LM_INFO("trying to increase the open file limit"
 				" past the hard limit (%ld -> %d)\n",
-				(unsigned long)lim.rlim_max, target);
-		lim.rlim_max=target;
-		lim.rlim_cur=target;
+				(unsigned long)lim.rlim_max, open_files_limit);
+		lim.rlim_max=open_files_limit;
+		lim.rlim_cur=open_files_limit;
 	}
 	LM_DBG("increasing open file limits to: %lu/%lu\n",
 			(unsigned long)lim.rlim_cur, (unsigned long)lim.rlim_max);
@@ -492,11 +497,14 @@ int increase_open_fds(unsigned int target)
 			if (setrlimit(RLIMIT_NOFILE, &lim)==0){
 				LM_CRIT("maximum number of file descriptors increased to"
 					" %u\n",(unsigned)orig.rlim_max);
+				open_files_limit = orig.rlim_max;
+				goto done;
 			}
 		}
 		goto error;
 	}
 done:
+	LM_DBG("open files limit set to %d\n",open_files_limit);
 	return 0;
 error:
 	return -1;

@@ -288,11 +288,11 @@ static inline void tcp_receive_timeout(void)
 
 
 
-void tcp_worker_proc( int unix_sock, int max_fd )
+void tcp_worker_proc( int unix_sock)
 {
 	/* init reactor for TCP worker */
 	tcpmain_sock=unix_sock; /* init com. socket */
-	if ( init_worker_reactor( "TCP_worker", max_fd, RCT_PRIO_MAX)<0 ) {
+	if ( init_worker_reactor("TCP_worker",open_files_limit,RCT_PRIO_MAX)<0 ) {
 		goto error;
 	}
 

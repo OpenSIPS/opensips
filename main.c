@@ -1146,11 +1146,9 @@ try_again:
 
 	if (disable_core_dump) set_core_dump(0, 0);
 	else set_core_dump(1, shm_mem_size+pkg_mem_size+4*1024*1024);
-	if (open_files_limit>0){
-		if(increase_open_fds(open_files_limit)<0){
-			LM_ERR("ERROR: error could not increase file limits\n");
-			goto error;
-		}
+	if(set_open_fds_limit()<0){
+		LM_ERR("ERROR: error could not increase file limits\n");
+		goto error;
 	}
 
 	/* print OpenSIPS version to log for history tracking */
