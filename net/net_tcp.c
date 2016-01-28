@@ -102,7 +102,6 @@ int tcp_listen_backlog=DEFAULT_TCP_LISTEN_BACKLOG;
 /*!< by default choose the best method */
 enum poll_types tcp_poll_method=0;
 int tcp_max_connections=DEFAULT_TCP_MAX_CONNECTIONS;
-int tcp_max_fd_no=0;
 /* number of TCP workers */
 int tcp_children_no = CHILD_NO;
 /* Max number of seconds that we except a full SIP message
@@ -1454,7 +1453,7 @@ static void tcp_main_server(void)
 
 	/* we run in a separate, dedicated process, with its own reactor
 	 * (reactors are per process) */
-	if (init_worker_reactor("TCP_main", tcp_max_fd_no, RCT_PRIO_MAX)<0)
+	if (init_worker_reactor("TCP_main", open_files_limit, RCT_PRIO_MAX)<0)
 		goto error;
 
 	/* now start watching all the fds*/
@@ -1683,9 +1682,6 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		if ( is_tcp_based_proto(n) )
 			for(si=protos[n].listeners; si ; si=si->next,r++ );
 
-	tcp_max_fd_no=counted_processes*2 + r - 1/*timer*/ + 3/*stdin/out/err*/;
-	tcp_max_fd_no+=tcp_max_connections;
-
 	if (register_tcp_load_stat( &load_p )!=0) {
 		LM_ERR("failed to init tcp load statistic\n");
 		goto error;
@@ -1739,7 +1735,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 
 			report_conditional_status( (1), 0);
 
-			tcp_worker_proc( reader_fd[1], tcp_max_fd_no);
+			tcp_worker_proc( reader_fd[1] );
 			exit(-1);
 		}
 	}

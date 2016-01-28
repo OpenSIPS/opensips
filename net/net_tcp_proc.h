@@ -27,6 +27,6 @@
 #define _NET_net_tcp_proc_h
 
 /* Loop implementing a TCP worker */
-void tcp_worker_proc( int fd, int max_fd);
+void tcp_worker_proc( int fd);
 
 #endif
