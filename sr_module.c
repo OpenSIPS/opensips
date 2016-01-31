@@ -89,9 +89,10 @@ struct sr_module* modules=0;
 	extern struct module_exports sl_exports;
 #endif
 
-char *mpath=NULL;
-char mpath_buf[256];
-int  mpath_len = 0;
+char *mpath;
+#define MPATH_BUF_SZ 255
+char mpath_buf[MPATH_BUF_SZ];
+int  mpath_len;
 
 
 /* initializes statically built (compiled in) modules*/
@@ -338,51 +339,58 @@ static int load_static_module(char *path)
 /* returns 0 on success , <0 on error */
 int load_module(char* name)
 {
-	int i_tmp;
+	int mplen, nlen;
 	struct stat statf;
 
 	/* if this is a static module, load it directly */
 	if (load_static_module(name) == 0)
 		return 0;
 
-	if(*name!='/' && mpath!=NULL
-		&& strlen(name)+mpath_len<255)
-	{
-		strcpy(mpath_buf+mpath_len, name);
+	nlen = strlen(name);
+	if (*name != '/' && mpath) {
+		if (mpath_len + nlen + 1 + nlen + 3 > MPATH_BUF_SZ - 1) {
+			LM_ERR("mpath buffer exceeded! use a shorter \"mpath\" or increase "
+					"MPATH_BUF_SZ (at least %d), and recompile OpenSIPS!\n",
+					mpath_len + nlen + 1 + nlen + 3);
+			return -1;
+		}
+		/* append ".so" if needed */
+		strcpy(mpath_buf + mpath_len, name);
+		if (nlen < 3 || strncmp(name + nlen - 3, ".so", 3))
+			strcpy(mpath_buf + mpath_len + nlen, ".so");
+
 		if (stat(mpath_buf, &statf) == -1 || S_ISDIR(statf.st_mode)) {
-			i_tmp = strlen(mpath_buf);
-			if(strchr(name, '/')==NULL &&
-				strncmp(mpath_buf+i_tmp-3, ".so", 3)==0)
-			{
-				if(i_tmp+strlen(name)<255)
-				{
-					strcpy(mpath_buf+i_tmp-3, "/");
-					strcpy(mpath_buf+i_tmp-2, name);
-					if (stat(mpath_buf, &statf) == -1) {
-						mpath_buf[mpath_len]='\0';
-						LM_ERR("module '%s' not found in '%s'\n",
-								name, mpath_buf);
-						return -1;
-					}
-				} else {
-					LM_ERR("failed to load module - path too long\n");
+			mplen = strlen(mpath_buf);
+			if (!strchr(name, '/')) {
+				strcpy(mpath_buf + mplen - 3, "/");
+				strcpy(mpath_buf + mplen - 2, name);
+				mplen = strlen(mpath_buf);
+
+				/* append ".so" if needed */
+				if (nlen < 3 || strncmp(name + nlen - 3, ".so", 3))
+					strcpy(mpath_buf + mplen, ".so");
+				mplen = strlen(mpath_buf);
+
+				if (stat(mpath_buf, &statf) == -1) {
+					mpath_buf[mpath_len] = '\0';
+					LM_ERR("module '%s' not found in '%s'\n", name, mpath_buf);
 					return -1;
 				}
 			} else {
-				LM_ERR("failed to load module - not found\n");
+				LM_ERR("Module '%s' not found in '%s'\n", name, mpath_buf);
 				return -1;
 			}
 		}
 		LM_DBG("loading module %s\n", mpath_buf);
-		if (sr_load_module(mpath_buf)!=0){
-			LM_ERR("failed to load module\n");
+		if (sr_load_module(mpath_buf) != 0) {
+			LM_ERR("failed to load module %s\n", name);
 			return -1;
 		}
-		mpath_buf[mpath_len]='\0';
+		mpath_buf[mpath_len] = '\0';
 	} else {
-		LM_DBG("loading module %s\n", name);
-		if (sr_load_module(name)!=0){
-			LM_ERR("failed to load module\n");
+		LM_DBG("Loading module %s\n", name);
+		if (sr_load_module(name) != 0) {
+			LM_ERR("failed to load module %s\n", name);
 			return -1;
 		}
 	}

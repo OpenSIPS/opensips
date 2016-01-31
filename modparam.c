@@ -46,6 +46,7 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 	int mod_found, param_found, len;
 	char* reg;
 	int n;
+	int exp_type;
 
 	len = strlen(regex);
 	reg = pkg_malloc(len + 2 + 2 + 1);
@@ -78,13 +79,15 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 
 				if (strcmp(name, param->name) == 0) {
 					param_found = 1;
+					exp_type = param->type;
+					LM_DBG("found param, %d, %d\n", PARAM_TYPE_MASK(param->type), type);
 
 					if (PARAM_TYPE_MASK(param->type) == type) {
 						LM_DBG("found <%s> in module %s [%s]\n",
 							name, t->exports->name, t->path);
 
 						if (param->type&USE_FUNC_PARAM) {
-							n = ((param_func_t)(param->param_pointer))(type, val );
+							n = ((param_func_t)(param->param_pointer))(type, val);
 							if (n<0)
 								return -4;
 						} else {
@@ -113,10 +116,11 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 
 			if (!param || !param->name) {
 				if (param_found)
-					LM_ERR("type mismatch for parameter <%s> in module <%s>\n",
-					        name, t->exports->name);
+					LM_ERR("type mismatch for \"%s\" parameter of \"%s\" "
+							"module (expected %s)\n", name, t->exports->name,
+							mpt2str(exp_type));
 				else
-					LM_ERR("parameter <%s> not found in module <%s>\n",
+					LM_ERR("\"%s\" parameter not found in \"%s\" module\n",
 						    name, t->exports->name);
 
 				regfree(&preg);

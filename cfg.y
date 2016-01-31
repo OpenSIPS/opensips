@@ -120,6 +120,11 @@
  with no built in alloca, like icc*/
 #undef _ALLOCA_H
 
+struct modparam_list {
+	str k;
+	long_str v;
+	struct modparam_list *next;
+};
 
 extern int yylex();
 static void yyerror(char* s);
@@ -136,6 +141,7 @@ static pv_spec_t *spec;
 static pv_elem_t *pvmodel;
 static struct bl_rule *bl_head = 0;
 static struct bl_rule *bl_tail = 0;
+static struct modparam_list *mpl, *mplast;
 
 action_elem_t elems[MAX_ACTION_ELEMS];
 static action_elem_t route_elems[MAX_ACTION_ELEMS];
@@ -145,6 +151,8 @@ static inline void warn(char* s);
 static struct socket_id* mk_listen_id(char*, enum sip_protos, int);
 static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
 static struct multi_str *new_string(char *s);
+static int push_modparam(char *k, int iv, char *sv);
+static void consume_modparams(char *mod);
 
 extern int line;
 extern int column;
@@ -159,6 +167,12 @@ struct multi_str{
 #else 
 static struct multi_str *tmp_mod;
 #endif
+
+enum parse_state {
+	PARSE_GPARM,
+	PARSE_LDMOD,
+	PARSE_ROUTE,
+};
 
 #define get_cfg_file_name \
 	((finame) ? finame : cfg_file ? cfg_file : "default")
@@ -212,6 +226,7 @@ static struct multi_str *tmp_mod;
 	struct socket_id* sockid;
 	struct _pv_spec *specval;
 	struct multi_str* multistr;
+	struct modparam_list *mpl;
 }
 
 /* terminals */
@@ -432,6 +447,7 @@ static struct multi_str *tmp_mod;
 %token <strval> ID
 %token <strval> STRING
 %token <strval> SCRIPTVAR
+%token <strval> LOADMOD
 %token <strval> IPV6ADDR
 
 /* other */
@@ -498,7 +514,7 @@ statements:	statements statement {}
 	;
 
 statement:	assign_stm
-		| module_stm
+		| loadmodule_stm
 		| {rt=REQUEST_ROUTE;} route_stm
 		| {rt=FAILURE_ROUTE;} failure_route_stm
 		| {rt=ONREPLY_ROUTE;} onreply_route_stm
@@ -636,6 +652,43 @@ blst_elem_list: blst_elem_list COMMA blst_elem {}
 		| blst_elem {}
 		| blst_elem_list error { yyerror("bad black list element");}
 		;
+
+lmod_assign: ID EQUAL NUMBER {
+				if (push_modparam($1, $3, NULL))
+					YYABORT;
+			}
+		   | ID EQUAL STRING {
+				if (push_modparam($1, 0, $3))
+					YYABORT;
+			}
+		   ;
+
+lmod_assigns: lmod_assigns lmod_assign { }
+			| lmod_assign { }
+			;
+
+loadmodule_stm: LOADMOD LBRACE lmod_assigns RBRACE {
+					if (load_module($1) < 0) {
+						LM_ERR("failed to load \"%s\" module\n", $1);
+						YYABORT;
+					}
+					consume_modparams($1);
+				}
+			   | LOADMOD LBRACE RBRACE {
+					if (load_module($1) < 0) {
+						LM_ERR("failed to load \"%s\" module\n", $1);
+						YYABORT;
+					}
+					consume_modparams($1);
+				}
+			   | LOADMOD {
+					if (load_module($1) < 0) {
+						LM_ERR("failed to load \"%s\" module\n", $1);
+						YYABORT;
+					}
+					consume_modparams($1);
+				}
+			   ;
 
 
 assign_stm: DEBUG EQUAL snumber {
@@ -1071,27 +1124,6 @@ assign_stm: DEBUG EQUAL snumber {
 				}
 		| error EQUAL { yyerror("unknown config variable"); }
 	;
-
-module_stm:	LOADMODULE STRING	{
-			if (load_module($2) < 0)
-				yyerrorf("failed to load module %s\n", $2);
-		}
-		| LOADMODULE error	{ yyerror("string expected");  }
-		| MODPARAM LPAREN STRING COMMA STRING COMMA STRING RPAREN {
-				if (set_mod_param_regex($3, $5, STR_PARAM, $7) != 0) {
-					yyerrorf("Parameter <%s> not found in module <%s> - "
-						"can't set", $5, $3);
-				}
-			}
-		| MODPARAM LPAREN STRING COMMA STRING COMMA snumber RPAREN {
-				if (set_mod_param_regex($3, $5, INT_PARAM, (void*)$7) != 0) {
-					yyerrorf("Parameter <%s> not found in module <%s> - "
-						"can't set", $5, $3);
-				}
-			}
-		| MODPARAM error { yyerror("Invalid arguments"); }
-		;
-
 
 ip:		 ipv4  { $$=$1; }
 		|ipv6  { $$=$1; }
@@ -1696,6 +1728,8 @@ assign_cmd: script_var assignop assignexp {
 		}
 	;
 
+
+
 exp_stm:	cmd						{ $$=$1; }
 		|	if_cmd					{ $$=$1; }
 		|	assign_cmd				{ $$=$1; }
@@ -1980,7 +2014,7 @@ async_func: ID LPAREN RPAREN {
 				cmd_tmp=(void*)find_acmd_export_t($1, 0);
 				if (cmd_tmp==0){
 					yyerrorf("unknown async command <%s>, "
-						"missing loadmodule?", $1);
+						"did you forget to load its module?", $1);
 					$$=0;
 				}else{
 					elems[0].type = ACMD_ST;
@@ -1992,7 +2026,7 @@ async_func: ID LPAREN RPAREN {
 				cmd_tmp=(void*)find_acmd_export_t($1, $3);
 				if (cmd_tmp==0){
 					yyerrorf("unknown async command <%s>, "
-						"missing loadmodule?", $1);
+						"did you forget to load its module?", $1);
 					$$=0;
 				}else{
 					elems[0].type = ACMD_ST;
@@ -2591,7 +2625,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 												"used in the block\n");
 										} else {
 											yyerrorf("unknown command <%s>, "
-												"missing loadmodule?", $1);
+												"did you forget to load its module?", $1);
 										}
 										$$=0;
 									}else{
@@ -2608,7 +2642,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 												"used in the block\n");
 										} else {
 											yyerrorf("unknown command <%s>, "
-												"missing loadmodule?", $1);
+												"did you forget to load its module?", $1);
 										}
 										$$=0;
 									}else{
@@ -2695,6 +2729,63 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 
 
 %%
+
+static int push_modparam(char *k, int iv, char *sv)
+{
+	struct modparam_list *mp;
+
+	mp = pkg_malloc(sizeof *mp);
+	if (!mp) {
+		LM_ERR("no more pkg mem\n");
+		return 1;
+	}
+	memset(mp, 0, sizeof *mp);
+
+	mp->k.s = k;
+	mp->k.len = strlen(k);
+
+	if (sv) {
+		mp->v.s.s = sv;
+		mp->v.s.len = strlen(sv);
+	} else
+		mp->v.n = iv;
+
+	LM_DBG("\"%.*s\" : %ld/\"%.*s\"\n", mp->k.len, mp->k.s, mp->v.n,
+			mp->v.s.len, mp->v.s.s);
+
+	if (!mpl)
+		mpl = mplast = mp;
+	else {
+		mplast->next = mp;
+		mplast = mp;
+	}
+
+	return 0;
+}
+
+static void consume_modparams(char *mod)
+{
+	struct modparam_list *mp, *it;
+
+	for (it = mpl; it; ) {
+		mp = it;
+		it = it->next;
+
+		if (mp->v.s.s) {
+			if (set_mod_param_regex(mod, mp->k.s, STR_PARAM, mp->v.s.s)) {
+				LM_ERR("failed to set \"%.*s\"\n", mp->k.len, mp->k.s);
+			}
+		} else {
+			if (set_mod_param_regex(mod, mp->k.s, INT_PARAM, (void *)mp->v.n)) {
+				LM_ERR("failed to set \"%.*s\"\n", mp->k.len, mp->k.s);
+			}
+		}
+
+		pkg_free(mp);
+	}
+
+	mpl = NULL;
+}
 
 static inline void warn(char* s)
 {

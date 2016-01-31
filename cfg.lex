@@ -73,6 +73,7 @@
 	#define COMMENT_LN_S	2
 	#define STRING_S		3
 	#define SCRIPTVAR_S		4
+	#define LOADMOD_S		5
 
 	#define STR_BUF_ALLOC_UNIT	128
 	struct str_buf{
@@ -87,6 +88,7 @@
 	static struct str_buf s_buf;
 	int line=1;
 	int np=0;
+	int lms=0;
 	int svar_tlen=0;
 	int column=1;
 	int startcolumn=1;
@@ -131,7 +133,7 @@
 %}
 
 /* start conditions */
-%x STRING1 STRING2 COMMENT COMMENT_LN SCRIPTVARS
+%x STRING1 STRING2 COMMENT COMMENT_LN SCRIPTVARS LOADMODS
 %x INCLF IMPTF
 
 /* action keywords */
@@ -284,6 +286,9 @@ LOGOP		{EQUAL_T}|{GT}|{LT}|{GTE}|{LTE}|{DIFF}|{MATCH}|{NOTMATCH}|{NOT}|{AND}|{OR
 /* variables */
 SCRIPTVAR_START	"$"
 
+/* loadmodule */
+LOADMOD_START	"loadmodule"
+
 /* config vars. */
 DEBUG	debug
 ENABLE_ASSERTS	enable_asserts
@@ -360,7 +365,6 @@ DB_MAX_ASYNC_CONNECTIONS "db_max_async_connections"
 DISABLE_503_TRANSLATION "disable_503_translation"
 
 MPATH	mpath
-LOADMODULE	loadmodule
 MODPARAM        modparam
 
 /* values */
@@ -658,7 +662,6 @@ IMPORTFILE      "import_file"
 									return DISABLE_503_TRANSLATION; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
-<INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }
 <INITIAL>{MODPARAM}    { count(); yylval.strval=yytext; return MODPARAM; }
 
 <INITIAL>{EQUAL}	{ count(); return EQUAL; }
@@ -731,6 +734,47 @@ IMPORTFILE      "import_file"
 								yymore();
 								BEGIN(SCRIPTVARS);
 							}
+
+<INITIAL>{LOADMOD_START} { count(); lms=0; state=LOADMOD_S;
+								svar_tlen = yyleng;
+								BEGIN(LOADMODS);
+							}
+
+<LOADMODS>{WHITESPACE} { count(); }
+<LOADMODS>{LBRACK} {
+		count();
+		if (lms) {
+			LM_CRIT("syntax error in %s, line %d\n",
+					finame ? finame : "cfg", line);
+			exit(-1);
+		}
+		lms++;
+		}
+<LOADMODS>{ID} {
+		count();
+		if (lms != 1) {
+			LM_CRIT("syntax error in %s, line %d\n",
+					finame ? finame : "cfg", line);
+			exit(-1);
+		}
+		lms++;
+		addstr(&s_buf, yytext, yyleng);
+		yylval.strval = s_buf.s;
+		yymore();
+	}
+<LOADMODS>{RBRACK} {
+		count();
+		if (lms != 2) {
+			LM_CRIT("syntax error in %s, line %d\n",
+					finame ? finame : "cfg", line);
+			exit(-1);
+		}
+		state = INITIAL_S;
+		BEGIN(INITIAL);
+		yylval.strval = s_buf.s;
+		memset(&s_buf, 0, sizeof(s_buf));
+		return LOADMOD;
+		}
 <SCRIPTVARS>{LPAREN} { count(); np++; yymore(); svar_tlen = yyleng; }
 <SCRIPTVARS>{RPAREN} {
 			count();

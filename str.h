@@ -52,5 +52,11 @@ struct _str{
 
 typedef struct _str str;
 
+struct _long_str {
+	long n;
+	str s;
+};
+
+typedef struct _long_str long_str;
 
 #endif

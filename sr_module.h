@@ -70,8 +70,9 @@ typedef int (*child_init_function)(int rank);
 
 #define STR_PARAM        (1U<<0)  /* String parameter type */
 #define INT_PARAM        (1U<<1)  /* Integer parameter type */
-#define USE_FUNC_PARAM   (1U<<(8*sizeof(int)-1))
+#define USE_FUNC_PARAM   (1U<<(8*sizeof(int)-1)) /* !! input is not strdup'ed */
 #define PARAM_TYPE_MASK(_x)   ((_x)&(~USE_FUNC_PARAM))
+#define mpt2str(mpt) (mpt & STR_PARAM ? "string" : "int")
 
 typedef unsigned int modparam_t;
 
