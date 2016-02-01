@@ -67,7 +67,7 @@
  * the TCP, UDP, timer and fifo children.
  */
 
-
+#include "reactor_defs.h" /*keep this first*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -81,7 +81,6 @@
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <sys/utsname.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -1154,9 +1153,11 @@ try_again:
 
 	if (disable_core_dump) set_core_dump(0, 0);
 	else set_core_dump(1, shm_mem_size+pkg_mem_size+4*1024*1024);
-	if(set_open_fds_limit()<0){
-		LM_ERR("ERROR: error could not increase file limits\n");
-		goto error;
+	if (open_files_limit>0) {
+		if(set_open_fds_limit()<0){
+			LM_ERR("ERROR: error could not increase file limits\n");
+			goto error;
+		}
 	}
 
 	/* print OpenSIPS version to log for history tracking */
@@ -1166,6 +1167,12 @@ try_again:
 	LM_INFO("using %ld Mb shared memory\n", ((shm_mem_size/1024)/1024));
 	LM_INFO("using %ld Mb private memory per process\n",
 		((pkg_mem_size/1024)/1024));
+
+	/* init async reactor */
+	if (init_reactor_size()<0) {
+		LM_CRIT("failed to init internal reactor, exiting...\n");
+		goto error;
+	}
 
 	/* init timer */
 	if (init_timer()<0){

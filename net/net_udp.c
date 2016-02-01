@@ -287,7 +287,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 int udp_rcv_loop( struct socket_info *si )
 {
 	/* create the reactor for UDP proc */
-	if ( init_worker_reactor("UDP_worker",open_files_limit,RCT_PRIO_MAX)<0 ) {
+	if ( init_worker_reactor( "UDP_worker", RCT_PRIO_MAX)<0 ) {
 		LM_ERR("failed to init reactor\n");
 		goto error;
 	}

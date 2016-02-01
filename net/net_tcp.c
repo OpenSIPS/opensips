@@ -1453,7 +1453,7 @@ static void tcp_main_server(void)
 
 	/* we run in a separate, dedicated process, with its own reactor
 	 * (reactors are per process) */
-	if (init_worker_reactor("TCP_main", open_files_limit, RCT_PRIO_MAX)<0)
+	if (init_worker_reactor("TCP_main", RCT_PRIO_MAX)<0)
 		goto error;
 
 	/* now start watching all the fds*/
