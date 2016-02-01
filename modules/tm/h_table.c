@@ -288,7 +288,7 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 	/* get timer set id based on the transaction pointer, but
 	 * devide by 64 to avoid issues because pointer are 64 bits
 	 * aligned */
-	set = ( ((long)new_cell)>>tm_timer_shift ) % tm_table->timer_sets;
+	set = ( ((unsigned long)new_cell)>>tm_timer_shift ) % tm_table->timer_sets;
 
 	/* UAS */
 #ifdef EXTRA_DEBUG
