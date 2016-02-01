@@ -275,7 +275,7 @@ int sl_filter_ACK(struct sip_msg *msg, void *bar )
 			if (memcmp(tag_str->s,sl_tag.s,sl_tag.len)==0) {
 				LM_DBG("local ACK found -> dropping it!\n");
 				if_update_stat( sl_enable_stats, rcv_acks, 1);
-				run_sl_callbacks( SLCB_ACK_IN, msg, 0, 0, 0, 0 );
+				slcb_run_ack_in( msg );
 
 				return SCB_DROP_MSG;
 			}
