@@ -38,11 +38,11 @@
 #include "../../parser/parse_content.h"
 #include "../../parser/parse_from.h"
 #include "../../pvar.h"
-#include "../tm/tm_load.h"
-#include "../dialog/dlg_load.h"
-#include "../sl/sl_cb.h"
+#include "../../sl_cb.h"
 #include "../../str.h"
 #include "../../script_cb.h"
+#include "../tm/tm_load.h"
+#include "../dialog/dlg_load.h"
 #include "../proto_hep/hep.h"
 #include "../proto_hep/hep_cb.h"
 
@@ -88,14 +88,15 @@ static void trace_onreq_in(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps);
-static void trace_sl_onreply_out(unsigned int types, struct sip_msg* req,
-			struct sl_cb_param *sl_param);
-static void trace_sl_ack_in(unsigned int types, struct sip_msg* req,
-			struct sl_cb_param *sl_param);
-static void trace_msg_out(struct sip_msg* req, str  *buffer,
-			struct socket_info* send_sock, int proto, union sockaddr_union *to);
-static void trace_msg_out_w(struct sip_msg* req, str  *buffer,
-			struct socket_info* send_sock, int proto, union sockaddr_union *to);
+static void trace_sl_onreply_out(struct sip_msg* req, str *buffer,int rpl_code,
+		union sockaddr_union *dst, struct socket_info *sock, int proto);
+static void trace_sl_ack_in(struct sip_msg* req, str *buffer,int rpl_code,
+		union sockaddr_union *dst, struct socket_info *sock, int proto);
+static void trace_msg_out_w(struct sip_msg* req, str *buffer,int rpl_code,
+		union sockaddr_union *dst, struct socket_info *sock, int proto);
+
+static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
+		struct socket_info* send_sock, int proto, union sockaddr_union *to);
 
 static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
 static struct mi_root* trace_to_database_mi(struct mi_root* cmd, void* param );
@@ -156,9 +157,6 @@ static unsigned int enable_ack_trace = 0;
 db_con_t *db_con = NULL;
 db_func_t db_funcs;      /* Database functions */
 
-
-/* sl callback registration */
-register_slcb_t register_slcb_f=NULL;
 
 /*
  * Exported functions
@@ -470,25 +468,19 @@ static int mod_init(void)
 	}
 
 	/* register sl callback */
-	register_slcb_f = (register_slcb_t)find_export("register_slcb", 0, 0);
-	if(register_slcb_f==NULL)
+	if(register_slcb( SLCB_REPLY_OUT, 0, trace_sl_onreply_out)!=0)
 	{
-		LM_ERR("can't load sl api\n");
+		LM_ERR("can't register callback for stateless generated replies\n");
 		return -1;
 	}
-	if(register_slcb_f(SLCB_REPLY_OUT,trace_sl_onreply_out, NULL)!=0)
+	if(register_slcb( SLCB_REQUEST_OUT, 0, trace_msg_out_w)!=0)
 	{
-		LM_ERR("can't register trace_sl_onreply_out\n");
+		LM_ERR("can't register callback for stateless request forwarding\n");
 		return -1;
 	}
-	if(register_fwdcb(trace_msg_out_w)!=0)
+	if(enable_ack_trace&&register_slcb( SLCB_ACK_IN, 0, trace_sl_ack_in)!=0)
 	{
-		LM_ERR("can't register trace_sl_ack_out\n");
-		return -1;
-	}
-	if(enable_ack_trace&&register_slcb_f(SLCB_ACK_IN,trace_sl_ack_in,NULL)!=0)
-	{
-		LM_ERR("can't register trace_sl_ack_in\n");
+		LM_ERR("can't register callback for incoming stateless ACK\n");
 		return -1;
 	}
 
@@ -1156,8 +1148,8 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 
 }
 
-static void trace_msg_out_w(struct sip_msg* msg, str  *sbuf,
-			struct socket_info* send_sock, int proto, union sockaddr_union *to)
+static void trace_msg_out_w(struct sip_msg* msg, str *sbuf,int rpl_code,
+			union sockaddr_union *to, struct socket_info *send_sock, int proto)
 {
 	if( trace_is_off() )
 	{
@@ -1516,15 +1508,15 @@ error:
 	return;
 }
 
-static void trace_sl_ack_in( unsigned int types, struct sip_msg* req,
-									struct sl_cb_param *sl_param)
+static void trace_sl_ack_in(struct sip_msg* req, str *buffer,int rpl_code,
+				union sockaddr_union *dst, struct socket_info *sock, int proto)
 {
 	LM_DBG("storing ack...\n");
 	sip_trace_w(req);
 }
 
-static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
-									struct sl_cb_param *sl_param)
+static void trace_sl_onreply_out(struct sip_msg* req, str *buffer,int rpl_code,
+				union sockaddr_union *dst, struct socket_info *sock, int proto)
 {
 	static char fromip_buff[IP_ADDR_MAX_STR_SIZE+12];
 	static char toip_buff[IP_ADDR_MAX_STR_SIZE+12];
@@ -1534,12 +1526,6 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	struct ip_addr to_ip;
 	int len;
 	char statusbuf[INT2STR_MAX_LEN];
-
-	if(req==NULL || sl_param==NULL)
-	{
-		LM_ERR("bad parameters\n");
-		goto error;
-	}
 
 	if( trace_is_off() )
 	{
@@ -1574,8 +1560,8 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 		return;
 	}
 
-	db_vals[0].val.blob_val.s   = (sl_param->buffer)?sl_param->buffer->s:"";
-	db_vals[0].val.blob_val.len = (sl_param->buffer)?sl_param->buffer->len:0;
+	db_vals[0].val.blob_val.s   = (buffer)?buffer->s:"";
+	db_vals[0].val.blob_val.len = (buffer)?buffer->len:0;
 
 	/* check Call-ID header */
 	if(msg->callid==NULL || msg->callid->body.s==NULL)
@@ -1598,20 +1584,20 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 			&msg->rcv.dst_ip, msg->rcv.dst_port, msg->rcv.proto);
 	}
 
-	char * str_code = int2str(sl_param->code, &len);
+	char * str_code = int2str(rpl_code, &len);
 	statusbuf[INT2STR_MAX_LEN-1]=0;
 	strncpy(statusbuf, str_code, len >= INT2STR_MAX_LEN ? INT2STR_MAX_LEN-1 : len);
 	db_vals[3].val.str_val.s = statusbuf;
 	db_vals[3].val.str_val.len = len;
 
 	memset(&to_ip, 0, sizeof(struct ip_addr));
-	if(sl_param->dst==0)
+	if(dst==0)
 	{
 		set_columns_to_any(db_vals[7], db_vals[8], db_vals[9]);
 	} else {
-		su2ip_addr(&to_ip, sl_param->dst);
+		su2ip_addr(&to_ip, dst);
 		set_sock_columns( db_vals[7], db_vals[8],db_vals[9], toip_buff, &to_ip,
-			(unsigned short)su_getport(sl_param->dst), req->rcv.proto);
+			(unsigned short)su_getport(dst), req->rcv.proto);
 	}
 
 	db_vals[10].val.time_val = time(NULL);

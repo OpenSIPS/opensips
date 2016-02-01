@@ -53,11 +53,13 @@
 #include "../../config.h"
 #include "../../tags.h"
 #include "../../script_cb.h"
+#include "../../sl_cb.h"
 #include "sl.h"
 #include "sl_funcs.h"
-#include "sl_cb.h"
 #include "../../usr_avp.h"
 #include <string.h>
+
+
 /* to-tag including pre-calculated and fixed part */
 static char           sl_tag_buf[TOTAG_VALUE_LEN];
 static str            sl_tag = {sl_tag_buf,TOTAG_VALUE_LEN};
@@ -177,7 +179,7 @@ int sl_send_reply_helper(struct sip_msg *msg ,int code, str *text)
 		goto error;
 	}
 
-	run_sl_callbacks( SLCB_REPLY_OUT, msg, &buf, code, text, &to );
+	slcb_run_reply_out( msg, &buf, &to, code);
 
 	/* supress multhoming support when sending a reply back -- that makes sure
 	   that replies will come from where requests came in; good for NATs

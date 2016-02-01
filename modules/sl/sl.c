@@ -43,7 +43,6 @@
 #include "../../pvar.h"
 #include "sl_funcs.h"
 #include "sl_api.h"
-#include "sl_cb.h"
 
 
 
@@ -73,8 +72,6 @@ static cmd_export_t cmds[]={
 			REQUEST_ROUTE | ERROR_ROUTE },
 	{"sl_reply_error",(cmd_function)w_sl_reply_error,0, 0,                   0,
 			REQUEST_ROUTE},
-	{"register_slcb", (cmd_function)register_slcb,   0, 0,                   0,
-			0},
 	{"load_sl",       (cmd_function)load_sl,         0, 0,                   0,
 			0},
 	{0,0,0,0,0,0}
@@ -161,8 +158,6 @@ static int mod_init(void)
 static void mod_destroy(void)
 {
 	sl_shutdown();
-	destroy_slcb_lists();
-
 }
 
 
