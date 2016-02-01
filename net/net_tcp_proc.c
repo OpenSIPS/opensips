@@ -292,7 +292,7 @@ void tcp_worker_proc( int unix_sock)
 {
 	/* init reactor for TCP worker */
 	tcpmain_sock=unix_sock; /* init com. socket */
-	if ( init_worker_reactor("TCP_worker",open_files_limit,RCT_PRIO_MAX)<0 ) {
+	if ( init_worker_reactor( "TCP_worker", RCT_PRIO_MAX)<0 ) {
 		goto error;
 	}
 

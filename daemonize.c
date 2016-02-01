@@ -448,8 +448,9 @@ error:
 
 
 /*!
- * \brief try to increase the open file limit
- * \param target target that should be reached
+ * \brief try to increase the open file limit to the value given by the global
+ *        option "open_files_limit" ; the value is updated back in case of a
+ *        partial increase of the limit
  * \return return 0 on success, -1 on error
  */
 int set_open_fds_limit(void)
@@ -464,11 +465,6 @@ int set_open_fds_limit(void)
 	orig=lim;
 	LM_DBG("current open file limits: %lu/%lu\n",
 			(unsigned long)lim.rlim_cur, (unsigned long)lim.rlim_max);
-	if (open_files_limit<=0) {
-		/* if not set from cfg, we just read the existing value */
-		open_files_limit = lim.rlim_cur;
-		goto done;
-	}
 	if ((lim.rlim_cur==RLIM_INFINITY) || (open_files_limit<=lim.rlim_cur))
 		/* nothing to do (we do no reduce the limit) */
 		goto done;

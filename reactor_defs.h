@@ -68,9 +68,12 @@ enum fd_types { F_NONE=0,
 		};
 
 extern io_wait_h _worker_io;
+extern unsigned int reactor_size;
 
-#define init_worker_reactor( _name, _max_fd, _prio_max) \
-	init_io_wait(&_worker_io, _name, _max_fd, io_poll_method, _prio_max)
+int init_reactor_size(void);
+
+#define init_worker_reactor( _name, _prio_max) \
+	init_io_wait(&_worker_io, _name, reactor_size, io_poll_method, _prio_max)
 
 #define reactor_add_reader( _fd, _type, _prio, _data) \
 	io_watch_add(&_worker_io, _fd, _type, _data, _prio, IO_WATCH_READ)
