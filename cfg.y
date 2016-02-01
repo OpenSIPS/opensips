@@ -152,7 +152,7 @@ static struct socket_id* mk_listen_id(char*, enum sip_protos, int);
 static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
 static struct multi_str *new_string(char *s);
 static int push_modparam(char *k, int iv, char *sv);
-static void consume_modparams(char *mod);
+static int consume_modparams(char *mod);
 
 extern int line;
 extern int column;
@@ -669,24 +669,33 @@ lmod_assigns: lmod_assigns lmod_assign { }
 
 loadmodule_stm: LOADMOD LBRACE lmod_assigns RBRACE {
 					if (load_module($1) < 0) {
-						LM_ERR("failed to load \"%s\" module\n", $1);
+						yyerrorf("failed to load \"%s\" module\n", $1);
 						YYABORT;
 					}
-					consume_modparams($1);
+					if (consume_modparams($1) != 0) {
+						yyerrorf("failed to load \"%s\" module\n", $1);
+						YYABORT;
+					}
 				}
 			   | LOADMOD LBRACE RBRACE {
 					if (load_module($1) < 0) {
-						LM_ERR("failed to load \"%s\" module\n", $1);
+						yyerrorf("failed to load \"%s\" module\n", $1);
 						YYABORT;
 					}
-					consume_modparams($1);
+					if (consume_modparams($1) != 0) {
+						yyerrorf("failed to load \"%s\" module\n", $1);
+						YYABORT;
+					}
 				}
 			   | LOADMOD {
 					if (load_module($1) < 0) {
-						LM_ERR("failed to load \"%s\" module\n", $1);
+						yyerrorf("failed to load \"%s\" module\n", $1);
 						YYABORT;
 					}
-					consume_modparams($1);
+					if (consume_modparams($1) != 0) {
+						yyerrorf("failed to load \"%s\" module\n", $1);
+						YYABORT;
+					}
 				}
 			   ;
 
@@ -1335,7 +1344,7 @@ event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 						i_tmp = 1;
 						while (event_rlist[i_tmp].a !=0 && i_tmp < EVENT_RT_NO) {
 							if (strcmp($3, event_rlist[i_tmp].name) == 0) {
-								LM_ERR("Script route <%s> redefined\n", $3);
+								yyerrorf("Script route <%s> redefined\n", $3);
 								YYABORT;
 							}
 							i_tmp++;
@@ -1356,7 +1365,7 @@ event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 						i_tmp = 1;
 						while (event_rlist[i_tmp].a !=0 && i_tmp < EVENT_RT_NO) {
 							if (strcmp($3, event_rlist[i_tmp].name) == 0) {
-								LM_ERR("Script route <%s> redefined\n", $3);
+								yyerrorf("Script route <%s> redefined\n", $3);
 								YYABORT;
 							}
 							i_tmp++;
@@ -1377,7 +1386,7 @@ event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 						i_tmp = 1;
 						while (event_rlist[i_tmp].a !=0 && i_tmp < EVENT_RT_NO) {
 							if (strcmp($3, event_rlist[i_tmp].name) == 0) {
-								LM_ERR("Script route <%s> redefined\n", $3);
+								yyerrorf("Script route <%s> redefined\n", $3);
 								YYABORT;
 							}
 							i_tmp++;
@@ -2763,7 +2772,7 @@ static int push_modparam(char *k, int iv, char *sv)
 	return 0;
 }
 
-static void consume_modparams(char *mod)
+static int consume_modparams(char *mod)
 {
 	struct modparam_list *mp, *it;
 
@@ -2774,10 +2783,12 @@ static void consume_modparams(char *mod)
 		if (mp->v.s.s) {
 			if (set_mod_param_regex(mod, mp->k.s, STR_PARAM, mp->v.s.s)) {
 				LM_ERR("failed to set \"%.*s\"\n", mp->k.len, mp->k.s);
+				return -1;
 			}
 		} else {
 			if (set_mod_param_regex(mod, mp->k.s, INT_PARAM, (void *)mp->v.n)) {
 				LM_ERR("failed to set \"%.*s\"\n", mp->k.len, mp->k.s);
+				return -1;
 			}
 		}
 
@@ -2785,6 +2796,7 @@ static void consume_modparams(char *mod)
 	}
 
 	mpl = NULL;
+	return 0;
 }
 
 static inline void warn(char* s)
