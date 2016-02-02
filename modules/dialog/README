@@ -788,25 +788,30 @@ modparam("dialog", "flags_column", "flags_c_name")
 
 1.6.36. profiles_with_value (string)
 
-   List of names for profiles with values.
+   List of names for profiles with values. Flag /b allows
+   replicating dialogs over the bin interface. Before, all of them
+   were replicated.
 
    Default value is “empty”.
 
    Example 1.36. Set profiles_with_value parameter
 ...
-modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s"
-)
+modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s;
+ repl/b;")
 ...
 
 1.6.37. profiles_no_value (string)
 
-   List of names for profiles without values.
+   List of names for profiles without values. Flag /b allows
+   replicating dialogs over the bin interface. Before, all of them
+   were replicated.
 
    Default value is “empty”.
 
    Example 1.37. Set profiles_no_value parameter
 ...
-modparam("dialog", "profiles_no_value", "inbound ; outbound ; shared/s")
+modparam("dialog", "profiles_no_value", "inbound ; outbound ; shared/s;
+repl/b;")
 ...
 
 1.6.38. db_flush_vals_profiles (int)
