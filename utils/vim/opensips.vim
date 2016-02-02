@@ -16,7 +16,7 @@ syn keyword	osStatement	return break exit drop
 syn keyword	osLabel		case default esac
 syn keyword	osConditional	if else switch and or not
 syn keyword	osRepeat		while for in
-syn keyword osAction loadmodule modparam async
+syn keyword osAction module async
 
 syn keyword specialOperand myself yes no true false enable disable on off
 syn keyword specialOperand af uri status from_uri to_uri NULL null
@@ -86,7 +86,7 @@ hi def link osVarSimple		Type
 hi def link osVar			Type
 hi def link osVarNamedS   	Type
 hi def link osVarIndex   	Type
-hi def link osRouteStmt		Type
+hi def link osRouteStmt		osStatement
 hi def link osLogFacility	specialOperand
 hi def link osTransfm		Special
 hi def link osCommentL		osComment
