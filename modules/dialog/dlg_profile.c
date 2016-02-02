@@ -492,8 +492,6 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 	profile->has_value = (has_value==0)?0:1;
 	profile->repl_type = repl_type;
 
-	profile->repl = NULL;
-
 	/* init locks */
 	if (repl_type != CACHEDB) {
 		profile->locks = get_a_lock_set(size) ;
