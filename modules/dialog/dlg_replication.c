@@ -232,7 +232,7 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 
 	/*
 	Do not replicate the pinging - we might terminate dialogs badly when running
-	as backup 
+	as backup
 	if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
 		if (insert_ping_timer(dlg) != 0)
 			LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
@@ -453,8 +453,8 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 
 	if (bin_init(&module_name, REPLICATION_DLG_CREATED, BIN_VERSION) != 0)
 		goto error;
-	
-	bin_push_int(clusterer_api.get_my_id());	
+
+	bin_push_int(clusterer_api.get_my_id());
 
 	callee_leg = callee_idx(dlg);
 
@@ -517,7 +517,7 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 {
 	static str module_name = str_init("dialog");
 	int callee_leg;
-	str *vars, *profiles;	
+	str *vars, *profiles;
 
 	if (bin_init(&module_name, REPLICATION_DLG_UPDATED, BIN_VERSION) != 0)
 		goto error;
@@ -565,7 +565,7 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 	bin_push_int((unsigned int)time(0) + dlg->tl.timeout - get_ticks());
 	bin_push_int(dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(dlg->legs[callee_leg].last_gen_cseq);
-	
+
 	if (clusterer_api.send_to(dialog_replicate_cluster, PROTO_BIN) < 0) {
 		LM_ERR("replicate dialog updated failed\n");
 		return;
@@ -585,7 +585,7 @@ error:
 void replicate_dialog_deleted(struct dlg_cell *dlg)
 {
 	static str module_name = str_init("dialog");
-	
+
 	if (bin_init(&module_name, REPLICATION_DLG_DELETED, BIN_VERSION) != 0)
 		goto error;
 
@@ -593,11 +593,11 @@ void replicate_dialog_deleted(struct dlg_cell *dlg)
 	bin_push_str(&dlg->callid);
 	bin_push_str(&dlg->legs[DLG_CALLER_LEG].tag);
 	bin_push_str(&dlg->legs[callee_idx(dlg)].tag);
-	
+
 	if (clusterer_api.send_to(dialog_replicate_cluster, PROTO_BIN) < 0) {
 		goto error;
  	}
-	
+
 	return;
 error:
 	LM_ERR("Failed to replicate deleted dialog\n");
@@ -637,11 +637,11 @@ void receive_dlg_binary_packet(int packet_type, struct receive_info *ri, void *a
 	char *ip;
 	unsigned short port;
 	int server_id;
-	
+
 	rc = bin_pop_int(&server_id);
 	if (rc < 0)
 		return;
-	
+
 	LM_DBG("Received a binary packet!\n");
 
 	if(get_bin_pkg_version() != BIN_VERSION){
@@ -655,7 +655,7 @@ void receive_dlg_binary_packet(int packet_type, struct receive_info *ri, void *a
 				ip, port, packet_type);
 		return;
 	}
-	
+
 	if(!clusterer_api.check(accept_replicated_dlg, &ri->src_su, server_id, ri->proto))
 		return;
 
@@ -778,13 +778,13 @@ static inline void dlg_replicate_profiles(void)
 
 	return;
 error:
-	LM_ERR("Failed to replicate profile dialog\n");	
+	LM_ERR("Failed to replicate profile dialog\n");
 }
 
 static repl_prof_count_t* find_destination(repl_prof_novalue_t *noval, int machine_id)
 {
 	repl_prof_count_t *head;
-	
+
 	head = noval->dsts;
 	while(head != NULL){
 		if( head->machine_id ==  machine_id )
@@ -957,7 +957,7 @@ int repl_prof_remove(str *name, str *value)
 		LM_ERR("cannot initiate bin buffer\n");
 		return -1;
 	}
-	
+
 	bin_push_int(clusterer_api.get_my_id());
 
 	if (repl_prof_add(name, value?1:0, value, 0) < 0)
@@ -996,7 +996,7 @@ static void repl_prof_timer_f(unsigned int ticks, void *param)
 	int i;
 
 	for (profile = profiles; profile; profile = profile->next) {
-		if (!profile->has_value)
+		if (!profile->has_value || profile->repl_type != PROTOBIN)
 			continue;
 		for (i = 0; i < profile->size; i++) {
 			lock_set_get(profile->locks, i);
@@ -1071,6 +1071,9 @@ static void repl_prof_utimer_f(utime_t ticks, void *param)
 	bin_push_int(clusterer_api.get_my_id());
 
 	for (profile = profiles; profile; profile = profile->next) {
+		if (!(profile->repl_type&PROTOBIN))
+			continue;
+
 		count = 0;
 		if (!profile->has_value) {
 			for (i = 0; i < profile->size; i++) {
