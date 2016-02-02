@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-id(int) time_stamp(datetime) callid(str) traced_user(str) msg(str) method(str) status(str) from_proto(str) from_ip(str) from_port(int) to_proto(str) to_ip(str) to_port(int) fromtag(str) direction(str)
+id(int) time_stamp(datetime) callid(str) trace_attrs(str) msg(str) method(str) status(str) from_proto(str) from_ip(str) from_port(int) to_proto(str) to_ip(str) to_port(int) fromtag(str) direction(str)
 METADATA_KEY
 2 
 METADATA_READONLY

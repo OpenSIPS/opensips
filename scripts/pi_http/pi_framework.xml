@@ -838,7 +838,7 @@
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>time_stamp</field><type>DB_DATETIME</type></column>
 		<column><field>callid</field><type>DB_STR</type></column>
-		<column><field>traced_user</field><type>DB_STR</type></column>
+		<column><field>trace_attrs</field><type>DB_STR</type></column>
 		<column><field>msg</field><type>DB_BLOB</type></column>
 		<column><field>method</field><type>DB_STR</type></column>
 		<column><field>status</field><type>DB_STR</type></column>
@@ -4101,7 +4101,7 @@
 				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>time_stamp</field></col>
 				<col><field>callid</field></col>
-				<col><field>traced_user</field></col>
+				<col><field>trace_attrs</field></col>
 				<col><field>msg</field></col>
 				<col><field>method</field></col>
 				<col><field>status</field></col>
@@ -4121,7 +4121,7 @@
 			<query_cols>
 				<col><field>time_stamp</field></col>
 				<col><field>callid</field></col>
-				<col><field>traced_user</field></col>
+				<col><field>trace_attrs</field></col>
 				<col><field>msg</field></col>
 				<col><field>method</field></col>
 				<col><field>status</field></col>
@@ -4144,7 +4144,7 @@
 			<query_cols>
 				<col><field>time_stamp</field></col>
 				<col><field>callid</field></col>
-				<col><field>traced_user</field></col>
+				<col><field>trace_attrs</field></col>
 				<col><field>msg</field></col>
 				<col><field>method</field></col>
 				<col><field>status</field></col>
