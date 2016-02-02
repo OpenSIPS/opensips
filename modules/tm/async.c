@@ -142,8 +142,14 @@ int t_resume_async(int fd, void *param)
 	/* no need for the context anymore */
 	shm_free(ctx);
 
-	context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
-	pkg_free(current_processing_ctx);
+	/* free also the processing ctx if still set
+	 * NOTE: it may become null if inside the run_resume_route
+	 * another async jump was made (and context attached again
+	 * to transaction) */
+	if (current_processing_ctx) {
+		context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
+		pkg_free(current_processing_ctx);
+	}
 
 restore:
 	/* restore original environment */
