@@ -375,7 +375,6 @@ enum parse_state {
 %token SERVER_SIGNATURE
 %token SERVER_HEADER
 %token USER_AGENT_HEADER
-%token LOADMODULE
 %token MPATH
 %token MODPARAM
 %token MAXBUFFER
@@ -447,7 +446,7 @@ enum parse_state {
 %token <strval> ID
 %token <strval> STRING
 %token <strval> SCRIPTVAR
-%token <strval> LOADMOD
+%token <strval> MODULE
 %token <strval> IPV6ADDR
 
 /* other */
@@ -514,7 +513,7 @@ statements:	statements statement {}
 	;
 
 statement:	assign_stm
-		| loadmodule_stm
+		| module_stm
 		| {rt=REQUEST_ROUTE;} route_stm
 		| {rt=FAILURE_ROUTE;} failure_route_stm
 		| {rt=ONREPLY_ROUTE;} onreply_route_stm
@@ -667,7 +666,7 @@ lmod_assigns: lmod_assigns lmod_assign { }
 			| lmod_assign { }
 			;
 
-loadmodule_stm: LOADMOD LBRACE lmod_assigns RBRACE {
+module_stm: MODULE LBRACE lmod_assigns RBRACE {
 					if (load_module($1) < 0) {
 						yyerrorf("failed to load \"%s\" module\n", $1);
 						YYABORT;
@@ -677,7 +676,7 @@ loadmodule_stm: LOADMOD LBRACE lmod_assigns RBRACE {
 						YYABORT;
 					}
 				}
-			   | LOADMOD LBRACE RBRACE {
+			   | MODULE LBRACE RBRACE {
 					if (load_module($1) < 0) {
 						yyerrorf("failed to load \"%s\" module\n", $1);
 						YYABORT;
@@ -687,7 +686,7 @@ loadmodule_stm: LOADMOD LBRACE lmod_assigns RBRACE {
 						YYABORT;
 					}
 				}
-			   | LOADMOD {
+			   | MODULE {
 					if (load_module($1) < 0) {
 						yyerrorf("failed to load \"%s\" module\n", $1);
 						YYABORT;

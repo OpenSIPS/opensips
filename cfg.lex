@@ -287,7 +287,7 @@ LOGOP		{EQUAL_T}|{GT}|{LT}|{GTE}|{LTE}|{DIFF}|{MATCH}|{NOTMATCH}|{NOT}|{AND}|{OR
 SCRIPTVAR_START	"$"
 
 /* loadmodule */
-LOADMOD_START	"loadmodule"
+LOADMOD_START	"module"
 
 /* config vars. */
 DEBUG	debug
@@ -773,7 +773,7 @@ IMPORTFILE      "import_file"
 		BEGIN(INITIAL);
 		yylval.strval = s_buf.s;
 		memset(&s_buf, 0, sizeof(s_buf));
-		return LOADMOD;
+		return MODULE;
 		}
 <SCRIPTVARS>{LPAREN} { count(); np++; yymore(); svar_tlen = yyleng; }
 <SCRIPTVARS>{RPAREN} {
