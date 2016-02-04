@@ -524,9 +524,9 @@ static void acc_db_init_keys(void)
 		db_keys_cdrs[n++] = db_keys[m++] = &acc_setuptime_col;
 		db_keys_cdrs[n++] = db_keys[m++] = &acc_created_col;
 		db_keys_cdrs[n++] = &acc_duration_col;
-		VAL_TYPE(db_vals_cdrs + n-1) = VAL_TYPE(db_vals+m-1) = DB_INT;
-		VAL_TYPE(db_vals_cdrs + n-2) = VAL_TYPE(db_vals+m-2) = DB_DATETIME;
-		VAL_TYPE(db_vals_cdrs + n-3) = DB_INT;
+		VAL_TYPE(db_vals_cdrs + n-1) = DB_INT; /* duration*/
+		VAL_TYPE(db_vals_cdrs + n-2) = VAL_TYPE(db_vals+m-1) = DB_DATETIME;
+		VAL_TYPE(db_vals_cdrs + n-3) = VAL_TYPE(db_vals+m-2) = DB_INT;
 	}
 
 }
