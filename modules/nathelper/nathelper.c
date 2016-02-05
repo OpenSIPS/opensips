@@ -601,6 +601,7 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 
 		cp = ip_addr2a(&msg->rcv.src_ip);
 		len = (hostport.s-c->uri.s) + strlen(cp) + 6 /* :port */
+			+ 2 /* just in case if IPv6 */
 			+ (params?params->len+(is_enclosed?0:2):0)
 			+ 1 + left.len + left2.len;
 		buf = pkg_malloc(len);
@@ -610,15 +611,28 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 		}
 		temp = hostport.s[0]; hostport.s[0] = '\0';
 		if (params==NULL) {
-			len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s", c->uri.s, cp,
-				msg->rcv.src_port,left.len,left.s,left2.len,left2.s);
+			if (msg->rcv.src_ip.af==AF_INET6)
+				len1 = snprintf(buf, len, "%s[%s]:%d%.*s%.*s", c->uri.s, cp,
+					msg->rcv.src_port,left.len,left.s,left2.len,left2.s);
+			else
+				len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s", c->uri.s, cp,
+					msg->rcv.src_port,left.len,left.s,left2.len,left2.s);
 		} else if (!is_enclosed) {
-			len1 = snprintf(buf, len, "<%s%s:%d%.*s>", c->uri.s, cp,
-				msg->rcv.src_port,params->len,params->s);
+			if (msg->rcv.src_ip.af==AF_INET6)
+				len1 = snprintf(buf, len, "<%s[%s]:%d%.*s>", c->uri.s, cp,
+					msg->rcv.src_port,params->len,params->s);
+			else
+				len1 = snprintf(buf, len, "<%s%s:%d%.*s>", c->uri.s, cp,
+					msg->rcv.src_port,params->len,params->s);
 		} else {
-			len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s%.*s", c->uri.s, cp,
-				msg->rcv.src_port,params->len,params->s,
-				left.len,left.s,left2.len,left2.s);
+			if (msg->rcv.src_ip.af==AF_INET6)
+				len1 = snprintf(buf, len, "%s[%s]:%d%.*s%.*s%.*s", c->uri.s, cp,
+					msg->rcv.src_port,params->len,params->s,
+					left.len,left.s,left2.len,left2.s);
+			else
+				len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s%.*s", c->uri.s, cp,
+					msg->rcv.src_port,params->len,params->s,
+					left.len,left.s,left2.len,left2.s);
 		}
 		if (len1 < len)
 			len = len1;
