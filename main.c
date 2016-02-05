@@ -169,7 +169,6 @@ int children_no = CHILD_NO;		/* number of children processing requests */
 enum poll_types io_poll_method=0; 	/*!< by default choose the best method */
 int sig_flag = 0;              /* last signal received */
 
-int dont_fork = 0;
 int no_daemon_mode = 0;
 /* assertion statements in script. disabled by default */
 int enable_asserts = 0;
@@ -540,10 +539,6 @@ static void sig_usr(int signo)
 		if (sig_flag==0) sig_flag=signo;
 		else /*  previous sig. not processed yet, ignoring? */
 			return; ;
-		if (dont_fork)
-				/* only one proc, doing everything from the sig handler,
-				unsafe, but this is only for debugging mode*/
-			handle_sigs();
 	}else{
 		/* process the important signals */
 		switch(signo){
@@ -645,86 +640,46 @@ static int main_loop(void)
 		goto error;
 	}
 
-	if (dont_fork){
 
-		if (create_status_pipe() < 0) {
-			LM_ERR("failed to create status pipe\n");
+	if (trans_init_all_listeners()<0) {
+		LM_ERR("failed to init all SIP listeners, aborting\n");
+		goto error;
+	}
+
+	/* all processes should have access to all the sockets (for sending)
+	 * so we open all first*/
+	if (do_suid(uid, gid)==-1) goto error; /* try to drop privileges */
+
+	if (start_module_procs()!=0) {
+		LM_ERR("failed to fork module processes\n");
+		goto error;
+	}
+
+	if(startup_rlist.a) {/* if a startup route was defined */
+		startup_done = (int*)shm_malloc(sizeof(int));
+		if(startup_done == NULL) {
+			LM_ERR("No more shared memory\n");
 			goto error;
 		}
+		*startup_done = 0;
+	}
 
-		if (udp_init_nofork() < 0) {
-			LM_ERR("failed to init UDP for no fork mode\n");
-			goto error;
-		}
+	/* fork for the timer process*/
+	if (start_timer_processes()!=0) {
+		LM_CRIT("cannot start timer process(es)\n");
+		goto error;
+	}
 
-		/* try to drop privileges */
-		if (do_suid(uid, gid)==-1)
-			goto error;
+	/* fork all processes required by UDP network layer */
+	if (udp_start_processes( &chd_rank, startup_done)<0) {
+		LM_CRIT("cannot start TCP processes\n");
+		goto error;
+	}
 
-		if (start_module_procs()!=0) {
-			LM_ERR("failed to fork module processes\n");
-			goto error;
-		}
-
-		/* we need another process to act as the timer*/
-		if (start_timer_processes()!=0) {
-			LM_CRIT("cannot start timer process(es)\n");
-			goto error;
-		}
-
-		is_main=1;
-
-		udp_start_nofork();
-		/* udp_start_nofork() returns only if error */
-
-		/* in case of failed startup, behave as "attendant" to trigger
-		 * proper cleanup sequance (and proper signal handler !!!).
-		 * So, reset the dont_fork (as it will force inline signal handling)*/
-		dont_fork = 0;
-		return -1;
-
-	} else {  /* don't fork */
-
-		if (trans_init_all_listeners()<0) {
-			LM_ERR("failed to init all SIP listeners, aborting\n");
-			goto error;
-		}
-
-		/* all processes should have access to all the sockets (for sending)
-		 * so we open all first*/
-		if (do_suid(uid, gid)==-1) goto error; /* try to drop privileges */
-
-		if (start_module_procs()!=0) {
-			LM_ERR("failed to fork module processes\n");
-			goto error;
-		}
-
-		if(startup_rlist.a) {/* if a startup route was defined */
-			startup_done = (int*)shm_malloc(sizeof(int));
-			if(startup_done == NULL) {
-				LM_ERR("No more shared memory\n");
-				goto error;
-			}
-			*startup_done = 0;
-		}
-
-		/* fork for the timer process*/
-		if (start_timer_processes()!=0) {
-			LM_CRIT("cannot start timer process(es)\n");
-			goto error;
-		}
-
-		/* fork all processes required by UDP network layer */
-		if (udp_start_processes( &chd_rank, startup_done)<0) {
-			LM_CRIT("cannot start TCP processes\n");
-			goto error;
-		}
-
-		/* fork all processes required by TCP network layer */
-		if (tcp_start_processes( &chd_rank, startup_done)<0) {
-			LM_CRIT("cannot start TCP processes\n");
-			goto error;
-		}
+	/* fork all processes required by TCP network layer */
+	if (tcp_start_processes( &chd_rank, startup_done)<0) {
+		LM_CRIT("cannot start TCP processes\n");
+		goto error;
 	}
 
 	/* this is the main process -> it shouldn't send anything */
@@ -758,7 +713,7 @@ error:
 	is_main=1;  /* if we are here, we are the "main process",
 				  any forked children should exit with exit(-1) and not
 				  ever use return */
-	report_conditional_status( (!dont_fork), -1);
+	report_conditional_status( 1, -1);
 	return -1;
 
 }
@@ -879,9 +834,6 @@ int main(int argc, char** argv)
 				    break;
 			case 'd':
 					(*debug)++;
-					break;
-			case 'D':
-					dont_fork=1;
 					break;
 			case 'F':
 					no_daemon_mode=1;
@@ -1064,11 +1016,6 @@ try_again:
 	print_rl();
 #endif
 
-	if (no_daemon_mode+dont_fork > 1) {
-		LM_ERR("cannot use -D (fork=no) and -F together\n");
-		return ret;
-	}
-
 	/* init the resolver, before fixing the config */
 	resolv_init();
 
@@ -1101,21 +1048,12 @@ try_again:
 	print_aliases();
 	printf("\n");
 
-	if (dont_fork){
-		LM_WARN("no fork mode %s\n",
-				(protos[PROTO_UDP].listeners)?(
-				(protos[PROTO_UDP].listeners->next)?" and more than one listen"
-				" address found(will use only the first one)":""
-				):"and no udp listen address found" );
-	}
 	if (config_check){
 		LM_NOTICE("config file ok, exiting...\n");
 		return 0;
 	}
 
 	time(&startup_time);
-
-
 
 	/* Init statistics */
 	init_shm_statistics();
@@ -1132,10 +1070,8 @@ try_again:
 	}
 
 	/* init_daemon? */
-	if (!dont_fork){
-		if ( daemonize((log_name==0)?argv[0]:log_name, &own_pgid) <0 )
-			goto error;
-	}
+	if ( daemonize((log_name==0)?argv[0]:log_name, &own_pgid) <0 )
+		goto error;
 
 	/* install signal handlers */
 	if (install_sigs() != 0){

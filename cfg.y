@@ -316,7 +316,6 @@ static struct multi_str *tmp_mod;
 %token DEBUG
 %token ENABLE_ASSERTS
 %token ABORT_ON_ASSERT
-%token FORK
 %token LOGSTDERROR
 %token LOGFACILITY
 %token LOGNAME
@@ -646,8 +645,6 @@ assign_stm: DEBUG EQUAL snumber {
 		| ENABLE_ASSERTS EQUAL error  { yyerror("boolean value expected"); }
 		| ABORT_ON_ASSERT EQUAL NUMBER  { abort_on_assert=$3; }
 		| ABORT_ON_ASSERT EQUAL error  { yyerror("boolean value expected"); }
-		| FORK  EQUAL NUMBER { dont_fork= !dont_fork ? ! $3:1; }
-		| FORK  EQUAL error  { yyerror("boolean value expected"); }
 		| LOGSTDERROR EQUAL NUMBER { if (!config_check) log_stderr=$3; }
 		| LOGSTDERROR EQUAL error { yyerror("boolean value expected"); }
 		| LOGFACILITY EQUAL ID {

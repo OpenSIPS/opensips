@@ -396,26 +396,24 @@ error:
  */
 int do_suid(const int uid, const int gid)
 {
-	if (!dont_fork) {
-		if (pid_file) {
-			/* pid file should be already created by deamonize function
-			   -> change the owner and group also
-			*/
-			if (chown( pid_file , uid?uid:-1, gid?gid:-1)!=0) {
-				LM_ERR("failed to change owner of pid file %s: %s(%d)\n",
-					pid_file, strerror(errno), errno);
-				goto error;
-			}
+	if (pid_file) {
+		/* pid file should be already created by deamonize function
+		   -> change the owner and group also
+		*/
+		if (chown( pid_file , uid?uid:-1, gid?gid:-1)!=0) {
+			LM_ERR("failed to change owner of pid file %s: %s(%d)\n",
+				pid_file, strerror(errno), errno);
+			goto error;
 		}
-		if (pgid_file) {
-			/* pgid file should be already created by deamonize function
-			   -> change the owner and group also
-			*/
-			if (chown( pgid_file , uid?uid:-1, gid?gid:-1)!=0) {
-				LM_ERR("failed to change owner of pid file %s: %s(%d)\n",
-					pgid_file, strerror(errno), errno);
-				goto error;
-			}
+	}
+	if (pgid_file) {
+		/* pgid file should be already created by deamonize function
+		   -> change the owner and group also
+		*/
+		if (chown( pgid_file , uid?uid:-1, gid?gid:-1)!=0) {
+			LM_ERR("failed to change owner of pid file %s: %s(%d)\n",
+				pgid_file, strerror(errno), errno);
+			goto error;
 		}
 	}
 

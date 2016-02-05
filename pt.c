@@ -50,18 +50,12 @@ int init_multi_proc_support(void)
 
 	proc_no = 0;
 
-	/* count how many processes we will have in core */
-	if (dont_fork) {
-		/* only one UDP listener */
-		proc_no = 1;
-	} else {
-		/* UDP based listeners */
-		proc_no += udp_count_processes();
-		/* TCP based listeners */
-		proc_no += tcp_count_processes();
-		/* attendent */
-		proc_no++;
-	}
+	/* UDP based listeners */
+	proc_no += udp_count_processes();
+	/* TCP based listeners */
+	proc_no += tcp_count_processes();
+	/* attendent */
+	proc_no++;
 
 	/* info packet UDP receivers */
 
@@ -178,17 +172,12 @@ int count_init_children(int flags)
 	int ret=0,i;
 	struct sr_module *m;
 
-	if (dont_fork)
-		goto skip_listeners;
-
 	/* listening children */
 	ret += udp_count_processes();
 	ret += tcp_count_processes();
 
 	/* attendent */
 	ret++;
-
-skip_listeners:
 
 	/* count number of module procs going to be initialised */
 	for (m=modules;m;m=m->next) {
