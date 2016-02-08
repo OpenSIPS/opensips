@@ -169,6 +169,9 @@ int children_no = CHILD_NO;		/* number of children processing requests */
 enum poll_types io_poll_method=0; 	/*!< by default choose the best method */
 int sig_flag = 0;              /* last signal received */
 
+/* activate debug mode */
+int debug_mode = 0;
+/* do not become daemon, stay attached to the console */
 int no_daemon_mode = 0;
 /* assertion statements in script. disabled by default */
 int enable_asserts = 0;
@@ -635,21 +638,6 @@ static int main_loop(void)
 
 	chd_rank=0;
 
-	if (init_debug() != 0) {
-		LM_ERR("failed to init logging levels\n");
-		goto error;
-	}
-
-
-	if (trans_init_all_listeners()<0) {
-		LM_ERR("failed to init all SIP listeners, aborting\n");
-		goto error;
-	}
-
-	/* all processes should have access to all the sockets (for sending)
-	 * so we open all first*/
-	if (do_suid(uid, gid)==-1) goto error; /* try to drop privileges */
-
 	if (start_module_procs()!=0) {
 		LM_ERR("failed to fork module processes\n");
 		goto error;
@@ -713,7 +701,7 @@ error:
 	is_main=1;  /* if we are here, we are the "main process",
 				  any forked children should exit with exit(-1) and not
 				  ever use return */
-	report_conditional_status( 1, -1);
+	report_failure_status();
 	return -1;
 
 }
@@ -730,7 +718,7 @@ error:
 int main(int argc, char** argv)
 {
 	/* configure by default logging to syslog */
-	int cfg_log_stderr = 0;
+	int cfg_log_stderr = 1;
 	FILE* cfg_stream;
 	int c,r;
 	char *tmp;
@@ -790,11 +778,9 @@ int main(int argc, char** argv)
 						LM_ERR("bad shmem size number: -m %s\n", optarg);
 						goto error00;
 					};
-
 					break;
 			case 'M':
 					/* ignoring it, parsed previously */
-
 					break;
 			case 'b':
 					maxbuffer=strtol(optarg, &tmp, 10);
@@ -833,7 +819,11 @@ int main(int argc, char** argv)
 					received_dns|=DO_REV_DNS;
 				    break;
 			case 'd':
-					(*debug)++;
+					*debug = debug_mode ? L_DBG : (*debug)+1;
+					break;
+			case 'D':
+					debug_mode=1;
+					*debug = L_DBG;
 					break;
 			case 'F':
 					no_daemon_mode=1;
@@ -862,7 +852,6 @@ int main(int argc, char** argv)
 					print_ct_constants();
 					printf("%s compiled on %s with %s\n", __FILE__,
 							compiled, COMPILER );
-
 					exit(0);
 					break;
 			case 'h':
@@ -1012,10 +1001,6 @@ try_again:
 		return -1;
 	}
 
-#ifdef EXTRA_DEBUG
-	print_rl();
-#endif
-
 	/* init the resolver, before fixing the config */
 	resolv_init();
 
@@ -1060,18 +1045,61 @@ try_again:
 
 	/*init UDP networking layer*/
 	if (udp_init()<0){
-		LM_CRIT("could not initialize tcp, exiting...\n");
+		LM_CRIT("could not initialize tcp\n");
 		goto error;
 	}
 	/*init TCP networking layer*/
 	if (tcp_init()<0){
-		LM_CRIT("could not initialize tcp, exiting...\n");
+		LM_CRIT("could not initialize tcp\n");
 		goto error;
 	}
 
-	/* init_daemon? */
-	if ( daemonize((log_name==0)?argv[0]:log_name, &own_pgid) <0 )
+	if (create_status_pipe() < 0) {
+		LM_ERR("failed to create status pipe\n");
 		goto error;
+	}
+
+	if (debug_mode) {
+
+		LM_NOTICE("DEBUG MODE activated\n");
+		if (no_daemon_mode==0) {
+			LM_NOTICE("disabling daemon mode (found enabled)\n");
+			no_daemon_mode = 1;
+		}
+		if (log_stderr==0) {
+			LM_NOTICE("enabling logging to standard error (found disabled)\n");
+			log_stderr = 1;
+		}
+		if (*debug<L_DBG) {
+			LM_NOTICE("setting logging to debug level (found on %d)\n",*debug);
+			*debug = L_DBG;
+		}
+		if (disable_core_dump) {
+			LM_NOTICE("enabling core dumping (found off)\n");
+			disable_core_dump = 0;
+		}
+		if (udp_count_processes()!=0) {
+			if (children_no!=2) {
+				LM_NOTICE("setting UDP children to 2 (found %d)\n",
+					children_no);
+				children_no = 2;
+			}
+		}
+		if (tcp_count_processes()!=0) {
+			if (tcp_children_no!=2) {
+				LM_NOTICE("setting TCP children to 2 (found %d)\n",
+					tcp_children_no);
+				tcp_children_no = 2;
+			}
+		}
+
+	} else { /* debug_mode */
+
+		/* init_daemon */
+		if ( daemonize((log_name==0)?argv[0]:log_name, &own_pgid) <0 )
+			goto error;
+
+	}
 
 	/* install signal handlers */
 	if (install_sigs() != 0){
@@ -1189,9 +1217,24 @@ try_again:
 	if ( (r=fix_rls())!=0){
 		LM_ERR("failed to fix configuration with err code %d\n", r);
 		goto error;
-	};
+	}
 
-	ret=main_loop();
+	if (init_debug() != 0) {
+		LM_ERR("failed to init logging levels\n");
+		goto error;
+	}
+
+	if (trans_init_all_listeners()<0) {
+		LM_ERR("failed to init all SIP listeners, aborting\n");
+		goto error;
+	}
+
+	/* all processes should have access to all the sockets (for sending)
+	 * so we open all first*/
+	if (do_suid(uid, gid)==-1)
+		goto error;
+
+	ret = main_loop();
 
 error:
 	/*kill everything*/
@@ -1199,5 +1242,6 @@ error:
 	/*clean-up*/
 	cleanup(0);
 error00:
+	LM_NOTICE("Exiting....\n");
 	return ret;
 }

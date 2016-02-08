@@ -313,6 +313,8 @@ static struct multi_str *tmp_mod;
 %token SCRIPT_TRACE
 
 /* config vars. */
+%token FORK
+%token DEBUG_MODE
 %token DEBUG
 %token ENABLE_ASSERTS
 %token ABORT_ON_ASSERT
@@ -638,28 +640,32 @@ blst_elem_list: blst_elem_list COMMA blst_elem {}
 
 
 assign_stm: DEBUG EQUAL snumber {
-					*debug=$3;
+			/* in debug mode, force logging to DEBUG level*/
+			*debug= debug_mode?L_DBG:$3;
 			}
 		| DEBUG EQUAL error  { yyerror("number  expected"); }
 		| ENABLE_ASSERTS EQUAL NUMBER  { enable_asserts=$3; }
 		| ENABLE_ASSERTS EQUAL error  { yyerror("boolean value expected"); }
 		| ABORT_ON_ASSERT EQUAL NUMBER  { abort_on_assert=$3; }
 		| ABORT_ON_ASSERT EQUAL error  { yyerror("boolean value expected"); }
-		| LOGSTDERROR EQUAL NUMBER { if (!config_check) log_stderr=$3; }
+		| FORK EQUAL NUMBER {yyerror("fork is deprecated, use debug_mode\n");}
+		| DEBUG_MODE EQUAL NUMBER  { debug_mode=$3;*debug = L_DBG; }
+		| DEBUG_MODE EQUAL error
+			{ yyerror("boolean value expected for debug_mode"); }
+		| LOGSTDERROR EQUAL NUMBER 
+			/* in config-check or debug mode we force logging 
+			 * to standard error */
+			{ if (!config_check && !debug_mode) log_stderr=$3; }
 		| LOGSTDERROR EQUAL error { yyerror("boolean value expected"); }
 		| LOGFACILITY EQUAL ID {
-					if ( (i_tmp=str2facility($3))==-1)
-						yyerror("bad facility (see syslog(3) man page)");
-					if (!config_check)
-						log_facility=i_tmp;
-									}
+			if ( (i_tmp=str2facility($3))==-1)
+				yyerror("bad facility (see syslog(3) man page)");
+			if (!config_check)
+				log_facility=i_tmp;
+			}
 		| LOGFACILITY EQUAL error { yyerror("ID expected"); }
 		| LOGNAME EQUAL STRING { log_name=$3; }
 		| LOGNAME EQUAL error { yyerror("string value expected"); }
-		| AVP_ALIASES EQUAL STRING {
-				yyerror("AVP_ALIASES shouldn't be used anymore\n");
-			}
-		| AVP_ALIASES EQUAL error { yyerror("string value expected"); }
 		| DNS EQUAL NUMBER   { received_dns|= ($3)?DO_DNS:0; }
 		| DNS EQUAL error { yyerror("boolean value expected"); }
 		| REV_DNS EQUAL NUMBER { received_dns|= ($3)?DO_REV_DNS:0; }

@@ -285,13 +285,19 @@ LOGOP		{EQUAL_T}|{GT}|{LT}|{GTE}|{LTE}|{DIFF}|{MATCH}|{NOTMATCH}|{NOT}|{AND}|{OR
 SCRIPTVAR_START	"$"
 
 /* config vars. */
+DEBUG_MODE	debug_mode
+FORK		fork
+CHILDREN	children
+CHROOT		"chroot"
+WDIR		"workdir"|"wdir"
+DISABLE_CORE		"disable_core_dump"
+OPEN_FD_LIMIT		"open_files_limit"
 DEBUG	debug
 ENABLE_ASSERTS	enable_asserts
 ABORT_ON_ASSERT	abort_on_assert
 LOGSTDERROR	log_stderror
 LOGFACILITY	log_facility
 LOGNAME		log_name
-AVP_ALIASES	avp_aliases
 LISTEN		listen
 MEMGROUP	mem-group
 ALIAS		alias
@@ -305,7 +311,6 @@ DNS_RETR_NO     dns_retr_no
 DNS_SERVERS_NO  dns_servers_no
 DNS_USE_SEARCH  dns_use_search_list
 MAXBUFFER maxbuffer
-CHILDREN children
 CHECK_VIA	check_via
 SHM_HASH_SPLIT_PERCENTAGE "shm_hash_split_percentage"
 SHM_SECONDARY_HASH_SIZE "shm_secondary_hash_size"
@@ -325,8 +330,6 @@ SIP_WARNING sip_warning
 SERVER_SIGNATURE server_signature
 SERVER_HEADER server_header
 USER_AGENT_HEADER user_agent_header
-CHROOT		"chroot"
-WDIR		"workdir"|"wdir"
 MHOMED		mhomed
 POLL_METHOD		"poll_method"
 TCP_CHILDREN	"tcp_children"
@@ -343,8 +346,6 @@ TCP_KEEPINTERVAL        "tcp_keepinterval"
 TCP_MAX_MSG_TIME		"tcp_max_msg_time"
 ADVERTISED_ADDRESS	"advertised_address"
 ADVERTISED_PORT		"advertised_port"
-DISABLE_CORE		"disable_core_dump"
-OPEN_FD_LIMIT		"open_files_limit"
 MCAST_LOOPBACK		"mcast_loopback"
 MCAST_TTL			"mcast_ttl"
 TOS					"tos"
@@ -554,13 +555,23 @@ IMPORTFILE      "import_file"
 <INITIAL>{AF}	{ count(); yylval.strval=yytext; return AF; }
 <INITIAL>{MYSELF}	{ count(); yylval.strval=yytext; return MYSELF; }
 
+
+<INITIAL>{FORK}			{ count(); yylval.strval=yytext; return FORK; }
+<INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
+<INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
+<INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
+<INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
+<INITIAL>{DISABLE_CORE}		{	count(); yylval.strval=yytext;
+									return DISABLE_CORE; }
+<INITIAL>{OPEN_FD_LIMIT}	{	count(); yylval.strval=yytext;
+									return OPEN_FD_LIMIT; }
+
 <INITIAL>{DEBUG}	{ count(); yylval.strval=yytext; return DEBUG; }
 <INITIAL>{ENABLE_ASSERTS}	{ count(); yylval.strval=yytext; return ENABLE_ASSERTS; }
 <INITIAL>{ABORT_ON_ASSERT}	{ count(); yylval.strval=yytext; return ABORT_ON_ASSERT; }
 <INITIAL>{LOGSTDERROR}	{ yylval.strval=yytext; return LOGSTDERROR; }
 <INITIAL>{LOGFACILITY}	{ yylval.strval=yytext; return LOGFACILITY; }
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }
-<INITIAL>{AVP_ALIASES}	{ yylval.strval=yytext; return AVP_ALIASES; }
 <INITIAL>{LISTEN}	{ count(); yylval.strval=yytext; return LISTEN; }
 <INITIAL>{MEMGROUP}	{ count(); yylval.strval=yytext; return MEMGROUP; }
 <INITIAL>{ALIAS}	{ count(); yylval.strval=yytext; return ALIAS; }
@@ -582,7 +593,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{MAX_WHILE_LOOPS}	{ count(); yylval.strval=yytext;
 								return MAX_WHILE_LOOPS; }
 <INITIAL>{MAXBUFFER}	{ count(); yylval.strval=yytext; return MAXBUFFER; }
-<INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
 <INITIAL>{CHECK_VIA}	{ count(); yylval.strval=yytext; return CHECK_VIA; }
 <INITIAL>{SHM_HASH_SPLIT_PERCENTAGE}	{ count(); yylval.strval=yytext; return SHM_HASH_SPLIT_PERCENTAGE; }
 <INITIAL>{SHM_SECONDARY_HASH_SIZE}	{ count(); yylval.strval=yytext; return SHM_SECONDARY_HASH_SIZE; }
@@ -599,8 +609,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{QUERYBUFFERSIZE}	{ count(); yylval.strval=yytext; return QUERYBUFFERSIZE; }
 <INITIAL>{QUERYFLUSHTIME}	{ count(); yylval.strval=yytext; return QUERYFLUSHTIME; }
 <INITIAL>{SIP_WARNING}	{ count(); yylval.strval=yytext; return SIP_WARNING; }
-<INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
-<INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
 <INITIAL>{MHOMED}	{ count(); yylval.strval=yytext; return MHOMED; }
 <INITIAL>{TCP_NO_NEW_CONN_BFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_BFLAG; }
 <INITIAL>{TCP_CHILDREN}	{ count(); yylval.strval=yytext; return TCP_CHILDREN; }
@@ -628,10 +636,6 @@ IMPORTFILE      "import_file"
 									return ADVERTISED_ADDRESS; }
 <INITIAL>{ADVERTISED_PORT}		{	count(); yylval.strval=yytext;
 									return ADVERTISED_PORT; }
-<INITIAL>{DISABLE_CORE}		{	count(); yylval.strval=yytext;
-									return DISABLE_CORE; }
-<INITIAL>{OPEN_FD_LIMIT}	{	count(); yylval.strval=yytext;
-									return OPEN_FD_LIMIT; }
 <INITIAL>{MCAST_LOOPBACK}	{	count(); yylval.strval=yytext;
 									return MCAST_LOOPBACK; }
 <INITIAL>{MCAST_TTL}		{	count(); yylval.strval=yytext;

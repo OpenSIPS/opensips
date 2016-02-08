@@ -67,6 +67,7 @@ extern int tcp_no_new_conn;
 extern int tcp_no_new_conn_bflag;
 
 extern int no_daemon_mode;
+extern int debug_mode;
 extern int check_via;
 extern int received_dns;
 extern int sip_warning;

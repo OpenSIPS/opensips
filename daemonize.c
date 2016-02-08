@@ -236,11 +236,6 @@ int daemonize(char* name, int * own_pgid)
 		goto error;
 	}
 
-	if (create_status_pipe() < 0) {
-		LM_ERR("failed to create status pipe");
-		goto error;
-	}
-
 	if (!no_daemon_mode) {
 		/* fork to become!= group leader*/
 		if ((pid=fork())<0){
