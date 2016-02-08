@@ -144,7 +144,7 @@ pid_t internal_fork(char *proc_desc)
 		process_counter = CHILD_COUNTER_STOP;
 		/* each children need a unique seed */
 		seed_child(seed);
-		init_debug();
+		init_log_level();
 
 		/* set attributes */
 		set_proc_attrs(proc_desc);

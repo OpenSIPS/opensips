@@ -286,13 +286,13 @@ static struct mi_root *mi_kill(struct mi_root *cmd, void *param)
 
 
 
-static struct mi_root *mi_debug(struct mi_root *cmd, void *param)
+static struct mi_root *mi_log_level(struct mi_root *cmd, void *param)
 {
 	struct mi_root *rpl_tree;
 	struct mi_node *node;
 	char *p;
 	int len;
-	int new_debug, i;
+	int new_level, i;
 	pid_t pid = 0;
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
@@ -301,7 +301,7 @@ static struct mi_root *mi_debug(struct mi_root *cmd, void *param)
 
 	node = cmd->node.kids;
 	if (node!=NULL) {
-		if (str2sint( &node->value, &new_debug) < 0)
+		if (str2sint( &node->value, &new_level) < 0)
 			goto out_bad_param;
 
 		node = node->next;
@@ -321,8 +321,8 @@ static struct mi_root *mi_debug(struct mi_root *cmd, void *param)
 			if (!add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("PID"), p, len))
 				goto out;
 
-			p = sint2str((unsigned long)pt[i].debug, &len);
-			if (!add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Debug"), p, len))
+			p = sint2str((unsigned long)pt[i].log_level, &len);
+			if (!add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Log level"), p,len))
 				goto out;
 
 			if (!add_mi_attr( node, 0, MI_SSTR("Type"), pt[i].desc,
@@ -333,13 +333,13 @@ static struct mi_root *mi_debug(struct mi_root *cmd, void *param)
 		return rpl_tree;
 	}
 
-	p = sint2str((long)new_debug, &len);
+	p = sint2str((long)new_level, &len);
 	if (pid)
 		node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
-			MI_SSTR("New debug"), p, len);
+			MI_SSTR("New log level"), p, len);
 	else
 		node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
-			MI_SSTR("New global debug"), p, len);
+			MI_SSTR("New global log level"), p, len);
 
 	if (node==0)
 		goto out;
@@ -350,10 +350,10 @@ static struct mi_root *mi_debug(struct mi_root *cmd, void *param)
 		if (i == -1)
 			goto out_bad_param;
 
-		__set_proc_default_debug(i, new_debug);
-		__set_proc_debug_level(i, new_debug);
+		__set_proc_default_log_level(i, new_level);
+		__set_proc_log_level(i, new_level);
 	} else
-		set_global_debug_level(new_debug);
+		set_global_log_level(new_level);
 
 	return rpl_tree;
 
@@ -585,8 +585,8 @@ static mi_export_t mi_core_cmds[] = {
 		mi_ps,         MI_NO_INPUT_FLAG,  0,  0 },
 	{ "kill", "terminates OpenSIPS",
 		mi_kill,       MI_NO_INPUT_FLAG,  0,  0 },
-	{ "debug", "gets/sets the value of the debug core variable",
-		mi_debug,                     0,  0,  0 },
+	{ "log_level", "gets/sets the per process or global log level in OpenSIPS",
+		mi_log_level,                 0,  0,  0 },
 #if defined(QM_MALLOC) && defined(DBG_MALLOC)
 	{ "shm_check", "complete scan of the shared memory pool "
 		"(if any error is found, OpenSIPS will abort!)",

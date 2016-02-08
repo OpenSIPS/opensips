@@ -41,8 +41,8 @@ struct process_table {
 	int idx;       /* tcp child index, -1 for other processes */
 	char desc[MAX_PT_DESC];
 
-	int default_debug; /* used when resetting the log level */
-	int debug;         /* logging level of this process */
+	int default_log_level; /* used when resetting the log level */
+	int log_level;         /* logging level of this process */
 
 	stat_var *load;
 };

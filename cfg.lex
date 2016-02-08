@@ -292,9 +292,10 @@ CHROOT		"chroot"
 WDIR		"workdir"|"wdir"
 DISABLE_CORE		"disable_core_dump"
 OPEN_FD_LIMIT		"open_files_limit"
-DEBUG	debug
 ENABLE_ASSERTS	enable_asserts
 ABORT_ON_ASSERT	abort_on_assert
+DEBUG		debug
+LOGLEVEL	log_level
 LOGSTDERROR	log_stderror
 LOGFACILITY	log_facility
 LOGNAME		log_name
@@ -556,7 +557,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{MYSELF}	{ count(); yylval.strval=yytext; return MYSELF; }
 
 
-<INITIAL>{FORK}			{ count(); yylval.strval=yytext; return FORK; }
+<INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
 <INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
 <INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
@@ -566,9 +567,10 @@ IMPORTFILE      "import_file"
 <INITIAL>{OPEN_FD_LIMIT}	{	count(); yylval.strval=yytext;
 									return OPEN_FD_LIMIT; }
 
-<INITIAL>{DEBUG}	{ count(); yylval.strval=yytext; return DEBUG; }
 <INITIAL>{ENABLE_ASSERTS}	{ count(); yylval.strval=yytext; return ENABLE_ASSERTS; }
 <INITIAL>{ABORT_ON_ASSERT}	{ count(); yylval.strval=yytext; return ABORT_ON_ASSERT; }
+<INITIAL>{DEBUG} { count(); yylval.strval=yytext; return DEBUG; /*obsolete*/ }
+<INITIAL>{LOGLEVEL} { count(); yylval.strval=yytext; return LOGLEVEL; }
 <INITIAL>{LOGSTDERROR}	{ yylval.strval=yytext; return LOGSTDERROR; }
 <INITIAL>{LOGFACILITY}	{ yylval.strval=yytext; return LOGFACILITY; }
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }

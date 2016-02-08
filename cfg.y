@@ -318,6 +318,7 @@ static struct multi_str *tmp_mod;
 %token DEBUG
 %token ENABLE_ASSERTS
 %token ABORT_ON_ASSERT
+%token LOGLEVEL
 %token LOGSTDERROR
 %token LOGFACILITY
 %token LOGNAME
@@ -639,17 +640,19 @@ blst_elem_list: blst_elem_list COMMA blst_elem {}
 		;
 
 
-assign_stm: DEBUG EQUAL snumber {
+assign_stm: DEBUG EQUAL snumber
+			{ yyerror("\'debug\' is deprecated, use \'log_level\' instead\n");}
+		| FORK EQUAL NUMBER
+			{yyerror("fork is deprecated, use debug_mode\n");}
+		| LOGLEVEL EQUAL snumber {
 			/* in debug mode, force logging to DEBUG level*/
-			*debug= debug_mode?L_DBG:$3;
+			*log_level = debug_mode?L_DBG:$3;
 			}
-		| DEBUG EQUAL error  { yyerror("number  expected"); }
 		| ENABLE_ASSERTS EQUAL NUMBER  { enable_asserts=$3; }
 		| ENABLE_ASSERTS EQUAL error  { yyerror("boolean value expected"); }
 		| ABORT_ON_ASSERT EQUAL NUMBER  { abort_on_assert=$3; }
 		| ABORT_ON_ASSERT EQUAL error  { yyerror("boolean value expected"); }
-		| FORK EQUAL NUMBER {yyerror("fork is deprecated, use debug_mode\n");}
-		| DEBUG_MODE EQUAL NUMBER  { debug_mode=$3;*debug = L_DBG; }
+		| DEBUG_MODE EQUAL NUMBER  { debug_mode=$3;*log_level = L_DBG; }
 		| DEBUG_MODE EQUAL error
 			{ yyerror("boolean value expected for debug_mode"); }
 		| LOGSTDERROR EQUAL NUMBER 

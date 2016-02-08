@@ -34,13 +34,13 @@
 #include <stdio.h>
 #include <strings.h>
 
-static int debug_init = L_NOTICE;
+static int log_level_holder = L_NOTICE;
 
 /* current logging level for this process */
-int *debug = &debug_init;
+int *log_level = &log_level_holder;
 
 /* used when resetting the logging level of this process */
-static int *default_debug;
+static int *default_log_level;
 
 static char* str_fac[]={"LOG_AUTH","LOG_CRON","LOG_DAEMON",
 					"LOG_KERN","LOG_LOCAL0","LOG_LOCAL1",
@@ -93,27 +93,27 @@ void dprint(char * format, ...)
 	va_end(ap);
 }
 
-int init_debug(void)
+int init_log_level(void)
 {
-	debug = &pt[process_no].debug;
-	*debug = debug_init;
-	default_debug = &pt[process_no].default_debug;
-	*default_debug = debug_init;
+	log_level = &pt[process_no].log_level;
+	*log_level = log_level_holder;
+	default_log_level = &pt[process_no].default_log_level;
+	*default_log_level = log_level_holder;
 
 	return 0;
 }
 
 /* call before pt is freed */
-void cleanup_debug(void)
+void cleanup_log_level(void)
 {
-	static int debug_level;
+	static int my_log_level;
 
-	debug_level = *debug;
-	debug = &debug_level;
+	my_log_level = *log_level;
+	log_level = &my_log_level;
 }
 
 
-void reset_proc_debug_level(void)
+void reset_proc_log_level(void)
 {
-	*debug = *default_debug;
+	*log_level = *default_log_level;
 }

@@ -321,7 +321,7 @@ void cleanup(int show_status)
 		pkg_status();
 	}
 #endif
-	cleanup_debug();
+	cleanup_log_level();
 
 	if (pt) shm_free(pt);
 	pt=0;
@@ -819,11 +819,11 @@ int main(int argc, char** argv)
 					received_dns|=DO_REV_DNS;
 				    break;
 			case 'd':
-					*debug = debug_mode ? L_DBG : (*debug)+1;
+					*log_level = debug_mode ? L_DBG : (*log_level)+1;
 					break;
 			case 'D':
 					debug_mode=1;
-					*debug = L_DBG;
+					*log_level = L_DBG;
 					break;
 			case 'F':
 					no_daemon_mode=1;
@@ -1070,9 +1070,10 @@ try_again:
 			LM_NOTICE("enabling logging to standard error (found disabled)\n");
 			log_stderr = 1;
 		}
-		if (*debug<L_DBG) {
-			LM_NOTICE("setting logging to debug level (found on %d)\n",*debug);
-			*debug = L_DBG;
+		if (*log_level<L_DBG) {
+			LM_NOTICE("setting logging to debug level (found on %d)\n",
+				*log_level);
+			*log_level = L_DBG;
 		}
 		if (disable_core_dump) {
 			LM_NOTICE("enabling core dumping (found off)\n");
@@ -1219,7 +1220,7 @@ try_again:
 		goto error;
 	}
 
-	if (init_debug() != 0) {
+	if (init_log_level() != 0) {
 		LM_ERR("failed to init logging levels\n");
 		goto error;
 	}
