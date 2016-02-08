@@ -1238,7 +1238,7 @@ static inline char *dlg_th_rebuild_rpl(struct sip_msg *msg,int *len)
 static int dlg_th_callid_pre_parse(struct sip_msg *msg,int want_from)
 {
 	/* do not throw errors from the upcoming parsing operations */
-	set_proc_debug_level(L_ALERT);
+	set_proc_log_level(L_ALERT);
 
 	if (parse_msg(msg->buf,msg->len,msg)!=0) {
 		LM_ERR("Invalid SIP msg\n");
@@ -1270,11 +1270,11 @@ static int dlg_th_callid_pre_parse(struct sip_msg *msg,int want_from)
 		goto error;
 	}
 
-	reset_proc_debug_level();
+	reset_proc_log_level();
 	return 0;
 
 error:
-	reset_proc_debug_level();
+	reset_proc_log_level();
 	return -1;
 }
 
