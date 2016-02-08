@@ -364,7 +364,7 @@ int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	*(p++) = '\n';
 	*(p++) = 0;		
 
-	LM_GEN2(acc_log_facility, log_level,
+	LM_GEN2(acc_log_facility, acc_log_level,
 		"%.*screated=%lu;call_start_time=%lu;duration=%lu;ms_duration=%lu;setuptime=%lu%s",
 		acc_env.text.len, acc_env.text.s,(unsigned long)created,
 		(unsigned long)start_time.tv_sec,
@@ -446,7 +446,7 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 
 
 	if (cdr_flag) {
-		LM_GEN2(acc_log_facility, log_level, "%.*stimestamp=%lu;created=%lu;setuptime=%lu%s",
+		LM_GEN2(acc_log_facility, acc_log_level, "%.*stimestamp=%lu;created=%lu;setuptime=%lu%s",
 			acc_env.text.len, acc_env.text.s,
 			(unsigned long) acc_env.ts.tv_sec,
 			(unsigned long) _created,
@@ -454,7 +454,7 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 		return 1;
 	}
 
-	LM_GEN2(acc_log_facility, log_level, "%.*stimestamp=%lu%s",
+	LM_GEN2(acc_log_facility, acc_log_level, "%.*stimestamp=%lu%s",
 		acc_env.text.len, acc_env.text.s,(unsigned long) acc_env.ts.tv_sec, log_msg);
 
 	return 1;

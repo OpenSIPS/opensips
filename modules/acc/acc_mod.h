@@ -39,9 +39,9 @@ extern int early_media;
 extern int failed_transaction_flag;
 extern int detect_direction;
 
-extern int log_level;
-extern int log_flag;
-extern int log_missed_flag;
+extern int acc_log_level;
+extern int acc_log_flag;
+extern int acc_log_missed_flag;
 
 extern int aaa_flag;
 extern int aaa_missed_flag;

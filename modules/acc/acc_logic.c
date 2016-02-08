@@ -65,8 +65,8 @@ static query_list_t *mc_ins_list = NULL;
 
 #define is_failed_acc_on(_rq)  is_acc_flag_set(_rq,failed_transaction_flag)
 
-#define is_log_acc_on(_rq)     is_acc_flag_set(_rq,log_flag)
-#define is_log_mc_on(_rq)      is_acc_flag_set(_rq,log_missed_flag)
+#define is_log_acc_on(_rq)     is_acc_flag_set(_rq,acc_log_flag)
+#define is_log_mc_on(_rq)      is_acc_flag_set(_rq,acc_log_missed_flag)
 
 #define is_aaa_acc_on(_rq)     is_acc_flag_set(_rq,aaa_flag)
 #define is_aaa_mc_on(_rq)      is_acc_flag_set(_rq,aaa_missed_flag)
@@ -456,7 +456,7 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 	if (is_log_mc_on(req)) {
 		env_set_text( ACC_MISSED, ACC_MISSED_LEN);
 		acc_log_request( req, reply, is_cdr_acc_on(req) );
-		flags_to_reset |= log_missed_flag;
+		flags_to_reset |= acc_log_missed_flag;
 	}
 
 	if (is_aaa_mc_on(req)) {
@@ -667,7 +667,7 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 		}
 	}
 
-	if (flags & log_flag) {
+	if (flags & acc_log_flag) {
 		env_set_text( ACC_ENDED, ACC_ENDED_LEN);
 		if (acc_log_cdrs(dlg, _params->msg) < 0) {
 			LM_ERR("Cannot log values\n");

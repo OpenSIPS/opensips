@@ -787,11 +787,11 @@ void __free_sdp(sdp_info_t* sdp)
 	}
 }
 
-void print_sdp_stream(sdp_stream_cell_t *stream, int log_level)
+void print_sdp_stream(sdp_stream_cell_t *stream, int level)
 {
 	sdp_payload_attr_t *payload;
 
-	LM_GEN1(log_level, "....stream[%d]:%p=>%p {%p} '%.*s' '%.*s:%.*s:%.*s' '%.*s' [%d] '%.*s' '%.*s:%.*s' (%d)=>%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
+	LM_GEN1(level, "....stream[%d]:%p=>%p {%p} '%.*s' '%.*s:%.*s:%.*s' '%.*s' [%d] '%.*s' '%.*s:%.*s' (%d)=>%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
 		stream->stream_num, stream, stream->next,
 		stream->p_payload_attr,
 		stream->media.len, stream->media.s,
@@ -809,7 +809,7 @@ void print_sdp_stream(sdp_stream_cell_t *stream, int log_level)
 		stream->accept_wrapped_types.len, stream->accept_wrapped_types.s);
 	payload = stream->payload_attr;
 	while (payload) {
-		LM_GEN1(log_level, "......payload[%d]:%p=>%p p_payload_attr[%d]:%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
+		LM_GEN1(level, "......payload[%d]:%p=>%p p_payload_attr[%d]:%p '%.*s' '%.*s' '%.*s' '%.*s' '%.*s'\n",
 			payload->payload_num, payload, payload->next,
 			payload->payload_num, stream->p_payload_attr[payload->payload_num],
 			payload->rtp_payload.len, payload->rtp_payload.s,
@@ -821,7 +821,7 @@ void print_sdp_stream(sdp_stream_cell_t *stream, int log_level)
 	}
 }
 
-void print_sdp_session(sdp_session_cell_t *session, int log_level)
+void print_sdp_session(sdp_session_cell_t *session, int level)
 {
 	sdp_stream_cell_t *stream = session==NULL ? NULL : session->streams;
 
@@ -830,7 +830,7 @@ void print_sdp_session(sdp_session_cell_t *session, int log_level)
 		return;
 	}
 
-	LM_GEN1(log_level, "..session[%d]:%p=>%p '%.*s' '%.*s' '%.*s' '%.*s:%.*s' (%d)=>%p\n",
+	LM_GEN1(level, "..session[%d]:%p=>%p '%.*s' '%.*s' '%.*s' '%.*s:%.*s' (%d)=>%p\n",
 		session->session_num, session, session->next,
 		session->cnt_disp.len, session->cnt_disp.s,
 		session->ip_addr.len, session->ip_addr.s,
@@ -838,20 +838,20 @@ void print_sdp_session(sdp_session_cell_t *session, int log_level)
 		session->bw_type.len, session->bw_type.s, session->bw_width.len, session->bw_width.s,
 		session->streams_num, session->streams);
 	while (stream) {
-		print_sdp_stream(stream, log_level);
+		print_sdp_stream(stream, level);
 		stream=stream->next;
 	}
 }
 
 
-void print_sdp(sdp_info_t* sdp, int log_level)
+void print_sdp(sdp_info_t* sdp, int level)
 {
 	sdp_session_cell_t *session;
 
-	LM_GEN1(log_level, "sdp:%p=>%p (%d:%d)\n", sdp, sdp->sessions, sdp->sessions_num, sdp->streams_num);
+	LM_GEN1(level, "sdp:%p=>%p (%d:%d)\n", sdp, sdp->sessions, sdp->sessions_num, sdp->streams_num);
 	session = sdp->sessions;
 	while (session) {
-		print_sdp_session(session, log_level);
+		print_sdp_session(session, level);
 		session = session->next;
 	}
 }
