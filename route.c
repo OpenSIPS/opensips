@@ -518,21 +518,6 @@ static int fix_actions(struct action* a)
 				t->elem[0].u.data=si;
 				t->elem[0].type=SOCKETINFO_ST;
 				break;
-			case SET_DEBUG_T:
-				if (t->elem[0].type==NOSUBTYPE)
-					break;
-				if (t->elem[0].type!=NUMBER_ST) {
-					LM_CRIT("BUG in setdebug() type %d\n",
-						t->elem[0].type );
-					ret=E_BUG;
-					goto error;
-				}
-				/* normalize the value */
-				if (t->elem[0].u.number>L_DBG)
-					t->elem[0].u.number = L_DBG;
-				else if (t->elem[0].u.number<L_ALERT)
-					t->elem[0].u.number = L_ALERT;
-				break;
 			case SETFLAG_T:
 			case RESETFLAG_T:
 			case ISFLAGSET_T:

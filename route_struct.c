@@ -445,9 +445,6 @@ void print_action(struct action* t)
 		case LEN_GT_T:
 				LM_GEN1(L_DBG, "len_gt(");
 				break;
-		case SET_DEBUG_T:
-				LM_GEN1(L_DBG, "setdebug(");
-				break;
 		case SETFLAG_T:
 				LM_GEN1(L_DBG, "setflag(");
 				break;

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2014 OpenSIPS Solutions
+ * Copyright (C) 2010-2016 OpenSIPS Solutions
  * Copyright (C) 2005-2009 Voice Sistem SRL
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -3213,6 +3213,54 @@ int pv_get_cfg_file_name(struct sip_msg *msg,  pv_param_t *param, pv_value_t *re
 	return 0;
 }
 
+
+int pv_set_log_level(struct sip_msg* msg, pv_param_t *param, int op,
+															pv_value_t *val)
+{
+	if(param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(val==NULL || (val->flags&(PV_VAL_NULL|PV_VAL_NONE))!=0) {
+		/* reset the value to default */
+		reset_proc_log_level();
+	} else {
+		if ((val->flags&PV_TYPE_INT)==0) {
+			LM_ERR("input for $log_level found not to be an interger\n");
+			return -1;
+		}
+		set_proc_log_level(val->ri);
+	}
+
+	return 0;
+}
+
+int pv_get_log_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+	int l;
+
+	if (param==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	if(res == NULL) {
+		return -1;
+	}
+
+	res->ri = *log_level;
+	res->rs.s = int2str( (unsigned long)res->ri, &l);
+	res->rs.len = l;
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
+
+
+
 /**
  * the table with core pseudo-variables
  */
@@ -3365,6 +3413,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"from.user", (sizeof("from.user")-1)}, /* */
 		PVT_FROM_USERNAME, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 2},
+	{{"log_level", (sizeof("log_level")-1)}, /* per process log level*/
+		PVT_LOG_LEVEL, pv_get_log_level, pv_set_log_level,
+		0, 0, 0, 0},
 	{{"mb", (sizeof("mb")-1)}, /* */
 		PVT_MSG_BUF, pv_get_msg_buf, 0,
 		0, 0, 0, 0},

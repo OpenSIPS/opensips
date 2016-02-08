@@ -682,14 +682,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			ret = (msg->len >= (unsigned int)a->elem[0].u.number) ? 1 : -1;
 			break;
-		case SET_DEBUG_T:
-			script_trace("core", "set_debug", msg, a->file, a->line) ;
-			if (a->elem[0].type==NUMBER_ST)
-				set_proc_log_level(a->elem[0].u.number);
-			else
-				reset_proc_log_level();
-			ret = 1;
-			break;
 		case SETFLAG_T:
 			script_trace("core", "setflag", msg, a->file, a->line) ;
 			ret = setflag( msg, a->elem[0].u.number );
