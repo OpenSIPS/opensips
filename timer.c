@@ -276,7 +276,7 @@ utime_t get_uticks(void)
 
 
 
-static inline void timer_ticker(struct os_timer *timer_list, utime_t *drift)
+static inline void timer_ticker(struct os_timer *timer_list)
 {
 	struct os_timer* t;
 	unsigned int j;
@@ -326,7 +326,7 @@ again:
 
 
 
-static inline void utimer_ticker(struct os_timer *utimer_list, utime_t *drift)
+static inline void utimer_ticker(struct os_timer *utimer_list)
 {
 	struct os_timer* t;
 	utime_t uj;
@@ -377,13 +377,14 @@ static void run_timer_process( void )
 	unsigned int multiple;
 	unsigned int cnt;
 	struct timeval o_tv;
-	struct timeval tv;
+	struct timeval tv, comp_tv;
 	utime_t  drift;
 	utime_t  uinterval;
 	utime_t  wait;
+	utime_t  ij;
 
 /* timer re-calibration to compensate drifting */
-#define compute_wait_with_drift(_tv,_type) \
+#define compute_wait_with_drift(_tv) \
 	do {                                                         \
 		if ( drift > ITIMER_TICK ) {                             \
 			wait = (drift >= uinterval) ? 0 : uinterval-drift;   \
@@ -415,44 +416,63 @@ static void run_timer_process( void )
 	if (utimer_list==NULL) {
 		/* only TIMERs, ticking at TIMER_TICK */
 		for( ; ; ) {
-			compute_wait_with_drift( tv, 0);
+			ij = *ijiffies;
+			compute_wait_with_drift(comp_tv);
+			tv = comp_tv;
 			select( 0, 0, 0, 0, &tv);
-			timer_ticker( timer_list, &drift);
+			timer_ticker( timer_list);
+
+			drift += ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec > (*ijiffies-ij)) ?
+					0 : *ijiffies-ij - ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec);
 		}
 
 	} else
 	if (timer_list==NULL) {
 		/* only UTIMERs, ticking at UTIMER_TICK */
 		for( ; ; ) {
-			compute_wait_with_drift( tv, 1);
+			ij = *ijiffies;
+			compute_wait_with_drift(comp_tv);
+			tv = comp_tv;
 			select( 0, 0, 0, 0, &tv);
-			utimer_ticker( utimer_list, &drift);
+			utimer_ticker( utimer_list);
+
+			drift += ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec > (*ijiffies-ij)) ?
+					0 : *ijiffies-ij - ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec);
 		}
 
 	} else
 	if (multiple==1) {
 		/* TIMERs and UTIMERs, ticking together TIMER_TICK (synced) */
 		for( ; ; ) {
-			compute_wait_with_drift( tv, 2);
+			ij = *ijiffies;
+			compute_wait_with_drift(comp_tv);
+			tv = comp_tv;
 			select( 0, 0, 0, 0, &tv);
-			timer_ticker( timer_list, &drift);
-			utimer_ticker( utimer_list, &drift);
+			timer_ticker( timer_list);
+			utimer_ticker( utimer_list);
+
+			drift += ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec > (*ijiffies-ij)) ?
+					0 : *ijiffies-ij - ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec);
 		}
 
 	} else {
 		/* TIMERs and UTIMERs, TIMER_TICK is multiple of UTIMER_TICK */
 		for( cnt=1 ; ; cnt++ ) {
-			compute_wait_with_drift( tv, 3);
+			ij = *ijiffies;
+			compute_wait_with_drift(comp_tv);
+			tv = comp_tv;
 			select( 0, 0, 0, 0, &tv);
-			utimer_ticker(utimer_list, &drift);
+			utimer_ticker(utimer_list);
 			if (cnt==multiple) {
-				timer_ticker(timer_list, &drift);
+				timer_ticker(timer_list);
 				cnt = 0;
 			}
+
+			drift += ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec > (*ijiffies-ij)) ?
+					0 : *ijiffies-ij - ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec);
 		}
 	}
 }
-
 
 static void run_timer_process_jif(void)
 {
@@ -462,6 +482,9 @@ static void run_timer_process_jif(void)
 	unsigned int ucnt;
 	struct timeval o_tv;
 	struct timeval tv;
+	struct timeval sync_ts, last_ts;
+	utime_t interval, drift;
+	utime_t last_ticks, last_sync = 0;
 
 	o_tv.tv_sec = 0;
 	o_tv.tv_usec = ITIMER_TICK; /* internal timer */
@@ -470,6 +493,9 @@ static void run_timer_process_jif(void)
 
 	LM_DBG("tv = %ld, %ld , m=%d, mu=%d\n",
 		(long)o_tv.tv_sec,(long)o_tv.tv_usec,multiple,umultiple);
+
+	gettimeofday(&last_ts, 0);
+	last_ticks = *ijiffies;
 
 	for( cnt=1,ucnt=1 ; ; ucnt++ ) {
 		tv = o_tv;
@@ -491,6 +517,37 @@ static void run_timer_process_jif(void)
 				*(jiffies)+=TIMER_TICK;
 				/* test for overflow (if tick= 1s =>overflow in 136 years)*/
 				cnt = 0;
+			}
+		}
+
+		/* synchronize with system time if needed */
+		if (*ijiffies - last_sync >= TIMER_SYNC_TICKS) {
+			last_sync = *ijiffies;
+
+			gettimeofday(&sync_ts, 0);
+			interval = (utime_t)sync_ts.tv_sec*1000000 + sync_ts.tv_usec
+						- (utime_t)last_ts.tv_sec*1000000 - last_ts.tv_usec;
+
+			drift = interval - (*ijiffies - last_ticks);
+
+			/* protect against sudden time changes */
+			if (interval < 0 || drift < 0 || drift > TIMER_SYNC_TICKS) {
+				last_ts = sync_ts;
+				last_ticks = *ijiffies;
+				LM_DBG("System time changed, ignoring...\n");
+				continue;
+			}
+
+			if (drift > TIMER_MAX_DRIFT_TICKS) {
+				*(ijiffies) += (drift / ITIMER_TICK) * ITIMER_TICK;
+
+				ucnt += drift / ITIMER_TICK;
+				*(ujiffies) += (ucnt / umultiple) * (UTIMER_TICK);
+				ucnt = ucnt % umultiple;
+
+				cnt += (unsigned int)(drift / (UTIMER_TICK));
+				*(jiffies) += (cnt / multiple) * TIMER_TICK;
+				cnt = cnt % multiple;
 			}
 		}
 	}
