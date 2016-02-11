@@ -240,7 +240,7 @@ static param_export_t params[] = {
 	{"log_flag",             INT_PARAM, &acc_log_flag         },
 	{"log_missed_flag",      STR_PARAM, &log_missed_string    },
 	{"log_missed_flag",      INT_PARAM, &acc_log_missed_flag  },
-	{"log_level",            INT_PARAM, &log_level            },
+	{"log_level",            INT_PARAM, &acc_log_level        },
 	{"log_facility",         STR_PARAM, &log_facility_str     },
 	{"log_extra",            STR_PARAM, &log_extra_str        },
 	{"log_extra_bye",        STR_PARAM, &log_extra_bye_str    },
