@@ -3746,6 +3746,13 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 				goto error;
 			}
 			++medianum;
+
+			/* If the callee wants to neither send nor receive a stream offered by
+			the caller, the callee sets the port number of that stream to zero in
+			its media description - don't engage rtpproxy for such streams */
+			if (oldport.s[0] == '0' && oldport.len == 1)
+				continue;
+
 			if (asymmetric != 0 || real != 0) {
 				newip = oldip;
 			} else {
