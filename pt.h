@@ -31,7 +31,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "statistics.h"
+struct stat_var_;
 
 #define MAX_PT_DESC	128
 
@@ -44,7 +44,7 @@ struct process_table {
 	int default_debug; /* used when resetting the log level */
 	int debug;         /* logging level of this process */
 
-	stat_var *load;
+	struct stat_var_ *load;
 };
 
 typedef void(*forked_proc_func)(int i);

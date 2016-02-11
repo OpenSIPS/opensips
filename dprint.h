@@ -445,5 +445,10 @@ static inline char* dp_time(void)
 	#endif /*SUN_PRO_C*/
 #endif
 
+#define report_programming_bug(format, args...) \
+	LM_CRIT("\n>>> " format"\nIt seems you have hit a programming bug.\n" \
+			"Please help us make OpenSIPS better by reporting it at " \
+			"https://github.com/OpenSIPS/opensips/issues\n\n", ##args);
+#define LM_BUG report_programming_bug
 
 #endif /* ifndef dprint_h */
