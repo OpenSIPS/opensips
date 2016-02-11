@@ -243,23 +243,9 @@ static void delete_cell( struct cell *p_cell, int unlock )
 
 static void fake_reply(struct cell *t, int branch, int code )
 {
-	static context_p my_ctx = NULL;
-	context_p old_ctx;
 	branch_bm_t cancel_bitmap;
 	short do_cancel_branch;
 	enum rps reply_status;
-
-	/* as this processing is outside the scope of other messages (it is
-	   trigger from timer), a processing context must be attached to it */
-	old_ctx = current_processing_ctx;
-	if (my_ctx==NULL) {
-		my_ctx = context_alloc(CONTEXT_GLOBAL);
-		if (my_ctx==NULL) {
-			LM_ERR("failed to alloc new ctx in pkg\n");
-		}
-	}
-	memset( my_ctx, 0, context_size(CONTEXT_GLOBAL) );
-	current_processing_ctx = my_ctx;
 
 	do_cancel_branch = is_invite(t) && should_cancel_branch(t, branch);
 
@@ -274,14 +260,6 @@ static void fake_reply(struct cell *t, int branch, int code )
 		reply_status=relay_reply( t, FAKED_REPLY, branch, code,
 			&cancel_bitmap );
 	}
-
-	if (current_processing_ctx==NULL)
-		my_ctx=NULL;
-	else
-		context_destroy(CONTEXT_GLOBAL, my_ctx);
-
-	/* switch back to the old context */
-	current_processing_ctx = old_ctx;
 }
 
 
@@ -341,6 +319,8 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 #define CANCEL_REASON_SIP_480  \
 	"Reason: SIP;cause=480;text=\"NO_ANSWER\"" CRLF
 
+	static context_p my_ctx = NULL;
+	context_p old_ctx;
 	struct retr_buf* r_buf;
 	struct cell *t;
 
@@ -385,6 +365,20 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 		return;
 	};
 
+	/* as this processing is outside the scope of other messages (it is
+	   trigger from timer), a processing context must be attached to it */
+	old_ctx = current_processing_ctx;
+	if (my_ctx==NULL) {
+		my_ctx = context_alloc(CONTEXT_GLOBAL);
+		if (my_ctx==NULL) {
+			LM_ERR("failed to alloc new ctx in pkg\n");
+		}
+	}
+	memset( my_ctx, 0, context_size(CONTEXT_GLOBAL) );
+	current_processing_ctx = my_ctx;
+	/* set the T context too */
+	set_t( t );
+
 	/* out-of-lock do the cancel I/O */
 	if (is_invite(t) && should_cancel_branch(t, r_buf->branch) ) {
 		set_cancel_extra_hdrs( CANCEL_REASON_SIP_480, sizeof(CANCEL_REASON_SIP_480)-1);
@@ -395,6 +389,16 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 	LOCK_REPLIES( t );
 	LM_DBG("Cancel sent out, sending 408 (%p)\n", t);
 	fake_reply(t, r_buf->branch, 408 );
+
+	/* flush the context */
+	if (current_processing_ctx==NULL)
+		my_ctx=NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, my_ctx);
+	/* switch back to the old context */
+	current_processing_ctx = old_ctx;
+	/* reset the T context */
+	init_t();
 
 	LM_DBG("done\n");
 }
