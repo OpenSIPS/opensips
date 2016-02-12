@@ -75,6 +75,7 @@ int str2q(qvalue_t* q, char* s, int len)
 				break;
 
 			case '.':
+				*q = 0;
 				state = ST_0_PT;
 				break;
 
@@ -167,15 +168,8 @@ int str2q(qvalue_t* q, char* s, int len)
 		}
 	}
 
-	switch(state) {
-	case ST_START:
+	if (state == ST_START)
 		return E_Q_EMPTY;
 
-	case ST_0_PT:
-	case ST_1_PT:
-		return E_Q_DEC_MISSING;
-
-	default:
-		return 0;
-	}
+	return 0;
 }

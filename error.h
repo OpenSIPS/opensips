@@ -46,8 +46,7 @@
 #define E_Q_INV_CHAR        -15		/*!< Invalid character in q */
 #define E_Q_EMPTY           -16		/*!< Empty q */
 #define E_Q_TOO_BIG         -17		/*!< q too big (> 1) */
-#define E_Q_DEC_MISSING     -18		/*!< Decimal part missing */
-#define E_NO_DESTINATION    -19		/*!< No available destination */
+#define E_NO_DESTINATION    -18		/*!< No available destination */
 
 /* opensips specific error codes */
 #define E_IP_BLOCKED      -473		/*!< destination filtered */

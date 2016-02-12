@@ -132,7 +132,7 @@ extern int yylex();
 static void yyerror(char* s);
 static void yyerrorf(char* fmt, ...);
 static char* tmp;
-static int i_tmp;
+static int i_tmp, rc;
 static void* cmd_tmp;
 static struct socket_id* lst_tmp;
 static int rt;  /* Type of route block for find_export */
@@ -2751,13 +2751,18 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| STRIP error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| STRIP LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"number expected"); }
-		| APPEND_BRANCH LPAREN STRING COMMA STRING RPAREN { 
-				{   qvalue_t q;
-				if (str2q(&q, $5, strlen($5)) < 0) {
-					yyerror("bad argument, q value expected");
-				}
+		| APPEND_BRANCH LPAREN STRING COMMA STRING RPAREN {
+			{
+				qvalue_t q;
+
+				rc = str2q(&q, $5, strlen($5));
+				if (rc < 0)
+					yyerrorf("bad qvalue (%.*s): %s",
+							 strlen($5), $5, qverr2str(rc));
+
 				mk_action2( $$, APPEND_BRANCH_T, STR_ST, NUMBER_ST, $3,
-						(void *)(long)q); } 
+						(void *)(long)q);
+			}
 		}
 		| APPEND_BRANCH LPAREN STRING RPAREN { mk_action2( $$, APPEND_BRANCH_T,
 						STR_ST, NUMBER_ST, $3, (void *)Q_UNSPECIFIED) ; }

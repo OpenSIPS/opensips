@@ -106,7 +106,7 @@ static void sort_contacts(contact_t *ct_list, str *ct_array,
 {
 	param_t *q_para;
 	qvalue_t q;
-	int i,j;
+	int i, j, rc;
 	char backup;
 
 	for( ; ct_list ; ct_list = ct_list->next ) {
@@ -123,8 +123,10 @@ static void sort_contacts(contact_t *ct_list, str *ct_array,
 		if (q_para==0 || q_para->body.len==0) {
 			q = DEFAULT_Q_VALUE;
 		} else {
-			if (str2q( &q, q_para->body.s, q_para->body.len)!=0) {
-				LM_ERR("invalid q param\n");
+			rc = str2q( &q, q_para->body.s, q_para->body.len);
+			if (rc != 0) {
+				LM_ERR("invalid qvalue (%.*s): %s\n",
+						q_para->body.len, q_para->body.s, qverr2str(rc));
 				/* skip this contact */
 				continue;
 			}

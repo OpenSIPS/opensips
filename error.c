@@ -105,10 +105,6 @@ int err2reason_phrase(
 			error_txt="q parameter too big";
 			*sip_error=-E_BAD_REQ;
 			break;
-		case E_Q_DEC_MISSING:
-			error_txt="Decimal part missing in q";
-			*sip_error=-E_BAD_REQ;
-			break;
 		case E_NO_DESTINATION:
 			error_txt="No destination available";
 			*sip_error=-E_BAD_SERVER;

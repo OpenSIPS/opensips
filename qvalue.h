@@ -76,6 +76,10 @@ typedef int qvalue_t;
 #define Q_PREFIX "0."
 #define Q_PREFIX_LEN (sizeof(Q_PREFIX) - 1)
 
+#define qverr2str(rc) \
+	(rc == E_Q_INV_CHAR ? "bad characters" : \
+	 rc == E_Q_EMPTY ? "empty value" : \
+	 rc == E_Q_TOO_BIG ? "max value is 1.0" : "bad qvalue")
 
 
 /*! \brief
