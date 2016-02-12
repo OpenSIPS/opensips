@@ -23,8 +23,8 @@ syn keyword specialOperand af uri status from_uri to_uri NULL null
 syn keyword specialOperand src_ip src_port dst_ip dst_port proto method max_len
 syn keyword specialOperand UDP TCP TLS SCTP WS INET inet INET6 inet6
 
-syn keyword osGlobalParam debug memdump memlog log_stderror log_facility log_name
-syn keyword osGlobalParam fork children auto_aliases listen mpath tcp_children
+syn keyword osGlobalParam log_level memdump memlog log_stderror log_facility log_name
+syn keyword osGlobalParam debug_mode children auto_aliases listen mpath tcp_children
 syn keyword osGlobalParam disable_tcp disable_tls check_via dns rev_dns
 syn keyword osGlobalParam tcp_send_timeout tcp_connect_timeout tcp_no_new_conn_bflag
 syn keyword osGlobalParam disable_dns_failover disable_dns_blacklist dst_blacklist
