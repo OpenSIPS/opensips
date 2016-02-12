@@ -1,6 +1,6 @@
 INSERT INTO version (table_name, table_version) values ('location','1010');
 CREATE TABLE location (
-    contact_id BIGINTSERIAL PRIMARY KEY NOT NULL,
+    contact_id BIGINT PRIMARY KEY NOT NULL,
     username VARCHAR(64) DEFAULT '' NOT NULL,
     domain VARCHAR(64) DEFAULT '' NOT NULL,
     contact VARCHAR(255) DEFAULT '' NOT NULL,
