@@ -91,10 +91,10 @@ index 908f0e7..4b6c7d6 100644
  int do_lock_exclusive(FILE *);
  int do_unlock(FILE *);
 diff --git a/lib/buildreq.c b/lib/buildreq.c
-index a71b1f9..739e1c0 100644
+index a71b1f9..48b83e0 100644
 --- a/lib/buildreq.c
 +++ b/lib/buildreq.c
-@@ -175,6 +175,233 @@ exit:
+@@ -175,6 +175,234 @@ exit:
  	return result;
  }
  
@@ -300,7 +300,7 @@ index a71b1f9..739e1c0 100644
 +/*rc_receive async name*/
 +int rc_aaa_receive_async(SEND_CONTEXT **ctx, VALUE_PAIR **received, int request_type)
 +{
-+	int i, j;
++	int i;
 +	int		result;
 +
 +	if (*ctx == NULL) {
@@ -311,6 +311,7 @@ index a71b1f9..739e1c0 100644
 +	result = rc_receive_async(ctx);
 +
 +	if (result != READBLOCK_RC) {
++		i=(*ctx)->idx;
 +		(*ctx)->aaaserver->deadtime_ends[i] = -1;
 +		if (request_type != PW_ACCOUNTING_REQUEST) {
 +			*received = (*ctx)->data->receive_pairs;
@@ -328,7 +329,7 @@ index a71b1f9..739e1c0 100644
  /*
   * Function: rc_auth
   *
-@@ -193,6 +420,39 @@ int rc_auth(rc_handle *rh, uint32_t client_port, VALUE_PAIR *send, VALUE_PAIR **
+@@ -193,6 +421,39 @@ int rc_auth(rc_handle *rh, uint32_t client_port, VALUE_PAIR *send, VALUE_PAIR **
  	return rc_aaa(rh, client_port, send, received, msg, 1, PW_ACCESS_REQUEST);
  }
  
@@ -368,7 +369,7 @@ index a71b1f9..739e1c0 100644
  /*
   * Function: rc_auth_proxy
   *
-@@ -229,6 +489,38 @@ int rc_acct(rc_handle *rh, uint32_t client_port, VALUE_PAIR *send)
+@@ -229,6 +490,38 @@ int rc_acct(rc_handle *rh, uint32_t client_port, VALUE_PAIR *send)
  	return rc_aaa(rh, client_port, send, NULL, NULL, 1, PW_ACCOUNTING_REQUEST);
  }
  
