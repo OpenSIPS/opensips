@@ -1004,7 +1004,7 @@ ifeq	($(ARCH), arm)
 ifeq		($(CC_NAME), gcc)
 				#common stuff
 				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
-					-Wall   
+					-Wall -marm
 			#if gcc 4.x+
 ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-mcpu=strongarm1100 -minline-all-stringops \
