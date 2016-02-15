@@ -31,23 +31,26 @@
 
 #define DP_PARTITION 			"default"
 #define DP_TABLE_NAME			"dialplan"
-#define DPID_COL			"dpid"
-#define PR_COL				"pr"
+#define ID_COL					"id"
+#define DPID_COL				"dpid"
+#define PR_COL					"pr"
 #define MATCH_OP_COL			"match_op"
+#define SRC_MATCH_EXP_COL		"src_exp"
 #define MATCH_EXP_COL			"match_exp"
 #define MATCH_FLAGS_COL			"match_flags"
 #define SUBST_EXP_COL			"subst_exp"
 #define REPL_EXP_COL			"repl_exp"
 #define DISABLED_COL			"disabled"
-#define ATTRS_COL			"attrs"
-#define TIMEREC_COL			"timerec"
+#define ATTRS_COL				"attrs"
+#define TIMEREC_COL				"timerec"
+#define MATCH_VAR_COL			"match_var"
+#define CONTINUE_SEARCH_COL		"continue_search"
 
-
-#define DP_TABLE_VERSION		5
-#define DP_TABLE_COL_NO 		9
+#define DP_TABLE_VERSION		7
+#define DP_TABLE_COL_NO 		12
 
 typedef struct dp_head{
-	str partition;/*Attribute that uniquely identifies head*/
+	str partition; /* Attribute that uniquely identifies head */
 	str dp_db_url;
 	str dp_table_name;
 	struct dp_head* next;
@@ -59,15 +62,19 @@ extern dp_connection_list_p dp_conns;
 extern str default_dp_db_url;
 extern str default_dp_table;
 extern str dp_table_name;
+extern str id_column;
 extern str dpid_column;
 extern str pr_column;
 extern str match_op_column;
+extern str src_match_exp_column;
 extern str match_exp_column;
 extern str match_flags_column;
 extern str subst_exp_column;
 extern str repl_exp_column;
 extern str attrs_column;
 extern str timerec_column;
+extern str match_var_column;
+extern str continue_search_column;
 extern str disabled_column;
 
 struct dp_param_list;

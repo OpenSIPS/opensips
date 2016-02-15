@@ -22,7 +22,6 @@
  *  2007-08-01 initial version (ancuta onofrei)
  */
 
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -49,14 +48,15 @@
 #define DEFAULT_PARTITION  "default"
 #define PARAM_URL	   "db_url"
 #define PARAM_TABLE	   "table_name"
+#define DEF_MATCH_RULE	   "$avp(mtcrl)"
 #define DP_CHAR_COLON      ':'
 #define DP_CHAR_SLASH      '/'
 #define DP_CHAR_EQUAL      '='
 #define DP_CHAR_SCOLON     ';'
 #define DP_TYPE_URL 	    0
 #define DP_TYPE_TABLE 	    1
-#define is_space(p) (*(p) == ' ' || *(p) == '\t' || \
-					 *(p) == '\r' || *(p) == '\n')
+#define is_space(p) (*(p) == ' ' || *(p) == '\t' || *(p) == '\r' || *(p) == '\n')
+
 
 static int mod_init(void);
 static int child_init(int rank);
@@ -76,28 +76,34 @@ str default_dp_partition = {NULL, 0};
 dp_param_p default_par2 = NULL;
 static str database_url = {NULL, 0};
 
+/* Matched Rule Id PVAR */
+int avp_name = -1;
+str matched_rule_pvar;
 
 static param_export_t mod_params[]={
-	{ "partition",		STR_PARAM|USE_FUNC_PARAM,
-				(void*)dp_set_partition},
-	{ "db_url",		STR_PARAM,	&default_dp_db_url.s},
-	{ "table_name",		STR_PARAM,	&default_dp_table.s },
-	{ "dpid_col",		STR_PARAM,	&dpid_column.s },
-	{ "pr_col",		STR_PARAM,	&pr_column.s },
-	{ "match_op_col",	STR_PARAM,	&match_op_column.s },
-	{ "match_exp_col",	STR_PARAM,	&match_exp_column.s },
-	{ "match_flags_col",	STR_PARAM,	&match_flags_column.s },
-	{ "subst_exp_col",	STR_PARAM,	&subst_exp_column.s },
-	{ "repl_exp_col",	STR_PARAM,	&repl_exp_column.s },
-	{ "attrs_col",		STR_PARAM,	&attrs_column.s },
-	{ "timerec_col",        STR_PARAM,      &timerec_column.s },
-	{ "disabled_col",	STR_PARAM,	&disabled_column.s},
-	{0,0,0}
+	{ "partition",			STR_PARAM|USE_FUNC_PARAM, (void*)dp_set_partition},
+	{ "db_url",			STR_PARAM,	&default_dp_db_url.s},
+	{ "table_name",			STR_PARAM,	&default_dp_table.s },
+	{ "matched_pvar",		STR_PARAM,	&matched_rule_pvar.s },
+	{ "id_col",			STR_PARAM,	&id_column.s },
+	{ "dpid_col",			STR_PARAM,	&dpid_column.s },
+	{ "pr_col",			STR_PARAM,	&pr_column.s },
+	{ "match_op_col",		STR_PARAM,	&match_op_column.s },
+	{ "match_exp_col",		STR_PARAM,	&match_exp_column.s },
+	{ "match_flags_col",		STR_PARAM,	&match_flags_column.s },
+	{ "subst_exp_col",		STR_PARAM,	&subst_exp_column.s },
+	{ "repl_exp_col",		STR_PARAM,	&repl_exp_column.s },
+	{ "attrs_col",			STR_PARAM,	&attrs_column.s },
+	{ "timerec_col",		STR_PARAM,	&timerec_column.s },
+	{ "match_var_col",		STR_PARAM,	&match_var_column.s },
+	{ "continue_search_col",	STR_PARAM,	&continue_search_column.s },
+	{ "disabled_col",		STR_PARAM,	&disabled_column.s},
+	{0, 0, 0}
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "dp_reload",  0, mi_reload_rules,   0,       0,  mi_child_init},
-	{ "dp_translate",  0, mi_translate,   0,       0,              0},
+	{ "dp_reload",     0, mi_reload_rules,   0,       0,  mi_child_init},
+	{ "dp_translate",  0, mi_translate,      0,       0,              0},
 	{ "dp_show_partition",  0, mi_show_partition,   0,       0,              0},
 	{ 0, 0, 0, 0, 0, 0}
 };
@@ -125,21 +131,21 @@ static dep_export_t deps = {
 	},
 };
 
-struct module_exports exports= {
-	"dialplan",     /* module's name */
-	MOD_TYPE_DEFAULT,/* class of this module */
+struct module_exports exports = {
+	"dialplan",		/* module's name */
+	MOD_TYPE_DEFAULT,	/* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS, /* dlopen flags */
-	&deps,           /* OpenSIPS module dependencies */
-	cmds,            /* exported functions */
-	0,               /* exported async functions */
-	mod_params,     /* param exports */
-	0,				/* exported statistics */
+	DEFAULT_DLFLAGS,	/* dlopen flags */
+	&deps,			/* OpenSIPS module dependencies */
+	cmds,			/* exported functions */
+	0,			/* exported async functions */
+	mod_params,		/* param exports */
+	0,			/* exported statistics */
 	mi_cmds,		/* exported MI functions */
-	0,				/* exported pseudo-variables */
-	0,				/* additional processes */
+	0,			/* exported pseudo-variables */
+	0,			/* additional processes */
 	mod_init,		/* module initialization function */
-	0,				/* reply processing function */
+	0,			/* reply processing function */
 	mod_destroy,
 	child_init		/* per-child init function */
 };
@@ -371,16 +377,19 @@ static int mod_init(void)
 
 	init_db_url( default_dp_db_url , 0 /*can be null*/);
 
-	dpid_column.len     	= strlen(dpid_column.s);
-	pr_column.len       	= strlen(pr_column.s);
-	match_op_column.len 	= strlen(match_op_column.s);
-	match_exp_column.len	= strlen(match_exp_column.s);
-	match_flags_column.len	= strlen(match_flags_column.s);
-	subst_exp_column.len	= strlen(subst_exp_column.s);
-	repl_exp_column.len 	= strlen(repl_exp_column.s);
-	attrs_column.len    	= strlen(attrs_column.s);
-	timerec_column.len      = strlen(timerec_column.s);
-	disabled_column.len 	= strlen(disabled_column.s);
+	id_column.len     			= strlen(id_column.s);
+	dpid_column.len     		= strlen(dpid_column.s);
+	pr_column.len       		= strlen(pr_column.s);
+	match_op_column.len 		= strlen(match_op_column.s);
+	match_exp_column.len		= strlen(match_exp_column.s);
+	match_flags_column.len		= strlen(match_flags_column.s);
+	subst_exp_column.len		= strlen(subst_exp_column.s);
+	repl_exp_column.len 		= strlen(repl_exp_column.s);
+	attrs_column.len    		= strlen(attrs_column.s);
+	timerec_column.len			= strlen(timerec_column.s);
+	match_var_column.len		= strlen(match_var_column.s);
+	continue_search_column.len	= strlen(continue_search_column.s);
+	disabled_column.len 		= strlen(disabled_column.s);
 
 	if (default_dp_db_url.s) {
 		default_dp_db_url.len = strlen(default_dp_db_url.s);
@@ -443,6 +452,20 @@ static int mod_init(void)
 
 	}
 
+	/* Initialize matched_rule_pvar modparam structure */
+	if(strlen(matched_rule_pvar.s) <= 0) {
+
+		matched_rule_pvar.len = sizeof(DEF_MATCH_RULE) - 1;
+		matched_rule_pvar.s = pkg_malloc(matched_rule_pvar.len);
+
+		if (!matched_rule_pvar.s) {
+			LM_ERR("No more pkg memory\n");
+			return -1;
+		}
+
+		memcpy(matched_rule_pvar.s, DEF_MATCH_RULE, matched_rule_pvar.len);
+
+	} else matched_rule_pvar.len = strlen(matched_rule_pvar.s);
 	default_par2 = (dp_param_p)shm_malloc(sizeof(dp_param_t));
 	if(default_par2 == NULL){
 		LM_ERR("no shm more memory\n");
@@ -592,9 +615,7 @@ static int dp_get_svalue(struct sip_msg * msg, pv_spec_t spec, str* val)
 	return 0;
 }
 
-
-static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
-					 str * repl)
+int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest, str * repl)
 {
 	pv_value_t val;
 
@@ -610,11 +631,10 @@ static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
 	return 0;
 }
 
-static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
-						  char *attr_spec)
+static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2, char *attr_spec)
 {
 
-	int dpid;
+	int dpid, dbmatch;
 	str input, output;
 	dpl_id_p idp;
 	dp_param_p id_par, repl_par;
@@ -623,6 +643,8 @@ static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
 	pv_value_t pval;
 	str partition_name;
 
+	unsigned short avp_type;
+	pv_spec_t avp_spec;
 	if (!msg)
 		return -1;
 
@@ -682,20 +704,33 @@ static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
 	LM_DBG("Checking with dpid %i\n", idp->dp_id);
 
 	attrs_par =  attr_spec ? &attrs : NULL;
-	if (translate(msg, input, &output, idp, attrs_par) != 0) {
-		LM_DBG("could not translate %.*s "
-			"with dpid %i\n", input.len, input.s, idp->dp_id);
+
+	/* Retrieve Matched PVAR Reference */
+	if (pv_parse_spec(&matched_rule_pvar, &avp_spec) == 0 || avp_spec.type != PVT_AVP) {
+		LM_ERR("malformed or non AVP %.*s AVP definition\n", matched_rule_pvar.len, matched_rule_pvar.s);
+		return -1;
+	}
+
+	/* Retrieve Matched PVAR id */
+	if(pv_get_avp_name(0, &(avp_spec.pvp), &avp_name, &avp_type) != 0) {
+		LM_ERR("[%.*s]- invalid AVP definition\n", matched_rule_pvar.len, matched_rule_pvar.s);
+		return -1;
+	}
+
+	/* Doing translate */
+	if ((dbmatch = translate(msg, input, &output, idp, attrs_par, avp_name)) < 0) {
+		LM_DBG("could not translate %.*s with dpid %i\n", input.len, input.s, idp->dp_id);
 		goto error;
 	}
 
-	LM_DBG("input %.*s with dpid %i => output %.*s\n",
-			input.len, input.s, idp->dp_id, output.len, output.s);
-
-	/* set the output */
-	if (dp_update(msg, &repl_par->v.sp[0], &repl_par->v.sp[1], &output) != 0) {
-		LM_ERR("cannot set the output\n");
-		goto error;
-	}
+	LM_DBG("input %.*s with dpid %i => output %.*s dbmatch = %i\n", input.len, input.s, idp->dp_id, output.len, output.s, dbmatch);
+	
+	/* Set the output PVAR if not already done on DB side output PVAR*/
+	if (dbmatch == 0)
+		if (dp_update(msg, &repl_par->v.sp[0], &repl_par->v.sp[1], &output) != 0) {
+			LM_ERR("cannot set the output\n");
+			goto error;
+		}
 
 	/* we are done reading -> unref the data */
 	lock_stop_read( connection->ref_lock );
@@ -774,6 +809,34 @@ static char *parse_dp_command(char * p, int len, str * partition_name)
 
 #undef is_space
 
+/**
+ * This function will check for input pvar parameter validity
+ * @return dp_parm_p valued structure
+ */
+int check_input_param(dp_param_p dp_par, char* p) {
+	str lstr;
+	char *s = NULL;
+
+	if(((s = strchr(p, '/')) == 0) || (*(s+1)=='\0')) return E_UNSPEC;
+	*s = '\0'; s++;
+
+	lstr.s = p; lstr.len = strlen(p);
+	if(pv_parse_spec(&lstr, &dp_par->v.sp[0]) == NULL) return E_UNSPEC;
+	verify_par_type(dp_par->v.sp[0]);
+
+	lstr.s = s; lstr.len = strlen(s);
+	if (pv_parse_spec(&lstr, &dp_par->v.sp[1]) == NULL) return E_UNSPEC;
+	verify_par_type(dp_par->v.sp[1]);
+
+	if (dp_par->v.sp[1].setf == NULL) {
+		LM_ERR("the output PV is read-only!!\n");
+		return E_CFG;
+	}
+
+	dp_par->type = DP_VAL_SPEC;
+
+	return 1;
+}
 /* first param: DPID: type: INT, AVP, SVAR
  * second param: SRC/DST type: RURI, RURI_USERNAME, AVP, SVAR
  * default value for the second param: $ru.user/$ru.user
@@ -782,7 +845,7 @@ static int dp_trans_fixup(void ** param, int param_no){
 
 	int dpid;
 	dp_param_p dp_par= NULL;
-	char *p, *s = NULL;
+	char *p = NULL;
 	str lstr, partition_name;
 	dp_connection_list_t *list = NULL;
 
@@ -873,27 +936,8 @@ static int dp_trans_fixup(void ** param, int param_no){
 		break;
 
 	case 2:
-		if( ((s = strchr(p, '/')) == 0) ||( *(s+1)=='\0'))
-				goto error;
-		*s = '\0'; s++;
-
-		lstr.s = p; lstr.len = strlen(p);
-		if(pv_parse_spec( &lstr, &dp_par->v.sp[0])==NULL)
-			goto error;
-
-		verify_par_type(dp_par->v.sp[0]);
-
-		lstr.s = s; lstr.len = strlen(s);
-		if (pv_parse_spec( &lstr, &dp_par->v.sp[1] )==NULL)
-			goto error;
-
-		verify_par_type(dp_par->v.sp[1]);
-		if (dp_par->v.sp[1].setf==NULL) {
-			LM_ERR("the output PV is read-only!!\n");
-			return E_CFG;
-		}
-
-		dp_par->type = DP_VAL_SPEC;
+		/* Validate and collect SRC/DST (input/output) PVs */
+		if(check_input_param(dp_par, p) <= 0) goto error;
 		break;
 
 	case 3:
@@ -1026,31 +1070,32 @@ static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree, void *param)
 	struct mi_root *rpl_tree = NULL;
 	dp_connection_list_t *el;
 
+	LM_INFO("dp_reload MI command received!\n");
 
 	if (cmd_tree)
 		node = cmd_tree->node.kids;
 
 	if (node == NULL) {
-			/* Reload rules from all partitions */
-			if(dp_load_all_db() != 0){
-					LM_ERR("failed to reload database\n");
-					return 0;
-			}
+		/* Reload rules from all partitions */
+		if(dp_load_all_db() != 0){
+				LM_ERR("failed to reload database\n");
+				return 0;
+		}
 	} else if (node->value.s == NULL || node->value.len == 0) {
-			return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 	} else {
-			el = dp_get_connection(&node->value);
-			if (!el)
-					return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-			/* Reload rules from specified  partition */
-			LM_DBG("Reloading rules from table %.*s\n", node->value.len, node->value.s);
-			if(dp_load_db(el) != 0){
-					LM_ERR("failed to reload database data\n");
-					return 0;
-			}
+		el = dp_get_connection(&node->value);
+		if (!el)
+				return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		/* Reload rules from specified  partition */
+		LM_DBG("Reloading rules from table %.*s\n", node->value.len, node->value.s);
+		if(dp_load_db(el) != 0){
+				LM_ERR("failed to reload database data\n");
+				return 0;
+		}
 	}
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==0)
 		return 0;
 
@@ -1135,7 +1180,7 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 		return init_mi_tree(404, "No information available for dpid", 33);
 	}
 
-	if (translate(NULL, input, &output, idp, &attrs)!=0){
+	if (translate(NULL, input, &output, idp, &attrs, 0) < 0 ) {
 		LM_DBG("could not translate %.*s with dpid %i\n",
 			input.len, input.s, idp->dp_id);
 		lock_stop_read( connection->ref_lock );
