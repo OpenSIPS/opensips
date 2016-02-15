@@ -79,8 +79,11 @@ typedef struct max_list_param {
 	int type;
 } max_list_param_t, *max_list_param_p;
 
+extern int_list_t *ds_probing_list;
+
 int_list_t *set_list_from_pvs(struct sip_msg *msg, pv_spec_t *pvs, int_list_t *end);
 void free_int_list(int_list_t *start, int_list_t *end);
+int in_int_list(int_list_t *list, int val);
 
 int fixup_get_partition(struct sip_msg *msg, const gpartition_t *gpart,
 		ds_partition_t **partition);

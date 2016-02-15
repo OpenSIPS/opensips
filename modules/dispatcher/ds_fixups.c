@@ -581,6 +581,20 @@ void free_int_list(int_list_t *start, int_list_t *end)
 }
 
 /*
+ * Search for value in int_list_t
+*/
+
+int in_int_list(int_list_t *list, int val)
+{
+    int_list_t *tmp;
+    for (tmp=list;tmp!=NULL;tmp=tmp->next) {
+        if (tmp->type == GPARAM_TYPE_INT && tmp->v.ival == val)
+            return 0;
+    }
+    return -1;
+}
+
+/*
  * Get a partition and a set from a general ds_param structure
 */
 

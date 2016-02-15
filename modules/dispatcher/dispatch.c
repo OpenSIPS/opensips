@@ -67,6 +67,7 @@
 #include "../../rw_locking.h"
 
 #include "dispatch.h"
+#include "ds_fixups.h"
 #include "ds_bl.h"
 
 #define DS_TABLE_VERSION	7
@@ -2250,8 +2251,11 @@ void ds_check_timer(unsigned int ticks, void* param)
 		{
 			for(j=0; j<list->nr; j++)
 			{
-				/* If the Flag of the entry has "Probing set, send a probe:	*/
-				if ( ((list->dlist[j].flags&DS_INACTIVE_DST)==0) &&
+				/* If list is probed by this proxy and the Flag of
+                                 * the entry has "Probing" set, send a probe:
+                                 */
+				if ( (!ds_probing_list || in_int_list(ds_probing_list, list->id)==0) &&
+                                ((list->dlist[j].flags&DS_INACTIVE_DST)==0) &&
 				(ds_probing_mode==1 || (list->dlist[j].flags&DS_PROBING_DST)!=0
 				))
 				{
