@@ -85,7 +85,7 @@
 #define CALL_INFO_APPEARANCE_URI_10_COL	"app10_call_info_appearance_uri"
 #define B2BL_KEY_10_COL			"app10_b2bl_key"
 
-#define SCA_TABLE_NAME		"sca"
+#define SCA_TABLE_NAME		"b2b_sca"
 
 #define SCA_TABLE_VERSION	1
 #define DB_MODE_NONE		0
