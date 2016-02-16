@@ -151,7 +151,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 
 	if(use_init_sdp || (scenario && scenario->use_init_sdp))
 	{
-		if (!body && scenario->body.len)
+		if (!body && scenario && scenario->body.len)
 		{
 			body = &scenario->body;
 			/* we also have to add the content type here */
