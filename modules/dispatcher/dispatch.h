@@ -194,7 +194,6 @@ extern int probing_threshhold; /* number of failed requests,
 						before a destination is taken into probing */
 extern int ds_probing_mode;
 
-
 int init_ds_db(ds_partition_t *partition);
 int ds_connect_db(ds_partition_t *partition);
 void ds_disconnect_db(ds_partition_t *partition);

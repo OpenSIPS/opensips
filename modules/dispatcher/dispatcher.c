@@ -83,6 +83,7 @@ str ds_ping_from   = {"sip:dispatcher@localhost", 24};
 static int ds_ping_interval = 0;
 int ds_probing_mode = 0;
 int ds_persistent_state = 1;
+int_list_t *ds_probing_list = NULL;
 
 /* db partiton info */
 
@@ -183,6 +184,7 @@ static int mi_child_init(void);
 /* Parameters setters */
 
 static int set_partition_arguments(unsigned int type, void * val);
+static int set_probing_list(unsigned int type, void * val);
 
 static cmd_export_t cmds[]={
 	{"ds_select_dst",    (cmd_function)w_ds_select_dst, 2,
@@ -261,6 +263,7 @@ static param_export_t params[]={
 	{"ds_probing_mode",       INT_PARAM, &ds_probing_mode},
 	{"options_reply_codes",   STR_PARAM, &options_reply_codes_str.s},
 	{"ds_probing_sock",       STR_PARAM, &probing_sock_s},
+	{"ds_probing_list",       STR_PARAM|USE_FUNC_PARAM, (void*)set_probing_list},
 	{"ds_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_ds_bl},
 	{"persistent_state",      INT_PARAM, &ds_persistent_state},
 	{0,0,0}
@@ -452,6 +455,17 @@ static ds_partition_t* find_partition_by_name (const str *partition_name)
 	return part_it; //and NULL if there's no partition matching the name
 }
 
+/* Load setids this proxy is responsible for probing into list */
+static int set_probing_list(unsigned int type, void *val) {
+	str input = {(char*)val, strlen(val)};
+        if (set_list_from_string(input, &ds_probing_list) != 0 ||
+            ds_probing_list == NULL)
+        {
+            LM_ERR("Invalid set_probing_list input\n");
+            return -1;
+        }
+        return 0;
+}
 
 /* We parse the "partition" argument as: partition_name:arg1=val1; arg2=val2;*/
 
@@ -920,6 +934,10 @@ static void destroy(void)
 
 	/* destroy blacklists */
 	destroy_ds_bls();
+
+        /* destroy probing list */
+        if (ds_probing_list)
+            free_int_list(ds_probing_list, NULL);
 }
 
 #define CHECK_AND_EXPAND_LIST(_list_) \

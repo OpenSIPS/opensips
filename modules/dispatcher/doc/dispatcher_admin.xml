@@ -318,6 +318,30 @@ modparam("dispatcher", "ds_probing_mode", 1)
 	</section>
 
 	<section>
+		<title><varname>ds_probing_list</varname> (str)</title>
+		<para>
+                Defines a list of one or more setids that limits which
+                destinations are probed if probing is active.  This is useful
+                when multiple proxies share the same dispatcher table, but you
+                want to limit which ones are responsible for probing specific
+                destinations.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL(none)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <quote>ds_probing_list</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "ds_probing_list", "1,2,3")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>ds_define_blacklist</varname> (str)</title>
 		<para>
 		Defines a blacklist based on a dispatching setid from the 'default'
