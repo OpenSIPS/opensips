@@ -894,7 +894,7 @@ static inline int hep_handle_req(struct tcp_req *req,
 
 		/* skip receive msg if we were told so from at least one callback */
 		if (ret != HEP_SCRIPT_SKIP &&
-				receive_msg(msg_buf, msg_len, &local_rcv) <0)
+				receive_msg(msg_buf, msg_len, &local_rcv, NULL) <0)
 				LM_ERR("receive_msg failed \n");
 
 		if (!size && req != &hep_current_req) {
@@ -1192,7 +1192,7 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 
 	if (ret != HEP_SCRIPT_SKIP) {
 		/* receive_msg must free buf too!*/
-		receive_msg( msg.s, msg.len, &ri);
+		receive_msg( msg.s, msg.len, &ri, NULL);
 	}
 
 	return 0;

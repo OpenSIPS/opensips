@@ -187,7 +187,7 @@ static int udp_read_req(struct socket_info *si, int* bytes_read)
 	}
 
 	/* receive_msg must free buf too!*/
-	receive_msg( msg.s, msg.len, &ri);
+	receive_msg( msg.s, msg.len, &ri, NULL);
 
 	return 0;
 }
