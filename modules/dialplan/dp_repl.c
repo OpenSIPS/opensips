@@ -42,7 +42,6 @@ void repl_expr_free(struct subst_expr *se)
 	se = 0;
 }
 
-
 struct subst_expr* repl_exp_parse(str subst)
 {
 	struct replace_with rw[MAX_REPLACE_WITH];
@@ -105,9 +104,7 @@ error:
 static char dp_output_buf[MAX_PHONE_NB_DIGITS+1];
 static int matches[MAX_MATCHES];
 
-int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
-		str * result)
-{
+int rule_translate(struct sip_msg * msg, str string, dpl_node_t * rule, str * result) {
 	int repl_nb, offset, match_nb;
 	struct replace_with token;
 	pcre * subst_comp;
@@ -360,57 +357,93 @@ static inline int check_time(tmrec_t *time_rec) {
 	return 1;
 }
 
+/**
+ * Check for match_var SRC/DST variable. On success replace
+ * input/output placeholders
+ */
+static int check_match_var(struct sip_msg *msg, char * match_var, str * input, dp_param_p dp_par) {
+
+	pv_value_t value;
+
+	/* Backup Original Source */
+	char *backup = pkg_malloc(sizeof(char) * strlen(match_var));
+	strcpy(backup, match_var);
+
+	/* Check for input string validity */
+	if(check_input_param(dp_par, backup) <= 0) {
+		LM_ERR("wrong match_var syntax ... skipping rule!\n");
+		return -1;
+	}
+
+	/* Free backup memory */
+	pkg_free(backup);
+
+	/* Unable to retrieve input PV stored value */
+	if (pv_get_spec_value(msg, &dp_par->v.sp[0], &value) != 0) {
+		LM_ERR("no input match_var PV found ... skipping rule!\n");
+		return -1;
+	}
+
+	/* Input PV stored value was empty or NULL ... unusable for pattern matching */
+	if (value.flags &(PV_VAL_NULL|PV_VAL_EMPTY)) {
+		LM_ERR("NULL or empty input match_var ... skipping rule!\n");
+		return -1;
+	}
+
+	/* Rewrite input PV string */
+	input->s = value.rs.s;
+	memcpy(input->s, value.rs.s, value.rs.len * sizeof(char));
+	input->len = value.rs.len;
+
+	/* Debug */
+	LM_DBG("PV input changed to %.*s due to match_var option!\n", input->len, input->s);
+
+	/* Success */
+	return 1;
+}
+
 #define DP_MAX_ATTRS_LEN	32
 static char dp_attrs_buf[DP_MAX_ATTRS_LEN+1];
-int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * attrs) {
+int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * attrs, int matched_rule_id) {
 
-	dpl_node_p rulep, rrulep;
-	int string_res = -1, regexp_res = -1, bucket;
+	int_str val;
+	int dbmatch = 0;
+	dpl_node_p rrulep = NULL;
+	dp_param_p rdp_par = NULL;
+	struct usr_avp *ruleid_avp = NULL;
+	int string_res = -1, regexp_res = -1, matched = 0;
 
 	if(!input.s || !input.len) {
 		LM_ERR("invalid input string\n");
 		return -1;
 	}
 
-	bucket = core_case_hash(&input, NULL, DP_INDEX_HASH_SIZE);
-
-	/* try to match the input in the corresponding string bucket */
-	for (rulep = idp->rule_hash[bucket].first_rule; rulep; rulep=rulep->next) {
-
-		LM_DBG("Equal operator testing\n");
-
-		if(rulep->match_exp.len != input.len)
-			continue;
-
-		LM_DBG("Comparing (input %.*s) with (rule %.*s) [%d] and timerec %.*s\n",
-				input.len, input.s, rulep->match_exp.len, rulep->match_exp.s,
-				rulep->match_flags, rulep->timerec.len, rulep->timerec.s);
-
-		// Check for Time Period if Set
-		if(rulep->parsed_timerec) {
-			LM_DBG("Timerec exists for rule checking: %.*s\n", rulep->timerec.len, rulep->timerec.s);
-			// Doesn't matches time period continue with next rule
-			if(!check_time(rulep->parsed_timerec)) {
-				LM_DBG("Time rule doesn't match: skip next!\n");
-				continue;
-			}
-		}
-
-		if (rulep->match_flags & DP_CASE_INSENSITIVE) {
-			string_res = strncasecmp(rulep->match_exp.s,input.s,input.len);
-		} else {
-			string_res = strncmp(rulep->match_exp.s,input.s,input.len);
-		}
-
-		if (string_res == 0) {
-			break;
-		}
-	}
-
 	/* try to match the input in the regexp bucket */
 	for (rrulep = idp->rule_hash[DP_INDEX_HASH_SIZE].first_rule; rrulep; rrulep=rrulep->next) {
 
-		// Check for Time Period if Set
+		/* Debug */
+		LM_DBG("Comparing (match op: %i continue search: %i) input %.*s with rule %.*s [%d] and timerec %.*s\n",
+			rrulep->matchop, rrulep->continue_search, input.len, input.s, rrulep->match_exp.len, rrulep->match_exp.s,
+			rrulep->match_flags, rrulep->timerec.len, rrulep->timerec.s);
+
+		/* Check for match_var existance. If true override input search string and output pointer */
+		if(rrulep->match_var.len > 0) {
+			/* Build a parameters data structure and allocate it */
+			rdp_par = (dp_param_p) pkg_malloc(sizeof(dp_param_t));
+			if(rdp_par == NULL) { LM_ERR("no more pkg memory\n"); goto err; }
+			memset(rdp_par, 0, sizeof(dp_param_t));
+
+			if(check_match_var(msg, rrulep->match_var.s, &input, rdp_par) <= 0) continue;
+		}
+
+		/* Lenght match failed on a best match rule ... skipping rule */
+		if(rrulep->matchop == EQUAL_OP)
+			if(rrulep->match_exp.len != input.len) {
+				LM_DBG("Match length failed ... discarding rule!\n");
+				continue;
+			}
+
+		/* Check for Time Period if Set */
 		if(rrulep->parsed_timerec) {
 			LM_DBG("Timerec exists for rule checking: %.*s\n", rrulep->timerec.len, rrulep->timerec.s);
 			// Doesn't matches time period continue with next rule
@@ -420,65 +453,108 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 			}
 		}
 
-		regexp_res = (test_match(input, rrulep->match_comp, matches, MAX_MATCHES)
-					>= 0 ? 0 : -1);
+		/* Reset Return Values */
+		string_res = regexp_res = -1;
 
-		LM_DBG("Regex operator testing. Got result: %d\n", regexp_res);
-
-		if (regexp_res == 0) {
-			break;
+		/* Check wich match to apply */
+		if(rrulep->matchop == EQUAL_OP) {
+			/* Doing Best Match */
+			if (rrulep->match_flags & DP_CASE_INSENSITIVE)
+				string_res = strncasecmp(rrulep->match_exp.s,input.s,input.len);
+			else
+				string_res = strncmp(rrulep->match_exp.s,input.s,input.len);
+		} else {
+			/* Doing RegEXP Match */
+			regexp_res = (test_match(input, rrulep->match_comp, matches, MAX_MATCHES) >= 0 ? 0 : -1);
 		}
-	}
 
-	if (string_res != 0 && regexp_res != 0) {
-		LM_DBG("No matching rule for input %.*s\n", input.len, input.s);
-		return -1;
-	}
+		/* If a match occours apply translation */
+		if (string_res == 0 || regexp_res == 0) {
 
-	/* pick the rule with lowest table index if both match and prio are equal */
-	if ((string_res | regexp_res) == 0) {
-		if (rulep->pr < rrulep->pr) {
-			rulep = rrulep;
-		} else if (rrulep->pr == rulep->pr &&
-		           rrulep->table_id < rulep->table_id) {
-			rulep = rrulep;
-		}
-	}
+			/* Update Match Counter */
+			++matched;
 
-	if (!rulep)
-		rulep = rrulep;
-
-	LM_DBG("Found a matching rule %p: pr %i, match_exp %.*s\n",
-		rulep, rulep->pr, rulep->match_exp.len, rulep->match_exp.s);
-
-	if(attrs){
-		attrs->len = 0;
-		attrs->s = 0;
-		if(rulep->attrs.len>0) {
-			LM_DBG("the rule's attrs are %.*s\n",
-				rulep->attrs.len, rulep->attrs.s);
-			if(rulep->attrs.len >= DP_MAX_ATTRS_LEN) {
-				LM_ERR("EXCEEDED Max attribute length.\n");
-				return -1;
+			/* Applying translate on input string */
+			if(rule_translate(msg, input, rrulep, output) != 0){
+				LM_ERR("could not build the output\n");
+				goto err;
 			}
-			attrs->s = dp_attrs_buf;
-			memcpy(attrs->s, rulep->attrs.s, rulep->attrs.len*sizeof(char));
-			attrs->len = rulep->attrs.len;
-			attrs->s[attrs->len] = '\0';
+		
+			/* Update database retrieved output PV */
+			if(rrulep->match_var.len > 0 && rdp_par !=  NULL) {
+				if (dp_update(msg, &rdp_par->v.sp[0], &rdp_par->v.sp[1], output) != 0) 
+					LM_ERR("Unable to update database retrieved input/output PVs!\n");
+		
+				/* Free Datastructure */
+				pkg_free(rdp_par);
+		
+				/* Set as Matched */
+				dbmatch = 1;
+			}
+		
+			/* Check for a valid matching rule avp id */
+			if(matched_rule_id > 0) {
+				/* Check if AVP already exists ... */
+				ruleid_avp = search_first_avp(0, matched_rule_id, &val, NULL);
+		
+				/* ... and destroy it!!! */
+				if(ruleid_avp && !(is_avp_str_val(ruleid_avp) == 0)) { 
+					LM_DBG("AVP %i already exists with value %d\n", matched_rule_id, val.n);
+					destroy_avp(ruleid_avp);
+					ruleid_avp = NULL; 
+				}
+			
+				/* Validate AVP value */
+				val.n = rrulep->id;
+			
+				/* Add AVP */
+				if (add_avp(0, matched_rule_id, val) < 0) {
+					LM_ERR("unable to add AVP");
+					goto err;
+				}
+			}
 
-			LM_DBG("the copied attributes are: %.*s\n",
-				attrs->len, attrs->s);
+			/* A Rule Was Found ... build ATTRS PVAR content */
+			if(attrs) {
+				attrs->len = 0;
+				attrs->s = 0;
+		
+				if(rrulep->attrs.len > 0) {
+					LM_DBG("the rule's attrs are %.*s\n", rrulep->attrs.len, rrulep->attrs.s);
+		
+					if(rrulep->attrs.len >= DP_MAX_ATTRS_LEN) {
+						LM_ERR("EXCEEDED Max attribute length.\n");
+						goto err;
+					}
+		
+					attrs->s = dp_attrs_buf;
+					memcpy(attrs->s, rrulep->attrs.s, rrulep->attrs.len*sizeof(char));
+					attrs->len = rrulep->attrs.len;
+					attrs->s[attrs->len] = '\0';
+		
+					LM_DBG("the copied attributes are: %.*s\n", attrs->len, attrs->s);
+				}
+			}
+
+			/* Check if continue searching through dialplan rules */
+			if(rrulep->continue_search == 0) break;
 		}
 	}
 
-	if(rule_translate(msg, input, rulep, output)!=0){
-		LM_ERR("could not build the output\n");
-		return -1;
+	/* No Rule Found ... */
+	if (matched <= 0) {
+		LM_DBG("No matching rule for input %.*s\n", input.len, input.s);
+		goto err;
 	}
 
-	return 0;
-}
+	/* Return Value */
+	return dbmatch;
 
+/* Purge on error */
+err:
+	if(rdp_par) pkg_free(rdp_par);
+	return -1;	
+}
 
 int test_match(str string, pcre * exp, int * out, int out_max)
 {
@@ -493,20 +569,21 @@ int test_match(str string, pcre * exp, int * out, int out_max)
 		return -1;
 	}
 
-	result_count = pcre_exec(
-							exp, /* the compiled pattern */
-							NULL, /* no extra data - we didn't study the pattern */
-							string.s, /* the subject string */
-							string.len, /* the length of the subject */
-							0, /* start at offset 0 in the subject */
-							0, /* default options */
-							out, /* output vector for substring information */
-							out_max); /* number of elements in the output vector */
+	result_count = pcre_exec (
+		exp,		/* the compiled pattern */
+		NULL,		/* no extra data - we didn't study the pattern */
+		string.s,	/* the subject string */
+		string.len,	/* the length of the subject */
+		0,		/* start at offset 0 in the subject */
+		0,		/* default options */
+		out,		/* output vector for substring information */
+		out_max		/* number of elements in the output vector */
+	);
 
-	if( result_count < 0 )
+	if( result_count < 0  )
 		return result_count;
 
-	if( result_count == 0)
+	if( result_count == 0 )
 	{
 		LM_ERR("Not enough space for mathing\n");
 		return result_count;
@@ -519,7 +596,6 @@ int test_match(str string, pcre * exp, int * out, int out_max)
 		substring_length = out[2 * i + 1] - out[2 * i];
 		LM_DBG("test_match:[%d] %.*s\n",i, substring_length, substring_start);
 	}
-
 
 	return result_count;
 }

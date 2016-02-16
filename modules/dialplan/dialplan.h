@@ -39,29 +39,30 @@
 #define DP_CASE_INSENSITIVE		1
 #define DP_INDEX_HASH_SIZE		16
 
-typedef struct dpl_node{
+typedef struct dpl_node {
+	int id;
 	int dpid;
-	int table_id; /*choose between matching regexp/strings with same priority*/
+	int table_id; /* choose between matching regexp/strings with same priority */
 	int pr;
 	int matchop;
 	int match_flags;
-	str match_exp, subst_exp, repl_exp; /*keeping the original strings*/
+	str match_exp, subst_exp, repl_exp, attrs, timerec; /*keeping the original strings*/
 	pcre * match_comp, * subst_comp; /*compiled patterns*/
 	struct subst_expr * repl_comp;
-	str attrs;
-	str timerec;
 	tmrec_t *parsed_timerec;
+	str match_var;
+	int continue_search;
 
 	struct dpl_node * next; /*next rule*/
-}dpl_node_t, *dpl_node_p;
+} dpl_node_t, *dpl_node_p;
 
 /* HASH_SIZE	buckets of matching strings (lowercase hashing)
    1			bucket of regexps (index: HASH_SIZE) */
-typedef struct dpl_index{
+typedef struct dpl_index {
 	dpl_node_t * first_rule;
 	dpl_node_t * last_rule;
 
-}dpl_index_t, *dpl_index_p;
+} dpl_index_t, *dpl_index_p;
 
 /*For every DPID*/
 typedef struct dpl_id{
@@ -117,10 +118,11 @@ dpl_id_p select_dpid(dp_connection_list_p table, int id, int index);
 
 struct subst_expr* repl_exp_parse(str subst);
 void repl_expr_free(struct subst_expr *se);
-int translate(struct sip_msg *msg, str user_name, str* repl_user, dpl_id_p idp, str *);
+int translate(struct sip_msg *msg, str user_name, str* repl_user, dpl_id_p idp, str *, int);
+int check_input_param(dp_param_p, char *);
 int rule_translate(struct sip_msg *msg, str , dpl_node_t * rule,  str *);
 int test_match(str string, pcre * exp, int * out, int out_max);
-
+int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest, str * repl);
 
 typedef void * (*func_malloc)(size_t );
 typedef void  (*func_free)(void * );
@@ -128,10 +130,8 @@ typedef void  (*func_free)(void * );
 void * wrap_shm_malloc(size_t size);
 void  wrap_shm_free(void *);
 
-
 pcre * wrap_pcre_compile(char *  pattern, int flags);
 void wrap_pcre_free( pcre*);
-
 
 extern rw_lock_t *ref_lock;
 
