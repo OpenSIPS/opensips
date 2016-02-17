@@ -805,6 +805,7 @@ int db_delete_ucontact(ucontact_t* _c)
 	char* dom;
 	db_key_t keys[4];
 	db_val_t vals[4];
+	int n;
 
 	if (_c->flags & FL_MEM) {
 		return 0;
@@ -812,8 +813,6 @@ int db_delete_ucontact(ucontact_t* _c)
 
 	keys[0] = &user_col;
 	keys[1] = &contact_col;
-	keys[2] = &callid_col;
-	keys[3] = &domain_col;
 
 	vals[0].type = DB_STR;
 	vals[0].nul = 0;
@@ -823,22 +822,30 @@ int db_delete_ucontact(ucontact_t* _c)
 	vals[1].nul = 0;
 	vals[1].val.str_val = _c->c;
 
-	vals[2].type = DB_STR;
-	vals[2].nul = 0;
-	vals[2].val.str_val = _c->callid;
+	n = 2;
+
+	if (matching_mode==CONTACT_CALLID) {
+		vals[n].type = DB_STR;
+		vals[n].nul = 0;
+		vals[n].val.str_val = _c->callid;
+
+		keys[n++] = &callid_col;
+	}
 
 	if (use_domain) {
-		vals[3].type = DB_STR;
-		vals[3].nul = 0;
+		vals[n].type = DB_STR;
+		vals[n].nul = 0;
 		dom = q_memchr(_c->aor->s, '@', _c->aor->len);
 		if (dom==0) {
 			vals[0].val.str_val.len = 0;
-			vals[3].val.str_val = *_c->aor;
+			vals[n].val.str_val = *_c->aor;
 		} else {
 			vals[0].val.str_val.len = dom - _c->aor->s;
-			vals[3].val.str_val.s = dom + 1;
-			vals[3].val.str_val.len = _c->aor->s + _c->aor->len - dom - 1;
+			vals[n].val.str_val.s = dom + 1;
+			vals[n].val.str_val.len = _c->aor->s + _c->aor->len - dom - 1;
 		}
+
+		keys[n++] = &domain_col;
 	}
 
 	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
@@ -848,7 +855,7 @@ int db_delete_ucontact(ucontact_t* _c)
 
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 
-	if (ul_dbf.delete(ul_dbh, keys, 0, vals, (use_domain) ? (4) : (3)) < 0) {
+	if (ul_dbf.delete(ul_dbh, keys, 0, vals, n) < 0) {
 		LM_ERR("deleting from database failed\n");
 		return -1;
 	}
