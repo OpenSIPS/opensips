@@ -428,8 +428,11 @@ static int db_restore(void)
 				etag.s= (char*)row_vals[etag_col].val.string_val;
 				etag.len = strlen(etag.s);
 
-				tuple_id.s= (char*)row_vals[tuple_col].val.string_val;
-				tuple_id.len = strlen(tuple_id.s);
+				if(row_vals[tuple_col].val.string_val)
+				{
+					tuple_id.s= (char*)row_vals[tuple_col].val.string_val;
+					tuple_id.len = strlen(tuple_id.s);
+				}
 			}
 
 			if(row_vals[watcher_col].val.string_val)
