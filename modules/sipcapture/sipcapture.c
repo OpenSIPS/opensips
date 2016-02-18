@@ -127,6 +127,7 @@ struct _sipcapture_object {
 #define TABLE_LEN 256
 #define NR_KEYS 37
 
+typedef void* sc_async_param_t;
 db_key_t db_keys[NR_KEYS];
 
 /* module function prototypes */
@@ -1118,6 +1119,8 @@ static int db_async_store(db_val_t* db_vals,
 	int read_fd;
 	str query_str;
 
+	sc_async_param_t as_param;
+
 	if (!DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
 		LM_WARN("This database module does not have async queries!"
 				"Using sync insert!\n");
@@ -1183,7 +1186,7 @@ static int db_async_store(db_val_t* db_vals,
 
 		query_str.s   = query_buf;
 		query_str.len = query_len;
-		read_fd = db_funcs.async_raw_query(db_con, &query_str);
+		read_fd = db_funcs.async_raw_query(db_con, &query_str, &as_param);
 
 		lock_release(&query_lock);
 
@@ -1192,7 +1195,9 @@ static int db_async_store(db_val_t* db_vals,
 			*resume_f     = NULL;
 			return -1;
 		}
-		*resume_param = (void*)((unsigned long int)read_fd);
+
+
+		*resume_param = as_param;
 		*resume_f = resume_async_dbquery;
 		async_status = read_fd;
 
@@ -1214,12 +1219,9 @@ no_buffer:
 int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
 {
 	int rc;
-	unsigned long int param_fd;
 
-	param_fd = (int)((unsigned long int)_param);
-
-	rc = db_funcs.async_raw_resume(db_con, (int)param_fd, NULL);
-	if (async_status == ASYNC_CONTINUE)
+	rc = db_funcs.async_raw_resume(db_con, fd, NULL, (sc_async_param_t)_param);
+	if (async_status == ASYNC_CONTINUE || async_status == ASYNC_CHANGE_FD)
 		return rc;
 
 	if (rc != 0) {

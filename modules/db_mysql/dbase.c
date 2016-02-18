@@ -1125,7 +1125,7 @@ static inline int db_mysql_get_con_fd(void *con)
  *		success: Unix FD for polling
  *		failure: negative error code
  */
-int db_mysql_async_raw_query(db_con_t *_h, const str *_s)
+int db_mysql_async_raw_query(db_con_t *_h, const str *_s, void** _data)
 {
 	int *fd_ref;
 	int code, i;
@@ -1197,7 +1197,7 @@ out:
 	return -2;
 }
 
-int db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r)
+int db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r, void* _data)
 {
 	struct pool_con *con;
 	int rc;
