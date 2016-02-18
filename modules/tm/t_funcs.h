@@ -67,7 +67,7 @@ extern int noisy_ctimer;
 
 /* t_reply_to flags */
 #define TM_T_REPLY_repl_FLAG     (1<<0)
-#define TM_T_REPLY_no100_FLAG    (1<<1)
+#define TM_T_REPLY_not_used      (1<<1)
 #define TM_T_REPLY_noerr_FLAG    (1<<2)
 #define TM_T_REPLY_nodnsfo_FLAG  (1<<3)
 #define TM_T_REPLY_reason_FLAG   (1<<4)
