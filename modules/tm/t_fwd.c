@@ -510,9 +510,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	"Reason: SIP;cause=487;text=\"ORIGINATOR_CANCEL\"" CRLF
 
 	branch_bm_t cancel_bitmap;
-	branch_bm_t dummy_bm;
 	str reason;
-	unsigned int i;
 	struct hdr_field *hdr;
 
 	cancel_bitmap=0;

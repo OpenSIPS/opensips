@@ -147,6 +147,8 @@ static struct cell *cancelled_T;
  */
 static struct cell *e2eack_T;
 
+static str relay_reason_100 = str_init("Giving a try");
+
 
 struct cell *get_t(void) { return T; }
 void set_t(struct cell *t) { T=t; }
@@ -1100,6 +1102,10 @@ int t_newtran( struct sip_msg* p_msg )
 		put_on_wait( T );
 		t_unref(p_msg);
 		return E_BAD_VIA;
+	}
+
+	if (p_msg->REQ_METHOD==METHOD_INVITE) {
+		t_reply( T, p_msg , 100 , &relay_reason_100);
 	}
 
 	return 1;
