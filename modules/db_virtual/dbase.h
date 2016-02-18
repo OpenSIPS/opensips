@@ -119,6 +119,12 @@ typedef struct handle_private {
 } handle_private_t;
 
 
+typedef struct handle_async {
+	int current_con; /* current connection index */
+	int cons_rem;    /* number of cons to try */
+	str query;		 /* the query for this function call */
+} handle_async_t;
+
 /*
  * Initialize database connection
  */
@@ -194,6 +200,15 @@ int db_virtual_last_inserted_id(const db_con_t* _h);
 int db_virtual_insert_update(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
         const int _n);
 
+/*
+ * Async raw SQL query
+ */
+int db_virtual_async_raw_query(db_con_t *_h, const str *_s, void **_data);
+
+/*
+ * Async raw SQL query resume function
+ */
+int db_virtual_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r, void *_data);
 
 /*
  * Store name of table that will be used by
