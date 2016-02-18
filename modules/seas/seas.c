@@ -247,7 +247,6 @@ static int w_as_relay_t(struct sip_msg *msg, char *entry, char *foo)
    char *buffer,processor_id;
    struct cell *mycel;
    struct as_entry *as;
-   static str msg100={"Your call is important to us",sizeof("Your call is important to us")-1};
    static str msg500={"Server Internal Error!",sizeof("Server Internal Error!")-1};
 
    buffer=(char*)0;
@@ -267,15 +266,6 @@ static int w_as_relay_t(struct sip_msg *msg, char *entry, char *foo)
    if (new_tran==0 && !(msg->REQ_METHOD==METHOD_ACK)){
       ret = 0;
       goto done;
-   }
-   /*new transaction created, let's pass it to an APP SERVER*/
-   if (msg->REQ_METHOD==METHOD_INVITE )
-   {
-      LM_DBG("new INVITE\n");
-      if(!seas_f.tmb.t_reply(msg,100,&msg100)){
-	 LM_DBG("t_reply (100)\n");
-	 goto error;
-      }
    }
    as=(struct as_entry *)entry;
    if(!as->connected){
