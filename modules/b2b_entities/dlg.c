@@ -486,7 +486,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	str param= {NULL,0};
 	b2b_table table = NULL;
 	int method_value;
-	static str reason = {"Trying", 6};
 	str from_tag;
 	str to_tag;
 	str callid;
@@ -882,12 +881,6 @@ logic_notify:
 
 			if(tm_tran && tm_tran!=T_UNDEFINED)
 				tmb.unref_cell(tm_tran);
-		}
-
-		/* send provisional reply 100 Trying */
-		if(method_value == METHOD_INVITE)
-		{
-			tmb.t_reply(msg, 100, &reason);
 		}
 	}
 

@@ -54,8 +54,6 @@
 #include "config.h"
 #include "../../context.h"
 
-static str relay_reason_100 = str_init("Giving a try");
-
 
 /* ----------------------------------------------------- */
 int send_pr_buffer( struct retr_buf *rb, void *buf, int len,
@@ -185,7 +183,6 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 	int new_tran;
 	int reply_ret;
 	struct cell *t;
-	context_p ctx_backup;
 
 	ret=0;
 
@@ -232,16 +229,6 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 	if (flags&TM_T_REPLY_repl_FLAG) t->flags|=T_IS_LOCAL_FLAG;
 	if (flags&TM_T_REPLY_nodnsfo_FLAG) t->flags|=T_NO_DNS_FAILOVER_FLAG;
 	if (flags&TM_T_REPLY_reason_FLAG) t->flags|=T_CANCEL_REASON_FLAG;
-
-	/* INVITE processing might take long, particularly because of DNS
-	   look-ups -- let upstream know we're working on it */
-	if ( p_msg->REQ_METHOD==METHOD_INVITE &&
-	!(flags&(TM_T_REPLY_no100_FLAG|TM_T_REPLY_repl_FLAG)) ) {
-		ctx_backup = current_processing_ctx;
-		current_processing_ctx = NULL;
-		t_reply( t, p_msg , 100 , &relay_reason_100);
-		current_processing_ctx = ctx_backup;
-	}
 
 	/* now go ahead and forward ... */
 	ret=t_forward_nonack( t, p_msg, proxy);
