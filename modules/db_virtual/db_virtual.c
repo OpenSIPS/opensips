@@ -473,6 +473,8 @@ int db_virtual_bind_api(const str* mod, db_func_t *dbb)
     dbb->replace          = db_virtual_replace;
     dbb->last_inserted_id = db_virtual_last_inserted_id;
     dbb->insert_update    = db_virtual_insert_update;
+	dbb->async_raw_query  = db_virtual_async_raw_query;
+	dbb->async_raw_resume = db_virtual_async_raw_resume;
 
     return 0;
 }

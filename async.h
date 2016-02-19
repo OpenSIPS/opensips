@@ -36,9 +36,10 @@
  * NOTE: all values in this enum must be negative
  */
 enum async_ret_code {
-	ASYNC_NO_IO = -5,
+	ASYNC_NO_IO = -6,
 	ASYNC_SYNC,
 	ASYNC_CONTINUE,
+	ASYNC_CHANGE_FD,
 	ASYNC_DONE_CLOSE_FD,
 	ASYNC_DONE,
 };
@@ -61,7 +62,7 @@ typedef int (async_start_function)
 	(struct sip_msg *msg, struct action* a , int resume_route);
 
 typedef int (async_resume_function)
-	(int fd, void *param);
+	(int *fd, void *param);
 
 extern async_start_function  *async_start_f;
 extern async_resume_function *async_resume_f;
@@ -69,7 +70,7 @@ extern async_resume_function *async_resume_f;
 int register_async_handlers(async_start_function *f1, async_resume_function *f2);
 
 
-/* async related functions to be used by the 
+/* async related functions to be used by the
  * functions exported by modules */
 typedef int (async_resume_module)
 	(int fd, struct sip_msg *msg, void *param);

@@ -48,7 +48,7 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 	LM_DBG(" extra_data %p\n", c->extra_data);
 
 	/* if we are in a writer context, do not touch the buffer contain read packets per connection
-	might be in a completely different process 
+	might be in a completely different process
 	even if in our process we shouldn't touch it, since it might currently be in use, when we've read multiple SIP messages in one try*/
 	if (!writer && c->con_req) {
 		pkg_free(c->con_req);
@@ -61,8 +61,8 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 	/* errno==EINTR, EWOULDBLOCK a.s.o todo */
 	response[0]=(long)c;
 	response[1]=state;
-	
-	if (send_all((state==ASYNC_WRITE)?unix_tcp_sock:tcpmain_sock, response, 
+
+	if (send_all((state==ASYNC_WRITE)?unix_tcp_sock:tcpmain_sock, response,
 	sizeof(response))<=0)
 		LM_ERR("send_all failed\n");
 }
@@ -71,7 +71,7 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 /* wrapper around internal tcpconn_release() - to be called by functions which
  * used tcp_conn_get(), in order to release the connection;
  * It does the unref and pushes back (if needed) some update to TCP main;
- * right now, it used only from the xxx_send() functions 	
+ * right now, it used only from the xxx_send() functions
  */
 void tcp_conn_release(struct tcp_connection* c, int pending_data)
 {
@@ -117,7 +117,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			handle_timer_job();
 			break;
 		case F_SCRIPT_ASYNC:
-			async_resume_f( fm->fd, fm->data);
+			async_resume_f( &fm->fd, fm->data);
 			return 0;
 		case F_TCPMAIN:
 again:
@@ -173,7 +173,7 @@ again:
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					goto con_error;
 				}
-	
+
 				/* mark that the connection is currently in our process
 				future writes to this con won't have to acquire FD */
 				con->proc_id = process_no;

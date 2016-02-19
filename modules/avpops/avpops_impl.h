@@ -121,6 +121,7 @@ typedef struct _query_async_param
 	pvname_list_t *output_avps;
 	db_con_t      *hdl;
 	db_func_t     *dbf;
+	void		  *db_param;
 
 } query_async_param;
 
