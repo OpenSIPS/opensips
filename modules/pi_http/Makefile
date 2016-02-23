@@ -23,13 +23,13 @@ include ../../Makefile.modules
 
 install_module_custom:
 	echo "installing pi_http framework samples ..."
-	mkdir -p $(data-prefix)/$(data-dir)/pi_http
+	mkdir -p $(data_prefix)/$(data_dir)/pi_http
 	for FILE in $(wildcard ../../scripts/pi_http/*) ; do \
 		if [ -f $$FILE ] ; then \
 			$(INSTALL_TOUCH) $$FILE \
-				$(data-prefix)/$(data-dir)/pi_http/`basename "$$FILE"` ; \
+				$(data_prefix)/$(data_dir)/pi_http/`basename "$$FILE"` ; \
 			$(INSTALL_CFG) $$FILE \
-				$(data-prefix)/$(data-dir)/pi_http/`basename "$$FILE"` ; \
+				$(data_prefix)/$(data_dir)/pi_http/`basename "$$FILE"` ; \
 		fi ; \
 	done
 

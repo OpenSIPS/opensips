@@ -33,19 +33,19 @@ endif
 include ../../Makefile.modules
 
 install_module_custom: 
-	mkdir -p $(cfg-prefix)/$(cfg-dir)/tls ; \
-	mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA ; \
-	mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/certs ; \
-	mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private ; \
-	mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/user ; \
+	mkdir -p $(cfg_prefix)/$(cfg_dir)/tls ; \
+	mkdir -p $(cfg_prefix)/$(cfg_dir)/tls/rootCA ; \
+	mkdir -p $(cfg_prefix)/$(cfg_dir)/tls/rootCA/certs ; \
+	mkdir -p $(cfg_prefix)/$(cfg_dir)/tls/rootCA/private ; \
+	mkdir -p $(cfg_prefix)/$(cfg_dir)/tls/user ; \
 	for FILE in $(tls_configs) ; do \
 		if [ -f $(ETC_DIR)/$$FILE ]; then \
 			if [ "$(tls_overwrite_certs)" != "" -o \
-					 ! -f $(cfg-prefix)/$(cfg-dir)/$$FILE ] ; then \
+					 ! -f $(cfg_prefix)/$(cfg_dir)/$$FILE ] ; then \
 				$(INSTALL_TOUCH) $(ETC_DIR)/$$FILE \
-					$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
+					$(cfg_prefix)/$(cfg_dir)/$$FILE ; \
 				$(INSTALL_CFG) $(ETC_DIR)/$$FILE \
-					$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
+					$(cfg_prefix)/$(cfg_dir)/$$FILE ; \
 			fi; \
 		fi ;\
 	done ; \

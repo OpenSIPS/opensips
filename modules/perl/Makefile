@@ -66,21 +66,21 @@ doc/perl_pod.sgml: opensipsxs.xs
 
 install_module_custom:
 	echo "installing Perl OpenSIPS packages ..."
-	mkdir -p $(modules-prefix)/$(lib-dir)/perl
-	$(INSTALL_CFG) lib/perl/*.pm $(modules-prefix)/$(lib-dir)/perl
-	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSIPS
+	mkdir -p $(modules_prefix)/$(lib_dir)/perl
+	$(INSTALL_CFG) lib/perl/*.pm $(modules_prefix)/$(lib_dir)/perl
+	mkdir -p $(modules_prefix)/$(lib_dir)/perl/OpenSIPS
 	$(INSTALL_CFG) lib/perl/OpenSIPS/*.pm \
-		$(modules-prefix)/$(lib-dir)/perl/OpenSIPS
-	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSIPS/LDAPUtils
+		$(modules_prefix)/$(lib_dir)/perl/OpenSIPS
+	mkdir -p $(modules_prefix)/$(lib_dir)/perl/OpenSIPS/LDAPUtils
 	$(INSTALL_CFG) lib/perl/OpenSIPS/LDAPUtils/*.pm \
-		$(modules-prefix)/$(lib-dir)/perl/OpenSIPS/LDAPUtils
-	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSIPS/Utils
+		$(modules_prefix)/$(lib_dir)/perl/OpenSIPS/LDAPUtils
+	mkdir -p $(modules_prefix)/$(lib_dir)/perl/OpenSIPS/Utils
 	$(INSTALL_CFG) lib/perl/OpenSIPS/Utils/*.pm \
-		$(modules-prefix)/$(lib-dir)/perl/OpenSIPS/Utils
-	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSIPS/VDB
+		$(modules_prefix)/$(lib_dir)/perl/OpenSIPS/Utils
+	mkdir -p $(modules_prefix)/$(lib_dir)/perl/OpenSIPS/VDB
 	$(INSTALL_CFG) lib/perl/OpenSIPS/VDB/*.pm \
-		$(modules-prefix)/$(lib-dir)/perl/OpenSIPS/VDB
-	mkdir -p $(modules-prefix)/$(lib-dir)/perl/OpenSIPS/VDB/Adapter
+		$(modules_prefix)/$(lib_dir)/perl/OpenSIPS/VDB
+	mkdir -p $(modules_prefix)/$(lib_dir)/perl/OpenSIPS/VDB/Adapter
 	$(INSTALL_CFG) lib/perl/OpenSIPS/VDB/Adapter/*.pm \
-		$(modules-prefix)/$(lib-dir)/perl/OpenSIPS/VDB/Adapter
+		$(modules_prefix)/$(lib_dir)/perl/OpenSIPS/VDB/Adapter
 
