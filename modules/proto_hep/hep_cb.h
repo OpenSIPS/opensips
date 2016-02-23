@@ -43,6 +43,8 @@ typedef struct proto_hep_api {
 
 	register_hep_cb_t register_hep_cb;
 	pack_hep_t		  pack_hep;
+	get_hep_ctx_id_t  get_hep_ctx_id;
+
 } proto_hep_api_t;
 
 

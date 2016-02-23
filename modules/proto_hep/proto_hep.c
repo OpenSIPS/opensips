@@ -64,6 +64,9 @@ static int hep_udp_send (struct socket_info* send_sock,
 		char *buf, unsigned int len, union sockaddr_union *to, int id);
 static int hep_tcp_send (struct socket_info* send_sock,
 		char *buf, unsigned int len, union sockaddr_union *to, int id);
+static void update_recv_info(struct receive_info *ri, struct hep_desc *h);
+
+void free_hep_context(void* ptr);
 
 static int hep_port = 5656;
 static int hep_async = 1;
@@ -72,6 +75,8 @@ static int hep_async_max_postponed_chunks = 32;
 static int hep_max_msg_chunks = 32;
 static int hep_async_local_connect_timeout = 100;
 static int hep_async_local_write_timeout = 10;
+
+int hep_ctx_idx=0;
 
 int hep_version = 3;
 int hep_capture_id = 1;
@@ -193,12 +198,47 @@ static int mod_init(void)
 			return -1;
 		}
 	}
+
+	hep_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, free_hep_context);
+
 	return 0;
 }
 
 static void destroy(void)
 {
 	free_hep_cbs();
+}
+
+void free_hep_context(void *ptr)
+{
+	struct hep_desc* h;
+	struct hep_context* ctx = (struct hep_context*)ptr;
+
+	generic_chunk_t* it;
+	generic_chunk_t* foo=NULL;
+
+	h = &ctx->h;
+
+	/* for version 3 we may have custom chunks which are in shm so we
+	 * need to free them */
+	if (h->version == 3) {
+		it = h->u.hepv3.chunk_list;
+		while (it) {
+			if (foo) {
+				shm_free(foo->data);
+				shm_free(foo);
+			}
+			foo=it;
+			it=it->next;
+		}
+
+		if (foo) {
+			shm_free(foo->data);
+			shm_free(foo);
+		}
+	}
+
+	shm_free(ctx);
 }
 
 
@@ -833,12 +873,14 @@ static inline int hep_handle_req(struct tcp_req *req,
 							struct tcp_connection *con, int _max_msg_chunks)
 {
 	struct receive_info local_rcv;
-	struct hep_desc h;
 	char *msg_buf;
 	int msg_len;
 	long size;
 
 	int ret=0;
+
+	struct hep_context *hep_ctx;
+	context_p ctx=NULL;
 
 	if (req->complete){
 		/* update the timeout - we successfully read the request */
@@ -874,27 +916,43 @@ static inline int hep_handle_req(struct tcp_req *req,
 		}
 
 		if( msg_buf[0] == 'H' && msg_buf[1] == 'E' && msg_buf[2] == 'P' ) {
-			/* HEP related */
-			if (unpack_hepv3(msg_buf, msg_len, &h)) {
-				LM_ERR("failed to unpack hepV3\n");
+			if ((hep_ctx = shm_malloc(sizeof(struct hep_context))) == NULL) {
+				LM_ERR("no more shared memory!\n");
 				return -1;
 			}
+			memcpy(&hep_ctx->ri, &local_rcv, sizeof(struct receive_info));
 
-			ret=run_hep_cbs(&h, &local_rcv);
+			/* HEP related */
+			if (unpack_hepv3(msg_buf, msg_len, &hep_ctx->h)) {
+				LM_ERR("failed to unpack hepV3\n");
+				goto error_free_hep;
+			}
+			update_recv_info(&local_rcv, &hep_ctx->h);
+
+			/* set context for receive_msg */
+			if ((ctx=context_alloc(CONTEXT_GLOBAL)) == NULL) {
+				LM_ERR("failed to allocate new context! skipping...\n");
+				goto error_free_hep;
+			}
+
+			context_put_ptr(CONTEXT_GLOBAL, ctx, hep_ctx_idx, hep_ctx);
+
+			/* run hep callbacks */
+			ret=run_hep_cbs(&hep_ctx->h, &local_rcv);
 			if (ret < 0) {
 				LM_ERR("failed to run hep callbacks\n");
-				return -1;
+				goto error_free_hep;
 			}
 
 			msg_len = h.u.hepv3.payload_chunk.chunk.length-
 											sizeof(hep_chunk_payload_t);
 			/* remove the hep header; leave only the payload */
-			msg_buf = h.u.hepv3.payload_chunk.data;
+			msg_buf = hep_ctx->h.u.hepv3.payload_chunk.data;
 		}
 
 		/* skip receive msg if we were told so from at least one callback */
 		if (ret != HEP_SCRIPT_SKIP &&
-				receive_msg(msg_buf, msg_len, &local_rcv, NULL) <0)
+				receive_msg(msg_buf, msg_len, &local_rcv, ctx) <0)
 				LM_ERR("receive_msg failed \n");
 
 		if (!size && req != &hep_current_req) {
@@ -959,9 +1017,12 @@ static inline int hep_handle_req(struct tcp_req *req,
 
 	/* everything ok */
 	return 0;
+error_free_hep:
+	shm_free(hep_ctx);
 error:
 	/* report error */
 	return -1;
+
 }
 
 
@@ -1117,9 +1178,11 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 	unsigned int fromlen;
 	str msg;
 
-	struct hep_desc h;
+	struct hep_context *hep_ctx;
 
 	int ret = 0;
+
+	context_p ctx=NULL;
 
 #ifdef DYN_BUF
 	buf=pkg_malloc(BUF_SIZE+1);
@@ -1163,26 +1226,39 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 
 	/* if udp we are sure that version 1 or 2 of the
 	 * protocol is used */
-	if (unpack_hepv2(buf, len, &h)) {
+	if ((hep_ctx = shm_malloc(sizeof(struct hep_context))) == NULL) {
+		LM_ERR("no more shared memory!\n");
+		return -1;
+	}
+	memcpy(&hep_ctx->ri, &ri, sizeof(struct receive_info));
+
+	if (unpack_hepv2(buf, len, &hep_ctx->h)) {
 		LM_ERR("hep unpacking failed\n");
 		return -1;
 	}
 
-	/* run hep callbacks if looks like non-SIP message*/
-	if( !isalpha(msg.s[0]) ) {    /* not-SIP related */
-		ret=run_hep_cbs(&h, &ri);
-		if (ret < 0) {
-			LM_ERR("failed to run hep callbacks\n");
-			return -1;
-		}
-
-		/* remove the hep header; leave only the payload */
-		memmove(buf, h.u.hepv12.payload,
-							/* also copy '\0' character */
-							strlen(h.u.hepv12.payload)+1);
-		msg.s   = buf;
-		msg.len = strlen(buf);
+	/* set context for receive_msg */
+	if ((ctx=context_alloc(CONTEXT_GLOBAL)) == NULL) {
+		LM_ERR("failed to allocate new context! skipping...\n");
+		goto error_free_hep;
 	}
+
+	context_put_ptr(CONTEXT_GLOBAL, ctx, hep_ctx_idx, hep_ctx);
+
+	update_recv_info(&ri, &hep_ctx->h);
+
+	ret=run_hep_cbs(&hep_ctx->h, &ri);
+	if (ret < 0) {
+		LM_ERR("failed to run hep callbacks\n");
+		return -1;
+	}
+
+	/* remove the hep header; leave only the payload */
+	memmove(buf, hep_ctx->h.u.hepv12.payload,
+						/* also copy '\0' character */
+						strlen(hep_ctx->h.u.hepv12.payload)+1);
+	msg.s   = buf;
+	msg.len = strlen(buf);
 
 	if (ri.src_port==0){
 		tmp=ip_addr2a(&ri.src_ip);
@@ -1192,10 +1268,114 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 
 	if (ret != HEP_SCRIPT_SKIP) {
 		/* receive_msg must free buf too!*/
-		receive_msg( msg.s, msg.len, &ri, NULL);
+		receive_msg( msg.s, msg.len, &ri, ctx);
 	}
 
 	return 0;
+
+error_free_hep:
+	shm_free(hep_ctx);
+	return -1;
+
 }
 
 
+
+static void update_recv_info(struct receive_info *ri, struct hep_desc *h)
+{
+	unsigned proto;
+	unsigned ip_family;
+	unsigned sport, dport;
+
+	struct ip_addr dst_ip, src_ip;
+
+	switch (h->version) {
+		case 1:
+		case 2:
+			ip_family = h->u.hepv12.hdr.hp_f;
+			proto = h->u.hepv12.hdr.hp_p;
+			sport	  = h->u.hepv12.hdr.hp_sport;
+			dport	  = h->u.hepv12.hdr.hp_dport;
+			switch (ip_family) {
+				case AF_INET:
+					dst_ip.af  = src_ip.af  = AF_INET;
+					dst_ip.len = src_ip.len = 4;
+
+					memcpy(&dst_ip.u.addr,
+								&h->u.hepv12.addr.hep_ipheader.hp_dst, 4);
+					memcpy(&src_ip.u.addr,
+								&h->u.hepv12.addr.hep_ipheader.hp_src, 4);
+
+					break;
+
+				case AF_INET6:
+					dst_ip.af  = src_ip.af  = AF_INET6;
+					dst_ip.len = src_ip.len = 16;
+
+					memcpy(&dst_ip.u.addr,
+								&h->u.hepv12.addr.hep_ip6header.hp6_dst, 16);
+					memcpy(&src_ip.u.addr,
+								&h->u.hepv12.addr.hep_ip6header.hp6_src, 16);
+
+					break;
+			}
+
+			break;
+		case 3:
+			ip_family = h->u.hepv3.hg.ip_family.data;
+			proto	  = h->u.hepv3.hg.ip_proto.data;
+			sport     = h->u.hepv3.hg.src_port.data;
+			dport	  = h->u.hepv3.hg.dst_port.data;
+			switch (ip_family) {
+				case AF_INET:
+					dst_ip.af  = src_ip.af  = AF_INET;
+					dst_ip.len = src_ip.len = 4;
+
+					memcpy(&dst_ip.u.addr,
+								&h->u.hepv3.addr.ip4_addr.dst_ip4.data, 4);
+					memcpy(&src_ip.u.addr,
+								&h->u.hepv3.addr.ip4_addr.src_ip4.data, 4);
+
+					break;
+
+				case AF_INET6:
+					dst_ip.af  = src_ip.af  = AF_INET6;
+					dst_ip.len = src_ip.len = 16;
+
+					memcpy(&dst_ip.u.addr,
+								&h->u.hepv3.addr.ip6_addr.dst_ip6.data, 16);
+					memcpy(&src_ip.u.addr,
+								&h->u.hepv3.addr.ip6_addr.src_ip6.data, 16);
+
+					break;
+			}
+
+			break;
+		default:
+			LM_ERR("invalid hep version!\n");
+			return;
+	}
+
+	if(proto == IPPROTO_UDP) ri->proto=PROTO_UDP;
+	else if(proto == IPPROTO_TCP) ri->proto=PROTO_TCP;
+	else if(proto == IPPROTO_IDP) ri->proto=PROTO_TLS;
+											/* fake protocol */
+	else if(proto == IPPROTO_SCTP) ri->proto=PROTO_SCTP;
+	else if(proto == IPPROTO_ESP) ri->proto=PROTO_WS;
+                                            /* fake protocol */
+	else {
+		LM_ERR("unknown protocol [%d]\n",proto);
+		proto = PROTO_NONE;
+	}
+
+
+	if (h->version == 3)
+		h->u.hepv3.hg.ip_proto.data = ri->proto;
+
+
+	ri->src_ip = src_ip;
+	ri->src_port = sport;
+
+	ri->dst_ip = dst_ip;
+	ri->dst_port = dport;
+}
