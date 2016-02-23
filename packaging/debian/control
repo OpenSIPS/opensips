@@ -12,7 +12,7 @@ Build-Depends: bison,
                libcurl4-gnutls-dev,
                libdb-dev (>= 4.6.19),
                libexpat1-dev,
-               libfreeradius-client-dev | libradiusclient-ng-dev,
+               libfreeradius-client-dev,
                libgeoip-dev (>= 1.4.4),
                libhiredis-dev,
                libjson-c-dev,
@@ -185,7 +185,7 @@ Description: SIMPLE presence modules for OpenSIPS
 
 Package: opensips-xmlrpc-module
 Architecture: any
-Depends: opensips (= ${binary:Version}), opensips-http-modules (= ${binary:Version})
+Depends: opensips (= ${binary:Version}), opensips-http-modules (= ${binary:Version}), ${shlibs:Depends}
 Description: XMLRPC support for OpenSIPS's Management Interface
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
