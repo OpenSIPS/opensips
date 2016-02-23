@@ -2782,7 +2782,11 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 		}
 
 		if (set_found) {
-			if (dlg_api.store_dlg_value(dlg, &param3_name, &val3.rs) < 0) {
+			/* Store Set ID INT value correcty in dlg */
+			str param3_val;
+			param3_val.s = (char*)&val3.ri;
+			param3_val.len = sizeof(unsigned int);
+			if (dlg_api.store_dlg_value(dlg, &param3_name, &param3_val) < 0) {
 				LM_ERR("cannot store setid value\n");
 				goto error;
 			}
@@ -3767,6 +3771,8 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 					LM_ERR("out of pkg memory\n");
 					goto error;
 				}
+				/* Accommodate new opts length */
+				v[1].iov_len++;
 			}
 			STR2IOVEC(newip, v[7]);
 			STR2IOVEC(oldport, v[9]);
