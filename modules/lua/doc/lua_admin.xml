@@ -63,7 +63,7 @@ if (lua_exec("mongo_alias")) {
       before running OpenSIPS with this module loaded:
         <itemizedlist>      
           <listitem><para>Lua 5.1.x or later</para></listitem>
-          <listitem><para>memcache</para></listitem>
+          <listitem><para>memcached</para></listitem>
         </itemizedlist>
       </para>
       <para>
@@ -76,7 +76,7 @@ if (lua_exec("mongo_alias")) {
         <itemizedlist>
           <listitem><para>lua5.1</para></listitem>
           <listitem><para>liblua5.1-0-dev</para></listitem>
-          <listitem><para>libmemcache-dev</para></listitem>
+          <listitem><para>libmemcached-dev</para></listitem>
           <listitem><para>libmysqlclient-dev</para></listitem>
         </itemizedlist>
       </para>
