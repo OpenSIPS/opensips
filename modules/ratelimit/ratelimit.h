@@ -43,7 +43,8 @@ typedef enum {
 	PIPE_ALGO_TAILDROP,
 	PIPE_ALGO_RED,
 	PIPE_ALGO_FEEDBACK,
-	PIPE_ALGO_NETWORK
+	PIPE_ALGO_NETWORK,
+	PIPE_ALGO_HISTORY
 } rl_algo_t;
 
 typedef struct rl_repl_counter {
@@ -52,6 +53,17 @@ typedef struct rl_repl_counter {
         int machine_id;
         struct rl_repl_counter *next;
 } rl_repl_counter_t;
+
+
+typedef struct rl_window {
+	int window_size;   /* how big the window array is */
+	int start_index;   /* where the window starts; the window uses
+						* a circular buffer so we will need to know
+						* where is the start of the buffer */
+	struct timeval start_time; /* time from where the window starts */
+
+	long int *window;  /* actual array of messages */
+} rl_window_t;
 
 typedef struct rl_pipe {
 	int limit;					/* limit used by algorithm */
@@ -63,6 +75,7 @@ typedef struct rl_pipe {
 	rl_algo_t algo;				/* the algorithm used */
 	unsigned long last_used;	/* timestamp when the pipe was last accessed */
 	rl_repl_counter_t *dsts;	/* counters per destination */
+	rl_window_t rwin;			/* window of requests */
 } rl_pipe_t;
 
 typedef struct rl_repl_dst {
@@ -80,7 +93,6 @@ typedef struct {
 	unsigned int locks_no;
 } rl_big_htable;
 
-
 extern gen_lock_t * rl_lock;
 extern rl_big_htable rl_htable;
 extern int rl_timer_interval;
@@ -94,6 +106,8 @@ extern int accept_repl_pipes;
 extern int accept_repl_pipes_timeout;
 extern int repl_pipes_auth_check;
 extern int rl_repl_cluster;
+extern int rl_window_size;
+extern int rl_slot_period;
 
 extern struct clusterer_binds clusterer_api;
 
