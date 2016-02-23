@@ -838,18 +838,18 @@ clients.
 %build
 LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" %{?_with_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all %{?_smp_mflags} TLS=1 \
   exclude_modules="%EXCLUDE_MODULES" \
-  cfg-target=%{_sysconfdir}/opensips/ \
-  modules-prefix=%{buildroot}%{_prefix} \
-  modules-dir=%{_lib}/%{name}/modules
+  cfg_target=%{_sysconfdir}/opensips/ \
+  modules_prefix=%{buildroot}%{_prefix} \
+  modules_dir=%{_lib}/%{name}/modules
 
 %install
 rm -rf $RPM_BUILD_ROOT
 %{__make} install TLS=1 LIBDIR=%{_lib} \
   exclude_modules="%EXCLUDE_MODULES" \
   basedir=%{buildroot} prefix=%{_prefix} \
-  cfg-prefix=%{buildroot} \
-  modules-prefix=%{buildroot}/%{_prefix} \
-  modules-dir=%{_lib}/%{name}/modules \
+  cfg_prefix=%{buildroot} \
+  modules_prefix=%{buildroot}/%{_prefix} \
+  modules_dir=%{_lib}/%{name}/modules \
   DBTEXTON=yes # fixed dbtext documentation installation
 
 # clean some things
