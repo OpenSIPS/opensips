@@ -177,11 +177,13 @@ endif
 endif
 
 # inherit variables from dpkg-builder
-CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
-CFLAGS += $(shell dpkg-buildflags --get CFLAGS) $(CPPFLAGS)
+BUILD_CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
+BUILD_CFLAGS = $(shell dpkg-buildflags --get CFLAGS)
 CXXFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
 LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
 
+# remove date-time, since we want to have date in the binary
+CFLAGS+=$(filter-out -Wdate-time, $(BUILD_CFLAGS) $(BUILD_CPPFLAGS))
 
 # force lib (versus lib64) and SMP support all the time
 VARS = LIBDIR=lib ISSMP=yes
