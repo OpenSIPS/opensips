@@ -391,7 +391,7 @@ else
 	ORACLIENT=
 fi
 
-make all exclude_modules="" ORAVERSION=11.2/client$ORACLIENT cfg-target=%{_sysconfdir}/opensips/
+make all exclude_modules="" ORAVERSION=11.2/client$ORACLIENT cfg_target=%{_sysconfdir}/opensips/
 
 
 %install
@@ -400,8 +400,8 @@ make all exclude_modules="" ORAVERSION=11.2/client$ORACLIENT cfg-target=%{_sysco
 make install exclude_modules="" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/
+		cfg_prefix=$RPM_BUILD_ROOT \
+		cfg_target=/%{_sysconfdir}/opensips/
 
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/rc.d/init.d
 install -m755 $RPM_SOURCE_DIR/opensips.init \

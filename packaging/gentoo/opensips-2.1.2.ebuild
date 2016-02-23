@@ -82,8 +82,8 @@ src_compile() {
 	emake all "${compile_options}" \
 		prefix=${ROOT}/ \
 		include_modules="${inc_mod}" \
-		cfg-prefix=${ROOT}/ \
-		cfg-target=${ROOT}/etc/opensips/ || die
+		cfg_prefix=${ROOT}/ \
+		cfg_target=${ROOT}/etc/opensips/ || die
 }
 
 src_install () {
@@ -92,18 +92,18 @@ src_install () {
 	emake install \
 		prefix=${D}/ \
 		include_modules="${inc_mod}" \
-		bin-prefix=${D}/usr/sbin \
-		bin-dir="" \
-		cfg-prefix=${D}/etc \
-		cfg-dir=opensips/ \
-		cfg-target=${D}/etc/opensips \
-		modules-prefix=${D}/usr/lib/opensips \
-		modules-dir=modules \
-		modules-target=${D}/usr/lib/opensips/modules/ \
-		man-prefix=${D}/usr/share/man \
-		man-dir="" \
-		doc-prefix=${D}/usr/share/doc \
-		doc-dir=${PF} || die
+		bin_prefix=${D}/usr/sbin \
+		bin_dir="" \
+		cfg_prefix=${D}/etc \
+		cfg_dir=opensips/ \
+		cfg_target=${D}/etc/opensips \
+		modules_prefix=${D}/usr/lib/opensips \
+		modules_dir=modules \
+		modules_target=${D}/usr/lib/opensips/modules/ \
+		man_prefix=${D}/usr/share/man \
+		man_dir="" \
+		doc_prefix=${D}/usr/share/doc \
+		doc_dir=${PF} || die
 	exeinto /etc/init.d
 	newexe ${FILESDIR}/opensips.init opensips
 
