@@ -45,17 +45,28 @@ Alexandr Dubovikov
         1.4. Exported Functions
 
               1.4.1. sip_capture()
+              1.4.2. hep_set([data_type,] chunk_id, [vendor_id,]
+                      chunk_data)
+
+              1.4.3. hep_get([data_type,] chunk_id, vendor_id_pv,
+                      chunk_data_pv)
+
+              1.4.4. hep_del(chunk_id)
 
         1.5. Exported Async Functions
 
               1.5.1. sip_capture()
 
-        1.6. MI Commands
+        1.6. Exported PseudoVariables
 
-              1.6.1. sip_capture
+              1.6.1. hep_net
 
-        1.7. Database setup
-        1.8. Limitation
+        1.7. MI Commands
+
+              1.7.1. sip_capture
+
+        1.8. Database setup
+        1.9. Limitation
 
    List of Examples
 
@@ -74,7 +85,11 @@ Alexandr Dubovikov
    1.13. Set capture_node parameter
    1.14. Set hep_store_no_script parameter
    1.15. sip_capture usage
-   1.16. sip_capture usage
+   1.16. hep_set usage
+   1.17. hep_set usage
+   1.18. hep_set usage
+   1.19. sip_capture usage
+   1.20. hep_net usage
 
 Chapter 1. Admin Guide
 
@@ -86,7 +101,12 @@ Chapter 1. Admin Guide
    OpenSIPs can capture SIP messages in three mode
      * IPIP encapsulation. (ETHHDR+IPHDR+IPHDR+UDPHDR).
      * Monitoring/mirroring port.
-     * Homer encapsulation protocl mode (HEP v1).
+     * Homer encapsulation protocl mode (HEP v1/2/3). With version
+       2.2 comes the new HEPv3 support using the proto _hep
+       module. Also header manipulation support for HEPv3 has been
+       added. See Section 1.4.2, “ hep_set([data_type,] chunk_id,
+       [vendor_id,] chunk_data) ” for more details. If you want
+       more information about hep protocol check this link.
 
    The capturing can be turned on/off using fifo commad.
 
@@ -100,6 +120,7 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
      * database module - mysql, postrgress, dbtext, unixodbc...
+     * proto_hep module - if hep capturing used
 
 1.2.2. External Libraries or Applications
 
@@ -310,6 +331,152 @@ if (is_method("REGISTER"))
         sip_capture();
 ...
 
+1.4.2.  hep_set([data_type,] chunk_id, [vendor_id,] chunk_data)
+
+   Set a hep chunk. If not exists, it shall be added.
+
+   This function can be used from
+   REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_RO
+   UTE.
+
+   Meaning of the parameters is as follows:
+     * data_type - data type of the data in the chunk. It can have
+       the following values:
+          + uint8 - byte unsigned integer
+          + uint16 - word unsigned integer
+          + uint32 - 4 byte unsigned integer
+          + inet4-addr - IPv4 address in human readable format
+          + inet6-addr - IPv6 address in human readable format
+          + utf8-string - UTF8 encoded character sequence
+          + octet-string - byte array
+     * chunk_id(string value with hex/int or string identifiere of
+       chunk) - id of the chunk to be added; most of the generic
+       chunks are in the internal hep structure. For these you can
+       skip the data_type and vendor_id since they are already
+       known. Generic chunks that don't have built in support are
+       the followinig: 0x000d(keep alive timer),
+       0x000e(authenticate key), 0x0011(internal correltion id),
+       0x0012(vlan ID). You can set these chunks, but only with
+       vendor id 0x0000, other values shall result in an error.
+       Timestamp(0x0009) and timestamp_us(0x000A) chunks can't be
+       set. For chunks that have built-in support you can also use
+       strings instead of chunk ids as follows:
+          + 0x0001 - proto_family(CAN'T BE SET; it shall be
+            automatically updated if you change the type of the
+            source/destination address from IPv4 to IPv6 or else)
+          + 0x0002 - proto_id; since it's quite hard to know the
+            int values for the protocol one can change this value
+            using the following string values:
+               o UDP
+               o TCP
+               o TLS
+               o SCTP
+               o WS
+               o WSS
+               o BIN
+               o HEP
+          + 0x0003 - src_ip
+          + 0x0004 - dst_ip
+          + 0x0005 - src_ip
+          + 0x0006 - dst_ip
+          + 0x0007 - src_port
+          + 0x0008 - dst_port
+          + 0x0009 - timestamp(CAN'T BE SET)
+          + 0x000A - timestamp_us(CAN'T BE SET)
+          + 0x000B - proto_type; for this variable there are
+            predefined strings which can be set:
+               o SIP
+               o XMPP
+               o SDP
+               o RTP
+               o RTCP
+               o MGCP
+               o MEGACO
+               o M2UA
+               o M3UA
+               o IAX
+               o H322
+               o H321
+          + 0x000C - captagent_id
+          + 0x000f - payload
+          + 0x0010 - payload
+     * vendor id(string value with hex or int) - there are some
+       vendor ids already defined; check hep proto docs for more
+       details.
+     * data(string) - data that the chunk shall contain;
+       internally it shall be converted to the requested data type
+
+   Example 1.16. hep_set usage
+...
+/* modify/add a generic chunk */
+hep_set("proto_type", "H321");
+
+/* add a custom chunk - int */
+hep_set("uint32", "31"/*chk id*/, "3"/*opensips vendor*/, "132")
+
+/* add a custom chunk - IPv4 address */
+hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5
+.14")
+...
+
+1.4.3.  hep_get([data_type,] chunk_id, vendor_id_pv, chunk_data_pv)
+
+   Set a hep chunk. If not exists, it shall be added.
+
+   This function can be used from
+   REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_RO
+   UTE.
+
+   Meaning of the parameters is as follows:
+     * data_type(string) - same meaning as in Section 1.4.2, “
+       hep_set([data_type,] chunk_id, [vendor_id,] chunk_data) ”;
+       can miss if it's a generic chunk
+     * chunk_id - same meaning as in Section 1.4.2, “
+       hep_set([data_type,] chunk_id, [vendor_id,] chunk_data) ”
+     * vendor_id_pv(writable pvar) - will hold the vendor id(int
+       value) of the chunk
+     * chunk_data_pv(writable pvar) - will hold the data inside
+       the chunk; some of the generic chunk data come in specific
+       format, as following:
+          + 0x0001 - proto_family(string) - AF_INET/AF_INET6
+          + 0x0002 proto_id(string) - see Section 1.4.2, “
+            hep_set([data_type,] chunk_id, [vendor_id,]
+            chunk_data) ” for possible values
+          + 0x0003/0x0004/0x0005/0x0006 src/dst_ip(string) - ip
+            addresses in human readable format
+          + 0x0009 timestamp(string) - time and date in human
+            readable format
+          + 0x000B proto_type(string) - see Section 1.4.2, “
+            hep_set([data_type,] chunk_id, [vendor_id,]
+            chunk_data) ” for possible values
+
+   Example 1.17. hep_set usage
+...
+/* get a generic chunk */
+hep_get("proto_type", "$var(vid)", "$var(data)");
+
+/* get custom chunk - you must know what kind of data is there */
+hep_set("uint32", "31"/*chk id*/, "$var(vid)", "$var(data)")
+...
+
+1.4.4.  hep_del(chunk_id)
+
+   Removes a hep chunk.
+
+   This function can be used from
+   REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_RO
+   UTE.
+
+   Meaning of the parameters is as follows:
+     * chunk_id - same meaning as the chunk_id in Section 1.4.2, “
+       hep_set([data_type,] chunk_id, [vendor_id,] chunk_data) ”.
+
+   Example 1.18. hep_set usage
+...
+/* get a generic chunk */
+hep_del("25"); /* removes chunk with chunk id 25 */
+...
+
 1.5. Exported Async Functions
 
 1.5.1.  sip_capture()
@@ -319,7 +486,7 @@ if (is_method("REGISTER"))
    The query might not be executed exactly at this moment, it
    depends on the max_async_queries parameter.
 
-   Example 1.16. sip_capture usage
+   Example 1.19. sip_capture usage
 ...
 {
         async(sip_capture(), capture_resume);
@@ -331,9 +498,45 @@ route[capture_resume] {
 }
 ...
 
-1.6. MI Commands
+1.6. Exported PseudoVariables
 
-1.6.1.  sip_capture
+1.6.1.  hep_net
+
+   Holds layer 3 and 4 information(IP addresses and ports) about
+   the node from where the hep message was received. The variable
+   is read-only and can be used only if it's referenced by it's
+   name.
+
+   Possible values for it's name are the following:
+     * proto_family - can be AF_INET/AF_INET6
+     * proto_id - it's PROTO_HEP since you receive the message as
+       hep.
+     * src_ip - IPv4/IPv6 address, depending on the proto_family,
+       of the sending node.
+     * dst_ip - IPv4/IPv6 address, depending on the proto_family,
+       of the receiving node(OpenSIPS hep interface ip on which
+       the message was received).
+     * src_port - Sending node port.
+     * dst_port - Receiving port(OpenSIPS hep interace port on
+       which the message was received).
+
+   Example 1.20. hep_net usage
+...
+        /* received this hep packet on interface 192.168.2.5*/
+        if ($hep_net(dst_ip) == "192.168.2.5") {
+                /* received this on 192.168.2.5:6060 interface */
+                if ($hep_net(dst_port) == 6060) {
+                        ...
+                /* received this on 192.168.2.5:6061 interface */
+                } else if ($hep_net(dst_port) == 6061) {
+                        ...
+                }
+        }
+...
+
+1.7. MI Commands
+
+1.7.1.  sip_capture
 
    Name: sip_capture
 
@@ -351,7 +554,7 @@ route[capture_resume] {
                 capture_mode
                 _empty_line_
 
-1.7. Database setup
+1.8. Database setup
 
    Before running OpenSIPS with sipcapture, you have to setup the
    database tables where the module will store the data. For that,
@@ -363,7 +566,7 @@ route[capture_resume] {
    documentation on the project webpage,
    http://www.opensips.org/html/docs/db/db-schema-devel.html.
 
-1.8. Limitation
+1.9. Limitation
 
    1. Only one capturing mode on RAW socket is supported: IPIP or
    monitoring/mirroring port. Don't activate both at the same

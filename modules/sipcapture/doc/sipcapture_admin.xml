@@ -24,7 +24,13 @@
                 </listitem>
 		<listitem>
 		<para>
-		Homer encapsulation protocl mode (HEP v1).
+			Homer encapsulation protocl mode (HEP v1/2/3). With version 2.2
+			comes the new HEPv3 support using the proto _hep module. Also
+			header manipulation support for HEPv3 has been added. See
+			<xref linkend="hep_set_id"/> for more details. If you want more
+			information about hep protocol check this
+			<ulink url="https://github.com/sipcapture/HEP/blob/master/docs/HEP3_rev11.pdf">
+			link</ulink>.
 		</para>
 		</listitem>
 		</itemizedlist>
@@ -53,6 +59,12 @@
 				dbtext, unixodbc...
 			</para>
 			</listitem>
+			<listitem>
+			<para>
+				<emphasis>proto_hep module</emphasis> - if hep capturing used
+			</para>
+			</listitem>
+
 			</itemizedlist>
 		</para>
 	</section>
@@ -397,6 +409,299 @@ if (is_method("REGISTER"))
 
 		</section>
 
+		<section id="hep_set_id">
+		<title>
+			<function moreinfo="none">hep_set([data_type,] chunk_id, [vendor_id,] chunk_data)</function>
+		</title>
+		<para>
+			Set a hep chunk. If not exists, it shall be added.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>data_type</emphasis> - data type of the data in the chunk. It can have
+			the following values:
+			</para>
+			<itemizedlist>
+			<listitem>
+			<para>uint8  - byte unsigned integer</para>
+			</listitem>
+			<listitem>
+			<para>uint16 - word unsigned integer </para>
+			</listitem>
+			<listitem>
+			<para>uint32 - 4 byte unsigned integer </para>
+			</listitem>
+			<listitem>
+			<para>inet4-addr - IPv4 address in human readable format</para>
+			</listitem>
+			<listitem>
+			<para>inet6-addr - IPv6 address in human readable format</para>
+			</listitem>
+			<listitem>
+			<para>utf8-string - UTF8 encoded character sequence</para>
+			</listitem>
+			<listitem>
+			<para>octet-string - byte array</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>chunk_id(string value with hex/int or string identifiere of chunk)</emphasis>
+				- id of the chunk to be added; most of the generic
+			chunks are in the internal hep structure. For these you can skip the data_type
+			and vendor_id since they are already known. Generic chunks that don't have built
+			in support are the followinig: 0x000d(keep alive timer), 0x000e(authenticate key),
+			0x0011(internal correltion id), 0x0012(vlan ID). You can set these chunks, but
+			only with vendor id 0x0000, other values shall result in an error. Timestamp(0x0009)
+			and timestamp_us(0x000A) chunks can't be set. For chunks
+			that have built-in support you can also use strings instead of chunk ids as
+			follows:
+			<itemizedlist>
+			<listitem>
+				<para>0x0001 - proto_family(CAN'T BE SET; it shall be automatically updated
+					if you change the type of the source/destination address from IPv4 to IPv6
+					or else)
+				</para>
+			</listitem>
+			<listitem>
+				<para>0x0002 - proto_id; since it's quite hard to know the int values for the protocol
+				one can change this value using the following string values:</para>
+				<itemizedlist>
+				<listitem>
+				<para>UDP</para>
+				</listitem>
+				<listitem>
+				<para>TCP</para>
+				</listitem>
+				<listitem>
+				<para>TLS</para>
+				</listitem>
+				<listitem>
+				<para>SCTP</para>
+				</listitem>
+				<listitem>
+				<para>WS</para>
+				</listitem>
+				<listitem>
+				<para>WSS</para>
+				</listitem>
+				<listitem>
+				<para>BIN</para>
+				</listitem>
+				<listitem>
+				<para>HEP</para>
+				</listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem>
+			<para>0x0003 - src_ip</para>
+			</listitem>
+			<listitem>
+			<para>0x0004 - dst_ip</para>
+			</listitem>
+			<listitem>
+			<para>0x0005 - src_ip</para>
+			</listitem>
+			<listitem>
+			<para>0x0006 - dst_ip</para>
+			</listitem>
+			<listitem>
+			<para>0x0007 - src_port</para>
+			</listitem>
+			<listitem>
+			<para>0x0008 - dst_port</para>
+			</listitem>
+			<listitem>
+			<para>0x0009 - timestamp(CAN'T BE SET)</para>
+			</listitem>
+			<listitem>
+			<para>0x000A - timestamp_us(CAN'T BE SET)</para>
+			</listitem>
+			<listitem>
+				<para>0x000B - proto_type; for this variable there are predefined
+				strings which can be set: </para>
+				<itemizedlist>
+				<listitem>
+				<para>SIP</para>
+				</listitem>
+				<listitem>
+				<para>XMPP</para>
+				</listitem>
+				<listitem>
+				<para>SDP</para>
+				</listitem>
+				<listitem>
+				<para>RTP</para>
+				</listitem>
+				<listitem>
+				<para>RTCP</para>
+				</listitem>
+				<listitem>
+				<para>MGCP</para>
+				</listitem>
+				<listitem>
+				<para>MEGACO</para>
+				</listitem>
+				<listitem>
+				<para>M2UA</para>
+				</listitem>
+				<listitem>
+				<para>M3UA</para>
+				</listitem>
+				<listitem>
+				<para>IAX</para>
+				</listitem>
+				<listitem>
+				<para>H322</para>
+				</listitem>
+				<listitem>
+				<para>H321</para>
+				</listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem>
+			<para>0x000C - captagent_id</para>
+			</listitem>
+			<listitem>
+			<para>0x000f - payload</para>
+			</listitem>
+			<listitem>
+			<para>0x0010 - payload</para>
+			</listitem>
+			</itemizedlist>
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>vendor id(string value with hex or int)</emphasis> - there are
+				some vendor ids already defined; check
+				<ulink url="https://github.com/sipcapture/HEP/blob/master/docs/HEP3_rev11.pdf">
+					hep proto docs</ulink>
+				for more details.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>data(string)</emphasis> - data that the chunk shall contain;
+			internally it shall be converted to the requested data type</para>
+		</listitem>
+		</itemizedlist>
+	<example>
+	<title><function>hep_set</function> usage</title>
+	<programlisting format="linespecific">
+...
+/* modify/add a generic chunk */
+hep_set("proto_type", "H321");
+
+/* add a custom chunk - int */
+hep_set("uint32", "31"/*chk id*/, "3"/*opensips vendor*/, "132")
+
+/* add a custom chunk - IPv4 address */
+hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5.14")
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+		<section>
+		<title>
+			<function moreinfo="none">hep_get([data_type,] chunk_id, vendor_id_pv, chunk_data_pv)</function>
+		</title>
+		<para>
+			Set a hep chunk. If not exists, it shall be added.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+		<para><emphasis>data_type(string)</emphasis> - same meaning as in
+			<xref linkend="hep_set_id"/>; can miss if it's a generic chunk</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>chunk_id</emphasis> - same meaning as in
+			<xref linkend="hep_set_id"/></para>
+		</listitem>
+		<listitem>
+			<para><emphasis>vendor_id_pv(writable pvar)</emphasis> - will hold the vendor id(int value)
+			of the chunk</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>chunk_data_pv(writable pvar)</emphasis> - will hold the data inside the
+			chunk; some of the generic chunk data come in specific format, as following:</para>
+			<itemizedlist>
+			<listitem>
+				<para>0x0001 - proto_family(string) - AF_INET/AF_INET6</para>
+			</listitem>
+			<listitem>
+				<para>0x0002  proto_id(string) - see <xref linkend="hep_set_id"/> for possible values</para>
+			</listitem>
+			<listitem>
+				<para>0x0003/0x0004/0x0005/0x0006  src/dst_ip(string) - ip addresses in human readable format</para>
+			</listitem>
+			<listitem>
+				<para>0x0009  timestamp(string) - time and date in human readable format</para>
+			</listitem>
+			<listitem>
+				<para>0x000B  proto_type(string) - see <xref linkend="hep_set_id"/> for possible values</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		</itemizedlist>
+
+<example>
+<title><function>hep_set</function> usage</title>
+<programlisting format="linespecific">
+...
+/* get a generic chunk */
+hep_get("proto_type", "$var(vid)", "$var(data)");
+
+/* get custom chunk - you must know what kind of data is there */
+hep_set("uint32", "31"/*chk id*/, "$var(vid)", "$var(data)")
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+		<section>
+		<title>
+			<function moreinfo="none">hep_del(chunk_id)</function>
+		</title>
+		<para>
+			Removes a hep chunk.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>chunk_id</emphasis> - same meaning as the <emphasis>chunk_id</emphasis> in
+				<xref linkend="hep_set_id"/>.
+			</para>
+		</listitem>
+		</itemizedlist>
+<example>
+<title><function>hep_set</function> usage</title>
+<programlisting format="linespecific">
+...
+/* get a generic chunk */
+hep_del("25"); /* removes chunk with chunk id 25 */
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+
+
 	</section>
 
 	<section>
@@ -430,6 +735,70 @@ route[capture_resume] {
 	</section>
 
 </section>
+
+
+	<section>
+	<title>Exported PseudoVariables</title>
+
+	<section>
+	<title>
+		<function moreinfo="none">hep_net</function>
+	</title>
+	<para>Holds layer 3 and 4 information(IP addresses and ports) about
+		the node from where the hep message was received. The variable is
+		read-only and can be used only if it's referenced by it's name.</para>
+	<para>Possible values for it's name are the following:</para>
+	<itemizedlist>
+	<listitem>
+		<para><emphasis>proto_family</emphasis> - can be AF_INET/AF_INET6</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>proto_id</emphasis> - it's PROTO_HEP since you receive
+			the message as hep.</para>
+	</listitem>
+
+	<listitem>
+		<para><emphasis>src_ip</emphasis> - IPv4/IPv6 address, depending on the
+		proto_family, of the sending node.</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>dst_ip</emphasis> - IPv4/IPv6 address, depending on the
+			proto_family, of the receiving node(&osips; hep interface ip on which
+			the message was received).</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>src_port</emphasis> - Sending node port.</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>dst_port</emphasis> - Receiving port(&osips; hep interace
+			port on which the message was received).</para>
+	</listitem>
+	</itemizedlist>
+	<example>
+	<title><function>hep_net</function> usage</title>
+	<programlisting format="linespecific">
+...
+	/* received this hep packet on interface 192.168.2.5*/
+	if ($hep_net(dst_ip) == "192.168.2.5") {
+		/* received this on 192.168.2.5:6060 interface */
+		if ($hep_net(dst_port) == 6060) {
+			...
+		/* received this on 192.168.2.5:6061 interface */
+		} else if ($hep_net(dst_port) == 6061) {
+			...
+		}
+	}
+...
+	</programlisting>
+	</example>
+	</section>
+
+
+
+
+
+</section>
+
 
     <section>
 	<title>MI Commands</title>
