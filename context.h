@@ -66,6 +66,12 @@ context_p context_alloc(enum osips_context ctx);
  */
 void context_destroy(enum osips_context type, context_p ctx);
 
+/*
+ * - register a different function for each field you add in the context
+ * - each function will be called exactly once, every time a context is freed
+ *
+ * Note: for int and (str *) types, you must perform the appropriate casting
+ */
 typedef void (*context_destroy_f)(void *);
 
 /*

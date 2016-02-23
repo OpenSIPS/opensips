@@ -1908,7 +1908,7 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	if(msg->first_line.type == SIP_REPLY || nr_branches==0 )
+	if(msg->first_line.type == SIP_REPLY || get_nr_branches() == 0)
 		return pv_get_null(msg, param, res);
 
 	/* get the index */
@@ -1954,9 +1954,9 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 	/* numerical index */
 	if (idx<0) {
 		/* index from the end */
-		if (-idx > nr_branches)
+		if (-idx > get_nr_branches())
 			return pv_get_null(msg, param, res);
-		idx = nr_branches + idx;
+		idx = get_nr_branches() + idx;
 	}
 
 	/* return the request branch info */
@@ -2846,12 +2846,12 @@ int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 	}
 
 	if (idx<0) {
-		idx = nr_branches + idx;
+		idx = get_nr_branches() + idx;
 	}
 
-	if (idx<0 || idx>=nr_branches) {
+	if (idx<0 || idx>=get_nr_branches()) {
 		LM_ERR("SCRIPT BUG - inexisting branch assignment [%d/%d]\n",
-			nr_branches, idx);
+			get_nr_branches(), idx);
 		return -1;
 	}
 

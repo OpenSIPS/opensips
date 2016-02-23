@@ -32,8 +32,12 @@
 
 struct sip_msg;
 
-extern unsigned int nr_branches;
+int get_nr_branches(void);
 
+/*! \brief
+ * To be called in the startup phase of OpenSIPS
+ */
+int init_dset(void);
 
 /*! \brief
  * Add a new branch to current transaction

@@ -117,6 +117,7 @@
 #include "hash_func.h"
 #include "pt.h"
 #include "script_cb.h"
+#include "dset.h"
 #include "blacklists.h"
 
 #include "pt.h"
@@ -1207,7 +1208,12 @@ try_again:
 		LM_CRIT("failed to create DNS blacklist\n");
 		goto error;
 	}
-	
+
+	if (init_dset() != 0) {
+		LM_ERR("failed to initialize SIP forking logic!\n");
+		goto error;
+	}
+
 	/* init modules */
 	if (init_modules() != 0) {
 		LM_ERR("error while initializing modules\n");
