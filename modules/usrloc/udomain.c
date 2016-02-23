@@ -672,7 +672,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 
 			if ( (c=mem_insert_ucontact(r, &contact, ci)) == 0) {
 				LM_ERR("inserting contact failed\n"
-						"Found a bad contact with id:[%ld] "
+						"Found a bad contact with id:[%" PRIu64 "] "
 						"aor:[%.*s] contact:[%.*s] received:[%.*s]!\n"
 						"Will continue but that contact needs to be REMOVED!!\n",
 						ci->contact_id,

@@ -257,7 +257,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 			}
 
 			if (new_entry->nr_columns > sizeof(long long)) {
-				LM_WARN("Too many columns, maximum number is %ld\n", sizeof(long long));
+				LM_WARN("Too many columns, maximum number is %lu\n", (unsigned long)sizeof(long long));
 				goto parse_err;
 			}
 			/* allocate array of columns and actually parse */
