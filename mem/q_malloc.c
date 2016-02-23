@@ -41,6 +41,7 @@
 #include <string.h>
 
 #include "q_malloc.h"
+#include "common.h"
 #include "../dprint.h"
 #include "../globals.h"
 #include "../statistics.h"
@@ -197,7 +198,7 @@ static inline void qm_insert_free(struct qm_block* qm, struct qm_frag* frag)
 
 
 /* init malloc and return a qm_block*/
-struct qm_block* qm_malloc_init(char* address, unsigned long size)
+struct qm_block* qm_malloc_init(char* address, unsigned long size, char *name)
 {
 	char* start;
 	char* end;
@@ -229,6 +230,7 @@ struct qm_block* qm_malloc_init(char* address, unsigned long size)
 	end=start+size;
 	qm=(struct qm_block*)start;
 	memset(qm, 0, sizeof(struct qm_block));
+	qm->name=name;
 	qm->size=size;
 	qm->used=size-init_overhead;
 	qm->fragments = 0;
@@ -388,7 +390,8 @@ void* qm_malloc(struct qm_block* qm, unsigned long size)
 	/*size must be a multiple of 8*/
 	size=ROUNDUP(size);
 	if (size>(qm->size-qm->real_used)) {
-		LM_ERR("Not enough free memory (%lu)\n", qm->size-qm->real_used);
+		LM_ERR(oom_errorf, qm->name, qm->size - qm->real_used,
+				qm->name[0] == 'p' ? "M" : "m");
 		pkg_threshold_check();
 		return 0;
 	}
@@ -432,7 +435,8 @@ void* qm_malloc(struct qm_block* qm, unsigned long size)
 		return (char*)f+sizeof(struct qm_frag);
 	}
 
-	LM_ERR("Not enough free memory (%lu)\n", qm->size-qm->real_used);
+	LM_ERR(oom_errorf, qm->name, qm->size - qm->real_used,
+			qm->name[0] == 'p' ? "M" : "m");
 	pkg_threshold_check();
 	return 0;
 }

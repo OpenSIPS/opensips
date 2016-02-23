@@ -24,6 +24,14 @@
 #ifndef mem_common_h
 #define mem_common_h
 
+#define oom_errorf \
+	"not enough free %s memory (%lu bytes left), please increase the \"-%s\" " \
+	"command line parameter!\n"
+
+#define oom_nostats_errorf \
+	"not enough free %s memory, please increase the \"-%s\" " \
+	"command line parameter!\n"
+
 #	ifdef VQ_MALLOC
 #		include "vq_malloc.h"
 		extern struct vqm_block* mem_block;

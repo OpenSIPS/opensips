@@ -92,6 +92,8 @@ struct fm_frag_lnk{
 };
 
 struct fm_block{
+	char *name; /* purpose of this memory block */
+
 	unsigned long size; /* total size */
         unsigned long large_space;
         unsigned long large_limit;
@@ -110,7 +112,7 @@ struct fm_block{
 
 
 unsigned long frag_size(void* p);
-struct fm_block* fm_malloc_init(char* address, unsigned long size);
+struct fm_block* fm_malloc_init(char* address, unsigned long size, char* name);
 
 #ifdef DBG_MALLOC
 void* fm_malloc(struct fm_block*, unsigned long size,

@@ -106,6 +106,8 @@ struct qm_frag_lnk{
 
 
 struct qm_block{
+	char *name; /* purpose of this memory block */
+
 	unsigned long size; /* total size */
 	unsigned long used; /* alloc'ed size*/
 	unsigned long real_used; /* used+malloc overhead*/
@@ -121,7 +123,7 @@ struct qm_block{
 
 
 
-struct qm_block* qm_malloc_init(char* address, unsigned long size);
+struct qm_block* qm_malloc_init(char* address, unsigned long size, char* name);
 unsigned long frag_size(void* p);
 
 #ifdef DBG_MALLOC

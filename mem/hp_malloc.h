@@ -178,6 +178,8 @@ struct hp_frag_lnk {
 };
 
 struct hp_block {
+	char *name; /* purpose of this memory block */
+
 	unsigned long size; /* total size */
 	unsigned long large_space;
 	unsigned long large_limit;
@@ -201,8 +203,8 @@ struct hp_block {
 
 unsigned long frag_size(void* p);
 
-struct hp_block *hp_pkg_malloc_init(char *addr, unsigned long size);
-struct hp_block *hp_shm_malloc_init(char *addr, unsigned long size);
+struct hp_block *hp_pkg_malloc_init(char *addr, unsigned long size, char *name);
+struct hp_block *hp_shm_malloc_init(char *addr, unsigned long size, char *name);
 
 int hp_mem_warming(struct hp_block *);
 void hp_update_mem_pattern_file(void);

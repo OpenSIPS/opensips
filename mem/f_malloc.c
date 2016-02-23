@@ -39,6 +39,7 @@
 #include <stdlib.h>
 
 #include "f_malloc.h"
+#include "common.h"
 #include "../dprint.h"
 #include "../globals.h"
 #include "../statistics.h"
@@ -254,7 +255,7 @@ void fm_split_frag(struct fm_block* qm, struct fm_frag* frag,
 
 
 /* init malloc and return a fm_block*/
-struct fm_block* fm_malloc_init(char* address, unsigned long size)
+struct fm_block* fm_malloc_init(char* address, unsigned long size, char *name)
 
 {
 	char* start;
@@ -286,9 +287,10 @@ struct fm_block* fm_malloc_init(char* address, unsigned long size)
 	end=start+size;
 	qm=(struct fm_block*)start;
 	memset(qm, 0, sizeof(struct fm_block));
+	qm->name = name;
 	qm->size=size;
-	#if defined(DBG_MALLOC) || defined(STATISTICS)
 
+	#if defined(DBG_MALLOC) || defined(STATISTICS)
 	qm->used=size-init_overhead;
 	qm->real_used=size;
 	qm->max_real_used=init_overhead;
@@ -354,9 +356,12 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 	/* not found, bad! */
 
 #if defined(DBG_MALLOC) || defined(STATISTICS)
-	LM_WARN("Not enough free memory (%lu), will attempt defragmentation\n", qm->size-qm->used);
+	LM_ERR(oom_errorf, qm->name, qm->size - qm->real_used,
+			qm->name[0] == 'p' ? "M" : "m");
+	LM_INFO("attempting defragmentation... (need %lu bytes)\n", size);
 #else
-	LM_WARN("Not enough free memory, will attempt defragmentation\n");
+	LM_ERR(oom_nostats_errorf, qm->name, qm->name[0] == 'p' ? "M" : "m");
+	LM_INFO("attempting defragmentation... (need %lu bytes)\n", size);
 #endif
 
 	for( frag = qm->first_frag; (char*)frag < (char*)qm->last_frag;  )
@@ -399,7 +404,7 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 		frag = n;
 	}
 
-	LM_ERR("Defragmentation unsuccessful\n");
+	LM_INFO("unable to alloc a big enough fragment!\n");
 	pkg_threshold_check();
 	return 0;
 
