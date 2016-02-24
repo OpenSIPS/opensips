@@ -28,7 +28,7 @@ DEFAULTS=/etc/default/opensips
 RUN_OPENSIPS=no
 
 
-[ -e "/lib/lsb/init-functions" ] && . /lib/lsb/init-functions
+[-e "/lib/lsb/init-functions" ] && . /lib/lsb/init-functions
 
 # Do not start opensips if fork=no is set in the config file
 # otherwise the boot process will just stop

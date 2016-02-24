@@ -179,6 +179,8 @@ CFLAGS += $(shell dpkg-buildflags --get CFLAGS) $(CPPFLAGS)
 CXXFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
 LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
 
+# https://wiki.debian.org/ReproducibleBuilds/
+CC_EXTRA_OPTS += -DVERSION_NODATE
 
 # force lib (versus lib64) and SMP support all the time
 VARS = LIBDIR=lib ISSMP=yes
@@ -188,19 +190,21 @@ ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 endif
 
 # support parallel compiling
+NJOBS =
+FASTER =
 ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
-         NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
-         MAKEFLAGS += -j$(NUMJOBS)
+	NJOBS = -j $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+	FASTER = 1
 endif
 
 override_dh_auto_build:
 	# Add here commands to compile the package.
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) app \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) app \
 	  modules skip_modules="$(NONCORE_MODULES)" cfg-target=/etc/opensips/
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) \
 	  modules modules="$(BUILD_MODULE_PATHS)" cfg-target=/etc/opensips/
 	# generate the utils db_berkeley
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) utils include_modules="db_berkeley"
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) utils include_modules="db_berkeley"
 
 	touch build-stamp
 
@@ -227,7 +231,8 @@ show-mod-info:
 override_dh_auto_install:
 	# Add here commands to install the package into debian/opensips
 	# opensips base package
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-app \
+	# Show if parallel is enabled
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install \
 		install-modules-all skip_modules="$(NONCORE_MODULES)" \
 		basedir=$(CURDIR)/debian/opensips \
 		prefix=/usr \
@@ -245,7 +250,7 @@ override_dh_auto_install:
 	    eval pkg_modules=\$$$${pkg}_MODULES;\
 	    eval pkg_paths=\$$$${pkg}_MOD_PATH;\
 	    echo "rules: Installing $${pkg} as $${pkg_pkgname} from $${pkg_modules} ...";\
-	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all \
+	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install-modules-all \
 		modules="$${pkg_paths}"  \
 		basedir=$(CURDIR)/debian/$${pkg_pkgname} \
 		prefix=/usr \

@@ -1,9 +1,17 @@
-opensips (2.1.2-1) stable; urgency=low
+opensips (2.1.2-1) unstable; urgency=medium
 
-  * Major Public Release.
+  * New upstream release.
+  * Add patch to fix parallel builds. (Closes: #814196, #814546, #814194)
+  * Improve debian/rules to get parallel builds working.
+  * Add patch to fix FTBFS in armhf. (Closes: #814195)
+  * Change libjson0-dev to libjson-c-dev. (Closes: #815411)
+  * Backport upstream patch to migrate to libmemcached.
+    + Remove libmemcache-dev from Build-Depend.
+  * Add missing ${perl:Depends} in opensips-perl-modules package.
+  * Bump Standards-Version to 3.9.7 (no changes).
+  * Extend debian copyright holders years.
 
- -- Razvan Crainea <razvan@opensips.org>  Thu, 21 Jan 2016 18:20:46 +0200
-
+ -- Razvan Crainea <razvan@opensips.org>  Wed, 24 Feb 2016 08:57:10 -0500
 
 opensips (2.1.1-1) unstable; urgency=low
 

@@ -99,10 +99,10 @@ Copyright: 2002 Andrei Pelinescu-Onciul <pelinescu-onciul@fokus.fraunhofer.de>
   2006 Julien Blache <jblache@debian.org>
   2009 Bjoern Boschman <bjoern@boschman.de>
   2009 Bogdan Iancu <bogan@voice-system.ro>
-  2014-2015 Julián Moreno Patiño <julian@debian.org>
+  2014-2016 Julián Moreno Patiño <julian@debian.org>
   2011 Daniel Echeverry <epsilon77@gmail.com>
   2011 Alejandro Rios P. <alerios@debian.org>
-  2015 Răzvan Crainea <razvan@opensips.org>
+  2015-2016 Răzvan Crainea <razvan@opensips.org>
 License: GPL-2+
 
 Files: doc/dbschema/xsl/pi_framework_mod.xsl

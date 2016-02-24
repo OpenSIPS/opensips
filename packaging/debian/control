@@ -14,10 +14,9 @@ Build-Depends: bison,
                libfreeradius-client-dev | libradiusclient-ng-dev,
                libgeoip-dev (>= 1.4.4),
                libhiredis-dev,
-               libjson0-dev,
+               libjson-c-dev,
                libldap2-dev,
                liblua5.1-dev,
-               libmemcache-dev,
                libmemcached-dev,
                libmicrohttpd-dev,
                libmysqlclient-dev,
@@ -35,7 +34,7 @@ Build-Depends: bison,
                unixodbc-dev,
                xsltproc,
                zlib1g-dev
-Standards-Version: 3.9.6
+Standards-Version: 3.9.7
 Homepage: http://www.opensips.org/
 
 Package: opensips
