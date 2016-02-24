@@ -61,26 +61,26 @@ Makefile.conf: Makefile.conf.template
 		cp $< $@; \
 	fi
 
-$(cfg-prefix)/$(cfg-dir): 
-		mkdir -p $(cfg-prefix)/$(cfg-dir)
+$(cfg_prefix)/$(cfg_dir):
+		mkdir -p $(cfg_prefix)/$(cfg_dir)
 
-$(bin-prefix)/$(bin-dir):
-		mkdir -p $(bin-prefix)/$(bin-dir)
+$(bin_prefix)/$(bin_dir):
+		mkdir -p $(bin_prefix)/$(bin_dir)
 
-$(modules-prefix)/$(modules-dir):
-		mkdir -p $(modules-prefix)/$(modules-dir)
+$(modules_prefix)/$(modules_dir):
+		mkdir -p $(modules_prefix)/$(modules_dir)
 
-$(doc-prefix)/$(doc-dir):
-		mkdir -p $(doc-prefix)/$(doc-dir)
+$(doc_prefix)/$(doc_dir):
+		mkdir -p $(doc_prefix)/$(doc_dir)
 
-$(man-prefix)/$(man-dir)/man8:
-		mkdir -p $(man-prefix)/$(man-dir)/man8
+$(man_prefix)/$(man_dir)/man8:
+		mkdir -p $(man_prefix)/$(man_dir)/man8
 
-$(man-prefix)/$(man-dir)/man5:
-		mkdir -p $(man-prefix)/$(man-dir)/man5
+$(man_prefix)/$(man_dir)/man5:
+		mkdir -p $(man_prefix)/$(man_dir)/man5
 
-$(data-prefix)/$(data-dir):
-		mkdir -p $(data-prefix)/$(data-dir)
+$(data_prefix)/$(data_dir):
+		mkdir -p $(data_prefix)/$(data_dir)
 
 
 .PHONY: dosetrev
@@ -130,14 +130,14 @@ clean: docbook-clean dbschema-docbook-clean
 .PHONY: proper
 .PHONY: distclean
 .PHONY: realclean
-proper realclean distclean: clean 
+proper realclean distclean: clean
 	-@rm -f $(depends) $(auto_gen) 2>/dev/null
 	-@rm -f cfg.tab.h 2>/dev/null
 	-@for r in $(all_nostatic_modules) "" ; do \
 		if [ -d "$$r" -a -f "$$r/Makefile" ]; then \
 			 $(MAKE) -C $$r proper ; \
 		fi ; \
-	done 
+	done
 	-@if [ -d menuconfig ]; then $(MAKE) -C menuconfig proper; fi
 	-@if [ -d utils/opensipsunix ]; then $(MAKE) -C utils/opensipsunix proper; fi
 	-@if [ -d utils/db_berkeley ]; then $(MAKE) -C utils/db_berkeley proper; fi
@@ -150,7 +150,7 @@ mantainer-clean: distclean
 		if [ -d "$$r" ]; then \
 			$(MAKE) -C $$r mantainer-clean; \
 		fi ; \
-	 done 
+	 done
 	-@if [ -d utils/opensipsunix ]; then $(MAKE) -C utils/opensipsunix mantainer-clean; fi
 
 
@@ -159,7 +159,7 @@ mantainer-clean: distclean
 
 .PHONY: TAGS
 TAGS:
-	$(MKTAGS) 
+	$(MKTAGS)
 
 ifeq (,$(MAKECMDGOALS))
 -include $(depends)

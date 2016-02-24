@@ -43,23 +43,23 @@ endif
 include ../../Makefile.modules
 
 install_module_custom: 
-	mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl ; \
+	mkdir -p $(modules_prefix)/$(lib_dir)/opensipsctl ; \
 	sed -e "s#/usr/local/sbin#$(bin-target)#g" \
 		< $(SCRIPTS_DIR)/opensipsctl.mysql > /tmp/opensipsctl.mysql ; \
 	$(INSTALL_CFG) /tmp/opensipsctl.mysql \
-		$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsctl.mysql ; \
+		$(modules_prefix)/$(lib_dir)/opensipsctl/opensipsctl.mysql ; \
 	rm -fr /tmp/opensipsctl.mysql ; \
-	sed -e "s#/usr/local/share/opensips#$(data-target)#g" \
+	sed -e "s#/usr/local/share/opensips#$(data_target)#g" \
 	< $(SCRIPTS_DIR)/opensipsdbctl.mysql > /tmp/opensipsdbctl.mysql ; \
-	$(INSTALL_TOUCH) $(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbctl.mysql ; \
-	$(INSTALL_CFG) /tmp/opensipsdbctl.mysql $(modules-prefix)/$(lib-dir)/opensipsctl/ ; \
+	$(INSTALL_TOUCH) $(modules_prefix)/$(lib_dir)/opensipsctl/opensipsdbctl.mysql ; \
+	$(INSTALL_CFG) /tmp/opensipsdbctl.mysql $(modules_prefix)/$(lib_dir)/opensipsctl/ ; \
 	rm -fr /tmp/opensipsdbctl.mysql ; \
-	mkdir -p $(data-prefix)/$(data-dir)/mysql ; \
+	mkdir -p $(data_prefix)/$(data_dir)/mysql ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/mysql/*) ; do \
 		if [ -f $$FILE ] ; then \
 		$(INSTALL_TOUCH) $$FILE \
-			$(data-prefix)/$(data-dir)/mysql/`basename "$$FILE"` ; \
+			$(data_prefix)/$(data_dir)/mysql/`basename "$$FILE"` ; \
 		$(INSTALL_CFG) $$FILE \
-			$(data-prefix)/$(data-dir)/mysql/`basename "$$FILE"` ; \
+			$(data_prefix)/$(data_dir)/mysql/`basename "$$FILE"` ; \
 		fi ;\
 	done ; \

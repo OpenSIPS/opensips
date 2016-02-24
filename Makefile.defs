@@ -11,7 +11,7 @@
 # History:
 # --------
 #              created by andrei
-#  2003-02-24  added LOCALBASE, fixed doc-dir for freebsd - patch provided
+#  2003-02-24  added LOCALBASE, fixed doc_dir for freebsd - patch provided
 #               by Maxim Sobolev <sobomax@FreeBSD.org>
 #  2003-02-25  added -DDISABLE_NAGLE (andrei)
 #  2003-03-02  added -DDIGEST_DOMAIN (janakj)
@@ -303,9 +303,9 @@ CROSS_COMPILE ?=
 # system base
 SYSBASE ?= /usr
 
-# dirs 
-cfg-dir = etc/$(MAIN_NAME)/
-bin-dir = sbin/
+# dirs
+cfg_dir = etc/$(MAIN_NAME)/
+bin_dir = sbin/
 
 ARCH_B = $(shell echo $(ARCH) | sed -e 's/.*64.*/64b/')
 ifeq ($(ARCH_B),64b)
@@ -316,54 +316,54 @@ else
 	ARCH_B=32b
 endif
 
-lib-dir = $(LIBDIR)/$(MAIN_NAME)
-modules-dir = $(LIBDIR)/$(MAIN_NAME)/modules/
+lib_dir = $(LIBDIR)/$(MAIN_NAME)
+modules_dir = $(LIBDIR)/$(MAIN_NAME)/modules/
 
 ifeq ($(OS), linux)
-	doc-dir = share/doc/$(MAIN_NAME)/
-	man-dir = share/man/
-	data-dir = share/$(MAIN_NAME)/
+	doc_dir = share/doc/$(MAIN_NAME)/
+	man_dir = share/man/
+	data_dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
 else
 ifeq ($(OS), freebsd)
-	doc-dir = share/doc/$(MAIN_NAME)/
-	man-dir = man/
-	data-dir = share/$(MAIN_NAME)/
+	doc_dir = share/doc/$(MAIN_NAME)/
+	man_dir = man/
+	data_dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
 else
 ifeq ($(OS), openbsd)
-	doc-dir = share/doc/$(MAIN_NAME)/
-	man-dir = man/
-	data-dir = share/$(MAIN_NAME)/
+	doc_dir = share/doc/$(MAIN_NAME)/
+	man_dir = man/
+	data_dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
 else
 ifeq ($(OS), netbsd)
-	doc-dir = share/doc/$(MAIN_NAME)
-	man-dir = man/
-	data-dir = share/$(MAIN_NAME)/
+	doc_dir = share/doc/$(MAIN_NAME)
+	man_dir = man/
+	data_dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/pkg
 else
 ifeq ($(OS), darwin)
-	doc-dir = share/doc/$(MAIN_NAME)/
-	man-dir = man/
-	data-dir = share/$(MAIN_NAME)/
+	doc_dir = share/doc/$(MAIN_NAME)/
+	man_dir = man/
+	data_dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
 else
 ifeq ($(OS), gnu_kfreebsd)
-	doc-dir = share/doc/$(MAIN_NAME)/
-	man-dir = share/man/
-	data-dir = share/$(MAIN_NAME)/
+	doc_dir = share/doc/$(MAIN_NAME)/
+	man_dir = share/man/
+	data_dir = share/$(MAIN_NAME)/
 	LOCALBASE = ?= $(SYSBASE)/local
 else
 ifeq ($(OS), solaris)
-	doc-dir = doc/$(MAIN_NAME)/
-	man-dir = man/
-	data-dir = $(MAIN_NAME)/
+	doc_dir = doc/$(MAIN_NAME)/
+	man_dir = man/
+	data_dir = $(MAIN_NAME)/
 	LOCALBASE = $(SYSBASE)
 else
-	doc-dir = doc/$(MAIN_NAME)/
-	man-dir = man/
-	data-dir = $(MAIN_NAME)/
+	doc_dir = doc/$(MAIN_NAME)/
+	man_dir = man/
+	data_dir = $(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
 endif
 endif
@@ -386,21 +386,21 @@ prefix = $(PREFIX)
 BASEDIR ?=
 basedir = $(BASEDIR)
 # install prefixes for various stuff
-cfg-prefix = $(basedir)$(prefix)
-bin-prefix = $(basedir)$(prefix)
-modules-prefix = $(basedir)$(prefix)
-doc-prefix = $(basedir)$(prefix)
-man-prefix = $(basedir)$(prefix)
-ut-prefix = $(basedir)$(prefix)
-data-prefix = $(basedir)$(prefix)
+cfg_prefix = $(basedir)$(prefix)
+bin_prefix = $(basedir)$(prefix)
+modules_prefix = $(basedir)$(prefix)
+doc_prefix = $(basedir)$(prefix)
+man_prefix = $(basedir)$(prefix)
+ut_prefix = $(basedir)$(prefix)
+data_prefix = $(basedir)$(prefix)
 
 # target dirs for various stuff
-cfg-target = $(prefix)/$(cfg-dir)
-bin-target = $(prefix)/$(bin-dir)
-lib-target = $(prefix)/$(lib-dir)
-modules-target = $(prefix)/$(modules-dir)
-doc-target = $(prefix)/$(doc-dir)
-data-target = $(prefix)/$(data-dir)
+cfg_target = $(prefix)/$(cfg_dir)
+bin-target = $(prefix)/$(bin_dir)
+lib-target = $(prefix)/$(lib_dir)
+modules_target = $(prefix)/$(modules_dir)
+doc-target = $(prefix)/$(doc_dir)
+data_target = $(prefix)/$(data_dir)
 
 
 ifeq ($(OS), solaris)
@@ -579,7 +579,7 @@ MKTAGS=ctags -R .
 DEFS+= $(extra_defs) \
 	 -DNAME='"$(MAIN_NAME)"' -DVERSION='"$(RELEASE)"' -DARCH='"$(ARCH)"' \
 	 -DOS='"$(OS)"' -DCOMPILER='"$(CC_VER)"' -D__CPU_$(ARCH) -D__OS_$(OS) \
-	 -D__SMP_$(ISSMP) -DCFG_DIR='"$(cfg-target)"'\
+	 -D__SMP_$(ISSMP) -DCFG_DIR='"$(cfg_target)"'\
 
 #PROFILE=  -pg #set this if you want profiling
 
