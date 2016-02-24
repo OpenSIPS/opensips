@@ -187,7 +187,6 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 
 int run_top_route(struct action* a, struct sip_msg* msg)
 {
-	static unsigned int bl_last_msg_id = 0;
 	int bk_action_flags;
 	int bk_rec_lev;
 	int ret;
@@ -198,11 +197,6 @@ int run_top_route(struct action* a, struct sip_msg* msg)
 	action_flags = 0;
 	rec_lev = 0;
 	init_err_info();
-
-	if (bl_last_msg_id != msg->id) {
-		bl_last_msg_id = msg->id;
-		reset_bl_markers();
-	}
 
 	resetsflag( (unsigned int)-1 );
 

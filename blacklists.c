@@ -36,17 +36,18 @@
 #include "mi/mi.h"
 #include "dprint.h"
 #include "blacklists.h"
+#include "context.h"
 #include "timer.h"
 #include "ut.h"
 
-static struct bl_head *blst_heads = 0;
-static unsigned int bl_marker = 0;
-static unsigned int bl_default_marker = 0;
+static struct bl_head *blst_heads;
+static unsigned int bl_default_marker;
 
-static unsigned int max_heads  = 8*sizeof(bl_marker);
-static unsigned int used_heads = 0;
+static unsigned int max_heads = 8 * sizeof(int);
+static unsigned int used_heads;
 static unsigned int no_shm = 1;
 
+static int bl_ctx_idx = -1;
 
 static void delete_expired_routine(unsigned int ticks, void* param);
 static struct mi_root* mi_print_blacklists(struct mi_root *cmd, void *param);
@@ -133,6 +134,10 @@ int init_black_lists(void)
 
 	pkg_free(old_blst_heads);
 
+	bl_ctx_idx = context_register_int(CONTEXT_GLOBAL, NULL);
+	if (bl_ctx_idx < 0)
+		return -1;
+
 	/* register timer routine  */
 	if ( register_timer( "blcore-expire", delete_expired_routine, 0, 1,
 	TIMER_FLAG_SKIP_ON_DELAY)<0 ) {
@@ -149,7 +154,25 @@ int init_black_lists(void)
 	return 0;
 }
 
+/*
+ * get_bl_marker() and store_bl_marker():
+ *    easy manipulation of the blacklist bitmask stored in global context
+ */
+static int get_bl_marker(unsigned int *marker)
+{
+	if (!current_processing_ctx)
+		return -1;
 
+	if (marker)
+		*marker = (unsigned int)context_get_int(
+		                   CONTEXT_GLOBAL, current_processing_ctx, bl_ctx_idx);
+
+	return 0;
+}
+
+#define store_bl_marker(value) \
+	(context_put_int( \
+		CONTEXT_GLOBAL, current_processing_ctx, bl_ctx_idx, value))
 
 struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 											struct bl_rule *tail, str *name)
@@ -589,29 +612,38 @@ struct bl_head *get_bl_head_by_name(str *name)
 int mark_for_search(struct bl_head *list, int unsigned set)
 {
 	unsigned int n;
+	unsigned int bl_marker;
 
-	/* is it an "all" operation ? */
-	if (list==0) {
-		bl_marker = set ? (unsigned int)-1 : 0 ;
+	if (get_bl_marker(&bl_marker) != 0)
 		return 1;
+
+	/* is it an "all" operation? */
+	if (!list) {
+		store_bl_marker(set ? (unsigned int)-1 : 0);
+		return 0;
 	}
 
-	if( list<blst_heads || (n=(list - blst_heads)) >= used_heads )
-		return 0;
+	n = list - blst_heads;
+	if (list < blst_heads || n >= used_heads)
+		return 1;
 
 	if (set)
-		bl_marker |= (1<<n);
+		store_bl_marker(bl_marker | (1 << n));
 	else
-		bl_marker &= ~(1<<n);
+		store_bl_marker(bl_marker & ~(1 << n));
 
-	return 1;
+	return 0;
 }
 
 
 
+/*
+ * If possible, reset the bitmask stored in the current global context
+ */
 void reset_bl_markers(void)
 {
-	bl_marker = bl_default_marker;
+	if (get_bl_marker(NULL) == 0)
+		store_bl_marker(bl_default_marker);
 }
 
 
@@ -667,11 +699,17 @@ int check_against_blacklist(struct ip_addr *ip, str *text,
 			unsigned short port, unsigned short proto)
 {
 	unsigned int i;
+	unsigned int bl_marker;
 
-	for(i = 0 ; i < used_heads ; i++)
-		if( (bl_marker&(1<<i)) &&
-		check_against_rule_list(ip, text, port, proto, i))
+	/* no context -> no blacklists at all -> successful check */
+	if (get_bl_marker(&bl_marker) != 0)
+		return 0;
+
+	for (i = 0; i < used_heads; i++)
+		if (bl_marker & (1 << i) &&
+		    check_against_rule_list(ip, text, port, proto, i))
 			return 1;
+
 	return 0;
 }
 
