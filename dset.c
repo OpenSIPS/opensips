@@ -117,6 +117,9 @@ static inline unsigned int* get_ptr_bflags(struct sip_msg *msg, unsigned int b_i
 {
 	struct dset_ctx *dsct = get_dset_ctx();
 
+	if (!dsct)
+		return NULL;
+
 	if (b_idx == 0) {
 		return &getb0flags(msg);
 	} else {
@@ -380,10 +383,12 @@ int update_branch(unsigned int idx, str** uri, str** dst_uri, str** path,
 		qvalue_t* q, unsigned int* flags, struct socket_info** force_socket)
 {
 	struct dset_ctx *dsct = get_dset_ctx();
-	struct branch *branches = dsct->branches; /* no checks; we should always have a context here */
+	struct branch *branches;
 
-	if (!dsct->enabled || idx >= dsct->nr_branches)
+	if (!dsct || !dsct->enabled || idx >= dsct->nr_branches)
 		return -1;
+
+	branches = dsct->branches;
 
 	/* uri ? */
 	if (uri) {
@@ -566,8 +571,14 @@ char* print_dset(struct sip_msg* msg, int* len)
 int branch_uri2dset( str *new_uri )
 {
 	struct dset_ctx *dsct = get_dset_ctx();
-	struct branch *branches = dsct->branches;
+	struct branch *branches;
 	unsigned int b;
+
+	/* no branches have been added yet */
+	if (!dsct)
+		return 0;
+
+	branches = dsct->branches;
 
 	if (new_uri->len+1 > MAX_URI_SIZE) {
 		LM_ERR("new uri too long (%d)\n",new_uri->len);
