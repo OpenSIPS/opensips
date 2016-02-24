@@ -191,6 +191,9 @@ void set_dset_state(unsigned char enable)
 	struct dset_ctx *dsct = get_dset_ctx();
 	static unsigned int bk_nr_branches;
 
+	if (!dsct)
+		return;
+
 	if (enable) {
 		/* enable dset usage */
 		if (dsct->enabled) return; /* already enabled */
