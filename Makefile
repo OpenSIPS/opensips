@@ -453,7 +453,7 @@ sunpkg:
 
 .PHONY: install-app install-modules-all install
 # Install app only, excluding console, modules and module docs
-install-app: app mk-install-dirs install-cfg opensipsmc install-bin \
+install-app: app mk-install-dirs install-cfg install-bin \
 	install-app-doc install-man
 
 # Install all module stuff (except modules-docbook?)
@@ -530,7 +530,7 @@ install-console: $(bin-prefix)/$(bin-dir)
 		$(INSTALL_BIN) /tmp/osipsconsole $(bin-prefix)/$(bin-dir)
 		rm -fr /tmp/osipsconsole
 
-install-bin: $(bin-prefix)/$(bin-dir) utils
+install-bin: $(bin-prefix)/$(bin-dir) opensipsmc utils
 		# install opensips binary
 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
 		$(INSTALL_BIN) $(NAME) $(bin-prefix)/$(bin-dir)
@@ -621,8 +621,10 @@ install-doc: install-app-doc install-modules-doc
 
 install-app-doc: $(doc-prefix)/$(doc-dir)
 	-@for d in $(install_docs) ""; do \
-		$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/"$$d" ; \
-		$(INSTALL_DOC) "$$d" $(doc-prefix)/$(doc-dir) ; \
+		if [ -n "$$d" ]; then \
+			$(INSTALL_TOUCH) $(doc-prefix)/$(doc-dir)/"$$d" ; \
+			$(INSTALL_DOC) "$$d" $(doc-prefix)/$(doc-dir) ; \
+		fi ; \
 	done
 
 
