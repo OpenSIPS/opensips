@@ -96,9 +96,9 @@ static inline int check_blacklists( unsigned short proto,
 
 	body.s = body_s;
 	body.len = body_len;
-	su2ip_addr( &ip, to);
-	port = su_getport( to );
-	return check_against_blacklist( &ip, &body, port, proto);
+	su2ip_addr(&ip, to);
+	port = su_getport(to);
+	return check_against_blacklist(&ip, &body, port, proto);
 }
 
 #endif /* _BLACKLST_H */

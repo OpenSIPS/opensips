@@ -610,11 +610,11 @@ static int fix_actions(struct action* a)
 				}
 				host.s = t->elem[0].u.string;
 				host.len = strlen(host.s);
-				if ( strcasecmp(host.s,"all")==0 ) {
+				if (!strcasecmp(host.s, "all")) {
 					blh = NULL;
 				} else {
 					blh = get_bl_head_by_name(&host);
-					if (blh==NULL) {
+					if (!blh) {
 						LM_ERR("[UN]USE_BLACKLIST - list "
 							"%s not configured\n", t->elem[0].u.string);
 						ret=E_CFG;

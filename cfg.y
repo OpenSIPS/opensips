@@ -1052,12 +1052,12 @@ assign_stm: DEBUG EQUAL snumber
 		| DST_BLACKLIST EQUAL ID COLON LBRACE blst_elem_list RBRACE {
 				s_tmp.s = $3;
 				s_tmp.len = strlen($3);
-				if ( create_bl_head( BL_CORE_ID, BL_READONLY_LIST,
-				bl_head, bl_tail, &s_tmp)==0) {
+				if (create_bl_head( BL_CORE_ID, BL_READONLY_LIST,
+				    bl_head, bl_tail, &s_tmp)==0) {
 					yyerror("failed to create blacklist\n");
 					YYABORT;
 				}
-				bl_head = bl_tail = 0;
+				bl_head = bl_tail = NULL;
 				}
 		| DISABLE_STATELESS_FWD EQUAL NUMBER {
 				sl_fwd_disabled=$3;

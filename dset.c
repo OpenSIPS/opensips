@@ -93,7 +93,7 @@ int get_nr_branches(void)
 	return !dsct ? 0 : dsct->nr_branches;
 }
 
-#define ctx_put(value) \
+#define store_dset_ctx(value) \
 	(context_put_ptr( \
 		CONTEXT_GLOBAL, current_processing_ctx, dset_ctx_idx, value))
 
@@ -287,7 +287,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 		}
 		memset(dsct, 0, sizeof *dsct);
 		dsct->enabled = 1;
-		ctx_put(dsct);
+		store_dset_ctx(dsct);
 	}
 
 	nr_branches = dsct->nr_branches;

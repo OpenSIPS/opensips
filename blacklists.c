@@ -48,8 +48,8 @@ static unsigned int used_heads;
 
 static int bl_ctx_idx = -1;
 
-static void delete_expired_routine(unsigned int ticks, void* param);
-static struct mi_root* mi_print_blacklists(struct mi_root *cmd, void *param);
+static void delete_expired_routine(unsigned int ticks, void *param);
+static struct mi_root *mi_print_blacklists(struct mi_root *cmd, void *param);
 
 
 static mi_export_t mi_bl_cmds[] = {
@@ -65,14 +65,14 @@ int init_black_lists(void)
 		return -1;
 
 	/* register timer routine  */
-	if ( register_timer( "blcore-expire", delete_expired_routine, 0, 1,
-	TIMER_FLAG_SKIP_ON_DELAY)<0 ) {
+	if (register_timer("blcore-expire", delete_expired_routine, 0, 1,
+	    TIMER_FLAG_SKIP_ON_DELAY) < 0) {
 		LM_ERR("failed to register timer\n");
 		return -1;
 	}
 
 	/* register MI commands */
-	if (register_mi_mod( "blacklists", mi_bl_cmds)<0) {
+	if (register_mi_mod("blacklists", mi_bl_cmds) < 0) {
 		LM_ERR("unable to register MI cmds\n");
 		return -1;
 	}
@@ -105,48 +105,48 @@ struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 {
 	unsigned int i;
 
-	if(!blst_heads) {
-		blst_heads = (struct bl_head*)shm_malloc(max_heads*sizeof(struct bl_head));
-		if (blst_heads==NULL) {
+	if (!blst_heads) {
+		blst_heads = shm_malloc(max_heads * sizeof *blst_heads);
+		if (!blst_heads) {
 			LM_ERR("no more shared memory!\n");
 			return NULL;
 		}
-		memset( blst_heads, 0, max_heads*sizeof(struct bl_head));
+		memset(blst_heads, 0, max_heads * sizeof *blst_heads);
 	}
 	i = used_heads;
-	if (i==max_heads) {
+	if (i == max_heads) {
 		LM_ERR("too many lists\n");
 		return NULL;
 	}
 
-	if (get_bl_head_by_name(name)!=NULL) {
+	if (get_bl_head_by_name(name)) {
 		LM_CRIT("duplicated name!\n");
 		return NULL;
 	}
 
-	if ( flags&BL_READONLY_LIST && flags&BL_DO_EXPIRE){
+	if (flags & BL_READONLY_LIST && flags & BL_DO_EXPIRE) {
 		LM_CRIT("RO lists cannot accept EXPIRES!\n");
 		return NULL;
 	}
 
 	/* copy list name */
-	blst_heads[i].name.s = (char*)shm_malloc(name->len + 1);
-	if (blst_heads[i].name.s==NULL) {
+	blst_heads[i].name.s = shm_malloc(name->len + 1);
+	if (!blst_heads[i].name.s) {
 		LM_ERR("no more shm memory!\n");
 		return NULL;
 	}
-	memcpy( blst_heads[i].name.s, name->s, name->len);
+	memcpy(blst_heads[i].name.s, name->s, name->len);
 	blst_heads[i].name.s[name->len] = '\0';
 	blst_heads[i].name.len = name->len;
 
 	/* build lock? */
-	if (!(flags&BL_READONLY_LIST)) {
-		if ( (blst_heads[i].lock=lock_alloc())==NULL ) {
+	if (!(flags & BL_READONLY_LIST)) {
+		if (!(blst_heads[i].lock = lock_alloc())) {
 			LM_ERR("failed to create lock!\n");
 			shm_free(blst_heads[i].name.s);
 			return NULL;
 		}
-		if ( lock_init(blst_heads[i].lock)==NULL ) {
+		if (!lock_init(blst_heads[i].lock)) {
 			LM_ERR("failed to init lock!\n");
 			shm_free(blst_heads[i].name.s);
 			lock_dealloc(blst_heads[i].lock);
@@ -161,8 +161,8 @@ struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
 	blst_heads[i].first = head;
 	blst_heads[i].last = tail;
 
-	if (flags&BL_BY_DEFAULT)
-		bl_default_marker |= (1<<i);
+	if (flags & BL_BY_DEFAULT)
+		bl_default_marker |= (1 << i);
 
 	return blst_heads + i;
 }
@@ -174,14 +174,13 @@ void destroy_black_lists(void)
 	unsigned int i;
 	struct bl_rule *p, *q;
 
-	for(i = 0 ; i < used_heads ; i++){
-
+	for (i = 0; i < used_heads; i++) {
 		if (blst_heads[i].lock) {
 			lock_destroy(blst_heads[i].lock);
 			lock_dealloc(blst_heads[i].lock);
 		}
 
-		for( p=blst_heads[i].first ; p ; ) {
+		for (p = blst_heads[i].first; p; ) {
 			q = p;
 			p = p->next;
 			shm_free(q);
@@ -193,7 +192,7 @@ void destroy_black_lists(void)
 		blst_heads[i].first = blst_heads[i].last = NULL;
 	}
 
-	if(blst_heads)
+	if (blst_heads)
 		shm_free(blst_heads);
 }
 
@@ -207,38 +206,37 @@ static inline void delete_expired(struct bl_head *elem, unsigned int ticks)
 
 	/* get list for write */
 	lock_get(elem->lock);
-	while(elem->count_write){
+	while (elem->count_write){
 		lock_release(elem->lock);
 		sleep_us(5);
 		lock_get(elem->lock);
 	}
 	elem->count_write = 1;
-	while(elem->count_read){
+
+	while (elem->count_read){
 		lock_release(elem->lock);
 		sleep_us(5);
 		lock_get(elem->lock);
 	}
 	lock_release(elem->lock);
 
-	if(elem->first==NULL)
+	if (!elem->first)
 		goto done;
 
-	for( q=0,p = elem->first ; p ; q=p,p=p->next) {
-		if(p->expire_end > ticks)
+	for (q = 0, p = elem->first; p; q = p, p = p->next)
+		if (p->expire_end > ticks)
 			break;
-	}
 
-	if (q==NULL)
-		/* nothing to remove */
-		goto done;
+	if (!q)
+		goto done; /* nothing to remove */
 
-	if (p==NULL) {
+	if (!p) {
 		/* remove everything */
 		q = elem->first;
 		elem->first = elem->last = NULL;
 	} else {
 		/* remove up to p */
-		q->next = 0;
+		q->next = NULL;
 		q = elem->first;
 		elem->first = p;
 	}
@@ -246,25 +244,22 @@ static inline void delete_expired(struct bl_head *elem, unsigned int ticks)
 done:
 	elem->count_write = 0;
 
-	for( ; q ; ){
+	for (; q; ) {
 		p = q;
 		q = q->next;
 		shm_free(p);
 	}
-
-	return;
 }
 
 
 
-static void delete_expired_routine(unsigned int ticks, void* param)
+static void delete_expired_routine(unsigned int ticks, void *param)
 {
 	unsigned int i;
 
-	for(i = 0 ; i < used_heads ; i++){
-		if( blst_heads[i].flags&BL_DO_EXPIRE &&  blst_heads[i].first)
+	for (i = 0 ; i < used_heads ; i++)
+		if (blst_heads[i].flags&BL_DO_EXPIRE && blst_heads[i].first)
 				delete_expired(blst_heads + i, ticks);
-		}
 }
 
 
@@ -274,15 +269,14 @@ static inline int ip_class_compare(struct net *net1, struct net *net2)
 	unsigned int r;
 
 	if (net1->ip.af == net2->ip.af){
-		for(r=0; r<net1->ip.len/4; r++){ /* ipv4 & ipv6 addresses are
-										    all multiples of 4*/
+		/* ipv4 & ipv6 addresses are all multiples of 4 */
+		for(r=0; r<net1->ip.len/4; r++)
 			if ((net1->ip.u.addr32[r]&net1->mask.u.addr32[r])!=
-			     (net2->ip.u.addr32[r]&net2->mask.u.addr32[r]) ){
+			     (net2->ip.u.addr32[r]&net2->mask.u.addr32[r]))
 				return 0;
-			}
-		}
 		return 1;
-	};
+	}
+
 	return -1;
 }
 
@@ -304,7 +298,7 @@ int add_rule_to_list(struct bl_rule **first, struct bl_rule **last,
 		body = 0;
 
 	/* is it a duplicate? */
-	for(q = *first ; q ; q = q->next) {
+	for (q = *first; q; q = q->next) {
 		if ( (flags==q->flags) && (port==q->port) &&
 			(proto==q->proto) &&
 			(ip_class_compare(ip_net, &q->ip_net)==1) &&
@@ -316,11 +310,9 @@ int add_rule_to_list(struct bl_rule **first, struct bl_rule **last,
 		}
 	}
 
-
 	/* alloc memory */
-	p = (struct bl_rule*)shm_malloc
-			(sizeof(struct bl_rule) + (body?(body->len + 1):0));
-	if(!p){
+	p = shm_malloc(sizeof *p + (body?(body->len + 1):0));
+	if (!p) {
 		LM_ERR("no more  shm memory!\n");
 		return -1;
 	}
@@ -331,9 +323,9 @@ int add_rule_to_list(struct bl_rule **first, struct bl_rule **last,
 	p->proto = proto;
 	p->port = port;
 	if (body) {
-		p->body.s = (char *)p + sizeof(struct bl_rule);
+		p->body.s = (char *)(p + 1);
 		memcpy(p->body.s, body->s, body->len);
-		(p->body.s)[body->len] = '\0';
+		p->body.s[body->len] = '\0';
 		p->body.len = body->len;
 	} else {
 		p->body.s = NULL;
@@ -432,34 +424,34 @@ static inline int reload_permanent_list(struct bl_rule *first,
 
 
 /* should NOT add ANY DUPLICATES */
-int add_list_to_head( struct bl_head *head,
+int add_list_to_head(struct bl_head *head,
 			struct bl_rule *first, struct bl_rule *last,
 			int truncate, int expire_limit)
 {
 	struct bl_rule *p;
-	unsigned int expire_end=0;
+	unsigned int expire_end = 0;
 
 	if (!head || !first || !last)
 		return -1;
 
 	/* may I add to this list? */
-	if (head->flags&BL_READONLY_LIST) {
+	if (head->flags & BL_READONLY_LIST) {
 		LM_CRIT("list is readonly!!!\n");
 		return -1;
 	}
 
 	LM_DBG("adding to bl %.*s %p,%p\n",
-		head->name.len, head->name.s, first,last);
+		   head->name.len, head->name.s, first, last);
 
 	/* for expiring lists, sets the timeout */
-	if (head->flags&BL_DO_EXPIRE) {
+	if (head->flags & BL_DO_EXPIRE) {
 		if (expire_limit==0) {
 			LM_CRIT("expire is zero!!!\n");
 			return -1;
 		}
 		expire_end = get_ticks() + expire_limit;
 
-		for(p = first ; p ; p = p->next)
+		for (p = first; p; p = p->next)
 			p->expire_end = expire_end;
 	}
 
@@ -469,41 +461,39 @@ int add_list_to_head( struct bl_head *head,
 
 	/* get list for write */
 	lock_get(head->lock);
-	while(head->count_write){
-		lock_release( head->lock );
+	while (head->count_write){
+		lock_release(head->lock);
 		sleep_us(5);
-		lock_get( head->lock );
+		lock_get(head->lock);
 	}
 	head->count_write = 1;
-	while(head->count_read){
-		lock_release( head->lock );
-		sleep_us(5);
-		lock_get( head->lock );
-	}
-	lock_release( head->lock );
 
-	rm_dups( head, &first, &last);
-	if (first==NULL)
+	while (head->count_read){
+		lock_release(head->lock);
+		sleep_us(5);
+		lock_get(head->lock);
+	}
+	lock_release(head->lock);
+
+	rm_dups(head, &first, &last);
+	if (!first)
 		goto done;
 
-	if (head->first==NULL) {
+	if (!head->first) {
 		head->last  = last;
 		head->first = first;
-	} else
-	if ( !(head->flags&BL_DO_EXPIRE) ) {
+	} else if (!(head->flags & BL_DO_EXPIRE)) {
 		head->last->next = first;
 		head->last = last;
-	} else
-	if( head->first->expire_end >= expire_end){
+	} else if (head->first->expire_end >= expire_end) {
 		last->next = head->first;
 		head->first = first;
-	} else
-	if(head->last->expire_end <= expire_end){
+	} else if (head->last->expire_end <= expire_end) {
 		head->last->next = first;
 		head->last = last;
 	} else {
-		for(p = head->first ; ; p = p->next)
-			if( p->next->expire_end >= expire_end)
+		for (p = head->first; ; p = p->next)
+			if (p->next->expire_end >= expire_end)
 				break;
 		last->next = p->next;
 		p->next = first;
@@ -521,18 +511,17 @@ struct bl_head *get_bl_head_by_name(str *name)
 {
 	unsigned int i;
 
-	for(i = 0 ; i < used_heads ; i++){
+	for (i = 0; i < used_heads; i++)
 		if ((name->len == blst_heads[i].name.len) &&
-		!strncmp(name->s, blst_heads[i].name.s, name->len))
-			return (blst_heads + i);
-	}
+		    !strncmp(name->s, blst_heads[i].name.s, name->len))
+			return blst_heads + i;
 
 	return NULL;
 }
 
 
 
-int mark_for_search(struct bl_head *list, int unsigned set)
+int mark_for_search(struct bl_head *list, unsigned int set)
 {
 	unsigned int n;
 	unsigned int bl_marker;
