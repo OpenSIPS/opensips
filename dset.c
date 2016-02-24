@@ -578,6 +578,8 @@ int branch_uri2dset( str *new_uri )
 	if (!dsct)
 		return 0;
 
+	branches = dsct->branches;
+
 	if (new_uri->len+1 > MAX_URI_SIZE) {
 		LM_ERR("new uri too long (%d)\n",new_uri->len);
 		return -1;
