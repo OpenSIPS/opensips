@@ -13,6 +13,7 @@
 #	upstreamcflags -- don't set cflags, let upstream package Makefile do it
 
 DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 DEBVERSION:=$(shell head -n 1 debian/changelog \
                     | sed -e 's/^[^(]*(\([^)]*\)).*/\1/')
@@ -180,10 +181,10 @@ CXXFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
 LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
 
 # https://wiki.debian.org/ReproducibleBuilds/
-CC_EXTRA_OPTS += -DVERSION_NODATE
+CFLAGS += -DVERSION_NODATE
 
-# force lib (versus lib64) and SMP support all the time
-VARS = LIBDIR=lib ISSMP=yes
+# force multiach lib path and SMP support all the time
+VARS = LIBDIR=lib/$(DEB_HOST_MULTIARCH) ISSMP=yes
 
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
@@ -231,7 +232,6 @@ show-mod-info:
 override_dh_auto_install:
 	# Add here commands to install the package into debian/opensips
 	# opensips base package
-	# Show if parallel is enabled
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install \
 		install-modules-all skip_modules="$(NONCORE_MODULES)" \
 		basedir=$(CURDIR)/debian/opensips \
@@ -260,10 +260,14 @@ override_dh_auto_install:
 		;\
 	done
 
-	# install only the opensips console tool
-	$(MAKE) install-console \
-		basedir=$(CURDIR)/debian/opensips-console \
-		prefix=/usr
+	# move console binary from opensips to opensips-console
+	mkdir -p $(CURDIR)/debian/opensips-console/usr/sbin
+	mv $(CURDIR)/debian/opensips/usr/sbin/osipsconsole \
+		 $(CURDIR)/debian/opensips-console/usr/sbin/
+	# move binaries of opensips-berkeley-module to opensips-berkeley-bin
+	mkdir -p $(CURDIR)/debian/opensips-berkeley-bin/usr/
+	mv $(CURDIR)/debian/opensips-berkeley-module/usr/sbin \
+		$(CURDIR)/debian/opensips-berkeley-bin/usr/
 
 override_dh_strip:
 	dh_strip --dbg-package=opensips-dbg

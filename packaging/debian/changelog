@@ -1,17 +1,29 @@
 opensips (2.1.2-1) unstable; urgency=medium
 
   * New upstream release.
-  * Add patch to fix parallel builds. (Closes: #814196, #814546, #814194)
-  * Improve debian/rules to get parallel builds working.
-  * Add patch to fix FTBFS in armhf. (Closes: #814195)
-  * Change libjson0-dev to libjson-c-dev. (Closes: #815411)
-  * Backport upstream patch to migrate to libmemcached.
+  * debian/patches:
+    + Add patch to fix parallel builds. (Closes: #814196, #814546, #814194)
+    + Add patch to fix FTBFS in armhf. (Closes: #814195)
+    + Backport upstream patch to migrate to libmemcached.
+    + Add patch to get reproducible builds working.
+    + Add patch to work with multiarch paths.
+    + Add patch to fix spelling errors.
+  * debian/control:
+    + Change libjson0-dev to libjson-c-dev. (Closes: #815411)
+    + Bump Standards-Version to 3.9.7 (no changes).
     + Remove libmemcache-dev from Build-Depend.
-  * Add missing ${perl:Depends} in opensips-perl-modules package.
-  * Bump Standards-Version to 3.9.7 (no changes).
-  * Extend debian copyright holders years.
+    + Add support for multiarch.
+    + Add opensips-berkeley-bin new binary package.
+  * debian/rules:
+    + Improve to get parallel builds working.
+    + Export proper flag in CFLAGS to get reproducible builds working.
+    + Export DEB_HOST_MULTIARCH to get working multiarch paths.
+    + Move opensips-console to proper package.
+    + Move bdb_recover to new opensips-berkeley-bin binary package.
+  * debian/copyright:
+    + Extend copyright holders years.
 
- -- Razvan Crainea <razvan@opensips.org>  Wed, 24 Feb 2016 08:57:10 -0500
+ -- Razvan Crainea <razvan@opensips.org>  Wed, 24 Feb 2016 18:57:10 +0300
 
 opensips (2.1.1-1) unstable; urgency=low
 
