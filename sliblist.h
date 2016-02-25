@@ -68,7 +68,7 @@ typedef void (slinkedl_dealloc_f) (void *ptr);
  * return <0 on error and exit list traversal;
  * return  0 on no action on current list elemnt and
  *           continue list traversal;
- * return >0 on action successfuly completed on current list element
+ * return >0 on action successfully completed on current list element
  *           and exit list traversal.
  * @see slinkedl_traverse()
  */

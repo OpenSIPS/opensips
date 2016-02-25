@@ -267,7 +267,7 @@ int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message** reply) {
 				return -1;
 			}
 		} else if (result == REJECT_RC) {
-			LM_DBG("rc_auth function succeded with result REJECT_RC\n");
+			LM_DBG("rc_auth function succeeded with result REJECT_RC\n");
 			return result;
 		} else {
 			LM_ERR("rc_auth function failed\n");

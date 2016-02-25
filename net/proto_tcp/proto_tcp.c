@@ -679,7 +679,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 				return -1;
 			}
-			/* connect succeded, we have a connection */
+			/* connect succeeded, we have a connection */
 			if (n==0) {
 				/* connect is still in progress, break the sending
 				 * flow now (the actual write will be done when 
@@ -689,7 +689,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				return len;
 			}
 
-			LM_DBG("First connect attempt succeded in less than %d ms, "
+			LM_DBG("First connect attempt succeeded in less than %d ms, "
 				"proceed to writing \n",tcp_async_local_connect_timeout);
 			/* our first connect attempt succeeded - go ahead as normal */
 		} else if ((c=tcp_sync_connect(send_sock, to, &fd))==0) {

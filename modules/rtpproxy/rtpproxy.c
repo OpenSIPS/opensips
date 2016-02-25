@@ -110,7 +110,7 @@
  *		which share of the traffic should be placed to this particular
  *		proxy.
  *
- *		Introduce failover mechanism, so that if SER detects that one
+ *		Introduce fail-over mechanism, so that if SER detects that one
  *		of many proxies is no longer available it temporarily decreases
  *		its weight to 0, so that no traffic will be assigned to it.
  *		Such "disabled" proxies are periodically checked to see if they
@@ -127,7 +127,7 @@
  * 2005-07-14  SDP origin (o=) IP may be also changed (bogdan)
  * 2006-03-28 Support for changing session-level SDP connection (c=) IP when
  *            media-description also includes connection information (bayan)
- * 2007-04-13 Support multiple sets of rtpproxies and set selection added
+ * 2007-04-13 Support multiple sets of rtp-proxies and set selection added
  *            (ancuta)
  * 2007-04-26 Added some MI commands:
  *             nh_enable_rtpp used to enable or disable a specific rtp proxy
@@ -242,7 +242,7 @@ pv_spec_t param2_spec;
 static str param3_name = str_init("rtpproxy_3");
 str param3_bavp_name = str_init("$bavp(5589967)");
 pv_spec_t param3_spec;
-static str late_name = str_init("late_negociation");
+static str late_name = str_init("late_negotiation");
 
 /* parameters name for event signaling */
 static str event_name = str_init("E_RTPPROXY_STATUS");
@@ -681,8 +681,8 @@ static int add_rtpproxy_socks(struct rtpp_set * rtpp_list,
 }
 
 
-/*	0-succes
- *  -1 - erorr
+/*	0-success
+ *  -1 - error
  * */
 static int rtpproxy_add_rtpproxy_set( char * rtp_proxies, int set_id)
 {
@@ -732,7 +732,7 @@ static int rtpproxy_add_rtpproxy_set( char * rtp_proxies, int set_id)
 		rtp_proxies = p;
 		my_current_id = set_id;
 	}
-	LM_DBG("Adding proxy in setid %d [%s]\n", my_current_id, rtp_proxies);
+	LM_DBG("Adding proxy in set-id %d [%s]\n", my_current_id, rtp_proxies);
 
 	for(;*rtp_proxies && isspace(*rtp_proxies);rtp_proxies++);
 
@@ -858,14 +858,14 @@ static int fixup_set_id(void ** param)
 	p = (char*) *param;
 	if(*p != '$')
 	{
-		/* Fixed value specifed for RTP rpoxy set */
+		/* Fixed value specified for RTP proxy set */
 		int_val = str2s(p, strlen(p), &err);
 		if (err == 0) {
 			pkg_free(*param);
 			rtpp_list = select_rtpp_set(int_val);
 			if(rtpp_list ==0){
 				/* simply mark it as undefined and we search it one more time
-				 * at runtime, after the database has been updated */
+				 * at run-time, after the database has been updated */
 				pset->t = NH_VAL_SET_UNDEF;
 				pset->v.int_set = int_val;
 			} else {
@@ -880,7 +880,7 @@ static int fixup_set_id(void ** param)
 			return E_CFG;
 		}
 	} else {
-		/* proxyset is specified as an AVP */
+		/* proxy-set is specified as an AVP */
 		str lstr;
 
 		lstr.s = p;
@@ -1460,7 +1460,7 @@ static int _add_proxies_from_database(void) {
 
 		if(rtpproxy_add_rtpproxy_set(rtpp_socket, set_id) == -1)
 		{
-			LM_ERR("faild to add rtp proxy\n");
+			LM_ERR("failed to add rtp proxy\n");
 			goto error;
 		}
 	}
@@ -1897,7 +1897,7 @@ alter_mediaip(struct sip_msg *msg, str *body, str *oldip, int oldpf,
 	struct lump* anchor;
 	str omip, nip, oip;
 
-	/* check that updating mediaip is really necessary */
+	/* check that updating media-ip is really necessary */
 	if (oldpf == newpf && isnulladdr(oldip, oldpf))
 		return 0;
 	if (newip->len == oldip->len &&
@@ -1984,7 +1984,7 @@ alter_mediaport(struct sip_msg *msg, str *body, str *oldport, str *newport,
 	int offset;
 	struct lump* anchor;
 
-	/* check that updating mediaport is really necessary */
+	/* check that updating media-port is really necessary */
 	if (newport->len == oldport->len &&
 	    memcmp(newport->s, oldport->s, newport->len) == 0)
 		return 0;
@@ -2405,7 +2405,7 @@ retry:
 		}
 	}
 	if (found == 0) {
-		/* No proxies? Force all to be redetected, if not yet */
+		/* No proxies? Force all to be re-detected, if not yet */
 		if (was_forced)
 			return NULL;
 		was_forced = 1;
@@ -2560,7 +2560,7 @@ struct rtpp_set * get_rtpp_set(struct sip_msg * msg, nh_set_param_t *pset)
 		} else if ( value.flags & PV_VAL_INT ) {
 			int_val = value.ri;
 		} else {
-			LM_ERR("Unsupported PV value type for RTP ptoxy set.i\n");
+			LM_ERR("Unsupported PV value type for RTP proxy set.i\n");
 			return NULL;
 		}
 		LM_DBG("Variable proxy set %d specified.\n", int_val);
@@ -2783,7 +2783,7 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 
 		if (set_found) {
 			if (dlg_api.store_dlg_value(dlg, &param3_name, &val3.rs) < 0) {
-				LM_ERR("cannot store setid value\n");
+				LM_ERR("cannot store set-id value\n");
 				goto error;
 			}
 		} else {
@@ -2869,7 +2869,7 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 		goto error;
 	}
 
-	/* check to see if this is a late negociation */
+	/* check to see if this is a late negotiation */
 	if (dlg_api.fetch_dlg_value(dlg, &late_name, &value, 0) < 0)
 		offer = 0;
 	has_sdp = msg_has_sdp(msg);
@@ -2877,20 +2877,20 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 	method_id = get_cseq(msg)->method_id;
 	LM_DBG("method id is %d SDP: %d\n", method_id, has_sdp);
 	if (method_id == METHOD_ACK) {
-		/* normal negociation - ACK cannot have SDP */
+		/* normal negotiation - ACK cannot have SDP */
 		if (!offer && has_sdp) {
-			LM_ERR("not a late negociation - ACK cannot have SDP body\n");
+			LM_ERR("not a late negotiation - ACK cannot have SDP body\n");
 			goto error;
 		}
-		/* late negociation without SDP */
+		/* late negotiation without SDP */
 		if (offer && !has_sdp) {
-			LM_ERR("ACK of a late negociation that doesn't have SDP body\n");
+			LM_ERR("ACK of a late negotiation that doesn't have SDP body\n");
 			goto error;
 		}
-		/* valid normal negociation */
+		/* valid normal negotiation */
 		if (!offer && !has_sdp)
 			goto done;
-		/* late negociation */
+		/* late negotiation */
 	} else {
 		/* sequential request without SDP */
 		if (!has_sdp) {
@@ -3036,7 +3036,7 @@ engage_rtp_proxy4_f(struct sip_msg *msg, char *param1, char *param2, char *param
 		return -1;
 	}
 
-	/* totag field is empty*/
+	/* to-tag field is empty*/
 	if (!( pto->tag_value.s==NULL || pto->tag_value.len==0) ) {
 		LM_ERR("function can only be called from the initial invite");
 		return -1;
@@ -3070,7 +3070,7 @@ engage_rtp_proxy4_f(struct sip_msg *msg, char *param1, char *param2, char *param
 		param2 = aux_str.s;
 	}
 
-	/* is this a late negociation scenario? */
+	/* is this a late negotiation scenario? */
 	if (msg_has_sdp(msg)) {
 		LM_DBG("message has sdp body -> forcing rtp proxy\n");
 		if(force_rtp_proxy(msg,param1,param2,param3,param4,1) < 0) {
@@ -3079,7 +3079,7 @@ engage_rtp_proxy4_f(struct sip_msg *msg, char *param1, char *param2, char *param
 		}
 	} else {
 		if (dlg_api.store_dlg_value(dlg, &late_name, &late_name) < 0) {
-			LM_ERR("cannot store late_negociation param into dialog\n");
+			LM_ERR("cannot store late_negotiation param into dialog\n");
 			return -1;
 		}
 	}
@@ -3095,7 +3095,7 @@ engage_rtp_proxy4_f(struct sip_msg *msg, char *param1, char *param2, char *param
 	}
 
 	if (param3) {
-		/* get the setid */
+		/* get the set-id */
 		set = get_rtpp_set(msg, (nh_set_param_t *)param3);
 		if (!set) {
 			LM_CRIT("set no longer here - forcing the default one!\n");
@@ -3667,7 +3667,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 			LM_ERR("Failed to get dialog\n");
 			goto error;
 		}
-		/* construct the notify tag from dualog ids */
+		/* construct the notify tag from dialog ids */
 		notify_tag.len= sprintf(buf, "%d.%d", dlg->h_entry, dlg->h_id);
 		notify_tag.s = buf;
 		LM_DBG("notify_tag= %s\n", notify_tag.s);
@@ -3787,7 +3787,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 			}
 			do {
 
-				/* if not successfull choose a different rtpproxy */
+				/* if not successful choose a different rtpproxy */
 				if (!args->node) {
 					args->node = select_rtpp_node(msg, args->callid, args->set, var, 0);
 					if (!args->node) {

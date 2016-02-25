@@ -2381,7 +2381,7 @@ entity_search_done:
 			value_content = (char*)xmlNodeGetContent(value_node);
 			if(value_content == NULL)
 			{
-				LM_ERR("Bad formated scenario document. URI value empty\n");
+				LM_ERR("Bad formatted scenario document. URI value empty\n");
 				goto error;
 			}
 			if(b2b_scenario_parse_uri(value_node, value_content, tuple, msg,
@@ -2404,7 +2404,7 @@ entity_search_done:
 				fdname_content = (char*)xmlNodeGetContent(value_node);
 				if(fdname_content == NULL)
 				{
-					LM_ERR("Bad formated scenario document. URI value empty\n");
+					LM_ERR("Bad formatted scenario document. URI value empty\n");
 					xmlFree(value_content);
 					goto error;
 				}
@@ -3151,7 +3151,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 		entity_sid.s = (char*)xmlNodeGetNodeContentByName(node, "id", NULL);
 		if(entity_sid.s == NULL)
 		{
-			LM_ERR("Wrong formated xml document. Client node without "
+			LM_ERR("Wrong formatted xml document. Client node without "
 				"id parameter\n");
 			goto error;
 		}
@@ -3184,7 +3184,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 		value_content = (char*)xmlNodeGetContent(node_aux);
 		if(value_content == NULL)
 		{
-			LM_ERR("Bad formated scenario document. URI value empty\n");
+			LM_ERR("Bad formatted scenario document. URI value empty\n");
 			goto error2;
 		}
 

@@ -524,7 +524,7 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		}
 
 		/*the command exited well*/
-		LM_DBG("command process (%s)succeded\n",f->name.s);
+		LM_DBG("command process (%s)succeeded\n",f->name.s);
 
 		if (mi_rpl!=MI_ROOT_ASYNC_RPL) {
 			if(mi_datagram_write_tree(&dtgram , mi_rpl) != 0){

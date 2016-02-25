@@ -621,7 +621,7 @@ again:
 			goto error;
 		}
 	} else {
-		/* reset the retries if we succeded in doing something*/
+		/* reset the retries if we succeeded in doing something*/
 		retries = 0;
 	}
 

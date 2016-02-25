@@ -1470,7 +1470,7 @@ str* xml_dialog2presence(str* pres_uri, str* body)
 	dlg_doc = xmlParseMemory(body->s, body->len);
 	if(dlg_doc == NULL)
 	{
-		LM_ERR("Wrong formated xml document\n");
+		LM_ERR("Wrong formatted xml document\n");
 		return NULL;
 	}
 	dialog_node = xmlNodeGetNodeByName(dlg_doc->children, "dialog", 0);

@@ -213,7 +213,7 @@ static int child_init(int rank)
 				break;
 			default:
 				LM_ERR("invalid route mode value (%d)\n!"
-					"Possibilty of memory corruption\n",
+					"Possibility of memory corruption\n",
 						event_rlist[idx].mode);
 				return -1;
 		}

@@ -607,7 +607,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 		return -1;
 	}
 
-	/* formated database columns */
+	/* formatted database columns */
 	m = core2strar( rq, val_arr );
 
 	for(i = 0; i < m; i++)

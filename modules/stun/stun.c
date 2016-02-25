@@ -195,7 +195,7 @@ static int stun_mod_init(void)
 		return -1;
 	}
 
-	LM_DBG("stun init succeded\n");
+	LM_DBG("stun init succeeded\n");
 	return 0;
 }
 

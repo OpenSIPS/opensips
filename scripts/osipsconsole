@@ -5652,7 +5652,7 @@ sub pgsql_opensips_create() {	# pars: <database name>
 
 	&pgsql_query ($db, "CREATE USER $DBRWUSER WITH PASSWORD '$DBRWPW';");
 	if ( $? == 0 )	{
-		print "Creating user $DBRWUSER in database succeded!\n";
+		print "Creating user $DBRWUSER in database succeeded!\n";
 	} else {
 		print "Creating user $DBRWUSER in database failed!\n";
 	}
@@ -5667,21 +5667,21 @@ sub pgsql_opensips_create() {	# pars: <database name>
                                 if ( $? != 0 ) {
                                         print "Grant privileges to standard tables failed!\n";
                                 } else {
-                                        print "Privileges to standard tables succeded!\n";
+                                        print "Privileges to standard tables succeeded!\n";
                                 }
                         } elsif ( $TABLE =~ /dr_gateways/ ) {
                                 &pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_gwid_seq TO $DBRWUSER;");
                                 if ( $? != 0 ) {
                                         print "Grant privileges to standard tables failed!\n";
                                 } else {
-                                        print "Privileges to standard tables succeded!\n";
+                                        print "Privileges to standard tables succeeded!\n";
                                 }
                         } elsif ( $TABLE =~ /dr_rules/ ) {
                                 &pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_ruleid_seq TO $DBRWUSER;");
                                 if ( $? != 0 ) {
                                         print "Grant privileges to standard tables failed!\n";
                                 } else {
-                                        print "Privileges to standard tables succeded!\n";
+                                        print "Privileges to standard tables succeeded!\n";
                                 }
                         }
 
@@ -5891,7 +5891,7 @@ sub pgsql_presence_create(){ # pars: <database name>
 		&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;");
 		&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
 		if ($? == 0 )	{
-			print "Granting privileges to presence tables succeded!\n";
+			print "Granting privileges to presence tables succeeded!\n";
 		} else {
 			print "Granting privileges to presence tables failed!\n";
 		}
@@ -6045,7 +6045,7 @@ sub pgsql_extra_create() { # pars: <database name>
 
 		&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;" );
 		if ($? == 0 )	{
-			print "Granting privileges on $TABLE to $DBRWUSER succeded!\n";
+			print "Granting privileges on $TABLE to $DBRWUSER succeeded!\n";
 		} else {
 			print "Granting priviliges on $TABLE to $DBRWUSER failed!\n";
 		}
@@ -6053,7 +6053,7 @@ sub pgsql_extra_create() { # pars: <database name>
 		if ( $TABLE !~ /route_tree/ ) {
 			&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
 			if ($? == 0 )	{
-				print "Granting privileges on $TABLE to $DBRWUSER succeded!\n";
+				print "Granting privileges on $TABLE to $DBRWUSER succeeded!\n";
 			} else {
 				print "Granting priviliges on $TABLE to $DBRWUSER failed!\n";
 			}	
@@ -6142,7 +6142,7 @@ sub mysql_opensips_drop() {# pars: <database name>
 
 	&mysql_query($db, "drop database $db");
 	if ($? == 0 )	{
-		print "Database was successfuly dropped!\n";
+		print "Database was successfully dropped!\n";
 	} else {
 		print "Database could not be dropped!\n";
 	}

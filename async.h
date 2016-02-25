@@ -49,7 +49,7 @@ extern int async_status;
 /* function to handle script function in async mode.
    Input: the sip message, the function/action (MODULE_T) and the ID of
           the resume route (where to continue after the I/O is done).
-   Output: 0 if the async call was successfuly done and script execution
+   Output: 0 if the async call was successfully done and script execution
           must be terminated.
           -1 some error happened and the async call did not happened.
  */
