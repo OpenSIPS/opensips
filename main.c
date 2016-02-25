@@ -137,7 +137,15 @@
 
 static char* version=OPENSIPS_FULL_VERSION;
 static char* flags=OPENSIPS_COMPILE_FLAGS;
-char compiled[]= __TIME__ " " __DATE__ ;
+#ifdef VERSION_NODATE
+char compiled[] =  "" ;
+#else
+#ifdef VERSION_DATE
+const char compiled[] =  VERSION_DATE ;
+#else
+const char compiled[] =  __TIME__ " " __DATE__ ;
+#endif
+#endif
 
 /**
  * Print compile-time constants
