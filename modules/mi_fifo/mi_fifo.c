@@ -115,7 +115,7 @@ static int mi_mod_init(void)
 		return -1;
 	}
 
-	LM_DBG("testing fifo existance ...\n");
+	LM_DBG("testing fifo existence ...\n");
 	n=stat(mi_fifo, &filestat);
 	if (n==0){
 		/* FIFO exist, delete it (safer) */

@@ -193,7 +193,7 @@ static int generate_avps(db_res_t* result)
 			LM_DBG("set int AVP %d = %d\n",cred->avp_name, ivalue.n);
 			break;
 		default:
-			LM_ERR("subscriber table column %d `%.*s' has unsuported type. "
+			LM_ERR("subscriber table column %d `%.*s' has unsupported type. "
 				"Only string/str or int columns are supported by"
 				"load_credentials.\n", i,
 				result->col.names[i]->len, result->col.names[i]->s);

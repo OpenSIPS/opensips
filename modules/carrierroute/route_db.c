@@ -53,9 +53,9 @@ db_func_t dbf;
 db_con_t * dbh = NULL;
 
 /**
- * Initialises the db API
+ * Initializes the db API
  *
- * @return 0 means ok, -1 means an error occured.
+ * @return 0 means ok, -1 means an error occurred.
  */
 int db_init(void) {
 	if (!db_url.s) {
@@ -160,7 +160,7 @@ int load_user_carrier(str * user, str * domain) {
  * @param rd Pointer to the route data tree where the routing data
  * shall be loaded into
  *
- * @return 0 means ok, -1 means an error occured
+ * @return 0 means ok, -1 means an error occurred
  *
  */
 int load_route_data(struct rewrite_data * rd) {

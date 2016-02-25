@@ -210,7 +210,7 @@ int tcp_init_sock_opt(int s)
 	/* non-blocking */
 	flags=fcntl(s, F_GETFL);
 	if (flags==-1){
-		LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+		LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
 		goto error;
 	}
 	if (fcntl(s, F_SETFL, flags|O_NONBLOCK)==-1){
@@ -494,7 +494,7 @@ static struct tcp_connection* _tcpconn_find(int id)
 }
 
 
-/*! \brief _tcpconn_find with locks and aquire fd */
+/*! \brief _tcpconn_find with locks and acquire fd */
 int tcp_conn_get(int id, struct ip_addr* ip, int port,
 									struct tcp_connection** conn, int* conn_fd)
 {
@@ -552,7 +552,7 @@ found:
 	LM_DBG("con found in state %d\n",c->state);
 
 	if (c->state!=S_CONN_OK || conn_fd==NULL) {
-		/* no need to aquired, just return the conn with an invalid fd */
+		/* no need to acquired, just return the conn with an invalid fd */
 		*conn = c;
 		if (conn_fd) *conn_fd = -1;
 		return 1;
@@ -566,7 +566,7 @@ found:
 		return 1;
 	}
 
-	/* aquire the fd for this connection too */
+	/* acquire the fd for this connection too */
 	LM_DBG("tcp connection found (%p), acquiring fd\n", c);
 	/* get the fd */
 	response[0]=(long)c;
@@ -1394,7 +1394,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			LM_CRIT("empty fd map\n");
 			goto error;
 		default:
-			LM_CRIT("uknown fd type %d\n", fm->type);
+			LM_CRIT("unknown fd type %d\n", fm->type);
 			goto error;
 	}
 	return ret;
@@ -1509,7 +1509,7 @@ static void tcp_main_server(void)
 			/* make socket non-blocking */
 			flags=fcntl(tcp_children[n].unix_sock, F_GETFL);
 			if (flags==-1){
-				LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+				LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
 				goto error;
 			}
 			if (fcntl(tcp_children[n].unix_sock,F_SETFL,flags|O_NONBLOCK)==-1){

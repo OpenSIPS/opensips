@@ -290,7 +290,7 @@ int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message** reply) {
 	The return value is:
 	0, if the name is found
 	1, if the name isn't found
-	-1, if an error occured
+	-1, if an error occurred
  */
 int rad_find(aaa_conn* rh, aaa_map *map, int flag) {
 

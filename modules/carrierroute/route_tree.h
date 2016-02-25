@@ -116,7 +116,7 @@ struct route_tree * create_route_tree(const str * domain, int id);
  *
  * @param domain the domain to be added
  *
- * @return values: on succcess the numerical index of the given domain,
+ * @return values: on success the numerical index of the given domain,
  * -1 on failure
  */
 int add_domain(const str * domain);

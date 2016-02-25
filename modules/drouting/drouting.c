@@ -1117,7 +1117,7 @@ static int dr_init(void)
 	struct head_config * last_cleaned = 0;
 	struct head_db * it_head_db = 0, *to_clean = 0;
 
-	head_start = NULL; //emtpy head list
+	head_start = NULL; //empty head list
 	head_end = NULL;
 
 	LM_INFO("Dynamic-Routing - initializing\n");
@@ -1423,7 +1423,7 @@ static int dr_init(void)
 
 		if (!DB_CAPABILITY( head_db_end->db_funcs, DB_CAP_QUERY)) {
 			LM_CRIT( "database modules does not "
-					"provide QUERY functions needed by DRounting module\n");
+					"provide QUERY functions needed by DRouting module\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
@@ -3932,7 +3932,7 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 				case 'i': flags |= DR_IFG_IDS_FLAG; break;
 				case 'n': flags |= DR_IFG_IGNOREPORT_FLAG; break;
 				case 'c': flags |= DR_IFG_CARRIERID_FLAG; break;
-				default: LM_WARN("unsuported flag %c \n",flags_s.s[i]);
+				default: LM_WARN("unsupported flag %c \n",flags_s.s[i]);
 			}
 		}
 	}

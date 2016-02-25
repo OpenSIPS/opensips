@@ -1398,7 +1398,7 @@ int parse_orig_ruri(struct sip_msg* msg)
  *
  * Return value : 0 if URIs match
  *				  1 if URIs don't match
- *				 -1 if errors have occured
+ *				 -1 if errors have occurred
  */
 int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 					str *raw_uri_b,struct sip_uri *parsed_uri_b)

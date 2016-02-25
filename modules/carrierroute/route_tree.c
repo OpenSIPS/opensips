@@ -52,7 +52,7 @@ static int add_route_tree(struct carrier_tree * ct, struct route_tree * rt);
 
 /**
  * returns the routing tree for the given domain, if domain's tree
- * doesnt exist, it will be created. If the trees are completely
+ * doesn't exist, it will be created. If the trees are completely
  * filled and a not existing domain shall be added, an error is
  * returned
  *
@@ -474,7 +474,7 @@ static void destroy_failure_route_tree_item(struct failure_route_tree_item *rout
  *
  * @param domain the domain to be added
  *
- * @return values: on succcess the numerical index of the given domain,
+ * @return values: on success the numerical index of the given domain,
  * -1 on failure
  */
 int add_domain(const str * domain) {

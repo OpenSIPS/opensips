@@ -8,7 +8,7 @@
 	<qandaentry>
 
 		<question>
-		<para>What happend with the old <quote>append_branch</quote> module parameter?</para>
+		<para>What happened with the old <quote>append_branch</quote> module parameter?</para>
 		</question>
 		<answer>
 		<para>
@@ -22,7 +22,7 @@
 
 	<qandaentry>
 		<question>
-		<para>What happend with the old <quote>method_filtering</quote> module parameter?</para>
+		<para>What happened with the old <quote>method_filtering</quote> module parameter?</para>
 		</question>
 		<answer>
 		<para>
@@ -36,7 +36,7 @@
 
 	<qandaentry>
 		<question>
-		<para>What happend with the old <quote>sock_flag</quote> module parameter?</para>
+		<para>What happened with the old <quote>sock_flag</quote> module parameter?</para>
 		</question>
 		<answer>
 		<para>
@@ -50,7 +50,7 @@
 
 	<qandaentry>
 		<question>
-		<para>What happend with the old <quote>use_path</quote> and <quote>path_mode</quote> module parameters?</para>
+		<para>What happened with the old <quote>use_path</quote> and <quote>path_mode</quote> module parameters?</para>
 		</question>
 		<answer>
 		<para>
@@ -64,7 +64,7 @@
 
 	<qandaentry>
 		<question>
-		<para>What happend with the old <quote>path_use_received</quote> module parameter?</para>
+		<para>What happened with the old <quote>path_use_received</quote> module parameter?</para>
 		</question>
 		<answer>
 		<para>
@@ -78,7 +78,7 @@
 
 	<qandaentry>
 		<question>
-		<para>What happend with the old <quote>nat_flag</quote> module parameter?</para>
+		<para>What happened with the old <quote>nat_flag</quote> module parameter?</para>
 		</question>
 		<answer>
 		<para>
@@ -91,7 +91,7 @@
 
 	<qandaentry>
 		<question>
-		<para>What happend with the old <quote>use_domain</quote> module parameter?</para>
+		<para>What happened with the old <quote>use_domain</quote> module parameter?</para>
 		</question>
 		<answer>
 		<para>
@@ -104,7 +104,7 @@
 
 	<qandaentry>
 		<question>
-		<para>What happend with the old <quote>save_noreply</quote> and <quote>save_memory</quote> functions?</para>
+		<para>What happened with the old <quote>save_noreply</quote> and <quote>save_memory</quote> functions?</para>
 		</question>
 		<answer>
 		<para>

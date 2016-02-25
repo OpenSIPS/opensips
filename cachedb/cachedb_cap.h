@@ -55,7 +55,7 @@ static inline int check_cachedb_api(cachedb_engine *cde)
 	}
 
 	if (cde->cdb_func.destroy == 0) {
-		LM_ERR("module %.*s doesnt export destroy func\n",
+		LM_ERR("module %.*s doesn't export destroy func\n",
 				cde->name.len,cde->name.s);
 		return -1;
 	}

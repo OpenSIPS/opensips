@@ -80,7 +80,7 @@ modparam("mathops", "decimal_digits", 10)
 		Currently allowed syntax for specifying an expression:
 		<itemizedlist>
 		<listitem>
-			<para> Nested parantheses </para>
+			<para> Nested parentheses </para>
 		</listitem>
 		<listitem>
 			<para> binary + - / * operators </para>

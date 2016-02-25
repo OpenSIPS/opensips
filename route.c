@@ -227,7 +227,7 @@ static int fix_expr(struct expr* exp)
 			if (exp->right.type==EXPR_ST){
 				ret=fix_expr(exp->right.v.expr);
 				if (ret!=0){
-					LM_CRIT("fix rigth exp error\n");
+					LM_CRIT("fix right exp error\n");
 					return ret;
 				}
 			}

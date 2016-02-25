@@ -311,7 +311,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 
 	if (n<0) {
 		/* error during conn get, return with error too */
-		LM_ERR("failed to aquire connection\n");
+		LM_ERR("failed to acquire connection\n");
 		return -1;
 	}
 

@@ -43,7 +43,7 @@ typedef unsigned long long utime_t;
 typedef void (timer_function)(unsigned int ticks, void* param);
 typedef void (utimer_function)(utime_t uticks, void* param);
 
-/* define internal timer to 10 miliseconds */
+/* define internal timer to 10 milliseconds */
 #define ITIMER_TICK 10000
 
 #define TIMER_FLAG_IS_UTIMER       (1<<0)

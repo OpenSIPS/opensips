@@ -139,7 +139,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 					break;
 				case 'i': regexp_flags |= REG_ICASE; break;
 				case 'e': regexp_flags |= REG_EXTENDED; break;
-				default: LM_WARN("unsuported flag %c \n",flags_s.s[res]);
+				default: LM_WARN("unsupported flag %c \n",flags_s.s[res]);
 			}
 		}
 	}

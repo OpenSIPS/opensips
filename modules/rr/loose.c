@@ -57,7 +57,7 @@
 #include "api.h"
 
 
-#define RR_ERROR -1       /* An error occured while processing route set */
+#define RR_ERROR -1       /* An error occurred while processing route set */
 #define RR_DRIVEN 1       /* The next hop is determined from the route set */
 #define NOT_RR_DRIVEN -1  /* The next hop is not determined from the route set */
 

@@ -368,11 +368,11 @@ static int convert_to_rpn(str *exp)
 			}
 
 			if (top == 0) {
-				LM_ERR("Parse expr error: mismatched parantheses!\n");
+				LM_ERR("Parse expr error: mismatched parenthesis!\n");
 				return -1;
 			}
 
-			/* just pop the left paranthesis off the stack */
+			/* just pop the left parenthesis off the stack */
 			top--;
 
 			inc_and_trim(s);

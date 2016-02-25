@@ -60,7 +60,7 @@ Chapter 1. Admin Guide
      * the cache is persistent so a restart of the server will not
        affect the cache
      * memcached is an open-source project so it can be used to
-       exchange data with various other applicationsr
+       exchange data with various other applications
      * servers may be grouped together (e.g. for security purposes
        : some can be inside a private network, some can be in a
        public one)

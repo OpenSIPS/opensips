@@ -553,7 +553,7 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input,
 	}
 	val = fcntl( *fd, F_GETFL);
 	if (val==-1){
-		LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+		LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
 		goto error2;
 	}
 	if (fcntl( *fd , F_SETFL, val|O_NONBLOCK)==-1){

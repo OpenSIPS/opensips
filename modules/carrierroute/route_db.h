@@ -32,9 +32,9 @@
 #include "carrier_tree.h"
 
 /**
- * Initialises the db API
+ * Initializes the db API
  *
- * @return 0 means ok, -1 means an error occured.
+ * @return 0 means ok, -1 means an error occurred.
  */
 int db_init(void);
 
@@ -51,7 +51,7 @@ void db_destroy(void);
  * @param rd Pointer to the route data tree where the routing data
  * shall be loaded into
  *
- * @return 0 means ok, -1 means an error occured
+ * @return 0 means ok, -1 means an error occurred
  *
  */
 int load_route_data (struct rewrite_data * rd);
