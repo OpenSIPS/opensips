@@ -946,7 +946,7 @@ int pv_parse_json_name (pv_spec_p sp, str *in)
 
 	if( state == ST_IDX)
 	{
-		LM_ERR("Mismatched paranthesis in:(%.*s)\n",in->len,in->s);
+		LM_ERR("Mismatched parenthesis in:(%.*s)\n",in->len,in->s);
 		return -1;
 	}
 

@@ -776,7 +776,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 						if (flags_s.s[st]=='0') {
 							sctx.flags |= REG_SAVE_PATH_OFF_FLAG; break; }
 					}
-				default: LM_WARN("unsuported flag %c \n",flags_s.s[st]);
+				default: LM_WARN("unsupported flag %c \n",flags_s.s[st]);
 			}
 		}
 	}

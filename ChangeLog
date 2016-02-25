@@ -3168,7 +3168,7 @@ Date:   Thu May 7 18:46:07 2015 +0300
 2015-03-05  Vlad Paiu  <vladpaiu@opensips.org>
 	* [0802311] :
 
-	Optimized TCP writing Do not try to aquire FD from main on TCP write in case the TCP connection is already polled on in the context of the current TCP worker
+	Optimized TCP writing Do not try to acquire FD from main on TCP write in case the TCP connection is already polled on in the context of the current TCP worker
 
 2015-03-05  Liviu Chircu  <liviu@opensips.org>
 	* [4efeba5] :
@@ -3281,7 +3281,7 @@ Date:   Thu May 7 18:46:07 2015 +0300
 2015-02-28  Bogdan-Andrei Iancu  <bogdan@opensips.org>
 	* [2052432] :
 
-	If fd is NULL, tcp_conn_get() skips aquire fd
+	If fd is NULL, tcp_conn_get() skips acquire fd
 
 2015-02-28  Bogdan-Andrei Iancu  <bogdan@opensips.org>
 	* [713e22f] :
@@ -3387,7 +3387,7 @@ Date:   Thu May 7 18:46:07 2015 +0300
 
 	TCP related timeouts migreate to ms.
 	tcp_send_timeout moved as parameter to proto_tcp module
-	tcp_send_timoout, tcp_async_local_connect_timeout, tcp_async_local_write_timeout consistenly moved to miliseconds.
+	tcp_send_timoout, tcp_async_local_connect_timeout, tcp_async_local_write_timeout consistenly moved to milliseconds.
 	default tcp_send_timeout value set to 10 ms
 
 2015-02-22  Bogdan-Andrei Iancu  <bogdan@opensips.org>

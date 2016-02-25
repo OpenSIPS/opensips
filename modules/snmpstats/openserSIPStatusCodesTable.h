@@ -79,7 +79,7 @@ extern "C" {
  *
  * When the get request is received, the statistics framework will be queried,
  * and these values subtracted from that query.  This effectively gives us how
- * many of the given message codes have occured since the creation of the row,
+ * many of the given message codes have occurred since the creation of the row,
  * insead of since OpenSIPS first loaded up.
  */
 typedef struct openserSIPStatusCodesTable_context_s {

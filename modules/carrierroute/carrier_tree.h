@@ -147,7 +147,7 @@ int add_failure_route(struct rewrite_data * rd, int carrier_id, const str * doma
  *
  * @param tree the tree to be added
  *
- * @return values: on succcess the numerical index of the given tree,
+ * @return values: on success the numerical index of the given tree,
  * -1 on failure
  */
 int add_tree(const str * tree, int carrier_id);
@@ -157,7 +157,7 @@ int add_tree(const str * tree, int carrier_id);
  *
  * @param tree the carrier, we are looking for
  *
- * @return values: on succcess the id of for this carrier,
+ * @return values: on success the id of for this carrier,
  * -1 on failure
  */
 int find_tree(str tree);
@@ -177,7 +177,7 @@ struct carrier_tree * add_carrier_tree(const str * carrier, int carrier_id, stru
 
 /**
  * returns the routing tree for the given domain, if domain's tree
- * doesnt exist, it will be created. If the trees are completely
+ * doesn't exist, it will be created. If the trees are completely
  * filled and a not existing domain shall be added, an error is
  * returned
  *

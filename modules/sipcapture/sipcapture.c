@@ -709,7 +709,7 @@ int hep_msg_received(int sockfd, struct receive_info *ri, str *msg, void* param)
         else if(heph->hp_p == IPPROTO_ESP) ri->proto=PROTO_WS;
                                             /* fake protocol */
         else {
-        	LM_ERR("unknow protocol [%d]\n",heph->hp_p);
+        	LM_ERR("unknown protocol [%d]\n",heph->hp_p);
                 ri->proto = PROTO_NONE;
 	}
 
@@ -1037,7 +1037,7 @@ static int sip_capture(struct sip_msg *msg, char *s1, char *s2)
 		EMPTY_STR(sco.ruri_user);
 	}
 	else {
-		LM_ERR("unknow type [%i]\n", msg->first_line.type);
+		LM_ERR("unknown type [%i]\n", msg->first_line.type);
 		EMPTY_STR(sco.method);
 		EMPTY_STR(sco.reply_reason);
 		EMPTY_STR(sco.ruri);

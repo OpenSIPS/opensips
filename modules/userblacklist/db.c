@@ -74,7 +74,7 @@ void db_destroy(void)
 
 /**
  * Builds a d-tree using database entries.
- * \return negative on failure, postive on success, indicating the number of d-tree entries
+ * \return negative on failure, positive on success, indicating the number of d-tree entries
  */
 int db_build_userbl_tree(const str *username, const str *domain, const str *table, struct dt_node_t *root, int use_domain)
 {

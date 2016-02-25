@@ -249,7 +249,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 
 	if(pua_get_record_id(&dialog, &res_id)< 0) // verify if within a stored dialog
 	{
-		LM_ERR("error occured while trying to get dialog record id\n");
+		LM_ERR("error occurred while trying to get dialog record id\n");
 		goto error;
 	}
 	if(res_id== 0)

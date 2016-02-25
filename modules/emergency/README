@@ -96,7 +96,7 @@ Chapter 1. Admin Guide
 
    The emergency module provides emergency call treatment for
    OpenSIPS, following the architecture i2 specification of the
-   american entity NENA. (National Emergency Number Association).
+   American entity NENA. (National Emergency Number Association).
    The NENA solution routes the emergency call to a closer gateway
    (ESGW) and this forward the call to a PSAP(call center
    responsible for answering emergency calls) that serves the area

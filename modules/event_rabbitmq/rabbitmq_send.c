@@ -320,7 +320,7 @@ static inline int amqp_check_status(rmq_params_t *rmqp, int r)
 			LM_ERR("Connection closed\n");
 			break;
 
-		/* this should not happend since we do not use ssl */
+		/* this should not happened since we do not use ssl */
 		case AMQP_STATUS_SSL_ERROR:
 			LM_ERR("SSL error\n");
 			break;

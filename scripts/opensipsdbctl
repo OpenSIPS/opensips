@@ -423,7 +423,7 @@ migrating earlier DB versions (1.8, 1.9, 1.10) to 2.1 is undefined"
 		echo  "$0 $VERSION"
 		;;
 	*)
-		merr "$0: Uknown command - \"$1\""
+		merr "$0: Unknown command - \"$1\""
 		usage
 		exit 1;
 		;;

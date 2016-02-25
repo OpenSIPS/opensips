@@ -63,7 +63,7 @@ void conf_error(cfg_t *cfg, const char * fmt, va_list ap) {
  * @param rd Pointer to the route data tree where the routing data
  * shall be loaded into
  *
- * @return 0 means ok, -1 means an error occured
+ * @return 0 means ok, -1 means an error occurred
  *
  */
 int load_config(struct rewrite_data * rd) {
@@ -234,7 +234,7 @@ static cfg_t * parse_config(void) {
  *
  * @param rd Pointer to the routing tree which shall be saved to file
  *
- * @return 0 means ok, -1 means an error occured
+ * @return 0 means ok, -1 means an error occurred
  */
 int save_config(struct rewrite_data * rd) {
 	FILE * outfile;

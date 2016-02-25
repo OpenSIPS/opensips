@@ -562,7 +562,7 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
 	if (rpl == FAKED_REPLY || statuscode == 408) {
-		/* timeout occured, nothing else to do now
+		/* timeout occurred, nothing else to do now
 		 * next time timer fires, it will detect ping reply was not received
 		 */
 		LM_INFO("terminating dialog ( due to timeout ) "
@@ -609,7 +609,7 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
 	if (rpl == FAKED_REPLY || statuscode == 408) {
-		/* timeout occured, nothing else to do now
+		/* timeout occurred, nothing else to do now
 		 * next time timer fires, it will detect ping reply was not received
 		 */
 		LM_INFO("terminating dialog ( due to timeout ) "

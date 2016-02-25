@@ -301,12 +301,12 @@ inline static int io_watch_add(	io_wait_h* h,
 	do{ \
 			ctl_flags=fcntl(fd, F_GETFL); \
 			if (ctl_flags==-1){ \
-				LM_ERR("[%s] fnctl: GETFL failed:" \
+				LM_ERR("[%s] fcntl: GETFL failed:" \
 					" %s [%d]\n", h->name, strerror(errno), errno); \
 				goto error; \
 			} \
 			if (fcntl(fd, F_SETFL, ctl_flags|(f))==-1){ \
-				LM_ERR("[%s] fnctl: SETFL" \
+				LM_ERR("[%s] fcntl: SETFL" \
 					" failed: %s [%d]\n", h->name, strerror(errno), errno);\
 				goto error; \
 			} \
@@ -395,12 +395,12 @@ inline static int io_watch_add(	io_wait_h* h,
 			 */
 			/* set async & signal */
 			if (fcntl(fd, F_SETOWN, my_pid())==-1){
-				LM_ERR("[%s] fnctl: SETOWN"
+				LM_ERR("[%s] fcntl: SETOWN"
 				" failed: %s [%d]\n",h->name, strerror(errno), errno);
 				goto error;
 			}
 			if (fcntl(fd, F_SETSIG, h->signo)==-1){
-				LM_ERR("[%s] fnctl: SETSIG"
+				LM_ERR("[%s] fcntl: SETSIG"
 					" failed: %s [%d]\n",h->name, strerror(errno), errno);
 				goto error;
 			}
@@ -645,12 +645,12 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 				/* reset ASYNC */
 				fd_flags=fcntl(fd, F_GETFL);
 				if (fd_flags==-1){
-					LM_ERR("[%s] fnctl: GETFL failed:"
+					LM_ERR("[%s] fcntl: GETFL failed:"
 						" %s [%d]\n",h->name, strerror(errno), errno);
 					goto error;
 				}
 				if (fcntl(fd, F_SETFL, fd_flags&(~O_ASYNC))==-1){
-					LM_ERR("[%s] fnctl: SETFL"
+					LM_ERR("[%s] fcntl: SETFL"
 						" failed: %s [%d]\n",h->name, strerror(errno), errno);
 					goto error;
 				}

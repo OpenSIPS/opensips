@@ -8,7 +8,7 @@
 	<title>Overview</title>
 	<para>
 
-The emergency module provides emergency call treatment for OpenSIPS, following the architecture i2 specification of the american entity NENA. (National Emergency Number Association). The NENA solution routes the emergency call to a closer gateway (ESGW) and this forward the call to a PSAP(call center responsible for answering emergency calls) that serves the area of ​​the caller, so this must consider the handling and transport of caller location information in the SIP protocol.
+The emergency module provides emergency call treatment for OpenSIPS, following the architecture i2 specification of the American entity NENA. (National Emergency Number Association). The NENA solution routes the emergency call to a closer gateway (ESGW) and this forward the call to a PSAP(call center responsible for answering emergency calls) that serves the area of ​​the caller, so this must consider the handling and transport of caller location information in the SIP protocol.
 
 To attend this new need the NENA solution consists of several servers: to determine the location (LIS), to determine the area of emergency treatment depending on location (VPC), validate location stored (VDB), among others. Along with these elements have the SIP Proxy that interface with these servers to route the call. The OpenSIPS can do the functions of these SIP Proxy through this emergency module, may perform the function of a Call Server, Redirect Server and Routing Proxy, depending on the proposed scenario:
 	</para>

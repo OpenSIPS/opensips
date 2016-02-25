@@ -1193,7 +1193,7 @@ domain register {
    happened. If this flag is set, there will be no further
    forwarding, because next_domain is empty. In the second and
    third routes are certain gateway errors matched, if this errors
-   have occured, then the next domain will be choosen. The last
+   have occurred, then the next domain will be chosen. The last
    route does forwarding according some flags, e.g. the customer
    came from a certain carrier, and has call-forwarding
    deactivated. In order to use the routing that is specified

@@ -154,7 +154,7 @@ int udp_init_listener(struct socket_info *si, int status_flags)
 	if (status_flags) {
 		optval=fcntl(si->socket, F_GETFL);
 		if (optval==-1){
-			LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+			LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
 			goto error;
 		}
 		if (fcntl(si->socket,F_SETFL,optval|status_flags)==-1){
@@ -268,7 +268,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			async_resume_f( fm->fd, fm->data);
 			return 0;
 		default:
-			LM_CRIT("uknown fd type %d in UDP worker\n", fm->type);
+			LM_CRIT("unknown fd type %d in UDP worker\n", fm->type);
 			return -1;
 	}
 	return -1;

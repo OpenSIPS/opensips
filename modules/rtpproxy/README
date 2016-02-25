@@ -718,7 +718,7 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happend with “rtpproxy_disable” parameter?
+       What happened with “rtpproxy_disable” parameter?
 
        It was removed as it became obsolete - now “rtpproxy_sock” can
        take empty value to disable the rtpproxy functionality.

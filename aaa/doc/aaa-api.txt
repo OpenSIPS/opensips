@@ -167,7 +167,7 @@ f:  a flag representing the type of message (for authentication or accounting)
 2.1.4 Return Value
 
 The return value is a pointer to the AAA message structure, or NULL if error
-occured.
+occurred.
 
 
 2.2 Callback prot.destroy_aaa_message
@@ -320,7 +320,7 @@ url : a string that contains protocol dependent information needed to identify
 2.7.4 Return Value
 
 The return value is a pointer to a connection variable, or NULL if error
-occured.
+occurred.
 
 
 2.8 Function aaa_prot_bind

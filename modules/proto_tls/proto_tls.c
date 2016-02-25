@@ -1241,7 +1241,7 @@ static int tls_conn_init(struct tcp_connection* c)
 			LM_DBG("name based TLS client domains are disabled\n");
 		}
 		if (!avp) {
-			LM_DBG("no TLS client doman AVP set, looking "
+			LM_DBG("no TLS client domain AVP set, looking "
 				"for socket based TLS client domain\n");
 			dom = tls_find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
 			if (dom) {
@@ -1380,7 +1380,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 
 	if (n<0) {
 		/* error during conn get, return with error too */
-		LM_ERR("failed to aquire connection\n");
+		LM_ERR("failed to acquire connection\n");
 		return -1;
 	}
 

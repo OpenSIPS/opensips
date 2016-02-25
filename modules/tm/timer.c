@@ -23,8 +23,8 @@
  *  2003-06-27  timers are not unlinked if timerlist is 0 (andrei)
  *  2004-02-13  t->is_invite, t->local, t->noisy_ctimer replaced;
  *              timer_link.payload removed (bogdan)
- *  2007-02-02  retransmission timers have milliseconds resolution;
- *              adde faster timers (shortcuts based on timeout) (bogdan)
+ *  2007-02-02  re-transmission timers have milliseconds resolution;
+ *              add faster timers (shortcuts based on timeout) (bogdan)
  */
 
 
@@ -65,8 +65,8 @@
 		WRONG -- it was (step 2.)
 
 	So be careful when writing the timer handlers. Currently defined timers
-	don't hurt if they hit delayed, I hope at least. Retransmission timer
-	may results in a useless retransmission -- not too bad. FR timer not too
+	don't hurt if they hit delayed, I hope at least. Re-transmission timer
+	may results in a useless re-transmission -- not too bad. FR timer not too
 	bad either as timer processing uses a REPLY mutex making it safe to other
 	processing affecting transaction state. Wait timer not bad either -- processes
 	putting a transaction on wait don't do anything with it anymore.
@@ -88,9 +88,9 @@
     from timer process in which delayed timers cannot hit (all timers are
     processed sequentially).
 
-	A "bad example" -- rewriting content of retransmission buffer
-	in an unprotected way is bad because a delayed retransmission timer might
-	hit. Thats why our reply retransmission procedure is enclosed in
+	A "bad example" -- rewriting content of re-transmission buffer
+	in an unprotected way is bad because a delayed re-transmission timer might
+	hit. That's why our reply re transmission procedure is enclosed in
 	a REPLY_LOCK.
 
 */
@@ -281,7 +281,7 @@ inline static void retransmission_handler( struct timer_link *retr_tl )
 #endif
 
 	/* the transaction is already removed from RETRANSMISSION_LIST by timer*/
-	/* retransmission */
+	/* re-transmission */
 	if ( r_buf->activ_type==TYPE_LOCAL_CANCEL
 		|| r_buf->activ_type==TYPE_REQUEST ) {
 			LM_DBG("retransmission_handler : request resending"
@@ -502,7 +502,7 @@ void unlink_timer_lists(void)
 			reset_timer_list( set, i );
 		LM_DBG("emptying DELETE list for set %d\n",set);
 		/* deletes all cells from DELETE_LIST list 
-		   (they are no more accessible from entrys) */
+		   (they are no more accessible from entries) */
 		while (tl!=end) {
 			tmp=tl->next_tl;
 			free_cell( get_dele_timer_payload(tl) );
@@ -688,12 +688,12 @@ static void check_timer_list( struct timer* timer_list, char *txt)
 	tl = timer_list->first_tl.next_tl;
 	while (tl!=&timer_list->last_tl) {
 		if (tl->ld_tl==0) {
-			LM_CRIT("TM TIMER list [%d] currupted - ld=0 [%s]\n",
+			LM_CRIT("TM TIMER list [%d] corrupted - ld=0 [%s]\n",
 				timer_list->id, txt);
 			abort();
 		}
 		if (tl->ld_tl->ld_tl!=tl) {
-			LM_CRIT("TM TIMER list [%d] currupted - ld cycle broken [%s]\n",
+			LM_CRIT("TM TIMER list [%d] corrupted - ld cycle broken [%s]\n",
 				timer_list->id, txt);
 			abort();
 		}
@@ -702,7 +702,7 @@ static void check_timer_list( struct timer* timer_list, char *txt)
 			tl1 = tl->next_tl;
 			while(tl1!=tl->ld_tl) {
 				if (tl1->ld_tl) {
-					LM_CRIT("TM TIMER list [%d] currupted - ld!=0 inside "
+					LM_CRIT("TM TIMER list [%d] corrupted - ld!=0 inside "
 						"cycle [%s]\n", timer_list->id, txt);
 					abort();
 				}
@@ -810,7 +810,7 @@ static struct timer_link  *check_and_split_time_list( struct timer *timer_list,
 				&& */ timer_list->first_tl.next_tl->time_out > time) )
 		return NULL;
 
-	/* the entire timer list is locked now -- noone else can manipulate it */
+	/* the entire timer list is locked now -- no one else can manipulate it */
 	lock(timer_list->mutex);
 
 #ifdef TM_TIMER_DEBUG
@@ -911,7 +911,7 @@ void set_timer( struct timer_link *new_tl, enum lists list_id,
 	lock(list->mutex);
 	/* check first if we are on the "detached" timer_routine list,
 	 * if so do nothing, the timer is not valid anymore
-	 * (sideffect: reset_timer ; set_timer is not safe, a reseted timer
+	 * (side effect: reset_timer ; set_timer is not safe, a reseted timer
 	 *  might be lost, depending on this race condition ) */
 	if (new_tl->timer_list==DETACHED_LIST){
 		LM_CRIT("set_timer for %d list called on a \"detached\" "
@@ -979,7 +979,7 @@ static void unlink_timers( struct cell *t )
 
 	    note that is_in_timer_list2 is unsafe but it does not
 	    hurt -- transaction is already dead (wait state) so that
-	    noone else will install a FR/RETR timer and it can only
+	    no one else will install a FR/RETR timer and it can only
 	    be removed from timer process itself -> it is safe to
 	    use it without any protection
 	*/

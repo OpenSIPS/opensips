@@ -129,7 +129,7 @@ expression *new_expression(char *str)
 	}
 
 	if (strlen(str) > EXPRESSION_LENGTH){
-		LM_ERR("expresion too long\n");
+		LM_ERR("expression too long\n");
 		pkg_free(e);
 		return 0;
 	}

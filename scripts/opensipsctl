@@ -2809,7 +2809,7 @@ case $1 in
 		;;
 
 	*)
-		merr "$0: Uknown command - \"$1\""
+		merr "$0: Unknown command - \"$1\""
 		usage
 		exit 1
 		;;

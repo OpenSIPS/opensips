@@ -138,7 +138,7 @@ Chapter 1. Admin Guide
 
    The timer process(probe) is a process that tries to reconnect
    to failed dbs from time to time. It is a separate process so
-   that when it blocks (for a timeout on the connection) it doesnt
+   that when it blocks (for a timeout on the connection) it doesn't
    matter.
 
 1.2. Dependencies

@@ -104,7 +104,7 @@ int init_timer(void)
 	/* make reading fd non-blocking */
 	optval=fcntl(timer_pipe[0], F_GETFL);
 	if (optval==-1){
-		LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+		LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
 		return E_UNSPEC;
 	}
 	if (fcntl(timer_pipe[0],F_SETFL,optval|O_NONBLOCK)==-1){
@@ -112,7 +112,7 @@ int init_timer(void)
 			errno, strerror(errno));
 		return E_UNSPEC;
 	}
-	/* make vizible the "read" part of the pipe */
+	/* make visible the "read" part of the pipe */
 	timer_fd_out = timer_pipe[0];
 
 	return 0;
@@ -283,7 +283,7 @@ static inline void timer_ticker(struct os_timer *timer_list, utime_t *drift)
 	for (t=timer_list;t; t=t->next){
 		if (j>=t->expires){
 			if (t->trigger_time) {
-				LM_WARN("timer task <%s> already schedualed for %lld ms"
+				LM_WARN("timer task <%s> already scheduled for %lld ms"
 					" (now %lld ms), it may overlap..\n",
 					t->label, (utime_t)(t->trigger_time/1000),
 					((utime_t)*ijiffies/1000) );
@@ -296,7 +296,7 @@ static inline void timer_ticker(struct os_timer *timer_list, utime_t *drift)
 					   until the prev one is done */
 					continue;
 				} else {
-					/* launch the task now, even if overlaping with the 
+					/* launch the task now, even if overlapping with the 
 					   already running one */
 				}
 			}
@@ -309,7 +309,7 @@ again:
 			if (l==-1) {
 				if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
 					goto again;
-				LM_ERR("writing failed:[%d] %s, skipiping job <%s> at %d s\n",
+				LM_ERR("writing failed:[%d] %s, skipping job <%s> at %d s\n",
 					errno, strerror(errno),t->label, j);
 			}
 		}
@@ -330,7 +330,7 @@ static inline void utimer_ticker(struct os_timer *utimer_list, utime_t *drift)
 	for ( t=utimer_list ; t ; t=t->next){
 		if (uj>=t->expires){
 			if (t->trigger_time) {
-				LM_WARN("utimer task <%s> already schedualed for %lld ms"
+				LM_WARN("utimer task <%s> already scheduled for %lld ms"
 					" (now %lld ms), it may overlap..\n",
 					t->label, (utime_t)(t->trigger_time/1000),
 					((utime_t)*ijiffies/1000) );
@@ -343,7 +343,7 @@ static inline void utimer_ticker(struct os_timer *utimer_list, utime_t *drift)
 					   until the prev one is done */
 					continue;
 				} else {
-					/* launch the task now, even if overlaping with the 
+					/* launch the task now, even if overlapping with the 
 					   already running one */
 				}
 			}
@@ -356,7 +356,7 @@ again:
 			if (l==-1) {
 				if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
 					goto again;
-				LM_ERR("writing failed:[%d] %s, skipiping job <%s> at %lld us\n",
+				LM_ERR("writing failed:[%d] %s, skipping job <%s> at %lld us\n",
 					errno, strerror(errno),t->label, uj);
 			}
 		}

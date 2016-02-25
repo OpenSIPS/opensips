@@ -374,7 +374,7 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 			goto release;
 		}
 		memset(*pipe, 0, sizeof(rl_pipe_t));
-		LM_DBG("Pipe %.*s doens't exist, but was created %p\n",
+		LM_DBG("Pipe %.*s doesn't exist, but was created %p\n",
 				name.len, name.s, *pipe);
 		if (algo == PIPE_ALGO_NETWORK)
 			should_update = 1;

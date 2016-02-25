@@ -1282,7 +1282,7 @@ int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock, int m
 
 			utype = str2uri_type(uri->s);
 			if (utype == ERROR_URI_T) {
-				LM_ERR("Uknown uri type\n");
+				LM_ERR("Unknown uri type\n");
 				return -1;
 			}
 			typelen = uri_typestrlen(utype);

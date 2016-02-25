@@ -375,7 +375,7 @@ static void kill_all_children(int signum)
 
 /**
  * Timeout handler during wait for children exit.
- * If this handler is called, a critical timeout has occured while
+ * If this handler is called, a critical timeout has occurred while
  * waiting for the children to finish => we should kill everything and exit
  * \param signo signal for killing the children
  */
@@ -391,7 +391,7 @@ static void sig_alarm_kill(int signo)
 
 /**
  * Timeout handler during wait for children exit.
- * like sig_alarm_kill, but the timeout has occured when cleaning up,
+ * like sig_alarm_kill, but the timeout has occurred when cleaning up,
  * try to leave a core for future diagnostics
  * \param signo signal for killing the children
  * \see sig_alarm_kill

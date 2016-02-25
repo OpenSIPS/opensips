@@ -28,7 +28,7 @@
 # with Cisco 7960, Mitel 5055, Grandstream and Pingtel; Windows 
 # Messenger does not support REFER. Never tested on solaris. 
 # Some cisco 7960 images don't work (in particular, POS30202
-# doesnt, POS3-03-8-21 does)
+# doesn't, POS3-03-8-21 does)
 #
 # History:
 # --------

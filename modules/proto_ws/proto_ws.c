@@ -51,7 +51,7 @@ static int ws_read_req(struct tcp_connection* con, int* bytes_read);
 /* parameters*/
 int ws_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
 
-/* in miliseconds */
+/* in milliseconds */
 int ws_send_timeout = 100;
 
 static int ws_port = WS_DEFAULT_PORT;
@@ -159,7 +159,7 @@ static int proto_ws_send(struct socket_info* send_sock,
 
 	if (n<0) {
 		/* error during conn get, return with error too */
-		LM_ERR("failed to aquire connection\n");
+		LM_ERR("failed to acquire connection\n");
 		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 		return -1;
 	}

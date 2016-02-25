@@ -131,7 +131,7 @@
 #define DEFAULT_SHM_SECONDARY_HASH_SIZE 8
 
 #define TIMER_TICK   1  			/*!< one second */
-#define UTIMER_TICK  100*1000			/*!< 100 miliseconds*/
+#define UTIMER_TICK  100*1000			/*!< 100 milliseconds*/
 
 /*!< dimensioning buckets in q_malloc
 	 size of the size2bucket table; everything beyond that asks for

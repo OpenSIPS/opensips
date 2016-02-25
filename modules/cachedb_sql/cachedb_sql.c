@@ -535,7 +535,7 @@ static int mod_init(void)
 	cde.cdb_func.capability = 0;
 
 	if(cache_clean_period <= 0) {
-			LM_ERR("wrong parameter cache_clean_period - need a postive value\n");
+			LM_ERR("wrong parameter cache_clean_period - need a positive value\n");
 			return -1;
 	}
 

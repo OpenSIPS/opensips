@@ -379,10 +379,10 @@ static int mod_init(void)
 	}
 
 	compress_ctx_pos = context_register_ptr(CONTEXT_GLOBAL, NULL);
-	LM_DBG("received compress context postion %d\n", compress_ctx_pos);
+	LM_DBG("received compress context position %d\n", compress_ctx_pos);
 
 	compact_ctx_pos = context_register_ptr(CONTEXT_GLOBAL, NULL);
-	LM_DBG("received compact context postion %d\n", compact_ctx_pos);
+	LM_DBG("received compact context position %d\n", compact_ctx_pos);
 
 	memset(&tm_api, 0, sizeof(struct tm_binds));
 	if (load_tm_api(&tm_api) != 0)

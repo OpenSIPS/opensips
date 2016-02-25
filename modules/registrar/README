@@ -720,7 +720,7 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-        What happend with the old “append_branch” module parameter?
+        What happened with the old “append_branch” module parameter?
 
         It was removed as global option, as the “lookup” function takes
         this option via the flag "b" (append Branches) See the
@@ -728,7 +728,7 @@ Chapter 2. Frequently Asked Questions
 
    2.2.
 
-        What happend with the old “method_filtering” module parameter?
+        What happened with the old “method_filtering” module parameter?
 
         It was removed as global option, as the “lookup” function takes
         this option via the flag "m" (Method filtering) See the
@@ -736,7 +736,7 @@ Chapter 2. Frequently Asked Questions
 
    2.3.
 
-        What happend with the old “sock_flag” module parameter?
+        What happened with the old “sock_flag” module parameter?
 
         It was removed as global option, as the “save” function takes
         this option via the flag "s" (Socket header) See the
@@ -744,7 +744,7 @@ Chapter 2. Frequently Asked Questions
 
    2.4.
 
-        What happend with the old “use_path” and “path_mode” module
+        What happened with the old “use_path” and “path_mode” module
         parameters?
 
         They were removed as global option, as the “save” function
@@ -753,7 +753,7 @@ Chapter 2. Frequently Asked Questions
 
    2.5.
 
-        What happend with the old “path_use_received” module parameter?
+        What happened with the old “path_use_received” module parameter?
 
         It was removed as global option, as the “save” function takes
         this option via the flag "v" (path receiVed) See the
@@ -761,14 +761,14 @@ Chapter 2. Frequently Asked Questions
 
    2.6.
 
-        What happend with the old “nat_flag” module parameter?
+        What happened with the old “nat_flag” module parameter?
 
         It was removed, as the module internally loads this value from
         the “USRLOC” module (see the “nat_bflag” USRLOC parameter).
 
    2.7.
 
-        What happend with the old “use_domain” module parameter?
+        What happened with the old “use_domain” module parameter?
 
         It was removed, as the module internally loads this option from
         the “USRLOC” module. This was done in order to simplify the
@@ -776,7 +776,7 @@ Chapter 2. Frequently Asked Questions
 
    2.8.
 
-        What happend with the old “save_noreply” and “save_memory”
+        What happened with the old “save_noreply” and “save_memory”
         functions?
 
         There functions were merged into the new “save(domain,flags)”

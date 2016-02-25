@@ -181,7 +181,7 @@ again:
 				resp = protos[con->type].net.write( (void*)con, s );
 				lock_release(&con->write_lock);
 				if (resp<0) {
-					ret=-1; /* some error occured */
+					ret=-1; /* some error occurred */
 					con->state=S_CONN_BAD;
 					tcpconn_release(con, CONN_ERROR,1);
 					break;
@@ -200,7 +200,7 @@ again:
 				con=(struct tcp_connection*)fm->data;
 				resp = protos[con->type].net.read( (void*)con, &ret );
 				if (resp<0) {
-					ret=-1; /* some error occured */
+					ret=-1; /* some error occurred */
 					con->state=S_CONN_BAD;
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
@@ -226,7 +226,7 @@ again:
 						fm->fd, fm->type, fm->data);
 			goto error;
 		default:
-			LM_CRIT("uknown fd type %d\n", fm->type);
+			LM_CRIT("unknown fd type %d\n", fm->type);
 			goto error;
 	}
 

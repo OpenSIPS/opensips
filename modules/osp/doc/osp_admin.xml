@@ -76,7 +76,7 @@
     <title>Exported Parameters</title>
     <section>
       <title><varname>work_mode</varname></title>
-      <para>The work_mode (integer) parameter instructs the OSP module what mode it should work in. If this value is set to 0, the OSP module wokes in direct mode. If this value is set to 1, the OSP module works in indirect mode. The default value is 0.</para>
+      <para>The work_mode (integer) parameter instructs the OSP module what mode it should work in. If this value is set to 0, the OSP module works in direct mode. If this value is set to 1, the OSP module works in indirect mode. The default value is 0.</para>
       <example>
         <title>Instructing the module to work in direct mode</title>
         <programlisting format="linespecific">

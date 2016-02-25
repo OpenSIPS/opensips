@@ -62,7 +62,7 @@ Chapter 1. Admin Guide
        will not affect the DB. The MongoDB is also persistent so
        it can also be restarted without loss of information.
      * MongoDB is an open-source project so it can be used to
-       exchange data with various other applicationsr
+       exchange data with various other applications
      * By creating a MongoDB Cluster, multiple OpenSIPS instances
        can easily share key-value information
      * This module also implements the CacheDB Raw query

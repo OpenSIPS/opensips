@@ -1086,7 +1086,7 @@ error:
 
 
 /*
-* this function is responsible for getting the forwarding data to the INVITE from tha stucture given by the VPC
+* this function is responsible for getting the forwarding data to the INVITE from the structure given by the VPC
 * Stores :
 *       - selectiveRoutingID
 *       - routingESN

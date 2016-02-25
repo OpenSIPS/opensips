@@ -150,14 +150,14 @@ static int mi_mod_init(void)
 	str port_str;
 
 	/* checking the mi_socket module param */
-	LM_DBG("testing socket existance...\n");
+	LM_DBG("testing socket existence...\n");
 
 	if( mi_socket==NULL || *mi_socket == 0) {
 		LM_ERR("no DATAGRAM_ socket configured\n");
 		return -1;
 	}
 
-	LM_DBG("the socket's name/addres is %s\n", mi_socket);
+	LM_DBG("the socket's name/address is %s\n", mi_socket);
 
 	memset( &mi_dtgram_addr, 0, sizeof(mi_dtgram_addr) );
 

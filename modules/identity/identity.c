@@ -374,7 +374,7 @@ return value: -438: You should send a 438-reply.
 			-428: You should send a 428-reply.
 			-3: Error verifying Date header field.
 			-2: Authentication service is not authoritative.
-			-1: An error occured.
+			-1: An error occurred.
 			1: verification OK
 */
 static int verifier_(struct sip_msg* msg, char* str1, char* str2)
@@ -563,7 +563,7 @@ static int addDate(char * dateHF, time_t * dateHFValue, struct sip_msg * msg)
 
 /* calculates | now - dateHFValue |
    return value:	result,
-   					-1: if an error occured
+   					-1: if an error occurred
 */
 static long getDateDelta(time_t dateHFValue)
 {

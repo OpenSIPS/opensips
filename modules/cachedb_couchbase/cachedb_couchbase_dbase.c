@@ -43,7 +43,7 @@ static void couchbase_error_cb(lcb_t instance,
 		lcb_error_t error,
 		const char *errinfo)
 {
-	LM_ERR("Error %d occured. Extra info : [%s]\n",error,
+	LM_ERR("Error %d occurred. Extra info : [%s]\n",error,
 		errinfo?errinfo:"");
 
 }
