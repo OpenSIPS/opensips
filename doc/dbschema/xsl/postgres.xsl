@@ -57,6 +57,14 @@
 	    <xsl:when test="type[@db=$db]">
 		<xsl:value-of select="normalize-space(type[@db=$db])"/>
 	    </xsl:when>
+		<!--transform bigint primary key autoincrement to BIGSERIAL PRIMARY KEY -->
+		<xsl:when test="$type='long' and autoincrement and primary">
+		    <xsl:text>BIGSERIAL PRIMARY KEY</xsl:text>
+		</xsl:when>
+		<!--transform bigint autoincrement to BIGSERIAL -->
+		<xsl:when test="$type='long' and autoincrement">
+		    <xsl:text>BIGSERIAL</xsl:text>
+		</xsl:when>
 	    <xsl:when test="$type='char'">
 		<xsl:text>SMALLINT</xsl:text>
 		<xsl:call-template name="column.trailing"/>
