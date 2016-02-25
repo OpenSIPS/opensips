@@ -54,7 +54,7 @@ struct dlg_profile_link {
 
 struct repl_prof_novalue;
 
-enum repl_types {REPL_NONE=0, CACHEDB=1, PROTOBIN};
+enum repl_types {REPL_NONE=0, REPL_CACHEDB=1, REPL_PROTOBIN};
 struct dlg_profile_table {
 	str name;
 	unsigned int has_value;

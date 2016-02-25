@@ -996,7 +996,7 @@ static void repl_prof_timer_f(unsigned int ticks, void *param)
 	int i;
 
 	for (profile = profiles; profile; profile = profile->next) {
-		if (!profile->has_value || profile->repl_type != PROTOBIN)
+		if (!profile->has_value || profile->repl_type != REPL_PROTOBIN)
 			continue;
 		for (i = 0; i < profile->size; i++) {
 			lock_set_get(profile->locks, i);
@@ -1071,7 +1071,7 @@ static void repl_prof_utimer_f(utime_t ticks, void *param)
 	bin_push_int(clusterer_api.get_my_id());
 
 	for (profile = profiles; profile; profile = profile->next) {
-		if (!(profile->repl_type&PROTOBIN))
+		if (!(profile->repl_type&REPL_PROTOBIN))
 			continue;
 
 		count = 0;

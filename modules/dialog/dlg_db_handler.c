@@ -416,9 +416,9 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 				/* skip spaces after p */
 				for (++s; *s == ' ' && s < e; s++);
 				if ( s < e && *s == 's')
-				repl_type = CACHEDB;
+				repl_type = REPL_CACHEDB;
 				else if (s < e && *s == 'b')
-				repl_type = PROTOBIN;
+				repl_type = REPL_PROTOBIN;
 			}
 
 			for (it=dlg->profile_links;it;it=it->next) {
@@ -1178,7 +1178,7 @@ str* write_dialog_profiles( struct dlg_profile_link *links)
 		for( i=0 ; i<link->value.len ; i++ )
 			if (link->value.s[i]=='|' || link->value.s[i]=='#'
 					|| link->value.s[i]=='\\') l++;
-		if (link->profile->repl_type/*==(CACHEDB||PROTOBIN)*/)
+		if (link->profile->repl_type!=REPL_NONE/*==(CACHEDB||PROTOBIN)*/)
 			l+=cached_marker.len; /* same length for both */
 	}
 
@@ -1197,10 +1197,10 @@ str* write_dialog_profiles( struct dlg_profile_link *links)
 	o.len = l;
 	p = o.s;
 	for ( link=links; link ; link=link->next) {
-		if (link->profile->repl_type == CACHEDB)
+		if (link->profile->repl_type == REPL_CACHEDB)
 			p += write_pair( p, &link->profile->name, &cached_marker,
 							&link->value);
-		else if (link->profile->repl_type == PROTOBIN)
+		else if (link->profile->repl_type == REPL_PROTOBIN)
 			p += write_pair( p, &link->profile->name, &bin_marker,
 							&link->value);
 		else
