@@ -200,9 +200,9 @@ endif
 override_dh_auto_build:
 	# Add here commands to compile the package.
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) app \
-	  modules skip_modules="$(NONCORE_MODULES)" cfg-target=/etc/opensips/
+	  modules skip_modules="$(NONCORE_MODULES)" cfg_target=/etc/opensips/
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) \
-	  modules modules="$(BUILD_MODULE_PATHS)" cfg-target=/etc/opensips/
+	  modules modules="$(BUILD_MODULE_PATHS)" cfg_target=/etc/opensips/
 	# generate the utils db_berkeley
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) utils include_modules="db_berkeley"
 
@@ -236,9 +236,9 @@ override_dh_auto_install:
 		install-modules-all skip_modules="$(NONCORE_MODULES)" \
 		basedir=$(CURDIR)/debian/opensips \
 		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips \
+		cfg_prefix=$(CURDIR)/debian/opensips \
+		cfg_target=/etc/opensips/ \
+		doc_dir=share/doc/opensips \
 		skip-install-doc=yes # skip INSTALL.gz on debian systems
 
 	find $(CURDIR)/debian/opensips/etc/opensips -type f -exec chmod -x {} \;
@@ -254,9 +254,9 @@ override_dh_auto_install:
 		modules="$${pkg_paths}"  \
 		basedir=$(CURDIR)/debian/$${pkg_pkgname} \
 		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/$${pkg_pkgname} \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/$${pkg_pkgname} \
+		cfg_prefix=$(CURDIR)/debian/$${pkg_pkgname} \
+		cfg_target=/etc/opensips/ \
+		doc_dir=share/doc/$${pkg_pkgname} \
 		;\
 	done
 
