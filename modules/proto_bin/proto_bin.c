@@ -540,7 +540,7 @@ static int proto_bin_send(struct socket_info* send_sock,
 				LM_ERR("async TCP connect failed\n");
 				return -1;
 			}
-			/* connect succeded, we have a connection */
+			/* connect succeeded, we have a connection */
 			if (n==0) {
 				/* connect is still in progress, break the sending
 				 * flow now (the actual write will be done when 

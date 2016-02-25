@@ -1299,7 +1299,7 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 		list=tparam->u.lst;
 	} else {
 		if (pv_printf_s(msg, tparam->u.el, &tid_name) < 0) {
-			LM_ERR("cannot print trace id PV-formated string\n");
+			LM_ERR("cannot print trace id PV-formatted string\n");
 			return -1;
 		}
 

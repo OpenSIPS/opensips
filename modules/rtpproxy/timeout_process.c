@@ -339,7 +339,7 @@ void timeout_listener_process(int rank)
 				left -= id.len + 1;
 
 				if(str2int(&id, &h_entry)< 0) {
-					LM_ERR("Wrong formated message received from rtpproxy - invalid"
+					LM_ERR("Wrong formatted message received from rtpproxy - invalid"
 							" dialog entry [%.*s]\n", id.len, id.s);
 					break;
 				}
@@ -358,7 +358,7 @@ void timeout_listener_process(int rank)
 				left -= id.len + 1;
 
 				if(str2int(&id, &h_id)< 0) {
-					LM_ERR("Wrong formated message received from rtpproxy - invalid"
+					LM_ERR("Wrong formatted message received from rtpproxy - invalid"
 							" dialog id [%.*s]\n", id.len, id.s);
 					break;
 				}

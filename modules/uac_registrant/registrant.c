@@ -405,7 +405,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			LM_ERR("Credentials not provisioned\n");
 			rec->state = WRONG_CREDENTIALS_STATE;
 			rec->registration_timeout = 0;
-			/* action successfuly completed on current list element */
+			/* action successfully completed on current list element */
 			return 1; /* exit list traversal */
 		}
 
@@ -438,7 +438,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				rec->td.rem_uri.len, rec->td.rem_uri.s);
 			rec->state = WRONG_CREDENTIALS_STATE;
 			rec->registration_timeout = 0;
-			/* action successfuly completed on current list element */
+			/* action successfully completed on current list element */
 			return 1; /* exit list traversal */
 		default:
 			LM_ERR("Unexpected [%d] notification cb in state [%d]\n",
@@ -509,7 +509,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		}
 	}
 
-	/* action successfuly completed on current list element */
+	/* action successfully completed on current list element */
 	return 1; /* exit list traversal */
 done:
 	rec->state = INTERNAL_ERROR_STATE;
@@ -803,7 +803,7 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 		if(attr == NULL) goto error;
 	}
 
-	/* action successfuly completed on current list element */
+	/* action successfully completed on current list element */
 	return 0; /* continue list traversal */
 error:
 	LM_ERR("Unable to create reply\n");

@@ -117,7 +117,7 @@
 	<xsl:variable name="signed">
 	    <xsl:call-template name="get-sign"/>
 	</xsl:variable>	
-	<!-- PRIMARY KEY column defintion -->
+	<!-- PRIMARY KEY column definition -->
 	<xsl:if test="primary">
 	    <xsl:text> PRIMARY KEY</xsl:text>
 	</xsl:if>

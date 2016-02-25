@@ -346,7 +346,7 @@ set_dh_params(SSL_CTX * ctx, char *filename)
 	}
 
 	DH_free(dh);
-	LM_DBG("DH params from '%s' successfuly set\n", filename);
+	LM_DBG("DH params from '%s' successfully set\n", filename);
 	return 0;
 }
 
@@ -775,7 +775,7 @@ static int load_certificate(SSL_CTX * ctx, char *filename)
 		return -1;
 	}
 
-	LM_DBG("'%s' successfuly loaded\n", filename);
+	LM_DBG("'%s' successfully loaded\n", filename);
 	return 0;
 }
 
@@ -881,7 +881,7 @@ static int load_ca(SSL_CTX * ctx, char *filename)
 		return -1;
 	}
 
-	LM_DBG("CA '%s' successfuly loaded\n", filename);
+	LM_DBG("CA '%s' successfully loaded\n", filename);
 	return 0;
 }
 
@@ -896,7 +896,7 @@ static int load_ca_dir(SSL_CTX * ctx, char *directory)
 		return -1;
 	}
 
-	LM_DBG("CA '%s' successfuly loaded from directory\n", directory);
+	LM_DBG("CA '%s' successfully loaded from directory\n", directory);
 	return 0;
 }
 
@@ -959,7 +959,7 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 		return -1;
 	}
 
-	LM_DBG("key '%s' successfuly loaded\n", filename);
+	LM_DBG("key '%s' successfully loaded\n", filename);
 	return 0;
 }
 
@@ -1457,7 +1457,7 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 
 	tcp_conn_release(c, 0);
 
-	LM_DBG("tlsops:is_peer_verified: peer is successfuly verified"
+	LM_DBG("tlsops:is_peer_verified: peer is successfully verified"
 			"...done\n");
 	return 1;
 error:

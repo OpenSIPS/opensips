@@ -235,7 +235,7 @@ int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 		/* check that all dest to be GW! */
 		for( i=0 ; i<cr->pgwa_len ; i++ ) {
 			if (cr->pgwl[i].is_carrier) {
-				LM_ERR("invalid carrier <%s> defintion as points to other "
+				LM_ERR("invalid carrier <%s> definition as points to other "
 					"carrier (%.*s) in destination list\n",id,
 					cr->pgwl[i].dst.carrier->id.len,
 					cr->pgwl[i].dst.carrier->id.s);

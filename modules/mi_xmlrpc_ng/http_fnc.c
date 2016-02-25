@@ -899,7 +899,7 @@ error:
 }
 
 
-/* old implementations for less formated ouput */
+/* old implementations for less formatted ouput */
 
 int mi_xmlrpc_http_build_header(str *page, int max_page_len,
 				struct mi_root *tree, int flush)
