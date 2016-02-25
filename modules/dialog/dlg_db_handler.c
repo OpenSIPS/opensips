@@ -388,7 +388,7 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 	char *end;
 	char *p,*s,*e;
 	char bk;
-	int use_cached;
+	unsigned repl_type;
 
 	end = b + l;
 	p = b;
@@ -402,7 +402,7 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 
 		if (double_check) {
 			LM_DBG("Double checking profile - if it exists we'll skip it \n");
-			use_cached = 0;
+			repl_type = REPL_NONE;
 
 			/* check if this is a shared profile, and remove /s for manual
 			 * matching */
@@ -416,11 +416,13 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 				/* skip spaces after p */
 				for (++s; *s == ' ' && s < e; s++);
 				if ( s < e && *s == 's')
-				use_cached=1;
+				repl_type = REPL_CACHEDB;
+				else if (s < e && *s == 'b')
+				repl_type = REPL_PROTOBIN;
 			}
 
 			for (it=dlg->profile_links;it;it=it->next) {
-				if (it->profile->use_cached == use_cached &&
+				if (it->profile->repl_type == repl_type &&
 					it->profile->name.len == double_check_name.len &&
 					memcmp(it->profile->name.s,double_check_name.s,
 						   double_check_name.len) == 0) {
@@ -1161,7 +1163,7 @@ str* write_dialog_vars( struct dlg_val *vars)
  * deallocated if the dialog ends */
 str* write_dialog_profiles( struct dlg_profile_link *links)
 {
-	static str o = {NULL,0},cached_marker={"/s",2};
+	static str o = {NULL,0},cached_marker={"/s",2}, bin_marker={"/b", 2};
 	static int o_l = 0;
 	struct dlg_profile_link *link;
 	unsigned int l,i;
@@ -1176,8 +1178,8 @@ str* write_dialog_profiles( struct dlg_profile_link *links)
 		for( i=0 ; i<link->value.len ; i++ )
 			if (link->value.s[i]=='|' || link->value.s[i]=='#'
 					|| link->value.s[i]=='\\') l++;
-		if (link->profile->use_cached)
-			l+=cached_marker.len;
+		if (link->profile->repl_type!=REPL_NONE/*==(CACHEDB||PROTOBIN)*/)
+			l+=cached_marker.len; /* same length for both */
 	}
 
 	/* allocate the string to be stored */
@@ -1195,8 +1197,11 @@ str* write_dialog_profiles( struct dlg_profile_link *links)
 	o.len = l;
 	p = o.s;
 	for ( link=links; link ; link=link->next) {
-		if (link->profile->use_cached)
+		if (link->profile->repl_type == REPL_CACHEDB)
 			p += write_pair( p, &link->profile->name, &cached_marker,
+							&link->value);
+		else if (link->profile->repl_type == REPL_PROTOBIN)
+			p += write_pair( p, &link->profile->name, &bin_marker,
 							&link->value);
 		else
 			p += write_pair( p, &link->profile->name, NULL, &link->value);

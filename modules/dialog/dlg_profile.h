@@ -54,10 +54,11 @@ struct dlg_profile_link {
 
 struct repl_prof_novalue;
 
+enum repl_types {REPL_NONE=0, REPL_CACHEDB=1, REPL_PROTOBIN};
 struct dlg_profile_table {
 	str name;
 	unsigned int has_value;
-	unsigned int use_cached;
+	enum repl_types repl_type;
 
 
 	unsigned int size;
@@ -146,6 +147,7 @@ extern str cdb_noval_prefix;
 extern str cdb_size_prefix;
 extern str cdb_url;
 extern int profile_timeout;
+extern int profile_replicate_cluster;
 
 extern struct dlg_profile_table *profiles;
 
