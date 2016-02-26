@@ -183,4 +183,6 @@ Updated to support CNAM.
 2015 September 15
 Updated to support CNAM diversion use case.
 
+2016 February 26
+Updated to support STIR.
 
