@@ -389,6 +389,40 @@ modparam("osp", "destination_media_avp", "$avp(destmedia)")
         </programlisting>
       </example>
     </section>
+    <section>
+      <title><varname>request_date_avp</varname></title>
+      <para>The request_date_avp (string) parameter instructs the OSP module to use the defined AVP to pass the SIP request Date header values. The default value is "$avp(_osp_request_date_)".  Then the request date can be used by "$avp(_osp_request_date_)".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <example>
+        <title>Setting the request date AVP</title>
+        <programlisting format="linespecific">
+modparam("osp","request_date_avp","$avp(reqdate)")
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><varname>sdp_fingerprint_avp</varname></title>
+      <para>The sdp_fingerprint_avp (string) parameter instructs the OSP module to use the defined AVP to pass the SDP fing print attribute values. The default value is "$avp(_osp_sdp_fingerprint_)".  Then the SDP finger print attributes can be used by "$avp(_osp_sdp_fingerprint_)".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <example>
+        <title>Setting the SDP finger print AVP</title>
+        <programlisting format="linespecific">
+modparam("osp","sdp_fingerprint_avp","$avp(sdpfp)")
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><varname>identity_signature_avp</varname>, <varname>identity_algorithm_avp</varname>, <varname>identity_information_avp</varname>, <varname>identity_type_avp</varname>, <varname>identity_canon_avp</varname></title>
+      <para>These parameters instruct the OSP module to use the defined AVPs to pass the Identity related values. The default values are "$avp(_osp_identity_signature_)", "$avp(_osp_identity_algorithm_)", "$avp(_osp_identity_information_)", "$avp(_osp_identity_type_)", "$avp(_osp_identity_canon_)".  Then the indentity related values can be used by these AVPs.  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <example>
+        <title>Setting the Identity related AVPs</title>
+        <programlisting format="linespecific">
+modparam("osp","identity_signature_avp","$avp(idsign)")
+modparam("osp","identity_algorithm_avp","$avp(idalg)")
+modparam("osp","identity_information_avp","$avp(idinfo)")
+modparam("osp","identity_type_avp","$avp(idtype)")
+modparam("osp","identity_canon_avp","$avp(idcanon)")
+        </programlisting>
+      </example>
+    </section>
   </section>
   <section>
     <title>Exported Functions</title>
@@ -438,6 +472,23 @@ if (getlocaladdress()) {
   log(1,"Obtain proxy local egress address\n");
 } else {
   log(1,"Failed to get proxy local egress address\n");
+};
+...
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><function moreinfo="none">setrequestdate()</function></title>
+      <para>This function gets the receiving IP address of SIP response and stores it as proxy egress address.</para>
+      <para>This function can be used from REQUEST_ROUTE.</para>
+      <example>
+        <title>setrequestdate usage</title>
+        <programlisting format="linespecific">
+...
+if (setrequest()) {
+  log(1,"Set request date\n");
+} else {
+  log(1,"Failed to set request date\n");
 };
 ...
         </programlisting>

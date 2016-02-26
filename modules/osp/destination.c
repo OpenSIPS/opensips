@@ -427,7 +427,6 @@ static void ospRecordCode(
                     (destmediaavp->flags & AVP_VAL_STR) && (destmediaval.s.s && destmediaval.s.len))
                 {
                     snprintf(dest->destmedia, sizeof(dest->destmedia), "%.*s", destmediaval.s.len, destmediaval.s.s);
-                    dest->destmedia[sizeof(dest->destmedia) - 1] = '\0';
                 } else {
                     dest->destmedia[0] = '\0';
                 }
@@ -587,8 +586,8 @@ void ospConvertToOutAddress(
             }
         } else {
             strncpy(dest, src, bufsize);
+            dest[bufsize - 1] = '\0';
         }
-        dest[bufsize - 1] = '\0';
     } else {
         *dest = '\0';
     }
@@ -629,11 +628,12 @@ void ospConvertToInAddress(
                 snprintf(dest, bufsize, "%s:%s", buffer + 1, port);
             } else {
                 strncpy(dest, buffer + 1, bufsize);
+                dest[bufsize - 1] = '\0';
             }
         } else {
             strncpy(dest, src, bufsize);
+            dest[bufsize - 1] = '\0';
         }
-        dest[bufsize - 1] = '\0';
     } else {
         *dest = '\0';
     }

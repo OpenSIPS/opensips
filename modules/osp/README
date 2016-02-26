@@ -58,19 +58,26 @@ Di-Shi Sun
               1.3.27. custom_info_avp
               1.3.28. cnam_avp
               1.3.29. source_media_avp, destination_media_avp
+              1.3.30. request_date_avp
+              1.3.31. sdp_fingerprint_avp
+              1.3.32. identity_signature_avp,
+                      identity_algorithm_avp,
+                      identity_information_avp, identity_type_avp,
+                      identity_canon_avp
 
         1.4. Exported Functions
 
               1.4.1. checkospheader()
               1.4.2. validateospheader()
               1.4.3. getlocaladdress()
-              1.4.4. requestosprouting()
-              1.4.5. checkosproute()
-              1.4.6. prepareosproute()
-              1.4.7. prepareospresponse()
-              1.4.8. prepareallosproutes()
-              1.4.9. checkcallingtranslation()
-              1.4.10. reportospusage()
+              1.4.4. setrequestdate()
+              1.4.5. requestosprouting()
+              1.4.6. checkosproute()
+              1.4.7. prepareosproute()
+              1.4.8. prepareospresponse()
+              1.4.9. prepareallosproutes()
+              1.4.10. checkcallingtranslation()
+              1.4.11. reportospusage()
 
    2. Developer Guide
 
@@ -107,16 +114,20 @@ Di-Shi Sun
    1.27. Setting the custom info AVP
    1.28. Setting the CNAM AVP
    1.29. Setting the media address AVPs
-   1.30. checkospheader usage
-   1.31. validateospheader usage
-   1.32. getlocaladress usage
-   1.33. requestosprouting usage
-   1.34. checkosproute usage
-   1.35. prepareosproute usage
-   1.36. prepareospresponse usage
-   1.37. prepareallosproutes usage
-   1.38. checkcallingtranslation usage
-   1.39. reportospusage usage
+   1.30. Setting the request date AVP
+   1.31. Setting the SDP finger print AVP
+   1.32. Setting the Identity related AVPs
+   1.33. checkospheader usage
+   1.34. validateospheader usage
+   1.35. getlocaladress usage
+   1.36. setrequestdate usage
+   1.37. requestosprouting usage
+   1.38. checkosproute usage
+   1.39. prepareosproute usage
+   1.40. prepareospresponse usage
+   1.41. prepareallosproutes usage
+   1.42. checkcallingtranslation usage
+   1.43. reportospusage usage
 
 Chapter 1. Admin Guide
 
@@ -552,6 +563,51 @@ modparam("osp","cnam_avp","$avp(cnam)")
 modparam("osp", "source_media_avp", "$avp(srcmedia)")
 modparam("osp", "destination_media_avp", "$avp(destmedia)")
 
+1.3.30. request_date_avp
+
+   The request_date_avp (string) parameter instructs the OSP
+   module to use the defined AVP to pass the SIP request Date
+   header values. The default value is "$avp(_osp_request_date_)".
+   Then the request date can be used by
+   "$avp(_osp_request_date_)". All pseudo variables are described
+   in http://www.opensips.org/Resources/DocsCoreVar.
+
+   Example 1.30. Setting the request date AVP
+modparam("osp","request_date_avp","$avp(reqdate)")
+
+1.3.31. sdp_fingerprint_avp
+
+   The sdp_fingerprint_avp (string) parameter instructs the OSP
+   module to use the defined AVP to pass the SDP fing print
+   attribute values. The default value is
+   "$avp(_osp_sdp_fingerprint_)". Then the SDP finger print
+   attributes can be used by "$avp(_osp_sdp_fingerprint_)". All
+   pseudo variables are described in
+   http://www.opensips.org/Resources/DocsCoreVar.
+
+   Example 1.31. Setting the SDP finger print AVP
+modparam("osp","sdp_fingerprint_avp","$avp(sdpfp)")
+
+1.3.32. identity_signature_avp, identity_algorithm_avp,
+identity_information_avp, identity_type_avp, identity_canon_avp
+
+   These parameters instruct the OSP module to use the defined
+   AVPs to pass the Identity related values. The default values
+   are "$avp(_osp_identity_signature_)",
+   "$avp(_osp_identity_algorithm_)",
+   "$avp(_osp_identity_information_)",
+   "$avp(_osp_identity_type_)", "$avp(_osp_identity_canon_)". Then
+   the indentity related values can be used by these AVPs. All
+   pseudo variables are described in
+   http://www.opensips.org/Resources/DocsCoreVar.
+
+   Example 1.32. Setting the Identity related AVPs
+modparam("osp","identity_signature_avp","$avp(idsign)")
+modparam("osp","identity_algorithm_avp","$avp(idalg)")
+modparam("osp","identity_information_avp","$avp(idinfo)")
+modparam("osp","identity_type_avp","$avp(idtype)")
+modparam("osp","identity_canon_avp","$avp(idcanon)")
+
 1.4. Exported Functions
 
 1.4.1. checkospheader()
@@ -561,7 +617,7 @@ modparam("osp", "destination_media_avp", "$avp(destmedia)")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.30. checkospheader usage
+   Example 1.33. checkospheader usage
 ...
 if (checkospheader()) {
   log(1,"OSP header field found.\n");
@@ -580,7 +636,7 @@ if (checkospheader()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.31. validateospheader usage
+   Example 1.34. validateospheader usage
 ...
 if (validateospheader()) {
   log(1,"valid OSP header found\n");
@@ -596,7 +652,7 @@ if (validateospheader()) {
 
    This function can be used from ONREPLY_ROUTE.
 
-   Example 1.32. getlocaladress usage
+   Example 1.35. getlocaladress usage
 ...
 if (getlocaladdress()) {
   log(1,"Obtain proxy local egress address\n");
@@ -605,7 +661,23 @@ if (getlocaladdress()) {
 };
 ...
 
-1.4.4. requestosprouting()
+1.4.4. setrequestdate()
+
+   This function gets the receiving IP address of SIP response and
+   stores it as proxy egress address.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.36. setrequestdate usage
+...
+if (setrequest()) {
+  log(1,"Set request date\n");
+} else {
+  log(1,"Failed to set request date\n");
+};
+...
+
+1.4.5. requestosprouting()
 
    This function launches a query to the peering server requesting
    the IP address of one or more destination peers serving the
@@ -625,7 +697,7 @@ if (getlocaladdress()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.33. requestosprouting usage
+   Example 1.37. requestosprouting usage
 ...
 if (requestosprouting()) {
   log(1,"successfully queried OSP server, now relaying call\n");
@@ -634,14 +706,14 @@ if (requestosprouting()) {
 };
 ...
 
-1.4.5. checkosproute()
+1.4.6. checkosproute()
 
    This function is used to check if there is any route for the
    call.
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.34. checkosproute usage
+   Example 1.38. checkosproute usage
 ...
 if (checkosproute()) {
   log(1,"There is at least one route for the call\n");
@@ -650,7 +722,7 @@ if (checkosproute()) {
 };
 ...
 
-1.4.6. prepareosproute()
+1.4.7. prepareosproute()
 
    This function tries to prepare the INVITE to be forwarded using
    the destination in the list returned by the peering server. If
@@ -664,7 +736,7 @@ if (checkosproute()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.35. prepareosproute usage
+   Example 1.39. prepareosproute usage
 ...
 if (prepareosproute()) {
   log(1,"successfully prepared the route, now relaying call\n");
@@ -673,7 +745,7 @@ if (prepareosproute()) {
 };
 ...
 
-1.4.7. prepareospresponse()
+1.4.8. prepareospresponse()
 
    This function tries to prepare all the routes in the list
    returned by the peering server into SIP 300 Redirect or SIP 380
@@ -683,7 +755,7 @@ if (prepareosproute()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.36. prepareospresponse usage
+   Example 1.40. prepareospresponse usage
 ...
 if (prepareospresponse()) {
   log(1,"Response is prepared.\n");
@@ -692,7 +764,7 @@ if (prepareospresponse()) {
 };
 ...
 
-1.4.8. prepareallosproutes()
+1.4.9. prepareallosproutes()
 
    This function tries to prepare all the routes in the list
    returned by the peering server. The message is then forked off
@@ -701,7 +773,7 @@ if (prepareospresponse()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.37. prepareallosproutes usage
+   Example 1.41. prepareallosproutes usage
 ...
 if (prepareallosproutes()) {
   log(1,"Routes are prepared, now forking the call\n");
@@ -710,7 +782,7 @@ if (prepareallosproutes()) {
 };
 ...
 
-1.4.9. checkcallingtranslation()
+1.4.10. checkcallingtranslation()
 
    This function is used to check if the calling number is
    translated. Before calling checkcallingtranslation,
@@ -723,7 +795,7 @@ if (prepareallosproutes()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.38. checkcallingtranslation usage
+   Example 1.42. checkcallingtranslation usage
 ...
 if (checkcallingtranslation()) {
   # Remove the Remote_Party-ID from the received message
@@ -735,7 +807,7 @@ if (checkcallingtranslation()) {
 }
 ...
 
-1.4.10. reportospusage()
+1.4.11. reportospusage()
 
    This function should be called after receiving a BYE message.
    If the message contains an OSP cookie, the function will
@@ -752,7 +824,7 @@ if (checkcallingtranslation()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.39. reportospusage usage
+   Example 1.43. reportospusage usage
 ...
 if (is_direction("downstream")) {
   log(1,"This BYE message is from SOURCE\n");
