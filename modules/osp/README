@@ -176,7 +176,7 @@ Chapter 1. Admin Guide
 
    The work_mode (integer) parameter instructs the OSP module what
    mode it should work in. If this value is set to 0, the OSP
-   module wokes in direct mode. If this value is set to 1, the OSP
+   module works in direct mode. If this value is set to 1, the OSP
    module works in indirect mode. The default value is 0.
 
    Example 1.1. Instructing the module to work in direct mode
