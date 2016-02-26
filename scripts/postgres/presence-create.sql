@@ -14,7 +14,7 @@ CREATE TABLE presentity (
 );
 
 ALTER SEQUENCE presentity_id_seq MAXVALUE 2147483647 CYCLE;
-INSERT INTO version (table_name, table_version) values ('active_watchers','10');
+INSERT INTO version (table_name, table_version) values ('active_watchers','11');
 CREATE TABLE active_watchers (
     id SERIAL PRIMARY KEY NOT NULL,
     presentity_uri VARCHAR(128) NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE active_watchers (
     record_route TEXT,
     expires INTEGER NOT NULL,
     status INTEGER DEFAULT 2 NOT NULL,
-    reason VARCHAR(64) NOT NULL,
+    reason VARCHAR(64),
     version INTEGER DEFAULT 0 NOT NULL,
     socket_info VARCHAR(64) NOT NULL,
     local_contact VARCHAR(128) NOT NULL,

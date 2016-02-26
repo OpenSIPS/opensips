@@ -61,7 +61,7 @@
 
 #define S_TABLE_VERSION  4
 #define P_TABLE_VERSION  5
-#define ACTWATCH_TABLE_VERSION 10
+#define ACTWATCH_TABLE_VERSION 11
 
 char *log_buf = NULL;
 static int clean_period=100;

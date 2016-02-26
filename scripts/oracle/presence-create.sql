@@ -21,7 +21,7 @@ END presentity_tr;
 /
 BEGIN map2users('presentity'); END;
 /
-INSERT INTO version (table_name, table_version) values ('active_watchers','10');
+INSERT INTO version (table_name, table_version) values ('active_watchers','11');
 CREATE TABLE active_watchers (
     id NUMBER(10) PRIMARY KEY,
     presentity_uri VARCHAR2(128),
