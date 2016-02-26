@@ -1,9 +1,9 @@
-INSERT INTO version (table_name, table_version) values ('sip_trace','4');
+INSERT INTO version (table_name, table_version) values ('sip_trace','5');
 CREATE TABLE sip_trace (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     time_stamp DATETIME DEFAULT '1900-01-01 00:00:01' NOT NULL,
     callid CHAR(255) DEFAULT '' NOT NULL,
-    traced_user CHAR(128) DEFAULT NULL,
+    trace_attrs CHAR(128) DEFAULT NULL,
     msg TEXT NOT NULL,
     method CHAR(32) DEFAULT '' NOT NULL,
     status CHAR(128) DEFAULT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE sip_trace (
     direction CHAR(4) DEFAULT '' NOT NULL
 ) ENGINE=InnoDB;
 
-CREATE INDEX traced_user_idx ON sip_trace (traced_user);
+CREATE INDEX trace_attrs_idx ON sip_trace (trace_attrs);
 CREATE INDEX date_idx ON sip_trace (time_stamp);
 CREATE INDEX fromip_idx ON sip_trace (from_ip);
 CREATE INDEX callid_idx ON sip_trace (callid);

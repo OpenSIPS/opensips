@@ -102,15 +102,23 @@ FILE* mi_create_fifo(void)
 	/* make sure the read fifo will not close */
 	mi_fifo_write=open(mi_fifo_name, O_WRONLY|O_NONBLOCK, 0);
 	if (mi_fifo_write<0) {
+		fclose(fifo_stream);
+		close(mi_fifo_read);
 		LM_ERR("fifo_write did not open: %s\n", strerror(errno));
 		return 0;
 	}
 	/* set read fifo blocking mode */
 	if ((opt=fcntl(mi_fifo_read, F_GETFL))==-1){
+		fclose(fifo_stream);
+		close(mi_fifo_read);
+		close(mi_fifo_write);
 		LM_ERR("fcntl(F_GETFL) failed: %s [%d]\n", strerror(errno), errno);
 		return 0;
 	}
 	if (fcntl(mi_fifo_read, F_SETFL, opt & (~O_NONBLOCK))==-1){
+		fclose(fifo_stream);
+		close(mi_fifo_read);
+		close(mi_fifo_write);
 		LM_ERR("cntl(F_SETFL) failed: %s [%d]\n", strerror(errno), errno);
 		return 0;
 	}

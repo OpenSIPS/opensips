@@ -67,6 +67,7 @@ unsigned long hp_pkg_get_frags(struct hp_block *hpb);
 
 #define update_stats_pkg_frag_split(blk, ...) \
 	do { \
+		(blk)->used -= FRAG_OVERHEAD; \
 		(blk)->real_used += FRAG_OVERHEAD; \
 		(blk)->total_fragments++; \
 	} while (0)
@@ -97,6 +98,7 @@ unsigned long hp_pkg_get_frags(struct hp_block *hpb);
 
 	#define update_stats_shm_frag_split(...) \
 		do { \
+			update_stat(shm_used, -FRAG_OVERHEAD); \
 			update_stat(shm_rused, FRAG_OVERHEAD); \
 			update_stat(shm_frags, 1); \
 		} while (0)

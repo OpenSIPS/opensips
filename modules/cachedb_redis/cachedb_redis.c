@@ -53,6 +53,8 @@ int set_connection(unsigned int type, void *val)
 }
 
 static param_export_t params[]={
+	{ "connect_timeout",             INT_PARAM,                &redis_connnection_tout},
+	{ "query_timeout",               INT_PARAM,                &redis_query_tout      },
 	{ "cachedb_url",                 STR_PARAM|USE_FUNC_PARAM, (void *)&set_connection},
 	{0,0,0}
 };

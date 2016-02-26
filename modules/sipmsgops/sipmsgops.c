@@ -530,7 +530,7 @@ static int remove_hf_match_f(struct sip_msg* msg, char* pattern, char* regex_or_
 				continue;
 			}
 		} else {
-			LM_ERR("Unknow match type. Supported types are r (regex) and g (glob)");
+			LM_ERR("Unknown match type. Supported types are r (regex) and g (glob)");
 			return -1;
 		}
 		*(hf->name.s+hf->name.len) = tmp;
@@ -895,7 +895,7 @@ static int hname_match_fixup(void** param, int param_no)
 			LM_DBG("processing param1: %s as glob\n", *(char**)param);
 			fixup_str(param);
 		}else{
-			LM_ERR("Unknown match type '%c'\n", type);
+			LM_ERR("unknown match type '%c'\n", type);
 			return E_UNSPEC;
 		}
 	}
@@ -930,7 +930,7 @@ static int free_hname_match_fixup(void** param, int param_no)
 			LM_DBG("Freeing glob\n");
 			fixup_free_str_str(param, param_no);
 		}else{
-			LM_ERR("Unknown match type in free_hname_match_fixup. Please notify a developer.\n");
+			LM_ERR("unknown match type in free_hname_match_fixup. Please notify a developer.\n");
 		}
 	}
 
@@ -1168,6 +1168,13 @@ static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 )
 		return -1;
 	}
 
+	if (msg->content_type == NULL || msg->content_type->name.s == NULL ||
+			msg->content_type->name.len == 0) {
+		LM_WARN("You have a body but you don't have Content-Type! This is"
+				"not a valid SIP message! The body WILL BE stripped!\n");
+		goto out;
+	}
+
 	/* add delete content-type header lump */
 	if(del_lump(msg, msg->content_type->name.s- msg->buf, msg->content_type->len,
 				HDR_CONTENTTYPE_T) == 0) {
@@ -1175,6 +1182,7 @@ static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 )
 		return -1;
 	}
 
+out:
 	return 1;
 }
 
@@ -2021,7 +2029,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 						contacts = ((contact_body_t*)ptr->parsed)->contacts;
 						/* empty contacts header - something must be wrong */
 						if(contacts == NULL) {
-							strcpy(reason, "emtpy body for 'Contact' header");
+							strcpy(reason, "empty body for 'Contact' header");
 							ret = SV_CONTACT_PARSE_ERROR;
 							goto failed;
 						}

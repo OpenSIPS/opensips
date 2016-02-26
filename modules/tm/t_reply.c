@@ -758,7 +758,7 @@ static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 		if ( t->uac[b].last_received<200 ) {
 			if (t->uac[b].br_flags & minor_branch_flag) {
 				*do_cancel = 1;
-				continue;
+				continue; /* if last branch, lowest_b remains -1 */
 			}
 			return -2;
 		}
@@ -770,7 +770,7 @@ static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 		}
 	} /* find lowest branch */
 	LM_DBG("picked branch %d, code %d (prio=%d)\n",
-		lowest_b,t->uac[lowest_b].last_received,lowest_s);
+		lowest_b,lowest_b==-1 ? -1 : t->uac[lowest_b].last_received,lowest_s);
 
 	*res_code=lowest_s;
 	return lowest_b;

@@ -1,17 +1,17 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
 		This module implements rate limiting for SIP requests. In contrast to
 		the PIKE module this limits the flow based on a per SIP request type
-		basis and not per source IP. The latest sources allow you to 
+		basis and not per source IP. The latest sources allow you to
 		dynamically group several messages into some entities and limit the
-		traffic based on them. The MI interface can be used to change 
+		traffic based on them. The MI interface can be used to change
 		tunables while running OpenSIPS.
 	</para>
 	<para>
@@ -36,10 +36,10 @@
 	</para>
 	<para>
 		Distributed limiting is useful when the rate limit should be
-		performed not only on a specific node, but on the entire platform. 
-		The internal limiting data will no longer be kept on each &osips; 
+		performed not only on a specific node, but on the entire platform.
+		The internal limiting data will no longer be kept on each &osips;
 		instance. It will be stored in a distributed Key-Value database and
-		queried by each instance before deciding if a SIP message 
+		queried by each instance before deciding if a SIP message
 		should be blocked or not.
 	</para>
 	<para>
@@ -107,13 +107,30 @@
 		</para>
 	</section>
 	<section>
+		<title>Slot Based Taildropping (SBT) </title>
+		<para>
+			SBT holds a window consisting of one or more slots. You can set the
+			<emphasis>window_size</emphasis> parameter(seconds) which means for
+			how long we should look back to count the calls and
+			<emphasis>slot_period</emphasis> parameter(miliseconds) which tells
+			how granular the algorithm should be. The number of slots will be
+			<emphasis>window_size</emphasis>/<emphasis>slot_period</emphasis>.
+			If, for example, you have <emphasis>window_size</emphasis>=
+			<emphasis>slot_period</emphasis>=1 second, then after each second
+			you shall lose the call count, but if you set the
+			<emphasis>slot_period</emphasis> to 100 microseconds, then when your
+			call will be outside the window, the calls in the first 100 microseconds
+			shall be dropped, and the rest in the next 900 shall be kept.
+		</para>
+	</section>
+	<section>
 		<title>Network Algorithm (NETWORK)</title>
 		<para>
 		This algorithm relies on information provided by network interfaces.
 		The total amount of bytes waiting to be consumed on all the network
 		interfaces is retrieved once every timer_interval seconds.
 		If the returned amount exceeds the limit specified in the modparam,
-		rl_check returns an error. 
+		rl_check returns an error.
 		</para>
 	</section>
 	</section>
@@ -175,7 +192,7 @@
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
-		The following libraries or applications must be installed before 
+		The following libraries or applications must be installed before
 		running &osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
@@ -218,7 +235,7 @@ modparam("ratelimit", "timer_interval", 5)
 		<title><varname>expire_time</varname> (integer)</title>
 		<para>
 		This parameter specifies how long a pipe should be kept in memory
-		until deleted. 
+		until deleted.
 		</para>
 		<para>
 		<emphasis>
@@ -258,7 +275,7 @@ modparam("ratelimit", "hash_size", 512)
 	<section>
 		<title><varname>default_algorithm</varname> (string)</title>
 		<para>
-		Specifies which algorithm should be assumed in case it isn't 
+		Specifies which algorithm should be assumed in case it isn't
 		explicitly specified in the <emphasis>rl_check</emphasis> function.
 		</para>
 		<para>
@@ -461,7 +478,53 @@ modparam("dialog", "repl_pipes_auth_check", 1)
 </programlisting>
 		</example>
 	</section>
-        
+
+        <section>
+		<title><varname>window_size</varname> (int)</title>
+		<para>
+			How long the history in SBT should be in seconds.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>10</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>window_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "window_size", 5)
+...
+</programlisting>
+		</example>
+	</section>
+
+        <section>
+		<title><varname>slot_period</varname> (int)</title>
+		<para>
+			Value of one slot in microseconds. This parameter determines
+		how granular the algorithm should be. The number of slots will be
+		determined by window_size/slot_period.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>200</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>slot_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "window_size", 5)
+#we will have 50 slots of 100 microseconds
+modparam("dialog", "slot_period", 100)
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
 	</section>
 	<section>
 	<title>Exported Functions</title>
@@ -473,7 +536,7 @@ modparam("dialog", "repl_pipes_auth_check", 1)
 		<para>
 		Check the current request against the pipe identified by name and
 		changes/updates the limit. If no pipe is found, then a new one is
-		created with the specified limit and algorithm, if specified. If the 
+		created with the specified limit and algorithm, if specified. If the
 		algorithm parameter doesn't exist, the default one is used.
 		</para>
 		<para>
@@ -506,7 +569,7 @@ modparam("dialog", "repl_pipes_auth_check", 1)
 				<para>
 				<emphasis>algorithm</emphasis> - this is parameter is optional
 				and reffers to the algorithm used to check the pipe. If it is
-				not set, the default value is used. It accepts a string or a 
+				not set, the default value is used. It accepts a string or a
 				pseudovariable.
 				</para>
 			</listitem>

@@ -204,13 +204,13 @@ lcache_con* lcache_new_connection(struct cachedb_id* id)
 {
 	lcache_con *con;
 
-	if (id->flags != CACHEDB_ID_NO_URL) {
-		LM_ERR("bogus url for local cachedb\n");
+	if (id == NULL) {
+		LM_ERR("null db_id\n");
 		return 0;
 	}
 
-	if (id == NULL) {
-		LM_ERR("null db_id\n");
+	if (id->flags != CACHEDB_ID_NO_URL) {
+		LM_ERR("bogus url for local cachedb\n");
 		return 0;
 	}
 
@@ -280,7 +280,7 @@ static int mod_init(void)
 
 	if(cache_clean_period <= 0 )
 	{
-		LM_ERR("Worng parameter cache_clean_period - need a postive value\n");
+		LM_ERR("Wrong parameter cache_clean_period - need a positive value\n");
 		return -1;
 	}
 

@@ -131,7 +131,7 @@ Chapter 1. Admin Guide
        threshold. The idea is that a network operation centre can
        be made aware that their SIP servers may be overloaded,
        without having to explicitly check for this condition.
-       If a minor or major condition has occured, then a
+       If a minor or major condition has occurred, then a
        openserDialogLimitMinorEvent trap or a
        openserDialogLimitMajorEvent trap will be generated,
        respectively. The minor and major thresholds are described
@@ -261,7 +261,7 @@ modparam("snmpstats", "sipEntityType", "proxyServer")
    consumed by OpenSIPS. If the number of bytes waiting to be
    consumed exceeds a minor threshold, the SNMPStats module will
    send out an openserMsgQueueDepthMinorEvent trap to signal that
-   an alarm condition has occured. The minor threshold is set with
+   an alarm condition has occurred. The minor threshold is set with
    the MsgQueueMinorThreshold parameter.
 
    Example 1.2. Setting the MsgQueueMinorThreshold parameter
@@ -278,7 +278,7 @@ modparam("snmpstats", "MsgQueueMinorThreshold", 2000)
    consumed by OpenSIPS. If the number of bytes waiting to be
    consumed exceeds a major threshold, the SNMPStats module will
    send out an openserMsgQueueDepthMajorEvent trap to signal that
-   an alarm condition has occured. The major threshold is set with
+   an alarm condition has occurred. The major threshold is set with
    the MsgQueueMajorThreshold parameter.
 
    Example 1.3. Setting the MsgQueueMajorThreshold parameter
@@ -294,7 +294,7 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
    The SNMPStats module monitors the number of active dialogs. If
    the number of active dialogs exceeds a minor threshold, the
    SNMPStats module will send out an openserDialogLimitMinorEvent
-   trap to signal that an alarm condition has occured. The minor
+   trap to signal that an alarm condition has occurred. The minor
    threshold is set with the dlg_minor_threshold parameter.
 
    Example 1.4. Setting the dlg_minor_threshold parameter
@@ -310,7 +310,7 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
    The SNMPStats module monitors the number of active dialogs. If
    the number of active dialogs exceeds a major threshold, the
    SNMPStats module will send out an openserDialogLimitMajorEvent
-   trap to signal that an alarm condition has occured. The major
+   trap to signal that an alarm condition has occurred. The major
    threshold is set with the dlg_major_threshold parameter.
 
    Example 1.5. Setting the dlg_major_threshold parameter
@@ -367,6 +367,10 @@ modparam("snmpstats", "snmpCommunity", "customCommunityString")
 
    The SNMPStats modules makefile requires that the SNMP script
    "net-snmp-config" can run.
+
+   IMPORTANT: By default, SNMP loads mibs from
+   /var/lib/mibs/ietf/.Keep in mind that you have to copy OpenSIPS
+   mibs wherevere your mibs folder is.
 
 1.6.2.  Configuring SNMP daemon to allow connections from the
 SNMPStats module.
@@ -468,7 +472,9 @@ Chapter 2. Frequently Asked Questions
    nitty gritty details of the protocol, then please look at RFC
    3410. RFC 3410 maps out the many other RFCs that define SNMP,
    and can be found at
-   http://www.rfc-archive.org/getrfc.php?rfc=3410
+   http://www.rfc-archive.org/getrfc.php?rfc=3410 INFO: Also if
+   you want a nice tutorial for setting up snmpstats with OpenSIPS
+   try this one.
 
    2.2.
 

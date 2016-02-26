@@ -428,8 +428,11 @@ static int db_restore(void)
 				etag.s= (char*)row_vals[etag_col].val.string_val;
 				etag.len = strlen(etag.s);
 
-				tuple_id.s= (char*)row_vals[tuple_col].val.string_val;
-				tuple_id.len = strlen(tuple_id.s);
+				if(row_vals[tuple_col].val.string_val)
+				{
+					tuple_id.s= (char*)row_vals[tuple_col].val.string_val;
+					tuple_id.len = strlen(tuple_id.s);
+				}
 			}
 
 			if(row_vals[watcher_col].val.string_val)
@@ -932,7 +935,7 @@ static void db_update(unsigned int ticks,void *param)
 		p = HashT->p_records[i].entity->next;
 		while(p)
 		{
-			if(p->expires - (int)time(NULL) < 0)
+			if(p->expires < time(NULL))
 			{
 				p= p->next;
 				continue;

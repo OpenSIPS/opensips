@@ -19,7 +19,7 @@
  *
  * History:
  * --------
- *  2005-05-02  flags field added to node stucture -better sync between timer
+ *  2005-05-02  flags field added to node structure -better sync between timer
  *              and worker processes; some races eliminated (bogdan)
  */
 

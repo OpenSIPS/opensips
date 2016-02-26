@@ -622,16 +622,7 @@ modparam("tm", "timer_partitions", 2)
    The function may take as parameter an optional set of flags for
    controlling the internal behaviour. The flags may be given in
    decimal or hexa format; supported flags are:
-     * 0x01 - do not generate an 100 trying provisional reply when
-       building the transaction. By default one is generated.
-       Useful if you already pushed an stateless 100 reply from
-       script. Note: If the transaction was previously created 'by
-       hand' with t_newtran() , t_relay will not attempt to send a
-       100 Trying provisional reply. The 100 Trying reply is
-       generated as part of the transaction building, so if in
-       your script you manually take care of creating the
-       transaction, you must also take care of sending 100
-       provisional replies
+     * 0x01 - deprecated, not used any more
      * 0x02 - do not internally send a negative reply in case of
        forward failure (due internal error, bad RURI, bad message,
        etc). When a forward failure occurs, no SIP request is
@@ -689,8 +680,10 @@ t_relay("udp:mydomain.com");
 
 1.4.3.  t_reply(code, reason_phrase)
 
-   Sends a stateful reply after a transaction has been
-   established. See t_newtran for usage.
+   Sends a stateful SIP reply to the currently processed requests.
+   Note that if the transaction was not created yet, it will
+   automatically created by internally using the t_newtran
+   function.
 
    Meaning of the parameters is as follows:
      * code - Reply code number.
@@ -707,8 +700,10 @@ t_reply("404", "Use $rU not found");
 
 1.4.4.  t_reply_with_body(code, reason_phrase, body)
 
-   Sends a stateful reply with a body after a transaction has been
-   established. See t_newtran for usage.
+   Sends a stateful SIP reply with a body to the currently
+   processed requests. Note that if the transaction was not
+   created yet, it will automatically created by internally using
+   the t_newtran function.
 
    Meaning of the parameters is as follows:
      * code - Reply code number.
@@ -732,23 +727,19 @@ t_reply("404", "Use $rU not found");
 
 1.4.5.  t_newtran()
 
-   Creates a new transaction, returns a negative value on error.
-   This is the only way a script can add a new transaction in an
-   atomic way. Typically, it is used to deploy a UAS.
-
-Warning
-
-   NOTE that the changes on the request that are made after this
-   function call will not be saved into transaction!!!
+   Creates the SIP transaction for the currently processed SIP
+   requests. Basically you switch to a stateful processing from
+   this point furhter, with automatic detection of retransmission
+   and auto sending of 100 Trying reply on INVITEs.
 
    This function can be used from REQUEST_ROUTE.
 
    Example 1.23. t_newtran usage
 ...
-if (t_newtran()) {
-        log("UAS logic");
-        t_reply("999","hello");
-} else sl_reply_error();
+t_newtran();  # 100 Trying is fired here
+xlog("doing my complicated routing logic");
+....
+t_relay(); # send the call further
 ...
 
 1.4.6.  t_check_trans()
@@ -786,8 +777,8 @@ if ( is_method("CANCEL") ) {
 
 1.4.7.  t_check_status(re)
 
-   Returns true if the regualr expression “re” match the reply code
-   of the response message as follows:
+   Returns true if the regualr expression “re” match the reply
+   code of the response message as follows:
      * in routing block - the code of the last sent reply.
      * in on_reply block - the code of the current received reply.
      * in on_failure block - the code of the selected negative
@@ -1264,7 +1255,7 @@ Chapter 2. Developer Guide
 
 2.1.1.  load_tm(*import_structure)
 
-   For programmatic use only--import the TM API. See the cpl-c,
+   For programmatic use only--import the TM API. See the cpl_c,
    acc or jabber modules to see how it works.
 
    Meaning of the parameters is as follows:

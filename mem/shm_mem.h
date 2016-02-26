@@ -50,19 +50,6 @@
 #include <string.h>
 #include <errno.h>
 
-/* fix DBG MALLOC stuff */
-
-/* fix debug defines, DBG_F_MALLOC <=> DBG_QM_MALLOC */
-#ifdef F_MALLOC
-	#ifdef DBG_F_MALLOC
-		#ifndef DBG_QM_MALLOC
-			#define DBG_QM_MALLOC
-		#endif
-	#elif defined(DBG_QM_MALLOC)
-		#define DBG_F_MALLOC
-	#endif
-#endif
-
 #include "../dprint.h"
 #include "../lock_ops.h" /* we don't include locking.h on purpose */
 #include "common.h"
@@ -119,7 +106,7 @@
 #	define  shm_malloc_init hp_shm_malloc_init
 #	define  shm_mem_warming hp_mem_warming
 #	define  update_mem_pattern_file hp_update_mem_pattern_file
-#else
+#elif defined QM_MALLOC
 #	include "q_malloc.h"
 #	define MY_MALLOC qm_malloc
 #	define MY_FREE qm_free
@@ -138,6 +125,8 @@
 #		define MY_SHM_GET_FRAGS	qm_get_frags
 #	endif
 #	define  shm_malloc_init qm_malloc_init
+#else
+#	error "no memory allocator selected"
 #endif
 
 
@@ -214,7 +203,7 @@ inline static void shm_threshold_check(void)
 	#define VAR_STAT(_n) PASTER(_n, _mem_stat)
 #endif
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 
 	#ifdef __SUNPRO_C
 			#define __FUNCTION__ ""  /* gcc specific */
@@ -327,27 +316,42 @@ inline static void* _shm_realloc_unsafe(void *ptr, unsigned int size,
 #ifndef SHM_EXTRA_STATS
 	#define shm_free_unsafe( _p  ) \
 	do {\
-		MY_FREE( shm_block, (_p), __FILE__, __FUNCTION__, __LINE__ ); \
+		MY_FREE_UNSAFE( shm_block, (_p), __FILE__, __FUNCTION__, __LINE__ ); \
 		shm_threshold_check(); \
 	} while(0)
+
+	#ifdef HP_MALLOC
+	#define shm_free( _p  ) MY_FREE( shm_block, (_p), __FILE__, __FUNCTION__, __LINE__ )
+	#endif
 #else
 	#define shm_free_unsafe( _p  ) \
 	do {\
 		update_module_stats(-frag_size(_p), -(frag_size(_p) + FRAG_OVERHEAD), -1, VAR_STAT(MOD_NAME)); \
-		MY_FREE( shm_block, (_p), __FILE__, __FUNCTION__, __LINE__ ); \
+		MY_FREE_UNSAFE( shm_block, (_p), __FILE__, __FUNCTION__, __LINE__ ); \
 		shm_threshold_check(); \
 	} while(0)
 
+	#ifdef HP_MALLOC
+	#define shm_free( _p  ) \
+	do {\
+		update_module_stats(-frag_size(_p), -(frag_size(_p) + FRAG_OVERHEAD), -1, VAR_STAT(MOD_NAME)); \
+		MY_FREE( shm_block, (_p), __FILE__, __FUNCTION__, __LINE__ ); \
+	} while(0)
+	#endif
 #endif
 
+#ifndef HP_MALLOC
 #define shm_free(_p) \
 do { \
 		shm_lock(); \
 		shm_free_unsafe( (_p)); \
 		shm_unlock(); \
 }while(0)
+#endif
 
+#ifndef	HP_MALLOC
 extern unsigned long long *mem_hash_usage;
+#endif
 
 void* _shm_resize(void* ptr, unsigned int size, const char* f, const char* fn,
 					int line);
@@ -357,7 +361,7 @@ void* _shm_resize(void* ptr, unsigned int size, const char* f, const char* fn,
 
 
 
-#else /*DBQ_QM_MALLOC*/
+#else /*DBG_MALLOC*/
 
 inline static void* shm_malloc_unsafe(unsigned int size)
 {

@@ -316,7 +316,7 @@ Files: modules/compression/*
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+
 
-Files: modules/cpl-c/cpl_loader.c
+Files: modules/cpl_c/cpl_loader.c
 Copyright: 2006, Voice-Sistem SRL
   2001-2003, FhG Fokus
 License: GPL-2+

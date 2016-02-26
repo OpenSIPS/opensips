@@ -286,11 +286,16 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 
 void rmq_free_param(rmq_params_t *rmqp)
 {
+	/* XXX: hack to make clang happy, because it _always_
+	 * warns when comparing two char * (even casted to void *)
+	 */
+	static void *dummy_holder = RMQ_DEFAULT_UP;
+
 	if ((rmqp->flags & RMQ_PARAM_USER) && rmqp->user.s &&
-			rmqp->user.s != (char *)RMQ_DEFAULT_UP)
+			rmqp->user.s != dummy_holder)
 		shm_free(rmqp->user.s);
 	if ((rmqp->flags & RMQ_PARAM_PASS) && rmqp->pass.s &&
-			rmqp->pass.s != (char *)RMQ_DEFAULT_UP)
+			rmqp->pass.s != dummy_holder)
 		shm_free(rmqp->pass.s);
 	if ((rmqp->flags & RMQ_PARAM_RKEY) && rmqp->routing_key.s)
 		shm_free(rmqp->routing_key.s);
@@ -416,7 +421,7 @@ static inline int amqp_check_status(rmq_params_t *rmqp, int r, int* re_publish)
 			LM_ERR("Connection closed\n");
 			break;
 
-		/* this should not happend since we do not use ssl */
+		/* this should not happened since we do not use ssl */
 		case AMQP_STATUS_SSL_ERROR:
 			LM_ERR("SSL error\n");
 			break;
@@ -540,12 +545,14 @@ send_status_reply:
 		if (rmq_sync_mode) {
 			retries = RMQ_SEND_RETRY;
 
-			do {
-				rc = write(rmq_status_pipes[rmqs->process_idx][1], &send_status, sizeof(int));
-			} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
-
-			if (rc < 0)
-				LM_ERR("cannot send status back to requesting process\n");
+			/* check rmqs->process_idx sanity */
+			if (rmqs->process_idx >= 0 && rmqs->process_idx < nr_procs) {
+				do {
+					rc = write(rmq_status_pipes[rmqs->process_idx][1], &send_status, sizeof(int));
+				} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
+				if (rc < 0)
+					LM_ERR("cannot send status back to requesting process\n");
+			}
 		}
 end:
 		if (rmqs)

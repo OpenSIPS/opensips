@@ -128,6 +128,11 @@ expression *new_expression(char *str)
 		return 0;
 	}
 
+	if (strlen(str) > EXPRESSION_LENGTH){
+		LM_ERR("expression too long\n");
+		pkg_free(e);
+		return 0;
+	}
 	strcpy(e->value, str);
 
 	e->reg_value = (regex_t*)pkg_malloc(sizeof(regex_t));

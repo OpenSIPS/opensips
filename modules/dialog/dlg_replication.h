@@ -41,9 +41,8 @@
 
 extern int accept_replicated_dlg;
 extern int dialog_replicate_cluster;
-extern int profile_replicate_cluster;
 
-struct clusterer_binds clusterer_api;
+extern struct clusterer_binds clusterer_api;
 
 void replicate_dialog_created(struct dlg_cell *dlg);
 void replicate_dialog_updated(struct dlg_cell *dlg);

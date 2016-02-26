@@ -29,13 +29,14 @@
  */
 
 
-#if !defined(q_malloc_h) && !defined(VQ_MALLOC) && !defined(F_MALLOC) && !defined(HP_MALLOC)
+#if !defined(q_malloc_h) && !defined(VQ_MALLOC) && !defined(F_MALLOC) && \
+	!defined(HP_MALLOC)
 #define q_malloc_h
 
 #include "meminfo.h"
 
 /* defs*/
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
 /* tricky, on sun in 32 bits mode long long must be 64 bits aligned
  * but long can be 32 bits aligned => malloc should return long long
@@ -45,7 +46,7 @@
 	#define ROUNDTO		sizeof(void*) /* minimum possible ROUNDTO ->heavy
 										 debugging*/
 #endif
-#else /* DBG_QM_MALLOC */
+#else /* DBG_MALLOC */
 	#define ROUNDTO		16UL /* size we round to, must be = 2^n  and also
 							 sizeof(qm_frag)+sizeof(qm_frag_end)
 							 must be multiple of ROUNDTO!
@@ -76,7 +77,7 @@ struct qm_frag{
 		struct qm_frag* nxt_free;
 		long is_free;
 	}u;
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	const char* file;
 	const char* func;
 	unsigned long line;
@@ -85,7 +86,7 @@ struct qm_frag{
 };
 
 struct qm_frag_end{
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	unsigned long check1;
 	unsigned long check2;
 	unsigned long reserved1;
@@ -105,6 +106,8 @@ struct qm_frag_lnk{
 
 
 struct qm_block{
+	char *name; /* purpose of this memory block */
+
 	unsigned long size; /* total size */
 	unsigned long used; /* alloc'ed size*/
 	unsigned long real_used; /* used+malloc overhead*/
@@ -120,23 +123,23 @@ struct qm_block{
 
 
 
-struct qm_block* qm_malloc_init(char* address, unsigned long size);
-inline unsigned long frag_size(void* p);
+struct qm_block* qm_malloc_init(char* address, unsigned long size, char* name);
+unsigned long frag_size(void* p);
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void* qm_malloc(struct qm_block*, unsigned long size, const char* file,
 					const char* func, unsigned int line);
 #else
 void* qm_malloc(struct qm_block*, unsigned long size);
 #endif
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void  qm_free(struct qm_block*, void* p, const char* file, const char* func,
 				unsigned int line);
 #else
 void  qm_free(struct qm_block*, void* p);
 #endif
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void* qm_realloc(struct qm_block*, void* p, unsigned long size,
 					const char* file, const char* func, unsigned int line);
 #else

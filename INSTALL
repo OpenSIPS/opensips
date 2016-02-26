@@ -66,7 +66,7 @@ Requirements:
    support (the db_unixodbc module)
 - libexpat if you want the jabber gateway support (the jabber module) or the
    XMPP gateway support
-- libxml2 if you want to use the cpl-c (Call Processing Language) or
+- libxml2 if you want to use the cpl_c (Call Processing Language) or
    the presence modules (presence and pua*)
 - libradius-ng -libs and devel headers- if you want to use functionalities
    with radius support - authentication, accounting, group support, etc

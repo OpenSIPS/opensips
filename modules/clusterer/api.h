@@ -9,6 +9,13 @@
 #define SERVER_TEMP_DISABLED -1
 #define SERVER_TIMEOUT -2
 
+enum cl_machine_state {
+	CLUSTERER_STATE_ON =		0,
+	CLUSTERER_STATE_PROBE =		1,
+	CLUSTERER_STATE_OFF =		2
+};
+
+
 typedef struct clusterer_node_ clusterer_node_t;
 
 struct clusterer_node_ {
@@ -27,7 +34,7 @@ struct clusterer_node_ {
 };
 
 typedef clusterer_node_t * (*get_nodes_f) (int, int);
-typedef int (*set_state_f) (int, int, int, int);
+typedef int (*set_state_f) (int, int, enum cl_machine_state, int);
 typedef void (*free_nodes_f) (clusterer_node_t *);
 typedef int (*check_connection_f) (int, union sockaddr_union*, int, int);
 typedef int (*get_my_id_f) (void);

@@ -183,19 +183,19 @@ int tlsp_db_add_domain(char **str_vals, int *int_vals, struct tls_domain **serv_
 		
 		if (ip == NULL) {
 			if (tls_new_client_domain_name(&id, &domain, cli_dom) < 0) {
-				LM_ERR("failed to add new client domain name [%*.s]\n", domain.len, domain.s);
+				LM_ERR("failed to add new client domain name [%.*s]\n", domain.len, domain.s);
 				return -1;
 			}
 		} else {
 
 			if (tls_new_client_domain(&id, ip, port, cli_dom) < 0) {
-				LM_ERR("failed to add new client domain [%*.s]\n", domain.len, domain.s);
+				LM_ERR("failed to add new client domain [%.*s]\n", domain.len, domain.s);
 				return -1;
 			}
 
 		}
 		if (set_all_domain_attr(cli_dom, str_vals, int_vals) < 0){
-			LM_ERR("failed to set domain [%*.s] attr\n",  domain.len, domain.s);
+			LM_ERR("failed to set domain [%.*s] attr\n",  domain.len, domain.s);
 			return -1;
 		}
 
@@ -203,7 +203,7 @@ int tlsp_db_add_domain(char **str_vals, int *int_vals, struct tls_domain **serv_
 		if (ip) {
 
 			if (tls_new_server_domain(&id, ip, port, serv_dom) < 0) {
-				LM_ERR("failed to add new server domain [%*.s]\n", domain.len, domain.s);
+				LM_ERR("failed to add new server domain [%.*s]\n", domain.len, domain.s);
 				return -1;
 			}
 		} else {
@@ -211,7 +211,7 @@ int tlsp_db_add_domain(char **str_vals, int *int_vals, struct tls_domain **serv_
 			return -1;
 		}
 		if (set_all_domain_attr(serv_dom, str_vals, int_vals) < 0){
-			LM_ERR("failed to set domain [%*.s] attr\n", domain.len, domain.s );
+			LM_ERR("failed to set domain [%.*s] attr\n", domain.len, domain.s );
 			return -1;
 		}
 	}

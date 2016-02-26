@@ -19,7 +19,7 @@
  */
 
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 
 #include <stdio.h>
 #include <string.h>
@@ -64,7 +64,7 @@ void memtest()
 	char *p[TEST_RUN];
 	int t;
 
-	set_global_debug_level(7);
+	set_proc_log_level(7);
 	log_stderr=1;
 
 	printf("entering test\n");

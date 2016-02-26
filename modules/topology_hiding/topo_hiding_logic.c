@@ -148,7 +148,7 @@ int topology_hiding_match(struct sip_msg *msg)
 		for (i=0;i<r_uri->u_params_no;i++)
 			if (r_uri->u_name[i].len == th_contact_encode_param.len &&
 				memcmp(th_contact_encode_param.s,r_uri->u_name[i].s,th_contact_encode_param.len)==0) {
-				LM_INFO("We found param in R-URI with value of %.*s\n",
+				LM_DBG("We found param in R-URI with value of %.*s\n",
 					r_uri->u_val[i].len,r_uri->u_val[i].s);
 				/* pass the param value to the matching funcs */
 				return topo_no_dlg_seq_handling(msg,&r_uri->u_val[i]);
@@ -580,11 +580,11 @@ struct lump* restore_vias_from_req(struct sip_msg *req,struct sip_msg *rpl)
 		LM_DBG("via len = %d\n",via_str.len);
 		if (req->via1->received) {
 			via_str.len -= req->via1->received->size+1;
-			LM_INFO(" have received will remove %d \n",req->via1->received->size+1);
+			LM_DBG(" have received will remove %d \n",req->via1->received->size+1);
 		}
 		if (req->via1->rport) {
 			via_str.len -= req->via1->rport->size+1;
-			LM_INFO(" have rport will remove %d \n",req->via1->rport->size+1);
+			LM_DBG(" have rport will remove %d \n",req->via1->rport->size+1);
 		}
 
 		/* copy rest of VIA headers */
@@ -1238,7 +1238,7 @@ static inline char *dlg_th_rebuild_rpl(struct sip_msg *msg,int *len)
 static int dlg_th_callid_pre_parse(struct sip_msg *msg,int want_from)
 {
 	/* do not throw errors from the upcoming parsing operations */
-	set_proc_debug_level(L_ALERT);
+	set_proc_log_level(L_ALERT);
 
 	if (parse_msg(msg->buf,msg->len,msg)!=0) {
 		LM_ERR("Invalid SIP msg\n");
@@ -1270,11 +1270,11 @@ static int dlg_th_callid_pre_parse(struct sip_msg *msg,int want_from)
 		goto error;
 	}
 
-	reset_proc_debug_level();
+	reset_proc_log_level();
 	return 0;
 
 error:
-	reset_proc_debug_level();
+	reset_proc_log_level();
 	return -1;
 }
 
@@ -1792,7 +1792,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	}
 
 	if (!next_strict) {
-		LM_INFO("Fixing message. Next hop is Loose router\n");
+		LM_DBG("Fixing message. Next hop is Loose router\n");
 		if (ct_buf.len && ct_buf.s) {
 			LM_DBG("Setting new URI to  <%.*s> \n",ct_buf.len,
 					ct_buf.s);
@@ -1853,7 +1853,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 			}
 		}
 	} else {
-		LM_INFO("Fixing message. Next hop is Strict router\n");
+		LM_DBG("Fixing message. Next hop is Strict router\n");
 		if (msg->route) {
 			for (it=msg->route;it;it=it->sibling) {
 				if (it->parsed && ((rr_t*)it->parsed)->deleted)

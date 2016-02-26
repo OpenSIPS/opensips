@@ -397,8 +397,8 @@ remove_hf("^X-g.+[0-9]", "r");
    attached. The checked includes also the “Content-Lenght” header
    presence and value.
 
-   If a parameter is given, the mime described will be also checked
-   against the “Content-Type” header.
+   If a parameter is given, the mime described will be also
+   checked against the “Content-Type” header.
 
    If the SIP message has a multipart body and mime is not a
    multipart type , it will search through all the parts for the
@@ -605,7 +605,7 @@ codec_exists("GSM","8000");
    payload. It will search for the codec inside all streams from
    all sdp sessions. If it is found anywhere it will be deleted
    from the mapping ("a=...") and from the list of indexes
-   ("m=..."). Returns TRUE if any deletion occured otherwise it
+   ("m=..."). Returns TRUE if any deletion occurred otherwise it
    will return FALSE. The second parameter is optional, if it is
    not supplied any clockrate will match and all will be deleted.
    Parameters are CASE INSENSITIVE.
@@ -626,7 +626,7 @@ codec_delete("GSM","8000");
    indexes ("m=..."). It will search for the codec inside all
    streams from all sdp sessions. If it is found anywhere it will
    be moved to the top of the index list. Returns TRUE if any
-   moves occured otherwise it will return FALSE. The second
+   moves occurred otherwise it will return FALSE. The second
    parameter is optional, if it is not supplied any clockrate will
    match and all codecs will be moved to the front while
    preserving their original ordering. Parameters are CASE
@@ -648,7 +648,7 @@ codec_move_up("GSM","8000");
    indexes ("m=..."). It will search for the codec inside all
    streams from all sdp sessions. If it is found anywhere it will
    be moved to the back of the index list. Returns TRUE if any
-   moves occured otherwise it will return FALSE. The second
+   moves occurred otherwise it will return FALSE. The second
    parameter is optional, if it is not supplied any clockrate will
    match and all codecs will be moved to the back while preserving
    their original ordering. Parameters are CASE INSENSITIVE.
@@ -807,7 +807,7 @@ stream_exists("image");
    This function can be used to delete a whole stream from inside
    an sdp payload. It will search for the stream inside all sdp
    sessions. If it is found anywhere it will be deleted along with
-   all attributes Returns TRUE if any deletion occured otherwise
+   all attributes Returns TRUE if any deletion occurred otherwise
    it will return FALSE.
 
    Meaning of the parameters is as follows:

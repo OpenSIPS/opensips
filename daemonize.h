@@ -29,7 +29,7 @@
 
 int daemonize(char* name, int * own_pgid);
 int do_suid(const int uid, const int gid);
-int increase_open_fds(unsigned int target);
+int set_open_fds_limit(void);
 int set_core_dump(int enable, unsigned int size);
 
 int send_status_code(char val);

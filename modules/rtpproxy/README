@@ -499,14 +499,14 @@ sock_pvar]]]])
 route {
 ...
     if (is_method("INVITE")) {
-        if (has_sdp()) {
+        if (has_body("application/sdp")) {
             if (rtpproxy_offer())
                 t_on_reply("1");
         } else {
             t_on_reply("2");
         }
     }
-    if (is_method("ACK") && has_sdp())
+    if (is_method("ACK") && has_body("application/sdp"))
         rtpproxy_answer();
 ...
 }
@@ -514,7 +514,7 @@ route {
 onreply_route[1]
 {
 ...
-    if (has_sdp())
+    if (has_body("application/sdp"))
         rtpproxy_answer();
 ...
 }
@@ -522,7 +522,7 @@ onreply_route[1]
 onreply_route[2]
 {
 ...
-    if (has_sdp())
+    if (has_body("application/sdp"))
         rtpproxy_offer();
 ...
 }
@@ -718,7 +718,7 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happend with “rtpproxy_disable” parameter?
+       What happened with “rtpproxy_disable” parameter?
 
        It was removed as it became obsolete - now “rtpproxy_sock” can
        take empty value to disable the rtpproxy functionality.

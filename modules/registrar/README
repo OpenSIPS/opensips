@@ -57,7 +57,12 @@ Bogdan-Andrei Iancu
               1.4.3. lookup(domain [, flags [, aor]])
               1.4.4. registered(domain [,AOR[, callid]])
               1.4.5. is_other_contact(domain , IPs)
-              1.4.6. add_sock_hdr(hdr_name)
+              1.4.6. is_registered(domain ,[AOR])
+              1.4.7. is_contact_registered(domain
+                      ,[AOR],[contact],[callid])
+
+              1.4.8. is_ip_registered(domain ,[AOR],IPvar)
+              1.4.9. add_sock_hdr(hdr_name)
 
         1.5. Exported Statistics
 
@@ -92,7 +97,10 @@ Bogdan-Andrei Iancu
    1.19. lookup usage
    1.20. registered usage
    1.21. is_other_contact usage
-   1.22. add_sock_hdr usage
+   1.22. is_registered usage
+   1.23. is_registered usage
+   1.24. is_registered usage
+   1.25. add_sock_hdr usage
 
 Chapter 1. Admin Guide
 
@@ -660,6 +668,9 @@ switch ($retcode) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
+   WARNING: THIS FUNCTION IS DEPRECATED! USE
+   is_contact_registered() INSTEAD.
+
    Example 1.20. registered usage
 ...
 if (registered("location")) {
@@ -684,6 +695,9 @@ if (registered("location","$fu")) {
 
    This function can be used from REQUEST_ROUTE.
 
+   WARNING: THIS FUNCTION IS DEPRECATED! USE is_ip_registered()
+   INSTEAD.
+
    Example 1.21. is_other_contact usage
 ...
 
@@ -693,7 +707,109 @@ if (is_other_contact("location", "$avp(ips)")) {
 };
 ...
 
-1.4.6.  add_sock_hdr(hdr_name)
+1.4.6.  is_registered(domain ,[AOR])
+
+   The function returns true if an AOR is registered, false
+   otherwise. The function does not modify the message being
+   process.
+
+   Meaning of the parameters is as follows:
+     * domain - Name of table that should be used for the lookup.
+     * AOR (optional)- AOR to lookup for; if missing, the source
+       if the AOR is the "To" header for REGISTER request, "From"
+       header for any other sip request.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+
+   Example 1.22. is_registered usage
+...
+/**/
+if (is_method("REGISTER")) {
+        /* automatically uses the URI from the To header */
+        if (is_registered("location")) {
+                xlog("this AOR is registered\n")
+                ...
+        }
+};
+/* check the From uri whether this aor is registered or not */
+if (is_registered("location","$fu")) {
+        xlog("caller is registered\n");
+}
+...
+
+1.4.7.  is_contact_registered(domain ,[AOR],[contact],[callid])
+
+   The function returns true if a contact and/or a callid from a
+   certain AOR is registered, false otherwise. The function does
+   not modify the message being process.
+
+   Meaning of the parameters is as follows:
+     * domain - Name of table that should be used for the lookup.
+     * AOR (optional)- AOR to lookup for; if missing, the source
+       if the AOR is the "To" header for REGISTER request, "From"
+       header for any other sip request.
+     * contact (optional)- callid to check if a contact if
+       registered with this callid (this may help you to make
+       distinction between newly registered contact (callid not
+       registered so far) and re-registration (callid already
+       registered).
+     * callid (optional)- callid to check if a contact if
+       registered with this callid (this may help you to make
+       distinction between newly registered contact (callid not
+       registered so far) and re-registration (callid already
+       registered).
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+
+   Example 1.23. is_registered usage
+...
+/*let's say you want to block users that are not registered*/
+if (is_method("INVITE")) {
+        if (!is_contact_registered("location")) {
+                sl_send_reply("401", "Unauthorized");
+        ...
+        }
+}
+/* you want to check the second contact from the message whether it is
+registered or not */
+if(is_method("INVITE")) {
+        if (is_contact_registered("location","$fu","$(ct[1])",))
+                xlog("caller is registered\n");
+}
+...
+
+1.4.8.  is_ip_registered(domain ,[AOR],IPvar)
+
+   The function returns true if at least a contact has an IP from
+   the IPavp in it's received parameter,otherwise returns false.
+   The function does not modify the message being process. This
+   function replaces the "is_other_contact" function.
+
+   Meaning of the parameters is as follows:
+     * domain - Name of table that should be used for the lookup.
+     * AOR (optional)- AOR to lookup for; if missing, the source
+       if the AOR is the "To" header for REGISTER request, "From"
+       header for any other sip request.
+     * IPvar the pvar containing the IPs you want to check the
+       received parameter of the contacts in the AOR against.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+
+   Example 1.24. is_registered usage
+...
+/* check the source ip  whether it is already registered */
+if (is_method("REGISTER")) {
+        if (is_ip_registered("location","$tu","$si")) {
+                xlog("already registered from this ip\n");
+                ...
+        }
+};
+...
+
+1.4.9.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
    “hdr_name” which contains the description of the received
@@ -706,7 +822,7 @@ if (is_other_contact("location", "$avp(ips)")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.22. add_sock_hdr usage
+   Example 1.25. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...
@@ -737,7 +853,7 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-        What happend with the old “append_branch” module parameter?
+        What happened with the old “append_branch” module parameter?
 
         It was removed as global option, as the “lookup” function takes
         this option via the flag "b" (append Branches) See the
@@ -745,7 +861,7 @@ Chapter 2. Frequently Asked Questions
 
    2.2.
 
-        What happend with the old “method_filtering” module parameter?
+        What happened with the old “method_filtering” module parameter?
 
         It was removed as global option, as the “lookup” function takes
         this option via the flag "m" (Method filtering) See the
@@ -753,7 +869,7 @@ Chapter 2. Frequently Asked Questions
 
    2.3.
 
-        What happend with the old “sock_flag” module parameter?
+        What happened with the old “sock_flag” module parameter?
 
         It was removed as global option, as the “save” function takes
         this option via the flag "s" (Socket header) See the
@@ -761,7 +877,7 @@ Chapter 2. Frequently Asked Questions
 
    2.4.
 
-        What happend with the old “use_path” and “path_mode” module
+        What happened with the old “use_path” and “path_mode” module
         parameters?
 
         They were removed as global option, as the “save” function
@@ -770,7 +886,7 @@ Chapter 2. Frequently Asked Questions
 
    2.5.
 
-        What happend with the old “path_use_received” module parameter?
+        What happened with the old “path_use_received” module parameter?
 
         It was removed as global option, as the “save” function takes
         this option via the flag "v" (path receiVed) See the
@@ -778,14 +894,14 @@ Chapter 2. Frequently Asked Questions
 
    2.6.
 
-        What happend with the old “nat_flag” module parameter?
+        What happened with the old “nat_flag” module parameter?
 
         It was removed, as the module internally loads this value from
         the “USRLOC” module (see the “nat_bflag” USRLOC parameter).
 
    2.7.
 
-        What happend with the old “use_domain” module parameter?
+        What happened with the old “use_domain” module parameter?
 
         It was removed, as the module internally loads this option from
         the “USRLOC” module. This was done in order to simplify the
@@ -793,7 +909,7 @@ Chapter 2. Frequently Asked Questions
 
    2.8.
 
-        What happend with the old “save_noreply” and “save_memory”
+        What happened with the old “save_noreply” and “save_memory”
         functions?
 
         There functions were merged into the new “save(domain,flags)”

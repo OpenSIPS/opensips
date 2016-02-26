@@ -43,7 +43,8 @@ Razvan Crainea
 
               1.3.1. Tail Drop Algorithm (TAILDROP)
               1.3.2. Random Early Detection Algorithm (RED)
-              1.3.3. Network Algorithm (NETWORK)
+              1.3.3. Slot Based Taildropping (SBT)
+              1.3.4. Network Algorithm (NETWORK)
 
         1.4. Dynamic Rate Limiting Algorithms
 
@@ -69,6 +70,8 @@ Razvan Crainea
               1.6.11. accept_pipes_from (integer)
               1.6.12. accept_pipes_timeout (integer)
               1.6.13. repl_pipes_auth_check (int)
+              1.6.14. window_size (int)
+              1.6.15. slot_period (int)
 
         1.7. Exported Functions
 
@@ -103,9 +106,11 @@ Razvan Crainea
    1.11. Set accept_pipes_from parameter
    1.12. Set accept_pipes_timeout parameter
    1.13. Set repl_pipes_auth_check parameter
-   1.14. rl_check usage
-   1.15. rl_dec_count usage
-   1.16. rl_reset_count usage
+   1.14. Set window_size parameter
+   1.15. Set slot_period parameter
+   1.16. rl_check usage
+   1.17. rl_dec_count usage
+   1.18. rl_reset_count usage
 
 Chapter 1. Admin Guide
 
@@ -194,7 +199,21 @@ Chapter 1. Admin Guide
    messages although the limit might not be reached within the
    interval. Decrease the timer interval if you encounter this.
 
-1.3.3. Network Algorithm (NETWORK)
+1.3.3. Slot Based Taildropping (SBT)
+
+   SBT holds a window consisting of one or more slots. You can set
+   the window_size parameter(seconds) which means for how long we
+   should look back to count the calls and slot_period
+   parameter(miliseconds) which tells how granular the algorithm
+   should be. The number of slots will be window_size/slot_period.
+   If, for example, you have window_size= slot_period=1 second,
+   then after each second you shall lose the call count, but if
+   you set the slot_period to 100 microseconds, then when your
+   call will be outside the window, the calls in the first 100
+   microseconds shall be dropped, and the rest in the next 900
+   shall be kept.
+
+1.3.4. Network Algorithm (NETWORK)
 
    This algorithm relies on information provided by network
    interfaces. The total amount of bytes waiting to be consumed on
@@ -415,6 +434,32 @@ modparam("ratelimit", "accept_pipes_timeout", 1)
 modparam("dialog", "repl_pipes_auth_check", 1)
 ...
 
+1.6.14. window_size (int)
+
+   How long the history in SBT should be in seconds.
+
+   Default value is “10”.
+
+   Example 1.14. Set window_size parameter
+...
+modparam("dialog", "window_size", 5)
+...
+
+1.6.15. slot_period (int)
+
+   Value of one slot in microseconds. This parameter determines
+   how granular the algorithm should be. The number of slots will
+   be determined by window_size/slot_period.
+
+   Default value is “200”.
+
+   Example 1.15. Set slot_period parameter
+...
+modparam("dialog", "window_size", 5)
+#we will have 50 slots of 100 microseconds
+modparam("dialog", "slot_period", 100)
+...
+
 1.7. Exported Functions
 
 1.7.1.  rl_check(name, limit[, algorithm])
@@ -446,7 +491,7 @@ modparam("dialog", "repl_pipes_auth_check", 1)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.14. rl_check usage
+   Example 1.16. rl_check usage
 ...
         # perform a pipe match for all INVITE methods using RED algorith
 m
@@ -475,7 +520,7 @@ m
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.15. rl_dec_count usage
+   Example 1.17. rl_dec_count usage
 ...
         if (!rl_check("gw_$ru", "100", "TAILDROP")) {
                 exit;
@@ -494,7 +539,7 @@ m
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.16. rl_reset_count usage
+   Example 1.18. rl_reset_count usage
 ...
         if (!rl_check("gw_$ru", "100", "TAILDROP")) {
                 exit;

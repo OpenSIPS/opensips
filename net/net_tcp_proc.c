@@ -48,7 +48,7 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 	LM_DBG(" extra_data %p\n", c->extra_data);
 
 	/* if we are in a writer context, do not touch the buffer contain read packets per connection
-	might be in a completely different process 
+	might be in a completely different process
 	even if in our process we shouldn't touch it, since it might currently be in use, when we've read multiple SIP messages in one try*/
 	if (!writer && c->con_req) {
 		pkg_free(c->con_req);
@@ -61,8 +61,8 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 	/* errno==EINTR, EWOULDBLOCK a.s.o todo */
 	response[0]=(long)c;
 	response[1]=state;
-	
-	if (send_all((state==ASYNC_WRITE)?unix_tcp_sock:tcpmain_sock, response, 
+
+	if (send_all((state==ASYNC_WRITE)?unix_tcp_sock:tcpmain_sock, response,
 	sizeof(response))<=0)
 		LM_ERR("send_all failed\n");
 }
@@ -71,7 +71,7 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 /* wrapper around internal tcpconn_release() - to be called by functions which
  * used tcp_conn_get(), in order to release the connection;
  * It does the unref and pushes back (if needed) some update to TCP main;
- * right now, it used only from the xxx_send() functions 	
+ * right now, it used only from the xxx_send() functions
  */
 void tcp_conn_release(struct tcp_connection* c, int pending_data)
 {
@@ -117,7 +117,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			handle_timer_job();
 			break;
 		case F_SCRIPT_ASYNC:
-			async_resume_f( fm->fd, fm->data);
+			async_resume_f( &fm->fd, fm->data);
 			return 0;
 		case F_TCPMAIN:
 again:
@@ -173,7 +173,7 @@ again:
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					goto con_error;
 				}
-	
+
 				/* mark that the connection is currently in our process
 				future writes to this con won't have to acquire FD */
 				con->proc_id = process_no;
@@ -185,7 +185,7 @@ again:
 				resp = protos[con->type].net.write( (void*)con, s );
 				lock_release(&con->write_lock);
 				if (resp<0) {
-					ret=-1; /* some error occured */
+					ret=-1; /* some error occurred */
 					con->state=S_CONN_BAD;
 					tcpconn_release(con, CONN_ERROR,1);
 					break;
@@ -204,7 +204,7 @@ again:
 				con=(struct tcp_connection*)fm->data;
 				resp = protos[con->type].net.read( (void*)con, &ret );
 				if (resp<0) {
-					ret=-1; /* some error occured */
+					ret=-1; /* some error occurred */
 					con->state=S_CONN_BAD;
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
@@ -230,7 +230,7 @@ again:
 						fm->fd, fm->type, fm->data);
 			goto error;
 		default:
-			LM_CRIT("uknown fd type %d\n", fm->type);
+			LM_CRIT("unknown fd type %d\n", fm->type);
 			goto error;
 	}
 
@@ -288,11 +288,11 @@ static inline void tcp_receive_timeout(void)
 
 
 
-void tcp_worker_proc( int unix_sock, int max_fd )
+void tcp_worker_proc( int unix_sock)
 {
 	/* init reactor for TCP worker */
 	tcpmain_sock=unix_sock; /* init com. socket */
-	if ( init_worker_reactor( "TCP_worker", max_fd, RCT_PRIO_MAX)<0 ) {
+	if ( init_worker_reactor( "TCP_worker", RCT_PRIO_MAX)<0 ) {
 		goto error;
 	}
 

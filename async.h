@@ -36,9 +36,10 @@
  * NOTE: all values in this enum must be negative
  */
 enum async_ret_code {
-	ASYNC_NO_IO = -5,
+	ASYNC_NO_IO = -6,
 	ASYNC_SYNC,
 	ASYNC_CONTINUE,
+	ASYNC_CHANGE_FD,
 	ASYNC_DONE_CLOSE_FD,
 	ASYNC_DONE,
 };
@@ -49,7 +50,7 @@ extern int async_status;
 /* function to handle script function in async mode.
    Input: the sip message, the function/action (MODULE_T) and the ID of
           the resume route (where to continue after the I/O is done).
-   Output: 0 if the async call was successfuly done and script execution
+   Output: 0 if the async call was successfully done and script execution
           must be terminated.
           -1 some error happened and the async call did not happened.
  */
@@ -61,7 +62,7 @@ typedef int (async_start_function)
 	(struct sip_msg *msg, struct action* a , int resume_route);
 
 typedef int (async_resume_function)
-	(int fd, void *param);
+	(int *fd, void *param);
 
 extern async_start_function  *async_start_f;
 extern async_resume_function *async_resume_f;
@@ -69,7 +70,7 @@ extern async_resume_function *async_resume_f;
 int register_async_handlers(async_start_function *f1, async_resume_function *f2);
 
 
-/* async related functions to be used by the 
+/* async related functions to be used by the
  * functions exported by modules */
 typedef int (async_resume_module)
 	(int fd, struct sip_msg *msg, void *param);

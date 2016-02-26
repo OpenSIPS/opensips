@@ -153,7 +153,7 @@ int udp_init_listener(struct socket_info *si, int status_flags)
 	if (status_flags) {
 		optval=fcntl(si->socket, F_GETFL);
 		if (optval==-1){
-			LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+			LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
 			goto error;
 		}
 		if (fcntl(si->socket,F_SETFL,optval|status_flags)==-1){
@@ -264,10 +264,10 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			handle_timer_job();
 			return 0;
 		case F_SCRIPT_ASYNC:
-			async_resume_f( fm->fd, fm->data);
+			async_resume_f( &fm->fd, fm->data);
 			return 0;
 		default:
-			LM_CRIT("uknown fd type %d in UDP worker\n", fm->type);
+			LM_CRIT("unknown fd type %d in UDP worker\n", fm->type);
 			return -1;
 	}
 	return -1;
@@ -287,7 +287,7 @@ int udp_rcv_loop( struct socket_info *si )
 {
 
 	/* create the reactor for UDP proc */
-	if ( init_worker_reactor( "UDP_worker", 100/*max_fd*/, RCT_PRIO_MAX)<0 ) {
+	if ( init_worker_reactor( "UDP_worker", RCT_PRIO_MAX)<0 ) {
 		LM_ERR("failed to init reactor\n");
 		goto error;
 	}
@@ -310,81 +310,6 @@ int udp_rcv_loop( struct socket_info *si )
 error:
 	destroy_worker_reactor();
 	return -1;
-}
-
-
-int udp_init_nofork(void)
-{
-	struct socket_info *si;
-	stat_var *load_p = NULL;
-	int p;
-
-	if (udp_disabled || (si=protos[PROTO_UDP].listeners)==NULL) {
-		LM_ERR("configuration error: no UDP listener in NO FORK mode\n");
-		return -1;
-	}
-
-	/* only one address, we ignore all the others */
-	if (si->next) {
-		LM_WARN("using only the first UDP listen address (no fork)\n");
-	}
-	for( p=PROTO_FIRST ; p<PROTO_LAST ; p++ )
-		if (p!=PROTO_UDP && protos[p].listeners)
-			LM_WARN("discarding all listen addresses for protocol %s\n",
-				protos[p].name);
-
-	if (udp_init_listener(si, O_NONBLOCK) < 0) {
-		LM_ERR("failed to init the single UDP listener\n");
-		return -1;
-	}
-
-	protos[PROTO_UDP].sendipv4 = si;
-	protos[PROTO_UDP].sendipv6 = si; /*FIXME*/
-
-	if (register_udp_load_stat(&si->sock_str,&load_p,1/*children*/)!=0){
-		LM_ERR("failed to init load statistics\n");
-		return -1;
-	}
-	pt[process_no].load = load_p;
-
-	return 0;
-}
-
-
-int udp_start_nofork(void)
-{
-	struct socket_info *si;
-	int rc;
-
-	/* this was tested by udp_init_nofork !!! */
-	si = protos[PROTO_UDP].listeners;
-
-	/* main process, receive loop */
-	set_proc_attrs("stand-alone SIP receiver %.*s",
-		si->sock_str.len, si->sock_str.s );
-
-	bind_address = si; /* shortcut */
-
-	/* We will call child_init even if we
-	 * do not fork - and it will be called with rank 1 because
-	 * in fact we behave like a child, not like main process */
-	if (init_child(1) < 0) {
-		LM_ERR("init_child failed in don't fork\n");
-		return -1;
-	}
-
-	if (startup_rlist.a)
-		run_startup_route();
-
-	clean_write_pipeend();
-	LM_DBG("waiting for status code from children\n");
-	rc = wait_for_all_children();
-	if (rc < 0) {
-		LM_ERR("failed to successfully init children\n");
-		return rc;
-	}
-
-	return udp_rcv_loop( si );
 }
 
 
@@ -424,7 +349,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 						report_failure_status();
 						if (*chd_rank == 1 && startup_done)
 							*startup_done = -1;
-							exit(-1);
+						exit(-1);
 					}
 
 					/* first UDP proc runs statup_route (if defined) */

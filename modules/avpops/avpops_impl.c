@@ -244,7 +244,7 @@ inline static str* get_source_uri(struct sip_msg* msg,int source)
 			return &(msg->new_uri);
 		return &(msg->first_line.u.request.uri);
 	} else {
-		LM_ERR("unknow source <%d>\n", source);
+		LM_ERR("unknown source <%d>\n", source);
 		goto error;
 	}
 error:
@@ -811,6 +811,8 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 	query_async_param *param;
 	str qstr;
 
+	void *_tmp_db_param;
+
 	if (!msg || !query)
 	{
 		LM_ERR("bad parameters\n");
@@ -843,7 +845,7 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 		return rc == 1 ? -2 : (rc != 0 ? -1 : 1);
 	}
 
-	read_fd = url->dbf.async_raw_query(url->hdl, &qstr);
+	read_fd = url->dbf.async_raw_query(url->hdl, &qstr, &_tmp_db_param);
 	if (read_fd < 0)
 	{
 		*rparam = NULL;
@@ -865,6 +867,7 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 	param->output_avps = dest;
 	param->hdl = url->hdl;
 	param->dbf = &url->dbf;
+	param->db_param = _tmp_db_param;
 
 	async_status = read_fd;
 	return 1;
@@ -876,8 +879,8 @@ int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
 	query_async_param *param = (query_async_param *)_param;
 	int rc;
 
-	rc = param->dbf->async_raw_resume(param->hdl, fd, &res);
-	if (async_status == ASYNC_CONTINUE) {
+	rc = param->dbf->async_raw_resume(param->hdl, fd, &res, param->db_param);
+	if (async_status == ASYNC_CONTINUE || async_status == ASYNC_CHANGE_FD) {
 		return rc;
 	}
 
@@ -900,6 +903,8 @@ int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
 		pkg_free(param);
 		return -1;
 	}
+
+	async_status=ASYNC_DONE;
 
 	db_free_result(res);
 	pkg_free(param);

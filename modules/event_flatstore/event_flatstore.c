@@ -54,7 +54,7 @@ static int *opened_fds;
 static int *rotate_version;
 static int buff_convert_len;
 static int cap_params;
-static str delimiter; 
+static str delimiter;
 static char *dirc;
 static int dir_size;
 static char *buff;
@@ -265,7 +265,7 @@ static struct mi_root* mi_rotate(struct mi_root* root, void *param){
 	struct flat_socket *found_fd = search_for_fd(root->node.kids->value);
 
 	if (found_fd == NULL) {
-		LM_DBG("Not found path %*.s [lung : %d]\n",root->node.kids->value.len, root->node.kids->value.s, root->node.kids->value.len);
+		LM_DBG("Not found path %.*s [lung : %d]\n",root->node.kids->value.len, root->node.kids->value.s, root->node.kids->value.len);
 		lock_release(global_lock);
 		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));;
 	}
@@ -283,7 +283,7 @@ static struct mi_root* mi_rotate(struct mi_root* root, void *param){
 static int flat_match (evi_reply_sock *sock1, evi_reply_sock *sock2) {
 	struct flat_socket *fs1;
 	struct flat_socket *fs2;
-	   
+
 	if (sock1 != NULL && sock2 != NULL
 			&& sock1->params != NULL && sock2->params != NULL) {
 
@@ -349,8 +349,8 @@ static int insert_in_list(struct flat_socket *entry) {
 
 	lock_release(global_lock);
 
-	LM_ERR("no more free sockets\n");	
-	return -1;	
+	LM_ERR("no more free sockets\n");
+	return -1;
 }
 
 static evi_reply_sock* flat_parse(str socket){
@@ -410,7 +410,7 @@ static evi_reply_sock* flat_parse(str socket){
 	memcpy(dirc, entry->path.s, socket.len + 1);
 
 	dname = dirname(dirc);
-	
+
 	if (stat(dname, &st_buf) < 0) {
 		LM_ERR("invalid directory name\n");
 		shm_free(entry);
@@ -499,12 +499,13 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 
 	int idx = 0, offset_buff = 0, len, required_length = 0, nwritten;
 	evi_param_p param;
-	struct flat_socket *entry = (struct flat_socket*) sock->params;
+	struct flat_socket *entry = (struct flat_socket*)(sock ? sock->params: NULL);
 	char endline = '\n';
 	char *ptr_buff;
 	int nr_params = 0;
 
-	rotating(entry);
+	if (entry)
+		rotating(entry);
 
 	verify_delete();
 
@@ -570,7 +571,8 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 		nwritten = writev(opened_fds[entry->file_index_process], io_param, idx);
 	} while (nwritten < 0 && errno == EINTR);
 
-	LM_DBG("raised event: %.*s has %d parameters\n", ev_name->len, ev_name->s, nr_params);
+	if (ev_name && ev_name->s)
+		LM_DBG("raised event: %.*s has %d parameters\n", ev_name->len, ev_name->s, nr_params);
 
 	if (nwritten < 0){
 		LM_ERR("cannot write to socket\n");
@@ -589,9 +591,13 @@ static void flat_free(evi_reply_sock *sock) {
 	}
 
 	new = shm_malloc(sizeof(struct flat_deleted));
+	if (!new) {
+		LM_ERR("no more shm mem\n");
+		return;
+	}
 	new->socket = (struct flat_socket*)sock->params;
 	LM_DBG("File %s is being deleted...\n",new->socket->path.s);
-	new->next = NULL;	
+	new->next = NULL;
 
 	lock_get(global_lock);
 

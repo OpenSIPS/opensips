@@ -119,7 +119,7 @@ static int alias_db_query(struct sip_msg* _msg, char* _table,
 		goto err_server;
 	}
 
-	if (RES_ROW_N(db_res)<=0 || RES_ROWS(db_res)[0].values[0].nul != 0) {
+	if (db_res == NULL || RES_ROW_N(db_res)<=0 || RES_ROWS(db_res)[0].values[0].nul != 0) {
 		LM_DBG("no alias found for R-URI\n");
 		if (db_res!=NULL && adbf.free_result(db_handle, db_res) < 0)
 			LM_DBG("failed to freeing result of query\n");
@@ -272,20 +272,16 @@ static inline int set_alias_to_pvar(struct sip_msg* _msg, str *alias, int no, vo
 int alias_db_find(struct sip_msg* _msg, char* _table, char* _in, char* _out,
 															char* flags)
 {
-	pv_value_t val;
+	str _in_s;
 	struct sip_uri puri;
 
 	/* get the input value */
-	if (pv_get_spec_value(_msg, (pv_spec_t*)_in, &val)!=0) {
-		LM_ERR("failed to get PV value\n");
+	if(_in==NULL || fixup_get_svalue(_msg, (gparam_p)_in, &_in_s)!=0) {
+		LM_ERR("invalid input parameter\n");
 		return -1;
 	}
-	if ( (val.flags&PV_VAL_STR)==0 ) {
-		LM_ERR("PV vals is not string\n");
-		return -1;
-	}
-	if (parse_uri(val.rs.s, val.rs.len, &puri)<0) {
-		LM_ERR("failed to parse uri %.*s\n",val.rs.len,val.rs.s);
+	if (parse_uri(_in_s.s, _in_s.len, &puri)<0) {
+		LM_ERR("failed to parse uri %.*s\n",_in_s.len,_in_s.s);
 		return -1;
 	}
 

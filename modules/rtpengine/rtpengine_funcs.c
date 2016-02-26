@@ -411,7 +411,7 @@ get_via_branch(struct sip_msg* msg, int vianum, str* _branch)
 	struct via_body *via;
 	struct via_param *p;
 
-	if ((parse_headers(msg, (vianum == 1) ? HDR_VIA1_F : HDR_VIA2_F, 0) == -1) < 0)
+	if (parse_headers(msg, (vianum == 1) ? HDR_VIA1_F : HDR_VIA2_F, 0) < 0)
 		return -1;
 
 	via = (vianum == 1) ? msg->via1 : msg->via2;

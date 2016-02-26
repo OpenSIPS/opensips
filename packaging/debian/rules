@@ -13,6 +13,7 @@
 #	upstreamcflags -- don't set cflags, let upstream package Makefile do it
 
 DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 DEBVERSION:=$(shell head -n 1 debian/changelog \
                     | sed -e 's/^[^(]*(\([^)]*\)).*/\1/')
@@ -60,7 +61,7 @@ JABBER_PKGNAME = opensips-jabber-module
 JABBER_MODULES = jabber
 JABBER_MOD_PATH=$(addprefix modules/, $(JABBER_MODULES))
 CPL_PKGNAME = opensips-cpl-module 
-CPL_MODULES = cpl-c
+CPL_MODULES = cpl_c
 CPL_MOD_PATH=$(addprefix modules/, $(CPL_MODULES))
 RADIUS_PKGNAME = opensips-radius-modules
 RADIUS_MODULES = aaa_radius peering
@@ -159,6 +160,8 @@ BUILD_MODULE_PATHS = $(foreach pkg,$(BUILD_MODPKG_LIST),$($(pkg)_MOD_PATH))
 ## Everything we don't specifically exclude here will get built into the primary package
 NONCORE_MODULES = $(ALL_MODULES) osp
 
+# https://wiki.debian.org/ReproducibleBuilds/
+CC_EXTRA_OPTS += -DVERSION_NODATE
 
 ifeq (cc, $(CC))
 	CC = gcc
@@ -177,14 +180,16 @@ endif
 endif
 
 # inherit variables from dpkg-builder
-CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
-CFLAGS += $(shell dpkg-buildflags --get CFLAGS) $(CPPFLAGS)
+BUILD_CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
+BUILD_CFLAGS = $(shell dpkg-buildflags --get CFLAGS)
 CXXFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
 LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
 
+# https://wiki.debian.org/ReproducibleBuilds/
+CFLAGS += -DVERSION_NODATE
 
-# force lib (versus lib64) and SMP support all the time
-VARS = LIBDIR=lib ISSMP=yes
+# force multiach lib path and SMP support all the time
+VARS = LIBDIR=lib/$(DEB_HOST_MULTIARCH) ISSMP=yes
 
 # Debian Jessie doesn't package radius-ng, so use freeradius instead
 VARS += FREERADIUS=yes
@@ -194,19 +199,21 @@ ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 endif
 
 # support parallel compiling
+NJOBS =
+FASTER =
 ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
-         NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
-         MAKEFLAGS += -j$(NUMJOBS)
+	NJOBS = -j $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+	FASTER = 1
 endif
 
 override_dh_auto_build:
 	# Add here commands to compile the package.
-	FASTER=1 CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) app \
-	  modules skip_modules="$(NONCORE_MODULES)" cfg-target=/etc/opensips/
-	FASTER=1 CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) \
-	  modules modules="$(BUILD_MODULE_PATHS)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) app \
+	  modules skip_modules="$(NONCORE_MODULES)" cfg_target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) \
+	  modules modules="$(BUILD_MODULE_PATHS)" cfg_target=/etc/opensips/
 	# generate the utils db_berkeley
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) utils include_modules="db_berkeley"
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) utils include_modules="db_berkeley"
 
 	touch build-stamp
 
@@ -233,13 +240,13 @@ show-mod-info:
 override_dh_auto_install:
 	# Add here commands to install the package into debian/opensips
 	# opensips base package
-	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-app \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install \
 		install-modules-all skip_modules="$(NONCORE_MODULES)" \
 		basedir=$(CURDIR)/debian/opensips \
 		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/opensips \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/opensips \
+		cfg_prefix=$(CURDIR)/debian/opensips \
+		cfg_target=/etc/opensips/ \
+		doc_dir=share/doc/opensips \
 		skip-install-doc=yes # skip INSTALL.gz on debian systems
 
 	find $(CURDIR)/debian/opensips/etc/opensips -type f -exec chmod -x {} \;
@@ -251,20 +258,24 @@ override_dh_auto_install:
 	    eval pkg_modules=\$$$${pkg}_MODULES;\
 	    eval pkg_paths=\$$$${pkg}_MOD_PATH;\
 	    echo "rules: Installing $${pkg} as $${pkg_pkgname} from $${pkg_modules} ...";\
-	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all \
+	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install-modules-all \
 		modules="$${pkg_paths}"  \
 		basedir=$(CURDIR)/debian/$${pkg_pkgname} \
 		prefix=/usr \
-		cfg-prefix=$(CURDIR)/debian/$${pkg_pkgname} \
-		cfg-target=/etc/opensips/ \
-		doc-dir=share/doc/$${pkg_pkgname} \
+		cfg_prefix=$(CURDIR)/debian/$${pkg_pkgname} \
+		cfg_target=/etc/opensips/ \
+		doc_dir=share/doc/$${pkg_pkgname} \
 		;\
 	done
 
-	# install only the opensips console tool
-	$(MAKE) install-console \
-		basedir=$(CURDIR)/debian/opensips-console \
-		prefix=/usr
+	# move console binary from opensips to opensips-console
+	mkdir -p $(CURDIR)/debian/opensips-console/usr/sbin
+	mv $(CURDIR)/debian/opensips/usr/sbin/osipsconsole \
+		 $(CURDIR)/debian/opensips-console/usr/sbin/
+	# move binaries of opensips-berkeley-module to opensips-berkeley-bin
+	mkdir -p $(CURDIR)/debian/opensips-berkeley-bin/usr/
+	mv $(CURDIR)/debian/opensips-berkeley-module/usr/sbin \
+		$(CURDIR)/debian/opensips-berkeley-bin/usr/
 
 override_dh_strip:
 	dh_strip --dbg-package=opensips-dbg

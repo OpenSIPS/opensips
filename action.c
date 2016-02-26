@@ -106,6 +106,9 @@ action_elem_p route_params[MAX_REC_LEV];
 int route_params_number[MAX_REC_LEV];
 int route_rec_level = -1;
 
+int curr_action_line;
+char *curr_action_file;
+
 static int for_each_handler(struct sip_msg *msg, struct action *a);
 
 
@@ -187,7 +190,6 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 
 int run_top_route(struct action* a, struct sip_msg* msg)
 {
-	static unsigned int bl_last_msg_id = 0;
 	int bk_action_flags;
 	int bk_rec_lev;
 	int ret;
@@ -198,11 +200,6 @@ int run_top_route(struct action* a, struct sip_msg* msg)
 	action_flags = 0;
 	rec_lev = 0;
 	init_err_info();
-
-	if (bl_last_msg_id != msg->id) {
-		bl_last_msg_id = msg->id;
-		reset_bl_markers();
-	}
 
 	resetsflag( (unsigned int)-1 );
 
@@ -237,7 +234,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 	if(a->elem[1].type != NULLV_ST)
 	{
 		ret = eval_expr((struct expr*)a->elem[1].u.data, msg, &val);
-		if(!(val.flags & (PV_VAL_STR | PV_VAL_INT | PV_VAL_NULL)))
+		if(ret < 0 || !(val.flags & (PV_VAL_STR | PV_VAL_INT | PV_VAL_NULL)))
 		{
 			LM_WARN("no value in right expression at %s:%d\n",
 				a->file, a->line);
@@ -437,6 +434,9 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 	start_expire_timer(start,execmsgthreshold);
 
+	curr_action_line = a->line;
+	curr_action_file = a->file;
+
 	ret=E_BUG;
 	switch ((unsigned char)a->type){
 		case ASSERT_T:
@@ -466,7 +466,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case DROP_T:
 				script_trace("core", "drop", msg, a->file, a->line) ;
-				action_flags |= ACT_FL_DROP;
+				action_flags |= ACT_FL_DROP|ACT_FL_EXIT;
+			break;
 		case EXIT_T:
 				script_trace("core", "exit", msg, a->file, a->line) ;
 				ret=0;
@@ -521,7 +522,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				free_proxy(p); /* frees only p content, not p itself */
 				pkg_free(p);
 				if (ret==0) ret=1;
-			}else if ((a->elem[0].type==PROXY_ST)) {
+			}else if (a->elem[0].type==PROXY_ST) {
 				if (0==(p=clone_proxy((struct proxy_l*)a->elem[0].u.data))) {
 					LM_ERR("failed to clone proxy, dropping packet\n");
 					ret=E_OUT_OF_MEM;
@@ -674,14 +675,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 				break;
 			}
 			ret = (msg->len >= (unsigned int)a->elem[0].u.number) ? 1 : -1;
-			break;
-		case SET_DEBUG_T:
-			script_trace("core", "set_debug", msg, a->file, a->line) ;
-			if (a->elem[0].type==NUMBER_ST)
-				set_proc_debug_level(a->elem[0].u.number);
-			else
-				reset_proc_debug_level();
-			ret = 1;
 			break;
 		case SETFLAG_T:
 			script_trace("core", "setflag", msg, a->file, a->line) ;
@@ -1596,7 +1589,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 next_avp:
 							if (it) {
 								it = it->next;
-								if (it==NULL);
+								if (it==NULL)
 									break;
 							}
 						}
@@ -1882,8 +1875,9 @@ next_avp:
 				script_trace("async", ((acmd_export_t*)(aitem->elem[0].u.data))->name,
 					msg, a->file, a->line) ;
 				ret = async_start_f( msg, aitem, a->elem[1].u.number);
+				if (ret>=0)
+					action_flags |= ACT_FL_TBCONT;
 			}
-			action_flags |= ACT_FL_TBCONT;
 			ret = 0;
 			break;
 		case FORCE_RPORT_T:

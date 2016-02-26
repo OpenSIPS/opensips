@@ -56,8 +56,8 @@ struct tree_map ** script_failure_trees = NULL;
 static int carrier_tree_fixup(struct rewrite_data * rd);
 
 /**
- * Initialises the routing data, i.e. it binds the data loader,
- * initialises the global data pointer.
+ * Initializes the routing data, i.e. it binds the data loader,
+ * initializes the global data pointer.
  *
  * @param source data source, can be db or file
  *
@@ -380,7 +380,7 @@ struct carrier_tree * create_carrier_tree(const str * tree, int carrier_id, int 
 
 /**
  * returns the routing tree for the given domain, if domain's tree
- * doesnt exist, it will be created. If the trees are completely
+ * doesn't exist, it will be created. If the trees are completely
  * filled and a not existing domain shall be added, an error is
  * returned
  *
@@ -411,7 +411,7 @@ struct carrier_tree * get_carrier_tree(int carrier_id, struct rewrite_data * rd)
  * @param tree the tree to be added
  * @param carrier_id id of the carrier
  *
- * @return values: on succcess the numerical index of the given tree,
+ * @return values: on success the numerical index of the given tree,
  * -1 on failure
  */
 int add_tree(const str * tree, int carrier_id) {

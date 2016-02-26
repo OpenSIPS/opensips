@@ -429,7 +429,7 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 
 	pid_t pid;
 	int ret = -1;
-	FILE *pin, *pout, *perr;
+	FILE *pin = NULL, *pout, *perr;
 
 	if ((input && input->len && input->s) || outvar || errvar) {
 		pid =  __popen3(command->s, (input&&input->len&&input->s) ? &pin : NULL,
@@ -446,7 +446,7 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 		}
 	}
 
-	if (input && input->len) {
+	if (input && input->len && pin) {
 		if (fwrite(input->s, 1, input->len, pin) != input->len) {
 			LM_ERR("failed to write to pipe\n");
 			ser_error=E_EXEC;
@@ -505,7 +505,7 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input,
 													gparam_p outvar, int *fd)
 {
 	pid_t pid;
-	FILE *pin, *pout;
+	FILE *pin = NULL, *pout;
 	int val;
 
 	if ((input&&input->s&&input->len) || outvar) {
@@ -526,7 +526,7 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input,
 		}
 	}
 
-	if (input && input->len) {
+	if (input && input->len && pin) {
 		if ( (val=fwrite(input->s, 1, input->len, pin)) != input->len) {
 			LM_ERR("failed to write all (%d needed, %d written) to input pipe,"
 				" but continuing\n",input->len,val);
@@ -553,7 +553,7 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input,
 	}
 	val = fcntl( *fd, F_GETFL);
 	if (val==-1){
-		LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+		LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
 		goto error2;
 	}
 	if (fcntl( *fd , F_SETFL, val|O_NONBLOCK)==-1){

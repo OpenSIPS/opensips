@@ -509,18 +509,20 @@ error:
 
 static int evi_print_subscriber(struct mi_node *rpl, evi_subs_p subs)
 {
-	evi_reply_sock *sock = subs->reply_sock;
-	struct mi_node *node = NULL;
+	evi_reply_sock *sock;
+	struct mi_node *node;
 	str socket;
 
 	if (!subs || !subs->trans_mod || !subs->trans_mod->print) {
 		LM_ERR("subscriber does not have a print method exported\n");
 		return -1;
 	}
+
 	node = add_mi_node_child(rpl, 0, "Subscriber", 10, 0, 0);
 	if(node == NULL)
 		return -1;
 
+	sock = subs->reply_sock;
 	if (!sock) {
 		LM_DBG("no socket specified\n");
 		if (!add_mi_attr(node, 0, "protocol", 8,

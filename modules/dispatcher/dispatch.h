@@ -69,6 +69,9 @@
 #define DS_PARTITION_DELIM ':'
 #define DS_DEFAULT_PARTITION_NAME "default"
 
+#define MI_FULL_LISTING (1<<0)
+
+
 extern int ds_persistent_state;
 
 typedef struct _ds_dest
@@ -76,6 +79,7 @@ typedef struct _ds_dest
 	str uri;
 	str dst_uri;    /* Actual uri used in ds_select_dst ds_select_domain */
 	str attrs;
+	str description;
 	int flags;
 	unsigned short weight;
 	unsigned short running_weight;
@@ -175,6 +179,7 @@ extern str ds_dest_state_col;
 extern str ds_dest_weight_col;
 extern str ds_dest_prio_col;
 extern str ds_dest_attrs_col;
+extern str ds_dest_description_col;
 
 extern pv_elem_t * hash_param_model;
 
@@ -188,7 +193,6 @@ extern str ds_ping_from;
 extern int probing_threshhold; /* number of failed requests,
 						before a destination is taken into probing */
 extern int ds_probing_mode;
-
 
 int init_ds_db(ds_partition_t *partition);
 int ds_connect_db(ds_partition_t *partition);
@@ -204,7 +208,7 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
 int ds_set_state(int group, str *address, int state, int type,
 		ds_partition_t *partition);
 int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
-int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition);
+int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition, int flags);
 int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
 				ds_partition_t *partition);
 

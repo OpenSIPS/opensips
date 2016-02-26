@@ -150,7 +150,7 @@ int extract_avp(VALUE_PAIR* vp) {
 	unsigned short flags = 0;
 
 	/* empty? */
-	if (vp->lvalue == 0 || vp->strvalue == 0)
+	if (vp->lvalue == 0)
 		return -1;
 
 	p = vp->strvalue;
@@ -267,7 +267,7 @@ int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message** reply) {
 				return -1;
 			}
 		} else if (result == REJECT_RC) {
-			LM_DBG("rc_auth function succeded with result REJECT_RC\n");
+			LM_DBG("rc_auth function succeeded with result REJECT_RC\n");
 			return result;
 		} else {
 			LM_ERR("rc_auth function failed\n");
@@ -290,7 +290,7 @@ int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message** reply) {
 	The return value is:
 	0, if the name is found
 	1, if the name isn't found
-	-1, if an error occured
+	-1, if an error occurred
  */
 int rad_find(aaa_conn* rh, aaa_map *map, int flag) {
 

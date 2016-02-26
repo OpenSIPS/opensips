@@ -1,5 +1,7 @@
 language: c
-compiler: gcc
+compiler:
+    - gcc
+    - clang
 sudo: false
 addons:
     apt:
@@ -30,5 +32,4 @@ addons:
             - liblua5.1-0-dev
             - libncurses5-dev
             - libjson0-dev
-            - libmemcache-dev
 script: FASTER=1 make exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase cachedb_mongodb" all

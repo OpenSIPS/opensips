@@ -1,107 +1,21 @@
-/*
- * Copyright (C) 2001-2003 FhG Fokus
- * Copyright (C) 2004,2005 Free Software Foundation, Inc.
- * Copyright (C) 2006 enum.at
+/* 
+ * File:   tls_conn.h
+ * Author: razvan
  *
- * This file is part of opensips, a free SIP server.
- *
- * opensips is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version
- *
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- * You must obey the GNU General Public License in all respects
- * for all of the code used other than OpenSSL.  If you modify
- * file(s) with this exception, you may extend this exception to your
- * version of the file(s), but you are not obligated to do so.  If you
- * do not wish to do so, delete this exception statement from your
- * version.  If you delete this exception statement from all source
- * files in the program, then also delete it here.
- *
- * opensips is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Created on November 11, 2015, 5:26 PM
  */
-#include <sys/poll.h>
-#include <openssl/err.h>
+
+#ifndef TLS_CONN_SERVER_H
+#define TLS_CONN_SERVER_H
+
 #include <openssl/ssl.h>
-#include <string.h>
-#include <errno.h>
+#include <openssl/err.h>
+#include <poll.h>
+#include "api.h"
+#include "tls_conn.h"
+#include "tls_config_helper.h"
+#include "../../locking.h"
 
-#include "../../dprint.h"
-#include "../../ip_addr.h"
-#include "../../mem/shm_mem.h"
-//#include "../timer.h"
-//#include "../usr_avp.h"
-#include "../../net/proto_tcp/tcp_common_defs.h"
-#include "../../ut.h"
-#include "tls_server.h"
-
-/*
- * Open questions:
- *
- * - what would happen when select exits, connection is passed
- *   to reader to perform read, but another process would acquire
- *   the same connection meanwhile, performs a write and finishes
- *   accept/connect on behalf of the reader process, thus the
- *   reader process would have nothing to read ? (resolved)
- *
- * - What happens if SSL_accept or SSL_connect gets called on
- *   already established connection (c->S_CONN_OK) ? We could
- *   save some locking provided that the functions do not screw
- *   up the connection (in tcp_fix_read_conn we would not have
- *   to lock before the switch).
- *
- * - tls_blocking_write needs fixing..
- *
- * - we need to protect ctx by a lock -- it is in shared memory
- *   and may be accessed simultaneously
- */
-
-
-/*
- * Update ssl structure with new fd
- */
-int tls_update_fd(struct tcp_connection *c, int fd)
-{
-	/*
-	* must be run from within a lock
-	*/
-	SSL            *ssl;
-
-	ssl = (SSL *) c->extra_data;
-
-	if (!SSL_set_fd(ssl, fd)) {
-		LM_ERR("failed to assign socket to ssl\n");
-		return -1;
-	}
-
-	LM_DBG("New fd is %d\n", fd);
-	return 0;
-}
-
-
-/*
- * dump ssl error stack
- */
-static void tls_print_errstack(void)
-{
-	int             code;
-
-	while ((code = ERR_get_error())) {
-		LM_ERR("TLS errstack: %s\n", ERR_error_string(code, 0));
-	}
-}
 
 static void tls_dump_cert_info(char* s,	X509* cert)
 {
@@ -398,62 +312,43 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 	return -1;
 }
 
+
 /*
- * wrapper around SSL_shutdown, returns -1 on error, 0 on success
+ * called before tls_read, the this function should attempt tls_accept or
+ * tls_connect depending on the state of the connection, if this function
+ * does not transit a connection into S_CONN_OK then tcp layer would not
+ * call tcp_read
  */
-int tls_conn_shutdown(struct tcp_connection *c)
+static int tls_fix_read_conn(struct tcp_connection *c)
 {
-	int             ret,
-					err;
-	SSL            *ssl;
-
-	/* If EOF or other error on connection, no point in attempting to
-	 * do further writing & reading on the con */
-	if (c->state == S_CONN_BAD ||
-		c->state == S_CONN_ERROR ||
-		c->state == S_CONN_EOF)
-		return 0;
 	/*
-	* we do not implement full ssl shutdown
+	* no lock acquired
 	*/
-	ssl = (SSL *) c->extra_data;
-	if (ssl == 0) {
-		LM_ERR("no ssl data\n");
-		return -1;
+	int             ret;
+
+	ret = 0;
+
+	/*
+	* We have to acquire the lock before testing c->state, otherwise a
+	* writer could modify the structure if it gets preempted and has
+	* something to write
+	*/
+	lock_get(&c->write_lock);
+
+	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
+		ret = tls_update_fd(c, c->fd);
+		if (!ret)
+			ret = tls_accept(c, NULL);
+	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
+		ret = tls_update_fd(c, c->fd);
+		if (!ret)
+			ret = tls_connect(c, NULL);
 	}
 
-	ret = SSL_shutdown(ssl);
-	if (ret == 1) {
-		LM_DBG("shutdown successful\n");
-		return 0;
-	} else if (ret == 0) {
-		LM_DBG("first phase of 2-way handshake completed succesfuly\n");
-		return 0;
-	} else {
-		err = SSL_get_error(ssl, ret);
-		switch (err) {
-			case SSL_ERROR_ZERO_RETURN:
-				c->state = S_CONN_EOF;
+	lock_release(&c->write_lock);
 
-				return 0;
-
-			case SSL_ERROR_WANT_READ:
-			case SSL_ERROR_WANT_WRITE:
-				c->state = S_CONN_EOF;
-				return 0;
-
-			default:
-				LM_ERR("something wrong in SSL: %d, %d, %s\n",err,errno,strerror(errno));
-				c->state = S_CONN_BAD;
-				tls_print_errstack();
-				return -1;
-		}
-	}
-
-	LM_ERR("bug\n");
-	return -1;
+	return ret;
 }
-
 
 /*
  * Wrapper around SSL_write, returns number of bytes written on success, *
@@ -506,67 +401,13 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
 
 
 /*
- * Wrapper around SSL_read
- *
- * returns number of bytes read, 0 on eof and transits into S_CONN_EOF, -1
- * on error
- */
-static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
-{
-	int ret, err;
-	SSL *ssl;
-
-	ssl = c->extra_data;
-
-	ret = SSL_read(ssl, buf, len);
-	if (ret > 0) {
-		LM_DBG("%d bytes read\n", ret);
-		return ret;
-	} else if (ret == 0) {
-		/* unclean shutdown of the other peer */
-		c->state = S_CONN_EOF;
-		return 0;
-	} else {
-		err = SSL_get_error(ssl, ret);
-		switch (err) {
-		case SSL_ERROR_ZERO_RETURN:
-			LM_DBG("TLS connection to %s:%d closed cleanly\n",
-				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
-			/*
-			* mark end of file
-			*/
-			c->state = S_CONN_EOF;
-			return 0;
-
-		case SSL_ERROR_WANT_READ:
-		case SSL_ERROR_WANT_WRITE:
-			return 0;
-
-		case SSL_ERROR_SYSCALL:
-			LM_ERR("SYSCALL error -> (%d) <%s>\n",errno,strerror(errno));
-		default:
-			LM_ERR("TLS connection to %s:%d read failed\n",
-				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
-			LM_ERR("TLS read error: %d\n",err);
-			c->state = S_CONN_BAD;
-			tls_print_errstack();
-			return -1;
-		}
-	}
-
-	LM_BUG("bug\n");
-	return -1;
-}
-
-
-/*
  * This is shamelessly stolen tsend_stream from tsend.c
  */
 /*
  * fixme: probably does not work correctly
  */
-size_t tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
-																	size_t len)
+static int tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
+										size_t len, struct tls_mgm_binds *api)
 {
 	#define MAX_SSL_RETRIES 32
 	int             written, n;
@@ -587,7 +428,7 @@ size_t tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 	if (tls_update_fd(c, fd) < 0)
 		goto error;
 
-	timeout = tls_mgm_api.get_send_timeout();
+	timeout = api->get_send_timeout();
 again:
 	n = 0;
 	pf.events = 0;
@@ -595,14 +436,14 @@ again:
 	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
 		if (tls_accept(c, &(pf.events)) < 0)
 			goto error;
-		timeout = tls_mgm_api.get_handshake_timeout();
+		timeout = api->get_handshake_timeout();
 	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
 		if (tls_connect(c, &(pf.events)) < 0)
 			goto error;
-		timeout = tls_mgm_api.get_handshake_timeout();
+		timeout = api->get_handshake_timeout();
 	} else {
 		n = tls_write(c, fd, buf, len, &(pf.events));
-		timeout = tls_mgm_api.get_send_timeout();
+		timeout = api->get_send_timeout();
 	}
 
 	if (n < 0) {
@@ -619,7 +460,7 @@ again:
 			goto error;
 		}
 	} else {
-		/* reset the retries if we succeded in doing something*/
+		/* reset the retries if we succeeded in doing something*/
 		retries = 0;
 	}
 
@@ -681,74 +522,6 @@ error:
 }
 
 
-/*
- * called only when a connection is in S_CONN_OK, we do not have to care
- * about accepting or connecting here, each modification of ssl data
- * structures has to be protected, another process might ask for the same
- * connection and attempt write to it which would result in updating the
- * ssl structures
- */
-size_t tls_read(struct tcp_connection * c,struct tcp_req *r)
-{
-	int             bytes_free;
-	int             fd, read;
 
-	fd = c->fd;
-	bytes_free = TCP_BUF_SIZE - (int) (r->pos - r->buf);
+#endif /* TLS_CONN_SERVER_H */
 
-	if (bytes_free == 0) {
-		LM_ERR("TLS buffer overrun, dropping\n");
-		r->error = TCP_REQ_OVERRUN;
-		return -1;
-	}
-
-	/*
-	* ssl structures may be accessed from several processes, we need to
-	* protect each access and modification by a lock
-	*/
-	lock_get(&c->write_lock);
-	tls_update_fd(c, fd);
-	read = _tls_read(c, r->pos, bytes_free);
-	lock_release(&c->write_lock);
-	if (read > 0)
-		r->pos += read;
-	return read;
-}
-
-
-/*
- * called before tls_read, the this function should attempt tls_accept or
- * tls_connect depending on the state of the connection, if this function
- * does not transit a connection into S_CONN_OK then tcp layer would not
- * call tcp_read
- */
-int tls_fix_read_conn(struct tcp_connection *c)
-{
-	/*
-	* no lock acquired
-	*/
-	int             ret;
-
-	ret = 0;
-
-	/*
-	* We have to acquire the lock before testing c->state, otherwise a
-	* writer could modify the structure if it gets preempted and has
-	* something to write
-	*/
-	lock_get(&c->write_lock);
-
-	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
-		ret = tls_update_fd(c, c->fd);
-		if (!ret)
-			ret = tls_accept(c, NULL);
-	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
-		ret = tls_update_fd(c, c->fd);
-		if (!ret)
-			ret = tls_connect(c, NULL);
-	}
-
-	lock_release(&c->write_lock);
-
-	return ret;
-}

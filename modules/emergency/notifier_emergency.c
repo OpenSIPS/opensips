@@ -564,7 +564,6 @@ str* add_body_notifier(struct sm_subscriber* notifier){
 	aux_body+= 14;
 	memcpy(aux_body, CRLF, CRLF_LEN);
 	aux_body += CRLF_LEN;
-	aux_body = '\0';
 
 	LM_DBG(" aux_body:%.*s \n",pt_body->len, pt_body->s);
 
@@ -638,7 +637,6 @@ str* add_hdr_notifier(struct sm_subscriber* notifier){
 	aux_hdr+= 25;
 	memcpy(aux_hdr, CRLF, CRLF_LEN);
 	aux_hdr += CRLF_LEN;
-	aux_hdr = '\0';
 
 	LM_DBG("NEW_HDR : %.*s \n", pt_hdr->len, pt_hdr->s);
 

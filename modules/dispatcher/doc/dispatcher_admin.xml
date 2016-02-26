@@ -318,6 +318,30 @@ modparam("dispatcher", "ds_probing_mode", 1)
 	</section>
 
 	<section>
+		<title><varname>ds_probing_list</varname> (str)</title>
+		<para>
+                Defines a list of one or more setids that limits which
+                destinations are probed if probing is active.  This is useful
+                when multiple proxies share the same dispatcher table, but you
+                want to limit which ones are responsible for probing specific
+                destinations.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL(none)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <quote>ds_probing_list</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "ds_probing_list", "1,2,3")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>ds_define_blacklist</varname> (str)</title>
 		<para>
 		Defines a blacklist based on a dispatching setid from the 'default'
@@ -570,7 +594,12 @@ modparam("dispatcher", "table_name", "my_dispatcher")
 		<title> Create a new partition called 'part2' </title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "partition", "part2 : db_url=mysql://user:passwd@localhost/database; table_name = ds_table; ds_define_blacklist= list2= 4,6;")
+modparam("dispatcher", "partition",
+                "part2:
+                    db_url = mysql://user:passwd@localhost/database;
+                    table_name = ds_table;
+                    attrs_avp = $avp(ds_attr_part2);
+                    ds_define_blacklist = list2 = 4,6;")
 ...
 </programlisting>
 		</example>
@@ -1157,7 +1186,13 @@ _empty_line_
 		<para>
 		Name: <emphasis>ds_list</emphasis>
 		</para>
-		<para>Parameters: <emphasis>none</emphasis></para>
+		<para>Parameters:</para>
+		 <itemizedlist>
+			<listitem><para>
+				<emphasis>full</emphasis> (optional) - adds the weight,
+				priority and description fields to the listing
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
 		</para>
@@ -1171,12 +1206,19 @@ _empty_line_
 		<function moreinfo="none">ds_reload</function>
 		</title>
 		<para>
-		It reloads the groups and included destinations for all partitions.
+		It reloads the groups and included destinations for a
+		specified partition or all partitions.
 		</para>
 		<para>
 		Name: <emphasis>ds_reload</emphasis>
 		</para>
-		<para>Parameters: <emphasis>none</emphasis></para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>partition</emphasis> (optional) - name of
+				the partition to be reloaded.
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		MI DATAGRAM Command Format:
 		</para>

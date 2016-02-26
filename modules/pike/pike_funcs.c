@@ -21,7 +21,7 @@
  * --------
  *  2003-03-11  converted to the new locking interface: locking.h --
  *               major changes (andrei)
- *  2005-05-02  flags field added to node stucture -better sync between timer
+ *  2005-05-02  flags field added to node structure -better sync between timer
  *              and worker processes; some races eliminated (bogdan)
  *  2008-04-17  new parameter to control the module's log regarding the
  *               blocking/unblocking of IPs (bogdan)

@@ -51,8 +51,8 @@ stat_export_t shm_stats[] = {
 	{"total_size" ,     STAT_IS_FUNC,    (stat_var**)shm_get_size  },
 
 #if defined(HP_MALLOC) && !defined(HP_MALLOC_FAST_STATS)
-	{"used_size" ,                 0,               &shm_used      },
-	{"real_used_size" ,            0,               &shm_rused     },
+	{"used_size" ,     STAT_NO_RESET,               &shm_used      },
+	{"real_used_size" ,STAT_NO_RESET,               &shm_rused     },
 #else
 	{"used_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_used  },
 	{"real_used_size" , STAT_IS_FUNC,    (stat_var**)shm_get_rused },
@@ -62,7 +62,7 @@ stat_export_t shm_stats[] = {
 	{"free_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_free  },
 
 #if defined(HP_MALLOC) && !defined(HP_MALLOC_FAST_STATS)
-	{"fragments" ,                 0,               &shm_frags     },
+	{"fragments" ,     STAT_NO_RESET,               &shm_frags     },
 #else
 	{"fragments" ,      STAT_IS_FUNC,    (stat_var**)shm_get_frags },
 #endif
@@ -206,7 +206,7 @@ inline static void* sh_realloc(void* p, unsigned int size)
     NULL
 */
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void* _shm_resize( void* p, unsigned int s, const char* file, const char* func,
 							int line)
 #else
@@ -220,7 +220,7 @@ void* _shm_resize( void* p , unsigned int s)
 		LM_DBG("resize(0) called\n");
 		return shm_malloc( s );
 	}
-#	ifdef DBG_QM_MALLOC
+#	ifdef DBG_MALLOC
 #	ifdef VQ_MALLOC
 	f=(struct  vqm_frag*) ((char*)p-sizeof(struct vqm_frag));
 	LM_DBG("params (%p, %d), called from %s: %s(%d)\n",
@@ -300,7 +300,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 #endif
 
 	/* init it for malloc*/
-	shm_block = shm_malloc_init(mempool, pool_size);
+	shm_block = shm_malloc_init(mempool, pool_size, "shm");
 	if (!shm_block){
 		LM_CRIT("could not initialize shared malloc\n");
 		shm_mem_destroy();
@@ -319,7 +319,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		one_full_entry = 3 * (sizeof(stat_var) + sizeof(stat_val));
 		size_prealoc = groups * sizeof(struct module_info) + groups * one_full_entry;
 
-	#ifndef DBG_QM_MALLOC
+	#ifndef DBG_MALLOC
 		memory_mods_stats = MY_MALLOC_UNSAFE(shm_block, size_prealoc);
 	#else
 		memory_mods_stats = MY_MALLOC_UNSAFE(shm_block, size_prealoc, __FILE__, __FUNCTION__, __LINE__ );
@@ -434,7 +434,7 @@ int shm_mem_init(void)
 
 struct mi_root *mi_shm_check(struct mi_root *cmd, void *param)
 {
-#ifdef DBG_QM_MALLOC
+#if defined(QM_MALLOC) && defined(DBG_MALLOC)
 	struct mi_root *root;
 	int ret;
 

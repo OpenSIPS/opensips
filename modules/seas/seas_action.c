@@ -1433,6 +1433,7 @@ void uac_cb(struct cell* t, int type,struct tmcb_params *rcvd_params)
    int mylen,code,i;
    struct as_uac_param *ev_info;
    char *buffer;
+   UNUSED(code);
 
    ev_info=(struct as_uac_param*)*rcvd_params->param;
    code=rcvd_params->code;

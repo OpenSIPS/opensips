@@ -43,7 +43,8 @@ struct url_data {
 	char* data;
 };
 
-size_t write_data(void *ptr, size_t size, size_t nmemb, struct url_data *data) {
+size_t write_data(char *ptr, size_t size, size_t nmemb, void *stream) {
+	struct url_data *data = (struct url_data *)stream;
 	size_t index = data->size;
 	size_t n = (size * nmemb);
 	char* tmp;

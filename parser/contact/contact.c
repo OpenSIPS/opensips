@@ -223,7 +223,7 @@ int parse_contacts(str* _s, contact_t** _c)
 
 		trim(&c->uri);
 
-		/* RFC3261 grammar enforces the existance of an URI */
+		/* RFC3261 grammar enforces the existence of an URI */
 		if (c->uri.len==0) {
 			LM_ERR("Empty URI found in contact body\n");
 			goto error;

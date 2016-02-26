@@ -32,14 +32,6 @@
 #include "../globals.h"
 #include "mem.h"
 
-#ifdef PKG_MALLOC
-	#ifdef VQ_MALLOC
-		#include "vq_malloc.h"
-	#else
-		#include "q_malloc.h"
-	#endif
-#endif
-
 #include "shm_mem.h"
 
 #ifdef PKG_MALLOC
@@ -50,8 +42,10 @@
 		struct fm_block* mem_block;
 	#elif defined HP_MALLOC
 		struct hp_block* mem_block;
-	#else
+	#elif defined QM_MALLOC
 		struct qm_block* mem_block;
+	#else
+		#error "no memory allocator selected"
 	#endif
 #endif
 
@@ -67,13 +61,15 @@ int init_pkg_mallocs(void)
 		return -1;
 	}
 	#ifdef VQ_MALLOC
-		mem_block=vqm_malloc_init(mem_pool, pkg_mem_size);
+		mem_block=vqm_malloc_init(mem_pool, pkg_mem_size, "pkg");
 	#elif F_MALLOC
-		mem_block=fm_malloc_init(mem_pool, pkg_mem_size);
+		mem_block=fm_malloc_init(mem_pool, pkg_mem_size, "pkg");
 	#elif HP_MALLOC
-		mem_block=hp_pkg_malloc_init(mem_pool, pkg_mem_size);
+		mem_block=hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");
+	#elif QM_MALLOC
+		mem_block=qm_malloc_init(mem_pool, pkg_mem_size, "pkg");
 	#else
-		mem_block=qm_malloc_init(mem_pool, pkg_mem_size);
+		#error "no memory allocator selected"
 	#endif
 	if (mem_block==0){
 		LM_CRIT("could not initialize memory pool\n");

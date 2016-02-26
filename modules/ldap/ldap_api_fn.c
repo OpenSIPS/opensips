@@ -188,6 +188,7 @@ int ldap_params_search_async(
 	va_start(filter_vars, _filter);
 	rc = vsnprintf(filter_str, (size_t)LDAP_MAX_FILTER_LEN, _filter,
 			filter_vars);
+	va_end(filter_vars);
 	if (rc >= LDAP_MAX_FILTER_LEN)
 	{
 		LM_ERR(	"[%s]: filter string too long (len [%d], max len [%d])\n",
@@ -280,6 +281,7 @@ int ldap_params_search(
 	va_start(filter_vars, _filter);
 	rc = vsnprintf(filter_str, (size_t)LDAP_MAX_FILTER_LEN, _filter,
 			filter_vars);
+	va_end(filter_vars);
 	if (rc >= LDAP_MAX_FILTER_LEN)
 	{
 		LM_ERR(	"[%s]: filter string too long (len [%d], max len [%d])\n",

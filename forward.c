@@ -79,56 +79,6 @@
 #include "msg_callbacks.h"
 
 
-/*************************** callback functions ***************************/
-struct fwd_callback {
-	fwd_cb_t* callback;         /* callback function */
-	struct fwd_callback* next;  /* next callback element*/
-};
-
-static struct fwd_callback* fwdcb_hl = 0;  /* head list */
-
-/* register a FWD callback */
-int register_fwdcb(fwd_cb_t f)
-{
-	struct fwd_callback *cbp;
-
-	/* build a new callback structure */
-	if (!(cbp=pkg_malloc( sizeof( struct fwd_callback)))) {
-		LM_ERR("out of pkg. mem\n");
-		return -1;
-	}
-
-	/* fill it up */
-	cbp->callback = f;
-	/* link it at the beginning of the list */
-	cbp->next = fwdcb_hl;
-	fwdcb_hl = cbp;
-
-	return 0;
-
-}
-
-static inline void run_fwd_callbacks(struct sip_msg *req, char *buf, int len,
-			struct socket_info* send_sock, int proto, union sockaddr_union *to)
-{
-	struct fwd_callback *cbp;
-	str buffer;
-
-	buffer.len = len;
-	buffer.s = buf;
-
-	for ( cbp=fwdcb_hl ; cbp ; cbp=cbp->next ) {
-		LM_DBG("FWD callback entered\n");
-		cbp->callback( req, &buffer, send_sock, proto, to);
-	}
-}
-
-
-/**************************************************************************/
-
-
-
-
 /*! \brief return a socket_info_pointer to the sending socket
  * \note As opposed to
  * get_send_socket(), which returns process's default socket, get_out_socket
@@ -321,13 +271,12 @@ found:
 int forward_request( struct sip_msg* msg, struct proxy_l * p)
 {
 	union sockaddr_union to;
-	unsigned int len;
-	char* buf;
+	str buf;
 	struct socket_info* send_sock;
 	struct socket_info* last_sock;
 	str *branch;
 
-	buf=0;
+	buf.s=NULL;
 
 	/* calculate branch for outbound request - if the branch buffer is already
 	 * set (maybe by an upper level as TM), used it; otherwise computes
@@ -363,11 +312,12 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 
 		if ( last_sock!=send_sock ) {
 
-			if (buf)
-				pkg_free(buf);
+			if (buf.s)
+				pkg_free(buf.s);
 
-			buf = build_req_buf_from_sip_req(msg, &len, send_sock, p->proto, 0);
-			if (!buf){
+			buf.s = build_req_buf_from_sip_req( msg, (unsigned int*)&buf.len,
+				send_sock, p->proto, 0 /*flags*/);
+			if (!buf.s){
 				LM_ERR("building req buf failed\n");
 				tcp_no_new_conn = 0;
 				goto error;
@@ -376,23 +326,23 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 			last_sock = send_sock;
 		}
 
-		if (check_blacklists( p->proto, &to, buf, len)) {
+		if (check_blacklists( p->proto, &to, buf.s, buf.len)) {
 			LM_DBG("blocked by blacklists\n");
 			ser_error=E_IP_BLOCKED;
 			continue;
 		}
 
 		/* send it! */
-		LM_DBG("sending:\n%.*s.\n", (int)len, buf);
+		LM_DBG("sending:\n%.*s.\n", buf.len, buf.s);
 		LM_DBG("orig. len=%d, new_len=%d, proto=%d\n",
-			msg->len, len, p->proto );
+			msg->len, buf.len, p->proto );
 
-		if (msg_send(send_sock, p->proto, &to, 0, buf, len, msg)<0){
+		if (msg_send(send_sock, p->proto, &to, 0, buf.s, buf.len, msg)<0){
 			ser_error=E_SEND;
 			continue;
 		}
 
-		run_fwd_callbacks( msg, buf, len, send_sock, p->proto, &to);
+		slcb_run_req_out( msg, &buf, &to, send_sock, p->proto);
 
 		ser_error = 0;
 		break;
@@ -409,12 +359,12 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	/* sent requests stats */
 	update_stat( fwd_reqs, 1);
 
-	pkg_free(buf);
+	pkg_free(buf.s);
 	/* received_buf & line_buf will be freed in receive_msg by free_lump_list*/
 	return 0;
 
 error:
-	if (buf) pkg_free(buf);
+	if (buf.s) pkg_free(buf.s);
 	return -1;
 }
 

@@ -41,7 +41,7 @@
 #include "../error.h"
 #include "../errinfo.h"
 #include "../core_stats.h"
-
+#include "../strcommon.h"
 
 int parse_uri_headers(str headers, str h_name[], str h_val[], int h_size)
 {
@@ -158,37 +158,37 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	enum states  {	URI_INIT, URI_USER, URI_PASSWORD, URI_PASSWORD_ALPHA,
 					URI_HOST, URI_HOST_P,
 					URI_HOST6_P, URI_HOST6_END, URI_PORT,
-					URI_PARAM, URI_PARAM_P, URI_PARAM_VAL_P, URI_VAL_P, URI_HEADERS,
+					URI_PARAM, URI_PARAM_P, URI_PARAM_VAL_P,
+					URI_VAL_P, URI_HEADERS,
 					/* param states */
 					/* transport */
 					PT_T, PT_R, PT_A, PT_N, PT_S, PT_P, PT_O, PT_R2, PT_T2,
 					PT_eq,
 					/* ttl */
-					      PTTL_T2, PTTL_L, PTTL_eq,
+					PTTL_T2, PTTL_L, PTTL_eq,
 					/* user */
 					PU_U, PU_S, PU_E, PU_R, PU_eq,
 					/* method */
 					PM_M, PM_E, PM_T, PM_H, PM_O, PM_D, PM_eq,
 					/* maddr */
-					      PMA_A, PMA_D, PMA_D2, PMA_R, PMA_eq,
+					PMA_A, PMA_D, PMA_D2, PMA_R, PMA_eq,
 					/* lr */
 					PLR_L, PLR_R_FIN, PLR_eq,
 					/* gr */
 					PG_G, PG_G_FIN, PG_eq,
 					/* r2 */
 					PR2_R, PR2_2_FIN, PR2_eq,
-
 					/* transport values */
 					/* udp */
 					VU_U, VU_D, VU_P_FIN,
 					/* tcp */
 					VT_T, VT_C, VT_P_FIN,
 					/* tls */
-					      VTLS_L, VTLS_S_FIN,
+					VTLS_L, VTLS_S_FIN,
 					/* sctp */
 					VS_S, VS_C, VS_T, VS_P_FIN,
 					/* ws */
-					VW_W, VW_S_FIN
+					VW_W, VW_S, VW_S_FIN, VWS_S_FIN
 	};
 	register enum states state;
 	char* s;
@@ -820,8 +820,17 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			value_switch(VS_T, 'p', 'P', VS_P_FIN);
 			transport_fin(VS_P_FIN, PROTO_SCTP);
 			/* ws */
-			value_switch(VW_W, 's', 'S', VW_S_FIN);
+			value_switch(VW_W, 's', 'S', VW_S);
+			case VW_S:
+				if (*p == 's' || *p == 'S') {
+					state=(VWS_S_FIN);
+					break;
+				}
+				/* if not a 's' transiting to VWS_S_FIN, fallback
+				 * to testing as existing VW_S_FIN (NOTE the missing break) */
+				state=(VW_S_FIN);
 			transport_fin(VW_S_FIN, PROTO_WS);
+			transport_fin(VWS_S_FIN, PROTO_WSS);
 
 			/* ttl */
 			param_switch(PTTL_T2,  'l', 'L', PTTL_L);
@@ -1173,11 +1182,18 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			param_set(b, v);
 			uri->proto=PROTO_SCTP;
 			break;
+		case VW_S:
 		case VW_S_FIN:
 			uri->params.s=s;
 			uri->params.len=p-s;
 			param_set(b, v);
 			uri->proto=PROTO_WS;
+			break;
+		case VWS_S_FIN:
+			uri->params.s=s;
+			uri->params.len=p-s;
+			param_set(b, v);
+			uri->proto=PROTO_WSS;
 			break;
 		/* headers */
 		case URI_HEADERS:
@@ -1382,17 +1398,23 @@ int parse_orig_ruri(struct sip_msg* msg)
  *
  * Return value : 0 if URIs match
  *				  1 if URIs don't match
- *				 -1 if errors have occured
+ *				 -1 if errors have occurred
  */
 int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 					str *raw_uri_b,struct sip_uri *parsed_uri_b)
 {
+	#define UNESCAPED_BUF_LEN 1024
+	char unescaped_a[UNESCAPED_BUF_LEN], unescaped_b[UNESCAPED_BUF_LEN];
+
+	str unescaped_userA={unescaped_a, UNESCAPED_BUF_LEN};
+	str unescaped_userB={unescaped_b, UNESCAPED_BUF_LEN};
+
 	struct sip_uri first;
 	struct sip_uri second;
 	char matched[URI_MAX_U_PARAMS];
 	int i,j;
 
-	if ( (!raw_uri_a && !parsed_uri_b) || (!raw_uri_b && !parsed_uri_b) )
+	if ( (!raw_uri_a && !parsed_uri_a) || (!raw_uri_b && !parsed_uri_b) )
 	{
 		LM_ERR("Provide either a raw or parsed form of a SIP URI\n");
 		return -1;
@@ -1442,6 +1464,15 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 		LM_DBG("Different uri types\n");
 		return 1;
 	}
+
+	if (unescape_user(&first.user, &unescaped_userA) < 0 ||
+			unescape_user(&second.user, &unescaped_userB) < 0) {
+		LM_ERR("Failed to unescape user!\n");
+		return -1;
+	}
+
+	first.user = unescaped_userA;
+	second.user = unescaped_userB;
 
 	compare_uri_val(user,strncmp);
 	compare_uri_val(passwd,strncmp);

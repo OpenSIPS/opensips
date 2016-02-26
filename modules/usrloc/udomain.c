@@ -524,6 +524,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	int no_rows = 10;
 	unsigned short aorhash, clabel;
 	unsigned int   rlabel;
+	UNUSED(n);
 
 	urecord_t* r;
 	ucontact_t* c;
@@ -670,9 +671,17 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 			}
 
 			if ( (c=mem_insert_ucontact(r, &contact, ci)) == 0) {
-				LM_ERR("inserting contact failed\n");
+				LM_ERR("inserting contact failed\n"
+						"Found a bad contact with id:[%" PRIu64 "] "
+						"aor:[%.*s] contact:[%.*s] received:[%.*s]!\n"
+						"Will continue but that contact needs to be REMOVED!!\n",
+						ci->contact_id,
+						r->aor.len, r->aor.s,
+						contact.len, contact.s,
+						ci->received.len, ci->received.s);
 				unlock_udomain(_d, &user);
-				goto error1;
+				free_ucontact(c);
+				continue;
 			}
 
 
@@ -707,8 +716,6 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 #endif
 
 	return 0;
-error1:
-	free_ucontact(c);
 error:
 	ul_dbf.free_result(_c, res);
 	return -1;

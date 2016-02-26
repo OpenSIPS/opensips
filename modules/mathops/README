@@ -95,7 +95,7 @@ modparam("mathops", "decimal_digits", 10)
    contain any number of pseudo variables.
 
    Currently allowed syntax for specifying an expression:
-     * Nested parantheses
+     * Nested parentheses
      * binary + - / * operators
 
    Meaning of the parameters is as follows:

@@ -716,16 +716,7 @@ modparam("tm", "timer_partitions", 2)
 		</para>
 		<itemizedlist>
 			<listitem>
-				<para><emphasis>0x01</emphasis> - do not generate an 100 trying
-				provisional reply when building the transaction. By default 
-				one is generated. Useful if you already pushed an 
-				stateless 100 reply from script.
-				Note: If the transaction was previously created 'by hand' with
-				t_newtran() , t_relay will not attempt to send a 100 Trying
-				provisional reply. The 100 Trying reply is generated as part of
-				the transaction building, so if in your script you manually take
-				care of creating the transaction, you must also take care of
-				sending 100 provisional replies
+				<para><emphasis>0x01</emphasis> - deprecated, not used any more
 				</para>
 			</listitem>
 			<listitem>
@@ -836,8 +827,10 @@ t_relay("udp:mydomain.com");
 		<function moreinfo="none">t_reply(code, reason_phrase)</function>
 		</title>
 		<para>
-		Sends a stateful reply after a transaction has been established. See
-		<function>t_newtran</function> for usage.
+		Sends a stateful SIP reply to the currently processed requests. Note 
+		that if the transaction was not created yet, it will automatically
+		created by internally using the
+		<function>t_newtran</function> function.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -871,8 +864,10 @@ t_reply("404", "Use $rU not found");
 		<function moreinfo="none">t_reply_with_body(code, reason_phrase, body)</function>
 		</title>
 		<para>
-		Sends a stateful reply with a body after a transaction has been established. See
-		<function>t_newtran</function> for usage.
+		Sends a stateful SIP reply with a body to the currently processed 
+		requests. Note that if the transaction was not created yet, it will 
+		automatically created by internally using the
+		<function>t_newtran</function> function.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -917,16 +912,11 @@ t_reply("404", "Use $rU not found");
 		<function moreinfo="none">t_newtran()</function>
 		</title>
 		<para>
-		Creates a new transaction, returns a negative value on error. This is 
-		the only way a script can add a new transaction in an atomic way. 
-		Typically, it is used to deploy a &uas;.
+		Creates the SIP transaction for the currently processed SIP requests.
+		Basically you switch to a stateful processing from this point furhter,
+		with automatic detection of retransmission and auto sending of
+		100 Trying reply on INVITEs.
 		</para>
-		<warning>
-			<para>
-			NOTE that the changes on the request that are made after this 
-			function call will not be saved into transaction!!!
-			</para>
-		</warning>
 		<para>
 		This function can be used from REQUEST_ROUTE.
 		</para>
@@ -934,10 +924,10 @@ t_reply("404", "Use $rU not found");
 		<title><function>t_newtran</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (t_newtran()) { 
-	log("UAS logic"); 
-	t_reply("999","hello"); 
-} else sl_reply_error();
+t_newtran();  # 100 Trying is fired here
+xlog("doing my complicated routing logic");
+....
+t_relay(); # send the call further
 ...
 </programlisting>
 		</example>

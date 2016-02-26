@@ -178,9 +178,9 @@ static int mod_init(void)
 {
 	LM_INFO("rr - initializing\n");
 
-	ctx_rrparam_idx = context_register_str(CONTEXT_GLOBAL);
-	ctx_routing_idx = context_register_int(CONTEXT_GLOBAL);
-	ctx_rrdone_idx  = context_register_int(CONTEXT_GLOBAL);
+	ctx_rrparam_idx = context_register_str(CONTEXT_GLOBAL, NULL);
+	ctx_routing_idx = context_register_int(CONTEXT_GLOBAL, NULL);
+	ctx_rrdone_idx  = context_register_int(CONTEXT_GLOBAL, NULL);
 
 #ifdef ENABLE_USER_CHECK
 	if(ignore_user)

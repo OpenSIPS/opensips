@@ -25,20 +25,104 @@
 #include "str.h"
 #include "mem/mem.h"
 #include "context.h"
+#include <string.h>
 
 /* Pointer to the current processing context */
 context_p current_processing_ctx = NULL;
 
 unsigned int context_sizes[CONTEXT_COUNT];
 
-static unsigned int type_sizes[CONTEXT_COUNT][3];
-static unsigned int type_offsets[CONTEXT_COUNT][3];
+enum osips_context_val {
+	CONTEXT_INT_TYPE,
+	CONTEXT_STR_TYPE,
+	CONTEXT_PTR_TYPE,
 
-context_p context_alloc(void)
+	CONTEXT_COUNT_TYPE
+};
+
+static unsigned int type_sizes[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
+static unsigned int type_offsets[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
+
+/* vector of destroy functions */
+static context_destroy_f *context_destroy_array;
+
+static void register_context_destroy(context_destroy_f f,
+		enum osips_context ctx, enum osips_context_val t)
+{
+	static int count = 0; /* contains all counters */
+	context_destroy_f *tmp;
+	int pos = 0;
+	int i;
+
+	/*
+	 * group all functions based on their types:
+	 * first the int functions, then the str and pointers the last
+	 */
+	switch (t) {
+	case CONTEXT_PTR_TYPE:
+		pos += type_sizes[ctx][CONTEXT_PTR_TYPE];
+	case CONTEXT_STR_TYPE:
+		pos += type_sizes[ctx][CONTEXT_STR_TYPE];
+	case CONTEXT_INT_TYPE:
+		pos += type_sizes[ctx][CONTEXT_INT_TYPE];
+		break;
+	default:
+		LM_ERR("should not get here with ctx %d\n", t);
+		return;
+	}
+	/* TODO: check whether this should be in pkg or shm? */
+	tmp = pkg_realloc(context_destroy_array, (count + 1) * sizeof(context_destroy_f));
+	if (!tmp) {
+		LM_ERR("cannot add any more destroy functions\n");
+		return;
+	}
+	context_destroy_array = tmp;
+
+	/* move everything to the right to make room for pos */
+	for (i = count; i > pos; i--)
+		context_destroy_array[i] = context_destroy_array[i - 1];
+	context_destroy_array[pos] = f;
+	count++;
+}
+
+void context_destroy(enum osips_context ctxtype, context_p ctx)
+{
+	int f = 0;
+	int n;
+	int i;
+	str *s;
+	void *p;
+
+	/* int ctx */
+	for (n = 0; n < type_sizes[ctxtype][CONTEXT_INT_TYPE]; n++, f++)
+		if (context_destroy_array[f]) {
+			i = context_get_int(ctxtype, ctx, n);
+			if (i)/* XXX: should we call for 0 values? */
+				context_destroy_array[f](&i);
+		}
+
+	/* str ctx */
+	for (n = 0; n < type_sizes[ctxtype][CONTEXT_STR_TYPE]; n++, f++)
+		if (context_destroy_array[f]) {
+			s = context_get_str(ctxtype, ctx, n);
+			if (s)/* XXX: how do we determine if s is empty? */
+				context_destroy_array[f](s);
+		}
+
+	/* ptr ctx */
+	for (n = 0; n < type_sizes[ctxtype][CONTEXT_PTR_TYPE]; n++, f++)
+		if (context_destroy_array[f]) {
+			p = context_get_ptr(ctxtype, ctx, n);
+			if (p)
+				context_destroy_array[f](p);
+		}
+}
+
+context_p context_alloc(enum osips_context type)
 {
 	context_p ctx;
 
-	ctx = pkg_malloc(context_size(CONTEXT_GLOBAL));
+	ctx = pkg_malloc(context_size(type));
 	if (!ctx) {
 		LM_ERR("no more pkg mem\n");
 		return NULL;
@@ -47,42 +131,42 @@ context_p context_alloc(void)
 	return ctx;
 }
 
-int context_register_int(enum osips_context type)
+int context_register_int(enum osips_context type, context_destroy_f f)
 {
 	context_sizes[type] += sizeof(int);
-	type_offsets[type][1] += sizeof(int);
-	type_offsets[type][2] += sizeof(int);
+	type_offsets[type][CONTEXT_STR_TYPE] += sizeof(int);
+	type_offsets[type][CONTEXT_PTR_TYPE] += sizeof(int);
+	register_context_destroy(f, type, CONTEXT_INT_TYPE);
 
-	return type_sizes[type][0]++;
+	return type_sizes[type][CONTEXT_INT_TYPE]++;
 }
 
-int context_register_str(enum osips_context type)
+int context_register_str(enum osips_context type, context_destroy_f f)
 {
 	context_sizes[type] += sizeof(str);
-	type_offsets[type][2] += sizeof(str);
+	type_offsets[type][CONTEXT_PTR_TYPE] += sizeof(str);
+	register_context_destroy(f, type, CONTEXT_STR_TYPE);
 
-	return type_sizes[type][1]++;
+	return type_sizes[type][CONTEXT_STR_TYPE]++;
 }
 
-int context_register_ptr(enum osips_context type)
+int context_register_ptr(enum osips_context type, context_destroy_f f)
 {
 	context_sizes[type] += sizeof(void *);
+	register_context_destroy(f, type, CONTEXT_PTR_TYPE);
 
-	return type_sizes[type][2]++;
+	return type_sizes[type][CONTEXT_PTR_TYPE]++;
 }
 
 void context_put_int(enum osips_context type, context_p ctx,
 									 int pos, int data)
 {
-#ifdef DBG_QM_MALLOC
-	if (pos < 0 || pos >= type_sizes[type][0]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][0]);
+#ifdef DBG_MALLOC
+	if (pos < 0 || pos >= type_sizes[type][CONTEXT_INT_TYPE]) {
+		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_INT_TYPE]);
 		abort();
 	}
 #endif
-
-	if (!ctx)
-		LM_CRIT("NULL context given\n");
 
 	((int *)ctx)[pos] = data;
 }
@@ -90,76 +174,61 @@ void context_put_int(enum osips_context type, context_p ctx,
 void context_put_str(enum osips_context type, context_p ctx,
 									 int pos, str *data)
 {
-#ifdef DBG_QM_MALLOC
-	if (pos < 0 || pos >= type_sizes[type][1]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][1]);
+#ifdef DBG_MALLOC
+	if (pos < 0 || pos >= type_sizes[type][CONTEXT_STR_TYPE]) {
+		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_STR_TYPE]);
 		abort();
 	}
 #endif
 
-	if (!ctx)
-		LM_CRIT("NULL context given\n");
-
-	((str *)((char *)ctx + type_offsets[type][1]))[pos] = *data;
+	((str *)((char *)ctx + type_offsets[type][CONTEXT_STR_TYPE]))[pos] = *data;
 }
 
 void context_put_ptr(enum osips_context type, context_p ctx,
 									 int pos, void *data)
 {
-#ifdef DBG_QM_MALLOC
-	if (pos < 0 || pos >= type_sizes[type][2]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][2]);
+#ifdef DBG_MALLOC
+	if (pos < 0 || pos >= type_sizes[type][CONTEXT_PTR_TYPE]) {
+		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_PTR_TYPE]);
 		abort();
 	}
 #endif
 
-	if (!ctx)
-		LM_CRIT("NULL context given\n");
-
-	((void **)((char *)ctx + type_offsets[type][2]))[pos] = data;
+	((void **)((char *)ctx + type_offsets[type][CONTEXT_PTR_TYPE]))[pos] = data;
 }
 
 int context_get_int(enum osips_context type, context_p ctx, int pos)
 {
-#ifdef DBG_QM_MALLOC
-	if (pos < 0 || pos >= type_sizes[type][0]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][0]);
+#ifdef DBG_MALLOC
+	if (pos < 0 || pos >= type_sizes[type][CONTEXT_INT_TYPE]) {
+		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_INT_TYPE]);
 		abort();
 	}
 #endif
-
-	if (!ctx)
-		LM_CRIT("NULL context given\n");
 
 	return ((int *)ctx)[pos];
 }
 
 str *context_get_str(enum osips_context type, context_p ctx, int pos)
 {
-#ifdef DBG_QM_MALLOC
-	if (pos < 0 || pos >= type_sizes[type][1]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][1]);
+#ifdef DBG_MALLOC
+	if (pos < 0 || pos >= type_sizes[type][CONTEXT_STR_TYPE]) {
+		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_STR_TYPE]);
 		abort();
 	}
 #endif
 
-	if (!ctx)
-		LM_CRIT("NULL context given\n");
-
-	return &((str *)((char *)ctx + type_offsets[type][1]))[pos];
+	return &((str *)((char *)ctx + type_offsets[type][CONTEXT_STR_TYPE]))[pos];
 }
 
 void *context_get_ptr(enum osips_context type, context_p ctx, int pos)
 {
-#ifdef DBG_QM_MALLOC
-	if (pos < 0 || pos >= type_sizes[type][2]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][2]);
+#ifdef DBG_MALLOC
+	if (pos < 0 || pos >= type_sizes[type][CONTEXT_PTR_TYPE]) {
+		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_PTR_TYPE]);
 		abort();
 	}
 #endif
 
-	if (!ctx)
-		LM_CRIT("NULL context given\n");
-
-	return ((void **)((char *)ctx + type_offsets[type][2]))[pos];
+	return ((void **)((char *)ctx + type_offsets[type][CONTEXT_PTR_TYPE]))[pos];
 }

@@ -24,7 +24,7 @@
  *  2007-03-29  initial version (anca)
  */
 #ifndef _PU_PIDF_
-#define _PU_PIDF
+#define _PU_PIDF_
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

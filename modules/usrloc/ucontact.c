@@ -60,12 +60,12 @@ extern event_id_t ei_c_update_id;
  */
 static int compute_next_hop(ucontact_t *contact)
 {
-	str uri;
+	str uri = {0,0};
 	struct sip_uri puri;
 
 	if (contact->path.s && contact->path.len > 0) {
 		if (get_path_dst_uri(&contact->path, &uri) < 0) {
-			LM_ERR("failed to get dst_uri for Path '%*.s'\n",
+			LM_ERR("failed to get dst_uri for Path '%.*s'\n",
 			        contact->path.len, contact->path.s);
 			return -1;
 		}
@@ -76,7 +76,7 @@ static int compute_next_hop(ucontact_t *contact)
 		uri = contact->c;
 
 	if (parse_uri(uri.s, uri.len, &puri) < 0) {
-		LM_ERR("failed to parse URI of next hop: '%*.s'\n", uri.len, uri.s);
+		LM_ERR("failed to parse URI of next hop: '%.*s'\n", uri.len, uri.s);
 		return -1;
 	}
 
@@ -96,6 +96,8 @@ static int compute_next_hop(ucontact_t *contact)
 ucontact_t*
 new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 {
+	struct sip_uri tmp_uri;
+
 	ucontact_t *c;
 
 	c = (ucontact_t*)shm_malloc(sizeof(ucontact_t));
@@ -104,6 +106,13 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 		return NULL;
 	}
 	memset(c, 0, sizeof(ucontact_t));
+
+	if (parse_uri(_contact->s, _contact->len, &tmp_uri) < 0) {
+		LM_ERR("contact [%.*s] is not valid! Will not store it!\n",
+			  _contact->len, _contact->s);
+		shm_free(c);
+		return NULL;
+	}
 
 	if (shm_str_dup( &c->c, _contact) < 0) goto mem_error;
 	if (shm_str_dup( &c->callid, _ci->callid) < 0) goto mem_error;

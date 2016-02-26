@@ -51,7 +51,7 @@
 #define EO_STEP                         -1
 
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 #	define ST_CHECK_PATTERN   	0xf0f0f0f0
 #	define END_CHECK_PATTERN  	"sExP"
 #	define END_CHECK_PATTERN_LEN 	4
@@ -79,7 +79,7 @@ struct vqm_frag {
 			unsigned char bucket;
         } inuse;
 	} u;
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	/* source code info */
 	char* file;
 	char* func;
@@ -121,7 +121,7 @@ struct vqm_block{
 	char *big_chunks;
 
 	struct vqm_frag* next_free[ MAX_BUCKET +1];
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	unsigned long usage[ MAX_BUCKET +1];
 #endif
 };
@@ -130,7 +130,7 @@ struct vqm_block{
 
 struct vqm_block* vqm_malloc_init(char* address, unsigned int size);
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void vqm_debug_frag(struct vqm_block* qm, struct vqm_frag* f);
 void* vqm_malloc(struct vqm_block*, unsigned int size, char* file, char* func,
 					unsigned int line);

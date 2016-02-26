@@ -180,8 +180,8 @@ modparam("alias_db", "append_branches", 1)
    by user's SIP uri.
 
    Meaning of the parameters is as follows:
-     * table_name - the name of the table where to search for
-       alias. It can include pseudo-variables.
+     * table_name - any PV (string or PV or mix) the name of the
+       table where to search for alias.
      * flags (optional) - set of flags (char based flags) to
        control the alias lookup process:
           + d - do not use domain URI part in the alias lookup
@@ -216,11 +216,11 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
    returned.
 
    Meaning of the parameters is as follows:
-     * table_name - the name of the table where to search for
-       alias. It can include pseudo-variables.
-     * input - any PV (pseudo-variable) carrying the SIP URI that
-       needs to be looked up.
-     * ouput - PV (AVP or script VAR) where to place the SIP URI
+     * table_name - any PV (string or PV or mix) the name of the
+       table where to search for alias.
+     * input - any PV (string or PV or mix) carrying the SIP URI
+       that needs to be looked up.
+     * output - PV (AVP or script VAR) where to place the SIP URI
        resulting from the alias lookup.
      * flags (optional) - set of flags (char based flags) to
        control the alias lookup process:
@@ -233,7 +233,7 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
             the alias (alias 2 URI translation).
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-   LOCAL_ROUTE, FAILURE_ROUTE and ONREPLY_ROUTE.
+   LOCAL_ROUTE, STARTUP_ROUTE, FAILURE_ROUTE and ONREPLY_ROUTE.
 
    Example 1.9. alias_db_find() usage
 ...

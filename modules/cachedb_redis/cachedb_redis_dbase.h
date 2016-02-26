@@ -39,6 +39,12 @@ typedef struct cluster_nodes {
 	struct cluster_nodes *next;
 } cluster_node;
 
+
+#define CACHEDB_REDIS_DEFAULT_TIMEOUT 5000
+
+extern int redis_query_tout;
+extern int redis_connnection_tout;
+
 #define REDIS_SINGLE_INSTANCE	(1<<0)
 #define REDIS_CLUSTER_INSTANCE	(1<<1)
 typedef struct {

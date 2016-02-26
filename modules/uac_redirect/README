@@ -307,10 +307,10 @@ get_redirects("*");
 
    Example 1.9. get_redirects usage
 ...
-get_redirects("4:1","300"); # Record 300, using the default reason stri
-ng for a 300
-get_redirects("4:1","302 Redirected"); # Record as 302, with custom "Re
-directed" reason string
+get_redirects("4:1","300"); # Record 300, using the default reason strin
+g for a 300
+get_redirects("4:1","302 Redirected"); # Record as 302, with custom "Red
+irected" reason string
 ...
 
 1.6. Script Example

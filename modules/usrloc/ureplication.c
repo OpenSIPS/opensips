@@ -32,6 +32,7 @@ str repl_module_name = str_init("ul");
 
 /* Skip all DB operations when receiving replicated data */
 int skip_replicated_db_ops;
+struct clusterer_binds clusterer_api;
 
 /* packet sending */
 

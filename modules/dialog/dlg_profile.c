@@ -35,6 +35,7 @@
 #include "dlg_hash.h"
 #include "dlg_profile.h"
 #include "dlg_repl_profile.h"
+#include "dlg_req_within.h"
 
 #define PROFILE_HASH_SIZE 16
 
@@ -46,7 +47,7 @@ static int finished_allocating_locks = 0;
 extern int log_profile_hash_size;
 
 static struct dlg_profile_table* new_dlg_profile( str *name,
-		unsigned int size, unsigned int has_value, unsigned use_cached);
+		unsigned int size, unsigned int has_value, unsigned repl_type);
 
 /* used by cachedb interface */
 static cachedb_funcs cdbf;
@@ -144,14 +145,16 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 	char *d;
 	char *e;
 	str name;
-	unsigned int i, use_cached = 0;
-
+	unsigned int i;
+	enum repl_types type;
 	if (profiles==NULL || strlen(profiles)==0 )
 		return 0;
 
 	p = profiles;
 	do {
-		use_cached = 0;
+		/* By default no replication (no CACHEDB nor BIN)*/
+		type = REPL_NONE;
+
 		/* locate name of profile */
 		name.s = p;
 		d = strchr( p, ';');
@@ -180,13 +183,29 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 			for (++p; *p == ' ' && p < e; p++);
 			if ( p < e && *p == 's') {
 				if (cdb_url.len && cdb_url.s) {
-					use_cached = 1;
+					if (type==REPL_PROTOBIN)
+						goto repl_error;
+
+					type= REPL_CACHEDB;
 				} else {
 					LM_WARN("profile %.*s configured to be stored in CacheDB, "
 							"but the cachedb_url was not defined\n",
 							name.len, name.s);
-					use_cached = 0;
 				}
+			} else if ( p < e && *p == 'b') {
+				if (profile_replicate_cluster) {
+					if (type==REPL_CACHEDB)
+						goto repl_error;
+
+					type = REPL_PROTOBIN;
+				} else {
+					LM_WARN("profile %.*s configured to be replicated over BIN, "
+							"but replicate_profiles_to param is not defined\n",
+							name.len, name.s);
+				}
+			} else if (isalnum(*p)) {
+				LM_ERR("Invalid letter in profile definitition </%c>!\n", *p);
+				return -1;
 			}
 		}
 
@@ -201,10 +220,11 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 
 		/* name ok -> create the profile */
 		LM_DBG("creating profile <%.*s> %s\n", name.len, name.s,
-				use_cached ? "cached" : "");
+				type ==REPL_CACHEDB ? "cached" :
+				(type==REPL_PROTOBIN ? "bin replicated": ""));
 
 		if (new_dlg_profile( &name, 1 << log_profile_hash_size,
-					has_value, use_cached)==NULL) {
+					has_value, type)==NULL) {
 			LM_ERR("failed to create new profile <%.*s>\n",name.len,name.s);
 			return -1;
 		}
@@ -212,6 +232,10 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 	}while( (p=d)!=NULL );
 
 	return 0;
+
+repl_error:
+	LM_ERR("Can't use both bin replication and cachedb!\n");
+	return -1;
 }
 
 #define DLG_COPY(_d, _s) \
@@ -392,7 +416,7 @@ struct dlg_profile_table* search_dlg_profile(str *name)
 {
 	struct dlg_profile_table *profile;
 	char *p,*e;
-	int use_cached=0;
+	unsigned repl_type=REPL_NONE;
 	str profile_name = *name;
 
 	/* check if this is a shared profile, and remove /s for lookup */
@@ -405,11 +429,14 @@ struct dlg_profile_table* search_dlg_profile(str *name)
 		/* skip spaces after p */
 		for (++p; *p == ' ' && p < e; p++);
 		if ( p < e && *p == 's')
-		use_cached=1;
+		repl_type=REPL_CACHEDB;
+		else if (p < e && *p == 'b')
+		repl_type=REPL_PROTOBIN;
 	}
 
 	for( profile=profiles ; profile ; profile=profile->next ) {
-		if (profile->use_cached == use_cached && profile_name.len ==profile->name.len &&
+		if (profile->repl_type == repl_type &&
+				profile_name.len ==profile->name.len &&
 		memcmp(profile_name.s,profile->name.s,profile_name.len)==0 )
 			return profile;
 	}
@@ -418,7 +445,7 @@ struct dlg_profile_table* search_dlg_profile(str *name)
 }
 
 static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
-		unsigned int has_value, unsigned use_cached)
+		unsigned int has_value, unsigned repl_type)
 {
 	struct dlg_profile_table *profile;
 	struct dlg_profile_table *ptmp;
@@ -445,9 +472,10 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 		return NULL;
 	}
 
-	len = sizeof(struct dlg_profile_table) + name->len + 1 +
-		(!use_cached ? (size  * ( (has_value == 0 ) ?
-				sizeof( int ) : sizeof( map_t ) )) : 0);
+	len = sizeof(struct dlg_profile_table) + name->len + 1;
+	/* anything else than only CACHEDB */
+	if (repl_type !=  REPL_CACHEDB)
+		len += size * ((has_value==0) ? sizeof(int):sizeof(map_t));
 
 	profile = (struct dlg_profile_table *)shm_malloc(len);
 
@@ -462,12 +490,10 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 
 	profile->size = size;
 	profile->has_value = (has_value==0)?0:1;
-	profile->use_cached = use_cached;
-
-	profile->repl = NULL;
+	profile->repl_type = repl_type;
 
 	/* init locks */
-	if (!use_cached) {
+	if (repl_type != REPL_CACHEDB) {
 		profile->locks = get_a_lock_set(size) ;
 
 		if( !profile->locks )
@@ -478,7 +504,7 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 		}
 	}
 
-	if( use_cached ) {
+	if( repl_type == REPL_CACHEDB ) {
 
 		profile->name.s = (char *)(profile + 1);
 
@@ -530,7 +556,7 @@ static void destroy_dlg_profile(struct dlg_profile_table *profile)
 
 	if (profile==NULL)
 		return;
-	if( profile -> has_value && !profile -> use_cached )
+	if( profile->has_value && !(profile->repl_type==REPL_CACHEDB) )
 	{
 		for( i= 0; i < profile->size; i++)
 			map_destroy( profile->entries[i], free_profile_val);
@@ -570,7 +596,7 @@ void destroy_linkers(struct dlg_profile_link *linker, char is_replicated)
 		/* unlink from profile table */
 
 
-		if (!l->profile->use_cached) {
+		if (!(l->profile->repl_type==REPL_CACHEDB)) {
 			lock_set_get( l->profile->locks, l->hash_idx);
 
 			if( l->profile->has_value)
@@ -674,7 +700,7 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 
 	/* insert into profile hash table */
 	/* but only if cachedb is not used */
-	if (!linker->profile->use_cached) {
+	if (!(linker->profile->repl_type==REPL_CACHEDB)) {
 		/* calculate the hash position */
 		hash = calc_hash_profile(&linker->value, dlg, linker->profile);
 		linker->hash_idx = hash;
@@ -869,7 +895,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 	{
 		/* iterate through the hash and count all records */
 
-		if (cdbc && profile->use_cached) {
+		if (cdbc && (profile->repl_type == REPL_CACHEDB)) {
 			if (dlg_fill_name(&profile->name) < 0)
 				goto failed;
 
@@ -901,7 +927,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 
 		if(  value==NULL )
 		{
-			if (cdbc && profile->use_cached) {
+			if (cdbc && (profile->repl_type == REPL_CACHEDB)) {
 				if (dlg_fill_size(&profile->name) < 0)
 					goto failed;
 
@@ -931,7 +957,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 		}
 		else
 		{
-			if (cdbc && profile->use_cached) {
+			if (cdbc && (profile->repl_type == REPL_CACHEDB)) {
 				if (dlg_fill_value(&profile->name, value) < 0)
 					goto failed;
 
@@ -1038,7 +1064,7 @@ struct mi_root * mi_get_profile(struct mi_root *cmd_tree, void *param )
 		goto error;
 	}
 
-	if (profile->use_cached) {
+	if (profile->repl_type == REPL_CACHEDB) {
 		attr = add_mi_attr(node, MI_DUP_VALUE, "shared", 6, "yes", 3);
 	} else {
 		attr = add_mi_attr(node, MI_DUP_VALUE, "shared", 6, "no", 2);
@@ -1046,6 +1072,17 @@ struct mi_root * mi_get_profile(struct mi_root *cmd_tree, void *param )
 	if (attr == NULL) {
 		goto error;
 	}
+
+	if (profile->repl_type == REPL_PROTOBIN) {
+		attr = add_mi_attr(node, MI_DUP_VALUE, "replicated", 10, "yes", 3);
+	} else {
+		attr = add_mi_attr(node, MI_DUP_VALUE, "replicated", 10, "no", 2);
+	}
+	if (attr == NULL) {
+		goto error;
+	}
+
+
 
 	return rpl_tree;
 error:
@@ -1103,7 +1140,7 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 	profile = search_dlg_profile( profile_name );
 	if (profile==NULL)
 		return init_mi_tree( 404, MI_SSTR("Profile not found"));
-	if (profile->use_cached)
+	if (profile->repl_type == REPL_CACHEDB)
 		return init_mi_tree( 405, MI_SSTR("Unsupported command for shared profiles"));
 
 	/* gather dialog count for all values in this profile */
@@ -1146,8 +1183,8 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 
 	return rpl_tree;
 error:
-
-	free_mi_tree(rpl_tree);
+	if (rpl_tree)
+		free_mi_tree(rpl_tree);
 	return NULL;
 }
 
@@ -1279,4 +1316,99 @@ struct mi_root * mi_list_all_profiles(struct mi_root *cmd_tree, void *param )
 	}
 
 	return rpl_tree;
+}
+
+struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
+	struct mi_node* node;
+	struct dlg_profile_table *profile;
+	str *profile_name;
+	str *value;
+	unsigned int i;
+	struct dlg_entry *d_entry;
+	struct dlg_cell    *cur_dlg;
+	struct dlg_profile_link *cur_link;
+	struct dialog_list *deleted = NULL, *delete_entry ;
+
+	node = cmd_tree->node.kids;
+	if (node==NULL || !node->value.s || !node->value.len)
+		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
+	profile_name = &node->value;
+
+	if (node->next) {
+		node = node->next;
+		if (!node->value.s || !node->value.len)
+			return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+		if (node->next)
+			return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
+		value = &node->value;
+	} else {
+		value = NULL;
+	}
+
+	profile = search_dlg_profile( profile_name );
+
+	if (profile==NULL)
+		return init_mi_tree( 404, MI_SSTR("Profile not found"));
+
+	for (i = 0; i < d_table->size; i++) {
+		d_entry = &(d_table->entries[i]);
+		lock_set_get(d_table->locks,d_entry->lock_idx);
+
+		cur_dlg = d_entry->first;
+		while( cur_dlg ) {
+
+			cur_link = cur_dlg ->profile_links;
+
+			while(cur_link) {
+				if( cur_link->profile == profile &&
+					( value == NULL ||
+					( value->len == cur_link->value.len
+					 && !strncmp(value->s,cur_link->value.s, value->len))
+					)) {
+					delete_entry = pkg_malloc(sizeof(struct dialog_list));
+					if (!delete_entry) {
+						LM_CRIT("no more pkg memory\n");
+						lock_set_release(d_table->locks,d_entry->lock_idx);
+						return init_mi_tree( 400, MI_SSTR(MI_INTERNAL_ERR));
+					}
+
+					delete_entry->dlg = cur_dlg;
+					delete_entry->next = deleted;
+					deleted = delete_entry;
+
+					ref_dlg_unsafe(cur_dlg, 1);
+
+					break;
+				}
+				cur_link = cur_link->next;
+			}
+			cur_dlg = cur_dlg->next;
+		}
+
+		lock_set_release(d_table->locks,d_entry->lock_idx);
+
+		delete_entry = deleted;
+		while(delete_entry){
+			init_dlg_term_reason(delete_entry->dlg,"MI Termination",sizeof("MI Termination")-1);
+
+			if ( dlg_end_dlg( delete_entry->dlg, NULL) ) {
+				while(delete_entry){
+					deleted = delete_entry;
+					delete_entry = delete_entry->next;
+					pkg_free(deleted);
+				}
+				LM_CRIT("eror while terminating dlg\n");
+				return init_mi_tree( 400, MI_SSTR("Dialog internal error"));
+			}
+
+			unref_dlg(delete_entry->dlg, 1);
+			deleted = delete_entry;
+			delete_entry = delete_entry->next;
+			pkg_free(deleted);
+		}
+
+		deleted = NULL;
+	}
+
+	return init_mi_tree(400, MI_SSTR(MI_OK));
 }

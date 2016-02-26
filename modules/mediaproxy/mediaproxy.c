@@ -111,7 +111,7 @@ typedef enum {
 typedef struct MediaproxySocket {
     char *name;             // name
     int  sock;              // socket
-    int  timeout;           // how many miliseconds to wait for an answer
+    int  timeout;           // how many milliseconds to wait for an answer
     time_t last_failure;    // time of the last failure
     char data[BUFFER_SIZE]; // buffer for the answer data
 } MediaproxySocket;
@@ -179,7 +179,7 @@ static str ice_candidate = str_init("none");
 static MediaproxySocket mediaproxy_socket = {
     "/var/run/mediaproxy/dispatcher.sock", // name
     -1,                                    // sock
-    500,                                   // timeout in 500 miliseconds if there is no answer
+    500,                                   // timeout in 500 milliseconds if there is no answer
     0,                                     // time of the last failure
     ""                                     // data
 };
@@ -1833,7 +1833,7 @@ __dialog_ended(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
     if ((int)(long)*_params->param == MPActive) {
         end_media_session(dlg->callid, dlg->legs[DLG_CALLER_LEG].tag, dlg->legs[DLG_FIRST_CALLEE_LEG].tag);
-        *_params->param = MPInactive;
+        *_params->param = (void *)MPInactive;
     }
 }
 

@@ -73,6 +73,7 @@ static void timer_routine(unsigned int ticks , void * attr)
 {
 	struct timer_link *tl, *tmp_tl, *end, *ret;
 	int killr;
+	UNUSED(killr);
 
 	/* check if it worth entering the lock */
 	if (kill_list->first_tl.next_tl==&kill_list->last_tl

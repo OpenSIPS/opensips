@@ -1,9 +1,9 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
     <title>&adminguide;</title>
-	
+
     <section>
         <title>Overview</title>
 
@@ -14,7 +14,7 @@
                 This means that a virtual db url translates to many real db urls.
                 This virtual layer also enables us to use the real dbs in multiple ways such as: parallel, failover(hotswap), round-robin.
 
-                Therefore: 
+                Therefore:
                     each virtual db url with associated real dbs and
                     a way to use(mode) it's real dbs must be specified.
             </para>
@@ -70,6 +70,8 @@
     dbb->replace            1           0
     dbb->last_inserted_id   0           0
     dbb->insert_update      1           1
+	dbb->async_raw_query    0           1
+	dbb->async_raw_resume   0           1
                 </programlisting>
                 </para>
                 <para>
@@ -81,6 +83,11 @@
                     will be done on a single db.
                     Ex: query will only query one db.
                 </para>
+                <para>
+					Note 3: Since version 2.2 db_virtual supports async_raw_query and async_raw_resume functions currently
+					implemented only by the mysql database engine.
+                </para>
+
             </para>
         </section>
 
@@ -120,7 +127,7 @@
             <title>The timer process</title>
             <para>
                 The timer process(probe) is a process that tries to reconnect to failed dbs from time to time.
-                It is a separate process so that when it blocks (for a timeout on the connection) it doesnt matter.
+                It is a separate process so that when it blocks (for a timeout on the connection) it doesn't matter.
             </para>
         </section>
 
@@ -254,7 +261,7 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 		Return information about global state of the real dbs.
             </para>
             <para>
-		Name: 
+		Name:
                 <emphasis>db_get</emphasis>
             </para>
             <para>Parameters:</para>

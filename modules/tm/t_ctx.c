@@ -24,19 +24,19 @@
 
 #include "t_funcs.h"
 
-int t_ctx_register_int(void)
+int t_ctx_register_int(context_destroy_f f)
 {
-	return context_register_int(CONTEXT_TRAN);
+	return context_register_int(CONTEXT_TRAN, f);
 }
 
-int t_ctx_register_str(void)
+int t_ctx_register_str(context_destroy_f f)
 {
-	return context_register_str(CONTEXT_TRAN);
+	return context_register_str(CONTEXT_TRAN, f);
 }
 
-int t_ctx_register_ptr(void)
+int t_ctx_register_ptr(context_destroy_f f)
 {
-	return context_register_ptr(CONTEXT_TRAN);
+	return context_register_ptr(CONTEXT_TRAN, f);
 }
 
 void t_ctx_put_int(struct cell *t, int pos, int data)

@@ -27,6 +27,9 @@
 
 #include "../../parser/msg_parser.h"
 
+/* fixup for perl_exec and perl_exec_simple */
+int perl_fixup(void** param, int param_no);
+
 /*
  * Run a perl function without a sip message parameter.
  */

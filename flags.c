@@ -131,7 +131,7 @@ int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
 		return 0;
 
 #ifdef EXTRA_DEBUG
-	LM_DBG("flag_list -> '%*.s'\n", flags->len, flags->s);
+	LM_DBG("flag_list -> '%.*s'\n", flags->len, flags->s);
 #endif
 	lim = flags->s + flags->len;
 	crt_flag = flags->s;
@@ -179,7 +179,7 @@ int get_flag_id_by_name(int flag_type, char *flag_name)
 		return -1;
 	}
 
-	if (flag_type < 0 || flag_type > FLAG_LIST_COUNT) {
+	if (flag_type < 0 || flag_type >= FLAG_LIST_COUNT) {
 		LM_ERR("Invalid flag list: %d\n", flag_type);
 		return -2;
 	}

@@ -64,7 +64,7 @@ typedef str* (aux_body_processing_t)(struct subscription *subs, str* body);
 typedef int (is_allowed_t)(struct subscription* subs);
 typedef int (get_rules_doc_t)(str* user, str* domain, str** rules_doc);
 /* return code rules for is_allowed_t
- *	< 0  if error occured
+ *	< 0  if error occurred
  *	=0	 if no change in status(if no xcap document exists)
  *	>0   if change in status
  *	*/

@@ -599,7 +599,6 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 				(mi_flush_f *)mi_xmlrpc_http_flush_tree, &html_page_data);
 	if (mi_rpl == NULL) {
 		LM_ERR("failed to process the command\n");
-		if (mi_cmd) free_mi_tree(mi_cmd);
 		goto xml_error;
 	} else {
 		*page = html_page_data.page;
@@ -618,7 +617,7 @@ xml_error:
 	if (hdl) shm_free(hdl);
 	*async_hdl = NULL;
 	if(doc)xmlFree(doc);doc=NULL;
-	if(esc_val.s);shm_free(esc_val.s);
+	if(esc_val.s) shm_free(esc_val.s);
 	return NULL;
 }
 
@@ -900,7 +899,7 @@ error:
 }
 
 
-/* old implementations for less formated ouput */
+/* old implementations for less formatted ouput */
 
 int mi_xmlrpc_http_build_header(str *page, int max_page_len,
 				struct mi_root *tree, int flush)

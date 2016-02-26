@@ -317,7 +317,8 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 			LM_DBG("Binding '%.*s','%.*s' has expired\n",
 				ptr->aor->len, ZSW(ptr->aor->s),
 				ptr->c.len, ZSW(ptr->c.s));
-			update_stat( _r->slot->d->expires, 1);
+			if (db_mode != DB_ONLY)
+				update_stat( _r->slot->d->expires, 1);
 
 			t = ptr;
 			ptr = ptr->next;

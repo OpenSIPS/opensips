@@ -278,6 +278,7 @@ int timerec_print(tmrec_p _trp)
 {
 	static char *_wdays[] = {"SU", "MO", "TU", "WE", "TH", "FR", "SA"}; 
 	int i;
+	UNUSED(_wdays);
 	
 	if(!_trp)
 	{
@@ -482,6 +483,10 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 int test_match(str string, pcre * exp, int * out, int out_max)
 {
 	int i, result_count;
+	char *substring_start;
+	int substring_length;
+	UNUSED(substring_start);
+	UNUSED(substring_length);
 
 	if(!exp){
 		LM_ERR("invalid compiled expression\n");
@@ -510,8 +515,8 @@ int test_match(str string, pcre * exp, int * out, int out_max)
 
 	for (i = 0; i < result_count; i++)
 	{
-		char *substring_start = string.s + out[2 * i];
-		int substring_length = out[2 * i + 1] - out[2 * i];
+		substring_start = string.s + out[2 * i];
+		substring_length = out[2 * i + 1] - out[2 * i];
 		LM_DBG("test_match:[%d] %.*s\n",i, substring_length, substring_start);
 	}
 

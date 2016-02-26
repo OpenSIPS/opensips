@@ -67,6 +67,10 @@ int accept_repl_pipes = 0;
 int rl_repl_cluster = 0;
 int accept_repl_pipes_timeout = 10;
 int repl_pipes_auth_check = 0;
+struct clusterer_binds clusterer_api;
+
+int rl_window_size=10;   /* how many seconds the window shall hold*/
+int rl_slot_period=200;  /* how many milisecs a slot from the window has  */
 
 static str db_url = {0,0};
 str db_prefix = str_init("rl_pipe_");
@@ -140,6 +144,8 @@ static param_export_t params[] = {
 	{ "replicate_pipes_to",		INT_PARAM,	&rl_repl_cluster		},
 	{ "accept_pipes_timeout",	INT_PARAM,	&accept_repl_pipes_timeout	},
 	{ "repl_pipes_auth_check",	INT_PARAM,	&repl_pipes_auth_check		},
+	{ "window_size",            INT_PARAM,  &rl_window_size},
+	{ "slot_period",            INT_PARAM,  &rl_slot_period},
 	{ 0, 0, 0}
 };
 
@@ -330,11 +336,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (rl_repl_timer_interval < 0) {
-		LM_ERR("invalid replication time\n");
-		return -1;
-	}
-
 	if (rl_repl_cluster < 0)
 		rl_repl_cluster = 0;
 
@@ -346,7 +347,7 @@ static int mod_init(void)
 
 	if (repl_pipes_auth_check < 0)
 		repl_pipes_auth_check = 0;
-		
+
 	if ( (rl_repl_cluster || accept_repl_pipes) && load_clusterer_api(&clusterer_api) != 0 ){
 		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
 		return -1;
@@ -417,8 +418,8 @@ static int mod_init(void)
 		LM_ERR("cannot init bin replication\n");
 		return -1;
 	}
-	
-	
+
+
 
 	return 0;
 }
@@ -477,6 +478,105 @@ int hash[100] = {18, 50, 51, 39, 49, 68, 8, 78, 61, 75, 53, 32, 45, 77, 31,
 	54, 33, 92, 76, 85, 5, 72, 9, 83, 56, 17, 95, 55, 80, 98, 66, 14, 16,
 	38, 71, 23, 2, 67, 36, 65, 27, 1, 19, 59, 89, 48};
 
+/**
+ * the algorithm keeps a circular window of requests in a fixed size buffer
+ *
+ * @param pipe   containing the window
+ * @param update whether or not to inc call number
+ * @return number of calls in the window
+ */
+static inline int hist_check(rl_pipe_t *pipe)
+{
+	#define U2MILI(__usec__) (__usec__/1000)
+	#define S2MILI(__sec__)  (__sec__ *1000)
+	int i;
+	int count;
+	int first_good_index;
+	int rl_win_ms = rl_window_size * 1000;
+
+
+	unsigned long long now_total, start_total;
+
+	struct timeval tv;
+
+	/* first get values from our beloved replicated friends
+	 * current pipe counter will be calculated after this
+	 * iteration; no need for the old one */
+	pipe->counter=0;
+	count = rl_get_all_counters(pipe);
+
+	gettimeofday(&tv, NULL);
+	if (pipe->rwin.start_time.tv_sec == 0) {
+		/* the lucky one to come first here */
+		pipe->rwin.start_time = tv;
+		pipe->rwin.start_index = 0;
+
+		/* we know it starts from 0 because we did memset when created*/
+		pipe->rwin.window[pipe->rwin.start_index]++;
+	} else {
+		start_total = S2MILI(pipe->rwin.start_time.tv_sec)
+							+ U2MILI(pipe->rwin.start_time.tv_usec);
+
+		now_total = S2MILI(tv.tv_sec) + U2MILI(tv.tv_usec);
+
+		/* didn't do any update to the window for "2*window_size" secs
+		 * we can't use any elements from the vector
+		 * the window is invalidated; very unlikely to happen*/
+		if (now_total - start_total >= 2*rl_win_ms) {
+			memset(pipe->rwin.window, 0,
+					pipe->rwin.window_size * sizeof(long int));
+
+			pipe->rwin.start_index = 0;
+			pipe->rwin.start_time = tv;
+			pipe->rwin.window[pipe->rwin.start_index]++;
+		} else if (now_total - start_total >= rl_win_ms) {
+			/* current time in interval [window_size; 2*window_size)
+			 * all the elements in [start_time; (ctime-window_size+1) are
+			 * invalidated(set to 0)
+			 * */
+			/* the first window index not to be set to 0
+			 * number of slots from the start_index*/
+			first_good_index = ((((now_total - rl_win_ms) - start_total)
+							/rl_slot_period + 1) + pipe->rwin.start_index) %
+							pipe->rwin.window_size;
+
+			/* the new start time will be the start time of the first slot */
+			start_total = (now_total - rl_win_ms) -
+					(now_total - rl_win_ms)%rl_slot_period+ rl_slot_period;
+
+			pipe->rwin.start_time.tv_sec  = start_total/1000;
+			pipe->rwin.start_time.tv_usec = (start_total%1000)*1000;
+
+
+			for (i=pipe->rwin.start_index; i != first_good_index;
+										i=(i+1)%pipe->rwin.window_size)
+				pipe->rwin.window[i] = 0;
+
+			pipe->rwin.start_index = first_good_index;
+
+			/* count current call; it will be the last element in the window */
+			pipe->rwin.window[(pipe->rwin.start_index)
+					+ (pipe->rwin.window_size-1) % pipe->rwin.window_size]++;
+
+		} else { /* now_total - start_total < rl_win_ms  */
+			/* no need to modify the window, the value is inside it;
+			 * we just need to increment the number of calls for
+			 * the current slot*/
+			pipe->rwin.window[(now_total-start_total)/rl_slot_period]++;
+		}
+	}
+
+	/* count the total number of calls in the window */
+	for (i=0; i < pipe->rwin.window_size; i++)
+		pipe->counter += pipe->rwin.window[i];
+
+	count += pipe->counter;
+
+	return count > pipe->limit ? -1 : 1;
+
+	#undef U2MILI
+	#undef S2MILI
+}
 
 /**
  * runs the pipe's algorithm
@@ -502,6 +602,8 @@ int rl_pipe_check(rl_pipe_t *pipe)
 			return pipe->load;
 		case PIPE_ALGO_FEEDBACK:
 			return (hash[counter % 100] < *drop_rate) ? -1 : 1;
+		case PIPE_ALGO_HISTORY:
+			return hist_check(pipe);
 		default:
 			LM_ERR("ratelimit algorithm %d not implemented\n", pipe->algo);
 	}

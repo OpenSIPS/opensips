@@ -310,7 +310,7 @@ struct fis_param* parse_intstr_value(char *p, int len)
 		len -= 2;
 		if (*p==0 || len<=0 )
 		{
-			LM_ERR("parse error arround <%.*s>\n",len,p);
+			LM_ERR("parse error around <%.*s>\n",len,p);
 				goto error;
 		}
 	} else {

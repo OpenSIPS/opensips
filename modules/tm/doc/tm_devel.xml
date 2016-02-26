@@ -11,7 +11,7 @@
 			</title>
 			<para>
 			For programmatic use only--import the  <acronym>TM</acronym> API.
-			See the cpl-c, acc or jabber modules to see how it works.
+			See the cpl_c, acc or jabber modules to see how it works.
 			</para>
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>

@@ -182,7 +182,7 @@ inline static int parse_store_bavp(str *s, pv_spec_t *bavp)
 		return -1;
 	}
 	 /* check if there is a bavp type */
-	if (bavp->type != 903 + PVT_EXTRA) {
+	if (bavp->type != (pv_type_t)(903 + PVT_EXTRA)) {
 		LM_ERR("store parameter must be an bavp\n");
 		return -1;
 	}
@@ -419,7 +419,7 @@ static int w_replace_from(struct sip_msg* msg, char* p1, char* p2)
 	str uri_s;
 	str dsp_s;
 	str *uri;
-	str *dsp;
+	str *dsp = NULL;
 
 	if (p2==NULL) {
 		p2 = p1;

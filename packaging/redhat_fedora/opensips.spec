@@ -13,7 +13,7 @@ Version:  2.2.0
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
-Source0:  http://opensips.org/pub/%{name}/%{version}/src/%{name}-%{version}-tls_src.tar.gz
+Source0:  http://download.opensips.org/%{name}-%{version}.tar.gz
 URL:      http://opensips.org
 
 BuildRequires:  expat-devel
@@ -129,6 +129,15 @@ Requires: %{name} = %{version}-%{release}
 %description  carrierroute
 A module which provides routing, balancing and blacklisting capabilities.
 
+%package  clusterer
+Summary:  Define and configure an OpenSIPS cluster
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  clusterer
+Clusterer module stores information about the status of a server belonging to
+a cluster.
+
 %package  compression
 Summary:  Message compression and compaction
 Group:    System Environment/Daemons
@@ -142,12 +151,12 @@ this module is reducing headers to compact for as specified in SIP RFC's, sdp
 body codec unnecessary description removal (for codecs 0-97), whitelist for
 headers not be removed (excepting necessary headers).
 
-%package  cpl-c
+%package  cpl_c
 Summary:  Call Processing Language interpreter
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description	cpl-c
+%description	cpl_c
 This module implements a CPL (Call Processing Language) interpreter.
 Support for uploading/downloading/removing scripts via SIP REGISTER method
 is present.
@@ -170,6 +179,28 @@ Requires: %{name} = %{version}-%{release}
 This module provides access to a database that is implemented as a
 HTTP server.
 
+%package  db_mysql
+Summary:  MySQL Storage Support for the OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: mysql-libs
+
+%description  db_mysql
+The %{name}-db_mysql package contains the MySQL plugin for %{name}, which allows
+a MySQL-Database to be used for persistent storage.
+
+%if 0%{?_with_oracle}
+%package  db_oracle
+Summary:  Oracle Storage Support for the OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: oracle-instantclient-devel
+
+%description db_oracle
+The %{name}-db_oracle package contains the Oracle plugin for %{name}, which allows
+a Oracle-Database to be used for persistent storage.
+%endif
+
 %if %{undefined el5}
 %package  db_perlvdb
 Summary:  Perl virtual database engine
@@ -185,6 +216,26 @@ The Perl Virtual Database (VDB) provides a virtualization framework for
 OpenSIPS's database access. It does not handle a particular database engine
 itself but lets the user relay database requests to arbitrary Perl functions.
 %endif
+
+%package  db_postgresql
+Summary:  PostgreSQL Storage Support for the OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: postgresql-libs
+
+%description  db_postgresql
+The %{name}-db_postgresql package contains the PostgreSQL plugin for %{name},
+which allows a PostgreSQL-Database to be used for persistent storage.
+
+%package  db_sqlite
+Summary:  SQLITE3-backend for database API module
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: sqlite-devel
+
+%description  db_sqlite
+This is a module which provides SQLite support for OpenSIPS. It implements
+the DB API defined in OpenSIPS.
 
 %package  emergency
 Summary:  Emergency module
@@ -209,6 +260,17 @@ Requires: %{name} = %{version}-%{release}
 This is a module which provides a UNIX/UDP SOCKET transport layer
 implementation for the Event Interface.
 
+%package  event_flatstore
+Summary:  Event flatstore module
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  event_flatstore
+Flatstore module provides a logging facility for different
+events, triggered through the OpenSIPS Event Interface,
+directly from the OpenSIPS script. The module logs the events
+along with their parameters in regular text files.
+
 %package  event_rabbitmq
 Summary:  Event RabbitMQ module
 Group:    System Environment/Daemons
@@ -231,6 +293,16 @@ the OpenSIPS Event Interface, directly from the OpenSIPS script. For a specific 
 a special route (event_route) has to be declared in the script, and should contain
 the code that handles the event. The route is executed by the module when the
 corresponding event is raised by the OpenSIPS Event Interface.
+
+%package  event_virtual
+Summary:  Aggregator of event backends (failover & balancing)
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  event_virtual
+Virtual module provides the possibility to have multiple external applications,
+using different transport protocols, subscribed to the OpenSIPS Event Interface
+as a single virtual subscriber, for a specific event.
 
 %package  event_xmlrpc
 Summary:  Event XMLRPC client module
@@ -314,28 +386,6 @@ Requires: %{name} = %{version}-%{release}
 Mmgeoip is a lightweight wrapper for the MaxMind GeoIP API. It adds
 IP address-to-location lookup capability to OpenSIPS scripts.
 
-%package  mysql
-Summary:  MySQL Storage Support for the OpenSIPS
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: mysql-libs
-
-%description  mysql
-The %{name}-mysql package contains the MySQL plugin for %{name}, which allows
-a MySQL-Database to be used for persistent storage.
-
-%if 0%{?_with_oracle}
-%package  oracle
-Summary:  Oracle Storage Support for the OpenSIPS
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-BuildRequires: oracle-instantclient-devel
-
-%description oracle
-The %{name}-oracle package contains the Oracle plugin for %{name}, which allows
-a Oracle-Database to be used for persistent storage.
-%endif
-
 %package  peering
 Summary:  Radius peering
 Group:    System Environment/Daemons
@@ -381,16 +431,6 @@ Requires: %{name} = %{version}-%{release}
 This module provides an HTTP provisioning interface for OpenSIPS. It is using the
 OpenSIPS's internal database API to provide a simple way of manipulating records
 inside OpenSIPS's tables.
-
-%package  postgresql
-Summary:  PostgreSQL Storage Support for the OpenSIPS
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: postgresql-libs
-
-%description  postgresql
-The %{name}-postgresql package contains the PostgreSQL plugin for %{name},
-which allows a PostgreSQL-Database to be used for persistent storage.
 
 %package  presence
 Summary:  Presence server
@@ -462,6 +502,30 @@ Requires: %{name}-xcap_client
 The module does specific handling for notify-subscribe events using xml bodies.
 It is used with the general event handling module, presence.
 
+%package  proto_bin
+Summary:  BIN protocol module - implements binary transport for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  proto_bin
+The proto_bin module is a transport module which implements BIN
+TCP-based communication. It does not handle TCP connections
+management, but only offers higher-level primitives to read and
+write BIN messages over TCP. It calls registered callback
+functions for every complete message received.
+
+%package  proto_hep
+Summary:  HEP protocol module - implements HEP transport for SIP
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  proto_hep
+The proto_hep module is a transport module which implements hepV1
+and hepV2 UDP-based communication and hepV3 TCP-based communication.
+It also offers an API with which you can register callbacks which
+are called after the HEP header is parsed and also can pack sip
+messages to HEP messages.The unpacking part is done internally.
+
 %package  proto_sctp
 Summary:  SCTP protocol module - implements SCTP transport for SIP
 Group:    System Environment/Daemons
@@ -494,6 +558,17 @@ Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
 %description  proto_ws
+The WebSocket protocol (RFC 6455) provides an end-to-end full-duplex communication
+channel between two web-based applications. This allows WebSocket enabled browsers
+to connect to a WebSocket server and exchange any type of data. RFC 7118 provides
+the specifications for transporting SIP messages over the WebSocket protocol.
+
+%package  proto_wss
+Summary:  WebSocket protocol module - implements WSS transport for SIP
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  proto_wss
 The WebSocket protocol (RFC 6455) provides an end-to-end full-duplex communication
 channel between two web-based applications. This allows WebSocket enabled browsers
 to connect to a WebSocket server and exchange any type of data. RFC 7118 provides
@@ -677,6 +752,29 @@ table representations of more complicated data such as user and contact
 information, and alarm monitoring capabilities.
 %endif
 
+%package  tls_mgm
+Summary:  TLS management module
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  tls_mgm
+This module is a management module for TLS certificates and parameters.
+It provides an interfaces for all the modules that use the TLS protocol.
+It also implements TLS related functions to use in the routing script,
+and exports pseudo variables with certificate and TLS parameters.
+
+%package  sql_cacher
+Summary:  SQL Caching module
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  sql_cacher
+The sql_cacher module introduces the possibility to cache data from a SQL-based database
+(using different OpenSIPS modules which implement the DB API) into a cache system
+implemented in OpenSIPS through the CacheDB Interface. This is done by specifying the
+databases URLs, SQL table to be used, desired columns to be cached and other details in
+the OpenSIPS configuration script.
+
 %package  topology_hiding
 Summary:  Provides Topology Hiding capabilities
 Group:    System Environment/Daemons
@@ -734,32 +832,24 @@ This modules is a gateway between Openser and a jabber server. It enables
 the exchange of instant messages between SIP clients and XMPP(jabber)
 clients.
 
-%package  rest_client
-Summary:  REST client for OpenSIPS
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  rest_client
-This modules consists of a REST client for OpenSIPS.
-
 %prep
-%setup -q -n %{name}-%{version}-tls
+%setup -q -n %{name}-%{version}
 
 %build
 LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" %{?_with_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all %{?_smp_mflags} TLS=1 \
   exclude_modules="%EXCLUDE_MODULES" \
-  cfg-target=%{_sysconfdir}/opensips/ \
-  modules-prefix=%{buildroot}%{_prefix} \
-  modules-dir=%{_lib}/%{name}/modules
+  cfg_target=%{_sysconfdir}/opensips/ \
+  modules_prefix=%{buildroot}%{_prefix} \
+  modules_dir=%{_lib}/%{name}/modules
 
 %install
 rm -rf $RPM_BUILD_ROOT
 %{__make} install TLS=1 LIBDIR=%{_lib} \
   exclude_modules="%EXCLUDE_MODULES" \
   basedir=%{buildroot} prefix=%{_prefix} \
-  cfg-prefix=%{buildroot} \
-  modules-prefix=%{buildroot}/%{_prefix} \
-  modules-dir=%{_lib}/%{name}/modules \
+  cfg_prefix=%{buildroot} \
+  modules_prefix=%{buildroot}/%{_prefix} \
+  modules_dir=%{_lib}/%{name}/modules \
   DBTEXTON=yes # fixed dbtext documentation installation
 
 # clean some things
@@ -790,18 +880,18 @@ done
 
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 # install systemd files
-install -D -m 0644 -p packaging/fedora/%{name}.service $RPM_BUILD_ROOT%{_unitdir}/%{name}.service
-install -D -m 0644 -p packaging/fedora/%{name}.tmpfiles.conf $RPM_BUILD_ROOT%{_sysconfdir}/tmpfiles.d/%{name}.conf
-install -D -m 0755 -p packaging/fedora/%{name}.m4cfg $RPM_BUILD_ROOT%{_sbindir}/%{name}-m4cfg
+install -D -m 0644 -p packaging/redhat_fedora/%{name}.service $RPM_BUILD_ROOT%{_unitdir}/%{name}.service
+install -D -m 0644 -p packaging/redhat_fedora/%{name}.tmpfiles.conf $RPM_BUILD_ROOT%{_sysconfdir}/tmpfiles.d/%{name}.conf
+install -D -m 0755 -p packaging/redhat_fedora/%{name}.m4cfg $RPM_BUILD_ROOT%{_sbindir}/%{name}-m4cfg
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/run/%{name}
 %else
-install -p -D -m 755 packaging/fedora/opensips.init $RPM_BUILD_ROOT%{_initrddir}/opensips
+install -p -D -m 755 packaging/redhat_fedora/opensips.init $RPM_BUILD_ROOT%{_initrddir}/opensips
 %endif
 echo -e "\nETCDIR=\"%{_sysconfdir}/opensips\"\n" \
   >> $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/opensipsctlrc
 
 #install sysconfig file
-install -D -p -m 644 packaging/fedora/%{name}.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/%{name}
+install -D -p -m 644 packaging/redhat_fedora/%{name}.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/%{name}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -835,21 +925,6 @@ if [ $1 = 0 ]; then
 	/sbin/service %{name} stop > /dev/null 2>&1
 	/sbin/chkconfig --del %{name}
 fi
-%endif
-
-%if 0%{?fedora} > 16 || 0%{?rhel} > 6
-%triggerun -- %{name} < 1.7.2-1
-# Save the current service runlevel info
-# User must manually run systemd-sysv-convert --apply opensips
-# to migrate them to systemd targets
-/usr/bin/systemd-sysv-convert --save %{name} >/dev/null 2>&1 ||:
-
-# Run these because the SysV package being removed won't do them
-/sbin/chkconfig --del %{name} >/dev/null 2>&1 || :
-/bin/systemctl try-restart %{name}.service >/dev/null 2>&1 || :
-
-%triggerun -- opensips < 1.7.2-4
-chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %endif
 
 %files
@@ -1090,13 +1165,17 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/carrierroute.so
 %doc docdir/README.carrierroute
 
+%files clusterer
+%{_libdir}/opensips/modules/clusterer.so
+%doc docdir/README.clusterer
+
 %files compression
 %{_libdir}/opensips/modules/compression.so
 %doc docdir/README.compression
 
-%files cpl-c
-%{_libdir}/opensips/modules/cpl-c.so
-%doc docdir/README.cpl-c
+%files cpl_c
+%{_libdir}/opensips/modules/cpl_c.so
+%doc docdir/README.cpl_c
 
 %files db_berkeley
 %{_sbindir}/bdb_recover
@@ -1111,6 +1190,26 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %files db_http
 %{_libdir}/opensips/modules/db_http.so
 %doc docdir/README.db_http
+
+%files db_mysql
+%{_libdir}/opensips/modules/db_mysql.so
+%{_libdir}/opensips/opensipsctl/opensipsctl.mysql
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.mysql
+%dir %{_datadir}/opensips/mysql
+%{_datadir}/opensips/mysql/*.sql
+%doc docdir/README.db_mysql
+
+%if 0%{?_with_oracle}
+%files db_oracle
+%{_sbindir}/opensips_orasel
+%{_libdir}/opensips/modules/db_oracle.so
+%{_libdir}/opensips/opensipsctl/opensipsctl.oracle
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.oracle
+%{_libdir}/opensips/opensipsctl/opensipsdbfunc.oracle
+%dir %{_datadir}/opensips/oracle
+%{_datadir}/opensips/oracle/*
+%doc docdir/README.db_oracle
+%endif
 
 %if %{undefined el5}
 %files db_perlvdb
@@ -1133,6 +1232,22 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.db_perlvdb
 %endif
 
+%files db_postgresql
+%{_libdir}/opensips/modules/db_postgres.so
+%{_libdir}/opensips/opensipsctl/opensipsctl.pgsql
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.pgsql
+%dir %{_datadir}/opensips/postgres
+%{_datadir}/opensips/postgres/*.sql
+%doc docdir/README.db_postgres
+
+%files db_sqlite
+%{_libdir}/opensips/modules/db_sqlite.so
+%doc docdir/README.db_sqlite
+%{_libdir}/opensips/opensipsctl/opensipsctl.sqlite
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.sqlite
+%dir %{_datadir}/opensips/sqlite
+%{_datadir}/opensips/sqlite/*.sql
+
 %files emergency
 %{_libdir}/opensips/modules/emergency.so
 %doc docdir/README.emergency
@@ -1141,6 +1256,10 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/event_datagram.so
 %doc docdir/README.event_datagram
 
+%files event_flatstore
+%{_libdir}/opensips/modules/event_flatstore.so
+%doc docdir/README.event_flatstore
+
 %files event_rabbitmq
 %{_libdir}/opensips/modules/event_rabbitmq.so
 %doc docdir/README.event_rabbitmq
@@ -1148,6 +1267,10 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %files event_route
 %{_libdir}/opensips/modules/event_route.so
 %doc docdir/README.event_route
+
+%files event_virtual
+%{_libdir}/opensips/modules/event_virtual.so
+%doc docdir/README.event_virtual
 
 %files event_xmlrpc
 %{_libdir}/opensips/modules/event_xmlrpc.so
@@ -1185,26 +1308,6 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/mmgeoip.so
 %doc docdir/README.mmgeoip
 
-%files mysql
-%{_libdir}/opensips/modules/db_mysql.so
-%{_libdir}/opensips/opensipsctl/opensipsctl.mysql
-%{_libdir}/opensips/opensipsctl/opensipsdbctl.mysql
-%dir %{_datadir}/opensips/mysql
-%{_datadir}/opensips/mysql/*.sql
-%doc docdir/README.db_mysql
-
-%if 0%{?_with_oracle}
-%files oracle
-%{_sbindir}/opensips_orasel
-%{_libdir}/opensips/modules/db_oracle.so
-%{_libdir}/opensips/opensipsctl/opensipsctl.oracle
-%{_libdir}/opensips/opensipsctl/opensipsdbctl.oracle
-%{_libdir}/opensips/opensipsctl/opensipsdbfunc.oracle
-%dir %{_datadir}/opensips/oracle
-%{_datadir}/opensips/oracle/*
-%doc docdir/README.db_oracle
-%endif
-
 %files peering
 %{_libdir}/opensips/modules/peering.so
 %doc docdir/README.peering
@@ -1227,14 +1330,6 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/pi_http.so
 %{_datadir}/opensips/pi_http/*
 %doc docdir/README.pi_http
-
-%files postgresql
-%{_libdir}/opensips/modules/db_postgres.so
-%{_libdir}/opensips/opensipsctl/opensipsctl.pgsql
-%{_libdir}/opensips/opensipsctl/opensipsdbctl.pgsql
-%dir %{_datadir}/opensips/postgres
-%{_datadir}/opensips/postgres/*.sql
-%doc docdir/README.db_postgres
 
 %files presence
 %{_libdir}/opensips/modules/presence.so
@@ -1260,6 +1355,14 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/presence_xml.so
 %doc docdir/README.presence_xml
 
+%files proto_bin
+%{_libdir}/opensips/modules/proto_bin.so
+%doc docdir/README.proto_bin
+
+%files proto_hep
+%{_libdir}/opensips/modules/proto_hep.so
+%doc docdir/README.proto_hep
+
 %files proto_sctp
 %{_libdir}/opensips/modules/proto_sctp.so
 %doc docdir/README.proto_sctp
@@ -1271,6 +1374,10 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %files proto_ws
 %{_libdir}/opensips/modules/proto_ws.so
 %doc docdir/README.proto_ws
+
+%files proto_wss
+%{_libdir}/opensips/modules/proto_wss.so
+%doc docdir/README.proto_wss
 
 %files pua
 %{_libdir}/opensips/modules/pua.so
@@ -1342,6 +1449,14 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_datadir}/snmp/mibs/OPENSER-TC
 %endif
 
+%files sql_cacher
+%{_libdir}/opensips/modules/sql_cacher.so
+%doc docdir/README.sql_cacher
+
+%files tls_mgm
+%{_libdir}/opensips/modules/tls_mgm.so
+%doc docdir/README.tls_mgm
+
 %files topology_hiding
 %{_libdir}/opensips/modules/topology_hiding.so
 %doc docdir/README.topology_hiding
@@ -1366,13 +1481,13 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/xmpp.so
 %doc docdir/README.xmpp
 
-%files rest_client
-%{_libdir}/opensips/modules/rest_client.so
-%doc docdir/README.rest_client
-
 %changelog
-* Wed Aug 05 2015 Razvan Crainea <razvan@opensips.org> - 2.1.0-2
-- Add rest_client specs
+* Wed Jan 20 2016 Nick Altmann <nick.altmann@gmail.com> - 2.2.0-1
+- Specification updated for opensips 2.2
+- New packages: db_sqlite, clusterer, event_flatstore,
+  event_virtual, proto_bin, proto_hep, proto_wss, sql_cacher
+- Renamed packages: mysql -> db_mysql, postgres -> db_postgres,
+  cpl-c -> cpl_c
 
 * Sat Mar 14 2015 Nick Altmann <nick.altmann@gmail.com> - 2.1.0-1
 - Specification updated for opensips 2.1

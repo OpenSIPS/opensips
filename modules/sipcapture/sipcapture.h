@@ -21,8 +21,13 @@
  *
  */
 
+#ifndef _SIPCAPTURE_H_
+#define _SIPCAPTURE_H_
+
 typedef char        T8;
 #define BINDING_REQUEST	0x0001;
+
+#if 0
 
 #ifdef __OS_solaris
 typedef uint8_t u_int8_t;
@@ -56,4 +61,6 @@ struct hep_ip6hdr {
         struct in6_addr hp6_src;        /* source address */
         struct in6_addr hp6_dst;        /* destination address */
 };
+#endif
 
+#endif /* _SIPCAPTURE_H_ */

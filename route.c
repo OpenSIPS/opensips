@@ -227,7 +227,7 @@ static int fix_expr(struct expr* exp)
 			if (exp->right.type==EXPR_ST){
 				ret=fix_expr(exp->right.v.expr);
 				if (ret!=0){
-					LM_CRIT("fix rigth exp error\n");
+					LM_CRIT("fix right exp error\n");
 					return ret;
 				}
 			}
@@ -518,21 +518,6 @@ static int fix_actions(struct action* a)
 				t->elem[0].u.data=si;
 				t->elem[0].type=SOCKETINFO_ST;
 				break;
-			case SET_DEBUG_T:
-				if (t->elem[0].type==NOSUBTYPE)
-					break;
-				if (t->elem[0].type!=NUMBER_ST) {
-					LM_CRIT("BUG in setdebug() type %d\n",
-						t->elem[0].type );
-					ret=E_BUG;
-					goto error;
-				}
-				/* normalize the value */
-				if (t->elem[0].u.number>L_DBG)
-					t->elem[0].u.number = L_DBG;
-				else if (t->elem[0].u.number<L_ALERT)
-					t->elem[0].u.number = L_ALERT;
-				break;
 			case SETFLAG_T:
 			case RESETFLAG_T:
 			case ISFLAGSET_T:
@@ -625,11 +610,11 @@ static int fix_actions(struct action* a)
 				}
 				host.s = t->elem[0].u.string;
 				host.len = strlen(host.s);
-				if ( strcasecmp(host.s,"all")==0 ) {
+				if (!strcasecmp(host.s, "all")) {
 					blh = NULL;
 				} else {
 					blh = get_bl_head_by_name(&host);
-					if (blh==NULL) {
+					if (!blh) {
 						LM_ERR("[UN]USE_BLACKLIST - list "
 							"%s not configured\n", t->elem[0].u.string);
 						ret=E_CFG;

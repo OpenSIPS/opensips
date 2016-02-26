@@ -550,6 +550,7 @@ void indialog_ua(struct dlg_cell* dlg, int type, struct dlg_cb_params * params){
 	struct sip_msg *msg = params->msg;
 	int dir = params->direction;
 	int resp;
+	UNUSED(resp);
 
 	LM_DBG(" New sequential request received:%d !! \n",dir);
 	LM_DBG(" New sequential request method:%.*s \n",msg->first_line.u.request.method.len,msg->first_line.u.request.method.s);
@@ -1911,28 +1912,39 @@ end :
  * Aux functions
  */
 
+#define SUCCESS_OR_EXIT(_f) \
+	do {\
+		resp = fill_parm_with_BS(&(_f)); \
+		if (resp < 0) { \
+			LM_ERR("out of pkg mem\n"); \
+			return -1; \
+		} \
+	} while(0)
+
 
 /* fill with blanck spaces
 */
 int fill_blank_space(void) {
 	int resp = 1;
-	resp = fill_parm_with_BS(&vpc_organization_name);
-	resp = fill_parm_with_BS(&vpc_hostname);
-	resp = fill_parm_with_BS(&vpc_nena_id);
-	resp = fill_parm_with_BS(&vpc_contact);
-	resp = fill_parm_with_BS(&vpc_cert_uri);
-	resp = fill_parm_with_BS(&source_organization_name);
-	resp = fill_parm_with_BS(&source_nena_id);
-	resp = fill_parm_with_BS(&source_cert_uri);
-	resp = fill_parm_with_BS(&vsp_organization_name);
+	SUCCESS_OR_EXIT(vpc_organization_name);
+	SUCCESS_OR_EXIT(vpc_hostname);
+	SUCCESS_OR_EXIT(vpc_nena_id);
+	SUCCESS_OR_EXIT(vpc_contact);
+	SUCCESS_OR_EXIT(vpc_cert_uri);
+	SUCCESS_OR_EXIT(source_organization_name);
+	SUCCESS_OR_EXIT(source_nena_id);
+	SUCCESS_OR_EXIT(source_cert_uri);
+	SUCCESS_OR_EXIT(vsp_organization_name);
 	if (proxy_role == 0) {
-		resp = fill_parm_with_BS(&vsp_hostname);
-		resp = fill_parm_with_BS(&vsp_nena_id);
+		SUCCESS_OR_EXIT(vsp_hostname);
+		SUCCESS_OR_EXIT(vsp_nena_id);
 	}
-	resp = fill_parm_with_BS(&vsp_contact);
-	resp = fill_parm_with_BS(&vsp_cert_uri);
+	SUCCESS_OR_EXIT(vsp_contact);
+	SUCCESS_OR_EXIT(vsp_cert_uri);
 	return resp;
 }
+
+#undef SUCCESS_OR_EXIT
 
 
 /*fill with blanck spaces

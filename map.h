@@ -247,7 +247,7 @@ int iterator_is_valid( map_iterator_t * it );
  * as they point to inexisting nodes.
  *
  * Returns the value stored in the node so the user can free it.
- * Returns NULL if no deletion occured.
+ * Returns NULL if no deletion occurred.
  *
  *
  */

@@ -1,13 +1,13 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
-		This module is an implementation of a cache system designed to work with a 
+		This module is an implementation of a cache system designed to work with a
 		Redis server. It uses hiredis client library to connect to either a single Redis
 		server instance, or to a Redis Server inside a Redis Cluster.
 		It uses the Key-Value interface exported from the core.
@@ -47,7 +47,7 @@
 			<para>
 				<emphasis>redis is an open-source project so
 				it can be used to exchange data
-				 with various other applicationsr</emphasis>
+				 with various other applications</emphasis>
 			</para>
 			</listitem>
 
@@ -66,8 +66,8 @@
 
 	<section>
 	<title>Limitations</title>
-	
-		
+
+
 		<para>
 			<itemizedlist>
 			<listitem>
@@ -90,7 +90,7 @@
 		None.
 		</para>
 	</section>
-	
+
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
@@ -102,7 +102,7 @@
 			<para>
 				<emphasis>hiredis:</emphasis>
 			</para>
-			
+
 			<para>
 				On the latest Debian based distributions, hiredis can be installed
 				by running 'apt-get install libhiredis-dev'
@@ -111,12 +111,12 @@
 				hiredis can be downloaded from: https://github.com/antirez/hiredis .
 				Download the archive, extract sources, run make,sudo make install.
 			</para>
-			
+
 			</listitem>
 			</itemizedlist>
 	</section>
 	</section>
-	
+
 	<section>
 		<title>Exported Parameters</title>
 		<section>
@@ -128,35 +128,80 @@
 			The prefix part of the URL will be the identifier that will be used
 			from the script.
 		</para>
-		
+
 		<example>
 		<title>Set <varname>cachedb_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_redis", "cachedb_url","redis:group1://localhost:6379/");
-modparam("cachedb_redis", "cachedb_url","redis:cluster1://random_url:8888/");
+modparam("cachedb_redis", "cachedb_url","redis:group1://localhost:6379/")
+modparam("cachedb_redis", "cachedb_url","redis:cluster1://random_url:8888/")
 ...
-	</programlisting>
-		</example>
-		
-		<example>
-		<title>Use Redis servers </title>
-		<programlisting format="linespecific">
+		</programlisting>
+			</example>
+
+			<example>
+			<title>Use Redis servers </title>
+			<programlisting format="linespecific">
 ...
 cache_store("redis:group1","key","$ru value");
 cache_fetch("redis:cluster1","key",$avp(10));
 cache_remove("redis:cluster1","key");
 ...
-	</programlisting>
+		</programlisting>
+			</example>
+		</section>
+
+		<section>
+		<title><varname>connect_timeout</varname> (integer)</title>
+		<para>
+			This parameter specifies how many milliseconds &osips; should wait
+			for connecting to a Redis node.
+		</para>
+		<emphasis>
+			Default value is <quote>5000 ms</quote>.
+		</emphasis>
+
+		<example>
+		<title>Set <varname>connect_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# wait 1 seconds for Redis to connect
+modparam("cachedb_redis", "connect_timeout",1000)
+...
+		</programlisting>
 		</example>
+
+		</section>
+
+		<section>
+		<title><varname>query_timeout</varname> (integer)</title>
+		<para>
+			This parameter specifies how many milliseconds &osips; should wait
+			for a query response from a Redis node.
+		</para>
+		<emphasis>
+			Default value is <quote>5000 ms</quote>.
+		</emphasis>
+
+		<example>
+		<title>Set <varname>connect_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# wait 1 seconds for Redis queries
+modparam("cachedb_redis", "query_timeout",1000)
+...
+		</programlisting>
+		</example>
+
+		</section>
 	</section>
-	
+
 
 	<section>
 		<title>Exported Functions</title>
 		<para>The module does not export functions to be used
 		in configuration script.</para>
-	</section>	
+	</section>
 
 	<section>
 	<title>Raw Query Syntax</title>
@@ -175,22 +220,22 @@ cache_remove("redis:cluster1","key");
 	$var(my_hash) = "my_hash_name";
 	$var(my_key) = "my_key_name";
 	$var(my_value) = "my_key_value";
-	cache_raw_query("redis","HSET $var(my_hash) $var(my_key) $var(my_value)"); 
+	cache_raw_query("redis","HSET $var(my_hash) $var(my_key) $var(my_value)");
 	cache_raw_query("redis","HGET $var(my_hash) $var(my_key)","$avp(result)");
-	xlog("We have fetched $avp(result) \n"); 
+	xlog("We have fetched $avp(result) \n");
 ...
 	$var(my_hash) = "my_hash_name";
 	$var(my_key1) = "my_key1_name";
 	$var(my_key2) = "my_key2_name";
 	$var(my_value1) = "my_key1_value";
 	$var(my_value2) = "my_key2_value";
-	cache_raw_query("redis","HSET $var(my_hash) $var(my_key1) $var(my_value1)"); 
-	cache_raw_query("redis","HSET $var(my_hash) $var(my_key2) $var(my_value2)"); 
+	cache_raw_query("redis","HSET $var(my_hash) $var(my_key1) $var(my_value1)");
+	cache_raw_query("redis","HSET $var(my_hash) $var(my_key2) $var(my_value2)");
 	cache_raw_query("redis","HGETALL $var(my_hash)","$avp(result)");
 
 	$var(it) = 0;
 	while ($(avp(result_final)[$var(it)]) != NULL) {
-		xlog("Multiple key reply: - we have fetched $(avp(result_final)[$var(it)]) \n"); 
+		xlog("Multiple key reply: - we have fetched $(avp(result_final)[$var(it)]) \n");
 		$var(it) = $var(it) + 1;
 	}
 ...
@@ -199,7 +244,7 @@ cache_remove("redis:cluster1","key");
 		</para>
 
 	</section>
-</section>
+
 
 </chapter>
 

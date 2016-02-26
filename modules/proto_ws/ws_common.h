@@ -302,7 +302,7 @@ static enum ws_close_code inline ws_parse(struct ws_req *req)
 		/* check if we have the minimal header */
 		if (req->tcp.pos - req->tcp.buf < WS_MIN_HDR_LEN)
 			/* wait for more data to come */
-			return 0;
+			goto update_parsed;
 
 		if (!WS_IS_FIN(req)) {
 			LM_ERR("We do not support fragmemntation yet. Dropping...\n");
@@ -335,7 +335,7 @@ static enum ws_close_code inline ws_parse(struct ws_req *req)
 			clen = WS_ELENC(req);
 			if ((clen+WS_MIN_HDR_LEN+WS_ELENC_SIZE+WS_IF_MASK_SIZE(req))>
 					TCP_BUF_SIZE) {
-				LM_ERR("packet too large, can't fit: %lu\n", clen);
+				LM_ERR("packet too large, can't fit: %" PRIu64 "\n", clen);
 				req->tcp.error = TCP_REQ_OVERRUN;
 				return WS_ERR_TOO_BIG;
 			}
@@ -383,8 +383,10 @@ static enum ws_close_code inline ws_parse(struct ws_req *req)
 
 		req->tcp.complete = 1;
 		req->tcp.parsed = req->tcp.body + req->tcp.content_len;
-	} else
+	} else {
+update_parsed:
 		req->tcp.parsed = req->tcp.pos;
+	}
 
 	return 0;
 }
@@ -438,6 +440,10 @@ again:
 			LM_DBG("EOF received\n");
 			goto done;
 		}
+	}
+
+	if (req->tcp.complete) {
+
 		/* sanity mask checks */
 		if ((WS_TYPE(con) == WS_CLIENT && req->is_masked) ||
 			(WS_TYPE(con) == WS_SERVER && !req->is_masked)) {
@@ -447,9 +453,6 @@ again:
 			ret_code = WS_ERR_BADDATA;
 			goto error;
 		}
-	}
-
-	if (req->tcp.complete) {
 
 		/* update the timeout - we successfully read the request */
 		tcp_conn_set_lifetime(con, _ws_common_write_tout);

@@ -380,6 +380,7 @@ int pv_get_json (struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 	pv_json_t * var ;
 	json_t * obj;
 	json_name * id = (json_name *) pvp->pvn.u.dname;
+	UNUSED(id);
 
 
 	if( expand_tag_list( msg, ((json_name *)pvp->pvn.u.dname)->tags ) < 0)
@@ -941,7 +942,7 @@ int pv_parse_json_name (pv_spec_p sp, str *in)
 
 	if( state == ST_IDX)
 	{
-		LM_ERR("Mismatched paranthesis in:(%.*s)\n",in->len,in->s);
+		LM_ERR("Mismatched parenthesis in:(%.*s)\n",in->len,in->s);
 		return -1;
 	}
 

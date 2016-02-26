@@ -102,7 +102,6 @@ int tcp_listen_backlog=DEFAULT_TCP_LISTEN_BACKLOG;
 /*!< by default choose the best method */
 enum poll_types tcp_poll_method=0;
 int tcp_max_connections=DEFAULT_TCP_MAX_CONNECTIONS;
-int tcp_max_fd_no=0;
 /* number of TCP workers */
 int tcp_children_no = CHILD_NO;
 /* Max number of seconds that we except a full SIP message
@@ -211,7 +210,7 @@ int tcp_init_sock_opt(int s)
 	/* non-blocking */
 	flags=fcntl(s, F_GETFL);
 	if (flags==-1){
-		LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+		LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
 		goto error;
 	}
 	if (fcntl(s, F_SETFL, flags|O_NONBLOCK)==-1){
@@ -495,7 +494,7 @@ static struct tcp_connection* _tcpconn_find(int id)
 }
 
 
-/*! \brief _tcpconn_find with locks and aquire fd */
+/*! \brief _tcpconn_find with locks and acquire fd */
 int tcp_conn_get(int id, struct ip_addr* ip, int port,
 									struct tcp_connection** conn, int* conn_fd)
 {
@@ -553,7 +552,7 @@ found:
 	LM_DBG("con found in state %d\n",c->state);
 
 	if (c->state!=S_CONN_OK || conn_fd==NULL) {
-		/* no need to aquired, just return the conn with an invalid fd */
+		/* no need to acquired, just return the conn with an invalid fd */
 		*conn = c;
 		if (conn_fd) *conn_fd = -1;
 		return 1;
@@ -567,7 +566,7 @@ found:
 		return 1;
 	}
 
-	/* aquire the fd for this connection too */
+	/* acquire the fd for this connection too */
 	LM_DBG("tcp connection found (%p), acquiring fd\n", c);
 	/* get the fd */
 	response[0]=(long)c;
@@ -614,7 +613,7 @@ error:
 
 
 /* used to tune the tcp_connection attributes - not to be used inside the
-   network layer, but onlu from the above layer (otherwise we may end up 
+   network layer, but onlu from the above layer (otherwise we may end up
    in strange deadlocks!) */
 int tcp_conn_fcntl(struct receive_info *rcv, int attr, void *value)
 {
@@ -751,12 +750,12 @@ ok:
 	TCPCONN_UNLOCK(id);
 #ifdef EXTRA_DEBUG
 	if (a) LM_DBG("alias already present\n");
-	else   LM_DBG("alias port %d for hash %d, id %d\n", port, hash, c->id);
+	else   LM_DBG("alias port %d for hash %d, id %d\n", port, hash, id);
 #endif
 	return 0;
 error_aliases:
 	TCPCONN_UNLOCK(id);
-	LM_ERR("too many aliases for connection %p (%d)\n", c, c->id);
+	LM_ERR("too many aliases for connection %p (%d)\n", c, id);
 	return -1;
 error_not_found:
 	TCPCONN_UNLOCK(id);
@@ -765,7 +764,7 @@ error_not_found:
 error_sec:
 	LM_WARN("possible port hijack attempt\n");
 	LM_WARN("alias already present and points to another connection "
-			"(%d : %d and %d : %d)\n", a->parent->id,  port, c->id, port);
+			"(%d : %d and %d : %d)\n", a->parent->id,  port, id, port);
 	TCPCONN_UNLOCK(id);
 	return -1;
 }
@@ -847,7 +846,7 @@ error:
 
 /* creates a new tcp connection structure and informs the TCP Main on that
  * a +1 ref is set for the new conn !
- * IMPORTANT - the function assumes you want to create a new TCP conn as 
+ * IMPORTANT - the function assumes you want to create a new TCP conn as
  * a result of a connect operation - the conn will be set as connect !!
  * Accepted connection are triggered internally only */
 struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
@@ -925,7 +924,8 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 				tcpconn, tcpconn->flags);
 		fd=tcpconn->s;
 		_tcpconn_rm(tcpconn);
-		close(fd);
+		if (fd >= 0)
+			close(fd);
 		tcp_connections_no--;
 	}else{
 		/* force timeout */
@@ -1059,8 +1059,8 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 			/* we're coming from an async connect & write
 			 * let's see if we connected successfully*/
 			err_len=sizeof(err);
-			getsockopt(tcpconn->s, SOL_SOCKET, SO_ERROR, &err, &err_len);
-			if (err != 0) {
+			if (getsockopt(tcpconn->s, SOL_SOCKET, SO_ERROR, &err, &err_len) < 0 || \
+					err != 0) {
 				LM_DBG("Failed connection attempt\n");
 				tcpconn_ref(tcpconn);
 				reactor_del_all(tcpconn->s, fd_i, IO_FD_CLOSING);
@@ -1342,7 +1342,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			break;
 		case ASYNC_WRITE:
 			if (tcpconn->state==S_CONN_BAD){
-				tcpconn_destroy(tcpconn);
+				tcpconn->lifetime=0;
 				break;
 			}
 			/* must be after the de-ref*/
@@ -1394,7 +1394,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			LM_CRIT("empty fd map\n");
 			goto error;
 		default:
-			LM_CRIT("uknown fd type %d\n", fm->type);
+			LM_CRIT("unknown fd type %d\n", fm->type);
 			goto error;
 	}
 	return ret;
@@ -1430,7 +1430,10 @@ static inline void __tcpconn_lifetime(int force)
 	unsigned h;
 	int fd;
 
-	ticks=get_ticks();
+	if (have_ticks())
+		ticks=get_ticks();
+	else
+		ticks=0;
 
 	for( part=0 ; part<TCP_PARTITION_SIZE ; part++ ) {
 		TCPCONN_LOCK(part); /* fixme: we can lock only on delete IMO */
@@ -1470,7 +1473,7 @@ static void tcp_main_server(void)
 
 	/* we run in a separate, dedicated process, with its own reactor
 	 * (reactors are per process) */
-	if (init_worker_reactor("TCP_main", tcp_max_fd_no, RCT_PRIO_MAX)<0)
+	if (init_worker_reactor("TCP_main", RCT_PRIO_MAX)<0)
 		goto error;
 
 	/* now start watching all the fds*/
@@ -1506,7 +1509,7 @@ static void tcp_main_server(void)
 			/* make socket non-blocking */
 			flags=fcntl(tcp_children[n].unix_sock, F_GETFL);
 			if (flags==-1){
-				LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+				LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
 				goto error;
 			}
 			if (fcntl(tcp_children[n].unix_sock,F_SETFL,flags|O_NONBLOCK)==-1){
@@ -1699,9 +1702,6 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		if ( is_tcp_based_proto(n) )
 			for(si=protos[n].listeners; si ; si=si->next,r++ );
 
-	tcp_max_fd_no=counted_processes*2 + r - 1/*timer*/ + 3/*stdin/out/err*/;
-	tcp_max_fd_no+=tcp_max_connections;
-
 	if (register_tcp_load_stat( &load_p )!=0) {
 		LM_ERR("failed to init tcp load statistic\n");
 		goto error;
@@ -1736,7 +1736,8 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			if (init_child(*chd_rank) < 0) {
 				LM_ERR("init_children failed\n");
 				report_failure_status();
-				*startup_done = -1;
+				if (startup_done)
+					*startup_done = -1;
 				exit(-1);
 			}
 
@@ -1752,9 +1753,9 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 				*startup_done = 1;
 			}
 
-			report_conditional_status( (1), 0);
+			report_conditional_status( 1, 0);
 
-			tcp_worker_proc( reader_fd[1], tcp_max_fd_no);
+			tcp_worker_proc( reader_fd[1] );
 			exit(-1);
 		}
 	}

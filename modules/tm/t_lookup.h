@@ -77,9 +77,11 @@ void set_t(struct cell *t);
 
 
 struct cell *get_cancelled_t();
+void set_cancelled_t(struct cell* t);
 void reset_cancelled_t();
 
 struct cell *get_e2eack_t();
+void set_e2eack_t(struct cell* t);
 void reset_e2eack_t();
 
 

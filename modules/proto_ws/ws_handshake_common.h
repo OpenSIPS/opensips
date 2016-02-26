@@ -157,9 +157,6 @@ static const char base64alphabet[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 #define BASE64ALPHABET_LEN (sizeof base64alphabet)
 
-/* XXX: this information should be dynamically provided */
-static str ws_resource = str_init("/");
-
 
 /* we're using a completely random key - no reason yet for something else */
 static str ws_rand_key(void)
@@ -184,7 +181,8 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 	int to;
 	int elapsed;
 	struct timeval begin;
-	unsigned int err_len, poll_err = 0, n, err;
+	unsigned int err_len, poll_err = 0, err;
+	int n;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 	fd_set sel_set;
 	fd_set orig_set;
@@ -252,8 +250,8 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 #endif
 		{
 			err_len=sizeof(err);
-			getsockopt(con->fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
-			if (err != 0 || poll_err != 0) {
+			if (getsockopt(con->fd, SOL_SOCKET, SO_ERROR, &err, &err_len) < 0 ||
+					err != 0 || poll_err != 0) {
 				if (err != EINPROGRESS && err != EALREADY)
 					goto error;
 				continue;
@@ -477,8 +475,9 @@ static int ws_server_handshake(struct tcp_connection *con)
 			goto error;
 		}
 
-		init_tcp_req(req, 0);
 		con->msg_attempts = 0;
+		if (req != &_ws_common_tcp_current_req)
+			pkg_free(req);
 
 		/* handshake now completed, destroy the handshake data */
 		WS_STATE(con) = WS_CON_HANDSHAKE_DONE;
@@ -946,7 +945,11 @@ error:
 	return -1;
 }
 
-unsigned char ws_key_buf[] = "xxxxxxxxxxxxxxxxxxxxxxxx" /* the key len: 24 */
+/*
+ * The Polar library needs this to be 64 bytes, to avoid overflow
+ * when computing the SHA1 hash
+ */
+unsigned char ws_key_buf[64] = "xxxxxxxxxxxxxxxxxxxxxxxx" /* the key len: 24 */
 		WS_GUID_KEY /* the GUID */;
 unsigned char ws_sha1_buf[WS_SHA1_KEY_LEN];
 unsigned char ws_accept_buf[WS_ACCEPT_KEY_LEN];
@@ -1022,7 +1025,6 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len)
 		LM_ERR("Invalid HTTP version: %u.%u\n", ver_maj, ver_min);
 		goto error;
 	}
-	return 0;
 
 	/* Parse the Headers */
 	memset(&tmp_msg, 0, sizeof(struct sip_msg));
@@ -1213,8 +1215,8 @@ static int ws_start_handshake(struct tcp_connection *c)
 	host_orig_buf[n] = ':';
 	memcpy(host_orig_buf + n + 1, port, port_len);
 
-	iov[2].iov_base = ws_resource.s;
-	iov[2].iov_len = ws_resource.len;
+	iov[2].iov_base = _ws_common_resource.s;
+	iov[2].iov_len = _ws_common_resource.len;
 
 	iov[7].iov_len = n + port_len + 1;
 	iov[10].iov_len = iov[7].iov_len;

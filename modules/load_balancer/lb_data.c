@@ -925,7 +925,7 @@ int do_lb_reset(struct sip_msg *req, struct lb_data *data)
 	destroy_avps(0, id_avp_name, 0);
 
 	/* any valid previous iteration ? */
-	if( (last_dst == NULL) ) {
+	if(last_dst == NULL) {
 		/* simply delete all possible resources */
 		destroy_avps(0, res_avp_name, 1);
 	} else {

@@ -263,7 +263,7 @@ static enum hash_source hash_fixup(const char * my_hash_source) {
 /************* Interface Functions *****************************************/
 
 /**
- * Initialises the module, i.e. it binds the necessary API functions
+ * Initializes the module, i.e. it binds the necessary API functions
  * and registers the fifo commands
  *
  * @return 0 on success, -1 on failure

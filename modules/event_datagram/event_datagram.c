@@ -338,7 +338,6 @@ static int datagram_build_params(str* ev_name, evi_params_p ev_params)
 		if (node->flags & EVI_STR_VAL) {
 			/* it is a string value */
 			if (node->val.s.len && node->val.s.s) {
-				len++;
 				/* check to see if enclose is needed */
 				end = node->val.s.s + node->val.s.len;
 				for (p = node->val.s.s; p < end; p++)
@@ -388,6 +387,8 @@ end:
 static int datagram_raise(struct sip_msg *msg, str* ev_name,
 						  evi_reply_sock *sock, evi_params_t *params)
 {
+	int ret;
+
 	if (!sock || !(sock->flags & EVI_SOCKET)) {
 		LM_ERR("no socket found\n");
 		return -1;
@@ -407,11 +408,15 @@ static int datagram_raise(struct sip_msg *msg, str* ev_name,
 
 	/* send data */
 	if (sock->flags & DGRAM_UDP_FLAG) {
-		sendto(sockets.udp_sock, dgram_buffer, dgram_buffer_len, 0,
+		ret = sendto(sockets.udp_sock, dgram_buffer, dgram_buffer_len, 0,
 			&sock->src_addr.udp_addr.s, sizeof(struct sockaddr_in));
 	} else {
-		sendto(sockets.unix_sock, dgram_buffer, dgram_buffer_len, 0,
+		ret = sendto(sockets.unix_sock, dgram_buffer, dgram_buffer_len, 0,
 			&sock->src_addr.udp_addr.s, sizeof(struct sockaddr_un));
+	}
+	if (ret < 0) {
+		LM_ERR("Cannot raise datagram event due to %d:%s\n", errno, strerror(errno));
+		return -1;
 	}
 	return 0;
 }

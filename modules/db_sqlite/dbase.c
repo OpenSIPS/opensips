@@ -49,7 +49,7 @@ extern int db_sqlite_alloc_limit;
 char count_buf[COUNT_BUF_SIZE]="select count(*)";
 str count_str = {count_buf, sizeof(COUNT_QUERY)-1};
 
-static inline int db_copy_rest_of_count(const str* query_holder, str* count_query);
+static inline int db_copy_rest_of_count(const str* _qh, str* count_query);
 static int db_sqlite_store_result(const db_con_t* _h, db_res_t** _r, const db_val_t* v, const int n);
 #ifdef SQLITE_BIND
 static int db_sqlite_bind_values(sqlite3_stmt* stmt, const db_val_t* _v, const int _n);
@@ -84,15 +84,15 @@ void db_sqlite_close(db_con_t* _h)
 	db_do_close(_h, db_sqlite_free_connection);
 }
 
-static inline int db_copy_rest_of_count(const str* query_holder, str* count_query)
+static inline int db_copy_rest_of_count(const str* _qh, str* count_query)
 {
 
 	char* found;
 	const str searched_str = {" from ", sizeof(" from ")-1};
 
 	count_query->len = sizeof(COUNT_QUERY)-1;
-	if ((found=str_strstr(query_holder, &searched_str)) != NULL) {
-		const int len=query_holder->len-(found-query_holder->s);
+	if ((found=str_strstr(_qh, &searched_str)) != NULL) {
+		const int len=_qh->len-(found-_qh->s);
 		/* check for overflow */
 		if (len > COUNT_BUF_SIZE-(sizeof(COUNT_QUERY)-1)) {
 			LM_ERR("query too big! try reducing the size of your query!"
@@ -327,15 +327,36 @@ int db_sqlite_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
  */
 int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 {
-	int ret=-1;
+	static char sql_str[SQL_BUF_LEN];
+	int ret=-1, i=0;
 	char* errmsg;
 	str select_str={"select", 6};
 
+	str _scpy;
+
 	CON_RESET_CURR_PS(_h);
-	if (!str_strstr(_s, &select_str)) {
+	while (i < _s->len && !isalpha(_s->s[i])) i++;
+
+	/* if any blank spaces or anything else before the actual query */
+	if (i) {
+		_scpy.s   = _s->s+i;
+		_scpy.len = _s->len-i;
+	} else {
+		_scpy = *_s;
+	}
+
+	if (_scpy.len >= select_str.len &&
+		str_strncasecmp(&_scpy, &select_str, select_str.len)) {
 		/* not a select statement; can execute the query and exit*/
+		if (_s->len + 1 > SQL_BUF_LEN) {
+			LM_ERR("query too big! try reducing the size of your query!"
+				"Current max size [%d]!\n", SQL_BUF_LEN);
+			return -1;
+		}
+		memcpy(sql_str, _s->s, _s->len);
+		sql_str[_s->len] = '\0';
 		if (sqlite3_exec(CON_CONNECTION(_h),
-							query_holder.s, NULL, NULL, &errmsg)) {
+			sql_str, NULL, NULL, &errmsg)) {
 			LM_ERR("query failed: %s\n", errmsg);
 			return -2;
 		}
@@ -345,7 +366,7 @@ int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 
 	CON_RAW_QUERY(_h) = 1;
 
-	if (db_copy_rest_of_count(_s, &count_str)) {
+	if (db_copy_rest_of_count(&_scpy, &count_str)) {
 		LM_ERR("failed to build count str!\n");
 		return -1;
 	}
@@ -727,9 +748,14 @@ int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 	db_val_t* v;
 	db_row_t* res_col;
 
-	if ((!_h) || (!_r)) {
-		LM_ERR("invalid parameter value\n");
+	if (!_h) {
+		LM_ERR("invalid database handle\n");
 		return -1;
+	}
+
+	if (!_r) {
+		LM_DBG("nothing to free!\n");
+		return 0;
 	}
 
 

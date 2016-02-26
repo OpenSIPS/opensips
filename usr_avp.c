@@ -516,7 +516,7 @@ static inline int new_avp_alias(str *alias)
 	/* successfully added avp */
 	last_avp_index++;
 
-	LM_DBG("added alias %.*s with id %hu\n",alias->len,alias->s,id);
+	LM_DBG("added alias %.*s with id %d\n",alias->len,alias->s,id);
 
 	return id;
 }
@@ -541,7 +541,7 @@ static inline int new_avp_extra_alias(str *alias)
 	(*last_avp_index_shm)++;
 	lock_release(extra_lock);
 
-	LM_DBG("added extra alias %.*s with id %hu\n",alias->len,alias->s,id);
+	LM_DBG("added extra alias %.*s with id %d\n",alias->len,alias->s,id);
 
 	return id;
 }

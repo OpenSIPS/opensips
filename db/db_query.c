@@ -118,7 +118,8 @@ error:
 err_exit:
 	if (_r)
 		*_r = NULL;
-	CON_OR_RESET(_h);
+	if (_h)
+		CON_OR_RESET(_h);
 	return -1;
 }
 
@@ -341,7 +342,8 @@ int db_do_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 error:
 	LM_ERR("error while preparing delete operation\n");
 err_exit:
-	CON_OR_RESET(_h);
+	if (_h)
+		CON_OR_RESET(_h);
 	return -1;
 }
 
@@ -392,7 +394,8 @@ int db_do_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 error:
 	LM_ERR("error while preparing update operation\n");
 err_exit:
-	CON_OR_RESET(_h);
+	if(_h)
+		CON_OR_RESET(_h);
 	return -1;
 }
 

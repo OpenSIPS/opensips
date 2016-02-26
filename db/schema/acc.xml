@@ -9,7 +9,7 @@
 
 <table id="acc" xmlns:db="http://docbook.org/ns/docbook">
 	<name>acc</name>
-	<version>6</version>
+	<version>7</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>This table is used by the ACC module to report on transactions - accounted calls. More information is available at: &OPENSIPS_MOD_DOC;acc.html
@@ -86,7 +86,15 @@
 		<type>unsigned int</type>
 		<size>&expires_len;</size>
 		<default>0</default>
-		<description>Call duration (from 200OK INVITE to BYE request) - this filed is populated only if CDR support is enabled in ACC module (see cdr_flag parameter)</description>
+		<description>Call duration (from 200OK INVITE to BYE request) in seconds - this field is populated only if CDR support is enabled in ACC module (see cdr_flag parameter)</description>
+	</column>
+
+	<column>
+		<name>ms_duration</name>
+		<type>unsigned int</type>
+		<size>&expires_len;</size>
+		<default>0</default>
+		<description>Call duration (from 200OK INVITE to BYE request) in milliseconds - this field is populated only if CDR support is enabled in ACC module (see cdr_flag parameter)</description>
 	</column>
 
 	<column>

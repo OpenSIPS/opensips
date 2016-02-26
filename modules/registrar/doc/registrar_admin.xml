@@ -946,6 +946,10 @@ switch ($retcode) {
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 		</para>
+		<para>
+		WARNING: THIS FUNCTION IS DEPRECATED! USE
+		<emphasis>is_contact_registered()</emphasis> INSTEAD.
+		</para>
 		<example>
 		<title><function>registered</function> usage</title>
 		<programlisting format="linespecific">
@@ -988,6 +992,10 @@ if (registered("location","$fu")) {
 		<para>
 		This function can be used from REQUEST_ROUTE.
 		</para>
+		<para>
+			WARNING: THIS FUNCTION IS DEPRECATED! USE
+			<emphasis>is_ip_registered()</emphasis> INSTEAD.
+		</para>
 		<example>
 		<title><function>is_other_contact</function> usage</title>
 		<programlisting format="linespecific">
@@ -1001,6 +1009,179 @@ if (is_other_contact("location", "$avp(ips)")) {
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">is_registered(domain ,[AOR])</function>
+		</title>
+		<para>
+		The function returns true if an AOR is registered, false otherwise.
+		The function does not modify the message being process.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>domain</emphasis> - Name of table that should be
+			used for the lookup.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
+			missing, the source if the AOR is the "To" header for REGISTER
+			request, "From" header for any other sip request.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>is_registered</function> usage</title>
+		<programlisting format="linespecific">
+...
+/**/
+if (is_method("REGISTER")) {
+	/* automatically uses the URI from the To header */
+	if (is_registered("location")) {
+		xlog("this AOR is registered\n")
+		...
+	}
+};
+/* check the From uri whether this aor is registered or not */
+if (is_registered("location","$fu")) {
+	xlog("caller is registered\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section>
+		<title>
+		<function moreinfo="none">is_contact_registered(domain ,[AOR],[contact],[callid])</function>
+		</title>
+		<para>
+			The function returns true if a contact and/or a callid from a certain AOR is registered, false otherwise.
+		The function does not modify the message being process.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>domain</emphasis> - Name of table that should be
+			used for the lookup.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
+			missing, the source if the AOR is the "To" header for REGISTER
+			request, "From" header for any other sip request.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>contact</emphasis> (optional)- callid to check if a
+			contact if registered with this callid (this may help you to
+			make distinction between newly registered contact (callid
+			not registered so far) and re-registration (callid already
+			registered).
+			</para>
+		</listitem>
+
+		<listitem>
+			<para>
+			<emphasis>callid</emphasis> (optional)- callid to check if a
+			contact if registered with this callid (this may help you to
+			make distinction between newly registered contact (callid
+			not registered so far) and re-registration (callid already
+			registered).
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>is_registered</function> usage</title>
+		<programlisting format="linespecific">
+...
+/*let's say you want to block users that are not registered*/
+if (is_method("INVITE")) {
+	if (!is_contact_registered("location")) {
+		sl_send_reply("401", "Unauthorized");
+	...
+	}
+}
+/* you want to check the second contact from the message whether it is
+registered or not */
+if(is_method("INVITE")) {
+	if (is_contact_registered("location","$fu","$(ct[1])",))
+		xlog("caller is registered\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">is_ip_registered(domain ,[AOR],IPvar)</function>
+		</title>
+		<para>
+			The function returns true if at least a contact has an IP from the IPavp in it's received parameter,otherwise
+			returns false. The function does not modify the message being process. This function replaces the "is_other_contact"
+			function.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>domain</emphasis> - Name of table that should be
+			used for the lookup.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
+			missing, the source if the AOR is the "To" header for REGISTER
+			request, "From" header for any other sip request.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>IPvar</emphasis> the pvar containing the IPs you want
+				to check the received parameter of the contacts in the AOR against.
+			</para>
+		</listitem>
+
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>is_registered</function> usage</title>
+		<programlisting format="linespecific">
+...
+/* check the source ip  whether it is already registered */
+if (is_method("REGISTER")) {
+	if (is_ip_registered("location","$tu","$si")) {
+		xlog("already registered from this ip\n");
+		...
+	}
+};
+...
+</programlisting>
+		</example>
+	</section>
+
+
 
 	<section>
 		<title>

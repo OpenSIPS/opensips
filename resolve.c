@@ -123,14 +123,14 @@ typedef union {
 		(s) = ntohl (*t_cp); \
 	} while (0)
 
-inline unsigned int dns_get16(const u_char *src) {
+static inline unsigned int dns_get16(const u_char *src) {
 	unsigned int dst;
 
 	DNS_GET16(dst, src);
 	return dst;
 }
 
-inline unsigned int dns_get32(const u_char *src) {
+static inline unsigned int dns_get32(const u_char *src) {
 	unsigned int dst;
 
 	DNS_GET32(dst, src);
@@ -507,6 +507,7 @@ struct hostent * own_gethostbyaddr(void *addr, socklen_t len, int af)
 	static const u_char mapped[] = { 0,0, 0,0, 0,0, 0,0, 0,0, 0xff,0xff };
 	static const u_char tunnelled[] = { 0,0, 0,0, 0,0, 0,0, 0,0, 0,0 };
 	int n;
+	int ret;
 	static union dns_query ptr_buff;
 	socklen_t size;
 	char qbuf[DNS_MAX_NAME+1];
@@ -576,15 +577,15 @@ query:
 	global_he.h_addrtype=af;
 	global_he.h_length=len;
 
-	size=res_search(qbuf,C_IN,T_PTR,ptr_buff.buff,sizeof(ptr_buff.buff));
-	if (size < 0) {
+	ret=res_search(qbuf,C_IN,T_PTR,ptr_buff.buff,sizeof(ptr_buff.buff));
+	if (ret < 0) {
 		LM_DBG("ptr not found\n");
 		if (dnscache_put_func(addr,T_PTR,NULL,len,1,0) < 0)
 			LM_ERR("Failed to store PTR in cache\n");
 		return NULL;
 	}
 
-	if (get_dns_answer(&ptr_buff,size,qbuf,T_PTR,&min_ttl) < 0) {
+	if (get_dns_answer(&ptr_buff,ret,qbuf,T_PTR,&min_ttl) < 0) {
 		LM_ERR("Failed to get dns answer\n");
 		return NULL;
 	}
@@ -1786,7 +1787,8 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	}
 
 	if ( dns_try_naptr==0 ) {
-		*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
+		if (proto)
+			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		goto do_srv;
 	}
 	LM_DBG("no port, no proto -> do NAPTR lookup!\n");

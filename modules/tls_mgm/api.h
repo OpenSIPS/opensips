@@ -5,7 +5,8 @@
  * Created on September 1, 2015, 5:23 PM
  */
 
-#ifndef API_H
+#ifndef TLS_API_H
+#define TLS_API_H
 
 typedef struct tls_domain * (*tls_find_server_domain_f) (struct ip_addr *, unsigned short);
 typedef struct tls_domain * (*tls_find_client_domain_f) (struct ip_addr *, unsigned short);
@@ -38,4 +39,4 @@ static inline int load_tls_mgm_api(struct tls_mgm_binds *binds) {
     return 0;
 }
 
-#endif	/* API_H */
+#endif	/* TLS_API_H */

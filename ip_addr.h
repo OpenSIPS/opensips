@@ -50,8 +50,8 @@
 #define BUFFER_INCREMENT	2048
 
 enum sip_protos { PROTO_NONE = 0, PROTO_FIRST = 1, PROTO_UDP = 1, \
-	PROTO_TCP, PROTO_TLS, PROTO_SCTP, PROTO_WS, PROTO_WSS, \
-	PROTO_BIN, PROTO_OTHER };
+	PROTO_TCP, PROTO_TLS, PROTO_SCTP, PROTO_WS, PROTO_WSS, PROTO_BIN,
+				PROTO_HEP, PROTO_OTHER };
 #define PROTO_LAST PROTO_OTHER
 
 struct ip_addr{
@@ -529,7 +529,7 @@ static inline struct hostent* ip_addr2he(str* name, struct ip_addr* ip)
 	p_aliases[0]=0; /* no aliases*/
 	p_addr[1]=0; /* only one address*/
 	p_addr[0]=address;
-	len = (name->len < 256) ? name->len : 256;
+	len = (name->len < 255) ? name->len : 255;
 	strncpy(hostname, name->s, len);
 	hostname[len] = 0;
 	if (ip->len>16) return 0;

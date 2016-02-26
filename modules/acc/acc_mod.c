@@ -97,11 +97,11 @@ int cdr_flag = -1;
 /* ----- SYSLOG acc variables ----------- */
 
 static char *log_string = 0;
-int log_flag = -1;
+int acc_log_flag = -1;
 static char *log_missed_string = 0;
-int log_missed_flag = -1;
+int acc_log_missed_flag = -1;
 /* noisiness level logging facilities are used */
-int log_level = L_NOTICE;
+int acc_log_level = L_NOTICE;
 /* log facility that is used */
 int acc_log_facility = LOG_DAEMON;
 static char * log_facility_str = 0;
@@ -175,6 +175,7 @@ str acc_sipcode_col    = str_init("sip_code");
 str acc_sipreason_col  = str_init("sip_reason");
 str acc_time_col       = str_init("time");
 str acc_duration_col   = str_init("duration");
+str acc_ms_duration_col= str_init("ms_duration");
 str acc_setuptime_col  = str_init("setuptime");
 str acc_created_col    = str_init("created");
 
@@ -236,10 +237,10 @@ static param_export_t params[] = {
 	{"cdr_flag",                INT_PARAM, &cdr_flag                  },
 	/* syslog specific */
 	{"log_flag",             STR_PARAM, &log_string           },
-	{"log_flag",             INT_PARAM, &log_flag             },
+	{"log_flag",             INT_PARAM, &acc_log_flag         },
 	{"log_missed_flag",      STR_PARAM, &log_missed_string    },
-	{"log_missed_flag",      INT_PARAM, &log_missed_flag      },
-	{"log_level",            INT_PARAM, &log_level            },
+	{"log_missed_flag",      INT_PARAM, &acc_log_missed_flag  },
+	{"log_level",            INT_PARAM, &acc_log_level        },
 	{"log_facility",         STR_PARAM, &log_facility_str     },
 	{"log_extra",            STR_PARAM, &log_extra_str        },
 	{"log_extra_bye",        STR_PARAM, &log_extra_bye_str    },
@@ -516,18 +517,18 @@ static int mod_init( void )
 		return -1;
 	}
 
-	fix_flag_name(log_string, log_flag);
+	fix_flag_name(log_string, acc_log_flag);
 
-	log_flag = get_flag_id_by_name(FLAG_TYPE_MSG, log_string);
+	acc_log_flag = get_flag_id_by_name(FLAG_TYPE_MSG, log_string);
 
-	if (flag_idx2mask(&log_flag)<0)
+	if (flag_idx2mask(&acc_log_flag)<0)
 		return -1;
 
-	fix_flag_name(log_missed_string, log_missed_flag);
+	fix_flag_name(log_missed_string, acc_log_missed_flag);
 
-	log_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, log_missed_string);
+	acc_log_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG,log_missed_string);
 
-	if (flag_idx2mask(&log_missed_flag)<0)
+	if (flag_idx2mask(&acc_log_missed_flag)<0)
 		return -1;
 
 	acc_log_init();

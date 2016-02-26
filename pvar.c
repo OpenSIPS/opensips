@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2014 OpenSIPS Solutions
+ * Copyright (C) 2010-2016 OpenSIPS Solutions
  * Copyright (C) 2005-2009 Voice Sistem SRL
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -65,6 +65,9 @@
 #include "parser/contact/parse_contact.h"
 
 #define is_in_str(p, in) (p<in->s+in->len && *p)
+
+extern int curr_action_line;
+extern char *curr_action_file;
 
 typedef struct _pv_extra
 {
@@ -418,7 +421,7 @@ static int pv_get_ruri(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesnt have a ruri */
+	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesn't have a ruri */
 		return pv_get_null(msg, param, res);
 
 	if(msg->parsed_uri_ok==0 /* R-URI not parsed*/ && parse_sip_msg_uri(msg)<0)
@@ -450,7 +453,7 @@ static int pv_get_ouri(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesnt have a ruri */
+	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesn't have a ruri */
 		return pv_get_null(msg, param, res);
 
 	if(msg->parsed_orig_ruri_ok==0
@@ -495,7 +498,7 @@ static int pv_get_ruri_attr(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL)
 		return -1;
 
-	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesnt have a ruri */
+	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesn't have a ruri */
 		return pv_get_null(msg, param, res);
 
 	if(msg->parsed_uri_ok==0 /* R-URI not parsed*/ && parse_sip_msg_uri(msg)<0)
@@ -512,7 +515,7 @@ static int pv_get_ouri_attr(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL)
 		return -1;
 
-	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesnt have a ruri */
+	if(msg->first_line.type == SIP_REPLY)	/* REPLY doesn't have a ruri */
 		return pv_get_null(msg, param, res);
 
 	if(msg->parsed_orig_ruri_ok==0
@@ -1175,6 +1178,7 @@ static int pv_get_route_type(struct sip_msg *msg, pv_param_t *param,
 			break;
 		case EVENT_ROUTE:
 			s = str_event_route;
+			break;
 		default:
 			s = str_null;
 	}
@@ -1908,7 +1912,7 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	if(msg->first_line.type == SIP_REPLY || nr_branches==0 )
+	if(msg->first_line.type == SIP_REPLY || get_nr_branches() == 0)
 		return pv_get_null(msg, param, res);
 
 	/* get the index */
@@ -1954,9 +1958,9 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 	/* numerical index */
 	if (idx<0) {
 		/* index from the end */
-		if (-idx > nr_branches)
+		if (-idx > get_nr_branches())
 			return pv_get_null(msg, param, res);
-		idx = nr_branches + idx;
+		idx = get_nr_branches() + idx;
 	}
 
 	/* return the request branch info */
@@ -2851,12 +2855,12 @@ int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 	}
 
 	if (idx<0) {
-		idx = nr_branches + idx;
+		idx = get_nr_branches() + idx;
 	}
 
-	if (idx<0 || idx>=nr_branches) {
+	if (idx<0 || idx>=get_nr_branches()) {
 		LM_ERR("SCRIPT BUG - inexisting branch assignment [%d/%d]\n",
-			nr_branches, idx);
+			get_nr_branches(), idx);
 		return -1;
 	}
 
@@ -3166,6 +3170,95 @@ int pv_init_iname(pv_spec_p sp, int param)
 	return 0;
 }
 
+int pv_get_line_number(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res){
+	int l;
+	char *ch;
+
+	if (param==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	if(res == NULL) {
+		return -1;
+	}
+
+	res->ri = curr_action_line;
+	ch = int2str( (unsigned long)res->ri, &l);
+
+	res->rs.s = ch;
+	res->rs.len = l;
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
+
+int pv_get_cfg_file_name(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res){
+
+	if (param==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	if(res == NULL) {
+		return -1;
+	}
+
+	res->rs.s = curr_action_file;
+	res->rs.len = (res->rs.s)?(strlen(res->rs.s)):(0);
+
+	res->flags = PV_VAL_STR;
+
+	return 0;
+}
+
+
+int pv_set_log_level(struct sip_msg* msg, pv_param_t *param, int op,
+															pv_value_t *val)
+{
+	if(param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(val==NULL || (val->flags&(PV_VAL_NULL|PV_VAL_NONE))!=0) {
+		/* reset the value to default */
+		reset_proc_log_level();
+	} else {
+		if ((val->flags&PV_TYPE_INT)==0) {
+			LM_ERR("input for $log_level found not to be an interger\n");
+			return -1;
+		}
+		set_proc_log_level(val->ri);
+	}
+
+	return 0;
+}
+
+int pv_get_log_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+	int l;
+
+	if (param==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	if(res == NULL) {
+		return -1;
+	}
+
+	res->ri = *log_level;
+	res->rs.s = int2str( (unsigned long)res->ri, &l);
+	res->rs.len = l;
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
+
 
 
 /**
@@ -3320,6 +3413,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"from.user", (sizeof("from.user")-1)}, /* */
 		PVT_FROM_USERNAME, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 2},
+	{{"log_level", (sizeof("log_level")-1)}, /* per process log level*/
+		PVT_LOG_LEVEL, pv_get_log_level, pv_set_log_level,
+		0, 0, 0, 0},
 	{{"mb", (sizeof("mb")-1)}, /* */
 		PVT_MSG_BUF, pv_get_msg_buf, 0,
 		0, 0, 0, 0},
@@ -3494,6 +3590,10 @@ static pv_export_t _pv_names_table[] = {
 		pv_parse_argv_name, 0, 0, 0 },
 	{{"param", sizeof("param")-1}, PVT_ROUTE_PARAM, pv_get_param, 0,
 		pv_parse_param_name, 0, 0, 0 },
+	{{"cfg_line", sizeof("cfg_line")-1}, PVT_LINE_NUMBER, pv_get_line_number, 0,
+		0, 0, 0, 0 },
+	{{"cfg_file", sizeof("cfg_file")-1}, PVT_CFG_FILE_NAME, pv_get_cfg_file_name, 0,
+	0, 0, 0, 0 },
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -4927,7 +5027,6 @@ static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
 
 	return 0;
 }
-
 
 void destroy_argv_list(void)
 {

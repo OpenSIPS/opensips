@@ -195,7 +195,7 @@ static int stun_mod_init(void)
 		return -1;
 	}
 
-	LM_DBG("stun init succeded\n");
+	LM_DBG("stun init succeeded\n");
 	return 0;
 }
 
@@ -1289,13 +1289,15 @@ void freeStunBuf(IN_OUT Buffer** buffer){
 /* print */
 void printStunAddr(StunAddr* addr){
     struct in_addr ip;
+	UNUSED(ip);
+
     ip.s_addr = htonl(addr->ip4);
 
-    LM_DBG("\t\t\tUnused = %02hX\n", addr->unused);
+    LM_DBG("\t\t\tUnused = %02X\n", addr->unused);
     if(addr->family == 0x01){
-	LM_DBG("\t\t\tFamily = %02hX (IPv4)\n", addr->family);
+	LM_DBG("\t\t\tFamily = %02X (IPv4)\n", addr->family);
     }else{
-	LM_DBG("\t\t\tFamily = %02hX\n", addr->family);
+	LM_DBG("\t\t\tFamily = %02X\n", addr->family);
     }
     LM_DBG("\t\t\tPort = %hu\n", addr->port);
     LM_DBG("\t\t\tIPv4 = %s\n", inet_ntoa(ip));
@@ -1307,6 +1309,8 @@ void printStunMsg(StunMsg* msg){
     char*   s;
     //char    s2[16];
     T16*    val;
+	UNUSED(s);
+	UNUSED(val);
 
     switch(msg->type){
 	case BINDING_REQUEST:
@@ -1381,8 +1385,8 @@ void printStunMsg(StunMsg* msg){
     if(msg->hasErrorCode){
 	LM_DBG("\t\tERROR_CODE\n");
 	if(msg->errorReason){
-	    LM_DBG("\t\t\tCLASS = %hu\n", msg->errorReason->buffer[2]);
-	    LM_DBG("\t\t\tNUMBER = %hu\n", msg->errorReason->buffer[3]);
+	    LM_DBG("\t\t\tCLASS = %u\n", msg->errorReason->buffer[2]);
+	    LM_DBG("\t\t\tNUMBER = %u\n", msg->errorReason->buffer[3]);
 	    LM_DBG("\t\t\tSTRING = %.*s\n", msg->errorReason->size - 4,
 		    &(msg->errorReason->buffer[4]));
 	}
@@ -1400,6 +1404,7 @@ void printStunMsg(StunMsg* msg){
 void print_hex(IN char* buffer, IN int size){
     int	    i;
     T16*    t16 = (T16*) buffer;
+	UNUSED(t16);
 
     for(i=0; i<size/sizeof(T16); i++){
 	LM_DBG("%04hX", ntohs(t16[i]));

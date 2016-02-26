@@ -9,7 +9,7 @@ METADATA_LOGFLAGS
 METADATA_DEFAULTS
 NIL|0
 acc|
-acc|6
+acc|7
 active_watchers|
 active_watchers|10
 address|
@@ -38,8 +38,8 @@ cc_flows|
 cc_flows|1
 closeddial|
 closeddial|1
-METADATA_DEFAULTS
-NIL|NIL|NIL|NIL|1|0|3|0|30|NIL
+clusterer|
+clusterer|1
 cpl|
 cpl|2
 dbaliases|
@@ -105,7 +105,7 @@ rtpproxy_sockets|0
 silo|
 silo|6
 sip_trace|
-sip_trace|4
+sip_trace|5
 speed_dial|
 speed_dial|3
 subscriber|

@@ -282,11 +282,13 @@ typedef int (*db_insert_update_f) (const db_con_t* _h, const db_key_t* _k,
  *
  * \param _h structure representing the database handle
  * \param _s the SQL query
+ * \param _data data that shall be populated by the engine;
+ *			!!! must be handled by the upper layers
  * \return
  *		success: Unix FD for polling
  *		failure: negative error code
  */
-typedef int (*db_async_raw_query_f) (db_con_t *_h, const str *_q);
+typedef int (*db_async_raw_query_f) (db_con_t *_h, const str *_q, void **_data);
 
 /*
  * \brief Reads data from the given fd's SQL connection. Populates the query
@@ -295,6 +297,8 @@ typedef int (*db_async_raw_query_f) (db_con_t *_h, const str *_q);
  * \param _h structure representing the database handle
  * \param fd read file descriptor obtained in starting phase
  * \param _r structure for the result
+ * \param _data data that shall be populated by the engine;
+ *			!!! must be handled by the upper layers
  * \return:
  *		-> 0 on success, negative on failure
  *		-> also populates the global "async_status": ASYNC_CONTINUE / ASYNC_DONE
@@ -304,7 +308,8 @@ typedef int (*db_async_raw_query_f) (db_con_t *_h, const str *_q);
  *		backend-specific results have already been freed!
  *			You only need to call db_free_result(_r) when done
  */
-typedef int (*db_async_raw_resume_f) (db_con_t *_h, int fd, db_res_t **_r);
+typedef int (*db_async_raw_resume_f) (db_con_t *_h, int fd, db_res_t **_r,
+		void *_data);
 
 /**
  * \brief Database module callbacks
@@ -398,7 +403,7 @@ int db_table_version(const db_func_t* dbf, db_con_t* con, const str* table);
  * \param dbh database connection handle
  * \param table checked table
  * \param \version checked version
- * \return 0 means ok, -1 means an error occured
+ * \return 0 means ok, -1 means an error occurred
  */
 int db_check_table_version(db_func_t* dbf, db_con_t* dbh, const str* table, const unsigned int version);
 

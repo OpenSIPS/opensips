@@ -53,6 +53,7 @@
 #include "compression.h"
 #include "compression_helpers.h"
 #include "gz_helpers.h"
+#include "compression_api.h"
 
 
 #define CL_NAME		"Content-Length: "
@@ -111,7 +112,7 @@ static int mod_init(void);
 static int child_init(int rank);
 static void mod_destroy();
 
-static int mc_level = 6;
+int mc_level = 6;
 unsigned char* mnd_hdrs_mask = NULL;
 unsigned char* compact_form_mask = NULL;
 struct tm_binds tm_api;
@@ -168,6 +169,7 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|FAILURE_ROUTE},
 	{"mc_decompress",	  (cmd_function)mc_decompress,  0,	NULL, 0,
 		REQUEST_ROUTE|LOCAL_ROUTE|FAILURE_ROUTE},
+	{"load_compression",			  (cmd_function)bind_compression,        1, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
 
@@ -378,11 +380,11 @@ static int mod_init(void)
 		mc_level = 6;
 	}
 
-	compress_ctx_pos = context_register_ptr(CONTEXT_GLOBAL);
-	LM_DBG("received compress context postion %d\n", compress_ctx_pos);
+	compress_ctx_pos = context_register_ptr(CONTEXT_GLOBAL, NULL);
+	LM_DBG("received compress context position %d\n", compress_ctx_pos);
 
-	compact_ctx_pos = context_register_ptr(CONTEXT_GLOBAL);
-	LM_DBG("received compact context postion %d\n", compact_ctx_pos);
+	compact_ctx_pos = context_register_ptr(CONTEXT_GLOBAL, NULL);
+	LM_DBG("received compact context position %d\n", compact_ctx_pos);
 
 	memset(&tm_api, 0, sizeof(struct tm_binds));
 	if (load_tm_api(&tm_api) != 0)
@@ -704,7 +706,7 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 				if (hf->type != HDR_OTHER_T &&
 					(c=get_compact_form(hf)) != NO_FORM) {
 
-					hf->name.s = COMPACT_FORMS+c;
+					hf->name.s = &COMPACT_FORMS[c];
 					hf->name.len = 1;
 				}
 
@@ -802,7 +804,7 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 	memset(hf, 0, sizeof(struct hdr_field));
 
 	hf->type = HDR_CONTENTLENGTH_T;
-	hf->name.s = COMPACT_FORMS + get_compact_form(hf);
+	hf->name.s = &COMPACT_FORMS[get_compact_form(hf)];
 	hf->name.len = 1;
 
 	if (new_body_len <= CRLF_LEN)

@@ -23,7 +23,7 @@
  */
 
 #ifndef _DP_DB_H_
-#define _DP_DB_H
+#define _DP_DB_H_
 
 #include "../../str.h"
 #include "../../db/db.h"

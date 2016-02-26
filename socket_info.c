@@ -397,7 +397,7 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 			goto error;
 		}
 		if (ioctl(s, SIOCGIFCONF, &ifc)==-1){
-			if(errno==EBADF) return 0; /* invalid descriptor => no such ifs*/
+			if(errno==EBADF) goto error; /* invalid descriptor => no such ifs*/
 			LM_ERR("ioctl failed: %s\n", strerror(errno));
 			goto error;
 		}
@@ -478,7 +478,8 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 	return  ret;
 error:
 	if (ifc.ifc_req) pkg_free(ifc.ifc_req);
-	close(s);
+	if (s >= 0)
+		close(s);
 	return -1;
 }
 
@@ -651,7 +652,7 @@ int fix_socket_list(struct socket_info **list)
 		/* build and set string encoding for the real socket info */
 		tmp = socket2str( si, 0, &si->sock_str.len, 0);
 		if (tmp==0) {
-			LM_ERR("failed to convert socket to string");
+			LM_ERR("failed to convert socket to string\n");
 			goto error;
 		}
 		si->sock_str.s=(char*)pkg_malloc(si->sock_str.len);

@@ -67,6 +67,7 @@
 #include "../../rw_locking.h"
 
 #include "dispatch.h"
+#include "ds_fixups.h"
 #include "ds_bl.h"
 
 #define DS_TABLE_VERSION	7
@@ -148,7 +149,7 @@ void ds_destroy_data(ds_partition_t *partition)
 
 
 int add_dest2list(int id, str uri, struct socket_info *sock, int state,
-							int weight, int prio, str attrs, ds_data_t *d_data)
+							int weight, int prio, str attrs, str description, ds_data_t *d_data)
 {
 	ds_dest_p dp = NULL;
 	ds_set_p  sp = NULL;
@@ -202,23 +203,26 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 			&& puri.headers.len == 0) {
 
 		/* The uri from db is good for ds_select_dst */
-		dp->uri.s = shm_malloc(uri.len + 1 + attrs.len + 1);
+		dp->uri.s = shm_malloc(uri.len + 1 + attrs.len + 1 + description.len + 1);
 		if(dp->uri.s==NULL){
 			LM_ERR("no more shm memory!\n");
 			goto err;
 		}
 		dp->dst_uri = dp->uri;
 		dp->attrs.s = dp->uri.s + dp->uri.len + 1;
+		dp->description.s = dp->uri.s + dp->uri.len + 1 + attrs.len + 1;
 	}
 	else {
 		dp->dst_uri.len = uri_typestrlen(puri.type) + 1 + puri.host.len
 						+ (puri.port.len ? puri.port.len + 1 : 0);
-		dp->uri.s = shm_malloc(uri.len+1 + dp->dst_uri.len + 1 + attrs.len+1);
+		dp->uri.s = shm_malloc(uri.len+1 + dp->dst_uri.len + 1 + attrs.len+1
+								+ description.len + 1);
 		if(dp->uri.s==NULL){
 			LM_ERR("no more shm memory!\n");
 			goto err;
 		}
 
+		dp->description.s = dp->uri.s + dp->uri.len + 1 + dp->dst_uri.len + 1 + attrs.len + 1;
 		dp->attrs.s = dp->uri.s + dp->uri.len + 1 + dp->dst_uri.len + 1;
 		dp->dst_uri.s = dp->uri.s + dp->uri.len + 1;
 		char *p = uri_type2str(puri.type, dp->dst_uri.s);
@@ -242,6 +246,12 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 		dp->attrs.len = attrs.len;
 	}
 	else dp->attrs.s = NULL;
+
+	if(description.len){
+		memcpy(dp->description.s, description.s, description.len);
+		dp->description.s[description.len]='\0';
+		dp->description.len = description.len;
+	}
 
 	/* copy state, weight & socket */
 	dp->sock = sock;
@@ -659,8 +669,8 @@ static void ds_inherit_state( ds_data_t *old_data , ds_data_t *new_data)
 
 void ds_flusher_routine(unsigned int ticks, void* param)
 {
-	db_key_t key_cmp;
-	db_val_t val_cmp;
+	db_key_t key_cmp[2];
+	db_val_t val_cmp[2];
 	db_key_t key_set;
 	db_val_t val_set;
 	ds_set_p list;
@@ -671,8 +681,10 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 		if (*partition->db_handle==NULL)
 			continue;
 
-		val_cmp.type = DB_STR;
-		val_cmp.nul  = 0;
+		val_cmp[0].type = DB_INT;
+		val_cmp[0].nul  = 0;
+		val_cmp[1].type = DB_STR;
+		val_cmp[1].nul  = 0;
 
 		val_set.type = DB_INT;
 		val_set.nul  = 0;
@@ -684,7 +696,8 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 				partition->table_name.len, partition->table_name.s);
 			continue;
 		}
-		key_cmp = &ds_dest_uri_col;
+		key_cmp[0] = &ds_set_id_col;
+		key_cmp[1] = &ds_dest_uri_col;
 		key_set = &ds_dest_state_col;
 
 		if (*partition->data) {
@@ -697,7 +710,8 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 						continue;
 
 					/* populate the update */
-					val_cmp.val.str_val = list->dlist[j].uri;
+					val_cmp[0].val.int_val = list->id;
+					val_cmp[1].val.str_val = list->dlist[j].uri;
 					val_set.val.int_val =
 						(list->dlist[j].flags&DS_INACTIVE_DST) ? 1 :
 							((list->dlist[j].flags&DS_PROBING_DST)?2:0);
@@ -707,8 +721,8 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 						list->dlist[j].uri.len, list->dlist[j].uri.s,
 							val_set.val.int_val);
 
-					if (partition->dbf.update(*partition->db_handle,&key_cmp,0,
-					&val_cmp,&key_set,&val_set,1,1)<0 ) {
+					if (partition->dbf.update(*partition->db_handle,key_cmp,0,
+					val_cmp,&key_set,&val_set,2,1)<0 ) {
 						LM_ERR("DB update failed\n");
 					} else {
 						list->dlist[j].flags &= ~DS_STATE_DIRTY_DST;
@@ -726,7 +740,7 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 {
 	ds_data_t *d_data;
-	int i, id, nr_rows, cnt, nr_cols = 7;
+	int i, id, nr_rows, cnt, nr_cols = 8;
 	int state;
 	int weight;
 	int prio;
@@ -734,14 +748,15 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	str uri;
 	str attrs;
 	str host;
+	str description;
 	int port, proto;
 	db_res_t * res = NULL;
 	db_val_t * values;
 	db_row_t * rows;
 
-	db_key_t query_cols[7] = {&ds_set_id_col, &ds_dest_uri_col,
+	db_key_t query_cols[8] = {&ds_set_id_col, &ds_dest_uri_col,
 			&ds_dest_sock_col, &ds_dest_weight_col, &ds_dest_attrs_col,
-			&ds_dest_prio_col, &ds_dest_state_col};
+			&ds_dest_prio_col, &ds_dest_description_col, &ds_dest_state_col};
 
 	if (!use_state_col)
 		nr_cols--;
@@ -832,13 +847,16 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 			prio = VAL_INT(values+5);
 
 		/* state */
-		if (!use_state_col || VAL_NULL(values+6))
+		if (!use_state_col || VAL_NULL(values+7))
 			/* active state */
 			state = 0;
 		else
-			state = VAL_INT(values+6);
+			state = VAL_INT(values+7);
 
-		if (add_dest2list(id, uri, sock, state, weight, prio, attrs, d_data)
+		get_str_from_dbval( "DESCIPTION", values+6,
+			0/*not_null*/, 0/*not_empty*/, description, error2);
+
+		if (add_dest2list(id, uri, sock, state, weight, prio, attrs, description, d_data)
 		!= 0) {
 			LM_WARN("failed to add destination <%.*s> in group %d\n",
 				uri.len,uri.s,id);
@@ -1286,7 +1304,7 @@ int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock,
 
 			utype = str2uri_type(uri->s);
 			if (utype == ERROR_URI_T) {
-				LM_ERR("Uknown uri type\n");
+				LM_ERR("Unknown uri type\n");
 				return -1;
 			}
 			typelen = uri_typestrlen(utype);
@@ -1556,8 +1574,8 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 				/* use the hash and weights over active destinations only ;
 				 * if USE_DEFAULT is set, do a -1 if the default (last)
 				 * destination is active (we want to skip it) */
-				cnt = idx->active_nr - (ds_flags&DS_USE_DEFAULT &&
-					dst_is_active(idx->dlist[idx->nr-1]))?1:0 ;
+				cnt = idx->active_nr - ((ds_flags&DS_USE_DEFAULT &&
+					dst_is_active(idx->dlist[idx->nr-1]))?1:0);
 				if (cnt) {
 					/* weights or not ? */
 					if (idx->dlist[set_size-1].active_running_weight) {
@@ -2039,7 +2057,7 @@ error:
 }
 
 
-int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition)
+int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition, int flags)
 {
 	int len, j;
 	char* p;
@@ -2105,6 +2123,27 @@ int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition)
 					list->dlist[j].attrs.s, list->dlist[j].attrs.len);
 				if(node1 == NULL)
 					goto error;
+			}
+
+			if (flags &  MI_FULL_LISTING) {
+				p = int2str(list->dlist[j].weight, &len);
+				node1= add_mi_node_child(node, MI_DUP_VALUE, "weight", 6,
+					p, len);
+				if(node1 == NULL)
+					goto error;
+
+				p = int2str(list->dlist[j].priority, &len);
+				node1 = add_mi_node_child(node, MI_DUP_VALUE, "priority", 8,
+					p, len);
+				if(node1 == NULL)
+					goto error;
+
+				if (list->dlist[j].description.len) {
+					node1= add_mi_node_child(node, MI_DUP_VALUE, "description", 11,
+						list->dlist[j].description.s, list->dlist[j].description.len);
+					if(node1 == NULL)
+						goto error;
+				}
 			}
 		}
 	}
@@ -2212,8 +2251,11 @@ void ds_check_timer(unsigned int ticks, void* param)
 		{
 			for(j=0; j<list->nr; j++)
 			{
-				/* If the Flag of the entry has "Probing set, send a probe:	*/
-				if ( ((list->dlist[j].flags&DS_INACTIVE_DST)==0) &&
+				/* If list is probed by this proxy and the Flag of
+                                 * the entry has "Probing" set, send a probe:
+                                 */
+				if ( (!ds_probing_list || in_int_list(ds_probing_list, list->id)==0) &&
+                                ((list->dlist[j].flags&DS_INACTIVE_DST)==0) &&
 				(ds_probing_mode==1 || (list->dlist[j].flags&DS_PROBING_DST)!=0
 				))
 				{

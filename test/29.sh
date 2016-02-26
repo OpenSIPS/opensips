@@ -1,5 +1,5 @@
 #!/bin/bash
-# tests simple cpl-c script operations with postgres
+# tests simple cpl_c script operations with postgres
 
 # Copyright (C) 2008 1&1 Internet AG
 #
@@ -21,7 +21,7 @@
 
 source include/require
 
-if ! (check_sipp && check_opensips && check_module "db_postgres" && check_module "cpl-c"); then
+if ! (check_sipp && check_opensips && check_module "db_postgres" && check_module "cpl_c"); then
 	exit 0
 fi ;
 
@@ -31,7 +31,7 @@ TMPFILE=`mktemp -t opensips-test.XXXXXXXXXX`
 
 cp $CFG $CFG.tmp
 echo "loadmodule \"db_postgres/db_postgres.so\"" >> $CFG
-echo "modparam(\"cpl-c\", \"db_url\", \"postgres://opensips:opensipsrw@localhost/opensips\")" >> $CFG
+echo "modparam(\"cpl_c\", \"db_url\", \"postgres://opensips:opensipsrw@localhost/opensips\")" >> $CFG
 
 
 ../opensips -w . -f $CFG &> /dev/null;

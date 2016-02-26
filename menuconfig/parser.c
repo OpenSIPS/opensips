@@ -160,12 +160,35 @@ int parse_include_line(char *line,select_menu *parent)
 }
 
 /* Parse a single compile flags DEFS line */
-int parse_defs_line(char *line,select_menu *parent)
+int parse_defs_line(char *line,select_menu *parent,int *group_idx,int *start_grp)
 {
 	char *start,*end,*desc_start;
 	int def_len,enabled=1;
 	select_item *item;
 	int len = strlen(line);
+
+	/* allows commenting out menuconfig features */
+	if (!strncmp(line, SKIP_LINE_STR, SKIP_LINE_STRL))
+		return 0;
+
+	if (!strncmp(line,GRP_START_STR,17)) {
+		if (!(*start_grp)) {
+			*start_grp = 1;
+			return 0;
+		} else {
+			fprintf(output,"Malformed DEFS line\n");
+			return -1;
+		}
+	} else if(!strncmp(line,GRP_END_STR,15)) {
+		if (*start_grp == 1) {
+			(*group_idx)++;
+			*start_grp = 0;
+			return 0;
+		} else {
+			fprintf(output,"Malformed DEFS line\n");
+			return -1;
+		}
+	}
 
 	start = memchr(line,'-',len);
 	if (!start) {
@@ -200,6 +223,9 @@ int parse_defs_line(char *line,select_menu *parent)
 
 	item->enabled=enabled;
 	item->prev_state=enabled;
+	item->group_idx = *start_grp ? *group_idx : 0;
+	if (item->group_idx && enabled)
+		item->group_idx = -item->group_idx;
 	link_item(parent,item);
 
 	return 0;
@@ -355,6 +381,7 @@ int parse_make_conf(void)
 	FILE *conf = fopen(MAKE_CONF_FILE,"r");
 	char *p;
 	int defs=0;
+	int start_grp=0, group_idx=1;
 
 	if (!conf) {
 		/* if we cannot find the Makefile.conf, try the template */
@@ -391,7 +418,7 @@ int parse_make_conf(void)
 				state = PARSE_COMPILE_DEFS;
 				break;
 			case PARSE_COMPILE_DEFS:
-				if (parse_defs_line(p,find_menu(CONF_COMPILE_FLAGS,main_menu)) < 0) {
+				if (parse_defs_line(p,find_menu(CONF_COMPILE_FLAGS,main_menu),&group_idx,&start_grp) < 0) {
 					fprintf(output,"Failed to parse compile defs [%s]\n",p);
 				}
 				defs=1;

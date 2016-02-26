@@ -346,7 +346,7 @@ set_dh_params(SSL_CTX * ctx, char *filename)
 	}
 
 	DH_free(dh);
-	LM_DBG("DH params from '%s' successfuly set\n", filename);
+	LM_DBG("DH params from '%s' successfully set\n", filename);
 	return 0;
 }
 
@@ -775,12 +775,13 @@ static int load_certificate(SSL_CTX * ctx, char *filename)
 		return -1;
 	}
 
-	LM_DBG("'%s' successfuly loaded\n", filename);
+	LM_DBG("'%s' successfully loaded\n", filename);
 	return 0;
 }
 
 static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
 {
+#if OPENSSL_VERSION_NUMBER >= 0x10000000L
 	DIR *d;
 	struct dirent *dir;
 	int crl_added = 0;
@@ -857,6 +858,14 @@ static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
 	X509_VERIFY_PARAM_free(param);
 
 	return 0;
+#else
+	static int already_warned = 0;
+	if (!already_warned) {
+		LM_WARN("CRL not supported in %s\n", OPENSSL_VERSION_TEXT);
+		already_warned = 1;
+	}
+	return 0;
+#endif
 }
 
 /*
@@ -872,7 +881,7 @@ static int load_ca(SSL_CTX * ctx, char *filename)
 		return -1;
 	}
 
-	LM_DBG("CA '%s' successfuly loaded\n", filename);
+	LM_DBG("CA '%s' successfully loaded\n", filename);
 	return 0;
 }
 
@@ -887,7 +896,7 @@ static int load_ca_dir(SSL_CTX * ctx, char *directory)
 		return -1;
 	}
 
-	LM_DBG("CA '%s' successfuly loaded from directory\n", directory);
+	LM_DBG("CA '%s' successfully loaded from directory\n", directory);
 	return 0;
 }
 
@@ -950,7 +959,7 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 		return -1;
 	}
 
-	LM_DBG("key '%s' successfuly loaded\n", filename);
+	LM_DBG("key '%s' successfully loaded\n", filename);
 	return 0;
 }
 
@@ -1448,7 +1457,7 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 
 	tcp_conn_release(c, 0);
 
-	LM_DBG("tlsops:is_peer_verified: peer is successfuly verified"
+	LM_DBG("tlsops:is_peer_verified: peer is successfully verified"
 			"...done\n");
 	return 1;
 error:
@@ -1517,40 +1526,40 @@ static int list_domain(struct mi_node *root, struct tls_domain *d)
 			break;
 		default: goto error;
 		}
+		if (child == NULL) goto error;
 
 		if (d->verify_cert)
 			child = add_mi_node_child(node, 0, "VERIFY_CERT", 11, "yes", 3);
 		else
 			child = add_mi_node_child(node, 0, "VERIFY_CERT", 11, "no", 2);
+		if (child == NULL) goto error;
 
 		if (d->require_client_cert)
 			child = add_mi_node_child(node, 0, "REQ_CLI_CERT", 12, "yes", 3);
 		else
 			child = add_mi_node_child(node, 0, "REQ_CLI_CERT", 12, "no", 2);
+		if (child == NULL) goto error;
 
 		if (d->crl_check_all)
 			child = add_mi_node_child(node, 0, "CRL_CHECKALL", 12, "yes", 3);
 		else
 			child = add_mi_node_child(node, 0, "CRL_CHECKALL", 12, "no", 2);
+		if (child == NULL) goto error;
 
 		child = add_mi_node_child(node, MI_DUP_VALUE, "CERT_FILE", 9,
 			d->cert_file, len(d->cert_file));
-
 		if (child == NULL) goto error;
 
 		child = add_mi_node_child(node, MI_DUP_VALUE, "CRL_DIR", 7,
 			d->crl_directory, len(d->crl_directory));
-
 		if (child == NULL) goto error;
 
 		child = add_mi_node_child(node, MI_DUP_VALUE, "CA_FILE", 7,
 			d->ca_file, len(d->ca_file));
-
 		if (child == NULL) goto error;
 
 		child = add_mi_node_child(node, MI_DUP_VALUE, "CA_DIR", 6,
 			d->ca_directory, len(d->ca_directory));
-
 		if (child == NULL) goto error;
 
 		child = add_mi_node_child(node, MI_DUP_VALUE, "PKEY_FILE", 9,

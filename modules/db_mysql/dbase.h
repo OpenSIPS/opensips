@@ -111,7 +111,7 @@ int db_last_inserted_id(const db_con_t* _h);
  *		success: Unix FD for polling
  *		failure: negative error code
  */
-int db_mysql_async_raw_query(db_con_t *_h, const str *_s);
+int db_mysql_async_raw_query(db_con_t *_h, const str *_s, void** _data);
 
 /*
  * Reads data from the given fd's connection.
@@ -125,7 +125,7 @@ int db_mysql_async_raw_query(db_con_t *_h, const str *_s);
  *		backend-specific results have already been freed!
  *			You only need to call db_free_result(_r) when done
  */
-int db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r);
+int db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r, void* _data);
 
 /*
  * Insert a row into table, update on duplicate key

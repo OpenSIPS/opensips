@@ -585,7 +585,7 @@ int ph_getDbTableCols(ph_db_url_t *ph_db_urls, ph_db_table_t *db_tables,
 			db_tables->cols = cols;
 			cols = &db_tables->cols[db_tables->cols_size];
 			memset(cols, 0, sizeof(ph_table_col_t));
-			cols->type=-1;
+			cols->type=(db_type_t)-1;
 			/* Populate the field */
 			field.s =
 				ph_xmlNodeGetNodeContentByName(node->children,
@@ -691,7 +691,7 @@ int ph_getDbTableCols(ph_db_url_t *ph_db_urls, ph_db_table_t *db_tables,
 				if(strncmp("DB_DATETIME",val,11)==0)
 					cols->type=DB_DATETIME;
 			}
-			if(cols->type==-1){
+			if(cols->type== (db_type_t)-1){
 				LM_ERR("unexpected type [%s] for %s %s %s\n",
 					val, table_node->name, node->name,
 					PI_HTTP_XML_TYPE_NODE);
@@ -2815,7 +2815,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 			goto finish_page;
 		}
 
-		if(db_url->http_dbf.query(db_url->http_db_handle,
+		if(db_url->http_dbf.query(*db_url->http_db_handle,
 			command->c_keys, command->c_ops, c_vals,
 			command->q_keys,
 			command->c_keys_size,
@@ -2845,7 +2845,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 		rows = RES_ROWS(res);
 		values = ROW_VALUES(rows);
 		ret = ph_build_content(page, buffer->len, mod, cmd, &l_arg, values);
-		db_url->http_dbf.free_result(db_url->http_db_handle, res);
+		db_url->http_dbf.free_result(*db_url->http_db_handle, res);
 		//res = NULL;
 		return ret;
 	} else if(l_arg.len==2 && strncmp(l_arg.s, "on", 2)==0) {
@@ -2878,7 +2878,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 				s_arg.s = l_arg.s;
 				val = &c_vals[i];
 				val->type = command->c_types[i];
-	
+
 				ret = getVal(val, command->c_types[i], command->c_keys[i],
 					command->db_table, &s_arg, page, buffer, mod, cmd);
 				if(ret<0)
@@ -2954,7 +2954,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 
 		}
 		if (DB_CAPABILITY(db_url->http_dbf, DB_CAP_FETCH)){
-			if(db_url->http_dbf.query(db_url->http_db_handle,
+			if(db_url->http_dbf.query(*db_url->http_db_handle,
 				command->c_keys, command->c_ops, c_vals,
 				command->q_keys,
 				command->c_keys_size,
@@ -2964,14 +2964,14 @@ int ph_run_pi_cmd(int mod, int cmd,
 					"Error while querying (fetch) database.");
 				goto done;
 			}
-			if(db_url->http_dbf.fetch_result(db_url->http_db_handle,
+			if(db_url->http_dbf.fetch_result(*db_url->http_db_handle,
 					&res, 100)<0){
 				PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
 					"Fetching rows failed.");
 				goto done;
 			}
 		}else{
-			if(db_url->http_dbf.query(db_url->http_db_handle,
+			if(db_url->http_dbf.query(*db_url->http_db_handle,
 				command->c_keys, command->c_ops, c_vals,
 				command->q_keys,
 				command->c_keys_size,
@@ -3146,7 +3146,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 			}
 			/* any more data to be fetched ?*/
 			if (DB_CAPABILITY(db_url->http_dbf, DB_CAP_FETCH)){
-				if(db_url->http_dbf.fetch_result(db_url->http_db_handle,
+				if(db_url->http_dbf.fetch_result(*db_url->http_db_handle,
 					&res, 100)<0){
 					LM_ERR("fetching more rows failed\n");
 					goto error;
@@ -3156,12 +3156,12 @@ int ph_run_pi_cmd(int mod, int cmd,
 				nr_rows = 0;
 			}
 		}while (nr_rows>0);
-		db_url->http_dbf.free_result(db_url->http_db_handle, res);
+		db_url->http_dbf.free_result(*db_url->http_db_handle, res);
 		res=NULL;
 		goto finish_page;
 		break;
 	case DB_CAP_INSERT:
-		if((db_url->http_dbf.insert(db_url->http_db_handle,
+		if((db_url->http_dbf.insert(*db_url->http_db_handle,
 			command->q_keys, q_vals, command->q_keys_size))!=0){
 			PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
 					"Unable to add record to db.");
@@ -3172,7 +3172,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 		goto done;
 		break;
 	case DB_CAP_DELETE:
-		if((db_url->http_dbf.delete(db_url->http_db_handle,
+		if((db_url->http_dbf.delete(*db_url->http_db_handle,
 			command->c_keys, command->c_ops, c_vals,
 			command->c_keys_size))!=0) {
 			PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
@@ -3184,7 +3184,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 		goto done;
 		break;
 	case DB_CAP_UPDATE:
-		if((db_url->http_dbf.update(db_url->http_db_handle,
+		if((db_url->http_dbf.update(*db_url->http_db_handle,
 			command->c_keys, command->c_ops, c_vals,
 			command->q_keys, q_vals,
 			command->c_keys_size, command->q_keys_size))!=0){
@@ -3197,7 +3197,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 		goto done;
 		break;
 	case DB_CAP_REPLACE:
-		if((db_url->http_dbf.replace(db_url->http_db_handle,
+		if((db_url->http_dbf.replace(*db_url->http_db_handle,
 			command->q_keys, q_vals, command->q_keys_size))!=0){
 			PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
 					"Unable to replace record.");
@@ -3214,7 +3214,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 	LM_ERR("You shoudn't end up here\n");
 error:
 	if (db_url && res)
-		db_url->http_dbf.free_result(db_url->http_db_handle, res);
+		db_url->http_dbf.free_result(*db_url->http_db_handle, res);
 	if(c_vals) pkg_free(c_vals);
 	if(q_vals) pkg_free(q_vals);
 	return -1;

@@ -73,6 +73,8 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dst_leg, int src_leg)
 
 	if ((dst_leg == DLG_CALLER_LEG && (cell->flags & DLG_FLAG_PING_CALLER)) ||
 		(dst_leg == callee_idx(cell) && (cell->flags & DLG_FLAG_PING_CALLEE)) || 
+		(dst_leg == DLG_CALLER_LEG && (cell->flags & DLG_FLAG_REINVITE_PING_CALLER)) ||
+		(dst_leg == callee_idx(cell) && (cell->flags & DLG_FLAG_REINVITE_PING_CALLEE)) || 
 		cell->flags & DLG_FLAG_CSEQ_ENFORCE)
 	{
 		dlg_lock_dlg(cell);
@@ -140,7 +142,7 @@ error:
 
 
 
-dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
+dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,char *reply_marker)
 {
 	dlg_t* td = NULL;
 	str cseq;
@@ -165,7 +167,7 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
 	else
 		cell->legs[dst_leg].last_gen_cseq++;
 
-	cell->legs[dst_leg].reply_received = 0;
+	*reply_marker = 0;
 
 	td->loc_seq.value = cell->legs[dst_leg].last_gen_cseq -1;
 
@@ -211,6 +213,7 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 	int event, old_state, new_state, unref, ret;
 	struct sip_msg *fake_msg=NULL;
 	context_p old_ctx;
+	context_p *new_ctx;
 
 	event = DLG_EVENT_REQBYE;
 	next_state_dlg(dlg, event, DLG_DIR_DOWNSTREAM, &old_state, &new_state,
@@ -251,10 +254,14 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 
 		if (req==NULL) {
 			/* set new msg & processing context */
-			if (push_new_processing_context( dlg, &old_ctx, &fake_msg)==0) {
+			if (push_new_processing_context( dlg, &old_ctx, &new_ctx, &fake_msg)==0) {
 				/* dialog terminated (BYE) */
 				run_dlg_callbacks( DLGCB_TERMINATED, dlg, fake_msg, DLG_DIR_NONE, 0);
-				/* reset the processing contect */
+				/* reset the processing context */
+				if (current_processing_ctx == NULL)
+					*new_ctx = NULL;
+				else
+					context_destroy(CONTEXT_GLOBAL, *new_ctx);
 				current_processing_ctx = old_ctx;
 			} /* no CB run in case of failure FIXME */
 		} else {
@@ -347,6 +354,7 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 														str *extra_hdrs)
 {
 	context_p old_ctx;
+	context_p *new_ctx;
 	dlg_t* dialog_info;
 	str met = {"BYE", 3};
 	int result;
@@ -360,7 +368,7 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
 
 	/* set new processing context */
-	if (push_new_processing_context( cell, &old_ctx, NULL)!=0)
+	if (push_new_processing_context( cell, &old_ctx, &new_ctx, NULL)!=0)
 		goto err;
 
 	ctx_lastdstleg_set(dst_leg);
@@ -377,6 +385,10 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 		NULL);         /* release function*/
 
 	/* reset the processing contect */
+	if (current_processing_ctx == NULL)
+		*new_ctx = NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, *new_ctx);
 	current_processing_ctx = old_ctx;
 
 	if(result < 0){
@@ -513,9 +525,11 @@ error:
 }
 
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
-		str *hdrs,str *body,dlg_request_callback func,void *param,dlg_release_func release)
+	str *hdrs,str *body,dlg_request_callback func,
+	void *param,dlg_release_func release,char *reply_marker)
 {
 	context_p old_ctx;
+	context_p *new_ctx;
 	dlg_t* dialog_info;
 	int result;
 	unsigned int method_type;
@@ -533,7 +547,7 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		return -1;
 	}
 
-	if ((dialog_info = build_dialog_info(dlg, dst_leg, src_leg)) == 0)
+	if ((dialog_info = build_dialog_info(dlg, dst_leg, src_leg,reply_marker)) == 0)
 	{
 		LM_ERR("failed to create dlg_t\n");
 		return -1;
@@ -543,10 +557,10 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
 
 	/* set new processing context */
-	if (push_new_processing_context( dlg, &old_ctx, NULL)!=0)
+	if (push_new_processing_context( dlg, &old_ctx, &new_ctx, NULL)!=0)
 		return -1;
 
-	dialog_info->T_flags=T_NO_AUTOACK_FLAG;
+	//dialog_info->T_flags=T_NO_AUTOACK_FLAG;
 
 	result = d_tmb.t_request_within
 		(method,         /* method*/
@@ -558,6 +572,10 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		release);         /* release function*/
 
 	/* reset the processing contect */
+	if (current_processing_ctx == NULL)
+		*new_ctx = NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, *new_ctx);
 	current_processing_ctx = old_ctx;
 
 	if(result < 0)

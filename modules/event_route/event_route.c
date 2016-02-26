@@ -195,8 +195,8 @@ static int child_init(int rank)
 		memcpy(buffer + sizeof(SCRIPTROUTE_NAME), event_name.s, event_name.len);
 		sock_name.len = event_name.len + sizeof(SCRIPTROUTE_NAME);
 
-		if (sock_name.len >= EV_SCRIPTROUTE_MAX_SOCK -
-			(event_rlist[idx].mode+4 /*"sync"*/ +1 /*'/'*/)) {
+		if (sock_name.len + event_rlist[idx].mode+4 /*"sync"*/
+				+1 /*'/'*/ > EV_SCRIPTROUTE_MAX_SOCK) {
 			LM_ERR("not enough room in socket name buffer\n");
 			return -1;
 		}
@@ -213,7 +213,7 @@ static int child_init(int rank)
 				break;
 			default:
 				LM_ERR("invalid route mode value (%d)\n!"
-					"Possibilty of memory corruption\n",
+					"Possibility of memory corruption\n",
 						event_rlist[idx].mode);
 				return -1;
 		}
@@ -247,7 +247,7 @@ static evi_reply_sock* scriptroute_parse(str socket)
 
 	evi_reply_sock *sock = NULL;
 	static char *dummy_buffer = 0, *name;
-	int idx, mode=-1, name_len;
+	int idx, mode=-1, name_len = 0;
 	char* mode_pos;
 
 	if (!socket.len || !socket.s) {
@@ -565,7 +565,7 @@ static int fixup_scriptroute_fetch(void **param, int param_no)
 			return E_OUT_OF_MEM;
 		}
 		memset(elem, 0, sizeof(struct scriptroute_params));
-		if (pv_parse_spec(&s, &elem->spec) < 0) {
+		if (pv_parse_spec(&s, &elem->spec) == NULL) {
 			LM_ERR("cannot parse spec <%.*s>\n", s.len, s.s);
 			shm_free(elem);
 			goto error;

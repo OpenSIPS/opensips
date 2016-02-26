@@ -1,5 +1,5 @@
 #!/bin/bash
-# tests simple cpl-c script operations with mysql
+# tests simple cpl_c script operations with mysql
 
 # Copyright (C) 2008 1&1 Internet AG
 #
@@ -21,7 +21,7 @@
 
 source include/require
 
-if ! (check_sipp && check_opensips && check_module "db_mysql" && check_module "cpl-c"); then
+if ! (check_sipp && check_opensips && check_module "db_mysql" && check_module "cpl_c"); then
 	exit 0
 fi ;
 

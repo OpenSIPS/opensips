@@ -22,7 +22,7 @@
 
 
 #ifndef _XJAB_JCONF_H_
-#define _XHAB_JCONF_H_
+#define _XJAB_JCONF_H_
 
 #include "../../str.h"
 

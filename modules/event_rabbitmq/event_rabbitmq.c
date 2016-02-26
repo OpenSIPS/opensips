@@ -498,7 +498,6 @@ static int rmq_build_params(str* ev_name, evi_params_p ev_params)
 		if (node->flags & EVI_STR_VAL) {
 			/* it is a string value */
 			if (node->val.s.len && node->val.s.s) {
-				len++;
 				/* check to see if enclose is needed */
 				end = node->val.s.s + node->val.s.len;
 				for (p = node->val.s.s; p < end; p++)

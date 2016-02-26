@@ -34,18 +34,18 @@
 #include "../presence/utils_func.h"
 #include "records.h"
 
-static void _print_entity(int index, b2bl_entity_id_t* e, int log_level)
+static void _print_entity(int index, b2bl_entity_id_t* e, int level)
 {
 	b2bl_entity_id_t* c = e;
 
 	while (c)
 	{
-		LM_GEN1(log_level, ".type=[%d] index=[%d] [%p]->[%.*s] state=%d no=%d"
+		LM_GEN1(level, ".type=[%d] index=[%d] [%p]->[%.*s] state=%d no=%d"
 			" dlginfo=[%p] peer=[%p] prev:next=[%p][%p]\n",
 			c->type, index, c, c->key.len, c->key.s, c->state, c->no,
 			c->dlginfo, c->peer, c->prev, c->next);
 		if (c->dlginfo)
-			LM_GEN1(log_level, "..........dlginfo=[%p]->[%.*s][%.*s][%.*s]\n",
+			LM_GEN1(level, "..........dlginfo=[%p]->[%.*s][%.*s][%.*s]\n",
 				c->dlginfo, c->dlginfo->callid.len, c->dlginfo->callid.s,
 				c->dlginfo->fromtag.len, c->dlginfo->fromtag.s,
 				c->dlginfo->totag.len, c->dlginfo->totag.s);
@@ -53,14 +53,14 @@ static void _print_entity(int index, b2bl_entity_id_t* e, int log_level)
 	}
 }
 
-void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level)
+void b2bl_print_tuple(b2bl_tuple_t* tuple, int level)
 {
 	int index;
 	b2bl_entity_id_t* e;
 
 	if(tuple)
 	{
-		LM_GEN1(log_level, "[%p]->[%.*s] to_del=[%d] lifetime=[%d]"
+		LM_GEN1(level, "[%p]->[%.*s] to_del=[%d] lifetime=[%d]"
 			" bridge_entities[%p][%p][%p]\n",
 			tuple, tuple->key->len, tuple->key->s,
 			tuple->to_del, tuple->lifetime,
@@ -69,18 +69,18 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level)
 		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
 			e = tuple->servers[index];
-			if (e) _print_entity(index, e, log_level);
+			if (e) _print_entity(index, e, level);
 		}
 		for (index = 0; index < MAX_B2BL_ENT; index++)
 		{
 			e = tuple->clients[index];
-			if (e) _print_entity(index, e, log_level);
+			if (e) _print_entity(index, e, level);
 		}
 		for (index = 0; index < MAX_BRIDGE_ENT; index++)
 		{
 			e = tuple->bridge_entities[index];
 			if (e)
-				LM_GEN1(log_level, ".type=[%d] index=[%d] [%p]"
+				LM_GEN1(level, ".type=[%d] index=[%d] [%p]"
 					" peer=[%p] prev:next=[%p][%p]\n",
 					e->type, index, e, e->peer, e->prev, e->next);
 		}
@@ -127,18 +127,6 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 
 	tuple->scenario = scenario;
 
-	if(body && (use_init_sdp || (scenario && scenario->use_init_sdp)))
-	{
-		/* alloc sepparate memory for sdp */
-		tuple->sdp.s = shm_malloc(body->len);
-		if (!tuple->sdp.s) {
-			LM_ERR("no more shm memory for sdp body\n");
-			goto error;
-		}
-		memcpy(tuple->sdp.s, body->s, body->len);
-		tuple->sdp.len = body->len;
-	}
-
 	if(msg)
 	{
 		if(b2b_extra_headers(msg, NULL, custom_hdrs, &extra_headers)< 0)
@@ -160,6 +148,46 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 			pkg_free(extra_headers.s);
 		}
 	}
+
+	if(use_init_sdp || (scenario && scenario->use_init_sdp))
+	{
+		if (!body && scenario && scenario->body.len)
+		{
+			body = &scenario->body;
+			/* we also have to add the content type here */
+			tuple->extra_headers = (str *)shm_realloc(tuple->extra_headers,
+					sizeof(str) + extra_headers.len +
+					14/* "Content-Type: " */ + 2/* "\r\n\" */ +
+					scenario->body_type.len);
+			if (!tuple->extra_headers)
+			{
+				LM_ERR("cannot add extra headers\n");
+				goto error;
+			}
+			/* restore initial data */
+			tuple->extra_headers->s = (char*)tuple->extra_headers + sizeof(str);
+			tuple->extra_headers->len = extra_headers.len;
+			memcpy(tuple->extra_headers->s + tuple->extra_headers->len,
+					"Content-Type: ", 14);
+			tuple->extra_headers->len += 14;
+			memcpy(tuple->extra_headers->s + tuple->extra_headers->len,
+					scenario->body_type.s, scenario->body_type.len);
+			tuple->extra_headers->len += scenario->body_type.len;
+			memcpy(tuple->extra_headers->s + tuple->extra_headers->len, "\r\n", 2);
+			tuple->extra_headers->len += 2;
+		}
+		if (body) {
+			/* alloc separate memory for sdp */
+			tuple->sdp.s = shm_malloc(body->len);
+			if (!tuple->sdp.s) {
+				LM_ERR("no more shm memory for sdp body\n");
+				goto error;
+			}
+			memcpy(tuple->sdp.s, body->s, body->len);
+			tuple->sdp.len = body->len;
+		}
+	}
+
 
 	/* copy the function parameters that customize the scenario */
 	memset(tuple->scenario_params, 0, MAX_SCENARIO_PARAMS* sizeof(str));

@@ -412,7 +412,7 @@ regex_t* fixup_get_regex(struct sip_msg* msg, gparam_p gp,int *do_free)
 	}
 	if(gp->type==GPARAM_TYPE_PVE){
 		if(pv_printf_s( msg, gp->v.pve, &val)!=0){
-			LM_ERR("cannot print the PV-formated string\n");
+			LM_ERR("cannot print the PV-formatted string\n");
 			return NULL;
 		}
 		goto build_re;
@@ -1038,7 +1038,7 @@ int fixup_get_svalue(struct sip_msg* msg, gparam_p gp, str *val)
 	{
 		if(pv_printf_s( msg, gp->v.pve, val)!=0)
 		{
-			LM_ERR("cannot print the PV-formated string\n");
+			LM_ERR("cannot print the PV-formatted string\n");
 			return -1;
 		}
 		return 0;
@@ -1071,7 +1071,7 @@ int fixup_get_isvalue(struct sip_msg* msg, gparam_p gp,
 	case GPARAM_TYPE_PVE:
 		if(pv_printf_s( msg, gp->v.pve, s_val)!=0)
 		{
-			LM_ERR("cannot print the PV-formated string\n");
+			LM_ERR("cannot print the PV-formatted string\n");
 			return -1;
 		}
 		*flags |= GPARAM_STR_VALUE_FLAG;

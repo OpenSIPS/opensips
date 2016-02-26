@@ -195,10 +195,14 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 				shm_free(dlg->legs[i].prev_cseq.s);
 			if (dlg->legs[i].contact.s)
 				shm_free(dlg->legs[i].contact.s); /* + route_set */
+			if (dlg->legs[i].th_sent_contact.s)
+				shm_free(dlg->legs[i].th_sent_contact.s);
 			if (dlg->legs[i].from_uri.s)
 				shm_free(dlg->legs[i].from_uri.s);
 			if (dlg->legs[i].to_uri.s)
 				shm_free(dlg->legs[i].to_uri.s);
+			if (dlg->legs[i].sdp.s)
+				shm_free(dlg->legs[i].sdp.s);
 		}
 		shm_free(dlg->legs);
 	}
@@ -219,7 +223,7 @@ void destroy_dlg(struct dlg_cell *dlg)
 {
 	int ret = 0;
 
-	LM_DBG("destroing dialog %p\n",dlg);
+	LM_DBG("destroying dialog %p\n",dlg);
 
 	ret = remove_dlg_timer(&dlg->tl);
 	if (ret < 0) {
@@ -331,7 +335,7 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
    the CALLEE legs will follow into the array in the same order they came */
 int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		str *contact,str *cseq, struct socket_info *sock,
-		str *mangled_from,str *mangled_to)
+		str *mangled_from,str *mangled_to,str *sdp)
 {
 	struct dlg_leg* leg,*new_legs;
 	rr_t *head = NULL, *rrp;
@@ -437,6 +441,23 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		memcpy(leg->to_uri.s,mangled_to->s,mangled_to->len);
 	}
 
+	if (sdp && sdp->s && sdp->len) {
+		leg->sdp.s = shm_malloc(sdp->len);
+		if (!leg->sdp.s) {
+			LM_ERR("no more shm\n");
+			shm_free(leg->tag.s);
+			shm_free(leg->r_cseq.s);
+			if (leg->contact.s)
+				shm_free(leg->contact.s);
+			if (leg->from_uri.s)
+				shm_free(leg->from_uri.s);
+			return -1;
+		}
+
+		leg->sdp.len = sdp->len;
+		memcpy(leg->sdp.s,sdp->s,sdp->len);
+	}
+
 	/* tag */
 	leg->tag.len = tag->len;
 	memcpy( leg->tag.s, tag->s, tag->len);
@@ -523,7 +544,7 @@ error:
 
 
 int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
-													str *rr, str *contact )
+	str *rr, str *contact)
 {
 	rr_t *head = NULL, *rrp;
 
@@ -1150,6 +1171,12 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 				dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str.len);
 		if(node1 == 0)
 			goto error;
+
+		node1 = add_mi_node_child(node, MI_DUP_VALUE,"caller_sdp",10,
+				dlg->legs[DLG_CALLER_LEG].sdp.s,
+				dlg->legs[DLG_CALLER_LEG].sdp.len);
+		if(node1 == 0)
+			goto error;
 	}
 
 	node1 = add_mi_node_child(node, MI_IS_ARRAY, "CALLEES", 7, NULL, 0);
@@ -1191,6 +1218,12 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 			node3 = add_mi_node_child(node2, 0,
 				"callee_bind_addr",16,0,0);
 		}
+		if(node3 == 0)
+			goto error;
+		
+		node3 = add_mi_node_child(node2, MI_DUP_VALUE,"callee_sdp",10,
+				dlg->legs[i].sdp.s,
+				dlg->legs[i].sdp.len);
 		if(node3 == 0)
 			goto error;
 	}

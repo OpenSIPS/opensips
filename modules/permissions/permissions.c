@@ -1042,7 +1042,6 @@ static int check_addr_fixup(void** param, int param_no) {
 					pv->type = TYPE_PARSED;
 					ret = check_addr_param1(&gp->v.sval, pv);
 				} else {
-					pv->type = TYPE_PARSED;
 					pv->type = TYPE_PV;
 					pv->u.gp = gp;
 				}

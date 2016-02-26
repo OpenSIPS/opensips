@@ -83,7 +83,7 @@ unsigned int get_next_msg_no(void)
 #define prepare_context( _ctx, _err ) \
 	do { \
 		if (_ctx==NULL) { \
-			_ctx = context_alloc();\
+			_ctx = context_alloc(CONTEXT_GLOBAL);\
 			if (_ctx==NULL) { \
 				LM_ERR("failed to allocated new context, skipping\n"); \
 				goto _err; \
@@ -250,6 +250,14 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	}
 
 end:
+
+	/* if someone else set the context, then we should also "release" the
+	 * static ctx. */
+	if (current_processing_ctx == NULL)
+		ctx = NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, ctx);
+
 	current_processing_ctx = NULL;
 	stop_expire_timer( start, execmsgthreshold, "msg processing",
 		msg->buf, msg->len, 0);

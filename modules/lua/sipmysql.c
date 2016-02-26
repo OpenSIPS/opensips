@@ -756,7 +756,7 @@ static int sipmysql_stmt_fetch(lua_State *L, int result_type)
 	  lua_pushvalue(L, -1);
 	}
       ret = mysql_stmt_fetch(o->stmt);
-      if (ret == 1) /* an error occured */
+      if (ret == 1) /* an error occurred */
 	{
 	  siplua_log(L_CRIT, "mysql_stmt_fetch failed: [%d] %s",
 		     mysql_stmt_errno(o->stmt), mysql_stmt_error(o->stmt));

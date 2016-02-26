@@ -43,12 +43,17 @@ typedef unsigned long long utime_t;
 typedef void (timer_function)(unsigned int ticks, void* param);
 typedef void (utimer_function)(utime_t uticks, void* param);
 
-/* define internal timer to 10 miliseconds */
+/* define internal timer to 10 milliseconds */
 #define ITIMER_TICK 10000
 
 #define TIMER_FLAG_IS_UTIMER       (1<<0)
 #define TIMER_FLAG_SKIP_ON_DELAY   (1<<1)
 #define TIMER_FLAG_DELAY_ON_DELAY  (1<<2)
+
+/* try to synchronize with system time every 5 seconds */
+#define TIMER_SYNC_TICKS 5000000
+/* synchronize if drift is greater than internal timer tick */
+#define TIMER_MAX_DRIFT_TICKS ITIMER_TICK
 
 struct os_timer{
 	/* unique ID in the list of timer handlers - not really used */
@@ -90,6 +95,10 @@ int register_timer(char *label, timer_function f, void* param,
 
 int register_utimer(char *label, utimer_function f, void* param,
 		unsigned int interval, unsigned short flags);
+
+unsigned int have_ticks(void);
+
+unsigned int have_uticks(void);
 
 unsigned int get_ticks(void);
 

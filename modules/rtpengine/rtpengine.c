@@ -759,7 +759,7 @@ mod_init(void)
 	unsigned short avp_flags;
 	str s;
 
-	ctx_rtpeset_idx = context_register_ptr(CONTEXT_GLOBAL);
+	ctx_rtpeset_idx = context_register_ptr(CONTEXT_GLOBAL, NULL);
 
 	/* any rtpengine configured? */
 	if(rtpe_set_list)
@@ -1222,7 +1222,8 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 {
 	struct ng_flags_parse ng_flags;
 	bencode_item_t *item, *resp;
-	str callid, from_tag, to_tag, body, viabranch, error;
+	str callid, from_tag, to_tag, viabranch, error;
+	str body = { 0, 0 };
 	int ret;
 	struct rtpe_node *node;
 	struct rtpe_set *set;

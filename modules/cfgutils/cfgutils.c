@@ -39,7 +39,9 @@
  *
  */
 #include <stdlib.h>
+#ifdef __OS_linux
 #include <features.h>     /* for GLIBC version testing */
+#endif
 
 #include "../../sr_module.h"
 #include "../../error.h"
@@ -61,7 +63,9 @@
 	#include <sys/timerfd.h>  /* for timer FD */
 	#define HAVE_TIMER_FD 1
 #else
+#ifdef __OS_linux
 	#warning Your GLIB is too old, disabling async sleep functions!!!
+#endif
 #endif
 
 /* FIFO action protocol names */
@@ -254,7 +258,7 @@ struct module_exports exports = {
 /**************************** fixup functions ******************************/
 static int fixup_prob( void** param, int param_no)
 {
-	unsigned int myint;
+	unsigned int myint = 0;
 	str param_str;
 
 	/* we only fix the parameter #1 */
@@ -703,12 +707,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if(init_shvars()<0)
-	{
-		LM_ERR("init shvars failed\n");
-		shm_free(probability);
-		return -1;
-	}
 	LM_INFO("module initialized, pid [%d]\n", getpid());
 
 	return 0;

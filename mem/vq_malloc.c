@@ -82,14 +82,14 @@
 #define BIG_BUCKET(_qm) ((_qm)->max_small_bucket+1)
 #define IS_BIGBUCKET(_qm, _bucket) ((_bucket)==BIG_BUCKET(_qm))
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 #define ASSERT(a)	\
 	my_assert(a, __LINE__, __FILE__, __FUNCTION__ )
 #else
 #define ASSERT(a)
 #endif
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 #	define MORE_CORE(_q,_b,_s)\
 				(more_core( (_q), (_b), (_s), file, func, line ))
 #else
@@ -110,7 +110,7 @@ void my_assert( int assertation, int line, char *file, char *function )
 	abort();
 }
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void vqm_debug_frag(struct vqm_block* qm, struct vqm_frag* f)
 {
 
@@ -142,7 +142,7 @@ unsigned char size2bucket( struct vqm_block* qm, int *size  )
 
 	real_size = *size+ VQM_OVERHEAD;
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	real_size+=END_CHECK_PATTERN_LEN;
 #endif
 	real_size+=((exceeds = (real_size % 8 )) ? 8 - exceeds : 0);
@@ -225,7 +225,7 @@ struct vqm_block* vqm_malloc_init(char* address, unsigned int size)
 
 struct vqm_frag *more_core(	struct vqm_block* qm,
 				unsigned char bucket, unsigned int size
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 				, char *file, char *func, unsigned int line
 #endif
 			 )
@@ -272,7 +272,7 @@ static inline void vqm_detach_free( struct vqm_block* qm,
 }
 
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void* vqm_malloc(struct vqm_block* qm, unsigned int size,
 	char* file, char* func, unsigned int line)
 #else
@@ -282,7 +282,7 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 	struct vqm_frag *new_chunk, *f;
 	unsigned char bucket;
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	unsigned int demanded_size;
 	LM_GEN1( memlog, "params (%p, %d) called from %s: %s(%d)\n",
 		qm, size, file, func, line);
@@ -293,7 +293,7 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 	bucket = size2bucket( qm, &size );
 
 	if (IS_BIGBUCKET(qm, bucket)) {	/* the kilo-bucket uses first-fit */
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 		LM_GEN1( memlog, "processing a big fragment\n");
 #endif
 		for (f=qm->next_free[bucket] ; f; f=f->u.nxt_free )
@@ -312,7 +312,7 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 	if (!new_chunk) { /* no chunk can be reused; slice one from the core */
 		new_chunk=MORE_CORE( qm, bucket, size );
 		if (!new_chunk) {
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 			LM_GEN1(memlog, "params (%p, %d) called from %s: %s(%d)\n",
 				qm, size, file, func, line);
 #else
@@ -325,7 +325,7 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 	}
 	new_chunk->u.inuse.magic = FR_USED;
 	new_chunk->u.inuse.bucket=bucket;
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	new_chunk->file=file;
 	new_chunk->func=func;
 	new_chunk->line=line;
@@ -345,7 +345,7 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 	return (char*)new_chunk+sizeof(struct vqm_frag);
 }
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void vqm_free(struct vqm_block* qm, void* p, char* file, char* func,
 				unsigned int line)
 #else
@@ -355,7 +355,7 @@ void vqm_free(struct vqm_block* qm, void* p)
 	struct vqm_frag *f, *next, *prev, *first_big;
 	unsigned char b;
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	LM_GEN1(memlog,"params (%p, %p), called from %s: %s(%d)\n",
 		qm, p, file, func, line);
 	if (p>(void *)qm->core_end || p<(void*)qm->init_core){
@@ -369,7 +369,7 @@ void vqm_free(struct vqm_block* qm, void* p)
 	}
 	f=(struct  vqm_frag*) ((char*)p-sizeof(struct vqm_frag));
 	b=f->u.inuse.bucket;
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	VQM_DEBUG_FRAG(qm, f);
 	if ( ! FRAG_ISUSED(f) ) {
 		LM_CRIT("freeing already freed pointer, first freed: %s: %s(%d) "
@@ -431,7 +431,7 @@ void dump_frag( struct vqm_frag* f, int i )
 {
 	LM_GEN1(memdump, "    %3d. address=%p  real size=%d bucket=%d\n", i,
 		(char*)f+sizeof(struct vqm_frag), f->size, f->u.inuse.bucket);
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	LM_GEN1(memdump, "            demanded size=%d\n", f->demanded_size );
 	LM_GEN1(memdump, "            alloc'd from %s: %s(%d)\n",
 		f->file, f->func, f->line);
@@ -458,7 +458,7 @@ void vqm_status(struct vqm_block* qm)
 	for (f=(struct vqm_frag*)qm->big_chunks,i=0;(char*)f<(char*)qm->core_end;
 		f=FRAG_NEXT(f) ,i++) if ( FRAG_ISUSED(f) ) dump_frag( f, i );
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	LM_GEN1(memdump,"dumping bucket statistics:\n");
 	for (i=0; i<=BIG_BUCKET(qm); i++) {
 		for(on_list=0, f=qm->next_free[i]; f; f=f->u.nxt_free ) on_list++;

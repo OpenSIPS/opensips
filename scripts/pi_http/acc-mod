@@ -13,6 +13,7 @@
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
 				<col><field>duration</field></col>
+				<col><field>ms_duration</field></col>
 				<col><field>setuptime</field></col>
 				<col><field>created</field></col>
 			</query_cols>
@@ -29,6 +30,7 @@
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
 				<col><field>duration</field></col>
+				<col><field>ms_duration</field></col>
 				<col><field>setuptime</field></col>
 				<col><field>created</field></col>
 			</query_cols>
@@ -48,6 +50,7 @@
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
 				<col><field>duration</field></col>
+				<col><field>ms_duration</field></col>
 				<col><field>setuptime</field></col>
 				<col><field>created</field></col>
 			</query_cols>

@@ -492,12 +492,12 @@ static int dr_disable(struct sip_msg *req, char * param_part_name) {
 		if( (current_partition = get_partition(&part_name))!= NULL) {
 			return dr_disable_w_part(req, current_partition);
 		} else {
-			LM_ERR("Given partition name <%*.s> was not found\n", part_name.len, part_name.s);
+			LM_ERR("Given partition name <%.*s> was not found\n", part_name.len, part_name.s);
 			return -1;
 		}
 	} else {
 		if( use_partitions ) {
-			LM_ERR("Partition name is mandatory <%*.s>\n", part_name.len
+			LM_ERR("Partition name is mandatory <%.*s>\n", part_name.len
 					,part_name.s);
 			return -1;
 		} else {
@@ -1117,7 +1117,7 @@ static int dr_init(void)
 	struct head_config * last_cleaned = 0;
 	struct head_db * it_head_db = 0, *to_clean = 0;
 
-	head_start = NULL; //emtpy head list
+	head_start = NULL; //empty head list
 	head_end = NULL;
 
 	LM_INFO("Dynamic-Routing - initializing\n");
@@ -1423,7 +1423,7 @@ static int dr_init(void)
 
 		if (!DB_CAPABILITY( head_db_end->db_funcs, DB_CAP_QUERY)) {
 			LM_CRIT( "database modules does not "
-					"provide QUERY functions needed by DRounting module\n");
+					"provide QUERY functions needed by DRouting module\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
@@ -1878,7 +1878,7 @@ static inline str* build_ruri(struct sip_uri *uri, int strip, str *pri,
 	}
 	memcpy(p, uri->user.s+strip, uri->user.len-strip);
 	p += uri->user.len-strip;
-	if (uri->passwd.len) {
+	if (uri->passwd.s && uri->passwd.len) {
 		*(p++)=':';
 		memcpy(p, uri->passwd.s, uri->passwd.len);
 		p += uri->passwd.len;
@@ -1886,12 +1886,12 @@ static inline str* build_ruri(struct sip_uri *uri, int strip, str *pri,
 	*(p++)='@';
 	memcpy(p, hostport->s, hostport->len);
 	p += hostport->len;
-	if (uri->params.len) {
+	if (uri->params.s && uri->params.len) {
 		*(p++)=';';
 		memcpy(p, uri->params.s, uri->params.len);
 		p += uri->params.len;
 	}
-	if (uri->headers.len) {
+	if (uri->headers.s && uri->headers.len) {
 		*(p++)='?';
 		memcpy(p, uri->headers.s, uri->headers.len);
 		p += uri->headers.len;
@@ -2070,7 +2070,7 @@ static int use_next_gw_w_part(struct sip_msg* msg,
 	pv_value_t pv_val;
 	str ruri;
 	dr_part_group_t * part_grp;
-	int ok;
+	int ok = 0;
 	pgw_t * dst;
 	struct socket_info *sock;
 
@@ -3932,7 +3932,7 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 				case 'i': flags |= DR_IFG_IDS_FLAG; break;
 				case 'n': flags |= DR_IFG_IGNOREPORT_FLAG; break;
 				case 'c': flags |= DR_IFG_CARRIERID_FLAG; break;
-				default: LM_WARN("unsuported flag %c \n",flags_s.s[i]);
+				default: LM_WARN("unsupported flag %c \n",flags_s.s[i]);
 			}
 		}
 	}

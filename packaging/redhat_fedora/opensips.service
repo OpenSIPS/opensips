@@ -12,6 +12,7 @@ ExecStart=/usr/sbin/opensips -P /var/run/opensips/opensips.pid -f /etc/opensips/
 ExecStartPre=/usr/sbin/opensips-m4cfg
 Restart=always
 TimeoutStopSec=30s
+LimitNOFILE=262144
 
 [Install]
 WantedBy=multi-user.target

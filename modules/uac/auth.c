@@ -184,7 +184,7 @@ int uac_auth( struct sip_msg *msg)
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
 	struct uac_credential *crd;
 	int code, branch;
-	unsigned int new_cseq;
+	int new_cseq;
 	struct sip_msg *rpl;
 	struct cell *t;
 	HASHHEX response;
@@ -268,6 +268,9 @@ int uac_auth( struct sip_msg *msg)
 		new_hdr->s = NULL; new_hdr->len = 0;
 		goto error;
 	}
+	/* the Authorization hdr was already pushed into the message as a lump
+	 * along with the buffer, so detach the buffer from new_hdr var */
+	new_hdr->s = NULL; new_hdr->len = 0;
 
 	if ( (new_cseq = apply_cseq_op(msg,1)) < 0) {
 		LM_WARN("Failure to increment the CSEQ header - continue \n");

@@ -297,7 +297,6 @@ static inline char *run_proxy( struct cpl_interpreter *intr )
 	int timeout;
 	str *s;
 	struct location *loc;
-	str reason;
 
 	intr->proxy.ordering = PARALLEL_VAL;
 	intr->proxy.recurse = (unsigned short)cpl_env.proxy_recurse;
@@ -460,17 +459,6 @@ static inline char *run_proxy( struct cpl_interpreter *intr )
 				return EO_SCRIPT;
 			}
 			intr->flags |= CPL_IS_STATEFUL;
-
-			/* INVITE processing might take long, particularly because of DNS
-			 * look-ups -- let upstream know we're working on it  */
-			if ( intr->msg->REQ_METHOD==METHOD_INVITE ) {
-				reason.s = "Trying";
-				reason.len = 6;
-				if (cpl_fct.tmb.t_reply(intr->msg, (int)100, &reason) != 1) {
-					LM_ERR("100 t_reply failed!\n");
-					goto runtime_error;
-				}
-			}
 		}
 
 		/* as I am interested in getting the responses back - I need to install

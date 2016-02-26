@@ -80,7 +80,8 @@ str rr_param = {"did",3};
 static int dlg_hash_size = 4096;
 static str timeout_spec = {NULL, 0};
 static int default_timeout = 60 * 60 * 12;  /* 12 hours */
-static int ping_interval = 30; /* seconds */
+static int options_ping_interval = 30;      /* seconds */
+static int reinvite_ping_interval = 300;    /* seconds */
 static char* profiles_wv_s = NULL;
 static char* profiles_nv_s = NULL;
 
@@ -228,7 +229,8 @@ static param_export_t mod_params[]={
 	{ "log_profile_hash_size", INT_PARAM, &log_profile_hash_size    },
 	{ "rr_param",              STR_PARAM, &rr_param.s               },
 	{ "default_timeout",       INT_PARAM, &default_timeout          },
-	{ "ping_interval",         INT_PARAM, &ping_interval            },
+	{ "options_ping_interval", INT_PARAM, &options_ping_interval    },
+	{ "reinvite_ping_interval",INT_PARAM, &reinvite_ping_interval   },
 	{ "dlg_extra_hdrs",        STR_PARAM, &dlg_extra_hdrs.s         },
 	{ "dlg_match_mode",        INT_PARAM, &seq_match_mode           },
 	{ "db_url",                STR_PARAM, &db_url.s                 },
@@ -308,6 +310,7 @@ static mi_export_t mi_cmds[] = {
 	{ "profile_list_dlgs",  0, mi_profile_list,       0,  0,  0},
 	{ "profile_get_values", 0, mi_get_profile_values, 0,  0,  0},
 	{ "list_all_profiles",  0, mi_list_all_profiles,  0,  0,  0},
+	{ "profile_end_dlgs",   0, mi_profile_terminate,  0,  0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -689,6 +692,14 @@ static int pv_get_dlg_count(struct sip_msg *msg, pv_param_t *param,
 	return 0;
 }
 
+static void ctx_dlg_idx_destroy(void *v)
+{
+	unref_dlg((struct dlg_cell*)v, 1);
+	/* reset the pointer to make sure no-one is trying to free it anymore */
+	if (current_processing_ctx)
+		ctx_dialog_set(NULL);
+}
+
 
 static int mod_init(void)
 {
@@ -749,7 +760,7 @@ static int mod_init(void)
 	}
 
 
-	if (ping_interval<=0) {
+	if (options_ping_interval<=0 || reinvite_ping_interval<=0) {
 		LM_ERR("Non-positive ping interval not accepted!!\n");
 		return -1;
 	}
@@ -783,9 +794,9 @@ static int mod_init(void)
 	}
 
 	/* allocate a slot in the processing context */
-	ctx_dlg_idx = context_register_ptr(CONTEXT_GLOBAL);
-	ctx_timeout_idx = context_register_int(CONTEXT_GLOBAL);
-	ctx_lastdstleg_idx = context_register_int(CONTEXT_GLOBAL);
+	ctx_dlg_idx = context_register_ptr(CONTEXT_GLOBAL, ctx_dlg_idx_destroy);
+	ctx_timeout_idx = context_register_int(CONTEXT_GLOBAL, NULL);
+	ctx_lastdstleg_idx = context_register_int(CONTEXT_GLOBAL, NULL);
 
 	/* create dialog state changed event */
 	if (state_changed_event_init() < 0) {
@@ -879,8 +890,14 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if ( register_timer( "dlg-pinger", dlg_ping_routine, NULL,
-	ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+	if ( register_timer( "dlg-options-pinger", dlg_options_routine, NULL,
+	options_ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+		LM_ERR("failed to register timer 2\n");
+		return -1;
+	}
+
+	if ( register_timer( "dlg-reinvite-pinger", dlg_reinvite_routine, NULL,
+	reinvite_ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 		LM_ERR("failed to register timer 2\n");
 		return -1;
 	}
@@ -895,6 +912,11 @@ static int mod_init(void)
 	}
 
 	if (init_dlg_ping_timer()!=0) {
+		LM_ERR("cannot init ping timer\n");
+		return -1;
+	}
+
+	if (init_dlg_reinvite_ping_timer()!=0) {
 		LM_ERR("cannot init ping timer\n");
 		return -1;
 	}
@@ -958,11 +980,10 @@ static int child_init(int rank)
 		if_update_stat(dlg_enable_stats, early_dlgs, early_dlgs_cnt);
 	}
 
-	if ( (dlg_db_mode==DB_MODE_REALTIME &&
-		(rank>=PROC_MAIN || rank==PROC_MODULE)) ||
-	(dlg_db_mode==DB_MODE_SHUTDOWN && (rank==(dont_fork?1:PROC_MAIN) ||
-		rank==PROC_MODULE) ) ||
-	(dlg_db_mode==DB_MODE_DELAYED && (rank>=PROC_MAIN || rank==PROC_MODULE) )
+	if (
+	(dlg_db_mode==DB_MODE_REALTIME && (rank>=PROC_MAIN||rank==PROC_MODULE)) ||
+	(dlg_db_mode==DB_MODE_SHUTDOWN && (rank==PROC_MAIN||rank==PROC_MODULE)) ||
+	(dlg_db_mode==DB_MODE_DELAYED  && (rank>=PROC_MAIN||rank==PROC_MODULE))
 	){
 		if ( dlg_connect_db(&db_url) ) {
 			LM_ERR("failed to connect to database (rank=%d)\n",rank);
@@ -1033,7 +1054,8 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 	if ( (dlg=get_current_dialog())!=NULL  )
 	{
 		/*Clear current flags before setting new ones*/
-		dlg->flags &= ~(DLG_FLAG_PING_CALLER | DLG_FLAG_PING_CALLEE | DLG_FLAG_BYEONTIMEOUT);
+		dlg->flags &= ~(DLG_FLAG_PING_CALLER | DLG_FLAG_PING_CALLEE | 
+		DLG_FLAG_BYEONTIMEOUT | DLG_FLAG_REINVITE_PING_CALLER | DLG_FLAG_REINVITE_PING_CALLEE);
 		dlg->flags |= flags;
 		return 1;
 	}
@@ -1716,7 +1738,8 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 		if (db_update)
 			update_dialog_timeout_info(dlg);
 
-		replicate_dialog_updated(dlg);
+		if (dialog_replicate_cluster)
+			replicate_dialog_updated(dlg);
 
 		if (timer_update && update_dlg_timer(&dlg->tl, timeout) < 0) {
 			LM_ERR("failed to update timer\n");

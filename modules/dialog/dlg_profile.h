@@ -54,10 +54,11 @@ struct dlg_profile_link {
 
 struct repl_prof_novalue;
 
+enum repl_types {REPL_NONE=0, REPL_CACHEDB=1, REPL_PROTOBIN};
 struct dlg_profile_table {
 	str name;
 	unsigned int has_value;
-	unsigned int use_cached;
+	enum repl_types repl_type;
 
 
 	unsigned int size;
@@ -81,6 +82,11 @@ struct dlg_profile_table {
 	struct repl_prof_novalue *repl;
 
 	struct dlg_profile_table *next;
+};
+
+struct dialog_list{
+	struct dlg_cell *dlg;
+	struct dialog_list *next;
 };
 
 typedef int (*set_dlg_profile_f)(struct dlg_cell *dlg, str *value,
@@ -131,6 +137,8 @@ struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param );
 
 struct mi_root * mi_list_all_profiles(struct mi_root *cmd_tree, void *param );
 
+struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param );
+
 void get_value_names(struct dlg_profile_table *profile, struct dlg_profile_value_name *);
 
 /* cachedb interface */
@@ -139,6 +147,7 @@ extern str cdb_noval_prefix;
 extern str cdb_size_prefix;
 extern str cdb_url;
 extern int profile_timeout;
+extern int profile_replicate_cluster;
 
 extern struct dlg_profile_table *profiles;
 

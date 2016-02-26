@@ -358,27 +358,42 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	++se->stats.total_calls;
 
 	/* Calls per FRD_SECS_PER_WINDOW */
-	if (nowt - se->stats.last_matched_time >= FRD_SECS_PER_WINDOW) {
+	if (nowt - se->stats.last_matched_time >= 2 * FRD_SECS_PER_WINDOW) {
+		/* outside the range of t0 + 2*WINDOW_SIZE; we can't use any of the
+		 * data since they are too old */
 		se->stats.cpm = 0;
 		memset(se->stats.calls_window, 0,
 				sizeof(unsigned short) * FRD_SECS_PER_WINDOW);
 		se->stats.calls_window[nowt % FRD_SECS_PER_WINDOW] = 1;
+		se->stats.last_matched_time = nowt;
 	}
-	else {
-		unsigned int i = nowt % FRD_SECS_PER_WINDOW;
-		unsigned int j = (se->stats.last_matched_time + 1) % FRD_SECS_PER_WINDOW;
+	else if (nowt - se->stats.last_matched_time >= FRD_SECS_PER_WINDOW) {
+		/* more than t0 + WINDOW_SIZE but less than 2 * WINDOW_SIZE
+		 * we can consider calls from t0 + (now - WINDOW_SIZE)
+		 * all cals from t0 to t0 + (now - WINDOW_SIZE) shall be invalidated */
+		unsigned int old_matched_time = se->stats.last_matched_time;
+
+		se->stats.last_matched_time = nowt - FRD_SECS_PER_WINDOW + 1;
+
+		/*interval [old_last_matched_time; current_last_matched_time) shall
+		 * be invalidated */
+		unsigned int i = (se->stats.last_matched_time - 1) % FRD_SECS_PER_WINDOW;
+		unsigned int j = (old_matched_time - 1) % FRD_SECS_PER_WINDOW;
 		for (;i != j; i = (i - 1 + FRD_SECS_PER_WINDOW) % FRD_SECS_PER_WINDOW) {
 			se->stats.cpm -= se->stats.calls_window[i];
 			se->stats.calls_window[i] = 0;
 		}
+		se->stats.calls_window[nowt%FRD_SECS_PER_WINDOW]++;
+	} else {
+		/* less than t0 + WINDOW_SIZE; all we need to do is to increase
+		 * the number of calls for nowt */
+		se->stats.calls_window[nowt%FRD_SECS_PER_WINDOW]++;
 	}
 
 	++se->stats.cpm;
 	++se->stats.concurrent_calls;
-	se->stats.last_matched_time = nowt;
 
 	/* Check the thresholds */
-
 	int rc = rc_no_rule;
 
 	frd_thresholds_t *thr = (frd_thresholds_t*)rule->attrs.s;

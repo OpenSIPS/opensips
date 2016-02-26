@@ -97,7 +97,7 @@
 
 /* vars:*/
 
-extern int *debug;
+extern int *log_level;
 extern int log_stderr;
 extern int log_facility;
 extern char* log_name;
@@ -107,10 +107,10 @@ extern char ctime_buf[];
  * must be called after init_multi_proc_support()
  * must be called once for each OpenSIPS process
  */
-int init_debug(void);
+int init_log_level(void);
 
 /* must be called once, before the "pt" process table is freed */
-void cleanup_debug(void);
+void cleanup_log_level(void);
 
 int dp_my_pid(void);
 
@@ -123,36 +123,36 @@ int str2facility(char *s);
  *
  * Note: the index param is not validated!
  */
-static inline void __set_proc_debug_level(int proc_idx, int level)
+static inline void __set_proc_log_level(int proc_idx, int level)
 {
-	pt[proc_idx].debug = level;
+	pt[proc_idx].log_level = level;
 }
 
-static inline void __set_proc_default_debug(int proc_idx, int level)
+static inline void __set_proc_default_log_level(int proc_idx, int level)
 {
-	pt[proc_idx].default_debug = level;
+	pt[proc_idx].default_log_level = level;
 }
 
 /* set the current and default log levels for all OpenSIPS processes */
-static inline void set_global_debug_level(int level)
+static inline void set_global_log_level(int level)
 {
 	int i;
 
 	for (i = 0; i < counted_processes; i++) {
-		__set_proc_default_debug(i, level);
-		__set_proc_debug_level(i, level);
+		__set_proc_default_log_level(i, level);
+		__set_proc_log_level(i, level);
 	}
 }
 
 /* set the log level of the current process */
-static inline void set_proc_debug_level(int level)
+static inline void set_proc_log_level(int level)
 {
-	__set_proc_debug_level(process_no, level);
+	__set_proc_log_level(process_no, level);
 }
 
 
 /* changes the logging level to the default value for the current process */
-void reset_proc_debug_level(void);
+void reset_proc_log_level(void);
 
 static inline char* dp_time(void)
 {
@@ -165,7 +165,7 @@ static inline char* dp_time(void)
 	return ctime_buf+4;  /* remove name of day*/
 }
 
-#define is_printable(_level)  (((int)(*debug)) >= ((int)(_level)))
+#define is_printable(_level)  (((int)(*log_level)) >= ((int)(_level)))
 
 #if defined __GNUC__
 	#define __DP_FUNC  __FUNCTION__
@@ -448,5 +448,10 @@ static inline char* dp_time(void)
 	#endif /*SUN_PRO_C*/
 #endif
 
+#define report_programming_bug(format, args...) \
+	LM_CRIT("\n>>> " format"\nIt seems you have hit a programming bug.\n" \
+			"Please help us make OpenSIPS better by reporting it at " \
+			"https://github.com/OpenSIPS/opensips/issues\n\n", ##args);
+#define LM_BUG report_programming_bug
 
 #endif /* ifndef dprint_h */

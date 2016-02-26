@@ -311,7 +311,7 @@ static int l_sipstate_setCoreDebug(lua_State *L)
   int n;
 
   n = luaL_checkinteger(L, 1);
-  set_global_debug_level(n);
+  set_proc_log_level(n);
 
   return 0;
 }

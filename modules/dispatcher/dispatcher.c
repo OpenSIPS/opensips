@@ -47,7 +47,7 @@
 #include "../../mi/mi.h"
 #include "../../dprint.h"
 #include "../../error.h"
-#include "../../ut.h"
+#include "../../trim.h"
 #include "../../route.h"
 #include "../../mem/mem.h"
 #include "../../mod_fix.h"
@@ -65,6 +65,7 @@
 #define DS_DEST_WEIGHT_COL	"weight"
 #define DS_DEST_PRIO_COL	"priority"
 #define DS_DEST_ATTRS_COL	"attrs"
+#define DS_DEST_DESCRIPTION_COL	"description"
 #define DS_TABLE_NAME 		"dispatcher"
 #define DS_PARTITION_DELIM  ':'
 
@@ -82,6 +83,7 @@ str ds_ping_from   = {"sip:dispatcher@localhost", 24};
 static int ds_ping_interval = 0;
 int ds_probing_mode = 0;
 int ds_persistent_state = 1;
+int_list_t *ds_probing_list = NULL;
 
 /* db partiton info */
 
@@ -138,6 +140,7 @@ str ds_dest_state_col = str_init(DS_DEST_STATE_COL);
 str ds_dest_weight_col= str_init(DS_DEST_WEIGHT_COL);
 str ds_dest_prio_col = str_init(DS_DEST_PRIO_COL);
 str ds_dest_attrs_col = str_init(DS_DEST_ATTRS_COL);
+str ds_dest_description_col = str_init(DS_DEST_DESCRIPTION_COL);
 
 str ds_setid_pvname   = {NULL, 0};
 pv_spec_t ds_setid_pv;
@@ -181,6 +184,7 @@ static int mi_child_init(void);
 /* Parameters setters */
 
 static int set_partition_arguments(unsigned int type, void * val);
+static int set_probing_list(unsigned int type, void * val);
 
 static cmd_export_t cmds[]={
 	{"ds_select_dst",    (cmd_function)w_ds_select_dst, 2,
@@ -243,6 +247,7 @@ static param_export_t params[]={
 	{"weight_col",      STR_PARAM, &ds_dest_weight_col.s},
 	{"priority_col",    STR_PARAM, &ds_dest_prio_col.s},
 	{"attrs_col",       STR_PARAM, &ds_dest_attrs_col.s},
+	{"description_col",       STR_PARAM, &ds_dest_description_col.s},
 	{"dst_avp",         STR_PARAM, &default_db_head.dst_avp.s},
 	{"grp_avp",         STR_PARAM, &default_db_head.grp_avp.s},
 	{"cnt_avp",         STR_PARAM, &default_db_head.cnt_avp.s},
@@ -258,6 +263,7 @@ static param_export_t params[]={
 	{"ds_probing_mode",       INT_PARAM, &ds_probing_mode},
 	{"options_reply_codes",   STR_PARAM, &options_reply_codes_str.s},
 	{"ds_probing_sock",       STR_PARAM, &probing_sock_s},
+	{"ds_probing_list",       STR_PARAM|USE_FUNC_PARAM, (void*)set_probing_list},
 	{"ds_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_ds_bl},
 	{"persistent_state",      INT_PARAM, &ds_persistent_state},
 	{0,0,0}
@@ -273,7 +279,7 @@ static module_dependency_t *get_deps_ds_ping_interval(param_export_t *param)
 
 static mi_export_t mi_cmds[] = {
 	{ "ds_set_state",   0, ds_mi_set,     0,                0,  0            },
-	{ "ds_list",        0, ds_mi_list,    MI_NO_INPUT_FLAG, 0,  0            },
+	{ "ds_list",        0, ds_mi_list,    0,                0,  0            },
 	{ "ds_reload",      0, ds_mi_reload,  0,                0,  mi_child_init},
 	{ 0, 0, 0, 0, 0, 0}
 };
@@ -375,7 +381,7 @@ static int split_partition_argument(str *arg, str *partition_name)
 	arg->s = delim_pos + 1;
 	arg->len -= partition_name->len + 1;
 
-	str_trim_spaces_lr(*partition_name);
+	trim(partition_name);
 	for (;arg->s[0] == ' ' && arg->len; ++arg->s, --arg->len);
 	return 0;
 }
@@ -449,6 +455,17 @@ static ds_partition_t* find_partition_by_name (const str *partition_name)
 	return part_it; //and NULL if there's no partition matching the name
 }
 
+/* Load setids this proxy is responsible for probing into list */
+static int set_probing_list(unsigned int type, void *val) {
+	str input = {(char*)val, strlen(val)};
+        if (set_list_from_string(input, &ds_probing_list) != 0 ||
+            ds_probing_list == NULL)
+        {
+            LM_ERR("Invalid set_probing_list input\n");
+            return -1;
+        }
+        return 0;
+}
 
 /* We parse the "partition" argument as: partition_name:arg1=val1; arg2=val2;*/
 
@@ -479,8 +496,8 @@ static int set_partition_arguments(unsigned int type, void *val)
 		arg.len = eq_pos - arg.s;
 		value.s = eq_pos + 1;
 		value.len = end_pair_pos - eq_pos - 1;
-		str_trim_spaces_lr(arg);
-		str_trim_spaces_lr(value);
+		trim(&arg);
+		trim(&value);
 
 		if (arg.len <= 0 || value.len <= 0) {
 			LM_ERR("Wrong format in partition arguments specifier at pos %d\n",
@@ -917,6 +934,10 @@ static void destroy(void)
 
 	/* destroy blacklists */
 	destroy_ds_bls();
+
+        /* destroy probing list */
+        if (ds_probing_list)
+            free_int_list(ds_probing_list, NULL);
 }
 
 #define CHECK_AND_EXPAND_LIST(_list_) \
@@ -1353,6 +1374,15 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 {
 	struct mi_root* rpl_tree;
 	struct mi_node* part_node;
+	int flags = 0;
+
+	if (cmd_tree->node.kids){
+		if(cmd_tree->node.kids->value.len == 4 && memcmp(cmd_tree->node.kids->value.s,"full",4)==0)
+			flags  |= MI_FULL_LISTING;
+		else
+			return init_mi_tree(400, MI_SSTR(MI_BAD_PARM_S));
+
+	}
 
 	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL)
@@ -1365,7 +1395,7 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 				9, part_it->name.s, part_it->name.len);
 
 		if (part_node == NULL
-			|| ds_print_mi_list(part_node, part_it) < 0) {
+			|| ds_print_mi_list(part_node, part_it, flags) < 0) {
 		LM_ERR("failed to add node\n");
 		free_mi_tree(rpl_tree);
 		return 0;

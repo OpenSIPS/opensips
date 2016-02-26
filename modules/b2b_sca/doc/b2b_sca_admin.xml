@@ -253,7 +253,7 @@ modparam("b2b_sca", "db_mode", 1)
 		Identifies the table name from the defined database.
 		</para>
 		<para>
-		<emphasis>The default value is "sca".</emphasis>
+		<emphasis>The default value is "b2b_sca".</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>table_name</varname> parameter</title>
