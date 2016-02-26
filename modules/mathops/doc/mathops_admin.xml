@@ -74,7 +74,7 @@ modparam("mathops", "decimal_digits", 10)
 		<para>
 		The function evaluates a given expression and writes the results in the
 		output pseudo-variable. The expression may contain any number of pseudo
-		variables.
+		variables. Evalutaion uses tinyexpr (see https://github.com/codeplea/tinyexpr).
 		</para>
 		<para>
 		Currently allowed syntax for specifying an expression:
@@ -83,7 +83,10 @@ modparam("mathops", "decimal_digits", 10)
 			<para> Nested parentheses </para>
 		</listitem>
 		<listitem>
-			<para> binary + - / * operators </para>
+			<para> addition (+), subtraction/negation (-), multiplication (*), division (/), exponentiation (^) and modulus (%) with the normal operator precedence (the one exception being that exponentiation is evaluated left-to-right) </para>
+		</listitem>
+                <listitem>
+			<para> C math functions: abs (calls to fabs), acos, asin, atan, ceil, cos, cosh, exp, floor, ln (calls to log), log (calls to log10), sin, sinh, sqrt, tan, tanh </para>
 		</listitem>
 		</itemizedlist>
 		</para>

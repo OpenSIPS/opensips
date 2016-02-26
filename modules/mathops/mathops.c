@@ -262,7 +262,7 @@ static int w_evaluate_exp(struct sip_msg *msg, char *exp, char *result)
 
 	LM_DBG("Evaluating expression: %.*s\n", s.len, s.s);
 
-	return evaluate_exp(msg, &s, (pv_spec_p)result, 0);
+	return evaluate_exp(msg, &s, (pv_spec_p)result);
 }
 
 static int w_evaluate_rpn(struct sip_msg *msg, char *exp, char *result)
@@ -277,7 +277,7 @@ static int w_evaluate_rpn(struct sip_msg *msg, char *exp, char *result)
 
 	LM_DBG("Evaluating expression: %.*s\n", s.len, s.s);
 
-	return evaluate_exp(msg, &s, (pv_spec_p)result, 1);
+	return evaluate_rpn(msg, &s, (pv_spec_p)result);
 }
 
 

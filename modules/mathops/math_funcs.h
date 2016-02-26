@@ -26,6 +26,7 @@
 #define __MATHOPS_H__
 
 #include <math.h>
+#include "tinyexpr.h"
 
 #define MAX_STACK_SIZE   100
 
@@ -60,6 +61,7 @@ int basic_round_op(struct sip_msg *msg, str *n, pv_spec_p result_var,
 int round_dp_op(struct sip_msg *msg, str *n, pv_spec_p result_var, int digits);
 int round_sf_op(struct sip_msg *msg, str *n, pv_spec_p result_var, int digits);
 
-int evaluate_exp(struct sip_msg *msg, str *exp, pv_spec_p result, short is_rpn);
+int evaluate_rpn(struct sip_msg *msg, str *exp, pv_spec_p result_var);
+int evaluate_exp(struct sip_msg *msg, str *exp, pv_spec_p result_var);
 
 #endif /* __MATHOPS_H__ */
