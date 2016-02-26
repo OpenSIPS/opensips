@@ -399,6 +399,7 @@ inline static int io_wait_loop_devpoll(io_wait_h* h, int t, int repeat)
 	int n, r;
 	int ret;
 	struct dvpoll dpoll;
+	struct fd_map *e;
 
 		dpoll.dp_timeout=t*1000;
 		dpoll.dp_nfds=h->fd_no;
