@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-id(int) organizationName(str) hostId(str) nenaId(str) contact(str) certUri(str) nodeIP(str) nodeIP(int)
+id(int) organizationName(str) hostId(str) nenaId(str) contact(str) certUri(str) nodeIP(str) attribution(int)
 METADATA_KEY
 0 
 METADATA_READONLY

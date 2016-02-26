@@ -34,7 +34,7 @@ CREATE TABLE emergency_service_provider (
     contact VARCHAR(20) NOT NULL,
     certUri VARCHAR(50) NOT NULL,
     nodeIP VARCHAR(20) NOT NULL,
-    nodeIP INTEGER NOT NULL
+    attribution INTEGER NOT NULL
 );
 
 ALTER SEQUENCE emergency_service_provider_id_seq MAXVALUE 2147483647 CYCLE;

@@ -32,6 +32,6 @@ CREATE TABLE emergency_service_provider (
     contact CHAR(20) NOT NULL,
     certUri CHAR(50) NOT NULL,
     nodeIP CHAR(20) NOT NULL,
-    nodeIP INTEGER NOT NULL
+    attribution INTEGER NOT NULL
 );
 

@@ -83,7 +83,7 @@
 	</column>
 
 	<column id="attribution">
-		<name>nodeIP</name>
+		<name>attribution</name>
 		<type>unsigned int</type>
 		<size>2</size>
 		<description> It is a field of type int designating the function of the organization involved in the composition of architecture NENA being registered in this table. This parameter is  mandatory. 

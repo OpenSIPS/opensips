@@ -48,7 +48,7 @@ CREATE TABLE emergency_service_provider (
     contact VARCHAR2(20),
     certUri VARCHAR2(50),
     nodeIP VARCHAR2(20),
-    nodeIP NUMBER(10)
+    attribution NUMBER(10)
 );
 
 CREATE OR REPLACE TRIGGER emergency_service_provider_tr

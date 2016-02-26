@@ -32,6 +32,6 @@ CREATE TABLE emergency_service_provider (
     contact CHAR(20) NOT NULL,
     certUri CHAR(50) NOT NULL,
     nodeIP CHAR(20) NOT NULL,
-    nodeIP INT(2) UNSIGNED NOT NULL
+    attribution INT(2) UNSIGNED NOT NULL
 ) ENGINE=InnoDB;
 
