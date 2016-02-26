@@ -168,7 +168,7 @@ again:
 		for (r=0; r<n; r++) {
 			if (h->ep_array[r].events & EPOLLIN) {
 				if (h->ep_array[r].events&EPOLLHUP) {
-					LM_NOTICE("EPOLLIN(read) event: epollwait() "
+					LM_DBG("EPOLLIN(read) event: epollwait() "
 							"set event EPOLLHUP - "
 							"connection closed by the remote peer!\n");
 				}
@@ -177,7 +177,7 @@ again:
 					IO_WATCH_PRV_TRIG_READ;
 			} else if (h->ep_array[r].events & EPOLLOUT){
 				if (h->ep_array[r].events&EPOLLHUP) {
-					LM_NOTICE("EPOLLOUT(write) event: epollwait() "
+					LM_DBG("EPOLLOUT(write) event: epollwait() "
 							"set event EPOLLHUP - "
 							"connection closed by the remote peer!\n");
 				}
@@ -195,7 +195,7 @@ again:
 					IO_WATCH_PRV_TRIG_READ;
 			} else {
 				if (h->ep_array[r].events & EPOLLHUP) {
-					LM_NOTICE("connection closed by the remote peer!\n");
+					LM_DBG("connection closed by the remote peer!\n");
 				}
 
 				LM_ERR("[%s] unexpected event %x on %d/%d, data=%p\n",
