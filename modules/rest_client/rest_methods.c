@@ -216,6 +216,10 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 			continue;
 		}
 
+		if (retry_time > connection_timeout_ms)
+			LM_INFO("initial TCP connect: we must wait at least %ldms! Please "
+			        "consider increasing 'connection_timeout'!\n", retry_time);
+
 		busy_wait = retry_time < timeout ? retry_time : timeout;
 
 		/**
