@@ -62,5 +62,5 @@ int add_hdr_PAI(struct sip_msg *msg, str cbn);
 int find_body_pidf(struct sip_msg *msg, char** pidf_body);
 int proxy_request(struct sip_msg *msg,char *call_server_hostname);
 int new_uri_proxy(struct sip_msg *req_msg, char* new_uri );
-int get_ip_socket(struct sip_msg *msg, char** s_addr); 
+int get_ip_socket(struct sip_msg *msg, char** saddr);
 int extract_contact_hdrs(struct sip_msg *reply, char **contact_esgwri, char **contact_lro);

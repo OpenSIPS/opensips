@@ -303,7 +303,7 @@ int get_callid_header(struct sip_msg *msg, char** callidHeader) {
 
 
 // get ip address of opensips server in port that receive INVITE
-int get_ip_socket(struct sip_msg *msg, char** s_addr){
+int get_ip_socket(struct sip_msg *msg, char** saddr){
 
 	char *socket;
 	struct socket_info** list;
@@ -316,7 +316,7 @@ int get_ip_socket(struct sip_msg *msg, char** s_addr){
 	}
 
 	si = *list;
-	*s_addr = NULL;
+	*saddr = NULL;
 
 	while (si) {
 		if (si->port_no == msg->rcv.dst_port) {
@@ -325,7 +325,8 @@ int get_ip_socket(struct sip_msg *msg, char** s_addr){
 				LM_ERR("no more pkg memory\n");
 				return -1;
 			}
-			*s_addr = socket;
+
+			*saddr = socket;
 			*socket = '@';
 			socket++;
 			memcpy(socket, si->address_str.s, si->address_str.len);
@@ -336,12 +337,12 @@ int get_ip_socket(struct sip_msg *msg, char** s_addr){
 			socket = socket + si->port_no_str.len;
 			*socket = 0;
 
-			LM_INFO(" --- SERVER = %s \n \n", *s_addr);
+			LM_INFO(" --- SERVER = %s \n \n", *saddr);
 			break;
 		}
 		si = si->next;
 	}  
-	if (*s_addr == NULL) {
+	if (*saddr == NULL) {
 		LM_ERR("failed in found ip listen\n");
 		return -1;
 	}
