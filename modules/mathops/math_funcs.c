@@ -38,6 +38,7 @@
 #endif
 
 #include <errno.h>
+#include <math.h>
 
 #include "../../pvar.h"
 #include "../../dprint.h"
@@ -45,6 +46,7 @@
 #include "../../mem/mem.h"
 #include "../../trim.h"
 
+#include "tinyexpr.h"
 #include "math_funcs.h"
 
 static char print_buffer[MATHOP_REAL_DIGITS + MATHOP_DECIMAL_DIGITS];
@@ -55,54 +57,6 @@ static token output[MAX_STACK_SIZE];
 int top = 0;
 int pos = 0;
 
-static int precedence(int op)
-{
-	switch (op) {
-
-	case MATHOP_ADD:
-	case MATHOP_SUB:
-		return 1;
-
-	case MATHOP_MUL:
-	case MATHOP_DIV:
-		return 2;
-
-	default:
-		return 3;
-	}
-}
-
-static int get_op(char symbol)
-{
-	switch (symbol) {
-		case MATHOP_PLUS:
-			return  MATHOP_ADD;
-
-		case MATHOP_MINUS:
-			return  MATHOP_SUB;
-
-		case MATHOP_MULT:
-			return  MATHOP_MUL;
-
-		case MATHOP_SLASH:
-			return  MATHOP_DIV;
-
-		default:
-			return -1;
-	}
-}
-
-static int push_op(int type)
-{
-  if(top >= MAX_STACK_SIZE) {
-		LM_ERR("RPN Stack Full\n");
-    return -1;
-  }
-
-	stack[top].type = type;
-	top++;
-  return 0;
-}
 
 static int push_number(double value)
 {
@@ -135,20 +89,6 @@ static int pop_number(double *value)
 	*value = stack[top].value;
 	LM_DBG("pop = %f\n",*value);
   return 0;
-}
-
-static void pop_to_output(void)
-{
-	output[pos++] = stack[--top];
-}
-
-static void pop_while_higher(int op_type)
-{
-	while (top > 0 && stack[top-1].type != MATHOP_LPAREN &&
-	       precedence(stack[top-1].type) >= precedence(op_type))
-	{
-		pop_to_output();
-	}
 }
 
 static int rpn_eval(const token* t)
@@ -315,91 +255,6 @@ static int get_rpn_op(str *_s)
   return -1;
 }
 
-/**
- * Shunting-yard algorithm
- *
- * Converts an expression to Reverse Polish Notation
- * Result is written to the 'output' buffer
- */
-static int convert_to_rpn(str *exp)
-{
-	double d;
-	char *p;
-	int op;
-	str s;
-
-	p = exp->s;
-	s.s = exp->s;
-	s.len = exp->len;
-
-	while (s.len) {
-
-		if (*s.s >= '0' && *s.s <= '9') {
-			errno = 0;
-			d = strtod(s.s, &p);
-
-			s.len -= p - s.s;
-			s.s = p;
-
-			if (errno == ERANGE) {
-				LM_WARN("Overflow in parsing a numeric value!\n");
-			}
-
-			output[pos].type = MATHOP_NUMBER;
-			output[pos].value = d;
-			pos++;
-
-			trim_leading(&s);
-			continue;
-		}
-
-		switch (*s.s) {
-
-		case MATHOP_L_PAREN:
-
-			push_op(MATHOP_LPAREN);
-			inc_and_trim(s);
-			break;
-
-		case MATHOP_R_PAREN:
-
-			while (top > 0 && stack[top-1].type != MATHOP_LPAREN) {
-				pop_to_output();
-			}
-
-			if (top == 0) {
-				LM_ERR("Parse expr error: mismatched parenthesis!\n");
-				return -1;
-			}
-
-			/* just pop the left parenthesis off the stack */
-			top--;
-
-			inc_and_trim(s);
-
-			break;
-
-		default:
-
-			op = get_op(*s.s);
-			if (op < 0) {
-				LM_WARN("Parse expr error: Invalid operator! <%c>\n", *s.s);
-				return -1;
-			}
-
-			pop_while_higher(op);
-			push_op(op);
-
-			inc_and_trim(s);
-		}
-	}
-
-	/* since ADD has lowest precedence, this will pop all remaining operators */
-	pop_while_higher(MATHOP_ADD);
-
-	return 0;
-}
-
 static int parse_rpn(str *exp)
 {
   double d;
@@ -467,9 +322,9 @@ static int evaluate_rpn_output(double *result)
 
 
 /**
- * Computes the result of a given expression
+ * Computes the result of a given RPN expression
  */
-int evaluate_exp(struct sip_msg *msg, str *exp, pv_spec_p result_var, short is_rpn)
+int evaluate_rpn(struct sip_msg *msg, str *exp, pv_spec_p result_var)
 {
 	double result;
 	pv_value_t pv_val;
@@ -480,20 +335,46 @@ int evaluate_exp(struct sip_msg *msg, str *exp, pv_spec_p result_var, short is_r
 	top = 0;
 	pos = 0;
 
-	if(is_rpn) {
-		if (parse_rpn(exp) != 0) {
-			LM_ERR("Failed to parse RPN!\n");
-			return -1;
-		}
-	} else {
-		if (convert_to_rpn(exp) != 0) {
-			LM_ERR("Failed to convert expression to RPN form!\n");
-			return -1;
-		}
+	if (parse_rpn(exp) != 0) {
+		LM_ERR("Failed to parse RPN!\n");
+		return -1;
 	}
 
 	if (evaluate_rpn_output(&result) != 0) {
 		LM_ERR("Mismatched tokens in expression: <%.*s>\n", exp->len, exp->s);
+		return -1;
+	}
+
+	sprintf(print_buffer, "%.*lf", decimal_digits, result);
+
+	pv_val.flags = PV_VAL_STR;
+	pv_val.rs.s = print_buffer;
+	pv_val.rs.len = strlen(print_buffer);
+
+	if (pv_set_value(msg, result_var, 0, &pv_val) != 0)
+	{
+		LM_ERR("SET output value failed.\n");
+		return -1;
+	}
+
+	return 1;
+}
+
+/**
+ * Computes the result of a given math expression
+ */
+int evaluate_exp(struct sip_msg *msg, str *exp, pv_spec_p result_var)
+{
+	double result;
+	int error;
+	pv_value_t pv_val;
+
+	trim(exp);
+
+	result = te_interp(exp->s, &error);
+
+	if (isnan(result)) {
+		LM_ERR("Failed to run math expression: <%.*s>\n", exp->len, exp->s);
 		return -1;
 	}
 

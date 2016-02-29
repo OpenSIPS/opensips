@@ -92,11 +92,13 @@ modparam("mathops", "decimal_digits", 10)
 
    The function evaluates a given expression and writes the
    results in the output pseudo-variable. The expression may
-   contain any number of pseudo variables.
+   contain any number of pseudo variables.  Evalutaion uses 
+   tinyexpr (see https://github.com/codeplea/tinyexpr).
 
    Currently allowed syntax for specifying an expression:
      * Nested parentheses
-     * binary + - / * operators
+     * addition (+), subtraction/negation (-), multiplication (*), division (/), exponentiation (^) and modulus (%) with the normal operator precedence (the one exception being that exponentiation is evaluated left-to-right)
+     * C math functions: abs (calls to fabs), acos, asin, atan, ceil, cos, cosh, exp, floor, ln (calls to log), log (calls to log10), sin, sinh, sqrt, tan, tanh
 
    Meaning of the parameters is as follows:
      * expression - String containing a mathematical expression.
