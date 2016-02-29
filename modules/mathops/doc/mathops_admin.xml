@@ -72,9 +72,9 @@ modparam("mathops", "decimal_digits", 10)
 		<function moreinfo="none">math_eval(expression, result_pvar)</function>
 		</title>
 		<para>
-		The function evaluates a given expression and writes the results in the
+		The function evaluates a given expression and writes the result in the
 		output pseudo-variable. The expression may contain any number of pseudo
-		variables. Evalutaion uses tinyexpr (see https://github.com/codeplea/tinyexpr).
+		variables. Evaluation uses tinyexpr (see https://github.com/codeplea/tinyexpr).
 		</para>
 		<para>
 		Currently allowed syntax for specifying an expression:
@@ -133,12 +133,12 @@ if (math_eval("$avp(1) * ($avp(3) - ($avp(1) - $avp(2))) / $avp(3)", "$avp(resul
 		<function moreinfo="none">math_rpn(expression, result_pvar)</function>
 		</title>
 		<para>
-		The function evaluates a given RPN expression and writes the results in the
+		The function evaluates a given RPN expression and writes the result in the
 		output pseudo-variable. The expression may contain any number of pseudo
 		variables.
 		</para>
 		<para>
-    The expression is specified as a Reverse Polish Notation script. Values are pushed
+    The expression is specified in Reverse Polish Notation. Values are pushed
     onto a stack, while operations are executed on that stack. The following operations
     are supported:
 		<itemizedlist>

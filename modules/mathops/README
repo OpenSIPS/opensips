@@ -90,15 +90,20 @@ modparam("mathops", "decimal_digits", 10)
 
 1.4.1.  math_eval(expression, result_pvar)
 
-   The function evaluates a given expression and writes the
-   results in the output pseudo-variable. The expression may
-   contain any number of pseudo variables.  Evalutaion uses 
-   tinyexpr (see https://github.com/codeplea/tinyexpr).
+   The function evaluates a given expression and writes the result
+   in the output pseudo-variable. The expression may contain any
+   number of pseudo variables. Evaluation uses tinyexpr (see
+   https://github.com/codeplea/tinyexpr).
 
    Currently allowed syntax for specifying an expression:
      * Nested parentheses
-     * addition (+), subtraction/negation (-), multiplication (*), division (/), exponentiation (^) and modulus (%) with the normal operator precedence (the one exception being that exponentiation is evaluated left-to-right)
-     * C math functions: abs (calls to fabs), acos, asin, atan, ceil, cos, cosh, exp, floor, ln (calls to log), log (calls to log10), sin, sinh, sqrt, tan, tanh
+     * addition (+), subtraction/negation (-), multiplication (*),
+       division (/), exponentiation (^) and modulus (%) with the
+       normal operator precedence (the one exception being that
+       exponentiation is evaluated left-to-right)
+     * C math functions: abs (calls to fabs), acos, asin, atan,
+       ceil, cos, cosh, exp, floor, ln (calls to log), log (calls
+       to log10), sin, sinh, sqrt, tan, tanh
 
    Meaning of the parameters is as follows:
      * expression - String containing a mathematical expression.
@@ -129,12 +134,12 @@ vp(result)")) {
 1.4.2.  math_rpn(expression, result_pvar)
 
    The function evaluates a given RPN expression and writes the
-   results in the output pseudo-variable. The expression may
+   result in the output pseudo-variable. The expression may
    contain any number of pseudo variables.
 
-   The expression is specified as a Reverse Polish Notation
-   script. Values are pushed onto a stack, while operations are
-   executed on that stack. The following operations are supported:
+   The expression is specified in Reverse Polish Notation. Values
+   are pushed onto a stack, while operations are executed on that
+   stack. The following operations are supported:
      * binary operators: + - / * mod pow
      * unary functions: neg exp ln log10 abs sqrt cbrt floor ceil
        round nearbyint trunc
