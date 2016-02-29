@@ -52,7 +52,6 @@ package OpenSIPS::LDAPUtils::LDAPConnection;
 use OpenSIPS::LDAPUtils::LDAPConf;
 use Net::LDAP;
 use Authen::SASL;
-use UNIVERSAL qw( isa );
 
 my $ldap_singleton = undef;
 
@@ -185,7 +184,7 @@ sub search {
 
     my $ldap = undef;
 
-    if( isa($conf ,"OpenSIPS::LDAPUtils::LDAPConnection") ) {
+    if( $conf->isa("OpenSIPS::LDAPUtils::LDAPConnection") ) {
       $ldap = $conf;
     } else {
       if( ! $ldap_singleton ) {
