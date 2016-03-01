@@ -1098,7 +1098,8 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body
 
 			if(row_vals[body_col].val.string_val== NULL)
 			{
-				LM_ERR("NULL notify body record\n");
+				if (event->mandatory_body)
+					LM_ERR("NULL notify body record\n");
 				goto error;
 			}
 			len= strlen(row_vals[body_col].val.string_val);
