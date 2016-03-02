@@ -3,6 +3,9 @@
 #include <openssl/opensslv.h>
 #include <openssl/err.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
