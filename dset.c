@@ -117,7 +117,7 @@ static inline unsigned int* get_ptr_bflags(struct sip_msg *msg, unsigned int b_i
 {
 	struct dset_ctx *dsct = get_dset_ctx();
 
-	if (!dsct)
+	if (!dsct && b_idx != 0)
 		return NULL;
 
 	if (b_idx == 0) {
