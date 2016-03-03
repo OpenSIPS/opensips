@@ -935,6 +935,8 @@ static inline int hep_handle_req(struct tcp_req *req,
 				goto error_free_hep;
 			}
 
+			memset(ctx, 0, context_size(CONTEXT_GLOBAL));
+
 			context_put_ptr(CONTEXT_GLOBAL, ctx, hep_ctx_idx, hep_ctx);
 
 			/* run hep callbacks */
@@ -944,7 +946,7 @@ static inline int hep_handle_req(struct tcp_req *req,
 				goto error_free_hep;
 			}
 
-			msg_len = h.u.hepv3.payload_chunk.chunk.length-
+			msg_len = hep_ctx->h.u.hepv3.payload_chunk.chunk.length-
 											sizeof(hep_chunk_payload_t);
 			/* remove the hep header; leave only the payload */
 			msg_buf = hep_ctx->h.u.hepv3.payload_chunk.data;
@@ -1242,6 +1244,8 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 		LM_ERR("failed to allocate new context! skipping...\n");
 		goto error_free_hep;
 	}
+
+	memset(ctx, 0, context_size(CONTEXT_GLOBAL));
 
 	context_put_ptr(CONTEXT_GLOBAL, ctx, hep_ctx_idx, hep_ctx);
 
