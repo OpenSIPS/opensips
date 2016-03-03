@@ -886,7 +886,7 @@ static inline int hep_handle_req(struct tcp_req *req,
 				return -1;
 			}
 
-			msg_len = ntohs(h.u.hepv3.payload_chunk.chunk.length) -
+			msg_len = h.u.hepv3.payload_chunk.chunk.length-
 											sizeof(hep_chunk_payload_t);
 			/* remove the hep header; leave only the payload */
 			msg_buf = h.u.hepv3.payload_chunk.data;
