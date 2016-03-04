@@ -421,11 +421,15 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			}
 		}
 
-		*req->parsed=c;
-
 		update_stat( pt[process_no].load, -1 );
 
-		if (size) memmove(req->buf, req->parsed, size);
+		if (size) {
+			/* restoring the char only makes sense if there is something else to
+			 * process, otherwise we can leave it. This prevents us from accessing
+			 * unallocated memory - razvanc */
+			*req->parsed=c;
+			memmove(req->buf, req->parsed, size);
+		}
 #ifdef EXTRA_DEBUG
 		LM_DBG("preparing for new request, kept %ld bytes\n", size);
 #endif
