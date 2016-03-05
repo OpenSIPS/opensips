@@ -46,7 +46,7 @@
 #define WRITE_BACK    2
 #define DB_ONLY       3
 
-#define UL_TABLE_VERSION 1010
+#define UL_TABLE_VERSION 1011
 
 extern str contactid_col;
 extern str user_col;

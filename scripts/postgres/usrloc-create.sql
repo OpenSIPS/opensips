@@ -1,8 +1,8 @@
-INSERT INTO version (table_name, table_version) values ('location','1010');
+INSERT INTO version (table_name, table_version) values ('location','1011');
 CREATE TABLE location (
     contact_id BIGSERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) DEFAULT '' NOT NULL,
-    domain VARCHAR(64) DEFAULT '' NOT NULL,
+    domain VARCHAR(64) DEFAULT '',
     contact VARCHAR(255) DEFAULT '' NOT NULL,
     received VARCHAR(128) DEFAULT NULL,
     path VARCHAR(255) DEFAULT NULL,
