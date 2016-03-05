@@ -32,11 +32,11 @@ CREATE TABLE b2b_entities (
 
 CREATE INDEX b2b_entities_param ON b2b_entities (param);
 
-INSERT INTO version (table_name, table_version) values ('b2b_logic','2');
+INSERT INTO version (table_name, table_version) values ('b2b_logic','3');
 CREATE TABLE b2b_logic (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     si_key CHAR(64) NOT NULL,
-    scenario CHAR(64) NOT NULL,
+    scenario CHAR(64),
     sstate INT(2) NOT NULL,
     next_sstate INT(2) NOT NULL,
     sparam0 CHAR(64),
@@ -47,12 +47,12 @@ CREATE TABLE b2b_logic (
     sdp TEXT(64),
     lifetime INT(10) DEFAULT 0 NOT NULL,
     e1_type INT(2) NOT NULL,
-    e1_sid CHAR(64) NOT NULL,
+    e1_sid CHAR(64),
     e1_from CHAR(128) NOT NULL,
     e1_to CHAR(128) NOT NULL,
     e1_key CHAR(64) NOT NULL,
     e2_type INT(2) NOT NULL,
-    e2_sid CHAR(64) NOT NULL,
+    e2_sid CHAR(64),
     e2_from CHAR(128) NOT NULL,
     e2_to CHAR(128) NOT NULL,
     e2_key CHAR(64) NOT NULL,

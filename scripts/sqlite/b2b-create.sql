@@ -32,11 +32,11 @@ CREATE TABLE b2b_entities (
 
 CREATE INDEX ORA_b2b_entities_param  ON b2b_entities (param);
 
-INSERT INTO version (table_name, table_version) values ('b2b_logic','2');
+INSERT INTO version (table_name, table_version) values ('b2b_logic','3');
 CREATE TABLE b2b_logic (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     si_key CHAR(64) NOT NULL,
-    scenario CHAR(64) NOT NULL,
+    scenario CHAR(64),
     sstate INTEGER NOT NULL,
     next_sstate INTEGER NOT NULL,
     sparam0 CHAR(64),
@@ -47,12 +47,12 @@ CREATE TABLE b2b_logic (
     sdp TEXT(64),
     lifetime INTEGER DEFAULT 0 NOT NULL,
     e1_type INTEGER NOT NULL,
-    e1_sid CHAR(64) NOT NULL,
+    e1_sid CHAR(64),
     e1_from CHAR(128) NOT NULL,
     e1_to CHAR(128) NOT NULL,
     e1_key CHAR(64) NOT NULL,
     e2_type INTEGER NOT NULL,
-    e2_sid CHAR(64) NOT NULL,
+    e2_sid CHAR(64),
     e2_from CHAR(128) NOT NULL,
     e2_to CHAR(128) NOT NULL,
     e2_key CHAR(64) NOT NULL,

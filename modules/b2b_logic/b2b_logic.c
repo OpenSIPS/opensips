@@ -48,7 +48,7 @@
 #include "b2b_load.h"
 #include "b2bl_db.h"
 
-#define TABLE_VERSION 2
+#define TABLE_VERSION 3
 
 /** Functions declarations */
 static int mod_init(void);
