@@ -521,23 +521,12 @@ static int fix_actions(struct action* a)
 			case SETFLAG_T:
 			case RESETFLAG_T:
 			case ISFLAGSET_T:
-				i = FLAG_TYPE_MSG;
-			case SETSFLAG_T:
-			case RESETSFLAG_T:
-			case ISSFLAGSET_T:
-
-				if (t->type == SETSFLAG_T || t->type == RESETSFLAG_T ||
-				    t->type == ISSFLAGSET_T) {
-
-					i = FLAG_TYPE_SCRIPT;
-				}
-
 				if (t->elem[0].type == NUMBER_ST) {
 					s.s = int2str((unsigned long)t->elem[0].u.number, &s.len);
-				    t->elem[0].u.number = fixup_flag(i, &s);
+				    t->elem[0].u.number = fixup_flag(FLAG_TYPE_MSG, &s);
 
 				} else if (t->elem[0].type == STR_ST) {
-					t->elem[0].u.number = fixup_flag(i, &t->elem[0].u.s);
+					t->elem[0].u.number = fixup_flag(FLAG_TYPE_MSG, &t->elem[0].u.s);
 
 				} else {
 					LM_CRIT("bad xxxflag() type %d\n", t->elem[0].type);

@@ -463,15 +463,6 @@ void print_action(struct action* t)
 		case ISBFLAGSET_T:
 				LM_GEN1(L_DBG, "isbflagset(");
 				break;
-		case SETSFLAG_T:
-				LM_GEN1(L_DBG, "setsflag(");
-				break;
-		case RESETSFLAG_T:
-				LM_GEN1(L_DBG, "resetsflag(");
-				break;
-		case ISSFLAGSET_T:
-				LM_GEN1(L_DBG, "issflagset(");
-				break;
 		case SET_HOST_T:
 				LM_GEN1(L_DBG, "sethost(");
 				break;

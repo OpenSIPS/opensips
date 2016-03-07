@@ -1023,19 +1023,6 @@ static int pv_get_bflags(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_strval(msg, param, res, &buf);
 }
 
-static int pv_get_sflags(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	str buf;
-
-	if (!msg)
-		return -1;
-
-	buf = bitmask_to_flag_list(FLAG_TYPE_SCRIPT, getsflags());
-
-	return pv_get_strval(msg, param, res, &buf);
-}
-
 static int pv_get_callid(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -3529,9 +3516,6 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0},
 	{{"Rp", (sizeof("Rp")-1)}, /* */
 		PVT_RCVPORT, pv_get_rcvport, 0,
-		0, 0, 0, 0},
-	{{"sf", (sizeof("sf")-1)}, /* */
-		PVT_SFLAGS, pv_get_sflags, 0,
 		0, 0, 0, 0},
 	{{"src_ip", (sizeof("src_ip")-1)}, /* */
 		PVT_SRCIP, pv_get_srcip, 0,

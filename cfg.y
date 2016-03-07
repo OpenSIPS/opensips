@@ -277,9 +277,6 @@ static struct multi_str *tmp_mod;
 %token SETBFLAG
 %token RESETBFLAG
 %token ISBFLAGSET
-%token SETSFLAG
-%token RESETSFLAG
-%token ISSFLAGSET
 %token METHOD
 %token URI
 %token FROM_URI
@@ -2106,21 +2103,6 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| ISFLAGSET LPAREN ID RPAREN {mk_action2( $$, ISFLAGSET_T,
 										STR_ST, 0, (void *)$3, 0 ); }
 		| ISFLAGSET error { $$=0; yyerror("missing '(' or ')'?"); }
-		| SETSFLAG LPAREN NUMBER RPAREN {mk_action2( $$, SETSFLAG_T, NUMBER_ST,
-										0, (void *)$3, 0 ); }
-		| SETSFLAG LPAREN ID RPAREN {mk_action2( $$, SETSFLAG_T, STR_ST,
-										0, (void *)$3, 0 ); }
-		| SETSFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| RESETSFLAG LPAREN NUMBER RPAREN {mk_action2( $$, RESETSFLAG_T,
-										NUMBER_ST, 0, (void *)$3, 0 ); }
-		| RESETSFLAG LPAREN ID RPAREN {mk_action2( $$, RESETSFLAG_T,
-										STR_ST, 0, (void *)$3, 0 ); }
-		| RESETSFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| ISSFLAGSET LPAREN NUMBER RPAREN {mk_action2( $$, ISSFLAGSET_T,
-										NUMBER_ST, 0, (void *)$3, 0 ); }
-		| ISSFLAGSET LPAREN ID RPAREN {mk_action2( $$, ISSFLAGSET_T,
-										STR_ST, 0, (void *)$3, 0 ); }
-		| ISSFLAGSET error { $$=0; yyerror("missing '(' or ')'?"); }
 		| SETBFLAG LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$,
 													SETBFLAG_T,
 													NUMBER_ST, NUMBER_ST,

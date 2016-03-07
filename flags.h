@@ -47,7 +47,6 @@ typedef unsigned int flag_t;
 
 enum flag_type {
 	FLAG_TYPE_MSG=0,
-	FLAG_TYPE_SCRIPT,
 	FLAG_TYPE_BRANCH,
 	FLAG_LIST_COUNT,
 };
@@ -85,11 +84,5 @@ int flag_list_to_bitmask(str *flags, enum flag_type type, char delim);
 
 unsigned int fixup_flag(int flag_type, str *flag_name);
 int get_flag_id_by_name(int flag_type, char *flag_name);
-
-int setsflagsval( unsigned int val );
-int setsflag( unsigned int mask );
-int resetsflag( unsigned int mask );
-int issflagset( unsigned int mask );
-unsigned int getsflags();
 
 #endif

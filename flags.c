@@ -217,11 +217,6 @@ int get_flag_id_by_name(int flag_type, char *flag_name)
 	return it->bit;
 }
 
-
-/*********************** script flags ****************************/
-
-static unsigned int sflags = 0;
-
 unsigned int fixup_flag(int flag_type, str *flag_name)
 {
 	int ret;
@@ -238,33 +233,3 @@ unsigned int fixup_flag(int flag_type, str *flag_name)
 
 	return ret;
 }
-
-int setsflagsval( unsigned int val )
-{
-	sflags = val;
-	return 1;
-}
-
-int setsflag( unsigned int mask )
-{
-	sflags |= mask;
-	return 1;
-}
-
-int resetsflag( unsigned int mask )
-{
-	sflags &= ~ mask;
-	return 1;
-}
-
-int issflagset( unsigned int mask )
-{
-	return ( sflags & mask) ? 1 : -1;
-}
-
-unsigned int getsflags(void)
-{
-	return sflags;
-}
-
-

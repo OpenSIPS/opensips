@@ -162,9 +162,6 @@ ISFLAGSET	isflagset
 SETBFLAG		"setbflag"|"setbranchflag"
 RESETBFLAG		"resetbflag"|"resetbranchflag"
 ISBFLAGSET		"isbflagset"|"isbranchflagset"
-SETSFLAG		"setsflag"|"setscriptflag"
-RESETSFLAG		"resetsflag"|"resetscriptflag"
-ISSFLAGSET		"issflagset"|"isscriptflagset"
 SET_HOST		"rewritehost"|"sethost"|"seth"
 SET_HOSTPORT	"rewritehostport"|"sethostport"|"sethp"
 SET_USER		"rewriteuser"|"setuser"|"setu"
@@ -431,9 +428,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{SETBFLAG}	{ count(); yylval.strval=yytext; return SETBFLAG; }
 <INITIAL>{RESETBFLAG}	{ count(); yylval.strval=yytext; return RESETBFLAG; }
 <INITIAL>{ISBFLAGSET}	{ count(); yylval.strval=yytext; return ISBFLAGSET; }
-<INITIAL>{SETSFLAG}	{ count(); yylval.strval=yytext; return SETSFLAG; }
-<INITIAL>{RESETSFLAG}	{ count(); yylval.strval=yytext; return RESETSFLAG; }
-<INITIAL>{ISSFLAGSET}	{ count(); yylval.strval=yytext; return ISSFLAGSET; }
 <INITIAL>{MSGLEN}	{ count(); yylval.strval=yytext; return MSGLEN; }
 <INITIAL>{ROUTE}	{ count(); yylval.strval=yytext; return ROUTE; }
 <INITIAL>{ROUTE_ONREPLY}	{ count(); yylval.strval=yytext;

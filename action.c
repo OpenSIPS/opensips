@@ -201,8 +201,6 @@ int run_top_route(struct action* a, struct sip_msg* msg)
 	rec_lev = 0;
 	init_err_info();
 
-	resetsflag( (unsigned int)-1 );
-
 	run_actions(a, msg);
 	ret = action_flags;
 
@@ -687,18 +685,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 		case ISFLAGSET_T:
 			script_trace("core", "isflagset", msg, a->file, a->line) ;
 			ret = isflagset( msg, a->elem[0].u.number );
-			break;
-		case SETSFLAG_T:
-			script_trace("core", "setsflag", msg, a->file, a->line) ;
-			ret = setsflag( a->elem[0].u.number );
-			break;
-		case RESETSFLAG_T:
-			script_trace("core", "resetsflag", msg, a->file, a->line) ;
-			ret = resetsflag( a->elem[0].u.number );
-			break;
-		case ISSFLAGSET_T:
-			script_trace("core", "issflagset", msg, a->file, a->line) ;
-			ret = issflagset( a->elem[0].u.number );
 			break;
 		case SETBFLAG_T:
 			script_trace("core", "setbflag", msg, a->file, a->line) ;
