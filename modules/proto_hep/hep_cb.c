@@ -42,6 +42,7 @@
 #include "hep_cb.h"
 
 extern int hep_version;
+extern int hep_ctx_idx;
 
 struct hep_cb_list {
 	hep_cb_t cb;
@@ -49,6 +50,11 @@ struct hep_cb_list {
 };
 
 struct hep_cb_list *cb_list=0;
+
+int get_hep_ctx_id(void)
+{
+	return hep_ctx_idx;
+}
 
 int register_hep_cb(hep_cb_t cb)
 {
@@ -120,6 +126,7 @@ int bind_proto_hep(proto_hep_api_t *api)
 
 	api->pack_hep        = pack_hep;
 	api->register_hep_cb = register_hep_cb;
+	api->get_hep_ctx_id  = get_hep_ctx_id;
 
 	return 0;
 }

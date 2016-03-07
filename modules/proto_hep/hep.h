@@ -32,6 +32,30 @@
 #define HEP_HEADER_ID_LEN (sizeof(HEP_HEADER_ID) - 1)
 
 #define HEP_SCRIPT_SKIP 0xFF
+#define HEP_MIN_INDEX 0x0001
+#define HEP_MAX_INDEX 0x0012
+
+#define HEP_IDENTIFIER 0x0fee0faa
+
+#define HEP_OPENSIPS_VENDOR_ID 0x0003
+
+enum hep_generic_chunks { HEP_PROTO_FAMILY=0x0001, HEP_PROTO_ID=0x0002,
+	HEP_IPV4_SRC=0x0003, HEP_IPV4_DST=0x0004, HEP_IPV6_SRC=0x0005,
+	HEP_IPV6_DST=0x0006, HEP_SRC_PORT=0x0007, HEP_DST_PORT=0x0008,
+	HEP_TIMESTAMP=0x0009, HEP_TIMESTAMP_US=0x000A, HEP_PROTO_TYPE=0x000B,
+	HEP_AGENT_ID=0x000C, HEP_KEEP_ALIVE=0x000D, HEP_AUTH_KEY=0x000E,
+	HEP_PAYLOAD=0x000F, HEP_COMPRESSED_PAYLOAD=0x0010,
+	HEP_CORRELATION_ID=0x0011, HEP_VLAN_ID=0x0012};
+
+#define HEP_STRUCT_CHUNKS ((1<<HEP_PROTO_FAMILY)|(1<<HEP_PROTO_ID)|           \
+		(1<<HEP_IPV4_SRC)|(1<<HEP_IPV4_DST)|(1<<HEP_IPV6_SRC)|                \
+		(1<<HEP_IPV6_DST)|(1<<HEP_SRC_PORT)|(1<<HEP_DST_PORT)|                \
+		(1<<HEP_TIMESTAMP)|(1<<HEP_TIMESTAMP_US)|(1<<HEP_PROTO_TYPE)|         \
+		(1<<HEP_AGENT_ID)|(1<<HEP_PAYLOAD)|(1<<HEP_COMPRESSED_PAYLOAD))
+
+#define CHUNK_IS_GENERIC(_cid) (_cid>=HEP_MIN_INDEX || _cid<=HEP_MAX_INDEX)
+
+#define CHUNK_IS_IN_HEPSTRUCT(_cid) ((1<<_cid)&HEP_STRUCT_CHUNKS)
 
 /* HEPv3 types */
 
@@ -151,6 +175,14 @@ struct hep_ip6hdr {
         struct in6_addr hp6_dst;        /* destination address */
 };
 
+typedef struct _generic_chunk {
+	hep_chunk_t chunk;
+	void* data; /* blob data */
+
+	struct _generic_chunk* next;
+} generic_chunk_t;
+
+
 
 struct hep_desc {
 	int version;
@@ -185,8 +217,15 @@ struct hep_desc {
 			} addr;
 
 			hep_chunk_payload_t payload_chunk;
+			generic_chunk_t* chunk_list;
 		} hepv3;
 	} u;
+};
+
+
+struct hep_context {
+	struct hep_desc h;
+	struct receive_info ri;
 };
 
 int pack_hep(union sockaddr_union* from_su, union sockaddr_union* to_su,
@@ -198,5 +237,6 @@ int unpack_hep(char *buf, int len, int version, struct hep_desc* h);
 
 typedef int (*pack_hep_t)(union sockaddr_union* from_su, union sockaddr_union* to_su,
 		int proto, char *payload, int plen, char **retbuf, int *retlen);
+typedef int (*get_hep_ctx_id_t)(void);
 #endif
 

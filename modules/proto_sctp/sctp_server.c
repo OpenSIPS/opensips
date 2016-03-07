@@ -193,7 +193,7 @@ int proto_sctp_read(struct socket_info *si, int* bytes_read)
 	}
 
 	/* receive_msg must free buf too!*/
-	receive_msg(buf, len, &ri);
+	receive_msg(buf, len, &ri, NULL);
 
 	return 0;
 }

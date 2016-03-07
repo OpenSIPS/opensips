@@ -96,7 +96,8 @@ unsigned int get_next_msg_no(void)
 /*! \note WARNING: buf must be 0 terminated (buf[len]=0) or some things might
  * break (e.g.: modules/textops)
  */
-int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
+int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
+		context_p existing_context)
 {
 	static context_p ctx = NULL;
 	struct sip_msg* msg;
@@ -107,6 +108,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 
 	in_buff.len = len;
 	in_buff.s = buf;
+	ctx = existing_context;
 
 	/* the raw processing callbacks can change the buffer,
 	further use in_buff.s and at the end try to free in_buff.s
@@ -172,8 +174,10 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		/* set request route type --bogdan*/
 		set_route_type( REQUEST_ROUTE );
 
-		/* prepare and set a new processing context for this request */
-		prepare_context( ctx, parse_error );
+		/* prepare and set a new processing context for this request only if
+		 * no context was set from the upper layers */
+		if (existing_context == NULL)
+			prepare_context( ctx, parse_error );
 		current_processing_ctx = ctx;
 
 		/* execute pre-script callbacks, if any;
@@ -213,8 +217,10 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		/* set reply route type --bogdan*/
 		set_route_type( ONREPLY_ROUTE );
 
-		/* prepare and set a new processing context for this reply */
-		prepare_context( ctx, parse_error );
+		/* prepare and set a new processing context for this reply only if
+		 * no context was set from the upper layers */
+		if (existing_context == NULL)
+			prepare_context( ctx, parse_error );
 		current_processing_ctx = ctx;
 
 		/* execute pre-script callbacks, if any ;

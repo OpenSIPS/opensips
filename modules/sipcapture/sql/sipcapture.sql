@@ -39,6 +39,7 @@ CREATE TABLE `sip_capture` (
   `originator_port` int(10) NOT NULL,
   `proto` int(5) NOT NULL,
   `family` int(1) DEFAULT NULL,
+  `proto_type` int(8) DEFAULT NULL,
   `rtp_stat` varchar(256) NOT NULL,
   `type` int(2) NOT NULL,
   `node` varchar(125) NOT NULL,

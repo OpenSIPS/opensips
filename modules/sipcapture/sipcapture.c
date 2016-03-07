@@ -41,6 +41,8 @@
 #include <sys/wait.h>
 #include "../proto_hep/hep.h"
 #include "../proto_hep/hep_cb.h"
+#include "../../context.h"
+#include "../../mod_fix.h"
 
 /* BPF structure */
 #ifdef __OS_linux
@@ -80,6 +82,18 @@
 #include "../../statistics.h"
 #endif
 
+/* this value shall be put in proto_reserved2 field of
+ * the receive_info structure and help us identify a
+ * hep message */
+#define HEPBUF_LEN (1<<14)
+
+#define LOWER_DWORD(_c1, _c2, _c3, _c4) (((_c1<<24)|(_c2<<16)|(_c3<<8)|_c4)|0x20202020)
+#define LOWER_WORD(_c1, _c2) (((_c1|0x20)<<8) | (_c2|0x20))
+#define LOWER_BYTE(_c1) (_c1|0x20)
+
+#define HEP_GET_CONTEXT(_api) \
+	(struct hep_context*)context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, _api.get_hep_ctx_id())
+
 struct _sipcapture_object {
 	str method;
 	str reply_reason;
@@ -112,6 +126,7 @@ struct _sipcapture_object {
 	int originator_port;
 	int proto;
 	int family;
+	int proto_type;
 	str rtp_stat;
 	int type;
 	long long tmstamp;
@@ -125,7 +140,7 @@ struct _sipcapture_object {
 #define ETHHDR 14 /* sizeof of ethhdr structure */
 #define EMPTY_STR(val) val.s=""; val.len=0;
 #define TABLE_LEN 256
-#define NR_KEYS 37
+#define NR_KEYS 38
 
 typedef void* sc_async_param_t;
 db_key_t db_keys[NR_KEYS];
@@ -153,6 +168,37 @@ static int db_async_store(db_val_t* db_vals,
 							async_resume_module **resume_f, void **resume_param);
 int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param);
 
+/* setter functions */
+static int set_hep_generic_fixup(void** param, int param_no);
+static int set_hep_fixup(void** param, int param_no);
+static int w_set_hep_generic(struct sip_msg* msg, char* id, char* data);
+static int w_set_hep(struct sip_msg* msg,  char* id, char* vid, char* data, char* type);
+
+/* getter functions */
+static int get_hep_fixup(void** param, int param_no);
+static int get_hep_generic_fixup(void** param, int param_no);
+static int
+w_get_hep(struct sip_msg* msg, char* type, char* id, char* vid, char* data);
+static int
+w_get_hep_generic(struct sip_msg* msg, char* id, char* vid, char* data);
+
+
+/* remove chunk functions */
+static int del_hep_fixup(void** param, int param_no);
+static int w_del_hep(struct sip_msg* msg, char *id);
+
+static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+
+static int
+set_generic_hep_chunk(struct hepv3* h3, unsigned chunk_id, str *data);
+
+
+
+static int pv_parse_hep_net_name(pv_spec_p sp, str *in);
+
+static int parse_hep_index(str *s_index);
+
 static str db_url		= {NULL, 0};
 static str table_name		= str_init("sip_capture");
 static str id_column		= str_init("id");
@@ -167,6 +213,8 @@ static str from_tag_column 	= str_init("from_tag");
 static str to_user_column 	= str_init("to_user");
 static str to_tag_column 	= str_init("to_tag");
 static str pid_user_column 	= str_init("pid_user");
+
+	/* FAMILY TYPE */
 static str contact_user_column 	= str_init("contact_user");
 static str auth_user_column 	= str_init("auth_user");
 static str callid_column 	= str_init("callid");
@@ -190,10 +238,52 @@ static str orig_port_column 	= str_init("originator_port");
 static str rtp_stat_column 	= str_init("rtp_stat");
 static str proto_column 	= str_init("proto");
 static str family_column 	= str_init("family");
+static str protot_column 	= str_init("proto_type");
 static str type_column 		= str_init("type");
 static str node_column 		= str_init("node");
 static str msg_column 		= str_init("msg");
 static str capture_node 	= str_init("homer01");
+/* hep pvar related */
+static str afinet_str    = str_init("AF_INET");
+static str afinet6_str   = str_init("AF_INET6");
+/* hep capture proto types */
+static str hep_net_protos[]={
+	/* want same index as in opensips enum */
+	{NULL, 0},
+	str_init("UDP"),
+	str_init("TCP"),
+	str_init("TLS"),
+	str_init("SCTP"),
+	str_init("WS"),
+	str_init("WSS"),
+	str_init("BIN"),
+	str_init("HEP"),
+	{NULL, 0}
+};
+
+static str hep_app_protos[]= {
+	str_init("reserved"),
+	str_init("SIP"),
+	str_init("XMPP"),
+	str_init("SDP"),
+	str_init("RTP"),
+	str_init("RTCP"),
+	str_init("MGCP"),
+	str_init("MEGACO(H.248)"),
+	str_init("M2UA(SS7/SIGTRAN)"),
+	str_init("M3UA(SS7/SIGTRAN)"),
+	str_init("IAX"),
+	str_init("H322"),
+	str_init("H321"),
+	{NULL, 0}
+};
+
+#define MAX_PAYLOAD 32767
+static char payload_buf[MAX_PAYLOAD];
+
+
+/* values to be set from script for hep pvar */
+
 
 
 #define MAX_QUERY 65535
@@ -260,16 +350,30 @@ db_con_t* db_con = 0; 		/*!< database connection */
 static db_ps_t sipcapture_ps = NULL;
 static query_list_t *ins_list = NULL;
 
-struct hep_timehdr* heptime;
-
 proto_hep_api_t hep_api;
 load_hep_f load_hep;
+
+
+static char hepbuf[HEPBUF_LEN];
+static str hep_str={hepbuf, 0};
 
 /*! \brief
  * Exported functions
  */
 static cmd_export_t cmds[] = {
 	{"sip_capture", (cmd_function)sip_capture, 0, 0, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"hep_set", (cmd_function)w_set_hep_generic, 2, set_hep_generic_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"hep_set", (cmd_function)w_set_hep, 4, set_hep_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"hep_get", (cmd_function)w_get_hep_generic, 3, get_hep_generic_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"hep_get", (cmd_function)w_get_hep, 4, get_hep_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"hep_get", (cmd_function)w_get_hep, 4, get_hep_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"hep_del", (cmd_function)w_del_hep, 1, del_hep_fixup, 0,
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -388,6 +492,15 @@ static dep_export_t deps = {
 	},
 };
 
+ /**
+ * pseudo-variables
+ */
+static pv_export_t mod_items[] = {
+	{{"hep_net", sizeof("hep_net")-1}, 1201, pv_get_hep_net, 0,
+		pv_parse_hep_net_name, 0, 0, 0},
+	{{0, 0}, 0, 0, 0, 0, 0, 0, 0}
+};
+
 /*! \brief module exports */
 struct module_exports exports = {
 	"sipcapture",
@@ -404,7 +517,7 @@ struct module_exports exports = {
 	0,          /*!< exported statistics */
 #endif
 	mi_cmds,    /*!< exported MI functions */
-	0,          /*!< exported pseudo-variables */
+	mod_items,          /*!< exported pseudo-variables */
 	procs,          /*!< extra processes */
 	mod_init,   /*!< module initialization function */
 	0,          /*!< response function */
@@ -455,10 +568,11 @@ static int mod_init(void) {
 	db_keys[30] = &orig_port_column;
 	db_keys[31] = &proto_column;
 	db_keys[32] = &family_column;
-	db_keys[33] = &rtp_stat_column;
-	db_keys[34] = &type_column;
-	db_keys[35] = &node_column;
-	db_keys[36] = &msg_column;
+	db_keys[33] = &protot_column;
+	db_keys[34] = &rtp_stat_column;
+	db_keys[35] = &type_column;
+	db_keys[36] = &node_column;
+	db_keys[37] = &msg_column;
 
 
 #ifdef STATISTICS
@@ -656,6 +770,1062 @@ error:
 }
 
 
+/*
+ * returns hep index as an integer from a string
+ */
+static int parse_hep_index(str *s_index)
+{
+	int p;
+	int index=0;
+	int hex_mode=0;
+	unsigned int dec_num;
+
+	if (s_index == NULL || s_index->s == NULL || s_index->len == 0) {
+		LM_ERR("null index!\n");
+		return -1;
+	}
+
+	if (!isdigit(s_index->s[0]))
+		return 0;
+
+	/* cut the '0x' in the beginning if exists */
+	if (s_index->len > 2 && s_index->s[0] == '0' && s_index->s[1] == 'x') {
+		s_index->s   += 2;
+		s_index->len -= 2;
+		hex_mode=1;
+	}
+
+	/**/
+	while (s_index->s[0] == '0')
+		(s_index->s++, s_index->len--);
+
+	/* decimal */
+	if (!hex_mode) {
+		if (str2int(s_index, &dec_num) < 0) {
+			LM_ERR("Chunk identifier begins with a digit "
+					"but it's not a valid number!\n");
+			return -1;
+		}
+
+		return dec_num;
+	}
+
+	for (p=0; p < s_index->len; p++) {
+		switch (s_index->s[p]) {
+			case 'a':
+			case 'A':
+				index = (index<<4) + 0xA;
+				break;
+			case 'b':
+			case 'B':
+				index = (index<<4) + 0xB;
+				break;
+			case 'c':
+			case 'C':
+				index = (index<<4) + 0xC;
+				break;
+			case 'd':
+			case 'D':
+				index = (index<<4) + 0xD;
+				break;
+			case 'e':
+			case 'E':
+				index = (index<<4) + 0xE;
+				break;
+			case 'f':
+			case 'F':
+				index = (index<<4) + 0xF;
+				break;
+			default:
+				if (s_index->s[p] >= '0' && s_index->s[p] <= '9') {
+					index = (index<<4) + (s_index->s[p] -'0');
+					break;
+				}
+
+				return -1;
+		}
+	}
+
+	return index==0?-1:index; /* index can't be 0 */
+
+}
+
+
+enum hep_state { STATE_NONE=0, SOURCE=1, DEST, PROTO, TIME, AG_ID, PLOAD};
+
+static int parse_hep_name(str *s_name, unsigned *chunk)
+{
+	#define CHECK_IS_VALID(_str, _pattern)                     \
+	do {                                                       \
+		if (_str.len < (sizeof(_pattern)-1))                   \
+			goto error;                                        \
+	} while(0);
+
+	int ret=0;
+	int p=0;
+	enum hep_state state=STATE_NONE;
+
+	str s;
+
+	if (s_name == NULL || s_name->s == NULL ||
+			s_name->len == 0 || chunk == NULL) {
+		LM_ERR("bad input!\n");
+		return -1;
+	}
+
+	str_trim_spaces_lr(*s_name);
+
+	ret=parse_hep_index(s_name);
+	if (ret<0) {
+		goto error;
+	} else if (ret > 0) {
+		*chunk=ret;
+		return 0;
+	} /* else it's a name; continue */
+
+	s = *s_name;
+	if (s.len < 4) {
+		LM_ERR("bad chunk name <%.*s>!\n", s_name->len, s_name->s);
+		return -1;
+	}
+
+	switch (LOWER_DWORD(s.s[0], s.s[1], s.s[2], s.s[3])) {
+		case LOWER_DWORD('p','r','o','t'):
+			state=PROTO;
+			break;
+		case LOWER_DWORD('s','r','c','_'):
+			state=SOURCE;
+			break;
+		case LOWER_DWORD('d','s','t','_'):
+			state=DEST;
+			break;
+		case LOWER_DWORD('t','i','m','e'):
+			state=TIME;
+			break;
+		case LOWER_DWORD('c','a','p','t'):
+			state=AG_ID;
+			break;
+		case LOWER_DWORD('p','a','y','l'):
+			state=PLOAD;
+			break;
+		default:
+			goto error;
+	}
+
+	p+=4;
+
+	switch (state) {
+		case PROTO:
+			/* we need at least 8 bytes protXXXX */
+			CHECK_IS_VALID(s, "protXXXX");
+
+			switch LOWER_DWORD(s.s[p], s.s[p+1], s.s[p+2], s.s[p+3]){
+			/*proto_family*/
+			case LOWER_DWORD('o','_','f','a'):
+				p+=4;
+				CHECK_IS_VALID(s, "proto_faXXXX");
+
+				if (LOWER_DWORD(s.s[p],s.s[p+1], s.s[p+2], s.s[p+3]) !=
+							LOWER_DWORD('m','i','l','y'))
+					goto error;
+
+				*chunk=HEP_PROTO_FAMILY;
+				break;
+
+			/* protocol id */
+			case LOWER_DWORD('o','_','i','d'):
+				*chunk=HEP_PROTO_ID;
+				break;
+
+			case LOWER_DWORD('o','_','t','y'):
+				p+=4;
+				CHECK_IS_VALID(s, "proto_tyXX");
+
+				if (LOWER_WORD(s.s[p],s.s[p+1]) != LOWER_WORD('p','e'))
+					goto error;
+				*chunk=HEP_PROTO_TYPE;
+				break;
+
+			default:
+				goto error;
+			}
+
+			break;
+		case SOURCE:
+			CHECK_IS_VALID(s, "src_XX");
+			switch LOWER_WORD(s.s[p], s.s[p+1]) {
+				case LOWER_WORD('i', 'p'):
+					*chunk=HEP_IPV4_SRC;
+					break;
+				case LOWER_WORD('p', 'o'):
+					CHECK_IS_VALID(s, "src_poXX");
+					p+=2;
+					if (LOWER_WORD(s.s[p], s.s[p+1]) != LOWER_WORD('r','t'))
+						goto error;
+
+					*chunk=HEP_SRC_PORT;
+					break;
+				default:
+					goto error;
+			}
+
+			break;
+		case DEST:
+			CHECK_IS_VALID(s, "dst_XX");
+			switch LOWER_WORD(s.s[p], s.s[p+1]) {
+				case LOWER_WORD('i', 'p'):
+					*chunk=HEP_IPV4_DST;
+					break;
+				case LOWER_WORD('p', 'o'):
+					CHECK_IS_VALID(s, "dst_poXX");
+					p+=2;
+					if (LOWER_WORD(s.s[p], s.s[p+1]) != LOWER_WORD('r','t'))
+						goto error;
+
+					*chunk=HEP_DST_PORT;
+					break;
+				default:
+					goto error;
+			}
+
+			break;
+		case TIME:
+			CHECK_IS_VALID(s, "timestamp");
+			if (s.len == sizeof("timestamp")-1 &&
+					!strncasecmp(s.s, "timestamp", s.len)) {
+				*chunk = HEP_TIMESTAMP;
+				break;
+			}
+
+			CHECK_IS_VALID(s, "timestampXXX");
+			if (s.len == sizeof("timestamp_us")-1 &&
+					!strncasecmp(s.s, "timestamp_us", s.len)) {
+				*chunk=HEP_TIMESTAMP_US;
+				break;
+			}
+
+			goto error;
+		case AG_ID:
+			CHECK_IS_VALID(s, "captXXXXXXXX");
+			if ((LOWER_DWORD(s.s[p], s.s[p+1], s.s[p+2], s.s[p+3])
+					!= LOWER_DWORD('a','g','e','n')) || (p+=4,0) ||
+				LOWER_DWORD(s.s[p], s.s[p+1], s.s[p+2], s.s[p+3])
+					!= LOWER_DWORD('t','_','i','d'))
+				goto error;
+
+			*chunk = HEP_AGENT_ID;
+			break;
+		case PLOAD:
+			CHECK_IS_VALID(s, "paylXXX");
+			if ((LOWER_WORD(s.s[p], s.s[p+1]) != LOWER_WORD('o', 'a')
+						|| s.s[p+2] != 'd'))
+				goto error;
+
+			*chunk = HEP_PAYLOAD;
+			break;
+		default:
+			goto error;
+	}
+
+	return 0;
+error:
+	LM_ERR("invalid hepvar name <%.*s>! parsed until <%.*s>!\n",
+		s_name->len, s_name->s, s_name->len-p, s_name->s+p);
+	return -1;
+
+#undef CHECK_IS_VALID
+}
+
+
+static int pv_parse_hep_net_name(pv_spec_p sp, str* in)
+{
+	pv_spec_p e;
+
+	unsigned id;
+
+	if (in==NULL || in->s == NULL || in->len == 0) {
+		LM_ERR("bad name!\n");
+		return -1;
+	}
+
+	str_trim_spaces_lr(*in);
+
+	if (in->s[0] != PV_MARKER) {
+		if (parse_hep_name(in, &id) < 0) {
+			LM_ERR("Invalid hep net name <%.*s>!\n", in->len, in->s);
+			return -1;
+		}
+
+		sp->pvp.pvn.type = PV_NAME_INTSTR;
+		sp->pvp.pvn.u.isname.name.n = id;
+		sp->pvp.pvn.u.isname.type = 0;
+	} else {
+		e = pkg_malloc(sizeof(pv_spec_p));
+		if (e==NULL) {
+			LM_ERR("no more pkg mem!\n");
+			return -1;
+		}
+
+		if (pv_parse_spec(in, e)==NULL) {
+			LM_ERR("invalid pvar!\n");
+			return -1;
+		}
+
+		sp->pvp.pvn.u.dname = (void *)e;
+		sp->pvp.pvn.type = PV_NAME_PVAR;
+	}
+
+	return 0;
+}
+
+
+static int get_hepvar_name(struct sip_msg *msg, pv_param_t *param,
+		unsigned int *chunk)
+{
+	pv_spec_p sp;
+	pv_value_t value;
+
+	if (param->pvn.type == PV_NAME_PVAR) {
+		sp = param->pvn.u.dname;
+		if (pv_get_spec_value(msg, sp, &value) < 0) {
+			LM_ERR("failed to get name pv value!\n");
+			return -1;
+		}
+
+		if (!(value.flags&PV_VAL_STR)) {
+			LM_ERR("invalid name!\n");
+			return -1;
+		}
+
+		if (parse_hep_name(&value.rs, chunk) < 0) {
+			LM_ERR("invalid name!\n");
+			return -1;
+		}
+	} else {
+		*chunk = param->pvn.u.isname.name.n;
+	}
+
+	return 0;
+}
+
+
+static int get_hep_chunk(struct hepv3* h3, unsigned int chunk_id,
+		pv_value_t *res)
+{
+	#define SET_PVAL_INT(__pval__, __ival__)    \
+	do {                                                   \
+		__pval__->flags = PV_VAL_STR|PV_VAL_INT;           \
+		__pval__->ri = __ival__;                           \
+		__pval__->rs.len +=                                \
+			snprintf(__pval__->rs.s + __pval__->rs.len,    \
+			HEPBUF_LEN, "%d", __ival__);  \
+	} while(0);
+
+	#define SET_PVAL_STR(__pval__, __sval__)    \
+	do {                                                   \
+		__pval__->flags = PV_VAL_STR;                     \
+		__pval__->rs.len +=                                \
+			snprintf(__pval__->rs.s + __pval__->rs.len,    \
+			HEPBUF_LEN, "%.*s", __sval__.len, __sval__.s); \
+	} while(0);
+
+
+	char addr[INET6_ADDRSTRLEN];
+
+	time_t time;
+
+	str addr_str;
+	str time_str;
+	str payload_str;
+	hep_str.len = 0;
+
+	res->rs    = hep_str;
+	res->flags = PV_VAL_STR;
+
+	switch (chunk_id) {
+	/* ip family */
+	case HEP_PROTO_FAMILY:
+		if (h3->hg.ip_family.chunk.length == 0)
+			goto chunk_not_set;
+
+		if (h3->hg.ip_family.data == AF_INET) {
+			SET_PVAL_STR(res, afinet_str);
+		} else {
+			SET_PVAL_STR(res, afinet6_str);
+		}
+
+		break;
+	/* ip protocol id */
+	case HEP_PROTO_ID:
+		if (h3->hg.ip_proto.chunk.length == 0)
+			goto chunk_not_set;
+
+		if (h3->hg.ip_proto.data<PROTO_UDP || h3->hg.ip_proto.data>PROTO_WS) {
+			LM_ALERT("Invalid proto!Probably a new one was added %d\n",
+					h3->hg.ip_proto.data);
+			return -1;
+		}
+		SET_PVAL_STR(res, hep_net_protos[h3->hg.ip_proto.data]);
+
+		break;
+	/* ipv4/6 source
+	 * no difference between ipv4/ipv6 from script level; it only returns
+	 * the address it the format that it is */
+	case HEP_IPV4_SRC:
+	case HEP_IPV6_SRC:
+		if (h3->hg.ip_family.data == AF_INET) {
+			if (h3->addr.ip4_addr.src_ip4.chunk.length == 0)
+				goto chunk_not_set;
+
+			if (inet_ntop(AF_INET, &h3->addr.ip4_addr.src_ip4.data,
+						addr, INET_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+		} else {
+			if (h3->addr.ip6_addr.src_ip6.chunk.length == 0)
+				goto chunk_not_set;
+
+			if (inet_ntop(AF_INET6, &h3->addr.ip6_addr.src_ip6.data,
+						addr, INET6_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+		}
+
+		addr_str.s = addr;
+		addr_str.len = strlen(addr);
+
+		SET_PVAL_STR(res, addr_str);
+
+		break;
+	/* ipv4/6 dest */
+	case HEP_IPV4_DST:
+	case HEP_IPV6_DST:
+		if (h3->hg.ip_family.data == AF_INET) {
+			if (h3->addr.ip4_addr.dst_ip4.chunk.length == 0)
+				goto chunk_not_set;
+
+			if (inet_ntop(AF_INET, &h3->addr.ip4_addr.dst_ip4.data,
+						addr, INET_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+		} else {
+			if (h3->addr.ip6_addr.dst_ip6.chunk.length == 0)
+				goto chunk_not_set;
+
+			if (inet_ntop(AF_INET6, &h3->addr.ip6_addr.dst_ip6.data,
+						addr, INET6_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+		}
+
+		addr_str.s = addr;
+		addr_str.len = strlen(addr);
+
+		SET_PVAL_STR(res, addr_str);
+
+		break;
+	/* ipv6 source */
+	/* source port */
+	case HEP_SRC_PORT:
+		if (h3->hg.src_port.chunk.length == 0)
+			goto chunk_not_set;
+
+
+		SET_PVAL_INT(res, h3->hg.src_port.data);
+
+		break;
+	/* destination port */
+	case HEP_DST_PORT:
+		if (h3->hg.dst_port.chunk.length == 0)
+			goto chunk_not_set;
+
+		SET_PVAL_INT(res, h3->hg.dst_port.data);
+
+		break;
+	/* timestamp */
+	case HEP_TIMESTAMP:
+		if (h3->hg.time_sec.chunk.length == 0)
+			goto chunk_not_set;
+
+		time = h3->hg.time_sec.data;
+		time_str.s = ctime(&time);
+		time_str.len = strlen(time_str.s)-1;
+
+		SET_PVAL_STR(res, time_str);
+
+		break;
+	/* timestamp us offset */
+	case HEP_TIMESTAMP_US:
+		if (h3->hg.time_usec.chunk.length == 0)
+			goto chunk_not_set;
+
+		SET_PVAL_INT(res, h3->hg.time_usec.data);
+
+		break;
+	/*  proto type (SIP, ...) */
+	case HEP_PROTO_TYPE:
+		if (h3->hg.proto_t.chunk.length == 0)
+			goto chunk_not_set;
+
+		if (h3->hg.proto_t.data < 0 || h3->hg.proto_t.data >
+				sizeof(hep_app_protos)-1) {
+			LM_ALERT("Invalid proto!Probably a new one was added %d\n",
+					h3->hg.ip_proto.data);
+		}
+
+		SET_PVAL_STR(res, hep_app_protos[h3->hg.proto_t.data]);
+
+		break;
+	/* capture agent id */
+	case HEP_AGENT_ID:
+		if (h3->hg.capt_id.chunk.length == 0)
+			goto chunk_not_set;
+
+		SET_PVAL_INT(res, h3->hg.capt_id.data);
+
+		break;
+	/* payload */
+	case HEP_PAYLOAD:
+	case HEP_COMPRESSED_PAYLOAD/* gzipped payload */:
+		if (h3->payload_chunk.chunk.length == 0)
+			goto chunk_not_set;
+
+
+		payload_str.s = h3->payload_chunk.data;
+		payload_str.len = h3->payload_chunk.chunk.length
+							- sizeof(hep_chunk_t);
+		SET_PVAL_STR(res, payload_str);
+
+		break;
+
+	}
+
+	return 0;
+
+chunk_not_set:
+	LM_DBG("generic chunk <%d> not set!\n", chunk_id);
+	return -1;
+
+	#undef SET_PVAL_STR
+	#undef SET_PVAL_INT
+}
+
+static int del_hep_chunk(struct hepv3* h3, unsigned int chunk_id)
+{
+
+	switch (chunk_id) {
+	/* ip family */
+	case HEP_PROTO_FAMILY:
+
+		h3->hg.ip_family.chunk.length = 0;
+
+		break;
+	/* ip protocol id */
+	case HEP_PROTO_ID:
+
+		h3->hg.ip_proto.chunk.length = 0;
+
+		break;
+	case HEP_IPV4_SRC:
+	case HEP_IPV6_SRC:
+		if (h3->hg.ip_family.data == AF_INET)
+			h3->addr.ip4_addr.src_ip4.chunk.length = 0;
+		else
+			h3->addr.ip6_addr.src_ip6.chunk.length = 0;
+
+		break;
+	/* ipv4/6 dest */
+	case HEP_IPV4_DST:
+	case HEP_IPV6_DST:
+		if (h3->hg.ip_family.data == AF_INET)
+			h3->addr.ip4_addr.dst_ip4.chunk.length = 0;
+		else
+			h3->addr.ip6_addr.dst_ip6.chunk.length = 0;
+
+		break;
+	/* ipv6 source */
+	/* source port */
+	case HEP_SRC_PORT:
+		h3->hg.src_port.chunk.length = 0;
+
+		break;
+	/* destination port */
+	case HEP_DST_PORT:
+		h3->hg.dst_port.chunk.length = 0;
+
+		break;
+	/* timestamp */
+	case HEP_TIMESTAMP:
+		h3->hg.time_sec.chunk.length = 0;
+
+		break;
+	/* timestamp us offset */
+	case HEP_TIMESTAMP_US:
+		h3->hg.time_usec.chunk.length = 0;
+
+		break;
+	/*  proto type (SIP, ...) */
+	case HEP_PROTO_TYPE:
+		h3->hg.proto_t.chunk.length = 0;
+
+		break;
+	/* capture agent id */
+	case HEP_AGENT_ID:
+		h3->hg.capt_id.chunk.length = 0;
+
+		break;
+	/* payload */
+	case HEP_PAYLOAD:
+	case HEP_COMPRESSED_PAYLOAD/* gzipped payload */:
+		h3->payload_chunk.chunk.length = 0;
+
+		break;
+	}
+
+	return 1;
+}
+
+
+
+
+static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	#define SET_PVAL_INT(__pval__, __ival__)    \
+	do {                                                   \
+		__pval__->flags = PV_VAL_STR|PV_VAL_INT;           \
+		__pval__->ri = __ival__;                           \
+		__pval__->rs.len +=                                \
+			snprintf(__pval__->rs.s + __pval__->rs.len,    \
+			HEPBUF_LEN, "%d", __ival__);  \
+	} while(0);
+
+	#define SET_PVAL_STR(__pval__, __sval__)    \
+	do {                                                   \
+		__pval__->flags = PV_VAL_STR;                     \
+		__pval__->rs.len +=                                \
+			snprintf(__pval__->rs.s + __pval__->rs.len,    \
+			HEPBUF_LEN, "%.*s", __sval__.len, __sval__.s); \
+	} while(0);
+
+
+	char addr[INET6_ADDRSTRLEN];
+	unsigned net_info_type;
+
+	struct hep_context *ctx;
+	struct receive_info *ri;
+
+	str addr_str;
+
+	if (msg == NULL)
+	{
+		LM_ERR("invalid message!\n");
+		return -1;
+	}
+
+	ctx = HEP_GET_CONTEXT(hep_api);
+	if (ctx == NULL) {
+		LM_ERR("Hep context not there!");
+		return -1;
+	}
+
+	if (ctx->h.version != 3) {
+		LM_ERR("hep version 3 or more required for all hep variables!\n");
+		return -1;
+	}
+
+	ri = &ctx->ri;
+
+	if (get_hepvar_name(msg, param, &net_info_type) < 0) {
+		LM_ERR("failed to get variable index/name!\n");
+		return -1;
+	}
+
+	if (net_info_type < HEP_PROTO_FAMILY || net_info_type > HEP_DST_PORT) {
+		LM_ERR("Invalid hep net var name!\n");
+		return -1;
+	}
+
+
+	hep_str.len = 0;
+	memset(hep_str.s, 0, HEPBUF_LEN);
+
+	res->rs    = hep_str;
+	res->flags = PV_VAL_STR;
+
+
+	/* FIXME TODO FIXME TODO replace with recieve_info from extended hep struct */
+	switch (net_info_type) {
+	/* ip family */
+	case HEP_PROTO_FAMILY:
+		if (ri->src_ip.af == AF_INET) {
+			SET_PVAL_STR(res, afinet_str);
+		} else {
+			SET_PVAL_STR(res, afinet6_str);
+		}
+		break;
+	/* ip protocol id */
+	case HEP_PROTO_ID:
+		if (ri->proto < PROTO_UDP || ri->proto >= PROTO_OTHER) {
+			LM_ALERT("Invalid proto!Maybe a new one was added %d\n",
+					ri->proto);
+			return -1;
+		}
+		SET_PVAL_STR(res, hep_net_protos[ri->proto]);
+
+		break;
+	/* ipv4 source */
+	case HEP_IPV4_SRC:
+	case HEP_IPV6_SRC:
+		if (ri->src_ip.af == AF_INET) {
+			if (inet_ntop(AF_INET, &ri->src_ip.u.addr,
+					addr, INET_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+		} else {
+			if (inet_ntop(AF_INET6, &ri->src_ip.u.addr,
+					addr, INET6_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+		}
+
+		addr_str.s = addr;
+		addr_str.len = strlen(addr);
+
+		SET_PVAL_STR(res, addr_str);
+
+		break;
+	/* ipv4 dest */
+	case HEP_IPV4_DST:
+	case HEP_IPV6_DST:
+		if (ri->dst_ip.af == AF_INET) {
+			if (inet_ntop(AF_INET, &ri->dst_ip.u.addr,
+						addr, INET_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+		} else {
+			if (inet_ntop(AF_INET6, &ri->dst_ip.u.addr,
+						addr, INET6_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+		}
+
+		addr_str.s = addr;
+		addr_str.len = strlen(addr);
+
+		SET_PVAL_STR(res, addr_str);
+
+		break;
+	/* source port */
+	case HEP_SRC_PORT:
+		SET_PVAL_INT(res, ri->src_port);
+
+		break;
+	/* destination port */
+	case HEP_DST_PORT:
+		SET_PVAL_INT(res, ri->dst_port);
+
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+
+	#undef SET_PVAL_STR
+	#undef SET_PVAL_INT
+}
+
+static int
+set_generic_hep_chunk(struct hepv3* h3, unsigned chunk_id, str *data)
+{
+	#define CHECK_LEN(_str, _len, _fail_fmt, ...)        \
+		do {                                                    \
+			if (_str->len < _len) {                              \
+				LM_ERR("invalid "#_fail_fmt, __VA_ARGS__);      \
+				return -1;                                      \
+			}                                                   \
+		} while(0);
+
+	#define CHECK_PROTO_LEN(_str, _len) CHECK_LEN(_str, _len,   \
+			"invalid protocol <%.*s>!\n", _str->len, _str->s);
+
+	#define CHECK_PROTOT_LEN(_str, _len) CHECK_LEN(_str, _len,   \
+			"invalid prot_t <%.*s>!\n", _str->len, _str->s);
+
+	#define RETURN_ERROR(_format, ...)                          \
+	    do {                                                    \
+			LM_ERR(_format, __VA_ARGS__);                       \
+			return -1;                                          \
+		} while (0);
+
+	unsigned int port;
+	unsigned int capture_id;
+
+
+	switch (chunk_id) {
+	/* ip family - this can't be set; it will be automatically set
+	 * if you change ip addresses */
+	case HEP_PROTO_FAMILY:
+		h3->hg.ip_family.chunk.length = sizeof(hep_chunk_uint8_t);
+
+		LM_DBG("Proto family can't be set!"
+			" It shall be automatically updated when you change addresses!\n");
+
+		return 0;
+	/* ip protocol id */
+	case HEP_PROTO_ID:
+		/** possible values(string)
+		 * UDP
+		 * TCP
+		 * TLS
+		 * SCTP
+		 * WS
+		 */
+		h3->hg.ip_proto.chunk.length = sizeof(hep_chunk_uint8_t);
+
+		CHECK_PROTO_LEN(data, 2);
+
+		switch (LOWER_WORD(data->s[0], data->s[1])) {
+			case LOWER_WORD('u','d'):
+				CHECK_PROTO_LEN(data, 3);
+				if (LOWER_BYTE(data->s[2]) != 'p')
+					RETURN_ERROR("invalid proto %.*s\n", data->len, data->s);
+
+				h3->hg.ip_proto.data = PROTO_UDP;
+				break;
+			case LOWER_WORD('t','c'):
+				CHECK_PROTO_LEN(data, 3);
+				if (LOWER_BYTE(data->s[2]) != 'p')
+					RETURN_ERROR("invalid proto %.*s\n", data->len, data->s);
+
+				h3->hg.ip_proto.data = PROTO_TCP;
+				break;
+			case LOWER_WORD('t','l'):
+				if (LOWER_BYTE(data->s[2]) != 's')
+					RETURN_ERROR("invalid proto %.*s\n", data->len, data->s);
+
+				h3->hg.ip_proto.data = PROTO_TLS;
+				break;
+			case LOWER_WORD('s','c'):
+				if (LOWER_WORD(data->s[2], data->s[3]) != LOWER_WORD('t', 'p'))
+					RETURN_ERROR("invalid proto %.*s\n", data->len, data->s);
+
+				h3->hg.ip_proto.data = PROTO_SCTP;
+				break;
+			case LOWER_WORD('w','s'):
+				h3->hg.ip_proto.data = PROTO_WS;
+				break;
+			default:
+				LM_ERR("invalid protocol <%.*s>!\n", data->len, data->s);
+				return -1;
+		}
+		break;
+	/* ipv4 source */
+	case HEP_IPV4_SRC:
+	case HEP_IPV6_SRC:
+		/** possible values(string)
+		 * ip address in human readable format
+		 */
+		if (inet_pton(AF_INET, data->s, &h3->addr.ip4_addr.src_ip4.data) == 0) {
+			/* check if it's ipV6*/
+			if (inet_pton(AF_INET6, data->s, &h3->addr.ip6_addr.src_ip6.data) == 0) {
+				RETURN_ERROR("address <<%.*s>> it's neither IPv4 nor IPv6!\n",
+							data->len, data->s);
+			} else {
+				/* it's IPv6 change ip family*/
+				if (h3->hg.ip_family.data == AF_INET) {
+					LM_DBG("You changed source address in hep header to IPv6!"
+					" You also have to change destination IP in order to work!\n");
+					h3->hg.ip_family.data = AF_INET6;
+				}
+				h3->addr.ip6_addr.src_ip6.chunk.length = sizeof(hep_chunk_ip6_t);
+
+			}
+		} else {
+			if (h3->hg.ip_family.data == AF_INET6) {
+				LM_DBG("You changed source address in hep header to IPv6!"
+					" You also have to change destination IP in order to work!\n");
+				h3->hg.ip_family.data = AF_INET;
+			}
+			h3->addr.ip4_addr.src_ip4.chunk.length = sizeof(hep_chunk_ip4_t);
+		}
+
+		break;
+	/* ipv4 dest */
+	case HEP_IPV4_DST:
+	case HEP_IPV6_DST:
+		/** possible values(string)
+		 * ip address in human readable format
+		 */
+		if (inet_pton(AF_INET, data->s, &h3->addr.ip4_addr.dst_ip4.data) == 0) {
+			/* check if it's ipV6*/
+			if (inet_pton(AF_INET6, data->s, &h3->addr.ip6_addr.dst_ip6.data) == 0) {
+				RETURN_ERROR("address <<%.*s>> it's neither IPv4 nor IPv6!\n",
+							data->len, data->s);
+			} else {
+				/* it's IPv6 change ip family*/
+				if (h3->hg.ip_family.data == AF_INET) {
+					LM_DBG("You changed source address in hep header to IPv6!"
+					" You also have to change destination IP in order to work!\n");
+					h3->hg.ip_family.data = AF_INET6;
+				}
+				h3->addr.ip6_addr.dst_ip6.chunk.length = sizeof(hep_chunk_ip6_t);
+
+			}
+		} else {
+			if (h3->hg.ip_family.data == AF_INET6) {
+				LM_DBG("You changed source address in hep header to IPv6!"
+					" You also have to change destination IP in order to work!\n");
+				h3->hg.ip_family.data = AF_INET;
+			}
+			h3->addr.ip4_addr.dst_ip4.chunk.length = sizeof(hep_chunk_ip4_t);
+		}
+
+		break;
+	/* source port */
+	case HEP_SRC_PORT:
+		/** possible values(string/int)
+		 * valid port
+		 */
+		if (str2int(data, &port) < 0)
+			RETURN_ERROR("invalid port <%.*s>!\n", data->len, data->s);
+
+		if (port > 65535)
+			RETURN_ERROR("port not in range <%d>!\n", port);
+
+		h3->hg.src_port.data = port;
+		h3->hg.src_port.chunk.length = sizeof(hep_chunk_uint16_t);
+
+		break;
+	/* destination port */
+	case HEP_DST_PORT:
+		/** possible values(string/int)
+		 * valid port
+		 */
+		if (str2int(data, &port) < 0)
+			RETURN_ERROR("invalid port <%.*s>!\n", data->len, data->s);
+
+		if (port > 65535)
+			RETURN_ERROR("port not in range <%d>!\n", port);
+
+		h3->hg.dst_port.data = port;
+		h3->hg.dst_port.chunk.length = sizeof(hep_chunk_uint16_t);
+
+		break;
+	case HEP_TIMESTAMP:
+	case HEP_TIMESTAMP_US:
+		LM_WARN("Timestamp can't be set!\n");
+		return 0;
+	case HEP_PROTO_TYPE:
+		/** possible values(string)
+		 * SIP | XMPP | SDP | RTP | RTCP | MGCP | MEGACO
+		 * | M2UA | M3UA | IAX | H322 | H321
+		 */
+
+		h3->hg.proto_t.chunk.length = sizeof(hep_chunk_uint8_t);
+
+		CHECK_PROTOT_LEN(data, 3);
+
+		switch (LOWER_DWORD(data->s[0], data->s[1], data->s[2],
+					((data->len > 3) ? data->s[3] : 0))) {
+			case LOWER_DWORD('s','i','p',0):
+				h3->hg.proto_t.data = 0x01;
+				break;
+			case LOWER_DWORD('x','m','p','p'):
+				h3->hg.proto_t.data = 0x02;
+				break;
+			case LOWER_DWORD('s','d','p',0):
+				h3->hg.proto_t.data = 0x03;
+				break;
+			case LOWER_DWORD('r','t','p',0):
+				h3->hg.proto_t.data = 0x04;
+				break;
+			case LOWER_DWORD('r','t','c','p'):
+				h3->hg.proto_t.data = 0x05;
+				break;
+			case LOWER_DWORD('m','g','c','p'):
+				h3->hg.proto_t.data = 0x06;
+				break;
+			case LOWER_DWORD('m','e','g','a'):
+				CHECK_PROTOT_LEN(data, 6)
+				if ((LOWER_BYTE(data->s[4]) != 'c'
+							&& LOWER_BYTE(data->s[5]) != 'o'))
+						RETURN_ERROR("invalid prot_t type <%.*s>!\n",
+										data->len, data->s);
+				h3->hg.proto_t.data = 0x07;
+				break;
+			case LOWER_DWORD('m','2','u','a'):
+				h3->hg.proto_t.data = 0x08;
+				break;
+			case LOWER_DWORD('m','3','u','a'):
+				h3->hg.proto_t.data = 0x09;
+				break;
+			case LOWER_DWORD('i','a','x',0):
+				h3->hg.proto_t.data = 0x0A;
+				break;
+			case LOWER_DWORD('h','3','2','2'):
+				h3->hg.proto_t.data = 0x0B;
+				break;
+			case LOWER_DWORD('h','3','2','1'):
+				h3->hg.proto_t.data = 0x0C;
+				break;
+			default:
+				RETURN_ERROR("invalid prot_t type <%.*s>!\n",
+									data->len, data->s);
+		}
+
+		break;
+	/* capture agent id */
+	case HEP_AGENT_ID:
+		/* DATA here */
+		if (str2int(data, &capture_id) < 0)
+			RETURN_ERROR("invalid capture id <%.*s>!\n",
+										data->len, data->s);
+
+		h3->hg.capt_id.data = capture_id;
+		h3->hg.capt_id.chunk.length = sizeof(hep_chunk_uint32_t);
+
+		break;
+	/* payload */
+	case HEP_PAYLOAD:
+	case HEP_COMPRESSED_PAYLOAD:
+		if (data->len>MAX_PAYLOAD) {
+			LM_ERR("payload too big! Might be a message from an attacker!\n");
+			return -1;
+		}
+
+		memcpy(payload_buf, data->s, data->len);
+		h3->payload_chunk.data = payload_buf;
+		h3->payload_chunk.chunk.length = data->len + sizeof(hep_chunk_t);
+
+		break;
+	/* internal correlation id */
+	case HEP_CORRELATION_ID:
+		LM_WARN("not implemented yet!won't set\n");
+		break;
+	/* vlan ID */
+	}
+
+	return 1;
+
+	#undef CHECK_LEN
+	#undef PROTO_LEN
+	#undef PROTOT_LEN
+	#undef RETURN_ERROR
+
+}
+
+
+
 int extract_host_port(void)
 {
 	if(raw_socket_listen.len) {
@@ -667,9 +1837,9 @@ int extract_host_port(void)
 			 p1++;
 			 p2=p1;
 			 if((p2 = strrchr(p2, '-')) != 0 ) {
-			 	p2++;
-			 	moni_port_end = atoi(p2);
-			 	p1[strlen(p1)-strlen(p2)-1]='\0';
+				p2++;
+				moni_port_end = atoi(p2);
+				p1[strlen(p1)-strlen(p2)-1]='\0';
 			 }
 			 moni_port_start = atoi(p1);
 			 raw_socket_listen.len = strlen(raw_socket_listen.s);
@@ -684,12 +1854,12 @@ static int child_init(int rank)
 {
 
 	if (rank==PROC_MAIN || rank==PROC_TCP_MAIN)
-	            return 0; /* do nothing for the main process */
+			return 0; /* do nothing for the main process */
 
-        if (db_url.s)
-	          return sipcapture_db_init(&db_url);
+	if (db_url.s)
+	  return sipcapture_db_init(&db_url);
 
-        LM_ERR("db_url is empty\n");
+	LM_ERR("db_url is empty\n");
 
 	return 0;
 }
@@ -698,57 +1868,49 @@ static int child_init(int rank)
 int sipcapture_db_init(const str* db_url) {
 
 
-        if(db_funcs.init == 0) {
-                LM_CRIT("null dbf\n");
-                goto error;
-        }
+	if(db_funcs.init == 0) {
+		LM_CRIT("null dbf\n");
+		goto error;
+	}
 
-        db_con = db_funcs.init(db_url);
-        if (!db_con) {
-                LM_ERR("unable to connect database\n");
-                return -1;
-        }
+	db_con = db_funcs.init(db_url);
+	if (!db_con) {
+		LM_ERR("unable to connect database\n");
+		return -1;
+	}
 
-        if (db_funcs.use_table(db_con, &table_name) < 0) {
-                LM_ERR("use_table failed\n");
-                return -1;
-        }
+	if (db_funcs.use_table(db_con, &table_name) < 0) {
+		LM_ERR("use_table failed\n");
+		return -1;
+	}
 
-        heptime = (struct hep_timehdr*)pkg_malloc(sizeof(struct hep_timehdr));
-        if(heptime==NULL) {
-                LM_ERR("no more pkg memory left\n");
-                return -1;
-        }
-
-
-        return 0;
+	return 0;
 
 error:
-        return -1;
+	return -1;
 }
 
 void sipcapture_db_close(void)
 {
-        if (db_con && db_funcs.close){
-                db_funcs.close(db_con);
-                db_con=0;
-        }
+	if (db_con && db_funcs.close){
+		db_funcs.close(db_con);
+		db_con=0;
+	}
 
-        if(heptime) pkg_free(heptime);
 }
 
 static void raw_socket_process(int rank)
 {
 	if (sipcapture_db_init(&db_url) < 0 ){
-                LM_ERR("unable to open database connection\n");
-                return;
-        }
+			LM_ERR("unable to open database connection\n");
+			return;
+		}
 
 	raw_capture_rcv_loop(raw_sock_desc, moni_port_start, moni_port_end,
 			moni_capture_on ? 0 : 1);
 
 	/* Destroy DB socket */
-        sipcapture_db_close();
+		sipcapture_db_close();
 }
 
 
@@ -781,7 +1943,7 @@ static void destroy(void)
 			lock_destroy(&query_lock);
 		}
 
-		shm_free(async_query);
+	shm_free(async_query);
 	}
 
 	/* Destroy DB socket */
@@ -813,128 +1975,12 @@ destroy_continue:
 int hep_msg_received(struct hep_desc *h, struct receive_info *ri)
 {
 
-	char ip_family;
-	unsigned char proto;
-	unsigned short sport, dport;
-	struct ip_addr dst_ip, src_ip;
-
 	struct sip_msg msg;
 
 	if(!hep_capture_on) {
 		LM_ERR("HEP is not enabled\n");
 		return 0;
 	}
-
-	switch (h->version) {
-		case 1:
-		case 2:
-			ip_family = h->u.hepv12.hdr.hp_f;
-			proto	  = h->u.hepv12.hdr.hp_p;
-			dport	  = h->u.hepv12.hdr.hp_dport;
-			sport	  = h->u.hepv12.hdr.hp_sport;
-
-			switch (ip_family) {
-				case AF_INET:
-					dst_ip.af  = src_ip.af  = AF_INET;
-					dst_ip.len = src_ip.len = 4;
-
-					memcpy(&dst_ip.u.addr,
-								&h->u.hepv12.addr.hep_ipheader.hp_dst, 4);
-					memcpy(&src_ip.u.addr,
-								&h->u.hepv12.addr.hep_ipheader.hp_src, 4);
-
-					break;
-
-				case AF_INET6:
-					dst_ip.af  = src_ip.af  = AF_INET6;
-					dst_ip.len = src_ip.len = 16;
-
-					memcpy(&dst_ip.u.addr,
-								&h->u.hepv12.addr.hep_ip6header.hp6_dst, 16);
-					memcpy(&src_ip.u.addr,
-								&h->u.hepv12.addr.hep_ip6header.hp6_src, 16);
-
-					break;
-
-				default:
-					LM_ERR("unsupported family [%d]\n", ip_family);
-					return -1;
-			}
-
-			/* timestamp and capture id */
-			if (h->version == 2) {
-				heptime->tv_sec  = h->u.hepv12.hep_time.tv_sec;
-				heptime->tv_usec = h->u.hepv12.hep_time.tv_usec;
-				heptime->captid  = h->u.hepv12.hep_time.captid;
-			}
-
-			break;
-
-		case 3:
-			ip_family = h->u.hepv3.hg.ip_family.data;
-			proto	  = h->u.hepv3.hg.ip_proto.data;
-			dport	  = h->u.hepv3.hg.dst_port.data;
-			sport     = h->u.hepv3.hg.src_port.data;
-
-			switch (ip_family) {
-				case AF_INET:
-					dst_ip.af  = src_ip.af  = AF_INET;
-					dst_ip.len = src_ip.len = 4;
-
-					memcpy(&dst_ip.u.addr,
-								&h->u.hepv3.addr.ip4_addr.dst_ip4.data, 4);
-					memcpy(&src_ip.u.addr,
-								&h->u.hepv3.addr.ip4_addr.src_ip4.data, 4);
-
-					break;
-
-				case AF_INET6:
-					dst_ip.af  = src_ip.af  = AF_INET6;
-					dst_ip.len = src_ip.len = 16;
-
-					memcpy(&dst_ip.u.addr,
-								&h->u.hepv3.addr.ip6_addr.dst_ip6.data, 16);
-					memcpy(&src_ip.u.addr,
-								&h->u.hepv3.addr.ip6_addr.src_ip6.data, 16);
-
-					break;
-
-				default:
-					LM_ERR("unsupported family [%d]\n", ip_family);
-					return -1;
-			}
-
-			/* timestamp and capture id */
-			heptime->tv_sec  = h->u.hepv3.hg.time_sec.data;
-			heptime->tv_usec = h->u.hepv3.hg.time_usec.data;
-			heptime->captid  = h->u.hepv3.hg.capt_id.data;
-
-			break;
-
-		default:
-			LM_ERR("unknown hep proto [%d]\n", h->version);
-			return -1;
-	}
-
-	/* PROTO */
-	if(proto == IPPROTO_UDP) ri->proto=PROTO_UDP;
-	else if(proto == IPPROTO_TCP) ri->proto=PROTO_TCP;
-	else if(proto == IPPROTO_IDP) ri->proto=PROTO_TLS;
-											/* fake protocol */
-	else if(proto == IPPROTO_SCTP) ri->proto=PROTO_SCTP;
-	else if(proto == IPPROTO_ESP) ri->proto=PROTO_WS;
-                                            /* fake protocol */
-	else {
-		LM_ERR("unknown protocol [%d]\n",proto);
-		ri->proto = PROTO_NONE;
-	}
-
-	ri->src_ip = src_ip;
-	ri->src_port = ntohs(sport);
-
-	ri->dst_ip = dst_ip;
-	ri->dst_port = ntohs(dport);
-
 	if (hep_store_no_script) {
 		memset(&msg, 0, sizeof(struct sip_msg));
 
@@ -942,7 +1988,8 @@ int hep_msg_received(struct hep_desc *h, struct receive_info *ri)
 		case 1:
 		case 2:
 			msg.buf = h->u.hepv12.payload;
-			msg.len = strlen(msg.buf);
+			msg.len = h->u.hepv12.hdr.hp_l -
+						(sizeof(struct hepv12)-sizeof(char*));
 			break;
 		case 3:
 			msg.buf = h->u.hepv3.payload_chunk.data;
@@ -953,19 +2000,19 @@ int hep_msg_received(struct hep_desc *h, struct receive_info *ri)
 			return -1;
 		}
 
-		msg.rcv = *ri;
-
 		if (parse_msg(msg.buf,msg.len,&msg)!=0) {
 			LM_ERR("Unable to parse message in hep payload!"
 					"Hep version %d!\n", h->version);
 			return -1;
 		}
 
+	#if 0
 		/* if message not parsed ok this helps with debugging */
 		LM_DBG("********************************* SIP MESSAGE ******************\n"
 				"%.*s\n"
 				"***************************************************************\n",
 				(int)msg.len, msg.buf);
+	#endif
 
 		/* we basically move the sip_capture() call from the scripts here */
 		if (w_sip_capture(&msg, NULL, NULL) < 0) {
@@ -1103,17 +2150,20 @@ static int sip_capture_store(struct _sipcapture_object *sco,
 	db_vals[32].type = DB_INT;
 	db_vals[32].val.int_val = sco->family;
 
-	db_vals[33].type = DB_STR;
-	db_vals[33].val.str_val = sco->rtp_stat;
+	db_vals[33].type = DB_INT;
+	db_vals[33].val.int_val = sco->proto_type;
 
-	db_vals[34].type = DB_INT;
-	db_vals[34].val.int_val = sco->type;
+	db_vals[34].type = DB_STR;
+	db_vals[34].val.str_val = sco->rtp_stat;
 
-	db_vals[35].type = DB_STR;
-	db_vals[35].val.str_val = sco->node;
+	db_vals[35].type = DB_INT;
+	db_vals[35].val.int_val = sco->type;
 
-	db_vals[36].type = DB_BLOB;
-	db_vals[36].val.blob_val = sco->msg;
+	db_vals[36].type = DB_STR;
+	db_vals[36].val.str_val = sco->node;
+
+	db_vals[37].type = DB_BLOB;
+	db_vals[37].val.blob_val = sco->msg;
 
 	/* no field can be null */
 	for (i=0;i<NR_KEYS;i++)
@@ -1161,7 +2211,6 @@ static int db_async_store(db_val_t* db_vals,
 	str query_str;
 
 	sc_async_param_t as_param;
-
 	if (!DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
 		LM_WARN("This database module does not have async queries!"
 				"Using sync insert!\n");
@@ -1236,8 +2285,6 @@ static int db_async_store(db_val_t* db_vals,
 			*resume_f     = NULL;
 			return -1;
 		}
-
-
 		*resume_param = as_param;
 		*resume_f = resume_async_dbquery;
 		async_status = read_fd;
@@ -1260,6 +2307,7 @@ no_buffer:
 int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
 {
 	int rc;
+
 
 	rc = db_funcs.async_raw_resume(db_con, fd, NULL, (sc_async_param_t)_param);
 	if (async_status == ASYNC_CONTINUE || async_status == ASYNC_CHANGE_FD)
@@ -1296,11 +2344,15 @@ static int w_sip_capture(struct sip_msg *msg,
 	struct hdr_field *hook1 = NULL;
 	struct hdr_field *tmphdr[4];
 	contact_body_t*  cb=0;
-	char buf_ip[IP_ADDR_MAX_STR_SIZE+12];
+	char src_buf_ip[IP_ADDR_MAX_STR_SIZE+12];
+	char dst_buf_ip[IP_ADDR_MAX_STR_SIZE+12];
 	char *port_str = NULL, *tmp = NULL;
 	struct timeval tvb;
 	struct timezone tz;
 	char tmp_node[100];
+
+	struct hep_desc *h=NULL;
+	struct hep_context* ctx;
 
 	gettimeofday( &tvb, &tz );
 
@@ -1310,6 +2362,15 @@ static int w_sip_capture(struct sip_msg *msg,
 	}
 	memset(&sco, 0, sizeof(struct _sipcapture_object));
 
+	if (hep_capture_on) {
+		if ((ctx=HEP_GET_CONTEXT(hep_api))==NULL) {
+			LM_WARN("not a hep message!\n");
+			return -1;
+		}
+
+		h = &ctx->h;
+	}
+
 
 	if(capture_on_flag==NULL || *capture_on_flag==0) {
 		LM_DBG("capture off...\n");
@@ -1318,9 +2379,22 @@ static int w_sip_capture(struct sip_msg *msg,
 
 	if(sip_capture_prepare(msg)<0) return -1;
 
-        if(heptime && heptime->tv_sec != 0) {
-               sco.tmstamp = (unsigned long long)heptime->tv_sec*1000000+heptime->tv_usec; /* micro ts */
-               snprintf(tmp_node, 100, "%.*s:%i", capture_node.len, capture_node.s, heptime->captid);
+		if (h && h->version==3) {
+			/*hepv3; struct might have been modified in script */
+			sco.tmstamp =
+				(unsigned long long)h->u.hepv3.hg.time_sec.data*1000000 +
+				h->u.hepv3.hg.time_usec.data;
+			snprintf(tmp_node, 100, "%.*s:%i", capture_node.len,
+					capture_node.s, h->u.hepv3.hg.capt_id.data);
+			sco.node.s = tmp_node;
+			sco.node.len = strlen(tmp_node);
+		}
+		else if(h && h->version==2) {
+			sco.tmstamp =
+				(unsigned long long)h->u.hepv12.hep_time.tv_sec*1000000+
+					h->u.hepv12.hep_time.tv_usec; /* micro ts */
+			snprintf(tmp_node, 100, "%.*s:%i", capture_node.len, capture_node.s,
+						h->u.hepv12.hep_time.captid);
                sco.node.s = tmp_node;
                sco.node.len = strlen(tmp_node);
         }
@@ -1347,7 +2421,7 @@ static int w_sip_capture(struct sip_msg *msg,
 		EMPTY_STR(sco.ruri_user);
 	}
 	else {
-		LM_ERR("unknown type [%i]\n", msg->first_line.type);
+		LM_ERR("unknow type [%i]\n", msg->first_line.type);
 		EMPTY_STR(sco.method);
 		EMPTY_STR(sco.reply_reason);
 		EMPTY_STR(sco.ruri);
@@ -1520,37 +2594,153 @@ static int w_sip_capture(struct sip_msg *msg,
 	else { EMPTY_STR(sco.rtp_stat); }
 
 
-	/* PROTO TYPE */
-	sco.proto = msg->rcv.proto;
+	/* PROTO TYPE
+	 * FAMILY TYPE */
+	if (h && h->version==3) {
+		sco.proto = h->u.hepv3.hg.ip_proto.data;
+		sco.family = h->u.hepv3.hg.ip_family.data;
+		/*SIP, XMPP... */
+		sco.proto_type = h->u.hepv3.hg.proto_t.data;
 
-	/* FAMILY TYPE */
-	sco.family = msg->rcv.src_ip.af;
+		if (h->u.hepv3.hg.ip_family.data == AF_INET) {
+			if (inet_ntop(AF_INET, &h->u.hepv3.addr.ip4_addr.src_ip4.data,
+					src_buf_ip, INET_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+
+			if (inet_ntop(AF_INET, &h->u.hepv3.addr.ip4_addr.dst_ip4.data,
+					dst_buf_ip, INET_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+		} else {
+			if (inet_ntop(AF_INET6, &h->u.hepv3.addr.ip6_addr.src_ip6.data,
+					src_buf_ip, INET6_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+
+			if (inet_ntop(AF_INET6, &h->u.hepv3.addr.ip6_addr.dst_ip6.data,
+					dst_buf_ip, INET6_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+		}
+
+		sco.source_ip.s = src_buf_ip;
+		sco.source_ip.len = strlen(src_buf_ip);
+		sco.source_port = h->u.hepv3.hg.src_port.data;
+
+		sco.destination_ip.s = dst_buf_ip;
+		sco.destination_ip.len = strlen(dst_buf_ip);
+		sco.destination_port = h->u.hepv3.hg.dst_port.data;
+	} else if (h && (h->version == 1 || h->version == 2)) {
+		sco.proto = h->u.hepv12.hdr.hp_p;
+		sco.family = h->u.hepv12.hdr.hp_f;
+		/* default SIP; hepv12 doesn't have proto type */
+		sco.proto_type = 0x01;
+
+		if (sco.family == AF_INET) {
+			if (inet_ntop(AF_INET,
+					&h->u.hepv12.addr.hep_ipheader.hp_src,
+					src_buf_ip, INET_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+
+			if (inet_ntop(AF_INET,
+					&h->u.hepv12.addr.hep_ipheader.hp_dst,
+					dst_buf_ip, INET_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+		} else {
+			if (inet_ntop(AF_INET6,
+					&h->u.hepv12.addr.hep_ip6header.hp6_src,
+					src_buf_ip, INET6_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+
+			if (inet_ntop(AF_INET6,
+					&h->u.hepv12.addr.hep_ip6header.hp6_dst,
+					dst_buf_ip, INET6_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				return -1;
+			}
+		}
+
+		sco.source_ip.s = src_buf_ip;
+		sco.source_ip.len = strlen(src_buf_ip);
+		sco.source_port = h->u.hepv12.hdr.hp_sport;
+
+		sco.destination_ip.s = dst_buf_ip;
+		sco.destination_ip.len = strlen(dst_buf_ip);
+		sco.destination_port = h->u.hepv12.hdr.hp_dport;
+	} else {
+		sco.proto = msg->rcv.proto;
+		sco.family = msg->rcv.src_ip.af;
+
+		/* IP source and destination */
+
+		/*source ip*/
+		memcpy(src_buf_ip, ip_addr2a(&msg->rcv.src_ip),
+				sizeof(&msg->rcv.src_ip));
+		ip_addr2a((struct ip_addr*)src_buf_ip);
+		sco.source_ip.s = src_buf_ip;
+		sco.source_ip.len = strlen(src_buf_ip);
+		sco.source_port = msg->rcv.src_port;
+
+
+		/*destination ip*/
+		memcpy(dst_buf_ip, ip_addr2a(&msg->rcv.dst_ip),
+				sizeof(&msg->rcv.dst_ip));
+		ip_addr2a((struct ip_addr*)dst_buf_ip);
+		sco.destination_ip.s = dst_buf_ip;
+		sco.destination_ip.len = strlen(sco.destination_ip.s);
+		sco.destination_port = msg->rcv.dst_port;
+	}
+
+	if(sco.proto == PROTO_UDP) sco.proto=IPPROTO_UDP;
+	else if(sco.proto == PROTO_TCP) sco.proto=IPPROTO_TCP;
+	else if(sco.proto == PROTO_TLS) sco.proto=IPPROTO_IDP;
+											/* fake protocol */
+	else if(sco.proto == PROTO_SCTP) sco.proto=IPPROTO_SCTP;
+	else if(sco.proto == PROTO_WS) sco.proto=IPPROTO_ESP;
+                                            /* fake protocol */
+	else {
+		LM_ERR("unknown protocol [%d]\n",sco.proto);
+		sco.proto = PROTO_NONE;
+	}
+
+
+	LM_DBG("src_ip: [%.*s]\n", sco.source_ip.len, sco.source_ip.s);
+	LM_DBG("dst_ip: [%.*s]\n", sco.destination_ip.len, sco.destination_ip.s);
+
+	LM_DBG("dst_port: [%d]\n", sco.destination_port);
+	LM_DBG("src_port: [%d]\n", sco.source_port);
+
+	/* PROTO */
 
 	/* MESSAGE TYPE */
 	sco.type = msg->first_line.type;
 
 	/* MSG */
-	sco.msg.s = msg->buf;
-	sco.msg.len = msg->len;
+	if (h && h->version == 3) {
+		sco.msg.s = h->u.hepv3.payload_chunk.data;
+		sco.msg.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
+	} else if (h && (h->version == 1 || h->version == 2)) {
+		sco.msg.s = h->u.hepv12.payload;
+		sco.msg.len = h->u.hepv12.hdr.hp_l -
+						/* in the struct we have a pointer for the payload;
+						 * anything else is the size of the packet without the payload*/
+						(sizeof(struct hepv12) - sizeof(char*));
+	} else {
+		sco.msg.s = msg->buf;
+		sco.msg.len = msg->len;
+	}
 	//EMPTY_STR(sco.msg);
-
-	/* IP source and destination */
-
-	strcpy(buf_ip, ip_addr2a(&msg->rcv.src_ip));
-	sco.source_ip.s = buf_ip;
-	sco.source_ip.len = strlen(buf_ip);
-        sco.source_port = msg->rcv.src_port;
-
-        /*source ip*/
-	sco.destination_ip.s = ip_addr2a(&msg->rcv.dst_ip);
-	sco.destination_ip.len = strlen(sco.destination_ip.s);
-	sco.destination_port = msg->rcv.dst_port;
-
-        LM_DBG("src_ip: [%.*s]\n", sco.source_ip.len, sco.source_ip.s);
-        LM_DBG("dst_ip: [%.*s]\n", sco.destination_ip.len, sco.destination_ip.s);
-
-        LM_DBG("dst_port: [%d]\n", sco.destination_port);
-        LM_DBG("src_port: [%d]\n", sco.source_port);
 
 #ifdef STATISTICS
 	if(msg->first_line.type==SIP_REPLY) {
@@ -1561,6 +2751,789 @@ static int w_sip_capture(struct sip_msg *msg,
 #endif
 	LM_DBG("DONE\n");
 	return sip_capture_store(&sco, resume_f, resume_param);
+}
+
+/*
+ * resolve data type in chunk
+ */
+enum hep_chunk_value_type {TYPE_ERROR=0,TYPE_UINT8=1,
+					TYPE_UINT16=2, TYPE_UINT32=4, TYPE_INET_ADDR,
+					TYPE_INET6_ADDR=16, TYPE_UTF8, TYPE_BLOB};
+static int fix_hep_value_type(str *s) {
+	static const str type_uint_s={"uint", sizeof("uint")-1};
+	static const str type_utf_string_s=str_init("utf8-string");
+	static const str type_octet_string_s=str_init("octet-string");
+	static const str type_inet_addr_s=str_init("inet4-addr");
+	static const str type_inet6_addr_s=str_init("inet6-addr");
+
+	int diff;
+
+	diff = s->len - type_uint_s.len; /* also applies to 'str' - same len as 'int'  */
+
+	/* uintX or uintXX */
+	if (diff > 0 && diff <=2 &&
+			!strncasecmp(s->s, type_uint_s.s, type_uint_s.len)) {
+		if (diff == 1) { /* should be int8 */
+			if (s->s[s->len-1] == '8')
+				return TYPE_UINT8;
+			else
+				goto error;
+		} else {
+			if (s->s[s->len-2] == '1' && s->s[s->len-1] =='6')
+				return TYPE_UINT16;
+			else if (s->s[s->len-2] == '3' && s->s[s->len-1] =='2')
+				return TYPE_UINT32;
+			else
+				goto error;
+		}
+	} else if (s->len==type_utf_string_s.len &&
+			!strncasecmp(s->s, type_utf_string_s.s, type_utf_string_s.len)) {
+		return TYPE_UTF8;
+	} else if (s->len == type_octet_string_s.len &&
+			!strncasecmp(s->s, type_octet_string_s.s, type_octet_string_s.len)) {
+		return TYPE_BLOB;
+	} else if (s->len == type_inet_addr_s.len &&
+			!strncasecmp(s->s, type_inet_addr_s.s, type_inet_addr_s.len)) {
+		return TYPE_INET_ADDR;
+	} else if (s->len == type_inet6_addr_s.len &&
+			!strncasecmp(s->s, type_inet6_addr_s.s, type_inet6_addr_s.len)) {
+		return TYPE_INET6_ADDR;
+	} else {
+		goto error;
+	}
+
+error:
+	return TYPE_ERROR;
+}
+
+/*
+ * get int value from int or hex value in string format
+ */
+static int fix_hex_int(str *s)
+{
+
+	int retval;
+
+	if (!s->len || !s->s)
+		goto error;
+
+	if (s->len > 2)
+		if ((s->s[0] == '0') && ((s->s[1]|0x20) == 'x')) {
+			if (string2hex((unsigned char *)s->s+2, s->len-2, (char*)&retval)!=0)
+				goto error;
+			else
+				return retval;
+		}
+
+	if (str2int(s, (unsigned int*)&retval)<0)
+		goto error;
+
+
+	return retval;
+
+
+error:
+	LM_ERR("Invalid value for vendor_id: <%*s>!\n", s->len, s->s);
+	return -1;
+
+}
+
+static int set_hep_generic_fixup(void** param, int param_no)
+{
+	int type;
+	gparam_p gp;
+
+	switch (param_no) {
+		case 1:
+		/* chunk id */
+			if (fixup_sgp(param) < 0) {
+				LM_ERR("fixup for chunk type failed!\n");
+				return -1;
+			}
+
+			gp = *param;
+			if (gp->type == GPARAM_TYPE_STR) {
+				if ((type=fix_hex_int(&gp->v.sval)) < 0) {
+					LM_ERR("Invalid chunk value type <%.*s>!\n",
+							gp->v.sval.len, gp->v.sval.s);
+					return -1;
+				}
+				gp->v.ival = type;
+				gp->type   = GPARAM_TYPE_INT;
+			}
+
+			return 0;
+		/* data */
+		case 2:
+			return fixup_sgp(param);
+	}
+
+	return 0;
+}
+
+
+
+static int set_hep_fixup(void** param, int param_no)
+{
+	int type;
+	gparam_p gp;
+
+	switch (param_no) {
+		/* type */
+		case 1:
+			if (fixup_sgp(param) < 0) {
+				LM_ERR("fixup for chunk type failed!\n");
+				return -1;
+			}
+
+			gp = *param;
+			if (gp->type == GPARAM_TYPE_STR) {
+				if ((type=fix_hep_value_type(&gp->v.sval)) == TYPE_ERROR) {
+					LM_ERR("Invalid chunk value type <%.*s>!\n",
+							gp->v.sval.len, gp->v.sval.s);
+					return -1;
+				}
+				gp->v.ival = type;
+				gp->type   = GPARAM_TYPE_INT;
+			}
+
+			return 0;
+
+		/* chunk id */
+		case 2:
+		/* vendor*/
+		case 3:
+			if (fixup_sgp(param) < 0) {
+				LM_ERR("fixup for chunk type failed!\n");
+				return -1;
+			}
+
+			gp = *param;
+			if (gp->type == GPARAM_TYPE_STR) {
+				if ((type=fix_hex_int(&gp->v.sval)) < 0) {
+					LM_ERR("Invalid chunk value type <%.*s>!\n",
+							gp->v.sval.len, gp->v.sval.s);
+					return -1;
+				}
+				gp->v.ival = type;
+				gp->type   = GPARAM_TYPE_INT;
+			}
+
+			return 0;
+		/* data */
+		case 4:
+			return fixup_sgp(param);
+		}
+
+	return 0;
+}
+
+static int get_hep_generic_fixup(void** param, int param_no)
+{
+	int type;
+	gparam_p gp;
+
+	switch (param_no) {
+		case 1:
+			if (fixup_sgp(param) < 0) {
+				LM_ERR("fixup for chunk type failed!\n");
+				return -1;
+			}
+
+			gp = *param;
+			if (gp->type == GPARAM_TYPE_STR) {
+				if ((type=fix_hex_int(&gp->v.sval)) < 0) {
+					LM_ERR("Invalid chunk value type <%.*s>!\n",
+							gp->v.sval.len, gp->v.sval.s);
+					return -1;
+				}
+				gp->v.ival = type;
+				gp->type   = GPARAM_TYPE_INT;
+			}
+
+			return 0;
+
+		/* vendor pvar */
+		case 2:
+		/* data pvar */
+		case 3:
+			return fixup_pvar(param);
+		default:
+			LM_ERR("Invalid param number <%d>\n", param_no);
+			return -1;
+	}
+
+	return 0;
+}
+
+
+
+static int get_hep_fixup(void** param, int param_no)
+{
+	int type;
+	gparam_p gp;
+
+	switch (param_no) {
+		/* type */
+		case 1:
+			if (fixup_sgp(param) < 0) {
+				LM_ERR("fixup for chunk type failed!\n");
+				return -1;
+			}
+
+			gp = *param;
+			if (gp->type == GPARAM_TYPE_STR) {
+				if ((type=fix_hep_value_type(&gp->v.sval)) == TYPE_ERROR) {
+					LM_ERR("Invalid chunk value type <%.*s>!\n",
+							gp->v.sval.len, gp->v.sval.s);
+					return -1;
+				}
+				gp->v.ival = type;
+				gp->type   = GPARAM_TYPE_INT;
+			}
+
+			return 0;
+		/* chunk id */
+		case 2:
+			if (fixup_sgp(param) < 0) {
+				LM_ERR("fixup for chunk type failed!\n");
+				return -1;
+			}
+
+			gp = *param;
+			if (gp->type == GPARAM_TYPE_STR) {
+				if ((type=fix_hex_int(&gp->v.sval)) < 0) {
+					LM_ERR("Invalid chunk value type <%.*s>!\n",
+							gp->v.sval.len, gp->v.sval.s);
+					return -1;
+				}
+				gp->v.ival = type;
+				gp->type   = GPARAM_TYPE_INT;
+			}
+
+			return 0;
+
+		/* vendor pvar */
+		case 3:
+		/* data pvar */
+		case 4:
+			return fixup_pvar(param);
+		default:
+			LM_ERR("Invalid param number <%d>\n", param_no);
+			return -1;
+	}
+
+	return 0;
+}
+
+static int del_hep_fixup(void** param, int param_no)
+{
+	int type;
+	gparam_p gp;
+
+	if (param_no == 1) {
+		if (fixup_sgp(param) < 0) {
+			LM_ERR("fixup for chunk type failed!\n");
+			return -1;
+		}
+
+		gp = *param;
+		if (gp->type == GPARAM_TYPE_STR) {
+			if ((type=fix_hex_int(&gp->v.sval)) < 0) {
+				LM_ERR("Invalid chunk value type <%.*s>!\n",
+						gp->v.sval.len, gp->v.sval.s);
+				return -1;
+			}
+			gp->v.ival = type;
+			gp->type   = GPARAM_TYPE_INT;
+		}
+
+		return 0;
+	}
+
+	LM_ERR("Invalid param number <%d>\n", param_no);
+	return -1;
+}
+
+
+
+
+static int w_set_hep_generic(struct sip_msg* msg, char* id, char* data)
+{
+	return w_set_hep(msg, NULL, id, NULL, data);
+}
+
+static int
+w_set_hep(struct sip_msg* msg, char* type, char* id, char* vid, char* data)
+{
+	int data_len;
+	int data_type=TYPE_UTF8;
+	int vendor_id=HEP_OPENSIPS_VENDOR_ID;
+	unsigned int chunk_id;
+
+	unsigned int idata;
+
+	struct in_addr addr4;
+	struct in6_addr addr6;
+
+	str s;
+	str data_s;
+
+	gparam_p gp;
+
+	struct hep_desc *h;
+	struct hep_context *ctx;
+
+	generic_chunk_t* ch;
+	generic_chunk_t* it;
+
+	if (id==NULL || data==NULL) {
+		LM_ERR("Chunk id and chunk data can't be NULL!\n");
+		return -1;
+	}
+
+	if ((ctx=HEP_GET_CONTEXT(hep_api)) ==  NULL) {
+		LM_WARN("not a hep message!\n");
+		return -1;
+	}
+
+	h = &ctx->h;
+	if (h->version < 3) {
+		LM_ERR("set chunk only available in HEPv3(EEP)!\n");
+		return -1;
+	}
+
+	if (type != NULL) {
+		gp = (gparam_p)type;
+		if (gp->type == GPARAM_TYPE_INT) {
+			data_type = gp->v.ival;
+		} else {
+			if (fixup_get_svalue(msg, gp, &s) < 0) {
+				LM_ERR("Getting vendor id value from pvar failed!\n");
+				return -1;
+			}
+
+			if ((data_type=fix_hep_value_type(&s))==TYPE_ERROR) {
+				LM_ERR("Invalid data_type vlaue <%.*s>!\n", s.len, s.s);
+				return -1;
+			}
+		}
+	}
+
+
+	gp = (gparam_p)id;
+	if (gp->type == GPARAM_TYPE_INT) {
+		chunk_id = gp->v.ival;
+	} else {
+		if (fixup_get_svalue(msg, gp, &s) < 0) {
+			LM_ERR("Getting vendor id value from pvar failed!\n");
+			return -1;
+		}
+
+		if (parse_hep_name(&s, &chunk_id) < 0) {
+			LM_ERR("Invalid chunk id/name!\n");
+		}
+	}
+
+	if (vid) {
+		gp = (gparam_p)vid;
+		if (gp->type == GPARAM_TYPE_INT) {
+			vendor_id = gp->v.ival;
+		} else {
+			if (fixup_get_svalue(msg, gp, &s) < 0) {
+				LM_ERR("Getting vendor id value from pvar failed!\n");
+				return -1;
+			}
+
+			if ((vendor_id=fix_hex_int(&s)) < 0) {
+				LM_ERR("Invalid vendor id value <%.*s>!\n", s.len, s.s);
+				return -1;
+			}
+		}
+	}
+
+
+
+	if (fixup_get_svalue(msg, (gparam_p)data, &data_s) < 0) {
+		LM_ERR("failed to get chunk data value!\n");
+		return -1;
+	}
+
+	if (CHUNK_IS_IN_HEPSTRUCT(chunk_id)) {
+		return set_generic_hep_chunk(&h->u.hepv3, chunk_id, &data_s);
+	}
+
+	it = NULL;
+	for (it=h->u.hepv3.chunk_list; it; it = it->next) {
+		if (it->chunk.type_id == chunk_id)
+			break;
+	}
+
+	if (it == NULL){
+		ch = shm_malloc(sizeof(generic_chunk_t));
+		if (ch == NULL)
+			goto shm_err;
+
+		memset(ch, 0, sizeof(generic_chunk_t));
+	} else {
+		ch = it;
+	}
+
+	if (data_type == TYPE_UTF8 || data_type == TYPE_BLOB) {
+		data_len = data_s.len;
+	} else if (data_type == TYPE_INET_ADDR) {
+		data_len = sizeof(struct in_addr);
+		if (inet_pton(AF_INET, data_s.s, &addr4)==0) {
+			LM_ERR("not an IPv4 address <<%.*s>>!\n",
+					data_s.len, data_s.s);
+			return -1;
+		}
+	} else if (data_type == TYPE_INET6_ADDR) {
+		data_len = sizeof(struct in6_addr);
+		if (inet_pton(AF_INET6, data_s.s, &addr6)==0) {
+			LM_ERR("not an IPv6 address <<%.*s>>!\n",
+					data_s.len, data_s.s);
+			return -1;
+		}
+	} else {
+		data_len = data_type;
+		if (str2int(&data_s, &idata) < 0) {
+			LM_ERR("Invalid int value for chunk <%*.s>!\n",
+										data_s.len, data_s.s);
+		}
+
+		/* keep values in big endian */
+		if (data_type == TYPE_UINT32)
+			idata = htonl(idata);
+		else if (data_type == TYPE_UINT16)
+			idata = htons(idata);
+	}
+
+	/* if new chunk data is same length as the old one no problem there;
+	 * else we need to alloc new memory or delete some of the old one  :( */
+	if (it && (it->chunk.length - sizeof(hep_chunk_t)) != data_len) {
+		ch->data=shm_realloc(ch->data, data_len);
+		if (ch->data == NULL)
+			goto shm_err;
+	} else if (it == NULL) {
+		ch->data = shm_malloc(data_len);
+		if (ch->data == NULL)
+			goto shm_err;
+	}
+
+	if (data_type == TYPE_UTF8 || data_type == TYPE_BLOB) {
+		memcpy(ch->data, data_s.s, data_len);
+	} else if (data_type == TYPE_INET_ADDR) {
+		memcpy(ch->data, &addr4, sizeof(struct in_addr));
+	} else if (data_type == TYPE_INET6_ADDR) {
+		memcpy(ch->data, &addr6, sizeof(struct in6_addr));
+	} else {
+		memcpy(ch->data, &idata, data_len);
+	}
+
+	ch->chunk.vendor_id = vendor_id;
+	ch->chunk.type_id = chunk_id;
+	ch->chunk.length = sizeof(hep_chunk_t) + data_len;
+
+
+	/* if it's not a new chunk don't put it in the list */
+	if (it == NULL) {
+		if (h->u.hepv3.chunk_list == NULL) {
+			h->u.hepv3.chunk_list = ch;
+		} else {
+			for (it=h->u.hepv3.chunk_list; it->next; it=it->next);
+			it->next=ch;
+		}
+	}
+
+	return 1;
+
+	shm_err:
+	LM_ERR("no more shm!\n");
+	return -1;
+}
+
+static int
+w_get_hep_generic(struct sip_msg* msg, char* id, char* vid, char* data)
+{
+	return w_get_hep(msg, NULL, id, vid, data);
+}
+
+static int
+w_get_hep(struct sip_msg* msg, char* type, char* id, char* vid, char* data)
+{
+
+	int data_type;
+
+	unsigned int net_data;
+	unsigned int chunk_id;
+
+	struct hep_desc *h;
+	struct hep_context *ctx;
+
+	str s;
+
+	pv_spec_p data_pv, vendor_pv;
+	pv_value_t data_val, vendor_val;
+
+	gparam_p gp;
+
+	generic_chunk_t* it;
+
+	data_pv = (pv_spec_p)data;
+	vendor_pv = (pv_spec_p)vid;
+
+	if (id == NULL) {
+		LM_ERR("No chunk id given!\n");
+		return -1;
+	}
+
+	if (vid == NULL && data == NULL) {
+		LM_ERR("No output vars provided!\n");
+		return -1;
+	}
+
+	if ((ctx=HEP_GET_CONTEXT(hep_api)) ==  NULL) {
+		LM_WARN("not a hep message!\n");
+		return -1;
+	}
+
+	h = &ctx->h;
+	if (h->version < 3) {
+		LM_ERR("get chunk only available in HEPv3(EEP)!\n");
+		return -1;
+	}
+
+	gp = (gparam_p)id;
+	if (gp->type == GPARAM_TYPE_INT) {
+		chunk_id = gp->v.ival;
+	} else {
+		if (fixup_get_svalue(msg, gp, &s) < 0) {
+			LM_ERR("Getting vendor id value from pvar failed!\n");
+			return -1;
+		}
+
+		if (parse_hep_name(&s, &chunk_id) < 0) {
+			LM_ERR("Invalid chunk id/name!\n");
+		}
+	}
+
+	if (CHUNK_IS_IN_HEPSTRUCT(chunk_id)) {
+		/* don't need type for these; we already know it */
+		if (data) {
+			if (get_hep_chunk(&h->u.hepv3, chunk_id, &data_val) < 0)
+				goto set_pv_null;
+		}
+
+		if (vid) {
+			vendor_val.ri = 0;
+			vendor_val.flags = PV_TYPE_INT;
+		}
+
+		goto set_pv_values;
+	}
+
+	if (type == NULL) {
+		LM_ERR("no type given! Don't know what to return!\n");
+		return -1;
+	}
+
+	gp = (gparam_p)type;
+	if (gp->type == GPARAM_TYPE_INT) {
+		data_type = gp->v.ival;
+	} else {
+		if (fixup_get_svalue(msg, gp, &s) < 0) {
+			LM_ERR("Getting vendor id value from pvar failed!\n");
+			return -1;
+		}
+
+		if ((data_type=fix_hep_value_type(&s))==TYPE_ERROR) {
+			LM_ERR("Invalid data_type vlaue <%.*s>!\n", s.len, s.s);
+			return -1;
+		}
+	}
+
+	for (it=h->u.hepv3.chunk_list; it; it=it->next) {
+		if (it->chunk.type_id == chunk_id) {
+			vendor_val.ri = it->chunk.vendor_id;
+			vendor_val.flags = PV_TYPE_INT;
+
+			switch (data_type) {
+				/* all int types are in big endian */
+				case TYPE_UINT8:
+					data_val.ri = ((char*)it->data)[0];
+					data_val.flags = PV_TYPE_INT;
+
+					break;
+				case TYPE_UINT16:
+					net_data = ((unsigned short*)it->data)[0];
+					data_val.ri = htons(net_data);
+					data_val.flags = PV_TYPE_INT;
+
+					break;
+				case TYPE_UINT32:
+					net_data = ((unsigned int*)it->data)[0];
+					data_val.ri = htonl(net_data);
+					data_val.flags = PV_TYPE_INT;
+
+					break;
+				case TYPE_INET_ADDR:
+					hep_str.len = 0;
+					memset(hep_str.s, 0, HEPBUF_LEN);
+
+					if (inet_ntop(AF_INET, it->data,
+								hep_str.s, INET_ADDRSTRLEN) == NULL) {
+						LM_ERR("Not an IPv4 address!\n");
+						return -1;
+					}
+
+					hep_str.len = strlen(hep_str.s);
+
+					data_val.rs = hep_str;
+					data_val.flags = PV_VAL_STR;
+
+					break;
+				case TYPE_INET6_ADDR:
+					hep_str.len = 0;
+					memset(hep_str.s, 0, HEPBUF_LEN);
+
+					if (inet_ntop(AF_INET6, it->data,
+								hep_str.s, INET6_ADDRSTRLEN) == NULL) {
+						LM_ERR("Not an IPv4 address!\n");
+						return -1;
+					}
+
+					hep_str.len = strlen(hep_str.s);
+
+					data_val.rs = hep_str;
+					data_val.flags = PV_VAL_STR;
+
+					break;
+				case TYPE_UTF8:
+				case TYPE_BLOB:
+					data_val.rs.s = (char*)it->data;
+					data_val.rs.len = it->chunk.length - sizeof(hep_chunk_t);
+					data_val.flags = PV_VAL_STR;
+
+					break;
+			}
+			break;
+		}
+	}
+
+	if (it == NULL)
+		goto set_pv_null;
+
+set_pv_values:
+
+	if (data) {
+		if (pv_set_value(msg, data_pv, 0, &data_val) < 0) {
+			LM_ERR("Failed setting data pvar value!\n");
+			return -1;
+		}
+	}
+
+	if (vid) {
+		if (pv_set_value(msg, vendor_pv, 0, &vendor_val) < 0) {
+			LM_ERR("Failed setting data pvar value!\n");
+			return -1;
+		}
+	}
+
+	return 1;
+
+set_pv_null:
+	if (data) {
+		if (pv_set_value(msg, data_pv, 0, NULL) < 0) {
+			LM_ERR("Failed setting data pvar value!\n");
+			return -1;
+		}
+	}
+
+	if (vid) {
+		if (pv_set_value(msg, vendor_pv, 0, NULL) < 0) {
+			LM_ERR("Failed setting data pvar value!\n");
+			return -1;
+		}
+	}
+
+	return -1;
+}
+
+static int w_del_hep(struct sip_msg* msg, char *id)
+{
+	unsigned int chunk_id;
+
+	struct hep_desc *h;
+	struct hep_context *ctx;
+
+	str s;
+
+	gparam_p gp;
+
+	generic_chunk_t* it;
+	generic_chunk_t* foo;
+
+	if (id==NULL) {
+		LM_ERR("No chunk id provided!\n");
+		return -1;
+	}
+
+	if ((ctx=HEP_GET_CONTEXT(hep_api)) ==  NULL) {
+		LM_WARN("not a hep message!\n");
+		return -1;
+	}
+
+	h = &ctx->h;
+	if (h->version < 3) {
+		LM_ERR("del chunk only available in HEPv3(EEP)!\n");
+		return -1;
+	}
+
+	gp = (gparam_p)id;
+	if (gp->type == GPARAM_TYPE_INT) {
+		chunk_id = gp->v.ival;
+	} else {
+		if (fixup_get_svalue(msg, gp, &s) < 0) {
+			LM_ERR("Getting vendor id value from pvar failed!\n");
+			return -1;
+		}
+
+		if (parse_hep_name(&s, &chunk_id) < 0) {
+			LM_ERR("Invalid chunk id/name!\n");
+		}
+	}
+
+
+	if (CHUNK_IS_IN_HEPSTRUCT(chunk_id))
+		return del_hep_chunk(&h->u.hepv3, chunk_id);
+
+
+	it=h->u.hepv3.chunk_list;
+
+	if (it->chunk.type_id == chunk_id) {
+		h->u.hepv3.chunk_list = it->next;
+		foo = it;
+		goto free_chunk;
+	}
+
+	while (it->next) {
+		if (it->next->chunk.type_id == chunk_id) {
+			foo = it->next;
+			it->next = it->next->next;
+			goto free_chunk;
+		}
+
+		it = it->next;
+	}
+
+	return -1;
+
+free_chunk:
+	shm_free(foo->data);
+	shm_free(foo);
+
+	return 1;
 }
 
 #define capture_is_off(_msg) \
@@ -1813,7 +3786,7 @@ int raw_capture_rcv_loop(int rsock, int port1, int port2, int ipip) {
 		if((!port1 && !port2)
 		        || (src_port >= port1 && src_port <= port2) || (dst_port >= port1 && dst_port <= port2)
 		        || (!port2 && (src_port == port1 || dst_port == port1)))
-		                          receive_msg(buf+offset, len, &ri);
+		                          receive_msg(buf+offset, len, &ri, NULL);
 	}
 
 	return 0;

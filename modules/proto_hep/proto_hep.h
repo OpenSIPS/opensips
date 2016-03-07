@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 - OpenSIPS Foundation
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,24 +16,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *
+ * History:
+ * -------
+ *  2016-01-22  first version (Ionut Ionita)
  */
 
-/*!
- * \file
- * \brief Receive message handling
- */
 
-
-#ifndef receive_h
-#define receive_h
-
-#include "ip_addr.h"
-#include "context.h"
-
-int receive_msg(char* buf, unsigned int len, struct receive_info *ri,
-		context_p existing_context);
-
-unsigned int get_next_msg_no(void);
-
+#ifndef _PROTO_HEP_
+#define _PROTO_HEP_
+extern int proto_tcp_read(struct tcp_connection*, struct tcp_req*);
 #endif
