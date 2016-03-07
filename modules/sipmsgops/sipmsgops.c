@@ -1605,9 +1605,9 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 				memset(disp, 0, sizeof(struct disposition));
 
 				switch (parse_disposition(&(hf->body), disp)) {
-					case -1:
-						free_disposition(&disp);
 					case -2:
+						free_disposition(&disp);
+					case -1:
 						LM_DBG("cannot parse disposition\n");
 						goto failed;
 				}
