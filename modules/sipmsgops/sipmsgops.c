@@ -1609,6 +1609,7 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 						free_disposition(&disp);
 					case -2:
 						LM_DBG("cannot parse disposition\n");
+						free_disposition(&disp);
 						goto failed;
 				}
 				break;
