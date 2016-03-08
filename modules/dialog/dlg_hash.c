@@ -860,8 +860,8 @@ static void raise_state_changed_event(unsigned int h_entry, unsigned int h_id,
  * \see next_state_dlg
  */
 static inline void log_next_state_dlg(const int event,
-												const struct dlg_cell *dlg) {
-	LM_CRIT("bogus event %d in state %d for dlg %p [%u:%u] with "
+                                      const struct dlg_cell *dlg) {
+	LM_WARN("bogus event %d in state %d for dlg %p [%u:%u] with "
 		"clid '%.*s' and tags '%.*s' '%.*s'\n",
 		event, dlg->state, dlg, dlg->h_entry, dlg->h_id,
 		dlg->callid.len, dlg->callid.s,
