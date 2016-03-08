@@ -1223,9 +1223,6 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 	su2ip_addr(&ri.src_ip, &ri.src_su);
 	ri.src_port=su_getport(&ri.src_su);
 
-	msg.s = buf;
-	msg.len = len;
-
 	/* if udp we are sure that version 1 or 2 of the
 	 * protocol is used */
 	if ((hep_ctx = shm_malloc(sizeof(struct hep_context))) == NULL) {
@@ -1257,12 +1254,13 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 		return -1;
 	}
 
-	/* remove the hep header; leave only the payload */
-	memmove(buf, hep_ctx->h.u.hepv12.payload,
-						/* also copy '\0' character */
-						strlen(hep_ctx->h.u.hepv12.payload)+1);
-	msg.s   = buf;
-	msg.len = strlen(buf);
+	msg.len = len - hep_ctx->h.u.hepv12.hdr.hp_l;
+	msg.s = buf + hep_ctx->h.u.hepv12.hdr.hp_l;
+
+	if (hep_ctx->h.u.hepv12.hdr.hp_v == 2) {
+		msg.s += sizeof(struct hep_timehdr);
+		msg.len -= sizeof(struct hep_timehdr);
+	}
 
 	if (ri.src_port==0){
 		tmp=ip_addr2a(&ri.src_ip);
