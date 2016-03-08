@@ -46,6 +46,7 @@
 #define XIDOID 			28
 #define CIDOID 			29
 #define OIDVECTOROID		30
+#define JSONOID                 114
 #define POINTOID		600
 #define LSEGOID			601
 #define PATHOID			602
