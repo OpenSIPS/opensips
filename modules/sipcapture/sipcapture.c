@@ -43,6 +43,7 @@
 #include "../proto_hep/hep_cb.h"
 #include "../../context.h"
 #include "../../mod_fix.h"
+#include "../../msg_translator.h"
 
 /* BPF structure */
 #ifdef __OS_linux
@@ -77,6 +78,8 @@
 #include "../../str.h"
 #include "../../resolve.h"
 #include "../../receive.h"
+#include "../../forward.h"
+#include "../../msg_translator.h"
 
 #ifdef STATISTICS
 #include "../../statistics.h"
@@ -192,6 +195,9 @@ static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
 
 static int
 set_generic_hep_chunk(struct hepv3* h3, unsigned chunk_id, str *data);
+
+/* hep relay function */
+static int w_hep_relay(struct sip_msg *msg);
 
 
 
@@ -374,6 +380,8 @@ static cmd_export_t cmds[] = {
 	{"hep_get", (cmd_function)w_get_hep, 4, get_hep_fixup, 0,
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"hep_del", (cmd_function)w_del_hep, 1, del_hep_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"hep_relay", (cmd_function)w_hep_relay, 0, 0, 0,
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -2730,12 +2738,6 @@ static int w_sip_capture(struct sip_msg *msg,
 	if (h && h->version == 3) {
 		sco.msg.s = h->u.hepv3.payload_chunk.data;
 		sco.msg.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
-	} else if (h && (h->version == 1 || h->version == 2)) {
-		sco.msg.s = h->u.hepv12.payload;
-		sco.msg.len = h->u.hepv12.hdr.hp_l -
-						/* in the struct we have a pointer for the payload;
-						 * anything else is the size of the packet without the payload*/
-						(sizeof(struct hepv12) - sizeof(char*));
 	} else {
 		sco.msg.s = msg->buf;
 		sco.msg.len = msg->len;
@@ -3532,6 +3534,330 @@ static int w_del_hep(struct sip_msg* msg, char *id)
 free_chunk:
 	shm_free(foo->data);
 	shm_free(foo);
+
+	return 1;
+}
+
+static inline void osip_to_net_proto(unsigned char* proto)
+{
+	if(*proto == PROTO_UDP) *proto=IPPROTO_UDP;
+	else if(*proto == PROTO_TCP) *proto=IPPROTO_TCP;
+	else if(*proto == PROTO_TLS) *proto=IPPROTO_IDP;
+											/* fake protocol */
+	else if(*proto == PROTO_SCTP) *proto=IPPROTO_SCTP;
+	else if(*proto == PROTO_WS) *proto=IPPROTO_ESP;
+                                            /* fake protocol */
+	else {
+		LM_ERR("unknown protocol [%d]\n", *proto);
+		*proto = PROTO_NONE;
+	}
+
+
+}
+
+
+static void hepv2_to_buf(struct hepv12* h2, char* buf, int *len)
+{
+	int buflen;
+	int payload_len = *len;
+
+	/* instead of copying element by element we just convert
+	 * to network order and after convert it back */
+	h2->hdr.hp_sport = htons(h2->hdr.hp_sport);
+	h2->hdr.hp_dport = htons(h2->hdr.hp_dport);
+
+	memcpy(buf, &h2->hdr, sizeof(struct hep_hdr));
+	buflen = sizeof(struct hep_hdr);
+
+	h2->hdr.hp_sport = ntohs(h2->hdr.hp_sport);
+	h2->hdr.hp_dport = ntohs(h2->hdr.hp_dport);
+
+	if (h2->hdr.hp_f==AF_INET) {
+		memcpy(buf+buflen, &h2->addr.hep_ipheader, sizeof(struct hep_iphdr));
+		buflen += sizeof(struct hep_iphdr);
+	} else {
+		memcpy(buf+buflen, &h2->addr.hep_ip6header, sizeof(struct hep_ip6hdr));
+		buflen += sizeof(struct hep_ip6hdr);
+	}
+
+	if (h2->hdr.hp_v == 2) {
+		memcpy(buf + buflen, &h2->hep_time, sizeof(struct hep_timehdr));
+		buflen += sizeof(struct hep_timehdr);
+	}
+
+
+	memcpy(buf + buflen, h2->payload, payload_len);
+
+
+	*len = buflen + payload_len;
+}
+
+static void hepv3_to_buf(struct hepv3* h3, char* buf, int *len)
+{
+	#define CONVERT_HEP_CHUNK(_src_chunk, _dst_chunk)          \
+	do {                                                       \
+		_dst_chunk.vendor_id = htons(_src_chunk.vendor_id);    \
+		_dst_chunk.length    = htons(_src_chunk.length);       \
+		_dst_chunk.type_id   = htons(_src_chunk.type_id);      \
+	} while(0);
+
+
+	#define CHUNK_COPY_AND_UPDATE(buf, len, chunk)             \
+		do {                                                   \
+			memcpy(buf+len, &chunk, sizeof(chunk));            \
+			len += sizeof(chunk);                              \
+		} while(0);
+
+	int af;
+	int buflen=sizeof(hep_ctrl_t);
+
+	unsigned char osip_proto;
+
+	generic_chunk_t* it;
+
+	hep_chunk_t chunk_copy;
+
+	u_int16_t data16;
+	u_int32_t data32;
+
+	if (h3->hg.ip_family.chunk.length == 0) {
+		LM_WARN("ip family chunk removed! considering default IPv4!\n");
+		af = AF_INET;
+	} else {
+		if (h3->hg.ip_family.data != AF_INET && h3->hg.ip_family.data != AF_INET6) {
+			LM_ERR("Unknown family <%d>! Will use IPv4\n", h3->hg.ip_family.data);
+			af = AF_INET;
+		}
+		af = h3->hg.ip_family.data;
+	}
+
+
+	if (h3->hg.ip_family.chunk.length) {
+		CONVERT_HEP_CHUNK(h3->hg.ip_family.chunk, chunk_copy);
+		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+		memcpy(buf+buflen, &h3->hg.ip_family.data, sizeof(u_int8_t));
+		buflen += sizeof(u_int8_t);
+	}
+
+	if (h3->hg.ip_proto.chunk.length) {
+		CONVERT_HEP_CHUNK(h3->hg.ip_proto.chunk, chunk_copy);
+		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+		osip_proto = h3->hg.ip_proto.data;
+		osip_to_net_proto(&h3->hg.ip_proto.data);
+
+		memcpy(buf+buflen, &h3->hg.ip_proto.data, sizeof(u_int8_t));
+		buflen += sizeof(u_int8_t);
+
+		h3->hg.ip_proto.data = osip_proto;
+	}
+
+	if (h3->hg.src_port.chunk.length) {
+		CONVERT_HEP_CHUNK(h3->hg.src_port.chunk, chunk_copy);
+		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+		data16 = htons(h3->hg.src_port.data);
+		memcpy(buf+buflen, &data16, sizeof(u_int16_t));
+		buflen += sizeof(u_int16_t);
+	}
+
+	if (h3->hg.dst_port.chunk.length) {
+		CONVERT_HEP_CHUNK(h3->hg.dst_port.chunk, chunk_copy);
+		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+		data16 = htons(h3->hg.dst_port.data);
+		memcpy(buf+buflen, &data16, sizeof(u_int16_t));
+		buflen += sizeof(u_int16_t);
+	}
+
+	if (h3->hg.time_sec.chunk.length) {
+		CONVERT_HEP_CHUNK(h3->hg.time_sec.chunk, chunk_copy);
+		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+		data32 = htonl(h3->hg.time_sec.data);
+		memcpy(buf+buflen, &data32, sizeof(u_int32_t));
+		buflen += sizeof(u_int32_t);
+	}
+
+	if (h3->hg.time_usec.chunk.length) {
+		CONVERT_HEP_CHUNK(h3->hg.time_usec.chunk, chunk_copy);
+		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+		data32 = htonl(h3->hg.time_usec.data);
+		memcpy(buf+buflen, &data32, sizeof(u_int32_t));
+		buflen += sizeof(u_int32_t);
+	}
+
+	if (h3->hg.proto_t.chunk.length) {
+		CONVERT_HEP_CHUNK(h3->hg.proto_t.chunk, chunk_copy);
+		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+		memcpy(buf+buflen, &h3->hg.proto_t.data, sizeof(u_int8_t));
+		buflen += sizeof(u_int8_t);
+	}
+
+	if (h3->hg.capt_id.chunk.length) {
+		CONVERT_HEP_CHUNK(h3->hg.capt_id.chunk, chunk_copy);
+		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+		data32 = htonl(h3->hg.capt_id.data);
+		memcpy(buf+buflen, &data32, sizeof(u_int32_t));
+		buflen += sizeof(u_int32_t);
+	}
+
+	if (af == AF_INET) {
+		if (h3->addr.ip4_addr.src_ip4.chunk.length) {
+			CONVERT_HEP_CHUNK(h3->addr.ip4_addr.src_ip4.chunk, chunk_copy);
+			CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+			memcpy(buf+buflen, &h3->addr.ip4_addr.src_ip4.data,
+					sizeof(struct in_addr));
+			buflen += sizeof(struct in_addr);
+		}
+
+		if (h3->addr.ip4_addr.dst_ip4.chunk.length) {
+			CONVERT_HEP_CHUNK(h3->addr.ip4_addr.dst_ip4.chunk, chunk_copy);
+			CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+			memcpy(buf+buflen, &h3->addr.ip4_addr.dst_ip4.data,
+					sizeof(struct in_addr));
+			buflen += sizeof(struct in_addr);
+		}
+	} else {
+		if (h3->addr.ip6_addr.src_ip6.chunk.length) {
+			CONVERT_HEP_CHUNK(h3->addr.ip6_addr.src_ip6.chunk, chunk_copy);
+			CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+			memcpy(buf+buflen, &h3->addr.ip6_addr.src_ip6.data,
+					sizeof(struct in6_addr));
+			buflen += sizeof(struct in6_addr);
+		}
+
+		if (h3->addr.ip6_addr.dst_ip6.chunk.length) {
+			CONVERT_HEP_CHUNK(h3->addr.ip6_addr.dst_ip6.chunk, chunk_copy);
+			CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+			memcpy(buf+buflen, &h3->addr.ip6_addr.dst_ip6.data,
+					sizeof(struct in6_addr));
+			buflen += sizeof(struct in6_addr);
+		}
+	}
+
+	for (it=h3->chunk_list; it; it=it->next) {
+		CONVERT_HEP_CHUNK(it->chunk, chunk_copy);
+		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+
+		memcpy(buf+buflen, it->data, it->chunk.length - sizeof(hep_chunk_t));
+		buflen += it->chunk.length - sizeof(hep_chunk_t);
+	}
+
+	if (h3->payload_chunk.chunk.length) {
+		CONVERT_HEP_CHUNK(h3->payload_chunk.chunk, chunk_copy);
+		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+
+		memcpy(buf+buflen, h3->payload_chunk.data,
+				h3->payload_chunk.chunk.length - sizeof(hep_chunk_t));
+		buflen += (h3->payload_chunk.chunk.length - sizeof(hep_chunk_t));
+	}
+
+	memcpy(((hep_ctrl_t*)buf)->id, HEP_HEADER_ID, HEP_HEADER_ID_LEN);
+	((hep_ctrl_t*)buf)->length = htons(buflen);
+
+	*len = buflen;
+}
+
+
+static int build_hep_buf(str* hep_buf, int* proto)
+{
+
+	struct hep_context *ctx;
+
+	ctx = HEP_GET_CONTEXT(hep_api);
+	if (ctx == NULL) {
+		LM_ERR("Hep context not there!");
+		return -1;
+	}
+
+	if (ctx->h.version == 3) {
+		*proto = ctx->h.u.hepv3.hg.ip_proto.data;
+		hepv3_to_buf(&ctx->h.u.hepv3, hep_buf->s, &hep_buf->len);
+	} else {
+		*proto = ctx->h.u.hepv12.hdr.hp_p;
+		hepv2_to_buf(&ctx->h.u.hepv12, hep_buf->s, &hep_buf->len);
+	}
+
+	return ctx->h.version;
+}
+
+static int w_hep_relay(struct sip_msg *msg)
+{
+	struct proxy_l* proxy;
+	struct sip_uri uri;
+
+	struct socket_info* send_sock;
+
+	union sockaddr_union to;
+
+	str* uri_s;
+	str  buf_s;
+
+	int hep_version;
+	int proto;
+
+	if (msg==NULL) {
+		LM_ERR("Invalid sip message!\n");
+		return -1;
+	}
+
+	uri_s=GET_NEXT_HOP(msg);
+	if (parse_uri(uri_s->s, uri_s->len, &uri) < 0) {
+		LM_ERR("bad uri <%.*s>!\n", uri_s->len, uri_s->s);
+		return -1;
+	}
+
+	/* build everything but the sip message because we don't have it yet*/
+	buf_s.s = payload_buf;
+
+	/* this way we will know what's the size of the hep payload
+	 * in version 1/2 */
+	buf_s.len = msg->len;
+	if ((hep_version=build_hep_buf(&buf_s, &proto)) < 0) {
+		LM_ERR("failed to append hep header!\n");
+		return -1;
+	}
+
+	/* get net info */
+	proxy = mk_proxy(
+		&uri.host,
+		uri.port_no?uri.port_no:SIP_PORT, proto, 0 );
+	if (proxy == 0) {
+		LM_ERR("bad host name in URI <%.*s>\n", uri_s->len, ZSW(uri_s->s));
+		return 0;
+	}
+
+	hostent2su( &to, &proxy->host, proxy->addr_idx,
+				(proxy->port)?proxy->port:SIP_PORT);
+
+	send_sock=get_send_socket(0, &to, PROTO_HEP);
+	if (send_sock==0){
+		LM_ERR("cannot forward to af %d, proto %d no corresponding"
+			"listening socket\n", to.s.sa_family, proxy->proto);
+		return -1;
+	}
+
+	do {
+		if (msg_send(NULL, PROTO_HEP, &to, 0, buf_s.s, buf_s.len, msg)<0){
+			LM_ERR("failed to send message!\n");
+			continue;
+		}
+
+		break;
+	} while( get_next_su( proxy, &to, 0)==0 );
+
+	free_proxy(proxy);
+	pkg_free(proxy);
 
 	return 1;
 }
