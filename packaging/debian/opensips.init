@@ -43,15 +43,6 @@ if [ "$RUN_OPENSIPS" != "yes" ]; then
     exit 0
 fi
 
-# Do not start opensips if fork=no is set in the config file
-# otherwise the boot process will just stop
-check_fork ()
-{
-    if grep -q "^[[:space:]]*fork[[:space:]]*=[[:space:]]*no.*" $CFGFILE; then
-	echo "Not starting $DESC: fork=no specified in config file; run /etc/init.d/opensips debug instead"
-	exit 1
-    fi
-}
 
 check_opensips_config ()
 {
@@ -112,13 +103,9 @@ fi
 OPTIONS="-P $PIDFILE -m $S_MEMORY -M $P_MEMORY -u $USER -g $GROUP"
 
 case "$1" in
-  start|debug)
+  start)
 	check_opensips_config
 	create_radius_seqfile
-
-	if [ "$1" != "debug" ]; then
-	    check_fork
-	fi
 
 	# dirs under /var/run will go away on reboot.
 	mkdir -p "$HOMEDIR"
@@ -176,7 +163,7 @@ case "$1" in
 	;;
   *)
 	N=/etc/init.d/$NAME
-	echo "Usage: $N {start|stop|restart|force-reload|debug|status}" >&2
+	echo "Usage: $N {start|stop|restart|force-reload|status}" >&2
 	exit 1
 	;;
 esac

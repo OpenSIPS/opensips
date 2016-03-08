@@ -311,8 +311,8 @@ Chapter 2. Frequently Asked Questions
 
        How can I debug ssl/tls problems?
 
-       Increase the log level in opensips.cfg (debug=4) and watch the
-       log statements in syslog.
+       Increase the log level in opensips.cfg (log_level=4) and watch
+       the log statements in syslog.
 
        Install the ssldump utility and start it. This will give you a
        trace of the ssl/tls connections.

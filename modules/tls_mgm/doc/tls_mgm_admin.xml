@@ -1157,8 +1157,7 @@ route{
 			<title>Script with TLS support</title>
 		<programlisting format="linespecific">
   # ----------- global configuration parameters ------------------------
-  debug=3
-  fork=yes
+  log_level=3
   log_stderror=no
 
   check_via=no

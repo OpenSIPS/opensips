@@ -30,7 +30,7 @@ fi ;
 CFG=18.cfg
 
 # setup config
-echo -e "debug=3" > $CFG
+echo -e "log_level=3" > $CFG
 
 # start:
 ../opensips -f ./$CFG -l 127.0.0.1 -n 0 -rR -v  -E -d -T -N 0 -b 23 -m 42 -w ./  -u $(id -u)  -g $(id -g) -P ./pid.out -G ./pgid.out  > /dev/null 2>&1

@@ -1,6 +1,4 @@
 #
-# $Id$
-#
 # OpenSIPS trunking script
 #     by OpenSIPS Solutions <team@opensips-solutions.com>
 #
@@ -17,17 +15,14 @@
 
 ####### Global Parameters #########
 
-debug=3
+log_level=3
 log_stderror=no
 log_facility=LOG_LOCAL0
 
-fork=yes
 children=4
 
 /* uncomment the following lines to enable debugging */
-#debug=6
-#fork=no
-#log_stderror=yes
+#debug_mode=yes
 
 /* uncomment the next line to enable the auto temporary blacklisting of 
    not available destinations (default disabled) */

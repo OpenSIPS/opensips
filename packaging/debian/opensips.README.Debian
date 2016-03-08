@@ -1,19 +1,6 @@
 OpenSIPS for Debian
 ------------------
 
-* init script check for fork=no
--------------------------------
-
-The OpenSIPS init script will not start OpenSIPS on boot if fork=no is
-specified in the config file. The check in the initscript will match
-any occurrence of fork=no in the file, even inside C-style comments.
-
-You can disable this check in the init script if you wish; just comment
-out the calls to the check_fork function in the script. Your changes to
-the init script will be preserved upon upgrade, as the file is tagged
-as a conffile.
-
-
 * OpenSIPS setup
 ---------------
 

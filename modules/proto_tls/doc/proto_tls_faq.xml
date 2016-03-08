@@ -48,8 +48,8 @@
 		</question>
 		<answer>
 		<para>
-			Increase the log level in opensips.cfg (debug=4) and watch the log
-			statements in syslog.
+			Increase the log level in opensips.cfg (log_level=4) and watch 
+			the log statements in syslog.
 		</para>
 		<para>
 			Install the ssldump utility and start it. This will give you a trace

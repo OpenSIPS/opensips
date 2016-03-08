@@ -959,8 +959,7 @@ route{
 
    Example 1.33. Script with TLS support
   # ----------- global configuration parameters ------------------------
-  debug=3
-  fork=yes
+  log_level=3
   log_stderror=no
 
   check_via=no
