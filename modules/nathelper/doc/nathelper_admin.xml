@@ -475,6 +475,11 @@ modparam("nathelper", "max_pings_lost", 5)
 		be added to the modified contact;
 		</para>
 		<para>
+		<emphasis>IMPORTANT NOTE: </emphasis> Changes made by this function shall
+		not be seen in the async resume route. So make sure you call it in all the
+		resume routes where you need the contact fixed.
+		</para>
+		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
 		</para>
 		<example>
