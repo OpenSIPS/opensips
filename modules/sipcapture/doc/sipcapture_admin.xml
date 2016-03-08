@@ -701,6 +701,37 @@ hep_del("25"); /* removes chunk with chunk id 25 */
 		</section>
 
 
+		<section>
+		<title>
+			<function moreinfo="none">hep_relay()</function>
+		</title>
+		<para>
+		Relay a message statefully to destination indicated in current URI.
+		(If the original URI was rewritten by UsrLoc, RR, strip/prefix, etc.,
+		the new URI will be taken). The message has to have been a HEP message,
+		version 1, 2 or 3.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
+		</para>
+<example>
+<title><function>hep_relay</function> usage</title>
+<programlisting format="linespecific">
+...
+$du="sip:192.168.153.157";
+if (!hep_relay()) {
+	xlog("Hep proxying failed!\n");
+	exit;
+}
+
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+
+
 
 	</section>
 
