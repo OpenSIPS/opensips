@@ -2,7 +2,7 @@ INSERT INTO version (table_name, table_version) values ('location','1011');
 CREATE TABLE location (
     contact_id BIGINT(10) PRIMARY KEY,
     username VARCHAR2(64) DEFAULT '',
-    domain VARCHAR2(64) DEFAULT '',
+    domain VARCHAR2(64) DEFAULT NULL,
     contact VARCHAR2(255) DEFAULT '',
     received VARCHAR2(128) DEFAULT NULL,
     path VARCHAR2(255) DEFAULT NULL,

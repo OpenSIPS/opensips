@@ -40,7 +40,7 @@
         <type>string</type>
         <size>&domain_len;</size>
         <null/>
-        <default>&DEFAULT_DOMAIN;</default>
+        <default><null/></default>
         <description>Domain name</description>
         <natural/>
     </column>
