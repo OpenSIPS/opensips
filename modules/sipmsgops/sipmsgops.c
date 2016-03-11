@@ -1604,13 +1604,14 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 				}
 				memset(disp, 0, sizeof(struct disposition));
 
-				switch (parse_disposition(&(hf->body), disp)) {
-					case -2:
-						free_disposition(&disp);
-					case -1:
-						LM_DBG("cannot parse disposition\n");
-						goto failed;
+				if (parse_disposition(&(hf->body), disp)<0) {
+					free_disposition(&disp);
+					LM_DBG("cannot parse disposition\n");
+					goto failed;
 				}
+				/* even if success, we need to free the parsed disposition
+				   hdr as it is not linked anywhere */
+				free_disposition(&disp);
 				break;
 
 				/* to-style headers */
