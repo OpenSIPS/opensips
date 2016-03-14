@@ -35,8 +35,8 @@
 
 typedef struct _rmq_send {
 	evi_reply_sock *sock;
-	char msg[0];
 	int process_idx;
+	char msg[0];
 } rmq_send_t;
 
 void rmq_process(int rank);
