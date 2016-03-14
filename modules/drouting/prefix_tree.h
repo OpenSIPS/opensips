@@ -35,6 +35,7 @@
 #include "../../str.h"
 #include "../../ip_addr.h"
 #include "../../time_rec.h"
+#include "../../map.h"
 
 #define PTREE_CHILDREN 10
 #define IS_DECIMAL_DIGIT(d) \
@@ -199,22 +200,25 @@ add_rt_info(
 	);
 
 pgw_t*
-get_gw_by_id(
-	pgw_t *gw,
-	str *id
-	);
-
-pgw_t*
 get_gw_by_internal_id(
-	pgw_t *gw,
+	map_t gw_tree,
 	unsigned int id
 	);
 
+
+pgw_t*
+get_gw_by_id(
+		map_t pgw_tree,
+		str *id
+		);
+
 pcr_t*
 get_carrier_by_id(
-	pcr_t *carrier,
-	str *id
-	);
+		map_t carriers_tree,
+		str *id
+		);
+
+
 
 void
 del_rt_list(

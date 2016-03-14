@@ -32,7 +32,9 @@
 #include <assert.h>
 #include <unistd.h>
 
+
 #include "../../evi/evi.h"
+#include "../../map.h"
 
 #include "dr_load.h"
 #include "prefix_tree.h"
@@ -584,7 +586,7 @@ static int dr_disable_w_part(struct sip_msg *req, struct head_db *current_partit
 		return -1;
 	}
 
-	gw = get_gw_by_id( (*current_partition->rdata)->pgw_l, &id_val.s );
+	gw = get_gw_by_id( (*current_partition->rdata)->pgw_tree, &id_val.s );
 	if (gw!=NULL && (gw->flags&DR_DST_STAT_DSBL_FLAG)==0) {
 		LM_INFO(" partition : %.*s\n", current_partition->partition.len,
 				current_partition->partition.s);
@@ -624,7 +626,7 @@ static void dr_probing_callback( struct cell *t, int type,
 
 	_id = ((param_prob_callback_t*)*ps->param)->_id;
 
-	gw = get_gw_by_internal_id( (*(current_partition->rdata))->pgw_l, _id);
+	gw = get_gw_by_internal_id( (*(current_partition->rdata))->pgw_tree, _id);
 	if (gw==NULL)
 		goto end;
 
@@ -666,6 +668,9 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 	dlg_t *dlg;
 	str uri;
 
+	void** dest;
+	map_iterator_t map_it;
+
 	struct head_db *it = head_db_start;
 	while( it!=NULL ) {
 		if (it->rdata==NULL || *(it->rdata)==NULL)
@@ -674,7 +679,15 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 		lock_start_read( it->ref_lock );
 
 		/* go through all destinations */
-		for( dst = (*(it->rdata))->pgw_l ; dst ; dst=dst->next ) {
+		for (map_first( (*(it->rdata))->pgw_tree, &map_it);
+				iterator_is_valid(&map_it); iterator_next(&map_it)) {
+
+			dest = iterator_val(&map_it);
+			if (dest==NULL)
+				break;
+
+			dst = (pgw_t*)*dest;
+
 			/* dst requires probing ? */
 			if ( dst->flags&DR_DST_STAT_NOEN_FLAG
 					|| !( (dst->flags&DR_DST_PING_PERM_FLAG)  ||  /*permanent probing*/
@@ -730,6 +743,9 @@ static void dr_state_flusher(struct head_db* hd)
 	db_key_t key_set;
 	db_val_t val_set;
 
+	void** dest;
+	map_iterator_t it;
+
 	if(!hd) {
 		LM_ERR(" Bug - no head supplied to dr_state_flusher\n");
 	}
@@ -753,7 +769,15 @@ static void dr_state_flusher(struct head_db* hd)
 	key_set = &state_drd_col;
 
 	/* iterate the gateways */
-	for( gw=(*hd->rdata)->pgw_l ; gw ; gw=gw->next ) {
+	for (map_first((*hd->rdata)->pgw_tree , &it);
+			iterator_is_valid(&it); iterator_next(&it)) {
+
+		dest = iterator_val(&it);
+		if (dest==NULL)
+			break;
+
+		gw = (pgw_t*)*dest;
+
 		if ( (gw->flags & DR_DST_STAT_DIRT_FLAG)==0 )
 			/* nothing to do for this gateway */
 			continue;
@@ -783,7 +807,15 @@ static void dr_state_flusher(struct head_db* hd)
 	key_set = &state_drc_col;
 
 	/* iterate the carriers */
-	for( cr=(*hd->rdata)->carriers ; cr ; cr=cr->next ) {
+	for (map_first( (*hd->rdata)->carriers_tree, &it);
+			iterator_is_valid(&it); iterator_next(&it)) {
+
+		dest = iterator_val(&it);
+		if (dest==NULL)
+			break;
+
+		cr = (pcr_t*)*dest;
+
 		if ( (cr->flags & DR_CR_FLAG_DIRTY)==0 )
 			/* nothing to do for this carrier */
 			continue;
@@ -836,6 +868,9 @@ static inline int dr_reload_data_head( struct head_db *hd )
 	pcr_t *cr, *old_cr;
 	time_t rawtime;
 
+	void **dest;
+	map_iterator_t it;
+
 	if (no_concurrent_reload) {
 		lock_get( hd->ref_lock->lock );
 		if (hd->ongoing_reload) {
@@ -868,16 +903,31 @@ static inline int dr_reload_data_head( struct head_db *hd )
 	if (old_data) {
 		/* copy the state of gw/cr from old data */
 		/* interate new gws and search them into old data */
-		for( gw=new_data->pgw_l ; gw ; gw=gw->next ) {
-			old_gw = get_gw_by_id( old_data->pgw_l, &gw->id);
+		for (map_first(new_data->pgw_tree, &it);
+				iterator_is_valid(&it); iterator_next(&it)) {
+			dest = iterator_val(&it);
+			if(dest==NULL)
+				break;
+
+			gw=(pgw_t *)*dest;
+
+			old_gw = get_gw_by_id( old_data->pgw_tree, &gw->id);
 			if (old_gw) {
 				gw->flags &= ~DR_DST_STAT_MASK;
 				gw->flags |= old_gw->flags&DR_DST_STAT_MASK;
 			}
 		}
 		/* interate new crs and search them into old data */
-		for( cr=new_data->carriers ; cr ; cr=cr->next ) {
-			old_cr = get_carrier_by_id( old_data->carriers, &cr->id);
+		for (map_first(new_data->carriers_tree, &it);
+				iterator_is_valid(&it); iterator_next(&it)) {
+			dest = iterator_val(&it);
+			if(dest==NULL)
+				break;
+
+			cr=(pcr_t *)*dest;
+
+
+			old_cr = get_carrier_by_id( old_data->carriers_tree, &cr->id);
 			if (old_cr) {
 				cr->flags &= ~DR_CR_FLAG_IS_OFF;
 				cr->flags |= old_cr->flags&DR_CR_FLAG_IS_OFF;
@@ -889,7 +939,7 @@ static inline int dr_reload_data_head( struct head_db *hd )
 	}
 
 	/* generate new blacklist from the routing info */
-	populate_dr_bls((*(hd->rdata))->pgw_l);
+	populate_dr_bls((*(hd->rdata))->pgw_tree);
 
 	if (no_concurrent_reload)
 		hd->ongoing_reload = 0;
@@ -2207,7 +2257,7 @@ static int use_next_gw_w_part(struct sip_msg* msg,
 
 		/* we have an ID, so we can check the GW state */
 		lock_start_read( current_partition->ref_lock );
-		dst = get_gw_by_id( (*current_partition->rdata)->pgw_l, &val.s);
+		dst = get_gw_by_id( (*current_partition->rdata)->pgw_tree, &val.s);
 		if (dst && (dst->flags & DR_DST_STAT_DSBL_FLAG) == 0)
 			ok = 1;
 
@@ -2533,7 +2583,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 
 	/* allow no GWs if we're only trying to use DR for checking purposes */
 	if ( *(current_partition->rdata)==0 || ((flags & DR_PARAM_ONLY_CHECK) == 0
-				&& (*(current_partition->rdata))->pgw_l==0 )) {
+				&& (*(current_partition->rdata))->pgw_tree==0 )) {
 		LM_DBG("empty routing table\n");
 		goto error1;
 	}
@@ -3012,7 +3062,7 @@ static int route2_carrier(struct sip_msg* msg, char* part_carrier,
 	}
 
 
-	if ( (*current_partition->rdata)==0 || (*current_partition->rdata)->pgw_l==0 ) {
+	if ( (*current_partition->rdata)==0 || (*current_partition->rdata)->pgw_tree==0 ) {
 		LM_DBG("empty routing table\n");
 		return -1;
 	}
@@ -3060,7 +3110,7 @@ static int route2_carrier(struct sip_msg* msg, char* part_carrier,
 	/* ref the data for reading */
 	lock_start_read( current_partition->ref_lock );
 
-	cr = get_carrier_by_id( (*current_partition->rdata)->carriers, &id );
+	cr = get_carrier_by_id( (*current_partition->rdata)->carriers_tree, &id );
 	if (cr==NULL) {
 		LM_ERR("carrier <%.*s> was not found\n", id.len, id.s );
 		goto error;
@@ -3197,7 +3247,7 @@ static int route2_gw(struct sip_msg* msg, char* ch_part_gw, char* gw_att_pv)
 	}
 
 
-	if ( (*current_partition->rdata)==0 || (*current_partition->rdata)->pgw_l==0 ) {
+	if ( (*current_partition->rdata)==0 || (*current_partition->rdata)->pgw_tree==0 ) {
 		LM_DBG("empty routing table\n");
 		return -1;
 	}
@@ -3251,7 +3301,7 @@ static int route2_gw(struct sip_msg* msg, char* ch_part_gw, char* gw_att_pv)
 			return -1;
 		} else {
 			LM_DBG("found and looking for gw id <%.*s>,len=%d\n",id.len, id.s, id.len);
-			gw = get_gw_by_id( (*current_partition->rdata)->pgw_l, &id );
+			gw = get_gw_by_id( (*current_partition->rdata)->pgw_tree, &id );
 			if (gw==NULL) {
 				LM_ERR("no GW found with ID <%.*s> -> ignorring\n", id.len, id.s);
 			} else if ( push_gw_for_usage(msg, current_partition, &uri, gw, NULL, NULL, idx ) ) {
@@ -3915,6 +3965,9 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 	int i;
 	struct head_db *current_partition = (struct head_db *)part;
 
+	void** dest;
+	map_iterator_t gw_it, cr_it;
+
 	if(current_partition == NULL || current_partition->rdata==NULL
 			|| *current_partition->rdata==NULL || msg==NULL)
 		return -1;
@@ -3938,8 +3991,15 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 	}
 
 	if(current_partition->rdata!=NULL && *current_partition->rdata!=NULL) {
-		pgwa = (*current_partition->rdata)->pgw_l;
-		while(pgwa) {
+		for (map_first((*current_partition->rdata)->pgw_tree, &gw_it);
+			iterator_is_valid(&gw_it); iterator_next(&gw_it)) {
+
+			dest = iterator_val(&gw_it);
+			if (dest==NULL)
+				break;
+
+			pgwa = (pgw_t*)*dest;
+
 			if( (type<0 || type==pgwa->type) &&
 			gw_matches_ip( pgwa, ip, (flags&DR_IFG_IGNOREPORT_FLAG)?0:port )) {
 				/* strip ? */
@@ -3974,8 +4034,15 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 
 				if ( flags & DR_IFG_CARRIERID_FLAG ) {
 					/* lookup first carrier that contains this gw */
-					for (pcr=(*current_partition->rdata)->carriers;pcr;
-					pcr=pcr->next) {
+					for (map_first((*current_partition->rdata)->carriers_tree, &cr_it);
+							iterator_is_valid(&cr_it); iterator_next(&cr_it)) {
+
+						dest = iterator_val(&cr_it);
+						if (dest==NULL)
+							break;
+
+						pcr = (pcr_t*)*dest;
+
 						for (i=0;i<pcr->pgwa_len;i++) {
 							if (pcr->pgwl[i].is_carrier == 0 &&
 									pcr->pgwl[i].dst.gw == pgwa ) {
@@ -4196,6 +4263,9 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 	str *id;
 	int old_flags;
 
+	void** dest;
+	map_iterator_t it;
+
 	node = cmd->node.kids;
 
 
@@ -4216,7 +4286,15 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 			goto error;
 		rpl_tree->node.flags |= MI_IS_ARRAY;
 
-		for( gw=(*current_partition->rdata)->pgw_l ; gw ; gw=gw->next ) {
+		for (map_first((*current_partition->rdata)->pgw_tree, &it);
+				iterator_is_valid(&it); iterator_next(&it)) {
+
+			dest = iterator_val(&it);
+			if (dest==NULL)
+				return NULL;
+
+			gw = (pgw_t*)*dest;
+
 			node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
 					"ID", 2, gw->id.s, gw->id.len);
 			if (node==NULL) goto error;
@@ -4247,7 +4325,7 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 	id =  &node->value;
 
 	/* search for the Gw */
-	gw = get_gw_by_id( (*current_partition->rdata)->pgw_l, id);
+	gw = get_gw_by_id( (*current_partition->rdata)->pgw_tree, id);
 	if (gw==NULL) {
 		rpl_tree = init_mi_tree( 404, MI_SSTR("GW ID not found"));
 		goto done;
@@ -4325,6 +4403,9 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 	str *id;
 	int old_flags;
 
+	void** dest;
+	map_iterator_t it;
+
 	node = cmd->node.kids;
 
 	if( (rpl_tree = mi_w_partition(&node, &current_partition))
@@ -4346,7 +4427,14 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 			goto error;
 		rpl_tree->node.flags |= MI_IS_ARRAY;
 
-		for( cr=(*current_partition->rdata)->carriers ; cr ; cr=cr->next ) {
+		for (map_first((*current_partition->rdata)->carriers_tree, &it);
+				iterator_is_valid(&it); iterator_next(&it)) {
+			dest = iterator_val(&it);
+			if (dest==NULL)
+				return NULL;
+
+			cr = (pcr_t*)*dest;
+
 			node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
 					"ID", 2, cr->id.s, cr->id.len);
 			if (node==NULL) goto error;
@@ -4362,7 +4450,7 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 	id =  &node->value;
 
 	/* search for the Carrier */
-	cr = get_carrier_by_id( (*current_partition->rdata)->carriers, id);
+	cr = get_carrier_by_id( (*current_partition->rdata)->carriers_tree, id);
 	if (cr==NULL) {
 		rpl_tree = init_mi_tree( 404, MI_SSTR("Carrier ID not found"));
 		goto done;

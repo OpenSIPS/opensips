@@ -216,7 +216,7 @@ void destroy_dr_bls(void)
 }
 
 
-int populate_dr_bls(pgw_t *pgwa)
+int populate_dr_bls(map_t pgw_tree)
 {
 	unsigned int i,j;
 	struct dr_bl *drbl;
@@ -225,16 +225,26 @@ int populate_dr_bls(pgw_t *pgwa)
 	struct bl_rule *drbl_last;
 	struct net *gw_net;
 
+	void** dest;
+	map_iterator_t it;
+
 	/* each bl list at a time */
 	for( drbl=drbl_lists ; drbl ; drbl = drbl->next ) {
-		if( drbl->part && (*drbl->part->rdata) && (*drbl->part->rdata)->pgw_l == pgwa) { /* check if
+		if( drbl->part && (*drbl->part->rdata) && (*drbl->part->rdata)->pgw_tree == pgw_tree) { /* check if
 																							list applies to current
 																							partition */
 			drbl_first = drbl_last = NULL;
 			/* each type at a time */
 			for ( i=0 ; i<drbl->no_types ; i++ ) {
 				/* search in the GW list all GWs of this type */
-				for( gw=pgwa ; gw ; gw=gw->next ) {
+				for (map_first(pgw_tree, &it);
+					iterator_is_valid(&it); iterator_next(&it)) {
+					dest = iterator_val(&it);
+					if (dest==NULL)
+						break;
+
+					gw = (pgw_t*)*dest;
+
 					if (gw->type==drbl->types[i]) {
 						for ( j=0 ; j<gw->ips_no ; j++ ) {
 							gw_net = mk_net_bitlen( &gw->ips[j], gw->ips[j].len*8);

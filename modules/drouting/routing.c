@@ -39,7 +39,6 @@
 #include "../../mem/shm_mem.h"
 #include "../../parser/parse_uri.h"
 #include "../../time_rec.h"
-
 #include "routing.h"
 #include "prefix_tree.h"
 #include "parse.h"
@@ -59,6 +58,18 @@ build_rt_data( void )
 	memset(rdata, 0, sizeof(rt_data_t));
 
 	INIT_PTREE_NODE(NULL, rdata->pt);
+
+	rdata->pgw_tree = map_create( AVLMAP_SHARED );
+	rdata->carriers_tree = map_create( AVLMAP_SHARED );
+
+	if (rdata->pgw_tree == NULL || rdata->carriers_tree == NULL) {
+		LM_ERR("Initializing avl failed!\n");
+		if (rdata->pgw_tree)
+			map_destroy(rdata->pgw_tree, 0);
+		goto err_exit;
+
+	}
+
 
 	return rdata;
 err_exit:
@@ -128,9 +139,9 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 		id.len = tmp - id.s ;
 		/* look for the destination */
 		if (pgwl[size].is_carrier) {
-			pgwl[size].dst.carrier = get_carrier_by_id(rd->carriers, &id);
+			pgwl[size].dst.carrier = get_carrier_by_id(rd->carriers_tree, &id);
 		} else {
-			pgwl[size].dst.gw = get_gw_by_id(rd->pgw_l, &id);
+			pgwl[size].dst.gw = get_gw_by_id(rd->pgw_tree, &id);
 		}
 		if (pgwl[size].dst.gw==NULL)
 			LM_WARN("destination ID <%.*s> was not found\n",id.len,id.s);
@@ -218,6 +229,8 @@ int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 	pcr_t *cr = NULL;
 	unsigned int i;
 
+	str key;
+
 	/* allocate a new carrier structure */
 	cr = (pcr_t*)shm_malloc(sizeof(pcr_t)+strlen(id)+(attrs?strlen(attrs):0));
 	if (cr==NULL) {
@@ -267,8 +280,11 @@ int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 	}
 
 	/* link it */
-	cr->next = rd->carriers;
-	rd->carriers = cr;
+	key.s = id;
+	key.len = strlen(id);
+	LM_INFO("carriers key %.*s\n", key.len, key.s);
+	map_put(rd->carriers_tree, key, cr);
+
 
 	return 0;
 error:
@@ -438,7 +454,7 @@ add_dst(
 	)
 {
 	static unsigned id_counter = 0;
-	pgw_t *pgw=NULL, *tmp=NULL;
+	pgw_t *pgw=NULL;
 	struct sip_uri uri;
 	int l_ip,l_pri,l_attrs,l_id;
 #define GWABUF_MAX_SIZE	512
@@ -447,6 +463,7 @@ add_dst(
 	struct proxy_l *proxy;
 	unsigned int sip_prefix;
 	str gwas;
+	str key;
 
 	if (NULL==r || NULL==ip) {
 		LM_ERR("invalid parametres\n");
@@ -588,14 +605,15 @@ add_dst(
 	pkg_free(proxy);
 
 done:
-	if(NULL==r->pgw_l)
-		r->pgw_l = pgw;
-	else {
-		tmp = r->pgw_l;
-		while(NULL != tmp->next)
-			tmp = tmp->next;
-		tmp->next = pgw;
+	key.s = id;
+	key.len = strlen(id);
+
+	LM_INFO("pgw tree %p\n", r->pgw_tree);
+	if (map_put(r->pgw_tree, key, pgw)) {
+		LM_ERR("Duplicate gateway!\n");
+		return -1;
 	}
+
 	return 0;
 
 err_exit:
@@ -604,31 +622,33 @@ err_exit:
 	return -1;
 }
 
-void
-del_pgw_list(
-		pgw_t *pgw_l
-		)
+
+void destroy_pgw(void *pgw_p)
 {
-	pgw_t *t;
-	while(NULL!=pgw_l){
-		t = pgw_l;
-		pgw_l=pgw_l->next;
-		shm_free(t);
-	}
+	shm_free((pgw_t *)pgw_p);
 }
 
-void del_carriers_list(
-		pcr_t *carriers
+void destroy_pcr(void *pcr_p)
+{
+	shm_free((pcr_t *)pcr_p);
+}
+
+
+/* FIXME FREE AVL HERE */
+void
+del_pgw_list(
+		map_t pgw_tree
 		)
 {
-	pcr_t *it;
+	map_destroy(pgw_tree, destroy_pgw);
+}
 
-	while (NULL!=carriers) {
-		it = carriers;
-		carriers=carriers->next;
-		if(it->pgwl) shm_free(it->pgwl);
-		shm_free(it);
-	}
+/* FIXME FREE AVL HERE */
+void del_carriers_list(
+		map_t carriers_tree
+		)
+{
+	map_destroy(carriers_tree, destroy_pcr);
 }
 
 void
@@ -640,8 +660,8 @@ free_rt_data(
 	int j;
 	if(NULL!=rt_data) {
 		/* del GW list */
-		del_pgw_list(rt_data->pgw_l);
-		rt_data->pgw_l = 0 ;
+		del_pgw_list(rt_data->pgw_tree);
+		rt_data->pgw_tree = 0 ;
 		/* del prefix tree */
 		del_tree(rt_data->pt);
 		rt_data->pt = 0 ;
@@ -657,8 +677,8 @@ free_rt_data(
 			rt_data->noprefix.rg = 0;
 		}
 		/* del carriers */
-		del_carriers_list(rt_data->carriers);
-		rt_data->carriers=0;
+		del_carriers_list(rt_data->carriers_tree);
+		rt_data->carriers_tree=0;
 		/* del top level */
 		if (all) shm_free(rt_data);
 	}

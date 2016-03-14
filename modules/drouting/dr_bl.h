@@ -51,6 +51,6 @@ int init_dr_bls( struct head_db *);
 
 void destroy_dr_bls(void);
 
-int populate_dr_bls(pgw_t *pgwa);
+int populate_dr_bls(map_t pgw_tree);
 
 #endif

@@ -35,6 +35,7 @@
 #include "../../usr_avp.h"
 #include "../../time_rec.h"
 #include "prefix_tree.h"
+#include "../../map.h"
 
 #define RG_HASH_SIZE
 #define RG_INIT_LEN 4
@@ -52,10 +53,12 @@ typedef struct hb_ {
 	pointers to the coresponding prefix trees
 */
 typedef struct rt_data_ {
-	/* list of PSTN gw */
-	pgw_t *pgw_l;
-	/* list of carriers */
-	pcr_t *carriers;
+	/* avl of PSTN gw */
+	map_t pgw_tree;
+
+	/* avl of carriers */
+	map_t carriers_tree;
+
 	/* default routing list for prefixless rules */
 	ptree_node_t noprefix;
 	/* tree with routing prefixes */
@@ -135,8 +138,10 @@ parse_destination_list(
 
 void
 del_pgw_list(
-	pgw_t *pgw_l
-	);
+		map_t pgw_tree
+		);
+
+
 
 void
 free_rt_data(

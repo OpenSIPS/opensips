@@ -184,51 +184,49 @@ err_exit:
 
 pgw_t*
 get_gw_by_internal_id(
-		pgw_t* gw,
+		map_t gw_tree,
 		unsigned int id
 		)
 {
-	while(NULL != gw) {
+	pgw_t* gw;
+	void** dest;
+	map_iterator_t it;
+
+	for (map_first(gw_tree, &it); iterator_is_valid(&it); iterator_next(&it)) {
+
+		dest = iterator_val(&it);
+		if (dest==NULL)
+			return NULL;
+
+		gw = (pgw_t*)*dest;
 		if ( id == gw->_id)
 			return gw;
-		gw = gw->next;
 	}
+
+
 	return NULL;
 }
-
 
 
 pgw_t*
 get_gw_by_id(
-		pgw_t* gw,
+		map_t pgw_tree,
 		str *id
 		)
 {
-	while(NULL != gw) {
-		if ( (id->len == gw->id.len) &&
-		strncmp(id->s, gw->id.s, id->len)==0 ) {
-			return gw;
-		}
-		gw = gw->next;
-	}
-	return NULL;
+	return (pgw_t *)*map_get(pgw_tree, *id);
 }
-
 
 pcr_t*
 get_carrier_by_id(
-		pcr_t* carrier,
+		map_t carriers_tree,
 		str *id
 		)
 {
-	while(carrier) {
-		if ( (carrier->id.len==id->len) &&
-		strncmp(carrier->id.s,id->s,id->len)==0 )
-			return carrier;
-		carrier = carrier->next;
-	}
-	return NULL;
+	return (pcr_t*)*map_get(carriers_tree, *id);
 }
+
+
 
 
 int
