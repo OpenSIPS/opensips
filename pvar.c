@@ -1056,7 +1056,8 @@ static int pv_get_srcip(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL)
 		return -1;
 
-	s.s = ip_addr2a(&msg->rcv.src_ip);
+	if ( (s.s=ip_addr2a(&msg->rcv.src_ip))==NULL)
+		return pv_get_null(msg, param, res);
 	s.len = strlen(s.s);
 	return pv_get_strval(msg, param, res, &s);
 }
