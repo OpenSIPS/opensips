@@ -216,6 +216,10 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	if (async_status>=0) {
 		/* async I/O was successfully launched */
 		fd = async_status;
+		if (msg->REQ_METHOD==METHOD_ACK) {
+			/* end2end ACK, there is no actual transaction here */
+			goto sync;
+		}
 	} else if (async_status==ASYNC_NO_IO) {
 		/* no IO, so simply go for resume route */
 		goto resume;
