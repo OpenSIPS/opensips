@@ -116,6 +116,9 @@ int evi_raise_event(event_id_t id, evi_params_t* params)
 	req->first_line.u.request.method.len= 5;
 	req->first_line.u.request.uri.s= "sip:user@domain.com";
 	req->first_line.u.request.uri.len= 19;
+	req->rcv.src_ip.af = AF_INET;
+	req->rcv.dst_ip.af = AF_INET;
+
 
 	bak_avps = set_avp_list(&event_avps);
 
