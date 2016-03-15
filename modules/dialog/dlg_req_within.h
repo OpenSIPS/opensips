@@ -88,6 +88,8 @@ static inline int push_new_processing_context( struct dlg_cell *dlg,
 		my_msg->first_line.u.request.method.len= 5;
 		my_msg->first_line.u.request.uri.s= "sip:user@domain.com";
 		my_msg->first_line.u.request.uri.len= 19;
+		my_msg->rcv.src_ip.af = AF_INET;
+		my_msg->rcv.dst_ip.af = AF_INET;
 		*fake_msg = my_msg;
 	}
 
