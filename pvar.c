@@ -1046,7 +1046,17 @@ static int pv_get_srcip(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL)
 		return -1;
 
+	//SRCIP not populated. Local Message?
+	if (msg->rcv.src_ip.len == 0) {
+		return pv_get_null(msg, param, res);
+	}
+
 	s.s = ip_addr2a(&msg->rcv.src_ip);
+	//Check for failure to avoid segfault
+	if(s.s == 0) {
+		return -1;
+	}
+
 	s.len = strlen(s.s);
 	return pv_get_strval(msg, param, res, &s);
 }
