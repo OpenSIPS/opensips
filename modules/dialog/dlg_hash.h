@@ -325,6 +325,12 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 struct mi_root * mi_print_dlgs(struct mi_root *cmd, void *param );
 struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd, void *param );
 
+static inline void unref_dlg_destroy_safe(struct dlg_cell *dlg, unsigned int cnt)
+{
+	if (d_table)
+		unref_dlg(dlg, cnt);
+}
+
 static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 			str *ftag, str *ttag, unsigned int *dir, unsigned int *dst_leg) {
 	str *tag;

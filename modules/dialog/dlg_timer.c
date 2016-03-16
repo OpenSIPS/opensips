@@ -631,9 +631,7 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 
 void unref_dlg_cb(void *dlg)
 {
-	if (!d_table)
-		return;
-	unref_dlg((struct dlg_cell*)dlg,1);
+	unref_dlg_destroy_safe((struct dlg_cell*)dlg,1);
 }
 
 void dlg_ping_routine(unsigned int ticks , void * attr)

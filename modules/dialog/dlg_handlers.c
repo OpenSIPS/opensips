@@ -777,9 +777,7 @@ static void unreference_dialog_cseq(void *cseq_wrap)
 void unreference_dialog(void *dialog)
 {
 	/* if the dialog table is gone, it means the system is shutting down.*/
-	if (!d_table)
-		return;
-	unref_dlg((struct dlg_cell*)dialog, 1);
+	unref_dlg_destroy_safe((struct dlg_cell*)dialog, 1);
 }
 
 
@@ -797,8 +795,7 @@ static void unreference_dialog_create(void *dialog)
 static void tmcb_unreference_dialog(struct cell* t, int type,
 													struct tmcb_params *param)
 {
-	if (d_table)
-		unref_dlg((struct dlg_cell*)*param->param, 1);
+	unref_dlg_destroy_safe((struct dlg_cell*)*param->param, 1);
 }
 
 

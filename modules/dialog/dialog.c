@@ -632,7 +632,7 @@ int load_dlg( struct dlg_binds *dlgb )
 	dlgb->is_mod_flag_set = is_mod_flag_set_wrapper;
 
 	dlgb->ref_dlg = ref_dlg;
-	dlgb->unref_dlg = unref_dlg;
+	dlgb->unref_dlg = unref_dlg_destroy_safe;
 
 	dlgb->get_rr_param = get_rr_param;
 
