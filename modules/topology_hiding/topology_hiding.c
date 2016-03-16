@@ -206,6 +206,7 @@ static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_valu
 {
 	struct dlg_cell *dlg;
 	int req_len = 0,i;
+	char *p;
 
 	if(res==NULL)
 		return -1;
@@ -234,6 +235,12 @@ static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_valu
 
 	base64encode((unsigned char *)(callid_buf+topo_hiding_prefix.len+req_len),
 		     (unsigned char *)(callid_buf),dlg->callid.len);
+
+	p = callid_buf+ 2*req_len - 1;
+	while (*p == '=') {
+		*p = '-';
+		p--;
+	}
 
 	res->rs.s = callid_buf+req_len;
 	res->rs.len = req_len;
