@@ -432,6 +432,7 @@ error01:
 			shm_free(t->uac[branch].path_vec.s);
 		if (t->uac[branch].duri.s)
 			shm_free(t->uac[branch].duri.s);
+		memset(&t->uac[branch],0,sizeof(t->uac[branch]));
 	}
 error:
 	return ret;
