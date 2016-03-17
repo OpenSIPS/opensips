@@ -30,12 +30,17 @@ if [ -z "$PGSQL" ] ; then
 	PGSQL="$TOOLPATH"
 fi
 
+if ! [ -z "$DBPORT" ]; then
+	PORT_OPT="-p$DBPORT"
+else
+	PORT_OPT=
+fi
 
 # input: sql query, optional pgsql command-line params
 pgsql_query() {
 	# if password not yet queried, query it now
 	prompt_pw "PgSQL password for user '$DBRWUSER@$DBHOST'"
-	mecho "pgsql_query: $PGSQL $2 -A -q -t -P fieldsep='	' -h $DBHOST -U $DBRWUSER $DBNAME -c '$1'"
+	mecho "pgsql_query: $PGSQL $2 -A -q -t -P fieldsep='	' -h $DBHOST $PORT_OPT -U $DBRWUSER $DBNAME -c '$1'"
 	PGPASSWORD="$DBRWPW" $PGSQL $2 \
 		-A -q -t \
 		-P fieldsep="	" \
