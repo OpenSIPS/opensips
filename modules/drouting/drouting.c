@@ -3968,20 +3968,37 @@ static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port)
 static int _is_dr_gw(struct sip_msg* msg, char * part,
 		char * flags_pv, int type, struct ip_addr *ip,
 		unsigned int port) {
+
+	int ret=-1;
+
 	struct head_db * it;
 	if(use_partitions) {
 		if(part == NULL || ((dr_partition_t*)part)->type == DR_NO_PART) {
 			LM_ERR("Partition is mandatory!\n");
 			return -1;
-		} else if(((dr_partition_t*)part)->type == DR_PTR_PART) {
+		}
+
+		if(((dr_partition_t*)part)->type == DR_PTR_PART) {
 			return _is_dr_gw_w_part(msg, (char*)((dr_partition_t*)part)->v.part,
 					flags_pv, type, ip, port);
 		} else if(((dr_partition_t*)part)->type == DR_GPARAM_PART) {
-			if(to_partition(msg, (dr_partition_t*)part, &it) < 0) {
+			if((ret=to_partition(msg, (dr_partition_t*)part, &it) < 0)) {
 				return -1;
+			} else if (ret == 0) {
+				return _is_dr_gw_w_part(msg, (char*)it,flags_pv, type, ip, port);
 			}
-			return _is_dr_gw_w_part(msg, (char*)it,flags_pv, type, ip, port);
 		}
+
+		/* if we got here we have the wildcard operator */
+		for (it = head_db_start; it; it = it->next) {
+			ret = _is_dr_gw_w_part(msg, (char *)it, flags_pv, type, ip, port);
+			if (ret > 0)
+				return ret;
+		}
+
+		return ret;
+
+
 	} else {
 		if( head_db_start == NULL ) {
 			LM_ERR("Error loading config.");
