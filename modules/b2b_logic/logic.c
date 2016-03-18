@@ -2697,7 +2697,6 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	}
 	/* create new client */
-
 	memset(&ci, 0, sizeof(client_info_t));
 	ci.method        = msg->first_line.u.request.method;
 	ci.req_uri       = *(GET_RURI(msg));
@@ -2984,8 +2983,8 @@ int udh_to_uri(str user, str host, str port, str* uri)
 		return -1;
 	}
 
-	uri->len = sprintf(uri->s, "sip:%.*s@%.*s", user.len, user.s,
-			host.len, host.s);
+	uri->len = sprintf(uri->s, "sip:%.*s%.*s%.*s", user.len, user.s,
+			user.len?1:0,"@",host.len, host.s);
 	if(port.s)
 	{
 		uri->len += sprintf(uri->s+uri->len, ":%.*s", port.len, port.s);
