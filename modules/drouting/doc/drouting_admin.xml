@@ -818,7 +818,7 @@ modparam("drouting", "persistent_state", 0)
 		<para>
 			If enabled, the module will not allow do run multiple dr_reload
 			MI commands in parallel (with overlapping)  Any new reload will
-			be rejected (and discarded) while an existing reload is in 
+			be rejected (and discarded) while an existing reload is in
 			progress.
 			</para>
 			<para>
@@ -1117,6 +1117,7 @@ modparam("drouting", "db_partitions_table", "partition_defs")
 						parameter is 1 - both the partition name and the groupId may be statical
 						values or AVP specifications. If no group is specified the function will
 						try to query the dr_group table for the given partition to get this information.
+						If <emphasis>* (wildcard)</emphasis> operator is used all partitions shall be checked.
 					</para>
 					</listitem>
 					</itemizedlist>
@@ -1648,7 +1649,8 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 					<para>
 					<emphasis role='bold'>partition</emphasis> (mandatory if <varname>use_partitions
 					</varname> parameter is 1, otherwise it will be omitted altogether) - Partition
-					containing the destination/gw to be checked.
+					containing the destination/gw to be checked. If <emphasis>*(wildcard)</emphasis>
+					operator is used all partitions shall be checked.
 					</para>
 				</listitem>
 				<listitem>
@@ -2094,7 +2096,7 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 	<section>
 		<title><varname>dr_number_routing</varname></title>
 		<para>
-			Gets the matched prefix along with the  list of the gateways / carriers to which a number 
+			Gets the matched prefix along with the  list of the gateways / carriers to which a number
 			would be routed when using the do_routing function
 		</para>
 		<itemizedlist>

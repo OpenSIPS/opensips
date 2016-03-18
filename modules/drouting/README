@@ -872,7 +872,8 @@ modparam("drouting", "db_partitions_table", "partition_defs")
             name and the groupId may be statical values or AVP
             specifications. If no group is specified the function
             will try to query the dr_group table for the given
-            partition to get this information.
+            partition to get this information. If * (wildcard)
+            operator is used all partitions shall be checked.
      * flags - Controls the behavior of the function. Possible
        flags are:
           + W - Instead of using the destination (from the rule
@@ -1203,7 +1204,8 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
    marks "," are properly placed.
      * partition (mandatory if use_partitions parameter is 1,
        otherwise it will be omitted altogether) - Partition
-       containing the destination/gw to be checked.
+       containing the destination/gw to be checked. If *(wildcard)
+       operator is used all partitions shall be checked.
      * type (optional) - GW/destination type to be checked; when
        omitting this parameter or specifying a negative value i.e.
        "-1", matching will be done against all groups
