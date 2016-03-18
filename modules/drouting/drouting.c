@@ -186,7 +186,7 @@ typedef struct dr_partition {
 		gparam_p part_name;
 	} v;
 
-	enum dr_partition_type { DR_PTR_PART, DR_GPARAM_PART, DR_NO_PART } type;
+	enum dr_partition_type { DR_PTR_PART, DR_GPARAM_PART, DR_WILDCARD_PART, DR_NO_PART } type;
 } dr_partition_t;
 
 typedef struct dr_part_group {
@@ -2549,9 +2549,11 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 	str ruri;
 	str next_carrier_attrs = {NULL, 0};
 	str next_gw_attrs = {NULL, 0};
-	int ret;
+	int ret, fret;
 	char tmp;
 	char *ruri_buf;
+
+	gparam_p tmp_gparam = NULL;
 
 	ret = -1;
 	ruri_buf = NULL;
@@ -2564,12 +2566,41 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 			LM_ERR("Partition name is mandatory for do_routing\n");
 			return -1;
 		}
+
 		if(part_group->dr_part->type == DR_GPARAM_PART) {
-			if (to_partition(msg, part_group->dr_part, &current_partition)<0) {
+			if ((fret=to_partition(msg, part_group->dr_part, &current_partition))<0) {
 				return -1;
+			} else if (fret == 1) {
+				tmp_gparam = part_group->dr_part->v.part_name;
+				part_group->dr_part->type = DR_WILDCARD_PART;
 			}
+
 		} else if(part_group->dr_part->type == DR_PTR_PART) {
 			current_partition = part_group->dr_part->v.part;
+		}
+
+
+		if (part_group->dr_part->type == DR_WILDCARD_PART) {
+			for (current_partition = head_db_start;
+					current_partition; current_partition = current_partition->next) {
+				part_group->dr_part->v.part = current_partition;
+				part_group->dr_part->type = DR_PTR_PART;
+
+				ret=do_routing( msg, part_group, flags, whitelist);
+				if (ret > 0)
+					break;
+			}
+
+			/* restore to initial state */
+			if (tmp_gparam) {
+				part_group->dr_part->type = DR_GPARAM_PART;
+			} else {
+				memset(part_group->dr_part, 0, sizeof(dr_partition_t));
+				part_group->dr_part->type = DR_WILDCARD_PART;
+			}
+
+			/* ret must be less than 0 here if nothing found */
+			return ret;
 		}
 	} else {
 		if(part_group->dr_part->type == DR_PTR_PART) {
@@ -3390,6 +3421,12 @@ int fxup_get_partition(void ** part_name, dr_partition_t ** x) {
 	if( ((gparam_p)(*part_name))->type==GPARAM_TYPE_STR ) { /* was
 															   defined statically */
 		str_part_name = (( (gparam_p) (*part_name))->v.sval);
+		str_trim_spaces_lr(str_part_name);
+		if (str_part_name.len == 1 && str_part_name.s[0] == '*') {
+			(*x)->type = DR_WILDCARD_PART;
+			return 0;
+		}
+
 		if((part = get_partition(&str_part_name)) == NULL) {
 			LM_CRIT("Partition <%.*s> was not found.\n", str_part_name.len,
 					str_part_name.s);
@@ -3413,6 +3450,14 @@ static int to_partition(struct sip_msg* msg, dr_partition_t *part,
 		LM_ERR("Failed to parse avp/pve.\n");
 		return -1;
 	}
+
+	str_trim_spaces_lr(part_name);
+
+	/* check for wildcard operator */
+	if ( part_name.len == 1 && part_name.s[0] == '*') {
+		return 1;
+	}
+
 	if((*current_partition = get_partition(&part_name)) == NULL) {
 		LM_ERR("Partition <%.*s> was not found.\n", part_name.len, part_name.s);
 		return -1;
