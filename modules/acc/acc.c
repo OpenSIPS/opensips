@@ -595,7 +595,9 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 		query_list_t **ins_list, int cdr_flag)
 {
 	static db_ps_t my_ps_ins = NULL;
+	static db_ps_t my_ps_ins2 = NULL;
 	static db_ps_t my_ps = NULL;
+	static db_ps_t my_ps2 = NULL;
 	int m;
 	int n;
 	int i;
@@ -629,7 +631,8 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	}
 
 	acc_dbf.use_table(db_handle, &acc_env.text/*table*/);
-	CON_PS_REFERENCE(db_handle) = ins_list? &my_ps_ins : &my_ps;
+	CON_PS_REFERENCE(db_handle) = cdr_flag ?
+		(ins_list? &my_ps_ins2:&my_ps2) : (ins_list? &my_ps_ins:&my_ps);
 
 	/* multi-leg columns */
 	if ( !leg_info ) {
