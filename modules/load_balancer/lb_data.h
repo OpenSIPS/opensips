@@ -31,6 +31,7 @@
 #ifndef LB_LB_DATA_H_
 #define LB_LB_DATA_H_
 
+#include "../../mod_fix.h"
 #include "../../str.h"
 #include "../../locking.h"
 #include "../../parser/msg_parser.h"
@@ -97,7 +98,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 int do_lb_disable(struct sip_msg *req, struct lb_data *data);
 
 int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
-		pv_spec_t *pv_ip, pv_spec_t *pv_port, int grp, int active);
+		pv_spec_t *pv_ip, gparam_t *pv_port, int group, int active);
 
 int lb_count_call(struct lb_data *data, struct sip_msg *req,
 		struct ip_addr *ip, int port, int grp, struct lb_res_str_list *rl);
