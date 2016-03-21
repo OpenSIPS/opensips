@@ -194,7 +194,8 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	} else {
 		/* update the cloned UAS (from transaction)
 		 * with data from current msg */
-		update_cloned_msg_from_msg( t->uas.request, msg);
+		if (t->uas.request)
+			update_cloned_msg_from_msg( t->uas.request, msg);
 	}
 
 	/* run the function (the action) and get back from it the FD,
@@ -216,8 +217,11 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	if (async_status>=0) {
 		/* async I/O was successfully launched */
 		fd = async_status;
-		if (msg->REQ_METHOD==METHOD_ACK) {
-			/* end2end ACK, there is no actual transaction here */
+		if (msg->REQ_METHOD==METHOD_ACK ||
+		/* ^^^ end2end ACK, there is no actual transaction here */
+		t->uas.request==NULL
+		/* ^^^ local requests do not support async in local route */
+		) {
 			goto sync;
 		}
 	} else if (async_status==ASYNC_NO_IO) {
