@@ -29,6 +29,8 @@
 #include <time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
+#include <math.h>
 
 #include "dprint.h"
 #include "mem/mem.h"
@@ -162,6 +164,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val)
 {
 	int i, j;
+	double d;
 	char *p, *s;
 	str st;
 	pv_value_t v;
@@ -182,8 +185,25 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		case TR_S_INT:
 			if(!(val->flags&PV_VAL_INT))
 			{
-				if(str2sint(&val->rs, &val->ri)!=0)
-					return -1;
+
+				//Empty String = 0
+				if(val->rs.len == 0) {
+					val->ri = 0;
+				//Try converting to INT
+				} else if(str2sint(&val->rs, &val->ri)!=0) {
+					//Try converting to Double
+					errno = 0;
+					d = strtod(val->rs.s, NULL);
+
+					if(errno != 0) {
+						return -1;
+					}
+
+					//Use truncation for getting int value. Ensures consistent treatment
+					//trunc(1.5) is 1.0 and trunc(-1.5) is -1.0
+					//mathops gives users more rounding options if they require them
+					val->ri = trunc(d);
+				}
 			} else {
 				if(!(val->flags&PV_VAL_STR))
 					val->rs.s = int2str(val->ri, &val->rs.len);
