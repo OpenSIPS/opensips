@@ -484,55 +484,53 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 			}
 			params_node = mi_xmlNodeGetNodeByName(methodCall_node->children,
 									MI_XMLRPC_HTTP_XML_PARAMS_NODE);
-			if (params_node==NULL) {
-				LM_ERR("missing node %s\n", MI_XMLRPC_HTTP_XML_PARAMS_NODE);
-				goto xml_error;
-			}
-			for(param_node=params_node->children;
+			if (params_node!=NULL) {
+				for(param_node=params_node->children;
 						param_node;param_node=param_node->next){
-				if (xmlStrcasecmp(param_node->name,
-					(const xmlChar*)MI_XMLRPC_HTTP_XML_PARAM_NODE) == 0) {
-					value_node = mi_xmlNodeGetNodeByName(param_node->children,
+					if (xmlStrcasecmp(param_node->name,
+						(const xmlChar*)MI_XMLRPC_HTTP_XML_PARAM_NODE) == 0) {
+						value_node = mi_xmlNodeGetNodeByName(param_node->children,
 								MI_XMLRPC_HTTP_XML_VALUE_NODE);
-					if (value_node==NULL) {
-						LM_ERR("missing node %s\n",
-								MI_XMLRPC_HTTP_XML_VALUE_NODE);
-						goto xml_error;
-					}
-					string_node = mi_xmlNodeGetNodeByName(value_node->children,
+						if (value_node==NULL) {
+							LM_ERR("missing node %s\n",
+									MI_XMLRPC_HTTP_XML_VALUE_NODE);
+							goto xml_error;
+						}
+						string_node = mi_xmlNodeGetNodeByName(value_node->children,
 								MI_XMLRPC_HTTP_XML_STRING_NODE);
-					if (string_node==NULL) {
-						LM_ERR("missing node %s\n",
+						if (string_node==NULL) {
+							LM_ERR("missing node %s\n",
 								MI_XMLRPC_HTTP_XML_STRING_NODE);
-						goto xml_error;
-					}
-					val.s = (char*)xmlNodeGetContent(string_node);
-					if(val.s==NULL){
-						LM_ERR("No content for node [%s]\n",
+							goto xml_error;
+						}
+						val.s = (char*)xmlNodeGetContent(string_node);
+						if(val.s==NULL){
+							LM_ERR("No content for node [%s]\n",
 								string_node->name);
-						goto xml_error;
-					}
-					val.len = strlen(val.s);
-					if(val.len==0){
-						LM_ERR("Empty content for node [%s]\n",
+							goto xml_error;
+						}
+						val.len = strlen(val.s);
+						if(val.len==0){
+							LM_ERR("Empty content for node [%s]\n",
 								string_node->name);
-						goto xml_error;
-					}
-					LM_DBG("got string param [%.*s]\n", val.len, val.s);
+							goto xml_error;
+						}
+						LM_DBG("got string param [%.*s]\n", val.len, val.s);
 
-					esc_val.s = shm_malloc(val.len);
-					if (esc_val.s == NULL) {
-						free_mi_tree(mi_cmd);
-						goto xml_error;
-					}
-					esc_val.len = unescape_xml(esc_val.s, val.s, val.len);
-					LM_DBG("got escaped string param [%.*s]\n", esc_val.len, esc_val.s);
+						esc_val.s = shm_malloc(val.len);
+						if (esc_val.s == NULL) {
+							free_mi_tree(mi_cmd);
+							goto xml_error;
+						}
+						esc_val.len = unescape_xml(esc_val.s, val.s, val.len);
+						LM_DBG("got escaped string param [%.*s]\n", esc_val.len, esc_val.s);
 
-					node = &mi_cmd->node;
-					if(!add_mi_node_child(node,0,NULL,0,esc_val.s,esc_val.len)){
-						LM_ERR("cannot add the child node to the tree\n");
-						free_mi_tree(mi_cmd);
-						goto xml_error;
+						node = &mi_cmd->node;
+						if(!add_mi_node_child(node,0,NULL,0,esc_val.s,esc_val.len)){
+							LM_ERR("cannot add the child node to the tree\n");
+							free_mi_tree(mi_cmd);
+							goto xml_error;
+						}
 					}
 				}
 			}
