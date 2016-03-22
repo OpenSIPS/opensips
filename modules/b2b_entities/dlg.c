@@ -860,15 +860,17 @@ logic_notify:
 						LM_DBG("Received another request when the previous "
 							"one was in process\n");
 						str text = str_init("Request Pending");
-						if(tmb.t_reply_with_body(dlg->uas_tran, 491,
+						if(tmb.t_reply_with_body( tm_tran, 491,
 						&text, 0, 0, &to_tag) < 0)
 						{
 							LM_ERR("failed to send reply with tm\n");
 						}
 						LM_DBG("Sent reply [491] and unreffed the cell %p\n",
-							dlg->uas_tran);
+							tm_tran);
 					}
-					tmb.unref_cell(dlg->uas_tran);
+					tmb.unref_cell(tm_tran); /* for t_newtran() */
+					lock_release(&table[hash_index].lock);
+					return SCB_DROP_MSG;
 				}
 				dlg->uas_tran = tm_tran;
 				LM_DBG("Saved uas_tran=[%p] for dlg[%p]\n", tm_tran, dlg);
