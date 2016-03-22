@@ -1,7 +1,7 @@
 /**
  * drouting module developer api
  *
- * Copyright (C) 2014 OpenSIPS Foundation
+ * Copyright (C) 2014-2016 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -28,6 +28,7 @@
 #define _DROUTING_API_H_
 
 #include "routing.h"
+#include "dr_cb.h"
 #include "../../lock_ops.h"
 #include "../../rw_locking.h"
 #include "../../sr_module.h"
@@ -47,10 +48,11 @@ typedef int (*add_rule_f)(dr_head_p partition, unsigned int rid,
 		tmrec_t *time_rec, void *attr);
 
 struct dr_binds {
-	create_head_f  create_head;
-	free_head_f    free_head;
-	match_number_f match_number;
-	add_rule_f     add_rule;
+	create_head_f   create_head;
+	free_head_f     free_head;
+	match_number_f  match_number;
+	add_rule_f      add_rule;
+	register_drcb_f register_drcb;
 };
 
 typedef int (*load_dr_api_f)(struct dr_binds *drb);

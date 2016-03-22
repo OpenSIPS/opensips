@@ -67,6 +67,7 @@ int load_dr (struct dr_binds *drb)
 	drb->create_head = create_dr_head;
 	drb->free_head = free_dr_head;
 	drb->add_rule = add_rule_api;
+	drb->register_drcb = register_dr_cb;
 	return 0;
 }
 

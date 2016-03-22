@@ -1785,6 +1785,9 @@ static int dr_exit(void)
 	/* destroy blacklists */
 	destroy_dr_bls();
 
+	/* destroy all callbacks */
+	destroy_dr_cbs();
+
 	return 0;
 }
 
