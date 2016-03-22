@@ -84,8 +84,8 @@ void destroy_dr_cbs(void)
 
 
 /* TODO: param will be the index in the array */
-int register_dr_cb(enum drcb_types type, drouting_cb f, void *param,
-															param_free_cb ff)
+int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
+														dr_param_free_cb ff)
 {
 	long int cb_sort_index = 0;
 	struct dr_callback *cb;

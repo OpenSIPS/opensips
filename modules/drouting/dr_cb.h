@@ -48,20 +48,20 @@ enum drcb_types {
 };
 
 /* callback function prototype */
-typedef void (drouting_cb) (void *param);
+typedef void (dr_cb) (void *param);
 /* function to free callback param */
-typedef void(param_free_cb) (void *param);
+typedef void(dr_param_free_cb) (void *param);
 
 /* register callback function protoype */
-typedef int (*register_drcb_f)(enum drcb_types, drouting_cb f, void *param,
-		param_free_cb ff);
-typedef int (*register_drcb_to_array_f)(enum drcb_types, drouting_cb f,
-		void *param, param_free_cb ff);
+typedef int (*register_drcb_f)(enum drcb_types, dr_cb f, void *param,
+		dr_param_free_cb ff);
+typedef int (*register_drcb_to_array_f)(enum drcb_types, dr_cb f,
+		void *param, dr_param_free_cb ff);
 
 struct dr_callback {
-	drouting_cb* callback;
+	dr_cb* callback;
 	void *param;
-	param_free_cb* callback_param_free;
+	dr_param_free_cb* callback_param_free;
 	struct dr_callback * next;
 };
 
@@ -84,8 +84,8 @@ typedef enum { NO_SORT = 1, WEIGHT_BASED_SORT = 2, QR_BASED_SORT = 3}
 extern unsigned char sort_algs[N_MAX_SORT_CBS];
 
 
-int register_dr_cb(enum drcb_types type, drouting_cb f, void *param,
-		param_free_cb ff);
+int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
+		dr_param_free_cb ff);
 int run_dr_cbs(enum drcb_types type, void *params);
 int run_dr_sort_cbs( sort_cb_type type, void *params);
 void destroy_dr_cbs(void);
