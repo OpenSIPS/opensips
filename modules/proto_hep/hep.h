@@ -32,6 +32,7 @@
 #define HEP_HEADER_ID_LEN (sizeof(HEP_HEADER_ID) - 1)
 
 #define HEP_SCRIPT_SKIP 0xFF
+
 #define HEP_MIN_INDEX 0x0001
 #define HEP_MAX_INDEX 0x0012
 
