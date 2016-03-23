@@ -101,7 +101,7 @@ static int parse_branch(str branch)
 	struct ping_cell *p_cell;
 
 	if (branch.len < BMAGIC_LEN
-			&& memcmp(branch.s, BMAGIC, BMAGIC_LEN)) {
+			|| memcmp(branch.s, BMAGIC, BMAGIC_LEN)) {
 		LM_ERR("invalid branch\n");
 		return -1;
 	}
