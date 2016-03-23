@@ -104,7 +104,7 @@ Chapter 1. Admin Guide
 
    Parameter to enable/disable trace (on(1)/off(0))
 
-   Default value is "0".
+   Default value is "1"(enabled).
 
    Example 1.1. Set trace_on parameter
 ...
