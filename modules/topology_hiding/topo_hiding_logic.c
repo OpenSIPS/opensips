@@ -1010,8 +1010,8 @@ static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 	}
 }
 
-static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_msg *req,
-		int init_req, int dir)
+static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl,
+								struct sip_msg *req, int init_req, int dir)
 {
 	int peer_leg;
 	struct lump* lmp;
@@ -1025,10 +1025,13 @@ static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_
 		return -1;
 	}
 
-	/* replace contact */
-	if(topo_dlg_replace_contact(rpl, dlg) < 0) {
-		LM_ERR("Failed to replace contact\n");
-		return -1;
+	/* replace contact, but not if a redirect reply for initial INVITE */
+	if ( !(init_req && dir == DLG_DIR_UPSTREAM &&
+	rpl->REPLY_STATUS>=300 && rpl->REPLY_STATUS<400) ) {
+		if(topo_dlg_replace_contact(rpl, dlg) < 0) {
+			LM_ERR("Failed to replace contact\n");
+			return -1;
+		}
 	}
 
 	if(dir == DLG_DIR_UPSTREAM)
@@ -1051,7 +1054,8 @@ static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_
 	/* pass the record route headers for this leg */
 	if(init_req && dir == DLG_DIR_UPSTREAM && leg->route_set.s) {
 
-		/* changed here for contact ( take care to insert the routes after own) */
+		/* changed here for contact
+		 * (take care to insert the routes after own) */
 
 		/* pass record route headers */
 		size = leg->route_set.len + RECORD_ROUTE_LEN + CRLF_LEN;
@@ -1066,7 +1070,8 @@ static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_
 		memcpy(route+RECORD_ROUTE_LEN+leg->route_set.len, CRLF, CRLF_LEN);
 
 		/* put after Via */
-		if ((lmp = insert_new_lump_after(lmp, route, size, HDR_RECORDROUTE_T)) == 0) {
+		if ((lmp =
+		insert_new_lump_after(lmp, route, size, HDR_RECORDROUTE_T)) == 0) {
 			LM_ERR("failed inserting new route set\n");
 			pkg_free(route);
 			return -1;
