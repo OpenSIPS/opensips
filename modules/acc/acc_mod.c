@@ -83,23 +83,14 @@ int report_cancels = 0;
 /* detect and correct direction in the sequential requests */
 int detect_direction = 0;
 /* should failed replies (>=3xx) be logged ? default==no */
-static char *failed_transaction_string = 0;
-int failed_transaction_flag = -1;
 /* multi call-leg support */
 static char* leg_info_str = 0;
 static char* leg_bye_info_str = 0;
 struct acc_extra *leg_info = 0;
 struct acc_extra *leg_bye_info = 0;
-static char *cdr_string = 0;
-int cdr_flag = -1;
 
 
 /* ----- SYSLOG acc variables ----------- */
-
-static char *log_string = 0;
-int acc_log_flag = -1;
-static char *log_missed_string = 0;
-int acc_log_missed_flag = -1;
 /* noisiness level logging facilities are used */
 int acc_log_level = L_NOTICE;
 /* log facility that is used */
@@ -113,11 +104,6 @@ struct acc_extra *log_extra_bye = 0;
 
 
 /* ----- AAA PROTOCOL acc variables ----------- */
-
-static char *aaa_string = 0;
-int aaa_flag = -1;
-static char *aaa_missed_string = 0;
-int aaa_missed_flag = -1;
 static int service_type = -1;
 char *aaa_proto_url = NULL;
 aaa_prot proto;
@@ -133,10 +119,6 @@ struct acc_extra *aaa_extra_bye = 0;
 /* ----- DIAMETER acc variables ----------- */
 
 #ifdef DIAM_ACC
-static char *diameter_string = 0;
-int diameter_flag = -1;
-static char *diameter_missed_string = 0;
-int diameter_missed_flag = -1;
 /* diameter extra variables */
 static char *dia_extra_str = 0;
 struct acc_extra *dia_extra = 0;
@@ -148,11 +130,6 @@ int diameter_client_port=3000;
 
 
 /* ----- SQL acc variables ----------- */
-
-static char *db_string = 0;
-int db_flag = -1;
-static char *db_missed_string = 0;
-int db_missed_flag = -1;
 /* db extra variables */
 static char *db_extra_str = 0;
 struct acc_extra *db_extra = 0;
@@ -180,11 +157,6 @@ str acc_setuptime_col  = str_init("setuptime");
 str acc_created_col    = str_init("created");
 
 /* ----- Event Interface acc variables ----------- */
-
-int evi_flag = -1;
-static char *evi_string = 0;
-int evi_missed_flag = -1;
-static char *evi_missed_string = 0;
 /* event extra variables */
 static char *evi_extra_str = 0;
 struct acc_extra *evi_extra = 0;
@@ -220,6 +192,23 @@ static cmd_export_t cmds[] = {
 	{"acc_evi_request", (cmd_function)w_acc_evi_request, 1,
 		acc_fixup, free_acc_fixup,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+
+	/* only the type of acc(db,evi...) */
+	{"do_accounting", (cmd_function)w_do_acc_1, 1,
+		do_acc_fixup, NULL,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+
+	/* type of acc(db,evi...) and flags(log cdr, log missed) */
+	{"do_accounting", (cmd_function)w_do_acc_2, 2,
+		do_acc_fixup, NULL,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+
+	/* type of acc(db,evi...) and flags(log cdr, log missed)
+	 * and db table */
+	{"do_accouting", (cmd_function)w_do_acc_3, 3,
+		do_acc_fixup, NULL,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -227,55 +216,31 @@ static cmd_export_t cmds[] = {
 
 static param_export_t params[] = {
 	{"early_media",             INT_PARAM, &early_media               },
-	{"failed_transaction_flag", STR_PARAM, &failed_transaction_string },
-	{"failed_transaction_flag", INT_PARAM, &failed_transaction_flag   },
 	{"report_cancels",          INT_PARAM, &report_cancels            },
 	{"multi_leg_info",          STR_PARAM, &leg_info_str              },
 	{"multi_leg_bye_info",      STR_PARAM, &leg_bye_info_str          },
 	{"detect_direction",        INT_PARAM, &detect_direction          },
-	{"cdr_flag",                STR_PARAM, &cdr_string                },
-	{"cdr_flag",                INT_PARAM, &cdr_flag                  },
 	/* syslog specific */
-	{"log_flag",             STR_PARAM, &log_string           },
-	{"log_flag",             INT_PARAM, &acc_log_flag         },
-	{"log_missed_flag",      STR_PARAM, &log_missed_string    },
-	{"log_missed_flag",      INT_PARAM, &acc_log_missed_flag  },
 	{"log_level",            INT_PARAM, &acc_log_level        },
 	{"log_facility",         STR_PARAM, &log_facility_str     },
 	{"log_extra",            STR_PARAM, &log_extra_str        },
 	{"log_extra_bye",        STR_PARAM, &log_extra_bye_str    },
 	/* aaa specific */
 	{"aaa_url",   		     STR_PARAM, &aaa_proto_url        },
-	{"aaa_flag",        	 STR_PARAM, &aaa_string           },
-	{"aaa_flag",        	 INT_PARAM, &aaa_flag    	      },
-	{"aaa_missed_flag",  	 STR_PARAM, &aaa_missed_string    },
-	{"aaa_missed_flag",  	 INT_PARAM, &aaa_missed_flag 	  },
 	{"service_type",         INT_PARAM, &service_type         },
 	{"aaa_extra",            STR_PARAM, &aaa_extra_str        },
 	{"aaa_extra_bye",        STR_PARAM, &aaa_extra_bye_str    },
 	/* event interface specific */
-	{"evi_flag",             STR_PARAM, &evi_string           },
-	{"evi_flag",             INT_PARAM, &evi_flag             },
-	{"evi_missed_flag",      STR_PARAM, &evi_missed_string    },
-	{"evi_missed_flag",      INT_PARAM, &evi_missed_flag      },
 	{"evi_extra",            STR_PARAM, &evi_extra_str        },
 	{"evi_extra_bye",        STR_PARAM, &evi_extra_bye_str    },
 
 	/* DIAMETER specific */
 #ifdef DIAM_ACC
-	{"diameter_flag",        STR_PARAM, &diameter_string        },
-	{"diameter_flag",        INT_PARAM, &diameter_flag          },
-	{"diameter_missed_flag", STR_PARAM, &diameter_missed_string },
-	{"diameter_missed_flag", INT_PARAM, &diameter_missed_flag   },
 	{"diameter_client_host", STR_PARAM, &diameter_client_host   },
 	{"diameter_client_port", INT_PARAM, &diameter_client_port   },
 	{"diameter_extra",       STR_PARAM, &dia_extra_str          },
 #endif
 	/* db-specific */
-	{"db_flag",              STR_PARAM, &db_string            },
-	{"db_flag",              INT_PARAM, &db_flag              },
-	{"db_missed_flag",       STR_PARAM, &db_missed_string     },
-	{"db_missed_flag",       INT_PARAM, &db_missed_flag       },
 	{"db_extra",             STR_PARAM, &db_extra_str         },
 	{"db_extra_bye",         STR_PARAM, &db_extra_bye_str     },
 	{"db_url",               STR_PARAM, &db_url.s             },
@@ -415,8 +380,6 @@ static int free_acc_fixup(void** param, int param_no)
 
 static int mod_init( void )
 {
-	pv_spec_t avp_spec;
-
 	LM_INFO("initializing...\n");
 
 	if (db_url.s)
@@ -442,35 +405,12 @@ static int mod_init( void )
 		}
 	}
 
-	/* ----------- GENERIC INIT SECTION  ----------- */
-
-	fix_flag_name(failed_transaction_string, failed_transaction_flag);
-
-	failed_transaction_flag =
-	    get_flag_id_by_name(FLAG_TYPE_MSG, failed_transaction_string);
-
-	if (flag_idx2mask(&failed_transaction_flag)<0)
-		return -1;
-	fix_flag_name(cdr_string, cdr_flag);
-
-	cdr_flag = get_flag_id_by_name(FLAG_TYPE_MSG, cdr_string);
-
-	if (flag_idx2mask(&cdr_flag)<0)
-		return -1;
-
 	/* load the TM API */
 	if (load_tm_api(&tmb)!=0) {
 		LM_ERR("can't load TM API\n");
 		return -1;
 	}
 
-	if (load_dlg_api(&dlg_api)!=0)
-		LM_DBG("failed to find dialog API - is dialog module loaded?\n");
-
-	if (cdr_flag && !dlg_api.get_dlg) {
-		LM_WARN("error loading dialog module - cdrs cannot be generated\n");
-		cdr_flag = 0;
-	}
 	/* if detect_direction is enabled, load rr also */
 	if (detect_direction) {
 		if (load_rr_api(&rrb)!=0) {
@@ -483,12 +423,6 @@ static int mod_init( void )
 				" - required by 'detect_direction'\n");
 			return -1;
 		}
-	}
-
-	/* listen for all incoming requests  */
-	if ( tmb.register_tmcb( 0, 0, TMCB_REQUEST_IN, acc_onreq, 0, 0 ) <=0 ) {
-		LM_ERR("cannot register TMCB_REQUEST_IN callback\n");
-		return -1;
 	}
 
 	/* init the extra engine */
@@ -517,20 +451,6 @@ static int mod_init( void )
 		return -1;
 	}
 
-	fix_flag_name(log_string, acc_log_flag);
-
-	acc_log_flag = get_flag_id_by_name(FLAG_TYPE_MSG, log_string);
-
-	if (flag_idx2mask(&acc_log_flag)<0)
-		return -1;
-
-	fix_flag_name(log_missed_string, acc_log_missed_flag);
-
-	acc_log_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG,log_missed_string);
-
-	if (flag_idx2mask(&acc_log_missed_flag)<0)
-		return -1;
-
 	acc_log_init();
 
 	/* ------------ SQL INIT SECTION ----------- */
@@ -551,37 +471,6 @@ static int mod_init( void )
 			LM_ERR("failed! bad db url / missing db module ?\n");
 			return -1;
 		}
-
-		/* fix the flags */
-		fix_flag_name(db_string, db_flag);
-
-		db_flag = get_flag_id_by_name(FLAG_TYPE_MSG, db_string);
-
-		if (flag_idx2mask(&db_flag)<0)
-			return -1;
-
-		fix_flag_name(db_missed_string, db_missed_flag);
-
-		db_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, db_missed_string);
-
-		if (flag_idx2mask(&db_missed_flag)<0)
-			return -1;
-		if (db_table_avp.s) {
-			db_table_avp.len = strlen(db_table_avp.s);
-			if (pv_parse_spec(&db_table_avp, &avp_spec) == 0 ||
-					avp_spec.type != PVT_AVP) {
-				LM_ERR("malformed or non AVP %s\n", db_table_avp.s);
-				return -1;
-			}
-			if (pv_get_avp_name(0, &avp_spec.pvp, &db_table_name,
-						&db_table_name_type)) {
-				LM_ERR("invalid definition of AVP %s\n", db_table_avp.s);
-				return -1;
-			}
-		}
-	} else {
-		db_flag = 0;
-		db_missed_flag = 0;
 	}
 
 	/* ------------ AAA PROTOCOL INIT SECTION ----------- */
@@ -597,50 +486,13 @@ static int mod_init( void )
 			LM_ERR("failed to parse aaa_extra_bye param\n");
 			return -1;
 		}
-
-		/* fix the flags */
-		fix_flag_name(aaa_string, aaa_flag);
-
-		aaa_flag = get_flag_id_by_name(FLAG_TYPE_MSG, aaa_string);
-
-		if (flag_idx2mask(&aaa_flag)<0)
-			return -1;
-
-		fix_flag_name(aaa_missed_string, aaa_missed_flag);
-
-		aaa_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, aaa_missed_string);
-
-		if (flag_idx2mask(&aaa_missed_flag)<0)
-			return -1;
-
-		if (init_acc_aaa(aaa_proto_url, service_type)!=0 ) {
-			LM_ERR("failed to init radius\n");
-			return -1;
-		}
 	} else {
 		aaa_proto_url = NULL;
-		aaa_flag = 0;
-		aaa_missed_flag = 0;
 	}
 
 	/* ------------ DIAMETER INIT SECTION ----------- */
 
 #ifdef DIAM_ACC
-	/* fix the flags */
-	fix_flag_name(diameter_string, diameter_flag);
-
-	diameter_flag = get_flag_id_by_name(FLAG_TYPE_MSG, diameter_string);
-
-	if (flag_idx2mask(&diameter_flag)<0)
-		return -1;
-
-	fix_flag_name(diameter_missed_string, diameter_missed_flag);
-
-	diameter_missed_flag=get_flag_id_by_name(FLAG_TYPE_MSG, diameter_missed_string);
-
-	if (flag_idx2mask(&diameter_missed_flag)<0)
-		return -1;
-
 	/* parse the extra string, if any */
 	if (dia_extra_str && (dia_extra=parse_acc_extra(dia_extra_str))==0 ) {
 		LM_ERR("failed to parse dia_extra param\n");
@@ -654,49 +506,6 @@ static int mod_init( void )
 
 #endif
 
-	/* ------------ EVENTS INIT SECTION ----------- */
-
-	if (evi_extra_str && (evi_extra = parse_acc_extra(evi_extra_str, 1))==0) {
-		LM_ERR("failed to parse evi_extra param\n");
-		return -1;
-	}
-	if (evi_extra_bye_str &&
-			(evi_extra_bye = parse_acc_extra(evi_extra_bye_str, 0))==0) {
-		LM_ERR("failed to parse evi_extra_bye param\n");
-		return -1;
-	}
-
-	/* fix the flags */
-	fix_flag_name(evi_string, evi_flag);
-
-	evi_flag = get_flag_id_by_name(FLAG_TYPE_MSG, evi_string);
-
-	if (flag_idx2mask(&evi_flag)<0)
-		return -1;
-
-	fix_flag_name(evi_missed_string, evi_missed_flag);
-
-	evi_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, evi_missed_string);
-
-	if (flag_idx2mask(&evi_missed_flag)<0)
-		return -1;
-
-	if (init_acc_evi() < 0) {
-		LM_ERR("cannot init acc events\n");
-		return -1;
-	}
-
-	/* load callbacks */
-	if (cdr_flag) {
-		if (parse_avp_spec( &acc_created_avp_name, &acc_created_avp_id) < 0) {
-			LM_ERR("failed to register AVP name <%s>\n", acc_created_avp_name.s);
-			return -1;
-		}
-		if (dlg_api.get_dlg && dlg_api.register_dlgcb(NULL,
-				DLGCB_LOADED,acc_loaded_callback, NULL, NULL) < 0)
-			LM_ERR("cannot register callback for dialog loaded - accounting "
-					"for ongoing calls will be lost after restart\n");
-	}
 
 	return 0;
 }
@@ -731,6 +540,25 @@ static int child_init(int rank)
 		return -1;
 	}
 	rb->buf = 0;
+
+
+
+	/* CDR flag will be checked at fixup so we need to init the keys in
+	 * here where we have that flag */
+
+	if (aaa_proto_url && aaa_proto_url[0]) {
+		if (init_acc_aaa(aaa_proto_url, service_type)!=0 ) {
+			LM_ERR("failed to init radius\n");
+			return -1;
+		}
+	}
+
+	if (init_acc_evi() < 0) {
+		LM_ERR("cannot init acc events\n");
+		return -1;
+	}
+
+
 #endif
 
 	return 0;

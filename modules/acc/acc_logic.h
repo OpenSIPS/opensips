@@ -32,6 +32,41 @@
 #include "../tm/t_hooks.h"
 #include "../dialog/dlg_cb.h"
 
+#define DO_ACC_LOG  (1<<(0*8))
+#define DO_ACC_AAA  (1<<(1*8))
+#define DO_ACC_DB   (1<<(2*8))
+#define DO_ACC_DIAM (1<<(3*8))
+#define DO_ACC_EVI  ((unsigned long long)1<<(4*8))
+
+#define DO_ACC        (1<<0) /* generic accouting flag - internal only */
+#define DO_ACC_CDR    (1<<1)
+#define DO_ACC_MISSED (1<<2)
+#define DO_ACC_FAILED (1<<3)
+
+#define DO_ACC_PARAM_TYPE_PV    (1<<0)
+#define DO_ACC_PARAM_TYPE_VALUE (1<<1)
+
+#define DO_ACC_LOG_STR  "log"
+#define DO_ACC_AAA_STR  "aaa"
+#define DO_ACC_DB_STR   "db"
+#define DO_ACC_DIAM_STR "diam"
+#define DO_ACC_EVI_STR  "evi"
+
+#define DO_ACC_CDR_STR    "cdr"
+#define DO_ACC_MISSED_STR "missed"
+#define DO_ACC_FAILED_STR "failed"
+
+#define DO_ACC_PARAM_DELIMITER '|'
+
+typedef unsigned long long (*do_acc_parser)(str*);
+
+typedef struct acc_type_param {
+	int t;
+	union {
+		unsigned long long ival;
+		pv_elem_p pval;
+	} u;
+} acc_type_param_t;
 
 /* various acc variables */
 struct acc_enviroment {
@@ -70,5 +105,13 @@ int w_acc_diam_request(struct sip_msg *rq, char *comment, char *foo);
 #endif
 
 int w_acc_evi_request(struct sip_msg *rq, pv_elem_t* comment, char *foo);
+
+
+int do_acc_fixup(void** param, int param_no);
+
+
+int w_do_acc_1(struct sip_msg* msg, char* type);
+int w_do_acc_2(struct sip_msg* msg, char* type, char* flags);
+int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p);
 
 #endif

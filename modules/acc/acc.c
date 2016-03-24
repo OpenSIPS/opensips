@@ -362,7 +362,7 @@ int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 
 	/* terminating line */
 	*(p++) = '\n';
-	*(p++) = 0;		
+	*(p++) = 0;
 
 	LM_GEN2(acc_log_facility, acc_log_level,
 		"%.*screated=%lu;call_start_time=%lu;duration=%lu;ms_duration=%lu;setuptime=%lu%s",
@@ -569,7 +569,6 @@ int acc_db_init(const str* db_url)
 
 	acc_db_close();
 
-	acc_db_init_keys();
 
 	return 0;
 }
@@ -579,6 +578,11 @@ int acc_db_init(const str* db_url)
  * returns 0 on success, -1 on error */
 int acc_db_init_child(const str *db_url)
 {
+
+	/* CDR flag will be checked at fixup so we need to init the keys in
+	 * here where we have that flag */
+	acc_db_init_keys();
+
 	db_handle=acc_dbf.init(db_url);
 	if (db_handle==0){
 		LM_ERR("unable to connect to the database\n");
@@ -722,7 +726,7 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	VAL_INT(db_vals_cdrs+ret+nr_vals+nr_bye_vals+1) = start_time.tv_sec - created;
 	VAL_TIME(db_vals_cdrs+ret+nr_vals+nr_bye_vals+2) = created;
 	VAL_INT(db_vals_cdrs+ret+nr_vals+nr_bye_vals+3) = end.tv_sec - start_time.tv_sec;
-	VAL_INT(db_vals_cdrs+ret+nr_vals+nr_bye_vals+4) = 
+	VAL_INT(db_vals_cdrs+ret+nr_vals+nr_bye_vals+4) =
 		(end.tv_sec-start_time.tv_sec)*1000+(end.tv_usec-start_time.tv_usec)%1000;
 
 	total = ret + 5;
