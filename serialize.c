@@ -67,7 +67,7 @@ int init_serialization(void)
 
 
 /*! \brief
- * Loads contacts in destination set into "serial_fork" AVP in reverse
+ * Loads contacts in destination set into "serial_avp" AVP in reverse
  * priority order and associated each contact with Q_FLAG telling if
  * contact is the last one in its priority class.  Finally, removes
  * all branches from destination set.
