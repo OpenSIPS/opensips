@@ -731,6 +731,16 @@ endif
 CFLAGS=$(shell echo "$${CFLAGS}")
 LDFLAGS+=
 
+ifeq	($(CC_NAME), gcc)
+	CC_OPTIMIZE_FLAG?=-O9
+endif
+ifeq	($(CC_NAME), icc)
+	CC_OPTIMIZE_FLAG?=-O3
+endif
+ifeq	($(CC_NAME), clang)
+	CC_OPTIMIZE_FLAG?=-O3
+endif
+
 ifeq (,$(CFLAGS))
 
 #common stuff
@@ -747,7 +757,7 @@ ifeq	($(ARCH), i386)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-m32 -O9 -funroll-loops  -Wcast-align $(PROFILE) \
+				CFLAGS+=-m32 $(CC_OPTIMIZE_FLAG) -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall
 				LDFLAGS+=-m32
 			#if gcc 4.0+
@@ -793,7 +803,7 @@ endif			# CC_CLASS, 4.x
 
 else		# CC_NAME, gcc
 ifeq		($(CC_NAME), icc)
-			CFLAGS+=-O3  -ipo -ipo_obj -unroll  $(PROFILE) \
+			CFLAGS+=$(CC_OPTIMIZE_FLAG)  -ipo -ipo_obj -unroll  $(PROFILE) \
 					 -tpp6 -xK  #-openmp  #optimize for PIII
 				# -prefetch doesn't seem to work
 				#( ty to inline acroos files, unroll loops,prefetch,
@@ -806,7 +816,7 @@ ifeq		($(CC_NAME), suncc)
 			# -Dinline="" # add this if cc < 5.3 (define inline as null)
 else
 ifeq		($(CC_NAME), clang)
-			CFLAGS+=-O3 -funroll-loops
+			CFLAGS+=$(CC_OPTIMIZE_FLAG) -funroll-loops
 else
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
@@ -825,7 +835,7 @@ ifeq	($(ARCH), x86_64)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
+				CFLAGS+=$(CC_OPTIMIZE_FLAG) -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
@@ -860,7 +870,7 @@ endif			# CC_CLASS, 4.x
 
 else		# CC_NAME, gcc
 ifeq		($(CC_NAME), icc)
-			CFLAGS+=-O3 -ipo -ipo_obj -unroll  $(PROFILE) \
+			CFLAGS+=$(CC_OPTIMIZE_FLAG) -ipo -ipo_obj -unroll  $(PROFILE) \
 					 -tpp6 -xK  #-openmp  #optimize for PIII
 				# -prefetch doesn't seem to work
 				#( ty to inline acroos files, unroll loops,prefetch,
@@ -873,7 +883,7 @@ ifeq		($(CC_NAME), suncc)
 				# -Dinline="" # add this if cc < 5.3 (define inline as null)
 else
 ifeq		($(CC_NAME), clang)
-			CFLAGS+=-O3 -funroll-loops
+			CFLAGS+=$(CC_OPTIMIZE_FLAG) -funroll-loops
 else
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
@@ -888,7 +898,7 @@ ifeq	($(ARCH), sparc64)
 			#if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O9 -funroll-loops  $(PROFILE) \
+				CFLAGS+=$(CC_OPTIMIZE_FLAG) -funroll-loops  $(PROFILE) \
 					-Wall\
 					#-Wcast-align \
 					#-Wmissing-prototypes
@@ -1029,7 +1039,7 @@ ifeq	($(ARCH), arm)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
+				CFLAGS+=$(CC_OPTIMIZE_FLAG) -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall -marm
 			#if gcc 4.x+
 ifeq			($(CC_CLASS), 4.x)
@@ -1065,7 +1075,7 @@ ifeq	($(ARCH), mips)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O9 -funroll-loops  -Wcast-align $(PROFILE) \
+				CFLAGS+=$(CC_OPTIMIZE_FLAG) -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
@@ -1102,7 +1112,7 @@ ifeq	($(ARCH), mips2)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O9 -mips2 -funroll-loops $(PROFILE) \
+				CFLAGS+=$(CC_OPTIMIZE_FLAG) -mips2 -funroll-loops $(PROFILE) \
 					-Wall
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
@@ -1136,7 +1146,7 @@ ifeq	($(ARCH), alpha)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall
+				CFLAGS+=$(CC_OPTIMIZE_FLAG) -funroll-loops $(PROFILE)  -Wall
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-minline-all-stringops
@@ -1169,7 +1179,7 @@ ifeq	($(ARCH), ppc)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall
+				CFLAGS+=$(CC_OPTIMIZE_FLAG) -funroll-loops $(PROFILE)  -Wall
 			#if gcc 4.0+
 ifeq			($(CC_CLASS), 4.x)
 					CPU_TYPE ?= powerpc
@@ -1204,7 +1214,7 @@ ifeq	($(ARCH), ppc64)
 		# if gcc
 ifeq		($(CC_NAME), gcc)
 				#common stuff
-				CFLAGS+=-O9 -funroll-loops $(PROFILE)  -Wall
+				CFLAGS+=$(CC_OPTIMIZE_FLAG) -funroll-loops $(PROFILE)  -Wall
 ifeq			($(CC_CLASS), 4.x)
 					CPU_TYPE ?= powerpc64
 					CFLAGS+=-ftree-vectorize \
