@@ -713,30 +713,34 @@ int check_transaction_quadruple( struct sip_msg* msg )
 /*
  * Make a private copy of the string and assign it to new_uri
  */
-int set_ruri(struct sip_msg* msg, str* uri)
+int set_ruri(struct sip_msg *msg, str *uri)
 {
-	char* ptr;
-
 	if (!msg || !uri) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
+	}
+
+	/* strange/corrupt input: best to assume it's an empty URI */
+	if (!uri->s || uri->len == 0) {
+		pkg_free(msg->new_uri.s);
+		memset(&msg->new_uri, 0, sizeof msg->new_uri);
+		return 0;
 	}
 
 	if (msg->new_uri.s && (msg->new_uri.len >= uri->len)) {
 		memcpy(msg->new_uri.s, uri->s, uri->len);
 		msg->new_uri.len = uri->len;
 	} else {
-		ptr = (char*)pkg_malloc(uri->len+1);
-		if (!ptr) {
+		msg->new_uri.s = pkg_realloc(msg->new_uri.s, uri->len + 1);
+		if (!msg->new_uri.s) {
 			LM_ERR("not enough pkg memory (%d)\n",uri->len);
 			return -1;
 		}
 
-		memcpy(ptr, uri->s, uri->len);
-		if (msg->new_uri.s) pkg_free(msg->new_uri.s);
-		msg->new_uri.s = ptr;
+		memcpy(msg->new_uri.s, uri->s, uri->len);
 		msg->new_uri.len = uri->len;
 	}
+
 	set_ruri_q(msg, Q_UNSPECIFIED);
 	msg->parsed_uri_ok = 0;
 	return 0;
@@ -747,60 +751,68 @@ int set_ruri(struct sip_msg* msg, str* uri)
 /*
  * Make a private copy of the string and assign it to dst_uri
  */
-int set_dst_uri(struct sip_msg* msg, str* uri)
+int set_dst_uri(struct sip_msg *msg, str *uri)
 {
-	char* ptr;
-
 	if (!msg || !uri) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
+	}
+
+	/* strange/corrupt input: best to assume it's an empty URI */
+	if (!uri->s || uri->len == 0) {
+		pkg_free(msg->dst_uri.s);
+		memset(&msg->dst_uri, 0, sizeof msg->dst_uri);
+		return 0;
 	}
 
 	if (msg->dst_uri.s && (msg->dst_uri.len >= uri->len)) {
 		memcpy(msg->dst_uri.s, uri->s, uri->len);
 		msg->dst_uri.len = uri->len;
 	} else {
-		ptr = (char*)pkg_malloc(uri->len);
-		if (!ptr) {
+		msg->dst_uri.s = pkg_realloc(msg->dst_uri.s, uri->len);
+		if (!msg->dst_uri.s) {
 			LM_ERR("not enough pkg memory\n");
 			return -1;
 		}
 
-		memcpy(ptr, uri->s, uri->len);
-		if (msg->dst_uri.s) pkg_free(msg->dst_uri.s);
-		msg->dst_uri.s = ptr;
+		memcpy(msg->dst_uri.s, uri->s, uri->len);
 		msg->dst_uri.len = uri->len;
 	}
+
 	return 0;
 }
 
 /*
  * Make a private copy of the string and assign it to path_vec
  */
-int set_path_vector(struct sip_msg* msg, str* path)
+int set_path_vector(struct sip_msg *msg, str *path)
 {
-	char* ptr;
-
 	if (!msg || !path) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
+	}
+
+	/* strange/corrupt input: best to assume it's an empty URI */
+	if (!path->s || path->len == 0) {
+		pkg_free(msg->path_vec.s);
+		memset(&msg->path_vec, 0, sizeof msg->path_vec);
+		return 0;
 	}
 
 	if (msg->path_vec.s && (msg->path_vec.len >= path->len)) {
 		memcpy(msg->path_vec.s, path->s, path->len);
 		msg->path_vec.len = path->len;
 	} else {
-		ptr = (char*)pkg_malloc(path->len);
-		if (!ptr) {
+		msg->path_vec.s = pkg_realloc(msg->path_vec.s, path->len);
+		if (!msg->path_vec.s) {
 			LM_ERR("not enough pkg memory\n");
 			return -1;
 		}
 
-		memcpy(ptr, path->s, path->len);
-		if (msg->path_vec.s) pkg_free(msg->path_vec.s);
-		msg->path_vec.s = ptr;
+		memcpy(msg->path_vec.s, path->s, path->len);
 		msg->path_vec.len = path->len;
 	}
+
 	return 0;
 }
 
