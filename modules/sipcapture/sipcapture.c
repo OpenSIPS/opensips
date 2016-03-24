@@ -586,8 +586,6 @@ static int mod_init(void) {
 	int i;
 	struct ip_addr *ip = NULL;
 
-	init_db_url(db_url, 0);
-
 	/* init db keys */
 	db_keys[0] = &id_column;
 	db_keys[1] = &date_column;
@@ -641,7 +639,6 @@ static int mod_init(void) {
 	/* check if we need to start extra process */
 	procs[0].no = (ipip_capture_on || moni_capture_on) ? raw_sock_children:0;
 
-	db_url.len = strlen(db_url.s);
 	table_name.len = strlen(table_name.s);
 	date_column.len = strlen(date_column.s);
 	id_column.len = strlen(id_column.s);
@@ -714,49 +711,66 @@ static int mod_init(void) {
 				build_dummy_msg();
 			}
 		}
+
+		/* db_url is mandatory if sip_capture is used */
+		if ((is_script_func_used("sip_capture", -1) ||
+				is_script_async_func_used("sip_capture", -1)) ||
+				hep_route_id == HEP_NO_ROUTE) {
+			init_db_url(db_url, 0);
+		} else {
+			init_db_url(db_url, 1);
+		}
+	} else {
+		if ((is_script_func_used("sip_capture", -1) ||
+				is_script_async_func_used("sip_capture", -1))) {
+			init_db_url(db_url, 0);
+		} else {
+			init_db_url(db_url, 1);
+		}
 	}
 
 
-	/* Find a database module */
-	if (db_bind_mod(&db_url, &db_funcs))
-	{
-		LM_ERR("unable to bind database module\n");
-		return -1;
-	}
-	if (!DB_CAPABILITY(db_funcs, DB_CAP_INSERT))
-	{
-		LM_ERR("database modules does not provide all functions needed"
-				" by module\n");
-		return -1;
-	}
-
-	if (DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
-		async_query = shm_malloc(sizeof(struct _async_query));
-		if (async_query == NULL) {
-			LM_ERR("no more shm");
+	if (db_url.s && db_url.len) {
+		/* Find a database module */
+		if (db_bind_mod(&db_url, &db_funcs))
+		{
+			LM_ERR("unable to bind database module\n");
 			return -1;
 		}
-		lock_init(&query_lock);
+		if (!DB_CAPABILITY(db_funcs, DB_CAP_INSERT))
+		{
+			LM_ERR("database modules does not provide all functions needed"
+					" by module\n");
+			return -1;
+		}
 
-		/* build first part of the async query; no overflow risk */
-		query_len = snprintf(query_buf, MAX_QUERY, "INSERT INTO %s(",
-															table_name.s);
-		for (i = 0; i < NR_KEYS-1; i++)
+		if (DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
+			async_query = shm_malloc(sizeof(struct _async_query));
+			if (async_query == NULL) {
+				LM_ERR("no more shm");
+				return -1;
+			}
+			lock_init(&query_lock);
+
+			/* build first part of the async query; no overflow risk */
+			query_len = snprintf(query_buf, MAX_QUERY, "INSERT INTO %s(",
+																table_name.s);
+			for (i = 0; i < NR_KEYS-1; i++)
+				query_len += snprintf(query_buf+query_len, MAX_QUERY-query_len,
+										"%s,",db_keys[i]->s);
 			query_len += snprintf(query_buf+query_len, MAX_QUERY-query_len,
-									"%s,",db_keys[i]->s);
-		query_len += snprintf(query_buf+query_len, MAX_QUERY-query_len,
-									"%s) VALUES", db_keys[NR_KEYS-1]->s);
-		base_query_len = query_len;
+										"%s) VALUES", db_keys[NR_KEYS-1]->s);
+			base_query_len = query_len;
+		}
+
+
+
+		/*Check the table name*/
+		if(!table_name.len) {
+			LM_ERR("table_name is not defined or empty\n");
+			return -1;
+		}
 	}
-
-
-
-	/*Check the table name*/
-	if(!table_name.len) {
-		LM_ERR("table_name is not defined or empty\n");
-		return -1;
-	}
-
 
 	capture_on_flag = (int*)shm_malloc(sizeof(int));
 	if(capture_on_flag==NULL) {
@@ -1925,7 +1939,7 @@ static int child_init(int rank)
 	if (db_url.s)
 	  return sipcapture_db_init(&db_url);
 
-	LM_ERR("db_url is empty\n");
+	LM_DBG("db_url is empty\n");
 
 	return 0;
 }
