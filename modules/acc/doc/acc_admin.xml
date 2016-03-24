@@ -69,9 +69,11 @@
 		</listitem>
 		<listitem>
 			<para>
-			All flags related to accounting need to be set in request processing
-			route - only the "missed-call" flag may be toggled from other
-			types of routes.
+			Since version 2.2 all flags used for accounting have been replaced
+			by the do_accounting function. No need to worry anymore of whether
+			you have set the flags or not, or be confused by various flag names,
+			now you only have to call the function and it will do all the work
+			for you.
 			</para>
 		</listitem>
 		<listitem>
@@ -432,26 +434,6 @@ modparam("acc", "early_media", 1)
 		</example>
 	</section>
 	<section>
-		<title><varname>failed_transaction_flag</varname> (string/integer)</title>
-		<para>
-		Per transaction flag which says if the transaction should be
-		accounted also in case of failure (status>=300).
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		Default value is not-set (no flag).
-		</para>
-		<example>
-		<title>failed_transaction_flag example</title>
-		<programlisting format="linespecific">
-modparam("acc", "failed_transaction_flag", "FAIL_TRANS_FLAG")
-</programlisting>
-		</example>
-	</section>
-	<section>
 		<title><varname>report_cancels</varname> (integer)</title>
 		<para>
 		By default, CANCEL reporting is disabled -- most accounting
@@ -552,45 +534,6 @@ modparam("acc", "multi_leg_bye_info",
 		</example>
 	</section>
 
-	<!-- SYSLOG specific ACC parameters -->
-	<section>
-		<title><varname>log_flag</varname> (string/integer)</title>
-		<para>
-		Request flag which needs to be set to account a transaction via syslog.
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		Default value is not-set (no flag).
-		</para>
-		<example>
-		<title>log_flag example</title>
-		<programlisting format="linespecific">
-modparam("acc", "log_flag", "LOG_FLAG")
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>log_missed_flag</varname> (string/integer)</title>
-		<para>
-		Request flag which needs to be set to account missed calls via syslog.
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		Default value is not-set (no flag).
-		</para>
-		<example>
-		<title>log_missed_flag example</title>
-		<programlisting format="linespecific">
-modparam("acc", "log_missed_flag", "LOG_MISSED_FLAG")
-</programlisting>
-		</example>
-	</section>
 	<section>
 		<title><varname>log_level</varname> (integer)</title>
 		<para>
@@ -684,46 +627,6 @@ modparam("acc", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 	</section>
 
 	<section>
-		<title><varname>aaa_flag</varname> (string/integer)</title>
-		<para>
-		Request flag which needs to be set to account a
-		transaction -- AAA specific.
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		Default value is not-set (no flag).
-		</para>
-		<example>
-		<title>aaa_flag example</title>
-		<programlisting format="linespecific">
-modparam("acc", "aaa_flag", "AAA_FLAG")
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>aaa_missed_flag</varname> (string/integer)</title>
-		<para>
-		Request flag which needs to be set to account missed
-		calls -- AAA specific.
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		Default value is not-set (no flag).
-		</para>
-		<example>
-		<title>aaa_missed_flag example</title>
-		<programlisting format="linespecific">
-modparam("acc", "aaa_missed_flag", "AAA_MISSED_FLAG")
-</programlisting>
-		</example>
-	</section>
-	<section>
 		<title><varname>service_type</varname> (integer)</title>
 		<para>
 		AAA service type used for accounting.
@@ -775,46 +678,6 @@ modparam("acc", "aaa_extra_bye",
 	</section>
 	<!-- SQL specific ACC parameters -->
 	<section>
-		<title><varname>db_flag</varname> (string/integer)</title>
-		<para>
-		Request flag which needs to be set to account a
-		transaction -- database specific.
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		Default value is not-set (no flag).
-		</para>
-		<example>
-		<title>db_flag example</title>
-		<programlisting format="linespecific">
-modparam("acc", "db_flag", "DB_FLAG")
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>db_missed_flag</varname> (string/integer)</title>
-		<para>
-		Request flag which needs to be set to account missed
-		calls -- database specific.
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		Default value is not-set (no flag).
-		</para>
-		<example>
-		<title>db_missed_flag example</title>
-		<programlisting format="linespecific">
-modparam("acc", "db_missed_flag", "DB_MISSED_FLAG")
-</programlisting>
-		</example>
-	</section>
-	<section>
 		<title><varname>db_table_acc</varname> (string)</title>
 		<para>
 		Table name of accounting successfull calls -- database specific.
@@ -826,35 +689,6 @@ modparam("acc", "db_missed_flag", "DB_MISSED_FLAG")
 		<title>db_table_acc example</title>
 		<programlisting format="linespecific">
 modparam("acc", "db_table_acc", "myacc_table")
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>db_table_avp</varname> (string)</title>
-		<para>
-		This parameter should contain a string with an AVP. This AVP should
-		be populated later in the script with the database table name where
-		the request accounting should be stored. This parameter is optional
-		and if it is not used or set in the script, all requests will be
-		stored in the table specified by <emphasis>db_table_acc</emphasis>
-		parameter or it's default value.
-		</para>
-		<para>
-			NOTE: when using auto CDR generation, the AVP with the table name
-			should be set in the initial INVITE.
-		</para>
-		<para>
-		Default value is <quote>acc</quote>
-		</para>
-		<example>
-		<title>db_table_avp example</title>
-		<programlisting format="linespecific">
-modparam("acc", "db_table_avp", "$avp(acc_table)")
-...
-route(OUTBOUND_ACC) {
-	setflag(CDR_FLAG); # do accounting
-	$avp(acc_table) = "acc_outbound"; # store request in the "acc_outbound" table
-}
 </programlisting>
 		</example>
 	</section>
@@ -1031,47 +865,6 @@ modparam("acc", "db_extra_bye", "ct=$hdr(Content-type); email=$avp(email)")
 		</example>
 	</section>
 
-	<!-- DIAMETER specific ACC parameters -->
-	<section>
-		<title><varname>diameter_flag</varname> (string/integer)</title>
-		<para>
-		Request flag which needs to be set to account a
-		transaction -- DIAMETER specific.
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		Default value is not-set (no flag).
-		</para>
-		<example>
-		<title>diameter_flag example</title>
-		<programlisting format="linespecific">
-modparam("acc", "diameter_flag", "DIAMETER_FLAG")
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>diameter_missed_flag</varname> (string/integer)</title>
-		<para>
-		Request flag which needs to be set to account missed
-		calls -- DIAMETER specific.
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		Default value is not-set (no flag).
-		</para>
-		<example>
-		<title>diameter_missed_flag example</title>
-		<programlisting format="linespecific">
-modparam("acc", "diameter_missed_flag", "DIAMETER_MISSED_FLAG")
-</programlisting>
-		</example>
-	</section>
 	<section>
 		<title><varname>diameter_client_host</varname> (string)</title>
 		<para>
@@ -1120,49 +913,6 @@ modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(email)")
 		</example>
 	</section>
 
-
-	<!-- Event Interface specific ACC parameters -->
-	<section>
-		<title><varname>evi_flag</varname> (string/integer)</title>
-		<para>
-			Request flag which needs to be set to account a transaction through
-			the Event Interface.
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		Default value is not-set (no flag).
-		</para>
-		<example>
-		<title>evi_flag example</title>
-		<programlisting format="linespecific">
-modparam("acc", "evi_flag", "EVI_FLAG")
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>evi_missed_flag</varname> (string/integer)</title>
-		<para>
-			Request flag which needs to be set to account missed calls throught
-			the Event Interface.
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		Default value is not-set (no flag).
-		</para>
-		<example>
-		<title>evi_missed_flag example</title>
-		<programlisting format="linespecific">
-modparam("acc", "evi_missed_flag", "EVI_MISSED_FLAG")
-</programlisting>
-		</example>
-	</section>
-
 	<section>
 		<title><varname>evi_extra</varname> (string)</title>
 		<para>
@@ -1197,31 +947,6 @@ modparam("acc", "evi_extra_bye",
 		</example>
 	</section>
 
-
-	<!-- CDR specific ACC parameters -->
-	<section>
-		<title><varname>cdr_flag</varname> (string/integer)</title>
-		<para>
-		Request flag which needs to be set to account a
-		transaction, including CDR details.
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		Default value is not-set (no flag).
-		</para>
-		<example>
-		<title>cdr_flag example</title>
-		<programlisting format="linespecific">
-modparam("acc", "cdr_flag", "CDR_FLAG")
-</programlisting>
-		</example>
-	</section>
-
-
-
 	<section>
 		<title><varname>acc_created_avp_name</varname> (string)</title>
 		<para>
@@ -1243,6 +968,98 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 
 	<section>
 	<title>Exported Functions</title>
+	<section>
+		<title>
+			<function moreinfo="none">do_accounting(type, flags, table)</function>
+		</title>
+		<para>
+			<function moreinfo="none">do_accounting()</function> replace all the
+			*_flag and, *_missed_flag, cdr_flag, failed transaction_flag and the
+			db_table_avp modpara. Just call do_accounting(), select where you want
+			to do accounting and how and the function will do all the job for you.
+		</para>
+
+		<para>
+		Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>type</emphasis> - the type of accounting you want to do.
+			All the types have to be separated by '|'. The following parameters can
+			be used: </para>
+			<itemizedlist>
+				<listitem>
+					<para><emphasis>log</emphasis> - syslog accounting;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>db</emphasis> - database accounting;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>aaa</emphasis> - aaa specific accounting;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>evi</emphasis> - Event Interface accounting;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>diam</emphasis> - Diameter accounting;</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>flags</emphasis> - flags for the accouting type you have
+			selected. All the types have to be separated by '|'. The following
+			parameters can be used: </para>
+			<itemizedlist>
+				<listitem>
+					<para><emphasis>cdr</emphasis> - also set CDR details when doing
+						accounting; DIALOG MODULE HAS TO BE LOADED;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>missed</emphasis> - log missed calls;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>missed</emphasis> - log missed calls;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>failed</emphasis> -  flag which says if the
+						transaction should be accounted also in case
+						of failure (status>=300);</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>table</emphasis> - table where to do the accounting;
+			it replaces old table_avp parameter;</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+
+		<example>
+				<title>acc_log_request usage</title>
+				<programlisting format="linespecific">
+		...
+		acc_log_request("403 Destination not allowed");
+		if (!has_totag()) {
+			if (is_method("INVITE")) {
+			/* enable cdr and missed calls accounting in the database
+			 * and to syslog; db accounting shall be done in "my_acc" table */
+				do_accounting("db|log", "cdr|missed", "my_acc");
+			}
+		}
+		...
+		if (is_method("BYE")) {
+			/* do normal accounting via aaa */
+			do_accounting("aaa");
+		}
+		...
+		</programlisting>
+		</example>
+
+	</section>
+
 	<section>
 		<title>
 			<function moreinfo="none">acc_log_request(comment)</function>
