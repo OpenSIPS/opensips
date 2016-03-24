@@ -731,6 +731,10 @@ endif
 CFLAGS=$(shell echo "$${CFLAGS}")
 LDFLAGS+=
 
+ifneq (,$(findstring DBG_MALLOC, $(DEFS)))
+	CC_OPTIMIZE_FLAG?=-O0
+endif
+
 ifeq	($(CC_NAME), gcc)
 	CC_OPTIMIZE_FLAG?=-O9
 endif
