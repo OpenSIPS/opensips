@@ -460,7 +460,7 @@ void fm_free(struct fm_block* qm, void* p)
 	#ifdef DBG_MALLOC
 	LM_GEN1(memlog, "%s_free(%p), called from %s: %s(%d)\n", qm->name, p, file,
 	        func, line);
-	if (p>(void*)qm->last_frag || p<(void*)qm->first_frag){
+	if (p && (p > (void *)qm->last_frag || p < (void *)qm->first_frag)) {
 		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
 		abort();
 	}
