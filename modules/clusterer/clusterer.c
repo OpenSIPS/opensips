@@ -49,24 +49,23 @@
 #define DB_CAP DB_CAP_QUERY | DB_CAP_UPDATE
 
 #define check_val( _col, _val, _type, _not_null, _is_empty_str) \
-	do{\
+	do { \
 		if ((_val)->type!=_type) { \
 			LM_ERR("column %.*s has a bad type\n", _col.len, _col.s); \
-			goto error;\
+			goto error; \
 		} \
 		if (_not_null && (_val)->nul) { \
 			LM_ERR("column %.*s is null\n", _col.len, _col.s); \
-			goto error;\
+			goto error; \
 		} \
-		if (_is_empty_str && VAL_STRING(_val)==0) { \
+		if (_is_empty_str && !VAL_STRING(_val)) { \
 			LM_ERR("column %.*s (str) is empty\n", _col.len, _col.s); \
-			goto error;\
+			goto error; \
 		} \
-	}while(0)
-
+	} while (0)
 
 /* lock */
-static rw_lock_t *ref_lock = NULL;
+static rw_lock_t *ref_lock;
 
 /* time interval */
 static unsigned int prob_interval = 1;
@@ -77,12 +76,12 @@ struct clusterer_binds clusterer_api;
 /* Database variables */
 
 /* DB handler */
-static db_con_t *db_hdl = 0;
+static db_con_t *db_hdl;
 /* DB functions */
 static db_func_t dr_dbf;
 
 /* DB URL */
-str clusterer_db_url = {NULL, 0};
+str clusterer_db_url;
 /* DB TABLE */
 str db_table = str_init("clusterer");
 
@@ -101,18 +100,18 @@ str failed_attempts_col = str_init("failed_attempts");
 str no_tries_col = str_init("no_tries");
 
 str description_col = str_init("description");
-static db_key_t *clusterer_cluster_id_key = NULL;
-static db_val_t *clusterer_cluster_id_value = NULL;
-/* EQUAL OPERATOR*/
-static db_op_t op = OP_EQ;
+static db_key_t *clusterer_cluster_id_key;
+static db_val_t *clusterer_cluster_id_value;
+
+static db_op_t op_eq = OP_EQ;
 
 int persistent_state = 0;
 
 int server_id = -1;
 
 /* shm data*/
-static table_entry_t **tdata = 0;
-static struct module_list *clusterer_modules = NULL;
+static table_entry_t **tdata;
+static struct module_list *clusterer_modules;
 
 /* initialize functions */
 static int mod_init(void);
@@ -163,26 +162,6 @@ static int su_ip_cmp(union sockaddr_union* s1, union sockaddr_union* s2)
 	}
 }
 
-
-int str_to_shm(str src, str * dest)
-{
-	if (src.len ==0 || src.s ==0)
-		return 0;
-
-	dest->s = (char*)shm_malloc((src.len+1) * sizeof(char));
-	if (!dest->s) {
-		LM_ERR("out of shm memory\n");
-		return -1;
-	}
-
-	memcpy(dest->s, src.s, src.len);
-	dest->s[src.len] = '\0';
-	dest->len = src.len;
-
-	return 0;
-}
-
-
 /*
  * Exported functions
  */
@@ -211,7 +190,7 @@ static param_export_t params[] = {
 	{"no_tries_col",	STR_PARAM,	&no_tries_col.s		},
 	{0, 0, 0}
 };	
-	
+
 /*
  * Exported MI functions
  */	
@@ -267,7 +246,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (persistent_state > 1 && persistent_state < 0) {
+	if (persistent_state < 0 || persistent_state > 1) {
 		LM_WARN("invalid value for persistent state - presistence disabled\n");
 		persistent_state = 0;
 	}
@@ -284,7 +263,6 @@ static int mod_init(void)
 	failed_attempts_col.len = strlen(failed_attempts_col.s);
 	no_tries_col.len = strlen(no_tries_col.s);
 
-
 	/* create & init lock */
 	if ((ref_lock = lock_init_rw()) == NULL) {
 		LM_CRIT("failed to init lock\n");
@@ -292,12 +270,12 @@ static int mod_init(void)
 	}
 
 	/* data pointer in shm */
-	tdata = (table_entry_t**) shm_malloc(sizeof(table_entry_t*));
-	if (tdata == 0) {
+	tdata = shm_malloc(sizeof *tdata);
+	if (!tdata) {
 		LM_CRIT("failed to get shm mem for data ptr\n");
 		goto error;
 	}
-	*tdata = 0;
+	*tdata = NULL;
 
 	/* bind to the mysql module */
 	if (db_bind_mod(&clusterer_db_url, &dr_dbf)) {
@@ -307,12 +285,11 @@ static int mod_init(void)
 	}
 
 	if (!DB_CAPABILITY(dr_dbf, DB_CAP)) {
-		LM_CRIT("database modules does not "
-			"provide QUERY functions needed by DRounting module\n");
+		LM_CRIT("given SQL DB does not provide query types needed by this module!\n");
 		goto error;
 	}
 
-	/*register timer*/
+	/* register timer */
 	if (persistent_state) {
 		/* register function to flush changes in state */
 		if (register_timer("update database", update_db_handler,
@@ -328,9 +305,9 @@ static int mod_init(void)
 		goto error;
 	}
 
-
 	/* everything is OK */
 	return 0;
+
 error:
 	if (ref_lock) {
 		lock_destroy_rw(ref_lock);
@@ -341,7 +318,6 @@ error:
 		tdata = 0;
 	}
 	return -1;
-
 }
 
 /* initialize child */
@@ -381,7 +357,7 @@ static void update_nodes_handler(unsigned int ticks, void *param)
 	table_entry_value_t *value;
 	struct module_timestamp *head;
 	uint64_t ctime;
-	
+
 	if(clusterer_modules == NULL)
 		return;
 
@@ -480,7 +456,7 @@ static void update_db_handler(unsigned int ticks, void* param)
 					val_set[2].val.int_val = value->last_attempt;
 
 					/* updating */
-					if (dr_dbf.update(db_hdl, &key_cmp, &op, &val_cmp, key_set, val_set, 1, 3) < 0) {
+					if (dr_dbf.update(db_hdl, &key_cmp, &op_eq, &val_cmp, key_set, val_set, 1, 3) < 0) {
 						LM_ERR("DB update failed\n");
 					} else {
 						/* only if the query is successful the data is synchronized */
@@ -537,19 +513,15 @@ int add_info(table_entry_t **data, int *int_vals, unsigned long last_attempt, ch
 
 	cluster_id = int_vals[INT_VALS_CLUSTER_ID_COL];
 
-	head = *data;
-	while (head != NULL) {
+	for (head = *data; head; head = head->next) {
 		if (head->cluster_id == cluster_id) {
 			info_head = head->info;
-			while (info_head != NULL) {
-				if (info_head->proto == proto) {
-					break;
-				}
+			while (info_head && info_head->proto != proto)
 				info_head = info_head->next;
-			}
-			if (info_head == NULL) {
-				info_head = shm_malloc(sizeof(table_entry_info_t));
-				if (info_head == NULL) {
+
+			if (!info_head) {
+				info_head = shm_malloc(sizeof *info_head);
+				if (!info_head) {
 					LM_ERR("no more shm memory\n");
 					goto error;
 				}
@@ -560,17 +532,17 @@ int add_info(table_entry_t **data, int *int_vals, unsigned long last_attempt, ch
 			}
 			break;
 		}
-		head = head->next;
 	}
-	if (head == NULL) {
-		head = shm_malloc(sizeof(table_entry_t));
-		if (head == NULL) {
+
+	if (!head) {
+		head = shm_malloc(sizeof *head);
+		if (!head) {
 			LM_ERR("no more shm memory\n");
 			goto error;
 		}
 		head->cluster_id = cluster_id;
 		head->info = shm_malloc(sizeof(table_entry_info_t));
-		if (head->info == NULL) {
+		if (!head->info) {
 			LM_ERR("no more shm memory\n");
 			goto error;
 		}
@@ -584,8 +556,8 @@ int add_info(table_entry_t **data, int *int_vals, unsigned long last_attempt, ch
 	}
 
 	/* allocating memory*/
-	value = shm_malloc(sizeof(table_entry_value_t));
-	if (value == NULL) {
+	value = shm_malloc(sizeof *value);
+	if (!value) {
 		LM_ERR("no more shm memory\n");
 		goto error;
 	}
@@ -604,7 +576,7 @@ int add_info(table_entry_t **data, int *int_vals, unsigned long last_attempt, ch
 
 	value->path.s = shm_malloc(strlen(url) * sizeof(char));
 
-	if (value->path.s == NULL) {
+	if (!value->path.s) {
 		LM_ERR("insufficient shm memory\n");
 		goto error;
 	}
@@ -638,8 +610,7 @@ int add_info(table_entry_t **data, int *int_vals, unsigned long last_attempt, ch
 	}
 
 	ctime = time(0);
-	module = clusterer_modules;
-	while (module != NULL) {
+	for (module = clusterer_modules; module; module = module->next) {
 		if (cluster_id == module->accept_cluster_id && proto == module->proto) {
 			new_timestamp = create_module_timestamp(ctime, module);
 			if (new_timestamp == NULL)
@@ -647,7 +618,6 @@ int add_info(table_entry_t **data, int *int_vals, unsigned long last_attempt, ch
 			new_timestamp->next = value->in_timestamps;
 			value->in_timestamps = new_timestamp;
 		}
-		module = module->next;
 	}
 
 	value->next = info_head->value;
@@ -736,7 +706,7 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 		"in which the specified server runs\n");
 
 	/* first we see in which clusters the specified server runs*/
-	if (dr_dbf->query(db_hdl, &clusterer_machine_id_key, &op,
+	if (dr_dbf->query(db_hdl, &clusterer_machine_id_key, &op_eq,
 		&clusterer_machine_id_value, columns, 1, 1, 0, &res) < 0) {
 		LM_ERR("DB query failed - cannot retrieve the clusters list in which"
 			" the specified server runs\n");
@@ -844,7 +814,7 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 			/* NO_TRIES column */
 			check_val(no_tries_col, ROW_VALUES(row) + 8, DB_INT, 1, 0);
 			int_vals[INT_VALS_NO_TRIES_COL] = VAL_INT(ROW_VALUES(row) + 8);
-			/* DURATIOH column */
+			/* DURATION column */
 			check_val(duration_col, ROW_VALUES(row) + 9, DB_INT, 1, 0);
 			int_vals[INT_VALS_DURATION_COL] = VAL_INT(ROW_VALUES(row) + 9);
 
@@ -950,7 +920,7 @@ static int reload_data(void)
 	struct module_timestamp *aux;
 
 	new_data = load_info(&dr_dbf, db_hdl, &db_table);
-	if (new_data == 0) {
+	if (!new_data) {
 		LM_CRIT("failed to load routing info\n");
 		return -1;
 	}
@@ -959,54 +929,36 @@ static int reload_data(void)
 
 	/* no more active readers -> do the swapping */
 
-	old_head = *tdata;
-	while (old_head != NULL) {
-		new_head = new_data;
-		while (new_head != NULL) {
-			if (old_head->cluster_id != new_head->cluster_id) {
-				new_head = new_head->next;
+	for (old_head = *tdata; old_head; old_head = old_head->next) {
+		for (new_head = new_data; new_head; new_head = new_head->next) {
+			if (old_head->cluster_id != new_head->cluster_id)
 				continue;
-			}
-			old_info = old_head->info;
-			while (old_info != NULL) {
-				new_info = new_head->info;
-				while (new_info != NULL) {
-					if (old_info->proto != new_info->proto) {
-						new_info = new_info->next;
+
+			for (old_info = old_head->info; old_info; old_info = old_info->next) {
+				for (new_info = new_head->info; new_info; new_info = new_info->next) {
+					if (old_info->proto != new_info->proto)
 						continue;
-					}
-					old_value = old_info->value;
-					while (old_value != NULL) {
-						new_value = new_info->value;
-						while (new_value != NULL) {
+
+					for (old_value = old_info->value; old_value; old_value = old_value->next) {
+						for (new_value = new_info->value; new_value; new_value = new_value->next) {
 							if (su_cmp(&new_value->addr, &old_value->addr)) {
 								aux = new_value->in_timestamps;
 								new_value->in_timestamps = old_value->in_timestamps;
 								old_value->in_timestamps = aux;
 								break;
 							}
-							new_value = new_value->next;
 						}
-						old_value = old_value->next;
 					}
-					new_info = new_info->next;
 				}
-				old_info = old_info->next;
 			}
-			new_head = new_head->next;
 		}
-		old_head = old_head->next;
 	}
-
-	modules = clusterer_modules;
 
 	old_data = *tdata;
 	*tdata = new_data;
 
-	while (modules != NULL) {
+	for (modules = clusterer_modules; modules; modules = modules->next)
 		modules->values = clusterer_find_nodes(modules->accept_cluster_id, modules->proto);
-		modules = modules->next;
-	}
 
 	lock_stop_write(ref_lock);
 
@@ -1020,13 +972,12 @@ static int reload_data(void)
 /* destroy function */
 static void destroy(void)
 {
-
 	struct module_list *tmp;
-	
+
 	/* close DB connection */
 	if (db_hdl) {
 		dr_dbf.close(db_hdl);
-		db_hdl = 0;
+		db_hdl = NULL;
 	}
 
 	/* destroy data */
@@ -1034,23 +985,20 @@ static void destroy(void)
 		if (*tdata)
 			free_data(*tdata);
 		shm_free(tdata);
-		tdata = 0;
+		tdata = NULL;
 	}
 
-	while (clusterer_modules != NULL) {
+	while (clusterer_modules) {
 		tmp = clusterer_modules;
 		clusterer_modules = clusterer_modules->next;
 		shm_free(tmp);
-
 	}
-	
+
 	/* destroy lock */
 	if (ref_lock) {
 		lock_destroy_rw(ref_lock);
-		ref_lock = 0;
+		ref_lock = NULL;
 	}
-
-	return;
 }
 
 /* reloads data from the db */
@@ -1080,11 +1028,13 @@ static void temp_disable_machine(table_entry_value_t *head)
 	}
 }
 
-static struct module_timestamp* create_module_timestamp(int ctime, struct module_list *module)
+static struct module_timestamp* create_module_timestamp(int ctime,
+		struct module_list *module)
 {
 	struct module_timestamp *new_node;
-	new_node = shm_malloc(sizeof(struct module_timestamp));
-	if (new_node == NULL) {
+
+	new_node = shm_malloc(sizeof *new_node);
+	if (!new_node) {
 		LM_ERR("not enough shm memory");
 		goto error;
 	}
@@ -1093,6 +1043,7 @@ static struct module_timestamp* create_module_timestamp(int ctime, struct module
 	new_node->up = module;
 	new_node->next = NULL;
 	return new_node;
+
 error:
 	return NULL;
 }
@@ -1103,52 +1054,55 @@ static int set_in_timestamp(struct module_list *module, int machine_id)
 	int is_ok = 1;
 	uint64_t ctime = time(0);
 	struct module_timestamp *head;
-	LM_DBG("setting timestamp for node with c_id %d m_id %d proto%d\n", module->accept_cluster_id,
-		machine_id, module->proto);
+
+	LM_DBG("setting timestamp for node with c_id %d m_id %d proto%d\n",
+			module->accept_cluster_id, machine_id, module->proto);
 
 	/* finding the machine */
 	lock_start_write(ref_lock);
 
-	values = module->values;
-
 	/* if the protocol is not specified */
-	while (values != NULL) {
+	for (values = module->values; values; values = values->next) {
 		if (values->machine_id == machine_id) {
 			is_ok = 0;
-			head = values->in_timestamps;
-			while (head != NULL) {
+			for (head = values->in_timestamps; head; head = head->next) {
 				if (head->up == module) {
 					if (head->state == CLUSTERER_STATE_OFF) {
-						LM_DBG("state for node with clusterer_id %d is 2\n", values->id);
+						LM_DBG("state for node with clusterer_id %d is 2\n",
+								values->id);
 						is_ok = -1;
 					} else
 						head->timestamp = ctime;
+
 					break;
 				}
-				head = head->next;
 			}
+
 			break;
 		}
-		values = values->next;
 	}
+
 	lock_stop_write(ref_lock);
 	return is_ok;
 }
 
 /* setting a connection status */
-static int set_state(int cluster_id, int machine_id, enum cl_machine_state state, int proto)
+static int set_state(int cluster_id, int machine_id,
+					 enum cl_machine_state state, int proto)
 {
 	table_entry_value_t *head_table;
 	int is_ok = 1;
-	LM_DBG("setting node with c_id %d m_id %d proto %d with state %d\n", cluster_id,
-		machine_id, proto, state);
+
+	LM_DBG("setting node with c_id %d m_id %d proto %d with state %d\n",
+			cluster_id, machine_id, proto, state);
+
 	/* finding the machine */
 	lock_start_write(ref_lock);
 
 	head_table = clusterer_find_nodes(cluster_id, proto);
 
 	/* if the protocol is not specified */
-	while (head_table != NULL) {
+	for (; head_table; head_table = head_table->next) {
 		if (head_table->machine_id == machine_id) {
 			head_table->dirty_bit = 1;
 			if (state == CLUSTERER_STATE_OFF) {
@@ -1163,8 +1117,8 @@ static int set_state(int cluster_id, int machine_id, enum cl_machine_state state
 			is_ok = 0;
 			break;
 		}
-		head_table = head_table->next;
 	}
+
 	lock_stop_write(ref_lock);
 	return is_ok;
 }
@@ -1177,24 +1131,24 @@ static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param)
 	unsigned int state;
 	int proto;
 	int rc;
-	struct mi_node* node;
-	struct mi_node* prot_node;
+	struct mi_node *node;
+	struct mi_node *prot_node;
 
 	LM_INFO("set status MI command received!\n");
 
-	if (cmd == NULL || cmd->node.kids == NULL || cmd->node.kids->value.s == NULL) {
+	if (!cmd || !cmd->node.kids || !cmd->node.kids->value.s) {
 		LM_DBG("no values specified\n");
 		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
 	}
 
 	node = cmd->node.kids;
 
-	if (node->next == NULL || node->next->value.s == NULL) {
+	if (!node->next || !node->next->value.s) {
 		LM_DBG("only one value specified\n");
 		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
 	}
 
-	if (node->next->next == NULL || node->next->next->value.s == NULL) {
+	if (!node->next->next || !node->next->next->value.s) {
 		LM_DBG("no state specified\n");
 		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
 	}
@@ -1219,7 +1173,7 @@ static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param)
 	}
 
 	prot_node = node->next->next->next;
-	if (prot_node == NULL || prot_node->value.s == NULL) {
+	if (!prot_node || !prot_node->value.s) {
 		LM_DBG("the protocol parameter is missing\n");
 		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM));
 	}
@@ -1263,59 +1217,59 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 	str failed_attempts;
 
 	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree == NULL)
+	if (!rpl_tree)
 		return NULL;
 
 	lock_start_read(ref_lock);
 
 	head_table = *tdata;
 	root = &rpl_tree->node;
-	for (head_table = *tdata; head_table != NULL; head_table = head_table->next) {
-		for (info = head_table->info; info != NULL; info = info->next) {
-			for (value = info->value; value != NULL; value = value->next) {
+	for (head_table = *tdata; head_table; head_table = head_table->next) {
+		for (info = head_table->info; info; info = info->next) {
+			for (value = info->value; value; value = value->next) {
 				clusterer_id.s = int2str(value->id, &clusterer_id.len);
 				node = add_mi_node_child(root, MI_DUP_VALUE, "Clusterer ID", 12,
 					clusterer_id.s, clusterer_id.len);
-				if (node == NULL) goto error;
+				if (!node) goto error;
 
 				cluster_id.s = int2str(head_table->cluster_id, &cluster_id.len);
 				attr = add_mi_attr(node, MI_DUP_VALUE, "Cluster ID", 10,
 					cluster_id.s, cluster_id.len);
-				if (attr == NULL) goto error;
+				if (!attr) goto error;
 
 				machine_id.s = int2str(value->machine_id, &machine_id.len);
 				attr = add_mi_attr(node, MI_DUP_VALUE, "Machine ID", 10,
 					machine_id.s, machine_id.len);
-				if (attr == NULL) goto error;
+				if (!attr) goto error;
 
 				state.s = int2str(value->state, &state.len);
 				attr = add_mi_attr(node, MI_DUP_VALUE, "STATE", 5,
 					state.s, state.len);
-				if (attr == NULL) goto error;
+				if (!attr) goto error;
 
 				last_attempt.s = int2str(value->last_attempt, &last_attempt.len);
 				attr = add_mi_attr(node, MI_DUP_VALUE, "LAST_FAILED_ATTEMPT", 19,
 					last_attempt.s, last_attempt.len);
-				if (attr == NULL) goto error;
+				if (!attr) goto error;
 
 				failed_attempts.s = int2str(value->failed_attempts, &failed_attempts.len);
 				attr = add_mi_attr(node, MI_DUP_VALUE, "MAX_FAILED_ATTEMPTS", 19,
 					failed_attempts.s, failed_attempts.len);
-				if (attr == NULL) goto error;
+				if (!attr) goto error;
 
 				no_tries.s = int2str(value->no_tries, &no_tries.len);
 				attr = add_mi_attr(node, MI_DUP_VALUE, "NO_TRIES", 8,
 					no_tries.s, no_tries.len);
-				if (attr == NULL) goto error;
+				if (!attr) goto error;
 
 				duration.s = int2str(value->duration, &duration.len);
 				attr = add_mi_attr(node, MI_DUP_VALUE, "SECONDS_UNTIL_ENABLING", 22,
 					duration.s, duration.len);
-				if (attr == NULL) goto error;
+				if (!attr) goto error;
 
 				attr = add_mi_attr(node, MI_DUP_VALUE, "PATH", 4,
 					value->path.s, value->path.len);
-				if (attr == NULL) goto error;
+				if (!attr) goto error;
 
 				if (value->description.s)
 					attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
@@ -1323,15 +1277,15 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 				else
 					attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
 					"none", 4);
-				if (attr == NULL) goto error;
+				if (!attr) goto error;
 			}
 		}
 
 	}
 
 	lock_stop_read(ref_lock);
-
 	return rpl_tree;
+
 error:
 	lock_stop_read(ref_lock);
 	if (rpl_tree) free_mi_tree(rpl_tree);
@@ -1352,8 +1306,9 @@ static int add_node(clusterer_node_t **nodes, table_entry_value_t *head, int pro
 {
 	clusterer_node_t *new_node = NULL;
 	struct ip_addr ip;
-	new_node = pkg_malloc(sizeof(clusterer_node_t));
-	if (new_node == NULL) {
+
+	new_node = pkg_malloc(sizeof *new_node);
+	if (!new_node) {
 		LM_ERR("no more pkg memory\n");
 		goto error;
 	}
@@ -1366,7 +1321,7 @@ static int add_node(clusterer_node_t **nodes, table_entry_value_t *head, int pro
 
 	memcpy(&new_node->addr, &head->addr, sizeof(head->addr));
 	new_node->description.s = pkg_malloc(head->description.len * sizeof(char));
-	if (new_node->description.s == NULL) {
+	if (!new_node->description.s) {
 		LM_ERR("no more pkg memory\n");
 		goto error;
 	}
@@ -1387,9 +1342,10 @@ error:
 
 static void free_nodes(clusterer_node_t *nodes)
 {
-	clusterer_node_t* tmp;
+	clusterer_node_t *tmp;
+
 	LM_DBG("freeing all the nodes\n");
-	while (nodes != NULL) {
+	while (nodes) {
 		tmp = nodes;
 		nodes = nodes->next;
 		free_node(tmp);
@@ -1406,7 +1362,7 @@ static clusterer_node_t* get_nodes(int cluster_id, int proto)
 	lock_start_read(ref_lock);
 
 	head = clusterer_find_nodes(cluster_id, proto);
-	while (head != NULL) {
+	for (; head; head = head->next) {
 		if (head->state == 1) {
 			if (head->prev_no_tries != -1 &&
 				head->no_tries > 0 &&
@@ -1426,16 +1382,14 @@ static clusterer_node_t* get_nodes(int cluster_id, int proto)
 		if (head->state == 1 && add_node(&nodes, head, proto) < 0) {
 			goto error;
 		}
-
-		head = head->next;
 	}
 
 	lock_stop_read(ref_lock);
-
 	return nodes;
+
 error:
 	lock_stop_read(ref_lock);
-	while (nodes != NULL) {
+	while (nodes) {
 		tmp = nodes;
 		nodes = nodes->next;
 		free_node(tmp);
@@ -1451,12 +1405,11 @@ int clusterer_check(int cluster_id, union sockaddr_union* su, int machine_id, in
 	lock_start_read(ref_lock);
 
 	head = clusterer_find_nodes(cluster_id, proto);
-	while (head != NULL) {
+	for (; head; head = head->next) {
 		if (su_ip_cmp(su, &head->addr) && head->machine_id == machine_id) {
 			rc = 1;
 			break;
 		}
-		head = head->next;
 	}
 
 	lock_stop_read(ref_lock);
@@ -1471,29 +1424,23 @@ static int get_my_id(void)
 
 static table_entry_value_t *clusterer_find_nodes(int cluster_id, int proto)
 {
-	table_entry_t* head;
+	table_entry_t *head;
 	table_entry_info_t *info = NULL;
-	table_entry_value_t *value;
+	table_entry_value_t *value = NULL;
 
-	value = NULL;
 	head = *tdata;
+	while (head && head->cluster_id != cluster_id)
+		head = head->next;
 
-	while (head != NULL) {
-		if (head->cluster_id != cluster_id) {
-			head = head->next;
-			continue;
-		}
+	if (head) {
 		info = head->info;
-		while (info != NULL) {
-			if (info->proto != proto) {
-				info = info->next;
-				continue;
-			}
+		while (info && info->proto != proto)
+			info = info->next;
+
+		if (info)
 			value = info->value;
-			break;
-		}
-		break;
 	}
+
 	return value;
 }
 
@@ -1504,13 +1451,13 @@ static int send_to(int cluster_id, int proto)
 	unsigned long ctime = time(0);
 	int ok = -1;
 
-	if (proto == PROTO_BIN) {
+	if (proto == PROTO_BIN)
 		bin_get_buffer(&send_buffer);
-	}
+
 	lock_start_read(ref_lock);
 
 	value = clusterer_find_nodes(cluster_id, proto);
-	while (value != NULL) {
+	for (; value; value = value->next) {
 		ok = 0;
 		if (value->state == 1) {
 			if (value->prev_no_tries != -1 &&
@@ -1528,16 +1475,16 @@ static int send_to(int cluster_id, int proto)
 				value->no_tries = 0;
 			}
 		}
+
 		if (value->state == 1) {
 			if (proto == PROTO_BIN) {
-				if (msg_send(NULL, PROTO_BIN, &value->addr, 0, send_buffer.s, send_buffer.len, 0) != 0) {
+				if (msg_send(NULL, PROTO_BIN, &value->addr, 0,
+				             send_buffer.s, send_buffer.len, 0) != 0) {
 					LM_ERR("cannot send message\n");
 					temp_disable_machine(value);
 				}
 			}
-
 		}
-		value = value->next;
 	}
 
 	lock_stop_read(ref_lock);
@@ -1582,23 +1529,25 @@ static void bin_receive_packets(int packet_type, struct receive_info *ri, void *
 	module->cb(packet_type, ri, machine_id);
 }
 
-static int cl_register_module(char *mod_name, int proto, void (*cb)(int, struct receive_info *, int),
-	int timeout, int auth_check, int accept_cluster_id)
+static int cl_register_module(char *mod_name, int proto,
+				void (*cb)(int, struct receive_info *, int),
+				int timeout, int auth_check, int accept_cluster_id)
 {
+	struct module_list *new_module;
 
 	LM_DBG("register module %s\n", mod_name);
-	struct module_list *new_module;
 
 	if (auth_check && !accept_cluster_id) {
 		LM_ERR("provided bad cluster_id\n");
 		return -1;
 	}
 
-	new_module = shm_malloc(sizeof(struct module_list));
-	if (new_module == NULL) {
+	new_module = shm_malloc(sizeof *new_module);
+	if (!new_module) {
 		LM_ERR("insufficient shm memory\n");
 		return -1;
 	}
+
 	new_module->mod_name.len = strlen(mod_name);
 	new_module->mod_name.s = mod_name;
 	new_module->proto = proto;
@@ -1635,6 +1584,7 @@ int load_clusterer(struct clusterer_binds *binds)
 	binds->get_my_id = get_my_id;
 	binds->send_to = send_to;
 	binds->register_module = cl_register_module;
+
 	/* everything ok*/
 	return 1;
 }

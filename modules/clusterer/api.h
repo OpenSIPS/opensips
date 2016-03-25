@@ -66,7 +66,7 @@ static inline int load_clusterer_api(struct clusterer_binds *binds) {
     /* import the DLG auto-loading function */
     if (!(load_clusterer = (load_clusterer_f) find_export("load_clusterer", 0, 0)))
         return -1;
- 
+
     /* let the auto-loading function load all DLG stuff */
     if (load_clusterer(binds) == -1)
         return -1;

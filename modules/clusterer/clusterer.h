@@ -89,7 +89,6 @@ struct table_entry_info_{
     table_entry_value_t *value;
     /* linker in the list */
     table_entry_info_t *next;
-    
 };
 
 
