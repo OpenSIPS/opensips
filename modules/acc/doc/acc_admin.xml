@@ -1058,10 +1058,10 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 
 	<section id="cancel_accouting">
 		<title>
-			<function moreinfo="none">cancel_accounting([type], [flags])</function>
+			<function moreinfo="none">drop_accounting([type], [flags])</function>
 		</title>
 		<para>
-			<function moreinfo="none">cancel_accounting()</function> resets flags
+			<function moreinfo="none">drop_accounting()</function> resets flags
 			and types of accounting set with do_accounting(). If called with no
 			arguments all accounting will be stopped. If called with only one argument
 			all accounting for that type will be stopped. If called with two arguments
@@ -1116,7 +1116,7 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 		</para>
 
 		<example>
-				<title>cancel_accounting usage</title>
+				<title>drop_accounting usage</title>
 				<programlisting format="linespecific">
 		...
 		acc_log_request("403 Destination not allowed");
@@ -1131,12 +1131,12 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 		/* later in your script */
 		if (...) { /* you don't want accounting anymore */
 			/* stop all syslog accounting */
-			cancel_accounting("log");
+			drop_accounting("log");
 			/* or stop missed calls and cdr accounting for syslog;
 			 * normal accounting will still be enabled */
-			cancel_accounting("log","missed|cdr");
+			drop_accounting("log","missed|cdr");
 			/* or stop all types of accounting  */
-			cancel_accounting();
+			drop_accounting();
 		}
 		...
 		</programlisting>

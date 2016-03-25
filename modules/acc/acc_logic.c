@@ -1058,16 +1058,16 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 }
 
 /* reset all flags */
-int w_cancel_acc_0(struct sip_msg* msg) {
-	return w_cancel_acc_2(msg, NULL, NULL);
+int w_drop_acc_0(struct sip_msg* msg) {
+	return w_drop_acc_2(msg, NULL, NULL);
 }
 
-int w_cancel_acc_1(struct sip_msg* msg, char* type)
+int w_drop_acc_1(struct sip_msg* msg, char* type)
 {
-	return w_cancel_acc_2(msg, type, NULL);
+	return w_drop_acc_2(msg, type, NULL);
 }
 
-int w_cancel_acc_2(struct sip_msg* msg, char* type_p, char* flags_p)
+int w_drop_acc_2(struct sip_msg* msg, char* type_p, char* flags_p)
 {
 	unsigned long long type=0;
 	/* if not set, we reset all flags for the type of accounting requested */

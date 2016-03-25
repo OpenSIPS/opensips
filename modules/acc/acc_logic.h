@@ -123,8 +123,8 @@ int w_do_acc_1(struct sip_msg* msg, char* type);
 int w_do_acc_2(struct sip_msg* msg, char* type, char* flags);
 int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p);
 
-int w_cancel_acc_0(struct sip_msg* msg);
-int w_cancel_acc_1(struct sip_msg* msg, char* type);
-int w_cancel_acc_2(struct sip_msg* msg, char* type, char* flags);
+int w_drop_acc_0(struct sip_msg* msg);
+int w_drop_acc_1(struct sip_msg* msg, char* type);
+int w_drop_acc_2(struct sip_msg* msg, char* type, char* flags);
 
 #endif

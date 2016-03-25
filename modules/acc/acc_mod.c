@@ -210,16 +210,16 @@ static cmd_export_t cmds[] = {
 		do_acc_fixup, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
-	{"cancel_accounting", (cmd_function)w_cancel_acc_0, 0, 0, NULL,
+	{"drop_accounting", (cmd_function)w_drop_acc_0, 0, 0, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	/* we use the same fixup function since the parameters
 	 * have the same meanining as for do_accounting  */
-	{"cancel_accounting", (cmd_function)w_cancel_acc_1, 1,
+	{"drop_accounting", (cmd_function)w_drop_acc_1, 1,
 		do_acc_fixup, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
-	{"cancel_accounting", (cmd_function)w_cancel_acc_2, 2,
+	{"drop_accounting", (cmd_function)w_drop_acc_2, 2,
 		do_acc_fixup, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
