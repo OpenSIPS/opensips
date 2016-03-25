@@ -14,11 +14,11 @@
 	</para>
 	<para>
 		To account a transaction and to choose which set of backends to be
-		used, the script writer just has to use mark the transaction for 
+		used, the script writer just has to use mark the transaction for
 		accouting by using the <xref linkend="do_accouting"/> script function.
 		Note that the function is not actually doing the accounting at that
 		very process, it is just setting a marker - the actual accouting
-		will be done later when the transaction or dialog will be 
+		will be done later when the transaction or dialog will be
 		completed.
 		</para>
 		<para>
@@ -346,7 +346,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 			<title>Configuration</title>
 			<para>
 			In order to have CDRs accounting, first you need to set the
-			<emphasis>cdr</emphasis> flag when calling 
+			<emphasis>cdr</emphasis> flag when calling
 			<xref linkend="do_accouting"/> script function for the
 			initial INVITE of the dialog.
 			</para>
@@ -1035,10 +1035,9 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 		</para>
 
 		<example>
-				<title>acc_log_request usage</title>
+				<title>do_accounting usage</title>
 				<programlisting format="linespecific">
 		...
-		acc_log_request("403 Destination not allowed");
 		if (!has_totag()) {
 			if (is_method("INVITE")) {
 			/* enable cdr and missed calls accounting in the database
@@ -1056,6 +1055,96 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 		</example>
 
 	</section>
+
+	<section id="cancel_accouting">
+		<title>
+			<function moreinfo="none">cancel_accounting([type], [flags])</function>
+		</title>
+		<para>
+			<function moreinfo="none">cancel_accounting()</function> resets flags
+			and types of accounting set with do_accounting(). If called with no
+			arguments all accounting will be stopped. If called with only one argument
+			all accounting for that type will be stopped. If called with two arguments
+			normal accounting will still be enabled.</para>
+
+		<para>
+		Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>type</emphasis> - the type of accounting you want to stop.
+			All the types have to be separated by '|'. The following parameters can
+			be used: </para>
+			<itemizedlist>
+				<listitem>
+					<para><emphasis>log</emphasis> - stop syslog accounting;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>db</emphasis> - stop database accounting;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>aaa</emphasis> - stop aaa specific accounting;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>evi</emphasis> - stop Event Interface accounting;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>diam</emphasis> - stop Diameter accounting;</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>flags</emphasis> - flags to be reset for the accouting type you have
+			selected. All the types have to be separated by '|'. The following
+			parameters can be used: </para>
+			<itemizedlist>
+				<listitem>
+					<para><emphasis>cdr</emphasis> - stop CDR accounting;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>missed</emphasis> - stop logging missed calls;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>failed</emphasis> -  stop failed transaction accounting;</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+
+		<example>
+				<title>cancel_accounting usage</title>
+				<programlisting format="linespecific">
+		...
+		acc_log_request("403 Destination not allowed");
+		if (!has_totag()) {
+			if (is_method("INVITE")) {
+			/* enable cdr and missed calls accounting in the database
+			 * and to syslog; db accounting shall be done in "my_acc" table */
+				do_accounting("db|log", "cdr|missed", "my_acc");
+			}
+		}
+		...
+		/* later in your script */
+		if (...) { /* you don't want accounting anymore */
+			/* stop all syslog accounting */
+			cancel_accounting("log");
+			/* or stop missed calls and cdr accounting for syslog;
+			 * normal accounting will still be enabled */
+			cancel_accounting("log","missed|cdr");
+			/* or stop all types of accounting  */
+			cancel_accounting();
+		}
+		...
+		</programlisting>
+		</example>
+
+	</section>
+
+
 
 	<section>
 		<title>
