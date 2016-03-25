@@ -576,6 +576,8 @@ void build_dummy_msg(void) {
 	dummy_req.first_line.u.request.method.len= 5;
 	dummy_req.first_line.u.request.uri.s= "sip:user@domain.com";
 	dummy_req.first_line.u.request.uri.len= 19;
+	dummy_req.rcv.src_ip.af = AF_INET;
+	dummy_req.rcv.dst_ip.af = AF_INET;
 }
 
 
