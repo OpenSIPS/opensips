@@ -520,6 +520,13 @@ static int mod_init( void )
 
 #endif
 
+	/* ----------- EVENT INTERFACE INIT SECTION ----------- */
+
+	if (init_acc_evi() < 0) {
+		LM_ERR("cannot init acc events\n");
+		return -1;
+	}
+
 	acc_flags_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, NULL);
 
 	return 0;
@@ -566,11 +573,6 @@ static int child_init(int rank)
 			LM_ERR("failed to init radius\n");
 			return -1;
 		}
-	}
-
-	if (init_acc_evi() < 0) {
-		LM_ERR("cannot init acc events\n");
-		return -1;
 	}
 
 
