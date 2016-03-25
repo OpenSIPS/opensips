@@ -38,6 +38,7 @@
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "../../pt.h"
 #include "../../ut.h"
+#include "../../context.h"
 #include "hep.h"
 #include "hep_cb.h"
 
@@ -82,13 +83,13 @@ int register_hep_cb(hep_cb_t cb)
 	return 0;
 }
 
-int run_hep_cbs(struct hep_desc *h, struct receive_info *rcv)
+int run_hep_cbs(void)
 {
 	int ret, fret=-1;
 	struct hep_cb_list *cb_el;
 
 	for (cb_el=cb_list; cb_el; cb_el=cb_el->next) {
-		ret=cb_el->cb(h, rcv);
+		ret=cb_el->cb();
 		if (ret < 0) {
 			LM_ERR("hep callback failed! Continuing with the other ones!\n");
 		} else if (ret == HEP_SCRIPT_SKIP) {

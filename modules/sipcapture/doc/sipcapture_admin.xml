@@ -361,22 +361,42 @@ modparam("sipcapture", "capture_node", "homer03")
 		</example>
 	</section>
 	<section>
-		<title><varname>hep_store_no_script</varname> (int)</title>
+		<title><varname>hep_route</varname> (string)</title>
 		<para>
-			Flag that specifies whether or not the HEP message should
-		pass through the script. If this flag set, the message will
-		be stored in the database just after it will be received.
+			Specifies what path your hep messages should take. Possible
+		values are the following:
 		</para>
+		<itemizedlist>
+			<listitem><para><emphasis>none</emphasis> - don't go through the script;
+					do directly sip_capture(); </para>
+			</listitem>
+			<listitem><para><emphasis>sip(default)</emphasis> - go through the main
+					request route; here the message is parsed and you can do anything you
+					want with it;</para>
+			</listitem>
+
+			<listitem><para><emphasis>any other string value</emphasis> - define a route name
+					through which your hep messages should go; the message is not parsed because
+					of efficiency reasons; from here you can modify the hep chunks(if hep version
+					3 is used) and relay the hep messages to other hep capture nodes; </para>
+			</listitem>
+		</itemizedlist>
 		<para>
 		<emphasis>
-			Default value is 0(passing through the script).
+			Default value is sip(going thorugh the main request route).
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>hep_store_no_script</varname> parameter</title>
+		<title>Set <varname>hep_route</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("sipcapture", "hep_store_no_script", 1)
+modparam("sipcapture", "hep_route", "my_hep_route")
+...
+
+route[my_hep_route] {
+	/* do hep stuff in here */
+	...
+}
 ...
 </programlisting>
 		</example>

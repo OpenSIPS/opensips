@@ -44,6 +44,7 @@
 #include "../../context.h"
 #include "../../mod_fix.h"
 #include "../../msg_translator.h"
+#include "../../action.h"
 
 /* BPF structure */
 #ifdef __OS_linux
@@ -158,7 +159,7 @@ static int async_sip_capture(struct sip_msg* msg, async_resume_module **resume_f
 		void **resume_param, str* s1, str* s2);
 static int w_sip_capture(struct sip_msg *msg,
 				async_resume_module **resume_f, void **resume_param);
-int hep_msg_received(struct hep_desc *h, struct receive_info *ri);
+int hep_msg_received(void);
 int extract_host_port(void);
 int raw_capture_socket(struct ip_addr* ip, str* iface, int port_start, int port_end, int proto);
 int raw_capture_rcv_loop(int rsock, int port1, int port2, int ipip);
@@ -184,6 +185,9 @@ static int
 w_get_hep(struct sip_msg* msg, char* type, char* id, char* vid, char* data);
 static int
 w_get_hep_generic(struct sip_msg* msg, char* id, char* vid, char* data);
+
+
+static int parse_hep_route(char *val);
 
 
 /* remove chunk functions */
@@ -287,6 +291,9 @@ static str hep_app_protos[]= {
 #define MAX_PAYLOAD 32767
 static char payload_buf[MAX_PAYLOAD];
 
+/* dummy request for the hep route */
+struct sip_msg dummy_req;
+
 
 /* values to be set from script for hep pvar */
 
@@ -329,7 +336,13 @@ int *capture_on_flag = NULL;
 int promisc_on = 0;
 int bpf_on = 0;
 
-int hep_store_no_script=0;
+char* hep_route=0;
+str hep_route_s;
+
+#define HEP_NO_ROUTE -1
+#define HEP_SIP_ROUTE 0
+static char* hep_route_name=NULL;
+static int hep_route_id=HEP_SIP_ROUTE;
 
 str raw_socket_listen = { 0, 0 };
 str raw_interface = { 0, 0 };
@@ -453,7 +466,7 @@ static param_export_t params[] = {
 	{"raw_interface",     		STR_PARAM, &raw_interface.s   },
         {"promiscious_on",  		INT_PARAM, &promisc_on   },
         {"raw_moni_bpf_on",  		INT_PARAM, &bpf_on   },
-	{"hep_store_no_script",		INT_PARAM, &hep_store_no_script},
+	{"hep_route",		STR_PARAM, &hep_route_name},
 	{0, 0, 0}
 };
 
@@ -533,14 +546,47 @@ struct module_exports exports = {
 	child_init  /*!< child initialization function */
 };
 
+static int parse_hep_route(char *val)
+{
+	static const str hep_sip_route = str_init("sip");
+	static const str hep_no_route = str_init("none");
+	str route_name = {val, strlen(val)};
+
+	if ( route_name.len == hep_no_route.len &&
+			strncasecmp(route_name.s, hep_no_route.s, hep_no_route.len ) == 0) {
+		hep_route_id = HEP_NO_ROUTE;
+	} else if ( route_name.len == hep_sip_route.len &&
+			strncasecmp(route_name.s, hep_sip_route.s, hep_sip_route.len ) == 0) {
+		hep_route_id = HEP_SIP_ROUTE;
+	} else {
+		hep_route_id=get_script_route_ID_by_name( route_name.s, rlist, RT_NO);
+		if ( hep_route_id == -1 ) {
+			LM_ERR("route <%s> not defined!\n", route_name.s);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+void build_dummy_msg(void) {
+	memset(&dummy_req, 0, sizeof(struct sip_msg));
+	dummy_req.first_line.type = SIP_REQUEST;
+	dummy_req.first_line.u.request.method.s= "DUMMY";
+	dummy_req.first_line.u.request.method.len= 5;
+	dummy_req.first_line.u.request.uri.s= "sip:user@domain.com";
+	dummy_req.first_line.u.request.uri.len= 19;
+	dummy_req.rcv.src_ip.af = AF_INET;
+	dummy_req.rcv.dst_ip.af = AF_INET;
+}
+
+
 
 /*! \brief Initialize sipcapture module */
 static int mod_init(void) {
 
 	int i;
 	struct ip_addr *ip = NULL;
-
-	init_db_url(db_url, 0);
 
 	/* init db keys */
 	db_keys[0] = &id_column;
@@ -595,7 +641,6 @@ static int mod_init(void) {
 	/* check if we need to start extra process */
 	procs[0].no = (ipip_capture_on || moni_capture_on) ? raw_sock_children:0;
 
-	db_url.len = strlen(db_url.s);
 	table_name.len = strlen(table_name.s);
 	date_column.len = strlen(date_column.s);
 	id_column.len = strlen(id_column.s);
@@ -656,49 +701,78 @@ static int mod_init(void) {
 			LM_ERR("failed to register hep callback\n");
 			return -1;
 		}
+
+		if (hep_route_name != NULL) {
+			if ( parse_hep_route(hep_route_name) < 0 ) {
+				LM_ERR("bad hep route name %s\n", hep_route_name);
+				return -1;
+			}
+
+			if (hep_route_id > HEP_SIP_ROUTE) {
+				/* builds a dummy message for being able to use the hep route */
+				build_dummy_msg();
+			}
+		}
+
+		/* db_url is mandatory if sip_capture is used */
+		if ((is_script_func_used("sip_capture", -1) ||
+				is_script_async_func_used("sip_capture", -1)) ||
+				hep_route_id == HEP_NO_ROUTE) {
+			init_db_url(db_url, 0);
+		} else {
+			init_db_url(db_url, 1);
+		}
+	} else {
+		if ((is_script_func_used("sip_capture", -1) ||
+				is_script_async_func_used("sip_capture", -1))) {
+			init_db_url(db_url, 0);
+		} else {
+			init_db_url(db_url, 1);
+		}
 	}
 
 
-	/* Find a database module */
-	if (db_bind_mod(&db_url, &db_funcs))
-	{
-		LM_ERR("unable to bind database module\n");
-		return -1;
-	}
-	if (!DB_CAPABILITY(db_funcs, DB_CAP_INSERT))
-	{
-		LM_ERR("database modules does not provide all functions needed"
-				" by module\n");
-		return -1;
-	}
-
-	if (DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
-		async_query = shm_malloc(sizeof(struct _async_query));
-		if (async_query == NULL) {
-			LM_ERR("no more shm");
+	if (db_url.s && db_url.len) {
+		/* Find a database module */
+		if (db_bind_mod(&db_url, &db_funcs))
+		{
+			LM_ERR("unable to bind database module\n");
 			return -1;
 		}
-		lock_init(&query_lock);
+		if (!DB_CAPABILITY(db_funcs, DB_CAP_INSERT))
+		{
+			LM_ERR("database modules does not provide all functions needed"
+					" by module\n");
+			return -1;
+		}
 
-		/* build first part of the async query; no overflow risk */
-		query_len = snprintf(query_buf, MAX_QUERY, "INSERT INTO %s(",
-															table_name.s);
-		for (i = 0; i < NR_KEYS-1; i++)
+		if (DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
+			async_query = shm_malloc(sizeof(struct _async_query));
+			if (async_query == NULL) {
+				LM_ERR("no more shm");
+				return -1;
+			}
+			lock_init(&query_lock);
+
+			/* build first part of the async query; no overflow risk */
+			query_len = snprintf(query_buf, MAX_QUERY, "INSERT INTO %s(",
+																table_name.s);
+			for (i = 0; i < NR_KEYS-1; i++)
+				query_len += snprintf(query_buf+query_len, MAX_QUERY-query_len,
+										"%s,",db_keys[i]->s);
 			query_len += snprintf(query_buf+query_len, MAX_QUERY-query_len,
-									"%s,",db_keys[i]->s);
-		query_len += snprintf(query_buf+query_len, MAX_QUERY-query_len,
-									"%s) VALUES", db_keys[NR_KEYS-1]->s);
-		base_query_len = query_len;
+										"%s) VALUES", db_keys[NR_KEYS-1]->s);
+			base_query_len = query_len;
+		}
+
+
+
+		/*Check the table name*/
+		if(!table_name.len) {
+			LM_ERR("table_name is not defined or empty\n");
+			return -1;
+		}
 	}
-
-
-
-	/*Check the table name*/
-	if(!table_name.len) {
-		LM_ERR("table_name is not defined or empty\n");
-		return -1;
-	}
-
 
 	capture_on_flag = (int*)shm_malloc(sizeof(int));
 	if(capture_on_flag==NULL) {
@@ -1867,7 +1941,7 @@ static int child_init(int rank)
 	if (db_url.s)
 	  return sipcapture_db_init(&db_url);
 
-	LM_ERR("db_url is empty\n");
+	LM_DBG("db_url is empty\n");
 
 	return 0;
 }
@@ -1980,16 +2054,27 @@ destroy_continue:
 /**
  * HEP message
  */
-int hep_msg_received(struct hep_desc *h, struct receive_info *ri)
+int hep_msg_received(void)
 {
-
 	struct sip_msg msg;
+
+	struct hep_desc *h;
+	struct hep_context* ctx;
+
+	if ((ctx=HEP_GET_CONTEXT(hep_api))==NULL) {
+		LM_WARN("not a hep message!\n");
+		return -1;
+	}
+
+	h = &ctx->h;
+
+
 
 	if(!hep_capture_on) {
 		LM_ERR("HEP is not enabled\n");
 		return 0;
 	}
-	if (hep_store_no_script) {
+	if ( hep_route_id == HEP_NO_ROUTE ) {
 		memset(&msg, 0, sizeof(struct sip_msg));
 
 		switch (h->version) {
@@ -2028,7 +2113,21 @@ int hep_msg_received(struct hep_desc *h, struct receive_info *ri)
 			return -1;
 		}
 
-		/* return a special code which will tell hep not to run the script */
+		/* don't go through the main route */
+		return HEP_SCRIPT_SKIP;
+	} else if (hep_route_id > HEP_SIP_ROUTE) {
+		/* set request route type */
+		set_route_type( REQUEST_ROUTE );
+
+
+		/* run given hep route */
+		run_top_route(rlist[hep_route_id].a, &dummy_req);
+
+		/* free possible loaded avps */
+		reset_avps();
+
+		/* don't go through the main route; we want to avoid
+		 * message parsing */
 		return HEP_SCRIPT_SKIP;
 	}
 
@@ -2710,16 +2809,21 @@ static int w_sip_capture(struct sip_msg *msg,
 		sco.destination_port = msg->rcv.dst_port;
 	}
 
-	if(sco.proto == PROTO_UDP) sco.proto=IPPROTO_UDP;
-	else if(sco.proto == PROTO_TCP) sco.proto=IPPROTO_TCP;
-	else if(sco.proto == PROTO_TLS) sco.proto=IPPROTO_IDP;
-											/* fake protocol */
-	else if(sco.proto == PROTO_SCTP) sco.proto=IPPROTO_SCTP;
-	else if(sco.proto == PROTO_WS) sco.proto=IPPROTO_ESP;
-                                            /* fake protocol */
-	else {
-		LM_ERR("unknown protocol [%d]\n",sco.proto);
-		sco.proto = PROTO_NONE;
+	/* we change to internal proto id only for version 3; for version
+	 * 1/2 we don't change the buffer inside opensips so we don't need
+	 * internal protocol id */
+	if (h && h->version == 3) {
+		if(sco.proto == PROTO_UDP) sco.proto=IPPROTO_UDP;
+		else if(sco.proto == PROTO_TCP) sco.proto=IPPROTO_TCP;
+		else if(sco.proto == PROTO_TLS) sco.proto=IPPROTO_IDP;
+												/* fake protocol */
+		else if(sco.proto == PROTO_SCTP) sco.proto=IPPROTO_SCTP;
+		else if(sco.proto == PROTO_WS) sco.proto=IPPROTO_ESP;
+												/* fake protocol */
+		else {
+			LM_ERR("unknown protocol [%d]\n",sco.proto);
+			sco.proto = PROTO_NONE;
+		}
 	}
 
 
@@ -2739,8 +2843,8 @@ static int w_sip_capture(struct sip_msg *msg,
 		sco.msg.s = h->u.hepv3.payload_chunk.data;
 		sco.msg.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
 	} else {
-		sco.msg.s = msg->buf;
-		sco.msg.len = msg->len;
+		sco.msg.s = h->u.hepv12.payload;
+		sco.msg.len = strlen(h->u.hepv12.payload);
 	}
 	//EMPTY_STR(sco.msg);
 

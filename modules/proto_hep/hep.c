@@ -736,14 +736,18 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 		default:
 			/* FIXME hep struct will be in shm, but if we put these in shm
 			 * locking will be required */
-			if ((gen_chunk = pkg_malloc(sizeof(generic_chunk_t)))==NULL) {
+			if ((gen_chunk = shm_malloc(sizeof(generic_chunk_t)))==NULL) {
 				LM_ERR("no more pkg mem!\n");
 				return -1;
 			}
 
 			memset(gen_chunk, 0, sizeof(generic_chunk_t));
 			gen_chunk->chunk = *((hep_chunk_t*)buf);
-			gen_chunk->data = (char *)buf + sizeof(hep_chunk_t);
+
+			gen_chunk->data =
+				shm_malloc(gen_chunk->chunk.length - sizeof(hep_chunk_t));
+			memcpy(gen_chunk->data, (char *)buf + sizeof(hep_chunk_t),
+					gen_chunk->chunk.length - sizeof(hep_chunk_t));
 
 
 			CONVERT_TO_HBO(gen_chunk->chunk);

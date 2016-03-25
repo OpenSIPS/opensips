@@ -30,7 +30,7 @@
 #include "../../sr_module.h"
 
 
-typedef int (*hep_cb_t)(struct hep_desc *h, struct receive_info *rcv);
+typedef int (*hep_cb_t)(void);
 
 
 /* in order to register a callback one must import hep.h header
@@ -38,13 +38,19 @@ typedef int (*hep_cb_t)(struct hep_desc *h, struct receive_info *rcv);
  * headers and also the sip payload */
 typedef int (*register_hep_cb_t)(hep_cb_t cb);
 
+/*
+ * receive message in hep route
+ * it receives the route id
+ * the hep context must have been set when calling this function
+ *
+ */
+
 typedef struct proto_hep_api {
 	int version;
 
 	register_hep_cb_t register_hep_cb;
 	pack_hep_t		  pack_hep;
 	get_hep_ctx_id_t  get_hep_ctx_id;
-
 } proto_hep_api_t;
 
 
@@ -53,7 +59,7 @@ typedef int (*bind_proto_hep_t)(proto_hep_api_t* api);
 int bind_proto_hep(proto_hep_api_t *api);
 typedef int (*load_hep_f)(proto_hep_api_t *api);
 
-int run_hep_cbs(struct hep_desc *h, struct receive_info *rcv);
+int run_hep_cbs(void);
 void free_hep_cbs(void);
 
 static inline int load_hep_api(proto_hep_api_t* api )
@@ -71,7 +77,6 @@ static inline int load_hep_api(proto_hep_api_t* api )
 
 	return 0;
 }
-
 
 
 #endif
