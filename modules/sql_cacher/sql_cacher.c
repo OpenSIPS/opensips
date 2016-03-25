@@ -83,6 +83,17 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_CACHEDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /**
  * module exports
  */
@@ -91,7 +102,7 @@ struct module_exports exports = {
 	MOD_TYPE_DEFAULT,			/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
-	NULL,						/* OpenSIPS module dependencies */
+	&deps,						/* OpenSIPS module dependencies */
 	0,							/* exported functions */
 	0,							/* exported async functions */
 	mod_params,					/* exported parameters */
