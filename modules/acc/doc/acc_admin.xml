@@ -14,15 +14,16 @@
 	</para>
 	<para>
 		To account a transaction and to choose which set of backends to be
-		used, the script writer just has to set some flags (see the module
-		parameters section for flag definitions <xref linkend="ACC-param-id"/>).
-		If the accounting flag for a specific backend is set, the acc module
-		will then report on completed transaction. A typical usage of the
-		module takes no acc-specific script command -- the functionality
-		binds invisibly through transaction processing. Script writers just
-		need to mark the transaction for accounting with proper setflag.
-		Even so, the module allows the script writter to force accounting in
-		special cases via some script functions.
+		used, the script writer just has to use mark the transaction for 
+		accouting by using the <xref linkend="do_accouting"/> script function.
+		Note that the function is not actually doing the accounting at that
+		very process, it is just setting a marker - the actual accouting
+		will be done later when the transaction or dialog will be 
+		completed.
+		</para>
+		<para>
+		Even so, the module allows the script writter to force accounting on the
+		spot in special cases via some other script functions.
 	</para>
 	<para>
 		The accounting module will log by default a fixed set of attributes
@@ -112,8 +113,6 @@
 		<title>General Example</title>
 		<programlisting format="linespecific">
 loadmodule "modules/acc/acc.so"
-modparam("acc", "log_level", 1)
-modparam("acc", "log_flag", "LOG_FLAG")
 
 if (uri=~"sip:+40") /* calls to Romania */ {
     if (!proxy_authorize("sip_domain.net" /* realm */,
@@ -123,12 +122,12 @@ if (uri=~"sip:+40") /* calls to Romania */ {
     }
 
     if (is_method("INVITE") &amp;&amp; !db_check_from()) {
-        log("from!=digest\n");
+        xlog("FROM URI != digest username\n");
         sl_send_reply("403","Forbidden");
     }
 
-    setflag(LOG_FLAG); /* set for accounting (the same value as in log_flag!)
-    t_relay(); 	/* enter stateful mode now */
+    do_accouting("log"); /* set for accounting via syslog */
+    t_relay(); /* enter stateful mode now */
 };
 </programlisting>
 	</section>
@@ -346,18 +345,18 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 		<section>
 			<title>Configuration</title>
 			<para>
-			In order to have CDRs accounting, first you need to specify the
-			<emphasis>cdr_flag</emphasis> parameter. In the script, you
-			must set the corresponding flag	for the calls that you want to log.
-			The flag is only meant to be set on the initial INVITE of the dialog.
+			In order to have CDRs accounting, first you need to set the
+			<emphasis>cdr</emphasis> flag when calling 
+			<xref linkend="do_accouting"/> script function for the
+			initial INVITE of the dialog.
 			</para>
 		</section>
 		<section>
 			<title>How it works</title>
 			<para>
 			This type of accounting is based on the dialog module. When
-			an initial INVITE is received, if the <emphasis>cdr_flag</emphasis>
-			is set, then the dialog creation time is saved. Once the call is
+			an initial INVITE is received, if the <emphasis>cdr</emphasis>
+			flag is set, then the dialog creation time is saved. Once the call is
 			answered and the ACK is received, other information like extra values
 			or leg values are saved. When the corresponding BYE is received,
 			the call duration is computed and all information is stored to
@@ -393,7 +392,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 			</listitem>
 				<listitem>
 				<para><emphasis>dialog</emphasis> -- Dialog, if
-				<quote>cdr_flag</quote> is set.
+				<quote>cdr</quote> option is used
 				</para>
 				</listitem>
 			</itemizedlist>
@@ -587,7 +586,7 @@ modparam("acc", "log_extra",
 		<title><varname>log_extra_bye</varname> (string)</title>
 		<para>
 		Extra values to be logged to logfile. Note that this parameter makes
-		sense only when the cdr_flag is used.
+		sense only when the cdr option is used with do_accouting().
 		</para>
 		<para>
 		Default value is NULL.
@@ -663,7 +662,7 @@ modparam("acc", "aaa_extra",
 		<para>
 		Extra values to be logged via AAA when a BYE message is received -
 		AAA specific. Note that this parameter makes sense only when the
-		cdr_flag is used.
+		cdr option is used with do_accouting.
 		</para>
 		<para>
 		Default value is NULL.
@@ -852,7 +851,7 @@ modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(email)")
 		<para>
 		Extra values to be logged into database when a BYE message is received
 		- DB specific. Note that this parameter makes sense only when the
-		cdr_flag is used.
+		cdr option is used with do_accouting.
 		</para>
 		<para>
 		Default value is NULL.
@@ -933,7 +932,8 @@ modparam("acc", "evi_extra",
 		<title><varname>evi_extra_bye</varname> (string)</title>
 		<para>
 			Extra values to be attached as event's parameters for BYE messages.
-			Note that this parameter makes sense only when the cdr_flag is used.
+			Note that this parameter makes sense only when the cdr option is
+			used with do_accouting.
 		</para>
 		<para>
 		Default value is NULL.
@@ -968,7 +968,7 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 
 	<section>
 	<title>Exported Functions</title>
-	<section>
+	<section id="do_accouting">
 		<title>
 			<function moreinfo="none">do_accounting(type, flags, table)</function>
 		</title>
@@ -1012,9 +1012,6 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 				<listitem>
 					<para><emphasis>cdr</emphasis> - also set CDR details when doing
 						accounting; DIALOG MODULE HAS TO BE LOADED;</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>missed</emphasis> - log missed calls;</para>
 				</listitem>
 				<listitem>
 					<para><emphasis>missed</emphasis> - log missed calls;</para>
