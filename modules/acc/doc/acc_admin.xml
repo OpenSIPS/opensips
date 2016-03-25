@@ -1056,7 +1056,7 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 
 	</section>
 
-	<section id="cancel_accouting">
+	<section id="drop_accouting">
 		<title>
 			<function moreinfo="none">drop_accounting([type], [flags])</function>
 		</title>
