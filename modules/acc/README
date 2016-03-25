@@ -91,11 +91,12 @@ Irina-Maria Stanescu
         1.7. Exported Functions
 
               1.7.1. do_accounting(type, flags, table)
-              1.7.2. acc_log_request(comment)
-              1.7.3. acc_db_request(comment, table)
-              1.7.4. acc_aaa_request(comment)
-              1.7.5. acc_diam_request(comment)
-              1.7.6. acc_evi_request(comment)
+              1.7.2. drop_accounting([type], [flags])
+              1.7.3. acc_log_request(comment)
+              1.7.4. acc_db_request(comment, table)
+              1.7.5. acc_aaa_request(comment)
+              1.7.6. acc_diam_request(comment)
+              1.7.7. acc_evi_request(comment)
 
         1.8. Exported Events
 
@@ -138,12 +139,13 @@ Irina-Maria Stanescu
    1.29. evi_extra example
    1.30. evi_extra_bye example
    1.31. acc_created_avp_name example
-   1.32. acc_log_request usage
-   1.33. acc_log_request usage
-   1.34. acc_db_request usage
-   1.35. acc_aaa_request usage
-   1.36. acc_diam_request usage
-   1.37. acc_evi_request usage
+   1.32. do_accounting usage
+   1.33. drop_accounting usage
+   1.34. acc_log_request usage
+   1.35. acc_db_request usage
+   1.36. acc_aaa_request usage
+   1.37. acc_diam_request usage
+   1.38. acc_evi_request usage
 
 Chapter 1. Admin Guide
 
@@ -808,9 +810,8 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.32. acc_log_request usage
+   Example 1.32. do_accounting usage
                 ...
-                acc_log_request("403 Destination not allowed");
                 if (!has_totag()) {
                         if (is_method("INVITE")) {
                         /* enable cdr and missed calls accounting in the
@@ -828,7 +829,61 @@ y_acc");
                 }
                 ...
 
-1.7.2.  acc_log_request(comment)
+1.7.2.  drop_accounting([type], [flags])
+
+   drop_accounting() resets flags and types of accounting set with
+   do_accounting(). If called with no arguments all accounting
+   will be stopped. If called with only one argument all
+   accounting for that type will be stopped. If called with two
+   arguments normal accounting will still be enabled.
+
+   Meaning of the parameters is as follows:
+     * type - the type of accounting you want to stop. All the
+       types have to be separated by '|'. The following parameters
+       can be used:
+          + log - stop syslog accounting;
+          + db - stop database accounting;
+          + aaa - stop aaa specific accounting;
+          + evi - stop Event Interface accounting;
+          + diam - stop Diameter accounting;
+     * flags - flags to be reset for the accouting type you have
+       selected. All the types have to be separated by '|'. The
+       following parameters can be used:
+          + cdr - stop CDR accounting;
+          + missed - stop logging missed calls;
+          + failed - stop failed transaction accounting;
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Example 1.33. drop_accounting usage
+                ...
+                acc_log_request("403 Destination not allowed");
+                if (!has_totag()) {
+                        if (is_method("INVITE")) {
+                        /* enable cdr and missed calls accounting in the
+ database
+                         * and to syslog; db accounting shall be done in
+ "my_acc" table */
+                                do_accounting("db|log", "cdr|missed", "m
+y_acc");
+                        }
+                }
+                ...
+                /* later in your script */
+                if (...) { /* you don't want accounting anymore */
+                        /* stop all syslog accounting */
+                        drop_accounting("log");
+                        /* or stop missed calls and cdr accounting for s
+yslog;
+                         * normal accounting will still be enabled */
+                        drop_accounting("log","missed|cdr");
+                        /* or stop all types of accounting  */
+                        drop_accounting();
+                }
+                ...
+
+1.7.3.  acc_log_request(comment)
 
    acc_request reports on a request, for example, it can be used
    to report on missed calls to off-line users who are replied 404
@@ -845,12 +900,12 @@ y_acc");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.33. acc_log_request usage
+   Example 1.34. acc_log_request usage
 ...
 acc_log_request("403 Destination not allowed");
 ...
 
-1.7.3.  acc_db_request(comment, table)
+1.7.4.  acc_db_request(comment, table)
 
    Like acc_log_request, acc_db_request reports on a request. The
    report is sent to database at “db_url”, in the table referred
@@ -866,13 +921,13 @@ acc_log_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.34. acc_db_request usage
+   Example 1.35. acc_db_request usage
 ...
 acc_db_request("Some comment", "Some table");
 acc_db_request("$T_reply_code $(<reply>rr)","acc");
 ...
 
-1.7.4.  acc_aaa_request(comment)
+1.7.5.  acc_aaa_request(comment)
 
    Like acc_log_request, acc_aaa_request reports on a request. It
    reports to aaa server as configured in “aaa_url”.
@@ -886,12 +941,12 @@ acc_db_request("$T_reply_code $(<reply>rr)","acc");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.35. acc_aaa_request usage
+   Example 1.36. acc_aaa_request usage
 ...
 acc_aaa_request("403 Destination not allowed");
 ...
 
-1.7.5.  acc_diam_request(comment)
+1.7.6.  acc_diam_request(comment)
 
    Like acc_log_request, acc_diam_request reports on a request. It
    reports to the configured Diameter server.
@@ -905,12 +960,12 @@ acc_aaa_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.36. acc_diam_request usage
+   Example 1.37. acc_diam_request usage
 ...
 acc_diam_request("403 Destination not allowed");
 ...
 
-1.7.6.  acc_evi_request(comment)
+1.7.7.  acc_evi_request(comment)
 
    Like acc_log_request, acc_evi_request reports on a request. The
    report is packed as an event sent through the OpenSIPS Event
@@ -928,7 +983,7 @@ acc_diam_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.37. acc_evi_request usage
+   Example 1.38. acc_evi_request usage
 ...
 acc_evi_request("403 Destination not allowed");
 ...

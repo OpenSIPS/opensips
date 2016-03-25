@@ -57,6 +57,8 @@ extern str table_str;
 extern str acc_created_avp_name;
 extern int acc_created_avp_id;
 
+extern int acc_flags_ctx_idx;
+
 struct acc_enviroment acc_env;
 
 static query_list_t *acc_ins_list = NULL;
@@ -139,6 +141,7 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 void free_acc_mask(void* param) {
 	shm_free((unsigned long long *)param);
 }
+
 
 static inline struct hdr_field* get_rpl_to( struct cell *t,
 														struct sip_msg *reply)
@@ -374,59 +377,6 @@ static inline int has_totag(struct sip_msg *msg)
 }
 
 
-
-/* prepare message and transaction context for later accounting */
-void acc_onreq( struct cell* t, int type, struct tmcb_params *ps )
-{
-#if 0
-	int tmcb_types;
-	int is_invite;
-	int_str _avp_created_value;
-
-	if ( ps->req && !skip_cancel(ps->req) &&
-	(is_acc_on(ps->req) || is_mc_on(ps->req)) ) {
-		/* do some parsing in advance */
-		if (acc_preparse_req(ps->req)<0)
-			return;
-		is_invite = (ps->req->REQ_METHOD==METHOD_INVITE)?1:0;
-		/* install additional handlers */
-		tmcb_types =
-			/* report on completed transactions */
-			TMCB_RESPONSE_OUT |
-			/* get incoming replies ready for processing */
-			TMCB_RESPONSE_IN |
-			/* report on missed calls */
-			((is_invite && is_mc_on(ps->req))?TMCB_ON_FAILURE:0) ;
-
-		/* if cdr accounting is enabled */
-		if (is_cdr_acc_on(ps->req) && !has_totag(ps->req)) {
-			_avp_created_value.n = time(NULL);
-
-			if ( add_avp(0, acc_created_avp_id, _avp_created_value) != 0) {
-				LM_ERR("failed to add created avp value!\n");
-				return;
-			}
-
-			if (is_invite && create_acc_dlg(ps->req) < 0) {
-				LM_ERR("cannot use dialog accounting module\n");
-				return;
-			}
-		}
-		if (tmb.register_tmcb( 0, t, tmcb_types, tmcb_func, 0, 0 )<=0) {
-			LM_ERR("cannot register additional callbacks\n");
-			return;
-		}
-		/* if required, determine request direction */
-		if( detect_direction && !rrb.is_direction(ps->req,RR_FLOW_UPSTREAM) ) {
-			LM_DBG("detected an UPSTREAM req -> flaging it\n");
-			ps->req->msg_flags |= FL_REQ_UPSTREAM;
-		}
-	}
-#endif
-}
-
-
-
 /* is this reply of interest for accounting ? */
 static inline int should_acc_reply(struct sip_msg *req,struct sip_msg *rpl,
 								int code, unsigned long long* flags)
@@ -554,7 +504,7 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 
 		/* register database callbacks */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
-				DLGCB_EXPIRED, acc_dlg_callback, flags_s.s, free_acc_mask)){
+				DLGCB_EXPIRED, acc_dlg_callback, flags_s.s, 0)){
 			LM_ERR("cannot register callback for database accounting\n");
 			return;
 		}
@@ -658,7 +608,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 
 		/* register database callbacks */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
-				DLGCB_EXPIRED, acc_dlg_callback,flags_s.s,0) != 0) {
+				DLGCB_EXPIRED, acc_dlg_callback,flags_s.s,free_acc_mask) != 0) {
 			LM_ERR("cannot register callback for database accounting\n");
 			return;
 		}
@@ -990,7 +940,7 @@ int w_do_acc_2(struct sip_msg* msg, char* type, char* flags)
 int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 {
 	unsigned long long type=0, flags=0;
-	unsigned long long *flag_mask;
+	unsigned long long *flag_mask_p, flag_mask;
 
 	acc_type_param_t* acc_param;
 
@@ -1022,13 +972,21 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		}
 	}
 
-
 	if (flags_p != NULL) {
 		flags= *(unsigned long long*)flags_p;
 	}
 
-	flag_mask=shm_malloc(sizeof(unsigned long long));
-	if (flag_mask==NULL) {
+	flag_mask = type + type * flags;
+
+	/* if already called the function once */
+	if ((flag_mask_p=ACC_GET_FLAGS) != NULL) {
+		*flag_mask_p |= flag_mask;
+		return 1;
+	}
+
+
+	flag_mask_p=shm_malloc(sizeof(unsigned long long));
+	if (flag_mask_p==NULL) {
 		LM_ERR("No more shm mem!\n");
 		return -1;
 	}
@@ -1041,8 +999,8 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 	 * so we keep the first bits in each byte and on the following positions
 	 * next flags
 	 */
-	*flag_mask = type  + type*flags;
-
+	*flag_mask_p = flag_mask;
+	ACC_PUT_FLAGS(flag_mask_p);
 
 	if (table_p != NULL) {
 		if (fixup_get_svalue(msg, (gparam_p)table_p, &table_name) < 0) {
@@ -1053,7 +1011,7 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 
 
 	if ( msg && !skip_cancel(msg) &&
-	(is_acc_on(*flag_mask) || is_mc_acc_on(*flag_mask)) ) {
+	(is_acc_on(*flag_mask_p) || is_mc_acc_on(*flag_mask_p)) ) {
 		/* do some parsing in advance */
 		if (acc_preparse_req(msg)<0)
 			return -1;
@@ -1065,10 +1023,10 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 			/* get incoming replies ready for processing */
 			TMCB_RESPONSE_IN |
 			/* report on missed calls */
-			((is_invite && is_mc_acc_on(*flag_mask))?TMCB_ON_FAILURE:0) ;
+			((is_invite && is_mc_acc_on(*flag_mask_p))?TMCB_ON_FAILURE:0) ;
 
 		/* if cdr accounting is enabled */
-		if (is_cdr_acc_on(*flag_mask) && !has_totag(msg)) {
+		if (is_cdr_acc_on(*flag_mask_p) && !has_totag(msg)) {
 			_avp_created_value.n = time(NULL);
 
 			if ( add_avp(0, acc_created_avp_id, _avp_created_value) != 0) {
@@ -1083,10 +1041,11 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		}
 
 		if (tmb.register_tmcb( msg, 0, tmcb_types, tmcb_func,
-				flag_mask, is_cdr_acc_on(*flag_mask) ? 0 : free_acc_mask)<=0) {
+				flag_mask_p, is_cdr_acc_on(*flag_mask_p) ? 0 : free_acc_mask)<=0) {
 			LM_ERR("cannot register additional callbacks\n");
 			return -1;
 		}
+
 
 		/* if required, determine request direction */
 		if( detect_direction && !rrb.is_direction(msg,RR_FLOW_UPSTREAM) ) {
@@ -1097,3 +1056,67 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 
 	return 1;
 }
+
+/* reset all flags */
+int w_drop_acc_0(struct sip_msg* msg) {
+	return w_drop_acc_2(msg, NULL, NULL);
+}
+
+int w_drop_acc_1(struct sip_msg* msg, char* type)
+{
+	return w_drop_acc_2(msg, type, NULL);
+}
+
+int w_drop_acc_2(struct sip_msg* msg, char* type_p, char* flags_p)
+{
+	unsigned long long type=0;
+	/* if not set, we reset all flags for the type of accounting requested */
+	unsigned long long flags=ALL_ACC_FLAGS;
+	unsigned long long flag_mask;
+	unsigned long long *context_flags_p=ACC_GET_FLAGS;
+
+
+	acc_type_param_t* acc_param;
+
+	str in;
+
+	if (context_flags_p == NULL) {
+		LM_ERR("do_accounting() not used! This function resets flags in "
+				"do_accounting()!\n");
+		return -1;
+	}
+
+	if (type_p != NULL) {
+		acc_param = (acc_type_param_t *)type_p;
+		if (acc_param->t == DO_ACC_PARAM_TYPE_VALUE) {
+			type = acc_param->u.ival;
+		} else {
+			if (pv_printf_s(msg, acc_param->u.pval, &in) < 0) {
+				LM_ERR("failed to fetch type value!\n");
+				return -1;
+			}
+
+			if ((type=do_acc_parse(&in, do_acc_type_parser)) < 0) {
+				LM_ERR("Invalid expression <%.*s> for acc type!\n", in.len, in.s);
+				return -1;
+			}
+		}
+	}
+
+	if (flags_p != NULL) {
+		flags= *(unsigned long long*)flags_p;
+	}
+
+	flag_mask = type * flags;
+
+	/* reset all flags */
+	if (flag_mask == 0) {
+		*context_flags_p = 0;
+	} else {
+		reset_flags(*context_flags_p, flag_mask);
+	}
+
+	return 1;
+}
+
+

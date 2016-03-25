@@ -42,6 +42,7 @@
 #define DO_ACC_CDR    (1<<1)
 #define DO_ACC_MISSED (1<<2)
 #define DO_ACC_FAILED (1<<3)
+#define ALL_ACC_FLAGS (DO_ACC|DO_ACC_CDR|DO_ACC_MISSED|DO_ACC_FAILED)
 
 #define DO_ACC_PARAM_TYPE_PV    (1<<0)
 #define DO_ACC_PARAM_TYPE_VALUE (1<<1)
@@ -57,6 +58,16 @@
 #define DO_ACC_FAILED_STR "failed"
 
 #define DO_ACC_PARAM_DELIMITER '|'
+
+#define ACC_PUT_FLAGS(_ptr) \
+	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, \
+			acc_flags_ctx_idx, _ptr)
+
+
+#define ACC_GET_FLAGS \
+	context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, \
+			acc_flags_ctx_idx)
+
 
 typedef unsigned long long (*do_acc_parser)(str*);
 
@@ -87,8 +98,6 @@ struct acc_param {
 };
 
 
-void acc_onreq( struct cell* t, int type, struct tmcb_params *ps );
-
 int w_acc_log_request(struct sip_msg *rq, pv_elem_t* comment, char *foo);
 
 int w_acc_aaa_request(struct sip_msg *rq, pv_elem_t* comment, char *foo);
@@ -113,5 +122,9 @@ int do_acc_fixup(void** param, int param_no);
 int w_do_acc_1(struct sip_msg* msg, char* type);
 int w_do_acc_2(struct sip_msg* msg, char* type, char* flags);
 int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p);
+
+int w_drop_acc_0(struct sip_msg* msg);
+int w_drop_acc_1(struct sip_msg* msg, char* type);
+int w_drop_acc_2(struct sip_msg* msg, char* type, char* flags);
 
 #endif

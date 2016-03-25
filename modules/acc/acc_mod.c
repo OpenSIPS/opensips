@@ -167,7 +167,8 @@ struct acc_extra *evi_extra_bye = 0;
 str acc_created_avp_name = str_init("accX_created");
 int acc_created_avp_id = -1;
 
-
+/* acc context position */
+int acc_flags_ctx_idx;
 
 /* ------------- fixup function --------------- */
 static int acc_fixup(void** param, int param_no);
@@ -206,6 +207,19 @@ static cmd_export_t cmds[] = {
 	/* type of acc(db,evi...) and flags(log cdr, log missed)
 	 * and db table */
 	{"do_accouting", (cmd_function)w_do_acc_3, 3,
+		do_acc_fixup, NULL,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+
+	{"drop_accounting", (cmd_function)w_drop_acc_0, 0, 0, NULL,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+
+	/* we use the same fixup function since the parameters
+	 * have the same meanining as for do_accounting  */
+	{"drop_accounting", (cmd_function)w_drop_acc_1, 1,
+		do_acc_fixup, NULL,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+
+	{"drop_accounting", (cmd_function)w_drop_acc_2, 2,
 		do_acc_fixup, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
@@ -506,6 +520,7 @@ static int mod_init( void )
 
 #endif
 
+	acc_flags_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, NULL);
 
 	return 0;
 }
