@@ -537,6 +537,8 @@ static inline int str2sint(str* _s, int* _r)
 			*_r *= 10;
 			*_r += _s->s[i] - '0';
 		} else {
+			//Preserve sign for partially converted strings
+			*_r *= s;
 			return -1;
 		}
 	}
