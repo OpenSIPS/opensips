@@ -500,6 +500,11 @@ static int mod_init( void )
 			LM_ERR("failed to parse aaa_extra_bye param\n");
 			return -1;
 		}
+
+		if (init_acc_aaa(aaa_proto_url, service_type)!=0 ) {
+			LM_ERR("failed to init radius\n");
+			return -1;
+		}
 	} else {
 		aaa_proto_url = NULL;
 	}
@@ -521,6 +526,16 @@ static int mod_init( void )
 #endif
 
 	/* ----------- EVENT INTERFACE INIT SECTION ----------- */
+
+	if (evi_extra_str && (evi_extra = parse_acc_extra(evi_extra_str, 1))==0) {
+		LM_ERR("failed to parse evi_extra param\n");
+		return -1;
+	}
+	if (evi_extra_bye_str &&
+			(evi_extra_bye = parse_acc_extra(evi_extra_bye_str, 0))==0) {
+		LM_ERR("failed to parse evi_extra_bye param\n");
+		return -1;
+	}
 
 	if (init_acc_evi() < 0) {
 		LM_ERR("cannot init acc events\n");
@@ -562,19 +577,6 @@ static int child_init(int rank)
 		return -1;
 	}
 	rb->buf = 0;
-
-
-
-	/* CDR flag will be checked at fixup so we need to init the keys in
-	 * here where we have that flag */
-
-	if (aaa_proto_url && aaa_proto_url[0]) {
-		if (init_acc_aaa(aaa_proto_url, service_type)!=0 ) {
-			LM_ERR("failed to init radius\n");
-			return -1;
-		}
-	}
-
 
 #endif
 

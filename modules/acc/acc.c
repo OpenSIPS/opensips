@@ -522,19 +522,17 @@ static void acc_db_init_keys(void)
 	}
 	VAL_TYPE(db_vals_cdrs+time_idx)=VAL_TYPE(db_vals+time_idx)=DB_DATETIME;
 
-	if (dlg_api.get_dlg) {
-		db_keys_cdrs[n++] = db_keys[m++] = &acc_setuptime_col;
-		db_keys_cdrs[n++] = db_keys[m++] = &acc_created_col;
-		db_keys_cdrs[n++] = &acc_duration_col;
-		db_keys_cdrs[n++] = &acc_ms_duration_col;
-		VAL_TYPE(db_vals_cdrs + n-1) = DB_INT;
-		VAL_TYPE(db_vals_cdrs + n-2) = DB_INT;
-		VAL_TYPE(db_vals_cdrs + n-3) = DB_DATETIME;
-		VAL_TYPE(db_vals_cdrs + n-4) = DB_INT;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_setuptime_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_created_col;
+	db_keys_cdrs[n++] = &acc_duration_col;
+	db_keys_cdrs[n++] = &acc_ms_duration_col;
+	VAL_TYPE(db_vals_cdrs + n-1) = DB_INT;
+	VAL_TYPE(db_vals_cdrs + n-2) = DB_INT;
+	VAL_TYPE(db_vals_cdrs + n-3) = DB_DATETIME;
+	VAL_TYPE(db_vals_cdrs + n-4) = DB_INT;
 
-		VAL_TYPE(db_vals+m-1) = DB_DATETIME;
-		VAL_TYPE(db_vals+m-2) = DB_INT;
-	}
+	VAL_TYPE(db_vals+m-1) = DB_DATETIME;
+	VAL_TYPE(db_vals+m-2) = DB_INT;
 
 }
 
@@ -569,6 +567,7 @@ int acc_db_init(const str* db_url)
 
 	acc_db_close();
 
+	acc_db_init_keys();
 
 	return 0;
 }
@@ -578,11 +577,6 @@ int acc_db_init(const str* db_url)
  * returns 0 on success, -1 on error */
 int acc_db_init_child(const str *db_url)
 {
-
-	/* CDR flag will be checked at fixup so we need to init the keys in
-	 * here where we have that flag */
-	acc_db_init_keys();
-
 	db_handle=acc_dbf.init(db_url);
 	if (db_handle==0){
 		LM_ERR("unable to connect to the database\n");
@@ -847,11 +841,9 @@ int init_acc_aaa(char* aaa_proto_url, int srv_type)
 	n += extra2attrs( leg_info, rd_attrs, n);
 	n += extra2attrs( leg_bye_info, rd_attrs, n);
 
-	if (dlg_api.get_dlg) {
-		rd_attrs[n++].name = "Sip-Call-Duration";
-		rd_attrs[n++].name = "Sip-Call-Setuptime";
-		rd_attrs[n++].name = "Sip-Call-Created";
-	}
+	rd_attrs[n++].name = "Sip-Call-Duration";
+	rd_attrs[n++].name = "Sip-Call-Setuptime";
+	rd_attrs[n++].name = "Sip-Call-Created";
 
 	prot_url.s = aaa_proto_url;
 	prot_url.len = strlen(aaa_proto_url);
@@ -1408,12 +1400,10 @@ int  init_acc_evi(void)
 	for( extra=leg_bye_info ; extra ; extra=extra->next)
 		EVI_CREATE_PARAM(extra->name);
 
-	if (dlg_api.get_dlg) {
-		EVI_CREATE_PARAM(acc_duration_evi);
-		EVI_CREATE_PARAM(acc_ms_duration_evi);
-		EVI_CREATE_PARAM(acc_setuptime_evi);
-		EVI_CREATE_PARAM(acc_created_evi);
-	}
+	EVI_CREATE_PARAM(acc_duration_evi);
+	EVI_CREATE_PARAM(acc_ms_duration_evi);
+	EVI_CREATE_PARAM(acc_setuptime_evi);
+	EVI_CREATE_PARAM(acc_created_evi);
 
 	return 0;
 
