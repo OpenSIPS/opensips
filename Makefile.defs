@@ -1329,7 +1329,7 @@ endif
 DEFAULT_YACC=bison
 
 # on solaris add -lxnet (e.g. LIBS= -lxnet)
-LIBS= -ldl -lresolv
+LIBS= -ldl -lresolv -lm
 
 #os specific stuff
 ifeq ($(OS), linux)
