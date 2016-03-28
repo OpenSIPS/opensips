@@ -15,7 +15,7 @@
 	<para>
 		To account a transaction and to choose which set of backends to be
 		used, the script writer just has to use mark the transaction for
-		accouting by using the <xref linkend="do_accouting"/> script function.
+		accouting by using the <xref linkend="do_accounting"/> script function.
 		Note that the function is not actually doing the accounting at that
 		very process, it is just setting a marker - the actual accouting
 		will be done later when the transaction or dialog will be
@@ -126,7 +126,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
         sl_send_reply("403","Forbidden");
     }
 
-    do_accouting("log"); /* set for accounting via syslog */
+    do_accounting("log"); /* set for accounting via syslog */
     t_relay(); /* enter stateful mode now */
 };
 </programlisting>
@@ -347,7 +347,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 			<para>
 			In order to have CDRs accounting, first you need to set the
 			<emphasis>cdr</emphasis> flag when calling
-			<xref linkend="do_accouting"/> script function for the
+			<xref linkend="do_accounting"/> script function for the
 			initial INVITE of the dialog.
 			</para>
 		</section>
@@ -586,7 +586,7 @@ modparam("acc", "log_extra",
 		<title><varname>log_extra_bye</varname> (string)</title>
 		<para>
 		Extra values to be logged to logfile. Note that this parameter makes
-		sense only when the cdr option is used with do_accouting().
+		sense only when the cdr option is used with do_accounting().
 		</para>
 		<para>
 		Default value is NULL.
@@ -662,7 +662,7 @@ modparam("acc", "aaa_extra",
 		<para>
 		Extra values to be logged via AAA when a BYE message is received -
 		AAA specific. Note that this parameter makes sense only when the
-		cdr option is used with do_accouting.
+		cdr option is used with do_accounting.
 		</para>
 		<para>
 		Default value is NULL.
@@ -851,7 +851,7 @@ modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(email)")
 		<para>
 		Extra values to be logged into database when a BYE message is received
 		- DB specific. Note that this parameter makes sense only when the
-		cdr option is used with do_accouting.
+		cdr option is used with do_accounting.
 		</para>
 		<para>
 		Default value is NULL.
@@ -933,7 +933,7 @@ modparam("acc", "evi_extra",
 		<para>
 			Extra values to be attached as event's parameters for BYE messages.
 			Note that this parameter makes sense only when the cdr option is
-			used with do_accouting.
+			used with do_accounting.
 		</para>
 		<para>
 		Default value is NULL.
@@ -968,7 +968,7 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 
 	<section>
 	<title>Exported Functions</title>
-	<section id="do_accouting">
+	<section id="do_accounting">
 		<title>
 			<function moreinfo="none">do_accounting(type, flags, table)</function>
 		</title>

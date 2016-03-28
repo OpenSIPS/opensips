@@ -232,7 +232,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
         sl_send_reply("403","Forbidden");
     }
 
-    do_accouting("log"); /* set for accounting via syslog */
+    do_accounting("log"); /* set for accounting via syslog */
     t_relay(); /* enter stateful mode now */
 };
 
@@ -538,7 +538,7 @@ modparam("acc", "log_extra",
 
    Extra values to be logged to logfile. Note that this parameter
    makes sense only when the cdr option is used with
-   do_accouting().
+   do_accounting().
 
    Default value is NULL.
 
@@ -586,7 +586,7 @@ modparam("acc", "aaa_extra",
 
    Extra values to be logged via AAA when a BYE message is
    received - AAA specific. Note that this parameter makes sense
-   only when the cdr option is used with do_accouting.
+   only when the cdr option is used with do_accounting.
 
    Default value is NULL.
 
@@ -706,7 +706,7 @@ modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(email)")
 
    Extra values to be logged into database when a BYE message is
    received - DB specific. Note that this parameter makes sense
-   only when the cdr option is used with do_accouting.
+   only when the cdr option is used with do_accounting.
 
    Default value is NULL.
 
@@ -758,7 +758,7 @@ modparam("acc", "evi_extra",
 
    Extra values to be attached as event's parameters for BYE
    messages. Note that this parameter makes sense only when the
-   cdr option is used with do_accouting.
+   cdr option is used with do_accounting.
 
    Default value is NULL.
 
