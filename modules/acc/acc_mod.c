@@ -206,7 +206,7 @@ static cmd_export_t cmds[] = {
 
 	/* type of acc(db,evi...) and flags(log cdr, log missed)
 	 * and db table */
-	{"do_accouting", (cmd_function)w_do_acc_3, 3,
+	{"do_accounting", (cmd_function)w_do_acc_3, 3,
 		do_acc_fixup, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
