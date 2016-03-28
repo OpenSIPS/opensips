@@ -182,8 +182,12 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		case TR_S_INT:
 			if(!(val->flags&PV_VAL_INT))
 			{
-				if(str2sint(&val->rs, &val->ri)!=0)
-					return -1;
+				//Default conversion to 0
+				val->ri = 0;
+				/*Ignore the return value of str2sint.
+				  str2sint will convert the string up until it finds a non-number char
+				  which is the desired behavior for the script level transformation*/
+				str2sint(&val->rs, &val->ri);
 			} else {
 				if(!(val->flags&PV_VAL_STR))
 					val->rs.s = int2str(val->ri, &val->rs.len);
