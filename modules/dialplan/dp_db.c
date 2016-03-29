@@ -33,20 +33,23 @@
 
 dp_head_p dp_hlist = NULL;
 
-str default_dp_db_url           =   {NULL, 0};
+str default_dp_db_url		=   {NULL, 0};
 str default_dp_table		=   {NULL, 0};
-str dp_table_name       	=   str_init(DP_TABLE_NAME);
-str dpid_column         	=   str_init(DPID_COL);
-str pr_column           	=   str_init(PR_COL);
-str match_op_column     	=   str_init(MATCH_OP_COL);
-str match_exp_column    	=   str_init(MATCH_EXP_COL);
-str match_flags_column  	=   str_init(MATCH_FLAGS_COL);
-str subst_exp_column    	=   str_init(SUBST_EXP_COL);
-str repl_exp_column     	=   str_init(REPL_EXP_COL);
-str disabled_column     	=   str_init(DISABLED_COL);
-str attrs_column        	=   str_init(ATTRS_COL);
-str timerec_column              =   str_init(TIMEREC_COL);
-
+str dp_table_name			=   str_init(DP_TABLE_NAME);
+str id_column				=   str_init(ID_COL);
+str dpid_column				=   str_init(DPID_COL);
+str pr_column				=   str_init(PR_COL);
+str match_op_column			=   str_init(MATCH_OP_COL);
+str src_match_exp_column	=   str_init(SRC_MATCH_EXP_COL);
+str match_exp_column		=   str_init(MATCH_EXP_COL);
+str match_flags_column		=   str_init(MATCH_FLAGS_COL);
+str subst_exp_column		=   str_init(SUBST_EXP_COL);
+str repl_exp_column			=   str_init(REPL_EXP_COL);
+str disabled_column			=   str_init(DISABLED_COL);
+str attrs_column			=   str_init(ATTRS_COL);
+str timerec_column			=   str_init(TIMEREC_COL);
+str match_var_column		=   str_init(MATCH_VAR_COL);
+str continue_search_column	=   str_init(CONTINUE_SEARCH_COL);
 
 #define GET_STR_VALUE(_res, _values, _index)\
 	do{\
@@ -58,6 +61,16 @@ str timerec_column              =   str_init(TIMEREC_COL);
 		(_res).len = strlen(VAL_STR((_values)+ (_index)).s);\
 	}while(0);
 
+#define GET_STR_VALUE_NULLALLOWED(_res, _values, _index)\
+	do{\
+		if (VAL_NULL((_values) + (_index))) { \
+			(_res).s = ""; \
+			(_res).len = 0; \
+		} else { \
+			(_res).s = VAL_STR((_values)+ (_index)).s;\
+			(_res).len = strlen(VAL_STR((_values)+ (_index)).s);\
+		} \
+	}while(0);
 void destroy_rule(dpl_node_t * rule);
 void destroy_hash(dpl_id_t **rules_hash);
 
@@ -233,10 +246,14 @@ int dp_load_db(dp_connection_list_p dp_conn)
 	db_res_t * res = 0;
 	db_val_t * values;
 	db_row_t * rows;
+	/* Database to datastructure relationship */
 	db_key_t query_cols[DP_TABLE_COL_NO] = {
-		&dpid_column,		&pr_column,
+		&id_column,		&dpid_column,		&pr_column,
 		&match_op_column,	&match_exp_column,	&match_flags_column,
-		&subst_exp_column,	&repl_exp_column,	&attrs_column,	&timerec_column };
+		&subst_exp_column,	&repl_exp_column,	&attrs_column,
+		&timerec_column,	&match_var_column,	&continue_search_column
+	};
+
 	db_key_t order = &pr_column;
 	/* disabled condition */
 	db_key_t cond_cols[1] = { &disabled_column };
@@ -444,74 +461,76 @@ error:
 dpl_node_t * build_rule(db_val_t * values)
 {
 	tmrec_t *parsed_timerec;
-	pcre * match_comp, *subst_comp;
+	pcre *match_comp, *subst_comp;
 	struct subst_expr * repl_comp;
 	dpl_node_t * new_rule;
-	str match_exp, subst_exp, repl_exp, attrs, timerec;
+	str match_exp, subst_exp, repl_exp, attrs, timerec, match_var;
 	int matchop;
 	int namecount;
 
-	matchop = VAL_INT(values+2);
+	matchop = VAL_INT(values+3);
 
 	if((matchop != REGEX_OP) && (matchop!=EQUAL_OP)){
 		LM_ERR("invalid value for match operator\n");
 		return NULL;
 	}
 
+	/* These Lines are just for debugging purpose */
+	LM_DBG("[**] STARTING RULE BUILDING   --> Rule Id: %d Dialplan Id: %d Dialplan Priority: %d\n", VAL_INT(values), VAL_INT(values+1), VAL_INT(values+2));
 	parsed_timerec = 0;
 	match_comp = subst_comp = 0;
 	repl_comp = 0;
 	new_rule = 0;
 
-	GET_STR_VALUE(match_exp, values, 3);
-	if(matchop == REGEX_OP){
+	/* Get Destination Matching Expression */
+	GET_STR_VALUE(match_exp, values, 4);
+	LM_DBG("[ii] MATCH EXPRESSION         --> %.*s \n", match_exp.len, match_exp.s);
 
-		LM_DBG("Compiling %.*s expression with flag: %d\n",
-				match_exp.len, match_exp.s, VAL_INT(values+4));
+	/* Evaluating Match Expression */
+	if(matchop == REGEX_OP) {
+		LM_DBG("Compiling %.*s expression with flag: %d\n", match_exp.len, match_exp.s, VAL_INT(values+5));
 
-		match_comp = wrap_pcre_compile(match_exp.s, VAL_INT(values+4));
+		match_comp = wrap_pcre_compile(match_exp.s, VAL_INT(values+5));
 
-		if(!match_comp){
-			LM_ERR("failed to compile match expression \"%.*s\"\n",
-				match_exp.len, match_exp.s);
+		if(!match_comp) {
+			LM_ERR("failed to compile match expression %.*s\n", match_exp.len, match_exp.s);
 			goto err;
 		}
 	}
 
-	LM_DBG("building subst rule\n");
-	GET_STR_VALUE(subst_exp, values, 5);
+	/* Retrieving Substitution Expression */
+	GET_STR_VALUE(subst_exp, values, 6);
+	LM_DBG("[ii] SUBSTITUTION EXPRESSION  --> %.*s \n", subst_exp.len, subst_exp.s);
+
 	if(subst_exp.s && subst_exp.len){
 		/* subst regexp */
-		subst_comp = wrap_pcre_compile(subst_exp.s, VAL_INT(values+4));
+		subst_comp = wrap_pcre_compile(subst_exp.s, VAL_INT(values+5));
 		if(subst_comp == NULL){
-			LM_ERR("failed to compile subst expression \"%.*s\"\n",
-					subst_exp.len, subst_exp.s);
+			LM_ERR("failed to compile subst expression\n");
 			goto err;
 		}
 	}
 
-	/* replace exp */
-	GET_STR_VALUE(repl_exp, values, 6);
+	/* Retrieving Replace Expression */
+	GET_STR_VALUE(repl_exp, values, 7);
+	LM_DBG("[ii] REPLACE EXPRESSION       --> %.*s \n", repl_exp.len, repl_exp.s);
+
 	if(repl_exp.len && repl_exp.s){
 		repl_comp = repl_exp_parse(repl_exp);
 		if(!repl_comp){
-			LM_ERR("failed to compile replacing expression \"%.*s\"\n",
-				repl_exp.len, repl_exp.s);
+			LM_ERR("failed to compile replacing expression %.*s\n", repl_exp.len, repl_exp.s);
 			goto err;
 		}
 	}
 
-	pcre_fullinfo(
-		subst_comp, /* the compiled pattern */
-		NULL, /* no extra data - we didn't study the pattern */
-		PCRE_INFO_CAPTURECOUNT, /* number of named substrings */
-		&namecount); /* where to put the answer */
+	pcre_fullinfo (
+		subst_comp,		/* the compiled pattern */
+		NULL,			/* no extra data - we didn't study the pattern */
+		PCRE_INFO_CAPTURECOUNT,	/* number of named substrings */
+		&namecount		/* where to put the answer */
+	);
 
-	LM_DBG("references:%d , max:%d\n",namecount,
-		repl_comp?repl_comp->max_pmatch:0);
-
-	if ( (repl_comp!=NULL) && (namecount<repl_comp->max_pmatch) &&
-	(repl_comp->max_pmatch!=0) ){
+	if((repl_comp != NULL) && (namecount < repl_comp->max_pmatch) && (repl_comp->max_pmatch != 0)) {
 		LM_ERR("repl_exp uses a non existing subexpression\n");
 			goto err;
 	}
@@ -534,24 +553,28 @@ dpl_node_t * build_rule(db_val_t * values)
 			goto err;
 
 	/*set the rest of the rule fields*/
-	new_rule->dpid          =	VAL_INT(values);
-	new_rule->pr            =	VAL_INT(values+1);
-	new_rule->match_flags   =	VAL_INT(values+4);
-	new_rule->matchop       =	matchop;
-	GET_STR_VALUE(attrs, values, 7);
-	if(str_to_shm(attrs, &new_rule->attrs)!=0)
-		goto err;
+	new_rule->id			=	VAL_INT(values);
+	new_rule->dpid			=	VAL_INT(values+1);
+	new_rule->pr			=	VAL_INT(values+2);
+	new_rule->match_flags		=	VAL_INT(values+5);
+	new_rule->matchop		=	matchop;
 
-	LM_DBG("attrs are %.*s\n",
-		new_rule->attrs.len, new_rule->attrs.s);
+	/* Retrieve Rule Attrs Value */
+	GET_STR_VALUE(attrs, values, 8);
+	LM_DBG("[ii] RULE ATTRIBUTES          --> %.*s \n", attrs.len, attrs.s);
+
+	if(str_to_shm(attrs, &new_rule->attrs)!=0) goto err;
+
+	LM_DBG("ATTRS are %.*s\n", new_rule->attrs.len, new_rule->attrs.s);
 
 	/* Retrieve and Parse Timerec Matching Pattern */
-	GET_STR_VALUE(timerec, values, 8);
+	GET_STR_VALUE(timerec, values, 9);
+	LM_DBG("[ii] RULE TIMEREC             --> %.*s \n", timerec.len, timerec.s);
+
 	if(timerec.len && timerec.s) {
 		parsed_timerec = parse_time_def(timerec.s);
 		if(!parsed_timerec) {
-			LM_ERR("failed to parse timerec pattern %.*s\n",
-				timerec.len, timerec.s);
+			LM_ERR("failed to parse timerec pattern %.*s\n", timerec.len, timerec.s);
 			goto err;
 		}
 
@@ -560,9 +583,18 @@ dpl_node_t * build_rule(db_val_t * values)
 
 		new_rule->parsed_timerec = parsed_timerec;
 
-		LM_DBG("timerecs are %.*s\n",
-			new_rule->timerec.len, new_rule->timerec.s);
+		LM_DBG("timerecs are %.*s\n", new_rule->timerec.len, new_rule->timerec.s);
 	}
+
+	/* Retrieve Matching Var */
+	GET_STR_VALUE_NULLALLOWED(match_var, values, 10);
+	LM_DBG("[ii] MATCHING VARIABLE        --> %.*s \n", match_var.len, match_var.s);
+
+	if(str_to_shm(match_var, &new_rule->match_var) != 0) goto err;
+
+	/* Retrieve Continue Search Flag */
+	new_rule->continue_search = VAL_INT(values+11);
+	LM_DBG("[ii] CONTINUE SEARCH          --> %d \n", VAL_INT(values+11));
 
 	if (match_comp)
 		new_rule->match_comp = match_comp;
@@ -585,11 +617,11 @@ err:
 }
 
 
-int add_rule2hash(dpl_node_t * rule, dp_connection_list_t *conn, int index)
-{
+int add_rule2hash(dpl_node_t * rule, dp_connection_list_t *conn, int index) {
+
+	int new_id;
 	dpl_id_p crt_idp;
 	dpl_index_p indexp;
-	int new_id, bucket = 0;
 
 	if(!conn){
 		LM_ERR("data not allocated\n");
@@ -599,7 +631,8 @@ int add_rule2hash(dpl_node_t * rule, dp_connection_list_t *conn, int index)
 	new_id = 0;
 
 	crt_idp = select_dpid(conn, rule->dpid, index);
-	/*didn't find a dpl_id*/
+
+	/* dpl_id not found */
 	if(!crt_idp){
 		crt_idp = shm_malloc(sizeof(dpl_id_t) + (DP_INDEX_HASH_SIZE+1) * sizeof(dpl_index_t));
 		if(!crt_idp){
@@ -615,22 +648,12 @@ int add_rule2hash(dpl_node_t * rule, dp_connection_list_t *conn, int index)
 
 	switch (rule->matchop) {
 		case REGEX_OP:
+		case EQUAL_OP:
 			indexp = &crt_idp->rule_hash[DP_INDEX_HASH_SIZE];
 			break;
 
-		case EQUAL_OP:
-			if (rule->match_exp.s == NULL || rule->match_exp.len == 0) {
-				LM_ERR("NULL matching expressions in database not accepted!!!\n");
-				return -1;
-			}
-			bucket = core_case_hash(&rule->match_exp, NULL, DP_INDEX_HASH_SIZE);
-
-			indexp = &crt_idp->rule_hash[bucket];
-			break;
-
 		default:
-			LM_ERR("SKIPPED RULE. Unsupported match operator (%d).\n",
-					rule->matchop);
+			LM_ERR("SKIPPED RULE. Unsupported match operator (%d).\n", rule->matchop);
 			goto err;
 	}
 
@@ -649,9 +672,8 @@ int add_rule2hash(dpl_node_t * rule, dp_connection_list_t *conn, int index)
 		crt_idp->next = conn->hash[conn->next_index];
 		conn->hash[conn->next_index] = crt_idp;
 	}
-	LM_DBG("added the rule id %i pr %i next %p to the "
-		" %i bucket\n", rule->dpid,
-		rule->pr, rule->next, rule->matchop == REGEX_OP ? DP_INDEX_HASH_SIZE : bucket);
+	
+	LM_DBG("added the rule id %i pr %i next %p to the %i bucket\n", rule->dpid, rule->pr, rule->next, DP_INDEX_HASH_SIZE);
 
 	return 0;
 
@@ -699,11 +721,10 @@ void destroy_hash(dpl_id_t **rules_hash)
 
 void destroy_rule(dpl_node_t * rule){
 
-	if(!rule)
-		return;
+	if(!rule) return;
 
-	LM_DBG("destroying rule with priority %i\n",
-		rule->pr);
+	/* Debug */
+	LM_DBG("Destroying rule %i dpid %i with priority %i\n", rule->id, rule->dpid, rule->pr);
 
 	if(rule->match_comp)
 		wrap_pcre_free(rule->match_comp);
@@ -711,7 +732,6 @@ void destroy_rule(dpl_node_t * rule){
 	if(rule->subst_comp)
 		wrap_pcre_free(rule->subst_comp);
 
-	/*destroy repl_exp*/
 	if(rule->repl_comp)
 		repl_expr_free(rule->repl_comp);
 
@@ -732,6 +752,8 @@ void destroy_rule(dpl_node_t * rule){
 
 	if(rule->parsed_timerec)
 		shm_free(rule->parsed_timerec);
+	if(rule->match_var.s)
+		shm_free(rule->match_var.s);
 }
 
 
@@ -782,17 +804,20 @@ void list_hash(dpl_id_t * hash, rw_lock_t * ref_lock)
 }
 
 
-void list_rule(dpl_node_t * rule)
-{
-	LM_DBG("RULE %p: pr %i next %p match_exp %.*s match_flags %d, "
-		"subst_exp %.*s, repl_exp %.*s and attrs %.*s and timerec %.*s\n", rule,
+void list_rule(dpl_node_t * rule) {
+	LM_DBG( "RULE %p: id %i dpid %i pr %i next %p match_exp %.*s match_flags %d, "
+		"subst_exp %.*s, repl_exp %.*s and attrs %.*s and timerec %.*s match_var %.*s continue_search %i\n",
+		rule, rule->id, rule->dpid,
 		rule->pr, rule->next,
 		rule->match_exp.len,	rule->match_exp.s,
 		rule->match_flags,
 		rule->subst_exp.len,	rule->subst_exp.s,
 		rule->repl_exp.len,	rule->repl_exp.s,
 		rule->attrs.len,	rule->attrs.s,
-		rule->timerec.len,	rule->timerec.s);
+		rule->timerec.len,	rule->timerec.s,
+		rule->match_var.len,	rule->match_var.s,
+		rule->continue_search
+	);
 }
 
 /* Retrieves the corresponding entry of the given partition name */
