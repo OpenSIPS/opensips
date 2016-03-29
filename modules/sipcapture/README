@@ -53,6 +53,7 @@ Alexandr Dubovikov
 
               1.4.4. hep_del(chunk_id)
               1.4.5. hep_relay()
+              1.4.6. hep_resume_sip()
 
         1.5. Exported Async Functions
 
@@ -90,8 +91,9 @@ Alexandr Dubovikov
    1.17. hep_set usage
    1.18. hep_set usage
    1.19. hep_relay usage
-   1.20. sip_capture usage
-   1.21. hep_net usage
+   1.20. hep_resume_sip usage
+   1.21. sip_capture usage
+   1.22. hep_net usage
 
 Chapter 1. Admin Guide
 
@@ -514,6 +516,28 @@ if (!hep_relay()) {
 
 ...
 
+1.4.6.  hep_resume_sip()
+
+   Break hep route execution and resume into the main request
+   route.
+
+   WARNING: USE THIS FUNCTION ONLY FROM A ROUTE DEFINED USING
+   hep_route PARAMETER.
+
+   Example 1.20. hep_resume_sip usage
+...
+modparam("sipcapture", "hep_route", "my_hep_route")
+
+route[my_hep_route] {
+        ...
+
+        /* resume execution in the main request route */
+        hep_resume_sip();
+}
+
+
+...
+
 1.5. Exported Async Functions
 
 1.5.1.  sip_capture()
@@ -523,7 +547,7 @@ if (!hep_relay()) {
    The query might not be executed exactly at this moment, it
    depends on the max_async_queries parameter.
 
-   Example 1.20. sip_capture usage
+   Example 1.21. sip_capture usage
 ...
 {
         async(sip_capture(), capture_resume);
@@ -557,7 +581,7 @@ route[capture_resume] {
      * dst_port - Receiving port(OpenSIPS hep interace port on
        which the message was received).
 
-   Example 1.21. hep_net usage
+   Example 1.22. hep_net usage
 ...
         /* received this hep packet on interface 192.168.2.5*/
         if ($hep_net(dst_ip) == "192.168.2.5") {

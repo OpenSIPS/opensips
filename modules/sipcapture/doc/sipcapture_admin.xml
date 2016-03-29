@@ -750,6 +750,37 @@ if (!hep_relay()) {
 
 		</section>
 
+		<section>
+		<title>
+			<function moreinfo="none">hep_resume_sip()</function>
+		</title>
+		<para>
+			Break hep route execution and resume into the main request route.
+		</para>
+		<para>
+			WARNING: USE THIS FUNCTION ONLY FROM A ROUTE DEFINED USING <emphasis>hep_route</emphasis> PARAMETER.
+		</para>
+<example>
+<title><function>hep_resume_sip</function> usage</title>
+<programlisting format="linespecific">
+...
+modparam("sipcapture", "hep_route", "my_hep_route")
+
+route[my_hep_route] {
+	...
+
+	/* resume execution in the main request route */
+	hep_resume_sip();
+}
+
+
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+
 
 
 
