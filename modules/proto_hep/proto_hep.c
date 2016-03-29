@@ -920,6 +920,7 @@ static inline int hep_handle_req(struct tcp_req *req,
 				LM_ERR("no more shared memory!\n");
 				return -1;
 			}
+			memset(hep_ctx, 0, sizeof(struct hep_context));
 			memcpy(&hep_ctx->ri, &local_rcv, sizeof(struct receive_info));
 
 			/* HEP related */
@@ -1232,6 +1233,8 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 		LM_ERR("no more shared memory!\n");
 		return -1;
 	}
+
+	memset(hep_ctx, 0, sizeof(struct hep_context));
 	memcpy(&hep_ctx->ri, &ri, sizeof(struct receive_info));
 
 	if (unpack_hepv2(buf, len, &hep_ctx->h)) {

@@ -202,6 +202,7 @@ set_generic_hep_chunk(struct hepv3* h3, unsigned chunk_id, str *data);
 
 /* hep relay function */
 static int w_hep_relay(struct sip_msg *msg);
+static int w_hep_resume_sip(struct sip_msg *msg);
 
 
 
@@ -396,6 +397,9 @@ static cmd_export_t cmds[] = {
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"hep_relay", (cmd_function)w_hep_relay, 0, 0, 0,
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"hep_resume_sip", (cmd_function)w_hep_resume_sip, 0, 0, 0,
+	        REQUEST_ROUTE},
+
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -2068,8 +2072,6 @@ int hep_msg_received(void)
 
 	h = &ctx->h;
 
-
-
 	if(!hep_capture_on) {
 		LM_ERR("HEP is not enabled\n");
 		return 0;
@@ -2081,8 +2083,7 @@ int hep_msg_received(void)
 		case 1:
 		case 2:
 			msg.buf = h->u.hepv12.payload;
-			msg.len = h->u.hepv12.hdr.hp_l -
-						(sizeof(struct hepv12)-sizeof(char*));
+			msg.len = strlen(msg.buf);
 			break;
 		case 3:
 			msg.buf = h->u.hepv3.payload_chunk.data;
@@ -2126,9 +2127,38 @@ int hep_msg_received(void)
 		/* free possible loaded avps */
 		reset_avps();
 
-		/* don't go through the main route; we want to avoid
-		 * message parsing */
-		return HEP_SCRIPT_SKIP;
+
+		/* requested to go through the main sip route */
+		if (ctx->resume_with_sip) {
+			memset(&msg, 0, sizeof(struct sip_msg));
+
+			switch (h->version) {
+			case 1:
+			case 2:
+				msg.buf = h->u.hepv12.payload;
+				msg.len = strlen(msg.buf);
+				break;
+			case 3:
+				msg.buf = h->u.hepv3.payload_chunk.data;
+				msg.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(struct hep_chunk);
+				break;
+			default:
+				LM_ERR("unknown hep proto [%d]\n", h->version);
+				return -1;
+			}
+
+			LM_INFO("message \n%.*s", msg.len, msg.buf);
+
+			if (parse_msg(msg.buf,msg.len,&msg)!=0) {
+				LM_ERR("Unable to parse message in hep payload!"
+						"Hep version %d!\n", h->version);
+				return -1;
+			}
+
+			return 0;
+		} else {
+			return HEP_SCRIPT_SKIP;
+		}
 	}
 
 	return 0;
@@ -3964,6 +3994,38 @@ static int w_hep_relay(struct sip_msg *msg)
 	pkg_free(proxy);
 
 	return 1;
+}
+
+
+static int w_hep_resume_sip(struct sip_msg *msg)
+{
+	struct hep_context* ctx;
+
+	if (current_processing_ctx == NULL ||
+			msg == NULL) {
+		return -1;
+	}
+
+	if ((ctx=HEP_GET_CONTEXT(hep_api))==NULL) {
+		LM_WARN("not a hep message!\n");
+		return -1;
+	}
+
+	if (ctx == NULL) {
+		LM_ERR(" no hep context!\n");
+		return -1;
+	}
+
+	if (ctx->resume_with_sip != 0) {
+		LM_ERR("Called this function twice! You should call it"
+				"only from the hep route!\n");
+		return -1;
+	}
+
+	ctx->resume_with_sip = 1;
+
+	/* break hep route execution */
+	return 0;
 }
 
 #define capture_is_off(_msg) \

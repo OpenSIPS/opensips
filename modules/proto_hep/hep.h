@@ -227,6 +227,7 @@ struct hep_desc {
 struct hep_context {
 	struct hep_desc h;
 	struct receive_info ri;
+	int resume_with_sip;
 };
 
 int pack_hep(union sockaddr_union* from_su, union sockaddr_union* to_su,
