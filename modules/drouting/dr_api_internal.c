@@ -125,8 +125,8 @@ static void del_tree_api(ptree_t* t)
 				/* if non intermediate delete the routing info */
 				if(t->ptnode[i].rg[j].rtlw !=NULL)
 					del_rt_list_api(t->ptnode[i].rg[j].rtlw);
-			shm_free(t->ptnode[i].rg);
 			}
+			shm_free(t->ptnode[i].rg);
 		}
 		/* if non leaf delete all the children */
 		if(t->ptnode[i].next != NULL)
