@@ -442,8 +442,8 @@ loadmodule "ratelimit.so"
 modparam("ratelimit", "replicate_pipes_to", 1)
 # accept replicated data from nodes within cluster 1
 modparam("ratelimit", "accept_pipes_from", 1)
-# if a node does not reply in a 5 seconds interval, the information from
- that node is invalidated
+# if a node does not reply in a 5 seconds interval,
+#the information from that node is invalidated
 modparam("ratelimit", "accept_pipes_timeout", 5)
 ...
 
@@ -465,8 +465,8 @@ loadmodule "ratelimit.so"
 modparam("ratelimit", "replicate_pipes_to", 1)
 # accept replicated data from nodes within cluster 1
 modparam("ratelimit", "accept_pipes_from", 1)
-# if a node does not reply in a 5 seconds interval, the information from
- that node is invalidated
+# if a node does not reply in a 5 seconds interval,
+# the information from that node is invalidated
 modparam("ratelimit", "accept_pipes_timeout", 5)
 ...
 

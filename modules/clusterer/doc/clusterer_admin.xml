@@ -548,7 +548,9 @@ modparam("clusterer", "no_tries_col", "no_tries")
 		</itemizedlist>
 	</para>
 	<para>
-		After provisioning the two nodes in the database, we have to configure the two instances of &osips;. First, we configure <emphasis>Node A</emphasis>:
+		After provisioning the two nodes in the database, we have to configure
+		the two instances of &osips;. First, we configure <emphasis>Node
+			A</emphasis>:
 	</para>
 	<example>
 		<title><emphasis>Node A</emphasis> configuration</title>
@@ -567,7 +569,8 @@ loadmodule "ratelimit.so"
 modparam("ratelimit", "replicate_pipes_to", 1)
 # accept replicated data from nodes within cluster 1
 modparam("ratelimit", "accept_pipes_from", 1)
-# if a node does not reply in a 5 seconds interval, the information from that node is invalidated
+# if a node does not reply in a 5 seconds interval,
+#the information from that node is invalidated
 modparam("ratelimit", "accept_pipes_timeout", 5)
 ...
 		</programlisting>
@@ -593,7 +596,8 @@ loadmodule "ratelimit.so"
 modparam("ratelimit", "replicate_pipes_to", 1)
 # accept replicated data from nodes within cluster 1
 modparam("ratelimit", "accept_pipes_from", 1)
-# if a node does not reply in a 5 seconds interval, the information from that node is invalidated
+# if a node does not reply in a 5 seconds interval,
+# the information from that node is invalidated
 modparam("ratelimit", "accept_pipes_timeout", 5)
 ...
 		</programlisting>
@@ -601,7 +605,11 @@ modparam("ratelimit", "accept_pipes_timeout", 5)
 </section>
 
 <para>
-	<emphasis>Note</emphasis> that the <emphasis>server_id</emphasis> parameter for <emphasis>Node B</emphasis> is <emphasis>2</emphasis>. Starting the two &osips; instances with the above configurations provides your platform the ability to used shared ratelimit pipes in a very efficient and scalable way.
+	<emphasis>Note</emphasis> that the <emphasis>server_id</emphasis>
+	parameter for <emphasis>Node B</emphasis> is <emphasis>2</emphasis>.
+	Starting the two &osips; instances with the above configurations provides
+	your platform the ability to used shared ratelimit pipes in a very
+	efficient and scalable way.
 </para>
 
 </chapter>
