@@ -3,44 +3,53 @@
 <chapter>
 
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
+	<para> The <emphasis>clusterer</emphasis> module is used to organize
+		multiple &osips; instances in groups that can communicate to each
+		other in order to replicate or share information or perform
+		distributed tasks. The module itself only stores information about the
+		nodes in a group/cluster and provides an interface to check or tune
+		its state and parameters. The distributed logic is performed by
+		different modules that use this interface (i.e. the
+		<emphasis>dialog</emphasis> module can replicate profiles, the
+		<emphasis>ratelimit</emphasis> can share pipes across multiple
+		instances, etc). Provisioning the nodes within a cluster is done over
+		the database, but for efficiency the nodes information is cached
+		&osips;' memory. This information can be checked or updated by sending
+		commands over the MI interface.
+	</para>
 	<para>
-		<emphasis>Clusterer</emphasis>
-		module stores information about the status of a server belonging 
-                to a cluster. The module ,via an internal API, provides a way to
-                access and manipulate stored data. If this module is used for
-                replication purposes, it tries to send to all available servers
-                necessary information and marks the server, which has modified
-                information (like number of tries, last attempt) and it has an api
-                function that can check the authenticity of an incoming connexion.
-                If the necessary information cannot be sent, the number of tries
-                are increased. If the number of tries does not match the maximum number
-                of tries and the necessary information can be send, the number of tries
-                resets to the default value (0). If the number of tries match the maximum
-                number of allowed tries, the server state is marked as temporary disabled and
-                the number of allowed tries is resetted. After the disabled period has passed
-                the server is up again.
-                The others module can register to the clusterer module, specifying
-                the protocol, timeout interval, callback function, authenticity check
-                enabled/disabled and the cluster id. Clusterer acts like an
-                intermediary and registers to the specified protocol, so that
-                every incoming connexion should arrive first in a clusterer function,
-                which does the necessary checks accordingly to the specified parameters
-                of the register function and calls the registered module callback
-                function. If a timeout interval has passed and a server has not
-                received any packets, the server is marked as temporary disabled
-                and a timeout notification is sent to the registered module.
-                If a packey has arrived for a temporary disabled server, the packet
-                is dropped and a temporary disabled notification is sent to the
-                registered module. After the disabled period ( 2 * timeout ) has passed
-                the server is up again.
-                If the persistent mode is activated, the local data are synchronized
-                with the database.
+		The <emphasis>clusterer</emphasis> module can also detect nodes
+		availability, by using certain parameters provisioned in the database.
+		When a destination is not reachable, it is put in a
+		<emphasis>probing</emphasis> state - it is periodically pinged until
+		a maximum number of failed attempts is reached, when it is marked as
+		temporarily disabled. It stays in this state for a period (equal to the
+		<emphasis>duration</emphasis> parameter), and then the number of
+		retries reset to 0 and the node is considered up again.
+	</para>
+	<para>
+		Modules (like <emphasis>dialog</emphasis> or
+		<emphasis>ratelimit</emphasis> can use nodes within the cluster to
+		replicate information. They also register a specific timeout to
+		invalidate data from specific nodes, in case no updates have been
+		within an interval. The <emphasis>clusterer</emphasis> notifies
+		the module if the timeout is reached and puts the node in a
+		temporary disabled state.
+		If a packet has arrived for a temporary disabled server, the packet
+		is dropped and a temporary disabled notification is sent to the
+		registered module. After the disabled period (2 * timeout) has passed
+		the server is up again.
+	</para>
+	<para>
+		By default, the nodes states are not persistent. To make them
+		persistent via database, you have to set the
+		<emphasis>persistent_mode</emphasis> parameter.
 	</para>
 	</section>
-        
+
         <section>
 	<title>Dependencies</title>
 	<section>
@@ -56,11 +65,11 @@
                     </itemizedlist>
 		</para>
 	</section>
-        
+
         <section>
 		<title>External Libraries or Applications</title>
 		<para>
-		The following libraries or applications must be installed before 
+		The following libraries or applications must be installed before
 		running &osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
@@ -72,7 +81,7 @@
 		</para>
 	</section>
 	</section>
-        
+
         <section>
 	<title>Exported Parameters</title>
 	<section>
@@ -95,7 +104,7 @@ modparam("clusterer", "db_url",
 </programlisting>
 		</example>
         </section>
-        
+
         <section>
             <title><varname>db_table</varname></title>
             <para>
@@ -110,18 +119,19 @@ modparam("clusterer", "db_url",
 		<title>Set <varname>db_table</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "db_table",
-	"clusterer")
+modparam("clusterer", "db_table", "clusterer")
 ...
 </programlisting>
 		</example>
         </section>
-        
+
         <section>
             <title><varname>server_id</varname></title>
             <para>
-                It specifies this server id.
-            </para>
+				It specifies the <emphasis>server_id</emphasis> the current
+				instance has. this field should correspond with one of the
+				<emphasis>machine_id</emphasis> fields in the database.
+			</para>
             <para>
 		<emphasis>
 			Default value is 0.
@@ -131,19 +141,18 @@ modparam("clusterer", "db_table",
 		<title>Set <varname>server_id</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "server_id",
-	2)
+modparam("clusterer", "server_id", 2)
 ...
 </programlisting>
 		</example>
         </section>
-        
+
         <section>
             <title><varname>persistent_mode</varname></title>
             <para>
-                If persistent mode is enabled, it is used a timer for synchronization
-                between information used by the clusterer module and the information
-                stored in the database.
+				If persistent mode is enabled, a timer synchronizes the
+				information used by the clusterer module and the information
+				stored in the database.
             </para>
             <para>
 		<emphasis>
@@ -154,8 +163,7 @@ modparam("clusterer", "server_id",
 		<title>Set <varname>persistent_mode</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "persistent_mode",
-	1)
+modparam("clusterer", "persistent_mode", 1)
 ...
 </programlisting>
 		</example>
@@ -175,13 +183,12 @@ modparam("clusterer", "persistent_mode",
 		<title>Set <varname>cluster_id_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "cluster_id_col",
-	"cluster_id")
+modparam("clusterer", "cluster_id_col", "cluster_id")
 ...
 </programlisting>
 		</example>
         </section>
-        
+
         <section>
             <title><varname>machine_id_col</varname></title>
             <para>
@@ -196,8 +203,7 @@ modparam("clusterer", "cluster_id_col",
 		<title>Set <varname>machine_id_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "machine_id_col",
-	"machine_id")
+modparam("clusterer", "machine_id_col", "machine_id")
 ...
 </programlisting>
 		</example>
@@ -210,20 +216,19 @@ modparam("clusterer", "machine_id_col",
             </para>
             <para>
 		<emphasis>
-			Default value is <quote>clusterer_id</quote>.
+			Default value is <quote>id</quote>.
 		</emphasis>
             </para>
             <example>
 		<title>Set <varname>clusterer_id_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "clusterer_id_col",
-	"clusterer_id")
+modparam("clusterer", "clusterer_id_col", "clusterer_id")
 ...
 </programlisting>
 		</example>
         </section>
-        
+
         <section>
             <title><varname>state_col</varname></title>
             <para>
@@ -238,13 +243,12 @@ modparam("clusterer", "clusterer_id_col",
 		<title>Set <varname>state_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "state_col",
-	"state")
+modparam("clusterer", "state_col", "state")
 ...
 </programlisting>
 		</example>
         </section>
-        
+
         <section>
             <title><varname>url_col</varname></title>
             <para>
@@ -259,13 +263,12 @@ modparam("clusterer", "state_col",
 		<title>Set <varname>url_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "url_col",
-	"url")
+modparam("clusterer", "url_col", "url")
 ...
 </programlisting>
 		</example>
         </section>
-        
+
         <section>
             <title><varname>description_col</varname></title>
             <para>
@@ -280,13 +283,12 @@ modparam("clusterer", "url_col",
 		<title>Set <varname>description_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "description_col",
-	"description")
+modparam("clusterer", "description_col", "description")
 ...
 </programlisting>
 		</example>
         </section>
-        
+
         <section>
             <title><varname>failed_attempts_col</varname></title>
             <para>
@@ -302,17 +304,16 @@ modparam("clusterer", "description_col",
 		<title>Set <varname>failed_attempts_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "failed_attempts_col",
-	"failed_attempts")
+modparam("clusterer", "failed_attempts_col", "failed_attempts")
 ...
 </programlisting>
 		</example>
         </section>
-        
+
         <section>
             <title><varname>last_attempt_col</varname></title>
             <para>
-                The name of the column in the db_table where the unix time of last 
+                The name of the column in the db_table where the UNIX time of last
                 last failed attempt is stored.
             </para>
             <para>
@@ -324,13 +325,12 @@ modparam("clusterer", "failed_attempts_col",
 		<title>Set <varname>last_attempt_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "last_attempt_col",
-	"last_attempt")
+modparam("clusterer", "last_attempt_col", "last_attempt")
 ...
 </programlisting>
 		</example>
         </section>
-        
+
         <section>
             <title><varname>duration_col</varname></title>
             <para>
@@ -347,13 +347,12 @@ modparam("clusterer", "last_attempt_col",
 		<title>Set <varname>duration_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "duration_col",
-	"duration")
+modparam("clusterer", "duration_col", "duration")
 ...
 </programlisting>
 		</example>
         </section>
-        
+
         <section>
             <title><varname>no_tries_col</varname></title>
             <para>
@@ -369,19 +368,18 @@ modparam("clusterer", "duration_col",
 		<title>Set <varname>no_tries_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "no_tries_col",
-	"no_tries")
+modparam("clusterer", "no_tries_col", "no_tries")
 ...
 </programlisting>
 		</example>
         </section>
         </section>
-        
+
         <section>
 	<title>Exported Functions</title>
-	<para>none</para>        
+	<para>none</para>
         </section>
-        
+
         <section>
 	<title>Exported MI Functions</title>
 	<section>
@@ -390,8 +388,8 @@ modparam("clusterer", "no_tries_col",
 		</title>
 		<para>
                     Reloads data from the clusterer database. If the persistent
-                    mode is disabled the changes made to the the locally stored
-                    data are lost. 
+                    mode is disabled the changes made to the locally stored
+                    data are lost.
 		</para>
 		<para>
 		Name: <emphasis>clusterer_reload</emphasis>
@@ -405,13 +403,13 @@ modparam("clusterer", "no_tries_col",
 		_empty_line_
 		</programlisting>
 	</section>
-        
+
         <section>
 		<title>
 		<function moreinfo="none">clusterer_list</function>
 		</title>
 		<para>
-                    Lists in a table format the locally stored data.
+			Lists in a table format all the data stored in &osips; cache.
 		</para>
 		<para>
 		Name: <emphasis>clusterer_list</emphasis>
@@ -425,7 +423,7 @@ modparam("clusterer", "no_tries_col",
 		_empty_line_
 		</programlisting>
 	</section>
-        
+
         <section>
 		<title>
 		<function moreinfo="none">clusterer_set_status</function>
@@ -439,16 +437,16 @@ modparam("clusterer", "no_tries_col",
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-			<emphasis>cluster_id</emphasis> - indicates the id of the cluster. 
+			<emphasis>cluster_id</emphasis> - indicates the id of the cluster.
 			</para></listitem>
                         <listitem><para>
-			<emphasis>machine_id</emphasis> - indicates the id of the machibe. 
+			<emphasis>machine_id</emphasis> - indicates the id of the machine.
 			</para></listitem>
                         <listitem><para>
-			<emphasis>status</emphasis> - indicates the new status( 0 - permanent down, 1 - up). 
+			<emphasis>status</emphasis> - indicates the new status( 0 - permanent down, 1 - up).
 			</para></listitem>
                         <listitem><para>
-			<emphasis>protocol</emphasis> - indicates the protocol. 
+			<emphasis>protocol</emphasis> - indicates the protocol.
 			</para></listitem>
 		</itemizedlist>
  		<para>
@@ -457,13 +455,153 @@ modparam("clusterer", "no_tries_col",
 		<programlisting  format="linespecific">
 		:clusterer_set_status:
 		1
-                2
-                0
-                bin 
+		2
+		0
+		bin
 		_empty_line_
 		</programlisting>
 	</section>
 
         </section>
-        
-</chapter>           
+
+<section>
+	<title>Usage Example</title>
+	<para> This section provides an usage example for replicating ratelimit
+		pipes between two &osips; instances. It uses the clusterer module to
+		manage the replicating nodes, and the proto_bin modules to send the
+		replicated information.
+	</para>
+	<para> The setup topology is simple: we have two &osips; nodes running on
+		two separate machines (although they could run on the same machine as
+		well): <emphasis>Node A</emphasis> has IP 192.168.0.5 and
+		<emphasis>Node B</emphasis> has IP 192.168.0.6. Both have, besides the
+		traffic listeners (UDP, TCP, etc.), bin listeners bound on port
+		<emphasis>5566</emphasis>. These listeners will be used by the
+		<emphasis>ratelimit</emphasis> module to replicate the pipes.
+		Therefore, we have to provision them in the
+		<emphasis>clusterer</emphasis> table.
+	</para>
+	<example>
+		<title>Example database content - clusterer table</title>
+		<programlisting format="linespecific">
++----+------------+------------+----------------------+-------+--------------+-----------------+----------+----------+-------------+
+| id | cluster_id | machine_id | url                  | state | last_attempt | failed_attempts | no_tries | duration | description |
++----+------------+------------+----------------------+-------+--------------+-----------------+----------+----------+-------------+
+|  1 |          1 |          1 | bin:192.168.0.5:5566 |     1 |            0 |               0 |        0 |       30 | Node A      |
+|  2 |          1 |          2 | bin:192.168.0.6:5566 |     1 |            0 |               0 |        0 |       30 | Node B      |
++----+------------+------------+----------------------+-------+--------------+-----------------+----------+----------+-------------+
+		</programlisting>
+	</example>
+	<para>
+		<itemizedlist>
+			<listitem>
+				<para><quote>cluster_id</quote> - this column represents the
+					identifier of the cluster. All nodes within a
+					group/cluster should have the same id (in our example,
+					both nodes have ID <emphasis>1</emphasis>)
+				</para>
+			</listitem>
+			<listitem>
+				<para><quote>machine_id</quote> - this represents the
+					identifier of the machine/node, and each instance within a
+					cluster should have a different ID. In our example,
+					<emphasis>Node A</emphasis> will have ID 1, and
+					<emphasis>Node B</emphasis> ID 2
+				</para>
+			</listitem>
+			<listitem>
+				<para><quote>url</quote> - this indicates the URL where the
+					instance will receive the replication information. In our
+					example, each node will receive the date over the bin
+					protocol
+				</para>
+			</listitem>
+			<listitem>
+				<para><quote>state</quote> - this is the state of the machine:
+					1 means on, 0 means off, and 2 means it is in probing.
+					Note that if you want the node to be active right away,
+					you have to set it in <emphasis>state 1</emphasis>
+				</para>
+			</listitem>
+			<listitem>
+				<para><quote>last_attempt</quote>,
+					<quote>failed_attempts</quote> and <quote>no_tries</quote>
+					- are fields used for the probing mechanisms, and should
+					be set to <emphasis>0</emphasis> by default. They are
+					automatically updated by the clusterer module if the
+					<emphasis>persistent_mode</emphasis> parameter is set to
+					<emphasis>1</emphasis>
+				</para>
+			</listitem>
+			<listitem>
+				<para><quote>duration</quote> - is used to specify the period
+					a node stays in the temporary disabled state. In our
+					example, if the node does not respond, it is disabled for
+					30 seconds before retrying to send data again
+				</para>
+			</listitem>
+			<listitem>
+				<para><quote>description</quote> - is an opaque value used to
+					identify the node
+				</para>
+			</listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		After provisioning the two nodes in the database, we have to configure the two instances of &osips;. First, we configure <emphasis>Node A</emphasis>:
+	</para>
+	<example>
+		<title><emphasis>Node A</emphasis> configuration</title>
+		<programlisting format="linespecific">
+...
+listen=udp:192.168.0.5:5566 # bin listener for Node A
+
+loadmodule "proto_bin.so"
+
+loadmodule "clusterer.so"
+modparam("clusterer","db_url","mysql://opensips@192.168.0.7/opensips")
+modparam("clusterer", "server_id", 1) # machine_id for Node A
+
+loadmodule "ratelimit.so"
+# replicate pipes to cluster id 1
+modparam("ratelimit", "replicate_pipes_to", 1)
+# accept replicated data from nodes within cluster 1
+modparam("ratelimit", "accept_pipes_from", 1)
+# if a node does not reply in a 5 seconds interval, the information from that node is invalidated
+modparam("ratelimit", "accept_pipes_timeout", 5)
+...
+		</programlisting>
+	</example>
+	<para>
+		Similarly, the configuration for <emphasis>Node B</emphasis> is as follows:
+	</para>
+	<example>
+		<title><emphasis>Node B</emphasis> configuration</title>
+		<programlisting format="linespecific">
+...
+listen=udp:192.168.0.6:5566 # bin listener for Node B
+
+loadmodule "proto_bin.so"
+
+loadmodule "clusterer.so"
+# ideally, use the same database for both nodes
+modparam("clusterer","db_url","mysql://opensips@192.168.0.7/opensips")
+modparam("clusterer", "server_id", 2) # machine_id for Node B
+
+loadmodule "ratelimit.so"
+# replicate pipes to cluster id 1
+modparam("ratelimit", "replicate_pipes_to", 1)
+# accept replicated data from nodes within cluster 1
+modparam("ratelimit", "accept_pipes_from", 1)
+# if a node does not reply in a 5 seconds interval, the information from that node is invalidated
+modparam("ratelimit", "accept_pipes_timeout", 5)
+...
+		</programlisting>
+	</example>
+</section>
+
+<para>
+	<emphasis>Note</emphasis> that the <emphasis>server_id</emphasis> parameter for <emphasis>Node B</emphasis> is <emphasis>2</emphasis>. Starting the two &osips; instances with the above configurations provides your platform the ability to used shared ratelimit pipes in a very efficient and scalable way.
+</para>
+
+</chapter>
