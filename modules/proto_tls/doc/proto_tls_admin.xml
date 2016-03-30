@@ -130,7 +130,7 @@
 			<listitem>
 			<para><emphasis>CISCO ATA</emphasis> - it has 4 pre-defined
 			ringing types. The Alert-Info header must look like
-			<quote>Alert-info: Bellcore-drX EOH"</quote> where X can be
+			<quote>Alert-info: Bellcore-drX EOH</quote> where X can be
 			between 1 and 4. Note that 1 is the phone default ringing tone.
 			</para>
 			</listitem>
@@ -160,8 +160,8 @@
 	</section>
 
 	<section>
-                <title>Dependencies</title>
-                <section>
+	<title>Dependencies</title>
+	<section>
 		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
@@ -173,7 +173,8 @@
 			</listitem>
                     </itemizedlist>
 		</para>
-                </section>
+	</section>
+	<section>
 		<title>Dependencies of external libraries</title>
 		<para>
 			&osips; TLS v1.0 support requires the following packages:
@@ -205,6 +206,7 @@
 				</listitem>
 			</itemizedlist>
 		</para>
+	</section>
 	</section>
 
 	<section>

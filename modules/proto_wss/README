@@ -6,7 +6,7 @@ Edited by
 
 Razvan Crainea
 
-   Copyright Â© 2016 OpenSIPS Project
+   Copyright © 2016 OpenSIPS Project
      __________________________________________________________
 
    Table of Contents
@@ -21,13 +21,56 @@ Razvan Crainea
 
         1.3. Exported Parameters
 
+              1.3.1. listen=interface
+              1.3.2. wss_port (integer)
+              1.3.3. wss_max_msg_chunks (integer)
+              1.3.4. wss_resource (string)
+              1.3.5. wss_handshake_timeout (integer)
+
    2. Frequently Asked Questions
+
+   List of Examples
+
+   1.1. Set listen variable
+   1.2. Set wss_port variable
+   1.3. Set wss_max_msg_chunks parameter
+   1.4. Set wss_resource parameter
+   1.5. Set wss_handshake_timeout parameter
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
-   TODO
+   The WSS (Secure WebSocket) module provides the ability to
+   communicate with a WebSocket (RFC 6455) client or server over a
+   secure (TLS encrypted) channel. As part of the WebRTC
+   specifications, this protocol can be used to provide secure
+   VoIP calls to HTTPS enabled browsers.
+
+   This module behaves as any other transport protocol module: in
+   order to use it, you must define one or more listeners that
+   will handle the secure WebSocket traffic, after the mpath
+   parameter:
+
+...
+mpath=/path/to/modules
+...
+listen=wss:10.0.0.1                     # change with the listening IP
+listen=wss:10.0.0.1:5060        # change with the listening IP and port
+...
+
+   Besides that, you need to define the TLS parameters for
+   securing the connection. This is done through the tls_mgm
+   module interface, similar to the proto_tls module:
+
+modparam("tls_mgm", "certificate", "/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "tlsv1")
+modparam("tls_mgm", "verify_cert", "1")
+modparam("tls_mgm", "require_cert", "1")
+
+   Check the tls_mgm module documentation for more info.
 
 1.2. Dependencies
 
@@ -48,19 +91,75 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-   TODO
+   All these parameters can be used from the opensips.cfg file, to
+   configure the behavior of OpenSIPS-WSS.
+
+1.3.1. listen=interface
+
+   This is a global parameter that specifies what interface/IP and
+   port should handle WSS traffic.
+
+   Example 1.1. Set listen variable
+...
+listen = wss:1.2.3.4:44344
+...
+
+1.3.2. wss_port (integer)
+
+   Sets the default WSS listening port.
+
+   Default value is 443.
+
+   Example 1.2. Set wss_port variable
+...
+modparam("proto_wss", "wss_port", 44344)
+...
+
+1.3.3. wss_max_msg_chunks (integer)
+
+   The maximum number of chunks that a SIP message is expected to
+   arrive via WSS. If a packet is received more fragmented than
+   this, the connection is dropped (either the connection is very
+   overloaded and this leads to high fragmentation - or we are the
+   victim of an ongoing attack where the attacker is sending the
+   traffic very fragmented in order to decrease our performance).
+
+   Default value is 4.
+
+   Example 1.3. Set wss_max_msg_chunks parameter
+...
+modparam("proto_wss", "wss_max_msg_chunks", 8)
+...
+
+1.3.4. wss_resource (string)
+
+   The resource queried for when a WebSocket handshake is
+   initiated.
+
+   Default value is "/".
+
+   Example 1.4. Set wss_resource parameter
+...
+modparam("proto_wss", "wss_resource", "/wss")
+...
+
+1.3.5. wss_handshake_timeout (integer)
+
+   This parameter specifies the time in milliseconds the wss
+   module waits for a WebSocket handshake reply from a WebSocket
+   server.
+
+   Default value is 100.
+
+   Example 1.5. Set wss_handshake_timeout parameter
+...
+modparam("proto_wss", "wss_handshake_timeout", 300)
+...
 
 Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Can OpenSIPS act as a WebSocket client?
+   Does OpenSIPS support fragmented Secure WebSocket messages?
 
-       Yes, starting with OpenSIPS 2.2, it can act as a WebSocket
-       client.
-
-   2.2.
-
-       Does OpenSIPS support WebSocket message fragmentation?
-
-       No, WebSocket fragmentation mechanims is not supported.
+   No, the WebSocket fragmentation mechanism is not supported.

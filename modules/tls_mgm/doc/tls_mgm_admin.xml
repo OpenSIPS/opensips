@@ -42,7 +42,7 @@
 		<title>Usage</title>
 		<para>
 			This module is used to provision TLS certificates and parameters
-			for all the modules that use TLS transport (currently only 
+			for all the modules that use TLS transport (currently only
 			<emphasis>proto_tls</emphasis>). The module supports multiple
 			virtual domains that can be assigned to different listeners
 			(servers) or new connections (clients). Each TLS module that uses
@@ -115,7 +115,7 @@ if (is_peer_verified()) {
 		</example>
 	</section>
 	</section>
-        
+
         <section>
             <title>Exported MI Functions</title>
             <section>
@@ -440,8 +440,8 @@ modparam("tls_mgm", "verify_cert", "1:1")
 					tls_send_timeout </varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "tls_handshake_timeout", 119)		# number of seconds
-modparam("tls_mgm", "tls_send_timeout", 121)			# number of seconds
+modparam("tls_mgm", "tls_handshake_timeout", 119) # number of seconds
+modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
 ...
 				</programlisting>
 			</example>
@@ -464,7 +464,7 @@ modparam("tls_mgm", "tls_send_timeout", 121)			# number of seconds
 				<title>Set <varname>tls_client_domain_avp</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "tls_client_domain_avp", "400")		# only integer named AVPs are supported
+modparam("tls_mgm", "tls_client_domain_avp", "400")
 ...
 				</programlisting>
 			</example>
@@ -486,7 +486,7 @@ modparam("tls_mgm", "db_mode", 1)
                                 </programlisting>
                     </example>
                 </section>
-                
+
                 <section>
                     <title>
                         <varname>db_url</varname> (string)
@@ -501,8 +501,8 @@ modparam("tls_mgm", "db_mode", 1)
 modparam("tls_mgm", "db_url", "mysql://root:admin@localhost/opensips")
                                 </programlisting>
                     </example>
-                </section>  
-                 
+                </section>
+
                 <section>
                     <title>
                         <varname>db_table</varname> (string)
@@ -518,8 +518,8 @@ modparam("tls_mgm", "db_url", "mysql://root:admin@localhost/opensips")
 modparam("tls_mgm", "db_table", "tls_mgm")
                                 </programlisting>
                     </example>
-                </section>              
-                           
+                </section>
+
                 <section>
                     <title>
                         <varname>id_col</varname> (string)
@@ -535,25 +535,8 @@ modparam("tls_mgm", "db_table", "tls_mgm")
 modparam("tls_mgm", "id_col", "id")
                                 </programlisting>
                     </example>
-                </section>  
-                
-                <section>
-                    <title>
-                        <varname>address_col</varname> (string)
-                    </title>
-                    <para>
-                        Sets the address column name.
-                    </para>
-                    <para>Default value is "address".</para>
-                    <example>
-				<title>Usage of <varname>address_col</varname> block
-					</title>
-				<programlisting format="linespecific">
-modparam("tls_mgm", "address_col", "addr")
-                                </programlisting>
-                    </example>
-                </section>                   
-                  
+                </section>
+
                 <section>
                     <title>
                         <varname>address_col</varname> (string)
@@ -570,7 +553,24 @@ modparam("tls_mgm", "address_col", "addr")
                                 </programlisting>
                     </example>
                 </section>
-                                
+
+                <section>
+                    <title>
+                        <varname>address_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the address column name.
+                    </para>
+                    <para>Default value is "address".</para>
+                    <example>
+				<title>Usage of <varname>address_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "address_col", "addr")
+                                </programlisting>
+                    </example>
+                </section>
+
                 <section>
                     <title>
                         <varname>tls_method_col</varname> (string)
@@ -586,8 +586,8 @@ modparam("tls_mgm", "address_col", "addr")
 modparam("tls_mgm", "tls_method_col", "method")
                                 </programlisting>
                     </example>
-                </section>  
-                                                                                                                                  
+                </section>
+
                 <section>
                     <title>
                         <varname>verify_cert_col</varname> (string)
@@ -604,7 +604,7 @@ modparam("tls_mgm", "verify_cert_col", "verify_cert")
                                 </programlisting>
                     </example>
                 </section>
-                
+
                 <section>
                     <title>
                         <varname>require_cert_col</varname> (string)
@@ -620,8 +620,8 @@ modparam("tls_mgm", "verify_cert_col", "verify_cert")
 modparam("tls_mgm", "require_cert_col", "req")
                                 </programlisting>
                     </example>
-                </section>                                                                                                                                                                                                                                                 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+                </section>
+
                 <section>
                     <title>
                         <varname>certificate_col</varname> (string)
@@ -637,8 +637,8 @@ modparam("tls_mgm", "require_cert_col", "req")
 modparam("tls_mgm", "certificate_col", "certificate")
                                 </programlisting>
                     </example>
-                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+                </section>
+
                 <section>
                     <title>
                         <varname>private_key_col</varname> (string)
@@ -654,8 +654,8 @@ modparam("tls_mgm", "certificate_col", "certificate")
 modparam("tls_mgm", "private_key_col", "pk")
                                 </programlisting>
                     </example>
-                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
-                
+                </section>
+
                 <section>
                     <title>
                         <varname>crl_check_all_col</varname> (string)
@@ -671,8 +671,8 @@ modparam("tls_mgm", "private_key_col", "pk")
 modparam("tls_mgm", "crl_check_all_col", "crl_check")
                                 </programlisting>
                     </example>
-                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                </section>
+
                 <section>
                     <title>
                         <varname>crl_dir_col</varname> (string)
@@ -688,7 +688,7 @@ modparam("tls_mgm", "crl_check_all_col", "crl_check")
 modparam("tls_mgm", "crl_dir_col", "crl_dir")
                                 </programlisting>
                     </example>
-                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+                </section>
                             <section>
                     <title>
                         <varname>ca_list_col</varname> (string)
@@ -704,10 +704,10 @@ modparam("tls_mgm", "crl_dir_col", "crl_dir")
 modparam("tls_mgm", "ca_list_col", "ca_list")
                                 </programlisting>
                     </example>
-                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
-                
+                </section>
+
+
+
                 <section>
                     <title>
                         <varname>ca_dir_col</varname> (string)
@@ -723,9 +723,9 @@ modparam("tls_mgm", "ca_list_col", "ca_list")
 modparam("tls_mgm", "ca_dir_col", "ca_dir")
                                 </programlisting>
                     </example>
-                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
-                
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+                </section>
+
+
                  <section>
                     <title>
                         <varname>cipher_list_col</varname> (string)
@@ -741,9 +741,9 @@ modparam("tls_mgm", "ca_dir_col", "ca_dir")
 modparam("tls_mgm", "cipher_list_col", "cipher_list")
                                 </programlisting>
                     </example>
-                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+                </section>
+
+
                 <section>
                     <title>
                         <varname>dh_params_col</varname> (string)
@@ -759,8 +759,8 @@ modparam("tls_mgm", "cipher_list_col", "cipher_list")
 modparam("tls_mgm", "dh_params_col", "dh_parms")
                                 </programlisting>
                     </example>
-                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+                </section>
+
                <section>
                     <title>
                         <varname>ec_curve_col</varname> (string)
@@ -776,8 +776,8 @@ modparam("tls_mgm", "dh_params_col", "dh_parms")
 modparam("tls_mgm", "ec_curve_col", "ec_curve")
                                 </programlisting>
                     </example>
-                </section>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+                </section>
+
 		<section>
 			<title><varname>server_domain, client_domain</varname> (string)</title>
 			<para>
@@ -1335,58 +1335,58 @@ route{
 	<example>
 		<title>Example of TLS logging</title>
 <programlisting format="linespecific">
-xlog("L_INFO","==================== start TLS pseudo variables =================='\n");
-xlog("L_INFO","$$tls_version                    = '$tls_version'\n");
-xlog("L_INFO","$$tls_description                = '$tls_description'\n");
-xlog("L_INFO","$$tls_cipher_info                = '$tls_cipher_info'\n");
-xlog("L_INFO","$$tls_cipher_bits                = '$tls_cipher_bits'\n");
-xlog("L_INFO","$$tls_peer_subject               = '$tls_peer_subject'\n");
-xlog("L_INFO","$$tls_peer_issuer                = '$tls_peer_issuer'\n");
-xlog("L_INFO","$$tls_my_subject                 = '$tls_my_subject'\n");
-xlog("L_INFO","$$tls_my_issuer                  = '$tls_my_issuer'\n");
-xlog("L_INFO","$$tls_peer_version               = '$tls_peer_version'\n");
-xlog("L_INFO","$$tls_my_version                 = '$tls_my_version'\n");
-xlog("L_INFO","$$tls_peer_serial                = '$tls_peer_serial'\n");
-xlog("L_INFO","$$tls_my_serial                  = '$tls_my_serial'\n");
-xlog("L_INFO","$$tls_peer_subject_cn            = '$tls_peer_subject_cn'\n");
-xlog("L_INFO","$$tls_peer_issuer_cn             = '$tls_peer_issuer_cn'\n");
-xlog("L_INFO","$$tls_my_subject_cn              = '$tls_my_subject_cn'\n");
-xlog("L_INFO","$$tls_my_issuer_cn               = '$tls_my_issuer_cn'\n");
-xlog("L_INFO","$$tls_peer_subject_locality      = '$tls_peer_subject_locality'\n");
-xlog("L_INFO","$$tls_peer_issuer_locality       = '$tls_peer_issuer_locality'\n");
-xlog("L_INFO","$$tls_my_subject_locality        = '$tls_my_subject_locality'\n");
-xlog("L_INFO","$$tls_my_issuer_locality         = '$tls_my_issuer_locality'\n");
-xlog("L_INFO","$$tls_peer_subject_country       = '$tls_peer_subject_country'\n");
-xlog("L_INFO","$$tls_peer_issuer_country        = '$tls_peer_issuer_country'\n");
-xlog("L_INFO","$$tls_my_subject_country         = '$tls_my_subject_country'\n");
-xlog("L_INFO","$$tls_my_issuer_country          = '$tls_my_issuer_country'\n");
-xlog("L_INFO","$$tls_peer_subject_state         = '$tls_peer_subject_state'\n");
-xlog("L_INFO","$$tls_peer_issuer_state          = '$tls_peer_issuer_state'\n");
-xlog("L_INFO","$$tls_my_subject_state           = '$tls_my_subject_state'\n");
-xlog("L_INFO","$$tls_my_issuer_state            = '$tls_my_issuer_state'\n");
-xlog("L_INFO","$$tls_peer_subject_organization  = '$tls_peer_subject_organization'\n");
-xlog("L_INFO","$$tls_peer_issuer_organization   = '$tls_peer_issuer_organization'\n");
-xlog("L_INFO","$$tls_my_subject_organization    = '$tls_my_subject_organization'\n");
-xlog("L_INFO","$$tls_my_issuer_organization     = '$tls_my_issuer_organization'\n");
-xlog("L_INFO","$$tls_peer_subject_unit          = '$tls_peer_subject_unit'\n");
-xlog("L_INFO","$$tls_peer_issuer_unit           = '$tls_peer_issuer_unit'\n");
-xlog("L_INFO","$$tls_my_subject_unit            = '$tls_my_subject_unit'\n");
-xlog("L_INFO","$$tls_my_issuer_unit             = '$tls_my_issuer_unit'\n");
-xlog("L_INFO","$$tls_peer_san_email             = '$tls_peer_san_email'\n");
-xlog("L_INFO","$$tls_my_san_email               = '$tls_my_san_email'\n");
-xlog("L_INFO","$$tls_peer_san_hostname          = '$tls_peer_san_hostname'\n");
-xlog("L_INFO","$$tls_my_san_hostname            = '$tls_my_san_hostname'\n");
-xlog("L_INFO","$$tls_peer_san_uri               = '$tls_peer_san_uri'\n");
-xlog("L_INFO","$$tls_my_san_uri                 = '$tls_my_san_uri'\n");
-xlog("L_INFO","$$tls_peer_san_ip                = '$tls_peer_san_ip'\n");
-xlog("L_INFO","$$tls_my_san_ip                  = '$tls_my_san_ip'\n");
-xlog("L_INFO","$$tls_peer_verified              = '$tls_peer_verified'\n");
-xlog("L_INFO","$$tls_peer_revoked               = '$tls_peer_revoked'\n");
-xlog("L_INFO","$$tls_peer_expired               = '$tls_peer_expired'\n");
-xlog("L_INFO","$$tls_peer_selfsigned            = '$tls_peer_selfsigned'\n");
-xlog("L_INFO","$$tls_peer_notBefore             = '$tls_peer_notBefore'\n");
-xlog("L_INFO","$$tls_peer_notAfter              = '$tls_peer_notAfter'\n");
-xlog("L_INFO","==================== end TLS pseudo variables =================='\n");
+xlog("L_INFO","================= start TLS pseudo variables ===============\n");
+xlog("L_INFO","$$tls_version                   = '$tls_version'\n");
+xlog("L_INFO","$$tls_description               = '$tls_description'\n");
+xlog("L_INFO","$$tls_cipher_info               = '$tls_cipher_info'\n");
+xlog("L_INFO","$$tls_cipher_bits               = '$tls_cipher_bits'\n");
+xlog("L_INFO","$$tls_peer_subject              = '$tls_peer_subject'\n");
+xlog("L_INFO","$$tls_peer_issuer               = '$tls_peer_issuer'\n");
+xlog("L_INFO","$$tls_my_subject                = '$tls_my_subject'\n");
+xlog("L_INFO","$$tls_my_issuer                 = '$tls_my_issuer'\n");
+xlog("L_INFO","$$tls_peer_version              = '$tls_peer_version'\n");
+xlog("L_INFO","$$tls_my_version                = '$tls_my_version'\n");
+xlog("L_INFO","$$tls_peer_serial               = '$tls_peer_serial'\n");
+xlog("L_INFO","$$tls_my_serial                 = '$tls_my_serial'\n");
+xlog("L_INFO","$$tls_peer_subject_cn           = '$tls_peer_subject_cn'\n");
+xlog("L_INFO","$$tls_peer_issuer_cn            = '$tls_peer_issuer_cn'\n");
+xlog("L_INFO","$$tls_my_subject_cn             = '$tls_my_subject_cn'\n");
+xlog("L_INFO","$$tls_my_issuer_cn              = '$tls_my_issuer_cn'\n");
+xlog("L_INFO","$$tls_peer_subject_locality     = '$tls_peer_subject_locality'\n");
+xlog("L_INFO","$$tls_peer_issuer_locality      = '$tls_peer_issuer_locality'\n");
+xlog("L_INFO","$$tls_my_subject_locality       = '$tls_my_subject_locality'\n");
+xlog("L_INFO","$$tls_my_issuer_locality        = '$tls_my_issuer_locality'\n");
+xlog("L_INFO","$$tls_peer_subject_country      = '$tls_peer_subject_country'\n");
+xlog("L_INFO","$$tls_peer_issuer_country       = '$tls_peer_issuer_country'\n");
+xlog("L_INFO","$$tls_my_subject_country        = '$tls_my_subject_country'\n");
+xlog("L_INFO","$$tls_my_issuer_country         = '$tls_my_issuer_country'\n");
+xlog("L_INFO","$$tls_peer_subject_state        = '$tls_peer_subject_state'\n");
+xlog("L_INFO","$$tls_peer_issuer_state         = '$tls_peer_issuer_state'\n");
+xlog("L_INFO","$$tls_my_subject_state          = '$tls_my_subject_state'\n");
+xlog("L_INFO","$$tls_my_issuer_state           = '$tls_my_issuer_state'\n");
+xlog("L_INFO","$$tls_peer_subject_organization = '$tls_peer_subject_organization'\n");
+xlog("L_INFO","$$tls_peer_issuer_organization  = '$tls_peer_issuer_organization'\n");
+xlog("L_INFO","$$tls_my_subject_organization   = '$tls_my_subject_organization'\n");
+xlog("L_INFO","$$tls_my_issuer_organization    = '$tls_my_issuer_organization'\n");
+xlog("L_INFO","$$tls_peer_subject_unit         = '$tls_peer_subject_unit'\n");
+xlog("L_INFO","$$tls_peer_issuer_unit          = '$tls_peer_issuer_unit'\n");
+xlog("L_INFO","$$tls_my_subject_unit           = '$tls_my_subject_unit'\n");
+xlog("L_INFO","$$tls_my_issuer_unit            = '$tls_my_issuer_unit'\n");
+xlog("L_INFO","$$tls_peer_san_email            = '$tls_peer_san_email'\n");
+xlog("L_INFO","$$tls_my_san_email              = '$tls_my_san_email'\n");
+xlog("L_INFO","$$tls_peer_san_hostname         = '$tls_peer_san_hostname'\n");
+xlog("L_INFO","$$tls_my_san_hostname           = '$tls_my_san_hostname'\n");
+xlog("L_INFO","$$tls_peer_san_uri              = '$tls_peer_san_uri'\n");
+xlog("L_INFO","$$tls_my_san_uri                = '$tls_my_san_uri'\n");
+xlog("L_INFO","$$tls_peer_san_ip               = '$tls_peer_san_ip'\n");
+xlog("L_INFO","$$tls_my_san_ip                 = '$tls_my_san_ip'\n");
+xlog("L_INFO","$$tls_peer_verified             = '$tls_peer_verified'\n");
+xlog("L_INFO","$$tls_peer_revoked              = '$tls_peer_revoked'\n");
+xlog("L_INFO","$$tls_peer_expired              = '$tls_peer_expired'\n");
+xlog("L_INFO","$$tls_peer_selfsigned           = '$tls_peer_selfsigned'\n");
+xlog("L_INFO","$$tls_peer_notBefore            = '$tls_peer_notBefore'\n");
+xlog("L_INFO","$$tls_peer_notAfter             = '$tls_peer_notAfter'\n");
+xlog("L_INFO","================= end TLS pseudo variables ===============\n");
 </programlisting>
 	</example>
 

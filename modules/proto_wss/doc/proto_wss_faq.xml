@@ -7,24 +7,12 @@
 
 	<qandaentry>
 		<question>
-			<para>Can &osips; act as a WebSocket client?
-			</para>
-		</question>
-		<answer>
-		<para>
-			Yes, starting with &osips; 2.2, it can act as a WebSocket client.
-		</para>
-		</answer>
-	</qandaentry>
-
-	<qandaentry>
-		<question>
-			<para>Does &osips; support WebSocket message fragmentation?
+			<para>Does &osips; support fragmented Secure WebSocket messages?
 			</para>
 		</question>
 		<answer>
 			<para>
-			No, WebSocket fragmentation mechanims is not supported.
+			No, the WebSocket fragmentation mechanism is not supported.
 			</para>
 		</answer>
 	</qandaentry>

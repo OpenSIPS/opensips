@@ -24,7 +24,7 @@
 		</question>
 		<answer>
 			<para>
-			No, WebSocket fragmentation mechanims is not supported.
+			No, WebSocket fragmentation mechanism is not supported.
 			</para>
 		</answer>
 	</qandaentry>
