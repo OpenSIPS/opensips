@@ -457,6 +457,22 @@ migrate_table ${dst_db}.route_tree \
 	${src_db}.route_tree \
 	"?id,?carrier"
 
+## CALL_CENTER module
+migrate_table ${dst_db}.cc_flows \
+	"flowid,priority,skill,prependcid,message_welcome,message_queue" \
+	${src_db}.cc_flows \
+	"?flowid,?priority,?skill,?prependcid,?message_welcome,?message_queue" 
+
+migrate_table ${dst_db}.cc_agents \
+	"agentid,location,logstate,skills,last_call_end" \
+	${src_db}.cc_flows \
+	"?agentid,?location,?logstate,?skills,?last_call_end" 
+
+migrate_table ${dst_db}.cc_cdrs \
+	"caller,received_timestamp,wait_time,pickup_time,talk_time,flow_id,agent_id,call_type,rejected,fstats,cid" \
+	${src_db}.cc_flows \
+	"?caller,?received_timestamp,?wait_time,?pickup_time,?talk_time,?flow_id,?agent_id,?call_type,?rejected,?fstats,?cid" 
+
 ## CPL module
 migrate_table ${dst_db}.cpl \
 	"id,username,domain,cpl_xml,cpl_bin" \
@@ -491,9 +507,9 @@ migrate_table ${dst_db}.registrant \
 
 ## SIPTRACE module
 migrate_table ${dst_db}.sip_trace \
-	"id,time_stamp,callid,traced_user,msg,method,status,from_proto,from_ip,from_port,to_proto,to_ip,to_port,fromtag,direction" \
+	"id,time_stamp,callid,trace_attrs,msg,method,status,from_proto,from_ip,from_port,to_proto,to_ip,to_port,fromtag,direction" \
 	${src_db}.sip_trace \
-	"?id,?time_stamp,?callid,?traced_user,?msg,?method,?status,SUBSTRING_INDEX(?fromip,':',1),SUBSTRING(SUBSTRING_INDEX(?fromip,':',2),LENGTH(SUBSTRING_INDEX(?fromip,':',1))+1),SUBSTRING(SUBSTRING_INDEX(?fromip,':',3),LENGTH(SUBSTRING_INDEX(?fromip,':',2))+1),SUBSTRING_INDEX(?toip,':',1),SUBSTRING(SUBSTRING_INDEX(?toip,':',2),LENGTH(SUBSTRING_INDEX(?toip,':',1))+1),SUBSTRING(SUBSTRING_INDEX(?toip,':',3),LENGTH(SUBSTRING_INDEX(?toip,':',2))+1),?fromtag,?direction"
+	"?id,?time_stamp,?callid,?traced_user,?msg,?method,?status,?from_proto,?from_ip,?from_port,?to_proto,?to_ip,?to_port,?fromtag,?direction"
 
 ## USERBLACKLIST module
 migrate_table ${dst_db}.userblacklist \
