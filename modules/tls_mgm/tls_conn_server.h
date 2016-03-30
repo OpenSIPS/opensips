@@ -209,17 +209,12 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 				return 0;
 			default:
 				c->state = S_CONN_BAD;
-				if (errno == 0) {
-					LM_ERR("New TLS connection from %s:%d failed to accept:"
-						" rejected by client\n",
-						ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
-				} else {
-					LM_ERR("New TLS connection from %s:%d failed to accept\n",
-						ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+				LM_ERR("New TLS connection from %s:%d failed to accept\n",
+				       ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+				if (errno != 0)
 					LM_ERR("TLS error: (ret=%d, err=%d, errno=%d/%s):\n",
-						ret, err, errno, strerror(errno));
-					tls_print_errstack();
-				}
+					       ret, err, errno, strerror(errno));
+				tls_print_errstack();
 				return -1;
 		}
 	}
