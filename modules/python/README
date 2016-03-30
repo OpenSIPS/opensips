@@ -8,7 +8,7 @@ Edited by
 
 Razvan Crainea
 
-   Copyright © 2009 Sippy Software, Inc.
+   Copyright � 2009 Sippy Software, Inc.
      __________________________________________________________
 
    Table of Contents
@@ -29,7 +29,7 @@ Razvan Crainea
 
         1.4. Exported Functions
 
-              1.4.1.
+              1.4.1. python_exec(method_name [, extra_args])
 
    List of Examples
 
@@ -123,7 +123,7 @@ Chapter 1. Admin Guide
 
    The script that contains the Python module.
 
-   Default value is “/usr/local/etc/opensips/handler.py”.
+   Default value is "/usr/local/etc/opensips/handler.py".
 
    Example 1.1. Set script_name parameter
 ...
@@ -135,7 +135,7 @@ modparam("python", "script_name", "/usr/local/bin/opensips_handler.py")
    The method used to initialize the Python module and return the
    object.
 
-   Default value is “mod_init”.
+   Default value is "mod_init".
 
    Example 1.2. Set mod_init_function parameter
 ...
@@ -146,7 +146,7 @@ modparam("python", "mod_init_function", "module_initializer")
 
    The method called for each child process.
 
-   Default value is “child_init”.
+   Default value is "child_init".
 
    Example 1.3. Set child_init_method parameter
 ...
@@ -155,7 +155,7 @@ modparam("python", "child_init_method", "child_initializer")
 
 1.4. Exported Functions
 
-1.4.1.1.  python_exec(method_name [, extra_args])
+1.4.1.  python_exec(method_name [, extra_args])
 
    Thhis function is used to execute a method from the Python
    module loaded.
