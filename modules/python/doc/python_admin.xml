@@ -222,10 +222,9 @@ modparam("python", "child_init_method", "child_initializer")
 	<section>
 	<title>Exported Functions</title>
 	<section>
-        <section>
-                <title>
-                <function moreinfo="none">python_exec(method_name [, extra_args])</function>
-                </title>
+			<title>
+				<function moreinfo="none">python_exec(method_name [, extra_args])</function>
+			</title>
 	<para>
 		Thhis function is used to execute a method from the Python module
 		loaded.
@@ -248,7 +247,6 @@ modparam("python", "child_init_method", "child_initializer")
 		</para>
 	    </listitem>
 	</itemizedlist>
-	</section>
 	</section>
 	</section>
 
