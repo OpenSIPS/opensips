@@ -74,8 +74,8 @@ void destroy_dr_cbs(void)
 	}
 
 	for(i=0; i <N_MAX_SORT_CBS; i++) {
-		dr_sort_cb_it = dr_sort_cbs[i];
-		if(dr_sort_cb_it->callback_param_free && dr_sort_cb_it->param) {
+		if ( (dr_sort_cb_it=dr_sort_cbs[i])!=NULL &&
+		dr_sort_cb_it->callback_param_free && dr_sort_cb_it->param) {
 			dr_sort_cb_it->callback_param_free(dr_sort_cb_it->param);
 			dr_sort_cb_it->param = NULL;
 		}
