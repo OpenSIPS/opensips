@@ -497,7 +497,7 @@ static int child_init(int rank)
  */
 static void destroy(void)
 {
-	LM_NOTICE("destroy module cachedb_redis ...\n");
+	LM_NOTICE("destroy module cachedb_memcached ...\n");
 	cachedb_end_connections(&cache_mod_name);
 	return;
 }
