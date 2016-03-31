@@ -853,103 +853,104 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-        What happened with the old “append_branch” module parameter?
+   What happened with the old “append_branch” module parameter?
 
-        It was removed as global option, as the “lookup” function takes
-        this option via the flag "b" (append Branches) See the
-        documentation of the “lookup” function.
+   It was removed as global option, as the “lookup” function takes
+   this option via the flag "b" (append Branches) See the
+   documentation of the “lookup” function.
 
    2.2.
 
-        What happened with the old “method_filtering” module parameter?
+   What happened with the old “method_filtering” module parameter?
 
-        It was removed as global option, as the “lookup” function takes
-        this option via the flag "m" (Method filtering) See the
-        documentation of the “lookup” function.
+   It was removed as global option, as the “lookup” function takes
+   this option via the flag "m" (Method filtering) See the
+   documentation of the “lookup” function.
 
    2.3.
 
-        What happened with the old “sock_flag” module parameter?
+   What happened with the old “sock_flag” module parameter?
 
-        It was removed as global option, as the “save” function takes
-        this option via the flag "s" (Socket header) See the
-        documentation of the “save” function.
+   It was removed as global option, as the “save” function takes
+   this option via the flag "s" (Socket header) See the
+   documentation of the “save” function.
 
    2.4.
 
-        What happened with the old “use_path” and “path_mode” module
-        parameters?
+   What happened with the old “use_path” and “path_mode” module
+   parameters?
 
-        They were removed as global option, as the “save” function
-        takes these options via the flag "px" (path support) See the
-        documentation of the “save” function.
+   They were removed as global option, as the “save” function
+   takes these options via the flag "px" (path support) See the
+   documentation of the “save” function.
 
    2.5.
 
-        What happened with the old “path_use_received” module parameter?
+   What happened with the old “path_use_received” module
+   parameter?
 
-        It was removed as global option, as the “save” function takes
-        this option via the flag "v" (path receiVed) See the
-        documentation of the “save” function.
+   It was removed as global option, as the “save” function takes
+   this option via the flag "v" (path receiVed) See the
+   documentation of the “save” function.
 
    2.6.
 
-        What happened with the old “nat_flag” module parameter?
+   What happened with the old “nat_flag” module parameter?
 
-        It was removed, as the module internally loads this value from
-        the “USRLOC” module (see the “nat_bflag” USRLOC parameter).
+   It was removed, as the module internally loads this value from
+   the “USRLOC” module (see the “nat_bflag” USRLOC parameter).
 
    2.7.
 
-        What happened with the old “use_domain” module parameter?
+   What happened with the old “use_domain” module parameter?
 
-        It was removed, as the module internally loads this option from
-        the “USRLOC” module. This was done in order to simplify the
-        configuration.
+   It was removed, as the module internally loads this option from
+   the “USRLOC” module. This was done in order to simplify the
+   configuration.
 
    2.8.
 
-        What happened with the old “save_noreply” and “save_memory”
-        functions?
+   What happened with the old “save_noreply” and “save_memory”
+   functions?
 
-        There functions were merged into the new “save(domain,flags)”
-        functions. If a reply should be sent or if the DB should be
-        updated also is controlled via the flags.
+   There functions were merged into the new “save(domain,flags)”
+   functions. If a reply should be sent or if the DB should be
+   updated also is controlled via the flags.
 
    2.9.
 
-        Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-        Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.10.
 
-        Where can I post a question about this module?
+   Where can I post a question about this module?
 
-        First at all check if your question was already answered on one
-        of our mailing lists:
-          * User Mailing List -
-            http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-          * Developer Mailing List -
-            http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-        E-mails regarding any stable OpenSIPS release should be sent to
-        <users@lists.opensips.org> and e-mails regarding development
-        versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-        If you want to keep the mail private, send it to
-        <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.11.
 
-        How can I report a bug?
+   How can I report a bug?
 
-        Please follow the guidelines provided at:
-        https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
    2.12.
 
-        What happened to the desc_time_order parameter?
+   What happened to the desc_time_order parameter?
 
-        It was removed, as its functionality was mmigrate into usrloc
-        module, were there is a parameter with the same name.
+   It was removed, as its functionality was mmigrate into usrloc
+   module, were there is a parameter with the same name.

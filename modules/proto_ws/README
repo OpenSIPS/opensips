@@ -6,7 +6,7 @@ Edited by
 
 Razvan Crainea
 
-   Copyright © 2015 OpenSIPS Project
+   Copyright Â© 2015 OpenSIPS Project
      __________________________________________________________
 
    Table of Contents
@@ -137,13 +137,13 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   Can OpenSIPS act as a WebSocket client?
+       Can OpenSIPS act as a WebSocket client?
 
-   Yes, starting with OpenSIPS 2.2, it can act as a WebSocket
-   client.
+       Yes, starting with OpenSIPS 2.2, it can act as a WebSocket
+       client.
 
    2.2.
 
-   Does OpenSIPS support WebSocket message fragmentation?
+       Does OpenSIPS support WebSocket message fragmentation?
 
-   No, WebSocket fragmentation mechanism is not supported.
+       No, WebSocket fragmentation mechanism is not supported.

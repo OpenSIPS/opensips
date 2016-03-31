@@ -4,7 +4,7 @@ Marius Cristian Eseanu
 
    OpenSIPS Solutions
 
-   Copyright � 2015 www.opensips-solutions.com
+   Copyright © 2015 www.opensips-solutions.com
      __________________________________________________________
 
    Table of Contents
@@ -148,7 +148,7 @@ Chapter 1. Admin Guide
 
    The database url.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.1. Set db_url parameter
 ...
@@ -160,7 +160,7 @@ modparam("clusterer", "db_url",
 
    The name of the table storing the clustering information.
 
-   Default value is "clusterer".
+   Default value is “clusterer”.
 
    Example 1.2. Set db_table parameter
 ...
@@ -198,7 +198,7 @@ modparam("clusterer", "persistent_mode", 1)
    The name of the column in the db_table where the cluster_id is
    stored.
 
-   Default value is "cluster_id".
+   Default value is “cluster_id”.
 
    Example 1.5. Set cluster_id_col parameter
 ...
@@ -210,7 +210,7 @@ modparam("clusterer", "cluster_id_col", "cluster_id")
    The name of the column in the db_table where the machine_id is
    stored.
 
-   Default value is "machine_id".
+   Default value is “machine_id”.
 
    Example 1.6. Set machine_id_col parameter
 ...
@@ -222,7 +222,7 @@ modparam("clusterer", "machine_id_col", "machine_id")
    The name of the column in the db_table where the machine_id is
    stored.
 
-   Default value is "id".
+   Default value is “id”.
 
    Example 1.7. Set clusterer_id_col parameter
 ...
@@ -234,7 +234,7 @@ modparam("clusterer", "clusterer_id_col", "clusterer_id")
    The name of the column in the db_table where the state is
    stored.
 
-   Default value is "state".
+   Default value is “state”.
 
    Example 1.8. Set state_col parameter
 ...
@@ -245,7 +245,7 @@ modparam("clusterer", "state_col", "state")
 
    The name of the column in the db_table where the url is stored.
 
-   Default value is "url".
+   Default value is “url”.
 
    Example 1.9. Set url_col parameter
 ...
@@ -257,7 +257,7 @@ modparam("clusterer", "url_col", "url")
    The name of the column in the db_table where the machine's
    description is stored.
 
-   Default value is "description".
+   Default value is “description”.
 
    Example 1.10. Set description_col parameter
 ...
@@ -269,7 +269,7 @@ modparam("clusterer", "description_col", "description")
    The name of the column in the db_table where the maximum
    allowed number of failed attempts is stored.
 
-   Default value is "failed_attempts".
+   Default value is “failed_attempts”.
 
    Example 1.11. Set failed_attempts_col parameter
 ...
@@ -281,7 +281,7 @@ modparam("clusterer", "failed_attempts_col", "failed_attempts")
    The name of the column in the db_table where the UNIX time of
    last last failed attempt is stored.
 
-   Default value is "last_attempt".
+   Default value is “last_attempt”.
 
    Example 1.12. Set last_attempt_col parameter
 ...
@@ -294,7 +294,7 @@ modparam("clusterer", "last_attempt_col", "last_attempt")
    machine belonging to a certain cluster temporary disabled state
    is stored.
 
-   Default value is "duration".
+   Default value is “duration”.
 
    Example 1.13. Set duration_col parameter
 ...
@@ -306,7 +306,7 @@ modparam("clusterer", "duration_col", "duration")
    The name of the column in the db_table where the number of
    failed connecting tries is stored.
 
-   Default value is "no_tries".
+   Default value is “no_tries”.
 
    Example 1.14. Set no_tries_col parameter
 ...
@@ -397,30 +397,30 @@ empt | failed_attempts | no_tries | duration | description |
 +----+------------+------------+----------------------+-------+---------
 -----+-----------------+----------+----------+-------------+
 
-     * "cluster_id" - this column represents the identifier of the
+     * “cluster_id” - this column represents the identifier of the
        cluster. All nodes within a group/cluster should have the
        same id (in our example, both nodes have ID 1)
-     * "machine_id" - this represents the identifier of the
+     * “machine_id” - this represents the identifier of the
        machine/node, and each instance within a cluster should
        have a different ID. In our example, Node A will have ID 1,
        and Node B ID 2
-     * "url" - this indicates the URL where the instance will
+     * “url” - this indicates the URL where the instance will
        receive the replication information. In our example, each
        node will receive the date over the bin protocol
-     * "state" - this is the state of the machine: 1 means on, 0
+     * “state” - this is the state of the machine: 1 means on, 0
        means off, and 2 means it is in probing. Note that if you
        want the node to be active right away, you have to set it
        in state 1
-     * "last_attempt", "failed_attempts" and "no_tries" - are
+     * “last_attempt”, “failed_attempts” and “no_tries” - are
        fields used for the probing mechanisms, and should be set
        to 0 by default. They are automatically updated by the
        clusterer module if the persistent_mode parameter is set to
        1
-     * "duration" - is used to specify the period a node stays in
+     * “duration” - is used to specify the period a node stays in
        the temporary disabled state. In our example, if the node
        does not respond, it is disabled for 30 seconds before
        retrying to send data again
-     * "description" - is an opaque value used to identify the
+     * “description” - is an opaque value used to identify the
        node
 
    After provisioning the two nodes in the database, we have to

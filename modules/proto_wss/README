@@ -6,7 +6,7 @@ Edited by
 
 Razvan Crainea
 
-   Copyright � 2016 OpenSIPS Project
+   Copyright © 2016 OpenSIPS Project
      __________________________________________________________
 
    Table of Contents
@@ -136,7 +136,7 @@ modparam("proto_wss", "wss_max_msg_chunks", 8)
    The resource queried for when a WebSocket handshake is
    initiated.
 
-   Default value is "/".
+   Default value is “/”.
 
    Example 1.4. Set wss_resource parameter
 ...
@@ -160,6 +160,6 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   Does OpenSIPS support fragmented Secure WebSocket messages?
+       Does OpenSIPS support fragmented Secure WebSocket messages?
 
-   No, the WebSocket fragmentation mechanism is not supported.
+       No, the WebSocket fragmentation mechanism is not supported.

@@ -12,27 +12,39 @@ Edited by
 
 Klaus Darilion
 
+Edited by
+
 Bogdan-Andrei Iancu
+
+Edited by
 
 Cesc Santasusana
 
+Edited by
+
 Klaus Darilion
+
+Edited by
 
 Christian Lahme
 
+Edited by
+
 Ionut-Razvan Ionita
+
+Edited by
 
 Marius Cristian Eseanu
 
-   Copyright � 2005 Voice Sistem SRL
+   Copyright © 2005 Voice Sistem SRL
 
-   Copyright � 2005 Cesc Santasusana
+   Copyright © 2005 Cesc Santasusana
 
-   Copyright � 2006 enum.at
+   Copyright © 2006 enum.at
 
-   Copyright � 2013 Secusmart GmbH
+   Copyright © 2013 Secusmart GmbH
 
-   Copyright � 2015 OpenSIPS Solutions
+   Copyright © 2015 OpenSIPS Solutions
      __________________________________________________________
 
    Table of Contents
@@ -206,7 +218,7 @@ Chapter 1. Admin Guide
    improvements were added.
 
    The TLS support was simultaneously added in both projects. In
-   SER, the support was committed in a separate "experimental" CVS
+   SER, the support was committed in a separate “experimental” CVS
    tree, as patch to the main CVS tree. In OpenSIPS, the support
    was integrated directly into the CVS tree, as a built-in
    component, and is part of stable OpenSIPS since release
@@ -229,7 +241,7 @@ Chapter 1. Admin Guide
    domains.
 
    A script example which details this module's usage can be found
-   in Section 1.9, "OpenSIPS with TLS - script example".
+   in Section 1.9, “OpenSIPS with TLS - script example”.
 
 1.4. Dependencies of external libraries
 
@@ -809,7 +821,7 @@ route{
 
    Some pseudo variables are available for both, the peer'S
    certificate and the local certificate. Further, some parameters
-   can be read from the "Subject" field or the "Issuer" field.
+   can be read from the “Subject” field or the “Issuer” field.
 
 1.8.1. $tls_version
 
@@ -882,23 +894,23 @@ route{
 
 1.8.14. $tls_[peer|my]_san_email
 
-   $tls_[peer|my]_san_email - email address in the "subject
-   alternative name" extension. String type.
+   $tls_[peer|my]_san_email - email address in the “subject
+   alternative name” extension. String type.
 
 1.8.15. $tls_[peer|my]_san_hostname
 
-   $tls_[peer|my]_san_hostname - hostname (DNS) in the "subject
-   alternative name" extension. String type.
+   $tls_[peer|my]_san_hostname - hostname (DNS) in the “subject
+   alternative name” extension. String type.
 
 1.8.16. $tls_[peer|my]_san_uri
 
-   $tls_[peer|my]_san_uri - URI in the "subject alternative name"
+   $tls_[peer|my]_san_uri - URI in the “subject alternative name”
    extension. String type.
 
 1.8.17. $tls_[peer|my]_san_ip
 
-   $tls_[peer|my]_san_ip - ip address in the "subject alternative
-   name" extension. String type.
+   $tls_[peer|my]_san_ip - ip address in the “subject alternative
+   name” extension. String type.
 
 1.8.18. $tls_peer_verified
 

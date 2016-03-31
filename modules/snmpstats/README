@@ -261,8 +261,8 @@ modparam("snmpstats", "sipEntityType", "proxyServer")
    consumed by OpenSIPS. If the number of bytes waiting to be
    consumed exceeds a minor threshold, the SNMPStats module will
    send out an openserMsgQueueDepthMinorEvent trap to signal that
-   an alarm condition has occurred. The minor threshold is set with
-   the MsgQueueMinorThreshold parameter.
+   an alarm condition has occurred. The minor threshold is set
+   with the MsgQueueMinorThreshold parameter.
 
    Example 1.2. Setting the MsgQueueMinorThreshold parameter
 ...
@@ -278,8 +278,8 @@ modparam("snmpstats", "MsgQueueMinorThreshold", 2000)
    consumed by OpenSIPS. If the number of bytes waiting to be
    consumed exceeds a major threshold, the SNMPStats module will
    send out an openserMsgQueueDepthMajorEvent trap to signal that
-   an alarm condition has occurred. The major threshold is set with
-   the MsgQueueMajorThreshold parameter.
+   an alarm condition has occurred. The major threshold is set
+   with the MsgQueueMajorThreshold parameter.
 
    Example 1.3. Setting the MsgQueueMajorThreshold parameter
 ...
