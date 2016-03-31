@@ -257,7 +257,7 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src,
 	return b2b_key;
 }
 
-/* key format : B2B.hash_index.local_index *
+/* key format : B2B.hash_index.local_index.timestamp *
  */
 
 int b2b_parse_key(str* key, unsigned int* hash_index, unsigned int* local_index)
@@ -292,12 +292,20 @@ int b2b_parse_key(str* key, unsigned int* hash_index, unsigned int* local_index)
 
 	p++;
 	s.s = p;
-	s.len = key->s + key->len - s.s;
+	p= strchr(s.s, '.');
+	if(p == NULL || ((p-s.s) > key->len) )
+	{
+		LM_DBG("Wrong format for b2b key\n");
+		return -1;
+	}
+
+	s.len = p - s.s;
 	if(str2int(&s, local_index)< 0)
 	{
 		LM_DBG("Wrong format for b2b key\n");
 		return -1;
 	}
+	/* we do not really care about the third part of the key */
 
 	LM_DBG("hash_index = [%d]  - local_index= [%d]\n", *hash_index, *local_index);
 
@@ -310,7 +318,8 @@ str* b2b_generate_key(unsigned int hash_index, unsigned int local_index)
 	str* b2b_key;
 	int len;
 
-	len = sprintf(buf, "%s.%d.%d", b2b_key_prefix.s, hash_index, local_index);
+	len = sprintf(buf, "%s.%d.%d.%ld",
+		b2b_key_prefix.s, hash_index, local_index, startup_time+get_ticks());
 
 	b2b_key = (str*)pkg_malloc(sizeof(str)+ len);
 	if(b2b_key== NULL)
