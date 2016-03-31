@@ -22,23 +22,28 @@
 		ratio of traffic between destinations.
 	</para>
 	<para>
-		Since version 1.12 the dispatcher module keeps its destination sets into
-		different partitions. Each partition is described by its own db_url, table_name,
-		dst_avp, grp_avp, cnt_avp, sock_avp, attr_avp and blacklists. Setting any of this parameters
-		using modparam will alter the default partition's properties. In order to create
-		a new partition the "partition" parameter should be used (see below for more details).
-		If none of the 8 partition specific parameters are defined for the default partition,
-		then this partition will not be created. If the default partition is created each
-		undefined parameter from all other partitions will take the value of the corresponding
-		one from the default partition. If there is no default partition, the default value
-		specified in the parameter's description will be used. Functions taking set arguments
-		will now take a set number preceded by a partition name and colon(i.e "part_name: 5").
-		If a set is not preceded by any partition name the default partition will be used.
-		Thus, the following arguments are equivalent: "default : 4" vs "4".
-		Remember that in order to be able to use a table from a partition, its name must be
-		found in the "version" table belonging to the database defined in the partition's db_url.
-		Also, in version 1.12 the "flags" parameter has been moved to ds_select_dst and
-		ds_select_domain along with "force_dst" and "use_default" flags.
+		Since version 2.1 the dispatcher module keeps its destination sets 
+		into different partitions. Each partition is described by its own
+		db_url, table_name, dst_avp, grp_avp, cnt_avp, sock_avp, attr_avp and 
+		blacklists. Setting any of this parameters using modparam will alter 
+		the default partition's properties. In order to create a new partition 
+		the "partition" parameter should be used (see below for more details).
+		If none of the 8 partition specific parameters are defined for the 
+		default partition, then this partition will not be created. If the 
+		default partition is created each undefined parameter from all other 
+		partitions will take the value of the corresponding one from the 
+		default partition. If there is no default partition, the default value
+		specified in the parameter's description will be used. Functions taking
+		set arguments will now take a set number preceded by a partition 
+		name and colon(i.e "part_name: 5").
+		If a set is not preceded by any partition name the default partition 
+		will be used. Thus, the following arguments are equivalent: 
+		"default : 4" vs "4". Remember that in order to be able to use a 
+		table from a partition, its name must be found in the "version" table 
+		belonging to the database defined in the partition's db_url.
+		Also, in version 2.1 the "flags" parameter has been moved to 
+		ds_select_dst() and ds_select_domain() along with "force_dst" and
+		"use_default" flags.
 	</para>
 	</section>
 	<section>
@@ -81,6 +86,11 @@
 		Setting this parameter will only change the default partition's
 		db_url. Use the partition parameter to create and alter
 		other partitions.
+		</para>
+		<para>
+		NOTE: if you intend to use the default partition you have to explicity 
+		set this default db_url, otherwise OpenSIPS will not start (he value 
+		of global default db_url is not inherited here! ).
 		</para>
 		<para>
 		<emphasis>
@@ -881,7 +891,7 @@ modparam("dispatcher", "socket_col", "my_sock")
 			max_results represents that only a maximum of max_results will be put into the
 			specified avp for failover. This allows having many destinations but limit the
 			useless traffic in case of a number that is bound to fail everywhere. Since version
-			1.12, the last paramater cand be represented by a list of flags and max_results,
+			2.1, the last paramater cand be represented by a list of flags and max_results,
 			separated by comma. You can specify either only the flags, either only the max_results
 			paramater, but if you want to specify them together you have to use the 'M' character
 			like this: flags M max_results.
