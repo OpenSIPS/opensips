@@ -321,6 +321,11 @@ modparam("dialplan", "partition",
 		The translation rules will be loaded using this database url.This
 		will be the db_url parameter value for the default partition.
 		</para>
+		<para>
+		NOTE: if you intend to use the default partition you have to explicity 
+		set this default db_url, otherwise OpenSIPS will not start (he value 
+		of global default db_url is not inherited here! ).
+		</para>
 		<example>
 		<title>Set <varname>db_url</varname> parameter</title>
 		<programlisting format="linespecific">

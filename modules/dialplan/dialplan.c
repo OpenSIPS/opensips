@@ -369,8 +369,6 @@ static int mod_init(void)
 
 	LM_INFO("initializing module...\n");
 
-	init_db_url( default_dp_db_url , 0 /*can be null*/);
-
 	dpid_column.len     	= strlen(dpid_column.s);
 	pr_column.len       	= strlen(pr_column.s);
 	match_op_column.len 	= strlen(match_op_column.s);
