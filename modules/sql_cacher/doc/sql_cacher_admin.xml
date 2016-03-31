@@ -36,7 +36,7 @@
 	<para>
 	For on demand caching, the stored values have a configurable expire period after
 	which they are permanently removed unless an MI reload function is called for a
-	specifc key. In the case of full caching the data is automatically reloaded at
+	specific key. In the case of full caching the data is automatically reloaded at
 	a configurable interval. Consequently if the data in the SQL database changes
 	and a MI reload function is  called, the old data remains in cache only
 	until it expires.

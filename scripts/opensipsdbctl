@@ -302,7 +302,7 @@ case $1 in
 			exit 1
 		fi
 
-		minfo	"MySQL DB migration tool for OpenSIPS 1.11.x databases\n\
+		minfo	"MySQL DB migration tool for OpenSIPS 2.1.x databases\n\
 ----------------------------------------------------------------------"
 		mwarn "\
 We recommend using this tool ONLY in order to upgrade an existing\n\
