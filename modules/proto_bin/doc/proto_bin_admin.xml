@@ -8,21 +8,21 @@
 	<title>Overview</title>
 	<para>
 		The <emphasis role='bold'>proto_bin</emphasis> module is a
-		transport module which implements BIN TCP-based communication. It does
+		transport module which implements Binary Interface TCP-based communication. It does
 		not handle TCP connections management, but only offers higher-level
 		primitives to read and write BIN messages over TCP. It calls registered
 		callback functions for every complete message received.
 	</para>
 	</section>
 	<para>
-		Once loaded, you will be able to define BIN listeners in your script,
-		by adding its IP, and optionally the listening port, in your configuration
-		file, similar to this example:
+		Once loaded, you will be able to define BIN listeners in your
+		configuration file by adding their IP and, optionally, a listening port,
+		similar to this example:
 	<para>
 		<programlisting format="linespecific">
 ...
-listen=bin:127.0.0.1 		# change the listening IP
-listen=bin:127.0.0.1:5080	# change with the listening IP and port
+listen = bin:127.0.0.1 		# change the listening IP
+listen = bin:127.0.0.1:5080	# change the listening IP and port
 ...
 </programlisting>
 	</para>
@@ -106,12 +106,12 @@ modparam("proto_bin", "bin_send_timeout", 200)
 	<section>
 		<title><varname>bin_max_msg_chunks</varname> (integer)</title>
 		<para>
-			The maximum number of chunks that a BIN message is expected to
-			arrive via TCP. If a packet is received more fragmented than this,
+			The maximum number of chunks in which a BIN message is expected to
+			arrive via TCP. If a received packet is more fragmented than this,
 			the connection is dropped (either the connection is very
 			overloaded and this leads to high fragmentation - or we are the
-			victim of an ongoing attack where the attacker is sending the
-			traffic very fragmented in order to decrease our performance).
+			victim of an ongoing attack where the attacker is sending very
+			fragmented traffic in order to decrease server performance).
 		</para>
 		<para>
 		<emphasis>
@@ -130,9 +130,9 @@ modparam("proto_bin", "bin_max_msg_chunks", 8)
 	<section>
 		<title><varname>bin_async</varname> (integer)</title>
 		<para>
-			If the TCP connect and write operations should be done in an
-			asynchronous mode (non-blocking connect and
-			write). If disabled, OpenSIPS will block and wait for TCP 
+			Specifies whether the TCP connect and write operations should be
+			done in an asynchronous mode (non-blocking connect and
+			write) or not. If disabled, OpenSIPS will block and wait for TCP
 			operations like connect and write.
 		</para>
 		<para>

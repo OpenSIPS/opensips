@@ -92,20 +92,20 @@ Chapter 1. Admin Guide
 1.1. Overview
 
    The clusterer module is used to organize multiple OpenSIPS
-   instances in groups that can communicate to each other in order
-   to replicate or share information or perform distributed tasks.
-   The module itself only stores information about the nodes in a
-   group/cluster and provides an interface to check or tune its
-   state and parameters. The distributed logic is performed by
-   different modules that use this interface (i.e. the dialog
-   module can replicate profiles, the ratelimit can share pipes
-   across multiple instances, etc). Provisioning the nodes within
-   a cluster is done over the database, but for efficiency the
-   nodes information is cached OpenSIPS' memory. This information
-   can be checked or updated by sending commands over the MI
-   interface.
+   instances into groups that can communicate with each other in
+   order to replicate, share information or perform distributed
+   tasks. The module itself only stores information about the
+   nodes in a group/cluster and provides an interface to check or
+   tune their state and parameters. The distributed logic is
+   performed by different modules that use this interface (i.e.
+   the dialog module can replicate profiles, the ratelimit module
+   can share pipes across multiple instances, etc). Provisioning
+   the nodes within a cluster is done over the database but, for
+   efficiency, the node-related information is cached into
+   OpenSIPS memory. This information can be checked or updated by
+   sending commands over the MI interface.
 
-   The clusterer module can also detect nodes availability, by
+   The clusterer module can also detect node availability, by
    using certain parameters provisioned in the database. When a
    destination is not reachable, it is put in a probing state - it
    is periodically pinged until a maximum number of failed
@@ -122,12 +122,12 @@ Chapter 1. Admin Guide
    temporary disabled state. If a packet has arrived for a
    temporary disabled server, the packet is dropped and a
    temporary disabled notification is sent to the registered
-   module. After the disabled period (2 * timeout) has passed the
+   module. After the disabled period (2 * timeout) has passed, the
    server is up again.
 
-   By default, the nodes states are not persistent. To make them
-   persistent via database, you have to set the persistent_mode
-   parameter.
+   By default, the state information of the nodes is not
+   persistent. To make them persistent via a database, one must
+   set the persistent_mode parameter.
 
 1.2. Dependencies
 

@@ -302,7 +302,7 @@ modparam("proto_tls", "tls_crlf_drop", 1)
 			the connection is dropped (either the connection is very
 			overloaded and this leads to high fragmentation - or we are the
 			victim of an ongoing attack where the attacker is sending the
-			traffic very fragmented in order to decrease our performance).
+			traffic very fragmented in order to decrease server performance).
 		</para>
 		<para>
 		<emphasis>
