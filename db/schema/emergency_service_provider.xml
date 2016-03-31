@@ -35,7 +35,8 @@
 		<name>organizationName</name>
 		<type>string</type>
 		<size>50</size>
-		<description>provider company name’s. This parameter is optional field in the NENA v2 interface (call server - VPC)
+		<description>provider company name's. This parameter is optional 
+		field in the NENA v2 interface (call server - VPC)
 		</description>
 	</column>
 
@@ -43,7 +44,8 @@
 		<name>hostId</name>
 		<type>string</type>
 		<size>30</size>
-		<description> provider hostname’s. This parameter is  mandatory if attribution is 0(source) or 2(VSP), otherwise it is optional.
+		<description> provider hostname's. This parameter is  mandatory if 
+		attribution is 0(source) or 2(VSP), otherwise it is optional.
 		</description>
 	</column>
 
