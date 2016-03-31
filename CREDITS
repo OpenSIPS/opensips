@@ -2,7 +2,7 @@
 #   OpenSIPS  #
 #=============#
 
-Current OpenSIPS team in alphabetical order as of 18 March 2015:
+Current OpenSIPS team in alphabetical order as of 31 March 2016:
 
 Core Team:
 
@@ -21,54 +21,81 @@ Arnaud Chong
 Dan Pascu
 Di-Shi Sun
 Iñaki Baz Castillo
+Ionel Cerghit
 Marc Leurent
 Ovidiu Sas
 Saúl Ibarra Corretgé
 Dynamic Packet
-
-
-============== Release 2.1.0 =================
-Andrei Datcu
-Alexander Mustafin
-Antonis Psaras
-Bill Hau
-Bobby Hakimi
-Brett Nemeroff
-buchtajz (GitHub)
-Carlos Oliva
-Chris Maciejewski
-cityant
-Damien Sandras
-eldonogithub
-Eric Tamme
-Evandro Villaron
-Ezequiel Lovelle
-Fabrizio Picconi
-Gary Nyquist
-gergelypeli (GitHub)
-Giuseppe Cardone
-hydrosine (GitHub)
-jalung (GitHub)
-jamesabravo (GitHub)
-Jamuel Starkey
-jbonicioli (GitHub)
-John Nash
-John Quick
-Justin Zondagh
-Mayama Takeshi
-Mihai Tiganus
-miko95 (GitHub)
-Nick Altmann
-Norman Brandinger
-Ovidiu Sas
-Parantido De Rica
-Peter Kelly
-Peter Lemenkov
+Robert Vladut Patrascu
 Robison Tesini
-SamyGo
+Evandro Villaron
+
+
+============== Release 2.2.0 =================
+Alan Erringer
+Antonis Psaras
+Aron Podrigal
+Colin Martin
+DMOsipov (GitHub)
+Damien Sanders
+Dan Bogos
+David Sanders
+Di-Shi Sun
+Don Steul
+Dragomir Haralambiev
+Dusan Klinec
+Eric Tamme
+Eric Werkhoven
+Eseanu Marius Cristian
+Evandro Villaron
+Federico Edorna
+Giuseppe Cardone
+Grygoriy Dobrovolskyy
+Hamid Elaosta
+Hieu Ta
+James Criscuolo
+Jarrod Baumann
+Jeff Pyle
+Jock McKechnie
+Jonathan Hunter
+Jordan Williams
+Joseph Frazier
+Julian Santer
+Julián Moreno Patiño
+Maksym Sobolyev
+Matthew Williams
+Mickael Marrache
+Mikko Lehto
+Minh Phan
+Mohammad Qandeel
+Muhammad Shahzad Shafi
+Nabeel Shikder
+Nathaniel L. Keeling III
+Nick Altmann
+Oliver Severin Mulelid-Tynes
+Pete Kelly
+Peter Baines
+Rik Broers
+Rob Gagnon
+Robison Gonçalves Tesini
+Robison Tesini
+Rudy Pedraza
+Ryan Bullock
+Santhosh Kumar
+Sasmita Panda
 Satish Patel
-sekil (IRC)
+Sebastian Sastre
 Sergey Khripchenko
 Stas Kobzar
+Steve Frécinaux
+Søren Andersen
+Trevor Francis
 Walter Doekes
-zhangst (GitHub)
+AVFedorov (GitHub)
+arovetto (GitHub)
+cepehutu (gitHub)
+ferrored (GitHub)
+gergelypeli (GitHub)
+mishehu (GitHub)
+narunask (GitHub)
+telephone-man (GitHub)
