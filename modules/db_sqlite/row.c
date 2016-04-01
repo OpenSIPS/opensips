@@ -117,6 +117,21 @@ int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 				memcpy(VAL_STR(_v).s, db_value, VAL_STR(_v).len);
 
 				VAL_STR(_v).s[VAL_STR(_v).len]='\0';
+
+				/* WARNING: we set the type to DB_STRING based on str definition
+				 * { char*
+				 *   int
+				 * }
+				 *
+				 * this way we know that if someone will access VAL_STRING(...)
+				 * of this value will get the char* value from the str structure
+				 * if someone will call VAL_STR(...) there will still be no
+				 * problem since we set the len
+				 *
+				 * invalid memory access shouldn't be the problem since it's an
+				 * union so we definetely will have the space for a str allocated
+				 *
+				 */
 				VAL_TYPE(_v) = DB_STRING;
 				VAL_FREE(_v) = 1;
 
