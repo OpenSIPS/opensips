@@ -942,7 +942,7 @@ static int repl_prof_add(str *name, int has_value, str *value,
 	/* the other end should already know if the profile has a value or not */
 	if (value && bin_push_str(value) < 0)
 		return -1;
-	if (bin_push_int(count) < 0)
+	if ((ret = bin_push_int(count)) < 0)
 		return -1;
 
 	return ret;
