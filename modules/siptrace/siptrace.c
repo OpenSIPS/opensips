@@ -269,6 +269,7 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 	#define HAVE_USER_AVP (1<<3)
 
 	unsigned char found_bitmask=0;
+	unsigned char is_db_url=0;
 
 
 	str uri_str={"uri", sizeof("uri")-1};
@@ -289,6 +290,9 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 	for (p=0; p<token->len; p++) {
 		switch (token->s[p]){
 		case '=':
+			if (is_db_url)
+				break;
+
 			_word_end = _word_end == -1 ? p : _word_end;
 
 			if (state==ST_TOK_VALUE) {
@@ -303,8 +307,18 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 
 			state=ST_TOK_VALUE;
 			_word_start=_word_end=-1;
+
+			/* it's a db url - don't parse user and password
+			 * this way we avoid thinking that ';' inside a mysql pass
+			 * is the end of the value */
+			if (NULL !=
+					q_memchr(&token->s[p+1], '@', token->len - (p + 1)))
+				is_db_url = 1;
 			break;
 		case ';':
+			if (is_db_url)
+				break;
+
 			if (state==ST_TOK_NAME || last_equal == 0) {
 				LM_ERR("bad name declaration!parsed until <%.*s>!\n",
 						token->len-p, token->s+p);
@@ -331,6 +345,10 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 			_word_start=_word_end=-1;
 
 			break;
+		case '@':
+			if (is_db_url)
+				is_db_url = 0;
+			break;
 		case '\n':
 		case '\r':
 		case '\t':
@@ -344,7 +362,6 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 		case ')':
 		case '/':
 		case ':':
-		case '@':
 		case '.':
 		case '_':
 			break;
@@ -352,9 +369,13 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 			if (_word_start==-1 && (isalpha(token->s[p])||token->s[p]=='$')) {
 				_word_start = p;
 			} else if (_word_start==-1 && isdigit(token->s[p])) {
-				LM_ERR("trace id can't start with digit!\n");
+				LM_ERR("trace id can't start with digit!parsed until <%.*s>\n",
+						token->len-p, &token->s[p]);
 				return -1;
 			}
+
+			if (is_db_url)
+				break;
 
 			if (_word_end == -1 && !isalnum(token->s[p]))
 				_word_end = p;
