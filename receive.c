@@ -113,7 +113,10 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 	/* the raw processing callbacks can change the buffer,
 	further use in_buff.s and at the end try to free in_buff.s
 	if changed by callbacks */
-	run_pre_raw_processing_cb(PRE_RAW_PROCESSING,&in_buff,NULL);
+	if (run_pre_raw_processing_cb(PRE_RAW_PROCESSING,&in_buff,NULL)<0) {
+		LM_ERR("error in running pre raw callbacks, dropping\n");
+		goto error;
+	}
 	/* update the length for further processing */
 	len = in_buff.len;
 
@@ -136,9 +139,10 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 
 	if (parse_msg(in_buff.s,len, msg)!=0){
 		tmp=ip_addr2a(&(rcv_info->src_ip));
-		LM_ERR("Unable to parse msg received from [%s:%d]\n", tmp, rcv_info->src_port);
-		/* if a REQUEST msg was detected (first line was successfully parsed) we
-		   should trigger the error route */
+		LM_ERR("Unable to parse msg received from [%s:%d]\n",
+			tmp, rcv_info->src_port);
+		/* if a REQUEST msg was detected (first line was successfully parsed)
+		   we should trigger the error route */
 		if ( msg->first_line.type==SIP_REQUEST && error_rlist.a!=NULL )
 			run_error_route(msg, 1);
 		goto parse_error;
