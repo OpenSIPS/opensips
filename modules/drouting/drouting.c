@@ -1199,6 +1199,11 @@ static int dr_init(void)
 				LM_ERR("malformed PV string: <<%s>>\n", partition_pvar.s);
 				return -1;
 			}
+
+			if (partition_spec.setf == NULL) {
+				LM_ERR("Partition_id_pvar is not WRITABLE!\n");
+				return -1;
+			}
 		}
 	} else {
 		init_db_url(db_url, 0);
