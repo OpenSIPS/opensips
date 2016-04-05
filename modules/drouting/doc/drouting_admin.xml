@@ -1091,7 +1091,7 @@ modparam("drouting", "db_partitions_table", "partition_defs")
 		<title>Set <varname>partition_id_pvar</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("drouting", "partition_id_pavr", "$var(matched_partition)")
+modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 ...
 </programlisting>
 		</example>

@@ -854,7 +854,7 @@ modparam("drouting", "db_partitions_table", "partition_defs")
 
    Example 1.31. Set partition_id_pvar parameter
 ...
-modparam("drouting", "partition_id_pavr", "$var(matched_partition)")
+modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 ...
 
 1.4. Exported Functions
