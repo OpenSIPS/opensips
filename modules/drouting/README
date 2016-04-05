@@ -69,6 +69,7 @@ Anca-Maria Vamanu
               1.3.28. use_partitions (int)
               1.3.29. db_partitions_url (int)
               1.3.30. db_partitions_table (int)
+              1.3.31. partition_id_pvar (pvar)
 
         1.4. Exported Functions
 
@@ -143,30 +144,31 @@ Anca-Maria Vamanu
    1.28. Set use_partitions parameter
    1.29. Set db_partitions_url parameter
    1.30. Set db_partitions_table parameter
-   1.31. do_routing usage
-   1.32. route_to_carrier usage when use_partitions parameter is 0
-   1.33. route_to_carrier usage when use_partitions parameter is 1
+   1.31. Set partition_id_pvar parameter
+   1.32. do_routing usage
+   1.33. route_to_carrier usage when use_partitions parameter is 0
    1.34. route_to_carrier usage when use_partitions parameter is 1
+   1.35. route_to_carrier usage when use_partitions parameter is 1
           with pseudovariables
 
-   1.35. route_to_gw usage when use_partition parameter is 0
-   1.36. route_to_gw usage when use_partition parameter is 1
-   1.37. use_next_gw usage
-   1.38. use_next_gw usage when use_partition parameter is 1
-   1.39. goes_to_gw usage when use_partitions parameter is 0
-   1.40. goes_to_gw usage, when use_partitions parameter is 1
-   1.41. is_from_gw usage when use_partitions is 0
-   1.42. is_from_gw usage when use_partitions is 1
-   1.43. dr_is_gw usage when use_partitions is 0
-   1.44. dr_is_gw usage when use_partitions is 1
-   1.45. dr_disable() usage when use_partitions is 0
-   1.46. dr_disable() usage when use_partitions is 1
-   1.47. dr_gw_status usage when use_partitions is set to 0
-   1.48. dr_gw_status usage when use_partitionsis set to 1
-   1.49. dr_carrier_status usage when use_partitions is 0
-   1.50. dr_carrier_status usage when use_partitions is 1
-   1.51. dr_reload_status usage when use_partitions is 0
-   1.52. dr_reload_status usage when use_partitions is 1
+   1.36. route_to_gw usage when use_partition parameter is 0
+   1.37. route_to_gw usage when use_partition parameter is 1
+   1.38. use_next_gw usage
+   1.39. use_next_gw usage when use_partition parameter is 1
+   1.40. goes_to_gw usage when use_partitions parameter is 0
+   1.41. goes_to_gw usage, when use_partitions parameter is 1
+   1.42. is_from_gw usage when use_partitions is 0
+   1.43. is_from_gw usage when use_partitions is 1
+   1.44. dr_is_gw usage when use_partitions is 0
+   1.45. dr_is_gw usage when use_partitions is 1
+   1.46. dr_disable() usage when use_partitions is 0
+   1.47. dr_disable() usage when use_partitions is 1
+   1.48. dr_gw_status usage when use_partitions is set to 0
+   1.49. dr_gw_status usage when use_partitionsis set to 1
+   1.50. dr_carrier_status usage when use_partitions is 0
+   1.51. dr_carrier_status usage when use_partitions is 1
+   1.52. dr_reload_status usage when use_partitions is 0
+   1.53. dr_reload_status usage when use_partitions is 1
 
 Chapter 1. Admin Guide
 
@@ -840,6 +842,21 @@ st/opensips_partitions")
 modparam("drouting", "db_partitions_table", "partition_defs")
 ...
 
+1.3.31. partition_id_pvar (pvar)
+
+   Variable which will store the name of the name partition when
+   wildcard(*) operatior is used. Use_partitions must be set in
+   order to use this parameter.
+
+   NOTE: The variable must be WRITABLE!
+
+   Default value is “null(not used)”.
+
+   Example 1.31. Set partition_id_pvar parameter
+...
+modparam("drouting", "partition_id_pavr", "$var(matched_partition)")
+...
+
 1.4. Exported Functions
 
 1.4.1.  do_routing([part_and_or_groupID], [flags], [gw_whitelist],
@@ -905,7 +922,7 @@ modparam("drouting", "db_partitions_table", "partition_defs")
        pseudo-variable which will be populated with the attributes
        of the matched carrier.
 
-   Example 1.31. do_routing usage
+   Example 1.32. do_routing usage
 ...
 # all groups, sort on order, use_partitions is 0
 do_routing();
@@ -965,7 +982,7 @@ do_routing("2", "F", , , "$var(gw_attributes)");
        pseudo-variable which will be populated with the attributes
        of this carrier.
 
-   Example 1.32. route_to_carrier usage when use_partitions
+   Example 1.33. route_to_carrier usage when use_partitions
    parameter is 0
 ...
 if ( route_to_carrier("my_top_carrier", , "$var(carrier_att)") ) {
@@ -976,7 +993,7 @@ if ( route_to_carrier("my_top_carrier", , "$var(carrier_att)") ) {
 }
 ...
 
-   Example 1.33. route_to_carrier usage when use_partitions
+   Example 1.34. route_to_carrier usage when use_partitions
    parameter is 1
 ...
 if ( route_to_carrier("my_partition:my_top_carrier", , "$var(carrier_att
@@ -988,7 +1005,7 @@ if ( route_to_carrier("my_partition:my_top_carrier", , "$var(carrier_att
 }
 ...
 
-   Example 1.34. route_to_carrier usage when use_partitions
+   Example 1.35. route_to_carrier usage when use_partitions
    parameter is 1 with pseudovariables
 ...
 if ( route_to_carrier("$var(my_partition):$var(carrierId)") ) {
@@ -1024,7 +1041,7 @@ if ( route_to_carrier("$var(my_partition):$var(carrierId)") ) {
        pseudo-variable which will be populated with the attributes
        of the currently matched gateway.
 
-   Example 1.35. route_to_gw usage when use_partition parameter is
+   Example 1.36. route_to_gw usage when use_partition parameter is
    0
 ...
 if ( route_to_gw("gw_europe") ) {
@@ -1040,7 +1057,7 @@ if ( route_to_gw("gw1,gw2,gw3", "$var(gw_attrs)") ) {
 }
 ...
 
-   Example 1.36. route_to_gw usage when use_partition parameter is
+   Example 1.37. route_to_gw usage when use_partition parameter is
    1
 ...
 if ( route_to_gw("my_partition:gw_europe") ) {
@@ -1091,7 +1108,7 @@ if ( route_to_gw("my_partition:gw1,gw2,gw3", "$var(gw_attrs)") ) {
        pseudo-variable which will be populated with the attributes
        of the matched carrier.
 
-   Example 1.37. use_next_gw usage
+   Example 1.38. use_next_gw usage
 ...
 if (use_next_gw()) {
         t_relay();
@@ -1107,7 +1124,7 @@ if (use_next_gw(, , "$var(carrier_attrs)")) {
 }
 ...
 
-   Example 1.38. use_next_gw usage when use_partition parameter is
+   Example 1.39. use_next_gw usage when use_partition parameter is
    1
 ...
 if (use_next_gw("my_partition")) {
@@ -1169,7 +1186,7 @@ if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
        pseudo-variable which will be populated with the attributes
        of the matched gateway.
 
-   Example 1.39. goes_to_gw usage when use_partitions parameter is
+   Example 1.40. goes_to_gw usage when use_partitions parameter is
    0
 ...
 if (goes_to_gw("1", , "$var(gw_attrs)")) {
@@ -1178,7 +1195,7 @@ if (goes_to_gw("1", , "$var(gw_attrs)")) {
 }
 ...
 
-   Example 1.40. goes_to_gw usage, when use_partitions parameter
+   Example 1.41. goes_to_gw usage, when use_partitions parameter
    is 1
 ...
 if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
@@ -1225,13 +1242,13 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
        pseudo-variable which will be populated with the attributes
        of the matched gateway.
 
-   Example 1.41. is_from_gw usage when use_partitions is 0
+   Example 1.42. is_from_gw usage when use_partitions is 0
 ...
 if (is_from_gw("3","1") {
 }
 ...
 
-   Example 1.42. is_from_gw usage when use_partitions is 1
+   Example 1.43. is_from_gw usage when use_partitions is 1
 ...
 if (is_from_gw("my_partition","3","1") {
 }
@@ -1275,13 +1292,13 @@ if (is_from_gw("my_partition","3","1") {
        pseudo-variable which will be populated with the attributes
        of the matched gateway.
 
-   Example 1.43. dr_is_gw usage when use_partitions is 0
+   Example 1.44. dr_is_gw usage when use_partitions is 0
 ...
 if (dr_is_gw("$avp(uac)","3") {
 }
 ...
 
-   Example 1.44. dr_is_gw usage when use_partitions is 1
+   Example 1.45. dr_is_gw usage when use_partitions is 1
 ...
 if (dr_is_gw("my_partition","$avp(uac)","3") {
 }
@@ -1304,7 +1321,7 @@ if (dr_is_gw("my_partition","$avp(uac)","3") {
        otherwise it will be omitted altogether) - Partition
        containing the destination/gateway to be disabled.
 
-   Example 1.45. dr_disable() usage when use_partitions is 0
+   Example 1.46. dr_disable() usage when use_partitions is 0
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         dr_disable();
@@ -1313,7 +1330,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 ...
 
-   Example 1.46. dr_disable() usage when use_partitions is 1
+   Example 1.47. dr_disable() usage when use_partitions is 1
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         dr_disable("my_partition");
@@ -1367,7 +1384,7 @@ ise will be omitted altogether)
                 status (optional)
                 _empty_line_
 
-   Example 1.47. dr_gw_status usage when use_partitions is set to
+   Example 1.48. dr_gw_status usage when use_partitions is set to
    0
 $ ./opensipsctl fifo dr_gw_status 2
 State:: Active
@@ -1377,7 +1394,7 @@ Enabled:: Disabled MI
 $ ./opensipsctl fifo dr_gw_status 3
 Enabled:: Inactive
 
-   Example 1.48. dr_gw_status usage when use_partitionsis set to 1
+   Example 1.49. dr_gw_status usage when use_partitionsis set to 1
 $ ./opensipsctl fifo dr_gw_status part_1 my_gw
 State:: Active
 $ ./opensipsctl fifo dr_gw_status my_partition 3 0
@@ -1416,14 +1433,14 @@ se it will be omitted)
                 status (optional)
                 _empty_line_
 
-   Example 1.49. dr_carrier_status usage when use_partitions is 0
+   Example 1.50. dr_carrier_status usage when use_partitions is 0
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status CR1 1
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: yes
 
-   Example 1.50. dr_carrier_status usage when use_partitions is 1
+   Example 1.51. dr_carrier_status usage when use_partitions is 1
 $ ./opensipsctl fifo dr_carrier_status my_partition CR1
 Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status partition_1 CR1 1
@@ -1450,11 +1467,11 @@ Enabled:: yes
 is 0 it must be omitted)
                 _empty_line_
 
-   Example 1.51. dr_reload_status usage when use_partitions is 0
+   Example 1.52. dr_reload_status usage when use_partitions is 0
 $ ./opensipsctl fifo dr_reload_status
 Date:: Tue Aug 12 12:26:00 2014
 
-   Example 1.52. dr_reload_status usage when use_partitions is 1
+   Example 1.53. dr_reload_status usage when use_partitions is 1
 $ ./opensipsctl fifo dr_reload_status
 Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 Partition:: part_2 Date=Tue Aug 12 12:24:13 2014

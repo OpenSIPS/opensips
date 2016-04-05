@@ -1072,6 +1072,33 @@ modparam("drouting", "db_partitions_table", "partition_defs")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>partition_id_pvar</varname> (pvar)</title>
+		<para>
+			Variable which will store the name of the name partition when
+			<emphasis>wildcard(*)</emphasis> operatior is used.
+			<emphasis>Use_partitions</emphasis> must be set in order to
+			use this parameter.
+		</para>
+		<para>
+			NOTE: The variable must be WRITABLE!
+		</para>
+		<para>
+		<emphasis>Default value is <quote>null(not used)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>partition_id_pvar</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "partition_id_pavr", "$var(matched_partition)")
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
 </section>
 
 <section>
