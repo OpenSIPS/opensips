@@ -121,6 +121,12 @@ static str carrier_id_avp_spec = {NULL, 0};
 /* internal AVP used to store CARRIER ATTRs */
 static str carrier_attrs_avp_spec = str_init("$avp(___dr_cr_att__)");
 
+/* AVP used to store PARTITION ID when using wildcard operator instead of
+ * partition name */
+static str partition_pvar = {NULL, 0};
+pv_spec_t partition_spec;
+
+
 
 /*
  * global pointers for faster parameter passing between functions
@@ -401,6 +407,7 @@ static param_export_t params[] = {
 	{"probing_reply_codes",STR_PARAM, &dr_probe_replies.s     },
 	{"persistent_state", INT_PARAM, &dr_persistent_state      },
 	{"no_concurrent_reload",INT_PARAM, &no_concurrent_reload  },
+	{"partition_id_pvar", STR_PARAM, &partition_pvar.s},
 	{0, 0, 0}
 };
 
@@ -1183,6 +1190,15 @@ static int dr_init(void)
 		if( get_config_from_db() == -1 ) {
 			LM_ERR("Failed to get configuration from db_config\n");
 			goto error;
+		}
+
+		if (partition_pvar.s) {
+			partition_pvar.len = strlen(partition_pvar.s);
+			/* just reusing avp_spec; no need to be an AVP to work */
+			if (pv_parse_spec(&partition_pvar, &partition_spec) == 0) {
+				LM_ERR("malformed PV string: <<%s>>\n", partition_pvar.s);
+				return -1;
+			}
 		}
 	} else {
 		init_db_url(db_url, 0);
@@ -2590,8 +2606,18 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 				part_group->dr_part->type = DR_PTR_PART;
 
 				ret=do_routing( msg, part_group, flags, whitelist);
-				if (ret > 0)
+				if (ret > 0) {
+					if (partition_pvar.s) {
+						pv_val.rs = current_partition->partition;
+						pv_val.flags = PV_VAL_STR;
+						if (pv_set_value(msg, &partition_spec, 0, &pv_val) != 0) {
+							LM_ERR("cannot print the PV-formatted"
+									" partition string\n");
+							return -1;
+						}
+					}
 					break;
+				}
 			}
 
 			/* restore to initial state */
@@ -3973,6 +3999,7 @@ static int _is_dr_gw(struct sip_msg* msg, char * part,
 		unsigned int port) {
 
 	int ret=-1;
+	pv_value_t pv_val;
 
 	struct head_db * it;
 	if(use_partitions) {
@@ -3995,8 +4022,18 @@ static int _is_dr_gw(struct sip_msg* msg, char * part,
 		/* if we got here we have the wildcard operator */
 		for (it = head_db_start; it; it = it->next) {
 			ret = _is_dr_gw_w_part(msg, (char *)it, flags_pv, type, ip, port);
-			if (ret > 0)
+			if (ret > 0) {
+				if (partition_pvar.s) {
+					pv_val.rs = it->partition;
+					pv_val.flags = PV_VAL_STR;
+					if (pv_set_value(msg, &partition_spec, 0, &pv_val) != 0) {
+						LM_ERR("cannot print the PV-formatted"
+								" partition string\n");
+						return -1;
+					}
+				}
 				return ret;
+			}
 		}
 
 		return ret;
