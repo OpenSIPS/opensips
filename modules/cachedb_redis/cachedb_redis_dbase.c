@@ -111,7 +111,8 @@ int redis_reconnect_node(redis_con *con,cluster_node *node)
 	LM_DBG("reconnecting node %s:%d \n",node->ip,node->port);
 
 	/* close the old connection */
-	redisFree(node->context);
+	if(node->context)
+		redisFree(node->context);
 
 	return redis_connect_node(con,node);
 }
@@ -253,6 +254,11 @@ void redis_destroy(cachedb_con *con) {
 		if (node == NULL) { \
 			LM_ERR("Bad cluster configuration\n"); \
 			return -10; \
+		} \
+		if (node->context == NULL) { \
+			if (redis_reconnect_node(con,node) < 0) { \
+				return -1; \
+			} \
 		} \
 		for (i=2;i;i--) { \
 			reply = redisCommand(node->context,fmt,##args); \
@@ -614,6 +620,12 @@ int redis_raw_query_send(cachedb_con *connection,redisReply **reply,cdb_raw_entr
 	if (node == NULL) {
 		LM_ERR("Bad cluster configuration\n");
 		return -10;
+	}
+
+	if (node->context == NULL) {
+		if (redis_reconnect_node(con,node) < 0) {
+			return -1;
+		}
 	}
 
 	va_start(ap,attr);
