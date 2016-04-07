@@ -58,7 +58,7 @@ extern unsigned int context_sizes[];
  *
  * Note: this will not change the "current_processing_ctx"
  */
-context_p context_alloc(enum osips_context ctx);
+context_p context_alloc(enum osips_context type);
 #define   context_free(context_p) pkg_free(context_p)
 
 /*
