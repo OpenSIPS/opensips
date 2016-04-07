@@ -108,7 +108,11 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 
 	in_buff.len = len;
 	in_buff.s = buf;
-	ctx = existing_context;
+
+	if (existing_context) {
+		context_free(ctx);
+		ctx = existing_context;
+	}
 
 	/* the raw processing callbacks can change the buffer,
 	further use in_buff.s and at the end try to free in_buff.s
