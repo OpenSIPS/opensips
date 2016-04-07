@@ -776,9 +776,9 @@ assign_stm: DEBUG EQUAL snumber
 				"for HP_MALLOC\n");
 			#endif
 			}
-		| MEMLOG EQUAL NUMBER { memlog=$3; memdump=$3; }
+		| MEMLOG EQUAL snumber { memlog=$3; memdump=$3; }
 		| MEMLOG EQUAL error { yyerror("int value expected"); }
-		| MEMDUMP EQUAL NUMBER { memdump=$3; }
+		| MEMDUMP EQUAL snumber { memdump=$3; }
 		| MEMDUMP EQUAL error { yyerror("int value expected"); }
 		| EXECMSGTHRESHOLD EQUAL NUMBER { execmsgthreshold=$3; }
 		| EXECMSGTHRESHOLD EQUAL error { yyerror("int value expected"); }
