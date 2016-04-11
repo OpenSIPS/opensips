@@ -267,7 +267,7 @@ int ph_answer_to_connection (void *cls, void *connection,
 		*page = PI_HTTP_U_METHOD;
 	}
 
-	return 0;
+	return 200;
 }
 
 
