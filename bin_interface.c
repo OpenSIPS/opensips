@@ -347,6 +347,7 @@ static void bin_receive_loop(void)
 	ri.proto_reserved1 = ri.proto_reserved2 = 0;
 
 	for (;;) {
+		from_len = sockaddru_len(*from);
 		rcv_bytes = recvfrom(bind_address->socket, rcv_buf, BUF_SIZE,
 							 0, &from->s, &from_len);
 		if (rcv_bytes == -1) {
