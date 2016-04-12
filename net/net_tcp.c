@@ -355,9 +355,9 @@ static int send2child(struct tcp_connection* tcpconn,int rw)
 
 	tcp_children[idx].busy++;
 	tcp_children[idx].n_reqs++;
-	if (min_busy){
-		LM_INFO("no free tcp receiver, connection passed to the least"
-				" busy one (%d)\n", min_busy);
+	if (min_busy) {
+		LM_DBG("no free tcp receiver, connection passed to the least "
+		       "busy one (proc #%d, %d con)\n", idx, min_busy);
 	}
 	LM_DBG("to tcp child %d %d(%d), %p rw %d\n", idx,tcp_children[idx].proc_no,
 		tcp_children[idx].pid, tcpconn,rw);
