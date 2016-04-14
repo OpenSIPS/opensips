@@ -123,6 +123,11 @@ static int is_cdr_enabled=0;
 		is_aaa_failed_on(_mask) || is_db_failed_on(_mask) ||        \
 		is_evi_failed_on(_mask) || is_diam_failed_on(_mask))
 
+#define set_dialog_context(_mask) \
+	_mask |= ACC_DIALOG_CONTEXT;
+
+#define is_dialog_context(_mask) (_mask&ACC_DIALOG_CONTEXT)
+
 #define reset_flags(_flags, _flags_to_reset) \
 	_flags &= ~_flags_to_reset;
 
@@ -138,9 +143,16 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params);
 
 
-void free_acc_mask(void* param) {
+void dlg_free_acc_mask(void* param) {
 	shm_free((unsigned long long *)param);
 }
+
+void tm_free_acc_mask(void* param) {
+	if (!is_dialog_context(*(unsigned long long*)param)) {
+		shm_free((unsigned long long *)param);
+	}
+}
+
 
 
 static inline struct hdr_field* get_rpl_to( struct cell *t,
@@ -608,7 +620,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 
 		/* register database callbacks */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
-				DLGCB_EXPIRED, acc_dlg_callback,flags_s.s,free_acc_mask) != 0) {
+				DLGCB_EXPIRED, acc_dlg_callback,flags_s.s,dlg_free_acc_mask) != 0) {
 			LM_ERR("cannot register callback for database accounting\n");
 			return;
 		}
@@ -978,8 +990,29 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 
 	flag_mask = type + type * flags;
 
+	/* report that flags shall be freed only by dialog module
+	 * tm shall never free */
+	if (is_cdr_acc_on(flag_mask))
+		set_dialog_context(flag_mask);
+
 	/* if already called the function once */
 	if ((flag_mask_p=ACC_GET_FLAGS) != NULL) {
+		if (!(is_dialog_context(*flag_mask_p)) && is_dialog_context(flag_mask)) {
+			if (!has_totag(msg)) {
+				_avp_created_value.n = time(NULL);
+
+				if ( add_avp(0, acc_created_avp_id, _avp_created_value) != 0) {
+					LM_ERR("failed to add created avp value!\n");
+					return -1;
+				}
+
+				if (msg->REQ_METHOD == METHOD_INVITE && create_acc_dlg(msg) < 0) {
+					LM_ERR("cannot use dialog accounting module\n");
+					return -1;
+				}
+			}
+		}
+
 		*flag_mask_p |= flag_mask;
 		return 1;
 	}
@@ -1041,7 +1074,7 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		}
 
 		if (tmb.register_tmcb( msg, 0, tmcb_types, tmcb_func,
-				flag_mask_p, is_cdr_acc_on(*flag_mask_p) ? 0 : free_acc_mask)<=0) {
+				flag_mask_p, is_cdr_acc_on(*flag_mask_p) ? 0 : tm_free_acc_mask)<=0) {
 			LM_ERR("cannot register additional callbacks\n");
 			return -1;
 		}
@@ -1118,5 +1151,3 @@ int w_drop_acc_2(struct sip_msg* msg, char* type_p, char* flags_p)
 
 	return 1;
 }
-
-
