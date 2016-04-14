@@ -325,16 +325,32 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 			goto error;
 		}
 
-		/* check uri */
-		if(!uri.user.s|| !uri.user.len|| !uri.host.len|| !uri.host.s)
-		{
-			LM_ERR("incomplet uri <%.*s>\n", uuid.len, uuid.s);
-			goto error;
-		}
-		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_USER0))
-			s1 = &uri.user;
+                if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_USER0))
+                {
+			/* check that uri contains user part */
+			if(!uri.user.s|| !uri.user.len)
+			{
+				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, uuid.s);
+				goto error;
+			}
+			else
+			{
+				s1 = &uri.user;
+			}
+                }
 		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_DOMAIN0))
-			s2 = &uri.host;
+		{
+			/* check that uri contains host part */
+			if(!uri.host.len|| !uri.host.s)
+			{
+				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, uuid.s);
+				goto error;
+			}
+			else
+			{
+				s2 = &uri.host;
+			}
+		}
 	}
 
 	/* is dynamic avp name ? */
@@ -487,16 +503,32 @@ int ops_dbdelete_avps (struct sip_msg* msg, struct fis_param *sp,
 			goto error;
 		}
 
-		/* check uri */
-		if(!uri.user.s|| !uri.user.len|| !uri.host.len|| !uri.host.s)
-		{
-			LM_ERR("incomplet uri <%.*s>\n", uuid.len, uuid.s);
-			goto error;
-		}
 		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_USER0))
-			s1 = &uri.user;
+		{
+			/* check that uri contains user part */
+			if(!uri.user.s|| !uri.user.len)
+			{
+				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, uuid.s);
+				goto error;
+			}
+			else
+			{
+				s1 = &uri.user;
+			}
+		}
 		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_DOMAIN0))
-			s2 = &uri.host;
+		{
+			/* check tah uri contains host part */
+			if(!uri.host.len|| !uri.host.s)
+			{
+				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, uuid.s);
+				goto error;
+			}
+			else
+			{
+				s2 = &uri.host;
+			}
+		}
 	}
 
 	/* is dynamic avp name ? */
@@ -606,16 +638,32 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 			goto error;
 		}
 
-		/* check uri */
-		if(!uri.user.s|| !uri.user.len|| !uri.host.len|| !uri.host.s)
-		{
-			LM_ERR("incomplet uri <%.*s>\n", uuid.len, uuid.s);
-			goto error;
-		}
 		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_USER0))
-			s1 = &uri.user;
+		{
+			/* check tha uri contains user part */
+			if(!uri.user.s|| !uri.user.len)
+			{
+				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, uuid.s);
+				goto error;
+			}
+			else
+			{
+				s1 = &uri.user;
+			}
+		}
 		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_DOMAIN0))
-			s2 = &uri.host;
+		{
+			/* check that uri contains host part */
+			if(!uri.host.len|| !uri.host.s)
+			{
+				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, uuid.s);
+				goto error;
+			}
+			else
+			{
+				s2 = &uri.host;
+			}
+		}
 	}
 
 	/* set values for keys  */
