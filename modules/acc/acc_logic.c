@@ -1053,8 +1053,9 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		tmcb_types =
 			/* report on completed transactions */
 			TMCB_RESPONSE_OUT |
-			/* get incoming replies ready for processing */
-			TMCB_RESPONSE_IN |
+			/* register it manually; see explanation below
+			 * get incoming replies ready for processing */
+			/* TMCB_RESPONSE_IN | */
 			/* report on missed calls */
 			((is_invite && is_mc_acc_on(*flag_mask_p))?TMCB_ON_FAILURE:0) ;
 
@@ -1073,11 +1074,21 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 			}
 		}
 
-		if (tmb.register_tmcb( msg, 0, tmcb_types, tmcb_func,
+		/* we do register_tmcb twice because we wan't to register the free
+		 * fucntion only once */
+		if (tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN, tmcb_func,
 				flag_mask_p, is_cdr_acc_on(*flag_mask_p) ? 0 : tm_free_acc_mask)<=0) {
 			LM_ERR("cannot register additional callbacks\n");
 			return -1;
 		}
+
+		if (tmb.register_tmcb( msg, 0, tmcb_types, tmcb_func,
+				flag_mask_p, 0)<=0) {
+			LM_ERR("cannot register additional callbacks\n");
+			return -1;
+		}
+
+
 
 
 		/* if required, determine request direction */
