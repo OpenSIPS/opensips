@@ -57,6 +57,9 @@
 #define DO_ACC_MISSED_STR "missed"
 #define DO_ACC_FAILED_STR "failed"
 
+/* flags on the eigth byte - generic flags for all accounting types */
+#define ACC_DIALOG_CONTEXT (((unsigned long long)1<<(8*7)) * (1<<0))
+
 #define DO_ACC_PARAM_DELIMITER '|'
 
 #define ACC_PUT_FLAGS(_ptr) \
