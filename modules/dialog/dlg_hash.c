@@ -321,12 +321,6 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 	memcpy( p, to_uri->s, to_uri->len);
 	p += to_uri->len;
 
-	if ( p!=(((char*)dlg)+len) ) {
-		LM_CRIT("buffer overflow\n");
-		shm_free(dlg);
-		return 0;
-	}
-
 	return dlg;
 }
 
