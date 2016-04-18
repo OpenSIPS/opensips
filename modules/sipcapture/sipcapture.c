@@ -98,6 +98,61 @@
 #define HEP_GET_CONTEXT(_api) \
 	(struct hep_context*)context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, _api.get_hep_ctx_id())
 
+
+#define HAVE_SHARED_QUERIES (max_async_queries > 1)
+#define HAVE_MULTIPLE_ASYNC_INSERT (DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY) && HAVE_SHARED_QUERIES)
+
+#define MAX_QUERY 65535
+struct _async_query {
+	str last_query_suffix;
+
+	int curr_async_queries;
+
+	int  query_len;
+	char query_buf[MAX_QUERY];
+
+	gen_lock_t query_lock;
+} *global_async_query;
+
+#define QUERY_BUF(_as_query) _as_query->query_buf
+#define QUERY_LEN(_as_query) _as_query->query_len
+
+#define INIT_QUERY_LOCK(_as_query) lock_init(&_as_query->query_lock)
+#define GET_QUERY_LOCK(_as_query)  lock_get(&_as_query->query_lock)
+#define RELEASE_QUERY_LOCK(_as_query)  lock_release(&_as_query->query_lock)
+#define DESTROY_QUERY_LOCK(_as_query)  lock_destroy(&_as_query->query_lock)
+
+
+#define CURR_QUERIES(_as_query) _as_query->curr_async_queries
+#define LAST_SUFFIX(_as_query) _as_query->last_query_suffix
+
+typedef struct _tz_table {
+	str prefix; /* table name */
+	str suffix; /* time format - strftime  */
+} tz_table_t;
+
+struct tz_table_list {
+	tz_table_t* table;
+	struct _async_query* as_qry;
+	struct tz_table_list* next;
+};
+
+/* HOMER5 compliant table name */
+#define CAPTURE_TABLE_MAX_LEN 256
+char table_buf[CAPTURE_TABLE_MAX_LEN];
+str  current_table;
+
+/* modparam defined table */
+tz_table_t tz_table;
+
+/* list of script used tables - we use this list to hold async queries;
+ * when opensips is closed we need to run all queries for all the tables
+ * in case max_async_queries is used */
+struct tz_table_list* tz_list=NULL;
+
+/* modparam defined table */
+struct tz_table_list tz_global;
+
 struct _sipcapture_object {
 	str method;
 	str reply_reason;
@@ -144,6 +199,11 @@ struct _sipcapture_object {
 #define ETHHDR 14 /* sizeof of ethhdr structure */
 #define EMPTY_STR(val) val.s=""; val.len=0;
 #define TABLE_LEN 256
+
+/*
+ * WARNING: if you add/remove keys take care to update
+ * VALUES_STR
+ */
 #define NR_KEYS 38
 
 typedef void* sc_async_param_t;
@@ -156,8 +216,10 @@ static void raw_socket_process(int rank);
 static void destroy(void);
 static int sip_capture(struct sip_msg *msg, char *s1, char *s2);
 static int async_sip_capture(struct sip_msg* msg, async_resume_module **resume_f,
-		void **resume_param, str* s1, str* s2);
-static int w_sip_capture(struct sip_msg *msg,
+		void **resume_param, char* s1, char* s2);
+static int sip_capture_fixup(void** param, int param_no);
+static int sip_capture_async_fixup(void** param, int param_no);
+static int w_sip_capture(struct sip_msg *msg, char *table_name,
 				async_resume_module **resume_f, void **resume_param);
 int hep_msg_received(void);
 int extract_host_port(void);
@@ -169,7 +231,8 @@ void sipcapture_db_close(void);
 static struct mi_root* sip_capture_mi(struct mi_root* cmd, void* param );
 static int db_sync_store(db_val_t* db_vals);
 static int db_async_store(db_val_t* db_vals,
-							async_resume_module **resume_f, void **resume_param);
+							async_resume_module **resume_f, void **resume_param,
+							struct tz_table_list* t_el);
 int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param);
 
 /* setter functions */
@@ -300,30 +363,12 @@ struct sip_msg dummy_req;
 
 
 
-#define MAX_QUERY 65535
 #define VALUES_STR "(%d,%ld,%lld,'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
 					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
 					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s',%d,'%.*s',%d," \
-					"'%.*s',%d,'%.*s',%d,%d,%d,'%.*s',%d,'%.*s','%.*s')"
+					"'%.*s',%d,'%.*s',%d,%d,%d,%d,'%.*s',%d,'%.*s','%.*s')"
 
 int  max_async_queries=5;
-
-static int base_query_len;
-
-struct _async_query {
-	int curr_async_queries;
-
-	int  query_len;
-	char query_buf[65535];
-
-	gen_lock_t query_lock;
-} *async_query;
-
-#define query_buf    async_query->query_buf
-#define query_len    async_query->query_len
-#define query_lock   async_query->query_lock
-#define curr_queries async_query->curr_async_queries
-
 
 int raw_sock_desc = -1; /* raw socket used for ip packets */
 unsigned int raw_sock_children = 1;
@@ -383,6 +428,8 @@ static str hep_str={hepbuf, 0};
 static cmd_export_t cmds[] = {
 	{"sip_capture", (cmd_function)sip_capture, 0, 0, 0,
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"sip_capture", (cmd_function)sip_capture, 1, sip_capture_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"hep_set", (cmd_function)w_set_hep_generic, 2, set_hep_generic_fixup, 0,
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"hep_set", (cmd_function)w_set_hep, 4, set_hep_fixup, 0,
@@ -406,6 +453,7 @@ static cmd_export_t cmds[] = {
 static acmd_export_t acmds[] = {
 
 	{"sip_capture", (acmd_function)async_sip_capture, 0, 0},
+	{"sip_capture", (acmd_function)async_sip_capture, 1, sip_capture_async_fixup},
 	{0, 0, 0, 0}
 };
 
@@ -585,11 +633,29 @@ void build_dummy_msg(void) {
 }
 
 
+void parse_table_str(str* table_s, tz_table_t* tz_table)
+{
+	if ((tz_table->suffix.s=q_memchr(table_s->s, '%', table_s->len)) == NULL) {
+		tz_table->prefix = *table_s;
+		tz_table->suffix.len = 0;
+	} else {
+		tz_table->prefix.s = table_s->s;
+		tz_table->prefix.len = tz_table->suffix.s - tz_table->prefix.s;
+		tz_table->suffix.len = strlen(tz_table->suffix.s);
+
+		if (tz_table->prefix.len == 0)
+			tz_table->prefix.s = NULL;
+	}
+
+
+
+}
+
+
 
 /*! \brief Initialize sipcapture module */
 static int mod_init(void) {
 
-	int i;
 	struct ip_addr *ip = NULL;
 
 	/* init db keys */
@@ -684,6 +750,9 @@ static int mod_init(void) {
 	msg_column.len = strlen(msg_column.s);
 	capture_node.len = strlen(capture_node.s);
 
+	/* extract prefix and suffix from table name */
+	parse_table_str(&table_name, &tz_table);
+
 	if(raw_socket_listen.s)
 		raw_socket_listen.len = strlen(raw_socket_listen.s);
 	if(raw_interface.s)
@@ -751,25 +820,35 @@ static int mod_init(void) {
 		}
 
 		if (DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
-			async_query = shm_malloc(sizeof(struct _async_query));
-			if (async_query == NULL) {
-				LM_ERR("no more shm");
-				return -1;
+			if (!HAVE_SHARED_QUERIES) {
+				global_async_query = pkg_malloc(sizeof(struct _async_query));
+				if (global_async_query == NULL) {
+					LM_ERR("no more pkg\n");
+					return -1;
+				}
+				memset(global_async_query, 0, sizeof(struct _async_query));
+			} else {
+				global_async_query = shm_malloc(sizeof(struct _async_query));
+				if (global_async_query == NULL) {
+					LM_ERR("no more shm\n");
+					return -1;
+				}
+				memset(global_async_query, 0, sizeof(struct _async_query));
+
+				LAST_SUFFIX(global_async_query).s = shm_malloc(CAPTURE_TABLE_MAX_LEN);
+				if (global_async_query == NULL) {
+					LM_ERR("no more shm\n");
+					return -1;
+				}
+
+				LAST_SUFFIX(global_async_query).len = 0;
+
+				INIT_QUERY_LOCK(global_async_query);
 			}
-			lock_init(&query_lock);
 
-			/* build first part of the async query; no overflow risk */
-			query_len = snprintf(query_buf, MAX_QUERY, "INSERT INTO %s(",
-																table_name.s);
-			for (i = 0; i < NR_KEYS-1; i++)
-				query_len += snprintf(query_buf+query_len, MAX_QUERY-query_len,
-										"%s,",db_keys[i]->s);
-			query_len += snprintf(query_buf+query_len, MAX_QUERY-query_len,
-										"%s) VALUES", db_keys[NR_KEYS-1]->s);
-			base_query_len = query_len;
+			tz_global.as_qry = global_async_query;
+			tz_global.table = &tz_table;
 		}
-
-
 
 		/*Check the table name*/
 		if(!table_name.len) {
@@ -795,29 +874,29 @@ static int mod_init(void) {
 	if (ipip_capture_on || moni_capture_on) {
 
 		if(extract_host_port() && (((ip=str2ip(&raw_socket_listen)) == NULL)
-		               && ((ip=str2ip6(&raw_socket_listen)) == NULL)
-		         ))
+					   && ((ip=str2ip6(&raw_socket_listen)) == NULL)
+				 ))
 		{
 			LM_ERR("bad RAW IP: %.*s\n", raw_socket_listen.len, raw_socket_listen.s);
 			return -1;
 		}
 
-        	if(moni_capture_on && !moni_port_start) {
-	        	LM_ERR("Please define port/portrange in 'raw_socket_listen', before \
-	        	                        activate monitoring capture\n");
-        		return -1;
-                }
+			if(moni_capture_on && !moni_port_start) {
+				LM_ERR("Please define port/portrange in 'raw_socket_listen', before \
+										activate monitoring capture\n");
+				return -1;
+				}
 
 		raw_sock_desc = raw_capture_socket(raw_socket_listen.len ? ip : 0, raw_interface.len ? &raw_interface : 0,
-		                                moni_port_start, moni_port_end , ipip_capture_on ? IPPROTO_IPIP : htons(0x0800));
+										moni_port_start, moni_port_end , ipip_capture_on ? IPPROTO_IPIP : htons(0x0800));
 
 		if(raw_sock_desc < 0) {
 			LM_ERR("could not initialize raw udp socket:"
-                                         " %s (%d)\n", strerror(errno), errno);
-	                if (errno == EPERM)
-        	        	LM_ERR("could not initialize raw socket on startup"
-                	        	" due to inadequate permissions, please"
-                        	        " restart as root or with CAP_NET_RAW\n");
+										 " %s (%d)\n", strerror(errno), errno);
+					if (errno == EPERM)
+						LM_ERR("could not initialize raw socket on startup"
+								" due to inadequate permissions, please"
+									" restart as root or with CAP_NET_RAW\n");
 
 			return -1;
 		}
@@ -831,17 +910,17 @@ static int mod_init(void) {
 #ifdef __OS_linux
 			 if(ioctl(raw_sock_desc, SIOCGIFFLAGS, &ifr) < 0) {
 				LM_ERR("could not get flags from interface [%.*s]:"
-                                         " %s (%d)\n", raw_interface.len, raw_interface.s, strerror(errno), errno);
+										 " %s (%d)\n", raw_interface.len, raw_interface.s, strerror(errno), errno);
 				goto error;
 			 }
 
-	                 ifr.ifr_flags |= IFF_PROMISC;
+					 ifr.ifr_flags |= IFF_PROMISC;
 
-	                 if (ioctl(raw_sock_desc, SIOCSIFFLAGS, &ifr) < 0) {
-	                 	LM_ERR("could not set PROMISC flag to interface [%.*s]:"
-                                         " %s (%d)\n", raw_interface.len, raw_interface.s, strerror(errno), errno);
+					 if (ioctl(raw_sock_desc, SIOCSIFFLAGS, &ifr) < 0) {
+						LM_ERR("could not set PROMISC flag to interface [%.*s]:"
+										 " %s (%d)\n", raw_interface.len, raw_interface.s, strerror(errno), errno);
 				goto error;
-	                 }
+					 }
 #endif
 
 		}
@@ -1648,7 +1727,7 @@ set_generic_hep_chunk(struct hepv3* h3, unsigned chunk_id, str *data)
 			"invalid prot_t <%.*s>!\n", _str->len, _str->s);
 
 	#define RETURN_ERROR(_format, ...)                          \
-	    do {                                                    \
+		do {                                                    \
 			LM_ERR(_format, __VA_ARGS__);                       \
 			return -1;                                          \
 		} while (0);
@@ -1996,7 +2075,29 @@ static void raw_socket_process(int rank)
 			moni_capture_on ? 0 : 1);
 
 	/* Destroy DB socket */
-		sipcapture_db_close();
+	sipcapture_db_close();
+}
+
+static int do_remaining_queries(str* query_str) {
+	if (!db_con) {
+		db_con = db_funcs.init(&db_url);
+		if (!db_con) {
+			LM_ERR("unable to connect database\n");
+			return -1;
+		}
+
+		if (db_funcs.use_table(db_con, &table_name) < 0) {
+			LM_ERR("use_table failed\n");
+			return -1;
+		}
+	}
+
+	if (db_funcs.raw_query(db_con, query_str, NULL)) {
+		LM_ERR("failed to insert remaining queries\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 
@@ -2004,38 +2105,39 @@ static void destroy(void)
 {
 	str query_str;
 
-	/* execute the uninserted queries */
+	struct tz_table_list* it=tz_list, *tz_free;
+
+	/* execute the uninserted queries - async only */
 	if (DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
-		if (curr_queries) {
-			if (!db_con) {
-				db_con = db_funcs.init(&db_url);
-				if (!db_con) {
-					LM_ERR("unable to connect database\n");
-					goto destroy_continue;
-				}
-
-				if (db_funcs.use_table(db_con, &table_name) < 0) {
-					LM_ERR("use_table failed\n");
-					goto destroy_continue;
-				}
+		while (it) {
+			if (CURR_QUERIES(it->as_qry)) {
+				query_str.s = QUERY_BUF(it->as_qry);
+				query_str.len = QUERY_LEN(it->as_qry);
+				do_remaining_queries(&query_str);
 			}
 
-			query_str.s   = query_buf;
-			query_str.len = query_len;
-
-			if (db_funcs.raw_query(db_con, &query_str, NULL)) {
-				LM_ERR("failed to insert remaining queries\n");
+			if (!HAVE_SHARED_QUERIES) {
+				shm_free(LAST_SUFFIX(it->as_qry).s);
+				shm_free(it->as_qry);
+				DESTROY_QUERY_LOCK(it->as_qry);
 			}
-			lock_destroy(&query_lock);
+
+			tz_free=it;
+			it=it->next;
+			pkg_free(tz_free);
 		}
 
-	shm_free(async_query);
+		if (!HAVE_SHARED_QUERIES) {
+			pkg_free(global_async_query);
+		} else {
+			shm_free(LAST_SUFFIX(global_async_query).s);
+			shm_free(global_async_query);
+			DESTROY_QUERY_LOCK(global_async_query);
+		}
 	}
 
 	/* Destroy DB socket */
 	sipcapture_db_close();
-
-destroy_continue:
 
 	if (capture_on_flag)
 		shm_free(capture_on_flag);
@@ -2076,6 +2178,7 @@ int hep_msg_received(void)
 		LM_ERR("HEP is not enabled\n");
 		return 0;
 	}
+
 	if ( hep_route_id == HEP_NO_ROUTE ) {
 		memset(&msg, 0, sizeof(struct sip_msg));
 
@@ -2109,7 +2212,7 @@ int hep_msg_received(void)
 	#endif
 
 		/* we basically move the sip_capture() call from the scripts here */
-		if (w_sip_capture(&msg, NULL, NULL) < 0) {
+		if (w_sip_capture(&msg, NULL, NULL, NULL) < 0) {
 			LM_ERR("failed to store the message!\n");
 			return -1;
 		}
@@ -2147,8 +2250,6 @@ int hep_msg_received(void)
 				return -1;
 			}
 
-			LM_INFO("message \n%.*s", msg.len, msg.buf);
-
 			if (parse_msg(msg.buf,msg.len,&msg)!=0) {
 				LM_ERR("Unable to parse message in hep payload!"
 						"Hep version %d!\n", h->version);
@@ -2164,6 +2265,98 @@ int hep_msg_received(void)
 	return 0;
 }
 
+static int sip_capture_fixup(void** param, int param_no)
+{
+	str table_s;
+
+	tz_table_t* tz_fxup_param;
+	struct tz_table_list* list_el,* it;
+
+	if (param_no != 1) {
+		LM_ERR("Invalid param number!\n");
+		return -1;
+	}
+
+	tz_fxup_param = pkg_malloc(sizeof(tz_table_t));
+	if (tz_fxup_param == NULL) {
+		LM_ERR("no more pkg mem!\n");
+		return -1;
+	}
+
+	table_s.s = (char *) *param;
+	table_s.len = strlen(table_s.s);
+
+	parse_table_str(&table_s, tz_fxup_param);
+
+	*param = tz_fxup_param;
+
+	/* if not there add this table to the list */
+	for ( it=tz_list; it; it=it->next) {
+		if (it->table->prefix.len == tz_fxup_param->prefix.len &&
+				it->table->suffix.len == tz_fxup_param->suffix.len &&
+				!memcmp(it->table->prefix.s, tz_fxup_param->prefix.s,
+					tz_fxup_param->prefix.len) &&
+				!memcmp(it->table->suffix.s, tz_fxup_param->suffix.s,
+					tz_fxup_param->suffix.len))
+			/* table already there */
+			return 0;
+	}
+
+	list_el = pkg_malloc(sizeof(struct tz_table_list));
+	if (list_el == NULL) {
+		LM_ERR("no more pkg mem!\n");
+		return -1;
+	}
+
+	memset(list_el, 0, sizeof(struct tz_table_list));
+	list_el->table = tz_fxup_param;
+
+	if (tz_list == NULL) {
+		tz_list = list_el;
+	} else {
+		list_el->next = tz_list;
+		tz_list = list_el;
+	}
+
+	return 0;
+}
+
+static int sip_capture_async_fixup(void** param, int param_no)
+{
+	struct tz_table_list* list_el;
+
+	sip_capture_fixup(param, param_no);
+
+	/* last inserted element(current one) is always in front of the list*/
+	list_el = tz_list;
+
+	/* we store this in shm; need the queries in the end */
+	if (HAVE_MULTIPLE_ASYNC_INSERT) {
+		list_el->as_qry=shm_malloc(sizeof(struct _async_query));
+		if (list_el->as_qry == NULL)
+			goto shm_err;
+
+		memset(list_el->as_qry, 0, sizeof(struct _async_query));
+
+		LAST_SUFFIX(list_el->as_qry).s = shm_malloc(CAPTURE_TABLE_MAX_LEN);
+		if (LAST_SUFFIX(list_el->as_qry).s == NULL)
+			goto shm_err;
+
+		LAST_SUFFIX(list_el->as_qry).len = 0;
+
+		INIT_QUERY_LOCK(list_el->as_qry);
+	}
+
+	return 0;
+
+shm_err:
+	LM_ERR("no more shared memory!\n");
+	return -1;
+
+}
+
+
+
 
 static int sip_capture_prepare(struct sip_msg* msg)
 {
@@ -2177,7 +2370,8 @@ static int sip_capture_prepare(struct sip_msg* msg)
 }
 
 static int sip_capture_store(struct _sipcapture_object *sco,
-							async_resume_module **resume_f, void **resume_param)
+							async_resume_module **resume_f, void **resume_param,
+							struct tz_table_list* t_el)
 {
 	db_val_t db_vals[NR_KEYS];
         int i = 0, ret;
@@ -2311,7 +2505,7 @@ static int sip_capture_store(struct _sipcapture_object *sco,
 		LM_ERR("failed to insert into database\n");
 		return -1;
 	} else if (resume_f) {
-		ret = db_async_store(db_vals, resume_f, resume_param);
+		ret = db_async_store(db_vals, resume_f, resume_param, t_el);
 	}
 
 	#ifdef STATISTICS
@@ -2330,6 +2524,14 @@ static int db_sync_store(db_val_t* db_vals)
 	               CON_RESET_INSLIST(db_con);
         CON_PS_REFERENCE(db_con) = &sipcapture_ps;
 
+	if (current_table.s && current_table.len) {
+		if (db_funcs.use_table(db_con, &current_table) < 0) {
+			LM_ERR("use table failed!\n");
+			return -1;
+		}
+	}
+
+
 	if (db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0) {
 		LM_ERR("failed to insert into database\n");
                 goto error;
@@ -2340,33 +2542,11 @@ error:
 	return -1;
 }
 
-static int db_async_store(db_val_t* db_vals,
-							async_resume_module **resume_f, void **resume_param)
+static inline int append_sc_values(char* buf, int max_len, db_val_t* db_vals)
 {
-	int ret;
-	int read_fd;
-	str query_str;
+	int len;
 
-	sc_async_param_t as_param;
-	if (!DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
-		LM_WARN("This database module does not have async queries!"
-				"Using sync insert!\n");
-		*resume_f     = NULL;
-		*resume_param = NULL;
-		async_status  = ASYNC_NO_IO;
-		return db_sync_store(db_vals);
-	}
-
-	lock_get(&query_lock);
-
-	if (curr_queries == 0) {
-		query_len = base_query_len;
-	} else {
-		/* VALUES delimiter*/
-		query_buf[query_len++]=',';
-	}
-
-	ret = snprintf(query_buf+query_len, MAX_QUERY-query_len, VALUES_STR,
+	len = snprintf(buf, max_len, VALUES_STR,
 			VAL_INT(db_vals+0), VAL_TIME(db_vals+1), VAL_BIGINT(db_vals+2),
 			VAL_STR(db_vals+3).len, VAL_STR(db_vals+3).s,
 			VAL_STR(db_vals+4).len, VAL_STR(db_vals+4).s,
@@ -2395,27 +2575,103 @@ static int db_async_store(db_val_t* db_vals,
 			VAL_STR(db_vals+27).len, VAL_STR(db_vals+27).s,
 			VAL_INT(db_vals+28),
 			VAL_STR(db_vals+29).len, VAL_STR(db_vals+29).s,
-			VAL_INT(db_vals+30), VAL_INT(db_vals+31), VAL_INT(db_vals+30),
-			VAL_STR(db_vals+33).len, VAL_STR(db_vals+33).s,
-			VAL_INT(db_vals+34),
-			VAL_STR(db_vals+35).len, VAL_STR(db_vals+35).s,
-			VAL_BLOB(db_vals+36).len, VAL_BLOB(db_vals+36).s
+			VAL_INT(db_vals+30), VAL_INT(db_vals+31), VAL_INT(db_vals+32),
+			VAL_INT(db_vals+33),
+			VAL_STR(db_vals+34).len, VAL_STR(db_vals+34).s,
+			VAL_INT(db_vals+35),
+			VAL_STR(db_vals+36).len, VAL_STR(db_vals+36).s,
+			VAL_BLOB(db_vals+37).len, VAL_BLOB(db_vals+37).s
 				);
 
-	if (ret < 0)
-		goto no_buffer;
+	return len;
+}
 
-	query_len += ret;
+static inline int init_raw_query(char* buf, int max_len, str* table_name)
+{
+	int len, i, ret;
+	len = snprintf(buf, max_len, "INSERT INTO %.*s(",
+			table_name->len, table_name->s);
+
+	for (i=0; i<NR_KEYS-1; i++) {
+		ret = snprintf(buf+len, max_len-len, "%.*s,", db_keys[i]->len, db_keys[i]->s);
+		if (ret<0)	return ret;
+		len += ret;
+	}
+
+	ret=snprintf(buf+len, max_len-len, "%.*s) VALUES", db_keys[NR_KEYS-1]->len, db_keys[NR_KEYS-1]->s);
+	if (ret<0)	return ret;
+	len += ret;
+
+	return len;
+}
 
 
-	if ((++curr_queries) == max_async_queries) {
-		curr_queries = 0;
+static int db_async_store(db_val_t* db_vals,
+							async_resume_module **resume_f, void **resume_param,
+							struct tz_table_list* t_el)
+{
+	int ret;
+	int read_fd;
+	str query_str;
 
-		query_str.s   = query_buf;
-		query_str.len = query_len;
+	struct _async_query *crt_as_query;
+
+	sc_async_param_t as_param;
+	if (!DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
+		LM_WARN("This database module does not have async queries!"
+				"Using sync insert!\n");
+		*resume_f     = NULL;
+		*resume_param = NULL;
+		async_status  = ASYNC_NO_IO;
+		return db_sync_store(db_vals);
+	}
+
+	if (HAVE_MULTIPLE_ASYNC_INSERT && t_el == NULL) {
+		LM_ERR("can't do multiple insert!\n");
+		*resume_param = NULL;
+		*resume_f     = NULL;
+		return -1;
+	}
+
+	if (t_el) {
+		crt_as_query = t_el->as_qry;
+	} else {
+		/* Do we really need this? */
+		crt_as_query = global_async_query;
+	}
+
+	if (HAVE_SHARED_QUERIES)
+		GET_QUERY_LOCK(crt_as_query);
+
+	/* use the global async query; we do this only once */
+	if (CURR_QUERIES(crt_as_query) == 0) {
+		QUERY_LEN(crt_as_query)=init_raw_query(QUERY_BUF(crt_as_query), MAX_QUERY,
+				&current_table);
+
+		ret=append_sc_values(QUERY_BUF(crt_as_query)+QUERY_LEN(crt_as_query), MAX_QUERY-QUERY_LEN(crt_as_query), db_vals);
+		if (ret < 0)
+			goto no_buffer;
+
+		QUERY_LEN(crt_as_query) += ret;
+	} else {
+		QUERY_BUF(crt_as_query)[QUERY_LEN(crt_as_query)++] = ',';
+		ret=append_sc_values(QUERY_BUF(crt_as_query)+QUERY_LEN(crt_as_query), MAX_QUERY-QUERY_LEN(crt_as_query), db_vals);
+		if (ret < 0)
+			goto no_buffer;
+
+		QUERY_LEN(crt_as_query) += ret;
+	}
+
+	if ((++CURR_QUERIES(crt_as_query)) == max_async_queries) {
+		CURR_QUERIES(crt_as_query) = 0;
+
+		query_str.s   = QUERY_BUF(crt_as_query);
+		query_str.len = QUERY_LEN(crt_as_query);
 		read_fd = db_funcs.async_raw_query(db_con, &query_str, &as_param);
 
-		lock_release(&query_lock);
+
+		if (HAVE_SHARED_QUERIES)
+			RELEASE_QUERY_LOCK(crt_as_query);
 
 		if (read_fd < 0) {
 			*resume_param = NULL;
@@ -2429,7 +2685,8 @@ static int db_async_store(db_val_t* db_vals,
 		return 1;
 	}
 
-	lock_release(&query_lock);
+	if (HAVE_SHARED_QUERIES)
+		RELEASE_QUERY_LOCK(crt_as_query);
 
 	LM_DBG("no query executed!\n");
 	async_status = ASYNC_NO_IO;
@@ -2463,17 +2720,17 @@ int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
 
 static int sip_capture(struct sip_msg *msg, char* s1, char* s2)
 {
-	return w_sip_capture(msg, NULL, NULL);
+	return w_sip_capture(msg, s1, NULL, NULL);
 }
 
 static int async_sip_capture(struct sip_msg* msg, async_resume_module **resume_f,
-		void **resume_param, str* s1, str* s2)
+		void **resume_param, char* s1, char* s2)
 {
-	return w_sip_capture(msg, resume_f, resume_param);
+	return w_sip_capture(msg, s1, resume_f, resume_param);
 }
 
 
-static int w_sip_capture(struct sip_msg *msg,
+static int w_sip_capture(struct sip_msg *msg, char *table_name,
 				async_resume_module **resume_f, void **resume_param)
 {
 	struct _sipcapture_object sco;
@@ -2488,8 +2745,89 @@ static int w_sip_capture(struct sip_msg *msg,
 	struct timezone tz;
 	char tmp_node[100];
 
+	time_t rawtime;
+	struct tm* gmtm;
+
 	struct hep_desc *h=NULL;
 	struct hep_context* ctx;
+
+	tz_table_t* tzt = (tz_table_t*)table_name, *t_el;
+
+	struct tz_table_list* t_it=NULL;
+	str query_str;
+
+	if (tzt == NULL ) {
+		tzt = &tz_table;
+	}
+
+	/**/
+	if (resume_f && resume_param && HAVE_MULTIPLE_ASYNC_INSERT)
+	{
+
+		if (table_name != NULL) {
+		/* find the table in the list */
+			for (t_it=tz_list; t_it; t_it=t_it->next) {
+				t_el = t_it->table;
+				if (t_el->prefix.len == tzt->prefix.len &&
+						t_el->suffix.len == tzt->suffix.len &&
+						!memcmp(t_el->prefix.s, tzt->prefix.s, t_el->prefix.len) &&
+						!memcmp(t_el->suffix.s, tzt->suffix.s, t_el->suffix.len))
+					break;
+			}
+
+			if (t_it == NULL) {
+				LM_ERR("Invalid table given!\n");
+				return -1;
+			}
+		} else{
+			/* or use the default one */
+			t_it = &tz_global;
+		}
+
+	}
+
+
+	current_table.s = table_buf;
+	memcpy(current_table.s, tzt->prefix.s, tzt->prefix.len);
+	current_table.len = tzt->prefix.len;
+	if (tzt->suffix.s && tzt->suffix.len) {
+		time(&rawtime);
+		gmtm = gmtime(&rawtime);
+
+		current_table.len += strftime(current_table.s+current_table.len,
+				CAPTURE_TABLE_MAX_LEN - current_table.len, tzt->suffix.s, gmtm);
+
+		/* check if table name changed and execute the remaining queries
+		 * we do this only if we have a suffix, else table name won't change */
+		if (resume_f && resume_param && HAVE_MULTIPLE_ASYNC_INSERT) {
+			GET_QUERY_LOCK(t_it->as_qry);
+			if (LAST_SUFFIX(t_it->as_qry).len &&
+				memcmp(LAST_SUFFIX(t_it->as_qry).s,
+					current_table.s+tzt->prefix.len,
+					current_table.len-tzt->prefix.len)) {
+
+				/* execute remaining queries for the old table */
+				if (CURR_QUERIES(t_it->as_qry)) {
+					query_str.s = QUERY_BUF(t_it->as_qry);
+					query_str.len = QUERY_LEN(t_it->as_qry);
+					if (do_remaining_queries(&query_str) < 0){
+						LM_ERR("failed to execute remaining queries "
+								"when switching to new table!\n");
+						RELEASE_QUERY_LOCK(t_it->as_qry);
+						return -1;
+					}
+					CURR_QUERIES(t_it->as_qry) = 0;
+
+					/* update the suffix */
+					LAST_SUFFIX(t_it->as_qry).len = current_table.len - tzt->prefix.len;
+					memcpy(LAST_SUFFIX(t_it->as_qry).s,
+							current_table.s+t_it->table->prefix.len,
+								LAST_SUFFIX(t_it->as_qry).len);
+				}
+			}
+			RELEASE_QUERY_LOCK(t_it->as_qry);
+		}
+	}
 
 	gettimeofday( &tvb, &tz );
 
@@ -2886,7 +3224,7 @@ static int w_sip_capture(struct sip_msg *msg,
 	}
 #endif
 	LM_DBG("DONE\n");
-	return sip_capture_store(&sco, resume_f, resume_param);
+	return sip_capture_store(&sco, resume_f, resume_param, t_it);
 }
 
 /*
@@ -4288,7 +4626,7 @@ error:
 
 }
 
-#undef query_buf
-#undef query_len
-#undef query_lock
-#undef curr_queries
+#undef QUERY_BUF
+#undef QUERY_LEN
+#undef LAST_SUFFIX
+#undef HAVE_MULTIPLE_ASYNC_INSERT
