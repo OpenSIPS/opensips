@@ -107,7 +107,9 @@ modparam("sipcapture", "db_url", "mysql://user:passwd@host/dbname")
 	<section>
 		<title><varname>table_name</varname> (str)</title>
 		<para>
-		Name of the table's name where to store the SIP messages.
+			Name of the table's name where to store the SIP messages. Since
+		version 2.2 it allows strftime-like suffix for having time formatted
+		table names.
 		</para>
 		<para>
 		<emphasis>
@@ -115,15 +117,47 @@ modparam("sipcapture", "db_url", "mysql://user:passwd@host/dbname")
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>sip_capture</varname> parameter</title>
+		<title>Set <varname>table_name</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("sipcapture", "table_name", "homer_capture")
+
+/* change table name every day */
+modparam("sipcapture", "table_name", "homer_%m_%d")
+/* if today is 13-04-2014 it will exetend to homer_04_13 */
 ...
 
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>rtcp_table_name</varname> (str)</title>
+		<para>
+			Name of the table's name where to store packets captured
+		with report_capture function. Since version 2.2 it allows
+		strftime-like suffix for having time formatted
+		table names.
+
+		</para>
+		<para>
+		<emphasis>
+			Default value is "rtcp_capture".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rtcp_capture</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sipcapture", "rtcp_table_name", "homer_capture")
+
+/* change table name every hour */
+modparam("sipcapture", "rtcp_table_name", "homer_%m_%d_%H")
+/* if today is 13-04-2014 13:05 pm it will exetend to homer_04_13_13 */
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section>
 		<title><varname>capture_on</varname> (integer)</title>
 		<para>
@@ -409,11 +443,20 @@ route[my_hep_route] {
 
 		<section>
 		<title>
-			<function moreinfo="none">sip_capture()</function>
+			<function moreinfo="none">sip_capture([table_name])</function>
 		</title>
 		<para>
 			Save the message into the database.
 		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>table_name (string)</emphasis> - the name of the table to store
+				the packet; it can have a strftime-like formatted suffix in order to change it's name
+				based on time; if not set, modparam defined table will be used;
+			</para>
+		</listitem>
+		</itemizedlist>
 		<para>
 			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
 		</para>
@@ -423,11 +466,57 @@ route[my_hep_route] {
 ...
 if (is_method("REGISTER"))
 	sip_capture();
+	...
+	/* table name will change every day */
+	sip_capture("homer_%m_%d");
 ...
 	</programlisting>
 	</example>
 
 		</section>
+
+		<section>
+		<title>
+			<function moreinfo="none">report_capture([table_name,]correlation_id)</function>
+		</title>
+		<para>
+			Save the message into the database.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>table_name (string)</emphasis> - the name of the table to store
+				the packet; it can have a strftime-like formatted suffix in order to change it's name
+				based on time;
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>correlation_id (string)</emphasis>
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
+		</para>
+	<example>
+	<title><function>sip_capture</function> usage</title>
+	<programlisting format="linespecific">
+...
+
+	hep_get("utf8-string", "0x0011", "$var(correlation_id)");
+	if($var(correlation_id) == $null) {
+		xlog("NO CORRELATION ID! SET SOMETHING OR DROP");
+		$var(correlation_id) = "absdcef";
+	}
+
+	report_capture("rtcp_log", $var(correlation_id");
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+
 
 		<section id="hep_set_id">
 		<title>
@@ -926,7 +1015,8 @@ route[capture_resume] {
 		Before running &osips; with sipcapture, you have to setup the database
 		tables where the module will store the data. For that, if the
 		table were not created by the installation script or you choose
-		to install everything by yourself you can use the sipcapture-create.sql or
+		to install everything by yourself you can use the sipcapture-create.sql and
+		reportcapture-create.sql or
 		the sipcapture-st-create.sql <acronym>SQL</acronym> script in the database
 		directories in the opensips/scripts folder as template.
 		You can also find the complete database documentation on the
