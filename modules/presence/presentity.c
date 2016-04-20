@@ -855,8 +855,6 @@ error:
 
 	if(result)
 		pa_dbf.free_result(pa_db, result);
-	if(etag.s)
-		pkg_free(etag.s);
 
 	if (notify_body.s)
 		xmlFree(notify_body.s);
