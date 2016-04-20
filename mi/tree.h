@@ -47,6 +47,20 @@ struct mi_handler;
 #define MI_DUP_VALUE  		(1<<1)
 #define MI_NOT_COMPLETED  	(1<<2)
 #define MI_WRITTEN			(1<<3)
+/*
+ * Known issue when building arrays into your modules' MI trees:
+ *  +----------------------------------------------------+
+ *  |        only use MI_IS_ARRAY iff all "name"         |
+ *  |   attributes of each array object are identical,   |
+ *  |             see mi_ps() or mi_which()              |
+ *  +----------------------------------------------------+
+ *
+ * Why?
+ *	 commit 459dffba introduced a "common denominator" optimization:
+ *	   - [GOOD] reduces the amount of redundant data in all mi_json output
+ *	   - [BAD] breaks all code which builds arrays of items with
+ *	           non-identical "name" attributes
+ */
 #define MI_IS_ARRAY			(1<<4)
 
 #define MI_OK_S              "OK"
