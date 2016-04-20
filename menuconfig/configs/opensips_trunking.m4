@@ -184,7 +184,7 @@ route{
 			',`')
 			if (is_method("BYE")) {
 				# do accounting even if the transaction fails
-				ifelse(USE_DBACC,`yes',`do_accouting("db","failed");
+				ifelse(USE_DBACC,`yes',`do_accounting("db","failed");
 				', `do_accounting("log","failed");')
 			} else if (is_method("INVITE")) {
 				# even if in most of the cases is useless, do RR for
@@ -252,7 +252,7 @@ route{
 	# record routing
 	record_route();
 
-	ifelse(USE_DBACC,`yes',`do_accouting("db");
+	ifelse(USE_DBACC,`yes',`do_accounting("db");
 	', `do_accounting("log");')
 
 	ifelse(USE_DIALOG,`yes',`

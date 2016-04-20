@@ -241,7 +241,7 @@ route{
 			',`')
 			if (is_method("BYE")) {
 				# do accounting even if the transaction fails
-				ifelse(USE_DBACC,`yes',`do_accouting("db","failed");
+				ifelse(USE_DBACC,`yes',`do_accounting("db","failed");
 				', `do_accounting("log","failed");')
 			} else if (is_method("INVITE")) {
 				# even if in most of the cases is useless, do RR for
@@ -346,7 +346,7 @@ route{
 			exit;
 		}
 		',`')
-		ifelse(USE_DBACC,`yes',`do_accouting("db");
+		ifelse(USE_DBACC,`yes',`do_accounting("db");
 		', `do_accounting("log");')
 	}
 
@@ -452,7 +452,7 @@ route{
 	ifelse(USE_NAT,`yes',`if (isbflagset(NAT)) setflag(NAT);',`')
 
 	# when routing via usrloc, log the missed calls also
-	ifelse(USE_DBACC,`yes',`do_accouting("db","missed");
+	ifelse(USE_DBACC,`yes',`do_accounting("db","missed");
 	', `do_accounting("log","missed");')
 	route(relay);
 }
