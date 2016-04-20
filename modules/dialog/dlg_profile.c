@@ -1300,7 +1300,6 @@ struct mi_root * mi_list_all_profiles(struct mi_root *cmd_tree, void *param )
 		return 0;
 
 	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
 
 	profile = profiles;
 	while (profile) {
