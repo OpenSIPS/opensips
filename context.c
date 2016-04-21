@@ -44,7 +44,7 @@ static unsigned int type_sizes[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
 static unsigned int type_offsets[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
 
 /* vector of destroy functions */
-static context_destroy_f *context_destroy_array;
+static context_destroy_f *context_destroy_array[CONTEXT_COUNT];
 
 static void register_context_destroy(context_destroy_f f,
 		enum osips_context ctx, enum osips_context_val t)
@@ -71,17 +71,17 @@ static void register_context_destroy(context_destroy_f f,
 		return;
 	}
 	/* TODO: check whether this should be in pkg or shm? */
-	tmp = pkg_realloc(context_destroy_array, (count + 1) * sizeof(context_destroy_f));
+	tmp = pkg_realloc(context_destroy_array[ctx], (count + 1) * sizeof(context_destroy_f));
 	if (!tmp) {
 		LM_ERR("cannot add any more destroy functions\n");
 		return;
 	}
-	context_destroy_array = tmp;
+	context_destroy_array[ctx] = tmp;
 
 	/* move everything to the right to make room for pos */
 	for (i = count; i > pos; i--)
-		context_destroy_array[i] = context_destroy_array[i - 1];
-	context_destroy_array[pos] = f;
+		context_destroy_array[ctx][i] = context_destroy_array[ctx][i - 1];
+	context_destroy_array[ctx][pos] = f;
 	count++;
 }
 
@@ -93,29 +93,31 @@ void context_destroy(enum osips_context ctxtype, context_p ctx)
 	str *s;
 	void *p;
 
+
 	/* int ctx */
 	for (n = 0; n < type_sizes[ctxtype][CONTEXT_INT_TYPE]; n++, f++)
-		if (context_destroy_array[f]) {
+		if (context_destroy_array[ctxtype][f]) {
 			i = context_get_int(ctxtype, ctx, n);
 			if (i)/* XXX: should we call for 0 values? */
-				context_destroy_array[f](&i);
+				context_destroy_array[ctxtype][f](&i);
 		}
 
 	/* str ctx */
 	for (n = 0; n < type_sizes[ctxtype][CONTEXT_STR_TYPE]; n++, f++)
-		if (context_destroy_array[f]) {
+		if (context_destroy_array[ctxtype][f]) {
 			s = context_get_str(ctxtype, ctx, n);
 			if (s)/* XXX: how do we determine if s is empty? */
-				context_destroy_array[f](s);
+				context_destroy_array[ctxtype][f](s);
 		}
 
 	/* ptr ctx */
-	for (n = 0; n < type_sizes[ctxtype][CONTEXT_PTR_TYPE]; n++, f++)
-		if (context_destroy_array[f]) {
+	for (n = 0; n < type_sizes[ctxtype][CONTEXT_PTR_TYPE]; n++, f++) {
+		if (context_destroy_array[ctxtype][f]) {
 			p = context_get_ptr(ctxtype, ctx, n);
 			if (p)
-				context_destroy_array[f](p);
+				context_destroy_array[ctxtype][f](p);
 		}
+	}
 }
 
 context_p context_alloc(enum osips_context type)
