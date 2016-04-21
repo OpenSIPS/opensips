@@ -25,9 +25,9 @@
 #ifndef __T_CTX_H
 #define __T_CTX_H
 
-typedef int (*t_ctx_register_int_f)(void);
-typedef int (*t_ctx_register_str_f)(void);
-typedef int (*t_ctx_register_ptr_f)(void);
+typedef int (*t_ctx_register_int_f)(context_destroy_f f);
+typedef int (*t_ctx_register_str_f)(context_destroy_f f);
+typedef int (*t_ctx_register_ptr_f)(context_destroy_f f);
 typedef void (*t_ctx_put_int_f)(struct cell *t, int pos, int data);
 typedef void (*t_ctx_put_str_f)(struct cell *t, int pos, str *data);
 typedef void (*t_ctx_put_ptr_f)(struct cell *t, int pos, void *data);
@@ -35,9 +35,9 @@ typedef int   (*t_ctx_get_int_f)(struct cell *t, int pos);
 typedef str  *(*t_ctx_get_str_f)(struct cell *t, int pos);
 typedef void *(*t_ctx_get_ptr_f)(struct cell *t, int pos);
 
-int t_ctx_register_int(void);
-int t_ctx_register_str(void);
-int t_ctx_register_ptr(void);
+int t_ctx_register_int(context_destroy_f f);
+int t_ctx_register_str(context_destroy_f f);
+int t_ctx_register_ptr(context_destroy_f);
 
 void t_ctx_put_int(struct cell *t, int pos, int data);
 void t_ctx_put_str(struct cell *t, int pos, str *data);

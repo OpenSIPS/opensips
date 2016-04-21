@@ -23,6 +23,7 @@
  */
 
 #include "t_funcs.h"
+#include "t_ctx.h"
 
 int t_ctx_register_int(context_destroy_f f)
 {
