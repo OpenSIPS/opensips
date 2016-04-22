@@ -746,6 +746,12 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 
 			gen_chunk->data =
 				shm_malloc(gen_chunk->chunk.length - sizeof(hep_chunk_t));
+
+			if (gen_chunk->data == NULL) {
+				LM_ERR("no more shared memory!\n");
+				return -1;
+			}
+
 			memcpy(gen_chunk->data, (char *)buf + sizeof(hep_chunk_t),
 					gen_chunk->chunk.length - sizeof(hep_chunk_t));
 
