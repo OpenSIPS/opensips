@@ -951,7 +951,7 @@ static inline int hep_handle_req(struct tcp_req *req,
 			current_processing_ctx = NULL;
 
 			msg_len = hep_ctx->h.u.hepv3.payload_chunk.chunk.length-
-											sizeof(hep_chunk_payload_t);
+											sizeof(hep_chunk_t);
 			/* remove the hep header; leave only the payload */
 			msg_buf = hep_ctx->h.u.hepv3.payload_chunk.data;
 		}
