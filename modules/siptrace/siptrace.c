@@ -2027,11 +2027,11 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd_tree, void* param )
 			_node=add_mi_node_child(_rpl, 0, _tid_el->name.s,                       \
 					_tid_el->name.len, 0, 0);                                       \
 			if (_tid_el->type==TYPE_HEP)                                            \
-				add_mi_attr(_node, 0, MI_SSTR("\n\ttype"), MI_SSTR("HEP"));         \
+				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("HEP"));         \
 			else if (_tid_el->type==TYPE_SIP)                                       \
-				add_mi_attr(_node, 0, MI_SSTR("\n\ttype"), MI_SSTR("SIP"));         \
+				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("SIP"));         \
 			else if (_tid_el->type==TYPE_DB)                                        \
-				add_mi_attr(_node, 0, MI_SSTR("\n\ttype"), MI_SSTR("Database"));    \
+				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("Database"));    \
                                                                                     \
 			if (_tid_el->type==TYPE_HEP||_tid_el->type==TYPE_SIP) {                 \
 				memcpy(uri, _tid_el->el.uri.host.s, _tid_el->el.uri.host.len);      \
@@ -2039,18 +2039,18 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd_tree, void* param )
 				memcpy(uri+_tid_el->el.uri.host.len+1,                              \
 						_tid_el->el.uri.port.s, _tid_el->el.uri.port.len);          \
                                                                                     \
-				add_mi_attr(_node, 0, MI_SSTR("\n\turi"), uri,                      \
+				add_mi_attr(_node, 0, MI_SSTR("uri"), uri,                      \
 						_tid_el->el.uri.host.len + 1 + _tid_el->el.uri.port.len);   \
 			} else {                                                                \
 				/* TYPE_DB */                                                       \
-				add_mi_attr(_node, 0, MI_SSTR("\n\turi"), _tid_el->el.db->url.s,    \
+				add_mi_attr(_node, 0, MI_SSTR("uri"), _tid_el->el.db->url.s,    \
 						_tid_el->el.db->url.len);                                   \
 			}                                                                       \
                                                                                     \
 			if (*_tid_el->traceable)                                                \
-				add_mi_attr(_node, 0, MI_SSTR("\n\tstate"), MI_SSTR("on"));         \
+				add_mi_attr(_node, 0, MI_SSTR("state"), MI_SSTR("on"));         \
 			else                                                                    \
-				add_mi_attr(_node, 0, MI_SSTR("\n\tstate"), MI_SSTR("off"));        \
+				add_mi_attr(_node, 0, MI_SSTR("state"), MI_SSTR("off"));        \
 		} while(0);
 
 	struct mi_node* node;
