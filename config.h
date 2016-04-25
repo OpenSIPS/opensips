@@ -141,7 +141,7 @@
 #define MAX_RECEIVED_SIZE	57
 #define MAX_RPORT_SIZE		13
 
-#define MAX_BRANCHES    12			/*!< maximum number of branches per transaction */
+#define MAX_BRANCHES    32			/*!< maximum number of branches per transaction */
 
 #define MCOOKIE "z9hG4bK"			/*!< magic cookie for transaction matching as defined in RFC3261 */
 #define MCOOKIE_LEN (sizeof(MCOOKIE)-1)
