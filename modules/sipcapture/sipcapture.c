@@ -164,9 +164,12 @@ struct _sipcapture_object {
 	str reply_reason;
 	str ruri;
 	str ruri_user;
+	str ruri_domain;
 	str from_user;
+	str from_domain;
 	str from_tag;
 	str to_user;
+	str to_domain;
 	str to_tag;
 	str pid_user;
 	str contact_user;
@@ -193,6 +196,7 @@ struct _sipcapture_object {
 	int family;
 	int proto_type;
 	str rtp_stat;
+	str correlation_id;
 	int type;
 	long long tmstamp;
 	str node;
@@ -210,7 +214,7 @@ struct _sipcapture_object {
  * WARNING: if you add/remove keys take care to update
  * VALUES_STR
  */
-#define NR_KEYS 38
+#define NR_KEYS 41
 #define RTCP_NR_KEYS 12
 
 typedef void* sc_async_param_t;
@@ -335,7 +339,7 @@ static str cseq_column		= str_init("cseq");
 static str diversion_column 	= str_init("diversion_user");
 static str reason_column 	= str_init("reason");
 static str content_type_column 	= str_init("content_type");
-static str authorization_column = str_init("authorization");
+static str authorization_column = str_init("auth");
 static str user_agent_column 	= str_init("user_agent");
 static str source_ip_column 	= str_init("source_ip");
 static str source_port_column 	= str_init("source_port");
@@ -345,16 +349,18 @@ static str contact_ip_column 	= str_init("contact_ip");
 static str contact_port_column 	= str_init("contact_port");
 static str orig_ip_column 	= str_init("originator_ip");
 static str orig_port_column 	= str_init("originator_port");
-static str rtp_stat_column 	= str_init("rtp_stat");
 static str proto_column 	= str_init("proto");
 static str family_column 	= str_init("family");
-static str protot_column 	= str_init("proto_type");
+static str rtp_stat_column 	= str_init("rtp_stat");
 static str type_column 		= str_init("type");
+static str correlation_column 		= str_init("correlation_id");
 static str node_column 		= str_init("node");
+static str from_domain_column = str_init("from_domain");
+static str to_domain_column = str_init("to_domain");
+static str ruri_domain_column = str_init("ruri_domain");
 static str msg_column 		= str_init("msg");
 static str capture_node 	= str_init("homer01");
 
-static str correlation_column = str_init("correlation_id");
 
 /* hep pvar related */
 static str afinet_str    = str_init("AF_INET");
@@ -405,7 +411,8 @@ struct sip_msg dummy_req;
 #define VALUES_STR "(%d,%ld,%lld,'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
 					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
 					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s',%d,'%.*s',%d," \
-					"'%.*s',%d,'%.*s',%d,%d,%d,%d,'%.*s',%d,'%.*s','%.*s')"
+					"'%.*s',%d,'%.*s',%d,%d,%d,'%.*s',%d,'%.*s','%.*s','%.*s'," \
+					"'%.*s', '%.*s', '%.*s')"
 
 #define RTCP_VALUES_STR "(%ld, %lld, '%.*s', '%.*s', %d, '%.*s', %d," \
 						"%d, %d, %d, '%.*s', '%.*s')"
@@ -745,11 +752,14 @@ static int mod_init(void) {
 	db_keys[30] = &orig_port_column;
 	db_keys[31] = &proto_column;
 	db_keys[32] = &family_column;
-	db_keys[33] = &protot_column;
-	db_keys[34] = &rtp_stat_column;
-	db_keys[35] = &type_column;
-	db_keys[36] = &node_column;
-	db_keys[37] = &msg_column;
+	db_keys[33] = &rtp_stat_column;
+	db_keys[34] = &type_column;
+	db_keys[35] = &node_column;
+	db_keys[36] = &correlation_column;
+	db_keys[37] = &from_domain_column;
+	db_keys[38] = &to_domain_column;
+	db_keys[39] = &ruri_domain_column;
+	db_keys[40] = &msg_column;
 
 	set_rtcp_keys();
 
@@ -2595,20 +2605,33 @@ static int sip_capture_store(struct _sipcapture_object *sco,
 	db_vals[32].type = DB_INT;
 	db_vals[32].val.int_val = sco->family;
 
-	db_vals[33].type = DB_INT;
-	db_vals[33].val.int_val = sco->proto_type;
+	db_vals[33].type = DB_STR;
+	db_vals[33].val.str_val = sco->rtp_stat;
 
-	db_vals[34].type = DB_STR;
-	db_vals[34].val.str_val = sco->rtp_stat;
+	/* proto type is defined in proto but not stored in homer db :-? */
+	//db_vals[34].type = DB_INT;
+	//db_vals[34].val.int_val = sco->proto_type;
 
-	db_vals[35].type = DB_INT;
-	db_vals[35].val.int_val = sco->type;
+	db_vals[34].type = DB_INT;
+	db_vals[34].val.int_val = sco->type;
+
+	db_vals[35].type = DB_STR;
+	db_vals[35].val.str_val = sco->node;
 
 	db_vals[36].type = DB_STR;
-	db_vals[36].val.str_val = sco->node;
+	db_vals[36].val.str_val = sco->correlation_id;
 
-	db_vals[37].type = DB_BLOB;
-	db_vals[37].val.blob_val = sco->msg;
+	db_vals[37].type = DB_STR;
+	db_vals[37].val.str_val = sco->from_domain;
+
+	db_vals[38].type = DB_STR;
+	db_vals[38].val.str_val = sco->to_domain;
+
+	db_vals[39].type = DB_STR;
+	db_vals[39].val.str_val = sco->ruri_domain;
+
+	db_vals[40].type = DB_BLOB;
+	db_vals[40].val.blob_val = sco->msg;
 
 	/* no field can be null */
 	for (i=0;i<NR_KEYS;i++)
@@ -2695,11 +2718,14 @@ static inline int append_sc_values(char* buf, int max_len, db_val_t* db_vals)
 			VAL_INT(db_vals+28),
 			VAL_STR(db_vals+29).len, VAL_STR(db_vals+29).s,
 			VAL_INT(db_vals+30), VAL_INT(db_vals+31), VAL_INT(db_vals+32),
-			VAL_INT(db_vals+33),
-			VAL_STR(db_vals+34).len, VAL_STR(db_vals+34).s,
-			VAL_INT(db_vals+35),
+			VAL_STR(db_vals+33).len, VAL_STR(db_vals+33).s,
+			VAL_INT(db_vals+34),
+			VAL_STR(db_vals+35).len, VAL_STR(db_vals+35).s,
 			VAL_STR(db_vals+36).len, VAL_STR(db_vals+36).s,
-			VAL_BLOB(db_vals+37).len, VAL_BLOB(db_vals+37).s
+			VAL_STR(db_vals+37).len, VAL_STR(db_vals+37).s,
+			VAL_STR(db_vals+38).len, VAL_STR(db_vals+38).s,
+			VAL_STR(db_vals+39).len, VAL_STR(db_vals+39).s,
+			VAL_BLOB(db_vals+40).len, VAL_BLOB(db_vals+40).s
 				);
 
 	return len;
@@ -2952,6 +2978,8 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 
 	struct tz_table_list* t_it=&tz_global;
 
+	generic_chunk_t* it;
+
 	if (tzt == NULL ) {
 		tzt = &tz_table;
 	}
@@ -3032,6 +3060,7 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 
 		sco.ruri = msg->first_line.u.request.uri;
 		sco.ruri_user = msg->parsed_uri.user;
+		sco.ruri_user = msg->parsed_uri.host;
 	}
 	else if(msg->first_line.type == SIP_REPLY) {
 		sco.method = msg->first_line.u.reply.status;
@@ -3063,6 +3092,7 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 
               sco.from_user = from.user;
               sco.from_tag = get_from(msg)->tag_value;
+			  sco.from_domain = from.host;
         }
         else {
 		EMPTY_STR(sco.from_user);
@@ -3081,6 +3111,7 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
               if(get_to(msg)->tag_value.len)
               		sco.to_tag = get_to(msg)->tag_value;
               else { EMPTY_STR(sco.to_tag); }
+			  sco.to_domain = to.host;
         }
         else {
         	EMPTY_STR(sco.to_user);
@@ -3351,8 +3382,20 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 	/* MESSAGE TYPE */
 	sco.type = msg->first_line.type;
 
+	sco.correlation_id.s = "";
+	sco.correlation_id.len = 0;
+
 	/* MSG */
 	if (h && h->version == 3) {
+		for (it=h->u.hepv3.chunk_list; it; it=it->next) {
+			if (it->chunk.type_id == HEP_CORRELATION_ID) {
+				sco.correlation_id.s = it->data;
+				sco.correlation_id.len = it->chunk.length - sizeof(hep_chunk_t);
+
+				break;
+			}
+		}
+
 		sco.msg.s = h->u.hepv3.payload_chunk.data;
 		sco.msg.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
 	} else {
