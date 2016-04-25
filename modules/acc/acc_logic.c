@@ -58,6 +58,7 @@ extern str acc_created_avp_name;
 extern int acc_created_avp_id;
 
 extern int acc_flags_ctx_idx;
+extern int acc_tm_flags_ctx_idx;
 
 struct acc_enviroment acc_env;
 
@@ -537,8 +538,9 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	/* acc_onreply is bound to TMCB_REPLY which may be called
 	   from _reply, like when FR hits; we should not miss this
 	   event for missed calls either */
-	if (is_invite(t) && code>=300 && is_mc_acc_on(*flags) )
+	if (is_invite(t) && code>=300 && is_mc_acc_on(*flags) ) {
 		on_missed(t, req, reply, code, flags);
+	}
 
 	if (!should_acc_reply(req, reply, code, flags))
 		return;
@@ -620,7 +622,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 
 		/* register database callbacks */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
-				DLGCB_EXPIRED, acc_dlg_callback,flags_s.s,dlg_free_acc_mask) != 0) {
+				DLGCB_EXPIRED, acc_dlg_callback,flags_s.s,0) != 0) {
 			LM_ERR("cannot register callback for database accounting\n");
 			return;
 		}
@@ -706,6 +708,9 @@ static void tmcb_func( struct cell* t, int type, struct tmcb_params *ps )
 {
 	unsigned long long *flags = *ps->param;
 
+	if (ACC_GET_TM_FLAGS(t) == NULL)
+		ACC_PUT_TM_FLAGS(t, flags);
+
 	if (type&TMCB_RESPONSE_OUT) {
 		acc_onreply( t, ps->req, ps->rpl, ps->code, flags);
 	} else if (type&TMCB_ON_FAILURE) {
@@ -715,6 +720,23 @@ static void tmcb_func( struct cell* t, int type, struct tmcb_params *ps )
 	}
 }
 
+
+/*
+ * helper function to retrieve flags from processing context or
+ * transaction context
+ */
+static inline unsigned long long* try_fetch_flags(void)
+{
+	unsigned long long* ret=NULL;
+	struct cell* t;
+
+	if ((ret=ACC_GET_FLAGS) == NULL)
+		if (((t=tmb.t_gett()) != NULL) && (t!=T_UNDEFINED)
+				&& ((ret=ACC_GET_TM_FLAGS(t)) == NULL))
+			return NULL;
+
+	return ret;
+}
 
 /*
  * use case
@@ -996,7 +1018,7 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		set_dialog_context(flag_mask);
 
 	/* if already called the function once */
-	if ((flag_mask_p=ACC_GET_FLAGS) != NULL) {
+	if ((flag_mask_p=try_fetch_flags()) != NULL) {
 		if (!(is_dialog_context(*flag_mask_p)) && is_dialog_context(flag_mask)) {
 			if (!has_totag(msg)) {
 				_avp_created_value.n = time(NULL);
@@ -1013,10 +1035,10 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 			}
 		}
 
+
 		*flag_mask_p |= flag_mask;
 		return 1;
 	}
-
 
 	flag_mask_p=shm_malloc(sizeof(unsigned long long));
 	if (flag_mask_p==NULL) {
@@ -1077,7 +1099,7 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		/* we do register_tmcb twice because we wan't to register the free
 		 * fucntion only once */
 		if (tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN, tmcb_func,
-				flag_mask_p, is_cdr_acc_on(*flag_mask_p) ? 0 : tm_free_acc_mask)<=0) {
+				flag_mask_p, 0)<=0) {
 			LM_ERR("cannot register additional callbacks\n");
 			return -1;
 		}
@@ -1117,7 +1139,7 @@ int w_drop_acc_2(struct sip_msg* msg, char* type_p, char* flags_p)
 	/* if not set, we reset all flags for the type of accounting requested */
 	unsigned long long flags=ALL_ACC_FLAGS;
 	unsigned long long flag_mask;
-	unsigned long long *context_flags_p=ACC_GET_FLAGS;
+	unsigned long long *context_flags_p=try_fetch_flags();
 
 
 	acc_type_param_t* acc_param;
