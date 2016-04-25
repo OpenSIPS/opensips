@@ -952,6 +952,10 @@ static void trace_transaction_dlgcb(struct dlg_cell* dlg, int type,
 
 	info=*params->param;
 
+	/* for sl callbacks */
+	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx,
+				sl_ctx_idx, info);
+
 	if (trace_transaction(params->msg, info, 1)<0) {
 		LM_ERR("trace transaction failed!\n");
 		return;

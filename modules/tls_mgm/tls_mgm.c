@@ -1603,7 +1603,8 @@ static struct mi_root * tls_list(struct mi_root *cmd_tree, void *param)
 		return NULL;
 	}
 
-	lock_start_read(dom_lock);
+	if (dom_lock)
+		lock_start_read(dom_lock);
 
 	root = &rpl_tree->node;
 
@@ -1613,11 +1614,13 @@ static struct mi_root * tls_list(struct mi_root *cmd_tree, void *param)
 	if (list_domain(root, tls_server_domains) < 0)
 		goto error;
 
-	lock_stop_read(dom_lock);
+	if (dom_lock)
+		lock_stop_read(dom_lock);
 
 	return rpl_tree;
 error:
-	lock_stop_read(dom_lock);
+	if (dom_lock)
+		lock_stop_read(dom_lock);
 	if (rpl_tree) free_mi_tree(rpl_tree);
 	return NULL;
 }
