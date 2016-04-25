@@ -169,6 +169,7 @@ int acc_created_avp_id = -1;
 
 /* acc context position */
 int acc_flags_ctx_idx;
+int acc_tm_flags_ctx_idx;
 
 /* ------------- fixup function --------------- */
 static int acc_fixup(void** param, int param_no);
@@ -543,6 +544,7 @@ static int mod_init( void )
 	}
 
 	acc_flags_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, NULL);
+	acc_tm_flags_ctx_idx = tmb.t_ctx_register_ptr(NULL);
 
 	return 0;
 }

@@ -62,14 +62,19 @@
 
 #define DO_ACC_PARAM_DELIMITER '|'
 
+#define ACC_GET_FLAGS \
+	context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, \
+			acc_flags_ctx_idx)
+
 #define ACC_PUT_FLAGS(_ptr) \
 	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, \
 			acc_flags_ctx_idx, _ptr)
 
+#define ACC_GET_TM_FLAGS(_t) \
+	tmb.t_ctx_get_ptr(_t, acc_tm_flags_ctx_idx)
 
-#define ACC_GET_FLAGS \
-	context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, \
-			acc_flags_ctx_idx)
+#define ACC_PUT_TM_FLAGS(_t, _ptr) \
+	tmb.t_ctx_put_ptr(_t, acc_tm_flags_ctx_idx, _ptr)
 
 
 typedef unsigned long long (*do_acc_parser)(str*);
