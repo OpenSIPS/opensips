@@ -2351,29 +2351,6 @@ int hep_msg_received(void)
 
 		/* requested to go through the main sip route */
 		if (ctx->resume_with_sip) {
-			memset(&msg, 0, sizeof(struct sip_msg));
-
-			switch (h->version) {
-			case 1:
-			case 2:
-				msg.buf = h->u.hepv12.payload;
-				msg.len = strlen(msg.buf);
-				break;
-			case 3:
-				msg.buf = h->u.hepv3.payload_chunk.data;
-				msg.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(struct hep_chunk);
-				break;
-			default:
-				LM_ERR("unknown hep proto [%d]\n", h->version);
-				return -1;
-			}
-
-			if (parse_msg(msg.buf,msg.len,&msg)!=0) {
-				LM_ERR("Unable to parse message in hep payload!"
-						"Hep version %d!\n", h->version);
-				return -1;
-			}
-
 			return 0;
 		} else {
 			return HEP_SCRIPT_SKIP;
