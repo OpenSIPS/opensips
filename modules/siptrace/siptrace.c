@@ -1051,7 +1051,6 @@ static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *pa
 
 	/* trace current request */
 	sip_trace(req, (trace_info_p)(*param->param));
-	shm_free((trace_info_p)(*param->param));
 }
 
 
