@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   tls_conn.h
  * Author: razvan
  *
@@ -60,6 +60,8 @@ static int tls_conn_shutdown(struct tcp_connection *c)
 
 			default:
 				LM_ERR("something wrong in SSL: %d, %d, %s\n",err,errno,strerror(errno));
+
+			case SSL_ERROR_SYSCALL:
 				c->state = S_CONN_BAD;
 				tls_print_errstack();
 				return -1;
@@ -79,7 +81,7 @@ static int tls_conn_init(struct tcp_connection* c, struct tls_mgm_binds *api)
 	* new connection within a single process, no lock necessary
 	*/
 	LM_DBG("entered: Creating a whole new ssl connection\n");
-	
+
 	if ( c->flags&F_CONN_ACCEPTED ) {
 		/* connection created as a result of an accept -> server */
 		c->proto_flags = F_TLS_DO_ACCEPT;
@@ -108,7 +110,7 @@ static int tls_conn_init(struct tcp_connection* c, struct tls_mgm_binds *api)
 			return -1;
 		}
 	}
-	
+
 	if (!c->extra_data) {
 		LM_ERR("failed to create SSL structure\n");
 		return -1;
