@@ -1237,7 +1237,7 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 
 				val.s = int2str(value->id, &val.len);
 				attr = add_mi_attr(node_s, MI_DUP_VALUE,
-					MI_SSTR("DB ID"), val.s, val.len);
+					MI_SSTR("DB_ID"), val.s, val.len);
 				if (!attr) goto error;
 
 				attr = add_mi_attr(node_s, MI_DUP_VALUE,
