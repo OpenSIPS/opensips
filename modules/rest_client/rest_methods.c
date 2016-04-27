@@ -127,7 +127,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	fd_set rset, wset, eset;
 	int max_fd, fd, i;
 	long busy_wait, timeout;
-	long retry_time, check_time = 5; /* 5ms looping time */
+	long retry_time, check_time = 5000; /* 5000 micro seconds = 5ms looping time */
 	int msgs_in_queue;
 	CURLMsg *cmsg;
 
@@ -259,7 +259,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 				}
 			}
 
-			usleep(1000UL * check_time);
+			usleep(check_time);
 		}
 	}
 
