@@ -62,26 +62,27 @@ int dbg_ht_update(mem_dbg_htable_t htable, const char *file, const char *func, u
 			entry->no_fragments++;
 			return 0;
 		}
-		for(; entry->next; entry = entry->next)
+
+		for (; entry->next; entry = entry->next)
 			if (!strcmp(entry->next->file, file) && !strcmp(entry->next->func, func)
 				&& entry->next->line == line) {
 				entry->next->size += size;
 				entry->next->no_fragments++;
-				break;
+				return 0;
 			}
-		/* not found, insert new entry in this bucket */
-		if (!entry->next) {
-			new = malloc(sizeof(struct mem_dbg_entry));
-			if (!new)
-				return -1;
-			new->file = file;
-			new->func = func;
-			new->line = line;
-			new->size = size;
-			new->no_fragments = 1;
-			new->next = NULL;
-			entry->next = new;
-		}
+
+		/* not found, append a new entry to the end of this bucket */
+		new = malloc(sizeof(struct mem_dbg_entry));
+		if (!new)
+			return -1;
+
+		new->file = file;
+		new->func = func;
+		new->line = line;
+		new->size = size;
+		new->no_fragments = 1;
+		new->next = NULL;
+		entry->next = new;
 
 		return 0;
 	}
