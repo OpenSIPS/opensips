@@ -1203,80 +1203,80 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 	table_entry_t *head_table;
 	table_entry_info_t *info;
 	table_entry_value_t *value;
-	struct mi_node *root = NULL;
 	struct mi_root *rpl_tree = NULL;
 	struct mi_node *node = NULL;
+	struct mi_node *node_s = NULL;
 	struct mi_attr* attr;
-	str cluster_id;
-	str clusterer_id;
-	str machine_id;
-	str state;
-	str no_tries;
-	str duration;
-	str last_attempt;
-	str failed_attempts;
+	str val;
 
 	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 	if (!rpl_tree)
 		return NULL;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	lock_start_read(ref_lock);
 
-	head_table = *tdata;
-	root = &rpl_tree->node;
+	/* iterate through clusters */
 	for (head_table = *tdata; head_table; head_table = head_table->next) {
+
+		val.s = int2str(head_table->cluster_id, &val.len);
+		node = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE|MI_IS_ARRAY,
+			MI_SSTR("Cluster"), val.s, val.len);
+		if (!node) goto error;
+
+		/* iterate through supported protocols */
 		for (info = head_table->info; info; info = info->next) {
+
+			/* iterate through servers */
 			for (value = info->value; value; value = value->next) {
-				clusterer_id.s = int2str(value->id, &clusterer_id.len);
-				node = add_mi_node_child(root, MI_DUP_VALUE, "Clusterer ID", 12,
-					clusterer_id.s, clusterer_id.len);
+
+				val.s = int2str(value->id, &val.len);
+				node_s = add_mi_node_child(node, MI_DUP_VALUE,
+					MI_SSTR("DB ID"), val.s, val.len);
 				if (!node) goto error;
 
-				cluster_id.s = int2str(head_table->cluster_id, &cluster_id.len);
-				attr = add_mi_attr(node, MI_DUP_VALUE, "Cluster ID", 10,
-					cluster_id.s, cluster_id.len);
+				val.s = int2str(value->state, &val.len);
+				attr = add_mi_attr(node_s, MI_DUP_VALUE,
+					MI_SSTR("State"), val.s, val.len);
 				if (!attr) goto error;
 
-				machine_id.s = int2str(value->machine_id, &machine_id.len);
-				attr = add_mi_attr(node, MI_DUP_VALUE, "Machine ID", 10,
-					machine_id.s, machine_id.len);
+				attr = add_mi_attr(node_s, MI_DUP_VALUE,
+					MI_SSTR("URL"), value->path.s, value->path.len);
 				if (!attr) goto error;
 
-				state.s = int2str(value->state, &state.len);
-				attr = add_mi_attr(node, MI_DUP_VALUE, "STATE", 5,
-					state.s, state.len);
+				val.s = int2str(value->state, &val.len);
+				attr = add_mi_attr(node_s, MI_DUP_VALUE,
+					MI_SSTR("State"), val.s, val.len);
 				if (!attr) goto error;
 
-				last_attempt.s = int2str(value->last_attempt, &last_attempt.len);
-				attr = add_mi_attr(node, MI_DUP_VALUE, "LAST_FAILED_ATTEMPT", 19,
-					last_attempt.s, last_attempt.len);
+				val.s = int2str(value->last_attempt, &val.len);
+				attr = add_mi_attr(node_s, MI_DUP_VALUE,
+					MI_SSTR("Last_failed_attempt"), val.s, val.len);
 				if (!attr) goto error;
 
-				failed_attempts.s = int2str(value->failed_attempts, &failed_attempts.len);
-				attr = add_mi_attr(node, MI_DUP_VALUE, "MAX_FAILED_ATTEMPTS", 19,
-					failed_attempts.s, failed_attempts.len);
+				val.s = int2str(value->failed_attempts, &val.len);
+				attr = add_mi_attr(node_s, MI_DUP_VALUE,
+					MI_SSTR("Max_failed_attempts"), val.s, val.len);
 				if (!attr) goto error;
 
-				no_tries.s = int2str(value->no_tries, &no_tries.len);
-				attr = add_mi_attr(node, MI_DUP_VALUE, "NO_TRIES", 8,
-					no_tries.s, no_tries.len);
+				val.s = int2str(value->no_tries, &val.len);
+				attr = add_mi_attr(node_s, MI_DUP_VALUE,
+					MI_SSTR("no_tries"), val.s, val.len);
 				if (!attr) goto error;
 
-				duration.s = int2str(value->duration, &duration.len);
-				attr = add_mi_attr(node, MI_DUP_VALUE, "SECONDS_UNTIL_ENABLING", 22,
-					duration.s, duration.len);
-				if (!attr) goto error;
-
-				attr = add_mi_attr(node, MI_DUP_VALUE, "PATH", 4,
-					value->path.s, value->path.len);
+				val.s = int2str(value->duration, &val.len);
+				attr = add_mi_attr(node_s, MI_DUP_VALUE,
+					MI_SSTR("Seconds_until_enabling"), val.s, val.len);
 				if (!attr) goto error;
 
 				if (value->description.s)
-					attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
-					value->description.s, value->description.len);
+					attr = add_mi_attr(node_s, MI_DUP_VALUE,
+						MI_SSTR("Description"),
+						value->description.s, value->description.len);
 				else
-					attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
-					"none", 4);
+					attr = add_mi_attr(node_s, MI_DUP_VALUE,
+						MI_SSTR("Description"),
+						"none", 4);
 				if (!attr) goto error;
 			}
 		}
