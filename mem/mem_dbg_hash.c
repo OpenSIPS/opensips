@@ -26,11 +26,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-void dbg_ht_init(mem_dbg_htable_t htable) {
-	int i;
-
-	for(i=0; i < DBG_HASH_SIZE; i++)
-		htable[i] = NULL;
+void dbg_ht_init(mem_dbg_htable_t htable)
+{
+	memset(htable, 0, sizeof(mem_dbg_htable_t));
 }
 
 int dbg_ht_update(mem_dbg_htable_t htable, const char *file, const char *func, unsigned long line, unsigned long size)

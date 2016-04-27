@@ -1440,6 +1440,7 @@ void hp_status(struct hp_block *hpb)
 		if (!f->is_free)
 			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
 				LM_ERR("Unable to update alloc'ed. memory summary\n");
+				dbg_ht_free(allocd);
 				return;
 			}
 

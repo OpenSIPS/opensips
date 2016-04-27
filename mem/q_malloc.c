@@ -688,6 +688,7 @@ void qm_status(struct qm_block* qm)
 		if (!f->u.is_free)
 			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
 				LM_ERR("Unable to update alloc'ed. memory summary\n");
+				dbg_ht_free(allocd);
 				return;
 			}
 
