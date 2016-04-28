@@ -27,6 +27,7 @@
 #define _HEP_H
 
 #include "../../ip_addr.h"
+#include "../../parser/msg_parser.h"
 
 #define HEP_HEADER_ID "\x48\x45\x50\x33"
 #define HEP_HEADER_ID_LEN (sizeof(HEP_HEADER_ID) - 1)
@@ -230,15 +231,17 @@ struct hep_context {
 	int resume_with_sip;
 };
 
-int pack_hep(union sockaddr_union* from_su, union sockaddr_union* to_su,
-		int proto, char *payload, int plen, char **retbuf, int *retlen);
+int pack_hep(struct sip_msg* msg, union sockaddr_union* from_su,
+		union sockaddr_union* to_su, int proto, char *payload, int plen,
+		char **retbuf, int *retlen);
 int unpack_hepv2(char *buf, int len, struct hep_desc* h);
 int unpack_hepv3(char *buf, int len, struct hep_desc *h);
 int unpack_hep(char *buf, int len, int version, struct hep_desc* h);
 
 
-typedef int (*pack_hep_t)(union sockaddr_union* from_su, union sockaddr_union* to_su,
-		int proto, char *payload, int plen, char **retbuf, int *retlen);
+typedef int (*pack_hep_t)(struct sip_msg* msg, union sockaddr_union* from_su,
+		union sockaddr_union* to_su, int proto, char *payload, int plen,
+		char **retbuf, int *retlen);
 typedef int (*get_hep_ctx_id_t)(void);
 #endif
 
