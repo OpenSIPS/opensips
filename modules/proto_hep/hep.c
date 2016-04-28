@@ -650,7 +650,7 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 			h3.hg.dst_port = *((hep_chunk_uint16_t*)buf);
 
 			CONVERT_TO_HBO(h3.hg.dst_port.chunk);
-			h3.hg.dst_port.data = ntohs(h3.hg.src_port.data);
+			h3.hg.dst_port.data = ntohs(h3.hg.dst_port.data);
 
 			UPDATE_BUFFER(buf, tlen, h3.hg.dst_port.chunk.length);
 
