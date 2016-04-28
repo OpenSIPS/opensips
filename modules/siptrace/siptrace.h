@@ -107,8 +107,8 @@ static void trace_slack_in(struct sip_msg* req, str *buffer,int rpl_code,
 static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
 
 static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri);
-static int trace_send_hep_duplicate(struct sip_msg* msg, str *body, str *fromproto,
-		str *fromip, unsigned short fromport, str *toproto, str *toip,
+static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
+		unsigned short fromport, str *toproto, str *toip,
 		unsigned short toport, struct sip_uri *uri);
 
 

@@ -50,12 +50,10 @@ extern int payload_compression;
 
 extern compression_api_t compression_api;
 
-static int pack_hepv3(struct sip_msg* msg, union sockaddr_union* from_su,
-		union sockaddr_union* to_su, int proto, char *payload, int plen,
-		char **retbuf, int *retlen);
-static int pack_hepv2(struct sip_msg* msg, union sockaddr_union* from_su,
-		union sockaddr_union* to_su, int proto, char *payload, int plen,
-		char **retbuf, int *retlen);
+static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su,
+		int proto, char *payload, int plen, char **retbuf, int *retlen);
+static int pack_hepv2(union sockaddr_union* from_su, union sockaddr_union* to_su,
+		int proto, char *payload, int plen, char **retbuf, int *retlen);
 
 /*
  *
@@ -69,22 +67,21 @@ static int pack_hepv2(struct sip_msg* msg, union sockaddr_union* from_su,
  * @out2 packed buffer length
  * it's your job to free the buffers
  */
-int pack_hep(struct sip_msg* msg, union sockaddr_union* from_su,
-		union sockaddr_union* to_su, int proto, char *payload, int plen,
-		char **retbuf, int *retlen)
+int pack_hep(union sockaddr_union* from_su, union sockaddr_union* to_su,
+		int proto, char *payload, int plen, char **retbuf, int *retlen)
 {
 
 	switch (hep_version) {
 		case 1:
 		case 2:
-			if (pack_hepv2(msg, from_su, to_su, proto, payload,
+			if (pack_hepv2(from_su, to_su, proto, payload,
 										plen, retbuf, retlen) < 0) {
 				LM_ERR("failed to pack using hep protocol version 3\n");
 				return -1;
 			}
 			break;
 		case 3:
-			if (pack_hepv3(msg, from_su, to_su, proto, payload,
+			if (pack_hepv3(from_su, to_su, proto, payload,
 										plen, retbuf, retlen) < 0) {
 				LM_ERR("failed to pack using hep protocol version 3\n");
 				return -1;
@@ -110,9 +107,8 @@ int pack_hep(struct sip_msg* msg, union sockaddr_union* from_su,
  * @out1 packed buffer (pkg)
  * @out2 packed buffer length
  */
-static int pack_hepv3(struct sip_msg* msg, union sockaddr_union* from_su,
-		union sockaddr_union* to_su, int proto, char *payload, int plen,
-		char **retbuf, int *retlen)
+static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su,
+		int proto, char *payload, int plen, char **retbuf, int *retlen)
 {
 	int rc;
 	int buflen, iplen=0, tlen;
@@ -154,13 +150,13 @@ static int pack_hepv3(struct sip_msg* msg, union sockaddr_union* from_su,
 		/* SRC IP */
 		src_ip4.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		src_ip4.chunk.type_id   = htons(0x0003);
-		src_ip4.data = *(struct in_addr*)msg->rcv.src_ip.u.addr;
+		src_ip4.data = from_su->sin.sin_addr;
 		src_ip4.chunk.length = htons(sizeof(src_ip4));
 
 		/* DST IP */
 		dst_ip4.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		dst_ip4.chunk.type_id   = htons(0x0004);
-		dst_ip4.data = *(struct in_addr*)msg->rcv.dst_ip.u.addr;
+		dst_ip4.data = to_su->sin.sin_addr;
 		dst_ip4.chunk.length = htons(sizeof(dst_ip4));
 
 		iplen = sizeof(dst_ip4) + sizeof(src_ip4);
@@ -168,13 +164,13 @@ static int pack_hepv3(struct sip_msg* msg, union sockaddr_union* from_su,
 		/* SRC PORT */
 		hg.src_port.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		hg.src_port.chunk.type_id   = htons(0x0007);
-		hg.src_port.data = htons(msg->rcv.src_port);
+		hg.src_port.data = htons(from_su->sin.sin_port);
 		hg.src_port.chunk.length = htons(sizeof(hg.src_port));
 
 		/* DST PORT */
 		hg.dst_port.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		hg.dst_port.chunk.type_id   = htons(0x0008);
-		hg.dst_port.data = htons(msg->rcv.dst_port);
+		hg.dst_port.data = htons(to_su->sin.sin_port);
 		hg.dst_port.chunk.length = htons(sizeof(hg.dst_port));
 	}
 	/* IPv6 */
@@ -182,13 +178,13 @@ static int pack_hepv3(struct sip_msg* msg, union sockaddr_union* from_su,
 		/* SRC IPv6 */
 		src_ip6.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		src_ip6.chunk.type_id   = htons(0x0005);
-		src_ip6.data = *(struct in6_addr*)msg->rcv.src_ip.u.addr;
+		src_ip6.data = from_su->sin6.sin6_addr;
 		src_ip6.chunk.length = htonl(sizeof(src_ip6));
 
 		/* DST IPv6 */
 		dst_ip6.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		dst_ip6.chunk.type_id   = htons(0x0006);
-		dst_ip6.data = *(struct in6_addr*)msg->rcv.dst_ip.u.addr;
+		dst_ip6.data = from_su->sin6.sin6_addr;
 		dst_ip6.chunk.length = htonl(sizeof(dst_ip6));
 
 		iplen = sizeof(dst_ip6) + sizeof(src_ip6);
@@ -196,13 +192,13 @@ static int pack_hepv3(struct sip_msg* msg, union sockaddr_union* from_su,
 		/* SRC PORT */
 		hg.src_port.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		hg.src_port.chunk.type_id   = htons(0x0007);
-		hg.src_port.data = htons(msg->rcv.src_port);
+		hg.src_port.data = htons(from_su->sin6.sin6_port);
 		hg.src_port.chunk.length = htons(sizeof(hg.src_port));
 
 		/* DST PORT */
 		hg.dst_port.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		hg.dst_port.chunk.type_id   = htons(0x0008);
-		hg.dst_port.data = htons(msg->rcv.dst_port);
+		hg.dst_port.data = htons(to_su->sin6.sin6_port);
 		hg.dst_port.chunk.length = htons(sizeof(hg.dst_port));
 	}
 
@@ -320,9 +316,8 @@ static int pack_hepv3(struct sip_msg* msg, union sockaddr_union* from_su,
  * @out2 packed buffer length
  */
 
-static int pack_hepv2(struct sip_msg* msg, union sockaddr_union* from_su,
-		union sockaddr_union* to_su, int proto, char *payload, int plen,
-		char **retbuf, int *retlen)
+static int pack_hepv2(union sockaddr_union* from_su, union sockaddr_union* to_su,
+		int proto, char *payload, int plen, char **retbuf, int *retlen)
 {
 	char* buffer;
 	unsigned int totlen=0, buflen=0;
@@ -378,28 +373,28 @@ static int pack_hepv2(struct sip_msg* msg, union sockaddr_union* from_su,
 	switch (hdr.hp_f) {
 		case AF_INET:
 			/* Source && Destination ipaddresses*/
-			hep_ipheader.hp_src = *(struct in_addr*)msg->rcv.src_ip.u.addr;
-			hep_ipheader.hp_dst = *(struct in_addr*)msg->rcv.dst_ip.u.addr;
+			hep_ipheader.hp_src = from_su->sin.sin_addr;
+			hep_ipheader.hp_dst = to_su->sin.sin_addr;
 
 			/* copy hep ipheader */
 			memcpy((void*)buffer + buflen, &hep_ipheader, sizeof(struct hep_iphdr));
 			buflen += sizeof(struct hep_iphdr);
 
-			hdr.hp_sport = htons(msg->rcv.src_port);
-			hdr.hp_dport = htons(msg->rcv.dst_port);
+			hdr.hp_sport = htons(from_su->sin.sin_port); /* src port */
+			hdr.hp_dport = htons(to_su->sin.sin_port); /* dst port */
 
 			break;
 		case AF_INET6:
 			/* Source && Destination ipv6addresses*/
-			hep_ip6header.hp6_src = *(struct in6_addr*)msg->rcv.src_ip.u.addr;
-			hep_ip6header.hp6_dst = *(struct in6_addr*)msg->rcv.dst_ip.u.addr;
+			hep_ip6header.hp6_src = from_su->sin6.sin6_addr;
+			hep_ip6header.hp6_dst = to_su->sin6.sin6_addr;
 
 			/* copy hep6 ipheader */
 			memcpy((void*)buffer + buflen, &hep_ip6header, sizeof(struct hep_ip6hdr));
 			buflen += sizeof(struct hep_ip6hdr);
 
-			hdr.hp_sport = htons(msg->rcv.src_port);
-			hdr.hp_dport = htons(msg->rcv.dst_port);
+			hdr.hp_sport = htons(from_su->sin6.sin6_port); /* src port */
+			hdr.hp_dport = htons(to_su->sin6.sin6_port); /* dst port */
 			break;
      }
 
@@ -655,7 +650,7 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 			h3.hg.dst_port = *((hep_chunk_uint16_t*)buf);
 
 			CONVERT_TO_HBO(h3.hg.dst_port.chunk);
-			h3.hg.dst_port.data = ntohs(h3.hg.dst_port.data);
+			h3.hg.dst_port.data = ntohs(h3.hg.src_port.data);
 
 			UPDATE_BUFFER(buf, tlen, h3.hg.dst_port.chunk.length);
 
