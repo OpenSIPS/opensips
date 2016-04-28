@@ -649,7 +649,8 @@ assign_stm: DEBUG EQUAL snumber
 		| ABORT_ON_ASSERT EQUAL NUMBER  { abort_on_assert=$3; }
 		| ABORT_ON_ASSERT EQUAL error  { yyerror("boolean value expected"); }
 		| DEBUG_MODE EQUAL NUMBER  { debug_mode=$3;
-			*log_level = L_DBG;log_stderr=1; }
+			if (debug_mode) { *log_level = L_DBG;log_stderr=1;}
+			}
 		| DEBUG_MODE EQUAL error
 			{ yyerror("boolean value expected for debug_mode"); }
 		| LOGSTDERROR EQUAL NUMBER 
