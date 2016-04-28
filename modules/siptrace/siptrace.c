@@ -2235,7 +2235,7 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 
 	hostent2su(to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
 
-	if (hep_api.pack_hep(&from_su, to, proto, body->s, body->len,
+	if (hep_api.pack_hep(&from_su, &to_su, proto, body->s, body->len,
 				&hepbuf, &heplen)) {
 		LM_ERR("failed to do hep packing\n");
 		return -1;
