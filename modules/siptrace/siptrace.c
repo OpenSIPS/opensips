@@ -904,7 +904,7 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 
 		switch (it->type) {
 		case TYPE_HEP:
-			if (trace_send_hep_duplicate(msg, &db_vals[0].val.blob_val,
+			if (trace_send_hep_duplicate(&db_vals[0].val.blob_val,
 					&db_vals[4].val.str_val, &db_vals[5].val.str_val,
 					db_vals[6].val.int_val, &db_vals[7].val.str_val,
 					&db_vals[8].val.str_val, db_vals[9].val.int_val,
@@ -2210,8 +2210,8 @@ static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri)
 	return ret;
 }
 
-static int trace_send_hep_duplicate(struct sip_msg* msg, str *body, str *fromproto,
-		str *fromip, unsigned short fromport, str *toproto, str *toip,
+static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
+		unsigned short fromport, str *toproto, str *toip,
 		unsigned short toport, struct sip_uri *uri)
 {
 	struct proxy_l * p=NULL /* make gcc happy */;
@@ -2256,7 +2256,7 @@ static int trace_send_hep_duplicate(struct sip_msg* msg, str *body, str *frompro
 
 	hostent2su(to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
 
-	if (hep_api.pack_hep(msg, &from_su, to, proto, body->s, body->len,
+	if (hep_api.pack_hep(&from_su, to, proto, body->s, body->len,
 				&hepbuf, &heplen)) {
 		LM_ERR("failed to do hep packing\n");
 		return -1;
