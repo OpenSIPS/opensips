@@ -42,7 +42,6 @@
 #include "hep.h"
 #include "hep_cb.h"
 
-extern int hep_version;
 extern int hep_ctx_idx;
 
 struct hep_cb_list {
@@ -122,8 +121,6 @@ int bind_proto_hep(proto_hep_api_t *api)
 		LM_ERR("invalid parameter value!\n");
 		return -1;
 	}
-
-	api->version         = hep_version;
 
 	api->pack_hep        = pack_hep;
 	api->register_hep_cb = register_hep_cb;

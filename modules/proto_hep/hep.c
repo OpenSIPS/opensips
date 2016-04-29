@@ -44,7 +44,6 @@
 #define GENERIC_VENDOR_ID 0x0000
 #define HEP_PROTO_SIP  0x01
 
-extern int hep_version;
 extern int hep_capture_id;
 extern int payload_compression;
 
@@ -53,11 +52,12 @@ extern compression_api_t compression_api;
 static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su,
 		int proto, char *payload, int plen, char **retbuf, int *retlen);
 static int pack_hepv2(union sockaddr_union* from_su, union sockaddr_union* to_su,
-		int proto, char *payload, int plen, char **retbuf, int *retlen);
+		int proto, char *payload, int plen, int hep_version,
+		char **retbuf, int *retlen);
 
 /*
  *
- * pack as hep; version depends on hep_version
+ * pack as hep; version depends
  * @in1 source sockkadr
  * @in2 dest sockkadr
  * @in3 protocolo
@@ -68,14 +68,15 @@ static int pack_hepv2(union sockaddr_union* from_su, union sockaddr_union* to_su
  * it's your job to free the buffers
  */
 int pack_hep(union sockaddr_union* from_su, union sockaddr_union* to_su,
-		int proto, char *payload, int plen, char **retbuf, int *retlen)
+		int proto, char *payload, int plen, int hep_version, char **retbuf,
+		int *retlen)
 {
 
 	switch (hep_version) {
 		case 1:
 		case 2:
 			if (pack_hepv2(from_su, to_su, proto, payload,
-										plen, retbuf, retlen) < 0) {
+										plen, hep_version, retbuf, retlen) < 0) {
 				LM_ERR("failed to pack using hep protocol version 3\n");
 				return -1;
 			}
@@ -317,7 +318,8 @@ static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su
  */
 
 static int pack_hepv2(union sockaddr_union* from_su, union sockaddr_union* to_su,
-		int proto, char *payload, int plen, char **retbuf, int *retlen)
+		int proto, char *payload, int plen, int hep_version,
+		char **retbuf, int *retlen)
 {
 	char* buffer;
 	unsigned int totlen=0, buflen=0;

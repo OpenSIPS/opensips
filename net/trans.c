@@ -198,7 +198,7 @@ int fix_all_socket_lists(void)
 {
 	int i;
 	int found = 0;
-	static char buf[5 /* currently sctp\0 is the largest protocol */];
+	static char buf[PROTO_NAME_MAX_SIZE /* currently we shouldn't hardcode that much */];
 	char *p;
 #if 0
 	/* TODO: decide what to do with this */

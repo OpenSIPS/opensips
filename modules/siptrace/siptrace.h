@@ -41,6 +41,12 @@ typedef struct st_db_struct {
 	str table;
 } st_db_struct_t;
 
+typedef struct st_hep_struct {
+	struct sip_uri uri;
+	char version;
+	int transport;
+} st_hep_struct_t;
+
 
 enum types { TYPE_HEP=0, TYPE_SIP, TYPE_DB, TYPE_END };
 typedef struct tlist_elem {
@@ -51,6 +57,7 @@ typedef struct tlist_elem {
 
 	union {
 		st_db_struct_t  *db;
+		st_hep_struct_t *hep;
 		struct sip_uri  uri;
 	} el;
 
@@ -109,7 +116,7 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
 static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri);
 static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 		unsigned short fromport, str *toproto, str *toip,
-		unsigned short toport, struct sip_uri *uri);
+		unsigned short toport, st_hep_struct_t* hep);
 
 
 
