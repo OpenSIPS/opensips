@@ -237,12 +237,6 @@ int parse_prefix_line(char *line,select_menu *menu)
 	char *p;
 	int pref_len,len = strlen(line);
 
-	install_prefix=malloc(len);
-	if (!install_prefix) {
-		fprintf(output,"Failed to allow mem\n");
-		return -1;
-	}
-
 	p=memchr(line,'=',len);
 	if (!p) {
 		fprintf(output,"Malformed prefix line\n");
@@ -251,6 +245,10 @@ int parse_prefix_line(char *line,select_menu *menu)
 
 	p++;
 	pref_len=line+len-1-p;
+	while (pref_len > 0 && *p == ' ') {
+		pref_len--;
+		p++;
+	}
 
 	if (p[pref_len-1] != '/')
 		pref_len++;
@@ -261,10 +259,13 @@ int parse_prefix_line(char *line,select_menu *menu)
 		return -1;
 	}
 
-	memset(install_prefix,0,pref_len+1);
 	memcpy(install_prefix,p,pref_len);
-	if (p[pref_len-1] != '/')
+	if (p[pref_len-1] != '/') {
 		install_prefix[pref_len-1]='/';
+		install_prefix[pref_len]='\0';
+	} else {
+		install_prefix[pref_len-1]='\0';
+	}
 
 	/* also init the prev prefix, used for
 	 * resetting changes */

@@ -86,4 +86,4 @@ DEFS+= -DDBG_MALLOC #Enables debugging for memory allocators
 #DEFS+= -DEXTRA_DEBUG #Compiles in some extra debugging code
 #DEFS+= -DORACLE_USRLOC #Uses Oracle compatible queries for USRLOC
 
-PREFIX=/usr/local/
+PREFIX ?= /usr/local/

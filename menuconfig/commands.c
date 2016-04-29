@@ -287,9 +287,10 @@ int read_install_prefix(select_menu *menu,void *arg)
 	#define query_msg		"Enter install prefix "
 	#define folder_ok		"Folder exists and is accesible "
 	char str[256];
+	char *p;
 	int ret,len;
 
-	print_notice(NOTICE_Y,NOTICE_X,0,"%s (Current = '%s') :",query_msg,
+	print_notice(NOTICE_Y,NOTICE_X,0,"%s (Current = '%s') : ",query_msg,
 			install_prefix?install_prefix:DEFAULT_INSTALL_PREFIX);
 
 	/* print directory that user is typing */
@@ -306,18 +307,21 @@ int read_install_prefix(select_menu *menu,void *arg)
 
 	/* Empty directory = default directory */
 	if (strlen(str) != 0) {
+		p = str;
+		/* trim the spaces before the prefix */
+		while (*p && *p == ' ') p++;
 		prev_prefix=install_prefix;
 
-		len = strlen(str);
-		install_prefix = malloc(str[len-1]=='/'?len+1:len+2);
+		len = strlen(p);
+		install_prefix = malloc(p[len-1]=='/'?len+1:len+2);
 		if (!install_prefix) {
 			fprintf(output,"No more mem\n");
 			return -1;
 		}
 
-		memset(install_prefix,0,str[len-1]=='/'?len+1:len+2);
-		memcpy(install_prefix,str,len);
-		if (str[len-1] != '/')
+		memset(install_prefix,0,p[len-1]=='/'?len+1:len+2);
+		memcpy(install_prefix,p,len);
+		if (p[len-1] != '/')
 			install_prefix[len]='/';
 
 		print_notice(NOTICE_Y,NOTICE_X,0,"%s. Install prefix is currently [%s]",folder_ok,
@@ -471,7 +475,7 @@ int dump_make_conf(select_menu *menu,void *arg)
 
 	/* START install prefix related options */
 	current=find_menu(CONF_INSTALL_PREFIX,main_menu);
-	fprintf(f,"\nPREFIX=%s",install_prefix?install_prefix:DEFAULT_INSTALL_PREFIX);
+	fprintf(f,"\nPREFIX ?= %s",install_prefix?install_prefix:DEFAULT_INSTALL_PREFIX);
 
 	prev_prefix=install_prefix;
 	current->child_changed=CHILD_NO_CHANGES;
