@@ -1231,7 +1231,7 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 		}
 	} else {
 		/* HEPv2 */
-		if (unpack_hepv2(buf, len, &hep_ctx->h)) {
+		if (unpack_hepv12(buf, len, &hep_ctx->h)) {
 			LM_ERR("hepv12 unpacking failed\n");
 			return -1;
 		}

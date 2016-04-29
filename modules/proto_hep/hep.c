@@ -51,7 +51,7 @@ extern compression_api_t compression_api;
 
 static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su,
 		int proto, char *payload, int plen, char **retbuf, int *retlen);
-static int pack_hepv2(union sockaddr_union* from_su, union sockaddr_union* to_su,
+static int pack_hepv12(union sockaddr_union* from_su, union sockaddr_union* to_su,
 		int proto, char *payload, int plen, int hep_version,
 		char **retbuf, int *retlen);
 
@@ -75,7 +75,7 @@ int pack_hep(union sockaddr_union* from_su, union sockaddr_union* to_su,
 	switch (hep_version) {
 		case 1:
 		case 2:
-			if (pack_hepv2(from_su, to_su, proto, payload,
+			if (pack_hepv12(from_su, to_su, proto, payload,
 										plen, hep_version, retbuf, retlen) < 0) {
 				LM_ERR("failed to pack using hep protocol version 3\n");
 				return -1;
@@ -317,7 +317,7 @@ static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su
  * @out2 packed buffer length
  */
 
-static int pack_hepv2(union sockaddr_union* from_su, union sockaddr_union* to_su,
+static int pack_hepv12(union sockaddr_union* from_su, union sockaddr_union* to_su,
 		int proto, char *payload, int plen, int hep_version,
 		char **retbuf, int *retlen)
 {
@@ -434,7 +434,7 @@ int unpack_hep(char *buf, int len, int version, struct hep_desc* h)
 	if (version == 3)
 		err = unpack_hepv3(buf, len, h);
 	else
-		err = unpack_hepv2(buf, len, h);
+		err = unpack_hepv12(buf, len, h);
 
 	return err;
 }
@@ -445,7 +445,7 @@ int unpack_hep(char *buf, int len, int version, struct hep_desc* h)
  * @in2 buffer length
  * @out1 structure containing hepv12 details + headers | see hep.h
  */
-int unpack_hepv2(char *buf, int len, struct hep_desc* h)
+int unpack_hepv12(char *buf, int len, struct hep_desc* h)
 {
 	int offset = 0, hl;
 
