@@ -87,7 +87,7 @@ static const builtin functions[] = {
     {"sqrt", sqrt},
     {"tan", tan},
     {"tanh", tanh},
-    {0}
+    {0, 0}
 };
 
 
