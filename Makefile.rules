@@ -79,7 +79,7 @@ Makefile.conf: Makefile.conf.template
 	fi
 
 $(cfg_prefix)/$(cfg_dir):
-		mkdir -p $(cfg_prefix)/$(cfg_dir)
+		mkdir -m 700 -p $(cfg_prefix)/$(cfg_dir)
 
 $(bin_prefix)/$(bin_dir):
 		mkdir -p $(bin_prefix)/$(bin_dir)

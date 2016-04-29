@@ -496,12 +496,10 @@ mk-install-dirs: $(cfg_prefix)/$(cfg_dir) $(bin_prefix)/$(bin_dir) \
 install-cfg: $(cfg_prefix)/$(cfg_dir)
 		sed -e "s#/usr/.*lib/$(NAME)/modules/#$(modules_target)#g" \
 			< etc/$(NAME).cfg > $(cfg_prefix)/$(cfg_dir)$(NAME).cfg.sample0
-		sed -e "s#/usr/.*etc/$(NAME)/tls/#$(cfg_target)tls/#g" \
+		umask 0077; sed -e "s#/usr/.*etc/$(NAME)/tls/#$(cfg_target)tls/#g" \
 			< $(cfg_prefix)/$(cfg_dir)$(NAME).cfg.sample0 \
 			> $(cfg_prefix)/$(cfg_dir)$(NAME).cfg.sample
 		rm -fr $(cfg_prefix)/$(cfg_dir)$(NAME).cfg.sample0
-		chmod 600 $(cfg_prefix)/$(cfg_dir)$(NAME).cfg.sample
-		chmod 700 $(cfg_prefix)/$(cfg_dir)
 		if [ -z "${skip_cfg_install}" -a \
 				! -f $(cfg_prefix)/$(cfg_dir)$(NAME).cfg ]; then \
 			mv -f $(cfg_prefix)/$(cfg_dir)$(NAME).cfg.sample \
