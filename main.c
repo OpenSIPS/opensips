@@ -734,6 +734,7 @@ int main(int argc, char** argv)
 	int tmp_len;
 	int port;
 	int proto;
+	int protos_no;
 	char *options;
 	int ret;
 	unsigned int seed;
@@ -1022,10 +1023,15 @@ try_again:
 	}
 
 	/* load transport protocols */
-	if (trans_load() < 0) {
+	protos_no = trans_load();
+	if (protos_no < 0) {
 		LM_ERR("cannot load transport protocols\n");
 		goto error;
-	}
+	} else if (protos_no == 0) {
+		LM_ERR("no trasnport protocol loaded\n");
+		goto error;
+	} else
+		LM_DBG("Loaded %d transport protocols\n", protos_no);
 
 	/* fix parameters */
 	if (working_dir==0) working_dir="/";

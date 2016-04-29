@@ -157,6 +157,8 @@ struct module_exports proto_tcp_exports = {
 
 static int proto_tcp_init(struct proto_info *pi)
 {
+	pi->id					= PROTO_TCP;
+	pi->name				= "tcp";
 	pi->default_port		= tcp_port;
 
 	pi->tran.init_listener	= proto_tcp_init_listener;

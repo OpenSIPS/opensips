@@ -203,6 +203,8 @@ static void mod_destroy(void)
 
 static int proto_tls_init(struct proto_info *pi)
 {
+	pi->id					= PROTO_TLS;
+	pi->name				= "tls";
 	pi->default_port		= tls_port_no;
 
 	pi->tran.init_listener	= proto_tls_init_listener;

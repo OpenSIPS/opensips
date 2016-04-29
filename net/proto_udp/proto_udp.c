@@ -94,6 +94,8 @@ static int mod_init(void)
 
 static int proto_udp_init(struct proto_info *pi)
 {
+	pi->id					= PROTO_UDP;
+	pi->name				= "udp";
 	pi->default_port		= udp_port;
 
 	pi->tran.init_listener	= proto_udp_init_listener;
