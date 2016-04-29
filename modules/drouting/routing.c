@@ -630,7 +630,9 @@ void destroy_pgw(void *pgw_p)
 
 void destroy_pcr(void *pcr_p)
 {
-	shm_free((pcr_t *)pcr_p);
+	pcr_t* pcr = pcr_p;
+	if (pcr->pgwl) shm_free(pcr->pgwl);
+	shm_free(pcr);
 }
 
 
