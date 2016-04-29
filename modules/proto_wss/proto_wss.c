@@ -132,6 +132,8 @@ struct module_exports exports = {
 
 static int proto_wss_init(struct proto_info *pi)
 {
+	pi->id					= PROTO_WSS;
+	pi->name				= "wss";
 	pi->default_port		= wss_port;
 
 	pi->tran.init_listener	= proto_wss_init_listener;

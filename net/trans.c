@@ -69,60 +69,67 @@ void trans_destroy(void)
 
 int trans_load(void)
 {
+	int id;
 	struct sr_module *mod;
-	struct sr_module *prev = NULL, *next;
 	cmd_export_t *cmd;
-	char * proto_name;
-	int proto = PROTO_NONE;
+	int found_all = 0;
+	int found_proto;
 	api_proto_init abind;
+	struct proto_info pi;
 
 	/* go through all protocol modules loaded and load only the ones
 	 * that are prefixed with the PROTO_PREFIX token */
-	for (mod=modules; mod && (next = mod->next, 1); mod = next) {
-		if (strncmp(PROTO_PREFIX, mod->exports->name, PROTO_PREFIX_LEN) == 0) {
-			proto_name = mod->exports->name + PROTO_PREFIX_LEN;
-			if (parse_proto((unsigned char *)proto_name,
-					strlen(proto_name), &proto) < 0) {
-				LM_ERR("don't know any protocol <%s>\n", proto_name);
-				return -1;
-			}
-
-			/* check if we have any listeners for that protocol */
-			if (!protos[proto].listeners) {
-				LM_WARN("protocol %s loaded, but no listeners defined! "
-						"Skipping ...\n", proto_name);
-				if (!prev)
-					modules = mod->next;
-				else
-					prev->next = mod->next;
-
-				/* we do not call the destroy_f because the module was not
-				 * initialized yet here */
-				pkg_free(mod);
-				continue;
-			}
-
-			for (cmd = mod->exports->cmds; cmd && cmd->name; cmd++) {
-				if (strcmp("proto_init", cmd->name)==0) {
-					abind = (api_proto_init)cmd->function;
-					if (abind(&protos[proto]) < 0) {
-						LM_ERR("cannot load protocol's functions for %s\n",
-								proto_name);
-						return -1;
-					}
-					/* everything was fine, return */
-					protos[proto].id = proto;
-					protos[proto].name = proto_name;
-					goto next;
+	for (mod = modules; mod; mod = mod->next) {
+		if (strncmp(PROTO_PREFIX, mod->exports->name, PROTO_PREFIX_LEN) != 0)
+			continue;
+		found_proto = 0;
+		/* we have a transport module here - check for protocols */
+		for (cmd = mod->exports->cmds; cmd && cmd->name; cmd++) {
+			if (strcmp("proto_init", cmd->name)==0) {
+				abind = (api_proto_init)cmd->function;
+				memset(&pi, 0, sizeof(pi));
+				if (abind(&pi) < 0) {
+					LM_ERR("cannot load protocol's functions for %s\n",
+							cmd->name);
+					return -1;
 				}
+				/* double check if it is a known/valid proto */
+				if (pi.id < PROTO_FIRST || pi.id >= PROTO_OTHER) {
+					LM_ERR("Unknown protocol id %d; check sip_protos structure!\n", pi.id);
+					return -1;
+				}
+				/* double check the name of the proto */
+				if (parse_proto((unsigned char *)pi.name, strlen(pi.name), &id) < 0) {
+					LM_ERR("Cannot parse protocol %s\n", pi.name);
+					return -1;
+				}
+				if (id != pi.id) {
+					LM_ERR("Protocol ID mismatch %d != %d\n", id, pi.id);
+					return -1;
+				}
+				/* check if already added */
+				if (protos[id].id != PROTO_NONE) {
+					LM_ERR("Protocol already loaded %s\n", pi.name);
+					return -1;
+				}
+				/* all good now */
+				found_all++;
+				found_proto = 1;
+				/* copy necessary info */
+				protos[pi.id].id = pi.id;
+				protos[pi.id].name = pi.name;
+				protos[pi.id].default_port = pi.default_port;
+				protos[pi.id].tran = pi.tran;
+				protos[pi.id].net = pi.net;
 			}
-			LM_ERR("No binding found for protocol %s\n", proto_name);
-			return -1;
 		}
-next:
-		prev = mod;
+		if (found_proto)
+			continue;
+		LM_ERR("No binding found for protocol %s\n", mod->exports->name);
+		return -1;
 	}
-	return 0;
+	/* return whether we found any protocol or not */
+	return found_all;
 }
 #undef PROTO_PREFIX_LEN
 

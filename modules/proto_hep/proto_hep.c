@@ -245,6 +245,8 @@ void free_hep_context(void *ptr)
 static int proto_hep_init(struct proto_info *pi)
 {
 
+	pi->id					= PROTO_HEP;
+	pi->name				= "hep";
 	pi->default_port		= hep_port;
 	pi->tran.init_listener	= proto_hep_init_listener;
 

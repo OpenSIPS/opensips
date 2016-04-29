@@ -54,6 +54,9 @@ struct proto_info {
 	struct socket_info *sendipv6;
 };
 
+/* XXX: here it would be nice to have a separate structure that only populates
+ * the necessary info, without having access to "private" fields like
+ * listeners */
 typedef int (*api_proto_init)(struct proto_info *pi);
 
 extern struct proto_info *protos;

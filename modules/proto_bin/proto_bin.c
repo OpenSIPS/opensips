@@ -118,7 +118,10 @@ struct module_exports exports = {
 	0,          /* per-child init function */
 };
 
-static int proto_bin_init(struct proto_info *pi) {
+static int proto_bin_init(struct proto_info *pi)
+{
+	pi->id					= PROTO_BIN;
+	pi->name				= "bin";
 	pi->default_port		= bin_port;
 
 	pi->tran.init_listener	= proto_bin_init_listener;
