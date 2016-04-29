@@ -93,6 +93,8 @@ static str trace_local_proto = {NULL, 0};
 static str trace_local_ip = {NULL, 0};
 static unsigned short trace_local_port = 0;
 static int sl_ctx_idx=-1;
+static int default_hep_version=3;
+static int default_hep_proto=PROTO_HEP_TCP;
 
 tlist_elem_p trace_list=NULL;
 
@@ -253,7 +255,7 @@ get_db_struct(str *url, str *tb_name, st_db_struct_t **st_db)
 }
 
 static int
-parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
+parse_siptrace_uri(const str *token, str *uri, str *param1, str* param2)
 {
 	enum states {ST_TOK_NAME, ST_TOK_VALUE, ST_TOK_END};
 	enum states state = ST_TOK_NAME;
@@ -264,16 +266,18 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 	int _word_start=-1, _word_end=-1;
 
 	#define HAVE_URI   (1<<0)
-	#define HAVE_TABLE (1<<1)
-	#define HAVE_AVP   (1<<2)
-	#define HAVE_USER_AVP (1<<3)
+	#define HAVE_PARAM1 (1<<1)
+	#define HAVE_PARAM2   (1<<2)
 
 	unsigned char found_bitmask=0;
-	unsigned char is_db_url=0;
+	unsigned char uri_type=TYPE_END;
+	unsigned char no_parsing=0;
 
 
-	str uri_str={"uri", sizeof("uri")-1};
-	str tb_name_str={"table", sizeof("table")-1};
+	static str uri_str={"uri", sizeof("uri")-1};
+	static str tb_name_str={"table", sizeof("table")-1};
+	static str version_name_str={"version", sizeof("version")-1};
+	static str transport_name_str={"transport", sizeof("transport")-1};
 
 	str name={NULL, 0}, value={NULL, 0};
 
@@ -282,7 +286,7 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 		return -1;
 	}
 
-	if (!uri || !table) {
+	if (!uri || !param1) {
 		LM_ERR("bad output parameter!\n");
 		return -1;
 	}
@@ -290,7 +294,7 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 	for (p=0; p<token->len; p++) {
 		switch (token->s[p]){
 		case '=':
-			if (is_db_url)
+			if (no_parsing)
 				break;
 
 			_word_end = _word_end == -1 ? p : _word_end;
@@ -308,15 +312,14 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 			state=ST_TOK_VALUE;
 			_word_start=_word_end=-1;
 
-			/* it's a db url - don't parse user and password
-			 * this way we avoid thinking that ';' inside a mysql pass
-			 * is the end of the value */
+			/* just for databases we need to know what it is before parsing */
 			if (NULL !=
 					q_memchr(&token->s[p+1], '@', token->len - (p + 1)))
-				is_db_url = 1;
+				no_parsing=1;
+
 			break;
 		case ';':
-			if (is_db_url)
+			if (no_parsing)
 				break;
 
 			if (state==ST_TOK_NAME || last_equal == 0) {
@@ -329,16 +332,35 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 			value.s = token->s + _word_start;;
 			value.len = _word_end - _word_start;
 
+			str_trim_spaces_lr(value);
+			if (value.len > 3 && uri_type == TYPE_END) {
+				if (!memcmp(value.s, "hep", 3)) {
+					uri_type = TYPE_HEP;
+				} else if (!memcmp(value.s, "sip", 3)) {
+					uri_type = TYPE_SIP;
+				} else {
+					uri_type = TYPE_DB;
+				}
+			}
+
 			/* most probably will be found first; will do strcmp only once */
 			if (!(found_bitmask&HAVE_URI) && !str_strcasecmp(&uri_str, &name)) {
 				found_bitmask |= HAVE_URI;
 				*uri = value;
 			}
 
-			if (!(found_bitmask&HAVE_TABLE)
-					&& !str_strcasecmp(&tb_name_str, &name)) {
-				found_bitmask |= HAVE_TABLE;
-				*table = value;
+			if (!(found_bitmask&HAVE_PARAM1)
+				&& ((uri_type == TYPE_DB && !str_strcasecmp(&tb_name_str, &name))
+					|| (uri_type == TYPE_HEP &&
+						!str_strcasecmp(&version_name_str, &name) ) ) ) {
+				found_bitmask |= HAVE_PARAM1;
+				*param1 = value;
+			}
+
+			if (!(found_bitmask&HAVE_PARAM2)
+					&& !str_strcasecmp(&transport_name_str, &name)) {
+				found_bitmask |= HAVE_PARAM2;
+				*param2 = value;
 			}
 
 			state=ST_TOK_END;
@@ -346,9 +368,10 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 
 			break;
 		case '@':
-			if (is_db_url)
-				is_db_url = 0;
-			break;
+			/* continue parsing; passed over database password */
+			if (no_parsing)
+				no_parsing=1;
+
 		case '\n':
 		case '\r':
 		case '\t':
@@ -366,15 +389,11 @@ parse_siptrace_uri(const str *token, str *uri, str *table/* only for dbs */)
 		case '_':
 			break;
 		default:
-			if (_word_start==-1 && (isalpha(token->s[p])||token->s[p]=='$')) {
+			if (_word_start==-1 && (isalnum(token->s[p])||token->s[p]=='$')) {
 				_word_start = p;
-			} else if (_word_start==-1 && isdigit(token->s[p])) {
-				LM_ERR("trace id can't start with digit!parsed until <%.*s>\n",
-						token->len-p, &token->s[p]);
-				return -1;
 			}
 
-			if (is_db_url)
+			if (no_parsing)
 				break;
 
 			if (_word_end == -1 && !isalnum(token->s[p]))
@@ -457,6 +476,13 @@ static int parse_siptrace_id(str *suri)
 				&& (__url__.s[0]|0x20) == 's' && (__url__.s[1]|0x20) == 'i' \
 					&& (__url__.s[2]|0x20) == 'p'))
 
+	#define IS_UDP(__url__) ((__url__.len == 3/*O_o*/ \
+				&& (__url__.s[0]|0x20) == 'u' && (__url__.s[1]|0x20) == 'd' \
+					&& (__url__.s[2]|0x20) == 'p'))
+
+	#define IS_TCP(__url__) ((__url__.len == 3/*O_o*/ \
+				&& (__url__.s[0]|0x20) == 't' && (__url__.s[1]|0x20) == 'c' \
+					&& (__url__.s[2]|0x20) == 'p'))
 
 
 	unsigned int hash, url_table_hash;
@@ -464,9 +490,12 @@ static int parse_siptrace_id(str *suri)
 	char *new_url;
 
 	str name={NULL, 0};
-	str trace_uri, db_table={NULL, 0};
+	str trace_uri;
+	str param1={NULL, 0}, param2={NULL,0};
 	tlist_elem_p    elem;
 	enum types uri_type;
+
+	unsigned int hep_version;
 
 
 	if (suri == NULL) {
@@ -491,23 +520,23 @@ static int parse_siptrace_id(str *suri)
 
 	PARSE_NAME(suri, name); /*parse '[<name>]'*/
 
-	if (parse_siptrace_uri(suri, &trace_uri, &db_table) < 0) {
+	if (parse_siptrace_uri(suri, &trace_uri, &param1, &param2) < 0) {
 		LM_ERR("invalid uri <%.*s>\n", suri->len, suri->s);
 		return -1;
 	}
 
 	hash = core_hash(&name, &trace_uri, 0);
 
-	 if (IS_HEP_URI(trace_uri)) {
+	if (IS_HEP_URI(trace_uri)) {
 		uri_type = TYPE_HEP;
 	} else if (IS_SIP_URI(trace_uri)) {
 		uri_type = TYPE_SIP;
 	} else {
 		/* need to take the table into account */
-		if (db_table.s == NULL || db_table.len == 0)
-			db_table = siptrace_table;
+		if (param1.s == NULL || param1.len == 0)
+			param1 = siptrace_table;
 
-		url_table_hash = core_hash(&trace_uri, &db_table, 0);
+		url_table_hash = core_hash(&trace_uri, &param1, 0);
 		hash ^= (url_table_hash>>3);
 		uri_type = TYPE_DB;
 	}
@@ -535,17 +564,72 @@ static int parse_siptrace_id(str *suri)
 	elem->next = NULL;
 
 	if (uri_type == TYPE_DB) {
-		if (get_db_struct(&trace_uri, &db_table, &elem->el.db) < 0) {
+		if (get_db_struct(&trace_uri, &param1, &elem->el.db) < 0) {
 			LM_ERR("Invalid parameters extracted!url <%.*s>! table name <%.*s>!\n",
-					trace_uri.len, trace_uri.s, db_table.len, db_table.s);
+					trace_uri.len, trace_uri.s, param1.len, param1.s);
 			return -1;
 		}
 	} else {
-		if (parse_uri(trace_uri.s, trace_uri.len, &elem->el.uri) < 0) {
+		if (uri_type == TYPE_HEP) {
+			elem->el.hep = pkg_malloc(sizeof(st_hep_struct_t));
+			if (elem->el.hep == NULL) {
+				LM_ERR("no more pkg mem!\n");
+				return -1;
+			}
+			memset(elem->el.hep, 0, sizeof(st_hep_struct_t));
+		}
+
+		if (parse_uri(trace_uri.s, trace_uri.len,
+					uri_type == TYPE_SIP ? &elem->el.uri: &elem->el.hep->uri) < 0) {
 			LM_ERR("failed to parse the URI!\n");
 			return -1;
 		}
+
+		if (uri_type == TYPE_HEP) {
+			/* version */
+			if (param1.s && param1.len) {
+				if (str2int(&param1, &hep_version) < 0) {
+					LM_ERR("invalid hep version parameter!\n");
+					return -1;
+				}
+
+				if (hep_version < 1 || hep_version > 3) {
+					LM_ERR("invalid hep protocol version %d\n", hep_version);
+					return -1;
+				}
+
+				elem->el.hep->version = hep_version;
+			} else {
+				elem->el.hep->version = default_hep_version;
+			}
+
+			if (param2.s && param2.len) {
+				if (IS_UDP(param2)) {
+					elem->el.hep->transport = PROTO_HEP_UDP;
+				} else if (IS_TCP(param2)) {
+					elem->el.hep->transport = PROTO_HEP_TCP;
+				} else {
+					LM_ERR("Invalid transport protocol [%.*s]\n",
+							param2.len, param2.s);
+					return -1;
+				}
+			} else {
+				if (elem->el.hep->version == 3)
+					elem->el.hep->transport = default_hep_proto;
+				else
+					elem->el.hep->transport = PROTO_HEP_UDP;
+			}
+
+			/* don't allow TCP for version 1 and 2 */
+			if ((elem->el.hep->version == 1 || elem->el.hep->version == 2) &&
+					elem->el.hep->transport == PROTO_HEP_TCP) {
+				LM_ERR("TCP not allowed for HEPv%d\n", elem->el.hep->version);
+				return -1;
+			}
+		}
 	}
+
+
 
 	ADD2LIST(trace_list, tlist_elem_p, elem);
 
@@ -557,6 +641,8 @@ static int parse_siptrace_id(str *suri)
 	#undef PARSE_NAME
 	#undef IS_HEP_URI
 	#undef IS_SIP_URI
+	#undef IS_TCP
+	#undef IS_UDP
 }
 
 
@@ -908,7 +994,7 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 					&db_vals[4].val.str_val, &db_vals[5].val.str_val,
 					db_vals[6].val.int_val, &db_vals[7].val.str_val,
 					&db_vals[8].val.str_val, db_vals[9].val.int_val,
-					&it->el.uri) < 0) {
+					it->el.hep) < 0) {
 				LM_ERR("Failed to duplicate with hep to <%.*s:%.*s>\n",
 						it->el.uri.host.len, it->el.uri.host.s,
 						it->el.uri.port.len, it->el.uri.port.s);
@@ -2212,7 +2298,7 @@ static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri)
 
 static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 		unsigned short fromport, str *toproto, str *toip,
-		unsigned short toport, struct sip_uri *uri)
+		unsigned short toport, st_hep_struct_t* hep)
 {
 	struct proxy_l * p=NULL /* make gcc happy */;
 	int ret;
@@ -2242,7 +2328,7 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 
 
 	/* create a temporary proxy*/
-	p=mk_proxy(&uri->host, (uri->port_no)?uri->port_no:SIP_PORT,proto, 0);
+	p=mk_proxy(&hep->uri.host, (hep->uri.port_no)?hep->uri.port_no:SIP_PORT,proto, 0);
 	if (p==0){
 		LM_ERR("bad host name in uri\n");
 		return -1;
@@ -2257,7 +2343,7 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 	hostent2su(to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
 
 	if (hep_api.pack_hep(&from_su, &to_su, proto, body->s, body->len,
-				&hepbuf, &heplen)) {
+				hep->version, &hepbuf, &heplen)) {
 		LM_ERR("failed to do hep packing\n");
 		return -1;
 	}
@@ -2266,7 +2352,7 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 
 	do {
 		/* send sock is being found in msg_send() function*/
-		if (msg_send(NULL, PROTO_HEP, to, 0, hepbuf, heplen, NULL)<0){
+		if (msg_send(NULL, hep->transport, to, 0, hepbuf, heplen, NULL)<0){
 			LM_ERR("cannot send duplicate message\n");
 			continue;
 		}

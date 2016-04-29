@@ -39,6 +39,8 @@
 /* struct socket_info is defined in ip_addr.h */
 
 #define NUM_IP_OCTETS	4
+#define PROTO_NAME_MAX_SIZE  8 /* CHANGEME if you define a bigger protocol name
+						   * currently hep_tcp - biggest proto */
 
 int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 							char *adv_name, unsigned short adv_port,
@@ -153,11 +155,13 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 								(((unsigned int)(b))<<8)+  \
 								((unsigned int)(c)) ) | 0x20202020)
 	unsigned int i;
+	unsigned int j;
 
 	/* must support 3-char arrays for udp, tcp, tls,
-	 * must support 4-char arrays for sctp */
+	 * must support 4-char arrays for sctp
+	 * must support 7-char arrays for hep_tcp and hep_udp */
 	*proto=PROTO_NONE;
-	if (len < 2 || len > 4) return -1;
+	if ((len < 2 || len > 4) && len != 7) return -1;
 
 	i=PROTO2UINT(s[0], s[1], s[2]);
 	switch(i){
@@ -183,9 +187,20 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 			break;
 
 		case PROTO2UINT('h', 'e', 'p'):
-			if(len==3) { *proto=PROTO_HEP; return 0; }
-			break;
+			if (len != 7) return -1;
 
+			j=PROTO2UINT(s[4], s[5], s[6]);
+			switch (j) {
+				case PROTO2UINT('u','d', 'p'):
+					*proto=PROTO_HEP_UDP;
+					return 0;
+				case PROTO2UINT('t','c', 'p'):
+					*proto=PROTO_HEP_TCP;
+					return 0;
+				default:
+					return -1;
+			}
+			break;
 		default:
 			if(len==2 && (s[0]|0x20)=='w' && (s[1]|0x20)=='s') {
 				*proto=PROTO_WS; return 0;
@@ -328,9 +343,22 @@ static inline char* proto2str(int proto, char *p)
 			*(p++) = 'i';
 			*(p++) = 'n';
 			break;
-		case PROTO_HEP:
+		case PROTO_HEP_UDP:
 			*(p++) = 'h';
 			*(p++) = 'e';
+			*(p++) = 'p';
+			*(p++) = '_';
+			*(p++) = 'u';
+			*(p++) = 'd';
+			*(p++) = 'p';
+			break;
+		case PROTO_HEP_TCP:
+			*(p++) = 'h';
+			*(p++) = 'e';
+			*(p++) = 'p';
+			*(p++) = '_';
+			*(p++) = 't';
+			*(p++) = 'c';
 			*(p++) = 'p';
 			break;
 

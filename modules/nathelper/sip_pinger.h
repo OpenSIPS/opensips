@@ -290,7 +290,7 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 {
 #define s_len(_s) (sizeof(_s)-1)
 	static char buf[MAX_SIPPING_SIZE];
-	char *p, proto_str[4];
+	char *p, proto_str[PROTO_NAME_MAX_SIZE];
 	str address, port;
 	str st;
 	int len;

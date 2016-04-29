@@ -45,6 +45,7 @@
 #include "../../mod_fix.h"
 #include "../../msg_translator.h"
 #include "../../action.h"
+#include "../../socket_info.h"
 
 /* BPF structure */
 #ifdef __OS_linux
@@ -4465,6 +4466,9 @@ static int w_hep_relay(struct sip_msg *msg)
 
 	int hep_version;
 	int proto;
+	int hep_proto;
+
+	char proto_buf[PROTO_NAME_MAX_SIZE];
 
 	if (msg==NULL) {
 		LM_ERR("Invalid sip message!\n");
@@ -4477,6 +4481,8 @@ static int w_hep_relay(struct sip_msg *msg)
 		return -1;
 	}
 
+
+
 	/* build everything but the sip message because we don't have it yet*/
 	buf_s.s = payload_buf;
 
@@ -4485,6 +4491,20 @@ static int w_hep_relay(struct sip_msg *msg)
 	buf_s.len = msg->len;
 	if ((hep_version=build_hep_buf(&buf_s, &proto)) < 0) {
 		LM_ERR("failed to append hep header!\n");
+		return -1;
+	}
+
+	if (uri.proto == 0 || uri.proto == PROTO_UDP) {
+		hep_proto = PROTO_HEP_UDP;
+	} else if (uri.proto == PROTO_TCP) {
+		if (hep_version == 1 || hep_version == 2) {
+			LM_ERR("TCP not supported for HEPv%d\n", hep_version);
+			return -1;
+		}
+		hep_proto = PROTO_HEP_TCP;
+	} else {
+		LM_ERR("cannot send hep with proto %s\n",
+					proto2str(uri.proto, proto_buf));
 		return -1;
 	}
 
@@ -4500,7 +4520,8 @@ static int w_hep_relay(struct sip_msg *msg)
 	hostent2su( &to, &proxy->host, proxy->addr_idx,
 				(proxy->port)?proxy->port:SIP_PORT);
 
-	send_sock=get_send_socket(0, &to, PROTO_HEP);
+	/* FIXME */
+	send_sock=get_send_socket(0, &to, hep_proto);
 	if (send_sock==0){
 		LM_ERR("cannot forward to af %d, proto %d no corresponding"
 			"listening socket\n", to.s.sa_family, proxy->proto);
@@ -4508,7 +4529,7 @@ static int w_hep_relay(struct sip_msg *msg)
 	}
 
 	do {
-		if (msg_send(NULL, PROTO_HEP, &to, 0, buf_s.s, buf_s.len, msg)<0){
+		if (msg_send(NULL, hep_proto, &to, 0, buf_s.s, buf_s.len, msg)<0){
 			LM_ERR("failed to send message!\n");
 			continue;
 		}
