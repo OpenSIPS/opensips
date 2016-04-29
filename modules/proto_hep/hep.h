@@ -233,7 +233,7 @@ struct hep_context {
 int pack_hep(union sockaddr_union* from_su, union sockaddr_union* to_su,
 		int proto, char *payload, int plen, int hep_version,
 		char **retbuf, int *retlen);
-int unpack_hepv2(char *buf, int len, struct hep_desc* h);
+int unpack_hepv12(char *buf, int len, struct hep_desc* h);
 int unpack_hepv3(char *buf, int len, struct hep_desc *h);
 int unpack_hep(char *buf, int len, int version, struct hep_desc* h);
 
