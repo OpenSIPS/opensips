@@ -214,7 +214,8 @@ get_gw_by_id(
 		str *id
 		)
 {
-	return (pgw_t *)*map_get(pgw_tree, *id);
+	pgw_t** ret;
+	return (ret=(pgw_t**)map_find(pgw_tree, *id))?*ret:NULL;
 }
 
 pcr_t*
@@ -223,7 +224,9 @@ get_carrier_by_id(
 		str *id
 		)
 {
-	return (pcr_t*)*map_get(carriers_tree, *id);
+	pcr_t** ret;
+
+	return (ret=(pcr_t**)map_find(carriers_tree, *id))?*ret:NULL;
 }
 
 
