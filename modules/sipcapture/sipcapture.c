@@ -299,6 +299,8 @@ static int w_del_hep(struct sip_msg* msg, char *id);
 
 static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
+static int pv_get_hep_version(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
 
 static int
 set_generic_hep_chunk(struct hepv3* h3, unsigned chunk_id, str *data);
@@ -631,6 +633,8 @@ static dep_export_t deps = {
 static pv_export_t mod_items[] = {
 	{{"hep_net", sizeof("hep_net")-1}, 1201, pv_get_hep_net, 0,
 		pv_parse_hep_net_name, 0, 0, 0},
+	{{"HEPVERSION", sizeof("HEPVERSION")-1}, 1202, pv_get_hep_version, 0,
+		0, 0, 0, 0},
 	{{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -1709,7 +1713,6 @@ static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
 	res->flags = PV_VAL_STR;
 
 
-	/* FIXME TODO FIXME TODO replace with recieve_info from extended hep struct */
 	switch (net_info_type) {
 	/* ip family */
 	case HEP_PROTO_FAMILY:
@@ -1793,6 +1796,29 @@ static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
 
 	#undef SET_PVAL_STR
 	#undef SET_PVAL_INT
+}
+
+
+static int pv_get_hep_version(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	struct hep_context *ctx;
+
+	ctx = HEP_GET_CONTEXT(hep_api);
+	if (ctx == NULL) {
+		LM_ERR("Hep context not there!");
+		return -1;
+	}
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	res->ri = ctx->h.version;
+
+	/* can't have bogus version number here since it's been already
+	 * checked in proto_hep */
+	res->rs = hep_str;
+	res->rs.s = int2str(ctx->h.version, &res->rs.len);
+
+	return 0;
 }
 
 static int
