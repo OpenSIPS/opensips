@@ -64,6 +64,7 @@ Alexandr Dubovikov
         1.6. Exported PseudoVariables
 
               1.6.1. hep_net
+              1.6.2. HEPVERSION - string,int
 
         1.7. MI Commands
 
@@ -98,6 +99,7 @@ Alexandr Dubovikov
    1.22. hep_resume_sip usage
    1.23. sip_capture usage
    1.24. hep_net usage
+   1.25. HEPVERSION usage
 
 Chapter 1. Admin Guide
 
@@ -656,6 +658,24 @@ route[capture_resume] {
                 } else if ($hep_net(dst_port) == 6061) {
                         ...
                 }
+        }
+...
+
+1.6.2.  HEPVERSION - string,int
+
+   Holds the version of the hep packet received on the interface.
+
+   Example 1.25. HEPVERSION usage
+...
+        if ($HEPVERSION == 3) {
+                /* It's a HEPv3 packet*/
+                ...
+        } else if ($HEPVERSION == 2) {
+                /* It's a HEPv2 packet */
+                ...
+        } else if ($HEPVERSION == 1) {
+                /* It's a HEPv1 packet */
+                ...
         }
 ...
 
