@@ -26,6 +26,11 @@ locate_tool() {
 			TOOLPATH="/bin/$1"
 			return
 		fi
+		#The md5 tool on FreeBSD 8.3 is located in /sbin/
+		if [ -x "/sbin/$1" ] ; then
+			TOOLPATH="/sbin/$1"
+			return
+		fi
 		if [ -x "/usr/local/bin/$1" ] ; then
 			TOOLPATH="/usr/local/bin/$1"
 			return
