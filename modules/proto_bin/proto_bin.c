@@ -779,7 +779,6 @@ static void bin_parse_headers(struct tcp_req *req){
 }
 
 static int bin_read_req(struct tcp_connection* con, int* bytes_read){
-	LM_INFO("reading from connection\n");
 
 	int bytes;
 	int total_bytes;
