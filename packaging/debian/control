@@ -194,7 +194,10 @@ Description: SIMPLE presence modules for OpenSIPS
 
 Package: opensips-xmlrpc-module
 Architecture: any
-Depends: opensips (= ${binary:Version}), opensips-http-modules (= ${binary:Version}), ${shlibs:Depends}
+Depends: opensips (= ${binary:Version}),
+	 opensips-http-modules (= ${binary:Version}),
+	 ${shlibs:Depends},
+	 ${misc:Depends}
 Multi-Arch: same
 Description: XMLRPC support for OpenSIPS's Management Interface
  OpenSIPS is a very fast and flexible SIP (RFC3261)
