@@ -59,6 +59,8 @@
 
 /* flags on the eigth byte - generic flags for all accounting types */
 #define ACC_DIALOG_CONTEXT (((unsigned long long)1<<(8*7)) * (1<<0))
+#define ACC_CDR_REGISTERED (((unsigned long long)1<<(8*7)) * (1<<1))
+
 
 #define DO_ACC_PARAM_DELIMITER '|'
 

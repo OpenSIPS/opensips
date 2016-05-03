@@ -125,9 +125,17 @@ static int is_cdr_enabled=0;
 		is_evi_failed_on(_mask) || is_diam_failed_on(_mask))
 
 #define set_dialog_context(_mask) \
-	_mask |= ACC_DIALOG_CONTEXT;
+	(_mask) |= ACC_DIALOG_CONTEXT;
 
-#define is_dialog_context(_mask) (_mask&ACC_DIALOG_CONTEXT)
+#define is_dialog_context(_mask) ((_mask)&ACC_DIALOG_CONTEXT)
+
+#define set_cdr_values_registered(_mask) \
+	(_mask) |= ACC_CDR_REGISTERED;
+
+#define cdr_values_registered(_mask) ((_mask)&ACC_CDR_REGISTERED)
+
+
+
 
 #define reset_flags(_flags, _flags_to_reset) \
 	_flags &= ~_flags_to_reset;
@@ -620,13 +628,16 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 			return;
 		}
 
+		/* report that flags shall be freed only by dialog module
+		 * tm must never free it */
+		set_dialog_context(*flags);
+
 		/* register database callbacks */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
-				DLGCB_EXPIRED, acc_dlg_callback,flags_s.s,0) != 0) {
+				DLGCB_EXPIRED, acc_dlg_callback,flags, dlg_free_acc_mask) != 0) {
 			LM_ERR("cannot register callback for database accounting\n");
 			return;
 		}
-
 	} else {
 		/* do old accounting */
 		if ( is_evi_acc_on(*flags) ) {
@@ -1011,15 +1022,21 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 	}
 
 	flag_mask = type + type * flags;
+	if (is_cdr_acc_on(flag_mask)) {
+		/* setting this flag will allow us to register everything
+		 * that is needed for CDR accounting only once */
+		set_cdr_values_registered(flag_mask);
+	}
 
-	/* report that flags shall be freed only by dialog module
-	 * tm shall never free */
-	if (is_cdr_acc_on(flag_mask))
-		set_dialog_context(flag_mask);
 
-	/* if already called the function once */
+	/* is it the first time when the function was called ? */
 	if ((flag_mask_p=try_fetch_flags()) != NULL) {
-		if (!(is_dialog_context(*flag_mask_p)) && is_dialog_context(flag_mask)) {
+		/* no the first time ; check now if CDRs are requested now
+		 * for the first time */
+		if (!cdr_values_registered(*flag_mask_p) &&
+				cdr_values_registered(flag_mask)) {
+			/* CDR support requested for the first time, we need to create
+			 * the dialog support, if an initial INVITE */
 			if (!has_totag(msg)) {
 				_avp_created_value.n = time(NULL);
 
@@ -1035,11 +1052,11 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 			}
 		}
 
-
 		*flag_mask_p |= flag_mask;
 		return 1;
 	}
 
+	/* setting accouting for the first time, allocate the flags holder */
 	flag_mask_p=shm_malloc(sizeof(unsigned long long));
 	if (flag_mask_p==NULL) {
 		LM_ERR("No more shm mem!\n");
@@ -1074,10 +1091,10 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		/* install additional handlers */
 		tmcb_types =
 			/* report on completed transactions */
-			TMCB_RESPONSE_OUT |
+			TMCB_RESPONSE_IN |
 			/* register it manually; see explanation below
 			 * get incoming replies ready for processing */
-			/* TMCB_RESPONSE_IN | */
+			/* TMCB_RESPONSE_OUT | */
 			/* report on missed calls */
 			((is_invite && is_mc_acc_on(*flag_mask_p))?TMCB_ON_FAILURE:0) ;
 
@@ -1098,8 +1115,8 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 
 		/* we do register_tmcb twice because we wan't to register the free
 		 * fucntion only once */
-		if (tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN, tmcb_func,
-				flag_mask_p, 0)<=0) {
+		if (tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT, tmcb_func,
+				flag_mask_p, tm_free_acc_mask)<=0) {
 			LM_ERR("cannot register additional callbacks\n");
 			return -1;
 		}
@@ -1109,9 +1126,6 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 			LM_ERR("cannot register additional callbacks\n");
 			return -1;
 		}
-
-
-
 
 		/* if required, determine request direction */
 		if( detect_direction && !rrb.is_direction(msg,RR_FLOW_UPSTREAM) ) {
