@@ -965,6 +965,35 @@ route[capture_resume] {
 	</example>
 	</section>
 
+	<section>
+	<title>
+		<function moreinfo="none">HEPVERSION - string,int</function>
+	</title>
+	<para>
+		Holds the version of the hep packet received on the interface.
+	</para>
+	<example>
+	<title><function>HEPVERSION</function> usage</title>
+	<programlisting format="linespecific">
+...
+	if ($HEPVERSION == 3) {
+		/* It's a HEPv3 packet*/
+		...
+	} else if ($HEPVERSION == 2) {
+		/* It's a HEPv2 packet */
+		...
+	} else if ($HEPVERSION == 1) {
+		/* It's a HEPv1 packet */
+		...
+	}
+...
+	</programlisting>
+	</example>
+	</section>
+
+
+
+
 
 
 
