@@ -382,7 +382,6 @@ parse_siptrace_uri(const str *token, str *uri, str *param1, str* param2)
 		case ')':
 		case '/':
 		case ':':
-		case '@':
 		case '.':
 		case '_':
 			break;
