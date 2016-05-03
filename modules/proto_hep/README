@@ -24,10 +24,9 @@ Ionut-Razvan Ionita
               1.3.3. hep_max_msg_chunks (integer)
               1.3.4. hep_async (integer)
               1.3.5. hep_async_max_postponed_chunks (integer)
-              1.3.6. hep_version (integer)
-              1.3.7. hep_capture_id (integer)
-              1.3.8. hep_async_local_connect_timeout (integer)
-              1.3.9. hep_async_local_write_timeout (integer)
+              1.3.6. hep_capture_id (integer)
+              1.3.7. hep_async_local_connect_timeout (integer)
+              1.3.8. hep_async_local_write_timeout (integer)
 
    2. Developer Guide
 
@@ -46,10 +45,9 @@ Ionut-Razvan Ionita
    1.3. Set hep_max_msg_chunks parameter
    1.4. Set hep_async parameter
    1.5. Set hep_async_max_postponed_chunks parameter
-   1.6. Set hep_version parameter
-   1.7. Set hep_capture_id parameter
-   1.8. Set hep_async_local_connect_timeout parameter
-   1.9. Set hep_async_local_write_timeout parameter
+   1.6. Set hep_capture_id parameter
+   1.7. Set hep_async_local_connect_timeout parameter
+   1.8. Set hep_async_local_write_timeout parameter
 
 Chapter 1. Admin Guide
 
@@ -64,11 +62,17 @@ Chapter 1. Admin Guide
 
    Once loaded, you will be able to define HEP listeners in your
    configuration file by adding their IP and, optionally, a
-   listening port, similar to this example:
+   listening port. You can define both TCP and UDP listeners. On
+   UDP you will be able to receive HEP v1, v2 and v3 packets, on
+   TCP only HEPv3.
 
 ...
-listen = hep:127.0.0.1          # change the listening IP
-listen = hep:127.0.0.1:5080     # change the listening IP and port
+#HEPv3 listener
+listen = hep_tcp:127.0.0.1:6061                 # change the listening I
+P
+#HEPv1, v2, v3 listener
+listen = hep_udp:127.0.0.1:6061                 # change the listening I
+P
 ...
 
 1.2. Dependencies
@@ -154,33 +158,19 @@ modparam("proto_bin", "hep_async", 0)
 modparam("proto_hep", "hep_async_max_postponed_chunks", 16)
 ...
 
-1.3.6. hep_version (integer)
-
-   The parameter indicate the version of HEP protocol. Can be 1, 2
-   or 3. In HEPv2 the timestamp and capture agent ID will be
-   included to HEP header. Version 1 and 2 uses UDP and version 3
-   uses TCP.
-
-   Default value is "3".
-
-   Example 1.6. Set hep_version parameter
-...
-modparam("proto_hep", "hep_version", 2)
-...
-
-1.3.7. hep_capture_id (integer)
+1.3.6. hep_capture_id (integer)
 
    The parameter indicate the capture agent ID for HEPv2/v3
    protocol. Limitation: 16-bit integer.
 
    Default value is "1".
 
-   Example 1.7. Set hep_capture_id parameter
+   Example 1.6. Set hep_capture_id parameter
 ...
 modparam("proto_hep", "hep_capture_id", 234)
 ...
 
-1.3.8. hep_async_local_connect_timeout (integer)
+1.3.7. hep_async_local_connect_timeout (integer)
 
    If hep_async is enabled, this specifies the number of
    milliseconds that a connect will be tried in blocking mode
@@ -190,12 +180,12 @@ modparam("proto_hep", "hep_capture_id", 234)
 
    Default value is 100 ms.
 
-   Example 1.8. Set hep_async_local_connect_timeout parameter
+   Example 1.7. Set hep_async_local_connect_timeout parameter
 ...
 modparam("proto_hep", "hep_async_local_connect_timeout", 200)
 ...
 
-1.3.9. hep_async_local_write_timeout (integer)
+1.3.8. hep_async_local_write_timeout (integer)
 
    If hep_async is enabled, this specifies the number of
    milliseconds that a write op will be tried in blocking mode
@@ -205,7 +195,7 @@ modparam("proto_hep", "hep_async_local_connect_timeout", 200)
 
    Default value is 10 ms.
 
-   Example 1.9. Set hep_async_local_write_timeout parameter
+   Example 1.8. Set hep_async_local_write_timeout parameter
 ...
 modparam("proto_hep", "tcp_async_local_write_timeout", 100)
 ...

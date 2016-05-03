@@ -46,8 +46,6 @@ typedef int (*register_hep_cb_t)(hep_cb_t cb);
  */
 
 typedef struct proto_hep_api {
-	int version;
-
 	register_hep_cb_t register_hep_cb;
 	pack_hep_t		  pack_hep;
 	get_hep_ctx_id_t  get_hep_ctx_id;

@@ -1808,7 +1808,7 @@ struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param)
 	char date_buf[MI_DATE_BUF_LEN];
 	int date_buf_len;
 	unsigned int i,n,part;
-	char proto[4];
+	char proto[PROTO_NAME_MAX_SIZE];
 	char *p;
 	int len;
 

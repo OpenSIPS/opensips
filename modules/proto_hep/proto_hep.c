@@ -53,8 +53,9 @@
 
 static int mod_init(void);
 static void destroy(void);                          /*!< Module destroy function */
-static int proto_hep_init(struct proto_info *pi);
-static int proto_hep_init_listener(struct socket_info *si);
+static int proto_hep_init_udp(struct proto_info *pi);
+static int proto_hep_init_tcp(struct proto_info *pi);
+static int proto_hep_init_udp_listener(struct socket_info *si);
 static int hep_conn_init(struct tcp_connection* c);
 static void hep_conn_clean(struct tcp_connection* c);
 static int hep_write_async_req(struct tcp_connection* con,int fd);
@@ -78,7 +79,6 @@ static int hep_async_local_write_timeout = 10;
 
 int hep_ctx_idx=0;
 
-int hep_version = 3;
 int hep_capture_id = 1;
 int payload_compression=0;
 
@@ -110,7 +110,8 @@ struct hep_data {
 
 
 static cmd_export_t cmds[] = {
-	{"proto_init",            (cmd_function)proto_hep_init,        0, 0, 0, 0},
+	{"proto_init",            (cmd_function)proto_hep_init_udp,        0, 0, 0, 0},
+	{"proto_init",            (cmd_function)proto_hep_init_tcp,        0, 0, 0, 0},
 	{"load_hep",			  (cmd_function)bind_proto_hep,        1, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
@@ -123,7 +124,6 @@ static param_export_t params[] = {
 	{ "hep_async_max_postponed_chunks",  INT_PARAM,
 											&hep_async_max_postponed_chunks },
 	/* what protocol shall be used: 1, 2 or 3 */
-	{ "hep_version",					 INT_PARAM, &hep_version			},
 	{ "hep_capture_id",					 INT_PARAM, &hep_capture_id			},
 	{ "hep_async_local_connect_timeout", INT_PARAM,
 											&hep_async_local_connect_timeout},
@@ -138,7 +138,7 @@ static module_dependency_t *get_deps_compression(param_export_t *param)
 {
 	int do_compression= *(int *)param->param_pointer;
 
-	if (hep_version < 3 || do_compression == 0)
+	if (do_compression == 0)
 		return NULL;
 
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "compression", DEP_ABORT);
@@ -178,13 +178,6 @@ struct module_exports exports = {
 
 static int mod_init(void)
 {
-	LM_INFO("initializing HEP protocol\n");
-	if (hep_version < HEP_FIRST || hep_version > HEP_LAST) {
-		LM_WARN("invalid protocol version!"
-				"Assuming last protocol version [%d]!\n", HEP_LAST);
-		hep_version = HEP_LAST;
-	}
-
 	if (payload_compression) {
 		load_compression =
 			(load_compression_f)find_export("load_compression", 1, 0);
@@ -242,45 +235,50 @@ void free_hep_context(void *ptr)
 }
 
 
-static int proto_hep_init(struct proto_info *pi)
+static int proto_hep_init_udp(struct proto_info *pi)
 {
 
-	pi->id					= PROTO_HEP;
-	pi->name				= "hep";
+	pi->id					= PROTO_HEP_UDP;
+	pi->name				= "hep_udp";
 	pi->default_port		= hep_port;
-	pi->tran.init_listener	= proto_hep_init_listener;
+	pi->tran.init_listener	= proto_hep_init_udp_listener;
 
-	switch (hep_version) {
-		case 1:
-		case 2:
-			pi->tran.send	= hep_udp_send;
+	pi->tran.send	= hep_udp_send;
 
-			pi->net.flags	= PROTO_NET_USE_UDP;
-			pi->net.read	= (proto_net_read_f)hep_udp_read_req;
-
-			break;
-		case 3:
-
-			pi->tran.dst_attr		= tcp_conn_fcntl;
-
-			pi->net.flags			= PROTO_NET_USE_TCP;
-
-			pi->net.read			= (proto_net_read_f)hep_tcp_read_req;
-			pi->net.write			= (proto_net_write_f)hep_write_async_req;
-
-			pi->tran.send			= hep_tcp_send;
+	pi->net.flags	= PROTO_NET_USE_UDP;
+	pi->net.read	= (proto_net_read_f)hep_udp_read_req;
 
 
-			if (hep_async) {
-				pi->net.conn_init	= hep_conn_init;
-				pi->net.conn_clean	= hep_conn_clean;
-			}
+	return 0;
+}
 
-			break;
+static int proto_hep_init_tcp(struct proto_info *pi)
+{
+
+	pi->id					= PROTO_HEP_TCP;
+	pi->name				= "hep_tcp";
+	pi->default_port		= hep_port;
+	pi->tran.init_listener	= tcp_init_listener;
+
+	pi->tran.dst_attr		= tcp_conn_fcntl;
+
+	pi->net.flags			= PROTO_NET_USE_TCP;
+
+	pi->net.read			= (proto_net_read_f)hep_tcp_read_req;
+	pi->net.write			= (proto_net_write_f)hep_write_async_req;
+
+	pi->tran.send			= hep_tcp_send;
+
+
+	if (hep_async) {
+		pi->net.conn_init	= hep_conn_init;
+		pi->net.conn_clean	= hep_conn_clean;
 	}
 
 	return 0;
 }
+
+
 
 static int hep_conn_init(struct tcp_connection* c)
 {
@@ -317,29 +315,9 @@ static void hep_conn_clean(struct tcp_connection* c)
 }
 
 
-static int proto_hep_init_listener(struct socket_info *si)
+static int proto_hep_init_udp_listener(struct socket_info *si)
 {
-	/* we do not do anything particular, so
-	 * transparently use the generic listener init from net TCP layer
-	 * or net UDP depending on hep version */
-	int ret = -1;
-
-	switch (hep_version) {
-		case 1:
-		case 2:
-			ret = udp_init_listener(si, hep_async?O_NONBLOCK:0);
-
-			break;
-		case 3:
-			ret = tcp_init_listener(si);
-
-			break;
-
-		default:
-			LM_ERR("hep version [%d] not implemented\n", hep_version);
-	}
-
-	return ret;
+	return udp_init_listener(si, hep_async?O_NONBLOCK:0);
 }
 
 static int add_write_chunk(struct tcp_connection *con,char *buf,int len,
@@ -1239,9 +1217,24 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 	memset(hep_ctx, 0, sizeof(struct hep_context));
 	memcpy(&hep_ctx->ri, &ri, sizeof(struct receive_info));
 
-	if (unpack_hepv2(buf, len, &hep_ctx->h)) {
-		LM_ERR("hep unpacking failed\n");
+
+	if (len < 4) {
+		LM_ERR("invalid message! too short!\n");
 		return -1;
+	}
+
+	if (!memcmp(buf, HEP_HEADER_ID, HEP_HEADER_ID_LEN)) {
+		/* HEPv3 */
+		if (unpack_hepv3(buf, len, &hep_ctx->h)) {
+			LM_ERR("hepv3 unpacking failed\n");
+			return -1;
+		}
+	} else {
+		/* HEPv2 */
+		if (unpack_hepv12(buf, len, &hep_ctx->h)) {
+			LM_ERR("hepv12 unpacking failed\n");
+			return -1;
+		}
 	}
 
 	/* set context for receive_msg */
@@ -1267,12 +1260,20 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 	}
 	current_processing_ctx = NULL;
 
-	msg.len = len - hep_ctx->h.u.hepv12.hdr.hp_l;
-	msg.s = buf + hep_ctx->h.u.hepv12.hdr.hp_l;
+	if (hep_ctx->h.version == 3) {
+		/* HEPv3 */
+		msg.len =
+			hep_ctx->h.u.hepv3.payload_chunk.chunk.length- sizeof(hep_chunk_t);
+		msg.s = hep_ctx->h.u.hepv3.payload_chunk.data;
+	} else {
+		/* HEPv12 */
+		msg.len = len - hep_ctx->h.u.hepv12.hdr.hp_l;
+		msg.s = buf + hep_ctx->h.u.hepv12.hdr.hp_l;
 
-	if (hep_ctx->h.u.hepv12.hdr.hp_v == 2) {
-		msg.s += sizeof(struct hep_timehdr);
-		msg.len -= sizeof(struct hep_timehdr);
+		if (hep_ctx->h.u.hepv12.hdr.hp_v == 2) {
+			msg.s += sizeof(struct hep_timehdr);
+			msg.len -= sizeof(struct hep_timehdr);
+		}
 	}
 
 	if (ri.src_port==0){

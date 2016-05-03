@@ -45,6 +45,7 @@
 #include "../../mod_fix.h"
 #include "../../msg_translator.h"
 #include "../../action.h"
+#include "../../socket_info.h"
 
 /* BPF structure */
 #ifdef __OS_linux
@@ -297,6 +298,8 @@ static int del_hep_fixup(void** param, int param_no);
 static int w_del_hep(struct sip_msg* msg, char *id);
 
 static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+static int pv_get_hep_version(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
 static int
@@ -630,6 +633,8 @@ static dep_export_t deps = {
 static pv_export_t mod_items[] = {
 	{{"hep_net", sizeof("hep_net")-1}, 1201, pv_get_hep_net, 0,
 		pv_parse_hep_net_name, 0, 0, 0},
+	{{"HEPVERSION", sizeof("HEPVERSION")-1}, 1202, pv_get_hep_version, 0,
+		0, 0, 0, 0},
 	{{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -1708,7 +1713,6 @@ static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
 	res->flags = PV_VAL_STR;
 
 
-	/* FIXME TODO FIXME TODO replace with recieve_info from extended hep struct */
 	switch (net_info_type) {
 	/* ip family */
 	case HEP_PROTO_FAMILY:
@@ -1792,6 +1796,29 @@ static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
 
 	#undef SET_PVAL_STR
 	#undef SET_PVAL_INT
+}
+
+
+static int pv_get_hep_version(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	struct hep_context *ctx;
+
+	ctx = HEP_GET_CONTEXT(hep_api);
+	if (ctx == NULL) {
+		LM_ERR("Hep context not there!");
+		return -1;
+	}
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	res->ri = ctx->h.version;
+
+	/* can't have bogus version number here since it's been already
+	 * checked in proto_hep */
+	res->rs = hep_str;
+	res->rs.s = int2str(ctx->h.version, &res->rs.len);
+
+	return 0;
 }
 
 static int
@@ -4465,6 +4492,9 @@ static int w_hep_relay(struct sip_msg *msg)
 
 	int hep_version;
 	int proto;
+	int hep_proto;
+
+	char proto_buf[PROTO_NAME_MAX_SIZE];
 
 	if (msg==NULL) {
 		LM_ERR("Invalid sip message!\n");
@@ -4477,6 +4507,8 @@ static int w_hep_relay(struct sip_msg *msg)
 		return -1;
 	}
 
+
+
 	/* build everything but the sip message because we don't have it yet*/
 	buf_s.s = payload_buf;
 
@@ -4485,6 +4517,20 @@ static int w_hep_relay(struct sip_msg *msg)
 	buf_s.len = msg->len;
 	if ((hep_version=build_hep_buf(&buf_s, &proto)) < 0) {
 		LM_ERR("failed to append hep header!\n");
+		return -1;
+	}
+
+	if (uri.proto == 0 || uri.proto == PROTO_UDP) {
+		hep_proto = PROTO_HEP_UDP;
+	} else if (uri.proto == PROTO_TCP) {
+		if (hep_version == 1 || hep_version == 2) {
+			LM_ERR("TCP not supported for HEPv%d\n", hep_version);
+			return -1;
+		}
+		hep_proto = PROTO_HEP_TCP;
+	} else {
+		LM_ERR("cannot send hep with proto %s\n",
+					proto2str(uri.proto, proto_buf));
 		return -1;
 	}
 
@@ -4500,7 +4546,8 @@ static int w_hep_relay(struct sip_msg *msg)
 	hostent2su( &to, &proxy->host, proxy->addr_idx,
 				(proxy->port)?proxy->port:SIP_PORT);
 
-	send_sock=get_send_socket(0, &to, PROTO_HEP);
+	/* FIXME */
+	send_sock=get_send_socket(0, &to, hep_proto);
 	if (send_sock==0){
 		LM_ERR("cannot forward to af %d, proto %d no corresponding"
 			"listening socket\n", to.s.sa_family, proxy->proto);
@@ -4508,7 +4555,7 @@ static int w_hep_relay(struct sip_msg *msg)
 	}
 
 	do {
-		if (msg_send(NULL, PROTO_HEP, &to, 0, buf_s.s, buf_s.len, msg)<0){
+		if (msg_send(NULL, hep_proto, &to, 0, buf_s.s, buf_s.len, msg)<0){
 			LM_ERR("failed to send message!\n");
 			continue;
 		}
