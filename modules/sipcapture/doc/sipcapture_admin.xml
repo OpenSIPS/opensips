@@ -477,10 +477,11 @@ if (is_method("REGISTER"))
 
 		<section>
 		<title>
-			<function moreinfo="none">report_capture([table_name,]correlation_id)</function>
+			<function moreinfo="none">report_capture([table_name],correlation_id[,proto_type])</function>
 		</title>
 		<para>
-			Save the message into the database.
+			Save the message into the database. If you want set the protocol type you have to define
+		the table name, even if you pass over it(report_capture(,"$var(cor_id)", "$var(proto_type)")).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -492,6 +493,11 @@ if (is_method("REGISTER"))
 		</listitem>
 		<listitem>
 			<para><emphasis>correlation_id (string)</emphasis>
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>proto_type (int)</emphasis> - protocol type number as defined in hep protocol
+				specification.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -509,7 +515,12 @@ if (is_method("REGISTER"))
 		$var(correlation_id) = "absdcef";
 	}
 
-	report_capture("rtcp_log", $var(correlation_id");
+	$var(proto_type) = "3"; /* 0x03 - SDP protocol */
+
+	report_capture("rtcp_log", $var(correlation_id)");
+	/* setting the first parameter, even if setting it to null, is mandatory in order to be able to set proto type */
+	report_capture(, $var(correlation_id)", "$var);
+	report_capture("rtcp_log", $var(correlation_id)", "$var);
 ...
 	</programlisting>
 	</example>

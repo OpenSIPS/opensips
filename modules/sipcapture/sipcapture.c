@@ -247,13 +247,18 @@ static int rc_async_fixup(void** param, int param_no);
 
 static int w_report_capture_1(struct sip_msg* msg, char* cor_id_p);
 static int w_report_capture_2(struct sip_msg* msg, char* table_p, char* cor_id_p);
+static int w_report_capture_3(struct sip_msg* msg, char* table_p,
+		char* cor_id_p, char* proto_t_p);
 static int w_report_capture_async_1(struct sip_msg* msg,
 	async_resume_module** resume_f, void** resume_param, char* cor_id_p);
 static int w_report_capture_async_2(struct sip_msg* msg,
 		async_resume_module** resume_f, void** resume_param,
 		char* table_p, char* cor_id_p);
+static int w_report_capture_async_3(struct sip_msg* msg,
+		async_resume_module** resume_f, void** resume_param,
+		char* table_p, char* cor_id_p, char* proto_t_p);
 static int w_report_capture(struct sip_msg* msg, char* table_p, char* cor_id_p,
-		async_resume_module **resume_f, void** resume_param);
+		char* proto_t_p, async_resume_module **resume_f, void** resume_param);
 
 int hep_msg_received(void);
 int extract_host_port(void);
@@ -506,6 +511,8 @@ static cmd_export_t cmds[] = {
 			REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"report_capture", (cmd_function)w_report_capture_2, 2, rc_fixup, 0,
 			REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"report_capture", (cmd_function)w_report_capture_3, 3, rc_fixup, 0,
+			REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -515,6 +522,7 @@ static acmd_export_t acmds[] = {
 	{"sip_capture",    (acmd_function)async_sip_capture, 1, sip_capture_async_fixup},
 	{"report_capture", (acmd_function)w_report_capture_async_1, 1, rc_async_fixup_1},
 	{"report_capture", (acmd_function)w_report_capture_async_2, 2, rc_async_fixup},
+	{"report_capture", (acmd_function)w_report_capture_async_3, 3, rc_async_fixup},
 	{0, 0, 0, 0}
 };
 
@@ -4634,6 +4642,7 @@ static void set_rtcp_keys(void)
 		case 1:                                    \
 			return fix_func(param, &rc_list);      \
 		case 2:                                    \
+		case 3:                                    \
 			return fixup_sgp(param);               \
 		default:                                   \
 			LM_ERR("Invalid param number!\n");     \
@@ -4654,7 +4663,7 @@ static int rc_fixup_1(void** param, int param_no)
 
 static int rc_fixup(void** param, int param_no)
 {
-	if (param_no < 1 || param_no > 2) {
+	if (param_no < 1 || param_no > 3) {
 		LM_ERR("Invalid param number!\n");
 		return -1;
 	}
@@ -4676,7 +4685,7 @@ static int rc_async_fixup_1(void** param, int param_no)
 
 static int rc_async_fixup(void** param, int param_no)
 {
-	if (param_no < 1 || param_no > 2) {
+	if (param_no < 1 || param_no > 3) {
 		LM_ERR("Invalid param number!\n");
 		return -1;
 	}
@@ -4705,12 +4714,7 @@ static inline void build_hepv3_obj(struct hepv3* h3, struct _sipcapture_object* 
 	sco->destination_ip.len = strlen(sco->destination_ip.s);
 	sco->destination_port = h3->hg.dst_port.data;
 
-	if (h3->hg.proto_t.data == 5 || h3->hg.proto_t.data == 99 || h3->hg.proto_t.data==100)
-		sco->proto_type = 1;
-	else if (h3->hg.proto_t.data == 32)
-		sco->proto_type = 2;
-	else
-		sco->proto_type = h3->hg.proto_t.data;
+	sco->proto_type = h3->hg.proto_t.data;
 
 	sco->tmstamp = h3->hg.time_sec.data*1000000 + h3->hg.time_usec.data;
 
@@ -4774,7 +4778,8 @@ static inline int append_rc_values(char* buf, int max_len, db_val_t* db_vals)
 
 
 static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
-		struct tz_table_list* t_el, async_resume_module **resume_f, void** resume_param)
+		unsigned int* proto_t, struct tz_table_list* t_el,
+		async_resume_module **resume_f, void** resume_param)
 {
 	char node[100];
 	char src_ip[INET6_ADDRSTRLEN], dst_ip[INET6_ADDRSTRLEN];
@@ -4836,7 +4841,7 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 	db_vals[8].val.int_val = sco.family;
 
 	db_vals[9].type = DB_INT;
-	db_vals[9].val.int_val = sco.type;
+	db_vals[9].val.int_val = proto_t?(*proto_t):sco.proto_type;
 
 	db_vals[10].type = DB_STR;
 	db_vals[10].val.str_val = sco.node;
@@ -4872,33 +4877,48 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 
 static int w_report_capture_1(struct sip_msg* msg, char* cor_id_p)
 {
-	return w_report_capture(msg, NULL, cor_id_p, NULL, NULL);
+	return w_report_capture(msg, NULL, cor_id_p, NULL, NULL, NULL);
 }
 
 static int w_report_capture_2(struct sip_msg* msg, char* table_p, char* cor_id_p)
 {
-	return w_report_capture(msg, table_p, cor_id_p, NULL, NULL);
+	return w_report_capture(msg, table_p, cor_id_p, NULL, NULL, NULL);
+}
+
+static int w_report_capture_3(struct sip_msg* msg, char* table_p,
+		char* cor_id_p, char* proto_t_p)
+{
+	return w_report_capture(msg, table_p, cor_id_p, proto_t_p, NULL, NULL);
 }
 
 static int w_report_capture_async_1(struct sip_msg* msg,
 	async_resume_module** resume_f, void** resume_param, char* cor_id_p)
 {
-	return w_report_capture(msg, NULL, cor_id_p, resume_f, resume_param);
+	return w_report_capture(msg, NULL, cor_id_p, NULL, resume_f, resume_param);
 }
 
 static int w_report_capture_async_2(struct sip_msg* msg,
 		async_resume_module** resume_f, void** resume_param,
 		char* table_p, char* cor_id_p)
 {
-	return w_report_capture(msg, table_p, cor_id_p, resume_f, resume_param);
+	return w_report_capture(msg, table_p, cor_id_p, NULL, resume_f, resume_param);
+}
+
+static int w_report_capture_async_3(struct sip_msg* msg,
+		async_resume_module** resume_f, void** resume_param,
+		char* table_p, char* cor_id_p, char* proto_t_p)
+{
+	return w_report_capture(msg, table_p, cor_id_p, proto_t_p, resume_f, resume_param);
 }
 
 
-
 static int w_report_capture(struct sip_msg* msg, char* table_p, char* cor_id_p,
-		async_resume_module **resume_f, void** resume_param)
+		char* proto_t_p, async_resume_module **resume_f, void** resume_param)
 {
+	unsigned int proto_t;
+
 	str cor_id_s;
+	str proto_t_s;
 
 	tz_table_t* rct;
 	struct tz_table_list* t_el=&rc_global;
@@ -4926,6 +4946,17 @@ static int w_report_capture(struct sip_msg* msg, char* table_p, char* cor_id_p,
 		return -1;
 	}
 
+	if (proto_t_p) {
+		if (fixup_get_svalue(msg, (gparam_p)proto_t_p, &proto_t_s) < 0 ) {
+			LM_ERR("failed to fetch correlation id!\n");
+			return -1;
+		}
+
+		if (str2int(&proto_t_s, &proto_t) < 0) {
+			LM_ERR("Invalid proto type value!\n");
+			return -1;
+		}
+	}
 
 	if (IS_ASYNC_F && HAVE_MULTIPLE_ASYNC_INSERT) {
 		if (table_p) {
@@ -4942,7 +4973,8 @@ static int w_report_capture(struct sip_msg* msg, char* table_p, char* cor_id_p,
 			return -1;
 	}
 
-	return report_capture(msg, &current_table, &cor_id_s, t_el, resume_f, resume_param);
+	return report_capture(msg, &current_table, &cor_id_s,
+			proto_t_p?&proto_t:NULL, t_el, resume_f, resume_param);
 }
 
 /*
