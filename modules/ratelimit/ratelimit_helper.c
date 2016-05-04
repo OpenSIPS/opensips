@@ -222,6 +222,7 @@ int init_rl_table(unsigned int size)
 		LM_ERR("Default algorithm was not specified\n");
 		return -1;
 	}
+	rl_default_algo_s.len = strlen(rl_default_algo_s.s);
 	/* resolve the default algorithm */
 	rl_default_algo = get_rl_algo(rl_default_algo_s);
 	if (rl_default_algo < 0) {
