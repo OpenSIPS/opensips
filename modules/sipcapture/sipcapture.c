@@ -2230,13 +2230,13 @@ static void destroy(void)
 	/* execute the uninserted queries - async only */
 	if (DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
 		while (it) {
-			if (HAVE_SHARED_QUERIES && CURR_QUERIES(it->as_qry)) {
-				query_str.s = QUERY_BUF(it->as_qry);
-				query_str.len = QUERY_LEN(it->as_qry);
-				do_remaining_queries(&query_str);
-			}
+			if (it->as_qry && HAVE_SHARED_QUERIES) {
+				if (CURR_QUERIES(it->as_qry)) {
+					query_str.s = QUERY_BUF(it->as_qry);
+					query_str.len = QUERY_LEN(it->as_qry);
+					do_remaining_queries(&query_str);
+				}
 
-			if (HAVE_SHARED_QUERIES) {
 				shm_free(LAST_SUFFIX(it->as_qry).s);
 				DESTROY_QUERY_LOCK(it->as_qry);
 				shm_free(it->as_qry);
@@ -2249,13 +2249,13 @@ static void destroy(void)
 
 		it=rc_list;
 		while (it) {
-			if (HAVE_SHARED_QUERIES && CURR_QUERIES(it->as_qry)) {
-				query_str.s = QUERY_BUF(it->as_qry);
-				query_str.len = QUERY_LEN(it->as_qry);
-				do_remaining_queries(&query_str);
-			}
+			if (it->as_qry && HAVE_SHARED_QUERIES) {
+				if (CURR_QUERIES(it->as_qry)) {
+					query_str.s = QUERY_BUF(it->as_qry);
+					query_str.len = QUERY_LEN(it->as_qry);
+					do_remaining_queries(&query_str);
+				}
 
-			if (HAVE_SHARED_QUERIES) {
 				shm_free(LAST_SUFFIX(it->as_qry).s);
 				DESTROY_QUERY_LOCK(it->as_qry);
 				shm_free(it->as_qry);
