@@ -46,7 +46,10 @@ Alexandr Dubovikov
         1.4. Exported Functions
 
               1.4.1. sip_capture([table_name])
-              1.4.2. report_capture([table_name,]correlation_id)
+              1.4.2.
+                      report_capture([table_name],correlation_id[,pr
+                      oto_type])
+
               1.4.3. hep_set([data_type,] chunk_id, [vendor_id,]
                       chunk_data)
 
@@ -387,15 +390,20 @@ if (is_method("REGISTER"))
         sip_capture("homer_%m_%d");
 ...
 
-1.4.2.  report_capture([table_name,]correlation_id)
+1.4.2.  report_capture([table_name],correlation_id[,proto_type])
 
-   Save the message into the database.
+   Save the message into the database. If you want set the
+   protocol type you have to define the table name, even if you
+   pass over it(report_capture(,"$var(cor_id)",
+   "$var(proto_type)")).
 
    Meaning of the parameters is as follows:
      * table_name (string) - the name of the table to store the
        packet; it can have a strftime-like formatted suffix in
        order to change it's name based on time;
      * correlation_id (string)
+     * proto_type (int) - protocol type number as defined in hep
+       protocol specification.
 
    This function can be used from
    REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_RO
@@ -410,7 +418,13 @@ if (is_method("REGISTER"))
                 $var(correlation_id) = "absdcef";
         }
 
-        report_capture("rtcp_log", $var(correlation_id");
+        $var(proto_type) = "3"; /* 0x03 - SDP protocol */
+
+        report_capture("rtcp_log", $var(correlation_id)");
+        /* setting the first parameter, even if setting it to null, is m
+andatory in order to be able to set proto type */
+        report_capture(, $var(correlation_id)", "$var);
+        report_capture("rtcp_log", $var(correlation_id)", "$var);
 ...
 
 1.4.3.  hep_set([data_type,] chunk_id, [vendor_id,] chunk_data)
