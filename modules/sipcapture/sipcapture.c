@@ -1377,7 +1377,7 @@ static int get_hep_chunk(struct hepv3* h3, unsigned int chunk_id,
 {
 	#define SET_PVAL_INT(__pval__, __ival__)    \
 	do {                                                   \
-		__pval__->flags = PV_VAL_STR|PV_VAL_INT;           \
+		__pval__->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;\
 		__pval__->ri = __ival__;                           \
 		__pval__->rs.len +=                                \
 			snprintf(__pval__->rs.s + __pval__->rs.len,    \
@@ -1536,11 +1536,13 @@ static int get_hep_chunk(struct hepv3* h3, unsigned int chunk_id,
 
 		if (h3->hg.proto_t.data < 0 || h3->hg.proto_t.data >
 				sizeof(hep_app_protos)-1) {
-			LM_ALERT("Invalid proto!Probably a new one was added %d\n",
+			LM_DBG("Not a HEP default defined proto %d\n",
 					h3->hg.ip_proto.data);
-		}
 
-		SET_PVAL_STR(res, hep_app_protos[h3->hg.proto_t.data]);
+			SET_PVAL_INT(res, h3->hg.ip_proto.data);
+		} else {
+			SET_PVAL_STR(res, hep_app_protos[h3->hg.proto_t.data]);
+		}
 
 		break;
 	/* capture agent id */
