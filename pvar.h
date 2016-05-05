@@ -213,7 +213,11 @@ int pv_get_spec_value(struct sip_msg* msg, pv_spec_p sp, pv_value_t *value);
 int pv_print_spec(struct sip_msg* msg, pv_spec_p sp, char *buf, int *len);
 int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len);
 int pv_elem_free_all(pv_elem_p log);
+
+/* always obtain a printable version of the given (pv_value_t *) */
+str pv_value_print(pv_value_t *val);
 void pv_value_destroy(pv_value_t *val);
+
 void pv_spec_free(pv_spec_t *spec);
 int pv_spec_dbg(pv_spec_p sp);
 int pv_get_spec_index(struct sip_msg* msg, pv_param_p ip, int *idx, int *flags);

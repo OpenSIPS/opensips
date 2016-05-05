@@ -4244,10 +4244,9 @@ int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len)
 {
 	int n;
 	pv_value_t tok;
+	str print;
 	pv_elem_p it;
 	char *cur;
-	char *p;
-	int l;
 
 	if(msg==NULL || list==NULL || buf==NULL || len==NULL)
 		return -1;
@@ -4278,38 +4277,16 @@ int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len)
 		if(it->spec.type!=PVT_NONE
 				&& pv_get_spec_value(msg, &(it->spec), &tok)==0)
 		{
-			if(tok.flags&PV_VAL_NULL)
-				tok.rs = str_null;
-			if (tok.flags&PV_VAL_STR || tok.flags&PV_VAL_NULL) {
-				if(n+tok.rs.len < *len)
-				{
-					if(tok.rs.len>0)
-					{
-						memcpy(cur, tok.rs.s, tok.rs.len);
-						n += tok.rs.len;
-						cur += tok.rs.len;
-					}
-				} else {
-					LM_ERR("no more space for spec value [%d][%d]\n",
-						n, tok.rs.len);
-					goto overflow;
-				}
-			} else if (tok.flags&(PV_VAL_INT|PV_TYPE_INT)){
-				p = int2str(tok.ri, &l);
-				if (n+l < *len)
-				{
-					memcpy(cur, p, l);
-					n += l;
-					cur += l;
-				} else {
-					LM_ERR("no more space for spec value [%d][%d]\n",
-						n, tok.rs.len);
-					goto overflow;
-				}
-			} else {
-				LM_ERR("unknown type %x\n", tok.flags);
-				return -1;
+			print = pv_value_print(&tok);
+			if (n + print.len >= *len) {
+				LM_ERR("no more space for spec value [%d][%d]\n",
+				       n, print.len);
+				goto overflow;
 			}
+
+			memcpy(cur, print.s, print.len);
+			n += print.len;
+			cur += print.len;
 		}
 	}
 
@@ -4405,6 +4382,25 @@ int pv_elem_free_all(pv_elem_p log)
 		pkg_free(t);
 	}
 	return 0;
+}
+
+str pv_value_print(pv_value_t *val)
+{
+	str printed = str_init(NULL);
+
+	if (val->flags & PV_VAL_NULL)
+		return str_null;
+
+	if (val->flags & PV_VAL_STR)
+		return val->rs;
+
+	if (val->flags & (PV_VAL_INT|PV_TYPE_INT)) {
+		printed.s = int2str(val->ri, &printed.len);
+		return printed;
+	}
+
+	LM_ERR("unknown type %x\n", val->flags);
+	return str_empty;
 }
 
 void pv_value_destroy(pv_value_t *val)
