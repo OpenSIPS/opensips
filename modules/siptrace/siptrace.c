@@ -369,9 +369,10 @@ parse_siptrace_uri(const str *token, str *uri, str *param1, str* param2)
 			break;
 		case '@':
 			/* continue parsing; passed over database password */
-			if (no_parsing)
-				no_parsing=1;
-
+			if (no_parsing) {
+				no_parsing=0;
+			}
+			break;
 		case '\n':
 		case '\r':
 		case '\t':
