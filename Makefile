@@ -33,10 +33,10 @@
 
 #FREERADIUS=1
 # freeradius libs check (must be done in toplevel makefile)
-ifneq ("$(wildcard /usr/include/freeradius-client.h)","")
-FREERADIUS=1
-else
-#FREERADIUS=0
+ifeq ($(RADIUSCLIENT),)
+RADIUSCLIENT=$(shell if [ -n "`ldconfig -p | grep radcli`" ]; then echo "RADCLI"; \
+		 elif [ -n "`ldconfig -p | grep freeradius`" ]; then echo "FREERADIUS"; \
+		  elif [ -n "`ldconfig -p | grep radiusclient-ng`" ];then echo "RADIUSCLIENT"; fi)
 endif
 
 #SQLITE_BIND=1
@@ -124,7 +124,6 @@ modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf
 
-
 install_docs := README-MODULES AUTHORS NEWS README
 ifneq ($(skip-install-doc),yes)
 	install_docs += INSTALL
@@ -178,6 +177,7 @@ endif
 
 .PHONY: all
 all: $(NAME) modules utils
+
 
 .PHONY: app
 app: $(NAME)
@@ -708,6 +708,11 @@ doxygen:
 	echo "HAVE_DOT=no" ;\
 	echo "PROJECT_NUMBER=$(NAME)-$(RELEASE)" )| doxygen -
 	-@echo "Doxygen documentation created"
+
+
+.PHONY: print radius_lib
+print_radius_lib:
+	@echo $(RADIUSCLIENT)
 
 comp_menuconfig:
 	$(MAKE) -C menuconfig

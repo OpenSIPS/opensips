@@ -605,11 +605,19 @@ ifneq ($(VERSIONTYPE),)
 	DEFS+= -DVERSIONTYPE='"$(VERSIONTYPE)"' -DTHISREVISION='"$(THISREVISION)"'
 endif
 
-ifneq ($(FREERADIUS),)
-	DEFS+= -DUSE_FREERADIUS
-	RADIUS_LIB= -lfreeradius-client
-else
+ifneq ($(RADIUSCLIENT), RADCLI)
+ifneq ($(RADIUSCLIENT), FREERADIUS)
+ifeq ($(RADIUSCLIENT), RADIUSCLIENT)
+	DEFS+= -DRADIUSCLIENT
 	RADIUS_LIB= -lradiusclient-ng
+endif
+else
+	DEFS+= -DFREERADIUS
+	RADIUS_LIB= -lfreeradius-client
+endif
+else
+	DEFS+= -DRADCLI
+	RADIUS_LIB= -lradcli
 endif
 
 ifneq ($(SQLITE_BIND),)

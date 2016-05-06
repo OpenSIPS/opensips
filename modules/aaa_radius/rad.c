@@ -28,10 +28,16 @@
  * This is the Radius implementation for the generic AAA Interface.
  */
 
-#ifndef USE_FREERADIUS
-	#include <radiusclient-ng.h>
-#else
+#ifdef FREERADIUS
 	#include <freeradius-client.h>
+#else
+	#ifdef RADCLI
+		#include <radcli/radcli.h>
+	#else
+		#ifdef RADIUSCLIENT
+			#include <radiusclient-ng.h>
+		#endif
+	#endif
 #endif
 
 #ifndef REJECT_RC
