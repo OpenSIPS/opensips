@@ -1699,11 +1699,6 @@ static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 	}
 
-	if (ctx->h.version != 3) {
-		LM_ERR("hep version 3 or more required for all hep variables!\n");
-		return -1;
-	}
-
 	ri = &ctx->ri;
 
 	if (get_hepvar_name(msg, param, &net_info_type) < 0) {
