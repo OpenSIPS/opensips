@@ -3511,14 +3511,14 @@ error:
 static int fix_hex_int(str *s)
 {
 
-	int retval;
+	unsigned int retval=0;
 
 	if (!s->len || !s->s)
 		goto error;
 
 	if (s->len > 2)
 		if ((s->s[0] == '0') && ((s->s[1]|0x20) == 'x')) {
-			if (string2hex((unsigned char *)s->s+2, s->len-2, (char*)&retval)!=0)
+			if (hexstr2int(s->s+2, s->len-2, &retval)!=0)
 				goto error;
 			else
 				return retval;
