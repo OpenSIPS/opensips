@@ -384,7 +384,8 @@ static str hep_net_protos[]={
 	str_init("WS"),
 	str_init("WSS"),
 	str_init("BIN"),
-	str_init("HEP"),
+	str_init("HEP_UDP"),
+	str_init("HEP_TCP"),
 	{NULL, 0}
 };
 
