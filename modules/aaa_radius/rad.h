@@ -47,4 +47,7 @@ int rad_avp_add(aaa_conn* rh, aaa_message* message, aaa_map* name, void* value,
 
 int extract_avp(VALUE_PAIR* vp);
 
+#ifdef RADCLI
+uint32_t rc_get_ipaddr (char *host);
+#endif
 #endif
