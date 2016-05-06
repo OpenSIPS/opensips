@@ -482,7 +482,7 @@ static int parse_siptrace_id(str *suri)
 					&& (__url__.s[2]|0x20) == 'p'))
 
 
-	unsigned int hash, url_table_hash;
+	unsigned int hash, param_hash;
 
 	char *new_url;
 
@@ -526,6 +526,14 @@ static int parse_siptrace_id(str *suri)
 
 	if (IS_HEP_URI(trace_uri)) {
 		uri_type = TYPE_HEP;
+		if (param1.s && param1.len) {
+			if (param2.s && param2.len) {
+				param_hash = core_hash(&param1, &param2, 0);
+			} else {
+				param_hash = core_hash(&param1, NULL, 0);
+			}
+			hash^= param_hash;
+		}
 	} else if (IS_SIP_URI(trace_uri)) {
 		uri_type = TYPE_SIP;
 	} else {
@@ -533,8 +541,8 @@ static int parse_siptrace_id(str *suri)
 		if (param1.s == NULL || param1.len == 0)
 			param1 = siptrace_table;
 
-		url_table_hash = core_hash(&trace_uri, &param1, 0);
-		hash ^= (url_table_hash>>3);
+		param_hash = core_hash(&trace_uri, &param1, 0);
+		hash ^= (param_hash>>3);
 		uri_type = TYPE_DB;
 	}
 
