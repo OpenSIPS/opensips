@@ -47,10 +47,10 @@ Chapter 1. Admin Guide
 
 1.1. Overview
 
-   Flatstore module provides a logging facility for different
-   events, triggered through the OpenSIPS Event Interface,
-   directly from the OpenSIPS script. The module logs the events
-   along with their parameters in regular text files.
+   The event_flatstore module provides a logging facility for
+   different events, triggered through the OpenSIPS Event
+   Interface, directly from the OpenSIPS script. The module logs
+   the events along with their parameters in plain text files.
 
 1.2. Flatstore socket syntax
 
@@ -60,10 +60,9 @@ Chapter 1. Admin Guide
      * flatstore: - informs the Event Interface that the events
        sent to this subscriber should be handled by the
        event_flatstore module.
-     * path_to_file - path to a file to be created for logging the
-       events. The file can exist in which case the events will be
-       appended to existing file. It must be a valid path and not
-       a directory.
+     * path_to_file - path to the file where the logged events
+       will be appended to. The file will be created if it does
+       not exist. It must be a valid path and not a directory.
 
 1.3. Dependencies
 
@@ -82,10 +81,10 @@ Chapter 1. Admin Guide
 
 1.5.1. max_open_sockets (integer)
 
-   Defines the maximum number of simultaniously opened files by
-   the module. If the maximum limit is reached a error message
-   will be thrown, further subscribtions will be possible after at
-   least one current subscribtion will expire.
+   Defines the maximum number of simultaneously opened files by
+   the module. If the maximum limit is reached, an error message
+   will be thrown, and further subscriptions will only be possible
+   after at least one of the current subscriptions will expire.
 
    Default value is “100”.
 
@@ -108,7 +107,7 @@ modparam("event_flatstore", "delimiter", ";")
 
 1.5.3. file_permissions (string)
 
-   Sets the permission for the newly created logs. It expects a
+   Sets the permissions for the newly created logs. It expects a
    string representation of a octal value.
 
    Default value is “644”.
@@ -120,7 +119,7 @@ modparam("event_flatstore", "file_permissions", "664")
 
 1.6. Exported Functions
 
-   No function exported to be used from configuration file.
+   No exported functions to be used in the configuration file.
 
 1.7. Exported MI Functions
 
@@ -129,7 +128,8 @@ modparam("event_flatstore", "file_permissions", "664")
    It makes the processes reopen the file specified as a parameter
    to the command in order to be compatible with a logrotate
    command. If the function is not called after the mv command is
-   executed the module will continue to write in the renamed file.
+   executed, the module will continue to write in the renamed
+   file.
 
    Name: evi_flat_rotate
 

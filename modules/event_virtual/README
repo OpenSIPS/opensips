@@ -30,22 +30,23 @@ Chapter 1. Admin Guide
 
 1.1. Overview
 
-   Virtual module provides the possibility to have multiple
-   external applications, using different transport protocols,
-   subscribed to the OpenSIPS Event Interface as a single virtual
-   subscriber, for a specific event.When an event is triggered,
-   the virtual module notifies the specified transport modules
-   with three different policies:
-     * parallel - all the subsribers are notified at once
-     * failover - for every event raised, try to notify the
+   The event_virtual module provides the possibility to have
+   multiple external applications, using different transport
+   protocols, subscribed to the OpenSIPS Event Interface as a
+   single virtual subscriber, for a specific event. When an event
+   is triggered, the event_virtual module notifies the specified
+   transport modules using one of the following policies:
+     * PARALLEL - all subscribers (applications) are notified at
+       once
+     * FAILOVER - for every event raised, try to notify the
        subscribers, in the order in which they are given, until
        the first successful notification
-     * round-robin for every event raised, notify the subscribers
-       alternatively, in the order in which they are given (for
-       each raised event notify a different subscriber)
+     * ROUND-ROBIN - for every event raised, notify the
+       subscribers alternatively, in the order in which they are
+       given (for each raised event notify a different subscriber)
 
-   Only one expire value can be used, for the whole virtual
-   subscribtion, not for every subscriber separately.
+   Only one expire value can be used (for the whole virtual
+   subscription), and not one for each individual subscriber.
 
 1.2. Virtual socket syntax
 
@@ -55,9 +56,11 @@ Chapter 1. Admin Guide
      * virtual: - informs the Event Interface that the events sent
        to this subscriber should be handled by the event_virtual
        module
-     * policy - subscribers notification policy, can have one of
-       the following values: 'PARALLEL', 'FAILOVER',
-       'ROUND-ROBIN', with the behaviour as described above
+     * policy - subscriber notification policy, can have one of
+       the following values: 'PARALLEL', 'FAILOVER', 'ROUND-ROBIN'
+       (with the behaviour described above)
+          + !! Important: Policies must always be specified as
+            uppercase strings!
      * subscriber_1 - use the socket syntax for this specific
        subscriber (eg. "rabbitmq:guest:guest@127.0.0.1:5672/pike")
 
@@ -67,8 +70,8 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
 
-   The OpenSIPS modules which implement the transport protocols
-   used by the subscribers.
+   The OpenSIPS event modules which implement the transport
+   protocols used by the subscribers.
 
 1.4. External Libraries or Applications
 
@@ -78,18 +81,18 @@ Chapter 1. Admin Guide
 
 1.5. Exported Parameters
 
-   No parameters exported to be used from configuration file.
+   No exported parameters to be used in the configuration file.
 
 1.6. Exported Functions
 
-   No function exported to be used from configuration file.
+   No exported functions to be used in the configuration file.
 
 1.7. Example
 
    Example 1.1. Virtual socket
 
-   The sockets of the subscribers should be separated by any
-   number of spaces or tabs:
+   The sockets of the subscribers may be separated by any number
+   of spaces or tabs:
 
         virtual:PARALLEL rabbitmq:guest:guest@127.0.0.1:5672/pike flatst
 ore:/var/log/opensips_proxy.log
