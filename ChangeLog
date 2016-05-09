@@ -1,5 +1,1808 @@
 =========================== Release 2.2.0 ==============================
 
+2016-05-09  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [3c75721] :
+
+	[nathelper] fix bad logic regarding the timer list
+	(cherry picked from commit a86d2c4edcf9c62778a2a9d2438d57fac869bc10)
+
+
+2016-05-09  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [2330afa] :
+
+	[sipcapture] fix sip_capture table schema
+	(cherry picked from commit 8fd97163058c798f45d381b124cc465261e9e1e5)
+
+
+2016-05-09  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [22bdc37] :
+
+	[siptrace][bugfix] bad structre used when printing HEP trace_id via mi
+	(cherry picked from commit 8c6d9bacb580960f1a0a642a5be5a5ffeb5f958a)
+
+
+2016-05-08  Liviu Chircu  <liviu at opensips dot org>
+	* [cd4101a] :
+
+	event_virtual doc: Fix grammar/typos
+	(cherry picked from commit 3fd96863cb611d1eefad3b175535944545253f19)
+
+
+2016-05-08  Liviu Chircu  <liviu at opensips dot org>
+	* [664ec6b] :
+
+	event_flatstore doc: Fix some typos
+	(cherry picked from commit 3cedcc4af994aa8ce132547c325c13cbc8d2cd07)
+
+
+2016-05-06  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [f5753f9] :
+
+	[siptrace] fix hash calculus for extended hep trace_id
+	(cherry picked from commit 5e261d7e9f1ea632806370c16cb0f733cee4edfc)
+
+
+2016-05-06  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [91c3247] :
+
+	[sipcapture] allow any hep version for hep_net variable
+	(cherry picked from commit bcbded5653d5703b53ed4bc961a8a66d724d3e32)
+
+
+2016-05-06  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [d09775b] :
+
+	[sipcapture] fix new hep proto names string
+	(cherry picked from commit 3c15d2d89ec1ab8ad01a2e29a844eb3084128abf)
+
+
+2016-05-06  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c939605] :
+
+	[sipcapture][bugfix] fix bad string hex value parsing
+	(cherry picked from commit 5d6b927d41988e3170ab37889fb26c8026dce29d)
+
+
+2016-05-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [454a557] :
+
+	[siptrace][bugfix] fix trace_id parsing
+	(cherry picked from commit 2878741afc71620c5910f689c07db38b5003a48c)
+
+
+2016-05-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [ed3f224] :
+
+	[sipcapture][bugfix] invalid static vector size calculation
+	(cherry picked from commit b8a82b159d220389513808c8fb8f651fc1498cda)
+
+
+2016-05-05  Liviu Chircu  <liviu at opensips dot org>
+	* [5589ffe] :
+
+	dialog: Remove a chunk of dead code
+	(cherry picked from commit fd330577d66de599430694334e8605ae8b46b9d9)
+
+
+2016-05-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [55f45c4] :
+
+	[sipcapture][bugfix] invalid memory access
+	(cherry picked from commit 8056a984ce914d6585aef6054d727d82f72da3c6)
+
+
+2016-05-04  renicok  <renico.koen at gmail dot com>
+	* [f12cf9b] :
+
+	Updated opensipsctl.base to also search /sbin
+	The md5 utility is located at /sbin/md5 on FreeBSD 8.3. An additional common location was added to allow the script to accommodate this.
+	(cherry picked from commit ca87f55ad071257aa3b891347aadb55a7729d25b)
+
+
+2016-05-04  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [ef5f3b5] :
+
+	[sipcapture] fix bad conditions
+	(cherry picked from commit 4caa2ac37177f2ad59c8f2de23fcc3b12c11fe69)
+
+
+2016-05-04  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c24abca] :
+
+	[sipcapture] be able to set proto_type in report capture function
+	(cherry picked from commit e3466c4adecf11fa6d7da206359847c3a1c4b0f9)
+
+
+2016-05-04  Razvan Crainea  <razvan at opensips dot org>
+	* [2d4d2ff] :
+
+	ratelimit: initialize the length of the algorithm
+	(cherry picked from commit 0eebf1058574c622ba3532fb520908da1c1d94a5)
+
+
+2016-05-04  Razvan Crainea  <razvan at opensips dot org>
+	* [ebaad38] :
+
+	Makefile.conf: add deps for tls_mgm and proto_wss
+	This prevents 'make menuconf' from deleting these modules from the generated
+	configuration file
+	(cherry picked from commit 616b2ba189771a499c76d645627869270555511d)
+
+
+2016-05-03  Răzvan Crainea  <razvan at opensips dot org>
+	* [83a23be] :
+
+	debian: add missing dependency
+	Ovewrite lintian warning
+
+
+2016-05-03  Razvan Crainea  <razvan at opensips dot org>
+	* [1e99bb0] :
+
+	dialog and usrloc: broadcast replication data all time
+	This prevents clusterer module from marking a node as not reachable when there
+	is no traffic at all.
+
+	Fixes #849
+	(cherry picked from commit 7f7f8711ccfd0aabb71b124fbb7f4c3e8afd6e37)
+
+
+2016-05-03  Razvan Crainea  <razvan at opensips dot org>
+	* [d02ae4f] :
+
+	regex: fix spell-check in package
+	(cherry picked from commit 647ea214f1892f8901f562bc45e0e1e33b699aba)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [30d8048] :
+
+	[acc][bugfix] fix memory leak
+	* fix leak caused by missed calls - receiving a negative reply
+	caused flags not being freed
+
+
+2016-05-03  Razvan Crainea  <razvan at opensips dot org>
+	* [a1af71c] :
+
+	proto_bin: remove debug INFO message
+	(cherry picked from commit d388e804a320aa0f267e47cbcbaf473d519fab31)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [4389c26] :
+
+	[siptrace] fix bad cherry-pick conflict solving
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [090525c] :
+
+	[sipcapture] updated docs for HEPVERSION
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e547ec6] :
+
+	[fix functional bug][sipcapture] new HEPVERSION script variable
+	(cherry picked from commit 136fcb65edd4ca00cb15f088de3e58f960385518)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [a9a9d7f] :
+
+	[proto_hep] correctly name function
+	(cherry picked from commit 853b0bbb759d3c58f00b0749e90e4016dd500891)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [608881b] :
+
+	[hep] updated docs for previous commit
+	(cherry picked from commit f9c6cdd2acf93062c252f9fc64faa6327e696718)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [b2ff3cc] :
+
+	[fix functional bug][hep] multiple versions/protocols can be used in the same time
+	Since commit 0873c14d1b81887823242a955217dcc854eb97c9 multiple
+	network protocols can be used from one module. Proto_hep was changed
+	to be able to use both tcp and udp in the same time. Moreover, there
+	is no hep_version needed since we can receive HEPv1,v2 and v3 on any
+	UDP interface. Since HEPv1 and v2 are not compatible with TCP, only
+	HEPv3 will be support. For HEPv3, Sipcapture module can now relay
+	packets from TCP to UDP or the reverse way.
+	Siptrace module was also improved. Trace id's can now be defined with
+	hep version and transport protocol, in order to be able to do multiple
+	types of tracing with different HEP protocols and/or network transports.
+	(cherry picked from commit 45a3aef8e151a03966a7739c2f880a3fdb0d6811)
+
+	Conflicts:
+		modules/siptrace/siptrace.c
+
+
+2016-05-03  Razvan Crainea  <razvan at opensips dot org>
+	* [5e8f0ac] :
+
+	[fix functional bug]allow a module to register multiple protocols
+	(cherry picked from commit 0873c14d1b81887823242a955217dcc854eb97c9)
+
+
+2016-04-29  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e82a5b3] :
+
+	[drouting] bug fix and memory leak fix
+	* free gateways list for each carrier at reload
+	* use map_find instead of map_get to search an element in the tree
+	(cherry picked from commit f9f3b83ef621850c2c128b12b9bf6ab2e78e5ee1)
+
+
+2016-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [19421eb] :
+
+	[siptrace][bugfix] use the correct sockaddr structure for storing
+	(cherry picked from commit 556f394212bb07c6f7641f3b1df954d52ff730a5)
+
+
+2016-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [ba0fcc2] :
+
+	[proto_hep][bugfix] use the correct port when unpacking
+	(cherry picked from commit 3dda4131b458bc6f3145196f7661671571dc948e)
+
+
+2016-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c2e8c17] :
+
+	Revert "[hep][bugfix] correctly store ports/addresses"
+	This reverts commit 7b1359adfcd55f12fd3739c04e30e1c12b91a71b.
+	(cherry picked from commit ab2292945b19f00faa063c457a0efce384b8f245)
+
+
+2016-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [4cce28a] :
+
+	[hep][bugfix] correctly store ports/addresses
+	(cherry picked from commit 51e6f102daac7d0de9a7ca4efea74d5c559746fe)
+
+
+2016-04-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [70a3018] :
+
+	Enable debug_mode settings only if debug_mode gets set to enable.
+	(cherry picked from commit e7c14bc0c85c888040aec7f0949b085c5cee38e7)
+
+
+2016-04-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5c8869b] :
+
+	Avoid space in MI node name
+
+
+2016-04-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [555c0e7] :
+
+	Fixed wrong MI tree in clusterer_list (related to previous commit)
+	(cherry picked from commit fa4e7f0fa10c6e987b1b69bc5302f0d12a3f8714)
+
+
+2016-04-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [aa856a7] :
+
+	Fixed arrays in clusterer_list MI command
+	(cherry picked from commit 31943a4e2c4ae84babc181f4e5a31e33f2d6b63a)
+
+
+2016-04-26  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [0e81a70] :
+
+	[tls_mgm] properly handle SSL_ERROR_SYSCALL on SSL_shutdown
+	(cherry picked from commit bdcee39ebf04f8a74b926dc6e6c311487d3ef601)
+
+
+2016-04-26  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [dbdc46c] :
+
+	[siptrace][bugfix] avoid double free on cancelled transaction
+	(cherry picked from commit 3c6b6930d615adb978dd2779b6cd4054c3bc49df)
+
+
+2016-04-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [a9b0011] :
+
+	[sipcapture] fix incompatibilities with HOMERv5 db schema
+	(cherry picked from commit f75687847a142f18b44c49a0b274457d7039f165)
+
+
+2016-04-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [85b126a] :
+
+	[sipcapture] remove time-consuming unnecessary chunk of code
+	(cherry picked from commit cc7a2ea114444b82645e484a1cf728c4464c17dd)
+
+
+2016-04-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [d49afa6] :
+
+	[proto_hep][bugfix] fix bad sip payload size calculation
+	(cherry picked from commit eec5045d44ec1fc29aba9a6d5d024e38ace10ae1)
+
+
+2016-04-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e6258da] :
+
+	[acc][bugfix] correctly store do_accounting() flags
+		Flags are now moved from processing context into
+	transaction context when the transaction is created, this way
+	having visibility for the whole transaction.
+	(cherry picked from commit 41bcd2559b29a23e96636c6c2dfc5628f69ae5b7)
+
+
+2016-04-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [507db77] :
+
+	Fixed MI nodes in 'sip_trace' command.
+	Formatting chars must not be included in the MI tree
+	(cherry picked from commit 7811e2d6b6013fe21c744531299f490671462a05)
+
+
+2016-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0a1fc05] :
+
+	Fixed default FIFO file name
+	(cherry picked from commit ffdbb970bfa60dcd1ed7d88fc94c4a07f9356ad9)
+
+
+2016-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b7ac4fc] :
+
+	exclude proto_wss, use QM_MALLOC
+
+
+2016-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7aef53c] :
+
+	tls_list() may be called even without DB support
+	Avoid locking if DB support was not enabled.
+	(cherry picked from commit e6944bb064750611585d0fa516551b944aa44cdc)
+
+
+2016-04-22  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [eee4fae] :
+
+	[proto_hep][bugfix] check memory allocation
+	(cherry picked from commit f5ad753d56a95d68bc937e0721895d6ee4aefd43)
+
+
+2016-04-21  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [21ca280] :
+
+	[siptrace][bugfix] sequential requests - set context for sl callbacks
+	(cherry picked from commit 943d9015f8f1e3467acafee67693f157beab9755)
+
+
+2016-04-21  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [6ce202a] :
+
+	[context][bugfix] each context has its own destroy functions vector
+	Credits to Razvan Crainea
+	(cherry picked from commit 53263b2a65dc771cb660078f4b20171a48f04248)
+
+
+2016-04-21  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [576a730] :
+
+	[tm]fix context functions header
+	(cherry picked from commit 59e5a4165f88c2a4a4dbb5e159786c441f6fa502)
+
+
+2016-04-20  Liviu Chircu  <liviu at opensips dot org>
+	* [4cd99ec] :
+
+	MI library: Add comments regarding a known issue
+	Currently, MI arrays cannot contain objects with non-identical
+	"name" attributes.
+
+	This patch also quickfixes this issue in mi_list_all_profiles() by dropping
+	the array idea altogether, in favour of a top-most object.
+	(cherry picked from commit 6c105015c3a0a02c6f65822f5ce52e12bd0ae108)
+
+
+2016-04-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [134ad0d] :
+
+	Fixed bogus pkg_free on pointer in data segment
+	Reported by @dzhou121
+	Closes #854
+	(cherry picked from commit b9aa87360eecf1e77baea661b855eec4f5798f2f)
+
+
+2016-04-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [afc4c40] :
+
+	Fix typo in do_accounting() naming is cfg templates
+	(cherry picked from commit 7f8656e026435bf4ac6eff19b964b81d7a37d28e)
+
+
+2016-04-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [b65c6c2] :
+
+	[sipcapture][HOMERv5 incompatibility fix] updated docs for report_capture and new table name format
+	(cherry picked from commit 5d725a42d0262807dd9a2c555640a980e50381ce)
+
+
+2016-04-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [acd0a9c] :
+
+	[sipcapture][HOMERv5 incompatibility fix]generic capturing function
+	      Added new function called report_capture which allows
+	capturing hep packets in a generic format. It will be very
+	effective for the third version of the hep protocol for capturing
+	packets other than SIP. Also added a new table called rtcp_capture
+	for storing everything capture with report capture.
+	(cherry picked from commit c5700cce4a37e484869941502e495733b8138b98)
+
+
+2016-04-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [3053c7e] :
+
+	 [sipcapture][HOMERv5 incompatibility fix] HOMERv5 table rotation aware logic
+	    * HOMVERv5 allows rotating tables by having a prefix which is
+	    the fixed table name and a suffix which is a string containig
+	    timestamps
+	    * sip_capture now accepts table name as a parameter to sip_capture()
+	    function
+	    * both global table name and sip_capture table_name can have
+	    a prefix(string) and a suffix(strftime format string);
+	    * fixed bugs in async query building
+	(cherry picked from commit 074463f17f2e57fb15c120f306ce895438ad1865)
+
+
+2016-04-14  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e894f7a] :
+
+	[acc][bugfix] register tm free function only once
+	(cherry picked from commit 92d20416568c23f58f378fd14b272d2b16d7518e)
+
+
+2016-04-14  Liviu Chircu  <liviu at opensips dot org>
+	* [19dca29] :
+
+	Fix a PKG leak in the SIP message processing stack
+	Commit 7464a86ec introduced a processing context leak during the
+	handling of basically any SIP request in all protocol stacks
+	except for HEP.
+
+	Reported by Trevor Francis <trevor@46labs.com>
+	(cherry picked from commit 731719a2b10283439e2f6a0ba15bb8c6c6ef189c)
+
+
+2016-04-14  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c5c4df0] :
+
+	[acc] fix double free issue
+	Since callbacks were registered only at first, and aftewards only
+	flags were changed there was no way to know if tm is to free the
+	shmed flags from acc or dialog. For this a new flag was introduced
+	to indicate whether the flags shall be removed either by dialog or
+	tm.
+	(cherry picked from commit 6852bd427376cea0cc53cbc5f87476f3377cbd04)
+
+
+2016-04-12  Liviu Chircu  <liviu at opensips dot org>
+	* [9888984] :
+
+	Suppress "no free TCP receiver" logging noise
+	This was added long before async TCP support, and it is now
+	only useful to developers.
+	(cherry picked from commit 142e7e0121040aceb2f9c31c4d4a0e8d8b573cc6)
+
+
+2016-04-11  Ovidiu Sas  <osas at voipembedded dot com>
+	* [7d371ab] :
+
+	pi_http: return "200 OK" instead of "0 Unknown"
+	(cherry picked from commit 73f8117f2f5f01560b6698ad845cce0b485df203)
+
+
+2016-04-07  Kristian Høgh  <kfh at uni-tel dot dk>
+	* [423f277] :
+
+	cachedb_redis: Prevent crash when re-connect keeps failing
+	(cherry picked from commit b501df74a231a987babe6eeadb3c676d8823619c)
+
+
+2016-04-05  rvlad-patrascu  <rvlad.patrascu at gmail dot com>
+	* [032bb69] :
+
+	Fix missing GPL headers for mem files
+	(cherry picked from commit 8ffd592e316a4436e2144dfc08f1b20571e6622e)
+
+
+2016-04-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [be22446] :
+
+	Fix typo in README example
+	(cherry picked from commit 983ad955e21f57878fcefd61f8a734e89de5eab9)
+
+
+2016-04-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [836d3b5] :
+
+	[drouting] docs updated for partition id variable
+	(cherry picked from commit 2013276a1b1e4a29766f22b5f483eb4ace6a7235)
+
+
+2016-04-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [5689d43] :
+
+	[drouting] check if partition pvar is writable
+	(cherry picked from commit cf0945c16eff03efd5ec2b120d283ebc7f4b8616)
+
+
+2016-04-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [7745b11] :
+
+	[drouting] pvar for matched partition if wildcard operator used
+	fix missing functionality - return to script the matching partition
+	(cherry picked from commit 7551c668972e63970c9a65f7dc5bbd1959100d79)
+
+
+2016-04-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4be2662] :
+
+	Fixed checking return code for pre raw callbacks
+	If the TH pre raw callbacks fails, it may return a NULL buffer, leading to a later crash when we want to parse the SIP message.
+
+
+2016-04-04  Jarrod Baumann  <j at rrod dot org>
+	* [cf1e11d] :
+
+	[dialog] repl_prof_add never increments the return buffer size for threshold comparison
+	(cherry picked from commit 52028bdd2c729904c7e337d7aa0b99cce4195f0c)
+
+
+2016-04-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bcf7d40] :
+
+	Fix missing logs if debug_mode after log_stderror
+	(cherry picked from commit 29182c9baa98a8e156a1c0dd4ceb4992005c7950)
+
+
+2016-03-31  Liviu Chircu  <liviu at opensips dot org>
+	* [2c84108] :
+
+	Various doc improvements
+	(cherry picked from commit d9326522ae9c3dc39b8163d07495dc013217ab80)
+
+	Conflicts:
+		scripts/opensipsdbctl
+		scripts/opensipsdbctl.base
+
+
+2016-03-31  Liviu Chircu  <liviu at opensips dot org>
+	* [7ac6bfc] :
+
+	Update opensipsdbctl for 2.2
+
+
+2016-03-31  Razvan Crainea  <razvan at opensips dot org>
+	* [11877a6] :
+
+	Update ChangeLog
+
+
+2016-03-31  Liviu Chircu  <liviu at opensips dot org>
+	* [c4b48fb] :
+
+	Improve the AUTHORS file
+	(cherry picked from commit 32d0e1a4fa500e7693828b3f98392d0502b8b0da)
+
+2016-05-09  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [3c75721] :
+
+	[nathelper] fix bad logic regarding the timer list
+	(cherry picked from commit a86d2c4edcf9c62778a2a9d2438d57fac869bc10)
+
+
+2016-05-09  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [2330afa] :
+
+	[sipcapture] fix sip_capture table schema
+	(cherry picked from commit 8fd97163058c798f45d381b124cc465261e9e1e5)
+
+
+2016-05-09  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [22bdc37] :
+
+	[siptrace][bugfix] bad structre used when printing HEP trace_id via mi
+	(cherry picked from commit 8c6d9bacb580960f1a0a642a5be5a5ffeb5f958a)
+
+
+2016-05-08  Liviu Chircu  <liviu at opensips dot org>
+	* [cd4101a] :
+
+	event_virtual doc: Fix grammar/typos
+	(cherry picked from commit 3fd96863cb611d1eefad3b175535944545253f19)
+
+
+2016-05-08  Liviu Chircu  <liviu at opensips dot org>
+	* [664ec6b] :
+
+	event_flatstore doc: Fix some typos
+	(cherry picked from commit 3cedcc4af994aa8ce132547c325c13cbc8d2cd07)
+
+
+2016-05-06  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [f5753f9] :
+
+	[siptrace] fix hash calculus for extended hep trace_id
+	(cherry picked from commit 5e261d7e9f1ea632806370c16cb0f733cee4edfc)
+
+
+2016-05-06  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [91c3247] :
+
+	[sipcapture] allow any hep version for hep_net variable
+	(cherry picked from commit bcbded5653d5703b53ed4bc961a8a66d724d3e32)
+
+
+2016-05-06  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [d09775b] :
+
+	[sipcapture] fix new hep proto names string
+	(cherry picked from commit 3c15d2d89ec1ab8ad01a2e29a844eb3084128abf)
+
+
+2016-05-06  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c939605] :
+
+	[sipcapture][bugfix] fix bad string hex value parsing
+	(cherry picked from commit 5d6b927d41988e3170ab37889fb26c8026dce29d)
+
+
+2016-05-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [454a557] :
+
+	[siptrace][bugfix] fix trace_id parsing
+	(cherry picked from commit 2878741afc71620c5910f689c07db38b5003a48c)
+
+
+2016-05-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [ed3f224] :
+
+	[sipcapture][bugfix] invalid static vector size calculation
+	(cherry picked from commit b8a82b159d220389513808c8fb8f651fc1498cda)
+
+
+2016-05-05  Liviu Chircu  <liviu at opensips dot org>
+	* [5589ffe] :
+
+	dialog: Remove a chunk of dead code
+	(cherry picked from commit fd330577d66de599430694334e8605ae8b46b9d9)
+
+
+2016-05-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [55f45c4] :
+
+	[sipcapture][bugfix] invalid memory access
+	(cherry picked from commit 8056a984ce914d6585aef6054d727d82f72da3c6)
+
+
+2016-05-04  renicok  <renico.koen at gmail dot com>
+	* [f12cf9b] :
+
+	Updated opensipsctl.base to also search /sbin
+	The md5 utility is located at /sbin/md5 on FreeBSD 8.3. An additional common location was added to allow the script to accommodate this.
+	(cherry picked from commit ca87f55ad071257aa3b891347aadb55a7729d25b)
+
+
+2016-05-04  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [ef5f3b5] :
+
+	[sipcapture] fix bad conditions
+	(cherry picked from commit 4caa2ac37177f2ad59c8f2de23fcc3b12c11fe69)
+
+
+2016-05-04  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c24abca] :
+
+	[sipcapture] be able to set proto_type in report capture function
+	(cherry picked from commit e3466c4adecf11fa6d7da206359847c3a1c4b0f9)
+
+
+2016-05-04  Razvan Crainea  <razvan at opensips dot org>
+	* [2d4d2ff] :
+
+	ratelimit: initialize the length of the algorithm
+	(cherry picked from commit 0eebf1058574c622ba3532fb520908da1c1d94a5)
+
+
+2016-05-04  Razvan Crainea  <razvan at opensips dot org>
+	* [ebaad38] :
+
+	Makefile.conf: add deps for tls_mgm and proto_wss
+	This prevents 'make menuconf' from deleting these modules from the generated
+	configuration file
+	(cherry picked from commit 616b2ba189771a499c76d645627869270555511d)
+
+
+2016-05-03  Răzvan Crainea  <razvan at opensips dot org>
+	* [83a23be] :
+
+	debian: add missing dependency
+	Ovewrite lintian warning
+
+
+2016-05-03  Razvan Crainea  <razvan at opensips dot org>
+	* [1e99bb0] :
+
+	dialog and usrloc: broadcast replication data all time
+	This prevents clusterer module from marking a node as not reachable when there
+	is no traffic at all.
+
+	Fixes #849
+	(cherry picked from commit 7f7f8711ccfd0aabb71b124fbb7f4c3e8afd6e37)
+
+
+2016-05-03  Razvan Crainea  <razvan at opensips dot org>
+	* [d02ae4f] :
+
+	regex: fix spell-check in package
+	(cherry picked from commit 647ea214f1892f8901f562bc45e0e1e33b699aba)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [30d8048] :
+
+	[acc][bugfix] fix memory leak
+	* fix leak caused by missed calls - receiving a negative reply
+	caused flags not being freed
+
+
+2016-05-03  Razvan Crainea  <razvan at opensips dot org>
+	* [a1af71c] :
+
+	proto_bin: remove debug INFO message
+	(cherry picked from commit d388e804a320aa0f267e47cbcbaf473d519fab31)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [4389c26] :
+
+	[siptrace] fix bad cherry-pick conflict solving
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [090525c] :
+
+	[sipcapture] updated docs for HEPVERSION
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e547ec6] :
+
+	[fix functional bug][sipcapture] new HEPVERSION script variable
+	(cherry picked from commit 136fcb65edd4ca00cb15f088de3e58f960385518)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [a9a9d7f] :
+
+	[proto_hep] correctly name function
+	(cherry picked from commit 853b0bbb759d3c58f00b0749e90e4016dd500891)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [608881b] :
+
+	[hep] updated docs for previous commit
+	(cherry picked from commit f9c6cdd2acf93062c252f9fc64faa6327e696718)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [b2ff3cc] :
+
+	[fix functional bug][hep] multiple versions/protocols can be used in the same time
+	Since commit 0873c14d1b81887823242a955217dcc854eb97c9 multiple
+	network protocols can be used from one module. Proto_hep was changed
+	to be able to use both tcp and udp in the same time. Moreover, there
+	is no hep_version needed since we can receive HEPv1,v2 and v3 on any
+	UDP interface. Since HEPv1 and v2 are not compatible with TCP, only
+	HEPv3 will be support. For HEPv3, Sipcapture module can now relay
+	packets from TCP to UDP or the reverse way.
+	Siptrace module was also improved. Trace id's can now be defined with
+	hep version and transport protocol, in order to be able to do multiple
+	types of tracing with different HEP protocols and/or network transports.
+	(cherry picked from commit 45a3aef8e151a03966a7739c2f880a3fdb0d6811)
+
+	Conflicts:
+		modules/siptrace/siptrace.c
+
+
+2016-05-03  Razvan Crainea  <razvan at opensips dot org>
+	* [5e8f0ac] :
+
+	[fix functional bug]allow a module to register multiple protocols
+	(cherry picked from commit 0873c14d1b81887823242a955217dcc854eb97c9)
+
+
+2016-04-29  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e82a5b3] :
+
+	[drouting] bug fix and memory leak fix
+	* free gateways list for each carrier at reload
+	* use map_find instead of map_get to search an element in the tree
+	(cherry picked from commit f9f3b83ef621850c2c128b12b9bf6ab2e78e5ee1)
+
+
+2016-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [19421eb] :
+
+	[siptrace][bugfix] use the correct sockaddr structure for storing
+	(cherry picked from commit 556f394212bb07c6f7641f3b1df954d52ff730a5)
+
+
+2016-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [ba0fcc2] :
+
+	[proto_hep][bugfix] use the correct port when unpacking
+	(cherry picked from commit 3dda4131b458bc6f3145196f7661671571dc948e)
+
+
+2016-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c2e8c17] :
+
+	Revert "[hep][bugfix] correctly store ports/addresses"
+	This reverts commit 7b1359adfcd55f12fd3739c04e30e1c12b91a71b.
+	(cherry picked from commit ab2292945b19f00faa063c457a0efce384b8f245)
+
+
+2016-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [4cce28a] :
+
+	[hep][bugfix] correctly store ports/addresses
+	(cherry picked from commit 51e6f102daac7d0de9a7ca4efea74d5c559746fe)
+
+
+2016-04-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [70a3018] :
+
+	Enable debug_mode settings only if debug_mode gets set to enable.
+	(cherry picked from commit e7c14bc0c85c888040aec7f0949b085c5cee38e7)
+
+
+2016-04-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5c8869b] :
+
+	Avoid space in MI node name
+
+
+2016-04-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [555c0e7] :
+
+	Fixed wrong MI tree in clusterer_list (related to previous commit)
+	(cherry picked from commit fa4e7f0fa10c6e987b1b69bc5302f0d12a3f8714)
+
+
+2016-04-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [aa856a7] :
+
+	Fixed arrays in clusterer_list MI command
+	(cherry picked from commit 31943a4e2c4ae84babc181f4e5a31e33f2d6b63a)
+
+
+2016-04-26  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [0e81a70] :
+
+	[tls_mgm] properly handle SSL_ERROR_SYSCALL on SSL_shutdown
+	(cherry picked from commit bdcee39ebf04f8a74b926dc6e6c311487d3ef601)
+
+
+2016-04-26  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [dbdc46c] :
+
+	[siptrace][bugfix] avoid double free on cancelled transaction
+	(cherry picked from commit 3c6b6930d615adb978dd2779b6cd4054c3bc49df)
+
+
+2016-04-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [a9b0011] :
+
+	[sipcapture] fix incompatibilities with HOMERv5 db schema
+	(cherry picked from commit f75687847a142f18b44c49a0b274457d7039f165)
+
+
+2016-04-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [85b126a] :
+
+	[sipcapture] remove time-consuming unnecessary chunk of code
+	(cherry picked from commit cc7a2ea114444b82645e484a1cf728c4464c17dd)
+
+
+2016-04-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [d49afa6] :
+
+	[proto_hep][bugfix] fix bad sip payload size calculation
+	(cherry picked from commit eec5045d44ec1fc29aba9a6d5d024e38ace10ae1)
+
+
+2016-04-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e6258da] :
+
+	[acc][bugfix] correctly store do_accounting() flags
+		Flags are now moved from processing context into
+	transaction context when the transaction is created, this way
+	having visibility for the whole transaction.
+	(cherry picked from commit 41bcd2559b29a23e96636c6c2dfc5628f69ae5b7)
+
+
+2016-04-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [507db77] :
+
+	Fixed MI nodes in 'sip_trace' command.
+	Formatting chars must not be included in the MI tree
+	(cherry picked from commit 7811e2d6b6013fe21c744531299f490671462a05)
+
+
+2016-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0a1fc05] :
+
+	Fixed default FIFO file name
+	(cherry picked from commit ffdbb970bfa60dcd1ed7d88fc94c4a07f9356ad9)
+
+
+2016-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b7ac4fc] :
+
+	exclude proto_wss, use QM_MALLOC
+
+
+2016-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7aef53c] :
+
+	tls_list() may be called even without DB support
+	Avoid locking if DB support was not enabled.
+	(cherry picked from commit e6944bb064750611585d0fa516551b944aa44cdc)
+
+
+2016-04-22  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [eee4fae] :
+
+	[proto_hep][bugfix] check memory allocation
+	(cherry picked from commit f5ad753d56a95d68bc937e0721895d6ee4aefd43)
+
+
+2016-04-21  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [21ca280] :
+
+	[siptrace][bugfix] sequential requests - set context for sl callbacks
+	(cherry picked from commit 943d9015f8f1e3467acafee67693f157beab9755)
+
+
+2016-04-21  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [6ce202a] :
+
+	[context][bugfix] each context has its own destroy functions vector
+	Credits to Razvan Crainea
+	(cherry picked from commit 53263b2a65dc771cb660078f4b20171a48f04248)
+
+
+2016-04-21  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [576a730] :
+
+	[tm]fix context functions header
+	(cherry picked from commit 59e5a4165f88c2a4a4dbb5e159786c441f6fa502)
+
+
+2016-04-20  Liviu Chircu  <liviu at opensips dot org>
+	* [4cd99ec] :
+
+	MI library: Add comments regarding a known issue
+	Currently, MI arrays cannot contain objects with non-identical
+	"name" attributes.
+
+	This patch also quickfixes this issue in mi_list_all_profiles() by dropping
+	the array idea altogether, in favour of a top-most object.
+	(cherry picked from commit 6c105015c3a0a02c6f65822f5ce52e12bd0ae108)
+
+
+2016-04-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [134ad0d] :
+
+	Fixed bogus pkg_free on pointer in data segment
+	Reported by @dzhou121
+	Closes #854
+	(cherry picked from commit b9aa87360eecf1e77baea661b855eec4f5798f2f)
+
+
+2016-04-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [afc4c40] :
+
+	Fix typo in do_accounting() naming is cfg templates
+	(cherry picked from commit 7f8656e026435bf4ac6eff19b964b81d7a37d28e)
+
+
+2016-04-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [b65c6c2] :
+
+	[sipcapture][HOMERv5 incompatibility fix] updated docs for report_capture and new table name format
+	(cherry picked from commit 5d725a42d0262807dd9a2c555640a980e50381ce)
+
+
+2016-04-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [acd0a9c] :
+
+	[sipcapture][HOMERv5 incompatibility fix]generic capturing function
+	      Added new function called report_capture which allows
+	capturing hep packets in a generic format. It will be very
+	effective for the third version of the hep protocol for capturing
+	packets other than SIP. Also added a new table called rtcp_capture
+	for storing everything capture with report capture.
+	(cherry picked from commit c5700cce4a37e484869941502e495733b8138b98)
+
+
+2016-04-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [3053c7e] :
+
+	 [sipcapture][HOMERv5 incompatibility fix] HOMERv5 table rotation aware logic
+	    * HOMVERv5 allows rotating tables by having a prefix which is
+	    the fixed table name and a suffix which is a string containig
+	    timestamps
+	    * sip_capture now accepts table name as a parameter to sip_capture()
+	    function
+	    * both global table name and sip_capture table_name can have
+	    a prefix(string) and a suffix(strftime format string);
+	    * fixed bugs in async query building
+	(cherry picked from commit 074463f17f2e57fb15c120f306ce895438ad1865)
+
+
+2016-04-14  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e894f7a] :
+
+	[acc][bugfix] register tm free function only once
+	(cherry picked from commit 92d20416568c23f58f378fd14b272d2b16d7518e)
+
+
+2016-04-14  Liviu Chircu  <liviu at opensips dot org>
+	* [19dca29] :
+
+	Fix a PKG leak in the SIP message processing stack
+	Commit 7464a86ec introduced a processing context leak during the
+	handling of basically any SIP request in all protocol stacks
+	except for HEP.
+
+	Reported by Trevor Francis <trevor@46labs.com>
+	(cherry picked from commit 731719a2b10283439e2f6a0ba15bb8c6c6ef189c)
+
+
+2016-04-14  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c5c4df0] :
+
+	[acc] fix double free issue
+	Since callbacks were registered only at first, and aftewards only
+	flags were changed there was no way to know if tm is to free the
+	shmed flags from acc or dialog. For this a new flag was introduced
+	to indicate whether the flags shall be removed either by dialog or
+	tm.
+	(cherry picked from commit 6852bd427376cea0cc53cbc5f87476f3377cbd04)
+
+
+2016-04-12  Liviu Chircu  <liviu at opensips dot org>
+	* [9888984] :
+
+	Suppress "no free TCP receiver" logging noise
+	This was added long before async TCP support, and it is now
+	only useful to developers.
+	(cherry picked from commit 142e7e0121040aceb2f9c31c4d4a0e8d8b573cc6)
+
+
+2016-04-11  Ovidiu Sas  <osas at voipembedded dot com>
+	* [7d371ab] :
+
+	pi_http: return "200 OK" instead of "0 Unknown"
+	(cherry picked from commit 73f8117f2f5f01560b6698ad845cce0b485df203)
+
+
+2016-04-07  Kristian Høgh  <kfh at uni-tel dot dk>
+	* [423f277] :
+
+	cachedb_redis: Prevent crash when re-connect keeps failing
+	(cherry picked from commit b501df74a231a987babe6eeadb3c676d8823619c)
+
+
+2016-04-05  rvlad-patrascu  <rvlad.patrascu at gmail dot com>
+	* [032bb69] :
+
+	Fix missing GPL headers for mem files
+	(cherry picked from commit 8ffd592e316a4436e2144dfc08f1b20571e6622e)
+
+
+2016-04-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [be22446] :
+
+	Fix typo in README example
+	(cherry picked from commit 983ad955e21f57878fcefd61f8a734e89de5eab9)
+
+
+2016-04-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [836d3b5] :
+
+	[drouting] docs updated for partition id variable
+	(cherry picked from commit 2013276a1b1e4a29766f22b5f483eb4ace6a7235)
+
+
+2016-04-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [5689d43] :
+
+	[drouting] check if partition pvar is writable
+	(cherry picked from commit cf0945c16eff03efd5ec2b120d283ebc7f4b8616)
+
+
+2016-04-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [7745b11] :
+
+	[drouting] pvar for matched partition if wildcard operator used
+	fix missing functionality - return to script the matching partition
+	(cherry picked from commit 7551c668972e63970c9a65f7dc5bbd1959100d79)
+
+
+2016-04-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4be2662] :
+
+	Fixed checking return code for pre raw callbacks
+	If the TH pre raw callbacks fails, it may return a NULL buffer, leading to a later crash when we want to parse the SIP message.
+
+
+2016-04-04  Jarrod Baumann  <j at rrod dot org>
+	* [cf1e11d] :
+
+	[dialog] repl_prof_add never increments the return buffer size for threshold comparison
+	(cherry picked from commit 52028bdd2c729904c7e337d7aa0b99cce4195f0c)
+
+
+2016-04-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bcf7d40] :
+
+	Fix missing logs if debug_mode after log_stderror
+	(cherry picked from commit 29182c9baa98a8e156a1c0dd4ceb4992005c7950)
+
+
+2016-03-31  Liviu Chircu  <liviu at opensips dot org>
+	* [2c84108] :
+
+	Various doc improvements
+	(cherry picked from commit d9326522ae9c3dc39b8163d07495dc013217ab80)
+
+	Conflicts:
+		scripts/opensipsdbctl
+		scripts/opensipsdbctl.base
+
+
+2016-03-31  Liviu Chircu  <liviu at opensips dot org>
+	* [7ac6bfc] :
+
+	Update opensipsdbctl for 2.2
+
+
+2016-03-31  Razvan Crainea  <razvan at opensips dot org>
+	* [11877a6] :
+
+	Update ChangeLog
+
+
+2016-03-31  Liviu Chircu  <liviu at opensips dot org>
+	* [c4b48fb] :
+
+	Improve the AUTHORS file
+	(cherry picked from commit 32d0e1a4fa500e7693828b3f98392d0502b8b0da)
+
+2016-05-09  Razvan Crainea  <razvan at opensips dot org>
+	* [7e7a2df] :
+
+	Update name to opensips-2.2.0-rc1
+
+
+2016-05-09  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [3c75721] :
+
+	[nathelper] fix bad logic regarding the timer list
+	(cherry picked from commit a86d2c4edcf9c62778a2a9d2438d57fac869bc10)
+
+
+2016-05-09  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [2330afa] :
+
+	[sipcapture] fix sip_capture table schema
+	(cherry picked from commit 8fd97163058c798f45d381b124cc465261e9e1e5)
+
+
+2016-05-09  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [22bdc37] :
+
+	[siptrace][bugfix] bad structre used when printing HEP trace_id via mi
+	(cherry picked from commit 8c6d9bacb580960f1a0a642a5be5a5ffeb5f958a)
+
+
+2016-05-08  Liviu Chircu  <liviu at opensips dot org>
+	* [cd4101a] :
+
+	event_virtual doc: Fix grammar/typos
+	(cherry picked from commit 3fd96863cb611d1eefad3b175535944545253f19)
+
+
+2016-05-08  Liviu Chircu  <liviu at opensips dot org>
+	* [664ec6b] :
+
+	event_flatstore doc: Fix some typos
+	(cherry picked from commit 3cedcc4af994aa8ce132547c325c13cbc8d2cd07)
+
+
+2016-05-06  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [f5753f9] :
+
+	[siptrace] fix hash calculus for extended hep trace_id
+	(cherry picked from commit 5e261d7e9f1ea632806370c16cb0f733cee4edfc)
+
+
+2016-05-06  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [91c3247] :
+
+	[sipcapture] allow any hep version for hep_net variable
+	(cherry picked from commit bcbded5653d5703b53ed4bc961a8a66d724d3e32)
+
+
+2016-05-06  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [d09775b] :
+
+	[sipcapture] fix new hep proto names string
+	(cherry picked from commit 3c15d2d89ec1ab8ad01a2e29a844eb3084128abf)
+
+
+2016-05-06  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c939605] :
+
+	[sipcapture][bugfix] fix bad string hex value parsing
+	(cherry picked from commit 5d6b927d41988e3170ab37889fb26c8026dce29d)
+
+
+2016-05-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [454a557] :
+
+	[siptrace][bugfix] fix trace_id parsing
+	(cherry picked from commit 2878741afc71620c5910f689c07db38b5003a48c)
+
+
+2016-05-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [ed3f224] :
+
+	[sipcapture][bugfix] invalid static vector size calculation
+	(cherry picked from commit b8a82b159d220389513808c8fb8f651fc1498cda)
+
+
+2016-05-05  Liviu Chircu  <liviu at opensips dot org>
+	* [5589ffe] :
+
+	dialog: Remove a chunk of dead code
+	(cherry picked from commit fd330577d66de599430694334e8605ae8b46b9d9)
+
+
+2016-05-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [55f45c4] :
+
+	[sipcapture][bugfix] invalid memory access
+	(cherry picked from commit 8056a984ce914d6585aef6054d727d82f72da3c6)
+
+
+2016-05-04  renicok  <renico.koen at gmail dot com>
+	* [f12cf9b] :
+
+	Updated opensipsctl.base to also search /sbin
+	The md5 utility is located at /sbin/md5 on FreeBSD 8.3. An additional common location was added to allow the script to accommodate this.
+	(cherry picked from commit ca87f55ad071257aa3b891347aadb55a7729d25b)
+
+
+2016-05-04  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [ef5f3b5] :
+
+	[sipcapture] fix bad conditions
+	(cherry picked from commit 4caa2ac37177f2ad59c8f2de23fcc3b12c11fe69)
+
+
+2016-05-04  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c24abca] :
+
+	[sipcapture] be able to set proto_type in report capture function
+	(cherry picked from commit e3466c4adecf11fa6d7da206359847c3a1c4b0f9)
+
+
+2016-05-04  Razvan Crainea  <razvan at opensips dot org>
+	* [2d4d2ff] :
+
+	ratelimit: initialize the length of the algorithm
+	(cherry picked from commit 0eebf1058574c622ba3532fb520908da1c1d94a5)
+
+
+2016-05-04  Razvan Crainea  <razvan at opensips dot org>
+	* [ebaad38] :
+
+	Makefile.conf: add deps for tls_mgm and proto_wss
+	This prevents 'make menuconf' from deleting these modules from the generated
+	configuration file
+	(cherry picked from commit 616b2ba189771a499c76d645627869270555511d)
+
+
+2016-05-03  Răzvan Crainea  <razvan at opensips dot org>
+	* [83a23be] :
+
+	debian: add missing dependency
+	Ovewrite lintian warning
+
+
+2016-05-03  Razvan Crainea  <razvan at opensips dot org>
+	* [1e99bb0] :
+
+	dialog and usrloc: broadcast replication data all time
+	This prevents clusterer module from marking a node as not reachable when there
+	is no traffic at all.
+
+	Fixes #849
+	(cherry picked from commit 7f7f8711ccfd0aabb71b124fbb7f4c3e8afd6e37)
+
+
+2016-05-03  Razvan Crainea  <razvan at opensips dot org>
+	* [d02ae4f] :
+
+	regex: fix spell-check in package
+	(cherry picked from commit 647ea214f1892f8901f562bc45e0e1e33b699aba)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [30d8048] :
+
+	[acc][bugfix] fix memory leak
+	* fix leak caused by missed calls - receiving a negative reply
+	caused flags not being freed
+
+
+2016-05-03  Razvan Crainea  <razvan at opensips dot org>
+	* [a1af71c] :
+
+	proto_bin: remove debug INFO message
+	(cherry picked from commit d388e804a320aa0f267e47cbcbaf473d519fab31)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [4389c26] :
+
+	[siptrace] fix bad cherry-pick conflict solving
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [090525c] :
+
+	[sipcapture] updated docs for HEPVERSION
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e547ec6] :
+
+	[fix functional bug][sipcapture] new HEPVERSION script variable
+	(cherry picked from commit 136fcb65edd4ca00cb15f088de3e58f960385518)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [a9a9d7f] :
+
+	[proto_hep] correctly name function
+	(cherry picked from commit 853b0bbb759d3c58f00b0749e90e4016dd500891)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [608881b] :
+
+	[hep] updated docs for previous commit
+	(cherry picked from commit f9c6cdd2acf93062c252f9fc64faa6327e696718)
+
+
+2016-05-03  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [b2ff3cc] :
+
+	[fix functional bug][hep] multiple versions/protocols can be used in the same time
+	Since commit 0873c14d1b81887823242a955217dcc854eb97c9 multiple
+	network protocols can be used from one module. Proto_hep was changed
+	to be able to use both tcp and udp in the same time. Moreover, there
+	is no hep_version needed since we can receive HEPv1,v2 and v3 on any
+	UDP interface. Since HEPv1 and v2 are not compatible with TCP, only
+	HEPv3 will be support. For HEPv3, Sipcapture module can now relay
+	packets from TCP to UDP or the reverse way.
+	Siptrace module was also improved. Trace id's can now be defined with
+	hep version and transport protocol, in order to be able to do multiple
+	types of tracing with different HEP protocols and/or network transports.
+	(cherry picked from commit 45a3aef8e151a03966a7739c2f880a3fdb0d6811)
+
+	Conflicts:
+		modules/siptrace/siptrace.c
+
+
+2016-05-03  Razvan Crainea  <razvan at opensips dot org>
+	* [5e8f0ac] :
+
+	[fix functional bug]allow a module to register multiple protocols
+	(cherry picked from commit 0873c14d1b81887823242a955217dcc854eb97c9)
+
+
+2016-04-29  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e82a5b3] :
+
+	[drouting] bug fix and memory leak fix
+	* free gateways list for each carrier at reload
+	* use map_find instead of map_get to search an element in the tree
+	(cherry picked from commit f9f3b83ef621850c2c128b12b9bf6ab2e78e5ee1)
+
+
+2016-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [19421eb] :
+
+	[siptrace][bugfix] use the correct sockaddr structure for storing
+	(cherry picked from commit 556f394212bb07c6f7641f3b1df954d52ff730a5)
+
+
+2016-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [ba0fcc2] :
+
+	[proto_hep][bugfix] use the correct port when unpacking
+	(cherry picked from commit 3dda4131b458bc6f3145196f7661671571dc948e)
+
+
+2016-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c2e8c17] :
+
+	Revert "[hep][bugfix] correctly store ports/addresses"
+	This reverts commit 7b1359adfcd55f12fd3739c04e30e1c12b91a71b.
+	(cherry picked from commit ab2292945b19f00faa063c457a0efce384b8f245)
+
+
+2016-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [4cce28a] :
+
+	[hep][bugfix] correctly store ports/addresses
+	(cherry picked from commit 51e6f102daac7d0de9a7ca4efea74d5c559746fe)
+
+
+2016-04-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [70a3018] :
+
+	Enable debug_mode settings only if debug_mode gets set to enable.
+	(cherry picked from commit e7c14bc0c85c888040aec7f0949b085c5cee38e7)
+
+
+2016-04-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5c8869b] :
+
+	Avoid space in MI node name
+
+
+2016-04-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [555c0e7] :
+
+	Fixed wrong MI tree in clusterer_list (related to previous commit)
+	(cherry picked from commit fa4e7f0fa10c6e987b1b69bc5302f0d12a3f8714)
+
+
+2016-04-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [aa856a7] :
+
+	Fixed arrays in clusterer_list MI command
+	(cherry picked from commit 31943a4e2c4ae84babc181f4e5a31e33f2d6b63a)
+
+
+2016-04-26  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [0e81a70] :
+
+	[tls_mgm] properly handle SSL_ERROR_SYSCALL on SSL_shutdown
+	(cherry picked from commit bdcee39ebf04f8a74b926dc6e6c311487d3ef601)
+
+
+2016-04-26  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [dbdc46c] :
+
+	[siptrace][bugfix] avoid double free on cancelled transaction
+	(cherry picked from commit 3c6b6930d615adb978dd2779b6cd4054c3bc49df)
+
+
+2016-04-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [a9b0011] :
+
+	[sipcapture] fix incompatibilities with HOMERv5 db schema
+	(cherry picked from commit f75687847a142f18b44c49a0b274457d7039f165)
+
+
+2016-04-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [85b126a] :
+
+	[sipcapture] remove time-consuming unnecessary chunk of code
+	(cherry picked from commit cc7a2ea114444b82645e484a1cf728c4464c17dd)
+
+
+2016-04-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [d49afa6] :
+
+	[proto_hep][bugfix] fix bad sip payload size calculation
+	(cherry picked from commit eec5045d44ec1fc29aba9a6d5d024e38ace10ae1)
+
+
+2016-04-25  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e6258da] :
+
+	[acc][bugfix] correctly store do_accounting() flags
+		Flags are now moved from processing context into
+	transaction context when the transaction is created, this way
+	having visibility for the whole transaction.
+	(cherry picked from commit 41bcd2559b29a23e96636c6c2dfc5628f69ae5b7)
+
+
+2016-04-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [507db77] :
+
+	Fixed MI nodes in 'sip_trace' command.
+	Formatting chars must not be included in the MI tree
+	(cherry picked from commit 7811e2d6b6013fe21c744531299f490671462a05)
+
+
+2016-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0a1fc05] :
+
+	Fixed default FIFO file name
+	(cherry picked from commit ffdbb970bfa60dcd1ed7d88fc94c4a07f9356ad9)
+
+
+2016-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b7ac4fc] :
+
+	exclude proto_wss, use QM_MALLOC
+
+
+2016-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7aef53c] :
+
+	tls_list() may be called even without DB support
+	Avoid locking if DB support was not enabled.
+	(cherry picked from commit e6944bb064750611585d0fa516551b944aa44cdc)
+
+
+2016-04-22  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [eee4fae] :
+
+	[proto_hep][bugfix] check memory allocation
+	(cherry picked from commit f5ad753d56a95d68bc937e0721895d6ee4aefd43)
+
+
+2016-04-21  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [21ca280] :
+
+	[siptrace][bugfix] sequential requests - set context for sl callbacks
+	(cherry picked from commit 943d9015f8f1e3467acafee67693f157beab9755)
+
+
+2016-04-21  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [6ce202a] :
+
+	[context][bugfix] each context has its own destroy functions vector
+	Credits to Razvan Crainea
+	(cherry picked from commit 53263b2a65dc771cb660078f4b20171a48f04248)
+
+
+2016-04-21  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [576a730] :
+
+	[tm]fix context functions header
+	(cherry picked from commit 59e5a4165f88c2a4a4dbb5e159786c441f6fa502)
+
+
+2016-04-20  Liviu Chircu  <liviu at opensips dot org>
+	* [4cd99ec] :
+
+	MI library: Add comments regarding a known issue
+	Currently, MI arrays cannot contain objects with non-identical
+	"name" attributes.
+
+	This patch also quickfixes this issue in mi_list_all_profiles() by dropping
+	the array idea altogether, in favour of a top-most object.
+	(cherry picked from commit 6c105015c3a0a02c6f65822f5ce52e12bd0ae108)
+
+
+2016-04-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [134ad0d] :
+
+	Fixed bogus pkg_free on pointer in data segment
+	Reported by @dzhou121
+	Closes #854
+	(cherry picked from commit b9aa87360eecf1e77baea661b855eec4f5798f2f)
+
+
+2016-04-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [afc4c40] :
+
+	Fix typo in do_accounting() naming is cfg templates
+	(cherry picked from commit 7f8656e026435bf4ac6eff19b964b81d7a37d28e)
+
+
+2016-04-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [b65c6c2] :
+
+	[sipcapture][HOMERv5 incompatibility fix] updated docs for report_capture and new table name format
+	(cherry picked from commit 5d725a42d0262807dd9a2c555640a980e50381ce)
+
+
+2016-04-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [acd0a9c] :
+
+	[sipcapture][HOMERv5 incompatibility fix]generic capturing function
+	      Added new function called report_capture which allows
+	capturing hep packets in a generic format. It will be very
+	effective for the third version of the hep protocol for capturing
+	packets other than SIP. Also added a new table called rtcp_capture
+	for storing everything capture with report capture.
+	(cherry picked from commit c5700cce4a37e484869941502e495733b8138b98)
+
+
+2016-04-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [3053c7e] :
+
+	 [sipcapture][HOMERv5 incompatibility fix] HOMERv5 table rotation aware logic
+	    * HOMVERv5 allows rotating tables by having a prefix which is
+	    the fixed table name and a suffix which is a string containig
+	    timestamps
+	    * sip_capture now accepts table name as a parameter to sip_capture()
+	    function
+	    * both global table name and sip_capture table_name can have
+	    a prefix(string) and a suffix(strftime format string);
+	    * fixed bugs in async query building
+	(cherry picked from commit 074463f17f2e57fb15c120f306ce895438ad1865)
+
+
+2016-04-14  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e894f7a] :
+
+	[acc][bugfix] register tm free function only once
+	(cherry picked from commit 92d20416568c23f58f378fd14b272d2b16d7518e)
+
+
+2016-04-14  Liviu Chircu  <liviu at opensips dot org>
+	* [19dca29] :
+
+	Fix a PKG leak in the SIP message processing stack
+	Commit 7464a86ec introduced a processing context leak during the
+	handling of basically any SIP request in all protocol stacks
+	except for HEP.
+
+	Reported by Trevor Francis <trevor@46labs.com>
+	(cherry picked from commit 731719a2b10283439e2f6a0ba15bb8c6c6ef189c)
+
+
+2016-04-14  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c5c4df0] :
+
+	[acc] fix double free issue
+	Since callbacks were registered only at first, and aftewards only
+	flags were changed there was no way to know if tm is to free the
+	shmed flags from acc or dialog. For this a new flag was introduced
+	to indicate whether the flags shall be removed either by dialog or
+	tm.
+	(cherry picked from commit 6852bd427376cea0cc53cbc5f87476f3377cbd04)
+
+
+2016-04-12  Liviu Chircu  <liviu at opensips dot org>
+	* [9888984] :
+
+	Suppress "no free TCP receiver" logging noise
+	This was added long before async TCP support, and it is now
+	only useful to developers.
+	(cherry picked from commit 142e7e0121040aceb2f9c31c4d4a0e8d8b573cc6)
+
+
+2016-04-11  Ovidiu Sas  <osas at voipembedded dot com>
+	* [7d371ab] :
+
+	pi_http: return "200 OK" instead of "0 Unknown"
+	(cherry picked from commit 73f8117f2f5f01560b6698ad845cce0b485df203)
+
+
+2016-04-07  Kristian Høgh  <kfh at uni-tel dot dk>
+	* [423f277] :
+
+	cachedb_redis: Prevent crash when re-connect keeps failing
+	(cherry picked from commit b501df74a231a987babe6eeadb3c676d8823619c)
+
+
+2016-04-05  rvlad-patrascu  <rvlad.patrascu at gmail dot com>
+	* [032bb69] :
+
+	Fix missing GPL headers for mem files
+	(cherry picked from commit 8ffd592e316a4436e2144dfc08f1b20571e6622e)
+
+
+2016-04-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [be22446] :
+
+	Fix typo in README example
+	(cherry picked from commit 983ad955e21f57878fcefd61f8a734e89de5eab9)
+
+
+2016-04-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [836d3b5] :
+
+	[drouting] docs updated for partition id variable
+	(cherry picked from commit 2013276a1b1e4a29766f22b5f483eb4ace6a7235)
+
+
+2016-04-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [5689d43] :
+
+	[drouting] check if partition pvar is writable
+	(cherry picked from commit cf0945c16eff03efd5ec2b120d283ebc7f4b8616)
+
+
+2016-04-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [7745b11] :
+
+	[drouting] pvar for matched partition if wildcard operator used
+	fix missing functionality - return to script the matching partition
+	(cherry picked from commit 7551c668972e63970c9a65f7dc5bbd1959100d79)
+
+
+2016-04-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4be2662] :
+
+	Fixed checking return code for pre raw callbacks
+	If the TH pre raw callbacks fails, it may return a NULL buffer, leading to a later crash when we want to parse the SIP message.
+
+
+2016-04-04  Jarrod Baumann  <j at rrod dot org>
+	* [cf1e11d] :
+
+	[dialog] repl_prof_add never increments the return buffer size for threshold comparison
+	(cherry picked from commit 52028bdd2c729904c7e337d7aa0b99cce4195f0c)
+
+
+2016-04-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bcf7d40] :
+
+	Fix missing logs if debug_mode after log_stderror
+	(cherry picked from commit 29182c9baa98a8e156a1c0dd4ceb4992005c7950)
+
+
+2016-03-31  Liviu Chircu  <liviu at opensips dot org>
+	* [2c84108] :
+
+	Various doc improvements
+	(cherry picked from commit d9326522ae9c3dc39b8163d07495dc013217ab80)
+
+	Conflicts:
+		scripts/opensipsdbctl
+		scripts/opensipsdbctl.base
+
+
+2016-03-31  Liviu Chircu  <liviu at opensips dot org>
+	* [7ac6bfc] :
+
+	Update opensipsdbctl for 2.2
+
+
+2016-03-31  Razvan Crainea  <razvan at opensips dot org>
+	* [11877a6] :
+
+	Update ChangeLog
+
+
+2016-03-31  Liviu Chircu  <liviu at opensips dot org>
+	* [c4b48fb] :
+
+	Improve the AUTHORS file
+	(cherry picked from commit 32d0e1a4fa500e7693828b3f98392d0502b8b0da)
+
 2016-03-31  Liviu Chircu  <liviu at opensips dot org>
 	* [c4b48fb] :
 
