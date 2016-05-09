@@ -157,7 +157,8 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 	unsigned int i;
 	unsigned int j;
 
-	/* must support 3-char arrays for udp, tcp, tls,
+	/* must support 2-char arrays for ws
+	 * must support 3-char arrays for udp, tcp, tls, wss
 	 * must support 4-char arrays for sctp
 	 * must support 7-char arrays for hep_tcp and hep_udp */
 	*proto=PROTO_NONE;

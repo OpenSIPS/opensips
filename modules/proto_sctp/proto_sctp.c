@@ -70,7 +70,7 @@ struct module_exports exports = {
 static int proto_sctp_init(struct proto_info *pi)
 {
 	pi->id					= PROTO_SCTP;
-	pi->name				= "stcp";
+	pi->name				= "sctp";
 	pi->default_port		= sctp_port;
 
 	pi->tran.init_listener	= proto_sctp_init_listener;

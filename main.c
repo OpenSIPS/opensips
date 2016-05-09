@@ -1031,7 +1031,7 @@ try_again:
 		LM_ERR("cannot load transport protocols\n");
 		goto error;
 	} else if (protos_no == 0) {
-		LM_ERR("no trasnport protocol loaded\n");
+		LM_ERR("no transport protocol loaded\n");
 		goto error;
 	} else
 		LM_DBG("Loaded %d transport protocols\n", protos_no);
