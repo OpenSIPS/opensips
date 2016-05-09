@@ -2131,7 +2131,15 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd_tree, void* param )
 			else if (_tid_el->type==TYPE_DB)                                        \
 				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("Database"));    \
                                                                                     \
-			if (_tid_el->type==TYPE_HEP||_tid_el->type==TYPE_SIP) {                 \
+			if (_tid_el->type==TYPE_HEP) {                                          \
+				memcpy(uri, _tid_el->el.hep->uri.host.s, _tid_el->el.hep->uri.host.len);      \
+				uri[_tid_el->el.hep->uri.host.len] = ':';                                \
+				memcpy(uri+_tid_el->el.hep->uri.host.len+1,                              \
+						_tid_el->el.hep->uri.port.s, _tid_el->el.hep->uri.port.len);          \
+                                                                                    \
+				add_mi_attr(_node, 0, MI_SSTR("uri"), uri,                      \
+						_tid_el->el.hep->uri.host.len + 1 + _tid_el->el.hep->uri.port.len);    \
+			} else if (_tid_el->type==TYPE_SIP) {                 \
 				memcpy(uri, _tid_el->el.uri.host.s, _tid_el->el.uri.host.len);      \
 				uri[_tid_el->el.uri.host.len] = ':';                                \
 				memcpy(uri+_tid_el->el.uri.host.len+1,                              \
