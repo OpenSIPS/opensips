@@ -47,6 +47,8 @@
 
 #define BSTART ";branch="
 
+#define LIST_END_CELL ((struct ping_cell*)-1) /* this cell is the end of the list */
+#define FREE_CELL NULL /* this cell is not in the timer list */
 
 /* helping macros for building SIP PING ping request */
 #define append_str( _p, _s) \
@@ -208,6 +210,7 @@ build_branch(char *branch, int *size,
 {
 
 	int hash_id, ret, label;
+	time_t timestamp;
 	struct ping_cell *p_cell;
 	struct nh_table *htable;
 
@@ -215,6 +218,9 @@ build_branch(char *branch, int *size,
 	hash_id = core_hash(curi, 0, 0) & (NH_TABLE_ENTRIES-1);
 
 	if (rm_on_to) {
+		/* get the time before the lock - we may wait a little bit
+		 * on this lock */
+		timestamp=now;
 		lock_hash(hash_id);
 		if ((p_cell=get_cell(hash_id, contact_id))==NULL) {
 			if (0 == (p_cell = build_p_cell(hash_id, d, contact_id))) {
@@ -224,20 +230,23 @@ build_branch(char *branch, int *size,
 			insert_into_hash(p_cell);
 		}
 
-		p_cell->timestamp = now;
+		p_cell->timestamp = timestamp;
 		unlock_hash(hash_id);
 
 		htable = get_htable();
 
 		/* put the cell in timer list */
 		lock_get(&htable->timer_list.mutex);
-		if (!p_cell->tnext) {
+
+		if (p_cell->tnext == FREE_CELL) {
 			if (!htable->timer_list.first) {
 				htable->timer_list.first = htable->timer_list.last = p_cell;
 			} else {
 				htable->timer_list.last->tnext = p_cell;
 				htable->timer_list.last = p_cell;
 			}
+			/* this cell will be the end of the list */
+			p_cell->tnext = LIST_END_CELL;
 		}
 
 		/* we get the label that assures us that the via is unique */

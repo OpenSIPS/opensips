@@ -1657,26 +1657,58 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 	ctime=now;
 
 	/* detect cells for which threshold has been exceeded */
+
+	/* something very fishy here */
 	lock_get(&table->timer_list.mutex);
 	first = last = table->timer_list.first;
 
-	while (last != table->timer_list.last
-			&& ((ctime - last->timestamp) > ping_threshold))
+	if (table->timer_list.first == NULL || table->timer_list.last == NULL) {
+		/* nothing to do here - empty list */
+		goto out_release_lock;
+	}
+
+	/* only valid elements */
+	if (table->timer_list.first == table->timer_list.last
+			&& ((ctime-last->timestamp) < ping_threshold)) {
+		goto out_release_lock;
+	}
+
+	/* at least one invalid element
+	 *
+	 */
+	prev=NULL;
+	while (last != LIST_END_CELL
+			&& ((ctime-last->timestamp)>ping_threshold)) {
+		prev = last;
 		last = last->tnext;
+	}
 
-	if (last == table->timer_list.last)
-		table->timer_list.first = table->timer_list.last = NULL;
-	else
-		table->timer_list.first = last->tnext;
 
-	/* last will be the first valid element in timer list */
-	last = table->timer_list.first;
+	if (prev != NULL) {
+		/* have at least 1 element to remove */
+		if (last == LIST_END_CELL) {
+			/* all the list contains expired elements */
+			table->timer_list.first = table->timer_list.last = NULL;
+		} else {
+			/* still have non expired elements
+			 * move list start to first valid one */
+			table->timer_list.first = last;
+		}
+
+		last = prev;
+		last->tnext = LIST_END_CELL;
+	} else {
+		/* nothing to remove - timer list remains the same */
+		goto out_release_lock;;
+	}
 
 	lock_release(&table->timer_list.mutex);
 
-
+	/*
+	 * getting here means we have at least one element in the list to remove
+	 */
 	cell = first;
-	while (cell &&  cell != last) {
+	do {
 		if (cell->timestamp == 0) {
 			/* ping confirmed and unlinked from hash; only free the cell */
 			prev = cell;
@@ -1703,11 +1735,11 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 
 			remove_given_cell(cell, &table->entries[cell->hash_id]);
 
+			/* we put the lock on cell which now moved into prev */
+			unlock_hash(cell->hash_id);
+
 			prev = cell;
 			cell = cell->tnext;
-
-			/* we put the lock on cell which now moved into prev */
-			unlock_hash(prev->hash_id);
 
 			shm_free(prev);
 
@@ -1721,12 +1753,15 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 			cell = cell->tnext;
 
 			/* allow cell to be reintroduced in timer list */
-			prev->tnext = NULL;
+			prev->tnext = FREE_CELL;
 
 			/* we put the lock on cell which now moved into prev */
 			unlock_hash(prev->hash_id);
 		}
-	}
+	} while (cell != LIST_END_CELL);
+
+out_release_lock:
+	lock_release(&table->timer_list.mutex);
 }
 
 
