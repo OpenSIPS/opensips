@@ -7,6 +7,8 @@
 #define FLAT_STR		{ FLAT_NAME, sizeof(FLAT_NAME) - 1}
 #define FLAT_FLAG (1<<25)
 
+#define FLAT_DEFAULT_MAX_FD 100
+
 struct flat_socket {
     str path;
     unsigned int file_index_process;

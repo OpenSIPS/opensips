@@ -62,7 +62,7 @@ static struct iovec *io_param ;
 static struct flat_socket **list_files;
 static struct flat_deleted **list_deleted_files;
 static gen_lock_t *global_lock;
-static int initial_capacity;
+static int initial_capacity = FLAT_DEFAULT_MAX_FD;
 static str file_permissions;
 static mode_t file_permissions_oct;
 
@@ -139,8 +139,8 @@ static int mod_init(void) {
 	}
 
     if (initial_capacity <= 0 || initial_capacity > 65535) {
-		LM_WARN("wrong maximum open sockets according to the modparam configuration\n");
-		initial_capacity = 100;
+		LM_WARN("bad value for maximum open sockets (%d)\n", initial_capacity);
+		initial_capacity = FLAT_DEFAULT_MAX_FD;
 	} else
 		LM_DBG("Number of files descriptors was set at %d\n", initial_capacity);
 
