@@ -540,7 +540,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 		for (param = params->first; param; param = param->next) {
 
 			if(idx + 3 > cap_params){
-				pkg_realloc(io_param, (cap_params + 20) * sizeof(struct iovec));
+				io_param = pkg_realloc(io_param, (cap_params + 20) * sizeof(struct iovec));
 				cap_params += 20;
 			}
 
