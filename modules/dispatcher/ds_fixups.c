@@ -220,9 +220,11 @@ only_max_res:
 				goto wrong_value;
 		}
 		else if (s_tok.s[0] == PV_MARKER) {
-			new_el = shm_malloc(sizeof(int_list_t));
-			if (new_el == NULL)
-				goto no_memory;
+			if (new_el == NULL) {
+				new_el = shm_malloc(sizeof(int_list_t));
+				if (new_el == NULL)
+					goto no_memory;
+			}
 
 			new_el->type = GPARAM_TYPE_PVS;
 			new_el->v.pvs = shm_malloc(sizeof(pv_spec_t));
@@ -253,9 +255,17 @@ only_max_res:
 			}
 		}
 		else if (str2int(&s_tok, &u_num) == 0) {
-			new_el = shm_malloc(sizeof(int_list_t));
-			if (new_el == NULL)
-				goto no_memory;
+			/*
+			 * don't alloc twice
+			 * if both flags and max_results defined
+			 * it is already allocated
+			 *
+			 */
+			if (new_el == NULL) {
+				new_el = shm_malloc(sizeof(int_list_t));
+				if (new_el == NULL)
+					goto no_memory;
+			}
 
 only_flags01:
 			new_el->v.ival = u_num;
