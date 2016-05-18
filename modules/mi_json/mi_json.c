@@ -55,7 +55,7 @@ static const str MI_HTTP_U_NOT_FOUND = str_init("Command not found");
 
 
 char err_buf[MI_ERROR_BUF_MAX_LEN];
-static const char* MI_JSON_COMMAND_ERROR_S = "{\"code\":\"%u\", \"reason\": \"%.*s\"}";
+static const char* MI_JSON_COMMAND_ERROR_S = "{\"error\": {\"code\": %u, \"message\": \"%.*s\"}}";
 
 
 
