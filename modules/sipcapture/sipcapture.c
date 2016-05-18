@@ -2543,7 +2543,7 @@ static int sip_capture_store(struct _sipcapture_object *sco,
     db_vals[0].val.int_val = 0;
 
 	db_vals[1].type = DB_DATETIME;
-	db_vals[1].val.time_val = time(NULL);
+	db_vals[1].val.time_val = (sco->tmstamp/1000000);
 
 	db_vals[2].type = DB_BIGINT;
 	db_vals[2].val.bigint_val = sco->tmstamp;
@@ -4714,7 +4714,8 @@ static inline void build_hepv3_obj(struct hepv3* h3, struct _sipcapture_object* 
 
 	sco->proto_type = h3->hg.proto_t.data;
 
-	sco->tmstamp = h3->hg.time_sec.data*1000000 + h3->hg.time_usec.data;
+	sco->tmstamp = (unsigned long long)h3->hg.time_sec.data*1000000
+					+ h3->hg.time_usec.data;
 
 	/* WARN node must be allocated */
 	sco->node.len = snprintf(sco->node.s, 100, "%.*s:%i", capture_node.len, capture_node.s, h3->hg.capt_id.data);
@@ -4812,7 +4813,7 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 	memset(db_vals, 0, sizeof(db_val_t) * RTCP_NR_KEYS);
 
 	db_vals[0].type = DB_DATETIME;
-	db_vals[0].val.time_val = time(NULL);
+	db_vals[0].val.time_val = (sco.tmstamp/1000000);
 
 	db_vals[1].type = DB_BIGINT;
 	db_vals[1].val.bigint_val = sco.tmstamp;
