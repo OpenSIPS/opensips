@@ -38,6 +38,42 @@
 #define MI_XMLRPC_XML_STOP_VER2	"</param></params>\r\n</methodResponse>\r\n"
 
 
+#define MI_XMLRPC_XML_FAULT_START        "<?xml version=\"1.0\" "        \
+       "encoding=\"UTF-8\"?>\r\n<methodResponse>\r\n<fault>"  \
+       "<value>\r\n<struct>\r\n"
+
+#define MI_XMLRPC_XML_FAULT_END "</struct>\r\n</value>\r\n</fault>\r\n" \
+       "</methodResponse>\r\n"
+
+#define MI_XMLRPC_XML_FAULT_MESSAGE_START "<member>\r\n<name>message</name>\r\n" \
+       "<value><string>"
+#define MI_XMLRPC_XML_FAULT_MESSAGE_END "</string></value>\r\n</member>\r\n"
+
+#define MI_XMLRPC_XML_FAULT_CODE_START "<member>\r\n<name>code</name>\r\n" \
+       "<value><int>"
+#define MI_XMLRPC_XML_FAULT_CODE_END "</int></value>\r\n</member>\r\n"
+
+#define INIT_XMLRPC_FAULT(code, message) MI_XMLRPC_XML_FAULT_START  \
+	MI_XMLRPC_XML_FAULT_CODE_START \
+	code \
+	MI_XMLRPC_XML_FAULT_CODE_END \
+	MI_XMLRPC_XML_FAULT_MESSAGE_START \
+	message \
+	MI_XMLRPC_XML_FAULT_MESSAGE_END \
+	MI_XMLRPC_XML_FAULT_END
+
+#define XMLRPC_FAULT_FORMAT MI_XMLRPC_XML_FAULT_START  \
+	MI_XMLRPC_XML_FAULT_CODE_START \
+	"%u" \
+	MI_XMLRPC_XML_FAULT_CODE_END \
+	MI_XMLRPC_XML_FAULT_MESSAGE_START \
+	"%.*s" \
+	MI_XMLRPC_XML_FAULT_MESSAGE_END \
+	MI_XMLRPC_XML_FAULT_END
+
+
+
+
 #define MI_XMLRPC_START_OBJECT   		(1<<0)
 #define MI_XMLRPC_END_OBJECT  		(1<<1)
 #define MI_XMLRPC_FULL_OBJECT        3
