@@ -49,9 +49,9 @@ str http_root = str_init("json");
 httpd_api_t httpd_api;
 
 
-static const str MI_HTTP_U_ERROR = str_init("\"Internal server error\"");
-static const str MI_HTTP_U_METHOD = str_init("\"Unexpected method\"");
-static const str MI_HTTP_U_NOT_FOUND = str_init("\"Command not found\"");
+static const str MI_HTTP_U_ERROR = str_init("Internal server error");
+static const str MI_HTTP_U_METHOD = str_init("Unexpected method");
+static const str MI_HTTP_U_NOT_FOUND = str_init("Command not found");
 
 
 char err_buf[MI_ERROR_BUF_MAX_LEN];
