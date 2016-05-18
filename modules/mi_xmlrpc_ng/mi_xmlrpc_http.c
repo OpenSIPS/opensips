@@ -48,11 +48,25 @@ str http_root = str_init("RPC2");
 int version = 2;
 httpd_api_t httpd_api;
 
+#define MI_XMLRPC_NOT_ACCEPTABLE_STR	"406"
+#define MI_XMLRPC_INTERNAL_ERROR_STR	"500"
 
-static const str MI_XMLRPC_U_ERROR = str_init(MI_XMLRPC_XML_START
-		"Internal server error!" MI_XMLRPC_XML_STOP);
-static const str MI_XMLRPC_U_METHOD = str_init(MI_XMLRPC_XML_START
-		"Unexpected method (only POST is accepted)!" MI_XMLRPC_XML_STOP);
+static const str MI_XMLRPC_U_ERROR = str_init(
+		INIT_XMLRPC_FAULT(MI_XMLRPC_INTERNAL_ERROR_STR,
+			"Internal server error!" ));
+static const str MI_XMLRPC_U_METHOD = str_init(
+		INIT_XMLRPC_FAULT(MI_XMLRPC_NOT_ACCEPTABLE_STR,
+			"Unexpected method (only POST is accepted)!"));
+
+#define MI_XML_ERROR_BUF_MAX_LEN 1024
+static char err_buf[MI_XML_ERROR_BUF_MAX_LEN];
+
+#define MI_XMLRPC_PRINT_FAULT(page, code, message) \
+	do { \
+	page->len = snprintf(page->s, MI_XML_ERROR_BUF_MAX_LEN, \
+			XMLRPC_FAULT_FORMAT, \
+			code, message.len, message.s); \
+	} while(0);
 
 
 /* module parameters */
@@ -237,6 +251,7 @@ mi_xmlrpc_wait_async_reply(struct mi_handler *hdl)
 #define MI_XMLRPC_NOT_ACCEPTABLE	406
 #define MI_XMLRPC_INTERNAL_ERROR	500
 
+
 int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
@@ -249,6 +264,7 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 	int ret_code = MI_XMLRPC_OK;
 	int is_shm = 0;
 
+	page->s = err_buf;
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 		"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
@@ -268,23 +284,22 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 			if (tree == NULL) {
 				LM_ERR("no reply\n");
 				*page = MI_XMLRPC_U_ERROR;
-				ret_code = MI_XMLRPC_INTERNAL_ERROR;
 			} else {
 				LM_DBG("building on page [%p:%d]\n",
 					page->s, page->len);
 				if(0!=mi_xmlrpc_http_build_page(page, buffer->len, tree)){
 					LM_ERR("unable to build response\n");
 					*page = MI_XMLRPC_U_ERROR;
-					ret_code = MI_XMLRPC_INTERNAL_ERROR;
 				} else {
-					ret_code = tree->code;
+					if (tree->code >= 400) {
+						MI_XMLRPC_PRINT_FAULT(page, tree->code, tree->reason);
+					}
 				}
 			}
 		} else {
 			page->s = buffer->s;
 			LM_ERR("unable to build response for empty request\n");
 			*page = MI_XMLRPC_U_ERROR;
-			ret_code = MI_XMLRPC_INTERNAL_ERROR;
 		}
 		if (tree) {
 			is_shm?free_shm_mi_tree(tree):free_mi_tree(tree);
@@ -293,7 +308,6 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 	} else {
 		LM_ERR("unexpected method [%s]\n", method);
 		*page = MI_XMLRPC_U_METHOD;
-		return MI_XMLRPC_NOT_ACCEPTABLE;
 	}
 
 	return ret_code;
