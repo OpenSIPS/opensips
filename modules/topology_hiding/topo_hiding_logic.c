@@ -1427,7 +1427,8 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
 {
 	short rr_len,ct_len,addr_len,enc_len;
 	char *suffix_plain,*suffix_enc,*p,*s;
-	str rr_set,contact;
+	str rr_set = {NULL, 0};
+	str contact;
 	int i,total_len;
 	struct sip_uri ctu;
 	struct th_ct_params* el;
@@ -1459,8 +1460,7 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
 	((contact_body_t *)msg->contact->parsed)->contacts==NULL ||
 	((contact_body_t *)msg->contact->parsed)->contacts->next!=NULL ) {
 		LM_ERR("bad Contact HDR\n");
-		pkg_free(rr_set.s);
-		return NULL;
+		goto error;
 	} else {
 		contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
 		ct_len = (short)contact.len;
@@ -1612,10 +1612,14 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
 		}
 	}
 
+	if (rr_set.s)
+		pkg_free(rr_set.s);
 	pkg_free(suffix_plain);
 	*suffix_len = total_len;
 	return suffix_enc;
 error:
+	if (rr_set.s)
+		pkg_free(rr_set.s);
 	return NULL;
 }
 
