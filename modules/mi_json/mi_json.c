@@ -32,6 +32,8 @@
 #include "../httpd/httpd_load.h"
 #include "http_fnc.h"
 
+#define MI_ERROR_BUF_MAX_LEN 512
+
 /* module functions */
 static int mod_init();
 static int destroy(void);
@@ -47,12 +49,15 @@ str http_root = str_init("json");
 httpd_api_t httpd_api;
 
 
-static const str MI_HTTP_U_ERROR = str_init("{\"error\":"
-"\"Internal server error\"}");
-static const str MI_HTTP_U_METHOD = str_init("{\"error\":"
-"\"Unexpected method\"}");
-static const str MI_HTTP_U_NOT_FOUND = str_init("{\"error\":"
-"\"Command not found\"}");
+static const str MI_HTTP_U_ERROR = str_init("\"Internal server error\"");
+static const str MI_HTTP_U_METHOD = str_init("\"Unexpected method\"");
+static const str MI_HTTP_U_NOT_FOUND = str_init("\"Command not found\"");
+
+
+char err_buf[MI_ERROR_BUF_MAX_LEN];
+static const char* MI_JSON_COMMAND_ERROR_S = "{\"code\":\"%u\", \"reason\": \"%.*s\"}";
+
+
 
 
 /* module parameters */
@@ -248,6 +253,7 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 	int ret_code = MI_JSON_OK;
 	int is_shm = 0;
 
+	page->s = err_buf;
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 			"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
@@ -264,8 +270,10 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 			if (f == NULL) {
 				LM_ERR("unable to find mi command [%.*s]\n",
 					command.len, command.s);
-				*page = MI_HTTP_U_NOT_FOUND;
-				ret_code = MI_JSON_INTERNAL_ERROR;
+				page->len = snprintf(page->s, MI_ERROR_BUF_MAX_LEN,
+						MI_JSON_COMMAND_ERROR_S,
+						MI_JSON_INTERNAL_ERROR,
+						MI_HTTP_U_NOT_FOUND.len, MI_HTTP_U_NOT_FOUND.s);
 			} else {
 
 				tree = mi_json_run_mi_cmd(f, &command,&params,
@@ -279,25 +287,35 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 
 				if (tree == NULL) {
 					LM_ERR("no reply\n");
-					*page = MI_HTTP_U_ERROR;
-					ret_code = MI_JSON_INTERNAL_ERROR;
+					page->len = snprintf(page->s, MI_ERROR_BUF_MAX_LEN,
+							MI_JSON_COMMAND_ERROR_S,
+							MI_JSON_INTERNAL_ERROR,
+							MI_HTTP_U_ERROR.len, MI_HTTP_U_ERROR.s);
 				} else {
 					LM_DBG("building on page [%p:%d]\n",
 							page->s, page->len);
 					if(0!=mi_json_build_page(page, buffer->len, tree)){
 						LM_ERR("unable to build response\n");
-						*page = MI_HTTP_U_ERROR;
-						ret_code = MI_JSON_INTERNAL_ERROR;
+						page->len = snprintf(page->s, MI_ERROR_BUF_MAX_LEN,
+								MI_JSON_COMMAND_ERROR_S,
+								MI_JSON_INTERNAL_ERROR,
+								MI_HTTP_U_ERROR.len, MI_HTTP_U_ERROR.s);
 					} else {
-						ret_code = tree->code;
+						if (tree->code >= 400) {
+							page->s = err_buf;
+							page->len = snprintf(page->s, MI_ERROR_BUF_MAX_LEN,
+									MI_JSON_COMMAND_ERROR_S,
+									tree->code, tree->reason.len, tree->reason.s);
+						}
 					}
 				}
 			}
 		} else {
-			page->s = buffer->s;
 			LM_ERR("unable to build response for empty request\n");
-			*page = MI_HTTP_U_ERROR;
-			ret_code = MI_JSON_INTERNAL_ERROR;
+			page->len = snprintf(page->s, MI_ERROR_BUF_MAX_LEN,
+					MI_JSON_COMMAND_ERROR_S,
+					MI_JSON_INTERNAL_ERROR,
+					MI_HTTP_U_ERROR.len, MI_HTTP_U_ERROR.s);
 		}
 		if (tree) {
 			is_shm?free_shm_mi_tree(tree):free_mi_tree(tree);
@@ -305,8 +323,11 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 		}
 	} else {
 		LM_ERR("unexpected method [%s]\n", method);
-		*page = MI_HTTP_U_METHOD;
-		ret_code = MI_JSON_NOT_ACCEPTABLE;
+		page->len = snprintf(page->s, MI_ERROR_BUF_MAX_LEN,
+					MI_JSON_COMMAND_ERROR_S,
+					MI_JSON_NOT_ACCEPTABLE,
+					MI_HTTP_U_METHOD.len, MI_HTTP_U_METHOD.s);
+
 	}
 
 	return ret_code;
