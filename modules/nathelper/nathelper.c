@@ -1392,8 +1392,9 @@ nh_timer(unsigned int ticks, void *timer_idx)
 			}
 
 			if (next_hop.proto != PROTO_NONE && next_hop.proto != PROTO_UDP &&
-			    (natping_tcp == 0 || (next_hop.proto != PROTO_TCP &&
-									 next_hop.proto != PROTO_TLS &&
+				(natping_tcp == 0 || (next_hop.proto != PROTO_TCP &&
+									  next_hop.proto != PROTO_TLS &&
+									  next_hop.proto != PROTO_WSS &&
 									  next_hop.proto != PROTO_WS)))
 				continue;
 
