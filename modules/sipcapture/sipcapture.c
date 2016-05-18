@@ -4745,13 +4745,14 @@ static inline void build_hepv2_obj(struct hepv12* h2, struct _sipcapture_object*
 	sco->proto_type = 1;
 
 	if (h2->hdr.hp_v == 2) {
-		sco->tmstamp = h2->hep_time.tv_sec*1000000 + h2->hep_time.tv_usec;
+		sco->tmstamp = (unsigned long long)h2->hep_time.tv_sec*1000000
+						+ h2->hep_time.tv_usec;
 
 		/* WARN node must be allocated */
 		sco->node.len = snprintf(sco->node.s, 100, "%.*s:%i", capture_node.len, capture_node.s, h2->hep_time.captid);
 	} else {
 		gettimeofday(&tvb, NULL);
-		sco->tmstamp = tvb.tv_sec * 1000000 + tvb.tv_usec;
+		sco->tmstamp = (unsigned long long)tvb.tv_sec * 1000000 + tvb.tv_usec;
 
 		sco->node = capture_node;
 	}
