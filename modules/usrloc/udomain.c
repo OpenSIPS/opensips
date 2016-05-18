@@ -764,11 +764,11 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 	if (desc_time_order)
 		order = &last_mod_col;
 
+	memset(vals, 0, sizeof vals);
+
 	vals[0].type = DB_STR;
-	vals[0].nul = 0;
 	if (use_domain) {
 		vals[1].type = DB_STR;
-		vals[1].nul = 0;
 		domain = q_memchr(_aor->s, '@', _aor->len);
 		vals[0].val.str_val.s   = _aor->s;
 		if (domain==0) {
@@ -848,12 +848,12 @@ int db_timer_udomain(udomain_t* _d)
 		ops[1] = "!=";
 	}
 
+	memset(vals, 0, sizeof vals);
+
 	vals[0].type = DB_DATETIME;
-	vals[0].nul = 0;
 	vals[0].val.time_val = act_time + 1;
 
 	vals[1].type = DB_DATETIME;
-	vals[1].nul = 0;
 	vals[1].val.time_val = 0;
 
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
