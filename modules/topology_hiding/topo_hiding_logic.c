@@ -790,9 +790,11 @@ static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *par
 		return;
 	}
 
-	if (topo_no_dlg_encode_contact(rpl,flags) < 0) {
-		LM_ERR("Failed to encode contact header \n");
-		return;
+	if ( !(rpl->REPLY_STATUS>=300 && rpl->REPLY_STATUS<400) ) {
+		if (topo_no_dlg_encode_contact(rpl,flags) < 0) {
+			LM_ERR("Failed to encode contact header \n");
+			return;
+		}
 	}
 
 	if (!(lmp = restore_vias_from_req(req,rpl))) {
