@@ -143,7 +143,7 @@ int set_list_from_string(str input, int_list_t **result)
 
 	if (str2sint(&input, &uset) == 0) {
 		/* Just one set in the list */
-		*result = shm_malloc(sizeof(int_list_t));
+		*result = pkg_malloc(sizeof(int_list_t));
 		if (*result == NULL)
 			goto no_memory;
 		(*result)->v.ival = uset;
@@ -194,7 +194,7 @@ only_flags00:
 			s_tok.s += flg_tok.len +1;
 			s_tok.len -= (flg_tok.len +1);
 
-			new_el = shm_malloc(sizeof(int_list_t));
+			new_el = pkg_malloc(sizeof(int_list_t));
 			if (new_el == NULL)
 				goto no_memory;
 
@@ -223,26 +223,27 @@ only_max_res:
 		}
 		else if (s_tok.s[0] == PV_MARKER) {
 			if (new_el == NULL) {
-				new_el = shm_malloc(sizeof(int_list_t));
+				new_el = pkg_malloc(sizeof(int_list_t));
 				if (new_el == NULL)
 					goto no_memory;
 			}
 
 			new_el->type = GPARAM_TYPE_PVS;
-			new_el->v.pvs = shm_malloc(sizeof(pv_spec_t));
+			new_el->v.pvs = pkg_malloc(sizeof(pv_spec_t));
 			if (new_el->v.pvs == NULL) {
-				shm_free(new_el);
+				pkg_free(new_el);
 				goto no_memory;
 			}
 
 			if ((pvdelim = pv_parse_spec(&s_tok, new_el->v.pvs)) == NULL) {
-				shm_free(new_el->v.pvs);
-				shm_free(new_el);
+				pkg_free(new_el->v.pvs);
+				pkg_free(new_el);
 				goto wrong_value;
 			}
 
 			new_el->next = *result;
 			*result = new_el;
+			new_el = NULL;
 
 			if (delim)
 				if (delim != pvdelim)
@@ -264,7 +265,7 @@ only_max_res:
 			 *
 			 */
 			if (new_el == NULL) {
-				new_el = shm_malloc(sizeof(int_list_t));
+				new_el = pkg_malloc(sizeof(int_list_t));
 				if (new_el == NULL)
 					goto no_memory;
 			}
@@ -276,6 +277,7 @@ only_flags01:
 				new_el->flags = flags;
 			new_el->next = *result;
 			*result = new_el;
+			new_el = NULL;
 
 			input.len -= full_tok_len + 1;
 			input.s = delim + 1;
@@ -291,10 +293,10 @@ only_flags01:
 no_memory:
 	while(*result) {
 		if ((*result)->type == GPARAM_TYPE_PVS)
-			shm_free((*result)->v.pvs);
+			pkg_free((*result)->v.pvs);
 		int_list_t *aux = *result;
 		*result = (*result)->next;
-		shm_free(aux);
+		pkg_free(aux);
 	}
 	LM_ERR("no more shared memory\n");
 	return -1;
@@ -302,10 +304,10 @@ no_memory:
 wrong_value:
 	while(*result) {
 		if ((*result)->type == GPARAM_TYPE_PVS)
-			shm_free((*result)->v.pvs);
+			pkg_free((*result)->v.pvs);
 		int_list_t *aux = *result;
 		*result = (*result)->next;
-		shm_free(aux);
+		pkg_free(aux);
 	}
 	LM_ERR("wrong format for set/set list. Token <%.*s>\n", original_input.len, original_input.s);
 	return -1;
@@ -725,7 +727,7 @@ int ds_select_fixup(void** param, int param_no)
 						(char*)(*param), param_no);
 			}
 
-			maxlst = shm_malloc(sizeof(max_list_param_t));
+			maxlst = pkg_malloc(sizeof(max_list_param_t));
 			if (maxlst == NULL) {
 				LM_ERR("no mem\n");
 				return -1;
