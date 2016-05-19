@@ -30,6 +30,7 @@
 #include "route_send.h"
 #include "event_route.h"
 #include <fcntl.h>
+#include <sched.h>
 #include <unistd.h>
 
 #define IS_ERR(_err) (errno == _err)
