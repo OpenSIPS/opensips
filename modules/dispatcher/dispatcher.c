@@ -458,12 +458,14 @@ static ds_partition_t* find_partition_by_name (const str *partition_name)
 /* Load setids this proxy is responsible for probing into list */
 static int set_probing_list(unsigned int type, void *val) {
 	str input = {(char*)val, strlen(val)};
+
         if (set_list_from_string(input, &ds_probing_list) != 0 ||
             ds_probing_list == NULL)
         {
             LM_ERR("Invalid set_probing_list input\n");
             return -1;
         }
+
         return 0;
 }
 
@@ -1066,7 +1068,7 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg,
 			max_list = max_list->next;
 
 			if (max_param->type == MAX_LIST_TYPE_PV)
-				shm_free(max_list_free);
+				pkg_free(max_list_free);
 		}
 
 		TRY_FREE_EXPANDED_LIST(set_list);
