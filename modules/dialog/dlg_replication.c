@@ -336,12 +336,22 @@ int dlg_replicated_update(void)
 	bin_skip_int(2);
 
 	timeout -= time(0);
-	LM_DBG("Received updated timeout of %d for dialog %.*s\n",timeout,call_id.len,call_id.s);
+	LM_DBG("Received updated timeout of %d for dialog %.*s\n",
+		timeout, call_id.len, call_id.s);
 
 	if (dlg->lifetime != timeout) {
 		dlg->lifetime = timeout;
-		if (update_dlg_timer(&dlg->tl, dlg->lifetime) == -1)
+		switch (update_dlg_timer(&dlg->tl, dlg->lifetime) ) {
+		case -1:
 			LM_ERR("failed to update dialog lifetime!\n");
+			/* continue */
+		case 0:
+			/* timeout value was updated */
+			break;
+		case 1:
+			/* dlg inserted in timer list with new expire (reference it)*/
+			ref_dlg(dlg,1);
+		}
 	}
 
 	unref_dlg_unsafe(dlg, 1, d_entry);

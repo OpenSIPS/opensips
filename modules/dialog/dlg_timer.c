@@ -374,6 +374,8 @@ int remove_ping_timer(struct dlg_cell *dlg)
     -1 - failure (dialog is expired, so it cannot be added again) */
 int update_dlg_timer( struct dlg_tl *tl, int timeout )
 {
+	int ret;
+
 	lock_get( d_timer->lock);
 
 	if ( tl->next == FAKE_DIALOG_TL ) {
@@ -388,13 +390,16 @@ int update_dlg_timer( struct dlg_tl *tl, int timeout )
 			return -1;
 		}
 		remove_dlg_timer_unsafe(tl);
+		ret = 0;
+	} else {
+		ret = 1;
 	}
 
 	tl->timeout = get_ticks()+timeout;
 	insert_dlg_timer_unsafe( tl );
 
 	lock_release( d_timer->lock);
-	return 0;
+	return ret;
 }
 
 static inline struct dlg_tl* get_expired_dlgs(unsigned int time)
