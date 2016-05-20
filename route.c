@@ -1758,13 +1758,18 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 					if(val!=NULL) val->ri = ival;
 					return (ival)?1:0;
 				} else if (e->op == PLUS_OP) {
-					if( (rval.flags&PV_VAL_NULL) || (val==NULL)) {
-						if (val) val->flags|=PV_VAL_STR;
+					if (!val) {
 						ret = (lval.rs.len>0 || rval.rs.len>0);
 						pv_value_destroy(&lval);
 						pv_value_destroy(&rval);
 						return ret;
 					}
+
+					if (rval.flags & PV_VAL_NULL) {
+						pv_value_destroy(&rval);
+						rval.flags = PV_VAL_STR;
+					}
+
 					if(!(rval.flags&PV_VAL_STR))
 					{
 						LM_ERR("invalid string operands\n");
