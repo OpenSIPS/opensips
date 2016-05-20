@@ -159,6 +159,14 @@ static int mod_init(void)
 		LM_ERR("failed to initialize post raw support\n");
 		return -1;
 	}
+	/* restore dialog callbacks when restart */
+	if (dlg_api.register_dlgcb && dlg_api.register_dlgcb(NULL,
+				DLGCB_LOADED,th_loaded_callback, NULL, NULL) < 0)
+			LM_ERR("cannot register callback for dialog loaded - topology "
+					"hiding signalling for ongoing calls will be lost after "
+					"restart\n");
+
+
 
 	return 0;
 error:
