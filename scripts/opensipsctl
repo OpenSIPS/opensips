@@ -12,22 +12,26 @@ PATH=$PATH:/usr/local/sbin/
 # as this introduce security risks
 TEST="false"
 ### include config files
-if [ -f /etc/opensips/opensipsctlrc ]; then
-	. /etc/opensips/opensipsctlrc
-fi
-if [ -f /usr/local/etc/opensips/opensipsctlrc ]; then
-	. /usr/local/etc/opensips/opensipsctlrc
-fi
-if [ -f ~/.opensipsctlrc ]; then
-	. ~/.opensipsctlrc
-fi
+if [ -n "$osipsctlrc" -a -f "$osipsctlrc" ]; then
+	. "$osipsctlrc"
+else
+	if [ -f /etc/opensips/opensipsctlrc ]; then
+		. /etc/opensips/opensipsctlrc
+	fi
+	if [ -f /usr/local/etc/opensips/opensipsctlrc ]; then
+		. /usr/local/etc/opensips/opensipsctlrc
+	fi
+	if [ -f ~/.opensipsctlrc ]; then
+		. ~/.opensipsctlrc
+	fi
 
-if [ $TEST = "true" ]; then
-	ETCDIR=etc/
-	if [ -f ./opensipsctlrc ]; then
-		. ./opensipsctlrc
-	elif [ -f scripts/opensipsctlrc ]; then
-		. scripts/opensipsctlrc
+	if [ $TEST = "true" ]; then
+		ETCDIR=etc/
+		if [ -f ./opensipsctlrc ]; then
+			. ./opensipsctlrc
+		elif [ -f scripts/opensipsctlrc ]; then
+			. scripts/opensipsctlrc
+		fi
 	fi
 fi
 
