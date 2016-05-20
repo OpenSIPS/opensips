@@ -933,7 +933,7 @@ void th_loaded_callback(struct dlg_cell *dlg, int type,
 		return;
 	}
 
-	if (dlg_api.is_mod_flag_set(dlg,TOPOH_ONGOING) < 0) {
+	if (!dlg_api.is_mod_flag_set(dlg,TOPOH_ONGOING)) {
 		LM_DBG("no topo hiding for dlg %p\n", dlg);
 		return;
 	}
