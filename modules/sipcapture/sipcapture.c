@@ -2874,19 +2874,20 @@ int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
 {
 	int rc;
 
-
-	rc = db_funcs.async_raw_resume(db_con, fd, NULL, (sc_async_param_t)_param);
+	rc = db_funcs.async_resume(db_con, fd, NULL, (sc_async_param_t)_param);
 	if (async_status == ASYNC_CONTINUE || async_status == ASYNC_CHANGE_FD)
 		return rc;
 
 	if (rc != 0) {
-		LM_ERR("async query returned error!\n");
+		LM_ERR("async query returned error (%d)\n", rc);
+		db_funcs.async_free_result(db_con, NULL, (sc_async_param_t)_param);
 		return -1;
 	}
 
-	LM_DBG("Async query executed with success!\n");
+	LM_DBG("async query executed successfully!\n");
 	async_status = ASYNC_DONE;
 
+	db_funcs.async_free_result(db_con, NULL, (sc_async_param_t)_param);
 	return 1;
 }
 

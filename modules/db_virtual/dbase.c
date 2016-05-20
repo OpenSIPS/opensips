@@ -595,7 +595,7 @@ do {                                                                            
 }while (0);
 
 
-int db_virtual_async_raw_query(db_con_t *_h, const str *_s, void **_data)
+int db_virtual_async_raw_query(db_con_t *_h, const str *_s, void **_priv)
 {
 	handle_async_t* _ah;
     handle_con_t * _handle;
@@ -623,17 +623,18 @@ int db_virtual_async_raw_query(db_con_t *_h, const str *_s, void **_data)
 		_ah->query.s	 = (char*)(_ah+1);
 		memcpy(_ah->query.s, _s->s, _s->len);
 
-		*_data			 = _ah;
+		*_priv			 = _ah;
 	}
 
     _handle = &_p->con_list[CURRCON(_ah)];
 
-	db_generic_async_operation(_h, _ah,0, async_raw_query(_handle->con, _s, NULL) );
+	db_generic_async_operation(_h, _ah,0, async_raw_query(_handle->con, _s,
+	                           &_ah->_priv) );
 	return 0;
 }
 
 
-int db_virtual_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r, void *_data)
+int db_virtual_async_resume(db_con_t *_h, int fd, db_res_t **_r, void *_priv)
 {
 
 	handle_async_t *_ah;
@@ -641,19 +642,17 @@ int db_virtual_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r, void *_data
     handle_con_t * _handle;
     handle_set_t * _p = (handle_set_t*)_h->tail;
 
-	if (_data == NULL) {
+	if (!_priv) {
 		LM_ERR("Expecting async handle! Nothing received!\n");
 		return -1;
-	} else {
-		_ah = (handle_async_t*)_data;
 	}
 
+	_ah = (handle_async_t *)_priv;
     _handle = &_p->con_list[CURRCON(_ah)];
-
     _f = &global->set_list[_p->set_index].db_list[CURRCON(_ah)].dbf;
 
 	/* call the resume function */
-	if (_f->async_raw_resume(_handle->con, fd, _r, NULL) < 0) {
+	if (_f->async_resume(_handle->con, fd, _r, _ah->_priv) < 0) {
 		_handle->flags &= NOT_CAN_USE;
 		/* close connection*/
 		_f->close(_handle->con);
@@ -662,7 +661,7 @@ int db_virtual_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r, void *_data
 		 * do something to those DBs */
 		if ((--_ah->cons_rem) == 0) {
 			LM_ERR("All databases failed!! No hope for you!\n");
-			goto out_err_free;
+			return -1;
 		}
 
 		/* try next DB; no matter RR or FAILOVER */
@@ -671,7 +670,7 @@ int db_virtual_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r, void *_data
 
 		/* try the next database connection */
 		db_generic_async_operation(_h, _ah,1,
-				async_raw_query(_handle->con, &_ah->query, NULL) );
+				async_raw_query(_handle->con, &_ah->query, _ah->_priv) );
 	}
 
 	/* if here means it worked; we set this connection as current connection
@@ -680,13 +679,31 @@ int db_virtual_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r, void *_data
 
 	async_status = ASYNC_DONE;
 
+	return 0;
+}
+
+int db_virtual_async_free_result(db_con_t *_h, db_res_t *_r, void *_priv)
+{
+	handle_async_t *_ah = (handle_async_t *)_priv;
+	db_func_t *_f;
+	handle_con_t *_handle;
+	handle_set_t *_p = (handle_set_t *)_h->tail;
+
+	if (!_ah) {
+		LM_ERR("Expecting async handle! Nothing received!\n");
+		return -1;
+	}
+
+	_handle = &_p->con_list[CURRCON(_ah)];
+	_f = &global->set_list[_p->set_index].db_list[CURRCON(_ah)].dbf;
+
+	if (_f->async_free_result(_handle->con, _r, _ah->_priv) < 0) {
+		LM_ERR("error while freeing async query result\n");
+		return -1;
+	}
+
 	pkg_free(_ah);
 	return 0;
-
-out_err_free:
-	pkg_free(_ah);
-	return -1;
-
 }
 
 #undef CURRCON
