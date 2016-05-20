@@ -1,5 +1,206 @@
 =========================== Release 2.2.0 ==============================
 
+2016-05-20  Razvan Crainea  <razvan at opensips dot org>
+	* [0668ec7] :
+
+	Upgrade to release candidate 2
+
+
+2016-05-20  Liviu Chircu  <liviu at opensips dot org>
+	* [dc77cfd] :
+
+	Fix invalid memory access with async MySQL queries
+	Due to the way the libmysqlclient query result strings were managed,
+	they would be freed by the library before OpenSIPS would copy them
+	into the output AVPs.
+
+	This patch fixes the issue by adding a new DB API function which handles
+	the cleanup of async query results.
+
+	Reported by Ovidiu Sas
+	Addresses issue #873
+	(cherry picked from commit 177c60a0e13471a87d80f21504894b883038ffa4)
+
+
+2016-05-20  Razvan Crainea  <razvan at opensips dot org>
+	* [a080811] :
+
+	th: fix dlg flag check
+	(cherry picked from commit 1b5802d2e4876e0d63eeeec5a6edcb7a2321e9d0)
+
+
+2016-05-20  Razvan Crainea  <razvan at opensips dot org>
+	* [1dd0afb] :
+
+	re-register topo hiding callbacks after restart
+	Thanks to Pete Kelly for reporting this
+	(cherry picked from commit 4c84bd84ad67e71f174b3297ff3432ca21bafab4)
+
+
+2016-05-20  Liviu Chircu  <liviu at opensips dot org>
+	* [0e22144] :
+
+	clusterer: Fix bad doc example
+	Reported by "alias_neo" on IRC
+	(cherry picked from commit fd0ddaa8587c38dda74a5f0e853a283724281252)
+
+
+2016-05-20  Liviu Chircu  <liviu at opensips dot org>
+	* [3d91ab1] :
+
+	Fix a string concatenation operator bug
+	This patch fixes an issue with string concatenation where any NULL
+	operand would cause all operands to its left to be ignored when
+	computing the result of the expression.
+
+	Reported by Ovidiu Sas
+	Closes #870
+	(cherry picked from commit a420752f436a1f952c255df8d5dbe9ea59b0d653)
+
+
+2016-05-20  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [0fa379c] :
+
+	Process sequential messages received in CONFIRMED_NA state
+	Due to UDP race conditions, sequential messages may be received
+	before the ACK confirming the initial INVITE ( eg. Re-INVITE sent
+	immediately as the call is established in order to force
+	a specific codec ) - also push these requests through the whole
+	dialog processing in order to avoid any future issues ( eg. CSEQ
+	updating which, if left unprocessed, will lead to generating out
+	of order sequentials by OpenSIPS )
+	(cherry picked from commit bfaf02242a98c464dfbdcd3c3ebf3fbb555bcc47)
+
+
+2016-05-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [21ad02f] :
+
+	Fix bogus timer ref counter during expire update.
+	Many thanks to Trevor Francis for reporting and helping with troubleshooting and testing.
+	(cherry picked from commit 047b1b3e32a9af30dd44f2487460975ed7b3a815)
+
+
+2016-05-19  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [dea3a12] :
+
+	[dispatcher] multiple fixes
+	* use pkg memory instead of shm for fixup variables
+	* fix int list building - avoid building a circular list
+
+
+2016-05-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a41b6c4] :
+
+	Fixed preserving 3xx Contacts in TH without dialog
+	Reported by Pete Kelly.
+	Closes #656.
+	(cherry picked from commit 6184b96c94d0fcc298dbe5bce1cd0ca9fb0445d3)
+
+
+2016-05-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [8ae32d8] :
+
+	[mi_xmlrpc] return code rework for errors
+	Mi_xmlrpc_ng now returns only 200 OK as HTTP code. We have two
+	labels for inspecting mi level faults, "code" for the error code
+	and "message" for the error message. Check
+	http://www.tutorialspoint.com/xml-rpc/xml_rpc_fault.htm for
+	more details.
+	(cherry picked from commit 2bb871d0e77a739aac310235a1d042f3241d02e0)
+
+
+2016-05-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [24d63b6] :
+
+	[mi_json] minor fixes in mi_json
+	(cherry picked from commit c091d068768d76fe34ea67ebb010b30082d55ca5)
+
+
+2016-05-18  Liviu Chircu  <liviu at opensips dot org>
+	* [cf7b16f] :
+
+	usrloc: Fix some uninitialized memory issues
+	Reported by Minh Phan
+	Closes #878
+	(cherry picked from commit 38f525d14ab03df94cf5194cd60543636d1d73b3)
+
+
+2016-05-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [4a086b6] :
+
+	[mi_json] return jsonrpc compliat error message
+	(cherry picked from commit 26a66f6aa2fb957a16ed000cc10360bf5f648e18)
+
+
+2016-05-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [841343b] :
+
+	[mi_json] remove double inverted commas for internal error messages
+	(cherry picked from commit b5a51a964ee1658f41ad435190b14f82edfedffd)
+
+
+2016-05-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [07dbc08] :
+
+	[mi_json] return code rework for errors
+		Mi_json now returns only 200 OK as HTTP code. We have two
+	records for inspecting mi level errors, "code" for the error code
+	and "reason" for the error message.
+	(cherry picked from commit 644ea2938f4a8b3f3a25aff1529374f9dfc68ae0)
+
+
+2016-05-18  Razvan Crainea  <razvan at opensips dot org>
+	* [6a22f40] :
+
+	nathelper: ping WSS clients when using natping_tcp
+	See ticket #875
+	(cherry picked from commit 54a306ae68c6ccb30caff0eb470a40517a687827)
+
+
+2016-05-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [515484f] :
+
+	Fixed bogus memory operations.
+	Fixed bogus free (of uninit pointer) if parse_contact() fails
+	Fixed shm leak on errors after print_rr_body
+	Fixed shm leak on success if record_route is present.
+	Reported by John Nash.
+	(cherry picked from commit 4b0fca533cd7be4a45c1381c78f2b37aaba6152b)
+
+
+2016-05-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [f8a3a1d] :
+
+	[sipcapture] fix possible data type loss
+	(cherry picked from commit 1c811ceb987b678e81af6b7669b219adf15250a1)
+
+
+2016-05-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [aeed4cb] :
+
+	[sipcapture] fix bad time calculation
+	(cherry picked from commit d54dc2d0234825a92497fea1c3df08eec4afac83)
+
+
+2016-05-11  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [eff04e0] :
+
+	[dispatcher] fix double allocation issue
+	(cherry picked from commit d6891363e3b3b4047a1948eb03fb6b6bab285885)
+
+
+2016-05-09  Razvan Crainea  <razvan at opensips dot org>
+	* [3ca4bfb] :
+
+	Update ChangeLog for 2.2.0-rc1
+
+
+2016-05-09  Razvan Crainea  <razvan at opensips dot org>
+	* [7e7a2df] :
+
+	Update name to opensips-2.2.0-rc1
+
+
 2016-05-09  ionutrazvanionita  <ionutionita at opensips dot org>
 	* [3c75721] :
 
