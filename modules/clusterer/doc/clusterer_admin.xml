@@ -556,12 +556,12 @@ modparam("clusterer", "no_tries_col", "no_tries")
 		<title><emphasis>Node A</emphasis> configuration</title>
 		<programlisting format="linespecific">
 ...
-listen=udp:192.168.0.5:5566 # bin listener for Node A
+listen = bin:192.168.0.5:5566 # bin listener for Node A
 
 loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
-modparam("clusterer","db_url","mysql://opensips@192.168.0.7/opensips")
+modparam("clusterer", "db_url", "mysql://opensips@192.168.0.7/opensips")
 modparam("clusterer", "server_id", 1) # machine_id for Node A
 
 loadmodule "ratelimit.so"
@@ -582,13 +582,13 @@ modparam("ratelimit", "accept_pipes_timeout", 5)
 		<title><emphasis>Node B</emphasis> configuration</title>
 		<programlisting format="linespecific">
 ...
-listen=udp:192.168.0.6:5566 # bin listener for Node B
+listen = bin:192.168.0.6:5566 # bin listener for Node B
 
 loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
 # ideally, use the same database for both nodes
-modparam("clusterer","db_url","mysql://opensips@192.168.0.7/opensips")
+modparam("clusterer", "db_url", "mysql://opensips@192.168.0.7/opensips")
 modparam("clusterer", "server_id", 2) # machine_id for Node B
 
 loadmodule "ratelimit.so"
