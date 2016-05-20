@@ -1121,11 +1121,12 @@ static inline int db_mysql_get_con_fd(void *con)
  *
  * \param _h handle for the database
  * \param _s raw query string
+ * \param _priv internal parameter; holds the conn that the query is bound to
  * \return
  *		success: Unix FD for polling
  *		failure: negative error code
  */
-int db_mysql_async_raw_query(db_con_t *_h, const str *_s)
+int db_mysql_async_raw_query(db_con_t *_h, const str *_s, void **_priv)
 {
 	int *fd_ref;
 	int code, i;
@@ -1137,8 +1138,9 @@ int db_mysql_async_raw_query(db_con_t *_h, const str *_s)
 		return -1;
 	}
 
-	con = (struct my_con *)db_switch_to_async(_h, db_mysql_get_con_fd, &fd_ref,
-											  (void *)db_mysql_new_connection);
+	con = (struct my_con *)db_init_async(_h, db_mysql_get_con_fd,
+	                           &fd_ref, (void *)db_mysql_new_connection);
+	*_priv = con;
 	if (!con)
 		LM_INFO("Failed to open new connection (current: 1 + %d). Running "
 				"in sync mode!\n", ((struct pool_con *)_h->tail)->no_transfers);
@@ -1197,16 +1199,19 @@ out:
 	return -2;
 }
 
-int db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r)
+int db_mysql_async_resume(db_con_t *_h, int fd, db_res_t **_r, void *_priv)
 {
-	struct pool_con *con;
+	struct pool_con *con = (struct pool_con *)_priv;
 	int rc;
 
-	con = db_match_async_con(fd, _h);
-	if (!con) {
+#ifdef EXTRA_DEBUG
+	if (!db_match_async_con(fd, _h)) {
 		LM_BUG("no conn match for fd %d", fd);
 		abort();
 	}
+#endif
+
+	db_switch_to_async(_h, con);
 
 	rc = mysql_read_query_result(CON_CONNECTION(_h));
 	LM_DBG("mysql_read_query_result: %d, %s - \"%s\"\n",
@@ -1235,14 +1240,24 @@ int db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r)
 		}
 	}
 
-	mysql_free_result(CON_RESULT(_h));
-	CON_RESULT(_h) = NULL;
-
 	db_switch_to_sync(_h);
 	db_store_async_con(_h, con);
 	return 0;
 }
 
+int db_mysql_async_free_result(db_con_t *_h, db_res_t *_r, void *_priv)
+{
+	struct my_con *con = (struct my_con *)_priv;
+
+	if (_r && db_free_result(_r) < 0) {
+		LM_ERR("error while freeing result structure\n");
+		return -1;
+	}
+
+	mysql_free_result(con->res);
+	con->res = NULL;
+	return 0;
+}
 
 /**
  * Insert a row into a specified table.

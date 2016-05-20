@@ -281,30 +281,53 @@ typedef int (*db_insert_update_f) (const db_con_t* _h, const db_key_t* _k,
  * done synchronously!
  *
  * \param _h structure representing the database handle
- * \param _s the SQL query
+ * \param _s the SQL query string
+ * \param _priv data that shall be populated by the engine
+ *			!!! must be preserved by the upper layer while the query is run
  * \return
  *		success: Unix FD for polling
  *		failure: negative error code
  */
-typedef int (*db_async_raw_query_f) (db_con_t *_h, const str *_q);
+typedef int (*db_async_raw_query_f) (db_con_t *_h, const str *_q, void **_priv);
 
 /*
  * \brief Reads data from the given fd's SQL connection. Populates the query
  *			result parameter when it resumes fetching data for the last time.
  *
+ * The results ("_r" output parameter) are ready to be used only when data is
+ * fully read (i.e. iff async_status == ASYNC_DONE).
+ *
+ * After the results are processed by the calling module, they must be freed
+ * using the "db_async_free_result_f" function.
+ *
  * \param _h structure representing the database handle
  * \param fd read file descriptor obtained in starting phase
  * \param _r structure for the result
+ * \param _priv data that shall be populated by the engine
+ *			!!! the same data pointer passed to the "query" function call
  * \return:
  *		-> 0 on success, negative on failure
  *		-> also populates the global "async_status": ASYNC_CONTINUE / ASYNC_DONE
- *
- * !!! IMPORTANT:
- *		if data is fully read (async_status == ASYNC_DONE),
- *		backend-specific results have already been freed!
- *			You only need to call db_free_result(_r) when done
  */
-typedef int (*db_async_raw_resume_f) (db_con_t *_h, int fd, db_res_t **_r);
+typedef int (*db_async_resume_f) (db_con_t *_h, int fd, db_res_t **_r,
+		void *_priv);
+
+/*
+ * \brief Performs the necessary cleanup of asynchronous query results and
+ * their associated internal structures
+ *
+ * This function must be called once for every "async_resume" call, after the
+ * query has been completed (i.e. "async_resume" resulted in ASYNC_DONE) and
+ * its results have been processed by the calling module.
+ *
+ * \param _h structure representing the database handle
+ * \param _r structure for the result
+ * \param _priv data that shall be populated by the engine
+ *			!!! the same data pointer passed to the "query" and "resume" calls
+ * \return:
+ *		-> 0 on success, negative on failure
+ */
+typedef int (*db_async_free_result_f) (db_con_t *_h, db_res_t *_r, void *_priv);
 
 /**
  * \brief Database module callbacks
@@ -326,10 +349,11 @@ typedef struct db_func {
 	db_delete_f       delete;        /* Delete from table */
 	db_update_f       update;        /* Update table */
 	db_replace_f      replace;       /* Replace row in a table */
-	db_last_inserted_id_f last_inserted_id;  /* Retrieve the last inserted ID in a table */
-	db_insert_update_f    insert_update;     /* Insert into table, update on duplicate key */
-	db_async_raw_query_f  async_raw_query;   /* Starts an asynchronous raw query */
-	db_async_raw_resume_f async_raw_resume;  /* Called if there is some data to be read */
+	db_last_inserted_id_f  last_inserted_id;  /* Retrieve the last inserted ID in a table */
+	db_insert_update_f     insert_update;     /* Insert into table, update on duplicate key */
+	db_async_raw_query_f   async_raw_query;   /* Starts an asynchronous raw query */
+	db_async_resume_f      async_resume;      /* Called on progress or completed query */
+	db_async_free_result_f async_free_result; /* Clean up after an async query */
 } db_func_t;
 
 

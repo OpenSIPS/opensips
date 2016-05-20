@@ -810,6 +810,7 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 	int rc, read_fd;
 	query_async_param *param;
 	str qstr;
+	void *_priv;
 
 	if (!msg || !query)
 	{
@@ -843,7 +844,7 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 		return rc == 1 ? -2 : (rc != 0 ? -1 : 1);
 	}
 
-	read_fd = url->dbf.async_raw_query(url->hdl, &qstr);
+	read_fd = url->dbf.async_raw_query(url->hdl, &qstr, &_priv);
 	if (read_fd < 0)
 	{
 		*rparam = NULL;
@@ -865,6 +866,7 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 	param->output_avps = dest;
 	param->hdl = url->hdl;
 	param->dbf = &url->dbf;
+	param->db_param = _priv;
 
 	async_status = read_fd;
 	return 1;
@@ -874,37 +876,41 @@ int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
 {
 	db_res_t *res = NULL;
 	query_async_param *param = (query_async_param *)_param;
-	int rc;
+	int rc, ret;
 
-	rc = param->dbf->async_raw_resume(param->hdl, fd, &res);
+	rc = param->dbf->async_resume(param->hdl, fd, &res, param->db_param);
 	if (async_status == ASYNC_CONTINUE) {
 		return rc;
 	}
 
 	if (rc != 0) {
 		LM_ERR("async query returned error\n");
-		pkg_free(param);
-		return -1;
+		ret = -1;
+		goto err_free;
 	}
 
 	if (!res || RES_ROW_N(res) <= 0 || RES_COL_N(res) <= 0) {
 		LM_DBG("query returned no results\n");
-		db_free_result(res);
-		pkg_free(param);
-		return -2;
+		ret = -2;
+		goto err_free;
 	}
 
 	if (db_query_avp_print_results(msg, res, param->output_avps) != 0) {
 		LM_ERR("failed to print results\n");
-		db_free_result(res);
-		pkg_free(param);
-		return -1;
+		ret = -1;
+		goto err_free;
 	}
 
-	db_free_result(res);
-	pkg_free(param);
+	async_status = ASYNC_DONE;
 
+	param->dbf->async_free_result(param->hdl, res, param->db_param);
+	pkg_free(param);
 	return 1;
+
+err_free:
+	param->dbf->async_free_result(param->hdl, res, param->db_param);
+	pkg_free(param);
+	return ret;
 }
 
 
