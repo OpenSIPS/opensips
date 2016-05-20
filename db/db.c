@@ -144,9 +144,9 @@ int db_check_api(db_func_t* dbf, char *mname)
 		dbf->cap |= DB_CAP_INSERT_UPDATE;
 	}
 
-	if (dbf->async_raw_query || dbf->async_raw_resume) {
-		if (!dbf->async_raw_query || !dbf->async_raw_resume) {
-			LM_BUG("NULL async_raw_query_f or async_raw_resume_f in %s", mname);
+	if (dbf->async_raw_query || dbf->async_resume || dbf->async_free_result) {
+		if (!dbf->async_raw_query || !dbf->async_resume || !dbf->async_free_result) {
+			LM_BUG("NULL async raw_query | resume | free_result in %s", mname);
 			return -1;
 		}
 

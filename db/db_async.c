@@ -37,8 +37,8 @@
  */
 static struct pool_con *sync_con;
 
-struct pool_con *db_switch_to_async(db_con_t *_h, get_con_fd_f get_fd, int **fd_ref,
-							void *(*new_connection)(const struct db_id *))
+struct pool_con *db_init_async(db_con_t *_h, get_con_fd_f get_fd, int **fd_ref,
+                               void *(*new_connection)(const struct db_id *))
 {
 	struct pool_con *con = (struct pool_con *)_h->tail;
 	void *new;
@@ -71,12 +71,16 @@ struct pool_con *db_switch_to_async(db_con_t *_h, get_con_fd_f get_fd, int **fd_
 
 	con->no_transfers++;
 
-
-	/* switch to async con */
-	sync_con = con;
-	_h->tail = (unsigned long)new;
+	/* switch to the new async con */
+	db_switch_to_async(_h, new);
 
 	return new;
+}
+
+void db_switch_to_async(db_con_t *_h, struct pool_con *async_con)
+{
+	sync_con = (struct pool_con *)_h->tail;
+	_h->tail = (unsigned long)async_con;
 }
 
 void db_switch_to_sync(db_con_t *_h)
@@ -125,13 +129,8 @@ struct pool_con *db_match_async_con(int fd, db_con_t *_h)
 	max = ((struct pool_con *)_h->tail)->no_transfers;
 
 	for (i = 0; i < max; i++)
-		if (fd == transfers[i].fd) {
-			/* switch to async con */
-			sync_con = (struct pool_con *)_h->tail;
-			_h->tail = (unsigned long)transfers[i].con;
-
+		if (fd == transfers[i].fd)
 			return (struct pool_con *)_h->tail;
-		}
 
 	return NULL;
 }

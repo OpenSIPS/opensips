@@ -49,11 +49,19 @@ typedef int (*get_con_fd_f) (void *con);
  *			has changed, make sure you also update the reference passed on here
  * new_connection - backend-specific function to allocate and set up a new con
  */
-struct pool_con *db_switch_to_async(db_con_t *_h, get_con_fd_f get_fd, int **fd_ref,
-							void *(*new_connection)(const struct db_id *));
+struct pool_con *db_init_async(db_con_t *_h, get_con_fd_f get_fd, int **fd_ref,
+                               void *(*new_connection)(const struct db_id *));
+
+/**
+ * Replaces the currently in use connection of the DB handle with "async_con"
+ *
+ * Must not be called twice in a row
+ */
+void             db_switch_to_async(db_con_t *_h, struct pool_con *async_con);
 
 /**
  * Restores the DB handle in its normal state (i.e. ready for blocking queries)
+ * after a previous call to "db_switch_to_async"
  *
  * MUST be called after initiating async operations and/or if:
  *		* a previous db_switch_to_async() was done
@@ -73,11 +81,8 @@ void             db_switch_to_sync(db_con_t *_h);
 void             db_store_async_con(db_con_t *_h, struct pool_con *con);
 
 /**
- * Matches the given fd to one of the ongoing async DB transfers.
- * Returns the DB connection of the given fd.
- *
- * Note: the DB handle is switched to async mode.
- * Make sure you switch back to sync mode when done.
+ * Attempts to match the given fd to one of the ongoing async DB transfers.
+ * Returns the DB connection of the given fd or NULL if not found
  */
 struct pool_con *db_match_async_con(int fd, db_con_t *_h);
 

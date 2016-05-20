@@ -460,21 +460,22 @@ int db_virtual_bind_api(const str* mod, db_func_t *dbb)
     }
 
 
-    dbb->use_table        = db_virtual_use_table;
-    dbb->init             = db_virtual_init;
-    dbb->close            = db_virtual_close;
-    dbb->query            = db_virtual_query;
-    dbb->fetch_result     = db_virtual_fetch_result;
-    dbb->raw_query        = db_virtual_raw_query;
-    dbb->free_result      = db_virtual_free_result;
-    dbb->insert           = db_virtual_insert;
-    dbb->delete           = db_virtual_delete;
-    dbb->update           = db_virtual_update;
-    dbb->replace          = db_virtual_replace;
-    dbb->last_inserted_id = db_virtual_last_inserted_id;
-    dbb->insert_update    = db_virtual_insert_update;
-	dbb->async_raw_query  = db_virtual_async_raw_query;
-	dbb->async_raw_resume = db_virtual_async_raw_resume;
+    dbb->use_table         = db_virtual_use_table;
+    dbb->init              = db_virtual_init;
+    dbb->close             = db_virtual_close;
+    dbb->query             = db_virtual_query;
+    dbb->fetch_result      = db_virtual_fetch_result;
+    dbb->raw_query         = db_virtual_raw_query;
+    dbb->free_result       = db_virtual_free_result;
+    dbb->insert            = db_virtual_insert;
+    dbb->delete            = db_virtual_delete;
+    dbb->update            = db_virtual_update;
+    dbb->replace           = db_virtual_replace;
+    dbb->last_inserted_id  = db_virtual_last_inserted_id;
+    dbb->insert_update     = db_virtual_insert_update;
+    dbb->async_raw_query   = db_virtual_async_raw_query;
+    dbb->async_resume      = db_virtual_async_resume;
+    dbb->async_free_result = db_virtual_async_free_result;
 
     return 0;
 }
