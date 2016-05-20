@@ -46,5 +46,7 @@ int topology_hiding(struct sip_msg *req,int extra_flags);
 int topo_callid_pre_raw(str *data, struct sip_msg* req);
 int topo_callid_post_raw(str *data, struct sip_msg* req);
 int topology_hiding_match(struct sip_msg *req);
+void th_loaded_callback(struct dlg_cell *dlg, int type,
+			struct dlg_cb_params *_params);
 
 #endif

@@ -911,17 +911,43 @@ static int topo_hiding_with_dlg(struct sip_msg *req,struct cell* t,struct dlg_ce
 	}
 
 	if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED, topo_dlg_initial_reply, NULL, NULL)) {
-		LM_ERR("cannot register callback for fwded relies in dialog\n");
+		LM_ERR("cannot register callback for fwded replies in dialog\n");
 		return -1;
 	}
 
-	if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED | DLGCB_REQ_WITHIN, 
+	if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED | DLGCB_REQ_WITHIN,
 	topo_dlg_onroute, NULL , NULL)) {
 		LM_ERR("cannot register callback for sequential requests\n");
 		return -1;
 	}
 
 	return 1;
+}
+
+/* restore callbacks */
+void th_loaded_callback(struct dlg_cell *dlg, int type,
+			struct dlg_cb_params *_params)
+{
+	if (!dlg) {
+		LM_ERR("null dialog - cannot fetch message flags\n");
+		return;
+	}
+
+	if (dlg_api.is_mod_flag_set(dlg,TOPOH_ONGOING) < 0) {
+		LM_DBG("no topo hiding for dlg %p\n", dlg);
+		return;
+	}
+
+	if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED, topo_dlg_initial_reply, NULL, NULL)) {
+		LM_ERR("cannot register callback for fwded replies in dialog\n");
+		return ;
+	}
+
+	if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED | DLGCB_REQ_WITHIN,
+	topo_dlg_onroute, NULL , NULL)) {
+		LM_ERR("cannot register callback for sequential requests\n");
+		return ;
+	}
 }
 
 static void topo_unref_dialog(void *dialog)
