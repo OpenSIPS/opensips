@@ -273,6 +273,8 @@ static param_export_t params[]={
 		&minor_branch_flag },
 	{ "timer_partitions",         INT_PARAM,
 		&timer_partitions },
+	{ "auto_100trying",           INT_PARAM,
+		&auto_100trying },
 	{0,0,0}
 };
 
