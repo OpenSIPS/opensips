@@ -1,9 +1,9 @@
 <!-- Module User's Guide -->
 
 <chapter>
-  
+
   <title>&adminguide;</title>
-  
+
   <section>
 	<title>Overview</title>
 	<para>
@@ -18,7 +18,7 @@
 	  by the script. Visit the
 	  <ulink
 	  url="http://www.maxmind.com/app/geolitecity"><citetitle>MaxMind
-	  website</citetitle></ulink> for more information on the location 
+	  website</citetitle></ulink> for more information on the location
 	  databases.
 	</para>
   </section>
@@ -55,6 +55,7 @@
 
   <section>
 	<title>Exported Parameters</title>
+
 	<section>
 	  <title><varname>mmgeoip_city_db_path</varname> (string)</title>
 	  <para>
@@ -75,6 +76,53 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
 		</programlisting>
 	  </example>
 	</section>
+
+	<section>
+	  <title><varname>cache_type</varname> (string)</title>
+	  <para>
+		Databse memory caching options. The following options are available:
+		<itemizedlist>
+
+			<listitem>
+				<para>
+					<emphasis>STANDARD</emphasis> - Read database from file system;
+					least memory used;
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<emphasis>MMAP_CACHE</emphasis> - Load database into mmap allocated
+					memory;
+					<para><emphasis>WARNING: this option will cause a segmentation
+							fault if database file is changed at runtime!</emphasis></para>
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<emphasis>MEM_CACHE_CHECK</emphasis> - Load database into memory;
+					this mode checks for database updates; if database was modified,
+					the file will be reloaded after 60 seconds; it will be slower than
+					<emphasis>MMAP_CACHE</emphasis> but it will allow reloads;
+				</para>
+			</listitem>
+
+		</itemizedlist>
+	  </para>
+	  <para>
+		Default value for this parameter is <emphasis>MMAP_CACHE</emphasis>.
+	  </para>
+	  <example>
+		<title>Set <quote>cache_type</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
+...
+		</programlisting>
+	  </example>
+	</section>
+
   </section>
   <section>
 	<title>Exported Functions</title>
@@ -107,7 +155,7 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
 		<listitem> <para> <varname>ac</varname> Area Code</para></listitem>
 		<listitem> <para> <varname>TZ</varname> Time Zone</para></listitem>
 	  </itemizedlist>
-	  
+
 	  <para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		ONREPLY_ROUTE, BRANCH_ROUTE,ERROR_ROUTE, and LOCAL_ROUTE.
