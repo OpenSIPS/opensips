@@ -14,8 +14,8 @@ tls_configs=$(patsubst $(ETC_DIR)/%, %, $(wildcard $(ETC_DIR)/tls/*) \
 
 ifeq ($(CROSS_COMPILE),)
 SSL_BUILDER=$(shell \
-	if pkg_config --exists libssl; then \
-		echo 'pkg_config libssl'; \
+	if pkg-config --exists libssl; then \
+		echo 'pkg-config libssl'; \
 	fi)
 endif
 
