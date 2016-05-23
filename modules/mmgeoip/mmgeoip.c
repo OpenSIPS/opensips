@@ -33,6 +33,7 @@
 #include "../../str.h"
 #include "../../usr_avp.h"
 #include "../../mod_fix.h"
+#include "../../ut.h"
 #include "GeoIP.h"
 #include "GeoIPCity.h"
 
@@ -40,6 +41,38 @@
 #define MMG_OP_DELIMS ":|,/ "
 static str MMG_city_db_path = {NULL, 0};
 static GeoIP *MMG_gi = NULL;
+
+static int geoip_cache_option = GEOIP_MMAP_CACHE;
+
+
+int parse_mem_option( unsigned int type, void *val)
+{
+	str opt_s;
+
+	static const str opt_STANDARD = str_init("STANDARD");
+	static const str opt_MMAP = str_init("MMAP_CACHE");
+	static const str opt_MEM_CHECK = str_init("MEM_CACHE_CHECK");
+
+	opt_s.s = (char *) val;
+	opt_s.len = strlen(opt_s.s);
+
+
+	if (opt_s.len == opt_STANDARD.len &&
+			!strncasecmp(opt_s.s, opt_STANDARD.s, opt_s.len)) {
+		geoip_cache_option = GEOIP_STANDARD;
+	} else if (opt_s.len == opt_MMAP.len &&
+			!strncasecmp(opt_s.s, opt_MMAP.s, opt_s.len)) {
+		geoip_cache_option = GEOIP_MMAP_CACHE;
+	} else if (opt_s.len == opt_MEM_CHECK.len &&
+			!strncasecmp(opt_s.s, opt_MEM_CHECK.s, opt_s.len)) {
+		geoip_cache_option = GEOIP_MEMORY_CACHE|GEOIP_CHECK_CACHE;
+	} else {
+		LM_ERR("Invalid cache option!\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 static int
 mod_init(void)
@@ -52,7 +85,8 @@ mod_init(void)
 	}
 
 	MMG_city_db_path.len=strlen(MMG_city_db_path.s);
-	if(0==(MMG_gi = GeoIP_open(MMG_city_db_path.s, GEOIP_MMAP_CACHE))){
+	if(0==(MMG_gi = GeoIP_open(MMG_city_db_path.s,
+					geoip_cache_option))){
 		LM_ERR("Unable to open City DB at path '%.*s'.\n",
 			MMG_city_db_path.len,MMG_city_db_path.s);
 		return -1;
@@ -234,6 +268,7 @@ w_lookup_cmd2(struct sip_msg *m, char *ipaddr, char *dst)
  */
 static param_export_t mod_params[]={
 	{"mmgeoip_city_db_path",   STR_PARAM, &MMG_city_db_path.s},
+	{"cache_type", STR_PARAM|USE_FUNC_PARAM, parse_mem_option},
 	{ 0,0,0 }
 };
 

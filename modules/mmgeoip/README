@@ -26,6 +26,7 @@ Kobi Eshun
         1.3. Exported Parameters
 
               1.3.1. mmgeoip_city_db_path (string)
+              1.3.2. cache_type (string)
 
         1.4. Exported Functions
 
@@ -36,7 +37,8 @@ Kobi Eshun
    List of Examples
 
    1.1. Set “mmgeoip_city_db_path” parameter
-   1.2. mmg_lookup usage
+   1.2. Set “cache_type” parameter
+   1.3. mmg_lookup usage
 
 Chapter 1. Admin Guide
 
@@ -79,6 +81,27 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
   "/usr/share/GeoIP/GeoLiteCity.dat")
 ...
 
+1.3.2. cache_type (string)
+
+   Databse memory caching options. The following options are
+   available:
+     * STANDARD - Read database from file system; least memory
+       used;
+     * MMAP_CACHE - Load database into mmap allocated memory;
+       WARNING: this option will cause a segmentation fault if
+       database file is changed at runtime!
+     * MEM_CACHE_CHECK - Load database into memory; this mode
+       checks for database updates; if database was modified, the
+       file will be reloaded after 60 seconds; it will be slower
+       than MMAP_CACHE but it will allow reloads;
+
+   Default value for this parameter is MMAP_CACHE.
+
+   Example 1.2. Set “cache_type” parameter
+...
+modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
+...
+
 1.4. Exported Functions
 
 1.4.1.  mmg_lookup([fields,]src,dst)
@@ -104,7 +127,7 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE,ERROR_ROUTE, and LOCAL_ROUTE.
 
-   Example 1.2. mmg_lookup usage
+   Example 1.3. mmg_lookup usage
 ...
 if(mmg_lookup("lon:lat","$si","$avp(lat_lon)")) {
   xlog("L_INFO","Source IP latitude:$(avp(lat_lon)[0])\n");
