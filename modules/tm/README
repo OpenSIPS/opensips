@@ -60,6 +60,7 @@ Ovidiu Sas
               1.3.16. enable_stats (integer)
               1.3.17. minor_branch_flag (string/integer)
               1.3.18. own_timer_proc (integer)
+              1.3.19. auto_100trying (integer)
 
         1.4. Exported Functions
 
@@ -145,24 +146,25 @@ Ovidiu Sas
    1.16. Set enable_stats parameter
    1.17. Set minor_branch_flag parameter
    1.18. Set own_timer_proc parameter
-   1.19. t_relay usage
+   1.19. Set auto_100trying parameter
    1.20. t_relay usage
-   1.21. t_reply usage
-   1.22. t_reply_with_body usage
-   1.23. t_newtran usage
-   1.24. t_check_trans usage
-   1.25. t_check_status usage
-   1.26. t_local_replied usage
-   1.27. t_was_cancelled usage
-   1.28. t_cancel_branch usage
-   1.29. t_new_request usage
-   1.30. t_on_failure usage
-   1.31. t_on_reply usage
-   1.32. t_on_branch usage
-   1.33. t_add_hdrs usage
-   1.34. t_replicate usage
-   1.35. t_write_req/unix usage
-   1.36. t_flush_flags usage
+   1.21. t_relay usage
+   1.22. t_reply usage
+   1.23. t_reply_with_body usage
+   1.24. t_newtran usage
+   1.25. t_check_trans usage
+   1.26. t_check_status usage
+   1.27. t_local_replied usage
+   1.28. t_was_cancelled usage
+   1.29. t_cancel_branch usage
+   1.30. t_new_request usage
+   1.31. t_on_failure usage
+   1.32. t_on_reply usage
+   1.33. t_on_branch usage
+   1.34. t_add_hdrs usage
+   1.35. t_replicate usage
+   1.36. t_write_req/unix usage
+   1.37. t_flush_flags usage
 
 Chapter 1. Admin Guide
 
@@ -609,6 +611,23 @@ modparam("tm", "minor_branch_flag", "MINOR_BFLAG")
 modparam("tm", "own_timer_proc", 2)
 ...
 
+1.3.19. auto_100trying (integer)
+
+   This parameter controls if the TM module should automatically
+   generate an 100 Trying stateful reply when an INVITE
+   transaction is created.
+
+   You may want to disable this behavior if you want to control
+   from script level when the 100 Trying is to be sent out.
+
+   Default value is 1 (enabled).
+
+   Example 1.19. Set auto_100trying parameter
+...
+# Disable automatic 100 Trying
+modparam("tm", "auto_100trying", 0)
+...
+
 1.4. Exported Functions
 
 1.4.1.  t_relay([flags])
@@ -662,7 +681,7 @@ modparam("tm", "own_timer_proc", 2)
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.19. t_relay usage
+   Example 1.20. t_relay usage
 ...
 if (!t_relay()) {
     sl_reply_error();
@@ -684,7 +703,7 @@ if (!t_relay()) {
 
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.20. t_relay usage
+   Example 1.21. t_relay usage
 ...
 t_relay("tcp:192.168.1.10:5060");
 t_relay("mydomain.com:5070","0x1");
@@ -704,7 +723,7 @@ t_relay("udp:mydomain.com");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.21. t_reply usage
+   Example 1.22. t_reply usage
 ...
 t_reply("404", "Use $rU not found");
 ...
@@ -723,7 +742,7 @@ t_reply("404", "Use $rU not found");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.22. t_reply_with_body usage
+   Example 1.23. t_reply_with_body usage
 ...
         if(is_method("INVITE"))
         {
@@ -747,7 +766,7 @@ Warning
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.23. t_newtran usage
+   Example 1.24. t_newtran usage
 ...
 if (t_newtran()) {
         log("UAS logic");
@@ -779,7 +798,7 @@ if (t_newtran()) {
 
    This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
 
-   Example 1.24. t_check_trans usage
+   Example 1.25. t_check_trans usage
 ...
 if ( is_method("CANCEL") ) {
         if ( t_check_trans() )
@@ -800,7 +819,7 @@ if ( is_method("CANCEL") ) {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE .
 
-   Example 1.25. t_check_status usage
+   Example 1.26. t_check_status usage
 ...
 if (t_check_status("(487)|(408)")) {
     log("487 or 408 negative reply\n");
@@ -817,7 +836,7 @@ if (t_check_status("(487)|(408)")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    FAILURE_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.26. t_local_replied usage
+   Example 1.27. t_local_replied usage
 ...
 if (t_local_replied("all")) {
         log ("no reply received\n");
@@ -831,7 +850,7 @@ if (t_local_replied("all")) {
 
    This function can be used from ONREPLY_ROUTE, FAILURE_ROUTE.
 
-   Example 1.27. t_was_cancelled usage
+   Example 1.28. t_was_cancelled usage
 ...
 if (t_was_cancelled()) {
     log("transaction was cancelled by UAC\n");
@@ -853,7 +872,7 @@ if (t_was_cancelled()) {
 
    This function can be used from ONREPLY_ROUTE.
 
-   Example 1.28. t_cancel_branch usage
+   Example 1.29. t_cancel_branch usage
 onreply_route[3] {
 ...
         if (t_check_status("183")) {
@@ -882,7 +901,7 @@ onreply_route[3] {
        transaction as an AVP with name "uac_ctx" (it may be
        visible in local route)
 
-   Example 1.29. t_new_request usage
+   Example 1.30. t_new_request usage
 ...
         # send a MESSAGE request
         t_new_request("MESSAGE","sip:alice@192.168.2.2","BOB sip:userB@m
@@ -917,7 +936,7 @@ ydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!"))
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.30. t_on_failure usage
+   Example 1.31. t_on_failure usage
 ...
 route {
         t_on_failure("1");
@@ -966,7 +985,7 @@ failure_route[1] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.31. t_on_reply usage
+   Example 1.32. t_on_reply usage
 ...
 route {
         seturi("sip:bob@opensips.org");  # first branch
@@ -1023,7 +1042,7 @@ onreply_route[global] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.32. t_on_branch usage
+   Example 1.33. t_on_branch usage
 ...
 route {
         t_on_branch("1");
@@ -1047,7 +1066,7 @@ branch_route[1] {
    headers will be appended to all requests related to the
    transaction (outgoing branches, local ACKS, CANCELs).
 
-   Example 1.33. t_add_hdrs usage
+   Example 1.34. t_add_hdrs usage
 ...
 t_add_hdrs("X-origin: 1.1.1.1\r\n");
 ...
@@ -1069,7 +1088,7 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
 
    This functions can be used from REQUEST_ROUTE.
 
-   Example 1.34. t_replicate usage
+   Example 1.35. t_replicate usage
 ...
 t_replicate("sip:1.2.3.4:5060");
 t_replicate("sip:1.2.3.4:5060;transport=tcp");
@@ -1085,7 +1104,7 @@ t_replicate("sip:1.2.3.4","0x4");
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE
    and BRANCH_ROUTE.
 
-   Example 1.35. t_write_req/unix usage
+   Example 1.36. t_write_req/unix usage
 ...
 modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
 modparam("tm","tw_append","append2:body=$rb")
@@ -1104,7 +1123,7 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 
    This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
 
-   Example 1.36. t_flush_flags usage
+   Example 1.37. t_flush_flags usage
 ...
 t_flush_flags();
 ...
@@ -1279,14 +1298,14 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-       What happened with old cancel_call() function
+   What happened with old cancel_call() function
 
-       The function was replace (as functionality) by
-       cancel_branch("a") - cancel all braches.
+   The function was replace (as functionality) by
+   cancel_branch("a") - cancel all braches.
 
    3.2.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.

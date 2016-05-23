@@ -128,6 +128,9 @@
 int ruri_matching=1;
 int via1_matching=1;
 
+/* by default we automaticaly send 100 Trying on trasacation creation */
+int auto_100trying=1;
+
 /* this is a global variable which keeps pointer to
    transaction currently processed by a process; it it
    set by t_lookup_request or t_reply_matching; don't
@@ -1104,7 +1107,7 @@ int t_newtran( struct sip_msg* p_msg )
 		return E_BAD_VIA;
 	}
 
-	if (p_msg->REQ_METHOD==METHOD_INVITE) {
+	if (auto_100trying && p_msg->REQ_METHOD==METHOD_INVITE) {
 		t_reply( T, p_msg , 100 , &relay_reason_100);
 	}
 

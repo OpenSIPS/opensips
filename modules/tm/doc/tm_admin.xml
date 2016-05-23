@@ -689,6 +689,33 @@ modparam("tm", "own_timer_proc", 2)
 		</example>
 	</section>
 
+	<section>
+		<title><varname>auto_100trying</varname> (integer)</title>
+		<para>
+		This parameter controls if the TM module should automatically 
+		generate an 100 Trying stateful reply when an INVITE transaction
+		is created.
+		</para>
+		<para>
+		You may want to disable this behavior if you want to control from
+		script level when the 100 Trying is to be sent out.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 1 (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>auto_100trying</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# Disable automatic 100 Trying
+modparam("tm", "auto_100trying", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 

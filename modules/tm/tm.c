@@ -274,6 +274,8 @@ static param_export_t params[]={
 		&minor_branch_flag },
 	{ "own_timer_proc",           INT_PARAM,
 		&own_timer_proc },
+	{ "auto_100trying",           INT_PARAM,
+		&auto_100trying },
 	{0,0,0}
 };
 
