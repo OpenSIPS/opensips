@@ -820,12 +820,22 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* register post-script clean-up function */
-	if (register_script_cb( do_t_cleanup, POST_SCRIPT_CB|REQ_TYPE_CB, 0)<0 ) {
+	if (register_script_cb(do_t_cleanup, POST_SCRIPT_CB|REQ_TYPE_CB, 0) < 0) {
 		LM_ERR("failed to register POST request callback\n");
 		return -1;
 	}
-	if (register_script_cb( script_init, PRE_SCRIPT_CB|REQ_TYPE_CB , 0)<0 ) {
+
+	/**
+	 * Current PRE_SCRIPT_CB callback ordering in OpenSIPS 1.11:
+	 *      tm(1) ---> others(0) ---> script_helper (-1)
+	 *
+	 * "tm" is the first one to initialize its globals because several modules
+	 *   may depend on it, e.g. "b2b_entities"
+	 *
+	 * Note: in 2.1+, callback ordering is ensured through module dependencies
+	 */
+	if (__register_script_cb(script_init,
+		                     PRE_SCRIPT_CB|REQ_TYPE_CB, 0, 1) < 0) {
 		LM_ERR("failed to register PRE request callback\n");
 		return -1;
 	}
