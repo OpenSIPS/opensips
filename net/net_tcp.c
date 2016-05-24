@@ -732,9 +732,11 @@ int tcpconn_add_alias(int id, int port, int proto)
 	if (c){
 		hash=tcp_addr_hash(&c->rcv.src_ip, port);
 		/* search the aliases for an already existing one */
-		for (a=TCP_PART(id).tcpconn_aliases_hash[hash]; a; a=a->next){
-			if ( (a->parent->state!=S_CONN_BAD) && (port==a->port) &&
-					(ip_addr_cmp(&c->rcv.src_ip, &a->parent->rcv.src_ip)) ){
+		for (a=TCP_PART(id).tcpconn_aliases_hash[hash]; a; a=a->next) {
+			if (a->parent->state != S_CONN_BAD &&
+			    port == a->port &&
+			    proto == a->parent->type &&
+			    ip_addr_cmp(&c->rcv.src_ip, &a->parent->rcv.src_ip)) {
 				/* found */
 				if (a->parent!=c) goto error_sec;
 				else goto ok;
