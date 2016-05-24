@@ -74,7 +74,7 @@ int tcp_connect_blocking(int s, const struct sockaddr *servaddr,
 /********************** TCP conn management functions ************************/
 
 /* returns the connection identified by either the id or the destination to */
-int tcp_conn_get(int id, struct ip_addr* ip, int port,
+int tcp_conn_get(int id, struct ip_addr* ip, int port, enum sip_protos proto,
 		struct tcp_connection** conn, int* conn_fd);
 
 /* creates a new tcp conn around a newly connected socket */

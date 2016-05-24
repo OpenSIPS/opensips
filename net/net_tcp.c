@@ -495,7 +495,7 @@ static struct tcp_connection* _tcpconn_find(int id)
 
 
 /*! \brief _tcpconn_find with locks and acquire fd */
-int tcp_conn_get(int id, struct ip_addr* ip, int port,
+int tcp_conn_get(int id, struct ip_addr* ip, int port, enum sip_protos proto,
 									struct tcp_connection** conn, int* conn_fd)
 {
 	struct tcp_connection* c;
@@ -515,7 +515,7 @@ int tcp_conn_get(int id, struct ip_addr* ip, int port,
 		TCPCONN_UNLOCK(part);
 	}
 
-	/* continue search based on IP + port */
+	/* continue search based on IP address + port + transport */
 #ifdef EXTRA_DEBUG
 	LM_DBG("%d  port %d\n",id, port);
 	if (ip) print_ip("tcpconn_find: ip ", ip, "\n");
@@ -532,8 +532,10 @@ int tcp_conn_get(int id, struct ip_addr* ip, int port,
 				print_ip("ip=",&a->parent->rcv.src_ip,"\n");
 #endif
 				c = a->parent;
-				if ( (c->state!=S_CONN_BAD) && (port==a->port) &&
-				(ip_addr_cmp(ip, &c->rcv.src_ip)) )
+				if (c->state != S_CONN_BAD &&
+				    port == a->port &&
+				    proto == c->type &&
+				    ip_addr_cmp(ip, &c->rcv.src_ip))
 					goto found;
 			}
 			TCPCONN_UNLOCK(part);

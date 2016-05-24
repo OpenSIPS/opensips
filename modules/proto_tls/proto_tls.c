@@ -1373,9 +1373,9 @@ static int proto_tls_send(struct socket_info* send_sock,
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
-		n = tcp_conn_get(id, &ip, port, &c, &fd);
+		n = tcp_conn_get(id, &ip, port, PROTO_TLS, &c, &fd);
 	}else if (id){
-		n = tcp_conn_get(id, 0, 0, &c, &fd);
+		n = tcp_conn_get(id, 0, 0, PROTO_NONE, &c, &fd);
 	}else{
 		LM_CRIT("prot_tls_send called with null id & to\n");
 		return -1;
@@ -1546,7 +1546,7 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 	     connection 1: localIP1:localPort1 <--> remoteIP:remotePort
 	     connection 2: localIP2:localPort2 <--> remoteIP:remotePort
 	   but I think the is very unrealistic */
-	tcp_conn_get(0, &(msg->rcv.src_ip), msg->rcv.src_port, &c, NULL/*fd*/);
+	tcp_conn_get(0, &(msg->rcv.src_ip), msg->rcv.src_port, PROTO_TLS, &c, NULL/*fd*/);
 	if (c==NULL) {
 		LM_ERR("no corresponding TLS/TCP connection found."
 				" This should not happen... return -1\n");
