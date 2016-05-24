@@ -859,7 +859,8 @@ void tcpconn_rm(struct tcp_connection* c)
 /*! \brief finds a connection, if id=0 uses the ip addr & port (host byte order)
  * \note WARNING: unprotected (locks) use tcpconn_get unless you really
  * know what you are doing */
-struct tcp_connection* _tcpconn_find(int id, struct ip_addr* ip, int port)
+struct tcp_connection* _tcpconn_find(int id, struct ip_addr* ip, int port,
+                                     int proto)
 {
 
 	struct tcp_connection *c;
@@ -887,8 +888,10 @@ struct tcp_connection* _tcpconn_find(int id, struct ip_addr* ip, int port)
 				a, a->parent, a->parent->id, a->port, a->parent->rcv.src_port);
 			print_ip("ip=",&a->parent->rcv.src_ip,"\n");
 #endif
-			if ( (a->parent->state!=S_CONN_BAD) && (port==a->port) &&
-					(ip_addr_cmp(ip, &a->parent->rcv.src_ip)) )
+			if (a->parent->state != S_CONN_BAD &&
+			    port == a->port &&
+			    proto == a->parent->type &&
+			    ip_addr_cmp(ip, &a->parent->rcv.src_ip))
 				return a->parent;
 		}
 	}
@@ -898,12 +901,12 @@ struct tcp_connection* _tcpconn_find(int id, struct ip_addr* ip, int port)
 
 
 /*! \brief _tcpconn_find with locks and timeout */
-struct tcp_connection* tcpconn_get(int id, struct ip_addr* ip, int port,
+struct tcp_connection* tcpconn_get(int id, struct ip_addr* ip, int port, int proto,
 									int timeout)
 {
 	struct tcp_connection* c;
 	TCPCONN_LOCK;
-	c=_tcpconn_find(id, ip, port);
+	c=_tcpconn_find(id, ip, port, proto);
 	if (c) {
 			c->refcnt++;
 			c->timeout=get_ticks()+timeout;
@@ -927,13 +930,15 @@ int tcpconn_add_alias(int id, int port, int proto)
 	port=port?port:((proto==PROTO_TLS)?SIPS_PORT:SIP_PORT);
 	TCPCONN_LOCK;
 	/* check if alias already exists */
-	c=_tcpconn_find(id, 0, 0);
+	c=_tcpconn_find(id, NULL, 0, PROTO_NONE);
 	if (c){
 		hash=tcp_addr_hash(&c->rcv.src_ip, port);
 		/* search the aliases for an already existing one */
 		for (a=tcpconn_aliases_hash[hash]; a; a=a->next){
-			if ( (a->parent->state!=S_CONN_BAD) && (port==a->port) &&
-					(ip_addr_cmp(&c->rcv.src_ip, &a->parent->rcv.src_ip)) ){
+			if (a->parent->state != S_CONN_BAD &&
+			    port == a->port &&
+			    proto == a->parent->type &&
+			    ip_addr_cmp(&c->rcv.src_ip, &a->parent->rcv.src_ip)) {
 				/* found */
 				if (a->parent!=c) goto error_sec;
 				else goto ok;
@@ -1090,9 +1095,9 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
-		c=tcpconn_get(id, &ip, port, tcp_con_lifetime);
+		c=tcpconn_get(id, &ip, port, PROTO_TCP, tcp_con_lifetime);
 	}else if (id){
-		c=tcpconn_get(id, 0, 0, tcp_con_lifetime);
+		c=tcpconn_get(id, 0, 0, PROTO_NONE, tcp_con_lifetime);
 	}else{
 		LM_CRIT("tcp_send called with null id & to\n");
 		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
@@ -1103,7 +1108,7 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 		if (c==0) {
 			if (to){
 				/* try again w/o id */
-				c=tcpconn_get(0, &ip, port, tcp_con_lifetime);
+				c=tcpconn_get(0, &ip, port, PROTO_TCP, tcp_con_lifetime);
 				goto no_id;
 			}else{
 				LM_ERR("id %d not found, dropping\n", id);
@@ -1636,7 +1641,7 @@ void force_tcp_conn_lifetime(struct receive_info *rcv, unsigned int timeout)
 	unsigned int lifetime = get_ticks() + timeout;
 
 	TCPCONN_LOCK;
-	con =_tcpconn_find(rcv->proto_reserved1, 0, 0);
+	con =_tcpconn_find(rcv->proto_reserved1, NULL, 0, PROTO_NONE);
 	if (!con) {
 		LM_ERR("Strange, tcp conn not found (id=%d)\n",rcv->proto_reserved1);
 	} else {

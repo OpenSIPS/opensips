@@ -44,7 +44,7 @@ struct tcp_connection* get_cur_connection(struct sip_msg* msg)
 		return 0;
 	}
 
-	c = tcpconn_get(msg->rcv.proto_reserved1, 0, 0, tcp_con_lifetime);
+	c = tcpconn_get(msg->rcv.proto_reserved1, 0, 0, PROTO_NONE, tcp_con_lifetime);
 	if (c && c->type != PROTO_TLS) {
 		LM_ERR("connection found but is not TLS (bug in config)\n");
 		tcpconn_put(c);

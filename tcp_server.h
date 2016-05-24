@@ -35,7 +35,7 @@ extern int tcp_no_new_conn;
 
 /* "public" functions*/
 
-struct tcp_connection* tcpconn_get(int id, struct ip_addr* ip, int port,
+struct tcp_connection* tcpconn_get(int id, struct ip_addr* ip, int port, int proto,
 									int timeout);
 void tcpconn_put(struct tcp_connection* c);
 int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
