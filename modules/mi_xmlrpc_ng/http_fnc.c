@@ -750,7 +750,7 @@ static int mi_xmlrpc_http_recur_write_tree(char** pointer, char *buf, int max_pa
 			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_START);
 			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_START);
 
-			if (tree->name.s!=NULL) 
+			if (tree && tree->name.s)
 				MI_XMLRPC_HTTP_ESC_COPY(*pointer, tree->name, temp_holder, temp_counter);
 			else
 				MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_DEFAULT);
