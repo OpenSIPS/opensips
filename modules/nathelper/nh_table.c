@@ -76,7 +76,7 @@ void free_hash_table(void)
 	for (i=0; i < NH_TABLE_ENTRIES; i++)
 		lock_destroy(&n_table->entries[i].mutex);
 
-	lock_destroy(&n_table->timer_list.mutext);
+	lock_destroy(&n_table->timer_list.mutex);
 
 	shm_free(n_table);
 }
