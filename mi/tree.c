@@ -210,6 +210,13 @@ struct mi_node *addf_mi_node_sibling(struct mi_node *brother, int flags,
 }
 
 
+/**
+ * By default, the "value" reference will be copied into the returned node!
+ *
+ * In order to have this string fully duplicated and also transparently freed
+ * by free_mi_tree() / free_mi_node(), make sure to enable the MI_DUP_VALUE bit
+ * in the "flags" bitmask parameter
+ */
 struct mi_node *add_mi_node_child( struct mi_node *parent, int flags,
 						char *name, int name_len, char *value, int value_len)
 {
