@@ -291,18 +291,6 @@ static module_dependency_t *get_deps_detect_dir(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "rr", DEP_ABORT);
 }
 
-static module_dependency_t *get_deps_cdr_flag(param_export_t *param)
-{
-	if (param->type == STR_PARAM) {
-		char *str_flag = *(char **)param->param_pointer;
-
-		if (!str_flag || strlen(str_flag) == 0)
-			return NULL;
-	}
-
-	return alloc_module_dep(MOD_TYPE_DEFAULT, "dialog", DEP_WARN);
-}
-
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT  },
@@ -312,7 +300,6 @@ static dep_export_t deps = {
 		{ "db_url",           get_deps_sqldb_url  },
 		{ "aaa_url",          get_deps_aaa_url    },
 		{ "detect_direction", get_deps_detect_dir },
-		{ "cdr_flag",         get_deps_cdr_flag   },
 		{ NULL, NULL },
 	},
 };
