@@ -423,6 +423,7 @@ static inline void detach_ping_node_unsafe(struct dlg_ping_list *it,int reinvite
 
 /* returns :
      0 - dialog was inserted in timer list with the new timeout
+     1 - dialog was inserted in timer list with the new timeout 
     -1 - failure (dialog is expired, so it cannot be added again) */
 int update_dlg_timer( struct dlg_tl *tl, int timeout )
 {
