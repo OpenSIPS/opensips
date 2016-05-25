@@ -487,13 +487,13 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 
 	LM_DBG(" call (%p) has BYE for %d, \n", call, event);
 
-	lock_get( call->lock );
+	lock_set_get( data->call_locks, call->lock_idx );
 	cs = call->state;
 
 	if (event==B2B_DESTROY_CB) {
 		LM_DBG("A delete in b2blogic, call->state=%d, %p\n", call->state, call);
 		call->state = CC_CALL_ENDED;
-		lock_release( call->lock );
+		lock_set_release( data->call_locks, call->lock_idx );
 		if( cs != CC_CALL_ENDED) {
 			/* call terminated due to some error -> cleanup here */
 			terminate_call( call, NULL, cs);
@@ -508,9 +508,9 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 				//update_stat( call->agent->st_aban_incalls, 1);
 			}
 		}
-		lock_get( call->lock );
+		lock_set_get( data->call_locks, call->lock_idx );
 		cnt = --call->ref_cnt;
-		lock_release( call->lock );
+		lock_set_release( data->call_locks, call->lock_idx );
 		if (cnt==0)
 			free_cc_call( data, call);
 		else
@@ -519,7 +519,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	}
 
 	if(call->ign_cback) {
-		lock_release( call->lock );
+		lock_set_release( data->call_locks, call->lock_idx );
 		return 2;
 	}
 
@@ -537,7 +537,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		LM_DBG("BYE from the customer\n");
 		/* external caller terminated the call */
 		call->state = CC_CALL_ENDED;
-		lock_release( call->lock );
+		lock_set_release( data->call_locks, call->lock_idx );
 		if (cs<CC_CALL_TOAGENT) {
 			/* call terminated while onwait */
 			LM_DBG("** onhold-- BYE from customer [%p]\n", call);
@@ -560,17 +560,17 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	}
 	/* if reInvite to the customer failed - end the call */
 	if(event == B2B_REJECT_CB && params->entity==1) {
-		lock_release( call->lock );
+		lock_set_release( data->call_locks, call->lock_idx );
 		return 1;
 	}
 
 	if(event == B2B_REJECT_CB && params->entity>1) {
 		if(call->state == CC_CALL_TOAGENT) {
 			handle_agent_reject(call, 1, stat->setup_time);
-			lock_release( call->lock );
+			lock_set_release( data->call_locks, call->lock_idx );
 			return 0;
 		}
-		lock_release( call->lock );
+		lock_set_release( data->call_locks, call->lock_idx );
 		return 1;
 	}
 
@@ -578,7 +578,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		LM_INFO("*** AGENT answered and closed immediately %.*s\n",
 			call->agent->location.len, call->agent->location.s);
 		handle_agent_reject(call, 1, stat->setup_time);
-		lock_release( call->lock );
+		lock_set_release( data->call_locks, call->lock_idx );
 		return 0;
 	}
 	
@@ -588,7 +588,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	if (cc_call_state_machine( data, call, &leg )!=0) {
 		LM_ERR("failed to get next call destination \n");
 		lock_release( data->lock );
-		lock_release( call->lock );
+		lock_set_release( data->call_locks, call->lock_idx );
 		/* force BYE to be sent in both parts */
 		return -1;
 	}
@@ -599,7 +599,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		call, leg.len, leg.s, call->state);
 
 	if (call->state == CC_CALL_ENDED) {
-		lock_release( call->lock );
+		lock_set_release( data->call_locks, call->lock_idx );
 		terminate_call( call, stat, cs);
 		return 2;
 	} else if (call->state == CC_CALL_TOAGENT) {
@@ -612,11 +612,11 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	/* send call to selected destination */
 	if (set_call_leg( NULL, call, &leg)< 0) {
 		LM_ERR("failed to set new destination for call\n");
-		lock_release( call->lock );
+		lock_set_release( data->call_locks, call->lock_idx );
 		pkg_free(leg.s);
 		return -1;
 	}
-	lock_release( call->lock );
+	lock_set_release( data->call_locks, call->lock_idx );
 
 	if(cc_db_update_call(call) < 0)
 	{
@@ -980,16 +980,16 @@ next_ag:
 
 		if (call) {
 
-			lock_get( call->lock );
+			lock_set_get( data->call_locks, call->lock_idx );
 			call->ref_cnt--;
 
 			/* is the call state still valid? (as queued) */
 			if(call->state != CC_CALL_QUEUED) {
 				if (call->state==CC_CALL_ENDED && call->ref_cnt==0) {
-					lock_release( call->lock );
+					lock_set_release( data->call_locks, call->lock_idx );
 					free_cc_call( data, call);
 				} else {
-					lock_release( call->lock );
+					lock_set_release( data->call_locks, call->lock_idx );
 				}
 				continue;
 			}
@@ -1028,7 +1028,7 @@ next_ag:
 			if (set_call_leg( NULL, call, &out)< 0 ) {
 				LM_ERR("failed to set new destination for call\n");
 			}
-			lock_release( call->lock );
+			lock_set_release( data->call_locks, call->lock_idx );
 
 			if(cc_db_update_call(call) < 0)
 			{
