@@ -118,7 +118,7 @@ void lock_shvar(sh_var_t *shv)
 #ifdef GEN_LOCK_T_PREFERED
 	lock_get(shv->lock);
 #else
-	ul_lock_idx(shv->lockidx);
+	shvar_lock_idx(shv->lockidx);
 #endif
 }
 
@@ -133,7 +133,7 @@ void unlock_shvar(sh_var_t *shv)
 #ifdef GEN_LOCK_T_PREFERED
 	lock_release(shv->lock);
 #else
-	ul_release_idx(shv->lockidx);
+	shvar_release_idx(shv->lockidx);
 #endif
 }
 
