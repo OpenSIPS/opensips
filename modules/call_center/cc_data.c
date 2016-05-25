@@ -712,7 +712,7 @@ struct cc_call* new_cc_call(struct cc_data *data, struct cc_flow *flow, str *dn,
 	LM_DBG("created call %p\n", call);
 
 	/* attache a lock */
-	call->lock = &(data->call_locks->locks[data->next_lock_to_use++]);
+	call->lock_idx = data->next_lock_to_use++;
 	if (data->next_lock_to_use==512)
 		data->next_lock_to_use = 0;
 

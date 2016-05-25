@@ -162,7 +162,7 @@ typedef enum {
 
 struct cc_call {
 	unsigned int id;
-	gen_lock_t *lock;
+	unsigned int lock_idx;
 	char ign_cback; /* ignore callbacks because agent_free was called */
 	int fst_flags;  /* flow stats flags */
 	call_state state; /* call state */
