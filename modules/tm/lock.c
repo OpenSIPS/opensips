@@ -193,7 +193,7 @@ void lock_cleanup(void)
 #else
 
 /* remove the semaphore set from system */
-void lock_cleanup()
+void lock_cleanup(void)
 {
 	/* that's system-wide; all other processes trying to use
 	   the semaphore will fail! call only if it is for sure
