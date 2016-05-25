@@ -413,6 +413,7 @@ static inline struct mi_handler* mi_xmlrpc_http_build_async_handler(void)
 struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 		str *page, str *buffer, struct mi_handler **async_hdl)
 {
+	static str esc_buf = {NULL, 0};
 	struct mi_cmd *f;
 	struct mi_node *node;
 	struct mi_root *mi_cmd = NULL;
@@ -426,8 +427,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	xmlNodePtr param_node;
 	xmlNodePtr value_node;
 	xmlNodePtr string_node;
-	str val;
-	str esc_val = {NULL, 0};
+	str val, esc_val = {NULL, 0};
 
 	//LM_DBG("arg [%p]->[%.*s]\n", arg->s, arg->len, arg->s);
 	doc = xmlParseMemory(arg->s, arg->len);
@@ -517,16 +517,22 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 						}
 						LM_DBG("got string param [%.*s]\n", val.len, val.s);
 
-						esc_val.s = shm_malloc(val.len);
-						if (esc_val.s == NULL) {
-							free_mi_tree(mi_cmd);
-							goto xml_error;
+						if (val.len > esc_buf.len) {
+							esc_buf.s = shm_realloc(esc_buf.s, val.len);
+							if (!esc_buf.s) {
+								esc_buf.len = 0;
+								free_mi_tree(mi_cmd);
+								goto xml_error;
+							}
+							esc_buf.len = val.len;
 						}
+
+						esc_val.s = esc_buf.s;
 						esc_val.len = unescape_xml(esc_val.s, val.s, val.len);
 						LM_DBG("got escaped string param [%.*s]\n", esc_val.len, esc_val.s);
 
 						node = &mi_cmd->node;
-						if(!add_mi_node_child(node,0,NULL,0,esc_val.s,esc_val.len)){
+						if(!add_mi_node_child(node,MI_DUP_VALUE,NULL,0,esc_val.s,esc_val.len)){
 							LM_ERR("cannot add the child node to the tree\n");
 							free_mi_tree(mi_cmd);
 							goto xml_error;
