@@ -15,45 +15,79 @@
 	<section>
 	<title>How it works</title>
 	<para>
-	At startup, the module will load a set of transformation rules from multiple 
-	databases. Each database will be stored in a partition which will have db_url
-	and table_name parameters. Every database row will be stored in memory as a 
-	translation rule. Each rule will describe how the matching should be made, how the 
-	input value should be modified and which attributes should be set for 
-	the matching transformation.
+	At startup, the module will load all transformation rules from one or more
+	dialplan-compatible tables. The data of each table will be stored in a
+	partition which is defined by the "db_url" and "table_name" parameters.
+	Every table row will be stored in memory as a translation rule. Each rule
+	will describe how the matching should be made, how the input value should
+	be modified and which attributes should be set for the matching transformation.
 	</para>
 	<para>
-	The module expects an input value which will be matched against a rules
-	via regexp or string matching. Overlapping matching expressions can be
-	controlled via priorities. Once a rule is matched, the defined 
-	transformation (if any) is applied and the result is returned as output 
-	value. Also, if any string attribute is associated to the rule, this will 
-	be returned to the script along with the output value.
+	A dialplan rule can be of two types:
+	<itemizedlist>
+	<listitem>
+	<para>
+		<emphasis>"String matching" rule</emphasis> - performs a
+		string equality test against the input string. The case of the
+		characters can be ignored by enabling bit 1 of the rule's "match_flags"
+		bitmask column
+		(i.e. set the column value to 1 or 0, for insensitive or sensitive)
+	</para>
+	</listitem>
+	<listitem>
+	<para>
+		<emphasis>"Regex matching" rule</emphasis> - uses Perl
+		Compatible Regular Expressions, and will attempt to match the rule's
+		expression against an input string. The regex
+		maching can be done in a caseless manner by enabling bit 1 of the
+		rule's "match_flags" bitmask column
+		(i.e. set the column value to 1 or 0, for insensitive or sensitive)
+	</para>
+	</listitem>
+	</itemizedlist>
 	</para>
 	<para>
-	<emphasis> The first matching rule will be processed.</emphasis>
+	The module provides the <emphasis>dp_translate()</emphasis> script function,
+	which expects an input <emphasis role='bold'>string</emphasis> value that
+	will be matched, at worst, against all rules of a partition.
+	</para>
+	<para>
+	Internally, the module groups a partition's rules into two sets, "string" and "regex".
+	The matching logic will attempt to find the first match within each of
+	these two sets of rules. Each set will be iterated in
+	<emphasis role='bold'>ascending</emphasis> order of priority. If an input
+	string happens to match a rule in each of the two sets, the rule with the
+	smallest priority will be chosen. Furthermore, should these two matching
+	rules also have equal priorities, the one with the smallest "id" field
+	(the unique key) will be chosen. 
+	</para>
+	<para>
+	Once a single rule is decided upon, the defined transformation (if any) is
+	applied and the result is returned as output value. Also, if any string
+	attribute is associated to the rule, this will be returned to the script
+	along with the output value.
 	</para>
 	</section>
 
 	<section>
 	<title>Usage cases</title>
 	<para>
-	The module can be used to implement dialplans - do to auto completion of 
-	the dial numbers (like national to international), to convert generic 
-	numbers to specific numbers (like for emergency numbers).
+	The module can be used to implement dialplans - to do auto completion of
+	the dialed numbers (e.g. national to international), to convert generic
+	numbers to specific numbers (e.g. for emergency numbers).
 	</para>
 	<para>
-	Also the module can be used for detecting range or sets of numbers mapped 
-	on a service/case - attributes string can be used here to store extra 
-	information about the service/case.
+	Also the module can be used for detecting ranges or sets of numbers mapped
+	on a service/case - the "attributes" string column can be used here to
+	store extra information about the service/case.
 	</para>
 	<para>
-	Non-SIP string translation can be implemented - like converting country 
+	Non-SIP string translation can also be implemented - like converting country
 	names from all possible formats to a canonical format:
 	(UK, England, United Kingdom) -> GB.
 	</para>
 	<para>
-	Any other string-base translation or detection for whatever other purposes.
+	Any other string-based translation or detection for whatever other purposes.
 	</para>
 	</section>
 
@@ -61,7 +95,7 @@
 		<title>Database structure and usage</title>
 		<para>
 		Depending what kind of operation (translation, matching, etc) you want
-		to do with the module, you need to appropriate populate the DB records.
+		to do with the module, you need to populate the appropriate DB records.
 		</para>
 		<para>
 		The definition of the tables used by the dialplan module can be found
@@ -74,7 +108,7 @@
 		<title>String translation (regexp detection, subst translation)</title>
 			<para>
 			Recognize a number block in all forms (international, national)
-			and convert it to a canonical format (e.164)
+			and convert it to a canonical format (E.164)
 			</para>
 			<itemizedlist>
 			<listitem>
@@ -116,7 +150,7 @@
 		<title>String translation (regexp detection, replacement)</title>
 			<para>
 			Recognize the name of a country (multiple languages) and convert
-			it to a single fix value
+			it to a single, fixed value
 			</para>
 			<itemizedlist>
 			<listitem>
@@ -204,7 +238,7 @@
 		<section>
 		<title>String conversion (equal detection, replacement)</title>
 			<para>
-			Recognize a fix string/number and replace it with something fix.
+			Recognize a fixed string/number and replace it with something fixed.
 			</para>
 			<itemizedlist>
 			<listitem>
@@ -375,7 +409,8 @@ modparam("dialplan", "dpid_col", "column_name")
 	<section>
 		<title><varname>pr_col</varname> (string)</title>
 		<para>
-		The column name to store the priority of the corresponding rule from the 		database row.
+		The column name to store the priority of the corresponding rule from
+		the table row. Smaller priority values have higher precedence.
 		</para>
 		<para>
 		<emphasis>
