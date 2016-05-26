@@ -499,7 +499,7 @@ clean:
 	// memory leak?!?! with last incomplete row
 	if(fin)
 		fclose(fin);
-	LM_DBG("error at row=%d col=%d c=%c\n", crow+1, ccol+1, c);
+	LM_ERR("error at row=%d col=%d c=%c\n", crow+1, ccol+1, c);
 	if(dtp)
 		dbt_table_free(dtp);
 	return NULL;
