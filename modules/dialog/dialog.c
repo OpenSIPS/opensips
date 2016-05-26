@@ -832,6 +832,12 @@ static int mod_init(void)
 	mark_dlg_loaded_callbacks_run();
 	destroy_cachedb(0);
 
+	if (replication_dests && !bin) {
+		LM_ERR("You are using dialog replication, but there "
+				"is no bin_listen parameter defined!\n");
+		return -1;
+	}
+
 	return 0;
 }
 
