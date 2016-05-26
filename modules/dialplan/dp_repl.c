@@ -436,8 +436,8 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 	}
 
 	/* pick the rule with lowest table index if both match and prio are equal */
-	if ((string_res | regexp_res) == 0) {
-		if (rulep->pr < rrulep->pr) {
+	if (string_res == 0 && regexp_res == 0) {
+		if (rrulep->pr < rulep->pr) {
 			rulep = rrulep;
 		} else if (rrulep->pr == rulep->pr &&
 		           rrulep->table_id < rulep->table_id) {
