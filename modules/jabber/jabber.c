@@ -587,10 +587,10 @@ int xjab_manage_sipmsg(struct sip_msg *msg, int type)
 
 prepare_job:
 	//putting the SIP message parts in share memory to be accessible by workers
-    jsmsg = (xj_sipmsg)shm_malloc(sizeof(t_xj_sipmsg));
+	jsmsg = (xj_sipmsg)shm_malloc(sizeof(t_xj_sipmsg));
+	if (jsmsg == NULL)
+		return -1;
 	memset(jsmsg, 0, sizeof(t_xj_sipmsg));
-    if(jsmsg == NULL)
-    	return -1;
 
 	switch(type)
 	{

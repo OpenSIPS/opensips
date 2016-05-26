@@ -59,8 +59,6 @@ static const str MI_HTTP_U_URL = str_init("<html><body>"
 "Unable to parse URL!</body></html>");
 static const str MI_HTTP_U_METHOD = str_init("<html><body>"
 "Unsupported HTTP request!</body></html>");
-static const str MI_HTTP_U_CNT_TYPE = str_init("<html><body>"
-"Unsupported Content-Type!</body></html>");
 
 /**
  * Data structure to store inside elents of slinkedl_list list.
@@ -622,7 +620,11 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 		}
 	}else{
 		page = MI_HTTP_U_METHOD;
+#ifdef MHD_HTTP_NOT_ACCEPTABLE
+		ret_code = MHD_HTTP_NOT_ACCEPTABLE;
+#else
 		ret_code = MHD_HTTP_METHOD_NOT_ACCEPTABLE;
+#endif
 	}
 
 send_response:

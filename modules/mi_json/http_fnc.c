@@ -90,12 +90,9 @@ static inline void MI_JSON_ESC_COPY(struct page_buf* pb, const str s) {
 }
 
 
-static const str MI_JSON_CR = str_init("\n");
-
 static const str MI_JSON_KEY_NAME = str_init("\"name\":");
 static const str MI_JSON_KEY_VALUE = str_init("\"value\":");
 static const str MI_JSON_KEY_ATTRIBUTES = str_init("\"attributes\":");
-static const str MI_JSON_KEY_NODE = str_init("\"node\":");
 static const str MI_JSON_KEY_CHILDREN = str_init("\"children\":");
 
 static const str MI_JSON_NULL = str_init("null");

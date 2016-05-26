@@ -2189,8 +2189,8 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd_tree, void* param )
 
 		return rpl_tree ;
 	} else {
-	if(trace_on_flag==NULL)
-		return init_mi_tree( 500, MI_SSTR(MI_INTERNAL_ERR));
+		if(trace_on_flag==NULL)
+			return init_mi_tree( 500, MI_SSTR(MI_INTERNAL_ERR));
 
 		/* <on/off> global or trace_id name */
 		if (node && !node->next) {

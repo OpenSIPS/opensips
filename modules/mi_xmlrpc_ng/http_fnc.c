@@ -243,8 +243,6 @@ static int mi_xmlrpc_http_write_node_old(char** pointer, char* buf, int max_page
 					struct mi_node *node, int level);
 
 static const str MI_XMLRPC_HTTP_CR = str_init("\n");
-static const str MI_XMLRPC_HTTP_SLASH = str_init("/");
-static const str MI_XMLRPC_HTTP_SEMICOLON = str_init(" : ");
 
 static const str MI_XMLRPC_HTTP_NODE_INDENT = str_init("   ");
 static const str MI_XMLRPC_HTTP_NODE_SEPARATOR = str_init(":: ");
@@ -612,14 +610,16 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	*async_hdl = hdl;
 
 	if (mi_cmd) free_mi_tree(mi_cmd);
-	if(doc)xmlFree(doc);doc=NULL;
+	if(doc) xmlFree(doc);
+	doc=NULL;
 	return mi_rpl;
 
 xml_error:
 	if (mi_cmd) free_mi_tree(mi_cmd);
 	if (hdl) shm_free(hdl);
 	*async_hdl = NULL;
-	if(doc)xmlFree(doc);doc=NULL;
+	if(doc) xmlFree(doc);
+	doc=NULL;
 	return NULL;
 }
 

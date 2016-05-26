@@ -820,6 +820,7 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 		}
 	}
 	else
+	{
 		if(code>=200 )
 		{
 			attr= xmlNewProp(root_node, BAD_CAST "type", BAD_CAST "subscribed");
@@ -829,26 +830,27 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 				goto error;
 			}
 		}
+	}
 
-		buffer= xmlBufferCreate();
-		if(buffer== NULL)
-		{
-			LM_ERR("while adding creating new buffer\n");
-			goto error;
-		}
+	buffer= xmlBufferCreate();
+	if(buffer== NULL)
+	{
+		LM_ERR("while adding creating new buffer\n");
+		goto error;
+	}
 
-		xmpp_msg.len= xmlNodeDump(buffer, doc, root_node, 1,1);
-		if(xmpp_msg.len== -1)
-		{
-			LM_ERR("while dumping node\n");
-			goto error;
-		}
-		xmpp_msg.s= (char*)xmlBufferContent( buffer);
-		if(xmpp_msg.s==  NULL)
-		{
-			LM_ERR("while extracting buffer content\n");
-			goto error;
-		}
+	xmpp_msg.len= xmlNodeDump(buffer, doc, root_node, 1,1);
+	if(xmpp_msg.len== -1)
+	{
+		LM_ERR("while dumping node\n");
+		goto error;
+	}
+	xmpp_msg.s= (char*)xmlBufferContent( buffer);
+	if(xmpp_msg.s==  NULL)
+	{
+		LM_ERR("while extracting buffer content\n");
+		goto error;
+	}
 
 
 	LM_DBG("xmpp_msg: %.*s\n",xmpp_msg.len, xmpp_msg.s);

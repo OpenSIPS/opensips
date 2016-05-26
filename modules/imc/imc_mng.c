@@ -95,12 +95,12 @@ int imc_htable_destroy(void)
 		lock_destroy(&_imc_htable[i].lock);
 		if(_imc_htable[i].rooms==NULL)
 			continue;
-			irp = _imc_htable[i].rooms;
-			while(irp){
-				irp_temp = irp->next;
-				imc_del_room(&irp->name, &irp->domain);
-				irp = irp_temp;
-			}
+		irp = _imc_htable[i].rooms;
+		while(irp){
+			irp_temp = irp->next;
+			imc_del_room(&irp->name, &irp->domain);
+			irp = irp_temp;
+		}
 	}
 	shm_free(_imc_htable);
 	_imc_htable = NULL;
