@@ -3683,8 +3683,8 @@ done_inm:
 	has_inner_name = (pvstate==2||pvstate==5)?1:0;
 	if((pte = pv_lookup_spec_name(&pvname, e, has_inner_name))==NULL)
 	{
-		LM_ERR("pvar \"%.*s\"%s not found\n", pvname.len, pvname.s,
-			has_inner_name?"(inner_name)":"");
+		LM_ERR("unknown script var $%.*s%s, maybe a 'loadmodule' statement "
+		       "is missing?\n", pvname.len, pvname.s,has_inner_name ? "()":"");
 		goto error;
 	}
 	if(pvstate==2 || pvstate==5)
