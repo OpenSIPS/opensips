@@ -800,7 +800,7 @@ unsigned long long do_acc_type_parser(str* token)
 		return DO_ACC_EVI;
 	} else {
 		LM_ERR("Invalid token <%.*s>!\n", token->len, token->s);
-		return -1;
+		return DO_ACC_ERR;
 	}
 }
 
@@ -820,7 +820,7 @@ unsigned long long do_acc_flags_parser(str* token)
 		if (!is_cdr_enabled) {
 			if (parse_avp_spec( &acc_created_avp_name, &acc_created_avp_id) < 0) {
 				LM_ERR("failed to register AVP name <%s>\n", acc_created_avp_name.s);
-				return -1;
+				return DO_ACC_ERR;
 			}
 
 			if (load_dlg_api(&dlg_api)!=0)
@@ -828,7 +828,7 @@ unsigned long long do_acc_flags_parser(str* token)
 
 			if (!dlg_api.get_dlg) {
 				LM_WARN("error loading dialog module - cdrs cannot be generated\n");
-				return 0;
+				return DO_ACC_NONE;
 			}
 
 			if (dlg_api.get_dlg && dlg_api.register_dlgcb(NULL,
@@ -848,7 +848,7 @@ unsigned long long do_acc_flags_parser(str* token)
 			!strncasecmp(token->s, do_acc_failed_s.s, token->len)) {
 		return DO_ACC_FAILED;
 	} else {
-		return -1;
+		return DO_ACC_ERR;
 	}
 }
 
@@ -877,7 +877,7 @@ do_acc_parse(str* in, do_acc_parser parser)
 			token = *in;
 		}
 
-		if ((ret=parser(&token)) < 0) {
+		if ((ret=parser(&token)) == DO_ACC_ERR) {
 			LM_ERR("Invalid token <%.*s>!\n", token.len, token.s);
 			return -1;
 		}
@@ -927,7 +927,7 @@ int do_acc_fixup(void** param, int param_no)
 
 		if (el->next == 0 && el->spec.getf == 0) {
 			pv_elem_free_all(el);
-			if ( (ival=do_acc_parse(&el->text, parser)) < 0) {
+			if ( (ival=do_acc_parse(&el->text, parser)) == DO_ACC_ERR) {
 				LM_ERR("Invalid value <%.*s>!\n", el->text.len, el->text.s);
 				return -1;
 			}
@@ -948,7 +948,7 @@ int do_acc_fixup(void** param, int param_no)
 		s.s = *param;
 		s.len = strlen(s.s);
 
-		if ( (ival=do_acc_parse(&s, parser)) < 0) {
+		if ( (ival=do_acc_parse(&s, parser)) == DO_ACC_ERR) {
 			LM_ERR("Invalid value <%.*s>!\n", s.len, s.s);
 			return -1;
 		}
@@ -1011,7 +1011,7 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 			return -1;
 		}
 
-		if ((type=do_acc_parse(&in, do_acc_type_parser)) < 0) {
+		if ((type=do_acc_parse(&in, do_acc_type_parser)) == DO_ACC_ERR) {
 			LM_ERR("Invalid expression <%.*s> for acc type!\n", in.len, in.s);
 			return -1;
 		}
@@ -1176,7 +1176,7 @@ int w_drop_acc_2(struct sip_msg* msg, char* type_p, char* flags_p)
 				return -1;
 			}
 
-			if ((type=do_acc_parse(&in, do_acc_type_parser)) < 0) {
+			if ((type=do_acc_parse(&in, do_acc_type_parser)) == DO_ACC_ERR) {
 				LM_ERR("Invalid expression <%.*s> for acc type!\n", in.len, in.s);
 				return -1;
 			}
