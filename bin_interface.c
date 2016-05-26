@@ -257,6 +257,11 @@ int bin_send(union sockaddr_union *dest)
 	int rc, destlen;
 	str st;
 
+	if (!bin) {
+		LM_ERR("binary listener not defined - cannot replicate!\n");
+		return -1;
+	}
+
 	if (!dest)
 		return 0;
 

@@ -348,6 +348,12 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (replication_dests && !bin) {
+		LM_ERR("You are using contacts replication, but there "
+				"is no bin_listen parameter defined!\n");
+		return -1;
+	}
+
 	init_flag = 1;
 
 	return 0;
