@@ -30,7 +30,6 @@
         <name>cluster_id</name>
         <type>int</type>
         <size>&table_id_len;</size>
-        <type db="dbtext">int</type>
         <description>unique identifier for a cluster</description>
     </column>
 
@@ -38,7 +37,6 @@
         <name>machine_id</name>
         <type>int</type>
         <size>&table_id_len;</size>
-        <type db="dbtext">int</type>
         <description>unique identifier for a machine (a node in a cluster)</description>
     </column>
 
@@ -53,7 +51,6 @@
         <name>state</name>
         <type>int</type>
         <size>1</size>
-        <type db="dbtext">int</type>
         <default>1</default>
         <description>state of the  machine 0 - down/ 1 - up / 2 - temporary disable</description>
     </column>
@@ -62,7 +59,7 @@
         <name>last_attempt</name>
         <type>unsigned long</type>
         <size>64</size>
-        <type db="dbtext">bigint</type>
+        <type db="dbtext">long</type>
         <default>0</default>
         <description>last time(UNIX timestamp) when a failed attempt has occurred</description>
     </column>
@@ -71,7 +68,6 @@
         <name>failed_attempts</name>
         <type>int</type>
         <size>&table_id_len;</size>
-        <type db="dbtext">int</type>
         <default>3</default>
         <description>maximum number of failed attempts</description>
     </column>
@@ -80,7 +76,6 @@
         <name>no_tries</name>
         <type>int</type>
         <size>&table_id_len;</size>
-        <type db="dbtext">int</type>
         <default>0</default>
         <description>number of failed tries before auto-disabling</description>
     </column>
@@ -89,7 +84,6 @@
         <name>duration</name>
         <type>int</type>
         <size>&table_id_len;</size>
-        <type db="dbtext">int</type>
         <default>30</default>
         <description>tempory disabled state duration(seconds)</description>
     </column>
