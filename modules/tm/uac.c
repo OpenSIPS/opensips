@@ -236,6 +236,11 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		goto error2;
 	}
 
+	/* if we have a dialog ctx, link it to the newly created transaction
+	 * we might need it later for accessing dialog specific info */
+	if (dialog->dialog_ctx)
+		new_cell->dialog_ctx = dialog->dialog_ctx;
+
 	/* pass the transaction flags from dialog to transaction */
 	new_cell->flags |= dialog->T_flags;
 
