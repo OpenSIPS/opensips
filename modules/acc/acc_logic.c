@@ -145,6 +145,35 @@ static int is_cdr_enabled=0;
 	(((_rq)->REQ_METHOD==METHOD_CANCEL) && report_cancels==0)
 
 
+/*
+ * the 8th byte of the mask will be a reference counter for dialog callbacks
+ * each time we enter a diallog callback(acc_dlg_callback) the reference counter shall
+ * be increased
+ * each time we enter a dialog callback free function(dlg_free_acc_mask) the refernce
+ * counter shall be decreased
+ * when the counter reaches 0 the mask shall be freed */
+#define ACC_MASK_INC_REF(mask) \
+	do { \
+		mask = mask + (0x100000000000000); \
+	} while (0);
+
+#define ACC_MASK_DEC_REF(mask) \
+	do { \
+		if (!(mask&0xFF00000000000000)) { \
+			LM_BUG("More substitutions than additions in acc mask!\n"); \
+			return; \
+		} \
+		mask = mask - (0x100000000000000); \
+	} while (0);
+
+/* read the value of the 8th byte as a char type value */
+#define ACC_MASK_GET_REF(mask) (mask >> (8*7))
+
+/* just for debugging purposes
+ * read the value of the flags without the ref counter to know
+ * that the actual flags value is not altered */
+#define ACC_MASK_GET_VALUE(mask) (mask & 0x00FFFFFFFFFFFFFF)
+
 
 
 static void tmcb_func( struct cell* t, int type, struct tmcb_params *ps );
@@ -153,7 +182,21 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 
 
 void dlg_free_acc_mask(void* param) {
-	shm_free((unsigned long long *)param);
+	/*
+	 * decrease the number of references to the shm memory pointer
+	 * the free functions are executed sequentially so we know that this operation
+	 * is atomic
+	 **/
+	ACC_MASK_DEC_REF(*((unsigned long long*)param));
+	LM_DBG("flags[%p] ref counter value after dereferencing[%llu]\n",
+				param,
+				ACC_MASK_GET_REF(*((unsigned long long*)param)));
+	/*
+	 * if the reference counter gets to 0 we can free
+	 * the shm pointer
+	 * */
+	if (ACC_MASK_GET_REF(*((unsigned long long*)param)) == 0)
+		shm_free((unsigned long long *)param);
 }
 
 void tm_free_acc_mask(void* param) {
@@ -615,7 +658,6 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		flags_s.s = (char*)flags;
 		flags_s.len = sizeof(unsigned long long);
 
-
 		/* store flags into dlg */
 		if ( dlg_api.store_dlg_value(dlg, &flags_str, &flags_s) < 0) {
 			LM_ERR("cannot store flag value into dialog\n");
@@ -682,7 +724,18 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 		return;
 	}
 
+
 	flags = *((unsigned long long*)(*_params->param));
+	/**
+	 * we've read the value of the flags
+	 * increase the number of references to the shm memory pointer
+	 * we know that this operation is atomic since the dialog callbacks
+	 * are executed sequentially
+	 */
+	ACC_MASK_INC_REF(*((unsigned long long *)*_params->param));
+	LM_DBG("flags[%p] ref counter value after referencing [%llu]\n",
+				*_params->param,
+				ACC_MASK_GET_REF(*((unsigned long long*)*_params->param)));
 
 	if (is_evi_acc_on(flags)) {
 		env_set_event(acc_cdr_event);

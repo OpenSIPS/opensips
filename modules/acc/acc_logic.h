@@ -60,8 +60,11 @@
 #define DO_ACC_FAILED_STR "failed"
 
 /* flags on the eigth byte - generic flags for all accounting types */
-#define ACC_DIALOG_CONTEXT (((unsigned long long)1<<(8*7)) * (1<<0))
-#define ACC_CDR_REGISTERED (((unsigned long long)1<<(8*7)) * (1<<1))
+#define ACC_DIALOG_CONTEXT (((unsigned long long)1<<(8*6)) * (1<<0))
+#define ACC_CDR_REGISTERED (((unsigned long long)1<<(8*6)) * (1<<1))
+
+#define ACC_MASK_REF_BYTE (((unsigned long long)(0xFF)<<(8*7))
+
 
 
 #define DO_ACC_PARAM_DELIMITER '|'
