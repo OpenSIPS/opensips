@@ -133,6 +133,10 @@ after_strcseq:
 	td->state= DLG_CONFIRMED;
 	td->send_sock = cell->legs[dst_leg].bind_addr;
 
+	/* link the dialog cell here - it will eventually be linked
+	 * within the upcoming created transaction */
+	td->dialog_ctx = cell;
+
 	return td;
 
 error:
@@ -199,6 +203,10 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,char 
 
 	td->state= DLG_CONFIRMED;
 	td->send_sock = cell->legs[dst_leg].bind_addr;
+
+	/* link the dialog cell here - it will eventually be linked
+	 * within the upcoming created transaction */
+	td->dialog_ctx = cell;
 
 	return td;
 
