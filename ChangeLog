@@ -1,5 +1,274 @@
 =========================== Release 2.2.0 ==============================
 
+2016-05-27  Razvan Crainea  <razvan at opensips dot org>
+	* [5e87139] :
+
+	promote 2.2.0-rc2 to stable
+
+
+2016-05-27  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e432851] :
+
+	[acc] fix double free issue for multiple dlg callbacks
+		The last byte in acc flag mask now holds a ref counter in
+	the last byte. The counter is increased each time a dialog callback
+	is invoked, and decreased for each free function corresponding to
+	a callback. When the ref counter reaches 0, flags can be freed.
+	The atomicity of the ref counter is based on the fact that
+	dialog callbacks and their free functions are called sequentially,
+	one after the other.
+	ACC_DIALOG_CONTEXT and ACC_CDR_REGISTERED flags where moved in the
+	7th byte of the flags.
+	(cherry picked from commit 7834aa5d86187c5fda416fb2763510a015da351a)
+
+
+2016-05-27  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [7a846e9] :
+
+	Link the dialog cell into internally generated requests from the dialog module
+	Fixes #839
+	(cherry picked from commit 66937a2834d5680031f81c881719b43018fa06ad)
+
+
+2016-05-27  Razvan Crainea  <razvan at opensips dot org>
+	* [e8beb7b] :
+
+	add license to rw_locking.h header
+	(cherry picked from commit e3a57ac953259a0254a07198aabc88eaac9da9c2)
+
+
+2016-05-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cad565d] :
+
+	Fixed missing MI reply on pua_publish.
+	Properly send an MI reply for the async pua_publish with Expires 0.
+	Many thanks to Damien Sandrs for invetigating and reporting.
+
+	Closing #657
+	(cherry picked from commit 60d01efe811ac7eeaa063032a309b1895c59e92f)
+
+
+2016-05-26  Liviu Chircu  <liviu at opensips dot org>
+	* [e98d96a] :
+
+	Improve error reporting for unknown script vars
+	Fixes #574
+	(cherry picked from commit 97ace293dd4c7eb2fe8cd8fbee693455a5737861)
+
+
+2016-05-26  Razvan Crainea  <razvan at opensips dot org>
+	* [f210f84] :
+
+	clusterer: proper translation to bigint for dbtext
+	This creates the proper type for bigint in the clusterer table for dbtext
+
+	Thanks go to Trevor Francis from 46Labs for reporting this
+	Close #699
+	(cherry picked from commit 5bae37316277f8fa31659c5e334e47f0ca3b78ab)
+
+
+2016-05-26  Razvan Crainea  <razvan at opensips dot org>
+	* [1bfd454] :
+
+	dbtext: convert DBG to ERR for better debugging
+	(cherry picked from commit 0f08b26e40b31bb8af325ba62cfa32676c62ae86)
+
+
+2016-05-26  Liviu Chircu  <liviu at opensips dot org>
+	* [270b757] :
+
+	dialplan: Improve documentation
+	Added paragraphs regarding rule types along with explanations on
+	they way priorities and rule tie-breaking work.
+	(cherry picked from commit 46894f819d1d7d6092129b334e33956e89e5d4ea)
+
+
+2016-05-26  Razvan Crainea  <razvan at opensips dot org>
+	* [6d74ed1] :
+
+	Update makefile to support gcc 6.1
+
+
+2016-05-26  Liviu Chircu  <liviu at opensips dot org>
+	* [4dd88e8] :
+
+	dialplan: Fix a rule tie-breaking bug
+	When an input string would match both a "string" rule and a "regex"
+	rule, the priority based tie-breaking was incorrect (now favouring
+	the bigger priority instead - opposite to default module behavior).
+
+	Thanks to @paolodepa for suggesting this fix
+	Fixes issue #696
+	(cherry picked from commit cbdd79ab3f6d772c6ef1fb7afc44990e9cad294e)
+
+
+2016-05-26  Razvan Crainea  <razvan at opensips dot org>
+	* [fe5a869] :
+
+	acc: properly detect parsing errors
+	(cherry picked from commit d6a44c0e77216f2b22aefdcffebd808374a9be85)
+
+
+2016-05-25  Liviu Chircu  <liviu at opensips dot org>
+	* [eda5580] :
+
+	acc: Remove deprecated modparam dependency
+	(cherry picked from commit d983d2875ef5dbbbffcdc62855f49b0cf3994459)
+
+
+2016-05-25  Razvan Crainea  <razvan at opensips dot org>
+	* [109a89f] :
+
+	call_center: obey lock_set interface
+
+
+2016-05-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ffad254] :
+
+	Fix warning in SYSTEM V locking functions
+	(cherry picked from commit 53b3f402a4d9fb0ff1ba30288d810d41d6b55b1b)
+
+
+2016-05-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [08fe6f5] :
+
+	Fix bogus set locking functions.
+	It is used for SYSTEM V locking only, looks like a copy'n'paste error.
+	(cherry picked from commit 4bcdf4e6aee07ef965f6ae573b289f3fd082fdde)
+
+
+2016-05-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [952f652] :
+
+	Proper support for USE_POSIX_SEM option in Makefile
+	(cherry picked from commit 5e40aaf9c3ed8ab4381d847f6a1f6a01a8113bf7)
+
+
+2016-05-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9bb5e71] :
+
+	Fix bogus destroy of a RW lock.
+	(cherry picked from commit 83f394579a88a6a9185342cf5f92401ef5c18e5a)
+
+
+2016-05-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a3887b5] :
+
+	Obey USE_SYSV_SEM and USE_PTHREAD_MUTEX.
+	If USE_SYSV_SEM or USE_PTHREAD_MUTEX are defined via Makefile.conf, do you force autodetection (based on arch type) of the locking support.
+	(cherry picked from commit 39592dc9f25ecee982156e365d160642bdde48e8)
+
+
+2016-05-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e06048f] :
+
+	Fixed typo
+	(cherry picked from commit 1503ca6f2311cd635f4732d180d670eae04ac466)
+
+
+2016-05-25  Liviu Chircu  <liviu at opensips dot org>
+	* [8239ff1] :
+
+	mi_xmlrpc_ng: Remove an incorrect free operation
+	Completes commit d047e109
+	(cherry picked from commit 99f039e37cd79621b2dcc2b5ec2decc9e7c39670)
+
+
+2016-05-25  Liviu Chircu  <liviu at opensips dot org>
+	* [bde14cd] :
+
+	mi_xmlrpc_ng: Fix NULL pointer dereference
+	Any MI tree with a topmost Array structure would have caused a crash
+	(cherry picked from commit 555fb8a3cc91ffc48ae6629a47936391cfe6b2bc)
+
+
+2016-05-25  Liviu Chircu  <liviu at opensips dot org>
+	* [638e5d5] :
+
+	mi_xmlrpc_ng: Fix a shared memory leak
+	(cherry picked from commit d047e1096e2f6624f776d9a031f92be3cc9a0a0d)
+
+
+2016-05-24  Liviu Chircu  <liviu at opensips dot org>
+	* [bc5f651] :
+
+	TCP alias lookup: Add matching by transport
+	Further improving commit 13970bb.
+	(cherry picked from commit ea699f0116a28cd03a0d1ff50da3fc6045ac3da5)
+
+
+2016-05-24  Liviu Chircu  <liviu at opensips dot org>
+	* [1a93613] :
+
+	TCP connection lookup: Add matching by transport
+	The fact that all currently supported TCP-oriented protocols have different
+	standard ports is not an excuse for not including the transport into the
+	match condition (i.e. dest IP address + dest port + dest transport).
+
+	This may very well prevent issues with messages being sent out over the
+	wrong TCP connection in a number of scenarios where we employ TCP connection
+	reusage over both plain TCP and TLS with a Proxy that specifies the same port
+	in the topmost Via header when it establishes each of the two connections.
+	(cherry picked from commit 13970bb65253f1b35156466c6f514a4c520d8893)
+
+
+2016-05-24  Liviu Chircu  <liviu at opensips dot org>
+	* [bc996b4] :
+
+	Revert "Accept TCP aliases by default"
+	This reverts commit d62bc967b0d6784d2baced88b895da57f3f4ab9a.
+
+	Firstly, TCP connection reusage (RFC 5923) should only be employed between
+	TLS endpoints - only TLS allows the endpoints to authenticate each other
+	during connection setup, preventing unauthorized connection hijacking.
+
+	Secondly, aside from any security considerations, RFC 5923 must
+	not be employed fanatically (Proxy-Proxy, Edge-UA, UA-Proxy) on any TCP
+	connection (especially disregarding the ";alias" Via parameter!), but
+	rather only between adjacent SIP entities who can both initiate a
+	connection towards each other, and also support the RFC. In the real
+	world, we're basically only talking about the Proxy-Proxy usage case, as
+	any SIP UA scenario will most likely involve some form of NAT and a
+	Proxy that cannot open connections backwards, towards the UA. In these
+	cases, TCP connection reusage is _completely_ out of the question, as a
+	single UA might end up receiving all calls of all users behind their
+	public IP.
+
+	Thanks to Jonas Borjesson for reporting the problem in the first place.
+	(cherry picked from commit 715339fdd25bc74797e6f978d164eb0c4d5669ce)
+
+
+2016-05-23  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [4beba6d] :
+
+	[mmgeoip] allow chosing memory caching type
+		Before GEOIP_MMAP_CACHE was used causing a segmentation
+	fault when database file was changed. Now users can choose between
+	reading the database directly from file, cahing it into memory with
+	the possibility to change the database file at runtime.
+	(cherry picked from commit ecf5032aaafbe5a93bbfc3562c4b3358548839e7)
+
+
+2016-05-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [71b5274] :
+
+	Fix potential 100 Trying duplicates.
+	Added the "auto_100trying" module parameter to allow the script writter to take control (from script level) over when the 100 Trying reply is to be sent back.
+	By default, the reply is automatically generated when the INVITE transaction is created.
+	Fixes #833
+	(cherry picked from commit b023c93a8c476e70b1550da4f46c91d6e2679442)
+
+
+2016-05-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c5bb0d0] :
+
+	Added extra log message on openssl 1.0.1e-fips bug.
+	If CRYPTO_set_mem_functions() fails, make a note on the openssl 1.0.1e-fips bug, so users may have a hint on the actual issue.
+	See more  #834.
+	Closes  #834.
+
+
+
 2016-05-20  Razvan Crainea  <razvan at opensips dot org>
 	* [0668ec7] :
 
