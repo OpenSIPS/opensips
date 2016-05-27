@@ -211,6 +211,47 @@ publ_info_t* construct_pending_publ(ua_pres_t* presentity)
 }
 
 
+void publ_expired_cback_func(struct cell *t, int type, struct tmcb_params *ps)
+{
+	ua_pres_t presentity;
+	struct sip_msg* msg;
+
+	if (ps->param==NULL) {
+		LM_DBG("NULL callback parameter\n");
+		return;
+	}
+	LM_DBG("cback param = %p\n", *ps->param);
+
+	if ( (msg=ps->rpl)==NULL) {
+		LM_ERR("no reply message found\n");
+		return;
+	}
+	if (parse_headers(msg,HDR_EOH_F, 0)==-1 ) {
+		LM_ERR("parsing headers\n");
+		return;
+	}
+	if (msg->expires== NULL || msg->expires->body.len<= 0) {
+		LM_ERR("No Expires header found\n");
+		return;
+	}
+	if (parse_expires(msg->expires) < 0) {
+		LM_ERR("cannot parse Expires header\n");
+		return;
+	}
+
+	/* use a dummy presentity structure */
+	memset( &presentity, 0, sizeof(presentity) );
+	/* copy the MI async handler */
+	presentity.cb_param = *ps->param;
+	presentity.flag = MI_ASYN_PUBLISH;
+	run_pua_callbacks( &presentity, ps->rpl);
+	/* unlink the MI handler once triggered */
+	*ps->param = NULL;
+
+	return;
+}
+
+
 void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 {
 	struct hdr_field* hdr= NULL;
@@ -384,6 +425,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 	str* body= NULL;
 	str* str_hdr = NULL;
 	str met = {"PUBLISH", 7};
+	void* mi_hdl = NULL;
 
 	LM_DBG("start\n");
 
@@ -415,6 +457,8 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		if(publ->expires== 0)
 		{
 			LM_DBG("expires= 0- delete from hash table\n");
+			if (presentity->flag|MI_ASYN_PUBLISH)
+				mi_hdl = presentity->cb_param;
 			delete_htable_safe(presentity, hash_index);
 		}
 	}
@@ -481,9 +525,12 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 			publ->pres_uri,							/* From */
 			str_hdr,								/* Optional headers */
 			body,									/* Message body */
-			((publ->outbound_proxy.s)?&publ->outbound_proxy:0),/*Outbound proxy*/
-			publ->expires?publ_cback_func:0,		/* Callback function */
-			(void*)pres_id,							/* Callback parameter */
+			/*Outbound proxy*/
+			((publ->outbound_proxy.s)?&publ->outbound_proxy:0),
+			/* Callback function */
+			publ->expires?publ_cback_func:(mi_hdl?publ_expired_cback_func:0),
+			/* Callback parameter */
+			publ->expires?(void*)pres_id:mi_hdl,
 			0
 			) < 0 )
 	{
