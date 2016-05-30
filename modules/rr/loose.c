@@ -239,7 +239,7 @@ static inline int is_myself(struct sip_uri* _uri)
 
 	/* known port? */
 	if ((port=_uri->port_no)==0)
-		port = protos[proto].default_port;
+		port = (proto==PROTO_TLS) ? SIPS_PORT : SIP_PORT;
 
 	ret = check_self(&_uri->host, port, proto);
 	if (ret < 0) return 0;
