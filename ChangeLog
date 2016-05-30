@@ -1,5 +1,17 @@
 =========================== Release 1.11.7 ==============================
 
+2016-05-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d39cfb7] :
+
+	Fixed backporting error (1.11 does not have the proto structures).
+
+
+2016-05-30  Razvan Crainea  <razvan at opensips dot org>
+	* [7f627e0] :
+
+	Update ChangeLog for 1.11.7
+
+
 2016-05-30  Razvan Crainea  <razvan at opensips dot org>
 	* [f3f21ee] :
 
