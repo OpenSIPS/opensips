@@ -798,14 +798,14 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c=(struct tcp_connection*)shm_malloc(sizeof(struct tcp_connection));
 	if (c==0){
 		LM_ERR("shared memory allocation failure\n");
-		goto error;
+		return 0;
 	}
 	memset(c, 0, sizeof(struct tcp_connection)); /* zero init */
 	c->s=sock;
 	c->fd=-1; /* not initialized */
 	if (lock_init(&c->write_lock)==0){
 		LM_ERR("init lock failed\n");
-		goto error;
+		goto error0;
 	}
 
 	c->rcv.src_su=*su;
@@ -833,17 +833,16 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	protos[si->proto].net.conn_init(c)<0) {
 		LM_ERR("failed to do proto %d specific init for conn %p\n",
 			si->proto,c);
-		goto error;
+		goto error1;
 	}
 
 	tcp_connections_no++;
 	return c;
 
-error:
-	if (c) {
-		lock_destroy(&c->write_lock);
-		shm_free(c);
-	}
+error1:
+	lock_destroy(&c->write_lock);
+error0:
+	shm_free(c);
 	return 0;
 }
 
