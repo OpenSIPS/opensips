@@ -457,14 +457,14 @@ struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c=(struct tcp_connection*)shm_malloc(sizeof(struct tcp_connection));
 	if (c==0){
 		LM_ERR("shared memory allocation failure\n");
-		goto error;
+		return 0;
 	}
 	memset(c, 0, sizeof(struct tcp_connection)); /* zero init */
 	c->s=sock;
 	c->fd=-1; /* not initialized */
 	if (lock_init(&c->write_lock)==0){
 		LM_ERR("init lock failed\n");
-		goto error;
+		goto error0;
 	}
 
 	c->rcv.src_su=*su;
@@ -486,7 +486,7 @@ struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c->extra_data=0;
 #ifdef USE_TLS
 	if (type==PROTO_TLS){
-		if (tls_tcpconn_init(c, sock)==-1) goto error;
+		if (tls_tcpconn_init(c, sock)==-1) goto error1;
 	}else
 #endif /* USE_TLS*/
 	{
@@ -501,15 +501,17 @@ struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 									 tcp_async_max_postponed_chunks);
 		if (c->async_chunks == NULL) {
 			LM_ERR("No more SHM for send chunks pointers \n");
-			goto error;
+			goto error1;
 		}
 	}
 
 	tcp_connections_no++;
 	return c;
 
-error:
-	if (c) shm_free(c);
+error1:
+	lock_destroy(&c->write_lock);
+error0:
+	shm_free(c);
 	return 0;
 }
 
