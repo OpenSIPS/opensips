@@ -1590,6 +1590,13 @@ ifneq (,$(findstring CYGWIN, $(OS)))
 	endif
 endif
 
+#if POSIX sems are to be used, be sure to link with ptread
+ifneq (,$(findstring USE_POSIX_SEM, $(DEFS)))
+ifeq (,$(findstring pthread, $(LIBS)))
+LIBS+= -pthread
+endif
+endif
+
 #add libsctp if needed
 ifneq ($(SCTP),)
 LIBS+= -lsctp
