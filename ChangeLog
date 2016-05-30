@@ -1,5 +1,42 @@
 =========================== Release 2.2.0 ==============================
 
+2016-05-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f595cf4] :
+
+	Fixed interface matching in loose_route()
+	If port is missing in Route URI, do not assume default 5060, but consider the schema and protocol (they may require a different default port).
+	Ex: sip:10.0.0.5;transport=tls was previously handled as sip:10.0.0.5:5060;transport=tls, which is wrong as the default TLS port is 5061
+	Reported on mailing list by Ravitez Dondeti.
+	(cherry picked from commit 3593a5f5b2e012154b1c9a00e1645c67c5ece91c)
+
+
+2016-05-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ff237c8] :
+
+	If POSIX sems are used, be sure to link against pthread lib
+	(cherry picked from commit f7de6406056cbae95ba9f7521d822d280afbe6a2)
+
+
+2016-05-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [77701c4] :
+
+	Fixed proper cleanup on failure of tcpconn_new()
+	The chances for going for error cases are very low, still let's do it in the proper way
+	(cherry picked from commit 57c163b1b7680d3cc01227dbca7676e532aa7539)
+
+
+2016-05-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5cc7999] :
+
+	Disable QM and DBG for memory manager.
+
+
+2016-05-27  Razvan Crainea  <razvan at opensips dot org>
+	* [a26b0a3] :
+
+	Update ChangeLog with latest changes
+
+
 2016-05-27  Razvan Crainea  <razvan at opensips dot org>
 	* [5e87139] :
 
