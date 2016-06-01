@@ -735,7 +735,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 						 * if we have a room for it */
 						if( dsts_size_cur < dsts_size_max ) {
 							load = it_l;
-							dsts[dsts_size_cur++] = it_d;
+							dsts_cur[dsts_size_cur++] = it_d;
 
 							LM_DBG("%s call of LB - destination %d <%.*s> "
 								"selected for LB set with free=%d\n",
@@ -767,9 +767,9 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 	/* choose one destination among selected */
 	if( dsts_size_cur > 0 ) {
 		if( (dsts_size_cur > 1) && (flags & LB_FLAGS_RANDOM) ) {
-			dst = dsts[rand() % dsts_size_cur];
+			dst = dsts_cur[rand() % dsts_size_cur];
 		} else {
-			dst = dsts[0];
+			dst = dsts_cur[0];
 		}
 	}
 
