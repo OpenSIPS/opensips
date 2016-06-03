@@ -1388,7 +1388,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				if((dialog_dbf.insert(dialog_db_handle, insert_keys,
 				values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
 					LM_ERR("could not add another dialog to db\n");
-					goto error;
+					continue;
 				}
 
 				if (ins_done==0)
@@ -1429,7 +1429,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 				(values), (insert_keys+15), (values+15), 1, 11)) !=0) {
 					LM_ERR("could not update database info\n");
-					goto error;
+					continue;
 				}
 
 				/* dialog saved */
@@ -1448,7 +1448,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 				(values), (insert_keys+21), (values+21), 1, 4)) !=0) {
 					LM_ERR("could not update database info\n");
-					goto error;
+					continue;
 				}
 
 				run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
@@ -2041,9 +2041,7 @@ static int restore_dlg_db(void)
 			if((dialog_dbf.insert(dialog_db_handle, insert_keys,
 			values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
 				LM_ERR("could not add another dialog to db\n");
-
-				dlg_unlock(d_table, e);
-				return -1;
+				continue;
 			}
 
 			if (ins_done == 0)
