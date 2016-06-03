@@ -64,6 +64,11 @@ udomain_t* get_next_udomain(udomain_t *_d)
 {
 	dlist_t *it;
 
+	/* if not domain registered, return NULL directly */
+	if (root==NULL)
+		return NULL;
+
+	/* if no input provide, return the first domain */
 	if (_d==NULL)
 		return root->d;
 
