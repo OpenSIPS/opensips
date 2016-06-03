@@ -1470,14 +1470,8 @@ void dialog_update_db(unsigned int ticks, void * param)
 			LM_ERR("failed to flush rows to DB\n");
 	}
 
-
-
 	dlg_timer_flush_del();
 	return;
-
-error:
-	dlg_unlock( d_table, entry);
-	dlg_timer_flush_del();
 }
 
 static int sync_dlg_db_mem(void)
