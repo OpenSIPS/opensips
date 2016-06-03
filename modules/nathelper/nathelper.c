@@ -491,20 +491,6 @@ mod_init(void)
 		rcv_avp_type = 0;
 	}
 
-	if (force_socket_str) {
-		socket_str.s=force_socket_str;
-		socket_str.len=strlen(socket_str.s);
-		force_socket=grep_sock_info(&socket_str,0,0);
-	}
-
-	/* create raw socket? */
-	if (natping_socket && natping_socket[0]) {
-		if (get_natping_socket( natping_socket, &raw_ip, &raw_port)!=0)
-			return -1;
-		if (init_raw_socket() < 0)
-			return -1;
-	}
-
 	if (nortpproxy_str.s==NULL || nortpproxy_str.s[0]==0) {
 		nortpproxy_str.len = 0;
 		nortpproxy_str.s = NULL;
@@ -517,6 +503,9 @@ mod_init(void)
 			nortpproxy_str.s = NULL;
 	}
 
+	/* enable all the pinging stuff only if pinging interval is set and
+	 * if we have at least one domain in the usrloc (otherwise there is
+	 * nothing to ping) */
 	if (natping_interval > 0) {
 		bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
 		if (!bind_usrloc) {
@@ -526,6 +515,26 @@ mod_init(void)
 
 		if (bind_usrloc(&ul) < 0) {
 			return -1;
+		}
+
+		if ( ul.get_next_udomain(NULL)==NULL ) {
+			/* no usrloc domains, nothing to ping, so abort enabling
+			 * the pinging support */
+			goto after_pinging;
+		}
+
+		if (force_socket_str) {
+			socket_str.s=force_socket_str;
+			socket_str.len=strlen(socket_str.s);
+			force_socket=grep_sock_info(&socket_str,0,0);
+		}
+
+		/* create raw socket? */
+		if (natping_socket && natping_socket[0]) {
+			if (get_natping_socket( natping_socket, &raw_ip, &raw_port)!=0)
+				return -1;
+			if (init_raw_socket() < 0)
+				return -1;
 		}
 
 		natping_state =(unsigned int *) shm_malloc(sizeof(unsigned int));
@@ -547,13 +556,11 @@ mod_init(void)
 		}
 
 		fix_flag_name(sipping_flag_str, sipping_flag);
-		sipping_flag = get_flag_id_by_name(FLAG_TYPE_BRANCH, sipping_flag_str);
-
+		sipping_flag=get_flag_id_by_name(FLAG_TYPE_BRANCH, sipping_flag_str);
 		sipping_flag = (sipping_flag==-1)?0:(1<<sipping_flag);
 
 		fix_flag_name(rm_on_to_flag_str, rm_on_to_flag);
-		rm_on_to_flag = get_flag_id_by_name(FLAG_TYPE_BRANCH, rm_on_to_flag_str);
-
+		rm_on_to_flag=get_flag_id_by_name(FLAG_TYPE_BRANCH, rm_on_to_flag_str);
 		rm_on_to_flag = (rm_on_to_flag==-1)?0:(1<<rm_on_to_flag);
 
 		/* set reply function if SIP natping is enabled */
@@ -579,8 +586,8 @@ mod_init(void)
 		}
 
 		if (REMOVE_ON_TIMEOUT &&
-				register_timer("pg-chk-timer", ping_checker_timer,
-					NULL, ping_checker_interval, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
+		register_timer("pg-chk-timer", ping_checker_timer,
+		NULL, ping_checker_interval, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
 			LM_ERR("failed to register ping checker timer\n");
 			return -1;
 		}
@@ -602,6 +609,8 @@ mod_init(void)
 			}
 		}
 	}
+
+after_pinging:
 
 	/* Prepare 1918/6598 networks list */
 	for (i = 0; nets_1918[i].cnetaddr != NULL; i++) {
