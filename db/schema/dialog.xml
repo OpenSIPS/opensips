@@ -134,6 +134,7 @@
 		<name>caller_contact</name>
 		<type>string</type>
 		<size>&uri_len;</size>
+		<null/>
 		<description>Caller's contact uri.</description>
 	</column>
 
@@ -141,6 +142,7 @@
 		<name>callee_contact</name>
 		<type>string</type>
 		<size>&uri_len;</size>
+		<null/>
 		<description>Callee's contact uri.</description>
 	</column>
 
