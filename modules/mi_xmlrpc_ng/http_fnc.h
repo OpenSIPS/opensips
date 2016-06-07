@@ -45,11 +45,11 @@
 #define MI_XMLRPC_XML_FAULT_END "</struct>\r\n</value>\r\n</fault>\r\n" \
        "</methodResponse>\r\n"
 
-#define MI_XMLRPC_XML_FAULT_MESSAGE_START "<member>\r\n<name>message</name>\r\n" \
+#define MI_XMLRPC_XML_FAULT_MESSAGE_START "<member>\r\n<name>faultString</name>\r\n" \
        "<value><string>"
 #define MI_XMLRPC_XML_FAULT_MESSAGE_END "</string></value>\r\n</member>\r\n"
 
-#define MI_XMLRPC_XML_FAULT_CODE_START "<member>\r\n<name>code</name>\r\n" \
+#define MI_XMLRPC_XML_FAULT_CODE_START "<member>\r\n<name>faultCode</name>\r\n" \
        "<value><int>"
 #define MI_XMLRPC_XML_FAULT_CODE_END "</int></value>\r\n</member>\r\n"
 
