@@ -32,6 +32,7 @@
 #include <fcntl.h>
 #include <sched.h>
 #include <unistd.h>
+#include <sched.h>
 
 #define IS_ERR(_err) (errno == _err)
 
