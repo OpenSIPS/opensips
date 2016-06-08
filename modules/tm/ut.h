@@ -81,8 +81,8 @@ inline static struct proxy_l *uri2proxy( str *uri, int forced_proto )
 		return 0;
 	}
 
-	if (parsed_uri.type==SIPS_URI_T &&
-	((parsed_uri.proto!=PROTO_TLS) && (parsed_uri.proto!=PROTO_NONE)) ) {
+	if (parsed_uri.type==SIPS_URI_T && ((parsed_uri.proto!=PROTO_WSS) &&
+	(parsed_uri.proto!=PROTO_TLS) && (parsed_uri.proto!=PROTO_NONE)) ) {
 		LM_ERR("bad transport for sips uri: %d\n", parsed_uri.proto);
 		return 0;
 	}
