@@ -29,6 +29,7 @@
 
 
 #include "../str.h"
+#include "../net/trans.h"
 #include "../parser/msg_parser.h"
 
 /* buf= pointer to beginning of uri (sip:x@foo.bar:5060;a=b?h=i)
@@ -48,5 +49,31 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 char * uri_type2str(const uri_type type, char *result);
 int uri_typestrlen(const uri_type type);
 uri_type str2uri_type(char * buf);
+
+/* Gets (in a SIP wise manner) the SIP port from a SIP URI ; if the port
+   is not explicitly set in the URI, it returns the default port corresponding
+   to the user transport protocol (if protocol misses, we assume the default
+   protos according to the URI schema) */
+static inline unsigned short get_uri_port(struct sip_uri* _uri,
+													unsigned short *_proto)
+{
+	unsigned short port;
+	unsigned short proto;
+
+	/* known protocol? */
+	if ((proto=_uri->proto)==PROTO_NONE) {
+		/* use UDP as default proto, but TLS for secure schemas */
+		proto = (_uri->type==SIPS_URI_T || _uri->type==TELS_URI_T)?
+			PROTO_TLS : PROTO_UDP ;
+	}
+
+	/* known port? */
+	if ((port=_uri->port_no)==0)
+		port = protos[proto].default_port;
+
+	if (_proto) *_proto = proto;
+
+	return port;
+}
 
 #endif /* PARSE_URI_H */

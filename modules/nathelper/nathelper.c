@@ -852,11 +852,10 @@ contact_rport(struct sip_msg* msg)
 	struct sip_uri uri;
 	contact_t* c;
 	struct hdr_field *hdr;
-	int ct_port;
 
 	for( hdr=NULL,c=NULL ; get_contact_uri(msg, &uri, &c, &hdr)==0 ; ) {
-		ct_port=uri.port_no?uri.port_no:((uri.type==SIPS_URI_T)?SIPS_PORT:SIP_PORT);
-		if ( msg->rcv.src_port != ct_port ) return 1;
+		if ( msg->rcv.src_port != get_uri_port( &uri, NULL) )
+			return 1;
 	}
 
 	return 0;
