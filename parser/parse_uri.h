@@ -48,4 +48,30 @@ int parse_orig_ruri(struct sip_msg* msg);
 int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 					str *raw_uri_b,struct sip_uri *parsed_uri_b);
 
+/* Gets (in a SIP wise manner) the SIP port from a SIP URI ; if the port
+   is not explicitly set in the URI, it returns the default port corresponding
+   to the user transport protocol (if protocol misses, we assume the default
+   protos according to the URI schema) */
+static inline unsigned short get_uri_port(struct sip_uri* _uri,
+													unsigned short *_proto)
+{
+	unsigned short port;
+	unsigned short proto;
+
+	/* known protocol? */
+	if ((proto=_uri->proto)==PROTO_NONE) {
+		/* use UDP as default proto, but TLS for secure schemas */
+		proto = (_uri->type==SIPS_URI_T || _uri->type==TELS_URI_T)?
+			PROTO_TLS : PROTO_UDP ;
+	}
+
+	/* known port? */
+	if ((port=_uri->port_no)==0)
+		port = (proto==PROTO_TLS) ? SIPS_PORT : SIP_PORT;
+
+	if (_proto) *_proto = proto;
+
+	return port;
+}
+
 #endif /* PARSE_URI_H */

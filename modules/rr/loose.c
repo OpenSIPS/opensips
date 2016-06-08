@@ -230,16 +230,7 @@ static inline int is_myself(struct sip_uri* _uri)
 	unsigned short port;
 	unsigned short proto;
 
-	/* known protocol? */
-	if ((proto=_uri->proto)==PROTO_NONE) {
-		/* use UDP as default proto, but TLS for secure schemas */
-		proto = (_uri->type==SIPS_URI_T || _uri->type==TELS_URI_T)?
-			PROTO_TLS : PROTO_UDP ;
-	}
-
-	/* known port? */
-	if ((port=_uri->port_no)==0)
-		port = (proto==PROTO_TLS) ? SIPS_PORT : SIP_PORT;
+	port = get_uri_port(_uri, &proto);
 
 	ret = check_self(&_uri->host, port, proto);
 	if (ret < 0) return 0;

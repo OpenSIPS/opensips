@@ -905,6 +905,7 @@ static inline int get_uri_hash_keys(str* key1, str* key2,
 							str* uri, struct sip_uri* parsed_uri, int flags)
 {
 	struct sip_uri tmp_p_uri; /* used only if parsed_uri==0 */
+	unsigned short proto;
 
 	if (parsed_uri==0)
 	{
@@ -923,8 +924,8 @@ static inline int get_uri_hash_keys(str* key1, str* key2,
 			goto error;
 	}
 
-	/* we want: user@host:port if port !=5060
-	 *          user@host if port==5060
+	/* we want: user@host:port if port is not the defaut one
+	 *          user@host if port is the default one
 	 *          user if the user flag is set*/
 	*key1=parsed_uri->user;
 	key2->s=0;
@@ -935,9 +936,9 @@ static inline int get_uri_hash_keys(str* key1, str* key2,
 		/* add port if needed */
 		if (parsed_uri->port.s!=0)
 		{ /* uri has a port */
-			/* skip port if == 5060 or sips and == 5061 */
-			if (parsed_uri->port_no !=
-					((parsed_uri->type==SIPS_URI_T)?SIPS_PORT:SIP_PORT))
+			/* skip port if the default one ( first extract proto from URI) */
+			if ( get_uri_port(parsed_uri, &proto) &&
+			parsed_uri->port_no != (proto==PROTO_TLS)?SIPS_PORT:SIP_PORT )
 				key2->len+=parsed_uri->port.len+1 /* ':' */;
 		}
 	}
