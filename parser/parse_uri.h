@@ -52,7 +52,7 @@ uri_type str2uri_type(char * buf);
 
 /* Gets (in a SIP wise manner) the SIP port from a SIP URI ; if the port
    is not explicitly set in the URI, it returns the default port corresponding
-   to the user transport protocol (if protocol misses, we assume the default
+   to the used transport protocol (if protocol misses, we assume the default
    protos according to the URI schema) */
 static inline unsigned short get_uri_port(struct sip_uri* _uri,
 													unsigned short *_proto)
