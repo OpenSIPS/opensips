@@ -465,12 +465,12 @@ migrate_table ${dst_db}.cc_flows \
 
 migrate_table ${dst_db}.cc_agents \
 	"agentid,location,logstate,skills,last_call_end" \
-	${src_db}.cc_flows \
+	${src_db}.cc_agents \
 	"?agentid,?location,?logstate,?skills,?last_call_end" 
 
 migrate_table ${dst_db}.cc_cdrs \
 	"caller,received_timestamp,wait_time,pickup_time,talk_time,flow_id,agent_id,call_type,rejected,fstats,cid" \
-	${src_db}.cc_flows \
+	${src_db}.cc_cdrs \
 	"?caller,?received_timestamp,?wait_time,?pickup_time,?talk_time,?flow_id,?agent_id,?call_type,?rejected,?fstats,?cid" 
 
 ## CPL module
