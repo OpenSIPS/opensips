@@ -126,7 +126,7 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 			goto error;
 		}else{
 			if (tcp_send(send_sock, proto, buf, len, to, id)<0){
-				LM_ERR("tcp_send failed\n");
+				LM_ERR("tcp_send failed (TLS)\n");
 				goto error;
 			}
 		}

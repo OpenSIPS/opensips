@@ -1097,7 +1097,7 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
-		c=tcpconn_get(id, &ip, port, PROTO_TCP, tcp_con_lifetime);
+		c=tcpconn_get(id, &ip, port, type, tcp_con_lifetime);
 	}else if (id){
 		c=tcpconn_get(id, 0, 0, PROTO_NONE, tcp_con_lifetime);
 	}else{
@@ -1110,7 +1110,7 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 		if (c==0) {
 			if (to){
 				/* try again w/o id */
-				c=tcpconn_get(0, &ip, port, PROTO_TCP, tcp_con_lifetime);
+				c=tcpconn_get(0, &ip, port, type, tcp_con_lifetime);
 				goto no_id;
 			}else{
 				LM_ERR("id %d not found, dropping\n", id);
