@@ -235,7 +235,9 @@ Chapter 1. Admin Guide
 1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * Optionally a database module.
+     * Optionally an SQL database module.
+     * clusterer, if replicate_contacts_to parameters is turned on
+       (contact replication via clusterer module).
 
 1.2.2. External Libraries or Applications
 

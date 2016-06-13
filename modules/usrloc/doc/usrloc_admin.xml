@@ -131,7 +131,14 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>Optionally a database module</emphasis>.
+				<emphasis>Optionally an SQL database module</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>clusterer, if <xref linkend="replicate_contacts_to"/>
+				parameters is turned on (contact replication via clusterer 
+				module)</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
