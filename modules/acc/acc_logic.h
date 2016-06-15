@@ -62,7 +62,15 @@
 /* flags on the eigth byte - generic flags for all accounting types */
 #define ACC_DIALOG_CONTEXT (((unsigned long long)1<<(8*6)) * (1<<0))
 #define ACC_CDR_REGISTERED (((unsigned long long)1<<(8*6)) * (1<<1))
-
+/*
+ * this flag will help to know if we entered at least once
+ * in the dialog callbacks
+ *
+ * this way, at shutdown, we will know that we didn't call any
+ * dialog callbacks and  value 0 in the 8th byte(ref count)
+ * is valid
+ */
+#define ACC_DLG_CB_USED (((unsigned long long)1<<(8*6)) * (1<<2))
 #define ACC_MASK_REF_BYTE (((unsigned long long)(0xFF)<<(8*7))
 
 

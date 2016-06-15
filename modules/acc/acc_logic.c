@@ -132,6 +132,11 @@ static int is_cdr_enabled=0;
 #define set_cdr_values_registered(_mask) \
 	(_mask) |= ACC_CDR_REGISTERED;
 
+#define set_dlg_cb_used(_mask) \
+	(_mask) |= ACC_DLG_CB_USED;
+
+#define was_dlg_cb_used(_mask) (_mask&ACC_DLG_CB_USED)
+
 #define cdr_values_registered(_mask) ((_mask)&ACC_CDR_REGISTERED)
 
 
@@ -159,11 +164,13 @@ static int is_cdr_enabled=0;
 
 #define ACC_MASK_DEC_REF(mask) \
 	do { \
-		if (!(mask&0xFF00000000000000)) { \
-			LM_BUG("More substitutions than additions in acc mask!\n"); \
-			return; \
+		if (was_dlg_cb_used(mask)) { \
+			if (!(mask&0xFF00000000000000)) { \
+				LM_BUG("More substitutions than additions in acc mask!\n"); \
+				return; \
+			} \
+			mask = mask - (0x100000000000000); \
 		} \
-		mask = mask - (0x100000000000000); \
 	} while (0);
 
 /* read the value of the 8th byte as a char type value */
@@ -736,6 +743,12 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 	LM_DBG("flags[%p] ref counter value after referencing [%llu]\n",
 				*_params->param,
 				ACC_MASK_GET_REF(*((unsigned long long*)*_params->param)));
+	/*
+	 * this way we "enable" the refcount
+	 * if opensips shuts down before dialog terminated then the refcount
+	 * won't be enabled
+	 */
+	set_dlg_cb_used(*((unsigned long long*)*_params->param));
 
 	if (is_evi_acc_on(flags)) {
 		env_set_event(acc_cdr_event);
