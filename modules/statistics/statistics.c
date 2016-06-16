@@ -324,6 +324,7 @@ int pv_parse_name(pv_spec_p sp, str *in)
 	if(in==NULL || in->s==NULL || sp==NULL)
 		return -1;
 
+	LM_NOTICE("xXx name %p with name <%.*s>\n", &sp->pvp.pvn, in->len, in->s);
 	if (pv_parse_format( in, &format)!=0) {
 		LM_ERR("failed to parse statistic name format <%.*s> \n",
 			in->len,in->s);
@@ -344,10 +345,13 @@ int pv_parse_name(pv_spec_p sp, str *in)
 				LM_ERR("failed to clone name of statistic \n");
 				return -1;
 			}
+			LM_NOTICE("xXx name %p, name cloned (in=%p, out=%p)\n",
+				&sp->pvp.pvn, in->s, sp->pvp.pvn.u.isname.name.s.s);
 		} else {
 			/* link the stat pointer directly as dynamic name */
 			sp->pvp.pvn.type = PV_NAME_PVAR;
 			sp->pvp.pvn.u.dname = (void*)stat;
+			LM_NOTICE("xXx name %p, stat found\n", &sp->pvp.pvn);
 		}
 
 	} else {
@@ -356,6 +360,7 @@ int pv_parse_name(pv_spec_p sp, str *in)
 			sp->pvp.pvn.u.isname.type = 0; /* not string */
 			sp->pvp.pvn.u.isname.name.s.s = (char*)(void*)format;
 			sp->pvp.pvn.u.isname.name.s.len = 0;
+			LM_NOTICE("xXx name %p, stat name is FMT\n", &sp->pvp.pvn);
 
 	}
 
@@ -370,6 +375,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 
 	/* is the statistic found ? */
 	if (name->type==PV_NAME_INTSTR) {
+		LM_NOTICE("xXx stat with name %p still not found\n", name);
 		/* not yet :( */
 		/* do we have at least the name ?? */
 		if (name->u.isname.type==0) {
@@ -385,6 +391,8 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 		}
 		/* lookup for the statistic */
 		*stat = get_stat( &pv_val.rs );
+		LM_NOTICE("xXx stat name %p (%.*s) after lookup is %p\n",
+			name, pv_val.rs.len, pv_val.rs.s, *stat);
 		if (*stat==NULL) {
 			if (!create)
 				return 0;
@@ -397,9 +405,15 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 				return -1;
 			}
 		}
-		/* if name is static string, better link the stat directly and discard name */
+		/* if name is static string, better link the stat directly
+		 * and discard name */
 		if (name->u.isname.type==AVP_NAME_STR) {
-			shm_free(name->u.isname.name.s.s);
+			LM_NOTICE("xXx name %p freeing %p\n",name,name->u.isname.name.s.s);
+			/* it is totally unsafe to free this shm block here, as it is
+			 * referred by the spec from all the processess. Even if we create
+			 * here a small leak (one time only), we do not have a better fix
+			 * until a final review of the specs in pkg and shm mem - bogdan */
+			//shm_free(name->u.isname.name.s.s);
 			name->u.isname.name.s.s = NULL;
 			name->u.isname.name.s.len = 0;
 			name->type = PV_NAME_PVAR;
@@ -408,6 +422,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 	} else {
 		/* stat already found ! */
 		*stat = (stat_var*)name->u.dname;
+		LM_NOTICE("xXx stat name %p is founded\n",name);
 	}
 
 	return 0;
