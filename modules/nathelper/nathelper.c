@@ -485,9 +485,7 @@ mod_init(void)
 			nortpproxy_str.s = NULL;
 	}
 
-	/* enable all the pinging stuff only if pinging interval is set and
-	 * if we have at least one domain in the usrloc (otherwise there is
-	 * nothing to ping) */
+	/* enable all the pinging stuff only if pinging interval is set */
 	if (natping_interval > 0) {
 		bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
 		if (!bind_usrloc) {
@@ -497,12 +495,6 @@ mod_init(void)
 
 		if (bind_usrloc(&ul) < 0) {
 			return -1;
-		}
-
-		if ( ul.get_next_udomain(NULL)==NULL ) {
-			/* no usrloc domains, nothing to ping, so abort enabling
-			 * the pinging support */
-			goto after_pinging;
 		}
 
 		if (force_socket_str) {
@@ -565,8 +557,6 @@ mod_init(void)
 			}
 		}
 	}
-
-after_pinging:
 
 	/* Prepare 1918/6598 networks list */
 	for (i = 0; nets_1918[i].cnetaddr != NULL; i++) {
