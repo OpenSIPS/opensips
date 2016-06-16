@@ -530,6 +530,24 @@ static inline int shm_str_dup(str* dst, const str* src)
 }
 
 /*
+ * Make a copy of an str structure using shm_malloc
+ *	  + an additional '\0' byte, so you can make use of dst->s
+ */
+static inline int shm_nt_str_dup(str* dst, const str* src)
+{
+	dst->s = shm_malloc(src->len + 1);
+	if (!dst->s) {
+		LM_ERR("no shared memory left\n");
+		return -1;
+	}
+
+	memcpy(dst->s, src->s, src->len);
+	dst->len = src->len;
+	dst->s[dst->len] = '\0';
+	return 0;
+}
+
+/*
  * Make a copy of a str structure using pkg_malloc
  */
 static inline int pkg_str_dup(str* dst, const str* src)
