@@ -55,12 +55,9 @@
 
 #define ua_re_check(return) \
 	if (flags & REG_LOOKUP_UAFILTER_FLAG) { \
-		tmp = *(ptr->user_agent.s+ptr->user_agent.len); \
-		*(ptr->user_agent.s+ptr->user_agent.len) = '\0'; \
 		if (regexec(&ua_re, ptr->user_agent.s, 1, &ua_match, 0)) { \
 			return; \
 		} \
-		*(ptr->user_agent.s+ptr->user_agent.len) = tmp; \
 	}
 
 unsigned int nbranches;
