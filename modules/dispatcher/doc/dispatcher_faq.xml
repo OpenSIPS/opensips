@@ -62,8 +62,10 @@
 			chosen(if we have two destinations with weights 1 respectively
 			4 than the second one is 4 times more likely to be selected than the
 			other). The sum of all weights does not need to add up to a specific
-			number. It is important to understand that the weights are not used
-			in the round-robin algorithm at the moment.
+			number.
+			Weights are now used in the round-robin algorithm, a destination is
+			chosen a number of times equal to its weight consecutively before going
+			to the next destination.
 			</para>
 			<para>
 			The  <emphasis>priority</emphasis> field is used at ordering the

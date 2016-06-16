@@ -155,7 +155,7 @@ Chapter 1. Admin Guide
    definition of weights for the destination. This is useful in
    order to get a different ratio of traffic between destinations.
 
-   Since version 1.12 the dispatcher module keeps its destination
+   Since version 2.1 the dispatcher module keeps its destination
    sets into different partitions. Each partition is described by
    its own db_url, table_name, dst_avp, grp_avp, cnt_avp,
    sock_avp, attr_avp and blacklists. Setting any of this
@@ -176,9 +176,9 @@ Chapter 1. Admin Guide
    Remember that in order to be able to use a table from a
    partition, its name must be found in the "version" table
    belonging to the database defined in the partition's db_url.
-   Also, in version 1.12 the "flags" parameter has been moved to
-   ds_select_dst and ds_select_domain along with "force_dst" and
-   "use_default" flags.
+   Also, in version 2.1 the "flags" parameter has been moved to
+   ds_select_dst() and ds_select_domain() along with "force_dst"
+   and "use_default" flags.
 
 1.2. Dependencies
 
@@ -200,6 +200,11 @@ Chapter 1. Admin Guide
    Database where to load the destinations from. Setting this
    parameter will only change the default partition's db_url. Use
    the partition parameter to create and alter other partitions.
+
+   NOTE: if you intend to use the default partition you have to
+   explicity set this default db_url, otherwise OpenSIPS will not
+   start (he value of global default db_url is not inherited here!
+   ).
 
    Default value is “NULL”. At least one db_url should be defined
    for the dispatcher module to work.
@@ -641,10 +646,12 @@ modparam("dispatcher", "socket_col", "my_sock")
           + “1” - hash over from uri.
           + “2” - hash over to uri.
           + “3” - hash over request-uri.
-          + “4” - round-robin (next destination).
+          + “4” - weighted round-robin (next destination). the
+            destination's weight determines how many times it is
+            chosen before going to the next one
           + “5” - hash over authorization-username
             (Proxy-Authorization or "normal" authorization). If no
-            username is found, round robin is used.
+            username is found, weighted round-robin is used.
           + “6” - random (using rand()).
           + “7” - hash over the content of PVs string. Note: This
             works only when the parameter hash_pvar is set.
@@ -673,7 +680,7 @@ modparam("dispatcher", "socket_col", "my_sock")
        maximum of max_results will be put into the specified avp
        for failover. This allows having many destinations but
        limit the useless traffic in case of a number that is bound
-       to fail everywhere. Since version 1.12, the last paramater
+       to fail everywhere. Since version 2.1, the last paramater
        cand be represented by a list of flags and max_results,
        separated by comma. You can specify either only the flags,
        either only the max_results paramater, but if you want to
@@ -1016,9 +1023,9 @@ Chapter 2. Frequently Asked Questions
        chosen(if we have two destinations with weights 1 respectively
        4 than the second one is 4 times more likely to be selected
        than the other). The sum of all weights does not need to add up
-       to a specific number. It is important to understand that the
-       weights are not used in the round-robin algorithm at the
-       moment.
+       to a specific number. Weights are now used in the round-robin
+       algorithm, a destination is chosen a number of times equal to
+       its weight consecutively before going to the next destination.
 
        The priority field is used at ordering the destinations from a
        set. It does not affect the overall probability of a
