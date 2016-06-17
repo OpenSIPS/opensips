@@ -1,3 +1,163 @@
+=========================== Release 1.11.8 ==============================
+
+2016-06-17  Razvan Crainea  <razvan at opensips dot org>
+	* [4438f09] :
+
+	Update version from 1.11.7 to 1.11.8
+
+
+2016-06-17  Razvan Crainea  <razvan at opensips dot org>
+	* [8034909] :
+
+	Update specs from 1.11.6 to 1.11.7
+	Reported by Carlos Oliva (telematico on GitHub)
+	Close #908
+
+
+2016-06-17  Razvan Crainea  <razvan at opensips dot org>
+	* [ad25211] :
+
+	rtpproxy: no need to update the len for IPv6
+	(cherry picked from commit 5cfd916ca41ed60c9997f95d05694c9083b743b1)
+
+
+2016-06-17  davesidwell  <davesidwell at users.noreply.github dot com>
+	* [b481aef] :
+
+	Update rtpproxy.c
+	When moving stored parameters from Branch AVP to Dialog variable, make sure that the integer value "setid" is handled correctly so that it remains valid for the remainder of the dialog.
+	(cherry picked from commit e267e9eb83e2345ca716b897975c2fbfbb4e75ce)
+
+
+2016-06-17  davesidwell  <davesidwell at users.noreply.github dot com>
+	* [a706056] :
+
+	Update rtpproxy.c
+	When building I/O vector for command to rtpproxy in "force_rtp_proxy_body", after an IPv6 address is detected and the "6" option is added, increase the length component in the I/O vector so it is passed correctly.
+	(cherry picked from commit 4e73871adba3f48b67a9ebbf20a2d9c60b823be8)
+
+
+2016-06-16  Răzvan Crainea  <razvan at opensips dot org>
+	* [3bcf310] :
+
+	Merge pull request #860 from andrey-vorobiev/support-uris-without-user
+	Add support for SIP URIs without user part in 'avpops' module.
+
+
+2016-06-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c788f20] :
+
+	Fixed failure to enable NAT pinging.
+	Commit 8f0c677 introduces a bug in testing is usrloc domains are available, and if not, to disable the NAT pinging in nathelper. The test is wrong as it is done in mod_init, while registrar module registerd the usrloc domain via fixup function, after the mod_init section.
+
+	Reported by Nick Altmann
+	(cherry picked from commit f150fb75611a6e61eabc134f266064bd23f1c850)
+
+
+2016-06-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4baead7] :
+
+	Fix memory corruption on $stat() vars
+	The $stat() var specs are kept in pkg, while the name (if stat not found) is kept in memeory. This means all the copies (form all procs) of the specs will point to a single shm block. It is not safet to free this block as you have no idea how many copies of the spec (from other processes) still refer the name.
+	Closes #902
+
+
+2016-06-09  Liviu Chircu  <liviu at opensips dot org>
+	* [f923d2f] :
+
+	Fix a TLS connection matching bug
+	Thanks to Igor Pavlov for reporting and helping with troubleshooting
+
+
+2016-06-09  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c589357] :
+
+	Fixed forcing FAST LOCKS for arm6.
+	Use FAST locking support for arm6 too.
+	For Linux, use POSIX as default locking support.
+	(cherry picked from commit 058e16f2a76df9be4e48fa6866b096502981d530)
+
+
+2016-06-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [11a32c5] :
+
+	Fix evaluating the SIP port from a SIP URI.
+	Use the new function get_uri_port() to evaluate the port and proto, in a SIP wise manner, form a SIP URI. If port/proto are not explicitly set in the URI, consider the default port for the used transpor proto. If protocol misses, we assume the default protos according to the URI schema.
+
+	NOTE: it is completly bogus (and dangerous) to assue 5061 if SIPS schema is used as:
+	1) SIPS can use used with WSS, which actually has 443 port
+	2) TLS can pe required via transport param in a SIP schema URI too
+	(cherry picked from commit 4c54bcd8bf0426f899b82505e493c97ef5378c79)
+
+
+2016-06-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a2132b8] :
+
+	Removed wrong "NOT NULL" constraint over the contact DB fields
+	The code actually handles the case of NULL callee / caller contacts, so DB must allow NULL values.
+
+
+2016-06-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [40cbcd7] :
+
+	Removed unused "error" jump label
+	(cherry picked from commit 5819b0fa7033bf2a6daef824bc21dd4ba497ae1b)
+
+
+2016-06-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e77e69e] :
+
+	Fix error handling in DB writes.
+	If inserting/updating a dlg record in DB fails, do not exit with error, but continue with the rest of the dialogs.
+	Credits for finding and reporting this go to Rik Broers @ Motto
+	(cherry picked from commit 0ca6cf035471fc010366e4d29ced5d6fd63199ab)
+
+
+2016-06-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9d60efd] :
+
+	Proper handle the case of no usrloc domain registered.
+	Prevent get_next_udomain() crashing if there are no usrloc domains registered (reported by Qasim Akhan on users mailing list.
+	Do not enable the pinging support in nathelper if usrloc has no registered domains.
+
+	(cherry picked from commit 8f0c677be7dfd3fe6b17932173f14e049ae466a5)
+	(cherry picked from commit f2ab0dad3b709521d38c2662112cfbd09b1a5085)
+
+
+2016-06-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [87f2212] :
+
+	Fix documentation on former b2bl_key_avp module param
+	(cherry picked from commit ca21c6d2871e01d093c69371ddcc204c5af0355a)
+
+
+2016-05-31  Razvan Crainea  <razvan at opensips dot org>
+	* [b9f0d76] :
+
+	httpd: properly treat select response
+	(cherry picked from commit b49d37494d77c81bdbf76406fc568f530cd66379)
+
+
+2016-05-30  Razvan Crainea  <razvan at opensips dot org>
+	* [8cea14e] :
+
+	re-do ChangeLog
+
+
+2016-04-14  Andrey Vorobiev  <andrey.vorobiev at mind dot com>
+	* [459f2e9] :
+
+	Add support for SIP URIs without user part in 'avpops' module.
+	This module provides a set of avp_db_xxx functions which take pseudo
+	var and flag as first argument. Flag can be one of username, domain,
+	uri or uuid. Previosly avp_db_xxx functions used to return an error if
+	flag has been set to username, domain or uri and specifed pseudo var
+	did not contain username and host after parsing as SIP URI. This
+	behaviour seems to be strange because if flag is being set to
+	domain/username and sip URI contains domain/username we can still
+	load/store/delete this variable.
+
+
 =========================== Release 1.11.7 ==============================
 
 2016-05-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
