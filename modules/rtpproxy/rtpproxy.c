@@ -3737,8 +3737,6 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 					LM_ERR("out of pkg memory\n");
 					goto error;
 				}
-				/* Accommodate new opts length */
-				v[1].iov_len++;
 			}
 			STR2IOVEC(newip, v[7]);
 			STR2IOVEC(oldport, v[9]);
