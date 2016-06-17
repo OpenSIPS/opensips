@@ -99,7 +99,7 @@ int alloc_group_stat(void) {
 	one_full_entry = 3 * (sizeof(stat_var) + sizeof(stat_val));
 	size_prealoc = groups * sizeof(struct module_info) + groups * one_full_entry;
 
-#ifndef DBG_QM_MALLOC
+#ifndef DBG_MALLOC
 	new_stats_vec = MY_MALLOC_UNSAFE(shm_block, size_prealoc);
 #else
 	new_stats_vec = MY_MALLOC_UNSAFE(shm_block, size_prealoc, __FILE__, __FUNCTION__, __LINE__ );
@@ -133,7 +133,7 @@ int alloc_group_stat(void) {
 #endif
 
 	if(memory_mods_stats){
-	#ifndef DBG_QM_MALLOC
+	#ifndef DBG_MALLOC
 		MY_FREE_UNSAFE(shm_block, (void*)memory_mods_stats);
 	#else
 		MY_FREE_UNSAFE(shm_block, (void*)memory_mods_stats, __FILE__, __FUNCTION__, __LINE__ );
