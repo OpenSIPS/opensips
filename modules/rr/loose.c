@@ -921,7 +921,8 @@ int get_route_params(struct sip_msg *msg, str *val)
 		return -1;
 
 	/* check if params are present */
-	if ( (val=ctx_rrparam_get())==NULL )
+	*val = *ctx_rrparam_get();
+	if (val->s==NULL || val->len==0)
 		return -1;
 
 	return 0;
@@ -936,7 +937,8 @@ int check_route_param(struct sip_msg * msg, regex_t* re)
 	str *rparams;
 
 	/* check if params are present */
-	if ( (rparams=ctx_rrparam_get())==NULL || rparams->len==0)
+	rparams = ctx_rrparam_get();
+	if (rparams->s==NULL || rparams->len==0)
 		return -1;
 
 	/* include also the first ';' */
@@ -966,7 +968,8 @@ int get_route_param( struct sip_msg *msg, str *name, str *val)
 	str *rparams;
 
 	/* check if params are present */
-	if ( (rparams=ctx_rrparam_get())==NULL || rparams->len==0)
+	rparams = ctx_rrparam_get();
+	if (rparams->s==NULL || rparams->len==0)
 		goto notfound;
 
 	end = rparams->s + rparams->len;
