@@ -88,5 +88,6 @@ DEFS+= -DF_MALLOC #Fast memory allocator with minimal runtime overhead
 #DEFS+= -DNOSMP #Do not use SMP sompliant locking. Faster but won't work on SMP machines
 #DEFS+= -DEXTRA_DEBUG #Compiles in some extra debugging code
 #DEFS+= -DORACLE_USRLOC #Uses Oracle compatible queries for USRLOC
+#DEFS+= -DSHM_EXTRA_STATS #Needed when using the mem-group core parameter
 
 PREFIX=/usr/local/
