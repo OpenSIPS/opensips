@@ -815,14 +815,16 @@ modparam("dispatcher", "socket_col", "my_sock")
 			</listitem>
 			<listitem>
 				<para>
-				<quote>4</quote> - round-robin (next destination).
+				<quote>4</quote> - weighted round-robin (next destination).
+				the destination's weight determines how many times it is chosen
+				before going to the next one
 				</para>
 			</listitem>
 			<listitem>
 				<para>
 				<quote>5</quote> - hash over authorization-username
 				(Proxy-Authorization or "normal" authorization).
-				If no username is found, round robin is used.
+				If no username is found, weighted round-robin is used.
 				</para>
 			</listitem>
 			<listitem>

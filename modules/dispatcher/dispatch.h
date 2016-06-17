@@ -82,6 +82,7 @@ typedef struct _ds_dest
 	str description;
 	int flags;
 	unsigned short weight;
+	unsigned short rr_count; /* times it was chosen in a row for weighted round-robin */
 	unsigned short running_weight;
 	unsigned short active_running_weight;
 	unsigned short priority;
