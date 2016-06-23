@@ -31,13 +31,16 @@
 #include "api_proto_net.h"
 
 struct proto_info {
-	/* proto as ID */
-	enum sip_protos id;
-
 	/* the name of the protocol */
 	char *name;
 
-	/* the default protocol */
+	/* the default port according to RFC */
+	unsigned short port;
+
+	/* proto as ID */
+	enum sip_protos id;
+
+	/* the default port, in case it is missing in the listener */
 	unsigned short default_port;
 
 	/* bindings for the transport interface */
@@ -56,7 +59,7 @@ struct proto_info {
 
 typedef int (*api_proto_init)(struct proto_info *pi);
 
-extern struct proto_info *protos;
+extern struct proto_info protos[];
 
 #define is_tcp_based_proto(_p) \
 	(protos[_p].net.flags&PROTO_NET_USE_TCP)
@@ -71,16 +74,6 @@ extern struct proto_info *protos;
 		if (protos[(_rcv)->proto].tran.dst_attr) \
 			protos[(_rcv)->proto].tran.dst_attr(_rcv,_attr,_val);\
 	}while(0)
-
-/*
- * initializes transport interface structures
- */
-int trans_init(void);
-
-/*
- * destroys the transport interface structures
- */
-void trans_destroy(void);
 
 /*
  * loads the transport protocol

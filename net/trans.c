@@ -33,37 +33,23 @@
 #include "proto_udp/proto_udp_handler.h"
 
 
-/* we alocate this dynamically because we don't know how when new protocols
- * are developed. Since this is done only once, it's not that bad */
-struct proto_info *protos;
+/*
+ * we need to always populate this structure at startup, at least the SIP
+ * protocols, because we never know what kind of traffic we receive and have
+ * to print its name
+ */
+struct proto_info protos[PROTO_LAST - PROTO_NONE] = {
+
+	{ }, /* PROTO_NONE */
+	{ .name = "udp",  .port = 5060 }, /* PROTO_UDP */
+	{ .name = "tcp",  .port = 5060 }, /* PROTO_TCP */
+	{ .name = "tls",  .port = 5061 }, /* PROTO_TLS */
+	{ .name = "sctp", .port = 5060 }, /* PROTO_SCTP */
+	{ .name = "ws",   .port = 80 },   /* PROTO_WS */
+	/* populate here for other protos - not necessary right now */
+};
 
 static struct socket_id *cmd_listeners;
-
-
-int trans_init(void)
-{
-	unsigned int proto_nr;
-
-	proto_nr = PROTO_LAST - PROTO_NONE;
-	protos = pkg_malloc(proto_nr * sizeof(struct proto_info));
-	if (!protos) {
-		LM_ERR("no more memory to allocate protocols\n");
-		return -1;
-	}
-
-	memset(protos, 0, proto_nr * sizeof(struct proto_info));
-
-	return 0;
-}
-
-void trans_destroy(void)
-{
-	int i;
-	for (i = PROTO_FIRST; i < PROTO_LAST; i++)
-		if (protos[i].id != PROTO_NONE)
-			pkg_free(protos[i].name);
-	pkg_free(protos);
-}
 
 #define PROTO_PREFIX_LEN (sizeof(PROTO_PREFIX) - 1)
 
