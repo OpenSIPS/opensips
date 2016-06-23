@@ -44,7 +44,7 @@ check_opensips_config ()
 {
 	# Check if opensips configuration is valid before starting the server
 	set +e
-	out=$($DAEMON -c 2>&1 > /dev/null)
+	out=$($DAEMON -c -f $CFGFILE 2>&1 > /dev/null)
 	retcode=$?
 	set -e
 	if [ "$retcode" != '0' ]; then
@@ -109,7 +109,7 @@ if test "$DUMP_CORE" = "yes" ; then
     # echo "$COREDIR/core.%e.sig%s.%p" > /proc/sys/kernel/core_pattern
 fi
 
-OPTIONS="-P $PIDFILE -m $S_MEMORY -M $P_MEMORY -u $USER -g $GROUP"
+OPTIONS="-P $PIDFILE -m $S_MEMORY -M $P_MEMORY -u $USER -g $GROUP -f $CFGFILE"
 
 case "$1" in
   start|debug)
