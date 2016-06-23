@@ -955,15 +955,6 @@ try_again:
 	yydebug = 1;
 #endif
 
-	/*
-	 * initializes transport interfaces - we initialize them here because we
-	 * can have listening interfaces declared in the command line
-	 */
-	if (trans_init() < 0) {
-		LM_ERR("cannot initialize transport interface\n");
-		goto error;
-	}
-
 		/* get uid/gid */
 	if (user){
 		if (user2uid(&uid, &gid, user)<0){
