@@ -758,6 +758,13 @@ int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 		return 0;
 	}
 
+	/* free names and types */
+	if (RES_NAMES(_r)) {
+		LM_DBG("freeing result columns at %p\n", RES_NAMES(_r));
+		RES_TYPES(_r) = NULL;
+		pkg_free(RES_NAMES(_r));
+		RES_NAMES(_r) = NULL;
+	}
 
 	if (RES_ROWS(_r)) {
 		LM_DBG("freeing rows at %p\n", RES_ROWS(_r));
