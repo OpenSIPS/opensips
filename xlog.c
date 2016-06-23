@@ -42,6 +42,7 @@ char *log_buf = NULL;
 int xlog_buf_size = 4096;
 int xlog_force_color = 0;
 int xlog_default_level = L_ERR;
+int xlog_level = L_ERR;
 
 static int buf_init(void)
 {
@@ -93,8 +94,10 @@ int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 
 	log_len = xlog_buf_size;
 
+	xlog_level = level;
 	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0)
 		return -1;
+	xlog_level = xlog_default_level;
 
 	/* log_buf[log_len] = '\0'; */
 	LM_GEN1((int)level, "%.*s", log_len, log_buf);
