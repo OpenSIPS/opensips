@@ -41,11 +41,11 @@
 struct proto_info protos[PROTO_LAST - PROTO_NONE] = {
 
 	{ }, /* PROTO_NONE */
-	{ .name = "udp",  .port = 5060 }, /* PROTO_UDP */
-	{ .name = "tcp",  .port = 5060 }, /* PROTO_TCP */
-	{ .name = "tls",  .port = 5061 }, /* PROTO_TLS */
-	{ .name = "sctp", .port = 5060 }, /* PROTO_SCTP */
-	{ .name = "ws",   .port = 80 },   /* PROTO_WS */
+	{ .name = "udp",  .default_rfc_port = 5060 }, /* PROTO_UDP */
+	{ .name = "tcp",  .default_rfc_port = 5060 }, /* PROTO_TCP */
+	{ .name = "tls",  .default_rfc_port = 5061 }, /* PROTO_TLS */
+	{ .name = "sctp", .default_rfc_port = 5060 }, /* PROTO_SCTP */
+	{ .name = "ws",   .default_rfc_port = 80 },   /* PROTO_WS */
 	/* populate here for other protos - not necessary right now */
 };
 

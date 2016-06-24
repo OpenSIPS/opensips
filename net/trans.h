@@ -35,7 +35,7 @@ struct proto_info {
 	char *name;
 
 	/* the default port according to RFC */
-	unsigned short port;
+	unsigned short default_rfc_port;
 
 	/* proto as ID */
 	enum sip_protos id;
