@@ -6,10 +6,10 @@ CREATE TABLE dialplan (
     match_op INT(11) NOT NULL,
     match_exp CHAR(64) NOT NULL,
     match_flags INT(11) NOT NULL,
-    subst_exp CHAR(64) NOT NULL,
-    repl_exp CHAR(32) NOT NULL,
-    timerec CHAR(255) NOT NULL,
+    subst_exp CHAR(64),
+    repl_exp CHAR(32),
+    timerec CHAR(255),
     disabled INT(11) DEFAULT 0 NOT NULL,
-    attrs CHAR(32) NOT NULL
+    attrs CHAR(32)
 ) ENGINE=InnoDB;
 
