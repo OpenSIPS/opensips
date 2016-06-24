@@ -66,6 +66,7 @@
         <name>subst_exp</name>
         <type>string</type>
         <size>64</size>
+        <null/>
         <description>Substitution expression.</description>
     </column>
     
@@ -73,6 +74,7 @@
         <name>repl_exp</name>
         <type>string</type>
         <size>32</size>
+        <null/>
         <description>Replacement expression (sed like).</description>
     </column>
 
@@ -80,6 +82,7 @@
         <name>timerec</name>
         <type>string</type>
         <size>255</size>
+        <null/>
         <description>Time recurrence used to match this rule.</description>
     </column>
 
@@ -95,6 +98,7 @@
         <name>attrs</name>
         <type>string</type>
         <size>32</size>
+        <null/>
         <description>General attributes string to be returned in case of rule matching.</description>
     </column>
  

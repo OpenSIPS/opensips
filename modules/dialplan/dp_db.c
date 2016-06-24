@@ -48,14 +48,20 @@ str attrs_column        	=   str_init(ATTRS_COL);
 str timerec_column              =   str_init(TIMEREC_COL);
 
 
-#define GET_STR_VALUE(_res, _values, _index)\
+#define GET_STR_VALUE(_res, _values, _index, _null)\
 	do{\
-		if ( VAL_NULL((_values)+ (_index)) ) { \
-			LM_ERR(" values %d is NULL - not allowed\n",_index);\
-			goto err;\
-		} \
-		(_res).s = VAL_STR((_values)+ (_index)).s;\
-		(_res).len = strlen(VAL_STR((_values)+ (_index)).s);\
+		if ( VAL_NULL((_values)+ (_index))) { \
+			if ( !_null) { \
+				LM_ERR(" values %d is NULL - not allowed\n",_index);\
+				goto err;\
+			} else { \
+				(_res).s = NULL; \
+				(_res).len = 0; \
+			} \
+		} else  { \
+			(_res).s = VAL_STR((_values)+ (_index)).s;\
+			(_res).len = strlen(VAL_STR((_values)+ (_index)).s);\
+		}\
 	}while(0);
 
 void destroy_rule(dpl_node_t * rule);
@@ -458,7 +464,7 @@ dpl_node_t * build_rule(db_val_t * values)
 	repl_comp = 0;
 	new_rule = 0;
 
-	GET_STR_VALUE(match_exp, values, 3);
+	GET_STR_VALUE(match_exp, values, 3, 0);
 	if(matchop == REGEX_OP){
 
 		LM_DBG("Compiling %.*s expression with flag: %d\n",
@@ -474,8 +480,8 @@ dpl_node_t * build_rule(db_val_t * values)
 	}
 
 	LM_DBG("building subst rule\n");
-	GET_STR_VALUE(subst_exp, values, 5);
-	if(subst_exp.s && subst_exp.len){
+	GET_STR_VALUE(subst_exp, values, 5, 1);
+	if(!VAL_NULL(values+5) && subst_exp.s && subst_exp.len){
 		/* subst regexp */
 		subst_comp = wrap_pcre_compile(subst_exp.s, VAL_INT(values+4));
 		if(subst_comp == NULL){
@@ -485,8 +491,8 @@ dpl_node_t * build_rule(db_val_t * values)
 	}
 
 	/* replace exp */
-	GET_STR_VALUE(repl_exp, values, 6);
-	if(repl_exp.len && repl_exp.s){
+	GET_STR_VALUE(repl_exp, values, 6, 1);
+	if(!VAL_NULL(values+6) && repl_exp.len && repl_exp.s){
 		repl_comp = repl_exp_parse(repl_exp);
 		if(!repl_comp){
 			LM_ERR("failed to compile replacing expression %.*s\n",
@@ -532,16 +538,19 @@ dpl_node_t * build_rule(db_val_t * values)
 	new_rule->pr            =	VAL_INT(values+1);
 	new_rule->match_flags   =	VAL_INT(values+4);
 	new_rule->matchop       =	matchop;
-	GET_STR_VALUE(attrs, values, 7);
-	if(str_to_shm(attrs, &new_rule->attrs)!=0)
-		goto err;
 
-	LM_DBG("attrs are %.*s\n",
-		new_rule->attrs.len, new_rule->attrs.s);
+	/* attributes */
+	GET_STR_VALUE(attrs, values, 7, 1);
+	if( !VAL_NULL(values+7) && attrs.len && attrs.s) {
+		if(str_to_shm(attrs, &new_rule->attrs)!=0)
+			goto err;
+		LM_DBG("attrs are %.*s\n",
+			new_rule->attrs.len, new_rule->attrs.s);
+	}
 
 	/* Retrieve and Parse Timerec Matching Pattern */
-	GET_STR_VALUE(timerec, values, 8);
-	if(timerec.len && timerec.s) {
+	GET_STR_VALUE(timerec, values, 8, 1);
+	if( !VAL_NULL(values+8) && timerec.len && timerec.s) {
 		parsed_timerec = parse_time_def(timerec.s);
 		if(!parsed_timerec) {
 			LM_ERR("failed to parse timerec pattern %.*s\n",
