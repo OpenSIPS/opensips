@@ -311,7 +311,7 @@ static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
 	/* we are done reading -> unref the data */
 	lock_stop_read( table->ref_lock );
 
-	if (attr_spec) {
+	if (attr_spec && attrs.s && attrs.len) {
 		pval.flags = PV_VAL_STR;
 		pval.rs = attrs;
 

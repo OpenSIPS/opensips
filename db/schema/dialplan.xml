@@ -66,21 +66,23 @@
         <name>subst_exp</name>
         <type>string</type>
         <size>64</size>
-        <description>Substitution expresion.</description>
+        <null/>
+        <description>Substitution expression.</description>
     </column>
     
     <column id="repl_exp">
         <name>repl_exp</name>
         <type>string</type>
         <size>32</size>
-        <description>Replacement expresion (sed like).</description>
+        <null/>
+        <description>Replacement expression (sed like).</description>
     </column>
 
     <column id="disabled">
         <name>disabled</name>
         <type>int</type>
         <size>11</size>
-    <default>0</default>
+        <default>0</default>
         <description>Specifies if the command can be used, or is disabled.</description>
     </column>
 
@@ -88,6 +90,7 @@
         <name>attrs</name>
         <type>string</type>
         <size>32</size>
+        <null/>
         <description>General attributes string to be returned in case of rule matching.</description>
     </column>
  
