@@ -69,7 +69,7 @@ static inline unsigned short get_uri_port(struct sip_uri* _uri,
 
 	/* known port? */
 	if ((port=_uri->port_no)==0)
-		port = protos[proto].default_port;
+		port = protos[proto].default_rfc_port;
 
 	if (_proto) *_proto = proto;
 
