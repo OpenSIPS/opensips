@@ -87,9 +87,6 @@ static str str_null   = { _str_null_hlp, 6 };
 static char _str_empty_hlp[1]  = { 0 };
 static str str_empty  = { _str_empty_hlp, 0 };
 
-static char _str_5060_hlp[5]   = {'5','0','6','0',0};
-static str str_5060   = { _str_5060_hlp, 4 };
-
 static char _str_udp_hlp[4]  = {'u','d','p',0};
 static str str_udp    = { _str_udp_hlp, 3 };
 
@@ -227,16 +224,6 @@ int pv_get_null(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	res->flags = PV_VAL_NULL;
 	return 0;
 }
-static int pv_get_udp(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
-{
-	return pv_get_strintval(msg, param, res, &str_udp, (int)PROTO_UDP);
-}
-
-static int pv_get_5060(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
-{
-	return pv_get_strintval(msg, param, res, &str_5060, 5060);
-}
-
 
 /************************************************************/
 static int pv_get_pid(struct sip_msg *msg, pv_param_t *param,
@@ -448,6 +435,9 @@ static int pv_get_ouri(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_xuri_attr(struct sip_msg *msg, struct sip_uri *parsed_uri,
 		pv_param_t *param, pv_value_t *res)
 {
+	unsigned short proto;
+	str proto_s;
+
 	if(param->pvn.u.isname.name.n==1) /* username */
 	{
 		if(parsed_uri->user.s==NULL || parsed_uri->user.len<=0)
@@ -459,12 +449,17 @@ static int pv_get_xuri_attr(struct sip_msg *msg, struct sip_uri *parsed_uri,
 		return pv_get_strval(msg, param, res, &parsed_uri->host);
 	} else if(param->pvn.u.isname.name.n==3) /* port */ {
 		if(parsed_uri->port.s==NULL)
-			return pv_get_5060(msg, param, res);
+			return pv_get_uintval(msg, param, res,
+				get_uri_port( parsed_uri, &proto));
 		return pv_get_strintval(msg, param, res, &parsed_uri->port,
 				(int)parsed_uri->port_no);
 	} else if(param->pvn.u.isname.name.n==4) /* protocol */ {
-		if(parsed_uri->transport_val.s==NULL)
-			return pv_get_udp(msg, param, res);
+		if(parsed_uri->transport_val.s==NULL) {
+			get_uri_port(parsed_uri, &proto);
+			proto_s.s = get_proto_name(proto);
+			proto_s.len = strlen(proto_s.s);
+			return pv_get_strintval(msg, param, res, &proto_s, (int)proto);
+		}
 		return pv_get_strintval(msg, param, res, &parsed_uri->transport_val,
 				(int)parsed_uri->proto);
 	}
@@ -1334,6 +1329,8 @@ static int pv_get_dsturi_attr(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	struct sip_uri uri;
+	unsigned short proto;
+	str proto_s;
 
 	if(msg==NULL)
 		return -1;
@@ -1356,11 +1353,15 @@ static int pv_get_dsturi_attr(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_strval(msg, param, res, &uri.host);
 	} else if(param->pvn.u.isname.name.n==2) /* port */ {
 		if(uri.port.s==NULL)
-			return pv_get_5060(msg, param, res);
+			return pv_get_uintval(msg, param, res, get_uri_port(&uri, &proto));
 		return pv_get_strintval(msg, param, res, &uri.port, (int)uri.port_no);
 	} else if(param->pvn.u.isname.name.n==3) /* proto */ {
-		if(uri.transport_val.s==NULL)
-			return pv_get_udp(msg, param, res);
+		if(uri.transport_val.s==NULL) {
+			get_uri_port(&uri, &proto);
+			proto_s.s = get_proto_name(proto);
+			proto_s.len = strlen(proto_s.s);
+			return pv_get_strintval(msg, param, res, &proto_s, (int)proto);
+		}
 		return pv_get_strintval(msg, param, res, &uri.transport_val,
 				(int)uri.proto);
 	}
