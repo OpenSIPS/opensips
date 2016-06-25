@@ -169,32 +169,6 @@ static void free_sock_info(struct socket_info* si)
 }
 
 
-
-static char* get_proto_name(unsigned short proto)
-{
-	switch(proto){
-		case PROTO_NONE:
-			return "*";
-		case PROTO_UDP:
-			return "udp";
-#ifdef USE_TCP
-		case PROTO_TCP:
-			return "tcp";
-#endif
-#ifdef USE_TLS
-		case PROTO_TLS:
-			return "tls";
-#endif
-#ifdef USE_SCTP
-		case PROTO_SCTP:
-			return "sctp";
-#endif
-		default:
-			return "unknown";
-	}
-}
-
-
 /* checks if the proto: host:port is one of the address we listen on
  * and returns the corresponding socket_info structure.
  * if port==0, the  port number is ignored
