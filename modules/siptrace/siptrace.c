@@ -943,9 +943,9 @@ static int sip_trace_w(struct sip_msg *msg)
 
 #define set_columns_to_trace_local_ip( _col_proto, _col_ip, _col_port) \
 	do { \
-		db_vals[4].val.str_val = trace_local_proto; \
-		db_vals[5].val.str_val = trace_local_ip; \
-		db_vals[6].val.int_val = trace_local_port; \
+		_col_proto.val.str_val = trace_local_proto; \
+		_col_ip.val.str_val = trace_local_ip; \
+		_col_port.val.int_val = trace_local_port; \
 	} while (0)
 
 static int sip_trace(struct sip_msg *msg)
