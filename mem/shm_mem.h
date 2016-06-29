@@ -272,7 +272,8 @@ inline static void* _shm_realloc(void *ptr, unsigned int size,
 
 	#ifdef SHM_EXTRA_STATS
 	size_f = (frag_size(p) - size_f);
-	update_module_stats(size_f, size_f + (ptr)?(0):(FRAG_OVERHEAD), (ptr)?(0):(1), VAR_STAT(MOD_NAME));
+	update_module_stats(size_f, size_f + (ptr ? 0 : FRAG_OVERHEAD),
+	                    ptr ? 0 : 1 , VAR_STAT(MOD_NAME));
 
 	#endif
 
@@ -293,7 +294,8 @@ inline static void* _shm_realloc_unsafe(void *ptr, unsigned int size,
 
 	#ifdef SHM_EXTRA_STATS
 	size_f = (frag_size(p) - size_f);
-	update_module_stats(size_f, size_f + (ptr)?(0):(FRAG_OVERHEAD), (ptr)?(0):(1), VAR_STAT(MOD_NAME));
+	update_module_stats(size_f, size_f + (ptr ? 0 : FRAG_OVERHEAD),
+	                    ptr ? 0 : 1 , VAR_STAT(MOD_NAME));
 	#endif
 
 	return p;
@@ -434,7 +436,8 @@ inline static void* shm_realloc(void *ptr, unsigned int size)
 
 #ifdef SHM_EXTRA_STATS
 	size_f = (frag_size(p) - size_f);
-	update_module_stats(size_f, size_f + (ptr)?(0):(FRAG_OVERHEAD), (ptr)?(0):(1), VAR_STAT(MOD_NAME));
+	update_module_stats(size_f, size_f + (ptr ? 0 : FRAG_OVERHEAD),
+	                    ptr ? 0 : 1 , VAR_STAT(MOD_NAME));
 #endif
 
 	return p;
@@ -452,7 +455,8 @@ inline static void* shm_realloc_unsafe(void *ptr, unsigned int size)
 
 #ifdef SHM_EXTRA_STATS
 	size_f = (frag_size(p) - size_f);
-	update_module_stats(size_f, size_f + (ptr)?(0):(FRAG_OVERHEAD), (ptr)?(0):(1), VAR_STAT(MOD_NAME));
+	update_module_stats(size_f, size_f + (ptr ? 0 : FRAG_OVERHEAD),
+	                    ptr ? 0 : 1 , VAR_STAT(MOD_NAME));
 #endif
 	return p;
 }
