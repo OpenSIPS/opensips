@@ -256,7 +256,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 #define update_str(_old,_new,_nt) \
 	do{\
 		if ((_old)->len < (_new)->len) { \
-			ptr = (char*)shm_malloc((_new)->len + _nt?1:0); \
+			ptr = shm_malloc((_new)->len + ((_nt) ? 1 : 0)); \
 			if (ptr == 0) { \
 				LM_ERR("no more shm memory\n"); \
 				return -1; \
