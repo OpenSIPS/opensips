@@ -106,6 +106,7 @@ int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 
 				VAL_BLOB(_v).s[VAL_BLOB(_v).len]='\0';
 				VAL_TYPE(_v) = DB_BLOB;
+				VAL_FREE(_v) = 1;
 
 				break;
 			case DB_STRING:
@@ -132,6 +133,8 @@ int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 				 *
 				 */
 				VAL_TYPE(_v) = DB_STRING;
+				VAL_FREE(_v) = 1;
+
 				break;
 			default:
 				LM_ERR("invalid type for sqlite!\n");
