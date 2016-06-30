@@ -138,6 +138,7 @@ again2:
 		goto again2;
 
 	if (ret != SQLITE_ROW) {
+		sqlite3_finalize(stmt);
 		LM_ERR("failed to fetch query size\n");
 		return -1;
 	}
@@ -189,17 +190,20 @@ again:
 #ifdef SQLITE_BIND
 	if (db_sqlite_bind_values(CON_SQLITE_PS(_h), _v, _n) != SQLITE_OK) {
 		LM_ERR("failed to bind values\n");
+		sqlite3_finalize(CON_SQLITE_PS(_h));
 		return -1;
 	}
 #endif
 
 	if (_r) {
 		ret = db_sqlite_store_result(_h, _r, _v, _n);
-		CON_SQLITE_PS(_h) = NULL;
 	} else {
 		/* need to fetch now the total number of rows in query
 		 * because later won't have the query string */
-		CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, _v, _n);
+		ret = CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, _v, _n);
+	}
+	if( ret < 0 ){
+		db_sqlite_free_result(_h,*_r);
 	}
 
 	return ret;
@@ -221,12 +225,13 @@ int db_sqlite_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 
 	if (!_h || !_r || nrows < 0) {
 		LM_ERR("Invalid parameter value\n");
+		db_sqlite_free_result(_h,*_r);
 		return -1;
 	}
 
 	/* exit if the fetch count is zero */
 	if (nrows == 0) {
-		db_free_result(*_r);
+		db_sqlite_free_result(_h,*_r);
 		*_r = 0;
 		return 0;
 	}
@@ -241,6 +246,7 @@ int db_sqlite_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 
 		if (db_sqlite_get_columns(_h, *_r) < 0) {
 			LM_ERR("error while getting column names\n");
+			db_sqlite_free_result(_h,*_r);
 			return -4;
 		}
 
@@ -278,6 +284,7 @@ int db_sqlite_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 
 	if (db_sqlite_allocate_rows(*_r, rows)!=0) {
 		LM_ERR("no memory left\n");
+		db_sqlite_free_result(_h,*_r);
 		return -5;
 	}
 
@@ -307,7 +314,7 @@ int db_sqlite_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 		if ((ret=db_sqlite_convert_row(_h, *_r, &(RES_ROWS(*_r)[i]))) < 0) {
 			LM_ERR("error while converting row #%d\n", i);
 			RES_ROW_N(*_r) = i;
-			db_free_rows(*_r);
+			db_sqlite_free_result(_h,*_r);
 			return -4;
 		}
 
@@ -358,6 +365,7 @@ int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 		if (sqlite3_exec(CON_CONNECTION(_h),
 			sql_str, NULL, NULL, &errmsg)) {
 			LM_ERR("query failed: %s\n", errmsg);
+			sqlite3_free(errmsg);
 			return -2;
 		}
 
@@ -385,9 +393,11 @@ again:
 	} else {
 		/* need to fetch now the total number of rows in query
 		 * because later won't have the query string */
-		CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, NULL, 0);
+		ret = CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, NULL, 0);
 	}
-
+	if( ret < 0 ){
+		db_sqlite_free_result(_h,*_r);
+	}
 
 	return ret;
 }
@@ -741,16 +751,16 @@ error:
  * \param _r result set that should be freed
  * \return zero on success, negative value on failure
  */
-int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
+int db_sqlite_free_result(const db_con_t* _h, db_res_t* _r)
 {
-	int i;
-	int j;
-	db_val_t* v;
-	db_row_t* res_col;
-
 	if (!_h) {
 		LM_ERR("invalid database handle\n");
 		return -1;
+	}
+
+	if( CON_SQLITE_PS(_h) ){
+		sqlite3_finalize(CON_SQLITE_PS(_h));
+		CON_SQLITE_PS(_h) = NULL;
 	}
 
 	if (!_r) {
@@ -758,47 +768,7 @@ int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 		return 0;
 	}
 
-	/* free names and types */
-	if (RES_NAMES(_r)) {
-		LM_DBG("freeing result columns at %p\n", RES_NAMES(_r));
-		RES_TYPES(_r) = NULL;
-		pkg_free(RES_NAMES(_r));
-		RES_NAMES(_r) = NULL;
-	}
-
-	if (RES_ROWS(_r)) {
-		LM_DBG("freeing rows at %p\n", RES_ROWS(_r));
-		for (i = 0; i < RES_ROW_N(_r); i++) {
-			for (j = 0; j < RES_COL_N(_r); j++) {
-				res_col = &_r->rows[i];
-				v = &res_col->values[j];
-
-				if (VAL_NULL(v))
-					continue;
-
-				/* only allocated types; STR and BLOB;*/
-				if (VAL_TYPE(v) == DB_STR) {
-					pkg_free(VAL_STR(v).s);
-					VAL_STR(v).s = 0;
-				} else if (VAL_TYPE(v) == DB_BLOB) {
-					pkg_free(VAL_BLOB(v).s);
-					VAL_BLOB(v).s = 0;
-				}
-			}
-		}
-
-		pkg_free(_r->rows[0].values);
-		pkg_free(_r->rows);
-		RES_ROWS(_r) = NULL;
-	}
-
-	RES_ROW_N(_r) = 0;
-
-
-	pkg_free(_r);
-	_r = NULL;
-
-	return 0;
+	return db_free_result(_r);
 }
 
 /**
