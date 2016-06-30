@@ -45,5 +45,5 @@ int db_sqlite_replace(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v
 int db_last_inserted_id(const db_con_t* _h);
  int db_insert_update(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 	const int _n);
-int db_sqlite_free_result(const db_con_t* _h, db_res_t* _r);
+int db_sqlite_free_result(db_con_t* _h, db_res_t* _r);
 #endif

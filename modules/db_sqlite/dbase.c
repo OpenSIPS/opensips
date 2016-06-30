@@ -54,6 +54,7 @@ static int db_sqlite_store_result(const db_con_t* _h, db_res_t** _r, const db_va
 #ifdef SQLITE_BIND
 static int db_sqlite_bind_values(sqlite3_stmt* stmt, const db_val_t* _v, const int _n);
 #endif
+static int db_sqlite_free_result_internal(const db_con_t* _h, db_res_t* _r);
 
 static int db_sqlite_submit_dummy_query(const db_con_t* _h, const str* _s)
 {
@@ -203,7 +204,7 @@ again:
 		ret = CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, _v, _n);
 	}
 	if( ret < 0 ){
-		db_sqlite_free_result(_h,*_r);
+		db_sqlite_free_result_internal(_h,*_r);
 	}
 
 	return ret;
@@ -225,13 +226,13 @@ int db_sqlite_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 
 	if (!_h || !_r || nrows < 0) {
 		LM_ERR("Invalid parameter value\n");
-		db_sqlite_free_result(_h,*_r);
+		db_sqlite_free_result_internal(_h,*_r);
 		return -1;
 	}
 
 	/* exit if the fetch count is zero */
 	if (nrows == 0) {
-		db_sqlite_free_result(_h,*_r);
+		db_sqlite_free_result_internal(_h,*_r);
 		*_r = 0;
 		return 0;
 	}
@@ -246,7 +247,7 @@ int db_sqlite_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 
 		if (db_sqlite_get_columns(_h, *_r) < 0) {
 			LM_ERR("error while getting column names\n");
-			db_sqlite_free_result(_h,*_r);
+			db_sqlite_free_result_internal(_h,*_r);
 			return -4;
 		}
 
@@ -284,7 +285,7 @@ int db_sqlite_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 
 	if (db_sqlite_allocate_rows(*_r, rows)!=0) {
 		LM_ERR("no memory left\n");
-		db_sqlite_free_result(_h,*_r);
+		db_sqlite_free_result_internal(_h,*_r);
 		return -5;
 	}
 
@@ -314,7 +315,7 @@ int db_sqlite_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 		if ((ret=db_sqlite_convert_row(_h, *_r, &(RES_ROWS(*_r)[i]))) < 0) {
 			LM_ERR("error while converting row #%d\n", i);
 			RES_ROW_N(*_r) = i;
-			db_sqlite_free_result(_h,*_r);
+			db_sqlite_free_result_internal(_h,*_r);
 			return -4;
 		}
 
@@ -396,7 +397,7 @@ again:
 		ret = CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, NULL, 0);
 	}
 	if( ret < 0 ){
-		db_sqlite_free_result(_h,*_r);
+		db_sqlite_free_result_internal(_h,*_r);
 	}
 
 	return ret;
@@ -745,13 +746,19 @@ error:
 	return -1;
 }
 
+
+static int db_sqlite_free_result_internal(const db_con_t* _h, db_res_t* _r)
+{
+	return db_sqlite_free_result(*(db_con_t**)&_h, _r);
+}
+
 /**
  * Release a result set from memory.
  * \param _h handle to the database
  * \param _r result set that should be freed
  * \return zero on success, negative value on failure
  */
-int db_sqlite_free_result(const db_con_t* _h, db_res_t* _r)
+int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 {
 	if (!_h) {
 		LM_ERR("invalid database handle\n");
