@@ -186,6 +186,7 @@ void set_pkg_stats(pkg_status_holder*);
 #elif defined(USE_SHM_MEM)
 #	include "shm_mem.h"
 #	define pkg_malloc(s) shm_malloc((s))
+#	define pkg_realloc(p, s) shm_realloc((p), (s))
 #	define pkg_free(p)   shm_free((p))
 #	define pkg_status()  shm_status()
 #	define MY_PKG_GET_SIZE()
