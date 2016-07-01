@@ -462,7 +462,7 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 	 */
 	reset_acc_flag( req, flags_to_reset );
 
-	if (new_uri_bk.s) {
+	if (t->nr_of_outgoings) {
 		req->new_uri = new_uri_bk;
 		req->dst_uri = dst_uri_bk;
 		req->parsed_uri_ok = 0;
