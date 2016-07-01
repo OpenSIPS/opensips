@@ -547,7 +547,7 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 	 * it would skip accounting if the flags are identical
 	 */
 
-	if (new_uri_bk.s) {
+	if (t->nr_of_outgoings) {
 		req->new_uri = new_uri_bk;
 		req->dst_uri = dst_uri_bk;
 		req->parsed_uri_ok = 0;
