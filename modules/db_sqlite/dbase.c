@@ -760,6 +760,9 @@ static int db_sqlite_free_result_internal(const db_con_t* _h, db_res_t* _r)
  */
 int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 {
+	int i, j;
+	db_val_t* val;
+
 	if (!_h) {
 		LM_ERR("invalid database handle\n");
 		return -1;
@@ -775,7 +778,54 @@ int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 		return 0;
 	}
 
-	return db_free_result(_r);
+
+	db_free_columns(_r);
+
+	/* for each row iterate through all the values and free them
+	 * the values array(RES_ROW_N rows with RES_COL_N values for
+	 * each row) is allocated using a single chunk so in order
+	 * to free the array(check db_sqlite_allocate_rows function ) */
+	if (RES_ROWS(_r)) {
+		for(i=0; i < RES_ROW_N(_r); i++) {
+			for (j=0; j < RES_COL_N(_r); j++) {
+				val = &(_r->rows[i].values[j]);
+				if (VAL_NULL(val) || !VAL_FREE(val))
+					continue;
+
+				switch (VAL_TYPE(val)) {
+					case DB_STRING:
+					case DB_STR:
+						/*
+						 * FIXME
+						 * see row.c +121 ( last comment ) for
+						 * explanation why this will work
+						 *
+						 */
+						pkg_free(VAL_STR(val).s);
+						VAL_STR(val).s = 0;
+						break;
+					case DB_BLOB:
+						pkg_free(VAL_BLOB(val).s);
+						VAL_BLOB(val).s = 0;
+						break;
+					default:
+						break;
+				}
+
+			}
+		}
+		/* free all the columns; they are all allocated at once */
+		pkg_free( _r->rows[0].values);
+		/* free the rows */
+		pkg_free( _r->rows);
+		_r->rows = NULL;
+	}
+
+	RES_ROW_N(_r) = 0;
+	pkg_free(_r);
+	_r = NULL;
+
+	return 0;
 }
 
 /**
