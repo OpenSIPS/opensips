@@ -772,23 +772,21 @@ int get_source_group(struct sip_msg* msg, char *arg) {
 	group = find_group_in_hash_table(*ps->hash_table,
 				ip,
 				msg->rcv.src_port);
-	group=0;
-
-	LM_DBG("Found <%d>\n", group);
-
 	if (group == -1) {
 
 		LM_DBG("Looking for <%x, %u> in subnet table\n",
 			msg->rcv.src_ip.u.addr32[0], msg->rcv.src_port);
 
-/* TODO FIX INPUT PARAMS*/
-	group = find_group_in_subnet_table(*ps->subnet_table,
-			ip,
-			msg->rcv.src_port);
-		group = 0;
-
-		LM_DBG("Found <%d>\n", group);
+		group = find_group_in_subnet_table(*ps->subnet_table,
+				ip,
+				msg->rcv.src_port);
+		if (group == -1) {
+			LM_DBG("IP <%.*s:%u> not found in any group\n",
+					str_ip.len, str_ip.s, msg->rcv.src_port);
+			return -1;
+		}
 	}
+	LM_DBG("Found <%d>\n", group);
 
 	pvt.flags = PV_VAL_INT|PV_TYPE_INT;
 	pvt.rs.s = NULL;
