@@ -90,7 +90,11 @@ int db_free_row(db_row_t* _r)
 		}
 	}
 
-	pkg_free(ROW_VALUES(_r));
+	/* HINT: this is based on db_allocate_rwos_function which allocates the
+	 * whole ROW_VALUES array in the same time with the holder, RES_ROWS
+	 * this way when RES_ROWS will be freed, all the ROW_VALUES will be freed
+	 * if using  other function than db_allocate_rows for allocating take
+	 * great care when using this function */
 	ROW_VALUES(_r) = NULL;
 	return 0;
 }
