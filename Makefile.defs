@@ -683,9 +683,10 @@ ifeq ($(ARCH), arm)
 	use_fast_lock=yes
 endif
 
-ifeq ($(ARCH), arm6)
-	use_fast_lock=yes
-endif
+# use need some asm code for locking before enabling this
+#ifeq ($(ARCH), arm6)
+#	use_fast_lock=yes
+#endif
 
 ifeq ($(ARCH), ppc)
 	use_fast_lock=yes
