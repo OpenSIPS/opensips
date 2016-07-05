@@ -758,8 +758,36 @@ int main(int argc, char** argv)
 					};
 
 					break;
+			case 'm':
+					shm_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
+					if (tmp &&(*tmp)){
+						LM_ERR("bad shmem size number: -m %s\n", optarg);
+						goto error00;
+					};
+					break;
+			case 'u':
+					user=optarg;
+					break;
+			case 'g':
+					group=optarg;
+					break;
 		}
 	}
+
+	/* get uid/gid */
+	if (user){
+		if (user2uid(&uid, &gid, user)<0){
+			LM_ERR("bad user name/uid number: -u %s\n", user);
+			goto error00;
+		}
+	}
+	if (group){
+		if (group2gid(&gid, group)<0){
+			LM_ERR("bad group name/gid number: -u %s\n", group);
+			goto error00;
+		}
+	}
+
 	/*init pkg mallocs (before parsing cfg but after parsing cmd line !)*/
 	if (init_pkg_mallocs()==-1)
 		goto error00;
@@ -783,11 +811,7 @@ int main(int argc, char** argv)
 					cfg_log_stderr=1; /* force stderr logging */
 					break;
 			case 'm':
-					shm_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
-					if (tmp &&(*tmp)){
-						LM_ERR("bad shmem size number: -m %s\n", optarg);
-						goto error00;
-					};
+					/* ignoring it, parsed previously */
 					break;
 			case 'M':
 					/* ignoring it, parsed previously */
@@ -876,10 +900,10 @@ int main(int argc, char** argv)
 					chroot_dir=optarg;
 					break;
 			case 'u':
-					user=optarg;
+					/* ignoring it, parsed previously */
 					break;
 			case 'g':
-					group=optarg;
+					/* ignoring it, parsed previously */
 					break;
 			case 'P':
 					pid_file=optarg;
@@ -955,21 +979,7 @@ try_again:
 	yydebug = 1;
 #endif
 
-		/* get uid/gid */
-	if (user){
-		if (user2uid(&uid, &gid, user)<0){
-			LM_ERR("bad user name/uid number: -u %s\n", user);
-			goto error00;
-		}
-	}
-	if (group){
-		if (group2gid(&gid, group)<0){
-			LM_ERR("bad group name/gid number: -u %s\n", group);
-			goto error00;
-		}
-	}
-
-		/*init shm mallocs
+	/*  init shm mallocs
 	 *  this must be here
 	 *     -to allow setting shm mem size from the command line
 	 *     -it must be also before init_timer and init_tcp
