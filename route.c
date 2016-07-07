@@ -281,7 +281,8 @@ static int fix_actions(struct action* a)
 					goto error;
 				}
 				if ( rlist[t->elem[0].u.number].a==NULL ) {
-					LM_ERR("called route %d is not defined\n",
+					LM_ERR("called route [%s] (id=%d) is not defined\n",
+						rlist[t->elem[0].u.number].name,
 						(int)t->elem[0].u.number);
 					ret = E_CFG;
 					goto error;
