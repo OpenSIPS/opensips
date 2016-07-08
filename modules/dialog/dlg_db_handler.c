@@ -1381,6 +1381,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				if((dialog_dbf.insert(dialog_db_handle, insert_keys,
 				values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
 					LM_ERR("could not add another dialog to db\n");
+					cell = cell->next;
 					continue;
 				}
 
@@ -1422,6 +1423,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 				(values), (insert_keys+15), (values+15), 1, 10)) !=0) {
 					LM_ERR("could not update database info\n");
+					cell = cell->next;
 					continue;
 				}
 
@@ -1441,6 +1443,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 				(values), (insert_keys+21), (values+21), 1, 3)) !=0) {
 					LM_ERR("could not update database info\n");
+					cell = cell->next;
 					continue;
 				}
 
