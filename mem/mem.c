@@ -84,10 +84,8 @@ int init_pkg_mallocs(void)
 			shm_mem_size );
 		return -1;
 	}
-	return 0;
-#else
-	return 0;
 #endif
+	return 0;
 }
 
 
