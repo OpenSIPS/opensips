@@ -604,6 +604,11 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	unsigned int _created=0;
 	unsigned int  _setup_time=0;
 
+	if (!acc_dbf.use_table || !acc_dbf.insert) {
+		LM_ERR("database not loaded! Probably database url not defined!\n");
+		return -1;
+	}
+
 	if (cdr_flag && get_timestamps(&_created, &_setup_time)<0) {
 		LM_ERR("cannot get timestamps\n");
 		return -1;
@@ -667,6 +672,11 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	short nr_legs;
 	static db_ps_t my_ps = NULL;
 	static query_list_t *ins_list = NULL;
+
+	if (!acc_dbf.use_table || !acc_dbf.insert) {
+		LM_ERR("database not loaded! Probably database url not defined!\n");
+		return -1;
+	}
 
 	core_s.s = extra_s.s = leg_s.s = 0;
 
