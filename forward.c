@@ -65,6 +65,7 @@
 
 #include "forward.h"
 #include "parser/msg_parser.h"
+#include "parser/parse_from.h"
 #include "dprint.h"
 #include "ut.h"
 #include "dset.h"
@@ -78,6 +79,8 @@
 #include "core_stats.h"
 #include "blacklists.h"
 #include "msg_callbacks.h"
+#include "md5utils.h"
+
 
 
 /*************************** callback functions ***************************/
@@ -316,13 +319,13 @@ found:
 
 
 
-static inline str* get_sl_branch(struct sip_msg* msg)
+static inline int set_sl_branch(struct sip_msg* msg)
 {
-	static str default_branch = str_init("0");
 	struct hdr_field *h_via;
 	struct via_body  *b_via;
 	str *branch;
 	int via_parsed;
+	char b_md5[MD5_LEN];
 
 	via_parsed = 0;
 	branch = 0;
@@ -348,7 +351,7 @@ static inline str* get_sl_branch(struct sip_msg* msg)
 		if (!via_parsed) {
 			if ( parse_headers(msg,HDR_EOH_F,0)<0 ) {
 				LM_ERR("failed to parse all hdrs\n");
-				return 0;
+				return -1;
 			}
 			via_parsed = 1;
 		}
@@ -356,14 +359,45 @@ static inline str* get_sl_branch(struct sip_msg* msg)
 
 	/* no statefull branch :(.. -> use the branch from the last via */
 found:
-	if (branch) {
-		if (branch->len>(int)MAX_BRANCH_PARAM_LEN)
-			branch->len = MAX_BRANCH_PARAM_LEN;
-	} else {
-		/* no branch found/...use a default one*/
-		branch = &default_branch;
+	if (branch==NULL) {
+		/* no branch found :(.. -> try to use the From TAG param as 
+		 * a value to seed the MD5 - the From TAG is per call, so it gives
+		 * a bit of uniqueness; if this is empty, as a last resort, use the 
+		 * FROM URI (it cannot mis) */
+		if ( parse_from_header(msg)!=0 )
+		{
+			LM_ERR("failed to extract FROM header\n");
+			return -1;
+		}
+		if ( get_from(msg)->tag_value.len )
+			branch = &get_from(msg)->tag_value;
+		else
+			branch = &get_from(msg)->uri;
 	}
-	return branch;
+
+	/* make an MD5 over the found branch, to ensure a controlable 
+	 * length of the resulting branch */
+	MD5StringArray ( b_md5, branch, 1 );
+	/* and make a hash over transaction-related values */
+	if ( parse_headers(msg, HDR_CALLID_F|HDR_CSEQ_F,0)==-1 ||
+		msg->callid==NULL || msg->cseq==NULL )
+	{
+		LM_ERR("failed to extract CALLID or CSEQ hdr from SIP msg\n");
+		return -1;
+	}
+	/* build the new branch */
+	if (branch_builder(
+		core_hash( &msg->callid->body, &get_cseq(msg)->number, 1<<16 ),
+		0 /*labled - not used here */,
+		b_md5,
+		0 /*branch - not used here */,
+		msg->add_to_branch_s, &msg->add_to_branch_len )==0 )
+	{
+		LM_ERR("branch_builder failed to construct the branch\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 
@@ -375,7 +409,6 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	char* buf;
 	struct socket_info* send_sock;
 	struct socket_info* last_sock;
-	str *branch;
 
 	buf=0;
 
@@ -385,13 +418,10 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	 * on the topic, you should reuse the latest statefull branch
 	 * --bogdan */
 	if ( msg->add_to_branch_len==0 ) {
-		branch = get_sl_branch(msg);
-		if (branch==0) {
-			LM_ERR("unable to compute branch\n");
+		if (set_sl_branch(msg)!=0) {
+			LM_ERR("unable to compute and add stateless VIA branch\n");
 			goto error;
 		}
-		msg->add_to_branch_len = branch->len;
-		memcpy( msg->add_to_branch_s, branch->s, branch->len);
 	}
 
 	msg_callback_process(msg, REQ_PRE_FORWARD, (void *)p);
