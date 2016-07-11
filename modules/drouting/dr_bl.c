@@ -246,8 +246,8 @@ int populate_dr_bls(pgw_t *pgwa)
 							if( add_rule_to_list( &drbl_first, &drbl_last,
 										gw_net,
 										NULL/*body*/,
-										0/*port*/,
-										PROTO_NONE/*proto*/,
+										gw->ports[j],
+										gw->protos[j],
 										0/*flags*/) != 0) {
 								LM_ERR("Something went wrong in add_rule_to_list\n");
 							} else {
