@@ -246,6 +246,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	}
 	hostent2ip_addr( &dp->ips[0], &proxy->host, proxy->addr_idx);
 	dp->ports[0] = proxy->port;
+	dp->protos[0] = proxy->proto;
 	dp->ips_cnt = 1;
 	LM_DBG("first gw ip addr [%s]:%d\n",
 		ip_addr2a(&dp->ips[0]), dp->ports[0]);
@@ -253,8 +254,10 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	while (dp->ips_cnt<DS_MAX_IPS && (get_next_su( proxy, &sau, 0)==0) ) {
 		su2ip_addr( &dp->ips[dp->ips_cnt], &sau);
 		dp->ports[dp->ips_cnt] = proxy->port;
-		LM_DBG("additional gw ip addr [%s]:%d\n",
-			ip_addr2a(&dp->ips[dp->ips_cnt]), dp->ports[dp->ips_cnt]);
+		dp->protos[dp->ips_cnt] = proxy->proto;
+		LM_DBG("additional gw ip addr [%s]:%d, proto %d\n",
+			ip_addr2a(&dp->ips[dp->ips_cnt]),
+			dp->ports[dp->ips_cnt], dp->protos[dp->ips_cnt]);
 		/* one more IP found */
 		dp->ips_cnt++;
 	}

@@ -76,6 +76,7 @@ typedef struct _ds_dest
 	struct socket_info *sock;
 	struct ip_addr ips[DS_MAX_IPS]; /* IP-Address of the entry */
 	unsigned short int ports[DS_MAX_IPS]; /* Port of the request URI */
+	unsigned short int protos[DS_MAX_IPS]; /* Protocol of the request URI */
 	unsigned short ips_cnt;
 	unsigned short failure_count;
 	void *param;

@@ -177,7 +177,8 @@ int populate_ds_bls( ds_set_t *sets)
 			/* search if any set matches the one above */
 			for( set=sets ; set ; set = set->next) {
 				if (set->id == dsbl->sets[i]) {
-					LM_DBG("Set [%d] matches. Adding all destinations:\n", set->id);
+					LM_DBG("Set [%d] matches. Adding all destinations:\n",
+						set->id);
 					for (dst = set->dlist; dst; dst = dst->next) {
 						/* and add all IPs for each destination */
 						for( k=0 ; k<dst->ips_cnt ; k++ ) {
@@ -192,8 +193,8 @@ int populate_ds_bls( ds_set_t *sets)
 							add_rule_to_list( &dsbl_first, &dsbl_last,
 								set_net,
 								NULL/*body*/,
-								0/*port*/,
-								PROTO_NONE/*proto*/,
+								dst->ports[k],
+								dst->protos[k],
 								0/*flags*/);
 							pkg_free(set_net);
 						}
