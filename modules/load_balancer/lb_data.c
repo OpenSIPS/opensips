@@ -303,6 +303,7 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	}
 	hostent2ip_addr( &dst->ips[0], &proxy->host, proxy->addr_idx);
 	dst->ports[0] = proxy->port;
+	dst->protos[0] = proxy->proto;
 	dst->ips_cnt = 1;
 	LM_DBG("first dst ip addr [%s]:%d\n",
 		ip_addr2a(&dst->ips[0]), dst->ports[0]);
@@ -310,8 +311,10 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	while (dst->ips_cnt<LB_MAX_IPS && (get_next_su( proxy, &sau, 0)==0) ) {
 		su2ip_addr( &dst->ips[dst->ips_cnt], &sau);
 		dst->ports[dst->ips_cnt] = proxy->port;
-		LM_DBG("additional dst ip addr [%s]:%d\n",
-			ip_addr2a(&dst->ips[dst->ips_cnt]), dst->ports[dst->ips_cnt]);
+		dst->protos[dst->ips_cnt] = proxy->proto;
+		LM_DBG("additional dst ip addr [%s]:%d, proto %d\n",
+			ip_addr2a(&dst->ips[dst->ips_cnt]),
+			dst->ports[dst->ips_cnt], dst->protos[dst->ips_cnt] );
 		/* one more IP found */
 		dst->ips_cnt++;
 	}

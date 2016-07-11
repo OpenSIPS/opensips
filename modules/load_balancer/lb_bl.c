@@ -190,8 +190,8 @@ int populate_lb_bls(struct lb_dst *dest_list)
 						add_rule_to_list( &lbbl_first, &lbbl_last,
 							group_net,
 							NULL/*body*/,
-							0/*port*/,
-							PROTO_NONE/*proto*/,
+							dst->ports[j],
+							dst->protos[j],
 							0/*flags*/);
 						pkg_free(group_net);
 					}
