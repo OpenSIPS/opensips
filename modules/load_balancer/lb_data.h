@@ -73,6 +73,7 @@ struct lb_dst {
 	struct lb_resource_map *rmap;
 	struct ip_addr ips[LB_MAX_IPS]; /* IP-Address of the entry */
 	unsigned short int ports[LB_MAX_IPS]; /* Port of the request URI */
+	unsigned short int protos[LB_MAX_IPS]; /* Protocol of the request URI */
 	unsigned short ips_cnt;
 	struct lb_dst *next;
 };
