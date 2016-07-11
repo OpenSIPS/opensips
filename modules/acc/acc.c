@@ -557,6 +557,11 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	int n;
 	int i;
 
+	if (!acc_dbf.use_table || !acc_dbf.insert) {
+		LM_ERR("database not loaded! Probably database url not defined!\n");
+		return -1;
+	}
+
 	/* formated database columns */
 	m = core2strar( rq, val_arr );
 
@@ -609,6 +614,11 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	short nr_legs;
 	static db_ps_t my_ps = NULL;
 	static query_list_t *ins_list = NULL;
+
+	if (!acc_dbf.use_table || !acc_dbf.insert) {
+		LM_ERR("database not loaded! Probably database url not defined!\n");
+		return -1;
+	}
 
 	core_s.s = extra_s.s = leg_s.s = 0;
 
