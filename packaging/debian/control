@@ -71,6 +71,8 @@ Suggests: opensips-b2bua-module,
           opensips-sctp-module,
           opensips-snmpstats-module,
           opensips-tls-module,
+          opensips-wss-module,
+          opensips-tlsmgm-module,
           opensips-unixodbc-module,
           opensips-xmlrpc-module,
           opensips-xmpp-module
@@ -510,11 +512,26 @@ Description: Emerrgency call module for OpenSIPS
  the architecture i2 specification of the american entity NENA. (National
  Emergency Number Association).
 
+Package: opensips-tlsmgm-module
+Architecture: any
+Multi-Arch: same
+Depends: libssl-dev,
+         opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: TLS management module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides support for TLS management for OpenSIPS.
+
 Package: opensips-tls-module
 Architecture: any
 Multi-Arch: same
 Depends: libssl-dev,
          opensips (= ${binary:Version}),
+         opensips-tlsmgm-module (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: TLS transport module for OpenSIPS
@@ -523,6 +540,21 @@ Description: TLS transport module for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides the TLS support for OpenSIPS.
+
+Package: opensips-wss-module
+Architecture: any
+Multi-Arch: same
+Depends: libssl-dev,
+         opensips (= ${binary:Version}),
+         opensips-tlsmgm-module (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: WebSocket Secure (WSS) transport module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the WebSocket Secure (WSS) support for OpenSIPS.
 
 Package: opensips-sctp-module
 Architecture: any
