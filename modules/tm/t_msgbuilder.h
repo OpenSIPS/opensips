@@ -201,10 +201,6 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 			   shm_msg->path_vec.len);
 	}
 
-
-	/* we could also restore dst_uri, but will be confusing from script,
-	 * so let it set to NULL */
-
 	/* set as flags the global flags and the branch flags from the
 	 * elected branch */
 	faked_req->flags = uas->request->flags;
