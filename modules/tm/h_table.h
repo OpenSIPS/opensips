@@ -149,6 +149,10 @@ typedef struct ua_client
 	str              duri;
 	/* the path vector used for this branch */
 	str              path_vec;
+	/* the advertised address used for this branch */
+	str              adv_address;
+	/* the advertised port used for this branch */
+	str              adv_port;
 	/* number of RR headers that were locally added for this branch */
 	unsigned int     added_rr;
 	/* if we store a reply (branch picking), this is where it is */

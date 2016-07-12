@@ -150,6 +150,10 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	if (!t_calc_branch(Trans,  branch, branch_str.s, &branch_str.len ))
 		goto error;
 	set_hostport(&hp, (is_local(Trans))?0:req);
+	if (Trans->uac[branch].adv_address.len)
+		hp.host = &Trans->uac[branch].adv_address;
+	if (Trans->uac[branch].adv_port.len)
+		hp.port = &Trans->uac[branch].adv_port;
 	via=via_builder(&via_len, Trans->uac[branch].request.dst.send_sock,
 		&branch_str, 0, Trans->uac[branch].request.dst.proto, &hp );
 	if (!via){

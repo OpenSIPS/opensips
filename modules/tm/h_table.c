@@ -178,6 +178,12 @@ void free_cell( struct cell* dead_cell )
 		if (dead_cell->uac[i].path_vec.s) {
 			__shm_free(dead_cell->uac[i].path_vec.s);
 		}
+		if (dead_cell->uac[i].adv_address.s) {
+			__shm_free(dead_cell->uac[i].adv_address.s);
+		}
+		if (dead_cell->uac[i].adv_port.s) {
+			__shm_free(dead_cell->uac[i].adv_port.s);
+		}
 		if (dead_cell->uac[i].duri.s) {
 			__shm_free(dead_cell->uac[i].duri.s);
 		}
