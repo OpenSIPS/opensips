@@ -68,5 +68,20 @@ typedef struct usrloc_api {
 
 typedef int (*bind_usrloc_t)(usrloc_api_t* api);
 
+static inline int load_ul_api(usrloc_api_t *ul)
+{
+	bind_usrloc_t bind_usrloc;
+
+	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
+	if (!bind_usrloc) {
+		LM_ERR("can't bind usrloc\n");
+		return -1;
+	}
+
+	if (bind_usrloc(ul) < 0)
+		return -1;
+
+	return 0;
+}
 
 #endif /* USRLOC_H */
