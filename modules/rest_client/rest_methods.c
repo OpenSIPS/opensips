@@ -397,7 +397,7 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	long http_rc;
 	pv_value_t pv_val;
 	str st = { 0, 0 };
-	str body = { 0, 0 };
+	str body = { NULL, 0 }, tbody;
 
 	handle = curl_easy_init();
 	if (!handle) {
@@ -449,10 +449,11 @@ int rest_get_method(struct sip_msg *msg, char *url,
 		goto cleanup;
 	}
 
-	trim(&body);
+	tbody = body;
+	trim(&tbody);
 
 	pv_val.flags = PV_VAL_STR;
-	pv_val.rs = body;
+	pv_val.rs = tbody;
 
 	if (pv_set_value(msg, body_pv, 0, &pv_val) != 0) {
 		LM_ERR("Set body pv value failed!\n");
@@ -501,7 +502,7 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	long http_rc;
 	struct curl_slist *list = NULL;
 	str st = { 0, 0 };
-	str res_body = { 0, 0 };
+	str res_body = { NULL, 0 }, tbody;
 	pv_value_t pv_val;
 
 	handle = curl_easy_init();
@@ -564,10 +565,11 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 		goto cleanup;
 	}
 
-	trim(&res_body);
+	tbody = res_body;
+	trim(&tbody);
 
 	pv_val.flags = PV_VAL_STR;
-	pv_val.rs = res_body;
+	pv_val.rs = tbody;
 
 	if (pv_set_value(msg, body_pv, 0, &pv_val) != 0) {
 		LM_ERR("Set body pv value failed!\n");
