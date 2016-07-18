@@ -35,6 +35,7 @@
 #include "../../config.h"
 #include "../../db/db.h"
 #include "../../ip_addr.h"
+#include "../../socket_info.h"
 #include "../../mem/shm_mem.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_from.h"
@@ -59,18 +60,13 @@ struct subnet *subnet_table_2;       /* Ptr to subnet table 2 */
 static db_con_t* db_handle = 0;
 static db_func_t perm_dbf;
 
-static int proto_char2int(str *proto) {
+static inline int proto_char2int(str *proto) {
+	int ret_proto;
 	if (proto->len==0 || (proto->len==3 && !strcasecmp(proto->s, "any")))
 		return PROTO_NONE;
-	if (proto->len==3 && !strcasecmp(proto->s, "udp"))
-		return PROTO_UDP;
-	if (proto->len==3 && !strcasecmp(proto->s, "tcp"))
-		return PROTO_TCP;
-	if (proto->len==3 && !strcasecmp(proto->s, "tls"))
-		return PROTO_TLS;
-	if (proto->len==4 && !strcasecmp(proto->s, "sctp"))
-		return PROTO_SCTP;
-	return -1;
+	if (parse_proto((unsigned char*)proto->s, proto->len, &ret_proto) < 0)
+		return -1;
+	return ret_proto;
 }
 
 /*
@@ -481,17 +477,7 @@ int check_addr_6(struct sip_msg* msg,
 		str_proto.len = strlen(str_proto.s);
 	}
 
-	if (!strncasecmp(str_proto.s, "UDP", str_proto.len))
-	    proto = PROTO_UDP;
-	else if (!strncasecmp(str_proto.s, "TCP", str_proto.len))
-	    proto = PROTO_TCP;
-    else if (!strncasecmp(str_proto.s, "TLS", str_proto.len))
-	    proto = PROTO_TLS;
-    else if (!strncasecmp(str_proto.s, "SCTP", str_proto.len))
-	    proto = PROTO_SCTP;
-	else if (!strncasecmp(str_proto.s, "ANY", str_proto.len))
-	    proto = PROTO_NONE;
-	else {
+	if ((proto = proto_char2int(&str_proto)) < 0) {
 		LM_ERR("unknown protocol %.*s\n", str_proto.len, str_proto.s);
 		return -1;
 	}
