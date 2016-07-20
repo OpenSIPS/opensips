@@ -1,3 +1,356 @@
+=========================== Release 2.1.4 ==============================
+
+2016-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [171a78c] :
+
+	Update version to 2.1.4
+
+
+2016-07-18  Razvan Crainea  <razvan at opensips dot org>
+	* [9c5fe8d] :
+
+	permissions: allow any supported protocol
+	Before this commit, the protocol check was hardcoded in the module. This
+	commit allows to add in the permissions table any transport protocol
+	supported.
+
+	Thanks go to Kirill Galinurov for reporting this!
+	(cherry picked from commit 0eecff942dc3700e008a9941ac406a565325ef89)
+
+
+2016-07-15  Liviu Chircu  <liviu at opensips dot org>
+	* [a8c997d] :
+
+	rest_client: Fix incorrect trim operation
+	(cherry picked from commit d8bf10da34152612e7835a64cedbb7593b8fc57b)
+
+
+2016-07-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e0b237b] :
+
+	Fix building Via Branch in stateless mode
+	Instead of copying the branch value from a previous statefull Via header (which may lead to overflow as OpenSIPS has a maximum value for the built branch), we generate a new branch value based on the previous Via branch - in this way, we have full controll over the length of the resulting Branch and we also inherit the uniqueness of the branch value (from the prev Via hdr).
+
+	Reported by Gupta, Rahul and Elliott, Ray
+	(cherry picked from commit 482e643469b351d12418ff54c96beee7b27dca94)
+
+
+2016-07-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [49adcf5] :
+
+	Fix advertised port and address per branch.
+	Before the advertised_port/address are preserved only in the UAS part of the transaction - that means it is only one value and it is from the setting done in Request Route; whatever later setting done in Failure Route or Branch Route are not preserved at transaction level (even if they are used on the spot, for sending out the INVITE).
+	So, when we have to build a local request (ACK or CANCEL), we do not remember which specific address/port were advertised for that particular UAC (branch).
+
+	Fixes #917.
+	(cherry picked from commit eb850a22f0af83bf75e75dfadbe1320e8b92784b)
+
+
+2016-07-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6030e5f] :
+
+	Fix populating blacklists.
+	When creating the blacklists, use the port and protocol of the destination too, otherwise the rules may conflict or be too wide to be used (like 2 destinations with same IP but different ports).
+	(cherry picked from commit 7fa9cee5037af26fd1c63b70710f2bc03e6a31f4)
+
+
+2016-07-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a51b18a] :
+
+	Fix populating blacklists.
+	When creating the blacklists, use the port and protocol of the destination too, otherwise the rules may conflict or be too wide to be used (like 2 destinations with same IP but different ports).
+	(cherry picked from commit 97f309c34c7333270a3f0f997868bdb9b94107f1)
+
+
+2016-07-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f5a251a] :
+
+	Fix populating blacklists.
+	When creating the blacklists, use the port and protocol of the destination too, otherwise the rules may conflict or be too wide to be used (like 2 destinations with same IP but different ports).
+	(cherry picked from commit 0495faa7d96f92da13102480ca43cd1befd37ba0)
+
+
+2016-07-11  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [61e0ca2] :
+
+	[acc][bugfix] check if database loaded before using its handler
+	(cherry picked from commit 8dd10d85b408947576223e75a67228ed7c7abd91)
+
+
+2016-07-08  Razvan Crainea  <razvan at opensips dot org>
+	* [a48af8e] :
+
+	dialog: advance to next cell in case of error
+	(cherry picked from commit 70db2cfcdb0c74e6437db2aa9663fd0a5000ecdd)
+
+
+2016-07-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [186c4c2] :
+
+	Fix error message when a route is not defined.
+	Print the name of the route too - the ID is irrelevant for the script writter.
+	(cherry picked from commit 409481818148d7951e1520c9dd4eb715c2bec7c6)
+
+
+2016-07-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d3e9b6a] :
+
+	Fixed compiling on arm6 with fastlocks
+	Partial revert of 058e16 as we need some extra asm code for fast locking on arm6.
+	See #923
+	Closes #912
+	(cherry picked from commit a69c32877b99fbd6eef736eff58c9b6ed8228166)
+
+
+2016-07-04  Liviu Chircu  <liviu at opensips dot org>
+	* [63e25f5] :
+
+	acc: Fix incorrect Request-URI handling
+	If the config script does not include any Request-URI altering logic
+	(e.g. no lookup() or $ru manipulation), the acc module would incorrectly fill
+	in a "msg->new_uri" field which should NOT be freed into the SIP request
+	structure, leading to the memory pool being corrupted upon transaction release.
+
+	Credits to Guillaume Lacroix for reporting
+	(cherry picked from commit 02cb9f048d0a5e1f988aa9ccae1691216ed16ee5)
+
+
+2016-07-04  Razvan Crainea  <razvan at opensips dot org>
+	* [e7f8d1b] :
+
+	permissions: fix get_source_group() return
+	In case a group is not found, return -1 instead of true
+
+
+2016-06-27  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [e56b290] :
+
+	[siptrace][bugfix] fix bad macro in siptrace(trace local ip logic)
+	This commit closes #916
+	Thanks to @Tinet-AaronAn for reporting the issue
+	(cherry picked from commit 2a4f686d4997b814eeaa425dc23fe822cb8ef91a)
+
+
+2016-06-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [618ff92] :
+
+	Fix dialplan module when using db_text backend.
+	The db_text makes no difference between NULL or "empty string" values in DB -> both are internally translated as NULL . The dialplan module, in a very abusive way, forces "not null" (in DB schema and in the code for data validation) even for columns that are optional (like subst_exp, repl_exp, timerec and attrs). Besides being bogus (if a column is not to be used, you have to set it to empty string rather than let it NULL), it makes impossible the usage of db_text with dialplan.
+	This fix allows (DB and code) the mentioned DB columns to be also NULL.
+	The change is backward compatible, it should not break any existing usage of the dialplan module.
+	(cherry picked from commit 8f548976389ee3968bf06f649b54d88db694f949)
+
+
+2016-06-25  Liviu Chircu  <liviu at opensips dot org>
+	* [055730a] :
+
+	Fix compiler warning
+	Using gcc 4.8.4, we would get:
+
+	net/trans.c:43:2: warning: missing initializer for field ‘name’ of
+	‘struct proto_info’ [-Wmissing-field-initializers]
+	  { }, /* PROTO_NONE */
+	    ^
+	(cherry picked from commit 376579fa53abb6fc16de76a3070d082c9d958165)
+
+
+2016-06-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [81da723] :
+
+	Fix script varibles for providing port and proto (as part of SIP URI).
+	If the SIP URI does not have an explicit port or proto, determine the default port/proto in a SIP wise manner (rather than returning 5060 / UDP) (Ex: sip:example.com;transport=tls has default port 5061 and not 5060 ; or sips:example.com has default proto TLS and not UDP).
+
+	Affected variables are $dp, $rp, $op and $dP, $rP, $oP
+	(cherry picked from commit 6cc850e34dcd022f1ed354bd50d9a1809518fa1f)
+
+
+2016-06-24  Razvan Crainea  <razvan at opensips dot org>
+	* [6e0e811] :
+
+	Allow proto modules to populate its name
+	(cherry picked from commit 00d052c18bd663e24769b7198a24aefbcd1963dc)
+
+
+2016-06-24  Razvan Crainea  <razvan at opensips dot org>
+	* [daf692a] :
+
+	proto: always populate default values for protocols name and port
+	This allows you to print the protocol you received, and its associated port
+	(cherry picked from commit 0ae5ba280618e076a7ba658d15db32b877b55442)
+
+
+2016-06-23  Razvan Crainea  <razvan at opensips dot org>
+	* [d4c45ab] :
+
+	init: use the specified CFGFILE in debian init
+	In case the CFGFILE changes in the init script, opensips will still start with
+	the compiled file instead of the one configured
+	(cherry picked from commit 030efef84d240646ed8e99616b8a6eb64f7d17d2)
+
+
+2016-06-17  Razvan Crainea  <razvan at opensips dot org>
+	* [d00f1f3] :
+
+	Update version from 2.1.2 to 2.1.3 for specs
+
+
+2016-06-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [853998c] :
+
+	Fix proper testing of context content
+	If a STR is register to the context, a valid STR * will be always returned , so we need to test the content, not the pointer.
+	(cherry picked from commit 968a8a807c102a6d53f2bc831cde74c79ee754a9)
+
+
+2016-06-17  Razvan Crainea  <razvan at opensips dot org>
+	* [01cf24e] :
+
+	rtpproxy: no need to update the len for IPv6
+	(cherry picked from commit 5cfd916ca41ed60c9997f95d05694c9083b743b1)
+
+
+2016-06-17  davesidwell  <davesidwell at users.noreply.github dot com>
+	* [2edafc6] :
+
+	Update rtpproxy.c
+	When moving stored parameters from Branch AVP to Dialog variable, make sure that the integer value "setid" is handled correctly so that it remains valid for the remainder of the dialog.
+	(cherry picked from commit e267e9eb83e2345ca716b897975c2fbfbb4e75ce)
+
+
+2016-06-17  davesidwell  <davesidwell at users.noreply.github dot com>
+	* [5708cf5] :
+
+	Update rtpproxy.c
+	When building I/O vector for command to rtpproxy in "force_rtp_proxy_body", after an IPv6 address is detected and the "6" option is added, increase the length component in the I/O vector so it is passed correctly.
+	(cherry picked from commit 4e73871adba3f48b67a9ebbf20a2d9c60b823be8)
+
+
+2016-06-16  Andrey Vorobiev  <andrey.vorobiev at mind dot com>
+	* [5c25300] :
+
+	Add support for SIP URIs without user part in 'avpops' module.
+	This module provides a set of avp_db_xxx functions which take pseudo
+	var and flag as first argument. Flag can be one of username, domain,
+	uri or uuid. Previosly avp_db_xxx functions used to return an error if
+	flag has been set to username, domain or uri and specifed pseudo var
+	did not contain username and host after parsing as SIP URI. This
+	behaviour seems to be strange because if flag is being set to
+	domain/username and sip URI contains domain/username we can still
+	load/store/delete this variable.
+	(cherry picked from commit 459f2e90ed277a0371a3325b27038213c5083e8c)
+
+
+2016-06-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8ea0ab1] :
+
+	Fixed failure to enable NAT pinging.
+	Commit 8f0c677 introduces a bug in testing is usrloc domains are available, and if not, to disable the NAT pinging in nathelper. The test is wrong as it is done in mod_init, while registrar module registerd the usrloc domain via fixup function, after the mod_init section.
+
+	Reported by Nick Altmann
+	(cherry picked from commit f150fb75611a6e61eabc134f266064bd23f1c850)
+
+
+2016-06-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5b76510] :
+
+	Fix memory corruption on $stat() vars
+	The $stat() var specs are kept in pkg, while the name (if stat not found) is kept in memeory. This means all the copies (form all procs) of the specs will point to a single shm block. It is not safet to free this block as you have no idea how many copies of the spec (from other processes) still refer the name.
+	Closes #902
+	(cherry picked from commit 4baead765179f6bfbc098b3e59791d7bbc4a8d42)
+
+
+2016-06-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [248c836] :
+
+	Fix potential 100 Trying duplicates.
+	Added the "auto_100trying" module parameter to allow the script writter to take control (from script level) over when the 100 Trying reply is to be sent back.
+	By default, the reply is automatically generated when the INVITE transaction is created.
+	Fixes #833
+
+	(cherry picked from commit b023c93a8c476e70b1550da4f46c91d6e2679442)
+	(cherry picked from commit 71b527446b00fc4e3886d8d02c7d03d313dbee05)
+
+
+2016-06-09  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [58b2d8b] :
+
+	Fixed forcing FAST LOCKS for arm6.
+	Use FAST locking support for arm6 too.
+	For Linux, use POSIX as default locking support.
+	(cherry picked from commit 058e16f2a76df9be4e48fa6866b096502981d530)
+
+
+2016-06-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2ca9e1d] :
+
+	Fix evaluating the SIP port from a SIP URI.
+	Use the new function get_uri_port() to evaluate the port and proto, in a SIP wise manner, form a SIP URI. If port/proto are not explicitly set in the URI, consider the default port for the used transpor proto. If protocol misses, we assume the default protos according to the URI schema.
+
+	NOTE: it is completly bogus (and dangerous) to assue 5061 if SIPS schema is used as:
+	1) SIPS can use used with WSS, which actually has 443 port
+	2) TLS can pe required via transport param in a SIP schema URI too
+	(cherry picked from commit 4c54bcd8bf0426f899b82505e493c97ef5378c79)
+
+
+2016-06-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [10bff83] :
+
+	Removed compilation warning
+	implicit declaration of function â"sched_yield" [-Wimplicit-function-declaration]
+	(cherry picked from commit 8ef8d79701357b7412555519e166481e699e9833)
+
+
+2016-06-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [485bfad] :
+
+	Removed wrong "NOT NULL" constraint over the contact DB fields
+	The code actually handles the case of NULL callee / caller contacts, so DB must allow NULL values.
+
+
+2016-06-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a5b1249] :
+
+	Removed unused "error" jump label
+	(cherry picked from commit 5819b0fa7033bf2a6daef824bc21dd4ba497ae1b)
+
+
+2016-06-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [48c178b] :
+
+	Fix error handling in DB writes.
+	If inserting/updating a dlg record in DB fails, do not exit with error, but continue with the rest of the dialogs.
+	Credits for finding and reporting this go to Rik Broers @ Motto
+	(cherry picked from commit 0ca6cf035471fc010366e4d29ced5d6fd63199ab)
+
+
+2016-06-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f2ab0da] :
+
+	Proper handle the case of no usrloc domain registered.
+	Prevent get_next_udomain() crashing if there are no usrloc domains registered (reported by Qasim Akhan on users mailing list.
+	Do not enable the pinging support in nathelper if usrloc has no registered domains.
+	(cherry picked from commit 8f0c677be7dfd3fe6b17932173f14e049ae466a5)
+
+
+2016-06-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [72f1711] :
+
+	Fix documentation on former b2bl_key_avp module param
+	(cherry picked from commit ca21c6d2871e01d093c69371ddcc204c5af0355a)
+
+
+2016-05-31  Razvan Crainea  <razvan at opensips dot org>
+	* [34abb00] :
+
+	httpd: properly treat select response
+	(cherry picked from commit b49d37494d77c81bdbf76406fc568f530cd66379)
+
+
+2016-05-30  Razvan Crainea  <razvan at opensips dot org>
+	* [1867198] :
+
+	Update ChangeLog for 2.1.3
+
 =========================== Release 2.1.3 ==============================
 
 2016-05-30  Razvan Crainea  <razvan at opensips dot org>
