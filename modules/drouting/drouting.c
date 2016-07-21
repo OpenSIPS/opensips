@@ -990,7 +990,12 @@ static inline int get_group_id(struct sip_uri *uri)
 
 	if (RES_ROW_N(res) == 0) {
 		if (dr_default_grp!=-1)
+		{
+			if (res)
+				(current_partition->db_funcs).free_result(*(current_partition->db_con), res);
+
 			return dr_default_grp;
+		}
 		LM_ERR("no group for user "
 			"\"%.*s\"@\"%.*s\"\n", uri->user.len, uri->user.s,
 			uri->host.len, uri->host.s);
