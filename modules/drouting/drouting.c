@@ -1895,11 +1895,9 @@ static inline int get_group_id(struct sip_uri *uri, struct head_db *
 	}
 
 	if (RES_ROW_N(res) == 0) {
-		if (dr_default_grp!=-1)
-		{
-			if (res)
-				(current_partition->db_funcs).free_result(*(current_partition->db_con), res);
-
+		if (dr_default_grp!=-1) {
+			(current_partition->db_funcs).free_result
+				(*(current_partition->db_con), res);
 			return dr_default_grp;
 		}
 		LM_ERR("no group for user "
