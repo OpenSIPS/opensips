@@ -267,7 +267,6 @@ static int mod_init(void)
 	pv_spec_t avp_spec;
 	int i;
 
-	init_db_url( db_url , 0 /*cannot be null*/);
 	siptrace_table.len = strlen(siptrace_table.s);
 	date_column.len = strlen(date_column.s);
 	callid_column.len = strlen(callid_column.s);
@@ -298,21 +297,22 @@ static int mod_init(void)
 		return -1;
 
 	trace_to_database_flag = (int*)shm_malloc(sizeof(int));
-        if(trace_to_database_flag==NULL) {
-                LM_ERR("no more shm memory left\n");
-                return -1;
-        }
+	if(trace_to_database_flag==NULL) {
+		LM_ERR("no more shm memory left\n");
+		return -1;
+	}
 
 	*trace_to_database_flag = trace_to_database;
 
-        if(trace_to_database_flag!=NULL && *trace_to_database_flag!=0) {
+	if(*trace_to_database_flag!=0) {
+		init_db_url( db_url , 0 /*cannot be null*/);
 		/* Find a database module */
 		if (db_bind_mod(&db_url, &db_funcs))
 		{
 			LM_ERR("unable to bind database module\n");
 			return -1;
 		}
-		if (trace_to_database_flag && !DB_CAPABILITY(db_funcs, DB_CAP_INSERT))
+		if (!DB_CAPABILITY(db_funcs, DB_CAP_INSERT))
 		{
 			LM_ERR("database modules does not provide all functions needed by module\n");
 			return -1;
@@ -555,7 +555,7 @@ static int save_siptrace(struct sip_msg *msg,struct usr_avp *avp,
 			db_vals[0].val.blob_val.len);
 
 
-	if(trace_to_database_flag!=NULL && *trace_to_database_flag!=0) {
+	if(*trace_to_database_flag!=0) {
 		LM_DBG("saving siptrace\n");
 		db_funcs.use_table(db_con, siptrace_get_table());
 
@@ -576,7 +576,7 @@ static int save_siptrace(struct sip_msg *msg,struct usr_avp *avp,
 static int child_init(int rank)
 {
 
-	if(trace_to_database_flag!=NULL && *trace_to_database_flag!=0) {
+	if(*trace_to_database_flag!=0) {
 		db_con = db_funcs.init(&db_url);
 		if (!db_con)
 		{
@@ -1565,21 +1565,17 @@ static struct mi_root* trace_to_database_mi (struct mi_root* cmd_tree, void* par
 		}
 		return rpl_tree ;
 	}
-	if(trace_to_database_flag==NULL)
-		return init_mi_tree( 500, MI_SSTR(MI_INTERNAL_ERR));
 
 	if ( node->value.len==2 &&
 	(node->value.s[0]=='o'|| node->value.s[0]=='O') &&
 	(node->value.s[1]=='n'|| node->value.s[1]=='N'))
 	{
-                if (db_con!=NULL) {
-        		*trace_to_database_flag = 1;
-	        	return init_mi_tree( 200, MI_SSTR(MI_OK));
-                }
-                else {
-                        return init_mi_tree( 501, MI_SSTR(MI_INTERNAL_ERR));
-                }
-
+		if (db_con!=NULL) {
+			*trace_to_database_flag = 1;
+			return init_mi_tree( 200, MI_SSTR(MI_OK));
+		} else {
+			return init_mi_tree( 501, MI_SSTR(MI_INTERNAL_ERR));
+		}
 	} else if ( node->value.len==3 &&
 	(node->value.s[0]=='o'|| node->value.s[0]=='O') &&
 	(node->value.s[1]=='f'|| node->value.s[1]=='F') &&
