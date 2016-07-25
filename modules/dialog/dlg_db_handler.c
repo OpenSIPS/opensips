@@ -859,7 +859,7 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 	LM_DBG("callid was %.*s\n", cell->callid.len, cell->callid.s );
 
 	/* dialog saved */
-	run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+	run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1);
 
 	return 0;
 }
@@ -901,7 +901,7 @@ int update_dialog_timeout_info(struct dlg_cell * cell)
 	}
 
 	/* dialog saved */
-	run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+	run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1);
 
 	cell->flags &= ~(DLG_FLAG_CHANGED);
 
@@ -1006,7 +1006,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		}
 
 		/* dialog saved */
-		run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+		run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1);
 
 		cell->flags &= ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 
@@ -1046,7 +1046,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		}
 
 		/* dialog saved */
-		run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+		run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1);
 
 		cell->flags &= ~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 	} else if (cell->flags & DLG_FLAG_VP_CHANGED) {
@@ -1073,7 +1073,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 			goto error;
 		}
 
-		run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+		run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1);
 
 		cell->flags &= ~DLG_FLAG_VP_CHANGED;
 	} else {
@@ -1225,6 +1225,13 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 	LM_DBG("DLG vals and profiles should %s[%x:%d]\n",
 			(db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED)) ?
 			"be saved" : "not be saved", cell->flags, db_flush_vp);
+
+	if (on_shutdown || db_flush_vp) {
+		/* it is very likely to flush the vals/profiles to DB, so trigger the
+		 * callback to see if other modules may want to add more vals/profiles
+		 before the actual writting */
+		run_dlg_callbacks( DLGCB_DB_WRITE_VP, cell, 0, DLG_DIR_NONE, NULL, 1);
+	}
 
 	if (on_shutdown || (db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED))) {
 		if (cell->vals==NULL) {
@@ -1396,7 +1403,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 					ins_done=1;
 
 				/* dialog saved */
-				run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+				run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL,1);
 
 				cell->flags &= ~(DLG_FLAG_NEW |DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 
@@ -1435,7 +1442,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				}
 
 				/* dialog saved */
-				run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+				run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL,1);
 
 				cell->flags &= ~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 			} else if (db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED)) {
@@ -1454,7 +1461,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 					continue;
 				}
 
-				run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+				run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL,1);
 
 				cell->flags &= ~DLG_FLAG_VP_CHANGED;
 			}
@@ -2045,7 +2052,7 @@ static int restore_dlg_db(void)
 				ins_done = 1;
 
 			/* dialog saved */
-			run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+			run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1);
 
 			cell->flags &= ~(DLG_FLAG_NEW |DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 		}

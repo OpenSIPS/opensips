@@ -254,7 +254,7 @@ void run_create_callbacks(struct dlg_cell *dlg, struct sip_msg *msg)
 
 
 void run_dlg_callbacks(int type , struct dlg_cell *dlg, struct sip_msg *msg,
-											unsigned int dir, void *dlg_data)
+								unsigned int dir, void *dlg_data, int locked)
 {
 	struct dlg_callback *cb;
 
@@ -265,6 +265,9 @@ void run_dlg_callbacks(int type , struct dlg_cell *dlg, struct sip_msg *msg,
 	if (dlg->cbs.first==0 || ((dlg->cbs.types)&type)==0 )
 		return;
 
+	if (locked)
+		dlg->locked_by = (unsigned short)process_no;
+
 	for ( cb=dlg->cbs.first; cb; cb=cb->next)  {
 		if ( (cb->types)&type ) {
 			LM_DBG("dialog=%p, type=%d\n", dlg, type);
@@ -272,5 +275,7 @@ void run_dlg_callbacks(int type , struct dlg_cell *dlg, struct sip_msg *msg,
 			cb->callback( dlg, type, &params );
 		}
 	}
+
+	dlg->locked_by = 0;
 	return;
 }

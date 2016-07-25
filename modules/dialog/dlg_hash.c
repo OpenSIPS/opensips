@@ -242,7 +242,7 @@ void destroy_dlg(struct dlg_cell *dlg)
 			dlg_leg_print_info( dlg, callee_idx(dlg), tag));
 	}
 
-	run_dlg_callbacks( DLGCB_DESTROY , dlg, 0, DLG_DIR_NONE, 0);
+	run_dlg_callbacks( DLGCB_DESTROY , dlg, 0, DLG_DIR_NONE, NULL, 0);
 
 	free_dlg_dlg(dlg);
 }
@@ -1275,7 +1275,7 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 		}
 		/* print external context info */
 		run_dlg_callbacks( DLGCB_MI_CONTEXT, dlg, NULL,
-			DLG_DIR_NONE, (void *)node1);
+			DLG_DIR_NONE, (void *)node1, 0);
 	}
 
 	return 0;

@@ -127,7 +127,11 @@ struct dlg_cell
 	unsigned int         h_entry;
 	unsigned int         state;
 	unsigned int         lifetime;
-	unsigned int         lifetime_dirty; /* 1 if lifetime timer should be updated */
+	unsigned short       lifetime_dirty; /* 1 if lifetime timer should
+	                                      * be updated */
+	unsigned short       locked_by;   /* holds the ID of the process locking
+	                                   * the dialog (if the case) while
+	                                   * calling a callback */
 	unsigned int         start_ts;    /* start time  (absolute UNIX ts)*/
 	unsigned int         flags;
 	unsigned int         from_rr_nb;

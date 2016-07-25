@@ -689,10 +689,12 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 	 * into the hash table -> we need circular lists  -bogdan */
 	if (dlg->h_id) {
 		d_entry = &d_table->entries[dlg->h_entry];
-		dlg_lock( d_table, d_entry);
+		if (dlg->locked_by!=process_no)
+			dlg_lock( d_table, d_entry);
 		linker->next = dlg->profile_links;
 		dlg->profile_links =linker;
-		dlg_unlock( d_table, d_entry);
+		if (dlg->locked_by!=process_no)
+			dlg_unlock( d_table, d_entry);
 	} else {
 		linker->next = dlg->profile_links;
 		dlg->profile_links =linker;
@@ -815,7 +817,9 @@ int unset_dlg_profile(struct dlg_cell *dlg, str *value,
 
 	/* check the dialog linkers */
 	d_entry = &d_table->entries[dlg->h_entry];
-	dlg_lock( d_table, d_entry);
+	/* lock dialog (if not already locked via a callback triggering)*/
+	if (dlg->locked_by!=process_no)
+		dlg_lock( d_table, d_entry);
 	linker = dlg->profile_links;
 	linker_prev = NULL;
 	for( ; linker ; linker_prev=linker,linker=linker->next) {
@@ -831,7 +835,8 @@ int unset_dlg_profile(struct dlg_cell *dlg, str *value,
 			 */
 		}
 	}
-	dlg_unlock( d_table, d_entry);
+	if (dlg->locked_by!=process_no)
+		dlg_unlock( d_table, d_entry);
 	return -1;
 
 found:
@@ -844,7 +849,8 @@ found:
 	}
 	linker->next = NULL;
 	dlg->flags |= DLG_FLAG_VP_CHANGED;
-	dlg_unlock( d_table, d_entry);
+	if (dlg->locked_by!=process_no)
+		dlg_unlock( d_table, d_entry);
 	/* remove linker from profile table and free it */
 	destroy_linkers(linker, 0);
 	return 1;

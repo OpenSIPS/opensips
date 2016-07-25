@@ -122,11 +122,13 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 {
 	int ret;
 
-	/* lock dialog */
-	dlg_lock_dlg( dlg );
+	/* lock dialog (if not already locked via a callback triggering)*/
+	if (dlg->locked_by!=process_no)
+		dlg_lock_dlg( dlg );
 	ret = store_dlg_value_unsafe(dlg,name,val);
 	/* unlock dialog */
-	dlg_unlock_dlg( dlg );
+	if (dlg->locked_by!=process_no)
+		dlg_unlock_dlg( dlg );
 
 	return ret;
 }
@@ -151,8 +153,9 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 	} else
 		val = ival;
 
-	/* lock dialog */
-	dlg_lock_dlg( dlg );
+	/* lock dialog (if not already locked via a callback triggering)*/
+	if (dlg->locked_by!=process_no)
+		dlg_lock_dlg( dlg );
 
 	/* iterate the list */
 	for( dv=dlg->vals ; dv ; dv=dv->next) {
@@ -166,7 +169,8 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 					if (!val_has_buf)
 						val_buf_size = 0;
 
-					dlg_unlock_dlg( dlg );
+					if (dlg->locked_by!=process_no)
+						dlg_unlock_dlg( dlg );
 					LM_ERR("failed to do realloc for %d\n",dv->val.len);
 					return -1;
 				}
@@ -179,13 +183,15 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 			*ival = *val;
 
 			/* unlock dialog */
-			dlg_unlock_dlg( dlg );
+			if (dlg->locked_by!=process_no)
+				dlg_unlock_dlg( dlg );
 			return 0;
 		}
 	}
 
 	/* unlock dialog */
-	dlg_unlock_dlg( dlg );
+	if (dlg->locked_by!=process_no)
+		dlg_unlock_dlg( dlg );
 	LM_DBG("var NOT found!\n");
 
 	return -1;

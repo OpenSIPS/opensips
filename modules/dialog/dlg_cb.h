@@ -63,7 +63,8 @@ typedef int (*register_dlgcb_f)(struct dlg_cell* dlg, int cb_types,
 #define DLGCB_RESPONSE_WITHIN (1<<9)
 #define DLGCB_MI_CONTEXT      (1<<10)
 #define DLGCB_DESTROY         (1<<11)
-#define DLGCB_SAVED           (1<<12)
+#define DLGCB_DB_SAVED        (1<<12)
+#define DLGCB_DB_WRITE_VP     (1<<13)
 
 struct dlg_callback {
 	int types;
@@ -91,7 +92,7 @@ int register_dlgcb( struct dlg_cell* dlg, int types, dialog_cb f, void *param, p
 void run_create_callbacks(struct dlg_cell *dlg, struct sip_msg *msg);
 
 void run_dlg_callbacks( int type , struct dlg_cell *dlg, struct sip_msg *msg,
-		unsigned int dir, void *dlg_data);
+		unsigned int dir, void *dlg_data, int locked);
 
 void run_load_callbacks( void );
 
