@@ -304,8 +304,10 @@ acc_ctx_t* try_fetch_ctx(void)
 
 		/* search the flags in transaction context */
 		if (t && (ret=ACC_GET_TM_CTX(t))==NULL) {
-			/* try fetching the context from dialog */
-			if (dlg && dlg_api.fetch_dlg_value(dlg, &acc_ctx_str, &ctx_s, 0) < 0) {
+			/* try fetching the context from dialog  only if dialog exists */
+			if ( !dlg ||
+				 (dlg &&
+					dlg_api.fetch_dlg_value(dlg, &acc_ctx_str, &ctx_s, 0) < 0)) {
 				/* can't find the flags anywhere */
 				return NULL;
 			} else { /* found them in dialog; set in the processing context
