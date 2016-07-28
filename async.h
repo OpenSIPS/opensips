@@ -46,6 +46,7 @@ enum async_ret_code {
 
 extern int async_status;
 
+/******** functions related to script async ops *******/
 
 /* function to handle script function in async mode.
    Input: the sip message, the function/action (MODULE_T) and the ID of
@@ -54,21 +55,20 @@ extern int async_status;
           must be terminated.
           -1 some error happened and the async call did not happened.
  */
+typedef int (async_script_start_function)
+	(struct sip_msg *msg, struct action* a , int resume_route);
 
+typedef int (async_script_resume_function)
+	(int *fd, void *param);
 
 /* internal used functions to start (from script) and
  * to continue (from reactor) async I/O ops */
-typedef int (async_start_function)
-	(struct sip_msg *msg, struct action* a , int resume_route);
+extern async_script_start_function  *async_script_start_f;
+extern async_script_resume_function *async_script_resume_f;
 
-typedef int (async_resume_function)
-	(int *fd, void *param);
-
-extern async_start_function  *async_start_f;
-extern async_resume_function *async_resume_f;
-
-int register_async_handlers(async_start_function *f1, async_resume_function *f2);
-
+/* Registers the start and resume functions for the script async ops */
+int register_script_async_handlers(async_script_start_function *f1,
+											async_script_resume_function *f2);
 
 /* async related functions to be used by the
  * functions exported by modules */
@@ -76,6 +76,8 @@ typedef int (async_resume_module)
 	(int fd, struct sip_msg *msg, void *param);
 
 
+
+/******** functions related to generic fd async ops *******/
 
 /* async resume function triggered by
  * an IO event on a a registered FD */
@@ -90,10 +92,9 @@ typedef int (async_resume_fd)
  * removed from the reactor (see async_ret_code).
  * Returns : 0 - on succesfull FD registration
  *          -1 - failure to register the FD
- * Function to be used by modules seeking to launch async I/O ops.
+ * Function to be used by modules seeking to launch async I/O ops
  */
 int register_async_fd(int fd, async_resume_fd *f, void *param);
-
 
 /* Reseum function for the registered async fd. This is internally called
  * by the reactor via the handle_io() routine

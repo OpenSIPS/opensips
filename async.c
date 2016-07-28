@@ -31,8 +31,8 @@
 int async_status = ASYNC_NO_IO;
 
 /* start/resume functions used for script async ops */
-async_start_function  *async_start_f  = NULL;
-async_resume_function *async_resume_f = NULL;
+async_script_start_function  *async_script_start_f  = NULL;
+async_script_resume_function *async_script_resume_f = NULL;
 
 /* async context used for fd async operations */
 typedef struct _async_fd_ctx {
@@ -44,15 +44,16 @@ typedef struct _async_fd_ctx {
 
 
 
-int register_async_handlers(async_start_function *f1, async_resume_function *f2)
+int register_async_script_handlers(async_script_start_function *f1,
+											async_script_resume_function *f2)
 {
-	if (async_start_f) {
-		LM_ERR("aync handler already registered, it cannot be override\n");
+	if (async_script_start_f) {
+		LM_ERR("aync script handlers already registered\n");
 		return -1;
 	}
 
-	async_start_f = f1;
-	async_resume_f = f2;
+	async_script_start_f = f1;
+	async_script_resume_f = f2;
 
 	return 0;
 }
