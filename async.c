@@ -117,6 +117,7 @@ int async_fd_resume(int *fd, void *param)
 				if (async_status == ASYNC_CHANGE_FD)
 					*fd=ret;
 			} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
+			goto done;
 		} else {
 
 			/* succesfully changed fd */
@@ -127,6 +128,7 @@ int async_fd_resume(int *fd, void *param)
 	/* remove from reactor, we are done */
 	reactor_del_reader( *fd, -1, IO_FD_CLOSING);
 
+done:
 	if (async_status == ASYNC_DONE_CLOSE_FD)
 		close(*fd);
 
