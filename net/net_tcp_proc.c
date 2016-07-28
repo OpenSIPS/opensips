@@ -119,6 +119,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 		case F_SCRIPT_ASYNC:
 			async_resume_f( &fm->fd, fm->data);
 			return 0;
+		case F_FD_ASYNC:
+			async_fd_resume( &fm->fd, fm->data);
+			return 0;
 		case F_TCPMAIN:
 again:
 			ret=n=receive_fd(fm->fd, response, sizeof(response), &s, 0);

@@ -75,5 +75,31 @@ int register_async_handlers(async_start_function *f1, async_resume_function *f2)
 typedef int (async_resume_module)
 	(int fd, struct sip_msg *msg, void *param);
 
+
+
+/* async resume function triggered by
+ * an IO event on a a registered FD */
+typedef int (async_resume_fd)
+	(int fd, void *param);
+
+
+/* Registers the fd into the reactor for READ monitoring; The f function
+ * (together with the param parameter) will be triggered for each READ event
+ * on the fd.
+ * The return code of the f resume function dictates when the fd will be
+ * removed from the reactor (see async_ret_code).
+ * Returns : 0 - on succesfull FD registration
+ *          -1 - failure to register the FD
+ * Function to be used by modules seeking to launch async I/O ops.
+ */
+int register_async_fd(int fd, async_resume_fd *f, void *param);
+
+
+/* Reseum function for the registered async fd. This is internally called
+ * by the reactor via the handle_io() routine
+   Function only for internal usage.
+ */
+int async_fd_resume(int *fd, void *param);
+
 #endif
 
