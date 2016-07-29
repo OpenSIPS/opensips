@@ -67,7 +67,7 @@ extern async_script_start_function  *async_script_start_f;
 extern async_script_resume_function *async_script_resume_f;
 
 /* Registers the start and resume functions for the script async ops */
-int register_script_async_handlers(async_script_start_function *f1,
+int register_async_script_handlers(async_script_start_function *f1,
 											async_script_resume_function *f2);
 
 /* async related functions to be used by the
