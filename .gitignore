@@ -1,8 +1,9 @@
 *.o
 *.d
 *.so
-*.swp
+*.sw?
 tags
+cscope*
 
 # /
 /cfg.tab.c
@@ -14,12 +15,20 @@ tags
 /.svnrevision
 /.gitrevision
 
-
 # /doc/
 /doc/database
 
 # /menuconfig/
 /menuconfig/configure
+/Makefile.conf
 
 # /utils/opensipsunix/
 /utils/opensipsunix/opensipsunix
+
+# miscellaneous files
+core
+core.*
+out
+log
+*.log
+*.html
