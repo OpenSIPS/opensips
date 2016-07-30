@@ -1,0 +1,1 @@
+id(int,auto) organizationName(string) hostId(string) nenaId(string) contact(string) certUri(string) nodeIP(string) attribution(int) 

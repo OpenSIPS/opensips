@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Route & Record-Route header field parser
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /**
@@ -68,7 +66,7 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 			goto error;
 		}
 		memset(r, 0, sizeof(rr_t));
-		
+
 		/* Parse name-addr part of the header */
 		if (parse_nameaddr(&s, &r->nameaddr) < 0) {
 			LM_ERR("failed to parse name-addr\n");
@@ -83,12 +81,12 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 		trim_leading(&s); /* Skip any white-chars */
 
 		if (s.len == 0) goto ok; /* Nothing left, finish */
-		
+
 		if (s.s[0] == ';') {         /* Route parameter found */
 			s.s++;
 			s.len--;
 			trim_leading(&s);
-			
+
 			if (s.len == 0) {
 				LM_ERR("failed to parse params\n");
 				goto parse_error;
@@ -113,7 +111,7 @@ static inline int do_parse_rr_body(char *buf, int len, rr_t **head)
 			LM_ERR("invalid character '%c', comma expected\n", s.s[0]);
 			goto parse_error;
 		}
-		
+
 		/* Next character is comma or end of header*/
 		s.s++;
 		s.len--;
@@ -252,12 +250,12 @@ static inline void xlate_pointers(rr_t* _orig, rr_t* _r)
 {
 	param_t* ptr;
 	_r->nameaddr.uri.s = translate_pointer(_r->nameaddr.name.s, _orig->nameaddr.name.s, _r->nameaddr.uri.s);
-	
+
 	ptr = _r->params;
 	while(ptr) {
 		     /*		if (ptr->type == P_R2) _r->r2 = ptr; */
 		ptr->name.s = translate_pointer(_r->nameaddr.name.s, _orig->nameaddr.name.s, ptr->name.s);
-		ptr->body.s = translate_pointer(_r->nameaddr.name.s, _orig->nameaddr.name.s, ptr->body.s);		
+		ptr->body.s = translate_pointer(_r->nameaddr.name.s, _orig->nameaddr.name.s, ptr->body.s);
 		ptr = ptr->next;
 	}
 }
@@ -375,9 +373,9 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 	route_len= 0;
 	memset(route, 0, MAX_RR_HDRS*sizeof(str));
 
-	while (iroute!=NULL) 
+	while (iroute!=NULL)
 	{
-		if (parse_rr(iroute) < 0) 
+		if (parse_rr(iroute) < 0)
 		{
 			LM_ERR("failed to parse RR\n");
 			goto error;
@@ -402,18 +400,18 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 	}
 
 	for(i=0;i<n;i++){
-		if(!nb_recs || (nb_recs && 
+		if(!nb_recs || (nb_recs &&
 		 ( (!order&& (i>=*nb_recs)) || (order && (i<=(n-*nb_recs)) )) ) )
 		{
 			route_len+= route[i].len;
 			nr++;
 		}
-	
+
 	}
 
 	if(nb_recs)
 		LM_DBG("skipping %i route records\n", *nb_recs);
-	
+
 	route_len += --nr; /* for commas */
 
 	oroute->s=(char*)pkg_malloc(route_len);
@@ -437,9 +435,9 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 				*(cp++) = ',';
 		}
 	} else {
-		
+
 		i = (nb_recs == NULL) ? n-1 : (n-*nb_recs-1);
-			
+
 		while (i>=0)
 		{
 			memcpy(cp, route[i].s, route[i].len);
@@ -453,7 +451,7 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 	LM_DBG("out rr [%.*s]\n", oroute->len, oroute->s);
 	LM_DBG("we have %i records\n", n);
 	if(nb_recs != NULL)
-		*nb_recs = (unsigned int)n; 
+		*nb_recs = (unsigned int)n;
 
 	return 0;
 
@@ -464,7 +462,7 @@ error:
 
 
 /*
- * Path must be available. Function returns the first uri 
+ * Path must be available. Function returns the first uri
  * from Path without any duplication.
  */
 int get_path_dst_uri(str *_p, str *_dst)

@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * MySQL module result related functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -18,9 +16,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -58,7 +56,7 @@ int db_mysql_get_columns(const db_con_t* _h, db_res_t* _r)
 	} else {
 		LM_DBG("%d columns returned from the query\n", RES_COL_N(_r));
 	}
-	
+
 	if (db_allocate_columns(_r, RES_COL_N(_r)) != 0) {
 		LM_ERR("could not allocate columns\n");
 		return -3;

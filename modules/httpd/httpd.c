@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011-2012 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -93,9 +91,12 @@ static mi_export_t mi_cmds[] = {
 /** Module exports */
 struct module_exports exports = {
 	"httpd",                    /* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,                       /* exported functions */
+	0,                          /* exported async functions */
 	params,                     /* exported parameters */
 	NULL,                       /* exported statistics */
 	mi_cmds,                    /* exported MI functions */
@@ -224,6 +225,7 @@ static struct mi_root* mi_list_root_path(struct mi_root* cmd, void* param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 	while(cb) {
 		node = add_mi_node_child(rpl, 0, "http_root", 9,
 				cb->http_root->s, cb->http_root->len);

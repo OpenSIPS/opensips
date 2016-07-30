@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * SDP parser interface
  *
  * Copyright (C) 2008 SOMA Networks, INC.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * HISTORY:
@@ -135,6 +133,8 @@ typedef struct sdp_info {
  * Parse SDP.
  */
 int parse_sdp(struct sip_msg* _m);
+int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp,
+                      sdp_info_t* _sdp);
 
 /**
  * Get number of sessions in existing SDP.
@@ -177,7 +177,8 @@ sdp_payload_attr_t* get_sdp_payload4index(sdp_stream_cell_t *stream, int index);
  *
  * Note: this will free up the parsed sdp structure (form PKG_MEM).
  */
-void free_sdp(sdp_info_t** _sdp);
+void free_sdp(sdp_info_t** sdp);
+void __free_sdp(sdp_info_t* sdp);
 
 
 /**

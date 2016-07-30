@@ -12,8 +12,7 @@ Dan Pascu
 
    Copyright © 2008 Dan Pascu
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -515,7 +514,7 @@ if (client_nat_test("3")) {
 
    Will replace the IP and port in the Contact header with the IP
    and port the SIP message was received from. Usually called
-   after a succesful call to client_nat_test(type)
+   after a successful call to client_nat_test(type)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.

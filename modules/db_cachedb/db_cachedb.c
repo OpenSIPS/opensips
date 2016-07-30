@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -60,20 +60,33 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_CACHEDB, NULL, DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports = {
 	"db_cachedb",
+	MOD_TYPE_SQLDB,  /* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS,            /* dlopen flags */
+	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,
-	params,                     /* module parameters */
-	0,                          /* exported statistics */
-	0,                          /* exported MI functions */
-	0,                          /* exported pseudo-variables */
-	0,                          /* extra processes */
-	mod_init,                   /* module initialization function */
-	0,                          /* response function*/
-	destroy,                    /* destroy function */
-	0                           /* per-child init function */
+	NULL,
+	params,          /* module parameters */
+	0,               /* exported statistics */
+	0,               /* exported MI functions */
+	0,               /* exported pseudo-variables */
+	0,               /* extra processes */
+	mod_init,        /* module initialization function */
+	0,               /* response function*/
+	destroy,         /* destroy function */
+	0                /* per-child init function */
 };
 
 

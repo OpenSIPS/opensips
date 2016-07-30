@@ -1,0 +1,127 @@
+sqlite Module
+
+Ionut-Razvan Ionita
+
+   <ionutionita@opensips.org>
+
+   Copyright © 2015 Voice Sistem SRL
+   Revision History
+   Revision $Revision: 5901 $ $Date$
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. alloc_limit (integer)
+              1.3.2. load_extension (string)
+
+        1.4. Exported Functions
+        1.5. Installation
+
+   List of Examples
+
+   1.1. Set alloc_limit parameter
+   1.2. Set db_sqlite_alloc_limit parameter
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This is a module which provides SQLite support for OpenSIPS. It
+   implements the DB API defined in OpenSIPS.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * No dependencies on other OpenSIPS modules.
+
+   Also this module provides two ways of creating the query. One
+   is to use sqlite3_bind_* functions after opensips creates the
+   prepared statement query. The second one directly uses only
+   sqlite3_snprintf function to print the values into the opensips
+   created query. In theory, the second one should be faster and
+   should allow you to make more queries to the database in the
+   same time, so by default this one will be active. You can use
+   the sqlite3_bind_* interface by simply uncommenting the
+   SQLITE_BIND line the Makefile.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * libsqlite3-dev - the development libraries of sqlite.
+
+1.3. Exported Parameters
+
+1.3.1. alloc_limit (integer)
+
+   Since the library does not support a function to return the
+   number of rows in a query, this number is obtained using
+   "count(*)" query. If we use multiple processes there is the
+   risk ,since "count(*)" query and the actual "select" query, the
+   number of rows in the result query to have changed, so realloc
+   will be needed if the number is bigger. Using alloc_limit
+   parameter you can specify the number with which the number of
+   allocated rows in the result is raised.
+
+   Default value is 10.
+
+   Example 1.1. Set alloc_limit parameter
+...
+modparam("db_sqlite", "alloc_limit", 25)
+...
+
+1.3.2. load_extension (string)
+
+   Since the library does not support a function to return the
+   number of rows in a query, this number is obtained using
+   "count(*)" query. If we use multiple processes there is the
+   risk ,since "count(*)" query and the actual "select" query, the
+   number of rows in the result query to have changed, so realloc
+   will be needed if the number is bigger. Using alloc_limit
+   parameter you can specify the number with which the number of
+   allocated rows in the result is raised. This parameter enables
+   extension loading, similiar to ".load" functionality in
+   sqlite3, extenions like sqlite3-pcre which enables REGEX
+   function. In order to use this functionality you must specify
+   the library path(.so file) and the entry point which represents
+   the function to be called by the sqlite library (read more at
+   sqlite load_extension official documentation), separated by ";"
+   delimiter. The entry point paramter can miss, so you won't need
+   to use the delimitier in this case.
+
+   Default no extenion is loaded.
+
+   Example 1.2. Set db_sqlite_alloc_limit parameter
+...
+modparam("db_sqlite", "load_extension", "/usr/lib/sqlite3/pcre.so")
+modparam("db_sqlite", "load_extension", "/usr/lib/sqlite3/pcre.so;sqlite
+3_extension_init")
+...
+
+1.4. Exported Functions
+
+   No function exported to be used from configuration file.
+
+1.5. Installation
+
+   Because it dependes on an external library, the sqlite module
+   is not compiled and installed by default. You can use one of
+   the next options.
+     * - edit the "Makefile" and remove "db_sqlite" from
+       "excluded_modules" list. Then follow the standard procedure
+       to install OpenSIPS: "make all; make install".
+     * - from command line use: 'make all
+       include_modules="db_sqlite"; make install
+       include_modules="db_sqlite"'.

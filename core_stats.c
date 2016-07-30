@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,12 +15,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
  *  2006-01-23  first version (bogdan)
- *  2006-11-28  Added statistics for the number of bad URI's, methods, and 
+ *  2006-11-28  Added statistics for the number of bad URI's, methods, and
  *              proxy requests (Jeffrey Magder - SOMA Networks)
  *  2009-04-23  NET and PKG statistics added (bogdan)
  */
@@ -38,6 +36,7 @@
 #include "statistics.h"
 #include "globals.h"
 #include "pt.h"
+#include "timer.h"
 #include <sys/types.h>
 #include <signal.h>
 #include "socket_info.h"
@@ -71,8 +70,7 @@ stat_export_t core_stats[] = {
 	{"bad_URIs_rcvd",         0,  &bad_URIs              },
 	{"unsupported_methods",   0,  &unsupported_methods   },
 	{"bad_msg_hdr",           0,  &bad_msg_hdr           },
-	{"timestamp",  STAT_IS_FUNC, (stat_var**)get_ticks   },
-	{0,0,0}
+	{"timestamp",  STAT_IS_FUNC, (stat_var**)get_ticks   }, {0,0,0}
 };
 
 
@@ -84,28 +82,20 @@ static unsigned long net_get_wb_udp(unsigned short foo)
 	return get_total_bytes_waiting(PROTO_UDP);
 }
 
-#ifdef USE_TCP
 static unsigned long net_get_wb_tcp(unsigned short foo)
 {
 	return get_total_bytes_waiting(PROTO_TCP);
 }
-#endif
 
-#ifdef USE_TLS
 static unsigned long net_get_wb_tls(unsigned short foo)
 {
 	return get_total_bytes_waiting(PROTO_TLS);
 }
-#endif
 
 stat_export_t net_stats[] = {
 	{"waiting_udp" ,    STAT_IS_FUNC,  (stat_var**)net_get_wb_udp    },
-#ifdef USE_TCP
 	{"waiting_tcp" ,    STAT_IS_FUNC,  (stat_var**)net_get_wb_tcp    },
-#endif
-#ifdef USE_TLS
 	{"waiting_tls" ,    STAT_IS_FUNC,  (stat_var**)net_get_wb_tls    },
-#endif
 	{0,0,0}
 };
 
@@ -196,42 +186,42 @@ int init_pkg_stats(int no_procs)
 
 		if ( (name=build_stat_name( &n_str,"total_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_total_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n, 0)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
 
 		if ( (name=build_stat_name( &n_str,"used_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_used_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n, 0)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
 
 		if ( (name=build_stat_name( &n_str,"real_used_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_real_used_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n, 0)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
 
 		if ( (name=build_stat_name( &n_str,"max_used_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_max_used_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n, 0)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
 
 		if ( (name=build_stat_name( &n_str,"free_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_free_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n, 0)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
 
 		if ( (name=build_stat_name( &n_str,"fragments"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_fragments,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n, 0)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}

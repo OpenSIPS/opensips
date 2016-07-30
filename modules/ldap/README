@@ -48,9 +48,13 @@ Christian Schlatter
               1.5.4. ldap_result_next()
               1.5.5. ldap_filter_url_encode(string, avp_spec)
 
-        1.6. Installation & Running
+        1.6. Exported Async Functions
 
-              1.6.1. Compiling the Module
+              1.6.1. ldap_search(ldap_url)
+
+        1.7. Installation & Running
+
+              1.7.1. Compiling the Module
 
    2. Developer Guide
 
@@ -84,14 +88,20 @@ Christian Schlatter
    1.4. ldap_bind_password example
    1.5. ldap_network_timeout example
    1.6. ldap_client_bind_timeout example
-   1.7. Example LDAP Configuration File
-   1.8. config_file parameter usage
-   1.9. Example Usage of ldap_url
-   1.10. Example Usage
-   1.11. Example Usage
-   1.12. Example Usage
-   1.13. Example Usage
+   1.7. ldap_ca_cert_file example
+   1.8. ldap_cert_file example
+   1.9. ldap_key_file example
+   1.10. ldap_require_certificate example
+   1.11. Example LDAP Configuration File
+   1.12. config_file parameter usage
+   1.13. Example Usage of ldap_url
    1.14. Example Usage
+   1.15. Example Usage
+   1.16. Example Usage
+   1.17. Example Usage
+   1.18. Example Usage
+   1.19. Example Usage of ldap_url
+   1.20. Example Usage
    2.1. Example code fragment to load LDAP module API
    2.2. Example LDAP module API function call
 
@@ -106,7 +116,8 @@ Chapter 1. Admin Guide
    message routing script.
 
    The following features are offered by the LDAP module:
-     * LDAP search function taking an LDAP URL as input
+     * LDAP search function taking an LDAP URL as input both
+       synchronous and asynchronous
      * LDAP result parsing functions to store LDAP data as AVP
      * Support for accessing multiple LDAP servers
      * LDAP SIMPLE authentication
@@ -114,6 +125,7 @@ Chapter 1. Admin Guide
      * Configurable LDAP connection and bind timeouts
      * Module API for LDAP search operations that can be used by
        other OpenSIPS modules
+     * StartTLS support
 
    The module implementation makes use of the open source OpenLDAP
    library available on most UNIX/Linux platforms. Besides LDAP
@@ -278,6 +290,12 @@ ldap_bind_dn               = "cn=sip_proxy,ou=accounts,dc=example,dc=com
 ldap_bind_password         = "pwd"
 ldap_network_timeout       = 500
 ldap_client_bind_timeout   = 500
+ldap_ca_cert_file                  = "/usr/share/ca-certificates/mycert.
+pem"
+ldap_cert_file                     = "/var/my-certificate/certificate.pe
+m"
+ldap_key_file                      = "/var/my-certificate/key.pem"
+ldap_require_certificate   = "ALLOW"
 
    The configuration keys are explained in the following section.
    This LDAP session can be referred to in the routing script by
@@ -354,13 +372,54 @@ ldap_network_timeout = 500 ; setting TCP timeout to 500 ms
 
 ldap_client_bind_timeout = 1000
 
+   ldap_ca_cert_file (optional)
+          LDAP full path of the CA certificate file.
+
+          No default value. It is mandatory in case you wish to
+          use StartTLS
+
+          Example 1.7. ldap_ca_cert_file example
+
+ldap_ca_cert_file = "/usr/local/CAcert.pem"
+
+   ldap_cert_file (optional)
+          LDAP full path of the certificate file.
+
+          No default value. It is mandatory in case you wish to
+          use StartTLS
+
+          Example 1.8. ldap_cert_file example
+
+ldap_cert_file = "/usr/local/mycert.pem"
+
+   ldap_key_file (optional)
+          LDAP full path of the key file.
+
+          No default value. It is mandatory in case you wish to
+          use StartTLS
+
+          Example 1.9. ldap_key_file example
+
+ldap_key_file = "/usr/local/mykey.pem"
+
+   ldap_require_certificate (optional)
+          LDAP peer certificate checking strategy, one of "NEVER",
+          "HARD", "DEMAND", "ALLOW", "TRY". Lower case letters are
+          also accepted.
+
+          Default value "NEVER".
+
+          Example 1.10. ldap_require_certificate example
+
+ldap_require_certificate = "NEVER"
+
 1.3.3. Configuration File Example
 
    The following configuration file example includes two LDAP
    session definitions that could be used e.g. for accessing H.350
    data and do phone number to name mappings.
 
-   Example 1.7. Example LDAP Configuration File
+   Example 1.11. Example LDAP Configuration File
 # LDAP session "sipaccounts":
 #
 # - using LDAPv3 (default)
@@ -372,6 +431,11 @@ ldap_bind_dn = "cn=sip_proxy,ou=accounts,dc=example,dc=com"
 ldap_bind_password = "pwd"
 ldap_network_timeout = 500
 ldap_client_bind_timeout = 500
+#using StartTLS
+ldap_ca_cert_file = "/ldap/path/to/ca/certificate.pem"
+ldap_cert_file = "/ldap/path/to/certificate.pem"
+ldap_key_file = "/ldap/path/to/key/file.pem"
+ldap_require_certificate = "NEVER"
 
 
 # LDAP session "campus":
@@ -393,7 +457,7 @@ ldap_client_bind_timeout = 500
 
    Default value: /usr/local/etc/opensips/ldap.cfg
 
-   Example 1.8. config_file parameter usage
+   Example 1.12. config_file parameter usage
 modparam("ldap", "config_file", "/etc/opensips/ldap.ini")
 
 1.5. Exported Functions
@@ -419,7 +483,7 @@ modparam("ldap", "config_file", "/etc/opensips/ldap.ini")
           OpenSIPS pseudo variables and AVPs included in ldap_url
           do get substituted with their value.
 
-          Example 1.9. Example Usage of ldap_url
+          Example 1.13. Example Usage of ldap_url
 
           Search with LDAP session named sipaccounts, base
           ou=sip,dc=example,dc=com, one level deep using search
@@ -453,7 +517,7 @@ ldap://ldap_1/dc=example,dc=com?
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, and ONREPLY_ROUTE.
 
-   Example 1.10. Example Usage
+   Example 1.14. Example Usage
 ...
 # ldap search
 if (!ldap_search("ldap://sipaccounts/ou=sip,dc=example,dc=com??one?(cn=$
@@ -537,7 +601,7 @@ regex_subst])
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, and ONREPLY_ROUTE.
 
-   Example 1.11. Example Usage
+   Example 1.15. Example Usage
 ...
 
 # ldap_search call
@@ -610,7 +674,7 @@ regex_subst])
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, and ONREPLY_ROUTE.
 
-   Example 1.12. Example Usage
+   Example 1.16. Example Usage
 ...
 # ldap_search call
 ...
@@ -660,7 +724,7 @@ if (!ldap_result_check("sn/$ru", "/^sip:([^@]).*$/\1/"))
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, and ONREPLY_ROUTE.
 
-   Example 1.13. Example Usage
+   Example 1.17. Example Usage
 ...
 # ldap_search call
 ...
@@ -719,7 +783,7 @@ if (ldap_result_next())
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, and ONREPLY_ROUTE.
 
-   Example 1.14. Example Usage
+   Example 1.18. Example Usage
 ...
 if (!ldap_filter_url_encode("cn=$avp(name)", "$avp(name_esc)"))
 {
@@ -735,9 +799,98 @@ if (ldap_search(
     { ... }
 ...
 
-1.6. Installation & Running
+1.6. Exported Async Functions
 
-1.6.1. Compiling the Module
+1.6.1. ldap_search(ldap_url)
+
+   Performs an LDAP search operation using given LDAP URL and
+   stores result internally for later retrieval by ldap_result*
+   functions. If one ore more LDAP entries are found the function
+   returns the number of found entries which evaluates to TRUE in
+   the OpenSIPS configuration script. It returns -1 (FALSE) in
+   case no LDAP entry was found, and -2 (FALSE) if an internal
+   error like e.g. an LDAP error occurred.
+
+   Function Parameters:
+
+   ldap_url
+          An LDAP URL defining the LDAP search operation (refer to
+          Section 1.1.2, “LDAP URLs” for a description of the LDAP
+          URL format). The hostport part must be one of the LDAP
+          session names declared in the LDAP configuration script.
+
+          OpenSIPS pseudo variables and AVPs included in ldap_url
+          do get substituted with their value.
+
+          Example 1.19. Example Usage of ldap_url
+
+          Search with LDAP session named sipaccounts, base
+          ou=sip,dc=example,dc=com, one level deep using search
+          filter (cn=schlatter) and returning all attributes:
+
+ldap://sipaccounts/ou=sip,dc=example,dc=com??one?(cn=schlatter)
+
+          Subtree search with LDAP session named ldap1, base
+          dc=example,dc=com using search filter (cn=$(avp(name)))
+          and returning SIPIdentityUserName and
+          SIPIdentityServiceLevel attributes
+
+ldap://ldap_1/dc=example,dc=com?
+       SIPIdentityUserName,SIPIdentityServiceLevel?sub?(cn=$(avp(name)))
+
+   Return Values:
+
+   n > 0 (TRUE):
+
+          + Found n matching LDAP entries
+
+   -1 (FALSE):
+
+          + No matching LDAP entries found
+
+   -2 (FALSE):
+
+          + LDAP error (e.g. LDAP server unavailable), or
+          + internal error
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, and ONREPLY_ROUTE.
+
+   Example 1.20. Example Usage
+...
+# ldap search
+
+route {
+        async( ldap_search("ldap://sipaccounts/ou=sip,dc=example,dc=com?
+?one?(cn=$rU)"), resume);
+}
+....
+route[resume] {
+{
+    switch ($rc)
+    {
+    case -1:
+        # no LDAP entry found
+        sl_send_reply("404", "User Not Found");
+        exit;
+    case -2:
+        # internal error
+        sl_send_reply("500", "Internal server error");
+        exit;
+    default:
+        exit;
+    }
+    xlog("L_INFO", "ldap_search: found [$retcode] entries for (cn=$rU)")
+;
+
+    # save telephone number in $avp(tel_number)
+    ldap_result("telephoneNumber/$avp(tel_number)");
+...
+}
+
+1.7. Installation & Running
+
+1.7.1. Compiling the Module
 
    OpenLDAP library (libldap) and header files (libldap-dev) v2.1
    or greater (this module was tested with v2.1.3 and v2.3.32) are

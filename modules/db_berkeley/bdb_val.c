@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * db_berkeley module, portions of this code were templated using
  * the dbtext and postgres modules.
 
@@ -18,15 +16,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
  * History:
  * --------
  * 2007-09-19  genesis (wiquan)
  */
- 
+
 
 #include "../../db/db_val.h"
 #include "../../db/db_ut.h"
@@ -47,7 +45,7 @@
  * should be done in the val2str function, as some databases
  * like db_berkeley don't need or like this at all.
  */
-inline int bdb_time2str(time_t _v, char* _s, int* _l)
+static inline int bdb_time2str(time_t _v, char* _s, int* _l)
 {
 	struct tm* t;
 	int l;
@@ -152,8 +150,8 @@ int bdb_str2val(db_type_t _t, db_val_t* _v, char* _s, int _l)
 			VAL_TYPE(_v) = DB_STRING;
 			VAL_FREE(_v) = 1;
 		}
-			
-		
+
+
 		return 0;
 
 	case DB_STR:
@@ -168,7 +166,7 @@ int bdb_str2val(db_type_t _t, db_val_t* _v, char* _s, int _l)
 			VAL_TYPE(_v) = DB_STR;
 			VAL_FREE(_v) = 1;
 		}
-		
+
 
 		return 0;
 
@@ -204,12 +202,12 @@ int bdb_val2str(db_val_t* _v, char* _s, int* _len)
 {
 	int l;
 
-	if (VAL_NULL(_v)) 
+	if (VAL_NULL(_v))
 	{
 		*_len = snprintf(_s, *_len, "NULL");
 		return 0;
 	}
-	
+
 	switch(VAL_TYPE(_v)) {
 	case DB_INT:
 		if (db_int2str(VAL_INT(_v), _s, _len) < 0) {
@@ -243,7 +241,7 @@ int bdb_val2str(db_val_t* _v, char* _s, int* _len)
 
 	case DB_DOUBLE:
 		if (db_double2str(VAL_DOUBLE(_v), _s, _len) < 0) {
-			LM_ERR("Error while converting double  to string\n");
+			LM_ERR("Error while converting double to string\n");
 			return -3;
 		} else {
 			LM_DBG("Converted double to string\n");
@@ -253,11 +251,11 @@ int bdb_val2str(db_val_t* _v, char* _s, int* _len)
 
 	case DB_STRING:
 		l = strlen(VAL_STRING(_v));
-		if (*_len < l ) 
+		if (*_len < l )
 		{	LM_ERR("Destination buffer too short for string\n");
 			return -4;
-		} 
-		else 
+		}
+		else
 		{	LM_DBG("Converted string to string\n");
 			strncpy(_s, VAL_STRING(_v) , l);
 			_s[l] = 0;
@@ -272,8 +270,8 @@ int bdb_val2str(db_val_t* _v, char* _s, int* _len)
 		{
 			LM_ERR("Destination buffer too short for str\n");
 			return -5;
-		} 
-		else 
+		}
+		else
 		{
 			LM_DBG("Converted str to string\n");
 			strncpy(_s, VAL_STR(_v).s , l);
@@ -294,12 +292,12 @@ int bdb_val2str(db_val_t* _v, char* _s, int* _len)
 
 	case DB_BLOB:
 		l = VAL_BLOB(_v).len;
-		if (*_len < l) 
+		if (*_len < l)
 		{
 			LM_ERR("Destination buffer too short for blob\n");
 			return -7;
-		} 
-		else 
+		}
+		else
 		{
 			strncpy(_s, VAL_BLOB(_v).s , l);
 			LM_DBG("Converting BLOB [%.*s]\n", l,_s);

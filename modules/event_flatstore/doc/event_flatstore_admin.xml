@@ -1,0 +1,161 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		The <emphasis>event_flatstore</emphasis>
+		module provides a logging facility for different events,
+		triggered through the &osips; Event Interface, directly from the &osips;
+		script. The module logs the events along with their parameters in plain
+		text files.
+	</para>
+	</section>
+	<section>
+	<title>Flatstore socket syntax</title>
+	<para>
+		<para><emphasis>flatstore:path_to_file</emphasis></para>
+	</para>
+	<para>
+		Meanings:
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>flatstore:</emphasis> - informs the Event Interface that the
+					events sent to this subscriber should be handled by the
+					<emphasis>event_flatstore</emphasis> module.
+			</para>	</listitem>
+			<listitem><para>
+					<emphasis>path_to_file</emphasis> - path to the file where the logged events will be appended to. The file will be created if it does not exist. It must be a valid path and not a directory.
+			</para>	</listitem>
+		</itemizedlist>
+	</para>
+	</section>
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+    </section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>max_open_sockets</varname> (integer)</title>
+		<para>
+			Defines the maximum number of simultaneously opened files by the
+			module. If the maximum limit is reached, an error message will be
+			thrown, and further subscriptions will only be possible after at
+			least one of the current subscriptions will expire.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>100</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>max_open_sockets</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_flatstore", "max_open_sockets", 200)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>delimiter</varname> (string)</title>
+		<para>
+			Sets the separator between the parameters of the event in the logging file.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>,</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>delimiter</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_flatstore", "delimiter", ";")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>file_permissions</varname> (string)</title>
+		<para>
+			Sets the permissions for the newly created logs. It
+			expects a string representation of a octal value.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>644</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>file_permissions</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_flatstore", "file_permissions", "664")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+	<section>
+	<title>Exported Functions</title>
+		<para>
+		No exported functions to be used in the configuration file.
+		</para>
+	</section>
+
+	<section>
+	<title>Exported MI Functions</title>
+	<section>
+		<title>
+		<function>evi_flat_rotate</function>
+		</title>
+		<para>
+		It makes the processes reopen the file specified as a parameter to the command in order to be compatible with a logrotate command. If the function is not called after the mv command is executed, the module will continue to write in the renamed file.
+		</para>
+		<para>
+		Name: <emphasis>evi_flat_rotate</emphasis>
+		</para>
+		<para>Parameters: <emphasis>path_to_file</emphasis></para>
+ 		<para>
+		MI FIFO Command Format:
+		</para>
+        <programlisting  format="linespecific">
+		:evi_flat_rotate:_path_to_log_file_ 
+		_empty_line_
+		</programlisting>
+	</section>	
+    </section>
+</chapter>
+
+

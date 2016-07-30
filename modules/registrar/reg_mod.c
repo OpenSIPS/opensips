@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Registrar module interface
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -37,9 +35,9 @@
  *              removed the module parameter "use_domain" - now it is
  *              imported from usrloc module (bogdan)
  *  2006-11-28  Added statistics tracking for the number of accepted/rejected
- *              registrations, as well as for the max expiry time, max 
+ *              registrations, as well as for the max expiry time, max
  *              contacts and default expiry time(Jeffrey Magder-SOMA Networks)
- *  2007-02-24  sip_natping_flag moved into branch flags, so migrated to 
+ *  2007-02-24  sip_natping_flag moved into branch flags, so migrated to
  *              nathelper module (bogdan)
  *
  */
@@ -47,13 +45,13 @@
 /*!
  * \defgroup registrar SIP Registrar support
  * The module contains REGISTER processing logic.
- */  
+ */
 
 /*!
  * \file
  * \brief SIP registrar module - interface
- * \ingroup registrar   
- */  
+ * \ingroup registrar
+ */
 
 #include <stdio.h>
 #include "../../sr_module.h"
@@ -81,12 +79,14 @@ static int  child_init(int);
 static void mod_destroy(void);
 /*! \brief Fixup functions */
 static int registrar_fixup(void** param, int param_no);
-static int registered_fixup(void** param, int param_no);
+static int fixup_remove(void** param, int param_no);
 /*! \brief Functions */
 static int add_sock_hdr(struct sip_msg* msg, char *str, char *foo);
 
-static int fixup_domain_avp_param(void **param, int param_no);
-
+static int fixup_is_registered(void **param, int param_no);
+static int fixup_is_aor_registered(void **param, int param_no);
+static int fixup_is_contact_registered(void **param, int param_no);
+static int fixup_is_ip_registered(void **param, int param_no);
 
 int default_expires = 3600; 			/*!< Default expires value in seconds */
 qvalue_t default_q  = Q_UNSPECIFIED;	/*!< Default q value multiplied by 1000 */
@@ -148,22 +148,35 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"save",         (cmd_function)save,         3,  registrar_fixup,  0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
+	{"remove",       (cmd_function)_remove,      2,  fixup_remove,     0,
+		REQUEST_ROUTE|ONREPLY_ROUTE },
+	{"remove",       (cmd_function)_remove,      3,  fixup_remove,     0,
+		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"lookup",       (cmd_function)lookup,       1,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
 	{"lookup",       (cmd_function)lookup,       2,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
 	{"lookup",       (cmd_function)lookup,       3,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
-	{"registered",   (cmd_function)registered,   1,  registered_fixup, 0,
+	{"registered",   (cmd_function)registered,   1,  fixup_is_registered, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"registered",   (cmd_function)registered,   2,  registered_fixup, 0,
+	{"registered",   (cmd_function)registered,   2,  fixup_is_registered, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"registered",   (cmd_function)registered,   3,  registered_fixup, 0,
+	{"registered",   (cmd_function)registered,   3,  fixup_is_registered, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"add_sock_hdr", (cmd_function)add_sock_hdr, 1,  fixup_str_null,   0,
 		REQUEST_ROUTE },
 	{"is_other_contact",      (cmd_function)is_other_contact_f, 2,
-		fixup_domain_avp_param, 0, REQUEST_ROUTE},
+		fixup_is_aor_registered/*same # of params*/, 0, REQUEST_ROUTE},
+	{"is_registered",      (cmd_function)is_registered, 2,
+		fixup_is_aor_registered, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"is_contact_registered",      (cmd_function)is_contact_registered, 4,
+		fixup_is_contact_registered, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"is_ip_registered",      (cmd_function)is_ip_registered, 3,
+		fixup_is_ip_registered, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -203,15 +216,29 @@ static stat_export_t mod_stats[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "usrloc",    DEP_ABORT  },
+		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT  },
+		{ MOD_TYPE_DEFAULT, "tm",        DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /*! \brief
  * Module exports structure
  */
 struct module_exports exports = {
 	"registrar",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,        /* Exported functions */
+	0,           /* Exported async functions */
 	params,      /* Exported parameters */
 	mod_stats,   /* exported statistics */
 	0,           /* exported MI functions */
@@ -320,7 +347,7 @@ static int mod_init(void)
 			default_q = MIN_Q;
 		}
 	}
-	
+
 
 	if (bind_usrloc(&ul) < 0) {
 		return -1;
@@ -338,7 +365,7 @@ static int mod_init(void)
 		gruu_secret.len = strlen(gruu_secret.s);
 
 	/* fix the flags */
-	fix_flag_name(&tcp_persistent_flag_s, tcp_persistent_flag);
+	fix_flag_name(tcp_persistent_flag_s, tcp_persistent_flag);
 	tcp_persistent_flag = get_flag_id_by_name(FLAG_TYPE_MSG, tcp_persistent_flag_s);
 	tcp_persistent_flag = (tcp_persistent_flag!=-1)?(1<<tcp_persistent_flag):0;
 
@@ -375,6 +402,24 @@ static int domain_fixup(void** param)
 	return 0;
 }
 
+/*! \brief
+ * @params: domain, AOR, contact/domain
+ */
+static int fixup_remove(void** param, int param_no)
+{
+	switch (param_no) {
+	case 1:
+		return domain_fixup(param);
+	case 2:
+		return fixup_spve(param);
+	case 3:
+		return fixup_spve(param);
+
+	default:
+		LM_ERR("maximum 3 params! given at least %d\n", param_no);
+		return E_INVALID_PARAMS;
+	}
+}
 
 /*! \brief
  * Fixup for "save"+"lookup" functions - domain, flags, AOR params
@@ -392,23 +437,6 @@ static int registrar_fixup(void** param, int param_no)
 		return fixup_pvar(param);
 	}
 }
-
-
-static int registered_fixup(void** param, int param_no)
-{
-	if (param_no == 1) {
-		/* name of the table */
-		return domain_fixup(param);
-	} else if (param_no == 2) {
-		/* AOR - from PVAR */
-		return fixup_pvar(param);
-	} else if (param_no == 3) {
-		/* CALLID - from PVAR */
-		return fixup_pvar(param);
-	}
-	return 0;
-}
-
 
 static void mod_destroy(void)
 {
@@ -443,7 +471,7 @@ static int add_sock_hdr(struct sip_msg* msg, char *name, char *foo)
 		goto error;
 	}
 
-	anchor = anchor_lump( msg, msg->unparsed-msg->buf, 0, 0);
+	anchor = anchor_lump( msg, msg->unparsed-msg->buf, 0);
 	if (anchor==0) {
 		LM_ERR("can't get anchor\n");
 		goto error;
@@ -484,16 +512,14 @@ error:
 	return -1;
 }
 
-static int fixup_domain_avp_param(void **param, int param_no)
-{
-	str s;
-	pv_spec_p spec;
-	udomain_t *d;
 
-	if (param_no > 2) {
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
+
+/*
+ * fixup for domain and aor
+ */
+static int fixup_is_registered(void **param, int param_no)
+{
+	udomain_t *d;
 
 	if (param_no == 1) {
 		if (ul.register_udomain((char*)*param, &d) < 0) {
@@ -504,18 +530,36 @@ static int fixup_domain_avp_param(void **param, int param_no)
 	    return 0;
 	}
 
-	spec = pkg_malloc(sizeof(pv_spec_t));
-	if (!spec) {
-		LM_ERR("no more pkg mem\n");
-		return E_OUT_OF_MEM;
-	}
-	s.s = (char*)(*param);
-	s.len = strlen(s.s);
-	if (!pv_parse_spec(&s, spec) || spec->type != PVT_AVP) {
-		LM_ERR("malformed avp definition %s\n", s.s);
+	return fixup_pvar(param);
+}
+
+static int fixup_is_aor_registered(void **param, int param_no)
+{
+	if (param_no > 2) {
+		LM_ERR("invalid param number\n");
 		return E_UNSPEC;
 	}
 
-	*param = (void*)spec;
-	return 0;
+	return fixup_is_registered(param, param_no);
+}
+
+static int fixup_is_contact_registered(void **param, int param_no)
+{
+	if (param_no > 4) {
+		LM_ERR("invalid param number\n");
+		return E_UNSPEC;
+	}
+
+	return fixup_is_registered(param, param_no);
+}
+
+
+static int fixup_is_ip_registered(void **param, int param_no)
+{
+	if (param_no > 3) {
+		LM_ERR("invalid param number\n");
+		return E_UNSPEC;
+	}
+
+	return fixup_is_registered(param, param_no);
 }

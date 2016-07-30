@@ -1,0 +1,1 @@
+id(int,auto) flowid(string) priority(int) skill(string) prependcid(string) message_welcome(string,null) message_queue(string) 

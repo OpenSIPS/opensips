@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * registrar module interface
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -29,15 +27,15 @@
  * 2006-11-28  Added statistics tracking for the number of accepted/rejected
  *             registrations, as well as for the max expiry time, max contacts,
  *             and default expiry time. (Jeffrey Magder - SOMA Networks)
- * 2007-02-24  sip_natping_flag moved into branch flags, so migrated to 
+ * 2007-02-24  sip_natping_flag moved into branch flags, so migrated to
  *             nathelper module (bogdan)
  */
 
 /*!
  * \file
  * \brief SIP registrar module - interface
- * \ingroup registrar   
- */  
+ * \ingroup registrar
+ */
 
 
 #ifndef REG_MOD_H
@@ -50,7 +48,7 @@
 #include "../signaling/signaling.h"
 #include "../tm/tm_load.h"
 
-/* if DB support is used, this values must not exceed the 
+/* if DB support is used, this values must not exceed the
  * storage capacity of the DB columns! See db/schema/entities.xml */
 #define CONTACT_MAX_SIZE       255
 #define RECEIVED_MAX_SIZE      255
@@ -76,6 +74,8 @@
 
 #define REG_LOOKUP_METHODFILTER_FLAG   (1<<0)
 #define REG_LOOKUP_NOBRANCH_FLAG       (1<<1)
+#define REG_LOOKUP_UAFILTER_FLAG       (1<<2)
+#define REG_BRANCH_AOR_LOOKUP_FLAG     (1<<3)
 
 extern int default_expires;
 extern qvalue_t default_q;

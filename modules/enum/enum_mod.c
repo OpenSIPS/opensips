@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Enum module
  *
  * Copyright (C) 2002-2008 Juha Heinanen
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -79,7 +77,7 @@ static cmd_export_t cmds[] = {
 	{"enum_query", (cmd_function)enum_query_0, 0, 0, 0, REQUEST_ROUTE},
 	{"enum_query", (cmd_function)enum_query_1, 1, fixup_sgp_null,
 	 fixup_free_str_null, REQUEST_ROUTE},
-	{"enum_query", (cmd_function)enum_query_2, 2, fixup_sgp_sgp, 
+	{"enum_query", (cmd_function)enum_query_2, 2, fixup_sgp_sgp,
 	 fixup_free_str_str, REQUEST_ROUTE},
 	{"enum_pv_query", (cmd_function)enum_pv_query_1, 1, fixup_pvar_null,
 	 fixup_free_pvar_null, REQUEST_ROUTE},
@@ -101,7 +99,7 @@ static cmd_export_t cmds[] = {
 	{"isn_query", (cmd_function)isn_query_0, 0, 0, 0, REQUEST_ROUTE},
 	{"isn_query", (cmd_function)isn_query_1, 1, fixup_str_null,
 	 fixup_free_str_null, REQUEST_ROUTE},
-	{"isn_query", (cmd_function)isn_query_2, 2, fixup_str_str, 
+	{"isn_query", (cmd_function)isn_query_2, 2, fixup_str_str,
 	 fixup_free_str_str, REQUEST_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -125,10 +123,13 @@ static param_export_t params[] = {
  * Module parameter variables
  */
 struct module_exports exports = {
-	"enum", 
+	"enum",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,     /* Exported functions */
+	0,        /* Exported async functions */
 	params,   /* Exported parameters */
 	0,        /* exported statistics */
 	0,        /* exported MI functions */
@@ -144,7 +145,7 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	LM_DBG("Initializing\n");
-	
+
 	suffix.s = domain_suffix;
 	suffix.len = strlen(suffix.s);
 

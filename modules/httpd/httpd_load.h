@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011-2012 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -34,7 +32,8 @@
 enum HTTPD_CONTENT_TYPE {
 	HTTPD_UNKNOWN_CNT_TYPE = -1,
 	HTTPD_STD_CNT_TYPE = 0,
-	HTTPD_TEXT_XML_CNT_TYPE
+	HTTPD_TEXT_XML_CNT_TYPE,
+	HTTPD_APPLICATION_JSON_CNT_TYPE
 };
 
 /**
@@ -63,8 +62,9 @@ enum HTTPD_CONTENT_TYPE {
  * @param page the page to return.  If no page is returned,
  *             then the page will be built later on via a
  *             callback (see httpd_flush_data_cb)
+ * @returns code the HTTP code to be returned to the client
  */
-typedef void (httpd_acces_handler_cb) (void *cls, void *connection, const char *url,
+typedef int (httpd_acces_handler_cb) (void *cls, void *connection, const char *url,
 				const char *method, const char *version,
 				const char *upload_data, size_t *upload_data_size,
 				void **con_cls,

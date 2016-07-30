@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -42,7 +40,7 @@
 /* maximum length of a FIFO line */
 #define MAX_MI_FIFO_BUFFER    1024
 
-/* how patient is ser with FIFO clients not awaiting a reply? 
+/* how patient is ser with FIFO clients not awaiting a reply?
 	4 x 80ms = 0.32 sec */
 #define FIFO_REPLY_RETRIES  4
 
@@ -51,5 +49,8 @@
 
 /* size of buffer used by parser to read and build the MI tree */
 #define MAX_MI_FIFO_READ 8192
+
+/* we are waiting for a while between fifo file checks */
+#define FIFO_CHECK_WAIT 30
 
 #endif /* _MI_FIFO */

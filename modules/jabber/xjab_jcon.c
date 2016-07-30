@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * eXtended JABber module - functions used for SIP 2 JABBER communication
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
+ * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -63,7 +61,7 @@ xj_jcon xj_jcon_init(char *hostname, int port)
 	xj_jcon jbc = NULL;
 	if(hostname==NULL || strlen(hostname)<=0)
 		return NULL;
-	
+
 	jbc = (xj_jcon)_M_MALLOC(sizeof(struct _xj_jcon));
 	if(jbc == NULL)
 		return NULL;
@@ -88,7 +86,7 @@ xj_jcon xj_jcon_init(char *hostname, int port)
 		_M_FREE(jbc);
 		return NULL;
 	}
-			
+
     return jbc;
 }
 
@@ -191,12 +189,12 @@ int xj_jcon_user_auth(xj_jcon jbc, char *username, char *passwd,
 	sprintf(msg_buff, JB_CLIENT_OPEN_STREAM, jbc->hostname);
 	if(send(jbc->sock, msg_buff, strlen(msg_buff), 0) != strlen(msg_buff))
 		goto error;
-	
+
 	n = recv(jbc->sock, msg_buff, 4096, 0);
 	msg_buff[n] = 0;
 	if(strncasecmp(msg_buff, JB_START_STREAM, JB_START_STREAM_LEN))
 		goto error;
-	
+
 	p0 = strstr(msg_buff + JB_START_STREAM_LEN, "id='");
 	if(p0 == NULL)
 		goto error;
@@ -211,7 +209,7 @@ int xj_jcon_user_auth(xj_jcon jbc, char *username, char *passwd,
     jbc->stream_id[p1-p0] = 0;
 
 	sprintf(msg_buff, "%08X", jbc->seq_nr);
-	
+
 	x = xode_new_tag("iq");
 	if(!x)
 		return -1;
@@ -228,9 +226,9 @@ int xj_jcon_user_auth(xj_jcon jbc, char *username, char *passwd,
 	i = send(jbc->sock, p0, n, 0);
 	if(i != n)
 		goto errorx;
-	
+
 	xode_free(x);
-	
+
 	// receive  response
 	// try 10 times
 	i = 10;
@@ -250,24 +248,24 @@ int xj_jcon_user_auth(xj_jcon jbc, char *username, char *passwd,
 	x = xode_from_strx(msg_buff, n, &err, &i);
 	p0 = msg_buff;
 	if(err)
-		p0 += i; 
-	
+		p0 += i;
+
 	if(strncasecmp(xode_get_name(x), "iq", 2))
 		goto errorx;
-	
+
 	if((x = xode_get_tag(x, "query?xmlns=jabber:iq:auth")) == NULL)
 		goto errorx;
-			
+
 	y = xode_new_tag("query");
 	xode_put_attrib(y, "xmlns", "jabber:iq:auth");
 	z = xode_insert_tag(y, "username");
 	xode_insert_cdata(z, username, -1);
 	z = xode_insert_tag(y, "resource");
 	xode_insert_cdata(z, resource, -1);
-	
+
 	if(xode_get_tag(x, "digest") != NULL)
 	{ // digest authentication
-			
+
 		//sprintf(msg_buff, "%s%s", jbc->stream_id, passwd);
 		strcpy(msg_buff, jbc->stream_id);
 		strcat(msg_buff, passwd);
@@ -284,16 +282,16 @@ int xj_jcon_user_auth(xj_jcon jbc, char *username, char *passwd,
 	}
 
 	y = xode_wrap(y, "iq");
-	
+
 	jbc->seq_nr++;
 	sprintf(msg_buff, "%08X", jbc->seq_nr);
-	
+
 	xode_put_attrib(y, "id", msg_buff);
 	xode_put_attrib(y, "type", "set");
-	
+
 	p1 = xode_to_str(y);
 	n = strlen(p1);
-	
+
 	i = send(jbc->sock, p1, n, 0);
 	if(i != n)
 	{
@@ -302,7 +300,7 @@ int xj_jcon_user_auth(xj_jcon jbc, char *username, char *passwd,
 	}
 	xode_free(x);
 	xode_free(y);
-	
+
 	// receive  response
 	// try 10 times
 	i = 10;
@@ -322,19 +320,19 @@ int xj_jcon_user_auth(xj_jcon jbc, char *username, char *passwd,
 	x = xode_from_strx(msg_buff, n, &err, &i);
 	p0 = msg_buff;
 	if(err)
-		p0 += i; 
-	
-	if(strncasecmp(xode_get_name(x), "iq", 2) || 
+		p0 += i;
+
+	if(strncasecmp(xode_get_name(x), "iq", 2) ||
 			strncasecmp(xode_get_attrib(x, "type"), "result", 6))
 		goto errorx;
-	
+
 	jbc->resource = (char*)_M_MALLOC(strlen(resource)+1);
 	strcpy(jbc->resource, resource);
 
 	jbc->allowed = XJ_NET_ALL;
-	jbc->ready = XJ_NET_JAB;	
+	jbc->ready = XJ_NET_JAB;
 	return 0;
-	
+
 errorx:
 	xode_free(x);
 error:
@@ -361,22 +359,22 @@ int xj_jcon_set_roster(xj_jcon jbc, char* jid, char *type)
 	char *p;
 	int n;
 	char buff[16];
-	
+
 	if(!jbc || !jid)
 		return -1;
-	
+
 	x = xode_new_tag("item");
 	if(!x)
 		return -1;
 	xode_put_attrib(x, "jid", jid);
 	if(type != NULL)
 		xode_put_attrib(x, "subscription", type);
-	
+
 	x = xode_wrap(x, "query");
 	xode_put_attrib(x, "xmlns", "jabber:iq:roster");
 
 	x = xode_wrap(x, "iq");
-	
+
 	xode_put_attrib(x, "type", "set");
 	jbc->seq_nr++;
 	sprintf(buff, "%08X", jbc->seq_nr);
@@ -384,7 +382,7 @@ int xj_jcon_set_roster(xj_jcon jbc, char* jid, char *type)
 
 	p = xode_to_str(x);
 	n = strlen(p);
-	
+
 	if(send(jbc->sock, p, n, 0) != n)
 	{
 		LM_DBG("item not sent\n");
@@ -401,20 +399,20 @@ error:
  * send a message through a JABBER connection
  * params are pairs (buffer, len)
  */
-int xj_jcon_send_msg(xj_jcon jbc, char *to, int tol, char *msg, 
+int xj_jcon_send_msg(xj_jcon jbc, char *to, int tol, char *msg,
 		int msgl, int type)
 {
 	char msg_buff[4096], *p;
 	int n;
 	xode x;
-	
+
 	if(jbc == NULL)
 		return -1;
-	
+
 	x = xode_new_tag("body");
 	if(!x)
 		return -1;
-	
+
 	xode_insert_cdata(x, msg, msgl);
 	x = xode_wrap(x, "message");
 	strncpy(msg_buff, to, tol);
@@ -436,7 +434,7 @@ int xj_jcon_send_msg(xj_jcon jbc, char *to, int tol, char *msg,
 	n = strlen(p);
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("jabber msg:\n%s\n", p);
-#endif	
+#endif
 	if(send(jbc->sock, p, n, 0) != n)
 	{
 		LM_DBG(" message not sent\n");
@@ -474,16 +472,16 @@ int xj_jcon_send_presence(xj_jcon jbc, char *sto, char *type, char *status,
 	char *p;
 	int n;
 	xode x, y;
-	
+
 	if(jbc == NULL)
 		return -1;
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("-----START-----\n");
-#endif	
+#endif
 	x = xode_new_tag("presence");
 	if(!x)
 		return -1;
-	
+
 	if(sto != NULL)
 		xode_put_attrib(x, "to", sto);
 	if(type != NULL)
@@ -497,11 +495,11 @@ int xj_jcon_send_presence(xj_jcon jbc, char *sto, char *type, char *status,
 	{
 		y = xode_insert_tag(x, "priority");
 		xode_insert_cdata(y, priority, strlen(priority));
-	}	
-	
+	}
+
 	p = xode_to_str(x);
 	n = strlen(p);
-	
+
 	if(send(jbc->sock, p, n, 0) != n)
 	{
 		LM_DBG("presence not sent\n");
@@ -525,10 +523,10 @@ int xj_jcon_send_subscribe(xj_jcon jbc, char *to, char *from, char *type)
 	char *p;
 	int n;
 	xode x;
-	
+
 	if(!jbc || !to)
 		return -1;
-	
+
 	x = xode_new_tag("presence");
 	if(!x)
 		return -1;
@@ -541,7 +539,7 @@ int xj_jcon_send_subscribe(xj_jcon jbc, char *to, char *from, char *type)
 
 	p = xode_to_str(x);
 	n = strlen(p);
-	
+
 	if(send(jbc->sock, p, n, 0) != n)
 	{
 		LM_DBG("subscribe not sent\n");
@@ -561,7 +559,7 @@ error:
 int xj_jcon_free(xj_jcon jbc)
 {
 	xj_jconf jcf;
-	
+
 	if(jbc == NULL)
 		return -1;
 
@@ -575,7 +573,7 @@ int xj_jcon_free(xj_jcon jbc)
 		_M_FREE(jbc->hostname);
 	if(jbc->stream_id != NULL)
 		_M_FREE(jbc->stream_id);
-	
+
 	if(jbc->resource != NULL)
 		_M_FREE(jbc->resource);
 #ifdef XJ_EXTRA_DEBUG
@@ -603,7 +601,7 @@ int xj_jcon_free(xj_jcon jbc)
  * - delay_time : time needed to became an active connection
  * return : pointer to the structure or NULL on error
  */
-int xj_jcon_set_attrs(xj_jcon jbc, xj_jkey jkey, int cache_time, 
+int xj_jcon_set_attrs(xj_jcon jbc, xj_jkey jkey, int cache_time,
 				int delay_time)
 {
 	int t;
@@ -627,11 +625,11 @@ int xj_jcon_update(xj_jcon jbc, int cache_time)
 	if(jbc == NULL)
 		return -1;
 #ifdef XJ_EXTRA_DEBUG
-	LM_DBG("params [%.*s] %d\n", 
+	LM_DBG("params [%.*s] %d\n",
 			jbc->jkey->id->len, jbc->jkey->id->s, cache_time);
 #endif
 	jbc->expire = get_ticks() + cache_time;
-	return 0;	
+	return 0;
 }
 
 int xj_jcon_is_ready(xj_jcon jbc, char *to, int tol, char dl)
@@ -641,14 +639,14 @@ int xj_jcon_is_ready(xj_jcon jbc, char *to, int tol, char dl)
 	xj_jconf jcf = NULL;
 	if(!jbc || !to || tol <= 0)
 		return -1;
-	
+
 	sto.s = to;
 	sto.len = tol;
 	if(!xj_jconf_check_addr(&sto, dl))
 	{
 #ifdef XJ_EXTRA_DEBUG
 		LM_DBG("destination=conference\n");
-#endif		
+#endif
 		if((jcf=xj_jcon_get_jconf(jbc, &sto, dl))!=NULL)
 			return (jcf->status & XJ_JCONF_READY)?0:3;
 #ifdef XJ_EXTRA_DEBUG
@@ -656,19 +654,19 @@ int xj_jcon_is_ready(xj_jcon jbc, char *to, int tol, char dl)
 #endif
 		return -1;
 	}
-	
+
 	p = to;
-	while(p < to+tol && *p!='@') 
+	while(p < to+tol && *p!='@')
 		p++;
 	if(p>=to+tol)
 		return -1;
 	p++;
 	if(!strncasecmp(p, XJ_AIM_NAME, XJ_AIM_LEN))
 		return (jbc->ready & XJ_NET_AIM)?0:((jbc->allowed & XJ_NET_AIM)?1:2);
-	
+
 	if(!strncasecmp(p, XJ_ICQ_NAME, XJ_ICQ_LEN))
 		return (jbc->ready & XJ_NET_ICQ)?0:((jbc->allowed & XJ_NET_ICQ)?1:2);
-	
+
 	if(!strncasecmp(p, XJ_MSN_NAME, XJ_MSN_LEN))
 		return (jbc->ready & XJ_NET_MSN)?0:((jbc->allowed & XJ_NET_MSN)?1:2);
 
@@ -687,8 +685,8 @@ xj_jconf  xj_jcon_get_jconf(xj_jcon jbc, str* sid, char dl)
 	if(!jbc || !sid || !sid->s || sid->len <= 0)
 		return NULL;
 #ifdef XJ_EXTRA_DEBUG
-	LM_DBG("looking for conference\n");	
-#endif	
+	LM_DBG("looking for conference\n");
+#endif
 	if((jcf = xj_jconf_new(sid))==NULL)
 		return NULL;
 	if(xj_jconf_init_sip(jcf, jbc->jkey->id, dl))
@@ -701,7 +699,7 @@ xj_jconf  xj_jcon_get_jconf(xj_jcon jbc, str* sid, char dl)
 		xj_jconf_free(jcf);
 		return p;
 	}
-	
+
 	if(jbc->nrjconf >= XJ_MAX_JCONF)
 		goto clean;
 
@@ -734,7 +732,7 @@ xj_jconf xj_jcon_check_jconf(xj_jcon jbc, char* id)
 		return NULL;
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("conference not found\n");
-#endif	
+#endif
 	sid.s = id;
 	sid.len = strlen(id);
 	if((jcf = xj_jconf_new(&sid))==NULL)
@@ -754,15 +752,15 @@ clean:
 	LM_DBG("conference not found\n");
 #endif
 	xj_jconf_free(jcf);
-	return NULL;	
+	return NULL;
 }
 
-int xj_jcon_jconf_presence(xj_jcon jbc, xj_jconf jcf, char* type, 
+int xj_jcon_jconf_presence(xj_jcon jbc, xj_jconf jcf, char* type,
 		char* status)
 {
 	char buff[256];
-	
-	strncpy(buff, jcf->room.s, 
+
+	strncpy(buff, jcf->room.s,
 			jcf->room.len + jcf->server.len +1);
 	buff[jcf->room.len + jcf->server.len +1] = '/';
 	buff[jcf->room.len + jcf->server.len +2] = 0;
@@ -775,12 +773,12 @@ int xj_jcon_jconf_presence(xj_jcon jbc, xj_jconf jcf, char* type,
 int  xj_jcon_del_jconf(xj_jcon jbc, str *sid, char dl, int flag)
 {
 	xj_jconf jcf = NULL, p = NULL;
-	
+
 	if(!jbc || !sid || !sid->s || sid->len <= 0)
 		return -1;
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("deleting conference of <%.*s>\n", sid->len, sid->s);
-#endif	
+#endif
 	if((jcf = xj_jconf_new(sid))==NULL)
 		return -1;
 	if(xj_jconf_init_sip(jcf, jbc->jkey->id, dl))
@@ -788,7 +786,7 @@ int  xj_jcon_del_jconf(xj_jcon jbc, str *sid, char dl, int flag)
 		xj_jconf_free(jcf);
 		return -1;
 	}
-	
+
 	p = del234(jbc->jconf, (void*)jcf);
 
 	if(p != NULL)

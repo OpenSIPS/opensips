@@ -1,5 +1,4 @@
- /* $Id$
- *
+ /*
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2006 Voice System SRL
  *
@@ -17,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -51,18 +50,13 @@
 #include "../tm/t_funcs.h"
 #include "../../aaa/aaa.h"
 
-#ifdef DIAM_ACC
-#include "diam_dict.h"
-#include "diam_message.h"
-#include "diam_tcp.h"
-#endif
-
 #include "acc.h"
 #include "acc_mod.h"
 #include "acc_extra.h"
 #include "acc_logic.h"
+#include "acc_vars.h"
 
-#define TABLE_VERSION 6
+#define TABLE_VERSION 7
 
 #define GET_LEN(p)	(*((unsigned char*)p) | *((unsigned char*)p+1) << 8)
 #define MAX_LEN_VALUE 65535
@@ -72,61 +66,55 @@
 		*(p+1) = (n) >> 8; \
 	} while(0)
 
+#define LEG_VALUE( leg, extra, ctx) (ctx->leg_values[leg][extra->tag_idx].value)
+
 str created_str = str_init("accX_created");
 str core_str = str_init("accX_core");
 str leg_str = str_init("accX_leg");
 str flags_str = str_init("accX_flags");
 str table_str = str_init("accX_table");
-str db_extra_str = str_init("accX_db");
-str log_extra_str = str_init("accX_log");
-str aaa_extra_str = str_init("accX_aaa");
-str evi_extra_str = str_init("accX_evi");
+str extra_str = str_init("accX_extra");
+str acc_ctx_str = str_init("accX_ctx");
 
-extern struct acc_extra *log_extra;
-extern struct acc_extra *log_extra_bye;
-extern struct acc_extra *leg_info;
-extern struct acc_extra *leg_bye_info;
+extern struct acc_extra *log_extra_tags;
+extern struct acc_extra *db_extra_tags;
+extern struct acc_extra *aaa_extra_tags;
+extern struct acc_extra *evi_extra_tags;
+
+extern tag_t* extra_tags;
+extern int extra_tgs_len;
+
+extern struct acc_extra *log_leg_tags;
+extern struct acc_extra *db_leg_tags;
+extern struct acc_extra *aaa_leg_tags;
+extern struct acc_extra *evi_leg_tags;
+
+extern tag_t* leg_tags;
+extern int leg_tgs_len;
+
 extern struct acc_enviroment acc_env;
 
-extern struct acc_extra *aaa_extra;
-extern struct acc_extra *aaa_extra_bye;
+extern int acc_flags_ctx_idx;
 
-#ifdef DIAM_ACC
-extern char *diameter_client_host;
-extern int diameter_client_port;
-extern struct acc_extra *dia_extra;
-#endif
 
-extern struct acc_extra *evi_extra;
-extern struct acc_extra *evi_extra_bye;
 event_id_t acc_cdr_event = EVI_ERROR;
 event_id_t acc_event = EVI_ERROR;
 event_id_t acc_missed_event = EVI_ERROR;
 
 static db_func_t acc_dbf;
 static db_con_t* db_handle=0;
-extern struct acc_extra *db_extra;
-extern struct acc_extra *db_extra_bye;
 extern int acc_log_facility;
 
-static int build_core_dlg_values(struct dlg_cell *dlg,struct sip_msg *req);
-static int build_extra_dlg_values(struct acc_extra* extra, 
-		struct dlg_cell *dlg,struct sip_msg *req, struct sip_msg *reply);
-static int build_leg_dlg_values(struct dlg_cell *dlg,struct sip_msg *req);
-static void complete_dlg_values(str *stored_values,str *val_arr,short nr_vals);
-static int prebuild_string(str *value_str, struct dlg_cell *dlg, str *core_s,
-		str *extra_s,str *leg_s, short *leg_idx, short *leg_values,
-		short *nr_legs, time_t *created, time_t *start);
-/* prebuild functions */
-static time_t acc_get_created(struct dlg_cell *dlg);
-static int prebuild_core_arr(struct dlg_cell *dlg, str *buffer, time_t *start);
-static int prebuild_extra_arr(struct dlg_cell *dlg, struct sip_msg *msg,
-		str *buffer, str *type_str, struct acc_extra * extra, int start);
-static int prebuild_leg_arr(struct dlg_cell *dlg, str *buffer, short *nr_legs)
-;
 
-static int store_extra_values(struct acc_extra* extra, str *values_str,
-		struct dlg_cell *dlg, struct sip_msg *req, struct sip_msg *reply);
+/* call created avp id */
+extern int acc_created_avp_id;
+
+static int build_core_dlg_values(struct dlg_cell *dlg,struct sip_msg *req);
+static int build_extra_dlg_values(extra_value_t* values);
+static int build_leg_dlg_values(acc_ctx_t* ctx);
+static void complete_dlg_values(str *stored_values,str *val_arr,short nr_vals);
+/* prebuild functions */
+static int prebuild_core_arr(struct dlg_cell *dlg, str *buffer, struct timeval *start);
 
 /* array used to collect the values before being
  * pushed to the storage backend (whatever used) */
@@ -195,7 +183,8 @@ static inline int core2strar( struct sip_msg *req, str *c_vals)
 
 	c_vals[5] = acc_env.reason;
 
-	acc_env.ts = time(NULL);
+	gettimeofday(&acc_env.ts, NULL);
+
 	return ACC_CORE_LEN;
 }
 
@@ -229,15 +218,11 @@ void acc_log_init(void)
 	SET_LOG_ATTR(n,STATUS);
 
 	/* init the extra db keys */
-	for(extra=log_extra; extra ; extra=extra->next)
-		log_attrs[n++] = extra->name;
-	for(extra=log_extra_bye; extra ; extra=extra->next)
+	for(extra=log_extra_tags; extra ; extra=extra->next)
 		log_attrs[n++] = extra->name;
 
 	/* multi leg call columns */
-	for( extra=leg_info ; extra ; extra=extra->next)
-		log_attrs[n++] = extra->name;
-	for( extra=leg_bye_info ; extra ; extra=extra->next)
+	for( extra=log_leg_tags; extra ; extra=extra->next)
 		log_attrs[n++] = extra->name;
 
 	/* cdrs columns */
@@ -246,15 +231,16 @@ void acc_log_init(void)
 	SET_LOG_ATTR(n,CREATED);
 }
 
-int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
+int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 {
 	static char log_msg[MAX_SYSLOG_SIZE];
 	static char *log_msg_end=log_msg+MAX_SYSLOG_SIZE-2;
 	char *p;
-	int nr_vals, i, j, ret, res = -1, n;
-	time_t created, start_time;
+	int i, j, ret, res = -1, n;
+	struct timeval start_time;
 	str core_s, leg_s, extra_s;
-	short nr_legs;
+
+	struct acc_extra* extra;
 
 	core_s.s = extra_s.s = leg_s.s = 0;
 
@@ -264,24 +250,11 @@ int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 		goto end;
 	}
 
-	ret = prebuild_extra_arr(dlg, msg, &extra_s,
-			&log_extra_str, log_extra_bye, ret);
-	if (ret < 0) {
-		LM_ERR("cannot copy extra arguments\n");
-		goto end;
-	}
 
-	/* here starts the extra leg */
-	nr_vals = prebuild_leg_arr(dlg, &leg_s, &nr_legs);
-	if (nr_vals < 0) {
-		LM_ERR("cannot compute leg values\n");
-		goto end;
-	}
-
-	if (!(created = acc_get_created(dlg))) {
-		LM_ERR("cannot get created\n");
-		goto end;
-	}
+	/* prevent acces for setting variable */
+	accX_lock(&ctx->lock);
+	for (extra=log_extra_tags, i=ACC_CORE_LEN; extra; extra=extra->next, ++i, ++ret)
+		val_arr[i] = ctx->extra_values[extra->tag_idx].value;
 
 	for ( i = 0,p = log_msg ; i<ret ; i++ ) {
 		if (p + 1 + log_attrs[i].len + 1 + val_arr[i].len >= log_msg_end) {
@@ -297,58 +270,42 @@ int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 		memcpy(p, val_arr[i].s, val_arr[i].len);
 		p += val_arr[i].len;
 	}
-	LM_DBG("core+extra = %d - nr_legs = %d - nr_vals = %d\n",
-			ret, nr_legs, nr_vals);
 
-	if (leg_info || leg_bye_info) {
+	if (ctx->leg_values) {
 		leg_s.len = 4;
-		n = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals,1);
-		for (j=0; j<nr_legs; j++) {
-			complete_dlg_values(&leg_s,val_arr+ret,nr_vals);
-			for (i=ret; i<ret+nr_vals+n; i++) {
-				if (p+1+log_attrs[i].len+1+val_arr[i].len >= log_msg_end) {
+		for (j=0; j<ctx->legs_no; j++) {
+			for (extra=log_leg_tags, n=ret; extra; extra=extra->next, n++) {
+				if (p+1+log_attrs[i].len+1+
+						LEG_VALUE(j, extra, ctx).len >= log_msg_end) {
 					LM_WARN("acc message too long, truncating..\n");
 					p = log_msg_end;
 					break;
 				}
 				*(p++) = A_SEPARATOR_CHR;
-				memcpy(p, log_attrs[i].s, log_attrs[i].len);
-				p += log_attrs[i].len;
+				memcpy(p, log_attrs[n].s, log_attrs[n].len);
+				p += log_attrs[n].len;
 				*(p++) = A_EQ_CHR;
-				memcpy(p, val_arr[i].s, val_arr[i].len);
-				p += val_arr[i].len;
+				memcpy(p, LEG_VALUE(j, extra, ctx).s, LEG_VALUE(j, extra, ctx).len);
+				p += LEG_VALUE(j, extra, ctx).len;
 			}
-			n = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals,0);
 		}
-		while (n) {
-			for (i=ret; i<ret+nr_vals+n; i++) {
-				if (p+1+log_attrs[i].len+1+val_arr[i].len >= log_msg_end) {
-					LM_WARN("acc message too long, truncating..\n");
-					p = log_msg_end;
-					break;
-				}
-				*(p++) = A_SEPARATOR_CHR;
-				memcpy(p, log_attrs[i].s, log_attrs[i].len);
-				p += log_attrs[i].len;
-				*(p++) = A_EQ_CHR;
-				memcpy(p, val_arr[i].s, val_arr[i].len);
-				p += val_arr[i].len;
-			}
-			n = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals,0);
-		}
-	} else
-		LM_DBG("not entering\n");
+	} else {
+		LM_DBG("no legs\n");
+	}
+	accX_unlock(&ctx->lock);
 
 	/* terminating line */
 	*(p++) = '\n';
 	*(p++) = 0;
 
-	LM_GEN2(acc_log_facility, log_level,
-		"%.*screated=%lu;call_start_time=%lu;duration=%lu;setuptime=%lu%s",
-		acc_env.text.len, acc_env.text.s,(unsigned long)created,
-		(unsigned long)start_time,
-		(unsigned long)(time(NULL)-start_time),
-		(unsigned long)(start_time - created), log_msg);
+	LM_GEN2(acc_log_facility, acc_log_level,
+		"%.*screated=%lu;call_start_time=%lu;duration=%lu;ms_duration=%lu;setuptime=%lu%s",
+		acc_env.text.len, acc_env.text.s,(unsigned long)ctx->created,
+		(unsigned long)start_time.tv_sec,
+		(unsigned long)(ctx->bye_time.tv_sec-start_time.tv_sec),
+		(unsigned long)((ctx->bye_time.tv_sec-start_time.tv_sec)*1000
+							+(ctx->bye_time.tv_usec-start_time.tv_usec)%1000),
+		(unsigned long)(start_time.tv_sec - ctx->created), log_msg);
 
 	res = 1;
 end:
@@ -362,20 +319,35 @@ end:
 }
 
 
-int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl)
+int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 {
 	static char log_msg[MAX_SYSLOG_SIZE];
 	static char *log_msg_end=log_msg+MAX_SYSLOG_SIZE-2;
 	char *p;
-	int n;
 	int m;
-	int i;
+	int i, j;
+	unsigned int _created=0;
+	unsigned int _setup_time=0;
+
+	struct acc_extra* extra;
+	acc_ctx_t* ctx = try_fetch_ctx();
+
+	if (ctx && cdr_flag) {
+		/* get created value from context */
+		_created = ctx->created;
+		_setup_time = time(NULL) - _created;
+	}
 
 	/* get default values */
 	m = core2strar( rq, val_arr);
 
 	/* get extra values */
-	m += extra2strar( log_extra, rq, rpl, val_arr+m, 0);
+	if (ctx) {
+		/* prevent acces for setting variable */
+		accX_lock(&ctx->lock);
+		for (extra=log_extra_tags; extra; extra=extra->next, ++m)
+			val_arr[m] = ctx->extra_values[extra->tag_idx].value;
+	}
 
 	for ( i = 0,p = log_msg ; i<m ; i++ ) {
 		if (p + 1 + log_attrs[i].len + 1 + val_arr[i].len >= log_msg_end) {
@@ -392,48 +364,59 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl)
 	}
 
 	/* get per leg attributes */
-	if ( leg_info ) {
-		n = legs2strar(leg_info,rq,val_arr+m,1);
-		do {
-			for (i=m; i<m+n; i++) {
-				if (p+1+log_attrs[i].len+1+val_arr[i].len >= log_msg_end) {
-					LM_WARN("acc message too long, truncating..\n");
-					p = log_msg_end;
-					break;
+	if (ctx) {
+		/* we are still under lock here */
+		if (ctx->leg_values) {
+			for (j=0; j<ctx->legs_no; j++) {
+				for (extra=log_leg_tags, i=m; extra; extra=extra->next, i++) {
+					if (p+1+log_attrs[i].len+1+
+							LEG_VALUE(j, extra, ctx).len >= log_msg_end) {
+						LM_WARN("acc message too long, truncating..\n");
+						p = log_msg_end;
+						break;
+					}
+					*(p++) = A_SEPARATOR_CHR;
+					memcpy(p, log_attrs[i].s, log_attrs[i].len);
+					p += log_attrs[i].len;
+					*(p++) = A_EQ_CHR;
+					memcpy(p, LEG_VALUE(j, extra, ctx).s, LEG_VALUE(j, extra,ctx).len);
+					p += LEG_VALUE(j, extra, ctx).len;
 				}
-				*(p++) = A_SEPARATOR_CHR;
-				memcpy(p, log_attrs[i].s, log_attrs[i].len);
-				p += log_attrs[i].len;
-				*(p++) = A_EQ_CHR;
-				memcpy(p, val_arr[i].s, val_arr[i].len);
-				p += val_arr[i].len;
 			}
-		}while (p!=log_msg_end && (n=legs2strar(leg_info,rq,val_arr+m,0))!=0);
+		} else {
+			LM_DBG("no legs\n");
+		}
+		accX_unlock(&ctx->lock);
 	}
 
 	/* terminating line */
 	*(p++) = '\n';
 	*(p++) = 0;
 
-	LM_GEN2(acc_log_facility, log_level, "%.*stimestamp=%lu%s",
-		acc_env.text.len, acc_env.text.s,(unsigned long) acc_env.ts, log_msg);
+
+	if (ctx && cdr_flag) {
+		LM_GEN2(acc_log_facility, acc_log_level, "%.*stimestamp=%lu;created=%lu;setuptime=%lu%s",
+			acc_env.text.len, acc_env.text.s,
+			(unsigned long) acc_env.ts.tv_sec,
+			(unsigned long) _created,
+			(unsigned long) _setup_time, log_msg);
+		return 1;
+	}
+
+	LM_GEN2(acc_log_facility, acc_log_level, "%.*stimestamp=%lu%s",
+		acc_env.text.len, acc_env.text.s,(unsigned long) acc_env.ts.tv_sec, log_msg);
 
 	return 1;
 }
-
-int store_log_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
-		struct sip_msg *reply)
-{
-	return store_extra_values(log_extra, &log_extra_str, dlg, req, reply);
-}
-
 
 /********************************************
  *        SQL  ACCOUNTING
  ********************************************/
 
 /* caution: keys need to be aligned to core format */
+static db_key_t db_keys_cdrs[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 static db_key_t db_keys[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
+static db_val_t db_vals_cdrs[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 static db_val_t db_vals[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 
 
@@ -443,46 +426,51 @@ static void acc_db_init_keys(void)
 	int time_idx;
 	int i;
 	int n;
+	int m;
 
 	/* init the static db keys */
 	n = 0;
+	m = 0;
 	/* caution: keys need to be aligned to core format */
-	db_keys[n++] = &acc_method_col;
-	db_keys[n++] = &acc_fromtag_col;
-	db_keys[n++] = &acc_totag_col;
-	db_keys[n++] = &acc_callid_col;
-	db_keys[n++] = &acc_sipcode_col;
-	db_keys[n++] = &acc_sipreason_col;
-	db_keys[n++] = &acc_time_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_method_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_fromtag_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_totag_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_callid_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_sipcode_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_sipreason_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_time_col;
 	time_idx = n-1;
 
 	/* init the extra db keys */
-	for(extra=db_extra; extra ; extra=extra->next)
-		db_keys[n++] = &extra->name;
-	for(extra=db_extra_bye; extra ; extra=extra->next)
-		db_keys[n++] = &extra->name;
+	for(extra=db_extra_tags; extra ; extra=extra->next)
+		db_keys_cdrs[n++] = db_keys[m++] = &extra->name;
 
 	/* multi leg call columns */
-	for( extra=leg_info ; extra ; extra=extra->next)
-		db_keys[n++] = &extra->name;
-	for( extra=leg_bye_info ; extra ; extra=extra->next)
-		db_keys[n++] = &extra->name;
+	for( extra=db_leg_tags; extra ; extra=extra->next)
+		db_keys_cdrs[n++] = db_keys[m++] = &extra->name;
 
 	/* init the values */
 	for(i = 0; i < n; i++) {
+		VAL_TYPE(db_vals_cdrs + i)=DB_STR;
+		VAL_NULL(db_vals_cdrs + i)=0;
+	}
+	for(i = 0; i < m; i++) {
 		VAL_TYPE(db_vals + i)=DB_STR;
 		VAL_NULL(db_vals + i)=0;
 	}
-	VAL_TYPE(db_vals+time_idx)=DB_DATETIME;
-	
-	if (dlg_api.get_dlg) {
-		db_keys[n++] = &acc_duration_col;
-		db_keys[n++] = &acc_setuptime_col;
-		db_keys[n++] = &acc_created_col;
-		VAL_TYPE(db_vals + n-3) = DB_INT;
-		VAL_TYPE(db_vals + n-2) = DB_INT;
-		VAL_TYPE(db_vals + n-1) = DB_DATETIME;
-	}
+	VAL_TYPE(db_vals_cdrs+time_idx)=VAL_TYPE(db_vals+time_idx)=DB_DATETIME;
+
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_setuptime_col;
+	db_keys_cdrs[n++] = db_keys[m++] = &acc_created_col;
+	db_keys_cdrs[n++] = &acc_duration_col;
+	db_keys_cdrs[n++] = &acc_ms_duration_col;
+	VAL_TYPE(db_vals_cdrs + n-1) = DB_INT;
+	VAL_TYPE(db_vals_cdrs + n-2) = DB_INT;
+	VAL_TYPE(db_vals_cdrs + n-3) = DB_DATETIME;
+	VAL_TYPE(db_vals_cdrs + n-4) = DB_INT;
+
+	VAL_TYPE(db_vals+m-1) = DB_DATETIME;
+	VAL_TYPE(db_vals+m-2) = DB_INT;
 
 }
 
@@ -547,64 +535,122 @@ void acc_db_close(void)
 
 
 int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
-		query_list_t **ins_list)
+		query_list_t **ins_list, int cdr_flag)
 {
 	static db_ps_t my_ps_ins = NULL;
+	static db_ps_t my_ps_ins2 = NULL;
 	static db_ps_t my_ps = NULL;
+	static db_ps_t my_ps2 = NULL;
 	int m;
 	int n;
-	int i;
+	int i, j;
+	unsigned int _created=0;
+	unsigned int  _setup_time=0;
+	unsigned int extra_start;
 
-	/* formated database columns */
+
+	struct acc_extra* extra;
+	acc_ctx_t* ctx = try_fetch_ctx();
+
+	if (!acc_dbf.use_table || !acc_dbf.insert) {
+		LM_ERR("database not loaded! Probably database url not defined!\n");
+		return -1;
+	}
+
+	if (ctx && cdr_flag) {
+		/* get created value from context */
+		_created = ctx->created;
+		_setup_time = time(NULL) - _created;
+	}
+
+	/* formatted database columns */
 	m = core2strar( rq, val_arr );
 
 	for(i = 0; i < m; i++)
 		VAL_STR(db_vals+i) = val_arr[i];
+
 	/* time value */
-	VAL_TIME(db_vals+(m++)) = acc_env.ts;
+	VAL_TIME(db_vals+(m++)) = acc_env.ts.tv_sec;
 
-	/* extra columns */
-	m += extra2strar( db_extra, rq, rpl, val_arr+m, 0);
+	/* just count the values to do other ops inside lock */
+	if (ctx) {
+		extra_start=m;
+		for (extra=db_extra_tags; extra; extra=extra->next, ++m);
+		for( extra=db_leg_tags, n=0; extra; extra=extra->next, n++);
 
-	for( i++; i < m; i++)
-		VAL_STR(db_vals+i) = val_arr[i];
+		if (cdr_flag) {
+			VAL_INT(db_vals+(m+n)) = _setup_time;
+			VAL_TIME(db_vals+(m+n+1)) = _created;
+		}
+	}
 
 	acc_dbf.use_table(db_handle, &acc_env.text/*table*/);
-	CON_PS_REFERENCE(db_handle) = ins_list? &my_ps_ins : &my_ps;
+	CON_PS_REFERENCE(db_handle) = (ctx && cdr_flag) ?
+		(ins_list? &my_ps_ins2:&my_ps2) : (ins_list? &my_ps_ins:&my_ps);
+
 
 	/* multi-leg columns */
-	if ( !leg_info ) {
-		if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m) < 0 )
-			CON_RESET_INSLIST(db_handle);
-		if (acc_dbf.insert(db_handle, db_keys, db_vals, m) < 0) {
-			LM_ERR("failed to insert into database\n");
-			return -1;
+	if (ctx) {
+		/* prevent acces for setting variable */
+		accX_lock(&ctx->lock);
+
+		/* extra columns */
+		if (ctx->extra_values) {
+			for (extra=db_extra_tags, i=extra_start; extra; extra=extra->next, ++i) {
+				VAL_STR(db_vals+i) = ctx->extra_values[extra->tag_idx].value;
+			}
 		}
-	} else {
-		n = legs2strar(leg_info,rq,val_arr+m,1);
-		do {
-			for ( i = m; i < m + n; i++)
-				VAL_STR(db_vals+i)=val_arr[i];
-			if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+n) < 0 )
+
+		if ( !ctx->leg_values ) {
+			accX_unlock(&ctx->lock);
+			if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+((ctx&&cdr_flag)?2:0)) < 0 )
 				CON_RESET_INSLIST(db_handle);
-			if (acc_dbf.insert(db_handle, db_keys, db_vals, m+n) < 0) {
+			if (acc_dbf.insert(db_handle, db_keys, db_vals, m+((ctx&&cdr_flag)?2:0)) < 0) {
 				LM_ERR("failed to insert into database\n");
 				return -1;
 			}
-		}while ( (n = legs2strar(leg_info,rq,val_arr+m,0))!=0 );
+		} else {
+			for (j=0; j < ctx->legs_no; j++) {
+				for (extra=db_leg_tags, i=m; extra; extra=extra->next, i++) {
+					VAL_STR(db_vals+i)=LEG_VALUE( j, extra, ctx);
+				}
+				if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+n+((ctx&&cdr_flag)?2:0)) < 0 )
+					CON_RESET_INSLIST(db_handle);
+				if (acc_dbf.insert(db_handle, db_keys, db_vals, m+n+((ctx&&cdr_flag)?2:0)) < 0) {
+					LM_ERR("failed to insert into database\n");
+					accX_unlock(&ctx->lock);
+					return -1;
+				}
+			}
+			accX_unlock(&ctx->lock);
+		}
+	} else {
+		if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+((ctx&&cdr_flag)?2:0)) < 0 )
+				CON_RESET_INSLIST(db_handle);
+		if (acc_dbf.insert(db_handle, db_keys, db_vals, m+((ctx&&cdr_flag)?2:0)) < 0) {
+			LM_ERR("failed to insert into database\n");
+			return -1;
+		}
 	}
 
 	return 1;
 }
 
-int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
+int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 {
-	int total, nr_vals, i, ret, res = -1, nr_bye_vals = 0, j;
-	time_t created, start_time;
+	int total, i, ret, res = -1, j;
+	int nr_leg_vals=0;
+	struct timeval start_time;
 	str core_s, leg_s, extra_s, table;
-	short nr_legs;
 	static db_ps_t my_ps = NULL;
 	static query_list_t *ins_list = NULL;
+
+	struct acc_extra* extra;
+
+	if (!acc_dbf.use_table || !acc_dbf.insert) {
+		LM_ERR("database not loaded! Probably database url not defined!\n");
+		return -1;
+	}
 
 	core_s.s = extra_s.s = leg_s.s = 0;
 
@@ -614,83 +660,62 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 		goto end;
 	}
 
-	ret = prebuild_extra_arr(dlg, msg, &extra_s,
-			&db_extra_str, db_extra_bye, ret);
-	if (ret < 0) {
-		LM_ERR("cannot copy extra arguments\n");
-		goto end;
-	}
+	/* count the number of extra values*/
+	for (extra=db_extra_tags; extra; extra=extra->next, ++ret);
+	/* count the number of leg values*/
+	for (extra=db_leg_tags, nr_leg_vals=0; extra; extra=extra->next, nr_leg_vals++);
 
-	/* here starts the extra leg */
-	nr_vals = prebuild_leg_arr(dlg, &leg_s, &nr_legs);
-	if (nr_vals < 0) {
-		LM_ERR("cannot compute leg values\n");
-		goto end;
-	}
-
-	if (!(created = acc_get_created(dlg))) {
-		LM_ERR("cannot get created\n");
-		goto end;
-	}
-
-	if (dlg_api.fetch_dlg_value(dlg, &table_str, &table, 0) < 0) {
-		LM_ERR("error getting table name\n");
-		return -1;
-	}
+	table = ctx->acc_table;
 
 	for (i=0;i<ACC_CORE_LEN;i++)
-		VAL_STR(db_vals+i) = val_arr[i];
-	for (i=ACC_CORE_LEN; i<ret; i++)
-		VAL_STR(db_vals+i+1) = val_arr[i];
+		VAL_STR(db_vals_cdrs+i) = val_arr[i];
 
-	if (leg_bye_info) {
-		nr_bye_vals = legs2strar(leg_bye_info, msg, val_arr+ret+nr_vals, 1);
-	}
+	VAL_TIME(db_vals_cdrs+ACC_CORE_LEN) = start_time.tv_sec;
+	VAL_INT(db_vals_cdrs+ret+nr_leg_vals+1) =
+		start_time.tv_sec - ctx->created;
+	VAL_TIME(db_vals_cdrs+ret+nr_leg_vals+2) = ctx->created;
+	VAL_INT(db_vals_cdrs+ret+nr_leg_vals+3) =
+		ctx->bye_time.tv_sec - start_time.tv_sec;
+	VAL_INT(db_vals_cdrs+ret+nr_leg_vals+4) =
+		(ctx->bye_time.tv_sec-start_time.tv_sec)*1000+(ctx->bye_time.tv_usec-start_time.tv_usec)%1000;
 
-	VAL_TIME(db_vals+ACC_CORE_LEN) = start_time;
-	VAL_INT(db_vals+ret+nr_vals+nr_bye_vals+1) = time(NULL) - start_time;
-	VAL_INT(db_vals+ret+nr_vals+nr_bye_vals+2) = start_time - created;
-	VAL_TIME(db_vals+ret+nr_vals+nr_bye_vals+3) = created;
-
-	total = ret + 4;
+	total = ret + 5;
 	acc_dbf.use_table(db_handle, &table);
 	CON_PS_REFERENCE(db_handle) = &my_ps;
 
-	if (!leg_info && !leg_bye_info) {
-		if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total) < 0 )
+
+	/* prevent acces for setting variable */
+	accX_lock(&ctx->lock);
+
+	for (extra=db_extra_tags,i=ACC_CORE_LEN+1; extra; extra=extra->next, ++i)
+		VAL_STR(db_vals_cdrs+i) = ctx->extra_values[extra->tag_idx].value;
+
+	if (!ctx->leg_values) {
+		if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys_cdrs,total) < 0 )
 			CON_RESET_INSLIST(db_handle);
-		if (acc_dbf.insert(db_handle, db_keys, db_vals, total) < 0) {
+		if (acc_dbf.insert(db_handle, db_keys_cdrs, db_vals_cdrs, total) < 0) {
 			LM_ERR("failed to insert into database\n");
+			accX_unlock(&ctx->lock);
 			goto end;
 		}
+		accX_unlock(&ctx->lock);
 	} else {
-		total += nr_vals;
+		total += nr_leg_vals;
 		leg_s.len = 4;
-		for (i=0;i<nr_legs;i++) {
-			complete_dlg_values(&leg_s,val_arr+ret,nr_vals);
-			 for (j = 0; j<nr_vals+nr_bye_vals; j++)
-				VAL_STR(db_vals+ret+j+1) = val_arr[ret+j];
-			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total+nr_bye_vals) < 0 )
+		for (i=0; i < ctx->legs_no; i++) {
+			for (extra=db_leg_tags, j=0; extra; extra=extra->next, j++) {
+				VAL_STR(db_vals_cdrs+ret+j+1) = LEG_VALUE( i, extra, ctx);
+			}
+
+			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys_cdrs,total) < 0 )
 				CON_RESET_INSLIST(db_handle);
-			if (acc_dbf.insert(db_handle,db_keys,db_vals,total+nr_bye_vals) < 0) {
+			if (acc_dbf.insert(db_handle,db_keys_cdrs,db_vals_cdrs,total) < 0) {
 				LM_ERR("failed inserting into database\n");
+				accX_unlock(&ctx->lock);
 				goto end;
 			}
-			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
 		}
-		/* there were no Invite legs */
-		while (nr_bye_vals) {
-			/* drain all the values */
-			for (j = ret+nr_vals; j<ret+nr_bye_vals+nr_vals; j++)
-				VAL_STR(db_vals+j+1) = val_arr[j];
-			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total+nr_bye_vals) < 0 )
-				CON_RESET_INSLIST(db_handle);
-			if (acc_dbf.insert(db_handle,db_keys,db_vals,total+nr_bye_vals) < 0) {
-				LM_ERR("failed inserting into database\n");
-				goto end;
-			}
-			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
-		}
+		accX_unlock(&ctx->lock);
 	}
 
 	res = 1;
@@ -702,12 +727,6 @@ end:
 	if (leg_s.s)
 		pkg_free(leg_s.s);
 	return res;
-}
-
-int store_db_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
-		struct sip_msg *reply)
-{
-	return store_extra_values(db_extra, &db_extra_str, dlg, req, reply);
 }
 
 /************ AAA PROTOCOLS helper functions **************/
@@ -738,7 +757,7 @@ static aaa_map
 	rd_attrs[RA_STATIC_MAX+ACC_CORE_LEN+ACC_DLG_LEN-2+MAX_ACC_EXTRA+MAX_ACC_LEG];
 static aaa_map rd_vals[RV_STATIC_MAX];
 
-int init_acc_aaa(char* aaa_proto_url, int srv_type) 
+int init_acc_aaa(char* aaa_proto_url, int srv_type)
 {
 	int n;
 	str prot_url;
@@ -764,16 +783,14 @@ int init_acc_aaa(char* aaa_proto_url, int srv_type)
 	rd_vals[RV_SIP_SESSION].name         = "Sip-Session";
 
 	/* add and count the extras as attributes */
-	n += extra2attrs( aaa_extra, rd_attrs, n);
-	n += extra2attrs( aaa_extra_bye, rd_attrs, n);
-	/* add and count the legs as attributes */
-	n += extra2attrs( leg_info, rd_attrs, n);
-	n += extra2attrs( leg_bye_info, rd_attrs, n);
+	n += extra2attrs( aaa_extra_tags, rd_attrs, n);
 
-	if (dlg_api.get_dlg) {
-		rd_attrs[n++].name = "Sip-Call-Duration";
-		rd_attrs[n++].name = "Sip-Call-Setuptime";
-	}
+	/* add and count the legs as attributes */
+	n += extra2attrs( aaa_leg_tags, rd_attrs, n);
+
+	rd_attrs[n++].name = "Sip-Call-Duration";
+	rd_attrs[n++].name = "Sip-Call-Setuptime";
+	rd_attrs[n++].name = "Sip-Call-Created";
 
 	prot_url.s = aaa_proto_url;
 	prot_url.len = strlen(aaa_proto_url);
@@ -820,16 +837,27 @@ static inline aaa_map *aaa_status( struct sip_msg *req, int code )
 		} \
 	}while(0)
 
-int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl)
+int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag)
 {
-	int attr_cnt;
+	int attr_cnt, extra_len;
 	aaa_message *send;
 	int offset, i, av_type;
 	aaa_map *r_stat;
 
+	unsigned int _created=0;
+	unsigned int _setup_time=0;
+
+	struct acc_extra* extra;
+	acc_ctx_t* ctx = try_fetch_ctx();
+
 	if ((send = proto.create_aaa_message(conn, AAA_ACCT)) == NULL) {
 		LM_ERR("failed to create new aaa message for acct\n");
 		return -1;
+	}
+
+	if (ctx &&cdr_flag) {
+		_created = ctx->created;
+		_setup_time = time(NULL) - _created;
 	}
 
 	attr_cnt = core2strar( req, val_arr);
@@ -849,11 +877,11 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl)
 	ADD_AAA_AVPAIR( RA_SIP_METHOD, &av_type, -1);
 
 	/* unix time */
-	av_type = (uint32_t)acc_env.ts;
+	av_type = (uint32_t)acc_env.ts.tv_sec;
 	ADD_AAA_AVPAIR( RA_TIME_STAMP, &av_type, -1);
 
-	/* add extra also */
-	attr_cnt += extra2strar( aaa_extra, req, rpl, val_arr+attr_cnt, 0);
+	if (ctx)
+		for (extra=aaa_extra_tags, extra_len=0; extra; extra=extra->next, extra_len++);
 
 	/* add the values for the vector - start from 1 instead of
 	 * 0 to skip the first value which is the METHOD as string */
@@ -861,14 +889,33 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl)
 	for (i = 1; i < attr_cnt; i++)
 		ADD_AAA_AVPAIR( offset + i, val_arr[i].s, val_arr[i].len );
 
+	if (cdr_flag) {
+		av_type = (uint32_t)_setup_time;
+		ADD_AAA_AVPAIR( offset + attr_cnt + extra_len + 1, &av_type, -1);
+		av_type = (uint32_t)_created;
+		ADD_AAA_AVPAIR( offset + attr_cnt + extra_len + 2, &av_type, -1);
+	}
+
 	/* call-legs attributes also get inserted */
-	if (leg_info) {
-		offset += attr_cnt;
-		attr_cnt = legs2strar(leg_info,req,val_arr,1);
-		do {
-			for (i = 0; i < attr_cnt; i++)
-				ADD_AAA_AVPAIR( offset+i, val_arr[i].s, val_arr[i].len );
-		} while ((attr_cnt = legs2strar(leg_info,req,val_arr,0)) != 0);
+	if (ctx) {
+		/* prevent acces for setting variable */
+		accX_lock(&ctx->lock);
+
+		for (extra = aaa_extra_tags, i=attr_cnt; extra; i++, extra=extra->next) {
+			ADD_AAA_AVPAIR(offset+i, ctx->extra_values[extra->tag_idx].value.s,
+										ctx->extra_values[extra->tag_idx].value.len);
+		}
+
+		if (ctx->leg_values) {
+			offset += attr_cnt;
+			for (i=0; i<ctx->legs_no; i++) {
+				for (extra=aaa_leg_tags; extra; extra=extra->next) {
+					ADD_AAA_AVPAIR( offset+i,
+						LEG_VALUE(i, extra, ctx).s, LEG_VALUE(i, extra, ctx).len);
+				}
+			}
+		}
+		accX_unlock(&ctx->lock);
 	}
 
 	if (proto.send_aaa_request(conn, send, NULL)) {
@@ -886,101 +933,17 @@ error:
 	return -1;
 }
 
-int acc_aaa_cdrs_request( struct dlg_cell *dlg)
+int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 {
-	aaa_message *send = NULL;
-	int offset, i, j, av_type;
-	aaa_map *r_stat;
+	int i, j, ret, res = -1;
+	int nr_leg_vals=0;
+	struct timeval start_time;
 	str core_s, leg_s, extra_s;
-	short nr_legs, leg_values, attr_cnt;
-	time_t created, start_time;
-	int result = -1;
-
-	core_s.s = leg_s.s = extra_s.s = NULL;
-	core_s.len = leg_s.len = extra_s.len = 0;
-
-	if (prebuild_string(&aaa_extra_str, dlg, &core_s, &extra_s, &leg_s,
-				&attr_cnt,&leg_values, &nr_legs, &created, &start_time) < 0) {
-		LM_ERR("cannot store values\n");
-		goto error;
-	}
-
-	if ((send = proto.create_aaa_message(conn, AAA_ACCT)) == NULL) {
-		LM_ERR("failed to create new aaa message for acct\n");
-		goto error;
-	}
-
-	r_stat = &rd_vals[RV_STATUS_STOP]; /* AAA PROTOCOL status */
-	ADD_AAA_AVPAIR(RA_ACCT_STATUS_TYPE,&(r_stat->value),-1);
-
-	av_type = rd_vals[RV_SIP_SESSION].value; /* session*/
-	ADD_AAA_AVPAIR( RA_SERVICE_TYPE, &av_type, -1);
-
-	av_type = (uint32_t)acc_env.code; /* status=integer */
-	ADD_AAA_AVPAIR( RA_SIP_RESPONSE_CODE, &av_type, -1);
-
-	av_type = METHOD_INVITE; /* method */
-	ADD_AAA_AVPAIR( RA_SIP_METHOD, &av_type, -1);
-
-	av_type = (uint32_t)start_time; /* call start time */
-	ADD_AAA_AVPAIR( RA_TIME_STAMP, &av_type, -1);
-
-	/* add the values for the vector - start from 1 instead of
-	 * 0 to skip the first value which is the METHOD as string */
-	offset = RA_STATIC_MAX-1;
-	for (i = 1; i < ACC_CORE_LEN-2; i++)
-		ADD_AAA_AVPAIR( offset + i, val_arr[i].s, val_arr[i].len );
-	for (i = ACC_CORE_LEN - 2; i<attr_cnt - 2; i++)
-		ADD_AAA_AVPAIR( offset + i, val_arr[i+2].s,
-				val_arr[i+2].len );
-	offset = attr_cnt + 2;
-
-	/* add duration and setup values */
-	av_type = (uint32_t)val_arr[attr_cnt + leg_values].len;
-	ADD_AAA_AVPAIR( offset + leg_values, &av_type, -1);
-	av_type = (uint32_t)val_arr[attr_cnt + leg_values + 1].len;
-	ADD_AAA_AVPAIR( offset + leg_values + 1, &av_type, -1);
-
-	/* call-legs attributes also get inserted */
-	if (leg_info) {
-		leg_s.len = 4;
-		for (i=0; i<nr_legs; i++) {
-			complete_dlg_values(&leg_s, val_arr, leg_values);
-			for (j=0; j<leg_values; j++)
-				ADD_AAA_AVPAIR( offset+j, val_arr[j].s,
-						val_arr[j].len );
-		}
-	}
-
-	if (proto.send_aaa_request(conn, send, NULL)) {
-		LM_ERR("Radius accounting request failed for status: '%s' "
-			"Call-Id: '%.*s' \n",r_stat->name,
-			val_arr[3].len, val_arr[3].s);
-		goto error;
-	}
-
-	result = 1;
-error:
-	proto.destroy_aaa_message(conn, send);
-	if (core_s.s)
-		pkg_free(core_s.s);
-	if (extra_s.s)
-		pkg_free(extra_s.s);
-	if (leg_s.s)
-		pkg_free(leg_s.s);
-
-	return result;
-}
-
-int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
-{
-	int nr_vals, i, j, ret, res = -1;
-	time_t created, start_time;
-	str core_s, leg_s, extra_s;
-	short nr_legs;
 	aaa_message *send = NULL;
 	int offset, av_type;
 	aaa_map *r_stat;
+
+	struct acc_extra* extra;
 
 	core_s.s = extra_s.s = leg_s.s = 0;
 
@@ -990,25 +953,10 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 		goto error;
 	}
 
-	ret = prebuild_extra_arr(dlg, msg, &extra_s,
-			&aaa_extra_str, aaa_extra_bye, ret);
-	if (ret < 0) {
-		LM_ERR("cannot copy extra arguments\n");
-		goto error;
-	}
-
-	/* here starts the extra leg */
-	nr_vals = prebuild_leg_arr(dlg, &leg_s, &nr_legs);
-	if (nr_vals < 0) {
-		LM_ERR("cannot compute leg values\n");
-		goto error;
-	}
-
-	if (!(created = acc_get_created(dlg))) {
-		LM_ERR("cannot get created\n");
-		goto error;
-	}
-
+	/* count the number of values in one leg */
+	for (extra=aaa_leg_tags; extra; extra=extra->next, ++ret);
+	/* count the number of values in one leg */
+	for (extra=aaa_leg_tags, nr_leg_vals=0; extra; extra=extra->next, nr_leg_vals++);
 
 	if ((send = proto.create_aaa_message(conn, AAA_ACCT)) == NULL) {
 		LM_ERR("failed to create new aaa message for acct\n");
@@ -1021,13 +969,13 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	av_type = rd_vals[RV_SIP_SESSION].value; /* session*/
 	ADD_AAA_AVPAIR( RA_SERVICE_TYPE, &av_type, -1);
 
-	av_type = (uint32_t)acc_env.code; /* status=integer */
+	av_type =  (uint32_t)acc_env.code; /* status=integer */
 	ADD_AAA_AVPAIR( RA_SIP_RESPONSE_CODE, &av_type, -1);
 
 	av_type = METHOD_INVITE; /* method */
 	ADD_AAA_AVPAIR( RA_SIP_METHOD, &av_type, -1);
 
-	av_type = (uint32_t)start_time; /* call start time */
+	av_type = (uint32_t)start_time.tv_sec; /* call start time */
 	ADD_AAA_AVPAIR( RA_TIME_STAMP, &av_type, -1);
 
 	/* add the values for the vector - start from 1 instead of
@@ -1035,32 +983,35 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	offset = RA_STATIC_MAX-1;
 	for (i = 1; i < ACC_CORE_LEN-2; i++)
 		ADD_AAA_AVPAIR( offset + i, val_arr[i].s, val_arr[i].len );
-	for (i = ACC_CORE_LEN - 2; i<ret - 2; i++)
-		ADD_AAA_AVPAIR( offset + i, val_arr[i+2].s,
-				val_arr[i+2].len );
 	offset = ret + 2;
 
 	/* add duration and setup values */
-	av_type = (uint32_t)(time(NULL) - start_time);
-	ADD_AAA_AVPAIR( offset + nr_vals, &av_type, -1);
-	av_type = (uint32_t)(start_time - created);
-	ADD_AAA_AVPAIR( offset + nr_vals + 1, &av_type, -1);
+	av_type = (uint32_t)(ctx->bye_time.tv_sec - start_time.tv_sec);
+	ADD_AAA_AVPAIR( offset + nr_leg_vals, &av_type, -1);
+	av_type = (uint32_t)((ctx->bye_time.tv_sec-start_time.tv_sec)*1000+(ctx->bye_time.tv_usec-start_time.tv_usec)%1000);
+	ADD_AAA_AVPAIR( offset + nr_leg_vals + 1, &av_type, -1);
+	av_type = (uint32_t)(start_time.tv_sec - ctx->created);
+	ADD_AAA_AVPAIR( offset + nr_leg_vals + 2, &av_type, -1);
+
+	/* prevent acces for setting variable */
+	accX_lock(&ctx->lock);
 
 	/* call-legs attributes also get inserted */
-	if (leg_info || leg_bye_info) {
+	for (extra=aaa_extra_tags, i=ACC_CORE_LEN+1; extra; extra=extra->next, ++i) {
+		ADD_AAA_AVPAIR( i, ctx->extra_values[extra->tag_idx].value.s ,
+							ctx->extra_values[extra->tag_idx].value.len );
+	}
+
+	if (ctx->leg_values) {
 		leg_s.len = 4;
-		ret = legs2strar(leg_bye_info,msg,val_arr + nr_vals,1);
-		for (i=0; i<nr_legs; i++) {
-			complete_dlg_values(&leg_s, val_arr, nr_vals);
-			for (j=0; j<nr_vals + ret; j++)
-				ADD_AAA_AVPAIR( offset+j, val_arr[j].s, val_arr[j].len );
-			ret = legs2strar(leg_bye_info,msg,val_arr + nr_vals,0);
-		}
-		while (ret) {
-			for (j = nr_vals; j < nr_vals + ret; j++)
-				ADD_AAA_AVPAIR( offset+j, val_arr[j].s, val_arr[j].len );
+		for (i=0; i<ctx->legs_no; i++) {
+			for (extra=aaa_leg_tags,j=0; extra; extra=extra->next, j++) {
+				ADD_AAA_AVPAIR( offset+j,
+					LEG_VALUE(j, extra, ctx).s, LEG_VALUE(j, extra, ctx).len);
+			}
 		}
 	}
+	accX_unlock(&ctx->lock);
 
 	if (proto.send_aaa_request(conn, send, NULL)) {
 		LM_ERR("Radius accounting request failed for status: '%s' "
@@ -1081,237 +1032,6 @@ error:
 	return res;
 }
 
-int store_aaa_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
-		struct sip_msg *reply)
-{
-	return store_extra_values(aaa_extra, &aaa_extra_str, dlg, req, reply);
-}
-
-/********************************************
- *        DIAMETER  ACCOUNTING
- ********************************************/
-#ifdef DIAM_ACC
-
-#define AA_REQUEST 265
-#define AA_ANSWER  265
-
-#define ACCOUNTING_REQUEST 271
-#define ACCOUNTING_ANSWER  271
-
-static int diam_attrs[ACC_CORE_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
-
-int acc_diam_init()
-{
-	int n;
-	int m;
-
-	n = 0;
-	/* caution: keep these aligned to core acc output */
-	diam_attrs[n++] = AVP_SIP_METHOD;
-	diam_attrs[n++] = AVP_SIP_FROM_TAG;
-	diam_attrs[n++] = AVP_SIP_TO_TAG;
-	diam_attrs[n++] = AVP_SIP_CALLID;
-	diam_attrs[n++] = AVP_SIP_STATUS;
-
-	m = extra2int( dia_extra, diam_attrs+n);
-	if (m<0) {
-		LM_ERR("extra names for DIAMETER must be integer AVP codes\n");
-		return -1;
-	}
-	n += m;
-
-	m = extra2int( leg_info, diam_attrs+n);
-	if (m<0) {
-		LM_ERR("leg info names for DIAMTER must be integer AVP codes\n");
-		return -1;
-	}
-	n += m;
-
-	return 0;
-}
-
-
-inline unsigned long diam_status(struct sip_msg *rq, int code)
-{
-	if ((rq->REQ_METHOD==METHOD_INVITE || rq->REQ_METHOD==METHOD_ACK)
-				&& code>=200 && code<300) 
-		return AAA_ACCT_START;
-
-	if ((rq->REQ_METHOD==METHOD_BYE || rq->REQ_METHOD==METHOD_CANCEL))
-		return AAA_ACCT_STOP;
-
-	if (code>=200 && code <=300)  
-		return AAA_ACCT_EVENT;
-
-	return -1;
-}
-
-
-int acc_diam_request( struct sip_msg *req, struct sip_msg *rpl)
-{
-	int attr_cnt;
-	int cnt;
-	AAAMessage *send = NULL;
-	AAA_AVP *avp;
-	struct sip_uri puri;
-	str *uri;
-	int ret;
-	int i;
-	int status;
-	char tmp[2];
-	unsigned int mid;
-
-	attr_cnt = core2strar( req, val_arr);
-	/* last value is not used */
-	attr_cnt--;
-
-	if ( (send=AAAInMessage(ACCOUNTING_REQUEST, AAA_APP_NASREQ))==NULL) {
-		LM_ERR("failed to create new AAA request\n");
-		return -1;
-	}
-
-	/* AVP_ACCOUNTIG_RECORD_TYPE */
-	if( (status = diam_status(req, acc_env.code))<0) {
-		LM_ERR("status unknown\n");
-		goto error;
-	}
-	tmp[0] = status+'0';
-	tmp[1] = 0;
-	if( (avp=AAACreateAVP(AVP_Accounting_Record_Type, 0, 0, tmp,
-	1, AVP_DUPLICATE_DATA)) == 0) {
-		LM_ERR("failed to create AVP:no more free memory!\n");
-		goto error;
-	}
-	if( AAAAddAVPToMessage(send, avp, 0)!= AAA_ERR_SUCCESS) {
-		LM_ERR("avp not added \n");
-		AAAFreeAVP(&avp);
-		goto error;
-	}
-	/* SIP_MSGID AVP */
-	mid = req->id;
-	if( (avp=AAACreateAVP(AVP_SIP_MSGID, 0, 0, (char*)(&mid), 
-	sizeof(mid), AVP_DUPLICATE_DATA)) == 0) {
-		LM_ERR("failed to create AVP:no more free memory!\n");
-		goto error;
-	}
-	if( AAAAddAVPToMessage(send, avp, 0)!= AAA_ERR_SUCCESS) {
-		LM_ERR("avp not added \n");
-		AAAFreeAVP(&avp);
-		goto error;
-	}
-
-	/* SIP Service AVP */
-	if( (avp=AAACreateAVP(AVP_Service_Type, 0, 0, SIP_ACCOUNTING, 
-	SERVICE_LEN, AVP_DUPLICATE_DATA)) == 0) {
-		LM_ERR("failed to create AVP:no more free memory!\n");
-		goto error;
-	}
-	if( AAAAddAVPToMessage(send, avp, 0)!= AAA_ERR_SUCCESS) {
-		LM_ERR("avp not added \n");
-		AAAFreeAVP(&avp);
-		goto error;
-	}
-
-	/* also the extra attributes */
-	attr_cnt += extra2strar( dia_extra, rpl, req, val_arr, 0);
-
-	/* add attributes */
-	for(i=0; i<attr_cnt; i++) {
-		if((avp=AAACreateAVP(diam_attrs[i], 0,0, val_arr[i].s, val_arr[i].len,
-		AVP_DUPLICATE_DATA)) == 0) {
-			LM_ERR("failed to create AVP: no more free memory!\n");
-			goto error;
-		}
-		if( AAAAddAVPToMessage(send, avp, 0)!= AAA_ERR_SUCCESS) {
-			LM_ERR("avp not added \n");
-			AAAFreeAVP(&avp);
-			goto error;
-		}
-	}
-
-	/* and the leg attributes */
-	if ( leg_info ) {
-		cnt = legs2strar(leg_info,req,val_arr,1);
-		do {
-			for (i=0; i<cnt; i++) {
-				if((avp=AAACreateAVP(diam_attrs[attr_cnt+i], 0, 0,
-				val_arr[i].s, val_arr[i].len, AVP_DUPLICATE_DATA)) == 0) {
-					LM_ERR("failed to create AVP: no more free memory!\n");
-					goto error;
-				}
-				if( AAAAddAVPToMessage(send, avp, 0)!= AAA_ERR_SUCCESS) {
-					LM_ERR("avp not added \n");
-					AAAFreeAVP(&avp);
-					goto error;
-				}
-			}
-		} while ( (cnt=legs2strar(leg_info,req,val_arr,0))!=0 );
-	}
-
-	if (get_uri(req, &uri) < 0) {
-		LM_ERR("failed to get uri, From/To URI not found\n");
-		goto error;
-	}
-
-	if (parse_uri(uri->s, uri->len, &puri) < 0) {
-		LM_ERR("failed to parse From/To URI\n");
-		goto error;
-	}
-
-	/* Destination-Realm AVP */
-	if( (avp=AAACreateAVP(AVP_Destination_Realm, 0, 0, puri.host.s,
-	puri.host.len, AVP_DUPLICATE_DATA)) == 0) {
-		LM_ERR("failed to create AVP:no more free memory!\n");
-		goto error;
-	}
-
-	if( AAAAddAVPToMessage(send, avp, 0)!= AAA_ERR_SUCCESS) {
-		LM_ERR("avp not added \n");
-		AAAFreeAVP(&avp);
-		goto error;
-	}
-
-	/* prepare the message to be sent over the network */
-	if(AAABuildMsgBuffer(send) != AAA_ERR_SUCCESS) {
-		LM_ERR("message buffer not created\n");
-		goto error;
-	}
-
-	if(sockfd==AAA_NO_CONNECTION) {
-		sockfd = init_mytcp(diameter_client_host, diameter_client_port);
-		if(sockfd==AAA_NO_CONNECTION) {
-			LM_ERR("failed to reconnect to Diameter client\n");
-			goto error;
-		}
-	}
-
-	/* send the message to the DIAMETER client */
-	ret = tcp_send_recv(sockfd, send->buf.s, send->buf.len, rb, req->id);
-	if(ret == AAA_CONN_CLOSED) {
-		LM_NOTICE("connection to Diameter client closed.It will be "
-				"reopened by the next request\n");
-		close(sockfd);
-		sockfd = AAA_NO_CONNECTION;
-		goto error;
-	}
-
-	if(ret != ACC_SUCCESS) {
-		/* a transmission error occurred */
-		LM_ERR("message sending to the DIAMETER backend authorization "
-				"server failed\n");
-		goto error;
-	}
-
-	AAAFreeMessage(&send);
-	return 1;
-
-error:
-	AAAFreeMessage(&send);
-	return -1;
-}
-
-#endif
-
 
 /********************************************
  *        EVENT INTERFACE  ACCOUNTING
@@ -1325,6 +1045,7 @@ static str acc_sipcode_evi    = str_init("sip_code");
 static str acc_sipreason_evi  = str_init("sip_reason");
 static str acc_time_evi       = str_init("time");
 static str acc_duration_evi   = str_init("duration");
+static str acc_ms_duration_evi= str_init("ms_duration");
 static str acc_setuptime_evi  = str_init("setuptime");
 static str acc_created_evi    = str_init("created");
 
@@ -1385,22 +1106,17 @@ int  init_acc_evi(void)
 	EVI_CREATE_PARAM(acc_time_evi);
 
 	/* init the extra db keys */
-	for(extra=evi_extra; extra ; extra=extra->next)
-		EVI_CREATE_PARAM(extra->name);
-	for(extra=evi_extra_bye; extra ; extra=extra->next)
+	for(extra=evi_extra_tags; extra ; extra=extra->next)
 		EVI_CREATE_PARAM(extra->name);
 
 	/* multi leg call columns */
-	for( extra=leg_info ; extra ; extra=extra->next)
-		EVI_CREATE_PARAM(extra->name);
-	for( extra=leg_bye_info ; extra ; extra=extra->next)
+	for( extra=evi_leg_tags; extra ; extra=extra->next)
 		EVI_CREATE_PARAM(extra->name);
 
-	if (dlg_api.get_dlg) {
-		EVI_CREATE_PARAM(acc_duration_evi);
-		EVI_CREATE_PARAM(acc_setuptime_evi);
-		EVI_CREATE_PARAM(acc_created_evi);
-	}
+	EVI_CREATE_PARAM(acc_duration_evi);
+	EVI_CREATE_PARAM(acc_ms_duration_evi);
+	EVI_CREATE_PARAM(acc_setuptime_evi);
+	EVI_CREATE_PARAM(acc_created_evi);
 
 	return 0;
 
@@ -1411,29 +1127,37 @@ error:
 #undef EVI_CREATE_PARAM
 
 
-int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl)
+int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 {
 	int m;
 	int n;
 	int i;
-	int backup_idx = -1, ret = -1;
-	event_id_t event = EVI_ERROR;
+	int ret = -1;
+	int nr_leg_vals;
+
+	unsigned int _created=0;
+	unsigned int _setup_time=0;
+
+	struct acc_extra* extra;
+	acc_ctx_t* ctx = try_fetch_ctx();
 
 	/*
 	 * if the code is not set, choose the missed calls event
 	 * otherwise, check if the code is negative
 	 */
-	event = (!acc_env.code || acc_env.code > 300) ?
-		acc_missed_event : acc_event;
-
-	if (event == EVI_ERROR) {
+	if (acc_env.event == EVI_ERROR) {
 		LM_ERR("event not registered %d\n", acc_event);
 		return -1;
 	}
 
 	/* check if someone is interested in this event */
-	if (!evi_probe_event(event))
+	if (!evi_probe_event(acc_env.event))
 		return 1;
+
+	if (ctx && cdr_flag) {
+		_created = ctx->created;
+		_setup_time = time(NULL) - _created;
+	}
 
 	m = core2strar( rq, val_arr );
 
@@ -1448,61 +1172,84 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl)
 		return -1;
 	}
 
-	/* extra columns */
-	m += extra2strar( evi_extra, rq, rpl, val_arr+m, 0);
+	for (extra=evi_extra_tags; extra; extra=extra->next, ++m);
 
-	for( i++; i < m; i++)
-		if(evi_param_set_str(evi_params[i], &val_arr[i]) < 0) {
-			LM_ERR("cannot set acc extra parameter\n");
-			return -1;
-		}
+	for (extra=evi_leg_tags, nr_leg_vals=0; extra; extra=extra->next, nr_leg_vals++);
+
+	if ((ctx&&cdr_flag) && evi_param_set_int(evi_params[m+nr_leg_vals], &_setup_time) < 0) {
+		LM_ERR("cannot set setuptime parameter\n");
+		goto end;
+	}
+
+	if ((ctx&&cdr_flag) && evi_param_set_int(evi_params[m+nr_leg_vals+1], &_created) < 0) {
+		LM_ERR("cannot set created parameter\n");
+		goto end;
+	}
+
 
 	/* multi-leg columns */
-	if ( !leg_info ) {
-		/*
-		 * XXX: hack to skip adding the information that doesn't exist
-		 * for these requests - leg info, duration, setuptime, etc.
-		 */
-		backup_idx = m - 1;
-		evi_params[backup_idx]->next = NULL;
+	if (ctx) {
+		/* prevent acces for setting variable */
+		accX_lock(&ctx->lock);
 
-		if (evi_raise_event(event, acc_event_params) < 0) {
-			LM_ERR("cannot raise ACC event\n");
-			goto end;
-		}
-	} else {
-		n = legs2strar(leg_info,rq,val_arr+m,1);
-		do {
-			for ( i = m; i < m + n; i++)
-				if(evi_param_set_str(evi_params[i], &val_arr[i]) < 0) {
-					LM_ERR("cannot set acc extra parameter\n");
-					goto end;
-				}
-			/* XXX: same hack for above, but at least now we have legs */
-			backup_idx = i - 1;
-			evi_params[backup_idx]->next = NULL;
+		/* extra columns */
+		/* i will now indicate at the first position after the core values, where
+		 * we have to put the extras*/
+		for( extra=evi_extra_tags, i++; extra; extra=extra->next, i++)
+			if(evi_param_set_str(evi_params[i],
+						&ctx->extra_values[extra->tag_idx].value) < 0) {
+				LM_ERR("cannot set acc extra parameter\n");
+				return -1;
+			}
 
-			if (evi_raise_event(event, acc_event_params) < 0) {
+		if ( !ctx->leg_values) {
+			accX_unlock(&ctx->lock);
+			if (evi_raise_event(acc_env.event, acc_event_params) < 0) {
 				LM_ERR("cannot raise ACC event\n");
 				goto end;
 			}
-			evi_params[backup_idx]->next = evi_params[backup_idx + 1];
-		}while ( (n = legs2strar(leg_info,rq,val_arr+m,0))!=0 );
+		} else {
+			for (i=0; i<ctx->legs_no; i++) {
+				for (extra=evi_leg_tags, n=m; extra; extra=extra->next,n++) {
+					if (evi_param_set_str(evi_params[n],
+								&LEG_VALUE(i, extra, ctx)) < 0) {
+						LM_ERR("cannot set acc extra parameter\n");
+						accX_unlock(&ctx->lock);
+						goto end;
+					}
+				}
+
+				if (evi_raise_event(acc_env.event, acc_event_params) < 0) {
+					LM_ERR("cannot raise ACC event\n");
+					accX_unlock(&ctx->lock);
+					goto end;
+				}
+			}
+			accX_unlock(&ctx->lock);
+		}
+	} else {
+		if (evi_raise_event(acc_env.event, acc_event_params) < 0) {
+			LM_ERR("cannot raise ACC event\n");
+			goto end;
+		}
 	}
+
+
+
 	ret = 1;
 end:
-	evi_params[backup_idx]->next = evi_params[backup_idx + 1];
-
 	return ret;
 }
 
-int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
+int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 {
-	int nr_vals, i, ret, res = -1, nr_bye_vals = 0, j;
+	int  i, ret, res = -1, j;
+	int nr_leg_vals;
 	int aux_time;
-	time_t created, start_time;
+	struct timeval start_time;
 	str core_s, leg_s, extra_s;
-	short nr_legs;
+
+	struct acc_extra* extra;
 
 	if (acc_cdr_event == EVI_ERROR) {
 		LM_ERR("event not registered %d\n", acc_cdr_event);
@@ -1513,7 +1260,6 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	if (!evi_probe_event(acc_cdr_event))
 		return 1;
 
-
 	core_s.s = extra_s.s = leg_s.s = 0;
 
 	ret = prebuild_core_arr(dlg, &core_s, &start_time);
@@ -1522,63 +1268,57 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 		goto end;
 	}
 
-	
-	LM_DBG("XXX: nr before extra is: %d\n", ret);
-	ret = prebuild_extra_arr(dlg, msg, &extra_s,
-			&evi_extra_str, evi_extra_bye, ret);
-	if (ret < 0) {
-		LM_ERR("cannot copy extra arguments\n");
-		goto end;
-	}
-	LM_DBG("XXX: nr after extra is: %d\n", ret);
+	/* count extras just to avoid doing all operations below  under lock */
+	for (extra=evi_extra_tags; extra; extra=extra->next, ++ret);
 
-	/* here starts the extra leg */
-	nr_vals = prebuild_leg_arr(dlg, &leg_s, &nr_legs);
-	if (nr_vals < 0) {
-		LM_ERR("cannot compute leg values\n");
-		goto end;
-	}
-
-	if (!(created = acc_get_created(dlg))) {
-		LM_ERR("cannot get created\n");
-		goto end;
-	}
+	/* count the number of leg values */
+	for (extra=evi_leg_tags, nr_leg_vals=0; extra; extra=extra->next, nr_leg_vals++);
 
 	for (i=0;i<ACC_CORE_LEN;i++)
 		if(evi_param_set_str(evi_params[i], &val_arr[i]) < 0) {
 			LM_ERR("cannot set acc parameter\n");
 			goto end;
 		}
-	for (i=ACC_CORE_LEN+1; i<=ret; i++)
-		if(evi_param_set_str(evi_params[i], &val_arr[i-1]) < 0) {
-			LM_ERR("cannot set acc parameter\n");
-			goto end;
-		}
 
-	if (leg_bye_info) {
-		nr_bye_vals = legs2strar(leg_bye_info, msg, val_arr+ret+nr_vals, 1);
-	}
-
-	if (evi_param_set_int(evi_params[ACC_CORE_LEN], &start_time) < 0) {
+	if (evi_param_set_int(evi_params[ACC_CORE_LEN], &start_time.tv_sec) < 0) {
 		LM_ERR("cannot set start_time parameter\n");
 		goto end;
 	}
-	aux_time = time(NULL) - start_time;
-	if (evi_param_set_int(evi_params[ret+nr_vals+nr_bye_vals+1], &aux_time) < 0) {
+
+	aux_time = ctx->bye_time.tv_sec - start_time.tv_sec;
+	if (evi_param_set_int(evi_params[ret+nr_leg_vals+1], &aux_time) < 0) {
 		LM_ERR("cannot set duration parameter\n");
 		goto end;
 	}
-	aux_time = start_time - created;
-	if (evi_param_set_int(evi_params[ret+nr_vals+nr_bye_vals+2], &aux_time) < 0) {
+	aux_time = (ctx->bye_time.tv_sec-start_time.tv_sec)*1000
+					+ (ctx->bye_time.tv_usec-start_time.tv_usec)%1000;
+	if (evi_param_set_int(evi_params[ret+nr_leg_vals+2], &aux_time) < 0) {
+		LM_ERR("cannot set duration parameter\n");
+		goto end;
+	}
+	aux_time = start_time.tv_sec - ctx->created;
+	if (evi_param_set_int(evi_params[ret+nr_leg_vals+3], &aux_time) < 0) {
 		LM_ERR("cannot set setuptime parameter\n");
 		goto end;
 	}
-	if (evi_param_set_int(evi_params[ret+nr_vals+nr_bye_vals+3], &created) < 0) {
+	if (evi_param_set_int(evi_params[ret+nr_leg_vals+4], &ctx->created) < 0) {
 		LM_ERR("cannot set created parameter\n");
 		goto end;
 	}
 
-	if (!leg_info && !leg_bye_info) {
+	/* prevent acces for setting variable */
+	accX_lock(&ctx->lock);
+
+	for (extra=evi_extra_tags, i=ACC_CORE_LEN+1; extra; extra=extra->next, i++)
+		if(evi_param_set_str(evi_params[i], &ctx->extra_values[extra->tag_idx].value) < 0) {
+			LM_ERR("cannot set acc parameter\n");
+			accX_unlock(&ctx->lock);
+			goto end;
+		}
+
+
+	if (!ctx->leg_values) {
+		accX_unlock(&ctx->lock);
 		/* make sure the parameters list is built */
 		if (evi_raise_event(acc_cdr_event, acc_event_params) < 0) {
 			LM_ERR("cannot raise acc CDR event\n");
@@ -1586,35 +1326,22 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 		}
 	} else {
 		leg_s.len = 4;
-		for (i=0;i<nr_legs;i++) {
-			complete_dlg_values(&leg_s,val_arr+ret,nr_vals);
-			for (j = 0; j<nr_vals+nr_bye_vals; j++) {
-				if(evi_param_set_str(evi_params[ret+j+1], &val_arr[ret+j]) < 0) {
+		for (i=0;i<ctx->legs_no;i++) {
+			for (extra=evi_leg_tags, j=0; extra; extra=extra->next, j++) {
+				if(evi_param_set_str(evi_params[ret+j+1], &LEG_VALUE(i, extra, ctx)) < 0) {
 					LM_ERR("cannot set acc parameter\n");
+					accX_unlock(&ctx->lock);
 					goto end;
 				}
 			}
+
 			if (evi_raise_event(acc_cdr_event, acc_event_params) < 0) {
 				LM_ERR("cannot raise acc CDR event\n");
+				accX_unlock(&ctx->lock);
 				goto end;
 			}
-			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
 		}
-		/* there were no Invite legs */
-		while (nr_bye_vals) {
-			/* drain all the values */
-			for (j = 0; j<nr_vals+nr_bye_vals; j++) {
-				if(evi_param_set_str(evi_params[j+1], &val_arr[j]) < 0) {
-					LM_ERR("cannot set acc parameter\n");
-					goto end;
-				}
-			}
-			if (evi_raise_event(acc_cdr_event, acc_event_params) < 0) {
-				LM_ERR("cannot raise acc CDR event\n");
-				goto end;
-			}
-			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
-		}
+		accX_unlock(&ctx->lock);
 	}
 
 	res = 1;
@@ -1627,14 +1354,6 @@ end:
 		pkg_free(leg_s.s);
 	return res;
 }
-
-int store_evi_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
-		struct sip_msg *reply)
-{
-	return store_extra_values(evi_extra, &evi_extra_str, dlg, req, reply);
-}
-
-
 
 /* Functions used to store values into dlg */
 
@@ -1675,7 +1394,7 @@ int set_dlg_value(str *value)
 
 	memcpy(cdr_buf.s + cdr_buf.len + 2, value->s, value->len);
 	cdr_buf.len += value->len + 2;
-	
+
 	return 1;
 }
 
@@ -1709,25 +1428,15 @@ int store_core_leg_values(struct dlg_cell *dlg, struct sip_msg *req)
 		return -1;
 	}
 
-	if ( build_leg_dlg_values(dlg, req) < 0) {
-		LM_ERR("cannot build legs value string\n");
-		return -1;
-	}
-	
-	if (dlg_api.store_dlg_value(dlg,&leg_str,&cdr_buf) < 0) {
-		LM_ERR("cannot store dialog string\n");
-		return -1;
-	}
-
 	return 1;
 }
 
 
 /* stores extra values into dlg */
-static int store_extra_values(struct acc_extra* extra, str *values_str,
-		struct dlg_cell *dlg, struct sip_msg *req, struct sip_msg *reply)
+int store_extra_values(extra_value_t* values, str *values_str,
+		struct dlg_cell *dlg)
 {
-	if ( build_extra_dlg_values(extra, dlg, req, reply) < 0) {
+	if ( build_extra_dlg_values(values) < 0) {
 		LM_ERR("cannot build core value string\n");
 		return -1;
 	}
@@ -1738,6 +1447,26 @@ static int store_extra_values(struct acc_extra* extra, str *values_str,
 	}
 
 	return 1;
+}
+
+int store_leg_values(acc_ctx_t* ctx, str* values_str, struct dlg_cell *dlg)
+{
+	if (ctx == NULL || values_str == NULL) {
+		LM_ERR("bad usage!\n");
+		return -1;
+	}
+
+	if ( build_leg_dlg_values(ctx) < 0) {
+		LM_ERR("cannot build legs value string\n");
+		return -1;
+	}
+
+	if (dlg_api.store_dlg_value(dlg, values_str,&cdr_buf) < 0) {
+		LM_ERR("cannot store dialog string\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 /* builds core string */
@@ -1751,9 +1480,9 @@ static int build_core_dlg_values(struct dlg_cell *dlg,struct sip_msg *req)
 	for (i=0; i<count; i++)
 		if (set_dlg_value(&val_arr[i]) < 0)
 			return -1;
-	
+
 	value.s = (char*)&acc_env.ts;
-	value.len = sizeof(time_t);
+	value.len = sizeof(struct timeval);
 	if (set_dlg_value(&value) < 0)
 		return -1;
 
@@ -1761,109 +1490,65 @@ static int build_core_dlg_values(struct dlg_cell *dlg,struct sip_msg *req)
 }
 
 /* builds extra values string */
-static int build_extra_dlg_values(struct acc_extra *extra,
-		struct dlg_cell *dlg,struct sip_msg *req, struct sip_msg *reply)
+static int build_extra_dlg_values(extra_value_t* values)
 {
 	str val_arr[MAX_ACC_EXTRA];
 	int nr, i;
 
 	cdr_buf.len = 2;
-	nr = extra2strar(extra, req, reply, val_arr, 0);
+	nr = extra2strar(values, val_arr, 0);
 
 	for (i=0; i<nr; i++)
 		if (set_dlg_value(&val_arr[i]) < 0)
 			return -1;
 	SET_LEN(cdr_buf.s, nr);
+
 	return nr;
 }
 
 /* builds leg values string */
-static int build_leg_dlg_values(struct dlg_cell *dlg,struct sip_msg *req)
+static int build_leg_dlg_values(acc_ctx_t* ctx)
 {
-	str val_arr[MAX_ACC_LEG];
-	int nr_values, i,nr_legs=0;
+	int i, j;
+
+	/* init cdr buf before doing SET_LEN on it */
+	if (cdr_len==0) {
+		cdr_buf.s = pkg_malloc(STRING_INIT_SIZE);
+		if (cdr_buf.s == NULL) {
+			LM_ERR(" no more pkg mem\n");
+			return -1;
+		}
+
+		cdr_len = STRING_INIT_SIZE;
+	}
 
 	cdr_buf.len = 4;
-	if (!leg_info)
+	if (!ctx->leg_values)
 		SET_LEN(cdr_buf.s,0);
 	else {
-		nr_values = legs2strar(leg_info,req,val_arr,1);
-		SET_LEN(cdr_buf.s,nr_values);
-		do {
-			for (i=0;i<nr_values;i++)
-				if (set_dlg_value(&val_arr[i]) < 0)
+		SET_LEN(cdr_buf.s, leg_tgs_len);
+		for (i=0; i < ctx->legs_no; i++) {
+			for (j=0; j < leg_tgs_len; j++) {
+				if (set_dlg_value(&ctx->leg_values[i][j].value) < 0) {
 					return -1;
-			nr_legs++;
-		} while ( (nr_values = legs2strar(leg_info,req,val_arr,0)) != 0);
-	}
-	SET_LEN(cdr_buf.s+2,nr_legs);
-	return 1;
-}
-
-/* gets values from dlg and stores them into val_arr array */
-static int prebuild_string(str *value_str, struct dlg_cell *dlg, str *core_s,
-		str *extra_s,str *leg_s, short *leg_idx, short *leg_values,
-		short *nr_legs, time_t *created, time_t *start)
-{
-	int cdrs_pos;
-	short extra_len, nr;
-
-	if (!leg_idx) {
-		LM_ERR("null pointer to leg index\n");
-		return -1;
+				}
+			}
+		}
 	}
 
-	/* fetching core, extra and leg string values */
-	if (dlg_api.fetch_dlg_value(dlg, &core_str, core_s, 1) < 0) {
-		LM_ERR("cannot fetch core string value\n");
-		return -1;
-	}
-	if (dlg_api.fetch_dlg_value(dlg, value_str, extra_s, 1) < 0) {
-		LM_ERR("cannot fetch extra string value\n");
-		return -1;
-	}
-	if (dlg_api.fetch_dlg_value(dlg, &leg_str, leg_s, 1) < 0) {
-		LM_ERR("cannot fetch leg string value\n");
-		return -1;
-	}
-
-	/* getting legs number, and extra number */
-	*leg_values = GET_LEN(leg_s->s);
-	*nr_legs = GET_LEN(leg_s->s+2);
-	extra_len = GET_LEN(extra_s->s);
-
-	core_s->len = 0;
-	complete_dlg_values(core_s, val_arr, ACC_CORE_LEN+1);
-
-	/* get the time value then overwrite it */
-	memcpy(start, val_arr[ACC_CORE_LEN].s, val_arr[ACC_CORE_LEN].len);
-	nr = ACC_CORE_LEN;
-
-	extra_s->len = 2;
-	complete_dlg_values(extra_s, val_arr+nr, extra_len);
-	nr += extra_len;
-	*leg_idx = nr;
-	cdrs_pos = *leg_values + nr;
-
-	if (dlg_api.fetch_dlg_value(dlg,&created_str, val_arr+cdrs_pos+2,0) < 0) {
-		LM_ERR("error fetching base dlg value\n");
-		return -1;
-	}
-	memcpy(created, val_arr[cdrs_pos+2].s, val_arr[cdrs_pos+2].len);
-
-	/* calculate duration and setup time */
-	val_arr[cdrs_pos].len = time(NULL) - *start;
-	val_arr[cdrs_pos+1].len = *start - *created;
-
-	return 1;
+	SET_LEN(cdr_buf.s+2,ctx->legs_no);
+	return 0;
 }
 
 /* create accounting dialog */
 int create_acc_dlg(struct sip_msg* req)
 {
 	struct dlg_cell *dlg;
-	str current_time;
-	time_t curr_time;
+
+	if (!dlg_api.get_dlg) {
+		LM_ERR("dialog not loaded!\n");
+		return -1;
+	}
 
 	dlg = dlg_api.get_dlg();
 	if (!dlg) {
@@ -1879,20 +1564,12 @@ int create_acc_dlg(struct sip_msg* req)
 		}
 	}
 
-	/* store the created time into dlg */
-	curr_time = time(NULL);
-	current_time.s = (char*)&curr_time;
-	current_time.len = sizeof(time_t);
-	
-	if ( dlg_api.store_dlg_value(dlg,&created_str,&current_time) < 0)
-		return -1;
-
 	return 1;
 }
 
 
 /* gets core values from dlg and stores them into val_arr array */
-static int prebuild_core_arr(struct dlg_cell *dlg, str *buffer, time_t *start)
+static int prebuild_core_arr(struct dlg_cell *dlg, str *buffer, struct timeval *start)
 {
 	if (!start || !buffer) {
 		LM_ERR("invalid parameters\n");
@@ -1914,69 +1591,154 @@ static int prebuild_core_arr(struct dlg_cell *dlg, str *buffer, time_t *start)
 }
 
 
-
-/* gets extra values from dlg and stores them into val_arr array */
-static int prebuild_extra_arr(struct dlg_cell *dlg, struct sip_msg *msg,
-		str *buffer, str *type_str, struct acc_extra * extra, int start)
+/*
+ * @param list of tag names and their indexes
+ *
+ *
+ */
+static extra_value_t* restore_extra_from_str(tag_t* tags, int tags_len,
+												str* extra_s, int extra_len)
 {
-	short extra_len;
+	int i;
 
-	if (!start || !type_str || !buffer) {
-		LM_ERR("invalid parameters\n");
-		return -1;
-	}
-	buffer->len = 0;
-	buffer->s = 0;
+	pv_value_t value;
+	extra_value_t* values;
 
-	/* fetching extra string values */
-	if (dlg_api.fetch_dlg_value(dlg, type_str, buffer, 1) < 0) {
-		LM_ERR("cannot fetch core string value\n");
-		return -1;
+	if (build_acc_extra_array(tags, tags_len, &values) < 0) {
+		LM_ERR("failed to build extra pvar list!\n");
+		return NULL;
 	}
 
-	extra_len = GET_LEN(buffer->s);
-	buffer->len = 2;
-	complete_dlg_values(buffer, val_arr + start, extra_len);
-	start += extra_len;
+	value.flags = PV_VAL_STR;
+	for (i=0; i<extra_len; i++) {
+		value.rs.len = GET_LEN(extra_s->s);
+		value.rs.s =  extra_s->s + 2;
+		value.flags = value.rs.len == 0 ? PV_VAL_NULL : PV_VAL_STR;
 
-	/* populate the extra from bye */
-	return  start + extra2strar(extra, msg, NULL, val_arr + start, 1);
+		if (set_value_shm(&value, &values[i])< 0) {
+			LM_ERR("failed to set shm value!\n");
+			return NULL;
+		}
+
+		extra_s->s += 2 + value.rs.len;
+		extra_s->len -= 2 + value.rs.len;
+	}
+
+	return values;
 }
 
-
-/* gets leg values from dlg and stores them into val_arr array */
-static int prebuild_leg_arr(struct dlg_cell *dlg, str *buffer, short *nr_legs)
+static int restore_extra(struct dlg_cell* dlg,
+			str *type_str, acc_ctx_t* ctx)
 {
-	if (!buffer || !nr_legs) {
-		LM_ERR("invalid parameters\n");
-		return -1;
-	}
-	buffer->len = 0;
-	buffer->s = 0;
+	int extra_len;
+	str buffer = {0, 0};
 
-	/* fetching  leg string values */
-	if (dlg_api.fetch_dlg_value(dlg, &leg_str, buffer, 1) < 0) {
-		LM_ERR("cannot fetch core string value\n");
+	if (ctx == NULL) {
+		LM_ERR("bad call!\n");
 		return -1;
 	}
 
-	/* getting legs number */
-	*nr_legs = GET_LEN(buffer->s+2);
+	if (dlg_api.fetch_dlg_value(dlg, type_str, &buffer, 1) < 0) {
+		LM_ERR("cannot fetch <%.*s> value from dialog!\n",
+				type_str->len, type_str->s);
+		return -1;
+	}
 
-	return GET_LEN(buffer->s);
+	/* jump over the total length */
+	extra_len = GET_LEN(buffer.s);
+	buffer.s += 2;
+	buffer.len -= 2;
+
+	if ((ctx->extra_values =
+		restore_extra_from_str(extra_tags, extra_tgs_len, &buffer, extra_len)) == NULL) {
+		LM_ERR("failed to restore extra values!\n");
+		return -1;
+	}
+
+	return 0;
 }
 
-
-/* gets leg values from dlg and stores them into val_arr array */
-static time_t acc_get_created(struct dlg_cell *dlg)
+static int restore_legs(struct dlg_cell* dlg,
+			str *type_str, acc_ctx_t* ctx)
 {
-	time_t created;
-	str aux;
+	short extra_len, i;
+	str buffer = {0, 0};
 
-	if (dlg_api.fetch_dlg_value(dlg, &created_str, &aux, 0) < 0) {
-		LM_ERR("error getting dialog creation time\n");
+	if (ctx == NULL) {
+		LM_ERR("bad call!\n");
+		return -1;
+	}
+
+	if (dlg_api.fetch_dlg_value(dlg, type_str, &buffer, 1) < 0) {
+		LM_ERR("cannot fetch <%.*s> value from dialog!\n",
+				type_str->len, type_str->s);
+		return -1;
+	}
+
+	ctx->legs_no = GET_LEN(buffer.s+2);
+	extra_len = GET_LEN(buffer.s);
+
+	if (extra_len != leg_tgs_len) {
+		LM_WARN("tags were added/removed since last run! won't restore values!\n");
 		return 0;
 	}
-	memcpy(&created, aux.s, aux.len);
-	return created;
+
+	ctx->leg_values = shm_malloc(ctx->legs_no * sizeof(leg_value_p));
+	if (ctx->leg_values == NULL) {
+		LM_ERR("no more shm!\n");
+		return -1;
+	}
+
+	buffer.s += 4;
+	buffer.len -=4;
+
+	for (i=0; i<ctx->legs_no; i++) {
+		if ((ctx->leg_values[i] =
+			restore_extra_from_str(leg_tags, leg_tgs_len, &buffer, extra_len)) == NULL) {
+			LM_ERR("failed to restore leg values!\n");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+
+/*
+ * restore extras that are held in dlg vals
+ */
+int restore_dlg_extra(struct dlg_cell* dlg, acc_ctx_t** ctx_p)
+{
+
+	acc_ctx_t* ctx;
+
+	if (ctx_p == NULL) {
+		LM_ERR("bad usage! null context!\n");
+		return -1;
+	}
+
+	ctx = shm_malloc(sizeof(acc_ctx_t));
+	if (ctx == NULL) {
+		LM_ERR("no more shm!\n");
+		return -1;
+	}
+
+	memset(ctx, 0, sizeof(acc_ctx_t));
+
+	if (extra_tags &&
+			restore_extra(dlg, &extra_str, ctx)) {
+		LM_ERR("failed to restore extra!\n");
+		return -1;
+	}
+
+	if (leg_tags &&
+			restore_legs(dlg, &leg_str, ctx)) {
+		LM_ERR("failed to restore legs!\n");
+		return -1;
+	}
+
+	*ctx_p = ctx;
+
+	return 0;
+
 }

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 voice-system.ro
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
 
  */
@@ -106,6 +104,30 @@ int unescape_common(char *dst, char *src, int src_len)
 			dst[j++] = src[i];
 		}
 		i++;
+	}
+	return j;
+}
+
+/*! \brief
+ * replace &#xx; with ascii character
+ */
+int unescape_xml(char *dst, char *src, int src_len)
+{
+	int i, j;
+
+	if(dst==0 || src==0 || src_len<=0)
+		return 0;
+	j = 0;
+	i = 0;
+	while(i<src_len)
+	{
+		if(src[i]=='&' && i+4<src_len && src[i+1]=='#' && src[i+4]==';' &&
+			src[i+2]>='0' && src[i+2]<='9' && src[i+3]>='0' && src[i+3]<='9') {
+			dst[j++] = (src[i+2]-'0')*10 + src[i+3] - '0';
+			i += 5;
+		} else {
+			dst[j++] = src[i++];
+		}
 	}
 	return j;
 }
@@ -220,7 +242,7 @@ int unescape_user(str *sin, str *sout)
 
 	*at = 0;
 	sout->len = at - sout->s;
-	
+
 	LM_DBG("unescaped string is <%s>\n", sout->s);
 	return 0;
 }

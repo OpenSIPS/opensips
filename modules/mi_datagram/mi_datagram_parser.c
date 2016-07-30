@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -55,7 +53,7 @@ int mi_datagram_parser_init( unsigned int size )
  *          1 = end of input
  */
 /*example: mi_parse_node(datagram, &buf, &name, &value)*/
-static inline int mi_datagram_parse_node(datagram_stream * data, str *name, 
+static inline int mi_datagram_parse_node(datagram_stream * data, str *name,
 											str *value)
 {
 	char *p, *pmax;
@@ -92,7 +90,7 @@ static inline int mi_datagram_parse_node(datagram_stream * data, str *name,
 		/* look for the atribute name */
 
 		p = mark_nsp = start;
-		while ( p!=pmax && (( *p!=MI_ATTR_VAL_SEP1) || p+1==pmax 
+		while ( p!=pmax && (( *p!=MI_ATTR_VAL_SEP1) || p+1==pmax
 		||*(p+1)!=MI_ATTR_VAL_SEP2) ) {
 			if (!isspace((int)*p)) {
 				if (*p=='"')
@@ -128,7 +126,7 @@ static inline int mi_datagram_parse_node(datagram_stream * data, str *name,
 			}
 
 			p += 2; /* for separator */
-				
+
 			/* consume the trailing spaces */
 			for( ; p!=pmax && isspace((int)*p) ; p++)
 			{
@@ -165,7 +163,7 @@ static inline int mi_datagram_parse_node(datagram_stream * data, str *name,
 						break;
 					}
 				}
-			
+
 				value->s = start;
 				value->len = mark_nsp - start+1;
 				LM_DBG("*start is %c and start is %p\n",*start, start);
@@ -200,13 +198,13 @@ static inline int mi_datagram_parse_node(datagram_stream * data, str *name,
 				LM_DBG("skipping %c",*p);
 				/* skip current char */
 				memmove( p-1, p, pmax-p);
-				pmax--; 
+				pmax--;
 			} else {
 				LM_DBG("we have reached the end of attr value, p is %s\n", p);
 				/* end of value */
 				value->len = p - value->s;
 				LM_DBG("attr value <%.*s> found\n",value->len, value->s);
-				
+
 				/* is the line ending propely (only spaces) ? */
 				p++;
 				for(; p!=pmax && isspace((int)*p) ; p++)
@@ -278,7 +276,7 @@ struct mi_root * mi_datagram_parse_tree(datagram_stream * datagram) {
 
 	/* every tree for a command ends with a \n that is alone on its line */
 	while ((ret=mi_datagram_parse_node(datagram, &name, &value))>=0 ) {
-		
+
 		if(ret == 1)
 			return root;
 		LM_DBG("adding node <%.*s> ; val <%.*s>\n",

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * MAXFWD module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -30,7 +28,7 @@
  *              module param (bogdan)
  *  2005-09-15  max_limit param cannot be disabled anymore (according to RFC)
  *              (bogdan)
- *  2005-11-03  is_maxfwd_lt() function added; MF value saved in 
+ *  2005-11-03  is_maxfwd_lt() function added; MF value saved in
  *              msg->maxforwards->parsed (bogdan)
  */
 
@@ -78,9 +76,12 @@ struct module_exports maxfwd_exports = {
 struct module_exports exports= {
 #endif
 	"maxfwd",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,
+	0,
 	params,
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
@@ -129,7 +130,7 @@ static int fixup_maxfwd_header(void** param, int param_no)
 			*param=(void*)code;
 			return 0;
 		}else{
-			LM_ERR("bad  number <%s>\n",(char*)(*param));
+			LM_ERR("bad number <%s>\n",(char*)(*param));
 			return E_UNSPEC;
 		}
 	}
@@ -152,7 +153,7 @@ static int w_process_maxfwd_header(struct sip_msg* msg, char* str1,char* str2)
 			return 2;
 		/* error */
 		case -2:
-			break;
+			goto error;
 		/* found */
 		case 0:
 			return -1;

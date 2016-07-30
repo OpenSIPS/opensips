@@ -1,13 +1,13 @@
 %define name    opensips
-%define ver     1.9.0
-%define rel     0
+%define ver     2.1
+%define rel     rc1
 
-%define EXCLUDED_MODULES	aaa_radius b2b_entities b2b_logic db_http json memcached jabber cpl-c xmpp rls mi_xmlrpc xcap_client db_mysql db_postgres db_unixodbc db_oracle db_berkeley osp perl snmpstats db_perlvdb peering carrierroute mmgeoip presence presence_xml presence_mwi presence_dialoginfo pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo xcap xcap_client ldap h350 identity regex
+%define EXCLUDED_MODULES	aaa_radius b2b_entities b2b_logic db_http json memcached jabber cpl_c xmpp rls mi_xmlrpc xcap_client db_mysql db_postgres db_unixodbc db_oracle db_berkeley osp perl snmpstats db_perlvdb peering carrierroute mmgeoip presence presence_xml presence_mwi presence_dialoginfo pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo xcap xcap_client ldap h350 identity regex
 %define MYSQL_MODULES		modules/db_mysql
 %define UNIXODBC_MODULES	modules/db_unixodbc
 %define POSTGRES_MODULES	modules/db_postgres
 %define XMPP_MODULES		modules/jabber modules/xmpp
-%define CPL_MODULES			modules/cpl-c
+%define CPL_MODULES			modules/cpl_c
 %define SNMPSTATS_MODULES	modules/snmpstats
 %define PRESENCE_MODULES	modules/presence modules/presence_dialoginfo modules/presence_xml modules/presence_mwi modules/presence_xcapdiff modules/pua modules/pua_bla modules/pua_dialoginfo modules/pua_mi modules/pua_usrloc modules/pua_xmpp modules/rls modules/xcap modules/xcap_client
 %define RADIUS_MODULES		modules/aaa_radius
@@ -116,15 +116,15 @@ The opensips-radius package contains modules for radius authentication, group
 %setup
 
 %build
-make all skip_modules="%EXCLUDED_MODULES" cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%MYSQL_MODULES"     cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%POSTGRES_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%UNIXODBC_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%XMPP_MODULES"      cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%CPL_MODULES"       cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%PRESENCE_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%RADIUS_MODULES"    cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%B2BUA_MODULES"     cfg-target=/%{_sysconfdir}/opensips/
+make all skip_modules="%EXCLUDED_MODULES" cfg_target=/%{_sysconfdir}/opensips/
+make modules modules="%MYSQL_MODULES"     cfg_target=/%{_sysconfdir}/opensips/
+make modules modules="%POSTGRES_MODULES"  cfg_target=/%{_sysconfdir}/opensips/
+make modules modules="%UNIXODBC_MODULES"  cfg_target=/%{_sysconfdir}/opensips/
+make modules modules="%XMPP_MODULES"      cfg_target=/%{_sysconfdir}/opensips/
+make modules modules="%CPL_MODULES"       cfg_target=/%{_sysconfdir}/opensips/
+make modules modules="%PRESENCE_MODULES"  cfg_target=/%{_sysconfdir}/opensips/
+make modules modules="%RADIUS_MODULES"    cfg_target=/%{_sysconfdir}/opensips/
+make modules modules="%B2BUA_MODULES"     cfg_target=/%{_sysconfdir}/opensips/
 
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf "$RPM_BUILD_ROOT"
@@ -132,71 +132,71 @@ make modules modules="%B2BUA_MODULES"     cfg-target=/%{_sysconfdir}/opensips/
 make install skip_modules="%EXCLUDED_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ \
-		doc-prefix=$RPM_BUILD_ROOT \
-		doc-dir=/%{_docdir}/opensips/
+		cfg_prefix=$RPM_BUILD_ROOT \
+		cfg_target=/%{_sysconfdir}/opensips/ \
+		doc_prefix=$RPM_BUILD_ROOT \
+		doc_dir=/%{_docdir}/opensips/
 make install-modules modules="%MYSQL_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ \
-		doc-prefix=$RPM_BUILD_ROOT \
-		doc-dir=/%{_docdir}/opensips/
+		cfg_prefix=$RPM_BUILD_ROOT \
+		cfg_target=/%{_sysconfdir}/opensips/ \
+		doc_prefix=$RPM_BUILD_ROOT \
+		doc_dir=/%{_docdir}/opensips/
 make install-modules modules="%POSTGRES_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ \
-		doc-prefix=$RPM_BUILD_ROOT \
-		doc-dir=/%{_docdir}/opensips/
+		cfg_prefix=$RPM_BUILD_ROOT \
+		cfg_target=/%{_sysconfdir}/opensips/ \
+		doc_prefix=$RPM_BUILD_ROOT \
+		doc_dir=/%{_docdir}/opensips/
 make install-modules modules="%UNIXODBC_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ \
-		doc-prefix=$RPM_BUILD_ROOT \
-		doc-dir=/%{_docdir}/opensips/
+		cfg_prefix=$RPM_BUILD_ROOT \
+		cfg_target=/%{_sysconfdir}/opensips/ \
+		doc_prefix=$RPM_BUILD_ROOT \
+		doc_dir=/%{_docdir}/opensips/
 make install-modules modules="%XMPP_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ \
-		doc-prefix=$RPM_BUILD_ROOT \
-		doc-dir=/%{_docdir}/opensips/
+		cfg_prefix=$RPM_BUILD_ROOT \
+		cfg_target=/%{_sysconfdir}/opensips/ \
+		doc_prefix=$RPM_BUILD_ROOT \
+		doc_dir=/%{_docdir}/opensips/
 make install-modules modules="%CPL_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ \
-		doc-prefix=$RPM_BUILD_ROOT \
-		doc-dir=/%{_docdir}/opensips/
+		cfg_prefix=$RPM_BUILD_ROOT \
+		cfg_target=/%{_sysconfdir}/opensips/ \
+		doc_prefix=$RPM_BUILD_ROOT \
+		doc_dir=/%{_docdir}/opensips/
 make install-modules modules="%PRESENCE_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ \
-		doc-prefix=$RPM_BUILD_ROOT \
-		doc-dir=/%{_docdir}/opensips/
+		cfg_prefix=$RPM_BUILD_ROOT \
+		cfg_target=/%{_sysconfdir}/opensips/ \
+		doc_prefix=$RPM_BUILD_ROOT \
+		doc_dir=/%{_docdir}/opensips/
 make install-modules modules="%RADIUS_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ \
-		doc-prefix=$RPM_BUILD_ROOT \
-		doc-dir=/%{_docdir}/opensips/
+		cfg_prefix=$RPM_BUILD_ROOT \
+		cfg_target=/%{_sysconfdir}/opensips/ \
+		doc_prefix=$RPM_BUILD_ROOT \
+		doc_dir=/%{_docdir}/opensips/
 make install-modules modules="%B2BUA_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ \
-		doc-prefix=$RPM_BUILD_ROOT \
-		doc-dir=/%{_docdir}/opensips/
+		cfg_prefix=$RPM_BUILD_ROOT \
+		cfg_target=/%{_sysconfdir}/opensips/ \
+		doc_prefix=$RPM_BUILD_ROOT \
+		doc_dir=/%{_docdir}/opensips/
 make install-doc modules="XMPP_MODULES %RADIUS_MODULES %MYSQL_MODULES %POSTGRES_MODULES %UNIXODBC_MODULES %CPL_MODULES %PRESENCE_MODULES %B2BUA_MODULES" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
-		doc-prefix=$RPM_BUILD_ROOT \
-		doc-dir=/%{_docdir}/opensips/
+		doc_prefix=$RPM_BUILD_ROOT \
+		doc_dir=/%{_docdir}/opensips/
 
 
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/init.d
@@ -263,7 +263,6 @@ sbin/insserv etc/init.d/
 %doc %{_docdir}/opensips/README.nathelper
 %doc %{_docdir}/opensips/README.options
 %doc %{_docdir}/opensips/README.path
-%doc %{_docdir}/opensips/README.pdt
 %doc %{_docdir}/opensips/README.permissions
 %doc %{_docdir}/opensips/README.pike
 %doc %{_docdir}/opensips/README.qos
@@ -332,7 +331,6 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/nathelper.so
 %{_libdir}/opensips/modules/options.so
 %{_libdir}/opensips/modules/path.so
-%{_libdir}/opensips/modules/pdt.so
 %{_libdir}/opensips/modules/permissions.so
 %{_libdir}/opensips/modules/pike.so
 %{_libdir}/opensips/modules/qos.so
@@ -410,8 +408,8 @@ sbin/insserv etc/init.d/
 
 %files cpl
 %defattr(-,root,root)
-%{_libdir}/opensips/modules/cpl-c.so
-%doc %{_docdir}/opensips/README.cpl-c
+%{_libdir}/opensips/modules/cpl_c.so
+%doc %{_docdir}/opensips/README.cpl_c
 
 %files presence
 %defattr(-,root,root)

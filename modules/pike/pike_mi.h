@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Header file for PIKE MI functions
  *
  * Copyright (C) 2006 Voice Sistem SRL
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -33,8 +31,10 @@
 #include "../../mi/mi.h"
 
 #define MI_PIKE_LIST      "pike_list"
+#define MI_PIKE_RM        "pike_rm"
 
 struct mi_root* mi_pike_list(struct mi_root* cmd_tree, void* param);
+struct mi_root* mi_pike_rm(struct mi_root *cmd, void *param);
 
 #endif
 

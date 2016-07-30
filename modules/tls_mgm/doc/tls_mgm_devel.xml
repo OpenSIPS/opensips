@@ -1,0 +1,242 @@
+<!-- Module Developer's Guide -->
+<!-- TODO this document needs to be updated -->
+
+<chapter>
+	<title>&develguide;</title>
+
+        <section>
+            <title>API Functions</title>
+             <section id="find-server-domain-id">
+                <title>find_server_domain</title>
+                <para>
+                    struct tls_domain *find_server_domain(struct ip_addr *ip,
+                    unsigned short port);
+                </para>
+                <para>
+                    Find a TLS server domain with given ip and port
+                    (local listening socket).
+                </para>
+             </section>
+
+             <section id="find-client-domain-id">
+                 <title>find_client_domain</title>
+                 <para>
+                     struct tls_domain *find_client_domain(struct ip_addr *ip,
+                     unsigned short port);
+                 </para>
+                 <para>
+                     Find TLS client domain.
+                 </para>
+             </section>
+
+             <section id="get-handshake-timeout-id">
+                 <title>get_handshake_timeout</title>
+                 <para>
+                     int get_handshake_timeout(void);
+                 </para>
+                 <para>
+                     Returns the handshanke timeout.
+                 </para>
+            </section>
+
+            <section id="get-send-timeout-id">
+                 <title>get_send_timeout</title>
+                 <para>
+                     int get_send_timeout(void);
+                 </para>
+                 <para>
+                     Returns the send timeout.
+                 </para>
+            </section>
+        </section>    
+	<section>
+		<title>TLS_CONFIG</title>
+		<para>
+		It contains configuration variables for &osips;'s TLS (timeouts,
+		file paths, etc).
+		</para>
+	</section>
+
+	<section>
+		<title>TLS_INIT</title>
+		<para>
+		Initialization related functions and parameters.
+		</para>
+		<section>
+			<title>ssl context</title>
+			<para>
+			extern SSL_CTX *default_client_ctx;
+			</para>
+			<para>
+			The ssl context is a member of the TLS domain strcuture. Thus, every
+			TLS domain, default and virtual - servers and clients, have its own SSL context.
+			</para>
+		</section>
+		<section>
+			<title>pre_init_tls</title>
+			<para>
+			int init_tls(void);
+			</para>
+			<para>
+			Called once to pre_initialize the tls subsystem, from the main().
+			Called before parsing the configuration file.
+			</para>
+		</section>
+		<section>
+			<title>init_tls</title>
+			<para>
+			int init_tls(void);
+			</para>
+			<para>
+			Called once to initialize the tls subsystem, from the main().
+			Called after parsing the configuration file.
+			</para>
+		</section>
+		<section>
+			<title>destroy_tls</title>
+			<para>
+			void destroy_tls(void);
+			</para>
+			<para>
+			Called once, just before cleanup.
+			</para>
+		</section>
+		<section>
+			<title>tls_init</title>
+			<para>
+			int tls_init(struct socket_info *c);
+			</para>
+			<para>
+			Called once for each tls socket created, from main.c
+			</para>
+		</section>
+		<section>
+			<title>os_malloc, os_realloc, os_free</title>
+			<para>
+			Wrapper functions around the shm_* functions. OpenSSL uses
+			non-shared memory to create its objects, thus it would not
+			work in &osips;. By creating these wrappers and configuring
+			OpenSSL to use them instead of its default memory functions,
+			we have all OpenSSL objects in shared memory, ready to use.
+			</para>
+		</section>
+	</section>
+
+	<section>
+		<title>TLS_DOMAIN</title>
+		<section>
+			<title>tls_domains</title>
+			<para>
+			extern struct tls_domain *tls_default_server_domain;
+			</para>
+			<para>
+			The default TLS server domain.
+			</para>
+			<para>
+			extern struct tls_domain *tls_default_client_domain;
+			</para>
+			<para>
+			The default TLS client domain.
+			</para>
+			<para>
+			extern struct tls_domain *tls_server_domains;
+			</para>
+			<para>
+			List with defined server domains.
+			</para>
+			<para>
+			extern struct tls_domain *tls_client_domains;
+			</para>
+			<para>
+			List with defined client domains.
+			</para>
+		</section>
+		<section>
+			<title>tls_find_server_domain</title>
+			<para>
+			struct tls_domain *tls_find_server_domain(struct ip_addr *ip,
+			unsigned short port);
+			</para>
+			<para>
+			Find a TLS server domain with given ip and port
+			(local listening socket).
+			</para>
+		</section>
+                <section>
+			<title>tls_find_client_domain</title>
+			<para>
+			struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
+			unsigned short port);
+			</para>
+			<para>
+			Find TLS client domain.
+			</para>
+		</section>
+		<section>
+			<title>tls_find_client_domain_addr</title>
+			<para>
+			struct tls_domain *tls_find_client_domain_addr(struct ip_addr *ip,
+			unsigned short port);
+			</para>
+			<para>
+			Find TLS client domain with given ip and port
+			(socket of the remote destination).
+			</para>
+		</section>
+		<section>
+			<title>tls_find_client_domain_name</title>
+			<para>
+			struct tls_domain *tls_find_client_name(str name);
+			</para>
+			<para>
+			Find TLS client domain with given name.
+			</para>
+		</section>
+		<section>
+			<title>tls_new__domain</title>
+			<para>
+			struct tls_domain *tls_new_domain(int type);
+			</para>
+			<para>
+			Creates new TLS: allocate memory, set the type and initialize members
+			</para>
+		</section>
+		<section>
+			<title>tls_new_server_domain</title>
+			<para>
+			int tls_new_server_domain(struct ip_addr *ip, unsigned short port);
+			</para>
+			<para>
+			Creates and adds to the list of TLS server domains a new domain.
+			</para>
+		</section>
+		<section>
+			<title>tls_new_client_domain</title>
+			<para>
+			int tls_new_client_domain(struct ip_addr *ip, unsigned short port);
+			</para>
+			<para>
+			Creates and adds to the list of TLS client domains a new socket based domain.
+			</para>
+		</section>
+		<section>
+			<title>tls_new_client_domain_name</title>
+			<para>
+			int tls_new_client_domain_name(char *s, int len);
+			</para>
+			<para>
+			Creates and adds to the list of TLS client domains a new name based domain.
+			</para>
+		</section>
+		<section>
+			<title>tls_free_domains</title>
+			<para>
+			void tls_free_domains(void);
+			</para>
+			<para>
+			Cleans up the entire domain lists.
+			</para>
+		</section>
+	</section>
+
+</chapter>

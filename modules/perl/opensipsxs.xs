@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Perl module for OpenSIPS
  *
  * Copyright (C) 2006 Collax GmbH
@@ -20,7 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -267,7 +265,8 @@ int moduleFunc(struct sip_msg *m, char *func,
 	act = mk_action(	MODULE_T,
 				3,
 				elems,
-				0);
+				0,
+				"perl");
 
 
 	if (!act) {
@@ -400,7 +399,7 @@ char *pv_sprintf(struct sip_msg *m, char *fmt) {
  * - strflag: flag mask to be or-applied for string match
  */
 
-inline int sv2int_str(SV *val, int_str *is,
+static inline int sv2int_str(SV *val, int_str *is,
 		      unsigned short *flags, unsigned short strflag) {
 	char *s;
 	STRLEN len;
@@ -1199,7 +1198,8 @@ append_branch(self, branch = NULL, qval = NULL)
 				act = mk_action(APPEND_BRANCH_T,
 						2,
 						elems,
-						0);
+						0,
+						"perl");
 			}
 		} else {
 			if (branch) { /* branch set, qval unset */
@@ -1210,7 +1210,8 @@ append_branch(self, branch = NULL, qval = NULL)
 				act = mk_action(APPEND_BRANCH_T,
 						2,
 						elems,
-						0);
+						0,
+						"perl");
 			} else { /* neither branch nor qval set */
 				elems[0].type = STR_ST;
 				elems[0].u.data = NULL;
@@ -1219,7 +1220,8 @@ append_branch(self, branch = NULL, qval = NULL)
 				act = mk_action(APPEND_BRANCH_T,
 						2,
 						elems,
-						0);
+						0,
+						"perl");
 			}
 		}
 

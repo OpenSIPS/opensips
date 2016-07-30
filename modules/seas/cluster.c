@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2006-2007 VozTelecom Sistemas S.L
  *
  * This file is part of opensips, a free SIP server.
@@ -14,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -35,13 +34,13 @@ char *cluster_cfg;
 
 
 /**
- * Parses the PING configuration string. Its format is 
+ * Parses the PING configuration string. Its format is
  * "ping_period:pings_lost:ping_timeout"
  * ping_period : time between pings
  * pings_lost: number of lost pings before failure
  * ping_timeout: time to consider a ping failed
  *
- * returns 
+ * returns
  * 0 if no clusters present
  * -1 if config is malformed (unable to parse);
  *  1 if config is successfully set
@@ -130,13 +129,13 @@ int parse_cluster_cfg(void)
    LM_DBG("%.*s\n",tmp->name.len,tmp->name.s);
    entry=&(tmp->next);
    for(tmp=as_list;tmp;tmp=tmp->next){
-      if (tmp->type!=CLUSTER_TYPE) 
+      if (tmp->type!=CLUSTER_TYPE)
 	 continue;
       LM_DBG("cluster:[%.*s]\n",tmp->name.len,tmp->name.s);
       for(k=0;k<tmp->u.cs.num;k++){
 	 LM_DBG("\tAS:[%.*s]\n",tmp->u.cs.as_names[k].len,tmp->u.cs.as_names[k].s);
 	 for (tmp2=as_list;tmp2;tmp2=tmp2->next) {
-	    if (tmp2->type== AS_TYPE && tmp->u.cs.as_names[k].len == tmp2->name.len && 
+	    if (tmp2->type== AS_TYPE && tmp->u.cs.as_names[k].len == tmp2->name.len &&
 		  !memcmp(tmp->u.cs.as_names[k].s,tmp2->name.s,tmp2->name.len)) {
 	       tmp->u.cs.servers[k]=&tmp2->u.as;
 	       break;

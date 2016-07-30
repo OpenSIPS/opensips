@@ -491,7 +491,7 @@ INPUT                  = ./ \
                          modules/avp_radius \
                          modules/benchmark \
                          modules/cfgutils \
-                         modules/cpl-c \
+                         modules/cpl_c \
                          modules/carrierroute \
                          modules/db_berkeley \
                          modules/db_text \
@@ -522,7 +522,6 @@ INPUT                  = ./ \
                          modules/options \
                          modules/osp \
                          modules/path \
-                         modules/pdt \
                          modules/perl \
                          modules/perlvdb \
                          modules/permissions \

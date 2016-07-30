@@ -1,5 +1,4 @@
 /*
- *
  * Copyright (c) 2008, 2009
  * 	     Eric Gouyer <folays@folays.net>
  * Copyright (c) 2008, 2009, 2010, 2011
@@ -74,6 +73,7 @@ struct mi_root *siplua_mi_watch(struct mi_root *cmd_tree, void *param)
       int i;
 
       answer = init_mi_tree(200, "xOK", 3);
+      answer->node.flags |= MI_IS_ARRAY;
       sipwatch_lock();
       for (i = 0; i < siplua_watch->nb; ++i)
 	addf_mi_node_child(&answer->node, 0, "extension", 9, "%s",

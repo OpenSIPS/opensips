@@ -1,7 +1,5 @@
-/* 
- * $Id$
- *
- * SNMPStats Module 
+/*
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -19,13 +17,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
  * --------
  * 2006-11-23 initial version (jmagder)
- * 
+ *
  * This file was created to group together utility functions that were useful
  * throughout the SNMPStats module, without belonging to any file in particular.
  */
@@ -42,10 +40,10 @@
  * file parameter handler. */
 int stringHandlerSanityCheck( modparam_t type, void *val, char *parameterName);
 
-/* 
+/*
  * This function is a wrapper around the standard statistic framework.  It will
  * return the value of the statistic denoted with statName, or zero if the
- * statistic was not found. 
+ * statistic was not found.
  */
 int get_statistic(char *statName);
 

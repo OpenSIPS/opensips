@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2006-2007 VozTelecom Sistemas S.L
  *
  * This file is part of opensips, a free SIP server.
@@ -14,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -34,7 +33,7 @@ struct ha{
    int timed_out_pings;
    int timeout;
    gen_lock_t *mutex;
-   struct ping *pings; 
+   struct ping *pings;
    int begin;
    int end;
    int count;
@@ -59,6 +58,6 @@ char * create_ping_event(int *evt_len,int flags,unsigned int *seqno);
 int prepare_ha();
 int spawn_pinger();
 int print_pingtable(struct ha *ta,int idx,int lock);
-inline int init_pingtable(struct ha *table,int timeout,int maxpings);
-inline void destroy_pingtable(struct ha *table);
+int init_pingtable(struct ha *table,int timeout,int maxpings);
+void destroy_pingtable(struct ha *table);
 #endif

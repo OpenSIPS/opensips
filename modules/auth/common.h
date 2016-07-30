@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Digest Authentication Module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #ifndef COMMON_H
@@ -31,7 +29,7 @@
 #define MESSAGE_500 "Server Internal Error"
 
 
-/* 
+/*
  * Return parsed To or From, host part of the parsed uri is realm
  */
 int get_realm(struct sip_msg* _m, hdr_types_t _hftype, struct sip_uri** _u);

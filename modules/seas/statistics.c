@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2006-2007 VozTelecom Sistemas S.L
  *
  * This file is part of opensips, a free SIP server.
@@ -14,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include <stdlib.h>
@@ -79,21 +78,11 @@ struct statstable* init_seas_stats_table(void)
    return seas_stats_table;
 }
 
-inline void destroy_seas_stats_table(void)
-{
-   /*deallocs the table*/
-   if(seas_stats_table){
-      lock_destroy(seas_stats_table->mutex);
-      shm_free(seas_stats_table);
-      seas_stats_table=(struct statstable *)0;
-   }
-}
-
 /** This will be called from within w_as_relay()
  *
  * TODO handle locking ?
  */
-inline void as_relay_stat(struct cell *t)
+void as_relay_stat(struct cell *t)
 {
    struct statscell *s;
    struct totag_elem *to;
@@ -131,7 +120,7 @@ inline void as_relay_stat(struct cell *t)
  *
  * TODO handle locking/mutexing ?
  */
-inline void event_stat(struct cell *t)
+void event_stat(struct cell *t)
 {
    struct statscell *s;
    struct totag_elem *to;
@@ -167,7 +156,7 @@ static inline int assignIndex(int i)
 /** this will be called from the SEAS action dispatcher
  * when it receives the action from the socket
  */
-inline void action_stat(struct cell *t)
+void action_stat(struct cell *t)
 {
    unsigned int seas_dispatch/*,as_delay*/;
    struct timeval *t1,*t2/*,*t3*/;
@@ -212,7 +201,7 @@ inline void action_stat(struct cell *t)
  * stats socket sould be an IP_address:port or unix://path/to_file
  * TODO handling unix sockets and IPv6 !!
  *
- * returns 
+ * returns
  * 0 if no stats
  * 1 if stats properly started
  * -1 if error
@@ -298,12 +287,12 @@ error:
  * stats socket sould be an IP_address:port or unix://path/to_file
  * TODO handling unix sockets and IPv6 !!
  *
- * returns 
+ * returns
  * 0 if no stats
  * 1 if stats properly started
  * -1 if error
  */
-inline int stop_stats_server(void)
+int stop_stats_server(void)
 {
    if(pid)
       kill(SIGTERM,pid);
@@ -341,7 +330,7 @@ void serve_stats(int fd)
 	    if(errno==EINTR){
 	       continue;
 	    }else{
-	       LM_ERR("unknown error reading from socket\n"); 
+	       LM_ERR("unknown error reading from socket\n");
 	       close(sock);
 	       /** and continue accept()'ing*/
 	       break;
@@ -368,7 +357,7 @@ void serve_stats(int fd)
  * this limit then the return value is the number of characters (not including the trailing '\\0') which would have been written to the final string
  * if  enough space had been available. Thus, a return value of size or more means that the output was truncated."
  */
-inline int print_stats_info(int f,int sock)
+int print_stats_info(int f,int sock)
 {
 #define STATS_BUF_SIZE  400
    int j,k,writen;
@@ -438,13 +427,6 @@ again:/*mutex is released*/
 error:/*mutex is locked*/
    lock_release(seas_stats_table->mutex);
    return -1;
-}
-
-inline void stats_reply(void)
-{
-   lock_get(seas_stats_table->mutex);
-   seas_stats_table->received_replies++;
-   lock_release(seas_stats_table->mutex);
 }
 
 

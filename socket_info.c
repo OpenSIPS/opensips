@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -14,14 +13,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * This file contains code that initializes and handles ser listen addresses
  * lists (struct socket_info). It is used mainly on startup.
- * 
+ *
  * History:
  * --------
  *  2003-10-22  created by andrei
@@ -57,6 +56,7 @@
 #include "ut.h"
 #include "resolve.h"
 #include "name_alias.h"
+#include "net/trans.h"
 
 #define MAX_PROC_BUFFER	256
 
@@ -100,15 +100,14 @@
 	}while(0)
 
 
-
 /* another helper function, it just creates a socket_info struct */
-static inline struct socket_info* new_sock_info(	char* name,
+struct socket_info* new_sock_info(	char* name,
 								unsigned short port, unsigned short proto,
 								char *adv_name, unsigned short adv_port,
 								unsigned short children,enum si_flags flags)
 {
 	struct socket_info* si;
-	
+
 	si=(struct socket_info*) pkg_malloc(sizeof(struct socket_info));
 	if (si==0) goto error;
 	memset(si, 0, sizeof(struct socket_info));
@@ -124,7 +123,7 @@ static inline struct socket_info* new_sock_info(	char* name,
 
     /* advertised socket information */
 	/* Make sure the adv_sock_string is initialized, because if there is
-	 * no adv_sock_name, no other code will initialize it! 
+	 * no adv_sock_name, no other code will initialize it!
 	 */
 	si->adv_sock_str.s=NULL;
 	si->adv_sock_str.len=0;
@@ -168,32 +167,6 @@ static void free_sock_info(struct socket_info* si)
 }
 
 
-
-static char* get_proto_name(unsigned short proto)
-{
-	switch(proto){
-		case PROTO_NONE:
-			return "*";
-		case PROTO_UDP:
-			return "udp";
-#ifdef USE_TCP
-		case PROTO_TCP:
-			return "tcp";
-#endif
-#ifdef USE_TLS
-		case PROTO_TLS:
-			return "tls";
-#endif
-#ifdef USE_SCTP
-		case PROTO_SCTP:
-			return "sctp";
-#endif
-		default:
-			return "unknown";
-	}
-}
-
-
 /* checks if the proto: host:port is one of the address we listen on
  * and returns the corresponding socket_info structure.
  * if port==0, the  port number is ignored
@@ -210,46 +183,42 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 	struct socket_info* si;
 	struct socket_info** list;
 	unsigned short c_proto;
-#ifdef USE_IPV6
 	struct ip_addr* ip6;
-#endif
+
 	h_len=host->len;
 	hname=host->s;
-#ifdef USE_IPV6
+
 	if ((h_len>2)&&((*hname)=='[')&&(hname[h_len-1]==']')){
 		/* ipv6 reference, skip [] */
 		hname++;
 		h_len-=2;
 	}
-#endif
+
 	c_proto=proto?proto:PROTO_UDP;
 	do{
-		/* get the proper sock_list */
-		if (c_proto==PROTO_NONE)
-			list=&udp_listen;
-		else
-			list=get_sock_info_list(c_proto);
-	
+		/* "proto" is all the time valid here */
+		list=get_sock_info_list(c_proto);
+
 		if (list==0){
 			LM_WARN("unknown proto %d\n", c_proto);
 			goto not_found; /* false */
 		}
 		for (si=*list; si; si=si->next){
 			LM_DBG("checking if host==us: %d==%d && "
-					" [%.*s] == [%.*s]\n", 
+					" [%.*s] == [%.*s]\n",
 						h_len,
 						si->name.len,
 						h_len, hname,
 						si->name.len, si->name.s
 				);
 			if (port) {
-				LM_DBG("checking if port %d matches port %d\n", 
+				LM_DBG("checking if port %d matches port %d\n",
 						si->port_no, port);
 				if (si->port_no!=port && si->adv_port!=port) {
 					continue;
 				}
 			}
-			if ( (h_len==si->name.len) && 
+			if ( (h_len==si->name.len) &&
 				(strncasecmp(hname, si->name.s,
 						 si->name.len)==0) /*slower*/)
 				/* comp. must be case insensitive, host names
@@ -257,7 +226,7 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 				 * ipv6 addresses if we are lucky*/
 				goto found;
 			/* Check if the adv. name of this socket matches */
-			if ( (h_len==si->adv_name_str.len) && 
+			if ( (h_len==si->adv_name_str.len) &&
 				(strncasecmp(hname, si->adv_name_str.s,
 					si->adv_name_str.len)==0) /*slower*/)
 				/* comp. must be case insensitive, host names
@@ -265,7 +234,6 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 				* ipv6 addresses if we are lucky*/
 				goto found;
 			/* check if host == ip address */
-#ifdef USE_IPV6
 			/* ipv6 case is uglier, host can be [3ffe::1] */
 			ip6=str2ip6(host);
 			if (ip6){
@@ -275,11 +243,10 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 					continue; /* no match, but this is an ipv6 address
 								 so no point in trying ipv4 */
 			}
-#endif
 			/* ipv4 */
 			if ( 	(!(si->flags&SI_IS_IP)) &&
-					(h_len==si->address_str.len) && 
-				(memcmp(hname, si->address_str.s, 
+					(h_len==si->address_str.len) &&
+				(memcmp(hname, si->address_str.s,
 									si->address_str.len)==0)
 				)
 				goto found;
@@ -308,15 +275,12 @@ struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
 	struct socket_info* si;
 	struct socket_info** list;
 	unsigned short c_proto;
-	
+
 	c_proto=proto?proto:PROTO_UDP;
 	do{
 		/* get the proper sock_list */
-		if (c_proto==PROTO_NONE)
-			list=&udp_listen;
-		else
-			list=get_sock_info_list(c_proto);
-	
+		list=get_sock_info_list(c_proto);
+
 		if (list==0){
 			LM_WARN("unknown proto %d\n", c_proto);
 			goto not_found; /* false */
@@ -346,7 +310,7 @@ int new_sock2list(char* name, unsigned short port, unsigned short proto,
 		enum si_flags flags, struct socket_info** list)
 {
 	struct socket_info* si;
-	
+
 	si=new_sock_info(name, port, proto, adv_name, adv_port, children, flags);
 	if (si==0){
 		LM_ERR("new_sock_info failed\n");
@@ -368,27 +332,17 @@ int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 {
 	struct socket_info** list;
 	unsigned short c_proto;
-	
+
 	c_proto=(proto)?proto:PROTO_UDP;
+	LM_INFO("XXX - c_proto = %d\n",c_proto);
 	do{
 		list=get_sock_info_list(c_proto);
 		if (list==0){
 			LM_ERR("get_sock_info_list failed\n");
 			goto error;
 		}
-		if (port==0){ /* use default port */
-			port=
-#ifdef USE_TLS
-				((c_proto)==PROTO_TLS)?tls_port_no:
-#endif
-				port_no;
-		}
-#ifdef USE_TLS
-		else if ((c_proto==PROTO_TLS) && (proto==0)){
-			/* -l  ip:port => on udp:ip:port; tcp:ip:port and tls:ip:port+1? */
-				port++;
-		}
-#endif
+		if (port==0) /* use default port */
+			port=protos[c_proto].default_port;
 		if (new_sock2list(name, port, c_proto, adv_name, adv_port, children,
 		flags, list)<0){
 			LM_ERR("new_sock2list failed\n");
@@ -423,7 +377,7 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 	struct ip_addr addr;
 	int ret;
 	enum si_flags flags;
-	
+
 #ifdef HAVE_SOCKADDR_SA_LEN
 	#ifndef MAX
 		#define MAX(a,b) ( ((a)>(b))?(a):(b))
@@ -443,7 +397,7 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 			goto error;
 		}
 		if (ioctl(s, SIOCGIFCONF, &ifc)==-1){
-			if(errno==EBADF) return 0; /* invalid descriptor => no such ifs*/
+			if(errno==EBADF) goto error; /* invalid descriptor => no such ifs*/
 			LM_ERR("ioctl failed: %s\n", strerror(errno));
 			goto error;
 		}
@@ -453,7 +407,7 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 		/* try a bigger array*/
 		pkg_free(ifc.ifc_req);
 	}
-	
+
 	last=(char*)ifc.ifc_req+ifc.ifc_len;
 	for(p=(char*)ifc.ifc_req; p<last;
 			p+=
@@ -481,28 +435,28 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 					ifr->ifr_addr.sa_family);*/
 			continue;
 		}
-		
+
 		/*get flags*/
 		ifrcopy=ifr;
 		if (ioctl(s, SIOCGIFFLAGS,  &ifrcopy)!=-1){ /* ignore errors */
 			/* ignore down ifs only if listening on all of them*/
-			if (if_name==0){ 
+			if (if_name==0){
 				/* if if not up, skip it*/
 				if (!(ifrcopy.ifr_flags & IFF_UP)) continue;
 			}
 		}
-		
-		
-		
+
+
+
 		if ((if_name==0)||
 			(strncmp(if_name, ifr.ifr_name, sizeof(ifr.ifr_name))==0)){
-			
+
 			/*add address*/
-			sockaddr2ip_addr(&addr, 
+			sockaddr2ip_addr(&addr,
 					(struct sockaddr*)(p+(long)&((struct ifreq*)0)->ifr_addr));
 			if ((tmp=ip_addr2a(&addr))==0) goto error;
 			/* check if loopback */
-			if (ifrcopy.ifr_flags & IFF_LOOPBACK) 
+			if (ifrcopy.ifr_flags & IFF_LOOPBACK)
 				flags|=SI_IS_LO;
 			/* add it to one of the lists */
 			if (new_sock2list(tmp, port, proto, 0, 0, 0, flags, list)!=0){
@@ -524,14 +478,15 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 	return  ret;
 error:
 	if (ifc.ifc_req) pkg_free(ifc.ifc_req);
-	close(s);
+	if (s >= 0)
+		close(s);
 	return -1;
 }
 
 
-/* fixes a socket list => resolve addresses, 
+/* fixes a socket list => resolve addresses,
  * interface names, fills missing members, remove duplicates */
-static int fix_socket_list(struct socket_info **list)
+int fix_socket_list(struct socket_info **list)
 {
 	struct socket_info* si;
 	struct socket_info* l;
@@ -540,10 +495,10 @@ static int fix_socket_list(struct socket_info **list)
 	int len;
 	struct hostent* he;
 	char** h;
-	
+
 	/* try to change all the interface names into addresses
 	 *  --ugly hack */
-	
+
 	for (si=*list;si;){
 		next=si->next;
 		if (add_interfaces(si->name.s, AF_INET, si->port_no,
@@ -560,16 +515,11 @@ static int fix_socket_list(struct socket_info **list)
 #endif
 	for (si=*list;si;si=si->next){
 		/* fix the number of processes per interface */
-		if (si->children==0 && (si->proto==PROTO_UDP || si->proto==PROTO_SCTP))
+		if (!si->children && is_udp_based_proto(si->proto))
 			si->children = children_no;
-		/* fix port number, port_no should be !=0 here */
-		if (si->port_no==0){
-#ifdef USE_TLS
-			si->port_no= (si->proto==PROTO_TLS)?tls_port_no:port_no;
-#else
-			si->port_no= port_no;
-#endif
-		}
+		if (si->port_no==0)
+			si->port_no= protos[si->proto].default_port;
+
 		tmp=int2str(si->port_no, &len);
 		if (len>=MAX_PORT_LEN){
 			LM_ERR("bad port number: %d\n", si->port_no);
@@ -611,7 +561,7 @@ static int fix_socket_list(struct socket_info **list)
 					LM_ERR("add_alias failed\n");
 				}
 		}
-		hostent2ip_addr(&si->address, he, 0); /*convert to ip_addr 
+		hostent2ip_addr(&si->address, he, 0); /*convert to ip_addr
 														 format*/
 		if ((tmp=ip_addr2a(&si->address))==0) goto error;
 		if (si->address.af == AF_INET6) {
@@ -702,7 +652,7 @@ static int fix_socket_list(struct socket_info **list)
 		/* build and set string encoding for the real socket info */
 		tmp = socket2str( si, 0, &si->sock_str.len, 0);
 		if (tmp==0) {
-			LM_ERR("failed to convert socket to string");
+			LM_ERR("failed to convert socket to string\n");
 			goto error;
 		}
 		si->sock_str.s=(char*)pkg_malloc(si->sock_str.len);
@@ -722,7 +672,7 @@ static int fix_socket_list(struct socket_info **list)
 #endif /* USE_MCAST */
 
 #ifdef EXTRA_DEBUG
-		printf("              %.*s [%s]:%s%s\n", si->name.len, 
+		printf("              %.*s [%s]:%s%s\n", si->name.len,
 				si->name.s, si->address_str.s, si->port_no_str.s,
 		                si->flags & SI_IS_MCAST ? " mcast" : "");
 #endif
@@ -747,7 +697,7 @@ static int fix_socket_list(struct socket_info **list)
 						(strncmp(l->name.s, si->name.s, si->name.len)!=0))
 					)
 					add_alias(l->name.s, l->name.len, l->port_no, l->proto);
-						
+
 				/* remove l*/
 				sock_listrm(list, l);
 				free_sock_info(l);
@@ -760,17 +710,11 @@ static int fix_socket_list(struct socket_info **list)
 	     /* Remove invalid multicast entries */
 	si=*list;
 	while(si){
-		if ((si->flags & SI_IS_MCAST) && 
-		    ((si->proto == PROTO_TCP)
-#ifdef USE_TLS
-		    || (si->proto == PROTO_TLS)
-#endif /* USE_TLS */
-#ifdef USE_SCTP
-			|| (si->proto == PROTO_SCTP)
-#endif
-		    )){
+		if ((si->flags & SI_IS_MCAST) &&
+		    (si->proto != PROTO_UDP)
+		   ){
 			LM_WARN("removing entry %s:%s [%s]:%s\n",
-			    get_proto_name(si->proto), si->name.s, 
+			    get_proto_name(si->proto), si->name.s,
 			    si->address_str.s, si->port_no_str.s);
 			l = si;
 			si=si->next;
@@ -789,110 +733,17 @@ error:
 
 
 
-/* fix all 3 socket lists
- * return 0 on success, -1 on error */
-int fix_all_socket_lists(void)
-{
-	struct utsname myname;
-	
-	if ((udp_listen==0)
-#ifdef USE_TCP
-			&& (tcp_listen==0)
-#ifdef USE_TLS
-			&& (tls_listen==0)
-#endif
-#endif
-#ifdef USE_SCTP
-			&& (sctp_listen==0)
-#endif
-		){
-		/* get all listening ipv4 interfaces */
-		if (add_interfaces(0, AF_INET, 0,  PROTO_UDP, &udp_listen)==0){
-			/* if ok, try to add the others too */
-#ifdef USE_TCP
-			if (!tcp_disable){
-				if (add_interfaces(0, AF_INET, 0,  PROTO_TCP, &tcp_listen)!=0)
-					goto error;
-#ifdef USE_TLS
-				if (!tls_disable){
-					if (add_interfaces(0, AF_INET, 0, PROTO_TLS,
-								&tls_listen)!=0)
-					goto error;
-				}
-#endif
-			}
-#endif
-#ifdef USE_SCTP
-			if (!sctp_disable){
-				if (add_interfaces(0, AF_INET, 0, PROTO_SCTP, &sctp_listen)!=0)
-					goto error;
-			}
-#endif
-		}else{
-			/* if error fall back to get hostname */
-			/* get our address, only the first one */
-			if (uname (&myname) <0){
-				LM_ERR("cannot determine hostname, try -l address\n");
-				goto error;
-			}
-			if (add_listen_iface(myname.nodename, 0, 0, 0, 0, 0, 0)!=0){
-				LM_ERR("add_listen_iface failed \n");
-				goto error;
-			}
-		}
-	}
-	if (fix_socket_list(&udp_listen)!=0){
-		LM_ERR("fix_socket_list udp failed\n");
-		goto error;
-	}
-#ifdef USE_TCP
-	if (!tcp_disable && (fix_socket_list(&tcp_listen)!=0)){
-		LM_ERR("fix_socket_list tcp failed\n");
-		goto error;
-	}
-#ifdef USE_TLS
-	if (!tls_disable && (fix_socket_list(&tls_listen)!=0)){
-		LM_ERR("fix_socket_list tls failed\n");
-		goto error;
-	}
-#endif
-#endif
-#ifdef USE_SCTP
-	if (!sctp_disable && (fix_socket_list(&sctp_listen)!=0)){
-		LM_ERR("fix_socket_list sctp failed\n");
-		goto error;
-	}
-#endif
-
-	if ((udp_listen==0)
-#ifdef USE_TCP
-			&& (tcp_listen==0)
-#ifdef USE_TLS
-			&& (tls_listen==0)
-#endif
-#endif
-#ifdef USE_SCTP
-			&& (sctp_listen==0)
-#endif
-	){
-		LM_ERR("no listening sockets\n");
-		goto error;
-	}
-	return 0;
-error:
-	return -1;
-}
 
 
 /*
- * This function will retrieve a list of all ip addresses and ports that OpenSER
- * is listening on, with respect to the transport protocol specified with
- * 'protocol'. 
+ * This function will retrieve a list of all ip addresses and ports that
+ * OpenSIPS is listening on, with respect to the transport protocol specified
+ * with 'protocol'.
  *
- * The first parameter, ipList, is a pointer to a pointer. It will be assigned a
- * new block of memory holding the IP Addresses and ports being listened to with
- * respect to 'protocol'.  The array maps a 2D array into a 1 dimensional space,
- * and is layed out as follows:
+ * The first parameter, ipList, is a pointer to a pointer. It will be assigned
+ * a new block of memory holding the IP Addresses and ports being listened to 
+ * with respect to 'protocol'.  The array maps a 2D array into a 1 dimensional 
+ * space, and is layed out as follows:
  *
  * The first NUM_IP_OCTETS indices will be the IP address, and the next index
  * the port.  So if NUM_IP_OCTETS is equal to 4 and there are two IP addresses
@@ -901,19 +752,19 @@ error:
  *  - ipList[0] will be the first octet of the first ip address
  *  - ipList[3] will be the last octet of the first ip address.
  *  - iplist[4] will be the port of the first ip address
- *  - 
- *  - iplist[5] will be the first octet of the first ip address, 
- *  - and so on.  
+ *  -
+ *  - iplist[5] will be the first octet of the first ip address,
+ *  - and so on.
  *
- * The function will return the number of sockets which were found.  This can be
- * used to index into ipList.
+ * The function will return the number of sockets which were found.  This can
+ * be used to index into ipList.
  *
  * NOTE: This function assigns a block of memory equal to:
  *
  *            returnedValue * (NUM_IP_OCTETS + 1) * sizeof(int);
  *
- *       Therefore it is CRUCIAL that you free ipList when you are done with its
- *       contents, to avoid a nasty memory leak.
+ *       Therefore it is CRUCIAL that you free ipList when you are done with
+ *       its contents, to avoid a nasty memory leak.
  */
 int get_socket_list_from_proto(int **ipList, int protocol) {
 
@@ -924,21 +775,17 @@ int get_socket_list_from_proto(int **ipList, int protocol) {
 	int numberOfSockets = 0;
 	int currentRow      = 0;
 
-	/* I hate to use #ifdefs, but this is necessary because of the way 
+	/* I hate to use #ifdefs, but this is necessary because of the way
 	 * get_sock_info_list() is defined.  */
-#ifndef USE_TCP
-	if (protocol == PROTO_TCP) 
+	if (protocol == PROTO_TCP)
 	{
 		return 0;
 	}
-#endif
 
-#ifndef USE_TLS
 	if (protocol == PROTO_TLS)
 	{
 		return 0;
 	}
-#endif
 
 	/* Retrieve the list of sockets with respect to the given protocol. */
 	list=get_sock_info_list(protocol);
@@ -979,34 +826,34 @@ int get_socket_list_from_proto(int **ipList, int protocol) {
 			continue;
 		}
 
-		(*ipList)[currentRow*(num_ip_octets + 1)  ] = 
+		(*ipList)[currentRow*(num_ip_octets + 1)  ] =
 			si->address.u.addr[0];
-		(*ipList)[currentRow*(num_ip_octets + 1)+1] = 
+		(*ipList)[currentRow*(num_ip_octets + 1)+1] =
 			si->address.u.addr[1];
-		(*ipList)[currentRow*(num_ip_octets + 1)+2] = 
+		(*ipList)[currentRow*(num_ip_octets + 1)+2] =
 			si->address.u.addr[2];
-		(*ipList)[currentRow*(num_ip_octets + 1)+3] = 
+		(*ipList)[currentRow*(num_ip_octets + 1)+3] =
 			si->address.u.addr[3];
-		(*ipList)[currentRow*(num_ip_octets + 1)+4] = 
+		(*ipList)[currentRow*(num_ip_octets + 1)+4] =
 			si->port_no;
-		
+
 		currentRow++;
 	}
 
 	return numberOfSockets;
 }
 
-/* 
+/*
  * Takes a 'line' (from the proc file system), parses out the ipAddress,
  * address, and stores the number of bytes waiting in 'rx_queue'
  *
  * Returns 1 on success, and 0 on a failed parse.
  *
  * Note: The format of ipAddress is as defined in the comments of
- * get_socket_list_from_proto() in this file. 
+ * get_socket_list_from_proto() in this file.
  *
  */
-static int parse_proc_net_line(char *line, int *ipAddress, int *rx_queue) 
+static int parse_proc_net_line(char *line, int *ipAddress, int *rx_queue)
 {
 	int i;
 
@@ -1020,7 +867,7 @@ static int parse_proc_net_line(char *line, int *ipAddress, int *rx_queue)
 
 	/* Example line from /proc/net/tcp or /proc/net/udp:
 	 *
-	 *	sl  local_address rem_address   st tx_queue rx_queue  
+	 *	sl  local_address rem_address   st tx_queue rx_queue
 	 *	21: 5A0A0B0A:CAC7 1C016E0A:0016 01 00000000:00000000
 	 *
 	 * Algorithm:
@@ -1035,16 +882,16 @@ static int parse_proc_net_line(char *line, int *ipAddress, int *rx_queue)
 
 	for (i = 0; i < 4; i++) {
 
-		currColonLocation = strchr(currentLocationInLine, ':'); 
+		currColonLocation = strchr(currentLocationInLine, ':');
 
 		/* We didn't find all the needed ':', so fail. */
 		if (currColonLocation == NULL) {
 			return 0;
 		}
 
-		/* Parse out the integer, keeping the location of the next 
+		/* Parse out the integer, keeping the location of the next
 		 * non-numerical character.  */
-		parsedInteger[i] = 
+		parsedInteger[i] =
 			(int) strtol(++currColonLocation, &nextNonNumericalChar,
 					16);
 
@@ -1054,8 +901,8 @@ static int parse_proc_net_line(char *line, int *ipAddress, int *rx_queue)
 		if (nextNonNumericalChar == currColonLocation) {
 			return 0;
 		}
-		
-		/* Reset the currentLocationInLine to the last non-numerical 
+
+		/* Reset the currentLocationInLine to the last non-numerical
 		 * character, so that next iteration of this loop, we can find
 		 * the next colon location. */
 		currentLocationInLine = nextNonNumericalChar;
@@ -1065,9 +912,9 @@ static int parse_proc_net_line(char *line, int *ipAddress, int *rx_queue)
 	/* Extract out the segments of the IP Address.  They are stored in
 	 * reverse network byte order. */
 	for (i = 0; i < NUM_IP_OCTETS; i++) {
-		
-		ipAddress[i] = 
-			parsedInteger[0] & (ipOctetExtractionMask << i*8); 
+
+		ipAddress[i] =
+			parsedInteger[0] & (ipOctetExtractionMask << i*8);
 
 		ipAddress[i] >>= i*8;
 
@@ -1076,20 +923,20 @@ static int parse_proc_net_line(char *line, int *ipAddress, int *rx_queue)
 	ipAddress[NUM_IP_OCTETS] = parsedInteger[1];
 
 	*rx_queue = parsedInteger[3];
-	
+
 	return 1;
- 
+
 }
 
 
 /*
- * Returns 1 if ipOne was found in ipArray, and 0 otherwise. 
+ * Returns 1 if ipOne was found in ipArray, and 0 otherwise.
  *
- * The format of ipOne and ipArray are described in the comments of 
+ * The format of ipOne and ipArray are described in the comments of
  * get_socket_list_from_proto() in this file.
  *
  * */
-static int match_ip_and_port(int *ipOne, int *ipArray, int sizeOf_ipArray) 
+static int match_ip_and_port(int *ipOne, int *ipArray, int sizeOf_ipArray)
 {
 	int curIPAddrIdx;
 	int curOctetIdx;
@@ -1101,10 +948,10 @@ static int match_ip_and_port(int *ipOne, int *ipArray, int sizeOf_ipArray)
 		/* Check for octets that don't match.  If one is found, skip the
 		 * rest.  */
 		for (curOctetIdx = 0; curOctetIdx < NUM_IP_OCTETS + 1; curOctetIdx++) {
-			
+
 			/* We've encoded a 2D array as a 1D array.  So find out
 			 * our position in the 1D array. */
-			ipArrayIndex = 
+			ipArrayIndex =
 				curIPAddrIdx * (NUM_IP_OCTETS + 1) + curOctetIdx;
 
 			if (ipOne[curOctetIdx] != ipArray[ipArrayIndex]) {
@@ -1134,14 +981,14 @@ static int match_ip_and_port(int *ipOne, int *ipArray, int sizeOf_ipArray)
  * - if forTCP is zero, the check involves only the UDP transport.
  *
  * Note: This only works on linux systems supporting the /proc/net/[tcp|udp]
- *       interface.  On other systems, zero will always be returned. 
+ *       interface.  On other systems, zero will always be returned.
  */
 static int get_used_waiting_queue(
-		int forTCP, int *interfaceList, int listSize) 
+		int forTCP, int *interfaceList, int listSize)
 {
 	FILE *fp;
 	char *fileToOpen;
-	
+
 	char lineBuffer[MAX_PROC_BUFFER];
 	int  ipAddress[NUM_IP_OCTETS+1];
 	int  rx_queue;
@@ -1156,7 +1003,7 @@ static int get_used_waiting_queue(
 	} else {
 		fileToOpen = "/proc/net/udp";
 	}
-	
+
 	fp = fopen(fileToOpen, "r");
 
 	if (fp == NULL) {
@@ -1173,7 +1020,7 @@ static int get_used_waiting_queue(
 		/* Parse out the ip address, port, and rx_queue. */
 		if(parse_proc_net_line(lineBuffer, ipAddress, &rx_queue)) {
 
-			/* Only add rx_queue if the line just parsed corresponds 
+			/* Only add rx_queue if the line just parsed corresponds
 			 * to an interface we are listening on.  We do this
 			 * check because it is possible that this system has
 			 * other network interfaces that OpenSER has been told
@@ -1191,11 +1038,11 @@ static int get_used_waiting_queue(
 
 /*
  * Returns the sum of the number of bytes waiting to be consumed on all network
- * interfaces and transports that OpenSIPS is listening on. 
+ * interfaces and transports that OpenSIPS is listening on.
  *
  * Note: This currently only works on systems supporting the /proc/net/[tcp|udp]
  *       interface.  On other systems, zero will always be returned.  To change
- *       this in the future, add an equivalent for get_used_waiting_queue(). 
+ *       this in the future, add an equivalent for get_used_waiting_queue().
  */
 int get_total_bytes_waiting(int only_proto)
 {
@@ -1236,35 +1083,17 @@ int get_total_bytes_waiting(int only_proto)
 }
 
 
-void print_all_socket_lists(void)
-{
-	struct socket_info *si;
-	struct socket_info** list;
-	unsigned short proto;
-	
-	
-	proto=PROTO_UDP;
-	do{
-		list=get_sock_info_list(proto);
-		for(si=list?*list:0; si; si=si->next){
-			printf("             %s: %s [%s]:%s%s\n", get_proto_name(proto),
-			       si->name.s, si->address_str.s, si->port_no_str.s, 
-			       si->flags & SI_IS_MCAST ? " mcast" : "");
-		}
-	}while((proto=next_proto(proto)));
-}
-
 
 void print_aliases(void)
 {
 	struct host_alias* a;
 
-	for(a=aliases; a; a=a->next) 
+	for(a=aliases; a; a=a->next)
 		if (a->port)
-			printf("             %s: %.*s:%d\n", get_proto_name(a->proto), 
+			printf("             %s: %.*s:%d\n", get_proto_name(a->proto),
 					a->alias.len, a->alias.s, a->port);
 		else
-			printf("             %s: %.*s:*\n", get_proto_name(a->proto), 
+			printf("             %s: %.*s:*\n", get_proto_name(a->proto),
 					a->alias.len, a->alias.s);
 }
 
@@ -1285,7 +1114,7 @@ int probe_max_sock_buff(int sock,int buff_choice,int buff_max,int buff_increment
 	int phase=0;
 	int buff_opt;
 	char *info;
-	
+
 	if (buff_choice == 0)
 	{
 		info = "rcv";
@@ -1320,7 +1149,7 @@ int probe_max_sock_buff(int sock,int buff_choice,int buff_max,int buff_increment
 		/* increase size; double in initial phase, add linearly later */
 		if (phase==0) optval <<= 1; else optval+=buff_increment;
 		if (optval > maxbuffer){
-			if (phase==1) break; 
+			if (phase==1) break;
 			else { phase=1; optval >>=1; continue; }
 		}
 		LM_DBG("trying : %d\n", optval );
@@ -1331,9 +1160,9 @@ int probe_max_sock_buff(int sock,int buff_choice,int buff_max,int buff_increment
 					" for %d, phase %d: %s\n", optval, phase, strerror(errno));
 			/* if setting buffer size failed and still in the aggressive
 			   phase, try less aggressively; otherwise give up */
-			if (phase==0) { phase=1; optval >>=1 ; continue; } 
+			if (phase==0) { phase=1; optval >>=1 ; continue; }
 			else break;
-		} 
+		}
 		/* verify if change has taken effect */
 		/* Linux note -- otherwise I would never know that; funny thing: Linux
 		   doubles size for which we asked in setsockopt */
@@ -1350,11 +1179,11 @@ int probe_max_sock_buff(int sock,int buff_choice,int buff_max,int buff_increment
 				LM_DBG("setting buf has no effect\n");
 				/* if setting buffer size failed and still in the aggressive
 				phase, try less aggressively; otherwise give up */
-				if (phase==0) { phase=1; optval >>=1 ; continue; } 
+				if (phase==0) { phase=1; optval >>=1 ; continue; }
 				else break;
-			} 
+			}
 		}
-	
+
 	} /* for ... */
 	foptvallen=sizeof(foptval);
 	if (getsockopt( sock, SOL_SOCKET, buff_opt, (void*) &foptval,

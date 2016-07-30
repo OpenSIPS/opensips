@@ -30,8 +30,7 @@ Razvan Crainea
 
    Copyright © 2011 OpenSIPS Foundation
    Revision History
-   Revision $Revision: 5901 $ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -44,7 +43,8 @@ Razvan Crainea
 
               1.3.1. Tail Drop Algorithm (TAILDROP)
               1.3.2. Random Early Detection Algorithm (RED)
-              1.3.3. Network Algorithm (NETWORK)
+              1.3.3. Slot Based Taildropping (SBT)
+              1.3.4. Network Algorithm (NETWORK)
 
         1.4. Dynamic Rate Limiting Algorithms
 
@@ -63,6 +63,15 @@ Razvan Crainea
               1.6.4. default_algorithm (string)
               1.6.5. cachedb_url (string)
               1.6.6. db_prefix (string)
+              1.6.7. repl_buffer_threshold (string)
+              1.6.8. repl_timer_interval (string)
+              1.6.9. repl_timer_expire (string)
+              1.6.10. replicate_pipes_to (integer)
+              1.6.11. accept_pipes_from (integer)
+              1.6.12. accept_pipes_timeout (integer)
+              1.6.13. repl_pipes_auth_check (int)
+              1.6.14. window_size (int)
+              1.6.15. slot_period (int)
 
         1.7. Exported Functions
 
@@ -76,6 +85,11 @@ Razvan Crainea
               1.8.2. rl_reset_pipe
               1.8.3. rl_set_pid
               1.8.4. rl_get_pid
+              1.8.5. rl_bin_status
+
+        1.9. Exported pseudo-variables
+
+              1.9.1. $rl_count(name)
 
    List of Examples
 
@@ -85,9 +99,18 @@ Razvan Crainea
    1.4. Set default_algorithm parameter
    1.5. Set cachedb_url parameter
    1.6. Set db_prefix parameter
-   1.7. rl_check usage
-   1.8. rl_dec_count usage
-   1.9. rl_reset_count usage
+   1.7. Set repl_buffer_threshold parameter
+   1.8. Set repl_timer_interval parameter
+   1.9. Set repl_timer_expire parameter
+   1.10. Set replicate_pipes_to parameter
+   1.11. Set accept_pipes_from parameter
+   1.12. Set accept_pipes_timeout parameter
+   1.13. Set repl_pipes_auth_check parameter
+   1.14. Set window_size parameter
+   1.15. Set slot_period parameter
+   1.16. rl_check usage
+   1.17. rl_dec_count usage
+   1.18. rl_reset_count usage
 
 Chapter 1. Admin Guide
 
@@ -104,6 +127,11 @@ Chapter 1. Admin Guide
    This module is also integrated with the OpenSIPS Key-Value
    Interface, providing support for distributed rate limiting
    using Redis or Memcached CacheDB backends.
+
+   To achieve a distributed ratelimit feature, the module can
+   replicate its pipes counters to different OpenSIPS interfaces
+   using the binary replicate interface (BIN). To do that, define
+   the repl_* parameters in your configuration script.
 
 1.2. Use Cases
 
@@ -171,7 +199,21 @@ Chapter 1. Admin Guide
    messages although the limit might not be reached within the
    interval. Decrease the timer interval if you encounter this.
 
-1.3.3. Network Algorithm (NETWORK)
+1.3.3. Slot Based Taildropping (SBT)
+
+   SBT holds a window consisting of one or more slots. You can set
+   the window_size parameter(seconds) which means for how long we
+   should look back to count the calls and slot_period
+   parameter(miliseconds) which tells how granular the algorithm
+   should be. The number of slots will be window_size/slot_period.
+   If, for example, you have window_size= slot_period=1 second,
+   then after each second you shall lose the call count, but if
+   you set the slot_period to 100 microseconds, then when your
+   call will be outside the window, the calls in the first 100
+   microseconds shall be dropped, and the rest in the next 900
+   shall be kept.
+
+1.3.4. Network Algorithm (NETWORK)
 
    This algorithm relies on information provided by network
    interfaces. The total amount of bytes waiting to be consumed on
@@ -305,6 +347,119 @@ modparam("ratelimit", "cachedb_url", "redis://root:root@127.0.0.1/")
 modparam("ratelimit", "db_prefix", "ratelimit_")
 ...
 
+1.6.7. repl_buffer_threshold (string)
+
+   Used to specify the length of the buffer used by the binary
+   replication, in bytes. Usually this should be big enough to
+   hold as much data as possible, but small enough to avoid UDP
+   fragmentation. The recommended value is the smallest MTU
+   between all the replication instances.
+
+   Default value is 1400 bytes.
+
+   Example 1.7. Set repl_buffer_threshold parameter
+...
+modparam("ratelimit", "repl_buffer_threshold", 500)
+...
+
+1.6.8. repl_timer_interval (string)
+
+   Timer in milliseconds, used to specify how often the module
+   should replicate its counters to the other instances.
+
+   Default value is 10 ms.
+
+   Example 1.8. Set repl_timer_interval parameter
+...
+modparam("ratelimit", "repl_timer_interval", 100)
+...
+
+1.6.9. repl_timer_expire (string)
+
+   Timer in seconds, used to specify when the counter received
+   from a different instance should no longer be taken into
+   account. This is used to prevent obsolete values, in case an
+   instance stops replicating its counters.
+
+   Default value is 10 s.
+
+   Example 1.9. Set repl_timer_expire parameter
+...
+modparam("ratelimit", "repl_timer_expire", 10)
+...
+
+1.6.10. replicate_pipes_to (integer)
+
+   Used to specify the instances, that belong to a certain
+   cluster, where the pipes should be replicated.
+
+   Default value is 0. (no replication destinations)
+
+   Example 1.10. Set replicate_pipes_to parameter
+...
+modparam("ratelimit", "replicate_pipes_to", 1)
+...
+
+1.6.11. accept_pipes_from (integer)
+
+   Used to specify the instances, that belong to a certain
+   cluster, from which we should expect incoming packets.
+
+   Default value is 0. (disabled)
+
+   Example 1.11. Set accept_pipes_from parameter
+...
+modparam("ratelimit", "accept_pipes_from", 1)
+...
+
+1.6.12. accept_pipes_timeout (integer)
+
+   The time between two succesive incoming packets.
+
+   Default value is 10.
+
+   Example 1.12. Set accept_pipes_timeout parameter
+...
+modparam("ratelimit", "accept_pipes_timeout", 1)
+...
+
+1.6.13. repl_pipes_auth_check (int)
+
+   Authentication check for incoming packets.
+
+   Default value is “0” (disabled).
+
+   Example 1.13. Set repl_pipes_auth_check parameter
+...
+modparam("dialog", "repl_pipes_auth_check", 1)
+...
+
+1.6.14. window_size (int)
+
+   How long the history in SBT should be in seconds.
+
+   Default value is “10”.
+
+   Example 1.14. Set window_size parameter
+...
+modparam("dialog", "window_size", 5)
+...
+
+1.6.15. slot_period (int)
+
+   Value of one slot in microseconds. This parameter determines
+   how granular the algorithm should be. The number of slots will
+   be determined by window_size/slot_period.
+
+   Default value is “200”.
+
+   Example 1.15. Set slot_period parameter
+...
+modparam("dialog", "window_size", 5)
+#we will have 50 slots of 100 microseconds
+modparam("dialog", "slot_period", 100)
+...
+
 1.7. Exported Functions
 
 1.7.1.  rl_check(name, limit[, algorithm])
@@ -336,7 +491,7 @@ modparam("ratelimit", "db_prefix", "ratelimit_")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.7. rl_check usage
+   Example 1.16. rl_check usage
 ...
         # perform a pipe match for all INVITE methods using RED algorith
 m
@@ -365,7 +520,7 @@ m
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.8. rl_dec_count usage
+   Example 1.17. rl_dec_count usage
 ...
         if (!rl_check("gw_$ru", "100", "TAILDROP")) {
                 exit;
@@ -384,7 +539,7 @@ m
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.9. rl_reset_count usage
+   Example 1.18. rl_reset_count usage
 ...
         if (!rl_check("gw_$ru", "100", "TAILDROP")) {
                 exit;
@@ -458,3 +613,24 @@ m
    MI FIFO Command Format:
                 :rl_get_pid:_reply_fifo_file_
                 _empty_line_
+
+1.8.5.  rl_bin_status
+
+   Dumps each destination used for replication, as well as the
+   timestamp of the last message received from them.
+
+   Name: rl_bin_status
+
+   Parameters: none
+
+   MI FIFO Command Format:
+                :rl_bin_status:_reply_fifo_file_
+                _empty_line_
+
+1.9. Exported pseudo-variables
+
+1.9.1. $rl_count(name)
+
+   Returns the counter of a pipe. The variable is read-only.
+
+   NULL will be returned if the pipe does not exist.

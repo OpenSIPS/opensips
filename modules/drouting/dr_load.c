@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2005-2008 Voice Sistem SRL
  *
  * This file is part of Open SIP Server (OpenSIPS).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * For any questions about this software and its license, please contact
  * Voice Sistem at following e-mail address:
@@ -42,68 +40,27 @@
 #include "../../db/db.h"
 #include "../../mem/shm_mem.h"
 #include "../../time_rec.h"
+#include "../../socket_info.h"
 
 #include "dr_load.h"
 #include "routing.h"
 #include "prefix_tree.h"
 #include "parse.h"
+#include "dr_db_def.h"
 
-
-#define ID_DRD_COL       "id"
-#define GWID_DRD_COL     "gwid"
-#define ADDRESS_DRD_COL  "address"
-#define STRIP_DRD_COL    "strip"
-#define PREFIX_DRD_COL   "pri_prefix"
-#define TYPE_DRD_COL     "type"
-#define ATTRS_DRD_COL    "attrs"
-#define PROBE_DRD_COL	 "probe_mode"
-static str id_drd_col = str_init(ID_DRD_COL);
-static str gwid_drd_col = str_init(GWID_DRD_COL);
-static str address_drd_col = str_init(ADDRESS_DRD_COL);
-static str strip_drd_col = str_init(STRIP_DRD_COL);
-static str prefix_drd_col = str_init(PREFIX_DRD_COL);
-static str type_drd_col = str_init(TYPE_DRD_COL);
-static str attrs_drd_col = str_init(ATTRS_DRD_COL);
-static str probe_drd_col = str_init(PROBE_DRD_COL);
-
-#define RULE_ID_DRR_COL   "ruleid"
-#define GROUP_DRR_COL     "groupid"
-#define PREFIX_DRR_COL    "prefix"
-#define TIME_DRR_COL      "timerec"
-#define PRIORITY_DRR_COL  "priority"
-#define ROUTEID_DRR_COL   "routeid"
-#define DSTLIST_DRR_COL   "gwlist"
-static str rule_id_drr_col = str_init(RULE_ID_DRR_COL);
-static str group_drr_col = str_init(GROUP_DRR_COL);
-static str prefix_drr_col = str_init(PREFIX_DRR_COL);
-static str time_drr_col = str_init(TIME_DRR_COL);
-static str priority_drr_col = str_init(PRIORITY_DRR_COL);
-static str routeid_drr_col = str_init(ROUTEID_DRR_COL);
-static str dstlist_drr_col = str_init(DSTLIST_DRR_COL);
-
-#define ID_DRC_COL     "id"
-#define CID_DRC_COL    "carrierid"
-#define FLAGS_DRC_COL  "flags"
-#define GWLIST_DRC_COL "gwlist"
-#define ATTRS_DRC_COL  "attrs"
-static str id_drc_col = str_init(ID_DRC_COL);
-static str cid_drc_col = str_init(CID_DRC_COL);
-static str flags_drc_col = str_init(FLAGS_DRC_COL);
-static str gwlist_drc_col = str_init(GWLIST_DRC_COL);
-static str attrs_drc_col = str_init(ATTRS_DRC_COL);
 
 #define check_val( _col, _val, _type, _not_null, _is_empty_str) \
 	do{\
 		if ((_val)->type!=_type) { \
-			LM_ERR("column %s has a bad type\n", _col); \
+			LM_ERR("column %.*s has a bad type\n", _col.len, _col.s); \
 			goto error;\
 		} \
 		if (_not_null && (_val)->nul) { \
-			LM_ERR("column %s is null\n", _col); \
+			LM_ERR("column %.*s is null\n", _col.len, _col.s); \
 			goto error;\
 		} \
 		if (_is_empty_str && VAL_STRING(_val)==0) { \
-			LM_ERR("column %s (str) is empty\n", _col); \
+			LM_ERR("column %.*s (str) is empty\n", _col.len, _col.s); \
 			goto error;\
 		} \
 	}while(0)
@@ -118,13 +75,13 @@ static inline tmrec_t* parse_time_def(char *time_str)
 	p = time_str;
 	time_rec = 0;
 
-/*	time_rec = (tmrec_t*)shm_malloc(sizeof(tmrec_t)); */
+	/*	time_rec = (tmrec_t*)shm_malloc(sizeof(tmrec_t)); */
 	time_rec = tmrec_new(SHM_ALLOC);
 	if (time_rec==0) {
 		LM_ERR("no more shm mem\n");
 		goto error;
 	}
-/*	memset( time_rec, 0, sizeof(tmrec_t)); */
+	/*	memset( time_rec, 0, sizeof(tmrec_t)); */
 
 	/* empty definition? */
 	if ( time_str==0 || *time_str==0 )
@@ -146,7 +103,7 @@ done:
 	return time_rec;
 parse_error:
 	LM_ERR("parse error in <%s> around position %i\n",
-		time_str, (int)(long)(p-time_str));
+			time_str, (int)(long)(p-time_str));
 error:
 	if (time_rec)
 		tmrec_free( time_rec );
@@ -169,7 +126,7 @@ static int add_rule(rt_data_t *rdata, char *grplst, str *prefix, rt_info_t *rule
 		t = strtol(tmp, &ep, 10);
 		if (ep == tmp) {
 			LM_ERR("bad grp id '%c' (%d)[%s]\n",
-				*ep, (int)(ep-grplst), grplst);
+					*ep, (int)(ep-grplst), grplst);
 			goto error;
 		}
 		if ((!IS_SPACE(*ep)) && (*ep != SEP) && (*ep != SEP1) && (*ep!=0)) {
@@ -187,12 +144,12 @@ static int add_rule(rt_data_t *rdata, char *grplst, str *prefix, rt_info_t *rule
 			/* add the routing rule */
 			if ( add_prefix(rdata->pt, prefix, rule, (unsigned int)t)!=0 ) {
 				LM_ERR("failed to add prefix route\n");
-					goto error;
+				goto error;
 			}
 		} else {
 			if ( add_rt_info( &rdata->noprefix, rule, (unsigned int)t)!=0 ) {
 				LM_ERR("failed to add prefixless route\n");
-					goto error;
+				goto error;
 			}
 		}
 		/* keep parsing */
@@ -205,7 +162,7 @@ static int add_rule(rt_data_t *rdata, char *grplst, str *prefix, rt_info_t *rule
 
 	if(n==0) {
 		LM_ERR("no id in grp list [%s]\n",
-			grplst);
+				grplst);
 		goto error;
 	}
 
@@ -215,13 +172,53 @@ error:
 }
 
 
-rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
-							str *drd_table, str *drc_table, str* drr_table )
+/* dr_gateways table */
+#define INT_VALS_STRIP_DRD_COL    0
+#define INT_VALS_TYPE_DRD_COL     1
+#define INT_VALS_PROBE_DRD_COL    2
+#define INT_VALS_STATE_DRD_COL    3
+#define STR_VALS_ADDRESS_DRD_COL  0
+#define STR_VALS_PREFIX_DRD_COL   1
+#define STR_VALS_ATTRS_DRD_COL    2
+#define STR_VALS_GWID_DRD_COL     3
+#define STR_VALS_ID_DRD_COL       4
+
+/* dr_carriers table */
+#define INT_VALS_FLAGS_DRC_COL    0
+#define INT_VALS_STATE_DRC_COL    1
+#define STR_VALS_CID_DRC_COL      0
+#define STR_VALS_GWLIST_DRC_COL   1
+#define STR_VALS_ATTRS_DRC_COL    2
+#define STR_VALS_ID_DRC_COL       3
+
+/* dr_rules table */
+#define INT_VALS_RULE_ID_DRR_COL  0
+#define INT_VALS_BLANK_1          1
+#define INT_VALS_PRIORITY_DRR_COL 2
+#define INT_VALS_SCRIPT_ROUTE_ID  3
+#define STR_VALS_GROUP_DRR_COL    0
+#define STR_VALS_PREFIX_DRR_COL   1
+#define STR_VALS_TIME_DRR_COL     2
+#define STR_VALS_ROUTEID_DRR_COL  3
+#define STR_VALS_DSTLIST_DRR_COL  4
+#define STR_VALS_ATTRS_DRR_COL    5
+
+/* loads routing info for given partition; if partition_name is NULL
+ * loads all partitions
+ */
+
+rt_data_t* dr_load_routing_info(struct head_db *current_partition
+		, int persistent_state)
 {
-	int    int_vals[4];
+	int    int_vals[5];
 	char * str_vals[6];
 	str tmp;
-	db_key_t columns[8];
+	db_func_t *dr_dbf = &current_partition->db_funcs;
+	db_con_t* db_hdl = *current_partition->db_con;
+	str *drd_table = &current_partition->drd_table;
+	str *drc_table = &current_partition->drc_table;
+	str *drr_table = &current_partition->drr_table;
+	db_key_t columns[10];
 	db_res_t* res;
 	db_row_t* row;
 	rt_info_t *ri;
@@ -229,6 +226,11 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	tmrec_t   *time_rec;
 	int i,n;
 	int no_rows = 10;
+	int db_cols;
+	struct socket_info *sock;
+	str s_sock, host;
+	int proto, port;
+	char id_buf[INT2STR_MAX_LEN];
 
 	res = 0;
 	ri = 0;
@@ -240,7 +242,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		goto error;
 	}
 
-	if (db_check_table_version(dr_dbf, db_hdl, drd_table, 5 )!= 0)
+	if (db_check_table_version(dr_dbf, db_hdl, drd_table, 6/*version*/ )!= 0)
 		goto error;
 
 	/* read the destinations */
@@ -257,62 +259,118 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	columns[5] = &type_drd_col;
 	columns[6] = &attrs_drd_col;
 	columns[7] = &probe_drd_col;
+	columns[8] = &sock_drd_col;
+	if (persistent_state) {
+		columns[9] = &state_drd_col;
+		db_cols = 10;
+	} else {
+		db_cols = 9;
+	}
 
 	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 8, 0, 0 ) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, db_cols, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
-		no_rows = estimate_available_rows( 4+32+15+4+32+4+128+4, 8);
+		no_rows = estimate_available_rows( 4+32+15+4+32+4+128+4+32+4, db_cols);
 		if (no_rows==0) no_rows = 10;
 		if(dr_dbf->fetch_result(db_hdl, &res, no_rows )<0) {
 			LM_ERR("Error fetching rows\n");
 			goto error;
 		}
 	} else {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 8, 0, &res) < 0) {
+		if ( dr_dbf->query(db_hdl,0,0,0,columns,0,db_cols,0,&res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
 	}
 
 	LM_DBG("%d records found in %.*s\n",
-		RES_ROW_N(res), drd_table->len,drd_table->s);
+			RES_ROW_N(res), drd_table->len,drd_table->s);
 
 	n = 0;
 	do {
 		for(i=0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 			/* DB ID column */
-			check_val(ID_DRD_COL, ROW_VALUES(row), DB_INT, 1, 0);
-			int_vals[0] = VAL_INT(ROW_VALUES(row));
+			if ( VAL_TYPE( ROW_VALUES(row) ) == DB_INT ) {
+				/* if INT type, convert it to string */
+				check_val( id_drd_col, ROW_VALUES(row), DB_INT, 1, 0);
+				/* int2bstr returns a null terminated string */
+				str_vals[STR_VALS_ID_DRD_COL] =
+					int2bstr((unsigned long)VAL_INT(ROW_VALUES(row)),
+							id_buf, &int_vals[0]/*useless*/);
+			} else {
+				/* if not INT, accept only STRING type */
+				check_val( id_drd_col, ROW_VALUES(row), DB_STRING, 1, 0);
+				str_vals[STR_VALS_ID_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row));
+			}
 			/* GW ID column */
-			check_val(GWID_DRD_COL, ROW_VALUES(row)+1, DB_STRING, 1, 1);
-			str_vals[3] = (char*)VAL_STRING(ROW_VALUES(row)+1);
+			check_val( gwid_drd_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
+			str_vals[STR_VALS_GWID_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row)+1);
 			/* ADDRESS column */
-			check_val(ADDRESS_DRD_COL, ROW_VALUES(row)+2, DB_STRING, 1, 1);
-			str_vals[0] = (char*)VAL_STRING(ROW_VALUES(row)+2);
+			check_val( address_drd_col, ROW_VALUES(row)+2, DB_STRING, 1, 1);
+			str_vals[STR_VALS_ADDRESS_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row)+2);
 			/* STRIP column */
-			check_val(STRIP_DRD_COL, ROW_VALUES(row)+3, DB_INT, 1, 0);
-			int_vals[1] = VAL_INT   (ROW_VALUES(row)+3);
+			check_val( strip_drd_col, ROW_VALUES(row)+3, DB_INT, 1, 0);
+			int_vals[INT_VALS_STRIP_DRD_COL] = VAL_INT   (ROW_VALUES(row)+3);
 			/* PREFIX column */
-			check_val(PREFIX_DRD_COL, ROW_VALUES(row)+4, DB_STRING, 0, 0);
-			str_vals[1] = (char*)VAL_STRING(ROW_VALUES(row)+4);
+			check_val( prefix_drd_col, ROW_VALUES(row)+4, DB_STRING, 0, 0);
+			str_vals[STR_VALS_PREFIX_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row)+4);
 			/* TYPE column */
-			check_val(TYPE_DRD_COL, ROW_VALUES(row)+5, DB_INT, 1, 0);
-			int_vals[2] = VAL_INT(ROW_VALUES(row)+5);
+			check_val( type_drd_col, ROW_VALUES(row)+5, DB_INT, 1, 0);
+			int_vals[INT_VALS_TYPE_DRD_COL] = VAL_INT(ROW_VALUES(row)+5);
 			/* ATTRS column */
-			check_val(ATTRS_DRD_COL, ROW_VALUES(row)+6, DB_STRING, 0, 0);
-			str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+6);
+			check_val( attrs_drd_col, ROW_VALUES(row)+6, DB_STRING, 0, 0);
+			str_vals[STR_VALS_ATTRS_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row)+6);
 			/*PROBE_MODE column */
-			check_val(PROBE_DRD_COL, ROW_VALUES(row)+7, DB_INT, 1, 0);
-			int_vals[3] = VAL_INT(ROW_VALUES(row)+7);
+			check_val( probe_drd_col, ROW_VALUES(row)+7, DB_INT, 1, 0);
+			int_vals[INT_VALS_PROBE_DRD_COL] = VAL_INT(ROW_VALUES(row)+7);
+			/*SOCKET column */
+			check_val( sock_drd_col, ROW_VALUES(row)+8, DB_STRING, 0, 0);
+			if ( !VAL_NULL(ROW_VALUES(row)+8) &&
+					(s_sock.s=(char*)VAL_STRING(ROW_VALUES(row)+8))[0]!=0 ) {
+				s_sock.len = strlen(s_sock.s);
+				if (parse_phostport( s_sock.s, s_sock.len, &host.s, &host.len,
+							&port, &proto)!=0){
+					LM_ERR("GW <%s>(%s): socket description <%.*s> "
+							"is not valid -> ignoring socket\n",
+							str_vals[STR_VALS_GWID_DRD_COL],
+							str_vals[STR_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
+					sock = NULL;
+				} else {
+					sock = grep_sock_info( &host, port, proto);
+					if (sock == NULL) {
+						LM_ERR("GW <%s>(%s): socket <%.*s> is not local to "
+								"OpenSIPS (we must listen on it) -> ignoring socket\n",
+								str_vals[STR_VALS_GWID_DRD_COL],
+								str_vals[STR_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
+					}
+				}
+			} else {
+				sock = NULL;
+			}
+			/*STATE column */
+			if (persistent_state) {
+				check_val( state_drd_col, ROW_VALUES(row)+9, DB_INT, 1, 0);
+				int_vals[INT_VALS_STATE_DRD_COL] = VAL_INT(ROW_VALUES(row)+9);
+			} else {
+				int_vals[INT_VALS_STATE_DRD_COL] = 0; /* by default enabled */
+			}
 
 			/* add the destinaton definition in */
-			if ( add_dst( rdata, str_vals[3], str_vals[0], int_vals[1],
-			str_vals[1], int_vals[2], str_vals[2], int_vals[3])<0 ) {
-				LM_ERR("failed to add destination id %d -> skipping\n",
-					int_vals[0]);
+			if ( add_dst( rdata, str_vals[STR_VALS_GWID_DRD_COL],
+						str_vals[STR_VALS_ADDRESS_DRD_COL],
+						int_vals[INT_VALS_STRIP_DRD_COL],
+						str_vals[STR_VALS_PREFIX_DRD_COL],
+						int_vals[INT_VALS_TYPE_DRD_COL],
+						str_vals[STR_VALS_ATTRS_DRD_COL],
+						int_vals[INT_VALS_PROBE_DRD_COL],
+						sock,
+						int_vals[INT_VALS_STATE_DRD_COL] )<0 ) {
+				LM_ERR("failed to add destination <%s>(%s) -> skipping\n",
+						str_vals[STR_VALS_GWID_DRD_COL],
+						str_vals[STR_VALS_ID_DRD_COL]);
 				continue;
 			}
 			n++;
@@ -341,20 +399,26 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	columns[2] = &flags_drc_col;
 	columns[3] = &gwlist_drc_col;
 	columns[4] = &attrs_drc_col;
+	if (persistent_state) {
+		columns[5] = &state_drc_col;
+		db_cols = 6;
+	} else {
+		db_cols = 5;
+	}
 
 	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 5, 0, 0 ) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, db_cols, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
-		no_rows = estimate_available_rows( 4+4+32+64+64, 5/*cols*/);
+		no_rows = estimate_available_rows( 4+4+32+64+64, db_cols);
 		if (no_rows==0) no_rows = 10;
 		if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
 			LM_ERR("Error fetching rows\n");
 			goto error;
 		}
 	} else {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 5, 0, &res) < 0) {
+		if ( dr_dbf->query(db_hdl,0,0,0,columns,0,db_cols,0,&res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -364,31 +428,52 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		LM_DBG("table \"%.*s\" empty\n", drc_table->len,drc_table->s );
 	} else {
 		LM_DBG("%d records found in %.*s\n",
-			RES_ROW_N(res), drc_table->len,drc_table->s);
+				RES_ROW_N(res), drc_table->len,drc_table->s);
 		do {
 			for(i=0; i < RES_ROW_N(res); i++) {
 				row = RES_ROWS(res) + i;
-				/* ID column */
-				check_val(ID_DRC_COL, ROW_VALUES(row), DB_INT, 1, 0);
-				int_vals[0] = VAL_INT(ROW_VALUES(row));
+				/* DB ID column */
+				if ( VAL_TYPE( ROW_VALUES(row) ) == DB_INT ) {
+					/* if INT type, convert it to string */
+					check_val( id_drc_col, ROW_VALUES(row), DB_INT, 1, 0);
+					/* int2bstr returns a null terminated string */
+					str_vals[STR_VALS_ID_DRC_COL] =
+						int2bstr((unsigned long)VAL_INT(ROW_VALUES(row)),
+								id_buf, &int_vals[0]/*useless*/);
+				} else {
+					/* if not INT, accept only STRING type */
+					check_val( id_drd_col, ROW_VALUES(row), DB_STRING, 1, 0);
+					str_vals[STR_VALS_ID_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row));
+				}
 				/* CARRIER_ID column */
-				check_val(CID_DRC_COL, ROW_VALUES(row)+1, DB_STRING, 1, 1);
-				str_vals[0] = (char*)VAL_STRING(ROW_VALUES(row)+1);
+				check_val( cid_drc_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
+				str_vals[STR_VALS_CID_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+1);
 				/* flags column */
-				check_val(ID_DRC_COL, ROW_VALUES(row)+2, DB_INT, 1, 0);
-				int_vals[1] = VAL_INT(ROW_VALUES(row)+2);
+				check_val( flags_drc_col, ROW_VALUES(row)+2, DB_INT, 1, 0);
+				int_vals[INT_VALS_FLAGS_DRC_COL] = VAL_INT(ROW_VALUES(row)+2);
 				/* GWLIST column */
-				check_val(GWLIST_DRC_COL, ROW_VALUES(row)+3, DB_STRING, 1, 1);
-				str_vals[1] = (char*)VAL_STRING(ROW_VALUES(row)+3);
+				check_val( gwlist_drc_col, ROW_VALUES(row)+3, DB_STRING, 1, 1);
+				str_vals[STR_VALS_GWLIST_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+3);
 				/* ATTRS column */
-				check_val(ATTRS_DRC_COL, ROW_VALUES(row)+4, DB_STRING, 0, 0);
-				str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+4);
+				check_val( attrs_drc_col, ROW_VALUES(row)+4, DB_STRING, 0, 0);
+				str_vals[STR_VALS_ATTRS_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+4);
+				/* STATE column */
+				if (persistent_state) {
+					check_val( state_drc_col, ROW_VALUES(row)+5, DB_INT, 1, 0);
+					int_vals[INT_VALS_STATE_DRC_COL] = VAL_INT(ROW_VALUES(row)+5);
+				} else {
+					/* by default enabled */
+					int_vals[INT_VALS_STATE_DRC_COL] = 0;
+				}
 
 				/* add the new carrier */
-				if ( add_carrier( int_vals[0], str_vals[0], int_vals[1],
-				str_vals[1], str_vals[2], rdata) != 0 ) {
-					LM_ERR("failed to add carrier db_id %d -> skipping\n",
-						int_vals[0]);
+				if ( add_carrier( str_vals[STR_VALS_CID_DRC_COL],
+							int_vals[INT_VALS_FLAGS_DRC_COL],
+							str_vals[STR_VALS_GWLIST_DRC_COL],
+							str_vals[STR_VALS_ATTRS_DRC_COL],
+							int_vals[INT_VALS_STATE_DRC_COL], rdata) != 0 ) {
+					LM_ERR("failed to add carrier db_id <%s> -> skipping\n",
+							str_vals[STR_VALS_ID_DRC_COL]);
 					continue;
 				}
 			}
@@ -419,7 +504,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	columns[4] = &priority_drr_col;
 	columns[5] = &routeid_drr_col;
 	columns[6] = &dstlist_drr_col;
-	columns[7] = &attrs_drd_col;
+	columns[7] = &attrs_drr_col;
 
 	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
 		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 8, 0, 0) < 0) {
@@ -444,73 +529,78 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	}
 
 	LM_DBG("initial %d records found in %.*s\n", RES_ROW_N(res),
-		drr_table->len, drr_table->s);
+			drr_table->len, drr_table->s);
 
 	n = 0;
 	do {
 		for(i=0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 			/* RULE_ID column */
-			check_val(RULE_ID_DRR_COL, ROW_VALUES(row), DB_INT, 1, 0);
-			int_vals[0] = VAL_INT (ROW_VALUES(row));
+			check_val( rule_id_drr_col, ROW_VALUES(row), DB_INT, 1, 0);
+			int_vals[INT_VALS_RULE_ID_DRR_COL] = VAL_INT (ROW_VALUES(row));
 			/* GROUP column */
-			check_val(GROUP_DRR_COL, ROW_VALUES(row)+1, DB_STRING, 1, 1);
-			str_vals[0] = (char*)VAL_STRING(ROW_VALUES(row)+1);
+			check_val( group_drr_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
+			str_vals[STR_VALS_GROUP_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+1);
 			/* PREFIX column - it may be null or empty */
-			check_val(PREFIX_DRR_COL, ROW_VALUES(row)+2, DB_STRING, 0, 0);
+			check_val( prefix_drr_col, ROW_VALUES(row)+2, DB_STRING, 0, 0);
 			if ((ROW_VALUES(row)+2)->nul || VAL_STRING(ROW_VALUES(row)+2)==0){
 				tmp.s = NULL;
 				tmp.len = 0;
 			} else {
-				str_vals[1] = (char*)VAL_STRING(ROW_VALUES(row)+2);
-				tmp.s = str_vals[1];
-				tmp.len = strlen(str_vals[1]);
+				str_vals[STR_VALS_PREFIX_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+2);
+				tmp.s = str_vals[STR_VALS_PREFIX_DRR_COL];
+				tmp.len = strlen(str_vals[STR_VALS_PREFIX_DRR_COL]);
 			}
 			/* TIME column */
-			check_val(TIME_DRR_COL, ROW_VALUES(row)+3, DB_STRING, 0, 0);
-			str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+3);
+			check_val( time_drr_col, ROW_VALUES(row)+3, DB_STRING, 0, 0);
+			str_vals[STR_VALS_TIME_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+3);
 			/* PRIORITY column */
-			check_val(PRIORITY_DRR_COL, ROW_VALUES(row)+4, DB_INT, 1, 0);
-			int_vals[2] = VAL_INT   (ROW_VALUES(row)+4);
+			check_val( priority_drr_col, ROW_VALUES(row)+4, DB_INT, 1, 0);
+			int_vals[INT_VALS_PRIORITY_DRR_COL] = VAL_INT   (ROW_VALUES(row)+4);
 			/* ROUTE_ID column */
-			check_val(ROUTEID_DRR_COL, ROW_VALUES(row)+5, DB_STRING, 0, 0);
-			str_vals[3] = (char*)VAL_STRING(ROW_VALUES(row)+5);
+			check_val( routeid_drr_col, ROW_VALUES(row)+5, DB_STRING, 0, 0);
+			str_vals[STR_VALS_ROUTEID_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+5);
 			/* DSTLIST column */
-			check_val(DSTLIST_DRR_COL, ROW_VALUES(row)+6, DB_STRING, 1, 1);
-			str_vals[4] = (char*)VAL_STRING(ROW_VALUES(row)+6);
+			check_val( dstlist_drr_col, ROW_VALUES(row)+6, DB_STRING, 1, 1);
+			str_vals[STR_VALS_DSTLIST_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+6);
 			/* ATTRS column */
-			check_val(ATTRS_DRD_COL, ROW_VALUES(row)+7, DB_STRING, 0, 0);
-			str_vals[5] = (char*)VAL_STRING(ROW_VALUES(row)+7);
+			check_val( attrs_drr_col, ROW_VALUES(row)+7, DB_STRING, 0, 0);
+			str_vals[STR_VALS_ATTRS_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+7);
 			/* parse the time definition */
-			if (str_vals[2] == NULL || *(str_vals[2]) == 0)
+			if (str_vals[STR_VALS_TIME_DRR_COL] == NULL || *(str_vals[STR_VALS_TIME_DRR_COL]) == 0)
 				time_rec = NULL;
-			else if ((time_rec=parse_time_def(str_vals[2]))==0) {
+			else if ((time_rec=parse_time_def(str_vals[STR_VALS_TIME_DRR_COL]))==0) {
 				LM_ERR("bad time definition <%s> for rule id %d -> skipping\n",
-					str_vals[2], int_vals[0]);
+						str_vals[STR_VALS_TIME_DRR_COL], int_vals[INT_VALS_RULE_ID_DRR_COL]);
 				continue;
 			}
 			/* lookup for the script route ID */
-			if (str_vals[3] && str_vals[3][0]) {
-				int_vals[3] =  get_script_route_ID_by_name( str_vals[3],
-						rlist, RT_NO);
-				if (int_vals[3]==-1) {
-					LM_WARN("route <%s> does not exist\n",str_vals[3]);
-					int_vals[3] = 0;
+			if (str_vals[STR_VALS_ROUTEID_DRR_COL] && str_vals[STR_VALS_ROUTEID_DRR_COL][0]) {
+				int_vals[INT_VALS_SCRIPT_ROUTE_ID] =
+					get_script_route_ID_by_name( str_vals[STR_VALS_ROUTEID_DRR_COL], rlist, RT_NO);
+				if (int_vals[INT_VALS_SCRIPT_ROUTE_ID]==-1) {
+					LM_WARN("route <%s> does not exist\n",
+							str_vals[STR_VALS_ROUTEID_DRR_COL]);
+					int_vals[INT_VALS_SCRIPT_ROUTE_ID] = 0;
 				}
 			} else {
-				int_vals[3] = 0;
+				int_vals[INT_VALS_SCRIPT_ROUTE_ID] = 0;
 			}
 			/* build the routing rule */
-			if ((ri = build_rt_info( int_vals[0], int_vals[2], time_rec,
-			int_vals[3], str_vals[4], str_vals[5], rdata))== 0 ) {
+			if ((ri = build_rt_info( int_vals[INT_VALS_RULE_ID_DRR_COL],
+							int_vals[INT_VALS_PRIORITY_DRR_COL], time_rec,
+							int_vals[INT_VALS_SCRIPT_ROUTE_ID],
+							str_vals[STR_VALS_DSTLIST_DRR_COL],
+							str_vals[STR_VALS_ATTRS_DRR_COL], rdata))== 0 ) {
 				LM_ERR("failed to add routing info for rule id %d -> "
-					"skipping\n", int_vals[0]);
+						"skipping\n", int_vals[INT_VALS_RULE_ID_DRR_COL]);
 				tmrec_free( time_rec );
 				continue;
 			}
 			/* add the rule */
-			if (add_rule( rdata, str_vals[0], &tmp, ri)!=0) {
-				LM_ERR("failed to add rule id %d -> skipping\n", int_vals[0]);
+			if (add_rule( rdata, str_vals[STR_VALS_GROUP_DRR_COL], &tmp, ri)!=0) {
+				LM_ERR("failed to add rule id %d -> skipping\n",
+						int_vals[INT_VALS_RULE_ID_DRR_COL]);
 				free_rt_info( ri );
 				continue;
 			}
@@ -522,7 +612,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				goto error;
 			}
 			LM_DBG("additional %d records found in %.*s\n", RES_ROW_N(res),
-				drr_table->len, drr_table->s);
+					drr_table->len, drr_table->s);
 		} else {
 			break;
 		}
@@ -532,8 +622,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	res = 0;
 
 	LM_DBG("%d total records loaded from table %.*s\n", n,
-		drr_table->len, drr_table->s);
-
+			drr_table->len, drr_table->s);
 	return rdata;
 error:
 	if (res)

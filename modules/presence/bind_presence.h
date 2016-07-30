@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence module - presence server implementation
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -34,6 +32,8 @@
 #include "presentity.h"
 
 typedef int (*update_watchers_t)(str pres_uri, pres_ev_t* ev, str* rules_doc);
+typedef int (*update_presentity_t)(presentity_t* presentity);
+typedef int (*terminate_watchers_t)(str *pres_uri, pres_ev_t* ev);
 
 typedef struct presence_api {
 	add_event_t add_event;
@@ -41,6 +41,8 @@ typedef struct presence_api {
 	search_event_t search_event;
 	get_event_list_t get_event_list;
 	update_watchers_t update_watchers_status;
+	terminate_watchers_t terminate_watchers;
+	update_presentity_t update_presentity;
 	/* subs hash table functions */
 	new_shtable_t new_shtable;
 	destroy_shtable_t destroy_shtable;

@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -26,6 +26,7 @@
 #include "db_insertq.h"
 #include "db_cap.h"
 #include "../timer.h"
+#include "../pt.h"
 
 int query_buffer_size = 0;
 int query_flush_time = 0;
@@ -33,7 +34,7 @@ query_list_t **query_list = NULL;
 query_list_t **last_query = NULL;
 gen_lock_t *ql_lock;
 
-/* inits all the global variables needed for the insert query lists */ 
+/* inits all the global variables needed for the insert query lists */
 int init_query_list(void)
 {
 	query_list = shm_malloc(sizeof(query_list_t *));
@@ -81,12 +82,12 @@ error0:
  * inherit same queue */
 int init_ql_support(void)
 {
-	if (query_buffer_size > 1) 
+	if (query_buffer_size > 1)
 	{
 		if  (init_query_list() != 0 ||
-			register_timer_process("querydb-flush", ql_timer_routine,NULL,
+			register_timer("querydb-flush", ql_timer_routine,NULL,
 				query_flush_time>0?query_flush_time:DEF_FLUSH_TIME,
-				TIMER_PROC_INIT_FLAG) < 0 ) 
+				TIMER_FLAG_DELAY_ON_DELAY) < 0 )
 		{
 			LM_ERR("failed initializing ins list support\n");
 			return -1;
@@ -109,28 +110,32 @@ void flush_query_list(void)
 		if (it->no_rows > 0)
 		{
 			memset(&it->dbf,0,sizeof(db_func_t));
-			if (db_bind_mod(&it->url,&it->dbf) < 0) 
+			if (db_bind_mod(&it->url,&it->dbf) < 0)
 			{
 				LM_ERR("failed to bind to db at shutdown\n");
 				lock_release(it->lock);
 				continue;
 			}
 
-			it->conn = it->dbf.init(&it->url);
-			if (it->conn == 0)
+			it->conn[process_no] = it->dbf.init(&it->url);
+			if (it->conn[process_no] == 0)
 			{
 				LM_ERR("unable to connect to DB at shutdown\n");
 				lock_release(it->lock);
 				continue;
 			}
 
-			it->dbf.use_table(it->conn,&it->table);
-			CON_PS_REFERENCE(it->conn) = &my_ps;
+			it->dbf.use_table(it->conn[process_no],&it->table);
+
+			//Reset prepared statement between query lists/connections
+			my_ps = NULL;
+
+			CON_PS_REFERENCE(it->conn[process_no]) = &my_ps;
 
 			/* and let's insert the rows */
 			for (i=0;i<it->no_rows;i++)
 			{
-				if (it->dbf.insert(it->conn,it->cols,it->rows[i],
+				if (it->dbf.insert(it->conn[process_no],it->cols,it->rows[i],
 							it->col_no) < 0)
 					LM_ERR("failed to insert into DB\n");
 
@@ -138,8 +143,8 @@ void flush_query_list(void)
 			}
 
 			/* no longer need this connection */
-			if (it->conn && it->dbf.close)
-				it->dbf.close(it->conn);
+			if (it->conn[process_no] && it->dbf.close)
+				it->dbf.close(it->conn[process_no]);
 		}
 	}
 }
@@ -148,7 +153,7 @@ void flush_query_list(void)
 void destroy_query_list(void)
 {
 	query_list_t *it;
-	
+
 	for (it=*query_list;it;it=it->next)
 	{
 		lock_destroy(it->lock);
@@ -172,7 +177,7 @@ void handle_ql_shutdown(void)
 	}
 }
 
-/* adds a new type of query to the list 
+/* adds a new type of query to the list
  * assumes ql_lock is acquired*/
 void ql_add_unsafe(query_list_t *entry)
 {
@@ -222,7 +227,7 @@ int ql_detach_rows_unsafe(query_list_t *entry,db_val_t ***ins_rows)
 	return no_rows;
 }
 
-/* safely adds a new row to the insert list 
+/* safely adds a new row to the insert list
  * also checks if the queue is full and returns all the rows that need to
  * be flushed to DB to the caller
  *
@@ -332,8 +337,9 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 		key_size += cols[i]->len;
 
 	row_q_size = sizeof(db_val_t *) * query_buffer_size;
-	size = sizeof(query_list_t) + con->table->len + key_size + 
-					row_q_size + con->url.len;
+	size = sizeof(query_list_t) +
+		counted_processes * sizeof(db_con_t *) +
+		con->table->len + key_size + row_q_size + con->url.len;
 
 	entry = shm_malloc(size);
 	if (entry == NULL)
@@ -360,7 +366,7 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 		shm_free(entry);
 		return NULL;
 	}
-	
+
 	/* deal with the table name */
 	entry->table.s = (char *)entry+sizeof(query_list_t);
 	entry->table.len = con->table->len;
@@ -374,10 +380,10 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 	pos = (char *)(entry->cols + col_no) + col_no * sizeof(str);
 	for (i=0;i<col_no;i++)
 	{
-		entry->cols[i] = (str *)((char *)(entry->cols + col_no) + 
+		entry->cols[i] = (str *)((char *)(entry->cols + col_no) +
 							i * sizeof(str));
 		entry->cols[i]->len = cols[i]->len;
-		entry->cols[i]->s = pos; 
+		entry->cols[i]->s = pos;
 		memcpy(pos,cols[i]->s,cols[i]->len);
 		pos += cols[i]->len;
 	}
@@ -391,6 +397,10 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 					con->table->len + key_size + row_q_size;
 	entry->url.len = con->url.len;
 	memcpy(entry->url.s,con->url.s,con->url.len);
+
+	/* build array of connections per process */
+	entry->conn = (db_con_t**)((char *)entry + sizeof(query_list_t) +
+					con->table->len + key_size + row_q_size + con->url.len);
 
 	LM_DBG("initialized query list for table [%.*s]\n",entry->table.len,entry->table.s);
 	return entry;
@@ -420,14 +430,14 @@ query_list_t *find_query_list_unsafe(const str *table,db_key_t *cols,int col_no)
 		}
 
 		/* match table name */
-		if (it->table.len != table->len || 
+		if (it->table.len != table->len ||
 				memcmp(it->table.s,table->s,table->len) != 0)
 		{
 			LM_DBG("different tables - [%.*s] - [%.*s] \n",it->table.len,it->table.s,
 						table->len,table->s);
 			continue;
 		}
-		
+
 		/* match columns */
 		for (i=0;i<col_no;i++)
 		{
@@ -442,13 +452,13 @@ query_list_t *find_query_list_unsafe(const str *table,db_key_t *cols,int col_no)
 
 		/* got here, we have found our match */
 		entry = it;
-		LM_DBG("succesful match on %p\n",entry);
+		LM_DBG("successful match on %p\n",entry);
 		break;
 
 next_query:
 		;
 	}
-	
+
 	LM_DBG("returning %p\n",entry);
 	return entry;
 }
@@ -458,7 +468,7 @@ next_query:
  *
  * also takes care of initialisation of this is the first process
  * attempting to execute this type of query */
-inline int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
+int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
 							db_key_t *cols,int col_no)
 {
 	query_list_t *entry;
@@ -486,7 +496,7 @@ inline int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
 		{
 			LM_DBG("couldn't find entry for this query\n");
 			/* first query of this type is done from this process,
-			 * it's my job to initialize the query list 
+			 * it's my job to initialize the query list
 			 * and save for later use */
 			entry = ql_init(con,cols,col_no);
 			if (entry == NULL)
@@ -519,17 +529,17 @@ inline int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
 		con->ins_list = *list;
 	}
 
-	LM_DBG("succesfully returned from con_set_inslist\n");
+	LM_DBG("successfully returned from con_set_inslist\n");
 	return 0;
 }
 
 /* clean shm memory used by the rows */
-inline void cleanup_rows(db_val_t **rows)
+void cleanup_rows(db_val_t **rows)
 {
 	int i;
-	
-	if (rows != NULL) 
-		for (i=0;i<query_buffer_size;i++) 
+
+	if (rows != NULL)
+		for (i=0;i<query_buffer_size;i++)
 			if (rows[i] != NULL)
 			{
 				shm_free(rows[i]);
@@ -549,24 +559,32 @@ void ql_timer_routine(unsigned int ticks,void *param)
 	for (it=*query_list;it;it=it->next)
 	{
 		lock_get(it->lock);
-	
+
 		/* are there any old queries in queue ? */
 		if (it->oldest_query && (now - it->oldest_query > query_flush_time))
 		{
 			LM_DBG("insert timer kicking in for query %p [%d]\n",it, it->no_rows);
 
-			if (it->conn == NULL)
+			if (it->dbf.init == NULL)
 			{
 				/* first time timer kicked in for this query */
-				if (db_bind_mod(&it->url,&it->dbf) < 0) 
+				if (db_bind_mod(&it->url,&it->dbf) < 0)
 				{
 					LM_ERR("timer failed to bind to db\n");
 					lock_release(it->lock);
 					continue;
 				}
+			}
 
-				it->conn = it->dbf.init(&it->url);
-				if (it->conn == 0)
+			if (it->conn[process_no] == NULL)
+			{
+				if (!it->dbf.init) {
+					LM_ERR("DB engine does not have init function\n");
+					lock_release(it->lock);
+					continue;
+				}
+				it->conn[process_no] = it->dbf.init(&it->url);
+				if (it->conn[process_no] == 0)
 				{
 					LM_ERR("unable to connect to DB\n");
 					lock_release(it->lock);
@@ -576,15 +594,15 @@ void ql_timer_routine(unsigned int ticks,void *param)
 				LM_DBG("timer has init conn for query %p\n",it);
 			}
 
-			it->dbf.use_table(it->conn,&it->table);
+			it->dbf.use_table(it->conn[process_no],&it->table);
 
 			/* simulate the finding of the right query list */
-			it->conn->ins_list = it;
+			it->conn[process_no]->ins_list = it;
 			/* tell the core that this is the insert timer handler */
-			CON_FLUSH_UNSAFE(it->conn);
+			CON_FLUSH_UNSAFE(it->conn[process_no]);
 
 			/* no actual new row to provide, flush existing ones */
-			if (it->dbf.insert(it->conn,it->cols,(db_val_t *)-1,
+			if (it->dbf.insert(it->conn[process_no],it->cols,(db_val_t *)-1,
 						it->col_no) < 0)
 				LM_ERR("failed to insert rows to DB\n");
 		}
@@ -593,7 +611,7 @@ void ql_timer_routine(unsigned int ticks,void *param)
 	}
 }
 
-inline int ql_flush_rows(db_func_t *dbf,db_con_t *conn,query_list_t *entry)
+int ql_flush_rows(db_func_t *dbf,db_con_t *conn,query_list_t *entry)
 {
 	if (query_buffer_size <= 1 || !entry)
 		return 0;

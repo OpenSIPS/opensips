@@ -1,8 +1,6 @@
 /*
- * $Id
- *
  * presence - presence server implementation
- * 
+ *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -27,8 +25,8 @@
  *  2006-10-09  first version (Anca Vamanu)
  */
 
-#ifndef PA_MOD_H
-#define PA_MOD_H
+#ifndef PRESENCE_MOD_H
+#define PRESENCE_MOD_H
 
 #include "../../parser/msg_parser.h"
 #include "../tm/tm_load.h"
@@ -50,7 +48,7 @@ extern db_con_t* pa_db;
 extern str db_url;
 extern str presentity_table;
 extern str active_watchers_table;
-extern str watchers_table; 
+extern str watchers_table;
 
 extern int counter;
 extern int pid;
@@ -65,6 +63,7 @@ extern int shtable_size;
 extern shtable_t subs_htable;
 extern int mix_dialog_presence;
 extern int notify_offline_body;
+extern int end_sub_on_timeout;
 
 extern int phtable_size;
 extern phtable_t* pres_htable;
@@ -72,6 +71,8 @@ extern phtable_t* pres_htable;
 extern long waiting_subs_time;
 
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc);
+
+int terminate_watchers(str *pres_uri, pres_ev_t* ev);
 
 extern str bla_presentity_spec_param;
 extern pv_spec_t bla_presentity_spec;

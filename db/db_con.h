@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /**
@@ -31,17 +29,18 @@
 
 #include "../str.h"
 #include "db_ps.h"
+#include "db_id.h"
 
 /**
  * This structure represents a database connection, pointer to this structure
  * are used as a connection handle from modules uses the db API.
  */
 typedef struct {
-	const str* table;         /**< Default table that should be used        */
+	const str* table;     /**< Default table that should be used */
 	db_ps_t* curr_ps;     /**< Prepared statement to be used for next query */
 	struct query_list *ins_list; /**< Insert list to be used for the next insert */
-	unsigned long tail; /**< Hook to implementation-specific database state */
-	str url;			/**< what is the URL that this connection is bound on */
+	unsigned long tail;   /**< Hook to implementation-specific database state */
+	str url;              /**< URL that this connection is bound on */
 	int flags;
 } db_con_t;
 
@@ -62,6 +61,5 @@ typedef struct {
 	do { \
 		*((int *)&(con)->flags) &= ~CON_OR_OPERATOR; \
 	} while (0)
-
 
 #endif /* DB_CON_H */

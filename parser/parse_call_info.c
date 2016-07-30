@@ -14,15 +14,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
  * 2010-11-09 Initial revision (Ovidiu Sas)
  */
- 
+
 #include "parse_from.h"
 #include "parse_to.h"
 #include "parse_call_info.h"
@@ -34,7 +34,7 @@
 #include "../errinfo.h"
 #include "../mem/mem.h"
 
- 
+
 /*
  * This method is used to parse Call-Info header.
  *
@@ -50,14 +50,14 @@ int parse_call_info_header( struct sip_msg *msg )
     void **parsed;
     char *tmp, *end, *start;
     unsigned int len;
-    
+
     if ( !msg->call_info &&
 	 (parse_headers(msg, HDR_CALL_INFO_F,0)==-1 || !msg->call_info)) {
 	return -1;
     }
 
     call_info=msg->call_info;
- 
+
     /* maybe the header is already parsed! */
     if (call_info->parsed)
 	return 0;

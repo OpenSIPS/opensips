@@ -8,9 +8,9 @@ CREATE TABLE silo (
     inc_time INT DEFAULT 0 NOT NULL,
     exp_time INT DEFAULT 0 NOT NULL,
     snd_time INT DEFAULT 0 NOT NULL,
-    ctype CHAR(32) DEFAULT 'text/plain' NOT NULL,
-    body BLOB DEFAULT '' NOT NULL
-) ENGINE=MyISAM;
+    ctype CHAR(255) DEFAULT NULL,
+    body BLOB DEFAULT NULL
+) ENGINE=InnoDB;
 
 CREATE INDEX account_idx ON silo (username, domain);
 

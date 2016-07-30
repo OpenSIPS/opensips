@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2006-2007 VozTelecom Sistemas S.L
  *
  * This file is part of opensips, a free SIP server.
@@ -14,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #ifndef _SEAS_H
@@ -127,7 +126,7 @@ struct cluster{
  * when one matches, they will put the as pointer inside the event that should process
  * that event.
  * If eventually the as becomes unavailable, the dispatcher will set valid=false, which should be
- * atomic operation. This way, we prevent having to put a mutex on the array, which would make 
+ * atomic operation. This way, we prevent having to put a mutex on the array, which would make
  * it slower , as only one process could be accessing it at a time.
  */
 struct as_entry{
@@ -143,7 +142,7 @@ struct as_entry{
 
 
 extern struct as_entry *my_as;
-extern struct seas_functions seas_f; 
+extern struct seas_functions seas_f;
 extern struct as_entry *as_list;
 
 typedef struct as_msg {

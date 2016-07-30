@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -32,14 +30,13 @@
  *  2003-04-05  s/reply_route/failure_route, onreply_route introduced (jiri)
  *  2003-04-14  use protocol from uri (jiri)
  *  2003-07-07  added t_relay_to_tls, t_replicate_tls, t_forward_nonack_tls
- *              added #ifdef USE_TCP, USE_TLS
  *              removed t_relay_{udp,tcp,tls} (andrei)
  *  2003-09-26  added t_forward_nonack_uri() - same as t_forward_nonack() but
  *              takes no parameters -> forwards to uri (bogdan)
  *  2004-02-11  FIFO/CANCEL + alignments (hash=f(callid,cseq)) (uli+jiri)
  *  2004-02-18  t_reply exported via FIFO - imported from VM (bogdan)
  *  2004-10-01  added a new param.: restart_fr_on_each_reply (andrei)
- *  2005-05-30  light version of tm_load - find_export dropped -> module 
+ *  2005-05-30  light version of tm_load - find_export dropped -> module
  *              interface dosen't need to export internal functions (bogdan)
  *  2006-01-15  merged functions which diff only via proto (like t_relay,
  *              t_replicate and t_forward_nonack) (bogdan)
@@ -77,6 +74,8 @@
 #include "t_fifo.h"
 #include "mi.h"
 #include "tm_load.h"
+#include "t_ctx.h"
+#include "async.h"
 
 
 /* item functions */
@@ -86,6 +85,10 @@ static int pv_get_tm_reply_code(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
+
+/* TODO: remove in future versions (deprecated parameters) */
+int __set_fr_timer(modparam_t type, void* val);
+int __set_fr_inv_timer(modparam_t type, void* val);
 
 /* fixup functions */
 static int fixup_t_send_reply(void** param, int param_no);
@@ -97,6 +100,7 @@ static int fixup_cancel_branch(void** param, int param_no);
 static int fixup_froute(void** param, int param_no);
 static int fixup_rroute(void** param, int param_no);
 static int fixup_broute(void** param, int param_no);
+static int fixup_t_new_request(void** param, int param_no);
 
 
 /* init functions */
@@ -105,29 +109,30 @@ static int child_init(int rank);
 
 
 /* exported functions */
-inline static int w_t_newtran(struct sip_msg* p_msg, char* , char* );
+inline static int w_t_newtran(struct sip_msg* p_msg);
 inline static int w_t_reply(struct sip_msg *msg, char* code, char* text);
 inline static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text);
 inline static int w_t_relay(struct sip_msg *p_msg , char *proxy, char* flags);
 inline static int w_t_replicate(struct sip_msg *p_msg, char *dst,char* );
-inline static int w_t_on_negative(struct sip_msg* msg, char *go_to, char* );
-inline static int w_t_on_reply(struct sip_msg* msg, char *go_to, char* );
-inline static int w_t_on_branch(struct sip_msg* msg, char *go_to, char* );
-inline static int t_check_status(struct sip_msg* msg, char *regexp, char* );
-inline static int t_flush_flags(struct sip_msg* msg, char*, char* );
-inline static int t_local_replied(struct sip_msg* msg, char *type, char* );
-inline static int t_check_trans(struct sip_msg* msg, char* , char* );
-inline static int t_was_cancelled(struct sip_msg* msg, char* , char* );
-inline static int w_t_cancel_branch(struct sip_msg* msg, char* );
-inline static int w_t_add_hdrs(struct sip_msg* msg, char* );
+inline static int w_t_on_negative(struct sip_msg* msg, char *go_to);
+inline static int w_t_on_reply(struct sip_msg* msg, char *go_to);
+inline static int w_t_on_branch(struct sip_msg* msg, char *go_to);
+inline static int t_check_status(struct sip_msg* msg, char *regexp);
+inline static int t_flush_flags(struct sip_msg* msg);
+inline static int t_local_replied(struct sip_msg* msg, char *type);
+inline static int t_check_trans(struct sip_msg* msg);
+inline static int t_was_cancelled(struct sip_msg* msg);
+inline static int w_t_cancel_branch(struct sip_msg* msg, char *sflags );
+inline static int w_t_add_hdrs(struct sip_msg* msg, char *val );
 int t_cancel_trans(struct cell *t, str *hdrs);
+inline static int w_t_new_request(struct sip_msg* msg, char*, char*, char*, char*, char*, char*);
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
 
-/* strings with avp definition */
-static char *fr_timer_param = NULL;
-static char *fr_inv_timer_param = NULL;
+/* these values are used when the transaction has not been defined yet */
+int fr_timeout;
+int fr_inv_timeout;
 
 #define TM_CANCEL_BRANCH_ALL    (1<<0)
 #define TM_CANCEL_BRANCH_OTHERS (1<<1)
@@ -139,15 +144,22 @@ static char *fr_inv_timer_param = NULL;
 #define PV_LOCAL_BUF_SIZE	511
 static char pv_local_buf[PV_LOCAL_BUF_SIZE+1];
 
+static str uac_ctx_avp = str_init("uac_ctx");
+static int uac_ctx_avp_id;
 
-int pv_get_tm_branch_avp(struct sip_msg*,  pv_param_t*, pv_value_t*);
-int pv_set_tm_branch_avp(struct sip_msg*,  pv_param_t*, int, pv_value_t*);
+
+int pv_get_tm_branch_avp(struct sip_msg*, pv_param_t*, pv_value_t*);
+int pv_set_tm_branch_avp(struct sip_msg*, pv_param_t*, int, pv_value_t*);
+int pv_get_tm_fr_timeout(struct sip_msg*, pv_param_t *, pv_value_t*);
+int pv_set_tm_fr_timeout(struct sip_msg*, pv_param_t *, int, pv_value_t*);
+int pv_get_tm_fr_inv_timeout(struct sip_msg*, pv_param_t *, pv_value_t*);
+int pv_set_tm_fr_inv_timeout(struct sip_msg*, pv_param_t *, int, pv_value_t*);
 struct usr_avp** get_bavp_list(void);
 
 
 /* module parameteres */
 int tm_enable_stats = 1;
-static int own_timer_proc = 0;
+static int timer_partitions = 1;
 
 /* statistic variables */
 stat_var *tm_rcv_rpls;
@@ -165,47 +177,53 @@ stat_var *tm_trans_inuse;
 
 static cmd_export_t cmds[]={
 	{"t_newtran",       (cmd_function)w_t_newtran,      0, 0,
-			0, REQUEST_ROUTE},
+		0, REQUEST_ROUTE},
 	{"t_reply",         (cmd_function)w_pv_t_reply,     2, fixup_t_send_reply,
-			0, REQUEST_ROUTE | FAILURE_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE },
 	{"t_replicate",     (cmd_function)w_t_replicate,    1, fixup_t_replicate,
-			0, REQUEST_ROUTE},
+		0, REQUEST_ROUTE},
 	{"t_replicate",     (cmd_function)w_t_replicate,    2, fixup_t_replicate,
-			0, REQUEST_ROUTE},
+		0, REQUEST_ROUTE},
 	{"t_relay",         (cmd_function)w_t_relay,        0, 0,
-			0, REQUEST_ROUTE | FAILURE_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE },
 	{"t_relay",         (cmd_function)w_t_relay,        1, fixup_t_relay1,
-			0, REQUEST_ROUTE | FAILURE_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE },
 	{"t_relay",         (cmd_function)w_t_relay,        2, fixup_t_relay2,
-			0, REQUEST_ROUTE | FAILURE_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE },
 	{"t_on_failure",    (cmd_function)w_t_on_negative,  1, fixup_froute,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_on_reply",      (cmd_function)w_t_on_reply,     1, fixup_rroute,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_on_branch",     (cmd_function)w_t_on_branch,    1, fixup_broute,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
 	{"t_check_status",  (cmd_function)t_check_status,   1, fixup_regexp_null,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
 	{"t_write_req",     (cmd_function)t_write_req,      2, fixup_t_write,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE },
 	{"t_write_unix",    (cmd_function)t_write_unix,     2, fixup_t_write,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE },
 	{"t_flush_flags",   (cmd_function)t_flush_flags,    0, 0,
-			0, REQUEST_ROUTE | BRANCH_ROUTE  },
+		0, REQUEST_ROUTE | BRANCH_ROUTE  },
 	{"t_local_replied", (cmd_function)t_local_replied,  1, fixup_local_replied,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
 	{"t_check_trans",   (cmd_function)t_check_trans,    0, 0,
-			0, REQUEST_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE | BRANCH_ROUTE },
 	{"t_was_cancelled", (cmd_function)t_was_cancelled,  0, 0,
-			0, FAILURE_ROUTE | ONREPLY_ROUTE },
+		0, FAILURE_ROUTE | ONREPLY_ROUTE },
 	{"t_cancel_branch", (cmd_function)w_t_cancel_branch,0, 0,
-			0, ONREPLY_ROUTE },
+		0, ONREPLY_ROUTE },
 	{"t_cancel_branch", (cmd_function)w_t_cancel_branch,1, fixup_cancel_branch,
-			0, ONREPLY_ROUTE },
+		0, ONREPLY_ROUTE },
 	{"t_add_hdrs",      (cmd_function)w_t_add_hdrs,     1, fixup_spve_null,
-			0, REQUEST_ROUTE },
-	{"t_reply_with_body",(cmd_function)w_t_reply_with_body,3, fixup_t_send_reply,
-			0, REQUEST_ROUTE },
+		0, REQUEST_ROUTE },
+	{"t_reply_with_body",(cmd_function)w_t_reply_body,  3,fixup_t_send_reply,
+		0, REQUEST_ROUTE },
+	{"t_new_request",    (cmd_function)w_t_new_request, 4, fixup_t_new_request,
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"t_new_request",    (cmd_function)w_t_new_request, 5, fixup_t_new_request,
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"t_new_request",    (cmd_function)w_t_new_request, 6, fixup_t_new_request,
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"load_tm",         (cmd_function)load_tm,          0, 0,
 			0, 0},
 	{0,0,0,0,0,0}
@@ -217,10 +235,14 @@ static param_export_t params[]={
 		&ruri_matching},
 	{"via1_matching",             INT_PARAM,
 		&via1_matching},
-	{"fr_timer",                  INT_PARAM,
+	{"fr_timeout",                  INT_PARAM,
 		&(timer_id2timeout[FR_TIMER_LIST])},
-	{"fr_inv_timer",              INT_PARAM,
+	{"fr_inv_timeout",              INT_PARAM,
 		&(timer_id2timeout[FR_INV_TIMER_LIST])},
+	{"fr_timer",                  INT_PARAM|USE_FUNC_PARAM,
+		__set_fr_timer},
+	{"fr_inv_timer",              INT_PARAM|USE_FUNC_PARAM,
+		__set_fr_inv_timer},
 	{"wt_timer",                  INT_PARAM,
 		&(timer_id2timeout[WT_TIMER_LIST])},
 	{"delete_timer",              INT_PARAM,
@@ -233,10 +255,6 @@ static param_export_t params[]={
 		&tm_unix_tx_timeout},
 	{"restart_fr_on_each_reply",  INT_PARAM,
 		&restart_fr_on_each_reply},
-	{"fr_timer_avp",              STR_PARAM,
-		&fr_timer_param},
-	{"fr_inv_timer_avp",          STR_PARAM,
-		&fr_inv_timer_param},
 	{"tw_append",                 STR_PARAM|USE_FUNC_PARAM,
 		(void*)parse_tw_append },
 	{ "enable_stats",             INT_PARAM,
@@ -253,8 +271,10 @@ static param_export_t params[]={
 		&minor_branch_flag_str },
 	{ "minor_branch_flag",        INT_PARAM,
 		&minor_branch_flag },
-	{ "own_timer_proc",           INT_PARAM,
-		&own_timer_proc },
+	{ "timer_partitions",         INT_PARAM,
+		&timer_partitions },
+	{ "auto_100trying",           INT_PARAM,
+		&auto_100trying },
 	{0,0,0}
 };
 
@@ -287,6 +307,10 @@ static pv_export_t mod_items[] = {
 		 0, 0, 0, 0 },
 	{ {"bavp",         sizeof("bavp")-1},         903, pv_get_tm_branch_avp,
 		pv_set_tm_branch_avp, pv_parse_avp_name, pv_parse_index, 0, 0 },
+	{ {"T_fr_timeout", sizeof("T_fr_timeout")-1}, 904, pv_get_tm_fr_timeout,
+		pv_set_tm_fr_timeout, 0, 0, 0, 0 },
+	{ {"T_fr_inv_timeout", sizeof("T_fr_inv_timeout")-1}, 905,
+		pv_get_tm_fr_inv_timeout, pv_set_tm_fr_inv_timeout, 0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -306,9 +330,12 @@ struct module_exports tm_exports = {
 struct module_exports exports= {
 #endif
 	"tm",      /* module name*/
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,      /* exported functions */
+	NULL,      /* exported async functions */
 	params,    /* exported variables */
 	mod_stats, /* exported statistics */
 	mi_cmds,   /* exported MI functions */
@@ -326,7 +353,7 @@ struct module_exports exports= {
 static int fixup_froute(void** param, int param_no)
 {
 	int rt;
-	
+
 	rt = get_script_route_ID_by_name( (char *)*param,
 			failure_rlist, FAILURE_RT_NO);
 	if (rt==-1) {
@@ -342,7 +369,7 @@ static int fixup_froute(void** param, int param_no)
 static int fixup_rroute(void** param, int param_no)
 {
 	int rt;
-	
+
 	rt = get_script_route_ID_by_name( (char *)*param,
 		onreply_rlist, ONREPLY_RT_NO);
 	if (rt==-1) {
@@ -358,7 +385,7 @@ static int fixup_rroute(void** param, int param_no)
 static int fixup_broute(void** param, int param_no)
 {
 	int rt;
-	
+
 	rt = get_script_route_ID_by_name( (char *)*param,
 		branch_rlist, BRANCH_RT_NO);
 	if (rt==-1) {
@@ -399,7 +426,7 @@ static int fixup_t_replicate(void** param, int param_no)
 		s.s = (char*)*param;
 		s.len = strlen(s.s);
 		model = NULL;
-		
+
 		if(pv_parse_format(&s ,&model) || model==NULL) {
 			LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
 			return E_CFG;
@@ -426,7 +453,7 @@ static int fixup_phostport2proxy(void** param, int param_no)
 	str host;
 
 	if (param_no!=1) {
-		LM_CRIT("called with more than  one parameter\n");
+		LM_CRIT("called with more than one parameter\n");
 		return E_BUG;
 	}
 
@@ -573,8 +600,15 @@ static int fixup_cancel_branch(void** param, int param_no)
 	pkg_free(*param);
 	*param = (void*)(unsigned long)flags;
 	return 0;
-
 }
+
+
+static int fixup_t_new_request(void** param, int param_no)
+{
+	/* static string or pv-format for all parameters */
+	return fixup_spve(param);
+}
+
 
 
 /***************************** init functions *****************************/
@@ -584,13 +618,15 @@ int load_tm( struct tm_binds *tmb)
 
 	/* relay function */
 	tmb->t_relay = (cmd_function)w_t_relay;
+
 	/* reply functions */
 	tmb->t_reply = (treply_f)w_t_reply;
 	tmb->t_reply_with_body = t_reply_with_body;
 
 	/* transaction location/status functions */
-	tmb->t_newtran = t_newtran;
+	tmb->t_newtran = w_t_newtran;
 	tmb->t_is_local = t_is_local;
+	tmb->t_check_trans = (cmd_function)t_check_trans;
 	tmb->t_get_trans_ident = t_get_trans_ident;
 	tmb->t_lookup_ident = t_lookup_ident;
 	tmb->t_gett = get_t;
@@ -619,6 +655,19 @@ int load_tm( struct tm_binds *tmb)
 	tmb->setlocalTholder = setlocalTholder;
 	tmb->get_branch_index = get_branch_index;
 
+	/* tm context functions */
+	tmb->t_ctx_register_int = t_ctx_register_int;
+	tmb->t_ctx_register_str = t_ctx_register_str;
+	tmb->t_ctx_register_ptr = t_ctx_register_ptr;
+
+	tmb->t_ctx_put_int = t_ctx_put_int;
+	tmb->t_ctx_put_str = t_ctx_put_str;
+	tmb->t_ctx_put_ptr = t_ctx_put_ptr;
+
+	tmb->t_ctx_get_int = t_ctx_get_int;
+	tmb->t_ctx_get_str = t_ctx_get_str;
+	tmb->t_ctx_get_ptr = t_ctx_get_ptr;
+
 	return 1;
 }
 
@@ -639,7 +688,7 @@ static int do_t_cleanup( struct sip_msg *foo, void *bar)
 
 	reset_e2eack_t();
 
-	return t_unref(foo);
+	return t_unref(foo) == 0 ? SCB_DROP_MSG : SCB_RUN_ALL;
 }
 
 
@@ -651,19 +700,25 @@ static int script_init( struct sip_msg *foo, void *bar)
 	set_t(T_UNDEFINED);
 	reset_cancelled_t();
 	reset_e2eack_t();
-	/* reset the kr status */
+	fr_timeout = timer_id2timeout[FR_TIMER_LIST];
+	fr_inv_timeout = timer_id2timeout[FR_INV_TIMER_LIST];
+
+	/* reset the kill reason status */
 	reset_kr();
+
 	/* reset the static holders for T routes */
 	t_on_negative( 0 );
 	t_on_reply(0);
 	t_on_branch(0);
-	return 1;
+
+	return SCB_RUN_ALL;
 }
 
 
 static int mod_init(void)
 {
-	void *timer;
+	unsigned int timer_sets,set;
+	unsigned int roundto_init;
 
 	LM_INFO("TM - initializing...\n");
 
@@ -675,7 +730,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	fix_flag_name(&minor_branch_flag_str, minor_branch_flag);
+	fix_flag_name(minor_branch_flag_str, minor_branch_flag);
 
 	minor_branch_flag =
 		get_flag_id_by_name(FLAG_TYPE_BRANCH, minor_branch_flag_str);
@@ -703,8 +758,15 @@ static int mod_init(void)
 		return -1;
 	}
 
+	/* how many timer sets do we need to create? */
+	timer_sets = (timer_partitions<=1)?1:timer_partitions ;
+
+	/* try first allocating all the structures needed for syncing */
+	if (lock_initialize( timer_sets )==-1)
+		return -1;
+
 	/* building the hash table*/
-	if (!init_hash_table()) {
+	if (!init_hash_table( timer_sets )) {
 		LM_ERR("initializing hash_table failed\n");
 		return -1;
 	}
@@ -712,31 +774,35 @@ static int mod_init(void)
 	/* init static hidden values */
 	init_t();
 
-	if (!tm_init_timers()) {
+	if (!tm_init_timers( timer_sets ) ) {
 		LM_ERR("timer init failed\n");
 		return -1;
 	}
 
+	/* the ROUNDTO macro taken from the locking interface */
+#ifdef ROUNDTO
+	roundto_init = ROUNDTO;
+#else
+	roundto_init = sizeof(void *);
+#endif
+	while (roundto_init != 1) {
+		tm_timer_shift++;
+		roundto_init >>= 1;
+	}
+
+	LM_DBG("timer set shift is %d\n", tm_timer_shift);
+
+
 	/* register the timer functions */
-	if (own_timer_proc) {
-		timer = register_timer_process( "tm-timer", timer_routine, NULL, 1,
-					TIMER_PROC_INIT_FLAG);
-		if (timer==NULL) {
-			LM_ERR("failed to register timer\n");
+	for ( set=0 ; set<timer_sets ; set++ ) {
+		if (register_timer( "tm-timer", timer_routine,
+		(void*)(long)set, 1, TIMER_FLAG_DELAY_ON_DELAY) < 0 ) {
+			LM_ERR("failed to register timer for set %d\n",set);
 			return -1;
 		}
-		if (append_utimer_to_process( "tm-utimer", utimer_routine, 0,
-			100*1000, timer)<0) {
-			LM_ERR("failed to register utimer\n");
-			return -1;
-		}
-	} else {
-		if (register_timer( "tm-timer", timer_routine , 0, 1 )<0) {
-			LM_ERR("failed to register timer\n");
-			return -1;
-		}
-		if (register_utimer( "tm-utimer", utimer_routine , 0, 100*1000 )<0) {
-			LM_ERR("failed to register utimer\n");
+		if (register_utimer( "tm-utimer", utimer_routine,
+		(void*)(long)set, 100*1000, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+			LM_ERR("failed to register utimer for set %d\n",set);
 			return -1;
 		}
 	}
@@ -768,24 +834,29 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if ( init_avp_params( fr_timer_param, fr_inv_timer_param)<0 ){
-		LM_ERR("ERROR:tm:mod_init: failed to process timer AVPs\n");
-		return -1;
-	}
-	if(register_pv_context("request", tm_pv_context_request)< 0)
-	{
+	if(register_pv_context("request", tm_pv_context_request)< 0) {
 		LM_ERR("Failed to register pv contexts\n");
 		return -1;
 	}
 
-	if(register_pv_context("reply", tm_pv_context_reply)< 0)
-	{
+	if(register_pv_context("reply", tm_pv_context_reply)< 0) {
 		LM_ERR("Failed to register pv contexts\n");
+		return -1;
+	}
+
+	if ( parse_avp_spec( &uac_ctx_avp, &uac_ctx_avp_id)<0 ) {
+		LM_ERR("failed to register AVP name <%s>\n",uac_ctx_avp.s);
+		return -1;
+	}
+
+	if ( register_async_script_handlers( t_handle_async, t_resume_async )<0 ) {
+		LM_ERR("failed to register async handler to core \n");
 		return -1;
 	}
 
 	return 0;
 }
+
 
 static int child_init(int rank)
 {
@@ -801,7 +872,7 @@ static int child_init(int rank)
 
 
 /**************************** wrapper functions ***************************/
-static int t_check_status(struct sip_msg* msg, char *regexp, char *foo)
+static int t_check_status(struct sip_msg* msg, char *regexp)
 {
 	regmatch_t pmatch;
 	struct cell *t;
@@ -854,7 +925,7 @@ static int t_check_status(struct sip_msg* msg, char *regexp, char *foo)
 }
 
 
-inline static int t_check_trans(struct sip_msg* msg, char *foo, char *bar)
+inline static int t_check_trans(struct sip_msg* msg)
 {
 	struct cell *trans;
 
@@ -897,7 +968,7 @@ inline static int t_check_trans(struct sip_msg* msg, char *foo, char *bar)
 }
 
 
-static int t_flush_flags(struct sip_msg* msg, char *foo, char *bar)
+static int t_flush_flags(struct sip_msg* msg)
 {
 	struct cell *t;
 
@@ -915,7 +986,7 @@ static int t_flush_flags(struct sip_msg* msg, char *foo, char *bar)
 }
 
 
-inline static int t_local_replied(struct sip_msg* msg, char *type, char *bar)
+inline static int t_local_replied(struct sip_msg* msg, char *type)
 {
 	struct cell *t;
 	int branch;
@@ -969,7 +1040,7 @@ inline static int t_local_replied(struct sip_msg* msg, char *type, char *bar)
 }
 
 
-static int t_was_cancelled(struct sip_msg* msg, char *foo, char *bar)
+static int t_was_cancelled(struct sip_msg* msg)
 {
 	struct cell *t;
 
@@ -1007,7 +1078,7 @@ inline static int w_t_reply(struct sip_msg* msg, char* code, char* text)
 		case REQUEST_ROUTE:
 			t=get_t();
 			if ( t==0 || t==T_UNDEFINED ) {
-				r = t_newtran( msg );
+				r = t_newtran( msg , 0/*no full UAS cloning*/ );
 				if (r==0) {
 					/* retransmission -> break the script */
 					return 0;
@@ -1050,29 +1121,29 @@ inline static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text)
 }
 
 
-inline static int w_t_newtran( struct sip_msg* p_msg, char* foo, char* bar ) 
+inline static int w_t_newtran( struct sip_msg* p_msg)
 {
 	/* t_newtran returns 0 on error (negative value means
 	   'transaction exists' */
-	return t_newtran( p_msg );
+	return t_newtran( p_msg , 0 /*no full UAS cloning*/);
 }
 
 
-inline static int w_t_on_negative( struct sip_msg* msg, char *go_to, char *foo)
+inline static int w_t_on_negative( struct sip_msg* msg, char *go_to)
 {
 	t_on_negative( (unsigned int )(long) go_to );
 	return 1;
 }
 
 
-inline static int w_t_on_reply( struct sip_msg* msg, char *go_to, char *foo )
+inline static int w_t_on_reply( struct sip_msg* msg, char *go_to)
 {
 	t_on_reply( (unsigned int )(long) go_to );
 	return 1;
 }
 
 
-inline static int w_t_on_branch( struct sip_msg* msg, char *go_to, char *foo )
+inline static int w_t_on_branch( struct sip_msg* msg, char *go_to)
 {
 	t_on_branch( (unsigned int )(long) go_to );
 	return 1;
@@ -1124,22 +1195,27 @@ static inline int t_relay_inerr2scripterr(void)
 
 inline static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 {
+	struct proxy_l *p = NULL;
 	struct cell *t;
 	int ret;
 
 	t=get_t();
 
+	if (proxy && (p=clone_proxy((struct proxy_l*)proxy))==0) {
+		LM_ERR("failed to clone proxy, dropping packet\n");
+		return -1;
+	}
+
 	if (!t || t==T_UNDEFINED) {
 		/* no transaction yet */
 		if (route_type==FAILURE_ROUTE) {
-			LM_CRIT(" BUG - undefined transaction in failure route\n");
+			LM_CRIT("BUG - undefined transaction in failure route\n");
 			return -1;
 		}
-		ret = t_relay_to( p_msg, (struct proxy_l *)proxy, (int)(long)flags );
+		ret = t_relay_to( p_msg, p, (int)(long)flags );
 		if (ret<0) {
 			ret = t_relay_inerr2scripterr();
 		}
-		return ret?ret:1;
 	} else {
 		/* transaction already created */
 
@@ -1157,13 +1233,20 @@ inline static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 		if (((int)(long)flags)&TM_T_REPLY_reason_FLAG)
 			t->flags|=T_CANCEL_REASON_FLAG;
 
-		ret = t_forward_nonack( t, p_msg, (struct proxy_l *)proxy);
+		update_cloned_msg_from_msg( t->uas.request, p_msg);
+
+		ret = t_forward_nonack( t, p_msg, p);
 		if (ret<=0 ) {
 			LM_ERR("t_forward_nonack failed\n");
 			ret = t_relay_inerr2scripterr();
 		}
-		return ret?ret:1;
 	}
+
+	if (p) {
+		free_proxy(p);
+		pkg_free(p);
+	}
+	return ret?ret:1;
 
 route_err:
 	LM_CRIT("unsupported route type: %d\n", route_type);
@@ -1273,6 +1356,160 @@ inline static int w_t_add_hdrs(struct sip_msg* msg, char *p_val )
 
 	return 1;
 }
+
+
+inline static int w_t_new_request(struct sip_msg* msg, char *p_method,
+			char *p_ruri, char *p_from, char *p_to, char *p_body, char *p_ctx)
+{
+#define CONTENT_TYPE_HDR      "Content-Type: "
+#define CONTENT_TYPE_HDR_LEN  (sizeof(CONTENT_TYPE_HDR)-1)
+	static dlg_t dlg;
+	struct usr_avp **avp_list;
+	str ruri;
+	str method;
+	str body;
+	str headers;
+	str s;
+	int_str ctx;
+	char *p;
+
+	memset( &dlg, 0, sizeof(dlg_t));
+
+	/* evaluate the parameters */
+
+	/* method */
+	if ( fixup_get_svalue(msg, (gparam_p)p_method, &method)<0 ) {
+		LM_ERR("failed to extract METHOD param\n");
+		return -1;
+	}
+	LM_DBG("setting METHOD to <%.*s>\n", method.len, method.s);
+
+	/* ruri - next hop is the same as RURI */
+	dlg.hooks.next_hop = dlg.hooks.request_uri = &ruri;
+	if ( fixup_get_svalue(msg, (gparam_p)p_ruri, &ruri)<0 ) {
+		LM_ERR("failed to extract RURI param\n");
+		return -1;
+	}
+	LM_DBG("setting RURI to <%.*s>\n",
+		dlg.hooks.next_hop->len, dlg.hooks.next_hop->s);
+
+	/* FROM URI + display */
+	if ( fixup_get_svalue(msg, (gparam_p)p_from, &s)<0 ) {
+		LM_ERR("failed to extract FROM param\n");
+		return -1;
+	}
+	if ( (p=q_memrchr(s.s, ' ', s.len))==NULL ) {
+		/* no display, only FROM URI */
+		dlg.loc_uri = s;
+		dlg.loc_dname.s = NULL;
+		dlg.loc_dname.len = 0;
+	} else {
+		/* display + URI */
+		dlg.loc_uri.s = p+1;
+		dlg.loc_uri.len = s.s+s.len - dlg.loc_uri.s;
+		dlg.loc_dname.s = s.s;
+		dlg.loc_dname.len = p - s.s;
+	}
+	LM_DBG("setting FROM to <%.*s> + <%.*s>\n",
+		dlg.loc_dname.len, dlg.loc_dname.s,
+		dlg.loc_uri.len, dlg.loc_uri.s);
+
+	/* TO URI + display */
+	if ( fixup_get_svalue(msg, (gparam_p)p_to, &s)<0 ) {
+		LM_ERR("failed to extract TO param\n");
+		return -1;
+	}
+	if ( (p=q_memrchr(s.s, ' ', s.len))==NULL ) {
+		/* no display, only TO URI */
+		dlg.rem_uri = s;
+		dlg.rem_dname.s = NULL;
+		dlg.rem_dname.len = 0;
+	} else {
+		/* display + URI */
+		dlg.rem_uri.s = p+1;
+		dlg.rem_uri.len = s.s+s.len - dlg.rem_uri.s;
+		dlg.rem_dname.s = s.s;
+		dlg.rem_dname.len = p - s.s;
+	}
+	LM_DBG("setting TO to <%.*s> + <%.*s>\n",
+		dlg.rem_dname.len, dlg.rem_dname.s,
+		dlg.rem_uri.len, dlg.rem_uri.s);
+
+	/* BODY and Content-Type */
+	if (p_body!=NULL) {
+		if ( fixup_get_svalue(msg, (gparam_p)p_body, &body)<0 ) {
+			LM_ERR("failed to extract BODY param\n");
+			return -1;
+		}
+		if ( (p=q_memchr(body.s, ' ', body.len))==NULL ) {
+			LM_ERR("Content Type not found in the beginning of body <%.*s>\n",
+				body.len, body.s);
+			return -1;
+		}
+		/* build the Content-type header */
+		headers.len = CONTENT_TYPE_HDR_LEN + (p-body.s) + CRLF_LEN;
+		if ( (headers.s=(char*)pkg_malloc(headers.len))==NULL ) {
+			LM_ERR("failed to get pkg mem (needed %d)\n",headers.len);
+			return -1;
+		}
+		memcpy( headers.s, CONTENT_TYPE_HDR, CONTENT_TYPE_HDR_LEN);
+		memcpy( headers.s+CONTENT_TYPE_HDR_LEN, body.s, p-body.s);
+		memcpy( headers.s+CONTENT_TYPE_HDR_LEN+(p-body.s), CRLF, CRLF_LEN);
+		/* set the body */
+		body.len = body.s + body.len - (p+1);
+		body.s = p + 1;
+		LM_DBG("setting BODY to <%.*s> <%.*s>\n",
+			headers.len, headers.s,
+			body.len, body.s );
+	} else {
+		body.s = NULL;
+		body.len = 0;
+		headers.s = NULL;
+		headers.len = 0;
+	}
+
+	/* context value */
+	if (p_ctx!=NULL) {
+		if ( fixup_get_svalue(msg, (gparam_p)p_ctx, &ctx.s)<0 ) {
+			LM_ERR("failed to extract BODY param\n");
+			if (p_body) pkg_free(headers.s);
+			return -1;
+		}
+		LM_DBG("setting CTX AVP to <%.*s>\n", ctx.s.len, ctx.s.s);
+		avp_list = set_avp_list( &dlg.avps );
+		if (!add_avp( AVP_VAL_STR, uac_ctx_avp_id, ctx))
+			LM_ERR("failed to add ctx AVP, ignorring...\n");
+		set_avp_list( avp_list );
+	}
+
+	/* add cseq */
+	dlg.loc_seq.value = DEFAULT_CSEQ;
+	dlg.loc_seq.is_set = 1;
+
+	/* add callid */
+	generate_callid(&dlg.id.call_id);
+
+	/* add FROM tag */
+	generate_fromtag(&dlg.id.loc_tag, &dlg.id.call_id);
+	/* TO tag is empty as this is a initial request */
+	dlg.id.rem_tag.s = NULL;
+	dlg.id.rem_tag.len = 0;
+
+	/* do the actual sending now */
+	if ( t_uac( &method, headers.s?&headers:NULL, body.s?&body:NULL,
+	&dlg, 0, 0, 0) <= 0 ) {
+		LM_ERR("failed to send the request out\n");
+		if (headers.s) pkg_free(headers.s);
+		if (dlg.avps) destroy_avp_list(&dlg.avps);
+		return -1;
+	}
+
+	/* success -> do cleanup */
+	if (headers.s) pkg_free(headers.s);
+	return 1;
+}
+
+
 
 
 /* pseudo-variable functions */
@@ -1389,7 +1626,7 @@ struct sip_msg* tm_pv_context_reply(struct sip_msg* msg)
 	struct cell* trans = get_t();
 	int branch;
 
-	if(trans == NULL)
+	if(trans == NULL || trans == T_UNDEFINED)
 	{
 		LM_ERR("No transaction found\n");
 		return NULL;
@@ -1410,7 +1647,7 @@ struct sip_msg* tm_pv_context_request(struct sip_msg* msg)
 	struct cell* trans = get_t();
 
 	LM_DBG("in fct din tm\n");
-	if(trans == NULL)
+	if(trans == NULL || trans == T_UNDEFINED)
 	{
 		LM_ERR("No transaction found\n");
 		return NULL;
@@ -1490,7 +1727,7 @@ int pv_get_tm_branch_avp(struct sip_msg *msg, pv_param_t *param,
 			} else {
 				val->rs.s = sint2str(avp_value.n, &val->rs.len);
 			}
-			
+
 			if(p-pv_local_buf+val->rs.len+1>PV_LOCAL_BUF_SIZE) {
 				LM_ERR("local buffer length exceeded!\n");
 				pv_get_null(msg, param, val);
@@ -1668,4 +1905,118 @@ struct usr_avp** get_bavp_list(void)
 
 	/* setting the avp head */
 	return &t->uac[_tm_branch_index].user_avps;
+}
+
+int pv_get_tm_fr_timeout(struct sip_msg *msg, pv_param_t *param,
+                         pv_value_t *ret)
+{
+	struct cell *t;
+
+	if (!msg || !ret)
+		return -1;
+
+	t = get_t();
+
+	ret->flags = PV_VAL_INT;
+	ret->ri = (t && t != T_UNDEFINED) ? t->fr_timeout : fr_timeout;
+
+	return 0;
+}
+
+int pv_set_tm_fr_timeout(struct sip_msg *msg, pv_param_t *param, int op,
+                         pv_value_t *val)
+{
+	struct cell *t;
+	int timeout;
+
+	if (!msg)
+		return -1;
+
+	/* "$T_fr_timer = NULL" will set the default timeout */
+	if (!val) {
+		timeout = timer_id2timeout[FR_TIMER_LIST];
+		goto set_timeout;
+	}
+
+	if (!(val->flags & PV_VAL_INT)) {
+		LM_ERR("assigning non-int value as a timeout\n");
+		return -1;
+	}
+
+	timeout = val->ri;
+
+set_timeout:
+	t = get_t();
+	if (t && t != T_UNDEFINED)
+		t->fr_timeout = timeout;
+	else
+		fr_timeout = timeout;
+
+	return 0;
+}
+
+int pv_get_tm_fr_inv_timeout(struct sip_msg *msg,
+                             pv_param_t *param, pv_value_t *ret)
+{
+	struct cell *t;
+
+	if (!msg || !ret)
+		return -1;
+
+	t = get_t();
+
+	ret->flags = PV_VAL_INT;
+	ret->ri = (t && t != T_UNDEFINED) ? t->fr_inv_timeout : fr_inv_timeout;
+
+	return 0;
+}
+
+int pv_set_tm_fr_inv_timeout(struct sip_msg *msg, pv_param_t *param,
+                             int op, pv_value_t *val)
+{
+	struct cell *t;
+	int timeout;
+
+	if (!msg)
+		return -1;
+
+	/* "$T_fr_inv_timer = NULL" will set the default timeout */
+	if (!val) {
+		timeout = timer_id2timeout[FR_INV_TIMER_LIST];
+		goto set_timeout;
+	}
+
+	if (!(val->flags & PV_VAL_INT)) {
+		LM_ERR("assigning non-int value as a timeout\n");
+		return -1;
+	}
+
+	timeout = val->ri;
+
+set_timeout:
+	t = get_t();
+	if (t && t != T_UNDEFINED)
+		t->fr_inv_timeout = timeout;
+	else
+		fr_inv_timeout = timeout;
+
+	return 0;
+}
+
+int __set_fr_timer(modparam_t type, void* val)
+{
+	LM_WARN("\"fr_timer\" is now deprecated! Use \"fr_timeout\" instead!\n");
+
+	timer_id2timeout[FR_TIMER_LIST] = (int)(long)val;
+
+	return 1;
+}
+
+int __set_fr_inv_timer(modparam_t type, void* val)
+{
+	LM_WARN("\"fr_inv_timer\" is now deprecated! Use \"fr_inv_timeout\" instead!\n");
+
+	timer_id2timeout[FR_INV_TIMER_LIST] = (int)(long)val;
+
+	return 1;
 }

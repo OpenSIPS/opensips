@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence module - presence server implementation
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -67,35 +65,20 @@ static inline int uandd_to_uri(str user,  str domain, str *out)
 	memcpy(out->s + out->len, domain.s, domain.len);
 	out->len += domain.len;
 	out->s[out->len] = '\0';
-	
+
 	return 0;
 }
 
+/* Build an contact URI but without the "transport" param - this is to be
+ * added when a send is done, depending on the used interface.
+ */
 static inline int get_local_contact(struct socket_info *sock, str* contact)
 {
 	static char buf[LCONTACT_BUF_SIZE];
-	char* proto;
-	int proto_len;
 
 	contact->s = buf;
 	contact->len= 0;
 	memset(buf, 0, LCONTACT_BUF_SIZE);
-
-	switch (sock->proto)
-	{
-		case PROTO_NONE:
-		case PROTO_UDP:
-			proto = NULL; proto_len=0; break;
-		case PROTO_TCP:
-			proto= "tcp"; proto_len=3; break;
-		case PROTO_TLS:
-			proto= "tls"; proto_len=3; break;
-		case PROTO_SCTP:
-			proto= "sctp";proto_len=4; break;
-		default:
-			LM_CRIT("unsupported %d proto\n",sock->proto);
-			return -1;
-	}
 
 	/* write "sip:ip" */
 	memcpy(contact->s+contact->len, "sip:", 4);
@@ -129,14 +112,6 @@ static inline int get_local_contact(struct socket_info *sock, str* contact)
 		*(contact->s+(contact->len++)) = ':';
 		memcpy(contact->s+contact->len, sock->port_no_str.s, sock->port_no_str.len);
 		contact->len += sock->port_no_str.len;
-	}
-
-	/* write ";transport=" if non-UDP */
-	if (proto) {
-		memcpy(contact->s+contact->len, ";transport=", 11);
-		contact->len += 11;
-		memcpy(contact->s+contact->len, proto, proto_len);
-		contact->len += proto_len;
 	}
 
 	return 0;

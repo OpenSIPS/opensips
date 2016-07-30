@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Supported parser.
  *
  * Copyright (C) 2006 Andreas Granig <agranig@linguin.org>
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -97,7 +95,7 @@ static inline int parse_supported_body(str *body, unsigned int *sup)
 				} else
 					goto default_label;
 				break;
-			
+
 			/* "eventlist" */
 			case _even_:
 				if ( pos+9 <= len && LOWER_DWORD(READ(p+4))==_tlis_ && LOWER_BYTE(*(p+8))=='t'
@@ -117,7 +115,7 @@ default_label:
 				break;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -159,7 +157,7 @@ int parse_supported( struct sip_msg *msg)
 		supported |= sb->supported;
 	}
 
-	((struct supported_body*)msg->supported->parsed)->supported_all = 
+	((struct supported_body*)msg->supported->parsed)->supported_all =
 		supported;
 	return 0;
 }

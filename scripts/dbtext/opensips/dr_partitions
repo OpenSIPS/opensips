@@ -1,0 +1,1 @@
+id(int,auto) partition_name(string) db_url(string) drd_table(string,null) drr_table(string,null) drg_table(string,null) drc_table(string,null) ruri_avp(string,null) gw_id_avp(string,null) gw_priprefix_avp(string,null) gw_sock_avp(string,null) rule_id_avp(string,null) rule_prefix_avp(string,null) carrier_id_avp(string,null) 

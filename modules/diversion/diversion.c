@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * Diversion Header Field Support
  *
  * Copyright (C) 2004 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -89,10 +87,13 @@ static param_export_t params[] = {
  * Module interface
  */
 struct module_exports exports = {
-	"diversion", 
+	"diversion",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
+	0,          /* Exported async functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
@@ -139,12 +140,12 @@ static inline int add_diversion_helper(struct sip_msg* msg, str* s)
 		msg_id = msg->id;
 		anchor = 0;
 	}
-	
+
 	if (!msg->diversion && parse_headers(msg, HDR_DIVERSION_F, 0) == -1) {
 		LM_ERR("header parsing failed\n");
 		return -1;
 	}
-	
+
 	if (msg->diversion) {
 		     /* Insert just before the topmost Diversion header */
 		ptr = msg->diversion->name.s;
@@ -154,13 +155,13 @@ static inline int add_diversion_helper(struct sip_msg* msg, str* s)
 	}
 
 	if (!anchor) {
-		anchor = anchor_lump(msg, ptr - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, ptr - msg->buf, 0);
 		if (!anchor) {
 			LM_ERR("can't get anchor\n");
 			return -2;
 		}
 	}
-	
+
 	if (!insert_new_lump_before(anchor, s->s, s->len, 0)) {
 		LM_ERR("can't insert lump\n");
 		return -3;

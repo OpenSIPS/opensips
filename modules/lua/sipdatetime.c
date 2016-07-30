@@ -1,5 +1,4 @@
 /*
- *
  * Copyright (c) 2006, 2007, 2008, 2009
  * 	     Eric Gouyer <folays@folays.net>
  * Copyright (c) 2006, 2007, 2008, 2009, 2010, 2011
@@ -21,6 +20,7 @@
 #define _XOPEN_SOURCE
 #include <stdlib.h>
 #include <string.h>
+#define __USE_MISC /* for timegm() */
 #include <time.h>
 
 #include <lua.h>

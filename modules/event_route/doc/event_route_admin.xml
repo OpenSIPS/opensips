@@ -13,7 +13,9 @@
 		(<emphasis>event_route</emphasis>) has to be declared in the script, and
 		should contain the code that handles the event. The route is executed by
 		the module when the corresponding event is raised by the &osips; Event
-		Interface.
+		Interface.Since version 1.12, the way an event is handlend (sync/async)
+		should be specified from the configuration script with the desired keyword
+		following the name of the event (<emphasis>event_route[e, sync]</emphasis>).
 	</para>
 	</section>
 
@@ -31,9 +33,9 @@
 
 		Example:
 		<programlisting format="linespecific">
-fetch_even_params("$avp(first_param)");
-fetch_even_params("ip=$avp(pike_ip)");
-fetch_even_params("source=$avp(src);destination=$avp(dst)");
+fetch_event_params("$avp(first_param)");
+fetch_event_params("ip=$avp(pike_ip)");
+fetch_event_params("source=$avp(src);destination=$avp(dst)");
 </programlisting>
 
 		If the name of the parameter is not specified, the avp will be populated
@@ -124,12 +126,7 @@ fetch_even_params("source=$avp(src);destination=$avp(dst)");
 
 	<section>
 	<title>Exported Parameters</title>
-	<section>
-		<para>
-		No parameter exported by this module.
-			This module doesn't export any parameter
-		</para>
-	</section>
+	<para>The module does not export parameters to be used in configuration script.</para>
 	</section>
 
 	<section>
@@ -153,9 +150,9 @@ fetch_even_params("source=$avp(src);destination=$avp(dst)");
 		<title><function>fetch_event_params</function> usage</title>
 		<programlisting format="linespecific">
 ...
-fetch_even_params("$avp(first_param)"); # fetch the first parameter of an event
-fetch_even_params("ip=$avp(pike_ip)");  # fetch the ip parameter
-fetch_even_params("source=$avp(src);destination=$avp(dst)"); # fetch the source and destination parameters
+fetch_event_params("$avp(first_param)"); # fetch the first parameter of an event
+fetch_event_params("ip=$avp(pike_ip)");  # fetch the ip parameter
+fetch_event_params("source=$avp(src);destination=$avp(dst)"); # fetch the source and destination parameters
 ...
 </programlisting>
 		</example>

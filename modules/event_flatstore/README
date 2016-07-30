@@ -1,0 +1,140 @@
+event_flatstore Module
+
+Ionel Cerghit
+
+   OpenSIPS Solutions
+
+Marius Cristian Eseanu
+
+   OpenSIPS Solutions
+
+Robert-Vladut Patrascu
+
+   OpenSIPS Solutions
+
+   Copyright © 2015 www.opensips-solutions.com
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Flatstore socket syntax
+        1.3. Dependencies
+
+              1.3.1. OpenSIPS Modules
+
+        1.4. External Libraries or Applications
+        1.5. Exported Parameters
+
+              1.5.1. max_open_sockets (integer)
+              1.5.2. delimiter (string)
+              1.5.3. file_permissions (string)
+
+        1.6. Exported Functions
+        1.7. Exported MI Functions
+
+              1.7.1. evi_flat_rotate
+
+   List of Examples
+
+   1.1. Set max_open_sockets parameter
+   1.2. Set delimiter parameter
+   1.3. Set file_permissions parameter
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   The event_flatstore module provides a logging facility for
+   different events, triggered through the OpenSIPS Event
+   Interface, directly from the OpenSIPS script. The module logs
+   the events along with their parameters in plain text files.
+
+1.2. Flatstore socket syntax
+
+   flatstore:path_to_file
+
+   Meanings:
+     * flatstore: - informs the Event Interface that the events
+       sent to this subscriber should be handled by the
+       event_flatstore module.
+     * path_to_file - path to the file where the logged events
+       will be appended to. The file will be created if it does
+       not exist. It must be a valid path and not a directory.
+
+1.3. Dependencies
+
+1.3.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * No dependencies on other OpenSIPS modules.
+
+1.4. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * none
+
+1.5. Exported Parameters
+
+1.5.1. max_open_sockets (integer)
+
+   Defines the maximum number of simultaneously opened files by
+   the module. If the maximum limit is reached, an error message
+   will be thrown, and further subscriptions will only be possible
+   after at least one of the current subscriptions will expire.
+
+   Default value is “100”.
+
+   Example 1.1. Set max_open_sockets parameter
+...
+modparam("event_flatstore", "max_open_sockets", 200)
+...
+
+1.5.2. delimiter (string)
+
+   Sets the separator between the parameters of the event in the
+   logging file.
+
+   Default value is “,”.
+
+   Example 1.2. Set delimiter parameter
+...
+modparam("event_flatstore", "delimiter", ";")
+...
+
+1.5.3. file_permissions (string)
+
+   Sets the permissions for the newly created logs. It expects a
+   string representation of a octal value.
+
+   Default value is “644”.
+
+   Example 1.3. Set file_permissions parameter
+...
+modparam("event_flatstore", "file_permissions", "664")
+...
+
+1.6. Exported Functions
+
+   No exported functions to be used in the configuration file.
+
+1.7. Exported MI Functions
+
+1.7.1.  evi_flat_rotate
+
+   It makes the processes reopen the file specified as a parameter
+   to the command in order to be compatible with a logrotate
+   command. If the function is not called after the mv command is
+   executed, the module will continue to write in the renamed
+   file.
+
+   Name: evi_flat_rotate
+
+   Parameters: path_to_file
+
+   MI FIFO Command Format:
+                :evi_flat_rotate:_path_to_log_file_
+                _empty_line_

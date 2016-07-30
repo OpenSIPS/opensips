@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * DBText library
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,14 +15,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
  * History:
  * --------
  * 2003-01-30 created by Daniel
- * 
+ *
  */
 
 
@@ -62,7 +60,7 @@ typedef struct _dbt_row
 	dbt_val_p fields;
 	struct _dbt_row *prev;
 	struct _dbt_row *next;
-	
+
 } dbt_row_t, *dbt_row_p;
 
 typedef struct _dbt_column
@@ -72,7 +70,7 @@ typedef struct _dbt_column
 	int flag;
 	struct _dbt_column *prev;
 	struct _dbt_column *next;
-	
+
 } dbt_column_t, *dbt_column_p;
 
 
@@ -101,7 +99,7 @@ typedef struct _dbt_tbl_cachel
 	dbt_table_p dtp;
 } dbt_tbl_cachel_t, *dbt_tbl_cachel_p;
 
-typedef struct _dbt_cache 
+typedef struct _dbt_cache
 {
 	str name;
 	int flags;
@@ -113,6 +111,7 @@ typedef struct _dbt_cache
 int dbt_init_cache();
 int dbt_cache_destroy();
 int dbt_cache_print(int);
+int dbt_cache_reload(const str *dbname, const str *name);
 
 dbt_cache_p dbt_cache_get_db(str*);
 int dbt_cache_check_db(str*);

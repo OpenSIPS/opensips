@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * ---------
@@ -26,16 +24,18 @@
  * 2004-06-07 updated to the new DB api (andrei)
  * 2004-08-23  hash function changed to process characters as unsigned
  *             -> no negative results occur (jku)
- *   
+ *
  */
 
 /*! \file
- *  \brief USRLOC - 
+ *  \brief USRLOC -
  *  \ingroup usrloc
  */
 
-#include "udomain.h"
 #include <string.h>
+#include <inttypes.h>
+#include "udomain.h"
+#include "dlist.h"
 #include "../../parser/parse_methods.h"
 #include "../../mem/shm_mem.h"
 #include "../../dprint.h"
@@ -45,8 +45,13 @@
 #include "../../hash_func.h"
 #include "ul_mod.h"            /* usrloc module parameters */
 #include "utime.h"
+#include "ureplication.h"
 
 
+extern int max_contact_delete;
+extern db_key_t *cid_keys;
+extern db_val_t *cid_vals;
+int cid_len=0;
 
 /*! \brief
  * Create a new domain structure
@@ -62,18 +67,19 @@ int new_udomain(str* _n, int _s, udomain_t** _d)
 #ifdef STATISTICS
 	char *name;
 #endif
-	
+
 	/* Must be always in shared memory, since
 	 * the cache is accessed from timer which
 	 * lives in a separate process
 	 */
+
 	*_d = (udomain_t*)shm_malloc(sizeof(udomain_t));
 	if (!(*_d)) {
 		LM_ERR("new_udomain(): No memory left\n");
 		goto error0;
 	}
 	memset(*_d, 0, sizeof(udomain_t));
-	
+
 	(*_d)->table = (hslot_t*)shm_malloc(sizeof(hslot_t) * _s);
 	if (!(*_d)->table) {
 		LM_ERR("no memory left 2\n");
@@ -81,7 +87,7 @@ int new_udomain(str* _n, int _s, udomain_t** _d)
 	}
 
 	(*_d)->name = _n;
-	
+
 	for(i = 0; i < _s; i++) {
 		if (init_slot(*_d, &((*_d)->table[i]), i) < 0) {
 			LM_ERR("initializing hash table failed\n");
@@ -122,11 +128,26 @@ error0:
 
 static event_id_t ei_ins_id = EVI_ERROR;
 static event_id_t ei_del_id = EVI_ERROR;
+event_id_t ei_c_ins_id = EVI_ERROR;
+event_id_t ei_c_del_id = EVI_ERROR;
+event_id_t ei_c_update_id = EVI_ERROR;
 static str ei_ins_name = str_init("E_UL_AOR_INSERT");
 static str ei_del_name = str_init("E_UL_AOR_DELETE");
+static str ei_contact_ins_name = str_init("E_UL_CONTACT_INSERT");
+static str ei_contact_del_name = str_init("E_UL_CONTACT_DELETE");
+static str ei_contact_update_name = str_init("E_UL_CONTACT_UPDATE");
 static str ei_aor_name = str_init("aor");
+static str ei_c_addr_name = str_init("address");
+static str ei_c_recv_name = str_init("received");
+static str ei_callid_name = str_init("callid");
+static str ei_cseq_name = str_init("cseq");
 static evi_params_p ul_event_params;
 static evi_param_p ul_aor_param;
+static evi_params_p ul_contact_event_params;
+static evi_param_p ul_c_addr_param, ul_c_callid_param;
+static evi_param_p ul_c_aor_param;
+static evi_param_p ul_c_recv_param;
+static evi_param_p ul_c_cseq_param;
 
 /*! \brief
  * Initialize event structures
@@ -135,13 +156,31 @@ int ul_event_init(void)
 {
 	ei_ins_id = evi_publish_event(ei_ins_name);
 	if (ei_ins_id == EVI_ERROR) {
-		LM_ERR("cannot register insert event\n");
+		LM_ERR("cannot register aor insert event\n");
 		return -1;
 	}
 
 	ei_del_id = evi_publish_event(ei_del_name);
 	if (ei_del_id == EVI_ERROR) {
-		LM_ERR("cannot register delete event\n");
+		LM_ERR("cannot register aor delete event\n");
+		return -1;
+	}
+
+	ei_c_ins_id = evi_publish_event(ei_contact_ins_name);
+	if (ei_c_ins_id == EVI_ERROR) {
+		LM_ERR("cannot register contact insert event\n");
+		return -1;
+	}
+
+	ei_c_del_id = evi_publish_event(ei_contact_del_name);
+	if (ei_c_del_id == EVI_ERROR) {
+		LM_ERR("cannot register contact delete event\n");
+		return -1;
+	}
+
+	ei_c_update_id = evi_publish_event(ei_contact_update_name);
+	if (ei_c_update_id == EVI_ERROR) {
+		LM_ERR("cannot register contact delete event\n");
 		return -1;
 	}
 
@@ -154,6 +193,43 @@ int ul_event_init(void)
 	ul_aor_param = evi_param_create(ul_event_params, &ei_aor_name);
 	if (!ul_aor_param) {
 		LM_ERR("cannot create AOR parameter\n");
+		return -1;
+	}
+
+	ul_contact_event_params = pkg_malloc(sizeof(evi_params_t));
+	if (!ul_contact_event_params) {
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+	memset(ul_contact_event_params, 0, sizeof(evi_params_t));
+
+	ul_c_addr_param = evi_param_create(ul_contact_event_params, &ei_c_addr_name);
+	if (!ul_c_addr_param) {
+		LM_ERR("cannot create contact address parameter\n");
+		return -1;
+	}
+
+	ul_c_aor_param = evi_param_create(ul_contact_event_params, &ei_aor_name);
+	if (!ul_c_aor_param) {
+		LM_ERR("cannot create contact aor parameter\n");
+		return -1;
+	}
+
+	ul_c_callid_param = evi_param_create(ul_contact_event_params, &ei_callid_name);
+	if (!ul_c_callid_param) {
+		LM_ERR("cannot create callid parameter\n");
+		return -1;
+	}
+
+	ul_c_recv_param = evi_param_create(ul_contact_event_params, &ei_c_recv_name);
+	if (!ul_c_recv_param) {
+		LM_ERR("cannot create received parameter\n");
+		return -1;
+	}
+
+	ul_c_cseq_param = evi_param_create(ul_contact_event_params, &ei_cseq_name);
+	if (!ul_c_cseq_param) {
+		LM_ERR("cannot create cseq parameter\n");
 		return -1;
 	}
 
@@ -177,6 +253,42 @@ static void ul_raise_event(event_id_t _e, struct urecord* _r)
 		LM_ERR("cannot raise event\n");
 }
 
+void ul_raise_contact_event(event_id_t _e, str *addr, str *callid, str *recv,
+		str *aor, int cseq)
+{
+	if (_e == EVI_ERROR) {
+		LM_ERR("event not yet registered %d\n", _e);
+		return;
+	}
+	if (evi_param_set_str(ul_c_addr_param, addr) < 0) {
+		LM_ERR("cannot set contact address parameter\n");
+		return;
+	}
+
+	if (evi_param_set_str(ul_c_aor_param, aor) < 0) {
+		LM_ERR("cannot set contact aor parameter\n");
+		return;
+	}
+
+	if (evi_param_set_str(ul_c_callid_param, callid) < 0) {
+		LM_ERR("cannot set callid parameter\n");
+		return;
+	}
+
+	if (evi_param_set_str(ul_c_recv_param, recv) < 0) {
+		LM_ERR("cannot set received parameter\n");
+		return;
+	}
+
+	if (evi_param_set_int(ul_c_cseq_param, &cseq) < 0) {
+		LM_ERR("cannot set cseq parameter\n");
+		return;
+	}
+
+	if (evi_raise_event(_e, ul_contact_event_params) < 0)
+		LM_ERR("cannot raise event\n");
+}
+
 
 /*! \brief
  * Free all memory allocated for
@@ -185,7 +297,7 @@ static void ul_raise_event(event_id_t _e, struct urecord* _r)
 void free_udomain(udomain_t* _d)
 {
 	int i;
-	
+
 	if (_d->table) {
 		for(i = 0; i < _d->size; i++) {
 			lock_ulslot(_d, i);
@@ -197,12 +309,11 @@ void free_udomain(udomain_t* _d)
 	shm_free(_d);
 }
 
-
 /*! \brief
  * Returns a static dummy urecord for temporary usage
  */
-static inline void get_static_urecord(udomain_t* _d, str* _aor,
-														struct urecord** _r)
+static inline void
+get_static_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 {
 	static struct urecord r;
 
@@ -210,9 +321,10 @@ static inline void get_static_urecord(udomain_t* _d, str* _aor,
 	memset( &r, 0, sizeof(struct urecord) );
 	r.aor = *_aor;
 	r.domain = _d->name;
+	r.aorhash = core_hash(_aor, 0, 0)&(_d->size-1);
+
 	*_r = &r;
 }
-
 
 /*! \brief
  * Just for debugging
@@ -241,16 +353,16 @@ void print_udomain(FILE* _f, udomain_t* _d)
 			iterator_is_valid(&it);
 			iterator_next(&it) )
 			print_urecord(_f, (struct urecord *)*iterator_val(&it));
-		
+
 	}
-	
+
 	fprintf(_f, "\nMax slot: %d (%d/%d)\n", max, slot, n);
 	fprintf(_f, "\n---/Domain---\n");
 }
 
 
 /*! \brief
- * expects 14 rows (contact, expires, q, callid, cseq, flags, cflags,
+ * expects 15 rows (contact_id, contact, expires, q, callid, cseq, flags, cflags,
  *   ua, received, path, socket, methods, last_modified, instance)
  */
 static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
@@ -262,57 +374,63 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 
 	memset( &ci, 0, sizeof(ucontact_info_t));
 
-	contact->s = (char*)VAL_STRING(vals);
-	if (VAL_NULL(vals) || contact->s==0 || contact->s[0]==0) {
+	ci.contact_id = VAL_BIGINT(vals);
+	if (VAL_NULL(vals)) {
+		LM_CRIT("bad contact id\n");
+		return 0;
+	}
+
+	contact->s = (char*)VAL_STRING(vals+1);
+	if (VAL_NULL(vals+1) || contact->s==0 || contact->s[0]==0) {
 		LM_CRIT("bad contact\n");
 		return 0;
 	}
 	contact->len = strlen(contact->s);
 
-	if (VAL_NULL(vals+1)) {
+	if (VAL_NULL(vals+2)) {
 		LM_CRIT("empty expire\n");
 		return 0;
 	}
-	ci.expires = VAL_TIME(vals+1);
+	ci.expires = VAL_TIME(vals+2);
 
-	if (VAL_NULL(vals+2)) {
+	if (VAL_NULL(vals+3)) {
 		LM_CRIT("empty q\n");
 		return 0;
 	}
-	ci.q = double2q(VAL_DOUBLE(vals+2));
+	ci.q = double2q(VAL_DOUBLE(vals+3));
 
-	if (VAL_NULL(vals+4)) {
+	if (VAL_NULL(vals+5)) {
 		LM_CRIT("empty cseq_nr\n");
 		return 0;
 	}
-	ci.cseq = VAL_INT(vals+4);
+	ci.cseq = VAL_INT(vals+5);
 
-	callid.s = (char*)VAL_STRING(vals+3);
-	if (VAL_NULL(vals+3) || !callid.s || !callid.s[0]) {
+	callid.s = (char*)VAL_STRING(vals+4);
+	if (VAL_NULL(vals+4) || !callid.s || !callid.s[0]) {
 		LM_CRIT("bad callid\n");
 		return 0;
 	}
 	callid.len  = strlen(callid.s);
 	ci.callid = &callid;
 
-	if (VAL_NULL(vals+5)) {
+	if (VAL_NULL(vals+6)) {
 		LM_CRIT("empty flag\n");
 		return 0;
 	}
-	ci.flags  = VAL_BITMAP(vals+5);
+	ci.flags  = VAL_BITMAP(vals+6);
 
-	if (!VAL_NULL(vals+6)) {
-		flags.s   = (char *)VAL_STRING(vals+6);
+	if (!VAL_NULL(vals+7)) {
+		flags.s   = (char *)VAL_STRING(vals+7);
 		flags.len = strlen(flags.s);
 		LM_DBG("flag str: '%.*s'\n", flags.len, flags.s);
-	
+
 		ci.cflags = flag_list_to_bitmask(&flags, FLAG_TYPE_BRANCH, FLAG_DELIM);
-	
+
 		LM_DBG("set flags: %d\n", ci.cflags);
 	}
 
-	ua.s  = (char*)VAL_STRING(vals+7);
-	if (VAL_NULL(vals+7) || !ua.s || !ua.s[0]) {
+	ua.s  = (char*)VAL_STRING(vals+8);
+	if (VAL_NULL(vals+8) || !ua.s || !ua.s[0]) {
 		ua.s = 0;
 		ua.len = 0;
 	} else {
@@ -320,17 +438,17 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 	}
 	ci.user_agent = &ua;
 
-	received.s  = (char*)VAL_STRING(vals+8);
-	if (VAL_NULL(vals+8) || !received.s || !received.s[0]) {
+	received.s  = (char*)VAL_STRING(vals+9);
+	if (VAL_NULL(vals+9) || !received.s || !received.s[0]) {
 		received.len = 0;
 		received.s = 0;
 	} else {
 		received.len = strlen(received.s);
 	}
 	ci.received = received;
-	
-	path.s  = (char*)VAL_STRING(vals+9);
-		if (VAL_NULL(vals+9) || !path.s || !path.s[0]) {
+
+	path.s  = (char*)VAL_STRING(vals+10);
+		if (VAL_NULL(vals+10) || !path.s || !path.s[0]) {
 			path.len = 0;
 			path.s = 0;
 		} else {
@@ -339,11 +457,11 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 	ci.path= &path;
 
 	/* socket name */
-	p  = (char*)VAL_STRING(vals+10);
+	p  = (char*)VAL_STRING(vals+11);
 	if (VAL_NULL(vals+10) || p==0 || p[0]==0){
 		ci.sock = 0;
 	} else {
-		if (parse_phostport( p, strlen(p), &host.s, &host.len, 
+		if (parse_phostport( p, strlen(p), &host.s, &host.len,
 		&port, &proto)!=0) {
 			LM_ERR("bad socket <%s>\n", p);
 			return 0;
@@ -355,19 +473,19 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 	}
 
 	/* supported methods */
-	if (VAL_NULL(vals+11)) {
+	if (VAL_NULL(vals+12)) {
 		ci.methods = ALL_METHODS;
 	} else {
-		ci.methods = VAL_BITMAP(vals+11);
+		ci.methods = VAL_BITMAP(vals+12);
 	}
 
 	/* last modified time */
-	if (!VAL_NULL(vals+12)) {
-		ci.last_modified = VAL_TIME(vals+12);
+	if (!VAL_NULL(vals+13)) {
+		ci.last_modified = VAL_TIME(vals+13);
 	}
 
-	instance.s  = (char*)VAL_STRING(vals+13);
-	if (VAL_NULL(vals+13) || !instance.s || !instance.s[0]) {
+	instance.s  = (char*)VAL_STRING(vals+14);
+	if (VAL_NULL(vals+14) || !instance.s || !instance.s[0]) {
 		instance.len = 0;
 		instance.s = 0;
 	} else {
@@ -375,13 +493,13 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 	}
 	ci.instance = instance;
 
-	if (VAL_NULL(vals+14) || !attr.s) {
+	attr.s = (char*)VAL_STRING(vals+15);
+	if (VAL_NULL(vals+15) || !attr.s) {
 		attr.s = NULL;
 		attr.len = 0;
-	} else {
-		attr.s = (char*)VAL_STRING(vals+14);
+	} else
 		attr.len  = strlen(attr.s);
-	}
+
 	ci.attr = &attr;
 
 	return &ci;
@@ -392,37 +510,44 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 {
 	/* no use to try prepared statements here as this query is performed
 	   once at startup -bogdan */
+	int sl;
 	char uri[MAX_URI_SIZE];
 	ucontact_info_t *ci;
 	db_row_t *row;
-	db_key_t columns[17];
+	db_key_t columns[18];
 	db_res_t* res = NULL;
 	str user, contact;
 	char* domain;
 	int i;
 	int n;
+	int ret;
 	int no_rows = 10;
+	unsigned short aorhash, clabel;
+	unsigned int   rlabel;
+	UNUSED(n);
 
 	urecord_t* r;
 	ucontact_t* c;
 
+	/* user column first in order to check if null */
 	columns[0] = &user_col;
-	columns[1] = &contact_col;
-	columns[2] = &expires_col;
-	columns[3] = &q_col;
-	columns[4] = &callid_col;
-	columns[5] = &cseq_col;
-	columns[6] = &flags_col;
-	columns[7] = &cflags_col;
-	columns[8] = &user_agent_col;
-	columns[9] = &received_col;
-	columns[10] = &path_col;
-	columns[11] = &sock_col;
-	columns[12] = &methods_col;
-	columns[13] = &last_mod_col;
-	columns[14] = &sip_instance_col;
-	columns[15] = &attr_col;
-	columns[16] = &domain_col;
+	columns[1] = &contactid_col;
+	columns[2] = &contact_col;
+	columns[3] = &expires_col;
+	columns[4] = &q_col;
+	columns[5] = &callid_col;
+	columns[6] = &cseq_col;
+	columns[7] = &flags_col;
+	columns[8] = &cflags_col;
+	columns[9] = &user_agent_col;
+	columns[10] = &received_col;
+	columns[11] = &path_col;
+	columns[12] = &sock_col;
+	columns[13] = &methods_col;
+	columns[14] = &last_mod_col;
+	columns[15] = &sip_instance_col;
+	columns[16] = &attr_col;
+	columns[17] = &domain_col;
 
 	if (ul_dbf.use_table(_c, _d->name) < 0) {
 		LM_ERR("sql use_table failed\n");
@@ -434,20 +559,20 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 #endif
 
 	if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
-		if (ul_dbf.query(_c, 0, 0, 0, columns, 0, (use_domain)?(17):(16), 0,
+		if (ul_dbf.query(_c, 0, 0, 0, columns, 0, (use_domain)?(18):(17), 0,
 		0) < 0) {
 			LM_ERR("db_query (1) failed\n");
 			return -1;
 		}
-		no_rows = estimate_available_rows( 32+64+4+8+128+8+4+4+64
-			+32+128+16+8+8+255+32+255, 17);
+		no_rows = estimate_available_rows( 8+32+64+4+8+128+8+4+4+64
+			+32+128+16+8+8+255+32+255, 18);
 		if (no_rows==0) no_rows = 10;
 		if(ul_dbf.fetch_result(_c, &res, no_rows)<0) {
 			LM_ERR("fetching rows failed\n");
 			return -1;
 		}
 	} else {
-		if (ul_dbf.query(_c, 0, 0, 0, columns, 0, (use_domain)?(17):(16), 0,
+		if (ul_dbf.query(_c, 0, 0, 0, columns, 0, (use_domain)?(18):(17), 0,
 		&res) < 0) {
 			LM_ERR("db_query failed\n");
 			return -1;
@@ -483,8 +608,8 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 			}
 
 			if (use_domain) {
-				domain = (char*)VAL_STRING(ROW_VALUES(row) + 16);
-				if (VAL_NULL(ROW_VALUES(row)+16) || domain==0 || domain[0]==0){
+				domain = (char*)VAL_STRING(ROW_VALUES(row) + 17);
+				if (VAL_NULL(ROW_VALUES(row)+17) || domain==0 || domain[0]==0){
 					LM_CRIT("empty domain record for user %.*s...skipping\n",
 							user.len, user.s);
 					continue;
@@ -500,21 +625,65 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 				}
 			}
 
-		
+			if (unpack_indexes(ci->contact_id, &aorhash, &rlabel, &clabel)) {
+				LM_ERR("unpacking failed\n");
+				return -1;
+			}
+
 			lock_udomain(_d, &user);
-			if (get_urecord(_d, &user, &r) > 0) {
+
+			if ((ret=get_urecord(_d, &user, &r)) > 0) {
 				if (mem_insert_urecord(_d, &user, &r) < 0) {
 					LM_ERR("failed to create a record\n");
 					unlock_udomain(_d, &user);
 					goto error;
 				}
+
+				sl = r->aorhash&(_d->size-1);
+				if (_d->table[sl].next_label <= rlabel)
+					_d->table[sl].next_label = rlabel;
+				else if (_d->table[sl].next_label == 0)
+					_d->table[sl].next_label = rand();
+
+				r->label = CID_NEXT_RLABEL(_d, sl);
+				r->next_clabel = CLABEL_INC_AND_TEST(clabel);
+			} else if (ret < 0) {
+				unlock_udomain(_d, &user);
+				goto error;
+			} else {
+				if (r->next_clabel <= clabel)
+					r->next_clabel = CLABEL_INC_AND_TEST(clabel);
+			}
+
+			if ((unsigned short)r->aorhash != aorhash) {
+				LM_ERR("failed to match aorhashes for user %.*s,"
+						"db aorhash [%u] new aorhash [%u],"
+						"db contactid [%" PRIu64 "]\n",
+						user.len, user.s, aorhash,
+						(unsigned short)(r->aorhash&(_d->size-1)),
+						ci->contact_id);
+				if (ret > 0) {
+					LM_DBG("release bogus urecord\n");
+					release_urecord(r, 0);
+				}
+				unlock_udomain(_d, &user);
+				continue;
 			}
 
 			if ( (c=mem_insert_ucontact(r, &contact, ci)) == 0) {
-				LM_ERR("inserting contact failed\n");
+				LM_ERR("inserting contact failed\n"
+						"Found a bad contact with id:[%" PRIu64 "] "
+						"aor:[%.*s] contact:[%.*s] received:[%.*s]!\n"
+						"Will continue but that contact needs to be REMOVED!!\n",
+						ci->contact_id,
+						r->aor.len, r->aor.s,
+						contact.len, contact.s,
+						ci->received.len, ci->received.s);
 				unlock_udomain(_d, &user);
-				goto error1;
+				free_ucontact(c);
+				continue;
 			}
+
 
 			/* We have to do this, because insert_ucontact sets state to CS_NEW
 			 * and we have the contact in the database already */
@@ -535,13 +704,18 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 
 	ul_dbf.free_result(_c, res);
 
+	/* for each not populated slot with record label
+	 * populate it*/
+	for (sl=0; sl < _d->size; sl++) {
+		if (_d->table[sl].next_label == 0)
+			_d->table[sl].next_label = rand();
+	}
+
 #ifdef EXTRA_DEBUG
 	LM_NOTICE("load end time [%d]\n", (int)time(NULL));
 #endif
 
 	return 0;
-error1:
-	free_ucontact(c);
 error:
 	ul_dbf.free_result(_c, res);
 	return -1;
@@ -555,7 +729,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 {
 	/*static db_ps_t my_ps = NULL;*/
 	ucontact_info_t *ci;
-	db_key_t columns[15];
+	db_key_t columns[16];
 	db_key_t keys[2];
 	db_val_t vals[2];
 	db_key_t order = &q_col;
@@ -570,30 +744,31 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 	keys[0] = &user_col;
 	keys[1] = &domain_col;
 
-	columns[0] = &contact_col;
-	columns[1] = &expires_col;
-	columns[2] = &q_col;
-	columns[3] = &callid_col;
-	columns[4] = &cseq_col;
-	columns[5] = &flags_col;
-	columns[6] = &cflags_col;
-	columns[7] = &user_agent_col;
-	columns[8] = &received_col;
-	columns[9] = &path_col;
-	columns[10] = &sock_col;
-	columns[11] = &methods_col;
-	columns[12] = &last_mod_col;
-	columns[13] = &sip_instance_col;
-	columns[14] = &attr_col;
+	columns[0] = &contactid_col;
+	columns[1] = &contact_col;
+	columns[2] = &expires_col;
+	columns[3] = &q_col;
+	columns[4] = &callid_col;
+	columns[5] = &cseq_col;
+	columns[6] = &flags_col;
+	columns[7] = &cflags_col;
+	columns[8] = &user_agent_col;
+	columns[9] = &received_col;
+	columns[10] = &path_col;
+	columns[11] = &sock_col;
+	columns[12] = &methods_col;
+	columns[13] = &last_mod_col;
+	columns[14] = &sip_instance_col;
+	columns[15] = &attr_col;
 
 	if (desc_time_order)
 		order = &last_mod_col;
 
+	memset(vals, 0, sizeof vals);
+
 	vals[0].type = DB_STR;
-	vals[0].nul = 0;
 	if (use_domain) {
 		vals[1].type = DB_STR;
-		vals[1].nul = 0;
 		domain = q_memchr(_aor->s, '@', _aor->len);
 		vals[0].val.str_val.s   = _aor->s;
 		if (domain==0) {
@@ -615,14 +790,15 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 
 	/* CON_PS_REFERENCE(_c) = &my_ps; - this is still dangerous with STMT */
 
-	if (ul_dbf.query(_c, keys, 0, vals, columns, (use_domain)?2:1, 15, order,
+	if (ul_dbf.query(_c, keys, 0, vals, columns, (use_domain)?2:1, 16, order,
 				&res) < 0) {
 		LM_ERR("db_query failed\n");
 		return 0;
 	}
 
 	if (RES_ROW_N(res) == 0) {
-		LM_DBG("aor %.*s not found in table %.*s\n",_aor->len, _aor->s, _d->name->len, _d->name->s);
+		LM_DBG("aor %.*s not found in table %.*s\n",_aor->len, _aor->s,
+			_d->name->len, _d->name->s);
 		ul_dbf.free_result(_c, res);
 		return 0;
 	}
@@ -636,7 +812,8 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 					_aor->len, _aor->s, _d->name->s);
 			continue;
 		}
-		
+
+
 		if ( r==0 )
 			get_static_urecord( _d, _aor, &r);
 
@@ -671,12 +848,12 @@ int db_timer_udomain(udomain_t* _d)
 		ops[1] = "!=";
 	}
 
+	memset(vals, 0, sizeof vals);
+
 	vals[0].type = DB_DATETIME;
-	vals[0].nul = 0;
 	vals[0].val.time_val = act_time + 1;
 
 	vals[1].type = DB_DATETIME;
-	vals[1].nul = 0;
 	vals[1].val.time_val = 0;
 
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
@@ -709,7 +886,7 @@ int testdb_udomain(db_con_t* con, udomain_t* d)
 	VAL_TYPE(val) = DB_STRING;
 	VAL_NULL(val) = 0;
 	VAL_STRING(val) = "dummy_user";
-	
+
 	if (ul_dbf.query( con, key, 0, val, col, 1, 1, 0, &res) < 0) {
 		LM_ERR("failure in db_query\n");
 		return -1;
@@ -726,7 +903,7 @@ int testdb_udomain(db_con_t* con, udomain_t* d)
 int mem_insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 {
 	int sl;
-	
+
 	if (new_urecord(_d->name, _aor, _r) < 0) {
 		LM_ERR("creating urecord failed\n");
 		return -1;
@@ -767,6 +944,7 @@ int mem_timer_udomain(udomain_t* _d)
 	int i,ret=0,flush=0;
 	map_iterator_t it,prev;
 
+	cid_len = 0;
 	for(i=0; i<_d->size; i++)
 	{
 		lock_ulslot(_d, i);
@@ -792,7 +970,7 @@ int mem_timer_udomain(udomain_t* _d)
 				unlock_ulslot(_d, i);
 				return -1;
 			}
-			
+
 			if (ret)
 				flush=1;
 
@@ -803,15 +981,22 @@ int mem_timer_udomain(udomain_t* _d)
 				mem_delete_urecord(_d,ptr);
 			}
 		}
-		
+
 		unlock_ulslot(_d, i);
+	}
+
+	/* delete all the contacts left pending in the "to-be-delete" buffer */
+	if (cid_len &&
+	db_multiple_ucontact_delete(_d->name, cid_keys, cid_vals, cid_len) < 0) {
+		LM_ERR("failed to delete contacts from database\n");
+		return -1;
 	}
 
 	if (flush) {
 		LM_DBG("usrloc timer attempting to flush rows to DB\n");
 		/* flush everything to DB
 		 * so that next-time timer fires
-		 * we are sure that DB updates will be succesful */
+		 * we are sure that DB updates will be successful */
 		if (ql_flush_rows(&ul_dbf,ul_dbh,_d->ins_list) < 0)
 			LM_ERR("failed to flush rows to DB\n");
 	}
@@ -887,23 +1072,37 @@ void unlock_ulslot(udomain_t* _d, int i)
 
 /*! \brief
  * Create and insert a new record
+ * after inserting and urecord one must populate the
+ * label field outside this function
  */
-int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
+int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
+                   char is_replicated)
 {
+	int sl;
+
 	if (db_mode!=DB_ONLY) {
 		if (mem_insert_urecord(_d, _aor, _r) < 0) {
 			LM_ERR("inserting record failed\n");
 			return -1;
 		}
+		/* make sure it does not overflows 14 bits */
+		(*_r)->next_clabel = (rand()&CLABEL_MASK);
+		sl = (*_r)->aorhash&(_d->size-1);
+
+		(*_r)->label = CID_NEXT_RLABEL(_d, sl);
+
+		if (!is_replicated && ul_replicate_cluster)
+			replicate_urecord_insert(*_r);
 	} else {
 		get_static_urecord( _d, _aor, _r);
 	}
+
 	return 0;
 }
 
 
 /*! \brief
- * Obtain a urecord pointer if the urecord exists in domain
+ * obtain urecord pointer if urecord exists;
  */
 int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 {
@@ -911,12 +1110,10 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 	urecord_t* r;
 	void ** dest;
 
-
 	if (db_mode!=DB_ONLY) {
 		/* search in cache */
 		aorhash = core_hash(_aor, 0, 0);
 		sl = aorhash&(_d->size-1);
-		
 
 		dest = map_find(_d->table[sl].records, *_aor);
 
@@ -926,8 +1123,6 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 		*_r = *dest;
 
 		return 0;
-
-		
 	} else {
 		/* search in DB */
 		r = db_load_urecord( ul_dbh, _d, _aor);
@@ -940,11 +1135,11 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 	return 1;   /* Nothing found */
 }
 
-
 /*! \brief
  * Delete a urecord from domain
  */
-int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r)
+int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
+                   char is_replicated)
 {
 	struct ucontact* c, *t;
 
@@ -965,16 +1160,19 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r)
 		}
 	}
 
+	if (!is_replicated && ul_replicate_cluster)
+		replicate_urecord_delete(_r);
+
 	c = _r->contacts;
 	while(c) {
 		t = c;
 		c = c->next;
-		if (delete_ucontact(_r, t) < 0) {
+		if (delete_ucontact(_r, t, is_replicated) < 0) {
 			LM_ERR("deleting contact failed\n");
 			return -1;
 		}
 	}
-	release_urecord(_r);
+	release_urecord(_r, is_replicated);
 	return 0;
 }
 

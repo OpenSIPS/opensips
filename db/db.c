@@ -1,9 +1,7 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2007-2008 1&1 Internet AG
- * 
+ *
  * This file is part of opensips, a free SIP server.
  *
  * opensips is free software; you can redistribute it and/or modify
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
  /*
   * History:
@@ -55,6 +53,7 @@
 
 char *db_version_table = VERSION_TABLE;
 char *db_default_url = NULL;
+int   db_max_async_connections = 10;
 
 /** maximal length of a SQL URL */
 static unsigned int MAX_URL_LENGTH = 255;
@@ -144,6 +143,16 @@ int db_check_api(db_func_t* dbf, char *mname)
 	if (dbf->insert_update) {
 		dbf->cap |= DB_CAP_INSERT_UPDATE;
 	}
+
+	if (dbf->async_raw_query || dbf->async_resume || dbf->async_free_result) {
+		if (!dbf->async_raw_query || !dbf->async_resume || !dbf->async_free_result) {
+			LM_BUG("NULL async raw_query | resume | free_result in %s", mname);
+			return -1;
+		}
+
+		dbf->cap |= DB_CAP_ASYNC_RAW_QUERY;
+	}
+
 	return 0;
 error:
 	return -1;
@@ -254,24 +263,23 @@ error:
  */
 db_con_t* db_do_init(const str* url, void* (*new_connection)())
 {
-	struct db_id* id;
-	void* con;
-	db_con_t* res;
-
-	int con_size = sizeof(db_con_t) + sizeof(void *) + url->len;
-	id = 0;
-	res = 0;
+	struct db_id *id = NULL;
+	struct pool_con *con = NULL;
+	db_con_t *res = NULL;
+	int con_size = 0;
 
 	if (!url || !url->s || !new_connection) {
 		LM_ERR("invalid parameter value\n");
 		return 0;
 	}
+
+	con_size = sizeof(db_con_t) + sizeof(void *) + url->len;
 	if (url->len > MAX_URL_LENGTH)
 	{
 		LM_ERR("SQL URL too long\n");
 		return 0;
 	}
-	
+
 	/* this is the root memory for this database connection. */
 	res = (db_con_t*)pkg_malloc(con_size);
 	if (!res) {
@@ -297,15 +305,24 @@ db_con_t* db_do_init(const str* url, void* (*new_connection)())
 	if (!con) {
 		LM_DBG("connection %p not found in pool\n", id);
 		/* Not in the pool yet */
-		con = new_connection(id);
+		con = (struct pool_con *)new_connection(id);
 		if (!con) {
 			LM_ERR("could not add connection to the pool\n");
 			goto err;
 		}
-		pool_insert((struct pool_con*)con);
+		pool_insert(con);
 		LM_DBG("connection %p inserted in pool as %p\n", id,con);
 	} else {
 		LM_DBG("connection %p found in pool as %p\n", id,con);
+	}
+
+	if (!con->transfers) {
+		con->transfers = pkg_malloc(db_max_async_connections *
+										sizeof *con->transfers);
+		if (!con->transfers) {
+			LM_ERR("no more pkg\n");
+			goto err;
+		}
 	}
 
 	res->tail = (unsigned long)con;
@@ -373,10 +390,10 @@ int db_table_version(const db_func_t* dbf, db_con_t* connection, const str* tabl
 	VAL_TYPE(val) = DB_STR;
 	VAL_NULL(val) = 0;
 	VAL_STR(val) = *table;
-	
+
 	str tmp2 = str_init(VERSION_COLUMN);
 	col[0] = &tmp2;
-	
+
 	if (dbf->query(connection, key, 0, val, col, 1, 1, 0, &res) < 0) {
 		LM_ERR("error in db_query\n");
 		return -1;
@@ -411,7 +428,7 @@ int db_table_version(const db_func_t* dbf, db_con_t* connection, const str* tabl
 
 /*
  * Check the table version
- * 0 means ok, -1 means an error occured
+ * 0 means ok, -1 means an error occurred
  */
 int db_check_table_version(db_func_t* dbf, db_con_t* dbh, const str* table, const unsigned int version)
 {

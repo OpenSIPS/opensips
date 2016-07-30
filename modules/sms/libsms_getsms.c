@@ -171,7 +171,7 @@ static int fetchsms(struct modem *mdm, int sim, char* pdu)
 		position=strstr(answer,"+CMGR:");
 	}
 
-	/* keine SMS empfangen, weil Modem nicht mit +CMGR 
+	/* keine SMS empfangen, weil Modem nicht mit +CMGR
 	oder +CMGL geantwortet hat */
 	if (position==0)
 		return 0;
@@ -220,7 +220,7 @@ int check_memory(struct modem *mdm, int flag)
 	int   err,foo;
 	int   j, out;
 
-	for(out=0,j=0;!out && j<10; j++) 
+	for(out=0,j=0;!out && j<10; j++)
 	{
 		if (put_command(mdm,"AT+CPMS?\r",9,answer,sizeof(answer),50,0)
 		&& (posi=strstr(answer,"+CPMS:"))!=0 )
@@ -251,9 +251,9 @@ int check_memory(struct modem *mdm, int flag)
 				}
 			} /* if(strstr) */
 		} /* if(put_command) */
-		/* if we are here ->  some error happend */
+		/* if we are here ->  some error happened */
 		if (checkmodem(mdm)!=0) {
-			LM_WARN("something happend with the modem -> was reinit -> let's retry\n");
+			LM_WARN("something happened with the modem -> was re-init -> let's retry\n");
 		} else {
 			LM_ERR("modem seems to be ok, but we had an error? I give up!\n");
 			out = 1;
@@ -359,7 +359,7 @@ static int split_type_0( char* Pointer,struct incame_sms *sms)
 
 
 /* Subroutine for splitpdu() for messages type 2 (Staus Report)
-   Returns the length of the ascii string. In binary mode ascii 
+   Returns the length of the ascii string. In binary mode ascii
    contains the binary SMS */
 static int split_type_2( char* position, struct incame_sms *sms)
 {
@@ -520,7 +520,7 @@ int cds2sms(struct incame_sms *sms, struct modem *mdm, char *s, int s_len)
 	ptr = s;
 	for ( n=0 ; n<2 && (ptr=strstr(ptr,"\r\n")) ; n++,ptr+=2 );
 	if (n<2) {
-		LM_ERR("failed to find pdu begining in CDS!\n");
+		LM_ERR("failed to find pdu beginning in CDS!\n");
 		goto error;
 	}
 	data = ptr;

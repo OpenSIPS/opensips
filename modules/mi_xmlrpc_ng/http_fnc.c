@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2013 VoIP Embedded, Inc.
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -29,12 +27,14 @@
 
 #include "../../str.h"
 #include "../../ut.h"
+#include "../../strcommon.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../mi/mi.h"
 #include "../../config.h"
 #include "../../globals.h"
 #include "../../locking.h"
+#include "../../strcommon.h"
 
 #include "http_fnc.h"
 
@@ -46,7 +46,10 @@
 #define MI_XMLRPC_HTTP_XML_VALUE_NODE       "value"
 #define MI_XMLRPC_HTTP_XML_STRING_NODE      "string"
 
+
+
 extern str http_root;
+extern int version;
 
 mi_xmlrpc_http_page_data_t html_page_data;
 
@@ -192,31 +195,31 @@ do{	\
 		case '<':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_LT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s += (temp_holder).len + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '>':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_GT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s += (temp_holder).len + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '&':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_AMP);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s += (temp_holder).len + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '"':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_QUOT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s += (temp_holder).len + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '\'':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_SQUOT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s += (temp_holder).len + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		}	\
@@ -225,26 +228,56 @@ do{	\
 	MI_XMLRPC_HTTP_COPY(p, (temp_holder));	\
 }while(0)
 
+static int mi_xmlrpc_http_recur_write_tree(char** pointer, char *buf, int max_page_len,
+					struct mi_node *tree, int level, unsigned int flags, int flush, struct mi_node *parent, int object_flags);
+static int mi_xmlrpc_http_recur_write_node(char** pointer, char* buf, int max_page_len,
+					struct mi_node *node, int level, int dump_name, int flush);
+static int mi_xmlrpc_http_recur_write_tree_old(char** pointer, char *buf, int max_page_len,
+					struct mi_node *tree, int level);
+
+static int mi_xmlrpc_http_recur_flush_tree(char** pointer, char *buf, int max_page_len,
+					struct mi_node *tree, int level);
+static int mi_xmlrpc_http_build_content_old(str *page, int max_page_len,
+				struct mi_root* tree);
+static int mi_xmlrpc_http_write_node_old(char** pointer, char* buf, int max_page_len,
+					struct mi_node *node, int level);
 
 static const str MI_XMLRPC_HTTP_CR = str_init("\n");
-static const str MI_XMLRPC_HTTP_SLASH = str_init("/");
-static const str MI_XMLRPC_HTTP_SEMICOLON = str_init(" : ");
 
-static const str MI_XMLRPC_HTTP_NODE_INDENT = str_init("\t");
+static const str MI_XMLRPC_HTTP_NODE_INDENT = str_init("   ");
 static const str MI_XMLRPC_HTTP_NODE_SEPARATOR = str_init(":: ");
 static const str MI_XMLRPC_HTTP_ATTR_SEPARATOR = str_init(" ");
 static const str MI_XMLRPC_HTTP_ATTR_VAL_SEPARATOR = str_init("=");
 
-static const str MI_XMLRPC_HTTP_XML_START = str_init("<?xml version=\"1.0\" "
-"encoding=\"UTF-8\"?><methodResponse><params><param><value><string>\n");
-static const str MI_XMLRPC_HTTP_XML_STOP = str_init("</string></value></param>"
-"</params></methodResponse>");
+static const str MI_XMLRPC_HTTP_XML_START = str_init(MI_XMLRPC_XML_START);
+static const str MI_XMLRPC_HTTP_XML_STOP = str_init(MI_XMLRPC_XML_STOP);
+static const str MI_XMLRPC_HTTP_XML_START_VER2 = str_init(MI_XMLRPC_XML_START_VER2);
+static const str MI_XMLRPC_HTTP_XML_STOP_VER2 = str_init(MI_XMLRPC_XML_STOP_VER2);
 
 static const str MI_XMLRPC_HTTP_ESC_LT =    str_init("&lt;");   /* < */
 static const str MI_XMLRPC_HTTP_ESC_GT =    str_init("&gt;");   /* > */
 static const str MI_XMLRPC_HTTP_ESC_AMP =   str_init("&amp;");  /* & */
 static const str MI_XMLRPC_HTTP_ESC_QUOT =  str_init("&quot;"); /* " */
 static const str MI_XMLRPC_HTTP_ESC_SQUOT = str_init("&#39;");  /* ' */
+
+static const str MI_XMLRPC_HTTP_STRUCT_START = str_init("<struct>");
+static const str MI_XMLRPC_HTTP_STRUCT_END = str_init("</struct>");
+static const str MI_XMLRPC_HTTP_MEMBER_START = str_init("<member>");
+static const str MI_XMLRPC_HTTP_MEMBER_END = str_init("</member>");
+static const str MI_XMLRPC_HTTP_NAME_START = str_init("<name>");
+static const str MI_XMLRPC_HTTP_NAME_END = str_init("</name>");
+static const str MI_XMLRPC_HTTP_VALUE_START = str_init("<value>");
+static const str MI_XMLRPC_HTTP_VALUE_END = str_init("</value>");
+
+static const str MI_XMLRPC_HTTP_VALUE_DEFAULT = str_init("value");
+static const str MI_XMLRPC_HTTP_NAME_DEFAULT = str_init("name");
+static const str MI_XMLRPC_HTTP_KIDS_DEFAULT = str_init("kids");
+static const str MI_XMLRPC_HTTP_ATTRIBUTES_DEFAULT = str_init("attributes");
+
+static const str MI_XMLRPC_HTTP_ARRAY_START = str_init("<array>");
+static const str MI_XMLRPC_HTTP_ARRAY_END = str_init("</array>");
+static const str MI_XMLRPC_HTTP_DATA_START = str_init("<data>");
+static const str MI_XMLRPC_HTTP_DATA_END = str_init("</data>");
 
 
 int mi_xmlrpc_http_init_async_lock(void)
@@ -311,13 +344,10 @@ void mi_xmlrpc_http_destroy_async_lock(void)
 	}
 }
 
-
-static int mi_xmlrpc_http_recur_flush_tree(char** pointer, char *buf, int max_page_len,
-					struct mi_node *tree, int level);
-
 int mi_xmlrpc_http_flush_content(str *page, int max_page_len,
 				struct mi_root* tree);
-
+int mi_xmlrpc_http_flush_content_old(str *page, int max_page_len,
+				struct mi_root* tree);
 
 
 int mi_xmlrpc_http_flush_tree(void* param, struct mi_root *tree)
@@ -326,10 +356,23 @@ int mi_xmlrpc_http_flush_tree(void* param, struct mi_root *tree)
 		LM_CRIT("null param\n");
 		return 0;
 	}
+
 	mi_xmlrpc_http_page_data_t* html_p_data = (mi_xmlrpc_http_page_data_t*)param;
-	mi_xmlrpc_http_flush_content(&html_p_data->page,
-				html_p_data->buffer.len,
-				tree);
+
+	switch(version) {
+	case MI_XMLRPC_FORMATED_OUTPUT:
+		mi_xmlrpc_http_flush_content(&html_p_data->page,
+				html_p_data->buffer.len, tree);
+		break;
+	case MI_XMLRPC_UNFORMATED_OUTPUT:
+		mi_xmlrpc_http_flush_content_old(&html_p_data->page,
+				html_p_data->buffer.len, tree);
+		break;
+	default:
+		LM_ERR("Version param not set acordingly");
+		return -1;
+	
+	}
 	return 0;
 }
 
@@ -339,15 +382,15 @@ static void mi_xmlrpc_http_close_async(struct mi_root *mi_rpl, struct mi_handler
 	struct mi_root *shm_rpl = NULL;
 	gen_lock_t* lock;
 	mi_xmlrpc_http_async_resp_data_t *async_resp_data;
+	int x;
 
 	if (hdl==NULL) {
 		LM_CRIT("null mi handler\n");
 		return;
 	}
 
-	LM_DBG("mi_root [%p], hdl [%p], hdl->param [%p], "
-		"*hdl->param [%p] and done [%u]\n",
-		mi_rpl, hdl, hdl->param, *(struct mi_root **)hdl->param, done);
+	LM_DBG("mi_root [%p], hdl [%p], hdl->param [%p] and done [%u]\n",
+		mi_rpl, hdl, hdl->param, done);
 
 	if (!done) {
 		/* we do not pass provisional stuff (yet) */
@@ -355,26 +398,36 @@ static void mi_xmlrpc_http_close_async(struct mi_root *mi_rpl, struct mi_handler
 		return;
 	}
 
-	async_resp_data =
-		(mi_xmlrpc_http_async_resp_data_t*)((char*)hdl+sizeof(struct mi_handler));
+	async_resp_data = (mi_xmlrpc_http_async_resp_data_t*)(hdl+1);
 	lock = async_resp_data->lock;
-	lock_get(lock);
-	if (mi_rpl!=NULL && (shm_rpl=clone_mi_tree( mi_rpl, 1))!=NULL) {
-		*(struct mi_root **)hdl->param = shm_rpl;
-	} else {
+
+	if (mi_rpl==NULL || (shm_rpl=clone_mi_tree( mi_rpl, 1))==NULL) {
 		LM_WARN("Unable to process async reply [%p]\n", mi_rpl);
 		/* mark it as invalid */
-		hdl->param = NULL;
+		shm_rpl = MI_XMLRPC_ASYNC_FAILED;
 	}
-	LM_DBG("shm_rpl [%p], hdl [%p], hdl->param [%p], *hdl->param [%p]\n",
-		shm_rpl, hdl, hdl->param,
-		(hdl->param)?*(struct mi_root **)hdl->param:NULL);
+	if (mi_rpl) free_mi_tree(mi_rpl);
+
+	lock_get(lock);
+	if (hdl->param==NULL) {
+		hdl->param = shm_rpl;
+		x = 0;
+	} else {
+		x = 1;
+	}
+	LM_DBG("shm_rpl [%p], hdl [%p], hdl->param [%p]\n",
+		shm_rpl, hdl, hdl->param);
 	lock_release(lock);
 
-	if (mi_rpl) free_mi_tree(mi_rpl);
+	if (x) {
+		if (shm_rpl!=MI_XMLRPC_ASYNC_FAILED)
+			free_shm_mi_tree(shm_rpl);
+		shm_free(hdl);
+	}
 
 	return;
 }
+
 
 static inline struct mi_handler* mi_xmlrpc_http_build_async_handler(void)
 {
@@ -390,17 +443,15 @@ static inline struct mi_handler* mi_xmlrpc_http_build_async_handler(void)
 	}
 
 	memset(hdl, 0, len);
-	async_resp_data =
-		(mi_xmlrpc_http_async_resp_data_t*)((char*)hdl+sizeof(struct mi_handler));
+	async_resp_data = (mi_xmlrpc_http_async_resp_data_t*)(hdl+1);
 
 	hdl->handler_f = mi_xmlrpc_http_close_async;
-	hdl->param = (void*)&async_resp_data->tree;
+	hdl->param = NULL;
 
 	async_resp_data->lock = mi_xmlrpc_http_lock;
 
-	LM_DBG("hdl [%p], hdl->param [%p], *hdl->param [%p] mi_xmlrpc_http_lock=[%p]\n",
-		hdl, hdl->param, (hdl->param)?*(struct mi_root **)hdl->param:NULL,
-		async_resp_data->lock);
+	LM_DBG("hdl [%p], hdl->param [%p], mi_xmlrpc_http_lock=[%p]\n",
+		hdl, hdl->param, async_resp_data->lock);
 
 	return hdl;
 }
@@ -408,11 +459,12 @@ static inline struct mi_handler* mi_xmlrpc_http_build_async_handler(void)
 struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 		str *page, str *buffer, struct mi_handler **async_hdl)
 {
+	static str esc_buf = {NULL, 0};
 	struct mi_cmd *f;
 	struct mi_node *node;
-	struct mi_root *mi_cmd;
-	struct mi_root *mi_rpl;
-	struct mi_handler *hdl;
+	struct mi_root *mi_cmd = NULL;
+	struct mi_root *mi_rpl = NULL;
+	struct mi_handler *hdl = NULL;
 	str miCmd;
 	xmlDocPtr doc;
 	xmlNodePtr methodCall_node;
@@ -421,7 +473,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	xmlNodePtr param_node;
 	xmlNodePtr value_node;
 	xmlNodePtr string_node;
-	str val;
+	str val, esc_val = {NULL, 0};
 
 	//LM_DBG("arg [%p]->[%.*s]\n", arg->s, arg->len, arg->s);
 	doc = xmlParseMemory(arg->s, arg->len);
@@ -466,7 +518,6 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	} else {
 		hdl = NULL;
 	}
-	*async_hdl = hdl;
 
 	if (f->flags&MI_NO_INPUT_FLAG) {
 		mi_cmd = NULL;
@@ -479,46 +530,59 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 			}
 			params_node = mi_xmlNodeGetNodeByName(methodCall_node->children,
 									MI_XMLRPC_HTTP_XML_PARAMS_NODE);
-			if (params_node==NULL) {
-				LM_ERR("missing node %s\n", MI_XMLRPC_HTTP_XML_PARAMS_NODE);
-				goto xml_error;
-			}
-			for(param_node=params_node->children;
+			if (params_node!=NULL) {
+				for(param_node=params_node->children;
 						param_node;param_node=param_node->next){
-				if (xmlStrcasecmp(param_node->name,
-					(const xmlChar*)MI_XMLRPC_HTTP_XML_PARAM_NODE) == 0) {
-					value_node = mi_xmlNodeGetNodeByName(param_node->children,
+					if (xmlStrcasecmp(param_node->name,
+						(const xmlChar*)MI_XMLRPC_HTTP_XML_PARAM_NODE) == 0) {
+						value_node = mi_xmlNodeGetNodeByName(param_node->children,
 								MI_XMLRPC_HTTP_XML_VALUE_NODE);
-					if (value_node==NULL) {
-						LM_ERR("missing node %s\n",
-								MI_XMLRPC_HTTP_XML_VALUE_NODE);
-						goto xml_error;
-					}
-					string_node = mi_xmlNodeGetNodeByName(value_node->children,
+						if (value_node==NULL) {
+							LM_ERR("missing node %s\n",
+									MI_XMLRPC_HTTP_XML_VALUE_NODE);
+							goto xml_error;
+						}
+						string_node = mi_xmlNodeGetNodeByName(value_node->children,
 								MI_XMLRPC_HTTP_XML_STRING_NODE);
-					if (string_node==NULL) {
-						LM_ERR("missing node %s\n",
+						if (string_node==NULL) {
+							LM_ERR("missing node %s\n",
 								MI_XMLRPC_HTTP_XML_STRING_NODE);
-						goto xml_error;
-					}
-					val.s = (char*)xmlNodeGetContent(string_node);
-					if(val.s==NULL){
-						LM_ERR("No content for node [%s]\n",
+							goto xml_error;
+						}
+						val.s = (char*)xmlNodeGetContent(string_node);
+						if(val.s==NULL){
+							LM_ERR("No content for node [%s]\n",
 								string_node->name);
-						goto xml_error;
-					}
-					val.len = strlen(val.s);
-					if(val.len==0){
-						LM_ERR("Empty content for node [%s]\n",
+							goto xml_error;
+						}
+						val.len = strlen(val.s);
+						if(val.len==0){
+							LM_ERR("Empty content for node [%s]\n",
 								string_node->name);
-						goto xml_error;
-					}
-					LM_DBG("got string param [%.*s]\n", val.len, val.s);
-					node = &mi_cmd->node;
-					if(!add_mi_node_child(node,0,NULL,0,val.s,val.len)){
-						LM_ERR("cannot add the child node to the tree\n");
-						free_mi_tree(mi_cmd);
-						goto xml_error;
+							goto xml_error;
+						}
+						LM_DBG("got string param [%.*s]\n", val.len, val.s);
+
+						if (val.len > esc_buf.len) {
+							esc_buf.s = shm_realloc(esc_buf.s, val.len);
+							if (!esc_buf.s) {
+								esc_buf.len = 0;
+								free_mi_tree(mi_cmd);
+								goto xml_error;
+							}
+							esc_buf.len = val.len;
+						}
+
+						esc_val.s = esc_buf.s;
+						esc_val.len = unescape_xml(esc_val.s, val.s, val.len);
+						LM_DBG("got escaped string param [%.*s]\n", esc_val.len, esc_val.s);
+
+						node = &mi_cmd->node;
+						if(!add_mi_node_child(node,MI_DUP_VALUE,NULL,0,esc_val.s,esc_val.len)){
+							LM_ERR("cannot add the child node to the tree\n");
+							free_mi_tree(mi_cmd);
+							goto xml_error;
+						}
 					}
 				}
 			}
@@ -537,57 +601,115 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 				(mi_flush_f *)mi_xmlrpc_http_flush_tree, &html_page_data);
 	if (mi_rpl == NULL) {
 		LM_ERR("failed to process the command\n");
-		if (mi_cmd) free_mi_tree(mi_cmd);
 		goto xml_error;
-	} else if (mi_rpl != MI_ROOT_ASYNC_RPL) {
+	} else {
 		*page = html_page_data.page;
 	}
 	LM_DBG("got mi_rpl=[%p]\n",mi_rpl);
 
+	*async_hdl = hdl;
+
 	if (mi_cmd) free_mi_tree(mi_cmd);
-	if(doc)xmlFree(doc);doc=NULL;
+	if(doc) xmlFree(doc);
+	doc=NULL;
 	return mi_rpl;
 
 xml_error:
-	if(doc)xmlFree(doc);doc=NULL;
+	if (mi_cmd) free_mi_tree(mi_cmd);
+	if (hdl) shm_free(hdl);
+	*async_hdl = NULL;
+	if(doc) xmlFree(doc);
+	doc=NULL;
 	return NULL;
 }
 
 
-static inline int mi_xmlrpc_http_write_node(char** pointer, char* buf, int max_page_len,
-					struct mi_node *node, int level)
+static int mi_xmlrpc_http_recur_write_node(char** pointer, char* buf, int max_page_len,
+					struct mi_node *node, int level, int dump_name, int flush)
 {
 	struct mi_attr *attr;
 	str temp_holder;
 	int temp_counter;
 
-	/* name and value */
-	if (node->name.s!=NULL) {
-		for(;level>0;level--) {
-			MI_XMLRPC_HTTP_COPY(*pointer,
-				MI_XMLRPC_HTTP_NODE_INDENT);
+	if(dump_name){
+		MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_START);
+
+		if (node->name.s!=NULL) 
+			MI_XMLRPC_HTTP_ESC_COPY(*pointer, node->name, temp_holder, temp_counter);
+		else
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_DEFAULT);
+
+		MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_END);
+	}
+
+	MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_START);
+
+	if(!node->kids && !node->attributes){
+		if (node->value.s!=NULL) 
+			MI_XMLRPC_HTTP_ESC_COPY(*pointer, node->value, temp_holder, temp_counter);
+		else
+			MI_XMLRPC_HTTP_ESC_COPY(*pointer, node->value, temp_holder, temp_counter);
+	} else {
+		MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_START);
+
+		if (node->value.s!=NULL){
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_START);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_START);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_DEFAULT);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_START);
+			MI_XMLRPC_HTTP_ESC_COPY(*pointer, node->value, temp_holder, temp_counter);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_END);
 		}
-		MI_XMLRPC_HTTP_COPY(*pointer,
-				node->name);
-	}
-	if (node->value.s!=NULL) {
-		MI_XMLRPC_HTTP_COPY(*pointer,
-				MI_XMLRPC_HTTP_NODE_SEPARATOR);
-		MI_XMLRPC_HTTP_ESC_COPY(*pointer, node->value,
-				temp_holder, temp_counter);
-	}
-	/* attributes */
-	for(attr=node->attributes;attr!=NULL;attr=attr->next) {
-		if (attr->name.s!=NULL) {
-			MI_XMLRPC_HTTP_COPY_3(*pointer,
-					MI_XMLRPC_HTTP_ATTR_SEPARATOR,
-					attr->name,
-					MI_XMLRPC_HTTP_ATTR_VAL_SEPARATOR);
-			MI_XMLRPC_HTTP_ESC_COPY(*pointer, attr->value,
-					temp_holder, temp_counter);
+
+		if (node->attributes != NULL){
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_START);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_START);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_ATTRIBUTES_DEFAULT);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_START);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_START);
+
+			for(attr = node->attributes; attr != NULL; attr = attr->next) {
+				if (attr->name.s!=NULL) {
+					MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_START);
+					MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_START);
+					MI_XMLRPC_HTTP_ESC_COPY(*pointer, attr->name,temp_holder,temp_counter);
+					MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_END);
+					MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_START);
+
+					if (attr->value.s!=NULL) 
+						MI_XMLRPC_HTTP_ESC_COPY(*pointer, attr->value,temp_holder,temp_counter);
+					else
+						MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_DEFAULT);
+
+					MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_END);
+					MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_END);
+				} 
+			}
+
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_END);
 		}
+
+		if (node->kids != NULL) {
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_START);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_START);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_KIDS_DEFAULT);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_START);
+			mi_xmlrpc_http_recur_write_tree(pointer, buf, max_page_len, node->kids, level + 3, node->flags, flush, node, MI_XMLRPC_FULL_OBJECT);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_END);
+		}
+
+		MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_END);
 	}
-	MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_CR);
+
+	MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_END);
+
 	return 0;
 error:
 	LM_ERR("buffer 2 small: *pointer=[%p] buf=[%p] max_page_len=[%d]\n",
@@ -595,66 +717,191 @@ error:
 	return -1;
 }
 
+void flush_node (struct mi_node *parent, struct mi_node *prev) {
+	struct mi_node *freed;
 
-static int mi_xmlrpc_http_recur_flush_tree(char** pointer, char *buf, int max_page_len,
-					struct mi_node *tree, int level)
-{
-	struct mi_node *kid, *tmp;
-	int ret;
-
-	for(kid = tree->kids ; kid ; ){
-		if (!(kid->flags & MI_WRITTEN)) {
-			if (mi_xmlrpc_http_write_node(pointer, buf, max_page_len,
-							kid, level)!=0)
-				return -1;
-			kid->flags |= MI_WRITTEN;
-		}
-		if ((ret = mi_xmlrpc_http_recur_flush_tree(pointer, buf, max_page_len,
-							tree->kids, level+1))<0){
-			return -1;
-		} else if (ret > 0) {
-			return ret;
-		}
-		if (!(kid->flags & MI_NOT_COMPLETED)){
-			tmp = kid;
-			kid = kid->next;
-			tree->kids = kid;
-
-			if(!tmp->kids){
-				/* this node does not have any kids */
-				free_mi_node(tmp);
-			}
-		} else {
-			/* the node will have more kids =>
-			 * to keep the tree shape,
-			 * do not flush any other node for now */
-			return 1;
-		}
+	if(!prev){
+		freed = parent->kids;
+		parent->kids = freed->next;
+	} else {
+		freed = prev->next;
+		prev->next = prev->next->next;
 	}
-	return 0;
-}
 
+	if(!freed->kids)
+		free_mi_node(freed);
+}
 
 static int mi_xmlrpc_http_recur_write_tree(char** pointer, char *buf, int max_page_len,
-					struct mi_node *tree, int level)
+					struct mi_node *tree, int level, unsigned int flags, int flush, struct mi_node *parent, int object_flags)
 {
-	for( ; tree ; tree=tree->next ) {
-		if (!(tree->flags & MI_WRITTEN)) {
-			if (mi_xmlrpc_http_write_node(pointer, buf, max_page_len,
-									tree, level)!=0){
-				return -1;
+
+	struct mi_node *t, *prev, *next;
+	str temp_holder;
+	int temp_counter;
+
+	if (flags & MI_IS_ARRAY) {
+		LM_DBG("Treated as an array\n");
+
+		if(object_flags & MI_XMLRPC_START_OBJECT){
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_START);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_START);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_START);
+
+			if (tree && tree->name.s)
+				MI_XMLRPC_HTTP_ESC_COPY(*pointer, tree->name, temp_holder, temp_counter);
+			else
+				MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_DEFAULT);
+
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_START);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_ARRAY_START);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_DATA_START);
+		}
+
+		prev = NULL;
+		t = tree;
+		while(t) {
+			mi_xmlrpc_http_recur_write_node(pointer, buf, max_page_len,t, level + 4, 0, flush);
+			t->flags |= MI_WRITTEN;
+			if(flush && !(t->flags & MI_NOT_COMPLETED)){
+				next = t->next;
+				flush_node(parent, prev);
+				t = next;
+			} else {
+				prev = t;
+				t = t->next;
 			}
 		}
-		if (tree->kids) {
-			if (mi_xmlrpc_http_recur_write_tree(pointer, buf, max_page_len,
-						tree->kids, level+1)<0){
-				return -1;
+
+		if (object_flags & MI_XMLRPC_END_OBJECT) {
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_DATA_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_ARRAY_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_END);
+		}
+	} else {
+		LM_DBG("Treated as an hash\n");
+		if (object_flags & MI_XMLRPC_START_OBJECT) {
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_START);
+		}
+		prev = NULL;
+		t = tree;
+		while(t) {
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_START);
+			mi_xmlrpc_http_recur_write_node(pointer, buf, max_page_len,t, level + 2, 1, flush);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_END);
+
+			t->flags |= MI_WRITTEN;
+			if(flush && !(t->flags & MI_NOT_COMPLETED)){
+				next = t->next;
+				flush_node(parent, prev);
+				t = next;
+			} else{
+				prev = t;
+				t = t->next;
 			}
 		}
+		if (object_flags & MI_XMLRPC_END_OBJECT) {
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_END);
+		}
+	}
+
+	return 0;
+error:
+	LM_ERR("buffer 2 small\n");
+	return -1;
+
+}
+
+int mi_xmlrpc_http_build_content(str *page, int max_page_len,
+				struct mi_root* tree)
+{
+	char *p, *buf;
+
+	if (page->len==0) {
+		p = buf = page->s;
+		MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_START_VER2);
+		if (mi_xmlrpc_http_recur_write_tree(&p, buf, max_page_len,
+							tree->node.kids, 0, tree->node.flags, 0, NULL,MI_XMLRPC_FULL_OBJECT)<0)
+				return -1;
+		MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_STOP_VER2);
+		page->len = p - page->s;
+	} else {
+		buf = page->s;
+		p = page->s + page->len;
+		if (tree) { /* Build mi reply */
+			if (mi_xmlrpc_http_recur_write_tree(&p, buf, max_page_len,
+							tree->node.kids, 0, tree->node.flags, 0, NULL, MI_XMLRPC_END_OBJECT) < 0)
+				return -1;
+			MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_STOP_VER2);
+			page->len = p - page->s;
+		}
+	}
+
+	//LM_DBG("mesaj :\n %.*s\n", page->len, page->s);
+	return 0;
+error:
+	LM_ERR("buffer 2 small\n");
+	page->len = p - page->s;
+	return -1;
+}
+
+
+int mi_xmlrpc_http_build_page(str *page, int max_page_len,
+				struct mi_root *tree)
+{
+	switch(version) {
+	case MI_XMLRPC_FORMATED_OUTPUT:
+		if (0!=mi_xmlrpc_http_build_content(page, max_page_len, tree))
+			return -1;
+		break;
+	case MI_XMLRPC_UNFORMATED_OUTPUT:
+		if (0!=mi_xmlrpc_http_build_content_old(page, max_page_len, tree))
+			return -1;
+		break;
+	default:
+		LM_ERR("Version param not set acordingly");
+		return -1;
+	
 	}
 	return 0;
 }
 
+
+int mi_xmlrpc_http_flush_content(str *page, int max_page_len,
+				struct mi_root* tree)
+{
+	char *p, *buf;
+	if (page->len==0){
+		p = buf = page->s;
+		MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_START_VER2);
+		if (mi_xmlrpc_http_recur_write_tree(&p, buf, max_page_len,
+							tree->node.kids, 0, tree->node.flags, 1, &tree->node,MI_XMLRPC_START_OBJECT)<0)
+			return -1;
+		page->len = p - page->s;
+		return 0;
+	} else {
+		buf = page->s;
+		p = page->s + page->len;
+
+		if (tree) { /* Build mi reply */
+			if (mi_xmlrpc_http_recur_write_tree(&p, buf, max_page_len,
+								tree->node.kids, 0, tree->node.flags, 1, &tree->node, 0)<0)
+				return -1;
+			page->len = p - page->s;
+		}
+	}
+	return 0;
+error:
+	LM_ERR("buffer 2 small\n");
+	page->len = p - page->s;
+	return -1;
+}
+
+
+/* old implementations for less formatted ouput */
 
 int mi_xmlrpc_http_build_header(str *page, int max_page_len,
 				struct mi_root *tree, int flush)
@@ -678,7 +925,7 @@ int mi_xmlrpc_http_build_header(str *page, int max_page_len,
 							&tree->node, 0)<0)
 				return -1;
 		} else {
-			if (mi_xmlrpc_http_recur_write_tree(&p, buf, max_page_len,
+			if (mi_xmlrpc_http_recur_write_tree_old(&p, buf, max_page_len,
 							tree->node.kids, 0)<0)
 				return -1;
 		}
@@ -693,8 +940,7 @@ error:
 	return -1;
 }
 
-
-int mi_xmlrpc_http_build_content(str *page, int max_page_len,
+static int mi_xmlrpc_http_build_content_old(str *page, int max_page_len,
 				struct mi_root* tree)
 {
 	char *p, *buf;
@@ -707,7 +953,7 @@ int mi_xmlrpc_http_build_content(str *page, int max_page_len,
 		p = page->s + page->len;
 
 		if (tree) { /* Build mi reply */
-			if (mi_xmlrpc_http_recur_write_tree(&p, buf, max_page_len,
+			if (mi_xmlrpc_http_recur_write_tree_old(&p, buf, max_page_len,
 							tree->node.kids, 0)<0)
 				return -1;
 			page->len = p - page->s;
@@ -716,22 +962,7 @@ int mi_xmlrpc_http_build_content(str *page, int max_page_len,
 	return 0;
 }
 
-
-int mi_xmlrpc_http_build_page(str *page, int max_page_len,
-				struct mi_root *tree)
-{
-	char *p, *buf;
-
-	if (0!=mi_xmlrpc_http_build_content(page, max_page_len, tree))
-		return -1;
-	buf = page->s;
-	p = page->s + page->len;
-
-	return 0;
-}
-
-
-int mi_xmlrpc_http_flush_content(str *page, int max_page_len,
+int mi_xmlrpc_http_flush_content_old(str *page, int max_page_len,
 				struct mi_root* tree)
 {
 	char *p, *buf;
@@ -750,3 +981,115 @@ int mi_xmlrpc_http_flush_content(str *page, int max_page_len,
 	}
 	return 0;
 }
+
+static int mi_xmlrpc_http_recur_flush_tree(char** pointer, char *buf, int max_page_len,
+					struct mi_node *tree, int level)
+{
+	struct mi_node *kid, *tmp;
+	int ret;
+	LM_DBG("flushing tree");
+
+	for(kid = tree->kids ; kid ; ){
+		if (!(kid->flags & MI_WRITTEN)) {
+			if (mi_xmlrpc_http_write_node_old(pointer, buf, max_page_len,
+							kid, level)!=0)
+				return -1;
+			kid->flags |= MI_WRITTEN;
+		}
+		if ((ret = mi_xmlrpc_http_recur_flush_tree(pointer, buf, max_page_len,
+							tree->kids, level+1))<0){
+			return -1;
+		} else if (ret > 0) {
+			return ret;
+		}
+		if (!(kid->flags & MI_NOT_COMPLETED)){
+			tmp = kid;
+			kid = kid->next;
+			tree->kids = kid;
+
+			if(!tmp->kids){
+		
+				free_mi_node(tmp);
+			}
+		} else {
+		
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static int mi_xmlrpc_http_write_node_old(char** pointer, char* buf, int max_page_len,
+					struct mi_node *node, int level)
+{
+	struct mi_attr *attr;
+	str temp_holder;
+	int temp_counter;
+	int insert_node_separator;
+
+	/* name and value */
+	if (node->name.s!=NULL) {
+		for(;level>0;level--) {
+			MI_XMLRPC_HTTP_COPY(*pointer,
+				MI_XMLRPC_HTTP_NODE_INDENT);
+		}
+		MI_XMLRPC_HTTP_COPY(*pointer,
+				node->name);
+		insert_node_separator = 1;
+	} else {
+		insert_node_separator = 0;
+	}
+	if (node->value.s!=NULL) {
+		if (insert_node_separator) {
+			MI_XMLRPC_HTTP_COPY(*pointer,
+				MI_XMLRPC_HTTP_NODE_SEPARATOR);
+			insert_node_separator = 0;
+		}
+		MI_XMLRPC_HTTP_ESC_COPY(*pointer, node->value,
+				temp_holder, temp_counter);
+	}
+	/* attributes */
+	for(attr=node->attributes;attr!=NULL;attr=attr->next) {
+		if (insert_node_separator) {
+			MI_XMLRPC_HTTP_COPY(*pointer,
+				MI_XMLRPC_HTTP_NODE_SEPARATOR);
+			insert_node_separator = 0;
+		}
+		if (attr->name.s!=NULL) {
+			MI_XMLRPC_HTTP_COPY_3(*pointer,
+					MI_XMLRPC_HTTP_ATTR_SEPARATOR,
+					attr->name,
+					MI_XMLRPC_HTTP_ATTR_VAL_SEPARATOR);
+			MI_XMLRPC_HTTP_ESC_COPY(*pointer, attr->value,
+					temp_holder, temp_counter);
+		}
+	}
+	MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_CR);
+	return 0;
+error:
+	LM_ERR("buffer 2 small: *pointer=[%p] buf=[%p] max_page_len=[%d]\n",
+			*pointer, buf, max_page_len);
+	return -1;
+}
+
+static int mi_xmlrpc_http_recur_write_tree_old(char** pointer, char *buf, int max_page_len,
+					struct mi_node *tree, int level)
+{
+	for( ; tree ; tree=tree->next ) {
+		if (!(tree->flags & MI_WRITTEN)) {
+			if (mi_xmlrpc_http_write_node_old(pointer, buf, max_page_len,
+									tree, level)!=0){
+				return -1;
+			}
+		}
+		if (tree->kids) {
+			if (mi_xmlrpc_http_recur_write_tree_old(pointer, buf, max_page_len,
+						tree->kids, level+1)<0){
+				return -1;
+			}
+		}
+	}
+	return 0;
+}
+
+

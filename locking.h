@@ -1,6 +1,4 @@
 /*
- * $Id$ *
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,14 +13,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
  *  2002-12-16  created by andrei
- *  2003-02-20  s/gen_lock_t/gen_lock_t/ to avoid a type conflict 
+ *  2003-02-20  s/gen_lock_t/gen_lock_t/ to avoid a type conflict
  *               on solaris  (andrei)
  *  2003-03-05  lock set support added for FAST_LOCK & SYSV (andrei)
  *  2003-03-06  split in two: lock_ops.h & lock_alloc.h, to avoid
@@ -56,7 +54,7 @@
  * - void lock_set_release(gen_lock_set_t* s, int i)- unlocks sem i from the set
  *
  * WARNING:
- * - lock_set_init may fail for large number of sems (e.g. sysv). 
+ * - lock_set_init may fail for large number of sems (e.g. sysv).
  * - signals are not treated! (some locks are "awakened" by the signals)
  */
 

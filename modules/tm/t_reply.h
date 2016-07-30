@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -36,7 +34,7 @@ extern int onreply_avp_mode;
 /* reply processing status */
 enum rps {
 	/* something bad happened */
-	RPS_ERROR=0,	
+	RPS_ERROR=0,
 	/* transaction completed but we still accept the reply */
 	RPS_PUSHED_AFTER_COMPLETION,
 	/* reply discarded */
@@ -91,7 +89,7 @@ int t_reply_light( struct cell *trans, char* buf, unsigned int len,
 		   char *to_tag, unsigned int to_tag_len);
 #endif
 
-int t_reply_with_body( struct cell *trans, unsigned int code, 
+int t_reply_with_body( struct cell *trans, unsigned int code,
 		       str *text, str *body, str *new_header, str *to_tag );
 
 
@@ -104,12 +102,12 @@ int t_reply( struct cell *t, struct sip_msg * , unsigned int , str * );
    processing
 */
 
-int w_t_reply_with_body(struct sip_msg* msg,str* code,str *text, str *body);
+int w_t_reply_body(struct sip_msg* msg,str* code,str *text, str *body);
 
 int t_reply_unsafe( struct cell *t, struct sip_msg * , unsigned int , str * );
 
 
-enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch, 
+enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 	unsigned int msg_status, branch_bm_t *cancel_bitmap );
 
 enum rps local_reply( struct cell *t, struct sip_msg *p_msg, int branch,
@@ -127,7 +125,7 @@ typedef int (*tget_picked_f)(void);
 int t_get_picked_branch();
 
 /* set which 'reply' structure to take if only negative
-   replies arrive 
+   replies arrive
 */
 void t_on_negative( unsigned int go_to );
 unsigned int get_on_negative();

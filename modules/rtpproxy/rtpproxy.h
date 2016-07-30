@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2003-2008 Sippy Software, Inc., http://www.sippysoft.com
  *
  * This file is part of opensips, a free SIP server.
@@ -16,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * ---------
@@ -30,6 +29,7 @@
 #include "../../str.h"
 #include "../../pvar.h"
 #include "../dialog/dlg_load.h"
+#include "../../rw_locking.h"
 
 /* Handy macros */
 #define STR2IOVEC(sx, ix)       do {(ix).iov_base = (sx).s; (ix).iov_len = (sx).len;} while(0)
@@ -73,6 +73,7 @@ struct force_rtpp_args {
     int offer;
     str body;
     str callid;
+    struct rtpp_set *set;
     struct rtpp_node *node;
     str raddr;
 };
@@ -95,17 +96,20 @@ struct rtpp_notify_head {
 
 /* parameter type for set_rtp_proxy_set() */
 
-#define NH_VAL_SET_FIXED              0
+#define NH_VAL_SET_FIXED            0
 #define NH_VAL_SET_SPEC             1
+#define NH_VAL_SET_UNDEF            2
 
 typedef struct rtpp_set_param{
         int t;
         union {
                 struct rtpp_set * fixed_set;
                 pv_spec_t var_set;
+                int int_set;
         } v;
 } nh_set_param_t;
 
+extern rw_lock_t *nh_lock;
 extern str rtpp_notify_socket;
 extern int rtpp_notify_socket_un;
 extern struct dlg_binds dlg_api;
@@ -116,8 +120,9 @@ int init_rtpp_notify_list();
 void timeout_listener_process(int rank);
 
 /* Functions from nathelper */
-struct rtpp_node *select_rtpp_node(struct sip_msg *, str, int);
+struct rtpp_set *get_rtpp_set(struct sip_msg *, nh_set_param_t *);
+struct rtpp_node *select_rtpp_node(struct sip_msg *, str, struct rtpp_set *, pv_spec_p, int);
 char *send_rtpp_command(struct rtpp_node *, struct iovec *, int);
-int force_rtp_proxy_body(struct sip_msg *, struct force_rtpp_args *);
+int force_rtp_proxy_body(struct sip_msg *, struct force_rtpp_args *, pv_spec_p);
 
 #endif

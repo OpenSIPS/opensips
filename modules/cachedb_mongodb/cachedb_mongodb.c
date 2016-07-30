@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -53,6 +53,7 @@ int mongo_slave_ok=0;      /* not ok to send read requests to secondaries */
 str mongo_write_concern_str = {0,0};
 bson mongo_write_concern_b;
 mongo_write_concern mwc;
+int mongo_exec_threshold=0;
 
 int set_connection(unsigned int type, void *val)
 {
@@ -64,6 +65,7 @@ static param_export_t params[]={
 	{ "op_timeout",    INT_PARAM, &mongo_op_timeout},
 	{ "slave_ok",      INT_PARAM, &mongo_slave_ok},
 	{ "write_concern", STR_PARAM, &mongo_write_concern_str },
+	{ "exec_treshold", INT_PARAM, &mongo_exec_threshold },
 	{0,0,0}
 };
 
@@ -71,9 +73,12 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"cachedb_mongodb",					/* module name */
+	MOD_TYPE_CACHEDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	0,						/* exported functions */
+	0,						/* exported async functions */
 	params,						/* exported parameters */
 	0,							/* exported statistics */
 	0,							/* exported MI functions */
@@ -113,7 +118,7 @@ static int mod_init(void)
 	cde.cdb_func.db_delete_trans = mongo_db_delete_trans;
 	cde.cdb_func.db_update_trans = mongo_db_update_trans;
 
-	cde.cdb_func.capability = 0; 
+	cde.cdb_func.capability = 0;
 
 	if (mongo_write_concern_str.s != NULL) {
 		/* TODO - try manually building the getlasterror bson */

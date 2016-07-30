@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 kernel.org
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 /*!
@@ -29,13 +27,25 @@
 #define _ATOMIC_OPS_H_
 
 /************************* i386 & x86_64 ARCH ****************************/
-#if defined(__CPU_i386) || defined(__CPU_x86_64)
 
+#if defined(__CPU_i386) || defined(__CPU_x86_64)
 #if defined(__SMP_yes)
 	#define LOCK "lock ; "
 #else
 	#define LOCK ""
 #endif
+#endif
+
+#if defined(__CPU_i386)
+
+/*! \brief
+ * atomic_set - set atomic variable
+ * @v: pointer of type atomic_t
+ * @i: required value
+ *
+ * Atomically sets the value of @v to @i.
+ */
+#define atomic_set(v,i)		(((v)->counter) = (i))
 
 /*! \brief
  * Make sure gcc doesn't try to be clever and move things around
@@ -45,19 +55,10 @@
 typedef struct { volatile unsigned int counter; } atomic_t;
 
 /*! \brief
- * atomic_set - set atomic variable
- * @v: pointer of type atomic_t
- * @i: required value
- * 
- * Atomically sets the value of @v to @i.
- */ 
-#define atomic_set(v,i)		(((v)->counter) = (i))
-
-/*! \brief
  * atomic_add - add integer to atomic variable
  * @i: integer value to add
  * @v: pointer of type atomic_t
- * 
+ *
  * Atomically adds @i to @v.
  */
 static __inline__ void atomic_add(int i, atomic_t *v)
@@ -72,7 +73,7 @@ static __inline__ void atomic_add(int i, atomic_t *v)
  * atomic_sub - subtract the atomic variable
  * @i: integer value to subtract
  * @v: pointer of type atomic_t
- * 
+ *
  * Atomically subtracts @i from @v.
  */
 static __inline__ void atomic_sub(int i, atomic_t *v)
@@ -86,9 +87,9 @@ static __inline__ void atomic_sub(int i, atomic_t *v)
 /*! \brief
  * atomic_inc - increment atomic variable
  * @v: pointer of type atomic_t
- * 
+ *
  * Atomically increments @v by 1.
- */ 
+ */
 static __inline__ void atomic_inc(atomic_t *v)
 {
 	__asm__ __volatile__(
@@ -100,9 +101,9 @@ static __inline__ void atomic_inc(atomic_t *v)
 /*! \brief
  * atomic_dec - decrement atomic variable
  * @v: pointer of type atomic_t
- * 
+ *
  * Atomically decrements @v by 1.
- */ 
+ */
 static __inline__ void atomic_dec(atomic_t *v)
 {
 	__asm__ __volatile__(
@@ -110,9 +111,89 @@ static __inline__ void atomic_dec(atomic_t *v)
 		:"=m" (v->counter)
 		:"m" (v->counter));
 }
+
+#undef NO_ATOMIC_OPS
+
+#elif defined(__CPU_x86_64) /* __CPU_i386 */
+
+/*! \brief
+ * Make sure gcc doesn't try to be clever and move things around
+ * on us. We need to use _exactly_ the address the user gave us,
+ * not some alias that contains the same information.
+ */
+typedef struct { volatile unsigned long counter; } atomic_t;
+
+/*! \brief
+ * atomic_set - set atomic variable
+ * @v: pointer of type atomic_t
+ * @i: required value
+ *
+ * Atomically sets the value of @v to @i.
+ */
+#define atomic_set(v,i)		(((v)->counter) = (i))
+
+/*! \brief
+ * atomic_add - add integer to atomic variable
+ * @i: integer value to add
+ * @v: pointer of type atomic_t
+ *
+ * Atomically adds @i to @v.
+ */
+static __inline__ void atomic_add(unsigned long i, atomic_t *v)
+{
+	__asm__ __volatile__(
+		LOCK "addq %1,%0"
+		:"=m" (v->counter)
+		:"er" (i), "m" (v->counter));
+}
+
+/*! \brief
+ * atomic_sub - subtract the atomic variable
+ * @i: integer value to subtract
+ * @v: pointer of type atomic_t
+ *
+ * Atomically subtracts @i from @v.
+ */
+static __inline__ void atomic_sub(unsigned long i, atomic_t *v)
+{
+	__asm__ __volatile__(
+		LOCK "subq %1,%0"
+		:"=m" (v->counter)
+		:"er" (i), "m" (v->counter));
+}
+
+/*! \brief
+ * atomic_inc - increment atomic variable
+ * @v: pointer of type atomic_t
+ *
+ * Atomically increments @v by 1.
+ */
+static __inline__ void atomic_inc(atomic_t *v)
+{
+	__asm__ __volatile__(
+		LOCK "incq %0"
+		:"=m" (v->counter)
+		:"m" (v->counter));
+}
+
+/*! \brief
+ * atomic_dec - decrement atomic variable
+ * @v: pointer of type atomic_t
+ *
+ * Atomically decrements @v by 1.
+ */
+static __inline__ void atomic_dec(atomic_t *v)
+{
+	__asm__ __volatile__(
+		LOCK "decq %0"
+		:"=m" (v->counter)
+		:"m" (v->counter));
+}
+
 #undef NO_ATOMIC_OPS
 
 /************************* other ARCH ****************************/
+
 #else
 
 #define NO_ATOMIC_OPS

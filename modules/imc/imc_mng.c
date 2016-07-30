@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * imc module - instant messaging conferencing implementation
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * ---------
@@ -69,7 +67,7 @@ int imc_htable_init(void)
 			goto error;
 		}
 	}
-	
+
 	return 0;
 
 error:
@@ -91,18 +89,18 @@ int imc_htable_destroy(void)
 	imc_room_p irp = NULL, irp_temp=NULL;
 	if(_imc_htable==NULL)
 		return -1;
-	
+
 	for(i=0; i<imc_hash_size; i++)
 	{
 		lock_destroy(&_imc_htable[i].lock);
 		if(_imc_htable[i].rooms==NULL)
 			continue;
-			irp = _imc_htable[i].rooms;
-			while(irp){
-				irp_temp = irp->next;
-				imc_del_room(&irp->name, &irp->domain);
-				irp = irp_temp;
-			}
+		irp = _imc_htable[i].rooms;
+		while(irp){
+			irp_temp = irp->next;
+			imc_del_room(&irp->name, &irp->domain);
+			irp = irp_temp;
+		}
 	}
 	shm_free(_imc_htable);
 	_imc_htable = NULL;
@@ -117,7 +115,7 @@ imc_room_p imc_add_room(str* name, str* domain, int flags)
 	imc_room_p irp = NULL;
 	int size;
 	int hidx;
-	
+
 	if(name == NULL || name->s==NULL || name->len<=0
 			|| domain == NULL || domain->s==NULL || domain->len<=0)
 	{
@@ -134,7 +132,7 @@ imc_room_p imc_add_room(str* name, str* domain, int flags)
 		return NULL;
 	}
 	memset(irp, 0, size);
-	
+
 	irp->uri.len = 4 /*sip:*/ + name->len + 1 /*@*/ + domain->len;
 	irp->uri.s = (char*)(((char*)irp)+sizeof(imc_room_t));
 	memcpy(irp->uri.s, "sip:", 4);
@@ -147,14 +145,14 @@ imc_room_p imc_add_room(str* name, str* domain, int flags)
 	irp->name.s = irp->uri.s+4;
 	irp->domain.len = domain->len;
 	irp->domain.s = irp->uri.s+5+name->len;
-	
+
 	irp->flags  = flags;
 	irp->hashid = core_case_hash(&irp->name, &irp->domain, 0);
-	
+
 	hidx = imc_get_hentry(irp->hashid, imc_hash_size);
 
 	lock_get(&_imc_htable[hidx].lock);
-	
+
 	if(_imc_htable[hidx].rooms!=NULL)
 	{
 		irp->next = _imc_htable[hidx].rooms;
@@ -162,8 +160,8 @@ imc_room_p imc_add_room(str* name, str* domain, int flags)
 		_imc_htable[hidx].rooms = irp;
 	} else {
 		_imc_htable[hidx].rooms = irp;
-	}	
-	
+	}
+
 	return irp;
 }
 
@@ -173,13 +171,13 @@ imc_room_p imc_add_room(str* name, str* domain, int flags)
 int imc_release_room(imc_room_p room)
 {
 	unsigned int hidx;
-	
+
 	if(room==NULL)
 	{
 		LM_ERR("invalid parameters\n");
 		return -1;
 	}
-	
+
 	hidx = imc_get_hentry(room->hashid, imc_hash_size);
 	lock_release(&_imc_htable[hidx].lock);
 
@@ -194,16 +192,16 @@ imc_room_p imc_get_room(str* name, str* domain)
 	imc_room_p irp = NULL;
 	unsigned int hashid;
 	int hidx;
-	
+
 	if(name == NULL || name->s==NULL || name->len<=0
 			|| domain == NULL || domain->s==NULL || domain->len<=0)
 	{
 		LM_ERR("invalid parameters\n");
 		return NULL;
 	}
-	
+
 	hashid = core_case_hash(name, domain, 0);
-	
+
 	hidx = imc_get_hentry(hashid, imc_hash_size);
 
 	lock_get(&_imc_htable[hidx].lock);
@@ -235,19 +233,19 @@ int imc_del_room(str* name, str* domain)
 	imc_room_p irp = NULL;
 	imc_member_p imp=NULL, imp_temp=NULL;
 	unsigned int hashid;
-	int hidx;	
-	
+	int hidx;
+
 	if(name == NULL || name->s==NULL || name->len<=0
 			|| domain == NULL || domain->s==NULL || domain->len<=0)
 	{
 		LM_ERR("invalid parameters\n");
 		return -1;
 	}
-	
+
 	hashid = core_case_hash(name, domain, 0);
-	
+
 	hidx = imc_get_hentry(hashid, imc_hash_size);
-	
+
 	lock_get(&_imc_htable[hidx].lock);
 	irp = _imc_htable[hidx].rooms;
 	while(irp)
@@ -270,7 +268,7 @@ int imc_del_room(str* name, str* domain)
 				imp_temp = imp->next;
 				shm_free(imp);
 				imp = imp_temp;
-			}		
+			}
 
 			shm_free(irp);
 
@@ -279,7 +277,7 @@ int imc_del_room(str* name, str* domain)
 		irp = irp->next;
 	}
 
-done:	
+done:
 	lock_release(&_imc_htable[hidx].lock);
 
 	return 0;
@@ -292,14 +290,14 @@ imc_member_p imc_add_member(imc_room_p room, str* user, str* domain, int flags)
 {
 	imc_member_p imp = NULL;
 	int size;
-	
+
 	if(room==NULL || user == NULL || user->s==NULL || user->len<=0
 			|| domain == NULL || domain->s==NULL || domain->len<=0)
 	{
 		LM_ERR("invalid parameters\n");
 		return NULL;
 	}
-	
+
 	/* struct size + "sip:" + user name len + "@" + domain len + '\0' */
 	size = sizeof(imc_member_t) + (user->len+domain->len+6)*sizeof(char);
 	imp = (imc_member_p)shm_malloc(size);
@@ -309,7 +307,7 @@ imc_member_p imc_add_member(imc_room_p room, str* user, str* domain, int flags)
 		return NULL;
 	}
 	memset(imp, 0, size);
-	
+
 	imp->uri.len = 4 /*sip:*/ + user->len + 1 /*@*/ + domain->len;
 	imp->uri.s = (char*)(((char*)imp)+sizeof(imc_member_t));
 	memcpy(imp->uri.s, "sip:", 4);
@@ -317,11 +315,11 @@ imc_member_p imc_add_member(imc_room_p room, str* user, str* domain, int flags)
 	imp->uri.s[4+user->len] = '@';
 	memcpy(imp->uri.s+5+user->len, domain->s, domain->len);
 	imp->uri.s[imp->uri.len] = '\0';
-	
+
 	LM_DBG("[uri]= %.*s\n", imp->uri.len, imp->uri.s);
 	imp->user.len = user->len;
 	imp->user.s = imp->uri.s+4;
-	
+
 	LM_DBG("[user]= %.*s\n", imp->user.len, imp->user.s);
 	imp->domain.len = domain->len;
 	imp->domain.s = imp->uri.s+5+user->len;
@@ -330,7 +328,7 @@ imc_member_p imc_add_member(imc_room_p room, str* user, str* domain, int flags)
 	imp->hashid = core_case_hash(&imp->user, &imp->domain, 0);
 
 	room->nr_of_members++;
-	
+
 	if(room->members==NULL)
 		room->members = imp;
 	else {
@@ -338,7 +336,7 @@ imc_member_p imc_add_member(imc_room_p room, str* user, str* domain, int flags)
 		if((room->members)->next!=NULL)
 			((room->members)->next)->prev = imp;
 		imp->prev = room->members;
-		
+
 		room->members->next=imp;
 	}
 
@@ -359,7 +357,7 @@ imc_member_p imc_get_member(imc_room_p room, str* user, str* domain)
 		LM_ERR("invalid parameters\n");
 		return NULL;
 	}
-	
+
 	hashid = core_case_hash(user, domain, 0);
 	imp = room->members;
 	while(imp)
@@ -385,14 +383,14 @@ int imc_del_member(imc_room_p room, str* user, str* domain)
 {
 	imc_member_p imp = NULL;
 	unsigned int hashid;
-	
+
 	if(room==NULL || user == NULL || user->s==NULL || user->len<=0
 			|| domain == NULL || domain->s==NULL || domain->len<=0)
 	{
 		LM_ERR("invalid parameters\n");
 		return -1;
 	}
-	
+
 	hashid = core_case_hash(user, domain, 0);
 	imp = room->members;
 	while(imp)
@@ -414,6 +412,6 @@ int imc_del_member(imc_room_p room, str* user, str* domain)
 		}
 		imp = imp->next;
 	}
-	
+
 	return 0;
 }

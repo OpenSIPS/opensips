@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,13 +13,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
+
 #include <stdlib.h>
-#include <string.h> 
+#include <string.h>
 #include "../dprint.h"
 #include "../ut.h"
 #include "../mem/mem.h"
@@ -39,7 +37,7 @@
 int parse_diversion_header(struct sip_msg *msg)
 {
 	struct to_body* diversion_b;
-	
+
 	if (!msg->diversion && (parse_headers(msg, HDR_DIVERSION_F, 0) == -1 ||
 				!msg->diversion)) {
 		goto error;
@@ -58,7 +56,7 @@ int parse_diversion_header(struct sip_msg *msg)
 	}
 
 	/* now parse it!! */
-	parse_to(msg->diversion->body.s, 
+	parse_to(msg->diversion->body.s,
 		msg->diversion->body.s + msg->diversion->body.len + 1, diversion_b);
 	if (diversion_b->error == PARSE_ERROR) {
 		LM_ERR("bad diversion header\n");
@@ -66,7 +64,7 @@ int parse_diversion_header(struct sip_msg *msg)
 		goto error;
 	}
 	msg->diversion->parsed = diversion_b;
-	
+
 	return 0;
 error:
 	return -1;

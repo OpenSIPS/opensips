@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * simple, very fast, malloc library
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -16,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -30,18 +29,15 @@
  */
 
 
-#if !defined(f_malloc_h) && !defined(VQ_MALLOC) 
+#if !defined(f_malloc_h) && !defined(VQ_MALLOC) && !defined(QM_MALLOC) && \
+	!defined(HP_MALLOC)
 #define f_malloc_h
-
-#ifdef DBG_QM_MALLOC
-#define DBG_F_MALLOC
-#endif
 
 #include "meminfo.h"
 
 /* defs*/
 
-#ifdef DBG_F_MALLOC
+#ifdef DBG_MALLOC
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
 /* tricky, on sun in 32 bits mode long long must be 64 bits aligned
  * but long can be 32 bits aligned => malloc should return long long
@@ -51,7 +47,7 @@
 	#define ROUNDTO		sizeof(void*) /* size we round to, must be = 2^n, and
                       sizeof(fm_frag) must be multiple of ROUNDTO !*/
 #endif
-#else /* DBG_F_MALLOC */
+#else /* DBG_MALLOC */
 	#define ROUNDTO 8UL
 #endif
 #define MIN_FRAG_SIZE	ROUNDTO
@@ -72,6 +68,8 @@
  *                            ROUNDTO from bucket to bucket
  * +1 .... end -  size = 2^k, big buckets */
 
+#define FRAG_OVERHEAD	(sizeof(struct fm_frag))
+
 struct fm_frag{
 	unsigned long size;
 	union{
@@ -79,11 +77,12 @@ struct fm_frag{
 		long reserved;
 	}u;
         struct fm_frag ** prev;
-#ifdef DBG_F_MALLOC
+#ifdef DBG_MALLOC
 	const char* file;
 	const char* func;
 	unsigned long line;
 	unsigned long check;
+	char is_free;
 #endif
 };
 
@@ -93,42 +92,44 @@ struct fm_frag_lnk{
 };
 
 struct fm_block{
+	char *name; /* purpose of this memory block */
+
 	unsigned long size; /* total size */
         unsigned long large_space;
         unsigned long large_limit;
-
-#if defined(DBG_F_MALLOC) || defined(STATISTICS)
+    unsigned long fragments; /* number of fragments in use */
+#if defined(DBG_MALLOC) || defined(STATISTICS)
 	unsigned long used; /* alloc'ed size*/
 	unsigned long real_used; /* used+malloc overhead*/
 	unsigned long max_real_used;
 #endif
-	
+
 	struct fm_frag* first_frag;
 	struct fm_frag* last_frag;
-	
+
 	struct fm_frag_lnk free_hash[F_HASH_SIZE];
 };
 
 
+unsigned long frag_size(void* p);
+struct fm_block* fm_malloc_init(char* address, unsigned long size, char* name);
 
-struct fm_block* fm_malloc_init(char* address, unsigned long size);
-
-#ifdef DBG_F_MALLOC
+#ifdef DBG_MALLOC
 void* fm_malloc(struct fm_block*, unsigned long size,
 					const char* file, const char* func, unsigned int line);
 #else
 void* fm_malloc(struct fm_block*, unsigned long size);
 #endif
 
-#ifdef DBG_F_MALLOC
-void  fm_free(struct fm_block*, void* p, const char* file, const char* func, 
+#ifdef DBG_MALLOC
+void  fm_free(struct fm_block*, void* p, const char* file, const char* func,
 				unsigned int line);
 #else
 void  fm_free(struct fm_block*, void* p);
 #endif
 
-#ifdef DBG_F_MALLOC
-void*  fm_realloc(struct fm_block*, void* p, unsigned long size, 
+#ifdef DBG_MALLOC
+void*  fm_realloc(struct fm_block*, void* p, unsigned long size,
 					const char* file, const char* func, unsigned int line);
 #else
 void*  fm_realloc(struct fm_block*, void* p, unsigned long size);
@@ -161,12 +162,7 @@ static inline unsigned long fm_get_max_real_used(struct fm_block* qm)
 }
 static inline unsigned long fm_get_frags(struct fm_block* qm)
 {
-	unsigned long frags;
-	unsigned int r;
-	for(r=0,frags=0;r<F_HASH_SIZE; r++){
-		frags+=qm->free_hash[r].no;
-	}
-	return frags;
+	return qm->fragments;
 }
 #endif /*STATISTICS*/
 

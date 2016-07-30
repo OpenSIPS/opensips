@@ -1,6 +1,4 @@
 /*
- * $Id$ *
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,13 +13,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  * History:
  * --------
  *  2002-12-16  created by andrei
- *  2003-02-20  s/gen_lock_t/gen_lock_t/ to avoid a type conflict 
+ *  2003-02-20  s/gen_lock_t/gen_lock_t/ to avoid a type conflict
  *               on solaris  (andrei)
  *  2003-03-05  lock set support added for FAST_LOCK & SYSV (andrei)
  *  2003-03-06  removed *_alloc,*_dealloc & moved them to lock_alloc.h
@@ -53,7 +51,7 @@
  * - void lock_set_release(gen_lock_set_t* s, int i)- unlocks sem i from the set
  *
  * WARNING:
- * - lock_set_init may fail for large number of sems (e.g. sysv). 
+ * - lock_set_init may fail for large number of sems (e.g. sysv).
  * - signals are not treated! (some locks are "awakened" by the signals)
  *
  * \note Warning: do not include this file directly, use instead locking.h
@@ -68,19 +66,20 @@
 
 #ifdef FAST_LOCK
 
-#ifdef USE_FUTEX
-#include "futex_lock.h"
+	#ifdef USE_FUTEX
+		#include "futex_lock.h"
 
-typedef fx_lock_t gen_lock_t;
+		typedef fx_lock_t gen_lock_t;
 
-#elif defined FAST_LOCK
-#include "fastlock.h"
+	#elif defined FAST_LOCK
 
-typedef fl_lock_t gen_lock_t;
+		#include "fastlock.h"
 
-#endif
+		typedef fl_lock_t gen_lock_t;
 
-#define lock_destroy(lock) /* do nothing */ 
+	#endif
+
+#define lock_destroy(lock) /* do nothing */
 
 inline static gen_lock_t* lock_init(gen_lock_t* lock)
 {
@@ -88,15 +87,20 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 	return lock;
 }
 
-#define lock_get(lock) get_lock(lock)
 #define lock_release(lock) release_lock(lock)
+
+#ifndef DBG_LOCK
+	#define lock_get(lock) get_lock(lock)
+#else
+	#define lock_get(lock) get_lock(lock, __FILE__, __FUNCTION__, __LINE__)
+#endif
 
 #elif defined USE_PTHREAD_MUTEX
 #include <pthread.h>
 
 typedef pthread_mutex_t gen_lock_t;
 
-#define lock_destroy(lock) /* do nothing */ 
+#define lock_destroy(lock) /* do nothing */
 
 inline static gen_lock_t* lock_init(gen_lock_t* lock)
 {
@@ -104,27 +108,26 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 	else return 0;
 }
 
+
 #define lock_get(lock) pthread_mutex_lock(lock)
 #define lock_release(lock) pthread_mutex_unlock(lock)
-
-
 
 #elif defined USE_POSIX_SEM
 #include <semaphore.h>
 
 typedef sem_t gen_lock_t;
 
-#define lock_destroy(lock) /* do nothing */ 
+#define lock_destroy(lock) /* do nothing */
 
 inline static gen_lock_t* lock_init(gen_lock_t* lock)
 {
+	
 	if (sem_init(lock, 1, 1)<0) return 0;
 	return lock;
 }
 
 #define lock_get(lock) sem_wait(lock)
 #define lock_release(lock) sem_post(lock)
-
 
 #elif defined USE_SYSV_SEM
 #include <sys/ipc.h>
@@ -137,8 +140,8 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 #include "dprint.h"
 extern int uid; /* from main.c */
 
-#if ((defined(HAVE_UNION_SEMUN) || defined(__GNU_LIBRARY__) )&& !defined(_SEM_SEMUN_UNDEFINED)) 
-	
+#if ((defined(HAVE_UNION_SEMUN) || defined(__GNU_LIBRARY__) )&& !defined(_SEM_SEMUN_UNDEFINED))
+
 	/* union semun is defined by including sem.h */
 #else
 	/* according to X/OPEN we have to define it ourselves */
@@ -152,14 +155,11 @@ extern int uid; /* from main.c */
 
 typedef int gen_lock_t;
 
-
-
-
 inline static gen_lock_t* lock_init(gen_lock_t* lock)
 {
 	union semun su;
 	int euid;
-	
+
 	euid=geteuid();
 	if (uid && uid!=euid)
 		seteuid(uid); /* set euid to the cfg. requested one */
@@ -172,13 +172,15 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 		/* init error*/
 		return 0;
 	}
+
 	return lock;
+
 }
 
+//TODO if is init
 inline static void lock_destroy(gen_lock_t* lock)
 {
 	union semun su;
-
 	su.val = 0;
 	semctl(*lock, 0, IPC_RMID, su);
 }
@@ -190,7 +192,7 @@ inline static void lock_get(gen_lock_t* lock)
 
 	sop.sem_num=0;
 	sop.sem_op=-1; /* down */
-	sop.sem_flg=0; 
+	sop.sem_flg=0;
 tryagain:
 	if (semop(*lock, &sop, 1)==-1){
 		if (errno==EINTR){
@@ -200,16 +202,18 @@ tryagain:
 			LM_CRIT("%s (%d)\n", strerror(errno), errno);
 		}
 	}
+
 }
 
 inline static void lock_release(gen_lock_t* lock)
 {
 	struct sembuf sop;
-	
+
 	sop.sem_num=0;
 	sop.sem_op=1; /* up */
-	sop.sem_flg=0; 
+	sop.sem_flg=0;
 tryagain:
+
 	if (semop(*lock, &sop, 1)==-1){
 		if (errno==EINTR){
 			/* very improbable*/
@@ -282,7 +286,7 @@ inline static gen_lock_set_t* lock_set_init(gen_lock_set_t* s)
 	su.val=1;
 	for (r=0; r<s->size; r++){
 		if (semctl(s->semid, r, SETVAL, su)==-1){
-			LM_CRIT("semctl failed on sem %d: %s\n", 
+			LM_CRIT("semctl failed on sem %d: %s\n",
 				r, strerror(errno));
 			su.val = 0;
 			semctl(s->semid, 0, IPC_RMID, su);
@@ -333,8 +337,9 @@ tryagain:
 			LM_CRIT("%s (%d)\n", strerror(errno), errno);
 		}
 	}
+
 }
-#else 
+#else
 #error "no lock set method selected"
 #endif
 

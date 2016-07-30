@@ -1,6 +1,4 @@
-/* 
- * $Id$
- * 
+/*
  * Copyright (c) 2006 SOMA Networks, Inc. <http://www.somanetworks.com/>
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -32,17 +30,17 @@
 #include "../mem/mem.h"
 
 
-inline int/*bool*/  is_space( char c ) { return (c == ' ' || c == '\t'); }
-inline int/*bool*/  is_num( char c ) { return (c >= '0' && c <= '9'); }
+static inline int/*bool*/  is_space( char c ) { return (c == ' ' || c == '\t'); }
+static inline int/*bool*/  is_num( char c ) { return (c >= '0' && c <= '9'); }
 
-inline unsigned  lower_byte( char b ) { return b | 0x20; }
-inline unsigned  lower_4bytes( unsigned d ) { return d | 0x20202020; }
-inline unsigned  lower_3bytes( unsigned d ) { return d |   0x202020; }
-inline unsigned  read_4bytes( char *val ) {
+static inline unsigned  lower_byte( char b ) { return b | 0x20; }
+static inline unsigned  lower_4bytes( unsigned d ) { return d | 0x20202020; }
+static inline unsigned  lower_3bytes( unsigned d ) { return d |   0x202020; }
+static inline unsigned  read_4bytes( char *val ) {
 	return (*(val + 0) + (*(val + 1) << 8)
 		+ (*(val + 2) << 16) + (*(val + 3) << 24));
 }
-inline unsigned  read_3bytes( char *val ) {
+static inline unsigned  read_3bytes( char *val ) {
 	return (*(val + 0) + (*(val + 1) << 8) + (*(val + 2) << 16));
 }
 
@@ -130,7 +128,7 @@ parse_session_expires_body( struct hdr_field *hf )
 							}
 						}
 						else /* not "esher=" */ {
-							/* there are no other se-params 
+							/* there are no other se-params
 							   that start with "refr" */
 							for ( ; pos < len && *p != ';'; ++pos, ++p )
 								/*skip to ';'*/;

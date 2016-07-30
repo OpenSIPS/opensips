@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -30,7 +30,7 @@
 #include "../../cachedb/cachedb.h"
 
 typedef struct cluster_nodes {
-	char ip[16];					/* ip of this cluster node */
+	char *ip;							/* ip of this cluster node */
 	short port;						/* port of this cluster node */
 	unsigned short start_slot;		/* first slot for this server */
 	unsigned short end_slot;		/* last slot for this server */
@@ -38,6 +38,12 @@ typedef struct cluster_nodes {
 	redisContext *context;			/* actual connection to this node */
 	struct cluster_nodes *next;
 } cluster_node;
+
+
+#define CACHEDB_REDIS_DEFAULT_TIMEOUT 5000
+
+extern int redis_query_tout;
+extern int redis_connnection_tout;
 
 #define REDIS_SINGLE_INSTANCE	(1<<0)
 #define REDIS_CLUSTER_INSTANCE	(1<<1)
@@ -59,6 +65,7 @@ int redis_remove(cachedb_con *con,str *attr);
 int redis_add(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 int redis_sub(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 int redis_get_counter(cachedb_con *connection,str *attr,int *val);
+int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***reply,int expected_kv_no,int *reply_no);
 
 #endif /* CACHEDBREDIS_DBASE_H */
 

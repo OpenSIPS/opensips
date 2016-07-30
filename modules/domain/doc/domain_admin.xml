@@ -108,15 +108,33 @@ modparam("domain", "domain_col", "domain_name")
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>attrs_col</varname> (string)</title>
+		<para>
+		Name of column containing attributes in domain table.
+		</para>
+		<para>
+		Default value is <quote>attrs</quote>.
+		</para>
+		<example>
+		<title>Setting attrs_col parameter</title>
+		<programlisting format="linespecific">
+modparam("domain", "attrs_col", "attributes")
+</programlisting>
+		</example>
+	</section>
 	
 	</section>
 	<section>
 	<title>Exported Functions</title>
 	<section>
-		<title><function moreinfo="none">is_from_local()</function></title>
+		<title><function moreinfo="none">is_from_local([attrs_pvar])</function></title>
 		<para>
 		Checks based on domain table if host part of From header uri is
-		one of the local domains that the proxy is responsible for
+		one of the local domains that the proxy is responsible for.
+		The argument is optional and if present it should contain a writable
+		pseudo variable that will be populated with the attributes from the
+		database.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.
@@ -129,11 +147,16 @@ if (is_from_local()) {
 	...
 };
 ...
+if (is_from_local("$var(attrs)")) {
+	xlog("Domain attributes are $var(attrs)\n");
+	...
+};
+...
 		</programlisting>
 		</example>
 	</section>
 	<section>
-		<title><function moreinfo="none">is_uri_host_local()</function></title>
+		<title><function moreinfo="none">is_uri_host_local([attrs_pvar])</function></title>
 		<para>
 		If called from route or failure route block, checks
 		based on domain table if host part of Request-URI is one
@@ -142,6 +165,9 @@ if (is_from_local()) {
 		part of URI of first branch, which thus must have been
 		appended to the transaction before is_uri_host_local()
 		is called.
+		The argument is optional and if present it should contain a writable
+		pseudo variable that will be populated with the attributes from the
+		database.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -155,11 +181,15 @@ if (is_uri_host_local()) {
 	...
 };
 ...
+if (is_uri_host_local("$var(attrs)")) {
+	xlog("Domain attributes are $var(attrs)\n");
+	...
+};
 		</programlisting>
 		</example>
 	</section>
 	<section>
-		<title><function moreinfo="none">is_domain_local(pseudo_variable)</function></title>
+		<title><function moreinfo="none">is_domain_local(pseudo_variable [, attrs_pvar])</function></title>
 		<para>
 		This function checks if the domain contained in the
 		pseudo_variable is local.
@@ -179,6 +209,11 @@ if (is_uri_host_local()) {
 			is_domain_local("$fd") is same as is_from_local()
 		</para></listitem>
 		</itemizedlist>
+		<para>
+		The second argument is optional and if present it should contain a writable
+		pseudo variable that will be populated with the attributes from the
+		database.
+		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		BRANCH_ROUTE.
@@ -200,6 +235,10 @@ if (is_domain_local("$avp(850)")) {
 	...
 };
 if (is_domain_local("$avp(some_avp)")) {
+	...
+};
+if (is_domain_local("$avp(some_avp)", "$avp(attrs)")) {
+	xlog("Domain attributes are $avp(attrs)\n");
 	...
 };
 ...

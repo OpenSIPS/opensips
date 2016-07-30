@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -13,7 +11,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *  Jabber
  *  Copyright (C) 1998-1999 The Jabber Team http://jabber.org/
@@ -34,7 +32,7 @@ int xode_spool_getlen(const xode_spool s)
     if(s == NULL)
         return 0;
 
-    return s->len;    
+    return s->len;
 }
 
 void xode_spool_free(xode_spool s)

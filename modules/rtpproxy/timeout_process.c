@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2010 Voice System
  *
  * This file is part of opensips, a free SIP server.
@@ -16,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * ---------
@@ -67,17 +66,17 @@ void timeout_listener_process(int rank)
 	struct sockaddr_in6 *s_in6;
 	int connect_fd;
 	char buffer[BUF_LEN];
-	str dlg_id;
-	char* p;
+	char *p, *sp, *end, *start;
 	unsigned int h_entry, h_id;
 	str id;
 	unsigned short port;
 	struct sockaddr* saddr;
-	int len, i,n;
+	int len, i,n, left;
 	int optval = 1;
 	struct sockaddr rtpp_info;
 	struct rtpp_notify_node *rtpp_lst;
 	str terminate_reason = str_init("RTPProxy Timeout");
+	int offset = 0;
 
 	if (init_child(PROC_MODULE) != 0) {
 		LM_ERR("cannot init child process");
@@ -274,7 +273,7 @@ void timeout_listener_process(int rank)
 			nr_events--;
 
 			do
-				len = read(pfds[i].fd, buffer, BUF_LEN);
+				len = read(pfds[i].fd, buffer + offset, BUF_LEN - offset);
 			while (len == -1 && errno == EINTR);
 
 			if (len < 0) {
@@ -317,33 +316,49 @@ void timeout_listener_process(int rank)
 				lock_release(rtpp_notify_h->lock);
 				continue;
 			}
-			LM_DBG("Timeout detected on call [%.*s]\n", len, buffer);
-			dlg_id.s = buffer;
-			dlg_id.len = len; /*strlen(buffer);*/
-			trim(&dlg_id);
+			LM_INFO("Timeout detected on the following calls [%.*s]\n", len, buffer);
+			p = buffer;
+			left = len + offset;
+			offset = 0;
+			end = buffer + left;
 
 			do {
-				/* the message is: h_entry.h_id */
-				p = memchr(dlg_id.s, '.', dlg_id.len);
-				if(p == NULL) {
-					LM_ERR("Wrong formated message received from rtpproxy [%.*s]\n",
-							dlg_id.len, dlg_id.s);
+				start = p;
+				/* the message is: h_entry.h_id\n */
+				sp = memchr(p, '.', left);
+				if (sp == NULL)
 					break;
-				}
-				id.s = dlg_id.s;
-				id.len = p-dlg_id.s;
+
+				id.s = p;
+				id.len = sp - p;
+
+				if (sp >= end)
+					break;
+
+				p = sp + 1;
+				left -= id.len + 1;
+
 				if(str2int(&id, &h_entry)< 0) {
-					LM_ERR("Wrong formated message received from rtpproxy - invalid"
+					LM_ERR("Wrong formatted message received from rtpproxy - invalid"
 							" dialog entry [%.*s]\n", id.len, id.s);
 					break;
 				}
-				id.s = ++p;
-				/* go to end or to next non-digit */
-				for (; (p < buffer + len ) && IS_DIGIT(*p); ++p);
-				
-				id.len = p - id.s;
+
+				sp = memchr(p, '\n', left);
+				if (sp == NULL)
+					break;
+
+				id.s = p;
+				id.len = sp - p;
+
+				if (sp >= end)
+					break;
+
+				p = sp + 1;
+				left -= id.len + 1;
+
 				if(str2int(&id, &h_id)< 0) {
-					LM_ERR("Wrong formated message received from rtpproxy - invalid"
+					LM_ERR("Wrong formatted message received from rtpproxy - invalid"
 							" dialog id [%.*s]\n", id.len, id.s);
 					break;
 				}
@@ -352,12 +367,12 @@ void timeout_listener_process(int rank)
 				if(dlg_api.terminate_dlg(h_entry, h_id,&terminate_reason)< 0)
 					LM_ERR("Failed to terminate dialog h_entry=[%u], h_id=[%u]\n", h_entry, h_id);
 
-				/* go to end or to next digit */
-				for (; (p < buffer + len) && !IS_DIGIT(*p); ++p);
-				dlg_id.s = p;
-				dlg_id.len = buffer + len - p;
-				LM_DBG("left %d to parse\n", dlg_id.len);
-			} while (dlg_id.len > 0);
+				LM_DBG("Left to process: %d\n[%.*s]\n", left, left, p);
+
+			} while (p < end);
+
+			offset = end - start;
+			memmove(buffer, start, end - start);
 		}
 	}
 }
@@ -420,7 +435,7 @@ int init_rtpp_notify_list(void)
 		return 0;
 	}
 
-	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL; 
+	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 			rtpp_list = rtpp_list->rset_next) {
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 				crt_rtpp = crt_rtpp->rn_next) {
@@ -484,7 +499,7 @@ void update_rtpproxy_list(void)
 	LM_DBG("updating rtppproxy list\n");
 
 	/* add new rtppproxies */
-	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL; 
+	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 			rtpp_list = rtpp_list->rset_next) {
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 				crt_rtpp = crt_rtpp->rn_next) {
@@ -518,7 +533,7 @@ void update_rtpproxy_list(void)
 		/* don't update for unix sockets */
 		if (rtpp_lst->mode == 0)
 			goto loop;
-		for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL; 
+		for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 				rtpp_list = rtpp_list->rset_next) {
 			for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 						crt_rtpp = crt_rtpp->rn_next) {

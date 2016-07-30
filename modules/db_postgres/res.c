@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * POSTGRES module, portions of this code were templated using
  * the mysql module, thus it's similarity.
  *
@@ -20,9 +18,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * ---
  *
@@ -107,7 +105,7 @@ int db_postgres_get_columns(const db_con_t* _h, db_res_t* _r)
 		return -3;
 	}
 
-	/* For each column both the name and the OID number of the 
+	/* For each column both the name and the OID number of the
 	 * data type are saved. */
 	for(col = 0; col < RES_COL_N(_r); col++) {
 
@@ -151,6 +149,7 @@ int db_postgres_get_columns(const db_con_t* _h, db_res_t* _r)
 			case VARCHAROID:
 			case BPCHAROID:
 			case TEXTOID:
+			case JSONOID:
 				LM_DBG("use DB_STRING result type\n");
 				RES_TYPES(_r)[col] = DB_STRING;
 			break;
@@ -165,7 +164,7 @@ int db_postgres_get_columns(const db_con_t* _h, db_res_t* _r)
 				LM_DBG("use DB_BITMAP result type\n");
 				RES_TYPES(_r)[col] = DB_BITMAP;
 			break;
-				
+
 			default:
 				LM_WARN("unhandled data type column (%.*s) type id (%d), "
 						"use DB_STRING as default\n", RES_NAMES(_r)[col]->len,
@@ -195,7 +194,7 @@ int db_postgres_convert_rows(const db_con_t* _h, db_res_t* _r)
 		RES_ROWS(_r) = 0;
 		return 0;
 	}
-	/* Allocate an array of pointers per column to holds the string 
+	/* Allocate an array of pointers per column to holds the string
 	 * representation */
 	len = sizeof(char *) * RES_COL_N(_r);
 	row_buf = (char**)pkg_malloc(len);
@@ -215,18 +214,18 @@ int db_postgres_convert_rows(const db_con_t* _h, db_res_t* _r)
 	for(row=RES_LAST_ROW(_r); row<(RES_LAST_ROW(_r)+RES_ROW_N(_r)) ; row++) {
 		for(col = 0; col < RES_COL_N(_r); col++) {
 			/*
-			 * The row data pointer returned by PQgetvalue points to 
-			 * storage that is part of the PGresult structure. One should 
-			 * not modify the data it points to, and one must explicitly 
-			 * copy the data into other storage if it is to be used past 
+			 * The row data pointer returned by PQgetvalue points to
+			 * storage that is part of the PGresult structure. One should
+			 * not modify the data it points to, and one must explicitly
+			 * copy the data into other storage if it is to be used past
 			 * the lifetime of the PGresult structure itself.
 			 */
-			
+
 			/*
 			 * There's a weird bug (or just weird behavior) in the postgres
-			 * API - if the result is a BLOB (like 'text') and is with 
-			 * zero length, we get a pointer to nowhere, which is not 
-			 * null-terminated. The fix for this is to check what does the 
+			 * API - if the result is a BLOB (like 'text') and is with
+			 * zero length, we get a pointer to nowhere, which is not
+			 * null-terminated. The fix for this is to check what does the
 			 * DB think about the length and use that as a correction.
 			 */
 			if (PQgetisnull(CON_RESULT(_h), row, col) == 0) {
@@ -238,7 +237,7 @@ int db_postgres_convert_rows(const db_con_t* _h, db_res_t* _r)
 					s = PQgetvalue(CON_RESULT(_h), row, col);
 					LM_DBG("PQgetvalue(%p,%d,%d)=[%.*s]\n", _h, row,col,len,s);
 				}
-			
+
 				row_buf[col] = pkg_malloc(len+1);
 				if (!row_buf[col]) {
 					LM_ERR("no private memory left\n");
@@ -301,7 +300,7 @@ int db_postgres_convert_rows(const db_con_t* _h, db_res_t* _r)
 			 * Note that DB_STRING fields have not been pkg_free(). NULLing DB_STRING
 			 * fields would normally not be good to do because a memory leak would
 			 * occur.  However, the pg_convert_row() routine  has saved the DB_STRING
-			 * pointer in the db_val_t structure.  The db_val_t structure will 
+			 * pointer in the db_val_t structure.  The db_val_t structure will
 			 * eventually be used to pkg_free() the DB_STRING storage.
 			 */
 			row_buf[col] = (char *)NULL;

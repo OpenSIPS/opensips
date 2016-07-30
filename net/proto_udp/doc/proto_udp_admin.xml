@@ -1,0 +1,74 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+	The <emphasis role='bold'>proto_udp</emphasis> module is a built-in transport module which exports the required
+	logic in order to handle UDP-based communication. (socket initialization
+	and send/recv primitives to be used by higher-level network layers)
+	</para>
+	</section>
+	<para>
+	Once loaded, you will be able to define <emphasis>"udp:"</emphasis> listeners in your script.
+	</para>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>udp_port</varname> (integer)</title>
+		<para>
+		The default port to be used by all UDP listeners.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 5060.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>udp_port</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_udp", "udp_port", 5070)
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+</chapter>

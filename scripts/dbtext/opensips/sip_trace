@@ -1,1 +1,1 @@
-id(int,auto) time_stamp(int) callid(string) traced_user(string,null) msg(string) method(string) status(string,null) fromip(string) toip(string) fromtag(string) direction(string) 
+id(int,auto) time_stamp(int) callid(string) trace_attrs(string,null) msg(string) method(string) status(string,null) from_proto(string) from_ip(string) from_port(int) to_proto(string) to_ip(string) to_port(int) fromtag(string) direction(string) 

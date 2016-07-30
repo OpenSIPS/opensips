@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -19,20 +17,20 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
  * --------
  * 2006-11-23 initial version (jmagder)
- * 
+ *
  * Hash Stuff;
  *
  * This file describes several structure.  In general, it was necessary to map
  * between OpenSER's "aor" (Address of Record) and string indexing mechanisms,
  * and the SNMPStats modules integer indexing scheme for users and contacts.
  * While it would have been a more natural fit to use string indexes in the
- * SNMPStats module, SNMP limitations precluded this.  
+ * SNMPStats module, SNMP limitations precluded this.
  *
  * aorToIndexStruct: maps an aor to:
  *  - a userIndex, to uniquely identify each RegUserTable SNMP row
@@ -52,11 +50,11 @@
 #ifndef HASHSLOT_H
 #define HASHSLOT_H
 
-/* 
+/*
  * Used to map between a 'contact' name (OpenSER's index) and a contact index.
- * (SNMPStats Index) 
+ * (SNMPStats Index)
  */
-typedef struct contactToIndexStruct 
+typedef struct contactToIndexStruct
 {
 	char *contactName;
 
@@ -70,9 +68,9 @@ typedef struct contactToIndexStruct
 /*
  * Used to map between an 'aor' (OpenSIPS index) and a user index. (SNMPStats
  * index).  Since each user can have multiple contacts, the structure also has a
- * 'contactIndex', and a reference to the contactToIndexStruct list. 
+ * 'contactIndex', and a reference to the contactToIndexStruct list.
  */
-typedef struct aorToIndexStruct 
+typedef struct aorToIndexStruct
 {
 	/* Pointer to the actual address record in the given SNMP row. */
 	char *aor;
@@ -105,20 +103,20 @@ typedef struct aorToIndexStruct
 } aorToIndexStruct_t;
 
 
-typedef struct hashSlot 
+typedef struct hashSlot
 {
 	/* Number of elements in this list. */
 	int numberOfElements;
 
 	/* First element in the list. */
-	struct aorToIndexStruct* first; 
+	struct aorToIndexStruct* first;
 
 	/* Last element in the list.  This is here for optimization purposes.
 	 * It stands to reason that things added later will need to be deleted
 	 * later.  So they should be added to the end of the list.  This way,
 	 * things that are to be deleted sooner will be at the front of the
 	 * list. */
-	struct aorToIndexStruct* last; 
+	struct aorToIndexStruct* last;
 
 } hashSlot_t;
 
@@ -128,11 +126,11 @@ typedef struct hashSlot
 
 /* Returns a aorToIndexStruct_t, holding the given 'userIndex' and 'aor'.  The
  * structure is used to map between the "aor" (OpenSER's way of indexing
- * users/contacts), and the SNMPStats user and contact integer indexes.  
+ * users/contacts), and the SNMPStats user and contact integer indexes.
  *
  * NOTE: that this record does not make a copy of aor, but instead points
  * directly to the parameter.  Therefore make sure that aor is not on the stack,
- * and is not going to disappear before this record is deleted. 
+ * and is not going to disappear before this record is deleted.
  */
 aorToIndexStruct_t *createHashRecord(int userIndex, char *aor);
 
@@ -151,20 +149,20 @@ int calculateHashSlot(char *theString, int hashTableSize);
 
 /* Searches the hash table specified as theTable, of size 'size', for a record
  * indexed with 'aor'.  If a match is found, then an aorToIndextStruct_t
- * structure is returned. 
+ * structure is returned.
  *
- * This function is called to discover the map between OpenSER's "aor" 
+ * This function is called to discover the map between OpenSER's "aor"
  * (Address of Records) indexing scheme, and the SNMPStats modules integer
- * indexing scheme for its contact/user data. 
+ * indexing scheme for its contact/user data.
  *
- * Returns: the aorToIndexStruct_t mapping structure if a match was found, 
+ * Returns: the aorToIndexStruct_t mapping structure if a match was found,
  *          or NULL otherwise.
  */
 aorToIndexStruct_t *findHashRecord(hashSlot_t *theTable, char *aor, int size);
 
 
 /* Inserts theRecord into an appropriate place in theTable, when size is given. */
-void insertHashRecord(hashSlot_t *theTable, aorToIndexStruct_t *theRecord, int size); 
+void insertHashRecord(hashSlot_t *theTable, aorToIndexStruct_t *theRecord, int size);
 
 
 /* Debugging function.  Prints off an entire hash slot. */
@@ -173,11 +171,11 @@ void printHashSlot(hashSlot_t *theTable, int index);
 
 /* If a record is found with string aor in theTable, it is deleted and its
  * SNMPStats user integer index is returned. */
-int deleteHashRecord(hashSlot_t *theTable, char *aor, int hashTableSize); 
+int deleteHashRecord(hashSlot_t *theTable, char *aor, int hashTableSize);
 
 /*
  * This function will search the provided hash table for an entry indexed by
- * 'aor'.  If an entry is found then: 
+ * 'aor'.  If an entry is found then:
  *
  *   - Its numContacts counter will be decremented.
  *   - If its numContacts counter reaches zero, then the entry will be removed

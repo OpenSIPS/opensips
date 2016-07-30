@@ -1,0 +1,204 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+	The WSS (Secure WebSocket) module provides the ability to communicate with
+	a WebSocket (<ulink url='http://tools.ietf.org/html/rfc6455'>RFC
+		6455</ulink>) client or server over a secure (TLS encrypted) channel.
+	As part of the <ulink url='https://webrtc.org/'>WebRTC</ulink>
+	specifications, this protocol can be used to provide secure VoIP calls to
+	HTTPS enabled browsers.
+	</para>
+	<para>
+	This module behaves as any other transport protocol module: in order to
+	use it, you must define one or more listeners that will handle the secure
+	WebSocket traffic, <emphasis>after</emphasis> the <varname>mpath</varname>
+	parameter:
+	<para>
+		<programlisting format="linespecific">
+...
+mpath=/path/to/modules
+...
+listen=wss:10.0.0.1			# change with the listening IP
+listen=wss:10.0.0.1:5060	# change with the listening IP and port
+...
+</programlisting>
+	</para>
+	Besides that, you need to define the TLS parameters for securing the connection. This is done through the <emphasis>tls_mgm</emphasis> module interface, similar to the <emphasis>proto_tls</emphasis> module:
+	<para>
+		<programlisting format="linespecific">
+modparam("tls_mgm", "certificate", "/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "tlsv1")
+modparam("tls_mgm", "verify_cert", "1")
+modparam("tls_mgm", "require_cert", "1")
+</programlisting>
+	</para>
+	Check the <emphasis>tls_mgm</emphasis> module documentation for more info.
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+                    <itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>tls_mgm</emphasis>.
+			</para>
+			</listitem>
+                    </itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>Dependencies of external libraries</title>
+		<para>
+			&osips; TLS v1.0 support requires the following packages:
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>openssl</emphasis> or
+					<emphasis>libssl</emphasis> >= 0.9.6
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>openssl-dev</emphasis> or
+					<emphasis>libssl-dev</emphasis>
+				</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			&osips; TLS v1.1/1.2 support requires the following packages:
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>openssl</emphasis> or
+					<emphasis>libssl</emphasis> >= 1.0.1e
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>openssl-dev</emphasis> or
+					<emphasis>libssl-dev</emphasis>
+				</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+		<para>
+		All these parameters can be used from the opensips.cfg file,
+		to configure the behavior of &osips;-WSS.
+		</para>
+
+		<section>
+			<title><varname>listen</varname>=interface</title>
+			<para>
+			This is a global parameter that specifies what interface/IP and
+			port should handle WSS traffic.
+			</para>
+			<example>
+				<title>Set <varname>listen</varname> variable</title>
+				<programlisting format="linespecific">
+...
+listen = wss:1.2.3.4:44344
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><varname>wss_port</varname> (integer)</title>
+			<para>
+			Sets the default WSS listening port.
+			</para>
+			<para><emphasis>
+				Default value is 443.
+			</emphasis></para>
+			<example>
+				<title>Set <varname>wss_port</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("proto_wss", "wss_port", 44344)
+...
+				</programlisting>
+			</example>
+		</section>
+
+	<section>
+		<title><varname>wss_max_msg_chunks</varname> (integer)</title>
+		<para>
+			The maximum number of chunks in which a SIP message is expected to
+			arrive via WSS. If a received packet is more fragmented than this,
+			the connection is dropped (either the connection is very
+			overloaded and this leads to high fragmentation - or we are the
+			victim of an ongoing attack where the attacker is sending very
+			fragmented traffic in order to decrease server performance).
+		</para>
+		<para>
+		<emphasis>
+			Default value is 4.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>wss_max_msg_chunks</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_wss", "wss_max_msg_chunks", 8)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>wss_resource</varname> (string)</title>
+		<para>
+			The resource queried for when a WebSocket handshake is initiated.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>/</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>wss_resource</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_wss", "wss_resource", "/wss")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>wss_handshake_timeout</varname> (integer)</title>
+		<para>
+			This parameter specifies the time in milliseconds the proto_wss module
+			waits for a WebSocket handshake reply from a WebSocket server.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 100.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>wss_handshake_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_wss", "wss_handshake_timeout", 300)
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+</chapter>

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -41,7 +39,7 @@
 #define _XOPEN_SOURCE_EXTENDED /* same as above */
 #define __USE_XOPEN_EXTENDED /* same as above, overrides features.h */
 #define __EXTENSIONS__ /* needed on solaris: if XOPEN_SOURCE is defined
-                          struct timeval defintion from <sys/time.h> won't
+                          struct timeval definition from <sys/time.h> won't
                           be included => workarround define _EXTENSIONS_ */
 #include <signal.h>
 #include <syslog.h>
@@ -56,7 +54,9 @@
 #include <sys/prctl.h>
 #endif
 
+#include "mem/shm_mem.h"
 #include "daemonize.h"
+#include "sr_module.h"
 #include "globals.h"
 #include "dprint.h"
 #include "pt.h"
@@ -71,7 +71,7 @@ static int *init_timer_no;
 int create_status_pipe(void)
 {
 	int rc;
-	
+
 	status_pipe[0] = -1;
 	status_pipe[1] = -1;
 
@@ -97,7 +97,7 @@ retry:
 	return rc;
 }
 
-inline void inc_init_timer(void)
+void inc_init_timer(void)
 {
 	LM_DBG("incrementing init timer no\n");
 	(*init_timer_no)++;
@@ -118,7 +118,7 @@ retry:
 
 	if (rc == 1)
 		return 0;
-	
+
 	return -1;
 }
 
@@ -166,7 +166,7 @@ int wait_for_all_children(void)
 			return -1;
 	}
 
-	/* we got this far, means everything went ok with 
+	/* we got this far, means everything went ok with
 	 * SIP listeners and module procs
 	 *
 	 * still need to see if
@@ -182,7 +182,7 @@ int wait_for_all_children(void)
 	return 0;
 }
 
-/* cleans read pipe end 
+/* cleans read pipe end
  * for processes done reading */
 void clean_read_pipeend(void)
 {
@@ -195,7 +195,7 @@ void clean_read_pipeend(void)
 /* cleans write pipe end
  * for processes done writing the status code
 
- * MUST be called to ensure that the original 
+ * MUST be called to ensure that the original
  * parent process does not keep waiting forever */
 void clean_write_pipeend(void)
 {
@@ -213,7 +213,7 @@ void clean_write_pipeend(void)
  */
 int daemonize(char* name, int * own_pgid)
 {
-	FILE *pid_stream;
+	FILE *pid_stream = NULL;
 	pid_t pid;
 	int r, p,rc;
 	int pid_items;
@@ -230,14 +230,9 @@ int daemonize(char* name, int * own_pgid)
 		LM_CRIT("Cannot chroot to %s: %s\n", chroot_dir, strerror(errno));
 		goto error;
 	}
-	
+
 	if (chdir(working_dir)<0){
 		LM_CRIT("Cannot chdir to %s: %s\n", working_dir, strerror(errno));
-		goto error;
-	}
-
-	if (create_status_pipe() < 0) {
-		LM_ERR("failed to create status pipe");
 		goto error;
 	}
 
@@ -267,7 +262,7 @@ int daemonize(char* name, int * own_pgid)
 		}
 		/* fork again to drop group  leadership */
 		if ((pid=fork())<0){
-			LM_CRIT("Cannot  fork:%s\n", strerror(errno));
+			LM_CRIT("Cannot fork: %s\n", strerror(errno));
 			goto error;
 		}else if (pid!=0){
 			/*parent process => exit */
@@ -284,14 +279,14 @@ int daemonize(char* name, int * own_pgid)
 
 	/* added by noh: create a pid file for the main process */
 	if (pid_file!=0){
-		
+
 		if ((pid_stream=fopen(pid_file, "r"))!=NULL){
 			pid_items=fscanf(pid_stream, "%d", &p);
 			fclose(pid_stream);
 			if (p==-1 || pid_items <= 0){
 				LM_WARN("pid file %s exists, but doesn't contain a valid"
 					" pid number, replacing...\n", pid_file);
-			} else 
+			} else
 			if (kill((pid_t)p, 0)==0 || errno==EPERM){
 				LM_CRIT("running process found in the pid file %s\n",
 					pid_file);
@@ -302,17 +297,17 @@ int daemonize(char* name, int * own_pgid)
 		}
 		pid=getpid();
 		if ((pid_stream=fopen(pid_file, "w"))==NULL){
-			LM_ERR("unable to create pid file %s: %s\n", 
+			LM_ERR("unable to create pid file %s: %s\n",
 				pid_file, strerror(errno));
 			goto error;
 		}else{
 			r = fprintf(pid_stream, "%i\n", (int)pid);
+			fclose(pid_stream);
 			if (r<=0)  {
-				LM_ERR("unable to write pid to file %s: %s\n", 
+				LM_ERR("unable to write pid to file %s: %s\n",
 					pid_file, strerror(errno));
 				goto error;
 			}
-			fclose(pid_stream);
 		}
 	}
 
@@ -333,12 +328,12 @@ int daemonize(char* name, int * own_pgid)
 				goto error;
 			}else{
 				r = fprintf(pid_stream, "%i\n", (int)pid);
+				fclose(pid_stream);
 				if (r<=0)  {
-					LM_ERR("unable to write pgid to file %s: %s\n", 
+					LM_ERR("unable to write pgid to file %s: %s\n",
 						pid_file, strerror(errno));
 					goto error;
 				}
-				fclose(pid_stream);
 			}
 		}else{
 			LM_WARN("we don't have our own process so we won't save"
@@ -396,26 +391,24 @@ error:
  */
 int do_suid(const int uid, const int gid)
 {
-	if (!dont_fork) {
-		if (pid_file) {
-			/* pid file should be already created by deamonize function 
-			   -> change the owner and group also
-			*/
-			if (chown( pid_file , uid?uid:-1, gid?gid:-1)!=0) {
-				LM_ERR("failed to change owner of pid file %s: %s(%d)\n",
-					pid_file, strerror(errno), errno);
-				goto error;
-			}
+	if (pid_file) {
+		/* pid file should be already created by deamonize function
+		   -> change the owner and group also
+		*/
+		if (chown( pid_file , uid?uid:-1, gid?gid:-1)!=0) {
+			LM_ERR("failed to change owner of pid file %s: %s(%d)\n",
+				pid_file, strerror(errno), errno);
+			goto error;
 		}
-		if (pgid_file) {
-			/* pgid file should be already created by deamonize function 
-			   -> change the owner and group also
-			*/
-			if (chown( pgid_file , uid?uid:-1, gid?gid:-1)!=0) {
-				LM_ERR("failed to change owner of pid file %s: %s(%d)\n",
-					pgid_file, strerror(errno), errno);
-				goto error;
-			}
+	}
+	if (pgid_file) {
+		/* pgid file should be already created by deamonize function
+		   -> change the owner and group also
+		*/
+		if (chown( pgid_file , uid?uid:-1, gid?gid:-1)!=0) {
+			LM_ERR("failed to change owner of pid file %s: %s(%d)\n",
+				pgid_file, strerror(errno), errno);
+			goto error;
 		}
 	}
 
@@ -425,14 +418,14 @@ int do_suid(const int uid, const int gid)
 			goto error;
 		}
 	}
-	
+
 	if(uid){
 		if(setuid(uid)<0){
 			LM_CRIT("cannot change uid to %d: %s\n", uid, strerror(errno));
 			goto error;
 		}
 	}
-	
+
 #ifdef __OS_linux
 	/* setuid disables core dumping on linux, reenable it */
 	if ( !disable_core_dump && prctl(PR_SET_DUMPABLE, 1)) {
@@ -448,14 +441,15 @@ error:
 
 
 /*!
- * \brief try to increase the open file limit
- * \param target target that should be reached
+ * \brief try to increase the open file limit to the value given by the global
+ *        option "open_files_limit" ; the value is updated back in case of a
+ *        partial increase of the limit
  * \return return 0 on success, -1 on error
  */
-int increase_open_fds(unsigned int target)
+int set_open_fds_limit(void)
 {
 	struct rlimit lim, orig;
-	
+
 	if (getrlimit(RLIMIT_NOFILE, &lim)<0){
 		LM_CRIT("cannot get the maximum number of file descriptors: %s\n",
 				strerror(errno));
@@ -464,18 +458,18 @@ int increase_open_fds(unsigned int target)
 	orig=lim;
 	LM_DBG("current open file limits: %lu/%lu\n",
 			(unsigned long)lim.rlim_cur, (unsigned long)lim.rlim_max);
-	if ((lim.rlim_cur==RLIM_INFINITY) || (target<=lim.rlim_cur))
-		/* nothing to do */
+	if ((lim.rlim_cur==RLIM_INFINITY) || (open_files_limit<=lim.rlim_cur))
+		/* nothing to do (we do no reduce the limit) */
 		goto done;
-	else if ((lim.rlim_max==RLIM_INFINITY) || (target<=lim.rlim_max)){
-		lim.rlim_cur=target; /* increase soft limit to target */
-	}else{
+	if ((lim.rlim_max==RLIM_INFINITY) || (open_files_limit<=lim.rlim_max)) {
+		lim.rlim_cur=open_files_limit; /* increase soft limit to target */
+	} else {
 		/* more than the hard limit */
 		LM_INFO("trying to increase the open file limit"
-				" past the hard limit (%ld -> %d)\n", 
-				(unsigned long)lim.rlim_max, target);
-		lim.rlim_max=target;
-		lim.rlim_cur=target;
+				" past the hard limit (%ld -> %d)\n",
+				(unsigned long)lim.rlim_max, open_files_limit);
+		lim.rlim_max=open_files_limit;
+		lim.rlim_cur=open_files_limit;
 	}
 	LM_DBG("increasing open file limits to: %lu/%lu\n",
 			(unsigned long)lim.rlim_cur, (unsigned long)lim.rlim_max);
@@ -492,11 +486,14 @@ int increase_open_fds(unsigned int target)
 			if (setrlimit(RLIMIT_NOFILE, &lim)==0){
 				LM_CRIT("maximum number of file descriptors increased to"
 					" %u\n",(unsigned)orig.rlim_max);
+				open_files_limit = orig.rlim_max;
+				goto done;
 			}
 		}
 		goto error;
 	}
 done:
+	LM_DBG("open files limit set to %d\n",open_files_limit);
 	return 0;
 error:
 	return -1;
@@ -513,7 +510,7 @@ error:
 int set_core_dump(int enable, unsigned int size)
 {
 	struct rlimit lim, newlim;
-	
+
 	if (enable){
 		if (getrlimit(RLIMIT_CORE, &lim)<0){
 			LM_CRIT("cannot get the maximum core size: %s\n",
@@ -542,6 +539,9 @@ int set_core_dump(int enable, unsigned int size)
 					(unsigned long)lim.rlim_max);
 			}
 			goto error; /* it's an error we haven't got the size we wanted*/
+		} else {
+			/* using the same limit as before - disable uninitialized warning */
+			newlim.rlim_cur = lim.rlim_cur;
 		}
 		goto done; /*nothing to do */
 	}else{

@@ -25,7 +25,7 @@ Vladut-Stefan Paiu
 
         1.5. Exported Parameters
 
-              1.5.1. db_url (string)
+              1.5.1. cachedb_url (string)
               1.5.2. db_table (string)
               1.5.3. key_column (string)
               1.5.4. value_column (string)
@@ -33,6 +33,8 @@ Vladut-Stefan Paiu
               1.5.6. expires_column (string)
               1.5.7. cache_clean_period (int)
               1.5.8. Exported Functions
+
+   2. Frequently Asked Questions
 
    List of Examples
 
@@ -82,20 +84,32 @@ Chapter 1. Admin Guide
 
 1.5. Exported Parameters
 
-1.5.1. db_url (string)
+1.5.1. cachedb_url (string)
 
    The url of the Database that OpenSIPS will connect to in order
    to use the from script cache_store,cache_fetch, etc operations.
 
+   The format to follow is : sql:[conn_id]-dburl
+
+   The parameter can be set multiple times to create multiple
+   connections accessible from the OpenSIPS script.
+
    Example 1.1. Set db_url parameter
 ...
-modparam("cachedb_sql", "db_url","mysql://localhost/my_database");
+modparam("cachedb_sql", "cachedb_url", "sql:1st-mysql://root:vlad@localh
+ost/opensips_sql")
 ...
 
    Example 1.2. Usage example
 ...
-cache_store("sql","key","$ru value");
-cache_add("sql","counter",10);
+modparam("cachedb_sql", "cachedb_url", "sql:1st-mysql://root:vlad@localh
+ost/opensips_sql")
+modparam("cachedb_sql", "cachedb_url", "sql:2nd-postgres://root:vlad@loc
+alhost/opensips_pg")
+...
+...
+cache_store("sql:1st-mysql","key","$ru value");
+cache_store("sql:2nd-postgres","counter","10");
 ...
 
 1.5.2. db_table (string)
@@ -159,3 +173,12 @@ modparam("cachedb_sql", "cache_clean_period",10);
 
    The module does not export functions to be used in
    configuration script.
+
+Chapter 2. Frequently Asked Questions
+
+   2.1.
+
+       What happened with the old “db_url” module parameter?
+
+       It was replaced with the “cachedb_url” parameter. See the
+       documentation for the usage of the “cachedb_url” parameter.

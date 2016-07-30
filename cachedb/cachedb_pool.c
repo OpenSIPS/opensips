@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -25,6 +25,7 @@
 
 
 #include "../dprint.h"
+#include "../mem/mem.h"
 #include "cachedb_pool.h"
 #include <string.h>
 
@@ -33,7 +34,7 @@ static cachedb_pool_con *cachedb_pool = NULL;
 cachedb_pool_con* cachedb_pool_get(struct cachedb_id *id)
 {
 	cachedb_pool_con *it;
-	
+
 	for (it=cachedb_pool;it;it=it->next)
 		if (cmp_cachedb_id(id,it->id)) {
 			it->ref++;
@@ -41,6 +42,34 @@ cachedb_pool_con* cachedb_pool_get(struct cachedb_id *id)
 		}
 
 	return 0;
+}
+
+cachedb_pool_con** filter_pool_by_scheme(str *scheme,int* lst_size)
+{
+	cachedb_pool_con *it;
+	cachedb_pool_con **lst=NULL;
+	int size = 0;
+	int alloc_size = 0;
+	
+	for (it=cachedb_pool;it;it=it->next) {
+		if (memcmp(scheme->s,it->id->scheme,scheme->len) == 0) {
+			if (alloc_size - size == 0) {
+				alloc_size=(alloc_size==0)?2:2*alloc_size;
+				lst = pkg_realloc(lst,alloc_size * sizeof(cachedb_pool_con*));
+				if (lst == NULL) {
+					LM_ERR("No more pkg \n");
+					*lst_size = 0;
+					return NULL;
+				}
+			}
+
+			lst[size]=it;
+			size++;
+		}
+	}
+
+	*lst_size = size;
+	return lst;
 }
 
 void cachedb_pool_insert(cachedb_pool_con *con)

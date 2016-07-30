@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -39,61 +37,39 @@
 extern char * cfg_file;
 extern int config_check;
 extern char *stat_file;
-extern unsigned short port_no;
 
 extern char* pid_file;
 extern char* pgid_file;
 
 extern struct socket_info* bind_address; /*!< pointer to the crt. proc.  listening address */
-extern struct socket_info* sendipv4; /*!< ipv4 socket to use when msg.  comes from ipv6*/
-extern struct socket_info* sendipv6; /*!< same as above for ipv6 */
-#ifdef USE_TCP
-extern struct socket_info* sendipv4_tcp; /*!< ipv4 socket to use when msg.  comes from ipv6*/
-extern struct socket_info* sendipv6_tcp; /*!< same as above for ipv6 */
-extern int unix_tcp_sock; /*!< socket used for communication with tcp main*/
-#endif
-#ifdef USE_TLS
-extern struct socket_info* sendipv4_tls; /*!< ipv4 socket to use when msg.  comes from ipv6*/
-extern struct socket_info* sendipv6_tls; /*!< same as above for ipv6 */
-#endif
-#ifdef USE_SCTP
-extern struct socket_info* sendipv4_sctp; /*!< ipv4 socket to use when msg.  comes from ipv6*/
-extern struct socket_info* sendipv6_sctp; /*!< same as above for ipv6 */
-#endif
 
 extern int auto_aliases;
 
 extern unsigned int maxbuffer;
 extern int children_no;
-#ifdef USE_TCP
+extern enum poll_types io_poll_method;
+
+/* TCP network layer related parameters */
 extern int tcp_children_no;
 extern int tcp_disable;
 extern int tcp_accept_aliases;
 extern int tcp_connect_timeout;
-extern int tcp_send_timeout;
 extern int tcp_con_lifetime; /*!< connection lifetime */
 extern int tcp_listen_backlog;
-extern enum poll_types tcp_poll_method;
 extern int tcp_max_fd_no;
 extern int tcp_max_connections;
-extern int tcp_crlf_pingpong;
 extern int tcp_keepalive;
 extern int tcp_keepcount;
 extern int tcp_keepidle;
 extern int tcp_keepinterval;
-#endif
-#ifdef USE_TLS
-extern int tls_disable;
-extern unsigned short tls_port_no;
-#endif
-#ifdef USE_SCTP
-extern int sctp_disable;
-#endif
-extern int dont_fork;
+extern int tcp_max_msg_time;
+extern int tcp_no_new_conn;
+extern int tcp_no_new_conn_bflag;
+
 extern int no_daemon_mode;
+extern int debug_mode;
 extern int check_via;
 extern int received_dns;
-/* extern int process_no; */
 extern int sip_warning;
 extern int server_signature;
 extern str server_header;
@@ -121,6 +97,9 @@ extern int disable_dns_blacklist;
 extern int cfg_errors;
 
 extern unsigned long shm_mem_size;
+extern unsigned int shm_hash_split_percentage;
+extern unsigned int shm_hash_split_factor;
+extern unsigned int shm_secondary_hash_size;
 extern unsigned long pkg_mem_size;
 
 extern int reply_to_via;
@@ -156,8 +135,11 @@ extern int sl_fwd_disabled;
 extern time_t startup_time;
 
 extern char *db_version_table;
-
 extern char *db_default_url;
+extern int db_max_async_connections;
 
 extern int disable_503_translation;
+
+extern int enable_asserts;
+extern int abort_on_assert;
 #endif

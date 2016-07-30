@@ -1,8 +1,6 @@
 /*
- * $Id$
- * 
  * sip first line parsing automaton
- * 
+ *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * ---------
@@ -51,7 +49,7 @@ enum { START,
        BYE1, BYE2,
        SIP1, SIP2, SIP3, SIP4, SIP5, SIP6,
        FIN_INVITE = 100, FIN_ACK, FIN_CANCEL, FIN_BYE, FIN_SIP,
-       P_METHOD = 200, L_URI, P_URI, L_VER, 
+       P_METHOD = 200, L_URI, P_URI, L_VER,
        VER1, VER2, VER3, VER4, VER5, VER6, FIN_VER,
        L_STATUS, P_STATUS, L_REASON, P_REASON,
        L_LF, F_CR, F_LF
@@ -73,7 +71,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 			case ' ':
 			case '\t':
 				switch(state){
-					case START: /*allow space at the begining, although not
+					case START: /*allow space at the beginning, although not
 								  legal*/
 						break;
 					case L_URI:
@@ -193,7 +191,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						state=P_METHOD;
 				}
 				break;
-					
+
 			case 'i':
 			case 'I':
 				switch(state){
@@ -244,7 +242,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						state=P_METHOD;
 				}
 				break;
-				
+
 			case 'p':
 			case 'P':
 				switch(state){
@@ -293,7 +291,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 				}
 				break;
 
-			
+
 			case '/':
 				switch(state){
 					case START:
@@ -340,7 +338,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						state=P_METHOD;
 				}
 				break;
-			
+
 			case '2':
 				switch(state){
 					case START:
@@ -389,7 +387,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						state=P_METHOD;
 				}
 				break;
-			
+
 			case '.':
 				switch(state){
 					case START:
@@ -436,7 +434,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						state=P_METHOD;
 				}
 				break;
-			
+
 			case '0':
 				switch(state){
 					case START:
@@ -486,7 +484,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 						state=P_METHOD;
 				}
 				break;
-			
+
 			case 'n':
 			case 'N':
 				switch(state){
@@ -1055,7 +1053,7 @@ char* parse_fline(char* buffer, char* end, struct msg_start* fl)
 					default:
 						state=P_METHOD;
 				}
-						
+
 			default:
 				switch(state){
 					case START:
@@ -1104,7 +1102,7 @@ skip:
 		/* fl->u.reply.statusclass=stat/100; */
 	}
 	return tmp;
-	
+
 error:
 	LM_ERR("while parsing first line (state=%d)\n", state);
 	fl->type=SIP_INVALID;
@@ -1117,7 +1115,7 @@ error:
    also  modifies buffer (to avoid extra copy ops) */
 char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 {
-	
+
 	char *tmp;
 	char* second;
 	char* third;
@@ -1134,7 +1132,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 		response =  version SP status  SP reason  CRLF
 		(version = "SIP/2.0")
 	*/
-	
+
 
 	end=buffer+len;
 	/* see if it's a reply (status) */
@@ -1143,7 +1141,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 
 	/* drop messages which are so short they are for sure useless;
            utilize knowledge of minimum size in parsing the first
-	   token 
+	   token
         */
 	if (len <=16 ) {
 		LM_INFO("message too short: %d\n", len);
@@ -1152,7 +1150,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 
 	tmp=buffer;
   	/* is it perhaps a reply, ie does it start with "SIP...." ? */
-	if ( 	(*tmp=='S' || *tmp=='s') && 
+	if ( 	(*tmp=='S' || *tmp=='s') &&
 		strncasecmp( tmp+1, SIP_VERSION+1, SIP_VERSION_LEN-1)==0 &&
 		(*(tmp+SIP_VERSION_LEN)==' ')) {
 			fl->type=SIP_REPLY;
@@ -1161,7 +1159,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 	} else IFISMETHOD( INVITE, 'I' )
 	else IFISMETHOD( CANCEL, 'C')
 	else IFISMETHOD( ACK, 'A' )
-	else IFISMETHOD( BYE, 'B' ) 
+	else IFISMETHOD( BYE, 'B' )
 	else IFISMETHOD( INFO, 'I' )
 	/* if you want to add another method XXX, include METHOD_XXX in
            H-file (this is the value which you will take later in
@@ -1170,7 +1168,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 	   latter; everything must be capitals
 	*/
 	else {
-		/* neither reply, nor any of known method requests, 
+		/* neither reply, nor any of known method requests,
 		   let's believe it is an unknown method request
         	*/
 		tmp=eat_token_end(buffer,buffer+len);
@@ -1193,9 +1191,9 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 		}
 		fl->u.request.method.len=tmp-buffer;
 	}
-	
 
-	/* identifying type of message over now; 
+
+	/* identifying type of message over now;
 	   tmp points at space after; go ahead */
 
 	fl->u.request.method.s=buffer;  /* store ptr to first token */
@@ -1203,7 +1201,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 	offset=second-buffer;
 
 /* EoJku */
-	
+
 	/* next element */
 	tmp=eat_token_end(second, second+len-offset);
 	if (tmp>=end){
@@ -1226,7 +1224,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 			goto error;
 		}
 		s1=*second; s2=*(second+1);s3=*(second+2);
-		if (s1>='0' && s1<='9' && 
+		if (s1>='0' && s1<='9' &&
 		    s2>='0' && s2<='9' &&
 		    s3>='0' && s3<='9' ) {
 			fl->u.reply.statuscode=(s1-'0')*100+10*(s2-'0')+(s3-'0');
@@ -1251,7 +1249,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 			goto error;
 		}
 	}else{
-		tmp=eat_token2_end(third,third+len-offset,'\r'); /* find end of line 
+		tmp=eat_token2_end(third,third+len-offset,'\r'); /* find end of line
 												  ('\n' or '\r') */
 		if (tmp>=end){ /* no crlf in packet => invalid */
 			goto error;
@@ -1277,7 +1275,7 @@ error:
 	if (prn) {
 		for (t=0; t<offset; t++)
 			if (*(buffer+t)) *(prn+t)=*(buffer+t);
-			else *(prn+t)='°';
+			else *(prn+t)=248;
 		LM_ERR("parsed so far: %.*s\n", offset, ZSW(prn) );
 		pkg_free( prn );
 	};

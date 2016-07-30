@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -46,8 +44,7 @@
 #define E_Q_INV_CHAR        -15		/*!< Invalid character in q */
 #define E_Q_EMPTY           -16		/*!< Empty q */
 #define E_Q_TOO_BIG         -17		/*!< q too big (> 1) */
-#define E_Q_DEC_MISSING     -18		/*!< Decimal part missing */
-#define E_NO_DESTINATION    -19		/*!< No available destination */
+#define E_NO_DESTINATION    -18		/*!< No available destination */
 
 /* opensips specific error codes */
 #define E_IP_BLOCKED      -473		/*!< destination filtered */
@@ -60,6 +57,11 @@
 
 #define E_BAD_SERVER	  -500		/*!< error in server */
 
+/*
+ * portable macro which prevents "unused variable" compiler warnings
+ * when defining certain flags, e.g. NO_LOG, NO_DEBUG
+ */
+#define UNUSED(x) (void)(x)
 
 #define MAX_REASON_LEN	128
 
@@ -72,7 +74,7 @@ extern int prev_ser_error;
 struct sip_msg;
 
 /*! \brief ser error -> SIP error */
-int err2reason_phrase( int ser_error, int *sip_error, 
+int err2reason_phrase( int ser_error, int *sip_error,
                 char *phrase, int etl, char *signature );
 
 /*! \brief SIP error core -> SIP text */

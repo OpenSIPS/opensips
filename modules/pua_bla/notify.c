@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua_bla module - pua Bridged Line Appearance
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -44,7 +42,7 @@ static int bla_body_is_valid(str *bla_body)
 	xmlNodePtr	node = NULL;
 	xmlErrorPtr	xml_err = NULL;
 	int		valid = 0;
-	
+
 	doc = xmlParseMemory(bla_body->s, bla_body->len);
 	if (!doc)
 	{
@@ -202,7 +200,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 			return -1;
 		}
 	}
-   	
+
 	if(msg->contact== NULL || msg->contact->body.s== NULL)
 	{
 		LM_ERR("no contact header found");

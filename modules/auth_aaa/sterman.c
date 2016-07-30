@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * Digest Authentication - generic AAA support
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -19,9 +17,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -83,7 +81,7 @@ static int add_cisco_vsa(aaa_message** send, struct sip_msg* msg)
  * which can be be used as a check item in the request.  Service type of
  * the request is Authenticate-Only.
  */
-int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method, str* _user) 
+int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method, str* _user)
 {
 	aaa_message *send, *received;
 	uint32_t service;
@@ -232,12 +230,12 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 	}
 
 	/* Add CALL-ID in Acct-Session-Id Attribute */
-	if ( _msg->callid==NULL && 
+	if ( _msg->callid==NULL &&
 		(parse_headers(_msg, HDR_CALLID_F, 0)==-1 || _msg->callid==NULL)  ) {
 		LM_ERR("msg parsing failed or callid not present");
 		goto err;
 	}
-	if (proto.avp_add(conn, send, &attrs[A_ACCT_SESSION_ID], 
+	if (proto.avp_add(conn, send, &attrs[A_ACCT_SESSION_ID],
 				_msg->callid->body.s, _msg->callid->body.len, 0)) {
 		LM_ERR("unable to add CALL-ID attribute\n");
 		goto err;
@@ -268,7 +266,7 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 err:
 	if (send)
 		proto.destroy_aaa_message(conn, send);
-	if (received) 
+	if (received)
 		proto.destroy_aaa_message(conn, received);
 	return -1;
 }

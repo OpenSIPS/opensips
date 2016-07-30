@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua_xmpp module - presence SIP - XMPP Gateway
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -61,7 +59,7 @@ int request_winfo(struct sip_msg* msg, char* uri, char* expires)
 			LM_DBG("using user id [%.*s]\n", printbuf_len,
 					buffer);
 		}
-	} 
+	}
 	if(puri.user.len<=0 || puri.user.s==NULL
 			|| puri.host.len<=0 || puri.host.s==NULL)
 	{
@@ -73,13 +71,13 @@ int request_winfo(struct sip_msg* msg, char* uri, char* expires)
 	LM_DBG("uri= %.*s:\n", uri_str.len, uri_str.s);
 
 	memset(&subs, 0, sizeof(subs_info_t));
-	
+
 	subs.pres_uri= &uri_str;
 
 	subs.watcher_uri= &uri_str;
 
 	subs.contact= &server_address;
-	
+
 	if(presence_server.s && presence_server.len)
 		subs.outbound_proxy = &presence_server;
 
@@ -90,7 +88,7 @@ int request_winfo(struct sip_msg* msg, char* uri, char* expires)
 	else
 	{
 		subs.expires= -1;
-	
+
 	}
 	/* -1 - for a subscription with no time limit */
 	/*  0  -for unsubscribe */

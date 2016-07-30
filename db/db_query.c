@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -118,7 +116,10 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 error:
 	LM_ERR("error while preparing query\n");
 err_exit:
-	CON_OR_RESET(_h);
+	if (_r)
+		*_r = NULL;
+	if (_h)
+		CON_OR_RESET(_h);
 	return -1;
 }
 
@@ -159,7 +160,7 @@ int db_do_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
-	
+
 	/* insert buffering is enabled ? */
 	if (CON_HAS_INSLIST(_h) && !CON_HAS_PS(_h))
 	{
@@ -167,8 +168,8 @@ int db_do_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 		if (IS_INSTANT_FLUSH(_h))
 		{
 			LM_DBG("timer wishing to flush \n");
-			/* if caller signals it's flush time ( timer, etc ), 
-			 * detach rows in queue 
+			/* if caller signals it's flush time ( timer, etc ),
+			 * detach rows in queue
 			 * the caller is holding the lock at this point */
 			no_rows = ql_detach_rows_unsafe(_h->ins_list,&buffered_rows);
 			CON_FLUSH_RESET(_h,_h->ins_list);
@@ -188,7 +189,7 @@ int db_do_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 				return 0;
 			}
 		}
-		
+
 		/* if connection has prepared statement, leave
 		the row insertion to the proper module func,
 		as the submit_query func provided is a dummy one*/
@@ -220,8 +221,8 @@ build_query:
 	{
 		if (buffered_rows != NULL || CON_HAS_PS(_h))
 		{
-			/* if we have to insert now, build the query 
-			 * 
+			/* if we have to insert now, build the query
+			 *
 			 * if a prep stmt is provided,
 			 * build a prep stmt with query_buffer_size elements */
 
@@ -246,8 +247,10 @@ build_query:
 
 				/* if we have a PS, leave the function handling prep stmts
 				   in the module to free the rows once it's done */
-				if (!CON_HAS_PS(_h))
+				if (!CON_HAS_PS(_h)) {
 					shm_free(buffered_rows[i]);
+					buffered_rows[i] = NULL;
+				}
 			}
 
 			if (off + 1 > SQL_BUF_LEN) goto error0;
@@ -257,7 +260,7 @@ build_query:
 
 			goto submit;
 		}
-		else 
+		else
 		{
 			/* wait for queries to pile up */
 			return 0;
@@ -339,7 +342,8 @@ int db_do_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 error:
 	LM_ERR("error while preparing delete operation\n");
 err_exit:
-	CON_OR_RESET(_h);
+	if (_h)
+		CON_OR_RESET(_h);
 	return -1;
 }
 
@@ -382,7 +386,7 @@ int db_do_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 		LM_ERR("error while submitting query\n");
 		CON_OR_RESET(_h);
 		return -2;
-	}	
+	}
 
 	CON_OR_RESET(_h);
 	return 0;
@@ -390,7 +394,8 @@ int db_do_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 error:
 	LM_ERR("error while preparing update operation\n");
 err_exit:
-	CON_OR_RESET(_h);
+	if(_h)
+		CON_OR_RESET(_h);
 	return -1;
 }
 

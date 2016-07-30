@@ -1,7 +1,7 @@
 <!-- Module FAQ -->
 
 <chapter>
-    
+
 	<title>&faqguide;</title>
 	<qandaset defaultlabel="number">
 
@@ -35,13 +35,13 @@
 
 	<qandaentry>
 		<question>
-			<para>What happend with the <emphasis>ds_is_from_list()</emphasis> 
+			<para>What happened with the <emphasis>ds_is_from_list()</emphasis>
 			function?</para>
 		</question>
 		<answer>
 			<para>
-			The function was replaced by the more generic 
-			<emphasis>ds_is_in_list()</emphasis> function that takes as 
+			The function was replaced by the more generic
+			<emphasis>ds_is_in_list()</emphasis> function that takes as
 			parameters the IP and PORT to test against the dispatcher list.
 			</para>
 			<para>
@@ -52,7 +52,33 @@
 
 	<qandaentry>
 		<question>
-			<para>What happend with the <emphasis>list_file</emphasis> 
+			<para>How is weight and priority used by the dispatcher in selecting
+			a destination?</para>
+		</question>
+		<answer>
+			<para>
+			The <emphasis>weight</emphasis> of a destination is currently used in
+			the hashing algorithms and it increases the probability of it to be
+			chosen(if we have two destinations with weights 1 respectively
+			4 than the second one is 4 times more likely to be selected than the
+			other). The sum of all weights does not need to add up to a specific
+			number.
+			Weights are now used in the round-robin algorithm, a destination is
+			chosen a number of times equal to its weight consecutively before going
+			to the next destination.
+			</para>
+			<para>
+			The  <emphasis>priority</emphasis> field is used at ordering the
+			destinations from a set. It does not affect the overall probability
+			of a destination to be chosen.  It is reflected when listing the
+			destination, the field can definetly be used in further selecting algorithms.
+			</para>
+		</answer>
+	</qandaentry>
+
+	<qandaentry>
+		<question>
+			<para>What happened with the <emphasis>list_file</emphasis>
 			module parameter ?</para>
 		</question>
 		<answer>
@@ -82,7 +108,7 @@
 		<answer>
 		<para>
 			First at all check if your question was already answered on one of
-			our mailing lists: 
+			our mailing lists:
 		</para>
 		<itemizedlist>
 			<listitem>
@@ -93,8 +119,8 @@
 			</listitem>
 		</itemizedlist>
 		<para>
-			E-mails regarding any stable version should be sent to 
-			&osipsusersmail; and e-mail regarding development versions or SVN 
+			E-mails regarding any stable version should be sent to
+			&osipsusersmail; and e-mail regarding development versions or SVN
 			snapshots should be send to &osipsdevmail;.
 		</para>
 		<para>

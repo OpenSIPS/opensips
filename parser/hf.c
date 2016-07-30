@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -148,10 +146,10 @@ void clean_hdr_field(struct hdr_field* hf)
 
 		case HDR_ACCEPTLANGUAGE_T:
 			break;
-			
+
 		case HDR_ORGANIZATION_T:
 			break;
-			
+
 		case HDR_PRIORITY_T:
 			break;
 
@@ -229,13 +227,13 @@ void clean_hdr_field(struct hdr_field* hf)
 }
 
 
-/* 
+/*
  * Frees a hdr_field list,
  * WARNING: frees only ->parsed and ->next*/
 void free_hdr_field_lst(struct hdr_field* hf)
 {
 	struct hdr_field* foo;
-	
+
 	while(hf) {
 		foo=hf;
 		hf=hf->next;

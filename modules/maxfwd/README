@@ -8,8 +8,7 @@ Bogdan-Andrei Iancu
 
    Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -91,7 +90,7 @@ modparam("maxfwd", "max_limit", 32)
 
    Retuning codes:
      * 2 (true) - header was not found and a new header was
-       succesfully added.
+       successfully added.
      * 1 (true) - header was found and its value was successfully
        decremented (had a non-0 value).
      * -1 (false) - the header was found and its value is 0

@@ -1,6 +1,4 @@
 /*
- * $Id: localcache.h 5236 2009-01-30 16:18:37Z bogdan_iancu $
- *
  * memory cache system module
  *
  * Copyright (C) 2009 Anca Vamanu
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -35,6 +33,7 @@
 
 extern lcache_t* cache_htable;
 extern int cache_htable_size;
+extern int local_exec_threshold;
 
 typedef struct {
 	struct cachedb_id *id;

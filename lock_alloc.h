@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -45,7 +43,7 @@
  * lock sets: [implemented only for FL & SYSV so far]
  * - gen_lock_set_t* lock_set_alloc(no)           - allocs a lock set in shm.
  * - void lock_set_dealloc(gen_lock_set_t* s);    - deallocs the lock set shm.
- * 
+ *
  * \see locking.h
 */
 
@@ -54,11 +52,7 @@
 
 /*shm_{malloc, free}*/
 #include "mem/mem.h"
-#ifdef SHM_MEM
 #include "mem/shm_mem.h"
-#else
-#error "locking requires shared memory support"
-#endif
 
 #if defined(FAST_LOCK) || defined(USE_PTHREAD_MUTEX) || defined(USE_POSIX_SEM)
 /* simple locks*/

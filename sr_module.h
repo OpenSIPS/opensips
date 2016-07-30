@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * modules/plug-in structures declarations
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -53,9 +51,15 @@
 #include "pvar.h"
 #include "version.h"
 #include "route.h"
+#include "async.h"
+
+#include "sr_module_deps.h"
 
 typedef  struct module_exports* (*module_register)();
-typedef  int (*cmd_function)(struct sip_msg*, char*, char*, char*, char*, char*, char*);
+typedef  int (*cmd_function)(struct sip_msg*, char*, char*, char*, char*,
+			char*, char*);
+typedef  int (*acmd_function)(struct sip_msg*, async_resume_module **, void **,
+			char*, char*, char*, char*, char*, char*);
 typedef  int (*fixup_function)(void** param, int param_no);
 typedef  int (*free_fixup_function)(void** param, int param_no);
 typedef  int (*response_function)(struct sip_msg*);
@@ -82,6 +86,7 @@ typedef int (*mod_proc_wrapper)();
 #define PROC_TIMER    -1  /* Timer attendant process */
 #define PROC_MODULE   -2  /* Extra process requested by modules */
 #define PROC_TCP_MAIN -4  /* TCP main process */
+#define PROC_BIN      -8  /* Any binary interface listener */
 
 #define DEFAULT_DLFLAGS	0 /* value that signals to module loader to
 							use default dlopen flags in opensips */
@@ -113,6 +118,15 @@ struct cmd_export_ {
 };
 
 
+struct acmd_export_ {
+	char* name;              /* null terminated command name */
+	acmd_function function;  /* pointer to the corresponding function */
+	int param_no;            /* number of parameters used by the function */
+	fixup_function fixup;    /* pointer to the function called to "fix" the
+							    parameters */
+};
+
+
 struct param_export_ {
 	char* name;             /*!< null terminated param. name */
 	modparam_t type;        /*!< param. type */
@@ -129,19 +143,42 @@ struct proc_export_ {
 	unsigned int flags;
 };
 
+typedef struct dep_export_ {
+	module_dependency_t md[MAX_MOD_DEPS];
+	modparam_dependency_t mpd[];
+} dep_export_t;
 
-typedef struct cmd_export_ cmd_export_t;
-typedef struct param_export_ param_export_t;
+typedef struct cmd_export_  cmd_export_t;
+typedef struct acmd_export_ acmd_export_t;
 typedef struct proc_export_ proc_export_t;
+
+
+struct sr_module{
+	char* path;
+	void* handle;
+	int init_done;
+	struct module_exports* exports;
+
+	/* a list of module dependencies */
+	struct sr_module_dep *sr_deps;
+
+	struct sr_module* next;
+};
+
 
 struct module_exports{
 	char* name;                     /*!< null terminated module name */
+	enum module_type type;
 	char *version;                  /*!< module version */
 	char *compile_flags;            /*!< compile flags used on the module */
 	unsigned int dlflags;           /*!< flags for dlopen */
-	
+
+	dep_export_t *deps;             /*!< module and modparam dependencies */
+
 	cmd_export_t* cmds;             /*!< null terminated array of the exported
 	                                   commands */
+	acmd_export_t* acmds;           /*!< null terminated array of the exported
+	                                   async commands */
 	param_export_t* params;         /*!< null terminated array of the exported
 	                                   module parameters */
 
@@ -166,24 +203,17 @@ struct module_exports{
 	                                    after the fork */
 };
 
-
-
-
-
-struct sr_module{
-	char* path;
-	void* handle;
-	struct module_exports* exports;
-	struct sr_module* next;
-};
-
+extern char *mpath;
+extern char mpath_buf[];
+extern int  mpath_len;
 
 struct sr_module* modules; /*!< global module list*/
 
 int register_builtin_modules();
 int register_module(struct module_exports*, char*,  void*);
-int sr_load_module(char* path);
+int load_module(char* name);
 cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags);
+acmd_export_t* find_acmd_export_t(char* name, int param_no);
 cmd_function find_export(char* name, int param_no, int flags);
 cmd_function find_mod_export(char* mod, char* name, int param_no, int flags);
 void destroy_modules();
@@ -208,6 +238,10 @@ void* find_param_export(char* mod, char* name, modparam_t type);
 /*! \brief Check if module is loaded
  * \return Returns 1 if the module with name 'name' is loaded, and zero otherwise. */
 int module_loaded(char *name);
+
+/*! \brief Gets a specific module
+ * \return Returns the module if the module with name 'name' is loaded, and
+ * NULL otherwise */
 
 /*! \brief Counts the additional the number of processes requested by modules */
 int count_module_procs();

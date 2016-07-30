@@ -27,7 +27,6 @@ f none /opt/opensips/dbtext/opensips/imc_rooms 0644 root root
 f none /opt/opensips/dbtext/opensips/load_balancer 0644 root root
 f none /opt/opensips/dbtext/opensips/location 0644 root root
 f none /opt/opensips/dbtext/opensips/missed_calls 0644 root root
-f none /opt/opensips/dbtext/opensips/pdt 0644 root root
 f none /opt/opensips/dbtext/opensips/nh_sockets 0644 root root
 f none /opt/opensips/dbtext/opensips/presentity 0644 root root
 f none /opt/opensips/dbtext/opensips/pua 0644 root root
@@ -65,7 +64,7 @@ f none /opt/opensips/lib64/opensips/modules/benchmark.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/call_control.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/cfgutils.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/closeddial.so 0755 root root
-f none /opt/opensips/lib64/opensips/modules/cpl-c.so 0755 root root
+f none /opt/opensips/lib64/opensips/modules/cpl_c.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/db_flatstore.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/db_text.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/dialog.so 0755 root root
@@ -94,7 +93,6 @@ f none /opt/opensips/lib64/opensips/modules/nathelper.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/nat_traversal.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/options.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/path.so 0755 root root
-f none /opt/opensips/lib64/opensips/modules/pdt.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/pike.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/permissions.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/presence.so 0755 root root
@@ -160,7 +158,7 @@ f none /opt/opensips/README.benchmark 0644 root root
 f none /opt/opensips/README.call_control 0644 root root
 f none /opt/opensips/README.cfgutils 0644 root root
 f none /opt/opensips/README.closeddial 0644 root root
-f none /opt/opensips/README.cpl-c 0644 root root
+f none /opt/opensips/README.cpl_c 0644 root root
 f none /opt/opensips/README.db_flatstore 0644 root root
 f none /opt/opensips/README.db_text 0644 root root
 f none /opt/opensips/README.dialog 0644 root root
@@ -189,7 +187,6 @@ f none /opt/opensips/README.nathelper 0644 root root
 f none /opt/opensips/README.nat_traversal 0644 root root
 f none /opt/opensips/README.options 0644 root root
 f none /opt/opensips/README.path 0644 root root
-f none /opt/opensips/README.pdt 0644 root root
 f none /opt/opensips/README.permissions 0644 root root
 f none /opt/opensips/README.pike 0644 root root
 f none /opt/opensips/README.presence 0644 root root

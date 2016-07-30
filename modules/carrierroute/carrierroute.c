@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -206,11 +204,24 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports = {
 	"carrierroute",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version*/
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,            /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
+	0,          /* Exported async functions */
 	params,     /* Export parameters */
 	0,          /* exported statistics */
 	mi_cmds,    /* exported MI functions */
@@ -252,7 +263,7 @@ static enum hash_source hash_fixup(const char * my_hash_source) {
 /************* Interface Functions *****************************************/
 
 /**
- * Initialises the module, i.e. it binds the necessary API functions
+ * Initializes the module, i.e. it binds the necessary API functions
  * and registers the fifo commands
  *
  * @return 0 on success, -1 on failure
@@ -352,14 +363,14 @@ static int carrier_fixup(void ** param) {
 		return -1;
 	}
 	memset(mp, 0, sizeof(struct multiparam_t));
-	
+
 	s.s = (char *)(*param);
 	s.len = strlen(s.s);
 
 	if (s.s[0]!='$') {
 		/* This is a name string */
 		mp->type=MP_INT;
-		
+
 		/* get carrier id */
 		if ((mp->u.n = find_tree(s)) < 0) {
 			LM_ERR("could not find carrier tree '%s'\n", (char *)(*param));
@@ -367,7 +378,7 @@ static int carrier_fixup(void ** param) {
 			return -1;
 		}
 		LM_INFO("carrier tree %s has id %i\n", (char *)*param, mp->u.n);
-		
+
 		pkg_free(*param);
 		*param = (void *)mp;
 	}
@@ -420,14 +431,14 @@ static int domain_fixup(void ** param) {
 		return -1;
 	}
 	memset(mp, 0, sizeof(struct multiparam_t));
-	
+
 	s.s = (char *)(*param);
 	s.len = strlen(s.s);
-	
+
 	if (s.s[0]!='$') {
 		/* This is a name string */
 		mp->type=MP_INT;
-		
+
 		/* get domain id */
 		if ((mp->u.n = add_domain(&s)) < 0) {
 			LM_ERR("could not add domain\n");
@@ -459,7 +470,7 @@ static int domain_fixup(void ** param) {
 				pkg_free(mp);
 				return -1;
 			}
-		}	
+		}
 	}
 	*param = (void*)mp;
 
@@ -486,14 +497,14 @@ static int avp_name_fixup(void ** param) {
 		LM_ERR("Malformed or non AVP definition <%s>\n", (char *)(*param));
 		return -1;
 	}
-	
+
 	mp = (struct multiparam_t *)pkg_malloc(sizeof(struct multiparam_t));
 	if (mp == NULL) {
 		LM_ERR("no more memory\n");
 		return -1;
 	}
 	memset(mp, 0, sizeof(struct multiparam_t));
-	
+
 	mp->type=MP_AVP;
 	if(pv_get_avp_name(0, &(avp_spec.pvp), &(mp->u.a.name), &(mp->u.a.flags))!=0) {
 		LM_ERR("Invalid AVP definition <%s>\n", (char *)(*param));
@@ -502,7 +513,7 @@ static int avp_name_fixup(void ** param) {
 	}
 
 	*param = (void*)mp;
-	
+
 	return 0;
 }
 

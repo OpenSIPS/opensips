@@ -6,7 +6,7 @@ CREATE TABLE dbaliases (
     username CHAR(64) DEFAULT '' NOT NULL,
     domain CHAR(64) DEFAULT '' NOT NULL,
     CONSTRAINT alias_idx UNIQUE (alias_username, alias_domain)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX target_idx ON dbaliases (username, domain);
 

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * DBText module core functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -27,7 +25,7 @@
  *           the second one, the result of 'dbt_row_match' was always true,
  *           thanks to Gabriel, (Daniel)
  * 2003-02-04 created by Daniel
- * 
+ *
  */
 
 #include <stdio.h>
@@ -43,13 +41,13 @@ dbt_result_p dbt_result_new(dbt_table_p _dtp, int *_lres, int _sz)
 	dbt_result_p _dres = NULL;
 	int i, n;
 	char *p;
-	
+
 	if(!_dtp || _sz < 0)
 		return NULL;
 
 	if(!_lres)
 		_sz = _dtp->nrcols;
-	
+
 	_dres = (dbt_result_p)pkg_malloc(sizeof(dbt_result_t));
 	if(!_dres)
 		return NULL;
@@ -78,10 +76,11 @@ dbt_result_p dbt_result_new(dbt_table_p _dtp, int *_lres, int _sz)
 		_dres->colv[i].type =
 				(_lres)?_dtp->colv[_lres[i]]->type:_dtp->colv[i]->type;
 	}
-	
+
 	_dres->nrcols = _sz;
 	_dres->nrrows = 0;
 	_dres->rows = NULL;
+	_dres->last = NULL;
 
 	return _dres;
 clean:
@@ -93,7 +92,7 @@ clean:
 	}
 	pkg_free(_dres->colv);
 	pkg_free(_dres);
-	
+
 	return NULL;
 }
 
@@ -112,7 +111,7 @@ int dbt_result_free(dbt_result_p _dres)
 		{
 			for(i=0; i<_dres->nrcols; i++)
 			{
-				if((_dres->colv[i].type==DB_STR 
+				if((_dres->colv[i].type==DB_STR
 							|| _dres->colv[i].type==DB_STRING)
 						&& _rp0->fields[i].val.str_val.s)
 					pkg_free(_rp0->fields[i].val.str_val.s);
@@ -142,7 +141,7 @@ int dbt_result_add_row(dbt_result_p _dres, dbt_row_p _drp)
 	if(!_dres || !_drp)
 		return -1;
 	_dres->nrrows++;
-	
+
 	if(_dres->rows)
 		(_dres->rows)->prev = _drp;
 	_drp->next = _dres->rows;
@@ -154,7 +153,7 @@ int dbt_result_add_row(dbt_result_p _dres, dbt_row_p _drp)
 int* dbt_get_refs(dbt_table_p _dtp, db_key_t* _k, int _n)
 {
 	int i, j, *_lref=NULL;
-	
+
 	if(!_dtp || !_k || _n < 0)
 		return NULL;
 
@@ -182,7 +181,7 @@ int* dbt_get_refs(dbt_table_p _dtp, db_key_t* _k, int _n)
 		}
 	}
 	return _lref;
-}	
+}
 
 
 int dbt_row_match(dbt_table_p _dtp, dbt_row_p _drp, int* _lkey,
@@ -222,7 +221,7 @@ int dbt_row_match(dbt_table_p _dtp, dbt_row_p _drp, int* _lkey,
 				return 0;
 		}else{
 			return 0;
-		}}}}}		
+		}}}}}
 	}
 	return 1;
 }
@@ -232,10 +231,10 @@ int dbt_result_extract_fields(dbt_table_p _dtp, dbt_row_p _drp,
 {
 	dbt_row_p _rp=NULL;
 	int i, n;
-	
-	if(!_dtp || !_drp || !_dres || _dres->nrcols<=0)	
+
+	if(!_dtp || !_drp || !_dres || _dres->nrcols<=0)
 		return -1;
-	
+
 	_rp = dbt_result_new_row(_dres);
 	if(!_rp)
 		return -1;
@@ -254,7 +253,7 @@ int dbt_result_extract_fields(dbt_table_p _dtp, dbt_row_p _drp,
 			memset(&(_rp->fields[i].val), 0, sizeof(_rp->fields[i].val));
 			continue;
 		}
-		
+
 		switch(_dres->colv[i].type)
 		{
 			case DB_INT:
@@ -291,10 +290,14 @@ int dbt_result_extract_fields(dbt_table_p _dtp, dbt_row_p _drp,
 		}
 	}
 
-	if(_dres->rows)
-		(_dres->rows)->prev = _rp;
-	_rp->next = _dres->rows;
-	_dres->rows = _rp;
+	_rp->next = NULL;
+	if (_dres->last) {
+		_dres->last->next = _rp;
+		_rp->prev = _dres->last;
+	} else {
+		_dres->rows = _rp;
+	}
+	_dres->last = _rp;
 	_dres->nrrows++;
 
 	return 0;
@@ -309,7 +312,7 @@ clean:
 				&& !_rp->fields[i].nul
 				&& _rp->fields[i].val.str_val.s)
 			pkg_free(_rp->fields[i].val.str_val.s);
-				
+
 		i--;
 	}
 	pkg_free(_rp->fields);
@@ -330,7 +333,7 @@ int dbt_result_print(dbt_result_p _dres)
 		return -1;
 
 	fprintf(fout, "\nContent of result\n");
-	
+
 	for(i=0; i<_dres->nrcols; i++)
 	{
 		switch(_dres->colv[i].type)
@@ -445,7 +448,7 @@ int dbt_cmp_val(dbt_val_p _vp, db_val_t* _v)
 		return 1;
 	if(_vp->nul)
 		return -1;
-	
+
 	switch(VAL_TYPE(_v))
 	{
 		case DB_INT:
@@ -505,7 +508,7 @@ dbt_row_p dbt_result_new_row(dbt_result_p _dres)
 	dbt_row_p _drp = NULL;
 	if(!_dres || _dres->nrcols<=0)
 		return NULL;
-	
+
 	_drp = (dbt_row_p)pkg_malloc(sizeof(dbt_row_t));
 	if(!_drp)
 		return NULL;

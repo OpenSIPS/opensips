@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * XMPP Module
  * This file is part of opensips, a free SIP server.
  *
@@ -18,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * Author: Andreea Spirea
  *
@@ -92,7 +90,7 @@ char* uri_xmpp2sip(char* uri, int* len)
 		}
 		else
 			user.len = strlen(uri);
-	
+
 		if(5 + user.len > 256)
 		{
 			LM_ERR("Buffer overflow\n");
@@ -133,7 +131,7 @@ char* uri_xmpp2sip(char* uri, int* len)
 char *extract_domain(char *jid)
 {
 	char *p;
-	
+
 	if ((p = strchr(jid, '/')))
 		*p = 0;
 	if ((p = strchr(jid, '@'))) {
@@ -161,7 +159,7 @@ char *db_key(char *secret, char *domain, char *id)
 {
 	char buf[1024];
 	char *hash;
-	
+
 	snprintf(buf, sizeof(buf), "%s", secret);
 	hash = shahash(buf);
 

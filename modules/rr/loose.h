@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Route & Record-Route module, loose routing support
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -40,14 +38,14 @@
 #define RR_FLOW_DOWNSTREAM  (1<<0)
 #define RR_FLOW_UPSTREAM    (1<<1)
 
-extern int removed_routes;
-extern int routing_type;
+extern int ctx_rrparam_idx;
+extern int ctx_routing_idx;
 
 
 /*! \brief
  * Do loose routing as per RFC3261
  */
-int loose_route(struct sip_msg* _m, char* _s1, char* _s2);
+int loose_route(struct sip_msg* _m);
 
 
 /*! \brief
@@ -144,7 +142,7 @@ static inline int is_strict(str* _params)
 			default:              break;
 			}
 			break;
-			
+
 		case 5:
 			switch(s.s[i]) {
 			case '\\': state = 6; break;
@@ -156,7 +154,7 @@ static inline int is_strict(str* _params)
 		case 6: state = 5; break;
 		}
 	}
-	
+
 	if ((state == 2) || (state == 3)) return 0;
 	else return 1;
 }

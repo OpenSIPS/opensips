@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2004 FhG FOKUS
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -56,7 +54,7 @@ int main(int argc, char** argv)
 	int sock, len;
 	socklen_t from_len;
 	struct sockaddr_un from, to;
-	char name[256];
+	char name[108];
 	static char buffer[BUF_SIZE];
 	char *chroot_dir;
 
@@ -70,14 +68,18 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Error while opening socket: %s\n", strerror(errno));
 		return -1;
 	}
-	
+
 	memset(&from, 0, sizeof(from));
 	from.sun_family = PF_LOCAL;
 
 	chroot_dir = getenv("CHROOT_DIR");
 	if (chroot_dir == NULL)
 		chroot_dir = "";
-	sprintf(name, "%s/tmp/OpenSIPS.%d.XXXXXX", chroot_dir, getpid());
+	len = snprintf(name, 108, "%s/tmp/OpenSIPS.%d.XXXXXX", chroot_dir, getpid());
+	if (len == 108 && name[len - 1] != '\0') {
+		fprintf(stderr, "tmpfile too long: %s/tmp/OpenSIPS.%d.XXXXXX\n", chroot_dir, getpid());
+		return -3;
+	}
 	umask(0); /* set mode to 0666 for when opensips is running as non-root user and opensipsctl is running as root */
 
 	if (mkstemp(name) == -1) {
@@ -98,7 +100,7 @@ int main(int argc, char** argv)
 	memset(&to, 0, sizeof(to));
 	to.sun_family = PF_LOCAL;
 	strncpy(to.sun_path, argv[1], sizeof(to.sun_path) - 1);
-	
+
 	len = fread(buffer, 1, BUF_SIZE, stdin);
 
 	if (len) {

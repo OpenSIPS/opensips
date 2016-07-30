@@ -1,9 +1,9 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
@@ -24,7 +24,13 @@
                 </listitem>
 		<listitem>
 		<para>
-		Homer encapsulation protocl mode (HEP v1). 
+			Homer encapsulation protocl mode (HEP v1/2/3). With version 2.2
+			comes the new HEPv3 support using the proto _hep module. Also
+			header manipulation support for HEPv3 has been added. See
+			<xref linkend="hep_set_id"/> for more details. If you want more
+			information about hep protocol check this
+			<ulink url="https://github.com/sipcapture/HEP/blob/master/docs/HEP3_rev11.pdf">
+			link</ulink>.
 		</para>
 		</listitem>
 		</itemizedlist>
@@ -53,6 +59,12 @@
 				dbtext, unixodbc...
 			</para>
 			</listitem>
+			<listitem>
+			<para>
+				<emphasis>proto_hep module</emphasis> - if hep capturing used
+			</para>
+			</listitem>
+
 			</itemizedlist>
 		</para>
 	</section>
@@ -95,7 +107,9 @@ modparam("sipcapture", "db_url", "mysql://user:passwd@host/dbname")
 	<section>
 		<title><varname>table_name</varname> (str)</title>
 		<para>
-		Name of the table's name where to store the SIP messages. 
+			Name of the table's name where to store the SIP messages. Since
+		version 2.2 it allows strftime-like suffix for having time formatted
+		table names.
 		</para>
 		<para>
 		<emphasis>
@@ -103,15 +117,47 @@ modparam("sipcapture", "db_url", "mysql://user:passwd@host/dbname")
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>sip_capture</varname> parameter</title>
+		<title>Set <varname>table_name</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("sipcapture", "table_name", "homer_capture")
+
+/* change table name every day */
+modparam("sipcapture", "table_name", "homer_%m_%d")
+/* if today is 13-04-2014 it will exetend to homer_04_13 */
 ...
 
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>rtcp_table_name</varname> (str)</title>
+		<para>
+			Name of the table's name where to store packets captured
+		with report_capture function. Since version 2.2 it allows
+		strftime-like suffix for having time formatted
+		table names.
+
+		</para>
+		<para>
+		<emphasis>
+			Default value is "rtcp_capture".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rtcp_capture</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sipcapture", "rtcp_table_name", "homer_capture")
+
+/* change table name every hour */
+modparam("sipcapture", "rtcp_table_name", "homer_%m_%d_%H")
+/* if today is 13-04-2014 13:05 pm it will exetend to homer_04_13_13 */
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section>
 		<title><varname>capture_on</varname> (integer)</title>
 		<para>
@@ -151,6 +197,31 @@ modparam("sipcapture", "hep_capture_on", 1)
                 </example>
         </section>
         <section>
+                <title><varname>max_async_queries</varname> (integer)</title>
+                <para>
+				Parameter to set the maximum number of 'INSERT' queries of captured
+				packets to be done in the same time, only if the DB supports async
+				operations. If OpenSIPS is shut down, the remaining queries shall be
+				executed. The query buffer is limited 65535 chars, so probably no more
+				than 30-40 queries can be done in the same time, depending mostly on the size
+				of the inserted sip message, since it's the biggest part of the query.
+                </para>
+                <para>
+                <emphasis>
+                        Default value is "5".
+                </emphasis>
+                </para>
+                <example>
+                <title>Set <varname>max_async_queries</varname> parameter</title>
+                <programlisting format="linespecific">
+...
+modparam("sipcapture", "max_async_queries", 3)
+...
+</programlisting>
+                </example>
+        </section>
+
+        <section>
                 <title><varname>raw_ipip_capture_on</varname> (integer)</title>
                 <para>
                 Parameter to enable/disable IPIP capturing (on(1)/off(0))
@@ -173,7 +244,7 @@ modparam("sipcapture", "raw_ipip_capture_on", 1)
                 <title><varname>raw_moni_capture_on</varname> (integer)</title>
                 <para>
                 Parameter to enable/disable monitoring/mirroring port capturing (on(1)/off(0))
-		Only one mode on raw socket can be enabled! Monitoring port capturing currently 
+		Only one mode on raw socket can be enabled! Monitoring port capturing currently
 		supported only on Linux.
                 </para>
                 <para>
@@ -193,14 +264,14 @@ modparam("sipcapture", "raw_moni_capture_on", 1)
 	<section>
                 <title><varname>raw_socket_listen</varname> (string)</title>
                 <para>
-                Parameter indicate an listen IP address of RAW socket for IPIP capturing. 
-                You can also define a port/portrange for IPIP/Mirroring mode, to capture 
+                Parameter indicate an listen IP address of RAW socket for IPIP capturing.
+                You can also define a port/portrange for IPIP/Mirroring mode, to capture
                 SIP messages in specific ports:
 		<para>
 		"10.0.0.1:5060" - the source/destination port of the SIP message must be equal 5060
 		</para>
 		<para>
-		"10.0.0.1:5060-5090" - the source/destination port of the SIP message must be 
+		"10.0.0.1:5060-5090" - the source/destination port of the SIP message must be
 		equal or be between 5060 and 5090.
 		</para>
 		<para>
@@ -286,7 +357,7 @@ modparam("sipcapture", "promiscuous_on", 1)
         <section>
                 <title><varname>raw_moni_bpf_on</varname> (integer)</title>
                 <para>
-                Activate Linux Socket Filter (LSF based on BPF) on the mirroring interface. 
+                Activate Linux Socket Filter (LSF based on BPF) on the mirroring interface.
                 The structure is defined in linux/filter.h. The default LSF accept a port/portrange
                 from the raw_socket_listen param. Currently LSF supported only on Linux.
                 </para>
@@ -303,7 +374,7 @@ modparam("sipcapture", "raw_moni_bpf_on", 1)
 ...
 </programlisting>
                 </example>
-        </section>        
+        </section>
 	<section>
 		<title><varname>capture_node</varname> (str)</title>
 		<para>
@@ -323,7 +394,624 @@ modparam("sipcapture", "capture_node", "homer03")
 </programlisting>
 		</example>
 	</section>
-</section>	
+	<section>
+		<title><varname>hep_route</varname> (string)</title>
+		<para>
+			Specifies what path your hep messages should take. Possible
+		values are the following:
+		</para>
+		<itemizedlist>
+			<listitem><para><emphasis>none</emphasis> - don't go through the script;
+					do directly sip_capture(); </para>
+			</listitem>
+			<listitem><para><emphasis>sip(default)</emphasis> - go through the main
+					request route; here the message is parsed and you can do anything you
+					want with it;</para>
+			</listitem>
+
+			<listitem><para><emphasis>any other string value</emphasis> - define a route name
+					through which your hep messages should go; the message is not parsed because
+					of efficiency reasons; from here you can modify the hep chunks(if hep version
+					3 is used) and relay the hep messages to other hep capture nodes; </para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>
+			Default value is sip(going thorugh the main request route).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>hep_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sipcapture", "hep_route", "my_hep_route")
+...
+
+route[my_hep_route] {
+	/* do hep stuff in here */
+	...
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+</section>
+
+	<section>
+	<title>Exported Functions</title>
+
+		<section>
+		<title>
+			<function moreinfo="none">sip_capture([table_name])</function>
+		</title>
+		<para>
+			Save the message into the database.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>table_name (string)</emphasis> - the name of the table to store
+				the packet; it can have a strftime-like formatted suffix in order to change it's name
+				based on time; if not set, modparam defined table will be used;
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
+		</para>
+	<example>
+	<title><function>sip_capture</function> usage</title>
+	<programlisting format="linespecific">
+...
+if (is_method("REGISTER"))
+	sip_capture();
+	...
+	/* table name will change every day */
+	sip_capture("homer_%m_%d");
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+		<section>
+		<title>
+			<function moreinfo="none">report_capture([table_name],correlation_id[,proto_type])</function>
+		</title>
+		<para>
+			Save the message into the database. If you want set the protocol type you have to define
+		the table name, even if you pass over it(report_capture(,"$var(cor_id)", "$var(proto_type)")).
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>table_name (string)</emphasis> - the name of the table to store
+				the packet; it can have a strftime-like formatted suffix in order to change it's name
+				based on time;
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>correlation_id (string)</emphasis>
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>proto_type (int)</emphasis> - protocol type number as defined in hep protocol
+				specification.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
+		</para>
+	<example>
+	<title><function>sip_capture</function> usage</title>
+	<programlisting format="linespecific">
+...
+
+	hep_get("utf8-string", "0x0011", "$var(correlation_id)");
+	if($var(correlation_id) == $null) {
+		xlog("NO CORRELATION ID! SET SOMETHING OR DROP");
+		$var(correlation_id) = "absdcef";
+	}
+
+	$var(proto_type) = "3"; /* 0x03 - SDP protocol */
+
+	report_capture("rtcp_log", $var(correlation_id)");
+	/* setting the first parameter, even if setting it to null, is mandatory in order to be able to set proto type */
+	report_capture(, $var(correlation_id)", "$var);
+	report_capture("rtcp_log", $var(correlation_id)", "$var);
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+
+
+		<section id="hep_set_id">
+		<title>
+			<function moreinfo="none">hep_set([data_type,] chunk_id, [vendor_id,] chunk_data)</function>
+		</title>
+		<para>
+			Set a hep chunk. If not exists, it shall be added.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>data_type</emphasis> - data type of the data in the chunk. It can have
+			the following values:
+			</para>
+			<itemizedlist>
+			<listitem>
+			<para>uint8  - byte unsigned integer</para>
+			</listitem>
+			<listitem>
+			<para>uint16 - word unsigned integer </para>
+			</listitem>
+			<listitem>
+			<para>uint32 - 4 byte unsigned integer </para>
+			</listitem>
+			<listitem>
+			<para>inet4-addr - IPv4 address in human readable format</para>
+			</listitem>
+			<listitem>
+			<para>inet6-addr - IPv6 address in human readable format</para>
+			</listitem>
+			<listitem>
+			<para>utf8-string - UTF8 encoded character sequence</para>
+			</listitem>
+			<listitem>
+			<para>octet-string - byte array</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>chunk_id(string value with hex/int or string identifiere of chunk)</emphasis>
+				- id of the chunk to be added; most of the generic
+			chunks are in the internal hep structure. For these you can skip the data_type
+			and vendor_id since they are already known. Generic chunks that don't have built
+			in support are the followinig: 0x000d(keep alive timer), 0x000e(authenticate key),
+			0x0011(internal correltion id), 0x0012(vlan ID). You can set these chunks, but
+			only with vendor id 0x0000, other values shall result in an error. Timestamp(0x0009)
+			and timestamp_us(0x000A) chunks can't be set. For chunks
+			that have built-in support you can also use strings instead of chunk ids as
+			follows:
+			<itemizedlist>
+			<listitem>
+				<para>0x0001 - proto_family(CAN'T BE SET; it shall be automatically updated
+					if you change the type of the source/destination address from IPv4 to IPv6
+					or else)
+				</para>
+			</listitem>
+			<listitem>
+				<para>0x0002 - proto_id; since it's quite hard to know the int values for the protocol
+				one can change this value using the following string values:</para>
+				<itemizedlist>
+				<listitem>
+				<para>UDP</para>
+				</listitem>
+				<listitem>
+				<para>TCP</para>
+				</listitem>
+				<listitem>
+				<para>TLS</para>
+				</listitem>
+				<listitem>
+				<para>SCTP</para>
+				</listitem>
+				<listitem>
+				<para>WS</para>
+				</listitem>
+				<listitem>
+				<para>WSS</para>
+				</listitem>
+				<listitem>
+				<para>BIN</para>
+				</listitem>
+				<listitem>
+				<para>HEP</para>
+				</listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem>
+			<para>0x0003 - src_ip</para>
+			</listitem>
+			<listitem>
+			<para>0x0004 - dst_ip</para>
+			</listitem>
+			<listitem>
+			<para>0x0005 - src_ip</para>
+			</listitem>
+			<listitem>
+			<para>0x0006 - dst_ip</para>
+			</listitem>
+			<listitem>
+			<para>0x0007 - src_port</para>
+			</listitem>
+			<listitem>
+			<para>0x0008 - dst_port</para>
+			</listitem>
+			<listitem>
+			<para>0x0009 - timestamp(CAN'T BE SET)</para>
+			</listitem>
+			<listitem>
+			<para>0x000A - timestamp_us(CAN'T BE SET)</para>
+			</listitem>
+			<listitem>
+				<para>0x000B - proto_type; for this variable there are predefined
+				strings which can be set: </para>
+				<itemizedlist>
+				<listitem>
+				<para>SIP</para>
+				</listitem>
+				<listitem>
+				<para>XMPP</para>
+				</listitem>
+				<listitem>
+				<para>SDP</para>
+				</listitem>
+				<listitem>
+				<para>RTP</para>
+				</listitem>
+				<listitem>
+				<para>RTCP</para>
+				</listitem>
+				<listitem>
+				<para>MGCP</para>
+				</listitem>
+				<listitem>
+				<para>MEGACO</para>
+				</listitem>
+				<listitem>
+				<para>M2UA</para>
+				</listitem>
+				<listitem>
+				<para>M3UA</para>
+				</listitem>
+				<listitem>
+				<para>IAX</para>
+				</listitem>
+				<listitem>
+				<para>H322</para>
+				</listitem>
+				<listitem>
+				<para>H321</para>
+				</listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem>
+			<para>0x000C - captagent_id</para>
+			</listitem>
+			<listitem>
+			<para>0x000f - payload</para>
+			</listitem>
+			<listitem>
+			<para>0x0010 - payload</para>
+			</listitem>
+			</itemizedlist>
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>vendor id(string value with hex or int)</emphasis> - there are
+				some vendor ids already defined; check
+				<ulink url="https://github.com/sipcapture/HEP/blob/master/docs/HEP3_rev11.pdf">
+					hep proto docs</ulink>
+				for more details.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>data(string)</emphasis> - data that the chunk shall contain;
+			internally it shall be converted to the requested data type</para>
+		</listitem>
+		</itemizedlist>
+	<example>
+	<title><function>hep_set</function> usage</title>
+	<programlisting format="linespecific">
+...
+/* modify/add a generic chunk */
+hep_set("proto_type", "H321");
+
+/* add a custom chunk - int */
+hep_set("uint32", "31"/*chk id*/, "3"/*opensips vendor*/, "132")
+
+/* add a custom chunk - IPv4 address */
+hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5.14")
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+		<section>
+		<title>
+			<function moreinfo="none">hep_get([data_type,] chunk_id, vendor_id_pv, chunk_data_pv)</function>
+		</title>
+		<para>
+			Set a hep chunk. If not exists, it shall be added.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+		<para><emphasis>data_type(string)</emphasis> - same meaning as in
+			<xref linkend="hep_set_id"/>; can miss if it's a generic chunk</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>chunk_id</emphasis> - same meaning as in
+			<xref linkend="hep_set_id"/></para>
+		</listitem>
+		<listitem>
+			<para><emphasis>vendor_id_pv(writable pvar)</emphasis> - will hold the vendor id(int value)
+			of the chunk</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>chunk_data_pv(writable pvar)</emphasis> - will hold the data inside the
+			chunk; some of the generic chunk data come in specific format, as following:</para>
+			<itemizedlist>
+			<listitem>
+				<para>0x0001 - proto_family(string) - AF_INET/AF_INET6</para>
+			</listitem>
+			<listitem>
+				<para>0x0002  proto_id(string) - see <xref linkend="hep_set_id"/> for possible values</para>
+			</listitem>
+			<listitem>
+				<para>0x0003/0x0004/0x0005/0x0006  src/dst_ip(string) - ip addresses in human readable format</para>
+			</listitem>
+			<listitem>
+				<para>0x0009  timestamp(string) - time and date in human readable format</para>
+			</listitem>
+			<listitem>
+				<para>0x000B  proto_type(string) - see <xref linkend="hep_set_id"/> for possible values</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		</itemizedlist>
+
+<example>
+<title><function>hep_set</function> usage</title>
+<programlisting format="linespecific">
+...
+/* get a generic chunk */
+hep_get("proto_type", "$var(vid)", "$var(data)");
+
+/* get custom chunk - you must know what kind of data is there */
+hep_set("uint32", "31"/*chk id*/, "$var(vid)", "$var(data)")
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+		<section>
+		<title>
+			<function moreinfo="none">hep_del(chunk_id)</function>
+		</title>
+		<para>
+			Removes a hep chunk.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>chunk_id</emphasis> - same meaning as the <emphasis>chunk_id</emphasis> in
+				<xref linkend="hep_set_id"/>.
+			</para>
+		</listitem>
+		</itemizedlist>
+<example>
+<title><function>hep_set</function> usage</title>
+<programlisting format="linespecific">
+...
+/* get a generic chunk */
+hep_del("25"); /* removes chunk with chunk id 25 */
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+
+		<section>
+		<title>
+			<function moreinfo="none">hep_relay()</function>
+		</title>
+		<para>
+		Relay a message statefully to destination indicated in current URI.
+		(If the original URI was rewritten by UsrLoc, RR, strip/prefix, etc.,
+		the new URI will be taken). The message has to have been a HEP message,
+		version 1, 2 or 3. For version 1 and 2 you can relay only using UDP,
+		for version 3 TCP and UDP can be used.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
+		</para>
+<example>
+<title><function>hep_relay</function> usage</title>
+<programlisting format="linespecific">
+...
+$du="sip:192.168.153.157";
+if (!hep_relay()) {
+	xlog("Hep proxying failed!\n");
+	exit;
+}
+
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+		<section>
+		<title>
+			<function moreinfo="none">hep_resume_sip()</function>
+		</title>
+		<para>
+			Break hep route execution and resume into the main request route.
+		</para>
+		<para>
+			WARNING: USE THIS FUNCTION ONLY FROM A ROUTE DEFINED USING <emphasis>hep_route</emphasis> PARAMETER.
+		</para>
+<example>
+<title><function>hep_resume_sip</function> usage</title>
+<programlisting format="linespecific">
+...
+modparam("sipcapture", "hep_route", "my_hep_route")
+
+route[my_hep_route] {
+	...
+
+	/* resume execution in the main request route */
+	hep_resume_sip();
+}
+
+
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+
+
+
+
+	</section>
+
+	<section>
+	<title>Exported Async Functions</title>
+
+	<section>
+	<title>
+		<function moreinfo="none">sip_capture()</function>
+	</title>
+	<para>
+		Save the message inside the database. The query is being done
+	asnychronously only if the database supports async operations.
+	The query might not be executed exactly at this moment, it depends
+	on the <emphasis>max_async_queries</emphasis> parameter.
+	</para>
+	<example>
+	<title><function>sip_capture</function> usage</title>
+	<programlisting format="linespecific">
+...
+{
+	async(sip_capture(), capture_resume);
+}
+
+route[capture_resume] {
+	xlog("insert executed\n");
+	/*continuing logic here */
+}
+...
+	</programlisting>
+	</example>
+	</section>
+
+</section>
+
+
+	<section>
+	<title>Exported PseudoVariables</title>
+
+	<section>
+	<title>
+		<function moreinfo="none">hep_net</function>
+	</title>
+	<para>Holds layer 3 and 4 information(IP addresses and ports) about
+		the node from where the hep message was received. The variable is
+		read-only and can be used only if it's referenced by it's name.</para>
+	<para>Possible values for it's name are the following:</para>
+	<itemizedlist>
+	<listitem>
+		<para><emphasis>proto_family</emphasis> - can be AF_INET/AF_INET6</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>proto_id</emphasis> - it's PROTO_HEP since you receive
+			the message as hep.</para>
+	</listitem>
+
+	<listitem>
+		<para><emphasis>src_ip</emphasis> - IPv4/IPv6 address, depending on the
+		proto_family, of the sending node.</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>dst_ip</emphasis> - IPv4/IPv6 address, depending on the
+			proto_family, of the receiving node(&osips; hep interface ip on which
+			the message was received).</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>src_port</emphasis> - Sending node port.</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>dst_port</emphasis> - Receiving port(&osips; hep interace
+			port on which the message was received).</para>
+	</listitem>
+	</itemizedlist>
+	<example>
+	<title><function>hep_net</function> usage</title>
+	<programlisting format="linespecific">
+...
+	/* received this hep packet on interface 192.168.2.5*/
+	if ($hep_net(dst_ip) == "192.168.2.5") {
+		/* received this on 192.168.2.5:6060 interface */
+		if ($hep_net(dst_port) == 6060) {
+			...
+		/* received this on 192.168.2.5:6061 interface */
+		} else if ($hep_net(dst_port) == 6061) {
+			...
+		}
+	}
+...
+	</programlisting>
+	</example>
+	</section>
+
+	<section>
+	<title>
+		<function moreinfo="none">HEPVERSION - string,int</function>
+	</title>
+	<para>
+		Holds the version of the hep packet received on the interface.
+	</para>
+	<example>
+	<title><function>HEPVERSION</function> usage</title>
+	<programlisting format="linespecific">
+...
+	if ($HEPVERSION == 3) {
+		/* It's a HEPv3 packet*/
+		...
+	} else if ($HEPVERSION == 2) {
+		/* It's a HEPv2 packet */
+		...
+	} else if ($HEPVERSION == 1) {
+		/* It's a HEPv1 packet */
+		...
+	}
+...
+	</programlisting>
+	</example>
+	</section>
+
+
+
+
+
+
+
+
+</section>
+
+
     <section>
 	<title>MI Commands</title>
 	<section>
@@ -341,11 +1029,11 @@ modparam("sipcapture", "capture_node", "homer03")
 			<listitem><para>capture_mode : turns on/off SIP message capturing.
 			Possible values are:</para>
 			<itemizedlist>
-				<listitem><para> on </para></listitem> 
+				<listitem><para> on </para></listitem>
 				<listitem><para> off </para></listitem>
 			</itemizedlist>
 			<para>The parameter is optional - if missing, the command will
-			return the status of the SIP message capturing (as string 
+			return the status of the SIP message capturing (as string
 			<quote>on</quote> or <quote>off</quote> ) without changing
 			anything.</para>
 			</listitem>
@@ -361,15 +1049,16 @@ modparam("sipcapture", "capture_node", "homer03")
 		</programlisting>
 	</section>
 	</section>
-	
+
 	<section>
 		<title>Database setup</title>
 		<para>
-		Before running &osips; with sipcapture, you have to setup the database 
+		Before running &osips; with sipcapture, you have to setup the database
 		tables where the module will store the data. For that, if the
 		table were not created by the installation script or you choose
-		to install everything by yourself you can use the sipcapture-create.sql or 
-		the sipcapture-st-create.sql <acronym>SQL</acronym> script in the database 
+		to install everything by yourself you can use the sipcapture-create.sql and
+		reportcapture-create.sql or
+		the sipcapture-st-create.sql <acronym>SQL</acronym> script in the database
 		directories in the opensips/scripts folder as template.
 		You can also find the complete database documentation on the
 		project webpage, &osipsdbdocslink;.
@@ -378,13 +1067,13 @@ modparam("sipcapture", "capture_node", "homer03")
 	<section>
         <title>Limitation</title>
         <para>
-	
-		1. Only one capturing mode on RAW socket is supported: IPIP or monitoring/mirroring port. 
+
+		1. Only one capturing mode on RAW socket is supported: IPIP or monitoring/mirroring port.
 		   Don't activate both at the same time.
-		2. By default MySQL doesn't support INSERT DELAYED for partitioning table. You can patch MySQL 
+		2. By default MySQL doesn't support INSERT DELAYED for partitioning table. You can patch MySQL
 		  (http://bugs.mysql.com/bug.php?id=50393) or use separate tables (pseudo partitioning)
 		3. Mirroring port capturing works only on Linux.
-	
+
         </para>
         </section>
 </chapter>

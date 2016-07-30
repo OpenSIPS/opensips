@@ -1,6 +1,4 @@
 /*
- * $Id$ 
- *
  * Path handling for intermediate proxies
  *
  * Copyright (C) 2006 Inode GmbH (Andreas Granig <andreas.granig@inode.info>)
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -90,15 +88,35 @@ static param_export_t params[] = {
 	{ 0, 0, 0 }
 };
 
+static module_dependency_t *get_deps_use_received(param_export_t *param)
+{
+	if (! *(int *)param->param_pointer)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "rr", DEP_ABORT);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "use_received", get_deps_use_received },
+		{ NULL, NULL },
+	},
+};
 
 /*
  * Module interface
  */
 struct module_exports exports = {
-	"path", 
+	"path",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
+	0,          /* Exported async functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
@@ -131,7 +149,7 @@ static int mod_init(void)
 			return -1;
 		}
 	}
-	
+
 	return 0;
 }
 

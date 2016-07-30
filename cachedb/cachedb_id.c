@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -54,7 +54,7 @@ static int dupl_string(char** dst, const char* begin, const char* end)
 
 
 /**
- * Parse a database URL of form 
+ * Parse a database URL of form
  * scheme://[username[:password]@]hostname[:port]/database
  *
  * \param id filled id struct
@@ -88,18 +88,20 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 	if (!id || !url || !url->s) {
 		goto err;
 	}
-	
+
 	len = url->len;
 	if (len < SHORTEST_DB_URL_LEN) {
 		goto err;
 	}
-	
-	LM_DBG("parsing [%.*s]\n",url->len,url->s);
 
+	LM_DBG("parsing [%.*s]\n",url->len,url->s);
 	/* Initialize all attributes to 0 */
 	memset(id, 0, sizeof(struct cachedb_id));
 	st = ST_SCHEME;
 	begin = url->s;
+
+	if (dupl_string(&id->initial_url,url->s,url->s+url->len) < 0)
+		goto err;
 
 	for(i = 0; i < len; i++) {
 		switch(st) {
@@ -142,7 +144,7 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 				st = ST_USER_HOST;
 				begin = url->s + i + 1;
 				break;
-				
+
 			default:
 				goto err;
 			}
@@ -249,7 +251,7 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 				id->flags |= CACHEDB_ID_MULTIPLE_HOSTS;
 				break;
 			}
-			
+
 		case ST_DB:
 			break;
 		}
@@ -267,11 +269,12 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 	return 0;
 
  err:
-	if (id->scheme) pkg_free(id->scheme);
-	if (id->username) pkg_free(id->username);
-	if (id->password) pkg_free(id->password);
-	if (id->host) pkg_free(id->host);
-	if (id->database) pkg_free(id->database);
+	if (id && id->initial_url) pkg_free(id->initial_url);
+	if (id && id->scheme) pkg_free(id->scheme);
+	if (id && id->username) pkg_free(id->username);
+	if (id && id->password) pkg_free(id->password);
+	if (id && id->host) pkg_free(id->host);
+	if (id && id->database) pkg_free(id->database);
 	if (prev_token) pkg_free(prev_token);
 	return -1;
 }
@@ -373,6 +376,7 @@ void free_cachedb_id(struct cachedb_id* id)
 {
 	if (!id) return;
 
+	if (id->initial_url) pkg_free(id->initial_url);
 	if (id->scheme) pkg_free(id->scheme);
 	if (id->group_name) pkg_free(id->group_name);
 	if (id->username) pkg_free(id->username);

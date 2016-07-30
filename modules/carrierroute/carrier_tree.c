@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -58,8 +56,8 @@ struct tree_map ** script_failure_trees = NULL;
 static int carrier_tree_fixup(struct rewrite_data * rd);
 
 /**
- * Initialises the routing data, i.e. it binds the data loader,
- * initialises the global data pointer.
+ * Initializes the routing data, i.e. it binds the data loader,
+ * initializes the global data pointer.
  *
  * @param source data source, can be db or file
  *
@@ -210,10 +208,10 @@ int find_tree(str tree){
  * @param rewrite_local_suffix the rewrite suffix
  * @param status the status of the rule
  * @param hash_index the hash index of the rule
- * @param backup indicates if the route is backed up by another. only 
+ * @param backup indicates if the route is backed up by another. only
                  useful if status==0, if set, it is the hash value
                  of another rule
- * @param backed_up an -1-termintated array of hash indices of the route 
+ * @param backed_up an -1-termintated array of hash indices of the route
                     for which this route is backup
  * @param comment a comment for the route rule
  *
@@ -254,7 +252,7 @@ int add_route(struct rewrite_data * rd, int carrier_id,
  * @param domain the routing domain of the new route
  * @param scan_prefix the number prefix
  * @param host the hostname last tried
- * @param reply_code the reply code 
+ * @param reply_code the reply code
  * @param flags user defined flags
  * @param mask for user defined flags
  * @param next_domain continue routing with this domain
@@ -269,17 +267,17 @@ int add_failure_route(struct rewrite_data * rd, int carrier_id, const str * doma
 	struct carrier_tree * ct = NULL;
 	struct route_tree * rt = NULL;
 	LM_INFO("adding prefix %.*s, reply code %.*s\n", scan_prefix->len, scan_prefix->s, reply_code->len, reply_code->s);
-		
+
 	if (reply_code->len!=3) {
 		LM_ERR("invalid reply_code '%.*s'!\n", reply_code->len, reply_code->s);
 		return -1;
 	}
-	
+
 	if ((ct = get_carrier_tree(carrier_id, rd)) == NULL) {
 		LM_ERR("could not retrieve carrier tree\n");
 		return -1;
 	}
-	
+
 	if ((rt = get_route_tree(domain, ct)) == NULL) {
 		LM_ERR("could not retrieve route tree\n");
 		return -1;
@@ -289,7 +287,7 @@ int add_failure_route(struct rewrite_data * rd, int carrier_id, const str * doma
 		LM_ERR("add_domain failed\n");
 		return -1;
 	}
-	
+
 	LM_INFO("found failure route, now adding\n");
 	return add_failure_route_to_tree(rt->failure_tree, scan_prefix, scan_prefix, host, reply_code,
 			flags, mask, next_domain_id, comment);
@@ -335,8 +333,8 @@ struct carrier_tree * add_carrier_tree(const str * carrier, int carrier_id, stru
 		return NULL;
 	}
 	rd->carriers[id]->index = id;
-	LM_INFO("created carrier tree: %.*s, with id %i and %ld trees\n", 
-		rd->carriers[id]->name.len, rd->carriers[id]->name.s, rd->carriers[id]->id, 
+	LM_INFO("created carrier tree: %.*s, with id %i and %ld trees\n",
+		rd->carriers[id]->name.len, rd->carriers[id]->name.s, rd->carriers[id]->id,
 		(long)rd->carriers[id]->tree_num);
 	return rd->carriers[id];
 }
@@ -382,7 +380,7 @@ struct carrier_tree * create_carrier_tree(const str * tree, int carrier_id, int 
 
 /**
  * returns the routing tree for the given domain, if domain's tree
- * doesnt exist, it will be created. If the trees are completely
+ * doesn't exist, it will be created. If the trees are completely
  * filled and a not existing domain shall be added, an error is
  * returned
  *
@@ -413,7 +411,7 @@ struct carrier_tree * get_carrier_tree(int carrier_id, struct rewrite_data * rd)
  * @param tree the tree to be added
  * @param carrier_id id of the carrier
  *
- * @return values: on succcess the numerical index of the given tree,
+ * @return values: on success the numerical index of the given tree,
  * -1 on failure
  */
 int add_tree(const str * tree, int carrier_id) {

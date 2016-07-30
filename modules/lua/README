@@ -121,7 +121,7 @@ if (lua_exec("mongo_alias")) {
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * Lua 5.1.x or later
-     * memcache
+     * memcached
 
    This module has been developed and tested with Lua 5.1.?, but
    should work with any 5.1.x release. Earlier versions do not
@@ -131,7 +131,7 @@ if (lua_exec("mongo_alias")) {
    should be installed:
      * lua5.1
      * liblua5.1-0-dev
-     * libmemcache-dev
+     * libmemcached-dev
      * libmysqlclient-dev
 
    It was reported that other Debian-style distributions (such as

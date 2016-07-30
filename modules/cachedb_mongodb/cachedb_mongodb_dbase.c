@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -36,6 +36,10 @@ extern mongo_write_concern mwc;
 extern str mongo_write_concern_str;
 extern str mongo_write_concern_b;
 extern int mongo_slave_ok;
+extern int mongo_exec_threshold;
+
+#define HEX_OID_SIZE 25
+char *hex_oid_id = NULL;
 
 mongo_con* mongo_new_connection(struct cachedb_id* id)
 {
@@ -52,7 +56,7 @@ mongo_con* mongo_new_connection(struct cachedb_id* id)
 		LM_ERR("null cachedb_id\n");
 		return 0;
 	}
-	
+
 	if (id->flags & CACHEDB_ID_MULTIPLE_HOSTS) {
 		/* we are connecting to a replica set */
 		replset_name.s = id->database;
@@ -70,14 +74,14 @@ mongo_con* mongo_new_connection(struct cachedb_id* id)
 		if (!p) {
 			LM_ERR("Malformed mongo database\n");
 			return 0;
-		} 
+		}
 
 		database.len = p-database.s;
 
 		collection.s = p+1;
 		collection.len = id->database+strlen(id->database) - collection.s;
 
-		con = pkg_malloc(sizeof(mongo_con)+database.len+collection.len+ 
+		con = pkg_malloc(sizeof(mongo_con)+database.len+collection.len+
 											replset_name.len+3);
 		if (con == NULL) {
 			LM_ERR("no more pkg \n");
@@ -177,7 +181,7 @@ mongo_con* mongo_new_connection(struct cachedb_id* id)
 		memcpy(con->database,database.s,database.len);
 		con->collection = con->database + database.len + 1;
 		memcpy(con->collection,collection.s,collection.len);
-	
+
 		if (mongo_set_op_timeout(&MONGO_CON(con),mongo_op_timeout) != MONGO_OK)
 			LM_WARN("Failed to set timeout of %d millis\n",mongo_op_timeout);
 		else
@@ -224,7 +228,7 @@ void mongo_free_connection(cachedb_pool_con *con)
 {
 }
 
-void mongo_con_destroy(cachedb_con *con) 
+void mongo_con_destroy(cachedb_con *con)
 {
 	LM_DBG("in mongo_destroy\n");
 	cachedb_do_close(con,mongo_free_connection);
@@ -238,15 +242,17 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 	const char *rez;
 	int rez_len,i;
 	mongo *conn = &MONGO_CDB_CON(connection);
-	char hex_oid[25];
+	char hex_oid[HEX_OID_SIZE];
+	struct timeval start;
 
 	LM_DBG("Get operation on namespace %s\n",MONGO_NAMESPACE(connection));
+	start_expire_timer(start,mongo_exec_threshold);
 
 	bson_init(&new_b);
 	if (bson_append_string_n(&new_b,"_id",attr->s,attr->len) != BSON_OK) {
 		LM_ERR("Failed to append _id \n");
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 	bson_finish(&new_b);
 
@@ -254,7 +260,7 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 		m_cursor = mongo_find(conn,MONGO_NAMESPACE(connection),
 				&new_b,0,0,0,mongo_slave_ok);
 		if (m_cursor == NULL) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -262,9 +268,12 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
-				LM_DBG("Fetched key %s\n",bson_iterator_key(&it));	
+				LM_DBG("Fetched key %s\n",bson_iterator_key(&it));
 				switch( bson_iterator_type( &it ) ) {
 					case BSON_DOUBLE:
 						LM_DBG("(double) %e\n",bson_iterator_double(&it));
@@ -282,12 +291,12 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 					default:
 						LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
 						break;
-				
+
 				}
 
 				bson_destroy(&new_b);
 			}
-			return -1;
+			goto error;
 		}
 		break;
 	}
@@ -305,18 +314,20 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 					LM_ERR("Failed to convert %d to str\n",
 						bson_iterator_int(&it));
 					mongo_cursor_destroy(m_cursor);
-					return -1;
+					goto error;
 				}
-					
+
 				val->s = pkg_malloc(rez_len);
 				if (val->s == NULL) {
 					LM_ERR("No more pkg malloc\n");
 					mongo_cursor_destroy(m_cursor);
-					return -1;
-				}	
+					goto error;
+				}
 				memcpy(val->s,rez,rez_len);
 				val->len = rez_len;
 				mongo_cursor_destroy(m_cursor);
+				stop_expire_timer(start,mongo_exec_threshold,
+				"cachedb_mongo get",attr->s,attr->len,0);
 				return 0;
 
 				break;
@@ -325,7 +336,7 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 				if (rez == NULL) {
 					LM_ERR("Got null str for mongo\n");
 					mongo_cursor_destroy(m_cursor);
-					return -1;
+					goto error;
 				}
 				rez_len=strlen(rez);
 				val->s = pkg_malloc(rez_len);
@@ -333,13 +344,15 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 				if (val->s == NULL) {
 					LM_ERR("No more pkg malloc\n");
 					mongo_cursor_destroy(m_cursor);
-					return -1;
-				}	
+					goto error;
+				}
 				memcpy(val->s,rez,rez_len);
 				val->len = rez_len;
 				mongo_cursor_destroy(m_cursor);
+				stop_expire_timer(start,mongo_exec_threshold,
+				"cachedb_mongo get",attr->s,attr->len,0);
 				return 0;
-					
+
 				break;
 				default:
 					LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
@@ -349,36 +362,44 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 
 	LM_DBG("No suitable response found\n");
 	mongo_cursor_destroy(m_cursor);
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo get",attr->s,attr->len,0);
 	return -2;
+error:
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo get",attr->s,attr->len,0);
+	return -1;
 }
 
 int mongo_con_set(cachedb_con *connection,str *attr,str *val,int expires)
 {
 	bson new_b;
 	int i;
+	struct timeval start;
 	mongo *conn = &MONGO_CDB_CON(connection);
 
 	LM_DBG("Set operation on namespace %s\n",MONGO_NAMESPACE(connection));
-	
+	start_expire_timer(start,mongo_exec_threshold);
+
 	bson_init(&new_b);
 	if (bson_append_string_n(&new_b,"_id",attr->s,attr->len) != BSON_OK) {
 		LM_ERR("Failed to append _id \n");
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 
 	if (bson_append_string_n(&new_b,"opensips",val->s,val->len) != BSON_OK) {
 		LM_ERR("Failed to append _id \n");
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 
 	bson_finish(&new_b);
-	
+
 	for (i=0;i<2;i++) {
 		if (mongo_insert(conn,MONGO_NAMESPACE(connection),
 				&new_b,NULL) != BSON_OK) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -387,35 +408,43 @@ int mongo_con_set(cachedb_con *connection,str *attr,str *val,int expires)
 			LM_ERR("Failed to do insert. Con err = %d\n",
 				conn->err);
 			bson_destroy(&new_b);
-			return -1;
+			goto error;
 		}
-	}	
+	}
 
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo set",attr->s,attr->len,0);
 	bson_destroy(&new_b);
 	return 0;
+error:
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo set",attr->s,attr->len,0);
+	return -1;
 }
 
 int mongo_con_remove(cachedb_con *connection,str *attr)
 {
 	bson new_b;
 	int i;
+	struct timeval start;
 	mongo *conn = &MONGO_CDB_CON(connection);
 
 	LM_DBG("Remove operation on namespace %s\n",MONGO_NAMESPACE(connection));
-	
+	start_expire_timer(start,mongo_exec_threshold);
+
 	bson_init(&new_b);
 	if (bson_append_string_n(&new_b,"_id",attr->s,attr->len) != BSON_OK) {
 		LM_ERR("Failed to append _id \n");
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 
 	bson_finish(&new_b);
-	
+
 	for (i=0;i<2;i++) {
 		if (mongo_remove(conn,MONGO_NAMESPACE(connection),
 				&new_b,NULL) != BSON_OK) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -424,21 +453,27 @@ int mongo_con_remove(cachedb_con *connection,str *attr)
 			LM_ERR("Failed to do insert. Con err = %d\n",
 				conn->err);
 			bson_destroy(&new_b);
-			return -1;
-		}	
+			goto error;
+		}
 	}
 
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo remove",attr->s,attr->len,0);
 	bson_destroy(&new_b);
 	return 0;
+error:
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo remove",attr->s,attr->len,0);
+	return -1;
 }
 
-void dbg_bson_print_raw( const char *data , int depth ) 
+void dbg_bson_print_raw( const char *data , int depth )
 {
 	bson_iterator i;
 	const char *key;
 	int temp;
 	bson_timestamp_t ts;
-	char oidhex[25];
+	char oidhex[HEX_OID_SIZE];
 	bson scope;
 	bson_iterator_from_buffer( &i, data );
 
@@ -577,14 +612,21 @@ int mongo_raw_find(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***repl
 		m_cursor = mongo_find(conn,ns?ns:MONGO_NAMESPACE(connection),
 				&op_b,have_fields?&fields_b:0,0,0,mongo_slave_ok);
 		if (m_cursor == NULL) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
 				continue;
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
-			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			ret = mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (ret == MONGO_OK) {
+				LM_ERR("We had error - can't tell what it was - we're really bogus - probably mongos down\n");
+				return -1;
+			}
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&i));
@@ -678,7 +720,7 @@ int mongo_raw_count(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***rep
 		result = (int)mongo_count(conn,ns?db:MONGO_DATABASE(connection),
 				ns?coll:MONGO_COLLECTION(connection),&op_b);
 		if (result == MONGO_ERROR) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -686,6 +728,9 @@ int mongo_raw_count(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***rep
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&i));
@@ -784,7 +829,7 @@ int mongo_raw_update(cachedb_con *connection,bson *raw_query)
 		ret = mongo_update(conn,ns?ns:MONGO_NAMESPACE(connection),
 				have_match?&match_b:0,&op_b,0,0);
 		if (ret == MONGO_ERROR) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -792,6 +837,9 @@ int mongo_raw_update(cachedb_con *connection,bson *raw_query)
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&i));
@@ -866,7 +914,7 @@ int mongo_raw_insert(cachedb_con *connection,bson *raw_query)
 		ret = mongo_insert(conn,ns?ns:MONGO_NAMESPACE(connection),
 				&op_b,0);
 		if (ret == MONGO_ERROR) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -874,6 +922,9 @@ int mongo_raw_insert(cachedb_con *connection,bson *raw_query)
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&i));
@@ -950,7 +1001,7 @@ int mongo_raw_remove(cachedb_con *connection,bson *raw_query)
 		ret = mongo_remove(conn,ns?ns:MONGO_NAMESPACE(connection),
 				&op_b,0);
 		if (ret == MONGO_ERROR) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -958,6 +1009,9 @@ int mongo_raw_remove(cachedb_con *connection,bson *raw_query)
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&i));
@@ -993,15 +1047,17 @@ int mongo_con_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***reply
 	bson new_b;
 	int ret;
 	bson_iterator i;
+	struct timeval start;
 	const char *op=NULL;
 
 	LM_DBG("Get operation on namespace %s\n",MONGO_NAMESPACE(connection));
+	start_expire_timer(start,mongo_exec_threshold);
 
 	if (attr->len > raw_query_buf_len) {
 		raw_query_buf = pkg_realloc(raw_query_buf,attr->len+1);
 		if (!raw_query_buf) {
 			LM_ERR("No more pkg\n");
-			return -1;
+			goto error;
 		}
 
 		memcpy(raw_query_buf,attr->s,attr->len);
@@ -1017,19 +1073,19 @@ int mongo_con_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***reply
 
 	if (ret < 0) {
 		LM_ERR("Failed to convert [%.*s] to BSON\n",attr->len,attr->s);
-		return -1;
+		goto error;
 	}
 
 	if (bson_find(&i,&new_b,"op") == BSON_EOO) {
 		LM_ERR("No \"op\" specified \n");
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 
 	if (bson_iterator_type( &i ) != BSON_STRING) {
 		LM_ERR("The op must be a string \n");
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 
 	op = bson_iterator_string( &i );
@@ -1047,11 +1103,17 @@ int mongo_con_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***reply
 	} else {
 		LM_ERR("Unsupported op type [%s] \n",op);
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo raw",attr->s,attr->len,0);
 	bson_destroy(&new_b);
 	return ret;
+error:
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo raw",attr->s,attr->len,0);
+	return -1;
 }
 
 static char counter_q_buf[256];
@@ -1059,9 +1121,12 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 {
 	bson cmd,err_b,out;
 	int j,ret;
+	struct timeval start;
 	mongo *conn = &MONGO_CDB_CON(connection);
 	bson_iterator it,it2;
 	const char *curr_key,*inner_key;
+
+	start_expire_timer(start,mongo_exec_threshold);
 
 	bson_init( &cmd );
 	bson_append_string(&cmd,"findAndModify",MONGO_COLLECTION(connection));
@@ -1078,13 +1143,15 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 	bson_append_finish_object(&cmd);
 	bson_append_finish_object(&cmd);
 
+	bson_append_bool(&cmd,"upsert",1);
+
 	bson_finish(&cmd);
 
 	for (j=0;j<2;j++) {
 		ret = mongo_run_command(conn,MONGO_DATABASE(connection),
 				&cmd,&out);
 		if (ret != MONGO_OK) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -1092,6 +1159,9 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&it));
@@ -1112,6 +1182,8 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 				}
 			}
 			bson_destroy(&cmd);
+			stop_expire_timer(start,mongo_exec_threshold,
+			"cachedb_mongo add",attr->s,attr->len,0);
 			return -1;
 		}
 		break;
@@ -1120,6 +1192,8 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 	if (!new_val) {
 		bson_destroy(&out);
 		bson_destroy(&cmd);
+		stop_expire_timer(start,mongo_exec_threshold,
+		"cachedb_mongo add",attr->s,attr->len,0);
 		return 0;
 	}
 
@@ -1140,6 +1214,8 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 					*new_val = bson_iterator_int(&it2) + val;
 					bson_destroy(&out);
 					bson_destroy(&cmd);
+					stop_expire_timer(start,mongo_exec_threshold,
+					"cachedb_mongo add",attr->s,attr->len,0);
 					return 0;
 				}
 			}
@@ -1149,6 +1225,8 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 err:
 	bson_destroy(&out);
 	bson_destroy(&cmd);
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo add",attr->s,attr->len,0);
 	return -1;
 
 }
@@ -1164,15 +1242,19 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 	mongo_cursor *m_cursor;
 	bson_iterator it;
 	int i;
+	struct timeval start;
 	mongo *conn = &MONGO_CDB_CON(connection);
-	char hex_oid[25];
+	char hex_oid[HEX_OID_SIZE];
 
 	LM_DBG("Get counter operation on namespace %s\n",MONGO_NAMESPACE(connection));
+	start_expire_timer(start,mongo_exec_threshold);
 
 	bson_init(&new_b);
 	if (bson_append_string_n(&new_b,"_id",attr->s,attr->len) != BSON_OK) {
 		LM_ERR("Failed to append _id \n");
 		bson_destroy(&new_b);
+		stop_expire_timer(start,mongo_exec_threshold,
+		"cachedb_mongo get_counter",attr->s,attr->len,0);
 		return -1;
 	}
 	bson_finish(&new_b);
@@ -1181,7 +1263,7 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 		m_cursor = mongo_find(conn,MONGO_NAMESPACE(connection),
 				&new_b,0,0,0,mongo_slave_ok);
 		if (m_cursor == NULL) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -1189,9 +1271,12 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
-				LM_DBG("Fetched key %s\n",bson_iterator_key(&it));	
+				LM_DBG("Fetched key %s\n",bson_iterator_key(&it));
 				switch( bson_iterator_type( &it ) ) {
 					case BSON_DOUBLE:
 						LM_DBG("(double) %e\n",bson_iterator_double(&it));
@@ -1209,10 +1294,12 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 					default:
 						LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
 						break;
-				
+
 				}
 			}
 			bson_destroy(&new_b);
+			stop_expire_timer(start,mongo_exec_threshold,
+			"cachedb_mongo get_counter",attr->s,attr->len,0);
 			return -1;
 		}
 		break;
@@ -1230,6 +1317,8 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 					*val = bson_iterator_int(&it);
 
 				mongo_cursor_destroy(m_cursor);
+				stop_expire_timer(start,mongo_exec_threshold,
+				"cachedb_mongo get_counter",attr->s,attr->len,0);
 				return 0;
 
 				break;
@@ -1241,6 +1330,8 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 
 	LM_DBG("No suitable response found\n");
 	mongo_cursor_destroy(m_cursor);
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo get_counter",attr->s,attr->len,0);
 	return -2;
 }
 
@@ -1267,11 +1358,28 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 					bson_append_int(&query,key_buff,VAL_INT(val+index)); \
 					break; \
 				case DB_STRING: \
-					bson_append_string(&query,key_buff,VAL_STRING(val+index)); \
+					if (appendOID && key[index]->len == 3 && strncmp("_id", key[index]->s,key[index]->len) == 0) { \
+						LM_DBG("we got it [%.*s]\n", key[index]->len, key[index]->s); \
+						bson_oid_from_string(&_id, VAL_STRING(val+index)); \
+						bson_append_oid(&query,key_buff,&_id); \
+						appendOID = 0; \
+					} else { \
+						bson_append_string(&query,key_buff,VAL_STRING(val+index)); \
+					} \
 					break; \
 				case DB_STR: \
-					bson_append_string_n(&query,key_buff,VAL_STR(val+index).s, \
+					if (appendOID && key[index]->len == 3 && strncmp("_id", key[index]->s,key[index]->len) == 0) { \
+						p = VAL_STR(val+index).s + VAL_STR(val+index).len; \
+						_old_char = *p; \
+						*p = '\0'; \
+						bson_oid_from_string(&_id, VAL_STR(val+index).s); \
+						*p = _old_char; \
+						bson_append_oid(&query,key_buff,&_id); \
+						appendOID = 0; \
+					} else { \
+						bson_append_string_n(&query,key_buff,VAL_STR(val+index).s, \
 							VAL_STR(val+index).len); \
+					} \
 					break; \
 				case DB_BLOB: \
 					bson_append_string_n(&query,key_buff,VAL_BLOB(val+index).s, \
@@ -1306,10 +1414,16 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 	mongo *conn = &MONGO_CDB_CON(con);
 	mongo_cursor *m_cursor;
 	bson_iterator it;
-	char hex_oid[25];
+	char hex_oid[HEX_OID_SIZE];
 	db_row_t *current;
 	db_val_t *cur_val;
 	static str dummy_string = {"", 0};
+	struct timeval start;
+	char _old_char;
+	bson_oid_t _id;
+	int appendOID = 1;
+
+	start_expire_timer(start,mongo_exec_threshold);
 
 	if (!_c) {
 		LM_ERR("The module does not support 'select *' SQL queries \n");
@@ -1326,6 +1440,10 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 	}
 
 	if (_o) {
+		if (!_n) {
+			bson_append_start_object(&query, "$query");
+			bson_append_finish_object(&query);
+		}
 		memcpy(key_buff,_o->s,_o->len);
 		key_buff[_o->len]=0;
 		bson_append_start_object(&query, "$orderby");
@@ -1342,8 +1460,6 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 		 bson_append_bool(&fields,key_buff,1);
 	}
 
-	/* we skip the _id key, we always leave it as auto-generated */
-	bson_append_bool(&fields,"_id",0);
 	bson_finish(&fields);
 
 	p=namespace_buff;
@@ -1361,7 +1477,7 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 		m_cursor = mongo_find(conn,namespace_buff,
 				&query,&fields,0,0,mongo_slave_ok);
 		if (m_cursor == NULL) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -1369,9 +1485,12 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
-				LM_DBG("Fetched key %s\n",bson_iterator_key(&it));	
+				LM_DBG("Fetched key %s\n",bson_iterator_key(&it));
 				switch( bson_iterator_type( &it ) ) {
 					case BSON_DOUBLE:
 						LM_DBG("(double) %e\n",bson_iterator_double(&it));
@@ -1389,7 +1508,7 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 					default:
 						LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
 						break;
-				
+
 				}
 			}
 			goto error;
@@ -1413,6 +1532,8 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 		LM_DBG("No rows returned from Mongo \n");
 		bson_destroy(&fields);
 		bson_destroy(&query);
+		stop_expire_timer(start,mongo_exec_threshold,
+		"cachedb_mongo sql_select",table->s,table->len,0);
 		return 0;
 	}
 
@@ -1439,6 +1560,11 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 
 	RES_ROW_N(*_r) = row_no;
 
+	hex_oid_id = pkg_malloc(sizeof(char) * row_no * HEX_OID_SIZE);
+	if (hex_oid_id==NULL) {
+		LM_ERR("oom\n");
+		goto error2;
+	}
 	i=0;
 	while( mongo_cursor_next(m_cursor) == MONGO_OK ) {
 		bson_iterator_init(&it,mongo_cursor_bson(m_cursor));
@@ -1454,41 +1580,59 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 				VAL_STR(cur_val) = dummy_string;
 				VAL_BLOB(cur_val) = dummy_string;
 				/* we treat null values as DB string */
-				VAL_TYPE(cur_val) = DB_STRING; 
+				VAL_TYPE(cur_val) = DB_STRING;
 				VAL_NULL(cur_val) = 1;
+				LM_DBG("Found empty [%.*s]\n", _c[j]->len, _c[j]->s);
 			} else {
 				switch( bson_iterator_type( &it ) ) {
 					case BSON_INT:
-						VAL_TYPE(cur_val) = DB_INT; 
+						VAL_TYPE(cur_val) = DB_INT;
 						VAL_INT(cur_val) = bson_iterator_int(&it);
-						LM_DBG("found int %d\n",bson_iterator_int(&it));
+						LM_DBG("Found int [%.*s]=[%d]\n",
+							_c[j]->len, _c[j]->s, VAL_INT(cur_val));
 						break;
 					case BSON_DOUBLE:
 						VAL_TYPE(cur_val) = DB_DOUBLE;
 						VAL_DOUBLE(cur_val) = bson_iterator_double(&it);
-						LM_DBG("found double %f\n",bson_iterator_double(&it));
+						LM_DBG("Found double [%.*s]=[%f]\n",
+							_c[j]->len, _c[j]->s, VAL_DOUBLE(cur_val));
 						break;
 					case BSON_STRING:
 						VAL_TYPE(cur_val) = DB_STRING;
 						VAL_STRING(cur_val) = bson_iterator_string(&it);
-						LM_DBG("Found string %s\n",bson_iterator_string(&it));
+						LM_DBG("Found string [%.*s]=[%s]\n",
+							_c[j]->len, _c[j]->s, VAL_STRING(cur_val));
 						break;
 					case BSON_LONG:
 						VAL_TYPE(cur_val) = DB_BIGINT;
 						VAL_BIGINT(cur_val) = bson_iterator_long(&it);
+						LM_DBG("Found long [%.*s]=[%lld]\n",
+							_c[j]->len, _c[j]->s, VAL_BIGINT(cur_val));
 						break;
 					case BSON_DATE:
 						VAL_TYPE(cur_val) = DB_DATETIME;
-						VAL_TYPE(cur_val) = bson_iterator_time_t(&it);
+						VAL_TIME(cur_val) = bson_iterator_time_t(&it);
+						LM_DBG("Found time [%.*s]=[%d]\n",
+							_c[j]->len, _c[j]->s, (int)VAL_TIME(cur_val));
+						break;
+					case BSON_OID:
+						bson_oid_to_string(bson_iterator_oid(&it), hex_oid);
+						p = &hex_oid_id[i*HEX_OID_SIZE];
+						memcpy(p, hex_oid, HEX_OID_SIZE);
+						VAL_TYPE(cur_val) = DB_STRING;
+						VAL_STRING(cur_val) = p;
+						LM_DBG("Found oid [%.*s]=[%s]\n",
+							_c[j]->len, _c[j]->s, VAL_STRING(cur_val));
 						break;
 					default:
-						LM_WARN("Unsupported type %d - treating as NULL\n",bson_iterator_type(&it));
+						LM_WARN("Unsupported type [%d] for [%.*s] - treating as NULL\n",
+							bson_iterator_type(&it), _c[j]->len, _c[j]->s);
 						memset(cur_val,0,sizeof(db_val_t));
 						VAL_STRING(cur_val) = dummy_string.s;
 						VAL_STR(cur_val) = dummy_string;
 						VAL_BLOB(cur_val) = dummy_string;
 						/* we treat null values as DB string */
-						VAL_TYPE(cur_val) = DB_STRING; 
+						VAL_TYPE(cur_val) = DB_STRING;
 						VAL_NULL(cur_val) = 1;
 						break;
 				}
@@ -1497,9 +1641,11 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 		i++;
 	}
 
-	LM_DBG("Succesfully ran query\n");
+	LM_DBG("Successfully ran query\n");
 	bson_destroy(&query);
 	bson_destroy(&fields);
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo sql_select",table->s,table->len,0);
 	return 0;
 
 error2:
@@ -1510,6 +1656,8 @@ error2:
 error:
 	bson_destroy(&query);
 	bson_destroy(&fields);
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo sql_select",table->s,table->len,0);
 	return -1;
 }
 
@@ -1521,6 +1669,10 @@ int mongo_db_free_result_trans(cachedb_con* con, db_res_t* _r)
 	}
 
 	LM_DBG("freeing mongo query result \n");
+
+	if (hex_oid_id) {
+		pkg_free(hex_oid_id); hex_oid_id = NULL;
+	}
 
 	if (db_free_result(_r) < 0) {
 		LM_ERR("unable to free result structure\n");
@@ -1540,6 +1692,12 @@ int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, 
 	char key_buff[32],namespace_buff[64],*p;
 	mongo *conn = &MONGO_CDB_CON(con);
 	bson_iterator it;
+	struct timeval start;
+	char _old_char;
+	bson_oid_t _id;
+	int appendOID = 1;
+
+	start_expire_timer(start,mongo_exec_threshold);
 
 	bson_init(&query);
 	for (i=0;i<_n;i++) {
@@ -1563,7 +1721,7 @@ int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, 
 	for (j=0;j<2;j++) {
 		ret = mongo_insert(conn,namespace_buff,&query,0);
 		if (ret == MONGO_ERROR) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -1571,6 +1729,9 @@ int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, 
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&it));
@@ -1591,11 +1752,15 @@ int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, 
 			}
 
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
+			stop_expire_timer(start,mongo_exec_threshold,
+			"cachedb_mongo sql_insert",table->s,table->len,0);
 			return -1;
 		}
 		break;
 	}
 
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo sql_insert",table->s,table->len,0);
 	return 0;
 }
 
@@ -1607,6 +1772,12 @@ int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	char key_buff[32],namespace_buff[64],*p;
 	mongo *conn = &MONGO_CDB_CON(con);
 	bson_iterator it;
+	struct timeval start;
+	char _old_char;
+	bson_oid_t _id;
+	int appendOID = 1;
+
+	start_expire_timer(start,mongo_exec_threshold);
 
 	bson_init(&query);
 	for (i=0;i<_n;i++) {
@@ -1628,7 +1799,7 @@ int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	for (j=0;j<2;j++) {
 		ret = mongo_remove(conn,namespace_buff,&query,0);
 		if (ret == MONGO_ERROR) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -1636,6 +1807,9 @@ int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&it));
@@ -1656,11 +1830,15 @@ int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 			}
 
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
+			stop_expire_timer(start,mongo_exec_threshold,
+			"cachedb_mongo sql_delete",table->s,table->len,0);
 			return -1;
 		}
 		break;
 	}
 
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo sql_delete",table->s,table->len,0);
 	return 0;
 }
 
@@ -1672,6 +1850,12 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	char key_buff[32],namespace_buff[64],*p;
 	mongo *conn = &MONGO_CDB_CON(con);
 	bson_iterator it;
+	struct timeval start;
+	char _old_char;
+	bson_oid_t _id;
+	int appendOID = 1;
+
+	start_expire_timer(start,mongo_exec_threshold);
 
 	bson_init(&query);
 	for (i=0;i<_n;i++) {
@@ -1682,7 +1866,7 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	bson_init(&op_query);
 	bson_append_start_object(&op_query, "$set");
 	for (i=0;i<_un;i++) {
-		MONGO_DB_KEY_TRANS(_uk,_uv,i,((db_op_t*)0),op_query);
+		MONGO_DB_KEY_TRANS(_uk,_uv,i,((db_op_t*)NULL),op_query);
 	}
 	bson_append_finish_object(&op_query);
 	bson_finish(&op_query);
@@ -1694,7 +1878,7 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	*p++ = '.';
 	memcpy(p,table->s,table->len);
 	p+= table->len;
-	*p = 0;
+	*p = '\0';
 
 	LM_DBG("Running raw mongo update on table %s\n",namespace_buff);
 
@@ -1702,7 +1886,7 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 		ret = mongo_update(conn,namespace_buff,
 				&query,&op_query,MONGO_UPDATE_UPSERT|MONGO_UPDATE_MULTI,0);
 		if (ret == MONGO_ERROR) {
-			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			if (mongo_check_connection(conn) == MONGO_ERROR &&
 			mongo_reconnect(conn) == MONGO_OK &&
 			mongo_check_connection(conn) == MONGO_OK) {
 				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
@@ -1710,6 +1894,9 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
+			if (!bson_size(&err_b))
+				continue;
+
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&it));
@@ -1729,9 +1916,13 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 				}
 			}
 			return -1;
+			stop_expire_timer(start,mongo_exec_threshold,
+			"cachedb_mongo sql_update",table->s,table->len,0);
 		}
 		break;
 	}
 
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo sql_update",table->s,table->len,0);
 	return 0;
 }

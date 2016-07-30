@@ -553,7 +553,7 @@ if (client_nat_test("3")) {
       <para>
         Will replace the IP and port in the Contact header with the
         IP and port the SIP message was received from. Usually called
-        after a succesful call to client_nat_test(type)
+        after a successful call to client_nat_test(type)
       </para>
 
       <para>

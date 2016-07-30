@@ -20,8 +20,7 @@ Irina-Maria Stanescu
 
    Copyright © 2005, 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
-                              (Tue, 29 Jan 2013) $
+   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -60,8 +59,9 @@ Irina-Maria Stanescu
               1.4.9. uri_param(param)
               1.4.10. uri_param(param,value)
               1.4.11. add_uri_param(param)
-              1.4.12. tel2sip()
-              1.4.13. is_uri_user_e164(pseudo-variable)
+              1.4.12. del_uri_param(param)
+              1.4.13. tel2sip()
+              1.4.14. is_uri_user_e164(pseudo-variable)
 
    List of Examples
 
@@ -86,8 +86,9 @@ Irina-Maria Stanescu
    1.19. uri_param usage
    1.20. uri_param usage
    1.21. add_uri_param usage
-   1.22. tel2sip usage
-   1.23. is_uri_user_e164 usage
+   1.22. add_uri_param usage
+   1.23. tel2sip usage
+   1.24. is_uri_user_e164 usage
 
 Chapter 1. Admin Guide
 
@@ -277,8 +278,8 @@ if (db_check_from()) {
    Check if username in the request URI belongs to an existing
    user.
 
-   As the checking is done against URI table (if use_uri_table is
-   set) or subscriber table.
+   Matching is done against the URI table (if use_uri_table is
+   set) or the subscriber table.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -424,7 +425,22 @@ if (uri_param("param1","value1")) {
 add_uri_param("nat=yes");
 ...
 
-1.4.12.  tel2sip()
+1.4.12.  del_uri_param(param)
+
+   Delete a parameter from the RURI being given the
+   key(key=value);
+
+   Meaning of the parameters is as follows:
+     * param - key of the parameter to be removed/
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.22. add_uri_param usage
+...
+del_uri_param("name");
+...
+
+1.4.13.  tel2sip()
 
    Converts RURI, if it is tel URI, to SIP URI. Returns true, only
    if conversion succeeded or if no conversion was needed (like
@@ -432,19 +448,19 @@ add_uri_param("nat=yes");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.22. tel2sip usage
+   Example 1.23. tel2sip usage
 ...
 tel2sip();
 ...
 
-1.4.13.  is_uri_user_e164(pseudo-variable)
+1.4.14.  is_uri_user_e164(pseudo-variable)
 
    Checks if userpart of URI stored in pseudo variable is E164
    number.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.23. is_uri_user_e164 usage
+   Example 1.24. is_uri_user_e164 usage
 ...
 if (is_uri_user_e164("$fu")) {  # Check From header URI user part
    ...

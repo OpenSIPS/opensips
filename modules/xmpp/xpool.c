@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -13,30 +11,30 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *  Jabber
  *  Copyright (C) 1998-1999 The Jabber Team http://jabber.org/
- *  
+ *
  *  2/27/00:3am, random plans by jer
- *  
+ *
  *  ok based on gprof, we really need some innovation here... my thoughs are this:
- *  
+ *
  *  most things are strings, so have a string-based true-blue garbage collector
  *  one big global hash containing all the strings created by any pstrdup, returning const char *
  *  a refcount on each string block
  *  when a pool is freed, it moves down the refcount
  *  garbage collector collects pools on the free stack, and runs through the hash for unused strings
  *  j_strcmp can check for == (if they are both from a pstrdup)
- *  
+ *
  *  let's see... this would change:
  *  pstrdup: do a hash lookup, success=return, fail=pmalloc & hash put
- *  pool_free: 
- *  
- *  
- *  
- *  
- *  
+ *  pool_free:
+ *
+ *
+ *
+ *
+ *
  */
 
 #include "xode.h"
@@ -175,7 +173,7 @@ void *xode_pool_mallocx(xode_pool p, int size, char c)
    if (result != NULL)
            memset(result, c, size);
    return result;
-}  
+}
 
 /* easy safety utility (for creating blank mem for structs, etc) */
 void *xode_pool_malloco(xode_pool p, int size)
@@ -183,7 +181,7 @@ void *xode_pool_malloco(xode_pool p, int size)
     void *block = xode_pool_malloc(p, size);
     memset(block, 0, size);
     return block;
-}  
+}
 
 /* XXX efficient: move this to const char * and then loop through the existing heaps to see if src is within a block in this pool */
 char *xode_pool_strdup(xode_pool p, const char *src)

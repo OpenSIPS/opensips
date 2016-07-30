@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * SDP parser helpers
  *
  * Copyright (C) 2008 SOMA Networks, INC.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
@@ -93,7 +91,7 @@ static void * ser_memmem(const void *b1, const void *b2, size_t len1, size_t len
 			if (memcmp(sp, pp, len2) == 0)
 				return sp;
 
-			sp++;
+		sp++;
 	}
 
 	return NULL;
@@ -137,7 +135,7 @@ int get_mixed_part_delimiter(str* body, str *mp_delimiter)
 	x = READ(p-4);
 	if (!one_of_16(x,dary))
 		goto other;
-	
+
 	/* skip spaces and tabs if any */
 	while (*p==' ' || *p=='\t')
 		advance(p,1,str_type,error);
@@ -152,9 +150,9 @@ int get_mixed_part_delimiter(str* body, str *mp_delimiter)
 	mp_delimiter->s = p;
 	return 1;
 
-error:  
+error:
 	return -1;
-other:  
+other:
 	LM_DBG("'boundary' parsing error\n");
 	return -1;
 }
@@ -385,7 +383,7 @@ int extract_bwidth(str *body, str *bwtype, str *bwwitdth)
 	/* skip ':' */
 	bwwitdth->s = cp1 + 1;
 	bwwitdth->len = len - 1;
-	
+
 	return 0;
 }
 
@@ -433,7 +431,7 @@ int extract_mediaip(str *body, str *mediaip, int *pf, char *line)
 				break;
 			}
 		}
-		/* consume all spaces starting from the second char after the token 
+		/* consume all spaces starting from the second char after the token
 		   First char after the token is the char that stoped the token
 		   parsing, so it is space or \r / \n, so we simply skip it */
 		cp = eat_space_end(cp + len + 1, mediaip->s + mediaip->len);
@@ -577,7 +575,7 @@ char *find_sdp_line_complex(char* p, char* plimit, char * name)
 {
 	char *cp, *cp1;
 	int len =  strlen(name);
-	
+
 	/* Iterate through body */
 	cp = p;
 	for (;;) {
@@ -636,7 +634,7 @@ char* get_sdp_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 	}
 
 	/* eliminate leading whitespace */
-	tmp=eat_lws_end(tmp, end); 
+	tmp=eat_lws_end(tmp, end);
 	if (tmp>=end) {
 		LM_ERR("hf empty\n");
 		goto error;

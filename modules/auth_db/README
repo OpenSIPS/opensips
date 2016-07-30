@@ -23,8 +23,7 @@ Jan Janak
 
    Copyright © 2005 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -281,7 +280,7 @@ modparam("auth_db", "skip_version_check", 1)
 
    Example 1.10. www_authorize usage
 ...
-if (www_authorize("siphub.net", "subscriber")) {
+if (!www_authorize("siphub.net", "subscriber")) {
         www_challenge("siphub.net", "1");
 };
 ...

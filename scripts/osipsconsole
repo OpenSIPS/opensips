@@ -18,7 +18,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 #
 # History:
 # -------
@@ -122,7 +122,7 @@ my $ALIAS_EXISTS = 0;
 #
 my @STANDARD_TABLES = ('version', 'acc', 'dbaliases',
 			'domain', 'grp', 'uri', 'speed_dial', 
-			'gw', 'pdt', 'subscriber', 'location', 
+			'gw', 'subscriber', 'location', 
 			're_grp', 'address', 'missed_calls', 
 			'usr_preferences', 'aliases', 'silo', 
 			'dialog', 'dispatcher', 'dialplan',
@@ -131,14 +131,16 @@ my @STANDARD_TABLES = ('version', 'acc', 'dbaliases',
 
 my @STANDARD_MODULES = ('standard', 'acc', 'domain', 'group', 
 	'permissions', 'registrar', 'usrloc', 'msilo', 'alias_db', 'uri_db',
-	'speeddial', 'avpops', 'auth_db', 'pdt', 'dialog', 'dispatcher', 
+	'speeddial', 'avpops', 'auth_db', 'dialog', 'dispatcher', 
 	'dialplan','drouting','rtpproxy','load_balancer' );
 
 my @EXTRA_TABLES = ('imc_members', 'imc_rooms', 'cpl', 'sip_trace', 
 	'domainpolicy', 'carrierroute', 'route_tree', 'carrierfailureroute', 
 	'userblacklist', 'globalblacklist');
 
-my @EXTRA_MODULES = ('imc', 'cpl', 'siptrace', 'domainpolicy', 'carrierroute', 'userblacklist');
+my @EXTRA_MODULES = ('imc', 'cpl', 'siptrace', 'domainpolicy', 'carrierroute',
+	'userblacklist', 'b2b', 'registrant', 'call_center', 'fraud_detection',
+	'emergency_routing', 'emergency_report');
 
 my @PRESENCE_TABLES = ('presentity', 'active_watchers', 'watchers', 'xcap', 'pua');
 
@@ -258,7 +260,6 @@ while ( $#content gt -1 ){
 		}
 	}
 	elsif ( $arr[0] eq "MI_CONNECTOR" ) {
-		print "bla";
 		$MI_CONNECTOR = $arr[1];
 		@list = split(":",$arr[1]);
 	 	$CTLENGINE = $list[0]; 
@@ -394,6 +395,10 @@ if ( $DBNAME eq "" ) {
 	
 if ( $DBHOST eq "" ) {
 	$DBHOST = "localhost";
+}
+
+if ( $DBPORT eq "" ) {
+	$DBPORT = "3306";
 }
 
 if ( $DBRWUSER  eq "" ) {
@@ -694,9 +699,8 @@ if ( not defined $DISPATCHER_TABLE ){
 my %dispatcher_table = ('DISPATCHER_ID_COLUMN' => 'id',
 			'DISPATCHER_SETID_COLUMN' => 'setid',
 			'DISPATCHER_DESTINATION_COLUMN' => 'destination',
-			'DISPATCHER_FLAGS_COLUMN' => 'flags',
 			'DISPATCHER_SOCKET_COLUMN' => 'socket',
-			'DISPATCHER_FLAGS_COLUMN' => 'flags',
+			'DISPATCHER_STATE_COLUMN' => 'state',
 			'DISPATCHER_WEIGHT_COLUMN' => 'weight',
 			'DISPATCHER_ATTRS_COLUMN' => 'attrs',
 			'DISPATCHER_DESCRIPTION_COLUMN' => 'description'
@@ -896,15 +900,15 @@ sub usage_address() {
 #dispatcher
 sub usage_dispatcher() {
    print " -- command 'dispatcher' - manage dispatcher\n" .
-         "* Examples:  dispatcher addgw 1 sip:1.2.3.1:5050 '' 2 50 'og1' 'Outbound Gateway1'\n" .
-         "*            dispatcher addgw 2 sip:1.2.3.4:5050 '' 3 50 'og2' 'Outbound Gateway2'\n" .
+         "* Examples:  dispatcher addgw 1 sip:1.2.3.1:5050 '' 0 50 'og1' 'Outbound Gateway1'\n" .
+         "*            dispatcher addgw 2 sip:1.2.3.4:5050 '' 0 50 'og2' 'Outbound Gateway2'\n" .
          "*            dispatcher rmgw 4\n" .
          "dispatcher show ..................... show dispatcher gateways\n" .
          "dispatcher reload ................... reload dispatcher gateways\n" .
          "dispatcher dump ..................... show in memory dispatcher gateways\n" .
-         "dispatcher addgw <setid> <destination> <socket> <flags> <weight> <attrs> [description]\n" .
+         "dispatcher addgw <setid> <destination> <socket> <state> <weight> <attrs> [description]\n" .
          "           .......................... add gateway\n" .
-         "dispatcher rmgw <id> ................ delete gateway\n" .
+         "dispatcher rmgw <id> ................ delete gateway\n";
 }
 
 
@@ -1357,11 +1361,11 @@ sub db_load() {
 				print "Used database is mysql\n";
 				&validate_dbdata("mysql");
 				#Connect to the database.
-				$dbh = DBI->connect("DBI:mysql:database=$DBNAME;host=$DBHOST",
+				$dbh = DBI->connect("DBI:mysql:database=$DBNAME;host=$DBHOST;port=$DBPORT",
 						"$DBRWUSER", "$DBRWPW", {'PrintError' => 0} );
 				if ($dbh==NULL) {
 					print "Failed to connect the configured Database ".
-						"(database=$DBNAME;host=$DBHOST;user=$DBRWUSER)";
+						"(database=$DBNAME;host=$DBHOST;port=$DBPORT;user=$DBRWUSER)";
 					$DBENGINELOADED = 0;
 					return 0;
 				}
@@ -2839,7 +2843,7 @@ sub opensips_dispatcher() {
 
 		elsif ($cmd[1] =~ /^addgw$/) {
 
-			my ( $DISPATCHER_SETID, $DISPATCHER_DESTINATION, $DISPATCHER_SOCKET, $DISPATCHER_FLAGS, $DISPATCHER_WEIGHT, $DISPATCHER_ATTRS, $DISPATCHER_DESCRIPTION);
+			my ( $DISPATCHER_SETID, $DISPATCHER_DESTINATION, $DISPATCHER_SOCKET, $DISPATCHER_STATE, $DISPATCHER_WEIGHT, $DISPATCHER_ATTRS, $DISPATCHER_DESCRIPTION);
 	
 			if ( $#cmd lt 7 ) {
 				print "Too few parameters!\n";
@@ -2862,49 +2866,49 @@ sub opensips_dispatcher() {
 			$DISPATCHER_SETID = $cmd[2];
 			$DISPATCHER_DESTINATION = $cmd[3];
 			$DISPATCHER_SOCKET = $cmd[4];
-			$DISPATCHER_FLAGS = $cmd[5];
+			$DISPATCHER_STATE = $cmd[5];
 			$DISPATCHER_WEIGHT = $cmd[6];
 			$DISPATCHER_ATTRS = $cmd[7];
 
 			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				my $key = join(" ",$DISPATCHER_SETID,$DISPATCHER_FLAGS);
+				my $key = join(" ",$DISPATCHER_SETID,$DISPATCHER_STATE);
 				my $value = join(" ",$DISPATCHER_DESTINATION,$DISPATCHER_DESCRIPTION);
 				&bdb_insert($DISPATCHER_TABLE,$key,$value);								
 			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
 				system ("$DBTEXTCMD"," INSERT INTO $DISPATCHER_TABLE ( 
-                    $dispatcher_table{'DISPATCHER_SETID_COLUMN'}, 
+					$dispatcher_table{'DISPATCHER_SETID_COLUMN'}, 
 					$dispatcher_table{'DISPATCHER_DESTINATION_COLUMN'}, 
-                    $dispatcher_table{'DISPATCHER_SOCKET_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_FLAGS_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_WEIGHT_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_ATTRS_COLUMN'},
- 					$dispatcher_table{'DISPATCHER_DESCRIPTION_COLUMN'} ) 
-				VALUES (
-                      $DISPATCHER_SETID,
-                    \'$DISPATCHER_DESTINATION\',
-                    \'$DISPATCHER_SOCKET\',
-                      $DISPATCHER_FLAGS,
-                      $DISPATCHER_WEIGHT,
-                    \'$DISPATCHER_ATTRS\',
-                    \'$DISPATCHER_DESCRIPTION\') ");
+					$dispatcher_table{'DISPATCHER_SOCKET_COLUMN'},
+					$dispatcher_table{'DISPATCHER_STATE_COLUMN'},
+					$dispatcher_table{'DISPATCHER_WEIGHT_COLUMN'},
+					$dispatcher_table{'DISPATCHER_ATTRS_COLUMN'},
+					$dispatcher_table{'DISPATCHER_DESCRIPTION_COLUMN'} ) 
+					VALUES (
+					$DISPATCHER_SETID,
+					\'$DISPATCHER_DESTINATION\',
+					\'$DISPATCHER_SOCKET\',
+					$DISPATCHER_STATE,
+					$DISPATCHER_WEIGHT,
+					\'$DISPATCHER_ATTRS\',
+					\'$DISPATCHER_DESCRIPTION\') ");
 			} else {
 
 				$sth = $dbh->prepare( " INSERT INTO $DISPATCHER_TABLE ( 
-                    $dispatcher_table{'DISPATCHER_SETID_COLUMN'}, 
+					$dispatcher_table{'DISPATCHER_SETID_COLUMN'}, 
 					$dispatcher_table{'DISPATCHER_DESTINATION_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_SOCKET_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_FLAGS_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_WEIGHT_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_ATTRS_COLUMN'},
+					$dispatcher_table{'DISPATCHER_SOCKET_COLUMN'},
+					$dispatcher_table{'DISPATCHER_STATE_COLUMN'},
+					$dispatcher_table{'DISPATCHER_WEIGHT_COLUMN'},
+					$dispatcher_table{'DISPATCHER_ATTRS_COLUMN'},
 					$dispatcher_table{'DISPATCHER_DESCRIPTION_COLUMN'} ) 
 					VALUES (
-                    $DISPATCHER_SETID,
-                  \'$DISPATCHER_DESTINATION\',
-                  \'$DISPATCHER_SOCKET\',
-                    $DISPATCHER_FLAGS,
-                    $DISPATCHER_WEIGHT,
-                  \'$DISPATCHER_ATTRS\',
-                  \'$DISPATCHER_DESCRIPTION\') " );
+					$DISPATCHER_SETID,
+					\'$DISPATCHER_DESTINATION\',
+					\'$DISPATCHER_SOCKET\',
+					$DISPATCHER_STATE,
+					$DISPATCHER_WEIGHT,
+					\'$DISPATCHER_ATTRS\',
+					\'$DISPATCHER_DESCRIPTION\') " );
 
 				#execute the query
 				$sth->execute( );
@@ -2913,7 +2917,7 @@ sub opensips_dispatcher() {
 				$sth->finish();
 			}
 
-			&mi_comm('ds_reload');			
+			&mi_comm('ds_reload');
 
 		}	
 
@@ -5565,7 +5569,7 @@ sub mysql_opensips_create() {
 		}
 	}
 
-	print "Core OpenSIPS tables succesfully created.\n";
+	print "Core OpenSIPS tables successfully created.\n";
 
 	if ( -e $DB_SCHEMA."/extensions-create.sql" ) {
 		print "Creating custom extensions tables\n";
@@ -5648,7 +5652,7 @@ sub pgsql_opensips_create() {	# pars: <database name>
 
 	&pgsql_query ($db, "CREATE USER $DBRWUSER WITH PASSWORD '$DBRWPW';");
 	if ( $? == 0 )	{
-		print "Creating user $DBRWUSER in database succeded!\n";
+		print "Creating user $DBRWUSER in database succeeded!\n";
 	} else {
 		print "Creating user $DBRWUSER in database failed!\n";
 	}
@@ -5663,21 +5667,21 @@ sub pgsql_opensips_create() {	# pars: <database name>
                                 if ( $? != 0 ) {
                                         print "Grant privileges to standard tables failed!\n";
                                 } else {
-                                        print "Privileges to standard tables succeded!\n";
+                                        print "Privileges to standard tables succeeded!\n";
                                 }
                         } elsif ( $TABLE =~ /dr_gateways/ ) {
                                 &pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_gwid_seq TO $DBRWUSER;");
                                 if ( $? != 0 ) {
                                         print "Grant privileges to standard tables failed!\n";
                                 } else {
-                                        print "Privileges to standard tables succeded!\n";
+                                        print "Privileges to standard tables succeeded!\n";
                                 }
                         } elsif ( $TABLE =~ /dr_rules/ ) {
                                 &pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_ruleid_seq TO $DBRWUSER;");
                                 if ( $? != 0 ) {
                                         print "Grant privileges to standard tables failed!\n";
                                 } else {
-                                        print "Privileges to standard tables succeded!\n";
+                                        print "Privileges to standard tables succeeded!\n";
                                 }
                         }
 
@@ -5702,7 +5706,7 @@ sub pgsql_opensips_create() {	# pars: <database name>
 		}
 	}
 
-	print "Core OpenSIPS tables succesfully created.\n";
+	print "Core OpenSIPS tables successfully created.\n";
 
 	print "Install presence related tables? (y/n): ";
 	if ( ( $ans = <STDIN> ) =~ /[(^y)(^Y)]$/ ) {
@@ -5887,13 +5891,13 @@ sub pgsql_presence_create(){ # pars: <database name>
 		&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;");
 		&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
 		if ($? == 0 )	{
-			print "Granting privileges to presence tables succeded!\n";
+			print "Granting privileges to presence tables succeeded!\n";
 		} else {
 			print "Granting privileges to presence tables failed!\n";
 		}
 	}
 
-	print "Presence tables succesfully created.\n";
+	print "Presence tables successfully created.\n";
 } 
 
 sub dbtext_presence_create () { # pars: <database name>
@@ -6034,14 +6038,14 @@ sub pgsql_extra_create() { # pars: <database name>
 			&pgsql_query($db, $query[$i]);
 		}
 	}
-	print "Extra tables succesfully created.\n";
+	print "Extra tables successfully created.\n";
 
 
 	foreach $TABLE ( @EXTRA_TABLES ) {
 
 		&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;" );
 		if ($? == 0 )	{
-			print "Granting privileges on $TABLE to $DBRWUSER succeded!\n";
+			print "Granting privileges on $TABLE to $DBRWUSER succeeded!\n";
 		} else {
 			print "Granting priviliges on $TABLE to $DBRWUSER failed!\n";
 		}
@@ -6049,7 +6053,7 @@ sub pgsql_extra_create() { # pars: <database name>
 		if ( $TABLE !~ /route_tree/ ) {
 			&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
 			if ($? == 0 )	{
-				print "Granting privileges on $TABLE to $DBRWUSER succeded!\n";
+				print "Granting privileges on $TABLE to $DBRWUSER succeeded!\n";
 			} else {
 				print "Granting priviliges on $TABLE to $DBRWUSER failed!\n";
 			}	
@@ -6138,7 +6142,7 @@ sub mysql_opensips_drop() {# pars: <database name>
 
 	&mysql_query($db, "drop database $db");
 	if ($? == 0 )	{
-		print "Database was successfuly dropped!\n";
+		print "Database was successfully dropped!\n";
 	} else {
 		print "Database could not be dropped!\n";
 	}
@@ -6282,9 +6286,6 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	### gw
 	&mysql_migrate_table( $dst_db . ".gw", "id,gw_name,grp_id,ip_addr,port,uri_scheme,transport,strip,tag,flags", $src_db . ".gw", "?id,?gw_name,?grp_id,?ip_addr,?port,?uri_scheme,?transport,?strip,?tag,?flags" );
 
-	### pdt
-	&mysql_migrate_table( $dst_db. ".pdt", "id,sdomain,prefix,domain", $src_db . ".pdt", "?id,?sdomain,?prefix,?domain" );
-
 	### subscriber
 	&mysql_migrate_table( $dst_db . ".subscriber", "id,username,domain,password,email_address,ha1,ha1b,rpid", $src_db . ".subscriber", "?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid" );
 
@@ -6364,7 +6365,7 @@ sub mysql_migrate_table(){ # 4 paremeters (dst_table, dst_cols, src_table, src_c
 	$src_cols=`echo $src_cols | sed s/?/$src_table./g `;
 
 	if ( $PW eq "" ) {
-		$X = system("mysql -h $DBHOST -u$DBROOTUSER -e \"INSERT INTO $dst_table ($dst_cols) SELECT $src_cols FROM $src_table\"");
+		$X = system("mysql -h $DBHOST -P $DBPORT -u$DBROOTUSER -e \"INSERT INTO $dst_table ($dst_cols) SELECT $src_cols FROM $src_table\"");
 		if ( $? != 0 ) {
 			system("echo $X | $EGREP \"ERROR 1146\" > /dev/null");
 			if ( $? != 0 ) {
@@ -6378,7 +6379,7 @@ sub mysql_migrate_table(){ # 4 paremeters (dst_table, dst_cols, src_table, src_c
 			}
 		}
 	} else {
-		$X = system("mysql -h $DBHOST -u$DBROOTUSER -p$PW -e \"INSERT INTO $dst_table ($dst_cols) SELECT $src_cols FROM $src_table\"");
+		$X = system("mysql -h $DBHOST -P $DBPORT -u$DBROOTUSER -p$PW -e \"INSERT INTO $dst_table ($dst_cols) SELECT $src_cols FROM $src_table\"");
 		if ( $? != 0 ) {
 			system("echo $X | $EGREP \"ERROR 1146\" > /dev/null");
 			if ( $? != 0 ) {
@@ -6412,7 +6413,7 @@ sub opensips_dump() {
 	
 	if ( $DBENGINE =~ /^mysql$/ ) {
 		if ( $PW eq "" ) {
-			system("mysqldump -h $DBHOST -u$DBROOTUSER -c -t $_[0] > $_[1]");
+			system("mysqldump -h $DBHOST -P $DBPORT -u$DBROOTUSER -c -t $_[0] > $_[1]");
 			if ( $? != 0 ) {
 				print "db dump failed\n";
 				return;
@@ -6421,7 +6422,7 @@ sub opensips_dump() {
 				return;
 			}
 		} else {
-                        system("mysqldump -h $DBHOST -u$DBROOTUSER -p$PW -c -t $_[0] > $_[1]");
+                        system("mysqldump -h $DBHOST -P $DBPORT -u$DBROOTUSER -p$PW -c -t $_[0] > $_[1]");
                         if ( $? != 0 ) {
                                 print "db dump failed\n";
 				return;
@@ -6481,7 +6482,7 @@ sub opensips_restore() { #pars: <database name> <filename>
 #
 sub mysql_query() {
 
-	my $MYSQL_CMD="mysql -h $DBHOST -u$DBROOTUSER ";
+	my $MYSQL_CMD="mysql -h $DBHOST -P $DBPORT -u$DBROOTUSER ";
 	if ( $#_ > 0 ) {
 		if ( $PW eq "") {
 			system("$MYSQL_CMD -D $_[0] -e \"$_[1]\"");
@@ -6565,7 +6566,7 @@ sub db_mysql_query() {
 	
 	# if password not yet queried, query it now
 	#&prompt_pw(); "MySQL password for user '$DBRWUSER@$DBHOST'"
-	system("$MYSQL -h $DBHOST -u$DBRWUSER \"-p$DBRWPW\" -D $DBNAME -e \"$query\";");
+	system("$MYSQL -h $DBHOST -P $DBPORT -u$DBRWUSER \"-p$DBRWPW\" -D $DBNAME -e \"$query\";");
 	if ( $? != 0 ) {		
 		return 1;
 	} else {

@@ -1,6 +1,4 @@
 /**
- * $Id$
- *
  * Copyright (C) 2012 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History
  * -------
@@ -162,7 +160,7 @@ int strings_share_lock(struct sip_msg *msg, char *s1, char *s2)
 
 	if (core_hash(&ret1, NULL, lock_pool_size) ==
 		core_hash(&ret2, NULL, lock_pool_size)) {
-		
+
 		return 1;
 	}
 
@@ -179,11 +177,13 @@ void destroy_script_locks(void)
 		lock_entry = static_locks;
 		static_locks = static_locks->next;
 
-		lock_dealloc(lock_entry->lock);
+		if (lock_entry->lock)
+			lock_dealloc(lock_entry->lock);
 		shm_free(lock_entry);
 	}
 
 	/* Free all dynamic locks  */
-	lock_set_dealloc(dynamic_locks);
+	if (dynamic_locks)
+		lock_set_dealloc(dynamic_locks);
 }
 

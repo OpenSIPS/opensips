@@ -1,16 +1,16 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>The module contains REGISTER processing logic.</para>
 	<section>
 		<title>PATH support</title>
 		<para>
-		Register module includes Path support (according to RFC 3327) 
+		Register module includes Path support (according to RFC 3327)
 		for usage in registrars and home-proxies.
 		</para>
 		<para>
@@ -23,23 +23,23 @@
 		<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>off</emphasis> - stores the value of the 
-				Path headers into usrloc without passing it back to 
+				<emphasis>off</emphasis> - stores the value of the
+				Path headers into usrloc without passing it back to
 				the UAC in the reply.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>lazy</emphasis> - stores the Path header and 
-				passes it back to the UAC if Path-support is indicated 
+				<emphasis>lazy</emphasis> - stores the Path header and
+				passes it back to the UAC if Path-support is indicated
 				by the <quote>path</quote> param in the Supported HF.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>strict</emphasis> - rejects the registration 
-				with <quote>420 Bad Extension</quote> if there's a Path 
-				header but no support for it is indicated by the UAC. 
+				<emphasis>strict</emphasis> - rejects the registration
+				with <quote>420 Bad Extension</quote> if there's a Path
+				header but no support for it is indicated by the UAC.
 				Otherwise it's stored and passed back to the UAC.
 			</para>
 			</listitem>
@@ -56,7 +56,7 @@
 		<para>
 		The whole process is transparent to the user, so no
 		config changes are required beside setting the
-		registrar-parameters <quote>use_path</quote> and 
+		registrar-parameters <quote>use_path</quote> and
 		<quote>path_mode</quote>.
 		</para>
 	</section>
@@ -64,12 +64,12 @@
 	<section>
 		<title>GRUU support</title>
 		<para>
-		Register module includes GRUU support (according to RFC 5627) 
+		Register module includes GRUU support (according to RFC 5627)
 		for usage in registrars and home-proxies.
 		</para>
 		<para>
 		A call to save(...) stores, if the phone supports GRUU,
-		the values of the SIP Instance along with the contact into usrloc. 
+		the values of the SIP Instance along with the contact into usrloc.
 		The registrar module will generate two types of GRUUs :
 		</para>
 		<itemizedlist>
@@ -84,7 +84,7 @@
 			<listitem>
 			<para>
 				<emphasis>temporary</emphasis> - hides the underlying AOR
-				Each new Register request leads to the construction of a 
+				Each new Register request leads to the construction of a
 				new temporary GRUU, while Register requests with a different
 				Call-Id lead to the invalidation of all the previous generated
 				temporary GRUUs.
@@ -129,7 +129,7 @@
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
-		The following libraries or applications must be installed before 
+		The following libraries or applications must be installed before
 		running &osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
@@ -146,9 +146,9 @@
 	<section>
 		<title><varname>default_expires</varname> (integer)</title>
 		<para>
-		If the processed message contains neither Expires 
-		<acronym>HFs</acronym> nor expires contact parameters, this value 
-		will be used for newly created usrloc records. The parameter contains 
+		If the processed message contains neither Expires
+		<acronym>HFs</acronym> nor expires contact parameters, this value
+		will be used for newly created usrloc records. The parameter contains
 		number of second to expire (for example use 3600 for one hour).
 		</para>
 		<para>
@@ -168,8 +168,8 @@ modparam("registrar", "default_expires", 1800)
 	<section>
 		<title><varname>min_expires</varname> (integer)</title>
 		<para>
-		The minimum expires value of a Contact, values lower than this 
-		minimum will be automatically set to the minimum. Value 0 disables 
+		The minimum expires value of a Contact, values lower than this
+		minimum will be automatically set to the minimum. Value 0 disables
 		the checking.
 		</para>
 		<para>
@@ -189,8 +189,8 @@ modparam("registrar", "min_expires", 60)
 	<section>
 		<title><varname>max_expires</varname> (integer)</title>
 		<para>
-		The maximum expires value of a Contact, values higher than this 
-		maximum will be automatically set to the maximum. Value 0 disables 
+		The maximum expires value of a Contact, values higher than this
+		maximum will be automatically set to the maximum. Value 0 disables
 		the checking.
 		</para>
 		<para>
@@ -211,9 +211,9 @@ modparam("registrar", "max_expires", 120)
 	<section>
 		<title><varname>default_q</varname> (integer)</title>
 		<para>
-		The parameter represents default q value for new contacts. Because 
-		&osips; doesn't support float parameter types, the value in the parameter 
-		is divided by 1000 and stored as float. For example, if you want 
+		The parameter represents default q value for new contacts. Because
+		&osips; doesn't support float parameter types, the value in the parameter
+		is divided by 1000 and stored as float. For example, if you want
 		default_q to be 0.38, use value 380 here.
 		</para>
 		<para>
@@ -234,11 +234,11 @@ modparam("registrar", "default_q", 1000)
 	<section>
 		<title><varname>tcp_persistent_flag</varname> (integer)</title>
 		<para>
-		The parameter specifies the message flag to be used to control the 
-		module behaviour regarding TCP connections. If the flag is set for a 
-		REGISTER via TCP containing a TCP contact, the module, via the 
-		<quote>save()</quote> functions will set the lifetime of the TCP
-		connection to the contact expire value. By doing this, the TCP 
+		The parameter specifies the message flag to be used to control the
+		module behaviour regarding TCP connections. If the flag is set for a
+		REGISTER via TCP containing a TCP contact, the module, via the
+		<quote>save()</quote> function, will set the lifetime of the TCP
+		connection to the contact expire value. By doing this, the TCP
 		connection will stay on as long as the contact is valid.
 		</para>
 		<para>
@@ -259,10 +259,10 @@ modparam("registrar", "tcp_persistent_flag", 7)
 	<section>
 		<title><varname>realm_prefix</varname> (string)</title>
 		<para>
-		 Prefix to be automatically strip from realm. As an alternative to 
-		 SRV records (not all SIP clients support SRV lookup), a subdomain of 
-		 the master domain can be defined for SIP purposes (like 
-		 sip.mydomain.net pointing to same IP address as the SRV record for 
+		 Prefix to be automatically strip from realm. As an alternative to
+		 SRV records (not all SIP clients support SRV lookup), a subdomain of
+		 the master domain can be defined for SIP purposes (like
+		 sip.mydomain.net pointing to same IP address as the SRV record for
 		 mydomain.net). By ignoring the realm_prefix "sip.", at registration,
 		 sip.mydomain.net will be equivalent to mydomain.net .
 		</para>
@@ -285,8 +285,8 @@ modparam("registrar", "realm_prefix", "sip.")
 	<section>
 		<title><varname>case_sensitive</varname> (integer)</title>
 		<para>
-		If set to 1 then <acronym>AOR</acronym> comparison will be case 
-		sensitive (as RFC3261 instructs), if set to 0 then 
+		If set to 1 then <acronym>AOR</acronym> comparison will be case
+		sensitive (as RFC3261 instructs), if set to 0 then
 		<acronym>AOR</acronym> comparison will be case insensitive.
 		</para>
 		<para>
@@ -307,15 +307,15 @@ modparam("registrar", "case_sensitive", 0)
 	<section>
 		<title><varname>received_avp</varname> (str)</title>
 		<para>
-		Registrar will store the value of the AVP configured by this 
-		parameter in the received column in the user location database. 
-		It will leave the column empty if the AVP is empty. The AVP should 
+		Registrar will store the value of the AVP configured by this
+		parameter in the received column in the user location database.
+		It will leave the column empty if the AVP is empty. The AVP should
 		contain a SIP URI consisting of the source IP, port,
 		and protocol of the REGISTER message being processed.
 		</para>
 		<note>
 		<para>
-			The value of this parameter should be the same as the value of 
+			The value of this parameter should be the same as the value of
 			corresponding parameter of nathelper module.
 		</para>
 		</note>
@@ -337,7 +337,7 @@ modparam("registrar", "received_avp", "$avp(rcv)")
 	<section>
 		<title><varname>received_param</varname> (string)</title>
 		<para>
-		The name of the parameter that will be appended to Contacts of 
+		The name of the parameter that will be appended to Contacts of
 		200 OK when the received URI was set by nathelper module.
 		</para>
 		<para>
@@ -354,18 +354,18 @@ modparam("registrar", "received_param", "rcv")
 </programlisting>
 		</example>
 	</section>
-	
+
 
 	<section>
 		<title><varname>max_contacts</varname> (integer)</title>
 		<para>
-		The parameter can be used to limit the number of contacts per 
-		AOR (Address of Record) in the user location database. Value 0 
+		The parameter can be used to limit the number of contacts per
+		AOR (Address of Record) in the user location database. Value 0
 		disables the check.
 		<para>
 		This is the default value and will be used only if no other value
 		(for max_contacts) is passed as parameter to the save() function.
-		That's it - the function paramter overwride this global parameter.
+		That's it - the function parameter overwride this global parameter.
 		</para>
 		</para>
 		<para>
@@ -387,15 +387,15 @@ modparam("registrar", "max_contacts", 10)
 	<section>
 		<title><varname>retry_after</varname> (integer)</title>
 		<para>
-		The registrar can generate 5xx reply to REGISTER in various 
-		situations. It can, for example, happen when the 
+		The registrar can generate 5xx reply to REGISTER in various
+		situations. It can, for example, happen when the
 		<varname>max_contacts</varname> parameter is set and the
-		processing of REGISTER request would exceed the limit. In this case 
+		processing of REGISTER request would exceed the limit. In this case
 		the registrar would generate "503 Service Unavailable" response.
 		</para>
 		<para>
-		If you want to add the Retry-After header field in 5xx replies, set 
-		this parameter to a value grater than zero (0 means do not add the 
+		If you want to add the Retry-After header field in 5xx replies, set
+		this parameter to a value grater than zero (0 means do not add the
 		header field). See section 20.33 of RFC3261 for more details.
 		</para>
 		<para>
@@ -417,11 +417,11 @@ modparam("registrar", "retry_after", 30)
 		<title><varname>sock_hdr_name</varname> (string)</title>
 		<para>
 		Header which contains a socket description (proto:IP:port) to override
-		the received socket info. The header will be search and used only if 
+		the received socket info. The header will be search and used only if
 		the flag 's' (Socket header) is set at "save()" time.
 		</para>
 		<para>
-		This make sens only in multiple replicated servers scenarios.
+		This makes sense only in multiple replicated servers scenarios.
 		</para>
 		<para>
 		<emphasis>
@@ -447,7 +447,7 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 		expires from the 200ok reply.
 		</para>
 		<para>
-		This make sens only in cached registrations scenario.
+		This makes sense only in cached registrations scenario.
 		</para>
 		<para>
 		<emphasis>
@@ -468,9 +468,9 @@ modparam("registrar", "mcontact_avp", "$avp(register)")
 		<para>
 		AVP to store specific additional information for each registration.
 		This information is read from the AVP and stored (in memory, db or both)
-		at every registrar 'save'. When a registrar 'lookup' is done, the
-		<emphasis>attr_avp</emphasis> is populated with the value saved at
-		[re]registration.
+		at every registrar 'save'. When a registrar 'lookup' or 'registered'
+		function is called, the <emphasis>attr_avp</emphasis> is populated with
+		the value saved at [re]registration.
 		</para>
 		<para>
 		When doing call forking, the avp will hold multiple values. The position of
@@ -554,49 +554,49 @@ modparam("registrar", "disable_gruu", 0)
 		<function moreinfo="none">save(domain [,flags ,[aor]])</function>
 		</title>
 		<para>
-		The function processes a REGISTER message. It can add, remove or 
-		modify usrloc records depending on Contact and Expires HFs in the 
-		REGISTER message. On success, 200 OK will be returned listing all 
-		contacts that are currently in usrloc. On an error, error message 
+		The function processes a REGISTER message. It can add, remove or
+		modify usrloc records depending on Contact and Expires HFs in the
+		REGISTER message. On success, 200 OK will be returned listing all
+		contacts that are currently in usrloc. On an error, error message
 		will be send with a short description in reason phrase.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>domain</emphasis> - Logical domain within registrar. 
-			If database is used then this must be name of the table which 
+			<emphasis>domain</emphasis> - Logical domain within registrar.
+			If database is used then this must be name of the table which
 			stores the contacts.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>flags</emphasis> (optional)- string of 
+			<emphasis>flags</emphasis> (optional)- string of
 			the following flags:
 			</para>
 			<itemizedlist>
 				<listitem>
-					<para><emphasis>'m' (Memory only)</emphasis> - save the 
+					<para><emphasis>'m' (Memory only)</emphasis> - save the
 					contacts only in memory cache without no DB operation;
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>'r' (no Reply)</emphasis> - do not 
+					<para><emphasis>'r' (no Reply)</emphasis> - do not
 					generate a SIP reply to the current REGISTER request.
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>'s' (Socket header)</emphasis> -  look 
+					<para><emphasis>'s' (Socket header)</emphasis> -  look
 					into REGISTER request for a header which contains a socket
-					description (proto:IP:port). This socket info will be 
+					description (proto:IP:port). This socket info will be
 					stored by register instead of the received socket info.
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>'cnn' (max Contacts)</emphasis> -  this 
+					<para><emphasis>'cnn' (max Contacts)</emphasis> -  this
 					flag can be used to limit the number of contacts for this
 					AOR (Address of Record) in the user location database.
-					Value 0 disables the check. This parameter overrides the 
+					Value 0 disables the check. This parameter overrides the
 					global "max_contacts" module parameter.
 					</para>
 				</listitem>
@@ -617,7 +617,7 @@ modparam("registrar", "disable_gruu", 0)
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>'f' (force registration)</emphasis> - this 
+					<para><emphasis>'f' (force registration)</emphasis> - this
 					flag can be used to force the registration of NEW contacts
 					even if the maximum number of contacts is reached. In such
 					a case, older contacts will be removed to make space to the
@@ -627,37 +627,37 @@ modparam("registrar", "disable_gruu", 0)
 				</listitem>
 				<listitem>
 					<para><emphasis>'p0' (Path support - 'off' mode)</emphasis>
-					The Path header is saved into usrloc, but is never 
+					The Path header is saved into usrloc, but is never
 					included in the reply.
 					</para>
 				</listitem>
 				<listitem>
 					<para><emphasis>'p1' (Path support - lazy mode)</emphasis>
-					The Path header is saved into usrloc, but is only included 
-					in the reply if path support is indicated in the 
-					registration request by the <quote>path</quote> option 
+					The Path header is saved into usrloc, but is only included
+					in the reply if path support is indicated in the
+					registration request by the <quote>path</quote> option
 					of the <quote>Supported</quote> header.
 					</para>
 				</listitem>
 				<listitem>
 					<para><emphasis>'p2' (Path support - strict mode)</emphasis>
-					The path header is only saved into usrloc, if path support 
-					is indicated in the registration request by the 
-					<quote>path</quote> option of the <quote>Supported</quote> 
-					header. If no path support is indicated, the request is 
-					rejected with <quote>420 - Bad Extension</quote> and the 
-					header <quote>Unsupported: path</quote> is included in 
-					the reply along with the received <quote>Path</quote> 
+					The path header is only saved into usrloc, if path support
+					is indicated in the registration request by the
+					<quote>path</quote> option of the <quote>Supported</quote>
+					header. If no path support is indicated, the request is
+					rejected with <quote>420 - Bad Extension</quote> and the
+					header <quote>Unsupported: path</quote> is included in
+					the reply along with the received <quote>Path</quote>
 					header. This mode is the one recommended by RFC-3327.
 					</para>
 				</listitem>
 				<listitem>
 					<para><emphasis>'v' (path receiVed)</emphasis> if set,
-					the <quote>received</quote> parameter of the first Path 
-					URI of a registration is set as received-uri and the NAT 
-					branch flag is set for this contact. This is useful if 
-					the registrar is placed behind a SIP loadbalancer, which 
-					passes the nat'ed UAC address as <quote>received</quote> 
+					the <quote>received</quote> parameter of the first Path
+					URI of a registration is set as received-uri and the NAT
+					branch flag is set for this contact. This is useful if
+					the registrar is placed behind a SIP loadbalancer, which
+					passes the nat'ed UAC address as <quote>received</quote>
 					parameter in it's Path uri.
 					</para>
 				</listitem>
@@ -667,7 +667,7 @@ modparam("registrar", "disable_gruu", 0)
 		<listitem>
 			<para>
 			<emphasis>aor</emphasis> (optional) - Variable contain a custom
-			AOR; if missing, the AOR will be taken from the default place - 
+			AOR; if missing, the AOR will be taken from the default place -
 			the TO header URI.
 			</para>
 		</listitem>
@@ -698,14 +698,77 @@ save("location","mr", "$avp(aor)");
 
 	<section>
 		<title>
+		<function moreinfo="none">remove(domain, AOR[, target])</function>
+		</title>
+		<para>
+		Explicitly remove contacts behind a given address-of-record.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>domain</emphasis> - Logical domain within registrar.
+			If database is used then this must be name of the table which
+			stores the contacts.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>AOR</emphasis> - address-of-record to be searched (SIP URI)
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>target (optional)</emphasis> -
+				may be specified in two ways:
+				<itemizedlist>
+				<listitem>
+					<para>
+						<emphasis role='bold'>single delete - </emphasis>
+						Specific contact to be deleted (SIP URI)
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role='bold'>multi delete - </emphasis>
+						IP/hostname of the AOR's contacts which will be deleted
+					</para>
+				</listitem>
+				</itemizedlist>
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function>remove</function> usage</title>
+		<programlisting format="linespecific">
+...
+# remove all contacts belonging to the "bob" AOR
+remove("location", "sip:bob@atlanta.com");
+...
+# remove only bob's home phone
+remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78");
+...
+# remove all bob's phones which are behind "50.60.50.60"
+$var(next_hop) = "50.60.50.60"
+remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
 		<function moreinfo="none">lookup(domain [, flags [, aor]])</function>
 		</title>
 		<para>
-		The functions extracts username from Request-URI and tries to find 
-		all contacts for the username in usrloc. If there are no such 
-		contacts, -1 will be returned.  If there are such contacts, 
+		The functions extracts username from Request-URI and tries to find
+		all contacts for the username in usrloc. If there are no such
+		contacts, -1 will be returned.  If there are such contacts,
 		Request-URI will be overwritten with the contact that has
-		the highest q value and optionally the rest will be appended to 
+		the highest q value and optionally the rest will be appended to
 		the message (depending on append_branches parameter value).
 		</para>
 		<para>
@@ -717,7 +780,7 @@ save("location","mr", "$avp(aor)");
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>domain</emphasis> - Name of table that should be used 
+			<emphasis>domain</emphasis> - Name of table that should be used
 			for the lookup.
 			</para>
 		</listitem>
@@ -727,21 +790,61 @@ save("location","mr", "$avp(aor)");
 			<listitem>
 				<para>
 				<emphasis>'b' (no Branches)</emphasis> - this flag controls how
-				lookup function processes multiple contacts.  If there are 
-				multiple contacts for the given username in usrloc and this 
-				flag is not set, Request-URI will be overwritten with the 
-				highest-q rated contact and the rest will be appended to 
-				sip_msg structure and can be later used by tm for forking. If 
-				the flag is set, only Request-URI will be overwritten 
-				with the highest-q rated contact and the rest will be left 
+				lookup function processes multiple contacts.  If there are
+				multiple contacts for the given username in usrloc and this
+				flag is not set, Request-URI will be overwritten with the
+				highest-q rated contact and the rest will be appended to
+				sip_msg structure and can be later used by tm for forking. If
+				the flag is set, only Request-URI will be overwritten
+				with the highest-q rated contact and the rest will be left
 				unprocessed.
 				</para>
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis>'m' (Method filtering)</emphasis> - this flag tells 
+				<emphasis>'r' (bRanch lookup)</emphasis> - this flag enables
+				searching through existing branches for aor's and expanding
+				them to contacts. For example, you have got AOR A in your
+				ruri but you also want to forward your calls to AOR B. In order
+				to do this, you must put AOR B in a branch, and if this flag
+				enabled, the function will also expand AOR B to contacts,
+				which will be put back into the branches. The AOR's that were
+				in branches before the function call shall be removed.
+				</para>
+
+				<para>
+				<emphasis role='bold'>WARNING: </emphasis>
+				<emphasis>if you want this flag activated,
+				the 'b' (no Branches) flag must not be set, because by setting
+				that flag you won't allow lookup to write in a branch.</emphasis>
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+				<emphasis>'m' (Method filtering)</emphasis> - this flag tells
 				if the contact filtering based on supported methods should be
 				performed during lookup.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'u' (User-Agent filtering)</emphasis> - this flag
+				enables regexp filtering by user-agent. It's useful with
+				enabled append_branches parameter. Regexp must follow
+				the 'u' flag and must use format like 'u/regexp/'.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'i' (Case insensitive search)</emphasis> - this flag
+				enables case insensitive filtering for the 'u' flag.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'e' (Use extended regexp)</emphasis> - this flag
+				enables using of extended regexp format for the 'u' flag.
 				</para>
 			</listitem>
 			</itemizedlist>
@@ -749,7 +852,7 @@ save("location","mr", "$avp(aor)");
 		<listitem>
 			<para>
 			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
-			missing, the RURI is used as AOR; This can be a variable.
+			missing, the RURI is used as AOR; This must be a variable.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -782,6 +885,12 @@ lookup("location");  # simple lookup
    #or
 lookup("location","m"); # lookup with method filtering
    #or
+lookup("location","r"); #lookup with aor branch search;
+						#all contacts except the first one shall be put
+						#in the branches
+   #or
+lookup("location","u/phone/i"); # lookup with user-agent filtering
+   #or
 lookup("location","","$var(aor)"); # simple lookup with AOR from PV
 switch ($retcode) {
     case -1:
@@ -813,22 +922,22 @@ switch ($retcode) {
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>domain</emphasis> - Name of table that should be 
+			<emphasis>domain</emphasis> - Name of table that should be
 			used for the lookup.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
 			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
-			missing, the RURI is used as AOR; This can be a variable.
+			missing, the RURI is used as AOR; This must be a variable.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>callid</emphasis> (optional)- callid to check if a 
-			contact if registered with this callid (this may help you to 
-			make distinction between newly registered contact (callid 
-			not registered so far) and re-registration (callid already 
+			<emphasis>callid</emphasis> (optional)- callid to check if a
+			contact if registered with this callid (this may help you to
+			make distinction between newly registered contact (callid
+			not registered so far) and re-registration (callid already
 			registered).
 			</para>
 		</listitem>
@@ -836,6 +945,10 @@ switch ($retcode) {
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+		</para>
+		<para>
+		WARNING: THIS FUNCTION IS DEPRECATED! USE
+		<emphasis>is_contact_registered()</emphasis> INSTEAD.
 		</para>
 		<example>
 		<title><function>registered</function> usage</title>
@@ -865,7 +978,7 @@ if (registered("location","$fu")) {
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>domain</emphasis> - Name of table that should be 
+			<emphasis>domain</emphasis> - Name of table that should be
 			used for contacts lookup.
 			</para>
 		</listitem>
@@ -878,6 +991,10 @@ if (registered("location","$fu")) {
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE.
+		</para>
+		<para>
+			WARNING: THIS FUNCTION IS DEPRECATED! USE
+			<emphasis>is_ip_registered()</emphasis> INSTEAD.
 		</para>
 		<example>
 		<title><function>is_other_contact</function> usage</title>
@@ -895,15 +1012,188 @@ if (is_other_contact("location", "$avp(ips)")) {
 
 	<section>
 		<title>
+		<function moreinfo="none">is_registered(domain ,[AOR])</function>
+		</title>
+		<para>
+		The function returns true if an AOR is registered, false otherwise.
+		The function does not modify the message being process.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>domain</emphasis> - Name of table that should be
+			used for the lookup.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
+			missing, the source if the AOR is the "To" header for REGISTER
+			request, "From" header for any other sip request.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>is_registered</function> usage</title>
+		<programlisting format="linespecific">
+...
+/**/
+if (is_method("REGISTER")) {
+	/* automatically uses the URI from the To header */
+	if (is_registered("location")) {
+		xlog("this AOR is registered\n")
+		...
+	}
+};
+/* check the From uri whether this aor is registered or not */
+if (is_registered("location","$fu")) {
+	xlog("caller is registered\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section>
+		<title>
+		<function moreinfo="none">is_contact_registered(domain ,[AOR],[contact],[callid])</function>
+		</title>
+		<para>
+			The function returns true if a contact and/or a callid from a certain AOR is registered, false otherwise.
+		The function does not modify the message being process.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>domain</emphasis> - Name of table that should be
+			used for the lookup.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
+			missing, the source if the AOR is the "To" header for REGISTER
+			request, "From" header for any other sip request.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>contact</emphasis> (optional)- callid to check if a
+			contact if registered with this callid (this may help you to
+			make distinction between newly registered contact (callid
+			not registered so far) and re-registration (callid already
+			registered).
+			</para>
+		</listitem>
+
+		<listitem>
+			<para>
+			<emphasis>callid</emphasis> (optional)- callid to check if a
+			contact if registered with this callid (this may help you to
+			make distinction between newly registered contact (callid
+			not registered so far) and re-registration (callid already
+			registered).
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>is_registered</function> usage</title>
+		<programlisting format="linespecific">
+...
+/*let's say you want to block users that are not registered*/
+if (is_method("INVITE")) {
+	if (!is_contact_registered("location")) {
+		sl_send_reply("401", "Unauthorized");
+	...
+	}
+}
+/* you want to check the second contact from the message whether it is
+registered or not */
+if(is_method("INVITE")) {
+	if (is_contact_registered("location","$fu","$(ct[1])",))
+		xlog("caller is registered\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">is_ip_registered(domain ,[AOR],IPvar)</function>
+		</title>
+		<para>
+			The function returns true if at least a contact has an IP from the IPavp in it's received parameter,otherwise
+			returns false. The function does not modify the message being process. This function replaces the "is_other_contact"
+			function.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>domain</emphasis> - Name of table that should be
+			used for the lookup.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
+			missing, the source if the AOR is the "To" header for REGISTER
+			request, "From" header for any other sip request.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>IPvar</emphasis> the pvar containing the IPs you want
+				to check the received parameter of the contacts in the AOR against.
+			</para>
+		</listitem>
+
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>is_registered</function> usage</title>
+		<programlisting format="linespecific">
+...
+/* check the source ip  whether it is already registered */
+if (is_method("REGISTER")) {
+	if (is_ip_registered("location","$tu","$si")) {
+		xlog("already registered from this ip\n");
+		...
+	}
+};
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
+	<section>
+		<title>
 		<function moreinfo="none">add_sock_hdr(hdr_name)</function>
 		</title>
 		<para>
-		Adds to the current REGISTER request a new header with 
+		Adds to the current REGISTER request a new header with
 		<quote>hdr_name</quote> which contains the description of the
 		received socket (proto:ip:port)
 		</para>
 		<para>
-		This make sens only in multiple replicated servers scenarios.
+		This makes sense only in multiple replicated servers scenarios.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>

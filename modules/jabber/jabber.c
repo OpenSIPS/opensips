@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * XJAB module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * ---
  *
@@ -79,9 +77,9 @@ struct tm_binds tmb;
 /** iHTTP bind */
 struct ih_binds ihb;
 /** iHTTP callback functions */
-int xjab_mod_info(ih_req_p _irp, void *_p, char *_bb, int *_bl, 
+int xjab_mod_info(ih_req_p _irp, void *_p, char *_bb, int *_bl,
 		char *_hb, int *_hl);
-int xjab_connections(ih_req_p _irp, void *_p, char *_bb, int *_bl, 
+int xjab_connections(ih_req_p _irp, void *_p, char *_bb, int *_bl,
 		char *_hb, int *_hl);
 #endif
 
@@ -156,7 +154,7 @@ static cmd_export_t cmds[] = {
 
 
 /*
- * Exported parameters 
+ * Exported parameters
  */
 static param_export_t params[] = {
 	{"db_url",     STR_PARAM, &db_url.s  },
@@ -176,12 +174,25 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
+		{ MOD_TYPE_SQLDB,   NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports= {
 	"jabber",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
+	0,          /* Exported async functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
@@ -246,14 +257,14 @@ static int mod_init(void)
 	if (load_ih( &ihb )==-1)
 		return -1;
 #endif
-	
+
 	pipes = (int**)pkg_malloc(nrw*sizeof(int*));
 	if (pipes == NULL)
 	{
 		LM_ERR("no more pkg memory (pipes)\n");
 		return -1;
 	}
-	
+
 	for(i=0; i<nrw; i++)
 	{
 		pipes[i] = (int*)pkg_malloc(2*sizeof(int));
@@ -263,9 +274,9 @@ static int mod_init(void)
 			return -1;
 		}
 	}
-	
+
 	for(i=0; i<nrw; i++)
-	{	
+	{
 		db_con[i] = jabber_dbf.init(&db_url);
 		if (!db_con[i])
 		{
@@ -282,9 +293,9 @@ static int mod_init(void)
 		}
 	}
 
-	
+
 	/** creating the pipes */
-	
+
 	for(i=0;i<nrw;i++)
 	{
 		/* create the pipe*/
@@ -294,21 +305,21 @@ static int mod_init(void)
 		}
 		LM_DBG("pipe[%d] = <%d>-<%d>\n", i, pipes[i][0], pipes[i][1]);
 	}
-	
+
 	if((jwl = xj_wlist_init(pipes,nrw,max_jobs,cache_time,sleep_time,
 				delay_time)) == NULL)
 	{
 		LM_ERR("failed to initialize workers list\n");
 		return -1;
 	}
-	
+
 	if(xj_wlist_set_aliases(jwl, jaliases, jdomain, proxy) < 0)
 	{
 		LM_ERR("failed to set aliases and outbound proxy\n");
 		return -1;
 	}
 
-	LM_DBG("initialized ...\n");	
+	LM_DBG("initialized ...\n");
 	return 0;
 }
 
@@ -318,7 +329,7 @@ static int mod_init(void)
 static int child_init(int rank)
 {
 	int i, j, mpid, cpid;
-	
+
 	LM_DBG("initializing child <%d>\n", rank);
 	     /* Rank 0 is main process now - 1 is the first child (janakj) */
 	if(rank == 1)
@@ -355,7 +366,7 @@ static int child_init(int rank)
 						LM_ERR("failed to set worker's pid\n");
 						return -1;
 					}
-					xj_worker_process(jwl,jaddress,jport, priority, i, 
+					xj_worker_process(jwl,jaddress,jport, priority, i,
 							db_con[i], &jabber_dbf);
 					exit(0);
 				}
@@ -369,7 +380,7 @@ static int child_init(int rank)
 			}
 		}
 	}
-	
+
 	//if(pipes)
 	//{
 	//	for(i=0;i<nrw;i++)
@@ -463,16 +474,16 @@ int xjab_manage_sipmsg(struct sip_msg *msg, int type)
 			goto error;
 		}
 	}
-	
-	// check for TO and FROM headers - if is not SIP MESSAGE 
+
+	// check for TO and FROM headers - if is not SIP MESSAGE
 	if(parse_headers(msg,HDR_TO_F|HDR_FROM_F,0)==-1 || !msg->to || !msg->from)
 	{
 		LM_ERR("cannot find TO or FROM HEADERS!\n");
 		goto error;
 	}
-	
+
 	/* parsing from header */
-	if ( parse_from_header( msg )<0 || msg->from->parsed==NULL) 
+	if ( parse_from_header( msg )<0 || msg->from->parsed==NULL)
 	{
 		LM_DBG("cannot get FROM header\n");
 		goto error;
@@ -516,7 +527,7 @@ int xjab_manage_sipmsg(struct sip_msg *msg, int type)
 	// if is for going ONLINE/OFFLINE we do not need the destination
 	if(type==XJ_GO_ONLINE || type==XJ_GO_OFFLINE)
 		goto prepare_job;
-	
+
 	// determination of destination
 	// - try to get it from new_uri, r-uri or to hdr, but check it against
 	// jdomain and aliases
@@ -532,7 +543,7 @@ int xjab_manage_sipmsg(struct sip_msg *msg, int type)
 			LM_DBG("using NEW URI for destination\n");
 #endif
 	}
-	
+
 	if (dst.len == 0 &&  msg->first_line.u.request.uri.s != NULL
 			&& msg->first_line.u.request.uri.len > 0 )
 	{
@@ -557,13 +568,13 @@ int xjab_manage_sipmsg(struct sip_msg *msg, int type)
 			LM_DBG("using TO-URI for destination\n");
 #endif
 	}
-	
+
 	if(dst.len == 0)
 	{
 		LM_DBG("destination not found in SIP message\n");
 		goto error;
 	}
-	
+
 	/** skip 'sip:' and parameters in destination address */
 	if(xj_extract_aor(&dst, 1))
 	{
@@ -573,14 +584,14 @@ int xjab_manage_sipmsg(struct sip_msg *msg, int type)
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("destination after correction [%.*s].\n", dst.len, dst.s);
 #endif
-	
+
 prepare_job:
 	//putting the SIP message parts in share memory to be accessible by workers
-    jsmsg = (xj_sipmsg)shm_malloc(sizeof(t_xj_sipmsg));
+	jsmsg = (xj_sipmsg)shm_malloc(sizeof(t_xj_sipmsg));
+	if (jsmsg == NULL)
+		return -1;
 	memset(jsmsg, 0, sizeof(t_xj_sipmsg));
-    if(jsmsg == NULL)
-    	return -1;
-	
+
 	switch(type)
 	{
 		case XJ_SEND_MESSAGE:
@@ -640,7 +651,7 @@ prepare_job:
 		shm_free(jsmsg);
 		goto error;
 	}
-	
+
 	return 1;
 error:
 	return -1;
@@ -675,7 +686,7 @@ void destroy(void)
 			jabber_dbf.close(db_con[i]);
 		shm_free(db_con);
 	}
-			
+
 	xj_wlist_free(jwl);
 	LM_DBG("unloaded ...\n");
 }
@@ -713,16 +724,16 @@ void xj_register_watcher(str *from, str *to, void *cbf, void *pp)
 		LM_DBG("cannot find pipe of the worker!\n");
 		goto error;
 	}
-	
+
 	//putting the SIP message parts in share memory to be accessible by workers
 	jsmsg = (xj_sipmsg)shm_malloc(sizeof(t_xj_sipmsg));
 	memset(jsmsg, 0, sizeof(t_xj_sipmsg));
 	if(jsmsg == NULL)
 		goto error;
-	
+
 	jsmsg->msg.len = 0;
 	jsmsg->msg.s = NULL;
-	
+
 	to_uri.s = to->s;
 	to_uri.len = to->len;
 	/** skip 'sip:' and parameters in destination address */
@@ -749,7 +760,7 @@ void xj_register_watcher(str *from, str *to, void *cbf, void *pp)
 	jsmsg->jkey = jp;
 	jsmsg->type = XJ_REG_WATCHER;
 	//jsmsg->jkey->hash = jkey.hash;
-	
+
 	jsmsg->cbf = (pa_callback_f)cbf;
 	jsmsg->p = pp;
 
@@ -767,7 +778,7 @@ void xj_register_watcher(str *from, str *to, void *cbf, void *pp)
 		shm_free(jsmsg);
 		goto error;
 	}
-	
+
  error:
 	return;
 }
@@ -799,13 +810,13 @@ void xjab_check_workers(int mpid)
 			n = waitpid(jwl->workers[i].pid, &stat, WNOHANG);
 			if(n == 0 || n!=jwl->workers[i].pid)
 				continue;
-		
+
 			LM_ERR("worker[%d][pid=%d] has exited - status=%d err=%d"
 					"errno=%d\n", i, jwl->workers[i].pid, stat, n, errno);
 			xj_wlist_clean_jobs(jwl, i, 1);
 			xj_wlist_set_pid(jwl, -1, i);
 		}
-		
+
 #ifdef XJ_EXTRA_DEBUG
 		LM_DBG("create a new worker[%d]\n", i);
 #endif
@@ -828,22 +839,22 @@ void xjab_check_workers(int mpid)
 					db_con[i], &jabber_dbf);
 			exit(0);
 		}
-	}			
+	}
 }
 
 #ifdef HAVE_IHTTP
 /**
  * Module's information retrieval - function to use with iHttp module
  *
- */ 
-int xjab_mod_info(ih_req_p _irp, void *_p, char *_bb, int *_bl, 
+ */
+int xjab_mod_info(ih_req_p _irp, void *_p, char *_bb, int *_bl,
 		char *_hb, int *_hl)
 {
 	if(!_irp || !_bb || !_bl || *_bl <= 0 || !_hb || !_hl || *_hl <= 0)
 		return -1;
 	*_hl = 0;
 	*_hb = 0;
-	
+
 	strcpy(_bb, "<h4>SER2Jabber Gateway</h4>");
 	strcat(_bb, "<br>Module parameters:<br>");
 	strcat(_bb, "<br> -- db table = ");
@@ -873,7 +884,7 @@ int xjab_mod_info(ih_req_p _irp, void *_p, char *_bb, int *_bl,
 	strcat(_bb, int2str(cache_time, NULL));
 	strcat(_bb, "<br> -- check time = ");
 	strcat(_bb, int2str(check_time, NULL));
-	
+
 	*_bl = strlen(_bb);
 
 	return 0;
@@ -881,10 +892,10 @@ int xjab_mod_info(ih_req_p _irp, void *_p, char *_bb, int *_bl,
 
 /**
  * SER2Jab connection management - function to use with iHttp module
- * - be aware of who is able to use the ihttp because he can close any 
+ * - be aware of who is able to use the ihttp because he can close any
  *   open connection between SER and Jabber server
- */ 
-int xjab_connections(ih_req_p _irp, void *_p, char *_bb, int *_bl, 
+ */
+int xjab_connections(ih_req_p _irp, void *_p, char *_bb, int *_bl,
 		char *_hb, int *_hl)
 {
 	t_xj_jkey jkey, *p;
@@ -895,12 +906,12 @@ int xjab_connections(ih_req_p _irp, void *_p, char *_bb, int *_bl,
 
 	if(!_irp || !_bb || !_bl || *_bl <= 0 || !_hb || !_hl || *_hl <= 0)
 		return -1;
-	
+
 	*_hl = 0;
 	*_hb = 0;
 	idx = -1;
 	strcpy(_bb, "<h4>Active XMPP connections</h4>");
-	
+
 	if(_irp->params)
 	{
 		strcat(_bb, "<br><b>Close action is alpha release!</b><br>");
@@ -936,7 +947,7 @@ int xjab_connections(ih_req_p _irp, void *_p, char *_bb, int *_bl,
 					}
 					i++;
 				break;
-				
+
 			}
 			_ipp = _ipp->next;
 		}
@@ -958,7 +969,7 @@ int xjab_connections(ih_req_p _irp, void *_p, char *_bb, int *_bl,
 
 		return 0;
 	}
-	
+
 	if(jwl!=NULL && jwl->len > 0 && jwl->workers!=NULL)
 	{
 		for(idx=0; idx<jwl->len; idx++)
@@ -973,7 +984,7 @@ int xjab_connections(ih_req_p _irp, void *_p, char *_bb, int *_bl,
 				continue;
 			lock_set_get(jwl->sems, idx);
 			maxcount = count234(jwl->workers[idx].sip_ids);
-			for (i = 0; i < maxcount; i++) 
+			for (i = 0; i < maxcount; i++)
 			{
 				p = (xj_jkey)index234(jwl->workers[idx].sip_ids, i);
 				if(p == NULL)
@@ -996,7 +1007,7 @@ int xjab_connections(ih_req_p _irp, void *_p, char *_bb, int *_bl,
 			lock_set_release(jwl->sems, idx);
 		}
 	}
-	
+
 	*_bl = strlen(_bb);
 
 	return 0;

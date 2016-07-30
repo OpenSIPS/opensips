@@ -18,8 +18,10 @@
 
 # path to the database schemas
 DATA_DIR="/usr/local/share/opensips"
-if [ -d "$DATA_DIR/mysql" ] ; then
+if [ -d "$DATA_DIR/mysql" ]; then
 	DB_SCHEMA="$DATA_DIR/mysql"
+elif [ -d "scripts/mysql" ]; then
+	DB_SCHEMA="scripts/mysql"
 else
 	DB_SCHEMA="./mysql"
 fi
@@ -38,9 +40,14 @@ fi
 # automatic testing.
 #PW=""
 
+if ! [ -z "$DBPORT" ]; then
+	PORT_OPT="-P$DBPORT"
+else
+	PORT_OPT=
+fi
 
-CMD="mysql -h $DBHOST -u$DBROOTUSER "
-DUMP_CMD="mysqldump -h $DBHOST -u$DBROOTUSER -c -t "
+CMD="mysql -h $DBHOST $PORT_OPT -u$DBROOTUSER "
+DUMP_CMD="mysqldump -h $DBHOST $PORT_OPT -u$DBROOTUSER -c -t "
 #################################################################
 
 
@@ -109,6 +116,11 @@ db_charset_test()
 		ALLCHARSETS=`echo "show character set" | $CMD | $AWK '{print $1}' | $SED -e 1d | $GREP -iv  "utf8" | $GREP -iv "ucs2"`
 	fi
 
+	if [ -z "$ALLCHARSETS" -o -z "$CURRCHARSET" ]; then
+		mwarn "Failed to get the available and used character sets"
+		exit 1;
+	fi
+
 	tries=0;
 
 	while [ `echo "$ALLCHARSETS" | $GREP -icw $CURRCHARSET`  = "0" ]
@@ -146,7 +158,11 @@ minfo "creating database $1 ..."
 
 # Users: opensips is the regular user, opensipsro only for reading
 sql_query "" "create database $1 character set $CHARSET;"
-    
+if [ $? -ne 0 ] ; then
+	merr "Creating database $1 failed!"
+	exit 1
+fi
+
 if [ "$DBROOTUSER" != "$DBRWUSER" ] ; then
 sql_query "" "
 	GRANT ALL PRIVILEGES ON $1.* TO '$DBRWUSER' IDENTIFIED  BY '$DBRWPW';
@@ -154,22 +170,26 @@ sql_query "" "
 "
 fi
 
-
 if [ $? -ne 0 ] ; then
 	merr "Creating core database and grant privileges failed!"
 	exit 1
 fi
 
+if [ "$MYSQL_ENGINE" == "" ] ; then
+	MYSQL_ENGINE="InnoDB"
+fi
+minfo "Using table engine $MYSQL_ENGINE."
+
 for TABLE in $STANDARD_MODULES; do
 	mdbg "Creating core table: $TABLE"
-	sql_query $1 < $DB_SCHEMA/$TABLE-create.sql
+	$SED "s/ENGINE=[A-Za-z]\+/ENGINE=$MYSQL_ENGINE/g" $DB_SCHEMA/$TABLE-create.sql | sql_query $1
 	if [ $? -ne 0 ] ; then
 		merr "Creating core tables failed!"
 		exit 1
 	fi
 done
 
-minfo "Core OpenSIPS tables succesfully created."
+minfo "Core OpenSIPS tables successfully created."
 
 if [ -e $DB_SCHEMA/extensions-create.sql ]
 then
@@ -217,7 +237,7 @@ if [ $? -ne 0 ] ; then
 	exit 1
 fi
 
-minfo "Presence tables succesfully created."
+minfo "Presence tables successfully created."
 }  # end presence_create
 
 
@@ -238,7 +258,7 @@ for TABLE in $EXTRA_MODULES; do
 		exit 1
 		fi
 	done
-minfo "Extra tables succesfully created."
+minfo "Extra tables successfully created."
 }  # end extra_create
 
 
@@ -260,7 +280,7 @@ if [ $? -ne 0 ] ; then
 		echo " -- Migrating $3 to $1.....SKIPPED (no source)"
 		return 0
 	fi
-	echo "ERROR: failed to migrate $3 to $1!!!"
+	echo "ERROR: failed to migrate $3 to $1 ($X)!!!"
 	echo -n "Skip it and continue (y/n)? "
 	read INPUT
 	if [ "$INPUT" = "y" ] || [ "$INPUT" = "Y" ]
@@ -284,7 +304,8 @@ fi
 
 dst_db=$2
 src_db=$1
-       
+
+## ACC module
 migrate_table ${dst_db}.acc \
 	"id,method,from_tag,to_tag,callid,sip_code,sip_reason,time,duration,setuptime,created" \
 	${src_db}.acc \
@@ -295,16 +316,76 @@ migrate_table ${dst_db}.missed_calls \
  	 ${src_db}.missed_calls \
 	 "?id,?method,?from_tag,?to_tag,?callid,?sip_code,?sip_reason,?time"
 
-migrate_table ${dst_db}.aliases \
-	 "id,username,domain,contact,received,path,expires,q,callid,cseq,last_modified,flags,cflags,user_agent,socket,methods" \
- 	 ${src_db}.aliases \
-	 "?id,?username,?domain,?contact,?received,?path,?expires,?q,?callid,?cseq,?last_modified,?flags,?cflags,?user_agent,?socket,?methods"
-
+## ALIAS_DB module
 migrate_table ${dst_db}.dbaliases \
 	"id,alias_username,alias_domain,username,domain" \
 	${src_db}.dbaliases \
 	"?id,?alias_username,?alias_domain,?username,?domain"
 
+## AUTH_DB module
+migrate_table ${dst_db}.subscriber \
+	"id,username,domain,password,email_address,ha1,ha1b,rpid" \
+	${src_db}.subscriber \
+	"?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid"
+
+## AVPOPS module
+migrate_table ${dst_db}.usr_preferences \
+	"id,uuid,username,domain,attribute,type,value,last_modified" \
+	${src_db}.usr_preferences \
+	"?id,?uuid,?username,?domain,?attribute,?type,?value,?last_modified"
+
+## B2B modules
+#  runtime data, nothing to migrate
+
+## CACHEDB_SQL module
+migrate_table ${dst_db}.cachedb \
+	"keyname,value,counter,expires" \
+	${src_db}.cachedb \
+	"?keyname,?value,?counter,?expires" 
+
+## DIALOG modules
+#  runtime data, nothing to migrate
+
+## DIALPLAN module
+migrate_table ${dst_db}.dialplan \
+	"id,dpid,pr,match_op,match_exp,match_flags,subst_exp,repl_exp,disabled,attrs" \
+	${src_db}.dialplan \
+	"?id,?dpid,?pr,?match_op,?match_exp,?match_flags,?subst_exp,?repl_exp,?disabled,?attrs"
+
+## DISPATCHER module (changes here, the flags and state columns)
+migrate_table ${dst_db}.dispatcher \
+	"id,setid,destination,weight,attrs,description" \
+	${src_db}.dispatcher \
+	"?id,?setid,?destination,?weight,?attrs,?description"
+
+## DOMAIN module
+migrate_table ${dst_db}.domain \
+	"id,domain,last_modified" \
+	${src_db}.domain \
+	"?id,?domain,?last_modified"
+
+## DROUTING module
+migrate_table ${dst_db}.dr_gateways \
+	"id,gwid,type,address,strip,pri_prefix,attrs,probe_mode,state,socket,description" \
+	${src_db}.dr_gateways \
+	"?id,?gwid,?type,?address,?strip,?pri_prefix,?attrs,?probe_mode,?state,?socket,?description"
+
+migrate_table ${dst_db}.dr_rules \
+	"ruleid,groupid,prefix,timerec,priority,routeid,gwlist,attrs,description" \
+	${src_db}.dr_rules \
+	"?ruleid,?groupid,?prefix,?timerec,?priority,?routeid,?gwlist,?attrs,?description"
+
+migrate_table ${dst_db}.dr_groups \
+	"id,username,domain,groupid,description" \
+	${src_db}.dr_groups \
+	"?id,?username,?domain,?groupid,?description"
+
+migrate_table ${dst_db}.dr_carriers \
+	"id,carrierid,gwlist,flags,attrs,description" \
+	${src_db}.dr_carriers \
+	"?id,?carrierid,?gwlist,?flags,?attrs,?description"
+
+## GROUP module
 migrate_table ${dst_db}.grp \
 	"id,username,domain,grp,last_modified" \
 	${src_db}.grp \
@@ -315,129 +396,52 @@ migrate_table ${dst_db}.re_grp \
 	${src_db}.re_grp \
 	"?id,?reg_exp,?group_id" 
 
-migrate_table ${dst_db}.silo \
-	"id,src_addr,dst_addr,username,domain,inc_time,exp_time,snd_time,ctype,body" \
-	${src_db}.silo \
-	"?id,?src_addr,?dst_addr,?username,?domain,?inc_time,?exp_time,?snd_time,?ctype,?body"
-        
-migrate_table ${dst_db}.domain \
-	"id,domain,last_modified" \
-	${src_db}.domain \
-	"?id,?domain,?last_modified"
-
-migrate_table ${dst_db}.uri \
-	 "id,username,domain,uri_user,last_modified" \
-	 ${src_db}.uri \
-	 "?id,?username,?domain,?uri_user,?last_modified"
-
-migrate_table ${dst_db}.usr_preferences \
-	"id,uuid,username,domain,attribute,type,value,last_modified" \
-	${src_db}.usr_preferences \
-	"?id,?uuid,?username,?domain,?attribute,?type,?value,?last_modified"
-
-migrate_table ${dst_db}.address \
-	"id,grp,ip,mask,port,proto,pattern,context_info" \
-	${src_db}.address \
-	"?id,?grp,?ip,?mask,?port,?proto,?pattern,?context_info"
-
-migrate_table ${dst_db}.speed_dial \
-	"id,username,domain,sd_username,sd_domain,new_uri,fname,lname,description" \
-	${src_db}.speed_dial \
-	"?id,?username,?domain,?sd_username,?sd_domain,?new_uri,?fname,?lname,?description"
-
-migrate_table ${dst_db}.pdt \
-	"id,sdomain,prefix,domain" \
-	${src_db}.pdt \
-	"?id,?sdomain,?prefix,?domain"
-
-migrate_table ${dst_db}.subscriber \
-	"id,username,domain,password,email_address,ha1,ha1b,rpid" \
-	${src_db}.subscriber \
-	"?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid" 
-
+## LOAD_BALANCER module
 migrate_table ${dst_db}.load_balancer \
 	"id,group_id,dst_uri,resources,probe_mode,description" \
 	${src_db}.load_balancer \
 	"?id,?group_id,?dst_uri,?resources,?probe_mode,?description" \
 
-migrate_table ${dst_db}.dispatcher \
-	"id,setid,destination,flags,weight,attrs,description" \
-	${src_db}.dispatcher \
-	"?id,?setid,?destination,?flags,?weight,?attrs,?description"
+## MSILO module
+migrate_table ${dst_db}.silo \
+	"id,src_addr,dst_addr,username,domain,inc_time,exp_time,snd_time,ctype,body" \
+	${src_db}.silo \
+	"?id,?src_addr,?dst_addr,?username,?domain,?inc_time,?exp_time,?snd_time,?ctype,?body"
 
-migrate_table ${dst_db}.dialplan \
-	"id,dpid,pr,match_op,match_exp,subst_exp,repl_exp,attrs" \
-	${src_db}.dialplan \
-	"?id,?dpid,?pr,?match_op,?match_exp,?subst_exp,?repl_exp,?attrs"
+## PERMISSION module
+migrate_table ${dst_db}.address \
+	"id,grp,ip,mask,port,proto,pattern,context_info" \
+	${src_db}.address \
+	"?id,?grp,?ip,?mask,?port,?proto,?pattern,?context_info"
 
+## REGISTRAR module
+migrate_table ${dst_db}.aliases \
+	 "id,username,domain,contact,received,path,expires,q,callid,cseq,last_modified,flags,cflags,user_agent,socket,methods,sip_instance,attr" \
+ 	 ${src_db}.aliases \
+	 "?id,?username,?domain,?contact,?received,?path,?expires,?q,?callid,?cseq,?last_modified,?flags,?cflags,?user_agent,?socket,?methods,?sip_instance,?attr"
+
+## RTPPROXY module
 migrate_table ${dst_db}.rtpproxy_sockets \
 	"id,rtpproxy_sock,set_id" \
-	${src_db}.nh_sockets \
+	${src_db}.rtpproxy_sockets \
 	"?id,?rtpproxy_sock,?set_id"
 
-migrate_table ${dst_db}.dr_gateways \
-	"gwid,type,address,strip,pri_prefix,attrs,probe_mode,description" \
-	${src_db}.dr_gateways \
-	"?gwid,?type,?address,?strip,?pri_prefix,?attrs,?probe_mode,?description"
+## SPEEDDIAL module
+migrate_table ${dst_db}.speed_dial \
+	"id,username,domain,sd_username,sd_domain,new_uri,fname,lname,description" \
+	${src_db}.speed_dial \
+	"?id,?username,?domain,?sd_username,?sd_domain,?new_uri,?fname,?lname,?description"
 
-migrate_table ${dst_db}.dr_rules \
-	"ruleid,groupid,prefix,timerec,priority,routeid,gwlist,attrs,description" \
-	${src_db}.dr_rules \
-	"?ruleid,?groupid,?prefix,?timerec,?priority,?routeid,?gwlist,?attrs,?description"
+## URI_DB module
+migrate_table ${dst_db}.uri \
+	 "id,username,domain,uri_user,last_modified" \
+	 ${src_db}.uri \
+	 "?id,?username,?domain,?uri_user,?last_modified"
 
-drr_query=`sql_query "" "select count(*) from ${dst_db}.dr_rules where gwlist like '%;%';" 2>&1`
-
-if [ $? -ne 0 ] ; then
-	echo $drr_query | $GREP "ERROR 1146" > /dev/null
-	if [ $? -neq 0 ] ; then 
-		echo "ERROR: Failed to check dr_rules for unsupported gwlist types"
-		echo -n "Skip it and continue (y/n)? "
-		read INPUT
-		if [ "$INPUT" = "n" ] || [ "$INPUT" = "N" ]
-		then
-			exit 1
-		fi
-	fi
-fi
-
-drr_query=`echo $drr_query | head -n 2`
-if [ $drr_query -gt 0 ];
-then
-	mwarn "You currently have rules with gwlists that are not supported any more starting from OpenSIPS 1.8. See the updated DROUTING documentation"
-fi
-
-migrate_table ${dst_db}.dr_groups \
-	"id,username,domain,groupid,description" \
-	${src_db}.dr_groups \
-	"?id,?username,?domain,?groupid,?description"
-
-migrate_table ${dst_db}.dr_carriers \
-	"id,gwlist,description" \
-	${src_db}.dr_carriers \
-	"?id,?gwlist,?description"
 
 if [ "$HAS_EXTRA" = "yes" ] ; then
-                
-migrate_table ${dst_db}.cpl \
-	"id,username,domain,cpl_xml,cpl_bin" \
-	${src_db}.cpl \
-	"?id,?username,?domain,?cpl_xml,?cpl_bin"
 
-migrate_table ${dst_db}.sip_trace \
-	"id,time_stamp,callid,traced_user,msg,method,status,fromip,toip,fromtag,direction" \
-	${src_db}.sip_trace \
-	"?id,?time_stamp,?callid,?traced_user,?msg,?method,?status,?fromip,?toip, ?fromtag,?direction"
-
-migrate_table ${dst_db}.imc_rooms \
-	"id,name,domain,flag" \
-	${src_db}.imc_rooms \
-	"?id,?name,?domain,?flag"
-
-migrate_table ${dst_db}.imc_members \
-	"id,username,domain,room,flag" \
-	${src_db}.imc_members \
-	"?id,?username,?domain,?room,?flag"
-
+## CARRIERROUTE module
 migrate_table ${dst_db}.carrierroute \
 	"id,carrier,domain,scan_prefix,flags,mask,prob,strip,rewrite_host,rewrite_prefix,rewrite_suffix,description" \
 	${src_db}.carrierroute \
@@ -453,11 +457,61 @@ migrate_table ${dst_db}.route_tree \
 	${src_db}.route_tree \
 	"?id,?carrier"
 
+## CALL_CENTER module
+migrate_table ${dst_db}.cc_flows \
+	"flowid,priority,skill,prependcid,message_welcome,message_queue" \
+	${src_db}.cc_flows \
+	"?flowid,?priority,?skill,?prependcid,?message_welcome,?message_queue" 
+
+migrate_table ${dst_db}.cc_agents \
+	"agentid,location,logstate,skills,last_call_end" \
+	${src_db}.cc_agents \
+	"?agentid,?location,?logstate,?skills,?last_call_end" 
+
+migrate_table ${dst_db}.cc_cdrs \
+	"caller,received_timestamp,wait_time,pickup_time,talk_time,flow_id,agent_id,call_type,rejected,fstats,cid" \
+	${src_db}.cc_cdrs \
+	"?caller,?received_timestamp,?wait_time,?pickup_time,?talk_time,?flow_id,?agent_id,?call_type,?rejected,?fstats,?cid" 
+
+## CPL module
+migrate_table ${dst_db}.cpl \
+	"id,username,domain,cpl_xml,cpl_bin" \
+	${src_db}.cpl \
+	"?id,?username,?domain,?cpl_xml,?cpl_bin"
+
+## DOMAINPOLICY module
 migrate_table ${dst_db}.domainpolicy \
 	"id,rule,type,att,val,description" \
 	${src_db}.domainpolicy \
 	"?id,?rule,?type,?att,?val,?description"
 
+## IMC module
+migrate_table ${dst_db}.imc_rooms \
+	"id,name,domain,flag" \
+	${src_db}.imc_rooms \
+	"?id,?name,?domain,?flag"
+
+migrate_table ${dst_db}.imc_members \
+	"id,username,domain,room,flag" \
+	${src_db}.imc_members \
+	"?id,?username,?domain,?room,?flag"
+
+## PRESENCE modules
+# runtime data only, nothing to migrate
+
+## REGISTRANT module
+migrate_table ${dst_db}.registrant \
+	"id,registrar,proxy,aor,third_party_registrant,username,password,binding_URI,binding_params,expiry,forced_socket" \
+	${src_db}.registrant \
+	"?id,?registrar,?proxy,?aor,?third_party_registrant,?username,?password,?binding_URI,?binding_params,?expiry,?forced_socket"
+
+## SIPTRACE module
+migrate_table ${dst_db}.sip_trace \
+	"id,time_stamp,callid,trace_attrs,msg,method,status,from_proto,from_ip,from_port,to_proto,to_ip,to_port,fromtag,direction" \
+	${src_db}.sip_trace \
+	"?id,?time_stamp,?callid,?traced_user,?msg,?method,?status,?from_proto,?from_ip,?from_port,?to_proto,?to_ip,?to_port,?fromtag,?direction"
+
+## USERBLACKLIST module
 migrate_table ${dst_db}.userblacklist \
 	"id,username,domain,prefix,whitelist" \
 	${src_db}.userblacklist \

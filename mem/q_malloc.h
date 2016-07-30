@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * simple & fast malloc library
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -16,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -30,23 +29,24 @@
  */
 
 
-#if !defined(q_malloc_h) && !defined(VQ_MALLOC) && !defined(F_MALLOC)
+#if !defined(q_malloc_h) && !defined(VQ_MALLOC) && !defined(F_MALLOC) && \
+	!defined(HP_MALLOC)
 #define q_malloc_h
 
 #include "meminfo.h"
 
 /* defs*/
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
 /* tricky, on sun in 32 bits mode long long must be 64 bits aligned
  * but long can be 32 bits aligned => malloc should return long long
  * aligned memory */
 	#define ROUNDTO		sizeof(long long)
 #else
-	#define ROUNDTO		sizeof(void*) /* minimum possible ROUNDTO ->heavy 
+	#define ROUNDTO		sizeof(void*) /* minimum possible ROUNDTO ->heavy
 										 debugging*/
-#endif 
-#else /* DBG_QM_MALLOC */
+#endif
+#else /* DBG_MALLOC */
 	#define ROUNDTO		16UL /* size we round to, must be = 2^n  and also
 							 sizeof(qm_frag)+sizeof(qm_frag_end)
 							 must be multiple of ROUNDTO!
@@ -65,6 +65,7 @@
 #define QM_HASH_SIZE ((unsigned long)(QM_MALLOC_OPTIMIZE/ROUNDTO + \
 		(sizeof(long)*8-QM_MALLOC_OPTIMIZE_FACTOR)+1))
 
+#define FRAG_OVERHEAD	(sizeof(struct qm_frag)+sizeof(struct qm_frag_end))
 /* hash structure:
  * 0 .... QM_MALLOC_OPTIMIE/ROUNDTO  - small buckets, size increases with
  *                            ROUNDTO from bucket to bucket
@@ -76,7 +77,7 @@ struct qm_frag{
 		struct qm_frag* nxt_free;
 		long is_free;
 	}u;
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	const char* file;
 	const char* func;
 	unsigned long line;
@@ -85,7 +86,7 @@ struct qm_frag{
 };
 
 struct qm_frag_end{
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 	unsigned long check1;
 	unsigned long check2;
 	unsigned long reserved1;
@@ -105,36 +106,40 @@ struct qm_frag_lnk{
 
 
 struct qm_block{
+	char *name; /* purpose of this memory block */
+
 	unsigned long size; /* total size */
 	unsigned long used; /* alloc'ed size*/
 	unsigned long real_used; /* used+malloc overhead*/
 	unsigned long max_real_used;
-	
+	unsigned long fragments; /* number of fragments in use */
+
 	struct qm_frag* first_frag;
 	struct qm_frag_end* last_frag_end;
-	
+
 	struct qm_frag_lnk free_hash[QM_HASH_SIZE];
 	/*struct qm_frag_end free_lst_end;*/
 };
 
 
 
-struct qm_block* qm_malloc_init(char* address, unsigned long size);
+struct qm_block* qm_malloc_init(char* address, unsigned long size, char* name);
+unsigned long frag_size(void* p);
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void* qm_malloc(struct qm_block*, unsigned long size, const char* file,
 					const char* func, unsigned int line);
 #else
 void* qm_malloc(struct qm_block*, unsigned long size);
 #endif
 
-#ifdef DBG_QM_MALLOC
-void  qm_free(struct qm_block*, void* p, const char* file, const char* func, 
+#ifdef DBG_MALLOC
+void  qm_free(struct qm_block*, void* p, const char* file, const char* func,
 				unsigned int line);
 #else
 void  qm_free(struct qm_block*, void* p);
 #endif
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 void* qm_realloc(struct qm_block*, void* p, unsigned long size,
 					const char* file, const char* func, unsigned int line);
 #else
@@ -143,6 +148,12 @@ void* qm_realloc(struct qm_block*, void* p, unsigned long size);
 
 void  qm_status(struct qm_block*);
 void  qm_info(struct qm_block*, struct mem_info*);
+
+/*
+ * On success, returns the currrent number of fragments
+ * Internally aborts on failure
+ */
+int qm_mem_check(struct qm_block *qm);
 
 
 #ifdef STATISTICS
@@ -168,12 +179,7 @@ static inline unsigned long qm_get_max_real_used(struct qm_block* qm)
 }
 static inline unsigned long qm_get_frags(struct qm_block* qm)
 {
-	int r;
-	unsigned long frags;
-	for(r=0,frags=0;r<QM_HASH_SIZE; r++){
-		frags+=qm->free_hash[r].no;
-	}
-	return frags;
+	return qm->fragments;
 }
 #endif /* STATISTICS */
 

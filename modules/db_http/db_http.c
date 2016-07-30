@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2009 Voice Sistem SRL
  * Copyright (C) 2009 Andrei Dragus
  *
@@ -18,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -73,6 +71,7 @@ static param_export_t params[] = {
 	{"field_delimiter", STR_PARAM | USE_FUNC_PARAM ,set_col_delim},
 	{"row_delimiter", STR_PARAM | USE_FUNC_PARAM ,set_line_delim},
 	{"quote_delimiter", STR_PARAM | USE_FUNC_PARAM ,set_quote_delim},
+	{"value_delimiter", STR_PARAM | USE_FUNC_PARAM ,set_value_delim},
 	{"timeout", INT_PARAM,&db_http_timeout},
 	{0, 0, 0}
 };
@@ -80,15 +79,18 @@ static param_export_t params[] = {
 
 struct module_exports exports = {
 	"db_http",
+	MOD_TYPE_SQLDB,  /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,
+	0,
 	params,          /*  module parameters */
 	0,               /* exported statistics */
 	0,               /* exported MI functions */
 	0,               /* exported pseudo-variables */
 	0,               /* extra processes */
-	http_mod_init,  /* module initialization function */
+	http_mod_init,   /* module initialization function */
 	0,               /* response function*/
 	0,               /* destroy function */
 	0                /* per-child init function */
@@ -146,7 +148,7 @@ int db_http_bind_api( const str* mod, db_func_t *dbb)
 	dbb->insert           = db_http_insert;
 	dbb->delete           = db_http_delete;
 	dbb->update           = db_http_update;
-		
+
 
 	return 0;
 }

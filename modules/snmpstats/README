@@ -49,8 +49,8 @@ Jeffrey Magder
         1.6. Installation and Running
 
               1.6.1. Compiling the SNMPStats Module
-              1.6.2. Configuring NetSNMP to allow connections from
-                      the SNMPStats module.
+              1.6.2. Configuring SNMP daemon to allow connections
+                      from the SNMPStats module.
 
               1.6.3. Configuring the SNMPStats module for
                       communication with a Master Agent
@@ -131,13 +131,13 @@ Chapter 1. Admin Guide
        threshold. The idea is that a network operation centre can
        be made aware that their SIP servers may be overloaded,
        without having to explicitly check for this condition.
-       If a minor or major condition has occured, then a
+       If a minor or major condition has occurred, then a
        openserDialogLimitMinorEvent trap or a
        openserDialogLimitMajorEvent trap will be generated,
        respectively. The minor and major thresholds are described
        in the parameters section below.
     2. The number of bytes waiting to be consumed across all of
-       OpenSIPSs listening ports has passed a minor or major
+       OpenSIPS's listening ports has passed a minor or major
        threshold. The idea is that a network operation centre can
        be made aware that a machine hosting a SIP server may be
        entering a degraded state, and to investigate why this is
@@ -164,7 +164,7 @@ Chapter 1. Admin Guide
     2. The SNMPStats modules openserSIPMsgQueueDepthMinorEvent and
        openserSIPMsgQueueDepthMajorEvent alarms rely on the
        OpenSIPS core to find out what interfaces, ports, and
-       transports OpenSIPS is listening on. However, the module
+       transports OpenSIPS is listening on. However,the module
        will actually query the proc file system to find out the
        number of bytes waiting to be consumed. (Currently, this
        will only work on systems providing the proc file system).
@@ -173,11 +173,11 @@ Chapter 1. Admin Guide
 
    We have now explained how the SNMPStats module gathers its
    data. We still have not explained how it exports this data to a
-   NOC (Network Operations Centre), or administrator.
+   NOC (Network Operations Centre) or administrator.
 
    The SNMPStats module expects to connect to a Master Agent. This
-   would be a NetSNMP daemon running either on the same system as
-   the OpenSIPS instance, or on another system. (Communication can
+   would be a SNMP daemon running either on the same system as the
+   OpenSIPS instance, or on another system. (Communication can
    take place over TCP, so there is no restriction that this
    daemon need be on the same system as OpenSIPS).
 
@@ -223,13 +223,17 @@ Chapter 1. Admin Guide
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
-     * NetSNMP v5.3 or greater - NetSNMP must be around at the
-       time of compilation. Furthermore, there are several shared
-       objects that must be loadable at the time SNMPStats is
-       loaded. This means that NetSNMP must be installed (but not
-       necessarily running) on the system that has loaded the
-       SNMPStats module. (Details can be found in the compilation
-       section below).
+     * Net SNMP DEV (libsnmp-dev on debian) - SNMP library
+       (development files) must be installed at the time of
+       compilation. Furthermore, there are several shared objects
+       that must be loadable at the time SNMPStats is loaded. This
+       means that SNMP lib must be installed (but not necessarily
+       running) on the system that has loaded the SNMPStats
+       module. (Details can be found in the compilation section
+       below).
+     * SNMP tools(snmp on debian) - SNMP tools package to provide
+       the snmpget command (internally used by the SNMPStats
+       module.
 
 1.4. Exported Parameters
 
@@ -257,8 +261,8 @@ modparam("snmpstats", "sipEntityType", "proxyServer")
    consumed by OpenSIPS. If the number of bytes waiting to be
    consumed exceeds a minor threshold, the SNMPStats module will
    send out an openserMsgQueueDepthMinorEvent trap to signal that
-   an alarm condition has occured. The minor threshold is set with
-   the MsgQueueMinorThreshold parameter.
+   an alarm condition has occurred. The minor threshold is set
+   with the MsgQueueMinorThreshold parameter.
 
    Example 1.2. Setting the MsgQueueMinorThreshold parameter
 ...
@@ -274,8 +278,8 @@ modparam("snmpstats", "MsgQueueMinorThreshold", 2000)
    consumed by OpenSIPS. If the number of bytes waiting to be
    consumed exceeds a major threshold, the SNMPStats module will
    send out an openserMsgQueueDepthMajorEvent trap to signal that
-   an alarm condition has occured. The major threshold is set with
-   the MsgQueueMajorThreshold parameter.
+   an alarm condition has occurred. The major threshold is set
+   with the MsgQueueMajorThreshold parameter.
 
    Example 1.3. Setting the MsgQueueMajorThreshold parameter
 ...
@@ -290,7 +294,7 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
    The SNMPStats module monitors the number of active dialogs. If
    the number of active dialogs exceeds a minor threshold, the
    SNMPStats module will send out an openserDialogLimitMinorEvent
-   trap to signal that an alarm condition has occured. The minor
+   trap to signal that an alarm condition has occurred. The minor
    threshold is set with the dlg_minor_threshold parameter.
 
    Example 1.4. Setting the dlg_minor_threshold parameter
@@ -306,7 +310,7 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
    The SNMPStats module monitors the number of active dialogs. If
    the number of active dialogs exceeds a major threshold, the
    SNMPStats module will send out an openserDialogLimitMajorEvent
-   trap to signal that an alarm condition has occured. The major
+   trap to signal that an alarm condition has occurred. The major
    threshold is set with the dlg_major_threshold parameter.
 
    Example 1.5. Setting the dlg_major_threshold parameter
@@ -322,7 +326,7 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
    The SNMPStats module provides the openserSIPServiceStartTime
    scalar. This scalar requires the SNMPStats module to perform a
    snmpget query to the master agent. You can use this parameter
-   to set the path to your instance of NetSNMP's snmpget program.
+   to set the path to your instance of SNMP's snmpget program.
 
    Default value is “/usr/local/bin/”.
 
@@ -357,77 +361,59 @@ modparam("snmpstats", "snmpCommunity", "customCommunityString")
 
 1.6.1.  Compiling the SNMPStats Module
 
-   In order for the SNMPStats module to compile, you will need at
-   least version 5.3 of the NetSNMP source code. The source can be
-   found at:
-    http://net-snmp.sourceforge.net/
+   In order for the SNMPStats module to compile, you will need to
+   have installed the packages providing SNMP (Simple Network
+   Management Protocol) libray and development files.
 
-   For the specifics of installing NetSNMP, please see the INSTALL
-   document in the root of the NetSNMP source package.
+   The SNMPStats modules makefile requires that the SNMP script
+   "net-snmp-config" can run.
 
-   The SNMPStats modules makefile requires that the NetSNMP script
-   "net-snmp-config" can run. At a minimum, running
-   "net-snmp-config --agent-libs" from the OpenSIPS source
-   directory should return something similar to:
-    -L/usr/local/lib -lnetsnmpmibs -lnetsnmpagent -lnetsnmphelpers -lnet
-snmp
+   IMPORTANT: By default, SNMP loads mibs from
+   /var/lib/mibs/ietf/.Keep in mind that you have to copy OpenSIPS
+   mibs wherevere your mibs folder is.
 
-   The specifics of what is returned depends on how the system was
-   configured. If your NetSNMP installation was installed from an
-   RPM (or another packaged version), then there is a good chance
-   that net-snmp-config will return something unecessarily longer.
-   It is highly recommended you install NetSNMP from source to
-   avoid bringing in excessive dependencies to the SNMPStats
-   module.
+1.6.2.  Configuring SNMP daemon to allow connections from the
+SNMPStats module.
 
-1.6.2.  Configuring NetSNMP to allow connections from the SNMPStats
-module.
-
-   The SNMPStats module will communicate with the NetSNMP Master
+   The SNMPStats module will communicate with the SNMP Master
    Agent. This communication happens over a protocol known as
-   AgentX. This means that NetSNMP must have been compiled with
-   AgentX support. This will always be the case when you are
-   compiling from source unless you explicitly removed AgentX
-   support with ./configure.
+   AgentX. This means you need to have an SMP daemon (acting as
+   Master Agent) running - it can be on the same machine or on a
+   different one.
 
-   After AgentX support has been compiled into NetSNMP, its
-   configuration file needs to be changed to turn on AgentX
-   support. The exact location of the configuration file
-   (snmpd.conf) may vary depending on your system. On my system,
-   it is located in:
-    /usr/local/share/snmp/snmpd.conf.
+   First you need to turn on AgentX support. The exact location of
+   the configuration file (snmpd.conf) may vary depending on your
+   system. By default, via a package installation, it is located
+   in:
+    /etc/snmp/snmpd.conf.
 
    At the very end of the file add the following line:
     master agentx
 
-   The line tells NetSNMP to act as an AgentX master agent, so
+   The line tells SNMP daemon to act as an AgentX master agent, so
    that it can accept connections from sub-agents such as the
    SNMPStats module.
 
-   There is still one last step. Even though we have compiled and
-   configured NetSNMP to have AgentX support, we still need to
-   tell the daemon which interface and port to listen to for
-   AgentX connections. This is done when the daemon is started as
-   follows:
-    snmpd -x mySystemName:PortNumber
+   There is still one last step. Even though we have configured
+   SNMP to have AgentX support, we still need to tell the daemon
+   which interface and port to listen to for AgentX connections.
+   This is done also via the configuration file (snmpd.conf) :
+    agentXSocket    tcp:localhost:705
 
-   On my system, I start the NetSNMP daemon with:
-    snmpd -x localhost:705
-
-   This tells NetSNMP to act as a master agent, listening on the
-   localhost UDP interface at port 705.
+   This tells SNMP daemon to act as a master agent, listening on
+   the localhost UDP interface at port 705.
 
 1.6.3.  Configuring the SNMPStats module for communication with a
 Master Agent
 
-   The previous section explained how to set up a NetSNMP master
+   The previous section explained how to set up a SNMP master
    agent to accept AgentX connections. We now need to tell the
    SNMPStats module how to communicate with this master agent.
-   This is done by giving the SNMPStats module its own NetSNMP
-   configuration file. The file must be named snmpstats.conf, and
-   must be in the same folder as the snmpd.conf file that was
-   configured above. On my system this would be:
-    /usr/local/share/snmp/snmpstats.conf
+   This is done by giving the SNMPStats module its own SNMP
+   configuration file. The file must be named "snmpstats.conf",
+   and must be in the same folder as the "snmpd.conf" file that
+   was configured above. By default this would be:
+    /etc/snmp/snmpstats.conf
 
    The default configuration file included with the distribution
    can be used, and contains the following:
@@ -437,13 +423,15 @@ Master Agent
    master agent on the localhost, port 705. The parameters should
    match up with the snmpd process. Note that the master agent
    (snmpd) does not need to be present on the same machine as
-   OpenSIPS. localhost could be replaced with any other machine.
+   OpenSIPS. The localhost could be replaced with any other
+   machine.
 
 1.6.4.  Testing for a proper Configuration
 
    As a quick test to make sure that the SNMPStats module
-   sub-agent can succesfully connect to the NetSNMP Master agent,
-   start snmpd with the following:
+   sub-agent can successfully connect to the SNMP Master agent, be
+   sure the snmpd service is stopped (/etc/init.d/snmpd stop) and
+   manually start snmpd with the following:
     snmpd -f -Dagentx -x tcp:localhost:705 2>&1 | less
 
    You should see something similar to the following:
@@ -469,8 +457,8 @@ Master Agent
    because of the -Dagentx snmpd switch. The large number of debug
    messages appear at startup as the SNMPStats module registers
    all of its scalars and tables with the Master Agent. If you
-   receive these messages, then SNMPStats module and NetSNMP
-   daemon have both been configured correctly.
+   receive these messages, then SNMPStats module and SNMP daemon
+   have both been configured correctly.
 
 Chapter 2. Frequently Asked Questions
 
@@ -484,7 +472,9 @@ Chapter 2. Frequently Asked Questions
    nitty gritty details of the protocol, then please look at RFC
    3410. RFC 3410 maps out the many other RFCs that define SNMP,
    and can be found at
-   http://www.rfc-archive.org/getrfc.php?rfc=3410
+   http://www.rfc-archive.org/getrfc.php?rfc=3410 INFO: Also if
+   you want a nice tutorial for setting up snmpstats with OpenSIPS
+   try this one.
 
    2.2.
 

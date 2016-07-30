@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua module - presence user agent module
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -89,7 +87,7 @@ str* subs_build_hdr(str* contact, int expires, int event, str* extra_headers)
 
 	memcpy(str_hdr->s+ str_hdr->len ,"Contact: <", 10);
 	str_hdr->len += 10;
-	memcpy(str_hdr->s +str_hdr->len, contact->s, 
+	memcpy(str_hdr->s +str_hdr->len, contact->s,
 			contact->len);
 	str_hdr->len+= contact->len;
 	memcpy(str_hdr->s+ str_hdr->len, ">", 1);
@@ -135,7 +133,7 @@ dlg_t* pua_build_dlg_t(ua_pres_t* presentity)
 	int size;
 
 	size= sizeof(dlg_t)+ presentity->call_id.len+ presentity->to_tag.len+
-		presentity->from_tag.len+ presentity->watcher_uri->len+ 
+		presentity->from_tag.len+ presentity->watcher_uri->len+
 		presentity->to_uri.len+ presentity->remote_contact.len;
 
 	td = (dlg_t*)pkg_malloc(size);
@@ -280,7 +278,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		}
 		if (msg->from->parsed == NULL)
 		{
-			if ( parse_from_header( msg )<0 ) 
+			if ( parse_from_header( msg )<0 )
 			{
 				LM_ERR("cannot parse From header\n");
 				goto done;
@@ -329,7 +327,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	}
 
 	if(ps->code >= 300 )
-	{	/* if an error code and a stored dialog delete it and try to send 
+	{	/* if an error code and a stored dialog delete it and try to send
 		   a subscription with type= INSERT_TYPE, else return*/
 
 		if(!initial_request)
@@ -479,19 +477,19 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	size+= pfrom->uri.len;
 
 	presentity->call_id.s= (char*)presentity + size;
-	memcpy(presentity->call_id.s,msg->callid->body.s, 
+	memcpy(presentity->call_id.s,msg->callid->body.s,
 		msg->callid->body.len);
 	presentity->call_id.len= msg->callid->body.len;
 	size+= presentity->call_id.len;
 
 	presentity->to_tag.s= (char*)presentity + size;
-	memcpy(presentity->to_tag.s,pto->tag_value.s, 
+	memcpy(presentity->to_tag.s,pto->tag_value.s,
 			pto->tag_value.len);
 	presentity->to_tag.len= pto->tag_value.len;
 	size+= pto->tag_value.len;
 
 	presentity->from_tag.s= (char*)presentity + size;
-	memcpy(presentity->from_tag.s,pfrom->tag_value.s, 
+	memcpy(presentity->from_tag.s,pfrom->tag_value.s,
 			pfrom->tag_value.len);
 	presentity->from_tag.len= pfrom->tag_value.len;
 	size+= pfrom->tag_value.len;
@@ -514,9 +512,9 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	if(hentity->id.s)
 	{
 		presentity->id.s=(char*)presentity+ size;
-		memcpy(presentity->id.s, hentity->id.s, 
+		memcpy(presentity->id.s, hentity->id.s,
 			hentity->id.len);
-		presentity->id.len= hentity->id.len; 
+		presentity->id.len= hentity->id.len;
 		size+= presentity->id.len;
 	}
 
@@ -525,7 +523,8 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		presentity->extra_headers.s= (char*)shm_malloc(hentity->extra_headers.len* sizeof(char));
 		if(presentity->extra_headers.s== NULL)
 		{
-			ERR_MEM(SHARE_MEM);
+			LM_ERR("no more share memory\n");
+			goto mem_error;
 		}
 		memcpy(presentity->extra_headers.s, hentity->extra_headers.s, hentity->extra_headers.len);
 		presentity->extra_headers.len= hentity->extra_headers.len;
@@ -535,7 +534,8 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	presentity->remote_contact.s= (char*)shm_malloc(contact.len* sizeof(char));
 	if(presentity->remote_contact.s== NULL)
 	{
-		ERR_MEM(SHARE_MEM);
+		LM_ERR("no more share memory\n");
+		goto mem_error;
 	}
 	memcpy(presentity->remote_contact.s, contact.s, contact.len);
 	presentity->remote_contact.len= contact.len;
@@ -561,15 +561,22 @@ done:
 		hentity->flag= flag;
 		run_pua_callbacks( hentity, msg);
 	}
+
 error:
-	if(hentity)
-	{
-		if(presentity->extra_headers.s) shm_free(presentity->extra_headers.s);
-		if(presentity->remote_contact.s) shm_free(presentity->remote_contact.s);
-		shm_free(hentity);
-		hentity= NULL;
-	}
+        if(hentity->extra_headers.s)
+		shm_free(hentity->extra_headers.s);
+	shm_free(hentity);
 	return;
+
+mem_error:
+        if(presentity->extra_headers.s)
+		shm_free(presentity->extra_headers.s);
+        if(presentity->remote_contact.s)
+                shm_free(presentity->remote_contact.s);
+	shm_free(presentity);
+        if(hentity->extra_headers.s)
+		shm_free(hentity->extra_headers.s);
+	shm_free(hentity);
 }
 
 ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
@@ -657,7 +664,7 @@ ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
 
 	hentity->flag= subs->source_flag;
 	hentity->event= subs->event;
-	hentity->ua_flag= hentity->ua_flag;
+	hentity->ua_flag= ua_flag;
 	hentity->cb_param= subs->cb_param;
 	return hentity;
 
@@ -762,7 +769,7 @@ ua_pres_t* subs_cbparam_indlg(ua_pres_t* subs, int expires, int ua_flag)
 
 	hentity->flag= subs->flag;
 	hentity->event= subs->event;
-	hentity->ua_flag= hentity->ua_flag;
+	hentity->ua_flag= ua_flag;
 	hentity->cb_param= subs->cb_param;
 	hentity->hash_index = subs->hash_index;
 	hentity->local_index = subs->local_index;
@@ -838,7 +845,7 @@ int send_subscribe(subs_info_t* subs)
 
 	if(presentity== NULL )
 	{
-		lock_release(&HashT->p_records[hash_index].lock); 
+		lock_release(&HashT->p_records[hash_index].lock);
 		if(subs->flag & UPDATE_TYPE)
 		{
 			/*
@@ -880,6 +887,8 @@ int send_subscribe(subs_info_t* subs)
 		if(result< 0)
 		{
 			LM_ERR("while sending request with t_request\n");
+			if (hentity->extra_headers.s)
+				shm_free(hentity->extra_headers.s);
 			shm_free(hentity);
 			goto  done;
 		}
@@ -889,21 +898,21 @@ int send_subscribe(subs_info_t* subs)
         /*
 		if(presentity->desired_expires== 0)
 		{
-            
+
 			if(subs->expires< 0)
 			{
 			    LM_DBG("Found previous request for unlimited subscribe-"
 						" do not send subscribe\n");
-            
+
 				if (subs->event & PWINFO_EVENT)
 				{
 					presentity->watcher_count++;
 				}
 				lock_release(&HashT->p_records[hash_index].lock);
 			    goto done;
-            
+
 			}
-        
+
 
 			if(subs->event & PWINFO_EVENT)
 			{

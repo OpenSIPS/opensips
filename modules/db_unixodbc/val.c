@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * UNIXODBC module
  *
  * Copyright (C) 2005-2006 Marco Lorrai
@@ -18,9 +16,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
@@ -44,7 +42,7 @@
 /*
  * Convert str to db value, does not copy strings
  */
-int db_unixodbc_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const int _l)
+int db_unixodbc_str2val(const db_type_t _t, db_val_t* _v, char* _s, const int _l)
 {
 	static str dummy_string = {"", 0};
 
@@ -66,6 +64,7 @@ int db_unixodbc_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 		VAL_BLOB(_v) = dummy_string;
 		VAL_TYPE(_v) = _t;
 		VAL_NULL(_v) = 1;
+		pkg_free(_s);
 		return 0;
 	}
 	VAL_NULL(_v) = 0;
@@ -82,8 +81,10 @@ int db_unixodbc_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 			else
 			{
 				VAL_TYPE(_v) = DB_INT;
+				pkg_free(_s);
 				return 0;
 			}
+
 			break;
 
 		case DB_BIGINT:
@@ -96,8 +97,10 @@ int db_unixodbc_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 			else
 			{
 				VAL_TYPE(_v) = DB_BIGINT;
+				pkg_free(_s);
 				return 0;
 			}
+
 			break;
 
 
@@ -111,8 +114,10 @@ int db_unixodbc_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 			else
 			{
 				VAL_TYPE(_v) = DB_BITMAP;
+				pkg_free(_s);
 				return 0;
 			}
+
 			break;
 
 		case DB_DOUBLE:
@@ -125,14 +130,17 @@ int db_unixodbc_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 			else
 			{
 				VAL_TYPE(_v) = DB_DOUBLE;
+				pkg_free(_s);
 				return 0;
 			}
+
 			break;
 
 		case DB_STRING:
 			LM_DBG("converting STRING [%s]\n", _s);
 			VAL_STRING(_v) = _s;
 			VAL_TYPE(_v) = DB_STRING;
+			VAL_FREE(_v) = 1;
 			return 0;
 
 		case DB_STR:
@@ -140,6 +148,7 @@ int db_unixodbc_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 			VAL_STR(_v).s = (char*)_s;
 			VAL_STR(_v).len = _l;
 			VAL_TYPE(_v) = DB_STR;
+			VAL_FREE(_v) = 1;
 			return 0;
 
 		case DB_DATETIME:
@@ -152,8 +161,10 @@ int db_unixodbc_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 			else
 			{
 				VAL_TYPE(_v) = DB_DATETIME;
+				pkg_free(_s);
 				return 0;
 			}
+
 			break;
 
 		case DB_BLOB:
@@ -161,6 +172,7 @@ int db_unixodbc_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 			VAL_BLOB(_v).s = (char*)_s;
 			VAL_BLOB(_v).len = _l;
 			VAL_TYPE(_v) = DB_BLOB;
+			VAL_FREE(_v) = 1;
 			return 0;
 	}
 	return -6;

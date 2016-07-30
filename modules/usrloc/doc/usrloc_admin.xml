@@ -1,55 +1,123 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
-		User location module. The module keeps a user location table and 
-		provides access to the table to other modules. The module exports no 
+		User location module. The module keeps a user location table and
+		provides access to the table to other modules. The module exports no
 		functions that could be used directly from scripts.
 	</para>
 		<section id="contact-matching-algs">
 		<title>Contact matching</title>
 		<para>
-		How the contacts are matched (dor same AOR - Address of Record) is an 
+		How the contacts are matched (for same AOR - Address of Record) is an
 		important aspect of the usrloc modules, especialy in the context of NAT
-		traversal - this raise mre problems since contacts from different 
+		traversal - this raise mre problems since contacts from different
 		phones of same users may overlap (if behind NATs with same
 		configuration) or the re-register contact of same phone may be
 		seen as a new one (due different binding via NAT).
 		</para>
 		<para>
-		The SIP RFC 3261 publishes a matching algorithm based only on the 
+		The SIP RFC 3261 publishes a matching algorithm based only on the
 		contact string with callid and cseq number extra checking (if callid
 		is the same, it must have a higher cseq number, otherwise invalid).
-		But as argumented above, this is not enough in NAT traversal context, 
+		But as argumented above, this is not enough in NAT traversal context,
 		so the &osips; implementation of contact machting offers more algorithms:
 		</para>
 		<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>contact based only</emphasis> - it strict RFC 3261
-				compiancy - the contact is matched as string and extra checked
-				via callid and cseg (if callid is the same, it must have a 
+				<emphasis>contact based only</emphasis> - strict RFC 3261
+				compliancy - the contact is matched as string and extra checked
+				via callid and cseq (if callid is the same, it must have a
 				higher cseq number, otherwise invalid).
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>contact nad callid based</emphasis> - it an extension
-				of the first case - the contact and callid must matched as 
-				string; the cseg must be higher than the previous one - so be
-				careful how you deal with REGISTER retransmissions in this 
+				<emphasis>contact and callid based</emphasis> - an extension
+				of the first case - the contact and callid must match as
+				strings; the cseq must be higher than the previous one - so be
+				careful how you deal with REGISTER retransmissions in this
 				case.
 			</para>
 			</listitem>
 		</itemizedlist>
 		<para>
-		How to control/select the contact maching algorithm, please see the
-		module parameter matching_mode at <xref linkend="matching-mode"/>.
+		For more details on how to control/select the contact matching algorithm,
+		please see the module parameter matching_mode at
+		<xref linkend="matching-mode"/>.
+		</para>
+		</section>
+
+		<section id="usrloc-replication">
+		<title>Contact replication</title>
+		<para>
+		Starting from &osips; 1.11, the <emphasis>usrloc</emphasis> module
+		offers the possibility of performing real-time mirroring of the entire
+		in-memory user location information of one &osips; instance to one or more
+		other instances. This module-to-module communication is UDP-based, and
+		it is done through the <emphasis>Binary Interface</emphasis>.
+		</para>
+		<para>
+		Advantages of replicating user-location data using this feature
+		instead of sending duplicated SIP REGISTER requests:
+		<itemizedlist>
+			<listitem>
+				<para>
+					no message parsing required
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					reduced bandwith usage
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					no additional script logic needed
+				</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		In order to control the DB operations performed by the receiving instance(s),
+		the <emphasis role='bold'><xref linkend="skip_replicated_db_ops"/></emphasis>
+		parameter can be set. To summarise, the replication logic works together
+		with the DB modes as follows:
+		<itemizedlist>
+			<listitem>
+				<para>
+					<emphasis role='bold'>0 (No DB)</emphasis> - only in-memory
+					data is replicated (no DB operations are performed at all)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis role='bold'>1 (Write through) and 2 (Write back)</emphasis>
+					- default behaviour on all instances, <emphasis role='bold'><xref
+						linkend="skip_replicated_db_ops"/></emphasis> can be set
+					on the receiving ones
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis role='bold'>3 (DB only)</emphasis> -
+						data replication is <emphasis role='bold'>OFF</emphasis>
+				</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		Configuring both receival and sending of usrloc replication packets is
+		trivial and can be done by using the
+		<emphasis role='bold'><xref linkend="accept_replicated_contacts"/></emphasis> and
+		<emphasis role='bold'><xref linkend="replicate_contacts_to"/></emphasis> parameters of the
+		module.
 		</para>
 		</section>
 	</section>
@@ -63,7 +131,14 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>Optionally a database module</emphasis>.
+				<emphasis>Optionally an SQL database module</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>clusterer, if <xref linkend="replicate_contacts_to"/>
+				parameters is turned on (contact replication via clusterer 
+				module)</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -72,7 +147,7 @@
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
-		The following libraries or applications must be installed before 
+		The following libraries or applications must be installed before
 		running &osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
@@ -89,15 +164,13 @@
 	<section>
 		<title><varname>nat_bflag</varname> (string/integer)</title>
 		<para>
-		The name of the branch flag to be used as NAT marker (if the contact 
-		is or not natted). This is a branch flag and it will be imported and 
+		The name of the branch flag to be used as NAT marker (if the contact
+		is or not natted). This is a branch flag and it will be imported and
 		used by all other modules depending of usrloc module.
 		</para>
 		<para>
-		<para>
 		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
 		Use quoted strings instead!
-		</para>
 		<emphasis>
 			Default value is <quote>NULL</quote> (not set).
 		</emphasis>
@@ -438,7 +511,7 @@ modparam("usrloc", "attr_column", "attr")
 		<title><varname>use_domain</varname> (integer)</title>
 		<para>
 		If the domain part of the user should be also saved and used for
-		identifing the user (along with the username part). Useful in 
+		identifing the user (along with the username part). Useful in
 		multi domain scenarios. Non 0 value means true.
 		</para>
 		<para>
@@ -481,8 +554,8 @@ modparam("usrloc", "desc_time_order", 1)
 	<section>
 		<title><varname>timer_interval</varname> (integer)</title>
 		<para>
-		Number of seconds between two timer runs. The module uses timer to 
-		delete expired contacts, synchronize with database and other tasks, 
+		Number of seconds between two timer runs. The module uses timer to
+		delete expired contacts, synchronize with database and other tasks,
 		that need to be run periodically.
 		</para>
 		<para>
@@ -524,60 +597,60 @@ modparam("usrloc", "db_url", "&exampledb;")
 		<title><varname>db_mode</varname> (integer)</title>
 		<para>
 		The usrloc module can utilize database for persistent contact storage.
-		If you use database, your contacts will survive machine restarts or 
-		SW crashes. The disadvantage is that accessing database can be very 
-		time consuming. Therefore, usrloc module implements four database 
+		If you use database, your contacts will survive machine restarts or
+		SW crashes. The disadvantage is that accessing database can be very
+		time consuming. Therefore, usrloc module implements four database
 		accessing modes:
 		</para>
 		<itemizedlist>
 		<listitem>
 			<para>
-			0 - This disables database completely. Only memory will be used. 
-			Contacts will not survive restart. Use this value if you need a 
-			really fast usrloc and contact persistence is not necessary or 
+			0 - This disables database completely. Only memory will be used.
+			Contacts will not survive restart. Use this value if you need a
+			really fast usrloc and contact persistence is not necessary or
 			is provided by other means.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			1 - Write-Through scheme. All changes to usrloc are immediately 
-			reflected in database too. This is very slow, but very reliable. 
-			Use this scheme if speed is not your priority but need to make 
-			sure that no registered contacts will be lost during crash or 
+			1 - Write-Through scheme. All changes to usrloc are immediately
+			reflected in database too. This is very slow, but very reliable.
+			Use this scheme if speed is not your priority but need to make
+			sure that no registered contacts will be lost during crash or
 			reboot.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			2 - Write-Back scheme. This is a combination of previous two 
-			schemes. All changes are made to memory and database 
-			synchronization is done in the timer. The timer deletes all 
-			expired contacts and flushes all modified or new contacts to 
-			database.  Use this scheme if you encounter high-load peaks 
-			and want them to process as fast as possible. The mode will 
-			not help at all if the load is high all the time.  Also, latency 
-			of this mode is much lower than latency of mode 1, but slightly 
+			2 - Write-Back scheme. This is a combination of previous two
+			schemes. All changes are made to memory and database
+			synchronization is done in the timer. The timer deletes all
+			expired contacts and flushes all modified or new contacts to
+			database.  Use this scheme if you encounter high-load peaks
+			and want them to process as fast as possible. The mode will
+			not help at all if the load is high all the time.  Also, latency
+			of this mode is much lower than latency of mode 1, but slightly
 			higher than latency of mode 0.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
 			3 - DB-Only scheme. No memory cache is kept, all operations being
-			directly performed with the database. The timer deletes all 
+			directly performed with the database. The timer deletes all
 			expired contacts from database - cleans after clients that didn't
 			un-register or re-register. The mode is useful if you configure
 			more servers sharing the same DB without any replication at SIP
 			level. The mode may be slower due the high number of DB operation.
 			For example NAT pinging is a killer since during each ping cycle
-			all nated contact are loaded from the DB; The lack of memory 
+			all nated contact are loaded from the DB; The lack of memory
 			caching also disable the statistics exports.
 			</para>
 		</listitem>
 		</itemizedlist>
 		<warning>
 		<para>
-			In case of crash or restart contacts that are in memory only and 
-			haven't been flushed yet will get lost. If you want minimize the 
+			In case of crash or restart contacts that are in memory only and
+			haven't been flushed yet will get lost. If you want minimize the
 			risk, use shorter timer interval.
 		</para>
 		</warning>
@@ -599,8 +672,8 @@ modparam("usrloc", "db_mode", 2)
 	<section id="matching-mode">
 		<title><varname>matching_mode</varname> (integer)</title>
 		<para>
-		What contact matching algorithm to be used. Refer to section 
-		<xref linkend="contact-matching-algs"/> for the description of the 
+		What contact matching algorithm to be used. Refer to section
+		<xref linkend="contact-matching-algs"/> for the description of the
 		algorithms.
 		</para>
 		<para>
@@ -613,7 +686,7 @@ modparam("usrloc", "db_mode", 2)
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>1</emphasis> - CONTACT and CALLID based 
+				<para><emphasis>1</emphasis> - CONTACT and CALLID based
 				matching algorithm.
 				</para>
 			</listitem>
@@ -637,7 +710,7 @@ modparam("usrloc", "matching_mode", 1)
 		<title><varname>cseq_delay</varname> (integer)</title>
 		<para>
 		Delay (in seconds) for accepting as retransmissions register requests
-		with same Call-ID and Cseq. The delay is calculated starting from the 
+		with same Call-ID and Cseq. The delay is calculated starting from the
 		receiving time of the first register with that Call-ID and Cseq.
 		</para>
 		<para>
@@ -663,12 +736,116 @@ modparam("usrloc", "cseq_delay", 5)
 		</example>
 	</section>
 
+	<section id='accept_replicated_contacts'
+	         xreflabel="accept_replicated_contacts">
+		<title><varname>accept_replicated_contacts</varname> (integer)</title>
+		<para>
+		Set this to a valid cluster id in order to accept and process
+                user-location related information received from other &osips;
+                instances, that belong to the specified cluster id, through the
+                <emphasis role='bold'>Binary Interface</emphasis>.
+		</para>
+		<para>
+		Default value is <quote>0</quote> (no cluster id specified) -
+                Binary Interface listeners (if any) will simply ignore any usrloc-related packets
+		</para>
+		<para>
+			More details on the user location replication mechanism are available in <xref linkend="usrloc-replication"/>
+		</para>
+		<example>
+		<title>Setting the <varname>accept_replicated_contacts</varname>
+			parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "accept_replicated_contacts", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id='replicate_contacts_to'
+	         xreflabel="replicate_contacts_to">
+		<title><varname>replicate_contacts_to</varname> (integer)</title>
+		<para>
+		Defines the &osips; instances that belong to a ceratin cluster
+                which will receive all the user-location related information from
+                this machine (<emphasis>addresses-of-record</emphasis>, <emphasis>contacts</emphasis>),
+		organized into specific events (inserts, deletes or updates)
+		</para>
+		<para>
+		Default value is 0 (no cluster id specified)
+		</para>
+		<para>
+			More details on the user location replication mechanism are available in <xref linkend="usrloc-replication"/>
+		</para>
+		<example>
+		<title>Setting the <varname>replicate_contacts_to</varname>
+			parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "replicate_contacts_to", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id='skip_replicated_db_ops'
+	         xreflabel="skip_replicated_db_ops">
+		<title><varname>skip_replicated_db_ops</varname> (int)</title>
+		<para>
+		Prevent &osips; from performing any DB-related contact operations
+		when events are received over the <emphasis>Binary Interface</emphasis>.
+		This is commonly used to prevent unneeded duplicate operations.
+		</para>
+		<para>
+		Default value is "0" (upon receival of usrloc-related Binary Interface
+		events, DB queries may be freely performed)
+		</para>
+		<para>
+		More details on the user location replication mechanism are available
+		in <xref linkend="usrloc-replication"/>
+		</para>
+		<example>
+		<title>Setting the <varname>skip_replicated_db_ops</varname>
+			parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "skip_replicated_db_ops", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id='max_contact_delete'
+	         xreflabel="max_contact_delete">
+		<title><varname>max_contact_delete</varname> (int)</title>
+		<para>
+			Relevant only in WRITE_THROUGH or WRITE_BACK schemes. The maximum
+		number of contacts to be deleted from the database at once. Will delete
+		all of them, if fewer after passing through all the contacts.
+		</para>
+		<para>
+		Default value is "10"
+		</para>
+		<example>
+		<title>Setting the <varname>max_contact_delete</varname>
+			parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "max_contact_delete", 10)
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	<section>
 		<title><varname>hash_size</varname> (integer)</title>
 		<para>
 		The number of entries of the hash table used by usrloc to store the
 		location records is 2^hash_size. For hash_size=4, the number of entries
-		of the hash table is 16.
+		of the hash table is 16. Since version 2.2, the maximu size of this
+		parameter is 16, meaning that the hash supports maximum 65536 entries.
 		</para>
 		<para>
 		<emphasis>
@@ -801,11 +978,11 @@ modparam("usrloc", "hash_size", 10)
 				backword compatibility)
 			</para></listitem>
 			<listitem><para>
-				<emphasis>flags</emphasis> - internal USRLOC flags of the 
+				<emphasis>flags</emphasis> - internal USRLOC flags of the
 				contact
 			</para></listitem>
 			<listitem><para>
-				<emphasis>cflags</emphasis> - per branch flags of the 
+				<emphasis>cflags</emphasis> - per branch flags of the
 				contact
 			</para></listitem>
 			<listitem><para>
@@ -876,15 +1053,15 @@ modparam("usrloc", "hash_size", 10)
 		<title>users</title>
 			<para>
 			Number of AOR existing in the USRLOC memory cache for that domain
-			- can not be resetted; this statistic will be register for each 
+			- can not be resetted; this statistic will be register for each
 			used domain (Ex: location).
 			</para>
 		</section>
 		<section>
 		<title>contacts</title>
 			<para>
-			Number of contacts existing in the USRLOC memory cache for that 
-			domain - can not be resetted; this statistic will be register for 
+			Number of contacts existing in the USRLOC memory cache for that
+			domain - can not be resetted; this statistic will be register for
 			each used domain (Ex: location).
 			</para>
 		</section>
@@ -892,7 +1069,7 @@ modparam("usrloc", "hash_size", 10)
 		<title>expires</title>
 			<para>
 			Total number of expired contacts for that domain - can be resetted;
-			 this statistic will be register for each used domain 
+			 this statistic will be register for each used domain
 			(Ex: location).
 			</para>
 		</section>
@@ -935,6 +1112,100 @@ modparam("usrloc", "hash_size", 10)
 		<itemizedlist>
 			<listitem><para>
 				<emphasis>aor</emphasis> - The AOR of the deleted record.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">E_UL_CONTACT_INSERT</function>
+		</title>
+		<para>
+			This event is raised when a new contact is inserted in any of the
+			existing AOR's contact list. For each new contact, if its AOR does
+			not exist in the memory, then both the E_UL_AOR_CREATE and
+			E_UL_CONTACT_INSERT events will be raised.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>aor</emphasis> - The AOR of the inserted contact.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>address</emphasis> - The binding address of the inserted contact.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>callid</emphasis> - The Call-ID header of the registration message.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>received</emphasis> - IP, port and protocol the registration
+					message was received from. If these have the same value as the
+					contact's address (see the address parameter) then the received
+					parameter will be an empty string.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>cseq</emphasis> - The cseq number as an int value.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">E_UL_CONTACT_DELETE</function>
+		</title>
+		<para>
+			This event is raised when a contact is deleted from an
+			existing AOR's contact list. If the contact is the only one in
+			the list then both the E_UL_AOR_DELETE and
+			E_UL_CONTACT_DELETE events will be raised.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>aor</emphasis> - The AOR of the deleted contact.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>address</emphasis> - The binding address of the deleted contact.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>callid</emphasis> - The Call-ID header of the registration message.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>received</emphasis> - IP, port and protocol the registration
+					message was received from. If these have the same value as the
+					contact's address (see the address parameter) then the received
+					parameter will be an empty string.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>cseq</emphasis> - The cseq number as an int value.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">E_UL_CONTACT_UPDATE</function>
+		</title>
+		<para>
+			This event is raised when a contact's info is updated by receiving
+			another registration message.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>aor</emphasis> - The AOR of the updated contact.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>address</emphasis> - The binding address of the updated contact.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>callid</emphasis> - The Call-ID header of the registration message.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>received</emphasis> - IP, port and protocol the registration
+					message was received from. If these have the same value as the
+					contact's address (see the address parameter) then the received
+					parameter will be an empty string.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>cseq</emphasis> - The cseq number as an int value.
 			</para></listitem>
 		</itemizedlist>
 	</section>

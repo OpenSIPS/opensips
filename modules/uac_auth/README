@@ -1,5 +1,9 @@
 UAC AUTH Module
 
+Bogdan-Andrei Iancu
+
+   <bogdan@opensips.org>
+
 Ovidiu Sas
 
    <osas@voipembedded.com>
@@ -10,10 +14,17 @@ Ovidiu Sas
 
    <osas@voipembedded.com>
 
+Edited by
+
+Bogdan-Andrei Iancu
+
+   <bogdan@opensips.org>
+
    Copyright © 2011 VoIP Embedded, Inc.
+
+   Copyright © 2013 www.opensips-solutions.com
    Revision History
-   Revision $Revision: 8101 $ $Date: 2011-06-30 18:22:35 +0300
-                              (Thu, 30 Jun 2011) $
+   Revision $Revision: 8101 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -29,10 +40,16 @@ Ovidiu Sas
         1.3. Exported Parameters
 
               1.3.1. credential (string)
+              1.3.2. auth_realm_avp (string)
+              1.3.3. auth_username_avp (string)
+              1.3.4. auth_password_avp (string)
 
    List of Examples
 
    1.1. Set credential parameter
+   1.2. Set auth_realm_avp parameter
+   1.3. Set auth_username_avp parameter
+   1.4. Set auth_password_avp parameter
 
 Chapter 1. Admin Guide
 
@@ -78,4 +95,53 @@ Chapter 1. Admin Guide
 modparam("uac_auth","credential","username:domain:password")
 modparam("uac_auth","credential","username:domain:0xc17ba8157756f263d07e
 158504204629")
+...
+
+1.3.2. auth_realm_avp (string)
+
+   The definition of an AVP that might contain the realm to be
+   used to perform authentication.
+
+   If you define it, you also need to define “auth_username_avp”
+   (Section 1.3.3, “auth_username_avp (string)”) and
+   “auth_username_avp” (Section 1.3.4, “auth_password_avp
+   (string)”).
+
+   Example 1.2. Set auth_realm_avp parameter
+...
+modparam("uac_auth","auth_realm_avp","$avp(10)")
+...
+
+1.3.3. auth_username_avp (string)
+
+   The definition of an AVP that might contain the username to be
+   used to perform authentication.
+
+   If you define it, you also need to define “auth_realm_avp”
+   (Section 1.3.2, “auth_realm_avp (string)”) and
+   “auth_username_avp” (Section 1.3.4, “auth_password_avp
+   (string)”).
+
+   Example 1.3. Set auth_username_avp parameter
+...
+modparam("uac_auth","auth_username_avp","$avp(11)")
+...
+
+1.3.4. auth_password_avp (string)
+
+   The definition of an AVP that might contain the password to be
+   used to perform authentication. The password can be provided as
+   a plain text password or as a precalculated HA1 as a hexa
+   (lower case) string (of 32 chars) prefixed with "0x" (so a
+   total of 34 chars) (for example
+   "0xc17ba8157756f263d07e158504204629")
+
+   If you define it, you also need to define “auth_password_avp”
+   (Section 1.3.4, “auth_password_avp (string)”) and
+   “auth_username_avp” (Section 1.3.4, “auth_password_avp
+   (string)”).
+
+   Example 1.4. Set auth_password_avp parameter
+...
+modparam("uac_auth","auth_password_avp","$avp(12)")
 ...

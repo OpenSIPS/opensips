@@ -2,7 +2,7 @@
 
 <chapter>
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<section>
@@ -11,7 +11,7 @@
 	<para>Dynamic Routing is a module for selecting (based on multiple
 	criteria) the best gateway/destination to be used for delivering a
 	certain call. Least Cost Routing (LCR) is a special case of dynamic
-	routing - when the rules are ordered based on costs. Dynamic Routing 
+	routing - when the rules are ordered based on costs. Dynamic Routing
 	comes with many features regarding routing rule selection:
 	</para>
 	<itemizedlist>
@@ -50,15 +50,15 @@
 	<itemizedlist>
 	<listitem>
 	<para>
-	routing info (destinations, carriers, rules, groups) are stored in a 
+	The routing info (destinations, carriers, rules, groups) is stored in a
 	database and loaded into memory at start up time; reload at runtime via
-	an Management Interface command.
+	a Management Interface command.
 	</para>
 	</listitem>
 
 	<listitem>
 	<para>
-	weigth-based or random selection of the destinations (from a rule or
+	weight-based or random selection of the destinations (from a rule or
 	 from a carrier), failure detection of gateways (with switching to next
 	 available gateway).
 	</para>
@@ -70,27 +70,38 @@
 	speed/time and memory consumption penalties
 	</para>
 	</listitem>
-	
+
 	<listitem>
 	<para>
-	script integration - Pseudo variables support in functions; scripting
+	script integration - Pseudo-variable support in functions; scripting
 	route triggering when rules are matched
 	</para>
 	</listitem>
-	
+
 	<listitem>
 	<para>
-	bidirectional behavior - inbound and outbound processing (strip and 
+	bidirectional behavior - inbound and outbound processing (strip and
 	prefixing when sending and receiving from a destination/GW)
 	</para>
 	</listitem>
 
 	<listitem>
 	<para>
-	blacklisting - the module allows definition of backlists based on the
-	destination IPs. This blacklists are to be used to prevent malicious 
+	blacklisting - the module allows definition of blacklists based on the
+	destination IPs. This blacklists are to be used to prevent malicious
 	forwarding to GWs (based on DNS lookups) when the script logic does
 	none-GE forwarding (like foreign domains).
+	</para>
+	</listitem>
+
+	<listitem>
+	<para>
+	loading routing information from multiple databases - the gateways, rules, groups and
+	carriers can be grouped by partitions, and each partition may be loaded
+	from different databases/tables. This makes the routing process partition
+	based. In order to be able to use a table from a partition, its name must
+	be found in the "version" table belonging to the database defined in the
+	partition's db_url.
 	</para>
 	</listitem>
 
@@ -105,8 +116,7 @@
 	when dealing with a large number of routing rules.
 	</para>
 	<para>
-	The tests were performed with a set of 383000 rules and to values were
-	measured:
+	The tests were performed with a set of 383000 rules and measured:
 	</para>
 	<itemizedlist>
 	<listitem><para>time to load from DB</para></listitem>
@@ -114,13 +124,13 @@
 	</itemizedlist>
 	<para>
 	The time to load was varying between 4 seconds and 8 seconds, depending of
-	the caching of the DB client - the first load was the slowest (as the DB 
-	query hits the disk drive); the following are faster as data is already 
+	the caching of the DB client - the first load was the slowest (as the DB
+	query hits the disk drive); the following are faster as data is already
 	cached in the DB client. So technically speaking, the time to load (without
 	the time to query which is DB type dependent) is ~4 seconds
 	</para>
 	<para>
-	After loading the data into shared memory ~ 96M of memory were used 
+	After loading the data into shared memory ~ 96M of memory were used
 	exclusively for the DR data.
 	</para>
 </section>
@@ -130,7 +140,7 @@
 	<title>Dynamic Routing Concepts</title>
 	<para>
 	DR engine uses several concepts in order to define how the routing
-	should be done (describing all the dependecies between destinations
+	should be done (describing all the dependencies between destinations
 	and routing rules).
 	</para>
 
@@ -139,9 +149,9 @@
 	<para>
 	These are the end SIP entities where actually the traffic needs to be sent
 	after routing. They are stored in a table called <quote>dr_gateways</quote>.
-	Gateway addresses are stored in a separate table because of need to access them
+	Gateway addresses are stored in a separate table because of the need to access them
 	independent of Dynamic Routing processing (e.g., adding/ removing gateway PRI
-	prefix before/after performing other operation -- receiving/relaying to gateway). 
+	prefix before/after performing other operation -- receiving/relaying to gateway).
 	</para>
 	<para>
 	In DR, a gateway is defined by:
@@ -170,7 +180,7 @@
 	<title>Carriers</title>
 	<para>
 	The carrier concept is used if you need to group gateways in order to
-	have a better control on how the GWs will be used by DR rules; like 
+	have a better control on how the GWs will be used by DR rules; like
 	in what order the GWs will be used.
 	</para>
 	<para>
@@ -188,7 +198,7 @@
 	</para></listitem>
 	<listitem><para>flags : 0x1 - use weight for sorting the list and
 	not definition order; 0x2 - use only the first gateway from the carrier
-	(depending on the sorting); 0x4 - disable the usage of this 
+	(depending on the sorting); 0x4 - disable the usage of this
 	carrier</para></listitem>
 	<listitem><para>attributes (not used by DR engine, but only pushed
 	to script level when routing to this carrier)</para></listitem>
@@ -202,12 +212,12 @@
 	<section>
 	<title>Routing Rules</title>
 	<para>
-	These are the actual rule which control the routing - like based on
-	different criterias (prefix, time, priority, etc) they will decide
+	These are the actual rules which control the routing. Using
+	different criterias (prefix, time, priority, etc), they will decide
 	to which gateways the call will be sent.
 	</para>
 	<para>
-	Default name for the table storing rule definitions is 
+	Default name for the table storing rule definitions is
 	<quote>dr_rules</quote>.
 	</para>
 	<para>
@@ -216,26 +226,26 @@
 	<itemizedlist>
 	<listitem><para>group (list of numbers) - rules can be grouped (a rule may
 	belong to multiple groups in the same time ) and you can
-	use only a certian group at a point; like having a <quote>premium</quote> or
-	<quote>standard</quote> or <quote>interstate</quote> or 
-	<quote>intrastate</quote> groups of rules to be used in different 
+	use only a certain group at a point; like having a <quote>premium</quote> or
+	<quote>standard</quote> or <quote>interstate</quote> or
+	<quote>intrastate</quote> groups of rules to be used in different
 	cases</para></listitem>
 	<listitem><para>prefix (string with digits only) - prefix to be used for
 	matching this rule (longest prefix matching)</para></listitem>
 	<listitem><para>time validity (time recurrence string) - when this rule is
 	valid from time point of view (see RFC 2445)</para></listitem>
-	<listitem><para>priority (number) - prority off the rule - higher value, 
+	<listitem><para>priority (number) - priority of the rule - higher value,
 	higher priority (see rule section alg)</para></listitem>
-	<listitem><para>script route ID (string) - if defined, then execute the 
+	<listitem><para>script route ID (string) - if defined, then execute the
 	route with the specified ID when this rule is matched. That's it, a route
-	which can be used to perform custom operations on message. NOTE that no 
+	which can be used to perform custom operations on message. NOTE that no
 	modification is performed at signaling level and you must NOT do
-	any signalling operations in that script route</para></listitem>
+	any signaling operations in that script route</para></listitem>
 	<listitem><para>list of GWs/carriers (string) - a comma separated list
-	of gateways or carriers (defined by IDs) to be used for this rule; the 
+	of gateways or carriers (defined by IDs) to be used for this rule; the
 	carrier IDs are prefixed with <quote>#</quote> sign. For each ID (GW or
-	carrier) you may specify a weight. For how this list will be interpreted 
-	(as order) see the rule selection section. Example of list: 
+	carrier) you may specify a weight. For how this list will be interpreted
+	(as order) see the rule selection section. Example of list:
 	<quote>gw1,gw4,#cr3</quote> or <quote>gw1=10,gw4=10,#cr3=80</quote>
 	</para></listitem>
 	<listitem><para>attributes (not used by DR engine, but only pushed
@@ -247,11 +257,11 @@
 	</para>
 	<itemizedlist>
 	<listitem><para>
-	A date-time expression that defines the time recurrence to match for
-	current rule. Time recurrences are based closely on the specification
-	of recurring intervals of time in the Internet Calendaring and Scheduling
+	A date-time expression that defines the time recurrence to be matched for
+	current rule. Time recurrences are based closely on the recurring time
+	intervals from the Internet Calendaring and Scheduling
 	Core Object Specification (calendar COS), RFC 2445. The set of attributes
-	used in routing rule specification is subset of time recurrence attributes.
+	used in routing rule specification is a subset of time recurrence attributes.
 	</para></listitem>
 	<listitem><para>
 	The value stored in database has the format of:
@@ -277,15 +287,15 @@
 	<itemizedlist mark='bullet'>
 	<listitem>
 	<para>
-	the module discovers the routing group of the originating user. This 
+	the module discovers the routing group of the originating user. This
 	step is skipped if a routing group is passed from the script as parameter.
 	</para>
 	</listitem>
 	<listitem>
 	<para>
-	once the group is known, in the subset of the rules for this group the 
+	once the group is known, in the subset of the rules for this group the
 	module looks for the one that matches the destination based on "prefix"
-	column. The set of rules with the longest prefix is chosen. If no digit 
+	column. The set of rules with the longest prefix is chosen. If no digit
 	from the prefix matches, the default rules are used (rules with no prefix)
 	</para>
 	</listitem>
@@ -298,18 +308,17 @@
 	</listitem>
 	<listitem>
 	<para>
-	Once found the rule, it may contain a route ID to execute. If a certain 
+	Once found the rule, it may contain a route ID to execute. If a certain
 	flag is set, then the processing is stopped after executing the route
 	block.
 	</para>
 	</listitem>
 	<listitem>
 	<para>
-	The rule must contain a chain of gateways and carriers. The module will 
-	execute serial forking for each address in chain (in which order the 
-	destinations will be tried, depends on the defintion order or depends on
-	the weights (weights selection must be enabled). The next address in chain
-	is used only if the previously has failed.
+	The rule must contain a chain of gateways and carriers. The module will
+	execute serial forking for each address in the chain (ordering is either done
+	by simply using the definition order or it may weight-based - weight selection must be
+	enabled). The next address in chain is used only if the previously has failed.
 	</para>
 	</listitem>
 	<listitem>
@@ -322,7 +331,7 @@
 	</para>
 	<para>
 	If no rule is found to match the selection criteria an default action must
-	be taken (e.g., error response sent back). If the gateway in the chain has 
+	be taken (e.g., error response sent back). If the gateway in the chain has
 	no prefix the request is forwarded without adding any prefix to the request
 	URI.
 	</para>
@@ -345,7 +354,7 @@
 	</listitem>
 	<listitem>
 		<para><emphasis>(1)</emphasis> - probing only when the destination is
-		in disabled mode (disabling via MI command will competely stop the
+		in disabled mode (disabling via MI command will completely stop the
 		probing also). The destination will be automatically re-enabled
 		when the probing will succeed next time;</para>
 	</listitem>
@@ -416,7 +425,7 @@
 
 		</section>
 	</section>
-	
+
 	<section>
 	<title>Exported Parameters</title>
 	<section>
@@ -425,14 +434,14 @@
 		The database url.
 		</para>
 		<para>
-		<emphasis>	Default value is <quote>NULL</quote>.	
+		<emphasis>	Default value is <quote>NULL</quote>.
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>db_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("drouting", "db_url", 
+modparam("drouting", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips")
 ...
 </programlisting>
@@ -497,11 +506,11 @@ modparam("drouting", "drg_table", "groups")
 	<section>
 		<title><varname>drc_table</varname>(str)</title>
 		<para>
-		The name of the db table storing definitions of the carriers that will 
+		The name of the db table storing definitions of the carriers that will
 		be used directly by the routing rules.
 		</para>
 		<para>
-		<emphasis>	Default value is <quote>dr_gw_lists</quote>.
+		<emphasis>	Default value is <quote>dr_carriers</quote>.
 		</emphasis>
 		</para>
 		<example>
@@ -517,11 +526,13 @@ modparam("drouting", "drc_table", "my_dr_carriers")
 	<section>
 		<title><varname>ruri_avp</varname> (str)</title>
 		<para>
-		The name of the avp for storing Request URIs to be later used 
+		The name of the avp for storing Request URIs to be later used
 		(alternative destiantions for the current one).
 		</para>
 		<para>
-		<emphasis>Default value is <quote>$avp(0xad346b2f)</quote>.
+		<emphasis>Default value is <quote>$avp(___dr_ruri__)</quote> if <varname>use_partitions</varname> parameter is 0
+		or <quote>$avp(___dr_ruri__partition_name)</quote> where partition_name is the name of the partition
+		containing the AVP (as fetched from the database) if <varname>use_partitions</varname> parameter is 1.
 		</emphasis>
 		</para>
 		<example>
@@ -540,12 +551,14 @@ modparam("drouting", "ruri_avp", '$avp(33)')
 		<title><varname>gw_id_avp</varname> (str)</title>
 		<para>
 		The name of the avp for storing the id of the current selected
-		gateway/destination - once a new destination is selected (via the 
+		gateway/destination - once a new destination is selected (via the
 		use_next_gw() function), the AVP will be updated with the ID of the
 		new selected gateway/destination.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>$avp(0xad346b30)</quote>.
+		<emphasis>Default value is <quote>$avp(___dr_gw_id__)</quote> if <varname>use_partitions</varname> parameter is 0
+		or <quote>$avp(___dr_gw_id__partition_name)</quote> where partition_name is the name of the partition
+		containing the AVP (as fetched from the database) if <varname>use_partitions</varname> parameter is 1.
 		</emphasis>
 		</para>
 		<example>
@@ -559,35 +572,11 @@ modparam("drouting", "gw_id_avp", '$avp(334)')
 		</example>
 	</section>
 
-
-	<section>
-		<title><varname>gw_attrs_avp</varname> (str)</title>
-		<para>
-		The name of the avp for storing the attributes of the current selected
-		destination/gateway - once a new destination is selected (via the 
-		use_next_gw() function), the AVP will be updated with the attrs of the
-		new used destination.
-		</para>
-		<para>
-		<emphasis>Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>gw_attrs_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("drouting", "gw_attrs_avp", '$avp(gw_attrs)')
-modparam("drouting", "gw_attrs_avp", '$avp(67)')
-...
-	</programlisting>
-		</example>
-	</section>
-
 	<section>
 		<title><varname>gw_priprefix_avp</varname> (str)</title>
 		<para>
 		The name of the avp for storing the PRI prefix of the current selected
-		destination/gateway - once a new destination is selected (via the 
+		destination/gateway - once a new destination is selected (via the
 		use_next_gw() function), the AVP will be updated with the PRI prefix of the
 		new used destination.
 		</para>
@@ -627,33 +616,10 @@ modparam("drouting", "rule_id_avp", '$avp(335)')
 		</example>
 	</section>
 
-
-	<section>
-		<title><varname>rule_attrs_avp</varname> (str)</title>
-		<para>
-		The name of the avp for storing the attributes of the current matched
-		routing rule (see dr_rules table).
-		</para>
-		<para>
-		<emphasis>Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>rule_attrs_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("drouting", "rule_attrs_avp", '$avp(rule_attrs)')
-modparam("drouting", "rule_attrs_avp", '$avp(66)')
-...
-	</programlisting>
-		</example>
-	</section>
-
-
 	<section>
 		<title><varname>rule_prefix_avp</varname> (str)</title>
 		<para>
-		The actual prefix that matched the routing rule (the part from RURI 
+		The actual prefix that matched the routing rule (the part from RURI
 		username that matched the routing rule).
 		</para>
 		<para>
@@ -674,7 +640,7 @@ modparam("drouting", "rule_prefix_avp", '$avp(dr_prefix)')
 	<section>
 		<title><varname>carrier_id_avp</varname> (str)</title>
 		<para>
-		AVP to be populate with the ID string for the carrier the 
+		AVP to be populate with the ID string for the carrier the
 		current GW belongs to.
 		</para>
 		<para>
@@ -693,30 +659,78 @@ modparam("drouting", "carrier_id_avp", '$avp(carrier_id)')
 
 
 	<section>
-		<title><varname>carrier_attrs_avp</varname> (str)</title>
+		<title><varname>gw_sock_avp</varname> (str)</title>
 		<para>
-		AVP to be populate with the attributes string for the carrier the 
-		current GW belongs to.
+		The name of the avp for storing sockets for alternative destinations
+		defined by ruri_avp.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>NULL</quote>.
+		<emphasis>Default value is <quote>$avp(___dr_sock__)</quote> if <varname>use_partitions</varname> parameter is 0
+		or <quote>$avp(___dr_sock__partition_name)</quote> where partition_name is the name of the partition
+		containing the AVP (as fetched from the database) if <varname>use_partitions</varname> parameter is 1.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>carrier_attrs_avp</varname> parameter</title>
+		<title>Set <varname>gw_sock_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("drouting", "carrier_attrs_avp", '$avp(carrier_attrs)')
+modparam("drouting", "gw_sock_avp", '$avp(dr_sock)')
+modparam("drouting", "gw_sock_avp", '$avp(77)')
 ...
 	</programlisting>
 		</example>
 	</section>
 
+		<section>
+		<title><varname>gw_attrs_avp</varname> (str)</title>
+		<para>
+		The name of the avp for storing GW attrs in case they are requested at least
+		once in the script.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>$avp(___dr_gw_att__)</quote> if <varname>use_partitions</varname> parameter is 0
+		or <quote>$avp(___dr_gw_att__partition_name)</quote> where partition_name is the name of the partition
+		containing the AVP (as fetched from the database) if <varname>use_partitions</varname> parameter is 1.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>gw_attrs_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "gw_attrs_avp", '$avp(dr_attrs_gw)')
+modparam("drouting", "gw_attrs_avp", '$avp(11)')
+...
+	</programlisting>
+		</example>
+	</section>
+
+			<section>
+		<title><varname>rule_attrs_avp</varname> (str)</title>
+		<para>
+		The name of the avp for storing rule attrs in case they are requested at least
+		once in the script.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>$avp(___dr_ru_att__)</quote> if <varname>use_partitions</varname> parameter is 0
+		or <quote>$avp(___dr_ru_att__partition_name)</quote> where partition_name is the name of the partition
+		containing the AVP (as fetched from the database) if <varname>use_partitions</varname> parameter is 1.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rule_attrs_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "rule_attrs_avp", '$avp(dr_rule_attr)')
+modparam("drouting", "rule_attrs_avp", '$avp(11)')
+...
+	</programlisting>
+		</example>
+	</section>
 
 	<section>
 		<title><varname>define_blacklist</varname> (str)</title>
 		<para>
-		Defines a backlist based on a list of GW types - the list will contain
+		Defines a blacklist based on a list of GW types - the list will contain
 		the IPs (no port, all protocols) of the GWs with the specified types.
 		</para>
 		<para>
@@ -760,8 +774,8 @@ modparam("drouting", "default_group", 4)
 	<section>
 		<title><varname>force_dns</varname> (int)</title>
 		<para>
-		Force DNS resolving of GW/destination names (if not IPs) during 
-		startup. If not enabled, the GW name will be blindly used during 
+		Force DNS resolving of GW/destination names (if not IPs) during
+		startup. If not enabled, the GW name will be blindly used during
 		routing.
 		</para>
 		<para>
@@ -775,6 +789,56 @@ modparam("drouting", "default_group", 4)
 modparam("drouting", "force_dns", 0)
 ...
 	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>persistent_state</varname> (int)</title>
+		<para>
+		Specifies whether the <emphasis>state</emphasis> column
+		should be loaded at startup and flushed during runtime or not.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>1</quote> (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <varname>persistent_state</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# disable all DB operations with the state of a gateway
+modparam("drouting", "persistent_state", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>no_concurrent_reload</varname> (int)</title>
+		<para>
+			If enabled, the module will not allow do run multiple dr_reload
+			MI commands in parallel (with overlapping)  Any new reload will
+			be rejected (and discarded) while an existing reload is in
+			progress.
+			</para>
+			<para>
+			If you have a large routing set (millions of rules/prefixes), you
+			should consider disabling concurrent reload as they will exhaust
+			the shared memory (by reloading into memory, in the same time,
+			multiple instances of routing data).
+			</para>
+		<para>
+		<emphasis>Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>no_concurrent_reload</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# do not allow parallel reload operations
+modparam("drouting", "no_concurrent_reload", 1)
+...
+</programlisting>
 		</example>
 	</section>
 
@@ -940,64 +1004,217 @@ modparam("drouting", "drg_grpid_col", "grpid")
 		</example>
 	</section>
 
+
+	<section>
+		<title><varname>use_partitions</varname> (int)</title>
+		<para>
+		Flag to configure whether to use partitions for routing. If this
+		flag is set then the <varname>db_partitions_url</varname> and
+		<varname>db_partitions_table</varname>
+		variables become mandatory.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>use_partitions</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "use_partitions", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+<section>
+		<title><varname>db_partitions_url</varname> (int)</title>
+		<para>
+		The url to the database containing partition-specific
+		information. (partition-specific information includes
+		partition name, url to the database where information about
+		the partition is preserved, the names of the tables in which it
+		is preserved and the AVPs that can be accessed using the .cfg
+		script). The <varname>use_partitions</varname> parameter
+	    must be set to 1.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>"NULL"</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_partitions_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "db_partitions_url", "mysql://user:password@localhost/opensips_partitions")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>db_partitions_table</varname> (int)</title>
+		<para>
+		The name of the table containing partition definitions. To be
+		used with <varname>use_partitions</varname> and <varname>db_partitions_url</varname>.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>dr_partitions</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_partitions_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "db_partitions_table", "partition_defs")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>partition_id_pvar</varname> (pvar)</title>
+		<para>
+			Variable which will store the name of the name partition when
+			<emphasis>wildcard(*)</emphasis> operatior is used.
+			<emphasis>Use_partitions</emphasis> must be set in order to
+			use this parameter.
+		</para>
+		<para>
+			NOTE: The variable must be WRITABLE!
+		</para>
+		<para>
+		<emphasis>Default value is <quote>null(not used)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>partition_id_pvar</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
 </section>
 
 <section>
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">do_routing([[[groupID],flags],gw_whitelist])</function>
+		<function moreinfo="none">do_routing([part_and_or_groupID], [flags], [gw_whitelist], [rule_attrs_pvar], [gw_attrs_pvar], [carrier_attrs_pvar])</function>
 		</title>
 		<para>
-		Function to trigger routing of the message according to the 
+		Function to trigger routing of the message according to the
 		rules in the database table and the configured parameters.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 		</para>
 		<para>
-			The function can take two optional parameters:
+		If you set <varname>use_partitions</varname> to 1 the <emphasis role='bold'>
+		part_or_groupID</emphasis> parameter becomes mandatory.
+		</para>
+		<para>
+			All parameters are optional. Any of them may be ignored, provided
+			the necessary separation marks "," are properly placed.
 			<itemizedlist>
 				<listitem>
-					<emphasis>groupID</emphasis> - the routing group the
-					caller belongs to - this may be a static numerical 
-					value or an AVP specification (value must be numerical 
-					type, string types are ignored!). If none specified, the
-					function will automatically try to query the dr_group 
-					table to get this information;
-				</listitem>
-				<listitem>
-					<emphasis>flags</emphasis> - Controlls the behavior of the
-					function. Possible flags are:
+					<para>
+					<emphasis role='bold'>part_and_or_groupID</emphasis> - Specifies the group of the caller
+					for routing purposes. Depending on the value of the <varname>use_partitions</varname>
+					parameter, it contains:
+				</para>
 					<itemizedlist>
 					<listitem>
-						<emphasis>W</emphasis> - Instead of using the destination
-						(from the rule definition) in the given order, sort them
-						based on their weight.
+					<para>
+						the routing group the caller belongs to if <varname>use_partitions</varname>
+						is 0 - this may be a statical numerical value or an AVP specification (value
+						must be numerical type, string types are ignored!). If none specified the
+						function will automatically try to query the dr_group table to get this information
+					</para>
 					</listitem>
 					<listitem>
-						<emphasis>F</emphasis> - Enable rule fallback; normally
-						the engine is using a single rule for routing a call; by
-						setting this flag, the enging will fallback and use
-						rules with less priority or shorter prefix when all the 
-						destination from the current rules failed.
-					</listitem>
-					<listitem>
-						<emphasis>L</emphasis> - Do strict lenght matching over the
-						prefix - actually DR engine will do full number maching and 
-						not prefix matching anymore.
-					</listitem>
-					<listitem>
-						<emphasis>C</emphasis> - Only check if the dialed number 
-						matches any routing rule, without loading / applying any
-						routing info (no GW is set, the RURI is not altered)
+					<para>
+						the partition and routing group the caller belongs to, the format is:
+						"partition':'[groupID]" if <varname>use_partitions</varname>
+						parameter is 1 - both the partition name and the groupId may be statical
+						values or AVP specifications. If no group is specified the function will
+						try to query the dr_group table for the given partition to get this information.
+						If <emphasis>* (wildcard)</emphasis> operator is used all partitions shall be checked.
+					</para>
 					</listitem>
 					</itemizedlist>
 				</listitem>
 				<listitem>
-					<emphasis>gw_whitelist</emphasis> - a comma separated white
-					list of gateways. This will force routing over this list of 
-					carriers or gateways (a subset of what found in the prefix rules).
+					<para>
+					<emphasis role='bold'>flags</emphasis> - Controls the behavior of the
+					function. Possible flags are:
+				</para>
+					<itemizedlist>
+					<listitem>
+					<para>
+						<emphasis role='bold'>W</emphasis> - Instead of using the destination
+						(from the rule definition) in the given order, sort them
+						based on their weight.
+					</para>
+					</listitem>
+					<listitem>
+					<para>
+						<emphasis role='bold'>F</emphasis> - Enable rule fallback; normally
+						the engine is using a single rule for routing a call; by
+						setting this flag, the engine will fallback and use
+						rules with less priority or shorter prefix when all the
+						destination from the current rules failed.
+					</para>
+					</listitem>
+					<listitem>
+					<para>
+						<emphasis role='bold'>L</emphasis> - Do strict length matching over the
+						prefix - actually DR engine will do full number matching and
+						not prefix matching anymore.
+					</para>
+					</listitem>
+					<listitem>
+					<para>
+						<emphasis role='bold'>C</emphasis> - Only check if the dialed number
+						matches any routing rule, without loading / applying any
+						routing info (no GW is set, the RURI is not altered)
+					</para>
+					</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>gw_whitelist</emphasis> - a comma separated white
+					list of gateways. This will force routing over, at most, this
+					list of carriers or gateways (in other words, the whitelist
+					will be intersected with the results of the search through the rules).
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>rule_attrs_pvar</emphasis> (output, optional)- a writable
+					pseudo-variable which will be populated with the attributes
+					of the matched dynamic routing rule.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
+					- a writable pseudo-variable which will be populated with
+					the attributes of the matched gateway.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>carrier_attrs_pvar </emphasis> (output, optional) - a writable
+					pseudo-variable which will be populated with the attributes
+					of the matched carrier.
+					</para>
 				</listitem>
 			</itemizedlist>
 		</para>
@@ -1006,20 +1223,29 @@ modparam("drouting", "drg_grpid_col", "grpid")
 		<title><function>do_routing</function> usage</title>
 		<programlisting format="linespecific">
 ...
-# all groups, sort on order
+# all groups, sort on order, <varname>use_partitions</varname> is 0
 do_routing();
 ...
-# group id 0, sort on order
+# all groups, sort on order, <varname>use_partitions</varname> is 1, route by partition named "part"
+do_routing("part:");
+...
+# group id 0, sort on order, <varname>use_partitions</varname> is 0
 do_routing("0");
 ...
-# group id from $avp(10), sort on order
+# group id 0, sort on order, <varname>use_partitions</varname> is 1, route by partition named "part"
+do_routing("part:0");
+...
+# group id from $avp(10), sort on order, <varname>use_partitions</varname> is 0
 do_routing("$avp(10)");
 ...
-# all groups, sort on weights
-do_routing("","W");
+# all groups, sort on weights, <varname>use_partitions</varname> is 0
+do_routing("", "W");
 ...
-# group id 2, sort on order, fallback rule
-do_routing("2","F");
+# all groups, <varname>use_partitions</varname> is 1, partition and group supplied by AVPs, do strict length matching
+do_routing("$avp(partition):$avp(grp)","L")
+...
+# group id 2, sort on order, fallback rule and also return the gateway attributes
+do_routing("2", "F", , , "$var(gw_attributes)");
 ...
 </programlisting>
 		</example>
@@ -1027,26 +1253,94 @@ do_routing("2","F");
 
 	<section>
 		<title>
-		<function moreinfo="none">route_to_carrier(carrier_id)</function>
+		<function moreinfo="none">route_to_carrier(part_and_or_carrier_id, [gw_attrs_pvar], [carrier_attrs_pvar])</function>
 		</title>
 		<para>
 		Function to trigger the direct routing to a given carrier. In this case
 		the routing is not done prefix based, but carrier based (call will be
-		sent to the GWs of that carrier, based on carrier policy)
+		sent to the GWs of that carrier, based on carrier policy).
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE..
 		</para>
 		<para>
-		Function takes a single mandatory parameter, the ID of the carrier
-		to be used (variables are accepted).
+		If you set <varname>use_partitions</varname> parameter to 1 you must supply
+		the partition in which the carrier has been defined.
+		</para>
+		<para>
+		<itemizedlist>
+				<listitem>
+					<para>
+					<emphasis role='bold'>part_and_or_carrier_id </emphasis> (mandatory):
+					</para>
+					<itemizedlist>
+						<listitem>
+							<para>
+								the ID (name) of the carrier to be used, if <varname>use_partitions</varname>
+								parameter is 0; pseudo-variables are accepted.
+							</para>
+						</listitem>
+						<listitem>
+							<para>
+								the partition and carrier to be used, if <varname>use_partitions</varname> parameter
+								is 1. The format is "partition_name':'carrierId"; pseudo-variables are accepted.
+							</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
+					- a writable pseudo-variable which will be populated with
+					the attributes of the currently matched gateway of this carrier.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>carrier_attrs_pvar </emphasis> (output, optional)
+					- a writable pseudo-variable which will be populated with the attributes
+					of this carrier.
+					</para>
+				</listitem>
+		</itemizedlist>
 		</para>
 
 		<example>
-		<title><function>route_to_carrier</function> usage</title>
+		<title><function>route_to_carrier</function> usage when <varname>use_partitions</varname>
+		parameter is 0</title>
 		<programlisting format="linespecific">
 ...
-if ( route_to_carrier("my_top_carrier") ) {
+if ( route_to_carrier("my_top_carrier", , "$var(carrier_att)") ) {
+	xlog("Routing to \"my_top_carrier\" - $var(carrier_att)\n");
+	t_on_failure("next_gw");
+	t_relay();
+	exit;
+}
+...
+</programlisting>
+		</example>
+
+	<example>
+		<title><function>route_to_carrier</function> usage when <varname>use_partitions</varname>
+		parameter is 1</title>
+		<programlisting format="linespecific">
+...
+if ( route_to_carrier("my_partition:my_top_carrier", , "$var(carrier_att)") ) {
+	xlog("Routing to \"my_top_carrier\" - $var(carrier_att)\n");
+	t_on_failure("next_gw");
+	t_relay();
+	exit;
+}
+...
+</programlisting>
+		</example>
+<example>
+		<title><function>route_to_carrier</function> usage when <varname>use_partitions</varname>
+		parameter is 1 with pseudovariables</title>
+		<programlisting format="linespecific">
+...
+if ( route_to_carrier("$var(my_partition):$var(carrierId)") ) {
+	xlog("Routing to \"my_top_carrier\" - $var(carrier_att)\n");
 	t_on_failure("next_gw");
 	t_relay();
 	exit;
@@ -1058,25 +1352,85 @@ if ( route_to_carrier("my_top_carrier") ) {
 
 	<section>
 		<title>
-		<function moreinfo="none">route_to_gw(gw_id)</function>
+		<function moreinfo="none">route_to_gw(gw_id, [gw_attrs_pvar])</function>
 		</title>
 		<para>
-		Function to trigger the direct routing to a given gateway. Attributes 
-		and per-gw preocessing will be available.
+		Function to trigger the direct routing to a given gateway (or list of gateways).
+		Attributes and per-gw processing will be available.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 		</para>
 		<para>
-		Function takes a single mandatory parameter, the ID of the gateway
-		to be used (variables are accepted).
+		If you set <varname>use_partitions</varname> parameter to 1 you must supply
+		the partition in which the gateway has been defined.
+		</para>
+		<para>
+		<itemizedlist>
+				<listitem>
+					<para>
+					<emphasis role='bold'>gw_id </emphasis> (mandatory) - the list
+					of gateways to be used.
+					<itemizedlist>
+						<listitem>
+							<para>
+								a comma separated list of gateway ID's to be used, if
+								no <varname>use_partition</varname> parameter is 0. Pseudo-variables
+								are accepted.
+							</para>
+						</listitem>
+						<listitem>
+							<para>
+								the desired partition, followed by a comma separated list of gateway ID's
+								from that partition to be used, if <varname>use_partition</varname> parameter
+								is 1. The format is: "partition_name':'gwId1, gwId2, gwId3". Pseudo-variables
+								are accepted.
+							</para>
+						</listitem>
+					</itemizedlist>
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
+					- a writable pseudo-variable which will be populated with
+					the attributes of the currently matched gateway.
+					</para>
+				</listitem>
+		</itemizedlist>
 		</para>
 
 		<example>
-		<title><function>route_to_gw</function> usage</title>
+		<title><function>route_to_gw</function> usage when <varname>use_partition</varname>
+		parameter is 0</title>
 		<programlisting format="linespecific">
 ...
 if ( route_to_gw("gw_europe") ) {
+	t_relay();
+	exit;
+}
+...
+if ( route_to_gw("gw1,gw2,gw3", "$var(gw_attrs)") ) {
+	xlog("Relaying to first gateway from our list - $var(gw_attrs)\n");
+	t_relay();
+	exit;
+}
+...
+</programlisting>
+		</example>
+
+		<example>
+		<title><function>route_to_gw</function> usage when <varname>use_partition</varname>
+		parameter is 1</title>
+		<programlisting format="linespecific">
+...
+if ( route_to_gw("my_partition:gw_europe") ) {
+	t_relay();
+	exit;
+}
+...
+if ( route_to_gw("my_partition:gw1,gw2,gw3", "$var(gw_attrs)") ) {
+	xlog("Relaying to first gateway from our list - $var(gw_attrs)\n");
 	t_relay();
 	exit;
 }
@@ -1087,15 +1441,15 @@ if ( route_to_gw("gw_europe") ) {
 
 	<section>
 		<title>
-		<function moreinfo="none">use_next_gw()/next_routing()</function>
+		<function moreinfo="none">use_next_gw([partition','] [rule_attrs_pvar], [gw_attrs_pvar], [carrier_attrs_pvar])/next_routing()</function>
 		</title>
 		<para>
-		The function takes the next available destination (set by do_routing, 
-		as alternative destinations) and push it into RURI. Note that the 
+		The function takes the next available destination (set by do_routing,
+		as alternative destinations) and pushes it into the RURI. Note that the
 		function just sets the RURI (nothing more).
 		</para>
 		<para>
-		If a new RURI is set, the used destination is removed from the 
+		If a new RURI is set, the used destination is removed from the
 		pending set of alternative destinations.
 		</para>
 		<para>
@@ -1104,8 +1458,46 @@ if ( route_to_gw("gw_europe") ) {
 		<para>
 		The function returns true only if a new RURI was set. False
 		is returned is no other alternative destinations are found or in case
-		of internal processing error.
+		of an internal processing error. It may take the following optional parameters:
 		</para>
+		<para>
+			If you set <varname>use_partitions</varname> parameter to 1 you must supply
+			the partition (the partition becomes mandatory) in which the gateways have been defined.
+		</para>
+		<para>
+		<itemizedlist>
+				<listitem>
+					<para>
+					<emphasis role='bold'>partition</emphasis> (mandatory if <varname>use_partitions
+					</varname> parameter is 1, otherwise it will be omitted altogether) It is
+					the partition in which the gateways have been defined.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>rule_attrs_pvar </emphasis> (output, optional) - a writable
+					pseudo-variable which will be populated with the attributes
+					of the matched dynamic routing rule.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
+					- a writable pseudo-variable which will be populated with
+					the attributes of the matched gateway.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>carrier_attrs_pvar </emphasis> (output, optional) - a writable
+					pseudo-variable which will be populated with the attributes
+					of the matched carrier.
+					</para>
+				</listitem>
+		</itemizedlist>
+		</para>
+
+
 		<example>
 		<title><function>use_next_gw</function> usage</title>
 		<programlisting format="linespecific">
@@ -1115,16 +1507,43 @@ if (use_next_gw()) {
 	exit;
 }
 ...
+# Also fetch the carrier attributes, if any
+if (use_next_gw(, , "$var(carrier_attrs)")) {
+	xlog("Carrier attributes of current gateway: $var(carrier_attrs)\n");
+	t_relay();
+	exit;
+}
+...
+</programlisting>
+		</example>
+
+		<example>
+		<title><function>use_next_gw</function> usage when <varname>use_partition</varname>
+		parameter is 1</title>
+		<programlisting format="linespecific">
+...
+if (use_next_gw("my_partition")) {
+	t_relay();
+	exit;
+}
+...
+# Also fetch the carrier attributes, if any
+if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
+	xlog("Carrier attributes of current gateway: $var(carrier_attrs)\n");
+	t_relay();
+	exit;
+}
+...
 </programlisting>
 		</example>
 	</section>
 
 	<section>
 		<title>
-		<function moreinfo="none">goes_to_gw([[type],flags])</function>
+		<function moreinfo="none">goes_to_gw([partition','] [type], [flags], [gw_attrs_pvar])</function>
 		</title>
 		<para>
-		Function returns true if the destination of the current request 
+		Function returns true if the destination of the current request
 		(destination URI or Request URI) points (as IP) to one of the gateways.
 		There no DNS lookups done if the domain part of the URI is not an IP.
 		</para>
@@ -1136,47 +1555,94 @@ if (use_next_gw()) {
 		and LOCAL_ROUTE.
 		</para>
 		<para>
-			The function can take two optional parameters:
+			If you set <varname>use_partitions</varname> parameter to 1 you must supply
+			the partition (the partition becomes mandatory) in which the gateways have been defined.
+		</para>
+		<para>
+			If <varname>use_partitions</varname> parameter is 0
+			all parameters are optional. Any of them may be ignored, provided
+			the necessary separation marks "," are properly placed.
 			<itemizedlist>
 				<listitem>
-					<emphasis>type</emphasis> (optional) - GW/destination 
-					type to be checked; a negative value (ex: -1) means
-					match any group;
+					<para>
+					<emphasis role='bold'>partition</emphasis> (mandatory if <varname>use_partitions
+					</varname> parameter is 1, otherwise it will be omitted altogether) - the name
+					of the partition containing the gateway/destination to be checked.
+					</para>
 				</listitem>
 				<listitem>
-					<emphasis>flags</emphasis> (optional) - what operations
+					<para>
+					<emphasis role='bold'>type</emphasis> (optional) - GW/destination
+					type to be checked; when omitting this parameter or specifying
+					a negative value i.e. "-1", matching will be done against all groups
+					(in a given partition if <varname>use_partition</varname> parameter is 1; if
+					<varname>use_partitions</varname> is 1 the partition being mandatory at this
+					point, it is not possible to do matching against all the partitions)
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>flags</emphasis> (optional) - what operations
 					should be performed when a GW matches:
+					</para>
 					<itemizedlist>
 						<listitem>
-							<emphasis>'s'</emphasis> (Strip) - apply to the 
+							<para>
+							<emphasis role='bold'>'s'</emphasis> (Strip) - apply to the
 							username of RURI the strip defined by the GW
+							</para>
 						</listitem>
 						<listitem>
-							<emphasis>'p'</emphasis> (Prefix) - apply to the 
+							<para>
+							<emphasis role='bold'>'p'</emphasis> (Prefix) - apply to the
 							username of RURI the prefix defined by the GW
+							</para>
 						</listitem>
 						<listitem>
-							<emphasis>'a'</emphasis> (Attributes) - return
-							the attributes string defined by the GW into gw_attrs_avp
-							AVP
-						</listitem>
-						<listitem>
-							<emphasis>'i'</emphasis> (Gateway ID) - return the 
+							<para>
+							<emphasis role='bold'>'i'</emphasis> (Gateway ID) - return the
 							gateway id into gw_id_avp AVP
+							</para>
 						</listitem>
 						<listitem>
-							<emphasis>'n'</emphasis> (Ignore port) - ignores port
+							<para>
+							<emphasis role='bold'>'n'</emphasis> (Ignore port) - ignores port
 							number during matching
+							</para>
+						</listitem>
+						<listitem>
+							<para>
+							<emphasis role='bold'>'c'</emphasis> (Carrier ID) - return the
+							carrier id into carrier_id_avp AVP
+							</para>
 						</listitem>
 					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
+					- a writable pseudo-variable which will be populated with
+					the attributes of the matched gateway.
+					</para>
 				</listitem>
 			</itemizedlist>
 		</para>
 		<example>
-		<title><function>goes_to_gw</function> usage</title>
+		<title><function>goes_to_gw</function> usage when <varname>use_partitions</varname> parameter is 0</title>
 		<programlisting format="linespecific">
 ...
-if (goes_to_gw("1")) {
+if (goes_to_gw("1", , "$var(gw_attrs)")) {
+	sl_send_reply("403","Forbidden");
+	exit;
+}
+...
+</programlisting>
+		</example>
+	<example>
+	<title><function>goes_to_gw</function> usage, when <varname>use_partitions</varname> parameter is 1</title>
+		<programlisting format="linespecific">
+...
+if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 	sl_send_reply("403","Forbidden");
 	exit;
 }
@@ -1187,58 +1653,102 @@ if (goes_to_gw("1")) {
 
 	<section>
 		<title>
-		<function moreinfo="none">is_from_gw( [type, [flag]])</function>
+		<function moreinfo="none">is_from_gw([partition','] [type], [flag], [gw_attrs_pvar])</function>
 		</title>
 		<para>
-		The function checks if the sender of the message is a gateway
-		from a certain group.
+		The function checks if the sender of the message (its source IP)
+		is a gateway from a certain group.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE
 		and ONREPLY_ROUTE.
 		</para>
 		<para>
-			The function can take two optional parameters:
+			If you set <varname>use_partitions</varname> parameter to 1 you must supply
+			the partition (the partition becomes mandatory) in which the gateways have been defined.
+		</para>
+		<para>
+			If <varname>use_partitions</varname> parameter is 0
+			all parameters are optional. Any of them may be ignored, provided
+			the necessary separation marks "," are properly placed.
 			<itemizedlist>
 				<listitem>
-					<emphasis>type</emphasis> (optional) - GW/destination
-					type to be checked; a negative value (ex: -1) means
-					match any group;
+					<para>
+					<emphasis role='bold'>partition</emphasis> (mandatory if <varname>use_partitions
+					</varname> parameter is 1, otherwise it will be omitted altogether) - Partition
+					containing the destination/gw to be checked. If <emphasis>*(wildcard)</emphasis>
+					operator is used all partitions shall be checked.
+					</para>
 				</listitem>
 				<listitem>
-					<emphasis>flags</emphasis> (optional) - what operations
+					<para>
+					<emphasis role='bold'>type</emphasis> (optional) - GW/destination
+					type to be checked; when omitting this parameter or specifying
+					a negative value i.e. "-1", matching will be done against all groups
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>flags</emphasis> (optional) - what operations
 					should be performed when a GW matches:
+					</para>
 					<itemizedlist>
 						<listitem>
-							<emphasis>'s'</emphasis> (Strip) - apply to the 
+							<para>
+							<emphasis role='bold'>'s'</emphasis> (Strip) - apply to the
 							username of RURI the strip defined by the GW
+							</para>
 						</listitem>
 						<listitem>
-							<emphasis>'p'</emphasis> (Prefix) - apply to the 
+							<para>
+							<emphasis role='bold'>'p'</emphasis> (Prefix) - apply to the
 							username of RURI the prefix defined by the GW
+							</para>
 						</listitem>
 						<listitem>
-							<emphasis>'a'</emphasis> (Attributes) - return
-							the attributes string defined by the GW into gw_attrs_avp
-							AVP
-						</listitem>
-						<listitem>
-							<emphasis>'i'</emphasis> (Gateway ID) - return the 
+							<para>
+							<emphasis role='bold'>'i'</emphasis> (Gateway ID) - return the
 							gateway id into gw_id_avp AVP
+							</para>
 						</listitem>
 						<listitem>
-							<emphasis>'n'</emphasis> (Ignore port) - ignores port
+							<para>
+							<emphasis role='bold'>'n'</emphasis> (Ignore port) - ignores port
 							number during matching
+							</para>
+						</listitem>
+						<listitem>
+							<para>
+							<emphasis role='bold'>'c'</emphasis> (Carrier ID) - return the
+							carrier id into carrier_id_avp AVP
+							</para>
 						</listitem>
 					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
+					- a writable pseudo-variable which will be populated with
+					the attributes of the matched gateway.
+					</para>
 				</listitem>
 			</itemizedlist>
 		</para>
 		<example>
-		<title><function>is_from_gw</function> usage</title>
+		<title><function>is_from_gw</function> usage when <varname>use_partitions</varname> is 0</title>
 		<programlisting format="linespecific">
 ...
 if (is_from_gw("3","1") {
+}
+...
+</programlisting>
+		</example>
+
+		<example>
+		<title><function>is_from_gw</function> usage when <varname>use_partitions</varname> is 1</title>
+		<programlisting format="linespecific">
+...
+if (is_from_gw("my_partition","3","1") {
 }
 ...
 </programlisting>
@@ -1247,7 +1757,7 @@ if (is_from_gw("3","1") {
 
 	<section>
 		<title>
-		<function moreinfo="none">dr_is_gw(src_pv, [type, [flag]])</function>
+		<function moreinfo="none">dr_is_gw([partition,] src_avp, [type], [flag], [gw_attrs_pvar])</function>
 		</title>
 		<para>
 		The function checks if the ip address in pvar src_pv is a gateway
@@ -1258,48 +1768,91 @@ if (is_from_gw("3","1") {
 		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE and EVENT_ROUTE.
 		</para>
 		<para>
+			If you set <varname>use_partitions</varname> parameter to 1 you must supply
+			the partition (the partition becomes mandatory) in which the gateways have been defined.
+		</para>
+		<para>
 			Meaning of the parameters is as follows:
 			<itemizedlist>
 				<listitem>
-					<emphasis>src_pv</emphasis> (mandatory) - pvar containing SIP URI.
-					May be a script var or avp.
+					<para>
+					<emphasis role='bold'>partition</emphasis> (mandatory if <varname>use_partitions
+					</varname> parameter is 1, otherwise it will be omitted altogether) - Partition
+					containing the destinations/gateways to be checked.
+					</para>
 				</listitem>
 				<listitem>
-					<emphasis>type</emphasis> (optional) - GW/destination
-					type to be checked; a negative value (ex: -1) means
-					match any group;
+					<para>
+					<emphasis role='bold'>src_avp</emphasis> (mandatory) - avp containing a SIP URI.
+					Does not support other OpenSIPS pseudo-variables.
+					</para>
 				</listitem>
 				<listitem>
-					<emphasis>flags</emphasis> (optional) - what operations
+					<para>
+					<emphasis role='bold'>type</emphasis> (optional) - GW/destination
+					type to be checked; when omitting this parameter or specifying
+					a negative value i.e. "-1", matching will be done against all groups
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>flags</emphasis> (optional) - what operations
 					should be performed when a GW matches:
+					</para>
 					<itemizedlist>
 						<listitem>
-							<emphasis>'s'</emphasis> (Strip) - apply to the 
+							<para>
+							<emphasis role='bold'>'s'</emphasis> (Strip) - apply to the
 							username of RURI the strip defined by the GW
+							</para>
 						</listitem>
 						<listitem>
-							<emphasis>'p'</emphasis> (Prefix) - apply to the 
+							<para>
+							<emphasis role='bold'>'p'</emphasis> (Prefix) - apply to the
 							username of RURI the prefix defined by the GW
+							</para>
 						</listitem>
 						<listitem>
-							<emphasis>'a'</emphasis> (Attributes) - return the attributes string
-							defined by the GW into gw_attrs_avp pvar
+							<para>
+							<emphasis role='bold'>'i'</emphasis> (Gateway ID) - return the gateway id into gw_id_avp pvar
+							</para>
 						</listitem>
 						<listitem>
-							<emphasis>'i'</emphasis> (Gateway ID) - return the gateway id into gw_id_avp pvar
+							<para>
+							<emphasis role='bold'>'n'</emphasis> (Ignore port) - ignores port number
+							</para>
 						</listitem>
 						<listitem>
-							<emphasis>'n'</emphasis> (Ignore port) - ignores port number
+							<para>
+							<emphasis role='bold'>'c'</emphasis> (Carrier ID) - return the
+							carrier id into carrier_id_avp AVP
+							</para>
 						</listitem>
 					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
+					- a writable pseudo-variable which will be populated with
+					the attributes of the matched gateway.
+					</para>
 				</listitem>
 			</itemizedlist>
 		</para>
 		<example>
-		<title><function>dr_is_gw</function> usage</title>
+		<title><function>dr_is_gw</function> usage when <varname>use_partitions</varname> is 0</title>
 		<programlisting format="linespecific">
 ...
 if (dr_is_gw("$avp(uac)","3") {
+}
+...
+</programlisting>
+		</example>
+		<example>
+		<title><function>dr_is_gw</function> usage when <varname>use_partitions</varname> is 1</title>
+		<programlisting format="linespecific">
+...
+if (dr_is_gw("my_partition","$avp(uac)","3") {
 }
 ...
 </programlisting>
@@ -1314,18 +1867,44 @@ if (dr_is_gw("$avp(uac)","3") {
 		Marks as disabled the last destination that was used for the current
 		call. The disabling done via this function will prevent the
 		destination to be used for usage from now on. The probing mechanism
-		can re-enable this peer (see the probing section in the begining)
+		can re-enable this peer (see the probing section in the beginning)
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
+		<para>
+			If you set <varname>use_partitions</varname> parameter to 1 you must supply
+			the partition (the partition becomes mandatory) in which the gateway to be
+			disabled is defined.
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>partition</emphasis> (mandatory if <varname>use_partitions
+				</varname> parameter is 1, otherwise it will be omitted altogether) - Partition
+					containing the destination/gateway to be disabled.
+				</para>
+			</listitem>
+		</itemizedlist>
 		<example>
-		<title><function>dr_disable()</function> usage</title>
+		<title><function>dr_disable()</function> usage when <varname>use_partitions</varname> is 0</title>
 		<programlisting format="linespecific">
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
 	dr_disable();
-	
+
+}
+
+...
+</programlisting>
+		</example>
+		<example>
+		<title><function>dr_disable()</function> usage when <varname>use_partitions</varname> is 1</title>
+		<programlisting format="linespecific">
+...
+if (t_check_status("(408)|(5[0-9][0-9])")) {
+	dr_disable("my_partition");
+
 }
 
 ...
@@ -1342,10 +1921,12 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		<function moreinfo="none">dr_reload</function>
 		</title>
 		<para>
-		Command to reload routing rules from database.
+		Command to reload routing rules from database. If <varname>use_partitions</varname> is set to 1
+		you can reload just a partition given a parameter, if no parameter is supplied then all the
+		partitions will be reloaded.
 		</para>
 		<para>
-			It takes no parameter.
+			If <varname>use_partitions</varname> is 0 it takes no parameter.
 		</para>
 
 		<para>
@@ -1353,6 +1934,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		</para>
 		<programlisting  format="linespecific">
 		:dr_reload:fifo_reply
+		partition_name (optional)
 		_empty_line_
 		</programlisting>
 	</section>
@@ -1361,30 +1943,65 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		<title><varname>dr_gw_status</varname></title>
 		<para>
 		Gets or sets the status (enabled or disabled) of a gateway. The
-		function may take from 0 to 2 parameters. If none, it will list all
-		gateways along with their status. If one parameter is provided, that 
-		must be the id of a gateway and the function will return the status
-		of that gateway. If 2 parameters are provided, first must be the ID of
-		the ID of a GW and the second must be the new status to be forced for
-		that GW (0 - disable, 1 - enable).
+		function may take from 0 to 3 parameters.
+		<itemizedlist>
+			<listitem>
+				<para>
+				if <varname>use_partitions</varname> is set to 0 - if no parameter
+				is provided, it will list all
+				gateways along with their status. If one parameter is provided, that
+				must be the id of a gateway and the function will return the status
+				of that gateway. If 2 parameters are provided, first must be the ID of
+				the ID of a GW and the second must be the new status to be forced for
+				that GW (0 - disable, 1 - enable).
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				if <varname>use_partitions</varname> is set to 1 - the first parameter
+				must be the partition (the partition is mandatory). If just one parameter
+				is provided it will the display the statuses of all the gateways in the
+				given partition. If two parameters are provided,
+				the first must be the partition, and the second must be the gateway Id. If three
+				parameters are provided, the first must be the partition, the second must be the gateway
+				and the third will be the new status to be forced for tat GW (0 - disable, 1 - enable)
+				</para>
+			</listitem>
+		</itemizedlist>
 		</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
 		:dr_gw_status:_reply_fifo_file_
+		partition_name (mandatory if <varname>use_partitions</varname> is 1, otherwise will be omitted altogether)
 		GW_id
 		status (optional)
 		_empty_line_
 		</programlisting>
 		<example>
-		<title><function>dr_gw_status</function> usage</title>
+		<title><function>dr_gw_status</function> usage when <varname>use_partitions</varname> is set to 0</title>
 		<programlisting format="linespecific">
 $ ./opensipsctl fifo dr_gw_status 2
-Enabled:: no
-$ ./opensipsctl fifo dr_gw_status 2 1
+State:: Active
+$ ./opensipsctl fifo dr_gw_status 2 0
 $ ./opensipsctl fifo dr_gw_status 2
-Enabled:: yes
+Enabled:: Disabled MI
+$ ./opensipsctl fifo dr_gw_status 3
+Enabled:: Inactive
+</programlisting>
+		</example>
+
+		<example>
+		<title><function>dr_gw_status</function> usage when <varname>use_partitions</varname>is set to 1</title>
+		<programlisting format="linespecific">
+$ ./opensipsctl fifo dr_gw_status part_1 my_gw
+State:: Active
+$ ./opensipsctl fifo dr_gw_status my_partition 3 0
+$ ./opensipsctl fifo dr_gw_status partition7 dsbl_gw 2
+Enabled:: Disabled MI
+$ ./opensipsctl fifo dr_gw_status partition8 gw3
+Enabled:: Inactive
 </programlisting>
 		</example>
 	</section>
@@ -1393,24 +2010,44 @@ Enabled:: yes
 		<title><varname>dr_carrier_status</varname></title>
 		<para>
 		Gets or sets the status (enabled or disabled) of a carrier. The
-		function may take from 0 to 2 parameters. If none, it will list all
-		carriers along with their status. If one parameter is provided, that 
-		must be the id of a carrier and the function will return the status
-		of that carrier. If 2 parameters are provided, first must be the ID of
-		the ID of a carrier and the second must be the new status to be 
-		forced for that carrier (0 - disable, 1 - enable).
+		function may take from 0 to 3 parameters.
 		</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 0 - if no parameter
+					is provided it will list all the carriers along with their status. If
+					one parameter is provided, that must be the id of carrier and the function
+					will return the status of that carrier. If 2 parameters are provided, first
+					must be the Id of a carrier and the second must be the new status to be
+					forced for that carrier
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 1 - the first parameter
+					must be the partition (the partition becomes mandatory). If one parameter
+					is supplied, it will be the partition, and it will display the statuses
+					of the carriers contained in that partition. If two parameters are supplied,
+					the second must be the carrierId, and the command will display the status
+					of the selected carrier. If three parameters are supplied, the first two
+					will be the partition name and the carrierId while the third parameter will be
+					the new status to be forced for that carrier.
+				</para>
+			</listitem>
+		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
 		:dr_carrier_status:_reply_fifo_file_
+		partition_name (mandatory if <varname>use_partition</varname> is 1, otherwise it will be omitted)
 		carrier_id
 		status (optional)
 		_empty_line_
 		</programlisting>
 		<example>
-		<title><function>dr_carrier_status</function> usage</title>
+		<title><function>dr_carrier_status</function> usage when <varname>use_partitions</varname> is 0</title>
 		<programlisting format="linespecific">
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: no
@@ -1419,18 +2056,150 @@ $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: yes
 </programlisting>
 		</example>
+		<example>
+		<title><function>dr_carrier_status</function> usage when <varname>use_partitions</varname> is 1</title>
+		<programlisting format="linespecific">
+$ ./opensipsctl fifo dr_carrier_status my_partition CR1
+Enabled:: no
+$ ./opensipsctl fifo dr_carrier_status partition_1 CR1 1
+$ ./opensipsctl fifo dr_carrier_status partition_3 CR1
+Enabled:: yes
+</programlisting>
+		</example>
 	</section>
 
+	<section>
+		<title><varname>dr_reload_status</varname></title>
+		<para>
+			Gets the time of the last reload for any partition. The function
+			may take at most one parameter.
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 0 - the function
+					doesn't receive any parameter. It will list the date of the
+					last reload for the default (and only) partition.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 1 - if no parameter
+					is supplied it will list the time of the last update for every
+					partition. If one parameter is supplied, then this must be the
+					partition name, and the function will list the time of the last
+					reload for that given partition.
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:dr_reload_status:_reply_fifo_file_
+		partition_name (if <varname>use_partition</varname> is 1 it may be omitted, but if <varname>use_partition</varname>
+is 0 it must be omitted)
+		_empty_line_
+		</programlisting>
+		<example>
+		<title><function>dr_reload_status</function> usage when <varname>use_partitions</varname> is 0</title>
+		<programlisting format="linespecific">
+$ ./opensipsctl fifo dr_reload_status
+Date:: Tue Aug 12 12:26:00 2014
+</programlisting>
+		</example>
+		<example>
+		<title><function>dr_reload_status</function> usage when <varname>use_partitions</varname> is 1</title>
+		<programlisting format="linespecific">
+$ ./opensipsctl fifo dr_reload_status
+Partition:: part_test Date=Tue Aug 12 12:24:13 2014
+Partition:: part_2 Date=Tue Aug 12 12:24:13 2014
+$ ./opensipsctl fifo dr_reload_status part_test
+Partition:: part_test Date=Tue Aug 12 12:24:13 2014
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>dr_number_routing</varname></title>
+		<para>
+			Gets the matched prefix along with the  list of the gateways / carriers to which a number
+			would be routed when using the do_routing function
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 1 the function
+					will have 3 parameters:
+					<itemizedlist>
+						<listitem>
+							partition name
+						</listitem>
+						<listitem>
+							group id - the group id of the rules to check against
+						</listitem>
+						<listitem>
+							number - the number to test against
+						</listitem>
+					</itemizedlist>
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 0 the function will have 2 parameters:
+					<itemizedlist>
+						<listitem>
+							group id - the group id of the rules to check against
+						</listitem>
+						<listitem>
+							number - the number to test against
+						</listitem>
+					</itemizedlist>
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para> Note: The group id may be omitted - just as with the do_routing function.</para>
+	</section>
 
 </section>
 
 <section>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_DROUTING_STATUS</function>
+		</title>
+		<para>
+			This event is raised when the module changes the state of a gateway,
+			either through MI or probing.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>gwid</emphasis> - the gateway identifier.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>address</emphasis> - the address of the gateway.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>status</emphasis> - <emphasis>disabled MI</emphasis> if
+				the gateway was disabled using MI commands,
+				<emphasis>probing</emphasis> if the gateway is being pinged,
+				<emphasis>inactive</emphasis> if it was disabled from the script or
+				<emphasis>active</emphasis> if the gateway is enabled.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+</section>
+
+
+<section>
 	<title>Installation</title>
 	<para>
-	The module requires 4 table in OpenSIPS database: dr_groups,
+	The module requires 4 tables in the OpenSIPS database: dr_groups,
 	dr_gateways, dr_carriers, dr_rules. The SQL syntax to create them can be
-	found in drouting-create.sql script in the database directories
-	in the opensips/scripts folder. You can also find the complete
+	found in the drouting-create.sql script, located in the database directories
+	of the opensips/scripts folder. You can also find the complete
 	database documentation on the project webpage, &osipsdbdocslink;.
 	</para>
 </section>

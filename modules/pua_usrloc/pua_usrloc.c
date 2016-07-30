@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua_usrloc module - usrloc pua module
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -33,7 +31,6 @@
 #include <time.h>
 
 #include "../../sr_module.h"
-#include "../../script_cb.h"
 #include "../../parser/parse_expires.h"
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
@@ -50,7 +47,6 @@
 
 
 str default_domain= {NULL, 0};
-int pua_ul_publish= 0;
 pua_api_t pua;
 str pres_prefix= {0, 0};
 str presence_server= {0, 0};
@@ -64,27 +60,40 @@ static int mod_init(void);
 static int child_init(int);
 static void destroy(void);
 
-int pua_set_publish(struct sip_msg* , char*, char*);
 
 
 static cmd_export_t cmds[]=
 {
-	{"pua_set_publish", (cmd_function)pua_set_publish, 0, 0, 0, REQUEST_ROUTE}, 	
-	{0, 0, 0, 0, 0, 0} 
+	{"pua_set_publish", (cmd_function)pua_set_publish, 0, 0, 0, REQUEST_ROUTE},
+	{0, 0, 0, 0, 0, 0}
 };
 
 static param_export_t params[]={
-	{"default_domain",	 STR_PARAM, &default_domain.s	},
-	{"entity_prefix",	 STR_PARAM, &pres_prefix.s		},
-	{"presence_server",	 STR_PARAM, &presence_server.s	},
-	{0,							 0,			0			}
+	{"default_domain",   STR_PARAM, &default_domain.s   },
+	{"entity_prefix",    STR_PARAM, &pres_prefix.s      },
+	{"presence_server",  STR_PARAM, &presence_server.s  },
+	{0,                  0,         0                   }
+};
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "pua",    DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "usrloc", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
 };
 
 struct module_exports exports= {
 	"pua_usrloc",				/* module name */
+	MOD_TYPE_DEFAULT,           /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
+	&deps,                      /* OpenSIPS module dependencies */
 	cmds,						/* exported functions */
+	0,							/* exported async functions */
 	params,						/* exported parameters */
 	0,							/* exported statistics */
 	0,							/* exported MI functions */
@@ -95,7 +104,7 @@ struct module_exports exports= {
 	destroy,					/* destroy function */
 	child_init                  /* per-child init function */
 };
-	
+
 /**
  * init module function
  */
@@ -105,25 +114,28 @@ static int mod_init(void)
 	bind_pua_t bind_pua;
 
 	LM_DBG("initializing module ...\n");
-	
+
 	if(default_domain.s == NULL )
-	{	
+	{
 		LM_ERR("default domain parameter not set\n");
 		return -1;
 	}
 	default_domain.len= strlen(default_domain.s);
-	
+
 	if(pres_prefix.s == NULL )
-	{	
+	{
 		LM_DBG("No pres_prefix configured\n");
 	}
 	else
 		pres_prefix.len= strlen(pres_prefix.s);
-	
+
 	if(presence_server.s)
 	{
 		presence_server.len= strlen(presence_server.s);
 	}
+
+	/* index in global context to keep the on/off state */
+	pul_status_idx = context_register_int(CONTEXT_GLOBAL, NULL);
 
 	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
 	if (!bind_usrloc)
@@ -154,26 +166,26 @@ static int mod_init(void)
 				" expire\n");
 		return -1;
 	}
-	
+
 	if(ul.register_ulcb(UL_CONTACT_UPDATE, ul_publish, 0)< 0)
 	{
 		LM_ERR("can not register callback for update\n");
 		return -1;
 	}
-	
+
 	if(ul.register_ulcb(UL_CONTACT_DELETE, ul_publish, 0)< 0)
 	{
 		LM_ERR("can not register callback for delete\n");
 		return -1;
 	}
-	
+
 	bind_pua= (bind_pua_t)find_export("bind_pua", 1,0);
 	if (!bind_pua)
 	{
 		LM_ERR("Can't bind pua\n");
 		return -1;
 	}
-	
+
 	if (bind_pua(&pua) < 0)
 	{
 		LM_ERR("Can't bind pua\n");
@@ -192,14 +204,6 @@ static int mod_init(void)
 		return -1;
 	}
 	pua_send_subscribe= pua.send_subscribe;
-	
-	/* register post-script pua_unset_publish unset function */
-	if(register_script_cb(pua_unset_publish, POST_SCRIPT_CB|REQ_TYPE_CB, 0)<0)
-	{
-		LM_ERR("failed to register POST request callback\n");
-		return -1;
-	}
-
 
 	return 0;
 }
@@ -208,14 +212,12 @@ static int child_init(int rank)
 {
 	LM_DBG("child [%d]  pid [%d]\n", rank, getpid());
 	return 0;
-}	
+}
 
 static void destroy(void)
-{	
+{
 	LM_DBG("destroying module ...\n");
 
 	return ;
 }
-
-
 

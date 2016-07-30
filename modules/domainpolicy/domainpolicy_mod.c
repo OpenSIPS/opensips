@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Domain Policy related functions
  *
  * Copyright (C) 2006 Otmar Lendl & Klaus Darilion
@@ -19,9 +17,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -91,7 +89,7 @@ str send_socket_avp           = str_init(DEF_SEND_SOCKET_AVP);
  * Other module variables
  */
 
-int port_override_name, transport_override_name, domain_prefix_name, 
+int port_override_name, transport_override_name, domain_prefix_name,
 	domain_suffix_name, domain_replacement_name, send_socket_name;
 
 /*
@@ -123,15 +121,27 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /*
  * Module interface
  */
 struct module_exports exports = {
-	"domainpolicy", 
+	"domainpolicy",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,      /* exported functions */
+	0,         /* exported async functions */
 	params,    /* exported parameters */
 	0,         /* exported statistics */
 	0,         /* exported MI functions */

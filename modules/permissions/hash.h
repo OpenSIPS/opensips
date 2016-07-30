@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Hash table functions header file
  *
  * Copyright (C) 2009 Irina Stanescu
@@ -18,9 +16,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #ifndef PERM_HASH_H
@@ -34,6 +32,7 @@
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_from.h"
 #include "../../usr_avp.h"
+#include "partitions.h"
 
 #define PERM_HASH_SIZE 128
 
@@ -88,7 +87,8 @@ int hash_match(struct sip_msg *msg, struct address_list** table,
  * Print entries stored in hash table
  */
 //void hash_print(struct address_list** hash_table, FILE* reply_file);
-int hash_mi_print(struct address_list **table, struct mi_node* rpl);
+int hash_mi_print(struct address_list **table, struct mi_node* rpl,
+		struct pm_part_struct *pm);
 
 /*
  * Empty hash table
@@ -102,7 +102,7 @@ int find_group_in_hash_table(struct address_list** table,
 
 
 
-#define PERM_MAX_SUBNETS 128 
+#define PERM_MAX_SUBNETS 128
 
 /*
  * Structure used to store a subnet
@@ -123,7 +123,7 @@ struct subnet {
 struct subnet* new_subnet_table(void);
 
 
-/* 
+/*
  * Check if an entry exists in subnet table that matches given group, ip_addr,
  * and port.  Port 0 in subnet table matches any port.
  */
@@ -132,7 +132,7 @@ int match_subnet_table(struct sip_msg *msg, struct subnet* table,
 		char *pattern, char* info);
 
 
-/* 
+/*
  * Checks if an entry exists in subnet table that matches given ip_addr,
  * and port.  Port 0 in subnet table matches any port.  Returns group of
  * the first match or -1 if no match is found.
@@ -140,7 +140,7 @@ int match_subnet_table(struct sip_msg *msg, struct subnet* table,
 int find_group_in_subnet_table(struct subnet* table,
 		struct ip_addr *ip, unsigned int port);
 
-/* 
+/*
  * Empty contents of subnet table
  */
 void empty_subnet_table(struct subnet *table);
@@ -153,7 +153,7 @@ void free_subnet_table(struct subnet* table);
 
 
 
-/* 
+/*
  * Add <grp, subnet, mask, port> into subnet table so that table is
  * kept ordered according to subnet, port, grp.
  */
@@ -162,11 +162,12 @@ int subnet_table_insert(struct subnet* table, unsigned int grp,
 		str* pattern, str *info);
 
 
-/* 
+/*
  * Print subnets stored in subnet table
  */
 /*void subnet_table_print(struct subnet* table, FILE* reply_file);*/
-int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl);
+int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl,
+		struct pm_part_struct *pm);
 
 
 

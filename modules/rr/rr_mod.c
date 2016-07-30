@@ -1,8 +1,7 @@
 /*
- * $Id$
- *
  * Route & Record-Route module
  *
+ * Copyright (C) 2009-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -17,9 +16,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -52,6 +51,7 @@
 #include "../../pvar.h"
 #include "../../mem/mem.h"
 #include "../../mod_fix.h"
+#include "../../context.h"
 #include "loose.h"
 #include "record.h"
 #include "rr_cb.h"
@@ -64,14 +64,17 @@ str i_user;
 char *ignore_user = NULL;
 #endif
 
+int ctx_rrdone_idx = -1;
+#define ctx_rrdone_set(_val) \
+	context_put_int(CONTEXT_GLOBAL,current_processing_ctx,ctx_rrdone_idx,_val)
+#define ctx_rrdone_get() \
+	context_get_int(CONTEXT_GLOBAL, current_processing_ctx, ctx_rrdone_idx)
+
+/* module parameters */
 int append_fromtag = 1;
 int enable_double_rr = 1; /* Enable using of 2 RR by default */
 int add_username = 0;     /* Do not add username by default */
 int enable_socket_mismatch_warning = 1; /* Enable socket mismatch warning */
-
-static unsigned int last_rr_msg;
-
-
 
 static int  mod_init(void);
 static void mod_destroy(void);
@@ -85,7 +88,10 @@ static int w_add_rr_param(struct sip_msg *,char *, char *);
 static int w_check_route_param(struct sip_msg *,char *, char *);
 static int w_is_direction(struct sip_msg *,char *, char *);
 
-static int pv_get_rr_params(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+static int pv_get_rr_params(struct sip_msg *msg, pv_param_t *param,
+	pv_value_t *res);
+
+
 /*! \brief
  * Exported functions
  */
@@ -122,7 +128,7 @@ static cmd_export_t cmds[] = {
 /*! \brief
  * Exported parameters
  */
-static param_export_t params[] ={ 
+static param_export_t params[] ={
 	{"append_fromtag",                 INT_PARAM, &append_fromtag                },
 	{"enable_double_rr",               INT_PARAM, &enable_double_rr              },
 #ifdef ENABLE_USER_CHECK
@@ -150,9 +156,12 @@ struct module_exports rr_exports = {
 struct module_exports exports = {
 #endif
 	"rr",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /*!< dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,        /*!< Exported functions */
+	0,           /*!< Exported async functions */
 	params,      /*!< Exported parameters */
 	0,           /*!< exported statistics */
 	0,           /*!< exported MI functions */
@@ -168,6 +177,11 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	LM_INFO("rr - initializing\n");
+
+	ctx_rrparam_idx = context_register_str(CONTEXT_GLOBAL, NULL);
+	ctx_routing_idx = context_register_int(CONTEXT_GLOBAL, NULL);
+	ctx_rrdone_idx  = context_register_int(CONTEXT_GLOBAL, NULL);
+
 #ifdef ENABLE_USER_CHECK
 	if(ignore_user)
 	{
@@ -263,7 +277,7 @@ static int w_record_route(struct sip_msg *msg, char *key, char *bar)
 {
 	str s;
 
-	if (msg->id == last_rr_msg) {
+	if (ctx_rrdone_get()==1) {
 		LM_ERR("Double attempt to record-route\n");
 		return -1;
 	}
@@ -275,7 +289,7 @@ static int w_record_route(struct sip_msg *msg, char *key, char *bar)
 	if ( record_route( msg, key?&s:0 )<0 )
 		return -1;
 
-	last_rr_msg = msg->id;
+	ctx_rrdone_set(1);
 	return 1;
 }
 
@@ -284,8 +298,8 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 {
 	str s;
 
-	if (msg->id == last_rr_msg) {
-		LM_ERR("Duble attempt to record-route\n");
+	if (ctx_rrdone_get()==1) {
+		LM_ERR("Double attempt to record-route\n");
 		return -1;
 	}
 	if (key2 && !enable_double_rr) {
@@ -312,7 +326,7 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 		return -1;
 
 done:
-	last_rr_msg = msg->id;
+	ctx_rrdone_set(1);
 	return 1;
 }
 

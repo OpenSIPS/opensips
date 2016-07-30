@@ -1,0 +1,58 @@
+	<!-- Declaration of cc_flows table-->
+	<db_table id="cc_flows">
+		<table_name>cc_flows</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>flowid</field><type>DB_STR</type></column>
+		<column><field>priority</field><type>DB_INT</type></column>
+		<column><field>skill</field><type>DB_STR</type></column>
+		<column><field>prependcid</field><type>DB_STR</type></column>
+		<column><field>message_welcome</field><type>DB_STR</type></column>
+		<column><field>message_queue</field><type>DB_STR</type></column>
+	</db_table>
+	<!-- Declaration of cc_agents table-->
+	<db_table id="cc_agents">
+		<table_name>cc_agents</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>agentid</field><type>DB_STR</type></column>
+		<column><field>location</field><type>DB_STR</type></column>
+		<column><field>logstate</field><type>DB_INT</type></column>
+		<column><field>skills</field><type>DB_STR</type></column>
+		<column><field>last_call_end</field><type>DB_INT</type></column>
+	</db_table>
+	<!-- Declaration of cc_cdrs table-->
+	<db_table id="cc_cdrs">
+		<table_name>cc_cdrs</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>caller</field><type>DB_STR</type></column>
+		<column><field>received_timestamp</field><type>DB_DATETIME</type></column>
+		<column><field>wait_time</field><type>DB_INT</type></column>
+		<column><field>pickup_time</field><type>DB_INT</type></column>
+		<column><field>talk_time</field><type>DB_INT</type></column>
+		<column><field>flow_id</field><type>DB_STR</type></column>
+		<column><field>agent_id</field><type>DB_STR</type></column>
+		<column><field>call_type</field><type>DB_INT</type></column>
+		<column><field>rejected</field><type>DB_INT</type></column>
+		<column><field>fstats</field><type>DB_INT</type></column>
+		<column><field>cid</field><type>DB_INT</type></column>
+	</db_table>
+	<!-- Declaration of cc_calls table-->
+	<db_table id="cc_calls">
+		<table_name>cc_calls</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>state</field><type>DB_INT</type></column>
+		<column><field>ig_cback</field><type>DB_INT</type></column>
+		<column><field>no_rej</field><type>DB_INT</type></column>
+		<column><field>setup_time</field><type>DB_INT</type></column>
+		<column><field>eta</field><type>DB_INT</type></column>
+		<column><field>last_start</field><type>DB_INT</type></column>
+		<column><field>recv_time</field><type>DB_INT</type></column>
+		<column><field>caller_dn</field><type>DB_STR</type></column>
+		<column><field>caller_un</field><type>DB_STR</type></column>
+		<column><field>b2buaid</field><type>DB_STR</type></column>
+		<column><field>flow</field><type>DB_STR</type></column>
+		<column><field>agent</field><type>DB_STR</type></column>
+	</db_table>

@@ -1,0 +1,164 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+	The WebSocket protocol (<ulink url='http://tools.ietf.org/html/rfc6455'>RFC 6455</ulink>)
+	 provides an end-to-end full-duplex communication channel between two web-based applications.
+	This allows WebSocket enabled browsers to connect to a WebSocket server
+	and exchange any type of data.
+	<ulink url='http://tools.ietf.org/html/rfc7118'>RFC 7118</ulink>
+	provides the specifications for transporting SIP messages over the WebSocket protocol.
+	</para>
+	<para>
+	The <emphasis role='bold'>proto_ws</emphasis> module is transport module that provides
+	communication over the WebSocket protocol. This module is fully compliant with the
+	<ulink url='http://tools.ietf.org/html/rfc7118'>RFC 7118</ulink>, thus allowing browsers
+	to act as SIP clients for the &osips; proxy.
+	</para>
+	<para>
+	The current implementation acts both as WebSocket server and client, thus it can 
+	accept connections from WebSocket clients and can also initiate connections to another
+	WebSocket server. After the connection is established, messages can flow  in
+	both directions.
+	</para>
+	<para>&osips; supports the following WebSocket operations:
+	<itemizedlist>
+	<listitem><para>
+	text and binary - can both send and receive WebSocket messages that contain text or binary body
+	</para></listitem>
+	<listitem><para>
+	close - messages used to safely close the WebSocket communication using a 2-messages handshake
+	</para></listitem>
+	<listitem><para>
+	ping - responds with pong messages. There is no mechanism to trigger ping messages.
+	</para></listitem>
+	<listitem><para>
+	pong - sent when a ping message is received. &osips;, absorbes the pong messages received.
+	</para></listitem>
+	</itemizedlist>
+	</para>
+	<para>
+		Once loaded, you will be able to define WebSocket listeners in your script. To
+		add a listener, you have to add its IP, and optionally the listening port,
+		<emphasis>after</emphasis> the <varname>mpath</varname> parameter, similar to this
+		example:
+	<para>
+		<programlisting format="linespecific">
+...
+mpath=/path/to/modules
+...
+listen=ws:127.0.0.1		# change with the listening IP
+listen=ws:127.0.0.1:5060	# change with the listening IP and port
+...
+</programlisting>
+	</para>
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>ws_port</varname> (integer)</title>
+		<para>
+		The default port to be used by all WebSocket listeners.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 80.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ws_port</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_ws", "ws_port", 8080)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>ws_send_timeout</varname> (integer)</title>
+		<para>
+		Time in milliseconds after a WebSocket connection will be closed if it is
+		not available for blocking writing in this interval (and &osips; wants
+		to send something on it).
+		</para>
+		<para>
+		<emphasis>
+			Default value is 100 ms.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ws_send_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_ws", "ws_send_timeout", 200)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>ws_max_msg_chunks</varname> (integer)</title>
+		<para>
+			The maximum number of chunks in which a SIP message is expected to
+			arrive via WebSocket. If a received packet is more fragmented than this,
+			the connection is dropped (either the connection is very
+			overloaded and this leads to high fragmentation - or we are the
+			victim of an ongoing attack where the attacker is sending very
+			fragmented traffic in order to decrease server performance).
+		</para>
+		<para>
+		<emphasis>
+			Default value is 4.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ws_max_msg_chunks</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_ws", "ws_max_msg_chunks", 8)
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+</chapter>

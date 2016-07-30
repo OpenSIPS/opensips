@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -31,11 +29,12 @@
 
 
 #include "../str.h"
+#include "../net/trans.h"
 #include "../parser/msg_parser.h"
 
-/* buf= pointer to begining of uri (sip:x@foo.bar:5060;a=b?h=i)
+/* buf= pointer to beginning of uri (sip:x@foo.bar:5060;a=b?h=i)
  * len= len of uri
- * returns: fills uri & returns <0 on error or 0 if ok 
+ * returns: fills uri & returns <0 on error or 0 if ok
  */
 int parse_uri(char *buf, int len, struct sip_uri* uri);
 /* headers  : the list of headers to parse (taken from uri structure)
@@ -47,5 +46,34 @@ int parse_sip_msg_uri(struct sip_msg* msg);
 int parse_orig_ruri(struct sip_msg* msg);
 int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 					str *raw_uri_b,struct sip_uri *parsed_uri_b);
+char * uri_type2str(const uri_type type, char *result);
+int uri_typestrlen(const uri_type type);
+uri_type str2uri_type(char * buf);
+
+/* Gets (in a SIP wise manner) the SIP port from a SIP URI ; if the port
+   is not explicitly set in the URI, it returns the default port corresponding
+   to the used transport protocol (if protocol misses, we assume the default
+   protos according to the URI schema) */
+static inline unsigned short get_uri_port(struct sip_uri* _uri,
+													unsigned short *_proto)
+{
+	unsigned short port;
+	unsigned short proto;
+
+	/* known protocol? */
+	if ((proto=_uri->proto)==PROTO_NONE) {
+		/* use UDP as default proto, but TLS for secure schemas */
+		proto = (_uri->type==SIPS_URI_T || _uri->type==TELS_URI_T)?
+			PROTO_TLS : PROTO_UDP ;
+	}
+
+	/* known port? */
+	if ((port=_uri->port_no)==0)
+		port = protos[proto].default_rfc_port;
+
+	if (_proto) *_proto = proto;
+
+	return port;
+}
 
 #endif /* PARSE_URI_H */

@@ -10,6 +10,8 @@
 		<column><field>pri_prefix</field><type>DB_STR</type></column>
 		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>probe_mode</field><type>DB_INT</type></column>
+		<column><field>state</field><type>DB_INT</type></column>
+		<column><field>socket</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of dr_rules table-->
@@ -34,6 +36,7 @@
 		<column><field>carrierid</field><type>DB_STR</type></column>
 		<column><field>gwlist</field><type>DB_STR</type></column>
 		<column><field>flags</field><type>DB_INT</type></column>
+		<column><field>state</field><type>DB_INT</type></column>
 		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
@@ -46,4 +49,23 @@
 		<column><field>domain</field><type>DB_STR</type></column>
 		<column><field>groupid</field><type>DB_INT</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
+	</db_table>
+	<!-- Declaration of dr_partitions table-->
+	<db_table id="dr_partitions">
+		<table_name>dr_partitions</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>partition_name</field><type>DB_STR</type></column>
+		<column><field>db_url</field><type>DB_STR</type></column>
+		<column><field>drd_table</field><type>DB_STR</type></column>
+		<column><field>drr_table</field><type>DB_STR</type></column>
+		<column><field>drg_table</field><type>DB_STR</type></column>
+		<column><field>drc_table</field><type>DB_STR</type></column>
+		<column><field>ruri_avp</field><type>DB_STR</type></column>
+		<column><field>gw_id_avp</field><type>DB_STR</type></column>
+		<column><field>gw_priprefix_avp</field><type>DB_STR</type></column>
+		<column><field>gw_sock_avp</field><type>DB_STR</type></column>
+		<column><field>rule_id_avp</field><type>DB_STR</type></column>
+		<column><field>rule_prefix_avp</field><type>DB_STR</type></column>
+		<column><field>carrier_id_avp</field><type>DB_STR</type></column>
 	</db_table>

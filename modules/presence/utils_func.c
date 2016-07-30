@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence module - presence server implementation
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -41,19 +39,6 @@
 
 static const char base64digits[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-#define BAD     -1
-static const char base64val[] = {
-BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
-BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
-BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD, 62, BAD,BAD,BAD, 63,
-52, 53, 54, 55,  56, 57, 58, 59,  60, 61,BAD,BAD, BAD,BAD,BAD,BAD,
-BAD,  0,  1,  2,   3,  4,  5,  6,   7,  8,  9, 10,  11, 12, 13, 14,
-15, 16, 17, 18,  19, 20, 21, 22,  23, 24, 25,BAD, BAD,BAD,BAD,BAD,
-BAD, 26, 27, 28,  29, 30, 31, 32,  33, 34, 35, 36,  37, 38, 39, 40,
-41, 42, 43, 44,  45, 46, 47, 48,  49, 50, 51,BAD, BAD,BAD,BAD,BAD
-};
-#define DECODE64(c)  (isascii(c) ? base64val[c] : BAD)
 
 void to64frombits(unsigned char *out, const unsigned char *in, int inlen)
 {
@@ -81,16 +66,16 @@ void to64frombits(unsigned char *out, const unsigned char *in, int inlen)
 		*out++ = '=';
 	}
 		*out = '\0';
-		
+
 }
 
 int a_to_i (char *s,int len)
 {
 	int n = 0, i= 0;
-	
-	while( i<len  )		
+
+	while( i<len  )
 		n=n*10+( s[i++] -'0');
-	
+
 	return n;
 }
 
@@ -118,7 +103,7 @@ int send_error_reply(struct sip_msg* msg, int reply_code, str reply_str)
 			{
 				memcpy(hdr_append.s+ hdr_append.len, ", ", 2);
 				hdr_append.len+= 2;
-			}	
+			}
 			memcpy(hdr_append.s+ hdr_append.len, ev->name.s, ev->name.len );
 			hdr_append.len+= ev->name.len ;
 			ev= ev->next;
@@ -126,7 +111,7 @@ int send_error_reply(struct sip_msg* msg, int reply_code, str reply_str)
 		memcpy(hdr_append.s+ hdr_append.len, CRLF, CRLF_LEN);
 		hdr_append.len+=  CRLF_LEN;
 		hdr_append.s[hdr_append.len]= '\0';
-		
+
 		if (add_lump_rpl( msg, hdr_append.s, hdr_append.len, LUMP_RPL_HDR)==0 )
 		{
 			LM_ERR("unable to add lump_rl\n");

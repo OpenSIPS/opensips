@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * reg_db_handler module
  *
  * Copyright (C) 2011 VoIP Embedded, Inc.
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -289,6 +287,13 @@ int load_reg_info_from_db(unsigned int plist)
 
 			/* Get the expiration param */
 			uac_param.expires = values[expiry_col].val.int_val;
+			if (uac_param.expires <= timer_interval) {
+				LM_ERR("Please decrease timer_interval=[%u]"
+					" - requested expires=[%u] to small for AOR=[%.*s]\n",
+					timer_interval, uac_param.expires,
+					uac_param.to_uri.len, uac_param.to_uri.s);
+				continue;
+			}
 
 			/* Get the socket */
 			if (values[forced_socket_col].val.string_val &&

@@ -15,8 +15,7 @@ Vladut-Stefan Paiu
    Copyright © 2009 Anca-Maria
    Vamanu
    Revision History
-   Revision $Revision: 5901 $ $Date: 2013-01-29 14:35:11 +0200
-                              (Tue, 29 Jan 2013) $
+   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -32,15 +31,17 @@ Vladut-Stefan Paiu
         1.3. Exported Parameters
 
               1.3.1. cache_table_size (int)
-              1.3.2. cache_clean_period (int)
-              1.3.3. Exported Functions
-              1.3.4. Exported MI Functions
+              1.3.2. exec_threshold (int)
+              1.3.3. cache_clean_period (int)
+              1.3.4. Exported Functions
+              1.3.5. Exported MI Functions
 
    List of Examples
 
    1.1. Set cache_table_size parameter
-   1.2. Set cache_clean_period parameter
-   1.3. cache_remove_chunk usage
+   1.2. Set exec_threshold parameter
+   1.3. Set cache_clean_period parameter
+   1.4. cache_remove_chunk usage
 
 Chapter 1. Admin Guide
 
@@ -76,34 +77,47 @@ Chapter 1. Admin Guide
 modparam("cachedb_local", "cache_table_size", 10)
 ...
 
-1.3.2. cache_clean_period (int)
+1.3.2. exec_threshold (int)
+
+   The maximum number of microseconds that a local cache query can
+   last. Anything above the threshold will trigger a warning
+   message to the log
+
+   Default value is “0 ( unlimited - no warnings )”.
+
+   Example 1.2. Set exec_threshold parameter
+...
+modparam("cachedb_local", "exec_threshold", 100000)
+...
+
+1.3.3. cache_clean_period (int)
 
    The time interval in seconds at which to go through all the
    records and delete the expired ones.
 
    Default value is “600 (10 minutes)”.
 
-   Example 1.2. Set cache_clean_period parameter
+   Example 1.3. Set cache_clean_period parameter
 ...
 modparam("cachedb_local", "cache_clean_period", 1200)
 ...
 
-1.3.3. Exported Functions
+1.3.4. Exported Functions
 
-1.3.3.1.  cache_remove_chunk(glob)
+1.3.4.1.  cache_remove_chunk(glob)
 
    Remove all keys from local cache that match the glob pattern
 
    This function can be used from all routes
 
-   Example 1.3. cache_remove_chunk usage
+   Example 1.4. cache_remove_chunk usage
         ...
         cache_remove_chunk("myinfo_*");
         ...
 
-1.3.4. Exported MI Functions
+1.3.5. Exported MI Functions
 
-1.3.4.1. cache_remove_chunk
+1.3.5.1. cache_remove_chunk
 
    Removes all local cache entries that match the provided glob
    param.

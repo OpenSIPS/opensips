@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Domain MI functions
  *
  * Copyright (C) 2006 Voice Sistem SRL
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -64,6 +62,7 @@ struct mi_root* mi_domain_dump(struct mi_root *cmd_tree, void *param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL)
 		return 0;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	if(hash_table_mi_print(*hash_table, &rpl_tree->node)< 0)
 	{

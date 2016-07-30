@@ -4,7 +4,7 @@
 			<db_table_id>acc</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>id</field></col>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>method</field></col>
 				<col><field>from_tag</field></col>
 				<col><field>to_tag</field></col>
@@ -13,6 +13,7 @@
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
 				<col><field>duration</field></col>
+				<col><field>ms_duration</field></col>
 				<col><field>setuptime</field></col>
 				<col><field>created</field></col>
 			</query_cols>
@@ -29,6 +30,7 @@
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
 				<col><field>duration</field></col>
+				<col><field>ms_duration</field></col>
 				<col><field>setuptime</field></col>
 				<col><field>created</field></col>
 			</query_cols>
@@ -48,6 +50,7 @@
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
 				<col><field>duration</field></col>
+				<col><field>ms_duration</field></col>
 				<col><field>setuptime</field></col>
 				<col><field>created</field></col>
 			</query_cols>
@@ -66,7 +69,7 @@
 			<db_table_id>missed_calls</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>id</field></col>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>method</field></col>
 				<col><field>from_tag</field></col>
 				<col><field>to_tag</field></col>
@@ -74,6 +77,8 @@
 				<col><field>sip_code</field></col>
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
+				<col><field>setuptime</field></col>
+				<col><field>created</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -87,6 +92,8 @@
 				<col><field>sip_code</field></col>
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
+				<col><field>setuptime</field></col>
+				<col><field>created</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -103,6 +110,8 @@
 				<col><field>sip_code</field></col>
 				<col><field>sip_reason</field></col>
 				<col><field>time</field></col>
+				<col><field>setuptime</field></col>
+				<col><field>created</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

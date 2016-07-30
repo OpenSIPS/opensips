@@ -1,0 +1,87 @@
+<!-- Module Developer's Guide -->
+
+<chapter>
+
+	<title>&develguide;</title>
+	<section>
+	<title>Available Functions</title>
+
+	<section>
+		<title>
+		<function moreinfo="none">pack_hep(from, to, proto, payload, plen, retbuf, retlen)
+			</function>
+		</title>
+		<para>
+			The function packs connection details and sip message into HEP message. It's
+		your job to free both the old and the new buffer.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>sockaddr_union *from</emphasis> - sockaddr_union describing
+			sending socket
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>sockaddr_union *to</emphasis> - sockaddr_union describing
+			receiving socket
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>int proto</emphasis> - protocol used in hep header;
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>char *payload</emphasis> SIP payload buffer
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>int plen</emphasis> SIP payload buffer length
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>char **retbuf</emphasis> HEP message buffer
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>int *retlen</emphasis> HEP message buffer length
+			</para>
+		</listitem>
+		</itemizedlist>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">register_hep_cb(cb)
+			</function>
+		</title>
+		<para>
+			The function register callbacks to be called whenever a HEP message
+		is received. The callbacks parameters are struct hep_desc*(see hep.h for
+		details) a structure that holds all details about the hep header and the
+		receive_info* structure. The callback can return HEP_SCRIPT_SKIP which
+		stops the HEP message from being passed thrrough scripts.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>hep_cb_t cb</emphasis> HEP callback
+			</para>
+		</listitem>
+		</itemizedlist>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">hep_version
+			</function>
+		</title>
+		<para>
+			Current version of hep used.
+		</para>
+	</section>
+
+	</section>
+
+</chapter>
+

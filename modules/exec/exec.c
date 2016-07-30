@@ -1,8 +1,4 @@
 /*
- *
- * $Id$
- *
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -17,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History
  * --------
@@ -35,7 +31,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
-/* 
+#include <fcntl.h>
+/*
 #include <sys/resource.h>
 */
 #include <sys/wait.h>
@@ -48,33 +45,41 @@
 #include "../../action.h"
 #include "../../usr_avp.h"
 #include "../../ut.h"
+#include "../../trim.h"
+#include "../../mod_fix.h"
 
 #include "exec.h"
+#include "kill.h"
 
 #define SLEEP_INTERVAL		300
 
-/* used by async process */
-exec_list_p exec_async_list;
 
 int exec_msg(struct sip_msg *msg, char *cmd )
 {
 	FILE *pipe;
 	int exit_status;
 	int ret;
+	pid_t pid;
 
 	ret=-1; /* pessimist: assume error */
-	pipe=popen( cmd, "w" );
-	if (pipe==NULL) {
+	pid = __popen3(cmd, &pipe, NULL, NULL);
+	if (pid < 0) {
 		LM_ERR("cannot open pipe: %s\n", cmd);
 		ser_error=E_EXEC;
 		return -1;
 	}
+
+	LM_DBG("Forked pid %d\n", pid);
 
 	if (fwrite(msg->buf, 1, msg->len, pipe)!=msg->len) {
 		LM_ERR("failed to write to pipe\n");
 		ser_error=E_EXEC;
 		goto error01;
 	}
+
+	schedule_to_kill(pid);
+	wait(&exit_status);
+
 	/* success */
 	ret=1;
 
@@ -84,7 +89,8 @@ error01:
 		ser_error=E_EXEC;
 		ret=-1;
 	}
-	exit_status=pclose(pipe);
+
+	pclose(pipe);
 	if (WIFEXITED(exit_status)) { /* exited properly .... */
 		/* return false if script exited with non-zero status */
 		if (WEXITSTATUS(exit_status)!=0) ret=-1;
@@ -96,163 +102,30 @@ error01:
 	return ret;
 }
 
-#define MAX_EXEC_PARAMETERS 32
-static const char *exec_argv[MAX_EXEC_PARAMETERS];
-
-/* modifies the string in order to execute the command using exec */
-void exec_build_params(char *cmd)
+int exec_write_input(FILE** stream, str* input)
 {
-	char q, *p = cmd, *end = cmd + strlen(cmd);
-	int i = 1;
+	if (fwrite(input->s, 1, input->len, *stream) != input->len) {
+		LM_ERR("failed to write to pipe\n");
+		ser_error=E_EXEC;
+		return -1;
+	}
 
-	exec_argv[0] = (const char *)cmd;
-	/* extract command */
-	while (p < end && (*p != ' '  || *(p-1) == '\''))
-		p++;
+	if (ferror(*stream)) {
+		LM_ERR("writing pipe: %s\n", strerror(errno));
+		ser_error=E_EXEC;
+		return -1;
+	}
 
-	/* check if no parameters were specified */
-	if (p == end)
-		goto end;
+	pclose(*stream);
 
-	do {
-		/* terminate previous cmd/param */
-		*p++ = '\0';
-		/* skip spaces */
-		while (p < end && *p == ' ')
-			p++;
-		if (p == end)
-			goto end;
-
-		/* quoted? */
-		if (*p == '\'') {
-			p++;
-			q = '\'';
-		} else {
-			q = ' ';
-		}
-
-		exec_argv[i] = (const char *)p;
-		if (i == MAX_EXEC_PARAMETERS) {
-			LM_WARN("Too may parameters: %d - ignoring ...\n", i);
-			goto end;
-		}
-		i++;
-		/* skip parameter */
-		while (p < end && (*p != q || *(p-1) == '\''))
-			p++;
-	} while (p < end);
-
-end:
-	LM_DBG("XXX: reseting parameter %d\n", i);
-	exec_argv[i] = NULL;
+	return 0;
 }
 
-void exec_async_proc(int rank)
-{
-	int pid, status;
-	exec_cmd_t *cmd, *prev;
-
-	LM_DBG("started asyncronous process with rank %d\n", rank);
-
-	/* never stops listening */
-	for (;;) {
-		/* checks to see if there is anything in queue */
-		lock_get(exec_async_list->lock);
-		for (cmd = exec_async_list->first; cmd && cmd->pid; cmd = cmd->next);
-		lock_release(exec_async_list->lock);
-
-		if (cmd) {
-			if ((pid = fork()) < 0) {
-				LM_ERR("failed to fork\n");
-			} else if (pid) {
-				exec_async_list->active_childs++;
-				cmd->pid = pid;
-			} else {
-				LM_DBG("running command %s (%d)\n", cmd->cmd, getpid());
-				/* build the argv vector */
-				exec_build_params(cmd->cmd);
-				/* call command */
-				execv(cmd->cmd, (char * const *)exec_argv);
-				LM_ERR("failed to run command\n");
-				exit(0);
-			}
-		}
-
-		/* wait for child processes if any */
-		if (exec_async_list->active_childs) {
-			pid = waitpid(-1, &status, WNOHANG);
-			if (pid > 0) {
-				/* search for ended child and delete it */
-				lock_get(exec_async_list->lock);
-				for (cmd = exec_async_list->first, prev = NULL;
-						cmd && cmd->pid != pid;
-						prev = cmd, cmd = cmd->next);
-				if (!cmd) {
-					LM_ERR("[BUG] child %d not present anymore\n", pid);
-				} else {
-					/* if not the first element */
-					if (prev) {
-						prev->next = cmd->next;
-						if (!prev->next)
-							exec_async_list->last = prev;
-					} else {
-						exec_async_list->first = cmd->next;
-						if (!cmd->next)
-							exec_async_list->last = NULL;
-					}
-					/* check for status */
-					if (!WIFEXITED(status) || WEXITSTATUS(status)) {
-						LM_ERR("cmd %s failed. exit_status=%d, errno=%d: %s\n",
-									cmd->cmd, status, errno, strerror(errno));
-					} else {
-						LM_DBG("cmd %s successfully ended (%d)\n", cmd->cmd, cmd->pid);
-					}
-					shm_free(cmd);
-					exec_async_list->active_childs--;
-				}
-				lock_release(exec_async_list->lock);
-			}
-		}
-		/* if nothing to do - sleep */
-		if (!exec_async_list->first && !exec_async_list->active_childs)
-			usleep(SLEEP_INTERVAL);
-	}
-}
-
-int exec_async(struct sip_msg *msg, char *cmd )
-{
-	exec_cmd_t *elem;
-
-	/* alloc memory for command */
-	elem = shm_malloc(sizeof(exec_cmd_t) + strlen(cmd) + 1);
-	if (!elem) {
-		LM_ERR("no more shm memory\n");
-		goto error;
-	}
-	memset(elem, 0, sizeof(exec_cmd_t));
-	elem->cmd = (char *)(elem + 1);
-	memcpy(elem->cmd, cmd, strlen(cmd) + 1);
-
-	/* add command in list at the end */
-	lock_get(exec_async_list->lock);
-	if (exec_async_list->last) {
-		exec_async_list->last->next = elem;
-		exec_async_list->last = elem;
-	} else {
-		exec_async_list->first = exec_async_list->last = elem;
-	}
-	lock_release(exec_async_list->lock);
-
-	return 1;
-error:
-	LM_ERR("cmd %s failed to execute, errno=%d: %s\n", cmd, errno, strerror(errno));
-	return -1;
-}
 
 int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
 
 	int cmd_len;
-	FILE *pipe;	
+	FILE *pipe;
 	char *cmd_line;
 	int ret;
 	int l1;
@@ -260,10 +133,11 @@ int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
 	int uri_cnt;
 	str uri;
 	int exit_status;
+	pid_t pid;
 
 	/* pessimist: assume error by default */
 	ret=-1;
-	
+
 	l1=strlen(cmd);
 	if(param_len>0)
 		cmd_len=l1+param_len+4;
@@ -277,7 +151,7 @@ int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
 	}
 
 	/* 'command parameter \0' */
-	memcpy(cmd_line, cmd, l1); 
+	memcpy(cmd_line, cmd, l1);
 	if(param_len>0)
 	{
 		cmd_line[l1]=' ';
@@ -288,27 +162,25 @@ int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
 	} else {
 		cmd_line[l1] = 0;
 	}
-	
-	pipe=popen( cmd_line, "r" );
-	if (pipe==NULL) {
-		LM_ERR("cannot open pipe: %s\n", cmd_line);
+
+	pid = __popen3(cmd_line, NULL, &pipe, NULL);
+	if (pid < 0) {
+		LM_ERR("failed to run command: %s\n", cmd_line);
 		ser_error=E_EXEC;
 		goto error01;
 	}
 
+	LM_DBG("Forked pid %d\n", pid);
+	schedule_to_kill(pid);
+	wait(&exit_status);
+
 	/* read now line by line */
 	uri_cnt=0;
-	while( fgets(uri_line, MAX_URI_SIZE, pipe)!=NULL){
+	while (fgets(uri_line, MAX_URI_SIZE, pipe)) {
 		uri.s = uri_line;
 		uri.len=strlen(uri.s);
-		/* trim from right */
-		while(uri.len && (uri.s[uri.len-1]=='\r' 
-				|| uri.s[uri.len-1]=='\n' 
-				|| uri.s[uri.len-1]=='\t'
-				|| uri.s[uri.len-1]==' ' )) {
-			LM_DBG("rtrim\n");
-			uri.len--;
-		}
+		trim_trailing(&uri);
+
 		/* skip empty line */
 		if (uri.len==0) continue;
 		/* ZT */
@@ -340,7 +212,8 @@ error02:
 		ser_error=E_EXEC;
 		ret=-1;
 	}
-	exit_status=pclose(pipe);
+
+	pclose(pipe);
 	if (WIFEXITED(exit_status)) { /* exited properly .... */
 		/* return false if script exited with non-zero status */
 		if (WEXITSTATUS(exit_status)!=0) ret=-1;
@@ -361,37 +234,37 @@ int exec_avp(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 	int_str avp_val;
 	int_str avp_name;
 	unsigned short avp_type;
-	FILE *pipe;	
+	FILE *pipe;
 	int ret;
 	char res_line[MAX_URI_SIZE+1];
 	str res;
 	int exit_status;
 	int i;
 	pvname_list_t* crt;
+	pid_t pid;
 
 	/* pessimist: assume error by default */
 	ret=-1;
-	
-	pipe=popen( cmd, "r" );
-	if (pipe==NULL) {
-		LM_ERR("cannot open pipe: %s\n", cmd);
+
+	pid = __popen3(cmd, NULL, &pipe, NULL);
+	if (pid < 0) {
+		LM_ERR("failed to run command: %s\n", cmd);
 		ser_error=E_EXEC;
 		return ret;
 	}
 
+	LM_DBG("Forked pid %d\n", pid);
+	schedule_to_kill(pid);
+	wait(&exit_status);
+
 	/* read now line by line */
 	i=0;
 	crt = avpl;
-	while( fgets(res_line, MAX_URI_SIZE, pipe)!=NULL){
+	while (fgets(res_line, MAX_URI_SIZE, pipe)) {
 		res.s = res_line;
 		res.len=strlen(res.s);
-		/* trim from right */
-		while(res.len && (res.s[res.len-1]=='\r' 
-				|| res.s[res.len-1]=='\n' 
-				|| res.s[res.len-1]=='\t'
-				|| res.s[res.len-1]==' ' )) {
-			res.len--;
-		}
+		trim_trailing(&res);
+
 		/* skip empty line */
 		if (res.len==0) continue;
 		/* ZT */
@@ -420,13 +293,13 @@ int exec_avp(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 
 		avp_type |= AVP_VAL_STR;
 		avp_val.s = res;
-	
+
 		if(add_avp(avp_type, avp_name.n, avp_val)!=0)
 		{
 			LM_ERR("unable to add avp\n");
 			goto error;
 		}
-	
+
 		if(crt)
 			crt = crt->next;
 
@@ -443,7 +316,8 @@ error:
 		ser_error=E_EXEC;
 		ret=-1;
 	}
-	exit_status=pclose(pipe);
+
+	pclose(pipe);
 	if (WIFEXITED(exit_status)) { /* exited properly .... */
 		/* return false if script exited with non-zero status */
 		if (WEXITSTATUS(exit_status)!=0) ret=-1;
@@ -500,13 +374,13 @@ int exec_getenv(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 
 	avp_type |= AVP_VAL_STR;
 	avp_val.s = res;
-	
+
 	if(add_avp(avp_type, avp_name.n, avp_val)!=0)
 	{
 		LM_ERR("unable to add avp\n");
 		goto error;
 	}
-	
+
 	/* success */
 	ret=1;
 
@@ -514,4 +388,294 @@ error:
 	return ret;
 }
 
+
+static int read_and_write2var(struct sip_msg* msg, FILE** strm, gparam_p outvar)
+{
+	#define MAX_LINE_SIZE 1024
+	#define MAX_BUF_SIZE 32 * MAX_LINE_SIZE
+
+	int buflen=0, tmplen;
+	pv_value_t outval;
+	char buf[MAX_BUF_SIZE], tmpbuf[MAX_LINE_SIZE];
+
+
+	while((tmplen=fread(tmpbuf, 1, MAX_LINE_SIZE, *strm))) {
+		if ((buflen + tmplen) >= MAX_BUF_SIZE) {
+			LM_WARN("no more space in output buffer\n");
+			break;
+		}
+		memcpy(buf+buflen, tmpbuf, tmplen);
+		buflen += tmplen;
+	}
+
+	outval.flags = PV_VAL_STR;
+	outval.rs.s = buf;
+	outval.rs.len = buflen;
+
+	if (buflen &&
+		pv_set_value(msg, &outvar->v.pve->spec, 0, &outval) < 0) {
+		LM_ERR("cannot set output pv value\n");
+		return -1;
+	}
+
+	return 0;
+
+	#undef MAX_LINE_SIZE
+	#undef MAX_BUF_SIZE
+}
+
+int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gparam_p errvar)
+{
+
+	pid_t pid;
+	int ret = -1;
+	FILE *pin = NULL, *pout, *perr;
+
+	if ((input && input->len && input->s) || outvar || errvar) {
+		pid =  __popen3(command->s, (input&&input->len&&input->s) ? &pin : NULL,
+									outvar ? &pout : NULL,
+									errvar ? &perr : NULL);
+	} else {
+		pid = fork();
+		if (pid == 0) {
+			execl("/bin/sh", "/bin/sh", "-c", command->s, NULL);
+			exit(-1);
+		} else if (pid < 0) {
+			LM_ERR("fork failed\n");
+			return -1;
+		}
+	}
+
+	if (input && input->len && pin) {
+		if (fwrite(input->s, 1, input->len, pin) != input->len) {
+			LM_ERR("failed to write to pipe\n");
+			ser_error=E_EXEC;
+			goto error;
+		}
+
+		if (ferror(pin)) {
+			ser_error=E_EXEC;
+			goto error;
+		}
+
+		pclose(pin);
+	}
+
+	schedule_to_kill(pid);
+
+	if (outvar) {
+		if (read_and_write2var(msg, &pout, outvar) < 0) {
+			LM_ERR("failed reading stdout from pipe\n");
+			goto error;
+		}
+	}
+
+	if (errvar) {
+		if (read_and_write2var(msg, &perr, errvar) < 0) {
+			LM_ERR("failed reading stderr from pipe\n");
+			goto error;
+		}
+	}
+
+	ret=1;
+
+error:
+	if (outvar && ferror(pout)) {
+		LM_ERR("stdout reading pipe: %s\n", strerror(errno));
+		ser_error=E_EXEC;
+		ret=-1;
+	}
+
+	if (errvar && ferror(perr)) {
+		LM_ERR("stderr reading pipe: %s\n", strerror(errno));
+		ser_error=E_EXEC;
+		ret=-1;
+	}
+
+	if (outvar)
+		pclose(pout);
+	if (errvar)
+		pclose(perr);
+
+	return ret;
+}
+
+
+int start_async_exec(struct sip_msg* msg, str* command, str* input,
+													gparam_p outvar, int *fd)
+{
+	pid_t pid;
+	FILE *pin = NULL, *pout;
+	int val;
+
+	if ((input&&input->s&&input->len) || outvar) {
+		pid =  __popen3(command->s, (input&&input->s&&input->len) ? &pin : NULL,
+									outvar ? &pout : NULL,
+									NULL);
+	} else {
+		pid = fork();
+		if (pid == 0) {
+			/* child process*/
+			execl("/bin/sh", "/bin/sh", "-c", command->s, NULL);
+			exit(-1);
+		}
+		if (pid<0) {
+			/*error of fork*/
+			LM_ERR("failed to fork (%s)\n",strerror(errno));
+			goto error;
+		}
+	}
+
+	if (input && input->len && pin) {
+		if ( (val=fwrite(input->s, 1, input->len, pin)) != input->len) {
+			LM_ERR("failed to write all (%d needed, %d written) to input pipe,"
+				" but continuing\n",input->len,val);
+		}
+
+		if (ferror(pin)) {
+			LM_ERR("failure detected (%s), continuing..\n",strerror(errno));
+		}
+		pclose(pin);
+	}
+
+	/* set time to kill on the new process */
+	schedule_to_kill(pid);
+
+	if (outvar==NULL) {
+		/* nothing to wait for, no I/O */
+		return 2;
+	}
+
+	/* prepare the read FD and make it non-blocking */
+	if ( (*fd=dup( fileno( pout ) ))<0 ) {
+		LM_ERR("dup failed: (%d) %s\n", errno, strerror(errno));
+		goto error;
+	}
+	val = fcntl( *fd, F_GETFL);
+	if (val==-1){
+		LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
+		goto error2;
+	}
+	if (fcntl( *fd , F_SETFL, val|O_NONBLOCK)==-1){
+		LM_ERR("set non-blocking failed: (%d) %s\n",
+			errno, strerror(errno));
+		goto error2;
+	}
+
+	pclose(pout);
+
+	/* async started with success */
+	return 1;
+
+error2:
+	close(*fd);
+error:
+	/* async failed */
+	if (outvar)
+		pclose(pout);
+	return -1;
+}
+
+
+int resume_async_exec(int fd, struct sip_msg *msg, void *param)
+{
+	#define MAX_LINE_SIZE 1024
+	char buf[MAX_LINE_SIZE+1];
+	exec_async_param *p = (exec_async_param*)param;
+	pv_value_t outval;
+	char *s1, *s2;
+	int n, len;
+
+	if (p->buf) {
+		memcpy( buf, p->buf, p->buf_len);
+		len = p->buf_len;
+		shm_free(p->buf);
+		p->buf = NULL;
+	} else {
+		len = 0;
+	}
+
+	do {
+		n=read( fd, buf+len, MAX_LINE_SIZE-len);
+		LM_DBG(" read %d [%.*s] \n",n, n<0?0:n,buf+len);
+		if (n<0) {
+			if (errno==EINTR) continue;
+			if (errno==EAGAIN || errno==EWOULDBLOCK) {
+				/* nothing more to read */
+				if (len) {
+					/* store what is left */
+					if ((p->buf=(char*)shm_malloc(len))==NULL) {
+						LM_ERR("failed to allocate buffer\n");
+						goto error;
+					}
+					memcpy( p->buf, buf, len);
+					p->buf_len = len;
+					LM_DBG(" storing %d [%.*s] \n", p->buf_len, p->buf_len, p->buf);
+				}
+				/* async should continue */
+				async_status = ASYNC_CONTINUE;
+				return 1;
+			}
+			LM_ERR("read failed with %d (%s)\n",errno, strerror(errno));
+			/* terminate everything */
+			goto error;
+		}
+		/* EOF ? */
+		if (n==0) {
+			if (len) {
+				/* take whatever is left in buffer and push it as var */
+				outval.flags = PV_VAL_STR;
+				outval.rs.s = buf;
+				outval.rs.len = len;
+				LM_DBG("setting var [%.*s]\n",outval.rs.len,outval.rs.s);
+				if (pv_set_value(msg, &p->outvar->v.pve->spec, 0, &outval) < 0) {
+					LM_ERR("failed to set variable :(, continuing \n");
+				}
+			}
+			break;
+		}
+		/* successful reading  ( n>0 ) */
+		LM_DBG(" having %d [%.*s] \n", len+n, len+n, buf);
+		if (n+len==MAX_LINE_SIZE) {
+			/* we have full buffer, pack it as a line */
+			buf[n+len] = '\n';
+			n++;
+		}
+		/* search for '\n' in the newly read data */
+		s1 = buf;
+		while ( (buf+len+n-s1>0) && ((s2=q_memchr(s1, '\n', buf+len+n-s1))!=NULL) ) {
+			/* push it as var */
+			outval.flags = PV_VAL_STR;
+			outval.rs.s = s1;
+			outval.rs.len = s2-s1;
+			LM_DBG("setting var [%.*s]\n",outval.rs.len,outval.rs.s);
+			if (pv_set_value(msg, &p->outvar->v.pve->spec, 0, &outval) < 0) {
+				LM_ERR("failed to set variable :(, continuing \n");
+			}
+			s1 = s2+1;
+		}
+		/* any data consumed ? */
+		if ( s1!=buf+len ) {
+			/* yes -> shift the whole buffer to left */
+			len = buf+len+n-s1;
+			if (len) memmove( buf, s1, len);
+		} else {
+			/* no -> increase the len of the buffer */
+			len += n;
+		}
+	}while(1);
+
+	/* done with the async */
+	shm_free(param);
+
+	/* make sure our fd is closed by the async engine */
+	async_status = ASYNC_DONE_CLOSE_FD;
+	return 1;
+
+error:
+	shm_free(param);
+	/* stay with default async status ASYNC_DONE */
+	return -1;
+	#undef MAX_LINE_SIZE
+}
 

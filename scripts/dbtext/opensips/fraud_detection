@@ -1,0 +1,1 @@
+ruleid(int,auto) profileid(int) prefix(string) start_hour(string) end_hour(string) daysoftheweek(string) cpm_warning(int) cpm_critical(int) call_duration_warning(int) call_duration_critical(int) total_calls_warning(int) total_calls_critical(int) concurrent_calls_warning(int) concurrent_calls_critical(int) sequential_calls_warning(int) sequential_calls_critical(int) 

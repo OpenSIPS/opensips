@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence module - presence server implementation
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -41,7 +39,7 @@
 #include "../alias_db/alias_db.h"
 #include "../../data_lump_rpl.h"
 #include "presentity.h"
-#include "presence.h" 
+#include "presence.h"
 #include "notify.h"
 #include "publish.h"
 #include "hash.h"
@@ -53,8 +51,8 @@ char* dialog_states[]= {  "trying",
                            "early",
                        "confirmed",
                      "terminated"};
-char* presence_notes[]={ "Calling",
-                         "Calling",
+char* presence_notes[]={ "Proceeding",
+                         "Proceeding",
                     "On the phone",
                                ""};
 
@@ -98,7 +96,7 @@ int publ_send200ok(struct sip_msg *msg, int lexpire, str etag)
 
 	hdr_append.s = buf;
 	hdr_append.s[0]='\0';
-	
+
 	hdr_append.len = sprintf(hdr_append.s, "Expires: %d\r\n",((lexpire< expires_offset)?0:
 			(lexpire - expires_offset)));
 	if(hdr_append.len < 0)
@@ -106,13 +104,13 @@ int publ_send200ok(struct sip_msg *msg, int lexpire, str etag)
 		LM_ERR("unsuccessful sprintf\n");
 		goto error;
 	}
-	if(hdr_append.len > buf_len)
+	if(hdr_append.len >= buf_len)
 	{
 		LM_ERR("buffer size overflown\n");
 		goto error;
 	}
 	hdr_append.s[hdr_append.len]= '\0';
-		
+
 	if (add_lump_rpl( msg, hdr_append.s, hdr_append.len, LUMP_RPL_HDR)==0 )
 	{
 		LM_ERR("unable to add lump_rl\n");
@@ -296,7 +294,7 @@ int dialog_fix_remote_target(str *body, str *fixed_body)
 		&fixed_body->len);
 
 	xmlFreeDoc(doc);
-	
+
 	return 0;
 
 error:
@@ -411,6 +409,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	str pres_uri= {NULL, 0};
 	pres_entry_t* p= NULL;
 	unsigned int hash_code;
+	unsigned int turn;
 	str body = presentity->body;
 	str *extra_hdrs = presentity->extra_hdrs;
 	db_res_t *result= NULL;
@@ -426,7 +425,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			goto error;
 		}
 	}
-	
+
 	if(uandd_to_uri(presentity->user, presentity->domain, &pres_uri)< 0)
 	{
 		LM_ERR("constructing uri from user and domain\n");
@@ -462,10 +461,11 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	n_query_cols++;
 
 	result_cols[0] = &str_etag_col;
+	hash_code= core_hash(&pres_uri, NULL, phtable_size);
 
 	if(presentity->etag_new)
 	{
-		if( publ_send200ok(msg, presentity->expires, presentity->etag)< 0)
+		if (msg && publ_send200ok(msg,presentity->expires,presentity->etag)<0)
 		{
 			LM_ERR("sending 200OK\n");
 			goto error;
@@ -473,14 +473,15 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		*sent_reply= 1;
 
 		/* insert new record in hash_table */
-		if(insert_phtable(&pres_uri, presentity->event->evp->parsed,
-					&presentity->etag, presentity->sphere)< 0)
+		p = insert_phtable(&pres_uri, presentity->event->evp->parsed,
+					&presentity->etag, presentity->sphere, 1);
+		if (p==NULL)
 		{
 			LM_ERR("inserting record in hash table\n");
 			goto error;
 		}
 
-		/* insert new record into database */	
+		/* insert new record into database */
 		query_cols[n_query_cols] = &str_expires_col;
 		query_vals[n_query_cols].type = DB_INT;
 		query_vals[n_query_cols].nul = 0;
@@ -524,7 +525,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			n_query_cols++;
 		}
 
-		if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
+		if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 		{
 			LM_ERR("unsuccessful use_table\n");
 			goto error;
@@ -533,7 +534,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		LM_DBG("inserting %d cols into table\n",n_query_cols);
 
 		//CON_PS_REFERENCE(pa_db) = &my_ps_insert;
-		if (pa_dbf.insert(pa_db, query_cols, query_vals, n_query_cols) < 0) 
+		if (pa_dbf.insert(pa_db, query_cols, query_vals, n_query_cols) < 0)
 		{
 			LM_ERR("inserting new record in database\n");
 			goto error;
@@ -542,14 +543,28 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	}
 	else
 	{
-		hash_code= core_hash(&pres_uri, NULL, phtable_size);
 		lock_get(&pres_htable[hash_code].lock);
-
 		p = search_phtable_etag(&pres_uri, presentity->event->evp->parsed,
 				&presentity->etag, hash_code);
+		if (p) {
 
-		if(!p)
-		{
+			turn = p->last_turn++;
+			LM_DBG("pres <%.*s> my turn is %d, current turn is %d\n",pres_uri.len,
+				pres_uri.s, turn, p->current_turn);
+
+			/* wait to get our turn as order of handling pubishs
+			   (need to wait the ongoing published to terminate
+			   before starting */
+			while (p && turn!=p->current_turn) {
+				lock_release(&pres_htable[hash_code].lock);
+				sleep_us(100);
+				lock_get(&pres_htable[hash_code].lock);
+				p = search_phtable_etag(&pres_uri, presentity->event->evp->parsed,
+					&presentity->etag, hash_code);
+			}
+
+		} else {
+
 			lock_release(&pres_htable[hash_code].lock);
 			/* search also in db */
 			if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
@@ -571,15 +586,14 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 					pa_dbf.free_result(pa_db, result);
 					LM_ERR("No E_Tag match [%.*s]\n", presentity->etag.len,
 							presentity->etag.s);
-					if (sigb.reply(msg, 412, &pu_412_rpl, 0) == -1)
+					if (msg && sigb.reply(msg, 412, &pu_412_rpl, 0)==-1 )
 					{
-							LM_ERR("sending '412 Conditional request failed' reply\n");
-							goto error;
+						LM_ERR("sending '412 Conditional request failed' reply\n");
+						goto error;
 					}
 					*sent_reply= 1;
 					goto done;
 			}
-
 
 			pa_dbf.free_result(pa_db, result);
 			LM_INFO("*** found in db but not in htable [%.*s]\n",
@@ -594,39 +608,41 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			{
 					LM_ERR("deleting record from hash table failed\n");
 			}
+			/* presentity removed, pointer no longer valid */
+			p = NULL;
 
 			lock_release(&pres_htable[hash_code].lock);
-			if( publ_send200ok(msg, presentity->expires, presentity->etag)< 0)
+			if(msg && publ_send200ok(msg,presentity->expires,presentity->etag)<0)
 			{
 				LM_ERR("sending 200OK reply\n");
 				goto error;
 			}
 			*sent_reply= 1;
 
-			if(publ_notify(presentity, pres_uri, body.s ? &body : 0, 
-			&presentity->etag, rules_doc, NULL) < 0)
+			if(publ_notify(presentity, pres_uri, body.s ? &body : 0,
+			&presentity->etag, rules_doc, NULL, 1) < 0)
 			{
 				LM_ERR("while sending notify\n");
 				goto error;
 			}
 
-			if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
+			if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 			{
 				LM_ERR("unsuccessful sql use table\n");
 				goto error;
 			}
-		//	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+			//CON_PS_REFERENCE(pa_db) = &my_ps_delete;
 			if(pa_dbf.delete(pa_db,query_cols,0,query_vals,n_query_cols)<0)
 			{
 				LM_ERR("unsuccessful sql delete operation");
 				goto error;
 			}
 			LM_DBG("Expires=0, deleted from db %.*s\n",
-					presentity->user.len,presentity->user.s);
-
-                        /* Send another NOTIFY, this time rely on whatever is on the DB, so in case there are no documents an empty
-                         * NOTIFY will be sent to the watchers */
-			if(publ_notify(presentity, pres_uri, NULL, NULL, rules_doc, NULL) < 0)
+				presentity->user.len,presentity->user.s);
+			/* Send another NOTIFY, this time rely on whatever is on the DB,
+			 *  so in case there are no documents an empty
+			 * NOTIFY will be sent to the watchers */
+			if(publ_notify(presentity, pres_uri, NULL, NULL, rules_doc, NULL, 1) < 0)
 			{
 				LM_ERR("while sending notify\n");
 				goto error;
@@ -652,8 +668,9 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			else
 			{
 				lock_release(&pres_htable[hash_code].lock);
-				if(insert_phtable(&pres_uri, presentity->event->evp->parsed,
-							&presentity->etag, presentity->sphere)< 0)
+				p = insert_phtable(&pres_uri, presentity->event->evp->parsed,
+							&presentity->etag, presentity->sphere, 1);
+				if ( p==NULL )
 				{
 					LM_ERR("inserting record in hash table\n");
 					goto error;
@@ -731,7 +748,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			n_update_cols++;
 
 			/* updated stored sphere */
-			if(sphere_enable && 
+			if(sphere_enable &&
 					presentity->event->evp->parsed== EVENT_PRESENCE)
 			{
 				if(update_phtable(presentity, pres_uri, body)< 0)
@@ -740,28 +757,28 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 					goto error;
 				}
 			}
-		//	CON_PS_REFERENCE(pa_db) = &my_ps_update_body;
+			//CON_PS_REFERENCE(pa_db) = &my_ps_update_body;
 		}
 		else
 		{
-		//	CON_PS_REFERENCE(pa_db) = &my_ps_update_no_body;
+			//CON_PS_REFERENCE(pa_db) = &my_ps_update_no_body;
 		}
 
-		if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
+		if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 		{
 			LM_ERR("unsuccessful sql use table\n");
 			goto error;
 		}
 
 		if( pa_dbf.update( pa_db,query_cols, query_ops, query_vals,
-				update_keys, update_vals, n_query_cols, n_update_cols )<0) 
+				update_keys, update_vals, n_query_cols, n_update_cols )<0)
 		{
 			LM_ERR("updating published info in database\n");
 			goto error;
 		}
-		
+
 		/* send 200OK */
-		if( publ_send200ok(msg, presentity->expires, cur_etag)< 0)
+		if (msg && publ_send200ok(msg, presentity->expires, cur_etag)<0 )
 		{
 			LM_ERR("sending 200OK reply\n");
 			goto error;
@@ -775,7 +792,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 send_notify:
 
 	if (publ_notify(presentity, pres_uri, body.s?&body:0,
-				NULL, rules_doc, NULL)<0)
+				NULL, rules_doc, NULL, 1)<0)
 	{
 		LM_ERR("while sending Notify requests to watchers\n");
 		goto error;
@@ -784,7 +801,7 @@ send_notify:
 send_mxd_notify:
 	/* if event dialog -> send Notify for presence also */
 	if(mix_dialog_presence && *pres_event_p &&
-			presentity->event->evp->parsed == EVENT_DIALOG)
+	presentity->event->evp->parsed == EVENT_DIALOG)
 	{
 		str* dialog_body= NULL;
 
@@ -795,7 +812,7 @@ send_mxd_notify:
 		{
 			/* send Notify for presence */
 			presentity->event = *pres_event_p;
-			if (publ_notify(presentity, pres_uri, 0, NULL, 0, dialog_body)<0)
+			if (publ_notify(presentity, pres_uri, 0, NULL, 0, dialog_body, 1)<0)
 			{
 				LM_ERR("while sending Notify requests to watchers\n");
 				if(dialog_body && dialog_body!=FAKED_BODY)
@@ -814,6 +831,10 @@ send_mxd_notify:
 	}
 
 done:
+	/* allow next publish to be handled */
+	if (p)
+		next_turn_phtable( p, hash_code);
+
 	if (notify_body.s)
 		xmlFree(notify_body.s);
 
@@ -828,10 +849,12 @@ done:
 	return 0;
 
 error:
+	/* allow next publish to be handled */
+	if (p)
+		next_turn_phtable( p, hash_code);
+
 	if(result)
 		pa_dbf.free_result(pa_db, result);
-	if(etag.s)
-		pkg_free(etag.s);
 
 	if (notify_body.s)
 		xmlFree(notify_body.s);
@@ -847,9 +870,21 @@ error:
 	return -1;
 }
 
+
+/*  This is just a wrappter over "update_presentity" to be able to export the
+ *  function via the internal API - basically provides the "publishing" support
+ *  without actually having the PUBLISH SIP request, but directly a presentity
+ */
+int internal_update_presentity(presentity_t* presentity)
+{
+	int dummy;
+	return update_presentity( NULL, presentity, &dummy);
+}
+
+
 int pres_htable_restore(void)
 {
-	/* query all records from presentity table and insert records 
+	/* query all records from presentity table and insert records
 	 * in presentity table */
 	db_key_t result_cols[6];
 	db_res_t *result= NULL;
@@ -881,10 +916,10 @@ int pres_htable_restore(void)
 	}
 
 	/* select the whole tabel and all the columns */
-	if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH)) 
+	if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH))
 	{
 		if(pa_dbf.query(pa_db,0,0,0,result_cols, 0,
-		n_result_cols, result_cols[user_col], 0) < 0) 
+		n_result_cols, result_cols[user_col], 0) < 0)
 		{
 			LM_ERR("Error while querying (fetch) database\n");
 			return -1;
@@ -896,7 +931,7 @@ int pres_htable_restore(void)
 			LM_ERR("fetching rows failed\n");
 			return -1;
 		}
-	} else 
+	} else
 	{
 		if (pa_dbf.query (pa_db, 0, 0, 0,result_cols,0, n_result_cols,
 					result_cols[user_col], &result) < 0)
@@ -926,7 +961,7 @@ int pres_htable_restore(void)
 				continue;
 			}
 
-			if (VAL_NULL(row_vals+2) || VAL_NULL(row_vals+3)) 
+			if (VAL_NULL(row_vals+2) || VAL_NULL(row_vals+3))
 			{
 				LM_ERR("columns %.*s or/and %.*s cannot be null -> skipping\n",
 					str_event_col.len, str_event_col.s,
@@ -936,7 +971,7 @@ int pres_htable_restore(void)
 
 			if(row_vals[expires_col].val.int_val< (int)time(NULL))
 				continue;
-			
+
 			sphere= NULL;
 			user.s= (char*)row_vals[user_col].val.string_val;
 			user.len= strlen(user.s);
@@ -962,7 +997,7 @@ int pres_htable_restore(void)
 				goto error;
 			}
 			/* insert in hash_table*/
-		
+
 			if(sphere_enable && event== EVENT_PRESENCE )
 			{
 				body.s= (char*)row_vals[body_col].val.string_val;
@@ -970,7 +1005,7 @@ int pres_htable_restore(void)
 				sphere= extract_sphere(body);
 			}
 
-			if(insert_phtable(&uri, event, &etag, sphere)< 0)
+			if(insert_phtable(&uri, event, &etag, sphere, 0)== NULL)
 			{
 				LM_ERR("inserting record in presentity hash table");
 				pkg_free(uri.s);
@@ -984,27 +1019,27 @@ int pres_htable_restore(void)
 		}
 
 		/* any more data to be fetched ?*/
-		if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH)) 
+		if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH))
 		{
-			if (pa_dbf.fetch_result( pa_db, &result, no_rows) < 0) 
+			if (pa_dbf.fetch_result( pa_db, &result, no_rows) < 0)
 			{
 				LM_ERR("fetching more rows failed\n");
 				goto error;
 			}
 			nr_rows = RES_ROW_N(result);
-		} else 
+		} else
 			nr_rows = 0;
 
 	}while (nr_rows>0);
 
 	pa_dbf.free_result(pa_db, result);
-		
+
 	return 0;
 
 error:
 	if(result)
 		pa_dbf.free_result(pa_db, result);
-	return -1;	
+	return -1;
 }
 
 char* extract_sphere(str body)
@@ -1014,7 +1049,7 @@ char* extract_sphere(str body)
 	xmlDocPtr doc= NULL;
 	xmlNodePtr node;
 	char* cont, *sphere= NULL;
-	
+
 
 	doc= xmlParseMemory(body.s, body.len);
 	if(doc== NULL)
@@ -1024,7 +1059,7 @@ char* extract_sphere(str body)
 	}
 
 	node= xmlNodeGetNodeByName(doc->children, "sphere", "rpid");
-	
+
 	if(node== NULL)
 		node= xmlNodeGetNodeByName(doc->children, "sphere", "r");
 
@@ -1083,7 +1118,7 @@ char* get_sphere(str* pres_uri)
 	db_val_t query_vals[6];
 	db_key_t result_cols[6];
 	db_res_t *result = NULL;
-	db_row_t *row= NULL ;	
+	db_row_t *row= NULL ;
 	db_val_t *row_vals;
 	int n_result_cols = 0;
 	int n_query_cols = 0;
@@ -1152,23 +1187,23 @@ char* get_sphere(str* pres_uri)
 
 	result_cols[n_result_cols++] = &str_body_col;
 	result_cols[n_result_cols++] = &str_extra_hdrs_col;
-	
-	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
+
+	if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 	{
 		LM_ERR("in use_table\n");
 		return NULL;
 	}
 
-	// CON_PS_REFERENCE(pa_db) = &my_ps; 
+	// CON_PS_REFERENCE(pa_db) = &my_ps;
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
-		 result_cols, n_query_cols, n_result_cols, &query_str ,  &result) < 0) 
+		 result_cols, n_query_cols, n_result_cols, &query_str ,  &result) < 0)
 	{
 		LM_ERR("failed to query %.*s table\n", presentity_table.len, presentity_table.s);
 		if(result)
 			pa_dbf.free_result(pa_db, result);
 		return NULL;
 	}
-	
+
 	if(result== NULL)
 		return NULL;
 
@@ -1194,7 +1229,7 @@ char* get_sphere(str* pres_uri)
 		LM_ERR("Empty notify body record\n");
 		goto error;
 	}
-	
+
 	sphere= extract_sphere(body);
 
 	pa_dbf.free_result(pa_db, result);
@@ -1433,7 +1468,7 @@ str* xml_dialog2presence(str* pres_uri, str* body)
 	dlg_doc = xmlParseMemory(body->s, body->len);
 	if(dlg_doc == NULL)
 	{
-		LM_ERR("Wrong formated xml document\n");
+		LM_ERR("Wrong formatted xml document\n");
 		return NULL;
 	}
 	dialog_node = xmlNodeGetNodeByName(dlg_doc->children, "dialog", 0);

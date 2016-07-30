@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2006-2007 VozTelecom Sistemas S.L
  *
  * This file is part of opensips, a free SIP server.
@@ -14,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include <sys/time.h>
@@ -70,21 +69,36 @@ extern struct statstable *seas_stats_table;
  * Initialize and destroy statistics table
  */
 struct statstable* init_seas_stats_table();
-inline int stop_stats_server();
-inline void destroy_seas_stats_table();
+int stop_stats_server();
+static inline void destroy_seas_stats_table(void)
+{
+   /*deallocs the table*/
+   if(seas_stats_table){
+      lock_destroy(seas_stats_table->mutex);
+      shm_free(seas_stats_table);
+      seas_stats_table=(struct statstable *)0;
+   }
+}
 /** Statistics server process
  * functions
  */
 void serve_stats(int fd);
 int start_stats_server(char *socket);
-inline int print_stats_info(int f,int sock);
+int print_stats_info(int f,int sock);
 /**
  * Statistics functions
  */
-inline void as_relay_stat(struct cell *t);
-inline void event_stat(struct cell *t);
-inline void action_stat(struct cell *t);
-inline void stats_reply();
+void as_relay_stat(struct cell *t);
+void event_stat(struct cell *t);
+void action_stat(struct cell *t);
+
+static inline void stats_reply(void)
+{
+   lock_get(seas_stats_table->mutex);
+   seas_stats_table->received_replies++;
+   lock_release(seas_stats_table->mutex);
+}
+
 #define receivedplus() \
    do{ \
       lock_get(seas_stats_table->mutex); \

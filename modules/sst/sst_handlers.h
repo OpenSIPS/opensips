@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 SOMA Networks, Inc.
  * Written By Ron Winacott (karwin)
  *
@@ -18,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
@@ -60,8 +58,11 @@ typedef struct sst_info_st {
 /**
  * The static (opening) callback function for all dialog creations
  */
-void sst_dialog_created_CB(struct dlg_cell *did, int type, 
+void sst_dialog_created_CB(struct dlg_cell *did, int type,
 		struct dlg_cb_params * params);
+
+void sst_dialog_loaded_CB(struct dlg_cell *did, int type,
+		struct dlg_cb_params *params);
 
 /**
  * The script function
@@ -71,7 +72,7 @@ int sst_check_min(struct sip_msg *msg, char *str1, char *str2);
 /**
  * The handlers initializer function
  */
-void sst_handler_init(pv_spec_t *timeout_avp, unsigned int minSE, 
-		int flag, unsigned int reject, unsigned int interval);
+void sst_handler_init(unsigned int minSE, int flag, unsigned int reject,
+                      unsigned int interval);
 
 #endif /* _SST_HANDLERS_H_ */

@@ -18,7 +18,7 @@ f none /opt/opensips/mysql/auth_db-create.sql 0644 root root
 f none /opt/opensips/mysql/avpops-create.sql 0644 root root
 f none /opt/opensips/mysql/carrierroute-create.sql 0644 root root
 f none /opt/opensips/mysql/closeddial-create.sql 0644 root root
-f none /opt/opensips/mysql/cpl-create.sql 0644 root root
+f none /opt/opensips/mysql/cpl_create.sql 0644 root root
 f none /opt/opensips/mysql/dialog-create.sql 0644 root root
 f none /opt/opensips/mysql/dialplan-create.sql 0644 root root
 f none /opt/opensips/mysql/dispatcher-create.sql 0644 root root
@@ -30,7 +30,6 @@ f none /opt/opensips/mysql/imc-create.sql 0644 root root
 f none /opt/opensips/mysql/load_balancer-create.sql 0644 root root
 f none /opt/opensips/mysql/msilo-create.sql 0644 root root
 f none /opt/opensips/mysql/nathelper-create.sql 0644 root root
-f none /opt/opensips/mysql/pdt-create.sql 0644 root root
 f none /opt/opensips/mysql/permissions-create.sql 0644 root root
 f none /opt/opensips/mysql/presence-create.sql 0644 root root
 f none /opt/opensips/mysql/registrar-create.sql 0644 root root

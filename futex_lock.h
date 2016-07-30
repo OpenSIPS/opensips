@@ -13,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -45,7 +45,16 @@
 #include <linux/futex.h>
 
 /*! The actual lock */
+#ifndef DBG_LOCK
 typedef  volatile int fx_lock_t;
+#else
+typedef struct fx_lock_t_{
+	volatile int lock;
+	char* file;
+	char* func;
+	unsigned long line;
+} fx_lock_t;
+#endif
 
 /*
  * Possible Lock values:
@@ -55,8 +64,11 @@ typedef  volatile int fx_lock_t;
  */
 
 /*! Initialize a lock, zero is unlocked. */
-#define init_lock( l ) (l)=0
-
+#ifndef DBG_LOCK
+	#define init_lock( l ) (l)=0
+#else 
+	#define init_lock( l ) (l).lock = 0
+#endif
 /*
  * Wait on a futex
  * param lock - futex to wait on
@@ -90,7 +102,11 @@ typedef  volatile int fx_lock_t;
  * param val is the value to write to the lock
  * returns previous value of lock
  */
+#ifndef DBG_LOCK
 inline static int _atomic_xchg(fx_lock_t* lock, int val)
+#else
+inline static int _atomic_xchg(volatile int *lock, int val)
+#endif
 {
 #if defined(__CPU_i386) || defined(__CPU_x86_64)
 
@@ -101,7 +117,7 @@ inline static int _atomic_xchg(fx_lock_t* lock, int val)
 		: "=q" (val), "=m" (*lock) : "0"(val) : "memory", "cc" /* "cc" */
 	);
 #else
-	asm volatile( 
+	asm volatile(
 		" xchg %1, %0" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"
 	);
 #endif /*NOSMP*/
@@ -150,8 +166,8 @@ inline static int _atomic_xchg(fx_lock_t* lock, int val)
 		"    beqz %0, 1b \n\t"
 		"    nop \n\t"
 		".set reorder\n\t"
-		: "=&r" (tmp), "=&r" (val), "=m" (*lock) 
-		: "0" (tmp), "2" (*lock) 
+		: "=&r" (tmp), "=&r" (val), "=m" (*lock)
+		: "0" (tmp), "2" (*lock)
 		: "cc"
 	);
 #elif defined __CPU_alpha
@@ -162,7 +178,7 @@ inline static int _atomic_xchg(fx_lock_t* lock, int val)
 		"1:  ldl %0, %1   \n\t"
 		"    blbs %0, 2f  \n\t"  /* optimization if locked */
 		"    ldl_l %0, %1 \n\t"
-		"    blbs %0, 2f  \n\t" 
+		"    blbs %0, 2f  \n\t"
 		"    lda %2, 1    \n\t"  /* or: or $31, 1, %2 ??? */
 		"    stl_c %2, %1 \n\t"
 		"    beq %2, 1b   \n\t"
@@ -195,8 +211,15 @@ inline static int _atomic_xchg(fx_lock_t* lock, int val)
  * Get a lock.
  * \param lock the lock that should be gotten
  */
+#ifndef DBG_LOCK
 inline static void get_lock(fx_lock_t* lock)
 {
+#else
+inline static void get_lock(fx_lock_t* lock_struct, const char* file, const char* func, unsigned int line)
+{
+	volatile int *lock = &lock_struct->lock;
+#endif
+
 	int c;
 #ifdef ADAPTIVE_WAIT
 	register int i = ADAPTIVE_WAIT_LOOPS;
@@ -225,16 +248,34 @@ inline static void get_lock(fx_lock_t* lock)
 			c = atomic_xchg(lock, 2);
 		}
 	}
+
+#ifdef DBG_LOCK
+	lock_struct->file = (char*)file;
+	lock_struct->func = (char*)func;
+	lock_struct->line = line;
+#endif
+
 }
 
 /*! \brief
  * Release a lock
  * \param lock the lock that should be released
  */
+#ifndef DBG_LOCK
 inline static void release_lock(fx_lock_t* lock)
 {
-	int c;
+#else
+inline static void release_lock(fx_lock_t* lock_struct)
+{
+	volatile int *lock = &lock_struct->lock;
+#endif
 
+	int c;
+#ifdef DBG_LOCK
+	lock_struct->file = NULL;
+	lock_struct->func = NULL;
+	lock_struct->line = 0;
+#endif
 	c = atomic_xchg(lock, 0);
 
 	//Only do wakekup if others are waiting on the lock (value of 2)

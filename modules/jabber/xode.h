@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -13,7 +11,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *  Jabber
  *  Copyright (C) 1998-1999 The Jabber Team http://jabber.org/
@@ -85,7 +83,7 @@ extern int ap_vsnprintf(char *, size_t, const char *, va_list ap);
 
 
 /* xode_pool_cleaner - callback type which is associated
-   with a pool entry; invoked when the pool entry is 
+   with a pool entry; invoked when the pool entry is
    free'd */
 typedef void (*xode_pool_cleaner)(void *arg);
 
@@ -112,20 +110,20 @@ xode_pool xode_pool_new(void);
 
 /* pool wrappers for malloc */
 void *xode_pool_malloc  (xode_pool p, int size);
-void *xode_pool_mallocx (xode_pool p, int size, char c); 
-void *xode_pool_malloco (xode_pool p, int size); 
+void *xode_pool_mallocx (xode_pool p, int size, char c);
+void *xode_pool_malloco (xode_pool p, int size);
 
 /* wrapper around strdup, gains mem from pool */
-char *xode_pool_strdup  (xode_pool p, const char *src); 
+char *xode_pool_strdup  (xode_pool p, const char *src);
 
 /* calls f(arg) before the pool is freed during cleanup */
-void xode_pool_cleanup  (xode_pool p, xode_pool_cleaner f, void *arg); 
+void xode_pool_cleanup  (xode_pool p, xode_pool_cleaner f, void *arg);
 
 /* pool wrapper for free, called on a pool */
-void xode_pool_free     (xode_pool p); 
+void xode_pool_free     (xode_pool p);
 
 /* returns total bytes allocated in this pool */
-int  xode_pool_size     (xode_pool p); 
+int  xode_pool_size     (xode_pool p);
 
 /* --------------------------------------------------------- */
 /*                                                           */
@@ -178,8 +176,8 @@ void       xode_spool_free        ( xode_spool       s            ); /* Free's t
 #define XODE_TYPE_LAST   2
 #define XODE_TYPE_UNDEF  -1
 
-/* -------------------------------------------------------------------------- 
-   Node structure. Do not use directly! Always use accessors macros 
+/* --------------------------------------------------------------------------
+   Node structure. Do not use directly! Always use accessors macros
    and methods!
    -------------------------------------------------------------------------- */
 typedef struct xode_struct
@@ -191,9 +189,9 @@ typedef struct xode_struct
      int                  complete;
      xode_pool            p;
      struct xode_struct*  parent;
-     struct xode_struct*  firstchild; 
+     struct xode_struct*  firstchild;
      struct xode_struct*  lastchild;
-     struct xode_struct*  prev; 
+     struct xode_struct*  prev;
      struct xode_struct*  next;
      struct xode_struct*  firstattrib;
      struct xode_struct*  lastattrib;
@@ -204,7 +202,7 @@ xode  xode_wrap(xode x,const char* wrapper);
 xode  xode_new(const char* name);
 xode  xode_new_tag(const char* name);
 xode  xode_new_frompool(xode_pool p, const char* name);
-xode  xode_insert_tag(xode parent, const char* name); 
+xode  xode_insert_tag(xode parent, const char* name);
 xode  xode_insert_cdata(xode parent, const char* CDATA, unsigned int size);
 xode  xode_insert_tagnode(xode parent, xode node);
 void  xode_insert_node(xode parent, xode node);

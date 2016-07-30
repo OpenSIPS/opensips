@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -26,11 +24,27 @@
 
 #include "str.h"
 
+/* whitespace */
+#define is_ws(c) ((c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\t')
+
+/*
+ * trim leading ws
+ *
+ * Input: (char *)
+ */
+#define trim_ws(p) while (*(p) && is_ws(*(p))) p++
+
+/*
+ * trim trailing ws
+ *
+ * Input: (char *)
+ */
+#define trim_trail_ws(p) while (*(p) && is_ws(*(p))) p--
 
 /*
  * This switch-case statement is used in
  * trim_leading and trim_trailing. You can
- * define characters that should be skipped 
+ * define characters that should be skipped
  * here.
  */
 #define TRIM_SWITCH(c) switch(c) {     \

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,15 +13,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
  *  2003-11-06  body len is computed using the message len (it's
  *               not taken any more from the msg. content-length) (andrei)
- *  2008-08-30  body len is taken from Conent-length header as it is more 
+ *  2008-08-30  body len is taken from Conent-length header as it is more
  *               reliable (UDP packages may contain garbage at the end)(bogdan)
  */
 
@@ -38,7 +36,6 @@
 #include "../../forward.h"
 #include "../../resolve.h"
 #include "../../globals.h"
-#include "../../udp_server.h"
 #include "../../pt.h"
 #include "../../parser/msg_parser.h"
 #include "../../trim.h"
@@ -157,13 +154,13 @@ int extract_body(struct sip_msg *msg, str *body )
 {
 	char c;
 	int skip;
-	
+
 	if ( get_body(msg,body)!=0 || body->len==0) {
 		LM_ERR("failed to get the message body\n");
 		goto error;
 	}
-	
-	/* no need for parse_headers(msg, EOH), get_body will 
+
+	/* no need for parse_headers(msg, EOH), get_body will
 	 * parse everything */
 	/*is the content type correct?*/
 	if (check_content_type(msg)==-1)
@@ -217,8 +214,7 @@ ser_memmem(const void *b1, const void *b2, size_t len1, size_t len2)
                 if (*sp == *pp)
                         if (memcmp(sp, pp, len2) == 0)
                                 return sp;
-
-                        sp++;
+                sp++;
         }
 
         return NULL;

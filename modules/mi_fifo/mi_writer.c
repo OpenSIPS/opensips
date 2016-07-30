@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -141,7 +139,7 @@ static inline int mi_write_node(str *buf, struct mi_node *node, int level)
 static int recur_write_tree(FILE *stream, struct mi_node *tree, str *buf,
 																	int level)
 {
-	for( ; tree ; tree=tree->next ) {	
+	for( ; tree ; tree=tree->next ) {
 		if (!(tree->flags & MI_WRITTEN)) {
 			if (mi_write_node( buf, tree, level)!=0) {
 				/* buffer is full -> write it and reset buffer */
@@ -213,7 +211,7 @@ int mi_write_tree(FILE *stream, struct mi_root *tree)
 static int recur_flush_tree(FILE *stream, struct mi_node *tree, str *buf,
 																	int level)
 {
-	struct mi_node *kid, *tmp;	
+	struct mi_node *kid, *tmp;
 	int ret;
 
 	for(kid = tree->kids ; kid ; ){
@@ -232,7 +230,7 @@ static int recur_flush_tree(FILE *stream, struct mi_node *tree, str *buf,
 				}
 			}
 
-			/* we are sure that this node has been written 
+			/* we are sure that this node has been written
 			* => avoid writing it again */
 			kid->flags |= MI_WRITTEN;
 		}
@@ -250,7 +248,7 @@ static int recur_flush_tree(FILE *stream, struct mi_node *tree, str *buf,
 
 			if(!tmp->kids){
 				/* this node does not have any kids */
-				free_mi_node(tmp); 
+				free_mi_node(tmp);
 			}
 		}
 		else{
@@ -289,8 +287,8 @@ int mi_flush_tree(FILE *stream, struct mi_root *tree)
 		}
 		*(buf.s++) = '\n';
 		buf.len -= code.len + 1 + tree->reason.len+1;
-		
-		/* we are sure that this node has been written 
+
+		/* we are sure that this node has been written
 		 * => avoid writing it again */
 		tree->node.flags |= MI_WRITTEN;
 	}

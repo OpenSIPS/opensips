@@ -1,5 +1,4 @@
-/*$Id$
- *
+/*
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -14,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
@@ -97,7 +96,7 @@ static cmd_export_t cmds[]={
 		fixup_regexp_none,fixup_free_regexp_none,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"search_append_body", (cmd_function)search_append_body_f,   2,
-		fixup_regexp_none, fixup_free_regexp_none, 
+		fixup_regexp_none, fixup_free_regexp_none,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"replace",          (cmd_function)replace_f,         2,
 		fixup_regexp_none, fixup_free_regexp_none,
@@ -132,9 +131,12 @@ static cmd_export_t cmds[]={
 
 struct module_exports exports= {
 	"textops",  /* module name*/
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,       /* exported functions */
+	NULL,       /* exported async functions */
 	0,          /* module parameters */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
@@ -200,7 +202,7 @@ static int search_append_f(struct sip_msg* msg, char* key, char* str2)
 
 	if (regexec((regex_t*) key, begin, 1, &pmatch, 0)!=0) return -1;
 	if (pmatch.rm_so!=-1){
-		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0, 0))==0)
+		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0))==0)
 			return -1;
 		len=strlen(str2);
 		s=pkg_malloc(len);
@@ -208,7 +210,7 @@ static int search_append_f(struct sip_msg* msg, char* key, char* str2)
 			LM_ERR("memory allocation failure\n");
 			return -1;
 		}
-		memcpy(s, str2, len); 
+		memcpy(s, str2, len);
 		if (insert_new_lump_after(l, s, len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
@@ -237,7 +239,7 @@ static int search_append_body_f(struct sip_msg* msg, char* key, char* str2)
 
 	if (regexec((regex_t*) key, body.s, 1, &pmatch, 0)!=0) return -1;
 	if (pmatch.rm_so!=-1){
-		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0, 0))==0)
+		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0))==0)
 			return -1;
 		len=strlen(str2);
 		s=pkg_malloc(len);
@@ -245,7 +247,7 @@ static int search_append_body_f(struct sip_msg* msg, char* key, char* str2)
 			LM_ERR("memory allocation failure\n");
 			return -1;
 		}
-		memcpy(s, str2, len); 
+		memcpy(s, str2, len);
 		if (insert_new_lump_after(l, s, len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
@@ -273,7 +275,7 @@ static int replace_all_f(struct sip_msg* msg, char* key, char* str2)
 	len=strlen(str2);
 	eflags=0; /* match ^ at the beginning of the string*/
 
-	while (begin<msg->buf+msg->len 
+	while (begin<msg->buf+msg->len
 				&& regexec((regex_t*) key, begin, 1, &pmatch, eflags)==0) {
 		off=begin-msg->buf;
 		if (pmatch.rm_so==-1){
@@ -294,7 +296,7 @@ static int replace_all_f(struct sip_msg* msg, char* key, char* str2)
 			LM_ERR("memory allocation failure\n");
 			return -1;
 		}
-		memcpy(s, str2, len); 
+		memcpy(s, str2, len);
 		if (insert_new_lump_after(l, s, len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
@@ -334,7 +336,7 @@ static int do_replace_body_f(struct sip_msg* msg, char* key, char* str2, int nob
 	len=strlen(str2);
 	eflags=0; /* match ^ at the beginning of the string*/
 
-	while (begin<msg->buf+msg->len 
+	while (begin<msg->buf+msg->len
 				&& regexec((regex_t*) key, begin, 1, &pmatch, eflags)==0) {
 		off=begin-msg->buf;
 		if (pmatch.rm_so==-1){
@@ -355,7 +357,7 @@ static int do_replace_body_f(struct sip_msg* msg, char* key, char* str2, int nob
 			LM_ERR("memory allocation failure\n");
 			return -1;
 		}
-		memcpy(s, str2, len); 
+		memcpy(s, str2, len);
 		if (insert_new_lump_after(l, s, len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
@@ -407,13 +409,13 @@ static int replace_f(struct sip_msg* msg, char* key, char* str2)
 			LM_ERR("memory allocation failure\n");
 			return -1;
 		}
-		memcpy(s, str2, len); 
+		memcpy(s, str2, len);
 		if (insert_new_lump_after(l, s, len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
 			return -1;
 		}
-		
+
 		return 1;
 	}
 	return -1;
@@ -449,13 +451,13 @@ static int replace_body_f(struct sip_msg* msg, char* key, char* str2)
 			LM_ERR("memory allocation failure\n");
 			return -1;
 		}
-		memcpy(s, str2, len); 
+		memcpy(s, str2, len);
 		if (insert_new_lump_after(l, s, len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
 			return -1;
 		}
-		
+
 		return 1;
 	}
 	return -1;
@@ -473,7 +475,7 @@ static int subst_f(struct sip_msg* msg, char*  subst, char* ignored)
 	int off;
 	int ret;
 	int nmatches;
-	
+
 	se=(struct subst_expr*)subst;
 	begin=get_header(msg);  /* start after first line to avoid replacing
 							   the uri */
@@ -488,7 +490,7 @@ static int subst_f(struct sip_msg* msg, char*  subst, char* ignored)
 				rpl->rpl.len, rpl->rpl.s);
 		if ((l=del_lump(msg, rpl->offset+off, rpl->size, 0))==0)
 			goto error;
-		/* hack to avoid re-copying rpl, possible because both 
+		/* hack to avoid re-copying rpl, possible because both
 		 * replace_lst & lumps use pkg_malloc */
 		if (insert_new_lump_after(l, rpl->rpl.s, rpl->rpl.len, 0)==0){
 			LM_ERR("ERROR: %s: subst_f: could not insert new lump\n",
@@ -519,7 +521,7 @@ static int subst_uri_f(struct sip_msg* msg, char*  subst, char* ignored)
 	char c;
 	struct subst_expr* se;
 	str* result;
-	
+
 	se=(struct subst_expr*)subst;
 	if (msg->new_uri.s){
 		len=msg->new_uri.len;
@@ -548,7 +550,7 @@ static int subst_uri_f(struct sip_msg* msg, char*  subst, char* ignored)
 	}
 	return -1; /* false, no subst. made */
 }
-	
+
 
 
 /* sed-perl style re: s/regular expression/replacement/flags, like
@@ -613,10 +615,10 @@ static int subst_body_f(struct sip_msg* msg, char*  subst, char* ignored)
 		LM_DBG("message body has zero length\n");
 		return -1;
 	}
-	
+
 	se=(struct subst_expr*)subst;
 	begin=body.s;
-	
+
 	off=begin-msg->buf;
 	ret=-1;
 	if ((lst=subst_run(se, begin, msg, &nmatches))==0)
@@ -628,7 +630,7 @@ static int subst_body_f(struct sip_msg* msg, char*  subst, char* ignored)
 				rpl->rpl.len, rpl->rpl.s);
 		if ((l=del_lump(msg, rpl->offset+off, rpl->size, 0))==0)
 			goto error;
-		/* hack to avoid re-copying rpl, possible because both 
+		/* hack to avoid re-copying rpl, possible because both
 		 * replace_lst & lumps use pkg_malloc */
 		if (insert_new_lump_after(l, rpl->rpl.s, rpl->rpl.len, 0)==0){
 			LM_ERR("%s could not insert new lump\n",
@@ -660,7 +662,7 @@ static int fixup_substre(void** param, int param_no)
 	subst.len=strlen(*param);
 	se=subst_parser(&subst);
 	if (se==0){
-		LM_ERR("%s: bad subst. re %s\n", exports.name, 
+		LM_ERR("%s: bad subst. re %s\n", exports.name,
 				(char*)*param);
 		return E_BAD_RE;
 	}

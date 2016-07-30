@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="cc_agents" xmlns:db="http://docbook.org/ns/docbook">
+	<name>cc_agents</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Call Center module to store
+		the definition of the agents serving the flows/queues.
+		More information can be found at: &OPENSIPS_MOD_DOC;call_center.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Agent unique ID in DB
+		</description>
+	</column>
+
+	<column id="agentid">
+		<name>agentid</name>
+		<type>string</type>
+		<size>128</size>
+		<description>The unique ID of the agent in the
+		Call Center module - to be used to identify the
+		agent in the module and from outside the module;
+		It is an alphanumerical string.
+		</description>
+	</column>
+
+	<column id="location">
+		<name>location</name>
+		<type>string</type>
+		<size>128</size>
+		<description>SIP URI point to the agent location;
+		All calls for this agents will be sent to this
+		SIP address.</description>
+	</column>
+
+	<column id="logstate">
+		<name>logstate</name>
+		<type>unsigned int</type>
+		<size>10</size>
+		<default>0</default>
+		<description>The login state of the agent;
+		0 - not logged in; 1 - logged in ; Agent will
+		start receiving calls only if logged in.
+		</description>
+	</column>
+
+	<column id="skills">
+		<name>skills</name>
+		<type>string</type>
+		<size>255</size>
+		<description>Comma separated list of skills offered
+		by the agent; these skills must match the skills used
+		in the queues/flows definition; In order to receive
+		calls from a flow, the agent must have the skill required
+		by that flow.
+		</description>
+	</column>
+
+	<column id="last_call_end">
+		<name>last_call_end</name>
+		<type>int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>The timestamp of the last call of an agent.
+		If different than 0, the agent will only receive calls after
+		wrapup seconds pass after this timestamp.
+		</description>
+	</column>
+
+    <index>
+        <name>unique_agentid</name>
+        <colref linkend="agentid"/>
+        <unique/>
+    </index>
+
+</table>

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * XJAB module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include <string.h>
@@ -121,7 +119,7 @@ int xj_pres_cell_update(xj_pres_cell prc, pa_callback_f f, void *p)
 xj_pres_list xj_pres_list_init(void)
 {
 	xj_pres_list prl = NULL;
-	
+
 	prl = (xj_pres_list)pkg_malloc(sizeof(t_xj_pres_list));
 	if(!prl)
 		return NULL;
@@ -202,7 +200,7 @@ int xj_pres_list_del(xj_pres_list prl, str *uid)
 		return -1;
 	if(prl->nr<=0 || prl->clist==NULL)
 		return 0;
-	
+
 	lkey = xj_get_hash(uid, NULL);
 
 	p = prl->clist;

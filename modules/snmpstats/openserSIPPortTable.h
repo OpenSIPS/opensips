@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -19,15 +17,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
  * --------
  * 2006-11-23 initial version (jmagder)
- * 2007-02-16 Moved all OID registrations from the experimental branch to 
+ * 2007-02-16 Moved all OID registrations from the experimental branch to
  *            OpenSER's IANA assigned enterprise branch. (jmagder)
- * 
+ *
  * Originally Generated with Mib2c using mib2c.array-user.conf.
  *
  * This file defines the openserSIPPortTable prototypes.  For a full description
@@ -50,11 +48,11 @@ extern "C" {
 #define SIP_PORT_TABLE_STR_INDEX_SIZE 10
 
 /* This strucutre represents a single row in the table. */
-typedef struct openserSIPPortTable_context_s 
+typedef struct openserSIPPortTable_context_s
 {
 
-	netsnmp_index index; 
-	
+	netsnmp_index index;
+
 	unsigned char openserSIPStringIndex[SIP_PORT_TABLE_STR_INDEX_SIZE];
 	unsigned long openserSIPStringIndex_len;
 
@@ -67,7 +65,7 @@ typedef struct openserSIPPortTable_context_s
 
 
 /*
- * Initializes the openserSIPPortTable module.  
+ * Initializes the openserSIPPortTable module.
  *
  * Specifically, this function will define the tables structure, and then
  * populate it with the ports and transports that OpenSIPS is listening on.
@@ -82,9 +80,9 @@ void  initialize_table_openserSIPPortTable(void);
 
 /*
  * This routine is called to process get requests for elements of the table.
- * The function is mostly left in its auto-generated form 
+ * The function is mostly left in its auto-generated form
  */
-int   openserSIPPortTable_get_value(netsnmp_request_info *, netsnmp_index *, 
+int   openserSIPPortTable_get_value(netsnmp_request_info *, netsnmp_index *,
 		netsnmp_table_request_info *);
 
 const openserSIPPortTable_context * openserSIPPortTable_get_by_idx(
@@ -100,7 +98,7 @@ extern oid    openserSIPPortTable_oid[];
 extern size_t openserSIPPortTable_oid_len;
 
 #define openserSIPPortTable_TABLE_OID OPENSER_OID,3,1,1,1,1,5
-	
+
 /*
  * column number definitions for table openserSIPPortTable
  */

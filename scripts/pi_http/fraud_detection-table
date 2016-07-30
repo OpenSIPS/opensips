@@ -1,0 +1,21 @@
+	<!-- Declaration of fraud_detection table-->
+	<db_table id="fraud_detection">
+		<table_name>fraud_detection</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>ruleid</field><type>DB_INT</type></column>
+		<column><field>profileid</field><type>DB_INT</type></column>
+		<column><field>prefix</field><type>DB_STR</type></column>
+		<column><field>start_hour</field><type>DB_STR</type></column>
+		<column><field>end_hour</field><type>DB_STR</type></column>
+		<column><field>daysoftheweek</field><type>DB_STR</type></column>
+		<column><field>cpm_warning</field><type>DB_INT</type></column>
+		<column><field>cpm_critical</field><type>DB_INT</type></column>
+		<column><field>call_duration_warning</field><type>DB_INT</type></column>
+		<column><field>call_duration_critical</field><type>DB_INT</type></column>
+		<column><field>total_calls_warning</field><type>DB_INT</type></column>
+		<column><field>total_calls_critical</field><type>DB_INT</type></column>
+		<column><field>concurrent_calls_warning</field><type>DB_INT</type></column>
+		<column><field>concurrent_calls_critical</field><type>DB_INT</type></column>
+		<column><field>sequential_calls_warning</field><type>DB_INT</type></column>
+		<column><field>sequential_calls_critical</field><type>DB_INT</type></column>
+	</db_table>

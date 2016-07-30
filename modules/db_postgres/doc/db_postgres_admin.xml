@@ -67,8 +67,27 @@ modparam("db_postgres", "exec_query_threshold", 60000)
 </programlisting>
 		</example>
 	</section>
+        <section>
+		<title><varname>max_db_queries</varname> (integer)</title>
+		<para>
+		The maximum number of database queries to be executed. 
+                If this parameter is set improperly, it is set to default value. 
+		</para>
+		<para>
+		<emphasis>
+			Default value is 2.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>max_db_queries</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_postgres", "max_db_queries", 2)
+...
+</programlisting>
+		</example>
 	</section>
-
+	</section>
 	<section>
 	<title>Exported Functions</title>
 		<para>

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * rls module - resource list server
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -38,7 +36,7 @@
 #include "resource_notify.h"
 
 /* how to relate resource oriented dialogs to list_uri */
-/* sol1: use the same callid in Subscribe requests 
+/* sol1: use the same callid in Subscribe requests
  * sol2: include an extra header
  * sol3: put the list_uri as the id of the record stored in
  * pua and write a function to return that id
@@ -58,7 +56,7 @@ int parse_subs_state(str auth_state, str* reason, int* expires)
 		flag= ACTIVE_STATE;
 
 	if( strncasecmp(auth_state.s, "pending", 7)== 0)
-		flag= PENDING_STATE; 
+		flag= PENDING_STATE;
 
 	if( strncasecmp(auth_state.s, "terminated", 10)== 0)
 	{
@@ -160,7 +158,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	int err_ret = -1;
 
 	LM_DBG("start\n");
-	/* extract the dialog information and check if an existing dialog*/	
+	/* extract the dialog information and check if an existing dialog*/
 	if( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{
 		LM_ERR("parsing headers\n");
@@ -186,7 +184,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	memset(&dialog, 0, sizeof(ua_pres_t));
 	dialog.watcher_uri= &pto->uri;
     if (pto->tag_value.s==NULL || pto->tag_value.len==0 )
-	{  
+	{
 		LM_ERR("to tag value not parsed\n");
 		goto error;
 	}
@@ -208,7 +206,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	{
 		LM_DBG("'From' header not parsed\n");
 		/* parsing from header */
-		if ( parse_from_header( msg )<0 ) 
+		if ( parse_from_header( msg )<0 )
 		{
 			LM_ERR("cannot parse From header\n");
 			goto error;
@@ -216,7 +214,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	}
 	pfrom = (struct to_body*)msg->from->parsed;
 	dialog.pres_uri= &pfrom->uri;
-		
+
 	if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
 	{
 		LM_ERR("no from tag value present\n");
@@ -251,7 +249,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 
 	if(pua_get_record_id(&dialog, &res_id)< 0) // verify if within a stored dialog
 	{
-		LM_ERR("error occured while trying to get dialog record id\n");
+		LM_ERR("error occurred while trying to get dialog record id\n");
 		goto error;
 	}
 	if(res_id== 0)
@@ -291,31 +289,31 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 		}
 		LM_DBG("[body]= %.*s\n", body.len, body.s);
 	}
-	
+
 	/* update in rlpres_table where rlsusb_did= res_id and resource_uri= from_uri*/
 
 	query_cols[n_query_cols]= &str_rlsubs_did_col;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val= *res_id; 
+	query_vals[n_query_cols].val.str_val= *res_id;
 	n_query_cols++;
-	
+
 	query_cols[n_query_cols]= &str_resource_uri_col;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val= *dialog.pres_uri; 
+	query_vals[n_query_cols].val.str_val= *dialog.pres_uri;
 	n_query_cols++;
 
 	query_cols[n_query_cols]= &str_updated_col;
 	query_vals[n_query_cols].type = DB_INT;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.int_val= UPDATED_TYPE; 
+	query_vals[n_query_cols].val.int_val= UPDATED_TYPE;
 	n_query_cols++;
 
 	query_cols[n_query_cols]= &str_auth_state_col;
 	query_vals[n_query_cols].type = DB_INT;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.int_val= auth_flag; 
+	query_vals[n_query_cols].val.int_val= auth_flag;
 	n_query_cols++;
 
         query_cols[n_query_cols]= &str_reason_col;
@@ -346,7 +344,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
                 n_query_cols++;
         }
 
-	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0) 
+	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0)
 	{
 		LM_ERR("in use_table\n");
 		goto error;
@@ -427,7 +425,7 @@ int parse_rlsubs_did(char* str_did, str* callid, str* from_tag, str* to_tag)
 	}
 	callid->s= str_did;
 	callid->len= smc- str_did;
-			
+
 	from_tag->s= smc+ DID_SEP_LEN;
 	smc= strstr(from_tag->s, DID_SEP);
 	if(smc== NULL)
@@ -437,7 +435,7 @@ int parse_rlsubs_did(char* str_did, str* callid, str* from_tag, str* to_tag)
 		return -1;
 	}
 	from_tag->len= smc- from_tag->s;
-		
+
 	to_tag->s= smc+ DID_SEP_LEN;
 	to_tag->len= strlen(str_did)- 2* DID_SEP_LEN- callid->len- from_tag->len;
 
@@ -516,7 +514,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 	int n_result_cols= 0, i;
 	db_res_t *result= NULL;
 	char* prev_did= NULL, * curr_did= NULL;
-	db_row_t *row;	
+	db_row_t *row;
 	db_val_t *row_vals;
 	char* resource_uri;
 	str body;
@@ -535,7 +533,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 	query_cols[0]= &str_updated_col;
 	query_vals[0].type = DB_INT;
 	query_vals[0].nul = 0;
-	query_vals[0].val.int_val= UPDATED_TYPE; 
+	query_vals[0].val.int_val= UPDATED_TYPE;
 
 	result_cols[did_col= n_result_cols++]= &str_rlsubs_did_col;
 	result_cols[resource_uri_col= n_result_cols++]= &str_resource_uri_col;
@@ -544,10 +542,10 @@ void timer_send_notify(unsigned int ticks,void *param)
 	result_cols[reason_col= n_result_cols++]= &str_reason_col;
 	result_cols[body_col= n_result_cols++]= &str_presence_state_col;
 
-	/* query in alfabetical order after rlsusbs_did 
+	/* query in alfabetical order after rlsusbs_did
 	 * (resource list Subscribe dialog indentifier)*/
 
-	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0) 
+	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0)
 	{
 		LM_ERR("in use_table\n");
 		goto error;
@@ -566,9 +564,9 @@ void timer_send_notify(unsigned int ticks,void *param)
 	update_cols[0]= &str_updated_col;
 	update_vals[0].type = DB_INT;
 	update_vals[0].nul = 0;
-	update_vals[0].val.int_val= NO_UPDATE_TYPE; 
+	update_vals[0].val.int_val= NO_UPDATE_TYPE;
 
-	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0) 
+	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0)
 	{
 		LM_ERR("in use_table\n");
 		goto error;
@@ -603,7 +601,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 	{
 		row = &result->rows[i];
 		row_vals = ROW_VALUES(row);
-		
+
 		curr_did=     (char*)row_vals[did_col].val.string_val;
 		resource_uri= (char*)row_vals[resource_uri_col].val.string_val;
 		auth_state_flag=     row_vals[auth_state_col].val.int_val;
@@ -627,7 +625,7 @@ void timer_send_notify(unsigned int ticks,void *param)
                         dialog = NULL;
 		}
 
-		/* for the new dialog -> search the dialog info and 
+		/* for the new dialog -> search the dialog info and
 		 * fill the dialog structure and start a new rlmi document */
 		if(prev_did== NULL || strcmp(prev_did, curr_did) != 0)
 		{
@@ -671,13 +669,13 @@ void timer_send_notify(unsigned int ticks,void *param)
 			xmlDocSetRootElement(rlmi_doc, list_node);
 			buf_len = 0;
 
-			/* !!!! for now I will include the auth state without checking if 
-			 * it has changed - > in future chech if it works */		
-		}		
+			/* !!!! for now I will include the auth state without checking if
+			 * it has changed - > in future chech if it works */
+		}
 
-		/* add a node in rlmi_doc and if any presence state registered add 
+		/* add a node in rlmi_doc and if any presence state registered add
 		 * it in the buffer */
-		
+
 		resource_node= xmlNewChild(list_node,NULL,BAD_CAST "resource", NULL);
 		if(resource_node== NULL)
 		{
@@ -685,10 +683,10 @@ void timer_send_notify(unsigned int ticks,void *param)
 			goto error;
 		}
 		xmlNewProp(resource_node, BAD_CAST "uri", BAD_CAST resource_uri);
-			
+
 		/* there might be more records with the same uri- more instances-
 		 * search and add them all */
-		
+
 		while(1)
 		{
 			cid.s = NULL;
@@ -708,7 +706,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 				goto error;
 			}
 			xmlNewProp(instance_node, BAD_CAST "state", BAD_CAST auth_state);
-		
+
 			if(auth_state_flag & ACTIVE_STATE)
 			{
 				cid.s= generate_cid(resource_uri, strlen(resource_uri));
@@ -721,7 +719,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 				xmlNewProp(instance_node, BAD_CAST "reason",
 					   BAD_CAST row_vals[reason_col].val.string_val);
 			}
-		
+
 			/* add in the multipart buffer */
 			if(cid.s)
 			{
@@ -743,9 +741,9 @@ void timer_send_notify(unsigned int ticks,void *param)
 
 			row = &result->rows[i];
 			row_vals = ROW_VALUES(row);
-	
+
 			if(strncmp(row_vals[resource_uri_col].val.string_val,resource_uri,
-					strlen(resource_uri)) || strncmp(curr_did, 
+					strlen(resource_uri)) || strncmp(curr_did,
 					row_vals[did_col].val.string_val, strlen(curr_did)))
 			{
 				i--;

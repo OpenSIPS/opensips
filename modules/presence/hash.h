@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence module - presence server implementation
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -75,7 +73,7 @@ typedef struct subs_entry
 {
 	struct subscription* entries;
 	gen_lock_t lock;
-}subs_entry_t;	
+}subs_entry_t;
 
 typedef subs_entry_t* shtable_t;
 
@@ -127,6 +125,9 @@ typedef struct pres_entry
 	char* sphere;
 	char etag[ETAG_LEN];
 	int etag_len;
+	/* ordering */
+	unsigned int current_turn;
+	unsigned int last_turn;
 	struct pres_entry* next;
 }pres_entry_t;
 
@@ -144,9 +145,11 @@ pres_entry_t* search_phtable_etag(str* pres_uri, int event,
 
 void update_pres_etag(pres_entry_t* p, str* etag);
 
-int insert_phtable(str* pres_uri, int event, str* etag, char* sphere);
+pres_entry_t* insert_phtable(str* pres_uri, int event, str* etag, char* sphere, int init_turn);
 
 int update_phtable(struct presentity* presentity, str pres_uri, str body);
+
+void next_turn_phtable(pres_entry_t* p_p, unsigned int hash_code);
 
 int delete_phtable(pres_entry_t* p, unsigned int hash_code);
 int delete_phtable_query(str *pres_uri, int event, str* etag);

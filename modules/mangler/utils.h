@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Sdp mangler module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,13 +15,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
- *  2003-04-07 first version.  
+ *  2003-04-07 first version.
  */
 
 #ifndef UTILS_H
@@ -31,13 +29,13 @@
 
 #include "../../parser/msg_parser.h"	/* struct sip_msg */
 
-/*  replace a part of a sip message identified by (start address,length) with a new part 
+/*  replace a part of a sip message identified by (start address,length) with a new part
 	@param msg a pointer to a sip message
 	@param oldstr the start address of the part to be modified
 	@param oldlen the length of the part being modified
 	@param newstr the start address of the part to be added
 	@param oldlen the length of the part being added
-	@return 0 in case of success, negative on error 
+	@return 0 in case of success, negative on error
 */
 
 int patch (struct sip_msg *msg, char *oldstr, unsigned int oldlen,
@@ -46,7 +44,7 @@ int patch (struct sip_msg *msg, char *oldstr, unsigned int oldlen,
 	modify the Content-Length header of a sip message
 	@param msg a pointer to a sip message
 	@param newValue the new value of Content-Length
-	@return 0 in case of success, negative on error 
+	@return 0 in case of success, negative on error
 */
 int patch_content_length (struct sip_msg *msg, unsigned int newValue);
 

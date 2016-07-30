@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * statistics module - script interface to internal statistics manager
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -68,7 +66,7 @@ int reg_statistic( char* name)
 		if (strcasecmp( flag_str, NORESET_FLAG_STR)==0) {
 			flags |= STAT_NO_RESET;
 		} else {
-			LM_ERR("unsuported flag <%s>\n",flag_str);
+			LM_ERR("unsupported flag <%s>\n",flag_str);
 			goto error;
 		}
 	}
@@ -93,12 +91,13 @@ error:
 
 int register_all_mod_stats(void)
 {
-	stat_var  *stat;
 	stat_elem *se;
 	stat_elem *se_tmp;
+#ifdef STATISTICS
+	stat_var  *stat = NULL;
+#endif
 
 	se = stat_list;
-	stat = NULL;
 	while( se ) {
 		se_tmp = se;
 		se = se->next;

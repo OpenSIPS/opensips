@@ -1,10 +1,8 @@
 /*
- * $Id$
- *
  * tree234.c: reasonably generic counted 2-3-4 tree routines.
- * 
+ *
  * This file is copyright 1999-2001 Simon Tatham.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -13,10 +11,10 @@
  * sell copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -185,7 +183,7 @@ static void *add234_internal(tree234 *t, void *e, int index) {
 		/*
 		 * Leaf node. We want to insert at kid position
 		 * equal to the index:
-		 * 
+		 *
 		 *   0 A 1 B 2 C 3
 		 */
 		childnum = index;
@@ -313,7 +311,7 @@ static void *add234_internal(tree234 *t, void *e, int index) {
 	    /*
 	     * Insert in a 4-node; split into a 2-node and a
 	     * 3-node, and move focus up a level.
-	     * 
+	     *
 	     * I don't think it matters which way round we put the
 	     * 2 and the 3. For simplicity, we'll put the 3 first
 	     * always.
@@ -451,7 +449,7 @@ void *index234(tree234 *t, int index) {
 	return NULL;		       /* out of range */
 
     n = t->root;
-    
+
     while (n) {
 	if (index < n->counts[0])
 	    n = n->kids[0];
@@ -558,7 +556,7 @@ void *findrelpos234(tree234 *t, void *e, cmpfn234 cmp,
 	 * know where we would insert this node if we wanted to:
 	 * we'd put it in in place of the (empty) subtree
 	 * n->kids[kcount], and it would have index idx
-	 * 
+	 *
 	 * But the actual element isn't there. So if our search
 	 * relation is EQ, we're doomed.
 	 */
@@ -648,7 +646,7 @@ static void *delpos234_internal(tree234 *t, int index) {
 		     * only one element, but child ki-1 has two or
 		     * more. So we need to move a subtree from ki-1
 		     * to ki.
-		     * 
+		     *
 		     *                . C .                     . B .
 		     *               /     \     ->            /     \
 		     * [more] a A b B c   d D e      [more] a A b   c C d D e
@@ -684,7 +682,7 @@ static void *delpos234_internal(tree234 *t, int index) {
 		     * Case 3a, right-handed variant. ki has only
 		     * one element but ki+1 has two or more. Move a
 		     * subtree from ki+1 to ki.
-		     * 
+		     *
 		     *      . B .                             . C .
 		     *     /     \                ->         /     \
 		     *  a A b   c C d D e [more]      a A b B c   d D e [more]
@@ -719,7 +717,7 @@ static void *delpos234_internal(tree234 *t, int index) {
 		     *      . B .                .
 		     *     /     \     ->        |
 		     *  a A b   c C d      a A b B c C d
-		     * 
+		     *
 		     * (Since at all points we have avoided
 		     * descending to a node with only one element,
 		     * we can be sure that n is not reduced to
@@ -848,7 +846,7 @@ static void *delpos234_internal(tree234 *t, int index) {
 	    while (m->kids[0]) {
 		m = (m->kids[3] ? m->kids[3] :
 		     m->kids[2] ? m->kids[2] :
-		     m->kids[1] ? m->kids[1] : m->kids[0]);		     
+		     m->kids[1] ? m->kids[1] : m->kids[0]);
 	    }
 	    target = (m->elems[2] ? m->elems[2] :
 		      m->elems[1] ? m->elems[1] : m->elems[0]);

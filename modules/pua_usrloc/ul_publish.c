@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua_usrloc module - usrloc pua module
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include <stdio.h>
@@ -31,27 +29,33 @@
 #include "../../parser/parse_expires.h"
 #include "../../parser/msg_parser.h"
 #include "../../str.h"
+#include "../../script_cb.h"
 #include "../usrloc/usrloc.h"
 #include "../usrloc/ul_callback.h"
 #include "../tm/tm_load.h"
 #include "../pua/pua.h"
 #include "pua_usrloc.h"
 
+
+int pul_status_idx = -1;
+
 #define BUF_LEN   256
+
+#define ctx_pul_set(_val) \
+	context_put_int( CONTEXT_GLOBAL, current_processing_ctx, pul_status_idx, _val)
+
+#define ctx_pul_get() \
+	context_get_int( CONTEXT_GLOBAL, current_processing_ctx, pul_status_idx)
+
+
 int pua_set_publish(struct sip_msg* msg , char* s1, char* s2)
 {
 	LM_DBG("set send publish\n");
-	pua_ul_publish= 1;
+	ctx_pul_set(1/*pua UL on*/);
 	return 1;
 }
 
-int pua_unset_publish(struct sip_msg* msg , void* param)
-{
-	pua_ul_publish= 0;
-	return 1;
-}
 
-	
 /* for debug purpose only */
 void print_publ(publ_info_t* p)
 {
@@ -59,11 +63,11 @@ void print_publ(publ_info_t* p)
 	LM_DBG("uri= %.*s\n", p->pres_uri->len, p->pres_uri->s);
 	LM_DBG("id= %.*s\n", p->id.len, p->id.s);
 	LM_DBG("expires= %d\n", p->expires);
-}	
+}
 
 str* build_pidf(ucontact_t* c)
 {
-	xmlDocPtr  doc = NULL; 
+	xmlDocPtr  doc = NULL;
 	xmlNodePtr root_node = NULL;
 	xmlNodePtr tuple_node = NULL;
 	xmlNodePtr status_node = NULL;
@@ -107,7 +111,7 @@ str* build_pidf(ucontact_t* c)
 
 		pres_uri.s[pres_uri.len++]= '@';
 		memcpy(pres_uri.s+ pres_uri.len, default_domain.s, default_domain.len);
-		pres_uri.len+= default_domain.len;		
+		pres_uri.len+= default_domain.len;
 	}
 	pres_uri.s[pres_uri.len]= '\0';
 
@@ -119,7 +123,7 @@ str* build_pidf(ucontact_t* c)
     root_node = xmlNewNode(NULL, BAD_CAST "presence");
 	if(root_node==0)
 		goto error;
-    
+
 	xmlDocSetRootElement(doc, root_node);
 
     xmlNewProp(root_node, BAD_CAST "xmlns",
@@ -138,23 +142,23 @@ str* build_pidf(ucontact_t* c)
 		LM_ERR("while adding child\n");
 		goto error;
 	}
-	
+
 	status_node = xmlNewChild(tuple_node, NULL, BAD_CAST "status", NULL) ;
 	if( status_node ==NULL)
 	{
 		LM_ERR("while adding child\n");
 		goto error;
 	}
-	
+
 	basic_node = xmlNewChild(status_node, NULL, BAD_CAST "basic",
 		BAD_CAST "open") ;
-	
+
 	if( basic_node ==NULL)
 	{
 		LM_ERR("while adding child\n");
 		goto error;
 	}
-	
+
 	body = (str*)pkg_malloc(sizeof(str));
 	if(body == NULL)
 	{
@@ -193,10 +197,8 @@ void ul_publish(ucontact_t* c, int type, void* param)
 	publ_info_t publ;
 	int error;
 
-	if(pua_ul_publish== 0 && !(type & UL_CONTACT_EXPIRE))
-	{
+	if (!(type & UL_CONTACT_EXPIRE) && ctx_pul_get()==0)
 		return;
-	}
 
 	if(type & UL_CONTACT_DELETE)
 		LM_DBG("\nul_publish: DELETE type\n");
@@ -218,7 +220,7 @@ void ul_publish(ucontact_t* c, int type, void* param)
 	}
 	else
 		body = NULL;
-	
+
 	uri.s = (char*)pkg_malloc(sizeof(char)*(c->aor->len+default_domain.len+6));
 	if(uri.s == NULL)
 		goto error;
@@ -236,7 +238,7 @@ void ul_publish(ucontact_t* c, int type, void* param)
 		memcpy(uri.s+ uri.len, default_domain.s, default_domain.len);
 		uri.len+= default_domain.len;
 	}
-	
+
 	LM_DBG("uri= %.*s\n", uri.len, uri.s);
 
 	memset(&publ, 0, sizeof(publ_info_t));
@@ -250,7 +252,7 @@ void ul_publish(ucontact_t* c, int type, void* param)
 		publ.expires= 0;
 	else
 		publ.expires= c->expires - (int)time(NULL);
-	
+
 	if(type & UL_CONTACT_INSERT)
 		publ.flag= INSERT_TYPE;
 	else
@@ -291,10 +293,10 @@ error:
 			xmlFree(body->s);
 		pkg_free(body);
 	}
-	
+
 	if(uri.s)
 		pkg_free(uri.s);
-	pua_ul_publish= 0;
-
+	if (!(type & UL_CONTACT_EXPIRE))
+		ctx_pul_set( 0/* pua UL off*/);
 	return;
 }

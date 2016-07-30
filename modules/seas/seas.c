@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2006-2007 VozTelecom Sistemas S.L
  *
  * This file is part of opensips, a free SIP server.
@@ -14,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include <string.h>/*memset*/
@@ -104,12 +103,25 @@ static param_export_t params[]=
    {0,0,0}
 };
 
-struct module_exports exports= 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
+struct module_exports exports=
 {
    "seas",
+   MOD_TYPE_DEFAULT,/* class of this module */
    MODULE_VERSION,
    DEFAULT_DLFLAGS,
+   &deps,           /* OpenSIPS module dependencies */
    cmds,
+   0,
    params,
    0,
    0,
@@ -132,9 +144,9 @@ static int fixup_as_relay(void** param, int param_no)
    if (param_no!=1)
       return 0;
    len=strlen(parameter);
-   
+
    for (entry=&as_list;*entry;entry=&((*entry)->next)) {
-      if (len== (*entry)->name.len && 
+      if (len== (*entry)->name.len &&
 	    !memcmp((*entry)->name.s,parameter,len)) {
 	 pkg_free(*param);
 	 *param=*entry;
@@ -235,7 +247,6 @@ static int w_as_relay_t(struct sip_msg *msg, char *entry, char *foo)
    char *buffer,processor_id;
    struct cell *mycel;
    struct as_entry *as;
-   static str msg100={"Your call is important to us",sizeof("Your call is important to us")-1};
    static str msg500={"Server Internal Error!",sizeof("Server Internal Error!")-1};
 
    buffer=(char*)0;
@@ -244,7 +255,7 @@ static int w_as_relay_t(struct sip_msg *msg, char *entry, char *foo)
    /**
     * returns <0 on error
     * 1 if (new transaction was created) or if (ACK for locally replied 200 with totag) or if (ACK for code>=300)
-    * 0 if it was a retransmission 
+    * 0 if it was a retransmission
     */
    new_tran = seas_f.tmb.t_newtran(msg);
    if(new_tran<0) {
@@ -255,15 +266,6 @@ static int w_as_relay_t(struct sip_msg *msg, char *entry, char *foo)
    if (new_tran==0 && !(msg->REQ_METHOD==METHOD_ACK)){
       ret = 0;
       goto done;
-   }
-   /*new transaction created, let's pass it to an APP SERVER*/
-   if (msg->REQ_METHOD==METHOD_INVITE )
-   {
-      LM_DBG("new INVITE\n");
-      if(!seas_f.tmb.t_reply(msg,100,&msg100)){
-	 LM_DBG("t_reply (100)\n");
-	 goto error;
-      }
    }
    as=(struct as_entry *)entry;
    if(!as->connected){
@@ -388,7 +390,7 @@ again:
    }
    //this shouln't be here, because it will remove the transaction from memory, but
    //if transaction isn't unref'ed iw will be released anyway at t_unref if kr (killreason)==0
-   // a wait timer will be put to run with WT_TIME_OUT (5 seconds, within which the AS should respond)      
+   // a wait timer will be put to run with WT_TIME_OUT (5 seconds, within which the AS should respond)
    // this is a bug !!! I think this is why we lose calls at high load !!
    //t_release(msg, 0, 0);
    seas_f.tmb.t_setkr(REQ_FWDED);
@@ -406,17 +408,17 @@ error:
 /**
  * creates an as_event in shared memory and returns its address or NULL if error.
  * event_length(4) UNSIGNED INT includes the length 4 bytes itself
- * type(1), 
+ * type(1),
  * flags(4),
  * transport(1).
- * src_ip_len(1), 
- * src_ip(4 or 16), 
- * dst_ip_len(1), 
- * dst_ip(4 or 16), 
- * src_port(2), 
- * dst_port(2), 
- * hash index(4), 
- * label(4), 
+ * src_ip_len(1),
+ * src_ip(4 or 16),
+ * dst_ip_len(1),
+ * dst_ip(4 or 16),
+ * src_port(2),
+ * dst_port(2),
+ * hash index(4),
+ * label(4),
  * [cancelled hash_index,label]
  *
  */
@@ -529,16 +531,16 @@ error:
 /**
  * creates an as_event in shared memory and returns its address or NULL if error.
  * event_length(4) UNSIGNED INT includes the length 4 bytes itself
- * type(1), 
- * processor_id(4), 
+ * type(1),
+ * processor_id(4),
  * flags(4),
  * transport(1).
- * src_ip_len(1), 
- * src_ip(4 or 16), 
- * dst_ip_len(1), 
- * dst_ip(4 or 16), 
- * src_port(2), 
- * dst_port(2), 
+ * src_ip_len(1),
+ * src_ip(4 or 16),
+ * dst_ip_len(1),
+ * dst_ip(4 or 16),
+ * src_port(2),
+ * dst_port(2),
  *
  */
 char * create_as_event_sl(struct sip_msg *msg,char processor_id,int *evt_len,int flags)
@@ -738,7 +740,7 @@ static int seas_exit(void)
 
 /**
  * search within a given AS, if any of the registered processors is bound
- * to the receive_info structure passed. If there is one, it returns its 
+ * to the receive_info structure passed. If there is one, it returns its
  * identifier (number between 0 and 128), otherwise it returns -1;
  */
 char get_processor_id(struct receive_info *rcv,as_p as)

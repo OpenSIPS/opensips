@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -39,7 +37,6 @@ struct dns_node;
 #define PROXY_SHM_FLAG  (1<<0)
 
 struct proxy_l{
-	struct proxy_l* next;
 	str name; /* original name */
 	unsigned short flags;
 	unsigned short port;
@@ -48,13 +45,12 @@ struct proxy_l{
 	unsigned short addr_idx; /* crt. addr. idx. */
 	struct hostent host;     /* addresses */
 
+	/* tree with the DNS resolving status
+	 * NOTE: this is all the time in SHM */
 	struct dns_node *dn;
 };
 
 extern struct proxy_l* proxies;
-
-struct proxy_l* add_proxy( str* name, unsigned short port,
-		unsigned short proto);
 
 struct proxy_l* mk_proxy( str* name, unsigned short port, unsigned short proto,
 		int is_sips);
@@ -73,6 +69,8 @@ int  hostent_cpy(struct hostent *dst, struct hostent* src);
 int  hostent_shm_cpy(struct hostent *dst, struct hostent* src);
 
 void free_shm_hostent(struct hostent *dst);
+
+struct proxy_l* clone_proxy(struct proxy_l *sp);
 
 #include "resolve.h"
 

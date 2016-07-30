@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,10 +13,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
  * History:
  * --------
  * 2003-02-28 scratchpad compatibility abandoned (jiri)
@@ -40,10 +38,10 @@
 char* parse_cseq(char *buf, char* end, struct cseq_body* cb)
 {
 	char *t, *m, *m_end;
-	
+
 	cb->error=PARSE_ERROR;
 	t=buf;
-	
+
 	cb->number.s=t;
 	t=eat_token_end(t, end);
 	if (t>=end) goto error;
@@ -64,15 +62,15 @@ char* parse_cseq(char *buf, char* end, struct cseq_body* cb)
 	cb->method.s=m;
 	t=m_end;
 	cb->method.len=t-cb->method.s;
-	
+
 	/* cache the method id */
 	if(parse_method(cb->method.s, t, (unsigned int*)&cb->method_id)==0)
 	{
 		LM_ERR("cannot parse the method\n");
 		goto error;
 	}
-	
-	/* there may be trailing LWS 
+
+	/* there may be trailing LWS
 	 * (it was not my idea to put it in SIP; -jiri )
 	 */
 	t=eat_lws_end(t, end);

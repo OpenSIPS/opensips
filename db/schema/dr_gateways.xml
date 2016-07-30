@@ -9,7 +9,7 @@
 
 <table id="dr_gateways" xmlns:db="http://docbook.org/ns/docbook">
 	<name>dr_gateways</name>
-	<version>5</version>
+	<version>6</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>This table is used by the Dynamic Routing module to store
@@ -59,7 +59,7 @@
 		<type>unsigned int</type>
 		<size>11</size>
 		<default>0</default>
-		<description>Number of digits to be striped out for the begining 
+		<description>Number of digits to be striped out for the beginning 
 			of the username when using this GW/destination</description>
 	</column>
 
@@ -89,6 +89,26 @@
 		<size>11</size>
 		<default>0</default>
 		<description>0- No probing; 1-Probe on disable only ; 2-Always probe;  </description>
+	</column>
+
+	<column>
+		<name>state</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>State of the gateway: 0 - enabled; 1 - permanent disabled;
+                2 - temporary disabled (probing)</description>
+	</column>
+
+	<column>
+		<name>socket</name>
+		<type>string</type>
+		<size>128</size>
+		<null/>
+		<default><null/></default>
+		<description>Local Socket to be used when sending requests (traffic and probes)
+		to the destination - must be an listener configured in opensips.
+		</description>
 	</column>
 
 	<column id="description">

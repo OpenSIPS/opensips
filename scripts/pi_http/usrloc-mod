@@ -4,7 +4,7 @@
 			<db_table_id>location</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>id</field></col>
+				<col><field>contact_id</field><link_cmd>update</link_cmd></col>
 				<col><field>username</field></col>
 				<col><field>domain</field></col>
 				<col><field>contact</field></col>
@@ -51,7 +51,7 @@
 			<db_table_id>location</db_table_id>
 			<cmd_type>DB_UPDATE</cmd_type>
 			<clause_cols>
-				<col><field>id</field><operator>=</operator></col>
+				<col><field>contact_id</field><operator>=</operator></col>
 			</clause_cols>
 			<query_cols>
 				<col><field>username</field></col>
@@ -77,7 +77,7 @@
 			<db_table_id>location</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
-				<col><field>id</field><operator>=</operator></col>
+				<col><field>contact_id</field><operator>=</operator></col>
 			</clause_cols>
 		</cmd>
 	</mod>

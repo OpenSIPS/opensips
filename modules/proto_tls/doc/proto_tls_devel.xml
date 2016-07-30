@@ -1,0 +1,87 @@
+<!-- Module Developer's Guide -->
+<!-- TODO this document needs to be updated -->
+
+<chapter>
+	<title>&develguide;</title>
+
+	<section>
+		<title>TLS_SERVER</title>
+		<section>
+			<title>SSL data per connection</title>
+			<para>
+			Each TLS connection, incoming or outgoing, creates an
+			SSL * object, where configuration inherited from the
+			SSL_CTX * and particular info on that socket are stored.
+			This SSL * structure is kept in &osips; as  long as the connection
+			is alive, as part of the <quote>struct tcp_connection *</quote>
+			object:
+			<programlisting format="linespecific">
+...
+struct tcp_connection *c;
+SSL *ssl;
+
+/*create somehow SSL object*/
+c->extra_data = (void *) ssl;
+ssl = (SSL *) c->extra_data;
+...
+</programlisting>
+			</para>
+		</section>
+		<section>
+			<title>tls_print_errstack</title>
+			<para>
+			void  tls_print_errstack(void);
+			</para>
+			<para>
+			Dumps ssl error stack.
+			</para>
+		</section>
+		<section>
+			<title>tls_tcpconn_init</title>
+			<para>
+			int tls_tcpconn_init( struct tcp_connection *c, int fd);
+			</para>
+			<para>
+			Called when new tcp connection is accepted
+			</para>
+		</section>
+		<section>
+			<title>tls_tcpconn_clean</title>
+			<para>
+			void tls_tcpconn_clean( struct tcp_connection *c);
+			</para>
+			<para>
+			Shuts down the TLS connection.
+			</para>
+		</section>
+		<section>
+			<title>tls_blocking_write</title>
+			<para>
+			size_t tls_blocking_write( struct tcp_connection *c, int fd,
+			const char *buf, size_t len);
+			</para>
+			<para>
+			Writes a memory chunk in blocking mode (syncron).
+			</para>
+		</section>
+		<section>
+			<title>tls_read</title>
+			<para>
+			size_t tls_read( struct tcp_connection *c);
+			</para>
+			<para>
+			Reads from a TLS connection. Return the number of bytes read.
+			</para>
+		</section>
+		<section>
+			<title>tls_fix_read_conn</title>
+			<para>
+			void tls_tcpconn_clean( struct tcp_connection *c);
+			</para>
+			<para>
+			Shuts down the TLS connection.
+			</para>
+		</section>
+	</section>
+
+</chapter>

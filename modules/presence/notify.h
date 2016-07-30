@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence module -presence server implementation
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -100,12 +98,12 @@ void printf_subs(subs_t* subs);
 int query_db_notify(str* pres_uri,pres_ev_t* event, subs_t* watcher_subs );
 
 int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
-		str* rules_doc, str* dialog_publish);
+		str* rules_doc, str* dialog_publish, int from_publish);
 
-int notify(subs_t* subs, subs_t* watcher_subs, str* n_body,int force_null_body, str* extra_hdrs);
+int notify(subs_t* subs, subs_t* watcher_subs, str* n_body,int force_null_body, str* extra_hdrs, int from_publish);
 
 int send_notify_request(subs_t* subs, subs_t * watcher_subs,
-		str* n_body,int force_null_body, str* extra_hdrs);
+		str* n_body,int force_null_body, str* extra_hdrs, int from_publish);
 
 char* get_status_str(int flag);
 void free_watcher_list(watcher_t* w);

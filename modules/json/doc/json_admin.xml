@@ -44,7 +44,7 @@
 			<listitem>
 			<para>
 				<emphasis>libjson</emphasis>
-				The libjson library can be downloaded from:
+				The libjson C library can be downloaded from:
 				http://oss.metaparadigm.com/json-c/
 			</para>
 			</listitem>
@@ -72,7 +72,7 @@
 
 	<para>
 		The json variable provides methods to access fields
-		in json objects and to access indexes in json arrays.
+		in json objects and indexes in json arrays.
 	</para>
 
 		<section>

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2012 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -27,7 +25,7 @@
 #include<stdlib.h>
 #include<string.h>
 
-#include<sys/ioctl.h> 
+#include<sys/ioctl.h>
 #include<errno.h>
 
 #include "curses.h"
@@ -40,7 +38,7 @@ volatile int max_y = 0;
  * Mandatory to be called on all permanent exits from menuconfig
  * Otherwise, console will be messed up
 */
-void cleanup()
+void cleanup(void)
 {
 	delwin(stdscr);
 	endwin();
@@ -88,7 +86,7 @@ int draw_sibling_menu(select_menu *menu)
 	int max_len=0,len;
 again:
 	wclear(menu_window);
-	
+
 	/* print title in colour */
 	attron(COLOR_PAIR(1));
 	mvprintw(HIGH_NOTICE_Y,max_x/2-20,menu->parent?menu->parent->name:"OpenSIPS Main Configuration Menu");
@@ -106,7 +104,7 @@ again:
 		if (len > max_len)
 			max_len = len;
 	}
-	
+
 	/* draw selection marker */
 	wmove(menu_window, max_y/4+cur_index, (max_x / 2) - 25);
 	waddstr(menu_window, "--->");
@@ -153,7 +151,7 @@ again:
 		case 'h':
 		case 'H':
 			clear();
-			print_notice(max_y/2,20,0,"Use UP and DOWN arrow keys to navigate."); 
+			print_notice(max_y/2,20,0,"Use UP and DOWN arrow keys to navigate.");
 			print_notice(max_y/2+1,20,0,"Use RIGHT arrow or ENTER key to enter a certain menu.");
 			print_notice(max_y/2+2,20,0,"Use LEFT arror or Q key to go back.");
 			print_notice(max_y/2+3,20,0,"Use SPACE to toggle an entry ON/OFF.\n");
@@ -163,24 +161,24 @@ again:
 		case KEY_LEFT:
 		case 'q':
 		case 'Q':
-			for (it=menu;it;it=it->next_sibling) { 	
+			for (it=menu;it;it=it->next_sibling) {
 				if (it->child_changed == CHILD_CHANGED) {
 					if (skip == 0) {
 						/* have we asked before and got negative response ? */
 						print_notice(NOTICE_Y,NOTICE_X,0,"You have not saved changes. Go back anyway ? [y/n] ");
 						c = getch();
-						if (c == 'n' || c == 'N') 	
+						if (c == 'n' || c == 'N')
 							goto again;
 						else {
 							it->child_changed = CHILD_CHANGE_IGNORED;
 							skip=1;
 							return 0;
 						}
-					} else 
+					} else
 						it->child_changed = CHILD_CHANGE_IGNORED;
 				}
 			}
-			if (skip == 1) 
+			if (skip == 1)
 				return 0;
 			return 0;
 	}
@@ -190,7 +188,7 @@ again:
 
 int draw_item_list(select_menu *menu)
 {
-	select_item *it;
+	select_item *it, *it_2;
 	int i=0,j=0,k=0,d,sc=0;
 	int c,curopt=0;
 	char buf[40];
@@ -216,7 +214,8 @@ again:
 			if (sc>=disp_start && i < max_display) {
 				wmove(menu_window, max_y/4+j++, max_x / 2 - 20);
 				i++;
-				snprintf(buf, sizeof(buf), "[%s] %s", it->enabled ? "*" : " ", it->name);
+				snprintf(buf, sizeof(buf), "%s%s%s %s", it->group_idx ? "(" : "[",
+					it->enabled ? "*" : " ", it->group_idx ? ")" : "]", it->name);
 				waddstr(menu_window, buf);
 				len=strlen(it->name);
 				if (len > max_len)
@@ -228,7 +227,8 @@ again:
 			/* draw everything */
 			wmove(menu_window, max_y/4+j++, max_x / 2 - 20);
 			i++;
-			snprintf(buf, sizeof(buf), "[%s] %s", it->enabled ? "*" : " ", it->name);
+			snprintf(buf, sizeof(buf), "%s%s%s %s", it->group_idx ? "(" : "[",
+					it->enabled ? "*" : " ", it->group_idx ? ")" : "]", it->name);
 			waddstr(menu_window, buf);
 			len=strlen(it->name);
 			if (len > max_len)
@@ -253,7 +253,7 @@ again:
 	}
 
 	move(max_y/4+actual_pos,max_x/2-19);
-	
+
 	/* draw box */
 	wattron(menu_window,COLOR_PAIR(2));
 	for (d=-1;d<i+1;d++) {
@@ -275,14 +275,14 @@ again:
 		wmove(menu_window,max_y/4,max_x/2-5+max_len);
 		wprintw(menu_window,"Scroll up for more");
 	}
-	
+
 	if (should_scroll && disp_start + max_display < menu->item_no) {
 		wmove(menu_window,max_y/4+max_display-1,max_x/2-5+max_len);
 		wprintw(menu_window,"Scroll down for more");
 	}
 
 	wattroff(menu_window,COLOR_PAIR(2));
-		
+
 	wrefresh(menu_window);
 	k=0;
 
@@ -291,9 +291,9 @@ again:
 			case KEY_UP:
 				if (should_scroll && curopt != 0) {
 					if (curopt == disp_start) {
-						disp_start--;	
+						disp_start--;
 						actual_pos=0;
-					} else 
+					} else
 						actual_pos--;
 					curopt--;
 				} else if (curopt!=0) {
@@ -303,7 +303,7 @@ again:
 			case KEY_DOWN:
 				if (should_scroll && curopt < menu->item_no-1) {
 					if (curopt == (disp_start+max_display-1)) {
-						disp_start++;	
+						disp_start++;
 						actual_pos=i-1;
 					} else
 						actual_pos++;
@@ -317,6 +317,16 @@ again:
 					if (k++ == curopt) {
 						it->enabled=it->enabled?0:1;
 						menu->child_changed=CHILD_CHANGED;
+
+						it->group_idx = it->group_idx ? -it->group_idx : 0;
+						if (it->group_idx<0)
+							for(it_2=menu->item_list;it_2;it_2=it_2->next)
+								if (it!=it_2 && it_2->group_idx<0 && it->group_idx==it_2->group_idx) {
+									it_2->group_idx = -it_2->group_idx;
+									it_2->enabled=0;
+									menu->child_changed=CHILD_CHANGED;
+									break;
+								}
 					}
 				}
 				break;

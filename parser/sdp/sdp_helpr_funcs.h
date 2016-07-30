@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * SDP parser helpers
  *
  * Copyright (C) 2008 SOMA Networks, INC.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
@@ -70,5 +68,5 @@ char *find_sdp_line_complex(char* p, char* plimit, char * name);
 char* get_sdp_hdr_field(char* , char* , struct hdr_field* );
 
 char *find_sdp_line_delimiter(char *p, char *plimit, str delimiter);
-char *find_next_sdp_line_delimiter(char *p, char *plimit, str delimiter, char *defptr); 
+char *find_next_sdp_line_delimiter(char *p, char *plimit, str delimiter, char *defptr);
 #endif

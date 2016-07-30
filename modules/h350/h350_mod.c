@@ -1,12 +1,10 @@
-/* 
- * $Id$
- *
+/*
  * OpenSIPS H.350 Module
  *
  * Copyright (C) 2007 University of North Carolina
  *
  * Original author: Christian Schlatter, cs@unc.edu
- * 
+ *
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,9 +18,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -103,15 +101,27 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "ldap", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /*
  * Module interface
  */
 struct module_exports exports = {
-	"h350", 
+	"h350",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
+	0,          /* Exported async functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
@@ -125,7 +135,7 @@ struct module_exports exports = {
 
 static int child_init(int rank)
 {
-	
+
 	/* don't do anything for non-worker process */
 	if (rank == PROC_MAIN || rank == PROC_TCP_MAIN) {
 		return 0;
@@ -169,7 +179,7 @@ static int mod_init(void)
 		LM_ERR("Invalid search_scope [%s]\n", h350_search_scope.s);
 		return -1;
 	}
-	
+
 }
 
 
@@ -189,8 +199,8 @@ static int w_h350_sipuri_lookup(struct sip_msg* msg, char* sip_uri, char* s2)
 static int w_h350_auth_lookup(struct sip_msg* msg, char* digest_username, char* avp_specs)
 {
 	return h350_auth_lookup(
-		msg, 
-		(pv_elem_t*)digest_username, 
+		msg,
+		(pv_elem_t*)digest_username,
 		(struct h350_auth_lookup_avp_params*)avp_specs);
 }
 
@@ -237,7 +247,7 @@ static int h350_auth_lookup_fixup(void** param, int param_no)
 	str s;
 	struct h350_auth_lookup_avp_params *params;
 
-    if (param_no == 1) 
+    if (param_no == 1)
 	{
 		s.s = (char*)*param;
 		s.len = strlen(s.s);
@@ -254,7 +264,7 @@ static int h350_auth_lookup_fixup(void** param, int param_no)
 		/*
 		 * parse *param into username_avp_spec_str and pwd_avp_spec_str
 		 */
-		
+
 		username_avp_spec_str = (char*)*param;
 		if ((pwd_avp_spec_str = strchr(username_avp_spec_str, '/')) == 0)
 		{

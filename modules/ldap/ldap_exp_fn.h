@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * OpenSIPS LDAP Module
  *
  * Copyright (C) 2007 University of North Carolina
@@ -22,7 +20,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -38,6 +36,7 @@
 #include "../../pvar.h"
 #include "../../parser/msg_parser.h"
 #include "../../re.h"
+#include "ld_session.h"
 
 struct ldap_result_params
 {
@@ -52,8 +51,19 @@ struct ldap_result_check_params
 	pv_elem_p    check_str_elem_p;
 };
 
+struct ldap_async_params {
+	int msgid;
+	struct ld_session *lds;
+};
+
+int ldap_search_impl_async(
+	struct sip_msg* _msg,
+	async_resume_module **resume_f,
+	void **resume_param,
+	pv_elem_t* _ldap_url);
+
 int ldap_search_impl(
-	struct sip_msg* _msg, 
+	struct sip_msg* _msg,
 	pv_elem_t* _ldap_url);
 
 int ldap_write_result(

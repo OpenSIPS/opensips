@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -19,13 +17,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
  * --------
  * 2006-11-23 initial version (jmagder)
- * 
+ *
  * Originally Generated with mib2c using mib2c.array-user.conf
  *
  * This file implements the openserSIPPortTable.  For a full description of the table,
@@ -57,12 +55,12 @@ size_t openserSIPPortTable_oid_len = OID_LENGTH(openserSIPPortTable_oid);
  *
  * 	ipType.NUM_IP_OCTETS.ipAddress[0].ipAddress[1]...ipAddress[NUM_IP_OCTETS].portNumber
  *
- * sizeOfOID will be assigned the length of the oid.  
- * 
+ * sizeOfOID will be assigned the length of the oid.
+ *
  * Note: This function returns a newly allocated block of memory.  Make sure to
- * deallocate the memory when you no longer need it. 
+ * deallocate the memory when you no longer need it.
  */
-oid *createIndex(int ipType, int *ipAddress, int *sizeOfOID) 
+oid *createIndex(int ipType, int *ipAddress, int *sizeOfOID)
 {
 	oid *currentOIDIndex;
 	int i;
@@ -84,7 +82,7 @@ oid *createIndex(int ipType, int *ipAddress, int *sizeOfOID)
 	/* Assign the OID Index */
 	currentOIDIndex[0] = ipType;
 	currentOIDIndex[1] = NUM_IP_OCTETS;
-		
+
 	for (i = 0; i < NUM_IP_OCTETS; i++) {
 		currentOIDIndex[i+2] = ipAddress[i];
 	}
@@ -100,9 +98,9 @@ oid *createIndex(int ipType, int *ipAddress, int *sizeOfOID)
  * return a new one otherwise.  If the row is new, then the provided index will be
  * assigned to the new row.
  *
- * Note: NULL will be returned on an error 
+ * Note: NULL will be returned on an error
  */
-openserSIPPortTable_context *getRow(int ipType, int *ipAddress) 
+openserSIPPortTable_context *getRow(int ipType, int *ipAddress)
 {
 	int lengthOfOID;
 	oid *currentOIDIndex = createIndex(ipType, ipAddress, &lengthOfOID);
@@ -121,10 +119,10 @@ openserSIPPortTable_context *getRow(int ipType, int *ipAddress)
 
 	/* Lets check to see if there is an existing row. */
 	rowToReturn = CONTAINER_FIND(cb.container, &theIndex);
-	
+
 	/* We found an existing row, so there is no need to create a new one.
 	 * Let's return it to the caller. */
-	if (rowToReturn != NULL) 
+	if (rowToReturn != NULL)
 	{
 		/* We don't need the index we allocated anymore, because the
 		 * existing row already has its own copy, so free the memory */
@@ -132,7 +130,7 @@ openserSIPPortTable_context *getRow(int ipType, int *ipAddress)
 
 		return rowToReturn;
 	}
-	
+
 	/* If we are here then the row doesn't exist yet.  So lets create it. */
 	rowToReturn = SNMP_MALLOC_TYPEDEF(openserSIPPortTable_context);
 
@@ -161,22 +159,22 @@ openserSIPPortTable_context *getRow(int ipType, int *ipAddress)
  * can point to any integer >= zero.  All rows created by this function will be
  * indexed starting at snmpIndex++.  The parameter is implemented as a pointer
  * to an integer so that if the function is called again with another
- * 'protocol', we can continue from the last index. 
+ * 'protocol', we can continue from the last index.
  */
-void createRowsFromIPList(int *theList, int listSize, int protocol, 
+void createRowsFromIPList(int *theList, int listSize, int protocol,
 		int *snmpIndex) {
 
 	openserSIPPortTable_context *currentRow;
-	
+
 	int curIndexOfIP;
 	int curSocketIdx;
 	int valueToAssign;
 
-	if (protocol == PROTO_UDP) 
+	if (protocol == PROTO_UDP)
 	{
 		valueToAssign = TC_TRANSPORT_PROTOCOL_UDP;
 	}
-	else if (protocol == PROTO_TCP) 
+	else if (protocol == PROTO_TCP)
 	{
 		valueToAssign = TC_TRANSPORT_PROTOCOL_TCP;
 	}
@@ -184,16 +182,16 @@ void createRowsFromIPList(int *theList, int listSize, int protocol,
 	{
 		valueToAssign = TC_TRANSPORT_PROTOCOL_TLS;
 	}
-	else 
+	else
 	{
 		valueToAssign = TC_TRANSPORT_PROTOCOL_OTHER;
 	}
-	
+
 	/* Create all rows with respect to the given protocol */
 	for (curSocketIdx=0; curSocketIdx < listSize; curSocketIdx++) {
 
 		curIndexOfIP   = (NUM_IP_OCTETS + 1) * curSocketIdx;
-		
+
 		/* Retrieve an existing row, or a new row if one doesn't
 		 * allready exist. */
 		currentRow = getRow(1, &theList[curIndexOfIP]);
@@ -210,7 +208,7 @@ void createRowsFromIPList(int *theList, int listSize, int protocol,
 }
 
 /*
- * Initializes the openserSIPPortTable module.  
+ * Initializes the openserSIPPortTable module.
  *
  * Specifically, this function will define the tables structure, and then
  * populate it with the ports and transports that OpenSIPS is listening on.
@@ -227,9 +225,9 @@ void init_openserSIPPortTable(void)
 	int *TLSList = NULL;
 
 	int numUDPSockets;
-	int numTCPSockets; 
+	int numTCPSockets;
 	int numTLSSockets;
-	
+
 	/* Retrieve the list of the number of UDP and TCP sockets. */
 	numUDPSockets = get_socket_list_from_proto(&UDPList, PROTO_UDP);
 	numTCPSockets = get_socket_list_from_proto(&TCPList, PROTO_TCP);
@@ -239,14 +237,14 @@ void init_openserSIPPortTable(void)
 	createRowsFromIPList(UDPList, numUDPSockets, PROTO_UDP, &curSNMPIndex);
 
 	curSNMPIndex = 0;
-	
+
 	createRowsFromIPList(TCPList, numTCPSockets, PROTO_TCP, &curSNMPIndex);
 
 	curSNMPIndex = 0;
 	createRowsFromIPList(TLSList, numTLSSockets, PROTO_TLS, &curSNMPIndex);
 }
 
- 
+
 /* Initialize the openserSIPPortTable table by defining how it is structured */
 void initialize_table_openserSIPPortTable(void)
 {
@@ -268,7 +266,7 @@ void initialize_table_openserSIPPortTable(void)
 			openserSIPPortTable_oid,
 			openserSIPPortTable_oid_len,
 			HANDLER_CAN_RONLY);
-    
+
 	if (!my_handler || !table_info) {
 		snmp_log(LOG_ERR, "malloc failed in "
 			 "initialize_table_openserSIPPortTable_handler\n");
@@ -276,7 +274,7 @@ void initialize_table_openserSIPPortTable(void)
 	}
 
 	/* Set up the table's structural definition */
-	
+
 	/* index: openserSIPPortIndex */
 	netsnmp_table_helper_add_index(table_info, ASN_OCTET_STR);
 
@@ -289,11 +287,11 @@ void initialize_table_openserSIPPortTable(void)
 			"openserSIPPortTable:"
 			"table_container");
 
-	
+
 	DEBUGMSGTL(("initialize_table_openserSIPPortTable",
 				"Registering table openserSIPPortTable "
 				"as a table array\n"));
-	
+
 	netsnmp_table_container_register(my_handler, table_info, &cb,
 			cb.container, 1);
 }
@@ -301,20 +299,20 @@ void initialize_table_openserSIPPortTable(void)
 /*
  * This routine is called to process get requests for elements of the table.
  *
- * The function is mostly left in its auto-generated form 
+ * The function is mostly left in its auto-generated form
  */
-int openserSIPPortTable_get_value(netsnmp_request_info *request, 
+int openserSIPPortTable_get_value(netsnmp_request_info *request,
 		netsnmp_index *item,
 		netsnmp_table_request_info *table_info )
 {
 	netsnmp_variable_list *var = request->requestvb;
 
-	openserSIPPortTable_context *context = 
+	openserSIPPortTable_context *context =
 		(openserSIPPortTable_context *)item;
 
-	switch(table_info->colnum) 
+	switch(table_info->colnum)
 	{
-		
+
 		case COLUMN_OPENSERSIPTRANSPORTRCV:
 			/** OpenSERSIPTransportProtocol = ASN_OCTET_STR */
 			snmp_set_var_typed_value(var, ASN_OCTET_STR,

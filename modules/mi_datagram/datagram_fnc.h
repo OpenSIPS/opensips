@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -53,7 +51,7 @@
 
 
 typedef struct datagram_str{
-	char * start, * current; 
+	char * start, * current;
 	int len;
 }datagram_stream;
 
@@ -63,7 +61,7 @@ typedef struct rx_tx{
 
 
 int  mi_init_datagram_server(sockaddr_dtgram * address, unsigned int domain,
-								rx_tx_sockets * socks,int mode, 
+								rx_tx_sockets * socks,int mode,
 								int uid, int gid );
 int mi_init_datagram_buffer();
 void mi_datagram_server(int rx_sock, int tx_sock);

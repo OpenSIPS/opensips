@@ -2,7 +2,7 @@ DB_HTTP Module
 
 Andrei Dragus
 
-   OpenSIPS Solutions>
+   OpenSIPS Solutions
 
 Edited by
 
@@ -10,8 +10,7 @@ Andrei Dragus
 
    Copyright © 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision: 8740 $ $Date: 2013-01-29 14:35:11 +0200
-                              (Tue, 29 Jan 2013) $
+   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -27,14 +26,15 @@ Andrei Dragus
         1.3. Exported Parameters
 
               1.3.1. SSL(int)
-              1.3.2. cap_raw_quey(int)
+              1.3.2. cap_raw_query(int)
               1.3.3. cap_replace(int)
               1.3.4. cap_insert_update(int)
               1.3.5. cap_last_inserted_id(int)
               1.3.6. field_delimiter (str)
               1.3.7. row_delimiter (str)
               1.3.8. quote_delimiter (str)
-              1.3.9. timeout (int)
+              1.3.9. value_delimiter (str)
+              1.3.10. timeout (int)
 
         1.4. Exported Functions
         1.5. Server specifications
@@ -52,20 +52,21 @@ Andrei Dragus
 
    1.1. Setting db_url for a module
    1.2. Set SSL parameter
-   1.3. Set cap_raw_quey parameter
+   1.3. Set cap_raw_query parameter
    1.4. Set cap_replace parameter
    1.5. Set cap_insert_update parameter
    1.6. Set cap_last_inserted_id parameter
    1.7. Set field_delimiter parameter
    1.8. Set row_delimiter parameter
    1.9. Set quote_delimiter parameter
-   1.10. Set timeout parameter
-   1.11. Example query.
-   1.12. Example query with variables.
-   1.13. More query examples.
-   1.14. NULL query example.
-   1.15. Example Reply.
-   1.16. Quoting Example.
+   1.10. Set value_delimiter parameter
+   1.11. Set timeout parameter
+   1.12. Example query.
+   1.13. Example query with variables.
+   1.14. More query examples.
+   1.15. NULL query example.
+   1.16. Example Reply.
+   1.17. Quoting Example.
 
 Chapter 1. Admin Guide
 
@@ -126,15 +127,15 @@ modparam("presence", "db_url","http://user:pass@www.some.com/some/some")
 modparam("db_http", "SSL",1)
 ...
 
-1.3.2. cap_raw_quey(int)
+1.3.2. cap_raw_query(int)
 
    Whether or not the server supports raw queries.
 
    Default value is “0”.
 
-   Example 1.3. Set cap_raw_quey parameter
+   Example 1.3. Set cap_raw_query parameter
 ...
-modparam("db_http", "cap_raw_quey", 1)
+modparam("db_http", "cap_raw_query", 1)
 ...
 
 1.3.3. cap_replace(int)
@@ -207,16 +208,29 @@ modparam("db_http", "row_delimiter","\n")
 modparam("db_http", "quote_delimiter","|")
 ...
 
-1.3.9. timeout (int)
+1.3.9. value_delimiter (str)
+
+   The delimiter used to separate multiple fields of a single
+   variable (see Section 1.5.2, “Variables”). Only one char may be
+   set.
+
+   Default value is “,”
+
+   Example 1.10. Set value_delimiter parameter
+...
+modparam("db_http", "value_delimiter",";")
+...
+
+1.3.10. timeout (int)
 
    The maximum number of milliseconds that the HTTP ops are
    allowed to last
 
    Default value is “30000 ( 30 seconds )”
 
-   Example 1.10. Set timeout parameter
+   Example 1.11. Set timeout parameter
 ...
-modparam("db_http", "timeout","5000")
+modparam("db_http", "timeout",5000)
 ...
 
 1.4. Exported Functions
@@ -237,7 +251,7 @@ modparam("db_http", "timeout","5000")
    apart by the query_type variable. Each type of query uses
    specific variables simillar to those in the opensips db_api.
 
-   Example 1.11. Example query.
+   Example 1.12. Example query.
 ...
 GET /presentity/?c=username,domain,event,expires HTTP/1.1
 ...
@@ -282,7 +296,7 @@ GET /presentity/?c=username,domain,event,expires HTTP/1.1
        value. Will be present in all queries except the "SELECT"
        (normal query).
 
-   Example 1.12. Example query with variables.
+   Example 1.13. Example query with variables.
 ...
 GET /presentity/?c=username,domain,event,expires HTTP/1.1
 GET /version/?k=table_name&v=xcap&c=table_version HTTP/1.1
@@ -323,7 +337,7 @@ k=id&v=100&query_type=insert
        Uses the q variable. This is an optional type of query. If
        the module is not configured to use it it will not.
 
-   Example 1.13. More query examples.
+   Example 1.14. More query examples.
 
 ...
 POST /active_watchers HTTP/1.1
@@ -343,7 +357,7 @@ k=id&op=%3D&v=100&uk=id&uv=101&query_type=update
    NULL values in queries are represented as a string of length 1
    containing a single character with value '\0'.
 
-   Example 1.14. NULL query example.
+   Example 1.15. NULL query example.
 
 ...
 POST /active_watchers HTTP/1.1
@@ -378,7 +392,7 @@ k=id&op=%3D&v=%00&query_type=delete
    If the query produced an error the server must reply with a
    HTTP 500 reply, or with a corresponding error code (404, 401).
 
-   Example 1.15. Example Reply.
+   Example 1.16. Example Reply.
 ...
 int;string;blob
 6;something=something;1000
@@ -398,7 +412,7 @@ int;string;blob
    be placed under quotes. A quote delimiter inside a value must
    be preceeded by another quote delimiter.
 
-   Example 1.16. Quoting Example.
+   Example 1.17. Quoting Example.
 ...
 int;string;blob
 6;|ana;maria|;1000

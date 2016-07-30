@@ -1,0 +1,144 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+		This is a module which provides SQLite support for OpenSIPS.
+		It implements the DB API defined in OpenSIPS.
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+			Also this module provides two ways of creating the query. One is to use
+		sqlite3_bind_* functions after opensips creates the prepared statement query.
+		The second one directly uses only sqlite3_snprintf function to print the
+		values into the opensips created query. In theory, the second one should
+		be faster and should allow you to make more queries to the database in
+		the same time, so by default this one will be active. You can use the
+		sqlite3_bind_* interface by simply uncommenting the SQLITE_BIND line
+		the Makefile.
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>libsqlite3-dev</emphasis> - the development libraries of sqlite.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>alloc_limit</varname> (integer)</title>
+		<para>
+		Since the library does not support a function to return the number of rows
+		in a query, this number is obtained using "count(*)" query. If we use multiple
+		processes there is the risk ,since "count(*)" query and the actual "select"
+		query, the number of rows in the result query to have changed, so realloc
+		will be needed if the number is bigger. Using <emphasis>alloc_limit</emphasis>
+		parameter you can specify the number with which the number of allocated rows in the
+		result is raised.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 10.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>alloc_limit</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_sqlite", "alloc_limit", 25)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>load_extension</varname> (string)</title>
+		<para>
+		Since the library does not support a function to return the number of rows
+		in a query, this number is obtained using "count(*)" query. If we use multiple
+		processes there is the risk ,since "count(*)" query and the actual "select"
+		query, the number of rows in the result query to have changed, so realloc
+		will be needed if the number is bigger. Using <emphasis>alloc_limit</emphasis>
+		parameter you can specify the number with which the number of allocated rows in the
+		result is raised.
+		This parameter enables extension loading, similiar to ".load" functionality in sqlite3,
+		extenions like sqlite3-pcre which enables REGEX function. In order to use this functionality
+		you must specify the library path(.so file) and the entry point which represents the function
+		to be called by the sqlite library (read more at sqlite
+		<ulink url="https://www.sqlite.org/capi3ref.html#sqlite3_load_extension">load_extension</ulink>
+		official documentation), separated by   ";"   delimiter. The entry point paramter
+		can miss, so you won't need to use the delimitier in this case.
+		</para>
+		<para>
+		<emphasis>
+			Default no extenion is loaded.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_sqlite_alloc_limit</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_sqlite", "load_extension", "/usr/lib/sqlite3/pcre.so")
+modparam("db_sqlite", "load_extension", "/usr/lib/sqlite3/pcre.so;sqlite3_extension_init")
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+	<section>
+	<title>Exported Functions</title>
+		<para>
+		No function exported to be used from configuration file.
+		</para>
+	</section>
+	<section>
+	<title>Installation</title>
+		<para>
+		Because it dependes on an external library, the sqlite module is not
+		compiled and installed by default. You can use one of the next options.
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para>
+			- edit the "Makefile" and remove "db_sqlite" from "excluded_modules"
+			list. Then follow the standard procedure to install &osips;:
+			"make all; make install".
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+			- from command line use: 'make all include_modules="db_sqlite";
+			make install include_modules="db_sqlite"'.
+			</para>
+			</listitem>
+		</itemizedlist>
+	</section>
+</chapter>
+

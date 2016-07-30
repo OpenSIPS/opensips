@@ -1,10 +1,9 @@
 /*
- * $Id$
- *
  * timer related functions
  *
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2014 OpenSIPS Solutions
  * Copyright (C) 2007 Voice Sistem SRL
+ * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,13 +17,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
  *  2007-02-02  timer with resolution of microseconds added (bogdan)
+ *  2014-09-11  timer tasks are distributed via reactor (bogdan)
+ *  2014-10-03  drop all timer processes (aside keeper and trigger) (bogdan)
  */
 
 
@@ -42,12 +43,23 @@ typedef unsigned long long utime_t;
 typedef void (timer_function)(unsigned int ticks, void* param);
 typedef void (utimer_function)(utime_t uticks, void* param);
 
-/* define internal timer to 10 miliseconds */
+/* define internal timer to 10 milliseconds */
 #define ITIMER_TICK 10000
 
-struct sr_timer{
+#define TIMER_FLAG_IS_UTIMER       (1<<0)
+#define TIMER_FLAG_SKIP_ON_DELAY   (1<<1)
+#define TIMER_FLAG_DELAY_ON_DELAY  (1<<2)
+
+/* try to synchronize with system time every 5 seconds */
+#define TIMER_SYNC_TICKS 5000000
+/* synchronize if drift is greater than internal timer tick */
+#define TIMER_MAX_DRIFT_TICKS ITIMER_TICK
+
+struct os_timer{
 	/* unique ID in the list of timer handlers - not really used */
-	int id;
+	unsigned short id;
+	/* is utimer or timer? */
+	unsigned short flags;
 	/* string label identifying the handler (what module and what for was registered) */
 	char *label;
 	/* handler function */
@@ -61,49 +73,41 @@ struct sr_timer{
 	unsigned int interval;
 	/* internal time for the next triggering */
 	utime_t expires;
-	/* next element in the timer list (per timer process) */
-	struct sr_timer* next;
+	/* time of the current triggering (based on ITIMER_TICKs) */
+	utime_t trigger_time;
+	/* UTICKs or TICKs of the triggering */
+	utime_t time;
+	/* next element in the timer list */
+	struct os_timer* next;
 };
 
-struct sr_timer_process {
-	unsigned int flags;
-	struct sr_timer *timer_list;
-	struct sr_timer *utimer_list;
-	struct sr_timer_process *next;
-};
 
-#define TIMER_PROC_INIT_FLAG  (1<<0)
-
-extern struct sr_timer_process *timer_proc_list;
+extern int timer_fd_out;
 
 int init_timer(void);
 
 void destroy_timer(void);
 
-/*! \brief Counts the timer processes that needs to be created */
-int count_timer_procs(void);
-
-int start_timer_processes(void);
-
 /*! \brief register a periodic timer;
  * ret: <0 on error*/
-int register_timer(char *label, timer_function f, void* param, unsigned int interval);
+int register_timer(char *label, timer_function f, void* param,
+		unsigned int interval, unsigned short flags);
 
-int register_utimer(char *label, utimer_function f, void* param, unsigned int interval);
+int register_utimer(char *label, utimer_function f, void* param,
+		unsigned int interval, unsigned short flags);
 
-void* register_timer_process(char *label, timer_function f, void* param,
-	unsigned int interval, unsigned int flags);
+unsigned int have_ticks(void);
 
-int append_timer_to_process(char *label, timer_function f, void* param,
-	unsigned int interval, void *timer);
-
-int append_utimer_to_process(char *label, utimer_function f, void* param,
-	unsigned int interval, void *timer);
+unsigned int have_uticks(void);
 
 unsigned int get_ticks(void);
 
 utime_t get_uticks(void);
 
+int start_timer_processes(void);
+
 int register_route_timers(void);
+
+void handle_timer_job(void);
 
 #endif

@@ -1,0 +1,119 @@
+#!/bin/bash
+#
+# Startup script for OpenSIPS
+#
+# chkconfig: - 85 15
+# description: OpenSIPS is a fast SIP Server.
+#
+# processname: opensips
+# pidfile: /var/run/opensips.pid
+# config: /etc/opensips/opensips.cfg
+#
+### BEGIN INIT INFO
+# Provides: opensips
+# Required-Start: $local_fs $network $named
+# Should-Start: mysqld postgresql
+# Short-Description: start, stop OpenSIPS
+# Description: OpenSIPS is a very fast and flexible SIP (RFC3261) server.
+### END INIT INFO
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+prog=opensips
+opensips=/usr/sbin/$prog
+cfgdir="/etc/$prog"
+pidfile="/var/run/$prog.pid"
+lockfile="/var/lock/subsys/$prog"
+configfile="$cfgdir/$prog.cfg"
+m4configfile="$cfgdir/$prog.m4"
+m4archivedir="$cfgdir/archive"
+OPTIONS=""
+RETVAL=0
+
+[ -f /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
+
+start() {
+	echo -n $"Starting $prog: "
+
+	# check whether OpenSIPs was already started
+	if status -p $pidfile $prog > /dev/null 2>&1 ; then
+		echo -n "already running" && warning && echo
+		return 0
+	fi
+
+	# Generate config from M4
+	if [ -f $m4configfile ]; then
+		cd "$cfgdir"
+		m4 -Q $m4configfile >$configfile.tmp
+		if [ $? != 0 ]; then
+			echo -n "cannot process m4 macro" && failure && echo
+			rm "$configfile.tmp"
+			return 1
+		fi
+
+		[ -e $configfile ] || touch $configfile
+
+		# compare configs
+		if [ `md5sum $configfile|awk '{print $1}'` != `md5sum $configfile.tmp|awk '{print $1}'` ]; then
+			mkdir -p "$m4archivedir"
+			mv "$configfile" "$m4archivedir/$prog.cfg-`date +%Y%m%d_%H%M%S`"
+		fi
+
+		mv "$configfile.tmp" "$configfile"
+		chown $prog:$prog $configfile
+		chmod 640 $configfile
+	fi
+
+	# there is something at end of this output which is needed to
+	# report proper [ OK ] status in Fedora scripts
+	daemon $opensips -u $prog -g $prog -P $pidfile -f $configfile $OPTIONS 2>/dev/null | tail -1
+	RETVAL=$?
+	echo
+	[ $RETVAL = 0 ] && touch $lockfile
+	return $RETVAL
+}
+
+stop() {
+	echo -n $"Stopping $prog: "
+	# check whether OpenSIPs is running
+	if ! status -p $pidfile $prog > /dev/null 2>&1 ; then
+		echo -n "not running" && warning && echo
+		return 0
+	fi
+
+	killproc $prog 2> /dev/null
+	RETVAL=$?
+	echo
+	[ $RETVAL = 0 ] && rm -f $lockfile $pidfile
+	return $RETVAL
+}
+
+# See how we were called.
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	status)
+		status -p $pidfile $prog
+		RETVAL=$?
+		;;
+	restart|reload)
+		stop
+		start
+		;;
+	condrestart|try-restart)
+		if [ -f $pidfile ] ; then
+			stop
+			start
+		fi
+		;;
+	*)
+		echo $"Usage: $prog {start|stop|reload|restart|condrestart|status|help}"
+		RETVAL=2
+esac
+
+exit $RETVAL

@@ -1,6 +1,4 @@
 /*
- * $Id$ 
- *
  * Group membership - module interface
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -19,9 +17,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -33,7 +31,7 @@
  *  2004-06-07  updated to the new DB api: calls to group_db_* (andrei)
  *  2005-10-06 - added support for regexp-based groups (bogdan)
  *  2008-12-26  pseudovar argument for group parameter at is_user_in (saguti).
- *  2009-08-07 - joined with group_radius module to support generic AAA group 
+ *  2009-08-07 - joined with group_radius module to support generic AAA group
  *		requests (Irina Stanescu)
  */
 
@@ -108,7 +106,7 @@ static str db_url = {NULL, 0};
 static str aaa_proto_url = {NULL, 0};
 
 /* Table name where group definitions are stored */
-str table         = {TABLE, TABLE_LEN}; 
+str table         = {TABLE, TABLE_LEN};
 str user_column   = {USER_COL, USER_COL_LEN};
 str domain_column = {DOMAIN_COL, DOMAIN_COL_LEN};
 str group_column  = {GROUP_COL, GROUP_COL_LEN};
@@ -166,15 +164,28 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_AAA, NULL, DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_url", get_deps_sqldb_url },
+		{ NULL, NULL },
+	},
+};
 
 /*
  * Module interface
  */
 struct module_exports exports = {
-	"group", 
+	"group",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
+	0,          /* Exported async functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */

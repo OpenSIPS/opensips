@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua_urloc module - usrloc pua module
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,21 +15,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #ifndef _PUA_UL_
-#define _PUA_UL
+#define _PUA_UL_
 #include "../pua/pua_bind.h"
 
 send_publish_t pua_send_publish;
 send_subscribe_t pua_send_subscribe;
 void ul_publish(ucontact_t* c, int type, void* param);
-int pua_unset_publish(struct sip_msg* msg , void* param);
+int pua_set_publish(struct sip_msg* , char*, char*);
 
 extern str pres_prefix;
 extern str presence_server;
+extern int pul_status_idx;
 
 #endif

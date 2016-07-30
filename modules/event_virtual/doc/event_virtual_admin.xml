@@ -1,0 +1,110 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		The <emphasis>event_virtual</emphasis>
+		module provides the possibility to have multiple external applications, using different transport protocols, subscribed to the &osips; Event Interface as a single virtual subscriber, for a specific event. When an event is triggered, the event_virtual module notifies the specified transport modules using one of the following policies:
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>PARALLEL</emphasis> - all subscribers (applications) are notified at once
+			</para>	</listitem>
+			<listitem><para>
+					<emphasis>FAILOVER</emphasis> - for every event raised, try to notify the subscribers, in the order in which they are given, until the first successful notification
+			</para>	</listitem>
+			<listitem><para>
+					<emphasis>ROUND-ROBIN</emphasis> - for every event raised, notify the subscribers alternatively, in the order in which they are given (for each raised event notify a different subscriber)
+			</para>	</listitem>
+		</itemizedlist>
+		Only one expire value can be used (for the whole virtual subscription), and not one for each individual subscriber.
+	</para>
+	</section>
+	<section>
+	<title>Virtual socket syntax</title>
+	<para>
+		<para><emphasis>virtual:policy subscriber_1 [[subscriber_2] ...]</emphasis></para>
+	</para>
+	<para>
+		Meanings:
+		<itemizedlist>
+			<listitem>
+				<para>
+					<emphasis>virtual:</emphasis> - informs the Event Interface that the
+					events sent to this subscriber should be handled by the
+					<emphasis>event_virtual</emphasis> module
+				</para>
+			</listitem>
+			<listitem><para>
+				<emphasis>policy</emphasis> - subscriber notification policy, can have one of the following values: 'PARALLEL', 'FAILOVER', 'ROUND-ROBIN' (with the behaviour described above)
+				<itemizedlist>
+				<listitem>
+					<para>
+						<emphasis>!! Important: Policies must always be specified as
+							uppercase strings!</emphasis>
+					</para>
+				</listitem>
+			</itemizedlist>
+			</para>	</listitem>
+			<listitem><para>
+					<emphasis>subscriber_1</emphasis> - use the socket syntax for this specific subscriber (eg. "rabbitmq:guest:guest@127.0.0.1:5672/pike")
+			</para>	</listitem>
+		</itemizedlist>
+	</para>
+	</section>
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<para>
+				<emphasis>The OpenSIPS event modules which implement the transport protocols used by the subscribers</emphasis>.
+			</para>
+		</para>
+	</section>
+    </section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+	<title>Exported Parameters</title>
+		<para>
+		No exported parameters to be used in the configuration file.
+		</para>
+	</section>
+	<section>
+	<title>Exported Functions</title>
+		<para>
+		No exported functions to be used in the configuration file.
+		</para>
+	</section>
+	<section>
+	<title>Example</title>
+		<example>
+		<title>Virtual socket</title>
+		<para>
+			The sockets of the subscribers may be separated by any number of spaces or tabs:
+		</para>
+		<programlisting format="linespecific">
+
+	virtual:PARALLEL rabbitmq:guest:guest@127.0.0.1:5672/pike flatstore:/var/log/opensips_proxy.log
+
+</programlisting>
+		</example>
+	</section>
+</chapter>

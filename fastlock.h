@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -57,10 +55,23 @@
 #endif
 
 /*! The actual lock */
+#ifndef DBG_LOCK
 typedef  volatile int fl_lock_t;
+#else
+typedef struct fl_lock_t_{
+	volatile int lock;
+	char* file;
+	char* func;
+	unsigned long line;
+} fl_lock_t;
+#endif
 
 /*! Initialize a lock, zero is unlocked. */
-#define init_lock( l ) (l)=0
+#ifndef DBG_LOCK
+	#define init_lock( l ) (l)=0
+#else 
+	#define init_lock( l ) (l).lock = 0
+#endif
 
 
 
@@ -70,7 +81,11 @@ typedef  volatile int fl_lock_t;
  * \return 1 if the lock is held by someone else, 0 otherwise
  * \see get_lock
  */
+#ifndef DBG_LOCK
 inline static int tsl(fl_lock_t* lock)
+#else
+inline static int tsl(volatile int* lock)
+#endif
 {
 	int val;
 
@@ -85,7 +100,7 @@ inline static int tsl(fl_lock_t* lock)
 	);
 #else
 	val=1;
-	asm volatile( 
+	asm volatile(
 		" xchg %1, %0" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"
 	);
 #endif /*NOSMP*/
@@ -97,7 +112,7 @@ inline static int tsl(fl_lock_t* lock)
 #endif
 			: "=r"(val) : "r"(lock):"memory"
 	);
-	
+
 #elif defined __CPU_arm
 	asm volatile(
 			"# here \n\t"
@@ -105,7 +120,7 @@ inline static int tsl(fl_lock_t* lock)
 			: "=&r" (val)
 			: "r"(1), "r" (lock) : "memory"
 	);
-	
+
 #elif defined(__CPU_ppc) || defined(__CPU_ppc64)
 	asm volatile(
 			"1: lwarx  %0, 0, %2\n\t"
@@ -125,7 +140,7 @@ inline static int tsl(fl_lock_t* lock)
 #elif defined __CPU_mips2
 	long tmp;
 	tmp=1; /* just to kill a gcc 2.95 warning */
-	
+
 	asm volatile(
 		".set noreorder\n\t"
 		"1:  ll %1, %2   \n\t"
@@ -134,8 +149,8 @@ inline static int tsl(fl_lock_t* lock)
 		"    beqz %0, 1b \n\t"
 		"    nop \n\t"
 		".set reorder\n\t"
-		: "=&r" (tmp), "=&r" (val), "=m" (*lock) 
-		: "0" (tmp), "2" (*lock) 
+		: "=&r" (tmp), "=&r" (val), "=m" (*lock)
+		: "0" (tmp), "2" (*lock)
 		: "cc"
 	);
 #elif defined __CPU_alpha
@@ -146,7 +161,7 @@ inline static int tsl(fl_lock_t* lock)
 		"1:  ldl %0, %1   \n\t"
 		"    blbs %0, 2f  \n\t"  /* optimization if locked */
 		"    ldl_l %0, %1 \n\t"
-		"    blbs %0, 2f  \n\t" 
+		"    blbs %0, 2f  \n\t"
 		"    lda %2, 1    \n\t"  /* or: or $31, 1, %2 ??? */
 		"    stl_c %2, %1 \n\t"
 		"    beq %2, 1b   \n\t"
@@ -169,12 +184,19 @@ inline static int tsl(fl_lock_t* lock)
  * \param lock the lock that should be set
  * \see tsl
  */
+#ifndef DBG_LOCK
 inline static void get_lock(fl_lock_t* lock)
 {
+#else
+inline static void get_lock(fl_lock_t* lock_struct,  const char* file, const char* func, unsigned int line)
+{
+	volatile int *lock = &lock_struct->lock;
+#endif
+
 #ifdef ADAPTIVE_WAIT
 	int i=ADAPTIVE_WAIT_LOOPS;
 #endif
-	
+
 	while(tsl(lock)){
 #ifdef BUSY_WAIT
 #elif defined ADAPTIVE_WAIT
@@ -184,6 +206,13 @@ inline static void get_lock(fl_lock_t* lock)
 		sched_yield();
 #endif
 	}
+
+#ifdef DBG_LOCK
+	lock_struct->file = (char*)file;
+	lock_struct->func = (char*)func;
+	lock_struct->line = line;
+#endif
+
 }
 
 
@@ -191,20 +220,30 @@ inline static void get_lock(fl_lock_t* lock)
  * Release a lock
  * \param lock the lock that should be released
  */
+#ifndef DBG_LOCK
 inline static void release_lock(fl_lock_t* lock)
 {
+#else 
+inline static void release_lock(fl_lock_t* lock_struct)
+{
+	volatile int *lock = &lock_struct->lock;
+	lock_struct->file = 0;
+	lock_struct->func = 0;
+	lock_struct->line = 0;
+#endif
+
 #if defined(__CPU_i386) || defined(__CPU_x86_64)
 /*	char val;
 	val=0; */
 	asm volatile(
 		" movb $0, (%0)" : /*no output*/ : "r"(lock): "memory"
 		/*" xchg %b0, %1" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"*/
-	); 
+	);
 #elif defined(__CPU_sparc64) || defined(__CPU_sparc)
 	asm volatile(
-#ifndef NOSMP
-			"membar #LoadStore | #StoreStore \n\t" /*is this really needed?*/
-#endif
+	#ifndef NOSMP
+				"membar #LoadStore | #StoreStore \n\t" /*is this really needed?*/
+	#endif
 			"stb %%g0, [%0] \n\t"
 			: /*no output*/
 			: "r" (lock)
@@ -212,8 +251,8 @@ inline static void release_lock(fl_lock_t* lock)
 	);
 #elif defined __CPU_arm
 	asm volatile(
-		" str %0, [%1] \n\r" 
-		: /*no outputs*/ 
+		" str %0, [%1] \n\r"
+		: /*no outputs*/
 		: "r"(0), "r"(lock)
 		: "memory"
 	);
@@ -243,10 +282,11 @@ inline static void release_lock(fl_lock_t* lock)
 		"    mb          \n\t"
 		"    stl $31, %0 \n\t"
 		: "=m"(*lock) :/* no input*/ : "memory"  /* because of the mb */
-	);  
+	);
 #else
 #error "unknown architecture"
 #endif
+
 }
 
 

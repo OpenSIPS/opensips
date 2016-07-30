@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -27,6 +25,9 @@
 
 #ifndef _MI_HTTP_HTTP_FNC_H
 #define _MI_HTTP_HTTP_FNC_H
+
+#define MI_HTTP_ASYNC_FAILED   ((void*)-2)
+#define MI_HTTP_ASYNC_EXPIRED  ((void*)-3)
 
 typedef struct http_mi_cmd_ {
 	struct mi_cmd* cmds;

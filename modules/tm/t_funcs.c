@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * transaction maintenance functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -36,7 +34,7 @@
  *  2004-02-13  t->is_invite and t->local replaced with flags (bogdan)
  *  2005-02-16  fr_*_timer acceps full AVP specifications; empty AVP
  *              desable variable timer feature (bogdan)
- *  2007-01-25  DNS failover at transaction level added (bogdan) 
+ *  2007-01-25  DNS failover at transaction level added (bogdan)
  */
 
 #include <limits.h>
@@ -54,27 +52,19 @@
 #include "t_msgbuilder.h"
 #include "t_lookup.h"
 #include "config.h"
-
-/* fr_timer AVP specs */
-static int     fr_timer_avp_type;
-static int     fr_timer_avp;
-static int     fr_inv_timer_avp_type;
-static int     fr_inv_timer_avp;
-
-static str relay_reason_100 = str_init("Giving a try");
-
+#include "../../context.h"
 
 
 /* ----------------------------------------------------- */
-int send_pr_buffer( struct retr_buf *rb, void *buf, int len
+int send_pr_buffer( struct retr_buf *rb, void *buf, int len,
 #ifdef EXTRA_DEBUG
-						, char* file, const char *function, int line
+					char* file, const char *function, int line,
 #endif
-					)
+					void* ctx)
 {
 	if (buf && len && rb )
 		return msg_send( rb->dst.send_sock, rb->dst.proto, &rb->dst.to,
-				         rb->dst.proto_reserved1, buf, len);
+				         rb->dst.proto_reserved1, buf, len, ctx);
 	else {
 #ifdef EXTRA_DEBUG
 		LM_CRIT("sending an empty buffer from %s: %s (%d)\n",file,
@@ -117,7 +107,7 @@ int t_release_transaction( struct cell *trans )
 	reset_timer( & trans->uas.response.retr_timer );
 
 	cleanup_uac_timers( trans );
-	
+
 	put_on_wait( trans );
 	return 1;
 }
@@ -196,7 +186,7 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 
 	ret=0;
 
-	new_tran = t_newtran( p_msg );
+	new_tran = t_newtran( p_msg, 1/*full UAS cloning*/ );
 
 	/* parsing error, memory alloc, whatever ... */
 	if (new_tran<0) {
@@ -215,7 +205,9 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 		LM_DBG("forwarding ACK\n");
 		/* send it out */
 		if (proxy==0) {
-			proxy=uri2proxy(GET_NEXT_HOP(p_msg), PROTO_NONE);
+			proxy=uri2proxy(GET_NEXT_HOP(p_msg),
+				p_msg->force_send_socket ?
+				p_msg->force_send_socket->proto : PROTO_NONE );
 			if (proxy==0) {
 					ret=E_BAD_ADDRESS;
 					goto done;
@@ -237,12 +229,6 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 	if (flags&TM_T_REPLY_repl_FLAG) t->flags|=T_IS_LOCAL_FLAG;
 	if (flags&TM_T_REPLY_nodnsfo_FLAG) t->flags|=T_NO_DNS_FAILOVER_FLAG;
 	if (flags&TM_T_REPLY_reason_FLAG) t->flags|=T_CANCEL_REASON_FLAG;
-
-	/* INVITE processing might take long, particularly because of DNS
-	   look-ups -- let upstream know we're working on it */
-	if ( p_msg->REQ_METHOD==METHOD_INVITE &&
-	!(flags&(TM_T_REPLY_no100_FLAG|TM_T_REPLY_repl_FLAG)) )
-		t_reply( t, p_msg , 100 , &relay_reason_100);
 
 	/* now go ahead and forward ... */
 	ret=t_forward_nonack( t, p_msg, proxy);
@@ -268,102 +254,4 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 done:
 	return ret;
 }
-
-
-
-/*
- * Initialize parameters containing the ID of
- * AVPs with variable timers
- */
-int init_avp_params(char *fr_timer_param, char *fr_inv_timer_param)
-{
-	pv_spec_t avp_spec;
-	unsigned short avp_flags;
-	str s;
-	if (fr_timer_param && *fr_timer_param) {
-		s.s = fr_timer_param; s.len = strlen(s.s);
-		if (pv_parse_spec(&s, &avp_spec)==0
-				|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP %s AVP definition\n", fr_timer_param);
-			return -1;
-		}
-
-		if(pv_get_avp_name(0, &avp_spec.pvp, &fr_timer_avp, &avp_flags)!=0)
-		{
-			LM_ERR("[%s]- invalid AVP definition\n", fr_timer_param);
-			return -1;
-		}
-		fr_timer_avp_type = avp_flags;
-	} else {
-		fr_timer_avp = -1;
-		fr_timer_avp_type = 0;
-	}
-
-	if (fr_inv_timer_param && *fr_inv_timer_param) {
-		s.s = fr_inv_timer_param; s.len = strlen(s.s);
-		if (pv_parse_spec(&s, &avp_spec)==0
-				|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP %s AVP definition\n",
-					fr_inv_timer_param);
-			return -1;
-		}
-
-		if(pv_get_avp_name(0, &avp_spec.pvp, &fr_inv_timer_avp, &avp_flags)!=0)
-		{
-			LM_ERR("[%s]- invalid AVP definition\n", fr_inv_timer_param);
-			return -1;
-		}
-		fr_inv_timer_avp_type = avp_flags;
-	} else {
-		fr_inv_timer_avp = -1;
-		fr_inv_timer_avp_type = 0;
-	}
-	return 0;
-}
-
-
-/*
- * Get the FR_{INV}_TIMER from corresponding AVP
- */
-static inline int avp2timer(utime_t *timer, int type, int name)
-{
-	struct usr_avp *avp;
-	int_str val_istr;
-	int err;
-
-	avp = search_first_avp( type, name, &val_istr, 0);
-	if (!avp)
-		return 1;
-
-	if (avp->flags & AVP_VAL_STR) {
-		*timer = str2s(val_istr.s.s, val_istr.s.len, &err);
-		if (err) {
-			LM_ERR("failed to convert string to integer\n");
-			return -1;
-		}
-	} else {
-		*timer = val_istr.n;
-	}
-
-	return 0;
-}
-
-
-int fr_avp2timer(utime_t* timer)
-{
-	if (fr_timer_avp>=0)
-		return avp2timer( timer, fr_timer_avp_type, fr_timer_avp);
-	else
-		return 1;
-}
-
-
-int fr_inv_avp2timer(utime_t* timer)
-{
-	if (fr_inv_timer_avp>=0)
-		return avp2timer( timer, fr_inv_timer_avp_type, fr_inv_timer_avp);
-	else
-		return 1;
-}
-
 

@@ -10,8 +10,7 @@ Marco Lorrai
 
    Copyright © 2005, 2006 Marco Lorrai
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -26,9 +25,8 @@ Marco Lorrai
 
         1.3. Exported Parameters
 
-              1.3.1. ping_interval (int)
-              1.3.2. auto_reconnect (int)
-              1.3.3. use_escape_common (int)
+              1.3.1. auto_reconnect (int)
+              1.3.2. use_escape_common (int)
 
         1.4. Exported Functions
         1.5. Installation and Running
@@ -40,9 +38,8 @@ Marco Lorrai
 
    List of Examples
 
-   1.1. Set the “ping_interval” parameter
-   1.2. Set the “auto_reconnect” parameter
-   1.3. Set the “use_escape_common” parameter
+   1.1. Set the “auto_reconnect” parameter
+   1.2. Set the “use_escape_common” parameter
 
 Chapter 1. Admin Guide
 
@@ -73,29 +70,18 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-1.3.1. ping_interval (int)
-
-   Sets the ping time interval.
-
-   Default value is “300” seconds.
-
-   Example 1.1. Set the “ping_interval” parameter
-...
-modparam("db_unixodbc", "ping_interval", 600)
-...
-
-1.3.2. auto_reconnect (int)
+1.3.1. auto_reconnect (int)
 
    Turns on or off the auto_reconnect mode.
 
    Default value is “1”, this means it is enabled.
 
-   Example 1.2. Set the “auto_reconnect” parameter
+   Example 1.1. Set the “auto_reconnect” parameter
 ...
 modparam("db_unixodbc", "auto_reconnect", 0)
 ...
 
-1.3.3. use_escape_common (int)
+1.3.2. use_escape_common (int)
 
    Escape values in query using internal escape_common() function.
    It escapes single quote ''', double quote '"', backslash '\',
@@ -108,7 +94,7 @@ modparam("db_unixodbc", "auto_reconnect", 0)
 
    Default value is “0” (0 = disabled; 1 = enabled).
 
-   Example 1.3. Set the “use_escape_common” parameter
+   Example 1.2. Set the “use_escape_common” parameter
 ...
 modparam("db_unixodbc", "use_escape_common", 1)
 ...

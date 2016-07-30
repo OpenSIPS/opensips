@@ -1,6 +1,4 @@
 /*
- * $Id: checks.c 5901 2009-07-21 07:45:05Z bogdan_iancu $
- *
  * Various URI checks
  *
  * Copyright (C) 2001-2004 FhG FOKUS
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -261,7 +259,7 @@ int does_uri_exist(struct sip_msg* _msg, char* _s1, char* _s2)
  */
 int get_auth_id(struct sip_msg* _msg, char* _uri, char* _auth_user, char* _auth_realm)
 {
-	str uri, sip_user, sip_domain;
+	str uri;
 	struct sip_uri sip_uri;
 	int_str ret_authuser, ret_authrealm;
 	static db_ps_t my_ps = NULL;
@@ -272,27 +270,21 @@ int get_auth_id(struct sip_msg* _msg, char* _uri, char* _auth_user, char* _auth_
 	db_row_t* dbres_row;
 
 
-	// retrieve the string value of the given uri (pseudo variables will also be
-	// already substituted with their proper values)
+	/* retrieve the string value of the given uri (pseudo variables will also be
+	   already substituted with their proper values)  */
 	if (_uri == NULL || pv_printf_s(_msg, (pv_elem_t *) _uri, &uri) != 0 ||
 	uri.len == 0 || uri.s == NULL) {
 		LM_WARN("cannot get string for value\n");
 		return -1;
 	}
 
-	// check if we really have a valid uri as parameter
-	// TODO: check Bug ID 2685700
-	if (parse_uri(uri.s, strlen(uri.s), &sip_uri) < 0
-			&& (sip_uri.user.s == NULL || sip_uri.user.len <= 0)) {
-		LM_ERR("First parameter must be a URI (val = '%s').", uri.s);
+	/* check if we really have a valid uri as parameter */
+	if (parse_uri(uri.s, uri.len, &sip_uri) < 0
+	&& (sip_uri.user.s == NULL || sip_uri.user.len <= 0)) {
+		LM_ERR("First parameter must be a URI with username (val = '%s').",
+			uri.s);
 		return -1;
 	}
-
-	// split uri into user and realm part
-	sip_user.s = strtok(sip_uri.user.s, "@");
-	sip_domain.s = strtok(NULL, "@");
-	sip_user.len = strlen(sip_user.s);
-	sip_domain.len = strlen(sip_domain.s);
 
 	if (use_uri_table != 0) {
 		uridb_dbf.use_table(db_handle, &db_table);
@@ -310,16 +302,16 @@ int get_auth_id(struct sip_msg* _msg, char* _uri, char* _auth_user, char* _auth_
 
 	VAL_TYPE(vals) = DB_STR;
 	VAL_NULL(vals) = 0;
-	VAL_STR(vals) = sip_user;
+	VAL_STR(vals) = sip_uri.user;
 
 	VAL_TYPE(vals + 1) = DB_STR;
 	VAL_NULL(vals + 1) = 0;
-	VAL_STR(vals + 1) = sip_domain;
+	VAL_STR(vals + 1) = sip_uri.host;
 
 	CON_PS_REFERENCE(db_handle) = &my_ps;
 
-	// if use_domain is set also the domain column of the database table will
-	// be honoured in the following query (see sixth parameter)
+	/* if use_domain is set also the domain column of the database table will
+	   be honoured in the following query (see sixth parameter) */
 	if (uridb_dbf.query(db_handle, keys, 0, vals, cols, (use_domain ? 2 : 1), 2, 0, &dbres) < 0) {
 		LM_ERR("Error while querying database");
 		return ERR_DBQUERY;
@@ -331,19 +323,19 @@ int get_auth_id(struct sip_msg* _msg, char* _uri, char* _auth_user, char* _auth_
 		return ERR_USERNOTFOUND;
 	}
 
-	// if more than one matching db entry is found, there is either a duplicate or a
-	// wrong tuple in the database. or maybe just the 'use_domain' paramter should be set.
+	/* if more than one matching db entry is found, there is either a duplicate or a
+	   wrong tuple in the database. or maybe just the 'use_domain' parameter should be set. */
 	if (RES_ROW_N(dbres) > 1) {
 		LM_WARN("Multiple entries are matching the given uri. Consider setting the 'use_domain' param.");
 	}
 
 	LM_DBG("User in request uri does exist");
 
-	// in the case there is more than a single match, the above warning is presented
-	// to the user. anyway we continue by just using the first result row only.
+	/* in the case there is more than a single match, the above warning is presented
+	   to the user. anyway we continue by just using the first result row only. */
 	dbres_row = RES_ROWS(dbres);
 
-	// check the datatypes of the results of the database query
+	/* check the datatypes of the results of the database query */
 	if (ROW_VALUES(dbres_row)->type != DB_STRING) {
 		LM_ERR("Database '%s' column is not of type string.", ((str*) cols[0])->s);
 		return ERR_DBUSE;
@@ -353,7 +345,7 @@ int get_auth_id(struct sip_msg* _msg, char* _uri, char* _auth_user, char* _auth_
 		return ERR_DBUSE;
 	}
 
-	// set result parameters
+	/* set result parameters  */
 	ret_authuser.s.s = (char*) VAL_STRING(ROW_VALUES(dbres_row));
 	ret_authuser.s.len = strlen(ret_authuser.s.s);
 	ret_authrealm.s.s = (char*) VAL_STRING(ROW_VALUES(dbres_row)+1);

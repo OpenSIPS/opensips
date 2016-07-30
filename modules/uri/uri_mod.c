@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * Various URI related functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -19,9 +17,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -122,10 +120,10 @@ static cmd_export_t cmds[] = {
 	{"does_uri_user_exist", (cmd_function)NULL, 1, obsolete_fixup_2, 0,
 			REQUEST_ROUTE|LOCAL_ROUTE},
 	{"aaa_does_uri_exist", (cmd_function)aaa_does_uri_exist_0, 0,
-			aaa_fixup_0, 0, 
+			aaa_fixup_0, 0,
 			REQUEST_ROUTE|LOCAL_ROUTE},
 	{"aaa_does_uri_exist", (cmd_function)aaa_does_uri_exist_1, 1,
-			aaa_fixup_1, fixup_free_pvar_null, 
+			aaa_fixup_1, fixup_free_pvar_null,
 			REQUEST_ROUTE|LOCAL_ROUTE},
 	{"aaa_does_uri_user_exist", (cmd_function)aaa_does_uri_user_exist_0, 0,
 			aaa_fixup_0, 0,
@@ -155,6 +153,9 @@ static cmd_export_t cmds[] = {
 			fixup_str_str, 0,
 			REQUEST_ROUTE|LOCAL_ROUTE},
 	{"add_uri_param", (cmd_function)add_uri_param, 1,
+			fixup_str_null, 0,
+			REQUEST_ROUTE},
+	{"del_uri_param", (cmd_function)del_uri_param, 1,
 			fixup_str_null, 0,
 			REQUEST_ROUTE},
 	{"tel2sip", (cmd_function)tel2sip, 0, 0, 0,
@@ -194,15 +195,38 @@ static stat_export_t uridb_stats[] = {
 	{0,0,0}
 };
 
+static module_dependency_t *get_deps_aaa_url(param_export_t *param)
+{
+	char *url = *(char **)param->param_pointer;
+
+	if (url || strlen(url) == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_AAA, NULL, DEP_SILENT);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "aaa_url", get_deps_aaa_url   },
+		{ "db_url",  get_deps_sqldb_url },
+		{ NULL, NULL },
+	},
+};
 
 /*
  * Module interface
  */
 struct module_exports exports = {
-	"uri", 
+	"uri",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,      /* Exported functions */
+	0,         /* Exported async functions */
 	params,    /* Exported parameters */
 	uridb_stats, /* exported statistics */
 	0,         /* exported MI functions */

@@ -14,6 +14,10 @@ Edited by
 
 Bogdan-Andrei Iancu
 
+Edited by
+
+Ovidiu Sas
+
    Copyright © 2003 FhG FOKUS
 
    Copyright © 2005-2008 Voice Sistem SRL
@@ -28,7 +32,7 @@ Bogdan-Andrei Iancu
         1.1. Overview
 
               1.1.1. Per-Branch flags
-              1.1.2. Timer-Based Failover
+              1.1.2. Timeout-Based Failover
               1.1.3. DNS Failover
 
         1.2. Dependencies
@@ -38,8 +42,8 @@ Bogdan-Andrei Iancu
 
         1.3. Exported Parameters
 
-              1.3.1. fr_timer (integer)
-              1.3.2. fr_inv_timer (integer)
+              1.3.1. fr_timeout (integer)
+              1.3.2. fr_inv_timeout (integer)
               1.3.3. wt_timer (integer)
               1.3.4. delete_timer (integer)
               1.3.5. T1_timer (integer)
@@ -48,44 +52,50 @@ Bogdan-Andrei Iancu
               1.3.8. via1_matching (integer)
               1.3.9. unix_tx_timeout (integer)
               1.3.10. restart_fr_on_each_reply (integer)
-              1.3.11. fr_timer_avp (string)
-              1.3.12. fr_inv_timer_avp (string)
-              1.3.13. tw_append (string)
-              1.3.14. pass_provisional_replies (integer)
-              1.3.15. syn_branch (integer)
-              1.3.16. onreply_avp_mode (integer)
-              1.3.17. disable_6xx_block (integer)
-              1.3.18. enable_stats (integer)
-              1.3.19. minor_branch_flag (string/integer)
-              1.3.20. own_timer_proc (integer)
+              1.3.11. tw_append (string)
+              1.3.12. pass_provisional_replies (integer)
+              1.3.13. syn_branch (integer)
+              1.3.14. onreply_avp_mode (integer)
+              1.3.15. disable_6xx_block (integer)
+              1.3.16. enable_stats (integer)
+              1.3.17. minor_branch_flag (string/integer)
+              1.3.18. timer_partitions (integer)
+              1.3.19. auto_100trying (integer)
 
         1.4. Exported Functions
 
-              1.4.1. t_newtran()
-              1.4.2. t_relay([flags])
-              1.4.3. t_relay(proto:host:port,[flags])
-              1.4.4. t_reply(code, reason_phrase)
-              1.4.5. t_reply_with_body(code, reason_phrase, body)
-              1.4.6. t_replicate(URI,[flags])
+              1.4.1. t_relay([flags])
+              1.4.2. t_relay(proto:host:port,[flags])
+              1.4.3. t_reply(code, reason_phrase)
+              1.4.4. t_reply_with_body(code, reason_phrase, body)
+              1.4.5. t_newtran()
+              1.4.6. t_check_trans()
               1.4.7. t_check_status(re)
-              1.4.8. t_flush_flags()
-              1.4.9. t_local_replied(reply)
-              1.4.10. t_write_req(info,fifo)
+              1.4.8. t_local_replied(reply)
+              1.4.9. t_was_cancelled()
+              1.4.10. t_cancel_branch([flags])
+              1.4.11.
+                      t_new_request(method,RURI,from,to[,body[,ctx]
+                      ])
+
+              1.4.12. t_on_failure(failure_route)
+              1.4.13. t_on_reply(reply_route)
+              1.4.14. t_on_branch(branch_route)
+              1.4.15. t_add_hdrs("sip_hdrs")
+              1.4.16. t_replicate(URI,[flags])
+              1.4.17. t_write_req(info,fifo)
                       t_write_unix(info,sock)
 
-              1.4.11. t_check_trans()
-              1.4.12. t_was_cancelled()
-              1.4.13. t_cancel_branch([flags])
-              1.4.14. t_on_failure(failure_route)
-              1.4.15. t_on_reply(reply_route)
-              1.4.16. t_on_branch(branch_route)
+              1.4.18. t_flush_flags()
 
         1.5. Exported pseudo-variables
 
               1.5.1. $T_branch_idx
               1.5.2. $T_reply_code
-              1.5.3. $T_ruri
-              1.5.4. $bavp(name)
+              1.5.3. $T_fr_timeout
+              1.5.4. $T_fr_inv_timeout
+              1.5.5. $T_ruri
+              1.5.6. $bavp(name)
 
         1.6. Exported MI Functions
 
@@ -118,8 +128,8 @@ Bogdan-Andrei Iancu
 
    List of Examples
 
-   1.1. Set fr_timer parameter
-   1.2. Set fr_inv_timer parameter
+   1.1. Set fr_timeout parameter
+   1.2. Set fr_inv_timeout parameter
    1.3. Set wt_timer parameter
    1.4. Set delete_timer parameter
    1.5. Set T1_timer parameter
@@ -128,32 +138,33 @@ Bogdan-Andrei Iancu
    1.8. Set via1_matching parameter
    1.9. Set unix_tx_timeout parameter
    1.10. Set restart_fr_on_each_reply parameter
-   1.11. Set fr_timer_avp parameter
-   1.12. Set fr_inv_timer_avp parameter
-   1.13. Set tw_append parameter
-   1.14. Set pass_provisional_replies parameter
-   1.15. Set syn_branch parameter
-   1.16. Set onreply_avp_mode parameter
-   1.17. Set disable_6xx_block parameter
-   1.18. Set enable_stats parameter
-   1.19. Set minor_branch_flag parameter
-   1.20. Set own_timer_proc parameter
-   1.21. t_newtran usage
-   1.22. t_relay usage
-   1.23. t_relay usage
-   1.24. t_reply usage
-   1.25. t_reply_with_body usage
-   1.26. t_replicate usage
-   1.27. t_check_status usage
-   1.28. t_flush_flags usage
-   1.29. t_local_replied usage
-   1.30. t_write_req/unix usage
-   1.31. t_check_trans usage
-   1.32. t_was_cancelled usage
-   1.33. t_cancel_branch usage
-   1.34. t_on_failure usage
-   1.35. t_on_reply usage
-   1.36. t_on_branch usage
+   1.11. Set tw_append parameter
+   1.12. Set pass_provisional_replies parameter
+   1.13. Set syn_branch parameter
+   1.14. Set onreply_avp_mode parameter
+   1.15. Set disable_6xx_block parameter
+   1.16. Set enable_stats parameter
+   1.17. Set minor_branch_flag parameter
+   1.18. Set timer_partitions parameter
+   1.19. Set auto_100trying parameter
+   1.20. t_relay usage
+   1.21. t_relay usage
+   1.22. t_reply usage
+   1.23. t_reply_with_body usage
+   1.24. t_newtran usage
+   1.25. t_check_trans usage
+   1.26. t_check_status usage
+   1.27. t_local_replied usage
+   1.28. t_was_cancelled usage
+   1.29. t_cancel_branch usage
+   1.30. t_new_request usage
+   1.31. t_on_failure usage
+   1.32. t_on_reply usage
+   1.33. t_on_branch usage
+   1.34. t_add_hdrs usage
+   1.35. t_replicate usage
+   1.36. t_write_req/unix usage
+   1.37. t_flush_flags usage
 
 Chapter 1. Admin Guide
 
@@ -219,7 +230,7 @@ Chapter 1. Admin Guide
      * branch flags - flags that are visible only from a specific
        branch - in all replies and routes connected to this
        branch.
-       script flags - flags that exist only during script
+     * script flags - flags that exist only during script
        execution. They are not store anywhere and are lost once
        the top level route was left.
 
@@ -236,7 +247,7 @@ Chapter 1. Admin Guide
    executing replies from the other branch).
 
    For how to define branch flags and use via script, see
-   Section 1.4.16, “ t_on_branch(branch_route) ” and the
+   Section 1.4.14, “ t_on_branch(branch_route) ” and the
    setbflag(), resetbflag() and isbflagset() script functions.
 
    Also, modules may set branch flags before transaction creation
@@ -244,29 +255,31 @@ Chapter 1. Admin Guide
    REGISTRAR module was the first to use this type of flags. The
    NAT flag is pushed in branch flags instead in message flags
 
-1.1.2. Timer-Based Failover
+1.1.2. Timeout-Based Failover
 
-   Timers can be used to trigger failover behavior. E.g. if we
-   send a call a gateway and the gateway does not send a
+   Timeouts can be used to trigger failover behavior. E.g. if we
+   send a call to a gateway and the gateway does not send a
    provisional response within 3 seconds, we want to cancel this
    call and send the call to another gateway. Another example is
    to ring a SIP client only for 30 seconds and then redirect the
    call to the voicemail.
 
-   There are two timers in OpenSIPS :
-     * fr_timer - this timer is used when no response was received
-       yet. If there is no response after fr_timer seconds the
-       timer triggers (and failure route will be executed if
-       t_on_failure() was called). If a provisional response was
-       received, the timer is set to fr_inv_timer for INVITE
-       transactions, and RT_T2 for all other transactions. If a
-       final reponse is received, the transaction has finished.
-     * fr_inv_timer - this timer is used when a provisional
-       reponse was received for an INVITE transaction.
+   The transaction module exports two types of timeouts:
+     * fr_timeout - used when no response was received yet. If
+       there is no response after fr_timeout seconds, the timer
+       triggers (and failure route will be executed if
+       t_on_failure() was called). For INVITE transactions, if a
+       provisional response was received, the timeout is reset to
+       fr_inv_timeout seconds and RT_T2 for all other
+       transactions. Once a final response is received, the
+       transaction has finished.
+     * fr_inv_timeout - this timeout starts counting down once a
+       provisional response was received for an INVITE
+       transaction.
 
    For example: You want to have failover if there is no
    provisional response after 3 seconds, but you want to ring for
-   60 seconds. Thuse, set the fr_timer to 3 and fr_inv_timer to
+   60 seconds. Thus, set the fr_timeout to 3 and fr_inv_timeout to
    60.
 
 1.1.3. DNS Failover
@@ -312,31 +325,32 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-1.3.1. fr_timer (integer)
+1.3.1. fr_timeout (integer)
 
-   Timer which hits if no final reply for a request or ACK for a
-   negative INVITE reply arrives (in seconds).
+   Timeout which is triggered if no final reply for a request or
+   ACK for a negative INVITE reply arrives (in seconds).
 
    Default value is 30 seconds.
 
-   Example 1.1. Set fr_timer parameter
+   Example 1.1. Set fr_timeout parameter
 ...
-modparam("tm", "fr_timer", 10)
+modparam("tm", "fr_timeout", 10)
 ...
 
-1.3.2. fr_inv_timer (integer)
+1.3.2. fr_inv_timeout (integer)
 
-   Timer which hits if no final reply for an INVITE arrives after
-   a provisional message was received (in seconds). This timer is
-   started after the first provisional response. Thus, fast
-   failover (no 100 trying from gateway) can be achieved by
-   setting fr_timer to low values. See example below
+   Timeout which is triggered if no final reply for an INVITE
+   arrives after a provisional message was received (in seconds).
+   This timeout starts counting down once the first provisional
+   response is received. Thus, fast failover (no 100 trying from
+   gateway) can be achieved by setting fr_timeout to low values.
+   See example below.
 
    Default value is 120 seconds.
 
-   Example 1.2. Set fr_inv_timer parameter
+   Example 1.2. Set fr_inv_timeout parameter
 ...
-modparam("tm", "fr_inv_timer", 200)
+modparam("tm", "fr_inv_timeout", 200)
 ...
 
 1.3.3. wt_timer (integer)
@@ -439,8 +453,8 @@ modparam("tm", "unix_tx_timeout", 5)
 
    If true (non null value), the final response timer will be
    re-triggered for each received provisional reply. In this case,
-   final response timeout may occure after a time longe than
-   fr_inv_timer (if UAS keeps sending provisional replies)
+   final response timeout may occur after a time longer than
+   fr_inv_timeout (if UAS keeps sending provisional replies)
 
    Default value is 1 (true).
 
@@ -449,39 +463,7 @@ modparam("tm", "unix_tx_timeout", 5)
 modparam("tm", "restart_fr_on_each_reply", 0)
 ...
 
-1.3.11. fr_timer_avp (string)
-
-   Full specification (NAME, ID, Alias) of an AVP which contains a
-   final response timeout value. If present, ths value will
-   override the static fr_timer parameter.
-
-   If set to empty string, the whole mechanism for variable
-   timeout will be disabled, falling back to the static value.
-
-   Default value is "NULL" (feature disabled).
-
-   Example 1.11. Set fr_timer_avp parameter
-...
-modparam("tm", "fr_timer_avp", "$avp(fr_timer)")
-...
-
-1.3.12. fr_inv_timer_avp (string)
-
-   Full specification (NAME, ID, Alias) of an AVP which contains a
-   final INVITE response timeout value. If present, ths value will
-   overeide the static fr_inv_timer parameter.
-
-   If set to empty string, the whole mechanism for variable
-   timeout will be disabled, falling back to the static value.
-
-   Default value is "NULL" (feature disabled).
-
-   Example 1.12. Set fr_inv_timer_avp parameter
-...
-modparam("tm", "fr_inv_timer_avp", "$avp(fr_inv_timer)")
-...
-
-1.3.13. tw_append (string)
+1.3.11. tw_append (string)
 
    List of additional information to be appended by t_write_req
    and t_write_unix functions.
@@ -501,37 +483,37 @@ modparam("tm", "fr_inv_timer_avp", "$avp(fr_inv_timer)")
    accept name; the body it will be printed all the time at the
    end, disregarding its position in the definition string.
 
-   Example 1.13. Set tw_append parameter
+   Example 1.11. Set tw_append parameter
 ...
 modparam("tm", "tw_append",
    "test: ua=$hdr(User-Agent) ;avp=$avp(avp);$rb;time=$Ts")
 ...
 
-1.3.14. pass_provisional_replies (integer)
+1.3.12. pass_provisional_replies (integer)
 
    Enable/disable passing of provisional replies to FIFO
    applications.
 
    Default value is 0.
 
-   Example 1.14. Set pass_provisional_replies parameter
+   Example 1.12. Set pass_provisional_replies parameter
 ...
 modparam("tm", "pass_provisional_replies", 1)
 ...
 
-1.3.15. syn_branch (integer)
+1.3.13. syn_branch (integer)
 
    Enable/disable the usage of stateful synonym branch IDs in the
    generated Via headers. They are faster but not reboot-safe.
 
    Default value is 1 (use synonym branches).
 
-   Example 1.15. Set syn_branch parameter
+   Example 1.13. Set syn_branch parameter
 ...
 modparam("tm", "syn_branch", 0)
 ...
 
-1.3.16. onreply_avp_mode (integer)
+1.3.14. onreply_avp_mode (integer)
 
    Describes how the AVPs should be handled in reply route:
      * 0 - the AVPs will be per message only; they will not
@@ -550,12 +532,12 @@ modparam("tm", "syn_branch", 0)
 
    Default value is 0.
 
-   Example 1.16. Set onreply_avp_mode parameter
+   Example 1.14. Set onreply_avp_mode parameter
 ...
 modparam("tm", "onreply_avp_mode", 1)
 ...
 
-1.3.17. disable_6xx_block (integer)
+1.3.15. disable_6xx_block (integer)
 
    Tells how the 6xx replies should be internally handled:
      * 0 - the 6xx replies will block any further serial forking
@@ -567,12 +549,12 @@ modparam("tm", "onreply_avp_mode", 1)
 
    Default value is 0.
 
-   Example 1.17. Set disable_6xx_block parameter
+   Example 1.15. Set disable_6xx_block parameter
 ...
 modparam("tm", "disable_6xx_block", 1)
 ...
 
-1.3.18. enable_stats (integer)
+1.3.16. enable_stats (integer)
 
    Enables statistics support in TM module - If enabled, the TM
    module will internally keep several statistics and export them
@@ -580,12 +562,12 @@ modparam("tm", "disable_6xx_block", 1)
 
    Default value is 1 (enabled).
 
-   Example 1.18. Set enable_stats parameter
+   Example 1.16. Set enable_stats parameter
 ...
 modparam("tm", "enable_stats", 0)
 ...
 
-1.3.19. minor_branch_flag (string/integer)
+1.3.17. minor_branch_flag (string/integer)
 
    A branch flag index to be used in script to mark the minor
    branches ( before t_relay() ).
@@ -603,52 +585,48 @@ modparam("tm", "enable_stats", 0)
 
    Default value is none (disabled).
 
-   Example 1.19. Set minor_branch_flag parameter
+   Example 1.17. Set minor_branch_flag parameter
 ...
 modparam("tm", "minor_branch_flag", "MINOR_BFLAG")
 ...
 
-1.3.20. own_timer_proc (integer)
+1.3.18. timer_partitions (integer)
 
-   If TM module should create its own timer process (timer is used
-   for handling retransmissions, timeouts, etc). If disabled, TM
-   will used the global timer process which may be affected
-   (desynchronized) by the operations performed by other modules
-   on that timer (like usrloc flushing memory cash into DB). So,
-   on system with high load, to keep accuracy for the TM timer,
-   better enabled this.
+   The number of partitions for the internal TM timers
+   (retransmissions, delete, wait, etc). Partitioning the timers
+   increase the throughput under heavly load by handling timer
+   events in parallel, rather than all serial.
 
-   Default value is 0 (disabled).
+   Recomanded range for timer partitions is max 16 (soft limit).
 
-   Example 1.20. Set own_timer_proc parameter
+   Default value is 1 (disabled).
+
+   Example 1.18. Set timer_partitions parameter
 ...
-modparam("tm", "own_timer_proc", 1)
+# Enable two timer partitions
+modparam("tm", "timer_partitions", 2)
+...
+
+1.3.19. auto_100trying (integer)
+
+   This parameter controls if the TM module should automatically
+   generate an 100 Trying stateful reply when an INVITE
+   transaction is created.
+
+   You may want to disable this behavior if you want to control
+   from script level when the 100 Trying is to be sent out.
+
+   Default value is 1 (enabled).
+
+   Example 1.19. Set auto_100trying parameter
+...
+# Disable automatic 100 Trying
+modparam("tm", "auto_100trying", 0)
 ...
 
 1.4. Exported Functions
 
-1.4.1.  t_newtran()
-
-   Creates a new transaction, returns a negative value on error.
-   This is the only way a script can add a new transaction in an
-   atomic way. Typically, it is used to deploy a UAS.
-
-Warning
-
-   NOTE that the changes on the request that are made after this
-   function call will not be saved into transaction!!!
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.21. t_newtran usage
-...
-if (t_newtran()) {
-        log("UAS logic");
-        t_reply("999","hello");
-} else sl_reply_error();
-...
-
-1.4.2.  t_relay([flags])
+1.4.1.  t_relay([flags])
 
    Relay a message statefully to destination indicated in current
    URI. (If the original URI was rewritten by UsrLoc, RR,
@@ -663,16 +641,7 @@ if (t_newtran()) {
    The function may take as parameter an optional set of flags for
    controlling the internal behaviour. The flags may be given in
    decimal or hexa format; supported flags are:
-     * 0x01 - do not generate an 100 trying provisional reply when
-       building the transaction. By default one is generated.
-       Useful if you already pushed an stateless 100 reply from
-       script. Note: If the transaction was previously created 'by
-       hand' with t_newtran() , t_relay will not attempt to send a
-       100 Trying provisional reply. The 100 Trying reply is
-       generated as part of the transaction building, so if in
-       your script you manually take care of creating the
-       transaction, you must also take care of sending 100
-       provisional replies
+     * 0x01 - deprecated, not used any more
      * 0x02 - do not internally send a negative reply in case of
        forward failure (due internal error, bad RURI, bad message,
        etc). When a forward failure occurs, no SIP request is
@@ -699,7 +668,7 @@ if (t_newtran()) {
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.22. t_relay usage
+   Example 1.20. t_relay usage
 ...
 if (!t_relay()) {
     sl_reply_error();
@@ -707,13 +676,13 @@ if (!t_relay()) {
 }
 ...
 
-1.4.3.  t_relay(proto:host:port,[flags])
+1.4.2.  t_relay(proto:host:port,[flags])
 
    Relay a message statefully to a fixed destination. The
    destination is specified as “[proto:]host[:port]”. If a
    destination URI “$du” for this message was set before the
-   function is called then this value will be used as destination
-   instead of the function parameter.
+   function is called then this value will be used as the
+   destination instead of the function parameter.
 
    The function may take as parameter an optional set of flags for
    controlling the internal behaviour - for details see the above
@@ -721,17 +690,19 @@ if (!t_relay()) {
 
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.23. t_relay usage
+   Example 1.21. t_relay usage
 ...
 t_relay("tcp:192.168.1.10:5060");
 t_relay("mydomain.com:5070","0x1");
 t_relay("udp:mydomain.com");
 ...
 
-1.4.4.  t_reply(code, reason_phrase)
+1.4.3.  t_reply(code, reason_phrase)
 
-   Sends a stateful reply after a transaction has been
-   established. See t_newtran for usage.
+   Sends a stateful SIP reply to the currently processed requests.
+   Note that if the transaction was not created yet, it will
+   automatically created by internally using the t_newtran
+   function.
 
    Meaning of the parameters is as follows:
      * code - Reply code number.
@@ -741,15 +712,17 @@ t_relay("udp:mydomain.com");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.24. t_reply usage
+   Example 1.22. t_reply usage
 ...
 t_reply("404", "Use $rU not found");
 ...
 
-1.4.5.  t_reply_with_body(code, reason_phrase, body)
+1.4.4.  t_reply_with_body(code, reason_phrase, body)
 
-   Sends a stateful reply with a body after a transaction has been
-   established. See t_newtran for usage.
+   Sends a stateful SIP reply with a body to the currently
+   processed requests. Note that if the transaction was not
+   created yet, it will automatically created by internally using
+   the t_newtran function.
 
    Meaning of the parameters is as follows:
      * code - Reply code number.
@@ -760,119 +733,43 @@ t_reply("404", "Use $rU not found");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.25. t_reply_with_body usage
+   Example 1.23. t_reply_with_body usage
 ...
         if(is_method("INVITE"))
         {
-                append_to_reply("Contact: $var(contact)\r\nContent-Type:
- application/sdp\r\n");
+                append_to_reply("Contact: $var(contact)\r\n"
+                                "Content-Type: application/sdp\r\n");
                 t_reply_with_body("200", "Ok", "$var(body)");
                 exit;
         }
 ...
 
-1.4.6.  t_replicate(URI,[flags])
+1.4.5.  t_newtran()
 
-   Replicates a request to another destination. No information due
-   the replicated request (like reply code) will be forwarded to
-   the original SIP UAC.
+   Creates the SIP transaction for the currently processed SIP
+   requests. Basically you switch to a stateful processing from
+   this point furhter, with automatic detection of retransmission
+   and auto sending of 100 Trying reply on INVITEs.
 
-   The destination is specified by a SIP URI. If multiple
-   destinations are to be used, the additional SIP URIs have to be
-   set as branches.
+   This function can be used from REQUEST_ROUTE.
 
-   The function may take as parameter an optional set of flags for
-   controlling the internal behaviour - for description see the
-   above “t_relay([flags])” function. Note that only 0x4 is
-   applicable here.
-
-   This functions can be used from REQUEST_ROUTE.
-
-   Example 1.26. t_replicate usage
+   Example 1.24. t_newtran usage
 ...
-t_replicate("sip:1.2.3.4:5060");
-t_replicate("sip:1.2.3.4:5060;transport=tcp");
-t_replicate("sip:1.2.3.4","0x4");
+t_newtran();  # 100 Trying is fired here
+xlog("doing my complicated routing logic");
+....
+t_relay(); # send the call further
 ...
 
-1.4.7.  t_check_status(re)
-
-   Returns true if the regualr expresion “re” match the reply code
-   of the response message as follows:
-     * in routing block - the code of the last sent reply.
-     * in on_reply block - the code of the current received reply.
-     * in on_failure block - the code of the selected negative
-       final reply.
-
-   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-   FAILURE_ROUTE and BRANCH_ROUTE .
-
-   Example 1.27. t_check_status usage
-...
-if (t_check_status("(487)|(408)")) {
-    log("487 or 408 negative reply\n");
-}
-...
-
-1.4.8.  t_flush_flags()
-
-   Flush the flags from current request into the already created
-   transaction. It make sense only in routing block if the
-   transaction was created via t_newtran() and the flags have been
-   altered since.
-
-   This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
-
-   Example 1.28. t_flush_flags usage
-...
-t_flush_flags();
-...
-
-1.4.9.  t_local_replied(reply)
-
-   Returns true if all or last (depending of the parameter)
-   reply(es) were local generated (and not received).
-
-   Parameter may be “all” or “last”.
-
-   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-   FAILURE_ROUTE and ONREPLY_ROUTE.
-
-   Example 1.29. t_local_replied usage
-...
-if (t_local_replied("all")) {
-        log ("no reply received\n");
-}
-...
-
-1.4.10.  t_write_req(info,fifo) t_write_unix(info,sock)
-
-   Write via FIFO file or UNIX socket a lot of information
-   regarding the request. Which information should be written may
-   be control via the “tw_append” parameter.
-
-   This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE
-   and BRANCH_ROUTE.
-
-   Example 1.30. t_write_req/unix usage
-...
-modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
-modparam("tm","tw_append","append2:body=$rb")
-...
-t_write_req("voicemail/append1","/tmp/appx_fifo");
-...
-t_write_unix("logger/append2","/var/run/logger.sock");
-...
-
-1.4.11.  t_check_trans()
+1.4.6.  t_check_trans()
 
    Returns true if the current request is associated to a
    transaction. The relationship between the request and
-   transaction is defined as follow:
+   transaction is defined as follows:
      * non-CANCEL/non-ACK requests - if the request belongs to a
        transaction (it's a retransmision), the function will do a
        standard processing of the retransmission and will
-       break/stop the script. The function return false if the
+       break/stop the script. The function returns false if the
        request is not a retransmission.
      * CANCEL request - true if the cancelled INVITE transaction
        exists.
@@ -888,7 +785,7 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 
    This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
 
-   Example 1.31. t_check_trans usage
+   Example 1.25. t_check_trans usage
 ...
 if ( is_method("CANCEL") ) {
         if ( t_check_trans() )
@@ -897,21 +794,57 @@ if ( is_method("CANCEL") ) {
 }
 ...
 
-1.4.12.  t_was_cancelled()
+1.4.7.  t_check_status(re)
+
+   Returns true if the regualr expression “re” match the reply
+   code of the response message as follows:
+     * in routing block - the code of the last sent reply.
+     * in on_reply block - the code of the current received reply.
+     * in on_failure block - the code of the selected negative
+       final reply.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE and BRANCH_ROUTE .
+
+   Example 1.26. t_check_status usage
+...
+if (t_check_status("(487)|(408)")) {
+    log("487 or 408 negative reply\n");
+}
+...
+
+1.4.8.  t_local_replied(reply)
+
+   Returns true if all or last (depending of the parameter)
+   reply(es) were local generated (and not received).
+
+   Parameter may be “all” or “last”.
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+   FAILURE_ROUTE and ONREPLY_ROUTE.
+
+   Example 1.27. t_local_replied usage
+...
+if (t_local_replied("all")) {
+        log ("no reply received\n");
+}
+...
+
+1.4.9.  t_was_cancelled()
 
    Retuns true if called for an INVITE transaction that was
    explicitly cancelled by UAC side via a CANCEL request.
 
    This function can be used from ONREPLY_ROUTE, FAILURE_ROUTE.
 
-   Example 1.32. t_was_cancelled usage
+   Example 1.28. t_was_cancelled usage
 ...
 if (t_was_cancelled()) {
     log("transaction was cancelled by UAC\n");
 }
 ...
 
-1.4.13.  t_cancel_branch([flags])
+1.4.10.  t_cancel_branch([flags])
 
    This function is to be call when a reply is received for
    cancelling a set of branches (see flags) of the current call.
@@ -926,7 +859,7 @@ if (t_was_cancelled()) {
 
    This function can be used from ONREPLY_ROUTE.
 
-   Example 1.33. t_cancel_branch usage
+   Example 1.29. t_cancel_branch usage
 onreply_route[3] {
 ...
         if (t_check_status("183")) {
@@ -936,7 +869,34 @@ onreply_route[3] {
 ...
 }
 
-1.4.14.  t_on_failure(failure_route)
+1.4.11.  t_new_request(method,RURI,from,to[,body[,ctx]])
+
+   This function generates and sends out a new SIP request (in a
+   stateful way). The new request is completly unrelated to the
+   currently processed SIP message.
+
+   Meaning of the parameters is as follows (all do accept
+   variables):
+     * method - the SIP method
+     * RURI - the SIP Request URI (the request will be sent out to
+       this destination)
+     * from - the SIP From hdr information as "[display ]URI"
+     * from - the SIP To hdr information as "[display ]URI"
+     * body - (optional) the SIP body content starting with the
+       content type string: "conten_type body"
+     * ctx - a context string that will be added to the new
+       transaction as an AVP with name "uac_ctx" (it may be
+       visible in local route)
+
+   Example 1.30. t_new_request usage
+...
+        # send a MESSAGE request
+        t_new_request("MESSAGE","sip:alice@192.168.2.2","BOB sip:userB@m
+ydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!"))
+{
+...
+
+1.4.12.  t_on_failure(failure_route)
 
    Sets reply routing block, to which control is passed after a
    transaction completed with a negative result but before sending
@@ -963,7 +923,7 @@ onreply_route[3] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.34. t_on_failure usage
+   Example 1.31. t_on_failure usage
 ...
 route {
         t_on_failure("1");
@@ -976,7 +936,7 @@ failure_route[1] {
 }
 ...
 
-1.4.15.  t_on_reply(reply_route)
+1.4.13.  t_on_reply(reply_route)
 
    Sets reply routing block, to which control is passed each time
    a reply (provisional or final) for the transaction is received.
@@ -1012,7 +972,7 @@ failure_route[1] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.35. t_on_reply usage
+   Example 1.32. t_on_reply usage
 ...
 route {
         seturi("sip:bob@opensips.org");  # first branch
@@ -1045,7 +1005,7 @@ onreply_route[global] {
 }
 ...
 
-1.4.16.  t_on_branch(branch_route)
+1.4.14.  t_on_branch(branch_route)
 
    Sets a branch route to be execute separately for each branch of
    the transaction before being sent out - changes in that route
@@ -1069,7 +1029,7 @@ onreply_route[global] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.36. t_on_branch usage
+   Example 1.33. t_on_branch usage
 ...
 route {
         t_on_branch("1");
@@ -1085,6 +1045,74 @@ branch_route[1] {
                 append_rpid();
         }
 }
+...
+
+1.4.15.  t_add_hdrs("sip_hdrs")
+
+   Attach a set of headers to the existing transaction - these
+   headers will be appended to all requests related to the
+   transaction (outgoing branches, local ACKS, CANCELs).
+
+   Example 1.34. t_add_hdrs usage
+...
+t_add_hdrs("X-origin: 1.1.1.1\r\n");
+...
+
+1.4.16.  t_replicate(URI,[flags])
+
+   Replicates a request to another destination. No information due
+   the replicated request (like reply code) will be forwarded to
+   the original SIP UAC.
+
+   The destination is specified by a SIP URI. If multiple
+   destinations are to be used, the additional SIP URIs have to be
+   set as branches.
+
+   The function may take as parameter an optional set of flags for
+   controlling the internal behaviour - for description see the
+   above “t_relay([flags])” function. Note that only 0x4 is
+   applicable here.
+
+   This functions can be used from REQUEST_ROUTE.
+
+   Example 1.35. t_replicate usage
+...
+t_replicate("sip:1.2.3.4:5060");
+t_replicate("sip:1.2.3.4:5060;transport=tcp");
+t_replicate("sip:1.2.3.4","0x4");
+...
+
+1.4.17.  t_write_req(info,fifo) t_write_unix(info,sock)
+
+   Write via FIFO file or UNIX socket a lot of information
+   regarding the request. Which information should be written may
+   be control via the “tw_append” parameter.
+
+   This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE
+   and BRANCH_ROUTE.
+
+   Example 1.36. t_write_req/unix usage
+...
+modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
+modparam("tm","tw_append","append2:body=$rb")
+...
+t_write_req("voicemail/append1","/tmp/appx_fifo");
+...
+t_write_unix("logger/append2","/var/run/logger.sock");
+...
+
+1.4.18.  t_flush_flags()
+
+   Flush the flags from current request into the already created
+   transaction. It make sense only in routing block if the
+   transaction was created via t_newtran() and the flags have been
+   altered since.
+
+   This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
+
+   Example 1.37. t_flush_flags usage
+...
+t_flush_flags();
 ...
 
 1.5. Exported pseudo-variables
@@ -1107,14 +1135,34 @@ branch_route[1] {
    failure_route will be the negative winning reply. In case of
    no-reply or error, '0' value is returned.
 
-1.5.3. $T_ruri
+1.5.3. $T_fr_timeout
+
+   $T_fr_timeout (R/W) - the timeout for the final reply to the
+   current transaction
+
+   With each different request received, $T_fr_timeout will
+   initially be equal to the fr_timeout parameter.
+
+   "$T_fr_timeout = NULL;" will reset it to fr_timeout.
+
+1.5.4. $T_fr_inv_timeout
+
+   $T_fr_inv_timeout (R/W) - the timeout for the final reply to an
+   INVITE request, after a 1XX reply was received
+
+   With each different request received, $T_fr_inv_timeout will
+   initially be equal to the fr_inv_timeout parameter.
+
+   "$T_fr_inv_timeout = NULL;" will reset it to fr_inv_timeout.
+
+1.5.5. $T_ruri
 
    $T_ruri - the ruri of the current branch; this information is
    taken from the transaction structure, so you can access this
    information for any sip message (request/reply) that has a
    transaction.
 
-1.5.4. $bavp(name)
+1.5.6. $bavp(name)
 
    $bavp(name) - a particular type of avp that can have different
    values for each branch. They can only be used in BRANCH, REPLY
@@ -1226,7 +1274,7 @@ Chapter 2. Developer Guide
 
 2.1.1.  load_tm(*import_structure)
 
-   For programmatic use only--import the TM API. See the cpl-c,
+   For programmatic use only--import the TM API. See the cpl_c,
    acc or jabber modules to see how it works.
 
    Meaning of the parameters is as follows:
@@ -1237,14 +1285,14 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-       What happened with old cancel_call() function
+   What happened with old cancel_call() function
 
-       The function was replace (as functionality) by
-       cancel_branch("a") - cancel all braches.
+   The function was replace (as functionality) by
+   cancel_branch("a") - cancel all braches.
 
    3.2.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.

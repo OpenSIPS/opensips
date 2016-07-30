@@ -26,6 +26,11 @@ locate_tool() {
 			TOOLPATH="/bin/$1"
 			return
 		fi
+		#The md5 tool on FreeBSD 8.3 is located in /sbin/
+		if [ -x "/sbin/$1" ] ; then
+			TOOLPATH="/sbin/$1"
+			return
+		fi
 		if [ -x "/usr/local/bin/$1" ] ; then
 			TOOLPATH="/usr/local/bin/$1"
 			return
@@ -61,6 +66,15 @@ if [ -z "$AWK" ] ; then
 		exit
 	fi
 	AWK="$TOOLPATH"
+fi
+if [ -z "$GDB" ] ; then
+	locate_tool gdb
+	if [ -z "$TOOLPATH" ] ; then
+		# no gdb
+		GDB=""
+	else
+		GDB="$TOOLPATH"
+	fi
 fi
 if [ -z "$MD5" ]; then
 	locate_tool md5sum md5
@@ -274,7 +288,7 @@ DISPATCHER_ID_COLUMN=id
 DISPATCHER_SETID_COLUMN=setid
 DISPATCHER_DESTINATION_COLUMN=destination
 DISPATCHER_SOCKET_COLUMN=socket
-DISPATCHER_FLAGS_COLUMN=flags
+DISPATCHER_STATE_COLUMN=state
 DISPATCHER_WEIGHT_COLUMN=weight
 DISPATCHER_ATTRS_COLUMN=attrs
 DISPATCHER_DESCRIPTION_COLUMN=description
@@ -331,7 +345,7 @@ DIALPLAN_DPID_COLUMN=dpid
 DIALPLAN_PR_COLUMN=pr
 DIALPLAN_MATCH_OP_COLUMN=match_op
 DIALPLAN_MATCH_EXP_COLUMN=match_exp
-DIALPLAN_MATCH_LEN_COLUMN=match_len
+DIALPLAN_MATCH_FLAGS_COLUMN=match_flags
 DIALPLAN_SUBST_EXP_COLUMN=subst_exp
 DIALPLAN_REPL_EXP_COLUMN=repl_exp
 DIALPLAN_ATTRS_COLUMN=attrs
@@ -359,9 +373,10 @@ REGISTRANT_FORCED_SOCKET_COLUMN=forced_socket
 
 usage_base() {
 	echo
-	mecho " -- command 'start|stop|restart'"
+	mecho " -- command 'start|stop|restart|trap'"
 	echo
 cat <<EOF
+ trap ............................... trap with gdb OpenSIPS processes
  restart ............................ restart OpenSIPS
  start .............................. start OpenSIPS
  stop ............................... stop OpenSIPS
@@ -495,13 +510,13 @@ usage_dispatcher() {
 	mecho " -- command 'dispatcher' - manage dispatcher"
 	echo
 cat <<EOF
-   * Examples:  dispatcher addgw 1 sip:1.2.3.1:5050 '' 2 50 'og1' 'Outbound Gateway1'
-   *            dispatcher addgw 2 sip:1.2.3.4:5050 '' 3 50 'og2' 'Outbound Gateway2'
+   * Examples:  dispatcher addgw 1 sip:1.2.3.1:5050 '' 0 50 'og1' 'Outbound Gateway1'
+   *            dispatcher addgw 2 sip:1.2.3.4:5050 '' 0 50 'og2' 'Outbound Gateway2'
    *            dispatcher rmgw 4
  dispatcher show ..................... show dispatcher gateways
  dispatcher reload ................... reload dispatcher gateways
  dispatcher dump ..................... show in memory dispatcher gateways
- dispatcher addgw <setid> <destination> <socket> <flags> <weight> <attrs> [description]
+ dispatcher addgw <setid> <destination> <socket> <state> <weight> <attrs> [description]
             .......................... add gateway
  dispatcher rmgw <id> ................ delete gateway
 EOF
@@ -516,7 +531,7 @@ cat <<EOF
  dialplan show <dpid> .............. show dialplan tables
  dialplan reload ................... reload dialplan tables
  dialplan addrule <dpid> <prio> <match_op> <match_exp>
- 		<match_len> <subst_exp> <repl_exp> <attrs>
+ 		<match_flags> <subst_exp> <repl_exp> <attrs>
 		.................... add a rule
  dialplan rm ....................... removes the entire dialplan table
  dialplan rmdpid <dpid> ............ removes all the gived dpid entries

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,13 +13,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
-/* 
+/*
  *  2003-01-21  added rport parsing code, contributed by
  *               Maxim Sobolev  <sobomax@FreeBSD.org>
  *  2003-01-21  added extra via param parsing code (i=...), used
@@ -38,11 +36,11 @@
 #include "../str.h"
 
 /* via param types
- * WARNING: keep in sync with parse_via.c FIN_HIDDEN... 
+ * WARNING: keep in sync with parse_via.c FIN_HIDDEN...
  * and with tm/sip_msg.c via_body_cloner
  */
 enum {
-	PARAM_HIDDEN=230, PARAM_TTL, PARAM_BRANCH, 
+	PARAM_HIDDEN=230, PARAM_TTL, PARAM_BRANCH,
 	PARAM_MADDR, PARAM_RECEIVED, PARAM_RPORT, PARAM_I, PARAM_ALIAS,
 	GEN_PARAM,
 	PARAM_ERROR
@@ -64,7 +62,7 @@ struct via_param {
 
 /* Format: name/version/transport host:port;params comment */
  /* WARNING: keep in sync with tm/sip_msg.c via_body_cloner */
-struct via_body { 
+struct via_body {
 	int error;
 	str hdr;   /* Contains "Via" or "v" */
 	str name;

@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <!--
- * $Id$
+ *
  *
  * XSL converter script for mysql databases
  *
@@ -20,7 +20,7 @@
  *
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 -->
@@ -124,7 +124,7 @@
 	<xsl:if test="autoincrement">
 	    <xsl:text> AUTO_INCREMENT</xsl:text>
 	</xsl:if>
-	<!-- PRIMARY KEY column defintion -->
+	<!-- PRIMARY KEY column definition -->
 	<xsl:if test="primary">
 	    <xsl:text> PRIMARY KEY</xsl:text>
 	</xsl:if>

@@ -1,0 +1,167 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+	The purpose of the <emphasis role='bold'>Script Helper module</emphasis>
+	is to simplify the scripting process in OpenSIPS when doing basic scenarios.
+	At the same time, it is useful to script writers as it contains basic SIP
+	routing logic, and thus it allows them to focus more on the particular aspects
+	of their OpenSIPS routing code.
+	</para>
+	</section>
+
+	<section>
+	<title>How it works</title>
+	<para>
+	By simply loading the module, the following
+	<emphasis role='bold'>default logic</emphasis> will be embedded:
+	</para>
+	<itemizedlist>
+	<listitem>
+	<para>
+	for initial SIP requests, the module will perform <emphasis>record routing</emphasis>
+	before running the main <emphasis>request</emphasis> route
+	</para>
+	</listitem>
+	<listitem>
+	<para>
+	sequential SIP requests will be transparently handled - the module will perform
+	<emphasis>loose routing</emphasis>, and the request route will not be run at all
+	</para>
+	</listitem>
+	</itemizedlist>
+
+	<para>
+	Currently, the module may be further configured to embed the following
+	<emphasis role='bold'>optional logic</emphasis>:
+	</para>
+	<itemizedlist>
+	<listitem>
+	<para>
+		<emphasis>dialog</emphasis> support (dialog module dependency - must be loaded before this module)
+	</para>
+	</listitem>
+	<listitem>
+	<para>
+		an additional route to be run before relaying sequential requests
+	</para>
+	</listitem>
+	</itemizedlist>
+
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+		<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following  modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>dialog</emphasis> (only if <emphasis role='bold'><xref linkend="use_dialog"/></emphasis> is enabled).
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		</section>
+
+		<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+
+	<section id="use_dialog" xreflabel="use_dialog">
+		<title><varname>use_dialog</varname> (integer)</title>
+		<para>
+		Enables dialog support. Note that the dialog module must be loaded before
+		this module when setting this parameter.
+		</para>
+		<para>
+		Default value is 0 (disabled)
+		</para>
+		<example>
+		<title>Setting <varname>use_dialog</varname></title>
+		<programlisting format="linespecific">
+...
+modparam("script_helper", "use_dialog", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="create_dialog_flags" xreflabel="create_dialog_flags">
+		<title><varname>create_dialog_flags</varname> (string)</title>
+		<para>
+		Flags used when creating dialogs. For details on these flags, please refer
+		to the <emphasis>create_dialog()</emphasis> function of the dialog module.
+		</para>
+		<para>
+		Default value is "" (no flags are set)
+		</para>
+		<example>
+		<title>Setting <varname>create_dialog_flags</varname></title>
+		<programlisting format="linespecific">
+...
+modparam("script_helper", "create_dialog_flags", "PpB")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="sequential_route" xreflabel="sequential_route">
+		<title><varname>sequential_route</varname> (string)</title>
+		<para>
+		Optional route to be run just before sequential requests are relayed.
+		If the <emphasis>exit</emphasis> script statement is used inside this route,
+		the module assumes that the relaying logic has been handled.
+		</para>
+		<para>
+		By default, this parameter is not set
+		</para>
+		<example>
+		<title>Setting <varname>sequential_route</varname></title>
+		<programlisting format="linespecific">
+...
+modparam("script_helper", "sequential_route", "sequential_handling")
+...
+route [sequential_handling]
+{
+...
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section>
+	<title>Known Issues</title>
+
+	<para>
+		The Max-Forwards header is currently not handled at all.
+	</para>
+
+	</section>
+</chapter>
+

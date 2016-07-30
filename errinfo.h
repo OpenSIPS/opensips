@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -35,6 +33,7 @@
 #define OSER_EC_PARSER	1 /*!< parse error */
 #define OSER_EC_PMEMORY	2 /*!< private memory error */
 #define OSER_EC_SMEMORY	3 /*!< share memory error */
+#define OSER_EC_ASSERT	4 /*!< assertion error */
 
 #define OSER_EL_CRITIC	1
 #define OSER_EL_HIGH	2

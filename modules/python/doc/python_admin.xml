@@ -1,0 +1,254 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This module can be used to efficiently run Python code directly from
+		the &osips; script, without executing the <emphasis>python</emphasis>
+		interpreter.
+
+	</para>
+	<para>
+		The module provides the means to load a python module and run
+		its functions. Each function has to receive the SIP message as
+		parameter, and optionally some extra arguments passed from the
+		script.
+	</para>
+
+	<para>
+		In order to run Python functions, one has to load the module
+		that contains them, by specifying the script name using the
+		<emphasis>script_name</emphasis> parameter. The module has to contain
+		the following components:
+		<itemizedlist>
+		<listitem><para>
+		A class that contains all the methods that can be invoked from the
+		script.
+		</para></listitem>
+		<listitem><para>
+		A method within the class that is called when a SIP child is created.
+		The method should receive an integer parameter, which represents the
+		rank of the child, and must return 0 or positive in case the function
+		was executed successfully, or negative otherwise. The name of this
+		method is specified by the <emphasis>child_init_method</emphasis>
+		parameter.
+		</para></listitem>
+		<listitem><para>
+		A global function that initializes the Python module and returns an
+		object from the class whose functions will be invoked by the script.
+		The name of the global function is indicated by the
+		<emphasis>mod_init_method</emphasis> parameter.
+		</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		A minimal example of a Python script that satisfies these requirements
+		is:
+                <programlisting  format="linespecific">
+	def mod_init():
+		return SIPMsg()
+
+	class SIPMsg:
+        def child_init(self, rank):
+	        return 0
+		</programlisting>
+	</para>
+
+	<para>
+		A function from the object returned above can be executed from the
+		script using the <emphasis>python_exec()</emphasis> script function. The
+		python method has to receive the following parameters:
+		<itemizedlist>
+		<listitem><para>
+		The SIP message, that has the structure detailed below
+		</para></listitem>
+		<listitem><para>
+		Optionally, a string passed from the script
+		</para></listitem>
+		</itemizedlist>
+	</para>
+
+	<para>
+		The SIP message received as parameter by the function has the following
+		fields and methods:
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>Type</emphasis> - the type of the message, either
+		<emphasis>SIP_REQUEST</emphasis> or <emphasis>SIP_REPLY</emphasis>
+		</para></listitem>
+		<listitem><para>
+		<emphasis>Method</emphasis> - the method of the message
+		</para></listitem>
+		<listitem><para>
+		<emphasis>Status</emphasis> - the status of the message, available only
+		for replies
+		</para></listitem>
+		<listitem><para>
+		<emphasis>RURI</emphasis> - the R-URI of the message, available only for
+		requests
+		</para></listitem>
+		<listitem><para>
+		<emphasis>src_address</emphasis> - the (IP, port) tuple representing
+		source address of the message
+		</para></listitem>
+		<listitem><para>
+		<emphasis>dst_address</emphasis> - the (IP, port) tuple representing
+		the destination address (&osips; address) of the message
+		</para></listitem>
+		<listitem><para>
+		<emphasis>copy()</emphasis> - copies the current SIP message in a new
+		object
+		</para></listitem>
+		<listitem><para>
+		<emphasis>rewrite_ruri()</emphasis> - changes the R-URI of the message;
+		available only for requests
+		</para></listitem>
+		<listitem><para>
+		<emphasis>set_dst_uri()</emphasis> - sets the destination URI of the
+		message; available only for requests
+		</para></listitem>
+		<listitem><para>
+		<emphasis>getHeader()</emphasis> - returns the header of a message
+		the destination address (&osips; address) of the message
+		</para></listitem>
+		<listitem><para>
+		<emphasis>call_function()</emphasis> - calls a function from the script
+		</para></listitem>
+		</itemizedlist>
+	</para>
+
+
+	</section>
+
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>python-dev</emphasis> - provides the Python bindings.
+			</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>script_name</varname> (string)</title>
+		<para>
+		The script that contains the Python module.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>/usr/local/etc/opensips/handler.py</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>script_name</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("python", "script_name", "/usr/local/bin/opensips_handler.py")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>mod_init_function</varname> (string)</title>
+		<para>
+		The method used to initialize the Python module and return the object.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>mod_init</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>mod_init_function</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("python", "mod_init_function", "module_initializer")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>child_init_method</varname> (string)</title>
+		<para>
+		The method called for each child process.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>child_init</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>child_init_method</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("python", "child_init_method", "child_initializer")
+...
+</programlisting>
+		</example>
+	</section>
+
+</section>
+
+
+	<section>
+	<title>Exported Functions</title>
+	<section>
+			<title>
+				<function moreinfo="none">python_exec(method_name [, extra_args])</function>
+			</title>
+	<para>
+		Thhis function is used to execute a method from the Python module
+		loaded.
+	</para>
+	<para>
+	    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE and BRANCH_ROUTE.
+	</para>
+	<para>Meaning of the parameters is as follows:</para>
+	<itemizedlist>
+	    <listitem>
+		<para>
+		    <emphasis>method_name</emphasis> - name of the method called
+		</para>
+	    </listitem>
+	    <listitem>
+		<para>
+		    <emphasis>extra_args(optional)</emphasis> - extra arguments that can
+			be passed from the script to the python function.
+		</para>
+	    </listitem>
+	</itemizedlist>
+	</section>
+	</section>
+
+</chapter>
+

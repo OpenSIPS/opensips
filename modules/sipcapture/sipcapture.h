@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * hep related structure
  *
  * Copyright (C) 2011 Alexandr Dubovikov (QSC AG) (alexandr.dubovikov@gmail.com)
@@ -19,12 +17,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
+#ifndef _SIPCAPTURE_H_
+#define _SIPCAPTURE_H_
+
 typedef char        T8;
 #define BINDING_REQUEST	0x0001;
+
+#if 0
 
 #ifdef __OS_solaris
 typedef uint8_t u_int8_t;
@@ -46,7 +49,7 @@ struct hep_hdr{
 struct hep_timehdr{
    u_int32_t tv_sec;         /* seconds */
    u_int32_t tv_usec;        /* useconds */
-   u_int16_t captid;          /* Capture ID node */           
+   u_int16_t captid;          /* Capture ID node */
 };
 
 struct hep_iphdr{
@@ -54,10 +57,10 @@ struct hep_iphdr{
         struct in_addr hp_dst;      /* source and dest address */
 };
 
-#ifdef USE_IPV6
 struct hep_ip6hdr {
         struct in6_addr hp6_src;        /* source address */
         struct in6_addr hp6_dst;        /* destination address */
 };
 #endif
 
+#endif /* _SIPCAPTURE_H_ */

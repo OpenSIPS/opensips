@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * version and compile flags macros 
+ * version and compile flags macros
  *
  * Copyright (C) 2004 FhG Fokus
  *
@@ -17,45 +15,21 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #ifndef version_h
 #define version_h
 
-#define OPENSIPS_FULL_VERSION  NAME " " VERSION " (" ARCH "/" OS ")" 
+#define OPENSIPS_FULL_VERSION  NAME " " VERSION " (" ARCH "/" OS ")"
 
 
-#ifdef STATS
+#ifdef STATISTICS
 #define STATS_STR  "STATS: On"
 #else
 #define STATS_STR  "STATS: Off"
-#endif
-
-#ifdef USE_IPV6
-#define USE_IPV6_STR ", USE_IPV6"
-#else
-#define USE_IPV6_STR ""
-#endif
-
-#ifdef USE_TCP
-#define USE_TCP_STR ", USE_TCP"
-#else
-#define USE_TCP_STR ""
-#endif
-
-#ifdef USE_TLS
-#define USE_TLS_STR ", USE_TLS"
-#else 
-#define USE_TLS_STR ""
-#endif
-
-#ifdef USE_SCTP
-#define USE_SCTP_STR ", USE_SCTP"
-#else
-#define USE_SCTP_STR ""
 #endif
 
 #ifdef DISABLE_NAGLE
@@ -89,12 +63,6 @@
 #define EXTRA_DEBUG_STR ""
 #endif
 
-#ifdef SHM_MEM
-#define SHM_MEM_STR ", SHM_MEM"
-#else
-#define SHM_MEM_STR ""
-#endif
-
 #ifdef SHM_MMAP
 #define SHM_MMAP_STR ", SHM_MMAP"
 #else
@@ -113,10 +81,22 @@
 #define VQ_MALLOC_STR ""
 #endif
 
+#ifdef QM_MALLOC
+#define QM_MALLOC_STR ", QM_MALLOC"
+#else
+#define QM_MALLOC_STR ""
+#endif
+
 #ifdef F_MALLOC
 #define F_MALLOC_STR ", F_MALLOC"
 #else
 #define F_MALLOC_STR ""
+#endif
+
+#ifdef HP_MALLOC
+#define HP_MALLOC_STR ", HP_MALLOC"
+#else
+#define HP_MALLOC_STR ""
 #endif
 
 #ifdef USE_SHM_MEM
@@ -125,16 +105,10 @@
 #define USE_SHM_MEM_STR ""
 #endif
 
-#ifdef DBG_QM_MALLOC
-#define DBG_QM_MALLOC_STR ", DBG_QM_MALLOC"
+#ifdef DBG_MALLOC
+#define DBG_MALLOC_STR ", DBG_MALLOC"
 #else
-#define DBG_QM_MALLOC_STR ""
-#endif
-
-#ifdef DBG_F_MALLOC
-#define DBG_F_MALLOC_STR ", DBG_F_MALLOC"
-#else
-#define DBG_F_MALLOC_STR ""
+#define DBG_MALLOC_STR ""
 #endif
 
 #ifdef DEBUG_DMALLOC
@@ -185,6 +159,11 @@
 #define USE_SYSV_SEM_STR ""
 #endif
 
+#ifdef DBG_LOCK
+#define DBG_LOCK_STR ", DBG_LOCK"
+#else
+#define DBG_LOCK_STR ""
+#endif
 
 #ifdef NOSMP
 #define NOSMP_STR "-NOSMP"
@@ -192,14 +171,34 @@
 #define NOSMP_STR ""
 #endif
 
+#ifdef FREERADIUS
+#define FREERADIUS_STR " FREERADIUS "
+#else
+#define FREERADIUS_STR ""
+#endif
+
+#ifdef RADIUSCLIENT
+#define RADIUSCLIENT_STR " RADIUSCLIENT "
+#else
+#define RADIUSCLIENT_STR ""
+#endif
+
+#ifdef RADCLI
+#define RADCLI_STR " RADCLI "
+#else
+#define RADCLI_STR ""
+#endif
+
 
 #define OPENSIPS_COMPILE_FLAGS \
-	STATS_STR EXTRA_DEBUG_STR USE_IPV6_STR USE_TCP_STR USE_TLS_STR \
-	USE_SCTP_STR DISABLE_NAGLE_STR USE_MCAST_STR NO_DEBUG_STR NO_LOG_STR \
-	SHM_MEM_STR SHM_MMAP_STR PKG_MALLOC_STR VQ_MALLOC_STR F_MALLOC_STR \
-	USE_SHM_MEM_STR DBG_QM_MALLOC_STR DBG_F_MALLOC_STR DEBUG_DMALLOC_STR \
-	QM_JOIN_FREE_STR FAST_LOCK_STR NOSMP_STR USE_PTHREAD_MUTEX_STR \
-	USE_POSIX_SEM_STR USE_SYSV_SEM_STR
+	STATS_STR EXTRA_DEBUG_STR \
+	DISABLE_NAGLE_STR USE_MCAST_STR NO_DEBUG_STR NO_LOG_STR \
+	SHM_MMAP_STR PKG_MALLOC_STR VQ_MALLOC_STR QM_MALLOC_STR F_MALLOC_STR \
+	HP_MALLOC_STR USE_SHM_MEM_STR DBG_MALLOC_STR \
+	DEBUG_DMALLOC_STR QM_JOIN_FREE_STR FAST_LOCK_STR NOSMP_STR \
+	USE_PTHREAD_MUTEX_STR USE_POSIX_SEM_STR USE_SYSV_SEM_STR DBG_LOCK_STR \
+	FREERADIUS_STR RADIUSCLIENT_STR RADCLI_STR
+
 
 
 #endif

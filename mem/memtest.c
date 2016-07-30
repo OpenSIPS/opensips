@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,13 +13,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
-#ifdef DBG_QM_MALLOC
+#ifdef DBG_MALLOC
 
 #include <stdio.h>
 #include <string.h>
@@ -66,11 +64,7 @@ void memtest()
 	char *p[TEST_RUN];
 	int t;
 
-#ifdef CHANGEABLE_DEBUG_LEVEL
-	*debug=7;
-#else
-	debug=7;
-#endif
+	set_proc_log_level(7);
 	log_stderr=1;
 
 	printf("entering test\n");
@@ -116,7 +110,7 @@ void memtest()
 	mf(p2);
 	mf(p5);
 	mf(p6);
-	
+
 //	MY_STATUS(mem_block);
 
 	mf(p1);
@@ -158,7 +152,7 @@ void memtest()
 	printf("now I'm really done\n");
 	MY_STATUS(mem_block);
 	printf("And I'm done with dumping final report too\n");
-	
+
 	exit(0);
 }
 #endif

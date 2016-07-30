@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (c) 2004 Juha Heinanen
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -71,7 +69,7 @@ int parse_allow(struct sip_msg *msg)
 		}
 
 		if (parse_methods(&(hdr->body), &(ab->allow))!=0) {
-			LM_ERR("bad allow body header\n"); 
+			LM_ERR("bad allow body header\n");
 			set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 				"error parsing ALLOW header");
 			set_err_reply(400, "bad headers");

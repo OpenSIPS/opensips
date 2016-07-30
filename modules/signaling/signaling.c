@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * signaling module - interface for sending sip messages
  *
  * Copyright (C) 2008 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -61,12 +59,26 @@ static cmd_export_t cmds[]=
 	{0,						0,	0,						0,	0,				0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm", DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "sl", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /** module exports */
 struct module_exports exports= {
 	"signaling",				/* module name */
+	MOD_TYPE_DEFAULT,           /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	&deps,                      /* OpenSIPS module dependencies */
 	cmds,						/* exported functions */
+	0,							/* exported async functions */
 	0,							/* exported parameters */
 	0,							/* exported statistics */
 	0,							/* exported MI functions */
@@ -88,10 +100,10 @@ static int mod_init(void)
 	LM_NOTICE("initializing module ...\n");
 
 	/* load TM API*/
-	if ( (load_tm=(load_tm_f)find_export("load_tm", 0, 0))) 
+	if ( (load_tm=(load_tm_f)find_export("load_tm", 0, 0)))
 	{
 		if (load_tm( &tmb )==-1)
-		{ 
+		{
 			LM_ERR("failed to load tm api\n");
 			return -1;
 		}
@@ -111,16 +123,16 @@ static int mod_init(void)
 
 	if(!tm_loaded && !sl_loaded)
 	{
-		LM_ERR("nighter 'tm' nor 'sl' module loaded! Sipreply module requires"
+		LM_ERR("neither 'tm' nor 'sl' module loaded! Sipreply module requires"
 				" loading at least one of these two\n");
 		return -1;
 	}
-	
+
 	return 0;
 }
 
 /*
- * sig_send_reply - function to be called from script to send appropiate 
+ * sig_send_reply - function to be called from script to send appropiate
  * replies (statefull or stateless)
  * */
 int sig_send_reply(struct sip_msg* msg, char* str1, char* str2)
@@ -137,7 +149,7 @@ int sig_send_reply(struct sip_msg* msg, char* str1, char* str2)
 	} else {
 		code_i = ((pv_elem_p)str1)->spec.pvp.pvn.u.isname.name.n;
 	}
-	
+
 	if(((pv_elem_p)str2)->spec.getf!=NULL)
 	{
 		if(pv_printf_s(msg, (pv_elem_p)str2, &code_s)!=0 || code_s.len <=0)
@@ -206,8 +218,8 @@ sl_reply:
 	return 1;
 }
 
-/* * 
- * fixup_sig_send_reply 
+/* *
+ * fixup_sig_send_reply
  */
 static int fixup_sig_send_reply(void** param, int param_no)
 {

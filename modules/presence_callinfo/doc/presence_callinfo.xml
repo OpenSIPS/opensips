@@ -13,39 +13,50 @@
 ]>
 
 <book>
-    <bookinfo>
-	<title>Presence_CallInfo Module</title>
-	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Ovidiu</firstname>
-		<surname>Sas</surname>
-		<email>osas@voipembedded.com</email>
-	    </author>
-	    <editor>
-		<firstname>Ovidiu</firstname>
-		<surname>Sas</surname>
-  	        <email>osas@voipembedded.com</email>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2010</year>
-	    <holder>
-		<ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink>
-	    </holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 7754 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
-    </bookinfo>
-    <toc></toc>
-    
-    &admin;
-    &faq;
-    
+	<bookinfo>
+		<title>Presence_CallInfo Module</title>
+		<productname class="trade">&osipsname;</productname>
+		<authorgroup>
+			<author>
+				<firstname>Ovidiu</firstname>
+				<surname>Sas</surname>
+				<email>osas@voipembedded.com</email>
+			</author>
+			<author>
+				<firstname>Bogdan-Andrei</firstname>
+				<surname>Iancu</surname>
+				<email>bogdan@opensips.org</email>
+			</author>
+			<editor>
+				<firstname>Ovidiu</firstname>
+				<surname>Sas</surname>
+				<email>osas@voipembedded.com</email>
+			</editor>
+			<editor>
+				<firstname>Bogdan-Andrei</firstname>
+				<surname>Iancu</surname>
+				<email>bogdan@opensips.org</email>
+			</editor>
+		</authorgroup>
+		<copyright>
+			<year>2010-2013</year>
+			<holder>
+				<ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink>
+			</holder>
+			<holder>&osipssol;</holder>
+		</copyright>
+		<revhistory>
+			<revision>
+				<revnumber>$Revision: 7754 $</revnumber>
+				<date>$Date$</date>
+			</revision>
+		</revhistory>
+	</bookinfo>
+	<toc></toc>
+
+	&admin;
+	&faq;
+
 </book>
 
 

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History
  * -------
@@ -26,7 +24,7 @@
  *             from transaction state to a static var(jiri)
  * 2003-03-16  removed _TOTAG (jiri)
  * 2003-03-30  set_kr for requests only (jiri)
- * 2003-04-04  bug_fix: REQ_IN callback not called for local 
+ * 2003-04-04  bug_fix: REQ_IN callback not called for local
  *             UAC transactions (jiri)
  * 2003-09-12  timer_link->tg will be set only if EXTRA_DEBUG (andrei)
  * 2003-12-04  global callbacks replaceed with callbacks per transaction;
@@ -57,6 +55,9 @@
 #include "t_fwd.h"
 #include "t_lookup.h"
 
+/* indicates how much we have to shift the transaction pointer in order to
+ * obtain a fair distribution on the tm timers */
+int tm_timer_shift = 0;
 static enum kill_reason kr;
 
 /* pointer to the big table where all the transaction data
@@ -82,13 +83,13 @@ enum kill_reason get_kr(void) {
 }
 
 
-void lock_hash(int i) 
+void lock_hash(int i)
 {
 	lock(&tm_table->entrys[i].mutex);
 }
 
 
-void unlock_hash(int i) 
+void unlock_hash(int i)
 {
 	unlock(&tm_table->entrys[i].mutex);
 }
@@ -105,12 +106,11 @@ unsigned int transaction_count( void )
 	unsigned int i;
 	unsigned int count;
 
-	count=0;	
-	for (i=0; i<TM_TABLE_ENTRIES; i++) 
+	count=0;
+	for (i=0; i<TM_TABLE_ENTRIES; i++)
 		count+=tm_table->entrys[i].cur_entries;
 	return count;
 }
-
 
 
 void free_cell( struct cell* dead_cell )
@@ -127,45 +127,53 @@ void free_cell( struct cell* dead_cell )
 	empty_tmcb_list(&dead_cell->tmcb_hl);
 
 	release_cell_lock( dead_cell );
-	shm_lock();
+
+	tm_shm_lock();
 
 	/* UA Server */
 	if ( dead_cell->uas.request )
-		sip_msg_free_unsafe( dead_cell->uas.request );
+		free_cloned_msg_unsafe( dead_cell->uas.request );
+
 	if ( dead_cell->uas.response.buffer.s )
-		shm_free_unsafe( dead_cell->uas.response.buffer.s );
+		tm_shm_free_unsafe( dead_cell->uas.response.buffer.s );
 
 	/* UA Clients */
 	for ( i =0 ; i<dead_cell->nr_of_outgoings;  i++ )
 	{
 		/* retransmission buffer */
 		if ( (b=dead_cell->uac[i].request.buffer.s) )
-			shm_free_unsafe( b );
+			tm_shm_free_unsafe( b );
 		b=dead_cell->uac[i].local_cancel.buffer.s;
 		if (b!=0 && b!=BUSY_BUFFER)
-			shm_free_unsafe( b );
+			tm_shm_free_unsafe( b );
 		rpl=dead_cell->uac[i].reply;
 		if (rpl && rpl!=FAKED_REPLY && rpl->msg_flags&FL_SHM_CLONE) {
-			sip_msg_free_unsafe( rpl );
+			free_cloned_msg_unsafe( rpl );
 		}
 		if ( (p=dead_cell->uac[i].proxy)!=NULL ) {
 			if ( p->host.h_addr_list )
-				shm_free_unsafe( p->host.h_addr_list );
+				tm_shm_free_unsafe( p->host.h_addr_list );
 			if ( p->dn ) {
 				if ( p->dn->kids )
-					shm_free_unsafe( p->dn->kids );
-				shm_free_unsafe( p->dn );
+					tm_shm_free_unsafe( p->dn->kids );
+				tm_shm_free_unsafe( p->dn );
 			}
-			shm_free_unsafe(p);
+			tm_shm_free_unsafe(p);
 		}
 		if (dead_cell->uac[i].path_vec.s) {
-			shm_free_unsafe(dead_cell->uac[i].path_vec.s);
+			tm_shm_free_unsafe(dead_cell->uac[i].path_vec.s);
+		}
+		if (dead_cell->uac[i].adv_address.s) {
+			tm_shm_free_unsafe(dead_cell->uac[i].adv_address.s);
+		}
+		if (dead_cell->uac[i].adv_port.s) {
+			tm_shm_free_unsafe(dead_cell->uac[i].adv_port.s);
 		}
 		if (dead_cell->uac[i].duri.s) {
-			shm_free_unsafe(dead_cell->uac[i].duri.s);
+			tm_shm_free_unsafe(dead_cell->uac[i].duri.s);
 		}
 		if (dead_cell->uac[i].user_avps) {
-			destroy_avp_list_unsafe( &dead_cell->uac[i].user_avps);
+			tm_destroy_avp_list_unsafe( &dead_cell->uac[i].user_avps);
 		}
 	}
 
@@ -173,23 +181,23 @@ void free_cell( struct cell* dead_cell )
 	tt=dead_cell->fwded_totags;
 	while(tt) {
 		foo=tt->next;
-		shm_free_unsafe(tt->tag.s);
-		shm_free_unsafe(tt);
+		tm_shm_free_unsafe(tt->tag.s);
+		tm_shm_free_unsafe(tt);
 		tt=foo;
 	}
 
 	/* free the avp list */
 	if (dead_cell->user_avps)
-		destroy_avp_list_unsafe( &dead_cell->user_avps );
+		tm_destroy_avp_list_unsafe( &dead_cell->user_avps );
 
 	/* extra hdrs */
 	if ( dead_cell->extra_hdrs.s )
-		shm_free_unsafe( dead_cell->extra_hdrs.s );
+		tm_shm_free_unsafe( dead_cell->extra_hdrs.s );
 
 	/* the cell's body */
-	shm_free_unsafe( dead_cell );
+	tm_shm_free_unsafe( dead_cell );
 
-	shm_unlock();
+	tm_shm_unlock();
 }
 
 
@@ -211,7 +219,7 @@ static inline void init_synonym_id( struct cell *t )
 			char_msg_val( p_msg, t->md5 );
 		} else {
 			/* char value for a UAC transaction is created
-			   randomly -- UAC is an originating stateful element 
+			   randomly -- UAC is an originating stateful element
 			   which cannot be refreshed, so the value can be
 			   anything
 			*/
@@ -225,7 +233,7 @@ static inline void init_synonym_id( struct cell *t )
 	}
 }
 
-static inline void init_branches(struct cell *t)
+static inline void init_branches(struct cell *t, unsigned int set)
 {
 	unsigned int i;
 	struct ua_client *uac;
@@ -239,36 +247,48 @@ static inline void init_branches(struct cell *t)
 		uac->request.fr_timer.tg = TG_FR;
 		uac->request.retr_timer.tg = TG_RT;
 #endif
+		uac->request.fr_timer.set = set;
+		uac->request.retr_timer.set = set;
+		uac->local_cancel.fr_timer.set = set;
+		uac->local_cancel.retr_timer.set = set;
 		uac->local_cancel=uac->request;
 	}
 }
 
 
-struct cell*  build_cell( struct sip_msg* p_msg )
+struct cell*  build_cell( struct sip_msg* p_msg, int full_uas)
 {
 	struct cell* new_cell;
 	int          sip_msg_len;
 	struct usr_avp **old;
 	struct tm_callback *cbs, *cbs_tmp;
+	unsigned short set;
 
 	/* allocs a new cell */
-	new_cell = (struct cell*)shm_malloc( sizeof( struct cell ) );
+	new_cell = (struct cell*)shm_malloc(sizeof(struct cell) + context_size(CONTEXT_TRAN));
 	if  ( !new_cell ) {
 		ser_error=E_OUT_OF_MEM;
 		return NULL;
 	}
 
 	/* filling with 0 */
-	memset( new_cell, 0, sizeof( struct cell ) );
+	memset( new_cell, 0, sizeof( struct cell ) + context_size(CONTEXT_TRAN));
+
+	/* get timer set id based on the transaction pointer, but
+	 * devide by 64 to avoid issues because pointer are 64 bits
+	 * aligned */
+	set = ( ((unsigned long)new_cell)>>tm_timer_shift ) % tm_table->timer_sets;
 
 	/* UAS */
 #ifdef EXTRA_DEBUG
 	new_cell->uas.response.retr_timer.tg=TG_RT;
 	new_cell->uas.response.fr_timer.tg=TG_FR;
 #endif
+	new_cell->uas.response.retr_timer.set = set;
+	new_cell->uas.response.fr_timer.set = set;
 	new_cell->uas.response.my_T=new_cell;
 
-	/* dcm: - local generation transactions should not inherit AVPs 
+	/* dcm: - local generation transactions should not inherit AVPs
 	 * - commpletely new message */
 	if(p_msg) {
 		/* move the current avp list to transaction -bogdan */
@@ -296,14 +316,16 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 		/* clean possible previous added vias/clen header or else they would
 		 * get propagated in the failure routes */
 		free_via_clen_lump(&p_msg->add_rm);
-		new_cell->uas.request = sip_msg_cloner(p_msg,&sip_msg_len);
+		new_cell->uas.request = sip_msg_cloner(p_msg,&sip_msg_len,full_uas?1:2);
 		if (!new_cell->uas.request)
 			goto error;
 		new_cell->uas.end_request=((char*)new_cell->uas.request)+sip_msg_len;
 	}
 
 	/* UAC */
-	init_branches(new_cell);
+	init_branches(new_cell, set);
+	new_cell->fr_timeout = fr_timeout;
+	new_cell->fr_inv_timeout = fr_inv_timeout;
 
 	new_cell->relaied_reply_branch   = -1;
 	/* new_cell->T_canceled = T_UNDEFINED; */
@@ -311,6 +333,8 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 	new_cell->wait_tl.tg=TG_WT;
 	new_cell->dele_tl.tg=TG_DEL;
 #endif
+	new_cell->wait_tl.set = set;
+	new_cell->dele_tl.set = set;
 
 	init_synonym_id(new_cell);
 	init_cell_lock(  new_cell );
@@ -364,7 +388,7 @@ void free_hash_table(void)
 
 /*
  */
-struct s_table* init_hash_table(void)
+struct s_table* init_hash_table( unsigned int timer_sets )
 {
 	int              i;
 
@@ -372,14 +396,12 @@ struct s_table* init_hash_table(void)
 	tm_table= (struct s_table*)shm_malloc( sizeof( struct s_table ) );
 	if ( !tm_table) {
 		LM_ERR("no more share memory\n");
-		goto error0;
+		goto error;
 	}
 
 	memset( tm_table, 0, sizeof (struct s_table ) );
 
-	/* try first allocating all the structures needed for syncing */
-	if (lock_initialize()==-1)
-		goto error1;
+	tm_table->timer_sets = timer_sets;
 
 	/* inits the entrys */
 	for(  i=0 ; i<TM_TABLE_ENTRIES; i++ )
@@ -390,9 +412,7 @@ struct s_table* init_hash_table(void)
 
 	return  tm_table;
 
-error1:
-	free_hash_table( );
-error0:
+error:
 	return 0;
 }
 

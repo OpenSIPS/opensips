@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * OpenSIPS LDAP Module
  *
  * Copyright (C) 2007 University of North Carolina
@@ -22,7 +20,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -33,8 +31,6 @@
 #include <stdio.h>
 #include <ctype.h>
 #include "ldap_escape.h"
-
-static const char hex[] = "0123456789ABCDEF";
 
 /*
 * escape string following RFC 4515 (LDAP filter syntax) escaping rules:
@@ -53,8 +49,8 @@ static const char hex[] = "0123456789ABCDEF";
 int ldap_rfc4515_escape(str *sin, str *sout, int url_encode)
 {
 	char *src, *dst;
-	
-	if (sin == NULL || sout == NULL || sin->s == NULL || sout->s == NULL 
+
+	if (sin == NULL || sout == NULL || sin->s == NULL || sout->s == NULL
 			|| sin->len <= 0 || sout->len < 3*sin->len+1)
 	{
 		return -1;

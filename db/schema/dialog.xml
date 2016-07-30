@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN"
   "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
 
 <!ENTITY % entities SYSTEM "entities.xml">
@@ -9,10 +9,10 @@
 
 <table id="dialog" xmlns:db="http://docbook.org/ns/docbook">
 	<name>dialog</name>
-	<version>8</version>
+	<version>10</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
-		<db:para>Persistent dialog information for the dialog module. More 
+		<db:para>Persistent dialog information for the dialog module. More
 		information can be found at: &OPENSIPS_MOD_DOC;dialog.html
 		</db:para>
 	</description>
@@ -22,7 +22,7 @@
 		<type>unsigned long</type>
 		<size>&table_id_len;</size>
 		<primary/>
-		<type db="dbtext">long,auto</type>
+		<type db="dbtext">long</type>
 		<description>h_entry | h_id</description>
 	</column>
 
@@ -31,7 +31,7 @@
 		<type>string</type>
 		<size>&hf_len;</size>
 		<description>Call-ID of the dialog</description>
-		
+
 	</column>
 
 	<column>
@@ -45,8 +45,8 @@
 		<name>from_tag</name>
 		<type>string</type>
 		<size>&user_len;</size>
-		<description>The tag parameter serves as a general mechanism to 
-		identify a dialog, which is the combination of the Call-ID along 
+		<description>The tag parameter serves as a general mechanism to
+		identify a dialog, which is the combination of the Call-ID along
 		with two tags, one from participant in the dialog.</description>
 	</column>
 
@@ -61,8 +61,8 @@
 		<name>to_tag</name>
 		<type>string</type>
 		<size>&user_len;</size>
-		<description>The tag parameter serves as a general mechanism to 
-		identify a dialog, which is the combination of the Call-ID along 
+		<description>The tag parameter serves as a general mechanism to
+		identify a dialog, which is the combination of the Call-ID along
 		with two tags, one from participant in the dialog.</description>
 	</column>
 
@@ -134,6 +134,7 @@
 		<name>caller_contact</name>
 		<type>string</type>
 		<size>&uri_len;</size>
+		<null/>
 		<description>Caller's contact uri.</description>
 	</column>
 
@@ -141,6 +142,7 @@
 		<name>callee_contact</name>
 		<type>string</type>
 		<size>&uri_len;</size>
+		<null/>
 		<description>Callee's contact uri.</description>
 	</column>
 
@@ -184,8 +186,8 @@
 
 	<column>
 		<name>vars</name>
-		<type>text</type>
-		<size>512</size>
+		<type>binary</type>
+		<size>4096</size>
 		<default><null/></default>
 		<null/>
 		<description>Variables attached to this dialog.</description>
@@ -206,6 +208,14 @@
 		<size>10</size>
 		<default>0</default>
 		<description>Script flags for the dialog.</description>
+	</column>
+
+	<column>
+		<name>module_flags</name>
+		<type>unsigned int</type>
+		<size>10</size>
+		<default>0</default>
+		<description>Module flags for the dialog.</description>
 	</column>
 
 	<column>

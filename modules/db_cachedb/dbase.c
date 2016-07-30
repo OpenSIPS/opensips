@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -91,7 +91,7 @@ db_con_t* db_cachedb_init(const str* _url)
 			ptr->cdbf = cdbf;
 
 			res->tail = (unsigned long)ptr;
-			LM_DBG("Succesfully initiated connection to [%.*s] \n",len,p);
+			LM_DBG("Successfully initiated connection to [%.*s] \n",len,p);
 
 			return res;
 		}
@@ -137,7 +137,7 @@ int db_cachedb_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	return ptr->cdbf.db_query_trans(ptr->cdbc,_h->table,_k,_op,_v,_c,_n,_nc,_o,_r);
 }
 
-int db_cachedb_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, const int _n) 
+int db_cachedb_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, const int _n)
 {
 	struct db_cachedb_con* ptr = (struct db_cachedb_con *)_h->tail;
 

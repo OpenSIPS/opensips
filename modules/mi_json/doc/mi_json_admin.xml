@@ -1,0 +1,125 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This module implements a JSON server that handles GET
+		requests and generates JSON responses.
+	</para>
+	</section>
+	
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>None
+		</para>
+	</section>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>httpd</emphasis> module.</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+	</section>
+	</section>
+	
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>mi_json_root</varname>(string)</title>
+		<para>
+		Specifies the root path for JSON requests:
+		http://[opensips_IP]:[opensips_httpd_port]/[mi_json_root]
+		</para>
+		<para>
+		<emphasis>The default value is "json".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>mi_json_root</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("mi_json", "mi_json_root", "opensips_mi_json")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+		<para>
+		No function exported to be used from configuration file.
+		</para>
+	</section>
+
+	<section>
+	<title>Known issues</title>
+		<para>
+		Commands with large responses (like ul_dump) will fail if the
+		configured size of the httpd buffer is to small (or if there
+		isn't enough pkg memory configured).
+		</para>
+		<para>
+		Future realeases of the httpd and mi_json modules
+		will address this issue.
+		</para>
+	</section>
+
+	<section>
+	<title>Examples</title>
+		<para>
+		This is an example showing the JSON format for the
+		<quote>get_statistics net: uri:</quote> MI command.
+		Notice how the paramaters are comma-separated then URI-encoded.
+		</para>
+		<example>
+		<title>JSON request</title>
+		<programlisting format="linespecific">
+<![CDATA[
+GET /json/get_statistics?params=net%3A%2Curi%3A HTTP/1.1
+Accept: application/json
+Host: example.net
+
+HTTP/1.1 200 OK
+Content-Length: 49
+Content-Type: application/json
+Date: Fri, 01 Nov 2013 12:00:00 GMT
+
+["net:waiting_udp = 0", "net:waiting_tcp = 0", "uri:positive checks = 0", "uri:negative_checks = 0"]
+]]>
+</programlisting>
+	</example>
+		<para>
+		Here is another example showing the JSON format for the
+		<quote>ps</quote> MI command.
+		</para>
+		<example>
+		<title>JSON request</title>
+		<programlisting format="linespecific">
+<![CDATA[
+GET /json/ps HTTP/1.1
+Accept: application/json
+Host: example.net
+
+HTTP/1.1 200 OK
+Content-Length: 428
+Content-Type: application/json
+Date: Fri, 01 Nov 2013 12:00:00 GMT
+
+[{"name":"Process", "value":null, "attributes":{"ID": "0", "PID": "7400", "Type": "stand-alone SIP receiver udp:127.0.0.1:5060"}}, {"name":"Process", "value":null, "attributes":{"ID": "1", "PID": "7402", "Type": "HTTPD INADDR_ANY:8888"}}, {"name":"Process", "value":null, "attributes":{"ID": "2", "PID": "7403", "Type": "time_keeper"}}, {"name":"Process", "value":null, "attributes":{"ID": "3", "PID": "7404", "Type": "timer"}}]
+]]>
+</programlisting>
+	</example>
+	</section>
+
+</chapter>
+

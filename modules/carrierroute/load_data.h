@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -38,7 +36,7 @@ typedef int (*route_data_load_func_t)(struct rewrite_data * rd);
  * Binds the loader function pointer api to the matching loader
  * functionm depending on source
  *
- * @param source the configuration data source, at the moment 
+ * @param source the configuration data source, at the moment
  * it can be db or file
  * @param api pointer to the api where the loader function is
  * bound to

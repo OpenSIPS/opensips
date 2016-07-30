@@ -1,3 +1,24 @@
+/*
+ * Copyright (C) 2016 OpenSIPS Project
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ */
+
 #ifndef _rw_locking_h
 #define _rw_locking_h
 
@@ -29,7 +50,7 @@ inline static rw_lock_t * lock_init_rw(void)
 
 	return new_lock;
 error:
-	if (new_lock->lock)
+	if (new_lock!=NULL && new_lock->lock)
 		lock_dealloc(new_lock->lock);
 	if (new_lock)
 		shm_free(new_lock);
@@ -50,6 +71,7 @@ inline static void lock_destroy_rw(rw_lock_t *_lock)
 
 #define lock_start_write(_lock) \
 	do { \
+		__label__ again; \
 		again: \
 			lock_get((_lock)->lock); \
 			/* wait for the other writers */ \
@@ -72,6 +94,7 @@ inline static void lock_destroy_rw(rw_lock_t *_lock)
 
 #define lock_start_read(_lock) \
 	do { \
+		__label__ again; \
 		again: \
 			lock_get((_lock)->lock); \
 			if ((_lock)->w_flag) { \

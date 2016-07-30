@@ -207,45 +207,45 @@ modparam("presence", "expires_offset", 10)
 		</example>
 
 </section>
-       <section>
-               <title><varname>max_expires_subscribe</varname> (int)</title>
-               <para>
-               The the maximum admissible expires value for SUBSCRIBE
-               messages.
-               </para>
-               <para>
-               <emphasis>Default value is <quote>3600</quote>.
-               </emphasis>
-               </para>
-               <example>
-               <title>Set <varname>max_expires_subscribe</varname> parameter</title>
-               <programlisting format="linespecific">
+	<section>
+		<title><varname>max_expires_subscribe</varname> (int)</title>
+		<para>
+		The the maximum admissible expires value for SUBSCRIBE
+		messages.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>3600</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>max_expires_subscribe</varname> parameter</title>
+		<programlisting format="linespecific">
 ...
 modparam("presence", "max_expires_subscribe", 3600)
 ...
 </programlisting>
-               </example>
-       </section>
+		</example>
+	</section>
 
 <section>
-               <title><varname>max_expires_publish</varname> (int)</title>
-               <para>
-               The the maximum admissible expires value for PUBLISH
-               messages.
-               </para>
-               <para>
-               <emphasis>Default value is <quote>3600</quote>.
-               </emphasis>
-               </para>
-               <example>
-               <title>Set <varname>max_expires_publish</varname> parameter</title>
-               <programlisting format="linespecific">
+		<title><varname>max_expires_publish</varname> (int)</title>
+		<para>
+		The the maximum admissible expires value for PUBLISH
+		messages.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>3600</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>max_expires_publish</varname> parameter</title>
+		<programlisting format="linespecific">
 ...
 modparam("presence", "max_expires_publish", 3600)
 ...
 </programlisting>
-               </example>
-       </section>
+		</example>
+	</section>
 
 
 <section>
@@ -286,8 +286,8 @@ modparam("presence", "fallback2db", 1)
 		<title><varname>subs_htable_size</varname> (int)</title>
 		<para>
 		The size of the hash table to store subscription dialogs.
-        This parameter will be used as the power of 2 when computing table size.
-        </para>
+	This parameter will be used as the power of 2 when computing table size.
+	</para>
 		<para>
 		<emphasis>Default value is <quote>9 (512)</quote>.
 		</emphasis>
@@ -305,8 +305,8 @@ modparam("presence", "subs_htable_size", 11)
 	<section>
 		<title><varname>pres_htable_size</varname> (int)</title>
 		<para>
-        The size of the hash table to store publish records.
-        This parameter will be used as the power of 2 when computing table size.
+	The size of the hash table to store publish records.
+	This parameter will be used as the power of 2 when computing table size.
 		</para>
 		<para>
 		<emphasis>Default value is <quote>9 (512)</quote>.
@@ -465,6 +465,28 @@ modparam("presence", "notify_offline_body", 1)
 	</section>
 
 
+	<section>
+		<title><varname>end_sub_on_timeout</varname> (int)</title>
+		<para>
+			If a presence subscription should be automatically terminated 
+			(destroyed) when receiving a SIP timeout (408) for a sent
+			NOTIFY requests.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>1</quote> (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>end_sub_on_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "end_sub_on_timeout", 0)
+...
+	</programlisting>
+		</example>
+	</section>
+
+
 </section>
 
 <section>
@@ -530,18 +552,26 @@ modparam("presence", "notify_offline_body", 1)
 		<function moreinfo="none">handle_subscribe(char* force_active)</function>
 		</title>
 		<para>
-		The function which handles SUBSCRIBE requests. It stores or 
-		updates information in database and calls functions to send Notify 
-		messages when a Subscribe which initiate a dialog is received
+		This function is to be used for handling SUBSCRIBE requests. It stores or 
+		updates the watcher/subscriber information in database. Additionally, in
+		response to initial SUBSCRIBE requests (creating a new subscription session),
+		the function also sends back the NOTIFY (with the presence information) to 
+		the wathcer/subscriber.
 		</para>
 		<para>
-			It can take one parameter meaningful when you use a configuration
-			with privacy rules enabled (force_active parameter in presence_xml
-			module not set). Supposing that you have a means to tell that the contact
-			the Subscribe message is destined to( the presentity) can not upload 
-			an xcap document with it's privacy rules, you can tell the presence
-			server to consider that subscription allowed(with Subscription-Status:active)
-			by calling handle_subscribe function with the string parameter "1".
+		The function may take on parameter that controlls what is the default 
+		policy (of the presentity) on accepting new subscriptions (accept or reject)
+		 - of course, this parameter makes sense only when using
+		a presence configuration with privacy rules enabled (force_active parameter
+		in presence_xml module is not set).
+		</para>
+		<para>
+		There are scenarios where the presentity (the party you subscribe to) can not 
+		upload an XCAP document with it's privacy rules (to controll which watchers are
+		allowed to subscribe to it). In such case, from script level, you can
+		force the presence server to consider the current subscription allowed 
+		(with Subscription-Status:active) by calling handle_subscribe() function with
+		the string parameter "1".
 		<programlisting format="linespecific">
    Ex: 
 	if(uri =~ "kphone@opensips.org")
@@ -624,12 +654,12 @@ if(method=="SUBSCRIBE")
 									</itemizedlist>
 				</para>
 			</listitem>
-        </itemizedlist>
+	</itemizedlist>
 
-        <para>
+	<para>
 		MI FIFO Command Format:
 		</para>
-        <programlisting  format="linespecific">
+	<programlisting  format="linespecific">
 :refreshWatchers:fifo_reply
 sip:11@192.168.2.132
 presence
@@ -702,16 +732,52 @@ _empty_line_
 	  </programlisting>
 	</section>
 
-   	</section>
+</section>
 
 
+	<section>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_PRESENCE_PUBLISH</function>
+		</title>
+		<para>
+			This event is raised when the presence module receives
+			a PUBLISH message.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>user</emphasis> - the AOR of the user
+			</para></listitem>
+			<listitem><para>
+				<emphasis>domain</emphasis> - the domain
+			</para></listitem>
+			<listitem><para>
+				<emphasis>event</emphasis> - the type of the
+					event published
+			</para></listitem>
+			<listitem><para>
+				<emphasis>expires</emphasis> - the expire value
+					of the publish
+			</para></listitem>
+			<listitem><para>
+				<emphasis>etag</emphasis> - the entity tag
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body</emphasis> - the body of the
+					PUBLISH request
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
 
 <section>
 	<title>Installation</title>
 	<para>
 	The module requires 3 table in OpenSIPS database: presentity,
 	active_watchers and watchers tables. The SQL 
-	syntax to create them can be found in presence-create.sql     
+	syntax to create them can be found in presence-create.sql 
 	script in the database directories in the opensips/scripts folder.
 	You can also find the complete database documentation on the
 	project webpage, &osipsdbdocslink;.

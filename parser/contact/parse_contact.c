@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Contact header field body parser
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -27,7 +25,7 @@
  */
 
 #include <string.h>          /* memset */
-#include "../hf.h"     
+#include "../hf.h"
 #include "../../mem/mem.h"   /* pkg_malloc, pkg_free */
 #include "../../dprint.h"
 #include "../../trim.h"      /* trim_leading */
@@ -108,7 +106,7 @@ void free_contact(contact_body_t** _c)
 	if ((*_c)->contacts) {
 		free_contacts(&((*_c)->contacts));
 	}
-	
+
 	pkg_free(*_c);
 	*_c = 0;
 }
@@ -199,10 +197,10 @@ int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev)
 				LM_ERR("failed to parse message header\n");
 				return -1;
 			}
-			
+
 			     /* Check if last found header field is Contact
 			      * and if it is not the same header field as the
-			      * previous Contact HF (that indicates that the previous 
+			      * previous Contact HF (that indicates that the previous
 			      * one was the last header field in the header)
 			      */
 			if ((msg->last_header->type == HDR_CONTACT_T) &&
@@ -213,12 +211,12 @@ int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev)
 				return 1;
 			}
 		}
-		
+
 		if (parse_contact(hdr) < 0) {
 			LM_ERR("failed to parse Contact HF body\n");
 			return -1;
 		}
-		
+
 		     /* And return first contact within that
 		      * header field
 		      */

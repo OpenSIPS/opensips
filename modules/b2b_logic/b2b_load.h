@@ -1,4 +1,3 @@
-
 #ifndef B2BUA_LOGIC_LOAD_
 #define B2BUA_LOGIC_LOAD_
 
@@ -42,7 +41,7 @@ typedef int (*b2bl_cback_f)(b2bl_cb_params_t *params, unsigned int b2b_event);
  * Return:
  *     B2B_ERROR_CB_RET           - error
  *     B2B_DROP_MSG_CB_RET        - drop the request
- *     B2B_SEND_MSG_CB_RET        - send the request on the other side 
+ *     B2B_SEND_MSG_CB_RET        - send the request on the other side
  *     B2B_FOLLOW_SCENARIO_CB_RET - do what the scenario tells,
  *               if no rule defined send the request on the other side
  **/
@@ -52,7 +51,7 @@ typedef str* (*b2bl_init_f)(struct sip_msg* msg, str* name, str* args[5],
 		b2bl_cback_f, void* param, unsigned int cb_mask, str* custom_hdrs);
 
 typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str* new_from_dname,int entity_type);
-/* key - the string returned by b2bl_init_f 
+/* key - the string returned by b2bl_init_f
  * entity_type - 0, the server entity
  *               1, the client entity
  */
@@ -79,8 +78,8 @@ typedef int (*b2bl_get_stats_f)(str* key, b2bl_dlg_stat_t* stat);
 int b2bl_register_cb(str* key, b2bl_cback_f, void* param, unsigned int cb_mask);
 typedef int (*b2bl_register_cb_f)(str* key, b2bl_cback_f, void* param, unsigned int cb_mask);
 
-int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f, void* param);
-typedef int (*b2bl_restore_upper_info_f)(str* b2bl_key, b2bl_cback_f, void* param);
+int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f, void* param, unsigned int cb_mask);
+typedef int (*b2bl_restore_upper_info_f)(str* b2bl_key, b2bl_cback_f, void* param, unsigned int cb_mask);
 
 typedef struct b2bl_api
 {

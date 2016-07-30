@@ -8,5 +8,5 @@ CREATE TABLE address (
     proto CHAR(4) DEFAULT 'any' NOT NULL,
     pattern CHAR(64) DEFAULT NULL,
     context_info CHAR(32) DEFAULT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 

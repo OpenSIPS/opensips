@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Oracle module interface
  *
  * Copyright (C) 2007,2008 TRUNK MOBILE
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 /*
  * History:
@@ -61,9 +59,12 @@ static param_export_t params[] = {
 
 struct module_exports exports = {
 	"db_oracle",
+	MOD_TYPE_SQLDB,  /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,
+	0,
 	params,          /*  module parameters */
 	0,               /* exported statistics */
 	0,               /* exported MI functions */
@@ -108,7 +109,7 @@ static int db_oracle_bind_api(const str* mod, db_func_t *dbb)
 	dbb->raw_query        = db_oracle_raw_query;
 	dbb->free_result      = db_oracle_free_result;
 	dbb->insert           = db_oracle_insert;
-	dbb->delete           = db_oracle_delete; 
+	dbb->delete           = db_oracle_delete;
 	dbb->update           = db_oracle_update;
 
 	return 0;

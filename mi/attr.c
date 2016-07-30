@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -26,7 +24,7 @@
  */
 
 /*!
- * \file 
+ * \file
  * \brief MI :: Attributes
  * \ingroup mi
  */
@@ -150,7 +148,7 @@ struct mi_attr *get_mi_attr_by_name(struct mi_node *node, char *name, int len)
 		return NULL;
 
 	for(head = node->attributes ; head->next ; head = head->next)
-		if(len == head->name.len 
+		if(len == head->name.len
 		&& !strncasecmp(name, head->name.s, head->name.len))
 			return head;
 

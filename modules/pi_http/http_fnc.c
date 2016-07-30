@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011-2013 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -62,6 +60,7 @@
 #define PI_HTTP_XML_COL_NODE		"col"
 
 #define PI_HTTP_XML_FIELD_NODE		"field"
+#define PI_HTTP_XML_LINK_CMD_NODE	"link_cmd"
 #define PI_HTTP_XML_TYPE_NODE		"type"
 #define PI_HTTP_XML_OPERATOR_NODE	"operator"
 #define PI_HTTP_XML_VALUE_NODE		"value"
@@ -260,31 +259,31 @@ do{	\
 		case '<':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_LT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '>':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_GT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '&':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_AMP);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '"':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_QUOT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '\'':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_SQUOT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		}	\
@@ -337,7 +336,6 @@ static const str PI_HTTP_Response_Menu_Cmd_Table_1a = str_init("<table border=\"
 static const str PI_HTTP_Response_Menu_Cmd_Table_1b = str_init("<table border=\"1\" cellpadding=\"3\" cellspacing=\"0\" width=\"90%\"><tbody>\n");
 static const str PI_HTTP_Response_Menu_Cmd_tr_1 = str_init("<tr>\n");
 static const str PI_HTTP_Response_Menu_Cmd_td_1a = str_init("	<td width=\"10%\"><a href='");
-static const str PI_HTTP_Response_Menu_Cmd_td_3a = str_init("'>");
 static const str PI_HTTP_Response_Menu_Cmd_td_4a = str_init("</a></td>\n");
 static const str PI_HTTP_Response_Menu_Cmd_td_1b = str_init("	<td align=\"left\"><b>");
 static const str PI_HTTP_Response_Menu_Cmd_td_1c = str_init("	<td valign=\"top\" align=\"left\" rowspan=\"");
@@ -353,16 +351,10 @@ static const str PI_HTTP_Response_Menu_Cmd_Table_2 = str_init("</tbody></table>\
 
 static const str PI_HTTP_NBSP = str_init("&nbsp;");
 static const str PI_HTTP_SLASH = str_init("/");
-static const str PI_HTTP_SEMICOLON = str_init(" : ");
+static const str PI_HTTP_SQUOT_GT = str_init("'>");
 
-static const str PI_HTTP_NODE_INDENT = str_init("\t");
-static const str PI_HTTP_NODE_SEPARATOR = str_init(":: ");
 static const str PI_HTTP_ATTR_SEPARATOR = str_init(" ");
 static const str PI_HTTP_ATTR_VAL_SEPARATOR = str_init("=");
-
-static const str PI_HTTP_BREAK = str_init("<br/>");
-static const str PI_HTTP_CODE_1 = str_init("<pre>");
-static const str PI_HTTP_CODE_2 = str_init("</pre>");
 
 static const str PI_HTTP_Post_Form_1a = str_init("\n"\
 "		<form name=\"input\" method=\"");
@@ -401,7 +393,7 @@ static const str PI_HTTP_Response_Foot = str_init(\
 "\n</center>\n<div align=\"center\" class=\"foot\" style=\"margin:20px auto\">"\
 	"<span style='margin-left:5px;'></span>"\
 	"<a href=\"http://opensips.org\">OpenSIPS web site</a><br/>"\
-	"Copyright &copy; 2012-2013 <a href=\"http://www.voipembedded.com/\">VoIP Embedded, Inc.</a>"\
+	"Copyright &copy; 2012-2015 <a href=\"http://www.voipembedded.com/\">VoIP Embedded, Inc.</a>"\
 								". All rights reserved."\
 "</div></body></html>");
 
@@ -413,6 +405,10 @@ static const str PI_HTTP_ESC_GT =    str_init("&gt;");   /* > */
 static const str PI_HTTP_ESC_AMP =   str_init("&amp;");  /* & */
 static const str PI_HTTP_ESC_QUOT =  str_init("&quot;"); /* " */
 static const str PI_HTTP_ESC_SQUOT = str_init("&#39;");  /* ' */
+
+static const str PI_HTTP_HREF_1 = str_init("<a href='/");
+static const str PI_HTTP_HREF_2 = str_init("?cmd=pre&");
+static const str PI_HTTP_HREF_3 = str_init("</a>");
 
 
 xmlAttrPtr ph_xmlNodeGetAttrByName(xmlNodePtr node, const char *name)
@@ -582,7 +578,7 @@ int ph_getDbTableCols(ph_db_url_t *ph_db_urls, ph_db_table_t *db_tables,
 			db_tables->cols = cols;
 			cols = &db_tables->cols[db_tables->cols_size];
 			memset(cols, 0, sizeof(ph_table_col_t));
-			cols->type=-1;
+			cols->type=(db_type_t)-1;
 			/* Populate the field */
 			field.s =
 				ph_xmlNodeGetNodeContentByName(node->children,
@@ -688,7 +684,7 @@ int ph_getDbTableCols(ph_db_url_t *ph_db_urls, ph_db_table_t *db_tables,
 				if(strncmp("DB_DATETIME",val,11)==0)
 					cols->type=DB_DATETIME;
 			}
-			if(cols->type==-1){
+			if(cols->type== (db_type_t)-1){
 				LM_ERR("unexpected type [%s] for %s %s %s\n",
 					val, table_node->name, node->name,
 					PI_HTTP_XML_TYPE_NODE);
@@ -894,7 +890,7 @@ int ph_getColVals(ph_mod_t *module, ph_cmd_t *cmd,
 			if(vals==NULL||ids==NULL) {LM_ERR("oom\n"); return -1;}
 			col_vals = vals; col_ids = ids;
 			vals = &col_vals[size]; ids = &col_ids[size];
-			memset(vals, 0, sizeof(str*)); memset(ids, 0, sizeof(str*));
+			memset(vals, 0, sizeof *vals); memset(ids, 0, sizeof *ids);
 			/* Retrieve the node attribute */
 			attr.s = ph_xmlNodeGetAttrContentByName(node,
 							PI_HTTP_XML_ID_ATTR);
@@ -947,7 +943,7 @@ int ph_getColVals(ph_mod_t *module, ph_cmd_t *cmd,
 
 int ph_getCols(ph_mod_t *module, ph_cmd_t *cmd,
 		db_op_t **mod_cmd_ops, db_key_t **mod_cmd_keys,
-		db_type_t **mod_cmd_types, ph_vals_t **mod_cmd_vals,
+		db_type_t **mod_cmd_types, ph_vals_t **mod_cmd_vals, str **mod_cmd_linkCmd,
 		int *key_size, xmlNodePtr cmd_node)
 {
 	xmlNodePtr node;
@@ -964,6 +960,9 @@ int ph_getCols(ph_mod_t *module, ph_cmd_t *cmd,
 	db_type_t *cmd_types = NULL;
 	ph_vals_t *vals;
 	ph_vals_t *cmd_vals = NULL;
+	str link_cmd;
+	str *linkCmd;
+	str *cmd_linkCmd = NULL;
 	int i;
 	int size = 0;
 	int table_size;
@@ -1151,6 +1150,36 @@ int ph_getCols(ph_mod_t *module, ph_cmd_t *cmd,
 				if(ph_getColVals(module, cmd, vals, node)!=0)
 					return -1;
 			}
+			/* Retrieve the link_cmds */
+			if(mod_cmd_linkCmd){
+				if(size)
+					linkCmd = (str*)shm_realloc(cmd_linkCmd,
+						(size+1)*sizeof(str));
+				else
+					linkCmd = (str*)shm_malloc(sizeof(str));
+				if(linkCmd==NULL) {LM_ERR("oom\n");return -1;}
+				cmd_linkCmd = linkCmd;
+				linkCmd = &cmd_linkCmd[size];
+				memset(linkCmd, 0, sizeof(str));
+				/* get the link_cmd */
+				link_cmd.s = ph_xmlNodeGetNodeContentByName(node->children,
+						PI_HTTP_XML_LINK_CMD_NODE);
+				if(link_cmd.s!=NULL){
+					link_cmd.len = strlen(link_cmd.s);
+					if(link_cmd.len!=0){
+						LM_DBG("got %s=[%.*s] in %s [%.*s] %s [%.*s] %s %s\n",
+							PI_HTTP_XML_LINK_CMD_NODE,
+							link_cmd.len, link_cmd.s,
+							cmd_node->parent->parent->name,
+							module->module.len, module->module.s,
+							cmd_node->parent->name,
+							cmd->name.len, cmd->name.s,
+							cmd_node->name, node->name);
+						if(shm_str_dup(linkCmd, &link_cmd)) return -1;
+					}
+					xmlFree(link_cmd.s); link_cmd.s = NULL; link_cmd.len = 0;
+				}
+			}
 			size++;
 		}
 	}
@@ -1171,6 +1200,7 @@ int ph_getCols(ph_mod_t *module, ph_cmd_t *cmd,
 		if(mod_cmd_ops) *mod_cmd_ops = cmd_ops;
 		if(mod_cmd_types) *mod_cmd_types = cmd_types;
 		if(mod_cmd_vals&&cmd_vals) *mod_cmd_vals = cmd_vals;
+		if(mod_cmd_linkCmd) *mod_cmd_linkCmd = cmd_linkCmd;
 		if(cmd_vals) for(i=0;i<size;i++){
 			LM_DBG("cmd_vals[%d]=[%p]->[%d][%p][%p]\n",
 				i, &cmd_vals[i], cmd_vals[i].vals_size,
@@ -1185,6 +1215,7 @@ int ph_getCols(ph_mod_t *module, ph_cmd_t *cmd,
 					cmd_vals[i].vals[op_len].len,
 					cmd_vals[i].vals[op_len].s);
 		}
+		if(mod_cmd_linkCmd&&cmd_linkCmd) *mod_cmd_linkCmd = cmd_linkCmd;
 		*key_size = size;
 		if(cmd_ops) for(i=0;i<size;i++)
 			LM_DBG("cmd_ops[%d]=[%p]->[%s]\n",
@@ -1330,6 +1361,7 @@ int ph_getCmds(ph_db_table_t *ph_db_tables, int ph_db_tables_size,
 								&cmds->c_keys,
 								&cmds->c_types,
 								&cmds->c_vals,
+								NULL,
 								&cmds->c_keys_size,
 								cmd_cols)!=0)
 							return -1;
@@ -1343,6 +1375,7 @@ int ph_getCmds(ph_db_table_t *ph_db_tables, int ph_db_tables_size,
 								&cmds->q_keys,
 								&cmds->q_types,
 								NULL,
+								&cmds->link_cmd,
 								&cmds->q_keys_size,
 								cmd_cols)!=0)
 							return -1;
@@ -1366,7 +1399,8 @@ int ph_getCmds(ph_db_table_t *ph_db_tables, int ph_db_tables_size,
 								NULL,
 								&cmds->o_keys,
 								NULL,
-								&cmds->q_vals,
+								NULL,
+								NULL,
 								&cmds->o_keys_size,
 								cmd_cols)!=0)
 							return -1;
@@ -1385,6 +1419,7 @@ int ph_getCmds(ph_db_table_t *ph_db_tables, int ph_db_tables_size,
 								&cmds->q_keys,
 								&cmds->q_types,
 								&cmds->q_vals,
+								NULL,
 								&cmds->q_keys_size,
 								cmd_cols)!=0)
 							return -1;
@@ -1411,6 +1446,7 @@ int ph_getCmds(ph_db_table_t *ph_db_tables, int ph_db_tables_size,
 								&cmds->c_keys,
 								&cmds->c_types,
 								&cmds->c_vals,
+								NULL,
 								&cmds->c_keys_size,
 								cmd_cols)!=0)
 							return -1;
@@ -1438,6 +1474,7 @@ int ph_getCmds(ph_db_table_t *ph_db_tables, int ph_db_tables_size,
 								&cmds->c_keys,
 								&cmds->c_types,
 								&cmds->c_vals,
+								NULL,
 								&cmds->c_keys_size,
 								cmd_cols)!=0)
 							return -1;
@@ -1451,6 +1488,7 @@ int ph_getCmds(ph_db_table_t *ph_db_tables, int ph_db_tables_size,
 								&cmds->q_keys,
 								&cmds->q_types,
 								&cmds->q_vals,
+								NULL,
 								&cmds->q_keys_size,
 								cmd_cols)!=0)
 							return -1;
@@ -1479,6 +1517,7 @@ int ph_getCmds(ph_db_table_t *ph_db_tables, int ph_db_tables_size,
 								&cmds->q_keys,
 								&cmds->q_types,
 								&cmds->q_vals,
+								NULL,
 								&cmds->q_keys_size,
 								cmd_cols)!=0)
 							return -1;
@@ -1534,10 +1573,12 @@ int ph_getCmds(ph_db_table_t *ph_db_tables, int ph_db_tables_size,
 			if(cmds->q_keys)
 				for(i=0;i<cmds->q_keys_size;i++){
 					LM_DBG("    [%d] q_keys=[%.*s] "
-						"q_types=[%d]\n",
+						"q_types=[%d] link_cmd=[%.*s]\n",
 						i, (*(cmds->q_keys[i])).len,
 						(*(cmds->q_keys[i])).s,
-						cmds->q_types[i]);
+						cmds->q_types[i],
+						(cmds->link_cmd)?(cmds->link_cmd[i]).len:0,
+						(cmds->link_cmd)?(cmds->link_cmd[i]).s:NULL);
 					if(cmds->q_vals)
 						for(j=0;j<cmds->q_vals->vals_size;j++)
 							LM_DBG("      c_vals[%d] "
@@ -1682,6 +1723,7 @@ void ph_freeMods(ph_mod_t **ph_modules, int ph_modules_size)
 	db_key_t *cmd_keys;
 	db_op_t *cmd_ops;
 	ph_vals_t *cmd_vals;
+	str *cmd_linkCmd;
 
 	if(_ph_modules==NULL) return;
 	for(i=0;i<ph_modules_size;i++){
@@ -1749,6 +1791,7 @@ void ph_freeMods(ph_mod_t **ph_modules, int ph_modules_size)
 			/* */
 			cmd_keys = _ph_modules[i].cmds[j].q_keys;
 			cmd_vals = _ph_modules[i].cmds[j].q_vals;
+			cmd_linkCmd = _ph_modules[i].cmds[j].link_cmd;
 			for(k=0;k<_ph_modules[i].cmds[j].q_keys_size;k++){
 				if(cmd_keys && cmd_keys[k]){
 					if(cmd_keys[k]->s){
@@ -1776,6 +1819,10 @@ void ph_freeMods(ph_mod_t **ph_modules, int ph_modules_size)
 						cmd_vals[k].vals = NULL;
 					}
 				}
+				if(cmd_linkCmd && cmd_linkCmd[k].s){
+					shm_free(cmd_linkCmd[k].s);
+					cmd_linkCmd[k].s = NULL;
+				}
 			}
 			if(_ph_modules[i].cmds[j].q_keys){
 				shm_free(_ph_modules[i].cmds[j].q_keys);
@@ -1788,6 +1835,10 @@ void ph_freeMods(ph_mod_t **ph_modules, int ph_modules_size)
 			if(_ph_modules[i].cmds[j].q_vals){
 				shm_free(_ph_modules[i].cmds[j].q_vals);
 				_ph_modules[i].cmds[j].q_vals = NULL;
+			}
+			if(_ph_modules[i].cmds[j].link_cmd){
+				shm_free(_ph_modules[i].cmds[j].link_cmd);
+				_ph_modules[i].cmds[j].link_cmd = NULL;
 			}
 			cmd_keys = NULL; cmd_vals = NULL;
 			/* */
@@ -1863,7 +1914,8 @@ int ph_init_cmds(ph_framework_t **framework_data, const char* filename)
 		if(ph_getMods(_framework_data, framework_node)!=0)
 			goto xml_error;
 
-		if(doc)xmlFree(doc);doc=NULL;
+		if(doc)xmlFree(doc);
+		doc=NULL;
 		*framework_data = _framework_data;
 	}else{ /* This is a reload */
 		_ph_db_tables = _framework_data->ph_db_tables;
@@ -1883,7 +1935,8 @@ int ph_init_cmds(ph_framework_t **framework_data, const char* filename)
 		if(ph_getMods(_framework_data, framework_node)!=0)
 			goto xml_reload_error;
 
-		if(doc)xmlFree(doc);doc=NULL;
+		if(doc)xmlFree(doc);
+		doc=NULL;
 		*framework_data = _framework_data;
 
 	}
@@ -1891,7 +1944,8 @@ int ph_init_cmds(ph_framework_t **framework_data, const char* filename)
 xml_error:
 	/* FIXME: free thw whole structure */
 	if(_framework_data){shm_free(_framework_data);}
-	if(doc)xmlFree(doc);doc=NULL;
+	if(doc)xmlFree(doc);
+	doc=NULL;
 	return -1;
 xml_reload_error:
 	ph_freeDbTables(&_framework_data->ph_db_tables,
@@ -1902,7 +1956,8 @@ xml_reload_error:
 	_framework_data->ph_db_tables_size = _ph_db_tables_size;
 	_framework_data->ph_modules = _ph_modules;
 	_framework_data->ph_modules_size = _ph_modules_size;
-	if(doc)xmlFree(doc);doc=NULL;
+	if(doc)xmlFree(doc);
+	doc=NULL;
 	return -1;
 }
 
@@ -1915,7 +1970,7 @@ int ph_parse_url(const char* url, int* mod, int* cmd)
 	int i;
 	int mod_len, cmd_len;
 	ph_mod_t *ph_modules = ph_framework_data->ph_modules;
-	
+
 
 	if (url_len<0) {
 		LM_ERR("Invalid url length [%d]\n", url_len);
@@ -1981,11 +2036,15 @@ int ph_parse_url(const char* url, int* mod, int* cmd)
 }
 
 
-int ph_build_form_imput(char **p, char *buf, int max_page_len, int mod, int cmd)
+int ph_build_form_imput(char **p, char *buf, str *page, int max_page_len,
+		int mod, int cmd, str *clause, db_val_t *values)
 {
 	unsigned long i, j;
 	char c;
 	str op, arg;
+	str val_str;
+	str temp_holder;
+	int temp_counter;
 	ph_cmd_t *command;
 	ph_mod_t *ph_modules;
 
@@ -2010,6 +2069,10 @@ int ph_build_form_imput(char **p, char *buf, int max_page_len, int mod, int cmd)
 				PI_HTTP_COPY(*p, op);
 				PI_HTTP_COPY(*p, PI_HTTP_Post_Input_Text);
 				PI_HTTP_COPY(*p, arg);
+				if (i==0 && clause) {
+					PI_HTTP_COPY(*p, PI_HTTP_Post_Input_Hidden_2);
+					PI_HTTP_COPY(*p, *clause);
+				}
 				PI_HTTP_COPY(*p, PI_HTTP_Post_Input_3);
 				break;
 			case 1:
@@ -2057,6 +2120,127 @@ int ph_build_form_imput(char **p, char *buf, int max_page_len, int mod, int cmd)
 				PI_HTTP_COPY(*p, *command->q_keys[i]);
 				PI_HTTP_COPY(*p, PI_HTTP_Post_Input_Text);
 				PI_HTTP_COPY(*p, arg);
+				if (values) {
+					PI_HTTP_COPY(*p, PI_HTTP_Post_Input_Hidden_2);
+					switch(command->q_types[i]){
+					case DB_STR:
+					case DB_STRING:
+					case DB_BLOB:
+						if(values[i].val.str_val.s==NULL){
+							val_str.s = NULL; val_str.len = 0;
+						} else {
+							val_str.s = values[i].val.str_val.s;
+							val_str.len = strlen(val_str.s);
+						}
+						LM_DBG("...got %.*s[0]=>"
+							"[%.*s][%.*s]\n",
+							command->q_keys[i]->len,
+							command->q_keys[i]->s,
+							values[i].val.str_val.len,
+							values[i].val.str_val.s,
+							val_str.len, val_str.s);
+						if (val_str.len) {
+							PI_HTTP_ESC_COPY(*p, val_str, temp_holder, temp_counter);
+						}
+						break;
+					case DB_INT:
+						val_str.s = *p;
+						val_str.len = max_page_len - page->len;
+						if(db_int2str(values[i].val.int_val,
+									val_str.s, &val_str.len)!=0){
+							LM_ERR("Unable to convert int [%d]\n",
+								values[i].val.int_val);
+							goto error;
+						}
+						*p += val_str.len;
+						page->len += val_str.len;
+						LM_DBG("   got %.*s[0]=>"
+							"[%d][%.*s]\n",
+							command->q_keys[i]->len,
+							command->q_keys[i]->s,
+							values[i].val.int_val,
+							val_str.len, val_str.s);
+						break;
+					case DB_BITMAP:
+						val_str.s = *p;
+						val_str.len = max_page_len - page->len;
+						if(db_int2str(values[i].val.bitmap_val,
+									val_str.s, &val_str.len)!=0){
+							LM_ERR("Unable to convert bitmap [%d]\n",
+								values[i].val.bitmap_val);
+							goto error;
+						}
+						*p += val_str.len;
+						page->len += val_str.len;
+						LM_DBG("   got %.*s[0]=>"
+							"[%d][%.*s]\n",
+							command->q_keys[i]->len,
+							command->q_keys[i]->s,
+							values[i].val.bitmap_val,
+							val_str.len, val_str.s);
+						break;
+					case DB_BIGINT:
+						val_str.s = *p;
+						val_str.len = max_page_len - page->len;
+						if(db_bigint2str(values[i].val.bigint_val,
+									val_str.s, &val_str.len)!=0){
+							LM_ERR("Unable to convert bigint [%-lld]\n",
+								values[i].val.bigint_val);
+							goto error;
+						}
+						*p += val_str.len;
+						page->len += val_str.len;
+						LM_DBG("   got %.*s[0]=>"
+							"[%-lld][%.*s]\n",
+							command->q_keys[i]->len,
+							command->q_keys[i]->s,
+							values[i].val.bigint_val,
+							val_str.len, val_str.s);
+						break;
+					case DB_DOUBLE:
+						val_str.s = *p;
+						val_str.len = max_page_len - page->len;
+						if(db_double2str(values[i].val.double_val,
+									val_str.s, &val_str.len)!=0){
+							LM_ERR("Unable to convert double [%-10.2f]\n",
+								values[i].val.double_val);
+							goto error;
+						}
+						*p += val_str.len;
+						page->len += val_str.len;
+						LM_DBG("   got %.*s[0]=>"
+							"[%-10.2f][%.*s]\n",
+							command->q_keys[i]->len,
+							command->q_keys[i]->s,
+							values[i].val.double_val,
+							val_str.len, val_str.s);
+						break;
+					case DB_DATETIME:
+						val_str.s = *p;
+						val_str.len = max_page_len - page->len;
+						if (db_time2str_nq(values[i].val.time_val,
+									val_str.s, &val_str.len)!=0){
+							LM_ERR("Unable to convert time [%ld]\n",
+								(unsigned long int)values[i].val.time_val);
+							goto error;
+						}
+						*p += val_str.len;
+						page->len += val_str.len;
+						LM_DBG("   got %.*s[0]=>"
+							"[%ld][%.*s]\n",
+							command->q_keys[i]->len,
+							command->q_keys[i]->s,
+							(unsigned long int)values[i].val.time_val,
+							val_str.len, val_str.s);
+						break;
+					default:
+						LM_ERR("unexpected type [%d] "
+							"for [%.*s]\n",
+							command->q_types[i],
+							command->q_keys[i]->len,
+							command->q_keys[i]->s);
+					}
+				}
 				PI_HTTP_COPY(*p, PI_HTTP_Post_Input_3);
 				break;
 			case 1:
@@ -2163,7 +2347,7 @@ int ph_build_reply(str *page, int max_page_len, int mod, int cmd)
 	PI_HTTP_COPY_6(p,ph_modules[mod].module,
 			PI_HTTP_SLASH,
 			ph_modules[mod].cmds[cmd].name,
-			PI_HTTP_Response_Menu_Cmd_td_3a,
+			PI_HTTP_SQUOT_GT,
 			ph_modules[mod].cmds[cmd].name,
 			PI_HTTP_Response_Menu_Cmd_td_4a);
 	/* Print cmd name */
@@ -2202,7 +2386,7 @@ error:
 	return -1;
 }
 
-int ph_build_content(str *page, int max_page_len, int mod, int cmd)
+int ph_build_content(str *page, int max_page_len, int mod, int cmd, str *clause, db_val_t *values)
 {
 	char *p, *buf;
 	int j;
@@ -2224,7 +2408,7 @@ int ph_build_content(str *page, int max_page_len, int mod, int cmd)
 		PI_HTTP_COPY_6(p,ph_modules[mod].module,
 				PI_HTTP_SLASH,
 				ph_modules[mod].cmds[0].name,
-				PI_HTTP_Response_Menu_Cmd_td_3a,
+				PI_HTTP_SQUOT_GT,
 				ph_modules[mod].cmds[0].name,
 				PI_HTTP_Response_Menu_Cmd_td_4a);
 		if (cmd>=0) {
@@ -2243,7 +2427,7 @@ int ph_build_content(str *page, int max_page_len, int mod, int cmd)
 			PI_HTTP_COPY_6(p,ph_modules[mod].module,
 					PI_HTTP_SLASH,
 					ph_modules[mod].cmds[j].name,
-					PI_HTTP_Response_Menu_Cmd_td_3a,
+					PI_HTTP_SQUOT_GT,
 					ph_modules[mod].cmds[j].name,
 					PI_HTTP_Response_Menu_Cmd_td_4a);
 			if (cmd>=0){
@@ -2255,8 +2439,8 @@ int ph_build_content(str *page, int max_page_len, int mod, int cmd)
 						PI_HTTP_Post_Form_1a,
 						PI_HTTP_METHOD[http_method],
 						PI_HTTP_Post_Form_1b);
-					if(ph_build_form_imput(&p, buf, max_page_len,
-							mod, cmd)!=0)
+					if(ph_build_form_imput(&p, buf, page, max_page_len,
+							mod, cmd, clause, values)!=0)
 						return -1;
 					PI_HTTP_COPY_2(p, PI_HTTP_Post_Form_2,
 						PI_HTTP_Response_Menu_Cmd_td_4c);
@@ -2281,8 +2465,8 @@ int ph_build_content(str *page, int max_page_len, int mod, int cmd)
 						PI_HTTP_Post_Form_1a,
 						PI_HTTP_METHOD[http_method],
 						PI_HTTP_Post_Form_1b);
-				if(ph_build_form_imput(&p, buf, max_page_len,
-						mod, cmd)!=0)
+				if(ph_build_form_imput(&p, buf, page, max_page_len,
+						mod, cmd, clause, values)!=0)
 					return -1;
 				PI_HTTP_COPY_3(p, PI_HTTP_Post_Form_2,
 						PI_HTTP_Response_Menu_Cmd_td_4c,
@@ -2420,7 +2604,7 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 			LM_DBG("[%.*s] has flags [%d]\n", key->len, key->s, flags);
 			if(flags){
 				PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
-					"Unkown validation [%d] for %s.",
+					"Unknown validation [%d] for %s.",
 					table->cols[i].validation, key->s);
 				goto done;
 			}
@@ -2532,7 +2716,9 @@ int ph_run_pi_cmd(int mod, int cmd,
 	ph_cmd_t *command;
 
 	int _len;
+	int link_on;
 
+	char tmp;
 	char c[2];
 	db_val_t *c_vals = NULL;
 	db_val_t *q_vals = NULL;
@@ -2541,7 +2727,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 	int nr_rows;
 	ph_db_url_t *db_url = NULL;
 	db_res_t *res = NULL;
-	db_val_t *values;
+	db_val_t *values = NULL;
 	db_row_t *rows;
 	ph_mod_t *ph_modules;
 
@@ -2559,53 +2745,144 @@ int ph_run_pi_cmd(int mod, int cmd,
 	buf = page->s;
 	p = page->s + page->len;
 
-	if (cmd<0) return ph_build_content(page, buffer->len, mod, cmd);
+	if (cmd<0) return ph_build_content(page, buffer->len, mod, cmd, NULL, NULL);
 
 	httpd_api.lookup_arg(connection, "cmd", con_cls, &l_arg);
-	if(l_arg.s==NULL) return ph_build_content(page, buffer->len, mod, cmd);
+	if(l_arg.s==NULL) return ph_build_content(page, buffer->len, mod, cmd, NULL, NULL);
+
+	LM_DBG("got arg cmd=[%.*s]\n", l_arg.len, l_arg.s);
 
 	command = &ph_modules[mod].cmds[cmd];
 
-	/* allocate c_vals array */
-	if(command->c_keys_size && command->c_keys_size){
+	if (l_arg.len==3 && strncmp(l_arg.s, "pre", 3)==0) {
+		/* We prebuild values only for update */
+		if(command->type!=DB_CAP_UPDATE) {
+			LM_ERR("command [%.*s] is not DB_CAP_UPDATE type\n",
+				command->name.len, command->name.s);
+			return ph_build_content(page, buffer->len, mod, cmd, NULL, NULL);
+		}
+		/* We prebuild values only for single clause update command */
+		if(command->c_keys_size!=1) {
+			LM_ERR("command [%.*s] has [%d] clause keys\n",
+				command->name.len, command->name.s, command->c_keys_size);
+			return ph_build_content(page, buffer->len, mod, cmd, NULL, NULL);
+		}
+		LM_DBG("[%.*s] with clause key [%.*s]\n",
+			command->name.len, command->name.s,
+			command->c_keys[0]->len, command->c_keys[0]->s);
+
+		tmp = command->c_keys[0]->s[command->c_keys[0]->len];
+		command->c_keys[0]->s[command->c_keys[0]->len] = '\0';
+		LM_DBG("httpd_api.lookup_arg[%s]\n", command->c_keys[0]->s);
+		httpd_api.lookup_arg(connection, command->c_keys[0]->s, con_cls, &l_arg);
+		if(l_arg.s==NULL) {
+			LM_ERR("missing clause key [%.*s] in args\n",
+				command->c_keys[0]->len, command->c_keys[0]->s);
+			command->c_keys[0]->s[command->c_keys[0]->len] = tmp;
+			return ph_build_content(page, buffer->len, mod, cmd, NULL, NULL);
+		}
+		command->c_keys[0]->s[command->c_keys[0]->len] = tmp;
+
+		LM_DBG("got clause [%.*s] with value [%.*s]\n",
+			command->c_keys[0]->len, command->c_keys[0]->s, l_arg.len, l_arg.s);
+
 		c_vals = (db_val_t*)pkg_malloc(command->c_keys_size*sizeof(db_val_t));
 		if(c_vals==NULL){
 			LM_ERR("oom\n");
 			return -1;
 		}
 		memset(c_vals, 0, command->c_keys_size*sizeof(db_val_t));
-		for(i=0;i<command->c_keys_size;i++){
-			s_arg.s = int2str(i, &s_arg.len);
-			httpd_api.lookup_arg(connection, s_arg.s, con_cls, &l_arg);
-			if(l_arg.s==NULL){
-				PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
-					"No argument for clause field #%d: %.*s.",
-					i, command->c_keys[i]->len,
-					command->c_keys[i]->s);
-				goto done;
-			}
-			s_arg.len = l_arg.len;
-			if(s_arg.len==0){
-				PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
-					"Empty argument for clause field #%d: %.*s.",
-					i,command->c_keys[i]->len,
-					command->c_keys[i]->s);
-				goto done;
-			}
-			//LM_DBG("s_arg=[%s] l_arg=[%.*s]\n", s_arg.s, l_arg.len, l_arg.s);
-			s_arg.s = l_arg.s;
-			val = &c_vals[i];
-			val->type = command->c_types[i];
-			//c_vals[i].null = 0;
-			/* FIXME: what should we do here? */
-			//c_vals[i].free = ?;
 
-			ret = getVal(val, command->c_types[i], command->c_keys[i],
-				command->db_table, &s_arg, page, buffer, mod, cmd);
-			if(ret<0)
-				goto error;
-			else if(ret>0)
-				goto done;
+		val = &c_vals[0];
+		val->type = command->c_types[0];
+		ret = getVal(val, command->c_types[0], command->c_keys[0],
+				command->db_table, &l_arg, page, buffer, mod, cmd);
+		if(ret<0)
+			goto error;
+		else if(ret>0)
+			goto finish_page;
+
+		/* Let's run the query to get the values for the record to update*/
+		db_url = command->db_table->db_url;
+		if(use_table(command->db_table)<0){
+			PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
+				"Error on table [%.*s].",
+				command->db_table->name.len,
+				command->db_table->name.s);
+			goto finish_page;
+		}
+
+		if(db_url->http_dbf.query(*db_url->http_db_handle,
+			command->c_keys, command->c_ops, c_vals,
+			command->q_keys,
+			command->c_keys_size,
+			command->q_keys_size,
+			command->o_keys?*command->o_keys:0, &res) < 0){
+			PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
+				"Error while querying database.");
+			goto finish_page;
+		}
+		nr_rows = RES_ROW_N(res);
+		switch (nr_rows) {
+		case 0:
+			LM_ERR("no record on clause key [%.*s]\n",
+				command->c_keys[0]->len, command->c_keys[0]->s);
+			if(c_vals) pkg_free(c_vals); c_vals = NULL;
+			goto finish_page;
+		case 1:
+			LM_DBG("got [%d] rows for key [%.*s]\n",
+				nr_rows, command->c_keys[0]->len, command->c_keys[0]->s);
+			break;
+		default:
+			LM_ERR("to many records [%d] on clause key [%.*s]\n",
+				nr_rows, command->c_keys[0]->len, command->c_keys[0]->s);
+			goto finish_page;
+		}
+
+		rows = RES_ROWS(res);
+		values = ROW_VALUES(rows);
+		ret = ph_build_content(page, buffer->len, mod, cmd, &l_arg, values);
+		db_url->http_dbf.free_result(*db_url->http_db_handle, res);
+		//res = NULL;
+		return ret;
+	} else if(l_arg.len==2 && strncmp(l_arg.s, "on", 2)==0) {
+		/* allocate c_vals array */
+		if(command->c_keys_size && command->c_keys_size){
+			c_vals = (db_val_t*)pkg_malloc(command->c_keys_size*sizeof(db_val_t));
+			if(c_vals==NULL){
+				LM_ERR("oom\n");
+				return -1;
+			}
+			memset(c_vals, 0, command->c_keys_size*sizeof(db_val_t));
+			for(i=0;i<command->c_keys_size;i++){
+				s_arg.s = int2str(i, &s_arg.len);
+				httpd_api.lookup_arg(connection, s_arg.s, con_cls, &l_arg);
+				if(l_arg.s==NULL){
+					PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
+						"No argument for clause field #%d: %.*s.",
+						i, command->c_keys[i]->len,
+						command->c_keys[i]->s);
+					goto done;
+				}
+				s_arg.len = l_arg.len;
+				if(s_arg.len==0){
+					PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
+						"Empty argument for clause field #%d: %.*s.",
+						i,command->c_keys[i]->len,
+						command->c_keys[i]->s);
+					goto done;
+				}
+				s_arg.s = l_arg.s;
+				val = &c_vals[i];
+				val->type = command->c_types[i];
+
+				ret = getVal(val, command->c_types[i], command->c_keys[i],
+					command->db_table, &s_arg, page, buffer, mod, cmd);
+				if(ret<0)
+					goto error;
+				else if(ret>0)
+					goto done;
+			}
 		}
 	}
 	if(command->q_keys_size && command->q_keys_size && command->type!=DB_CAP_QUERY){
@@ -2671,10 +2948,10 @@ int ph_run_pi_cmd(int mod, int cmd,
 			if(j)PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_td_1d);
 			PI_HTTP_COPY_2(p,*(command->q_keys[j]),
 					PI_HTTP_Response_Menu_Cmd_td_4d);
-					
+
 		}
 		if (DB_CAPABILITY(db_url->http_dbf, DB_CAP_FETCH)){
-			if(db_url->http_dbf.query(db_url->http_db_handle,
+			if(db_url->http_dbf.query(*db_url->http_db_handle,
 				command->c_keys, command->c_ops, c_vals,
 				command->q_keys,
 				command->c_keys_size,
@@ -2684,15 +2961,14 @@ int ph_run_pi_cmd(int mod, int cmd,
 					"Error while querying (fetch) database.");
 				goto done;
 			}
-			/* FIXME: implement proper fetch value */
-			if(db_url->http_dbf.fetch_result(db_url->http_db_handle,
+			if(db_url->http_dbf.fetch_result(*db_url->http_db_handle,
 					&res, 100)<0){
 				PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
 					"Fetching rows failed.");
 				goto done;
 			}
 		}else{
-			if(db_url->http_dbf.query(db_url->http_db_handle,
+			if(db_url->http_dbf.query(*db_url->http_db_handle,
 				command->c_keys, command->c_ops, c_vals,
 				command->q_keys,
 				command->c_keys_size,
@@ -2712,6 +2988,21 @@ int ph_run_pi_cmd(int mod, int cmd,
 				PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_tr_1);
 				for(j=0;j<command->q_keys_size;j++){
 					PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_td_1d);
+					/* BEGIN */
+					link_on = 0;
+					if(command->link_cmd && command->link_cmd[j].s) {
+						link_on = 1;
+						PI_HTTP_COPY(p,PI_HTTP_HREF_1);
+						if (http_root.len) {
+							PI_HTTP_COPY_2(p,http_root, PI_HTTP_SLASH);
+						}
+						PI_HTTP_COPY_2(p,ph_modules[mod].module, PI_HTTP_SLASH);
+						PI_HTTP_COPY(p,command->link_cmd[j]); /* this is the command */
+						PI_HTTP_COPY_3(p,PI_HTTP_HREF_2,
+								*command->q_keys[j],
+								PI_HTTP_ATTR_VAL_SEPARATOR);
+					}
+					/* END */
 					switch(command->q_types[j]){
 					case DB_STR:
 					case DB_STRING:
@@ -2730,8 +3021,16 @@ int ph_run_pi_cmd(int mod, int cmd,
 							values[j].val.str_val.s,
 							val_str.len, val_str.s);
 						if (val_str.len) {
+							if(link_on) {
+								PI_HTTP_ESC_COPY(p, val_str, temp_holder, temp_counter);
+								PI_HTTP_COPY(p,PI_HTTP_SQUOT_GT);
+							}
 							PI_HTTP_ESC_COPY(p, val_str, temp_holder, temp_counter);
 						} else {
+							if(link_on) {
+								PI_HTTP_COPY(p, PI_HTTP_NBSP);
+								PI_HTTP_COPY(p,PI_HTTP_SQUOT_GT);
+							}
 							PI_HTTP_COPY(p, PI_HTTP_NBSP);
 						}
 						break;
@@ -2746,6 +3045,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 						}
 						p += val_str.len;
 						page->len += val_str.len;
+						if(link_on) PI_HTTP_COPY_2(p,PI_HTTP_SQUOT_GT,val_str);
 						LM_DBG("   got %.*s[%d]=>"
 							"[%d][%.*s]\n",
 							command->q_keys[j]->len,
@@ -2764,6 +3064,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 						}
 						p += val_str.len;
 						page->len += val_str.len;
+						if(link_on) PI_HTTP_COPY_2(p,PI_HTTP_SQUOT_GT,val_str);
 						LM_DBG("   got %.*s[%d]=>"
 							"[%d][%.*s]\n",
 							command->q_keys[j]->len,
@@ -2782,6 +3083,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 						}
 						p += val_str.len;
 						page->len += val_str.len;
+						if(link_on) PI_HTTP_COPY_2(p,PI_HTTP_SQUOT_GT,val_str);
 						LM_DBG("   got %.*s[%d]=>"
 							"[%-lld][%.*s]\n",
 							command->q_keys[j]->len,
@@ -2800,6 +3102,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 						}
 						p += val_str.len;
 						page->len += val_str.len;
+						if(link_on) PI_HTTP_COPY_2(p,PI_HTTP_SQUOT_GT,val_str);
 						LM_DBG("   got %.*s[%d]=>"
 							"[%-10.2f][%.*s]\n",
 							command->q_keys[j]->len,
@@ -2818,6 +3121,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 						}
 						p += val_str.len;
 						page->len += val_str.len;
+						if(link_on) PI_HTTP_COPY_2(p,PI_HTTP_SQUOT_GT,val_str);
 						LM_DBG("   got %.*s[%d]=>"
 							"[%ld][%.*s]\n",
 							command->q_keys[j]->len,
@@ -2832,13 +3136,14 @@ int ph_run_pi_cmd(int mod, int cmd,
 							command->q_keys[j]->len,
 							command->q_keys[j]->s);
 					}
+					if(link_on) PI_HTTP_COPY(p,PI_HTTP_HREF_3);
 					PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_td_4d);
 				}
 				PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_tr_2);
 			}
 			/* any more data to be fetched ?*/
 			if (DB_CAPABILITY(db_url->http_dbf, DB_CAP_FETCH)){
-				if(db_url->http_dbf.fetch_result(db_url->http_db_handle,
+				if(db_url->http_dbf.fetch_result(*db_url->http_db_handle,
 					&res, 100)<0){
 					LM_ERR("fetching more rows failed\n");
 					goto error;
@@ -2848,12 +3153,12 @@ int ph_run_pi_cmd(int mod, int cmd,
 				nr_rows = 0;
 			}
 		}while (nr_rows>0);
-		db_url->http_dbf.free_result(db_url->http_db_handle, res);
+		db_url->http_dbf.free_result(*db_url->http_db_handle, res);
 		res=NULL;
 		goto finish_page;
 		break;
 	case DB_CAP_INSERT:
-		if((db_url->http_dbf.insert(db_url->http_db_handle,
+		if((db_url->http_dbf.insert(*db_url->http_db_handle,
 			command->q_keys, q_vals, command->q_keys_size))!=0){
 			PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
 					"Unable to add record to db.");
@@ -2864,7 +3169,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 		goto done;
 		break;
 	case DB_CAP_DELETE:
-		if((db_url->http_dbf.delete(db_url->http_db_handle,
+		if((db_url->http_dbf.delete(*db_url->http_db_handle,
 			command->c_keys, command->c_ops, c_vals,
 			command->c_keys_size))!=0) {
 			PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
@@ -2876,7 +3181,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 		goto done;
 		break;
 	case DB_CAP_UPDATE:
-		if((db_url->http_dbf.update(db_url->http_db_handle,
+		if((db_url->http_dbf.update(*db_url->http_db_handle,
 			command->c_keys, command->c_ops, c_vals,
 			command->q_keys, q_vals,
 			command->c_keys_size, command->q_keys_size))!=0){
@@ -2889,7 +3194,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 		goto done;
 		break;
 	case DB_CAP_REPLACE:
-		if((db_url->http_dbf.replace(db_url->http_db_handle,
+		if((db_url->http_dbf.replace(*db_url->http_db_handle,
 			command->q_keys, q_vals, command->q_keys_size))!=0){
 			PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
 					"Unable to replace record.");
@@ -2906,7 +3211,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 	LM_ERR("You shoudn't end up here\n");
 error:
 	if (db_url && res)
-		db_url->http_dbf.free_result(db_url->http_db_handle, res);
+		db_url->http_dbf.free_result(*db_url->http_db_handle, res);
 	if(c_vals) pkg_free(c_vals);
 	if(q_vals) pkg_free(q_vals);
 	return -1;

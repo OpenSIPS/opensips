@@ -12,12 +12,19 @@ Edited by
 
 Klaus Darilion
 
+Ovidiu Sas
+
+Edited by
+
+Ovidiu Sas
+
    Copyright © 2006 Voice Sistem SRL
 
    Copyright © 2008 Klaus Darilion IPCom
+
+   Copyright © 2014 VoIP Embedded, Inc.
    Revision History
-   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
-                              (Tue, 29 Jan 2013) $
+   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -36,10 +43,12 @@ Klaus Darilion
               1.3.2. include_tags (int)
               1.3.3. include_localremote (int)
               1.3.4. caller_confirmed (int)
-              1.3.5. presence_server (string)
-              1.3.6. caller_spec_param (string)
-              1.3.7. callee_spec_param (string)
-              1.3.8. osips_ps (int)
+              1.3.5. publish_on_trying (int)
+              1.3.6. nopublish_flag (int)
+              1.3.7. presence_server (string)
+              1.3.8. caller_spec_param (string)
+              1.3.9. callee_spec_param (string)
+              1.3.10. osips_ps (int)
 
         1.4. Exported Functions
 
@@ -51,11 +60,14 @@ Klaus Darilion
    1.2. Set include_tags parameter
    1.3. Set include_localremote parameter
    1.4. Set caller_confirmed parameter
-   1.5. Set presence_server parameter
-   1.6. Set caller_spec_param parameter
-   1.7. Set caller_spec_param parameter
-   1.8. Set osips_ps parameter
-   1.9. dialoginfo_set usage
+   1.5. Set publish_on_trying parameter to 0
+   1.6. Set publish_on_trying parameter to 1
+   1.7. Set nopublish_flag parameter
+   1.8. Set presence_server parameter
+   1.9. Set caller_spec_param parameter
+   1.10. Set caller_spec_param parameter
+   1.11. Set osips_ps parameter
+   1.12. dialoginfo_set usage
 
 Chapter 1. Admin Guide
 
@@ -286,18 +298,118 @@ modparam("pua_dialoginfo", "include_localremote", 0)
 modparam("pua_dialoginfo", "caller_confirmed", 1)
 ...
 
-1.3.5. presence_server (string)
+1.3.5. publish_on_trying (int)
+
+   Usually the dialog-info of the caller will be "trying -> early
+   -> confirmed". The "trying" state will be triggered as soon as
+   you call dialoginfo_set on the caller, while "early" is
+   triggered as soon as the callee is ringing (triggered by a 180
+   or 183 provisional reply). Sometimes, it is advisable to be
+   notified only when the callee reaches the early state and not
+   before. In other cases, it is advisable to notify the early
+   state. This setting allows controlling the behavior.
+
+   The intended purpose of this parameter is to reduce the rate of
+   notifications (see RFC4235, section 3.10. Rate of
+   Notifications).
+
+   Default value is “0”.
+
+   Example 1.5. Set publish_on_trying parameter to 0
+...
+modparam("pua_dialoginfo", "publish_on_trying", 0)
+
+# Successful call scenario:
+#
+# UAC       proxy       UAS     presence server
+#  |--INVITE->|          |            |
+#  |<-100-----|--INVITE->|            |
+#  |          |<-100-----|            |
+#  |          |          |            |
+#  |          |<-18x-----|            |
+#  |<-18x-----|--PUBLISH(early)------>|
+#  |          |          |            |
+#  |          |<-200-----|            |
+#  |<-200-----|--PUBLISH(confirmed)-->|
+#  |--ACK---->|          |            |
+#  |          |--ACK---->|            |
+#  |          |          |            |
+#
+#
+# Unsuccessful call scenario:
+#
+# UAC       proxy       UAS     presence server
+#  |--INVITE->|          |            |
+#  |<-100-----|--INVITE->|            |
+#  |          |<-100-----|            |
+#  |          |          |            |
+#  |          |<-456xx---|            |
+#  |<-456xx---|--ACK---->|            |
+#  |--ACK---->|          |            |
+...
+
+   Example 1.6. Set publish_on_trying parameter to 1
+...
+modparam("pua_dialoginfo", "publish_on_trying", 1)
+
+# Successful call scenario:
+#
+# UAC       proxy       UAS     presence server
+#  |--INVITE->|          |            |
+#  |<-100-----|--INVITE->|            |
+#  |          |--PUBLISH(trying)----->|
+#  |          |<-100-----|            |
+#  |          |          |            |
+#  |          |<-18x-----|            |
+#  |<-18x-----|--PUBLISH(early)------>|
+#  |          |          |            |
+#  |          |<-200-----|            |
+#  |<-200-----|--PUBLISH(confirmed)-->|
+#  |--ACK---->|          |            |
+#  |          |--ACK---->|            |
+#  |          |          |            |
+#
+#
+# Unsuccessful call scenario:
+#
+# UAC       proxy       UAS     presence server
+#  |--INVITE->|          |            |
+#  |<-100-----|--INVITE->|            |
+#  |          |--PUBLISH(trying)----->|
+#  |          |<-100-----|            |
+#  |          |          |            |
+#  |          |<-456xx---|            |
+#  |          |--PUBLISH(terminated)->|
+#  |<-456xx---|--ACK---->|            |
+#  |--ACK---->|          |            |
+...
+
+1.3.6. nopublish_flag (int)
+
+   By default, reINVITEs will trigger a PUBLISH. They are actually
+   the only in-dialog request for which it makes sense. In some
+   cases, it does not make sense to republish a dialog state.
+   (e.g. when handling a B2BUA reINVITE). This setting defines the
+   flag that needs to be set in the request route to prevent the
+   generation of a PUBLISH request in case of a specific reINVITE.
+
+   Example 1.7. Set nopublish_flag parameter
+...
+modparam("pua_dialoginfo", "nopublish_flag", 5)
+...
+
+1.3.7. presence_server (string)
 
    The address of the presence server, where the PUBLISH messages
    should be sent (not compulsory).
 
-   Example 1.5. Set presence_server parameter
+   Example 1.8. Set presence_server parameter
 ...
 modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060"
 )
 ...
 
-1.3.6. caller_spec_param (string)
+1.3.8. caller_spec_param (string)
 
    The name of the pseudovariable that will hold a custom caller
    URI. If this variable is not set, the information in From
@@ -307,12 +419,12 @@ modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060"
    the format of To/From SIP headers: "display_name<sip_uri>" or
    "sip_uri".
 
-   Example 1.6. Set caller_spec_param parameter
+   Example 1.9. Set caller_spec_param parameter
 ...
 modparam("pua_dialoginfo", "caller_spec_param", "$avp(10)")
 ...
 
-1.3.7. callee_spec_param (string)
+1.3.9. callee_spec_param (string)
 
    The name of the pseudovariable that will hold the callee URI.
    If this variable will not be set, the callee information used
@@ -320,12 +432,12 @@ modparam("pua_dialoginfo", "caller_spec_param", "$avp(10)")
    string to set this pseudovariable to is the same as described
    in caller_spec_param section.
 
-   Example 1.7. Set caller_spec_param parameter
+   Example 1.10. Set caller_spec_param parameter
 ...
 modparam("pua_dialoginfo", "callee_spec_param", "$avp(11)")
 ...
 
-1.3.8. osips_ps (int)
+1.3.10. osips_ps (int)
 
    It is advisable to specify if you use a different presence
    server than OpenSIPS presence server, by setting this parameter
@@ -336,7 +448,7 @@ modparam("pua_dialoginfo", "callee_spec_param", "$avp(11)")
 
    Default value is “1”.
 
-   Example 1.8. Set osips_ps parameter
+   Example 1.11. Set osips_ps parameter
 ...
 modparam("pua_dialoginfo", "osips_ps", 0)
 ...
@@ -353,7 +465,7 @@ modparam("pua_dialoginfo", "osips_ps", 0)
      * side (optional) - can be "A" or "B" for caller or callee
        PUBLISH only - if missing, both sides will be published.
 
-   Example 1.9. dialoginfo_set usage
+   Example 1.12. dialoginfo_set usage
 ...
         if(is_method("INVITE"))
                 if(uri =~ "opensips.org")

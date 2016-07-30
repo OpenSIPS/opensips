@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C)  2007-2008 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -29,98 +27,129 @@
 
 #include "../../dprint.h"
 #include "../../ut.h"
-#include "../../db/db.h"
+#include "../../time_rec.h"
+
 #include "dp_db.h"
-#include "dialplan.h"
 
-str dp_db_url           =   {NULL, 0};
-str dp_table_name       =   str_init(DP_TABLE_NAME);
-str dpid_column         =   str_init(DPID_COL);
-str pr_column           =   str_init(PR_COL);
-str match_op_column     =   str_init(MATCH_OP_COL);
-str match_exp_column    =   str_init(MATCH_EXP_COL);
-str match_flags_column  =   str_init(MATCH_FLAGS_COL);
-str subst_exp_column    =   str_init(SUBST_EXP_COL);
-str repl_exp_column     =   str_init(REPL_EXP_COL);
-str disabled_column     =   str_init(DISABLED_COL);
-str attrs_column        =   str_init(ATTRS_COL); 
+dp_head_p dp_hlist = NULL;
 
-static db_con_t* dp_db_handle    = 0; /* database connection handle */
-static db_func_t dp_dbf;
+str default_dp_db_url           =   {NULL, 0};
+str default_dp_table		=   {NULL, 0};
+str dp_table_name       	=   str_init(DP_TABLE_NAME);
+str dpid_column         	=   str_init(DPID_COL);
+str pr_column           	=   str_init(PR_COL);
+str match_op_column     	=   str_init(MATCH_OP_COL);
+str match_exp_column    	=   str_init(MATCH_EXP_COL);
+str match_flags_column  	=   str_init(MATCH_FLAGS_COL);
+str subst_exp_column    	=   str_init(SUBST_EXP_COL);
+str repl_exp_column     	=   str_init(REPL_EXP_COL);
+str disabled_column     	=   str_init(DISABLED_COL);
+str attrs_column        	=   str_init(ATTRS_COL);
+str timerec_column              =   str_init(TIMEREC_COL);
 
-#define GET_STR_VALUE(_res, _values, _index)\
+
+#define GET_STR_VALUE(_res, _values, _index, _null)\
 	do{\
-		if ( VAL_NULL((_values)+ (_index)) ) { \
-			LM_ERR(" values %d is NULL - not allowed\n",_index);\
-			goto err;\
-		} \
-		(_res).s = VAL_STR((_values)+ (_index)).s;\
-		(_res).len = strlen(VAL_STR((_values)+ (_index)).s);\
+		if ( VAL_NULL((_values)+ (_index))) { \
+			if ( !_null) { \
+				LM_ERR(" values %d is NULL - not allowed\n",_index);\
+				goto err;\
+			} else { \
+				(_res).s = NULL; \
+				(_res).len = 0; \
+			} \
+		} else  { \
+			(_res).s = VAL_STR((_values)+ (_index)).s;\
+			(_res).len = strlen(VAL_STR((_values)+ (_index)).s);\
+		}\
 	}while(0);
 
 void destroy_rule(dpl_node_t * rule);
 void destroy_hash(dpl_id_t **rules_hash);
 
 dpl_node_t * build_rule(db_val_t * values);
-int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index);
+int add_rule2hash(dpl_node_t * rule, dp_connection_list_t *table, int index);
 
 void list_rule(dpl_node_t * );
 void list_hash(dpl_id_t * , rw_lock_t *);
 
 
-dp_table_list_p dp_tables = NULL;
-dp_table_list_p dp_default_table = NULL;
+dp_connection_list_p dp_conns = NULL;
 
-dp_table_list_p dp_get_default_table(void)
-{
-	return dp_default_table;
-}
+int test_db(dp_connection_list_p dp_connection){
 
-int init_db_data(dp_table_list_p dp_table)
-{
-	if(dp_table_name.s == 0){
-		LM_ERR("invalid database table name\n");
+	if (dp_connection->partition.s == 0) {
+		LM_ERR("invalid partition name\n");
 		return -1;
 	}
 
-	/* Find a database module */
-	if (db_bind_mod(&dp_db_url, &dp_dbf) < 0){
+	if (db_bind_mod(&dp_connection->db_url, &dp_connection->dp_dbf) < 0){
 		LM_ERR("unable to bind to a database driver\n");
 		return -1;
 	}
 
-	if(dp_connect_db() !=0)
+	if (dp_connect_db(dp_connection) !=0)
 		return -1;
 
-	if(db_check_table_version(&dp_dbf, dp_db_handle, &dp_table->table_name,
-	DP_TABLE_VERSION) < 0) {
+
+	if (db_check_table_version(&dp_connection->dp_dbf,
+		 *dp_connection->dp_db_handle, &dp_connection->table_name,
+			 DP_TABLE_VERSION) < 0) {
 		LM_ERR("error during table version check.\n");
 		goto error;
 	}
 
-	if(dp_load_db(dp_table) != 0){
-		LM_ERR("failed to load database data\n");
-		goto error;
-	}
-
-	dp_disconnect_db();
+	dp_disconnect_db(dp_connection);
 
 	return 0;
+
 error:
 
-	dp_disconnect_db();
+	dp_disconnect_db(dp_connection);
 	return -1;
 }
 
 
-int dp_connect_db(void)
+int init_db_data(dp_connection_list_p dp_connection)
 {
-	if(dp_db_handle){
+	if (dp_connection->partition.s == 0) {
+		LM_ERR("invalid partition name\n");
+		return -1;
+	}
+
+	if (dp_connect_db(dp_connection) !=0)
+		return -1;
+
+
+	if (db_check_table_version(&dp_connection->dp_dbf,
+		*dp_connection->dp_db_handle, &dp_connection->table_name,
+			DP_TABLE_VERSION) < 0) {
+		LM_ERR("error during table version check.\n");
+		goto error;
+	}
+
+
+	if(dp_load_db(dp_connection) != 0){
+		LM_ERR("failed to load database data\n");
+		goto error;
+	}
+
+	return 0;
+error:
+
+	dp_disconnect_db(dp_connection);
+	return -1;
+}
+
+
+int dp_connect_db(dp_connection_list_p conn)
+{
+	if (*conn->dp_db_handle) {
 		LM_CRIT("BUG: connection to DB already open\n");
 		return -1;
 	}
 
-	if ((dp_db_handle = dp_dbf.init(&dp_db_url)) == 0){
+	if ((*conn->dp_db_handle = conn->dp_dbf.init(&conn->db_url)) == 0) {
 		LM_ERR("unable to connect to the database\n");
 		return -1;
 	}
@@ -129,21 +158,38 @@ int dp_connect_db(void)
 }
 
 
-void dp_disconnect_db(void)
+void dp_disconnect_db(dp_connection_list_p dp_conn)
 {
-	if(dp_db_handle){
-		dp_dbf.close(dp_db_handle);
-		dp_db_handle = 0;
+	if (*dp_conn->dp_db_handle) {
+		dp_conn->dp_dbf.close(*dp_conn->dp_db_handle);
+		*dp_conn->dp_db_handle = 0;
 	}
 }
 
 
 int init_data(void)
 {
-	dp_default_table = dp_add_table(&dp_table_name);
-	if (!dp_default_table) {
-		LM_ERR("couldn't add the default table\n");
+	dp_head_p start, tmp = NULL;
+
+	start = dp_hlist;
+	if (!start) {
+		LM_BUG("not even default partition defined!"
+				"An error occured!\n");
 		return -1;
+	}
+
+	while (start) {
+		LM_DBG("Adding partition with name [%.*s]\n",
+				start->partition.len, start->partition.s);
+		if (!dp_add_connection(start)) {
+			LM_ERR("failed to initialize partition '%.*s'\n",
+					start->partition.len, start->partition.s);
+			return -1;
+		}
+
+		tmp   = start;
+		start = start->next;
+		pkg_free(tmp);
 	}
 
 	return 0;
@@ -152,22 +198,23 @@ int init_data(void)
 
 void destroy_data(void)
 {
-	dp_table_list_t *el, *next;
+	dp_connection_list_t *el, *next;
 
-	for (el = dp_tables; el && (next = el->next, 1); el = next) {
+	LM_DBG("Destroying data\n");
+	for (el = dp_conns; el && (next = el->next, 1); el = next) {
 		destroy_hash(&el->hash[0]);
 		destroy_hash(&el->hash[1]);
 		lock_destroy_rw(el->ref_lock);
+
 		shm_free(el);
-		el = 0;
 	}
 }
 
 int dp_load_all_db(void)
 {
-	dp_table_list_t *el;
+	dp_connection_list_t *el;
 
-	for (el = dp_tables; el; el = el->next) {
+	for (el = dp_conns; el; el = el->next) {
 			if (dp_load_db(el) < 0) {
 					LM_ERR("unable to load %.*s table\n",
 							el->table_name.len, el->table_name.s);
@@ -177,8 +224,16 @@ int dp_load_all_db(void)
 	return 0;
 }
 
+void dp_disconnect_all_db(void)
+{
+	dp_connection_list_t *el;
+
+	for (el = dp_conns; el; el = el->next)
+		dp_disconnect_db(el);
+}
+
 /*load rules from DB*/
-int dp_load_db(dp_table_list_p dp_table)
+int dp_load_db(dp_connection_list_p dp_conn)
 {
 	int i, nr_rows;
 	db_res_t * res = 0;
@@ -187,7 +242,7 @@ int dp_load_db(dp_table_list_p dp_table)
 	db_key_t query_cols[DP_TABLE_COL_NO] = {
 		&dpid_column,		&pr_column,
 		&match_op_column,	&match_exp_column,	&match_flags_column,
-		&subst_exp_column,	&repl_exp_column,	&attrs_column };
+		&subst_exp_column,	&repl_exp_column,	&attrs_column,	&timerec_column };
 	db_key_t order = &pr_column;
 	/* disabled condition */
 	db_key_t cond_cols[1] = { &disabled_column };
@@ -195,50 +250,62 @@ int dp_load_db(dp_table_list_p dp_table)
 
 	dpl_node_t *rule;
 	int no_rows = 10;
-	
-	if( dp_table->crt_index != dp_table->next_index){
+
+
+	lock_start_write( dp_conn->ref_lock );
+
+	if( dp_conn->crt_index != dp_conn->next_index){
 		LM_WARN("a load command already generated, aborting reload...\n");
+		lock_stop_write( dp_conn->ref_lock );
 		return 0;
 	}
 
-	if (dp_dbf.use_table(dp_db_handle, &dp_table->table_name) < 0){
+	dp_conn->next_index = dp_conn->crt_index == 0 ? 1 : 0;
+
+	lock_stop_write( dp_conn->ref_lock );
+
+	if (dp_conn->dp_dbf.use_table(*dp_conn->dp_db_handle, &dp_conn->table_name) < 0){
 		LM_ERR("error in use_table\n");
-		return -1;
+		goto err1;
 	}
 
 	VAL_TYPE(cond_val) = DB_INT;
 	VAL_NULL(cond_val) = 0;
 	VAL_INT(cond_val) = 0;
 
-	if (DB_CAPABILITY(dp_dbf, DB_CAP_FETCH)) {
-		if(dp_dbf.query(dp_db_handle,cond_cols,0,cond_val,query_cols,1,
-				DP_TABLE_COL_NO, order, 0) < 0){
+	if (DB_CAPABILITY(dp_conn->dp_dbf, DB_CAP_FETCH)) {
+		if(dp_conn->dp_dbf.query(*dp_conn->dp_db_handle,cond_cols,
+				0,cond_val,query_cols,1,
+					DP_TABLE_COL_NO, order, 0) < 0){
 			LM_ERR("failed to query database!\n");
-			return -1;
+
+			goto err1;
 		}
 		no_rows = estimate_available_rows( 4+4+4+64+4+64+64+128,
 			DP_TABLE_COL_NO);
 		if (no_rows==0) no_rows = 10;
-		if(dp_dbf.fetch_result(dp_db_handle, &res, no_rows)<0) {
+		if(dp_conn->dp_dbf.fetch_result(*dp_conn->dp_db_handle,
+						&res, no_rows)<0) {
 			LM_ERR("failed to fetch\n");
 			if (res)
-				dp_dbf.free_result(dp_db_handle, res);
-			return -1;
+				dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
+
+			goto err1;
 		}
 	} else {
 		/*select the whole table and all the columns*/
-		if(dp_dbf.query(dp_db_handle,cond_cols,0,cond_val,query_cols,1,
+		if(dp_conn->dp_dbf.query(*dp_conn->dp_db_handle,
+				cond_cols,0,cond_val,query_cols,1,
 			DP_TABLE_COL_NO, order, &res) < 0){
 				LM_ERR("failed to query database\n");
-			return -1;
+
+			goto err1;
 		}
 	}
 
 	nr_rows = RES_ROW_N(res);
 
-	lock_start_write( dp_table->ref_lock );
 
-	dp_table->next_index = dp_table->crt_index == 0 ? 1 : 0;
 
 	if(nr_rows == 0){
 		LM_WARN("no data in the db\n");
@@ -250,65 +317,83 @@ int dp_load_db(dp_table_list_p dp_table)
 			rows = RES_ROWS(res);
 			values = ROW_VALUES(rows+i);
 
-			if ((rule = build_rule(values)) == NULL ) {
+			if ((rule = build_rule(values)) == NULL) {
 				LM_WARN(" failed to build rule -> skipping\n");
 				continue;
 			}
 
 			rule->table_id = i;
 
-			if(add_rule2hash(rule , dp_table, dp_table->next_index) != 0) {
+			if(add_rule2hash(rule , dp_conn, dp_conn->next_index) != 0) {
 				LM_ERR("add_rule2hash failed\n");
 				goto err2;
 			}
 		}
 
-		if (DB_CAPABILITY(dp_dbf, DB_CAP_FETCH)) {
-			if(dp_dbf.fetch_result(dp_db_handle, &res, no_rows)<0) {
+
+		if (DB_CAPABILITY(dp_conn->dp_dbf, DB_CAP_FETCH)) {
+			if(dp_conn->dp_dbf.fetch_result(*dp_conn->dp_db_handle,
+							&res, no_rows)<0) {
 				LM_ERR("failure while fetching!\n");
 				if (res)
-					dp_dbf.free_result(dp_db_handle, res);
-				lock_stop_write( dp_table->ref_lock );
-				return -1;
+					dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
+				goto err1;
 			}
 		} else {
 			break;
 		}
 	}  while(RES_ROW_N(res)>0);
 
+
 end:
-	destroy_hash(&dp_table->hash[dp_table->crt_index]);
+
+
 	/*update data*/
-	dp_table->crt_index = dp_table->next_index;
+	lock_start_write( dp_conn->ref_lock );
 
-	/* release the exclusive writing access */
-	lock_stop_write( dp_table->ref_lock );
+	destroy_hash(&dp_conn->hash[dp_conn->crt_index]);
 
-	list_hash(dp_table->hash[dp_table->crt_index], dp_table->ref_lock);
+	dp_conn->crt_index = dp_conn->next_index;
 
-	dp_dbf.free_result(dp_db_handle, res);
+	lock_stop_write( dp_conn->ref_lock );
+
+	list_hash(dp_conn->hash[dp_conn->crt_index], dp_conn->ref_lock);
+
+	dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
 	return 0;
+
+err1:
+
+	lock_start_write( dp_conn->ref_lock );
+
+	dp_conn->next_index = dp_conn->crt_index;
+
+	lock_stop_write( dp_conn->ref_lock );
+
+	return -1;
 
 err2:
 	if(rule)	destroy_rule(rule);
-	destroy_hash(&dp_table->hash[dp_table->next_index]);
-	dp_dbf.free_result(dp_db_handle, res);
-	dp_table->next_index = dp_table->crt_index;
+	destroy_hash(&dp_conn->hash[dp_conn->next_index]);
+	dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
+
+	lock_start_write( dp_conn->ref_lock );
+
+	dp_conn->next_index = dp_conn->crt_index;
 	/* if lock defined - release the exclusive writing access */
-	if(dp_table->ref_lock)
-		/* release the readers */
-		lock_stop_write( dp_table->ref_lock );
+
+	lock_stop_write( dp_conn->ref_lock );
 	return -1;
 }
 
 
 int str_to_shm(str src, str * dest)
 {
-	if(src.len ==0 || src.s ==0)
+	if (src.len ==0 || src.s ==0)
 		return 0;
 
 	dest->s = (char*)shm_malloc((src.len+1) * sizeof(char));
-	if(!dest->s){
+	if (!dest->s) {
 		LM_ERR("out of shm memory\n");
 		return -1;
 	}
@@ -320,14 +405,55 @@ int str_to_shm(str src, str * dest)
 	return 0;
 }
 
+static inline tmrec_t* parse_time_def(char *time_str) {
+
+	tmrec_p time_rec;
+	char *p,*s;
+
+	p = time_str;
+	time_rec = 0;
+
+	time_rec = tmrec_new(SHM_ALLOC);
+	if (time_rec==0) {
+		LM_ERR("no more shm mem\n");
+		goto error;
+	}
+
+	/* empty definition? */
+	if ( time_str==0 || *time_str==0 )
+		goto done;
+
+	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_duration, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_freq, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_until, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_interval, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_bymday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byyday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byweekno, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_bymonth, parse_error, done);
+
+	/* success */
+done:
+	return time_rec;
+parse_error:
+	LM_ERR("parse error in <%s> around position %i\n",
+		time_str, (int)(long)(p-time_str));
+error:
+	if (time_rec)
+		tmrec_free( time_rec );
+	return 0;
+}
 
 /*compile the expressions, and if ok, build the rule */
 dpl_node_t * build_rule(db_val_t * values)
 {
+	tmrec_t *parsed_timerec;
 	pcre * match_comp, *subst_comp;
 	struct subst_expr * repl_comp;
 	dpl_node_t * new_rule;
-	str match_exp, subst_exp, repl_exp, attrs;
+	str match_exp, subst_exp, repl_exp, attrs, timerec;
 	int matchop;
 	int namecount;
 
@@ -338,11 +464,12 @@ dpl_node_t * build_rule(db_val_t * values)
 		return NULL;
 	}
 
-	match_comp = subst_comp =0;
+	parsed_timerec = 0;
+	match_comp = subst_comp = 0;
 	repl_comp = 0;
 	new_rule = 0;
 
-	GET_STR_VALUE(match_exp, values, 3);
+	GET_STR_VALUE(match_exp, values, 3, 0);
 	if(matchop == REGEX_OP){
 
 		LM_DBG("Compiling %.*s expression with flag: %d\n",
@@ -351,29 +478,30 @@ dpl_node_t * build_rule(db_val_t * values)
 		match_comp = wrap_pcre_compile(match_exp.s, VAL_INT(values+4));
 
 		if(!match_comp){
-			LM_ERR("failed to compile match expression %.*s\n",
+			LM_ERR("failed to compile match expression \"%.*s\"\n",
 				match_exp.len, match_exp.s);
 			goto err;
 		}
 	}
 
 	LM_DBG("building subst rule\n");
-	GET_STR_VALUE(subst_exp, values, 5);
-	if(subst_exp.s && subst_exp.len){
+	GET_STR_VALUE(subst_exp, values, 5, 1);
+	if(!VAL_NULL(values+5) && subst_exp.s && subst_exp.len){
 		/* subst regexp */
 		subst_comp = wrap_pcre_compile(subst_exp.s, VAL_INT(values+4));
 		if(subst_comp == NULL){
-			LM_ERR("failed to compile subst expression\n");
+			LM_ERR("failed to compile subst expression \"%.*s\"\n",
+					subst_exp.len, subst_exp.s);
 			goto err;
 		}
 	}
 
 	/* replace exp */
-	GET_STR_VALUE(repl_exp, values, 6);
-	if(repl_exp.len && repl_exp.s){
+	GET_STR_VALUE(repl_exp, values, 6, 1);
+	if(!VAL_NULL(values+6) && repl_exp.len && repl_exp.s){
 		repl_comp = repl_exp_parse(repl_exp);
 		if(!repl_comp){
-			LM_ERR("failed to compile replacing expression %.*s\n",
+			LM_ERR("failed to compile replacing expression \"%.*s\"\n",
 				repl_exp.len, repl_exp.s);
 			goto err;
 		}
@@ -416,12 +544,34 @@ dpl_node_t * build_rule(db_val_t * values)
 	new_rule->pr            =	VAL_INT(values+1);
 	new_rule->match_flags   =	VAL_INT(values+4);
 	new_rule->matchop       =	matchop;
-	GET_STR_VALUE(attrs, values, 7);
-	if(str_to_shm(attrs, &new_rule->attrs)!=0)
-		goto err;
 
-	LM_DBG("attrs are %.*s\n", 
-		new_rule->attrs.len, new_rule->attrs.s);
+	/* attributes */
+	GET_STR_VALUE(attrs, values, 7, 1);
+	if( !VAL_NULL(values+7) && attrs.len && attrs.s) {
+		if(str_to_shm(attrs, &new_rule->attrs)!=0)
+			goto err;
+		LM_DBG("attrs are %.*s\n",
+			new_rule->attrs.len, new_rule->attrs.s);
+	}
+
+	/* Retrieve and Parse Timerec Matching Pattern */
+	GET_STR_VALUE(timerec, values, 8, 1);
+	if( !VAL_NULL(values+8) && timerec.len && timerec.s) {
+		parsed_timerec = parse_time_def(timerec.s);
+		if(!parsed_timerec) {
+			LM_ERR("failed to parse timerec pattern %.*s\n",
+				timerec.len, timerec.s);
+			goto err;
+		}
+
+		if(str_to_shm(timerec, &new_rule->timerec) != 0)
+			goto err;
+
+		new_rule->parsed_timerec = parsed_timerec;
+
+		LM_DBG("timerecs are %.*s\n",
+			new_rule->timerec.len, new_rule->timerec.s);
+	}
 
 	if (match_comp)
 		new_rule->match_comp = match_comp;
@@ -435,38 +585,37 @@ dpl_node_t * build_rule(db_val_t * values)
 	return new_rule;
 
 err:
-	if(subst_comp)	wrap_pcre_free(subst_comp);
-	if(repl_comp)	repl_expr_free(repl_comp);
-	if(new_rule)	destroy_rule(new_rule);
+	if(parsed_timerec)	shm_free(parsed_timerec);
+	if(match_comp)		wrap_pcre_free(match_comp);
+	if(subst_comp)		wrap_pcre_free(subst_comp);
+	if(repl_comp)		repl_expr_free(repl_comp);
+	if(new_rule)		destroy_rule(new_rule);
 	return NULL;
 }
 
 
-int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index)
+int add_rule2hash(dpl_node_t * rule, dp_connection_list_t *conn, int index)
 {
 	dpl_id_p crt_idp;
 	dpl_index_p indexp;
 	int new_id, bucket = 0;
 
-	if(!table){
+	if(!conn){
 		LM_ERR("data not allocated\n");
 		return -1;
 	}
 
 	new_id = 0;
 
-	crt_idp = select_dpid(table, rule->dpid, index);
-
+	crt_idp = select_dpid(conn, rule->dpid, index);
 	/*didn't find a dpl_id*/
 	if(!crt_idp){
-		crt_idp = shm_malloc(sizeof(dpl_id_t)	+
-							(DP_INDEX_HASH_SIZE+1) * sizeof(dpl_index_t));
+		crt_idp = shm_malloc(sizeof(dpl_id_t) + (DP_INDEX_HASH_SIZE+1) * sizeof(dpl_index_t));
 		if(!crt_idp){
 			LM_ERR("out of shm memory (crt_idp)\n");
 			return -1;
 		}
-		memset(crt_idp, 0, sizeof(dpl_id_t)	+
-							(DP_INDEX_HASH_SIZE+1) * sizeof(dpl_index_t));
+		memset(crt_idp, 0, sizeof(dpl_id_t) + (DP_INDEX_HASH_SIZE+1) * sizeof(dpl_index_t));
 		crt_idp->dp_id = rule->dpid;
 		crt_idp->rule_hash = (dpl_index_t*)(crt_idp + 1);
 		new_id = 1;
@@ -479,6 +628,10 @@ int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index)
 			break;
 
 		case EQUAL_OP:
+			if (rule->match_exp.s == NULL || rule->match_exp.len == 0) {
+				LM_ERR("NULL matching expressions in database not accepted!!!\n");
+				return -1;
+			}
 			bucket = core_case_hash(&rule->match_exp, NULL, DP_INDEX_HASH_SIZE);
 
 			indexp = &crt_idp->rule_hash[bucket];
@@ -502,13 +655,12 @@ int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index)
 	indexp->last_rule = rule;
 
 	if(new_id){
-			crt_idp->next = table->hash[table->next_index];
-			table->hash[table->next_index] = crt_idp;
+		crt_idp->next = conn->hash[conn->next_index];
+		conn->hash[conn->next_index] = crt_idp;
 	}
 	LM_DBG("added the rule id %i pr %i next %p to the "
 		" %i bucket\n", rule->dpid,
-		rule->pr, rule->next, rule->matchop == REGEX_OP?
-								DP_INDEX_HASH_SIZE : bucket);
+		rule->pr, rule->next, rule->matchop == REGEX_OP ? DP_INDEX_HASH_SIZE : bucket);
 
 	return 0;
 
@@ -536,7 +688,7 @@ void destroy_hash(dpl_id_t **rules_hash)
 			 i++, indexp = &crt_idp->rule_hash[i]) {
 
 			for (rulep = indexp->first_rule; rulep; rulep=indexp->first_rule) {
-			
+
 				destroy_rule(rulep);
 				indexp->first_rule = rulep->next;
 
@@ -559,7 +711,7 @@ void destroy_rule(dpl_node_t * rule){
 	if(!rule)
 		return;
 
-	LM_DBG("destroying rule with priority %i\n", 
+	LM_DBG("destroying rule with priority %i\n",
 		rule->pr);
 
 	if(rule->match_comp)
@@ -577,26 +729,32 @@ void destroy_rule(dpl_node_t * rule){
 
 	if(rule->subst_exp.s)
 		shm_free(rule->subst_exp.s);
-	
+
 	if(rule->repl_exp.s)
 		shm_free(rule->repl_exp.s);
-	
+
 	if(rule->attrs.s)
 		shm_free(rule->attrs.s);
+
+	if(rule->timerec.s)
+		shm_free(rule->timerec.s);
+
+	if(rule->parsed_timerec)
+		shm_free(rule->parsed_timerec);
 }
 
 
-dpl_id_p select_dpid(dp_table_list_p table, int id, int index)
+dpl_id_p select_dpid(dp_connection_list_p conn, int id, int index)
 {
 	dpl_id_p idp;
 
-	if(!table || !table->hash[index])
+	if(!conn || !conn->hash[index])
 		return NULL;
 
-	for(idp = table->hash[index]; idp!=NULL; idp = idp->next)
+	for(idp = conn->hash[index]; idp!=NULL; idp = idp->next)
 		if(idp->dp_id == id)
 			return idp;
-	
+
 	return NULL;
 }
 
@@ -636,44 +794,51 @@ void list_hash(dpl_id_t * hash, rw_lock_t * ref_lock)
 void list_rule(dpl_node_t * rule)
 {
 	LM_DBG("RULE %p: pr %i next %p match_exp %.*s match_flags %d, "
-		"subst_exp %.*s, repl_exp %.*s and attrs %.*s\n", rule,
+		"subst_exp %.*s, repl_exp %.*s and attrs %.*s and timerec %.*s\n", rule,
 		rule->pr, rule->next,
-		rule->match_exp.len, rule->match_exp.s, 
-		rule->match_flags, 
-		rule->subst_exp.len, rule->subst_exp.s,
-		rule->repl_exp.len, rule->repl_exp.s,
-		rule->attrs.len,	rule->attrs.s);
+		rule->match_exp.len,	rule->match_exp.s,
+		rule->match_flags,
+		rule->subst_exp.len,	rule->subst_exp.s,
+		rule->repl_exp.len,	rule->repl_exp.s,
+		rule->attrs.len,	rule->attrs.s,
+		rule->timerec.len,	rule->timerec.s);
 }
 
-/* Retrieves the corresponding entry of the given table name */
-dp_table_list_p dp_get_table(str * table)
+/* Retrieves the corresponding entry of the given partition name */
+dp_connection_list_p dp_get_connection(str * partition)
 {
-	dp_table_list_t *el;
+	dp_connection_list_t *el;
 
-	el = dp_tables;
-	while (el && str_strcmp(table, &el->table_name)) {
+	el = dp_conns;
+	while (el && str_strcmp(partition, &el->partition)) {
 		el = el->next;
 	}
 
 	return el;
 }
 
-/* Adds a new separate table and loads all its rules in shm */
-dp_table_list_p dp_add_table(str * table)
+dp_connection_list_p dp_get_connections(void)
 {
-	dp_table_list_t *el;
+	return dp_conns;
+}
 
-	if ((el = dp_get_table(table)) != NULL)
+/* Adds a new separate partition and loads all rules from database in shm */
+dp_connection_list_p dp_add_connection(dp_head_p head)
+{
+	dp_connection_list_t *el;
+
+	if ((el = dp_get_connection(&head->partition)) != NULL){
 		return el;
+	}
 
-	el = shm_malloc(sizeof(*el) + table->len);
+	el = shm_malloc(sizeof(dp_connection_list_t));
 
-	if (el == NULL) {
+	if (!el) {
 		LM_ERR("No more shm mem\n");
 		return NULL;
 	}
 
-	memset(el, 0, sizeof(*el));
+	memset(el, 0, sizeof(dp_connection_list_t));
 
 	/* create & init lock */
 	if((el->ref_lock = lock_init_rw()) == NULL) {
@@ -682,20 +847,37 @@ dp_table_list_p dp_add_table(str * table)
 		return NULL;
 	}
 
-	el->table_name.s = (char *)(el + 1);
-	el->table_name.len = table->len;
-	memcpy(el->table_name.s, table->s, table->len);
+	/*Set table name*/
+	el->table_name = head->dp_table_name;
 
-	if (init_db_data(el) != 0) {
-		LM_ERR("Unable to init db data\n");
+	/*Set partition*/
+	el->partition = head->partition;
+
+	/*Set db_url*/
+	el->db_url = head->dp_db_url;
+
+	el->dp_db_handle = pkg_malloc(sizeof(db_con_t*));
+	if (!el->dp_db_handle) {
+		LM_ERR("No more shm mem\n");
+		return NULL;
+	}
+
+	*el->dp_db_handle = 0;
+
+	/* *el->dp_db_handle is set to null at the end of test_db;
+	 * no need to do it again here */
+	if (test_db(el) != 0) {
+		LM_ERR("Unable to test db\n");
 		shm_free(el);
 		return NULL;
 	}
 
-	el->next = dp_tables;
-	dp_tables = el;
+	el->next = dp_conns;
+	dp_conns = el;
 
-	LM_DBG("Added dialplan table [%.*s].\n", table->len, table->s);
+	LM_DBG("Added dialplan partition [%.*s] table [%.*s].\n",
+		 head->partition.len, head->partition.s,
+				head->dp_table_name.len, head->dp_table_name.s);
 
 	return el;
 }

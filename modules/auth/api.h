@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Digest Authentication Module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #ifndef AUTH_API_H
@@ -55,9 +53,9 @@ typedef enum auth_result {
  * we should really authenticate (there must be no authentication for
  * ACK and CANCEL
  */
-typedef auth_result_t (*pre_auth_t)(struct sip_msg* _m, str* _realm, 
+typedef auth_result_t (*pre_auth_t)(struct sip_msg* _m, str* _realm,
 		hdr_types_t _hftype, struct hdr_field** _h);
-auth_result_t pre_auth(struct sip_msg* _m, str* _realm, 
+auth_result_t pre_auth(struct sip_msg* _m, str* _realm,
 		hdr_types_t _hftype, struct hdr_field** _h);
 
 

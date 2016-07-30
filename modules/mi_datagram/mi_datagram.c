@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -124,9 +122,12 @@ static param_export_t mi_params[] = {
 
 struct module_exports exports = {
 	"mi_datagram",                 /* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,               /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	0,                             /* exported functions */
+	0,                             /* exported async functions */
 	mi_params,                     /* exported parameters */
 	0,                             /* exported statistics */
 	0,                             /* exported MI functions */
@@ -149,14 +150,14 @@ static int mi_mod_init(void)
 	str port_str;
 
 	/* checking the mi_socket module param */
-	LM_DBG("testing socket existance...\n");
+	LM_DBG("testing socket existence...\n");
 
 	if( mi_socket==NULL || *mi_socket == 0) {
 		LM_ERR("no DATAGRAM_ socket configured\n");
 		return -1;
 	}
 
-	LM_DBG("the socket's name/addres is %s\n", mi_socket);
+	LM_DBG("the socket's name/address is %s\n", mi_socket);
 
 	memset( &mi_dtgram_addr, 0, sizeof(mi_dtgram_addr) );
 
@@ -195,7 +196,7 @@ static int mi_mod_init(void)
 			LM_ERR("invalid port number; must be in [1024,%d]\n",MAX_NB_PORT);
 			return -1;
 		}
-		
+
 		if(! (host = resolvehost(host_s, 0)) ){
 			LM_ERR("failed to resolve %s\n", host_s);
 			return -1;
@@ -211,7 +212,7 @@ static int mi_mod_init(void)
 	{
 		/*in case of a Unix socket*/
 		LM_DBG("we have an UNIX socket\n");
-		
+
 		n=stat(mi_socket, &filestat);
 		if( n==0){
 			LM_INFO("the socket %s already exists, trying to delete it...\n",
@@ -231,15 +232,15 @@ static int mi_mod_init(void)
 					"forcing it to rw-------\n");
 			mi_unix_socket_mode = S_IRUSR| S_IWUSR;
 		}
-	
+
 		if (mi_unix_socket_uid_s){
-			if (user2uid(&mi_unix_socket_uid, &mi_unix_socket_gid, 
+			if (user2uid(&mi_unix_socket_uid, &mi_unix_socket_gid,
 					mi_unix_socket_uid_s)<0){
 				LM_ERR("bad user name %s\n", mi_unix_socket_uid_s);
 				return -1;
 			}
 		}
-	
+
 		if (mi_unix_socket_gid_s){
 			if (group2gid(&mi_unix_socket_gid, mi_unix_socket_gid_s)<0){
 				LM_ERR("bad group name %s\n", mi_unix_socket_gid_s);
@@ -259,7 +260,7 @@ static int mi_mod_init(void)
 
 static int mi_child_init(int rank)
 {
-	if (rank==PROC_TIMER || rank>0 ) {
+	if ( rank>PROC_MAIN ) {
 		if(mi_datagram_writer_init( DATAGRAM_SOCK_BUF_SIZE ,
 		mi_reply_indent )!= 0){
 			LM_CRIT("failed to initiate mi_datagram_writer\n");
@@ -276,7 +277,7 @@ static int pre_datagram_process(void)
 
 	/*create the sockets*/
 	res = mi_init_datagram_server(&mi_dtgram_addr, mi_socket_domain, &sockets,
-								mi_unix_socket_mode, mi_unix_socket_uid, 
+								mi_unix_socket_mode, mi_unix_socket_uid,
 								mi_unix_socket_gid);
 
 	if ( res ) {
@@ -333,7 +334,7 @@ static int mi_destroy(void)
 		n=stat(mi_socket, &filestat);
 		if (n==0){
 			if (unlink(mi_socket)<0){
-				LM_ERR("cannot delete the socket (%s): %s\n", 
+				LM_ERR("cannot delete the socket (%s): %s\n",
 						mi_socket, strerror(errno));
 				goto error;
 			}

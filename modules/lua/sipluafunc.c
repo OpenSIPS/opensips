@@ -1,5 +1,4 @@
 /*
- *
  * Copyright (c) 2008, 2009
  * 	     Eric Gouyer <folays@folays.net>
  * Copyright (c) 2008, 2009, 2010, 2011
@@ -52,14 +51,17 @@ void siplua_log(int lev, const char *format, ...)
   va_list ap;
   char *ret;
   int priority;
+  int rc;
 
   if (!format)
     return;
   if (!(is_printable(lev) | lua_user_debug))
     return;
   va_start(ap, format);
-  vasprintf(&ret, format, ap);
+  rc = vasprintf(&ret, format, ap);
   va_end(ap);
+  if (rc < 0)
+    return;
   LM_GEN1(lev, "siplua: %s", ret);
   if (lua_user_debug)
     {

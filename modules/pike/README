@@ -10,8 +10,7 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005-2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -40,6 +39,7 @@ Bogdan-Andrei Iancu
         1.6. Exported MI Functions
 
               1.6.1. pike_list
+              1.6.2. pike_rm
 
         1.7. Exported Events
 
@@ -112,7 +112,7 @@ Chapter 1. Admin Guide
 
    Time period used for sampling (or the sampling accuracy ;-) ).
    The smaller the better, but slower. If you want to detect
-   peeks, use a small one. To limit the access (like total number
+   peaks, use a small one. To limit the access (like total number
    of requests on a long period of time) to a proxy resource (a
    gateway for ex), use a bigger value of this parameter.
 
@@ -200,7 +200,7 @@ modparam("pike", "pike_log_level", -1)
 
    Return codes:
      * 1 (true) - IP is not to be blocked or internal error
-       occured.
+       occurred.
 
 Warning
        IMPORTANT: in case of internal error, the function returns
@@ -225,6 +225,19 @@ if (!pike_check_req()) { exit; };
    Lists the nodes in the pike tree.
 
    Name: pike_list
+
+   Parameters:
+     * IP - IP address currently blocked.
+
+   MI FIFO Command Format:
+                :pike_list:_reply_fifo_file_
+                _empty_line_
+
+1.6.2.  pike_rm
+
+   Remove a node from the pike tree by IP address.
+
+   Name: pike_rm
 
    Parameters: none
 

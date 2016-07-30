@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -42,13 +40,24 @@
 #include "sr_module.h"
 #include "dprint.h"
 #include "error.h"
+#include "globals.h"
 #include "mem/mem.h"
 #include "pt.h"
+#include "ut.h"
 #include "daemonize.h"
 
 #include <strings.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include "net/api_proto.h"
+#include "net/proto_udp/proto_udp_handler.h"
+#include "net/proto_tcp/proto_tcp_handler.h"
+
 
 
 struct sr_module* modules=0;
@@ -80,6 +89,10 @@ struct sr_module* modules=0;
 	extern struct module_exports sl_exports;
 #endif
 
+char *mpath=NULL;
+char mpath_buf[256];
+int  mpath_len = 0;
+
 
 /* initializes statically built (compiled in) modules*/
 int register_builtin_modules(void)
@@ -88,12 +101,12 @@ int register_builtin_modules(void)
 
 	ret=0;
 #ifdef STATIC_TM
-	ret=register_module(&tm_exports,"built-in", 0); 
+	ret=register_module(&tm_exports,"built-in", 0);
 	if (ret<0) return ret;
 #endif
 
 #ifdef STATIC_EXEC
-	ret=register_module(&exec_exports,"built-in", 0); 
+	ret=register_module(&exec_exports,"built-in", 0);
 	if (ret<0) return ret;
 #endif
 
@@ -103,15 +116,15 @@ int register_builtin_modules(void)
 #endif
 
 #ifdef STATIC_AUTH
-	ret=register_module(&auth_exports, "built-in", 0); 
+	ret=register_module(&auth_exports, "built-in", 0);
 	if (ret<0) return ret;
 #endif
-	
+
 #ifdef STATIC_RR
 	ret=register_module(&rr_exports, "built-in", 0);
 	if (ret<0) return ret;
 #endif
-	
+
 #ifdef STATIC_USRLOC
 	ret=register_module(&usrloc_exports, "built-in", 0);
 	if (ret<0) return ret;
@@ -121,11 +134,9 @@ int register_builtin_modules(void)
 	ret=register_module(&sl_exports, "built-in", 0);
 	if (ret<0) return ret;
 #endif
-	
+
 	return ret;
 }
-
-
 
 /* registers a module,  register_f= module register  functions
  * returns <0 on error, 0 on success */
@@ -133,7 +144,7 @@ int register_module(struct module_exports* e, char* path, void* handle)
 {
 	int ret;
 	struct sr_module* mod;
-	
+
 	ret=-1;
 
 	/* add module to the list */
@@ -157,6 +168,15 @@ int register_module(struct module_exports* e, char* path, void* handle)
 				e->name);
 			pkg_free(mod);
 			return -1;
+		}
+	}
+
+	/* register all module dependencies */
+	if (e->deps) {
+		ret = add_module_dependencies(mod);
+		if (ret != 0) {
+			LM_CRIT("failed to add module dependencies [%d]\n", ret);
+			return ret;
 		}
 	}
 
@@ -260,10 +280,119 @@ skip:
 	return -1;
 }
 
+/* built-in modules with static exports */
+struct static_modules {
+	str name;
+	struct module_exports *exp;
+};
+
+struct static_modules static_modules[] = {
+	{ str_init(PROTO_PREFIX "udp"), &proto_udp_exports },
+	{ str_init(PROTO_PREFIX "tcp"), &proto_tcp_exports },
+};
+
+static int load_static_module(char *path)
+{
+	int len = strlen(path);
+	char *end = path + len;
+	struct sr_module* t;
+	unsigned int i;
+
+	/* eliminate the .so, if found */
+	if (len > 3 && strncmp(end - 3, ".so", 3)==0) {
+		end -= 3;
+		len -= 3;
+	}
+	/* we check whether the protocol is found within the static_modules */
+	for (i = 0; i < (sizeof(static_modules)/sizeof(static_modules[0])); i++) {
+		if (len >= static_modules[i].name.len &&
+				/* the path ends in the module's name */
+				memcmp(end - static_modules[i].name.len,
+					static_modules[i].name.s, static_modules[i].name.len) == 0 &&
+				/* check if the previous char is '/' or nothing */
+				(len == static_modules[i].name.len || (*(end-len-1) == '/'))) {
+
+			/* yey, found the module - check if it was loaded twice */
+			for(t=modules;t; t=t->next){
+				if (t->handle==static_modules[i].exp){
+					LM_WARN("attempting to load the same module twice (%s)\n", path);
+					return 0;
+				}
+			}
+
+			/* version control */
+			if (!version_control(static_modules[i].exp, path)) {
+				exit(0);
+			}
+
+			/* launch register */
+			if (register_module(static_modules[i].exp, path, static_modules[i].exp)<0)
+				return -1;
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+/* returns 0 on success , <0 on error */
+int load_module(char* name)
+{
+	int i_tmp;
+	struct stat statf;
+
+	/* if this is a static module, load it directly */
+	if (load_static_module(name) == 0)
+		return 0;
+
+	if(*name!='/' && mpath!=NULL
+		&& strlen(name)+mpath_len<255)
+	{
+		strcpy(mpath_buf+mpath_len, name);
+		if (stat(mpath_buf, &statf) == -1 || S_ISDIR(statf.st_mode)) {
+			i_tmp = strlen(mpath_buf);
+			if(strchr(name, '/')==NULL &&
+				strncmp(mpath_buf+i_tmp-3, ".so", 3)==0)
+			{
+				if(i_tmp+strlen(name)<255)
+				{
+					strcpy(mpath_buf+i_tmp-3, "/");
+					strcpy(mpath_buf+i_tmp-2, name);
+					if (stat(mpath_buf, &statf) == -1) {
+						mpath_buf[mpath_len]='\0';
+						LM_ERR("module '%s' not found in '%s'\n",
+								name, mpath_buf);
+						return -1;
+					}
+				} else {
+					LM_ERR("failed to load module - path too long\n");
+					return -1;
+				}
+			} else {
+				LM_ERR("failed to load module - not found\n");
+				return -1;
+			}
+		}
+		LM_DBG("loading module %s\n", mpath_buf);
+		if (sr_load_module(mpath_buf)!=0){
+			LM_ERR("failed to load module\n");
+			return -1;
+		}
+		mpath_buf[mpath_len]='\0';
+	} else {
+		LM_DBG("loading module %s\n", name);
+		if (sr_load_module(name)!=0){
+			LM_ERR("failed to load module\n");
+			return -1;
+		}
+	}
+	return 0;
+}
+
 
 
 /* searches the module list and returns pointer to the "name" function or
- * 0 if not found 
+ * 0 if not found
  * flags parameter is OR value of all flags that must match
  */
 cmd_function find_export(char* name, int param_no, int flags)
@@ -291,11 +420,11 @@ cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags)
 	for(t=modules;t;t=t->next){
 		for(cmd=t->exports->cmds; cmd && cmd->name; cmd++){
 			if((strcmp(name, cmd->name)==0)&&
-			   (cmd->param_no==param_no) &&
-			   ((cmd->flags & flags) == flags)
+				(cmd->param_no==param_no) &&
+				((cmd->flags & flags) == flags)
 			  ){
 				LM_DBG("found <%s>(%d) in module %s [%s]\n",
-					name, param_no, t->exports->name, t->path);
+						name, param_no, t->exports->name, t->path);
 				return cmd;
 			}
 		}
@@ -306,8 +435,35 @@ cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags)
 
 
 
+/* searches the module list and returns pointer to the async "name" cmd_export_t
+ * structure or 0 if not found
+ * In order to find the module the name, flags parameter number in the config
+ * must match to the module export
+ */
+acmd_export_t* find_acmd_export_t(char* name, int param_no)
+{
+	struct sr_module* t;
+	acmd_export_t* cmd;
+
+	for(t=modules;t;t=t->next){
+		for(cmd=t->exports->acmds; cmd && cmd->name; cmd++){
+			if((strcmp(name, cmd->name)==0)&&
+			   (cmd->param_no==param_no)
+			  ){
+				LM_DBG("found async <%s>(%d) in module %s [%s]\n",
+					name, param_no, t->exports->name, t->path);
+				return cmd;
+			}
+		}
+	}
+	LM_DBG("async <%s> not found \n", name);
+	return 0;
+}
+
+
+
 /*
- * searches the module list and returns pointer to "name" function in module 
+ * searches the module list and returns pointer to "name" function in module
  * "mod" or 0 if not found
  * flags parameter is OR value of all flags that must match
  */
@@ -334,7 +490,6 @@ cmd_function find_mod_export(char* mod, char* name, int param_no, int flags)
 	LM_DBG("<%s> in module %s not found\n", name, mod);
 	return 0;
 }
-
 
 
 
@@ -365,14 +520,16 @@ void destroy_modules(void)
 {
 	struct sr_module* t, *foo;
 
-	t=modules;
-	while(t) {
-		foo=t->next;
-		if ((t->exports)&&(t->exports->destroy_f)) t->exports->destroy_f();
+	t = modules;
+	while (t) {
+		foo = t->next;
+		if (t->init_done && t->exports && t->exports->destroy_f)
+			t->exports->destroy_f();
 		pkg_free(t);
-		t=foo;
+		t = foo;
 	}
-	modules=0;
+
+	modules = NULL;
 }
 
 
@@ -390,7 +547,7 @@ static int init_mod_child( struct sr_module* m, int rank, char *type )
 			return -1;
 
 		if (m->exports && m->exports->init_child_f) {
-			LM_DBG("type=%s, rank=%d, module=%s\n", 
+			LM_DBG("type=%s, rank=%d, module=%s\n",
 					type, rank, m->exports->name);
 			if (m->exports->init_child_f(rank)<0) {
 				LM_ERR("failed to initializing module %s, rank %d\n",
@@ -425,6 +582,7 @@ int init_child(int rank)
 	case PROC_TIMER:    type = "PROC_TIMER";    break;
 	case PROC_MODULE:   type = "PROC_MODULE";   break;
 	case PROC_TCP_MAIN: type = "PROC_TCP_MAIN"; break;
+	case PROC_BIN:      type = "PROC_BIN";      break;
 	}
 
 	if (!type) {
@@ -444,23 +602,41 @@ int init_child(int rank)
    which modules are loaded in config file
 */
 
-static int init_mod( struct sr_module* m )
+static int init_mod( struct sr_module* m, int skip_others)
 {
+	struct sr_module_dep *dep;
+
 	if (m) {
 		/* iterate through the list; if error occurs,
 		   propagate it up the stack
 		 */
-		if (init_mod(m->next)!=0) return -1;
-		if (m->exports==0)
+		if (!skip_others && init_mod(m->next, 0) != 0)
+			return -1;
+
+		/* our module might have been already init'ed through dependencies! */
+		if (m->init_done)
 			return 0;
+
+		if (!m->exports)
+			return 0;
+
+		/* make sure certain modules get loaded before this one */
+		for (dep = m->sr_deps; dep; dep = dep->next) {
+			if (!dep->mod->init_done)
+				if (init_mod(dep->mod, 1) != 0)
+					return -1;
+		}
+
 		if (m->exports->init_f) {
 			LM_DBG("initializing module %s\n", m->exports->name);
 			if (m->exports->init_f()!=0) {
-				LM_ERR("failed to initialize"
-					" module %s\n", m->exports->name);
+				LM_ERR("failed to initialize module %s\n", m->exports->name);
 				return -1;
 			}
 		}
+
+		m->init_done = 1;
+
 		/* no init function -- proceed further */
 #ifdef STATISTICS
 		if (m->exports->stats) {
@@ -495,7 +671,13 @@ static int init_mod( struct sr_module* m )
  */
 int init_modules(void)
 {
-	return init_mod(modules);
+	int ret;
+
+	ret = init_mod(modules, 0);
+
+	free_module_dependencies(modules);
+
+	return ret;
 }
 
 /* Returns 1 if the module with name 'name' is loaded, and zero otherwise. */
@@ -569,15 +751,11 @@ int start_module_procs(void)
 					if ( m->exports->procs[n].flags&PROC_FLAG_INITCHILD ) {
 						if (init_child(PROC_MODULE) < 0) {
 							LM_ERR("error in init_child for PROC_MODULE\n");
-							if (send_status_code(-1) < 0)
-								LM_ERR("failed to send status code\n");
-							clean_write_pipeend();
+							report_failure_status();
 							exit(-1);
 						}
 
-						if (!no_daemon_mode && send_status_code(0) < 0)
-							LM_ERR("failed to send status code\n");
-						clean_write_pipeend();
+						report_conditional_status( (!no_daemon_mode), 0);
 					} else
 						clean_write_pipeend();
 

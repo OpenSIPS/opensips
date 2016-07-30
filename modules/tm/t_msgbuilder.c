@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * message printing
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
@@ -124,14 +122,23 @@ char *build_local(struct cell *Trans,unsigned int branch,
 		to.len = rpl->to->len;
 		from.s = rpl->from->name.s;
 		from.len = rpl->from->len;
+		if (req && req->msg_flags&FL_USE_UAC_CSEQ) {
+			if ( extract_ftc_hdrs( Trans->uac[branch].request.buffer.s,
+				Trans->uac[branch].request.buffer.len,0 ,0 ,
+				&cseq_n ,0)!=0 ) {
+				LM_ERR("build_local: failed to extract UAC hdrs\n");
+				goto error;
+			}
+		}
 	} else {
 		to = Trans->to;
 		from = Trans->from;
-		if (req && req->msg_flags&(FL_USE_UAC_FROM|FL_USE_UAC_TO)) {
+		if (req && req->msg_flags&(FL_USE_UAC_FROM|FL_USE_UAC_TO|FL_USE_UAC_CSEQ)) {
 			if ( extract_ftc_hdrs( Trans->uac[branch].request.buffer.s,
 				Trans->uac[branch].request.buffer.len,
 				(req->msg_flags&FL_USE_UAC_FROM)?&from:0 ,
-				(req->msg_flags&FL_USE_UAC_TO)?&to:0 , 0 ,0)!=0 ) {
+				(req->msg_flags&FL_USE_UAC_TO)?&to:0 ,
+				(req->msg_flags&FL_USE_UAC_CSEQ)?&cseq_n:0 ,0)!=0 ) {
 				LM_ERR("build_local: failed to extract UAC hdrs\n");
 				goto error;
 			}
@@ -150,6 +157,10 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	if (!t_calc_branch(Trans,  branch, branch_str.s, &branch_str.len ))
 		goto error;
 	set_hostport(&hp, (is_local(Trans))?0:req);
+	if (Trans->uac[branch].adv_address.len)
+		hp.host = &Trans->uac[branch].adv_address;
+	if (Trans->uac[branch].adv_port.len)
+		hp.port = &Trans->uac[branch].adv_port;
 	via=via_builder(&via_len, Trans->uac[branch].request.dst.send_sock,
 		&branch_str, 0, Trans->uac[branch].request.dst.proto, &hp );
 	if (!via){
@@ -255,7 +266,7 @@ struct rte {
 static inline void free_rte_list(struct rte* list)
 {
 	struct rte* ptr;
-	
+
 	while(list) {
 		ptr = list;
 		list = list->next;
@@ -270,7 +281,7 @@ static inline int process_routeset(struct sip_msg* msg, str* contact, struct rte
 	rr_t* p;
 	struct rte* t, *head;
 	struct sip_uri puri;
-	
+
 	ptr = msg->record_route;
 	head = 0;
 	while(ptr) {
@@ -279,7 +290,7 @@ static inline int process_routeset(struct sip_msg* msg, str* contact, struct rte
 				LM_ERR("failed to parse Record-Route header\n");
 				return -1;
 			}
-			
+
 			p = (rr_t*)ptr->parsed;
 			while(p) {
 				t = (struct rte*)pkg_malloc(sizeof(struct rte));
@@ -296,14 +307,14 @@ static inline int process_routeset(struct sip_msg* msg, str* contact, struct rte
 		}
 		ptr = ptr->next;
 	}
-	
+
 	if (head) {
 		if (parse_uri(head->ptr->nameaddr.uri.s, head->ptr->nameaddr.uri.len, &puri) < 0) {
 			LM_ERR("failed to parse URI\n");
 			free_rte_list(head);
 			return -1;
 		}
-		
+
 		if (puri.lr.s) {
 			     /* Next hop is loose router */
 			*ruri = *contact;
@@ -321,7 +332,7 @@ static inline int process_routeset(struct sip_msg* msg, str* contact, struct rte
 		*ruri = *contact;
 		*next_hop = *contact;
 	}
-	
+
 	*list = head;
 	return 0;
 }
@@ -331,13 +342,13 @@ static inline int calc_routeset_len(struct rte* list, str* contact)
 {
 	struct rte* ptr;
 	int ret;
-	
+
 	if (list || contact) {
 		ret = ROUTE_PREFIX_LEN + CRLF_LEN;
 	} else {
 		return 0;
 	}
-	
+
 	ptr = list;
 	while(ptr) {
 		if (ptr != list) {
@@ -346,12 +357,12 @@ static inline int calc_routeset_len(struct rte* list, str* contact)
 		ret += ptr->ptr->len;
 		ptr = ptr->next;
 	}
-	
+
 	if (contact) {
 		if (list) ret += ROUTE_SEPARATOR_LEN;
 		ret += 2 + contact->len;
 	}
-	
+
 	return ret;
 }
 
@@ -362,30 +373,30 @@ static inline int calc_routeset_len(struct rte* list, str* contact)
 static inline char* print_rs(char* p, struct rte* list, str* contact)
 {
 	struct rte* ptr;
-	
+
 	if (list || contact) {
 		append_string(p, ROUTE_PREFIX, ROUTE_PREFIX_LEN);
 	} else {
 		return p;
 	}
-	
+
 	ptr = list;
 	while(ptr) {
 		if (ptr != list) {
 			append_string(p, ROUTE_SEPARATOR, ROUTE_SEPARATOR_LEN);
 		}
-		
+
 		append_string(p, ptr->ptr->nameaddr.name.s, ptr->ptr->len);
 		ptr = ptr->next;
 	}
-	
+
 	if (contact) {
 		if (list) append_string(p, ROUTE_SEPARATOR, ROUTE_SEPARATOR_LEN);
 		*p++ = '<';
 		append_string(p, contact->s, contact->len);
 		*p++ = '>';
 	}
-	
+
 	append_string(p, CRLF, CRLF_LEN);
 	return p;
 }
@@ -398,22 +409,22 @@ static inline char* print_rs(char* p, struct rte* list, str* contact)
 static inline int get_contact_uri(struct sip_msg* msg, str* uri)
 {
 	contact_t* c;
-	
+
 	uri->len = 0;
 	if (!msg->contact) return 1;
-	
+
 	if (parse_contact(msg->contact) < 0) {
 		LM_ERR("failed to parse Contact body\n");
 		return -1;
 	}
-	
+
 	c = ((contact_body_t*)msg->contact->parsed)->contacts;
-	
+
 	if (!c) {
 		LM_ERR("body or * contact\n");
 		return -2;
 	}
-	
+
 	*uri = c->uri;
 	return 0;
 }
@@ -421,7 +432,7 @@ static inline int get_contact_uri(struct sip_msg* msg, str* uri)
 
 
 /*
- * The function creates an ACK for a local INVITE. If 200 OK, route set 
+ * The function creates an ACK for a local INVITE. If 200 OK, route set
  * will be created and parsed
  */
 char *build_dlg_ack(struct sip_msg* rpl, struct cell *Trans,
@@ -481,7 +492,7 @@ char *build_dlg_ack(struct sip_msg* rpl, struct cell *Trans,
 	set_hostport(&hp, 0);
 
 	/* build via */
-	via = via_builder(&via_len, send_sock, &branch_str, 0, 
+	via = via_builder(&via_len, send_sock, &branch_str, 0,
 			send_sock->proto, &hp);
 	if (!via) {
 		LM_ERR("no via header got from builder\n");
@@ -602,7 +613,7 @@ static inline int assemble_via(str* dest, struct cell* t, struct socket_info* so
 		LM_ERR("branch calculation failed\n");
 		return -1;
 	}
-	
+
 	branch_str.s = branch_buf;
 	branch_str.len = len;
 
@@ -616,7 +627,7 @@ static inline int assemble_via(str* dest, struct cell* t, struct socket_info* so
 		LM_ERR("via building failed\n");
 		return -2;
 	}
-	
+
 	dest->s = via;
 	dest->len = via_len;
 	return 0;
@@ -628,13 +639,13 @@ static inline int assemble_via(str* dest, struct cell* t, struct socket_info* so
  */
 static inline char* print_request_uri(char* w, str* method, dlg_t* dialog, struct cell* t, int branch)
 {
-	append_string(w, method->s, method->len); 
-	append_string(w, " ", 1); 
+	append_string(w, method->s, method->len);
+	*(w++) = ' ';
 
-	t->uac[branch].uri.s = w; 
+	t->uac[branch].uri.s = w;
 	t->uac[branch].uri.len = dialog->hooks.request_uri->len;
 
-	append_string(w, dialog->hooks.request_uri->s, dialog->hooks.request_uri->len); 
+	append_string(w, dialog->hooks.request_uri->s, dialog->hooks.request_uri->len);
 	append_string(w, " " SIP_VERSION CRLF, 1 + SIP_VERSION_LEN + CRLF_LEN);
 	LM_DBG("%.*s\n",dialog->hooks.request_uri->len, dialog->hooks.request_uri->s );
 	return w;
@@ -701,7 +712,7 @@ static inline char* print_from(char* w, dlg_t* dialog, struct cell* t)
 		t->from.len +=1;
 		*(w++) = '<';
 	}
-	
+
 	append_string(w, dialog->loc_uri.s, dialog->loc_uri.len);
 
 	if(dialog->loc_dname.len || dialog->id.loc_tag.len) {
@@ -726,17 +737,17 @@ static inline char* print_from(char* w, dlg_t* dialog, struct cell* t)
 char* print_cseq_mini(char* target, str* cseq, str* method) {
 	append_string(target, CSEQ, CSEQ_LEN);
 	append_string(target, cseq->s, cseq->len);
-	append_string(target, " ", 1);
+	*(target++) = ' ';
 	append_string(target, method->s, method->len);
 	return target;
 }
 
 static inline char* print_cseq(char* w, str* cseq, str* method, struct cell* t)
 {
-	t->cseq_n.s = w; 
+	t->cseq_n.s = w;
 	/* don't include method name and CRLF -- subsequent
 	 * local requests ACK/CANCEL will add their own */
-	t->cseq_n.len = CSEQ_LEN + cseq->len; 
+	t->cseq_n.len = CSEQ_LEN + cseq->len;
 	w = print_cseq_mini(w, cseq, method);
 	return w;
 }
@@ -767,7 +778,7 @@ static inline char* print_callid(char* w, dlg_t* dialog, struct cell* t)
 /*
  * Create a request
  */
-char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog, 
+char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 										int branch, struct cell *t, int* len)
 {
 	char* buf, *w;
@@ -785,7 +796,7 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 		LM_ERR("failed to print CSeq number\n");
 		return 0;
 	}
-	*len = method->len + 1 + dialog->hooks.request_uri->len + 1 + 
+	*len = method->len + 1 + dialog->hooks.request_uri->len + 1 +
 		SIP_VERSION_LEN + CRLF_LEN;
 
 	if (assemble_via(&via, t, dialog->send_sock, branch) < 0) {
@@ -795,14 +806,14 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 	*len += via.len;
 
 	/* To */
-	*len += TO_LEN 
+	*len += TO_LEN
 		+ (dialog->rem_dname.len ? dialog->rem_dname.len+1 : 0)
 		+ dialog->rem_uri.len
 		+ (dialog->id.rem_tag.len ? TOTAG_LEN + dialog->id.rem_tag.len : 0)
 		+ (dialog->rem_dname.len || dialog->id.rem_tag.len ? 2 : 0)
 		+ CRLF_LEN;
 	/* From */
-	*len += FROM_LEN 
+	*len += FROM_LEN
 		+ (dialog->loc_dname.len ? dialog->loc_dname.len+1 : 0)
 		+ dialog->loc_uri.len
 		+ (dialog->id.loc_tag.len ? FROMTAG_LEN + dialog->id.loc_tag.len : 0)
@@ -832,7 +843,7 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 		LM_ERR("no more share memory\n");
 		goto error;
 	}
-	
+
 	w = buf;
 
 	w = print_request_uri(w, method, dialog, t, branch);  /* Request-URI */
@@ -856,17 +867,17 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 		append_string(w, user_agent_header.s, user_agent_header.len);
 		append_string(w, CRLF, CRLF_LEN);
 	}
-	if (headers) {
-		t->uac[branch].extra_headers.s = w;
-		t->uac[branch].extra_headers.len = headers->len;
+
+	/* extra headers (containing CRLF) */
+	if (headers)
 		append_string(w, headers->s, headers->len);
-	}
+
+	/* add CRLF between headers and body */
 	append_string(w, CRLF, CRLF_LEN);
-	if (body) {
-		t->uac[branch].body.s = w;
-		t->uac[branch].body.len = body->len;
+
+	/* add body (if required) */
+	if (body)
 		append_string(w, body->s, body->len);
-	}
 
 #ifdef EXTRA_DEBUG
 	if (w-buf != *len ) abort();
@@ -884,7 +895,7 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 }
 
 
-int t_calc_branch(struct cell *t, 
+int t_calc_branch(struct cell *t,
 	int b, char *branch, int *branch_len)
 {
 	return syn_branch ?

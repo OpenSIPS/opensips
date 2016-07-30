@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Event header field body parser.
  * The parser was written for Presence Agent module only.
  * it recognize presence package only, no sub-packages, no parameters
@@ -21,9 +19,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -110,22 +108,22 @@ int event_parser(char* _s, int _l, event_t* _e)
 
 	_e->text.len = end - tmp.s;
 
-	if ((_e->text.len == PRES_STR_LEN) && 
+	if ((_e->text.len == PRES_STR_LEN) &&
 		!strncasecmp(PRES_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_PRESENCE;
-	} else if ((_e->text.len == PRES_XCAP_DIFF_STR_LEN) && 
+	} else if ((_e->text.len == PRES_XCAP_DIFF_STR_LEN) &&
 		   !strncasecmp(PRES_XCAP_DIFF_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_XCAP_DIFF;
-	} else if ((_e->text.len == PRES_WINFO_STR_LEN) && 
+	} else if ((_e->text.len == PRES_WINFO_STR_LEN) &&
 		   !strncasecmp(PRES_WINFO_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_PRESENCE_WINFO;
-	} else if ((_e->text.len == PRES_SIP_PROFILE_STR_LEN) && 
+	} else if ((_e->text.len == PRES_SIP_PROFILE_STR_LEN) &&
 		   !strncasecmp(PRES_SIP_PROFILE_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_SIP_PROFILE;
-	} else if ((_e->text.len == DIALOG_STR_LEN) && 
+	} else if ((_e->text.len == DIALOG_STR_LEN) &&
 		   !strncasecmp(DIALOG_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_DIALOG;
-	} else if ((_e->text.len == MWI_STR_LEN) && 
+	} else if ((_e->text.len == MWI_STR_LEN) &&
 		   !strncasecmp(MWI_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_MWI;
 	} else if ((_e->text.len == CALL_INFO_STR_LEN) &&
@@ -203,11 +201,11 @@ int parse_event(struct hdr_field* _h)
 void free_event(event_t** _e)
 {
 	if (*_e)
-	{	
+	{
 		if((*_e)->params)
 			free_params((*_e)->params);
 		pkg_free(*_e);
-	}	
+	}
 	*_e = 0;
 }
 
@@ -219,7 +217,7 @@ void print_event(event_t* _e)
 {
 	printf("===Event===\n");
 	printf("text  : \'%.*s\'\n", _e->text.len, ZSW(_e->text.s));
-	printf("parsed: %s\n", 
+	printf("parsed: %s\n",
 	       (_e->parsed == EVENT_PRESENCE) ? ("EVENT_PRESENCE") : ("EVENT_OTHER"));
 	printf("===/Event===\n");
 }

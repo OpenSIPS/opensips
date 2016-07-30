@@ -43,7 +43,6 @@ lib/opensips/modules/nathelper.so
 lib/opensips/modules/nat_traversal.so
 lib/opensips/modules/options.so
 lib/opensips/modules/path.so
-lib/opensips/modules/pdt.so
 lib/opensips/modules/permissions.so
 lib/opensips/modules/pike.so
 lib/opensips/modules/ratelimit.so
@@ -116,7 +115,6 @@ share/doc/opensips/README.nathelper
 share/doc/opensips/README.nat_traversal
 share/doc/opensips/README.options
 share/doc/opensips/README.path
-share/doc/opensips/README.pdt
 share/doc/opensips/README.permissions
 share/doc/opensips/README.pike
 share/doc/opensips/README.ratelimit

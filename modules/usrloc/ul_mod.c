@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Usrloc module interface
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * ---------
@@ -56,10 +54,10 @@
 #include "udomain.h"         /* {insert,delete,get,release}_urecord */
 #include "urecord.h"         /* {insert,delete,get}_ucontact */
 #include "ucontact.h"        /* update_ucontact */
+#include "ureplication.h"
 #include "ul_mi.h"
 #include "ul_callback.h"
 #include "usrloc.h"
-
 
 
 #define USER_COL       "username"
@@ -79,6 +77,7 @@
 #define ATTR_COL       "attr"
 #define LAST_MOD_COL   "last_modified"
 #define SIP_INSTANCE_COL   "sip_instance"
+#define CONTACTID_COL  "contact_id"
 
 static int mod_init(void);                          /*!< Module initialization function */
 static void destroy(void);                          /*!< Module destroy function */
@@ -86,9 +85,19 @@ static void timer(unsigned int ticks, void* param); /*!< Timer handler */
 static int child_init(int rank);                    /*!< Per-child init function */
 static int mi_child_init(void);
 
+//static int add_replication_dest(modparam_t type, void *val);
+
 extern int bind_usrloc(usrloc_api_t* api);
 extern int ul_locks_no;
 extern rw_lock_t *sync_lock;
+extern int skip_replicated_db_ops;
+
+int max_contact_delete=10;
+db_key_t *cid_keys=NULL;
+db_val_t *cid_vals=NULL;
+
+
+
 /*
  * Module parameters and their default values
  */
@@ -110,6 +119,7 @@ str methods_col     = str_init(METHODS_COL);		/*!< Name of column containing the
 str last_mod_col    = str_init(LAST_MOD_COL);		/*!< Name of column containing the last modified date */
 str attr_col        = str_init(ATTR_COL);		/*!< Name of column containing additional info */
 str sip_instance_col = str_init(SIP_INSTANCE_COL);
+str contactid_col   = str_init(CONTACTID_COL);
 str db_url          = {NULL, 0};					/*!< Database URL */
 int timer_interval  = 60;				/*!< Timer interval in seconds */
 int db_mode         = 0;				/*!< Database sync scheme: 0-no db, 1-write through, 2-write back, 3-only db */
@@ -122,6 +132,10 @@ int ul_hash_size = 9;
 unsigned int nat_bflag = (unsigned int)-1;
 static char *nat_bflag_str = 0;
 unsigned int init_flag = 0;
+
+/* usrloc data replication using the bin interface */
+int accept_replicated_udata = 0;
+int ul_replicate_cluster = 0;
 
 db_con_t* ul_dbh = 0; /* Database connection handle */
 db_func_t ul_dbf;
@@ -137,9 +151,10 @@ static cmd_export_t cmds[] = {
 
 
 /*! \brief
- * Exported parameters 
+ * Exported parameters
  */
 static param_export_t params[] = {
+	{"contactid_column",   STR_PARAM, &contactid_col.s   },
 	{"user_column",        STR_PARAM, &user_col.s        },
 	{"domain_column",      STR_PARAM, &domain_col.s      },
 	{"contact_column",     STR_PARAM, &contact_col.s     },
@@ -166,6 +181,11 @@ static param_export_t params[] = {
 	{"hash_size",          INT_PARAM, &ul_hash_size      },
 	{"nat_bflag",          STR_PARAM, &nat_bflag_str     },
 	{"nat_bflag",          INT_PARAM, &nat_bflag         },
+    /* data replication through UDP binary packets */
+	{ "accept_replicated_contacts",INT_PARAM, &accept_replicated_udata },
+	{ "replicate_contacts_to",	INT_PARAM, &ul_replicate_cluster   },
+	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops     },
+	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{0, 0, 0}
 };
 
@@ -194,12 +214,44 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static module_dependency_t *get_deps_db_mode(param_export_t *param)
+{
+	if (*(int *)param->param_pointer == NO_DB)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
+}
+
+static module_dependency_t *get_deps_clusterer(param_export_t *param)
+{
+	int cluster_id = *(int *)param->param_pointer;
+
+	if (cluster_id <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer", DEP_ABORT);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_mode",			get_deps_db_mode	},
+		{ "accept_replicated_contacts",	get_deps_clusterer	},
+		{ "replicate_contacts_to",	get_deps_clusterer	},
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports = {
 	"usrloc",
+	MOD_TYPE_DEFAULT,/*!< class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /*!< dlopen flags */
+	&deps,           /*!< OpenSIPS module dependencies */
 	cmds,       /*!< Exported functions */
+	0,          /*!< Exported async functions */
 	params,     /*!< Export parameters */
 	mod_stats,  /*!< exported statistics */
 	mi_cmds,    /*!< exported MI functions */
@@ -217,10 +269,13 @@ struct module_exports exports = {
  */
 static int mod_init(void)
 {
+	int idx;
+
 	LM_DBG("initializing\n");
 
 	/* Compute the lengths of string parameters */
 	init_db_url( db_url , 1 /*can be null*/);
+	contactid_col.len = strlen(contactid_col.s);
 	user_col.len = strlen(user_col.s);
 	domain_col.len = strlen(domain_col.s);
 	contact_col.len = strlen(contact_col.s);
@@ -239,11 +294,32 @@ static int mod_init(void)
 	attr_col.len = strlen(attr_col.s);
 	last_mod_col.len = strlen(last_mod_col.s);
 
+	if (ul_hash_size > 16) {
+		LM_WARN("hash too big! max 2 ^ 16\n");
+		return -1;
+	}
+
 	if(ul_hash_size<=1)
 		ul_hash_size = 512;
 	else
 		ul_hash_size = 1<<ul_hash_size;
 	ul_locks_no = ul_hash_size;
+
+	if (db_mode != NO_DB) {
+		cid_keys = pkg_malloc(max_contact_delete *
+				(sizeof(db_key_t) * sizeof(db_val_t)));
+		if (cid_keys == NULL) {
+			LM_ERR("no more pkg memory\n");
+			return -1;
+		}
+
+		cid_vals = (db_val_t *)(cid_keys + max_contact_delete);
+		for (idx=0; idx < max_contact_delete; idx++) {
+			VAL_TYPE(cid_vals+idx) = DB_BIGINT;
+			VAL_NULL(cid_vals+idx) = 0;
+			cid_keys[idx] = &contactid_col;
+		}
+	}
 
 	/* check matching mode */
 	switch (matching_mode) {
@@ -261,7 +337,8 @@ static int mod_init(void)
 	}
 
 	/* Register cache timer */
-	register_timer( "ul-timer", timer, 0, timer_interval);
+	register_timer( "ul-timer", timer, 0, timer_interval,
+		TIMER_FLAG_DELAY_ON_DELAY);
 
 	/* init the callbacks list */
 	if ( init_ulcb_list() < 0) {
@@ -290,8 +367,8 @@ static int mod_init(void)
 		}
 	}
 
-	fix_flag_name(&nat_bflag_str, nat_bflag);
-	
+	fix_flag_name(nat_bflag_str, nat_bflag);
+
 	nat_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, nat_bflag_str);
 
 	if (nat_bflag==(unsigned int)-1) {
@@ -306,6 +383,26 @@ static int mod_init(void)
 	if (ul_event_init() < 0) {
 		LM_ERR("cannot initialize USRLOC events\n");
 		return -1;
+	}
+
+
+
+	if( (ul_replicate_cluster > 0 || accept_replicated_udata > 0)
+		&& load_clusterer_api(&clusterer_api)!=0){
+		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
+		return -1;
+	}
+
+	/* register handler for processing usrloc packets from the bin interface */
+	if (accept_replicated_udata > 0 &&
+			bin_register_cb(repl_module_name.s, receive_binary_packet, NULL) < 0) {
+		LM_ERR("cannot register binary packet callback!\n");
+		return -1;
+	}
+
+
+	if(ul_replicate_cluster < 0){
+		ul_replicate_cluster = 0;
 	}
 
 	init_flag = 1;
@@ -324,15 +421,9 @@ static int child_init(int _rank)
 			return 0;
 		case DB_ONLY:
 		case WRITE_THROUGH:
-			/* we need connection from working SIP and TIMER and MAIN
-			 * processes only */
-			if (_rank<=0 && _rank!=PROC_TIMER && _rank!=PROC_MAIN)
-				return 0;
-			break;
 		case WRITE_BACK:
-			/* connect only from TIMER (for flush), from MAIN (for
-			 * final flush() and from child 1 for preload */
-			if (_rank!=PROC_TIMER && _rank!=PROC_MAIN && _rank!=1)
+			/* we need connection from SIP workers, BIN and MAIN procs */
+			if (_rank < PROC_MAIN && _rank != PROC_BIN )
 				return 0;
 			break;
 	}
@@ -421,4 +512,3 @@ static void timer(unsigned int ticks, void* param)
 	if (sync_lock)
 		lock_stop_read(sync_lock);
 }
-

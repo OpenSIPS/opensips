@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,15 +13,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
  * --------
  *  2003-04-08  init_mallocs split into init_{pkg,shm}_malloc (andrei)
- * 
+ *
  */
 
 
@@ -34,17 +32,7 @@
 #include "../globals.h"
 #include "mem.h"
 
-#ifdef PKG_MALLOC
-	#ifdef VQ_MALLOC
-		#include "vq_malloc.h"
-	#else
-		#include "q_malloc.h"
-	#endif
-#endif
-
-#ifdef SHM_MEM
 #include "shm_mem.h"
-#endif
 
 #ifdef PKG_MALLOC
 	char* mem_pool = NULL;
@@ -52,8 +40,12 @@
 		struct vqm_block* mem_block;
 	#elif defined F_MALLOC
 		struct fm_block* mem_block;
-	#else
+	#elif defined HP_MALLOC
+		struct hp_block* mem_block;
+	#elif defined QM_MALLOC
 		struct qm_block* mem_block;
+	#else
+		#error "no memory allocator selected"
 	#endif
 #endif
 
@@ -69,16 +61,27 @@ int init_pkg_mallocs(void)
 		return -1;
 	}
 	#ifdef VQ_MALLOC
-		mem_block=vqm_malloc_init(mem_pool, pkg_mem_size);
+		mem_block=vqm_malloc_init(mem_pool, pkg_mem_size, "pkg");
 	#elif F_MALLOC
-		mem_block=fm_malloc_init(mem_pool, pkg_mem_size);
+		mem_block=fm_malloc_init(mem_pool, pkg_mem_size, "pkg");
+	#elif HP_MALLOC
+		mem_block=hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");
+	#elif QM_MALLOC
+		mem_block=qm_malloc_init(mem_pool, pkg_mem_size, "pkg");
 	#else
-		mem_block=qm_malloc_init(mem_pool, pkg_mem_size);
+		#error "no memory allocator selected"
 	#endif
 	if (mem_block==0){
 		LM_CRIT("could not initialize memory pool\n");
-		fprintf(stderr, "Too much pkg memory demanded: %ld\n",
+		fprintf(stderr, "Given PKG mem size is not enough: %ld\n",
 			pkg_mem_size );
+		return -1;
+	}
+#elif defined USE_SHM_MEM
+	if (shm_mem_init()<0) {
+		LM_CRIT("could not initialize shared memory pool, exiting...\n");
+		 fprintf(stderr, "Too much shared memory demanded: %ld\n",
+			shm_mem_size );
 		return -1;
 	}
 #endif
@@ -166,7 +169,7 @@ end:
 	event_pkg_pending = 0;
 }
 
-inline void pkg_threshold_check(void)
+void pkg_threshold_check(void)
 {
 	long pkg_perc, used, size;
 
@@ -194,14 +197,15 @@ inline void pkg_threshold_check(void)
 
 int init_shm_mallocs(void)
 {
-#ifdef SHM_MEM
+	#ifndef USE_SHM_MEM
 	if (shm_mem_init()<0) {
 		LM_CRIT("could not initialize shared memory pool, exiting...\n");
 		 fprintf(stderr, "Too much shared memory demanded: %ld\n",
 			shm_mem_size );
 		return -1;
 	}
-#endif
+	#endif
+
 	return 0;
 }
 

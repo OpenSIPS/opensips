@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -53,6 +53,8 @@ int set_connection(unsigned int type, void *val)
 }
 
 static param_export_t params[]={
+	{ "connect_timeout",             INT_PARAM,                &redis_connnection_tout},
+	{ "query_timeout",               INT_PARAM,                &redis_query_tout      },
 	{ "cachedb_url",                 STR_PARAM|USE_FUNC_PARAM, (void *)&set_connection},
 	{0,0,0}
 };
@@ -61,9 +63,12 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"cachedb_redis",					/* module name */
+	MOD_TYPE_CACHEDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	0,						/* exported functions */
+	0,						/* exported async functions */
 	params,						/* exported parameters */
 	0,							/* exported statistics */
 	0,							/* exported MI functions */
@@ -84,6 +89,7 @@ static int mod_init(void)
 	cachedb_engine cde;
 
 	LM_NOTICE("initializing module cachedb_redis ...\n");
+	memset(&cde,0,sizeof(cachedb_engine));
 
 	cde.name = cache_mod_name;
 
@@ -95,8 +101,9 @@ static int mod_init(void)
 	cde.cdb_func.remove = redis_remove;
 	cde.cdb_func.add = redis_add;
 	cde.cdb_func.sub = redis_sub;
+	cde.cdb_func.raw_query = redis_raw_query;
 
-	cde.cdb_func.capability = 0; 
+	cde.cdb_func.capability = 0;
 
 	if (register_cachedb(&cde) < 0) {
 		LM_ERR("failed to initialize cachedb_redis\n");

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua module - presence user agent module
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *	initial version 2007-05-03 (anca)
  */
@@ -43,7 +41,7 @@ pua_event_t* init_pua_evlist(void)
 		return NULL;
 	}
 	list->next= NULL;
-	
+
 	return list;
 
 }
@@ -55,7 +53,7 @@ int add_pua_event(int ev_flag, char* name, char* content_type,
 	int size;
 	int name_len;
 	int ctype_len= 0;
-	str str_name;	
+	str str_name;
 
 	if(pua_evlist == NULL)
 	{
@@ -82,7 +80,7 @@ int add_pua_event(int ev_flag, char* name, char* content_type,
 	{
 		LM_ERR("No more share memory\n");
 		return -1;
-	}	
+	}
 	memset(event, 0, size);
 	size= sizeof(pua_event_t);
 
@@ -90,13 +88,13 @@ int add_pua_event(int ev_flag, char* name, char* content_type,
 	memcpy(event->name.s, name, name_len);
 	event->name.len= name_len;
 	size+= name_len;
-			
+
 	if(content_type)
 	{
 		event->content_type.s= (char*)event+ size;
 		memcpy(event->content_type.s, content_type, ctype_len);
 		event->content_type.len= ctype_len;
-		size+= ctype_len;		
+		size+= ctype_len;
 	}
 
 	event->process_body= process_body;
@@ -121,9 +119,9 @@ pua_event_t* contains_pua_event(str* name)
 			return event;
 		}
 		event= event->next;
-	}	
+	}
 
-	return NULL;	
+	return NULL;
 }
 
 pua_event_t* get_event(int ev_flag)
@@ -155,8 +153,8 @@ void destroy_pua_evlist(void)
 			e2= e1->next;
 			shm_free(e1);
 			e1= e2;
-		}	
+		}
 		shm_free(pua_evlist);
-	}	
+	}
 
-}	
+}

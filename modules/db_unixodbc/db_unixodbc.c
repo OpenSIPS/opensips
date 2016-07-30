@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * UNIXODBC module interface
  *
  * Copyright (C) 2005-2006 Marco Lorrai
@@ -18,9 +16,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
@@ -33,7 +31,6 @@
 #include "dbase.h"
 #include "db_unixodbc.h"
 
-int ping_interval = 5 * 60; /* Default is 5 minutes */
 int auto_reconnect = 1;     /* Default is enabled */
 int use_escape_common = 0;  /* Enable common escaping */
 
@@ -54,18 +51,20 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-	{"ping_interval",     INT_PARAM, &ping_interval},
 	{"auto_reconnect",    INT_PARAM, &auto_reconnect},
 	{"use_escape_common", INT_PARAM, &use_escape_common},
 	{0, 0, 0}
 };
 
 
-struct module_exports exports = {	
+struct module_exports exports = {
 	"db_unixodbc",
+	MOD_TYPE_SQLDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,
+	0,
 	params,     /*  module parameters */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
@@ -91,7 +90,7 @@ int db_unixodbc_bind_api(const str* mod, db_func_t *dbb)
 	dbb->raw_query        = db_unixodbc_raw_query;
 	dbb->free_result      = db_unixodbc_free_result;
 	dbb->insert           = db_unixodbc_insert;
-	dbb->delete           = db_unixodbc_delete; 
+	dbb->delete           = db_unixodbc_delete;
 	dbb->update           = db_unixodbc_update;
 	dbb->replace          = db_unixodbc_replace;
 

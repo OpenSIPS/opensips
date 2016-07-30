@@ -12,8 +12,7 @@ Razvan Pistolea
 
    Copyright © 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision: 5917 $ $Date: 2009-07-29 19:12:14 +0300
-                              (Wed, 29 Jul 2009) $
+   Revision $Revision: 5917 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -98,6 +97,8 @@ Chapter 1. Admin Guide
     dbb->replace            1           0
     dbb->last_inserted_id   0           0
     dbb->insert_update      1           1
+        dbb->async_raw_query    0           1
+        dbb->async_raw_resume   0           1
 
    Note 1: The capabilities returned are the minimum common
    denominator of all the dbs in the set. The capabilities are
@@ -107,6 +108,10 @@ Chapter 1. Admin Guide
    Note 2: The capabilities will not be reduced for PARALLEL mode
    but conceptual not allowed operations will be done on a single
    db. Ex: query will only query one db.
+
+   Note 3: Since version 2.2 db_virtual supports async_raw_query
+   and async_raw_resume functions currently implemented only by
+   the mysql database engine.
 
 1.1.3.  Failures
 
@@ -139,8 +144,8 @@ Chapter 1. Admin Guide
 
    The timer process(probe) is a process that tries to reconnect
    to failed dbs from time to time. It is a separate process so
-   that when it blocks (for a timeout on the connection) it doesnt
-   matter.
+   that when it blocks (for a timeout on the connection) it
+   doesn't matter.
 
 1.2. Dependencies
 

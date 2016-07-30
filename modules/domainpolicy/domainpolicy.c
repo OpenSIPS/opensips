@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * Domain Policy related functions
  *
  * Copyright (C) 2006 Otmar Lendl & Klaus Darilion
@@ -19,9 +17,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -107,7 +105,7 @@ static void stack_to_avp(struct avp_stack *stack) {
 
 	for(j=0; j< stack->i; j++) {
 		/* AVP names can be integer or string based */
-		LM_DBG("process AVP: name='%s' value='%s'\n", 
+		LM_DBG("process AVP: name='%s' value='%s'\n",
 					stack->avp[j].att, stack->avp[j].val);
 
 		/* we will only use string avps
@@ -120,10 +118,10 @@ static void stack_to_avp(struct avp_stack *stack) {
 			LM_ERR("cannot find %s avp\n", avp_val.s.s);
 			continue;
 		}
-		LM_DBG("create string named AVP <s:%.*s>\n", 
+		LM_DBG("create string named AVP <s:%.*s>\n",
 				avp_val.s.len, ZSW(avp_val.s.s));
 
-		avp_val.s.s = stack->avp[j].val; 
+		avp_val.s.s = stack->avp[j].val;
 		avp_val.s.len = strlen(avp_val.s.s);
 
 		/* string type explicitely forced with s: */
@@ -249,7 +247,7 @@ static inline int parse_naptr_regexp(char* first, int len, str* pattern,
 
 /*
  * Tests if one result record is "greater" that the other.  Non-NAPTR records
- * greater that NAPTR record.  An invalid NAPTR record is greater than a 
+ * greater that NAPTR record.  An invalid NAPTR record is greater than a
  * valid one.  Valid NAPTR records are compared based on their
  * (order,preference).
  *
@@ -271,16 +269,16 @@ static inline int naptr_greater(struct rdata* a, struct rdata* b)
 
 	if (!IS_D2PNAPTR(na))
 	    	return 1;
-	
+
 	if (!IS_D2PNAPTR(nb))
 	    	return 0;
 
-	
+
 	return (((na->order) << 16) + na->pref) >
 		(((nb->order) << 16) + nb->pref);
 }
-	
-	
+
+
 /*
  * Bubble sorts result record list according to naptr (order,preference).
  */
@@ -289,38 +287,38 @@ static inline void naptr_sort(struct rdata** head)
 	struct rdata *p, *q, *r, *s, *temp, *start;
 
         /* r precedes p and s points to the node up to which comparisons
-         are to be made */ 
+         are to be made */
 
 	s = NULL;
 	start = *head;
-	while ( s != start -> next ) { 
-		r = p = start ; 
+	while ( s != start -> next ) {
+		r = p = start ;
 		q = p -> next ;
-		while ( p != s ) { 
-			if ( naptr_greater(p, q) ) { 
-				if ( p == start ) { 
-					temp = q -> next ; 
-					q -> next = p ; 
+		while ( p != s ) {
+			if ( naptr_greater(p, q) ) {
+				if ( p == start ) {
+					temp = q -> next ;
+					q -> next = p ;
 					p -> next = temp ;
-					start = q ; 
-					r = q ; 
+					start = q ;
+					r = q ;
 				} else {
-					temp = q -> next ; 
-					q -> next = p ; 
+					temp = q -> next ;
+					q -> next = p ;
 					p -> next = temp ;
-					r -> next = q ; 
-					r = q ; 
-				} 
+					r -> next = q ;
+					r = q ;
+				}
 			} else {
-				r = p ; 
-				p = p -> next ; 
-			} 
-			q = p -> next ; 
-			if ( q == s ) s = p ; 
+				r = p ;
+				p = p -> next ;
+			}
+			q = p -> next ;
+			if ( q == s ) s = p ;
 		}
 	}
 	*head = start;
-}	
+}
 
 /*
  * input: rule straight from the DDDS + avp-stack.
@@ -334,7 +332,7 @@ static int check_rule(str *rule, char *service, int service_len, struct avp_stac
     /* for the select */
     db_key_t keys[2];
     db_val_t vals[2];
-    db_key_t cols[4]; 
+    db_key_t cols[4];
     db_res_t* res;
     db_row_t* row;
     db_val_t* val;
@@ -344,7 +342,7 @@ static int check_rule(str *rule, char *service, int service_len, struct avp_stac
 
     LM_INFO("checking for '%.*s'.\n", rule->len, ZSW(rule->s));
 
-    if ((service_len != 11) || (strncasecmp("d2p+sip:fed", service, 11) && 
+    if ((service_len != 11) || (strncasecmp("d2p+sip:fed", service, 11) &&
 	    strncasecmp("d2p+sip:std", service, 11)  && strncasecmp("d2p+sip:dom", service, 11))) {
     	LM_ERR("can only cope with d2p+sip:fed, d2p+sip:std,and d2p+sip:dom "
 				"for now (and not %.*s).\n", service_len, service);
@@ -385,11 +383,11 @@ static int check_rule(str *rule, char *service, int service_len, struct avp_stac
 	    LM_ERR("querying database\n");
 	    return -1;
     }
-    
+
     LM_INFO("querying database OK\n");
 
     if (RES_ROW_N(res) == 0) {
-	    LM_DBG("rule '%.*s' is not know.\n", 
+	    LM_DBG("rule '%.*s' is not know.\n",
 		rule->len, ZSW(rule->s));
 	    domainpolicy_dbf.free_result(db_handle, res);
 	    return 0;
@@ -406,7 +404,7 @@ static int check_rule(str *rule, char *service, int service_len, struct avp_stac
 
 			val = ROW_VALUES(row + i);
 
-			if ((VAL_TYPE(val) != DB_STRING) || 
+			if ((VAL_TYPE(val) != DB_STRING) ||
 				(VAL_TYPE(val+1) != DB_STRING) ||
 				(VAL_TYPE(val+2) != DB_STRING) ||
 				(VAL_TYPE(val+3) != DB_STRING)) {
@@ -422,7 +420,7 @@ static int check_rule(str *rule, char *service, int service_len, struct avp_stac
 			LM_INFO("DB returned %s/%s \n",VAL_STRING(val+2),VAL_STRING(val+3));
 
 
-			if (!stack_push(stack, (char *) VAL_STRING(val+2), 
+			if (!stack_push(stack, (char *) VAL_STRING(val+2),
 					(char *) VAL_STRING(val+3))) {
 			    return(-1);
 			}
@@ -482,7 +480,7 @@ int dp_can_connect_str(str *domain, int rec_level) {
     LM_INFO("doing DDDS with %.*s\n",domain->len, ZSW(domain->s));
     head = get_record(domain->s, T_NAPTR);
     if (head == 0) {
-    	LM_NOTICE("no NAPTR record found for %.*s.\n", 
+    	LM_NOTICE("no NAPTR record found for %.*s.\n",
 				domain->len, ZSW(domain->s));
     	return(DP_DDDS_RET_NOTFOUND);
     }
@@ -499,7 +497,7 @@ int dp_can_connect_str(str *domain, int rec_level) {
 		continue;
 	}
 	LM_DBG("order %u, pref %u, flen %u, flags '%.*s', slen %u, "
-	    "services '%.*s', rlen %u, regexp '%.*s', repl '%s'\n", 
+	    "services '%.*s', rlen %u, regexp '%.*s', repl '%s'\n",
 		naptr->order, naptr->pref,
 	    naptr->flags_len, (int)(naptr->flags_len), ZSW(naptr->flags),
 	    naptr->services_len,
@@ -523,7 +521,7 @@ int dp_can_connect_str(str *domain, int rec_level) {
 	}
 
 	LM_DBG("considering order %u, pref %u, flen %u, flags '%.*s', slen %u, "
-	    "services '%.*s', rlen %u, regexp '%.*s', repl '%s'\n", 
+	    "services '%.*s', rlen %u, regexp '%.*s', repl '%s'\n",
 		naptr->order, naptr->pref,
 	    naptr->flags_len, (int)(naptr->flags_len), ZSW(naptr->flags),
 	    naptr->services_len,
@@ -554,7 +552,7 @@ int dp_can_connect_str(str *domain, int rec_level) {
 	/*
 	 * NAPTRs we don't care about
 	 */
-	if (!IS_D2PNAPTR(naptr)) 
+	if (!IS_D2PNAPTR(naptr))
 	    continue;
 
 	/*
@@ -662,7 +660,7 @@ int dp_can_connect_str(str *domain, int rec_level) {
 		return(DP_DDDS_RET_POSITIVE);
     }
 
-    LM_INFO("returning %d.\n", 
+    LM_INFO("returning %d.\n",
 	    (found_anything ? DP_DDDS_RET_NEGATIVE : DP_DDDS_RET_NOTFOUND));
     return(  found_anything ? DP_DDDS_RET_NEGATIVE : DP_DDDS_RET_NOTFOUND );
 }
@@ -757,7 +755,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 	 */
 
 	didsomething = 0; /* if no AVP is set, there is no need to set the DURI in the end */
-	
+
 	if (parse_sip_msg_uri(_msg) < 0) {
 		LM_ERR("failed to parse R-URI\n");
 		return -1;
@@ -818,7 +816,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 	    }
 	    memcpy(at, domain->s, domain->len); at = at + domain->len;
 	}
-	
+
 	/* search for suffix and add it to duri buffer */
 	avp = search_first_avp(0, domain_suffix_name, &val, 0);
 	if (avp) {
@@ -863,9 +861,9 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 				LM_ERR("duri buffer to small to copy port\n");
 				return -1;
 			}
-			*at = ':'; at = at + 1;	
+			*at = ':'; at = at + 1;
 			/* add : as delimiter between domain and port */
-			memcpy(at, _msg->parsed_uri.port.s, _msg->parsed_uri.port.len); 
+			memcpy(at, _msg->parsed_uri.port.s, _msg->parsed_uri.port.len);
 			at = at + _msg->parsed_uri.port.len;
 		} else {
 			LM_DBG("port not found in RURI, no need to copy it to DURI\n");

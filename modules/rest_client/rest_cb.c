@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2013 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -47,9 +45,10 @@ size_t write_func(char *ptr, size_t size, size_t nmemb, void *body)
 
 	if (len < 0)
 		len = strlen(ptr);
-	
+
 	buff->s = pkg_realloc(buff->s, buff->len + len + 1);
 	if (!buff->s) {
+		buff->len = 0;
 		LM_ERR("No more pkg memory!\n");
 		return E_OUT_OF_MEM;
 	}
@@ -76,7 +75,7 @@ size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata)
 	len = left = size * nmemb;
 
 	if (len > CONTENT_TYPE_HDR_LEN && *ptr == 'C' &&
-	    memcmp(ptr, HTTP_HDR_CONTENT_TYPE, CONTENT_TYPE_HDR_LEN) == 0) {
+	    strncasecmp(ptr, HTTP_HDR_CONTENT_TYPE, CONTENT_TYPE_HDR_LEN) == 0) {
 
 		ptr += CONTENT_TYPE_HDR_LEN + 1;
 		left -= CONTENT_TYPE_HDR_LEN + 1;
@@ -84,6 +83,12 @@ size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata)
 		while (*ptr == ' ') {
 			ptr++;
 			left--;
+		}
+
+		st->s = pkg_realloc(st->s, left);
+		if (!st->s) {
+			LM_ERR("no more pkg mem\n");
+			return E_OUT_OF_MEM;
 		}
 
 		st->len = left;

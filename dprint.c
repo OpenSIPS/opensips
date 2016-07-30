@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * debug print 
+ * debug print
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -31,10 +29,18 @@
 #include "dprint.h"
 #include "globals.h"
 #include "pt.h"
- 
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <strings.h>
+
+static int log_level_holder = L_NOTICE;
+
+/* current logging level for this process */
+int *log_level = &log_level_holder;
+
+/* used when resetting the logging level of this process */
+static int *default_log_level;
 
 static char* str_fac[]={"LOG_AUTH","LOG_CRON","LOG_DAEMON",
 					"LOG_KERN","LOG_LOCAL0","LOG_LOCAL1",
@@ -87,43 +93,27 @@ void dprint(char * format, ...)
 	va_end(ap);
 }
 
-
-#ifndef CHANGEABLE_DEBUG_LEVEL
-static int old_proc_level;
-#else
-static int *old_proc_level=NULL;
-#endif
-
-void set_proc_debug_level(int level)
+int init_log_level(void)
 {
-#ifndef CHANGEABLE_DEBUG_LEVEL
-	static int proc_level_saved=0;
+	log_level = &pt[process_no].log_level;
+	*log_level = log_level_holder;
+	default_log_level = &pt[process_no].default_log_level;
+	*default_log_level = log_level_holder;
 
-	if (!proc_level_saved) {
-		old_proc_level = debug;
-		proc_level_saved = 1;
-	}
-	debug = level;
-#else
-	static int proc_level;
+	return 0;
+}
 
-	proc_level = level;
-	if (old_proc_level==NULL) {
-		old_proc_level = debug;
-		debug = &proc_level;
-	}
-#endif
+/* call before pt is freed */
+void cleanup_log_level(void)
+{
+	static int my_log_level;
+
+	my_log_level = *log_level;
+	log_level = &my_log_level;
 }
 
 
-void reset_proc_debug_level(void)
+void reset_proc_log_level(void)
 {
-#ifndef CHANGEABLE_DEBUG_LEVEL
-	debug = old_proc_level;
-#else
-	if (old_proc_level) {
-		debug = old_proc_level;
-		old_proc_level = NULL;
-	}
-#endif
+	*log_level = *default_log_level;
 }

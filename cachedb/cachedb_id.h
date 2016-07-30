@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -37,7 +37,8 @@ struct cachedb_id {
 	char* host;          /**< Host or IP, case insensitive */
 	unsigned short port; /**< Port number */
 	char* database;      /**< Database, case sensitive */
-	int flags;			 /**< Flags for signaling various events */
+	char* initial_url;   /**< Initial full URL */
+	int flags;           /**< Flags for signaling various events */
 };
 
 #define CACHEDB_ID_NO_URL (1<<0)

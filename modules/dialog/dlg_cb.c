@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -15,17 +13,17 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
  * 2006-04-14  initial version (bogdan)
  * 2008-04-04  added direction reporting in dlg callbacks (bogdan)
- * 2008-04-14  DLGCB_CREATED may be registered before the module 
+ * 2008-04-14  DLGCB_CREATED may be registered before the module
  *              initialization (bogdan)
- * 2008-04-15  added new type of callback to be triggered when dialogs are 
+ * 2008-04-15  added new type of callback to be triggered when dialogs are
  *              loaded from DB (bogdan)
  */
 
@@ -38,6 +36,7 @@
 
 static struct dlg_head_cbl* create_cbs = 0;
 
+static int dlg_load_cbs_run = 0;
 static struct dlg_head_cbl* load_cbs = 0;
 
 static struct dlg_cb_params params = {NULL, DLG_DIR_NONE, NULL, NULL};
@@ -79,6 +78,11 @@ void destroy_dlg_callbacks_list(struct dlg_callback *cb)
 		}
 		shm_free(cb_t);
 	}
+}
+
+void mark_dlg_loaded_callbacks_run(void)
+{
+	dlg_load_cbs_run = 1;
 }
 
 
@@ -151,10 +155,9 @@ int register_dlgcb(struct dlg_cell *dlg, int types, dialog_cb f,
 		create_cbs->first = cb;
 		create_cbs->types |= types;
 	} else if (types==DLGCB_LOADED) {
-		if (load_cbs==POINTER_CLOSED_MARKER) {
+		if (dlg_load_cbs_run) {
 			/* run the callback on the spot */
 			run_load_callback(cb);
-			destroy_dlg_callbacks_list(cb);
 			return 0;
 		}
 		if (load_cbs==0) {
@@ -210,6 +213,22 @@ void run_load_callbacks( void )
 	return;
 }
 
+void run_load_callback_per_dlg(struct dlg_cell *dlg)
+{
+	struct dlg_callback *cb;
+
+	params.msg = NULL;
+	params.direction = DLG_DIR_NONE;
+
+	if (load_cbs && load_cbs!=POINTER_CLOSED_MARKER) {
+		for ( cb=load_cbs->first; cb; cb=cb->next ) {
+			params.param = &cb->param;
+			cb->callback( dlg, DLGCB_LOADED, &params );
+		}
+	}
+
+	return;
+}
 
 void run_create_callbacks(struct dlg_cell *dlg, struct sip_msg *msg)
 {
@@ -235,7 +254,7 @@ void run_create_callbacks(struct dlg_cell *dlg, struct sip_msg *msg)
 
 
 void run_dlg_callbacks(int type , struct dlg_cell *dlg, struct sip_msg *msg,
-											unsigned int dir, void *dlg_data)
+								unsigned int dir, void *dlg_data, int locked)
 {
 	struct dlg_callback *cb;
 
@@ -246,6 +265,9 @@ void run_dlg_callbacks(int type , struct dlg_cell *dlg, struct sip_msg *msg,
 	if (dlg->cbs.first==0 || ((dlg->cbs.types)&type)==0 )
 		return;
 
+	if (locked)
+		dlg->locked_by = (unsigned short)process_no;
+
 	for ( cb=dlg->cbs.first; cb; cb=cb->next)  {
 		if ( (cb->types)&type ) {
 			LM_DBG("dialog=%p, type=%d\n", dlg, type);
@@ -253,5 +275,7 @@ void run_dlg_callbacks(int type , struct dlg_cell *dlg, struct sip_msg *msg,
 			cb->callback( dlg, type, &params );
 		}
 	}
+
+	dlg->locked_by = 0;
 	return;
 }

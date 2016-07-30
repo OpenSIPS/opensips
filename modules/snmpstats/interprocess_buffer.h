@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -19,13 +17,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
  * --------
  * 2006-11-23 initial version (jmagder)
- * 
+ *
  * The SNMPStats module exposes user information through openserSIPRegUserTable,
  * openserSIPContactTable, and openserSIPRegUserLookupTable.  These tables are
  * populated through callback mechanisms from the usrloc module.  Unfortunately
@@ -33,11 +31,11 @@
  * amounts of data.  Because we don't want to experience a performance hit when
  * registering users, we make use of the interprocess buffer.  Specifically,
  * instead of adding/removing users/contacts from the SNMP tables directly, the
- * callbacks add an add/delete command to the interprocessBuffer.  
- 
+ * callbacks add an add/delete command to the interprocessBuffer.
+
  * When an snmp request is recieved by the SNMPStats sub-process, it will
  * consume this interprocess buffer, adding and deleting users.  When it is
- * finished, it can service the SNMP request.  
+ * finished, it can service the SNMP request.
  *
  * This doesn't remove the NetSNMP inefficiency of course, but it does move it
  * to a non-critical path.  Such an approach allows SNMP support with almost no
@@ -56,7 +54,7 @@
 #include "../usrloc/ucontact.h"
 
 /* Represents an element of the interprocess buffer. */
-typedef struct interprocessBuffer 
+typedef struct interprocessBuffer
 {
 	char  *stringName;
 	char  *stringContact;
@@ -93,7 +91,7 @@ int setInterprocessBuffersAlarm(void);
  * The callback type will be passed in 'type', and the contact the callback
  * applies to will be supplied in 'contactInfo.  This information will be copied
  * into the interprocess buffer.  The interprocess buffer will beconsumed at a
- * later time, when consumeInterprocessBuffer() is called.  
+ * later time, when consumeInterprocessBuffer() is called.
  *
  * This callback is thread safe with respect to the consumeInterprocessBuffer()
  * function.  Specifically, the interprocess buffer should not be corrupted by
@@ -114,11 +112,11 @@ void handleContactCallbacks(ucontact_t *contactInfo, int type, void *param);
  * Note: This function is believed to be thread safe.  Specifically, it protects
  *       corruption of the interprocess buffer through the interprocessCBLock.
  *       This ensures no corruption of the buffer by race conditions.  The lock
- *       has been designed to be occupied for as short a period as possible, so 
- *       as to prevent long waits.  Specifically, once we start consumption of 
+ *       has been designed to be occupied for as short a period as possible, so
+ *       as to prevent long waits.  Specifically, once we start consumption of
  *       the list, other processes are free to continue even before we are done.
  *       This is made possible by simply changing the head of the interprocess
- *       buffer, and then releasing the lock.  
+ *       buffer, and then releasing the lock.
  */
 void consumeInterprocessBuffer();
 

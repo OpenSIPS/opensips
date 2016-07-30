@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2008 Sippy Software, Inc., http://www.sippysoft.com
  *
  * This file is part of ser, a free SIP server.
@@ -21,16 +20,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
 #ifndef _RTPPROXY_STREAM_H
 #define  _RTPPROXY_STREAM_H
 
-int fixup_var_str_int(void **, int);
-int rtpproxy_stream2uac2_f(struct sip_msg *, char *, char *);
-int rtpproxy_stream2uas2_f(struct sip_msg *, char *, char *);
+int rtpproxy_stream2uac4_f(struct sip_msg *, char *, char *, char *, char *);
+int rtpproxy_stream2uas4_f(struct sip_msg *, char *, char *, char *, char *);
 int rtpproxy_stop_stream2uac2_f(struct sip_msg *, char *, char *);
 int rtpproxy_stop_stream2uas2_f(struct sip_msg *, char *, char *);
 

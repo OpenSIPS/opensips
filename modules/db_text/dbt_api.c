@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * DBText library
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,14 +15,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
  * 2003-02-05  created by Daniel
- * 
+ *
  */
 
 #include <string.h>
@@ -47,12 +45,12 @@ int dbt_use_table(db_con_t* _h, const str* _t)
 static int dbt_get_columns(db_con_t* _h, db_res_t* _r)
 {
 	int col;
-	
+
 	if (!_h || !_r) {
 		LM_ERR("invalid parameter\n");
 		return -1;
 	}
-	
+
 	RES_COL_N(_r) = DBT_CON_RESULT(_h)->nrcols;
 	if (!RES_COL_N(_r)) {
 		LM_ERR("no columns\n");
@@ -108,25 +106,25 @@ static int dbt_convert_row(db_con_t* _h, db_res_t* _res, db_row_t* _r)
 		switch(RES_TYPES(_res)[i])
 		{
 			case DB_INT:
-				VAL_INT(&(ROW_VALUES(_r)[i])) = 
+				VAL_INT(&(ROW_VALUES(_r)[i])) =
 						DBT_CON_ROW(_h)->fields[i].val.int_val;
 				VAL_TYPE(&(ROW_VALUES(_r)[i])) = DB_INT;
 			break;
 
 			case DB_BIGINT:
-				VAL_BIGINT(&(ROW_VALUES(_r)[i])) = 
+				VAL_BIGINT(&(ROW_VALUES(_r)[i])) =
 						DBT_CON_ROW(_h)->fields[i].val.bigint_val;
 				VAL_TYPE(&(ROW_VALUES(_r)[i])) = DB_BIGINT;
 			break;
 
 			case DB_DOUBLE:
-				VAL_DOUBLE(&(ROW_VALUES(_r)[i])) = 
+				VAL_DOUBLE(&(ROW_VALUES(_r)[i])) =
 						DBT_CON_ROW(_h)->fields[i].val.double_val;
 				VAL_TYPE(&(ROW_VALUES(_r)[i])) = DB_DOUBLE;
 			break;
 
 			case DB_STRING:
-				VAL_STR(&(ROW_VALUES(_r)[i])).s = 
+				VAL_STR(&(ROW_VALUES(_r)[i])).s =
 						DBT_CON_ROW(_h)->fields[i].val.str_val.s;
 				VAL_STR(&(ROW_VALUES(_r)[i])).len =
 						DBT_CON_ROW(_h)->fields[i].val.str_val.len;
@@ -135,7 +133,7 @@ static int dbt_convert_row(db_con_t* _h, db_res_t* _res, db_row_t* _r)
 			break;
 
 			case DB_STR:
-				VAL_STR(&(ROW_VALUES(_r)[i])).s = 
+				VAL_STR(&(ROW_VALUES(_r)[i])).s =
 						DBT_CON_ROW(_h)->fields[i].val.str_val.s;
 				VAL_STR(&(ROW_VALUES(_r)[i])).len =
 						DBT_CON_ROW(_h)->fields[i].val.str_val.len;
@@ -144,7 +142,7 @@ static int dbt_convert_row(db_con_t* _h, db_res_t* _res, db_row_t* _r)
 			break;
 
 			case DB_DATETIME:
-				VAL_INT(&(ROW_VALUES(_r)[i])) = 
+				VAL_INT(&(ROW_VALUES(_r)[i])) =
 						DBT_CON_ROW(_h)->fields[i].val.int_val;
 				VAL_TYPE(&(ROW_VALUES(_r)[i])) = DB_DATETIME;
 			break;
@@ -253,18 +251,18 @@ int dbt_get_result(db_con_t* _h, db_res_t** _r)
 	}
 
 	*_r = db_new_result();
-	if (*_r == 0) 
+	if (*_r == 0)
 	{
 		LM_ERR("no private memory left\n");
 		return -2;
 	}
 
-	if (dbt_convert_result(_h, *_r) < 0) 
+	if (dbt_convert_result(_h, *_r) < 0)
 	{
 		LM_ERR("failed to convert result\n");
 		pkg_free(*_r);
 		return -4;
 	}
-	
+
 	return 0;
 }

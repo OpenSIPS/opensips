@@ -1,5 +1,4 @@
 /*
- *
  * Copyright (c) 2008, 2009
  * 	     Eric Gouyer <folays@folays.net>
  * Copyright (c) 2008, 2009, 2010, 2011
@@ -149,7 +148,7 @@ static int l_sipstate_xlog(lua_State *L)
 	}
       str = luaL_checklstring(L, 2, &len);
     }
-  siplua_log(lev, "%.*s", (int)len, str); 
+  siplua_log(lev, "%.*s", (int)len, str);
   return 0;
 }
 
@@ -312,11 +311,8 @@ static int l_sipstate_setCoreDebug(lua_State *L)
   int n;
 
   n = luaL_checkinteger(L, 1);
-#ifdef CHANGEABLE_DEBUG_LEVEL
-  *debug = n;
-#else
-  debug = n;
-#endif
+  set_proc_log_level(n);
+
   return 0;
 }
 

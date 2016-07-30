@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011-2013 VoIP Embedded, Inc.
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -188,31 +186,31 @@ do{	\
 		case '<':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_HTTP_COPY_2(p, (temp_holder), MI_HTTP_ESC_LT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '>':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_HTTP_COPY_2(p, (temp_holder), MI_HTTP_ESC_GT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '&':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_HTTP_COPY_2(p, (temp_holder), MI_HTTP_ESC_AMP);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '"':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_HTTP_COPY_2(p, (temp_holder), MI_HTTP_ESC_QUOT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '\'':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_HTTP_COPY_2(p, (temp_holder), MI_HTTP_ESC_SQUOT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		}	\
@@ -302,7 +300,7 @@ static const str MI_HTTP_Response_Foot = str_init(\
 "\n</center>\n<div align=\"center\" class=\"foot\" style=\"margin:20px auto\">"\
 	"<span style='margin-left:5px;'></span>"\
 	"<a href=\"http://opensips.org\">OpenSIPS web site</a><br/>"\
-	"Copyright &copy; 2011-2013 <a href=\"http://www.voipembedded.com/\">VoIP Embedded, Inc.</a>"\
+	"Copyright &copy; 2011-2015 <a href=\"http://www.voipembedded.com/\">VoIP Embedded, Inc.</a>"\
 								". All rights reserved."\
 "</div></body></html>");
 
@@ -481,20 +479,21 @@ struct mi_root* mi_http_parse_tree(str* buf)
 }
 
 
-static void mi_http_close_async(struct mi_root *mi_rpl, struct mi_handler *hdl, int done)
+static void mi_http_close_async(struct mi_root *mi_rpl, struct mi_handler *hdl,
+																	int done)
 {
 	struct mi_root *shm_rpl = NULL;
 	gen_lock_t* lock;
 	mi_http_async_resp_data_t *async_resp_data;
+	int x;
 
 	if (hdl==NULL) {
 		LM_CRIT("null mi handler\n");
 		return;
 	}
 
-	LM_DBG("mi_root [%p], hdl [%p], hdl->param [%p], "
-		"*hdl->param [%p] and done [%u]\n",
-		mi_rpl, hdl, hdl->param, *(struct mi_root **)hdl->param, done);
+	LM_DBG("mi_root [%p], hdl [%p], hdl->param [%p], and done [%u]\n",
+		mi_rpl, hdl, hdl->param, done);
 
 	if (!done) {
 		/* we do not pass provisional stuff (yet) */
@@ -502,23 +501,32 @@ static void mi_http_close_async(struct mi_root *mi_rpl, struct mi_handler *hdl, 
 		return;
 	}
 
-	async_resp_data =
-		(mi_http_async_resp_data_t*)((char*)hdl+sizeof(struct mi_handler));
+	async_resp_data = (mi_http_async_resp_data_t*)(hdl+1);
 	lock = async_resp_data->lock;
-	lock_get(lock);
-	if (mi_rpl!=NULL && (shm_rpl=clone_mi_tree( mi_rpl, 1))!=NULL) {
-		*(struct mi_root **)hdl->param = shm_rpl;
-	} else {
+
+	if (mi_rpl==NULL || (shm_rpl=clone_mi_tree( mi_rpl, 1))==NULL) {
 		LM_WARN("Unable to process async reply [%p]\n", mi_rpl);
 		/* mark it as invalid */
-		hdl->param = NULL;
+		shm_rpl = MI_HTTP_ASYNC_FAILED;
 	}
-	LM_DBG("shm_rpl [%p], hdl [%p], hdl->param [%p], *hdl->param [%p]\n",
-		shm_rpl, hdl, hdl->param,
-		(hdl->param)?*(struct mi_root **)hdl->param:NULL);
+	if (mi_rpl) free_mi_tree(mi_rpl);
+
+	lock_get(lock);
+	if (hdl->param==NULL) {
+		hdl->param = shm_rpl;
+		x = 0;
+	} else {
+		x = 1;
+	}
+	LM_DBG("shm_rpl [%p], hdl [%p], hdl->param [%p]\n",
+		shm_rpl, hdl, hdl->param);
 	lock_release(lock);
 
-	if (mi_rpl) free_mi_tree(mi_rpl);
+	if (x) {
+		if (shm_rpl!=MI_HTTP_ASYNC_FAILED)
+			free_shm_mi_tree(shm_rpl);
+		shm_free(hdl);
+	}
 
 	return;
 }
@@ -537,19 +545,17 @@ static inline struct mi_handler* mi_http_build_async_handler(int mod, int cmd)
 	}
 
 	memset(hdl, 0, len);
-	async_resp_data =
-		(mi_http_async_resp_data_t*)((char*)hdl+sizeof(struct mi_handler));
+	async_resp_data = (mi_http_async_resp_data_t*)(hdl+1);
 
 	hdl->handler_f = mi_http_close_async;
-	hdl->param = (void*)&async_resp_data->tree;
+	hdl->param = NULL;
 
 	async_resp_data->mod = mod;
 	async_resp_data->cmd = cmd;
 	async_resp_data->lock = mi_http_lock;
 
-	LM_DBG("hdl [%p], hdl->param [%p], *hdl->param [%p] mi_http_lock=[%p]\n",
-		hdl, hdl->param, (hdl->param)?*(struct mi_root **)hdl->param:NULL,
-		async_resp_data->lock);
+	LM_DBG("hdl [%p], hdl->param [%p], mi_http_lock=[%p]\n",
+		hdl, hdl->param, async_resp_data->lock);
 
 	return hdl;
 }
@@ -558,21 +564,21 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 			str *page, str *buffer, struct mi_handler **async_hdl)
 {
 	struct mi_cmd *f;
-	struct mi_root *mi_cmd;
-	struct mi_root *mi_rpl;
-	struct mi_handler *hdl;
+	struct mi_root *mi_cmd = NULL;
+	struct mi_root *mi_rpl = NULL;
+	struct mi_handler *hdl = NULL;
 	str miCmd;
 	str buf;
 
 	if (mod<0 && cmd<0) {
 		LM_ERR("Incorect params: mod=[%d], cmd=[%d]\n", mod, cmd);
-		return NULL;
+		goto error;
 	}
 	miCmd = http_mi_cmds[mod].cmds[cmd].name;
 	f = lookup_mi_cmd(miCmd.s, miCmd.len);
 	if (f == NULL) {
 		LM_ERR("unable to find mi command [%.*s]\n", miCmd.len, miCmd.s);
-		return NULL;
+		goto error;
 	}
 
 	if (f->flags&MI_ASYNC_RPL_FLAG) {
@@ -580,12 +586,11 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 		hdl = mi_http_build_async_handler(mod, cmd);
 		if (hdl==NULL) {
 			LM_ERR("failed to build async handler\n");
-			return NULL;
+			goto error;
 		}
 	} else {
 		hdl = NULL;
 	}
-	*async_hdl = hdl;
 
 	if (f->flags&MI_NO_INPUT_FLAG) {
 		mi_cmd = NULL;
@@ -596,7 +601,7 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 			LM_DBG("start parsing [%d][%s]\n", buf.len, buf.s);
 			mi_cmd = mi_http_parse_tree(&buf);
 			if (mi_cmd==NULL)
-				return NULL;
+				goto error;
 			mi_cmd->async_hdl = hdl;
 		} else {
 			mi_cmd = NULL;
@@ -614,15 +619,21 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 				(mi_flush_f *)mi_http_flush_tree, &html_page_data);
 	if (mi_rpl == NULL) {
 		LM_ERR("failed to process the command\n");
-		if (mi_cmd) free_mi_tree(mi_cmd);
-		return NULL;
-	} else if (mi_rpl != MI_ROOT_ASYNC_RPL) {
+		goto error;
+	} else {
 		*page = html_page_data.page;
 	}
 	LM_DBG("got mi_rpl=[%p]\n",mi_rpl);
 
+	*async_hdl = hdl;
+
 	if (mi_cmd) free_mi_tree(mi_cmd);
 	return mi_rpl;
+error:
+	if (mi_cmd) free_mi_tree(mi_cmd);
+	if (hdl) shm_free(hdl);
+	*async_hdl  = NULL;
+	return NULL;
 }
 
 int init_upSinceCTime(void)

@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -45,7 +45,7 @@
 #define PARAM_SEP			'\n'
 #define QUOTE_C				'"'
 #define ESC_C				'\\'
-#define ATTR_SEP_S			"::"			
+#define ATTR_SEP_S			"::"
 #define ATTR_SEP_LEN		(sizeof(ATTR_SEP_S) - 1)
 
 struct dgram_socks {

@@ -20,7 +20,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 #
 
 # This file was kindly donated by Collax GmbH
@@ -52,7 +52,6 @@ package OpenSIPS::LDAPUtils::LDAPConnection;
 use OpenSIPS::LDAPUtils::LDAPConf;
 use Net::LDAP;
 use Authen::SASL;
-use UNIVERSAL qw( isa );
 
 my $ldap_singleton = undef;
 
@@ -185,7 +184,7 @@ sub search {
 
     my $ldap = undef;
 
-    if( isa($conf ,"OpenSIPS::LDAPUtils::LDAPConnection") ) {
+    if( $conf->isa("OpenSIPS::LDAPUtils::LDAPConnection") ) {
       $ldap = $conf;
     } else {
       if( ! $ldap_singleton ) {

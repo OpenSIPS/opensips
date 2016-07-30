@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2005 iptelorg GmbH
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -37,7 +35,7 @@ enum poll_types { POLL_NONE, POLL_POLL, POLL_EPOLL_LT, POLL_EPOLL_ET,
 /* all the function and vars are defined in io_wait.c */
 
 extern char* poll_method_str[POLL_END];
-extern char* poll_support; 
+extern char* poll_support;
 
 
 enum poll_types choose_poll_method();
@@ -47,5 +45,8 @@ char* check_poll_method(enum poll_types poll_method);
 
 char* poll_method_name(enum poll_types poll_method);
 enum poll_types get_poll_type(char* s);
+
+void fix_poll_method( enum poll_types *poll_method );
+
 
 #endif

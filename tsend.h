@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *  History:
  * --------
@@ -29,8 +27,9 @@
 
 
 int tsend_stream(int fd, char* buf, unsigned int len, int timeout);
-int tsend_dgram(int fd, char* buf, unsigned int len, 
+int tsend_dgram(int fd, char* buf, unsigned int len,
 				const struct sockaddr* to, socklen_t tolen, int timeout);
+int tsend_stream_ev(int fd, const struct iovec *iov, int iovcnt, int timeout);
 int tsend_dgram_ev(int fd, const struct iovec* v, int count, int timeout);
 
 

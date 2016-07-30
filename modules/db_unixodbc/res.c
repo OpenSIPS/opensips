@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * UNIXODBC module result related functions
  *
  * Copyright (C) 2005-2006 Marco Lorrai
@@ -20,7 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
@@ -36,7 +34,6 @@
 #include "../../db/db_res.h"
 #include "con.h"
 #include "res.h"
-#include "list.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -160,9 +157,8 @@ static inline int db_unixodbc_convert_rows(const db_con_t* _h, db_res_t* _r)
 {
 	int row_n = 0, i = 0, ret = 0;
 	SQLSMALLINT columns;
-	list* rows = NULL;
-	list* rowstart = NULL;
 	strn* temp_row = NULL;
+	str *rows = NULL;
 
 	if((!_h) || (!_r)) {
 		LM_ERR("invalid parameter\n");
@@ -173,10 +169,10 @@ static inline int db_unixodbc_convert_rows(const db_con_t* _h, db_res_t* _r)
 	temp_row = (strn*)pkg_malloc( columns*sizeof(strn) );
 	if(!temp_row) {
 		LM_ERR("no private memory left\n");
-		return -1;
+		return E_OUT_OF_MEM;
 	}
 
-	while(SQL_SUCCEEDED(ret = SQLFetch(CON_RESULT(_h))))
+	while (SQL_SUCCEEDED(ret = SQLFetch(CON_RESULT(_h))))
 	{
 		for(i=0; i < columns; i++)
 		{
@@ -192,51 +188,39 @@ static inline int db_unixodbc_convert_rows(const db_con_t* _h, db_res_t* _r)
 			}
 		}
 
-		if (db_unixodbc_list_insert(&rowstart, &rows, columns, temp_row) < 0) {
-			LM_ERR("insert failed\n");
-			pkg_free(temp_row);
-			temp_row= NULL;
-			return -5;
+		rows = db_unixodbc_dup_row(temp_row, row_n, columns);
+		if (!rows) {
+			LM_ERR("no more pkg mem\n");
+			return E_OUT_OF_MEM;
 		}
+
 		row_n++;
 	}
+
 	/* free temporary row data */
 	pkg_free(temp_row);
 	CON_ROW(_h) = NULL;
 
 	RES_ROW_N(_r) = row_n;
-	if (!row_n) {
-		RES_ROWS(_r) = 0;
+	if (row_n == 0) {
+		RES_ROWS(_r) = NULL;
 		return 0;
 	}
 
-	if (db_allocate_rows( _r, row_n)!=0) {
+	if (db_allocate_rows(_r, row_n) != 0) {
 		LM_ERR("no private memory left\n");
-		return -2;
+		return E_OUT_OF_MEM;
 	}
 
-	i = 0;
-	rows = rowstart;
-	while(rows)
-	{
-		CON_ROW(_h) = rows->data;
-		if (!CON_ROW(_h))
-		{
-			LM_ERR("string null\n");
-			RES_ROW_N(_r) = row_n;
-			db_free_rows(_r);
-			return -3;
-		}
-		if (db_unixodbc_convert_row(_h, _r, &(RES_ROWS(_r)[i]), rows->lengths) < 0) {
+	for (i = 0; i < row_n; i++) {
+		if (db_unixodbc_convert_row(&rows[i * columns], _r, &RES_ROWS(_r)[i]) < 0) {
 			LM_ERR("converting row failed #%d\n", i);
-			RES_ROW_N(_r) = i;
+			RES_ROW_N(_r) = 0;
 			db_free_rows(_r);
 			return -4;
 		}
-		i++;
-		rows = rows->next;
 	}
-	db_unixodbc_list_destroy(rowstart);
+
 	return 0;
 }
 

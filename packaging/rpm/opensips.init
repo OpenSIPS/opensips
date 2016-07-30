@@ -21,16 +21,6 @@ DEFAULTS=/etc/default/opensips
 RUN_OPENSIPS=no
 
 
-# Do not start opensips if fork=no is set in the config file
-# otherwise the boot process will just stop
-check_fork ()
-{
-    if grep -q "^[[:space:]]*fork[[:space:]]*=[[:space:]]*no.*" /etc/opensips/opensips.cfg; then
-        echo "Not starting $DESC: fork=no specified in config file; run /etc/init.d/opensips debug instead"
-        exit 1
-    fi
-}
-
 check_opensips_config ()
 {
         # Check if opensips configuration is valid before starting the server
@@ -46,9 +36,6 @@ check_opensips_config ()
 
 start() {
 	check_opensips_config
-        if [ "$1" != "debug" ]; then
-            check_fork
-        fi
 	echo -n $"Starting $PROG: "
 	daemon $OSER $OPTIONS >/dev/null 2>/dev/null
 	RETVAL=$?
@@ -99,7 +86,7 @@ OPTIONS="-P $PID_FILE -m $S_MEMORY -M $P_MEMORY -u $USER -g $GROUP"
 
 # See how we were called.
 case "$1" in
-	start|debug)
+	start)
 		start
 		;;
 	stop)
@@ -120,7 +107,7 @@ case "$1" in
 		fi
 		;;
 	*)
-		echo $"Usage: $PROG {start|stop|restart|condrestart|status|debug|help}"
+		echo $"Usage: $PROG {start|stop|restart|condrestart|status|help}"
 		exit 1
 esac
 

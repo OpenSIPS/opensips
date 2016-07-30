@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -29,6 +29,7 @@
 #include "../../ut.h"
 #include "../../cachedb/cachedb.h"
 
+#include <stdlib.h>
 #include <string.h>
 #include <hiredis/hiredis.h>
 #define is_valid(p,end) ((p) && (p)<(end))
@@ -68,7 +69,7 @@ static const uint16_t crc16tab[256]= {
     0x6e17,0x7e36,0x4e55,0x5e74,0x2e93,0x3eb2,0x0ed1,0x1ef0
 };
 
-uint16_t crc16(const char *buf, int len) 
+uint16_t crc16(const char *buf, int len)
 {
     int counter;
     uint16_t crc = 0;
@@ -77,12 +78,12 @@ uint16_t crc16(const char *buf, int len)
     return crc;
 }
 
-unsigned int redisHash(redis_con *con, str* key) 
+unsigned int redisHash(redis_con *con, str* key)
 {
 	return crc16(key->s,key->len) & con->slots_assigned;
 }
 
-inline cluster_node *get_redis_connection(redis_con *con,str *key)
+cluster_node *get_redis_connection(redis_con *con,str *key)
 {
 	unsigned short hash_slot;
 	cluster_node *it;
@@ -99,7 +100,7 @@ inline cluster_node *get_redis_connection(redis_con *con,str *key)
 	}
 }
 
-void destroy_cluster_nodes(redis_con *con) 
+void destroy_cluster_nodes(redis_con *con)
 {
 	cluster_node *new,*foo;
 
@@ -114,110 +115,195 @@ void destroy_cluster_nodes(redis_con *con)
 	}
 }
 
+struct datavalues {
+	int count;
+	char **redisdata;
+};
+
+int chkmalloc1 (char *handle) {
+	if ( handle == NULL || handle == 0) {
+		LM_ERR("Error1 while parsing cluster redisdata \n");
+		return -1;
+	}
+		return 1;
+}
+int chkmalloc2 (struct datavalues *handle) {
+	if ( handle == NULL || handle == 0) {
+		LM_ERR("Error2 while parsing cluster redisdata \n");
+		return -1;
+	}
+		return 1;
+}
+
+int chkmalloc3 (struct datavalues **handle) {
+	if ( handle == NULL || handle == 0) {
+		LM_ERR("Error3 while parsing cluster redisdata \n");
+		return -1;
+	}
+		return 1;
+}
+
+int chkmalloc4 (char **handle) {
+	if ( handle == NULL || handle == 0) {
+		LM_ERR("Error4 while parsing cluster redisdata \n");
+		return -1;
+	}
+		return 1;
+}
+
+int explode(char *line, const char *delimeters, struct datavalues **newret) {
+
+	int counter		= 0;
+	char *result 	= NULL;
+	char *data 		= NULL;
+
+	data = pkg_malloc((strlen(line) * sizeof(char)) +1);
+	if (!chkmalloc1(data)) return 0;
+	strcpy(data,line);
+
+	result = strtok(data, delimeters);
+	while (result != NULL ) {
+		newret[0]->redisdata[counter] = pkg_malloc((strlen(result) * sizeof(char) ) +1 );
+		if (chkmalloc1(newret[0]->redisdata[counter])) {
+			strcpy(newret[0]->redisdata[counter],result);
+			counter++;
+			result = strtok(NULL, delimeters);
+		} else { return 0; }
+	}
+	newret[0]->count = counter-1;
+
+	pkg_free(data);
+
+	return 1;
+
+}
+
 int build_cluster_nodes(redis_con *con,char *info,int size)
 {
-	char *p,*end,*aux,*aux2;
-	char *ip;
-	unsigned short port,start_slot,end_slot;
-	int err;
+
 	cluster_node *new;
-	
-	LM_DBG("info = [%.*s]\n",size,info);
+	const char *delimeters = "\n";
+	int i		= 0, 	j	= 0;
+	int masters = 1, count	= 0;
+	char *ip, *block = NULL;
+	unsigned short port,start_slot,end_slot;
+	int len;
 
-	end = info+size;
-	p = info;
+	// Define **pointers for new structures 
+	struct datavalues **newret1 = pkg_malloc(sizeof(struct datavalues *));
+	if (!chkmalloc3(newret1)) goto error;
+	struct datavalues **newret2 = pkg_malloc(sizeof(struct datavalues *));
+	if (!chkmalloc3(newret2)) goto error;
+	struct datavalues **newret3 = pkg_malloc(sizeof(struct datavalues *));
+	if (!chkmalloc3(newret3)) goto error;
 
-	while (is_valid(p,end))
-	{
-		start_slot = end_slot = port = 0;
-		ip = NULL;
+	// Allocate space for the structures
+	newret1[0] = pkg_malloc(sizeof(struct datavalues));
+	if (!chkmalloc2(newret1[0])) goto error;
+	newret2[0] = pkg_malloc(sizeof(struct datavalues));
+	if (!chkmalloc2(newret2[0])) goto error;
+	newret3[0] = pkg_malloc(sizeof(struct datavalues));
+	if (!chkmalloc2(newret3[0])) goto error;
 
-		/* skip ID */
-		aux = memchr(p,' ',size);
-		if (!is_valid(aux,end))
-			goto error;
+	// Allocate space for data item "redisdata" within the structures
+	newret1[0]->redisdata = pkg_malloc((strlen(info) * sizeof(char)) +1);
+	if (!chkmalloc4(newret1[0]->redisdata)) goto error;
+	newret2[0]->redisdata = pkg_malloc((strlen(info) * sizeof(char)) +1);
+	if (!chkmalloc4(newret2[0]->redisdata)) goto error;
+	newret3[0]->redisdata = pkg_malloc((strlen(info) * sizeof(char)) +1);
+	if (!chkmalloc4(newret3[0]->redisdata)) goto error;
 
-		while (is_valid(aux,end) && (*aux) == ' ') aux++;
-		
-		size -= (aux-p);
-		p = aux;
+	// Initialise the counter
+	newret1[0]->count = 0;
+	newret2[0]->count = 0;
+	newret3[0]->count = 0;
 
-		if (*aux == ':') {
-			/* no IP - my IP in CACHEDB_ID */
-			ip = con->id->host;
-			port = con->id->port;
-			while (is_valid(aux,end) && (*aux) != ' ') aux++;
-		} else {
-			/* other node in cluster */
-			p = memchr(aux,':',size);
-			if (!is_valid(p,end))
-				goto error;
+
+	// Redis really only requires two connections ("myself,master" && one other master) || (at least two masters)
+	// but this will supply info for upto 1000 masters due to current Opensips design (hopefully representing the total hash slots)
+	// will always connect to myself,master
+	strstr(info,"myself,master")?(count = 999):(count = 1000);
+
+	// Cluster data into Array
+	if (explode(info,delimeters,newret1)) {
+		for (i=0;i<=newret1[0]->count;i++) {
+
+			if ((strstr(newret1[0]->redisdata[i],"master") && (masters <= count)) || strstr(newret1[0]->redisdata[i],"myself,master")) {
+
+				start_slot = end_slot = port = 0;
+				ip = NULL;
+				masters++;
+
+				// Break up the row 
+				if (explode(newret1[0]->redisdata[i]," ",newret2)) {
+					for (j=0 ; j <= newret2[0]->count ; j++ ) {
+
+						if (strstr(newret1[0]->redisdata[i],"myself") && strstr(newret2[0]->redisdata[j],"myself")) {
+							//myself no ip
+							ip = con->id->host;
+							port = con->id->port;
+							if (i==0) masters--;
 			
-			*p = 0;
-			ip = aux;
-			size -= (p-aux);
+						} else {
+							//Get the ip and port of other master
+							if (strstr(newret2[0]->redisdata[j],":") && (strlen(newret2[0]->redisdata[j]) > 5)) {
 
-			aux = memchr(p+1,' ',size);
-			if (!is_valid(aux,end))
-				goto error;
-			
-			port = str2s(p+1,aux-p-1,&err);
-			if (err)
-				goto error;
+								if (explode(newret2[0]->redisdata[j],":",newret3)) {
+									ip = (char *)newret3[0]->redisdata[0];
+									port = atoi(newret3[0]->redisdata[1]);
+								} else { block = ":parsing ip/port"; goto error;}
+							}
+						}
+						//Get slots
+						if (strstr(newret2[0]->redisdata[j],"-") && (strlen(newret2[0]->redisdata[j]) > 2)) {
+							if (explode(newret2[0]->redisdata[j],"-",newret3)) {
+								start_slot = atoi(newret3[0]->redisdata[0]);
+								end_slot   = atoi(newret3[0]->redisdata[1]);
+							} else {block = ":parsing slots"; goto error;}
+
+						}
+					}
+
+				} else { block = "row to array"; goto error;}
+
+				LM_DBG("ip port start end %s %hu %hu %hu\n",ip,port,start_slot,end_slot);
+
+				if ( ip == NULL || !(port > 0) || (start_slot > end_slot) || !(end_slot > 0) ) {block = ":processing row"; goto error;}
+
+				len = strlen(ip);
+				new = pkg_malloc(sizeof(cluster_node) + len + 1);
+				if (!new) {
+					LM_ERR("no more pkg\n");
+					goto error;
+				}
+
+				memset(new,0,sizeof(cluster_node) + len + 1);
+
+				new->ip = (char *)(new + 1);
+				strcpy(new->ip,ip);
+				new->port = port;
+				new->start_slot = start_slot;
+				new->end_slot = end_slot;
+
+				if (con->nodes == NULL)
+					con->nodes = new;
+				else {
+					new->next = con->nodes;
+					con->nodes = new;
+				}
+			}
 		}
 
-		size -= (aux-p);
-		p=aux;
+	} else { block = ":initial"; goto error;}
 
-		p = memchr(p,'\n',size);
-		if (!is_valid(p,end))
-			goto error;
-
-		p++;
-		size -= (p-aux);
-		aux = p-2;
-		
-		while (*aux == ' ') aux--;
-		aux2 = aux;
-		while (*aux != '-') aux--;
-		end_slot = str2s(aux+1,aux2-aux,&err);
-		if (err)
-			goto error;
-
-		aux2=aux;
-		while (*aux2 != ' ') aux2--;
-		start_slot=str2s(aux2+1,aux-aux2-1,&err);
-		if (err)
-			goto error;
-
-		LM_DBG("ip port start end %s %hu %hu %hu\n",ip,port,start_slot,end_slot);
-		new = pkg_malloc(sizeof(cluster_node));
-		if (!new) {
-			LM_ERR("no more pkg\n");
-			goto error;
-		}
-		
-		memset(new,0,sizeof(cluster_node));
-
-		strcpy(new->ip,ip);
-		new->port = port;
-		new->start_slot = start_slot;
-		new->end_slot = end_slot;
-
-		if (con->nodes == NULL)
-			con->nodes = new;
-		else {
-			new->next = con->nodes;
-			con->nodes = new;
-		}
-		
-	}
+	pkg_free(newret1);
+	pkg_free(newret2);
+	pkg_free(newret3);
 
 	return 0;
 
 error:
-	LM_ERR("Error while parsing cluster nodes\n");
+	LM_ERR("Error while parsing cluster nodes in %s\n",block);
 	destroy_cluster_nodes(con);
 	return -1;
 }
-

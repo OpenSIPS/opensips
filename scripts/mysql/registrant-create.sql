@@ -12,5 +12,5 @@ CREATE TABLE registrant (
     expiry INT(1) UNSIGNED DEFAULT NULL,
     forced_socket CHAR(64) DEFAULT NULL,
     CONSTRAINT aor_idx UNIQUE (aor)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 

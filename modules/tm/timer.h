@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -31,6 +29,7 @@
 #define _TIMER_H
 
 #include "../../timer.h"
+#include "../../rw_locking.h"
 #include "lock.h"
 
 #define MIN_TIMER_VALUE  2
@@ -59,7 +58,8 @@ typedef struct timer_link
 	struct timer_link     *ld_tl;
 	volatile utime_t      time_out;
 	struct timer          *timer_list;
-	unsigned int          deleted;
+	unsigned short        deleted;
+	unsigned short        set;
 #ifdef EXTRA_DEBUG
 	enum timer_groups  tg;
 #endif
@@ -79,6 +79,7 @@ typedef struct  timer
 /* transaction table */
 struct timer_table
 {
+	rw_lock_t      *ex_lock;
 	/* table of timer lists */
 	struct timer   timers[ NR_OF_TIMER_LISTS ];
 };
@@ -92,11 +93,11 @@ extern unsigned int timer_id2timeout[NR_OF_TIMER_LISTS];
 
 
 
-struct timer_table * tm_init_timers();
+struct timer_table * tm_init_timers( unsigned int sets );
 void unlink_timer_lists();
 void free_timer_table();
-void init_timer_list( enum lists list_id);
-void reset_timer_list( enum lists list_id);
+void init_timer_list( unsigned int set, enum lists list_id);
+void reset_timer_list( unsigned int set, enum lists list_id);
 
 void reset_timer( struct timer_link* tl );
 

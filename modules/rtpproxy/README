@@ -45,22 +45,37 @@ Bogdan-Andrei Iancu
               1.5.10. rtpp_socket_col (string)
               1.5.11. set_id_col (string)
               1.5.12. rtpp_notify_socket (string)
-              1.5.13. rtpp_sock_pvar (string)
 
         1.6. Exported Functions
 
-              1.6.1. set_rtp_proxy_set()
-              1.6.2. engage_rtp_proxy([flags [, ip_address]])
-              1.6.3. rtpproxy_offer([flags [, ip_address]])
-              1.6.4. rtpproxy_answer([flags [, ip_address]])
-              1.6.5. unforce_rtp_proxy()
-              1.6.6. rtpproxy_stream2uac(prompt_name, count),
-                      rtpproxy_stream2uas(prompt_name, count)
+              1.6.1. engage_rtp_proxy([flags [, ip_address [,
+                      set_id [, sock_pvar]]]]) - deprecated,
+                      rtpproxy_engage([flags [, ip_address [,
+                      set_id [, sock_pvar]]]])
 
-              1.6.7. rtpproxy_stop_stream2uac(),
-                      rtpproxy_stop_stream2uas()
+              1.6.2. rtpproxy_offer([flags [, ip_address [, set_id
+                      [, sock_pvar]]]])
 
-              1.6.8. start_recording()
+              1.6.3. rtpproxy_answer([flags [, ip_address [,
+                      set_id [, sock_pvar]]]])
+
+              1.6.4. unforce_rtp_proxy([set_id [, sock_pvar]]) -
+                      deprecated, rtpproxy_unforce([set_id [,
+                      sock_pvar]])
+
+              1.6.5. rtpproxy_stream2uac(prompt_name, count [,
+                      set_id [, sock_pvar]]),
+                      rtpproxy_stream2uas(prompt_name, count [,
+                      set_id [, sock_pvar]])
+
+              1.6.6. rtpproxy_stop_stream2uac([set_id [,
+                      sock_pvar]]),
+                      rtpproxy_stop_stream2uas([set_id [,
+                      sock_pvar]])
+
+              1.6.7. start_recording([set_id [, sock_pvar]]) -
+                      deprecated, rtpproxy_start_recording([set_id
+                      [, sock_pvar]])
 
         1.7. MI Commands
 
@@ -87,17 +102,15 @@ Bogdan-Andrei Iancu
    1.9. Set rtpp_socket_col parameter
    1.10. Set set_id parameter
    1.11. Set rtpp_notify_socket parameter
-   1.12. Set rtpp_sock_pvar parameter
-   1.13. fix_nated_contact usage
-   1.14. engage_rtp_proxy usage
-   1.15. rtpproxy_offer usage
-   1.16. rtpproxy_answer usage
-   1.17. unforce_rtp_proxy usage
-   1.18. rtpproxy_stream2xxx usage
-   1.19. start_recording usage
-   1.20. rtpproxy_enable usage
-   1.21. rtpproxy_show usage
-   1.22. rtpproxy_reload usage
+   1.12. rtpproxy_engage usage
+   1.13. rtpproxy_offer usage
+   1.14. rtpproxy_answer usage
+   1.15. rtpproxy_unforce usage
+   1.16. rtpproxy_stream2xxx usage
+   1.17. rtpproxy_start_recording usage
+   1.18. rtpproxy_enable usage
+   1.19. rtpproxy_show usage
+   1.20. rtpproxy_reload usage
 
 Chapter 1. Admin Guide
 
@@ -129,18 +142,16 @@ Chapter 1. Admin Guide
    rtpproxies (with a different weight value than 0) respond.
    Default weight is 1.
 
-   The selection of the set is done from script prior using
-   unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
-   functions - see the set_rtp_proxy_set() function.
+   Starting with OpenSIPS 1.11, the set_rtp_proxy_set() function
+   has been removed. The set is now specified for each function.
+   If absend, the default set 0 is used. Also, engage_rtp_proxy(),
+   unforce_rtp_proxy() and start_recording() functions have been
+   deprecated and replaced by rtpproxy_engage(),
+   rtpproxy_unforce() and rtpproxy_start_recording() respectively.
 
-   For backward compatibility reasons, a set with no id take by
-   default the id 0. Also if no set is explicitly set before
-   unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer() the
-   0 id set will be used.
-
-   IMPORTANT: if you use multiple sets, take care and use the same
+   IMPORTANT: if you use multiple sets, make sure you use the same
    set for both rtpproxy_offer()/rtpproxy_answer() and
-   unforce_rtpproxy()!!
+   rtpproxy_unforce()!!
 
 1.3. RTPProxy timeout notifications
 
@@ -171,7 +182,7 @@ Chapter 1. Admin Guide
    script. This is the socket where further notification will be
    received from rtpproxies. This socket must be a TCP or UNIX
    socket. Also, for all the calls that require notification, the
-   engage_rtp_proxy(), rtpproxy_offer() and rtpproxy_answer()
+   rtpproxy_engage(), rtpproxy_offer() and rtpproxy_answer()
    functions must be called with the “n” flag.
 
    Configure RTPProxy to use timeout notification by adding the
@@ -210,7 +221,7 @@ Chapter 1. Admin Guide
    The following modules must be loaded before this module:
      * a database module - only if you want to load use a database
        table from where to load the rtp proxies sets.
-     * dialog module - if using the engage_rtp_proxy functions or
+     * dialog module - if using the rtpproxy_engage functions or
        RTPProxy timeout notifications.
 
 1.4.2. External Libraries or Applications
@@ -381,47 +392,11 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 ...
 
 
-1.5.13. rtpp_sock_pvar (string)
-
-   Socket url for the rtpproxy instance used for setting up the
-   call.
-
-   Default value is “NULL (don't set pvar)”.
-
-   Example 1.12. Set rtpp_sock_pvar parameter
-...
-modparam("rtpproxy", "rtpp_sock_pvar", "$avp(rtp_sock)")
-
-#Load balancing rtpproxies
-modparam("rtpproxy", "rtpproxy_sock",
-        "udp:localhost:12221 udp:localhost:12222")
-
-engage_rtp_proxy("roc");
-xlog("Used rtpproxy $avp(rtp_sock) for callid $ci");
-...
-
-
 1.6. Exported Functions
 
-1.6.1.  set_rtp_proxy_set()
-
-   Sets the Id of the rtpproxy set to be used for the next
-   unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
-   command.
-
-   Paramter can also be a pseudo-variable that contain (as string
-   or integer) the ID of the rtpproxy set to be used.
-
-   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-   BRANCH_ROUTE.
-
-   Example 1.13. fix_nated_contact usage
-...
-set_rtp_proxy_set("2");
-rtpproxy_offer();
-...
-
-1.6.2.  engage_rtp_proxy([flags [, ip_address]])
+1.6.1.  engage_rtp_proxy([flags [, ip_address [, set_id [,
+sock_pvar]]]]) - deprecated, rtpproxy_engage([flags [, ip_address [,
+set_id [, sock_pvar]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. It uses the dialog module facilities to keep track when
@@ -433,7 +408,7 @@ rtpproxy_offer();
    configuration), so you might face an undefined behavior.
 
    Meaning of the parameters is as follows:
-     * flags - flags to turn on some features.
+     * flags(optional) - flags to turn on some features.
           + a - flags that UA from which message is received
             doesn't support symmetric RTP.
           + l - force “lookup”, that is, only rewrite SDP when
@@ -484,44 +459,54 @@ rtpproxy_offer();
             significantly reducing bandwith overhead for low
             bitrate codecs, for example with G.729 going from 10ms
             to 100ms saves two thirds of the network bandwith.
-     * ip_address - new SDP IP address.
-
-   Both parmeters do accept variables in any combination.
+     * ip_address(optional) - new SDP IP address.
+     * set_id(optional) - the set used for this call.
+     * sock_pvar(optional) - pvar used to store the RTPProxy
+       socket chosen for this call. Note that the variable will
+       only be populated in the initial request.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.14. engage_rtp_proxy usage
-                ...
-                if (is_method("INVITE") &&
-                has_totag()) {engage_rtp_proxy();};
-                ...
+   Example 1.12. rtpproxy_engage usage
+...
+if (is_method("INVITE") && has_totag()) {
+        if ($var(setid) != 0) {
+                rtpproxy_engage(,,"$var(setid)", "$var(proxy)");
+                xlog("SCRIPT: RTPProxy server used is $var(proxy)\n");
+        } else {
+                rtpproxy_engage();
+                xlog("SCRIPT: using default RTPProxy set\n");
+        }
+}
+...
 
-1.6.3.  rtpproxy_offer([flags [, ip_address]])
+1.6.2.  rtpproxy_offer([flags [, ip_address [, set_id [,
+sock_pvar]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on INVITE for the cases the SDPs are in
    INVITE and 200 OK and on 200 OK when SDPs are in 200 OK and
    ACK.
 
-   See engage_rtp_proxy() function description above for the
+   See rtpproxy_engage() function description above for the
    meaning of the parameters.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.15. rtpproxy_offer usage
+   Example 1.13. rtpproxy_offer usage
 route {
 ...
     if (is_method("INVITE")) {
-        if (has_sdp()) {
+        if (has_body("application/sdp")) {
             if (rtpproxy_offer())
                 t_on_reply("1");
         } else {
             t_on_reply("2");
         }
     }
-    if (is_method("ACK") && has_sdp())
+    if (is_method("ACK") && has_body("application/sdp"))
         rtpproxy_answer();
 ...
 }
@@ -529,7 +514,7 @@ route {
 onreply_route[1]
 {
 ...
-    if (has_sdp())
+    if (has_body("application/sdp"))
         rtpproxy_answer();
 ...
 }
@@ -537,41 +522,49 @@ onreply_route[1]
 onreply_route[2]
 {
 ...
-    if (has_sdp())
+    if (has_body("application/sdp"))
         rtpproxy_offer();
 ...
 }
 
-1.6.4.  rtpproxy_answer([flags [, ip_address]])
+1.6.3.  rtpproxy_answer([flags [, ip_address [, set_id [,
+sock_pvar]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on 200 OK for the cases the SDPs are in
    INVITE and 200 OK and on ACK when SDPs are in 200 OK and ACK.
 
-   See engage_rtp_proxy() function description above for the
+   See rtpproxy_engage() function description above for the
    meaning of the parameters.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.16. rtpproxy_answer usage
+   Example 1.14. rtpproxy_answer usage
 
    See rtpproxy_offer() function example above for example.
 
-1.6.5.  unforce_rtp_proxy()
+1.6.4.  unforce_rtp_proxy([set_id [, sock_pvar]]) - deprecated,
+rtpproxy_unforce([set_id [, sock_pvar]])
 
    Tears down the RTPProxy session for the current call.
+
+   Meaning of the parameters is as follows:
+     * set_id(optional) - the set used for this call.
+     * sock_pvar(optional) - pvar used to store the RTPProxy
+       socket chosen for this call.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.17. unforce_rtp_proxy usage
+   Example 1.15. rtpproxy_unforce usage
 ...
-unforce_rtp_proxy();
+rtpproxy_unforce();
 ...
 
-1.6.6.  rtpproxy_stream2uac(prompt_name, count),
-rtpproxy_stream2uas(prompt_name, count)
+1.6.5.  rtpproxy_stream2uac(prompt_name, count [, set_id [,
+sock_pvar]]), rtpproxy_stream2uas(prompt_name, count [, set_id [,
+sock_pvar]])
 
    Instruct the RTPproxy to stream prompt/announcement pre-encoded
    with the makeann command from the RTPproxy distribution. The
@@ -604,8 +597,11 @@ rtpproxy_stream2uas(prompt_name, count)
        value of -1 means that it will be streaming in loop
        indefinitely, until appropriate rtpproxy_stop_stream2xxx is
        issued.
+     * set_id(optional) - the set used for this call.
+     * sock_pvar(optional) - pvar used to store the RTPProxy
+       socket chosen for this call.
 
-   Example 1.18. rtpproxy_stream2xxx usage
+   Example 1.16. rtpproxy_stream2xxx usage
 ...
     if (is_method("INVITE")) {
         rtpproxy_offer();
@@ -618,25 +614,37 @@ rtpproxy_stream2uas(prompt_name, count)
     };
 ...
 
-1.6.7.  rtpproxy_stop_stream2uac(), rtpproxy_stop_stream2uas()
+1.6.6.  rtpproxy_stop_stream2uac([set_id [, sock_pvar]]),
+rtpproxy_stop_stream2uas([set_id [, sock_pvar]])
 
    Stop streaming of announcement/prompt/MOH started previously by
    the respective rtpproxy_stream2xxx. The uac/uas suffix selects
    whose announcement relatively to tha current transaction should
    be stopped - UAC or UAS.
 
+   Meaning of the parameters is as follows:
+     * set_id(optional) - the set used for this call.
+     * sock_pvar(optional) - pvar used to store the RTPProxy
+       socket chosen for this call.
+
    These functions can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
-1.6.8.  start_recording()
+1.6.7.  start_recording([set_id [, sock_pvar]]) - deprecated,
+rtpproxy_start_recording([set_id [, sock_pvar]])
 
    This command will send a signal to the RTP-Proxy to record the
    RTP stream on the RTP-Proxy.
 
+   Meaning of the parameters is as follows:
+     * set_id(optional) - the set used for this call.
+     * sock_pvar(optional) - pvar used to store the RTPProxy
+       socket chosen for this call.
+
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.19. start_recording usage
+   Example 1.17. rtpproxy_start_recording usage
 ...
-start_recording();
+rtpproxy_start_recording();
 ...
 
 1.7. MI Commands
@@ -649,14 +657,23 @@ start_recording();
    The first parameter is the rtp proxy url (exactly as defined in
    the config file).
 
-   The second parameter value must be a number in decimal.
+   The next parameter (optional) is the rtpproxy set ID (used for
+   better indentification of the rtpproxy instance to be enabled,
+   for example when a rtpproxy is used in multiple sets).
+
+   The last parameter must be a number in decimal representing the
+   new enabled/disabled state.
 
    NOTE: if a rtpproxy is defined multiple times (in the same or
-   diferente sete), all its instances will be enables/disabled.
+   diferente sete), all its instances will be enables/disabled IF
+   no set ID provided (as second param).
 
-   Example 1.20.  rtpproxy_enable usage
+   Example 1.18.  rtpproxy_enable usage
 ...
+## disable a RTPProxy by URL only
 $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
+## disable a RTPProxy by URL and set ID (3)
+$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 ...
 
 1.7.2. rtpproxy_show
@@ -666,7 +683,7 @@ $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
 
    No parameter.
 
-   Example 1.21.  rtpproxy_show usage
+   Example 1.19.  rtpproxy_show usage
 ...
 $ opensipsctl fifo rtpproxy_show
 ...
@@ -680,7 +697,7 @@ $ opensipsctl fifo rtpproxy_show
 
    No parameter.
 
-   Example 1.22.  rtpproxy_reload usage
+   Example 1.20.  rtpproxy_reload usage
 ...
 $ opensipsctl fifo rtpproxy_reload
 ...
@@ -701,7 +718,7 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happend with “rtpproxy_disable” parameter?
+       What happened with “rtpproxy_disable” parameter?
 
        It was removed as it became obsolete - now “rtpproxy_sock” can
        take empty value to disable the rtpproxy functionality.

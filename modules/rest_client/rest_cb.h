@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2013 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -37,6 +35,7 @@
 #define HTTP_HDR_CONTENT_TYPE    "Content-Type"
 #define CONTENT_TYPE_HDR_LEN     12
 #define MAX_CONTENT_TYPE_LEN     64
+#define MAX_HEADER_FIELD_LEN	 1024 /* arbitrary */
 
 size_t write_func(char *ptr, size_t size, size_t nmemb, void *userdata);
 size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata);

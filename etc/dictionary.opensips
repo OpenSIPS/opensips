@@ -20,6 +20,8 @@ ATTRIBUTE Sip-Rpid             213  string     # Proprietary, auth_radius
 ATTRIBUTE SIP-AVP              225  string     # Proprietary, avp_radius
 ATTRIBUTE Sip-Call-Duration    227  integer
 ATTRIBUTE Sip-Call-Setuptime   228  integer
+ATTRIBUTE Sip-Call-Created     229  integer
+ATTRIBUTE Sip-Call-MSDuration  230  integer
 
 ### Service-Type Values ###
 VALUE Service-Type       Group-Check      12   # Proprietary, group_radius

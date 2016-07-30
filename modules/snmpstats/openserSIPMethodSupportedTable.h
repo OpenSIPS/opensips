@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -19,17 +17,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
  * --------
  * 2006-11-23 initial version (jmagder)
- * 2007-02-16 Moved all OID registrations from the experimental branch to 
+ * 2007-02-16 Moved all OID registrations from the experimental branch to
  *            OpenSER's IANA assigned enterprise branch. (jmagder)
- * 
+ *
  * Originally Generated with Mib2c using mib2c.array-user.conf.
- * 
+ *
  * This file defines the prototypes used to define the
  * openserSIPMethodSupportedTable.  For full details, please see the
  * OPENSER-SIP-COMMON-MIB.
@@ -42,16 +40,16 @@
 extern "C" {
 #endif
 
-    
+
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/library/container.h>
 #include <net-snmp/agent/table_array.h>
 
 #include "../../config.h"
 
-/* 
+/*
  * This strucutre represents a single row in the SNMP table, and is mostly
- * auto-generated. 
+ * auto-generated.
  */
 typedef struct openserSIPMethodSupportedTable_context_s {
 
@@ -62,7 +60,7 @@ typedef struct openserSIPMethodSupportedTable_context_s {
 
 	/** SnmpAdminString = ASN_OCTET_STR */
 	unsigned char *openserSIPMethodName;
-	
+
 	long openserSIPMethodName_len;
 
 	void * data;
@@ -70,7 +68,7 @@ typedef struct openserSIPMethodSupportedTable_context_s {
 } openserSIPMethodSupportedTable_context;
 
 
-/* Initializes the openserSIPMethodSupportedTable, and populates the tables 
+/* Initializes the openserSIPMethodSupportedTable, and populates the tables
  * contents */
 void init_openserSIPMethodSupportedTable(void);
 
@@ -78,18 +76,18 @@ void init_openserSIPMethodSupportedTable(void);
 void initialize_table_openserSIPMethodSupportedTable(void);
 
 
-/* 
+/*
  * This routine is called to process get requests for elements of the table.
  *
- * The function is pretty much left as is from the auto-generated code. 
+ * The function is pretty much left as is from the auto-generated code.
  */
-int openserSIPMethodSupportedTable_get_value(netsnmp_request_info *, 
+int openserSIPMethodSupportedTable_get_value(netsnmp_request_info *,
 		netsnmp_index *, netsnmp_table_request_info *);
 
-const openserSIPMethodSupportedTable_context * 
+const openserSIPMethodSupportedTable_context *
 	openserSIPMethodSupportedTable_get_by_idx(netsnmp_index *);
 
-const openserSIPMethodSupportedTable_context * 
+const openserSIPMethodSupportedTable_context *
 	openserSIPMethodSupportedTable_get_by_idx_rs(netsnmp_index *,
 			int row_status);
 
@@ -100,7 +98,7 @@ extern oid    openserSIPMethodSupportedTable_oid[];
 extern size_t openserSIPMethodSupportedTable_oid_len;
 
 #define openserSIPMethodSupportedTable_TABLE_OID OPENSER_OID,3,1,1,1,1,7
-    
+
 /*
  * column number definitions for table openserSIPMethodSupportedTable
  */

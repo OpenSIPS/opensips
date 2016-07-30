@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * rls module - resource list server
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -61,7 +59,7 @@ static str pu_404_rpl     = str_init("Not Found");
 #define SUBS_EXTRA_HDRS  "Supported: eventlist\r\nAccept: application/pidf+xml, application/rlmi+xml, application/watcherinfo+xml, multipart/related, application/xcap-diff+xml\r\n"
 #define SUBS_EXTRA_HDRS_LEN  sizeof(SUBS_EXTRA_HDRS) -1
 
-subs_t* constr_new_subs(struct sip_msg* msg, struct to_body *pto, 
+subs_t* constr_new_subs(struct sip_msg* msg, struct to_body *pto,
 		pres_ev_t* event);
 
 int update_rlsubs( subs_t* subs,unsigned int hash_code,
@@ -112,7 +110,7 @@ xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 				LM_ERR("failed to construct uri from user and domain\n");
 				return NULL;
 			}
-			if(uri_str.len== service_uri->len && 
+			if(uri_str.len== service_uri->len &&
 					strncmp(uri_str.s, service_uri->s, uri_str.len) == 0)
 			{
 				pkg_free(uri_str.s);
@@ -283,7 +281,7 @@ int reply_421(struct sip_msg* msg)
 {
 	str hdr_append;
 	char buffer[256];
-	
+
 	hdr_append.s = buffer;
 	hdr_append.s[0]='\0';
 	hdr_append.len = sprintf(hdr_append.s, "Require: eventlist\r\n");
@@ -371,14 +369,14 @@ int reply_200(struct sip_msg* msg, str* local_contact, int expires, str* rtag)
 	{
 		LM_ERR("failed to send reply\n");
 		goto error;
-	}	
+	}
 	pkg_free(hdr_append);
 	return 0;
 
 error:
 	pkg_free(hdr_append);
 	return -1;
-}	
+}
 
 int reply_489(struct sip_msg * msg)
 {
@@ -399,7 +397,7 @@ int reply_489(struct sip_msg * msg)
 	{
 		LM_ERR("while getting ev_list\n");
 		return -1;
-	}	
+	}
 	memcpy(hdr_append.s+ hdr_append.len, ev_list->s, ev_list->len);
 	hdr_append.len+= ev_list->len;
 	pkg_free(ev_list->s);
@@ -407,7 +405,7 @@ int reply_489(struct sip_msg * msg)
 	memcpy(hdr_append.s+ hdr_append.len, CRLF, CRLF_LEN);
 	hdr_append.len+=  CRLF_LEN;
 	hdr_append.s[hdr_append.len]= '\0';
-		
+
 	if (add_lump_rpl( msg, hdr_append.s, hdr_append.len, LUMP_RPL_HDR)==0 )
 	{
 		LM_ERR("unable to add lump_rl\n");
@@ -431,7 +429,7 @@ int reply_489(struct sip_msg * msg)
 
 int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 {
-	struct to_body *pto, *pfrom = NULL; 
+	struct to_body *pto, *pfrom = NULL;
 	subs_t subs;
 	pres_ev_t* event= NULL;
 	str* contact= NULL;
@@ -463,7 +461,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		LM_DBG("no supported header found\n");
 		return to_presence_code;
 	}
-	
+
 	if(parse_supported(msg) < 0)
 	{
 		LM_ERR("failed to parse supported headers\n");
@@ -506,7 +504,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		goto bad_event;
 	}
 	subs.event= event;
-	
+
 	/* extract the id if any*/
 	ev_param= parsed_event->params;
 	while(ev_param)
@@ -550,7 +548,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 			goto error;
 		}
 
-		/*verify if Request URI represents a list by asking xcap server*/	
+		/*verify if Request URI represents a list by asking xcap server*/
 		if(uandd_to_uri(msg->parsed_uri.user, msg->parsed_uri.host,
 					&subs.pres_uri)< 0)
 		{
@@ -559,7 +557,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 			reply_str = pu_500_rpl;
 			goto error;
 		}
-		
+
 		if( get_resource_list(&subs.pres_uri, fu.user, fu.host,
 					&service_node, &doc) < 0)
 		{
@@ -568,7 +566,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 			reply_str = pu_500_rpl;
 			goto error;
 		}
-		
+
 		if(doc== NULL|| service_node==NULL)
 		{
 			LM_DBG("list not found - search for uri = %.*s\n",subs.pres_uri.len,
@@ -675,12 +673,12 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	}
 
 	if(contact)
-	{	
+	{
 		if(contact->s)
 			pkg_free(contact->s);
 		pkg_free(contact);
 	}
-		
+
 	pkg_free(subs.pres_uri.s);
 	if(subs.record_route.s)
 		pkg_free(subs.record_route.s);
@@ -703,16 +701,16 @@ error:
 
 error_free:
 	if(contact)
-	{	
+	{
 		if(contact->s)
 			pkg_free(contact->s);
 		pkg_free(contact);
 	}
 	if(subs.pres_uri.s)
 		pkg_free(subs.pres_uri.s);
-		
+
 	if(subs.record_route.s)
-			pkg_free(subs.record_route.s);	
+			pkg_free(subs.record_route.s);
 	if(doc)
 		xmlFreeDoc(doc);
 	return -1;
@@ -741,10 +739,10 @@ int update_rlsubs( subs_t* subs, unsigned int hash_code,
 	}
 
 	s->expires= subs->expires+ (int)time(NULL);
-	
+
 	if(s->db_flag == NO_UPDATEDB_FLAG)
 		s->db_flag= UPDATEDB_FLAG;
-	
+
 	if(	s->remote_cseq>= subs->remote_cseq)
 	{
 		lock_release(&rls_table[hash_code].lock);
@@ -798,10 +796,10 @@ int update_rlsubs( subs_t* subs, unsigned int hash_code,
 		}
 		ps->next= s->next;
 		shm_free(s);
-	
+
 	/* delete from rls_presentity table also */
 	}
-	
+
 	lock_release(&rls_table[hash_code].lock);
 
 	return 0;
@@ -866,7 +864,7 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	list_entry_t *rls_subs_list = NULL;
 	void* params[2] = {&s, &rls_contact_list};
 
-	/* if is initial send an initial Subscribe 
+	/* if is initial send an initial Subscribe
 	 * else search in hash table for a previous subscription */
 
 	if(CONSTR_RLSUBS_DID(subs, &did_str)< 0)

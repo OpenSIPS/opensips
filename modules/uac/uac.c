@@ -1,8 +1,6 @@
 /*
- * $Id$
- *
  * Copyright (C) 2005-2009 Voice Sistem SRL
- *
+*
  * This file is part of opensips, a free SIP server.
  *
  * UAC OpenSIPS-module is free software; you can redistribute it and/or
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -50,6 +48,7 @@
 #include "../dialog/dlg_load.h"
 
 #include "replace.h"
+#include "auth.h"
 
 
 
@@ -57,15 +56,13 @@
 
 /* local variable used for init */
 static char* restore_mode_str = NULL;
-static char* auth_username_avp = NULL;
-static char* auth_realm_avp = NULL;
-static char* auth_password_avp = NULL;
 
 /* global param variables */
 str rr_from_param = str_init("vsf");
 str rr_from_param_new = str_init("739823");
 str store_from_bavp = str_init("$bavp(739825)");
 str rr_to_param = str_init("vst");
+str rr_uac_cseq_param = str_init("aci");
 str rr_to_param_new = str_init("739824");
 str store_to_bavp = str_init("$bavp(739826)");
 pv_spec_t from_bavp_spec;
@@ -76,9 +73,6 @@ int restore_mode = UAC_AUTO_RESTORE;
 struct tm_binds uac_tmb;
 struct rr_binds uac_rrb;
 uac_auth_api_t uac_auth_api;
-pv_spec_t auth_username_spec;
-pv_spec_t auth_realm_spec;
-pv_spec_t auth_password_spec;
 int force_dialog = 0;
 struct dlg_binds dlg_api;
 
@@ -115,7 +109,7 @@ static cmd_export_t cmds[]={
 	{"uac_restore_to",  (cmd_function)w_restore_to,   0,
 			0, 0,
 			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
-	{"uac_auth",          (cmd_function)w_uac_auth,       0,
+	{"uac_auth",        (cmd_function)w_uac_auth,     0,
 			0, 0,
 			FAILURE_ROUTE },
 	{0,0,0,0,0,0}
@@ -129,20 +123,44 @@ static param_export_t params[] = {
 	{"rr_to_store_param",   STR_PARAM,                &rr_to_param.s         },
 	{"restore_mode",        STR_PARAM,                &restore_mode_str      },
 	{"restore_passwd",      STR_PARAM,                &uac_passwd.s          },
-	{"auth_username_avp",   STR_PARAM,                &auth_username_avp     },
-	{"auth_realm_avp",      STR_PARAM,                &auth_realm_avp        },
-	{"auth_password_avp",   STR_PARAM,                &auth_password_avp     },
 	{"force_dialog",        INT_PARAM,                &force_dialog          },
 	{0, 0, 0}
 };
 
+static module_dependency_t *get_deps_restore_mode(param_export_t *param)
+{
+	char *mode = *(char **)param->param_pointer;
 
+	if (!mode || strlen(mode) == 0)
+		return NULL;
+
+	if (strcmp(mode, "none") != 0)
+		return alloc_module_dep(MOD_TYPE_DEFAULT, "rr", DEP_ABORT);
+
+	return NULL;
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm",       DEP_ABORT  },
+		{ MOD_TYPE_DEFAULT, "dialog",   DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "uac_auth", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "restore_mode", get_deps_restore_mode },
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports= {
 	"uac",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* exported functions */
+	0,          /* exported async functions */
 	params,     /* param exports */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
@@ -155,17 +173,6 @@ struct module_exports exports= {
 };
 
 
-inline static int parse_auth_avp( char *avp_spec, pv_spec_t *avp, char *txt)
-{
-	str s;
-	s.s = avp_spec; s.len = strlen(s.s);
-	if (pv_parse_spec(&s, avp)==NULL) {
-		LM_ERR("malformed or non AVP %s AVP definition\n",txt);
-		return -1;
-	}
-	return 0;
-}
-
 
 inline static int parse_store_bavp(str *s, pv_spec_t *bavp)
 {
@@ -175,18 +182,35 @@ inline static int parse_store_bavp(str *s, pv_spec_t *bavp)
 		return -1;
 	}
 	 /* check if there is a bavp type */
-	if (bavp->type != 903 + PVT_EXTRA) {
+	if (bavp->type != (pv_type_t)(903 + PVT_EXTRA)) {
 		LM_ERR("store parameter must be an bavp\n");
 		return -1;
 	}
 	return 0;
-	
+
 }
 
 
 static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
+	int rr_api_loaded=0;
+	int dlg_api_loaded=0;
+
+	if ( is_script_func_used("uac_auth", -1) ) {
+		/* load the UAC_AUTH API as uac_auth() is invoked from script */
+		if(load_uac_auth_api(&uac_auth_api)<0){
+			LM_ERR("can't load UAC_AUTH API, needed for uac_auth()\n");
+			goto error;
+		}
+	}
+
+	/* load the TM API - FIXME it should be loaded only
+	 * if NO_RESTORE and AUTH */
+	if (load_tm_api(&uac_tmb)!=0) {
+		LM_ERR("can't load TM API\n");
+		goto error;
+	}
 
 	if (restore_mode_str && *restore_mode_str) {
 		if (strcasecmp(restore_mode_str,"none")==0) {
@@ -202,90 +226,97 @@ static int mod_init(void)
 		}
 	}
 
-	rr_from_param.len = strlen(rr_from_param.s);
-	rr_to_param.len = strlen(rr_to_param.s);
-	if ( (rr_from_param.len==0 || rr_to_param.len==0) &&
-	restore_mode!=UAC_NO_RESTORE)
-	{
-		LM_ERR("rr_store_param cannot be empty if FROM is restoreable\n");
-		goto error;
-	}
+	if ( is_script_func_used("uac_replace_from", -1) ||
+	is_script_func_used("uac_replace_to", -1) ) {
 
-	uac_passwd.len = strlen(uac_passwd.s);
+		/* replace TO/FROM stuff is used, get prepared */
 
-	/* parse the auth AVP spesc, if any */
-	if ( auth_username_avp || auth_password_avp || auth_realm_avp) {
-		if (!auth_username_avp || !auth_password_avp || !auth_realm_avp) {
-			LM_ERR("partial definition of auth AVP!");
-			goto error;
-		}
-		if ( parse_auth_avp(auth_realm_avp, &auth_realm_spec, "realm")<0
-		|| parse_auth_avp(auth_username_avp, &auth_username_spec, "username")<0
-		|| parse_auth_avp(auth_password_avp, &auth_password_spec, "password")<0
-		) {
-			goto error;
-		}
-	} else {
-		memset( &auth_realm_spec, 0, sizeof(pv_spec_t));
-		memset( &auth_password_spec, 0, sizeof(pv_spec_t));
-		memset( &auth_username_spec, 0, sizeof(pv_spec_t));
-	}
-
-	/* load the TM API - FIXME it should be loaded only
-	 * if NO_RESTORE and AUTH */
-	if (load_tm_api(&uac_tmb)!=0) {
-		LM_ERR("can't load TM API\n");
-		goto error;
-	}
-
-	/* load the UAC_AUTH API - FIXME it should be loaded only
-	 * if uac_auth() is invoked from script */
-	if(load_uac_auth_api(&uac_auth_api)<0){
-		LM_ERR("can't load UAC_AUTH API\n");
-		goto error;
-	}
-
-	if (restore_mode!=UAC_NO_RESTORE) {
-		/* load the RR API */
-		if (load_rr_api(&uac_rrb)!=0) {
-			LM_ERR("can't load RR API\n");
+		rr_from_param.len = strlen(rr_from_param.s);
+		rr_to_param.len = strlen(rr_to_param.s);
+		if ( (rr_from_param.len==0 || rr_to_param.len==0) &&
+		restore_mode!=UAC_NO_RESTORE) {
+			LM_ERR("rr_store_param cannot be empty if FROM is restoreable\n");
 			goto error;
 		}
 
-		if (restore_mode==UAC_AUTO_RESTORE) {
-			/* we need the append_fromtag on in RR */
-			if (!force_dialog && !uac_rrb.append_fromtag) {
-				LM_ERR("'append_fromtag' RR param is not enabled!"
-					" - required by AUTO restore mode\n");
+		uac_passwd.len = strlen(uac_passwd.s);
+
+		if (restore_mode!=UAC_NO_RESTORE) {
+			/* load the RR API */
+			if (load_rr_api(&uac_rrb)!=0) {
+				LM_ERR("can't load RR API\n");
 				goto error;
 			}
+			rr_api_loaded=1;
 
-			/* trying to load dialog module */
-			memset(&dlg_api, 0, sizeof(struct dlg_binds));
+			if (restore_mode==UAC_AUTO_RESTORE) {
+				/* we need the append_fromtag on in RR */
+				if (!force_dialog && !uac_rrb.append_fromtag) {
+					LM_ERR("'append_fromtag' RR param is not enabled!"
+						" - required by AUTO restore mode\n");
+					goto error;
+				}
+
+				/* trying to load dialog module */
+				memset(&dlg_api, 0, sizeof(struct dlg_binds));
+				if (load_dlg_api(&dlg_api)!=0) {
+					if (force_dialog) {
+						LM_ERR("cannot force dialog. dialog module not loaded\n");
+						goto error;
+					}
+					LM_DBG("failed to find dialog API - is dialog module loaded?\n");
+				} else {
+					dlg_api_loaded=1;
+
+					if ( (parse_store_bavp(&store_to_bavp, &to_bavp_spec) ||
+					parse_store_bavp(&store_from_bavp, &from_bavp_spec))) {
+						LM_ERR("cannot set correct store parameters\n");
+						goto error;
+					}
+					/* install calback to catch all loaded dialogs */
+					if ( dlg_api.register_dlgcb( NULL, DLGCB_LOADED,
+					dlg_restore_callback, NULL, NULL) != 0 ) {
+						LM_ERR("failed to install dialog restore callback\n");
+						goto error;
+					}
+				}
+
+				/* get all requests doing loose route */
+				if (uac_rrb.register_rrcb( rr_checker, 0, 2)!=0) {
+					LM_ERR("failed to install RR callback\n");
+					goto error;
+				}
+			}
+		}
+
+		/* init from replacer */
+		init_from_replacer();
+	}
+
+	if (is_script_func_used("uac_auth", -1)) {
+		if (!rr_api_loaded) {
+			if (load_rr_api(&uac_rrb)!=0) {
+				LM_ERR("can't load RR API\n");
+				goto error;
+			}
+		}
+		if (!dlg_api_loaded) {
 			if (load_dlg_api(&dlg_api)!=0) {
-				if (force_dialog) {
-					LM_ERR("cannot force dialog. dialog module not loaded\n");
-					goto error;
-				}
-				LM_DBG("failed to find dialog API - is dialog module loaded?\n");
-			} else {
-				if ( (parse_store_bavp(&store_to_bavp, &to_bavp_spec) ||
-					 parse_store_bavp(&store_from_bavp, &from_bavp_spec))) {
-					LM_ERR("cannot set correct store parameters\n");
-					goto error;
-				}
-			}
+				LM_ERR("Can't load dlg API \n");
+			}	
+		}
 
-			/* get all requests doing loose route */
-			if (uac_rrb.register_rrcb( rr_checker, 0, 2)!=0) {
-				LM_ERR("failed to install RR callback\n");
-				goto error;
-			}
+		if (!uac_rrb.append_fromtag) {
+			LM_ERR("'append_fromtag' RR param is not enabled!"
+			" - required by uac_auth() restore mode\n");
+			goto error;
+		}
+
+		if (uac_rrb.register_rrcb( rr_uac_auth_checker, 0, 2)!=0) {
+			LM_ERR("failed to install RR callback\n");
+			goto error;
 		}
 	}
-
-	/* init from replacer */
-	init_from_replacer();
 
 	return 0;
 error:
@@ -388,7 +419,7 @@ static int w_replace_from(struct sip_msg* msg, char* p1, char* p2)
 	str uri_s;
 	str dsp_s;
 	str *uri;
-	str *dsp;
+	str *dsp = NULL;
 
 	if (p2==NULL) {
 		p2 = p1;

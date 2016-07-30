@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2005-2009 Voice Sistem S.R.L.
  *
@@ -15,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -25,11 +24,11 @@
  *  2003-07-03  default port value set according to proto (andrei)
  *  2007-01-25  support for DNS failover added (bogdan)
  *  2008-07-25  support for SRV load-balancing added (bogdan)
- */ 
+ */
 
 
 /*!
- * \file 
+ * \file
  * \brief DNS resolver for OpenSIPS
  */
 
@@ -43,6 +42,7 @@
 
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
+#include "net/trans.h"
 #include "resolve.h"
 #include "dprint.h"
 #include "ut.h"
@@ -67,6 +67,7 @@ struct dns_val {
 #define local_free   pkg_free
 
 int dns_try_ipv6=0; /*!< default off */
+int dns_try_naptr=1; /*!< default on */
 /* declared in globals.h */
 int dns_retr_time=-1;
 int dns_retr_no=-1;
@@ -122,14 +123,14 @@ typedef union {
 		(s) = ntohl (*t_cp); \
 	} while (0)
 
-inline unsigned int dns_get16(const u_char *src) {
+static inline unsigned int dns_get16(const u_char *src) {
 	unsigned int dst;
 
 	DNS_GET16(dst, src);
 	return dst;
 }
 
-inline unsigned int dns_get32(const u_char *src) {
+static inline unsigned int dns_get32(const u_char *src) {
 	unsigned int dst;
 
 	DNS_GET32(dst, src);
@@ -244,7 +245,7 @@ int get_dns_answer(union dns_query *answer,int anslen,char *qname,int qtype,int 
 				had_error++;
 				continue;
 			}
-			
+
 			strcpy(bp, tbuf);
 			global_he.h_name = bp;
 			bp += n;
@@ -408,7 +409,7 @@ struct hostent* own_gethostbyname2(char *name,int af)
 		default:
 			LM_ERR("Only A and AAAA queries\n");
 			return NULL;
-	}	
+	}
 
 	cached_he = (struct hostent *)dnscache_fetch_func(name,af==AF_INET?T_A:T_AAAA,0);
 	if (cached_he == NULL) {
@@ -430,7 +431,7 @@ query:
 	if (size < 0) {
 		LM_DBG("Domain name not found\n");
 		if (dnscache_put_func(name,af==AF_INET?T_A:T_AAAA,NULL,0,1,0) < 0)
-			LM_ERR("Failed to store %s - %d in cache\n",name,af);	
+			LM_ERR("Failed to store %s - %d in cache\n",name,af);
 		return NULL;
 	}
 
@@ -438,66 +439,66 @@ query:
 		LM_ERR("Failed to get dns answer\n");
 		return NULL;
 	}
-	
+
 	if (dnscache_put_func(name,af==AF_INET?T_A:T_AAAA,&global_he,-1,0,min_ttl) < 0)
-		LM_ERR("Failed to store %s - %d in cache\n",name,af);	
+		LM_ERR("Failed to store %s - %d in cache\n",name,af);
 	return &global_he;
 }
 
 inline struct hostent* resolvehost(char* name, int no_ip_test)
 {
-	static struct hostent* he=0;
-#ifdef HAVE_GETIPNODEBYNAME 
-	int err;
-	static struct hostent* he2=0;
+        static struct hostent* he=0;
+#ifdef HAVE_GETIPNODEBYNAME
+        int err;
+        static struct hostent* he2=0;
 #endif
-	struct ip_addr* ip;
-	str s;
+        struct ip_addr* ip;
+        str s;
 
-	if (!no_ip_test) {
-		s.s = (char*)name;
-		s.len = strlen(name);
+        if (!no_ip_test) {
+                s.s = (char*)name;
+                s.len = strlen(name);
 
-		/* check if it's an ip address */
-		if ( ((ip=str2ip(&s))!=0)
-#ifdef USE_IPV6
-			|| ((ip=str2ip6(&s))!=0)
-#endif
-		){
-			/* we are lucky, this is an ip address */
-			return ip_addr2he(&s, ip);
-		}
-	}
+                /* check if it's an ip address */
+                if ( ((ip=str2ip(&s))!=0)
+                        || ((ip=str2ip6(&s))!=0)
+                ){
+                        /* we are lucky, this is an ip address */
+                        return ip_addr2he(&s, ip);
+                }
+        }
 
-	if (dnscache_fetch_func != NULL) {
-		he = own_gethostbyname2(name,AF_INET);
-	}
-	else {
-		he=gethostbyname(name);
-	}
-#ifdef USE_IPV6
-	if(he==0 && dns_try_ipv6){
-		/*try ipv6*/
-	#ifdef HAVE_GETHOSTBYNAME2
-		if (dnscache_fetch_func != NULL) {
-			he = own_gethostbyname2(name,AF_INET6);
-		}
-		else {
-			he=gethostbyname2(name, AF_INET6);
-		}
-		
-	#elif defined HAVE_GETIPNODEBYNAME
-		/* on solaris 8 getipnodebyname has a memory leak,
-		 * after some time calls to it will fail with err=3
-		 * solution: patch your solaris 8 installation */
-		if (he2) freehostent(he2);
-		he=he2=getipnodebyname(name, AF_INET6, 0, &err);
-	#else
-		#error neither gethostbyname2 or getipnodebyname present
-	#endif
-	}
-#endif
-	return he;
+        if(dns_try_ipv6){
+                /*try ipv6*/
+        #ifdef HAVE_GETHOSTBYNAME2
+                if (dnscache_fetch_func != NULL) {
+                        he = own_gethostbyname2(name,AF_INET6);
+                }
+                else {
+                        he=gethostbyname2(name, AF_INET6);
+                }
+
+        #elif defined HAVE_GETIPNODEBYNAME
+                /* on solaris 8 getipnodebyname has a memory leak,
+                 * after some time calls to it will fail with err=3
+                 * solution: patch your solaris 8 installation */
+                if (he2) freehostent(he2);
+                he=he2=getipnodebyname(name, AF_INET6, 0, &err);
+        #else
+                #error neither gethostbyname2 or getipnodebyname present
+        #endif
+                if (he != 0)
+                        /* return the inet6 result if exists */
+                        return he;
+        }
+
+        if (dnscache_fetch_func != NULL) {
+                he = own_gethostbyname2(name,AF_INET);
+        }
+        else {
+                he=gethostbyname(name);
+        }
+        return he;
 }
 
 struct hostent * own_gethostbyaddr(void *addr, socklen_t len, int af)
@@ -506,6 +507,7 @@ struct hostent * own_gethostbyaddr(void *addr, socklen_t len, int af)
 	static const u_char mapped[] = { 0,0, 0,0, 0,0, 0,0, 0,0, 0xff,0xff };
 	static const u_char tunnelled[] = { 0,0, 0,0, 0,0, 0,0, 0,0, 0,0 };
 	int n;
+	int ret;
 	static union dns_query ptr_buff;
 	socklen_t size;
 	char qbuf[DNS_MAX_NAME+1];
@@ -575,38 +577,38 @@ query:
 	global_he.h_addrtype=af;
 	global_he.h_length=len;
 
-	size=res_search(qbuf,C_IN,T_PTR,ptr_buff.buff,sizeof(ptr_buff.buff));
-	if (size < 0) {
+	ret=res_search(qbuf,C_IN,T_PTR,ptr_buff.buff,sizeof(ptr_buff.buff));
+	if (ret < 0) {
 		LM_DBG("ptr not found\n");
 		if (dnscache_put_func(addr,T_PTR,NULL,len,1,0) < 0)
-			LM_ERR("Failed to store PTR in cache\n");	
+			LM_ERR("Failed to store PTR in cache\n");
 		return NULL;
 	}
 
-	if (get_dns_answer(&ptr_buff,size,qbuf,T_PTR,&min_ttl) < 0) {
+	if (get_dns_answer(&ptr_buff,ret,qbuf,T_PTR,&min_ttl) < 0) {
 		LM_ERR("Failed to get dns answer\n");
 		return NULL;
-	}	
-		
+	}
+
 	if (dnscache_put_func(addr,T_PTR,&global_he,len,0,min_ttl) < 0)
-		LM_ERR("Failed to store PTR in cache\n");	
+		LM_ERR("Failed to store PTR in cache\n");
 	return &global_he;
 }
 
 
-inline struct hostent* rev_resolvehost(struct ip_addr *ip)
+struct hostent* rev_resolvehost(struct ip_addr *ip)
 {
 	if (dnscache_fetch_func != NULL) {
 		return own_gethostbyaddr((char*)(ip)->u.addr, (ip)->len, (ip)->af);
 	} else
 		return gethostbyaddr((char*)(ip)->u.addr, (ip)->len, (ip)->af);
-} 
+}
 
 /*! \brief checks if ip is in host(name) and ?host(ip)=name?
  * ip must be in network byte order!
  *  resolver = DO_DNS | DO_REV_DNS; if 0 no dns check is made
  * \return 0 if equal */
-int check_ip_address(struct ip_addr* ip, str *name, 
+int check_ip_address(struct ip_addr* ip, str *name,
 				unsigned short port, unsigned short proto, int resolver)
 {
 	struct hostent* he;
@@ -619,7 +621,6 @@ int check_ip_address(struct ip_addr* ip, str *name,
 		LM_DBG("params %s, %.*s, %d\n", s, name->len, name->s, resolver);
 		len=strlen(s);
 
-	#ifdef USE_IPV6
 		/* check if name->s is an ipv6 address or an ipv6 address ref. */
 		if ((ip->af==AF_INET6) &&
 				(	((len==name->len)&&(strncasecmp(name->s, s, name->len)==0))
@@ -631,9 +632,8 @@ int check_ip_address(struct ip_addr* ip, str *name,
 		   )
 			return 0;
 		else
-	#endif
 
-			if (strncmp(name->s, s, name->len)==0) 
+			if (strncmp(name->s, s, name->len)==0)
 				return 0;
 	}else{
 		LM_CRIT("could not convert ip address\n");
@@ -751,7 +751,7 @@ unsigned char* dns_skipname(unsigned char* p, unsigned char* end)
  *   \param msg   - pointer to the dns message
  *   \param end   - pointer to the end of the message
  *   \param rdata - pointer  to the rdata part of the srv answer
- *   \return 0 on error, or a dyn. alloc'ed srv_rdata structure 
+ *   \return 0 on error, or a dyn. alloc'ed srv_rdata structure
  *
  * SRV rdata format:
  *            111111
@@ -773,7 +773,7 @@ struct srv_rdata* dns_srv_parser( unsigned char* msg, unsigned char* end,
 {
 	struct srv_rdata* srv;
 	int len;
-	
+
 	srv=0;
 	if ((rdata+6)>=end) goto error;
 	srv=(struct srv_rdata*)local_malloc(sizeof(struct srv_rdata));
@@ -781,7 +781,7 @@ struct srv_rdata* dns_srv_parser( unsigned char* msg, unsigned char* end,
 		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
-	
+
 	memcpy((void*)&srv->priority, rdata, 2);
 	memcpy((void*)&srv->weight,   rdata+2, 2);
 	memcpy((void*)&srv->port,     rdata+4, 2);
@@ -804,7 +804,7 @@ error:
  *   \param msg   - pointer to the dns message
  *   \param end   - pointer to the end of the message
  *   \param rdata - pointer  to the rdata part of the naptr answer
- *   \return  0 on error, or a dyn. alloc'ed naptr_rdata structure 
+ *   \return  0 on error, or a dyn. alloc'ed naptr_rdata structure
  *
  * NAPTR rdata format:
  *            111111
@@ -831,7 +831,7 @@ struct naptr_rdata* dns_naptr_parser( unsigned char* msg, unsigned char* end,
 								  unsigned char* rdata)
 {
 	struct naptr_rdata* naptr;
-	
+
 	naptr = 0;
 	if ((rdata + 7) >= end)
 		goto error;
@@ -840,7 +840,7 @@ struct naptr_rdata* dns_naptr_parser( unsigned char* msg, unsigned char* end,
 		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
-	
+
 	memcpy((void*)&naptr->order, rdata, 2);
 	naptr->order=ntohs(naptr->order);
 	memcpy((void*)&naptr->pref, rdata + 2, 2);
@@ -877,7 +877,7 @@ struct cname_rdata* dns_cname_parser( unsigned char* msg, unsigned char* end,
 {
 	struct cname_rdata* cname;
 	int len;
-	
+
 	cname=0;
 	cname=(struct cname_rdata*)local_malloc(sizeof(struct cname_rdata));
 	if(cname==0){
@@ -900,7 +900,7 @@ error:
 struct a_rdata* dns_a_parser(unsigned char* rdata, unsigned char* end)
 {
 	struct a_rdata* a;
-	
+
 	if (rdata+4>=end) goto error;
 	a=(struct a_rdata*)local_malloc(sizeof(struct a_rdata));
 	if (a==0){
@@ -916,12 +916,12 @@ error:
 
 
 /*! \brief Parses an AAAA (ipv6) record rdata into an aaaa_rdata structure
- * \return 0 on error or a dyn. alloc'ed aaaa_rdata struct 
+ * \return 0 on error or a dyn. alloc'ed aaaa_rdata struct
  */
 struct aaaa_rdata* dns_aaaa_parser(unsigned char* rdata, unsigned char* end)
 {
 	struct aaaa_rdata* aaaa;
-	
+
 	if (rdata+16>=end) goto error;
 	aaaa=(struct aaaa_rdata*)local_malloc(sizeof(struct aaaa_rdata));
 	if (aaaa==0){
@@ -946,7 +946,7 @@ struct txt_rdata* dns_txt_parser( unsigned char* msg, unsigned char* end,
 {
 	struct txt_rdata* txt;
 	unsigned int len;
-	
+
 	txt=0;
 	txt=(struct txt_rdata*)local_malloc(sizeof(struct txt_rdata));
 	if(txt==0){
@@ -970,7 +970,7 @@ error:
 }
 
 
-/*! \brief parses a EBL record into a ebl_rdata structure 
+/*! \brief parses a EBL record into a ebl_rdata structure
  *
  * EBL Record
  *
@@ -988,7 +988,7 @@ struct ebl_rdata* dns_ebl_parser( unsigned char* msg, unsigned char* end,
 {
 	struct ebl_rdata* ebl;
 	int len;
-	
+
 	ebl=0;
 	ebl=(struct ebl_rdata*)local_malloc(sizeof(struct ebl_rdata));
 	if(ebl==0){
@@ -1081,16 +1081,16 @@ struct rdata* get_record(char* name, int type)
 		head = (struct rdata *)dnscache_fetch_func(name,type,0);
 		if (head == NULL) {
 			LM_DBG("not found in cache or other internal error\n");
-			goto query;			
+			goto query;
 		} else if (head == (void *)-1) {
 			LM_DBG("previously failed query\n");
-			goto not_found;	
+			goto not_found;
 		} else {
 			LM_DBG("cache hit for %s - %d\n",name,type);
 			return head;
 		}
 	}
-	
+
 query:
 	start_expire_timer(start,execdnsthreshold);
 	size=res_search(name, C_IN, type, buff.buff, sizeof(buff));
@@ -1099,14 +1099,14 @@ query:
 		LM_DBG("lookup(%s, %d) failed\n", name, type);
 		if (dnscache_put_func != NULL) {
 			if (dnscache_put_func(name,type,NULL,0,1,0) < 0)
-				LM_ERR("Failed to store %s - %d in cache\n",name,type);	
+				LM_ERR("Failed to store %s - %d in cache\n",name,type);
 		}
 		goto not_found;
 	}
 	else if ((unsigned int)size > sizeof(buff)) size=sizeof(buff);
 	head=rd=0;
 	last=crt=&head;
-	
+
 	p=buff.buff+DNS_HDR_SIZE;
 	end=buff.buff+size;
 	if (p>=end) goto error_boundary;
@@ -1154,7 +1154,7 @@ query:
 		/* get ttl*/
 		memcpy((void*) &ttl, (void*)p, 4);
 		ttl=ntohl(ttl);
-		if (ttl < min_ttl) 
+		if (ttl < min_ttl)
 			min_ttl = ttl;
 		p+=4;
 		/* get size */
@@ -1170,7 +1170,7 @@ query:
 		}
 		*/
 		/* expand the "type" record  (rdata)*/
-		
+
 		rd=(struct rdata*) local_malloc(sizeof(struct rdata));
 		if (rd==0){
 			LM_ERR("out of pkg memory\n");
@@ -1187,15 +1187,15 @@ query:
 				srv_rd= dns_srv_parser(buff.buff, end, p);
 				if (srv_rd==0) goto error_parse;
 				if (dnscache_put_func)
-					rdata_buf_len+=4*sizeof(unsigned short) + 
+					rdata_buf_len+=4*sizeof(unsigned short) +
 					sizeof(unsigned int ) + srv_rd->name_len+1;
 				rd->rdata=(void*)srv_rd;
-				
+
 				/* insert sorted into the list */
 				for (crt=&head; *crt; crt= &((*crt)->next)){
 					crt_srv=(struct srv_rdata*)(*crt)->rdata;
 					if ((srv_rd->priority <  crt_srv->priority) ||
-					   ( (srv_rd->priority == crt_srv->priority) && 
+					   ( (srv_rd->priority == crt_srv->priority) &&
 							 ((srv_rd->weight==0) || (crt_srv->weight!=0)) ) ){
 						/* insert here */
 						goto skip;
@@ -1206,7 +1206,7 @@ query:
 				/* insert here */
 				rd->next=*crt;
 				*crt=rd;
-				
+
 				break;
 			case T_A:
 				rd->rdata=(void*) dns_a_parser(p,end);
@@ -1239,7 +1239,7 @@ query:
 				rd->rdata=(void*) naptr_rd;
 				if(rd->rdata==0) goto error_parse;
 				if (dnscache_put_func)
-					rdata_buf_len+=2*sizeof(unsigned short) + 
+					rdata_buf_len+=2*sizeof(unsigned short) +
 					4*sizeof(unsigned int) + naptr_rd->flags_len+1 +
 					+ naptr_rd->services_len+1+naptr_rd->regexp_len +
 					+ 1 + naptr_rd->repl_len + 1;
@@ -1248,7 +1248,7 @@ query:
 				break;
 			case T_TXT:
 				txt_rd = dns_txt_parser(buff.buff, end, p);
-				rd->rdata=(void*) txt_rd; 
+				rd->rdata=(void*) txt_rd;
 				if(rd->rdata==0) goto error_parse;
 				if (dnscache_put_func)
 					rdata_buf_len+=sizeof(int)+strlen(txt_rd->txt)+1;
@@ -1257,11 +1257,11 @@ query:
 				break;
 			case T_EBL:
 				ebl_rd = dns_ebl_parser(buff.buff, end, p);
-				rd->rdata=(void*) ebl_rd; 
+				rd->rdata=(void*) ebl_rd;
 				if(rd->rdata==0) goto error_parse;
 				if (dnscache_put_func)
 					rdata_buf_len+=sizeof(unsigned char)+
-					2*sizeof(unsigned int)+ebl_rd->apex_len + 1 + 
+					2*sizeof(unsigned int)+ebl_rd->apex_len + 1 +
 					ebl_rd->separator_len + 1;
 				*last=rd;
 				last=&(rd->next);
@@ -1272,14 +1272,14 @@ query:
 				*last=rd;
 				last=&(rd->next);
 		}
-		
+
 		p+=rdlength;
-		
+
 	}
 
 	if (dnscache_put_func != NULL) {
 		if (dnscache_put_func(name,type,head,rdata_buf_len,0,min_ttl) < 0)
-			LM_ERR("Failed to store %s - %d in cache\n",name,type);	
+			LM_ERR("Failed to store %s - %d in cache\n",name,type);
 	}
 	return head;
 error_boundary:
@@ -1302,28 +1302,21 @@ not_found:
 
 static inline int get_naptr_proto(struct naptr_rdata *n)
 {
-#ifdef USE_TLS
 	if (n->services[3]=='s' || n->services[3]=='S' )
 		return PROTO_TLS;
-#endif
 	switch (n->services[n->services_len-1]) {
 		case 'U':
 		case 'u':
 			return PROTO_UDP;
 			break;
-#ifdef USE_TCP
 		case 'T':
 		case 't':
 			return PROTO_TCP;
 			break;
-#endif
-#ifdef USE_SCTP
 		case 'S':
 		case 's':
 			return PROTO_SCTP;
 			break;
-#endif
-
 	}
 	LM_CRIT("failed to detect proto\n");
 	return PROTO_NONE;
@@ -1444,7 +1437,7 @@ static inline void sort_srvs(struct rdata **head)
 				/* -> calculate running sums (and detect the end) */
 				weight_sum = rd2srv(rd)->running_sum = rd2srv(rd)->weight;
 				crt = rd;
-				while( crt && crt->next && 
+				while( crt && crt->next &&
 				(rd2srv(rd)->priority==rd2srv(crt->next)->priority) ) {
 					crt = crt->next;
 					weight_sum += rd2srv(crt)->weight;
@@ -1507,7 +1500,7 @@ static inline struct hostent* do_srv_lookup(char *name, unsigned short* port, st
 			free_rdata_list(head);
 			return 0;
 		}
-		LM_DBG("resolving [%s]\n",srv->name);	
+		LM_DBG("resolving [%s]\n",srv->name);
 		he = resolvehost(srv->name, 1);
 		if ( he!=0 ) {
 			LM_DBG("SRV(%s) = %s:%d\n",     name, srv->name, srv->port);
@@ -1561,20 +1554,13 @@ static inline void filter_and_sort_naptr( struct rdata** head_p, struct rdata** 
 		if ( (is_sips || naptr->services_len!=7 ||
 			strncasecmp(naptr->services,"sip+d2",6) ) &&
 		(
-#ifdef USE_TLS
-		tls_disable ||
-#endif
 		naptr->services_len!=8 || strncasecmp(naptr->services,"sips+d2",7)))
 			goto skip;
 		p = naptr->services[naptr->services_len-1];
 		/* by default we do not support SCTP */
 		if ( p!='U' && p!='u'
-#ifdef USE_TCP
-		&& (tcp_disable || (p!='T' && p!='t'))
-#endif
-#ifdef USE_SCTP
-		&& (sctp_disable || (p!='S' && p!='s'))
-#endif
+		&& ((p!='T' && p!='t'))
+		&& ((p!='S' && p!='s'))
 		)
 			goto skip;
 		/* is it valid? (SIPS+D2U is not!) */
@@ -1584,7 +1570,7 @@ static inline void filter_and_sort_naptr( struct rdata** head_p, struct rdata** 
 		LM_DBG("found valid %.*s -> %s\n",
 			(int)naptr->services_len,naptr->services, naptr->repl);
 
-		/* this is a supported service -> add it according to order to the 
+		/* this is a supported service -> add it according to order to the
 		 * new head list */
 		prio = naptr_prio(get_naptr(l));
 		if (head==0) {
@@ -1630,9 +1616,7 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 	struct hostent* he;
 
 	if ( (is_sips)
-#ifdef USE_TLS
 	&& (tls_disable)
-#endif
 	) {
 		LM_ERR("cannot resolve SIPS as no TLS support is configured\n");
 		return 0;
@@ -1640,9 +1624,7 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 
 	/* check if it's an ip address */
 	if ( ((ip=str2ip(name))!=0)
-#ifdef USE_IPV6
 	|| ((ip=str2ip6(name))!=0)
-#endif
 	){
 		/* we are lucky, this is an ip address */
 		if (proto && *proto==PROTO_NONE)
@@ -1701,7 +1683,7 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 		if (head)
 			free_rdata_list(head);
 	}
-	LM_DBG("no valid NAPTR record found for %.*s," 
+	LM_DBG("no valid NAPTR record found for %.*s,"
 		" trying direct SRV lookup...\n", name->len, name->s);
 	*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 
@@ -1720,22 +1702,16 @@ do_srv:
 			memcpy(tmp+SRV_UDP_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_UDP_PREFIX_LEN + name->len] = '\0';
 			break;
-#ifdef USE_TCP
 		case PROTO_TCP:
-			if (tcp_disable) goto err_proto;
 			memcpy(tmp, SRV_TCP_PREFIX, SRV_TCP_PREFIX_LEN);
 			memcpy(tmp+SRV_TCP_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_TCP_PREFIX_LEN + name->len] = '\0';
 			break;
-#endif
-#ifdef USE_TLS
 		case PROTO_TLS:
-			if (tls_disable) goto err_proto;
 			memcpy(tmp, SRV_TLS_PREFIX, SRV_TLS_PREFIX_LEN);
 			memcpy(tmp+SRV_TLS_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_TLS_PREFIX_LEN + name->len] = '\0';
 			break;
-#endif
 		default:
 			goto err_proto;
 	}
@@ -1743,8 +1719,8 @@ do_srv:
 	he = do_srv_lookup( tmp, port );
 	if (he)
 		return he;
-	
-	LM_DBG("no valid SRV record found for %s," 
+
+	LM_DBG("no valid SRV record found for %s,"
 		" trying A record lookup...\n", tmp);
 	/* set default port */
 	*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
@@ -1776,29 +1752,16 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	struct rdata *rd;
 	struct hostent* he;
 
-	if ( (is_sips)
-#ifdef USE_TLS
-	&& (tls_disable)
-#endif
-	) {
-		LM_ERR("cannot resolve SIPS as no TLS support is configured\n");
-		return 0;
-	}
-
 	if (dn)
 		*dn = 0;
 
 	/* check if it's an ip address */
-	if ( ((ip=str2ip(name))!=0)
-#ifdef USE_IPV6
-	|| ((ip=str2ip6(name))!=0)
-#endif
-	){
+	if ( ((ip=str2ip(name))!=0) || ((ip=str2ip6(name))!=0) ){
 		/* we are lucky, this is an ip address */
 		if (proto && *proto==PROTO_NONE)
 			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		if (port && *port==0)
-			*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
+			*port = protos[*proto].default_port;
 		return ip_addr2he(name,ip);
 	}
 
@@ -1823,6 +1786,11 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 		goto do_srv;
 	}
 
+	if ( dns_try_naptr==0 ) {
+		if (proto)
+			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
+		goto do_srv;
+	}
 	LM_DBG("no port, no proto -> do NAPTR lookup!\n");
 	/* no proto, no port -> do NAPTR lookup */
 	if (name->len >= MAX_DNS_NAME) {
@@ -1860,7 +1828,7 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 		if (head)
 			free_rdata_list(head);
 	}
-	LM_DBG("no valid NAPTR record found for %.*s," 
+	LM_DBG("no valid NAPTR record found for %.*s,"
 		" trying direct SRV lookup...\n", name->len, name->s);
 	*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 
@@ -1879,30 +1847,31 @@ do_srv:
 			memcpy(tmp+SRV_UDP_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_UDP_PREFIX_LEN + name->len] = '\0';
 			break;
-#ifdef USE_TCP
 		case PROTO_TCP:
-			if (tcp_disable) goto err_proto;
 			memcpy(tmp, SRV_TCP_PREFIX, SRV_TCP_PREFIX_LEN);
 			memcpy(tmp+SRV_TCP_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_TCP_PREFIX_LEN + name->len] = '\0';
 			break;
-#endif
-#ifdef USE_TLS
 		case PROTO_TLS:
-			if (tls_disable) goto err_proto;
 			memcpy(tmp, SRV_TLS_PREFIX, SRV_TLS_PREFIX_LEN);
 			memcpy(tmp+SRV_TLS_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_TLS_PREFIX_LEN + name->len] = '\0';
 			break;
-#endif
-#ifdef USE_SCTP
 		case PROTO_SCTP:
-			if (sctp_disable) goto err_proto;
 			memcpy(tmp, SRV_SCTP_PREFIX, SRV_SCTP_PREFIX_LEN);
 			memcpy(tmp+SRV_SCTP_PREFIX_LEN, name->s, name->len);
 			tmp[SRV_SCTP_PREFIX_LEN + name->len] = '\0';
 			break;
-#endif
+		case PROTO_WS:
+			memcpy(tmp, SRV_WS_PREFIX, SRV_WS_PREFIX_LEN);
+			memcpy(tmp+SRV_WS_PREFIX_LEN, name->s, name->len);
+			tmp[SRV_WS_PREFIX_LEN + name->len] = '\0';
+			break;
+		case PROTO_WSS:
+			memcpy(tmp, SRV_WSS_PREFIX, SRV_WSS_PREFIX_LEN);
+			memcpy(tmp+SRV_WSS_PREFIX_LEN, name->s, name->len);
+			tmp[SRV_WSS_PREFIX_LEN + name->len] = '\0';
+			break;
 		default:
 			goto err_proto;
 	}
@@ -1910,11 +1879,11 @@ do_srv:
 	he = do_srv_lookup( tmp, port, dn);
 	if (he)
 		return he;
-	
+
 	LM_DBG("no valid SRV record found for %s, trying A record lookup...\n",
 		tmp);
 	/* set default port */
-	if (port) *port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
+	if (port) *port = protos[*proto].default_port;
 
 do_a:
 	/* do A record lookup */

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -55,9 +53,9 @@ db_func_t dbf;
 db_con_t * dbh = NULL;
 
 /**
- * Initialises the db API
+ * Initializes the db API
  *
- * @return 0 means ok, -1 means an error occured.
+ * @return 0 means ok, -1 means an error occurred.
  */
 int db_init(void) {
 	if (!db_url.s) {
@@ -162,13 +160,13 @@ int load_user_carrier(str * user, str * domain) {
  * @param rd Pointer to the route data tree where the routing data
  * shall be loaded into
  *
- * @return 0 means ok, -1 means an error occured
+ * @return 0 means ok, -1 means an error occurred
  *
  */
 int load_route_data(struct rewrite_data * rd) {
 	db_res_t * res = NULL;
 	db_row_t * row = NULL;
-	int i, ret;
+	int i, n = 0, ret;
 	int carrier_count = 0;
 	struct carrier * carriers = NULL, * tmp = NULL;
 	static str query_str;
@@ -183,6 +181,7 @@ int load_route_data(struct rewrite_data * rd) {
 	str tmp_next_domain;
 	str tmp_comment;
 	int no_rows=10;
+	UNUSED(n);
 
 	if( (strlen("SELECT DISTINCT  FROM  WHERE = ")
 			+ db_table.len + columns[COL_DOMAIN]->len
@@ -242,7 +241,7 @@ int load_route_data(struct rewrite_data * rd) {
 			LM_ERR("Failed to query database to prepare fetchrow.\n");
 			return -1;
 		}
-		no_rows = estimate_available_rows( 4+64+64+64+4+4+4+64+4+64+64+128, 
+		no_rows = estimate_available_rows( 4+64+64+64+4+4+4+64+4+64+64+128,
 			COLUMN_NUM);
 		if (no_rows==0) no_rows = 10;
 		if(dbf.fetch_result(dbh, &res, no_rows) < 0) {
@@ -255,7 +254,7 @@ int load_route_data(struct rewrite_data * rd) {
 			return -1;
 		}
 	}
-	int n = 0;
+
 	do {
 		LM_DBG("loading, cycle %d", n++);
 			for (i = 0; i < RES_ROW_N(res); ++i) {
@@ -311,7 +310,7 @@ int load_route_data(struct rewrite_data * rd) {
 
 	dbf.free_result(dbh, res);
 	res = NULL;
-	
+
 	if (dbf.use_table(dbh, &db_failure_table) < 0) {
 		LM_ERR("cannot set database table '%.*s'.\n",
 				db_failure_table.len, db_failure_table.s);
@@ -414,7 +413,7 @@ if(res){
 static void destroy_carriers(struct carrier * start){
 	struct carrier * tmp, * tmp2;
 	tmp = start;
-	
+
 	while(tmp){
 		tmp2 = tmp;
 		tmp = tmp->next;

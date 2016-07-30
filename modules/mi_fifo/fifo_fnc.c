@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2006 Voice Sistem SRL
  *
@@ -18,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -47,45 +45,49 @@
 #include "mi_parser.h"
 #include "mi_writer.h"
 
-static int  mi_fifo_read = 0;
-static int  mi_fifo_write = 0;
 static char *mi_buf = 0;
 static char *reply_fifo_s = 0;
 static int  reply_fifo_len = 0;
+static char *mi_fifo_name = NULL;
+static int mi_fifo_mode;
+static int mi_fifo_uid;
+static int mi_fifo_gid;
 
+static int volatile mi_reload_fifo = 0;
 
-FILE* mi_init_fifo_server(char *fifo_name, int mi_fifo_mode,
-						int mi_fifo_uid, int mi_fifo_gid, char* fifo_reply_dir)
+FILE* mi_create_fifo(void)
 {
-	FILE *fifo_stream;
+	static int  mi_fifo_read = 0;
+	static int  mi_fifo_write = 0;
+	FILE *fifo_stream = 0;
 	long opt;
 
 	/* create FIFO ... */
-	if ((mkfifo(fifo_name, mi_fifo_mode)<0)) {
+	if ((mkfifo(mi_fifo_name, mi_fifo_mode)<0)) {
 		LM_ERR("can't create FIFO: %s (mode=%d)\n", strerror(errno), mi_fifo_mode);
 		return 0;
 	}
 
-	LM_DBG("FIFO created @ %s\n", fifo_name );
+	LM_DBG("FIFO created @ %s\n", mi_fifo_name );
 
-	if ((chmod(fifo_name, mi_fifo_mode)<0)) {
+	if ((chmod(mi_fifo_name, mi_fifo_mode)<0)) {
 		LM_ERR("can't chmod FIFO: %s (mode=%d)\n", strerror(errno), mi_fifo_mode);
 		return 0;
 	}
 
 	if ((mi_fifo_uid!=-1) || (mi_fifo_gid!=-1)){
-		if (chown(fifo_name, mi_fifo_uid, mi_fifo_gid)<0){
-			LM_ERR("failed to change the owner/group for %s  to %d.%d; %s[%d]\n",
-				fifo_name, mi_fifo_uid, mi_fifo_gid, strerror(errno), errno);
+		if (chown(mi_fifo_name, mi_fifo_uid, mi_fifo_gid)<0){
+			LM_ERR("failed to change the owner/group for %s to %d.%d; %s[%d]\n",
+				mi_fifo_name, mi_fifo_uid, mi_fifo_gid, strerror(errno), errno);
 			return 0;
 		}
 	}
 
-	LM_DBG("fifo %s opened, mode=%o\n", fifo_name, mi_fifo_mode );
+	LM_DBG("fifo %s opened, mode=%o\n", mi_fifo_name, mi_fifo_mode );
 
 	/* open it non-blocking or else wait here until someone
 	 * opens it for writing */
-	mi_fifo_read=open(fifo_name, O_RDONLY|O_NONBLOCK, 0);
+	mi_fifo_read=open(mi_fifo_name, O_RDONLY|O_NONBLOCK, 0);
 	if (mi_fifo_read<0) {
 		LM_ERR("mi_fifo_read did not open: %s\n", strerror(errno));
 		return 0;
@@ -98,20 +100,41 @@ FILE* mi_init_fifo_server(char *fifo_name, int mi_fifo_mode,
 	}
 
 	/* make sure the read fifo will not close */
-	mi_fifo_write=open( fifo_name, O_WRONLY|O_NONBLOCK, 0);
+	mi_fifo_write=open(mi_fifo_name, O_WRONLY|O_NONBLOCK, 0);
 	if (mi_fifo_write<0) {
+		fclose(fifo_stream);
+		close(mi_fifo_read);
 		LM_ERR("fifo_write did not open: %s\n", strerror(errno));
 		return 0;
 	}
 	/* set read fifo blocking mode */
 	if ((opt=fcntl(mi_fifo_read, F_GETFL))==-1){
+		fclose(fifo_stream);
+		close(mi_fifo_read);
+		close(mi_fifo_write);
 		LM_ERR("fcntl(F_GETFL) failed: %s [%d]\n", strerror(errno), errno);
 		return 0;
 	}
 	if (fcntl(mi_fifo_read, F_SETFL, opt & (~O_NONBLOCK))==-1){
+		fclose(fifo_stream);
+		close(mi_fifo_read);
+		close(mi_fifo_write);
 		LM_ERR("cntl(F_SETFL) failed: %s [%d]\n", strerror(errno), errno);
 		return 0;
 	}
+	return fifo_stream;
+}
+
+static void mi_sig_hup(int signo)
+{
+	mi_reload_fifo = 1;
+}
+
+FILE* mi_init_fifo_server(char *fifo_name, int fifo_mode,
+						int fifo_uid, int fifo_gid, char* fifo_reply_dir)
+{
+	FILE *fifo_stream;
+
 
 	/* allocate all static buffers */
 	mi_buf = pkg_malloc(MAX_MI_FIFO_BUFFER);
@@ -120,10 +143,26 @@ FILE* mi_init_fifo_server(char *fifo_name, int mi_fifo_mode,
 		LM_ERR("no more private memory\n");
 		return 0;
 	}
+	mi_fifo_name = fifo_name;
+	mi_fifo_mode = fifo_mode;
+	mi_fifo_uid = fifo_uid;
+	mi_fifo_gid = fifo_gid;
+
+	fifo_stream = mi_create_fifo();
+	if (!fifo_stream) {
+		LM_ERR("cannot create fifo\n");
+		return 0;
+	}
 
 	/* init fifo reply dir buffer */
 	reply_fifo_len = strlen(fifo_reply_dir);
 	memcpy( reply_fifo_s, fifo_reply_dir, reply_fifo_len);
+
+	if (signal(SIGHUP, mi_sig_hup) == SIG_ERR ) {
+		LM_ERR("cannot install SIGHUP signal\n");
+		pkg_free(reply_fifo_s);
+		return 0;
+	}
 
 	return fifo_stream;
 }
@@ -138,7 +177,7 @@ static int mi_fifo_check(int fd, char* fname)
 {
 	struct stat fst;
 	struct stat lst;
-	
+
 	if (fstat(fd, &fst)<0){
 		LM_ERR("fstat failed: %s\n", strerror(errno));
 		return -1;
@@ -176,6 +215,35 @@ static int mi_fifo_check(int fd, char* fname)
 }
 
 
+static inline FILE* get_fifo_stream(FILE *old_stream)
+{
+	int fd, n;
+	struct stat fst;
+
+	if (mi_reload_fifo == 0) {
+		fd = fileno(old_stream);
+		if (!mi_fifo_check(fd, mi_fifo_name))
+			return old_stream;
+		LM_INFO("invalid FIFO file: creating a new one (%s)\n", mi_fifo_name);
+	} else {
+		LM_INFO("Forcefully replacing FIFO file (%s)\n", mi_fifo_name);
+	}
+	/* here we are either forced to reload or the check did not pass */
+	n = stat(mi_fifo_name, &fst);
+	if (n == 0) {
+		if (unlink(mi_fifo_name) < 0) {
+			LM_ERR("cannot delete fifo file %s\n", mi_fifo_name);
+			return NULL;
+		}
+		LM_INFO("deleted FIFO file (%s)\n", mi_fifo_name);
+	} else if (n < 0 && errno != ENOENT) {
+		LM_ERR("stat failed: %s\n", strerror(errno));
+		return NULL;
+	}
+	mi_reload_fifo = 0;
+	return mi_create_fifo();
+}
+
 
 static FILE *mi_open_reply_pipe( char *pipe_name )
 {
@@ -191,7 +259,7 @@ static FILE *mi_open_reply_pipe( char *pipe_name )
 	}
 
 tryagain:
-	/* open non-blocking to make sure that a broken client will not 
+	/* open non-blocking to make sure that a broken client will not
 	 * block the FIFO server forever */
 	fifofd=open( pipe_name, O_WRONLY | O_NONBLOCK );
 	if (fifofd==-1) {
@@ -215,7 +283,7 @@ tryagain:
 		LM_ERR("open error (%s): %s\n", pipe_name, strerror(errno));
 		return 0;
 	}
-	/* security checks: is this really a fifo?, is 
+	/* security checks: is this really a fifo?, is
 	 * it hardlinked? is it a soft link? */
 	if (mi_fifo_check(fifofd, pipe_name)<0) goto error;
 
@@ -243,39 +311,66 @@ error:
 	return 0;
 }
 
-
-
-int mi_read_line( char *b, int max, FILE *stream, int *read)
+static FILE *mi_init_read(FILE *stream, int *fd, fd_set *fds)
 {
-	int retry_cnt;
-	int len;
-	retry_cnt=0;
+	FILE *new_stream = get_fifo_stream(stream);
+	if (!new_stream)
+		return NULL;
+	*fd = fileno(new_stream);
+	FD_ZERO(fds);
+	FD_SET(*fd, fds);
+	return new_stream;
+}
 
+
+int mi_read_line( char *b, int max, FILE **stream, int *read_len)
+{
+	int ret = 0;
+	int done, i, fd;
+	struct timeval tv;
+	fd_set fds, init_fds;
+	FILE *new_stream;
+
+	/* first check if we need to update our fifo file */
+	if (!(new_stream = mi_init_read(*stream, &fd, &init_fds)))
+		return -1;
+
+	done = 0;
+	for (i = 0; !done && i < max; i++) {
+		fds = init_fds;
+		tv.tv_sec = FIFO_CHECK_WAIT;
+		tv.tv_usec = 0;
 retry:
-	if (fgets(b, max, stream)==NULL) {
-		LM_ERR("fifo_server fgets failed: %s\n", strerror(errno));
-		/* on Linux, fgets sometimes returns ESPIPE -- give
-		   it few more chances
-		*/
-		if (errno==ESPIPE) {
-			retry_cnt++;
-			if (retry_cnt<4) goto retry;
+		ret = select(fd + 1, &fds, NULL, NULL, &tv);
+		if (ret < 0)  {
+			if (errno == EAGAIN)
+				goto retry;
+			/* interrupted by signal or ... */
+			if (errno == EINTR) {
+				if (!(new_stream = mi_init_read(new_stream, &fd, &init_fds)))
+					return -1;
+			} else {
+				kill(0, SIGTERM);
+			}
+		} else if (ret == 0) {
+			if (!(new_stream = mi_init_read(new_stream, &fd, &init_fds)))
+				return -1;
+			--i;
+			continue;
 		}
-		/* interrupted by signal or ... */
-		if ((errno==EINTR)||(errno==EAGAIN)) goto retry;
-		kill(0, SIGTERM);
+		ret = read(fd, &b[i], 1);
+		if (ret < 0)
+			return ret;
+		else if (ret == 0 || b[i] == '\n')
+			done = 1;
 	}
-	/* if we did not read whole line, our buffer is too small
-	   and we cannot process the request; consume the remainder of 
-	   request
-	*/
 
-	len=strlen(b);
-	if (len && !(b[len-1]=='\n' || b[len-1]=='\r')) {
-		LM_ERR("request  line too long\n");
+	if (!done) {
+		LM_ERR("request line too long\n");
 		return -1;
 	}
-	*read = len;
+	*read_len = i;
+	*stream = new_stream;
 
 	return 0;
 }
@@ -296,6 +391,7 @@ static inline char *get_reply_filename( char * file, int len )
 
 	memcpy( reply_fifo_s+reply_fifo_len, file, len );
 	reply_fifo_s[reply_fifo_len+len]=0;
+
 
 	return reply_fifo_s;
 }
@@ -366,7 +462,7 @@ static inline struct mi_handler* build_async_handler( char *name, int len)
 		LM_DBG("entered consume\n"); \
 		/* consume the rest of the fifo request */ \
 		do { \
-			mi_read_line(mi_buf,MAX_MI_FIFO_BUFFER,fifo_stream,&line_len); \
+			mi_read_line(mi_buf,MAX_MI_FIFO_BUFFER,&fifo_stream,&line_len); \
 		} while(line_len>1); \
 		LM_DBG("**** done consume\n"); \
 	} while(0)
@@ -397,7 +493,7 @@ void mi_fifo_server(FILE *fifo_stream)
 		reply_stream = NULL;
 
 		/* commands must look this way ':<command>:[filename]' */
-		if (mi_read_line(mi_buf,MAX_MI_FIFO_BUFFER,fifo_stream, &line_len)) {
+		if (mi_read_line(mi_buf,MAX_MI_FIFO_BUFFER,&fifo_stream, &line_len)) {
 			LM_ERR("failed to read command\n");
 			continue;
 		}
@@ -409,7 +505,7 @@ void mi_fifo_server(FILE *fifo_stream)
 				line_len--;
 				mi_buf[line_len]=0;
 			} else break;
-		} 
+		}
 
 		if (line_len==0) {
 			LM_DBG("command empty\n");

@@ -25,7 +25,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #ifndef _OSP_MOD_SIPHEADER_H_
@@ -34,8 +34,12 @@
 #include <osp/osp.h>
 #include "../../parser/msg_parser.h"
 
-#define OSP_TOKEN_HEADER    "P-OSP-Auth-Token"
-#define OSP_HEADER_SIZE     16
+#define OSP_TOKENHEADER_NAME    "P-OSP-Auth-Token"
+#define OSP_TOKENHEADER_SIZE    16
+
+#define OSP_DATEHEADER_NAME     "Date"
+#define OSP_DATEHEADER_SIZE     4
+#define OSP_DATEHEADER_FORMAT   "%a, %d %b %Y %H:%M:%S GMT"
 
 #define OSP_RN_NAME         "rn"
 #define OSP_RN_SIZE         2
@@ -56,26 +60,34 @@
 #define OSP_MNC_NAME        "mnc"
 #define OSP_MNC_SIZE        3
 
+int ospGetAVP(int avpid, unsigned short avptype, char* avpstr, int bufsize);
 void ospCopyStrToBuffer(str* source, char* buffer, int bufsize);
-int ospGetFromUserpart(struct sip_msg* msg, char* fromuser, int bufsize);
-int ospGetRpidUserpart(struct sip_msg* msg, char* rpiduser, int bufsize);
-int ospGetPaiUserpart(struct sip_msg* msg, char* paiuser, int bufsize);
-int ospGetPChargeInfoUserpart(struct sip_msg* msg, char* paiuser, int bufsize);
-int ospGetToUserpart(struct sip_msg* msg, char* touser, int bufsize);
-int ospGetToHostpart(struct sip_msg* msg, char* tohost, int bufsize);
-int ospGetUriUserpart(struct sip_msg* msg, char* uriuser, int bufsize);
-int ospAddOspHeader(struct sip_msg* msg, unsigned char* token, unsigned int tokensize);
-int ospGetOspHeader(struct sip_msg* msg, unsigned char* token, unsigned int* tokensize);
+int ospGetLocalAddress(struct sip_msg*, char*, char*);
+int ospGetFromDisplay(struct sip_msg* msg, char* fromdisplay, int bufsize);
+int ospGetFromUser(struct sip_msg* msg, char* fromuser, int bufsize);
+int ospGetFromUri(struct sip_msg* msg, char* fromuri, int bufsize);
+int ospGetToDisplay(struct sip_msg* msg, char* todisplay, int bufsize);
+int ospGetToUser(struct sip_msg* msg, char* touser, int bufsize);
+int ospGetToHost(struct sip_msg* msg, char* tohost, int bufsize);
+int ospGetToUri(struct sip_msg* msg, char* touri, int bufsize);
+int ospGetPaiUser(struct sip_msg* msg, char* paiuser, int bufsize);
+int ospGetRpidUser(struct sip_msg* msg, char* rpiduser, int bufsize);
+int ospGetPciUser(struct sip_msg* msg, char* paiuser, int bufsize);
+int ospGetDiversion(struct sip_msg* msg, char* user, int userbufsize, char* host, int hostbufsize);
+int ospGetUriUser(struct sip_msg* msg, char* uriuser, int bufsize);
+int ospAddOspToken(struct sip_msg* msg, unsigned char* token, unsigned int tokensize);
+int ospGetOspToken(struct sip_msg* msg, unsigned char* token, unsigned int* tokensize);
 int ospGetViaAddress(struct sip_msg* msg, char* srcaddr, int bufsize);
-int ospGetSourceDevice(struct sip_msg* msg, char* srcaddr, int bufsize);
+int ospGetSrcDev(struct sip_msg* msg, char* srcaddr, int bufsize);
 int ospGetSource(struct sip_msg* msg, char* srcaddr, int bufsize);
 int ospGetCallId(struct sip_msg* msg, OSPT_CALL_ID** callid);
-int ospGetRouteParameters(struct sip_msg* msg, char* routeparams, int bufsize);
-int ospRebuildDestinationUri(str* newuri, osp_dest* dest);
+int ospGetRouteParam(struct sip_msg* msg, char* routeparams, int bufsize);
+int ospRebuildDestUri(str* newuri, osp_dest* dest);
 int ospGetNextHop(struct sip_msg* msg, char* nexthop, int bufsize);
-int ospGetNpParameters(struct sip_msg* msg, char* rn, int rnbufsize, char* cic, int cicbufsize, int* npdi);
+int ospGetNpParam(struct sip_msg* msg, char* rn, int rnbufsize, char* cic, int cicbufsize, int* npdi);
 int ospGetOperatorName(struct sip_msg* msg, OSPE_OPERATOR_NAME type, char* name, int namebufsize);
-int ospGetDiversion(struct sip_msg* msg, char* user, int userbufsize, char* host, int hostbufsize);
+int ospGetUserAgent(struct sip_msg* msg, char* useragent, int bufsize);
+int ospSetRequestDate(struct sip_msg* msg, char*, char*);
 
 #endif /* _OSP_MOD_SIPHEADER_H_ */
 

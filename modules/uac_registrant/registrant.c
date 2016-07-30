@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * registrant module
  *
  * Copyright (C) 2011 VoIP Embedded Inc.
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -79,7 +77,7 @@ static int mod_init(void);
 static void mod_destroy(void);
 static int child_init(int rank);
 
-void timer_check(unsigned int ticks, void* param);
+void timer_check(unsigned int ticks, void* hash_counter);
 
 static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param);
 static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param);
@@ -95,7 +93,6 @@ unsigned int timer_interval = 100;
 
 reg_table_t reg_htable = NULL;
 unsigned int reg_hsize = 1;
-unsigned int hash_index = 0;
 
 static str db_url = {NULL, 0};
 
@@ -152,13 +149,26 @@ static mi_export_t mi_cmds[] = {
 	{0,            0, 0,             0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm",       DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "uac_auth", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /** Module interface */
 struct module_exports exports= {
 	"uac_registrant",		/* module name */
+	MOD_TYPE_DEFAULT,       /* class of this module */
 	MODULE_VERSION,			/* module version */
 	DEFAULT_DLFLAGS,		/* dlopen flags */
+	&deps,                  /* OpenSIPS module dependencies */
 	cmds,				/* exported functions */
+	0,					/* exported async functions */
 	params,				/* exported parameters */
 	NULL,				/* exported statistics */
 	mi_cmds,			/* exported MI functions */
@@ -174,6 +184,9 @@ struct module_exports exports= {
 /** Module init function */
 static int mod_init(void)
 {
+	unsigned int _timer;
+	int *param;
+
 	if(load_uac_auth_api(&uac_auth_api)<0){
 		LM_ERR("Failed to load uac_auth api\n");
 		return -1;
@@ -221,8 +234,24 @@ static int mod_init(void)
 		return -1;
 	}
 
-	register_timer("uac_reg_check", timer_check, 0,
-					timer_interval/reg_hsize);
+	/* allocate a shm variable to keep the counter used by the timer
+	 * routine - it must be shared as the routine get executed
+	 * in different processes */
+	if (NULL==(param=(int*) shm_malloc(sizeof(int)))) {
+		LM_ERR("cannot allocate shm memory for keepalive counter\n");
+		return -1;
+	}
+	*param = 0;
+
+	_timer = timer_interval/reg_hsize;
+	if (_timer) {
+		register_timer("uac_reg_check", timer_check, (void*)(long)param, _timer,
+			TIMER_FLAG_DELAY_ON_DELAY);
+	} else {
+		LM_ERR("timer_interval=[%d] MUST be bigger then reg_hsize=[%d]\n",
+			timer_interval, reg_hsize);
+		return -1;
+	}
 
 	return 0;
 }
@@ -335,7 +364,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				}
 				break;
 			}
-					
+
 			/* get the next contact */
 			if (contact->next == NULL) {
 				contact = NULL;
@@ -353,11 +382,14 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			}
 		}
 		rec->state = REGISTERED_STATE;
-		if (exp) {
-			rec->registration_timeout = now + exp - timer_interval;
-		} else {
-			rec->registration_timeout = now + rec->expires - timer_interval;
+		if (exp) rec->expires = exp;
+		if (rec->expires <= timer_interval) {
+			LM_ERR("Please decrease timer_interval=[%u]"
+				" - imposed server expires [%u] to small for AOR=[%.*s]\n",
+				timer_interval, rec->expires,
+				rec->td.rem_uri.len, rec->td.rem_uri.s);
 		}
+		rec->registration_timeout = now + rec->expires - timer_interval;
 		break;
 
 	case WWW_AUTH_CODE:
@@ -373,7 +405,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			LM_ERR("Credentials not provisioned\n");
 			rec->state = WRONG_CREDENTIALS_STATE;
 			rec->registration_timeout = 0;
-			/* action successfuly completed on current list element */
+			/* action successfully completed on current list element */
 			return 1; /* exit list traversal */
 		}
 
@@ -406,7 +438,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				rec->td.rem_uri.len, rec->td.rem_uri.s);
 			rec->state = WRONG_CREDENTIALS_STATE;
 			rec->registration_timeout = 0;
-			/* action successfuly completed on current list element */
+			/* action successfully completed on current list element */
 			return 1; /* exit list traversal */
 		default:
 			LM_ERR("Unexpected [%d] notification cb in state [%d]\n",
@@ -438,6 +470,8 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		} else {
 			rec->state = INTERNAL_ERROR_STATE;
 		}
+		pkg_free(new_hdr->s);
+		new_hdr->s = NULL; new_hdr->len = 0;
 		break;
 
 	case 423: /* Interval Too Brief */
@@ -471,11 +505,11 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			/* we got an error from the server */
 			rec->state = REGISTRAR_ERROR_STATE;
 			rec->registration_timeout = now + rec->expires - timer_interval;
-			
+
 		}
 	}
 
-	/* action successfuly completed on current list element */
+	/* action successfully completed on current list element */
 	return 1; /* exit list traversal */
 done:
 	rec->state = INTERNAL_ERROR_STATE;
@@ -600,15 +634,16 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 struct timer_check_data {
 	time_t now;
 	str *s_now;
+	int hash_counter;
 };
 
 int run_timer_check(void *e_data, void *data, void *r_data)
 {
-	unsigned int i=hash_index;
 	reg_record_t *rec = (reg_record_t*)e_data;
 	struct timer_check_data *t_check_data = (struct timer_check_data*)data;
 	time_t now = t_check_data->now;
 	str *s_now = t_check_data->s_now;
+	unsigned int i = t_check_data->hash_counter;
 
 	switch(rec->state){
 	case REGISTERING_STATE:
@@ -650,9 +685,9 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 }
 
 
-void timer_check(unsigned int ticks, void* param)
+void timer_check(unsigned int ticks, void* hash_counter)
 {
-	unsigned int i=hash_index;
+	unsigned int i=*(unsigned*)(unsigned long*)hash_counter;
 	char *p;
 	int len, ret;
 	time_t now;
@@ -660,6 +695,7 @@ void timer_check(unsigned int ticks, void* param)
 	struct timer_check_data t_check_data;
 
 	now = time(0);
+	*(unsigned*)(unsigned long*)hash_counter = (i+1)%reg_hsize;
 
 	p = int2str((unsigned long)(time(0)), &len);
 	if (p && len>0) {
@@ -676,6 +712,7 @@ void timer_check(unsigned int ticks, void* param)
 	/* Initialize slinkedl run traversal data */
 	t_check_data.now = now;
 	t_check_data.s_now = &str_now;
+	t_check_data.hash_counter = i;
 
 	LM_DBG("checking ... [%d] on htable[%d]\n", (unsigned int)now, i);
 	lock_get(&reg_htable[i].lock);
@@ -685,8 +722,6 @@ void timer_check(unsigned int ticks, void* param)
 	lock_release(&reg_htable[i].lock);
 
 	if (str_now.s) {pkg_free(str_now.s);}
-
-	hash_index = (++i)%reg_hsize;
 
 	return;
 }
@@ -768,7 +803,7 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 		if(attr == NULL) goto error;
 	}
 
-	/* action successfuly completed on current list element */
+	/* action successfully completed on current list element */
 	return 0; /* continue list traversal */
 error:
 	LM_ERR("Unable to create reply\n");
@@ -783,6 +818,7 @@ static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	for(i=0; i<reg_hsize; i++) {
 		lock_get(&reg_htable[i].lock);
@@ -796,6 +832,34 @@ static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
 		}
 	}
 	return rpl_tree;
+}
+
+int run_compare_rec(void *e_data, void *data, void *r_data)
+{
+	reg_record_t *old_rec = (reg_record_t*)e_data;
+	reg_record_t *new_rec = (reg_record_t*)data;
+
+	if ((old_rec->state == REGISTERED_STATE) &&
+	    (str_strcmp(&old_rec->td.rem_uri, &new_rec->td.rem_uri) == 0)) {
+		memcpy(new_rec->td.id.call_id.s, old_rec->td.id.call_id.s,
+		    new_rec->td.id.call_id.len);
+		memcpy(new_rec->td.id.loc_tag.s, old_rec->td.id.loc_tag.s,
+		    new_rec->td.id.loc_tag.len);
+		new_rec->td.loc_seq.value = old_rec->td.loc_seq.value;
+		new_rec->last_register_sent = old_rec->last_register_sent;
+		new_rec->registration_timeout = old_rec->registration_timeout;
+		new_rec->state = old_rec->state;
+	}
+	return 0;
+}
+
+int run_find_same_rec(void *e_data, void *data, void *r_data)
+{
+	reg_record_t *new_rec = (reg_record_t*)e_data;
+	int i = *(int*)data;
+
+	slinkedl_traverse(reg_htable[i].p_list, &run_compare_rec, new_rec, NULL);
+	return 0;
 }
 
 static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param)
@@ -831,6 +895,9 @@ static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param)
 	/* Swap the lists: secondary will become primary */
 	for(i=0; i<reg_hsize; i++) {
 		lock_get(&reg_htable[i].lock);
+
+		slinkedl_traverse(reg_htable[i].s_list, &run_find_same_rec, &i, NULL);
+
 		slinkedl_list_destroy(reg_htable[i].p_list);
 		reg_htable[i].p_list = reg_htable[i].s_list;
 		reg_htable[i].s_list = NULL;

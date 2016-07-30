@@ -6,7 +6,7 @@ CREATE TABLE load_balancer (
     resources CHAR(255) NOT NULL,
     probe_mode INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     description CHAR(128) DEFAULT '' NOT NULL
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX dsturi_idx ON load_balancer (dst_uri);
 

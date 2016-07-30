@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Oracle module interface
  *
  * Copyright (C) 2007,2008 TRUNK MOBILE
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -54,7 +52,7 @@ sword begin_timelimit(ora_con_t* con, int connect);
 int wait_timelimit(ora_con_t* con, sword status);
 
 /*
- * close current timelimited operation and disconnect if timeout occured
+ * close current timelimited operation and disconnect if timeout occurred
  * return true only if work in asynch mode and timeout detect
  */
 int done_timelimit(ora_con_t* con, sword status);

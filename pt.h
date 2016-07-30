@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Process Table
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -33,21 +31,20 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "globals.h"
-#include "timer.h"
-#include "socket_info.h"
-#include "atomic.h"
+struct stat_var_;
 
 #define MAX_PT_DESC	128
 
 struct process_table {
 	int pid;
-#ifdef USE_TCP
 	int unix_sock; /* unix socket on which tcp main listens */
-	int idx; /* tcp child index, -1 for other processes */
-#endif
+	int idx;       /* tcp child index, -1 for other processes */
 	char desc[MAX_PT_DESC];
-	stat_var *load;
+
+	int default_log_level; /* used when resetting the log level */
+	int log_level;         /* logging level of this process */
+
+	struct stat_var_ *load;
 };
 
 typedef void(*forked_proc_func)(int i);
@@ -60,6 +57,9 @@ int   init_multi_proc_support();
 void  set_proc_attrs( char *fmt, ...);
 pid_t internal_fork(char *proc_desc);
 int count_init_children(int flags);
+
+/* @return: -1 or the index of the given process */
+int id_of_pid(pid_t pid);
 
 /* return processes pid */
 inline static int my_pid(void)

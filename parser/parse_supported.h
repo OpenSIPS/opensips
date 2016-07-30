@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Supported parser.
  *
  * Copyright (C) 2006 Andreas Granig <agranig@linguin.org>
@@ -19,12 +17,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
  * -------
- * 2006-03-02  parse_supported() parses and cumulates all SUPPORTED 
+ * 2006-03-02  parse_supported() parses and cumulates all SUPPORTED
  *             headers (bogdan)
  */
 
@@ -63,8 +61,8 @@
 
 struct supported_body {
 	unsigned int supported;        /* supported mask for the current hdr */
-	unsigned int supported_all;    /* suppoted mask for the all "supported" hdr
-	                                *  - it's set only for the first hdr in 
+	unsigned int supported_all;    /* supported mask for the all "supported" hdr
+	                                *  - it's set only for the first hdr in
 	                                *  sibling list*/
 };
 

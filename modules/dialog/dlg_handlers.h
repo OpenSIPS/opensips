@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -58,7 +56,34 @@ typedef struct _dlg_cseq dlg_cseq_wrapper;
 
 typedef int (*create_dlg_f)(struct sip_msg *req,int flags);
 
-void init_dlg_handlers(pv_spec_t *timeout_avp, int default_timeout);
+typedef void (*set_mod_flag_f)(struct dlg_cell *dlg, unsigned int flags);
+typedef int (*is_mod_flag_set_f)(struct dlg_cell *dlg, unsigned int flags);
+
+typedef void (*ref_dlg_f)(struct dlg_cell *dlg, unsigned int cnt);
+typedef void (*unref_dlg_f)(struct dlg_cell *dlg, unsigned int cnt);
+
+typedef str* (*get_rr_param_f)(void);
+
+extern int ctx_timeout_idx;
+
+#define ctx_timeout_get() \
+	context_get_int(CONTEXT_GLOBAL,current_processing_ctx,ctx_timeout_idx)
+
+#define ctx_timeout_set(_timeout) \
+	context_put_int(CONTEXT_GLOBAL,current_processing_ctx, ctx_timeout_idx, _timeout)
+
+/* IMPORTANT - as the default value for INT in context is 0, we shift the
+   last leg idx with +1 to avoid having idx 0; this shifting is hidden by the
+   get /  set functions, so transparent for the usage */
+extern int ctx_lastdstleg_idx;
+
+#define ctx_lastdstleg_get() \
+	(context_get_int(CONTEXT_GLOBAL,current_processing_ctx,ctx_lastdstleg_idx)-1)
+
+#define ctx_lastdstleg_set(_lastleg) \
+	context_put_int(CONTEXT_GLOBAL,current_processing_ctx, ctx_lastdstleg_idx, _lastleg+1)
+
+void init_dlg_handlers(int default_timeout);
 
 void destroy_dlg_handlers();
 
@@ -70,8 +95,10 @@ void dlg_onroute(struct sip_msg* req, str *rr_param, void *param);
 
 void dlg_ontimeout( struct dlg_tl *tl);
 
+typedef int (*validate_dialog_f) (struct sip_msg* req, struct dlg_cell *dlg);
 int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg);
 
+typedef int (*fix_route_dialog_f) (struct sip_msg *req,struct dlg_cell *dlg);
 int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg);
 
 int terminate_dlg(unsigned int h_entry, unsigned int h_id,str *reason);

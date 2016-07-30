@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -35,16 +33,16 @@
 
 
 
-#ifndef GEN_LOCK_T_PREFERED 
+#ifndef GEN_LOCK_T_PREFERED
 /* semaphore probing limits */
 #define SEM_MIN		16
 #define SEM_MAX		4096
 
 /* we implement mutex here using lock sets; as the number of
-   semaphores may be limited (e.g. sysv) and number of synchronized 
-   elements high, we partition the synced SER elements and share 
-   semaphores in each of the partitions; we try to use as many 
-   semaphores as OS gives us for finest granularity. 
+   semaphores may be limited (e.g. sysv) and number of synchronized
+   elements high, we partition the synced SER elements and share
+   semaphores in each of the partitions; we try to use as many
+   semaphores as OS gives us for finest granularity.
 
    we allocate the locks according to the following plans:
 
@@ -72,12 +70,12 @@ gen_lock_set_t* reply_semaphore=0;
 
 
 static ser_lock_t* timer_group_lock=0; /* pointer to a TG_NR lock array,
-								    it's safer if we alloc this in shared mem 
+								    it's safer if we alloc this in shared mem
 									( required for fast lock ) */
 
 /* initialize the locks; return 0 on success, -1 otherwise
 */
-int lock_initialize(void)
+int lock_initialize( unsigned int timer_sets )
 {
 	int i;
 #ifndef GEN_LOCK_T_PREFERED
@@ -87,13 +85,13 @@ int lock_initialize(void)
 	/* first try allocating semaphore sets with fixed number of semaphores */
 	LM_DBG("lock initialization started\n");
 
-	timer_group_lock=shm_malloc(TG_NR*sizeof(ser_lock_t));
+	timer_group_lock=shm_malloc(timer_sets*TG_NR*sizeof(ser_lock_t));
 	if (timer_group_lock==0){
 		LM_CRIT("no more share mem\n");
 		goto error;
 	}
 #ifdef GEN_LOCK_T_PREFERED
-	for(i=0;i<TG_NR;i++) lock_init(&timer_group_lock[i]);
+	for(i=0;i<timer_sets*TG_NR;i++) lock_init(&timer_group_lock[i]);
 #else
 	/* transaction timers */
 	if (((timer_semaphore= lock_set_alloc( TG_NR ) ) == 0)||
@@ -123,12 +121,12 @@ again:
 			lock_set_destroy(reply_semaphore);
 			lock_set_dealloc(reply_semaphore);
 		}
-		
+
 		if (i==0){
 			LM_CRIT("failed allocate semaphore sets\n");
 			goto error;
 		}
-		
+
 		if (((entry_semaphore=lock_set_alloc(i))==0)||
 			(lock_set_init(entry_semaphore)==0)) {
 			LM_DBG("entry semaphore initialization failure:  %s\n",
@@ -195,11 +193,11 @@ void lock_cleanup(void)
 #else
 
 /* remove the semaphore set from system */
-void lock_cleanup()
+void lock_cleanup(void)
 {
 	/* that's system-wide; all other processes trying to use
 	   the semaphore will fail! call only if it is for sure
-	   no other process lives 
+	   no other process lives
 	*/
 
 	/* sibling double-check missing here; install a signal handler */
@@ -282,9 +280,9 @@ int release_timerlist_lock( struct timer *timerlist )
 	return 0;
 }
 
-int init_timerlist_lock( enum lists timerlist_id)
+int init_timerlist_lock( unsigned int set, enum lists timerlist_id)
 {
-	get_timertable()->timers[timerlist_id].mutex=
-		&(timer_group_lock[ timer_group[timerlist_id] ]);
+	get_timertable()[set].timers[timerlist_id].mutex=
+		&(timer_group_lock[ set*TG_NR + timer_group[timerlist_id] ]);
 	return 0;
 }

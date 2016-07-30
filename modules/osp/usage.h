@@ -25,7 +25,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #ifndef _OSP_MOD_USAGE_H_
@@ -49,11 +49,11 @@
  * Actual conversation duration maybe calculated using connect time (from the call
  * set up usage) and stop time (from the duration usage).
  */
-void ospRecordOrigTransaction(struct sip_msg* msg, osp_dest* dest);
-void ospRecordTermTransaction(struct sip_msg* msg, osp_dest* dest);
+void ospRecordOrigTransaction(struct sip_msg* msg, osp_inbound* inbound, osp_dest* dest);
+void ospRecordTermTransaction(struct sip_msg* msg, osp_inbound* inbound, osp_dest* dest);
 void ospReportOrigSetupUsage(void);
 void ospReportTermSetupUsage(void);
-int  ospReportUsage(struct sip_msg* msg, char* whorelease, char* ignore2);
+int ospReportUsage(struct sip_msg* msg, char* whorelease, char* ignore2);
 
 #endif /* _OSP_MOD_USAGE_H_ */
 

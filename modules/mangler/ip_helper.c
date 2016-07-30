@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Sdp mangler module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,13 +15,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
- *  2003-04-07 first version.  
+ *  2003-04-07 first version.
  */
 
 #include "ip_helper.h"
@@ -193,7 +191,7 @@ make_mask (unsigned int length)
    netmask is specified and inserts the netmask into mask.
    Cuts of the netmask of the string, if it founds a netmask !!!
    Returns 0 if no netmask found, -1 if netmask isn't valid, and
-   1 if successful.  
+   1 if successful.
 	According to this function a mask is in form of 255.255.192.0
 	so an ip/mask looks like 10.0.0.0/255.255.192.0
 	we will extend it to 10.0.0.0/18 which will be also valid

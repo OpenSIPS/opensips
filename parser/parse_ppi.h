@@ -1,5 +1,4 @@
 /*
- *
  * Copyright (C) 2006 Juha Heinanen
  *
  * This file is part of opensips, a free SIP server.
@@ -14,19 +13,19 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
- 
- 
+
+
 #ifndef PARSE_PPI_H
 #define PARSE_PPI_H
- 
+
 #include "msg_parser.h"
- 
- 
+
+
 /* casting macro for accessing P-Preferred-Identity body */
 #define get_ppi(p_msg)  ((struct to_body*)(p_msg)->ppi->parsed)
 
@@ -37,5 +36,5 @@
 int parse_ppi_header( struct sip_msg *msg);
 
 struct sip_uri *parse_ppi_uri(struct sip_msg *msg);
- 
+
 #endif /* PARSE_PPI_H */

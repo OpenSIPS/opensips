@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -37,7 +37,7 @@
 typedef struct evi_subscriber {
 	evi_export_t* trans_mod;			/* transport module */
 	evi_reply_sock* reply_sock;		/* reply socket */
-	struct evi_subscriber *next;		/* next subscriber */ 
+	struct evi_subscriber *next;		/* next subscriber */
 } evi_subs_t, *evi_subs_p;
 
 

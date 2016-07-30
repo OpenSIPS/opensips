@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * rls module - resource list server
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -99,15 +97,15 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 	query_cols[0]= &str_rlsubs_did_col;
 	query_vals[0].type = DB_STR;
 	query_vals[0].nul = 0;
-	query_vals[0].val.str_val= rlsubs_did; 
+	query_vals[0].val.str_val= rlsubs_did;
 
 	result_cols[resource_uri_col= n_result_cols++]= &str_resource_uri_col;
 	result_cols[ctype_col= n_result_cols++]= &str_content_type_col;
 	result_cols[pres_state_col= n_result_cols++]= &str_presence_state_col;
 	result_cols[auth_state_col= n_result_cols++]= &str_auth_state_col;
 	result_cols[reason_col= n_result_cols++]= &str_reason_col;
-	
-	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0) 
+
+	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0)
 	{
 		LM_ERR("in use_table\n");
 		goto error;
@@ -167,9 +165,9 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 	update_cols[0]= &str_updated_col;
 	update_vals[0].type = DB_INT;
 	update_vals[0].nul = 0;
-	update_vals[0].val.int_val= NO_UPDATE_TYPE; 
-	
-	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0) 
+	update_vals[0].val.int_val= NO_UPDATE_TYPE;
+
+	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0)
 	{
 		LM_ERR("in use_table\n");
 		goto error;
@@ -185,7 +183,7 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 	xmlFree(rlmi_body->s);
 	pkg_free(rlmi_body);
 
-	if(multipart_body)			
+	if(multipart_body)
 	{
 		pkg_free(multipart_body->s);
 		pkg_free(multipart_body);
@@ -210,7 +208,7 @@ error:
 			pkg_free(multipart_body->s);
 		pkg_free(multipart_body);
 	}
-	
+
 	if(cid_array)
 	{
 		for(i= 0; i< result->n ; i++)
@@ -245,7 +243,7 @@ int agg_body_sendn_update(str* rl_uri, str bstr, str* rlmi_body,
 	len= 2*bstr.len+ 4+ 102+ cid.len+ 2+ rlmi_body->len+50+1;
 	if(multipart_body)
 		len+= multipart_body->len;
-	
+
 	init_len= len;
 
 	body.s= (char*)pkg_malloc(len);
@@ -255,8 +253,8 @@ int agg_body_sendn_update(str* rl_uri, str bstr, str* rlmi_body,
 	}
 	len=  sprintf(body.s, "--%.*s\r\n", bstr.len, bstr.s);
 	len+= sprintf(body.s+ len , "Content-Transfer-Encoding: binary\r\n");
-	len+= sprintf(body.s+ len , "Content-ID: <%.*s>\r\n", cid.len, cid.s);	
-	len+= sprintf(body.s+ len , 
+	len+= sprintf(body.s+ len , "Content-ID: <%.*s>\r\n", cid.len, cid.s);
+	len+= sprintf(body.s+ len ,
 			"Content-Type: application/rlmi+xml;charset=\"UTF-8\"\r\n");
 	len+= sprintf(body.s+ len, "\r\n"); /*blank line*/
 	body_len = rlmi_body->len;
@@ -287,7 +285,7 @@ int agg_body_sendn_update(str* rl_uri, str bstr, str* rlmi_body,
 	}
 	pkg_free(body.s);
 	body.s= NULL;
-	
+
 	if(subs->expires!= 0 && subs->status != TERMINATED_STATUS)
 	{
 		if(pres_update_shtable(rls_table, hash_code,subs, LOCAL_TYPE)< 0)
@@ -314,7 +312,7 @@ int add_resource_instance(char* uri, xmlNodePtr resource_node,
 		db_res_t* result, str* cid_array)
 {
 	xmlNodePtr instance_node= NULL;
-	db_row_t *row;	
+	db_row_t *row;
 	db_val_t *row_vals;
 	int i, cmp_code;
 	char* auth_state= NULL;
@@ -325,7 +323,7 @@ int add_resource_instance(char* uri, xmlNodePtr resource_node,
 	{
 		row = &result->rows[i];
 		row_vals = ROW_VALUES(row);
-		
+
 		cmp_code= strncmp(row_vals[resource_uri_col].val.string_val, uri,
 				strlen(uri));
 		if(cmp_code> 0)
@@ -333,7 +331,7 @@ int add_resource_instance(char* uri, xmlNodePtr resource_node,
 
 		if(cmp_code== 0)
 		{
-			instance_node= xmlNewChild(resource_node, NULL, 
+			instance_node= xmlNewChild(resource_node, NULL,
 					BAD_CAST "instance", NULL);
 			if(instance_node== NULL)
 			{
@@ -367,13 +365,13 @@ int add_resource_instance(char* uri, xmlNodePtr resource_node,
 			else
 			if(auth_state_flag & TERMINATED_STATE)
 			{
-				xmlNewProp(instance_node, BAD_CAST "reason", 
-						BAD_CAST row_vals[reason_col].val.string_val);	
+				xmlNewProp(instance_node, BAD_CAST "reason",
+						BAD_CAST row_vals[reason_col].val.string_val);
 			}
 		}
 	}
 
-	/* if record not found should not add a instance node */	
+	/* if record not found should not add a instance node */
 	return 0;
 error:
 	return -1;
@@ -413,7 +411,7 @@ str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
 	xmlDocPtr doc= NULL;
 	xmlNodePtr list_node= NULL;
 	str* rlmi_cont= NULL;
-	int len; 
+	int len;
 	char* uri;
 	res_param_t param;
 	str* cid_array= NULL;
@@ -455,9 +453,9 @@ str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
 	xmlNewProp(list_node, BAD_CAST "fullState", BAD_CAST "true");
 
 	xmlDocSetRootElement(doc, list_node);
-	
+
 	/* go through the list -- and add the appropriate 'resource' nodes*/
-	
+
 	param.list_node= list_node;
 	param.db_result= result;
 	param.cid_array= cid_array;
@@ -476,7 +474,7 @@ str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
 			&rlmi_cont->len);
 
 	*rlmi_cid_array= cid_array;
-	
+
 	xmlFreeDoc(doc);
 
 	return rlmi_cont;
@@ -484,7 +482,7 @@ str* constr_rlmi_doc(db_res_t *result, str* rl_uri, int version,
 error:
 	if(doc)
 		xmlFreeDoc(doc);
-	return NULL;	
+	return NULL;
 }
 
 
@@ -493,13 +491,13 @@ str* constr_multipart_body(db_res_t* result, str* cid_array, str bstr)
 	char* buf= NULL;
 	int size= BUF_REALLOC_SIZE;
 	int i, buf_len= 0;
-	db_row_t *row;	
+	db_row_t *row;
 	db_val_t *row_vals;
 	str cid={0, 0};
 	str body= {0, 0};
 	str* multi_body= NULL;
 	str ctype;
-	
+
 	LM_DBG("start\n");
 	buf= pkg_malloc(size);
 	if(buf== NULL)
@@ -511,7 +509,7 @@ str* constr_multipart_body(db_res_t* result, str* cid_array, str bstr)
 	{
 		row = &result->rows[i];
 		row_vals = ROW_VALUES(row);
-	
+
 		if(row_vals[auth_state_col].val.int_val!= ACTIVE_STATE)
 			continue;
 
@@ -539,7 +537,7 @@ str* constr_multipart_body(db_res_t* result, str* cid_array, str bstr)
 	}
 
 	buf[buf_len]= '\0';
-	
+
 	multi_body= (str*)pkg_malloc(sizeof(str));
 	if(multi_body== NULL)
 	{
@@ -567,14 +565,14 @@ int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* bstr,
 	char* p;
 
 	lexpire_s = int2str(subs->expires, &lexpire_len);
-	
+
 	len = 7 /*Event: */ + subs->event->name.len +4 /*;id=*/+ subs->event_id.len+
 		CRLF_LEN + 10 /*Contact: <*/ + subs->local_contact.len + 1/*>*/ +
 		((subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP)?
 		 15/*";transport=xxxx"*/:0) + CRLF_LEN +/*Subscription-State:*/ 20 +
 		((subs->expires>0)?(15+lexpire_len):25) + CRLF_LEN + /*Require: */ 18
 		+ CRLF_LEN + ((start_cid && bstr)?(/*Content-Type*/59 +
-		/*start*/12 + start_cid->len + /*boundary*/12 + 
+		/*start*/12 + start_cid->len + /*boundary*/12 +
 		bstr->len + CRLF_LEN):0);
 
 	hdr->s = (char*)pkg_malloc(len);
@@ -590,7 +588,7 @@ int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* bstr,
 	p+= 7;
 	memcpy(p, subs->event->name.s, subs->event->name.len);
 	p+= subs->event->name.len;
-	if(subs->event_id.len && subs->event_id.s) 
+	if(subs->event_id.len && subs->event_id.s)
 	{
  		memcpy(p, ";id=", 4);
  		p += 4;
@@ -604,7 +602,7 @@ int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* bstr,
 	p += 10;
 	memcpy(p, subs->local_contact.s, subs->local_contact.len);
 	p +=  subs->local_contact.len;
-	
+
 	if (subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP)
 	{
 		memcpy(p,";transport=",11);
@@ -686,20 +684,20 @@ int rls_send_notify(subs_t* subs, str* body, str* start_cid,
 	if(td ==NULL)
 	{
 		LM_ERR("while building dlg_t structure\n");
-		goto error;	
+		goto error;
 	}
 
 	LM_DBG("constructed dlg_t struct\n");
-	size= sizeof(dialog_id_t)+(subs->to_tag.len+ subs->callid.len+ 
+	size= sizeof(dialog_id_t)+(subs->to_tag.len+ subs->callid.len+
 			subs->from_tag.len) *sizeof(char);
-	
+
 	cb_param = (dialog_id_t*)shm_malloc(size);
 	if(cb_param== NULL)
 	{
 		ERR_MEM(SHARE_MEM);
 	}
 	size= sizeof(dialog_id_t);
-	
+
 	cb_param->callid.s= (char*)cb_param + size;
 	memcpy(cb_param->callid.s, subs->callid.s, subs->callid.len);
 	cb_param->callid.len= subs->callid.len;
@@ -713,7 +711,7 @@ int rls_send_notify(subs_t* subs, str* body, str* start_cid,
 	cb_param->from_tag.s= (char*)cb_param + size;
 	memcpy(cb_param->from_tag.s, subs->from_tag.s, subs->from_tag.len);
 	cb_param->from_tag.len= subs->from_tag.len;
-	
+
 	LM_DBG("constructed cb_param\n");
 
 	if(rls_notify_extra_hdr(subs, start_cid, bstr, &str_hdr) < 0)
@@ -723,10 +721,8 @@ int rls_send_notify(subs_t* subs, str* body, str* start_cid,
 	}
 	LM_DBG("str_hdr= %.*s\n", str_hdr.len, str_hdr.s);
 
-#ifdef USE_TCP
-        /* don't open new TCP connections if connection is down */
+	/* don't open new TCP connections if connection is down */
 	tcp_no_new_conn = 1;
-#endif
 
 	rt = tmb.t_request_within
 		(&met,
@@ -737,14 +733,12 @@ int rls_send_notify(subs_t* subs, str* body, str* start_cid,
 		(void*)cb_param,
 		NULL);
 
-#ifdef USE_TCP
 	tcp_no_new_conn = 0;
-#endif
 
 	if(rt < 0)
 	{
 		LM_ERR("in function tmb.t_request_within\n");
-		goto error;	
+		goto error;
 	}
 
 	pkg_free(str_hdr.s);
@@ -756,10 +750,10 @@ error:
 		rls_free_td(td);
 	if(cb_param)
 		shm_free(cb_param);
-		
+
 	if(str_hdr.s)
 		pkg_free(str_hdr.s);
-	
+
 	return -1;
 }
 
@@ -785,7 +779,7 @@ dlg_t* rls_notify_dlg(subs_t* subs)
 		LM_ERR("while constructing uri from user and domain\n");
 		goto error;
 	}
-	
+
 	if(uandd_to_uri(subs->from_user, subs->from_domain, &td->rem_uri)< 0)
 	{
 		LM_ERR("while constructing uri from user and domain\n");
@@ -820,27 +814,27 @@ error:
 	{
 		if(td->loc_uri.s)
 			pkg_free(td->loc_uri.s);
-	
+
 		if(td->rem_uri.s)
 			pkg_free(td->rem_uri.s);
 		pkg_free(td);
-	}	
+	}
 
 	return NULL;
 
 }
 void rls_notify_callback( struct cell *t, int type, struct tmcb_params *ps)
 {
-	if(ps->param==NULL || *ps->param==NULL || 
+	if(ps->param==NULL || *ps->param==NULL ||
 			((dialog_id_t*)(*ps->param)) == NULL)
 	{
 		LM_DBG("message id not received\n");
 		return;
 	}
-	
+
 	LM_DBG("completed with status %d [to_tag:"
 			"%.*s]\n",ps->code,
-			((dialog_id_t*)(*ps->param))->to_tag.len, 
+			((dialog_id_t*)(*ps->param))->to_tag.len,
 			((dialog_id_t*)(*ps->param))->to_tag.s);
 
 	if(ps->code >= 300)
@@ -850,19 +844,19 @@ void rls_notify_callback( struct cell *t, int type, struct tmcb_params *ps)
 		db_val_t db_vals[2];
 		unsigned int hash_code;
 		subs_t subs;
-		
+
 		memset(&subs, 0, sizeof(subs_t));
 
 		subs.to_tag= ((dialog_id_t*)(*ps->param))->to_tag;
 		subs.from_tag= ((dialog_id_t*)(*ps->param))->from_tag;
 		subs.callid= ((dialog_id_t*)(*ps->param))->callid;
 
-		if (rls_dbf.use_table(rls_db, &rlsubs_table) < 0) 
+		if (rls_dbf.use_table(rls_db, &rlsubs_table) < 0)
 		{
 			LM_ERR("in use_table\n");
 			goto done;
 		}
-		
+
 		db_keys[0] =&str_to_tag_col;
 		db_vals[0].type = DB_STR;
 		db_vals[0].nul = 0;
@@ -874,8 +868,8 @@ void rls_notify_callback( struct cell *t, int type, struct tmcb_params *ps)
 		db_vals[1].val.str_val = subs.callid;
 
 
-		if (rls_dbf.delete(rls_db, db_keys, 0, db_vals, 2) < 0) 
-			LM_ERR("cleaning expired messages\n");	
+		if (rls_dbf.delete(rls_db, db_keys, 0, db_vals, 2) < 0)
+			LM_ERR("cleaning expired messages\n");
 
 		/* delete from cache table */
 		hash_code= core_hash(&subs.callid, &subs.to_tag , hash_size);
@@ -884,9 +878,9 @@ void rls_notify_callback( struct cell *t, int type, struct tmcb_params *ps)
 		{
 			LM_ERR("record not found in hash table\n");
 		}
-	}	
+	}
 
-done:	
+done:
 	if(*ps->param !=NULL  )
 		shm_free(*ps->param);
 	return ;
@@ -996,15 +990,15 @@ char* generate_string(int seed, int length)
 	int r,i;
 
 	rstr = (char*) pkg_malloc(length + 1);
-	if(rstr == NULL) 
+	if(rstr == NULL)
 	{
 		LM_ERR("no more memory\n");
 		return NULL;
 	}
 
 	srand(seed);
-		
-	for(i=0; i<length; i++) 
+
+	for(i=0; i<length; i++)
 	{
 		r= rand() % ('z'- 'A') + 'A';
 	    if(r>'Z' && r< 'a')

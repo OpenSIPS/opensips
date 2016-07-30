@@ -1,6 +1,4 @@
 /*
-* $Id$
-*
 * OpenSIPS LDAP Module
 *
 * Copyright (C) 2007 University of North Carolina
@@ -22,7 +20,7 @@
 *
 * You should have received a copy of the GNU General Public License
 * along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 *
 * History:
 * --------
@@ -548,6 +546,7 @@ output file pointers.
 
 	/* iniparser.c.c following */
 #define ASCIILINESZ         1024
+#define LONGKEYBUFF         2*ASCIILINESZ+1
 #define INI_INVALID_KEY     ((char*)-1)
 
 	/* Private: add an entry to the dictionary */
@@ -557,13 +556,16 @@ output file pointers.
 	char * key,
 	char * val)
 	{
-		char longkey[2*ASCIILINESZ+1];
+		char longkey[LONGKEYBUFF];
 
 		/* Make a key as section:keyword */
 		if (key!=NULL) {
-			sprintf(longkey, "%s:%s", sec, key);
+			snprintf(longkey, LONGKEYBUFF, "%s:%s", sec, key);
 		} else {
-			strcpy(longkey, sec);
+			size_t len = strlen(sec);
+			if (len > LONGKEYBUFF - 1)
+				len = LONGKEYBUFF - 1;
+			strncpy(longkey, sec, len + 1);
 		}
 
 		/* Add (key,val) to dictionary */

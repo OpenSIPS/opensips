@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * Copyright (C) 2001-2004 iptel.org
  * Copyright (C) 2008 1&1 Internet AG
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include "my_con.h"
@@ -39,6 +37,11 @@ int db_mysql_connect(struct my_con* ptr)
 	mysql_init(ptr->con);
 	ptr->init = 1;
 
+	/* set connect, read and write timeout, the value counts three times */
+	mysql_options(ptr->con, MYSQL_OPT_CONNECT_TIMEOUT, &db_mysql_timeout_interval);
+	mysql_options(ptr->con, MYSQL_OPT_READ_TIMEOUT, &db_mysql_timeout_interval);
+	mysql_options(ptr->con, MYSQL_OPT_WRITE_TIMEOUT, &db_mysql_timeout_interval);
+
 	if (ptr->id->port) {
 		LM_DBG("opening connection: mysql://xxxx:xxxx@%s:%d/%s\n",
 			ZSW(ptr->id->host), ptr->id->port, ZSW(ptr->id->database));
@@ -47,7 +50,7 @@ int db_mysql_connect(struct my_con* ptr)
 			ZSW(ptr->id->host), ZSW(ptr->id->database));
 	}
 
-	if (!mysql_real_connect(ptr->con, ptr->id->host, 
+	if (!mysql_real_connect(ptr->con, ptr->id->host,
 			ptr->id->username, ptr->id->password,
 			ptr->id->database, ptr->id->port, 0,
 #if (MYSQL_VERSION_ID >= 40100)
@@ -94,20 +97,12 @@ struct my_con* db_mysql_new_connection(const struct db_id* id)
 
 	memset(ptr, 0, sizeof(struct my_con));
 	ptr->ref = 1;
-	
+
 	ptr->con = (MYSQL*)pkg_malloc(sizeof(MYSQL));
 	if (!ptr->con) {
 		LM_ERR("no private memory left\n");
 		goto err;
 	}
-
-	/* set connect, read and write timeout, the value counts three times */
-	mysql_options(ptr->con, MYSQL_OPT_CONNECT_TIMEOUT,
-			(const char *)&db_mysql_timeout_interval);
-	mysql_options(ptr->con, MYSQL_OPT_READ_TIMEOUT,
-			(const char *)&db_mysql_timeout_interval);
-	mysql_options(ptr->con, MYSQL_OPT_WRITE_TIMEOUT,
-			(const char *)&db_mysql_timeout_interval);
 
 	ptr->id = (struct db_id*)id;
 

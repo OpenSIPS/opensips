@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * eXtended JABber module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include <string.h>
@@ -40,7 +38,7 @@
 xj_jconf xj_jconf_new(str *u)
 {
 	xj_jconf jcf = NULL;
-	
+
 	if(!u || !u->s || u->len<=0)
 		return NULL;
 	jcf = (xj_jconf)pkg_malloc(sizeof(t_xj_jconf));
@@ -64,14 +62,14 @@ xj_jconf xj_jconf_new(str *u)
 
 	jcf->jcid = 0;
 	jcf->status = XJ_JCONF_NULL;
-	
+
 	jcf->room.s = NULL;
 	jcf->room.len = 0;
 	jcf->server.s = NULL;
 	jcf->server.len = 0;
 	jcf->nick.s = NULL;
 	jcf->nick.len = 0;
-	
+
 	return jcf;
 }
 
@@ -82,19 +80,19 @@ int xj_jconf_init_sip(xj_jconf jcf, str *sid, char dl)
 {
 	char *p, *p0;
 	int n = 0;
-	if(!jcf || !jcf->uri.s || jcf->uri.len <= 0 
+	if(!jcf || !jcf->uri.s || jcf->uri.len <= 0
 			|| !sid || !sid->s || sid->len <= 0)
 		return -1;
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("parsing uri\n");
-#endif	
+#endif
 	p = jcf->uri.s;
-	while(p<(jcf->uri.s + jcf->uri.len)	&& *p != '@') 
+	while(p<(jcf->uri.s + jcf->uri.len)	&& *p != '@')
 		p++;
 	if(*p != '@')
 		goto bad_format;
 	p0 = p;
-	
+
 	while(p0 > jcf->uri.s)
 	{
 		p0--;
@@ -142,9 +140,9 @@ int xj_jconf_init_sip(xj_jconf jcf, str *sid, char dl)
 	jcf->jcid = xj_get_hash(&jcf->room, &jcf->server);
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("conference id=%d\n", jcf->jcid);
-#endif	
+#endif
 	return 0;
-	
+
 bad_format:
 	LM_ERR("failed to parse uri - bad format\n");
 	return -2;
@@ -160,18 +158,18 @@ int xj_jconf_init_jab(xj_jconf jcf)
 		return -1;
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("parsing uri\n");
-#endif	
+#endif
 	p = jcf->uri.s;
-	while(p<(jcf->uri.s + jcf->uri.len)	&& *p != '@') 
+	while(p<(jcf->uri.s + jcf->uri.len)	&& *p != '@')
 		p++;
 	if(*p != '@' || p==jcf->uri.s)
 		goto bad_format;
-	
+
 	p0 = p+1;
-	
+
 	while(p0 < ((jcf->uri.s + jcf->uri.len)) && *p0 != '/')
 		p0++;
-	
+
 	jcf->server.s = p+1;
 	jcf->server.len = p0 - jcf->server.s;
 	jcf->room.s = jcf->uri.s;
@@ -186,7 +184,7 @@ int xj_jconf_init_jab(xj_jconf jcf)
 	LM_DBG("conference id=%d\n", jcf->jcid);
 #endif
 	return 0;
-	
+
 bad_format:
 	LM_ERR("failed to parse uri - bad format\n");
 	return -2;
@@ -214,38 +212,38 @@ int xj_jconf_cmp(void *a, void *b)
 	    return -1;
 	if(b == NULL)
 	    return 1;
-	
+
 	// LM_DBG("comparing <%.*s> / <%.*s>\n",((str *)a)->len,
 	// 		((str *)a)->s, ((str *)b)->len, ((str *)b)->s);
 	if(((xj_jconf)a)->jcid < ((xj_jconf)b)->jcid)
 			return -1;
 	if(((xj_jconf)a)->jcid > ((xj_jconf)b)->jcid)
 			return 1;
-	
+
 	if(((xj_jconf)a)->room.len < ((xj_jconf)b)->room.len)
 		return -1;
 	if(((xj_jconf)a)->room.len > ((xj_jconf)b)->room.len)
 		return 1;
-	
+
 	if(((xj_jconf)a)->server.len < ((xj_jconf)b)->server.len)
 		return -1;
 	if(((xj_jconf)a)->server.len > ((xj_jconf)b)->server.len)
 		return 1;
 
-	n = strncmp(((xj_jconf)a)->room.s, ((xj_jconf)b)->room.s, 
+	n = strncmp(((xj_jconf)a)->room.s, ((xj_jconf)b)->room.s,
 					((xj_jconf)a)->room.len);
 	if(n<0)
 		return -1;
 	if(n>0)
 		return 1;
-	
-	n = strncmp(((xj_jconf)a)->server.s, ((xj_jconf)b)->server.s, 
+
+	n = strncmp(((xj_jconf)a)->server.s, ((xj_jconf)b)->server.s,
 					((xj_jconf)a)->server.len);
 	if(n<0)
 		return -1;
 	if(n>0)
 		return 1;
-	
+
 	return 0;
 }
 
@@ -256,12 +254,12 @@ int xj_jconf_free(xj_jconf jcf)
 {
 	if(!jcf)
 		return 0;
-	
+
 	if(jcf->uri.s != NULL)
 		pkg_free(jcf->uri.s);
 	pkg_free(jcf);
 	jcf = NULL;
-	
+
 	return 0;
 }
 

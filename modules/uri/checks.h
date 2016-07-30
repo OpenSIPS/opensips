@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Various URI checks
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -57,6 +55,10 @@ int uri_param_1(struct sip_msg* _msg, char* _param, char* _str2);
  */
 int uri_param_2(struct sip_msg* _msg, char* _param, char* _value);
 
+/*
+ * Removes a given parameter from Request URI
+ */
+int del_uri_param(struct sip_msg* _msg, char* _param, char* _s);
 
 /*
  * Adds a new parameter to Request URI

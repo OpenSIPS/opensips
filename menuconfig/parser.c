@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2012 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -35,6 +33,7 @@
 #define MENUCONFIG_CFG_PATH_LEN		strlen(MENUCONFIG_CFG_PATH)
 
 static char prev_module[MAX_MODULE_NAME_SIZE];
+static int prev_module_len=0;
 static select_item *prev_item;
 
 /* Parses a single module dependency line */
@@ -56,8 +55,22 @@ int parse_dep_line(char *line,select_menu *parent)
 	mod_name[name_len]=0;
 
 	/* Is this still the previous module ? */
-	if (memcmp(prev_module,mod_name,name_len) != 0) {
-		
+	if (name_len == prev_module_len && memcmp(prev_module,mod_name,name_len) == 0) {
+		/* Previously found module with multiple deps.
+		 * Just add the new dependency */
+		fprintf(output,"found prev module %s with extra deps\n",mod_name);
+
+		mod_dep = p+1;
+		dep_len = (line+len) - mod_dep;
+		mod_dep[dep_len]=0;
+
+		if (add_dependency(prev_item,mod_dep) < 0) {
+			fprintf(output,"Failed to add dependency\n");
+			return -1;
+		}
+	} else {
+		fprintf(output,"found new module %s\n",mod_name);
+
 		/* nope, new module, get description */
 		mod_desc=p+1;
 		p = memchr(mod_desc,'|',line+len-mod_desc);
@@ -65,16 +78,16 @@ int parse_dep_line(char *line,select_menu *parent)
 			fprintf(output,"Malformed desc line\n");
 			return -1;
 		}
-		
+
 		desc_len = p-mod_desc;
-		mod_desc[desc_len]=0;	
-		
+		mod_desc[desc_len]=0;
+
 		item = create_item(mod_name,mod_desc);
 		if (item == NULL) {
 			fprintf(output,"Failed to create item\n");
 			return -1;
 		}
-	
+
 		mod_dep = p+1;
 		dep_len = (line+len) - mod_dep;
 		mod_dep[dep_len]=0;
@@ -90,18 +103,7 @@ int parse_dep_line(char *line,select_menu *parent)
 		prev_item = item;
 
 		strcpy(prev_module,mod_name);
-	} else {
-		/* Previously found module with multiple deps.
-		 * Just add the new dependency */
-
-		mod_dep = p+1;
-		dep_len = (line+len) - mod_dep;
-		mod_dep[dep_len]=0;
-
-		if (add_dependency(prev_item,mod_dep) < 0) {
-			fprintf(output,"Failed to add dependency\n");
-			return -1;
-		}
+		prev_module_len = name_len;
 	}
 
 	return 0;
@@ -158,12 +160,35 @@ int parse_include_line(char *line,select_menu *parent)
 }
 
 /* Parse a single compile flags DEFS line */
-int parse_defs_line(char *line,select_menu *parent)
+int parse_defs_line(char *line,select_menu *parent,int *group_idx,int *start_grp)
 {
 	char *start,*end,*desc_start;
 	int def_len,enabled=1;
 	select_item *item;
 	int len = strlen(line);
+
+	/* allows commenting out menuconfig features */
+	if (!strncmp(line, SKIP_LINE_STR, SKIP_LINE_STRL))
+		return 0;
+
+	if (!strncmp(line,GRP_START_STR,17)) {
+		if (!(*start_grp)) {
+			*start_grp = 1;
+			return 0;
+		} else {
+			fprintf(output,"Malformed DEFS line\n");
+			return -1;
+		}
+	} else if(!strncmp(line,GRP_END_STR,15)) {
+		if (*start_grp == 1) {
+			(*group_idx)++;
+			*start_grp = 0;
+			return 0;
+		} else {
+			fprintf(output,"Malformed DEFS line\n");
+			return -1;
+		}
+	}
 
 	start = memchr(line,'-',len);
 	if (!start) {
@@ -198,6 +223,9 @@ int parse_defs_line(char *line,select_menu *parent)
 
 	item->enabled=enabled;
 	item->prev_state=enabled;
+	item->group_idx = *start_grp ? *group_idx : 0;
+	if (item->group_idx && enabled)
+		item->group_idx = -item->group_idx;
 	link_item(parent,item);
 
 	return 0;
@@ -209,12 +237,6 @@ int parse_prefix_line(char *line,select_menu *menu)
 	char *p;
 	int pref_len,len = strlen(line);
 
-	install_prefix=malloc(len);
-	if (!install_prefix) {
-		fprintf(output,"Failed to allow mem\n");
-		return -1;
-	}
-
 	p=memchr(line,'=',len);
 	if (!p) {
 		fprintf(output,"Malformed prefix line\n");
@@ -223,6 +245,10 @@ int parse_prefix_line(char *line,select_menu *menu)
 
 	p++;
 	pref_len=line+len-1-p;
+	while (pref_len > 0 && *p == ' ') {
+		pref_len--;
+		p++;
+	}
 
 	if (p[pref_len-1] != '/')
 		pref_len++;
@@ -233,11 +259,14 @@ int parse_prefix_line(char *line,select_menu *menu)
 		return -1;
 	}
 
-	memset(install_prefix,0,pref_len+1);
 	memcpy(install_prefix,p,pref_len);
-	if (p[pref_len-1] != '/')
+	if (p[pref_len-1] != '/') {
 		install_prefix[pref_len-1]='/';
-		
+		install_prefix[pref_len]='\0';
+	} else {
+		install_prefix[pref_len-1]='\0';
+	}
+
 	/* also init the prev prefix, used for
 	 * resetting changes */
 	prev_prefix=install_prefix;
@@ -245,7 +274,7 @@ int parse_prefix_line(char *line,select_menu *menu)
 }
 
 /* Parse an m4 defs line for a cfg entry */
-#define READ_BUF_SIZE	512
+#define READ_BUF_SIZE	1024
 static char read_buf[READ_BUF_SIZE];
 int parse_defs_m4_line(char *line,select_menu *menu)
 {
@@ -275,7 +304,7 @@ int parse_defs_m4_line(char *line,select_menu *menu)
 		fprintf(output,"Failed to find macro value start\n");
 		return -1;
 	}
-	
+
 	value_start++;
 	value_end=memchr(value_start,'\'',line+len-value_start);
 	if (!value_end) {
@@ -347,17 +376,21 @@ int parse_defs_m4(select_menu *curr_menu,cfg_gen_t *curr_cfg)
 enum dep_states { PARSE_DEPENDENCIES, PARSE_INCLUDE_MODULES,
 				PARSE_COMPILE_DEFS, PARSE_PREFIX };
 
-int parse_make_conf()
+int parse_make_conf(void)
 {
 	enum dep_states state;
 	FILE *conf = fopen(MAKE_CONF_FILE,"r");
 	char *p;
 	int defs=0;
+	int start_grp=0, group_idx=1;
 
 	if (!conf) {
-		fprintf(output,"Failed to open [%s]\n",MAKE_CONF_FILE);
-		return -1;
-
+		/* if we cannot find the Makefile.conf, try the template */
+		conf = fopen(MAKE_TEMP_FILE, "r");
+		if (!conf) {
+			fprintf(output,"Failed to open [%s]\n",MAKE_TEMP_FILE);
+			return -1;
+		}
 	}
 	state = PARSE_DEPENDENCIES;
 
@@ -386,7 +419,7 @@ int parse_make_conf()
 				state = PARSE_COMPILE_DEFS;
 				break;
 			case PARSE_COMPILE_DEFS:
-				if (parse_defs_line(p,find_menu(CONF_COMPILE_FLAGS,main_menu)) < 0) {
+				if (parse_defs_line(p,find_menu(CONF_COMPILE_FLAGS,main_menu),&group_idx,&start_grp) < 0) {
 					fprintf(output,"Failed to parse compile defs [%s]\n",p);
 				}
 				defs=1;

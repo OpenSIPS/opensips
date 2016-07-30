@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * ---------
@@ -132,6 +130,8 @@ struct usr_avp* new_avp(unsigned short flags, int id, int_str val)
 		s->s = (char*)s + sizeof(str);
 		memcpy( s->s, val.s.s , s->len);
 		s->s[s->len] = 0;
+	} else if (flags & AVP_VAL_NULL) {
+                avp->data = NULL;
 	} else {
 		avp->data = (void *)(long)val.n;
 	}
@@ -295,7 +295,7 @@ inline void get_avp_val(struct usr_avp *avp, int_str *val)
 		val->s = *((str*)data);
 	} else {
 		/* avp type ID, int value */
-			val->n = (long)(avp->data);
+		val->n = (long)(avp->data);
 	}
 }
 
@@ -325,7 +325,7 @@ inline static struct usr_avp *internal_search_ID_avp( struct usr_avp *avp,
 
 
 /**
- * search first avp begining with 'start->next'
+ * search first avp beginning with 'start->next'
  * if start==NULL, beging from head of avp list
  */
 struct usr_avp *search_first_avp( unsigned short flags,
@@ -342,7 +342,7 @@ struct usr_avp *search_first_avp( unsigned short flags,
 	if(start==0)
 	{
 		assert( crt_avps!=0 );
-	
+
 		if (*crt_avps==0)
 			return 0;
 		head = *crt_avps;
@@ -460,7 +460,7 @@ inline void destroy_avp_list( struct usr_avp **list )
 void reset_avps(void)
 {
 	assert( crt_avps!=0 );
-	
+
 	if ( crt_avps!=&global_avps) {
 		crt_avps = &global_avps;
 	}
@@ -471,7 +471,7 @@ void reset_avps(void)
 struct usr_avp** set_avp_list( struct usr_avp **list )
 {
 	struct usr_avp **foo;
-	
+
 	assert( crt_avps!=0 );
 
 	foo = crt_avps;
@@ -483,7 +483,7 @@ static inline int __search_avp_map(str *alias, map_t m)
 {
 	int **id = (int **)map_find(m, *alias);
 	LM_DBG("looking for [%.*s] avp %s - found %d\n", alias->len, alias->s,
-			m == avp_map_shm ? "in shm" : "", id ? p2int(*id) : -1);
+			m == avp_map_shm ? "in shm": "", id ? p2int(*id) : -1);
 	return id ? p2int(*id) : -1;
 }
 
@@ -516,7 +516,7 @@ static inline int new_avp_alias(str *alias)
 	/* successfully added avp */
 	last_avp_index++;
 
-	LM_DBG("added alias %.*s with id %hu\n",alias->len,alias->s,id);
+	LM_DBG("added alias %.*s with id %d\n",alias->len,alias->s,id);
 
 	return id;
 }
@@ -541,7 +541,7 @@ static inline int new_avp_extra_alias(str *alias)
 	(*last_avp_index_shm)++;
 	lock_release(extra_lock);
 
-	LM_DBG("added extra alias %.*s with id %hu\n",alias->len,alias->s,id);
+	LM_DBG("added extra alias %.*s with id %d\n",alias->len,alias->s,id);
 
 	return id;
 }
@@ -582,3 +582,24 @@ int get_avp_id(str *name)
 	}
 	return id;
 }
+
+
+struct usr_avp *clone_avp_list(struct usr_avp *old)
+{
+	struct usr_avp *a;
+	int_str val;
+
+	if (!old) return NULL;
+
+	/* create a copy of the old AVP */
+	get_avp_val( old, &val );
+	a = new_avp( old->flags, old->id, val);
+	if (a==NULL) {
+		LM_ERR("cloning failed, trunking the list\n");
+		return NULL;
+	}
+
+	a->next = clone_avp_list(old->next);
+	return a;
+}
+

@@ -1,7 +1,6 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2001-2003 Juha Heinanen
- * 
+ *
  * This file is part of opensips, a free SIP server.
  *
  * opensips is free software; you can redistribute it and/or modify
@@ -14,12 +13,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
- 
+
 #include "parse_from.h"
 #include "parse_to.h"
 #include <stdlib.h>
@@ -30,7 +29,7 @@
 #include "../errinfo.h"
 #include "../mem/mem.h"
 
- 
+
 /*
  * This method is used to parse RPID header.
  *
@@ -41,7 +40,7 @@
 int parse_rpid_header( struct sip_msg *msg )
 {
 	struct to_body* rpid_b;
-	
+
 	if ( !msg->rpid && (parse_headers(msg, HDR_RPID_F, 0)==-1 || !msg->rpid)) {
 		goto error;
 	}

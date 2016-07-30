@@ -14,11 +14,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
+
 #include <stdlib.h>
 #include <string.h>
 #include "../dprint.h"
@@ -29,7 +29,7 @@
 #include "parse_from.h"
 #include "parse_to.h"
 
- 
+
 /*
  * This method is used to parse Refer-To header.
  *
@@ -40,7 +40,7 @@
 int parse_refer_to_header( struct sip_msg *msg )
 {
 	struct to_body* refer_to_b;
-	
+
 	if ( !msg->refer_to &&
 	(parse_headers(msg, HDR_REFER_TO_F,0)==-1 || !msg->refer_to)) {
 		goto error;

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * QoS module - support for tracking dialogs and SDP
  *
  * Copyright (C) 2007 SOMA Networks, Inc.
@@ -20,7 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
@@ -68,12 +66,24 @@ static param_export_t mod_params[]={
 	{ 0,0,0 }
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports= {
 	"qos",           /* module's name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,            /* exported functions */
+	NULL,            /* exported async functions */
 	mod_params,      /* param exports */
 	0,               /* exported statistics */
 	0,               /* exported MI functions */
@@ -99,16 +109,16 @@ int load_qos( struct qos_binds *qosb)
  * Bind to the dialog module and setup the callbacks. Also initialize
  * the shared memory to store our interninal information in.
  */
-static int mod_init(void) 
+static int mod_init(void)
 {
-	fix_flag_name(&qos_flag_str, qos_flag);
+	fix_flag_name(qos_flag_str, qos_flag);
 
 	qos_flag = get_flag_id_by_name(FLAG_TYPE_MSG, qos_flag_str);
 
 	if (qos_flag == -1) {
 		LM_ERR("no qos flag set!!\n");
 		return -1;
-	} 
+	}
 	else if (qos_flag > MAX_FLAG) {
 		LM_ERR("invalid qos flag %d!!\n", qos_flag);
 		return -1;
@@ -122,7 +132,7 @@ static int mod_init(void)
 
 	/* Register the main (static) dialog call back.  */
 	if (load_dlg_api(&dialog_st) != 0) {
-		LM_ERR("Can't load dialog hooks");
+		LM_ERR("Can't load dialog hooks\n");
 		return(-1);
 	}
 

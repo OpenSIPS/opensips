@@ -1,7 +1,5 @@
 /*
- *$Id$
- *
- * Copyright (C) 2007 Alexander Christ, 
+ * Copyright (C) 2007 Alexander Christ,
  *    Cologne University of Applied Sciences
  * Copyright (C) 2009 Voice Sistem SRL
  *
@@ -12,14 +10,27 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
+ * In addition, as a special exception, the copyright holders give
+ * permission to link the code of portions of this program with the
+ * OpenSSL library under certain conditions as described in each
+ * individual source file, and distribute linked combinations
+ * including the two.
+ * You must obey the GNU General Public License in all respects
+ * for all of the code used other than OpenSSL.  If you modify
+ * file(s) with this exception, you may extend this exception to your
+ * version of the file(s), but you are not obligated to do so.  If you
+ * do not wish to do so, delete this exception statement from your
+ * version.  If you delete this exception statement from all source
+ * files in the program, then also delete it here.
+ *
  * openser is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
@@ -31,15 +42,15 @@
  */
 
 
-/* Some functions are based on examples of [VIE-02]. 
+/* Some functions are based on examples of [VIE-02].
  * You can download these examples at
  *    http://www.opensslbook.com/code.html.
  *
- * [VIE-02] Viega, John; Messier, Matt; Chandra Pravir: Network Security 
+ * [VIE-02] Viega, John; Messier, Matt; Chandra Pravir: Network Security
  *    with OpenSSL.
  *  First Edition, Beijing, ... : O'Reilly, 2002
  *
- * The function "static STACK_OF(X509) * load_untrusted(char * certfile)" is 
+ * The function "static STACK_OF(X509) * load_untrusted(char * certfile)" is
  * based on the function"static STACK_OF(X509) *load_untrusted(char *certfile)"
  * of the openssl sources. (apps/verify.c, version 0.9.7e, line 290)
  *
@@ -54,7 +65,7 @@
 
 
 
-#include <fnmatch.h> 
+#include <fnmatch.h>
 
 #define _XOPEN_SOURCE 600          /* glibc2 on linux, bsd */
 #define _XOPEN_SOURCE_EXTENDED 1   /* solaris */
@@ -73,26 +84,26 @@
 
 #include <stdlib.h>
 #include <locale.h>
-#include <openssl/x509.h> 
+#include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <openssl/asn1.h>
 #include <openssl/pem.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
 #include <ctype.h>
-#include <dirent.h> 
+#include <dirent.h>
 #include <strings.h>
 #include <dlfcn.h>
 
 #include "../../sr_module.h"
-#include "../../pvar.h" 
-#include "../../data_lump.h" 
-#include "../../mem/mem.h" 
-#include "../../parser/parse_hname2.h" 
-#include "../../parser/contact/contact.h" 
-#include "../../parser/contact/parse_contact.h" 
-#include "../../parser/parse_from.h" 
-#include "../../parser/parse_uri.h" 
+#include "../../pvar.h"
+#include "../../data_lump.h"
+#include "../../mem/mem.h"
+#include "../../parser/parse_hname2.h"
+#include "../../parser/contact/contact.h"
+#include "../../parser/contact/parse_contact.h"
+#include "../../parser/parse_from.h"
+#include "../../parser/parse_uri.h"
 #include "identity.h"
 
 
@@ -103,7 +114,7 @@
 static char * authCert = NULL;
 /* private key of authentication service */
 static char * privKey = NULL;
-/* uri of Identity-Info header field, for authentication 
+/* uri of Identity-Info header field, for authentication
  * service NOT for verifier */
 static char * certUri = NULL;
 /* path where the verifier can find the certificates */
@@ -153,12 +164,15 @@ static param_export_t params[]={
 
 /** module exports */
 struct module_exports exports= {
-	"identity", /* name */ 
+	"identity", /* name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds, /* exported functions */
+	0,    /* exported async functions */
 	params,	/* parameters to be exportet */
-	0,          /* exported statistics */ 
+	0,          /* exported statistics */
 	0,          /* exported MI functions */
 	0,          /* exported pseudo-variables */
 	0,          /* local processes */
@@ -258,7 +272,7 @@ static void mod_destroy(void)
 
 	if(store)
 	{
-		X509_STORE_free(store); 
+		X509_STORE_free(store);
 	}
 
 	if(verify_ctx)
@@ -283,7 +297,7 @@ static void mod_destroy(void)
 */
 static int authservice_(struct sip_msg* msg, char* str1, char* str2)
 {
-	time_t dateHFValue = -1; 
+	time_t dateHFValue = -1;
 	int retval = 0;
 	char dateHF[MAX_TIME] = "\0";
 	long dateDelta = -1;
@@ -336,7 +350,7 @@ static int authservice_(struct sip_msg* msg, char* str1, char* str2)
 		}
 	}*/
 
-	
+
 	if(!addIdentity(dateHF, msg))
 	{
 		LM_ERR("addIdentity failed\n");
@@ -354,19 +368,19 @@ static int authservice_(struct sip_msg* msg, char* str1, char* str2)
 
 
 /* verifier
-return value: -438: You should send a 438-reply. 
+return value: -438: You should send a 438-reply.
 			-437: You should send a 437-reply.
 			-436: You should send a 436-reply.
 			-428: You should send a 428-reply.
 			-3: Error verifying Date header field.
 			-2: Authentication service is not authoritative.
-			-1: An error occured.
-			1: verification OK  
+			-1: An error occurred.
+			1: verification OK
 */
 static int verifier_(struct sip_msg* msg, char* str1, char* str2)
 {
 	char identityHF[MAX_IDENTITY] = "\0";
-	X509 * cert = NULL; 
+	X509 * cert = NULL;
 	int retval = -1;
 	STACK_OF(X509) * certchain = NULL;
 
@@ -387,12 +401,12 @@ static int verifier_(struct sip_msg* msg, char* str1, char* str2)
 			return -1;
 	}
 
-	if(!getCert(&cert, &certchain, msg)) 
+	if(!getCert(&cert, &certchain, msg))
 	{
 		return -436;
 	}
 
-	if(!validateCert(cert, certchain)) 
+	if(!validateCert(cert, certchain))
 	{
 		X509_free(cert);
 		sk_X509_pop_free(certchain, X509_free);
@@ -400,25 +414,25 @@ static int verifier_(struct sip_msg* msg, char* str1, char* str2)
 	}
 	sk_X509_pop_free(certchain, X509_free);
 
-	if(!checkAuthority(cert, msg)) 
+	if(!checkAuthority(cert, msg))
 	{
 		X509_free(cert);
 		return -2;
 	}
 
-	if(!checkSign(cert, identityHF, msg)) 
+	if(!checkSign(cert, identityHF, msg))
 	{
 		X509_free(cert);
 		return -438;
 	}
 
-	if(!checkDate(cert, msg)) 
+	if(!checkDate(cert, msg))
 	{
 		X509_free(cert);
 		return -3;
 	}
 
-	X509_free(cert); 
+	X509_free(cert);
 	return 1;
 }
 
@@ -444,9 +458,9 @@ static time_t my_timegm(struct tm *tm)
 /* reads the Date header field of msg
    return value: -1: error
                   0: Date header field does not exist
-                  1: success 
+                  1: success
 
-   dateHF must point to an array with at least MAX_TIME bytes 
+   dateHF must point to an array with at least MAX_TIME bytes
 */
 static int getDate(char * dateHF, time_t * dateHFValue, struct sip_msg * msg)
 {
@@ -494,7 +508,7 @@ static int getDate(char * dateHF, time_t * dateHFValue, struct sip_msg * msg)
 }
 
 
-/* adds a Date header field to msg 
+/* adds a Date header field to msg
    return value:   0: error
                    1: success
 */
@@ -502,9 +516,9 @@ static int addDate(char * dateHF, time_t * dateHFValue, struct sip_msg * msg)
 {
 	#define DATE_HDR_S  "Date: "
 	#define DATE_HDR_L  (sizeof(DATE_HDR_S)-1)
-	char* buf; 
+	char* buf;
 	size_t len = 0;
-	struct tm * bd_time = NULL; 
+	struct tm * bd_time = NULL;
 
 	if(!dateHF || !dateHFValue || !msg)
 	{
@@ -515,13 +529,13 @@ static int addDate(char * dateHF, time_t * dateHFValue, struct sip_msg * msg)
 	*dateHFValue = time(0);
 
 	bd_time = gmtime(dateHFValue);
-	if(!bd_time) 
+	if(!bd_time)
 	{
 		LM_ERR("gmtime failed\n");
 		return 0;
 	}
 
-	len=strftime(dateHF, MAX_TIME, DATE_FORMAT, bd_time); 
+	len=strftime(dateHF, MAX_TIME, DATE_FORMAT, bd_time);
 	if (len>MAX_TIME-1 || len==0)
 	{
 		LM_ERR("unexpected time length\n");
@@ -549,7 +563,7 @@ static int addDate(char * dateHF, time_t * dateHFValue, struct sip_msg * msg)
 
 /* calculates | now - dateHFValue |
    return value:	result,
-   					-1: if an error occured 
+   					-1: if an error occurred
 */
 static long getDateDelta(time_t dateHFValue)
 {
@@ -586,16 +600,16 @@ static int authCertMatchesDate(time_t dateHFValue)
    return value: 1: success
                  0: else
 
-annotation: This function is based on the function search_body_f of the 
+annotation: This function is based on the function search_body_f of the
 			Textops module.
 static int addContentLength(struct sip_msg * msg)
 {
 	str body;
 	char * tmp = NULL;
 	char buf[MAX_CONTENT_LENGTH] = "\0";
-		
+
 	body.s = get_body(msg);
-	if (body.s == 0) 
+	if (body.s == 0)
 	{
 		//body does not exist
 		body.len = 0;
@@ -605,20 +619,20 @@ static int addContentLength(struct sip_msg * msg)
 		//body exists
 		body.len = msg->len -(int)(body.s-msg->buf);
 	}
-	
-	
+
+
 	snprintf(buf, MAX_CONTENT_LENGTH, "Content-Length: %i\r\n", body.len);
 	buf[MAX_CONTENT_LENGTH - 1] = '\0';
-	
+
 	tmp = buf; //we need a char * for &-operation
-	
+
 	if(add_header_fixup( (void**) &tmp, 1) != 0)
 	{
 		LOG(L_ERR, "idenity: addContentLength: ERROR: add_header_fixup failed\n");
 		return 0;
 	}
-	
-	if(append_hf_1(msg, tmp, 0) != 1) 
+
+	if(append_hf_1(msg, tmp, 0) != 1)
 	{
 		pkg_free(tmp);
 		LOG(L_ERR, "identity: addContentLength: ERROR: append_hf_1 failed\n");
@@ -626,14 +640,14 @@ static int addContentLength(struct sip_msg * msg)
 	}
 	pkg_free(tmp);
 	return 1;
-	
+
 }*/
 
 
 /* builds digest string of msg
    Return value: 1: success
                  0: else
-    digestString must point to an array with at least MAX_DIGEST bytes 
+    digestString must point to an array with at least MAX_DIGEST bytes
 */
 static int makeDigestString(char * digestString, char * dateHF,
 														struct sip_msg * msg)
@@ -804,7 +818,7 @@ static int makeDigestString(char * digestString, char * dateHF,
 		*(digestString+(l++)) = 0;
 	}
 
-	LM_DBG("Digest-String=>%s<\n", digestString); 
+	LM_DBG("Digest-String=>%s<\n", digestString);
 	return 1;
 }
 
@@ -817,10 +831,10 @@ static int addIdentity(char * dateHF, struct sip_msg * msg)
 {
 	#define IDENTITY_HDR_S  "Identity: \""
 	#define IDENTITY_HDR_L  (sizeof(IDENTITY_HDR_S)-1)
-	EVP_MD_CTX ctx; 
+	EVP_MD_CTX ctx;
 	unsigned int siglen = 0;
 	int b64len = 0;
-	unsigned char * sig = NULL; 
+	unsigned char * sig = NULL;
 	char digestString[MAX_DIGEST];
 	str buf;
 
@@ -910,7 +924,7 @@ static int addIdentityInfo(struct sip_msg * msg)
 		LM_ERR("failed to add Identity-Info header\n");
 		return 0;
 	}
-	
+
 	return 1;
 }
 
@@ -930,7 +944,7 @@ static int getIdentityHF(char * identityHF, struct sip_msg * msg)
 		LM_ERR("identityHF or msg not set\n");
 		return -1;
 	}
-	
+
 	identity = get_header_by_static_name(msg, "Identity");
 	if (!identity)
 	{
@@ -961,7 +975,7 @@ static int getCert(X509 ** certp, STACK_OF(X509) ** certchainp,
 														struct sip_msg * msg)
 {
 	struct hdr_field * identityInfo = NULL;
-	int uriLen = 0; 
+	int uriLen = 0;
 	char * end = NULL;
 	char * begin = NULL;
 	char uri[MAX_IDENTITY_INFO] = "\0";
@@ -976,7 +990,7 @@ static int getCert(X509 ** certp, STACK_OF(X509) ** certchainp,
 	}
 
 	identityInfo = get_header_by_static_name(msg, "Identity-Info");
-	if (!identityInfo) 
+	if (!identityInfo)
 	{
 		/* Identity-Info header field does not exist */
 		return 0;
@@ -1068,7 +1082,7 @@ static int getCert(X509 ** certp, STACK_OF(X509) ** certchainp,
    Return value: 1: success, cert is valid
                  0: else
 
-   Annotation: This function is based on example 10-7 of [VIE-02]. 
+   Annotation: This function is based on example 10-7 of [VIE-02].
 */
 static int validateCert(X509 * cert, STACK_OF(X509) * certchain)
 {
@@ -1080,21 +1094,17 @@ static int validateCert(X509 * cert, STACK_OF(X509) * certchain)
 		return 0;
 	}
 
-	/* X509_STORE_CTX_init did not return an error condition 
+	/* X509_STORE_CTX_init did not return an error condition
 	   in prior versions */
-	#if (OPENSSL_VERSION_NUMBER > 0x00907000L)
 	if(X509_STORE_CTX_init(verify_ctx, store, cert, certchain) != 1)
 	{
-		X509_STORE_CTX_cleanup(verify_ctx); 
+		X509_STORE_CTX_cleanup(verify_ctx);
 		LM_ERR("Error initializing verification context\n");
 		return 0;
 	}
-	#else
-	X509_STORE_CTX_init(verify_ctx, store, cert, certchain);
-	#endif
 
-	result = X509_verify_cert(verify_ctx); 
-	X509_STORE_CTX_cleanup(verify_ctx); 
+	result = X509_verify_cert(verify_ctx);
+	X509_STORE_CTX_cleanup(verify_ctx);
 
 	if(result != 1)
 	{
@@ -1106,8 +1116,8 @@ static int validateCert(X509 * cert, STACK_OF(X509) * certchain)
 }
 
 
-/* checks whether the signing authentication service is authoritative 
-   for the URI in the From header field. 
+/* checks whether the signing authentication service is authoritative
+   for the URI in the From header field.
    Return value: 1: authentication service is authoritative
                  0: else
    Annotation: This function is based on example 5-8 of [VIE-02].
@@ -1125,11 +1135,7 @@ static int checkAuthority(X509 * cert, struct sip_msg * msg)
 	char * extstr;
 	X509V3_EXT_METHOD * meth;
 	void * ext_str = NULL;
-	#if (OPENSSL_VERSION_NUMBER > 0x00908000L)
 	const unsigned char * data;
-	#else
-	unsigned char * data;
-	#endif
 	STACK_OF(CONF_VALUE) * val;
 	CONF_VALUE * nval;
 
@@ -1168,7 +1174,7 @@ static int checkAuthority(X509 * cert, struct sip_msg * msg)
 	hostname[fromUri.host.len] = '\0';
 
 	/* first, check subjectAltName extensions */
-	num = X509_get_ext_count(cert); 
+	num = X509_get_ext_count(cert);
 
 	for(i = 0; i < num; i++)
 	{
@@ -1179,13 +1185,12 @@ static int checkAuthority(X509 * cert, struct sip_msg * msg)
 
 		if(!strcmp(extstr, "subjectAltName"))
 		{
-			if(!(meth = X509V3_EXT_get(cext)))
+			if(!(meth = (X509V3_EXT_METHOD*)X509V3_EXT_get(cext)))
 			{
 				LM_ERR("X509V3_EXT_get failed\n");
 				return 0;
 			}
 			data = cext->value->data;
-			#if (OPENSSL_VERSION_NUMBER > 0x00907000L)
 			if(meth->it)
 			{
 				ext_str = ASN1_item_d2i(NULL, &data,
@@ -1195,16 +1200,13 @@ static int checkAuthority(X509 * cert, struct sip_msg * msg)
 			{
 				 ext_str = meth->d2i(NULL, &data, cext->value->length);
 			}
-			#else
-			ext_str = meth->d2i(NULL, &data, cext->value->length);
-			#endif
 
 			val = meth->i2v(meth, ext_str, NULL);
 
 			for (j = 0;  j < sk_CONF_VALUE_num(val);  j++)
 			{
 				nval = sk_CONF_VALUE_value(val, j);
-				
+
 				if(!strcmp(nval->name, "DNS"))
 				{
 					/* entry of type dNSName found */
@@ -1220,11 +1222,11 @@ static int checkAuthority(X509 * cert, struct sip_msg * msg)
 		}
 	}
 
-	/* if no subjectAltName extension is found, Common Name of subject 
+	/* if no subjectAltName extension is found, Common Name of subject
 	   will be checked */
 	if(foundDNSName == 0)
 	{
-		X509_NAME_get_text_by_NID(X509_get_subject_name(cert), 
+		X509_NAME_get_text_by_NID(X509_get_subject_name(cert),
 			NID_commonName, tmp, MAX_HOSTNAME);
 		tmp[MAX_HOSTNAME - 1] = '\0';
 
@@ -1244,16 +1246,16 @@ static int checkAuthority(X509 * cert, struct sip_msg * msg)
 */
 static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 {
-	EVP_PKEY * pubkey = NULL; 
+	EVP_PKEY * pubkey = NULL;
 	char digestString[MAX_DIGEST] = "\0";
-	int siglen = -1; 
-	unsigned char * sigbuf = NULL; 
-	int b64len = 0; 
+	int siglen = -1;
+	unsigned char * sigbuf = NULL;
+	int b64len = 0;
 	EVP_MD_CTX ctx;
 	int result = 0;
 	char *p;
 	unsigned long err;
-	
+
 	if(!cert || !identityHF || !msg)
 	{
 		LM_ERR("cert or identityHF or msg not set\n");
@@ -1293,8 +1295,8 @@ static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 	p=strstr(identityHF , "=");
 	siglen-=strspn(p , "=");
 
-	EVP_VerifyInit(&ctx, EVP_sha1()); 
-	EVP_VerifyUpdate(&ctx, digestString, strlen(digestString)); 
+	EVP_VerifyInit(&ctx, EVP_sha1());
+	EVP_VerifyUpdate(&ctx, digestString, strlen(digestString));
 
 	pubkey = X509_get_pubkey(cert);
 	if(!pubkey)
@@ -1305,7 +1307,7 @@ static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 		return 0;
 	}
 
-	result = EVP_VerifyFinal(&ctx, sigbuf, siglen, pubkey); 
+	result = EVP_VerifyFinal(&ctx, sigbuf, siglen, pubkey);
 
 	EVP_PKEY_free(pubkey);
 	EVP_MD_CTX_cleanup(&ctx);
@@ -1330,8 +1332,8 @@ static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 
 
 /* checks the Date header field:
-   - difference between now and Date header field must be smaller 
-     than +-MAXDATEDELTA_VER 
+   - difference between now and Date header field must be smaller
+     than +-MAXDATEDELTA_VER
    - Date header field and validity period of cert must match
    Return value: 1: OK
                  0: else
@@ -1446,7 +1448,7 @@ static time_t parseX509Date(ASN1_STRING * dateString)
 }
 
 
-/* sets authCert_notBefore and authCert_notAfter, checks whether 
+/* sets authCert_notBefore and authCert_notAfter, checks whether
    cert is valid now
       return value: 1: success
                     0: else
@@ -1464,7 +1466,7 @@ static int setAuthCertPeriod(void)
 		return 0;
 	}
 
-	authCertX509 = PEM_read_X509(fp, NULL, NULL, NULL); 
+	authCertX509 = PEM_read_X509(fp, NULL, NULL, NULL);
 	if(!authCertX509)
 	{
 		fclose(fp);
@@ -1483,7 +1485,7 @@ static int setAuthCertPeriod(void)
 
 	X509_free(authCertX509);
 
-	now = time(0); 
+	now = time(0);
 	if(now == -1)
 	{
 		LM_ERR("time failed\n");
@@ -1566,7 +1568,7 @@ static int readPrivKey(void)
 
 
 /* replaces every forbidden char with a '-'. Only alphanumeric characters,
-   '_' and '.' are allowed. If the first char is a '.', 0 is returned also. 
+   '_' and '.' are allowed. If the first char is a '.', 0 is returned also.
    Return value: 1: success
                  0: else
 */
@@ -1577,7 +1579,7 @@ static int uri2filename(char * name)
 		return 0;
 	}
 
-	if(name[0] == '.') 
+	if(name[0] == '.')
 	{
 		LM_ERR("uri starts with '.'\n");
 		return 0;
@@ -1587,7 +1589,7 @@ static int uri2filename(char * name)
 	{
 		if(!isalnum(*name) && (*name != '_') && (*name != '.'))
 		{
-			*name = '-'; 
+			*name = '-';
 		}
 		name++;
 	}
@@ -1596,7 +1598,7 @@ static int uri2filename(char * name)
 }
 
 
-/* sets verCertWithSlash, verCert is used, If necessary, a '/' is 
+/* sets verCertWithSlash, verCert is used, If necessary, a '/' is
    added at the end.
    Return value: 1: success
                  0: else
@@ -1681,19 +1683,17 @@ static int prepareCertValidation(void)
 	{
 		if(X509_load_crl_file(lookup, crlList, X509_FILETYPE_PEM) < 1)
 		{
-			/* changed from !=1 to < 1 
+			/* changed from !=1 to < 1
 			return value = number of loaded crls
 			*/
 			LM_ERR("Error reading the crlList file\n");
 			return 0;
 		}
-		/* enabling verification against CRLs is 
+		/* enabling verification against CRLs is
 		   not possible in prior versions */
- 		#if (OPENSSL_VERSION_NUMBER > 0x00907000L)
 		/* set the flags of the store so that CRLs are consulted */
-		X509_STORE_set_flags(store, 
-				X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL); 
-		#endif
+		X509_STORE_set_flags(store,
+				X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
 	}
 
 	/* create a verification context and initialize it */
@@ -1735,8 +1735,8 @@ void seed_prng(void)
 /* loads a certificate chain
    return value: STACK_OF(X509) *: on success
                  NULL: else
-   annotation: This function is based on the function  
-      "static STACK_OF(X509) *load_untrusted(char *certfile)" of the openssl 
+   annotation: This function is based on the function
+      "static STACK_OF(X509) *load_untrusted(char *certfile)" of the openssl
        sources. (apps/verify.c, version 0.9.7e, line 290)
 */
 static STACK_OF(X509) * load_untrusted(char * certfile)
@@ -1780,7 +1780,7 @@ static STACK_OF(X509) * load_untrusted(char * certfile)
 		X509_INFO_free(xi);
 	}
 
-	if(!sk_X509_num(stack)) 
+	if(!sk_X509_num(stack))
 	{
 		LM_ERR("no certificates in file, %s\n",certfile);
 		sk_X509_free(stack);
@@ -1790,7 +1790,7 @@ static STACK_OF(X509) * load_untrusted(char * certfile)
 
 end:
 	BIO_free(in);
-	sk_X509_INFO_free(sk); 
+	sk_X509_INFO_free(sk);
 	return(ret);
 }
 
@@ -1868,12 +1868,12 @@ static int id_add_header(struct sip_msg* msg, char* s, int len)
 {
 	struct lump* anchor;
 
-	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0, 0);
+	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
 	if (!anchor) {
 		LM_ERR("can't get anchor\n");
 		return -1;
 	}
-	
+
 
 	if (!insert_new_lump_before(anchor, s, len, 0)) {
 		LM_ERR("can't insert lump\n");

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Hash functions for cached domain table
  *
  * Copyright (C) 2002-2008 Juha Heinanen
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -38,25 +36,30 @@
 
 
 /* Add domain to hash table */
-int hash_table_install (struct domain_list **hash_table, char *domain)
+int hash_table_install (struct domain_list **hash_table, str *d, str *a)
 {
 	struct domain_list *np;
 	unsigned int hash_val;
 
-	np = (struct domain_list *) shm_malloc(sizeof(*np));
+	np = (struct domain_list *) shm_malloc(sizeof(*np) + d->len + a->len);
 	if (np == NULL) {
 		LM_ERR("Cannot allocate memory for hash table entry\n");
 		return -1;
 	}
+	memset(np, 0, sizeof(*np));
 
-	np->domain.len = strlen(domain);
-	np->domain.s = (char *) shm_malloc(np->domain.len);
-	if (np->domain.s == NULL) {
-		LM_ERR("Cannot allocate memory for domain string\n");
-	        shm_free(np);
-		return -1;
+	np->domain.len = d->len;
+	np->domain.s = (char *)(np + 1);
+	memcpy(np->domain.s, d->s, d->len);
+
+	np->attrs.len = a->len;
+	/* check to see if there is a value there */
+	if (a->s) {
+		np->attrs.s = np->domain.s + d->len;
+		memcpy(np->attrs.s, a->s, a->len);
+	} else {
+		np->attrs.s = NULL;
 	}
-	(void) strncpy(np->domain.s, domain, np->domain.len);
 
 	hash_val = dom_hash(&np->domain);
 	np->next = hash_table[hash_val];
@@ -67,13 +70,20 @@ int hash_table_install (struct domain_list **hash_table, char *domain)
 
 
 /* Check if domain exists in hash table */
-int hash_table_lookup (str *domain)
+int hash_table_lookup (struct sip_msg *msg, str *domain, pv_spec_t *pv)
 {
 	struct domain_list *np;
+	pv_value_t val;
 
 	for (np = (*hash_table)[dom_hash(domain)]; np != NULL; np = np->next) {
-		if ((np->domain.len == domain->len) && 
-		    (strncasecmp(np->domain.s, domain->s, domain->len) == 0)) {
+		if ((np->domain.len == domain->len) &&
+			(strncasecmp(np->domain.s, domain->s, domain->len) == 0)) {
+			if (pv && np->attrs.s) {
+				val.rs = np->attrs;
+				val.flags = PV_VAL_STR;
+				if (pv_set_value(msg, pv, 0, &val) != 0)
+					LM_ERR("cannot set attributes value\n");
+			}
 			return 1;
 		}
 	}
@@ -93,10 +103,17 @@ int hash_table_mi_print(struct domain_list **hash_table, struct mi_node* rpl)
 	for (i = 0; i < DOM_HASH_SIZE; i++) {
 		np = hash_table[i];
 		while (np) {
-			node = add_mi_node_child(rpl, 0, 0, 0, 
+			node = add_mi_node_child(rpl, 0, 0, 0,
 					np->domain.s, np->domain.len);
 			if(node == 0)
 				return -1;
+			if (np->attrs.s) {
+				if (!add_mi_attr(node, 0, "attributes", 10,
+						np->attrs.s, np->attrs.len)) {
+					LM_ERR("cannot add attributes\n");
+					return -1;
+				}
+			}
 
 			np = np->next;
 		}
@@ -109,14 +126,13 @@ void hash_table_free (struct domain_list **hash_table)
 {
 	int i;
 	struct domain_list *np, *next;
-	
+
 	if(hash_table==0)
 		return;
 
 	for (i = 0; i < DOM_HASH_SIZE; i++) {
 		np = hash_table[i];
 		while (np) {
-			shm_free(np->domain.s);
 			next = np->next;
 			shm_free(np);
 			np = next;

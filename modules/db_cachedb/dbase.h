@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -32,9 +32,12 @@
 #include "../../str.h"
 
 struct db_cachedb_con {
-	struct db_id* id;        /* Connection identifier */
-	unsigned int ref;        /* Reference count */
-	struct pool_con* next;   /* Next connection in the pool */
+	struct db_id* id;        /**< Connection identifier */
+	unsigned int ref;        /**< Reference count */
+	struct pool_con *async_pool; /**< Subpool of identical database handles */
+	int no_transfers;        /**< Number of async queries to this backend */
+	struct db_transfer *transfers; /**< Array of ongoing async operations */
+	struct pool_con *next;   /**< Next element in the pool (different db_id) */
 
 	cachedb_funcs cdbf;      /* pointers to the NoSQL specific functions */
 	cachedb_con *cdbc;       /* connection to actual NoSQL back-end */

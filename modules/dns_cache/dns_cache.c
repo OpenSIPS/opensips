@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -60,13 +60,25 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_CACHEDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /** module exports */
 struct module_exports exports= {
 	"dns_cache",				/* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	&deps,              /* OpenSIPS module dependencies */
 	0,					/* exported functions */
+	0,					/* exported async functions */
 	params,					/* exported parameters */
 	0,					/* exported statistics */
 	0,					/* exported MI functions */
@@ -143,7 +155,7 @@ static char* serialize_he_rdata(struct hostent *he,int *buf_len,int do_encoding)
 	unsigned char *p;
 	int i,len=0,needed_len=0,base64_len=0,alias_no=0,addr_no=0;
 
-	/* addr_type, name_len, alias_no, addr_no */ 
+	/* addr_type, name_len, alias_no, addr_no */
 	len+=sizeof(int)*4;
 
 	/* compute needed buffer length */
@@ -171,14 +183,14 @@ static char* serialize_he_rdata(struct hostent *he,int *buf_len,int do_encoding)
 		base64_len = calc_base64_encode_len(len);
 		needed_len=len+base64_len;
 	} else
-		needed_len = len;	
+		needed_len = len;
 
 	if (he_buf == NULL || needed_len > he_buf_len) {
 		/* realloc if not enough space */
-		he_buf = pkg_realloc(he_buf,needed_len);	
+		he_buf = pkg_realloc(he_buf,needed_len);
 		if (he_buf == NULL) {
 			LM_ERR("No more pkg\n");
-			return NULL;				
+			return NULL;
 		}
 		he_buf_len = needed_len;
 	}
@@ -190,13 +202,13 @@ static char* serialize_he_rdata(struct hostent *he,int *buf_len,int do_encoding)
 	p+=sizeof(int);
 
 	/* copy h_name len */
-	len=strlen(he->h_name)+1;			
+	len=strlen(he->h_name)+1;
 	memcpy(p,&len,sizeof(int));
 	p+=sizeof(int);
 	/* copy h_name */
 	memcpy(p,he->h_name,len);
 	p+=len;
-	
+
 	/* copy number of aliases */
 	memcpy(p,&alias_no,sizeof(int));
 	p+=sizeof(int);
@@ -234,11 +246,11 @@ static char* serialize_he_rdata(struct hostent *he,int *buf_len,int do_encoding)
 
 		/* do encoding, and return pointer after unencoded data */
 		base64encode(p,he_buf,len);
-		return (char *)p;	
+		return (char *)p;
 	} else {
 		if (buf_len)
 			*buf_len = needed_len;
-		return (char *)he_buf;	
+		return (char *)he_buf;
 	}
 }
 
@@ -255,7 +267,7 @@ static struct hostent* deserialize_he_rdata(char *buff,int buf_len,int do_decodi
 	unsigned char *p;
 	int max_len=0;
 	int i,alias_no=0,addr_no=0,len=0;
-	
+
 	/* max estimation of needed buffer */
 	if (do_decoding) {
 		max_len=calc_max_base64_decode_len(buf_len);
@@ -265,10 +277,10 @@ static struct hostent* deserialize_he_rdata(char *buff,int buf_len,int do_decodi
 
 	if (dec_he_buf == NULL || max_len > dec_he_buf_len) {
 		/* realloc buff if not enough space */
-		dec_he_buf = pkg_realloc(dec_he_buf,max_len);	
+		dec_he_buf = pkg_realloc(dec_he_buf,max_len);
 		if (dec_he_buf == NULL) {
 			LM_ERR("No more pkg\n");
-			return NULL;				
+			return NULL;
 		}
 		dec_he_buf_len = max_len;
 	}
@@ -280,7 +292,7 @@ static struct hostent* deserialize_he_rdata(char *buff,int buf_len,int do_decodi
 	hap = h_addr_ptrs;
 	*hap = NULL;
 	dec_global_he.h_addr_list = h_addr_ptrs;
-	
+
 	if (do_decoding) {
 		/* decode base64 buf */
 		base64decode(dec_he_buf,(unsigned char *)buff,buf_len);
@@ -313,19 +325,19 @@ static struct hostent* deserialize_he_rdata(char *buff,int buf_len,int do_decodi
 		memcpy(&len,p,sizeof(int));
 		p+=sizeof(int);
 		*ap++ = (char *)p;
-		p+=len;		
+		p+=len;
 	}
 
 	/* get number of addresses */
-	memcpy(&addr_no,p,sizeof(int));	
+	memcpy(&addr_no,p,sizeof(int));
 	p+=sizeof(int);
 
 	for (i=0;i<addr_no;i++) {
 		/* set pointer and skip over length */
-		*hap++ = (char *)p;	
+		*hap++ = (char *)p;
 		p+=dec_global_he.h_length;
-	}			
-		
+	}
+
 	return &dec_global_he;
 }
 
@@ -345,38 +357,38 @@ static char* serialize_dns_rdata(struct rdata *head,int buf_len,int *len,int do_
 
 	if (do_encoding) {
 		base64_len = calc_base64_encode_len(buf_len);
-		needed_len = buf_len + base64_len; 
+		needed_len = buf_len + base64_len;
 	} else {
 		needed_len = buf_len;
-	}	
+	}
 
 	if (rdata_buf == NULL || needed_len > rdata_buf_len) {
-		rdata_buf = pkg_realloc(rdata_buf,needed_len);	
+		rdata_buf = pkg_realloc(rdata_buf,needed_len);
 		if (rdata_buf == NULL) {
 			LM_ERR("No more pkg\n");
-			return NULL;				
+			return NULL;
 		}
 		rdata_buf_len = needed_len;
 	}
 
 	p = rdata_buf;
-	
+
 	for (it=head;it;it=it->next) {
 		/* copy non-pointer fields of the struct */
 		memcpy(p,it,rdata_struct_len);
 		p+=rdata_struct_len;
-		
+
 		switch (it->type) {
 			case T_A:
 				/* copy all 4 bytes */
 				memcpy(p,it->rdata,sizeof(struct a_rdata));
 				p+=sizeof(struct a_rdata);
-				break;				
+				break;
 			case T_AAAA:
 				/* copy all 16 bytes */
 				memcpy(p,it->rdata,sizeof(struct aaaa_rdata));
 				p+=sizeof(struct aaaa_rdata);
-				break;				
+				break;
 			case T_CNAME:
 				cname_rd=(struct cname_rdata *)it->rdata;
 				entry_len=strlen(cname_rd->name);
@@ -386,11 +398,11 @@ static char* serialize_dns_rdata(struct rdata *head,int buf_len,int *len,int do_
 				/* copy alias */
 				memcpy(p,cname_rd->name,entry_len+1);
 				p+=entry_len+1;
-				break;				
+				break;
 			case T_NAPTR:
 				/* copy priority, etc */
-				memcpy(p,it->rdata,2*sizeof(unsigned short) + 
-						sizeof(unsigned int)); 
+				memcpy(p,it->rdata,2*sizeof(unsigned short) +
+						sizeof(unsigned int));
 				p+=2*sizeof(unsigned short) + sizeof(unsigned int);
 				naptr_rd=it->rdata;
 				/* copy flags, flags_len was copied above */
@@ -411,7 +423,7 @@ static char* serialize_dns_rdata(struct rdata *head,int buf_len,int *len,int do_
 				p+=sizeof(unsigned int);
 				memcpy(p,naptr_rd->repl,naptr_rd->repl_len+1);
 				p+=naptr_rd->repl_len+1;
-				break;				
+				break;
 			case T_SRV:
 				srv_rd=it->rdata;
 				memcpy(p,srv_rd,4*sizeof(unsigned short) +
@@ -419,18 +431,18 @@ static char* serialize_dns_rdata(struct rdata *head,int buf_len,int *len,int do_
 				p+=4*sizeof(unsigned short) + sizeof(unsigned int);
 				memcpy(p,srv_rd->name,srv_rd->name_len+1);
 				p+=srv_rd->name_len+1;
-				break;				
+				break;
 			case T_TXT:
 				txt_rd=it->rdata;
 				entry_len=strlen(txt_rd->txt);
 				memcpy(p,&entry_len,sizeof(int));
 				p+=sizeof(int);
 				memcpy(p,txt_rd->txt,entry_len+1);
-				p+=entry_len+1;		
-				break;				
+				p+=entry_len+1;
+				break;
 			case T_EBL:
 				ebl_rd=it->rdata;
-				memcpy(p,ebl_rd,sizeof(unsigned char) + 
+				memcpy(p,ebl_rd,sizeof(unsigned char) +
 					sizeof(unsigned int));
 				p+=sizeof(unsigned char) + sizeof(unsigned int);
 				memcpy(p,ebl_rd->separator,ebl_rd->separator_len+1);
@@ -439,21 +451,21 @@ static char* serialize_dns_rdata(struct rdata *head,int buf_len,int *len,int do_
 				p+=sizeof(unsigned int);
 				memcpy(p,ebl_rd->apex,ebl_rd->apex_len+1);
 				p+=ebl_rd->apex_len+1;
-				break;				
+				break;
 			default:
 				LM_ERR("Unexpected DNS record type\n");
 				return NULL;
 		}
 	}
-	
+
 	if (do_encoding) {
 		if (*len)
 			*len = base64_len;
 
 		/* encode and return beggining of encoding */
 		base64encode(p,rdata_buf,buf_len);
-		return (char *)p;	
-	} else { 
+		return (char *)p;
+	} else {
 		if (*len)
 			*len = needed_len;
 		return (char *)rdata_buf;
@@ -473,7 +485,7 @@ static struct rdata* deserialize_dns_rdata(char *buff,int buf_len,int do_decodin
 	struct ebl_rdata *ebl_rd;
 
 	head=it=NULL;
-	last=&head;	
+	last=&head;
 
 	if (do_decoding) {
 		max_len = calc_max_base64_decode_len(buf_len);
@@ -483,17 +495,17 @@ static struct rdata* deserialize_dns_rdata(char *buff,int buf_len,int do_decodin
 
 	if (dec_rdata_buf == NULL || max_len > dec_rdata_buf_len) {
 		/* realloc buff if not enough space */
-		dec_rdata_buf = pkg_realloc(dec_rdata_buf,max_len);	
+		dec_rdata_buf = pkg_realloc(dec_rdata_buf,max_len);
 		if (dec_rdata_buf == NULL) {
 			LM_ERR("No more pkg\n");
-			return NULL;				
+			return NULL;
 		}
 		dec_rdata_buf_len = max_len;
 	}
 
 	if (do_decoding) {
 		/* decode base64 buf */
-		actual_len = base64decode(dec_rdata_buf,(unsigned char *)buff,buf_len);	
+		actual_len = base64decode(dec_rdata_buf,(unsigned char *)buff,buf_len);
 		p = dec_rdata_buf;
 	} else {
 		memcpy(dec_rdata_buf,buff,buf_len);
@@ -502,7 +514,7 @@ static struct rdata* deserialize_dns_rdata(char *buff,int buf_len,int do_decodin
 	}
 
 	while ( p < dec_rdata_buf+actual_len) {
-		it = pkg_malloc(sizeof(struct rdata));		
+		it = pkg_malloc(sizeof(struct rdata));
 		if (it == 0) {
 			LM_ERR("no more pkg mem\n");
 			goto it_alloc_error;
@@ -510,44 +522,44 @@ static struct rdata* deserialize_dns_rdata(char *buff,int buf_len,int do_decodin
 
 		/* copy type, class & ttl */
 		memcpy(it,p,rdata_struct_len);
-		p+=rdata_struct_len;			
+		p+=rdata_struct_len;
 		it->next=0;
 		it->rdata=0;
 
 		switch (it->type) {
 			case T_A:
-				it->rdata = pkg_malloc(sizeof(struct a_rdata)); 
+				it->rdata = pkg_malloc(sizeof(struct a_rdata));
 				if (it->rdata == 0) {
 					LM_ERR("no more pkg\n");
 					goto rdata_alloc_error;
 				}
 				memcpy(p,it->rdata,sizeof(struct a_rdata));
-				p+=sizeof(struct a_rdata);	
+				p+=sizeof(struct a_rdata);
 				*last=it;
 				last=&(it->next);
-				break;	
+				break;
 			case T_AAAA:
-				it->rdata = pkg_malloc(sizeof(struct aaaa_rdata)); 
+				it->rdata = pkg_malloc(sizeof(struct aaaa_rdata));
 				if (it->rdata == 0) {
 					LM_ERR("no more pkg\n");
 					goto rdata_alloc_error;
 				}
 				memcpy(p,it->rdata,sizeof(struct aaaa_rdata));
-				p+=sizeof(struct aaaa_rdata);	
+				p+=sizeof(struct aaaa_rdata);
 				*last=it;
 				last=&(it->next);
-				break;	
+				break;
 			case T_CNAME:
-				it->rdata = pkg_malloc(sizeof(struct cname_rdata));	
+				it->rdata = pkg_malloc(sizeof(struct cname_rdata));
 				if (it->rdata == 0) {
 					LM_ERR("no more pkg\n");
 					goto rdata_alloc_error;
-				}	
+				}
 				memcpy(&entry_len,p,sizeof(int));
-				p+=sizeof(int);	
+				p+=sizeof(int);
 				memcpy(((struct cname_rdata*)it->rdata)->name,
 					p,entry_len+1);
-				p+=entry_len+1;		
+				p+=entry_len+1;
 				*last=it;
 				last=&(it->next);
 				break;
@@ -558,7 +570,7 @@ static struct rdata* deserialize_dns_rdata(char *buff,int buf_len,int do_decodin
 					goto rdata_alloc_error;
 				}
 				naptr_rd = (struct naptr_rdata*)it->rdata;
-				memcpy(naptr_rd,p,2*sizeof(unsigned short) + 
+				memcpy(naptr_rd,p,2*sizeof(unsigned short) +
 					sizeof(unsigned int));
 				p+=2*sizeof(unsigned short) + sizeof(unsigned int);
 				memcpy(naptr_rd->flags,p,naptr_rd->flags_len+1);
@@ -585,7 +597,7 @@ static struct rdata* deserialize_dns_rdata(char *buff,int buf_len,int do_decodin
 					goto rdata_alloc_error;
 				}
 				srv_rd = (struct srv_rdata*)it->rdata;
-				memcpy(srv_rd,p,4*sizeof(unsigned short) + 
+				memcpy(srv_rd,p,4*sizeof(unsigned short) +
 					sizeof(unsigned int));
 				p+=4*sizeof(unsigned short) + sizeof(unsigned int);
 				memcpy(srv_rd->name,p,srv_rd->name_len+1);
@@ -601,9 +613,9 @@ static struct rdata* deserialize_dns_rdata(char *buff,int buf_len,int do_decodin
 				}
 				txt_rd = (struct txt_rdata*)it->rdata;
 				memcpy(&entry_len,p,sizeof(int));
-				p+=sizeof(int);	
+				p+=sizeof(int);
 				memcpy(txt_rd->txt,p,entry_len+1);
-				p+=entry_len+1;		
+				p+=entry_len+1;
 				*last=it;
 				last=&(it->next);
 				break;
@@ -614,9 +626,9 @@ static struct rdata* deserialize_dns_rdata(char *buff,int buf_len,int do_decodin
 					goto rdata_alloc_error;
 				}
 				ebl_rd = (struct ebl_rdata*)it->rdata;
-				memcpy(ebl_rd,p,sizeof(unsigned char) + 
-					sizeof(unsigned int));	
-				p+=sizeof(unsigned char)+sizeof(unsigned int);	
+				memcpy(ebl_rd,p,sizeof(unsigned char) +
+					sizeof(unsigned int));
+				p+=sizeof(unsigned char)+sizeof(unsigned int);
 				memcpy(ebl_rd->separator,p,ebl_rd->separator_len+1);
 				p+=ebl_rd->separator_len+1;
 				memcpy(&ebl_rd->apex_len,p,sizeof(unsigned int));
@@ -632,7 +644,7 @@ static struct rdata* deserialize_dns_rdata(char *buff,int buf_len,int do_decodin
 	return head;
 
 rdata_alloc_error:
-	if (it) 
+	if (it)
 		pkg_free(it);
 it_alloc_error:
 	if (head)
@@ -662,7 +674,7 @@ char* create_keyname_for_record(char *name,int r_type,int name_len,int *res_len)
 	} else {
 		/* binary key, convert to str */
 		inet_ntop(name_len==4?AF_INET:AF_INET6,name,p,name_len==4?
-			INET_ADDRSTRLEN:INET6_ADDRSTRLEN);		
+			INET_ADDRSTRLEN:INET6_ADDRSTRLEN);
 		x=strlen(p);
 		*res_len += x;
 		p+=x;
@@ -710,12 +722,12 @@ char* create_keyname_for_record(char *name,int r_type,int name_len,int *res_len)
 			LM_ERR("invalid r_type %d\n",r_type);
 			return NULL;
 	}
-	
+
 	return keyname_buff;
 }
 
 /* gets value from cache for the corresponding entry
- * Params : 
+ * Params :
  * name - what is wished to be resolved - binary IP for PTR and strings for other queries
  * r_type - type of DNS query
  * name_len - only used in case of PTR
@@ -723,16 +735,16 @@ char* create_keyname_for_record(char *name,int r_type,int name_len,int *res_len)
 int get_dnscache_strvalue(char *name,int r_type,int name_len,str *res)
 {
 	str key;
-	
+
 	/* generate key */
 	key.s=create_keyname_for_record(name,r_type,name_len,&key.len);
 	if (key.s == NULL) {
 		LM_ERR("failed to create key\n");
 		return -1;
 	}
-	
+
 	LM_DBG("gen key [%.*s]\n",key.len,key.s);
-	
+
 	/* fetch from backend */
 	if (cdbf.get(cdbc, &key, res) < 0) {
 		LM_DBG("cannot retrieve key\n");
@@ -755,7 +767,7 @@ void* get_dnscache_value(char *name,int r_type,int name_len)
 
 	if (cdbc == NULL) {
 		/* assume dns request before forking - cache is not ready yet */
-		return NULL;	
+		return NULL;
 	}
 
 	if (get_dnscache_strvalue(name,r_type,name_len,&value) < 0) {
@@ -782,7 +794,7 @@ void* get_dnscache_value(char *name,int r_type,int name_len)
 	} else {
 		head = deserialize_dns_rdata(value.s,value.len,
 			CACHEDB_CAPABILITY(&cdbf,CACHEDB_CAP_BINARY_VALUE)?0:1);
-		if (head == NULL) { 
+		if (head == NULL) {
 			LM_ERR("failed to deserialize rdata struct\n");
 			pkg_free(value.s);
 			return NULL;
@@ -810,7 +822,7 @@ int put_dnscache_value(char *name,int r_type,void *record,int rdata_len,
 
 	if (cdbc == NULL) {
 		/* assume dns request before forking - cache is not ready yet */
-		return -1;	
+		return -1;
 	}
 
 	/* generate key */
@@ -825,11 +837,11 @@ int put_dnscache_value(char *name,int r_type,void *record,int rdata_len,
 		 * with the default timeout */
 		value.s = FAILURE_MARKER;
 		value.len= FAILURE_MARKER_LEN;
-		key_ttl = blacklist_timeout; 
+		key_ttl = blacklist_timeout;
 	} else {
 		if (r_type == T_A || r_type == T_AAAA || r_type == T_PTR) {
 			value.s = serialize_he_rdata((struct hostent *)record,
-		&value.len,CACHEDB_CAPABILITY(&cdbf,CACHEDB_CAP_BINARY_VALUE)?0:1); 
+		&value.len,CACHEDB_CAPABILITY(&cdbf,CACHEDB_CAP_BINARY_VALUE)?0:1);
 			if (value.s == NULL) {
 				LM_ERR("failed to serialize he rdata\n");
 				return -1;

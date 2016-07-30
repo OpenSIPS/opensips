@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -131,7 +129,7 @@ int add_route(struct rewrite_data * rd, int carrier_id,
  * @param domain the routing domain of the new route
  * @param scan_prefix the number prefix
  * @param host the hostname last tried
- * @param reply_code the reply code 
+ * @param reply_code the reply code
  * @param flags user defined flags
  * @param mask mask for user defined flags
  * @param next_domain continue routing with this domain
@@ -149,7 +147,7 @@ int add_failure_route(struct rewrite_data * rd, int carrier_id, const str * doma
  *
  * @param tree the tree to be added
  *
- * @return values: on succcess the numerical index of the given tree,
+ * @return values: on success the numerical index of the given tree,
  * -1 on failure
  */
 int add_tree(const str * tree, int carrier_id);
@@ -159,7 +157,7 @@ int add_tree(const str * tree, int carrier_id);
  *
  * @param tree the carrier, we are looking for
  *
- * @return values: on succcess the id of for this carrier,
+ * @return values: on success the id of for this carrier,
  * -1 on failure
  */
 int find_tree(str tree);
@@ -179,7 +177,7 @@ struct carrier_tree * add_carrier_tree(const str * carrier, int carrier_id, stru
 
 /**
  * returns the routing tree for the given domain, if domain's tree
- * doesnt exist, it will be created. If the trees are completely
+ * doesn't exist, it will be created. If the trees are completely
  * filled and a not existing domain shall be added, an error is
  * returned
  *

@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * Hash table collision slot related functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*! \file
@@ -107,6 +105,7 @@ void ul_release_idx(int idx)
 int init_slot(struct udomain* _d, hslot_t* _s, int n)
 {
 	_s->records = map_create( AVLMAP_SHARED | AVLMAP_NO_DUPLICATE);
+	_s->next_label = 0;
 
 	if( _s->records == NULL )
 		return -1;
@@ -153,8 +152,8 @@ int slot_add(hslot_t* _s, struct urecord* _r)
 		LM_ERR("inserting into map\n");
 		return -1;
 	}
-	 
-	
+
+
 	*dest = _r;
 
 	_r->slot = _s;
@@ -170,5 +169,5 @@ void slot_rem(hslot_t* _s, struct urecord* _r)
 {
 
 	map_remove( _s->records, _r->aor );
-	_r->slot = 0;	
+	_r->slot = 0;
 }

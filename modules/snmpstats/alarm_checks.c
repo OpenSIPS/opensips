@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -19,13 +17,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
  * --------
  * 2006-11-23 initial version (jmagder)
- * 
+ *
  * This file groups together alarm checking and handling
  */
 
@@ -42,7 +40,7 @@
 /* Returns the number of bytes currently waiting in the msg queue if they exceed
  * the threshold, and zero otherwise.  If threshold_to_compare_to is < 0, then
  * no check will be performed and zero always returned. */
-int check_msg_queue_alarm(int threshold_to_compare_to) 
+int check_msg_queue_alarm(int threshold_to_compare_to)
 {
 	int bytesWaiting = 0;
 
@@ -50,8 +48,8 @@ int check_msg_queue_alarm(int threshold_to_compare_to)
 	{
 		return 0;
 	}
-	
-	bytesWaiting = get_total_bytes_waiting(PROTO_NONE); 
+
+	bytesWaiting = get_total_bytes_waiting(PROTO_NONE);
 
 	if (bytesWaiting > threshold_to_compare_to)
 	{
@@ -64,18 +62,18 @@ int check_msg_queue_alarm(int threshold_to_compare_to)
 
 /* Returns the number of active dialogs if they exceed the threshold, and zero
  * otherwise. */
-int check_dialog_alarm(int threshold_to_compare_to) 
+int check_dialog_alarm(int threshold_to_compare_to)
 {
 	int num_dialogs;
 
-	if (threshold_to_compare_to < 0) 
+	if (threshold_to_compare_to < 0)
 	{
 		return 0;
 	}
 
 	num_dialogs = get_statistic("active_dialogs");
 
-	if (num_dialogs > threshold_to_compare_to) 
+	if (num_dialogs > threshold_to_compare_to)
 	{
 		return num_dialogs;
 	}
@@ -86,21 +84,21 @@ int check_dialog_alarm(int threshold_to_compare_to)
 /* This function will be called periodically from an OpenSIPS timer.  The first
  * time it is called, it will query OPENSER-MIB for configured thresholds.
  */
-void run_alarm_check(unsigned int ticks, void * attr) 
+void run_alarm_check(unsigned int ticks, void * attr)
 {
 	static int msg_queue_minor_threshold;
-	static int msg_queue_major_threshold;		
+	static int msg_queue_major_threshold;
 
 	static int dialog_minor_threshold;
 	static int dialog_major_threshold;
 
 	static char firstRun = 1;
-	
+
 	int bytesInMsgQueue;
 	int numActiveDialogs;
 
 	/* We only need to retrieve our thresholds the first time around */
-	if (firstRun) 
+	if (firstRun)
 	{
 		register_with_master_agent(ALARM_AGENT_NAME);
 
@@ -112,11 +110,11 @@ void run_alarm_check(unsigned int ticks, void * attr)
 
 		firstRun = 0;
 	}
-	
+
 	/* We need to have this here in case the master agent fails and is
 	 * restarted.  Without it, we won't be able to re-establish or AgentX
 	 * connection */
-	agent_check_and_process(0); 
+	agent_check_and_process(0);
 
 	/* Check for MsgQueue alarm conditions */
 
@@ -125,18 +123,18 @@ void run_alarm_check(unsigned int ticks, void * attr)
 	 * of bytes will be returned. */
 	bytesInMsgQueue = check_msg_queue_alarm(msg_queue_minor_threshold);
 
-	if (bytesInMsgQueue != 0) 
+	if (bytesInMsgQueue != 0)
 	{
-		send_openserMsgQueueDepthMinorEvent_trap(bytesInMsgQueue, 
+		send_openserMsgQueueDepthMinorEvent_trap(bytesInMsgQueue,
 						msg_queue_minor_threshold);
 	}
 
 	bytesInMsgQueue = check_msg_queue_alarm(msg_queue_major_threshold);
 
 
-	if (bytesInMsgQueue != 0) 
+	if (bytesInMsgQueue != 0)
 	{
-		send_openserMsgQueueDepthMajorEvent_trap(bytesInMsgQueue, 
+		send_openserMsgQueueDepthMajorEvent_trap(bytesInMsgQueue,
 						msg_queue_major_threshold);
 	}
 
@@ -149,7 +147,7 @@ void run_alarm_check(unsigned int ticks, void * attr)
 		send_openserDialogLimitMinorEvent_trap(numActiveDialogs,
 						dialog_minor_threshold);
 	}
-	
+
 	numActiveDialogs = check_dialog_alarm(dialog_major_threshold);
 
 	if (numActiveDialogs != 0)

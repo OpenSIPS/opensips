@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -73,7 +71,7 @@ inline static void stats_trans_rpl( int code, int local ) {
 		else
 			update_stat( tm_rld_rpls, 1);
 
-		numerical_stat = 
+		numerical_stat =
 			get_stat_var_from_num_code(code, 1);
 
 		/* Increment the status code. */
@@ -93,8 +91,8 @@ inline static void stats_trans_new( int local ) {
 	}
 }
 #else
-	#define stats_trans_rpl( _code , _local )  
-	#define stats_trans_new( _local )  
+	#define stats_trans_rpl( _code , _local )
+	#define stats_trans_new( _local )
 #endif
 
 #endif

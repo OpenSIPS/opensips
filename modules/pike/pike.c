@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * PIKE module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -95,15 +93,20 @@ static param_export_t params[]={
 static mi_export_t mi_cmds [] = {
 	{MI_PIKE_LIST, "lists the nodes in the pike tree",
 		mi_pike_list,   MI_NO_INPUT_FLAG,  0,  0 },
+	{MI_PIKE_RM, "remove a node from the tree",
+		mi_pike_rm,     0,                 0,  0 },
 	{0,0,0,0,0,0}
 };
 
 
 struct module_exports exports= {
 	"pike",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,
+	0,
 	params,
 	0,           /* exported statistics */
 	mi_cmds,     /* exported MI functions */
@@ -151,8 +154,10 @@ static int pike_init(void)
 	timer->next = timer->prev = timer;
 
 	/* registering timing functions  */
-	register_timer( "pike-clean", clean_routine , 0, 1 );
-	register_timer( "pike-swap", swap_routine , 0, time_unit );
+	register_timer( "pike-clean", clean_routine , 0, 1 ,
+		TIMER_FLAG_DELAY_ON_DELAY);
+	register_timer( "pike-swap", swap_routine , 0, time_unit,
+		TIMER_FLAG_DELAY_ON_DELAY );
 
 	if (pike_route_s && *pike_route_s) {
 		rt = get_script_route_ID_by_name( pike_route_s, rlist, RT_NO);

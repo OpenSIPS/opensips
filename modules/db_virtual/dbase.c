@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2009 Voice Sistem SRL
  * Copyright (C) 2009 Razvan
  *
@@ -18,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -34,6 +32,7 @@
 #include "dbase.h"
 #include "../../timer.h"
 
+#define MAXBUF (1<<14)
 /*  Conceptual allowed operations
  *                          parallel    round
     dbb->use_table
@@ -51,7 +50,7 @@
     dbb->last_inserted_id   0           0
     dbb->insert_update      1           1
  *
- * Explanation: 
+ * Explanation:
  * it makes sense to insert in multiple dbs
  * but not to query and fetch from multiple dbs.
  *
@@ -101,7 +100,7 @@ void try_reconnect(handle_set_t * p){
 
     int i;
     //handle_set_t * p = (handle_set_t*)_h->tail;//private_handles;
-    
+
     for(i=0; i< global->set_list[p->set_index].size; i++){
         if(!(p->con_list[i].flags & CAN_USE) &&
                 global->set_list[p->set_index].db_list[i].flags & CAN_USE){
@@ -272,9 +271,9 @@ do{                                                                             
 db_con_t* db_virtual_init(const str* _set_url)
 {
 /*
-    find set_url in globla state
+    find set_url in global state
     get index
-    alocate
+    allocate
     populate with db_init
 */
     LM_DBG("INIT set_name, %.*s\n", _set_url->len, _set_url->s);
@@ -285,7 +284,7 @@ db_con_t* db_virtual_init(const str* _set_url)
     char buffer[256];
     char * token;
     handle_set_t* p;
-    
+
     if(!_set_url || !_set_url->s){
         LM_ERR("url or url.s NULL\n");
         return NULL;
@@ -303,7 +302,7 @@ db_con_t* db_virtual_init(const str* _set_url)
         return NULL;
     }
 
-    
+
 
     /* find set_name in global */
     memset(buffer, 0, 256);
@@ -328,7 +327,7 @@ db_con_t* db_virtual_init(const str* _set_url)
 	return NULL;
     }
 
-    
+
     p = &private->hset_list[index];
 
     /* alocat res */
@@ -446,7 +445,7 @@ int db_virtual_use_table(db_con_t* _h, const str* _t)
 
     memcpy(use_table.s, _t->s, _t->len);
 
-    
+
     return rc2;
 }
 
@@ -514,3 +513,197 @@ int db_virtual_insert_update(const db_con_t* _h, const db_key_t* _k,
 {
     db_generic_operation2(insert_update(handle->con, _k, _v, _n),1, 1, 1);
 }
+
+#define CURRCON(_ah) (_ah->current_con)
+
+#define db_generic_async_operation(_h,_ah, _resume_f, FUNC_WITH_ARGS)         \
+do {                                                                            \
+	int mode;                                                                   \
+    int rc=0;                                                                   \
+    handle_con_t * handle;                                                      \
+    db_func_t * f;                                                              \
+    handle_set_t * p = (handle_set_t*)_h->tail;                                \
+                                                                                \
+    LM_DBG("f call handle size = %i\n", p->size);                               \
+                                                                                \
+    get_update_flags(p);                                                        \
+    try_reconnect(p);                                                           \
+                                                                                \
+	mode = global->set_list[p->set_index].set_mode;                             \
+                                                                                \
+	if (mode == PARALLEL) {                                                     \
+		LM_WARN("PARALLEL not supported in async! using FAILOVER!\n");          \
+	} else if (mode != FAILOVER && mode != ROUND) {                             \
+		LM_ERR("mode %d not supported!\n", mode);                               \
+		return -1;                                                              \
+	}                                                                           \
+                                                                                \
+	do {                                                                        \
+		handle = &p->con_list[CURRCON(_ah)];                                   \
+		f = &global->set_list[p->set_index].db_list[CURRCON(_ah)].dbf;         \
+                                                                                \
+		if((handle->flags & CAN_USE) && (handle->flags & MAY_USE)){             \
+			LM_DBG("flags1 = %i\n", p->con_list[CURRCON(_ah)].flags);          \
+                                                                                \
+			rc=f->FUNC_WITH_ARGS;                                               \
+                                                                                \
+			if (rc<0) {                                                         \
+				/* FIXME quite a complicated case                               \
+				 * if the db disconected by any means then                      \
+				 * anything shall be ok if continue with other DB               \
+				 * if cannot open new connections to mysql                      \
+				 * then things are gonna be messed up if continuing */          \
+				LM_ERR("failover call failed rc:%d\n", rc);                     \
+				/* set local can not use flag*/                                 \
+				handle->flags &= NOT_CAN_USE;                                   \
+                                                                                \
+				/* close connection*/                                           \
+				set_update_flags(CURRCON(_ah), p);                             \
+                                                                                \
+				f->close(handle->con);                                          \
+				/* if failed before placing the fd in reactor                   \
+				 * we keep on */                                                \
+				if ((--_ah->cons_rem) == 0) {                                  \
+					LM_ERR("All databases failed!! No hope for you!\n");        \
+					return -1;                                                  \
+				}                                                               \
+                                                                                \
+				/* try next*/                                                   \
+				rc = -1;                                                        \
+				CURRCON(_ah)  = (CURRCON(_ah)+1)%p->size;                     \
+			} else {                                                            \
+				if (_resume_f)                                                  \
+					async_status = ASYNC_CHANGE_FD;                             \
+				set_update_flags(CURRCON(_ah), p);                             \
+				return rc;                                                      \
+			}                                                                   \
+		} else {                                                                \
+			LM_DBG("flags2 = %i\n", p->con_list[CURRCON(_ah)].flags);          \
+			if ((--_ah->cons_rem) == 0) {                                      \
+				LM_ERR("All databases failed!! No hope for you!\n");            \
+				return -1;                                                      \
+			}                                                                   \
+                                                                                \
+			/* try next*/                                                       \
+			rc = -1;                                                            \
+			CURRCON(_ah)  = (CURRCON(_ah)+1)%p->size;                         \
+		}                                                                       \
+		LM_DBG("curent_con = %i\n", CURRCON(_ah));                             \
+	} while ((_ah)->cons_rem); /* should never exit here */                    \
+                                                                                \
+	return rc;                                                                  \
+}while (0);
+
+
+int db_virtual_async_raw_query(db_con_t *_h, const str *_s, void **_priv)
+{
+	handle_async_t* _ah;
+    handle_con_t * _handle;
+    handle_set_t * _p = (handle_set_t*)_h->tail;
+
+	if (_s->len > MAXBUF) {
+		LM_ERR("query exceeds buffer size(%d)!\n", MAXBUF);
+		return -1;
+	}
+
+	if ((_ah=pkg_malloc(sizeof(handle_async_t)+_s->len)) == NULL) {
+		LM_ERR("no more pkg\n");
+		return -1;
+	} else {
+		/* automatically jump to next DB destination only for ROUND ROBIN
+		 * else, for failover, will jump only if something goes wrong */
+		if (global->set_list[_p->set_index].set_mode == ROUND)
+			_p->curent_con = (_p->curent_con+1)%_p->size;
+
+		_ah->current_con = _p->curent_con;
+		_ah->cons_rem    = _p->size;
+
+		/* store the query for further calls */
+		_ah->query.len   = _s->len;
+		_ah->query.s	 = (char*)(_ah+1);
+		memcpy(_ah->query.s, _s->s, _s->len);
+
+		*_priv			 = _ah;
+	}
+
+    _handle = &_p->con_list[CURRCON(_ah)];
+
+	db_generic_async_operation(_h, _ah,0, async_raw_query(_handle->con, _s,
+	                           &_ah->_priv) );
+	return 0;
+}
+
+
+int db_virtual_async_resume(db_con_t *_h, int fd, db_res_t **_r, void *_priv)
+{
+
+	handle_async_t *_ah;
+    db_func_t * _f;
+    handle_con_t * _handle;
+    handle_set_t * _p = (handle_set_t*)_h->tail;
+
+	if (!_priv) {
+		LM_ERR("Expecting async handle! Nothing received!\n");
+		return -1;
+	}
+
+	_ah = (handle_async_t *)_priv;
+    _handle = &_p->con_list[CURRCON(_ah)];
+    _f = &global->set_list[_p->set_index].db_list[CURRCON(_ah)].dbf;
+
+	/* call the resume function */
+	if (_f->async_resume(_handle->con, fd, _r, _ah->_priv) < 0) {
+		_handle->flags &= NOT_CAN_USE;
+		/* close connection*/
+		_f->close(_handle->con);
+
+		/* we did all we could, but no con worked
+		 * do something to those DBs */
+		if ((--_ah->cons_rem) == 0) {
+			LM_ERR("All databases failed!! No hope for you!\n");
+			return -1;
+		}
+
+		/* try next DB; no matter RR or FAILOVER */
+		CURRCON(_ah) = (CURRCON(_ah) +1)%_p->size;
+		_handle = &_p->con_list[CURRCON(_ah)];
+
+		/* try the next database connection */
+		db_generic_async_operation(_h, _ah,1,
+				async_raw_query(_handle->con, &_ah->query, _ah->_priv) );
+	}
+
+	/* if here means it worked; we set this connection as current connection
+	 * for other messages to come */
+	_p->curent_con = CURRCON(_ah);
+
+	async_status = ASYNC_DONE;
+
+	return 0;
+}
+
+int db_virtual_async_free_result(db_con_t *_h, db_res_t *_r, void *_priv)
+{
+	handle_async_t *_ah = (handle_async_t *)_priv;
+	db_func_t *_f;
+	handle_con_t *_handle;
+	handle_set_t *_p = (handle_set_t *)_h->tail;
+
+	if (!_ah) {
+		LM_ERR("Expecting async handle! Nothing received!\n");
+		return -1;
+	}
+
+	_handle = &_p->con_list[CURRCON(_ah)];
+	_f = &global->set_list[_p->set_index].db_list[CURRCON(_ah)].dbf;
+
+	if (_f->async_free_result(_handle->con, _r, _ah->_priv) < 0) {
+		LM_ERR("error while freeing async query result\n");
+		return -1;
+	}
+
+	pkg_free(_ah);
+	return 0;
+}
+
+#undef CURRCON

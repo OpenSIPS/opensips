@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -26,13 +24,13 @@
 int load_xjab(struct xjab_binds *xjb)
 {
 	if(!( xjb->register_watcher=(pa_register_watcher_f)
-			find_export("jab_register_watcher", XJ_NO_SCRIPT_F, 0)) ) 
+			find_export("jab_register_watcher", XJ_NO_SCRIPT_F, 0)) )
 	{
 		LM_ERR("'jab_register_watcher' not found!\n");
 		return -1;
 	}
 	if(!( xjb->unregister_watcher=(pa_unregister_watcher_f)
-			find_export("jab_unregister_watcher", XJ_NO_SCRIPT_F, 0)) ) 
+			find_export("jab_unregister_watcher", XJ_NO_SCRIPT_F, 0)) )
 	{
 		LM_ERR("'jab_unregister_watcher' not found!\n");
 		return -1;

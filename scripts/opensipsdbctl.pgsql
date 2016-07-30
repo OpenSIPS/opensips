@@ -14,7 +14,6 @@
 #             split GRANTs for SERWeb tables so that it is only executed 
 #                  if SERWeb tables are created
 #             added GRANTs for re_grp table
-#             added CREATE pdt table (from PDT module)
 #             corrected comments to indicate Postgres as opposed to MySQL
 #             made last_modified/created stamps consistent to now() using 
 #                  local TIMESTAMP
@@ -30,8 +29,10 @@
 
 # path to the database schemas
 DATA_DIR="/usr/local/share/opensips"
-if [ -d "$DATA_DIR/postgres" ] ; then
+if [ -d "$DATA_DIR/postgres" ]; then
 	DB_SCHEMA="$DATA_DIR/postgres"
+elif [ -d "scripts/postgres" ]; then
+	DB_SCHEMA="scripts/postgres"
 else
 	DB_SCHEMA="./postgres"
 fi
@@ -50,10 +51,27 @@ if [ -z "$DBROOTUSER" ]; then
 	fi
 fi
 
-CMD="psql -q -h $DBHOST -U $DBROOTUSER "
-DUMP_CMD="pg_dump -h $DBHOST -U $DBROOTUSER -c"
+if ! [ -z "$DBPORT" ]; then
+	PORT_OPT="-p$DBPORT"
+else
+	PORT_OPT=
+fi
+
+CMD="psql -q -h $DBHOST $PORT_OPT -U $DBROOTUSER "
+DUMP_CMD="pg_dump -h $DBHOST $PORT_OPT -U $DBROOTUSER -c"
 #################################################################
 
+# read password and export PGPASSWORD
+prompt_pw()
+{
+        savetty=`stty -g`
+        echo -n "PGSQL password for $DBROOTUSER: "
+        stty -echo
+        read PGPASSWORD
+        stty $savetty
+        echo
+        export PGPASSWORD
+}
 
 # execute sql command with optional db name
 sql_query()
@@ -139,14 +157,15 @@ for TABLE in $STANDARD_TABLES; do
 	sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;"
 	if [ $TABLE != "version" ] ; then
 		mdbg "creating table: $TABLE"
-		if [ $TABLE = "dr_gateways" ] 
-		then
-			mdbg "creating table 1: $TABLE"
-			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
-		elif [ $TABLE = "dr_rules" ] 
+		if [ $TABLE = "dr_rules" ] 
 		then
 			mdbg "creating table 2: $TABLE"
 			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_ruleid_seq TO $DBRWUSER;"
+		elif [ $TABLE = "dialog" ] 
+		then
+			mdbg "creating table 2: $TABLE"
+			# the dialog table doesn't have an auto increment key
+			#sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_dlg_id_seq TO $DBRWUSER;"
 		else
 			mdbg "creating table 3: $TABLE"
 			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
@@ -170,7 +189,7 @@ then
 	fi
 fi
 
-minfo "Core OpenSIPS tables succesfully created."
+minfo "Core OpenSIPS tables successfully created."
 
 get_answer $INSTALL_PRESENCE_TABLES "Install presence related tables? (y/n): "
 if [ $ANSWER = "y" ]; then
@@ -216,7 +235,7 @@ for TABLE in $PRESENCE_TABLES; do
 	fi
 done
 
-minfo "Presence tables succesfully created."
+minfo "Presence tables successfully created."
 }  # end presence_create
 
 
@@ -240,8 +259,12 @@ done
 
 for TABLE in $EXTRA_TABLES; do
 	sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;"
-	if [ $TABLE != "route_tree" ] ; then
-		sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
+	if [ $TABLE != "route_tree" ] && [ $TABLE != "cachedb" ] ; then
+			if [ $TABLE == "fraud_detection" ] ; then
+				sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_ruleid_seq TO $DBRWUSER;"
+			else
+				sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
+			fi
 	fi
 	if [ $? -ne 0 ] ; then
 		merr "Grant privileges to extra tables failed!"
@@ -249,5 +272,10 @@ for TABLE in $EXTRA_TABLES; do
 	fi
 done
 
-minfo "Extra tables succesfully created."
+minfo "Extra tables successfully created."
 }  # end extra_create
+
+export PGPASSWORD
+if [ "$#" -ne 0 ] && [ "$PGPASSWORD" = "" ]; then
+        prompt_pw
+fi

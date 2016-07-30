@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -42,7 +40,7 @@
 #define MAX_MI_FILENAME 128
 
 /* size of buffer used by parser to read and build the MI tree */
-#define MI_CHILD_NO	    1 
+#define MI_CHILD_NO	    1
 
 #include <sys/un.h>
 #include "../../ip_addr.h"

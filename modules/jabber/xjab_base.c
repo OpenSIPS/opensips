@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * eXtended JABber module - Jabber connections pool
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
+ * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include <stdio.h>
@@ -39,7 +37,7 @@
 
 /**
  * get the hash code - based on Andrei's function
- * 
+ *
  */
 int xj_get_hash(str *x, str *y)
 {
@@ -59,8 +57,8 @@ int xj_get_hash(str *x, str *y)
 		}
 		v=0;
 		for (;p<(x->s+x->len); p++)
-		{ 
-			v<<=8; 
+		{
+			v<<=8;
 			v+=*p;
 		}
 		h+=v^(v>>3);
@@ -72,17 +70,17 @@ int xj_get_hash(str *x, str *y)
 			v=(*p<<24)+(p[1]<<16)+(p[2]<<8)+p[3];
 			h+=v^(v>>3);
 		}
-	
+
 		v=0;
 		for (;p<(y->s+y->len); p++)
-		{ 
-			v<<=8; 
+		{
+			v<<=8;
 			v+=*p;
 		}
 		h+=v^(v>>3);
 	}
 	h=((h)+(h>>11))+((h>>13)+(h>>23));
-	
+
 	return (h)?h:1;
 }
 
@@ -103,15 +101,15 @@ int xj_jkey_cmp(void *x, void *y)
 	// 		((str *)a)->s, ((str *)b)->len, ((str *)b)->s);
 	if(a->hash != b->hash)
 		return (a->hash < b->hash)?-1:1;
-	
+
 	if(a->id->len != b->id->len)
 		return (a->id->len < b->id->len)?-1:1;
-	
+
 	n=strncmp(a->id->s,b->id->s,a->id->len);
-	
+
 	if(n!=0)
 		return (n<0)?-1:1;
-	
+
 	return 0;
 }
 /**
@@ -159,7 +157,7 @@ int xj_extract_aor(str* u, int t)
 		LM_ERR("failed to parse URI\n");
 		return -1;
 	}
-	
+
 	if(t == 1)
 		u->s = puri.user.s;
 	u->len = puri.host.s + puri.host.len - u->s;

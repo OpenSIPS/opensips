@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2004-2006 Voice Sistem SRL
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -268,7 +266,7 @@ int parse_avp_db(char *s, struct db_param *dbp, int allow_scheme)
 		if (have_scheme)
 		{
 			dbp->scheme = avp_get_db_scheme( &tmp );
-			if (dbp->scheme==0) 
+			if (dbp->scheme==0)
 			{
 				LM_ERR("scheme <%s> not found\n", tmp.s);
 				goto error;
@@ -312,7 +310,7 @@ struct fis_param* parse_intstr_value(char *p, int len)
 		len -= 2;
 		if (*p==0 || len<=0 )
 		{
-			LM_ERR("parse error arround <%.*s>\n",len,p);
+			LM_ERR("parse error around <%.*s>\n",len,p);
 				goto error;
 		}
 	} else {
@@ -335,7 +333,7 @@ struct fis_param* parse_intstr_value(char *p, int len)
 		{
 			if(hexstr2int(val_str.s+2, val_str.len-2, &uint))
 			{
-				LM_ERR("value is not hex int as type says <%.*s>\n", 
+				LM_ERR("value is not hex int as type says <%.*s>\n",
 						val_str.len, val_str.s);
 				goto error;
 			}
@@ -451,37 +449,37 @@ int parse_avp_db_scheme( char *s, struct db_scheme *scheme)
 		while (*p && isspace((int)*p)) p++;
 
 		/* identify the attribute */
-		if ( foo.len==SCHEME_UUID_COL_LEN && 
+		if ( foo.len==SCHEME_UUID_COL_LEN &&
 		!strncasecmp( foo.s, SCHEME_UUID_COL, foo.len) )
 		{
 			if (scheme->uuid_col.s) goto parse_error;
 			duplicate_str( scheme->uuid_col, bar, error);
 		} else
-		if ( foo.len==SCHEME_USERNAME_COL_LEN && 
+		if ( foo.len==SCHEME_USERNAME_COL_LEN &&
 		!strncasecmp( foo.s, SCHEME_USERNAME_COL, foo.len) )
 		{
 			if (scheme->username_col.s) goto parse_error;
 			duplicate_str( scheme->username_col, bar, error);
 		} else
-		if ( foo.len==SCHEME_DOMAIN_COL_LEN && 
+		if ( foo.len==SCHEME_DOMAIN_COL_LEN &&
 		!strncasecmp( foo.s, SCHEME_DOMAIN_COL, foo.len) )
 		{
 			if (scheme->domain_col.s) goto parse_error;
 			duplicate_str( scheme->domain_col, bar, error);
 		} else
-		if ( foo.len==SCHEME_VALUE_COL_LEN && 
+		if ( foo.len==SCHEME_VALUE_COL_LEN &&
 		!strncasecmp( foo.s, SCHEME_VALUE_COL, foo.len) )
 		{
 			if (scheme->value_col.s) goto parse_error;
 			duplicate_str( scheme->value_col, bar, error);
 		} else
-		if ( foo.len==SCHEME_TABLE_LEN && 
+		if ( foo.len==SCHEME_TABLE_LEN &&
 		!strncasecmp( foo.s, SCHEME_TABLE, foo.len) )
 		{
 			if (scheme->table.s) goto parse_error;
 			duplicate_str( scheme->table, bar, error);
 		} else
-		if ( foo.len==SCHEME_VAL_TYPE_LEN && 
+		if ( foo.len==SCHEME_VAL_TYPE_LEN &&
 		!strncasecmp( foo.s, SCHEME_VAL_TYPE, foo.len) )
 		{
 			if ( bar.len==SCHEME_INT_TYPE_LEN &&

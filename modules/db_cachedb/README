@@ -132,7 +132,7 @@ modparam("auth_db","db_url","cachedb://mongodb:mycluster")
 
    Since the NoSQL backends do not usually have a strict schema
    involved, we do not provide scripts for creating such schemas,
-   since the insertion ops will trigger the dinamically creation
+   since the insertion ops will trigger the dynamically creation
    of the schema and info. Still, a specific data collection needs
    to be present, and that is the equivalent of the 'version'
    table from the SQL. Since most modules check the version table

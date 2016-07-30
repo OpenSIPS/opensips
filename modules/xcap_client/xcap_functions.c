@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * xcap_client module - XCAP client for OpenSIPS
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -50,7 +48,7 @@ char* get_xcap_path(xcap_get_req_t req);
 
 int bind_xcap_client(xcap_client_api_t* api)
 {
-	if (!api) 
+	if (!api)
 	{
 		LM_ERR("Invalid parameter value\n");
 		return -1;
@@ -62,7 +60,7 @@ int bind_xcap_client(xcap_client_api_t* api)
 	api->free_node_sel= xcapFreeNodeSel;
 	api->register_xcb= register_xcapcb;
 	api->getNewDoc= xcapGetNewDoc;
-	
+
 	return 0;
 }
 
@@ -83,10 +81,10 @@ void xcapFreeNodeSel(xcap_node_sel_t* node)
 	n= node->ns_list;
 	while(n)
 	{
-		m= n;
-		n= n->next;
-		pkg_free(n->value.s);
-		pkg_free(n);
+		m=n;
+		n=n->next;
+		pkg_free(m->value.s);
+		pkg_free(m);
 	}
 
 	pkg_free(node);
@@ -156,7 +154,7 @@ xcap_node_sel_t* xcapNodeSelAddStep(xcap_node_sel_t* curr_sel, str* name,
 		size+= 2+ attr_test->name.len+ attr_test->value.len;
 	if(extra_sel)
 		size+= 2+ extra_sel->len;
-	
+
 	new_step.s= (char*)pkg_malloc(size* sizeof(char));
 	if(new_step.s== NULL)
 	{
@@ -174,7 +172,7 @@ xcap_node_sel_t* xcapNodeSelAddStep(xcap_node_sel_t* curr_sel, str* name,
 				LM_ERR("Insuficient name cards for namespaces\n");
 				goto error;
 			}
-			new_step.len= sprintf(new_step.s, "%c:", ns_card);		
+			new_step.len= sprintf(new_step.s, "%c:", ns_card);
 		}
 		memcpy(new_step.s+new_step.len, name->s, name->len);
 		new_step.len+= name->len;
@@ -233,7 +231,7 @@ xcap_node_sel_t* xcapNodeSelAddStep(xcap_node_sel_t* curr_sel, str* name,
 	{
 		curr_sel->size+= namespace->len+ 3;
 	}
-	
+
 	return curr_sel;
 
 error:
@@ -251,7 +249,7 @@ error:
 	return NULL;
 }
 
-xcap_node_sel_t* xcapNodeSelAddTerminal(xcap_node_sel_t* curr_sel, 
+xcap_node_sel_t* xcapNodeSelAddTerminal(xcap_node_sel_t* curr_sel,
 		char* attr_sel, char* namespace_sel, char* extra_sel )
 {
 
@@ -287,14 +285,14 @@ char* get_node_selector(xcap_node_sel_t* node_sel)
 
 	if(ns_elem)
 		buf[len++]= '?';
-	
+
 	while(ns_elem)
 	{
 		len+= sprintf(buf+ len, "xmlns(%c=%.*s)", ns_elem->name,
 				ns_elem->value.len, ns_elem->value.s);
 		ns_elem= ns_elem->next;
 	}
-	
+
 	buf[len]= '\0';
 
 	return buf;
@@ -303,7 +301,7 @@ error:
 	return NULL;
 }
 
-int xcapGetNewDoc(xcap_get_req_t req, str user, 
+int xcapGetNewDoc(xcap_get_req_t req, str user,
 		str domain, str* xcap_doc)
 {
 	char* etag= NULL;
@@ -340,13 +338,13 @@ int xcapGetNewDoc(xcap_get_req_t req, str user,
 	query_vals[n_query_cols].nul = 0;
 	query_vals[n_query_cols].val.str_val = user;
 	n_query_cols++;
-	
+
 	query_cols[n_query_cols] = &str_domain_col;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
 	query_vals[n_query_cols].val.str_val = domain;
 	n_query_cols++;
-	
+
 	query_cols[n_query_cols] = &str_doc_type_col;
 	query_vals[n_query_cols].type = DB_INT;
 	query_vals[n_query_cols].nul = 0;
@@ -376,19 +374,19 @@ int xcapGetNewDoc(xcap_get_req_t req, str user,
 	query_vals[n_query_cols].nul = 0;
 	query_vals[n_query_cols].val.string_val= path;
 	n_query_cols++;
-	
+
 	query_cols[n_query_cols] = &str_port_col;
 	query_vals[n_query_cols].type = DB_INT;
 	query_vals[n_query_cols].nul = 0;
 	query_vals[n_query_cols].val.int_val= req.port;
 	n_query_cols++;
 
-	if (xcap_dbf.use_table(xcap_db, &xcap_db_table) < 0) 
+	if (xcap_dbf.use_table(xcap_db, &xcap_db_table) < 0)
 	{
 		LM_ERR("in use_table-[table]= %.*s\n", xcap_db_table.len, xcap_db_table.s);
 		goto error;
 	}
-	
+
 	if(xcap_dbf.insert(xcap_db, query_cols, query_vals, n_query_cols)< 0)
 	{
 		LM_ERR("in sql insert\n");
@@ -401,7 +399,7 @@ int xcapGetNewDoc(xcap_get_req_t req, str user,
 error:
 	pkg_free(path);
 	if(doc.s)
-		pkg_free(doc.s); 
+		pkg_free(doc.s);
 	return -1;
 }
 
@@ -413,7 +411,7 @@ char* get_xcap_path(xcap_get_req_t req)
 
 	len= (strlen(req.xcap_root)+ 1+ req.doc_sel.auid.len+ 5+
 			req.doc_sel.xid.len+ req.doc_sel.filename.len+ 50)* sizeof(char);
-	
+
 	if(req.node_sel)
 		len+= req.node_sel->size;
 
@@ -432,7 +430,7 @@ char* get_xcap_path(xcap_get_req_t req)
 			goto error;
 		}
 	}
-	
+
 	size= sprintf(path, "%s/%.*s/", req.xcap_root, req.doc_sel.auid.len,
 			req.doc_sel.auid.s);
 
@@ -443,7 +441,7 @@ char* get_xcap_path(xcap_get_req_t req)
 		size+= sprintf(path+ size, "%s/", "global");
 	size+= sprintf(path+ size, "%.*s", req.doc_sel.filename.len,
 			req.doc_sel.filename.s);
-	
+
 	if(node_selector)
 	{
 		size+= sprintf(path+ size, "/~~%s", node_selector);
@@ -454,12 +452,12 @@ char* get_xcap_path(xcap_get_req_t req)
 		LM_ERR("buffer size overflow\n");
 		goto error;
 	}
-	
+
 	if(node_selector)
 		pkg_free(node_selector);
 
 	return path;
-	
+
 error:
 	if(path)
 		pkg_free(path);
@@ -474,7 +472,7 @@ char* xcapGetElem(xcap_get_req_t req, char** etag)
 {
 	char* path= NULL;
 	str stream= {0, 0};
-	
+
 	path= get_xcap_path(req);
 	if(path== NULL)
 	{
@@ -487,7 +485,7 @@ char* xcapGetElem(xcap_get_req_t req, char** etag)
 	{
 		LM_DBG("the serched element was not found\n");
 	}
-	
+
 	if(etag== NULL)
 	{
 		LM_ERR("no etag found\n");
@@ -497,7 +495,7 @@ char* xcapGetElem(xcap_get_req_t req, char** etag)
 
 	if(path)
 		pkg_free(path);
-	
+
 	return stream.s;
 }
 
@@ -542,14 +540,14 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 	if(match_etag)
 	{
 		char* hdr_name= NULL;
-		
+
 		memset(buf, 0, 128);
 		match_header= buf;
-		
-		hdr_name= (match_type==IF_MATCH)?"If-Match":"If-None-Match"; 
-		
+
+		hdr_name= (match_type==IF_MATCH)?"If-Match":"If-None-Match";
+
 		len=sprintf(match_header, "%s: %s", hdr_name, match_etag);
-		
+
 		match_header[len]= '\0';
 		LM_DBG("match_header = %s\n", match_header);
 	}
@@ -557,21 +555,21 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 	LM_DBG("path = [%s]\n", path);
 
 	curl_handle = curl_easy_init();
-	
+
 	curl_easy_setopt(curl_handle, CURLOPT_URL, path);
-	
+
 	curl_easy_setopt(curl_handle, CURLOPT_PORT, xcap_port);
 
 	curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1);
 
 	curl_easy_setopt(curl_handle,  CURLOPT_STDERR, stdout);
-	
+
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_function);
-	
+
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &buff);
 
 	curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, get_xcap_etag);
-	
+
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEHEADER, etag);
 
 	curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, err_buff);
@@ -586,7 +584,7 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 	curl_easy_setopt(curl_handle, CURLOPT_FAILONERROR, 1);
 
 	ret_code= curl_easy_perform(curl_handle );
-	 
+
 	if( ret_code!=0) {
 		LM_ERR("Error [%i] while performing curl operation\n", ret_code);
 		LM_ERR("[%s]\n", err_buff);
@@ -618,16 +616,16 @@ size_t write_function( void *ptr, size_t size, size_t nmemb, void *stream)
 	int len = (int)(size*nmemb);
 	str* buff = (str*) stream;
 
-	if (len == -1) 
+	if (len == -1)
 		len=strlen(s);
-	if (len == 0) 
+	if (len == 0)
 		return buff->len;
 
 	if(buff->len + len == 0)
 		return 0;
 
 	newData= (char*)pkg_realloc(buff->s, buff->len + len + 1);
-	if(newData== NULL) 
+	if(newData== NULL)
 	{
 		LM_ERR("No more memory\n");
 		ERR_MEM(PKG_MEM_STR);

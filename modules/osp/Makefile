@@ -30,10 +30,10 @@ LIBS+=-L$(LOCALBASE)/lib -losptk -lpthread -lm
 
 include ../../Makefile.modules
 
-install_module_custom: 
+install_module_custom:
 	echo "OSP module overwrites the default configuration file"
 	sed  \
-		-e "s#/usr/local/lib/opensips#$(modules-prefix)/$(lib-dir)#g" \
+		-e "s#/usr/local/lib/opensips#$(modules_prefix)/$(lib_dir)#g" \
 		< etc/sample-osp-opensips.cfg \
-		> $(cfg-prefix)/$(cfg-dir)/opensips.cfg
+		> $(cfg_prefix)/$(cfg_dir)/opensips.cfg
 

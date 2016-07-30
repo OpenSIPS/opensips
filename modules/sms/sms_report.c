@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include <time.h>
@@ -82,7 +80,7 @@ void set_gettime_function(void)
 
 
 
-inline void free_report_cell(struct report_cell *cell)
+static inline void free_report_cell(struct report_cell *cell)
 {
 	if (!cell)
 		return;
@@ -276,12 +274,12 @@ str* get_error_str(int status)
 			START_ERR_MSG"Error, remote procedure error"END_ERR_MSG;
 			err_str.len = 29 + START_ERR_MSG_LEN + END_ERR_MSG_LEN;
 			break;
-		case 65: 
+		case 65:
 			err_str.s =
 			START_ERR_MSG"Error,incompatible destination"END_ERR_MSG;
 			err_str.len = 30 + START_ERR_MSG_LEN + END_ERR_MSG_LEN;
 			break;
-		case 66: 
+		case 66:
 			err_str.s =
 			START_ERR_MSG"Error,connection rejected by SME"END_ERR_MSG;
 			err_str.len = 32 + START_ERR_MSG_LEN + END_ERR_MSG_LEN;

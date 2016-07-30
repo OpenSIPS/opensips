@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2004-2006 Voice Sistem SRL
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -35,6 +33,8 @@
 #include "../../str.h"
 #include "../../sr_module.h"
 #include "../../pvar.h"
+
+extern struct db_url *default_db_url;
 
 struct db_url
 {
@@ -79,11 +79,14 @@ int db_store_avp( struct db_url *url, db_key_t *keys, db_val_t *vals,
 int db_delete_avp( struct db_url *url, str *uuid, str *username, str *domain,
 		char *attr, const str *table);
 
-int db_query_avp(struct db_url *url, struct sip_msg* msg, char *query,
+int db_query_avp(struct db_url *url, struct sip_msg* msg, str *query,
 		pvname_list_t* dest);
 
 int avp_add_db_scheme( modparam_t type, void* val);
 
 struct db_scheme *avp_get_db_scheme( str *name );
+
+int db_query_avp_print_results(struct sip_msg *msg, const db_res_t *db_res,
+								pvname_list_t *dest);
 
 #endif

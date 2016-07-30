@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2006 Voice Sistem SRL
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -47,17 +45,29 @@ static char print_buffer[PRINT_BUFFER_SIZE];
 
 /*********************** msg flags ****************************/
 
-int setflag( struct sip_msg* msg, flag_t flag ) {
+int setflag(struct sip_msg* msg, flag_t flag)
+{
+#ifdef EXTRA_DEBUG
+	LM_DBG("mflags for %p : (%u, %u)\n", msg, flag, msg->flags);
+#endif
 	msg->flags |= 1 << flag;
 	return 1;
 }
 
-int resetflag( struct sip_msg* msg, flag_t flag ) {
+int resetflag(struct sip_msg* msg, flag_t flag)
+{
+#ifdef EXTRA_DEBUG
+	LM_DBG("mflags for %p : (%u, %u)\n", msg, flag, msg->flags);
+#endif
 	msg->flags &= ~ (1 << flag);
 	return 1;
 }
 
-int isflagset( struct sip_msg* msg, flag_t flag ) {
+int isflagset(struct sip_msg* msg, flag_t flag)
+{
+#ifdef EXTRA_DEBUG
+	LM_DBG("mflags for %p : (%u, %u)\n", msg, flag, msg->flags);
+#endif
 	return (msg->flags & (1<<flag)) ? 1 : -1;
 }
 
@@ -88,6 +98,9 @@ str bitmask_to_flag_list(enum flag_type type, int bitmask)
 	struct flag_entry *entry;
 	str ret;
 
+#ifdef EXTRA_DEBUG
+	LM_DBG("bitmask -> %u\n", bitmask);
+#endif
 	ret.s   = print_buffer;
 	ret.len = 0;
 	for (entry = flag_lists[type]; entry; entry = entry->next) {
@@ -109,6 +122,7 @@ str bitmask_to_flag_list(enum flag_type type, int bitmask)
 int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
 {
 	char *p, *lim;
+	char *crt_flag;
 	str name;
 	struct flag_entry *e;
 	int ret = 0;
@@ -116,15 +130,19 @@ int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
 	if (flags->len < 0)
 		return 0;
 
+#ifdef EXTRA_DEBUG
+	LM_DBG("flag_list -> '%.*s'\n", flags->len, flags->s);
+#endif
 	lim = flags->s + flags->len;
+	crt_flag = flags->s;
 	for (p = flags->s; p <= lim; p++) {
 
 		if (p == lim || *p == delim) {
 
-			name.s   = flags->s;
-			name.len = p - flags->s;
+			name.s   = crt_flag;
+			name.len = p - crt_flag;
 			for (e = flag_lists[type]; e; e = e->next) {
-				if (e->name.len == p - flags->s &&
+				if (e->name.len == p - crt_flag &&
 				    str_strcmp(&e->name, &name) == 0) {
 
 					ret |= 1 << e->bit;
@@ -132,7 +150,7 @@ int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
 				}
 			}
 
-			flags->s = p + 1;
+			crt_flag = p + 1;
 		}
 	}
 
@@ -153,13 +171,18 @@ int get_flag_id_by_name(int flag_type, char *flag_name)
 		return -1;
 	}
 
-	if (flag_type < 0 || flag_type > FLAG_LIST_COUNT) {
+	fn.s = flag_name;
+	fn.len = strlen(flag_name);
+
+	if (fn.len == 0) {
+		LM_WARN("found empty string flag modparam! possible scripting error?\n");
+		return -1;
+	}
+
+	if (flag_type < 0 || flag_type >= FLAG_LIST_COUNT) {
 		LM_ERR("Invalid flag list: %d\n", flag_type);
 		return -2;
 	}
-
-	fn.s = flag_name;
-	fn.len = strlen(flag_name);
 
 	flag_list = flag_lists + flag_type;
 
@@ -190,13 +213,9 @@ int get_flag_id_by_name(int flag_type, char *flag_name)
 	it->next = *flag_list;
 	*flag_list = it;
 
+	LM_DBG("New flag: [ %.*s : %d ][%d]\n", fn.len, fn.s, it->bit, flag_type);
 	return it->bit;
 }
-
-
-/*********************** script flags ****************************/
-
-static unsigned int sflags = 0;
 
 unsigned int fixup_flag(int flag_type, str *flag_name)
 {
@@ -214,33 +233,3 @@ unsigned int fixup_flag(int flag_type, str *flag_name)
 
 	return ret;
 }
-
-int setsflagsval( unsigned int val )
-{
-	sflags = val;
-	return 1;
-}
-
-int setsflag( unsigned int mask )
-{
-	sflags |= mask;
-	return 1;
-}
-
-int resetsflag( unsigned int mask )
-{
-	sflags &= ~ mask;
-	return 1;
-}
-
-int issflagset( unsigned int mask )
-{
-	return ( sflags & mask) ? 1 : -1;
-}
-
-unsigned int getsflags(void)
-{
-	return sflags;
-}
-
-

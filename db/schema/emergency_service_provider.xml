@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="emergency_service_provider" xmlns:db="http://docbook.org/ns/docbook">
+	<name>emergency_service_provider</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Emergency module to store information of the organizations involved 
+		in the routing of the emergency call, this information is necessary to send the request to the VPC, 
+		according to the NENA standard. 
+		This table isn't necessary if opensips role not send request to VPC, such as the opensips acting as call server in the scenarios II and III.
+		More information can be found at: &OPENSIPS_MOD_DOC;emergency.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Unique ID</description>
+	</column>
+
+	<column id="organizationName">
+		<name>organizationName</name>
+		<type>string</type>
+		<size>50</size>
+		<description>provider company name's. This parameter is optional 
+		field in the NENA v2 interface (call server - VPC)
+		</description>
+	</column>
+
+	<column id="hostId">
+		<name>hostId</name>
+		<type>string</type>
+		<size>30</size>
+		<description> provider hostname's. This parameter is  mandatory if 
+		attribution is 0(source) or 2(VSP), otherwise it is optional.
+		</description>
+	</column>
+
+	<column id="nenaId">
+		<name>nenaId</name>
+		<type>string</type>
+		<size>50</size>
+		<description> the NENA administered company identifier (NENA Company ID) of provider. 
+			This parameter is optional field in the NENA v2 interface (call server - VPC). 
+		</description>
+	</column>
+
+	<column id="contact">
+		<name>contact</name>
+		<type>string</type>
+		<size>20</size>
+		<description>  telephone number by which the provider operator can be reached 24 hours a day, 7 days a week. 
+			This parameter is  mandatory if attribution is 0(source) or 2(VSP), otherwise it is optional.
+		</description>
+	</column>
+	
+	<column id="certUri">
+		<name>certUri</name>
+		<type>string</type>
+		<size>50</size>
+		<description> provides a means of directly obtaining the VESA(Valid Emergency Services Authority) issued certificate for the provider. 
+		         This parameter is optional field in the NENA v2 interface (call server - VPC).
+		</description>
+	</column>
+
+	<column id="nodeIP">
+		<name>nodeIP</name>
+		<type>string</type>
+		<size>20</size>
+		<description> IP address of the node that is being registered. This parameter is  mandatory.
+		</description>
+	</column>
+
+	<column id="attribution">
+		<name>attribution</name>
+		<type>unsigned int</type>
+		<size>2</size>
+		<description> It is a field of type int designating the function of the organization involved in the composition of architecture NENA being registered in this table. This parameter is  mandatory. 
+		  The values that this field can take are:
+		  0 - the organization is a Source. Source is node directly requesting emergency call routing from the VPC.
+		  1 - the organization is a VPC. VPC is the routing information provider to emengency call
+		  2- the organization is a VSP. VSP is the caller's voice service provider 
+		</description>
+	</column>
+	
+</table>
+

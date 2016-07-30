@@ -6,7 +6,7 @@
 #
 
 PORTNAME=	opensips
-PORTVERSION=	1.9.0
+PORTVERSION=	2.1.0
 CATEGORIES=	net
 MASTER_SITES=	http://opensips.org/pub/opensips/${PORTVERSION}/src/
 DISTNAME=	${PORTNAME}-${PORTVERSION}-tls_src
@@ -37,7 +37,7 @@ MODULES=	acc alias_db auth auth_db auth_diameter avpops benchmark \
 		cfgutils dbtext dialog dispatcher diversion domain \
 		domainpolicy enum exec flatstore gflags group imc \
 		mangler maxfwd mediaproxy mi_datagram mi_fifo msilo nathelper \
-		options path pdt permissions pike registrar rr seas \
+		options path permissions pike registrar rr seas \
 		siptrace sl sms speeddial sst statistics textops tm uac \
 		uac_redirect uri uri_db usrloc xlog
 
@@ -62,7 +62,7 @@ SUB_LIST=	RC_DIRS="${RC_DIRS}" RC_FILES="${RC_FILES}"
 OPTIONS=	MYSQL "MySQL support" on \
 		POSTGRESQL "PostgreSQL support" off \
 		UNIXODBC "UnixODBC support" off \
-		CPL "CPL-C support" off \
+		CPL "CPL_C support" off \
 		TLS "TLS support" off \
 		SNMPSTATS "SNMPStats support" off
 
@@ -93,10 +93,10 @@ MAKE_ENV+=	UNIXODBC=unixodbc
 
 .if defined(WITH_CPL)
 USE_GNOME=	libxml2
-MODULES+=	cpl-c
+MODULES+=	cpl_c
 PLIST_FILES+=	etc/opensips/cpl-06.dtd
 .else
-MAKE_ENV+=	CPL=cpl-c
+MAKE_ENV+=	CPL=cpl_c
 .endif
 
 .if defined(WITH_TLS)
@@ -149,7 +149,7 @@ post-patch:
 		${WRKSRC}/scripts/opensipsdbctl.dbtext
 	@${REINPLACE_CMD} -e 's|/etc/opensips|${PREFIX}/etc/opensips|' \
 		${WRKSRC}/modules/mediaproxy/README \
-		${WRKSRC}/modules/cpl-c/README \
+		${WRKSRC}/modules/cpl_c/README \
 		${WRKSRC}/INSTALL
 	@${REINPLACE_CMD} -e 's|/usr/local/sbin/opensips|${PREFIX}/sbin/opensips|' \
 		${WRKSRC}/INSTALL

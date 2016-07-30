@@ -130,7 +130,7 @@ modparam("pua", "db_table", "pua")
 		The inferior expires limit for both Publish and Subscribe.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>0</quote>.
+		<emphasis>Default value is <quote>300</quote>.
 		</emphasis>
 		</para>
 		<example>

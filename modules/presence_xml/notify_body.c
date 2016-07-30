@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * presence_xml module -  
+ * presence_xml module -
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
  *
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -269,7 +267,7 @@ str* agregate_dialog_xmls(str* pres_user, str* pres_domain, str** body_array, in
 	xml_array = (xmlDocPtr*)pkg_malloc( (n+2)*sizeof(xmlDocPtr));
 	if(xml_array== NULL)
 	{
-	
+
 		LM_ERR("while alocating memory");
 		return NULL;
 	}
@@ -317,7 +315,7 @@ str* agregate_dialog_xmls(str* pres_user, str* pres_domain, str** body_array, in
 			LM_ERR("while geting the xml_tree root\n");
 			goto error;
 		}
-		
+
 		node= xmlNodeGetChildByName(new_p_root, elem_name);
 		if(node== NULL)
 		{
@@ -388,7 +386,7 @@ append_label:
 		ERR_MEM(PKG_MEM_STR);
 	}
 
-	xmlDocDumpMemory(xml_array[j],(xmlChar**)(void*)&body->s, 
+	xmlDocDumpMemory(xml_array[j],(xmlChar**)(void*)&body->s,
 			&body->len);
 
 	LM_DBG("body = %.*s\n", body->len, body->s);
@@ -889,7 +887,7 @@ int pres_apply_auth(str* notify_body, subs_t* subs, str** final_nbody)
 	xmlDocPtr doc= NULL;
 	xmlNodePtr node= NULL;
 	str* n_body= NULL;
-	
+
 	*final_nbody= NULL;
 	if(force_active)
 		return 0;
@@ -905,7 +903,7 @@ int pres_apply_auth(str* notify_body, subs_t* subs, str** final_nbody)
 		LM_ERR("parsing xml doc\n");
 		return -1;
 	}
-	
+
 	node= get_rule_node(subs, doc);
 	if(node== NULL)
 	{
@@ -913,7 +911,7 @@ int pres_apply_auth(str* notify_body, subs_t* subs, str** final_nbody)
 		xmlFreeDoc(doc);
 		return 0;
 	}
-	
+
 	n_body= get_final_notify_body(subs, notify_body, node);
 	if(n_body== NULL)
 	{
@@ -971,11 +969,11 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 
 	transf_node = xmlNodeGetChildByName(rule_node, "transformations");
 	if(transf_node == NULL)
-	{ 
+	{
 		LM_DBG("No transformations node found\n");
 		goto done;
 	}
-	
+
 	for(node = transf_node->children; node; node = node->next )
 	{
 		if(xmlStrcasecmp(node->name, (unsigned char*)"text")== 0)
@@ -985,7 +983,7 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 
 		strcpy((char*)name ,(char*)(node->name + 8));
 		strcpy(all_name+4, name);
-		
+
 		if(xmlStrcasecmp((unsigned char*)name,(unsigned char*)"services") == 0)
 			strcpy(name, "tuple");
 		if(strncmp((char*)name,"person", 6) == 0)
@@ -995,26 +993,26 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 		if(doc_node == NULL)
 			continue;
 		LM_DBG("searched doc_node->name:%s\n",name);
-	
+
 		content = (char*)xmlNodeGetContent(node);
 		if(content)
 		{
 			LM_DBG("content = %s\n", content);
-		
+
 			if(xmlStrcasecmp((unsigned char*)content,
 					(unsigned char*) "FALSE") == 0)
 			{
 				LM_DBG("found content false\n");
 				while( doc_node )
 				{
-					xmlUnlinkNode(doc_node);	
+					xmlUnlinkNode(doc_node);
 					xmlFreeNode(doc_node);
 					doc_node = xmlNodeGetChildByName(doc_root, name);
 				}
 				xmlFree(content);
 				continue;
 			}
-		
+
 			if(xmlStrcasecmp((unsigned char*)content,
 					(unsigned char*) "TRUE") == 0)
 			{
@@ -1038,7 +1036,7 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 				break;
 			}
 			all_node = xmlNodeGetChildByName(node, all_name) ;
-		
+
 			if( all_node )
 			{
 				LM_DBG("must provide all\n");
@@ -1047,7 +1045,7 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 			}
 
 			found = 0;
-			class_cont = xmlNodeGetNodeContentByName(doc_node, "class", 
+			class_cont = xmlNodeGetNodeContentByName(doc_node, "class",
 					NULL);
 			if(class_cont == NULL)
 				LM_DBG("no class tag found\n");
@@ -1062,7 +1060,7 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 
 
 			deviceID = xmlNodeGetNodeContentByName(doc_node, "deviceID",
-					NULL);	
+					NULL);
 			if(deviceID== NULL)
 				LM_DBG("no deviceID found\n");
 			else
@@ -1070,7 +1068,7 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 
 
 			service_uri = xmlNodeGetNodeContentByName(doc_node, "contact",
-					NULL);	
+					NULL);
 			if(service_uri == NULL)
 				LM_DBG("no service_uri found\n");
 			else
@@ -1088,7 +1086,7 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 			}
 
 			provide_node = node->children;
-				
+
 			while ( provide_node!= NULL )
 			{
 				if(xmlStrcasecmp(provide_node->name,(unsigned char*) "text")==0)
@@ -1162,7 +1160,7 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 						xmlFree(content);
 
 				}
-			
+
 				if(xmlStrcasecmp(provide_node->name,
 						(unsigned char*)"service-uri-scheme")==0&& i)
 				{
@@ -1175,7 +1173,7 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 						LM_DBG("found service_uri_scheme= %s", service_uri_scheme);
 						xmlFree(content);
 						break;
-					}	
+					}
 					if(content)
 						xmlFree(content);
 
@@ -1183,18 +1181,18 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 
 				provide_node = provide_node->next;
 			}
-			
+
 			if(found == 0)
 			{
 				LM_DBG("delete node: %s\n", doc_node->name);
 				dont_provide = doc_node;
 				doc_node = doc_node->next;
-				xmlUnlinkNode(dont_provide);	
+				xmlUnlinkNode(dont_provide);
 				xmlFreeNode(dont_provide);
-			}	
+			}
 			else
 				doc_node = doc_node->next;
-	
+
 		}
 	}
 done:

@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -19,20 +17,20 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
  * --------
  * 2006-11-23 initial version (jmagder)
- * 
+ *
  * Originally Generated with mib2c using mib2c.array-user.conf
  *
  * The file implements the openserSIPMethodSupportedTable.  The table is
  * populated by looking to see which modules are loaded, and guessing what SIP
  * Methods they  provide.  It is quite possible that this initial implementation
  * is not very good at guessing.  This should be fixed in future releases as
- * more information becomes available.  
+ * more information becomes available.
  *
  * For full details, please see the OPENSER-SIP-COMMON-MIB.
  *
@@ -52,10 +50,10 @@
 static netsnmp_handler_registration *my_handler = NULL;
 static netsnmp_table_array_callbacks cb;
 
-oid    openserSIPMethodSupportedTable_oid[] = 
+oid    openserSIPMethodSupportedTable_oid[] =
 	{ openserSIPMethodSupportedTable_TABLE_OID };
 
-size_t openserSIPMethodSupportedTable_oid_len = 
+size_t openserSIPMethodSupportedTable_oid_len =
 	OID_LENGTH(openserSIPMethodSupportedTable_oid);
 
 
@@ -109,7 +107,7 @@ void createRow(int index, char *stringToRegister) {
 }
 
 
-/* Initializes the openserSIPMethodSupportedTable, and populates the tables 
+/* Initializes the openserSIPMethodSupportedTable, and populates the tables
  * contents */
 void init_openserSIPMethodSupportedTable(void)
 {
@@ -134,11 +132,11 @@ void init_openserSIPMethodSupportedTable(void)
 	 *
 	 * We should keep these indices fixed.  For example if we don't support
 	 * METHOD_REGISTER but we do support METHOD_MESSAGE, then METHOD_MESSAGE
-	 * should still be at index 9.  
+	 * should still be at index 9.
 	 *
 	 * NOTE: My way of checking what METHODS we support is probably wrong.
 	 * Please feel free to correct it! */
-	
+
 	if (module_loaded("sl")) {
 		createRow(1, "METHOD_INVITE");
 		createRow(2, "METHOD_CANCEL");
@@ -191,18 +189,18 @@ void initialize_table_openserSIPMethodSupportedTable(void)
 	/** create the table structure itself */
 	table_info = SNMP_MALLOC_TYPEDEF(netsnmp_table_registration_info);
 
-	my_handler = 
+	my_handler =
 		netsnmp_create_handler_registration(
 			"openserSIPMethodSupportedTable",
 			netsnmp_table_array_helper_handler,
 			openserSIPMethodSupportedTable_oid,
 			openserSIPMethodSupportedTable_oid_len,
 			HANDLER_CAN_RONLY);
-			
+
 	if (!my_handler || !table_info) {
 		snmp_log(LOG_ERR, "malloc failed in initialize_table_openser"
 				"SIPMethodSupportedTable_handler\n");
-		return; 
+		return;
 	}
 
 	netsnmp_table_helper_add_index(table_info, ASN_UNSIGNED);
@@ -214,11 +212,11 @@ void initialize_table_openserSIPMethodSupportedTable(void)
 	 * registering the table with the master agent
 	 */
 	cb.get_value = openserSIPMethodSupportedTable_get_value;
-	cb.container = 
+	cb.container =
 		netsnmp_container_find("openserSIPMethodSupportedTable_primary:"
 			"openserSIPMethodSupportedTable:" "table_container");
-	
-	DEBUGMSGTL(("initialize_table_openserSIPMethodSupportedTable", 
+
+	DEBUGMSGTL(("initialize_table_openserSIPMethodSupportedTable",
 				"Registering table openserSIPMethodSupportedTable"
 				"as a table array\n"));
 
@@ -227,10 +225,10 @@ void initialize_table_openserSIPMethodSupportedTable(void)
 
 }
 
-/* 
+/*
  * This routine is called to process get requests for elements of the table.
  *
- * The function is pretty much left as is from the auto-generated code. 
+ * The function is pretty much left as is from the auto-generated code.
  */
 int openserSIPMethodSupportedTable_get_value(
 			netsnmp_request_info *request,
@@ -239,10 +237,10 @@ int openserSIPMethodSupportedTable_get_value(
 {
 	netsnmp_variable_list *var = request->requestvb;
 
-	openserSIPMethodSupportedTable_context *context = 
+	openserSIPMethodSupportedTable_context *context =
 		(openserSIPMethodSupportedTable_context *)item;
 
-	switch(table_info->colnum) 
+	switch(table_info->colnum)
 	{
 		case COLUMN_OPENSERSIPMETHODNAME:
 
@@ -252,7 +250,7 @@ int openserSIPMethodSupportedTable_get_value(
 					context->openserSIPMethodName,
 					context->openserSIPMethodName_len );
 			break;
-	
+
 		default: /** We shouldn't get here */
 			snmp_log(LOG_ERR, "unknown column in openserSIPMethod"
 					"SupportedTable_get_value\n");

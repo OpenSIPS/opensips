@@ -1,6 +1,4 @@
 /*
- * $Id:$
- *
  * back-to-back entities modules
  *
  * Copyright (C) 2009 Free Software Fundation
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -40,10 +38,10 @@
 #include "dlg.h"
 #include "b2b_entities.h"
 
-/** 
- * Function to create a new server entity 
+/**
+ * Function to create a new server entity
  *	msg: SIP message
- *	b2b_cback: callback function to notify the logic about a change in dialog 
+ *	b2b_cback: callback function to notify the logic about a change in dialog
  *	param: the parameter that will be used when calling b2b_cback function
  *
  *	Return value: the dialog key allocated in private memory
@@ -54,7 +52,6 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 {
 	b2b_dlg_t* dlg;
 	unsigned int hash_index;
-	static str reason = {"Trying", 6};
 	int ret;
 
 	if(param && param->len > B2BL_MAX_KEY_LEN)
@@ -96,12 +93,10 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 		dlg->uas_tran = tmb.t_gett();
 	}
 	tmb.ref_cell(dlg->uas_tran);
-
-	tmb.t_reply(msg, 100, &reason);
 	tmb.t_setkr(REQ_FWDED);
 
 	LM_DBG("new server entity[%p]: callid=[%.*s] tag=[%.*s] param=[%.*s] dlg->uas_tran=[%p]\n",
-		dlg, dlg->callid.len, dlg->callid.s, 
+		dlg, dlg->callid.len, dlg->callid.s,
 		dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s,
 		dlg->param.len, dlg->param.s, dlg->uas_tran);
 

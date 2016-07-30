@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -48,6 +46,7 @@
 #define STAT_NO_SYNC   (1<<1)
 #define STAT_SHM_NAME  (1<<2)
 #define STAT_IS_FUNC   (1<<3)
+#define STAT_ONLY_REGISTER  (1<<4)
 
 #ifdef NO_ATOMIC_OPS
 typedef unsigned int stat_val;
@@ -103,6 +102,7 @@ typedef struct stat_export_ {
 char *build_stat_name( str* prefix, char *var_name);
 
 int init_stats_collector();
+int stats_are_ready(); /* for code which is statistics-dependent */
 
 int register_udp_load_stat(str *name, stat_var **ctx, int children);
 int register_tcp_load_stat(stat_var **ctx);
@@ -110,14 +110,17 @@ int register_tcp_load_stat(stat_var **ctx);
 void destroy_stats_collector();
 
 #define register_stat(_mod,_name,_pvar,_flags) \
-		register_stat2(_mod,_name,_pvar,_flags, 0)
+		register_stat2(_mod,_name,_pvar,_flags, NULL, 0)
 
-int register_stat2( char *module, char *name, stat_var **pvar, 
-		unsigned  short flags, void* context);
+int register_stat2( char *module, char *name, stat_var **pvar,
+		unsigned  short flags, void* context, int unsafe);
 
 int register_dynamic_stat( str *name, stat_var **pvar);
 
-int register_module_stats(char *module, stat_export_t *stats);
+#define register_module_stats(mod, stats) \
+	__register_module_stats(mod, stats, 0)
+
+int __register_module_stats(char *module, stat_export_t *stats, int unsafe);
 
 int clone_pv_stat_name(str *name, str *clone);
 
@@ -129,10 +132,10 @@ unsigned int get_stat_val( stat_var *var );
  * Returns the statistic associated with 'numerical_code' and 'is_a_reply'.
  * Specifically:
  *
- *  - if in_codes is nonzero, then the stat_var for the number of messages 
+ *  - if in_codes is nonzero, then the stat_var for the number of messages
  *    _received_ with the 'numerical_code' will be returned if it exists.
- *  - otherwise, the stat_var for the number of messages _sent_ with the 
- *    'numerical_code' will be returned, if the stat exists. 
+ *  - otherwise, the stat_var for the number of messages _sent_ with the
+ *    'numerical_code' will be returned, if the stat exists.
  */
 stat_var *get_stat_var_from_num_code(unsigned int numerical_code, int in_codes);
 
@@ -146,6 +149,7 @@ extern gen_lock_t *stat_lock;
 	#define init_stats_collector()  0
 	#define destroy_stats_collector()
 	#define register_module_stats(_mod,_stats) 0
+	#define __register_module_stats(_mod,_stats, unsafe) 0
 	#define register_stat( _mod, _name, _pvar, _flags) 0
 	#define register_dynamic_stat( _name, _pvar) 0
 	#define get_stat( _name )  0
@@ -153,6 +157,7 @@ extern gen_lock_t *stat_lock;
 	#define get_stat_var_from_num_code( _n_code, _in_code) NULL
 	#define register_udp_load_stat( _a, _b, _c) 0
 	#define register_tcp_load_stat( _a)     0
+	#define stats_are_ready() 0
 	#define clone_pv_stat_name( _name, _clone) 0
 #endif
 

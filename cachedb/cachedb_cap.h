@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -55,11 +55,11 @@ static inline int check_cachedb_api(cachedb_engine *cde)
 	}
 
 	if (cde->cdb_func.destroy == 0) {
-		LM_ERR("module %.*s doesnt export destroy func\n",
+		LM_ERR("module %.*s doesn't export destroy func\n",
 				cde->name.len,cde->name.s);
 		return -1;
 	}
-	
+
 	if (cde->cdb_func.get)
 		cde->cdb_func.capability |= CACHEDB_CAP_GET;
 	if (cde->cdb_func.set)

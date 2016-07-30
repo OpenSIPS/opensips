@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * OpenSIPS H.350 Module
  *
  * Copyright (C) 2007 University of North Carolina
@@ -22,7 +20,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -51,8 +49,8 @@ int h350_exp_fn_init();
 int h350_sipuri_lookup(struct sip_msg* _msg, pv_elem_t* _sip_uri);
 
 int h350_auth_lookup(
-	struct sip_msg* _msg, 
-	pv_elem_t* _digest_username, 
+	struct sip_msg* _msg,
+	pv_elem_t* _digest_username,
 	struct h350_auth_lookup_avp_params* _avp_specs);
 
 int h350_call_preferences(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix);

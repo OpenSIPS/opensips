@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <!--
- * $Id$
+ *
  *
  * XSL converter script for pi_http framework table
  *
@@ -19,7 +19,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  US
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  US
 -->
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"

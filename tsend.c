@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -17,15 +15,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * send with timeout for stream and datagram sockets
- * 
+ *
  * History:
  * --------
  *  2004-02-26  created by andrei
- *  2003-03-03  switched to heavy macro use, added tsend_dgram_ev (andrei) 
+ *  2003-03-03  switched to heavy macro use, added tsend_dgram_ev (andrei)
  */
 
 #include <string.h>
@@ -70,7 +68,7 @@ poll_loop: \
 		/* if POLLIN or POLLPRI or other non-harmful events happened,    \
 		 * continue ( although poll should never signal them since we're  \
 		 * not interested in them => we should never reach this point) */ \
-	} 
+	}
 
 
 #define TSEND_ERR_CHECK(f_name)\
@@ -82,7 +80,7 @@ poll_loop: \
 			goto error; \
 		}else goto poll_loop; \
 	}
-	
+
 
 
 /*! \brief sends on fd (which must be O_NONBLOCK); if it cannot send any data
@@ -95,7 +93,7 @@ int tsend_stream(int fd, char* buf, unsigned int len, int timeout)
 {
 	int written;
 	TSEND_INIT;
-	
+
 	written=0;
 again:
 	n=send(fd, buf, len,
@@ -106,13 +104,13 @@ again:
 #endif
 		);
 	TSEND_ERR_CHECK("tsend_stream");
-	written+=n; 
-	if ((unsigned int)n<len){ 
-		/* partial write */ 
-		buf+=n; 
-		len-=n; 
-	}else{ 
-		/* successful full write */ 
+	written+=n;
+	if ((unsigned int)n<len){
+		/* partial write */
+		buf+=n;
+		len-=n;
+	}else{
+		/* successful full write */
 		return written;
 	}
 	TSEND_POLL("tsend_stream");
@@ -128,14 +126,14 @@ error:
  *  (if less than len => couldn't send all)
  *  bugs: signals will reset the timer
  */
-int tsend_dgram(int fd, char* buf, unsigned int len, 
+int tsend_dgram(int fd, char* buf, unsigned int len,
 				const struct sockaddr* to, socklen_t tolen, int timeout)
 {
 	TSEND_INIT;
 again:
 	n=sendto(fd, buf, len, 0, to, tolen);
 	TSEND_ERR_CHECK("tsend_dgram");
-	/* we don't care about partial writes: they shouldn't happen on 
+	/* we don't care about partial writes: they shouldn't happen on
 	 * a datagram socket */
 	return n;
 	TSEND_POLL("tsend_datagram");
@@ -143,8 +141,8 @@ error:
 	return -1;
 }
 
-	
-/*! \brief sends on connected datagram fd (which must be O_NONBLOCK); 
+
+/*! \brief sends on connected datagram fd (which must be O_NONBLOCK);
  * if it cannot send any data in timeout milliseconds it will return ERROR
  * \return -1 on error, or number of bytes written
  *  (if less than len => couldn't send all)
@@ -162,3 +160,41 @@ error:
 	return -1;
 }
 
+
+/*! \brief writes a vector on fd (which must be O_NONBLOCK); if it cannot
+ * send any data in timeout milliseconds it will return ERROR
+ * \return -1 on error, or number of bytes written
+ *  (if less than len => couldn't send all)
+ *  bugs: signals will reset the timer
+ */
+int tsend_stream_ev(int fd, struct iovec *iov, int iovcnt, int timeout)
+{
+	int written;
+	int i, len = 0;
+	TSEND_INIT;
+
+	for (i = 0; i < iovcnt; i++)
+		len += iov[i].iov_len;
+
+	written=0;
+	i = 0;
+again:
+	n=writev(fd, &iov[i], iovcnt);
+	TSEND_ERR_CHECK("tsend_stream");
+	written+=n;
+	if ((unsigned int)n<len){
+		/* partial write */
+		len-=n;
+		while (n > iov[i].iov_len) {
+			i++;
+			n -= iov[i].iov_len;
+			iovcnt--;
+		}
+	}else{
+		/* successful full write */
+		return written;
+	}
+	TSEND_POLL("tsend_stream");
+error:
+	return -1;
+}

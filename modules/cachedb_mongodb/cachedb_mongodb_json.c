@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -30,7 +30,7 @@
 
 int json_to_bson_append_element( bson *bb , const char *k , struct json_object *v );
 
-int json_to_bson_append_array( bson *bb , struct json_object *a ) 
+int json_to_bson_append_array( bson *bb , struct json_object *a )
 {
 	int i,al_len;
 	char *al;
@@ -78,7 +78,7 @@ int json_to_bson_append(bson *bb,struct json_object *o)
 	return 0;
 }
 
-int json_to_bson_append_element( bson *bb , const char *k , struct json_object *v ) 
+int json_to_bson_append_element( bson *bb , const char *k , struct json_object *v )
 {
 	if (v==NULL) {
 		bson_append_null(bb,k);
@@ -136,7 +136,7 @@ int json_to_bson_append_element( bson *bb , const char *k , struct json_object *
 				LM_ERR("Failed to append start array\n");
 				return -1;
 			}
-			
+
 			if (json_to_bson_append_array(bb,v) < 0) {
 				LM_ERR("Failed to append array to bson\n");
 				return -1;
@@ -157,7 +157,7 @@ int json_to_bson_append_element( bson *bb , const char *k , struct json_object *
 
 int json_to_bson(char *json,bson *bb)
 {
-	struct json_object *obj; 
+	struct json_object *obj;
 
 	LM_DBG("Trying to convert [%s]\n",json);
 
@@ -191,12 +191,104 @@ error:
 	return -1;
 }
 
+void bson_to_json_generic(struct json_object *obj,bson_iterator *it,int type)
+{
+	const char *curr_key;
+	char *s;
+	int len;
+	struct json_object *obj2=NULL;
+	bson_iterator it2;
+
+		while (bson_iterator_next(it)) {
+			curr_key=bson_iterator_key(it);
+
+			switch( bson_iterator_type(it) ) {
+					case BSON_INT:
+						LM_DBG("Found key %s with type int\n",curr_key);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,
+									json_object_new_int(bson_iterator_int(it)));
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,json_object_new_int(bson_iterator_int(it)));
+						break;
+					case BSON_LONG:
+						LM_DBG("Found key %s with type long\n",curr_key);
+						/* no intrinsic support in OpenSIPS for 64bit integers -
+ 						 * converting to string */
+						s = int2str(bson_iterator_long(it),&len);
+						s[len]=0;
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,json_object_new_string(s));
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,json_object_new_string(s));
+						break;
+					case BSON_DOUBLE:
+						/* no intrinsic support in OpenSIPS for floating point numbers
+ 						 * converting to int */
+						LM_DBG("Found key %s with type double\n",curr_key);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,
+									json_object_new_int((int)bson_iterator_double(it)));
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,json_object_new_int((int)bson_iterator_double(it)));
+						break;
+					case BSON_STRING:
+						LM_DBG("Found key %s with type string\n",curr_key);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,
+									json_object_new_string(bson_iterator_string(it)));
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,json_object_new_string(bson_iterator_string(it)));
+						break;
+					case BSON_BOOL:
+						LM_DBG("Found key %s with type bool\n",curr_key);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,
+									json_object_new_int((int)bson_iterator_bool(it)));
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,json_object_new_int((int)bson_iterator_bool(it)));
+						break;
+					case BSON_DATE:
+						LM_DBG("Found key %s with type date\n",curr_key);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,
+									json_object_new_int((int)(bson_iterator_date(it)/1000)));
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,json_object_new_int((int)(bson_iterator_date(it)/1000)));
+						break;
+					case BSON_ARRAY:
+						LM_DBG("Found key %s with type array\n",curr_key);
+						obj2 = json_object_new_array();
+						bson_iterator_subiterator(it, &it2 );
+						bson_to_json_generic(obj2,&it2,BSON_ARRAY);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,obj2);
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,obj2);
+						break;
+					case BSON_OBJECT:
+						LM_DBG("Found key %s with type object\n",curr_key);
+						obj2 = json_object_new_object();
+						bson_iterator_subiterator(it, &it2 );
+						bson_to_json_generic(obj2,&it2,BSON_OBJECT);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,obj2);
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,obj2);
+						break;
+					default:
+						LM_DBG("Unsupported type %d for key %s - skipping\n",
+								bson_iterator_type(it),curr_key);
+			}
+		}
+}
+
 int mongo_cursor_to_json(mongo_cursor *m_cursor,
 		cdb_raw_entry ***reply,int expected_kv_no,int *reply_no)
 {
 	struct json_object *obj=NULL;
 	bson_iterator it;
-	const char *curr_key,*p;
+	const char *p;
 	int current_size=0,len;
 
 	/* start with a single returned document */
@@ -229,30 +321,8 @@ int mongo_cursor_to_json(mongo_cursor *m_cursor,
 		}
 
 		obj = json_object_new_object();
-
 		bson_iterator_init(&it,mongo_cursor_bson(m_cursor));
-		while (bson_iterator_next(&it)) {
-			curr_key=bson_iterator_key(&it);
-
-			switch( bson_iterator_type( &it ) ) {
-					case BSON_INT:
-						json_object_object_add(obj,curr_key,
-								json_object_new_int(bson_iterator_int(&it)));
-						break;
-					case BSON_DOUBLE:
-						json_object_object_add(obj,curr_key,
-								json_object_new_int((int)bson_iterator_double(&it)));
-						break;
-					case BSON_STRING:
-						json_object_object_add(obj,curr_key,
-								json_object_new_string(bson_iterator_string(&it)));
-						break;
-					default:
-						/* TODO - support embedded documents */
-						LM_WARN("Unsupported type %d - skipping\n",bson_iterator_type(&it));
-						break;
-			}
-		}
+		bson_to_json_generic(obj,&it,BSON_OBJECT);
 
 		p = json_object_to_json_string(obj);
 		if (!p) {
@@ -279,7 +349,10 @@ int mongo_cursor_to_json(mongo_cursor *m_cursor,
 
 	*reply_no = current_size;
 	LM_DBG("Fetched %d results\n",current_size);
-	return 0;
+	if (current_size == 0)
+		return -2;
+
+	return 1;
 
 error_cleanup:
 	if (obj)

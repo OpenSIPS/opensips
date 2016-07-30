@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="cc_flows" xmlns:db="http://docbook.org/ns/docbook">
+	<name>cc_flows</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Call Center module to store
+		the definition of the call queues / flows.
+		More information can be found at: &OPENSIPS_MOD_DOC;call_center.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Flow unique ID in DB
+		</description>
+	</column>
+
+	<column id="flowid">
+		<name>flowid</name>
+		<type>string</type>
+		<size>64</size>
+		<description>The unique ID of the flow in the
+		Call Center module - to be used to identify the
+		flow/queue in the module and from outside the module;
+		It is an alphanumerical string.
+		</description>
+	</column>
+
+	<column id="priority">
+		<name>priority</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>256</default>
+		<description>The priority of the flow (in relation to
+		the other flows); 0 is maximum priority and calls for
+		this flow will be processed first all the time.
+		</description>
+	</column>
+
+	<column id="skill">
+		<name>skill</name>
+		<type>string</type>
+		<size>64</size>
+		<description>The skill required from an agent in order
+		to receive calls from this flow/queue.
+		</description>
+	</column>
+
+	<column id="prependcid">
+		<name>prependcid</name>
+		<type>string</type>
+		<size>32</size>
+		<description>Aphanumerical prefix to be added to the
+		caller displayname when sending calls from this flow
+		to agents (so agent - serving muliple flows - can see
+		what was the flow the call was received on.
+		</description>
+	</column>
+
+	<column id="message_welcome">
+		<name>message_welcome</name>
+		<type>string</type>
+		<size>128</size>
+		<null/>
+		<default><null/></default>
+		<description>SIP URI point to a media server; this is
+		used for playing the welcome message for this
+		flow.</description>
+	</column>
+
+	<column id="message_queue">
+		<name>message_queue</name>
+		<type>string</type>
+		<size>128</size>
+		<description>SIP URI point to a media server; this is
+		used for playing the onhold message for this
+		flow. IMPORTANT - this message must cycle and media
+		server must never hung up on it.</description>
+	</column>
+
+    <index>
+        <name>unique_flowid</name>
+        <colref linkend="flowid"/>
+        <unique/>
+    </index>
+
+</table>

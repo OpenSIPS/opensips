@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence module - presence server implementation
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -259,13 +257,13 @@ int insert_shtable(shtable_t htable,unsigned int hash_code, subs_t* subs)
 		new_rec->db_flag= INSERTDB_FLAG;
 
 	lock_get(&htable[hash_code].lock);
-	
+
 	new_rec->next= htable[hash_code].entries->next;
-	
+
 	htable[hash_code].entries->next= new_rec;
-	
+
 	lock_release(&htable[hash_code].lock);
-	
+
 	return 0;
 
 error:
@@ -287,7 +285,7 @@ int delete_shtable(shtable_t htable,unsigned int hash_code,str to_tag)
 	int found= -1;
 
 	lock_get(&htable[hash_code].lock);
-	
+
 	ps= htable[hash_code].entries;
 	s= ps->next;
 
@@ -331,7 +329,7 @@ void free_subs_list(subs_t* s_array, int mem_type, int ic)
 	}
 }
 
-int update_shtable(shtable_t htable,unsigned int hash_code, 
+int update_shtable(shtable_t htable,unsigned int hash_code,
 		subs_t* subs, int type)
 {
 	subs_t* s;
@@ -355,7 +353,7 @@ int update_shtable(shtable_t htable,unsigned int hash_code,
 	else
 	{
 		subs->local_cseq= s->local_cseq++;
-		s->version= subs->version+ 1;
+		subs->version= s->version++;
 	}
 
 	if(strncmp(s->contact.s, subs->contact.s, subs->contact.len))
@@ -423,7 +421,7 @@ error:
 		{
 			if(htable[i].entries)
 				shm_free(htable[i].entries);
-			else 
+			else
 				break;
 			lock_destroy(&htable[i].lock);
 		}
@@ -506,7 +504,7 @@ void update_pres_etag(pres_entry_t* p, str* etag)
 	p->etag_count++;
 }
 
-int insert_phtable(str* pres_uri, int event, str* etag, char* sphere)
+pres_entry_t* insert_phtable(str* pres_uri, int event, str* etag, char* sphere, int init_turn)
 {
 	unsigned int hash_code;
 	pres_entry_t* p= NULL;
@@ -543,14 +541,16 @@ int insert_phtable(str* pres_uri, int event, str* etag, char* sphere)
 	p->next= pres_htable[hash_code].entries->next;
 	pres_htable[hash_code].entries->next= p;
 
+	p->last_turn = init_turn;
+
 	lock_release(&pres_htable[hash_code].lock);
 
-	return 0;
+	return p;
 
 error:
 	if(p)
 		shm_free(p);
-	return -1;
+	return NULL;
 }
 
 int delete_phtable_query(str *pres_uri, int event, str* etag)
@@ -572,12 +572,32 @@ int delete_phtable_query(str *pres_uri, int event, str* etag)
 	return 0;
 }
 
+
+void next_turn_phtable(pres_entry_t* p_p, unsigned int hash_code)
+{
+	pres_entry_t* p;
+
+	lock_get(&pres_htable[hash_code].lock);
+	for ( p=pres_htable[hash_code].entries->next ; p ; p=p->next ) {
+		if(p==p_p) {
+			p->current_turn++;
+			LM_DBG("new current turn is %d for <%.*s>\n",p->current_turn,
+				p_p->pres_uri.len, p_p->pres_uri.s);
+			break;
+		}
+	}
+
+	lock_release(&pres_htable[hash_code].lock);
+	return;
+}
+
+
 int delete_phtable(pres_entry_t* p, unsigned int hash_code)
 {
 	pres_entry_t* prev_p= NULL;
 
 	LM_DBG("Count = 0, delete\n");
-	/* delete record */	
+	/* delete record */
 	prev_p= pres_htable[hash_code].entries;
 	while(prev_p->next)
 	{
@@ -616,7 +636,7 @@ int update_phtable(presentity_t* presentity, str pres_uri, str body)
 
 	/* search for record in hash table */
 	hash_code= core_hash(&pres_uri, NULL, phtable_size);
-	
+
 	lock_get(&pres_htable[hash_code].lock);
 
 	p= search_phtable(&pres_uri, presentity->event->evp->parsed, hash_code);
@@ -625,7 +645,7 @@ int update_phtable(presentity_t* presentity, str pres_uri, str body)
 		lock_release(&pres_htable[hash_code].lock);
 		goto done;
 	}
-	
+
 	if(p->sphere)
 	{
 		if(strcmp(p->sphere, sphere)!= 0)
@@ -640,7 +660,7 @@ int update_phtable(presentity_t* presentity, str pres_uri, str body)
 			pkg_free(sphere);
 			return 0;
 		}
-	
+
 	}
 
 
@@ -652,7 +672,7 @@ int update_phtable(presentity_t* presentity, str pres_uri, str body)
 		goto done;
 	}
 	strcpy(p->sphere, sphere);
-		
+
 	lock_release(&pres_htable[hash_code].lock);
 
 	/* call for watchers status update */
@@ -660,7 +680,7 @@ int update_phtable(presentity_t* presentity, str pres_uri, str body)
 	if(presentity->event->get_rules_doc(&presentity->user, &presentity->domain,
 				&xcap_doc)< 0)
 	{
-		LM_ERR("failed to retreive xcap document\n");
+		LM_ERR("failed to retrieve xcap document\n");
 		ret= -1;
 		goto done;
 	}

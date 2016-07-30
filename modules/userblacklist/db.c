@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 1&1 Internet AG
  *
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -76,7 +74,7 @@ void db_destroy(void)
 
 /**
  * Builds a d-tree using database entries.
- * \return negative on failure, postive on success, indicating the number of d-tree entries
+ * \return negative on failure, positive on success, indicating the number of d-tree entries
  */
 int db_build_userbl_tree(const str *username, const str *domain, const str *table, struct dt_node_t *root, int use_domain)
 {
@@ -94,7 +92,7 @@ int db_build_userbl_tree(const str *username, const str *domain, const str *tabl
 	db_res_t *res;
 	int i;
 	int n = 0;
-	
+
 	if (dbf.use_table(dbc, table) < 0) {
 		LM_ERR("cannot use table '%.*s'.\n", table->len, table->s);
 		return -1;
@@ -141,7 +139,7 @@ int db_reload_source(const str *table, struct dt_node_t *root)
 	db_res_t *res;
 	int i;
 	int n = 0;
-	
+
 	if (dbf.use_table(dbc, table) < 0) {
 		LM_ERR("cannot use table '%.*s'.\n", table->len, table->s);
 		return -1;

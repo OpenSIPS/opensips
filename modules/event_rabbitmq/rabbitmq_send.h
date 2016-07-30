@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -30,15 +30,20 @@
 #include "event_rabbitmq.h"
 
 #define RMQ_SEND_RETRY 3
+#define RMQ_SEND_SUCCESS 0
+#define RMQ_SEND_FAIL -1
 
 typedef struct _rmq_send {
 	evi_reply_sock *sock;
+	int process_idx;
 	char msg[0];
 } rmq_send_t;
 
 void rmq_process(int rank);
 int rmq_create_pipe(void);
+int rmq_create_status_pipes(void);
 void rmq_destroy_pipe(void);
+void rmq_destroy_status_pipes(void);
 int rmq_init_writer(void);
 int rmq_send(rmq_send_t * rmqs);
 void rmq_free_param(rmq_params_t *rmqp);

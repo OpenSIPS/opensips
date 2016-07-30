@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * ALIAS_DB Module
  *
  * Copyright (C) 2004-2009 Voice Sistem SRL
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -77,9 +75,9 @@ static cmd_export_t cmds[] = {
 	{"alias_db_lookup", (cmd_function)alias_db_lookup, 2, lookup_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"alias_db_find", (cmd_function)alias_db_find, 3, find_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE},
 	{"alias_db_find", (cmd_function)alias_db_find, 4, find_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -96,13 +94,25 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /* Module interface */
 struct module_exports exports = {
 	"alias_db",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
+	0,          /* Exported async functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
@@ -148,7 +158,7 @@ static int lookup_fixup(void** param, int param_no)
 {
 	if (param_no==1) {
 		/* string or pseudo-var - table name */
-		return fixup_spve_null(param, 1);
+		return fixup_spve(param);
 	} else if (param_no==2) {
 		/* string - flags ? */
 		return alias_flags_fixup(param);
@@ -165,10 +175,10 @@ static int find_fixup(void** param, int param_no)
 
 	if (param_no==1) {
 		/* string or pseudo-var - table name */
-		return fixup_spve_null(param, 1);
+		return fixup_spve(param);
 	} else if(param_no==2) {
-		/* pseudo-var - source URI */
-		return fixup_pvar(param);
+		/* string or pseudo-var - source URI */
+		return fixup_spve(param);
 	} else if(param_no==3) {
 		/* pvar (AVP or VAR) - destination URI */
 		if (fixup_pvar(param))

@@ -18,8 +18,7 @@ Ramona-Elena Modroiu
 
    Copyright © 2005-2009 Voice Sistem
    Revision History
-   Revision $Revision$ $Date: 2012-03-21 13:05:34 +0200
-                              (Wed, 21 Mar 2012) $
+   Revision $Revision: 8806 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -38,10 +37,7 @@ Ramona-Elena Modroiu
               1.3.2. restore_passwd (string)
               1.3.3. rr_from_store_param (string)
               1.3.4. rr_to_store_param (string)
-              1.3.5. auth_realm_avp (string)
-              1.3.6. auth_username_avp (string)
-              1.3.7. auth_password_avp (string)
-              1.3.8. force_dialog (int)
+              1.3.5. force_dialog (int)
 
         1.4. Exported Functions
 
@@ -52,20 +48,19 @@ Ramona-Elena Modroiu
               1.4.3. uac_restore_from() uac_restore_to()
               1.4.4. uac_auth()
 
+   2. Frequently Asked Questions
+
    List of Examples
 
    1.1. Set restore_mode parameter
    1.2. Set restore_passwd parameter
    1.3. Set rr_from_store_param parameter
    1.4. Set rr_to_store_param parameter
-   1.5. Set auth_realm_avp parameter
-   1.6. Set auth_username_avp parameter
-   1.7. Set auth_password_avp parameter
-   1.8. Set force_dialog parameter
-   1.9. uac_replace_from/uac_replace_to usage
-   1.10. uac_replace_from/uac_replace_to usage
-   1.11. uac_restore_from/uac_restore_to usage
-   1.12. uac_auth usage
+   1.5. Set force_dialog parameter
+   1.6. uac_replace_from/uac_replace_to usage
+   1.7. uac_replace_from/uac_replace_to usage
+   1.8. uac_restore_from/uac_restore_to usage
+   1.9. uac_auth usage
 
 Chapter 1. Admin Guide
 
@@ -110,9 +105,9 @@ Chapter 1. Admin Guide
    There are 3 mode of restoring the original headers (FROM/TO)
    URI:
      * “none” - no information about original URI is stored;
-       restoretion is not possible.
-     * “manual” - all following replies will be restored, but not
-       also the sequential requests - this must be manually
+       restoration is not possible.
+     * “manual” - all following replies will be restored, except
+       for the sequential requests - these must be manually
        updated based on original URI.
      * “auto” - all sequential requests and replies will be
        automatically updated based on stored original URI.
@@ -126,7 +121,7 @@ modparam("uac","restore_mode","auto")
 
 1.3.2. restore_passwd (string)
 
-   String password to be used to encrypt the RR storing paramter
+   String password to be used to encrypt the RR storing parameter
    (when replacing the TO/FROM headers). If empty, no encryption
    will be used.
 
@@ -161,63 +156,14 @@ modparam("uac","rr_from_store_param","my_Fparam")
 modparam("uac","rr_to_store_param","my_Tparam")
 ...
 
-1.3.5. auth_realm_avp (string)
-
-   The definition of an AVP that might contain the realm to be
-   used to perform authentication.
-
-   If you define it, you also need to define “auth_username_avp”
-   (Section 1.3.6, “auth_username_avp (string)”) and
-   “auth_username_avp” (Section 1.3.7, “auth_password_avp
-   (string)”).
-
-   Example 1.5. Set auth_realm_avp parameter
-...
-modparam("uac","auth_realm_avp","$avp(10)")
-...
-
-1.3.6. auth_username_avp (string)
-
-   The definition of an AVP that might contain the username to be
-   used to perform authentication.
-
-   If you define it, you also need to define “auth_realm_avp”
-   (Section 1.3.5, “auth_realm_avp (string)”) and
-   “auth_username_avp” (Section 1.3.7, “auth_password_avp
-   (string)”).
-
-   Example 1.6. Set auth_username_avp parameter
-...
-modparam("uac","auth_username_avp","$avp(11)")
-...
-
-1.3.7. auth_password_avp (string)
-
-   The definition of an AVP that might contain the password to be
-   used to perform authentication. The password can be provided as
-   a plain text password or as a precalculated HA1 as a hexa
-   (lower case) string (of 32 chars) prefixed with "0x" (so a
-   total of 34 chars) (for example
-   "0xc17ba8157756f263d07e158504204629")
-
-   If you define it, you also need to define “auth_password_avp”
-   (Section 1.3.7, “auth_password_avp (string)”) and
-   “auth_username_avp” (Section 1.3.7, “auth_password_avp
-   (string)”).
-
-   Example 1.7. Set auth_password_avp parameter
-...
-modparam("uac","auth_password_avp","$avp(12)")
-...
-
-1.3.8. force_dialog (int)
+1.3.5. force_dialog (int)
 
    Force create dialog if it is not created from the configuration
    script.
 
    Default value is no.
 
-   Example 1.8. Set force_dialog parameter
+   Example 1.5. Set force_dialog parameter
 ...
 modparam("uac", "force_dialog", yes)
 ...
@@ -240,7 +186,7 @@ modparam("uac", "force_dialog", yes)
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.9. uac_replace_from/uac_replace_to usage
+   Example 1.6. uac_replace_from/uac_replace_to usage
 ...
 # replace both display and uri
 uac_replace_from("$avp(display)","$avp(uri)");
@@ -261,7 +207,7 @@ uac_replace_from("","");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.10. uac_replace_from/uac_replace_to usage
+   Example 1.7. uac_replace_from/uac_replace_to usage
 ...
 uac_replace_from("sip:batman@gotham.org");
 ...
@@ -278,7 +224,7 @@ uac_replace_from("sip:batman@gotham.org");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.11. uac_restore_from/uac_restore_to usage
+   Example 1.8. uac_restore_from/uac_restore_to usage
 ...
 uac_restore_from();
 ...
@@ -288,13 +234,58 @@ uac_restore_from();
    This function can be called only from failure route and will
    build the authentication response header and insert it into the
    request without sending anything. Credentials for buiding the
-   authentication response will be taken from AVPs first (if AVPs
-   are defined and populated) and then from the list of
-   credentials provided by the uac_auth module.
+   authentication response will be taken from the list of
+   credentials provided by the uac_auth module (static or via
+   AVPs).
 
    This function can be used from FAILURE_ROUTE.
 
-   Example 1.12. uac_auth usage
+   Example 1.9. uac_auth usage
 ...
 uac_auth();
 ...
+
+Chapter 2. Frequently Asked Questions
+
+   2.1.
+
+       What happened with auth_username_avp, auth_realm_avp and
+       auth_password_avp parameters
+
+       Due some restructuring of the UAC auth modules, these
+       parameters were moved into the "uac_auth" module. This module
+       is now responsible for handling all the credentials (static
+       defined or dynamically defined via AVPs). The UAC module will
+       still see the credentials defined via the AVPs.
+       $
+
+   2.2.
+
+       Where can I find more about OpenSIPS?
+
+       Take a look at http://www.opensips.org/.
+
+   2.3.
+
+       Where can I post a question about this module?
+
+       First at all check if your question was already answered on one
+       of our mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
+
+       If you want to keep the mail private, send it to
+       <users@lists.opensips.org>.
+
+   2.4.
+
+       How can I report a bug?
+
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.

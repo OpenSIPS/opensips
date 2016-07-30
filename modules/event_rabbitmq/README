@@ -24,6 +24,10 @@ Razvan Crainea
               1.4.2. External Libraries or Applications
 
         1.5. Exported Parameters
+
+              1.5.1. heartbeat (integer)
+              1.5.2. sync_mode (integer)
+
         1.6. Exported Functions
         1.7. Example
         1.8. Installation and Running
@@ -34,9 +38,11 @@ Razvan Crainea
 
    List of Examples
 
-   1.1. E_PIKE_BLOCKED event
-   1.2. RabbitMQ socket
-   1.3. OpenSIPS config script - sample event_rabbitmq usage
+   1.1. Set heartbeat parameter
+   1.2. Set sync_mode parameter
+   1.3. E_PIKE_BLOCKED event
+   1.4. RabbitMQ socket
+   1.5. OpenSIPS config script - sample event_rabbitmq usage
    2.1. Event subscription
    2.2. Event subscription
 
@@ -73,7 +79,8 @@ Chapter 1. Admin Guide
 
 1.3. RabbitMQ socket syntax
 
-   'rabbitmq:' [user[':'password] '@' host [':' port] '/' exchange
+   'rabbitmq:' [user[':'password] '@' host [':' port] '/'
+   [exchange '?'] routing_key
 
    Meanings:
      * 'rabbitmq:' - informs the Event Interface that the events
@@ -86,9 +93,11 @@ Chapter 1. Admin Guide
      * host - host name of the RabbitMQ server.
      * port - port of the RabbitMQ server. The default value is
        '5672'.
-     * exchange - this is the exchange routing information used by
-       the AMQP protocol. It is also used to identify the queue
-       where the event should be sent.
+     * exchange - exchange of the RabbitMQ server. The default
+       value is ''.
+     * routing_key - this is the routing key used by the AMQP
+       protocol and it is used to identify the queue where the
+       event should be sent.
        NOTE: if the queue does not exist, this module will not try
        to create it.
 
@@ -107,7 +116,37 @@ Chapter 1. Admin Guide
 
 1.5. Exported Parameters
 
-   No parameter exported by this module.
+1.5.1. heartbeat (integer)
+
+   Enables heartbeat support for the AMQP communication. If the
+   client does not receive a heartbeat from server within the
+   specified interval, the socket is automatically closed by the
+   rabbitmq-client. This prevents OpenSIPS from blocking while
+   waiting for a response from a dead rabbitmq-server. The value
+   represents the heartbit interval in seconds.
+
+   Default value is “0 (disabled)”.
+
+   Example 1.1. Set heartbeat parameter
+...
+modparam("event_rabbitmq", "heartbeat", 3)
+...
+
+1.5.2. sync_mode (integer)
+
+   Specifies whether an event raise operates synchronous or
+   asynchronous relative to the process where the raise is
+   triggered.In synchronous mode the process waits for the status
+   of the raise from the actual worker process.In asynchronous
+   mode the process continues its operation without receiving any
+   confirmation.
+
+   Default value is “0 (asynchronous)”.
+
+   Example 1.2. Set sync_mode parameter
+...
+modparam("event_rabbitmq", "sync_mode", 1)
+...
 
 1.6. Exported Functions
 
@@ -118,13 +157,13 @@ Chapter 1. Admin Guide
    This is an example of an event raised by the pike module when
    it decides an ip should be blocked:
 
-   Example 1.1. E_PIKE_BLOCKED event
+   Example 1.3. E_PIKE_BLOCKED event
 
         E_PIKE_BLOCKED
         ip::192.168.2.11
 
 
-   Example 1.2. RabbitMQ socket
+   Example 1.4. RabbitMQ socket
 
         rabbitmq:guest:guest@127.0.0.1:5672/pike
 
@@ -142,7 +181,7 @@ Chapter 1. Admin Guide
    The parameters passed to the server are the R-URI username and
    the message body.
 
-   Example 1.3. OpenSIPS config script - sample event_rabbitmq
+   Example 1.5. OpenSIPS config script - sample event_rabbitmq
    usage
 ...
 loadmodule "signaling.so"

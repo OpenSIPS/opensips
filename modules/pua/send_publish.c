@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua module - presence user agent module
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -89,7 +87,7 @@ str* publ_build_hdr(int expires, pua_event_t* ev, str* content_type, str* etag,
 	str_hdr->len+= len;
 	memcpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
 	str_hdr->len += CRLF_LEN;
-	
+
 	if(etag)
 	{
 		LM_DBG("UPDATE_TYPE [etag]= %.*s\n", etag->len, etag->s);
@@ -101,13 +99,13 @@ str* publ_build_hdr(int expires, pua_event_t* ev, str* content_type, str* etag,
 		str_hdr->len += CRLF_LEN;
 	}
 	if(is_body)
-	{	
+	{
 		if(content_type== NULL || content_type->s== NULL || content_type->len== 0)
 		{
-			ctype= ev->content_type; /* use event default value */ 
+			ctype= ev->content_type; /* use event default value */
 		}
 		else
-		{	
+		{
 			ctype.s=   content_type->s;
 			ctype.len= content_type->len;
 		}
@@ -210,6 +208,47 @@ publ_info_t* construct_pending_publ(ua_pres_t* presentity)
 	p->cb_param = pending_publ->cb_param;
 
 	return p;
+}
+
+
+void publ_expired_cback_func(struct cell *t, int type, struct tmcb_params *ps)
+{
+	ua_pres_t presentity;
+	struct sip_msg* msg;
+
+	if (ps->param==NULL) {
+		LM_DBG("NULL callback parameter\n");
+		return;
+	}
+	LM_DBG("cback param = %p\n", *ps->param);
+
+	if ( (msg=ps->rpl)==NULL) {
+		LM_ERR("no reply message found\n");
+		return;
+	}
+	if (parse_headers(msg,HDR_EOH_F, 0)==-1 ) {
+		LM_ERR("parsing headers\n");
+		return;
+	}
+	if (msg->expires== NULL || msg->expires->body.len<= 0) {
+		LM_ERR("No Expires header found\n");
+		return;
+	}
+	if (parse_expires(msg->expires) < 0) {
+		LM_ERR("cannot parse Expires header\n");
+		return;
+	}
+
+	/* use a dummy presentity structure */
+	memset( &presentity, 0, sizeof(presentity) );
+	/* copy the MI async handler */
+	presentity.cb_param = *ps->param;
+	presentity.flag = MI_ASYN_PUBLISH;
+	run_pua_callbacks( &presentity, ps->rpl);
+	/* unlink the MI handler once triggered */
+	*ps->param = NULL;
+
+	return;
 }
 
 
@@ -377,7 +416,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		int hash_index)
 {
 	unsigned long pres_id= 0;
-	int ret = -1;
+	int ret = ERR_PUBLISH_GENERIC;
 	char etag_buf[256];
 	char tuple_buf[128];
 	str tuple_id= {0, 0};
@@ -386,6 +425,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 	str* body= NULL;
 	str* str_hdr = NULL;
 	str met = {"PUBLISH", 7};
+	void* mi_hdl = NULL;
 
 	LM_DBG("start\n");
 
@@ -409,6 +449,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 			memcpy(tuple_id.s, presentity->tuple_id.s, presentity->tuple_id.len);
 			tuple_id.len = presentity->tuple_id.len;
 		}
+               presentity->desired_expires= publ->expires + (int)time(NULL);
 
 		presentity->waiting_reply = 1;
 		presentity->cb_param = publ->cb_param;
@@ -416,6 +457,8 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		if(publ->expires== 0)
 		{
 			LM_DBG("expires= 0- delete from hash table\n");
+			if (presentity->flag|MI_ASYN_PUBLISH)
+				mi_hdl = presentity->cb_param;
 			delete_htable_safe(presentity, hash_index);
 		}
 	}
@@ -446,6 +489,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		{
 			LM_DBG("request for a publish with expires 0 and"
 					" no record found\n");
+			ret = ERR_PUBLISH_NO_RECORD;
 			goto error;
 		}
 		if(publ->body== NULL)
@@ -460,7 +504,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		pres_id = new_publ_record(publ, ev, &tuple_id);
 	}
 
-	str_hdr = publ_build_hdr(((publ->expires< 0)?3600:publ->expires), ev, &publ->content_type, 
+	str_hdr = publ_build_hdr(((publ->expires< 0)?3600:publ->expires), ev, &publ->content_type,
 				(etag.s?&etag:NULL), publ->extra_headers, ((body)?1:0));
 	if(str_hdr == NULL)
 	{
@@ -475,17 +519,26 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 
 	LM_DBG("cback param = %ld\n", pres_id);
 
-	tmb.t_request(&met,						/* Type of the message */
+	if (tmb.t_request(&met,						/* Type of the message */
 			publ->pres_uri,							/* Request-URI */
 			publ->pres_uri,							/* To */
 			publ->pres_uri,							/* From */
 			str_hdr,								/* Optional headers */
 			body,									/* Message body */
-			((publ->outbound_proxy.s)?&publ->outbound_proxy:0),/*Outbound proxy*/
-			publ->expires?publ_cback_func:0,		/* Callback function */
-			(void*)pres_id,							/* Callback parameter */
+			/*Outbound proxy*/
+			((publ->outbound_proxy.s)?&publ->outbound_proxy:0),
+			/* Callback function */
+			publ->expires?publ_cback_func:(mi_hdl?publ_expired_cback_func:0),
+			/* Callback parameter */
+			publ->expires?(void*)pres_id:mi_hdl,
 			0
-			);
+			) < 0 )
+	{
+		LM_ERR("failed to send PUBLISH\n");
+		ret = -1;
+		goto error;
+	}
+
 	pkg_free(str_hdr);
 
 	if(body && ev->process_body)
@@ -495,7 +548,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		pkg_free(body);
 	}
 
-	return 0;
+	return ERR_PUBLISH_NO_ERROR;
 
 error:
 	if(body && ev->process_body)
@@ -568,7 +621,8 @@ int send_publish( publ_info_t* publ )
 					publ->extra_headers->len);
 			presentity->extra_headers.len= publ->extra_headers->len;
 		}
-		presentity->db_flag= UPDATEDB_FLAG;
+		if(presentity->db_flag == NO_UPDATEDB_FLAG)
+			presentity->db_flag= UPDATEDB_FLAG;
 		if (presentity->waiting_reply)
 		{
 			LM_DBG("Presentity is waiting for reply, queue this PUBLISH\n");

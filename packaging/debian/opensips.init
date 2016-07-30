@@ -2,8 +2,8 @@
 #
 ### BEGIN INIT INFO
 # Provides:          opensips
-# Required-Start:    $syslog $network $local_fs $time
-# Required-Stop:     $syslog $network $local_fs
+# Required-Start:    $syslog $network $local_fs $time $remote_fs
+# Required-Stop:     $syslog $network $local_fs $remote_fs
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Start the OpenSIPS SIP server
@@ -15,30 +15,40 @@
 # Should-Start:      postgresql mysql radius
 # Should-Stop:       postgresql mysql radius
 
+set -e
+
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/opensips
 NAME=opensips
 DESC=opensips
+CFGFILE=/etc/opensips/opensips.cfg
+M4CFGFILE=/etc/opensips/opensips.m4
+M4ARCHIVEDIR=/etc/opensips/archive
 HOMEDIR=/var/run/opensips
 PIDFILE=$HOMEDIR/$NAME.pid
 DEFAULTS=/etc/default/opensips
 RUN_OPENSIPS=no
 
-# Do not start opensips if fork=no is set in the config file
-# otherwise the boot process will just stop
-check_fork ()
-{
-    if grep -q "^[[:space:]]*fork[[:space:]]*=[[:space:]]*no.*" /etc/opensips/opensips.cfg; then
-	echo "Not starting $DESC: fork=no specified in config file; run /etc/init.d/opensips debug instead"
-	exit 1
-    fi
-}
+
+[ -e "/lib/lsb/init-functions" ] && . /lib/lsb/init-functions
+test -f $DAEMON || exit 0
+
+# Load startup options if available
+if [ -f $DEFAULTS ]; then
+   . $DEFAULTS || true
+fi
+
+if [ "$RUN_OPENSIPS" != "yes" ]; then
+    echo "OpenSIPS not yet configured. Edit /etc/default/opensips first."
+    exit 0
+fi
+
 
 check_opensips_config ()
 {
 	# Check if opensips configuration is valid before starting the server
 	set +e
-	out=$($DAEMON -c 2>&1 > /dev/null)
+	out=$($DAEMON -c -f $CFGFILE 2>&1 > /dev/null)
 	retcode=$?
 	set -e
 	if [ "$retcode" != '0' ]; then
@@ -71,19 +81,6 @@ create_radius_seqfile ()
     fi
 }
 
-test -f $DAEMON || exit 0
-
-# Load startup options if available
-if [ -f $DEFAULTS ]; then
-   . $DEFAULTS || true
-fi
-
-if [ "$RUN_OPENSIPS" != "yes" ]; then
-    echo "OpenSIPS not yet configured. Edit /etc/default/opensips first."
-    exit 0
-fi
-
-set -e
 
 S_MEMORY=$((`echo $S_MEMORY | sed -e 's/[^0-9]//g'`))
 P_MEMORY=$((`echo $P_MEMORY | sed -e 's/[^0-9]//g'`))
@@ -103,62 +100,70 @@ if test "$DUMP_CORE" = "yes" ; then
     # echo "$COREDIR/core.%e.sig%s.%p" > /proc/sys/kernel/core_pattern
 fi
 
-OPTIONS="-P $PIDFILE -m $S_MEMORY -M $P_MEMORY -u $USER -g $GROUP"
+OPTIONS="-P $PIDFILE -m $S_MEMORY -M $P_MEMORY -u $USER -g $GROUP -f $CFGFILE"
 
 case "$1" in
-  start|debug)
+  start)
 	check_opensips_config
 	create_radius_seqfile
 
-	if [ "$1" != "debug" ]; then
-	    check_fork
-	fi
-
-	# dirs under /var/run can go away on reboots.
+	# dirs under /var/run will go away on reboot.
 	mkdir -p "$HOMEDIR"
 	chmod 775 "$HOMEDIR"
 	chown "$USER:$GROUP" "$HOMEDIR" >/dev/null 2>&1 || true
 
-	echo -n "Starting $DESC: $NAME"
+	# Generate config from M4
+	if [ -f $M4CFGFILE ]; then
+		m4 -Q $M4CFGFILE >$CFGFILE.tmp
+		if [ $? != 0 ]; then
+			echo "Cannot process m4 macro"
+			rm "$CFGFILE.tmp"
+			exit 1
+		fi
+
+		[ -e $CFGFILE ] || touch $CFGFILE
+
+		# compare configs
+		if [ `md5sum $CFGFILE|awk '{print $1}'` != `md5sum $CFGFILE.tmp|awk '{print $1}'` ]; then
+			mkdir -p "$M4ARCHIVEDIR"
+			mv "$CFGFILE" "$M4ARCHIVEDIR/$NAME.cfg-`date +%Y%m%d_%H%M%S`"
+		fi
+
+
+		mv "$CFGFILE.tmp" "$CFGFILE"
+		chown $USER:$GROUP $CFGFILE
+		chmod 640 $CFGFILE
+	fi
+
+	log_daemon_msg "Starting $DESC" "$NAME"
 	start-stop-daemon --start --quiet --pidfile $PIDFILE \
 		--exec $DAEMON -- $OPTIONS || echo -n " already running"
-	echo "."
+	log_end_msg $?
 	;;
   stop)
-	echo -n "Stopping $DESC: $NAME"
+	log_daemon_msg "Stopping $DESC" "$NAME"
 	start-stop-daemon --oknodo --stop --quiet --pidfile $PIDFILE \
 		--exec $DAEMON
-	echo "."
+	log_end_msg $?
 	;;
   restart|force-reload)
 	check_opensips_config
 	create_radius_seqfile
 
-	echo -n "Restarting $DESC: $NAME"
+	log_daemon_msg "Restarting $DESC" "$NAME"
 	start-stop-daemon --oknodo --stop --quiet --pidfile \
 		$PIDFILE --exec $DAEMON
 	sleep 1
 	start-stop-daemon --start --quiet --pidfile \
 		$PIDFILE --exec $DAEMON  -- $OPTIONS
-	echo "."
+	log_end_msg $?
 	;;
   status)
-	echo -n "Status of $DESC: "
-	if [ ! -r "$PIDFILE" ]; then
-		echo "$NAME is not running."
-		exit 3
-	fi
-	if read pid < "$PIDFILE" && ps -p "$pid" > /dev/null 2>&1; then
-		echo "$NAME is running."
-		exit 0
-	else
-		echo "$NAME is not running but $PIDFILE exists."
-		exit 1
-	fi
+	status_of_proc -p $PIDFILE "$DAEMON" "$NAME"
 	;;
   *)
 	N=/etc/init.d/$NAME
-	echo "Usage: $N {start|stop|restart|force-reload|debug|status}" >&2
+	echo "Usage: $N {start|stop|restart|force-reload|status}" >&2
 	exit 1
 	;;
 esac

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * regex module - pcre operations
  *
  * Copyright (C) 2008 Iñaki Baz Castillo
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -35,6 +33,7 @@
  */
 
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -159,9 +158,12 @@ static mi_export_t mi_cmds[] = {
  */
 struct module_exports exports = {
 	"regex",                   /*!< module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,           /*!< dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,                      /*!< exported functions */
+	0,                         /*!< exported async functions */
 	params,                    /*!< exported parameters */
 	0,                         /*!< exported statistics */
 	mi_cmds,                   /*!< exported MI functions */
@@ -180,9 +182,9 @@ struct module_exports exports = {
  */
 static int mod_init(void)
 {
-	
+
 	LM_INFO("initializing module...\n");
-	
+
 	/* Group matching feature */
 	if (file == NULL) {
 		LM_NOTICE("'file' parameter is not set, group matching disabled\n");
@@ -198,7 +200,7 @@ static int mod_init(void)
 			lock_dealloc(reload_lock);
 			goto err;
 		}
-		
+
 		/* PCRE options */
 		if (pcre_caseless != 0) {
 			LM_DBG("PCRE CASELESS enabled\n");
@@ -217,19 +219,19 @@ static int mod_init(void)
 			pcre_options = pcre_options | PCRE_EXTENDED;
 		}
 		LM_DBG("PCRE options: %i\n", pcre_options);
-		
+
 		/* Pointer to pcres */
 		if ((pcres_addr = shm_malloc(sizeof(pcre **))) == 0) {
 			LM_ERR("no memory for pcres_addr\n");
 			goto err;
 		}
-		
+
 		/* Integer containing the number of pcres */
 		if ((num_pcres = shm_malloc(sizeof(int))) == 0) {
 			LM_ERR("no memory for num_pcres\n");
 			goto err;
 		}
-		
+
 		/* Load the pcres */
 		LM_NOTICE("loading pcres...\n");
 		if (load_pcres(START)) {
@@ -237,9 +239,9 @@ static int mod_init(void)
 			goto err;
 		}
 	}
-	
+
 	return 0;
-	
+
 err:
 	free_shared_memory();
 	return -1;
@@ -247,7 +249,7 @@ err:
 
 
 static void destroy(void)
-{	
+{
 	free_shared_memory();
 }
 
@@ -266,15 +268,15 @@ static int load_pcres(int action)
 	int pcre_erroffset;
 	int num_pcres_tmp = 0;
 	pcre **pcres_tmp = NULL;
-	
+
 	/* Get the lock */
 	lock_get(reload_lock);
-	
+
 	if (!(f = fopen(file, "r"))) {
 		LM_ERR("could not open file '%s'\n", file);
 		goto err;
 	}
-	
+
 	/* Array containing each pattern in the file */
 	if ((patterns = pkg_malloc(sizeof(char*) * max_groups)) == 0) {
 		LM_ERR("no more memory for patterns\n");
@@ -292,31 +294,31 @@ static int load_pcres(int action)
 		}
 		memset(patterns[i], '\0', group_max_size);
 	}
-	
+
 	/* Read the file and extract the patterns */
 	memset(line, '\0', FILE_MAX_LINE);
 	i = -1;
 	while (fgets(line, FILE_MAX_LINE, f) != NULL) {
-		
+
 		/* Ignore comments and lines starting by space, tab, CR, LF */
 		if(isspace(line[0]) || line[0]=='#') {
 			memset(line, '\0', FILE_MAX_LINE);
 			continue;
 		}
-		
+
 		/* First group */
 		if (i == -1 && line[0] != '[') {
 			LM_ERR("first group must be initialized with [0] before any regular expression\n");
 			fclose(f);
 			goto err;
 		}
-		
+
 		/* New group */
 		if (line[0] == '[') {
 			i++;
 			/* Check if there are more patterns than the max value */
 			if (i >= max_groups) {
-				LM_ERR("max patterns exceded\n");
+				LM_ERR("max patterns exceeded\n");
 				fclose(f);
 				goto err;
 			}
@@ -325,14 +327,14 @@ static int load_pcres(int action)
 			memset(line, '\0', FILE_MAX_LINE);
 			continue;
 		}
-		
+
 		/* Check if the patter size is too big (aprox) */
 		if (strlen(patterns[i]) + strlen(line) >= group_max_size - 2) {
-			LM_ERR("pattern max file exceded\n");
+			LM_ERR("pattern max file exceeded\n");
 			fclose(f);
 			goto err;
 		}
-		
+
 		/* Append ')' at the end of the line */
 		if (line[strlen(line) - 1] == '\n') {
 			line[strlen(line)] = line[strlen(line) - 1];
@@ -341,22 +343,22 @@ static int load_pcres(int action)
 			/* This is the last char in the file and it's not \n */
 			line[strlen(line)] = ')';
 		}
-		
+
 		/* Append '(' at the beginning of the line */
 		memcpy(patterns[i]+strlen(patterns[i]), "(", 1);
-		
+
 		/* Append the line to the current pattern */
 		memcpy(patterns[i]+strlen(patterns[i]), line, strlen(line));
-		
+
 		memset(line, '\0', FILE_MAX_LINE);
 	}
 	num_pcres_tmp = i + 1;
-	
+
 	fclose(f);
-	
+
 	/* Fix the patterns */
 	for (i=0; i < num_pcres_tmp; i++) {
-		
+
 		/* Convert empty groups in unmatcheable regular expression ^$ */
 		if (strlen(patterns[i]) == 1) {
 			patterns[i][0] = '^';
@@ -364,29 +366,29 @@ static int load_pcres(int action)
 			patterns[i][2] = '\0';
 			continue;
 		}
-		
+
 		/* Delete possible '\n' at the end of the pattern */
 		if (patterns[i][strlen(patterns[i])-1] == '\n') {
 			patterns[i][strlen(patterns[i])-1] = '\0';
 		}
-		
+
 		/* Replace '\n' with '|' (except at the end of the pattern) */
 		for (j=0; j < strlen(patterns[i]); j++) {
 			if (patterns[i][j] == '\n' && j != strlen(patterns[i])-1) {
 				patterns[i][j] = '|';
 			}
 		}
-		
+
 		/* Add ')' at the end of the pattern */
 		patterns[i][strlen(patterns[i])] = ')';
 	}
-	
+
 	/* Log the group patterns */
 	LM_NOTICE("num groups = %d\n\n", num_pcres_tmp);
 	for (i=0; i < num_pcres_tmp; i++) {
 		LM_NOTICE("<group[%d]>%s</group[%d]> (size = %i)\n", i, patterns[i], i, (int)strlen(patterns[i]));
 	}
-	
+
 	/* Temporal pointer of pcres */
 	if ((pcres_tmp = pkg_malloc(sizeof(pcre *) * num_pcres_tmp)) == 0) {
 		LM_ERR("no more memory for pcres_tmp\n");
@@ -395,10 +397,10 @@ static int load_pcres(int action)
 	for (i=0; i<num_pcres_tmp; i++) {
 		pcres_tmp[i] = NULL;
 	}
-	
+
 	/* Compile the patters */
 	for (i=0; i<num_pcres_tmp; i++) {
-	
+
 		pcre_tmp = pcre_compile(patterns[i], pcre_options, &pcre_error, &pcre_erroffset, NULL);
 		if (pcre_tmp == NULL) {
 			LM_ERR("pcre_tmp compilation of '%s' failed at offset %d: %s\n", patterns[i], pcre_erroffset, pcre_error);
@@ -409,17 +411,17 @@ static int load_pcres(int action)
 			printf("pcre_fullinfo on compiled pattern[%i] yielded error: %d\n", i, pcre_rc);
 			goto err;
 		}
-		
+
 		if ((pcres_tmp[i] = pkg_malloc(pcre_size)) == 0) {
 			LM_ERR("no more memory for pcres_tmp[%i]\n", i);
 			goto err;
 		}
-		
+
 		memcpy(pcres_tmp[i], pcre_tmp, pcre_size);
 		pcre_free(pcre_tmp);
 		pkg_free(patterns[i]);
 	}
-	
+
 	/* Copy to shared memory */
 	if (action == RELOAD) {
 		for(i=0; i<*num_pcres; i++) {  /* Use the previous num_pcres value */
@@ -452,12 +454,15 @@ static int load_pcres(int action)
 		pkg_free(pcres_tmp[i]);
 	}
 	pkg_free(pcres_tmp);
+	/* release the "non-existing" patterns */
+	for (i = num_pcres_tmp; i < max_groups; i++)
+		pkg_free(patterns[i]);
 	pkg_free(patterns);
 	lock_release(reload_lock);
-	
+
 	return 0;
-	
-	
+
+
 err:
 	if (patterns) {
 		for(i=0; i<max_groups; i++) {
@@ -488,7 +493,7 @@ err:
 static void free_shared_memory(void)
 {
 	int i;
-	
+
 	if (pcres) {
 		for(i=0; i<*num_pcres; i++) {
 			if (pcres[i]) {
@@ -497,15 +502,15 @@ static void free_shared_memory(void)
 		}
 		shm_free(pcres);
 	}
-	
+
 	if (num_pcres) {
 		shm_free(num_pcres);
 	}
-	
+
 	if (pcres_addr) {
 		shm_free(pcres_addr);
 	}
-	
+
 	if (reload_lock) {
 		lock_destroy(reload_lock);
 		lock_dealloc(reload_lock);
@@ -526,17 +531,17 @@ static int w_pcre_match(struct sip_msg* _msg, char* _s1, char* _s2)
 	int pcre_rc;
 	const char *pcre_error;
 	int pcre_erroffset;
-	
+
 	if (_s1 == NULL) {
 		LM_ERR("bad parameters\n");
 		return -2;
 	}
-	
+
 	if (_s2 == NULL) {
 		LM_ERR("bad parameters\n");
 		return -2;
 	}
-	
+
 	if (fixup_get_svalue(_msg, (gparam_p)_s1, &string))
 	{
 		LM_ERR("cannot print the format for string\n");
@@ -547,13 +552,13 @@ static int w_pcre_match(struct sip_msg* _msg, char* _s1, char* _s2)
 		LM_ERR("cannot print the format for regex\n");
 		return -3;
 	}
-	
+
 	pcre_re = pcre_compile(regex.s, pcre_options, &pcre_error, &pcre_erroffset, NULL);
 	if (pcre_re == NULL) {
 		LM_ERR("pcre_re compilation of '%s' failed at offset %d: %s\n", regex.s, pcre_erroffset, pcre_error);
 		return -4;
 	}
-	
+
 	pcre_rc = pcre_exec(
 		pcre_re,                    /* the compiled pattern */
 		NULL,                       /* no extra data - we didn't study the pattern */
@@ -563,7 +568,7 @@ static int w_pcre_match(struct sip_msg* _msg, char* _s1, char* _s2)
 		0,                          /* default options */
 		NULL,                       /* output vector for substring information */
 		0);                         /* number of elements in the output vector */
-	
+
 	/* Matching failed: handle error cases */
 	if (pcre_rc < 0) {
 		switch(pcre_rc) {
@@ -590,37 +595,37 @@ static int w_pcre_match_group(struct sip_msg* _msg, char* _s1, char* _s2)
 	str string;
 	int num_pcre;
 	int pcre_rc;
-	
+
 	/* Check if group matching feature is enabled */
 	if (file == NULL) {
 		LM_ERR("group matching is disabled\n");
 		return -2;
 	}
-	
+
 	if (_s1 == NULL) {
 		LM_ERR("bad parameters\n");
 		return -3;
 	}
-	
+
 	if (_s2 == NULL) {
 		num_pcre = 0;
 	} else {
 		num_pcre = (uint)(long)_s2;
 	}
-	
+
 	if (num_pcre >= *num_pcres) {
 		LM_ERR("invalid pcre index '%i', there are %i pcres\n", num_pcre, *num_pcres);
 		return -4;
 	}
-	
+
 	if (fixup_get_svalue(_msg, (gparam_p)_s1, &string))
 	{
 		LM_ERR("cannot print the format\n");
 		return -5;
 	}
-	
+
 	lock_get(reload_lock);
-	
+
 	pcre_rc = pcre_exec(
 		(*pcres_addr)[num_pcre],    /* the compiled pattern */
 		NULL,                       /* no extra data - we didn't study the pattern */
@@ -630,9 +635,9 @@ static int w_pcre_match_group(struct sip_msg* _msg, char* _s1, char* _s2)
 		0,                          /* default options */
 		NULL,                       /* output vector for substring information */
 		0);                         /* number of elements in the output vector */
-	
+
 	lock_release(reload_lock);
-	
+
 	/* Matching failed: handle error cases */
 	if (pcre_rc < 0) {
 		switch(pcre_rc) {
@@ -649,7 +654,7 @@ static int w_pcre_match_group(struct sip_msg* _msg, char* _s1, char* _s2)
 		LM_DBG("'%s' matches pcres[%i]\n", string.s, num_pcre);
 		return 1;
 	}
-	
+
 }
 
 
@@ -665,7 +670,7 @@ static struct mi_root* mi_pcres_reload(struct mi_root* cmd, void* param)
 		LM_NOTICE("'file' parameter is not set, group matching disabled\n");
 		return init_mi_tree(403, MI_SSTR("Group matching not enabled"));
 	}
-	
+
 	LM_NOTICE("reloading pcres...\n");
 	if (load_pcres(RELOAD)) {
 		LM_ERR("failed to reload pcres\n");

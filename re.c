@@ -1,8 +1,6 @@
-/* 
- * $Id$
- *
+/*
  * regexp and regexp substitutions implementations
- * 
+ *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
@@ -57,7 +55,7 @@ void subst_expr_free(struct subst_expr* se)
 void replace_lst_free(struct replace_lst* l)
 {
 	struct replace_lst* t;
-	
+
 	while (l){
 		t=l;
 		l=l->next;
@@ -67,7 +65,7 @@ void replace_lst_free(struct replace_lst* l)
 }
 
 #define MAX_REPLACE_WITH 100
-int parse_repl(struct replace_with * rw, char ** begin, 
+int parse_repl(struct replace_with * rw, char ** begin,
 				char * end, int *max_token_nb, int with_sep)
 {
 
@@ -145,7 +143,7 @@ int parse_repl(struct replace_with * rw, char ** begin,
 					rw[token_nb].type=REPLACE_NMATCH;
 					rw[token_nb].u.nmatch=(*p)-'0';
 								/* 0 is the whole matched str*/
-					if (max_pmatch<rw[token_nb].u.nmatch) 
+					if (max_pmatch<rw[token_nb].u.nmatch)
 						max_pmatch=rw[token_nb].u.nmatch;
 					break;
 				default: /* just print current char */
@@ -186,7 +184,7 @@ int parse_repl(struct replace_with * rw, char ** begin,
 		}
 	}
 	if(with_sep){
-	
+
 		LM_ERR("missing separator: %s\n", *begin);
 		goto error;
 	}
@@ -202,7 +200,7 @@ error:
 }
 
 
-/*! \brief Parse a /regular expression/replacement/flags into a subst_expr structure 
+/*! \brief Parse a /regular expression/replacement/flags into a subst_expr structure
  */
 struct subst_expr* subst_parser(str* subst)
 {
@@ -222,7 +220,7 @@ struct subst_expr* subst_parser(str* subst)
 	regex_t* regex;
 	int max_pmatch;
 	int r;
-	
+
 	/* init */
 	se=0;
 	regex=0;
@@ -232,18 +230,18 @@ struct subst_expr* subst_parser(str* subst)
 		LM_ERR("expression is too short: %.*s\n", subst->len, subst->s);
 		goto error;
 	}
-	
+
 	p=subst->s;
 	end=subst->s+subst->len;
 
 	c=*p;
 	if (c=='\\'){
-		LM_ERR("invalid separator char <%c> in %.*s\n", c, 
+		LM_ERR("invalid separator char <%c> in %.*s\n", c,
 				subst->len, subst->s);
 		goto error;
 	}
 	p++;
-	
+
 	/* find re */
 	re=p;
 	for (;p<end;p++){
@@ -261,7 +259,7 @@ found_re:
 	repl=p+1;
 	if((rw_no = parse_repl(rw, &p, end, &max_pmatch, WITH_SEP))< 0)
 		goto error;
-	
+
 
 	repl_end=p;
 	p++;
@@ -293,7 +291,7 @@ found_re:
 	if (regcomp(regex, re, cflags)!=0){
 		pkg_free(regex);
 		*re_end=c; /* restore */
-		LM_ERR("bad regular expression %.*s in %.*s\n", 
+		LM_ERR("bad regular expression %.*s in %.*s\n",
 				(int)(re_end-re), re, subst->len, subst->s);
 		goto error;
 	}
@@ -323,7 +321,7 @@ found_re:
 	for (r=0; r<rw_no; r++) se->replace[r]=rw[r];
 	LM_DBG("ok, se is %p\n", se);
 	return se;
-	
+
 error:
 	if (se) { subst_expr_free(se); regex=0; }
 	if (regex) { regfree (regex); pkg_free(regex); }
@@ -338,7 +336,7 @@ static int replace_len(const char* match, int nmatch, regmatch_t* pmatch,
 	int r;
 	int len;
 	str* uri;
-	
+
 	len=se->replacement.len;
 	for (r=0; r<se->n_escapes; r++){
 		switch(se->replace[r].type){
@@ -389,7 +387,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 	int size;
 #define REPLACE_BUFFER_SIZE	1024
 	static char rbuf[REPLACE_BUFFER_SIZE];
-	
+
 #if 0
 	/* use static bufer now since we cannot easily get the length */
 	rpl->len=replace_len(match, nmatch, pmatch, se, msg);
@@ -403,7 +401,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 		goto error;
 	}
 #endif
-	
+
 	p=se->replacement.s;
 	end=p+se->replacement.len;
 	dest=rbuf;
@@ -428,7 +426,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 							LM_ERR("overflow\n");
 							goto error;
 						}
-						memcpy(dest, 
+						memcpy(dest,
 								match+pmatch[se->replace[r].u.nmatch].rm_so,
 								size);
 						dest+=size;
@@ -475,7 +473,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 		}
 	}
 	memcpy(dest, p, end-p);
-	
+
 	rpl->len = (dest-rbuf)+(end-p);
 	rpl->s=pkg_malloc(rpl->len);
 	if (rpl->s==0){
@@ -483,7 +481,7 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 		goto error;
 	}
 	memcpy(rpl->s, rbuf, rpl->len);
-	
+
 	return 0;
 error:
 	return -1;
@@ -508,8 +506,8 @@ struct replace_lst* subst_run(struct subst_expr* se, const char* input,
 	int nmatch;
 	int eflags;
 	int cnt;
-	
-	
+
+
 	/* init */
 	head=0;
 	cnt=0;
@@ -546,7 +544,7 @@ struct replace_lst* subst_run(struct subst_expr* se, const char* input,
 			(*crt)->offset=pmatch[0].rm_so+(int)(p-input);
 			(*crt)->size=pmatch[0].rm_eo-pmatch[0].rm_so;
 			LM_DBG("matched (%d, %d): [%.*s]\n",
-					(*crt)->offset, (*crt)->size, 
+					(*crt)->offset, (*crt)->size,
 					(*crt)->size, input+(*crt)->offset);
 			/* create subst. string */
 			/* construct the string from replace[] */
@@ -578,8 +576,8 @@ error:
 /*! \return the substitution result in a str, input must be 0 term
  *  0 on no match or malloc error
  *  if count is non zero it will be set to the number of matches, or -1
- *   if error 
- */ 
+ *   if error
+ */
 str* subst_str(const char *input, struct sip_msg* msg, struct subst_expr* se,
 				int* count)
 {
@@ -591,8 +589,8 @@ str* subst_str(const char *input, struct sip_msg* msg, struct subst_expr* se,
 	const char* p;
 	char* dest;
 	const char* end;
-	
-	
+
+
 	/* compute the len */
 	len=strlen(input);
 	end=input+len;
@@ -615,7 +613,7 @@ str* subst_str(const char *input, struct sip_msg* msg, struct subst_expr* se,
 	}
 	res->s[len]=0;
 	res->len=len;
-	
+
 	/* replace */
 	dest=res->s;
 	p=input;

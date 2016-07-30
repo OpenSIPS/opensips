@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2005-2009 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -189,7 +187,7 @@ static inline struct lump* get_display_anchor(struct sip_msg *msg,
 
 	if (*p2=='<') {
 		/* is quoted */
-		l = anchor_lump( msg, p2 - msg->buf, 0, 0);
+		l = anchor_lump( msg, p2 - msg->buf, 0);
 		if (l==0) {
 			LM_ERR("unable to build lump anchor\n");
 			return 0;
@@ -199,7 +197,7 @@ static inline struct lump* get_display_anchor(struct sip_msg *msg,
 	}
 
 	/* not quoted - more complicated....must place the closing bracket */
-	l = anchor_lump( msg, (body->uri.s+body->uri.len) - msg->buf, 0, 0);
+	l = anchor_lump( msg, (body->uri.s+body->uri.len) - msg->buf, 0);
 	if (l==0) {
 		LM_ERR("unable to build lump anchor\n");
 		return 0;
@@ -216,7 +214,7 @@ static inline struct lump* get_display_anchor(struct sip_msg *msg,
 		return 0;
 	}
 	/* build anchor for display */
-	l = anchor_lump( msg, body->uri.s - msg->buf, 0, 0);
+	l = anchor_lump( msg, body->uri.s - msg->buf, 0);
 	if (l==0) {
 		LM_ERR("unable to build lump anchor\n");
 		return 0;
@@ -320,7 +318,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 		LM_ERR("no more pkg mem\n");
 		goto error;
 	}
-	memcpy( p, uri->s, uri->len); 
+	memcpy( p, uri->s, uri->len);
 	if (insert_new_lump_after( l, p, uri->len, 0)==0) {
 		LM_ERR("insert new lump failed\n");
 		pkg_free(p);
@@ -366,7 +364,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 			}
 			LM_DBG("stored <%.*s> param in dialog\n", rr_param->len, rr_param->s);
 		}
-		if (dlg_api.store_dlg_value(dlg, 
+		if (dlg_api.store_dlg_value(dlg,
 					to ? &rr_to_param_new : &rr_from_param_new, uri) < 0) {
 			LM_ERR("cannot store new uri value\n");
 			goto error;
@@ -449,7 +447,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 		}
 		/* set TO/ FROM sepcific flags */
 		msg->msg_flags |= uac_flag;
-		if ( (Trans=uac_tmb.t_gett())!=NULL && Trans!=T_UNDEFINED && 
+		if ( (Trans=uac_tmb.t_gett())!=NULL && Trans!=T_UNDEFINED &&
 		Trans->uas.request)
 			Trans->uas.request->msg_flags |= uac_flag;
 	}
@@ -579,6 +577,35 @@ failed:
 
 /************************** Dialog functions ******************************/
 
+void dlg_restore_callback(struct dlg_cell* dlg, int type, struct dlg_cb_params * params)
+{
+	str val;
+
+	/* check if the UAC corresponding values are present */
+
+	if ( dlg_api.fetch_dlg_value( dlg, &rr_to_param_new, &val, 0)==0 ) {
+		/* TO variable found -> TO URI changed */
+		LM_DBG("UAC TO related DLG vals found -> installing callback\n");
+		if ( dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED,
+		replace_callback, (void*)1/*to*/, 0) != 0) {
+			LM_ERR("cannot register callback\n");
+		}
+	}
+
+	if ( dlg_api.fetch_dlg_value( dlg, &rr_from_param_new, &val, 0)==0 ) {
+		/* FROM variable found -> FROM URI changed */
+		LM_DBG("UAC FROM related DLG vals found -> installing callback\n");
+		if ( dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED,
+		replace_callback, (void*)0/*from*/, 0) != 0) {
+			LM_ERR("cannot register callback\n");
+		}
+	}
+
+	return;
+}
+
+
+
 static void replace_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
@@ -685,7 +712,7 @@ void rr_checker(struct sip_msg *msg, str *r_param, void *cb_param)
 	if ( (restore_uri( msg, 0, 1/*from*/) +
 	restore_uri( msg, 1, 0/*to*/) )!= -2 ) {
 		/* restore in req performed -> replace in reply */
-		/* in callback we need TO/FROM to be parsed- it's already done 
+		/* in callback we need TO/FROM to be parsed- it's already done
 		 * by restore_from_to() function */
 		if ( uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN,
 		restore_uris_reply, 0, 0)!=1 ) {
@@ -758,7 +785,7 @@ int move_bavp_dlg( struct sip_msg *msg, str* rr_param, pv_spec_t *store_spec)
 		LM_DBG("dialog not found - cannot move branch avps\n");
 		goto not_moved;
 	}
-	
+
 	code = msg->first_line.u.reply.statuscode;
 	if (msg->first_line.type == SIP_REPLY && code >= 200 && code < 300) {
 		/* check to see if there are bavps stored */
@@ -775,7 +802,7 @@ int move_bavp_dlg( struct sip_msg *msg, str* rr_param, pv_spec_t *store_spec)
 			return -1;
 		}
 
-		LM_DBG("moved <%.*s> from branch avp list in dlg\n", 
+		LM_DBG("moved <%.*s> from branch avp list in dlg\n",
 				rr_param->len, rr_param->s);
 		return 1;
 	}
@@ -800,7 +827,7 @@ void move_bavp_callback(struct cell* t, int type, struct tmcb_params *p)
 	if (req == FAKED_REPLY || rpl == FAKED_REPLY)
 		return;
 
-	if (req->msg_flags & FL_USE_UAC_FROM && 
+	if (req->msg_flags & FL_USE_UAC_FROM &&
 			(move_bavp_dlg(rpl, &rr_from_param, &from_bavp_spec) < 0))
 		LM_ERR("failed to move bavp list\n");
 

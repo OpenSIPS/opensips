@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2006-2007 VozTelecom Sistemas S.L
  *
  * This file is part of opensips, a free SIP server.
@@ -14,26 +13,26 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*
  * =====================================================================================
- * 
+ *
  *        Filename:  encode_parameters.c
- * 
+ *
  *     Description:  Functions to encode/print parameters
- * 
+ *
  *         Version:  1.0
  *         Created:  25/01/06 17:46:04 CET
  *        Revision:  none
  *        Compiler:  gcc
- * 
+ *
  *          Author:  Elias Baixas (EB), elias@conillera.net
  *         Company:  VozTele.com
- * 
+ *
  * =====================================================================================
  */
 #define _GNU_SOURCE
@@ -50,7 +49,7 @@
 /**
  * Returns how many bytes in *where have been used
  *
- * TODO this is little shitty, someone should unify all the param flavours 
+ * TODO this is little shitty, someone should unify all the param flavours
  * to a sigle universal type of parameter (to_param,param,disposition_param)
  * the way is done here, at least, we dont have the parameter-hanling code spread all around.
  */
@@ -62,7 +61,7 @@ int encode_parameters(unsigned char *where,void *pars,char *hdrstart,void *_body
    struct via_param *vparam,*vparams;
    struct via_body *vbody;
    struct to_body *tbody;
-   char *mylittlepointer,*paramstart; 
+   char *mylittlepointer,*paramstart;
    int i,j,paramlen;
    i=0;
    if(!pars)
@@ -169,7 +168,7 @@ int encode_parameters(unsigned char *where,void *pars,char *hdrstart,void *_body
 	 return 0;
       /*the first parameter start index, I suppose paramstart points to the first
        letter of the first parameter: sip:elias@voztele.com;param1=true;param2=false
-                                     paramstart points to __^                      
+                                     paramstart points to __^
        each parameter is codified with its {param_name_start_idx,[param_value_start_idx|next_param_start_idx]} */
       where[j++]=paramstart-hdrstart;
       while(i<paramlen){

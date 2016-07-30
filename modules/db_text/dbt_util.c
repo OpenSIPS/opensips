@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * DBText library
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,14 +15,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
  * History:
  * -------
  * 2003-01-30 created by Daniel
- * 
+ *
  */
 
 #include <string.h>
@@ -40,7 +38,7 @@ int dbt_is_database(str *_s)
 {
 	DIR *dirp = NULL;
 	char buf[512];
-	
+
 	if(!_s || !_s->s || _s->len <= 0 || _s->len > 510)
 		return 0;
 	strncpy(buf, _s->s, _s->len);

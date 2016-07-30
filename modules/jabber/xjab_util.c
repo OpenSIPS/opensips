@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * eXtended JABber module - Jabber connections pool
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
+ * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -101,7 +99,7 @@ xj_jcon_pool xj_jcon_pool_init(int size, int jlen, int ch)
 int xj_jcon_pool_add_jmsg(xj_jcon_pool jcp, xj_sipmsg _jsm, xj_jcon _ojc)
 {
 	int i;
-	
+
 	if(jcp == NULL)
 		return -1;
 	if(jcp->jmqueue.size == jcp->jmqueue.len)
@@ -137,7 +135,7 @@ int xj_jcon_pool_del_jmsg(xj_jcon_pool jcp, int idx)
 	jcp->jmqueue.size--;
 	jcp->jmqueue.jsm[idx] = NULL;
 	jcp->jmqueue.ojc[idx] = NULL;
-	
+
 	return 0;
 }
 
@@ -149,18 +147,18 @@ int xj_jcon_pool_del_jmsg(xj_jcon_pool jcp, int idx)
 int xj_jcon_pool_add(xj_jcon_pool jcp, xj_jcon jc)
 {
 	int i = 0;
-	
+
 	if(jcp == NULL)
 		return -1;
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("add connection into the pool\n");
-#endif	
+#endif
 	while(i < jcp->len && jcp->ojc[i] != NULL)
 		i++;
 	if(i >= jcp->len)
 		return -1;
 	jcp->ojc[i] = jc;
-	
+
 	return 0;
 }
 
@@ -174,7 +172,7 @@ xj_jcon xj_jcon_pool_get(xj_jcon_pool jcp, xj_jkey jkey)
 {
 	int i = 0;
 	xj_jcon _ojc;
-	
+
 	if(jcp==NULL || jkey==NULL || jkey->id==NULL || jkey->id->s==NULL)
 		return NULL;
 #ifdef XJ_EXTRA_DEBUG
@@ -183,7 +181,7 @@ xj_jcon xj_jcon_pool_get(xj_jcon_pool jcp, xj_jkey jkey)
 #endif
 	while(i < jcp->len)
 	{
-	 	if((jcp->ojc[i]!=NULL) && jcp->ojc[i]->jkey->hash==jkey->hash && 
+	 	if((jcp->ojc[i]!=NULL) && jcp->ojc[i]->jkey->hash==jkey->hash &&
 			(!strncmp(jcp->ojc[i]->jkey->id->s, jkey->id->s, jkey->id->len)))
 	 	{
 	 		_ojc = jcp->ojc[i];
@@ -205,7 +203,7 @@ xj_jcon xj_jcon_pool_get(xj_jcon_pool jcp, xj_jkey jkey)
 int xj_jcon_pool_del(xj_jcon_pool jcp, xj_jkey jkey)
 {
 	int i = 0;
-	
+
 	if(jcp==NULL || jkey==NULL || jkey->id==NULL || jkey->id->s==NULL)
 		return -1;
 #ifdef XJ_EXTRA_DEBUG
@@ -213,7 +211,7 @@ int xj_jcon_pool_del(xj_jcon_pool jcp, xj_jkey jkey)
 #endif
 	while(i < jcp->len)
 	{
-	 	if((jcp->ojc[i]!=NULL) && jcp->ojc[i]->jkey->hash==jkey->hash && 
+	 	if((jcp->ojc[i]!=NULL) && jcp->ojc[i]->jkey->hash==jkey->hash &&
 			(!strncmp(jcp->ojc[i]->jkey->id->s,jkey->id->s,jkey->id->len)))
 	 	{
 	 		xj_jcon_free(jcp->ojc[i]);
@@ -253,7 +251,7 @@ void xj_jcon_pool_free(xj_jcon_pool jcp)
 		_M_FREE(jcp->jmqueue.ojc);
 	if(jcp->jmqueue.expire != NULL)
 		_M_FREE(jcp->jmqueue.expire);
-		
+
 	_M_FREE(jcp);
 }
 

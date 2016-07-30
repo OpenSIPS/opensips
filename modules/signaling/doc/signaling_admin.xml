@@ -12,7 +12,7 @@
 		that want to send a reply. 
 	</para>
 	<para>
-		The logic behind th emodule is to first search if a transaction is
+		The logic behind the module is to first search if a transaction is
 		created and if so, send a state full reply, using tm module, otherwise
 		send a stateless reply with the function exported by sl.
 		In this way, the script writer still has the call on how the transaction 

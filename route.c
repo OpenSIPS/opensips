@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * SIP routing engine
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -18,9 +16,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -35,7 +33,7 @@
  *              the ip with all the addresses (andrei)
  *  2003-10-10  added more operators support to comp_* (<,>,<=,>=,!=) (andrei)
  *  2004-10-19  added from_uri & to_uri (andrei)
- *  2006-03-02  MODULE_T action points to a cmd_export_t struct instead to 
+ *  2006-03-02  MODULE_T action points to a cmd_export_t struct instead to
  *               a function address - more info is accessible (bogdan)
  *              Fixup failure reports the config line (bogdan)
  *  2006-12-22  support for script and branch flags added (bogdan)
@@ -43,12 +41,12 @@
 
 
 /*!
- * \file 
+ * \file
  * \brief SIP routing engine
  */
 
 
- 
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <regex.h>
@@ -94,7 +92,7 @@ struct script_route startup_rlist;
 /* timer route */
 struct script_timer_route timer_rlist[TIMER_RT_NO];
 /* event route */
-struct script_route event_rlist[EVENT_RT_NO];
+struct script_event_route event_rlist[EVENT_RT_NO];
 
 int route_type = REQUEST_ROUTE;
 
@@ -103,7 +101,7 @@ static int fix_actions(struct action* a); /*fwd declaration*/
 
 extern int return_code;
 
-/*! 
+/*!
  * \brief Initialize routing lists
  */
 void init_route_lists(void)
@@ -160,14 +158,14 @@ int get_script_route_ID_by_name(char *name, struct script_route *sr, int size)
 }
 
 
-/*! \brief traverses an expression tree and compiles the REs where necessary) 
- * \return 0 for ok, <0 if errors 
+/*! \brief traverses an expression tree and compiles the REs where necessary)
+ * \return 0 for ok, <0 if errors
  */
 static int fix_expr(struct expr* exp)
 {
 	regex_t* re;
 	int ret;
-	
+
 	ret=E_BUG;
 	if (exp==0){
 		LM_CRIT("null pointer\n");
@@ -229,7 +227,7 @@ static int fix_expr(struct expr* exp)
 			if (exp->right.type==EXPR_ST){
 				ret=fix_expr(exp->right.v.expr);
 				if (ret!=0){
-					LM_CRIT("fix rigth exp error\n");
+					LM_CRIT("fix right exp error\n");
 					return ret;
 				}
 			}
@@ -240,13 +238,14 @@ static int fix_expr(struct expr* exp)
 
 
 
-/*! \brief Adds the proxies in the proxy list & resolves the hostnames 
+/*! \brief Adds the proxies in the proxy list & resolves the hostnames
  * \return 0 if ok, <0 on error */
 static int fix_actions(struct action* a)
 {
 	struct action *t;
 	int ret;
 	cmd_export_t* cmd;
+	acmd_export_t* acmd;
 	struct hostent* he;
 	struct ip_addr ip;
 	struct socket_info* si;
@@ -257,7 +256,7 @@ static int fix_actions(struct action* a)
 	int i = 0;
 	str s;
 	pv_elem_t *model=NULL;
-	pv_elem_t *models[5]; 
+	pv_elem_t *models[5];
 	xl_level_p xlp;
 	event_id_t ev_id;
 
@@ -281,7 +280,8 @@ static int fix_actions(struct action* a)
 					goto error;
 				}
 				if ( rlist[t->elem[0].u.number].a==NULL ) {
-					LM_ERR("called route %d is not defined\n",
+					LM_ERR("called route [%s] (id=%d) is not defined\n",
+						rlist[t->elem[0].u.number].name,
 						(int)t->elem[0].u.number);
 					ret = E_CFG;
 					goto error;
@@ -328,7 +328,7 @@ static int fix_actions(struct action* a)
 					ret = E_CFG;
 					goto error;
 				}
-				p = add_proxy( &host,(unsigned short)port, proto);
+				p = mk_proxy( &host,(unsigned short)port, proto, 0);
 				if (p==0) {
 					LM_ERR("forward/send failed to add proxy");
 					ret = E_CFG;
@@ -355,7 +355,7 @@ static int fix_actions(struct action* a)
 						ret=E_BUG;
 						goto error;
 					}
-					
+
 					t->elem[1].u.data = (void*)model;
 					t->elem[1].type = SCRIPTVAR_ELEM_ST;
 				}
@@ -414,6 +414,19 @@ static int fix_actions(struct action* a)
 						return ret;
 				}
 				break;
+			case FOR_EACH_T:
+				if (t->elem[2].type != ACTIONS_ST) {
+					LM_CRIT("bad subtype %d in for-each (should be actions)\n",
+				             t->elem[2].type);
+					ret = E_BUG;
+					goto error;
+				}
+
+				if (t->elem[2].u.data) {
+					if ((ret=fix_actions((struct action*)t->elem[2].u.data))<0)
+						return ret;
+				}
+				break;
 			case SWITCH_T:
 				if ( (t->elem[1].type==ACTIONS_ST)&&(t->elem[1].u.data) ){
 					if ((ret=fix_actions((struct action*)t->elem[1].u.data))<0)
@@ -434,7 +447,7 @@ static int fix_actions(struct action* a)
 				break;
 			case MODULE_T:
 				cmd = (cmd_export_t*)t->elem[0].u.data;
-				LM_DBG("fixing %s, line %d\n", cmd->name, t->line);
+				LM_DBG("fixing %s, %s:%d\n", cmd->name, t->file, t->line);
 				if (cmd->fixup){
 					if (cmd->param_no==0){
 						ret=cmd->fixup( 0, 0);
@@ -442,9 +455,38 @@ static int fix_actions(struct action* a)
 					}
 					else {
 						for (i=1; i<=cmd->param_no; i++) {
-							ret=cmd->fixup(&t->elem[i].u.data, i);
-							t->elem[i].type=MODFIXUP_ST;
-							if (ret<0) goto error;
+							/* we only call the fixup for non-null arguments */
+							if (t->elem[i].type != NULLV_ST) {
+								ret=cmd->fixup(&t->elem[i].u.data, i);
+								t->elem[i].type=MODFIXUP_ST;
+								if (ret<0) goto error;
+							}
+						}
+					}
+				}
+				break;
+			case ASYNC_T:
+				if ( (t->elem[0].type==ACTIONS_ST)&&(t->elem[0].u.data) ){
+					if ((ret=fix_actions((struct action*)t->elem[0].u.data))<0)
+						return ret;
+				}
+				break;
+			case AMODULE_T:
+				acmd = (acmd_export_t*)t->elem[0].u.data;
+				LM_DBG("fixing async %s, %s:%d\n", acmd->name, t->file, t->line);
+				if (acmd->fixup){
+					if (acmd->param_no==0){
+						ret=acmd->fixup( 0, 0);
+						if (ret<0) goto error;
+					}
+					else {
+						for (i=1; i<=acmd->param_no; i++) {
+							/* we only call the fixup for non-null arguments */
+							if (t->elem[i].type != NULLV_ST) {
+								ret=acmd->fixup(&t->elem[i].u.data, i);
+								t->elem[i].type=MODFIXUP_ST;
+								if (ret<0) goto error;
+							}
 						}
 					}
 				}
@@ -477,41 +519,15 @@ static int fix_actions(struct action* a)
 				t->elem[0].u.data=si;
 				t->elem[0].type=SOCKETINFO_ST;
 				break;
-			case SET_DEBUG_T:
-				if (t->elem[0].type==NOSUBTYPE)
-					break;
-				if (t->elem[0].type!=NUMBER_ST) {
-					LM_CRIT("fix_actions: BUG in setdebug() type %d\n",
-						t->elem[0].type );
-					ret=E_BUG;
-					goto error;
-				}
-				/* normalize the value */
-				if (t->elem[0].u.number>L_DBG)
-					t->elem[0].u.number = L_DBG;
-				else if (t->elem[0].u.number<L_ALERT)
-					t->elem[0].u.number = L_ALERT;
-				break;
 			case SETFLAG_T:
 			case RESETFLAG_T:
 			case ISFLAGSET_T:
-				i = FLAG_TYPE_MSG;
-			case SETSFLAG_T:
-			case RESETSFLAG_T:
-			case ISSFLAGSET_T:
-
-				if (t->type == SETSFLAG_T || t->type == RESETSFLAG_T ||
-				    t->type == ISSFLAGSET_T) {
-
-					i = FLAG_TYPE_SCRIPT;
-				}
-
 				if (t->elem[0].type == NUMBER_ST) {
 					s.s = int2str((unsigned long)t->elem[0].u.number, &s.len);
-				    t->elem[0].u.number = fixup_flag(i, &s);
+				    t->elem[0].u.number = fixup_flag(FLAG_TYPE_MSG, &s);
 
 				} else if (t->elem[0].type == STR_ST) {
-					t->elem[0].u.number = fixup_flag(i, &t->elem[0].u.s);
+					t->elem[0].u.number = fixup_flag(FLAG_TYPE_MSG, &t->elem[0].u.s);
 
 				} else {
 					LM_CRIT("bad xxxflag() type %d\n", t->elem[0].type);
@@ -584,11 +600,11 @@ static int fix_actions(struct action* a)
 				}
 				host.s = t->elem[0].u.string;
 				host.len = strlen(host.s);
-				if ( strcasecmp(host.s,"all")==0 ) {
+				if (!strcasecmp(host.s, "all")) {
 					blh = NULL;
 				} else {
 					blh = get_bl_head_by_name(&host);
-					if (blh==NULL) {
+					if (!blh) {
 						LM_ERR("[UN]USE_BLACKLIST - list "
 							"%s not configured\n", t->elem[0].u.string);
 						ret=E_CFG;
@@ -624,7 +640,7 @@ static int fix_actions(struct action* a)
 					break;
 
 				/* value */
-				if (t->type==CACHE_FETCH_T || 
+				if (t->type==CACHE_FETCH_T ||
 					t->type==CACHE_COUNTER_FETCH_T) {
 					if(((pv_spec_p)t->elem[2].u.data)->setf == NULL)
 					{
@@ -657,6 +673,14 @@ static int fix_actions(struct action* a)
 							goto error;
 						}
 					}
+				} else if (t->type==CACHE_ADD_T || t->type==CACHE_SUB_T) {
+					if(t->elem[4].u.data != NULL && ((pv_spec_p)t->elem[4].u.data)->setf == NULL)
+					{
+						LM_ERR("Fourth argument cannot be a read-only pvar\n");
+						ret=E_CFG;
+						goto error;
+					}
+
 				}
 				break;
 			case SET_ADV_ADDR_T:
@@ -674,6 +698,21 @@ static int fix_actions(struct action* a)
 						goto error;
 				}
 				t->elem[0].u.data = (void*)model;
+				break;
+			case SET_ADV_PORT_T:
+				if (t->elem[0].type == STR_ST) {
+					s.s = (char *)t->elem[0].u.data;
+					s.len = strlen(s.s);
+
+					if (pv_parse_format(&s ,&model) != 0 || !model) {
+							LM_ERR("wrong format for [%.*s] advertised port!\n",
+									t->elem[1].u.s.len, t->elem[1].u.s.s);
+							ret = E_BUG;
+							goto error;
+					}
+
+					t->elem[0].u.data = model;
+				}
 				break;
 			case XDBG_T:
 			case XLOG_T:
@@ -695,7 +734,7 @@ static int fix_actions(struct action* a)
 						ret=E_BUG;
 						goto error;
 					}
-					
+
 					t->elem[0].u.data = (void*)model;
 					t->elem[0].type = SCRIPTVAR_ELEM_ST;
 				}
@@ -725,8 +764,8 @@ static int fix_actions(struct action* a)
 							LM_ERR("invalid level param\n");
 							return E_UNSPEC;
 						}
-					} 
-					else 
+					}
+					else
 					{
 						xlp->type = 0;
 						switch(s.s[2])
@@ -749,7 +788,7 @@ static int fix_actions(struct action* a)
 					s.len = strlen(s.s);
 					if (pv_parse_format(&s, &model) || model == NULL)
 					{
-						LM_ERR("wrong fomat [%s] for value param\n",s.s);
+						LM_ERR("wrong format [%s] for value param\n",s.s);
 						ret=E_BUG;
 						goto error;
 					}
@@ -772,7 +811,7 @@ static int fix_actions(struct action* a)
 				}
 				t->elem[0].u.number = ev_id;
 				t->elem[0].type = NUMBER_ST;
-				if (t->elem[1].u.data && 
+				if (t->elem[1].u.data &&
 						((pv_spec_p)t->elem[1].u.data)->type != PVT_AVP) {
 					LM_ERR("second parameter should be an avp\n");
 					ret=E_UNSPEC;
@@ -788,13 +827,13 @@ static int fix_actions(struct action* a)
 				break;
 			case CONSTRUCT_URI_T:
 				for (i=0;i<5;i++)
-				{	
+				{
 					s.s = (char*)t->elem[i].u.data;
 					s.len = strlen(s.s);
-					if(s.len==0) 
+					if(s.len==0)
 						continue;
 
-					if(pv_parse_format(&s ,&(models[i])) || models[i]==NULL) 
+					if(pv_parse_format(&s ,&(models[i])) || models[i]==NULL)
 					{
 						LM_ERR("wrong format [%s] for value param!\n",s.s);
 						ret=E_BUG;
@@ -803,7 +842,7 @@ static int fix_actions(struct action* a)
 
 					t->elem[i].u.data = (void*)models[i];
 				}
-				
+
 				if (((pv_spec_p)t->elem[5].u.data)->type != PVT_AVP)
 				{
 					LM_ERR("Wrong type for the third argument - "
@@ -834,14 +873,14 @@ static int fix_actions(struct action* a)
 	}
 	return 0;
 error:
-	LM_ERR("fixing failed (code=%d) at cfg line %d\n", ret, t->line);
+	LM_ERR("fixing failed (code=%d) at %s:%d\n", ret, t->file, t->line);
 	return ret;
 }
 
 
 inline static int comp_no( int port, void *param, int op, int subtype )
 {
-	
+
 	if (subtype!=NUMBER_ST) {
 		LM_CRIT("number expected: %d\n", subtype );
 		return E_BUG;
@@ -866,7 +905,7 @@ inline static int comp_no( int port, void *param, int op, int subtype )
 }
 
 /*! \brief eval_elem helping function
- * \return str op param 
+ * \return str op param
  */
 inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 		operand_t *opd)
@@ -880,7 +919,7 @@ inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 
 	if(ival==NULL || ival->s==NULL)
 		goto error;
-	
+
 	res.s = 0; res.len = 0;
 	if(opd->type == SCRIPTVAR_ST)
 	{
@@ -953,12 +992,12 @@ inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 			goto error;
 	}
 	return ret;
-	
+
 error:
 	return -1;
 }
 
-/*! \brief eval_elem helping function, returns str op param 
+/*! \brief eval_elem helping function, returns str op param
  */
 inline static int comp_str(char* str, void* param, int op, int subtype)
 {
@@ -999,7 +1038,7 @@ inline static int comp_str(char* str, void* param, int op, int subtype)
 			goto error;
 	}
 	return ret;
-	
+
 error:
 	return -1;
 }
@@ -1009,7 +1048,7 @@ error:
 inline static int check_self_op(int op, str* s, unsigned short p)
 {
 	int ret;
-	
+
 	ret=check_self(s, p, 0);
 	switch(op){
 		case EQUAL_OP:
@@ -1112,7 +1151,7 @@ inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
 error_op:
 	LM_CRIT("invalid operator %d\n", op);
 	return -1;
-	
+
 }
 
 /*! \brief compare str to str */
@@ -1148,7 +1187,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			rt = strncasecmp(s1->s,s2->s, n);
 			if (rt>0)
 				ret = 1;
-			else if(rt==0 && s1->len>s1->len)
+			else if(rt==0 && s1->len>s2->len)
 				ret = 1;
 			else ret = 0;
 			break;
@@ -1158,7 +1197,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			rt = strncasecmp(s1->s,s2->s, n);
 			if (rt>0)
 				ret = 1;
-			else if(rt==0 && s1->len>=s1->len)
+			else if(rt==0 && s1->len>=s2->len)
 				ret = 1;
 			else ret = 0;
 			break;
@@ -1168,7 +1207,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			rt = strncasecmp(s1->s,s2->s, n);
 			if (rt<0)
 				ret = 1;
-			else if(rt==0 && s1->len<s1->len)
+			else if(rt==0 && s1->len<s2->len)
 				ret = 1;
 			else ret = 0;
 			break;
@@ -1178,7 +1217,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			rt = strncasecmp(s1->s,s2->s, n);
 			if (rt<0)
 				ret = 1;
-			else if(rt==0 && s1->len<=s1->len)
+			else if(rt==0 && s1->len<=s2->len)
 				ret = 1;
 			else ret = 0;
 			break;
@@ -1266,6 +1305,97 @@ inline static int comp_n2n(int op, int n1, int n2)
 }
 
 
+static inline const char *op_id_2_string(int op_id)
+{
+	switch (op_id) {
+		case EQUAL_OP:
+			return "EQUAL";
+		case MATCH_OP:
+			return "REGEXP_MATCH";
+		case NOTMATCH_OP:
+			return "REGEXP_NO_MATCH";
+		case MATCHD_OP:
+			return "DYN_REGEXP_MATCH";
+		case NOTMATCHD_OP:
+			return "DYN_REGEXP_NO_MATCH";
+		case GT_OP:
+			return "GREATER_THAN";
+		case LT_OP:
+			return "LESS_THAN";
+		case GTE_OP:
+			return "GREATER_OR_EQUAL";
+		case LTE_OP:
+			return "LESS_OR_EQUAL";
+		case DIFF_OP:
+			return "DIFFERENT_THAN";
+		case VALUE_OP:
+			return "VALUE";
+		case NO_OP:
+		default:
+			return "NONE";
+	}
+}
+
+
+static inline const char *expr_type_2_string(int expr_type)
+{
+	switch (expr_type) {
+		case STRING_ST:
+			return "STRING";
+		case NET_ST:
+			return "NET_MASK";
+		case NUMBER_ST:
+			return "NUMBER";
+		case IP_ST:
+			return "IP";
+		case RE_ST:
+			return "REGEXP";
+		case PROXY_ST:
+			return "PROXY";
+		case EXPR_ST:
+			return "EXPRESSION";
+		case ACTIONS_ST:
+			return "ACTION";
+		case CMD_ST:
+			return "FUNCTION";
+		case MODFIXUP_ST:
+			return "MOD_FIXUP";
+		case MYSELF_ST:
+			return "MYSELF";
+		case STR_ST:
+			return "STR";
+		case SOCKID_ST:
+			return "SOCKET";
+		case SOCKETINFO_ST:
+			return "SOCKET_INFO";
+		case SCRIPTVAR_ST:
+			return "VARIABLE";
+		case NULLV_ST:
+			return "NULL";
+		case BLACKLIST_ST:
+			return "BLACKLIST";
+		case SCRIPTVAR_ELEM_ST:
+			return "VARIABLE_ELEMENT";
+		case NOSUBTYPE:
+		default:
+			return"NONE";
+	}
+}
+
+static inline const char *val_type_2_string(int val_type)
+{
+	if (val_type&PV_VAL_STR)
+		return "STRING_VAL";
+	if (val_type&PV_VAL_INT)
+		return "INTEGER_VAL";
+	if (val_type&PV_VAL_NULL)
+		return "NULL_VAL";
+	if (val_type&PV_VAL_EMPTY)
+		return "EMPTY_VAL";
+	return "NO_VAL";
+}
+
+
 inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		operand_t *right)
 {
@@ -1276,13 +1406,13 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	pv_value_t lvalue;
 	pv_value_t rvalue;
 	int type;
-	
+
 	lstr.s = 0; lstr.len = 0;
 	rstr.s = 0; rstr.len = 0;
 	ln = 0; rn =0;
 	if(pv_get_spec_value(msg, left->v.spec, &lvalue)!=0)
 	{
-		LM_CRIT("cannot get left var value\n");
+		LM_ERR("cannot get left var value\n");
 		goto error;
 	}
 	if(right->type==NULLV_ST)
@@ -1302,12 +1432,13 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	lstr = lvalue.rs;
 	ln   = lvalue.ri;
 	type = 0;
+	rvalue.flags = 0; /*just for err printing purposes */
 
 	if(right->type == SCRIPTVAR_ST)
 	{
 		if(pv_get_spec_value(msg, right->v.spec, &rvalue)!=0)
 		{
-			LM_CRIT("cannot get right var value\n");
+			LM_ERR("cannot get right var value\n");
 			goto error;
 		}
 		if(rvalue.flags&PV_VAL_NULL || lvalue.flags&PV_VAL_NULL ) {
@@ -1315,14 +1446,11 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 				return (op==EQUAL_OP)?1:0;
 			return (op==DIFF_OP)?1:0;
 		}
-		
+
 		if(op==MATCH_OP||op==NOTMATCH_OP)
 		{
 			if(!((rvalue.flags&PV_VAL_STR) && (lvalue.flags&PV_VAL_STR)))
-			{
-				LM_CRIT("invalid operation %d/%d\n", op, right->type);
-				goto error;
-			}
+				goto error_op;
 			if(op==MATCH_OP)
 				return comp_s2s(MATCHD_OP, &lstr, &rvalue.rs);
 			else
@@ -1337,11 +1465,8 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 			/* comparing string */
 			rstr = rvalue.rs;
 			type =1;
-		} else {
-			LM_CRIT("invalid operation %d/%d!\n", op,
-					right->type);
-			goto error;
-		}
+		} else
+			goto error_op;
 	} else {
 		/* null against a not-null constant */
 		if(lvalue.flags&PV_VAL_NULL)
@@ -1349,20 +1474,13 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 
 		if(right->type == NUMBER_ST) {
 			if(!(lvalue.flags&PV_VAL_INT))
-			{
-				LM_CRIT("invalid operation %d/%d/%d!!\n", op, 
-						right->type, lvalue.flags);
-				goto error;
-			}
+				goto error_op;
 			/* comparing int */
 			type =2;
 			rn = right->v.n;
 		} else if(right->type == STR_ST) {
 			if(!(lvalue.flags&PV_VAL_STR))
-			{
-				LM_CRIT("invalid operation %d/%d!!!\n", op,	right->type);
-				goto error;
-			}
+				goto error_op;
 			/* comparing string */
 			type =1;
 			rstr = right->v.s;
@@ -1370,10 +1488,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 			if(op==MATCH_OP || op==NOTMATCH_OP)
 			{
 				if(!(lvalue.flags&PV_VAL_STR) || right->type != RE_ST)
-				{
-					LM_CRIT("invalid operation %d/%d\n", op, right->type);
-					goto error;
-				}
+					goto error_op;
 				return comp_s2s(op, &lstr, (str*)right->v.expr);
 			}
 			/* comparing others */
@@ -1382,22 +1497,26 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	}
 
 	if(type==1) { /* compare str */
-		LM_DBG("str %d : %.*s\n", op, lstr.len, ZSW(lstr.s)); 
+		LM_DBG("str %d : %.*s\n", op, lstr.len, ZSW(lstr.s));
 		return comp_s2s(op, &lstr, &rstr);
 	} else if(type==2) {
-		LM_DBG("int %d : %d / %d\n", op, ln, rn); 
+		LM_DBG("int %d : %d / %d\n", op, ln, rn);
 		return comp_n2n(op, ln, rn);
-	} else {
-		LM_CRIT("invalid operation %d/%d\n", op, right->type);
 	}
-	
+	/* default is error */
+
+error_op:
+	LM_WARN("invalid %s operation: left is %s/%s, right is %s/%s\n",
+		op_id_2_string(op),
+		expr_type_2_string(left->type), val_type_2_string(lvalue.flags),
+		expr_type_2_string(right->type), val_type_2_string(rvalue.flags) );
 error:
 	return -1;
 }
 
 
-/*! \brief 
- * \return 0/1 (false/true) or -1 on error, -127 EXPR_DROP 
+/*! \brief
+ * \return 0/1 (false/true) or -1 on error, -127 EXPR_DROP
  */
 static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 {
@@ -1411,13 +1530,13 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 	pv_value_t rval;
 	char *p;
 	int i,n;
-	
+
 	ret=E_BUG;
 	if (e->type!=ELEM_T){
 		LM_CRIT("invalid type\n");
 		goto error;
 	}
-	
+
 	if(val) memset(val, 0, sizeof(pv_value_t));
 
 	switch(e->left.type){
@@ -1540,7 +1659,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 				if(e->right.v.data)
 					eval_expr((struct expr*)e->right.v.data,msg,&rval);
 					/* retr=eval_expr((struct expr*)e->right.v.data,msg,&rval); */
-			
+
 				if(lval.flags&PV_TYPE_INT)
 				{
 					if( (rval.flags&PV_VAL_NULL) )
@@ -1571,7 +1690,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 								pv_value_destroy(&lval);
 								pv_value_destroy(&rval);
 								return 0;
-							} else 
+							} else
 								ival = lval.ri / rval.ri;
 							break;
 						case MULT_OP:
@@ -1584,7 +1703,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 								pv_value_destroy(&lval);
 								pv_value_destroy(&rval);
 								return 0;
-							} else 
+							} else
 								ival = lval.ri % rval.ri;
 							break;
 						case BAND_OP:
@@ -1614,13 +1733,18 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 					if(val!=NULL) val->ri = ival;
 					return (ival)?1:0;
 				} else if (e->op == PLUS_OP) {
-					if( (rval.flags&PV_VAL_NULL) || (val==NULL)) {
-						if (val) val->flags|=PV_VAL_STR;
+					if (!val) {
 						ret = (lval.rs.len>0 || rval.rs.len>0);
 						pv_value_destroy(&lval);
 						pv_value_destroy(&rval);
 						return ret;
 					}
+
+					if (rval.flags & PV_VAL_NULL) {
+						pv_value_destroy(&rval);
+						rval.flags = PV_VAL_STR;
+					}
+
 					if(!(rval.flags&PV_VAL_STR))
 					{
 						LM_ERR("invalid string operands\n");
@@ -1697,13 +1821,13 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 				}
 				break;
 		case SRCPORT_O:
-				ret=comp_no(msg->rcv.src_port, 
+				ret=comp_no(msg->rcv.src_port,
 					e->right.v.data, /* e.g., 5060 */
 					e->op, /* e.g. == */
 					e->right.type /* 5060 is number */);
 				break;
 		case DSTPORT_O:
-				ret=comp_no(msg->rcv.dst_port, e->right.v.data, e->op, 
+				ret=comp_no(msg->rcv.dst_port, e->right.v.data, e->op,
 							e->right.type);
 				break;
 		case PROTO_O:
@@ -1771,7 +1895,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 							memcpy(val, &lval, sizeof(pv_value_t));
 						if(lval.flags&PV_VAL_STR)
 						{
-							if(!((lval.flags&PV_VAL_PKG) 
+							if(!((lval.flags&PV_VAL_PKG)
 									|| (lval.flags&PV_VAL_SHM)))
 							{
 								if(val!=NULL)
@@ -1793,7 +1917,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 							}
 							return 1;
 						}
-						if(lval.flags==PV_VAL_NONE 
+						if(lval.flags==PV_VAL_NONE
 								|| (lval.flags & PV_VAL_NULL)
 								|| (lval.flags & PV_VAL_EMPTY))
 							return 0;
@@ -1827,19 +1951,19 @@ error:
 
 
 
-/*! \return ret= 0/1 (true/false) ,  -1 on error or EXPR_DROP (-127)  */
+/*! \return ret= 0/1 (false/true) ,  -1 on error or EXPR_DROP (-127)  */
 int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 {
 	static int rec_lev=0;
 	int ret;
-	
+
 	rec_lev++;
 	if (rec_lev>MAX_REC_LEV){
 		LM_CRIT("too many expressions (%d)\n", rec_lev);
 		ret=-1;
 		goto skip;
 	}
-	
+
 	if (e->type==ELEM_T){
 		ret=eval_elem(e, msg, val);
 	}else if (e->type==EXP_T){
@@ -1901,15 +2025,15 @@ int add_actions(struct action* a, struct action** head)
 	if ((ret=fix_actions(a))!=0) goto error;
 	push(a,head);
 	return 0;
-	
+
 error:
 	return ret;
 }
 
 
 
-/*! \brief fixes all action tables 
- * \return 0 if ok , <0 on error 
+/*! \brief fixes all action tables
+ * \return 0 if ok , <0 on error
  */
 int fix_rls(void)
 {
@@ -2020,6 +2144,10 @@ static int check_actions(struct action *a, int r_type)
 				if (check_actions((struct action*)a->elem[1].u.data, r_type)!=0)
 					goto error;
 				break;
+			case FOR_EACH_T:
+				if (check_actions((struct action*)a->elem[2].u.data, r_type)!=0)
+					goto error;
+				break;
 			case SWITCH_T:
 				aitem = (struct action*)a->elem[1].u.data;
 				for( ; aitem ; aitem=aitem->next ) {
@@ -2054,7 +2182,7 @@ error:
 
 /*! \brief check all routing tables for compatiblity between
  * route types and called module functions;
- * \return 0 if ok , <0 on error 
+ * \return 0 if ok , <0 on error
  */
 int check_rls(void)
 {
@@ -2119,7 +2247,7 @@ int check_rls(void)
 			LM_ERR("check failed for timer_route\n");
 			return ret;
 		}
-		
+
 	}
 
 	for(i = 1; i< EVENT_RT_NO; i++) {
@@ -2130,7 +2258,7 @@ int check_rls(void)
 			LM_ERR("check failed for event_route\n");
 			return ret;
 		}
-		
+
 	}
 
 
@@ -2144,42 +2272,126 @@ int check_rls(void)
 /*! \brief debug function, prints main routing table */
 void print_rl(void)
 {
-	int j;
+#define dump_rlist(rlist, max, desc) \
+	{ \
+		int __j; \
+		for (__j = 0; __j < max; __j++) { \
+			if (!(rlist)[__j].a) \
+				continue; \
+			LM_GEN1(L_DBG, desc " routing block %d:\n", __j); \
+			print_actions((rlist)[__j].a); \
+			LM_GEN1(L_DBG, "\n\n"); \
+		} \
+	}
 
-	for(j=0; j<RT_NO; j++){
-		if (rlist[j].a==0){
-			if (j==0) LM_DBG("WARNING: the main routing table is empty\n");
-			continue;
-		}
-		LM_DBG("routing table %d:\n",j);
-		print_actions(rlist[j].a);
-		LM_DBG("\n");
-	}
-	for(j=0; j<ONREPLY_RT_NO; j++){
-		if (onreply_rlist[j].a==0){
-			continue;
-		}
-		LM_DBG("onreply routing table %d:\n",j);
-		print_actions(onreply_rlist[j].a);
-		LM_DBG("\n");
-	}
-	for(j=0; j<FAILURE_RT_NO; j++){
-		if (failure_rlist[j].a==0){
-			continue;
-		}
-		LM_DBG("failure routing table %d:\n",j);
-		print_actions(failure_rlist[j].a);
-		LM_DBG("\n");
-	}
-	for(j=0; j<BRANCH_RT_NO; j++){
-		if (branch_rlist[j].a==0){
-			continue;
-		}
-		LM_DBG("T-branch routing table %d:\n",j);
-		print_actions(branch_rlist[j].a);
-		LM_DBG("\n");
-	}
+	dump_rlist(rlist,          RT_NO,         "main");
+	dump_rlist(onreply_rlist,  ONREPLY_RT_NO, "onreply");
+	dump_rlist(failure_rlist,  FAILURE_RT_NO, "failure");
+	dump_rlist(branch_rlist,   BRANCH_RT_NO,  "branch");
+	dump_rlist(&local_rlist,   1,             "local");
+	dump_rlist(&error_rlist,   1,             "error");
+	dump_rlist(&startup_rlist, 1,             "startup");
+	dump_rlist(timer_rlist,    TIMER_RT_NO,   "timer");
+	dump_rlist(event_rlist,    EVENT_RT_NO,   "event");
 }
+
+
+int is_script_func_used( char *name, int param_no)
+{
+	unsigned int i;
+
+	for( i=0; i<RT_NO ; i++ )
+		if (rlist[i].a && is_mod_func_used(rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<ONREPLY_RT_NO ; i++ )
+		if (onreply_rlist[i].a &&
+		is_mod_func_used(onreply_rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<FAILURE_RT_NO ; i++ )
+		if (failure_rlist[i].a &&
+		is_mod_func_used(failure_rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<BRANCH_RT_NO ; i++ )
+		if (branch_rlist[i].a &&
+		is_mod_func_used(branch_rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<TIMER_RT_NO ; i++ )
+		if (timer_rlist[i].a &&
+		is_mod_func_used(timer_rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<EVENT_RT_NO ; i++ )
+		if (event_rlist[i].a &&
+		is_mod_func_used(event_rlist[i].a,name,param_no) )
+			return 1;
+
+	if (error_rlist.a &&
+	is_mod_func_used(error_rlist.a,name,param_no) )
+		return 1;
+
+	if (local_rlist.a &&
+	is_mod_func_used(local_rlist.a,name,param_no) )
+		return 1;
+
+	if (startup_rlist.a &&
+	is_mod_func_used(startup_rlist.a,name,param_no) )
+		return 1;
+
+	return 0;
+}
+
+int is_script_async_func_used( char *name, int param_no)
+{
+	unsigned int i;
+
+	for( i=0; i<RT_NO ; i++ )
+		if (rlist[i].a && is_mod_async_func_used(rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<ONREPLY_RT_NO ; i++ )
+		if (onreply_rlist[i].a &&
+		is_mod_async_func_used(onreply_rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<FAILURE_RT_NO ; i++ )
+		if (failure_rlist[i].a &&
+		is_mod_async_func_used(failure_rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<BRANCH_RT_NO ; i++ )
+		if (branch_rlist[i].a &&
+		is_mod_async_func_used(branch_rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<TIMER_RT_NO ; i++ )
+		if (timer_rlist[i].a &&
+		is_mod_async_func_used(timer_rlist[i].a,name,param_no) )
+			return 1;
+
+	for( i=0; i<EVENT_RT_NO ; i++ )
+		if (event_rlist[i].a &&
+		is_mod_async_func_used(event_rlist[i].a,name,param_no) )
+			return 1;
+
+	if (error_rlist.a &&
+	is_mod_async_func_used(error_rlist.a,name,param_no) )
+		return 1;
+
+	if (local_rlist.a &&
+	is_mod_async_func_used(local_rlist.a,name,param_no) )
+		return 1;
+
+	if (startup_rlist.a &&
+	is_mod_async_func_used(startup_rlist.a,name,param_no) )
+		return 1;
+
+	return 0;
+}
+
 
 int run_startup_route(void)
 {
@@ -2190,8 +2402,10 @@ int run_startup_route(void)
 
 	req.first_line.u.request.method.s= "DUMMY";
 	req.first_line.u.request.method.len= 5;
-	req.first_line.u.request.uri.s= "user";
-	req.first_line.u.request.uri.len= 4;
+	req.first_line.u.request.uri.s= "sip:user@domain.com";
+	req.first_line.u.request.uri.len= 19;
+	req.rcv.src_ip.af = AF_INET;
+	req.rcv.dst_ip.af = AF_INET;
 
 	/* run the route */
 	return run_top_route( startup_rlist.a, &req);

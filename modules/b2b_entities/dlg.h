@@ -1,6 +1,4 @@
 /*
- * $Id: dlg.h $
- *
  * back-to-back entities modules
  *
  * Copyright (C) 2009 Free Software Fundation
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -45,7 +43,7 @@
 
 #define DLG_ESTABLISHED   1
 
-#define B2B_MAX_KEY_SIZE	(B2B_MAX_PREFIX_LEN + 5*3 + 40)
+#define B2B_MAX_KEY_SIZE	(B2B_MAX_PREFIX_LEN+4+10+10+INT2STR_MAX_LEN)
 
 
 enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT, B2B_NONE};
@@ -140,6 +138,7 @@ typedef struct client_info
 	str local_contact;
 	unsigned int cseq;
 	struct socket_info* send_sock;
+	struct usr_avp *avps;
 }client_info_t;
 
 typedef struct b2b_entry
@@ -228,7 +227,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 
 typedef void (*b2b_entity_delete_t)(enum b2b_entity_type et, str* b2b_key,
 	 b2b_dlginfo_t* dlginfo, int db_del);
-b2b_dlg_t* b2b_search_htable(b2b_table table, 
+b2b_dlg_t* b2b_search_htable(b2b_table table,
 		unsigned int hash_index, unsigned int local_index);
 
 void b2b_tm_cback(struct cell* t, b2b_table htable, struct tmcb_params *ps);

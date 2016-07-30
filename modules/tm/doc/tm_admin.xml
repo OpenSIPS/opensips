@@ -83,6 +83,8 @@
 				from a specific branch - in all replies and routes connected 
 				to this branch.
 			</para>
+			</listitem>
+			<listitem>
 			<para>
 				<emphasis>script</emphasis> flags - flags that exist only
 				during script execution. They are not store anywhere and are
@@ -115,41 +117,42 @@
 		</para>
 	</section>
 	<section id="timer-based-failover">
-		<title>Timer-Based Failover</title>
+		<title>Timeout-Based Failover</title>
 		<para>
-		Timers can be used to trigger failover behavior. E.g. if we send a call
-		a gateway and the gateway does not send a provisional response within 3
+		Timeouts can be used to trigger failover behavior. E.g. if we send a call
+		to a gateway and the gateway does not send a provisional response within 3
 		seconds, we want to cancel this call and send the call to another 
 		gateway. Another example is to ring a SIP client only for 30 seconds 
 		and then redirect the call to the voicemail.
 		</para>
 		<para>
-		There are two timers in &osips; :
+		The transaction module exports two types of timeouts:
 		</para>
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>fr_timer</emphasis> - this timer is used when
-				no response was received yet. If there is no response after
-				<emphasis>fr_timer</emphasis> seconds the timer triggers
+				<emphasis role='bold'>fr_timeout</emphasis> - used when no response was
+				received yet. If there is no response after
+				<emphasis>fr_timeout</emphasis> seconds, the timer triggers
 				(and failure route will be executed if t_on_failure() was
-				called). If a provisional response was received, the timer
-				is set to fr_inv_timer for INVITE transactions, and RT_T2
-				for all other transactions. If a final reponse is received, 
-				the transaction has finished.
+				called). For INVITE transactions, if a provisional response was
+				received, the timeout is reset to <emphasis>fr_inv_timeout</emphasis>
+				seconds and RT_T2 for all other transactions. Once a final response
+				is received, the transaction has finished.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>fr_inv_timer</emphasis> - this timer is used when 
-				a provisional reponse was received for an INVITE transaction.
+				<emphasis role='bold'>fr_inv_timeout</emphasis> - this timeout
+				starts counting down once a provisional response was received
+				for an INVITE transaction.
 			</para>
 			</listitem>
 			</itemizedlist>
 		<para>
 		For example: You want to have failover if there is no provisional 
 		response after 3 seconds, but you want to ring for 60 seconds. 
-		Thuse, set the fr_timer to 3 and fr_inv_timer to 60.
+		Thus, set the <emphasis>fr_timeout</emphasis> to 3 and <emphasis>fr_inv_timeout</emphasis> to 60.
 		</para>
 	</section>
 	<section>
@@ -219,10 +222,10 @@
 
 	<section>
 	<title>Exported Parameters</title>
-	<section>
-		<title><varname>fr_timer</varname> (integer)</title>
+	<section id='fr_timeout' xreflabel='fr_timeout'>
+		<title><varname>fr_timeout</varname> (integer)</title>
 		<para>
-		Timer which hits if no final reply for a request or ACK for a 
+		Timeout which is triggered if no final reply for a request or ACK for a 
 		negative INVITE reply arrives (in seconds).
 		</para>
 		<para>
@@ -231,24 +234,23 @@
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>fr_timer</varname> parameter</title>
+		<title>Set <varname>fr_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("tm", "fr_timer", 10)
+modparam("tm", "fr_timeout", 10)
 ...
 </programlisting>
 		</example>
 	</section>
 
-	<section>
-		<title><varname>fr_inv_timer</varname> (integer)</title>
+	<section id='fr_inv_timeout' xreflabel='fr_inv_timeout'>
+		<title><varname>fr_inv_timeout</varname> (integer)</title>
 		<para>
-		Timer which hits if no final reply for an INVITE arrives after a 
-		provisional message was received (in seconds). This timer is started
-		after the first provisional response. Thus, fast failover (no 100 
-		trying from gateway) can be achieved by setting fr_timer to low 
-		values. See example below
-
+		Timeout which is triggered if no final reply for an INVITE arrives after a 
+		provisional message was received (in seconds). This timeout starts
+		counting down once the first provisional response is received. Thus,
+		fast failover (no 100 trying from gateway) can be achieved by setting
+		<emphasis> fr_timeout</emphasis> to low values. See example below.
 		</para>
 		<para>
 		<emphasis>
@@ -256,10 +258,10 @@ modparam("tm", "fr_timer", 10)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>fr_inv_timer</varname> parameter</title>
+		<title>Set <varname>fr_inv_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("tm", "fr_inv_timer", 200)
+modparam("tm", "fr_inv_timeout", 200)
 ...
 </programlisting>
 		</example>
@@ -428,8 +430,8 @@ modparam("tm", "unix_tx_timeout", 5)
 		<para>
 		If true (non null value), the final response timer will be re-triggered
 		for each received provisional reply. In this case, final response
-		timeout may occure after a time longe than fr_inv_timer (if UAS keeps
-		sending provisional replies)
+		timeout may occur after a time longer than <emphasis>fr_inv_timeout</emphasis>
+		(if UAS keeps sending provisional replies)
 		</para>
 		<para>
 		<emphasis>
@@ -441,58 +443,6 @@ modparam("tm", "unix_tx_timeout", 5)
 		<programlisting format="linespecific">
 ...
 modparam("tm", "restart_fr_on_each_reply", 0)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>fr_timer_avp</varname> (string)</title>
-		<para>
-		Full specification (NAME, ID, Alias) of an AVP which contains a final
-		response timeout value. If present, ths value will override the 
-		static fr_timer parameter.
-		</para>
-		<para>
-		If set to empty string, the whole mechanism for variable timeout will
-		be disabled, falling back to the static value.
-		</para>
-		<para>
-		<emphasis>
-			Default value is "NULL" (feature disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>fr_timer_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("tm", "fr_timer_avp", "$avp(fr_timer)")
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>fr_inv_timer_avp</varname> (string)</title>
-		<para>
-		Full specification (NAME, ID, Alias) of an AVP which contains a final
-		INVITE response timeout value. If present, ths value will overeide the 
-		static fr_inv_timer parameter.
-		</para>
-		<para>
-		If set to empty string, the whole mechanism for variable timeout will
-		be disabled, falling back to the static value.
-		</para>
-		<para>
-		<emphasis>
-			Default value is "NULL" (feature disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>fr_inv_timer_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("tm", "fr_inv_timer_avp", "$avp(fr_inv_timer)")
 ...
 </programlisting>
 		</example>
@@ -713,25 +663,54 @@ modparam("tm", "minor_branch_flag", "MINOR_BFLAG")
 	</section>
 
 	<section>
-		<title><varname>own_timer_proc</varname> (integer)</title>
+		<title><varname>timer_partitions</varname> (integer)</title>
 		<para>
-		If TM module should create its own timer process (timer is used for 
-		handling retransmissions, timeouts, etc). If disabled, TM will used
-		the global timer process which may be affected (desynchronized) by
-		the operations performed by other modules on that timer (like usrloc
-		flushing memory cash into DB). So, on system with high load, to keep
-		accuracy for the TM timer, better enabled this.
+		The number of partitions for the internal TM timers (retransmissions,
+		delete, wait, etc). Partitioning the timers increase the throughput
+		under heavly load by handling timer events in parallel, rather than
+		all serial.
+		</para>
+		<para>
+		Recomanded range for timer partitions is max 16 (soft limit).
 		</para>
 		<para>
 		<emphasis>
-			Default value is 0 (disabled).
+			Default value is 1 (disabled).
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>own_timer_proc</varname> parameter</title>
+		<title>Set <varname>timer_partitions</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("tm", "own_timer_proc", 1)
+# Enable two timer partitions
+modparam("tm", "timer_partitions", 2)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>auto_100trying</varname> (integer)</title>
+		<para>
+		This parameter controls if the TM module should automatically 
+		generate an 100 Trying stateful reply when an INVITE transaction
+		is created.
+		</para>
+		<para>
+		You may want to disable this behavior if you want to control from
+		script level when the 100 Trying is to be sent out.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 1 (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>auto_100trying</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# Disable automatic 100 Trying
+modparam("tm", "auto_100trying", 0)
 ...
 </programlisting>
 		</example>
@@ -742,37 +721,6 @@ modparam("tm", "own_timer_proc", 1)
 
 	<section>
 	<title>Exported Functions</title>
-	<section>
-		<title>
-		<function moreinfo="none">t_newtran()</function>
-		</title>
-		<para>
-		Creates a new transaction, returns a negative value on error. This is 
-		the only way a script can add a new transaction in an atomic way. 
-		Typically, it is used to deploy a &uas;.
-		</para>
-		<warning>
-			<para>
-			NOTE that the changes on the request that are made after this 
-			function call will not be saved into transaction!!!
-			</para>
-		</warning>
-		<para>
-		This function can be used from REQUEST_ROUTE.
-		</para>
-		<example>
-		<title><function>t_newtran</function> usage</title>
-		<programlisting format="linespecific">
-...
-if (t_newtran()) { 
-	log("UAS logic"); 
-	t_reply("999","hello"); 
-} else sl_reply_error();
-...
-</programlisting>
-		</example>
-	</section>
-
 	<section>
 		<title>
 		<function moreinfo="none">t_relay([flags])</function>
@@ -795,16 +743,7 @@ if (t_newtran()) {
 		</para>
 		<itemizedlist>
 			<listitem>
-				<para><emphasis>0x01</emphasis> - do not generate an 100 trying
-				provisional reply when building the transaction. By default 
-				one is generated. Useful if you already pushed an 
-				stateless 100 reply from script.
-				Note: If the transaction was previously created 'by hand' with
-				t_newtran() , t_relay will not attempt to send a 100 Trying
-				provisional reply. The 100 Trying reply is generated as part of
-				the transaction building, so if in your script you manually take
-				care of creating the transaction, you must also take care of
-				sending 100 provisional replies
+				<para><emphasis>0x01</emphasis> - deprecated, not used any more
 				</para>
 			</listitem>
 			<listitem>
@@ -887,7 +826,7 @@ if (!t_relay()) {
 		Relay a message statefully to a fixed destination. The destination is
 		specified as <quote>[proto:]host[:port]</quote>. If a destination URI
 		<quote>$du</quote> for this message was set before the function
-		is called then this value will be used as destination instead of the
+		is called then this value will be used as the destination instead of the
 		function parameter.
 		</para>
 		<para>
@@ -915,8 +854,10 @@ t_relay("udp:mydomain.com");
 		<function moreinfo="none">t_reply(code, reason_phrase)</function>
 		</title>
 		<para>
-		Sends a stateful reply after a transaction has been established. See
-		<function>t_newtran</function> for usage.
+		Sends a stateful SIP reply to the currently processed requests. Note 
+		that if the transaction was not created yet, it will automatically
+		created by internally using the
+		<function>t_newtran</function> function.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -950,8 +891,10 @@ t_reply("404", "Use $rU not found");
 		<function moreinfo="none">t_reply_with_body(code, reason_phrase, body)</function>
 		</title>
 		<para>
-		Sends a stateful reply with a body after a transaction has been established. See
-		<function>t_newtran</function> for usage.
+		Sends a stateful SIP reply with a body to the currently processed 
+		requests. Note that if the transaction was not created yet, it will 
+		automatically created by internally using the
+		<function>t_newtran</function> function.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -981,7 +924,8 @@ t_reply("404", "Use $rU not found");
 ...
 	if(is_method("INVITE"))
 	{
-		append_to_reply("Contact: $var(contact)\r\nContent-Type: application/sdp\r\n");
+		append_to_reply("Contact: $var(contact)\r\n"
+				"Content-Type: application/sdp\r\n");
 		t_reply_with_body("200", "Ok", "$var(body)");
 		exit;
 	}
@@ -990,36 +934,81 @@ t_reply("404", "Use $rU not found");
 		</example>
 	</section>
 
-
-	<section id="treplicate">
+	<section>
 		<title>
-		<function moreinfo="none">t_replicate(URI,[flags])</function>
+		<function moreinfo="none">t_newtran()</function>
 		</title>
 		<para>
-		Replicates a request to another destination. No information due the
-		replicated request (like reply code) will be forwarded to the 
-		original SIP UAC.
+		Creates the SIP transaction for the currently processed SIP requests.
+		Basically you switch to a stateful processing from this point furhter,
+		with automatic detection of retransmission and auto sending of
+		100 Trying reply on INVITEs.
 		</para>
 		<para>
-		The destination is specified by a SIP URI. If multiple destinations are
-		to be used, the additional SIP URIs have to be set as branches.
-		</para>
-		<para>
-		The function may take as parameter an optional set of flags for 
-		controlling the internal behaviour - for description see the above 
-		<quote>t_relay([flags])</quote> function. Note that only 0x4 is 
-		applicable here.
-		</para>
-		<para>
-		This functions can be used from REQUEST_ROUTE.
+		This function can be used from REQUEST_ROUTE.
 		</para>
 		<example>
-		<title><function>t_replicate</function> usage</title>
+		<title><function>t_newtran</function> usage</title>
 		<programlisting format="linespecific">
 ...
-t_replicate("sip:1.2.3.4:5060");
-t_replicate("sip:1.2.3.4:5060;transport=tcp");
-t_replicate("sip:1.2.3.4","0x4");
+t_newtran();  # 100 Trying is fired here
+xlog("doing my complicated routing logic");
+....
+t_relay(); # send the call further
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">t_check_trans()</function>
+		</title>
+		<para>
+		Returns true if the current request is associated to a transaction. 
+		The relationship between the request and transaction is defined as
+		follows:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>non-CANCEL/non-ACK requests</emphasis> - if the
+			request belongs to a transaction (it's a retransmision), the
+			function will do a standard processing of the retransmission and
+			will break/stop the script. The function returns false if the
+			request is not a retransmission.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>CANCEL request</emphasis> - true if the cancelled
+			INVITE transaction exists.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>ACK request</emphasis> - true if the ACK is a
+			local end-to-end ACK corresponding to an previous INVITE
+			transaction.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		Note: To detect retransmissions using this function you have to make sure
+		that the initial request has already created a transaction, e.g. by using
+		t_relay(). If the processing of requests may take long time (e.g. DB lookups)
+		and the retransmission arrives before t_relay() is called, you can use the
+		t_newtran() function to manually create a transaction.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
+		</para>
+		<example>
+		<title><function>t_check_trans</function> usage</title>
+		<programlisting format="linespecific">
+...
+if ( is_method("CANCEL") ) {
+	if ( t_check_trans() )
+		t_relay();
+	exit;
+}
 ...
 </programlisting>
 		</example>
@@ -1030,7 +1019,7 @@ t_replicate("sip:1.2.3.4","0x4");
 		<function moreinfo="none">t_check_status(re)</function>
 		</title>
 		<para>
-		Returns true if the regualr expresion <quote>re</quote> match the 
+		Returns true if the regualr expression <quote>re</quote> match the 
 		reply code of the response message as follows:
 		<itemizedlist>
 		<listitem>
@@ -1068,28 +1057,6 @@ if (t_check_status("(487)|(408)")) {
 
 	<section>
 		<title>
-		<function moreinfo="none">t_flush_flags()</function>
-		</title>
-		<para>
-		Flush the flags from current request into the already created 
-		transaction. It make sense only in routing block if the transaction was
-		created via t_newtran() and the flags have been altered since.
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
-		</para>
-		<example>
-		<title><function>t_flush_flags</function> usage</title>
-		<programlisting format="linespecific">
-...
-t_flush_flags();
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title>
 		<function moreinfo="none">t_local_replied(reply)</function>
 		</title>
 		<para>
@@ -1109,89 +1076,6 @@ t_flush_flags();
 ...
 if (t_local_replied("all")) {
 	log ("no reply received\n");
-}
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title>
-		<function moreinfo="none">t_write_req(info,fifo)</function>
-		<function moreinfo="none">t_write_unix(info,sock)</function>
-		</title>
-		<para>
-		Write via FIFO file or UNIX socket a lot of information regarding the
-		request. Which information should be written may be control via the
-		<quote>tw_append</quote> parameter.
-		</para>
-		<para>
-		This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE and 
-		BRANCH_ROUTE.
-		</para>
-		<example>
-		<title><function>t_write_req/unix</function> usage</title>
-		<programlisting format="linespecific">
-...
-modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
-modparam("tm","tw_append","append2:body=$rb")
-...
-t_write_req("voicemail/append1","/tmp/appx_fifo");
-...
-t_write_unix("logger/append2","/var/run/logger.sock");
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title>
-		<function moreinfo="none">t_check_trans()</function>
-		</title>
-		<para>
-		Returns true if the current request is associated to a transaction. 
-		The relationship between the request and transaction is defined as
-		follow:
-		</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>non-CANCEL/non-ACK requests</emphasis> - if the
-			request belongs to a transaction (it's a retransmision), the
-			function will do a standard processing of the retransmission and
-			will break/stop the script. The function return false if the
-			request is not a retransmission.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>CANCEL request</emphasis> - true if the cancelled
-			INVITE transaction exists.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>ACK request</emphasis> - true if the ACK is a
-			local end-to-end ACK corresponding to an previous INVITE
-			transaction.
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		Note: To detect retransmissions using this function you have to make sure
-		that the initial request has already created a transaction, e.g. by using
-		t_relay(). If the processing of requests may take long time (e.g. DB lookups)
-		and the retransmission arrives before t_relay() is called, you can use the
-		t_newtran() function to manually create a transaction.
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
-		</para>
-		<example>
-		<title><function>t_check_trans</function> usage</title>
-		<programlisting format="linespecific">
-...
-if ( is_method("CANCEL") ) {
-	if ( t_check_trans() )
-		t_relay();
-	exit;
 }
 ...
 </programlisting>
@@ -1269,6 +1153,59 @@ onreply_route[3] {
 	}
 ...
 }
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">t_new_request(method,RURI,from,to[,body[,ctx]])</function>
+		</title>
+		<para>
+		This function generates and sends out a new SIP request (in a stateful way).
+		The new request is completly unrelated to the currently processed SIP message.
+		</para>
+		<para>Meaning of the parameters is as follows (all do accept variables):</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>method</emphasis> - the SIP method
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>RURI</emphasis> - the SIP Request URI (the request 
+			will be sent out to this destination)
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>from</emphasis> - the SIP From hdr information as
+			"[display ]URI"
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>from</emphasis> - the SIP To hdr information as
+			"[display ]URI"
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>body</emphasis> - (optional) the SIP body content
+			starting with the content type string: "conten_type body"
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>ctx</emphasis> - a context string that will be added to the
+			new transaction as an AVP with name "uac_ctx" (it may be visible in local
+			route)
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<example>
+		<title><function>t_new_request</function> usage</title>
+		<programlisting format="linespecific">
+...
+	# send a MESSAGE request
+	t_new_request("MESSAGE","sip:alice@192.168.2.2","BOB sip:userB@mydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!")) {
+...
 </programlisting>
 		</example>
 	</section>
@@ -1472,6 +1409,110 @@ branch_route[1] {
 		</example>
 	</section>
 
+	<section>
+		<title>
+		<function moreinfo="none">t_add_hdrs("sip_hdrs")</function>
+		</title>
+		<para>
+		Attach a set of headers to the existing transaction - these headers
+		will be appended to all requests related to the transaction (outgoing
+		branches, local ACKS, CANCELs).
+		</para>
+		<example>
+		<title><function>t_add_hdrs</function> usage</title>
+		<programlisting format="linespecific">
+...
+t_add_hdrs("X-origin: 1.1.1.1\r\n");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="treplicate">
+		<title>
+		<function moreinfo="none">t_replicate(URI,[flags])</function>
+		</title>
+		<para>
+		Replicates a request to another destination. No information due the
+		replicated request (like reply code) will be forwarded to the 
+		original SIP UAC.
+		</para>
+		<para>
+		The destination is specified by a SIP URI. If multiple destinations are
+		to be used, the additional SIP URIs have to be set as branches.
+		</para>
+		<para>
+		The function may take as parameter an optional set of flags for 
+		controlling the internal behaviour - for description see the above 
+		<quote>t_relay([flags])</quote> function. Note that only 0x4 is 
+		applicable here.
+		</para>
+		<para>
+		This functions can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>t_replicate</function> usage</title>
+		<programlisting format="linespecific">
+...
+t_replicate("sip:1.2.3.4:5060");
+t_replicate("sip:1.2.3.4:5060;transport=tcp");
+t_replicate("sip:1.2.3.4","0x4");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">t_write_req(info,fifo)</function>
+		<function moreinfo="none">t_write_unix(info,sock)</function>
+		</title>
+		<para>
+		Write via FIFO file or UNIX socket a lot of information regarding the
+		request. Which information should be written may be control via the
+		<quote>tw_append</quote> parameter.
+		</para>
+		<para>
+		This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE and 
+		BRANCH_ROUTE.
+		</para>
+		<example>
+		<title><function>t_write_req/unix</function> usage</title>
+		<programlisting format="linespecific">
+...
+modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
+modparam("tm","tw_append","append2:body=$rb")
+...
+t_write_req("voicemail/append1","/tmp/appx_fifo");
+...
+t_write_unix("logger/append2","/var/run/logger.sock");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">t_flush_flags()</function>
+		</title>
+		<para>
+		Flush the flags from current request into the already created 
+		transaction. It make sense only in routing block if the transaction was
+		created via t_newtran() and the flags have been altered since.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
+		</para>
+		<example>
+		<title><function>t_flush_flags</function> usage</title>
+		<programlisting format="linespecific">
+...
+t_flush_flags();
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 
@@ -1501,10 +1542,45 @@ branch_route[1] {
 			</para>
 		</section>
 		<section>
+		<title>$T_fr_timeout</title>
+			<para>
+			<emphasis>$T_fr_timeout (R/W)</emphasis> - the timeout
+			for the final reply to the current transaction
+			</para>
+			<para>
+			With each different
+			request received, <emphasis>$T_fr_timeout</emphasis> will initially
+			be equal to the
+			<emphasis role='bold'><xref linkend="fr_timeout"/></emphasis> parameter.
+			</para>
+			<para>
+			<emphasis>"$T_fr_timeout = NULL;"</emphasis> will reset it to
+			<emphasis role='bold'><xref linkend="fr_timeout"/></emphasis>.
+			</para>
+		</section>
+		<section>
+		<title>$T_fr_inv_timeout</title>
+			<para>
+			<emphasis>$T_fr_inv_timeout (R/W)</emphasis> - the timeout
+			for the final reply to an INVITE request, after a 1XX reply
+			was received
+			</para>
+			<para>
+			With each different request received,
+			<emphasis>$T_fr_inv_timeout</emphasis> will initially be equal to the
+			<emphasis role='bold'>
+			<xref linkend="fr_inv_timeout"/></emphasis> parameter.
+			</para>
+			<para>
+			<emphasis>"$T_fr_inv_timeout = NULL;"</emphasis> will reset it to
+			<emphasis role='bold'><xref linkend="fr_inv_timeout"/></emphasis>.
+			</para>
+		</section>
+		<section>
 		<title>$T_ruri</title>
 			<para>
 			<emphasis>$T_ruri</emphasis> - the ruri of the current branch; this
-			information is taken from the transaction structure, so you can 
+			information is taken from the transaction structure, so you can
 			access this information for any sip message (request/reply) that
 			has a transaction.
 			</para>

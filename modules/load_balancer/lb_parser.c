@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * load balancer module - complex call load balancing
  *
  * Copyright (C) 2009 Voice Sistem SRL
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -110,7 +108,7 @@ struct lb_res_str_list *parse_resources_list(char *r_list, int has_val)
 	}
 	LM_DBG("discovered %d resources\n",n);
 
-	/* alocate stuff*/
+	/* allocate stuff*/
 	lb_rl = (struct lb_res_str_list *)pkg_malloc
 		(sizeof(struct lb_res_str_list) + n*sizeof(struct lb_res_str) + len);
 	if (lb_rl==NULL) {

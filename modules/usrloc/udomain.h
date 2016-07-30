@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * Usrloc domain structure
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 /*
  * History:
@@ -45,7 +43,6 @@
 #include "../../db/db_insertq.h"
 #include "urecord.h"
 #include "hslot.h"
-
 
 struct hslot;   /*!< Hash table slot */
 struct urecord; /*!< Usrloc record */
@@ -113,7 +110,6 @@ int db_timer_udomain(udomain_t* _d);
  */
 int mem_timer_udomain(udomain_t* _d);
 
-
 /*! \brief
  * Insert record into domain
  */
@@ -159,9 +155,10 @@ void unlock_ulslot(udomain_t* _d, int slot);
 /*! \brief
  * Create and insert a new record
  */
-typedef int (*insert_urecord_t)(udomain_t* _d, str* _aor, struct urecord** _r);
-int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r);
-
+typedef int (*insert_urecord_t)(udomain_t* _d, str* _aor, struct urecord** _r,
+                                char is_replicated);
+int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
+                   char is_replicated);
 
 /*! \brief
  * Obtain a urecord pointer if the urecord exists in domain
@@ -173,10 +170,14 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r);
 /*! \brief
  * Delete a urecord from domain
  */
-typedef int  (*delete_urecord_t)(udomain_t* _d, str* _a, struct urecord* _r);
-int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r);
+typedef int  (*delete_urecord_t)(udomain_t* _d, str* _a, struct urecord* _r,
+                                 char is_replicated);
+int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
+                   char is_replicated);
 
 
 
+void ul_raise_contact_event(event_id_t _e, str *addr, str *callid, str *recv,
+		str *aor, int cseq);
 
 #endif /* UDOMAIN_H */

@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -25,6 +25,7 @@
 
 #include "../../evi/evi_transport.h"
 #include "../../mem/shm_mem.h"
+#include "../../pt.h"
 #include "rabbitmq_send.h"
 #include <fcntl.h>
 #include <unistd.h>
@@ -33,9 +34,21 @@
 #define RMQ_SIZE (sizeof(rmq_send_t *))
 #define IS_ERR(_err) (errno == _err)
 
+#ifdef HAVE_SCHED_YIELD
+#include <sched.h>
+#else
+#include <unistd.h>
+/** Fake sched_yield if no unistd.h include is available */
+        #define sched_yield()   sleep(0)
+#endif
+
+unsigned rmq_sync_mode = 0;
+static unsigned nr_procs = 0;
 
 /* used to communicate with the sending process */
 static int rmq_pipe[2];
+/* used to communicate the status of the send (success or fail) from the sending process back to the requesting ones */
+static int (*rmq_status_pipes)[2];
 
 /* creates communication pipe */
 int rmq_create_pipe(void)
@@ -52,6 +65,39 @@ int rmq_create_pipe(void)
 		LM_ERR("cannot create status pipe [%d:%s]\n", errno, strerror(errno));
 		return -1;
 	}
+
+	if (rmq_sync_mode && rmq_create_status_pipes() < 0) {
+		LM_ERR("cannot create communication status pipes\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/* creates status pipes */
+int rmq_create_status_pipes(void) {
+	int rc, i;
+
+	nr_procs = count_init_children(0) + 2;	/* + 2 timer processes */
+
+	rmq_status_pipes = shm_malloc(nr_procs * sizeof(rmq_pipe));
+
+	if (!rmq_status_pipes) {
+		LM_ERR("cannot allocate rmq_status_pipes\n");
+		return -1;
+	}
+
+	/* create pipes */
+	for (i = 0; i < nr_procs; i++) {
+		do {
+			rc = pipe(rmq_status_pipes[i]);
+		} while (rc < 0 && IS_ERR(EINTR));
+
+		if (rc < 0) {
+			LM_ERR("cannot create status pipe [%d:%s]\n", errno, strerror(errno));
+			return -1;
+		}
+	}
 	return 0;
 }
 
@@ -61,25 +107,58 @@ void rmq_destroy_pipe(void)
 		close(rmq_pipe[0]);
 	if (rmq_pipe[1] != -1)
 		close(rmq_pipe[1]);
+
+	if (rmq_sync_mode)
+		rmq_destroy_status_pipes();
+}
+
+void rmq_destroy_status_pipes(void)
+{
+	int i;
+
+	for(i = 0; i < nr_procs; i++) {
+		close(rmq_status_pipes[i][0]);
+		close(rmq_status_pipes[i][1]);
+	}
+
+	shm_free(rmq_status_pipes);
 }
 
 int rmq_send(rmq_send_t* rmqs)
 {
 	int rc;
 	int retries = RMQ_SEND_RETRY;
+	int send_status;
+
+	rmqs->process_idx = process_no;
 
 	do {
 		rc = write(rmq_pipe[1], &rmqs, RMQ_SIZE);
-	} while (rc < 0 && ((IS_ERR(EINTR)||IS_ERR(EAGAIN)||IS_ERR(EWOULDBLOCK))
-			|| retries-- > 0));
+	} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
 
 	if (rc < 0) {
 		LM_ERR("unable to send rmq send struct to worker\n");
-		return -1;
+		shm_free(rmqs);
+		return RMQ_SEND_FAIL;
 	}
 	/* give a change to the writer :) */
 	sched_yield();
-	return 0;
+
+	if (rmq_sync_mode) {
+		retries = RMQ_SEND_RETRY;
+
+		do {
+			rc = read(rmq_status_pipes[process_no][0], &send_status, sizeof(int));
+		} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
+
+		if (rc < 0) {
+			LM_ERR("cannot receive send status\n");
+			send_status = RMQ_SEND_FAIL;
+		}
+
+		return send_status;
+	} else
+		return RMQ_SEND_SUCCESS;
 }
 
 static rmq_send_t * rmq_receive(void)
@@ -111,6 +190,9 @@ int rmq_init_writer(void)
 		rmq_pipe[0] = -1;
 	}
 
+	if (rmq_sync_mode)
+		close(rmq_status_pipes[process_no][1]);
+
 	/* Turn non-blocking mode on for sending*/
 	flags = fcntl(rmq_pipe[1], F_GETFL);
 	if (flags == -1) {
@@ -131,10 +213,30 @@ error:
 
 static void rmq_init_reader(void)
 {
+	int i, flags;
+
 	if (rmq_pipe[1] != -1) {
 		close(rmq_pipe[1]);
 		rmq_pipe[1] = -1;
 	}
+
+	if (rmq_sync_mode)
+		for(i = 0; i < nr_procs; i++) {
+			close(rmq_status_pipes[i][0]);
+
+			/* Turn non-blocking mode on for sending*/
+			flags = fcntl(rmq_status_pipes[i][1], F_GETFL);
+			if (flags == -1) {
+				LM_ERR("fcntl failed: %s\n", strerror(errno));
+				close(rmq_status_pipes[i][1]);
+				return;
+			}
+			if (fcntl(rmq_status_pipes[i][1], F_SETFL, flags | O_NONBLOCK) == -1) {
+				LM_ERR("fcntl: set non-blocking failed: %s\n", strerror(errno));
+				close(rmq_status_pipes[i][1]);
+				return;
+			}
+		}
 }
 
 /* function that checks for error */
@@ -184,14 +286,19 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 
 void rmq_free_param(rmq_params_t *rmqp)
 {
+	/* XXX: hack to make clang happy, because it _always_
+	 * warns when comparing two char * (even casted to void *)
+	 */
+	static void *dummy_holder = RMQ_DEFAULT_UP;
+
 	if ((rmqp->flags & RMQ_PARAM_USER) && rmqp->user.s &&
-			rmqp->user.s != (char *)RMQ_DEFAULT_UP)
+			rmqp->user.s != dummy_holder)
 		shm_free(rmqp->user.s);
 	if ((rmqp->flags & RMQ_PARAM_PASS) && rmqp->pass.s &&
-			rmqp->pass.s != (char *)RMQ_DEFAULT_UP)
+			rmqp->pass.s != dummy_holder)
 		shm_free(rmqp->pass.s);
-	if ((rmqp->flags & RMQ_PARAM_EXCH) && rmqp->exchange.s)
-		shm_free(rmqp->exchange.s);
+	if ((rmqp->flags & RMQ_PARAM_RKEY) && rmqp->routing_key.s)
+		shm_free(rmqp->routing_key.s);
 }
 
 
@@ -231,39 +338,42 @@ void rmq_destroy(evi_reply_sock *sock)
 static int rmq_reconnect(evi_reply_sock *sock)
 {
 	rmq_params_t * rmqp = (rmq_params_t *)sock->params;
+#if defined AMQP_VERSION_v04
+	amqp_socket_t *amqp_sock;
+#endif
+	int socket;
 
-	if (!rmqp || !(rmqp->flags & RMQ_PARAM_EXCH)) {
+	if (!rmqp || !(rmqp->flags & RMQ_PARAM_RKEY)) {
 		LM_ERR("not enough socket info\n");
 		return -1;
 	}
-//	rmq_print(sock);
 	if (!(rmqp->flags & RMQ_PARAM_CONN) || !rmqp->conn) {
 		/* init new connection */
 		if (!(rmqp->conn = amqp_new_connection())) {
 			LM_ERR("cannot create new connection\n");
 			return -1;
 		}
-		rmqp->flags |= RMQ_PARAM_CONN;
-		rmqp->sock = amqp_open_socket(sock->address.s, sock->port);
-		if (rmqp->sock < 0) {
-			LM_ERR("cannot opens socket\n");
+#if defined AMQP_VERSION_v04
+		amqp_sock = amqp_tcp_socket_new(rmqp->conn);
+		if (!amqp_sock) {
+			LM_ERR("cannot create AMQP socket\n");
 			goto destroy_rmqp;
 		}
-		amqp_set_sockfd(rmqp->conn, rmqp->sock);
+		socket = amqp_socket_open(amqp_sock, sock->address.s, sock->port);
+		if (socket < 0) {
+			LM_ERR("cannot open AMQP socket\n");
+			goto destroy_rmqp;
+		}
+#else
+		socket = amqp_open_socket(sock->address.s, sock->port);
+		if (socket < 0) {
+			LM_ERR("cannot open AMQP socket\n");
+			goto destroy_rmqp;
+		}
+		amqp_set_sockfd(rmqp->conn, socket);
+#endif
 
-/*
-librabbitmq-0.1-0.2 amqp.h
-RABBITMQ_EXPORT amqp_rpc_reply_t amqp_login(amqp_connection_state_t state,
-                                        char const *vhost,
-                                        int channel_max,
-                                        int frame_max,
-                                        int heartbeat,
-                                        amqp_sasl_method_enum sasl_method, ...);
-
-channel_max: the maximum number of channels per connection
-frame_max: maximum AMQP frame size for client
-*/
-
+		rmqp->flags |= RMQ_PARAM_CONN;
 		if (rmq_error("Logging in", amqp_login(
 				rmqp->conn,
 				RMQ_DEFAULT_VHOST,
@@ -288,27 +398,117 @@ destroy_rmqp:
 	return -1;
 }
 
+#ifdef AMQP_VERSION_v04
+static inline int amqp_check_status(rmq_params_t *rmqp, int r, int* re_publish)
+{
+	switch (r) {
+		case AMQP_STATUS_OK:
+			return 0;
+
+		case AMQP_STATUS_NO_MEMORY:
+			LM_ERR("no more memory\n");
+			goto no_close;
+
+		case AMQP_STATUS_TABLE_TOO_BIG:
+			LM_ERR("A table in the properties was too large to fit in a single frame\n");
+			goto no_close;
+
+		case AMQP_STATUS_HEARTBEAT_TIMEOUT:
+			LM_ERR("heartbeat timeout\n");
+			break;
+
+		case AMQP_STATUS_CONNECTION_CLOSED:
+			LM_ERR("Connection closed\n");
+			break;
+
+		/* this should not happened since we do not use ssl */
+		case AMQP_STATUS_SSL_ERROR:
+			LM_ERR("SSL error\n");
+			break;
+
+		case AMQP_STATUS_TCP_ERROR:
+			LM_ERR("TCP error: %s(%d)\n", strerror(errno), errno);
+			break;
+
+		/* This is happening on rabbitmq server restart */
+		case AMQP_STATUS_SOCKET_ERROR:
+			LM_WARN("Socket error\n");
+			if (*re_publish == 0) *re_publish = 1;
+			break;
+
+		default:
+			LM_ERR("Unknown AMQP error[%d]: %s(%d)\n", r, strerror(errno), errno);
+			break;
+	}
+	/* we close the connection here to be able to re-connect later */
+	rmq_destroy_param(rmqp);
+no_close:
+	return r;
+}
+#else
+static inline int amqp_check_status(rmq_params_t *rmqp, int r, int* re_publish)
+{
+	if (r != 0) {
+		LM_ERR("Unknown AMQP error [%d] while sending\n", r);
+		/* we close the connection here to be able to re-connect later */
+		rmq_destroy_param(rmqp);
+		return -1;
+	}
+	return 0;
+}
+#endif
+
 /* sends the buffer */
 static int rmq_sendmsg(rmq_send_t *rmqs)
 {
 	rmq_params_t * rmqp = (rmq_params_t *)rmqs->sock->params;
+	int ret,rtrn;
+	int re_publish = 0;
 
-	LM_DBG("rmqp->exchange: %s\n", rmqp->exchange.s);
-	LM_DBG("rmqp->routing_key: %s\n", rmqp->routing_key.s);
-
+	if (!(rmqp->flags & RMQ_PARAM_CONN))
+		return 0;
+	
 	/* all checks should be already done */
-	return amqp_basic_publish(rmqp->conn,
+	ret = amqp_basic_publish(rmqp->conn,
 			rmqp->channel,
-			amqp_cstring_bytes(rmqp->exchange.s),
+			rmqp->flags&RMQ_PARAM_EKEY?
+		 		amqp_cstring_bytes(rmqp->exchange.s) :
+				AMQP_EMPTY_BYTES ,
 			amqp_cstring_bytes(rmqp->routing_key.s),
 			0,
 			0,
 			0,
 			amqp_cstring_bytes(rmqs->msg));
+
+	rtrn = amqp_check_status(rmqp, ret, &re_publish);
+
+	if (rtrn != 0 && re_publish != 0) {
+		if (rmq_reconnect(rmqs->sock) < 0) {
+			LM_ERR("cannot reconnect socket\n");
+			return rtrn;
+		}
+		/* all checks should be already done */
+		ret = amqp_basic_publish(rmqp->conn,
+				rmqp->channel,
+				rmqp->flags&RMQ_PARAM_EKEY?
+					amqp_cstring_bytes(rmqp->exchange.s) :
+					AMQP_EMPTY_BYTES ,
+				amqp_cstring_bytes(rmqp->routing_key.s),
+				0,
+				0,
+				0,
+				amqp_cstring_bytes(rmqs->msg));
+		rtrn = amqp_check_status(rmqp, ret, &re_publish);
+	}
+
+	return rtrn;
 }
 
 void rmq_process(int rank)
 {
+	int retries, rc;
+	int send_status;
+
 	/* init blocking reader */
 	rmq_init_reader();
 	rmq_send_t * rmqs;
@@ -329,12 +529,31 @@ void rmq_process(int rank)
 		/* check if we should reconnect */
 		if (rmq_reconnect(rmqs->sock) < 0) {
 			LM_ERR("cannot reconnect socket\n");
-			goto end;
+			send_status = RMQ_SEND_FAIL;
+			goto send_status_reply;
 		}
 
 		/* send msg */
-		if (rmq_sendmsg(rmqs))
+		if (rmq_sendmsg(rmqs)) {
 			LM_ERR("cannot send message\n");
+			send_status = RMQ_SEND_FAIL;
+		} else {
+			send_status = RMQ_SEND_SUCCESS;
+		}
+
+send_status_reply:
+		if (rmq_sync_mode) {
+			retries = RMQ_SEND_RETRY;
+
+			/* check rmqs->process_idx sanity */
+			if (rmqs->process_idx >= 0 && rmqs->process_idx < nr_procs) {
+				do {
+					rc = write(rmq_status_pipes[rmqs->process_idx][1], &send_status, sizeof(int));
+				} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
+				if (rc < 0)
+					LM_ERR("cannot send status back to requesting process\n");
+			}
+		}
 end:
 		if (rmqs)
 			shm_free(rmqs);

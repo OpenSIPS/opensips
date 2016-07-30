@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua_xmpp module - presence SIP - XMPP Gateway
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -44,7 +42,7 @@ int build_publish(xmlNodePtr pres_node, int expire);
 int presence_subscribe(xmlNodePtr pres_node, int expires, int flag);
 
 /*  the function registered as a callback in xmpp,
- *  to be called when a new message with presence type is received 
+ *  to be called when a new message with presence type is received
  *  */
 
 void pres_Xmpp2Sip(char *msg, int type, void *param)
@@ -93,15 +91,15 @@ void pres_Xmpp2Sip(char *msg, int type, void *param)
 				goto error;
 		}
 
-	}		
+	}
 	else
-	if((strcmp(pres_type, "subscribe")==0)|| 
+	if((strcmp(pres_type, "subscribe")==0)||
 		( strcmp(pres_type, "unsubscribe")== 0)||
 		 (strcmp(pres_type, "probe")== 0))
 	{
-		if(strcmp(pres_type, "subscribe")==0 || 
+		if(strcmp(pres_type, "subscribe")==0 ||
 				strcmp(pres_type, "probe")== 0)
-		{	
+		{
 		    LM_DBG("send Subscribe message (no time limit)\n");
 			if(presence_subscribe(pres_node, -1,
 						XMPP_INITIAL_SUBS)< 0)
@@ -110,10 +108,10 @@ void pres_Xmpp2Sip(char *msg, int type, void *param)
 				xmlFree(pres_type);
 				goto error;
 			}
-		}	
+		}
 		if(strcmp(pres_type, "unsubscribe")== 0)
 		{
-			if(presence_subscribe(pres_node, 0, 
+			if(presence_subscribe(pres_node, 0,
 						XMPP_INITIAL_SUBS)< 0)
 			{
 				LM_ERR("when unsubscribing for presence");
@@ -124,7 +122,7 @@ void pres_Xmpp2Sip(char *msg, int type, void *param)
 	}
 	xmlFree(pres_type);
 
-	//	else 
+	//	else
 	//		send_reply_message(pres_node);
 
 	xmlFreeDoc(doc);
@@ -156,7 +154,7 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 
 	entity=(char*)pkg_malloc(7+ strlen(uri)*sizeof(char));
 	if(entity== NULL)
-	{	
+	{
 		LM_ERR("no more memory\n");
 		goto error;
 	}
@@ -188,7 +186,7 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 	xmlNewProp(root_node, BAD_CAST "xmlns:c",
 			BAD_CAST "urn:ietf:params:xml:ns:pidf:cipid");
 	xmlNewProp(root_node, BAD_CAST "entity", BAD_CAST entity);
-	
+
 	tuple_node =xmlNewChild(root_node, NULL, BAD_CAST "tuple", NULL) ;
 	if( tuple_node ==NULL)
 	{
@@ -228,7 +226,7 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 	/*if no type present search for suplimentary information */
 	status_cont= XMLNodeGetNodeContentByName(pres_node, "status", NULL);
 	show_cont= XMLNodeGetNodeContentByName(pres_node, "show", NULL);
-	
+
 	if(show_cont)
 	{
 		if(strcmp(show_cont, "xa")== 0)
@@ -263,7 +261,7 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 	}else
 		if(show_cont)
 		{
-			node = xmlNewChild(root_node, NULL, BAD_CAST "note", 
+			node = xmlNewChild(root_node, NULL, BAD_CAST "note",
 					BAD_CAST status);
 			if(node== NULL)
 			{
@@ -276,7 +274,7 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 	{
 		LM_DBG("show_cont= %s\n", show_cont);
 		if(person_node== NULL)
-		{	
+		{
 			person_node= xmlNewChild(root_node, NULL, BAD_CAST "person",0 );
 			if(person_node== NULL)
 			{
@@ -284,7 +282,7 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 				goto error;
 			}
 		}
-		node=  xmlNewChild(person_node, NULL, BAD_CAST "activities", 
+		node=  xmlNewChild(person_node, NULL, BAD_CAST "activities",
 				BAD_CAST 0);
 		if(node== NULL)
 		{
@@ -292,8 +290,8 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 			goto error;
 		}
 
-						
-		if( xmlNewChild(person_node, NULL, BAD_CAST "note", 
+
+		if( xmlNewChild(person_node, NULL, BAD_CAST "note",
 					BAD_CAST status )== NULL)
 		{
 			LM_ERR("while adding node\n");
@@ -302,9 +300,9 @@ str* build_pidf(xmlNodePtr pres_node, char* uri, char* resource)
 
 
 	}
-		
-	
-done:	
+
+
+done:
 	body= (str* )pkg_malloc(sizeof(str));
 	if(body== NULL)
 	{
@@ -322,7 +320,7 @@ done:
 	if(type)
 		xmlFree(type);
 	xmlFreeDoc(doc);
-	
+
 	return body;
 
 error:
@@ -378,7 +376,6 @@ int build_publish(xmlNodePtr pres_node, int expires)
 			return -1;
 		}
 		strcpy(resource, slash+1);
-		slash= '\0';
 	}
 
 	body= build_pidf(pres_node, pres_uri.s, resource);
@@ -445,7 +442,7 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
  	str from_uri= {0, 0};
  	char buf_from[256];
 
-	uri= XMLNodeGetAttrContentByName(pres_node, "to"); 
+	uri= XMLNodeGetAttrContentByName(pres_node, "to");
 	if(uri== NULL)
 	{
 		LM_ERR("failed to get to attribute from xml doc\n");
@@ -458,17 +455,17 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 		goto error;
 	}
  	xmlFree(uri);
- 
+
  	uri= XMLNodeGetAttrContentByName(pres_node, "from");
  	if(uri == NULL)
  	{
  		LM_ERR("failed to get from attribute from xml doc\n");
  		goto error;
  	}
- 
+
  	ENC_SIP_URI(from_uri, buf_from, uri);
  	xmlFree(uri);
-	
+
 	memset(&subs, 0, sizeof(subs_info_t));
 
 	subs.pres_uri= &to_uri;
@@ -480,7 +477,7 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 	type= XMLNodeGetAttrContentByName(pres_node, "type" );
 	if(strcmp(type, "subscribe")==0 ||strcmp(type, "probe")== 0)
 		subs->flag|= INSERT_TYPE;
-	else	
+	else
 		if(strcmp(type, "unsubscribe")== 0)
 			subs->flag|= UPDATE_TYPE;
 	xmlFree(type);
@@ -490,11 +487,11 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 	subs.source_flag|= flag;
 	subs.event= PRESENCE_EVENT;
 	subs.expires= expires;
-	
+
 	if(presence_server.s && presence_server.len)
 		subs.outbound_proxy = &presence_server;
 
-	LM_DBG("XMPP subscription to [%.*s] , from [%.*s], expires= [%d]\n", 
+	LM_DBG("XMPP subscription to [%.*s] , from [%.*s], expires= [%d]\n",
 			subs.pres_uri->len,  subs.pres_uri->s,
 			subs.watcher_uri->len,  subs.watcher_uri->s, expires);
 	if(subs.outbound_proxy)

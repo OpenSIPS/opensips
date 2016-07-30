@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * PERMISSIONS module
  *
  * Copyright (C) 2003 Miklós Tirpák (mtirpak@sztaki.hu)
@@ -19,9 +17,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -29,6 +27,7 @@
 #include "../../sr_module.h"
 #include "permissions.h"
 #include "parse_config.h"
+#include "partitions.h"
 
 #include "address.h"
 #include "hash.h"
@@ -163,11 +162,15 @@ static param_export_t params[] = {
 	{"check_all_branches", INT_PARAM, &check_all_branches},
 	{"allow_suffix",       STR_PARAM, &allow_suffix      },
 	{"deny_suffix",        STR_PARAM, &deny_suffix       },
-	{"db_url",             STR_PARAM, &db_url.s          },
-	{"address_table",      STR_PARAM, &address_table.s   },
+	{"partition",		   STR_PARAM|USE_FUNC_PARAM,
+							(void *)parse_partition      },
+	{"db_url",			   STR_PARAM|USE_FUNC_PARAM,
+						    (void *)set_default_db_url   },
+	{"address_table",      STR_PARAM|USE_FUNC_PARAM,
+							(void *)set_default_table    },
 	{"ip_col",             STR_PARAM, &ip_col.s          },
 	{"proto_col",          STR_PARAM, &proto_col.s       },
-	{"from_col",           STR_PARAM, &pattern_col.s     },
+	{"pattern_col",        STR_PARAM, &pattern_col.s     },
 	{"info_col",           STR_PARAM, &info_col.s        },
 	{"grp_col",            STR_PARAM, &grp_col.s         },
 	{"mask_col",           STR_PARAM, &mask_col.s        },
@@ -179,10 +182,9 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ MI_ADDRESS_RELOAD,  0, mi_address_reload,  MI_NO_INPUT_FLAG,  0,
-													mi_address_child_init },
-	{ MI_ADDRESS_DUMP,    0, mi_address_dump,    MI_NO_INPUT_FLAG,  0,  0 },
-	{ MI_SUBNET_DUMP,     0, mi_subnet_dump,     MI_NO_INPUT_FLAG,  0,  0 },
+	{ MI_ADDRESS_RELOAD,  0, mi_address_reload,  0,  0, mi_address_child_init },
+	{ MI_ADDRESS_DUMP,    0, mi_address_dump,    0,  0,  0 },
+	{ MI_SUBNET_DUMP,     0, mi_subnet_dump,     0,  0,  0 },
 	{ MI_ALLOW_URI,       0, mi_allow_uri,       0,  0,  0 },
 	{ 0, 0, 0, 0, 0, 0}
 };
@@ -190,9 +192,12 @@ static mi_export_t mi_cmds[] = {
 /* Module interface */
 struct module_exports exports = {
 	"permissions",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,      /* Exported functions */
+	0,         /* Exported async functions */
 	params,    /* Exported parameters */
 	0,         /* exported statistics */
 	mi_cmds,   /* exported MI functions */
@@ -207,13 +212,58 @@ struct module_exports exports = {
 
 static int get_src_grp_fixup(void** param, int param_no)
 {
-	if (!db_url.s || db_url.len == 0) {
-		LM_ERR("get_source_group() needs db_url to be set!\n");
+	int ret;
+	str s;
+	struct part_var *pv;
+	struct part_pvar *ppv;
+
+
+	if (get_part_structs() == NULL) {
+		LM_ERR("get_source_group() needs at least default partition!\n");
 		return E_UNSPEC;
 	}
 
-	if(param_no==1)
-		return fixup_pvar(param);
+
+	if(param_no==1) {
+		pv = pkg_malloc(sizeof(struct part_var));
+		if (pv == NULL) {
+			LM_ERR("no more pkg mem\n");
+			return -1;
+		}
+
+		s.s = *param;
+		s.len = strlen(s.s);
+		if (check_addr_param1(&s, pv))
+			return -1;
+
+
+		ppv = pkg_malloc(sizeof(struct part_pvar));
+		if (ppv == NULL) {
+			LM_ERR("no more pkg mem\n");
+			return -1;
+		}
+
+		ppv->sp = (pv_spec_t *)pv->u.parsed_part.v.sval.s;
+		ret=fixup_pvar((void **)&ppv->sp);
+		if (ret)
+			return E_UNSPEC;
+
+		if (pv->u.parsed_part.partition.s) {
+			pv->u.parsed_part.partition.s[pv->u.parsed_part.partition.len] = '\0';
+			if (fixup_sgp((void **)&pv->u.parsed_part.partition.s))
+				return E_UNSPEC;
+
+			ppv->part = (gparam_p)pv->u.parsed_part.partition.s;
+
+		} else {
+			ppv->part = NULL;
+		}
+
+		*param = ppv;
+		pkg_free(pv);
+
+		return 0;
+	}
 
 	return E_UNSPEC;
 }
@@ -506,7 +556,7 @@ static int single_fixup(void** param, int param_no)
 
 	strcpy(buffer, (char*)*param);
 	strcat(buffer, allow_suffix);
-	tmp = buffer; 
+	tmp = buffer;
 	ret = load_fixup(&tmp, 1);
 
 	strcpy(buffer + param_len, deny_suffix);
@@ -545,10 +595,10 @@ static int double_fixup(void** param, int param_no)
 		LM_ERR("no pkg memory left\n");
 		return -1;
 	    }
-	    
+
 	    strcpy(buffer, (char*)*param);
 	    strcat(buffer, allow_suffix);
-	    tmp = buffer; 
+	    tmp = buffer;
 	    ret = load_fixup(&tmp, 1);
 
 	    strcpy(buffer + param_len, deny_suffix);
@@ -592,14 +642,14 @@ static int double_fixup(void** param, int param_no)
 
 
 /*
- * module initialization function 
+ * module initialization function
  */
 static int mod_init(void)
 {
+	struct pm_partition *el, *prev_el=NULL;
+
 	LM_DBG("initializing...\n");
 
-	init_db_url( db_url , 1 /*can be null*/);
-	address_table.len = strlen(address_table.s);
 	ip_col.len = strlen(ip_col.s);
 	proto_col.len = strlen(proto_col.s);
 	pattern_col.len = strlen(pattern_col.s);
@@ -628,9 +678,22 @@ static int mod_init(void)
 			deny[0].filename);
 	}
 
-	if (init_address() != 0) {
-		LM_ERR("failed to initialize the allow_address function\n");
-		return -1;
+
+	el = get_partitions();
+	while (el) {
+		/* initialize table name if not done from script */
+		if (el->table.s == NULL) {
+			el->table.s = "address";
+			el->table.len = strlen(el->table.s);
+		}
+
+		if (init_address(el) != 0) {
+			LM_ERR("failed to initialize the allow_address function\n");
+			return -1;
+		}
+		prev_el = el;
+		el = el->next;
+		pkg_free(prev_el);
 	}
 
 	rules_num = 1;
@@ -656,12 +719,13 @@ static int mi_addr_child_init(void)
 }
 */
 
-/* 
- * destroy function 
+/*
+ * destroy function
  */
-static void mod_exit(void) 
+static void mod_exit(void)
 {
 	int i;
+	struct pm_part_struct *it;
 
 	for(i = 0; i < rules_num; i++) {
 		free_rule(allow[i].rules);
@@ -671,7 +735,8 @@ static void mod_exit(void)
 		pkg_free(deny[i].filename);
 	}
 
-	clean_address();
+	for (it=get_part_structs(); it; it=it->next)
+		clean_address(it);
 //	clean_addresses();
 }
 
@@ -704,7 +769,7 @@ int allow_routing_2(struct sip_msg* msg, char* allow_file, char* deny_file)
 /*
  * Test of REGISTER messages. Creates To-Contact pairs and compares them
  * against rules in allow and deny files passed as parameters. The function
- * iterates over all Contacts and creates a pair with To for each contact 
+ * iterates over all Contacts and creates a pair with To for each contact
  * found. That allows to restrict what IPs may be used in registrations, for
  * example
  */
@@ -736,7 +801,7 @@ static int check_register(struct sip_msg* msg, int idx)
 		LM_ERR("To or Contact not found\n");
 		return -1;
 	}
-	
+
 	if (!msg->contact) {
 		     /* REGISTER messages that contain no Contact header field
 		      * are allowed. Such messages do not modify the contents of
@@ -784,7 +849,7 @@ static int check_register(struct sip_msg* msg, int idx)
 		if (search_rule(allow[idx].rules, to_str, contact_str)) {
 			if (check_all_branches) goto skip_deny;
 		}
-	
+
 		     /* rule exists in deny file */
 		if (search_rule(deny[idx].rules, to_str, contact_str)) {
 			LM_DBG("deny rule found => Register denied\n");
@@ -820,7 +885,7 @@ int allow_register_2(struct sip_msg* msg, char* allow_file, char* deny_file)
  * -1:	deny
  * 1:	allow
  */
-static int allow_uri(struct sip_msg* msg, char* _idx, char* _sp) 
+static int allow_uri(struct sip_msg* msg, char* _idx, char* _sp)
 {
 	struct hdr_field *from;
 	int idx, len;
@@ -831,30 +896,30 @@ static int allow_uri(struct sip_msg* msg, char* _idx, char* _sp)
 
 	idx = (int)(long)_idx;
 	sp = (pv_spec_t *)_sp;
-	
+
 	/* turn off control, allow any uri */
 	if ((!allow[idx].rules) && (!deny[idx].rules)) {
 		LM_DBG("no rules => allow any uri\n");
 		return 1;
 	}
-	
+
 	/* looking for FROM HF */
         if ((!msg->from) && (parse_headers(msg, HDR_FROM_F, 0) == -1)) {
                 LM_ERR("failed to parse message\n");
                 return -1;
         }
-	
+
 	if (!msg->from) {
 		LM_ERR("FROM header field not found\n");
 		return -1;
 	}
-	
+
 	/* we must call parse_from_header explicitly */
         if ((!(msg->from)->parsed) && (parse_from_header(msg) < 0)) {
                 LM_ERR("failed to parse From body\n");
                 return -1;
         }
-	
+
 	from = msg->from;
 	len = ((struct to_body*)from->parsed)->uri.len;
 	if (len > EXPRESSION_LENGTH) {
@@ -888,7 +953,7 @@ static int allow_uri(struct sip_msg* msg, char* _idx, char* _sp)
     		LM_DBG("allow rule found => URI is allowed\n");
 		return 1;
 	}
-	
+
 	/* rule exists in deny file */
 	if (search_rule(deny[idx].rules, from_str, uri_str)) {
 	    LM_DBG("deny rule found => URI is denied\n");
@@ -908,7 +973,7 @@ int allow_test(char *file, char *uri, char *contact)
 {
     char *pathname;
     int idx;
-    
+
     pathname = get_pathname(file);
     if (!pathname) {
 	LM_ERR("Cannot get pathname of <%s>\n", file);
@@ -923,13 +988,13 @@ int allow_test(char *file, char *uri, char *contact)
     }
 
     pkg_free(pathname);
-	
+
     /* turn off control, allow any routing */
     if ((!allow[idx].rules) && (!deny[idx].rules)) {
 	LM_DBG("No rules => Allowed\n");
 	return 1;
     }
-    
+
     LM_DBG("Looking for URI: %s, Contact: %s\n", uri, contact);
 
     /* rule exists in allow file */
@@ -937,7 +1002,7 @@ int allow_test(char *file, char *uri, char *contact)
 	LM_DBG("Allow rule found => Allowed\n");
 	return 1;
     }
-	
+
     /* rule exists in deny file */
     if (search_rule(deny[idx].rules, uri, contact)) {
 	LM_DBG("Deny rule found => Denied\n");
@@ -951,16 +1016,39 @@ int allow_test(char *file, char *uri, char *contact)
 
 
 static int check_addr_fixup(void** param, int param_no) {
+	int ret;
+	gparam_p gp;
+	struct part_var *pv;
 
-	if (!db_url.s || db_url.len == 0) {
-		LM_ERR("check_address needs db_url to be set!\n");
+	if (get_part_structs() == NULL) {
+		LM_ERR("check_source_address needs db_url to be set!\n");
 		return E_UNSPEC;
 	}
 
 	/* grp ip port proto info pattern*/
 	switch (param_no) {
 		case 1:
-			return fixup_igp(param);
+			ret = fixup_spve(param);
+
+			if (0 == ret) {
+				gp = *param;
+				pv = pkg_malloc(sizeof(struct part_var));
+				if (pv == NULL) {
+					LM_ERR("no more pkg mem\n");
+					return -1;
+				}
+
+				if (gp->type == GPARAM_TYPE_STR) {
+					pv->type = TYPE_PARSED;
+					ret = check_addr_param1(&gp->v.sval, pv);
+				} else {
+					pv->type = TYPE_PV;
+					pv->u.gp = gp;
+				}
+				*param = pv;
+			}
+
+			return ret;
 		case 2:
 		case 3:
 		case 4:
@@ -981,8 +1069,11 @@ static int check_addr_fixup(void** param, int param_no) {
 
 
 static int check_src_addr_fixup(void** param, int param_no) {
+	int ret;
+	gparam_p gp;
+	struct part_var *pv;
 
-	if (!db_url.s || db_url.len == 0) {
+	if (get_part_structs() == NULL) {
 		LM_ERR("check_source_address needs db_url to be set!\n");
 		return E_UNSPEC;
 	}
@@ -990,7 +1081,28 @@ static int check_src_addr_fixup(void** param, int param_no) {
 	/* grp info pattern */
 	switch (param_no) {
 		case 1:
-			return fixup_igp_null(param, param_no);
+			ret = fixup_spve(param);
+
+			if (0 == ret) {
+				gp = *param;
+				pv = pkg_malloc(sizeof(struct part_var));
+				if (pv == NULL) {
+					LM_ERR("no more pkg mem\n");
+					return -1;
+				}
+
+				if (gp->type == GPARAM_TYPE_STR) {
+					pv->type = TYPE_PARSED;
+					ret = check_addr_param1(&gp->v.sval, pv);
+				} else {
+					pv->type = TYPE_PV;
+					pv->u.gp = gp;
+				}
+
+				*param = pv;
+			}
+
+			return ret;
 		case 2:
 			if (*param && strlen((char*)*param))
 				return fixup_pvar(param);

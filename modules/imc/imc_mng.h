@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * imc module - instant messaging conferencing implementation
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * ---------
@@ -37,11 +35,11 @@
 #include "../../str.h"
 #include "../../parser/parse_from.h"
 
-#define IMC_MEMBER_OWNER	1<<0
-#define IMC_MEMBER_ADMIN	1<<1
-#define IMC_MEMBER_INVITED	1<<2
-#define IMC_MEMBER_DELETED  1<<3
-#define IMC_MEMBER_SKIP     1<<4
+#define IMC_MEMBER_OWNER	(1<<0)
+#define IMC_MEMBER_ADMIN	(1<<1)
+#define IMC_MEMBER_INVITED	(1<<2)
+#define IMC_MEMBER_DELETED  (1<<3)
+#define IMC_MEMBER_SKIP     (1<<4)
 
 typedef struct _imc_member
 {

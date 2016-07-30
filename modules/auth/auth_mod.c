@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * Digest Authentication Module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -27,7 +25,7 @@
  * 2003-03-10 New module interface (janakj)
  * 2003-03-16 flags export parameter added (janakj)
  * 2003-03-19 all mallocs/frees replaced w/ pkg_malloc/pkg_free (andrei)
- * 2003-04-28 rpid contributed by Juha Heinanen added (janakj) 
+ * 2003-04-28 rpid contributed by Juha Heinanen added (janakj)
  * 2005-05-31 general avp specification added for rpid (bogdan)
  * 2006-03-01 pseudo variables support for domain name (bogdan)
  */
@@ -117,7 +115,7 @@ int* next_index= NULL;
 int disable_nonce_check = 0;
 
 /*
- * Exported functions 
+ * Exported functions
  */
 static cmd_export_t cmds[] = {
 	{"www_challenge",       (cmd_function)www_challenge,           2,
@@ -160,15 +158,27 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /*
  * Module interface
  */
 struct module_exports exports = {
-	"auth", 
+	"auth",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,
+	0,
 	params,
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
@@ -305,7 +315,7 @@ static int mod_init(void)
 			return -10;
 		}
 		memset(nonce_buf, 255, NBUF_LEN);
-	   
+
 		sec_monit= (int*)shm_malloc((nonce_expire +1)* sizeof(int));
 		if(sec_monit== NULL)
 		{
@@ -355,7 +365,7 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 		str* _domain, char* _ha1)
 {
 	pv_value_t sval;
-	
+
 	/* get username from PV */
 	memset(&sval, 0, sizeof(pv_value_t));
 	if(pv_get_spec_value(msg, &user_spec, &sval)==0)
@@ -366,11 +376,11 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 			pv_value_destroy(&sval);
 			return 1;
 		}
-		if(sval.rs.len!= _username->user.len
-				|| strncasecmp(sval.rs.s, _username->user.s, sval.rs.len))
+		if(sval.rs.len!= _username->whole.len
+				|| strncasecmp(sval.rs.s, _username->whole.s, sval.rs.len))
 		{
 			LM_DBG("username mismatch [%.*s] [%.*s]\n",
-				_username->user.len, _username->user.s, sval.rs.len, sval.rs.s);
+				_username->whole.len, _username->whole.s, sval.rs.len, sval.rs.s);
 			pv_value_destroy(&sval);
 			return 1;
 		}
@@ -399,7 +409,7 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 		memcpy(_ha1, sval.rs.s, sval.rs.len);
 		_ha1[sval.rs.len] = '\0';
 	}
-    
+
 	return 0;
 }
 

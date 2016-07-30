@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  * Copyright (C) 2011-2013 OpenSIPS Solutions
  *
@@ -18,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -28,8 +26,8 @@
 
 
 /*!
- * \file 
- * \brief MI :: Core 
+ * \file
+ * \brief MI :: Core
  * \ingroup mi
  */
 
@@ -46,7 +44,7 @@
 #include "../globals.h"
 #include "../ut.h"
 #include "../pt.h"
-#include "../tcp_server.h"
+#include "../net/net_tcp.h"
 #include "../mem/mem.h"
 #include "../cachedb/cachedb.h"
 #include "../evi/event_interface.h"
@@ -186,6 +184,7 @@ static struct mi_root *mi_arg(struct mi_root *cmd, void *param)
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for ( n=0; n<my_argc ; n++ ) {
 		node = add_mi_node_child(rpl, 0, 0, 0, my_argv[n], strlen(my_argv[n]));
@@ -214,6 +213,7 @@ static struct mi_root *mi_which(struct mi_root *cmd, void *param)
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	get_mi_cmds( &cmds, &size);
 	for ( i=0 ; i<size ; i++ ) {
@@ -245,6 +245,7 @@ static struct mi_root *mi_ps(struct mi_root *cmd, void *param)
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for ( i=0 ; i<counted_processes ; i++ ) {
 		node = add_mi_node_child(rpl, 0, MI_SSTR("Process"), 0, 0 );
@@ -285,42 +286,84 @@ static struct mi_root *mi_kill(struct mi_root *cmd, void *param)
 
 
 
-static struct mi_root *mi_debug(struct mi_root *cmd, void *param)
+static struct mi_root *mi_log_level(struct mi_root *cmd, void *param)
 {
 	struct mi_root *rpl_tree;
 	struct mi_node *node;
 	char *p;
 	int len;
-	int new_debug;
-
-#ifdef CHANGEABLE_DEBUG_LEVEL
-	node = cmd->node.kids;
-	if (node!=NULL) {
-		if (str2sint( &node->value, &new_debug) < 0)
-			return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
-	} else
-		new_debug = *debug;
-#else
-		new_debug = debug;
-#endif
+	int new_level, i;
+	pid_t pid = 0;
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
 		return 0;
 
-	p = sint2str((long)new_debug, &len);
-	node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
-		MI_SSTR("DEBUG"),p, len);
-	if (node==0) {
-		free_mi_tree(rpl_tree);
-		return 0;
+	node = cmd->node.kids;
+	if (node!=NULL) {
+		if (str2sint( &node->value, &new_level) < 0)
+			goto out_bad_param;
+
+		node = node->next;
+		if (node && str2sint( &node->value, &pid) < 0)
+			goto out_bad_param;
+
+	/* if called without arguments, print the table and exit */
+	} else {
+		rpl_tree->node.flags |= MI_IS_ARRAY;
+
+		for (i = 0; i < counted_processes; i++) {
+			node = add_mi_node_child(&rpl_tree->node, 0, MI_SSTR("Process"), 0, 0);
+			if (node==0)
+				goto out;
+
+			p = int2str((unsigned long)pt[i].pid, &len);
+			if (!add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("PID"), p, len))
+				goto out;
+
+			p = sint2str((unsigned long)pt[i].log_level, &len);
+			if (!add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Log level"), p,len))
+				goto out;
+
+			if (!add_mi_attr( node, 0, MI_SSTR("Type"), pt[i].desc,
+							  strlen(pt[i].desc)))
+				goto out;
+		}
+
+		return rpl_tree;
 	}
 
-#ifdef CHANGEABLE_DEBUG_LEVEL
-	*debug = new_debug;
-#endif
+	p = sint2str((long)new_level, &len);
+	if (pid)
+		node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
+			MI_SSTR("New log level"), p, len);
+	else
+		node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
+			MI_SSTR("New global log level"), p, len);
+
+	if (node==0)
+		goto out;
+
+	if (pid) {
+		/* convert pid to OpenSIPS id */
+		i = id_of_pid(pid);
+		if (i == -1)
+			goto out_bad_param;
+
+		__set_proc_default_log_level(i, new_level);
+		__set_proc_log_level(i, new_level);
+	} else
+		set_global_log_level(new_level);
 
 	return rpl_tree;
+
+out_bad_param:
+	free_mi_tree(rpl_tree);
+	return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+
+out:
+	free_mi_tree(rpl_tree);
+	return NULL;
 }
 
 
@@ -349,7 +392,7 @@ static struct mi_root *mi_cachestore(struct mi_root *cmd, void *param)
 		LM_ERR( "empty memory cache system parameter\n");
 		return init_mi_tree(404, MI_SSTR("Empty memory cache id"));
 	}
-	
+
 	node = node->next;
 	if(node == NULL)
 		return init_mi_tree(404, MI_SSTR("Too few arguments"));
@@ -360,7 +403,7 @@ static struct mi_root *mi_cachestore(struct mi_root *cmd, void *param)
 		LM_ERR( "empty attribute name parameter\n");
 		return init_mi_tree(404, MI_SSTR("Empty attribute name"));
 	}
-	
+
 	node = node->next;
 	if(node == NULL)
 		return init_mi_tree(404, MI_SSTR("Too few arguments"));
@@ -388,7 +431,7 @@ static struct mi_root *mi_cachestore(struct mi_root *cmd, void *param)
 			return init_mi_tree(404,
 				MI_SSTR("Bad format for expires argument"));
 		}
-	
+
 		node = node->next;
 		if(node!= NULL)
 			return init_mi_tree(404, MI_SSTR("Too many parameters"));
@@ -429,7 +472,7 @@ static struct mi_root *mi_cachefetch(struct mi_root *cmd, void *param)
 		LM_ERR( "empty memory cache system parameter\n");
 		return init_mi_tree(404, MI_SSTR("Empty memory cache id"));
 	}
-	
+
 	node = node->next;
 	if(node == NULL)
 		return init_mi_tree(404, MI_SSTR("Too few arguments"));
@@ -440,7 +483,7 @@ static struct mi_root *mi_cachefetch(struct mi_root *cmd, void *param)
 		LM_ERR( "empty attribute name parameter\n");
 		return init_mi_tree(404,MI_SSTR( "Empty attribute name"));
 	}
-	
+
 	node = node->next;
 	if(node != NULL)
 		return init_mi_tree(404, MI_SSTR("Too many arguments"));
@@ -467,9 +510,9 @@ static struct mi_root *mi_cachefetch(struct mi_root *cmd, void *param)
 		goto done;
 	}
 
-	addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "%.*s = [%.*s]", attr.len, 
+	addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "%.*s = [%.*s]", attr.len,
 			attr.s, value.len, value.s);
-	
+
 	pkg_free(value.s);
 
 done:
@@ -499,7 +542,7 @@ static struct mi_root *mi_cacheremove(struct mi_root *cmd, void *param)
 		LM_ERR( "empty memory cache system parameter\n");
 		return init_mi_tree(404, MI_SSTR("Empty memory cache id"));
 	}
-	
+
 	node = node->next;
 	if(node == NULL)
 		return init_mi_tree(404, MI_SSTR("Too few arguments"));
@@ -510,7 +553,7 @@ static struct mi_root *mi_cacheremove(struct mi_root *cmd, void *param)
 		LM_ERR( "empty attribute name parameter\n");
 		return init_mi_tree(404, MI_SSTR("Empty attribute name"));
 	}
-	
+
 	node = node->next;
 	if(node != NULL)
 		return init_mi_tree(404, MI_SSTR("Too many parameters"));
@@ -542,8 +585,13 @@ static mi_export_t mi_core_cmds[] = {
 		mi_ps,         MI_NO_INPUT_FLAG,  0,  0 },
 	{ "kill", "terminates OpenSIPS",
 		mi_kill,       MI_NO_INPUT_FLAG,  0,  0 },
-	{ "debug", "gets/sets the value of the debug core variable",
-		mi_debug,                     0,  0,  0 },
+	{ "log_level", "gets/sets the per process or global log level in OpenSIPS",
+		mi_log_level,                 0,  0,  0 },
+#if defined(QM_MALLOC) && defined(DBG_MALLOC)
+	{ "shm_check", "complete scan of the shared memory pool "
+		"(if any error is found, OpenSIPS will abort!)",
+		mi_shm_check, MI_NO_INPUT_FLAG, 0,  0 },
+#endif
 	{ "cache_store", "stores in a cache system a string value",
 		mi_cachestore,                0,  0,  0 },
 	{ "cache_fetch", "queries for a cache stored value",
@@ -558,10 +606,8 @@ static mi_export_t mi_core_cmds[] = {
 	{ "subscribers_list", "lists all the Event Interface subscribers; "
 		"Params: [ event [ subscriber ]]",
 		mi_subscribers_list,          0,  0,  0 },
-#if USE_TCP
-	{ "list_tcp_conns", "list all ongoing TCP/TLS connections",
-		mi_list_tcp_conns,MI_NO_INPUT_FLAG,0, 0 },
-#endif
+	{ "list_tcp_conns", "list all ongoing TCP based connections",
+		mi_tcp_list_conns,MI_NO_INPUT_FLAG,0, 0 },
 	{ "help", "prints information about MI commands usage",
 		mi_help,                      0,  0,  0 },
 	{ 0, 0, 0, 0, 0, 0}

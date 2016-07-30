@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Domain module headers
  *
  * Copyright (C) 2002-2003 Juha Heinanen
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -47,7 +45,7 @@ extern str domainpolicy_col_val;   	/* Value column name */
  * Other module variables
  */
 
-extern int port_override_name, transport_override_name, 
+extern int port_override_name, transport_override_name,
 		domain_prefix_name, domain_suffix_name, domain_replacement_name,
 		send_socket_name, target_name;
 extern str domain_replacement_avp;

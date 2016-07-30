@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Path handling for intermediate proxies.
  *
  * Copyright (C) 2006 Inode GmbH (Andreas Granig <andreas.granig@inode.info>)
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -62,7 +60,7 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 	int prefix_len, suffix_len;
 	str rcv_addr = {0, 0};
 	char *src_ip;
-		
+
 	prefix = suffix = crlf = r2 = 0;
 
 	prefix_len = PATH_PREFIX_LEN + (user->len ? (user->len+1) : 0);
@@ -146,9 +144,9 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 	}
 	l2 = insert_new_lump_before(l2, crlf, CRLF_LEN+1, 0);
 	if (!l2) goto out5;
-	
+
 	return 1;
-	
+
 out1:
 	if (prefix) pkg_free(prefix);
 out2:
@@ -178,17 +176,17 @@ static int prepend_path(struct sip_msg* _m, str *user, int recv)
 	for (hf = _m->headers; hf; hf = hf->next) {
 		if (hf->type == HDR_PATH_T) {
 			break;
-		} 
+		}
 	}
 
 	if (hf) {
 		/* path found, add ours in front of that */
-		l = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
-		l2 = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
+		l = anchor_lump(_m, hf->name.s - _m->buf, 0);
+		l2 = anchor_lump(_m, hf->name.s - _m->buf, 0);
 	} else {
 		/* no path, append to message */
-		l = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
-		l2 = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
+		l = anchor_lump(_m, _m->unparsed - _m->buf, 0);
+		l2 = anchor_lump(_m, _m->unparsed - _m->buf, 0);
 	}
 
 	if (!l || !l2) {
@@ -204,12 +202,12 @@ static int prepend_path(struct sip_msg* _m, str *user, int recv)
 	if (enable_double_path) {
 		if (hf) {
 			/* path found, add ours in front of that */
-			l = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
-			l2 = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
+			l = anchor_lump(_m, hf->name.s - _m->buf, 0);
+			l2 = anchor_lump(_m, hf->name.s - _m->buf, 0);
 		} else {
 			/* no path, append to message */
-			l = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
-			l2 = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
+			l = anchor_lump(_m, _m->unparsed - _m->buf, 0);
+			l2 = anchor_lump(_m, _m->unparsed - _m->buf, 0);
 		}
 
 		if (!l || !l2) {
@@ -283,7 +281,7 @@ void path_rr_callback(struct sip_msg *_m, str *r_param, void *cb_param)
 	str dst_uri = {0, 0};
 
 	if (parse_params(r_param, CLASS_ANY, &hooks, &params) != 0) {
-		LM_ERR("failed to parse route parametes\n");
+		LM_ERR("failed to parse route parameters\n");
 		return;
 	}
 

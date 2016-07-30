@@ -1,6 +1,4 @@
 /*
- * $Id: address.c 5901 2009-07-21 07:45:05Z bogdan_iancu $
- *
  * check_address related functions
  *
  * Copyright (C) 2003 Juha Heinanen
@@ -19,9 +17,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -37,6 +35,7 @@
 #include "../../config.h"
 #include "../../db/db.h"
 #include "../../ip_addr.h"
+#include "../../socket_info.h"
 #include "../../mem/shm_mem.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_from.h"
@@ -46,40 +45,26 @@
 #include "permissions.h"
 #include "hash.h"
 #include "address.h"
+#include "partitions.h"
 
 #define TABLE_VERSION 5
 
-struct address_list ***hash_table;     /* Pointer to current hash table pointer */
-struct address_list **hash_table_1;   /* Pointer to hash table 1 */
-struct address_list **hash_table_2;   /* Pointer to hash table 2 */
+str def_part = str_init("default");
 
-struct subnet **subnet_table;        /* Ptr to current subnet table */
-struct subnet *subnet_table_1;       /* Ptr to subnet table 1 */
-struct subnet *subnet_table_2;       /* Ptr to subnet table 2 */
-
-
-static db_con_t* db_handle = 0;
-static db_func_t perm_dbf;
-
-static int proto_char2int(str *proto) {
+static inline int proto_char2int(str *proto) {
+	int ret_proto;
 	if (proto->len==0 || (proto->len==3 && !strcasecmp(proto->s, "any")))
 		return PROTO_NONE;
-	if (proto->len==3 && !strcasecmp(proto->s, "udp"))
-		return PROTO_UDP;
-	if (proto->len==3 && !strcasecmp(proto->s, "tcp"))
-		return PROTO_TCP;
-	if (proto->len==3 && !strcasecmp(proto->s, "tls"))
-		return PROTO_TLS;
-	if (proto->len==4 && !strcasecmp(proto->s, "sctp"))
-		return PROTO_SCTP;
-	return -1;
+	if (parse_proto((unsigned char*)proto->s, proto->len, &ret_proto) < 0)
+		return -1;
+	return ret_proto;
 }
 
 /*
  * Reload address table to new hash table and when done, make new hash table
  * current one.
  */
-int reload_address_table(void)
+int reload_address_table(struct pm_part_struct *part_struct)
 {
 	db_key_t cols[8];
 	db_res_t* res = NULL;
@@ -93,6 +78,7 @@ int reload_address_table(void)
 	struct net *subnet;
 	str str_pattern = {NULL,0}, str_info={NULL,0};
 	str str_src_ip, str_proto;
+	UNUSED(id);
 
 	cols[0] = &ip_col;
 	cols[1] = &grp_col;
@@ -103,32 +89,34 @@ int reload_address_table(void)
 	cols[6] = &info_col;
 	cols[7] = &id_col;
 
-	if (perm_dbf.use_table(db_handle, &address_table) < 0) {
+	if (part_struct->perm_dbf.use_table(part_struct->db_handle,
+											&part_struct->table) < 0) {
 		LM_ERR("failed to use address table\n");
 		return -1;
 	}
 
-	if (perm_dbf.query(db_handle, NULL, 0, NULL, cols, 0, 8, 0, &res) < 0) {
+	if (part_struct->perm_dbf.query(part_struct->db_handle, NULL, 0, NULL,
+													cols, 0, 8, 0, &res) < 0) {
 		LM_ERR("failed to query database\n");
 		return -1;
 	}
 
 	/* Choose new hash table and free its old contents */
-	if (*hash_table == hash_table_1) {
-		empty_hash(hash_table_2);
-		new_hash_table = hash_table_2;
+	if (*part_struct->hash_table == part_struct->hash_table_1) {
+		empty_hash(part_struct->hash_table_2);
+		new_hash_table = part_struct->hash_table_2;
 	} else {
-		empty_hash(hash_table_1);
-		new_hash_table = hash_table_1;
+		empty_hash(part_struct->hash_table_1);
+		new_hash_table = part_struct->hash_table_1;
 	}
 
 	/* Choose new subnet table */
-	if (*subnet_table == subnet_table_1) {
-		empty_subnet_table(subnet_table_2);
-		new_subnet_table = subnet_table_2;
+	if (*part_struct->subnet_table == part_struct->subnet_table_1) {
+		empty_subnet_table(part_struct->subnet_table_2);
+		new_subnet_table = part_struct->subnet_table_2;
 	} else {
-		empty_subnet_table(subnet_table_1);
-		new_subnet_table = subnet_table_1;
+		empty_subnet_table(part_struct->subnet_table_1);
+		new_subnet_table = part_struct->subnet_table_1;
 	}
 
 	row = RES_ROWS(res);
@@ -263,22 +251,29 @@ int reload_address_table(void)
 			if (subnet_table_insert(new_subnet_table, group, subnet,
 				port, proto, &str_pattern, &str_info) == -1) {
 					LM_ERR("subnet table problem\n");
+					if (subnet) {
+						pkg_free(subnet);
+					}
 					goto error;
 				}
 			LM_DBG("Tuple <%.*s, %u, %u, %u> inserted into subnet table\n",
 					str_src_ip.len, str_src_ip.s, group, mask, port);
+			/* subnet in pkg; needs to be freed since was copied to shm */
+			if (subnet) {
+				pkg_free(subnet);
+			}
 		}
 	}
 
-	perm_dbf.free_result(db_handle, res);
+	part_struct->perm_dbf.free_result(part_struct->db_handle, res);
 
-	*hash_table = new_hash_table;
-	*subnet_table = new_subnet_table;
+	*part_struct->hash_table = new_hash_table;
+	*part_struct->subnet_table = new_subnet_table;
 	LM_DBG("address table reloaded successfully.\n");
 
 	return 1;
 error:
-	perm_dbf.free_result(db_handle, res);
+	part_struct->perm_dbf.free_result(part_struct->db_handle, res);
 	return -1;
 }
 
@@ -286,103 +281,120 @@ error:
 /*
  * Initialize data structures
  */
-int init_address(void)
+int init_address(struct pm_partition *partition)
 {
+	struct pm_part_struct *part_struct;
 	/* Check if hash table needs to be loaded from address table */
-	if (!db_url.s) {
+	if (!partition->url.s) {
 		LM_INFO("db_url parameter of permissions module not set, "
 			"disabling allow_address\n");
 		return 0;
 	}
 
-	if (db_bind_mod(&db_url, &perm_dbf) < 0) {
+	part_struct = pkg_malloc(sizeof (struct pm_part_struct));
+	if (part_struct == NULL) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+	memset(part_struct, 0, sizeof(struct pm_part_struct));
+
+	part_struct->name = partition->name;
+	part_struct->url = partition->url;
+	part_struct->table = partition->table;
+
+	if (db_bind_mod(&partition->url, &part_struct->perm_dbf) < 0) {
 		LM_ERR("load a database support module\n");
 		return -1;
 	}
 
-	if (!DB_CAPABILITY(perm_dbf, DB_CAP_QUERY)) {
+	if (!DB_CAPABILITY(part_struct->perm_dbf, DB_CAP_QUERY)) {
 		LM_ERR("database module does not implement 'query' function\n");
 		return -1;
 	}
 
-	hash_table_1 = hash_table_2 = 0;
-	hash_table = 0;
+	part_struct->hash_table_1 = part_struct->hash_table_2 = 0;
+	part_struct->hash_table = 0;
 
-	db_handle = perm_dbf.init(&db_url);
-	if (!db_handle) {
+	part_struct->db_handle = part_struct->perm_dbf.init(&partition->url);
+	if (!part_struct->db_handle) {
 		LM_ERR("unable to connect database\n");
 		return -1;
 	}
 
-	if (db_check_table_version(&perm_dbf, db_handle, &address_table,
+	if (db_check_table_version(&part_struct->perm_dbf, part_struct->db_handle,
+				&partition->table,
 				TABLE_VERSION) < 0) {
 		LM_ERR("error during table version check.\n");
-		perm_dbf.close(db_handle);
+		part_struct->perm_dbf.close(part_struct->db_handle);
 		return -1;
 	}
 
-	hash_table_1 = hash_create();
-	if (!hash_table_1) return -1;
+	part_struct->hash_table_1 = hash_create();
+	if (!part_struct->hash_table_1) return -1;
 
-	hash_table_2  = hash_create();
-	if (!hash_table_2) goto error;
+	part_struct->hash_table_2  = hash_create();
+	if (!part_struct->hash_table_2) goto error;
 
-	hash_table = (struct address_list ***)shm_malloc
-						(sizeof(struct address_list **));
-	if (!hash_table) goto error;
+	part_struct->hash_table = (struct address_list ***)shm_malloc
+							(sizeof(struct address_list **));
+	if (!part_struct->hash_table) goto error;
 
-	*hash_table = hash_table_1;
+	*part_struct->hash_table = part_struct->hash_table_1;
 
-	subnet_table_1 = new_subnet_table();
-    if (!subnet_table_1) goto error;
+	part_struct->subnet_table_1 = new_subnet_table();
+    if (!part_struct->subnet_table_1) goto error;
 
-    subnet_table_2 = new_subnet_table();
-    if (!subnet_table_2) goto error;
+    part_struct->subnet_table_2 = new_subnet_table();
+    if (!part_struct->subnet_table_2) goto error;
 
-	subnet_table = (struct subnet **)shm_malloc(sizeof(struct subnet *));
-	if (!subnet_table) goto error;
+	part_struct->subnet_table = (struct subnet **)shm_malloc(sizeof(struct subnet *));
+	if (!part_struct->subnet_table) goto error;
 
-	*subnet_table = subnet_table_1;
+	*part_struct->subnet_table = part_struct->subnet_table_1;
 
-	if (reload_address_table() == -1) {
+	if (reload_address_table(part_struct) == -1) {
 		LM_CRIT("reload of address table failed\n");
 		goto error;
 	}
 
-	perm_dbf.close(db_handle);
-	db_handle = 0;
+	part_struct->perm_dbf.close(part_struct->db_handle);
+	part_struct->db_handle = 0;
+
+	add_part_struct(part_struct);
 
 	return 0;
 
 error:
-	if (hash_table_1) {
-		hash_destroy(hash_table_1);
-		hash_table_1 = 0;
+	if (part_struct->hash_table_1) {
+		hash_destroy(part_struct->hash_table_1);
+		part_struct->hash_table_1 = 0;
 	}
-	if (hash_table_2) {
-		hash_destroy(hash_table_2);
-		hash_table_2 = 0;
+	if (part_struct->hash_table_2) {
+		hash_destroy(part_struct->hash_table_2);
+		part_struct->hash_table_2 = 0;
 	}
-	if (hash_table) {
-		shm_free(hash_table);
-		hash_table = 0;
-	}
-
-	if (subnet_table_1) {
-		free_subnet_table(subnet_table_1);
-		subnet_table_1 = 0;
+	if (part_struct->hash_table) {
+		shm_free(part_struct->hash_table);
+		part_struct->hash_table = 0;
 	}
 
-	if (subnet_table_2) {
-		free_subnet_table(subnet_table_2);
-		subnet_table_2 = 0;
+	if (part_struct->subnet_table_1) {
+		free_subnet_table(part_struct->subnet_table_1);
+		part_struct->subnet_table_1 = 0;
+	}
+
+	if (part_struct->subnet_table_2) {
+		free_subnet_table(part_struct->subnet_table_2);
+		part_struct->subnet_table_2 = 0;
     }
-	if (subnet_table) {
-		shm_free(subnet_table);
-		subnet_table = 0;
+	if (part_struct->subnet_table) {
+		shm_free(part_struct->subnet_table);
+		part_struct->subnet_table = 0;
 	}
-	perm_dbf.close(db_handle);
-	db_handle = 0;
+	part_struct->perm_dbf.close(part_struct->db_handle);
+	part_struct->db_handle = 0;
+
+	pkg_free(part_struct);
 	return -1;
 }
 
@@ -392,14 +404,19 @@ error:
  */
 int mi_init_address(void)
 {
-    if (!db_url.s || db_handle) return 0;
+	struct pm_part_struct *it;
 
-    db_handle = perm_dbf.init(&db_url);
 
-    if (!db_handle) {
-		LM_ERR("unable to connect database\n");
-		return -1;
-    }
+	for (it=get_part_structs(); it; it=it->next) {
+		if (it->db_handle)
+			continue;
+
+		it->db_handle = it->perm_dbf.init(&it->url);
+		if (!it->db_handle) {
+			LM_ERR("unable to connect database\n");
+			return -1;
+		}
+	}
     return 0;
 }
 
@@ -407,11 +424,11 @@ int mi_init_address(void)
 /*
  * Close connections and release memory
  */
-void clean_address(void)
+void clean_address(struct pm_part_struct *part_struct)
 {
-	if (hash_table_1) hash_destroy(hash_table_1);
-	if (hash_table_2) hash_destroy(hash_table_2);
-	if (hash_table) shm_free(hash_table);
+	if (part_struct->hash_table_1) hash_destroy(part_struct->hash_table_1);
+	if (part_struct->hash_table_2) hash_destroy(part_struct->hash_table_2);
+	if (part_struct->hash_table) shm_free(part_struct->hash_table);
 }
 
 
@@ -419,35 +436,76 @@ void clean_address(void)
  *
  */
 int check_addr_6(struct sip_msg* msg,
-		char* grp_igp, char* ip_sp, char* port_sp, char* proto_sp,
+		char* grp_sgp, char* ip_sp, char* port_sp, char* proto_sp,
 		char* info, char* pattern) {
 
 	unsigned int port;
 	int group, proto, hash_ret, subnet_ret, ret = 1;
 	struct ip_addr *ip;
-	str str_ip, str_proto, str_port, pattern_s;
+	str str_ip, str_proto, str_port, pattern_s, str_part_group;
+	struct pm_part_struct *part_struct;
+	struct part_var *pvar, *pvar_new;
 
 	memset(&str_ip, 0, sizeof(str));
 	memset(&str_proto, 0, sizeof(str));
 
-	if (grp_igp) {
-		if (fixup_get_ivalue(msg, (gparam_p)grp_igp, &group)) {
-		    LM_ERR("cannot get group value\n");
-	    	return -1;
+	if (grp_sgp) {
+		pvar = (struct part_var *) grp_sgp;
+
+		if (pvar->type == TYPE_PV) {
+			if (fixup_get_svalue(msg, pvar->u.gp, &str_part_group)) {
+			    LM_ERR("cannot get group value\n");
+				return -1;
+			}
+
+			pvar_new = pkg_malloc(sizeof(struct part_var));
+			if (pvar_new == NULL) {
+				LM_ERR("no more pkg mem\n");
+				return -1;
+			}
+
+			if (check_addr_param1( &str_part_group, pvar_new)) {
+				LM_ERR("failed to parse [%s]!", str_part_group.s);
+				return -1;
+			}
+			group = pvar_new->u.parsed_part.v.ival;
+
+			if (pvar_new->u.parsed_part.partition.s)
+				part_struct = get_part_struct(&pvar_new->u.parsed_part.partition);
+			else
+				part_struct = get_part_struct(&def_part);
+
+			pkg_free(pvar_new);
+		} else {
+			group = pvar->u.parsed_part.v.ival;
+			if (pvar->u.parsed_part.partition.s)
+				part_struct = get_part_struct(&pvar->u.parsed_part.partition);
+			else
+				part_struct = get_part_struct(&def_part);
 		}
 
 		if (group < 0) {
 			LM_ERR("invalid group value\n");
 			return -1;
 		}
-	} else
+	} else {
 		group = 0;
+		part_struct = get_part_struct(&def_part);
+	}
+
+	if (part_struct == NULL) {
+		LM_ERR("no db_url defined or no (such) partition!\n");
+		return -1;
+	}
 
 	if (ip_sp) {
 		if (fixup_get_svalue(msg, (gparam_p)ip_sp, &str_ip)) {
 			LM_ERR("cannot get str_ip string\n");
 			return -1;
 		}
+	} else {
+		LM_ERR("source ip not provided!\n");
+		return -1;
 	}
 	if (str_ip.len <= 0 || !str_ip.s) {
 		LM_ERR("source ip is not set!\n");
@@ -456,7 +514,7 @@ int check_addr_6(struct sip_msg* msg,
 
 	ip = str2ip(&str_ip);
 	if (!ip) {
-		LM_ERR("source ip is not set!\n");
+		LM_ERR("invalid ip set <%.*s>!\n", str_ip.len, str_ip.s);
 		return -1;
 	}
 
@@ -472,17 +530,7 @@ int check_addr_6(struct sip_msg* msg,
 		str_proto.len = strlen(str_proto.s);
 	}
 
-	if (!strncasecmp(str_proto.s, "UDP", str_proto.len))
-	    proto = PROTO_UDP;
-	else if (!strncasecmp(str_proto.s, "TCP", str_proto.len))
-	    proto = PROTO_TCP;
-    else if (!strncasecmp(str_proto.s, "TLS", str_proto.len))
-	    proto = PROTO_TLS;
-    else if (!strncasecmp(str_proto.s, "SCTP", str_proto.len))
-	    proto = PROTO_SCTP;
-	else if (!strncasecmp(str_proto.s, "ANY", str_proto.len))
-	    proto = PROTO_NONE;
-	else {
+	if ((proto = proto_char2int(&str_proto)) < 0) {
 		LM_ERR("unknown protocol %.*s\n", str_proto.len, str_proto.s);
 		return -1;
 	}
@@ -517,10 +565,10 @@ int check_addr_6(struct sip_msg* msg,
 	LM_DBG("Looking for : <%d, %.*s, %.*s, %d, %s>\n", group, str_ip.len,
 			str_ip.s, str_proto.len, str_proto.s, port, ZSW(pattern) );
 
-	hash_ret = hash_match(msg, *hash_table, group, ip, port,
+	hash_ret = hash_match(msg, *part_struct->hash_table, group, ip, port,
 				proto, pattern, info);
 	if (hash_ret < 0) {
-	    subnet_ret = match_subnet_table(msg, *subnet_table, group,
+	    subnet_ret = match_subnet_table(msg, *part_struct->subnet_table, group,
 				ip, port, proto, pattern, info);
 	    ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
 	}
@@ -547,22 +595,59 @@ int check_src_addr_3(struct sip_msg *msg,
 
 	int group, hash_ret, subnet_ret, ret = 1;
 	struct in_addr in;
-	str str_ip;
+	str str_ip, str_part_group;
 	struct ip_addr *ip;
 	str pattern_s;
+	struct pm_part_struct *part_struct;
+	struct part_var *pvar, *pvar_new;
 
 	if (grp) {
-		if (fixup_get_ivalue(msg, (gparam_p)grp, &group)) {
-		    LM_ERR("cannot get group value\n");
-	    	return -1;
+		pvar = (struct part_var *) grp;
+
+		if (pvar->type == TYPE_PV) {
+			if (fixup_get_svalue(msg, pvar->u.gp, &str_part_group)) {
+			    LM_ERR("cannot get group value\n");
+				return -1;
+			}
+			pvar_new = pkg_malloc(sizeof(struct part_var));
+			if (pvar_new == NULL) {
+				LM_ERR("no more pkg mem\n");
+				return -1;
+			}
+
+			if (check_addr_param1( &str_part_group, pvar_new)) {
+				LM_ERR("failed to parse [%s]!", str_part_group.s);
+				return -1;
+			}
+			group = pvar_new->u.parsed_part.v.ival;
+			if (pvar_new->u.parsed_part.partition.s)
+				part_struct = get_part_struct(&pvar_new->u.parsed_part.partition);
+			else
+				part_struct = get_part_struct(&def_part);
+
+			pkg_free(pvar_new);
+		} else {
+			group = pvar->u.parsed_part.v.ival;
+
+			if (pvar->u.parsed_part.partition.s)
+				part_struct = get_part_struct(&pvar->u.parsed_part.partition);
+			else
+				part_struct = get_part_struct(&def_part);
 		}
 
 		if (group < 0) {
 			LM_ERR("invalid group value\n");
 			return -1;
 		}
-	} else
+	} else {
 		group = 0;
+		part_struct = get_part_struct(&def_part);
+	}
+
+	if (part_struct == NULL) {
+		LM_ERR("no db_url defined or no (such) partition!\n");
+		return -1;
+	}
 
 	in.s_addr = msg->rcv.src_ip.u.addr32[0];
 	str_ip.s = inet_ntoa(in);
@@ -593,14 +678,14 @@ int check_src_addr_3(struct sip_msg *msg,
 		pattern[pattern_s.len] = 0;
 	}
 
-	hash_ret = hash_match(msg, *hash_table, group,
+	hash_ret = hash_match(msg, *part_struct->hash_table, group,
 				ip,
 				msg->rcv.src_port,
 				msg->rcv.proto,
 				pattern,
 				info);
 	if (hash_ret < 0) {
-	    subnet_ret = match_subnet_table(msg, *subnet_table, group,
+	    subnet_ret = match_subnet_table(msg, *part_struct->subnet_table, group,
 				ip,
 				msg->rcv.src_port,
 				msg->rcv.proto,
@@ -628,12 +713,38 @@ int check_src_addr_1(struct sip_msg* msg,
 
 
 
-int get_source_group(struct sip_msg* msg, char *pvar) {
+int get_source_group(struct sip_msg* msg, char *arg) {
 	int group = -1;
 	struct in_addr in;
 	struct ip_addr *ip;
-	str str_ip;
+	str str_ip, partition;
 	pv_value_t pvt;
+	struct part_pvar *ppv;
+	struct pm_part_struct *ps;
+
+	ppv  = (struct part_pvar *)arg;
+
+	if (ppv->part) {
+		if (fixup_get_svalue(msg, ppv->part, &partition)) {
+			    LM_ERR("cannot get partition value\n");
+				return -1;
+		}
+
+		str_trim_spaces_lr(partition);
+		ps = get_part_struct(&partition);
+
+		if (ps == NULL) {
+			LM_ERR("no such partition (%.*s)\n", partition.len, partition.s);
+			return -1;
+		}
+
+	} else {
+		ps = get_part_struct(&def_part);
+		if (ps == NULL) {
+			LM_ERR("no default partition\n");
+			return -1;
+		}
+	}
 
 	LM_DBG("Looking for <%x, %u> in address table\n",
 			msg->rcv.src_ip.u.addr32[0], msg->rcv.src_port);
@@ -644,30 +755,31 @@ int get_source_group(struct sip_msg* msg, char *pvar) {
 
 	ip = str2ip(&str_ip);
 
-	group = find_group_in_hash_table(*hash_table,
+	group = find_group_in_hash_table(*ps->hash_table,
 				ip,
 				msg->rcv.src_port);
-
-	LM_DBG("Found <%d>\n", group);
-
 	if (group == -1) {
 
 		LM_DBG("Looking for <%x, %u> in subnet table\n",
 			msg->rcv.src_ip.u.addr32[0], msg->rcv.src_port);
 
-		group = find_group_in_subnet_table(*subnet_table,
-			ip,
-			msg->rcv.src_port);
-
-		LM_DBG("Found <%d>\n", group);
+		group = find_group_in_subnet_table(*ps->subnet_table,
+				ip,
+				msg->rcv.src_port);
+		if (group == -1) {
+			LM_DBG("IP <%.*s:%u> not found in any group\n",
+					str_ip.len, str_ip.s, msg->rcv.src_port);
+			return -1;
+		}
 	}
+	LM_DBG("Found <%d>\n", group);
 
 	pvt.flags = PV_VAL_INT|PV_TYPE_INT;
 	pvt.rs.s = NULL;
 	pvt.rs.len = 0;
 	pvt.ri = group;
 
-	if (pv_set_value(msg, (pv_spec_t *)pvar, (int)EQ_T, &pvt) < 0) {
+	if (pv_set_value(msg, ppv->sp, (int)EQ_T, &pvt) < 0) {
 		LM_ERR("setting of pvar failed\n");
 		return -1;
 	}

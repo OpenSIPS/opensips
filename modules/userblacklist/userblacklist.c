@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 1&1 Internet AG
  *
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -102,12 +100,24 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports= {
 	"userblacklist",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,
+	NULL,
 	params,
 	0,
 	mi_cmds,
@@ -353,7 +363,7 @@ static int check_blacklist_fixup(void **arg, int arg_no)
 	if (add_source(table) != 0) {
 		LM_ERR("could not add table");
 		return -1;
-	}	
+	}
 
 	/* get the node that belongs to the table */
 	node = table2dt(table);
@@ -521,7 +531,7 @@ struct mi_root * mi_reload_blacklist(struct mi_root* cmd, void* param)
 	struct mi_root * tmp = NULL;
 
 	if(reload_sources() == 0) {
-		tmp = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);	
+		tmp = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	} else {
 		tmp = init_mi_tree( 500, "cannot reload blacklist", 21);
 	}

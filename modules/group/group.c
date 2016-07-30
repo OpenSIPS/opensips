@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Group membership
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -19,9 +17,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -170,12 +168,12 @@ int db_is_user_in(struct sip_msg* _msg, char* _hf, char* _grp)
 	}
 
 	if (RES_ROW_N(res) == 0) {
-		LM_DBG("user is not in group '%.*s'\n", 
+		LM_DBG("user is not in group '%.*s'\n",
 		    (grp_s.len), ZSW((grp_s.s)));
 		group_dbf.free_result(group_dbh, res);
 		return -6;
 	} else {
-		LM_DBG("user is in group '%.*s'\n", 
+		LM_DBG("user is in group '%.*s'\n",
 			(grp_s.len), ZSW((grp_s.s)));
 		group_dbf.free_result(group_dbh, res);
 		return 1;
@@ -225,7 +223,7 @@ void group_db_close(void)
 }
 
 /*
- *  * "Request-URI", "To", "From", "Credentials"        
+ *  * "Request-URI", "To", "From", "Credentials"
 */
 static unsigned int hf_type( str *str1)
 {

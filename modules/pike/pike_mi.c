@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Header file for PIKE MI functions
  *
  * Copyright (C) 2006 Voice Sistem SRL
@@ -17,14 +15,18 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
  *  2006-12-05  created (bogdan)
  */
+
+#include <assert.h>
+
+#include "../../resolve.h"
 
 #include "ip_tree.h"
 #include "pike_mi.h"
@@ -34,7 +36,8 @@
 #define MAX_IP_LEN IPv6_LEN
 
 
-static struct ip_node *ip_stack[MAX_IP_LEN];
+static struct 		 ip_node *ip_stack[MAX_IP_LEN];
+extern int    		 pike_log_level;
 
 
 static inline void print_ip_stack( int level, struct mi_node *node)
@@ -88,6 +91,62 @@ static void print_red_ips( struct ip_node *ip, int level, struct mi_node *node)
 
 }
 
+struct mi_root* mi_pike_rm(struct mi_root *cmd, void *param)
+{
+    struct mi_node   *mn;
+    struct ip_node   *node;
+    struct ip_node   *kid;
+    struct ip_addr   *ip;
+    int byte_pos;
+
+    mn = cmd->node.kids;
+    if (mn==NULL)
+	return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+    ip = str2ip(&mn->value);
+    if (ip==0)
+	return init_mi_tree( 500, "Bad IP", 6);
+
+    node = 0;
+    byte_pos = 0;
+
+    kid = get_tree_branch((unsigned char)ip->u.addr[byte_pos]);
+
+    /* pilfered from ip_tree.c:mark_node(..) */
+    while (kid && byte_pos < ip->len) {
+	while (kid && kid->byte!=(unsigned char)ip->u.addr[byte_pos]) {
+	    kid = kid->next;
+	}
+	if (kid) {
+	    node = kid;
+	    kid = kid->kids;
+	    byte_pos++;
+	}
+    }
+
+    /* If all octets weren't matched, 404 */
+    if (byte_pos!=ip->len) {
+	return init_mi_tree( 404, "Match not found", 15);
+    }
+
+    /* If the node exists, check to see if it's really blocked */
+    if (!(node->flags&NODE_ISRED_FLAG)) {
+	return init_mi_tree( 400, "IP not blocked", 14);
+    }
+
+    /* reset the node block flag and counters */
+    node->flags &= ~(NODE_ISRED_FLAG);
+
+    node->hits[PREV_POS] = 0;
+    node->hits[CURR_POS] = 0;
+    node->leaf_hits[PREV_POS] = 0;
+    node->leaf_hits[CURR_POS] = 0;
+
+    LM_GEN1(pike_log_level,
+	    "PIKE - UNBLOCKing ip %s, node=%p\n",ip_addr2a(ip),node);
+
+    return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+}
 
 
 /*
@@ -103,6 +162,7 @@ struct mi_root* mi_pike_list(struct mi_root* cmd_tree, void* param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==0)
 		return 0;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	for( i=0 ; i<MAX_IP_BRANCHES ; i++ ) {
 

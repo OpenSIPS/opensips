@@ -25,7 +25,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include "osp_mod.h"
@@ -53,9 +53,9 @@ int ospCheckHeader(
     char* ignore2)
 {
     unsigned char buffer[OSP_TOKENBUF_SIZE];
-    unsigned int  bufsize = sizeof(buffer);
+    unsigned int bufsize = sizeof(buffer);
 
-    if (ospGetOspHeader(msg, buffer, &bufsize) != 0) {
+    if (ospGetOspToken(msg, buffer, &bufsize) != 0) {
         return MODULE_RETURNCODE_FALSE;
     } else {
         return MODULE_RETURNCODE_TRUE;
@@ -68,7 +68,7 @@ int ospCheckHeader(
  * param ignore2
  * return  MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure MODULE_RETURNCODE_ERROR error
  */
-int ospValidateHeader (
+int ospValidateHeader(
     struct sip_msg* msg,
     char* ignore1,
     char* ignore2)
@@ -84,22 +84,24 @@ int ospValidateHeader (
     unsigned callidsize = 0;
     unsigned char token[OSP_TOKENBUF_SIZE];
     unsigned int tokensize = sizeof(token);
+    osp_inbound inbound;
     osp_dest dest;
     int result = MODULE_RETURNCODE_FALSE;
 
+    ospInitInboundInfo(&inbound);
     ospInitDestination(&dest);
 
     if ((errorcode = OSPPTransactionNew(_osp_provider, &transaction) != OSPC_ERR_NO_ERROR)) {
         LM_ERR("failed to create a new OSP transaction handle (%d)\n", errorcode);
-    } else if (ospGetFromUserpart(msg, dest.calling, sizeof(dest.calling)) != 0) {
+    } else if (ospGetFromUser(msg, dest.calling, sizeof(dest.calling)) != 0) {
         LM_ERR("failed to extract calling number\n");
-    } else if ((ospGetUriUserpart(msg, dest.called, sizeof(dest.called)) != 0) && (ospGetToUserpart(msg, dest.called, sizeof(dest.called)) != 0)) {
+    } else if ((ospGetUriUser(msg, dest.called, sizeof(dest.called)) != 0) && (ospGetToUser(msg, dest.called, sizeof(dest.called)) != 0)) {
         LM_ERR("failed to extract called number\n");
     } else if (ospGetCallId(msg, &callid) != 0) {
         LM_ERR("failed to extract call id\n");
-    } else if (ospGetViaAddress(msg, dest.source, sizeof(dest.source)) != 0) {
+    } else if (ospGetViaAddress(msg, inbound.source, sizeof(inbound.source)) != 0) {
         LM_ERR("failed to extract source device address\n");
-    } else if (ospGetOspHeader(msg, token, &tokensize) != 0) {
+    } else if (ospGetOspToken(msg, token, &tokensize) != 0) {
         LM_ERR("failed to extract OSP authorization token\n");
     } else {
         LM_INFO("validate token for: "
@@ -150,9 +152,9 @@ int ospValidateHeader (
             dest.callid[dest.callidsize] = 0;
             dest.transid = ospGetTransactionId(transaction);
             dest.type = OSPC_ROLE_DESTINATION;
-            dest.authtime = time(NULL);
-            strncpy(dest.host, _osp_in_device, sizeof(dest.host) - 1);
-            strncpy(dest.origcalled, dest.called, sizeof(dest.origcalled) - 1);
+            inbound.authtime = time(NULL);
+            strncpy(dest.host, _osp_in_device, sizeof(dest.host));
+            dest.host[sizeof(dest.host) - 1] = '\0';
 
             if (ospSaveTermDestination(&dest) == -1) {
                 LM_ERR("failed to save terminate destination\n");
@@ -164,7 +166,7 @@ int ospValidateHeader (
                     dest.callidsize,
                     dest.callid,
                     dest.transid);
-                ospRecordTermTransaction(msg, &dest);
+                ospRecordTermTransaction(msg, &inbound, &dest);
                 result = MODULE_RETURNCODE_TRUE;
             }
         } else {

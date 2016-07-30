@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * ----------
@@ -58,7 +56,7 @@ void which_cancel( struct cell *t, branch_bm_t *cancel_bm )
 	int i;
 
 	for( i=t->first_branch ; i<t->nr_of_outgoings ; i++ ) {
-		if (should_cancel_branch(t, i)) 
+		if (should_cancel_branch(t, i))
 			*cancel_bm |= 1<<i ;
 
 	}
@@ -71,7 +69,7 @@ void cancel_uacs( struct cell *t, branch_bm_t cancel_bm )
 	int i;
 
 	/* cancel pending client transactions, if any */
-	for( i=0 ; i<t->nr_of_outgoings ; i++ ) 
+	for( i=0 ; i<t->nr_of_outgoings ; i++ )
 		if (cancel_bm & (1<<i))
 			cancel_branch(t, i);
 }
@@ -103,7 +101,7 @@ void cancel_branch( struct cell *t, int branch )
 	crb->buffer.len=len;
 	crb->dst=irb->dst;
 	crb->branch=branch;
-	/* label it as cancel so that FR timer can better now how 
+	/* label it as cancel so that FR timer can better now how
 	 * to deal with it */
 	crb->activ_type=TYPE_LOCAL_CANCEL;
 
@@ -135,7 +133,11 @@ char *build_cancel(struct cell *Trans,unsigned int branch,
 		extra = &_extra_cancel_hdrs;
 	}
 	return build_local( Trans, branch, &method, extra,
-		Trans->uac[branch].reply , len );
+		NULL /*reply*/ , len );
+	/* ^^^^ when CANCELing, there are 0 chances to have a reply stored into
+	 * transaction ; set it NULL to avoid using the temporary stored reply 
+	 * (by t_should_relay_response) which may lead into races ( building the
+	 * cancel versus handling a final response in a different process )*/
 }
 
 

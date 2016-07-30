@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * Postgres module interface
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -18,9 +16,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -37,6 +35,7 @@
 
 int db_postgres_exec_query_threshold = 0;   /* Warning in case DB query
 											takes too long disabled by default*/
+int max_db_queries = 2;
 
 int db_postgres_bind_api(const str* mod, db_func_t *dbb);
 
@@ -56,14 +55,18 @@ static cmd_export_t cmds[]={
  */
 static param_export_t params[] = {
 	{"exec_query_threshold", INT_PARAM, &db_postgres_exec_query_threshold},
+	{"max_db_queries", INT_PARAM, &max_db_queries},
 	{0, 0, 0}
 };
 
-struct module_exports exports = {	
+struct module_exports exports = {
 	"db_postgres",
+	MOD_TYPE_SQLDB,  /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	cmds,            /*  module parameters */
+	NULL,            /* OpenSIPS module dependencies */
+	cmds,            /*  module functions */
+	0,               /*  module async functions */
 	params,          /*  module parameters */
 	0,               /* exported statistics */
 	0,               /* exported MI functions */
@@ -79,6 +82,12 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
+	
+	if(max_db_queries < 1){
+		LM_WARN("Invalid number for max_db_queries\n");
+		max_db_queries = 2;
+	}
+	
 	return 0;
 }
 
@@ -97,7 +106,7 @@ int db_postgres_bind_api(const str* mod, db_func_t *dbb)
 	dbb->raw_query        = db_postgres_raw_query;
 	dbb->free_result      = db_postgres_free_result;
 	dbb->insert           = db_postgres_insert;
-	dbb->delete           = db_postgres_delete; 
+	dbb->delete           = db_postgres_delete;
 	dbb->update           = db_postgres_update;
 
 	dbb->cap |= DB_CAP_MULTIPLE_INSERT;

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -87,9 +85,12 @@ static proc_export_t mi_procs[] = {
 
 struct module_exports exports = {
 	"mi_fifo",                     /* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,               /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	0,                             /* exported functions */
+	0,                             /* exported async functions */
 	mi_params,                     /* exported parameters */
 	0,                             /* exported statistics */
 	0,                             /* exported MI functions */
@@ -114,7 +115,7 @@ static int mi_mod_init(void)
 		return -1;
 	}
 
-	LM_DBG("testing fifo existance ...\n");
+	LM_DBG("testing fifo existence ...\n");
 	n=stat(mi_fifo, &filestat);
 	if (n==0){
 		/* FIFO exist, delete it (safer) */
@@ -171,7 +172,7 @@ static int mi_mod_init(void)
 
 static int mi_child_init(int rank)
 {
-	if (rank==PROC_TIMER || rank>0 ) {
+	if (rank>PROC_MAIN ) {
 		if ( mi_writer_init(read_buf_size, mi_reply_indent)!=0 ) {
 			LM_CRIT("failed to init the reply writer\n");
 			return -1;

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,10 +13,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
  * History:
  * ----------
  * 2003-02-28 scratchpad compatibility abandoned (jiri)
@@ -40,7 +38,7 @@
 #define MF_HDR "Max-Forwards: "
 #define MF_HDR_LEN (sizeof(MF_HDR) - 1)
 
-/* do a tricky thing and keep the parsed value of MAXFWD hdr incremented 
+/* do a tricky thing and keep the parsed value of MAXFWD hdr incremented
  * by one in order to make difference between 0 (not set)
  * and 0 (zero value) - bogdan */
 #define IS_MAXWD_STORED(_msg_) \
@@ -135,7 +133,7 @@ int add_maxfwd_header( struct sip_msg* msg , unsigned int val )
 	len +=CRLF_LEN;
 
 	/*inserts the header at the beginning of the message*/
-	anchor = anchor_lump(msg, msg->headers->name.s - msg->buf, 0 , 0);
+	anchor = anchor_lump(msg, msg->headers->name.s - msg->buf, 0);
 	if (anchor == 0) {
 		LM_ERR("add_maxfwd_header: failed to get anchor\n");
 		goto error1;

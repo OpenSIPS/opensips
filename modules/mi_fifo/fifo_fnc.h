@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of a module for opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -34,7 +32,7 @@
 #include <errno.h>
 
 
-/* how patient is opensips with FIFO clients not awaiting a reply? 
+/* how patient is opensips with FIFO clients not awaiting a reply?
    default = 4 x 80ms = 0.32 sec
 */
 #define FIFO_REPLY_RETRIES  4
@@ -47,7 +45,7 @@ FILE* mi_init_fifo_server(char *fifo_name, int mode, int uid, int gid,
 
 void  mi_fifo_server(FILE *fifostream);
 
-int   mi_read_line( char *b, int max, FILE *stream, int *read);
+int   mi_read_line( char *b, int max, FILE **stream, int *read);
 
 static inline int mi_fifo_reply( FILE *stream, char *reply_fmt, ... )
 {

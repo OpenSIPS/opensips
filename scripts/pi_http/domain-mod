@@ -4,8 +4,9 @@
 			<db_table_id>domain</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>id</field></col>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>domain</field></col>
+				<col><field>attrs</field></col>
 				<col><field>last_modified</field></col>
 			</query_cols>
 		</cmd>
@@ -14,6 +15,7 @@
 			<cmd_type>DB_INSERT</cmd_type>
 			<query_cols>
 				<col><field>domain</field></col>
+				<col><field>attrs</field></col>
 				<col><field>last_modified</field></col>
 			</query_cols>
 		</cmd>
@@ -25,6 +27,7 @@
 			</clause_cols>
 			<query_cols>
 				<col><field>domain</field></col>
+				<col><field>attrs</field></col>
 				<col><field>last_modified</field></col>
 			</query_cols>
 		</cmd>

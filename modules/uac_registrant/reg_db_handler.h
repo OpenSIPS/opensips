@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * reg_db_handler module
  *
  * Copyright (C) 2011 VoIP Embedded, Inc.
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -66,6 +64,8 @@ extern str expiry_column;
 extern str forced_socket_column;
 
 extern str reg_table_name;
+
+extern unsigned int timer_interval;
 
 int init_reg_db(const str *db_url);
 int connect_reg_db(const str *db_url);

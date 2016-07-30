@@ -11,9 +11,9 @@ CREATE TABLE presentity (
     extra_hdrs BLOB DEFAULT '' NOT NULL,
     sender CHAR(128) NOT NULL,
     CONSTRAINT presentity_idx UNIQUE (username, domain, event, etag)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
-INSERT INTO version (table_name, table_version) values ('active_watchers','10');
+INSERT INTO version (table_name, table_version) values ('active_watchers','11');
 CREATE TABLE active_watchers (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     presentity_uri CHAR(128) NOT NULL,
@@ -32,12 +32,12 @@ CREATE TABLE active_watchers (
     record_route TEXT,
     expires INT(11) NOT NULL,
     status INT(11) DEFAULT 2 NOT NULL,
-    reason CHAR(64) NOT NULL,
+    reason CHAR(64),
     version INT(11) DEFAULT 0 NOT NULL,
     socket_info CHAR(64) NOT NULL,
     local_contact CHAR(128) NOT NULL,
     CONSTRAINT active_watchers_idx UNIQUE (presentity_uri, callid, to_tag, from_tag)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('watchers','4');
 CREATE TABLE watchers (
@@ -50,21 +50,21 @@ CREATE TABLE watchers (
     reason CHAR(64),
     inserted_time INT(11) NOT NULL,
     CONSTRAINT watcher_idx UNIQUE (presentity_uri, watcher_username, watcher_domain, event)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('xcap','4');
 CREATE TABLE xcap (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     username CHAR(64) NOT NULL,
     domain CHAR(64) NOT NULL,
-    doc BLOB NOT NULL,
+    doc LONGBLOB NOT NULL,
     doc_type INT(11) NOT NULL,
     etag CHAR(64) NOT NULL,
     source INT(11) NOT NULL,
     doc_uri CHAR(128) NOT NULL,
     port INT(11) NOT NULL,
     CONSTRAINT account_doc_type_idx UNIQUE (username, domain, doc_type, doc_uri)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE INDEX source_idx ON xcap (source);
 
@@ -90,5 +90,9 @@ CREATE TABLE pua (
     remote_contact CHAR(128),
     version INT(11),
     extra_headers TEXT
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
+
+CREATE INDEX del1_idx ON pua (pres_uri, event);
+CREATE INDEX del2_idx ON pua (expires);
+CREATE INDEX update_idx ON pua (pres_uri, pres_id, flag, event);
 

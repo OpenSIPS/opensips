@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Digest Authentication - generic AAA support
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -19,9 +17,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -39,6 +37,6 @@
  * which can be be used as a check item in the request.  Service type of
  * the request is Authenticate-Only.
  */
-int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method, str* _user); 
+int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method, str* _user);
 
 #endif /* STERMAN_H */

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * back-to-back logic module
  *
  * Copyright (C) 2009 Free Software Fundation
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -47,13 +45,17 @@ typedef struct b2bl_entity_id
 	int disconnected;
 	int state;
 	unsigned short no;
-	unsigned short late_sdp;
+	unsigned short sdp_type;
 	enum b2b_entity_type type;
 	b2bl_dlg_stat_t stats;
 	struct b2bl_entity_id* peer;
 	struct b2bl_entity_id* prev;
 	struct b2bl_entity_id* next;
 }b2bl_entity_id_t;
+
+#define B2BL_SDP_NORMAL     0
+#define B2BL_SDP_LATE       1
+#define B2BL_SDP_RENEW      2
 
 #define NO_UPDATEDB_FLAG    0
 #define UPDATEDB_FLAG       1

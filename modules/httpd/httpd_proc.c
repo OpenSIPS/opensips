@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011-2012 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -61,8 +59,6 @@ static const str MI_HTTP_U_URL = str_init("<html><body>"
 "Unable to parse URL!</body></html>");
 static const str MI_HTTP_U_METHOD = str_init("<html><body>"
 "Unsupported HTTP request!</body></html>");
-static const str MI_HTTP_U_CNT_TYPE = str_init("<html><body>"
-"Unsupported Content-Type!</body></html>");
 
 /**
  * Data structure to store inside elents of slinkedl_list list.
@@ -80,6 +76,7 @@ struct post_request {
 	struct MHD_PostProcessor *pp;
 	int status;
 	enum HTTPD_CONTENT_TYPE content_type;
+	enum HTTPD_CONTENT_TYPE accept_type;
 	int content_len;
 	slinkedl_list_t *p_list;
 };
@@ -208,16 +205,16 @@ static int post_iterator (void *cls,
 
 	LM_DBG("post_iterator: cls=%p, kind=%d key=[%p]->'%s'"
 			" filename='%s' content_type='%s' transfer_encoding='%s'"
-			" value=[%p]->'%s' off=%ld size=%ld\n",
+			" value=[%p]->'%s' off=%llu size=%zu\n",
 			cls, kind, key, key,
 			filename, content_type, transfer_encoding,
-			value, value, off, size);
+			value, value, (long long unsigned int)off, size);
 
 
 	pr = (struct post_request*)cls;
 	if (pr==NULL) {
 		LM_CRIT("corrupted data: null cls\n");
-		pr->status = -1; return MHD_NO;
+		return MHD_NO;
 	}
 
 	if (off!=0) {
@@ -257,14 +254,14 @@ static int post_iterator (void *cls,
 	}
 
 	LM_DBG("[%.*s]->[%.*s]\n", key_len, key, (int)size, value);
-	
+
 	kv = (str_str_t*)slinkedl_append(pr->p_list,
 						sizeof(str_str_t) + key_len + size);
 	p = (char*)(kv + 1);
 	kv->key.len = key_len; kv->key.s = p;
 	memcpy(p, key, key_len);
 	p += key_len;
-	kv->val.len = size; kv->val.s = p; 
+	kv->val.len = size; kv->val.s = p;
 	memcpy(p, value, size);
 	LM_DBG("inserting element pr=[%p] pp=[%p] p_list=[%p]\n",
 				pr, pr->pp, pr->p_list);
@@ -290,6 +287,7 @@ int getConnectionHeader(void *cls, enum MHD_ValueKind kind,
 	struct post_request *pr = (struct post_request*)cls;
 	str content_length;
 	unsigned int len;
+	char *p, bk;
 
 	if (cls == NULL) {
 		LM_ERR("Unable to store return data\n");
@@ -300,12 +298,31 @@ int getConnectionHeader(void *cls, enum MHD_ValueKind kind,
 		return MHD_NO;
 	}
 
+	if (strcasecmp("Accept", key) == 0) {
+		LM_DBG("Accept=%s\n", value);
+		if (strcasecmp("text/xml", value) == 0)
+			pr->accept_type = HTTPD_TEXT_XML_CNT_TYPE;
+		else if (strcasecmp("application/json", value) == 0)
+			pr->accept_type = HTTPD_APPLICATION_JSON_CNT_TYPE;
+		else
+			pr->accept_type = HTTPD_UNKNOWN_CNT_TYPE;
+		return MHD_YES;
+	}
 	if (strcasecmp("Content-Type", key) == 0) {
 		LM_DBG("Content-Type=%s\n", value);
+		/* extract only the mime */
+		if ( (p=strchr(value, ';'))!=NULL ) {
+			while( p>value && (*(p-1)==' ' || *(p-1)=='\t') ) p--;
+			bk = *p;
+			*p = 0;
+		}
 		if (strcasecmp("text/xml", value) == 0)
 			pr->content_type = HTTPD_TEXT_XML_CNT_TYPE;
+		else if (strncasecmp("application/json", value, 16) == 0)
+			pr->content_type = HTTPD_APPLICATION_JSON_CNT_TYPE;
 		else
 			pr->content_type = HTTPD_UNKNOWN_CNT_TYPE;
+		if (p) *p = bk;
 		goto done;
 	}
 	if (strcasecmp("Content-Length", key) == 0) {
@@ -386,28 +403,34 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	str_str_t *kv;
 	char *p;
 	int cnt_type = HTTPD_STD_CNT_TYPE;
+	int accept_type = HTTPD_STD_CNT_TYPE;
+	int ret_code = MHD_HTTP_OK;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
-			"versio=%s, upload_data[%ld]=%p, *con_cls=%p\n",
+			"versio=%s, upload_data[%zu]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
 			*upload_data_size, upload_data, *con_cls);
 
+	pr = *con_cls;
+	if(pr == NULL){
+		pr = pkg_malloc(sizeof(struct post_request));
+		if(pr==NULL) {
+			LM_ERR("oom while allocating post_request structure\n");
+			return MHD_NO;
+		}
+		memset(pr, 0, sizeof(struct post_request));
+		*con_cls = pr;
+		pr = NULL;
+	}
+
 	if(strncmp(method, "POST", 4)==0) {
-		pr = *con_cls;
 		if(pr == NULL){
-			pr = pkg_malloc(sizeof(struct post_request));
-			if(pr==NULL) {
-				LM_ERR("oom while allocating post_request structure\n");
-				return MHD_NO;
-			}
-			memset(pr, 0, sizeof(struct post_request));
+			pr = *con_cls;
 			pr->p_list = slinkedl_init(&httpd_alloc, &httpd_free);
 			if (pr->p_list==NULL) {
 				LM_ERR("oom while allocating list\n");
 				return MHD_NO;
 			}
-			*con_cls = pr;
-
 			LM_DBG("running MHD_create_post_processor\n");
 			pr->pp = MHD_create_post_processor(connection,
 											post_buf_size,
@@ -438,6 +461,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				/* Here we save data. */
 				switch (pr->content_type) {
 				case HTTPD_TEXT_XML_CNT_TYPE:
+				case HTTPD_APPLICATION_JSON_CNT_TYPE:
 					/* Save the entire body as 'body' */
 					kv = (str_str_t*)slinkedl_append(pr->p_list,
 							sizeof(str_str_t) + 1 +
@@ -468,18 +492,21 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				if (*upload_data_size == 0) {
 					if (pr->content_type==HTTPD_TEXT_XML_CNT_TYPE)
 						cnt_type = HTTPD_TEXT_XML_CNT_TYPE;
+					if (pr->content_type==HTTPD_APPLICATION_JSON_CNT_TYPE)
+						cnt_type = HTTPD_APPLICATION_JSON_CNT_TYPE;
 					*con_cls = pr->p_list;
 					cb = get_httpd_cb(url);
 					if (cb) {
 						normalised_url = &url[cb->http_root->len+1];
 						LM_DBG("normalised_url=[%s]\n", normalised_url);
-						cb->callback(cls, (void*)connection,
+						ret_code = cb->callback(cls, (void*)connection,
 								normalised_url,
 								method, version,
 								upload_data, upload_data_size, con_cls,
 								&buffer, &page);
 					} else {
 						page = MI_HTTP_U_URL;
+						ret_code = MHD_HTTP_BAD_REQUEST;
 					}
 					/* slinkedl_traverse(pr->p_list,
 							&httpd_print_data, NULL, NULL); */
@@ -506,6 +533,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				/* Here we save data. */
 				switch (pr->content_type) {
 				case HTTPD_TEXT_XML_CNT_TYPE:
+				case HTTPD_APPLICATION_JSON_CNT_TYPE:
 					/* Save the entire body as 'body' */
 					kv = (str_str_t*)slinkedl_append(pr->p_list,
 							sizeof(str_str_t) + 1 +
@@ -528,7 +556,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				return MHD_YES;
 			}
 			LM_DBG("running MHD_post_process: "
-					"pp=%p status=%d upload_data_size=%ld\n",
+					"pp=%p status=%d upload_data_size=%zu\n",
 					pr->pp, pr->status, *upload_data_size);
 			if (pr->status<0) {
 				slinkedl_list_destroy(pr->p_list);
@@ -539,7 +567,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				return MHD_NO;
 			}
 			ret =MHD_post_process(pr->pp, upload_data, *upload_data_size);
-			LM_DBG("ret=%d upload_data_size=%ld\n", ret, *upload_data_size);
+			LM_DBG("ret=%d upload_data_size=%zu\n", ret, *upload_data_size);
 			if(*upload_data_size != 0) {
 				*upload_data_size = 0;
 				return MHD_YES;
@@ -557,33 +585,46 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 			if (cb) {
 				normalised_url = &url[cb->http_root->len+1];
 				LM_DBG("normalised_url=[%s]\n", normalised_url);
-				cb->callback(cls, (void*)connection,
+				ret_code = cb->callback(cls, (void*)connection,
 						normalised_url,
 						method, version,
 						upload_data, upload_data_size, con_cls,
 						&buffer, &page);
 			} else {
 				page = MI_HTTP_U_URL;
+				ret_code = MHD_HTTP_BAD_REQUEST;
 			}
 			/* slinkedl_traverse(pr->p_list, &httpd_print_data, NULL, NULL); */
 			slinkedl_list_destroy(*con_cls);
 			pkg_free(pr); *con_cls = pr = NULL;
 		}
 	}else if(strncmp(method, "GET", 3)==0) {
+		pr = *con_cls;
+		MHD_get_connection_values(connection, MHD_HEADER_KIND,
+								&getConnectionHeader, pr);
+		accept_type = pr->accept_type;
+		pkg_free(pr); *con_cls = pr = NULL;
+		LM_DBG("accept_type=[%d]\n", accept_type);
 		cb = get_httpd_cb(url);
 		if (cb) {
 			normalised_url = &url[cb->http_root->len+1];
 			LM_DBG("normalised_url=[%s]\n", normalised_url);
-			cb->callback(cls, (void*)connection,
+			ret_code = cb->callback(cls, (void*)connection,
 					normalised_url,
 					method, version,
 					upload_data, upload_data_size, con_cls,
 					&buffer, &page);
 		} else {
 			page = MI_HTTP_U_URL;
+			ret_code = MHD_HTTP_BAD_REQUEST;
 		}
 	}else{
 		page = MI_HTTP_U_METHOD;
+#ifdef MHD_HTTP_NOT_ACCEPTABLE
+		ret_code = MHD_HTTP_NOT_ACCEPTABLE;
+#else
+		ret_code = MHD_HTTP_METHOD_NOT_ACCEPTABLE;
+#endif
 	}
 
 send_response:
@@ -597,15 +638,19 @@ send_response:
 		LM_DBG("MHD_create_response_from_callback\n");
 		response = MHD_create_response_from_callback (MHD_SIZE_UNKNOWN,
 							buffer.len,
-							cb->flush_data_callback,
+							(MHD_ContentReaderCallback)cb->flush_data_callback,
 							(void*)async_data,
 							NULL);
 	}
-	if (cnt_type==HTTPD_TEXT_XML_CNT_TYPE)
+	if (cnt_type==HTTPD_TEXT_XML_CNT_TYPE || accept_type==HTTPD_TEXT_XML_CNT_TYPE)
 		MHD_add_response_header(response,
 								MHD_HTTP_HEADER_CONTENT_TYPE,
 								"text/xml; charset=utf-8");
-	ret = MHD_queue_response (connection, MHD_HTTP_OK, response);
+	if (cnt_type==HTTPD_APPLICATION_JSON_CNT_TYPE || accept_type==HTTPD_APPLICATION_JSON_CNT_TYPE)
+		MHD_add_response_header(response,
+								MHD_HTTP_HEADER_CONTENT_TYPE,
+								"application/json");
+	ret = MHD_queue_response (connection, ret_code, response);
 	MHD_destroy_response (response);
 
 	return ret;
@@ -680,41 +725,18 @@ void httpd_proc(int rank)
 		tv.tv_usec = 0;
 		//LM_DBG("select(%d,%p,%p,%p,%p)\n",max+1, &rs, &ws, &es, &tv);
 		status = select(max+1, &rs, &ws, &es, &tv);
-		switch(status){
-		case EBADF:
-			LM_ERR("error returned by select: EBADF [%d] "
-				"(Bad file descriptor)\n", status);
-			return;
-			break;
-		case EINTR:
-			LM_WARN("error returned by select: EINTR [%d] "
-				"(Non blocked signal caught)\n", status);
-			break;
-		case EINVAL:
-			LM_ERR("error returned by select: EINVAL [%d] "
-				"(Invalid # of fd [%d] or timeout)\n",
-				status, max+1);
-			return;
-			break;
-		case ENOMEM:
-			LM_ERR("error returned by select: ENOMEM [%d] "
-				"(No more memory)\n", status);
-			return;
-			break;
-		default:
-			if(status<0){
-				switch(errno){
+		if (status < 0) {
+			switch(errno){
 				case EINTR:
-					LM_WARN("error returned by select:"
-						" [%d] [%d][%s]\n",
-						status, errno, strerror(errno));
+					LM_DBG("error returned by select:"
+							" [%d] [%d][%s]\n",
+							status, errno, strerror(errno));
 					break;
 				default:
 					LM_WARN("error returned by select:"
-						" [%d] [%d][%s]\n",
-						status, errno, strerror(errno));
+							" [%d] [%d][%s]\n",
+							status, errno, strerror(errno));
 					return;
-				}
 			}
 		}
 		//LM_DBG("select returned %d\n", status);

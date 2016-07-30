@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Handling of the q value
  *
  * Copyright (C) 2004 FhG FOKUS
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -33,7 +31,7 @@
 #include <string.h>
 
 /*! \page QvalueHandling Q Value Handling
- * 
+ *
  * The q value expresses the priority of a URI within a set of URIs
  * (Contact header field in the same SIP message or dset array in
  * ser. The higher is the q value of a URI the higher is the priority
@@ -76,6 +74,10 @@ typedef int qvalue_t;
 #define Q_PREFIX "0."
 #define Q_PREFIX_LEN (sizeof(Q_PREFIX) - 1)
 
+#define qverr2str(rc) \
+	(rc == E_Q_INV_CHAR ? "bad characters" : \
+	 rc == E_Q_EMPTY ? "empty value" : \
+	 rc == E_Q_TOO_BIG ? "max value is 1.0" : "bad qvalue")
 
 
 /*! \brief
@@ -145,7 +147,7 @@ static inline char* q2str(qvalue_t q, unsigned int* len)
 	} else {
 		memcpy(p, Q_PREFIX, Q_PREFIX_LEN);
 		p += Q_PREFIX_LEN;
-		
+
 		*p++ = q / 100 + '0';
 		q %= 100;
 		if (!q) goto end;

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2009 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -29,7 +27,7 @@
 #include <stddef.h>
 
 #ifndef AVL_H
-#define AVL_H 
+#define AVL_H
 
 
 
@@ -53,7 +51,7 @@ typedef struct avl_table {
 	struct avl_node *avl_root;	/* Tree's root. */
 	size_t avl_count;		/* Number of items in tree. */
 	int ret_code;
-	
+
 } *map_t;
 
 /* Iterator data structure. */
@@ -86,7 +84,7 @@ typedef  void (* value_destroy_func)(void *);
  *
  * Should return 0. A non-zero return code will cause the processing to stop
  * and the it will be returned by map_for_each();
- * 
+ *
  */
 
 typedef  int (* process_each_func )(void * param, str key, void * value);
@@ -100,7 +98,7 @@ typedef  int (* process_each_func )(void * param, str key, void * value);
  *
  * AVLMAP_SHARED -> flag for shared memory
  * AVLMAP_NO_DUPLICATE -> flag for key duplication
- * 
+ *
  */
 
 map_t map_create ( int flags );
@@ -249,7 +247,7 @@ int iterator_is_valid( map_iterator_t * it );
  * as they point to inexisting nodes.
  *
  * Returns the value stored in the node so the user can free it.
- * Returns NULL if no deletion occured.
+ * Returns NULL if no deletion occurred.
  *
  *
  */

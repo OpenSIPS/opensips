@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Route & Record-Route Parser
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -97,7 +95,7 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 		unsigned int * nb_recs);
 
 /*
- * Function returns the first uri 
+ * Function returns the first uri
  * from Path without any duplication.
  */
 int get_path_dst_uri(str *_p, str *_dst);

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="emergency_report" xmlns:db="http://docbook.org/ns/docbook">
+	<name>emergency_report</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Emergency module to save information associated 
+		  with a emergency call, for trouble shooting purposes.
+		  More information can be found at: &OPENSIPS_MOD_DOC;emergency.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Unique ID</description>
+	</column>
+
+	<column id="callid">
+		<name>callid</name>
+		<type>string</type>
+		<size>25</size>
+		<description> header that uniquely identifies the call.
+		</description>
+	</column>
+
+	<column id="selectiveRoutingID">
+		<name>selectiveRoutingID</name>
+		<type>string</type>
+		<size>11</size>
+		<description>The Common Language Location Indicator(CLLI) code associated
+		  with the Selective Router to which the emergency call is to be directed
+		</description>
+	</column>
+
+	<column id="routingESN">
+		<name>routingESN</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<default>0</default>
+		<description> The Emergency Services Number associated with a particular ESZ 
+		  that respresents a unique combination of Police, Fire and EMS emergency responders.
+		</description>
+	</column>
+
+	<column id="npa">
+		<name>npa</name>
+		<type>unsigned int</type>
+		<size>3</size>
+		<default>0</default>
+		<description> The primary Numbering Plan Area (NPA) associated with 
+		the outgoing route to the Selective Router that is appropriate for 
+		caller's location.
+		</description>
+	</column>
+
+	<column id="esgwri">
+		<name>esgwri</name>
+		<type>string</type>
+		<size>50</size>
+		<description> Routing information used to direct the call to the ESGW.
+		</description>
+	</column>
+
+	<column id="lro">
+		<name>lro</name>
+		<type>string</type>
+		<size>20</size>
+		<description>last routing option destination for the call.
+		</description>
+	</column>
+
+	<column id="VPC_organizationName">
+		<name>VPC_organizationName</name>
+		<type>string</type>
+		<size>50</size>
+		<description> company name or other label of the VPC that provided the routing information.
+		</description>
+	</column>
+
+	<column id="VPC_hostname">
+		<name>VPC_hostname</name>
+		<type>string</type>
+		<size>50</size>
+		<description> identifies the fully qualified domain name or IP address
+		  of the VPC that provided routing information.
+		</description>
+	</column>
+
+	<column id="VPC_timestamp">
+		<name>VPC_timestamp</name>
+		<type>string</type>
+		<size>30</size>
+		<description>Date Time Stamp indicating UTC date and time that the message was sent from VPC.
+		</description>
+	</column>
+
+	<column id="result">
+		<name>result</name>
+		<type>string</type>
+		<size>4</size>
+		<description> Code indicating the reason for success or failure to determine an ERT/ESGWRI and ESQK.
+		</description>
+	</column>
+
+	<column id="disposition">
+		<name>disposition</name>
+		<type>string</type>
+		<size>10</size>
+		<description> Describe how routing of call was done(e.g.,by ESGWRI or bye LRO)
+		</description>
+	</column>
+</table>

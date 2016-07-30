@@ -1,6 +1,4 @@
 /*
- *  $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -25,6 +23,7 @@
  * 2003-07-04  fixed SRV lookup prefix for TLS/sips (andrei)
  * 2007-02-16  Added an OPENSER_OID define to localize OpenSER's IANA assigned
  *             OID under the enterprise branch (jmagder)
+ * 2013-09-17  TLS_DH_PARAMS_FILE added (mehmet)
  */
 
 /*!
@@ -40,11 +39,14 @@
 #define SIPS_PORT 5061		/*! default sip port for tls if none specified */
 
 #define CFG_FILE CFG_DIR "opensips.cfg"
+#define MEM_WARMING_DEFAULT_PATTERN_FILE CFG_DIR "mem_warming_pattern"
+#define MEM_WARMING_DEFAULT_PERCENTAGE 75
 
-#define TLS_PKEY_FILE CFG_DIR "tls/cert.pem" 
+#define TLS_PKEY_FILE CFG_DIR "tls/ckey.pem"
 #define TLS_CERT_FILE CFG_DIR "tls/cert.pem"
 #define TLS_CA_FILE 0 		/*!< no CA list file by default */
-
+#define TLS_CA_DIRECTORY      "/etc/pki/CA/"
+#define TLS_DH_PARAMS_FILE 0   /*!< no DH params file by default */
 
 #define MAX_LISTEN 16		/*!< maximum number of addresses on which we will listen */
 
@@ -113,15 +115,28 @@
 #define SRV_TLS_PREFIX "_sips._tcp."
 #define SRV_TLS_PREFIX_LEN (sizeof(SRV_TLS_PREFIX) - 1)
 
+#define SRV_WS_PREFIX "_ws._tcp."
+#define SRV_WS_PREFIX_LEN (sizeof(SRV_WS_PREFIX) - 1)
+
+#define SRV_WSS_PREFIX "_wss._tcp."
+#define SRV_WSS_PREFIX_LEN (sizeof(SRV_WSS_PREFIX) - 1)
+
 #define SRV_MAX_PREFIX_LEN SRV_TLS_PREFIX_LEN
 
+#ifdef HP_MALLOC
+#define PKG_MEM_SIZE 16				/*!< Used only if PKG_MALLOC is defined*/
+#else
 #define PKG_MEM_SIZE 2				/*!< Used only if PKG_MALLOC is defined*/
+#endif
 #define SHM_MEM_SIZE 32				/*!< Used if SH_MEM is defined*/
+#define SHM_MAX_SECONDARY_HASH_SIZE 32
+#define DEFAULT_SHM_HASH_SPLIT_PERCENTAGE 1	/*!< Used if SH_MEM is defined*/
+#define DEFAULT_SHM_SECONDARY_HASH_SIZE 8
 
 #define TIMER_TICK   1  			/*!< one second */
-#define UTIMER_TICK  100*1000			/*!< 100 miliseconds*/
+#define UTIMER_TICK  100*1000			/*!< 100 milliseconds*/
 
-/*!< dimensioning buckets in q_malloc 
+/*!< dimensioning buckets in q_malloc
 	 size of the size2bucket table; everything beyond that asks for
    	a variable-size kilo-bucket
  */
@@ -141,7 +156,7 @@
 #define MAX_RECEIVED_SIZE	57
 #define MAX_RPORT_SIZE		13
 
-#define MAX_BRANCHES    32			/*!< maximum number of branches per transaction */
+#define MAX_BRANCHES    12			/*!< maximum number of branches per transaction */
 
 #define MCOOKIE "z9hG4bK"			/*!< magic cookie for transaction matching as defined in RFC3261 */
 #define MCOOKIE_LEN (sizeof(MCOOKIE)-1)

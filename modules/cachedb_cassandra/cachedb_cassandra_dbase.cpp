@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -60,17 +60,17 @@ void* cassandra_init_connection(struct cachedb_id *id)
 	str counter_family;
 	int db_len;
 	char *p;
-	
+
 	if (id == NULL) {
 		LM_ERR("null cachedb_id\n");
 		return 0;
 	}
-	
+
 	if (id->flags & CACHEDB_ID_MULTIPLE_HOSTS) {
 		LM_ERR("multiple hosts are not supported for cassandra\n");
 		return 0;
 	}
-	
+
 	if (id->database == NULL) {
 		LM_ERR("no database supplied for cassandra\n");
 		return 0;
@@ -104,7 +104,7 @@ void* cassandra_init_connection(struct cachedb_id *id)
 	LM_INFO("Keyspace = [%.*s]. ColumnFamily = [%.*s]. CounterFamily = [%.*s]\n",
 		keyspace.len,keyspace.s,column_family.len,column_family.s,
 		counter_family.len,counter_family.s);
-	
+
 	con = (cassandra_con *)pkg_malloc(sizeof(cassandra_con));
 	if (con == NULL) {
 		LM_ERR("no more pkg \n");
@@ -228,7 +228,7 @@ int cassandra_set(cachedb_con *connection,str *attr,str *val,int expires)
 
 	con = (cassandra_con *)connection->data;
 	c_con = (CassandraConnection *)con->cass_con;
-	
+
 	ret = c_con->cassandra_simple_insert(col_name,col_val,expires);
 	if (ret<0) {
 		LM_ERR("Failed to insert Cassandra key\n");
@@ -253,7 +253,7 @@ int cassandra_remove(cachedb_con *connection,str *attr)
 
 	con = (cassandra_con *)connection->data;
 	c_con = (CassandraConnection *)con->cass_con;
-	
+
 	ret = c_con->cassandra_simple_remove(col_name);
 	if (ret<0) {
 		LM_ERR("Failed to remove Cassandra key\n");

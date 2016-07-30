@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 1&1 Internet AG
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -82,7 +80,7 @@ int MD5File(char *dest, const char *file_name)
 	unsigned char buffer[32768];
 	unsigned char hash[16];
 	unsigned int counter, size;
-	
+
 	struct stat stats;
     if (stat(file_name, &stats) != 0) {
 		LM_ERR("could not stat file %s\n", file_name);

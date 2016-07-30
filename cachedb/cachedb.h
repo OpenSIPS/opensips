@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -42,6 +42,7 @@ struct cachedb_url
 typedef enum {
 	CDB_INT,
 	CDB_STR,
+	CDB_NULL,
 } cdb_raw_type_t;
 
 typedef struct {
@@ -117,5 +118,5 @@ int cachedb_bind_mod(str *url,cachedb_funcs *funcs);
 int cachedb_put_connection(str *cachedb_name,cachedb_con *con);
 
 void cachedb_end_connections(str *cachedb_name);
-void free_raw_fetch(cdb_raw_entry **reply,int no_key,int no_val);
+void free_raw_fetch(cdb_raw_entry **reply, int no_val, int no_key);
 #endif

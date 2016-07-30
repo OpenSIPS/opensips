@@ -47,7 +47,7 @@
 			<para>
 				<emphasis>CouchBase is an open-source project so
 				it can be used to exchange data
-				 with various other applicationsr</emphasis>
+				 with various other applications</emphasis>
 			</para>
 			</listitem>
 
@@ -151,6 +151,47 @@ modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random_url1:88
 		<programlisting format="linespecific">
 ...
 modparam("cachedb_couchbase", "timeout",5000000);
+...
+	</programlisting>
+		</example>
+	</section>
+		<section>
+		<title><varname>exec_threshold</varname> (int)</title>
+		<para>
+			The maximum number of microseconds that a couchbase query can last.
+			Anything above the threshold will trigger a warning message to the log
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0 ( unlimited - no warnings )</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>exec_threshold</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_couchbase", "exec_threshold", 100000)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>lazy_connect</varname> (int)</title>
+		<para>
+			Delay connecting to a bucket until the first time it is used.
+			Connecting to many buckets at startup can be time consuming. This option allows for
+			faster startup by delaying connections until they are needed.
+			This option can be dangerous for untested bucket configurations/settings. Always test
+			first without lazy_connect.
+			This option will show errors in the log during the first access made to a bucket.
+			Default is 0 ( Connect to all buckets on startup )
+		</para>
+		
+		<example>
+		<title>Set <varname>lazy_connect</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_couchbase", "lazy_connect", 1);
 ...
 	</programlisting>
 		</example>

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (c) 2004 Juha Heinanen
  *
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -46,8 +44,8 @@ static inline int method_char(char _c)
  		|| (_c == '-') || (_c == '.') || (_c == '%') || (_c == '*')
 		|| (_c == '_') || (_c == '+') || (_c == '~') || (_c == '+');
  }
- 
- 
+
+
 /*
  * Parse a method pointed by start, end is the last character to check (if NULL
  * assume that start is a zero terminated string)
@@ -59,7 +57,7 @@ char* parse_method(char* start, char* end, unsigned int* method)
 {
 	int len=0;
 	int max=0;
-		
+
 	 if (!start || !method) {
 		 LM_ERR("invalid parameter value\n");
 		 return NULL;
@@ -88,7 +86,7 @@ char* parse_method(char* start, char* end, unsigned int* method)
 		case 'b':
 			if(end && max<3)
 				goto unknown;
-			 
+
 			if ((start[1]=='y' || start[1]=='Y')
 					&& (start[2]=='e' || start[2]=='E'))
 			{
@@ -120,7 +118,7 @@ char* parse_method(char* start, char* end, unsigned int* method)
 				goto unknown;
 			if(start[1]=='n' && start[1]=='N')
 				goto unknown;
-			
+
 			if ((start[2]=='f' || start[2]=='F')
 					&& (start[3]=='o' || start[3]=='O'))
 			{
@@ -128,7 +126,7 @@ char* parse_method(char* start, char* end, unsigned int* method)
 				len = 4;
 				goto done;
 			}
-	
+
 			if(end && max<6)
 				goto unknown;
 			if ((start[2]=='v' || start[2]=='V')
@@ -204,10 +202,10 @@ char* parse_method(char* start, char* end, unsigned int* method)
 				len = 5;
 				goto done;
 			}
-			
+
 			if(end && max<7)
 				goto unknown;
-			
+
 			if ((start[1]=='u' || start[1]=='U')
 					 && (start[2]=='b' || start[2]=='B')
 					 && (start[3]=='l' || start[3]=='L')
@@ -227,10 +225,10 @@ char* parse_method(char* start, char* end, unsigned int* method)
 				goto unknown;
 			if(start[1]!='e' && start[1]!='E')
 				goto unknown;
-			
+
  			if((start[2]=='f' || start[2]=='F')
 					 && (start[3]=='e' || start[3]=='E')
-					 && (start[4]=='R' || start[4]=='R'))
+					 && (start[4]=='r' || start[4]=='R'))
 			{
  				*method = METHOD_REFER;
  				len = 5;
@@ -239,7 +237,7 @@ char* parse_method(char* start, char* end, unsigned int* method)
 
 			if(end && max<8)
 				goto unknown;
-			
+
 			if ((start[2]=='g' || start[2]=='G')
 					 && (start[3]=='i' || start[3]=='I')
 					 && (start[4]=='s' || start[4]=='S')
@@ -290,7 +288,7 @@ char* parse_method(char* start, char* end, unsigned int* method)
 		default:
 			goto unknown;
 		}
- 
+
 done:
 	if(!end || (end && len < max))
 	{
@@ -298,7 +296,7 @@ done:
 				&& start[len]!='\t' && start[len]!='\r' && start[len]!='\n')
 			goto unknown;
 	}
-	
+
 	return (start+len);
 
 unknown:
@@ -312,18 +310,18 @@ unknown:
 						|| start[len]=='\t' || start[len]=='\r'
 						|| start[len]=='\n'))
 				return (start+len);
-			
+
 			if(!method_char(start[len]))
 			{
 				LM_ERR("invalid character %c\n", start[len]);
 				return NULL;
 			}
-			
+
 			len++;
 		}
 		return end;
 	}
-	
+
 	while(start[len]!='\0' && start[len]!=',' && start[len]!=' '
 			&& start[len]!='\t' && start[len]!='\r' && start[len]!='\n')
 	{
@@ -337,9 +335,9 @@ unknown:
 
 	return (start+len);
 }
- 
- 
-/* 
+
+
+/*
  * Parse comma separated list of methods pointed by _body and assign their
  * enum bits to _methods.  Returns 0 on success and -1 on failure.
  */
@@ -367,7 +365,7 @@ int parse_methods(str* _body, unsigned int* _methods)
 
 	method = 0;
 	p = next.s;
-	
+
 	while (p<next.s+next.len) {
 		if((p0=parse_method(p, next.s+next.len, &method))!=NULL) {
 			*_methods |= method;
@@ -376,14 +374,14 @@ int parse_methods(str* _body, unsigned int* _methods)
 			LM_ERR("invalid method [%.*s]\n", next.len, next.s);
 			return -1;
 		}
-		
+
 		while(p<next.s+next.len && (*p==' ' || *p=='\t'
 					|| *p=='\r' || *p=='\n'))
 			p++;
 		if(p>=next.s+next.len || *p == '\0')
 			goto done;
-		
-		
+
+
 		if (*p == ',')
 		{
 			p++;

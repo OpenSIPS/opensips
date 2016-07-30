@@ -22,7 +22,7 @@
 CFG=1.cfg
 
 # setup config
-echo -e "debug=3" > $CFG
+echo -e "log_level=3" > $CFG
 
 ../opensips -w . -f $CFG > /dev/null
 ret=$?

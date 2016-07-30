@@ -1,6 +1,4 @@
 /*
-* $Id$
-*
 * OpenSIPS LDAP Module
 *
 * Copyright (C) 2007 University of North Carolina
@@ -22,7 +20,7 @@
 *
 * You should have received a copy of the GNU General Public License
 * along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 *
 * History:
 * --------
@@ -43,9 +41,10 @@ int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d)
 {
 	struct ld_session* current = ld_sessions;
 	struct ld_session* new_lds = NULL;
-	char *host_name, *bind_dn, *bind_pwd;
+	char *host_name, *bind_dn, *bind_pwd, *bind_cacert, *bind_cert, *bind_key,
+			*bind_req_cert;
 	int client_search_timeout_ms, client_bind_timeout_ms, network_timeout_ms;
-	
+
 	new_lds = (struct ld_session*)pkg_malloc(sizeof(struct ld_session));
 	if (new_lds == NULL)
 	{
@@ -58,7 +57,7 @@ int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d)
 	strncpy(new_lds->name, _name, 255);
 	/* handle */
 	new_lds->handle = _ldh;
-	
+
 	/* host_name */
 	host_name = iniparser_getstring(
 		_d,
@@ -76,7 +75,7 @@ int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d)
 		_d,
 		get_ini_key_name(_name, CFG_N_LDAP_VERSION),
 		CFG_DEF_LDAP_VERSION);
-	
+
 	/* client_search_timeout */
 	client_search_timeout_ms = iniparser_getint(
 		_d,
@@ -103,9 +102,9 @@ int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d)
 		get_ini_key_name(_name, CFG_N_LDAP_CLIENT_BIND_TIMEOUT),
 		CFG_DEF_LDAP_CLIENT_BIND_TIMEOUT);
 	new_lds->client_bind_timeout.tv_sec = client_bind_timeout_ms / 1000;
-	new_lds->client_bind_timeout.tv_usec = 
+	new_lds->client_bind_timeout.tv_usec =
 									(client_bind_timeout_ms % 1000) * 1000;
-	
+
 	/* network_timeout */
 	network_timeout_ms = iniparser_getint(
 		_d,
@@ -139,13 +138,67 @@ int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d)
 	memset(new_lds->bind_pwd, 0, strlen(bind_pwd)+1);
 	strcpy(new_lds->bind_pwd, bind_pwd);
 
+	/* bind_cacert*/
+	bind_cacert = iniparser_getstring(
+		_d,
+		get_ini_key_name(_name, CFG_N_LDAP_CACERTFILE),
+		CFG_DEF_LDAP_CACERTFILE);
+	new_lds->cacertfile = (char*)pkg_malloc(strlen(bind_cacert)+1);
+	if (new_lds->cacertfile == NULL) {
+		LM_ERR("no memory\n");
+		return -1;
+	}
+	memset(new_lds->cacertfile, 0, strlen(bind_cacert)+1);
+	strcpy(new_lds->cacertfile, bind_cacert);
+
+	/* bind_certfile */
+	bind_cert = iniparser_getstring(
+		_d,
+		get_ini_key_name(_name, CFG_N_LDAP_CERTFILE),
+		CFG_DEF_LDAP_CERTFILE);
+	new_lds->certfile = (char*)pkg_malloc(strlen(bind_cert)+1);
+	if (new_lds->certfile == NULL) {
+		LM_ERR("no memory\n");
+		return -1;
+	}
+	memset(new_lds->certfile, 0, strlen(bind_cert)+1);
+	strcpy(new_lds->certfile, bind_cert);
+
+	/* bind_key */
+	bind_key = iniparser_getstring(
+		_d,
+		get_ini_key_name(_name, CFG_N_LDAP_KEYFILE),
+		CFG_DEF_LDAP_KEYFILE);
+	new_lds->keyfile = (char*)pkg_malloc(strlen(bind_key)+1);
+	if (new_lds->keyfile == NULL) {
+		LM_ERR("no memory\n");
+		return -1;
+	}
+	memset(new_lds->keyfile, 0, strlen(bind_key)+1);
+	strcpy(new_lds->keyfile, bind_key);
+
+	/* bind_req_cert */
+	bind_req_cert = iniparser_getstring(
+		_d,
+		get_ini_key_name(_name, CFG_N_LDAP_REQCERT),
+		CFG_DEF_LDAP_REQCERT);
+	new_lds->req_cert = (char*)pkg_malloc(strlen(bind_req_cert)+1);
+	if (new_lds->req_cert == NULL) {
+		LM_ERR("no memory\n");
+		return -1;
+	}
+	memset(new_lds->req_cert, 0, strlen(bind_req_cert)+1);
+	strcpy(new_lds->req_cert, bind_req_cert);
+
+
 	/* calculate_ha1 */
 	new_lds->calculate_ha1 = iniparser_getboolean(
-		_d, 
-		get_ini_key_name(_name, CFG_N_CALCULATE_HA1), 
+		_d,
+		get_ini_key_name(_name, CFG_N_CALCULATE_HA1),
 		CFG_DEF_CALCULATE_HA1);
-	
-	
+
+
+
 	if (current == NULL)
 	{
 		ld_sessions = new_lds;
@@ -162,7 +215,7 @@ int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d)
 struct ld_session* get_ld_session(char* _name)
 {
 	struct ld_session* current = ld_sessions;
-	
+
 	if (_name == NULL)
 	{
 		LM_ERR("lds_name == NULL\n");
@@ -206,11 +259,11 @@ int free_ld_sessions(void)
 		{
 			pkg_free(current->bind_pwd);
 		}
-		
+
 		pkg_free(current);
 		current = tmp;
 	}
-	
+
 	ld_sessions = NULL;
 
 	return 0;

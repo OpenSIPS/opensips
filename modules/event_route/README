@@ -8,6 +8,10 @@ Edited by
 
 Razvan Crainea
 
+Edited by
+
+Ovidiu Sas
+
    Copyright © 2012 www.opensips-solutions.com
      __________________________________________________________
 
@@ -25,9 +29,6 @@ Razvan Crainea
               1.5.2. External Libraries or Applications
 
         1.6. Exported Parameters
-
-              1.6.1.
-
         1.7. Exported Functions
 
               1.7.1. fetch_event_params(pvar_list)
@@ -49,7 +50,10 @@ Chapter 1. Admin Guide
    special route (event_route) has to be declared in the script,
    and should contain the code that handles the event. The route
    is executed by the module when the corresponding event is
-   raised by the OpenSIPS Event Interface.
+   raised by the OpenSIPS Event Interface.Since version 1.12, the
+   way an event is handlend (sync/async) should be specified from
+   the configuration script with the desired keyword following the
+   name of the event (event_route[e, sync]).
 
 1.2. ROUTE events parameters
 
@@ -62,9 +66,9 @@ Chapter 1. Admin Guide
    [ param_name= ] pvar [; [ param_name= ] pvar ]*
 
    Example:
-fetch_even_params("$avp(first_param)");
-fetch_even_params("ip=$avp(pike_ip)");
-fetch_even_params("source=$avp(src);destination=$avp(dst)");
+fetch_event_params("$avp(first_param)");
+fetch_event_params("ip=$avp(pike_ip)");
+fetch_event_params("source=$avp(src);destination=$avp(dst)");
 
    If the name of the parameter is not specified, the avp will be
    populated according to the order of the parameters, as exported
@@ -119,8 +123,8 @@ fetch_even_params("source=$avp(src);destination=$avp(dst)");
 
 1.6. Exported Parameters
 
-   No parameter exported by this module. This module doesn't
-   export any parameter
+   The module does not export parameters to be used in
+   configuration script.
 
 1.7. Exported Functions
 
@@ -136,11 +140,11 @@ fetch_even_params("source=$avp(src);destination=$avp(dst)");
 
    Example 1.2. fetch_event_params usage
 ...
-fetch_even_params("$avp(first_param)"); # fetch the first parameter of a
-n event
-fetch_even_params("ip=$avp(pike_ip)");  # fetch the ip parameter
-fetch_even_params("source=$avp(src);destination=$avp(dst)"); # fetch the
- source and destination parameters
+fetch_event_params("$avp(first_param)"); # fetch the first parameter of
+an event
+fetch_event_params("ip=$avp(pike_ip)");  # fetch the ip parameter
+fetch_event_params("source=$avp(src);destination=$avp(dst)"); # fetch th
+e source and destination parameters
 ...
 
 Chapter 2. Frequently Asked Questions

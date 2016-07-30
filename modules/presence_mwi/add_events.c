@@ -15,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -53,7 +53,7 @@ inline char *eat_printable(char *at, char *over)
  * event specific publish handling - check if body format is ok
  */
 int mwi_publ_handl(struct sip_msg* msg, int *sent_reply)
-{	
+{
     return 1;
 	str body;
     char *at, *over;
@@ -80,7 +80,7 @@ int mwi_publ_handl(struct sip_msg* msg, int *sent_reply)
     at = at + 16;
     at = eat_sp_tab(at, over);
 
-    if ((at >= over) || (*at != ':')){ 
+    if ((at >= over) || (*at != ':')){
 	goto err;
     }
 
@@ -97,21 +97,21 @@ int mwi_publ_handl(struct sip_msg* msg, int *sent_reply)
 	goto err;
     }
 
-    if (strncasecmp(at, "yes", 3) == 0) 
+    if (strncasecmp(at, "yes", 3) == 0)
 	at = at + 3;
     else
     {
-	if (strncasecmp(at, "no", 2) == 0) 
+	if (strncasecmp(at, "no", 2) == 0)
 		at = at + 2;
 	else
 	    goto err;
     }
 
-    if ((at + 1 >= over) || (*at != '\r') || (*(at + 1) != '\n')) 
+    if ((at + 1 >= over) || (*at != '\r') || (*(at + 1) != '\n'))
 	goto err;
 
     at = at + 2;
-    
+
     /* check that remaining body consists of lines that only contain
        printable ascii chars */
     while (at < over) {
@@ -122,7 +122,7 @@ int mwi_publ_handl(struct sip_msg* msg, int *sent_reply)
 
 	at = at + 2;
     }
-    
+
     return 1;
 
 err:
@@ -135,7 +135,7 @@ err:
 int mwi_add_events(void)
 {
     pres_ev_t event;
-	
+
     /* constructing message-summary event */
     memset(&event, 0, sizeof(pres_ev_t));
     event.name.s = "message-summary";
@@ -150,11 +150,11 @@ int mwi_add_events(void)
     event.type = PUBL_TYPE;
 	event.req_auth = 0;
     event.evs_publ_handl = mwi_publ_handl;
-	
+
     if (pres_add_event(&event) < 0) {
 	LM_ERR("failed to add event \"message-summary\"\n");
 	return -1;
-    }		
-	
+    }
+
     return 0;
 }

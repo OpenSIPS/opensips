@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Enum and E164 related functions
  *
  * Copyright (C) 2002-2008 Juha Heinanen
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -59,8 +57,8 @@ static int cclen(const char *number)
 
 	d1 = number[0];
 	d2 = number[1];
-	
-	if (!isdigit((int)d2)) 
+
+	if (!isdigit((int)d2))
 		return(0);
 
 	switch(d1) {
@@ -90,7 +88,7 @@ static int cclen(const char *number)
 				return(2);
 			break;
 		case '8':
-			if ((d2 == '1') || (d1 == '2') || (d1 == '4') || (d1 == '6')) 
+			if ((d2 == '1') || (d1 == '2') || (d1 == '4') || (d1 == '6'))
 				return(2);
 			break;
 		case '9':
@@ -117,7 +115,7 @@ static inline int findchr(char* p, int c, unsigned int size)
 		if (*p==(unsigned char)c) {
 			return len;
 		}
-		len++;   
+		len++;
 	}
 	return len;
 }
@@ -290,7 +288,7 @@ int is_from_user_enum_2(struct sip_msg* _msg, char* _suffix, char* _service)
 	    LM_ERR("Failed to parse From header\n");
 	    return -1;
 	}
-	
+
 	if(_msg->from==NULL || get_from(_msg)==NULL) {
 	    LM_DBG("No From header\n");
 	    return -1;
@@ -361,7 +359,7 @@ int is_from_user_enum_2(struct sip_msg* _msg, char* _suffix, char* _service)
 #ifdef LATER
 			if ((pattern.len == 4) && (strncmp(pattern.s, "^.*$", 4) == 0)) {
 				LM_DBG("Resulted in replacement: '%.*s'\n",
-				       replacement.len, ZSW(replacement.s));				
+				       replacement.len, ZSW(replacement.s));
 				retval = set_uri(_msg, replacement.s, replacement.len);
 				free_rdata_list(head); /*clean up*/
 				return retval;
@@ -373,7 +371,7 @@ int is_from_user_enum_2(struct sip_msg* _msg, char* _suffix, char* _service)
 			pattern.s[pattern.len] = (char)0;
 			replacement.s[replacement.len] = (char)0;
 			/* We have already checked the size of
-			   _msg->parsed_uri.user.s */ 
+			   _msg->parsed_uri.user.s */
 			memcpy(&(string[0]), user_s, user_len);
 			string[user_len] = (char)0;
 			if (reg_replace(pattern.s, replacement.s, &(string[0]),
@@ -402,6 +400,12 @@ int is_from_user_enum_2(struct sip_msg* _msg, char* _suffix, char* _service)
 			proto = PROTO_NONE;
 			he = sip_resolvehost(&luri.host, &zp, &proto,
 				(luri.type==SIPS_URI_T)?1:0 , 0);
+			if (he == NULL){
+				LM_ERR("Resolving URI <%.*s> failed\n",
+					   result.len, result.s);
+				free_rdata_list(head); /*clean up*/
+				return -9;
+			}
 
 			hostent2ip_addr(&addr, he, 0);
 
@@ -421,7 +425,7 @@ int is_from_user_enum_2(struct sip_msg* _msg, char* _suffix, char* _service)
 
 
 
-/* 
+/*
  * Add parameter to URI.
  */
 int add_uri_param(str *uri, str *param, str *new_uri)
@@ -502,7 +506,7 @@ int add_uri_param(str *uri, str *param, str *new_uri)
 
 /*
  * Tests if one result record is "greater" that the other.  Non-NAPTR records
- * greater that NAPTR record.  An invalid NAPTR record is greater than a 
+ * greater that NAPTR record.  An invalid NAPTR record is greater than a
  * valid one.  Valid NAPTR records are compared based on their
  * (order,preference).
  */
@@ -532,34 +536,34 @@ static inline void naptr_sort(struct rdata** head)
 	struct rdata *p, *q, *r, *s, *temp, *start;
 
         /* r precedes p and s points to the node up to which comparisons
-         are to be made */ 
+         are to be made */
 
 	s = NULL;
 	start = *head;
-	while ( s != start -> next ) { 
-		r = p = start ; 
+	while ( s != start -> next ) {
+		r = p = start ;
 		q = p -> next ;
-		while ( p != s ) { 
-			if ( naptr_greater(p, q) ) { 
-				if ( p == start ) { 
-					temp = q -> next ; 
-					q -> next = p ; 
+		while ( p != s ) {
+			if ( naptr_greater(p, q) ) {
+				if ( p == start ) {
+					temp = q -> next ;
+					q -> next = p ;
 					p -> next = temp ;
-					start = q ; 
-					r = q ; 
+					start = q ;
+					r = q ;
 				} else {
-					temp = q -> next ; 
-					q -> next = p ; 
+					temp = q -> next ;
+					q -> next = p ;
 					p -> next = temp ;
-					r -> next = q ; 
-					r = q ; 
-				} 
+					r -> next = q ;
+					r = q ;
+				}
 			} else {
-				r = p ; 
-				p = p -> next ; 
-			} 
-			q = p -> next ; 
-			if ( q == s ) s = p ; 
+				r = p ;
+				p = p -> next ;
+			}
+			q = p -> next ;
+			if ( q == s ) s = p ;
 		}
 	}
 	*head = start;
@@ -567,7 +571,7 @@ static inline void naptr_sort(struct rdata** head)
 
 
 /*
- * Makes enum query on name.  On success, rewrites user part and 
+ * Makes enum query on name.  On success, rewrites user part and
  * replaces Request-URI.
  */
 int do_query(struct sip_msg* _msg, char *user, char *name, str *service) {
@@ -582,12 +586,12 @@ int do_query(struct sip_msg* _msg, char *user, char *name, str *service) {
     str pattern, replacement, result, new_result;
 
     head = get_record(name, T_NAPTR);
-    
+
     if (head == 0) {
 	LM_DBG("No NAPTR record found for %s.\n", name);
 	return -1;
     }
-    
+
     naptr_sort(&head);
 
     q = MAX_Q - 10;
@@ -610,9 +614,9 @@ int do_query(struct sip_msg* _msg, char *user, char *name, str *service) {
 	    naptr->services_len,
 	    (int)(naptr->services_len), ZSW(naptr->services), naptr->regexp_len,
 	    (int)(naptr->regexp_len), ZSW(naptr->regexp));
-	
+
 	if (sip_match(naptr, service) == 0) continue;
-	
+
 	if (parse_naptr_regexp(&(naptr->regexp[0]), naptr->regexp_len,
 			       &pattern, &replacement) < 0) {
 	    LM_ERR("Parsing of NAPTR regexp failed\n");
@@ -654,7 +658,7 @@ int do_query(struct sip_msg* _msg, char *user, char *name, str *service) {
 	    if (set_ruri(_msg, &result) == -1) {
 		goto done;
 	    }
-	    set_ruri_q(q);
+	    set_ruri_q(_msg, q);
 	    first = 0;
 	    curr_prio = ((naptr->order) << 16) + naptr->pref;
 	} else {
@@ -958,7 +962,7 @@ int i_enum_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
 		}
 		memcpy(name + j, suffix->s, suffix->len + 1);
 
-		LM_DBG("Looking for EBL record for %s.\n", name); 
+		LM_DBG("Looking for EBL record for %s.\n", name);
 		head = get_record(name, T_EBL);
 		if (head == 0) {
 			LM_DBG("No EBL found for %s. Defaulting to user ENUM.\n",name);
@@ -971,13 +975,13 @@ int i_enum_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
 			       ebl->separator,(int)ebl->apex_len, ebl->apex);
 
 			if ((ebl->apex_len > MAX_COMPONENT_SIZE) || (ebl->separator_len > MAX_COMPONENT_SIZE)) {
-				LM_ERR("EBL strings too long\n"); 
+				LM_ERR("EBL strings too long\n");
 				return -1;
 			}
 
 			if (ebl->position > 15)  {
 				LM_ERR("EBL position too large (%d)\n",
-				       ebl->position); 
+				       ebl->position);
 				return -1;
 			}
 
@@ -1201,7 +1205,7 @@ int enum_pv_query_3(struct sip_msg* _msg, char* _sp, char* _suffix,
 		       result.len, ZSW(result.s));
 		pattern.s[pattern.len] = '!';
 		replacement.s[replacement.len] = '!';
-		
+
 		if (param.len > 0) {
 			if (result.len + param.len > MAX_URI_SIZE - 1) {
 				LM_ERR("URI is too long\n");
@@ -1223,7 +1227,7 @@ int enum_pv_query_3(struct sip_msg* _msg, char* _sp, char* _suffix,
 			if (set_ruri(_msg, &result) == -1) {
 				goto done;
 			}
-			set_ruri_q(q);
+			set_ruri_q(_msg, q);
 			first = 0;
 			curr_prio = ((naptr->order) << 16) + naptr->pref;
 		} else {

@@ -18,8 +18,7 @@ Daniel-Constantin Mierla
 
    Copyright © 2003, 2004 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2012-12-15 09:11:44 +0400
-                              (Sat, 15 Dec 2012) $
+   Revision $Revision: 9528 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -45,6 +44,7 @@ Daniel-Constantin Mierla
         1.5. Exported MI Functions
 
               1.5.1. dbt_dump
+              1.5.2. dbt_reload
 
         1.6. Installation and Running
 
@@ -210,6 +210,34 @@ modparam("db_text", "db_mode", 1)
 :dbt_dump:_reply_fifo_file_
 _empty_line_
 
+1.5.2. dbt_reload
+
+   Causes db_text module to reload cached tables from disk.
+   Depending on parameters it could be a whole cache or a
+   specified database or a single table. If any table cannot be
+   reloaded from disk - the old version preserved and error
+   reported.
+
+   Name: dbt_reload.
+
+   Parameters:
+     * db_name (optional) - database name to reload.
+     * table_name (optional, but cannot be present without the
+       db_name parameter) - specific table to reload.
+
+   MI FIFO Command Format:
+:dbt_reload:_reply_fifo_file_
+_empty_line_
+
+:dbt_reload:_reply_fifo_file_
+/path/to/dbtext/database
+_empty_line_
+
+:dbt_reload:_reply_fifo_file_
+/path/to/dbtext/database
+table_name
+_empty_line_
+
 1.6. Installation and Running
 
    Compile the module and load it instead of mysql or other DB
@@ -271,24 +299,19 @@ aliases:6
    Example 1.9. Configuration file
 ...
 #
-# $Id$
-#
 # simple quick-start config script with dbtext
 #
 
 # ----------- global configuration parameters ------------------------
 
-#debug=9         # debug level (cmd line: -dddddddddd)
-#fork=yes
-#log_stderror=no        # (cmd line: -E)
+#debug_mode=yes
+children=4
 
 check_via=no    # (cmd. line: -v)
 dns=no          # (cmd. line: -r)
 rev_dns=no      # (cmd. line: -R)
-children=4
 
-listen=10.100.100.1
-port=5060
+listen=udp:10.100.100.1:5060
 
 # ------------------ module loading ----------------------------------
 

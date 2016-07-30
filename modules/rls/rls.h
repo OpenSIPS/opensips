@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * rls module - resource list server
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -41,8 +39,8 @@
 #include "../../db/db_con.h"
 #include "../../db/db.h"
 
-#define NO_UPDATE_TYPE     -1 
-#define UPDATED_TYPE        1 
+#define NO_UPDATE_TYPE     -1
+#define UPDATED_TYPE        1
 
 #define NOT_KNOWN_STATE     0
 #define ACTIVE_STATE        1<<1
@@ -83,9 +81,9 @@ typedef struct rls_resource
 
 extern char* xcap_root;
 extern unsigned int xcap_port;
-extern str server_address; 
-extern str presence_server; 
-extern int waitn_time; 
+extern str server_address;
+extern str presence_server;
+extern int waitn_time;
 extern str rlsubs_table;
 extern str rlpres_table;
 extern int hash_size;
@@ -191,13 +189,13 @@ static inline int CONSTR_RLSUBS_DID(subs_t* subs, str *did)
 		return -1;
 	}
 	did->s= (char*)pkg_malloc(len);
-	if(did->s== NULL) 
+	if(did->s== NULL)
 	{
-		ERR_MEM(PKG_MEM_STR); 
+		ERR_MEM(PKG_MEM_STR);
 	}
-	
-	did->len= sprintf(did->s, "%.*s%s%.*s%s%.*s", subs->callid.len, 
-			subs->callid.s, DID_SEP,subs->from_tag.len, subs->from_tag.s, 
+
+	did->len= sprintf(did->s, "%.*s%s%.*s%s%.*s", subs->callid.len,
+			subs->callid.s, DID_SEP,subs->from_tag.len, subs->from_tag.s,
 			DID_SEP, subs->to_tag.len, subs->to_tag.s);
 
 	if(did->len>= len)
@@ -207,7 +205,7 @@ static inline int CONSTR_RLSUBS_DID(subs_t* subs, str *did)
 		return -1;
 	}
 	did->s[did->len]= '\0';
-	
+
 	LM_DBG("did= %s\n", did->s);
 	return 0;
 error:

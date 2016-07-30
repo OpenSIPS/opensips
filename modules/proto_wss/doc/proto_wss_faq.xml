@@ -1,0 +1,21 @@
+<!-- Module FAQ -->
+
+<chapter>
+
+	<title>&faqguide;</title>
+	<qandaset defaultlabel="number">
+
+	<qandaentry>
+		<question>
+			<para>Does &osips; support fragmented Secure WebSocket messages?
+			</para>
+		</question>
+		<answer>
+			<para>
+			No, the WebSocket fragmentation mechanism is not supported.
+			</para>
+		</answer>
+	</qandaentry>
+
+	</qandaset>
+</chapter>

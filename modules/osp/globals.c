@@ -25,7 +25,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include <stdio.h>
@@ -33,6 +33,7 @@
 #include "../../usr_avp.h"
 #include "osp_mod.h"
 
+int _osp_inbound_avpid = OSP_DEF_AVP;
 int _osp_origdest_avpid = OSP_DEF_AVP;
 int _osp_termdest_avpid = OSP_DEF_AVP;
 int _osp_calling_avpid = OSP_DEF_AVP;
@@ -68,6 +69,8 @@ int _osp_use_np = OSP_DEF_USENP;
 int _osp_append_userphone = OSP_DEF_USERPHONE;
 int _osp_dnid_location = OSP_DEF_DNIDLOC;
 char* _osp_dnid_param = OSP_DEF_DNIDPARAM;
+int _osp_paramstr_location = OSP_DEF_PARAMSTRLOC;
+char* _osp_paramstr_value = OSP_DEF_PARAMSTRVAL;
 char _osp_PRIVATE_KEY[OSP_STRBUF_SIZE];
 char _osp_LOCAL_CERTIFICATE[OSP_STRBUF_SIZE];
 char _osp_CA_CERTIFICATE[OSP_STRBUF_SIZE];
@@ -80,6 +83,35 @@ unsigned short _osp_snid_avptype;
 char* _osp_cinfo_avp = OSP_DEF_CINFOAVP;
 int_str _osp_cinfo_avpid;
 unsigned short _osp_cinfo_avptype;
-
+char* _osp_cnam_avp = OSP_DEF_CNAMAVP;
+int_str _osp_cnam_avpid;
+unsigned short _osp_cnam_avptype;
+char* _osp_srcmedia_avp = OSP_DEF_SRCMEDIAAVP;
+int_str _osp_srcmedia_avpid;
+unsigned short _osp_srcmedia_avptype;
+char* _osp_destmedia_avp = OSP_DEF_DESTMEDIAAVP;
+int_str _osp_destmedia_avpid;
+unsigned short _osp_destmedia_avptype;
+char* _osp_reqdate_avp = OSP_DEF_REQDATEAVP;
+int_str _osp_reqdate_avpid;
+unsigned short _osp_reqdate_avptype;
+char* _osp_sdpfp_avp = OSP_DEF_SDPFPAVP;
+int_str _osp_sdpfp_avpid;
+unsigned short _osp_sdpfp_avptype;
+char* _osp_idsign_avp = OSP_DEF_IDSIGNAVP;
+int_str _osp_idsign_avpid;
+unsigned short _osp_idsign_avptype;
+char* _osp_idalg_avp = OSP_DEF_IDALGAVP;
+int_str _osp_idalg_avpid;
+unsigned short _osp_idalg_avptype;
+char* _osp_idinfo_avp = OSP_DEF_IDINFOAVP;
+int_str _osp_idinfo_avpid;
+unsigned short _osp_idinfo_avptype;
+char* _osp_idtype_avp = OSP_DEF_IDTYPEAVP;
+int_str _osp_idtype_avpid;
+unsigned short _osp_idtype_avptype;
+char* _osp_idcanon_avp = OSP_DEF_IDCANONAVP;
+int_str _osp_idcanon_avpid;
+unsigned short _osp_idcanon_avptype;
 OSPTPROVHANDLE _osp_provider = -1;
 

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 /*!
@@ -64,9 +62,6 @@ struct bl_head{
 
 #define BL_CORE_ID        13
 
-
-int preinit_black_lists();
-
 int init_black_lists();
 
 void destroy_black_lists();
@@ -101,9 +96,9 @@ static inline int check_blacklists( unsigned short proto,
 
 	body.s = body_s;
 	body.len = body_len;
-	su2ip_addr( &ip, to);
-	port = su_getport( to );
-	return check_against_blacklist( &ip, &body, port, proto);
+	su2ip_addr(&ip, to);
+	port = su_getport(to);
+	return check_against_blacklist(&ip, &body, port, proto);
 }
 
 #endif /* _BLACKLST_H */

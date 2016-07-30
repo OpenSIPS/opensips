@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -13,8 +11,8 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- * 
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
  *  Gabber
  *  Copyright (C) 1999-2000 Dave Smith & Julian Missig
  *
@@ -22,7 +20,7 @@
 
 
 
-/* 
+/*
    Implements the Secure Hash Algorithm (SHA1)
 
    Copyright (C) 1999 Scott G. Miller
@@ -30,12 +28,12 @@
    Released under the terms of the GNU General Public License v2
    see file COPYING for details
 
-   Credits: 
-      Robert Klep <robert@ilse.nl>  -- Expansion function fix 
+   Credits:
+      Robert Klep <robert@ilse.nl>  -- Expansion function fix
 	  Thomas "temas" Muldowney <temas@box5.net>:
 	  		-- shahash() for string fun
 			-- Will add the int32 stuff in a few
-	  		
+
    ---
    FIXME: This source takes int to be a 32 bit integer.  This
    may vary from system to system.  I'd use autoconf if I was familiar
@@ -67,7 +65,7 @@
                              (x>>24 & 0x000000ff)
 
 /* Initial hash values */
-#define Ai 0x67452301 
+#define Ai 0x67452301
 #define Bi 0xefcdab89
 #define Ci 0x98badcfe
 #define Di 0x10325476
@@ -76,7 +74,7 @@
 /* SHA1 round constants */
 #define K1 0x5a827999
 #define K2 0x6ed9eba1
-#define K3 0x8f1bbcdc 
+#define K3 0x8f1bbcdc
 #define K4 0xca62c1d6
 
 /* Round functions.  Note that f2() is used in both rounds 2 and 4 */
@@ -94,34 +92,34 @@
   32 bit ints), into the ongoing 160 bit hash value (five 32 bit ints)
   'hash'
 */
-int 
-sha_hash(int *data, int *hash)  
+int
+sha_hash(int *data, int *hash)
 {
   int W[80];
   unsigned int A=hash[0], B=hash[1], C=hash[2], D=hash[3], E=hash[4];
   unsigned int t, x, TEMP;
 
-  for (t=0; t<16; t++) 
+  for (t=0; t<16; t++)
     {
 #ifndef WORDS_BIGENDIAN
       W[t]=switch_endianness(data[t]);
-#else 
+#else
       W[t]=data[t];
 #endif
     }
 
 
   /* SHA1 Data expansion */
-  for (t=16; t<80; t++) 
+  for (t=16; t<80; t++)
     {
       x=W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16];
       W[t]=rol1(x);
     }
 
-  /* SHA1 main loop (t=0 to 79) 
+  /* SHA1 main loop (t=0 to 79)
    This is broken down into four subloops in order to use
    the correct round function and constant */
-  for (t=0; t<20; t++) 
+  for (t=0; t<20; t++)
     {
       TEMP=rol5(A) + f1(B,C,D) + E + W[t] + K1;
       E=D;
@@ -130,7 +128,7 @@ sha_hash(int *data, int *hash)
       B=A;
       A=TEMP;
     }
-  for (; t<40; t++) 
+  for (; t<40; t++)
     {
       TEMP=rol5(A) + f2(B,C,D) + E + W[t] + K2;
       E=D;
@@ -139,7 +137,7 @@ sha_hash(int *data, int *hash)
       B=A;
       A=TEMP;
     }
-  for (; t<60; t++) 
+  for (; t<60; t++)
     {
       TEMP=rol5(A) + f3(B,C,D) + E + W[t] + K3;
       E=D;
@@ -148,7 +146,7 @@ sha_hash(int *data, int *hash)
       B=A;
       A=TEMP;
     }
-  for (; t<80; t++) 
+  for (; t<80; t++)
     {
       TEMP=rol5(A) + f2(B,C,D) + E + W[t] + K4;
       E=D;
@@ -157,7 +155,7 @@ sha_hash(int *data, int *hash)
       B=A;
       A=TEMP;
     }
-  hash[0]+=A; 
+  hash[0]+=A;
   hash[1]+=B;
   hash[2]+=C;
   hash[3]+=D;
@@ -170,8 +168,8 @@ sha_hash(int *data, int *hash)
   initializes it to the start constants of the SHA1 algorithm.  This
   must be called before using hash in the call to sha_hash
 */
-int 
-sha_init(int *hash) 
+int
+sha_init(int *hash)
 {
   hash[0]=Ai;
   hash[1]=Bi;
@@ -181,11 +179,11 @@ sha_init(int *hash)
   return 0;
 }
 
-int strprintsha(char *dest, int *hashval) 
+int strprintsha(char *dest, int *hashval)
 {
 	int x;
 	char *hashstr = dest;
-	for (x=0; x<5; x++) 
+	for (x=0; x<5; x++)
 	{
 		snprintf(hashstr, 9, "%08x", hashval[x]);
 		hashstr+=8;
@@ -198,12 +196,12 @@ int strprintsha(char *dest, int *hashval)
 	return 0;
 }
 
-char *shahash(const char *str) 
+char *shahash(const char *str)
 {
 	char read_buffer[65];
 	//int read_buffer[64];
 	int c=1, i;
-       
+
 	INT64 length=0;
 
 	int strsz;
@@ -216,43 +214,43 @@ char *shahash(const char *str)
 
 	strsz = strlen(str);
 
-	if(strsz == 0) 
+	if(strsz == 0)
 	{
 	     memset(read_buffer, 0, 65);
 	     read_buffer[0] = 0x80;
 	     sha_hash((int *)read_buffer, hashval);
 	}
 
-	while (strsz>0) 
+	while (strsz>0)
 	{
 		memset(read_buffer, 0, 65);
 		strncpy((char*)read_buffer, str, 64);
 		c = strlen((char *)read_buffer);
 		length+=c;
 		strsz-=c;
-		if (strsz<=0) 
+		if (strsz<=0)
 		{
-			length<<=3;	
+			length<<=3;
 			read_buffer[c]=(char)0x80;
-			for (i=c+1; i<64; i++) 
+			for (i=c+1; i<64; i++)
 				read_buffer[i]=0;
-			if (c>55) 
+			if (c>55)
 			{
 				/* we need to do an entire new block */
 				sha_hash((int *)read_buffer, hashval);
-				for (i=0; i<14; i++) 
+				for (i=0; i<14; i++)
 					((int*)read_buffer)[i]=0;
-			}      
+			}
 #ifndef WORDS_BIGENDIAN
-			for (i=0; i<8; i++) 
+			for (i=0; i<8; i++)
 			{
 				read_buffer[56+i]=(char)(length>>(56-(i*8))) & 0xff;
 			}
-#else	
+#else
 			memcpy(read_buffer+56, &length, 8);
 #endif
 		}
-		
+
 		sha_hash((int *)read_buffer, hashval);
 		str+=64;
 	}

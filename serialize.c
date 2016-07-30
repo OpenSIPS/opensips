@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2005 Juha Heinanen
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -69,7 +67,7 @@ int init_serialization(void)
 
 
 /*! \brief
- * Loads contacts in destination set into "serial_fork" AVP in reverse
+ * Loads contacts in destination set into "serial_avp" AVP in reverse
  * priority order and associated each contact with Q_FLAG telling if
  * contact is the last one in its priority class.  Finally, removes
  * all branches from destination set.
@@ -88,14 +86,14 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 	int idx;
 
 	/* Check if anything needs to be done */
-	if (nr_branches == 0) {
+	if (get_nr_branches() == 0) {
 		LM_DBG("nothing to do - no branches!\n");
 		return 0;
 	}
 
 	ruri = GET_RURI(msg);
-	ruri_q = get_ruri_q();
-	flags = getb0flags();
+	ruri_q = get_ruri_q(msg);
+	flags = getb0flags(msg);
 
 	for (idx = 0; (branch.s = get_branch(idx,&branch.len,&q,0,0,0,0)); idx++) {
 		if (q != ruri_q)
@@ -165,7 +163,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 		memset(enc_info.s, 0, enc_info.len);
 		p = enc_info.s;
 
-		LM_DBG("Branch information <%.*s,%.*s,%.*s,%d,%u>\n", 
+		LM_DBG("Branch information <%.*s,%.*s,%.*s,%d,%u>\n",
 				branch.len, branch.s,
 				dst_uri.len, dst_uri.s,
 				path.len, path.s,
@@ -328,8 +326,8 @@ int next_branches( struct sip_msg *msg)
 		goto error1;
 
 	msg->force_send_socket = sock_info;
-	set_ruri_q( q );
-	setb0flags( flags );
+	set_ruri_q( msg, q );
+	setb0flags( msg, flags );
 
 	LM_DBG("Msg information <%.*s,%.*s,%.*s,%d,%u> (avp flag=%u)\n",
 				uri.len, uri.s,

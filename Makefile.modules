@@ -1,6 +1,4 @@
 #
-# $Id$
-#
 # module Makefile
 #(to be included from each module)
 #
@@ -23,6 +21,9 @@ ifneq ($(makefile_defs), 1)
 $(error "the local makefile does not include Makefile.defs!")
 endif
 
+ifeq (,$(wildcard ../../Makefile.conf))
+$(shell cp ../../Makefile.conf.template ../../Makefile.conf)
+endif
 include ../../Makefile.conf
 
 else
@@ -39,6 +40,6 @@ CFLAGS:=$(MOD_CFLAGS)
 LDFLAGS:=$(MOD_LDFLAGS)
 endif
 
-CFLAGS+=-DMOD_NAME='"$(MOD_NAME)"'
+CFLAGS+=-DMOD_NAME='$(MOD_NAME)'
 
 include ../../Makefile.rules

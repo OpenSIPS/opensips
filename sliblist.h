@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * A simple linked list implementation.
  *
  * Copyright (C) 2013 VoIP Embedded, Inc.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * 2013-02-25 initial implementation (osas)
  */
@@ -70,7 +68,7 @@ typedef void (slinkedl_dealloc_f) (void *ptr);
  * return <0 on error and exit list traversal;
  * return  0 on no action on current list elemnt and
  *           continue list traversal;
- * return >0 on action successfuly completed on current list element
+ * return >0 on action successfully completed on current list element
  *           and exit list traversal.
  * @see slinkedl_traverse()
  */

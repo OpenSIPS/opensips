@@ -53,10 +53,16 @@ Bogdan-Andrei Iancu
         1.4. Exported Functions
 
               1.4.1. save(domain [,flags ,[aor]])
-              1.4.2. lookup(domain [, flags [, aor]])
-              1.4.3. registered(domain [,AOR[, callid]])
-              1.4.4. is_other_contact(domain , IPs)
-              1.4.5. add_sock_hdr(hdr_name)
+              1.4.2. remove(domain, AOR[, target])
+              1.4.3. lookup(domain [, flags [, aor]])
+              1.4.4. registered(domain [,AOR[, callid]])
+              1.4.5. is_other_contact(domain , IPs)
+              1.4.6. is_registered(domain ,[AOR])
+              1.4.7. is_contact_registered(domain
+                      ,[AOR],[contact],[callid])
+
+              1.4.8. is_ip_registered(domain ,[AOR],IPvar)
+              1.4.9. add_sock_hdr(hdr_name)
 
         1.5. Exported Statistics
 
@@ -87,10 +93,14 @@ Bogdan-Andrei Iancu
    1.15. Set gruu_secret parameter
    1.16. Set gruu_secret parameter
    1.17. save usage
-   1.18. lookup usage
-   1.19. registered usage
-   1.20. is_other_contact usage
-   1.21. add_sock_hdr usage
+   1.18. remove usage
+   1.19. lookup usage
+   1.20. registered usage
+   1.21. is_other_contact usage
+   1.22. is_registered usage
+   1.23. is_registered usage
+   1.24. is_registered usage
+   1.25. add_sock_hdr usage
 
 Chapter 1. Admin Guide
 
@@ -230,7 +240,7 @@ modparam("registrar", "default_q", 1000)
    The parameter specifies the message flag to be used to control
    the module behaviour regarding TCP connections. If the flag is
    set for a REGISTER via TCP containing a TCP contact, the
-   module, via the “save()” functions will set the lifetime of the
+   module, via the “save()” function, will set the lifetime of the
    TCP connection to the contact expire value. By doing this, the
    TCP connection will stay on as long as the contact is valid.
 
@@ -311,7 +321,7 @@ modparam("registrar", "received_param", "rcv")
 
    This is the default value and will be used only if no other
    value (for max_contacts) is passed as parameter to the save()
-   function. That's it - the function paramter overwride this
+   function. That's it - the function parameter overwride this
    global parameter.
 
    Default value is 0.
@@ -349,7 +359,7 @@ modparam("registrar", "retry_after", 30)
    and used only if the flag 's' (Socket header) is set at
    "save()" time.
 
-   This make sens only in multiple replicated servers scenarios.
+   This makes sense only in multiple replicated servers scenarios.
 
    Default value is NULL.
 
@@ -365,7 +375,7 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
    registrar). The AVP will be used to extract the imposed expires
    from the 200ok reply.
 
-   This make sens only in cached registrations scenario.
+   This makes sense only in cached registrations scenario.
 
    Default value is NULL.
 
@@ -379,8 +389,8 @@ modparam("registrar", "mcontact_avp", "$avp(register)")
    AVP to store specific additional information for each
    registration. This information is read from the AVP and stored
    (in memory, db or both) at every registrar 'save'. When a
-   registrar 'lookup' is done, the attr_avp is populated with the
-   value saved at [re]registration.
+   registrar 'lookup' or 'registered' function is called, the
+   attr_avp is populated with the value saved at [re]registration.
 
    When doing call forking, the avp will hold multiple values. The
    position of the corresponding attribute information in attr_avp
@@ -522,7 +532,37 @@ save("location","","$fu");
 save("location","mr", "$avp(aor)");
 ...
 
-1.4.2.  lookup(domain [, flags [, aor]])
+1.4.2.  remove(domain, AOR[, target])
+
+   Explicitly remove contacts behind a given address-of-record.
+
+   Meaning of the parameters is as follows:
+     * domain - Logical domain within registrar. If database is
+       used then this must be name of the table which stores the
+       contacts.
+     * AOR - address-of-record to be searched (SIP URI)
+     * target (optional) - may be specified in two ways:
+          + single delete - Specific contact to be deleted (SIP
+            URI)
+          + multi delete - IP/hostname of the AOR's contacts which
+            will be deleted
+
+   This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
+
+   Example 1.18. remove usage
+...
+# remove all contacts belonging to the "bob" AOR
+remove("location", "sip:bob@atlanta.com");
+...
+# remove only bob's home phone
+remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78");
+...
+# remove all bob's phones which are behind "50.60.50.60"
+$var(next_hop) = "50.60.50.60"
+remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
+...
+
+1.4.3.  lookup(domain [, flags [, aor]])
 
    The functions extracts username from Request-URI and tries to
    find all contacts for the username in usrloc. If there are no
@@ -547,11 +587,31 @@ save("location","mr", "$avp(aor)");
             tm for forking. If the flag is set, only Request-URI
             will be overwritten with the highest-q rated contact
             and the rest will be left unprocessed.
+          + 'r' (bRanch lookup) - this flag enables searching
+            through existing branches for aor's and expanding them
+            to contacts. For example, you have got AOR A in your
+            ruri but you also want to forward your calls to AOR B.
+            In order to do this, you must put AOR B in a branch,
+            and if this flag enabled, the function will also
+            expand AOR B to contacts, which will be put back into
+            the branches. The AOR's that were in branches before
+            the function call shall be removed.
+            WARNING: if you want this flag activated, the 'b' (no
+            Branches) flag must not be set, because by setting
+            that flag you won't allow lookup to write in a branch.
           + 'm' (Method filtering) - this flag tells if the
             contact filtering based on supported methods should be
             performed during lookup.
+          + 'u' (User-Agent filtering) - this flag enables regexp
+            filtering by user-agent. It's useful with enabled
+            append_branches parameter. Regexp must follow the 'u'
+            flag and must use format like 'u/regexp/'.
+          + 'i' (Case insensitive search) - this flag enables case
+            insensitive filtering for the 'u' flag.
+          + 'e' (Use extended regexp) - this flag enables using of
+            extended regexp format for the 'u' flag.
      * AOR (optional)- AOR to lookup for; if missing, the RURI is
-       used as AOR; This can be a variable.
+       used as AOR; This must be a variable.
 
    Return codes:
      * 1 - contacts found and returned.
@@ -561,11 +621,18 @@ save("location","mr", "$avp(aor)");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.18. lookup usage
+   Example 1.19. lookup usage
 ...
 lookup("location");  # simple lookup
    #or
 lookup("location","m"); # lookup with method filtering
+   #or
+lookup("location","r"); #lookup with aor branch search;
+                                                #all contacts except the
+ first one shall be put
+                                                #in the branches
+   #or
+lookup("location","u/phone/i"); # lookup with user-agent filtering
    #or
 lookup("location","","$var(aor)"); # simple lookup with AOR from PV
 switch ($retcode) {
@@ -579,7 +646,7 @@ switch ($retcode) {
 };
 ...
 
-1.4.3.  registered(domain [,AOR[, callid]])
+1.4.4.  registered(domain [,AOR[, callid]])
 
    The function returns true if an AOR is registered, false
    otherwise. The function does not modify the message being
@@ -591,7 +658,7 @@ switch ($retcode) {
    Meaning of the parameters is as follows:
      * domain - Name of table that should be used for the lookup.
      * AOR (optional)- AOR to lookup for; if missing, the RURI is
-       used as AOR; This can be a variable.
+       used as AOR; This must be a variable.
      * callid (optional)- callid to check if a contact if
        registered with this callid (this may help you to make
        distinction between newly registered contact (callid not
@@ -601,7 +668,10 @@ switch ($retcode) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.19. registered usage
+   WARNING: THIS FUNCTION IS DEPRECATED! USE
+   is_contact_registered() INSTEAD.
+
+   Example 1.20. registered usage
 ...
 if (registered("location")) {
         sl_send_reply("100", "Trying");
@@ -612,7 +682,7 @@ if (registered("location","$fu")) {
 }
 ...
 
-1.4.4.  is_other_contact(domain , IPs)
+1.4.5.  is_other_contact(domain , IPs)
 
    This function returns true if there are any other contacts
    registered, different from the ones from the IPs avp.
@@ -625,7 +695,10 @@ if (registered("location","$fu")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.20. is_other_contact usage
+   WARNING: THIS FUNCTION IS DEPRECATED! USE is_ip_registered()
+   INSTEAD.
+
+   Example 1.21. is_other_contact usage
 ...
 
 if (is_other_contact("location", "$avp(ips)")) {
@@ -634,20 +707,122 @@ if (is_other_contact("location", "$avp(ips)")) {
 };
 ...
 
-1.4.5.  add_sock_hdr(hdr_name)
+1.4.6.  is_registered(domain ,[AOR])
+
+   The function returns true if an AOR is registered, false
+   otherwise. The function does not modify the message being
+   process.
+
+   Meaning of the parameters is as follows:
+     * domain - Name of table that should be used for the lookup.
+     * AOR (optional)- AOR to lookup for; if missing, the source
+       if the AOR is the "To" header for REGISTER request, "From"
+       header for any other sip request.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+
+   Example 1.22. is_registered usage
+...
+/**/
+if (is_method("REGISTER")) {
+        /* automatically uses the URI from the To header */
+        if (is_registered("location")) {
+                xlog("this AOR is registered\n")
+                ...
+        }
+};
+/* check the From uri whether this aor is registered or not */
+if (is_registered("location","$fu")) {
+        xlog("caller is registered\n");
+}
+...
+
+1.4.7.  is_contact_registered(domain ,[AOR],[contact],[callid])
+
+   The function returns true if a contact and/or a callid from a
+   certain AOR is registered, false otherwise. The function does
+   not modify the message being process.
+
+   Meaning of the parameters is as follows:
+     * domain - Name of table that should be used for the lookup.
+     * AOR (optional)- AOR to lookup for; if missing, the source
+       if the AOR is the "To" header for REGISTER request, "From"
+       header for any other sip request.
+     * contact (optional)- callid to check if a contact if
+       registered with this callid (this may help you to make
+       distinction between newly registered contact (callid not
+       registered so far) and re-registration (callid already
+       registered).
+     * callid (optional)- callid to check if a contact if
+       registered with this callid (this may help you to make
+       distinction between newly registered contact (callid not
+       registered so far) and re-registration (callid already
+       registered).
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+
+   Example 1.23. is_registered usage
+...
+/*let's say you want to block users that are not registered*/
+if (is_method("INVITE")) {
+        if (!is_contact_registered("location")) {
+                sl_send_reply("401", "Unauthorized");
+        ...
+        }
+}
+/* you want to check the second contact from the message whether it is
+registered or not */
+if(is_method("INVITE")) {
+        if (is_contact_registered("location","$fu","$(ct[1])",))
+                xlog("caller is registered\n");
+}
+...
+
+1.4.8.  is_ip_registered(domain ,[AOR],IPvar)
+
+   The function returns true if at least a contact has an IP from
+   the IPavp in it's received parameter,otherwise returns false.
+   The function does not modify the message being process. This
+   function replaces the "is_other_contact" function.
+
+   Meaning of the parameters is as follows:
+     * domain - Name of table that should be used for the lookup.
+     * AOR (optional)- AOR to lookup for; if missing, the source
+       if the AOR is the "To" header for REGISTER request, "From"
+       header for any other sip request.
+     * IPvar the pvar containing the IPs you want to check the
+       received parameter of the contacts in the AOR against.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+
+   Example 1.24. is_registered usage
+...
+/* check the source ip  whether it is already registered */
+if (is_method("REGISTER")) {
+        if (is_ip_registered("location","$tu","$si")) {
+                xlog("already registered from this ip\n");
+                ...
+        }
+};
+...
+
+1.4.9.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
    “hdr_name” which contains the description of the received
    socket (proto:ip:port)
 
-   This make sens only in multiple replicated servers scenarios.
+   This makes sense only in multiple replicated servers scenarios.
 
    Meaning of the parameters is as follows:
      * hdr_name - header name to be used.
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.21. add_sock_hdr usage
+   Example 1.25. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...
@@ -678,103 +853,104 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-        What happend with the old “append_branch” module parameter?
+   What happened with the old “append_branch” module parameter?
 
-        It was removed as global option, as the “lookup” function takes
-        this option via the flag "b" (append Branches) See the
-        documentation of the “lookup” function.
+   It was removed as global option, as the “lookup” function takes
+   this option via the flag "b" (append Branches) See the
+   documentation of the “lookup” function.
 
    2.2.
 
-        What happend with the old “method_filtering” module parameter?
+   What happened with the old “method_filtering” module parameter?
 
-        It was removed as global option, as the “lookup” function takes
-        this option via the flag "m" (Method filtering) See the
-        documentation of the “lookup” function.
+   It was removed as global option, as the “lookup” function takes
+   this option via the flag "m" (Method filtering) See the
+   documentation of the “lookup” function.
 
    2.3.
 
-        What happend with the old “sock_flag” module parameter?
+   What happened with the old “sock_flag” module parameter?
 
-        It was removed as global option, as the “save” function takes
-        this option via the flag "s" (Socket header) See the
-        documentation of the “save” function.
+   It was removed as global option, as the “save” function takes
+   this option via the flag "s" (Socket header) See the
+   documentation of the “save” function.
 
    2.4.
 
-        What happend with the old “use_path” and “path_mode” module
-        parameters?
+   What happened with the old “use_path” and “path_mode” module
+   parameters?
 
-        They were removed as global option, as the “save” function
-        takes these options via the flag "px" (path support) See the
-        documentation of the “save” function.
+   They were removed as global option, as the “save” function
+   takes these options via the flag "px" (path support) See the
+   documentation of the “save” function.
 
    2.5.
 
-        What happend with the old “path_use_received” module parameter?
+   What happened with the old “path_use_received” module
+   parameter?
 
-        It was removed as global option, as the “save” function takes
-        this option via the flag "v" (path receiVed) See the
-        documentation of the “save” function.
+   It was removed as global option, as the “save” function takes
+   this option via the flag "v" (path receiVed) See the
+   documentation of the “save” function.
 
    2.6.
 
-        What happend with the old “nat_flag” module parameter?
+   What happened with the old “nat_flag” module parameter?
 
-        It was removed, as the module internally loads this value from
-        the “USRLOC” module (see the “nat_bflag” USRLOC parameter).
+   It was removed, as the module internally loads this value from
+   the “USRLOC” module (see the “nat_bflag” USRLOC parameter).
 
    2.7.
 
-        What happend with the old “use_domain” module parameter?
+   What happened with the old “use_domain” module parameter?
 
-        It was removed, as the module internally loads this option from
-        the “USRLOC” module. This was done in order to simplify the
-        configuration.
+   It was removed, as the module internally loads this option from
+   the “USRLOC” module. This was done in order to simplify the
+   configuration.
 
    2.8.
 
-        What happend with the old “save_noreply” and “save_memory”
-        functions?
+   What happened with the old “save_noreply” and “save_memory”
+   functions?
 
-        There functions were merged into the new “save(domain,flags)”
-        functions. If a reply should be sent or if the DB should be
-        updated also is controlled via the flags.
+   There functions were merged into the new “save(domain,flags)”
+   functions. If a reply should be sent or if the DB should be
+   updated also is controlled via the flags.
 
    2.9.
 
-        Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-        Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.10.
 
-        Where can I post a question about this module?
+   Where can I post a question about this module?
 
-        First at all check if your question was already answered on one
-        of our mailing lists:
-          * User Mailing List -
-            http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-          * Developer Mailing List -
-            http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-        E-mails regarding any stable OpenSIPS release should be sent to
-        <users@lists.opensips.org> and e-mails regarding development
-        versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-        If you want to keep the mail private, send it to
-        <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.11.
 
-        How can I report a bug?
+   How can I report a bug?
 
-        Please follow the guidelines provided at:
-        https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
    2.12.
 
-        What happened to the desc_time_order parameter?
+   What happened to the desc_time_order parameter?
 
-        It was removed, as its functionality was mmigrate into usrloc
-        module, were there is a parameter with the same name.
+   It was removed, as its functionality was mmigrate into usrloc
+   module, were there is a parameter with the same name.

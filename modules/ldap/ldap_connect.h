@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * OpenSIPS LDAP Module
  *
  * Copyright (C) 2007 University of North Carolina
@@ -22,7 +20,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -35,6 +33,12 @@
 
 #include "../../str.h"
 #include "../../dprint.h"
+
+#define NEVE 0x4556454E
+#define DEMA 0x414D4544
+#define ALLO 0x4F4C4C41
+#define HARD 0x44524148
+#define  TRY 0x00595254
 
 extern int ldap_connect(char* _ld_name);
 extern int ldap_disconnect(char* _ld_name);

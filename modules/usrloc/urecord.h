@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * Usrloc record structure
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * ---------
@@ -50,10 +48,12 @@ struct hslot;
  * Basic hash table element
  */
 typedef struct urecord {
-	str* domain;                   /*!< Pointer to domain we belong to 
+	str* domain;                   /*!< Pointer to domain we belong to
                                     * ( null terminated string) */
 	str aor;                       /*!< Address of record */
 	unsigned int aorhash;          /*!< Hash over address of record */
+	unsigned int label;            /*!< Labels over AVL tree */
+	unsigned short next_clabel;      /*!< Labels to be assigned to contacts */
 	ucontact_t* contacts;          /*!< One or more contact fields */
 
 	struct hslot* slot;            /*!< Collision slot in the hash table
@@ -88,7 +88,7 @@ void mem_remove_ucontact(urecord_t* _r, ucontact_t* _c);
 
 
 /*
- * Remove contact from the list and delete 
+ * Remove contact from the list and delete
  */
 void mem_delete_ucontact(urecord_t* _r, ucontact_t* _c);
 
@@ -112,24 +112,25 @@ int db_delete_urecord(urecord_t* _r);
  * Release urecord previously obtained
  * through get_urecord
  */
-typedef void (*release_urecord_t)(urecord_t* _r);
-void release_urecord(urecord_t* _r);
+typedef void (*release_urecord_t)(urecord_t* _r, char is_replicated);
+void release_urecord(urecord_t* _r, char is_replicated);
 
 
 /*
  * Insert new contact
  */
 typedef int (*insert_ucontact_t)(urecord_t* _r, str* _contact,
-		ucontact_info_t* _ci, ucontact_t** _c);
+		ucontact_info_t* _ci, ucontact_t** _c, char is_replicated);
 int insert_ucontact(urecord_t* _r, str* _contact,
-		ucontact_info_t* _ci, ucontact_t** _c);
+		ucontact_info_t* _ci, ucontact_t** _c, char is_replicated);
 
 
 /*
  * Delete ucontact from urecord
  */
-typedef int (*delete_ucontact_t)(urecord_t* _r, struct ucontact* _c);
-int delete_ucontact(urecord_t* _r, struct ucontact* _c);
+typedef int (*delete_ucontact_t)(urecord_t* _r, struct ucontact* _c,
+                                 char is_replicated);
+int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated);
 
 
 /*

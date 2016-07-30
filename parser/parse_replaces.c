@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011 VoIP Embedded, Inc.
  *
  * This file is part of opensips, a free SIP server.
@@ -15,15 +13,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
  * 2011-06-28  initial implementation (Ovidiu Sas)
  */
- 
+
 #include <stdlib.h>
 #include <string.h>
 #include "../dprint.h"
@@ -31,7 +29,7 @@
 #include "../errinfo.h"
 #include "../mem/mem.h"
 #include "parse_replaces.h"
- 
+
 /*
  * This method is used to parse Replaces header body.
  *
@@ -243,7 +241,7 @@ int parse_replaces_body(char* buf, int buf_len, struct replaces_body* replaces_b
 				state = VAL_P;
 			}
 			break;
-		
+
 		/* from-tag param */
 		param_switch(FT_F, 'r', 'R', FT_R);
 		param_switch(FT_R, 'o', 'O', FT_O);

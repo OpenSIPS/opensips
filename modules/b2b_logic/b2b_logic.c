@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * back-to-back logic module
  *
  * Copyright (C) 2009 Free Software Fundation
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -50,7 +48,7 @@
 #include "b2b_load.h"
 #include "b2bl_db.h"
 
-#define TABLE_VERSION 2
+#define TABLE_VERSION 3
 
 /** Functions declarations */
 static int mod_init(void);
@@ -170,12 +168,26 @@ static mi_export_t mi_cmds[] = {
 	{  0,                  0, 0,                        0,  0,  0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "b2b_entities", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_url",           get_deps_sqldb_url  },
+		{ NULL, NULL },
+	},
+};
+
 /** Module interface */
 struct module_exports exports= {
 	"b2b_logic",                    /* module name */
+	MOD_TYPE_DEFAULT,               /* class of this module */
 	MODULE_VERSION,                 /* module version */
 	DEFAULT_DLFLAGS,                /* dlopen flags */
+	&deps,                          /* OpenSIPS module dependencies */
 	cmds,                           /* exported functions */
+	0,                              /* exported async functions */
 	params,                         /* exported parameters */
 	0,                              /* exported statistics */
 	mi_cmds,                        /* exported MI functions */
@@ -230,17 +242,6 @@ static int mod_init(void)
 	if(init_b2bl_htable() < 0)
 	{
 		LM_ERR("Failed to initialize b2b logic hash table\n");
-		return -1;
-	}
-
-	if(b2b_clean_period < 0)
-	{
-		LM_ERR("Wrong parameter - b2b_clean_period [%d]\n", b2b_clean_period);
-		return -1;
-	}
-	if(b2b_update_period < 0)
-	{
-		LM_ERR("Wrong parameter - b2b_update_period [%d]\n", b2b_update_period);
 		return -1;
 	}
 
@@ -432,10 +433,11 @@ next_hdr:
 	if(init_callid_hdr.s)
 		init_callid_hdr.len = strlen(init_callid_hdr.s);
 
-	register_timer("b2bl-clean", b2bl_clean, 0, b2b_clean_period);
+	register_timer("b2bl-clean", b2bl_clean, 0, b2b_clean_period,
+		TIMER_FLAG_DELAY_ON_DELAY);
 	if(b2bl_db_mode == WRITE_BACK)
 		register_timer("b2bl-dbupdate", b2bl_db_timer_update, 0,
-			b2b_update_period);
+			b2b_update_period, TIMER_FLAG_SKIP_ON_DELAY);
 
 	return 0;
 }
@@ -500,6 +502,9 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 	xmlNodePtr rules_node, rule_node, request_node;
 	int request_id = 0;
 	b2b_rule_t* rule_struct = NULL;
+	xmlNodePtr body_node;
+	char* body_content= 0;
+	char* body_type= 0;
 
 	doc = xmlParseFile(filename);
 	if(doc == NULL)
@@ -563,6 +568,28 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 	if(node)
 	{
 		scenario->use_init_sdp = 1;
+		body_node = xmlNodeGetChildByName(node, "body");
+		if(body_node)
+		{
+			body_type = (char *)xmlNodeGetAttrContentByName(body_node, "type");
+			if (body_type == NULL)
+			{
+				LM_ERR("Bad formatted scenario document. Empty body content type\n");
+				goto error;
+			}
+			body_content = (char*)xmlNodeGetContent(body_node);
+			if(body_content == NULL)
+			{
+				LM_ERR("Bad formatted scenario document. Empty body\n");
+				xmlFree(body_type);
+				goto error;
+			}
+			/* we move everything in pkg to be able to strip them */
+			scenario->body_type.len = strlen(body_type);
+			scenario->body_type.s = body_type;
+			scenario->body.len = strlen(body_content);
+			scenario->body.s = body_content;
+		}
 	}
 
 	/* go through the rules */
@@ -608,7 +635,7 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 			memset(rule_struct, 0, sizeof(b2b_rule_t));
 			rule_struct->next =  scenario->request_rules[request_id];
 			scenario->request_rules[request_id] = rule_struct;
-			
+
 			attr.s = (char*)xmlNodeGetAttrContentByName(rule_node, "id");
 			if(attr.s == NULL)
 			{
@@ -692,9 +719,13 @@ error:
 		}
 		if(scenario->id.s)
 			xmlFree(scenario->id.s);
+		if(scenario->body.s)
+			xmlFree(scenario->body.s);
+		if(scenario->body_type.s)
+			xmlFree(scenario->body_type.s);
 		pkg_free(scenario);
 	}
-	
+
 	return -1;
 }
 
@@ -761,6 +792,11 @@ static void mod_destroy(void)
 		}
 		if(scenario->id.s)
 			xmlFree(scenario->id.s);
+		if (scenario->body.s)
+			xmlFree(scenario->body.s);
+		if (scenario->body_type.s)
+			xmlFree(scenario->body_type.s);
+
 		pkg_free(scenario);
 		scenario = next;
 	}
@@ -948,7 +984,7 @@ struct to_body* get_b2bl_from(struct sip_msg* msg)
 			//LM_DBG("got PV_SPEC b2bl_from [%.*s]\n",
 			//	b2bl_from_tok.rs.len, b2bl_from_tok.rs.s);
 			if(b2bl_from_tok.rs.len+CRLF_LEN > B2BL_FROM_BUF_LEN) {
-				LM_ERR("Buffer overflow");
+				LM_ERR("Buffer overflow\n");
 				return NULL;
 			}
 			trim(&b2bl_from_tok.rs);
@@ -973,7 +1009,7 @@ struct to_body* get_b2bl_from(struct sip_msg* msg)
 					b2bl_from.uri.len, b2bl_from.uri.s);
 				return NULL;
 			}
-			
+
 			/* side effect of parsing - nobody should need them later on,
 			 * so free them right now */
 			free_to_params(&b2bl_from);
@@ -1003,13 +1039,13 @@ str* b2bl_bridge_extern(str* scenario_name, str* args[],
 	}
 	hash_index = core_hash(args[0], args[1], b2bl_hsize);
 
-	LM_DBG("start: bridge [%.*s] with [%.*s]\n", args[0]->len, args[0]->s, 
+	LM_DBG("start: bridge [%.*s] with [%.*s]\n", args[0]->len, args[0]->s,
 			 args[1]->len, args[1]->s);
 	/* find the scenario with the corresponding id */
 	scenario_struct = extern_scenarios;
 	while(scenario_struct)
 	{
-		if(scenario_struct->id.len == scenario_name->len && 
+		if(scenario_struct->id.len == scenario_name->len &&
 				strncmp(scenario_struct->id.s, scenario_name->s, scenario_name->len) == 0)
 		{
 			break;
@@ -1021,7 +1057,7 @@ str* b2bl_bridge_extern(str* scenario_name, str* args[],
 		LM_ERR("No scenario found with the specified id\n");
 		return 0;
 	}
-	
+
 	/* apply the init part of the scenario */
 	tuple = b2bl_insert_new(NULL, hash_index, scenario_struct, args,
 				NULL, NULL, -1, &b2bl_key, INSERTDB_FLAG);
@@ -1224,7 +1260,7 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	node = node->next;
 	if(node == NULL)
 		return 0;
-	
+
 	new_dest = node->value;
 	if(new_dest.s == NULL || new_dest.len == 0)
 	{
@@ -1460,12 +1496,13 @@ static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param)
 	char* p;
 	b2bl_tuple_t* tuple;
 	struct mi_root *rpl_tree;
-	struct mi_node *node=NULL, *node1=NULL, *rpl=NULL;
+	struct mi_node *node=NULL, *node1=NULL, *rpl=NULL, *node_a=NULL;
 	struct mi_attr* attr;
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for(i = 0; i< b2bl_hsize; i++)
 	{
@@ -1500,39 +1537,54 @@ static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param)
 				if(attr == NULL) goto error;
 			}
 
-			for (index = 0; index < MAX_B2BL_ENT; index++)
+			for (node_a=NULL,index=0; index < MAX_B2BL_ENT; index++)
 			{
 				if (tuple->servers[index] != NULL)
 				{
+					if (node_a==NULL) {
+						node_a = add_mi_node_child(node, MI_IS_ARRAY,
+							"SERVERS", 7, NULL, 0);
+						if (node_a==NULL) goto error;
+					}
 					p = int2str((unsigned long)(index), &len);
-					node1 = add_mi_node_child(node, MI_DUP_VALUE,
-						"servers", 7, p, len);
+					node1 = add_mi_node_child(node_a, MI_DUP_VALUE,
+						"server", 6, p, len);
 					if(node1 == NULL) goto error;
 					if (internal_mi_print_b2bl_entity_id(node1,
 							tuple->servers[index])!=0)
 						goto error;
 				}
 			}
-			for (index = 0; index < MAX_B2BL_ENT; index++)
+			for (node_a=NULL,index=0; index < MAX_B2BL_ENT; index++)
 			{
 				if (tuple->clients[index] != NULL)
 				{
+					if (node_a==NULL) {
+						node_a = add_mi_node_child(node, MI_IS_ARRAY,
+							"CLIENTS", 7, NULL, 0);
+						if (node_a==NULL) goto error;
+					}
 					p = int2str((unsigned long)(index), &len);
-					node1 = add_mi_node_child(node, MI_DUP_VALUE,
-						"clients", 7, p, len);
+					node1 = add_mi_node_child(node_a, MI_DUP_VALUE,
+						"client", 6, p, len);
 					if(node1 == NULL) goto error;
 					if (internal_mi_print_b2bl_entity_id(node1,
 							tuple->clients[index])!=0)
 						goto error;
 				}
 			}
-			for (index = 0; index < MAX_BRIDGE_ENT; index++)
+			for (node_a=NULL,index=0; index < MAX_BRIDGE_ENT; index++)
 			{
 				if (tuple->bridge_entities[index] != NULL)
 				{
+					if (node_a==NULL) {
+						node_a = add_mi_node_child(node, MI_IS_ARRAY,
+							"BRIDGE_ENTITIES", 15, NULL, 0);
+						if (node_a==NULL) goto error;
+					}
 					p = int2str((unsigned long)(index), &len);
-					node1 = add_mi_node_child(node, MI_DUP_VALUE,
-							"bridge_entities", 15, p, len);
+					node1 = add_mi_node_child(node_a, MI_DUP_VALUE,
+							"bridge_entitie", 14, p, len);
 					if(node1 == NULL) goto error;
 					if (internal_mi_print_b2bl_entity_id(node1,
 							tuple->bridge_entities[index])!=0)
@@ -1618,7 +1670,8 @@ int b2b_logic_bind(b2bl_api_t* api)
 }
 
 
-int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param)
+int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param,
+														unsigned int cb_mask)
 {
 	b2bl_tuple_t* tuple;
 	unsigned int local_index, hash_index;
@@ -1645,6 +1698,7 @@ int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param)
 		return -1;
 	}
 	tuple->cbf = cbf;
+	tuple->cb_mask = cb_mask;
 	tuple->cb_param = param;
 	lock_release(&b2bl_htable[hash_index].lock);
 

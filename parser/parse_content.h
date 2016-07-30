@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #ifndef _PARSE_CONTENT_H
@@ -69,7 +67,7 @@ struct mime_type {
 
 
 /*
- * Maximum number of mimes allowed in Accept header 
+ * Maximum number of mimes allowed in Accept header
  */
 #define MAX_MIMES_NR         128
 
@@ -129,5 +127,7 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_
 
 
 void free_contenttype(content_t ** con);
+
+char* convert_mime2string_CT(int contenttype);
 
 #endif

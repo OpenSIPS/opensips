@@ -1,8 +1,8 @@
-INSERT INTO version (table_name, table_version) values ('location','1009');
+INSERT INTO version (table_name, table_version) values ('location','1011');
 CREATE TABLE location (
-    id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    contact_id BIGINT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     username CHAR(64) DEFAULT '' NOT NULL,
-    domain CHAR(64) DEFAULT '' NOT NULL,
+    domain CHAR(64) DEFAULT NULL,
     contact CHAR(255) DEFAULT '' NOT NULL,
     received CHAR(128) DEFAULT NULL,
     path CHAR(255) DEFAULT NULL,
@@ -19,5 +19,5 @@ CREATE TABLE location (
     sip_instance CHAR(255) DEFAULT NULL,
     attr CHAR(255) DEFAULT NULL,
     CONSTRAINT account_contact_idx UNIQUE (username, domain, contact, callid)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 

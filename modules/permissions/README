@@ -24,8 +24,7 @@ Irina-Maria Stanescu
 
    Copyright © 2009 Irina-Maria Stanescu
    Revision History
-   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
-                              (Tue, 29 Jan 2013) $
+   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -53,13 +52,14 @@ Irina-Maria Stanescu
               1.3.5. deny_suffix (string)
               1.3.6. db_url (string)
               1.3.7. address_table (string)
-              1.3.8. grp_col (string)
-              1.3.9. ip_col (string)
-              1.3.10. mask_col (string)
-              1.3.11. port_col (string)
-              1.3.12. proto_col (string)
-              1.3.13. pattern_col (string)
-              1.3.14. info_col (string)
+              1.3.8. partition (string)
+              1.3.9. grp_col (string)
+              1.3.10. ip_col (string)
+              1.3.11. mask_col (string)
+              1.3.12. port_col (string)
+              1.3.13. proto_col (string)
+              1.3.14. pattern_col (string)
+              1.3.15. info_col (string)
 
         1.4. Exported Functions
 
@@ -69,8 +69,8 @@ Irina-Maria Stanescu
               1.4.4. allow_register(basename)
               1.4.5. allow_register(allow_file, deny_file)
               1.4.6. allow_uri(basename, pvar)
-              1.4.7. check_address(group_id, ip, port, proto [,
-                      context_info [, pattern]])
+              1.4.7. check_address([partition:]group_id, ip, port,
+                      proto [, context_info [, pattern]])
 
               1.4.8. check_source_address(group_id [, context_info
                       [, pattern]])
@@ -93,22 +93,23 @@ Irina-Maria Stanescu
    1.5. Set deny_suffix parameter
    1.6. Set db_url parameter
    1.7. Set address_table parameter
-   1.8. Set grp_col parameter
-   1.9. Set ip_col parameter
-   1.10. Set mask_col parameter
-   1.11. Set port_col parameter
-   1.12. Set proto_col parameter
-   1.13. Set pattern_col parameter
-   1.14. Set info_col parameter
-   1.15. allow_routing usage
-   1.16. allow_routing(basename) usage
-   1.17. allow_routing(allow_file, deny_file) usage
-   1.18. allow_register(basename) usage
-   1.19. allow_register(allow_file, deny_file) usage
-   1.20. allow_uri(basename, pvar) usage
-   1.21. check_address() usage
-   1.22. check_source_address() usage
-   1.23. get_source_group() usage
+   1.8. Set partition parameter
+   1.9. Set grp_col parameter
+   1.10. Set ip_col parameter
+   1.11. Set mask_col parameter
+   1.12. Set port_col parameter
+   1.13. Set proto_col parameter
+   1.14. Set pattern_col parameter
+   1.15. Set info_col parameter
+   1.16. allow_routing usage
+   1.17. allow_routing(basename) usage
+   1.18. allow_routing(allow_file, deny_file) usage
+   1.19. allow_register(basename) usage
+   1.20. allow_register(allow_file, deny_file) usage
+   1.21. allow_uri(basename, pvar) usage
+   1.22. check_address() usage
+   1.23. check_source_address() usage
+   1.24. get_source_group() usage
 
 Chapter 1. Admin Guide
 
@@ -318,7 +319,8 @@ modparam("permissions", "deny_suffix", ".deny")
 
 1.3.6. db_url (string)
 
-   This is URL of the database to be used.
+   This is URL of the database to be used. Since version 2.2, this
+   url represents the db_url for the “default” partition.
 
    Default value is “NULL”.
 
@@ -331,7 +333,8 @@ bname")
 1.3.7. address_table (string)
 
    Name of database table containing matching rules used by
-   allow_register function.
+   allow_register function. Since version 2.2, this table name
+   represents the table name for the “default” partition.
 
    Default value is “address”.
 
@@ -340,55 +343,74 @@ bname")
 modparam("permissions", "address_table", "pbx")
 ...
 
-1.3.8. grp_col (string)
+1.3.8. partition (string)
+
+   Create a partition containg an url and a table name. Partitions
+   allow you to use different databases or different tables from
+   the same database. It is IMPORTANT that you split the
+   paramteres by ";". Also, it is very IMPORTANT to put ";" after
+   the last parameter, elseway it will not be taken into
+   consideration.
+
+   The db_url for a partition is mandatory. The table name,
+   instead, has a default value 'address'.
+
+   Example 1.8. Set partition parameter
+...
+modparam("permissions", "partition", "my_part: db_url=“some_url”; table_
+name=“some_table”;")
+...
+
+
+1.3.9. grp_col (string)
 
    Name of address table column containing group identifier of the
    address.
 
    Default value is “grp”.
 
-   Example 1.8. Set grp_col parameter
+   Example 1.9. Set grp_col parameter
 ...
 modparam("permissions", "grp_col", "group_id")
 ...
 
-1.3.9. ip_col (string)
+1.3.10. ip_col (string)
 
    Name of address table column containing IP address part of the
    address.
 
    Default value is “ip”.
 
-   Example 1.9. Set ip_col parameter
+   Example 1.10. Set ip_col parameter
 ...
 modparam("permissions", "ip_col", "ipess")
 ...
 
-1.3.10. mask_col (string)
+1.3.11. mask_col (string)
 
    Name of address table column containing network mask of the
    address. Possible values are 0-32.
 
    Default value is “mask”.
 
-   Example 1.10. Set mask_col parameter
+   Example 1.11. Set mask_col parameter
 ...
 modparam("permissions", "mask_col", "subnet_length")
 ...
 
-1.3.11. port_col (string)
+1.3.12. port_col (string)
 
    Name of address table column containing port part of the
    address.
 
    Default value is “port”.
 
-   Example 1.11. Set port_col parameter
+   Example 1.12. Set port_col parameter
 ...
 modparam("permissions", "port_col", "prt")
 ...
 
-1.3.12. proto_col (string)
+1.3.13. proto_col (string)
 
    Name of address table column containing transport protocol that
    is matched against transport protocol of received request.
@@ -398,12 +420,12 @@ modparam("permissions", "port_col", "prt")
 
    Default value is “proto”.
 
-   Example 1.12. Set proto_col parameter
+   Example 1.13. Set proto_col parameter
 ...
 modparam("permissions", "proto_col", "transport")
 ...
 
-1.3.13. pattern_col (string)
+1.3.14. pattern_col (string)
 
    Name of address table column containing regular expression that
    is matched against the arguments received by check_address or
@@ -411,12 +433,12 @@ modparam("permissions", "proto_col", "transport")
 
    Default value is “pattern”.
 
-   Example 1.13. Set pattern_col parameter
+   Example 1.14. Set pattern_col parameter
 ...
 modparam("permissions", "pattern_col", "regexp")
 ...
 
-1.3.14. info_col (string)
+1.3.15. info_col (string)
 
    Name of address table column containing a string that is added
    as value to a pvar given as argument to check_address or
@@ -424,7 +446,7 @@ modparam("permissions", "pattern_col", "regexp")
 
    Default value is “context_info”.
 
-   Example 1.14. Set info_col parameter
+   Example 1.15. Set info_col parameter
 ...
 modparam("permissions", "info_col", "info_col")
 ...
@@ -441,7 +463,7 @@ modparam("permissions", "info_col", "info_col")
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.15. allow_routing usage
+   Example 1.16. allow_routing usage
 ...
 if (allow_routing()) {
         t_relay();
@@ -464,7 +486,7 @@ if (allow_routing()) {
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.16. allow_routing(basename) usage
+   Example 1.17. allow_routing(basename) usage
 ...
 if (allow_routing("basename")) {
         t_relay();
@@ -489,7 +511,7 @@ if (allow_routing("basename")) {
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.17. allow_routing(allow_file, deny_file) usage
+   Example 1.18. allow_routing(allow_file, deny_file) usage
 ...
 if (allow_routing("rules.allow", "rules.deny")) {
         t_relay();
@@ -513,7 +535,7 @@ if (allow_routing("rules.allow", "rules.deny")) {
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.18. allow_register(basename) usage
+   Example 1.19. allow_register(basename) usage
 ...
 if (method=="REGISTER") {
         if (allow_register("register")) {
@@ -544,7 +566,7 @@ if (method=="REGISTER") {
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.19. allow_register(allow_file, deny_file) usage
+   Example 1.20. allow_register(allow_file, deny_file) usage
 ...
 if (method=="REGISTER") {
         if (allow_register("register.allow", "register.deny")) {
@@ -574,7 +596,7 @@ if (method=="REGISTER") {
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.20. allow_uri(basename, pvar) usage
+   Example 1.21. allow_uri(basename, pvar) usage
 ...
 if (allow_uri("basename", "$rt")) {  // Check Refer-To URI
         t_relay();
@@ -585,8 +607,8 @@ i)
 };
 ...
 
-1.4.7.  check_address(group_id, ip, port, proto [, context_info [,
-pattern]])
+1.4.7.  check_address([partition:]group_id, ip, port, proto [,
+context_info [, pattern]])
 
    Returns 1 if group id, IP address, port and protocol given as
    arguments match an IP subnet found in cached address table, as
@@ -601,7 +623,9 @@ pattern]])
        This argument represents the group id to be matched. It can
        be an integer string or a string pvar. If the group_id
        argument is "0", the query can match any group in the
-       cached address table.
+       cached address table. Since version 2.2, you can also
+       specify the partition(either string or pv). If no partition
+       specified, the “default” one will be used.
      * ip
        This argument represents the ip address to be matched. It
        can be an given directly as string or as a string pvar.
@@ -628,7 +652,7 @@ pattern]])
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.21. check_address() usage
+   Example 1.22. check_address() usage
 ...
 
 // Checks if the tuple IP address/port (given as strings) and source pro
@@ -644,6 +668,11 @@ test")) {
         xlog("$avp(ctx)\n");
 }
 
+if (check_address("my_part:4","192.168.2.135","5700","$proto","$avp(ctx)
+", "texttest")) {
+        t_relay();
+        xlog("$avp(ctx)\n");
+}
 ...
 
 // Checks if the tuple IP address/port/protocol of the source message is
@@ -660,8 +689,9 @@ rt/s:proto
 $avp(ip) = "192.168.2.135";
 $avp(port) = 5061;
 $avp(proto) = "any";
-if (check_address("4","$avp(ip)","$avp(port)","$avp(proto)","$avp(ctx)))
- {
+$avp(partition)="my_part";
+if (check_address("$avp(partition):4","$avp(ip)","$avp(port)","$avp(prot
+o)","$avp(ctx))) {
         t_relay();
         xlog("$avp(ctx)\n");
 }
@@ -689,11 +719,11 @@ if (check_address("4","$si","5700","$proto","", "texttest")) {
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.22. check_source_address() usage
+   Example 1.23. check_source_address() usage
 ...
 // Check if source address/port/proto is in group 4 and stores
 // context information in $avp(ctx)
-if (check_source_address("4","$avp(ctx)")) {
+if (check_source_address("$avp(partition):4","$avp(ctx)")) {
         xlog("$avp(ctx)\n");
 }else {
         sl_send_reply("403", "Forbidden");
@@ -705,11 +735,14 @@ if (check_source_address("4","$avp(ctx)")) {
    Checks if an entry with the source ip/port/protocol is found in
    cached address or subnet table in any group. If yes, returns
    that group in the pvar parameter. If not returns -1. Port value
-   0 in cached address and subnet table matches any port.
+   0 in cached address and subnet table matches any port. Since
+   version 2.2, you can also specify the partition(either string
+   or pv). If no partition specified, the “default” one will be
+   used.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.23. get_source_group() usage
+   Example 1.24. get_source_group() usage
 
 ...
 
@@ -730,21 +763,27 @@ if ( get_source_group("$var(group)") ) {
    tables: address table and subnet table depending on the value
    of the mask field (32 or smaller).
 
-   Parameters: none
+   Parameters:
+     * partition - the name of the partition to be reloaded. If
+       none specified all the partitions shall be reloaded.
 
 1.5.2.  address_dump
 
    Causes permissions module to dump contents of the address table
    from cache memory.
 
-   Parameters: none
+   Parameters:
+     * partition - the name of the partition to be dumped. If none
+       specified all the partitions shall be dumped.
 
 1.5.3.  subnet_dump
 
    Causes permissions module to dump contents of cache memory
    subnet table.
 
-   Parameters: none
+   Parameters:
+     * partition - the name of the partition to be dumped. If none
+       specified all the partitions shall be dumped.
 
 1.5.4.  allow_uri
 

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * eXtended JABber module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -83,7 +81,7 @@ void xj_wlist_del(xj_wlist, xj_jkey, int);
 void xj_wlist_free(xj_wlist);
 int  xj_wlist_set_aliases(xj_wlist, char *, char *, char *);
 int  xj_wlist_check_aliases(xj_wlist, str*);
-int  xj_wlist_clean_jobs(xj_wlist, int, int); 
+int  xj_wlist_clean_jobs(xj_wlist, int, int);
 
 int xj_worker_process(xj_wlist, char*, int, char*, int, db_con_t*, db_func_t*);
 

@@ -25,8 +25,7 @@ Ovidiu Sas
 
    Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2010-12-07 19:37:12 +0200
-                              (Tue, 07 Dec 2010) $
+   Revision $Revision: 7480 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -266,9 +265,9 @@ if(has_body() && replace_body_atonce("^.+$", ""))
      * '/re/repl/flags' - sed like regular expression. flags can
        be a combination of i (case insensitive), g (global) or s
        (match newline don't treat it as end of line).
-       're' - is regular expresion
+       're' - is regular expression
        'repl' - is replacement string - may contain
-       pseudo-varibales
+       pseudo-variables
        'flags' - substitution flags (i - ignore case, g - global)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -295,9 +294,9 @@ if ( subst('/^To:(.*)sip:[^@]*@[a-zA-Z0-9.]+(.*)$/t:\1$avp(sip_address)\
      * '/re/repl/flags' - sed like regular expression. flags can
        be a combination of i (case insensitive), g (global) or s
        (match newline don't treat it as end of line).
-       're' - is regular expresion
+       're' - is regular expression
        'repl' - is replacement string - may contain
-       pseudo-varibales
+       pseudo-variables
        'flags' - substitution flags (i - ignore case, g - global)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -326,9 +325,9 @@ if (subst_uri('/^sip:([0-9]+)@(.*)$/sip:$avp(uri_prefix)\1@\2;orig_uri=\
      * '/re/repl/flags' - sed like regular expression. flags can
        be a combination of i (case insensitive), g (global) or s
        (match newline don't treat it as end of line).
-       're' - is regular expresion
+       're' - is regular expression
        'repl' - is replacement string - may contain
-       pseudo-varibales
+       pseudo-variables
        'flags' - substitution flags (i - ignore case, g - global)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -354,9 +353,9 @@ if (subst_user('/(.*)3642$/$avp(user_prefix)\13642/')){$
      * '/re/repl/flags' - sed like regular expression. flags can
        be a combination of i (case insensitive), g (global) or s
        (match newline don't treat it as end of line).
-       're' - is regular expresion
+       're' - is regular expression
        'repl' - is replacement string - may contain
-       pseudo-varibales
+       pseudo-variables
        'flags' - substitution flags (i - ignore case, g - global)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,

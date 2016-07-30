@@ -1,5 +1,4 @@
-/* $Id: python_iface.c,v 1.1 2009/12/09 09:28:26 root Exp $
- *
+/*
  * Copyright (C) 2009 Sippy Software, Inc., http://www.sippysoft.com
  *
  * This file is part of opensips, a free SIP server.
@@ -16,17 +15,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
 */
+
+#include <Python.h>
+#include "structmember.h"
 
 #include "../../action.h"
 #include "../../mem/mem.h"
 #include "../../sr_module.h"
 #include "../../parser/msg_parser.h"
-
-#include <Python.h>
-#include "structmember.h"
 
 #ifndef Py_TYPE
 #define Py_TYPE(ob)               (((PyObject*)(ob))->ob_type)
@@ -40,6 +39,11 @@ typedef struct {
 static PyTypeObject MSGtype;
 
 #define is_msgobject(v)         ((v)->ob_type == &MSGtype)
+
+void set_Py_Type(PyObject *obj, struct _typeobject *type)
+{
+	obj->ob_type = type;
+}
 
 msgobject *
 newmsgobject(struct sip_msg *msg)
@@ -222,7 +226,7 @@ msg_call_function(msgobject *self, PyObject *args)
     elems[1].u.data = arg1;
     elems[2].type = STRING_ST;
     elems[2].u.data = arg2;
-    act = mk_action(MODULE_T, 3, elems, 0);
+    act = mk_action(MODULE_T, 3, elems, 0, "python");
 
     if (act == NULL) {
         PyErr_SetString(PyExc_RuntimeError,
@@ -477,51 +481,30 @@ static PyGetSetDef msg_getseters[] = {
     {NULL, NULL, NULL, NULL, NULL}  /* Sentinel */
 };
 
-static PyTypeObject MSGtype = {
-#if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION >= 6
-    PyVarObject_HEAD_INIT(NULL, 0)
-#else
-    PyObject_HEAD_INIT(NULL)
-    0,                        /*ob_size*/
-#endif
-    "OpenSIPS.msg",           /*tp_name*/
-    sizeof(msgobject),        /*tp_size*/
-    0,                        /*tp_itemsize*/
-    /* methods */
-    (destructor)msg_dealloc,  /*tp_dealloc*/
-    0,                        /*tp_print*/
-    0,                        /*tp_getattr*/
-    0,                        /*tp_setattr*/
-    0,                        /*tp_compare*/
-    0,                        /*tp_repr*/
-    0,                        /*tp_as_number*/
-    0,                        /*tp_as_sequence*/
-    0,                        /*tp_as_mapping*/
-    0,                        /*tp_hash*/
-    0,                        /*tp_call*/
-    0,                        /*tp_str*/
-    0,                        /*tp_getattro*/
-    0,                        /*tp_setattro*/
-    0,                        /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT,       /*tp_flags*/
-    0,                        /*tp_doc*/
-    0,                        /*tp_traverse*/
-    0,                        /*tp_clear*/
-    0,                        /*tp_richcompare*/
-    0,                        /*tp_weaklistoffset*/
-    0,                        /*tp_iter*/
-    0,                        /*tp_iternext*/
-    msg_methods,              /*tp_methods*/
-    0,                        /*tp_members*/
-    msg_getseters,            /*tp_getset*/
-};
-
 int
 python_msgobj_init(void)
 {
+	/* HEAD initialization */
+#if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION >= 6
+	PyVarObject obj = { PyVarObject_HEAD_INIT(NULL, 0) };
 
-    Py_TYPE(&MSGtype) = &PyType_Type;
-    if (PyType_Ready(&MSGtype) < 0)
-        return -1;
-    return 0;
+	memcpy(((PyVarObject *)&MSGtype), &obj, sizeof obj);
+#else
+	PyObject obj = { PyObject_HEAD_INIT(NULL) };
+
+	memcpy(((PyObject *)&MSGtype), &obj, sizeof obj);
+#endif
+
+	MSGtype.tp_name      = "OpenSIPS.msg";
+	MSGtype.tp_basicsize = sizeof(msgobject);
+	MSGtype.tp_dealloc   = (destructor)msg_dealloc;
+	MSGtype.tp_flags     = Py_TPFLAGS_DEFAULT;
+	MSGtype.tp_methods   = msg_methods;
+	MSGtype.tp_getset   = msg_getseters;
+	set_Py_Type((PyObject *)&MSGtype, &PyType_Type);
+
+	if (PyType_Ready(&MSGtype) < 0)
+	    return -1;
+
+	return 0;
 }

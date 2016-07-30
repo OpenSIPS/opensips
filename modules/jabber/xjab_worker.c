@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * eXtended JABber module - worker implementation
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
+ * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History
  * -------
@@ -93,20 +91,20 @@ int xj_address_translation(str *src, str *dst, xj_jalias als, int flag)
 {
 	char *p, *p0;
 	int i, ll;
-	
+
 	if(!src || !dst || !src->s || !dst->s )
-		return -1; 
-	
+		return -1;
+
 	if(!als || !als->jdm || !als->jdm->s || als->jdm->len <= 0)
 		goto done;
-	
+
 	dst->len = 0;
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("%d: - checking aliases\n", _xj_pid);
 #endif
 	p = src->s;
 
-	while(p<(src->s + src->len)	&& *p != '@') 
+	while(p<(src->s + src->len)	&& *p != '@')
 		p++;
 	if(*p != '@')
 		goto done;
@@ -117,12 +115,12 @@ int xj_address_translation(str *src, str *dst, xj_jalias als, int flag)
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("%d: - domain is [%.*s]\n",_xj_pid,ll,p);
 #endif
-	
+
 	/*** checking aliases */
 	if(als->size > 0)
 	{
 		for(i=0; i<als->size; i++)
-			if(als->a[i].len == ll && 
+			if(als->a[i].len == ll &&
 				!strncasecmp(p, als->a[i].s, als->a[i].len))
 			{
 				if(als->d[i])
@@ -131,7 +129,7 @@ int xj_address_translation(str *src, str *dst, xj_jalias als, int flag)
 					{
 						strncpy(dst->s, src->s, src->len);
 						p0 = dst->s;
-						while(p0 < dst->s + (p-src->s)) 
+						while(p0 < dst->s + (p-src->s))
 						{
 							if(*p0 == als->dlm)
 								*p0 = als->d[i];
@@ -143,12 +141,12 @@ int xj_address_translation(str *src, str *dst, xj_jalias als, int flag)
 					{
 						strncpy(dst->s, src->s, src->len);
 						p0 = dst->s;
-						while(p0 < dst->s + (p-src->s)) 
+						while(p0 < dst->s + (p-src->s))
 						{
 							if(*p0 == als->d[i])
 								*p0 = als->dlm;
 							p0++;
-						}						
+						}
 						return 0;
 					}
 				}
@@ -158,9 +156,9 @@ int xj_address_translation(str *src, str *dst, xj_jalias als, int flag)
 
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("%d: - doing address correction\n",
-			_xj_pid);	
+			_xj_pid);
 #endif
-	
+
 	if(flag & XJ_ADDRTR_S2J)
 	{
 		if(als->jdm->len != ll || strncasecmp(p, als->jdm->s, als->jdm->len))
@@ -235,11 +233,11 @@ int xj_address_translation(str *src, str *dst, xj_jalias als, int flag)
 done:
 	dst->s = src->s;
 	dst->len = src->len;
-	return 0;	
+	return 0;
 }
 
 /**
- * worker implementation 
+ * worker implementation
  * - jwl : pointer to the workers list
  * - jaddress : address of the jabber server
  * - jport : port of the jabber server
@@ -267,7 +265,7 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 	static str tmp2 = str_init("type");
 	static str tmp3 = str_init("jab_id");
 	static str tmp4 = str_init("jab_passwd");
-	
+
 	db_key_t keys[] = {&tmp1, &tmp2};
 	db_val_t vals[2];
 	db_key_t col[] = {&tmp3, &tmp4};
@@ -279,9 +277,9 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 	vals[1].type=DB_INT;
 	vals[1].nul=0;
 	vals[1].val.int_val=0;
-		
+
 	_xj_pid = getpid();
-	
+
 	//signal(SIGTERM, xj_sig_handler);
 	//signal(SIGINT, xj_sig_handler);
 	//signal(SIGQUIT, xj_sig_handler);
@@ -299,7 +297,7 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 		}
 	}
 
-	if(!jwl || !jwl->aliases || !jwl->aliases->jdm 
+	if(!jwl || !jwl->aliases || !jwl->aliases->jdm
 			|| !jaddress || rank >= jwl->len)
 	{
 		LM_DBG("[%d]:%d: exiting - wrong parameters\n", rank, _xj_pid);
@@ -333,10 +331,10 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 		tmv.tv_usec = 0;
 
 		ret = select(maxfd+1, &mset, NULL, NULL, &tmv);
-		
+
 		// check the msg queue
 		xj_worker_check_qmsg(jwl, jcp);
-		
+
 		if(ret <= 0)
 			goto step_x;
 
@@ -345,7 +343,7 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 #endif
 		if(!FD_ISSET(pipe, &mset))
 			goto step_y;
-		
+
 		if(read(pipe, &jsmsg, sizeof(jsmsg)) < (int)sizeof(jsmsg))
 		{
 			LM_DBG("%d: BROKEN PIPE - exiting\n", _xj_pid);
@@ -363,7 +361,7 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 		buff[jsmsg->jkey->id->len] = 0;
 
 		jbc = xj_jcon_pool_get(jcp, jsmsg->jkey);
-		
+
 		switch(jsmsg->type)
 		{
 			case XJ_SEND_MESSAGE:
@@ -399,7 +397,7 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 			default:
 				goto step_w;
 		}
-		
+
 		if(jbc != NULL)
 		{
 #ifdef XJ_EXTRA_DEBUG
@@ -409,11 +407,11 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 			xj_jcon_update(jbc, jwl->cachet);
 			goto step_z;
 		}
-		
+
 		// NO OPEN CONNECTION FOR THIS SIP ID
 #ifdef XJ_EXTRA_DEBUG
 		LM_DBG("%d: new connection for <%s>.\n", _xj_pid, buff);
-#endif		
+#endif
 		if(dbf->query(db_con, keys, 0, vals, col, 2, 2, NULL, &res) != 0 ||
 			RES_ROW_N(res) <= 0)
 		{
@@ -421,29 +419,29 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 			LM_DBG("%d: no database result when looking"
 				" for associated Jabber account\n", _xj_pid);
 #endif
-			xj_send_sip_msgz(_PADDR(jwl), jsmsg->jkey->id, &jsmsg->to, 
+			xj_send_sip_msgz(_PADDR(jwl), jsmsg->jkey->id, &jsmsg->to,
 				XJ_DMSG_ERR_JGWFORB, NULL);
-			
+
 			goto step_v;
 		}
-		
+
 		jbc = xj_jcon_init(jaddress, jport);
-		
+
 		if(xj_jcon_connect(jbc))
 		{
 			LM_DBG("%d: Cannot connect"
 				" to the Jabber server ...\n", _xj_pid);
-			xj_send_sip_msgz(_PADDR(jwl), jsmsg->jkey->id, &jsmsg->to, 
+			xj_send_sip_msgz(_PADDR(jwl), jsmsg->jkey->id, &jsmsg->to,
 				XJ_DMSG_ERR_NOJSRV, NULL);
 
 			goto step_v;
 		}
-		
+
 #ifdef XJ_EXTRA_DEBUG
 		LM_DBG("auth to jabber as: [%s] / [xxx]\n",
 			(char*)(ROW_VALUES(RES_ROWS(res))[0].val.string_val));
 //			(char*)(ROW_VALUES(RES_ROWS(res))[1].val.string_val));
-#endif		
+#endif
 		if(xj_jcon_user_auth(jbc,
 			(char*)(ROW_VALUES(RES_ROWS(res))[0].val.string_val),
 			(char*)(ROW_VALUES(RES_ROWS(res))[1].val.string_val),
@@ -451,26 +449,26 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 		{
 			LM_DBG("athentication to the Jabber server failed ...\n");
 			xj_jcon_disconnect(jbc);
-			
-			xj_send_sip_msgz(_PADDR(jwl), jsmsg->jkey->id, &jsmsg->to, 
+
+			xj_send_sip_msgz(_PADDR(jwl), jsmsg->jkey->id, &jsmsg->to,
 					XJ_DMSG_ERR_JAUTH, NULL);
-			
+
 			xj_jcon_free(jbc);
 			goto step_v;
 		}
-		
+
 		if(xj_jcon_set_attrs(jbc, jsmsg->jkey, jwl->cachet, jwl->delayt)
 			|| xj_jcon_pool_add(jcp, jbc))
 		{
 			LM_DBG("keeping connection to Jabber server"
 				" failed! Not enough memory ...\n");
 			xj_jcon_disconnect(jbc);
-			xj_send_sip_msgz(_PADDR(jwl), jsmsg->jkey->id, &jsmsg->to,	
+			xj_send_sip_msgz(_PADDR(jwl), jsmsg->jkey->id, &jsmsg->to,
 					XJ_DMSG_ERR_JGWFULL, NULL);
 			xj_jcon_free(jbc);
 			goto step_v;
 		}
-								
+
 		/** add socket descriptor to select */
 #ifdef XJ_EXTRA_DEBUG
 		LM_DBG("add connection on <%d> \n",jbc->sock);
@@ -478,13 +476,13 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 		if(jbc->sock > maxfd)
 			maxfd = jbc->sock;
 		FD_SET(jbc->sock, &set);
-										
+
 		xj_jcon_get_roster(jbc);
 		xj_jcon_send_presence(jbc, NULL, NULL, "Online", priority);
-		
+
 		/** wait for a while - the worker is tired */
 		//sleep(3);
-		
+
 		if ((res != NULL) && (dbf->free_result(db_con,res) < 0))
 		{
 			LM_DBG("failed to free SQL result - worker terminated\n");
@@ -496,13 +494,13 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 step_z:
 		if(jsmsg->type == XJ_GO_ONLINE)
 			goto step_w;
-		
+
 		if(jsmsg->type == XJ_REG_WATCHER)
 		{ // update or register a presence watcher
 			xj_worker_check_watcher(jwl, jcp, jbc, jsmsg);
 			goto step_w;
 		}
-		
+
 		flag = 0;
 		if(!xj_jconf_check_addr(&jsmsg->to, jwl->aliases->dlm))
 		{
@@ -510,14 +508,14 @@ step_z:
 					!= NULL)
 			{
 				if((jsmsg->type == XJ_JOIN_JCONF) &&
-					!(jcf->status & XJ_JCONF_READY || 
+					!(jcf->status & XJ_JCONF_READY ||
 						jcf->status & XJ_JCONF_WAITING))
 				{
 					if(!xj_jcon_jconf_presence(jbc,jcf,NULL,"online"))
 						jcf->status = XJ_JCONF_WAITING;
 					else
 					{
-						// unable to join the conference 
+						// unable to join the conference
 						// --- send back to SIP user a msg
 						xj_send_sip_msgz(_PADDR(jwl),jsmsg->jkey->id,&jsmsg->to,
 							XJ_DMSG_ERR_JOINJCONF, &jbc->jkey->flag);
@@ -528,7 +526,7 @@ step_z:
 			}
 			else
 			{
-				// unable to get the conference 
+				// unable to get the conference
 				// --- send back to SIP user a msg
 				xj_send_sip_msgz(_PADDR(jwl), jsmsg->jkey->id, &jsmsg->to,
 						XJ_DMSG_ERR_NEWJCONF, &jbc->jkey->flag);
@@ -537,7 +535,7 @@ step_z:
 		}
 		if(jsmsg->type != XJ_SEND_MESSAGE)
 			goto step_w;
-		
+
 		// here will come only XJ_SEND_MESSAGE
 		switch(xj_jcon_is_ready(jbc,jsmsg->to.s,jsmsg->to.len,jwl->aliases->dlm))
 		{
@@ -546,24 +544,24 @@ step_z:
 				LM_DBG("sending the message to Jabber network ...\n");
 #endif
 				/*** address correction ***/
-				sto.s = buff; 
+				sto.s = buff;
 				sto.len = 0;
 				flag |= XJ_ADDRTR_S2J;
-				if(xj_address_translation(&jsmsg->to, &sto, jwl->aliases, 
+				if(xj_address_translation(&jsmsg->to, &sto, jwl->aliases,
 							flag) == 0)
 				{
 					if(xj_jcon_send_msg(jbc, sto.s, sto.len,
 						jsmsg->msg.s, jsmsg->msg.len,
 						(flag&XJ_ADDRTR_CON)?XJ_JMSG_GROUPCHAT:XJ_JMSG_CHAT)<0)
-							
+
 						xj_send_sip_msgz(_PADDR(jwl),jsmsg->jkey->id,&jsmsg->to,
 							XJ_DMSG_ERR_SENDJMSG, &jbc->jkey->flag);
 				}
 				else
 					LM_ERR("sending as Jabber message ...\n");
-						
+
 				goto step_w;
-		
+
 			case 1:
 #ifdef XJ_EXTRA_DEBUG
 				LM_DBG("scheduling the message.\n");
@@ -578,7 +576,7 @@ step_z:
 				}
 				else // skip freeing the SIP message - now is in queue
 					goto step_y;
-	
+
 			case 2:
 				xj_send_sip_msgz(_PADDR(jwl), jsmsg->jkey->id, &jsmsg->to,
 						XJ_DMSG_ERR_NOREGIM, &jbc->jkey->flag);
@@ -587,7 +585,7 @@ step_z:
 				xj_send_sip_msgz(_PADDR(jwl), jsmsg->jkey->id, &jsmsg->to,
 						XJ_DMSG_ERR_NOTJCONF, &jbc->jkey->flag);
 				goto step_w;
-				
+
 			default:
 				xj_send_sip_msgz(_PADDR(jwl), jsmsg->jkey->id, &jsmsg->to,
 						XJ_DMSG_ERR_SENDJMSG, &jbc->jkey->flag);
@@ -595,7 +593,7 @@ step_z:
 		}
 
 step_v: // error connecting to Jabber server
-		
+
 		// cleaning jab_wlist
 		xj_wlist_del(jwl, jsmsg->jkey, _xj_pid);
 
@@ -613,9 +611,9 @@ step_w:
 		{
 			xj_sipmsg_free(jsmsg);
 			jsmsg = NULL;
-		}			
+		}
 
-step_y:			 
+step_y:
 		// check for new message from ... JABBER
 		for(i = 0; i < jcp->len && main_loop; i++)
 		{
@@ -640,7 +638,7 @@ step_y:
 					}
 					*p = 0;
 					/**
-					 * flush out the socket - set it to nonblocking 
+					 * flush out the socket - set it to nonblocking
 					 */
  					flags = fcntl(jcp->ojc[i]->sock, F_GETFL, 0);
 					if(flags!=-1 && !(flags & O_NONBLOCK))
@@ -649,8 +647,8 @@ step_y:
     					fcntl(jcp->ojc[i]->sock, F_SETFL, flags|O_NONBLOCK);
    					}
 				}
-				
-				if((nr = read(jcp->ojc[i]->sock, p,	
+
+				if((nr = read(jcp->ojc[i]->sock, p,
 						sizeof(recv_buff)-(p-recv_buff))) == 0
 					||(nr < 0 && errno != EAGAIN))
 				{
@@ -678,9 +676,9 @@ step_y:
 #endif
 			} while(xj_manage_jab(recv_buff, nr, &pos, jwl->aliases,
 							jcp->ojc[i]) == 9	&& main_loop);
-	
+
 			/**
-			 * flush out the socket - set it back to blocking 
+			 * flush out the socket - set it back to blocking
 			 */
  			flags = fcntl(jcp->ojc[i]->sock, F_GETFL, 0);
 			if(flags!=-1 && (flags & O_NONBLOCK))
@@ -689,7 +687,7 @@ step_y:
     			fcntl(jcp->ojc[i]->sock, F_SETFL, flags & ~O_NONBLOCK);
    			}
 #ifdef XJ_EXTRA_DEBUG
-			LM_DBG("msgs from socket <%d> parsed ...\n", jcp->ojc[i]->sock);	
+			LM_DBG("msgs from socket <%d> parsed ...\n", jcp->ojc[i]->sock);
 #endif
 		} // end FOR(i = 0; i < jcp->len; i++)
 
@@ -744,11 +742,11 @@ int xj_manage_jab(char *buf, int len, int *pos, xj_jalias als, xj_jcon jbc)
 	if(!jbc)
 		return -1;
 
-	sid = jbc->jkey->id;	
+	sid = jbc->jkey->id;
 	x = xode_from_strx(buf, len, &err, &j);
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("xode ret:%d pos:%d\n", err, j);
-#endif	
+#endif
 	if(err && pos != NULL)
 		*pos= j;
 	if(x == NULL)
@@ -757,7 +755,7 @@ int xj_manage_jab(char *buf, int len, int *pos, xj_jalias als, xj_jcon jbc)
 	ecode = NULL;
 
 /******************** XMPP 'MESSAGE' HANDLING **********************/
-	
+
 	if(!strncasecmp(xode_get_name(x), "message", 7))
 	{
 #ifdef XJ_EXTRA_DEBUG
@@ -819,7 +817,7 @@ int xj_manage_jab(char *buf, int len, int *pos, xj_jalias als, xj_jcon jbc)
 					p--;
 				if(*p == '/')
 				{
-					if(jcf->nick.len>0 
+					if(jcf->nick.len>0
 						&& strlen(p+1) == jcf->nick.len
 						&& !strncasecmp(p+1, jcf->nick.s, jcf->nick.len))
 					{
@@ -842,7 +840,7 @@ int xj_manage_jab(char *buf, int len, int *pos, xj_jalias als, xj_jcon jbc)
 			strcat(lbuf, msg);
 			ts.s = lbuf;
 			ts.len = strlen(lbuf);
-	
+
 			if(xj_send_sip_msg(als->proxy, sid, &jcf->uri, &ts,
 						&jbc->jkey->flag)<0)
 				LM_ERR("sip message was not sent!\n");
@@ -862,7 +860,7 @@ int xj_manage_jab(char *buf, int len, int *pos, xj_jalias als, xj_jcon jbc)
 		{
 			ts.s = lbuf;
 			ts.len = strlen(lbuf);
-	
+
 			if(xj_send_sip_msg(als->proxy, sid, &tf, &ts, &jbc->jkey->flag)<0)
 				LM_ERR("sip message was not sent!\n");
 #ifdef XJ_EXTRA_DEBUG
@@ -873,7 +871,7 @@ int xj_manage_jab(char *buf, int len, int *pos, xj_jalias als, xj_jcon jbc)
 		goto ready;
 	}
 /*------------------- END 'MESSAGE' HANDLING ----------------------*/
-	
+
 /******************** XMPP 'PRESENCE' HANDLING *********************/
 	if(!strncasecmp(xode_get_name(x), "presence", 8))
 	{
@@ -978,11 +976,11 @@ int xj_manage_jab(char *buf, int len, int *pos, xj_jalias als, xj_jcon jbc)
 			}
 			goto ready;
 		}
-		
+
 		if(strchr(from, '@') == NULL)
 			goto ready;
-	
-		
+
+
 		if(!strncasecmp(type, "error", 5))
 		{
 			if((jcf=xj_jcon_check_jconf(jbc, from))!=NULL)
@@ -1025,11 +1023,11 @@ int xj_manage_jab(char *buf, int len, int *pos, xj_jalias als, xj_jcon jbc)
 			}
 			goto ready;
 		}
-		
+
 		if(!strncasecmp(type, "unsubscribed", 12))
 		{
 #ifdef XJ_EXTRA_DEBUG
-			LM_DBG("user <%s> does not allow to see his"
+			LM_DBG("user <%s> does not allow to see this"
 				" presence status\n", from);
 #endif
 			if(prc->state != XJ_PS_REFUSED)
@@ -1038,12 +1036,12 @@ int xj_manage_jab(char *buf, int len, int *pos, xj_jalias als, xj_jcon jbc)
 				goto call_pa_cbf;
 			}
 		}
-	
+
 		// ignoring unknown types
 		goto ready;
 	}
 /*------------------- END XMPP 'PRESENCE' HANDLING ----------------*/
-	
+
 /******************** XMPP 'IQ' HANDLING ***************************/
 	if(!strncasecmp(xode_get_name(x), "iq", 2))
 	{
@@ -1097,7 +1095,7 @@ next_sibling:
 				z = xode_get_nextsibling(z);
 			}
 		}
-		
+
 		goto ready;
 	}
 /*------------------- END XMPP 'IQ' HANDLING ----------------------*/
@@ -1124,7 +1122,7 @@ ready:
 /**
  *
  */
-void xj_sig_handler(int s) 
+void xj_sig_handler(int s)
 {
 	//signal(SIGTERM, xj_sig_handler);
 	//signal(SIGINT, xj_sig_handler);
@@ -1152,8 +1150,8 @@ int xj_send_sip_msg(str *proxy, str *to, str *from, str *msg, int *cbp)
 	str  str_hdr;
 	char buf1[1024];
 
-	if( !to || !to->s || to->len <= 0 
-			|| !from || !from->s || from->len <= 0 
+	if( !to || !to->s || to->len <= 0
+			|| !from || !from->s || from->len <= 0
 			|| !msg || !msg->s || msg->len <= 0
 			|| (cbp && *cbp!=0) )
 		return -1;
@@ -1165,16 +1163,16 @@ int xj_send_sip_msg(str *proxy, str *to, str *from, str *msg, int *cbp)
 	strncpy(buf+tfrom.len, from->s, from->len);
 	tfrom.len += from->len;
 	buf[tfrom.len++] = '>';
-		
+
 	tfrom.s = buf;
-	
+
 	// building Contact and Content-Type
 	strcpy(buf1,"Content-Type: text/plain"CRLF"Contact: ");
 	str_hdr.len = 24 + CRLF_LEN + 9;
-	
+
 	strncat(buf1,tfrom.s,tfrom.len);
 	str_hdr.len += tfrom.len;
-	
+
 	strcat(buf1, CRLF);
 	str_hdr.len += CRLF_LEN;
 	str_hdr.s = buf1;
@@ -1183,7 +1181,7 @@ int xj_send_sip_msg(str *proxy, str *to, str *from, str *msg, int *cbp)
 #ifdef XJ_EXTRA_DEBUG
 		LM_DBG("uac callback parameter [%p==%d]\n", cbp, *cbp);
 #endif
-		return tmb.t_request(&msg_type, 0, to, &tfrom, &str_hdr, msg, 
+		return tmb.t_request(&msg_type, 0, to, &tfrom, &str_hdr, msg,
 						0, xj_tuac_callback, (void*)cbp, 0);
 	}
 	else
@@ -1278,7 +1276,7 @@ void xj_worker_check_jcons(xj_wlist jwl, xj_jcon_pool jcp, int ltime, fd_set *ps
 {
 	int i;
 	xj_jconf jcf;
-	
+
 	for(i = 0; i < jcp->len && main_loop; i++)
 	{
 		if(jcp->ojc[i] == NULL)
@@ -1286,7 +1284,7 @@ void xj_worker_check_jcons(xj_wlist jwl, xj_jcon_pool jcp, int ltime, fd_set *ps
 		if(jcp->ojc[i]->jkey->flag==XJ_FLAG_OPEN &&
 			jcp->ojc[i]->expire > ltime)
 			continue;
-			
+
 #ifdef XJ_EXTRA_DEBUG
 		LM_DBG("connection expired for <%.*s> \n",
 			jcp->ojc[i]->jkey->id->len, jcp->ojc[i]->jkey->id->s);
@@ -1302,7 +1300,7 @@ void xj_worker_check_jcons(xj_wlist jwl, xj_jcon_pool jcp, int ltime, fd_set *ps
 
 		// looking for open conference rooms
 #ifdef XJ_EXTRA_DEBUG
-		LM_DBG("having %d open conferences\n", 
+		LM_DBG("having %d open conferences\n",
 				jcp->ojc[i]->nrjconf);
 #endif
 		while(jcp->ojc[i]->nrjconf > 0)
@@ -1363,10 +1361,10 @@ void xj_worker_check_qmsg(xj_wlist jwl, xj_jcon_pool jcp)
 		{
 #ifdef XJ_EXTRA_DEBUG
 			LM_DBG("message to %.*s is expired\n",
-				jcp->jmqueue.jsm[i]->to.len, 
+				jcp->jmqueue.jsm[i]->to.len,
 				jcp->jmqueue.jsm[i]->to.s);
 #endif
-			xj_send_sip_msgz(_PADDR(jwl), jcp->jmqueue.jsm[i]->jkey->id, 
+			xj_send_sip_msgz(_PADDR(jwl), jcp->jmqueue.jsm[i]->jkey->id,
 					&jcp->jmqueue.jsm[i]->to, XJ_DMSG_ERR_SENDIM,
 					&jcp->jmqueue.ojc[i]->jkey->flag);
 			if(jcp->jmqueue.jsm[i]!=NULL)
@@ -1381,7 +1379,7 @@ void xj_worker_check_qmsg(xj_wlist jwl, xj_jcon_pool jcp)
 #ifdef XJ_EXTRA_DEBUG
 		LM_DBG("%d: QUEUE: message[%d] from [%.*s]"
 				"/to [%.*s]/body[%.*s] expires at %d\n",
-				get_ticks(), i, 
+				get_ticks(), i,
 				jcp->jmqueue.jsm[i]->jkey->id->len,
 				jcp->jmqueue.jsm[i]->jkey->id->s,
 				jcp->jmqueue.jsm[i]->to.len,jcp->jmqueue.jsm[i]->to.s,
@@ -1391,13 +1389,13 @@ void xj_worker_check_qmsg(xj_wlist jwl, xj_jcon_pool jcp)
 		if(xj_jcon_is_ready(jcp->jmqueue.ojc[i], jcp->jmqueue.jsm[i]->to.s,
 				jcp->jmqueue.jsm[i]->to.len, jwl->aliases->dlm))
 			continue;
-		
+
 		/*** address correction ***/
 		flag = XJ_ADDRTR_S2J;
 		if(!xj_jconf_check_addr(&jcp->jmqueue.jsm[i]->to,jwl->aliases->dlm))
 		flag |= XJ_ADDRTR_CON;
-		
-		sto.s = buff; 
+
+		sto.s = buff;
 		sto.len = 0;
 		if(xj_address_translation(&jcp->jmqueue.jsm[i]->to,
 			&sto, jwl->aliases, flag) == 0)
@@ -1416,7 +1414,7 @@ void xj_worker_check_qmsg(xj_wlist jwl, xj_jcon_pool jcp)
 		else
 			LM_ERR("sending the message from"
 				" local queue to Jabber network ...\n");
-		
+
 		if(jcp->jmqueue.jsm[i]!=NULL)
 		{
 			xj_sipmsg_free(jcp->jmqueue.jsm[i]);
@@ -1458,11 +1456,11 @@ void xj_worker_check_watcher(xj_wlist jwl, xj_jcon_pool jcp,
 		(*(jsmsg->cbf))(&jsmsg->to, &jsmsg->to, XJ_PS_OFFLINE, jsmsg->p);
 		return;
 	}
-			
-	sto.s = buff; 
+
+	sto.s = buff;
 	sto.len = 0;
 
-	if(xj_address_translation(&jsmsg->to, &sto, jwl->aliases, 
+	if(xj_address_translation(&jsmsg->to, &sto, jwl->aliases,
 		XJ_ADDRTR_S2J) == 0)
 	{
 		prc = xj_pres_list_check(jbc->plist, &sto);
@@ -1492,7 +1490,7 @@ void xj_worker_check_watcher(xj_wlist jwl, xj_jcon_pool jcp,
 			}
 			sto.s[sto.len] = 0;
 			if(!xj_jcon_send_subscribe(jbc, sto.s, NULL, "subscribe"))
-				prc->status = XJ_PRES_STATUS_WAIT; 
+				prc->status = XJ_PRES_STATUS_WAIT;
 		}
 		else
 		{

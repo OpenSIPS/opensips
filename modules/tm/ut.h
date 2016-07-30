@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * utilities
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -52,35 +50,19 @@ inline static enum sip_protos get_proto(enum sip_protos force_proto,
 										enum sip_protos proto)
 {
 	/* calculate transport protocol */
-	switch(force_proto) {
-		case PROTO_NONE: /* no protocol has been forced -- look at proto */
-			switch(proto) {
-				case PROTO_NONE:
-					return PROTO_NONE;
-				case PROTO_UDP:/* transport specified explicitly */
-#ifdef USE_TCP
-				case PROTO_TCP:
-#endif
-#ifdef USE_TLS
-				case PROTO_TLS:
-#endif
-					return proto;
-				default:
-					LM_ERR("unsupported transport: %d\n", proto );
-					return PROTO_NONE;
-			}
-		case PROTO_UDP: /* some protocol has been forced -- take it */
-#ifdef USE_TCP
-		case PROTO_TCP:
-#endif
-#ifdef USE_TLS
-		case PROTO_TLS:
-#endif
-			return force_proto;
-		default:
-			LM_ERR("unsupported forced protocol: %d\n", force_proto);
+	if (force_proto == PROTO_NONE) {/* no protocol forced -- look at proto */
+		if (proto >= PROTO_OTHER) {
+			LM_ERR("unsupported transport: %d\n", proto );
 			return PROTO_NONE;
+		}
+		/* lower values are valid protocols, including PROTO_NONE */
+		return proto;
 	}
+	if (force_proto >= PROTO_OTHER) {
+		LM_ERR("unsupported forced protocol: %d\n", force_proto);
+		return PROTO_NONE;
+	}
+	return force_proto;
 }
 
 
@@ -99,8 +81,8 @@ inline static struct proxy_l *uri2proxy( str *uri, int forced_proto )
 		return 0;
 	}
 
-	if (parsed_uri.type==SIPS_URI_T &&
-	((parsed_uri.proto!=PROTO_TLS) && (parsed_uri.proto!=PROTO_NONE)) ) {
+	if (parsed_uri.type==SIPS_URI_T && ((parsed_uri.proto!=PROTO_WSS) &&
+	(parsed_uri.proto!=PROTO_TLS) && (parsed_uri.proto!=PROTO_NONE)) ) {
 		LM_ERR("bad transport for sips uri: %d\n", parsed_uri.proto);
 		return 0;
 	}
@@ -115,7 +97,7 @@ inline static struct proxy_l *uri2proxy( str *uri, int forced_proto )
 		LM_ERR("bad host name in URI <%.*s>\n", uri->len, ZSW(uri->s));
 		return 0;
 	}
-	
+
 	return p;
 }
 
@@ -131,7 +113,7 @@ static inline int uri2su(str *uri, union sockaddr_union *to_su, int proto)
 		return -1;
 	}
 
-	hostent2su(to_su, &proxy->host, proxy->addr_idx, 
+	hostent2su(to_su, &proxy->host, proxy->addr_idx,
 		(proxy->port) ? proxy->port : SIP_PORT);
 	proto = proxy->proto;
 

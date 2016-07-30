@@ -1,9 +1,9 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>Various checks related to &sip; &uri;.</para>
@@ -44,7 +44,7 @@
 		</para>
 	</section>
 	</section>
-	
+
 	<section>
 	<title>Exported Parameters</title>
 	<section>
@@ -81,8 +81,8 @@ modparam("uri", "service_type", 11)
 </programlisting>
 		</example>
 	</section>
-	
-	
+
+
 	<section>
 		<title><varname>use_sip_uri_host</varname> (integer)</title>
 		<para>
@@ -238,11 +238,11 @@ modparam("uri", "use_uri_table", 1)
 		<title><varname>use_domain</varname> (integer)</title>
 		<para>
 		Specify if the domain part of the URI should be used to identify the
-		users (along with username). This is useful in multi domain setups, a 
+		users (along with username). This is useful in multi domain setups, a
 		non-zero value means true.
 		</para>
 		<para>This parameter is only evaluated for calls to <quote>does_uri_exist</quote>,
-		all other functions checks the digest username and realm against the 
+		all other functions checks the digest username and realm against the
 		given username, if the <quote>uri</quote> table is used.
 		</para>
 		<para>
@@ -317,8 +317,9 @@ if (db_check_from()) {
 		Check if username in the request &uri; belongs to an existing user.
 		</para>
 		<para>
-		As the checking is done against &uri; table (if use_uri_table is set) 
-		or subscriber table.
+			Matching is done against the &uri; table (if
+			<emphasis role='bold'>use_uri_table</emphasis> is set)
+			or the <emphasis>subscriber</emphasis> table.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.
@@ -334,7 +335,7 @@ if (db_does_uri_exist()) {
 </programlisting>
 		</example>
 	</section>
-	
+
 	<section>
 		<title>
 		<function moreinfo="none">db_get_auth_id(string, var, var)</function>
@@ -565,6 +566,33 @@ add_uri_param("nat=yes");
 	</section>
 	<section>
 		<title>
+		<function moreinfo="none">del_uri_param(param)</function>
+		</title>
+		<para>
+		Delete a parameter from the RURI being given the key(key=value);
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>param</emphasis> - key of the parameter to be removed/
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>add_uri_param</function> usage</title>
+		<programlisting format="linespecific">
+...
+del_uri_param("name");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
 		<function moreinfo="none">tel2sip()</function>
 		</title>
 		<para>
@@ -610,8 +638,8 @@ if (is_uri_user_e164("$avp(uri)") {
 </programlisting>
 		</example>
 	</section>
-	
-	
+
+
 	</section>
 </chapter>
 

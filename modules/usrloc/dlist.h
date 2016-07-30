@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * List of registered domains
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * ========
@@ -87,9 +85,19 @@ int synchronize_all_udomains(void);
  * Get contacts to all registered users
  */
 typedef int  (*get_all_ucontacts_t) (void* buf, int len, unsigned int flags,
-		unsigned int part_idx, unsigned int part_max);
+		unsigned int part_idx, unsigned int part_max, int pack_cid);
 int get_all_ucontacts(void *, int, unsigned int,
-		unsigned int part_idx, unsigned int part_max);
+		unsigned int part_idx, unsigned int part_max, int pack_cid);
+
+/*! \brief
+ * Get contacts structures to all registered users
+ */
+typedef int  (*get_domain_ucontacts_t) (udomain_t *d, void* buf, int len,
+		unsigned int flags, unsigned int part_idx, unsigned int part_max,
+		int pack_cid);
+int get_domain_ucontacts(udomain_t *d,void *buf, int len, unsigned int flags,
+					unsigned int part_idx, unsigned int part_max, int pack_cid);
+
 
 
 /* Sums up the total number of users in memory, over all domains. */
@@ -108,5 +116,41 @@ int find_domain(str* _d, udomain_t** _p);
 typedef udomain_t* (*get_next_udomain_t) (udomain_t* _d);
 udomain_t* get_next_udomain(udomain_t *_d);
 
+/*contact label may not be higher than 14 bits*/
+#define CLABEL_MASK ((1<<14)-1)
+#define CLABEL_INC_AND_TEST(_clabel_) ((_clabel_+1)&CLABEL_MASK)
+#define CID_GET_CLABEL(_cid) (_cid&CLABEL_MASK)
+#define CID_NEXT_RLABEL(_dom, _sl) (_dom->table[_sl].next_label++)
+
+static inline uint64_t
+pack_indexes(unsigned short aorhash, unsigned int rlabel, unsigned short clabel)
+{
+	return clabel + ((uint64_t)rlabel << 14) + ((uint64_t)aorhash << 46);
+}
+
+
+static inline int
+unpack_indexes(uint64_t v,
+		unsigned short *aorhash, unsigned int *rlabel, unsigned short *clabel)
+{
+	if (aorhash == NULL || rlabel == NULL || clabel == NULL) {
+		LM_ERR("invalid arguments\n");
+		return -1;
+	}
+
+	/* first 14 bits 0-13 */
+	*clabel  = v & CLABEL_MASK;
+	/* middle 32 bits 14-45 */
+	*rlabel  = (v >> 14) & 0xFFFFFFFF;
+	/* last 16 bits 46-61 */
+	*aorhash = (v >> 46);
+
+	return 0;
+}
+
+typedef int (*delete_ucontact_from_id_t)(udomain_t *d,
+					uint64_t contact_id, char is_replicated);
+int delete_ucontact_from_id(udomain_t *d,
+		uint64_t contact_id, char is_replicated);
 
 #endif /* UDLIST_H */

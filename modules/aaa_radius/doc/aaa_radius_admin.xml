@@ -1,9 +1,9 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
@@ -13,7 +13,14 @@
 		It also provides two functions to be used from the script for generating custom Radius acct and auth requests.
 		Detection and handling of SIP-AVPs from Radius replies is automatically and transparently done by the module.
 	</para>
-	
+
+	<para>
+		Since version 2.2, aaa_radius module supports asynchronous operations. But in order to use them, one must apply
+		the patch contained by the modules/aaa_radius folder, called <emphasis>radius_async_support.patch</emphasis>.In
+		order to do this, you must have freeradius-client sources. In order to do this you can follow
+		the tutorial in the end of the documentation.
+	</para>
+
 	<para>
 		Any module that wishes to use it has to do the following:
 	</para>
@@ -26,9 +33,9 @@
 			<para><emphasis>make a bind call with a proper radius specific url</emphasis>
 			</para>
 		</listitem>
-			
+
 	</itemizedlist>
-	
+
 	</section>
 
 	<section>
@@ -39,7 +46,7 @@
 		None.
 		</para>
 	</section>
-	
+
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
@@ -49,14 +56,14 @@
 			<itemizedlist>
 			<listitem>
 			<para><emphasis>radiusclient-ng</emphasis> 0.5.0 or higher
-				See <ulink 
+				See <ulink
 				url='http://developer.berlios.de/projects/radiusclient-ng/'>
 				http://developer.berlios.de/projects/radiusclient-ng/</ulink>.
 			</para>
 			</listitem>
 			<listitem>
-			<para><emphasis>freeradius-client</emphasis> 
-				See <ulink 
+			<para><emphasis>freeradius-client</emphasis>
+				See <ulink
 				url='http://freeradius.org/'>
 				http://freeradius.org/</ulink>.
 			</para>
@@ -68,16 +75,16 @@
 			</para>
 	</section>
 	</section>
-	
+
 	<section>
 		<title>Exported Parameters</title>
 		<section>
-		<title><varname>sets</varname></title>
+		<title><varname>sets (string)</varname></title>
 		<para>
-			Sets of Radius AVPs to be used when building custom RADIUS requests (set of input RADIUS AVPs) 
+			Sets of Radius AVPs to be used when building custom RADIUS requests (set of input RADIUS AVPs)
 			or when fetching data from the RADIUS reply (set of output RADIUS AVPs).
 		</para>
-		
+
 		<para>
 			The format for a set definition is the following:
 		</para>
@@ -93,16 +100,16 @@
 		</para>
 		<para>
 			The right-hand side of the assignment must be a script pseudo variable or
-			a script AVP. For more information about them see <ulink 
+			a script AVP. For more information about them see <ulink
 				url='http://www.opensips.org/Resources/DocsCoreVar15'>
 				CookBooks - Scripting Variables</ulink>.
 		</para>
 		<example>
 		<title>Set <varname>sets</varname> parameter</title>
 		<programlisting format="linespecific">
-		
+
 ...
-modparam("aaa_radius","sets","set4  =  (  Sip-User-ID  =   $avp(10) 
+modparam("aaa_radius","sets","set4  =  (  Sip-User-ID  =   $avp(10)
 			,   Sip-From-Tag=$si,Sip-To-Tag=$tt      )      ")
 ...
 
@@ -120,7 +127,7 @@ modparam("aaa_radius","sets","set2 = (Sip-Group = $var(sipgrup)) ")
 		</section>
 
 		<section>
-		<title><varname>radius_config</varname></title>
+		<title><varname>radius_config (string)</varname></title>
 		<para>
 			Radiusclient configuration file.
 		</para>
@@ -141,7 +148,7 @@ modparam("aaa_radius", "radius_config", "/etc/radiusclient-ng/radiusclient.conf"
 		</section>
 
 		<section>
-		<title><varname>syslog_name</varname></title>
+		<title><varname>syslog_name (string)</varname></title>
 		<para>
 		Enable logging of the client library to syslog, using the given log name.
 		</para>
@@ -164,38 +171,60 @@ modparam("aaa_radius", "syslog_name", "aaa-radius")
 		</example>
 		</section>
 
+		<section>
+		<title><varname>fetch_all_values (integer)</varname></title>
+		<para>
+		For the output sets, this parameter controls if all the values (for the same
+		RADIUS AVP) should be returned (otherwise only the first value will be
+		returned). When enabling this options, be sure that the variable you use
+		to get the RADIUS output can store multiple values (like the AVP variables).
+		</para>
+		<para>
+		By default this parameter is disabled (set to 0) for backward compatibility
+		reasons.
+		</para>
+		<example>
+		<title>Set <varname>fetch_all_values</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("aaa_radius", "fetch_all_values", 1)
+...
+</programlisting>
+		</example>
+		</section>
+
 	</section>
 
 	<section>
 		<title>Exported Functions</title>
-		
+
 		<section>
 
 		<title>
-		<function moreinfo="none">radius_send_auth(input_set_name,output_set_name)</function>
+		<function moreinfo="none">radius_send_auth(input_set_name, output_set_name)</function>
 		</title>
 		<para>
-			This function can be used from the script to make custom 
+			This function can be used from the script to make custom
 			radius authentication request. The function takes two parameters.
 		</para>
 		<para>
-			The first parameter represents the name of the set that contains 
-			the list of attributes and pvars that will form the authentication 
+			The first parameter represents the name of the set that contains
+			the list of attributes and pvars that will form the authentication
 			request (see the <quote>sets</quote> module parameter).
 		</para>
 		<para>
-			The second parameter represents the name of the set that contains 
-			the list of attributes and pvars that will be extracted form the 
-			authentication reply (see the <quote>sets</quote> module 
+			The second parameter represents the name of the set that contains
+			the list of attributes and pvars that will be extracted form the
+			authentication reply (see the <quote>sets</quote> module
 			parameter).
 		</para>
 		<para>
-			The sets must be defined using the <quote>sets</quote> exported 
+			The sets must be defined using the <quote>sets</quote> exported
 			parameter.
 		</para>
 		<para>
-			The function return TRUE (retcode 1) if authentication was 
-			successful, FALSE (retcode -1) if an error (any kind of error) 
+			The function return TRUE (retcode 1) if authentication was
+			successful, FALSE (retcode -1) if an error (any kind of error)
 			occured during authentication processes or FALSE (retcode -2) if
 			authentication was rejected or denied by RADIUS server.
 		</para>
@@ -205,7 +234,7 @@ modparam("aaa_radius", "syslog_name", "aaa-radius")
 		<example>
 		<title><function>radius_send_auth</function> usage</title>
 		<programlisting format="linespecific">
-		
+
 ...
 radius_send_auth("set1","set2");
 switch ($rc) {
@@ -224,32 +253,32 @@ switch ($rc) {
 		</programlisting>
 		</example>
 		</section>
-		
+
 		<section>
 		<title>
 		<function moreinfo="none">radius_send_acct(input_set_name)</function>
 		</title>
 		<para>
-			This function can be used from the script to make custom 
+			This function can be used from the script to make custom
 			radius authentication request. The function takes only one parameter
-			that represents the name of the set that contains the list of attributes 
+			that represents the name of the set that contains the list of attributes
 			and pvars that will form the accounting request.
 		</para>
-		<para>	
-			Only one set is needed as a parameter because no AVPs can be extracted 
+		<para>
+			Only one set is needed as a parameter because no AVPs can be extracted
 			from the accounting replies.
 		</para>
-		<para>	
+		<para>
 			The set must be defined using the "sets" exported parameter.
 		</para>
 		<para>
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
-		
+
 		<title><function>radius_send_acct</function> usage</title>
 		<programlisting format="linespecific">
-		
+
 ...
 radius_send_acct("set1");
 ...
@@ -257,7 +286,106 @@ radius_send_acct("set1");
 		</programlisting>
 		</example>
 		</section>
-</section>
+	</section>
 
+	<section>
+		<title>Exported Async Functions</title>
+
+		<section>
+
+		<title>
+		<function moreinfo="none">radius_send_auth(input_set_name, output_set_name)</function>
+		</title>
+		<para>
+			This function can be used from the script to make custom
+			radius authentication request. The function takes two parameters.
+		</para>
+		<para>
+			The first parameter represents the name of the set that contains
+			the list of attributes and pvars that will form the authentication
+			request (see the <quote>sets</quote> module parameter).
+		</para>
+		<para>
+			The second parameter represents the name of the set that contains
+			the list of attributes and pvars that will be extracted form the
+			authentication reply (see the <quote>sets</quote> module
+			parameter).
+		</para>
+		<para>
+			The sets must be defined using the <quote>sets</quote> exported
+			parameter.
+		</para>
+		<para>
+			The function return TRUE (retcode 1) if authentication was
+			successful, FALSE (retcode -1) if an error (any kind of error)
+			occured during authentication processes or FALSE (retcode -2) if
+			authentication was rejected or denied by RADIUS server.
+		</para>
+		<example>
+		<title><function>radius_send_auth</function> usage</title>
+		<programlisting format="linespecific">
+
+...
+{
+async( radius_send_auth("set1","set2"), resume);
+}
+
+route[resume] {
+switch ($rc) {
+	case 1:
+		xlog("authentication ok \n");
+		break;
+	case -1:
+		xlog("error during authentication\n");
+		break;
+	case -2:
+		xlog("authentication denied \n");
+		break;
+}
+...
+
+		</programlisting>
+		</example>
+		</section>
+
+		<section>
+		<title>
+		<function moreinfo="none">radius_send_acct(input_set_name)</function>
+		</title>
+		<para>
+			This function can be used from the script to make custom
+			radius authentication request. The function takes only one parameter
+			that represents the name of the set that contains the list of attributes
+			and pvars that will form the accounting request.
+		</para>
+		<para>
+			Only one set is needed as a parameter because no AVPs can be extracted
+			from the accounting replies.
+		</para>
+		<para>
+			The set must be defined using the "sets" exported parameter.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+
+		<title><function>radius_send_acct</function> usage</title>
+		<programlisting format="linespecific">
+
+...
+{
+async( radius_send_acct("set1","set2"), resume);
+}
+
+route[resume] {
+xlog(" accounting finished\n");
+}
+
+...
+
+		</programlisting>
+		</example>
+		</section>
+	</section>
 </chapter>
-

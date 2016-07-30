@@ -8,8 +8,7 @@ Anca-Maria Vamanu
 
    Copyright © 2008 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -39,7 +38,7 @@ Chapter 1. Admin Guide
    and offers one function to be called by the modules that want
    to send a reply.
 
-   The logic behind th emodule is to first search if a transaction
+   The logic behind the module is to first search if a transaction
    is created and if so, send a state full reply, using tm module,
    otherwise send a stateless reply with the function exported by
    sl. In this way, the script writer still has the call on how

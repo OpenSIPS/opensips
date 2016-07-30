@@ -1,0 +1,24 @@
+<!-- Module FAQ -->
+
+<chapter>
+	
+	<title>&faqguide;</title>
+	<qandaset defaultlabel="number">
+
+	<qandaentry>
+
+		<question>
+		<para>What happened with the old <quote>db_url</quote> module parameter?</para>
+		</question>
+		<answer>
+		<para>
+			It was replaced with the <quote>cachedb_url</quote> parameter.
+			See the documentation for the usage of the <quote>cachedb_url</quote> parameter.
+		</para>
+		</answer>
+	</qandaentry>
+
+
+	</qandaset>
+</chapter>
+

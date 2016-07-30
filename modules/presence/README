@@ -2,8 +2,6 @@ Presence Module
 
 Anca-Maria Vamanu
 
-   Voice Sistem SRL
-
 Edited by
 
 Ovidiu Sas
@@ -18,8 +16,7 @@ Saul Ibarra Corretge
 
    Copyright © 2006 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-10-22 13:41:25 +0200
-                              (Mon, 22 Oct 2012) $
+   Revision $Revision: 9371 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -53,6 +50,7 @@ Saul Ibarra Corretge
               1.3.17. bla_presentity_spec (str)
               1.3.18. bla_fix_remote_target (int)
               1.3.19. notify_offline_body (int)
+              1.3.20. end_sub_on_timeout (int)
 
         1.4. Exported Functions
 
@@ -66,7 +64,11 @@ Saul Ibarra Corretge
               1.5.3. pres_phtable_list
               1.5.4. subs_phtable_list
 
-        1.6. Installation
+        1.6. Exported Events
+
+              1.6.1. E_PRESENCE_PUBLISH
+
+        1.7. Installation
 
    2. Developer Guide
 
@@ -108,8 +110,9 @@ Saul Ibarra Corretge
    1.17. Set bla_presentity_spec parameter
    1.18. Set bla_fix_remote_target parameter
    1.19. Set notify_offline_body parameter
-   1.20. handle_publish usage
-   1.21. handle_subscribe usage
+   1.20. Set end_sub_on_timeout parameter
+   1.21. handle_publish usage
+   1.22. handle_subscribe usage
    2.1. presence_api_t structure
 
 Chapter 1. Admin Guide
@@ -419,6 +422,19 @@ modparam("presence", "bla_fix_remote_target", 0)
 modparam("presence", "notify_offline_body", 1)
 ...
 
+1.3.20. end_sub_on_timeout (int)
+
+   If a presence subscription should be automatically terminated
+   (destroyed) when receiving a SIP timeout (408) for a sent
+   NOTIFY requests.
+
+   Default value is “1” (enabled).
+
+   Example 1.20. Set end_sub_on_timeout parameter
+...
+modparam("presence", "end_sub_on_timeout", 0)
+...
+
 1.4. Exported Functions
 
 1.4.1.  handle_publish(char* sender_uri)
@@ -443,7 +459,7 @@ modparam("presence", "notify_offline_body", 1)
 
    The module sends an appropriate stateless reply in all cases.
 
-   Example 1.20. handle_publish usage
+   Example 1.21. handle_publish usage
 ...
         if(is_method("PUBLISH"))
         {
@@ -456,19 +472,26 @@ modparam("presence", "notify_offline_body", 1)
 
 1.4.2.  handle_subscribe(char* force_active)
 
-   The function which handles SUBSCRIBE requests. It stores or
-   updates information in database and calls functions to send
-   Notify messages when a Subscribe which initiate a dialog is
-   received
+   This function is to be used for handling SUBSCRIBE requests. It
+   stores or updates the watcher/subscriber information in
+   database. Additionally, in response to initial SUBSCRIBE
+   requests (creating a new subscription session), the function
+   also sends back the NOTIFY (with the presence information) to
+   the wathcer/subscriber.
 
-   It can take one parameter meaningful when you use a
-   configuration with privacy rules enabled (force_active
-   parameter in presence_xml module not set). Supposing that you
-   have a means to tell that the contact the Subscribe message is
-   destined to( the presentity) can not upload an xcap document
-   with it's privacy rules, you can tell the presence server to
-   consider that subscription allowed(with
-   Subscription-Status:active) by calling handle_subscribe
+   The function may take on parameter that controlls what is the
+   default policy (of the presentity) on accepting new
+   subscriptions (accept or reject) - of course, this parameter
+   makes sense only when using a presence configuration with
+   privacy rules enabled (force_active parameter in presence_xml
+   module is not set).
+
+   There are scenarios where the presentity (the party you
+   subscribe to) can not upload an XCAP document with it's privacy
+   rules (to controll which watchers are allowed to subscribe to
+   it). In such case, from script level, you can force the
+   presence server to consider the current subscription allowed
+   (with Subscription-Status:active) by calling handle_subscribe()
    function with the string parameter "1".
    Ex:
         if(uri =~ "kphone@opensips.org")
@@ -482,7 +505,7 @@ modparam("presence", "notify_offline_body", 1)
 
    The module sends an appropriate stateless reply in all cases.
 
-   Example 1.21. handle_subscribe usage
+   Example 1.22. handle_subscribe usage
 ...
 if(method=="SUBSCRIBE")
     handle_subscribe();
@@ -554,7 +577,22 @@ _empty_line_
 :subs_phtable_list:fifo_reply
 _empty_line_
 
-1.6. Installation
+1.6. Exported Events
+
+1.6.1.  E_PRESENCE_PUBLISH
+
+   This event is raised when the presence module receives a
+   PUBLISH message.
+
+   Parameters:
+     * user - the AOR of the user
+     * domain - the domain
+     * event - the type of the event published
+     * expires - the expire value of the publish
+     * etag - the entity tag
+     * body - the body of the PUBLISH request
+
+1.7. Installation
 
    The module requires 3 table in OpenSIPS database: presentity,
    active_watchers and watchers tables. The SQL syntax to create

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -54,7 +52,7 @@ static int add_route_tree(struct carrier_tree * ct, struct route_tree * rt);
 
 /**
  * returns the routing tree for the given domain, if domain's tree
- * doesnt exist, it will be created. If the trees are completely
+ * doesn't exist, it will be created. If the trees are completely
  * filled and a not existing domain shall be added, an error is
  * returned
  *
@@ -161,7 +159,7 @@ static struct route_tree_item * create_route_tree_item(void) {
  */
 static struct failure_route_tree_item * create_failure_route_tree_item(void) {
 	struct failure_route_tree_item *ret;
-	
+
 	ret = (struct failure_route_tree_item *)
 		shm_malloc(sizeof(struct failure_route_tree_item));
 	if (ret == NULL) {
@@ -235,7 +233,7 @@ struct route_flags * add_route_flags(struct route_tree_item * route_tree, const 
 	shm_rf->flags=flags;
 	shm_rf->mask=mask;
 	shm_rf->next=tmp_rf;
-	
+
 	if (prev_rf) prev_rf->next = shm_rf;
 	else route_tree->flag_list = shm_rf;
 
@@ -266,10 +264,10 @@ struct route_flags * add_route_flags(struct route_tree_item * route_tree, const 
  * @param rewrite_local_suffix the rewrite suffix
  * @param status the status of the rule
  * @param hash_index the hash index of the rule
- * @param backup indicates if the route is backed up by another. only 
+ * @param backup indicates if the route is backed up by another. only
                  useful if status==0, if set, it is the hash value
                  of another rule
-  * @param backed_up an -1-termintated array of hash indices of the route 
+  * @param backed_up an -1-termintated array of hash indices of the route
                     for which this route is backup
  * @param comment a comment for the route rule
  *
@@ -280,7 +278,7 @@ struct route_flags * add_route_flags(struct route_tree_item * route_tree, const 
 int add_route_to_tree(struct route_tree_item * route_tree, const str * scan_prefix,
 		flag_t flags, flag_t mask, const str * full_prefix, int max_targets, double prob,
 		const str * rewrite_hostpart, int strip, const str * rewrite_local_prefix,
-		const str * rewrite_local_suffix, int status, int hash_index, 
+		const str * rewrite_local_suffix, int status, int hash_index,
 		int backup, int * backed_up, const str * comment) {
 	str next_prefix;
 	struct route_flags *rf;
@@ -326,7 +324,7 @@ int add_route_to_tree(struct route_tree_item * route_tree, const str * scan_pref
  * @param scan_prefix the prefix at the current position
  * @param full_prefix the whole scan prefix
  * @param host the hostname last tried
- * @param reply_code the reply code 
+ * @param reply_code the reply code
  * @param flags user defined flags
  * @param mask mask for user defined flags
  * @param next_domain continue routing with this domain id
@@ -449,11 +447,11 @@ static void destroy_failure_route_tree_item(struct failure_route_tree_item *rout
 	int i;
 	struct failure_route_rule *rs;
 	struct failure_route_rule *rs_tmp;
-	
+
 	if (!route_tree_item) {
 		LM_ERR("NULL pointer in parameter\n");
 	}
-	
+
 	for (i = 0; i < 10; ++i) {
 		if (route_tree_item->nodes[i] != NULL) {
 			destroy_failure_route_tree_item(route_tree_item->nodes[i]);
@@ -476,7 +474,7 @@ static void destroy_failure_route_tree_item(struct failure_route_tree_item *rout
  *
  * @param domain the domain to be added
  *
- * @return values: on succcess the numerical index of the given domain,
+ * @return values: on success the numerical index of the given domain,
  * -1 on failure
  */
 int add_domain(const str * domain) {

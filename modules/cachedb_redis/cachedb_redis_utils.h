@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -29,7 +29,7 @@
 #include "cachedb_redis_dbase.h"
 
 int build_cluster_nodes(redis_con *con,char *info,int size);
-inline cluster_node *get_redis_connection(redis_con *con,str *key);
+cluster_node *get_redis_connection(redis_con *con,str *key);
 void destroy_cluster_nodes(redis_con *con);
 
 #endif

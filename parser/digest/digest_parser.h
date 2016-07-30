@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Digest credentials parser
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -44,7 +42,7 @@ typedef enum alg {
 
 
 /* Quality Of Protection used */
-typedef enum qop_type { 
+typedef enum qop_type {
 	QOP_UNSPEC_D = 0,   /* QOP parameter not present in response */
 	QOP_AUTH_D = 1,     /* Authentication only */
 	QOP_AUTHINT_D = 2,  /* Authentication with integrity checks */

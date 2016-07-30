@@ -84,15 +84,17 @@
     <column>
         <name>ctype</name>
         <type>string</type>
-        <size>32</size>
-        <default>text/plain</default>
+        <size>255</size>
+        <null/>
+        <default><null/></default>
         <description>Content type</description>
     </column>
 
     <column>
         <name>body</name>
         <type>binary</type>
-        <default/>
+        <null/>
+        <default><null/></default>
         <description>Body of the message</description>
     </column>
 

@@ -1,42 +1,43 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
 		Offer a possibility to store incoming/outgoing SIP messages in database.
+		Since version 2.2, proto_hep module needs to be loaded in order to duplicate
+		with hep. All hep parameters moved inside proto_hep.
 	</para>
 	<para>
-	There are two ways of storing information.
-		<itemizedlist>
-		<listitem>
-		<para>
-		by calling explicitely the sip_trace() method in OpenSIPS configuration
-		file. In this case the original message is processed.
-		</para>
-		</listitem>
-		<listitem>
-		<para>
-		by setting the flag equal with the value of 'trace_flag' (e.g.,
-		setflag(TRACE_FLAG)) parameter of the module. In this case, the\
-		message sent forward is processed. The logging mechanism is based on
-		TM/SL callbacks, so only messages processed with TM/SL are logged.
-		</para>
-		</listitem>
-		</itemizedlist>
+		The 2.2 version of &osips; came with a major improvement in siptrace module.
+		Now all you have to do is call <emphasis>sip_trace()</emphasis> function
+		with the proper parameters and it will do the job for you. Now you can trace
+		messages, transactions and dialogs with the same function. Also, you can trace
+		to multiple databases, multiple hep destinations and sip destinations using
+		only one parameter. All you need now is defining <emphasis>trace_id</emphasis>
+		parameters in modparam section and switch between them in
+		siptrace function. Also you cand turn tracing  on
+		and off using <emphasis>trace_on</emphasis> either globally(for all trace_ids)
+		or for a certain trace_id.
 	</para>
 
 	<para>
-	The tracing can be turned on/off using fifo commad.
+		IMPORTANT: In 2.2 version support for stateless trace has been removed.
+	</para>
+
+	<para>
+	The tracing tracing can be turned on/off using fifo command.
 	</para>
 	<para>
 	opensipsctl fifo sip_trace on
+	opensipsctl fifo sip_trace [some_trace_id] on
 	</para>
 	<para>
 	opensipsctl fifo sip_trace off
+	opensipsctl fifo sip_trace [some_trace_id] off
 	</para>
 	</section>
 	<section>
@@ -49,13 +50,23 @@
 			<listitem>
 			<para>
 				<emphasis>database module</emphasis> - mysql, postrgress,
-				dbtext, unixodbc...
+				dbtext, unixodbc... only if you are using a database type
+				trace id
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>tm and sl modules</emphasis> - optional, only if
-				you want to trace messages forwarded by these modules.
+				<emphasis>dialog</emphasis> - only if you want to trace dialogs.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>tm</emphasis> - only if you want to trace dialogs/transactions.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>proto_hep</emphasis> - only if you want to replicate messages over hep.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -78,56 +89,14 @@
 	</section>
 	<section>
 	<title>Exported Parameters</title>
-	<section>
-		<title><varname>db_url</varname> (str)</title>
-		<para>
-		Database URL.
-		</para>
-		<para>
-		<emphasis>
-			Default value is "".
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>db_url</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("siptrace", "db_url", "mysql://user:passwd@host/dbname")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>trace_flag</varname> (string/integer)</title>
-		<para>
-		Which flag is used to mark messages to trace
-		</para>
-		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
-		<emphasis>
-			Default value is "NULL" (not set).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>trace_flag</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("siptrace", "trace_flag", "TRACE_FLAG")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
+		<section>
 		<title><varname>trace_on</varname> (integer)</title>
 		<para>
 		Parameter to enable/disable trace (on(1)/off(0))
 		</para>
 		<para>
 		<emphasis>
-			Default value is "0".
+			Default value is "1"(enabled).
 		</emphasis>
 		</para>
 		<example>
@@ -139,101 +108,15 @@ modparam("siptrace", "trace_on", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
-		<title><varname>enable_ack_trace</varname> (integer)</title>
-		<para>
-		Parameter to enable/disable tracing of statelessly received ACKs
-		(on(1)/off(0))
-		</para>
-		<para>
-		<emphasis>
-			Default value is "0".
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>enable_ack_trace</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("siptrace", "enable_ack_trace", 1)
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>traced_user_avp</varname> (str)</title>
-		<para>
-		The name of the AVP storing the SIP URI of the traced user. If
-		the AVP is set, messages are stored in database table and
-		'traced_user' column is filled with AVP's value. You can store
-		the message many times for many users by having multiple values
-		for this AVP.
-		</para>
-		<para>
-		<emphasis>
-			Default value is "NULL" (feature disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>traced_user_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("siptrace", "traced_user_avp", "$avp(123)")
-modparam("siptrace", "traced_user_avp", "$avp(user)")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>trace_table_avp</varname> (str)</title>
-		<para>
-		The name of the AVP storing the name of the table where to
-		store the SIP messages. If it is not set, the value of
-		'table' parameter is used. In this way one can select
-		dynamically where to store the traced messages. The table
-		must exists, and must have the same structure as 'sip_trace'
-		table.
-		</para>
-		<para>
-		<emphasis>
-			Default value is "NULL" (feature disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>trace_table_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("siptrace", "trace_table_avp", "$avp(345)")
-modparam("siptrace", "trace_table_avp", "$avp(siptrace_table)")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>duplicate_uri</varname> (str)</title>
-		<para>
-		The address in form of SIP uri where to send a duplicate
-		of traced message. It uses UDP all the time.
-		</para>
-		<para>
-		<emphasis>
-			Default value is "NULL".
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>duplicate_uri</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("siptrace", "duplicate_uri", "sip:10.1.1.1:5888")
-...
-</programlisting>
-		</example>
-	</section>
+
 	<section>
 		<title><varname>trace_local_ip</varname> (str)</title>
 		<para>
-		The address to be used in fromip field for local generated
-		messages. If not set, the module sets it to the address
-		of the socket that will be used to send the message.
+			The address to be used in the fields that specify the source address
+		(protocol, ip and port) for locally generated messages. If not set,
+		the module sets it to the address of the socket that will be used to send
+		the message. Protocol and/or port are optional and if omitted will take
+		the default values: udp and 5060.
 		</para>
 		<para>
 		<emphasis>
@@ -244,173 +127,206 @@ modparam("siptrace", "duplicate_uri", "sip:10.1.1.1:5888")
 		<title>Set <varname>trace_local_ip</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
+#Resulting address: udp:10.1.1.1:5064
 modparam("siptrace", "trace_local_ip", "10.1.1.1:5064")
+...
+
+...
+#Resulting address: tcp:10.1.1.1:5060
+modparam("siptrace, "trace_local_ip", "tcp:10.1.1.1")
+...
+
+...
+#Resulting address: tcp:10.1.1.1:5064
+modparam("siptrace", "trace_local_ip", "tcp:10.1.1.1:5064")
+...
+
+...
+#Resulting address: udp:10.1.1.1:5060
+modparam("siptrace", "trace_local_ip", "10.1.1.1")
 ...
 </programlisting>
 		</example>
 	</section>
+
 	<section>
-		<title><varname>table</varname> (str)</title>
+		<title><varname>trace_id</varname> (str)</title>
 		<para>
-		Name of the table where to store the SIP messages.
+			Specify a destination for the trace. This can be a hep uri,
+			sip uri or a database url and a table. All parameters inside
+			<emphasis>trace_id</emphasis> must be separated by
+			<emphasis>;</emphasis>. The parameters are given in key-value
+			format, the possible keys being <emphasis>uri</emphasis>
+			for HEP and SIP IDs and <emphasis>uri</emphasis> and
+			<emphasis>table</emphasis> for databases. The format is
+			<emphasis>[id_name]key1=value1;key2=value2;</emphasis>. HEP
+			uris must be specified as <emphasis>hep:host:port</emphasis>.
+		</para>
+		<para>
+			One can declare multiple types of tracing under the same trace
+			id, being identified by their name. So if you define two
+			database url, one hep uri and one sip uri with the same name,
+			when calling sip_trace() with this name tracing shall be done
+			to all the destinations.
+		</para>
+		<para>
+			All the old parameter such as db_url, table and duplicate_uri
+			will form the trace id with the name "default".
 		</para>
 		<para>
 		<emphasis>
-			Default value is "sip_trace".
+			No default value. If not set the module will be useless.
+			For HEP ids, if transport parameter is not set default will
+			be TCP for version 3 and UDP for 1 and 2. Also if version
+			not set, version 3 will be used by default.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>sip_trace</varname> parameter</title>
+		<title>Set <varname>trace_id</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("siptrace", "table", "strace")
+/*DB trace id*/
+modparam("siptrace", "trace_id",
+"[tid]
+uri=mysql://xxxx:xxxx@10.10.10.10/opensips;
+table=new_sip_trace;")
+/*hep trace id*/
+modparam("siptrace", "trace_id",
+"[tid]uri=hep:10.10.10.10:6161;")
+/*sip trace id*/
+modparam("siptrace", "trace_id",
+"[tid]uri=sip:10.10.10.11:5060;")
+/* notice that they all have the same name
+ * meaning that calling sip_trace("tid",...)
+ * will do sql, sip and hep tracing */
+
+/* hep version 3 with tcp - ALSO DEFAULT ONE */
+modparam("siptrace", "trace_id",
+"[tid]uri=hep:10.10.10.12:5061;transport=tcp;version=3")
+/* hep version 3 with udp (version not set-default will be 3)*/
+modparam("siptrace", "trace_id",
+"[tid]uri=hep:10.10.10.12:5061;transport=udp")
+/* hep version 1 */
+modparam("siptrace", "trace_id",
+"[tid]uri=hep:10.10.10.12:5061;version=1")
+
 ...
 </programlisting>
 		</example>
 	</section>
+
 	</section>
-	
+
 	<section>
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">sip_trace()</function>
+		<function moreinfo="none">sip_trace(trace_id, [type, [trace_attrs]])</function>
 		</title>
 		<para>
-		Store current processed SIP message in database. It is stored in the
-		form prior applying chages made to it.
+			Store or replocate current processed SIP message,transaction or dialogin database.
+			It is stored in the form prior applying chages made to it. The traced_user_avp
+			parameter is now an argument to sip_trace() function. Since version 2.2, sip_trace()
+			also catches internally generated replies in stateless mode(sl_send_reply(...)).
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
 		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>trace_id (string, pvar)</emphasis>
+			the name of the <emphasis>trace_id</emphasis> specifying where to do
+			the tracing.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>type (string)</emphasis> what do you want to trace:
+		dialog, transaction or only the message. If not specified, will try
+		the topmost trace that can be done: if dialog module loaded will trace
+		dialogs, else if tm module loaded will trace transaction and if none
+		of these loaded will trace messages.</para>
+			<para>Types can be the following:</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>'m'/'M'</emphasis> trace messages. Is the only
+				one you should use in stateless mode.</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>'t'/'T'</emphasis> trace transactions. If tm
+					module not loaded, it will be in stateless transaction aware
+					mode meaning that will catch selected requests both in and out
+				and internally generated replies.</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>'d'/'D'</emphasis> trace dialog</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>trace_attrs (string,pvar)</emphasis> this parameter
+			replaces the traced_user_avp from the old version. To avoid duplicating
+			an entry only for this parameter, whatever you put here(string/pvar)
+			shall be stored in the trace_attrs column in the sip_trace table.
+			</para>
+		</listitem>
+
+		</itemizedlist>
 		<example>
 		<title><function>sip_trace()</function> usage</title>
 		<programlisting format="linespecific">
 ...
-sip_trace();
+/* see declaration of tid in trace_id section */
+	$var(trace_id) = "tid";
+	$var(user) = "osip_user@opensips.org";
+
 ...
+/* Example 1: how to trace a dialog  */
+	if (has_totag()) {
+		match_dialog();
+	} else {
+		if (is_method("INVITE") {
+			sip_trace("$var(trace_id)", "d", "$var(user)");
+		}
+	}
+...
+/* Example 2: how to trace initial INVITE and BYE */
+	if (has_totag()) {
+		if (is_method("BYE")) {
+			sip_trace("$var(trace_id)", "m", "$var(user)")
+		}
+	} else {
+		if (is_method("INVITE")) {
+			sip_trace("$var(trace_id)", "m", "$var(user)")
+		}
+	}
+
+...
+/* Example 3: trace initial INVITE transaction */
+	if (!has_totag()) {
+		if (is_method("INVITE")) {
+			sip_trace("$var(trace_id)", "t", "$var(user)");
+		}
+	}
+...
+/* Example 4: stateless transaction aware mode!*/
+/* tm module must not be loaded */
+	if (is_method("REGISTER")) {
+		sip_trace("$var(trace_id)", "t", "$var(user)");
+		if (!www_authorize("", "subscriber")) {
+			/* siptrace will also catch the 401 generated by www_challenge() */
+			www_challenge("", "1");
+		}
+	}
+
+
+
 </programlisting>
 		</example>
 	</section>
-	<section>
-		<title>
-		<function moreinfo="none">trace_dialog()</function>
-		</title>
-		<para>
-		The function triggers the tracing of all messages belonging to a
-		dialog. The function must be called for the initial request (that 
-		starts the dialog) and it will automatically take care of tracing
-		evertyhing related to that dialog.
-		</para>
-		<para>
-		When using this function, you do not have to explicity set any tracing
-		flag or to explicitly call anothe trace function.
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE.
-		</para>
-		<example>
-		<title><function>trace_dialog()</function> usage</title>
-		<programlisting format="linespecific">
-...
-if(is_method("INVITE") &amp;&amp; !has_totag())
-	trace_dialog();
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-                <title><varname>trace_to_database</varname> (integer)</title>
-                <para>
-                Parameter to enable/disable inserts to the Database from this
-                OpenSIPS.
-                </para>
-                <para>
-                In case we only want to send the SIP-Messages to the
-                duplicate_uri and not store the information to the local
-                database we can set this to "0".
-                </para>
-                <para>
-                <emphasis>
-                        Default value is "1".
-                </emphasis>
-                </para>
-                <example>
-                <title>Set <varname>trace_to_database</varname>parameter</title>
-                <programlisting format="linespecific">
-...
-modparam("siptrace", "trace_to_database", 0)
-...
-</programlisting>
-                </example>
-        </section>
-
-	<section>
-                <title><varname>duplicate_with_hep</varname> (integer)</title>
-                <para>
-                Parameter to enable/disable homer encapsulate mode
-                (on(1)/off(0))
-                </para>
-                <para>
-                <emphasis>
-                        Default value is "0".
-                </emphasis>
-                </para>
-                <example>
-                <title>Set <varname>duplicate_with_hep</varname> parameter</title>
-                <programlisting format="linespecific">
-...
-modparam("siptrace", "duplicate_with_hep", 1)
-...
-</programlisting>
-                </example>
-        </section>
-	<section>
-                <title><varname>hep_version</varname> (integer)</title>
-                <para>
-                The parameter indicate the version of HEP protocol. 
-                Can be 1 or 2. In HEPv2 the timestamp and capture agent ID will
-                be included to HEP header.
-                </para>
-                <para>
-                <emphasis>
-                        Default value is "1".
-                </emphasis>
-                </para>
-                <example>
-                <title>Set <varname>hep_version</varname> parameter</title>
-                <programlisting format="linespecific">
-...
-modparam("siptrace", "hep_version", 2)
-...
-</programlisting>
-                </example>
-        </section>        
-        <section>
-                <title><varname>hep_capture_id</varname> (integer)</title>
-                <para>
-                The parameter indicate the capture agent ID for HEPv2 protocol. 
-                Limitation: 16-bit integer.
-                </para>
-                <para>
-                <emphasis>
-                        Default value is "1".
-                </emphasis>
-                </para>
-                <example>
-                <title>Set <varname>hep_capture_id</varname> parameter</title>
-                <programlisting format="linespecific">
-...
-modparam("siptrace", "hep_capture_id", 234)
-...
-</programlisting>
-                </example>
-        </section>
-
-        
 	</section>
 
-    <section>
+   <section>
 	<title>Exported MI Functions</title>
 	<section>
 		<title>
@@ -424,16 +340,30 @@ modparam("siptrace", "hep_capture_id", 234)
 		</para>
 		<para>Parameters: </para>
 		<itemizedlist>
-			<listitem><para>trace_mode : turns on/off SIP message tracing.
+			<listitem><para>trace_id/trace_mode : if it is a trace_id name
+			it dumps info about that trace id if the second parameter is
+			not set to on/off or it turns tracing on/off for a certain
+			trace id if it is set, else if it's on/off
+			it turns on/off tracing for all the trace ids. If you turn
+			global trace on but some of the trace ids had trace to off,
+			then they shall not do tracing. In order to do that you
+			have to set the trace_on parameter for each trace_id.
 			Possible values are:</para>
 			<itemizedlist>
-				<listitem><para> on </para></listitem> 
+				<listitem><para> on </para></listitem>
 				<listitem><para> off </para></listitem>
+				<listitem><para> trace_id name </para></listitem>
 			</itemizedlist>
 			<para>The parameter is optional - if missing, the command will
-			return the status of the SIP message tracing (as string 
-			<quote>on</quote> or <quote>off</quote> ) without changing
-			anything.</para>
+			return the status of the SIP message tracing (as string
+			<quote>on</quote> or <quote>off</quote>) marked with
+			<emphasis>global</emphasis> and the status for each trace id
+			without changing anything.</para>
+			</listitem>
+			<listitem><para>trace_mode : this parameter has the same
+			meaning as the trace_mode in the first parameter, but this time
+			it enables/disables tracing for a certain trace id given in the
+			first parameter.</para>
 			</listitem>
 		</itemizedlist>
 
@@ -442,70 +372,38 @@ modparam("siptrace", "hep_capture_id", 234)
 		</para>
 		<programlisting  format="linespecific">
 		:sip_trace:_reply_fifo_file_
+		trace_id/trace_mode
 		trace_mode
 		_empty_line_
 		</programlisting>
 	</section>
-	<section>
-		<title>
-		<function moreinfo="none">trace_to_database</function>
-		</title>
-		<para>
 
-		</para>
-		<para>
-		Name: <emphasis>trace_to_database</emphasis>
-		</para>
-		<para>Parameters: </para>
-		<itemizedlist>
-			<listitem><para>trace_to_db_mode : turns on/off SIP message tracing into DB.
-			Possible values are:</para>
-			<itemizedlist>
-				<listitem><para> on </para></listitem> 
-				<listitem><para> off </para></listitem>
-			</itemizedlist>
-			<para>The parameter is optional - if missing, the command will
-			return the status of the SIP message tracing (as string 
-			<quote>on</quote> or <quote>off</quote> ) without changing
-			anything. The parameter can be switched from off to on, 
-			if db connection was before inizialized</para>
-			</listitem>
-		</itemizedlist>
-
-		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		:trace_to_database:_reply_fifo_file_
-		trace_to_db_mode
-		_empty_line_
-		</programlisting>
 	</section>
 
-	
-	</section>
-	
 	<section>
 		<title>Database setup</title>
 		<para>
-			Before running &osips; with siptrace, you have to setup the database 
-			tables where the module will store the data. For that, if the 
+			Before running &osips; with siptrace, you have to setup the database
+			tables where the module will store the data. For that, if the
 			table were not created by the installation script or you choose
 			to install everything by yourself you can use the siptrace-create.sql
-			<acronym>SQL</acronym> script in the database directories in the 
-			opensips/scripts folder as template. 
+			<acronym>SQL</acronym> script in the database directories in the
+			opensips/scripts folder as template.
 			You can also find the complete database documentation on the
 			project webpage, &osipsdbdocslink;.
 		</para>
 	</section>
 
 	<section>
-	<title>Known issues</title>
-	<para>
-	Stateless forwarded messages (forward()) are not logged if you set the
-	flag, use sip_trace().
-	</para>
+		<title>Known issues</title>
+		<para>
+			ACKs related to a transaction that are leaving &osips; are not
+			traced since they are handled statelessly using forward_request function.
+			Fixing it would mean to register a fwdcb callback that would be called
+			for all the messages but would be used only by ACKs, which would be
+			highly ineffective.
+		</para>
 	</section>
-	
+
 </chapter>
 

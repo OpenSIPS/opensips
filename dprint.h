@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -31,7 +29,7 @@
 /*! \page DebugLogFunction Description of the logging functions:
  *
  *  A) macros to log on a predefine log level and with standard prefix
- *     for with additional info: [time] 
+ *     for with additional info: [time]
  *     No dynamic FMT is accepted (due macro processing).
  *       LM_ALERT( fmt, ....)
  *       LM_CRIT( fmt, ....)
@@ -53,6 +51,8 @@
 
 #include <syslog.h>
 #include <time.h>
+
+#include "pt.h"
 
 #define L_ALERT -3	/*!< Alert level */
 #define L_CRIT  -2	/*!< Critical level */
@@ -88,7 +88,7 @@
 #define DPRINT_LEV   L_ERR
 
 #ifndef MOD_NAME
-	#define MOD_NAME "core"
+	#define MOD_NAME core
 #endif
 
 #ifndef NO_DEBUG
@@ -97,16 +97,20 @@
 
 /* vars:*/
 
-#if CHANGEABLE_DEBUG_LEVEL
-extern int *debug;
-#else
-extern int debug;
-#endif
+extern int *log_level;
 extern int log_stderr;
 extern int log_facility;
 extern char* log_name;
 extern char ctime_buf[];
 
+/*
+ * must be called after init_multi_proc_support()
+ * must be called once for each OpenSIPS process
+ */
+int init_log_level(void);
+
+/* must be called once, before the "pt" process table is freed */
+void cleanup_log_level(void);
 
 int dp_my_pid(void);
 
@@ -114,11 +118,43 @@ void dprint (char* format, ...);
 
 int str2facility(char *s);
 
-void set_proc_debug_level(int level);
+/*
+ * set the (default) log level of a given process
+ *
+ * Note: the index param is not validated!
+ */
+static inline void __set_proc_log_level(int proc_idx, int level)
+{
+	pt[proc_idx].log_level = level;
+}
 
-void reset_proc_debug_level(void);
+static inline void __set_proc_default_log_level(int proc_idx, int level)
+{
+	pt[proc_idx].default_log_level = level;
+}
 
-inline static char* dp_time(void)
+/* set the current and default log levels for all OpenSIPS processes */
+static inline void set_global_log_level(int level)
+{
+	int i;
+
+	for (i = 0; i < counted_processes; i++) {
+		__set_proc_default_log_level(i, level);
+		__set_proc_log_level(i, level);
+	}
+}
+
+/* set the log level of the current process */
+static inline void set_proc_log_level(int level)
+{
+	__set_proc_log_level(process_no, level);
+}
+
+
+/* changes the logging level to the default value for the current process */
+void reset_proc_log_level(void);
+
+static inline char* dp_time(void)
 {
 	time_t ltime;
 
@@ -129,13 +165,7 @@ inline static char* dp_time(void)
 	return ctime_buf+4;  /* remove name of day*/
 }
 
-
-
-#if CHANGEABLE_DEBUG_LEVEL
-	#define is_printable(_level)  ((*debug)>=(_level))
-#else
-	#define is_printable(_level)  (debug>=(_level))
-#endif
+#define is_printable(_level)  (((int)(*log_level)) >= ((int)(_level)))
 
 #if defined __GNUC__
 	#define __DP_FUNC  __FUNCTION__
@@ -173,8 +203,9 @@ inline static char* dp_time(void)
 #else /* NO_LOG */
 
 	#ifdef __SUNPRO_C
-
-		#define LOG_PREFIX  MOD_NAME ": "
+		#define LOG_PREFIX_UTIL2(_n) #_n
+		#define LOG_PREFIX_UTIL(_n)  LOG_PREFIX_UTIL2(_n)
+		#define LOG_PREFIX  LOG_PREFIX_UTIL(MOD_NAME) ": "
 
 		#define MY_DPRINT( ...) \
 				dprint( LOG_PREFIX __VA_ARGS__ ) \
@@ -294,7 +325,9 @@ inline static char* dp_time(void)
 
 	#else /*SUN_PRO_C*/
 
-		#define LOG_PREFIX  MOD_NAME ":%s: "
+		#define LOG_PREFIX_UTIL2(_n) #_n
+		#define LOG_PREFIX_UTIL(_n)  LOG_PREFIX_UTIL2(_n)
+		#define LOG_PREFIX  LOG_PREFIX_UTIL(MOD_NAME) ":%s: "
 
 		#define MY_DPRINT( _prefix, _fmt, args...) \
 				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \
@@ -415,5 +448,10 @@ inline static char* dp_time(void)
 	#endif /*SUN_PRO_C*/
 #endif
 
+#define report_programming_bug(format, args...) \
+	LM_CRIT("\n>>> " format"\nIt seems you have hit a programming bug.\n" \
+			"Please help us make OpenSIPS better by reporting it at " \
+			"https://github.com/OpenSIPS/opensips/issues\n\n", ##args);
+#define LM_BUG report_programming_bug
 
 #endif /* ifndef dprint_h */

@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
@@ -41,7 +39,7 @@
  *
  * 2) We need a quick way of mapping usrloc indices to our integer indices.  For
  *    this reason a string indexed Hash Table was created, with each entry mapping
- *    to an integer user index. 
+ *    to an integer user index.
  *
  *    This hash table is used by the openserSIPContactTable (the hash table also
  *    maps a user to its contacts), as well as the openserSIPRegUserLookupTable.
@@ -54,19 +52,19 @@
  *    process.  Specifically:
  *
  *    - It can take a long time for the NetSNMP code base to populate a table with
- *      a large number of records. 
+ *      a large number of records.
  *
- *    - We rely on callbacks for updated user information. 
+ *    - We rely on callbacks for updated user information.
  *
  *    Clearly, using the SNMPStats module in this situation could lead to some
  *    big performance loses if we don't find another way to deal with this.  The
- *    solution was to use an interprocess communications buffer.  
+ *    solution was to use an interprocess communications buffer.
  *
  *    Instead of adding the record directly to the table, the callback functions
  *    now adds either an add/delete command to the interprocessBuffer.  When an
  *    snmp request is recieved by the SNMPStats sub-process, it will consume
  *    this interprocess buffer, adding and deleting users.  When it is finished,
- *    it can service the SNMP request.  
+ *    it can service the SNMP request.
  *
  *    This doesn't remove the NetSNMP inefficiency, but instead moves it to a
  *    non-critical path.  Such an approach allows SNMP support with almost no
@@ -101,7 +99,7 @@ size_t openserSIPRegUserTable_oid_len = OID_LENGTH(openserSIPRegUserTable_oid);
  * callback for UL_CONTACT_INSERT and UL_CONTACT_EXPIRE.
  *
  * Returns 1 on success, and zero otherwise. */
-int registerForUSRLOCCallbacks(void)  
+int registerForUSRLOCCallbacks(void)
 {
 	bind_usrloc_t bind_usrloc;
 	usrloc_api_t ul;
@@ -119,9 +117,9 @@ int registerForUSRLOCCallbacks(void)
 	}
 
 	ul.register_ulcb(UL_CONTACT_INSERT, handleContactCallbacks, NULL);
-	
+
 	ul.register_ulcb(UL_CONTACT_EXPIRE, handleContactCallbacks, NULL);
-	
+
 	ul.register_ulcb(UL_CONTACT_DELETE, handleContactCallbacks, NULL);
 
 	return 1;
@@ -136,14 +134,14 @@ error:
 
 /* Removes an SNMP row indexed by userIndex, and frees the string and index it
  * pointed to. */
-void deleteRegUserRow(int userIndex) 
+void deleteRegUserRow(int userIndex)
 {
-	
+
 	openserSIPRegUserTable_context *theRow;
 
 	netsnmp_index indexToRemove;
 	oid indexToRemoveOID;
-		
+
 	indexToRemoveOID   = userIndex;
 	indexToRemove.oids = &indexToRemoveOID;
 	indexToRemove.len  = 1;
@@ -166,22 +164,22 @@ void deleteRegUserRow(int userIndex)
  * Adds or updates a user:
  *
  *   - If a user with the name userName exists, its 'number of contacts' count
- *     will be incremented.  
+ *     will be incremented.
  *   - If the user doesn't exist, the user will be added to the table, and its
- *     number of contacts' count set to 1. 
+ *     number of contacts' count set to 1.
  */
-void updateUser(char *userName) 
+void updateUser(char *userName)
 {
-	int userIndex; 
+	int userIndex;
 
 	aorToIndexStruct_t *newRecord;
 
-	aorToIndexStruct_t *existingRecord = 
+	aorToIndexStruct_t *existingRecord =
 		findHashRecord(hashTable, userName, HASH_SIZE);
 
 	/* We found an existing record, so  we need to update its 'number of
 	 * contacts' count. */
-	if (existingRecord != NULL) 
+	if (existingRecord != NULL)
 	{
 		existingRecord->numContacts++;
 		return;
@@ -191,7 +189,7 @@ void updateUser(char *userName)
 	 * structures */
 	userIndex = createRegUserRow(userName);
 
-	if (userIndex == 0) 
+	if (userIndex == 0)
 	{
 		LM_ERR("openserSIPRegUserTable ran out of memory."
 				"  Not able to add user: %s", userName);
@@ -199,7 +197,7 @@ void updateUser(char *userName)
 	}
 
 	newRecord = createHashRecord(userIndex, userName);
-	
+
 	/* If we couldn't create a record in the hash table, then we won't be
 	 * able to access this row properly later.  So remove the row from the
 	 * table and fail. */
@@ -209,26 +207,26 @@ void updateUser(char *userName)
 				"  User not added to this table\n", userName);
 		return;
 	}
-	
+
 	/* Insert the new record of the mapping data structure into the hash
 	 * table */
 	/*insertHashRecord(hashTable,
-			createHashRecord(userIndex, userName), 
+			createHashRecord(userIndex, userName),
 			HASH_SIZE);*/
-	
+
 	insertHashRecord(hashTable,
-			newRecord, 
+			newRecord,
 			HASH_SIZE);
 }
 
 
-/* Creates a row and inserts it.  
+/* Creates a row and inserts it.
  *
  * Returns: The rows userIndex on success, and 0 otherwise. */
-int createRegUserRow(char *stringToRegister) 
+int createRegUserRow(char *stringToRegister)
 {
 	int static index = 0;
-	
+
 	index++;
 
 	openserSIPRegUserTable_context *theRow;
@@ -269,7 +267,7 @@ int createRegUserRow(char *stringToRegister)
 
     }
     memcpy(theRow->openserSIPUserUri, stringToRegister, stringLength);
-	
+
     theRow->openserSIPUserUri_len = stringLength;
 
 	theRow->openserSIPUserAuthenticationFailures = 0;
@@ -287,7 +285,7 @@ void init_openserSIPRegUserTable(void)
 
 	/* We need to create a default row, so create DefaultUser */
 	static char *defaultUser = "DefaultUser";
-	
+
 	createRegUserRow(defaultUser);
 }
 
@@ -312,10 +310,10 @@ void initialize_table_openserSIPRegUserTable(void)
 	/* create the table structure itself */
 	table_info = SNMP_MALLOC_TYPEDEF(netsnmp_table_registration_info);
 
-	my_handler = 
+	my_handler =
 		netsnmp_create_handler_registration(
 			"openserSIPRegUserTable",
-			netsnmp_table_array_helper_handler, 
+			netsnmp_table_array_helper_handler,
 			openserSIPRegUserTable_oid,
 			openserSIPRegUserTable_oid_len,
 			HANDLER_CAN_RONLY);
@@ -339,7 +337,7 @@ void initialize_table_openserSIPRegUserTable(void)
 				"Registering table openserSIPRegUserTable "
 				"as a table array\n"));
 
-	netsnmp_table_container_register(my_handler, table_info, &cb, 
+	netsnmp_table_container_register(my_handler, table_info, &cb,
 			cb.container, 1);
 }
 
@@ -356,10 +354,10 @@ int openserSIPRegUserTable_get_value(
 
 	netsnmp_variable_list *var = request->requestvb;
 
-	openserSIPRegUserTable_context *context = 
+	openserSIPRegUserTable_context *context =
 		(openserSIPRegUserTable_context *)item;
 
-	switch(table_info->colnum) 
+	switch(table_info->colnum)
 	{
 
 		case COLUMN_OPENSERSIPUSERURI:
@@ -368,7 +366,7 @@ int openserSIPRegUserTable_get_value(
 				(unsigned char*)context->openserSIPUserUri,
 				context->openserSIPUserUri_len );
 			break;
-	
+
 		case COLUMN_OPENSERSIPUSERAUTHENTICATIONFAILURES:
 			/** COUNTER = ASN_COUNTER */
 			snmp_set_var_typed_value(var, ASN_COUNTER,
@@ -377,7 +375,7 @@ int openserSIPRegUserTable_get_value(
 				sizeof(
 				context->openserSIPUserAuthenticationFailures));
 		break;
-	
+
 		default: /** We shouldn't get here */
 			snmp_log(LOG_ERR, "unknown column in "
 				"openserSIPRegUserTable_get_value\n");

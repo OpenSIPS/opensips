@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Send a reply
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -32,8 +30,8 @@
 /*!
  * \file
  * \brief SIP registrar module - Send a reply
- * \ingroup registrar   
- */  
+ * \ingroup registrar
+ */
 
 #include <stdio.h>
 #include "../../ut.h"
@@ -129,10 +127,10 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 			if (qlen) len += Q_PARAM_LEN + qlen;
 			len += EXPIRES_PARAM_LEN + INT2STR_MAX_LEN;
 			if (c->received.s) {
-				len += 1 /* ; */ 
-					+ rcv_param.len 
-					+ 1 /* = */ 
-					+ 1 /* dquote */ 
+				len += 1 /* ; */
+					+ rcv_param.len
+					+ 1 /* = */
+					+ 1 /* dquote */
 					+ c->received.len
 					+ 1 /* dquote */
 					;
@@ -159,7 +157,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 					+ sock->name.len
 					+ 1 /* : */
 					+ sock->port_no_str.len
-					+ GR_NO_VAL_SIZE 
+					+ GR_NO_VAL_SIZE
 					+ 1 /* quote */
 					;
 				/* sip.instance */
@@ -168,7 +166,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 					+ (c->instance.len - 2)
 					+ 1 /* quote */
 					;
-			}		
+			}
 		}
 		c = c->next;
 	}
@@ -248,7 +246,7 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 	}
 
 	p = contact.buf;
-	
+
 	memcpy(p, CONTACT_BEGIN, CONTACT_BEGIN_LEN);
 	p += CONTACT_BEGIN_LEN;
 
@@ -324,7 +322,7 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 				p += SIP_PROTO_SIZE;
 				memcpy(p,TEMP_GRUU_HEADER,TEMP_GRUU_HEADER_SIZE);
 				p += TEMP_GRUU_HEADER_SIZE;
-				
+
 				tmpgr = build_temp_gruu(c->aor,&c->instance,&c->callid,&grlen);
 				base64encode((unsigned char *)p,
 						(unsigned char *)tmpgr,grlen);
@@ -385,7 +383,7 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 #define	EI_R_PARSE      "Message parse error"                       /* R_PARSE */
 #define	EI_R_TO_MISS    "To header not found"                       /* R_TO_MISS */
 #define	EI_R_CID_MISS   "Call-ID header not found"                  /* R_CID_MISS */
-#define	EI_R_CS_MISS    "CSeq header not found"                     /* R_CS_MISS */ 
+#define	EI_R_CS_MISS    "CSeq header not found"                     /* R_CS_MISS */
 #define	EI_R_PARSE_EXP	"Expires parse error"                       /* R_PARSE_EXP */
 #define	EI_R_PARSE_CONT	"Contact parse error"                       /* R_PARSE_CONT */
 #define	EI_R_STAR_EXP	"* used in contact and expires is not zero" /* R_STAR__EXP */
@@ -475,7 +473,7 @@ static int add_retry_after(struct sip_msg* _m)
 {
 	char* buf, *ra_s;
  	int ra_len;
- 	
+
  	ra_s = int2str(retry_after, &ra_len);
  	buf = (char*)pkg_malloc(RETRY_AFTER_LEN + ra_len + CRLF_LEN);
  	if (!buf) {
@@ -529,7 +527,7 @@ static int add_unsupported(struct sip_msg* _m, str* _p)
  		     LUMP_RPL_HDR | LUMP_RPL_NODUP);
  	return 0;
 }
- 
+
 /*! \brief
  * Send a reply
  */
@@ -544,7 +542,7 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 		add_lump_rpl( _m, contact.buf, contact.data_len, LUMP_RPL_HDR|LUMP_RPL_NODUP|LUMP_RPL_NOFREE);
 		contact.data_len = 0;
 	}
-			
+
 	if (rerrno == R_FINE && (_flags&REG_SAVE_PATH_FLAG) && _m->path_vec.s) {
 		if ( (_flags&REG_SAVE_PATH_OFF_FLAG)==0 ) {
 			if (parse_supported(_m)<0 && (_flags&REG_SAVE_PATH_STRICT_FLAG)) {
@@ -575,7 +573,7 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 	case 500: msg.s = MSG_500; msg.len = sizeof(MSG_500)-1;break;
 	case 503: msg.s = MSG_503; msg.len = sizeof(MSG_503)-1;break;
 	}
-	
+
 	if (code != 200) {
 		buf = (char*)pkg_malloc(E_INFO_LEN + error_info[rerrno].len + CRLF_LEN + 1);
 		if (!buf) {
@@ -592,9 +590,9 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 			if (add_retry_after(_m) < 0) {
 				return -1;
 			}
-		} 
+		}
 	}
-	
+
 	if (sigb.reply(_m, code, &msg, NULL) == -1) {
 		LM_ERR("failed to send %ld %.*s\n", code, msg.len,msg.s);
 		return -1;

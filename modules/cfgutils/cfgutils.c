@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 1&1 Internet AG
  * Copyright (C) 2007 BASIS AudioNet GmbH
  *
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -38,16 +36,12 @@
  * or command line tools.
  * Furthermore it provides some functions to let the server wait a
  * specific time interval.
- * 
+ *
  */
-
-
-/* FIFO action protocol names */
-#define FIFO_SET_PROB   "rand_set_prob"
-#define FIFO_RESET_PROB "rand_reset_prob"
-#define FIFO_GET_PROB   "rand_get_prob"
-#define FIFO_GET_HASH   "get_config_hash"
-#define FIFO_CHECK_HASH "check_config_hash"
+#include <stdlib.h>
+#ifdef __OS_linux
+#include <features.h>     /* for GLIBC version testing */
+#endif
 
 #include "../../sr_module.h"
 #include "../../error.h"
@@ -60,10 +54,26 @@
 #include "../../md5utils.h"
 #include "../../globals.h"
 #include "../../time_rec.h"
-#include <stdlib.h>
+#include "../../timer.h"
 #include "shvar.h"
 #include "env_var.h"
 #include "script_locks.h"
+
+#if (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 8)
+	#include <sys/timerfd.h>  /* for timer FD */
+	#define HAVE_TIMER_FD 1
+#else
+#ifdef __OS_linux
+	#warning Your GLIB is too old, disabling async sleep functions!!!
+#endif
+#endif
+
+/* FIFO action protocol names */
+#define FIFO_SET_PROB   "rand_set_prob"
+#define FIFO_RESET_PROB "rand_reset_prob"
+#define FIFO_GET_PROB   "rand_get_prob"
+#define FIFO_GET_HASH   "get_config_hash"
+#define FIFO_CHECK_HASH "check_config_hash"
 
 
 static int set_prob(struct sip_msg*, char *, char *);
@@ -90,6 +100,16 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 static int ts_usec_delta(struct sip_msg *msg, char *_t1s,
 		char *_t1u, char *_t2s, char *_t2u, char *_res);
 static int check_time_rec(struct sip_msg*, char *);
+
+#ifdef HAVE_TIMER_FD
+static int async_sleep(struct sip_msg* msg,
+		async_resume_module **resume_f, void **resume_param,
+		char *duration);
+
+static int async_usleep(struct sip_msg* msg,
+		async_resume_module **resume_f, void **resume_param,
+		char *duration);
+#endif
 
 static int fixup_prob( void** param, int param_no);
 static int fixup_pv_set(void** param, int param_no);
@@ -172,7 +192,17 @@ static cmd_export_t cmds[]={
 	{0, 0, 0, 0, 0, 0}
 };
 
-static param_export_t params[]={ 
+static acmd_export_t acmds[] = {
+#ifdef HAVE_TIMER_FD
+	{"sleep",  (acmd_function)async_sleep,  1, fixup_spve_null },
+	{"usleep", (acmd_function)async_usleep, 1, fixup_spve_null },
+#endif
+	{0, 0, 0, 0}
+};
+
+
+
+static param_export_t params[]={
 	{"initial_probability", INT_PARAM, &initial},
 	{"hash_file",           STR_PARAM, &hash_file        },
 	{"shvset",              STR_PARAM|USE_FUNC_PARAM, (void*)param_set_shvar },
@@ -207,9 +237,12 @@ static pv_export_t mod_items[] = {
 
 struct module_exports exports = {
 	"cfgutils",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,        /* exported functions */
+	acmds,       /* exported async functions */
 	params,      /* exported parameters */
 	0,           /* exported statistics */
 	mi_cmds,     /* exported MI functions */
@@ -225,7 +258,7 @@ struct module_exports exports = {
 /**************************** fixup functions ******************************/
 static int fixup_prob( void** param, int param_no)
 {
-	unsigned int myint;
+	unsigned int myint = 0;
 	str param_str;
 
 	/* we only fix the parameter #1 */
@@ -303,7 +336,7 @@ static struct mi_root* mi_get_prob(struct mi_root* cmd, void* param )
 	node = addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "actual probability: %u percent\n",(*probability));
 	if(node == NULL)
 		goto error;
-	
+
 	return rpl_tree;
 
 error:
@@ -349,7 +382,7 @@ static struct mi_root* mi_check_hash(struct mi_root* cmd, void* param )
 			LM_ERR("could not hash the config file");
 			rpl_tree = init_mi_tree( 500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN );
 		}
-		
+
 		if (strncmp(config_hash, tmp, MD5_LEN) == 0) {
 			rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN );
 			if(rpl_tree == NULL)
@@ -364,7 +397,7 @@ static struct mi_root* mi_check_hash(struct mi_root* cmd, void* param )
 		if(node == NULL)
 			goto error;
 	}
-	
+
 	return rpl_tree;
 
 error:
@@ -372,12 +405,12 @@ error:
 	return 0;
 }
 
-static int set_prob(struct sip_msg *bar, char *percent_par, char *foo) 
+static int set_prob(struct sip_msg *bar, char *percent_par, char *foo)
 {
 	*probability=(int)(long)percent_par;
 	return 1;
 }
-	
+
 static int reset_prob(struct sip_msg *bar, char *percent_par, char *foo)
 {
 	*probability=initial;
@@ -469,7 +502,6 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 
 static int m_sleep(struct sip_msg *msg, char *time, char *str2)
 {
-
 	str time_s={NULL,0};
 	long seconds;
 
@@ -503,6 +535,122 @@ static int m_usleep(struct sip_msg *msg, char *time, char *str2)
 
 	return 1;
 }
+
+
+#ifdef HAVE_TIMER_FD
+int resume_async_sleep(int fd, struct sip_msg *msg, void *param)
+{
+	unsigned long now = (unsigned long)
+		(((unsigned long)-1) & get_uticks());
+
+	/* apply a sync correction if (for whatever reasons) the sleep
+	 * did not cover the whole interval so far */
+	if ( ((unsigned long)param) > (now+UTIMER_TICK) )
+		sleep_us((unsigned int)((unsigned long)param - now));
+
+	close (fd);
+	async_status = ASYNC_DONE;
+
+	return 1;
+}
+
+
+static int async_sleep(struct sip_msg* msg, async_resume_module **resume_f,
+										void **resume_param, char *time)
+{
+	str time_s={NULL,0};
+	unsigned int seconds;
+	struct itimerspec its;
+	int fd;
+
+	if(time == NULL || fixup_get_svalue(msg, (gparam_p)time, &time_s)!=0) {
+		LM_ERR("Invalid time argument\n");
+		return -1;
+	}
+
+	if ( str2int( &time_s, &seconds) != 0 ) {
+		LM_ERR("time to sleep <%.*s> is not integer\n",
+			time_s.len,time_s.s);
+		return -1;
+	}
+	LM_DBG("sleep %d seconds\n", seconds);
+
+	/* create the timer fd */
+	if ( (fd=timerfd_create( CLOCK_REALTIME, 0))<0 ) {
+		LM_ERR("failed to create new timer FD (%d) <%s>\n",
+			errno, strerror(errno));
+		return -1;
+	}
+
+	/* set the time */
+	its.it_value.tv_sec = seconds;
+	its.it_value.tv_nsec = 0;
+	its.it_interval.tv_sec = 0;
+	its.it_interval.tv_nsec = 0;
+	if (timerfd_settime( fd, 0, &its, NULL)<0) {
+		LM_ERR("failed to set timer FD (%d) <%s>\n",
+			errno, strerror(errno));
+		return -1;
+	}
+
+	/* start the async wait */
+	*resume_param = (void*)(unsigned long)
+		(((unsigned long)-1) & (get_uticks()+1000000*seconds));
+	*resume_f = resume_async_sleep;
+	async_status = fd;
+
+	return 1;
+}
+
+
+static int async_usleep(struct sip_msg* msg, async_resume_module **resume_f,
+										void **resume_param, char *time)
+{
+	str time_s={NULL,0};
+	unsigned int useconds;
+	struct itimerspec its;
+	int fd;
+
+	if(time == NULL || fixup_get_svalue(msg, (gparam_p)time, &time_s)!=0) {
+		LM_ERR("Invalid time argument\n");
+		return -1;
+	}
+
+	if ( str2int( &time_s, &useconds) != 0 ) {
+		LM_ERR("time to sleep <%.*s> is not integer\n",
+			time_s.len,time_s.s);
+		return -1;
+	}
+	LM_DBG("sleep %d useconds\n", useconds);
+
+	/* create the timer fd */
+	if ( (fd=timerfd_create( CLOCK_REALTIME, 0))<0 ) {
+		LM_ERR("failed to create new timer FD (%d) <%s>\n",
+			errno, strerror(errno));
+		return -1;
+	}
+
+	/* set the time */
+	its.it_value.tv_sec = (useconds / 1000000);
+	its.it_value.tv_nsec = (useconds % 1000000) * 1000;
+	its.it_interval.tv_sec = 0;
+	its.it_interval.tv_nsec = 0;
+	if (timerfd_settime( fd, 0, &its, NULL)<0) {
+		LM_ERR("failed to set timer FD (%d) <%s>\n",
+			errno, strerror(errno));
+		return -1;
+	}
+
+	/* start the async wait */
+	*resume_param = (void*)(unsigned long)
+		(((unsigned long)-1) & (get_uticks()+useconds));
+	*resume_f = resume_async_sleep;
+	async_status = fd;
+
+	return 1;
+}
+#endif
+
 
 static int dbg_abort(struct sip_msg* msg, char* foo, char* bar)
 {
@@ -559,12 +707,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if(init_shvars()<0)
-	{
-		LM_ERR("init shvars failed\n");
-		shm_free(probability);
-		return -1;
-	}
 	LM_INFO("module initialized, pid [%d]\n", getpid());
 
 	return 0;
@@ -633,7 +775,7 @@ static int pv_set_count(struct sip_msg* msg, char* pv_name, char* pv_result)
 
 	pv_val.flags = PV_TYPE_INT;
 	pv_val.ri = pv_elem->spec.pvp.pvi.u.ival-1;
-	
+
 	if (pv_set_value( msg, &pv_res->spec, 0, &pv_val) != 0)
 	{
 		LM_ERR("SET output value failed.\n");

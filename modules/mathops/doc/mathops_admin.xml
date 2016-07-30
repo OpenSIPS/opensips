@@ -59,7 +59,7 @@
 		<example>
 		<title>Setting the decimal_digits module parameter</title>
 		<programlisting format="linespecific">
-modparam("mathops", "decimal_digits", "10")
+modparam("mathops", "decimal_digits", 10)
 </programlisting>
 		</example>
 	</section>
@@ -72,18 +72,21 @@ modparam("mathops", "decimal_digits", "10")
 		<function moreinfo="none">math_eval(expression, result_pvar)</function>
 		</title>
 		<para>
-		The function evaluates a given expression and writes the results in the
+		The function evaluates a given expression and writes the result in the
 		output pseudo-variable. The expression may contain any number of pseudo
-		variables.
+		variables. Evaluation uses tinyexpr (see https://github.com/codeplea/tinyexpr).
 		</para>
 		<para>
 		Currently allowed syntax for specifying an expression:
 		<itemizedlist>
 		<listitem>
-			<para> Nested parantheses </para>
+			<para> Nested parentheses </para>
 		</listitem>
 		<listitem>
-			<para> binary + - / * operators </para>
+			<para> addition (+), subtraction/negation (-), multiplication (*), division (/), exponentiation (^) and modulus (%) with the normal operator precedence (the one exception being that exponentiation is evaluated left-to-right) </para>
+		</listitem>
+                <listitem>
+			<para> C math functions: abs (calls to fabs), acos, asin, atan, ceil, cos, cosh, exp, floor, ln (calls to log), log (calls to log10), sin, sinh, sqrt, tan, tanh </para>
 		</listitem>
 		</itemizedlist>
 		</para>
@@ -92,7 +95,7 @@ modparam("mathops", "decimal_digits", "10")
 		<listitem>
 			<para><emphasis>expression</emphasis> - String containing a
 			mathematical expression. It can also include pseudo variables. The
-			<emphasis>string</emphasis> parameter can only be given as a string.
+			<emphasis>expression</emphasis> parameter can only be given as a string.
 			</para>
 		</listitem>
 		<listitem>
@@ -124,6 +127,73 @@ if (math_eval("$avp(1) * ($avp(3) - ($avp(1) - $avp(2))) / $avp(3)", "$avp(resul
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">math_rpn(expression, result_pvar)</function>
+		</title>
+		<para>
+		The function evaluates a given RPN expression and writes the result in the
+		output pseudo-variable. The expression may contain any number of pseudo
+		variables.
+		</para>
+		<para>
+    The expression is specified in Reverse Polish Notation. Values are pushed
+    onto a stack, while operations are executed on that stack. The following operations
+    are supported:
+		<itemizedlist>
+		<listitem>
+			<para> binary operators: + - / * mod pow</para>
+		</listitem>
+		<listitem>
+			<para> unary functions: neg exp ln log10 abs sqrt cbrt floor ceil round nearbyint trunc </para>
+			<para> neg will change the sign of the top of the stack </para>
+			<para> ln is natural logarithm; abs is absolute value; other functions are standard C functions </para>
+		</listitem>
+		<listitem>
+			<para> constants: e pi</para>
+		</listitem>
+		<listitem>
+			<para> stack manipulations commands: drop dup swap</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>expression</emphasis> - String containing a
+			RPN expression. It can also include pseudo variables. The
+			<emphasis>expression</emphasis> parameter can only be given as a string.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
+			hold the result of the evaluation. Specified as a quoted string.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">math_rpn</function> usage</title>
+		<programlisting format="linespecific">
+$avp(1) = "3";
+
+if (math_rpn("1 $avp(1) swap swap dup drop / exp ln 1 swap /", "$avp(result)")) {
+	xlog("Result of expression: $avp(result)\n");
+} else {
+	xlog("RPN eval failed!\n");
+}
+
+/* This example RPN script will push 1 then 3 onto the stack, then do a couple no-ops
+(exchange the two values twice, duplicate one of them then drop the duplicate),
+compute the division of 1 by 3, then do another no-op (exponentiation then logarithm), and
+finally compute 1 divided by the result, giving 3 as the result. */
+</programlisting>
+		</example>
+	</section>
+
 
 	<section>
 		<title>

@@ -1,6 +1,4 @@
 /*
- *$Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -28,7 +26,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <regex.h>
 
 #include "mem/mem.h"
 #include "str.h"
@@ -66,17 +63,17 @@
 int fixup_str(void** param)
 {
 	str* s;
-	
+
 	s = (str*)pkg_malloc(sizeof(str));
 	if (!s) {
 		LM_ERR("no more pkg memory\n");
 		return E_UNSPEC;
 	}
-		
+
 	s->s = (char*)*param;
 	s->len = strlen(s->s);
 	*param = (void*)s;
-	
+
 	return 0;
 }
 
@@ -203,7 +200,6 @@ int fixup_uint_uint(void** param, int param_no)
 	return fixup_uint(param);
 }
 
-#if 0
 /*! \brief
  * - helper function
  * Convert char* parameter to signed int
@@ -220,7 +216,7 @@ int fixup_sint( void** param)
 	if(str2sint(&s, &si)==0)
 	{
 		pkg_free(*param);
-		*param=(void *)si;
+		*param=(void *)(unsigned long)si;
 		return 0;
 	}
 	LM_ERR("bad number <%s>\n", (char *)(*param));
@@ -256,6 +252,7 @@ int fixup_sint_sint(void** param, int param_no)
 	return fixup_sint(param);
 }
 
+#if 0
 /*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to signed int
@@ -316,6 +313,38 @@ static int fixup_regexp(void** param, int rflags)
 	return 0;
 }
 
+static int fixup_regexp_dynamic(void** param,int rflags)
+{
+	gparam_p gp;
+	int ret;
+	regex_t* re;
+
+	ret = fixup_sgp(param);
+	if (ret < 0)
+		return ret;
+
+	gp = (gparam_p)*param;
+	if (gp->type == GPARAM_TYPE_STR) {
+		/* we can compile the regex right now */
+		if ((re=pkg_malloc(sizeof(regex_t)))==0) {
+			LM_ERR("no more pkg memory\n");
+			return E_OUT_OF_MEM;
+		}
+		if (regcomp(re, gp->v.sval.s, (REG_EXTENDED|REG_ICASE|REG_NEWLINE)&(~rflags))) {
+			pkg_free(re);
+			LM_ERR("bad re %s\n", (char*)*param);
+			return E_BAD_RE;
+		}
+		/* replace it with the compiled re */
+		gp->type=GPARAM_TYPE_REGEX;
+		gp->v.re=re;
+		return 0;
+	}
+
+	/* regex will be compiled at runtime */
+	return 0;
+}
+
 /*! \brief
  * - helper function: free the regular expression parameter
  */
@@ -342,6 +371,83 @@ int fixup_regexp_null(void** param, int param_no)
 		return E_UNSPEC;
 	}
 	return fixup_regexp(param, 0);
+}
+
+/*! \brief
+ * fixup for functions that get one parameter
+ * - first parameter is converted to regular expression structure   - accepts non-plaintext input
+ */
+int fixup_regexp_dynamic_null(void** param, int param_no)
+{
+	if(param_no != 1)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_regexp_dynamic(param, 0);
+}
+
+static char *re_buff=NULL;
+static int re_buff_len = 0;
+regex_t* fixup_get_regex(struct sip_msg* msg, gparam_p gp,int *do_free)
+{
+	pv_value_t value;
+	str val;
+	regex_t* ret_re;
+
+	if(gp->type==GPARAM_TYPE_REGEX) {
+		/* pre-allocated at startup - just return it */
+		if (do_free)
+			*do_free=0;
+		return gp->v.re;
+	}
+	if(gp->type==GPARAM_TYPE_PVS) {
+		if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0
+				|| value.flags&PV_VAL_NULL || !(value.flags&PV_VAL_STR)){
+			LM_ERR("no valid PV value found (error in scripts)\n");
+			return NULL;
+		}
+		val = value.rs;
+		goto build_re;
+	}
+	if(gp->type==GPARAM_TYPE_PVE){
+		if(pv_printf_s( msg, gp->v.pve, &val)!=0){
+			LM_ERR("cannot print the PV-formatted string\n");
+			return NULL;
+		}
+		goto build_re;
+	}
+
+	return NULL;
+
+build_re:
+	if (val.len + 1 > re_buff_len) {
+		re_buff = pkg_realloc(re_buff,val.len + 1);
+		if (re_buff == NULL) {
+			LM_ERR("No more pkg \n");
+			return NULL;
+		}
+
+		re_buff_len = val.len + 1;
+	}
+
+	memcpy(re_buff,val.s,val.len);
+	re_buff[val.len] = 0;
+
+	if ((ret_re=pkg_malloc(sizeof(regex_t)))==0) {
+		LM_ERR("no more pkg memory\n");
+		return NULL;
+	}
+
+	if (regcomp(ret_re, re_buff, (REG_EXTENDED|REG_ICASE|REG_NEWLINE))) {
+		pkg_free(ret_re);
+		LM_ERR("bad re %s\n", re_buff);
+		return NULL;
+	}
+	
+	if (do_free)
+		*do_free=1;
+	return ret_re;
 }
 
 /*! \brief
@@ -527,7 +633,7 @@ int fixup_free_pvar_pvar(void** param, int param_no)
 	{
 	    LM_ERR("invalid parameter number %d\n", param_no);
 	    return E_UNSPEC;
-	}	
+	}
 	return fixup_free_pvar(param);
 }
 
@@ -617,7 +723,7 @@ int fixup_igp(void** param)
 {
 	str s;
 	gparam_p gp = NULL;
-	
+
 	gp = (gparam_p)pkg_malloc(sizeof(gparam_t));
 	if(gp == NULL)
 	{
@@ -661,7 +767,7 @@ int fixup_sgp(void** param)
 {
 	str s;
 	gparam_p gp = NULL;
-	
+
 	gp = (gparam_p)pkg_malloc(sizeof(gparam_t));
 	if(gp == NULL)
 	{
@@ -809,8 +915,8 @@ int fixup_get_ivalue(struct sip_msg* msg, gparam_p gp, int *val)
 		*val = gp->v.ival;
 		return 0;
 	}
-	
-	if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0 
+
+	if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0
 			|| value.flags&PV_VAL_NULL || !(value.flags&PV_VAL_INT))
 	{
 		LM_ERR("no valid PV value found (error in scripts)\n");
@@ -828,7 +934,7 @@ int fixup_spve(void** param)
 {
 	str s;
 	gparam_p gp = NULL;
-	
+
 	gp = (gparam_p)pkg_malloc(sizeof(gparam_t));
 	if(gp == NULL)
 	{
@@ -850,7 +956,7 @@ int fixup_spve(void** param)
 		gp->v.sval = s;
 	} else {
 		gp->type = GPARAM_TYPE_PVE;
-	}			
+	}
 	*param = (void*)gp;
 	return 0;
 }
@@ -898,7 +1004,7 @@ int fixup_spve_uint(void** param, int param_no)
 	}
 	if (param_no == 1)
 		return fixup_spve(param);
-		
+
 	return fixup_uint(param);
 }
 
@@ -915,10 +1021,10 @@ int fixup_get_svalue(struct sip_msg* msg, gparam_p gp, str *val)
 		*val = gp->v.sval;
 		return 0;
 	}
-	
+
 	if(gp->type==GPARAM_TYPE_PVS)
 	{
-		if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0 
+		if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0
 				|| value.flags&PV_VAL_NULL || !(value.flags&PV_VAL_STR))
 		{
 			LM_ERR("no valid PV value found (error in scripts)\n");
@@ -932,12 +1038,74 @@ int fixup_get_svalue(struct sip_msg* msg, gparam_p gp, str *val)
 	{
 		if(pv_printf_s( msg, gp->v.pve, val)!=0)
 		{
-			LM_ERR("cannot print the PV-formated string\n");
+			LM_ERR("cannot print the PV-formatted string\n");
 			return -1;
 		}
 		return 0;
 	}
 
+	LM_CRIT("bogus type %d in gparam\n",gp->type);
 	return -1;
+}
+
+/*! \brief
+ * - helper function
+ * Return string and/or int value from a gparam_t
+ */
+int fixup_get_isvalue(struct sip_msg* msg, gparam_p gp,
+			int *i_val, str *s_val, unsigned int *flags)
+{
+	pv_value_t value;
+
+	*flags = 0;
+	switch(gp->type)
+	{
+	case GPARAM_TYPE_INT:
+		*i_val = gp->v.ival;
+		*flags |= GPARAM_INT_VALUE_FLAG;
+		break;
+	case GPARAM_TYPE_STR:
+		*s_val = gp->v.sval;
+		*flags |= GPARAM_STR_VALUE_FLAG;
+		break;
+	case GPARAM_TYPE_PVE:
+		if(pv_printf_s( msg, gp->v.pve, s_val)!=0)
+		{
+			LM_ERR("cannot print the PV-formatted string\n");
+			return -1;
+		}
+		*flags |= GPARAM_STR_VALUE_FLAG;
+		break;
+	case GPARAM_TYPE_PVS:
+		if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0
+			|| value.flags&PV_VAL_NULL)
+		{
+			LM_ERR("no valid PV value found (error in scripts)\n");
+			return -1;
+		}
+		if(value.flags&PV_VAL_INT)
+		{
+			*i_val = value.ri;
+			*flags |= GPARAM_INT_VALUE_FLAG;
+		}
+		if(value.flags&PV_VAL_STR)
+		{
+			*s_val = value.rs;
+			*flags |= GPARAM_STR_VALUE_FLAG;
+		}
+		break;
+	default:
+		LM_ERR("unexpected gp->type=[%d]\n", gp->type);
+		return -1;
+	}
+
+	/* Let's convert to int, if possible */
+	if (!(*flags & GPARAM_INT_VALUE_FLAG) && (*flags & GPARAM_STR_VALUE_FLAG)
+		&& str2sint(s_val, i_val) == 0)
+		*flags |= GPARAM_INT_VALUE_FLAG;
+
+	if (!*flags) return -1;
+
+	return 0;
 }
 

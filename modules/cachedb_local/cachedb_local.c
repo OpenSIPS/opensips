@@ -1,6 +1,4 @@
 /*
- * $Id: localcache.c 6910 2010-05-26 09:23:27Z bogdan_iancu $
- *
  * memory cache system module
  *
  * Copyright (C) 2009 Anca Vamanu
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -53,6 +51,8 @@ static void destroy(void);
 lcache_t* cache_htable = NULL;
 int cache_htable_size = 9;
 int cache_clean_period = 600;
+int local_exec_threshold = 0;
+
 
 static int remove_chunk_f(struct sip_msg* msg, char* glob);
 struct mi_root * mi_cache_remove_chunk(struct mi_root *cmd_tree,void *param);
@@ -60,7 +60,8 @@ void localcache_clean(unsigned int ticks,void *param);
 
 static param_export_t params[]={
 	{ "cache_table_size",   INT_PARAM, &cache_htable_size },
-	{ "cache_clean_period", INT_PARAM, &cache_clean_period},
+	{ "cache_clean_period", INT_PARAM, &cache_clean_period },
+	{ "exec_threshold",     INT_PARAM, &local_exec_threshold },
 	{0,0,0}
 };
 
@@ -79,9 +80,12 @@ static mi_export_t mi_cmds[] = {
 /** module exports */
 struct module_exports exports= {
 	"cachedb_local",               /* module name */
+	MOD_TYPE_CACHEDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,                       /* exported functions */
+	0,                          /* exported async functions */
 	params,                     /* exported parameters */
 	0,                          /* exported statistics */
 	mi_cmds,                    /* exported MI functions */
@@ -102,6 +106,7 @@ static int remove_chunk_f(struct sip_msg* msg, char* glob)
 	int i;
 	str *pat = (str *)glob;
 	lcache_entry_t* me1, *me2;
+	struct timeval start;
 
 	if (pat->len+1 > pat_buff_size) {
 		pat_buff = pkg_realloc(pat_buff,pat->len+1);
@@ -118,6 +123,7 @@ static int remove_chunk_f(struct sip_msg* msg, char* glob)
 	pat_buff[pat->len] = 0;
 
 	LM_DBG("trying to remove chunk with pattern [%s]\n",pat_buff);
+	start_expire_timer(start,local_exec_threshold);
 
 	for(i = 0; i< cache_htable_size; i++) {
 		lock_get(&cache_htable[i].lock);
@@ -131,6 +137,8 @@ static int remove_chunk_f(struct sip_msg* msg, char* glob)
 					LM_ERR("No more pkg mem\n");
 					key_buff_size = 0;
 					lock_release(&cache_htable[i].lock);
+					stop_expire_timer(start,local_exec_threshold,
+					"cachedb_local remove_chunk",pat->s,pat->len,0);
 					return -1;
 				}
 
@@ -161,6 +169,8 @@ static int remove_chunk_f(struct sip_msg* msg, char* glob)
 		lock_release(&cache_htable[i].lock);
 	}
 
+	stop_expire_timer(start,local_exec_threshold,
+	"cachedb_local remove_chunk",pat->s,pat->len,0);
 	return 1;
 }
 
@@ -193,14 +203,14 @@ struct mi_root * mi_cache_remove_chunk(struct mi_root *cmd_tree,void *param)
 lcache_con* lcache_new_connection(struct cachedb_id* id)
 {
 	lcache_con *con;
-	
-	if (id->flags != CACHEDB_ID_NO_URL) {
-		LM_ERR("bogus url for local cachedb\n");
-		return 0;
-	}
 
 	if (id == NULL) {
 		LM_ERR("null db_id\n");
+		return 0;
+	}
+
+	if (id->flags != CACHEDB_ID_NO_URL) {
+		LM_ERR("bogus url for local cachedb\n");
 		return 0;
 	}
 
@@ -213,7 +223,7 @@ lcache_con* lcache_new_connection(struct cachedb_id* id)
 	memset(con,0,sizeof(lcache_con));
 	con->id = id;
 	con->ref = 1;
-	
+
 	return con;
 }
 
@@ -227,7 +237,7 @@ void lcache_free_connection(cachedb_pool_con *con)
 	pkg_free(con);
 }
 
-void lcache_destroy(cachedb_con *con) 
+void lcache_destroy(cachedb_con *con)
 {
 	cachedb_do_close(con,lcache_free_connection);
 }
@@ -242,7 +252,7 @@ static int mod_init(void)
 	cachedb_con *con;
 	str url=str_init("local://");
 	str name=str_init("local");
-	
+
 	if(cache_htable_size< 1)
 		cache_htable_size= 512;
 	else
@@ -265,12 +275,12 @@ static int mod_init(void)
 	cde.cdb_func.remove = lcache_htable_remove;
 	cde.cdb_func.add = lcache_htable_add;
 	cde.cdb_func.sub = lcache_htable_sub;
-	
+
 	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
 
 	if(cache_clean_period <= 0 )
 	{
-		LM_ERR("Worng parameter cache_clean_period - need a postive value\n");
+		LM_ERR("Wrong parameter cache_clean_period - need a positive value\n");
 		return -1;
 	}
 
@@ -294,7 +304,7 @@ static int mod_init(void)
 
 	/* register timer to delete the expired entries */
 	register_timer("localcache-expire",localcache_clean, 0,
-		cache_clean_period);
+		cache_clean_period, TIMER_FLAG_DELAY_ON_DELAY);
 
 	return 0;
 }
@@ -331,7 +341,7 @@ void localcache_clean(unsigned int ticks,void *param)
 		{
 			if((me1->expires > 0) && (me1->expires < get_ticks()))
 			{
-				LM_DBG("deleted entry attr= [%.*s]\n", 
+				LM_DBG("deleted entry attr= [%.*s]\n",
 						me1->attr.len, me1->attr.s);
 
 				if(me2)

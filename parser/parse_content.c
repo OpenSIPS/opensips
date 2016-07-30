@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * 2003-08-04 parse_content_type_hdr separates type from subtype inside
@@ -195,7 +193,7 @@ static type_node_t subtype_tree[] = {
 									{'c',SUBTYPE_UNKNOWN,1,-1},
 										{'.',SUBTYPE_UNKNOWN,1,-1},
 											{'p',SUBTYPE_UNKNOWN,1,-1},
-												{'i',SUBTYPE_UNKNOWN,1,-1}, 
+												{'i',SUBTYPE_UNKNOWN,1,-1},
 													{'d',SUBTYPE_UNKNOWN,1,-1},
 														{'f',SUBTYPE_XML_MSRTC_PIDF,0,-1},
 	{'e',SUBTYPE_UNKNOWN,1,118}, /* 105 */
@@ -222,6 +220,7 @@ static type_node_t subtype_tree[] = {
 				{'p',SUBTYPE_ISUP,0,-1},
 
         };
+char str_contenttype[50];
 
 
 
@@ -232,7 +231,7 @@ char* parse_content_length( char* buffer, char* end, int* length)
 	int  size;
 
 	p = buffer;
-	/* search the begining of the number */
+	/* search the beginning of the number */
 	while ( p<end && (*p==' ' || *p=='\t' ||
 	(*p=='\n' && (*(p+1)==' '||*(p+1)=='\t')) ))
 		p++;
@@ -243,6 +242,11 @@ char* parse_content_length( char* buffer, char* end, int* length)
 	number = 0;
 	while (p<end && *p>='0' && *p<='9') {
 		number = number*10 + (*p)-'0';
+		if (number<0) {
+			LM_ERR("number overflow at pos %d in len number [%.*s]\n",
+				(int)(p-buffer),(int)(end-buffer), buffer);
+			return 0;
+		}
 		size ++;
 		p++;
 	}
@@ -277,7 +281,7 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_
 
 	LM_DBG("Decoding MIME type for:[%.*s]\n",(int)(end-start),start);
 
-	/* search the begining of the type */
+	/* search the beginning of the type */
 	while ( p<end && (*p==' ' || *p=='\t' ||
 	(*p=='\n' && (*(p+1)==' '||*(p+1)=='\t')) ))
 		p++;
@@ -314,7 +318,7 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_
 	if ( p==end || *(p++)!='/')
 		goto error;
 
-	/* search the begining of the sub-type */
+	/* search the beginning of the sub-type */
 	while ( p<end && (*p==' ' || *p=='\t' ||
 	(*p=='\n' && (*(p+1)==' '||*(p+1)=='\t')) ))
 		p++;
@@ -355,11 +359,11 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_
 		if( con == NULL)
 			for(p++; p<end && *p!=','; p++);
 		else
-		{ 
+		{
 			str params_str;
 			param_hooks_t phooks;
 			param_t * cur;
-			
+
 			params_str.s = p;
 			params_str.len = end - p ;
 
@@ -367,14 +371,14 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_
 				goto error;
 
 			p = params_str.s;
-		
+
 			cur = con->params;
 
 			while(cur)
 			{
 				if( cur->name.len == 8 && !strncasecmp(cur->name.s,"boundary",cur->name.len ) )
 					con->boundary = cur->body;
-				
+
 				if( cur->name.len == 5 && !strncasecmp(cur->name.s,"start",cur->name.len ) )
 					con->start = cur->body;
 
@@ -453,7 +457,7 @@ int parse_content_type_hdr( struct sip_msg *msg )
 		goto parse_error;
 	}
 
-	
+
 	rez->type = mime;
 	msg->content_type->parsed = rez;
 	return mime;
@@ -557,4 +561,113 @@ void free_contenttype(content_t ** con)
 	}
 	*con = 0;
 }
-	
+
+char* convert_mime2string_CT(int contenttype)
+{
+	#define SET_TYPE_PTRS(_type_) \
+		do { \
+			subtype_start = type_start + sizeof(_type_) - 1; \
+			memcpy(type_start, _type_, sizeof(_type_) - 1); \
+		} while(0);
+
+	#define SET_SUBTYPE_PTR(_subtype_) memcpy(subtype_start, _subtype_, sizeof(_subtype_))
+
+	/* last 16 bits */
+	int type = contenttype >> 16;
+	/* only first 16 bits */
+	int subtype = contenttype & (0xFF);
+	char* type_start;
+	char* subtype_start;
+
+	memset(str_contenttype, 0 , sizeof(str_contenttype));
+	type_start = str_contenttype;
+
+	switch (type) {
+		case TYPE_TEXT:
+			SET_TYPE_PTRS("text/");
+			break;
+		case TYPE_MESSAGE:
+			SET_TYPE_PTRS("message/");
+			break;
+		case TYPE_APPLICATION:
+			SET_TYPE_PTRS("application/");
+			break;
+		case TYPE_MULTIPART:
+			SET_TYPE_PTRS("multipart/");
+			break;
+		case TYPE_ALL:
+			SET_TYPE_PTRS("*/");
+			break;
+		case TYPE_UNKNOWN:
+			SET_TYPE_PTRS("unknown/");
+			break;
+		default:
+			LM_ERR("invalid type\n");
+			return 0;
+	}
+
+	switch (subtype) {
+		case SUBTYPE_PLAIN:
+			SET_SUBTYPE_PTR("plain");
+			break;
+		case SUBTYPE_CPIM:
+			SET_SUBTYPE_PTR("cpim");
+			break;
+		case SUBTYPE_SDP:
+			SET_SUBTYPE_PTR("sdp");
+			break;
+		case SUBTYPE_CPLXML:
+			SET_SUBTYPE_PTR("cplxml");
+			break;
+		case SUBTYPE_PIDFXML:
+			SET_SUBTYPE_PTR("pidfxml");
+			break;
+		case SUBTYPE_RLMIXML:
+			SET_SUBTYPE_PTR("rlmixml");
+			break;
+		case SUBTYPE_RELATED:
+			SET_SUBTYPE_PTR("related");
+			break;
+		case SUBTYPE_LPIDFXML:
+			SET_SUBTYPE_PTR("lpidfxml");
+			break;
+		case SUBTYPE_XPIDFXML:
+			SET_SUBTYPE_PTR("xpidfxml");
+			break;
+		case SUBTYPE_WATCHERINFOXML:
+			SET_SUBTYPE_PTR("watcherinfoxml");
+			break;
+		case SUBTYPE_EXTERNAL_BODY:
+			SET_SUBTYPE_PTR("external_body");
+			break;
+		case SUBTYPE_XML_MSRTC_PIDF:
+			SET_SUBTYPE_PTR("xmlmsrtcpidf");
+			break;
+		case SUBTYPE_SMS:
+			SET_SUBTYPE_PTR("sms");
+			break;
+		case SUBTYPE_MIXED:
+			SET_SUBTYPE_PTR("mixed");
+			break;
+		case SUBTYPE_ISUP:
+			SET_SUBTYPE_PTR("isup");
+			break;
+		case SUBTYPE_ALL:
+			SET_SUBTYPE_PTR("*");
+			break;
+		case SUBTYPE_UNKNOWN:
+			SET_SUBTYPE_PTR("unknown");
+			break;
+		default:
+			LM_ERR("invalid subtype\n");
+			return 0;
+	}
+
+	return str_contenttype;
+
+#undef SET_TYPE_PTRS
+#undef SET_SUBTYPE_PTR
+}
+
+
+

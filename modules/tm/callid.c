@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Fast Call-ID Generator
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * ----------
@@ -65,7 +63,7 @@ int init_callid(void)
 	int rand_bits, i;
 
 	     /* calculate the initial call-id */
-	     /* how many bits and chars do we need to display the 
+	     /* how many bits and chars do we need to display the
 	      * whole ULONG number */
 	callid_prefix.len = sizeof(unsigned long) * 2;
 	callid_prefix.s = callid_buf;
@@ -74,7 +72,7 @@ int init_callid(void)
 		LM_ERR("too small callid buffer\n");
 		return -1;
 	}
-	
+
 	for(rand_bits = 1, i = RAND_MAX; i; i >>= 1, rand_bits++);  /* how long are the rand()s ? */
 	i = callid_prefix.len * 4 / rand_bits; /* how many rands() fit in the ULONG ? */
 
@@ -92,7 +90,7 @@ int init_callid(void)
 		LM_CRIT("callid calculation failed\n");
 		return -2;
 	}
-	
+
 	LM_DBG("Call-ID initialization: '%.*s'\n", callid_prefix.len, callid_prefix.s);
 	return 0;
 }
@@ -101,10 +99,10 @@ int init_callid(void)
 /*
  * Child initialization -- generates suffix
  */
-int child_init_callid(int rank) 
+int child_init_callid(int rank)
 {
 	struct socket_info *si;
-	
+
 	/* on tcp/tls bind_address is 0 so try to get the first address we listen
 	 * on no matter the protocol */
 	si=bind_address?bind_address:get_first_socket();
@@ -115,7 +113,7 @@ int child_init_callid(int rank)
 	callid_suffix.s = callid_buf + callid_prefix.len;
 
 	callid_suffix.len = snprintf(callid_suffix.s, CALLID_SUFFIX_LEN,
-				     "%c%d@%.*s", CID_SEP, my_pid(), 
+				     "%c%d@%.*s", CID_SEP, my_pid(),
 				     si->address_str.len,
 				     si->address_str.s);
 	if ((callid_suffix.len == -1) || (callid_suffix.len > CALLID_SUFFIX_LEN)) {

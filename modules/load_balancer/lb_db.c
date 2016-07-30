@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * load balancer module - complex call load balancing
  *
  * Copyright (C) 2009 Voice Sistem SRL
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -116,7 +114,7 @@ int init_lb_db(const str *db_url, char *table)
 int lb_db_load_data( struct lb_data *data)
 {
 	db_key_t columns[5];
-	db_res_t* res;
+	db_res_t* res = NULL;
 	db_row_t* row;
 	int i, n;
 	char *resource, *uri;
@@ -151,7 +149,7 @@ int lb_db_load_data( struct lb_data *data)
 		}
 	}
 
-	if (RES_ROW_N(res) == 0) {
+	if (res == NULL || RES_ROW_N(res) == 0) {
 		LM_WARN("table \"%.*s\" empty\n", lb_table_name.len,lb_table_name.s );
 		return 0;
 	}

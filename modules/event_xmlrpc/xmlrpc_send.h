@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -35,12 +35,16 @@ typedef struct _xmlrpc_send {
 	str body;
 	str method;
 	str host;
+	str first_line;
 	str event;
+	int process_idx;
 } xmlrpc_send_t;
 
 void xmlrpc_process(int rank);
 int xmlrpc_create_pipe(void);
+int xmlrpc_create_status_pipes(void);
 void xmlrpc_destroy_pipe(void);
+void xmlrpc_destroy_status_pipes(void);
 int xmlrpc_init_writer(void);
 int xmlrpc_init_buffers(void);
 int xmlrpc_send(xmlrpc_send_t * xmlrpcs);
@@ -52,6 +56,8 @@ int xmlrpc_build_buffer(str *,
 #define XMLRPC_DEFAULT_BUFFER_SIZE 8192
 #define XMLRPC_IOVEC_MAX_SIZE 32
 #define XMLRPC_DEFAULT_PORT 8080
+#define XMLRPC_SEND_SUCCESS 0
+#define XMLRPC_SEND_FAIL -1
 
 /* string macros */
 /* computes a macro len */
@@ -59,6 +65,9 @@ int xmlrpc_build_buffer(str *,
 
 /* xmlrpc http header */
 #define XMLRPC_HTTP_CONST "POST /RPC2 HTTP/1.1\r\nHost: "
+
+#define XMLRPC_HTTP_METHOD "POST "
+#define XMLRPC_HTTP_PROTO_HOST " HTTP/1.1\r\nHost:"
 
 #define XMLRPC_HTTP_HEADER \
 	"\r\nConnection: close\r\n" \
@@ -70,6 +79,8 @@ int xmlrpc_build_buffer(str *,
 
 #define XMLRPC_METHOD_CALL	"methodCall"
 #define XMLRPC_METHOD_NAME	"methodName"
+#define XMLRPC_STRUCT		"struct"
+#define XMLRPC_MEMBER		"member"
 #define XMLRPC_PARAMS		"params"
 #define XMLRPC_PARAM		"param"
 #define XMLRPC_ATTR			"name"

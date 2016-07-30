@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -71,8 +71,10 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"example_cachedb",			/* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,						/* exported functions */
 	params,						/* exported parameters */
 	0,							/* exported statistics */
@@ -127,7 +129,7 @@ static int mod_init(void)
 	LM_DBG("Destroying connection to back-end\n");
 	cdbf.destroy(con);
 
-	LM_INFO("succesfully loaded cachedb_example module\n");
+	LM_INFO("successfully loaded cachedb_example module\n");
 	return 0;
 }
 
@@ -174,7 +176,7 @@ static int process_msg(struct sip_msg *msg)
 {
 	str key=str_init("inv_bye");
 	int ret,result;
-	
+
 	LM_DBG("Inside process_msg\n");
 
 	/* based on different message contents, decide to do some Cache/DB ops

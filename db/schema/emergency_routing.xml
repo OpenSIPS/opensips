@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="emergency_routing" xmlns:db="http://docbook.org/ns/docbook">
+	<name>emergency_routing</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Emergency module to translate ERT informations in ESGWRI.
+		More information can be found at: &OPENSIPS_MOD_DOC;emergency.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Unique ID</description>
+	</column>
+
+	<column id="selectiveRoutingID">
+		<name>selectiveRoutingID</name>
+		<type>string</type>
+		<size>11</size>
+		<description>The Common Language Location Indicator(CLLI) code associated
+		  with the Selective Router to which the emergency call is to be directed
+		</description>
+	</column>
+
+	<column id="routingESN">
+		<name>routingESN</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<default>0</default>
+		<description> The Emergency Services Number associated with a particular ESZ 
+		  that respresents a unique combination of Police, Fire and EMS emergency responders.
+		</description>
+	</column>
+
+	<column id="npa">
+		<name>npa</name>
+		<type>unsigned int</type>
+		<size>3</size>
+		<default>0</default>
+		<description> The primary Numbering Plan Area (NPA) associated with
+		the outgoing route to the Selective Router that is appropriate for
+		caller's location.
+		</description>
+	</column>
+
+	<column id="esgwri">
+		<name>esgwri</name>
+		<type>string</type>
+		<size>50</size>
+		<description> Routing information used to direct the call to the ESGW.
+		</description>
+	</column>
+
+
+</table>

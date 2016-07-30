@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 SOMA Networks, Inc.
  * Written by Ovidiu Sas (osas)
  *
@@ -18,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
@@ -68,16 +66,16 @@ int add_mi_stream_nodes(struct mi_node* node, int index, sdp_stream_cell_t* stre
 	int i, len;
 
 	p = int2str((unsigned long)(index), &len);
-	node1 = add_mi_node_child( node, MI_DUP_VALUE, "stream", 6, p, len);
+	node1 = add_mi_node_child( node,  MI_IS_ARRAY|MI_DUP_VALUE, "stream", 6, p, len);
 	if (node1==NULL)
 		return 1;
-	
+
 	attr = add_mi_attr(node1, MI_DUP_VALUE, "media", 5, stream->media.s, stream->media.len);
-	if(attr == NULL) 
-		return 1; 
+	if(attr == NULL)
+		return 1;
 
 	attr = add_mi_attr(node1, MI_DUP_VALUE, "IP", 2, stream->ip_addr.s, stream->ip_addr.len);
-	if(attr == NULL) 
+	if(attr == NULL)
 		return 1;
 
 	attr = add_mi_attr(node1, MI_DUP_VALUE, "port", 4, stream->port.s, stream->port.len);
@@ -130,12 +128,14 @@ int add_mi_session_nodes(struct mi_node* node, int index, sdp_session_cell_t* se
 
 	switch (index) {
 		case 0:
-			node1 = add_mi_node_child( node, MI_DUP_VALUE, "session", 7, "caller", 6);
+			node1 = add_mi_node_child( node, MI_IS_ARRAY|MI_DUP_VALUE,
+				"session", 7, "caller", 6);
 			if (node1==NULL)
 				return 1;
 			break;
 		case 1:
-			node1 = add_mi_node_child( node, MI_DUP_VALUE, "session", 7, "callee", 6);
+			node1 = add_mi_node_child( node,  MI_IS_ARRAY|MI_DUP_VALUE,
+				"session", 7, "callee", 6);
 			if (node1==NULL)
 				return 1;
 			break;
@@ -155,7 +155,7 @@ int add_mi_session_nodes(struct mi_node* node, int index, sdp_session_cell_t* se
 	if(attr == NULL)
 		return 1;
 
-	p = int2str((unsigned long)(session->streams_num), &len); 
+	p = int2str((unsigned long)(session->streams_num), &len);
 	attr = add_mi_attr(node1, MI_DUP_VALUE, "streams", 7, p, len);
 	if(attr == NULL)
 		return 1;
@@ -186,7 +186,7 @@ int add_mi_sdp_nodes(struct mi_node* node, qos_sdp_t* qos_sdp)
 	if ( qos_sdp->prev != NULL ) LM_ERR("got qos_sdp->prev=%p\n", qos_sdp->prev);
 
 	while (qos_sdp) {
-		node1 = add_mi_node_child( node, MI_DUP_VALUE, "sdp", 3, NULL, 0);
+		node1 = add_mi_node_child( node, MI_IS_ARRAY|MI_DUP_VALUE, "sdp", 3, NULL, 0);
 		if (node1==NULL)
 			return 1;
 
@@ -235,7 +235,8 @@ void qos_dialog_mi_context_CB(struct dlg_cell* did, int type, struct dlg_cb_para
 
 	qos_sdp = qos_ctx->pending_sdp;
 	if (qos_sdp) {
-		node = add_mi_node_child(parent_node, MI_DUP_VALUE, "qos", 3, "pending_sdp", 11);
+		node = add_mi_node_child(parent_node, MI_IS_ARRAY|MI_DUP_VALUE,
+			"qos_pending_sdp", 15, NULL, 0);
 		if (node==NULL) {
 			LM_ERR("oom\n");
 			return;
@@ -248,7 +249,8 @@ void qos_dialog_mi_context_CB(struct dlg_cell* did, int type, struct dlg_cb_para
 
 	qos_sdp = qos_ctx->negotiated_sdp;
 	if (qos_sdp) {
-		node = add_mi_node_child(parent_node, MI_DUP_VALUE, "qos", 3, "negotiated_sdp", 14);
+		node = add_mi_node_child(parent_node, MI_IS_ARRAY|MI_DUP_VALUE,
+			"qos_negotiated_sdp", 18, NULL, 0);
 		if (node==NULL) {
 			LM_ERR("oom\n");
 			return;

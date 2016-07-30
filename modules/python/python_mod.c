@@ -1,5 +1,4 @@
-/* $Id: python_mod.c,v 1.1 2009/12/09 09:28:26 root Exp $
- *
+/*
  * Copyright (C) 2009 Sippy Software, Inc., http://www.sippysoft.com
  *
  * This file is part of opensips, a free SIP server.
@@ -16,9 +15,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
 */
+
+#include <Python.h>
 
 #include "../../str.h"
 #include "../../sr_module.h"
@@ -28,7 +29,6 @@
 #include "python_msgobj.h"
 #include "python_support.h"
 
-#include <Python.h>
 #include <libgen.h>
 
 static int mod_init(void);
@@ -67,9 +67,12 @@ static cmd_export_t cmds[] = {
 /** module exports */
 struct module_exports exports = {
     "python",                       /* module name */
+    MOD_TYPE_DEFAULT,/* class of this module */
     MODULE_VERSION,
     RTLD_NOW | RTLD_GLOBAL,         /* dlopen flags */
+    NULL,                           /* OpenSIPS module dependencies */
     cmds,                           /* exported functions */
+    0,                              /* exported async functions */
     params,                         /* exported parameters */
     0,                              /* exported statistics */
     0,                              /* exported MI functions */
@@ -99,9 +102,6 @@ mod_init(void)
         child_init_mname.len = strlen(child_init_mname.s);
     }
 
-    dname = dirname(script_name.s);
-    if (strlen(dname) == 0)
-        dname = ".";
     bname = basename(script_name.s);
     i = strlen(bname);
     if (bname[i - 1] == 'c' || bname[i - 1] == 'o')
@@ -113,6 +113,9 @@ mod_init(void)
           script_name.s);
         return -1;
     }
+    dname = dirname(script_name.s);
+    if (strlen(dname) == 0)
+        dname = ".";
 
     Py_Initialize();
     PyEval_InitThreads();
@@ -129,6 +132,7 @@ mod_init(void)
     sys_path = PySys_GetObject("path");
     /* PySys_GetObject doesn't pass reference! No need to DEREF */
     if (sys_path == NULL) {
+        PyErr_Print();
         LM_ERR("cannot import sys.path\n");
         PyEval_ReleaseLock();
         return -1;
@@ -136,6 +140,7 @@ mod_init(void)
 
     pDir = PyString_FromString(dname);
     if (pDir == NULL) {
+        PyErr_Print();
         LM_ERR("PyString_FromString() has filed\n");
         PyEval_ReleaseLock();
         return -1;
@@ -145,6 +150,7 @@ mod_init(void)
 
     pModule = PyImport_ImportModule(bname);
     if (pModule == NULL) {
+        PyErr_Print();
         LM_ERR("cannot import %s\n", bname);
         PyEval_ReleaseLock();
         return -1;
@@ -154,6 +160,7 @@ mod_init(void)
     Py_DECREF(pModule);
     /* pFunc is a new reference */
     if (pFunc == NULL || !PyCallable_Check(pFunc)) {
+        PyErr_Print();
         LM_ERR("cannot locate %s function in %s module\n",
           mod_init_fname.s, script_name.s);
         Py_XDECREF(pFunc);
@@ -163,6 +170,7 @@ mod_init(void)
 
     pModule = PyImport_ImportModule("traceback");
     if (pModule == NULL) {
+        PyErr_Print();
         LM_ERR("cannot import traceback module\n");
         Py_DECREF(pFunc);
         PyEval_ReleaseLock();
@@ -172,6 +180,7 @@ mod_init(void)
     format_exc_obj = PyObject_GetAttrString(pModule, "format_exception");
     Py_DECREF(pModule);
     if (format_exc_obj == NULL || !PyCallable_Check(format_exc_obj)) {
+        PyErr_Print();
         LM_ERR("cannot locate format_exception function in" \
           " traceback module\n");
         Py_XDECREF(format_exc_obj);
@@ -182,6 +191,7 @@ mod_init(void)
 
     pArgs = PyTuple_New(0);
     if (pArgs == NULL) {
+        PyErr_Print();
         LM_ERR("PyTuple_New() has failed\n");
         Py_DECREF(pFunc);
         Py_DECREF(format_exc_obj);
@@ -194,6 +204,7 @@ mod_init(void)
     Py_DECREF(pArgs);
 
     if (PyErr_Occurred()) {
+        PyErr_Print();
         python_handle_exception("mod_init");
         Py_XDECREF(handler_obj);
         Py_DECREF(format_exc_obj);
@@ -202,6 +213,7 @@ mod_init(void)
     }
 
     if (handler_obj == NULL) {
+        PyErr_Print();
         LM_ERR("%s function has not returned object\n",
           mod_init_fname.s);
         Py_DECREF(format_exc_obj);
@@ -226,6 +238,7 @@ child_init(int rank)
 
     pFunc = PyObject_GetAttrString(handler_obj, child_init_mname.s);
     if (pFunc == NULL || !PyCallable_Check(pFunc)) {
+        PyErr_Print();
         LM_ERR("cannot locate %s function\n", child_init_mname.s);
         if (pFunc != NULL) {
             Py_DECREF(pFunc);
@@ -237,6 +250,7 @@ child_init(int rank)
 
     pArgs = PyTuple_New(1);
     if (pArgs == NULL) {
+        PyErr_Print();
         LM_ERR("PyTuple_New() has failed\n");
         Py_DECREF(pFunc);
         PyThreadState_Swap(NULL);
@@ -246,6 +260,7 @@ child_init(int rank)
 
     pValue = PyInt_FromLong(rank);
     if (pValue == NULL) {
+        PyErr_Print();
         LM_ERR("PyInt_FromLong() has failed\n");
         Py_DECREF(pArgs);
         Py_DECREF(pFunc);
@@ -269,6 +284,7 @@ child_init(int rank)
     }
 
     if (pResult == NULL) {
+        PyErr_Print();
         LM_ERR("PyObject_CallObject() returned NULL but no exception!\n");
         PyThreadState_Swap(NULL);
         PyEval_ReleaseLock();

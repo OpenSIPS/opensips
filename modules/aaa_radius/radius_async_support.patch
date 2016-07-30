@@ -1,0 +1,684 @@
+diff --git a/include/freeradius-client.h b/include/freeradius-client.h
+index 96c7546..6a5ec13 100644
+--- a/include/freeradius-client.h
++++ b/include/freeradius-client.h
+@@ -33,6 +33,11 @@
+ /* #include	<inttypes.h> */
+ #include	<stdio.h>
+ #include	<time.h>
++#include	<netinet/in.h>
++
++#ifndef RADIUS_ASYNC_SUPPORT
++	#define RADIUS_ASYNC_SUPPORT
++#endif
+ 
+ #undef __BEGIN_DECLS
+ #undef __END_DECLS
+@@ -383,6 +388,7 @@ typedef struct value_pair
+ #define OK_RC		0
+ #define TIMEOUT_RC	1
+ #define REJECT_RC	2
++#define READBLOCK_RC 3
+ 
+ typedef struct send_data /* Used to pass information to sendserver() function */
+ {
+@@ -397,6 +403,26 @@ typedef struct send_data /* Used to pass information to sendserver() function */
+ 	VALUE_PAIR     *receive_pairs;  /* Where to place received a/v pairs */
+ } SEND_DATA;
+ 
++typedef struct send_context /* Used to pass information to cc_aaa_receive_async() function */
++{
++	int				idx;	   //!< index to the destination that was last tried
++	rc_handle		*rh;	   //!< rh a handle to parsed configuration.
++	char			*msg;	   //!< will contain the concatenation of any %PW_REPLY_MESSAGE received.
++	unsigned		type;	   //!< request type (accounting / authentification)
++	SEND_DATA	    *data;	   //!< used to pass information to sendserver() function
++	int				again;	   //!< first or second pass through all destinations;
++	int				sockfd;	   //!< socket to open connection
++	VALUE_PAIR		*adt_vp;   //!< internal rc_aaa parameter
++	struct addrinfo *auth_addr;//!< internal rc_aaa parameter
++	SERVER			*aaaserver;//!< server description
++	struct sockaddr_in sinremote; //!< remote server sockaddr struct
++	int				skip_count;//!< internal rc_aaa parameter
++	double			start_time;//!< internal rc_aaa parameter
++	int				request_type;//!< acct or auth
++	unsigned char   vector[AUTH_VECTOR_LEN];//!< internal sendserver() param
++	char            secret[MAX_SECRET_LENGTH + 1];//!< radius secret
++} SEND_CONTEXT;
++
+ #ifndef MIN
+ #define MIN(a, b)     ((a) < (b) ? (a) : (b))
+ #endif
+@@ -439,13 +465,25 @@ VALUE_PAIR *rc_avpair_readin(rc_handle const *, FILE *);
+ void rc_buildreq(rc_handle const *, SEND_DATA *, int, char *, unsigned short, char *, int, int);
+ unsigned char rc_get_id();
+ int rc_auth(rc_handle *, uint32_t, VALUE_PAIR *, VALUE_PAIR **, char *);
++
++int rc_auth_async(rc_handle *, uint32_t, VALUE_PAIR *, VALUE_PAIR **, char *, SEND_CONTEXT**);
++int rc_auth_resume(SEND_CONTEXT **, VALUE_PAIR **);
++
+ int rc_auth_proxy(rc_handle *, VALUE_PAIR *, VALUE_PAIR **, char *);
+ int rc_acct(rc_handle *, uint32_t, VALUE_PAIR *);
++
++int rc_acct_async(rc_handle *, uint32_t, VALUE_PAIR *, SEND_CONTEXT **);
++int rc_acct_resume(SEND_CONTEXT **);
++
+ int rc_acct_proxy(rc_handle *, VALUE_PAIR *);
+ int rc_check(rc_handle *, char *, char *, unsigned short, char *);
+ 
+ int rc_aaa(rc_handle *rh, uint32_t client_port, VALUE_PAIR *send, VALUE_PAIR **received,
+     char *msg, int add_nas_port, int request_type);
++int rc_aaa_async (rc_handle *rh, uint32_t client_port, VALUE_PAIR *send, VALUE_PAIR **received,
++	   char *msg, int add_nas_port, int request_type, SEND_CONTEXT **ctx);
++int rc_aaa_receive_async(SEND_CONTEXT **ctx, VALUE_PAIR **received, int request_type);
++
+ 
+ /*	clientid.c		*/
+ 
+diff --git a/include/includes.h b/include/includes.h
+index 908f0e7..4b6c7d6 100644
+--- a/include/includes.h
++++ b/include/includes.h
+@@ -177,6 +177,10 @@ int sigprocmask (int, sigset_t *, sigset_t *);
+ # endif
+ #endif
+ 
++#ifndef RADIUS_ASYNC_SUPPORT
++#define RADIUS_ASYNC_SUPPORT
++#endif
++
+ /* rlib/lock.c */
+ int do_lock_exclusive(FILE *);
+ int do_unlock(FILE *);
+diff --git a/lib/buildreq.c b/lib/buildreq.c
+index a71b1f9..48b83e0 100644
+--- a/lib/buildreq.c
++++ b/lib/buildreq.c
+@@ -175,6 +175,234 @@ exit:
+ 	return result;
+ }
+ 
++/** Builds an authentication/accounting request for port id client_port with the value_pairs send and submits it to a server;
++ *
++ * @param rh a handle to parsed configuration.
++ * @param client_port the client port number to use (may be zero to use any available).
++ * @param send a #VALUE_PAIR array of values (e.g., %PW_USER_NAME).
++ * @param received an allocated array of received values.
++ * @param msg must be an array of %PW_MAX_MSG_SIZE or %NULL; will contain the concatenation of any
++ *	%PW_REPLY_MESSAGE received.
++ * @param add_nas_port if non-zero it will include %PW_NAS_PORT in sent pairs.
++ * @param request_type one of standard RADIUS codes (e.g., %PW_ACCESS_REQUEST).
++ * @param ctx the context which shall be passed to the asynchronous receive function;
++ * @return OK_RC on send success and populated @ctx and socket in @ctx->sockfd;
++ *	resume shall be called
++ *		   ERROR_RC on failure
++ * if upper layer application detects timeout on sockfd it shall call this function
++ * again with the same @ctx
++ */
++
++int rc_aaa_async (rc_handle *rh, uint32_t client_port, VALUE_PAIR *send, VALUE_PAIR **received,
++	   char *msg, int add_nas_port, int request_type, SEND_CONTEXT **ctx)
++{
++	SEND_DATA       data;
++	VALUE_PAIR	*adt_vp = NULL;
++	int		result;
++	int		i, skip_count;
++	int		resume_send = 0;
++	SERVER		*aaaserver;
++	int		radius_deadtime = rc_conf_int(rh, "radius_deadtime");
++	double		start_time = 0;
++	double		now = 0;
++	time_t		dtime;
++
++	if (*ctx != NULL) {
++		/* if here it means another destination is tried */
++		aaaserver = (*ctx)->aaaserver;
++		data = *((*ctx)->data);
++		skip_count = (*ctx)->skip_count;
++
++		/* resume from the next destination */
++		(*ctx)->idx++;
++
++		if (!(*ctx)->again) {
++			if (radius_deadtime > 0)
++				aaaserver->deadtime_ends[(*ctx)->idx] =
++					(*ctx)->start_time + radius_deadtime;
++		}
++	} else {
++		if (request_type != PW_ACCOUNTING_REQUEST) {
++			aaaserver = rc_conf_srv(rh, "authserver");
++		} else {
++			aaaserver = rc_conf_srv(rh, "acctserver");
++		}
++		if (aaaserver == NULL)
++			return ERROR_RC;
++
++		data.send_pairs = send;
++		data.receive_pairs = NULL;
++
++		if (add_nas_port != 0) {
++			/*
++			 * Fill in NAS-Port
++			 */
++			if (rc_avpair_add(rh, &(data.send_pairs), PW_NAS_PORT,
++			    &client_port, 0, 0) == NULL)
++				return ERROR_RC;
++		}
++
++		if (request_type == PW_ACCOUNTING_REQUEST) {
++			/*
++			 * Fill in Acct-Delay-Time
++			 */
++			dtime = 0;
++			now = rc_getctime();
++			adt_vp = rc_avpair_get(data.send_pairs, PW_ACCT_DELAY_TIME, 0);
++			if (adt_vp == NULL) {
++				adt_vp = rc_avpair_add(rh, &(data.send_pairs),
++				    PW_ACCT_DELAY_TIME, &dtime, 0, 0);
++				if (adt_vp == NULL)
++					return ERROR_RC;
++				start_time = now;
++			} else {
++				start_time = now - adt_vp->lvalue;
++			}
++		}
++
++		if ((*ctx = malloc(sizeof(SEND_CONTEXT) + sizeof(SEND_DATA))) == NULL) {
++			rc_log(LOG_ERR, "rc_aaa_async: out of memory\n");
++			return -1;
++		}
++		memset(*ctx, '\0', sizeof(SEND_CONTEXT) + sizeof(SEND_DATA));
++
++		(*ctx)->rh				= rh;
++		(*ctx)->data			= (SEND_DATA *)(*ctx + 1);
++		(*ctx)->msg				= msg;
++		(*ctx)->idx				= 0;
++
++		skip_count = 0;
++	}
++
++	if ((*ctx)->again != 1) {
++		result = ERROR_RC;
++		for (i = (*ctx)->idx; (i < aaaserver->max) && (result != OK_RC);
++				i++, now = rc_getctime()) {
++			if (aaaserver->deadtime_ends[i] != -1 &&
++			    aaaserver->deadtime_ends[i] > start_time) {
++				skip_count++;
++				continue;
++			}
++
++			if (data.receive_pairs != NULL) {
++				rc_avpair_free(data.receive_pairs);
++				data.receive_pairs = NULL;
++			}
++
++			rc_buildreq(rh, &data, request_type, aaaserver->name[i],
++				aaaserver->port[i], aaaserver->secret[i], 0, 0);
++			(*(*ctx)->data)			= data;
++
++			if (request_type == PW_ACCOUNTING_REQUEST) {
++				dtime = now - start_time;
++				rc_avpair_assign(adt_vp, &dtime, 0);
++			}
++
++			result = rc_send_server_async (rh, &data, msg, ctx);
++			if (result == OK_RC) {
++				(*ctx)->idx = i;
++				(*ctx)->skip_count = skip_count;
++			}
++		}
++
++		if (result == OK_RC) {
++			(*ctx)->start_time		= start_time;
++			(*ctx)->adt_vp			= adt_vp;
++			(*ctx)->aaaserver		= aaaserver;
++
++			return result;
++		}
++
++		if (skip_count == 0) {
++			goto out_err;
++		}
++
++		(*ctx)->again = 1;
++		(*ctx)->idx = 0;
++	}
++
++	result = ERROR_RC;
++	for (i = (*ctx)->idx; (i < aaaserver->max) && (result != OK_RC); i++) {
++		if (aaaserver->deadtime_ends[i] != -1 ||
++			aaaserver->deadtime_ends[i] <= start_time) {
++			continue;
++		}
++
++		if (data.receive_pairs != NULL) {
++			rc_avpair_free(data.receive_pairs);
++			data.receive_pairs = NULL;
++		}
++
++		rc_buildreq(rh, &data, request_type, aaaserver->name[i],
++			aaaserver->port[i], aaaserver->secret[i], 0, 0);
++		(*(*ctx)->data)			= data;
++
++		if (request_type == PW_ACCOUNTING_REQUEST) {
++			dtime = now - start_time;
++			rc_avpair_assign(adt_vp, &dtime, 0);
++		}
++
++		result = rc_send_server_async (rh, &data, msg, ctx);
++		if (result == OK_RC)
++			(*ctx)->idx = i;
++
++		if (result != OK_RC)
++			aaaserver->deadtime_ends[i] = -1;
++
++	}
++
++	if (result == OK_RC) {
++		(*ctx)->start_time		= start_time;
++		(*ctx)->adt_vp			= adt_vp;
++		(*ctx)->aaaserver		= aaaserver;
++
++		return result;
++	}
++
++out_err:
++	/* got through all entries; none OK; free ctx and exit*/
++	free(*ctx);
++	*ctx = NULL;
++
++	return result;
++}
++
++/* Receives the reply from the server
++ * @param ctx the context that was set by rc_aaa_async function
++ * @param received an allocated array of received values.
++ * @return NULL @ctx and OK_RC(0) on success
++ * BLOCK_RC(3) and not NULL @ctx on EWOULDBLOCK/EAGAIN
++ * NULL @ctx on any other failure return code
++ */
++/*rc_receive async name*/
++int rc_aaa_receive_async(SEND_CONTEXT **ctx, VALUE_PAIR **received, int request_type)
++{
++	int i;
++	int		result;
++
++	if (*ctx == NULL) {
++		rc_log(LOG_ERR, "rc_aaa_async: context is null");
++		return ERROR_RC;
++	}
++
++	result = rc_receive_async(ctx);
++
++	if (result != READBLOCK_RC) {
++		i=(*ctx)->idx;
++		(*ctx)->aaaserver->deadtime_ends[i] = -1;
++		if (request_type != PW_ACCOUNTING_REQUEST) {
++			*received = (*ctx)->data->receive_pairs;
++		} else {
++			rc_avpair_free((*ctx)->data->receive_pairs);
++		}
++	} else {
++		free(*ctx);
++		*ctx = NULL;
++	}
++
++	return result;
++}
++
+ /*
+  * Function: rc_auth
+  *
+@@ -193,6 +421,39 @@ int rc_auth(rc_handle *rh, uint32_t client_port, VALUE_PAIR *send, VALUE_PAIR **
+ 	return rc_aaa(rh, client_port, send, received, msg, 1, PW_ACCESS_REQUEST);
+ }
+ 
++/* Builds an authentication request for port id client_port with the value_pairs send and submits it to a server
++ * @param rh a handle to parsed configuration.
++ * @param client_port the client port number to use (may be zero to use any available).
++ * @param send a #VALUE_PAIR array of values (e.g., %PW_USER_NAME).
++ * @param received an allocated array of received values.
++ * @param msg must be an array of %PW_MAX_MSG_SIZE or %NULL; will contain the concatenation of any
++ *	%PW_REPLY_MESSAGE received.
++ * @param ctx the context which shall be passed to the asynchronous receive function.
++ * @return received value_pairs in @received, messages from the server in msg (if non-NULL),
++ * context for resume function in @ctx, sockfd in @ctx->sockfd and %OK_RC (0) on success
++ * negative on failure as return value.
++ * on failure an error code is called; function shall not be called again
++ * if upper layer application detects timeout on socket it shall call this function
++ * again with same context
++ */
++int rc_auth_async(rc_handle *rh, uint32_t client_port, VALUE_PAIR *send, VALUE_PAIR **received,
++    char *msg, SEND_CONTEXT **ctx)
++{
++
++	return rc_aaa_async(rh, client_port, send, received, msg, 1, PW_ACCESS_REQUEST, ctx);
++}
++
++/* Asynchronously receives the authentification reply from the server
++ * @param ctx the context that was set by rc_auth_async function
++ * @param received an allocated array of received values.
++ * @return received value_pairs in @received OK_RC(0) on success;
++ *			BLOCK_RC and not null @ctx on EWOULDBLOCK/EAGAIN
++ *			any other rc means failure or rejection
++ */
++int rc_auth_resume(SEND_CONTEXT **ctx, VALUE_PAIR ** received) {
++	return rc_aaa_receive_async(ctx, received, PW_ACCESS_REQUEST);
++}
++
+ /*
+  * Function: rc_auth_proxy
+  *
+@@ -229,6 +490,38 @@ int rc_acct(rc_handle *rh, uint32_t client_port, VALUE_PAIR *send)
+ 	return rc_aaa(rh, client_port, send, NULL, NULL, 1, PW_ACCOUNTING_REQUEST);
+ }
+ 
++/** Builds an accounting request for port id client_port with the value_pairs at send
++ *
++ * @note NAS-IP-Address, NAS-Port and Acct-Delay-Time get filled in by this function, the rest has to be supplied.
++ *
++ * @param rh a handle to parsed configuration.
++ * @param client_port the client port number to use (may be zero to use any available).
++ * @param send a #VALUE_PAIR array of values (e.g., %PW_USER_NAME).
++ * @param ctx the context which shall be passed to the asynchronous receive function;
++ *@return received value_pairs in @received, messages from the server in msg (if non-NULL),
++ * context for resume function in @ctx, sockfd in @ctx->sockfd and %OK_RC (0) on success
++ * negative on failure as return value.
++ * on failure an error code is called; function shall not be called again
++ * if upper layer application detects timeout on socket it shall call this function
++ * again with same context
++
++ */
++int rc_acct_async(rc_handle *rh, uint32_t client_port, VALUE_PAIR *send, SEND_CONTEXT **ctx) {
++	return rc_aaa_async(rh, client_port, send, NULL, NULL, 1, PW_ACCOUNTING_REQUEST, ctx);
++}
++
++/* Asynchronously receives the accounting reply from the server
++ * @param ctx the context that was set by rc_acct_resume function
++ * @return NULL @ctx and OK_RC(0) on success;
++ *		   BLOCK_RC and not NULL @ctx on EWOULDBLOCK/EAGAIN
++ *		   any other rc means failure
++ *
++ */
++int rc_acct_resume(SEND_CONTEXT **ctx) {
++	return rc_aaa_receive_async(ctx, NULL, PW_ACCOUNTING_REQUEST);
++}
++
++
+ /*
+  * Function: rc_acct_proxy
+  *
+diff --git a/lib/sendserver.c b/lib/sendserver.c
+index bfdd9a2..dfb96a7 100644
+--- a/lib/sendserver.c
++++ b/lib/sendserver.c
+@@ -339,7 +339,7 @@ int rc_send_server (rc_handle *rh, SEND_DATA *data, char *msg)
+ 		auth->length = htons ((unsigned short) total_length);
+ 	}
+ 
+-	DEBUG(LOG_ERR, "DEBUG: local %s : 0, remote %s : %u\n", 
++	DEBUG(LOG_ERR, "DEBUG: local %s : 0, remote %s : %u\n",
+ 		inet_ntoa(sinlocal.sin_addr),
+ 		inet_ntoa(sinremote.sin_addr), data->svc_port);
+ 
+@@ -455,6 +455,260 @@ int rc_send_server (rc_handle *rh, SEND_DATA *data, char *msg)
+ 	return result;
+ }
+ 
++/** Sends a request to a RADIUS server;
++ *
++ * @param rh a handle to parsed configuration
++ * @param data a pointer to a #SEND_DATA structure
++ * @param msg must be an array of %PW_MAX_MSG_SIZE or %NULL; will contain the concatenation of
++ *	any %PW_REPLY_MESSAGE received.
++ * @param flags must be %AUTH or %ACCT
++ * @param ctx the context that is being set for the resume function
++ * @return %OK_RC (0) on success, %TIMEOUT_RC on timeout %REJECT_RC on acess reject, or negative
++ *	on failure as return value.
++ */
++int rc_send_server_async(rc_handle *rh, SEND_DATA *data, char *msg, SEND_CONTEXT **ctx)
++{
++	int             sockfd;
++	struct sockaddr_in sinlocal;
++	struct sockaddr_in sinremote;
++	AUTH_HDR       *auth;
++	uint32_t           auth_ipaddr, nas_ipaddr;
++	char           *server_name;	/* Name of server to query */
++	int             result = 0;
++	int             total_length;
++	int				sock_flags;
++	size_t		secretlen;
++	char            secret[MAX_SECRET_LENGTH + 1];
++	unsigned char   vector[AUTH_VECTOR_LEN];
++	uint8_t          send_buffer[BUFFER_LEN];
++	unsigned	discover_local_ip;
++	char		our_addr_txt[50]; /* hold a text IP */
++	char		auth_addr_txt[50]; /* hold a text IP */
++	VALUE_PAIR 	*vp;
++
++	server_name = data->server;
++	if (server_name == NULL || server_name[0] == '\0')
++		return ERROR_RC;
++
++
++	if ((vp = rc_avpair_get(data->send_pairs, PW_SERVICE_TYPE, 0)) && \
++	    (vp->lvalue == PW_ADMINISTRATIVE))
++	{
++		strcpy(secret, MGMT_POLL_SECRET);
++		if ((auth_ipaddr = rc_get_ipaddr(server_name)) == 0)
++			return ERROR_RC;
++	}
++	else
++	{
++		if(data->secret != NULL)
++		{
++			strncpy(secret, data->secret, MAX_SECRET_LENGTH);
++		}
++		/*
++		else
++		{
++		*/
++		if (rc_find_server (rh, server_name, &auth_ipaddr, secret) != 0)
++		{
++			rc_log(LOG_ERR, "rc_send_server_async: unable to find server: %s", server_name);
++			return ERROR_RC;
++		}
++		/*}*/
++	}
++
++	DEBUG(LOG_ERR, "DEBUG: rc_send_server_async: creating socket to: %s", server_name);
++
++	sockfd = socket (AF_INET, SOCK_DGRAM, 0);
++	if (sockfd < 0)
++	{
++		memset (secret, '\0', sizeof (secret));
++		rc_log(LOG_ERR, "rc_send_server_async: socket: %s", strerror(errno));
++		return ERROR_RC;
++	}
++
++	memset((char *)&sinlocal, '\0', sizeof(sinlocal));
++	sinlocal.sin_family = AF_INET;
++	sinlocal.sin_addr.s_addr = htonl(rc_own_bind_ipaddress(rh));
++	sinlocal.sin_port = htons((unsigned short) 0);
++	if (bind(sockfd, SA(&sinlocal), sizeof(sinlocal)) < 0)
++	{
++		close (sockfd);
++		memset (secret, '\0', sizeof (secret));
++		rc_log(LOG_ERR, "rc_send_server_async: bind: %s: %s", server_name, strerror(errno));
++		return ERROR_RC;
++	}
++
++	/* set socket to nonblocking */
++	sock_flags = fcntl(sockfd, F_GETFD, 0);
++	if (fcntl(sockfd, F_SETFL, sock_flags | O_NONBLOCK))
++		return ERROR_RC;
++
++	memset ((char *)&sinremote, '\0', sizeof(sinremote));
++	sinremote.sin_family = AF_INET;
++	sinremote.sin_addr.s_addr = htonl (auth_ipaddr);
++	sinremote.sin_port = htons ((unsigned short) data->svc_port);
++
++	/*
++	 * Fill in NAS-IP-Address (if needed)
++	 */
++	if (rc_avpair_get(data->send_pairs, PW_NAS_IP_ADDRESS, 0) == NULL) {
++		if (sinlocal.sin_addr.s_addr == htonl(INADDR_ANY)) {
++			if (rc_get_srcaddr(SA(&sinlocal), SA(&sinremote)) != 0) {
++				close (sockfd);
++				memset (secret, '\0', sizeof (secret));
++				return ERROR_RC;
++			}
++		}
++		nas_ipaddr = ntohl(sinlocal.sin_addr.s_addr);
++		rc_avpair_add(rh, &(data->send_pairs), PW_NAS_IP_ADDRESS,
++		    &nas_ipaddr, 0, 0);
++	}
++
++	/* Build a request */
++	auth = (AUTH_HDR *) send_buffer;
++	auth->code = data->code;
++	auth->id = data->seq_nbr;
++
++	if (data->code == PW_ACCOUNTING_REQUEST)
++	{
++		total_length = rc_pack_list(data->send_pairs, secret, auth) + AUTH_HDR_LEN;
++
++		auth->length = htons ((unsigned short) total_length);
++
++		memset((char *) auth->vector, 0, AUTH_VECTOR_LEN);
++		secretlen = strlen (secret);
++		memcpy ((char *) auth + total_length, secret, secretlen);
++		rc_md5_calc (vector, (unsigned char *) auth, total_length + secretlen);
++		memcpy ((char *) auth->vector, (char *) vector, AUTH_VECTOR_LEN);
++	}
++	else
++	{
++		rc_random_vector (vector);
++		memcpy ((char *) auth->vector, (char *) vector, AUTH_VECTOR_LEN);
++
++		total_length = rc_pack_list(data->send_pairs, secret, auth) + AUTH_HDR_LEN;
++
++		auth->length = htons ((unsigned short) total_length);
++	}
++
++
++	DEBUG(LOG_ERR, "DEBUG: local %s : 0, remote %s : %u\n",
++		inet_ntoa(sinlocal.sin_addr),
++		inet_ntoa(sinremote.sin_addr), data->svc_port);
++
++	sendto (sockfd, (char *) auth, (unsigned int) total_length, (int) 0,
++			SA(&sinremote), sizeof (struct sockaddr_in));
++
++
++	(*ctx)->sockfd	  = sockfd;
++	(*ctx)->sinremote = sinremote;
++	memcpy((*ctx)->vector, vector, AUTH_VECTOR_LEN);
++	memcpy((*ctx)->secret, secret, MAX_SECRET_LENGTH + 1);
++
++	return result;
++}
++
++/** Waits for the reply from the RADIUS server asynchronously;
++ * if receive returns EWOULDBLOCK then resume function shall be called
++ *
++ * @param ctx the context that was set by rc_aaa_async function
++ * @return %OK_RC (0) on success or blocking receive, %TIMEOUT_RC
++ * on timeout %REJECT_RC on acess reject, or negative on failure as return value.
++ */
++int rc_receive_async (SEND_CONTEXT **ctx) {
++	int				sockfd = (*ctx)->sockfd;
++	SEND_DATA		*data  = (*ctx)->data;
++	socklen_t		salen;
++	int             length, pos;
++	int             result = 0;
++	uint8_t         recv_buffer[BUFFER_LEN];
++	AUTH_HDR	    *recv_auth;
++	uint8_t			*attr;
++	char            *server_name;	/* Name of server to query */
++	VALUE_PAIR 	*vp;
++
++	server_name = (*ctx)->data->server;
++	if (server_name == NULL || server_name[0] == '\0')
++		return ERROR_RC;
++
++	salen = sizeof((*ctx)->sinremote);
++	length = recvfrom (sockfd, (char *) recv_buffer,
++			   (int) sizeof (recv_buffer),
++			   (int) 0, SA(&(*ctx)->sinremote), &salen);
++
++	if (length <= 0) {
++		if (errno == EAGAIN || errno == EWOULDBLOCK) {
++			rc_log(LOG_DEBUG, "E_WOULDBLOCK returned! Resume function shall be called\n");
++			return READBLOCK_RC;
++		} else {
++			rc_log(LOG_ERR, "rc_receive_async: recvfrom: %s:%d: %s", server_name,\
++						data->svc_port, strerror(errno));
++			close (sockfd);
++			memset((*ctx)->secret, '\0', sizeof((*ctx)->secret));
++			return ERROR_RC;
++		}
++	}
++
++	recv_auth = (AUTH_HDR *)recv_buffer;
++
++	if (length < AUTH_HDR_LEN || length < ntohs(recv_auth->length)) {
++		rc_log(LOG_ERR, "rc_send_server: recvfrom: %s:%d: reply is too short",
++		    server_name, data->svc_port);
++		close(sockfd);
++		memset((*ctx)->secret, '\0', sizeof((*ctx)->secret));
++		return ERROR_RC;
++	}
++
++	result = rc_check_reply (recv_auth, BUFFER_LEN, (*ctx)->secret,
++								(*ctx)->vector, data->seq_nbr);
++
++	length = ntohs(recv_auth->length)  - AUTH_HDR_LEN;
++	if (length > 0) {
++		data->receive_pairs = rc_avpair_gen((*ctx)->rh, NULL, recv_auth->data,
++		    length, 0);
++	} else {
++		data->receive_pairs = NULL;
++	}
++
++	close (sockfd);
++	memset((*ctx)->secret, '\0', sizeof((*ctx)->secret));
++
++	if (result != OK_RC) return result;
++
++	if ((*ctx)->msg) {
++		*((*ctx)->msg) = '\0';
++		pos = 0;
++		vp = data->receive_pairs;
++		while (vp)
++		{
++			if ((vp = rc_avpair_get(vp, PW_REPLY_MESSAGE, 0)))
++			{
++				strappend((*ctx)->msg, PW_MAX_MSG_SIZE, &pos, vp->strvalue);
++				strappend((*ctx)->msg, PW_MAX_MSG_SIZE, &pos, "\n");
++				vp = vp->next;
++			}
++		}
++	}
++
++	if ((recv_auth->code == PW_ACCESS_ACCEPT) ||
++		(recv_auth->code == PW_PASSWORD_ACK) ||
++		(recv_auth->code == PW_ACCOUNTING_RESPONSE))
++	{
++		result = OK_RC;
++	}
++	else if ((recv_auth->code == PW_ACCESS_REJECT) ||
++		(recv_auth->code == PW_PASSWORD_REJECT))
++	{
++		result = REJECT_RC;
++	}
++	else
++	{
++		result = BADRESP_RC;
++	}
++
++	return result;
++}
++
+ /*
+  * Function: rc_check_reply
+  *

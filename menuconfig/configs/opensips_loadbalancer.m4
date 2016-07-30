@@ -1,6 +1,4 @@
 #
-# $Id$
-#
 # OpenSIPS loadbalancer script
 #     by OpenSIPS Solutions <team@opensips-solutions.com>
 #
@@ -17,17 +15,14 @@
 
 ####### Global Parameters #########
 
-debug=3
+log_level=3
 log_stderror=no
 log_facility=LOG_LOCAL0
 
-fork=yes
 children=4
 
 /* uncomment the following lines to enable debugging */
-#debug=6
-#fork=no
-#log_stderror=yes
+#debug_mode=yes
 
 /* uncomment the next line to enable the auto temporary blacklisting of 
    not available destinations (default disabled) */
@@ -44,22 +39,8 @@ auto_aliases=no
 
 listen=udp:127.0.0.1:5060   # CUSTOMIZE ME
 
-ifelse(ENABLE_TCP, `yes', `disable_tcp=no
-listen=tcp:127.0.0.1:5060   # CUSTOMIZE ME' , `
-ifelse(ENABLE_TLS,`yes',`disable_tcp=no
-',`disable_tcp=yes')')
-
-ifelse(ENABLE_TLS,`yes',`disable_tls=no
-listen=tls:127.0.0.1:5061   # CUSTOMIZE ME
-tls_verify_server=1
-tls_verify_client = 1
-tls_require_client_certificate = 0
-tls_method = TLSv1
-tls_certificate = "/usr/local/etc/opensips/tls/user/user-cert.pem"
-tls_private_key = "/usr/local/etc/opensips/tls/user/user-privkey.pem"
-tls_ca_list = "/usr/local/etc/opensips/tls/user/user-calist.pem"
-', `disable_tls=yes
-')
+ifelse(ENABLE_TCP, `yes', `listen=tcp:127.0.0.1:5060   # CUSTOMIZE ME' , `')
+ifelse(ENABLE_TLS,`yes',`listen=tls:127.0.0.1:5061   # CUSTOMIZE ME' , `')
 
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')', `')
 
@@ -80,8 +61,8 @@ loadmodule "sl.so"
 
 #### Transaction Module
 loadmodule "tm.so"
-modparam("tm", "fr_timer", 5)
-modparam("tm", "fr_inv_timer", 30)
+modparam("tm", "fr_timeout", 5)
+modparam("tm", "fr_inv_timeout", 30)
 modparam("tm", "restart_fr_on_each_reply", 0)
 modparam("tm", "onreply_avp_mode", 1)
 
@@ -120,15 +101,9 @@ modparam("acc", "report_cancels", 0)
    if you enable this parameter, be sure the enable "append_fromtag"
    in "rr" module */
 modparam("acc", "detect_direction", 0)
-modparam("acc", "failed_transaction_flag", "ACC_FAILED")
-/* account triggers (flags) */
-ifelse(USE_DBACC,`yes',`modparam("acc", "db_flag", "ACC_DO")
-modparam("acc", "db_missed_flag", "ACC_MISSED")
-modparam("acc", "db_url",
+ifelse(USE_DBACC,`yes',`modparam("acc", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
-', `modparam("acc", "log_flag", "ACC_DO")
-modparam("acc", "log_missed_flag", "ACC_MISSED")
-')
+', `')
 
 ifelse(USE_DISPATCHER,`no',`#### DIALOG module
 loadmodule "dialog.so"
@@ -167,6 +142,19 @@ ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
 loadmodule "mi_http.so"
 ',`')
 
+loadmodule "proto_udp.so"
+
+ifelse(ENABLE_TCP, `yes', `loadmodule "proto_tcp.so"' , `')
+ifelse(ENABLE_TLS, `yes', `loadmodule "proto_tls.so"
+modparam("proto_tls","verify_cert", "1")
+modparam("proto_tls","require_cert", "0")
+modparam("proto_tls","tls_method", "TLSv1")
+modparam("proto_tls","certificate", "/usr/local/etc/opensips/tls/user/user-cert.pem")
+modparam("proto_tls","private_key", "/usr/local/etc/opensips/tls/user/user-privkey.pem")
+modparam("proto_tls","ca_list", "/usr/local/etc/opensips/tls/user/user-calist.pem")
+
+' , `')
+
 ####### Routing Logic ########
 
 
@@ -191,8 +179,9 @@ route{
 			}
 			',`')
 			if (is_method("BYE")) {
-				setflag(ACC_DO); # do accounting ...
-				setflag(ACC_FAILED); # ... even if the transaction fails
+				# do accounting even if the transaction fails
+				ifelse(USE_DBACC,`yes',`do_accounting("db","failed");
+				', `do_accounting("log","failed");')
 			} else if (is_method("INVITE")) {
 				# even if in most of the cases is useless, do RR for
 				# re-INVITEs alos, as some buggy clients do change route set
@@ -253,7 +242,8 @@ route{
 	# record routing
 	record_route();
 
-	setflag(ACC_DO); # do accounting
+	ifelse(USE_DBACC,`yes',`do_accounting("db");
+	', `do_accounting("log");')
 
 	ifelse(USE_DISPATCHER,`yes',`
 	if ( !ds_select_dst("1","4") ) {

@@ -1,173 +1,118 @@
-# $Id$
+#
 # The format of this file was inspired by the Linux kernel CREDITS file.
-# 
+#
 # Authors and contributors are listed alphabetically (first name).
 #
-# The fields are: name (N), email (E), web-address (W), SVN account login (C),
+# The fields are: name (N), email (E), web-address (W), username (U),
 # PGP key ID and fingerprint (P) and description (D).
 
 
-    ACTIVE PEOPLES
+    ACTIVE PEOPLE
 ======================
 
-N: Anca Vamanu
-C: anca_vamanu
-E: anca@opensips.org
-D: Main developer of OpenSIPS
-
-
-N: Andrei Dragus
-C: andreidragus
-E: andreidragus@yahoo.com
-D: Contributor to OpenSIPS
-
-
-N: Andrei Pisau
-C: apisau
-E: andrei.pisau@opensips.org
-D: Contributor to OpenSIPS
+N: Alexandr Dubovikov
+U: adubovikov
+E: voip@start4.info
+D: Modules Contributor to OpenSIPS
 
 
 N: Bogdan Andrei Iancu
-C: bogdan_iancu
+U: bogdan-iancu
 E: bogdan@opensips.org
 W: http://www.opensips.org
 D: Core developer of SER / OpenSER / OpenSIPS
 
 
-N: Dan Pascu
-C: dan_pascu
-E: dan@ag-projects.com
-D: Main developer of OpenSIPS
-
-
-N: Denis Bilenko
-C: denik
-E: denis@ag-projects.com
-D: Contributor to OpenSIPS
-
-
 N: Di-Shi Sun
-C: di-shi
+U: di-shi
 E: di-shi@transnexus.com
-D: Minor contributor to OpenSIPS
+D: Modules Contributor to OpenSIPS
 
 
-N: Dmitry Isakbayev
-C: isakdim
-E: isakdim@gmail.com
+N: Ionel Cerghit
+U: ionel-cerghit
+E: ionel.cerghit@gmail.com
 D: Contributor to OpenSIPS
 
 
-N: Elias Baixas
-C: eliasbaixas
-E: elias.baixas@voztele.com
+N: Ionut-Razvan Ionita
+U: ionutrazvanionita
+E: ionutionita@opensips.org
 D: Contributor to OpenSIPS
 
 
-N: Iñaki Baz Castillo
-C: ibc_sf
-E: ibc@aliax.net
-D: Contributor to OpenSIPS
-
-
-N: Irina-Maria Stanescu
-C: ironmissy
-E: ironmissy@gmail.com
-D: Contributor to OpenSIPS
-
-
-N: Iulia Bublea
-C: iulia_bublea
-E: iulia@opensips.org
-D: Contributor to OpenSIPS
-
-
-N: Jeffrey Magder
-C: jmagder
-E: jmagder@somanetworks.com
-D: Contributor to OpenSIPS
-
-
-N: Jesus Rodrigues
-C: jerocu
-E: jesusr@voztele.com
-W: www.voztele.com
-D: Contributor to OpenSIPS
-
-
-N: Kobi Eshun
-C: ekobi
-E: kobi@sightspeed.com
-D: Contributer to OpenSIPS
-
-
-N: Luci Stanescu
-C: luci_stanescu
-E: luci@ag-projects.com
-D: Contributer to OpenSIPS
+N: Liviu Chircu
+U: liviuchircu
+E: liviu@opensips.org
+D: Core Developer of OpenSIPS
 
 
 N: Maxim Sobolev
-C: sobomax
+U: sobomax
 E: sobomax@sippysoft.com
 D: Contributor to OpenSIPS
 
 
 N: Norman Brandinger
-C: goestelecom
+U: goestelecom
 E: norm@goes.com
 D: Contributor to OpenSIPS
 
 
 N: Ovidiu Sas
-C: osas
+U: osas
 E: osas@voipembedded.com
 D: Contributor to OpenSIPS
 
 
-N: Peter Nixon
-C: peternixon
-E: peter@peternixon.net
-D: Packager for OpenSIPS
+N: Saúl Ibarra Corretgé
+U: saghul
+E: saghul@gmail.com
+D: Contributor to OpenSIPS
 
 
 N: Razvan Crainea
-C: razvancrainea
+U: razvancrainea
 E: razvancrainea@opensips.org
-D: Contributor to OpenSIPS
+D: Core Developer of OpenSIPS
 
 
-N: Razvan Pistolea
-C: rpistolea
-E: razvy000@yahoo.com
-D: Packager for OpenSIPS
-
-
-N: Ron Winacott
-C: karwin
-E: ronw@somanetworks.com
-D: Contributor to OpenSIPS
-
-
-N: Sergio Gutierrez
-C: saguti
-E: saguti@gmail.com
+N: Robert Vladut Patrascu
+U: rvlad-patrascu
+E: rvlad.patrascu@gmail.com
 D: Contributor to OpenSIPS
 
 
 N: Vladut Paiu
-C: vladut-paiu
+U: vladut-paiu
 E: vladpaiu@opensips.org
-D: Contributor to OpenSIPS
+D: Core Developer of OpenSIPS
 
 
 
      INACTIVE PEOPLE
 ==========================
 
+N: Anca Vamanu
+U: anca_vamanu
+E: anca@opensips.org
+D: Main developer of OpenSIPS
+
+
+N: Andrei Dragus
+U: andreidragus
+E: andreidragus@yahoo.com
+D: Contributor to OpenSIPS
+
+
+N: Andrei Pisau
+U: apisau
+E: andrei.pisau@opensips.org
+D: Contributor to OpenSIPS
+
+
 N: Andreas Granig
-C: agranig
+U: agranig
 E: andreas.granig@inode.info
 D: Contributor to OpenSER
 
@@ -178,17 +123,46 @@ P: 2CF56A2D   D96D 8B80 BA31 9B93 6208  5D68 3910 FA00 2CF5 6A2D
 D: Core developer of SER
 
 
+N: Arnaud Chong
+U: achamo
+D: Modules Contributor to OpenSIPS
+
+
 N: Bastian Friedrich
-C: bastian
+U: bastian
 E: bastian.friedrich@collax.com
 D: Contributor to OpenSER
 
 
 N: Daniel-Constantin Mierla
-C: miconda
+U: miconda
 E: daniel@opensips.org
 W: http://www.opensips.org
 D: Core developer of SER / OpenSER
+
+
+N: Dan Pascu
+U: dan_pascu
+E: dan@ag-projects.com
+D: Main developer of OpenSIPS
+
+
+N: Denis Bilenko
+U: denik
+E: denis@ag-projects.com
+D: Contributor to OpenSIPS
+
+
+N: Dmitry Isakbayev
+U: isakdim
+E: isakdim@gmail.com
+D: Contributor to OpenSIPS
+
+
+N: Elias Baixas
+U: eliasbaixas
+E: elias.baixas@voztele.com
+D: Contributor to OpenSIPS
 
 
 N: Gabriel Vasile
@@ -200,9 +174,27 @@ D: Contributor to SER
 
 
 N: Henning Westerholt
-C: henningw
+U: henningw
 E: henning.westerholt@1und1.de
 D: Contributor to OpenSER
+
+
+N: Iñaki Baz Castillo
+U: ibc_sf
+E: ibc@aliax.net
+D: Contributor to OpenSIPS
+
+
+N: Irina-Maria Stanescu
+U: ironmissy
+E: ironmissy@gmail.com
+D: Contributor to OpenSIPS
+
+
+N: Iulia Bublea
+U: iulia_bublea
+E: iulia@opensips.org
+D: Contributor to OpenSIPS
 
 
 N: Jan Janak
@@ -216,28 +208,53 @@ N: Jamey Hicks
 D: Contributor to SER
 
 
+N: Jeffrey Magder
+U: jmagder
+E: jmagder@somanetworks.com
+D: Contributor to OpenSIPS
+
+
+N: Jesus Rodrigues
+U: jerocu
+E: jesusr@voztele.com
+W: www.voztele.com
+D: Contributor to OpenSIPS
+
+
 N: Jiri Kuthan
 D: Main developer of SER
 
 
 N: Juha Heinanen
-C: juhe
+U: juhe
 E: jh@tutpro.com
 W: http://lohi.eng.song.fi
 D: Contributor to OpenSER
 
 
 N: Klaus Darilion
-C: klaus_darilion
+U: klaus_darilion
 E: klaus.mailinglists@pernau.at
 W: http://www.enum.at/
 D: Contributor to OpenSER
 
 
+N: Kobi Eshun
+U: ekobi
+E: kobi@sightspeed.com
+D: Contributer to OpenSIPS
+
+
 N: Lavinia Andrei Spirea
-C: lavinia_andreea
+U: lavinia_andreea
 E: lavinia@opensips.org
 D: Contributor to OpenSER
+
+
+N: Luci Stanescu
+U: luci_stanescu
+E: luci@ag-projects.com
+D: Contributer to OpenSIPS
 
 
 N: Marco Lorrai
@@ -256,8 +273,14 @@ P: BAD6CA40   B5E7 4FB0 800F 0A2C E3E9  4073 C7C3 F275 BAD6 CA40
 D: Contributor to SER
 
 
+N: Peter Nixon
+U: peternixon
+E: peter@peternixon.net
+D: Packager for OpenSIPS
+
+
 N: Ramona-Elena Modroiu
-C: ramona
+U: ramona
 E: ramona@opensips.org
 W: http://www.opensips.org
 D: Main developer of SER / OpenSER
@@ -266,6 +289,24 @@ D: Main developer of SER / OpenSER
 N: Raphael Coeffic
 E: raphael.coeffic@gmx.de
 D: Minor contributor to SER
+
+
+N: Razvan Pistolea
+U: rpistolea
+E: razvy000@yahoo.com
+D: Packager for OpenSIPS
+
+
+N: Ron Winacott
+U: karwin
+E: ronw@somanetworks.com
+D: Contributor to OpenSIPS
+
+
+N: Sergio Gutierrez
+U: saguti
+E: saguti@gmail.com
+D: Contributor to OpenSIPS
 
 
 N: Ricardo Baratto

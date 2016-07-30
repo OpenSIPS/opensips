@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * POSTGRES module, portions of this code were templated using
  * the mysql module, thus it's similarity.
  *
@@ -19,9 +17,9 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * ---
  *
@@ -60,6 +58,7 @@ int db_postgres_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 
 	if (!_v) {
 		LM_ERR("invalid parameter value\n");
+		return -1;
 	}
 
 	if (!_s) {
@@ -108,7 +107,7 @@ int db_postgres_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const 
 			return 0;
 		}
 		break;
-	
+
 	case DB_DOUBLE:
 		LM_DBG("converting DOUBLE [%s]\n", _s);
 		if (db_str2double(_s, &VAL_DOUBLE(_v)) < 0) {
@@ -198,7 +197,7 @@ int db_postgres_val2str(const db_con_t* _con, const db_val_t* _v,
 		*_len = l;
 		return 0;
 	}
-	
+
 	switch(VAL_TYPE(_v)) {
 	case DB_INT:
 		if (db_int2str(VAL_INT(_v), _s, _len) < 0) {

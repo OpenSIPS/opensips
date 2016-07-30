@@ -1,7 +1,7 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
 
 
@@ -14,12 +14,12 @@
 		for implementing services/preferences per user/domain. Now they
 		are usable directly from configuration script. Functions for
 		interfacing DB resources (loading/storing/removing), functions
-		for swapping information between AVPs and SIP messages, function for 
+		for swapping information between AVPs and SIP messages, function for
 		testing/checking the value of an AVP.
 		</para>
 		<para>
-		AVPs are persistent per SIP transaction, being available in "route", 
-		"branch_route" and "failure_route". To make them available in 
+		AVPs are persistent per SIP transaction, being available in "route",
+		"branch_route" and "failure_route". To make them available in
 		"onreply_route" armed via TM module, set "onreply_avp_mode" parameter
 		of TM module (note that in the default "onreply_route", the AVPs of
 		the transaction are not available).
@@ -43,7 +43,7 @@
 		<section>
 			<title>External Libraries or Applications</title>
 			<para>
-				The following libraries or applications must be installed 
+				The following libraries or applications must be installed
 				before running &osips; with this module loaded:
 				<itemizedlist>
 				<listitem>
@@ -90,8 +90,8 @@ $avp(foo) - the AVP identified by the string 'foo'
 			<title><varname>db_url</varname> (string)</title>
 			<para>
 			DB URL for database connection. As the module allows the usage
-			of multiple DBs (DB URLs), the actual DB URL may be preceded by 
-			an reference number. This reference number is to be passed to 
+			of multiple DBs (DB URLs), the actual DB URL may be preceded by
+			an reference number. This reference number is to be passed to
 			AVPOPS function that what to explicitly use this DB connection.
 			If no reference number is given, 0 is assumed - this is the default
 			DB URL.
@@ -135,7 +135,7 @@ modparam("avpops","avp_table","avptable")
 		<section>
 			<title><varname>use_domain</varname> (integer)</title>
 			<para>
-				If the domain part of the an URI should be used for 
+				If the domain part of the an URI should be used for
 				identifying an AVP in DB operations.
 			</para>
 			<para>
@@ -339,17 +339,17 @@ modparam("avpops", "buf_size", 1024)
 			<para>
 			Loads from DB into memory the AVPs corresponding to the given
 			<emphasis>source</emphasis>. If given, it sets the script flags
-			for loaded AVPs. It returns true if it loaded some values 
+			for loaded AVPs. It returns true if it loaded some values
 			in AVPs, false otherwise (db error, no avp loaded ...).
-			</para>	
-			<para>	
+			</para>
+			<para>
 			AVPs may be preceded by an optional <emphasis>prefix</emphasis>, in
 			order to avoid some conflicts.
-			</para>	
+			</para>
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>source</emphasis> - what info is used for 
+				<para><emphasis>source</emphasis> - what info is used for
 				identifying the AVPs. Parameter syntax:
 				<itemizedlist>
 					<listitem><para><emphasis>
@@ -401,7 +401,7 @@ modparam("avpops", "buf_size", 1024)
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 			</para>
-			
+
 			<example>
 				<title><function>avp_db_load</function> usage</title>
 				<programlisting format="linespecific">
@@ -438,7 +438,7 @@ xlog("Loaded: $avp(caller_100)\n");
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 			</para>
-			
+
 			<example>
 				<title><function>avp_db_store</function> usage</title>
 				<programlisting format="linespecific">
@@ -496,13 +496,13 @@ avp_db_delete("$ru","$avp(1)","3");
 				query. The parameter can contain pseudo-variables.</para>
 				<para>You must escape any pseudo-variables manually to prevent
 				SQL injection attacks. You can use the existing transformations
-				<emphasis>escape.common</emphasis> and 
+				<emphasis>escape.common</emphasis> and
 				<emphasis>unescape.common</emphasis>
 				to escape and unescape the content of any pseudo-variable.
-				Failing to escape the variables used in the query makes you 
-				vulnerable to SQL injection, e.g. make it possible for an 
+				Failing to escape the variables used in the query makes you
+				vulnerable to SQL injection, e.g. make it possible for an
 				outside attacker to alter your database content.
-				The function returns true if the query was succesful, -2 in case
+				The function returns true if the query was successful, -2 in case
 				the query returned an empty result set, and -1 for all other types
 				of errors
 				</para>
@@ -511,7 +511,7 @@ avp_db_delete("$ru","$avp(1)","3");
 				<para><emphasis>dest</emphasis> - a list with AVP names where
 				to store the result. The format is
 				<quote>$avp(name1);$avp(name2);...</quote>. If this parameter
-				is ommited, the result is stored in 
+				is ommited, the result is stored in
 				<quote>$avp(1);$avp(2);...</quote>. If the result gives
 				many rows, then multiple AVPs with corresponding name will
 				be added. The value type of the AVP (string or integer) will
@@ -521,7 +521,8 @@ avp_db_delete("$ru","$avp(1)","3");
 			<listitem>
 				<para><emphasis>db_id</emphasis> - reference to a defined
 				DB URL (a numerical id) - see the <quote>db_url</quote>
-				module parameter.
+				module parameter. It can be either a constant, or a
+				string/int variable.
 				</para>
 			</listitem>
 			</itemizedlist>
@@ -537,6 +538,10 @@ avp_db_query("select password, ha1 from subscriber where username='$tu'",
 	"$avp(678);$avp(679)");
 avp_db_query("delete from subscriber");
 avp_db_query("delete from subscriber","","2");
+
+$avp(id)=2;#also works $avp(id)="2"
+avp_db_query("delete from subscriber","","$avp(id)");
+
 ...
 				</programlisting>
 			</example>
@@ -613,7 +618,7 @@ avp_delete("a3");
 					$du - write the AVP in 'dst_uri' field
 					</emphasis></para></listitem>
 					<listitem><para><emphasis>
-					$br - write the AVP directly as a new branch (does not 
+					$br - write the AVP directly as a new branch (does not
 					affect RURI)
 					</emphasis></para></listitem>
 				</itemizedlist>
@@ -663,7 +668,7 @@ avp_pushto("$br","$avp(680)");
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>name</emphasis> - which AVP(s) should be 
+				<para><emphasis>name</emphasis> - which AVP(s) should be
 				checked.
 				Parameter syntax is:
 				<itemizedlist>
@@ -674,7 +679,7 @@ avp_pushto("$br","$avp(680)");
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>op_value</emphasis> - define the operator, 
+				<para><emphasis>op_value</emphasis> - define the operator,
 				the value and flags for checking.
 				Parameter syntax is:
 				</para>
@@ -759,7 +764,7 @@ avp_check("$avp(foo)","fm/$avp(fm_avp)/g");
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>name1</emphasis> - which AVP(s) should be 
+				<para><emphasis>name1</emphasis> - which AVP(s) should be
 				copied/moved.
 				Parameter syntax is:
 				<itemizedlist>
@@ -770,7 +775,7 @@ avp_check("$avp(foo)","fm/$avp(fm_avp)/g");
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>name2</emphasis> - the new name of the 
+				<para><emphasis>name2</emphasis> - the new name of the
 				copied/moved AVP(s).
 				Parameter syntax is:
 				<itemizedlist>
@@ -811,14 +816,14 @@ avp_copy("$avp(old)","$avp(new)/gd");
 			Prints the formatted string 'format' in the AVP 'dest'. The
 			'format' parameter can include any pseudo-variable defined in
 			&osips;. The list with all pseudo-variables in &osips; can
-			be found at:	
+			be found at:
 			<ulink url="http://opensips.org/dokuwiki/">
 			http://opensips.org/dokuwiki/</ulink>.
 			</para>
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>dest</emphasis> - in which AVP should be 
+				<para><emphasis>dest</emphasis> - in which AVP should be
 				stored the result.
 				Parameter syntax is:
 				</para>
@@ -888,12 +893,12 @@ avp_printf("$avp(20)", "This is a $rm request with call-id $hdr(call-id)");
 					regexp - regular expression
 					</emphasis></para></listitem>
 					<listitem><para><emphasis>
-					replacement - replacement string, can include 
-					pseudo-variables and \1, ..., \9 for matching tokens, 
+					replacement - replacement string, can include
+					pseudo-variables and \1, ..., \9 for matching tokens,
 					\0 for whole matching text
 					</emphasis></para></listitem>
 					<listitem><para><emphasis>
-					flags = 'g' | 'G' | 'i' | 'i' (g, G - replace all 
+					flags = 'g' | 'G' | 'i' | 'i' (g, G - replace all
 					matching tokens; i, I - match ignore case)
 					</emphasis></para></listitem>
 				</itemizedlist>
@@ -940,7 +945,7 @@ avp_subst("$avp(678)/$avp(679)/g", "/(.*)@(.*)/\1@$rd/");
 			<itemizedlist>
 			<listitem>
 				<para><emphasis>name</emphasis>
-				- 'source_avp/destination_avp' - which AVP(s) should be 
+				- 'source_avp/destination_avp' - which AVP(s) should be
 				processed and where to store the result. If 'destination_avp'
 				is missing, same name as 'source_avp' is used to store the
 				result.
@@ -963,7 +968,7 @@ avp_subst("$avp(678)/$avp(679)/g", "/(.*)@(.*)/\1@$rd/");
 				</itemizedlist>
 			</listitem>
 			<listitem>
-				<para><emphasis>op_value</emphasis> - define the operation, 
+				<para><emphasis>op_value</emphasis> - define the operation,
 				the value and flags.
 				Parameter syntax is:
 				<itemizedlist>
@@ -1072,7 +1077,7 @@ avp_print();
 				</function>
 			</title>
 			<para>
-				This function inserts an avp value at a certain position specified 
+				This function inserts an avp value at a certain position specified
 				by the last parameter. If the index is greater than the count of values
 				the value will be inserted at the end.
 			</para>
@@ -1081,6 +1086,86 @@ avp_print();
 				<programlisting format="linespecific">
 ...
 avp_insert("avp(20)", "$hdr(From)", 2);
+...
+				</programlisting>
+			</example>
+		</section>
+
+	</section>
+
+	<section>
+	<title>Exported Asynchronous Functions</title>
+		<section>
+			<title>
+				<function moreinfo="none">avp_db_query(query[[,dest],db_id])</function>
+			</title>
+			<para>
+			Make a database query and store the result in AVPs.
+			</para>
+			<para>
+			The meaning and usage of the parameters:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>query</emphasis> - must be a valid SQL
+				query. The parameter can contain pseudo-variables.</para>
+				<para>You must escape any pseudo-variables manually to prevent
+				SQL injection attacks. You can use the existing transformations
+				<emphasis>escape.common</emphasis> and
+				<emphasis>unescape.common</emphasis>
+				to escape and unescape the content of any pseudo-variable.
+				Failing to escape the variables used in the query makes you
+				vulnerable to SQL injection, e.g. make it possible for an
+				outside attacker to alter your database content.
+				The function returns true if the query was successful, -2 in case
+				the query returned an empty result set, and -1 for all other types
+				of errors
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>dest</emphasis> - a list with AVP names where
+				to store the result. The format is
+				<quote>$avp(name1);$avp(name2);...</quote>. If this parameter
+				is ommited, the result is stored in
+				<quote>$avp(1);$avp(2);...</quote>. If the result gives
+				many rows, then multiple AVPs with corresponding name will
+				be added. The value type of the AVP (string or integer) will
+				be derived from the type of the columns.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>db_id</emphasis> - reference to a defined
+				DB URL (a numerical id) - see the <quote>db_url</quote>
+				module parameter.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+			</para>
+			<example>
+				<title><function>async avp_db_query</function> usage</title>
+				<programlisting format="linespecific">
+...
+{
+...
+/* Example of a slow MySQL query - it should take around 5 seconds */
+async(
+	avp_db_query(
+		"SELECT table_name, table_version, SLEEP(0.1) from version",
+		"$avp(tb_name); $avp(tb_ver); $avp(retcode)"),
+	my_resume_route);
+/* script execution is halted right after the async() call */
+}
+
+/* We will be called when data is ready - meanwhile, the worker is free */
+route [my_resume_route]
+{
+	xlog("Results: \n$(avp(tb_name)[*])\n
+-------------------\n$(avp(tb_ver)[*])\n
+-------------------\n$(avp(retcode)[*])\n");
+}
 ...
 				</programlisting>
 			</example>

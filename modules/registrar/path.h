@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Helper functions for Path support.
  *
  * Copyright (C) 2006 Andreas Granig <agranig@linguin.org>
@@ -19,14 +17,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 /*!
  * \file
  * \brief SIP registrar module - helper functions for Path support
- * \ingroup registrar   
- */  
+ * \ingroup registrar
+ */
 
 #ifndef REG_PATH_H
 #define REG_PATH_H

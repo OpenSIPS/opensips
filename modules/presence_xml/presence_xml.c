@@ -1,6 +1,4 @@
 /*
- * $Id: presence_xml.c 2006-12-07 18:05:05Z anca_vamanu$
- *
  * presence_xml module - Presence Handling XML bodies module
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -99,7 +97,7 @@ xcapGetNewDoc_t xcap_GetNewDoc;
 
 static param_export_t params[]={
 	{ "force_active",           INT_PARAM,                     &force_active },
-	{ "pidf_manipulation",      INT_PARAM,                 &pidf_manipulation}, 
+	{ "pidf_manipulation",      INT_PARAM,                 &pidf_manipulation},
 	{ "xcap_server",     STR_PARAM|USE_FUNC_PARAM,(void*)pxml_add_xcap_server},
 	{ "pres_rules_auid",        STR_PARAM,                 &pres_rules_auid.s},
 	{ "pres_rules_filename",    STR_PARAM,             &pres_rules_filename.s},
@@ -107,13 +105,27 @@ static param_export_t params[]={
 	{  0,                       0,                                          0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "xcap",      DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "presence",  DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /** module exports */
 struct module_exports exports= {
 	"presence_xml",				/* module name */
+	MOD_TYPE_DEFAULT,           /* class of this module */
 	MODULE_VERSION,				/* module version */
 	 DEFAULT_DLFLAGS,           /* dlopen flags */
+	 &deps,                     /* OpenSIPS module dependencies */
 	 0,  						/* exported functions */
+	 0,  						/* exported async functions */
 	 params,					/* exported parameters */
 	 0,							/* exported statistics */
 	 0,							/* exported MI functions */
@@ -133,7 +145,7 @@ static int verify_db(void)
 		LM_ERR("Database module not found\n");
 		return -1;
 	}
-	
+
 	if (!DB_CAPABILITY(pxml_dbf, DB_CAP_ALL)) {
 		LM_ERR("Database module does not implement all functions"
 				" needed by the module\n");
@@ -150,7 +162,7 @@ static int verify_db(void)
 	/* pxml_db is free'd by caller later, not sure if safe to do now */
 	return 0;
 }
-	
+
 /**
  * init module function
  */
@@ -187,7 +199,7 @@ static int mod_init(void)
 			return -1;
 	}
 
-	
+
 	/* load SL API */
 	if(load_sig_api(&xml_sigb)==-1)
 	{
@@ -206,7 +218,7 @@ static int mod_init(void)
 		LM_ERR("Can't bind module pua\n");
 		return -1;
 	}
-	
+
 	pres_get_sphere= pres.get_sphere;
 	pres_add_event= pres.add_event;
 	pres_update_watchers= pres.update_watchers_status;
@@ -218,30 +230,33 @@ static int mod_init(void)
 	if(xml_add_events()< 0)
 	{
 		LM_ERR("adding xml events\n");
-		return -1;		
+		return -1;
 	}
 
- 	if(pres_rules_auid.s)
-        {
-                pres_rules_auid.len = strlen(pres_rules_auid.s);
- 	        if (pres_rules_auid.len == IETF_PRES_RULES_AUID_LEN &&
- 	            strncmp(pres_rules_auid.s, IETF_PRES_RULES_AUID, IETF_PRES_RULES_AUID_LEN) == 0)
-                {
-                         LM_INFO("using IETF mode for pres-rules\n");
-                         pres_rules_doc_id = PRES_RULES;
-                }
- 	        if (pres_rules_auid.len == OMA_PRES_RULES_AUID_LEN &&
- 	            strncmp(pres_rules_auid.s, OMA_PRES_RULES_AUID, OMA_PRES_RULES_AUID_LEN) == 0)
- 	        {
-                         LM_INFO("using OMA mode for pres-rules\n");
-                         pres_rules_doc_id = OMA_PRES_RULES;
- 	        }
-                else
-                {
-                         LM_ERR("unrecognized AUID for pres-rules: %.*s\n", pres_rules_auid.len, pres_rules_auid.s);
-                         return -1;
-                }
-        }
+	if(pres_rules_auid.s)
+	{
+		pres_rules_auid.len = strlen(pres_rules_auid.s);
+		if (pres_rules_auid.len == IETF_PRES_RULES_AUID_LEN &&
+		strncmp(pres_rules_auid.s, IETF_PRES_RULES_AUID,
+		IETF_PRES_RULES_AUID_LEN) == 0)
+		{
+			LM_INFO("using IETF mode for pres-rules\n");
+			pres_rules_doc_id = PRES_RULES;
+		}
+		if (pres_rules_auid.len == OMA_PRES_RULES_AUID_LEN &&
+		strncmp(pres_rules_auid.s, OMA_PRES_RULES_AUID,
+		OMA_PRES_RULES_AUID_LEN) == 0)
+		{
+			LM_INFO("using OMA mode for pres-rules\n");
+			pres_rules_doc_id = OMA_PRES_RULES;
+		}
+		else
+		{
+			LM_ERR("unrecognized AUID for pres-rules: %.*s\n",
+				pres_rules_auid.len, pres_rules_auid.s);
+			return -1;
+		}
+	}
 
 	if(force_active== 0 && !integrated_xcap_server )
 	{
@@ -249,13 +264,14 @@ static int mod_init(void)
 		bind_xcap_client_t bind_xcap_client;
 
 		/* bind xcap */
-		bind_xcap_client = (bind_xcap_client_t)find_export("bind_xcap_client", 1, 0);
+		bind_xcap_client = (bind_xcap_client_t)find_export("bind_xcap_client",
+			1, 0);
 		if (!bind_xcap_client)
 		{
 			LM_ERR("Can't bind xcap_client\n");
 			return -1;
 		}
-	
+
 		if (bind_xcap_client(&xcap_client_api) < 0)
 		{
 			LM_ERR("Can't bind xcap_client_api\n");
@@ -295,7 +311,7 @@ static int mod_init(void)
 static int child_init(int rank)
 {
 	LM_DBG("[%d]  pid [%d]\n", rank, getpid());
-	
+
 	if(force_active==0)
 	{
 		if (pxml_dbf.init==0)
@@ -309,15 +325,15 @@ static int child_init(int rank)
 			LM_ERR("child %d: ERROR while connecting database\n",rank);
 			return -1;
 		}
-		
+
 		LM_DBG("child %d: Database connection opened successfully\n",rank);
 	}
 
 	return 0;
-}	
+}
 
 static void destroy(void)
-{	
+{
 	LM_DBG("start\n");
 	if(pxml_db && pxml_dbf.close)
 		pxml_dbf.close(pxml_db);
@@ -335,20 +351,20 @@ static int pxml_add_xcap_server( modparam_t type, void* val)
 	char* sep= NULL;
 	unsigned int port= 80;
 	str serv_addr_str;
-		
+
 	serv_addr_str.s= serv_addr;
 	serv_addr_str.len= strlen(serv_addr);
 
 	sep= strchr(serv_addr, ':');
 	if(sep)
-	{	
+	{
 		char* sep2= NULL;
 		str port_str;
-		
+
 		sep2= strchr(sep+ 1, ':');
 		if(sep2)
 			sep= sep2;
-		
+
 
 		port_str.s= sep+ 1;
 		port_str.len= serv_addr_str.len- (port_str.s- serv_addr);
@@ -358,7 +374,7 @@ static int pxml_add_xcap_server( modparam_t type, void* val)
 			LM_ERR("while converting string to int\n");
 			goto error;
 		}
-		if(port< 0 || port> 65535)
+		if(port> 65535)
 		{
 			LM_ERR("wrong port number\n");
 			goto error;
@@ -407,7 +423,7 @@ static int shm_copy_xcap_list(void)
 	}
 	xs_list= NULL;
 	size= sizeof(xcap_serv_t);
-	
+
 	while(xs)
 	{
 		size+= (strlen(xs->addr)+ 1)* sizeof(char);
@@ -422,7 +438,7 @@ static int shm_copy_xcap_list(void)
 		shm_xs->addr= (char*)shm_xs+ size;
 		strcpy(shm_xs->addr, xs->addr);
 		shm_xs->port= xs->port;
-		shm_xs->next= xs_list; 
+		shm_xs->next= xs_list;
 		xs_list= shm_xs;
 
 		prev_xs= xs;
@@ -470,7 +486,7 @@ static int xcap_doc_updated(int doc_type, str xid, char* doc)
 	if(pres_update_watchers(xid, &ev, &rules_doc)< 0)
 	{
 		LM_ERR("updating watchers in presence\n");
-		return -1;	
+		return -1;
 	}
 	return 0;
 

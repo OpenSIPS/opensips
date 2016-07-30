@@ -1,6 +1,4 @@
 /**
- * $Id$
- *
  * Copyright (C) 2012 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History
  * -------
@@ -34,55 +32,61 @@
 #include "../../trim.h"
 #include "../../ip_addr.h"
 
-#include "dispatch.h"
 #include "ds_bl.h"
 
 static struct ds_bl *dsbl_lists = NULL;
 
-static char **blacklists = NULL;
-static unsigned int bl_size = 0;
+static ds_bl_temp_t *blacklists = NULL;
 
 
 int set_ds_bl(modparam_t type, void *val)
 {
-	blacklists = pkg_realloc( blacklists, (bl_size+1) * sizeof(*blacklists));
-	if (blacklists == NULL) {
-		LM_ERR("REALLOC failed.\n");
+	static const str default_part_name = str_init(DS_DEFAULT_PARTITION_NAME);
+	return set_ds_bl_partition((char*)val, default_part_name);
+}
+
+int set_ds_bl_partition(char *val, str partition_name)
+{
+	ds_bl_temp_t *new_bl = pkg_malloc(sizeof (ds_bl_temp_t));
+
+	if (new_bl == NULL) {
+		LM_ERR ("no more private memory\n");
 		return -1;
 	}
-	blacklists[bl_size] = (char*)val;
-	bl_size++;
-
+	new_bl->text = val;
+	new_bl->partition_name = partition_name;
+	new_bl->next = blacklists;
+	blacklists = new_bl;
 	return 0;
 }
 
 
 int init_ds_bls(void)
 {
-	unsigned int i;
 	struct ds_bl *dsbl;
 	str name;
 	str val;
 	char *p;
+	ds_bl_temp_t *bs_it = blacklists, *aux;
 
 	LM_DBG("Initialising ds blacklists\n");
 
 	if (blacklists == NULL)
 		return 0;
 
-	for(i = 0; i < bl_size; i++ ) {
-		LM_DBG("processing bl definition <%s>\n", blacklists[i]);
+	while (bs_it) {
+		LM_DBG("processing bl definition <%s>\n", bs_it->text);
 		/* get name */
-		p = strchr( blacklists[i], '=');
-		if (p==NULL || p==blacklists[i]) {
-			LM_ERR("blacklist definition <%s> has no name", blacklists[i]);
+		p = strchr( bs_it->text, '=');
+		if (p==NULL || p==bs_it->text) {
+			LM_ERR("blacklist definition <%s> has no name", bs_it->text);
 			return -1;
 		}
-		name.s = blacklists[i];
+		name.s = bs_it->text;
 		name.len = p - name.s;
 		trim(&name);
 		if (name.len == 0) {
-			LM_ERR("empty name in blacklist definition <%s>\n", blacklists[i]);
+			LM_ERR("empty name in blacklist definition <%s>\n", bs_it->text);
 			return -1;
 		}
 		LM_DBG("found list name <%.*s>\n", name.len, name.s);
@@ -93,11 +97,12 @@ int init_ds_bls(void)
 			return -1;
 		}
 		memset(dsbl, 0, sizeof(*dsbl));
+		dsbl->partition_name = bs_it->partition_name;
 		/* fill in the types */
 		p++;
 		do {
 			if (dsbl->no_sets == DS_BL_MAX_SETS) {
-				LM_ERR("too many types per rule <%s>\n", blacklists[i]);
+				LM_ERR("too many types per rule <%s>\n", bs_it->text);
 				shm_free(dsbl);
 				return -1;
 			}
@@ -111,7 +116,7 @@ int init_ds_bls(void)
 			}
 			trim(&val);
 			if (val.len == 0) {
-				LM_ERR("invalid types listing in <%s>\n", blacklists[i]);
+				LM_ERR("invalid types listing in <%s>\n", bs_it->text);
 				shm_free(dsbl);
 				return -1;
 			}
@@ -124,9 +129,6 @@ int init_ds_bls(void)
 			dsbl->no_sets++;
 		} while(p != NULL);
 
-		pkg_free(blacklists[i]);
-		blacklists[i] = NULL;
-
 		/* create backlist for it */
 		dsbl->bl = create_bl_head( 313131, 0/*flags*/, NULL, NULL, &name);
 		if (dsbl->bl == NULL) {
@@ -135,12 +137,15 @@ int init_ds_bls(void)
 			return -1;
 		}
 
+		aux = bs_it;
+		bs_it = bs_it->next;
+		pkg_free(aux);
+
 		/* link it */
 		dsbl->next = dsbl_lists;
 		dsbl_lists = dsbl;
 	}
 
-	pkg_free(blacklists);
 	blacklists = NULL;
 
 	return 0;
@@ -158,7 +163,7 @@ void destroy_ds_bls(void)
 }
 
 
-int populate_ds_bls(void)
+int populate_ds_bls(ds_set_t *sets, str partition_name)
 {
 	unsigned int i,k;
 	struct ds_bl *dsbl;
@@ -169,16 +174,20 @@ int populate_ds_bls(void)
 	struct net *set_net;
 
 	LM_DBG("Updating ds blacklists...\n");
+	//TODO this could be done better
 
 	/* each bl list at a time */
 	for(dsbl = dsbl_lists; dsbl; dsbl = dsbl->next) {
+		if (str_strcmp(&partition_name, &dsbl->partition_name) != 0)
+			continue;
 		dsbl_first = dsbl_last = NULL;
 		/* each blacklisted set at a time */
 		for (i = 0; i < dsbl->no_sets; i++) {
 			/* search if any set matches the one above */
-			for(set = ds_lists[*crt_idx]; set ;set = set->next) {
+			for( set=sets ; set ; set = set->next) {
 				if (set->id == dsbl->sets[i]) {
-					LM_DBG("Set [%d] matches. Adding all destinations:\n", set->id);
+					LM_DBG("Set [%d] matches. Adding all destinations:\n",
+						set->id);
 					for (dst = set->dlist; dst; dst = dst->next) {
 						/* and add all IPs for each destination */
 						for( k=0 ; k<dst->ips_cnt ; k++ ) {
@@ -193,8 +202,8 @@ int populate_ds_bls(void)
 							add_rule_to_list( &dsbl_first, &dsbl_last,
 								set_net,
 								NULL/*body*/,
-								0/*port*/,
-								PROTO_NONE/*proto*/,
+								dst->ports[k],
+								dst->protos[k],
 								0/*flags*/);
 							pkg_free(set_net);
 						}
@@ -206,7 +215,10 @@ int populate_ds_bls(void)
 		/* the new content for the BL */
 		if (dsbl->bl && add_list_to_head( dsbl->bl, dsbl_first, dsbl_last, 1, 0)
 						!= 0) {
-			LM_ERR("UPDATE blacklist failed.\n");
+			LM_ERR("UPDATE blacklist failed for list <%.*s> in partition <%.*s>."
+					" Possibly, none of the sets in this list exists\n",
+					dsbl->bl->name.len, dsbl->bl->name.s, partition_name.len,
+					partition_name.s);
 			return -1;
 		}
 	}

@@ -18,7 +18,7 @@
 #
 # You should have received a copy of the GNU General Public License 
 # along with this program; if not, write to the Free Software 
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 # 
 # History:
 # --------
@@ -112,8 +112,10 @@ fi ;
 
 # path to the database schemas
 DATA_DIR="/usr/local/share/opensips"
-if [ -d "$DATA_DIR/db_berkeley/opensips" ] ; then
+if [ -d "$DATA_DIR/db_berkeley/opensips" ]; then
 	DB_SCHEMA="$DATA_DIR/db_berkeley/opensips"
+elif [ -d "scripts/db_berkeley/opensips" ]; then
+	DB_SCHEMA="scripts/db_berkeley/opensips"
 else
 	DB_SCHEMA="./db_berkeley/opensips"
 fi

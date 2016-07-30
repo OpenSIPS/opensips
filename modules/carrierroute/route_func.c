@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -61,7 +59,7 @@ int cr_load_user_carrier(struct sip_msg * _msg, pv_elem_t *_user, pv_elem_t *_do
 	str user;
 	str domain;
 	int_str avp_val;
-	
+
 	if (pv_printf_s(_msg, _user, &user)<0)	{
 		LM_ERR("cannot print the user\n");
 		return -1;
@@ -71,7 +69,7 @@ int cr_load_user_carrier(struct sip_msg * _msg, pv_elem_t *_user, pv_elem_t *_do
 		LM_ERR("cannot print the domain\n");
 		return -1;
 	}
-	
+
 	/* get carrier id */
 	if ((avp_val.n = load_user_carrier(&user, &domain)) < 0) {
 		LM_ERR("error in load user carrier");
@@ -210,15 +208,15 @@ int mp2domain_id(struct sip_msg * _msg, struct multiparam_t *mp) {
  */
 static inline int reply_code_matcher(const str *rcw, const str *rc) {
 	int i;
-	
+
 	if (rcw->len==0) return 0;
-	
+
 	if (rcw->len != rc->len) return -1;
-	
+
 	for (i=0; i<rc->len; i++) {
 		if (rcw->s[i]!='.' && rcw->s[i]!=rc->s[i]) return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -239,9 +237,9 @@ static int set_next_domain_on_rule(const struct failure_route_tree_item *failure
 		const struct multiparam_t *dstavp) {
 	struct failure_route_rule * rr;
 	int_str avp_val;
-	
+
 	assert(failure_tree != NULL);
-	
+
 	LM_DBG("searching for matching routing rules");
 	for (rr = failure_tree->rule_list; rr != NULL; rr = rr->next) {
 		/*
@@ -259,12 +257,12 @@ static int set_next_domain_on_rule(const struct failure_route_tree_item *failure
 				LM_ERR("set AVP failed\n");
 				return -1;
 			}
-			
+
 			LM_INFO("next_domain is %d.\n", rr->next_domain);
 			return 0;
 		}
 	}
-	
+
 	return -1;
 }
 
@@ -289,7 +287,7 @@ static int set_next_domain_recursor(const struct failure_route_tree_item *failur
 	int ret;
 	struct failure_route_tree_item *re_tree;
 	str re_uri = *uri;
-	
+
 	/* Skip over non-digits.  */
 	while (re_uri.len > 0 && !isdigit(*re_uri.s)) {
 		++re_uri.s;
@@ -458,7 +456,7 @@ static int rewrite_on_rule(const struct route_tree_item * route_tree, flag_t fla
 
 	assert(route_tree != NULL);
 	assert(route_tree->flag_list != NULL);
-	
+
 	LM_DBG("searching for matching routing rules");
 	for (rf = route_tree->flag_list; rf != NULL; rf = rf->next) {
 		/* LM_DBG("actual flags %i, searched flags %i, mask %i and match %i", rf->flags, flags, rf->mask, flags&rf->mask); */
@@ -640,7 +638,7 @@ int cr_do_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
 	do {
 		rd = get_data();
 	} while (rd == NULL);
-	
+
 	ct=NULL;
 	if (carrier_id < 0) {
 		if (fallback_default) {
@@ -801,7 +799,7 @@ int cr_load_next_domain(struct sip_msg * _msg, struct multiparam_t *_carrier,
 	do {
 		rd = get_data();
 	} while (rd == NULL);
-	
+
 	ct=NULL;
 	if (carrier_id < 0) {
 		if (fallback_default) {
@@ -836,9 +834,9 @@ int cr_load_next_domain(struct sip_msg * _msg, struct multiparam_t *_carrier,
 			prefix_matching.s, carrier_id, domain_id);
 		goto unlock_and_out;
 	}
-	
+
 	ret = 1;
-	
+
 unlock_and_out:
 	release_data(rd);
 	return ret;

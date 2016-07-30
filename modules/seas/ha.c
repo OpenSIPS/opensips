@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2006-2007 VozTelecom Sistemas S.L
  *
  * This file is part of opensips, a free SIP server.
@@ -14,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -61,7 +60,7 @@ int prepare_ha(void)
    }
    if(parse_ping(jain_ping_config,&jain_ping_period,&jain_pings_lost,&jain_ping_timeout)<0)
       goto error;
-   if(parse_ping(servlet_ping_config,&servlet_ping_period,&servlet_pings_lost,&servlet_ping_timeout)<0) 
+   if(parse_ping(servlet_ping_config,&servlet_ping_period,&servlet_pings_lost,&servlet_ping_timeout)<0)
       goto error;
    LM_DBG("jain: pinging period :%d max pings lost:%d ping timeout:%d\n",
 		   jain_ping_period,jain_pings_lost,jain_ping_timeout);
@@ -104,13 +103,13 @@ int print_pingtable(struct ha *ta,int idx,int lock)
 }
 
 /**
- * Parses the PING configuration string. Its format is 
+ * Parses the PING configuration string. Its format is
  * "ping_period:pings_lost:ping_timeout"
  * ping_period : time between pings
  * pings_lost: number of lost pings before failure
  * ping_timeout: time to consider a ping failed
  *
- * returns 
+ * returns
  * 0 if config is not set
  * -1 if config is malformed (unable to parse);
  *  1 if config is successfully set
@@ -271,7 +270,7 @@ static inline int send_ping(struct as_entry *the_as,struct timeval *now)
    aping->as=the_as;
    aping->msg=the_ping;
    aping->len=pinglen;
-   
+
    lock_get(the_as->u.as.jain_pings.mutex);
    {
       if(the_as->u.as.jain_pings.count==the_as->u.as.jain_pings.size){
@@ -314,7 +313,7 @@ error:
  * 	0 on success
  * 	-1 on error
  */
-inline int init_pingtable(struct ha *table,int timeout,int maxpings)
+int init_pingtable(struct ha *table,int timeout,int maxpings)
 {
    if(maxpings<=0)
       maxpings=1;
@@ -327,7 +326,7 @@ inline int init_pingtable(struct ha *table,int timeout,int maxpings)
    if (!(table->mutex=lock_alloc())){
       LM_ERR("Unable to allocate a lock for the ping table\n");
       goto error;
-   }else 
+   }else
       lock_init(table->mutex);
    LM_ERR("alloc'ing %d bytes for %d pings\n",(int)(maxpings*sizeof(struct ping)),maxpings);
    if (0==(table->pings=shm_malloc(maxpings*sizeof(struct ping)))){
@@ -342,7 +341,7 @@ error:
    return -1;
 }
 
-inline void destroy_pingtable(struct ha *table)
+void destroy_pingtable(struct ha *table)
 {
    if(table->mutex){
       lock_dealloc(table->mutex);
@@ -356,13 +355,13 @@ inline void destroy_pingtable(struct ha *table)
 
 /**
  * event_length(4) UNSIGNED INT includes the length 4 bytes itself
- * type(1), 
+ * type(1),
  * processor_id(1), 0 means nobody, 0xFF means everybody, 0<N<0xFF means processor with id=N
- * flags(4), 
- * ping_num(4), 
+ * flags(4),
+ * ping_num(4),
  *
  * NOT REENTRANT (uses static local var to store ping seqno.)
- * 
+ *
  * returns
  * 	0 on error
  * 	pointer to the buffer on success

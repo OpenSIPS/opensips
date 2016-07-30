@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2013 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,17 +15,74 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
  *  2013-03-04  first version (osas)
  */
 
-
 #ifndef _MI_XMLRPC_HTTP_HTTP_FNC_H
 #define _MI_XMLRPC_HTTP_HTTP_FNC_H
 
+ #define MI_XMLRPC_XML_START            "<?xml version=\"1.0\" "        \
+       "encoding=\"UTF-8\"?>\r\n<methodResponse>\r\n<params>"  \
+       "\r\n<param><value><string>"
+#define MI_XMLRPC_XML_STOP             "</string></value></param>"     \
+       "\r\n</params>\r\n</methodResponse>\r\n"
+
+
+#define MI_XMLRPC_XML_START_VER2		"<?xml version=\"1.0\" "	\
+	"encoding=\"UTF-8\"?>\r\n<methodResponse>\r\n<params><param>"	\
+	"\r\n"
+#define MI_XMLRPC_XML_STOP_VER2	"</param></params>\r\n</methodResponse>\r\n"
+
+
+#define MI_XMLRPC_XML_FAULT_START        "<?xml version=\"1.0\" "        \
+       "encoding=\"UTF-8\"?>\r\n<methodResponse>\r\n<fault>"  \
+       "<value>\r\n<struct>\r\n"
+
+#define MI_XMLRPC_XML_FAULT_END "</struct>\r\n</value>\r\n</fault>\r\n" \
+       "</methodResponse>\r\n"
+
+#define MI_XMLRPC_XML_FAULT_MESSAGE_START "<member>\r\n<name>faultString</name>\r\n" \
+       "<value><string>"
+#define MI_XMLRPC_XML_FAULT_MESSAGE_END "</string></value>\r\n</member>\r\n"
+
+#define MI_XMLRPC_XML_FAULT_CODE_START "<member>\r\n<name>faultCode</name>\r\n" \
+       "<value><int>"
+#define MI_XMLRPC_XML_FAULT_CODE_END "</int></value>\r\n</member>\r\n"
+
+#define INIT_XMLRPC_FAULT(code, message) MI_XMLRPC_XML_FAULT_START  \
+	MI_XMLRPC_XML_FAULT_CODE_START \
+	code \
+	MI_XMLRPC_XML_FAULT_CODE_END \
+	MI_XMLRPC_XML_FAULT_MESSAGE_START \
+	message \
+	MI_XMLRPC_XML_FAULT_MESSAGE_END \
+	MI_XMLRPC_XML_FAULT_END
+
+#define XMLRPC_FAULT_FORMAT MI_XMLRPC_XML_FAULT_START  \
+	MI_XMLRPC_XML_FAULT_CODE_START \
+	"%u" \
+	MI_XMLRPC_XML_FAULT_CODE_END \
+	MI_XMLRPC_XML_FAULT_MESSAGE_START \
+	"%.*s" \
+	MI_XMLRPC_XML_FAULT_MESSAGE_END \
+	MI_XMLRPC_XML_FAULT_END
+
+
+
+
+#define MI_XMLRPC_START_OBJECT   		(1<<0)
+#define MI_XMLRPC_END_OBJECT  		(1<<1)
+#define MI_XMLRPC_FULL_OBJECT        3
+
+#define MI_XMLRPC_FORMATED_OUTPUT 2
+#define MI_XMLRPC_UNFORMATED_OUTPUT 1
+
+#define MI_XMLRPC_ASYNC_FAILED   ((void*)-2)
+#define MI_XMLRPC_ASYNC_EXPIRED  ((void*)-3)
 
 typedef struct mi_xmlrpc_http_html_page_data_ {
 	str page;
@@ -36,7 +91,6 @@ typedef struct mi_xmlrpc_http_html_page_data_ {
 
 typedef struct mi_xmlrpc_http_async_resp_data_ {
 	gen_lock_t* lock;
-	struct mi_root* tree;
 }mi_xmlrpc_http_async_resp_data_t;
 
 

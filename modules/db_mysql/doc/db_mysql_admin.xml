@@ -45,26 +45,6 @@
 	<section>
 	<title>Exported Parameters</title>
 	<section>
-		<title><varname>ping_interval</varname> (integer)</title>
-		<para>
-		Time interval to send ping messages to MySQL server in order to keep
-		the connection open.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 300 (5 min).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>ping_interval</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("db_mysql", "ping_interval", 600)
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
 		<title><varname>exec_query_threshold</varname> (integer)</title>
 		<para>
 		If queries take longer than 'exec_query_threshold' microseconds, warning
@@ -87,7 +67,7 @@ modparam("db_mysql", "exec_query_threshold", 60000)
 		<section>
 		<title><varname>timeout_interval</varname> (integer)</title>
 		<para>
-		Time interval after that an connection attempt, read or write request
+		Time interval after which a connection attempt (read or write request)
 		is aborted. The value counts three times, as several retries are done
 		from the driver before it gives up.
 		</para>
@@ -107,6 +87,46 @@ modparam("db_mysql", "exec_query_threshold", 60000)
 		<programlisting format="linespecific">
 ...
 modparam("db_mysql", "timeout_interval", 2)
+...
+</programlisting>
+		</example>
+	</section>
+        <section>
+		<title><varname>max_db_queries</varname> (integer)</title>
+		<para>
+		The maximum number of database queries to be executed. 
+                If this parameter is set improperly, it is set to default value. 
+		</para>
+		<para>
+		<emphasis>
+			Default value is 2.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>max_db_queries</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_mysql", "max_db_queries", 2)
+...
+</programlisting>
+		</example>
+	</section>
+        <section>
+		<title><varname>max_db_retries</varname> (integer)</title>
+		<para>
+		The maximum number of database connection retries. If this parameter
+                is set improperly, it is set to default value. 
+		</para>
+		<para>
+		<emphasis>
+			Default value is 3.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>max_db_retries</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_mysql", "max_db_retries", 2)
 ...
 </programlisting>
 		</example>

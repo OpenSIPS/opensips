@@ -1,0 +1,1 @@
+id(int,auto) cluster_id(int) machine_id(int) url(string) state(int) last_attempt(long) failed_attempts(int) no_tries(int) duration(int) description(string,null) 

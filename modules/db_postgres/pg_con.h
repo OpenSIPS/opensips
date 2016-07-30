@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * POSTGRES module, portions of this code were templated using
  * the mysql module, thus it's similarity.
  *
@@ -18,9 +16,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * ---
  *
@@ -44,9 +42,12 @@
  * Postgres specific connection data
  */
 struct pg_con {
-	struct db_id* id;        /* Connection identifier */
-	unsigned int ref;        /* Reference count */
-	struct pool_con* next;   /* Next connection in the pool */
+	struct db_id* id;        /**< Connection identifier */
+	unsigned int ref;        /**< Reference count */
+	struct pool_con *async_pool; /**< Subpool of identical database handles */
+	int no_transfers;        /**< Number of async queries to this backend */
+	struct db_transfer *transfers; /**< Array of ongoing async operations */
+	struct pool_con *next;   /**< Next element in the pool (different db_id) */
 
 	int connected;
 	char *sqlurl;		/* the url we are connected to, all connection memory parents from this */

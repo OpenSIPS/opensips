@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,15 +13,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
  *  2003-03-11  converted to the new locking interface: locking.h --
  *               major changes (andrei)
- *  2005-05-02  flags field added to node stucture -better sync between timer
+ *  2005-05-02  flags field added to node structure -better sync between timer
  *              and worker processes; some races eliminated (bogdan)
  *  2008-04-17  new parameter to control the module's log regarding the
  *               blocking/unblocking of IPs (bogdan)
@@ -46,6 +44,7 @@
 #include "../../resolve.h"
 #include "../../action.h"
 #include "../../route.h"
+#include "../../script_cb.h"
 #include "ip_tree.h"
 #include "pike_funcs.h"
 #include "timer.h"
@@ -162,7 +161,7 @@ int pike_check_req(struct sip_msg *msg)
 			/* tree leafs which are not potential red nodes are not update in
 			 * order to make them to expire */
 			/* debug */
-			assert( has_timer_set(&(node->timer_ll)) 
+			assert( has_timer_set(&(node->timer_ll))
 				&& (node->flags&(NODE_EXPIRED_FLAG|NODE_INTIMER_FLAG)) );
 			/* if node exprired, ignore the current hit and let is
 			 * expire in timer process */
@@ -172,7 +171,7 @@ int pike_check_req(struct sip_msg *msg)
 			}
 		} else {
 			/* debug */
-			assert( !has_timer_set(&(node->timer_ll)) 
+			assert( !has_timer_set(&(node->timer_ll))
 				&& !(node->flags&(NODE_INTIMER_FLAG|NODE_EXPIRED_FLAG)) );
 			/* debug */
 			assert( !(node->flags&NODE_IPLEAF_FLAG) && node->kids );
@@ -201,12 +200,13 @@ int pike_check_req(struct sip_msg *msg)
 int run_pike_route( struct sip_msg *msg, void *rt ) {
 	/* the check was dropped */
 	if ( run_top_route( rlist[(int)(long)rt].a, msg)&ACT_FL_DROP)
-		return 1;
+		return SCB_RUN_ALL;
 
 	/* run the check */
 	if (pike_check_req(msg)<0)
-		return 0;
-	return 1;
+		return SCB_DROP_MSG;
+
+	return SCB_RUN_ALL;
 }
 
 
@@ -267,7 +267,7 @@ void clean_routine(unsigned int ticks , void *param)
 				continue;
 
 			/* process the node */
-			LM_DBG("clean node %p (kids=%p; hits=[%d,%d];leaf=[%d,%d])\n", 
+			LM_DBG("clean node %p (kids=%p; hits=[%d,%d];leaf=[%d,%d])\n",
 				node,node->kids,
 				node->hits[PREV_POS],node->hits[CURR_POS],
 				node->leaf_hits[PREV_POS],node->leaf_hits[CURR_POS]);

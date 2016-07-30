@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * OpenSIPS LDAP Module
  *
  * Copyright (C) 2007 University of North Carolina
@@ -22,7 +20,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -40,6 +38,7 @@
 #include "../../pvar.h"
 #include "../../usr_avp.h"
 #include "../../mem/mem.h"
+#include "../../async.h"
 #include "ldap_exp_fn.h"
 #include "ldap_connect.h"
 #include "ldap_api_fn.h"
@@ -54,7 +53,129 @@ static char esc_buf[ESC_BUF_SIZE];
 
 /*
 * exported functions
-*/ 
+*/
+int resume_ldap_search(int fd, struct sip_msg *msg, void *param)
+{
+	int ld_result_count = 0, rc;
+	struct ldap_async_params *as_params;
+
+	as_params = (struct ldap_async_params*) param;
+
+	rc = lds_resume( as_params->lds, as_params->msgid, &ld_result_count);
+
+	switch (rc) {
+	case -1:
+		/* error */
+		return -1;
+	case  0:
+		/* put back in reactor */
+		async_status = ASYNC_CONTINUE;
+		return 1;
+	case  1:
+		/* successfull */
+		pkg_free(as_params);
+		async_status  = ASYNC_DONE;
+
+		break;
+	default:
+		/* invalid rc */
+		LM_BUG("invalid return code\n");
+		return -1;
+	}
+
+	if (ld_result_count < 1)
+	{
+		/* no LDAP entry found */
+		LM_INFO("no LDAP entry found\n");
+		return -1;
+	}
+
+	return ld_result_count;
+}
+
+int ldap_search_impl_async(
+	struct sip_msg* _msg,
+	async_resume_module **resume_f,
+	void **resume_param,
+	pv_elem_t* _ldap_url)
+{
+	str ldap_url;
+	int ld_result_count = 0;
+	int msgid;
+	int sockfd;
+	struct ldap_async_params *as_params;
+	struct ld_session *lds;
+	Sockbuf *sb;
+
+	/*
+	* do variable substitution for _ldap_url (pv_printf_s)
+	*/
+	if (_ldap_url==NULL) {
+		LM_ERR("empty ldap_url\n");
+		return -2;
+	}
+	if ( _ldap_url->spec.getf!=NULL) {
+		if (pv_printf_s( _msg, _ldap_url, &ldap_url)!=0 || ldap_url.len<=0) {
+			LM_ERR("pv_printf_s failed\n");
+			return -2;
+		}
+	} else {
+		ldap_url = _ldap_url->text;
+	}
+
+	/*
+	* perform LDAP search
+	*/
+	if (ldap_url_search_async(ldap_url.s, &ld_result_count,
+											&msgid, &lds) != 0)
+	{
+		/* LDAP search error */
+		return -2;
+	}
+
+	if (msgid >= 0) {
+		if (lds == NULL) {
+			LM_ERR("invalid session handle\n");
+			return -1;
+		}
+
+		if (ldap_get_option(lds->handle, LDAP_OPT_SOCKBUF, &sb) != LDAP_SUCCESS) {
+			LM_ERR("failed to retrieve ldap sockbuf\n");
+			return -1;
+		}
+
+		if (ber_sockbuf_ctrl(sb, LBER_SB_OPT_GET_FD, &sockfd) != 1) {
+			LM_ERR("[%s]: couldn't get ldap session socket\n", lds->name);
+			return -1;
+		}
+
+		as_params = pkg_malloc(sizeof(struct ldap_async_params));
+		if (as_params == NULL) {
+			LM_ERR("no more pkg mem\n");
+		}
+
+		as_params->msgid = msgid;
+		as_params->lds	 = lds;
+
+		*resume_param = as_params;
+		*resume_f = resume_ldap_search;/* resume function */
+		async_status = sockfd;
+
+		return 1;
+	} else {
+		*resume_param = *resume_f = NULL;
+		async_status = ASYNC_NO_IO;
+	}
+
+	if (ld_result_count < 1)
+	{
+		/* no LDAP entry found */
+		LM_INFO("no LDAP entry found\n");
+		return -1;
+	}
+	return ld_result_count;
+}
+
 
 int ldap_search_impl(
 	struct sip_msg* _msg,
@@ -62,7 +183,7 @@ int ldap_search_impl(
 {
 	str ldap_url;
 	int ld_result_count = 0;
-	
+
 	/*
 	* do variable substitution for _ldap_url (pv_printf_s)
 	*/
@@ -108,16 +229,16 @@ int ldap_write_result(
 	struct berval              **attr_vals;
 	str                        avp_val_str, *subst_result = NULL;
 	int                        avp_val_int;
-	
+
 	/*
 	* get dst AVP name (dst_avp_name)
 	*/
-	
+
 	if (pv_get_avp_name(	_msg,
-				&(_lrp->dst_avp_spec.pvp), 
-				&dst_avp_name, 
+				&(_lrp->dst_avp_spec.pvp),
+				&dst_avp_name,
 				&dst_avp_type)
-			!= 0) 
+			!= 0)
 	{
 		LM_ERR("error getting dst AVP name\n");
 		return -2;
@@ -159,7 +280,7 @@ int ldap_write_result(
 		if (_lrp->dst_avp_val_type == 1)
 		{
 			/* try to convert ldap value to integer */
-			if (!str2sint(&avp_val_str, &avp_val_int)) 
+			if (!str2sint(&avp_val_str, &avp_val_int))
 			{
 				dst_avp_val.n = avp_val_int;
 				rc = add_avp(dst_avp_type, dst_avp_name, dst_avp_val);
@@ -173,7 +294,7 @@ int ldap_write_result(
 			dst_avp_val.s = avp_val_str;
 			rc = add_avp(dst_avp_type|AVP_VAL_STR, dst_avp_name, dst_avp_val);
 		}
-		
+
 		if (subst_result != NULL) {
 			if (subst_result->s != 0) {
 				pkg_free(subst_result->s);
@@ -181,8 +302,8 @@ int ldap_write_result(
 			pkg_free(subst_result);
 			subst_result = NULL;
 		}
-		
-		if (rc < 0) 
+
+		if (rc < 0)
 		{
 			LM_ERR("failed to create new AVP\n");
 			ldap_value_free_len(attr_vals);
@@ -191,7 +312,7 @@ int ldap_write_result(
 		added_avp_count++;
 	}
 	ldap_value_free_len(attr_vals);
-	
+
 	if (added_avp_count > 0)
 	{
 		return added_avp_count;
@@ -229,9 +350,9 @@ int ldap_result_check(
 	struct berval **attr_vals;
 
 	/*
-	* do variable substitution for check_str 
+	* do variable substitution for check_str
 	*/
-	
+
 	if (_lrp->check_str_elem_p)
 	{
 		if (pv_printf_s(_msg, _lrp->check_str_elem_p, &check_str) != 0)
@@ -239,18 +360,18 @@ int ldap_result_check(
 			LM_ERR("pv_printf_s failed\n");
 			return -2;
 		}
-	} else 
+	} else
 	{
 		LM_ERR("empty check string\n");
 		return -2;
 	}
 
 	LM_DBG("check_str [%s]\n", check_str.s);
-	
+
 	/*
 	* get LDAP attr values
 	*/
-	
+
 	if ((rc = ldap_get_attr_vals(&_lrp->ldap_attr_name, &attr_vals)) != 0)
 	{
 		if (rc > 0) {
@@ -263,14 +384,14 @@ int ldap_result_check(
 	/*
 	* loop through attribute values
 	*/
-	
+
 	for (i = 0; attr_vals[i] != NULL; i++)
 	{
 		if (_se == NULL)
 		{
 			attr_val = attr_vals[i]->bv_val;
 		} else
-		{	
+		{
 			subst_result = subst_str(attr_vals[i]->bv_val, _msg, _se,
 					&nmatches);
 			if ((subst_result == NULL) || (nmatches < 1))
@@ -279,10 +400,10 @@ int ldap_result_check(
 			}
 			attr_val = subst_result->s;
 		}
-		
+
 		LM_DBG("attr_val [%s]\n", attr_val);
 		rc = strncmp(check_str.s, attr_val, check_str.len);
-		if (_se != NULL) 
+		if (_se != NULL)
 		{
 			pkg_free(subst_result->s);
 		}
@@ -302,7 +423,7 @@ int ldap_filter_url_encode(
 	pv_elem_t* _filter_component,
 	pv_spec_t* _dst_avp_spec)
 {
-	str             filter_component_str, esc_str;	
+	str             filter_component_str, esc_str;
 	int         dst_avp_name;
 	unsigned short  dst_avp_type;
 

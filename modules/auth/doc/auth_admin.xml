@@ -51,7 +51,7 @@
 			the listed modules must be loaded before this module):
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>signalign</emphasis> -- Signaling module</para>
+				<para><emphasis>signaling</emphasis> -- Signaling module</para>
 			</listitem>
 			</itemizedlist>
 			</para>
@@ -331,7 +331,7 @@ modparam("auth", "disable_nonce_check", 1)
 		<title>www_challenge usage</title>
 		<programlisting format="linespecific">
 ...
-if (www_authorize("siphub.net", "subscriber")) {
+if (!www_authorize("siphub.net", "subscriber")) {
 	www_challenge("siphub.net", "1");
 };
 ...
@@ -491,7 +491,7 @@ append_rpid_hf();  # Append Remote-Party-ID header field
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>prefix</emphasis> - Prefix of the 
-			Remote-Party-ID URI. The string will be added at the begining of 
+			Remote-Party-ID URI. The string will be added at the beginning of 
 			body of the header field, just before the URI.
 			</para>
 		</listitem>
@@ -583,7 +583,7 @@ append_rpid_hf("", ";party=calling;id-type=subscriber;screen=yes");
 ...
 $var(username)="abc";
 $avp(password)="xyz";
-if (pv_www_authorize("opensips.org")) {
+if (!pv_www_authorize("opensips.org")) {
 	www_challenge("opensips.org", "1");
 };
 ...

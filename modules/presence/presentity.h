@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence module - presence server implementation
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -31,7 +29,7 @@
 #define PRESENTITY_H
 
 #include "../../str.h"
-#include "../../parser/msg_parser.h" 
+#include "../../parser/msg_parser.h"
 #include "event_list.h"
 //#include "presence.h"
 
@@ -53,6 +51,8 @@ typedef struct presentity
 	char* sphere;
 	str body;
 } presentity_t;
+
+int internal_update_presentity(presentity_t* presentity);
 
 /* update presentity in database */
 int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_reply);

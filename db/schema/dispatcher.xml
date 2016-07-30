@@ -9,7 +9,7 @@
 
 <table id="dispatcher" xmlns:db="http://docbook.org/ns/docbook">
     <name>dispatcher</name>
-    <version>5</version>
+    <version>7</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table is used by the dispatcher module. It contains the sets of destinations used for load balancing and dispatching. More information about the dispatcher module can be found at: &OPENSIPS_MOD_DOC;dispatcher.html
@@ -53,10 +53,10 @@
         </description>
     </column>
 
-    <column id="flags">
-        <name>flags</name>
+    <column>
+        <name>state</name>
         <type>int</type>
-        <description>Flags of destination SIP address</description>
+        <description>The state of the destination (0 enabled, 1 disabled , 2 probing)</description>
         <default>0</default>
         <natural/>
     </column>
@@ -66,6 +66,14 @@
         <type>int</type>
         <description>The weight of the destination</description>
         <default>1</default>
+        <natural/>
+    </column>
+
+    <column id="priority">
+        <name>priority</name>
+        <type>int</type>
+        <description>The priority of each destination (only useful with algorithm 8)</description>
+        <default>0</default>
         <natural/>
     </column>
 

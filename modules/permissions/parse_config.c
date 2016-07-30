@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * PERMISSIONS module
  *
  * Copyright (C) 2003 Miklós Tirpák (mtirpak@sztaki.hu)
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -36,12 +34,12 @@
  * return 0 on success, -1 on error
  * parsed expressions are returned in **e
  */
-static int parse_expression_list(char *str, expression **e) 
+static int parse_expression_list(char *str, expression **e)
 {
 	int start=0, i=-1, j=-1, apost=0;
 	char str2[EXPRESSION_LENGTH];
 	expression *e1=NULL, *e2;
-	
+
 	if (!str || !e) return -1;
 
 	*e = NULL;
@@ -66,12 +64,12 @@ static int parse_expression_list(char *str, expression **e)
 						}
 						strncpy(str2, str+start, j-start+1);
 						str2[j-start+1] = '\0';
-						
+
 						e2 = new_expression(str2);
 						if (!e2)
 							/* memory error */
 							goto error;
-						
+
 						if (e1) {
 							/* it is not the first */
 							e1->next = e2;
@@ -104,7 +102,7 @@ error:
  * return 0 on success, -1 on error
  * parsed expressions are returned in **e, and exceptions are returned in **e_exceptions
  */
-static int parse_expression(char *str, expression **e, expression **e_exceptions) 
+static int parse_expression(char *str, expression **e, expression **e_exceptions)
 {
 	char *except, str2[LINE_LENGTH+1];
 	int  i,j;
@@ -149,7 +147,7 @@ static int parse_expression(char *str, expression **e, expression **e_exceptions
  * parse one line of the config file
  * return the rule according to line
  */
-static rule *parse_config_line(char *line) 
+static rule *parse_config_line(char *line)
 {
 	rule	*rule1;
 	expression *left, *left_exceptions, *right, *right_exceptions;
@@ -167,28 +165,28 @@ static rule *parse_config_line(char *line)
 			case '"':	apost = !apost;
 					eval = 1;
 					break;
-			
+
 			case ':':	if (!apost) colon = i;
 					eval = 1;
 					break;
-			
-			case '#':	if (apost) break;			
+
+			case '#':	if (apost) break;
 			case '\0':
 			case '\n':
 					exit = 1;
 					break;
 			case ' ':	break;
 			case '\t':	break;
-				
+
 			default:	eval = 1;
-			
+
 		}
 	}
 
 	if (eval) {
 		if ((0<colon) && (colon+1<i)) {
 			/* valid line */
-			
+
 			/* left expression */
 			strncpy(str1, line, colon);
 			str1[colon] = '\0';
@@ -197,7 +195,7 @@ static rule *parse_config_line(char *line)
 				LM_ERR("failed to parse line-left: %s\n", line);
 				goto error;
 			}
-			
+
 			/* right expression */
 			strncpy(str2, line+colon+1, i-colon-1);
 			str2[i-colon-1] = '\0';
@@ -206,7 +204,7 @@ static rule *parse_config_line(char *line)
 				LM_ERR("failed to parse line-right: %s\n", line);
 				goto error;
 			}
-			
+
 			rule1 = new_rule();
 			if (!rule1) {
 				LM_ERR("can't create new rule\n");
@@ -231,7 +229,7 @@ static rule *parse_config_line(char *line)
 
 	if (right) free_expression(right);
 	if (right_exceptions) free_expression(right_exceptions);
-	
+
 	return 0;
 }
 
@@ -240,7 +238,7 @@ static rule *parse_config_line(char *line)
  * parse a config file
  * return a list of rules
  */
-rule *parse_config_file(char *filename) 
+rule *parse_config_file(char *filename)
 {
 	FILE	*file;
 	char	line[LINE_LENGTH+1];
@@ -251,7 +249,7 @@ rule *parse_config_file(char *filename)
 		LM_INFO("file not found: %s\n", filename);
 		return NULL;
 	}
-	
+
 	while (fgets(line, LINE_LENGTH, file)) {
 		rule2 = parse_config_line(line);
 		if (rule2) {
@@ -265,7 +263,7 @@ rule *parse_config_file(char *filename)
 			rule1 = rule2;
 		}
 	}
-	
+
 	fclose(file);
 	return start_rule;	/* returns the linked list */
 }

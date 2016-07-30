@@ -6,7 +6,19 @@
 	<qandaset defaultlabel="number">
 	<qandaentry>
 		<question>
-		<para>What happend with <quote>use_tight_match</quote> 
+		<para>What happened with <quote>topology_hiding()</quote> 
+		function?</para>
+		</question>
+		<answer>
+		<para>
+			The respective functionality was moved into the topology_hiding module.
+			Function prototype has remained the same.
+		</para>
+		</answer>
+	</qandaentry>
+	<qandaentry>
+		<question>
+		<para>What happened with <quote>use_tight_match</quote> 
 		parameter?</para>
 		</question>
 		<answer>
@@ -19,7 +31,7 @@
 	</qandaentry>
 	<qandaentry>
 		<question>
-		<para>What happend with <quote>bye_on_timeout_flag</quote> 
+		<para>What happened with <quote>bye_on_timeout_flag</quote> 
 		parameter?</para>
 		</question>
 		<answer>
@@ -32,7 +44,7 @@
 	</qandaentry>
 	<qandaentry>
 		<question>
-		<para>What happend with <quote>dlg_flag</quote> 
+		<para>What happened with <quote>dlg_flag</quote> 
 		parameter?</para>
 		</question>
 		<answer>

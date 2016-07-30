@@ -13,7 +13,8 @@ CREATE TABLE presentity (
     CONSTRAINT presentity_presentity_idx UNIQUE (username, domain, event, etag)
 );
 
-INSERT INTO version (table_name, table_version) values ('active_watchers','10');
+ALTER SEQUENCE presentity_id_seq MAXVALUE 2147483647 CYCLE;
+INSERT INTO version (table_name, table_version) values ('active_watchers','11');
 CREATE TABLE active_watchers (
     id SERIAL PRIMARY KEY NOT NULL,
     presentity_uri VARCHAR(128) NOT NULL,
@@ -32,13 +33,14 @@ CREATE TABLE active_watchers (
     record_route TEXT,
     expires INTEGER NOT NULL,
     status INTEGER DEFAULT 2 NOT NULL,
-    reason VARCHAR(64) NOT NULL,
+    reason VARCHAR(64),
     version INTEGER DEFAULT 0 NOT NULL,
     socket_info VARCHAR(64) NOT NULL,
     local_contact VARCHAR(128) NOT NULL,
     CONSTRAINT active_watchers_active_watchers_idx UNIQUE (presentity_uri, callid, to_tag, from_tag)
 );
 
+ALTER SEQUENCE active_watchers_id_seq MAXVALUE 2147483647 CYCLE;
 INSERT INTO version (table_name, table_version) values ('watchers','4');
 CREATE TABLE watchers (
     id SERIAL PRIMARY KEY NOT NULL,
@@ -52,6 +54,7 @@ CREATE TABLE watchers (
     CONSTRAINT watchers_watcher_idx UNIQUE (presentity_uri, watcher_username, watcher_domain, event)
 );
 
+ALTER SEQUENCE watchers_id_seq MAXVALUE 2147483647 CYCLE;
 INSERT INTO version (table_name, table_version) values ('xcap','4');
 CREATE TABLE xcap (
     id SERIAL PRIMARY KEY NOT NULL,
@@ -66,6 +69,7 @@ CREATE TABLE xcap (
     CONSTRAINT xcap_account_doc_type_idx UNIQUE (username, domain, doc_type, doc_uri)
 );
 
+ALTER SEQUENCE xcap_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX xcap_source_idx ON xcap (source);
 
 INSERT INTO version (table_name, table_version) values ('pua','8');
@@ -91,4 +95,9 @@ CREATE TABLE pua (
     version INTEGER,
     extra_headers TEXT
 );
+
+ALTER SEQUENCE pua_id_seq MAXVALUE 2147483647 CYCLE;
+CREATE INDEX pua_del1_idx ON pua (pres_uri, event);
+CREATE INDEX pua_del2_idx ON pua (expires);
+CREATE INDEX pua_update_idx ON pua (pres_uri, pres_id, flag, event);
 

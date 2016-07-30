@@ -1,7 +1,5 @@
-/* 
- * $Id$
- *
- * SNMPStats Module 
+/*
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -19,13 +17,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
  * --------
  * 2006-11-23 initial version (jmagder)
- * 
+ *
  * This file was created to group together utility functions that were useful
  * throughout the SNMPStats module, without belonging to any file in particular.
  */
@@ -43,7 +41,7 @@
 
 /* Silently returns 1 if the supplied parameters are sane.  Otherwise, an error
  * message is logged for parameterName, and 0 returned. */
-int stringHandlerSanityCheck( modparam_t type, void *val, char *parameterName) 
+int stringHandlerSanityCheck( modparam_t type, void *val, char *parameterName)
 {
 	char *theString = (char *)val;
 
@@ -56,8 +54,8 @@ int stringHandlerSanityCheck( modparam_t type, void *val, char *parameterName)
 
 	/* An empty string was supplied.  We consider this illegal */
 	if (theString==0 || (theString[0])==0) {
-		LM_ERR("the %s parameter was specified  with an empty string\n",
-				parameterName); 
+		LM_ERR("the %s parameter was specified with an empty string\n",
+				parameterName);
 		return 0;
 	}
 
@@ -66,12 +64,12 @@ int stringHandlerSanityCheck( modparam_t type, void *val, char *parameterName)
 
 
 
-/* 
+/*
  * This function is a wrapper around the standard statistic framework.  It will
  * return the value of the statistic denoted with statName, or zero if the
- * statistic was not found. 
+ * statistic was not found.
  */
-int get_statistic(char *statName) 
+int get_statistic(char *statName)
 {
 	int result = 0;
 
@@ -81,7 +79,7 @@ int get_statistic(char *statName)
 	theStr.len = strlen(statName);
 
 	stat_var *theVar = get_stat(&theStr);
-	
+
 	if (theVar==0) {
 		LM_INFO("failed to retrieve statistics for %s\n", statName);
 	} else {
@@ -94,7 +92,7 @@ int get_statistic(char *statName)
 /* Returns a pointer to an SNMP DateAndTime OCTET STRING representation of the
  * time structure.  Note that the pointer is to static data, so it shouldn't be
  * counted on to be around if this function is called again. */
-char * convertTMToSNMPDateAndTime(struct tm *timeStructure) 
+char * convertTMToSNMPDateAndTime(struct tm *timeStructure)
 {
 	static char dateAndTime[8];
 

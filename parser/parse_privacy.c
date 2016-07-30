@@ -1,5 +1,4 @@
 /*
- *
  * Copyright (c) 2006 Juha Heinanen
  *
  * This file is part of opensips, a free SIP server.
@@ -14,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -32,7 +31,7 @@
 #include "parse_privacy.h"
 #include "msg_parser.h"
 
- 
+
 /*
  * Parse a privacy value pointed by start that can be at most max_len long.
  * Returns length of matched privacy value or NULL otherwise.
@@ -137,7 +136,7 @@ unsigned int parse_priv_value(char* start, unsigned int max_len,
 	   && start[len] != '\t' && start[len] != '\r' && start[len] != '\n')
 	    return 0;
     }
-    
+
     return len;
 }
 
@@ -146,7 +145,7 @@ unsigned int parse_priv_value(char* start, unsigned int max_len,
  * This method is used to parse Privacy HF body, which consist of
  * comma separated list of priv-values.  After parsing, msg->privacy->parsed
  * contains enum bits of privacy values defined in parse_privacy.h.
- * Returns 0 on success and -1 on failure. 
+ * Returns 0 on success and -1 on failure.
  */
 int parse_privacy(struct sip_msg *msg)
 {

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="clusterer" xmlns:db="http://docbook.org/ns/docbook">
+    <name>clusterer</name>
+    <version>1</version>
+    <type db="mysql">&MYSQL_TABLE_TYPE;</type>
+    <description>
+        <db:para>This table is used for defining clusters of OpenSIPS instances.
+        </db:para>
+    </description>
+
+    <column id="id">
+        <name>id</name>
+        <type>int</type>
+        <size>&table_id_len;</size>
+        <autoincrement/>
+        <primary/>
+        <type db="dbtext">int,auto</type>
+        <description>unique ID</description>
+    </column>
+
+    <column id="cluster_id">
+        <name>cluster_id</name>
+        <type>int</type>
+        <size>&table_id_len;</size>
+        <description>unique identifier for a cluster</description>
+    </column>
+
+    <column id="machine_id">
+        <name>machine_id</name>
+        <type>int</type>
+        <size>&table_id_len;</size>
+        <description>unique identifier for a machine (a node in a cluster)</description>
+    </column>
+
+    <column id="url">
+        <name>url</name>
+        <type>string</type>
+        <size>64</size>
+        <description>network location of the machine, like protocol:ip:port</description>
+    </column>
+
+    <column id="state">
+        <name>state</name>
+        <type>int</type>
+        <size>1</size>
+        <default>1</default>
+        <description>state of the  machine 0 - down/ 1 - up / 2 - temporary disable</description>
+    </column>
+
+    <column id="last_attempt">
+        <name>last_attempt</name>
+        <type>unsigned long</type>
+        <size>64</size>
+        <type db="dbtext">long</type>
+        <default>0</default>
+        <description>last time(UNIX timestamp) when a failed attempt has occurred</description>
+    </column>
+
+    <column id="failed_attempts">
+        <name>failed_attempts</name>
+        <type>int</type>
+        <size>&table_id_len;</size>
+        <default>3</default>
+        <description>maximum number of failed attempts</description>
+    </column>
+
+    <column id="no_tries">
+        <name>no_tries</name>
+        <type>int</type>
+        <size>&table_id_len;</size>
+        <default>0</default>
+        <description>number of failed tries before auto-disabling</description>
+    </column>
+
+    <column id="duration">
+        <name>duration</name>
+        <type>int</type>
+        <size>&table_id_len;</size>
+        <default>30</default>
+        <description>tempory disabled state duration(seconds)</description>
+    </column>
+
+    <column id="description">
+        <name>description</name>
+        <type>string</type>
+        <size>64</size>
+        <null/>
+        <description>opaque text not used by the module</description>
+    </column>
+
+    <index>
+        <name>clusterer_idx</name>
+        <colref linkend="cluster_id"/>
+        <colref linkend="machine_id"/>
+        <unique/>
+    </index>
+    
+</table>

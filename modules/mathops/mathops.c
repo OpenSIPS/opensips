@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2013 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -69,6 +67,7 @@ static int fixup_round_op(void **param, int param_no);
  * Function headers
  */
 static int w_evaluate_exp(struct sip_msg *msg, char *exp, char *result);
+static int w_evaluate_rpn(struct sip_msg *msg, char *exp, char *result);
 static int w_basic_round_op(struct sip_msg *msg, char *number, char *result,
                             double (*math_op)(double));
 static int w_floor_op(struct sip_msg *msg, char *number, char *result);
@@ -85,6 +84,9 @@ static int w_round_sf_op(struct sip_msg *msg, char *number, char *result,
  */
 static cmd_export_t cmds[] = {
 	{"math_eval",(cmd_function)w_evaluate_exp, 2, fixup_evaluate_exp, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE},
+	{"math_rpn",(cmd_function)w_evaluate_rpn, 2, fixup_evaluate_exp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE},
 	{"math_floor",(cmd_function)w_floor_op, 2, fixup_binary_op, 0,
@@ -122,10 +124,13 @@ static param_export_t params[] = {
  * Module parameter variables
  */
 struct module_exports exports = {
-	"mathops", 
+	"mathops",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,     /* Exported functions */
+	0,        /* Exported async functions */
 	params,   /* Exported parameters */
 	0,        /* exported statistics */
 	0,        /* exported MI functions */
@@ -141,7 +146,7 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	LM_DBG("Initializing...\n");
-	
+
 	LM_INFO("Module initialized!\n");
 
 	return 0;
@@ -166,7 +171,7 @@ static int fixup_binary_op(void **param, int param_no)
 		}
 
 		memset(sp, 0, sizeof(*sp));
-		
+
 		s.s = (char *)*param; s.len = strlen(s.s);
 		if (!pv_parse_spec(&s, sp)) {
 			LM_ERR("Parameter 2 only accepts pvars! Given: <%.*s>\n", s.len, s.s);
@@ -191,7 +196,7 @@ static int fixup_round_op(void **param, int param_no)
 		return fixup_binary_op(param, param_no);
 	case 3:
 		return fixup_igp(param);
-	
+
 	default:
 		LM_ERR("Invalid parameter number: %d\n", param_no);
 		return E_UNSPEC;
@@ -211,7 +216,7 @@ static int fixup_evaluate_exp(void **param, int param_no)
 	}
 
 	if (param_no == 1) {
-		
+
     	s.s = (char*)(*param); s.len = strlen(s.s);
 
 		if (pv_parse_format(&s, &ep) < 0) {
@@ -229,7 +234,7 @@ static int fixup_evaluate_exp(void **param, int param_no)
 		}
 
 		memset(sp, 0, sizeof(*sp));
-		
+
 		s.s = (char *)*param; s.len = strlen(s.s);
 		if (!pv_parse_spec(&s, sp)) {
 			LM_ERR("Parameter 2 only accepts pvars! Given: <%.*s>\n", s.len, s.s);
@@ -258,6 +263,21 @@ static int w_evaluate_exp(struct sip_msg *msg, char *exp, char *result)
 	LM_DBG("Evaluating expression: %.*s\n", s.len, s.s);
 
 	return evaluate_exp(msg, &s, (pv_spec_p)result);
+}
+
+static int w_evaluate_rpn(struct sip_msg *msg, char *exp, char *result)
+{
+	pv_elem_p exp_fmt = (pv_elem_p)exp;
+	str s;
+
+	if (pv_printf_s(msg, exp_fmt, &s) != 0) {
+		LM_ERR("Failed to print the pv format string!\n");
+		return -1;
+	}
+
+	LM_DBG("Evaluating expression: %.*s\n", s.len, s.s);
+
+	return evaluate_rpn(msg, &s, (pv_spec_p)result);
 }
 
 

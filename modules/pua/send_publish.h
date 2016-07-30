@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua module - presence user agent module
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -31,7 +29,10 @@
 #include "hash.h"
 #include "event_list.h"
 
-#define ERR_PUBLISH_NO_BODY -10
+#define ERR_PUBLISH_NO_ERROR   0
+#define ERR_PUBLISH_GENERIC   -1
+#define ERR_PUBLISH_NO_RECORD -9
+#define ERR_PUBLISH_NO_BODY   -10
 
 typedef struct publ_info
 {
@@ -47,7 +48,7 @@ typedef struct publ_info
 	str* etag;
 	str* extra_headers;
 	str outbound_proxy;
-	void* cb_param;   /* the parameter for the function to be called on the callback 
+	void* cb_param;   /* the parameter for the function to be called on the callback
 						 for the received reply; it must be allocated in share memory;
 						 a reference to it will be found in the cb_param filed of the ua_pres_structure
 						 receied as a parameter for the registered function*/

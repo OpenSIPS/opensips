@@ -1,0 +1,149 @@
+proto_ws Module
+
+OpenSIPS Project
+
+Edited by
+
+Razvan Crainea
+
+   Copyright © 2015 OpenSIPS Project
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. ws_port (integer)
+              1.3.2. ws_send_timeout (integer)
+              1.3.3. ws_max_msg_chunks (integer)
+
+   2. Frequently Asked Questions
+
+   List of Examples
+
+   1.1. Set ws_port parameter
+   1.2. Set ws_send_timeout parameter
+   1.3. Set ws_max_msg_chunks parameter
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   The WebSocket protocol (RFC 6455) provides an end-to-end
+   full-duplex communication channel between two web-based
+   applications. This allows WebSocket enabled browsers to connect
+   to a WebSocket server and exchange any type of data. RFC 7118
+   provides the specifications for transporting SIP messages over
+   the WebSocket protocol.
+
+   The proto_ws module is transport module that provides
+   communication over the WebSocket protocol. This module is fully
+   compliant with the RFC 7118, thus allowing browsers to act as
+   SIP clients for the OpenSIPS proxy.
+
+   The current implementation acts both as WebSocket server and
+   client, thus it can accept connections from WebSocket clients
+   and can also initiate connections to another WebSocket server.
+   After the connection is established, messages can flow in both
+   directions.
+
+   OpenSIPS supports the following WebSocket operations:
+     * text and binary - can both send and receive WebSocket
+       messages that contain text or binary body
+     * close - messages used to safely close the WebSocket
+       communication using a 2-messages handshake
+     * ping - responds with pong messages. There is no mechanism
+       to trigger ping messages.
+     * pong - sent when a ping message is received. OpenSIPS,
+       absorbes the pong messages received.
+
+   Once loaded, you will be able to define WebSocket listeners in
+   your script. To add a listener, you have to add its IP, and
+   optionally the listening port, after the mpath parameter,
+   similar to this example:
+
+...
+mpath=/path/to/modules
+...
+listen=ws:127.0.0.1             # change with the listening IP
+listen=ws:127.0.0.1:5060        # change with the listening IP and port
+...
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * None.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported Parameters
+
+1.3.1. ws_port (integer)
+
+   The default port to be used by all WebSocket listeners.
+
+   Default value is 80.
+
+   Example 1.1. Set ws_port parameter
+...
+modparam("proto_ws", "ws_port", 8080)
+...
+
+1.3.2. ws_send_timeout (integer)
+
+   Time in milliseconds after a WebSocket connection will be
+   closed if it is not available for blocking writing in this
+   interval (and OpenSIPS wants to send something on it).
+
+   Default value is 100 ms.
+
+   Example 1.2. Set ws_send_timeout parameter
+...
+modparam("proto_ws", "ws_send_timeout", 200)
+...
+
+1.3.3. ws_max_msg_chunks (integer)
+
+   The maximum number of chunks in which a SIP message is expected
+   to arrive via WebSocket. If a received packet is more
+   fragmented than this, the connection is dropped (either the
+   connection is very overloaded and this leads to high
+   fragmentation - or we are the victim of an ongoing attack where
+   the attacker is sending very fragmented traffic in order to
+   decrease server performance).
+
+   Default value is 4.
+
+   Example 1.3. Set ws_max_msg_chunks parameter
+...
+modparam("proto_ws", "ws_max_msg_chunks", 8)
+...
+
+Chapter 2. Frequently Asked Questions
+
+   2.1.
+
+       Can OpenSIPS act as a WebSocket client?
+
+       Yes, starting with OpenSIPS 2.2, it can act as a WebSocket
+       client.
+
+   2.2.
+
+       Does OpenSIPS support WebSocket message fragmentation?
+
+       No, WebSocket fragmentation mechanism is not supported.

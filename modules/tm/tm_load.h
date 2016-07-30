@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
@@ -44,11 +42,13 @@
 #include "t_cancel.h"
 #include "dlg.h"
 #include "h_table.h"
+#include "t_ctx.h"
 
 
 struct tm_binds {
 	register_tmcb_f  register_tmcb;
 	cmd_function     t_relay;
+	cmd_function     t_check_trans;
 	tnewtran_f       t_newtran;
 	treply_f         t_reply;
 	treply_wb_f      t_reply_with_body;
@@ -78,6 +78,18 @@ struct tm_binds {
 	setkr_f            t_setkr;
 	set_localT_holder_f setlocalTholder;
 	tgetbranch_f       get_branch_index;
+
+	t_ctx_register_int_f t_ctx_register_int;
+	t_ctx_register_str_f t_ctx_register_str;
+	t_ctx_register_ptr_f t_ctx_register_ptr;
+
+	t_ctx_put_int_f t_ctx_put_int;
+	t_ctx_put_str_f t_ctx_put_str;
+	t_ctx_put_ptr_f t_ctx_put_ptr;
+
+	t_ctx_get_int_f t_ctx_get_int;
+	t_ctx_get_str_f t_ctx_get_str;
+	t_ctx_get_ptr_f t_ctx_get_ptr;
 };
 
 

@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -30,22 +30,22 @@
 #include "db_query.h"
 #include "../locking.h"
 
-extern int query_buffer_size; /* number of insert queries that will be 
-								 held in memory once this number of same 
-								 type of queries pile up to this number, 
+extern int query_buffer_size; /* number of insert queries that will be
+								 held in memory once this number of same
+								 type of queries pile up to this number,
 								 they will be flushed to DB */
 extern int query_flush_time; /* if the query contains inserts older
 								that query_flush_time seconds, the timer
 								will kick in and flush to DB,
 								to maintain "real time" sync with DB */
 
-#define CON_HAS_INSLIST(cn)	((cn)->ins_list) 
+#define CON_HAS_INSLIST(cn)	((cn)->ins_list)
 #define DEF_FLUSH_TIME		10 /* seconds */
 
 typedef struct query_list {
 	str url;			/* url for the connection - needed by timer */
 	db_func_t dbf;		/* func handlers that will be used by timer */
-	db_con_t *conn;		/* connection that will be used by timer */
+	db_con_t **conn;	/* connection that will be used by timer */
 	str table;			/* table that query is targetting */
 	db_key_t *cols;		/* columns for the insert */
 	int col_no;			/* number of columns */
@@ -63,10 +63,10 @@ extern gen_lock_t *ql_lock;
 int init_ql_support(void);
 int ql_row_add(query_list_t *entry,const db_val_t *row,db_val_t ***ins_rows);
 int ql_detach_rows_unsafe(query_list_t *entry,db_val_t ***ins_rows);
-inline int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
-							db_key_t *cols,int col_no);
+int con_set_inslist(db_func_t *dbf,db_con_t *con,
+							query_list_t **list,db_key_t *cols,int col_no);
 void ql_timer_routine(unsigned int ticks,void *param);
-inline int ql_flush_rows(db_func_t *dbf,db_con_t *conn,query_list_t *entry);
+int ql_flush_rows(db_func_t *dbf, db_con_t *conn,query_list_t *entry);
 
 #define CON_RESET_INSLIST(con) \
 	do { \
@@ -90,9 +90,9 @@ inline int ql_flush_rows(db_func_t *dbf,db_con_t *conn,query_list_t *entry);
 	do { \
 		*((int *)&(con)->flags) &= ~CON_INSTANT_FLUSH; \
 		lock_release((entry)->lock); \
-	} while (0) 
+	} while (0)
 
-inline void cleanup_rows(db_val_t **rows);
+void cleanup_rows(db_val_t **rows);
 void handle_ql_shutdown(void);
 
 #endif

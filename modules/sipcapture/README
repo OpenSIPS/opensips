@@ -29,38 +29,80 @@ Alexandr Dubovikov
 
               1.3.1. db_url (str)
               1.3.2. table_name (str)
-              1.3.3. capture_on (integer)
-              1.3.4. hep_capture_on (integer)
-              1.3.5. raw_ipip_capture_on (integer)
-              1.3.6. raw_moni_capture_on (integer)
-              1.3.7. raw_socket_listen (string)
-              1.3.8. raw_interface (string)
-              1.3.9. raw_sock_children (integer)
-              1.3.10. promiscuous_on (integer)
-              1.3.11. raw_moni_bpf_on (integer)
-              1.3.12. capture_node (str)
+              1.3.3. rtcp_table_name (str)
+              1.3.4. capture_on (integer)
+              1.3.5. hep_capture_on (integer)
+              1.3.6. max_async_queries (integer)
+              1.3.7. raw_ipip_capture_on (integer)
+              1.3.8. raw_moni_capture_on (integer)
+              1.3.9. raw_socket_listen (string)
+              1.3.10. raw_interface (string)
+              1.3.11. raw_sock_children (integer)
+              1.3.12. promiscuous_on (integer)
+              1.3.13. raw_moni_bpf_on (integer)
+              1.3.14. capture_node (str)
+              1.3.15. hep_route (string)
 
-        1.4. MI Commands
+        1.4. Exported Functions
 
-              1.4.1. sip_capture
+              1.4.1. sip_capture([table_name])
+              1.4.2.
+                      report_capture([table_name],correlation_id[,pr
+                      oto_type])
 
-        1.5. Database setup
-        1.6. Limitation
+              1.4.3. hep_set([data_type,] chunk_id, [vendor_id,]
+                      chunk_data)
+
+              1.4.4. hep_get([data_type,] chunk_id, vendor_id_pv,
+                      chunk_data_pv)
+
+              1.4.5. hep_del(chunk_id)
+              1.4.6. hep_relay()
+              1.4.7. hep_resume_sip()
+
+        1.5. Exported Async Functions
+
+              1.5.1. sip_capture()
+
+        1.6. Exported PseudoVariables
+
+              1.6.1. hep_net
+              1.6.2. HEPVERSION - string,int
+
+        1.7. MI Commands
+
+              1.7.1. sip_capture
+
+        1.8. Database setup
+        1.9. Limitation
 
    List of Examples
 
    1.1. Set db_url parameter
-   1.2. Set sip_capture parameter
-   1.3. Set capture_on parameter
-   1.4. Set hep_capture_on parameter
-   1.5. Set raw_ipip_capture_on parameter
-   1.6. Set raw_moni_capture_on parameter
-   1.7. Set raw_socket_listen parameter
-   1.8. Set raw_socket_listen parameter
+   1.2. Set table_name parameter
+   1.3. Set rtcp_capture parameter
+   1.4. Set capture_on parameter
+   1.5. Set hep_capture_on parameter
+   1.6. Set max_async_queries parameter
+   1.7. Set raw_ipip_capture_on parameter
+   1.8. Set raw_moni_capture_on parameter
    1.9. Set raw_socket_listen parameter
-   1.10. Set promiscuous_on parameter
-   1.11. Set raw_moni_bpf_on parameter
-   1.12. Set capture_node parameter
+   1.10. Set raw_socket_listen parameter
+   1.11. Set raw_socket_listen parameter
+   1.12. Set promiscuous_on parameter
+   1.13. Set raw_moni_bpf_on parameter
+   1.14. Set capture_node parameter
+   1.15. Set hep_route parameter
+   1.16. sip_capture usage
+   1.17. sip_capture usage
+   1.18. hep_set usage
+   1.19. hep_set usage
+   1.20. hep_set usage
+   1.21. hep_relay usage
+   1.22. hep_resume_sip usage
+   1.23. sip_capture usage
+   1.24. hep_net usage
+   1.25. HEPVERSION usage
 
 Chapter 1. Admin Guide
 
@@ -72,7 +114,12 @@ Chapter 1. Admin Guide
    OpenSIPs can capture SIP messages in three mode
      * IPIP encapsulation. (ETHHDR+IPHDR+IPHDR+UDPHDR).
      * Monitoring/mirroring port.
-     * Homer encapsulation protocl mode (HEP v1).
+     * Homer encapsulation protocl mode (HEP v1/2/3). With version
+       2.2 comes the new HEPv3 support using the proto _hep
+       module. Also header manipulation support for HEPv3 has been
+       added. See Section 1.4.3, “ hep_set([data_type,] chunk_id,
+       [vendor_id,] chunk_data) ” for more details. If you want
+       more information about hep protocol check this link.
 
    The capturing can be turned on/off using fifo commad.
 
@@ -86,6 +133,7 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
      * database module - mysql, postrgress, dbtext, unixodbc...
+     * proto_hep module - if hep capturing used
 
 1.2.2. External Libraries or Applications
 
@@ -108,50 +156,90 @@ modparam("sipcapture", "db_url", "mysql://user:passwd@host/dbname")
 
 1.3.2. table_name (str)
 
-   Name of the table's name where to store the SIP messages.
+   Name of the table's name where to store the SIP messages. Since
+   version 2.2 it allows strftime-like suffix for having time
+   formatted table names.
 
    Default value is "sip_capture".
 
-   Example 1.2. Set sip_capture parameter
+   Example 1.2. Set table_name parameter
 ...
 modparam("sipcapture", "table_name", "homer_capture")
+
+/* change table name every day */
+modparam("sipcapture", "table_name", "homer_%m_%d")
+/* if today is 13-04-2014 it will exetend to homer_04_13 */
 ...
 
 
-1.3.3. capture_on (integer)
+1.3.3. rtcp_table_name (str)
+
+   Name of the table's name where to store packets captured with
+   report_capture function. Since version 2.2 it allows
+   strftime-like suffix for having time formatted table names.
+
+   Default value is "rtcp_capture".
+
+   Example 1.3. Set rtcp_capture parameter
+...
+modparam("sipcapture", "rtcp_table_name", "homer_capture")
+
+/* change table name every hour */
+modparam("sipcapture", "rtcp_table_name", "homer_%m_%d_%H")
+/* if today is 13-04-2014 13:05 pm it will exetend to homer_04_13_13 */
+...
+
+1.3.4. capture_on (integer)
 
    Parameter to enable/disable capture globaly (on(1)/off(0))
 
    Default value is "0".
 
-   Example 1.3. Set capture_on parameter
+   Example 1.4. Set capture_on parameter
 ...
 modparam("sipcapture", "capture_on", 1)
 ...
 
-1.3.4. hep_capture_on (integer)
+1.3.5. hep_capture_on (integer)
 
    Parameter to enable/disable capture of HEP (on(1)/off(0))
 
    Default value is "0".
 
-   Example 1.4. Set hep_capture_on parameter
+   Example 1.5. Set hep_capture_on parameter
 ...
 modparam("sipcapture", "hep_capture_on", 1)
 ...
 
-1.3.5. raw_ipip_capture_on (integer)
+1.3.6. max_async_queries (integer)
+
+   Parameter to set the maximum number of 'INSERT' queries of
+   captured packets to be done in the same time, only if the DB
+   supports async operations. If OpenSIPS is shut down, the
+   remaining queries shall be executed. The query buffer is
+   limited 65535 chars, so probably no more than 30-40 queries can
+   be done in the same time, depending mostly on the size of the
+   inserted sip message, since it's the biggest part of the query.
+
+   Default value is "5".
+
+   Example 1.6. Set max_async_queries parameter
+...
+modparam("sipcapture", "max_async_queries", 3)
+...
+
+1.3.7. raw_ipip_capture_on (integer)
 
    Parameter to enable/disable IPIP capturing (on(1)/off(0))
 
    Default value is "0".
 
-   Example 1.5. Set raw_ipip_capture_on parameter
+   Example 1.7. Set raw_ipip_capture_on parameter
 ...
 modparam("sipcapture", "raw_ipip_capture_on", 1)
 ...
 
-1.3.6. raw_moni_capture_on (integer)
+1.3.8. raw_moni_capture_on (integer)
 
    Parameter to enable/disable monitoring/mirroring port capturing
    (on(1)/off(0)) Only one mode on raw socket can be enabled!
@@ -159,12 +247,12 @@ modparam("sipcapture", "raw_ipip_capture_on", 1)
 
    Default value is "0".
 
-   Example 1.6. Set raw_moni_capture_on parameter
+   Example 1.8. Set raw_moni_capture_on parameter
 ...
 modparam("sipcapture", "raw_moni_capture_on", 1)
 ...
 
-1.3.7. raw_socket_listen (string)
+1.3.9. raw_socket_listen (string)
 
    Parameter indicate an listen IP address of RAW socket for IPIP
    capturing. You can also define a port/portrange for
@@ -182,49 +270,49 @@ modparam("sipcapture", "raw_moni_capture_on", 1)
 
    Default value is "".
 
-   Example 1.7. Set raw_socket_listen parameter
+   Example 1.9. Set raw_socket_listen parameter
 ...
 modparam("sipcapture", "raw_socket_listen", "10.0.0.1:5060-5090")
 ...
 modparam("sipcapture", "raw_socket_listen", "10.0.0.1:5060")
 ...
 
-1.3.8. raw_interface (string)
+1.3.10. raw_interface (string)
 
    Name of the interface to bind on the raw socket.
 
    Default value is "".
 
-   Example 1.8. Set raw_socket_listen parameter
+   Example 1.10. Set raw_socket_listen parameter
 ...
 modparam("sipcapture", "raw_interface", "eth0")
 ...
 
-1.3.9. raw_sock_children (integer)
+1.3.11. raw_sock_children (integer)
 
    Parameter define how much children must be created to listen
    the raw socket.
 
    Default value is "1".
 
-   Example 1.9. Set raw_socket_listen parameter
+   Example 1.11. Set raw_socket_listen parameter
 ...
 modparam("sipcapture", "raw_sock_children", 6)
 ...
 
-1.3.10. promiscuous_on (integer)
+1.3.12. promiscuous_on (integer)
 
    Parameter to enable/disable promiscuous mode on the raw socket.
    Linux only.
 
    Default value is "0".
 
-   Example 1.10. Set promiscuous_on parameter
+   Example 1.12. Set promiscuous_on parameter
 ...
 modparam("sipcapture", "promiscuous_on", 1)
 ...
 
-1.3.11. raw_moni_bpf_on (integer)
+1.3.13. raw_moni_bpf_on (integer)
 
    Activate Linux Socket Filter (LSF based on BPF) on the
    mirroring interface. The structure is defined in
@@ -234,25 +322,380 @@ modparam("sipcapture", "promiscuous_on", 1)
 
    Default value is "0".
 
-   Example 1.11. Set raw_moni_bpf_on parameter
+   Example 1.13. Set raw_moni_bpf_on parameter
 ...
 modparam("sipcapture", "raw_moni_bpf_on", 1)
 ...
 
-1.3.12. capture_node (str)
+1.3.14. capture_node (str)
 
    Name of the capture node.
 
    Default value is "homer01".
 
-   Example 1.12. Set capture_node parameter
+   Example 1.14. Set capture_node parameter
 ...
 modparam("sipcapture", "capture_node", "homer03")
 ...
 
-1.4. MI Commands
+1.3.15. hep_route (string)
 
-1.4.1.  sip_capture
+   Specifies what path your hep messages should take. Possible
+   values are the following:
+     * none - don't go through the script; do directly
+       sip_capture();
+     * sip(default) - go through the main request route; here the
+       message is parsed and you can do anything you want with it;
+     * any other string value - define a route name through which
+       your hep messages should go; the message is not parsed
+       because of efficiency reasons; from here you can modify the
+       hep chunks(if hep version 3 is used) and relay the hep
+       messages to other hep capture nodes;
+
+   Default value is sip(going thorugh the main request route).
+
+   Example 1.15. Set hep_route parameter
+...
+modparam("sipcapture", "hep_route", "my_hep_route")
+...
+
+route[my_hep_route] {
+        /* do hep stuff in here */
+        ...
+}
+...
+
+1.4. Exported Functions
+
+1.4.1.  sip_capture([table_name])
+
+   Save the message into the database.
+
+   Meaning of the parameters is as follows:
+     * table_name (string) - the name of the table to store the
+       packet; it can have a strftime-like formatted suffix in
+       order to change it's name based on time; if not set,
+       modparam defined table will be used;
+
+   This function can be used from
+   REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_RO
+   UTE.
+
+   Example 1.16. sip_capture usage
+...
+if (is_method("REGISTER"))
+        sip_capture();
+        ...
+        /* table name will change every day */
+        sip_capture("homer_%m_%d");
+...
+
+1.4.2.  report_capture([table_name],correlation_id[,proto_type])
+
+   Save the message into the database. If you want set the
+   protocol type you have to define the table name, even if you
+   pass over it(report_capture(,"$var(cor_id)",
+   "$var(proto_type)")).
+
+   Meaning of the parameters is as follows:
+     * table_name (string) - the name of the table to store the
+       packet; it can have a strftime-like formatted suffix in
+       order to change it's name based on time;
+     * correlation_id (string)
+     * proto_type (int) - protocol type number as defined in hep
+       protocol specification.
+
+   This function can be used from
+   REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_RO
+   UTE.
+
+   Example 1.17. sip_capture usage
+...
+
+        hep_get("utf8-string", "0x0011", "$var(correlation_id)");
+        if($var(correlation_id) == $null) {
+                xlog("NO CORRELATION ID! SET SOMETHING OR DROP");
+                $var(correlation_id) = "absdcef";
+        }
+
+        $var(proto_type) = "3"; /* 0x03 - SDP protocol */
+
+        report_capture("rtcp_log", $var(correlation_id)");
+        /* setting the first parameter, even if setting it to null, is m
+andatory in order to be able to set proto type */
+        report_capture(, $var(correlation_id)", "$var);
+        report_capture("rtcp_log", $var(correlation_id)", "$var);
+...
+
+1.4.3.  hep_set([data_type,] chunk_id, [vendor_id,] chunk_data)
+
+   Set a hep chunk. If not exists, it shall be added.
+
+   This function can be used from
+   REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_RO
+   UTE.
+
+   Meaning of the parameters is as follows:
+     * data_type - data type of the data in the chunk. It can have
+       the following values:
+          + uint8 - byte unsigned integer
+          + uint16 - word unsigned integer
+          + uint32 - 4 byte unsigned integer
+          + inet4-addr - IPv4 address in human readable format
+          + inet6-addr - IPv6 address in human readable format
+          + utf8-string - UTF8 encoded character sequence
+          + octet-string - byte array
+     * chunk_id(string value with hex/int or string identifiere of
+       chunk) - id of the chunk to be added; most of the generic
+       chunks are in the internal hep structure. For these you can
+       skip the data_type and vendor_id since they are already
+       known. Generic chunks that don't have built in support are
+       the followinig: 0x000d(keep alive timer),
+       0x000e(authenticate key), 0x0011(internal correltion id),
+       0x0012(vlan ID). You can set these chunks, but only with
+       vendor id 0x0000, other values shall result in an error.
+       Timestamp(0x0009) and timestamp_us(0x000A) chunks can't be
+       set. For chunks that have built-in support you can also use
+       strings instead of chunk ids as follows:
+          + 0x0001 - proto_family(CAN'T BE SET; it shall be
+            automatically updated if you change the type of the
+            source/destination address from IPv4 to IPv6 or else)
+          + 0x0002 - proto_id; since it's quite hard to know the
+            int values for the protocol one can change this value
+            using the following string values:
+               o UDP
+               o TCP
+               o TLS
+               o SCTP
+               o WS
+               o WSS
+               o BIN
+               o HEP
+          + 0x0003 - src_ip
+          + 0x0004 - dst_ip
+          + 0x0005 - src_ip
+          + 0x0006 - dst_ip
+          + 0x0007 - src_port
+          + 0x0008 - dst_port
+          + 0x0009 - timestamp(CAN'T BE SET)
+          + 0x000A - timestamp_us(CAN'T BE SET)
+          + 0x000B - proto_type; for this variable there are
+            predefined strings which can be set:
+               o SIP
+               o XMPP
+               o SDP
+               o RTP
+               o RTCP
+               o MGCP
+               o MEGACO
+               o M2UA
+               o M3UA
+               o IAX
+               o H322
+               o H321
+          + 0x000C - captagent_id
+          + 0x000f - payload
+          + 0x0010 - payload
+     * vendor id(string value with hex or int) - there are some
+       vendor ids already defined; check hep proto docs for more
+       details.
+     * data(string) - data that the chunk shall contain;
+       internally it shall be converted to the requested data type
+
+   Example 1.18. hep_set usage
+...
+/* modify/add a generic chunk */
+hep_set("proto_type", "H321");
+
+/* add a custom chunk - int */
+hep_set("uint32", "31"/*chk id*/, "3"/*opensips vendor*/, "132")
+
+/* add a custom chunk - IPv4 address */
+hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5
+.14")
+...
+
+1.4.4.  hep_get([data_type,] chunk_id, vendor_id_pv, chunk_data_pv)
+
+   Set a hep chunk. If not exists, it shall be added.
+
+   This function can be used from
+   REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_RO
+   UTE.
+
+   Meaning of the parameters is as follows:
+     * data_type(string) - same meaning as in Section 1.4.3, “
+       hep_set([data_type,] chunk_id, [vendor_id,] chunk_data) ”;
+       can miss if it's a generic chunk
+     * chunk_id - same meaning as in Section 1.4.3, “
+       hep_set([data_type,] chunk_id, [vendor_id,] chunk_data) ”
+     * vendor_id_pv(writable pvar) - will hold the vendor id(int
+       value) of the chunk
+     * chunk_data_pv(writable pvar) - will hold the data inside
+       the chunk; some of the generic chunk data come in specific
+       format, as following:
+          + 0x0001 - proto_family(string) - AF_INET/AF_INET6
+          + 0x0002 proto_id(string) - see Section 1.4.3, “
+            hep_set([data_type,] chunk_id, [vendor_id,]
+            chunk_data) ” for possible values
+          + 0x0003/0x0004/0x0005/0x0006 src/dst_ip(string) - ip
+            addresses in human readable format
+          + 0x0009 timestamp(string) - time and date in human
+            readable format
+          + 0x000B proto_type(string) - see Section 1.4.3, “
+            hep_set([data_type,] chunk_id, [vendor_id,]
+            chunk_data) ” for possible values
+
+   Example 1.19. hep_set usage
+...
+/* get a generic chunk */
+hep_get("proto_type", "$var(vid)", "$var(data)");
+
+/* get custom chunk - you must know what kind of data is there */
+hep_set("uint32", "31"/*chk id*/, "$var(vid)", "$var(data)")
+...
+
+1.4.5.  hep_del(chunk_id)
+
+   Removes a hep chunk.
+
+   This function can be used from
+   REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_RO
+   UTE.
+
+   Meaning of the parameters is as follows:
+     * chunk_id - same meaning as the chunk_id in Section 1.4.3, “
+       hep_set([data_type,] chunk_id, [vendor_id,] chunk_data) ”.
+
+   Example 1.20. hep_set usage
+...
+/* get a generic chunk */
+hep_del("25"); /* removes chunk with chunk id 25 */
+...
+
+1.4.6.  hep_relay()
+
+   Relay a message statefully to destination indicated in current
+   URI. (If the original URI was rewritten by UsrLoc, RR,
+   strip/prefix, etc., the new URI will be taken). The message has
+   to have been a HEP message, version 1, 2 or 3. For version 1
+   and 2 you can relay only using UDP, for version 3 TCP and UDP
+   can be used.
+
+   This function can be used from
+   REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_RO
+   UTE.
+
+   Example 1.21. hep_relay usage
+...
+$du="sip:192.168.153.157";
+if (!hep_relay()) {
+        xlog("Hep proxying failed!\n");
+        exit;
+}
+
+...
+
+1.4.7.  hep_resume_sip()
+
+   Break hep route execution and resume into the main request
+   route.
+
+   WARNING: USE THIS FUNCTION ONLY FROM A ROUTE DEFINED USING
+   hep_route PARAMETER.
+
+   Example 1.22. hep_resume_sip usage
+...
+modparam("sipcapture", "hep_route", "my_hep_route")
+
+route[my_hep_route] {
+        ...
+
+        /* resume execution in the main request route */
+        hep_resume_sip();
+}
+
+
+...
+
+1.5. Exported Async Functions
+
+1.5.1.  sip_capture()
+
+   Save the message inside the database. The query is being done
+   asnychronously only if the database supports async operations.
+   The query might not be executed exactly at this moment, it
+   depends on the max_async_queries parameter.
+
+   Example 1.23. sip_capture usage
+...
+{
+        async(sip_capture(), capture_resume);
+}
+
+route[capture_resume] {
+        xlog("insert executed\n");
+        /*continuing logic here */
+}
+...
+
+1.6. Exported PseudoVariables
+
+1.6.1.  hep_net
+
+   Holds layer 3 and 4 information(IP addresses and ports) about
+   the node from where the hep message was received. The variable
+   is read-only and can be used only if it's referenced by it's
+   name.
+
+   Possible values for it's name are the following:
+     * proto_family - can be AF_INET/AF_INET6
+     * proto_id - it's PROTO_HEP since you receive the message as
+       hep.
+     * src_ip - IPv4/IPv6 address, depending on the proto_family,
+       of the sending node.
+     * dst_ip - IPv4/IPv6 address, depending on the proto_family,
+       of the receiving node(OpenSIPS hep interface ip on which
+       the message was received).
+     * src_port - Sending node port.
+     * dst_port - Receiving port(OpenSIPS hep interace port on
+       which the message was received).
+
+   Example 1.24. hep_net usage
+...
+        /* received this hep packet on interface 192.168.2.5*/
+        if ($hep_net(dst_ip) == "192.168.2.5") {
+                /* received this on 192.168.2.5:6060 interface */
+                if ($hep_net(dst_port) == 6060) {
+                        ...
+                /* received this on 192.168.2.5:6061 interface */
+                } else if ($hep_net(dst_port) == 6061) {
+                        ...
+                }
+        }
+...
+
+1.6.2.  HEPVERSION - string,int
+
+   Holds the version of the hep packet received on the interface.
+
+   Example 1.25. HEPVERSION usage
+...
+        if ($HEPVERSION == 3) {
+                /* It's a HEPv3 packet*/
+                ...
+        } else if ($HEPVERSION == 2) {
+                /* It's a HEPv2 packet */
+                ...
+        } else if ($HEPVERSION == 1) {
+                /* It's a HEPv1 packet */
+                ...
+        }
+...
+
+1.7. MI Commands
+
+1.7.1.  sip_capture
 
    Name: sip_capture
 
@@ -270,19 +713,19 @@ modparam("sipcapture", "capture_node", "homer03")
                 capture_mode
                 _empty_line_
 
-1.5. Database setup
+1.8. Database setup
 
    Before running OpenSIPS with sipcapture, you have to setup the
    database tables where the module will store the data. For that,
    if the table were not created by the installation script or you
    choose to install everything by yourself you can use the
-   sipcapture-create.sql or the sipcapture-st-create.sql SQL
-   script in the database directories in the opensips/scripts
-   folder as template. You can also find the complete database
-   documentation on the project webpage,
+   sipcapture-create.sql and reportcapture-create.sql or the
+   sipcapture-st-create.sql SQL script in the database directories
+   in the opensips/scripts folder as template. You can also find
+   the complete database documentation on the project webpage,
    http://www.opensips.org/html/docs/db/db-schema-devel.html.
 
-1.6. Limitation
+1.9. Limitation
 
    1. Only one capturing mode on RAW socket is supported: IPIP or
    monitoring/mirroring port. Don't activate both at the same

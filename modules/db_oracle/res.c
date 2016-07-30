@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Oracle module result related functions
  *
  * Copyright (C) 2007,2008 TRUNK MOBILE
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -446,15 +444,15 @@ badparam:
 	con = CON_ORA(_h);
 	{
 	    query_data_t *pcb = con->pqdata;
-	    
+
 
 	    if (!pcb || !pcb->_rs)
 		    goto badparam;
-		    
+
 	    hs = *pcb->_rs;
 	    pcb->_rs = NULL; /* paranoid for next call */
-	}	    
-	
+	}
+
 	rc = -1;
 	if (_r)	*_r = NULL;	/* unification for all errors */
 

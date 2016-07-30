@@ -262,7 +262,7 @@ rand_get_prob();
 </programlisting>
 	    </example>
 	</section>
-	<section>
+	<section id="sleep_sync">
 		<title>
 			<function moreinfo="none">sleep(time)</function>
 		</title>
@@ -295,7 +295,7 @@ sleep("$avp(secs)");
 		</example>
 	</section>
 	
-	<section>
+	<section id="usleep_sync">
 		<title>
 			<function moreinfo="none">usleep(time)</function>
 		</title>
@@ -470,8 +470,12 @@ ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
 			<function moreinfo="none">check_time_rec(time_string)</function>
 		</title>
 		<para>
-		The function returns a positive value if the specified time reccurence string
+		The function returns a positive value if the specified time recurrence string
 		matches the current time, or a negative value otherwise.
+		</para>
+		<para>
+		The syntax of each field is identical to the corresponding field from
+		RFC 2445.
 		</para>
 		<para>
 			This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
@@ -781,9 +785,77 @@ if (!release_dynamic_lock("$avp(1)") {
 </programlisting>
 		</example>
 	</section>
+	</section>
+
+	<section>
+	<title>Exported Asyncronous Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">sleep(seconds)</function>
+		</title>
+		<para>
+		Waits a number of seconds. This function does exactly the same as
+		<xref linkend="sleep_sync"/>,
+		but in an asynchronous way. The script execution is suspended until
+		the waiting is done; then OpenSIPS resumes the script execution via 
+		the resume route.
+		</para>
+		<para>
+		To read and understand more on the asynchronous functions, how to 
+		use them and what are their advantages, please refer to the OpenSIPS
+		online Manual.
+		</para>
+		<example>
+		<title><function moreinfo="none">async sleep</function> usage</title>
+		<programlisting format="linespecific">
+{
+...
+async( sleep("5"), after_sleep );
+}
+
+route[after_sleep] {
+...
+}
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">usleep(seconds)</function>
+		</title>
+		<para>
+		Waits a number of micro-seconds. This function does exactly the same as
+		<xref linkend="usleep_sync"/>,
+		but in an asynchronous way. The script execution is suspended until
+		the waiting is done; then OpenSIPS resumes the script execution via 
+		the resume route.
+		</para>
+		<para>
+		To read and understand more on the asynchronous functions, how to 
+		use them and what are their advantages, please refer to the OpenSIPS
+		online Manual.
+		</para>
+		<example>
+		<title><function moreinfo="none">async usleep</function> usage</title>
+		<programlisting format="linespecific">
+{
+...
+async( usleep("1000"), after_usleep );
+}
+
+route[after_usleep] {
+...
+}
+</programlisting>
+		</example>
+	</section>
+
+	</section>
 
 
-</section>
+
+
 	<section>
 		<title><acronym>MI</acronym> Commands</title>
 		<section>

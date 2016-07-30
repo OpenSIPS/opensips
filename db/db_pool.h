@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * Copyright (C) 2001-2005 iptel.org
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /**
@@ -29,9 +27,14 @@
 #ifndef _DB_POOL_H
 #define _DB_POOL_H
 
+#include "../globals.h"
 #include "db_id.h"
 #include "db_con.h"
 
+struct db_transfer {
+	int fd;
+	struct pool_con *con;
+};
 
 /**
  * This is a stub that contains all attributes
@@ -44,7 +47,10 @@
 struct pool_con {
 	struct db_id* id;        /**< Connection identifier */
 	unsigned int ref;        /**< Reference count */
-	struct pool_con* next;   /**< Next element in the pool */
+	struct pool_con *async_pool; /**< Subpool of identical database handles */
+	int no_transfers;        /**< Number of async queries to this backend */
+	struct db_transfer *transfers; /**< Array of ongoing async operations */
+	struct pool_con *next;   /**< Next element in the pool (different db_id) */
 };
 
 
@@ -59,7 +65,7 @@ struct pool_con* pool_get(const struct db_id* id);
 
 /**
  * Insert a new connection into the pool.
- * \param con the inserted connection 
+ * \param con the inserted connection
  */
 void pool_insert(struct pool_con* con);
 

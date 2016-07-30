@@ -1,0 +1,6 @@
+version=3
+
+opts=filenamemangle=s/.+\/v?(\d\S*)\.tar\.gz/opensips-$1\.tar\.gz/ \
+  https://github.com/OpenSIPS/opensips/tags .*/v?(\d\S*)\.tar\.gz
+
+https://github.com/OpenSIPS/opensips/releases /OpenSIPS/opensips/archive/(.+)\.tar\.gz

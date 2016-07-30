@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007-2009 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -44,10 +42,10 @@
 #include "dlg_req_within.h"
 #include "dlg_db_handler.h"
 #include "dlg_profile.h"
+#include "dlg_handlers.h"
 
 
 extern str dlg_extra_hdrs;
-extern int last_dst_leg;
 
 int free_tm_dlg(dlg_t *td)
 {
@@ -74,7 +72,10 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dst_leg, int src_leg)
 	memset(td, 0, sizeof(dlg_t));
 
 	if ((dst_leg == DLG_CALLER_LEG && (cell->flags & DLG_FLAG_PING_CALLER)) ||
-		(dst_leg == callee_idx(cell) && (cell->flags & DLG_FLAG_PING_CALLEE)))
+		(dst_leg == callee_idx(cell) && (cell->flags & DLG_FLAG_PING_CALLEE)) || 
+		(dst_leg == DLG_CALLER_LEG && (cell->flags & DLG_FLAG_REINVITE_PING_CALLER)) ||
+		(dst_leg == callee_idx(cell) && (cell->flags & DLG_FLAG_REINVITE_PING_CALLEE)) || 
+		cell->flags & DLG_FLAG_CSEQ_ENFORCE)
 	{
 		dlg_lock_dlg(cell);
 		if (cell->legs[dst_leg].last_gen_cseq == 0)
@@ -112,7 +113,7 @@ after_strcseq:
 		 	LM_ERR("failed to parse route set\n");
 			goto error;
 		}
-	} 
+	}
 
 	/*remote target--- Request URI*/
 	if (cell->legs[dst_leg].contact.s==0 || cell->legs[dst_leg].contact.len==0){
@@ -121,7 +122,7 @@ after_strcseq:
 	}
 	td->rem_target = cell->legs[dst_leg].contact;
 
-	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_from_uri(cell,dst_leg): 
+	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_from_uri(cell,dst_leg):
 					 *dlg_leg_to_uri(cell,dst_leg);
 	td->loc_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_to_uri(cell,dst_leg):
 					 *dlg_leg_from_uri(cell,dst_leg);
@@ -132,6 +133,10 @@ after_strcseq:
 	td->state= DLG_CONFIRMED;
 	td->send_sock = cell->legs[dst_leg].bind_addr;
 
+	/* link the dialog cell here - it will eventually be linked
+	 * within the upcoming created transaction */
+	td->dialog_ctx = cell;
+
 	return td;
 
 error:
@@ -141,7 +146,7 @@ error:
 
 
 
-dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
+dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,char *reply_marker)
 {
 	dlg_t* td = NULL;
 	str cseq;
@@ -166,7 +171,7 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
 	else
 		cell->legs[dst_leg].last_gen_cseq++;
 
-	cell->legs[dst_leg].reply_received = 0;
+	*reply_marker = 0;
 
 	td->loc_seq.value = cell->legs[dst_leg].last_gen_cseq -1;
 
@@ -179,7 +184,7 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
 		 	LM_ERR("failed to parse route set\n");
 			goto error;
 		}
-	} 
+	}
 
 	/*remote target--- Request URI*/
 	if (cell->legs[dst_leg].contact.s==0 || cell->legs[dst_leg].contact.len==0){
@@ -188,7 +193,7 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
 	}
 	td->rem_target = cell->legs[dst_leg].contact;
 
-	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_from_uri(cell,dst_leg): 
+	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_from_uri(cell,dst_leg):
 					 *dlg_leg_to_uri(cell,dst_leg);
 	td->loc_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_to_uri(cell,dst_leg):
 					 *dlg_leg_from_uri(cell,dst_leg);
@@ -198,6 +203,10 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
 
 	td->state= DLG_CONFIRMED;
 	td->send_sock = cell->legs[dst_leg].bind_addr;
+
+	/* link the dialog cell here - it will eventually be linked
+	 * within the upcoming created transaction */
+	td->dialog_ctx = cell;
 
 	return td;
 
@@ -210,19 +219,25 @@ error:
 static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_unref)
 {
 	int event, old_state, new_state, unref, ret;
+	struct sip_msg *fake_msg=NULL;
+	context_p old_ctx;
+	context_p *new_ctx;
 
 	event = DLG_EVENT_REQBYE;
-	next_state_dlg(dlg, event, &old_state, &new_state, &unref);
+	next_state_dlg(dlg, event, DLG_DIR_DOWNSTREAM, &old_state, &new_state,
+			&unref, dlg->legs_no[DLG_LEG_200OK], 0);
 	unref += extra_unref;
 
 	if(new_state == DLG_STATE_DELETED && old_state != DLG_STATE_DELETED){
-		
+
 		LM_DBG("removing dialog with h_entry %u and h_id %u\n",
 			dlg->h_entry, dlg->h_id);
 
 		/*destroy linkers */
-		destroy_linkers(dlg->profile_links);
+		dlg_lock_dlg(dlg);
+		destroy_linkers(dlg->profile_links, 0);
 		dlg->profile_links = NULL;
+		dlg_unlock_dlg(dlg);
 
 		/* remove from timer */
 		ret = remove_dlg_timer(&dlg->tl);
@@ -245,8 +260,25 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 			unref++;
 		}
 
-		/* dialog terminated (BYE) */
-		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, DLG_DIR_NONE, 0);
+		if (req==NULL) {
+			/* set new msg & processing context */
+			if (push_new_processing_context( dlg, &old_ctx, &new_ctx, &fake_msg)==0) {
+				/* dialog terminated (BYE) */
+				run_dlg_callbacks( DLGCB_TERMINATED, dlg, fake_msg,
+					DLG_DIR_NONE, NULL, 0);
+				/* reset the processing context */
+				if (current_processing_ctx == NULL)
+					*new_ctx = NULL;
+				else
+					context_destroy(CONTEXT_GLOBAL, *new_ctx);
+				current_processing_ctx = old_ctx;
+			} /* no CB run in case of failure FIXME */
+		} else {
+			/* we should have the msg and context from upper levels */
+			/* dialog terminated (BYE) */
+			run_dlg_callbacks( DLGCB_TERMINATED, dlg, req,
+				DLG_DIR_NONE, NULL, 0);
+		}
 
 		LM_DBG("first final reply\n");
 		/* derefering the dialog */
@@ -281,6 +313,8 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps)
 	}
 
 	LM_DBG("receiving a final reply %d\n",ps->code);
+	/* mark the transaction as belonging to this dialog */
+	t->dialog_ctx = *(ps->param);
 
 	dual_bye_event( (struct dlg_cell *)(*(ps->param)), ps->req, 1);
 }
@@ -291,7 +325,7 @@ static inline int build_extra_hdr(struct dlg_cell * cell, str *extra_hdrs,
 {
 	char *p;
 
-	str_hdr->len = dlg_extra_hdrs.len + 
+	str_hdr->len = dlg_extra_hdrs.len +
 		(extra_hdrs?extra_hdrs->len:0);
 
 	str_hdr->s = (char*)pkg_malloc( str_hdr->len * sizeof(char) );
@@ -316,7 +350,7 @@ static inline int build_extra_hdr(struct dlg_cell * cell, str *extra_hdrs,
 
 	return 0;
 
-error: 
+error:
 	return -1;
 }
 
@@ -329,8 +363,9 @@ error:
 static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 														str *extra_hdrs)
 {
+	context_p old_ctx;
+	context_p *new_ctx;
 	dlg_t* dialog_info;
-	struct dlg_cell *old_cell;
 	str met = {"BYE", 3};
 	int result;
 
@@ -342,10 +377,13 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 	LM_DBG("sending BYE to %s (%d)\n",
 		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
 
-	ref_dlg(cell, 1);
+	/* set new processing context */
+	if (push_new_processing_context( cell, &old_ctx, &new_ctx, NULL)!=0)
+		goto err;
 
-	old_cell = current_dlg_pointer;
-	current_dlg_pointer = cell;
+	ctx_lastdstleg_set(dst_leg);
+
+	ref_dlg(cell, 1);
 
 	result = d_tmb.t_request_within
 		(&met,         /* method*/
@@ -356,7 +394,12 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 		(void*)cell,   /* callback parameter*/
 		NULL);         /* release function*/
 
-	current_dlg_pointer = old_cell;
+	/* reset the processing contect */
+	if (current_processing_ctx == NULL)
+		*new_ctx = NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, *new_ctx);
+	current_processing_ctx = old_ctx;
 
 	if(result < 0){
 		LM_ERR("failed to send the BYE request\n");
@@ -412,11 +455,9 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 	}
 
 	callee = callee_idx(dlg);
-	last_dst_leg = DLG_CALLER_LEG;
 	if ( send_leg_bye( dlg, DLG_CALLER_LEG, callee, &str_hdr)!=0) {
 		res--;
 	}
-	last_dst_leg = callee;
 	if (send_leg_bye( dlg, callee, DLG_CALLER_LEG, &str_hdr)!=0 ) {
 		res--;
 	}
@@ -487,17 +528,19 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 
 end:
 	return init_mi_tree(404, MI_DIALOG_NOT_FOUND, MI_DIALOG_NOT_FOUND_LEN);
-	
+
 error:
 	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 
 }
 
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
-		str *hdrs,str *body,dlg_request_callback func,void *param,dlg_release_func release)
+	str *hdrs,str *body,dlg_request_callback func,
+	void *param,dlg_release_func release,char *reply_marker)
 {
+	context_p old_ctx;
+	context_p *new_ctx;
 	dlg_t* dialog_info;
-	struct dlg_cell *old_cell;
 	int result;
 	unsigned int method_type;
 
@@ -514,7 +557,7 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		return -1;
 	}
 
-	if ((dialog_info = build_dialog_info(dlg, dst_leg, src_leg)) == 0)
+	if ((dialog_info = build_dialog_info(dlg, dst_leg, src_leg,reply_marker)) == 0)
 	{
 		LM_ERR("failed to create dlg_t\n");
 		return -1;
@@ -523,10 +566,11 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	LM_DBG("sending [%.*s] to %s (%d)\n",method->len,method->s,
 		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
 
-	old_cell = current_dlg_pointer;
-	current_dlg_pointer = dlg;
+	/* set new processing context */
+	if (push_new_processing_context( dlg, &old_ctx, &new_ctx, NULL)!=0)
+		return -1;
 
-	dialog_info->T_flags=T_NO_AUTOACK_FLAG;
+	//dialog_info->T_flags=T_NO_AUTOACK_FLAG;
 
 	result = d_tmb.t_request_within
 		(method,         /* method*/
@@ -537,7 +581,12 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		param,   /* callback parameter*/
 		release);         /* release function*/
 
-	current_dlg_pointer = old_cell;
+	/* reset the processing contect */
+	if (current_processing_ctx == NULL)
+		*new_ctx = NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, *new_ctx);
+	current_processing_ctx = old_ctx;
 
 	if(result < 0)
 	{

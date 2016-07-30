@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2005-2008 Voice Sistem SRL
  *
  * This file is part of Open SIP Server (OpenSIPS).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * For any questions about this software and its license, please contact
  * Voice Sistem at following e-mail address:
@@ -35,9 +33,9 @@
 
 #include "../../str.h"
 #include "../../db/db.h"
+#include "dr_partitions.h"
 #include "routing.h"
 
-rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
-							str *drd_table, str *drl_table, str* str_table);
+rt_data_t* dr_load_routing_info(struct head_db * ,int persistent_state);
 
 #endif

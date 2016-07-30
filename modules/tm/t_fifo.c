@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * transaction maintenance functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,15 +15,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
  *  2004-02-23  created by splitting it from t_funcs (bogdan)
  *  2004-11-15  t_write_xxx can print whatever avp/hdr
- *  2005-07-14  t_write_xxx specification aligned to use pseudo-variables 
+ *  2005-07-14  t_write_xxx specification aligned to use pseudo-variables
  *              (bogdan)
  */
 
@@ -148,7 +146,7 @@ int parse_tw_append( modparam_t type, void* val)
 	str  foo;
 	str  bar;
 
-	
+
 	if (val==0 || ((char*)val)[0]==0)
 		return 0;
 
@@ -350,7 +348,7 @@ int init_twrite_sock(void)
 		close(sock);
 		return -1;
 	}
-		
+
 	if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
 		LM_ERR("init_twrite_sock: fcntl: set non-blocking failed:"
 		    " %s\n", strerror(errno));
@@ -436,7 +434,7 @@ static inline char* add2buf(char *buf, char *end, str *name, str *value)
 
 
 
-static inline char* append2buf( char *buf, int len, struct sip_msg *req, 
+static inline char* append2buf( char *buf, int len, struct sip_msg *req,
 				struct append_elem *elem)
 {
 	pv_value_t value;
@@ -499,7 +497,7 @@ static int assemble_msg(struct sip_msg* msg, struct tw_info *twi)
 		goto error;
 	}
 
-	/* find index and hash; (the transaction can be safely used due 
+	/* find index and hash; (the transaction can be safely used due
 	 * to refcounting till script completes) */
 	if( t_get_trans_ident(msg,&hash_index,&label) == -1 ) {
 		LM_ERR("t_get_trans_ident failed\n");
@@ -565,7 +563,7 @@ static int assemble_msg(struct sip_msg* msg, struct tw_info *twi)
 			/* Parse all parameters */
 			tmp_s.len = record_route->nameaddr.uri.len - (tmp_s.s-
 				record_route->nameaddr.uri.s);
-			if (parse_params( &tmp_s, CLASS_URI, &hooks, 
+			if (parse_params( &tmp_s, CLASS_URI, &hooks,
 			&record_route->params) < 0) {
 				LM_ERR("failed to parse record route uri params\n");
 				goto error;
@@ -609,7 +607,7 @@ static int assemble_msg(struct sip_msg* msg, struct tw_info *twi)
 	LM_DBG("calculated route: %.*s\n",route.len,route.len ? route.s : "");
 	LM_DBG("next r-uri: %.*s\n",str_uri.len,str_uri.len ? str_uri.s : "");
 
-	if ( REQ_LINE(msg).method_value==METHOD_INVITE || 
+	if ( REQ_LINE(msg).method_value==METHOD_INVITE ||
 	(twi->append && twi->append->add_body) ) {
 		/* get body */
 		if( get_body(msg,&body)!=0 ){

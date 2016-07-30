@@ -1,5 +1,4 @@
 /*
- *
  * Copyright (c) 2008, 2009
  * 	     Eric Gouyer <folays@folays.net>
  * Copyright (c) 2008, 2009, 2010, 2011
@@ -78,9 +77,12 @@ static mi_export_t mi_cmds[] = {
  */
 struct module_exports exports = {
   "lua",
+  MOD_TYPE_DEFAULT,/* class of this module */
   MODULE_VERSION,
   RTLD_NOW | RTLD_GLOBAL,
+  NULL,     /* OpenSIPS module dependencies */
   cmds,		/* Exported functions */
+  0,		/* Exported async functions */
   params,	/* Exported parameters */
   0,		/* exported statistics */
   mi_cmds,	/* exported MI functions */

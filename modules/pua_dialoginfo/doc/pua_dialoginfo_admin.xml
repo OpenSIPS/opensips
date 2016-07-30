@@ -73,10 +73,10 @@
 	</para>
 	<para>
 
-        The dialog element can contain optional "local" and "remote" elements which
-        describes the local and the remote party in more detail, for example:
+		The dialog element can contain optional "local" and "remote" elements which
+		describes the local and the remote party in more detail, for example:
 
-        <programlisting format="linespecific">
+		<programlisting format="linespecific">
 <![CDATA[
 <?xml version="1.0" encoding="UTF-8"?>
 <dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info"
@@ -100,7 +100,7 @@
 ]]>
 </programlisting>
 
-        The local and remote elements are needed to implement call pickup. For example if 
+		The local and remote elements are needed to implement call pickup. For example if 
 		the above XML document is received by somebody who SUBSCRIBEd the dialog-info of
 		Alice, then it can pick-up the call by sending an INVITE to Bob (actually I am not
 		sure if it should use the URI in the identity element or the URI in the target 
@@ -288,6 +288,122 @@ modparam("pua_dialoginfo", "include_localremote", 0)
 			<programlisting format="linespecific">
 ...
 modparam("pua_dialoginfo", "caller_confirmed", 1)
+...
+</programlisting>
+		</example>
+		</section>
+
+		<section>
+		<title><varname>publish_on_trying</varname> (int)</title>
+		<para>
+			Usually the dialog-info of the caller will be
+			"trying -> early -> confirmed". The "trying" state will be triggered as soon
+			as you call dialoginfo_set on the caller, while "early" is triggered
+			as soon as the callee is ringing (triggered by a 180 or 183 provisional reply).
+			Sometimes, it is advisable to be notified only when the callee reaches
+			the early state and not before. In other cases, it is advisable to
+			notify the early state. This setting allows controlling the behavior.
+		</para>
+		<para>
+			The intended purpose of this parameter is to reduce the rate of notifications
+			(see RFC4235, section 3.10. Rate of Notifications).
+		</para>
+		<para>
+			<emphasis>Default value is <quote>0</quote>.</emphasis>
+		</para>
+		<example>
+			<title>Set <varname>publish_on_trying</varname> parameter to 0</title>
+			<programlisting format="linespecific">
+...
+modparam("pua_dialoginfo", "publish_on_trying", 0)
+
+# Successful call scenario:
+#
+# UAC       proxy       UAS     presence server
+#  |--INVITE-&gt;|          |            |
+#  |&lt;-100-----|--INVITE-&gt;|            |
+#  |          |&lt;-100-----|            |
+#  |          |          |            |
+#  |          |&lt;-18x-----|            |
+#  |&lt;-18x-----|--PUBLISH(early)------&gt;|
+#  |          |          |            |
+#  |          |&lt;-200-----|            |
+#  |&lt;-200-----|--PUBLISH(confirmed)--&gt;|
+#  |--ACK----&gt;|          |            |
+#  |          |--ACK----&gt;|            |
+#  |          |          |            |
+#
+#
+# Unsuccessful call scenario:
+#
+# UAC       proxy       UAS     presence server
+#  |--INVITE-&gt;|          |            |
+#  |&lt;-100-----|--INVITE-&gt;|            |
+#  |          |&lt;-100-----|            |
+#  |          |          |            |
+#  |          |&lt;-456xx---|            |
+#  |&lt;-456xx---|--ACK----&gt;|            |
+#  |--ACK----&gt;|          |            |
+...
+</programlisting>
+		</example>
+		<example>
+			<title>Set <varname>publish_on_trying</varname> parameter to 1</title>
+			<programlisting format="linespecific">
+...
+modparam("pua_dialoginfo", "publish_on_trying", 1)
+
+# Successful call scenario:
+#
+# UAC       proxy       UAS     presence server
+#  |--INVITE-&gt;|          |            |
+#  |&lt;-100-----|--INVITE-&gt;|            |
+#  |          |--PUBLISH(trying)-----&gt;|
+#  |          |&lt;-100-----|            |
+#  |          |          |            |
+#  |          |&lt;-18x-----|            |
+#  |&lt;-18x-----|--PUBLISH(early)------&gt;|
+#  |          |          |            |
+#  |          |&lt;-200-----|            |
+#  |&lt;-200-----|--PUBLISH(confirmed)--&gt;|
+#  |--ACK----&gt;|          |            |
+#  |          |--ACK----&gt;|            |
+#  |          |          |            |
+#
+#
+# Unsuccessful call scenario:
+#
+# UAC       proxy       UAS     presence server
+#  |--INVITE-&gt;|          |            |
+#  |&lt;-100-----|--INVITE-&gt;|            |
+#  |          |--PUBLISH(trying)-----&gt;|
+#  |          |&lt;-100-----|            |
+#  |          |          |            |
+#  |          |&lt;-456xx---|            |
+#  |          |--PUBLISH(terminated)-&gt;|
+#  |&lt;-456xx---|--ACK----&gt;|            |
+#  |--ACK----&gt;|          |            |
+...
+</programlisting>
+		</example>
+		</section>
+
+		<section>
+		<title><varname>nopublish_flag</varname> (int)</title>
+		<para>
+			By default, reINVITEs will trigger a PUBLISH. They are actually
+			the only in-dialog request for which it makes sense.
+			In some cases, it does not make sense to republish a dialog state.
+			(e.g. when handling a B2BUA reINVITE).
+			This setting defines the flag that needs to be set in the request
+			route to prevent the generation of a PUBLISH request in case of a
+			specific reINVITE.
+		</para>
+		<example>
+			<title>Set <varname>nopublish_flag</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("pua_dialoginfo", "nopublish_flag", 5)
 ...
 </programlisting>
 		</example>

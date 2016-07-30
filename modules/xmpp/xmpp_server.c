@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * XMPP Module
  * This file is part of opensips, a free SIP server.
  *
@@ -18,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * Author: Andreea Spirea
  *
@@ -109,15 +107,15 @@ static struct xmpp_connection *conn_list = NULL;
 static struct xmpp_connection *conn_new(int type, int fd, char *domain)
 {
 	struct xmpp_connection *conn = NULL;
-	
+
 	conn = malloc(sizeof(struct xmpp_connection));
 
-	if(conn==NULL) 
+	if(conn==NULL)
 	{
 		LM_ERR("out of memory\n");
 		return NULL;
 	}
-	
+
 	memset(conn, 0, sizeof(struct xmpp_connection));
 	conn->domain = domain ? strdup(domain) : NULL;
 	conn->type = type;
@@ -128,7 +126,7 @@ static struct xmpp_connection *conn_new(int type, int fd, char *domain)
 	conn->stream = xode_stream_new(conn->pool,
 		(type==CONN_INBOUND)?in_stream_node_callback:out_stream_node_callback,
 		conn);
-	
+
 	conn->next = conn_list;
 	conn_list = conn;
 	return conn;
@@ -137,7 +135,7 @@ static struct xmpp_connection *conn_new(int type, int fd, char *domain)
 static void conn_free(struct xmpp_connection *conn)
 {
 	struct xmpp_connection **last_p, *link;
-	
+
 	last_p = &conn_list;
 	for (link = conn_list; link; link = link->next) {
 		if (link == conn) {
@@ -162,9 +160,9 @@ static void conn_free(struct xmpp_connection *conn)
 static struct xmpp_connection *conn_find_domain(char *domain, int type)
 {
 	struct xmpp_connection *conn;
-	
+
 	for (conn = conn_list; conn; conn = conn->next)
-		if (conn->domain && !strcasecmp(conn->domain, domain) 
+		if (conn->domain && !strcasecmp(conn->domain, domain)
 				&& conn->type == type)
 			return conn;
 	return NULL;
@@ -174,7 +172,7 @@ static struct xmpp_connection *conn_find_domain(char *domain, int type)
 static struct xmpp_connection *conn_find_fd(int fd)
 {
 	struct xmpp_connection *conn;
-	
+
 	for (conn = conn_list; conn; conn = conn->next)
 		if (conn->fd == fd)
 			return conn;
@@ -188,7 +186,7 @@ static int xode_send(int fd, xode x)
 {
 	char *str = xode_to_str(x);
 	int len = strlen(str);
-	
+
 	LM_DBG("xode_send->%d [%s]\n", fd, str);
 
 	if (net_send(fd, str, len) != len) {
@@ -220,7 +218,7 @@ static void out_stream_node_callback(int type, xode node, void *arg)
 	char *tag;
 	xode x;
 
-	LM_DBG("outstream callback: %d: %s\n", type, 
+	LM_DBG("outstream callback: %d: %s\n", type,
 			node?xode_get_name(node):"n/a");
 
 	if (conn->domain)
@@ -248,7 +246,7 @@ static void out_stream_node_callback(int type, xode node, void *arg)
 			char *id = xode_get_attrib(node, "id");
 			char *type = xode_get_attrib(node, "type");
 			/* char *cdata = xode_get_data(node); */
-			
+
 			if (!strcmp(type, "valid") || !strcmp(type, "invalid")) {
 				/* got a reply, report it */
 				x = xode_new_tag("db:result");
@@ -266,7 +264,7 @@ static void out_stream_node_callback(int type, xode node, void *arg)
 			}
 		} else if (!strcmp(tag, "db:result")) {
 			char *type = xode_get_attrib(node, "type");
-			
+
 			if (type && !strcmp(type, "valid")) {
 				/* the remote server has successfully authenticated us,
 				 * we can now send data */
@@ -290,7 +288,7 @@ static void out_stream_node_callback(int type, xode node, void *arg)
 	xode_free(node);
 }
 
-static void in_stream_node_callback(int type, xode node, void *arg) 
+static void in_stream_node_callback(int type, xode node, void *arg)
 {
 	struct xmpp_connection *conn = (struct xmpp_connection *) arg;
 	char *tag;
@@ -316,7 +314,7 @@ static void in_stream_node_callback(int type, xode node, void *arg)
 			/* char *id = xode_get_attrib(node, "id"); */
 			char *type = xode_get_attrib(node, "type");
 			char *cdata = xode_get_data(node);
-			
+
 			if (!type) {
 				if (conn->domain) {
 					LM_DBG("connection %d has old domain '%s'\n",conn->fd,
@@ -336,14 +334,14 @@ static void in_stream_node_callback(int type, xode node, void *arg)
 				xode_put_attrib(x, "id", conn->stream_id);
 				xode_insert_cdata(x, cdata, -1);
 				xode_send_domain(from, x);
-			}			
+			}
 		} else if (!strcmp(tag, "db:verify")) {
 			char *from = xode_get_attrib(node, "from");
 			char *to = xode_get_attrib(node, "to");
 			char *id = xode_get_attrib(node, "id");
 			char *type = xode_get_attrib(node, "type");
 			char *cdata = xode_get_data(node);
-			
+
 			if (!type) {
 				/* it's a request */
 				x = xode_new_tag("db:verify");
@@ -359,21 +357,21 @@ static void in_stream_node_callback(int type, xode node, void *arg)
 				}
 				xode_send(conn->fd, x);
 				xode_free(x);
-			}			
+			}
 		} else if (!strcmp(tag, "message")) {
 			char *from = xode_get_attrib(node, "from");
 			char *to = xode_get_attrib(node, "to");
 			char *type = xode_get_attrib(node, "type");
 			xode body = xode_get_tag(node, "body");
 			char *msg;
-			
+
 			if (!type)
 				type = "chat";
-			if (!strcmp(type, "error")) {	
+			if (!strcmp(type, "error")) {
 				LM_DBG("received message error stanza\n");
 				goto out;
 			}
-			
+
 			if (!from || !to || !body) {
 				LM_DBG("invalid <message/> attributes\n");
 				goto out;
@@ -439,7 +437,7 @@ int xmpp_server_child_process(int data_pipe)
 	int listen_fd;
 	fd_set fdset;
 	struct xmpp_connection *conn;
-	
+
 	snprintf(local_secret, sizeof(local_secret), "%s", random_secret());
 
 	while ((listen_fd = net_listen(xmpp_domain, xmpp_port)) < 0) {
@@ -451,7 +449,7 @@ int xmpp_server_child_process(int data_pipe)
 		FD_ZERO(&fdset);
 		FD_SET(data_pipe, &fdset);
 		FD_SET(listen_fd, &fdset);
-		
+
 		/* check for dead connections */
 		for (conn = conn_list; conn; ) {
 			struct xmpp_connection *next = conn->next;
@@ -476,7 +474,7 @@ int xmpp_server_child_process(int data_pipe)
 				} else {
 					conn->type = CONN_DEAD;
 				}
-			}		
+			}
 
 			if (conn->fd != -1)
 				FD_SET(conn->fd, &fdset);

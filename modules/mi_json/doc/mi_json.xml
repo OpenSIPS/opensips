@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding='ISO-8859-1'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+<!ENTITY admin SYSTEM "mi_json_admin.xml">
+<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book>
+    <bookinfo>
+	<title>mi_json Module</title>
+	<productname class="trade">&osipsname;</productname>
+	<authorgroup>
+	    <author>
+		<firstname>Stephane</firstname>
+		<surname>Alnet</surname>
+		<email>stephane@shimaore.net</email>
+	    </author>
+	    <editor>
+		<firstname>Stephane</firstname>
+		<surname>Alnet</surname>
+	    </editor>
+	</authorgroup>
+	<copyright>
+	    <year>2013</year>
+	    <holder>
+		<ulink url="http://shimaore.net">shimaore.net</ulink>
+	    </holder>
+	</copyright>
+	<revhistory>
+	    <revision>
+		<revnumber>$Rev$</revnumber>
+		<date>$Date$</date>
+	    </revision>
+	</revhistory>
+  </bookinfo>
+    <toc></toc>
+    
+    &admin;
+    &faq;
+    
+</book>
+
+

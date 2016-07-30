@@ -1,0 +1,1 @@
+id(int,auto) agentid(string) location(string) logstate(int) skills(string) last_call_end(int) 

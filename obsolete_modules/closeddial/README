@@ -1,0 +1,227 @@
+closeddial Module
+
+Sergio Gutierrez
+
+Edited by
+
+Sergio Gutierrez
+
+   Copyright © 2009
+   Revision History
+   Revision $Revision: 5901 $ $Date: 2009-02-07 18:00:00 -0500$
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. db_url (string)
+              1.3.2. user_column (string)
+              1.3.3. domain_column (string)
+              1.3.4. group_id_column (string)
+              1.3.5. cd_user_column (string)
+              1.3.6. cd_domain_column (string)
+              1.3.7. new_uri_column (string)
+              1.3.8. use_domain (integer)
+
+        1.4. Exported Functions
+
+              1.4.1. cd_lookup(domain [, group])
+
+        1.5. Installation
+
+   List of Examples
+
+   1.1. Set db_url parameter
+   1.2. Set user_column parameter
+   1.3. Set domain_column parameter
+   1.4. Set group_id_column parameter
+   1.5. Set user_column parameter
+   1.6. Set cd_domain_column parameter
+   1.7. Set new_uri_column parameter
+   1.8. Set use_domain parameter
+   1.9. cd_lookup usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module provides functionality which allows to group users
+   using a common field, in such a way that a particular group
+   defines abbreviated codes for users, allowing closed dialing
+   within the group, locating users by their abbreviated code,
+   besides their full identification. This module offers a
+   functionality similar to Centrex. The relationship between
+   users and their abbreviated codes, and their grouping is
+   defined in a database table (see below).
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * A database module, like mysql, postgres or dbtext
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported Parameters
+
+1.3.1. db_url (string)
+
+   URL of the database table to be used.
+
+   Default value is
+   “mysql://opensips:opensipsrw@localhost/opensips”.
+
+   Example 1.1. Set db_url parameter
+...
+modparam("closeddial", "db_url", "mysql://username:password@dbhost/opens
+ips")
+...
+
+1.3.2. user_column (string)
+
+   Column of the table which stores the username
+
+   Default value is “username”.
+
+   Example 1.2. Set user_column parameter
+...
+modparam("closeddial", "user_column", "user")
+...
+
+1.3.3. domain_column (string)
+
+   Column of the table which stores the domain associated to
+   usernames.
+
+   Default value is “domain”.
+
+   Example 1.3. Set domain_column parameter
+...
+modparam("closeddial", "domain_column", "domain")
+...
+
+1.3.4. group_id_column (string)
+
+   Column of the table which stores the group_id which groups the
+   usernames.
+
+   Default value is “group_id”.
+
+   Example 1.4. Set group_id_column parameter
+...
+modparam("closeddial", "group_id_column", "groupid")
+...
+
+1.3.5. cd_user_column (string)
+
+   Column of the table which stores the closed dial code
+   associated to a username.
+
+   Default value is “cd_username”.
+
+   Example 1.5. Set user_column parameter
+...
+modparam("closeddial", "cd_user_column", "cd_user")
+...
+
+1.3.6. cd_domain_column (string)
+
+   Column of the table which stores the domain associated to
+   closed dial usernames.
+
+   Default value is “cd_domain”.
+
+   Example 1.6. Set cd_domain_column parameter
+...
+modparam("closeddial", "cd_domain_column", "cddomain")
+...
+
+1.3.7. new_uri_column (string)
+
+   Column of the table which stores the new URI which will be used
+   to rewrite the request, in case a possitive match be found.
+
+   Default value is “new_uri”.
+
+   Example 1.7. Set new_uri_column parameter
+...
+modparam("closeddial", "new_uri_column", "new_uri")
+...
+
+1.3.8. use_domain (integer)
+
+   If enabled (set to non zero value) then domain will be used
+   also used for searching new uri; otherwise only the username
+   part will be used.
+
+   Default value is “0 (no)”.
+
+   Example 1.8. Set use_domain parameter
+...
+modparam("closeddial", "use_domain", 1)
+...
+
+1.4. Exported Functions
+
+1.4.1.  cd_lookup(domain [, group])
+
+   This function is used to lookup in the database the
+   corresponding URI for an abbreviated code dialed, according to
+   group which From user belongs to. After finding the group for
+   From user, the dialed code and found group are used to look for
+   the new URI to rewrite the request. If a positive match is
+   found, R-URI is rewritten; if no match is found, R-URI is not
+   changed.
+
+   Meaning of the parameters is as follows:
+     * domain Table where searching is going to be perfomed on.
+     * group Optional parameter which can be used to store the
+       group to be used in searching. This group must be
+       associated to From user.
+
+   Both of the parameters can contain pseudovariables.
+
+   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+
+   Example 1.9. cd_lookup usage
+...
+
+# Abbreviated code of two digits
+if($(rU{s.len}) == 2)
+{
+        # Group AVP could be loaded at register time.
+        $avp(group)="companyA";
+        cd_lookup("closeddial", "$avp(group)");
+};
+...
+
+# Abbreviated code of three digits
+if($(rU{s.len}) == 3)
+{
+        # Group is searched on database, by using
+        # From username.
+        cd_lookup("closeddial");
+};
+...
+
+1.5. Installation
+
+   A table needs to be created on the database to store
+   relationship between usernames, their corresponding abbreviated
+   codes and their grouping using group attribute. The SQL syntax
+   to create the table can be found in closeddial-create.sql
+   script at opensips/scripts folder.

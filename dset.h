@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2004 FhG FOKUS
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -34,11 +32,15 @@
 
 struct sip_msg;
 
-extern unsigned int nr_branches;
+int get_nr_branches(void);
 
+/*! \brief
+ * To be called in the startup phase of OpenSIPS
+ */
+int init_dset(void);
 
-/*! \brief 
- * Add a new branch to current transaction 
+/*! \brief
+ * Add a new branch to current transaction
  */
 int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 		qvalue_t q, unsigned int flags, struct socket_info* force_socket);
@@ -84,43 +86,25 @@ void clear_branches(void);
 char* print_dset(struct sip_msg* msg, int* len);
 
 
-/*! \brief 
- * Set the q value of the Request-URI
- */
-void set_ruri_q(qvalue_t q);
-
-
-/*! \brief 
- * Get the q value of the Request-URI
- */
-qvalue_t get_ruri_q(void);
-
 int branch_uri2dset( str *new_uri );
-
-
-/*! \brief
- * Get/set the per branch flags for the RURI (branch 0)
- */
-unsigned int getb0flags();
-unsigned int setb0flags(unsigned int flags);
 
 
 /*! \brief
  * Set the per branch flag
  */
-int setbflag(unsigned int b_idx, unsigned int mask);
+int setbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask);
 
 
 /*! \brief
  * Test the per branch flag
  */
-int isbflagset(unsigned int b_idx, unsigned int mask);
+int isbflagset(struct sip_msg *msg, unsigned int b_idx, unsigned int mask);
 
 
 /*! \brief
  * Reset the per branch flag
  */
-int resetbflag(unsigned int b_idx, unsigned int mask);
+int resetbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask);
 
 
 #endif /* _DSET_H */

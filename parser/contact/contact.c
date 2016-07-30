@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Parses one Contact in Contact HF body
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -70,17 +68,17 @@ static inline int skip_uri(str* _s)
 		case '<':
 			switch(st) {
 			case ST1: st = ST3; break;
-			case ST3: 
+			case ST3:
 				LM_ERR("second < found\n");
 				return -1;
 			case ST5: st = ST2; break;
 			case ST6: st = ST4; break;
 			}
 			break;
-			
+
 		case '>':
 			switch(st) {
-			case ST1: 
+			case ST1:
 				LM_ERR("> is first\n");
 				return -2;
 
@@ -126,7 +124,7 @@ static inline int skip_name(str* _s)
 {
 	char* last_wsp, *p;
 	int i, quoted = 0;
-	
+
 
 	if (!_s) {
 		LM_ERR("invalid parameter value\n");
@@ -147,7 +145,7 @@ static inline int skip_name(str* _s)
 					_s->len -= i;
 					return 0;
 				}
-				
+
 				if (*p == ':') {
 					if (last_wsp) {
 						_s->s = last_wsp;
@@ -195,7 +193,7 @@ int parse_contacts(str* _s, contact_t** _c)
 			goto error;
 		}
 		memset(c, 0, sizeof(contact_t));
-		
+
 		c->name.s = _s->s;
 
 		if (skip_name(_s) < 0) {
@@ -206,13 +204,13 @@ int parse_contacts(str* _s, contact_t** _c)
 		c->uri.s = _s->s;
 		c->name.len = _s->s - c->name.s;
 		trim_trailing(&c->name);
-		
+
 		/* Find the end of the URI */
 		if (skip_uri(_s) < 0) {
 			LM_ERR("failed to skip URI\n");
 			goto error;
 		}
-		
+
 		c->uri.len = _s->s - c->uri.s; /* Calculate URI length */
 		trim_trailing(&(c->uri));    /* Remove any trailing spaces from URI */
 
@@ -224,14 +222,20 @@ int parse_contacts(str* _s, contact_t** _c)
 		}
 
 		trim(&c->uri);
-		
+
+		/* RFC3261 grammar enforces the existence of an URI */
+		if (c->uri.len==0) {
+			LM_ERR("Empty URI found in contact body\n");
+			goto error;
+		}
+
 		if (_s->len == 0) goto ok;
-		
+
 		if (_s->s[0] == ';') {         /* Contact parameter found */
 			_s->s++;
 			_s->len--;
 			trim_leading(_s);
-			
+
 			if (_s->len == 0) {
 				LM_ERR("failed to parse params\n");
 				goto error;

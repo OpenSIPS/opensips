@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * eXtended JABber module - worker implementation
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
+ * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * ---
  *
@@ -61,13 +59,13 @@ xj_wlist xj_wlist_init(int **pipes, int size, int max, int cache_time,
 		return NULL;
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("-----START-----\n");
-#endif	
+#endif
 	jwl = (xj_wlist)_M_SHM_MALLOC(sizeof(t_xj_wlist));
 	if(jwl == NULL)
 		return NULL;
 	jwl->len = size;
 	jwl->maxj = max;
-	
+
 	jwl->cachet = cache_time;
 	jwl->delayt = delay_time;
 	jwl->sleept = sleep_time;
@@ -101,7 +99,7 @@ xj_wlist xj_wlist_init(int **pipes, int size, int max, int cache_time,
 			lock_set_destroy(jwl->sems);
 			goto clean;
 		}
-	}	
+	}
 
 	return jwl;
 
@@ -185,12 +183,12 @@ void xj_wlist_free(xj_wlist jwl)
 		_M_SHM_FREE(jwl->aliases);
 		jwl->aliases = NULL;
 	}
-	
+
 	if(jwl->sems != NULL){
 		lock_set_destroy(jwl->sems);
 		lock_set_dealloc(jwl->sems);
 	}
-	
+
 	_M_SHM_FREE(jwl);
 }
 
@@ -207,7 +205,7 @@ int xj_wlist_check(xj_wlist jwl, xj_jkey jkey, xj_jkey *p)
 	int i;
 	if(jwl==NULL || jkey==NULL || jkey->id==NULL || jkey->id->s==NULL)
 		return -1;
-	
+
 	i = 0;
 	*p = NULL;
 	while(i < jwl->len)
@@ -251,7 +249,7 @@ int xj_wlist_get(xj_wlist jwl, xj_jkey jkey, xj_jkey *p)
 {
 	int i = 0, pos = -1, min = 100000;
 	xj_jkey msid = NULL;
-	
+
 	if(jwl==NULL || jkey==NULL || jkey->id==NULL || jkey->id->s==NULL)
 		return -1;
 
@@ -301,7 +299,7 @@ int xj_wlist_get(xj_wlist jwl, xj_jkey jkey, xj_jkey *p)
 			_M_SHM_FREE(msid);
 			goto error;
 		}
-		
+
 		msid->id->s = (char*)_M_SHM_MALLOC(jkey->id->len);
 		if(msid->id == NULL)
 		{
@@ -309,7 +307,7 @@ int xj_wlist_get(xj_wlist jwl, xj_jkey jkey, xj_jkey *p)
 			_M_SHM_FREE(msid);
 			goto error;
 		}
-		
+
 		if((*p = add234(jwl->workers[pos].sip_ids, msid)) != NULL)
 		{
 			msid->id->len = jkey->id->len;
@@ -347,12 +345,12 @@ int xj_wlist_set_flag(xj_wlist jwl, xj_jkey jkey, int fl)
 	xj_jkey p = NULL;
 	if(jwl==NULL || jkey==NULL || jkey->id==NULL || jkey->id->s==NULL)
 		return -1;
-	
+
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("looking for <%.*s>"
 		" having id=%d\n", jkey->id->len, jkey->id->s, jkey->hash);
 #endif
-			
+
 	i = 0;
 	while(i < jwl->len)
 	{
@@ -393,18 +391,18 @@ int  xj_wlist_set_aliases(xj_wlist jwl, char *als, char *jd, char *pa)
 {
 	char *p, *p0, *p1;
 	int i, n;
-	
+
 	if(jwl == NULL)
 		return -1;
 	if(!jd) // || !als || strlen(als)<2)
 		return 0;
-	
+
 	if((jwl->aliases = (xj_jalias)_M_SHM_MALLOC(sizeof(t_xj_jalias)))==NULL)
 	{
 		LM_DBG("not enough SHMemory.\n");
 		return -1;
 	}
-	
+
 	jwl->aliases->jdm = NULL;
 	jwl->aliases->proxy = NULL;
 	jwl->aliases->dlm = XJ_DEF_JDELIM; // default user part delimiter
@@ -428,7 +426,7 @@ int  xj_wlist_set_aliases(xj_wlist jwl, char *als, char *jd, char *pa)
 			LM_DBG("not enough SHMemory!?\n");
 			_M_SHM_FREE(jwl->aliases);
 			jwl->aliases = NULL;
-			return -1;		
+			return -1;
 		}
 		jwl->aliases->jdm->len = n;
 		if((jwl->aliases->jdm->s=(char*)_M_SHM_MALLOC(jwl->aliases->jdm->len))
@@ -445,14 +443,14 @@ int  xj_wlist_set_aliases(xj_wlist jwl, char *als, char *jd, char *pa)
 			jwl->aliases->jdm->len, jwl->aliases->jdm->s, jwl->aliases->dlm);
 #endif
 	}
-	
+
 	// set the proxy address
 	if(pa && strlen(pa)>0)
 	{
 		if((jwl->aliases->proxy = (str*)_M_SHM_MALLOC(sizeof(str)))==NULL)
 		{
 			LM_DBG(" not enough SHMemory!!\n");
-			goto clean3;		
+			goto clean3;
 		}
 		i = jwl->aliases->proxy->len = strlen(pa);
 		// check if proxy address has sip: prefix
@@ -478,23 +476,23 @@ int  xj_wlist_set_aliases(xj_wlist jwl, char *als, char *jd, char *pa)
 			jwl->aliases->proxy->len, jwl->aliases->proxy->s);
 #endif
 	}
-	
+
 	// set the IM aliases
 	if(!als || strlen(als)<2)
 		return 0;
-	
+
 	if((p = strchr(als, ';')) == NULL)
 	{
 		LM_DBG("bad parameter value\n");
 		return -1;
 	}
-	
+
 	if((jwl->aliases->size = atoi(als)) <= 0)
 	{
 		LM_DBG("wrong number of aliases\n");
 		return 0;
 	}
-	
+
 	jwl->aliases->d = (char*)_M_SHM_MALLOC(jwl->aliases->size*sizeof(char));
 	if(jwl->aliases->d == NULL)
 	{
@@ -502,14 +500,14 @@ int  xj_wlist_set_aliases(xj_wlist jwl, char *als, char *jd, char *pa)
 		goto clean2;
 	}
 	memset(jwl->aliases->d, 0, jwl->aliases->size);
-	
+
 	jwl->aliases->a = (str*)_M_SHM_MALLOC(jwl->aliases->size*sizeof(str));
 	if(jwl->aliases->a == NULL)
 	{
 		LM_DBG("not enough SHMemory..\n");
 		goto clean1;
 	}
-	
+
 	p++;
 	for(i=0; i<jwl->aliases->size; i++)
 	{
@@ -532,11 +530,11 @@ int  xj_wlist_set_aliases(xj_wlist jwl, char *als, char *jd, char *pa)
 			LM_DBG("not enough SHMemory!\n");
 			goto clean;
 		}
-			
+
 		strncpy(jwl->aliases->a[i].s, p, jwl->aliases->a[i].len);
 #ifdef XJ_EXTRA_DEBUG
-		LM_DBG("alias[%d/%d]=%.*s delim=%c\n", 
-			i+1, jwl->aliases->size, jwl->aliases->a[i].len, 
+		LM_DBG("alias[%d/%d]=%.*s delim=%c\n",
+			i+1, jwl->aliases->size, jwl->aliases->a[i].len,
 			jwl->aliases->a[i].s, jwl->aliases->d[i]?jwl->aliases->d[i]:'X');
 #endif
 		p = p0 + 1;
@@ -592,27 +590,27 @@ int  xj_wlist_check_aliases(xj_wlist jwl, str *addr)
 		p++;
 	if(p >= addr->s + addr->len)
 		return -1;
-	
+
 	p++;
 	ll = addr->s + addr->len - p;
-	
+
 	// check parameters
 	p0 = p;
 	while(p0 < p + ll && *p0 != ';')
 		p0++;
 	if(p0 < p + ll)
 		ll = p0 - p;
-	
+
 	ll = addr->s + addr->len - p;
-	if(jwl->aliases->jdm && jwl->aliases->jdm->len == ll && 
+	if(jwl->aliases->jdm && jwl->aliases->jdm->len == ll &&
 			!strncasecmp(jwl->aliases->jdm->s, p, ll))
 		return 0;
 
 	if(jwl->aliases->size <= 0)
 		return 1;
-	
+
 	for(i = 0; i < jwl->aliases->size; i++)
-		if(jwl->aliases->a[i].len == ll && 
+		if(jwl->aliases->a[i].len == ll &&
 			!strncasecmp(p, jwl->aliases->a[i].s, ll))
 				return 0;
 	return 1;

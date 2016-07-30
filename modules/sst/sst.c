@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * SIP Session Timer (sst) module - support for tracking dialogs and
  * SIP Session Timers.
  *
@@ -21,7 +19,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
@@ -48,19 +46,10 @@ static int mod_init(void);
 struct sig_binds sigb;
 
 /*
- * statistic variables 
+ * statistic variables
  */
 int sst_enable_stats = 1;
 stat_var *expired_sst = 0;
-
-/*
- * The name of the AVP the dialog module will use to hold the timeout
- * value so we can set the AVP in the dialog callbacks so the dialog
- * code will set the dialog lifetime when it returns from the INVITE
- * and IN_ROUTE callbacks.
- */
-pv_spec_t timeout_avp; 
-static char* timeout_spec = 0; /* Place holder for the passed in name */
 
 /*
  * The default or script parameter for the requested MIN-SE: value for
@@ -68,7 +57,7 @@ static char* timeout_spec = 0; /* Place holder for the passed in name */
  * proxy will except any value from the UAC as its min-SE value. If
  * the value is NOT set then the default will be asserted.
  */
-unsigned int sst_minSE = 90; 
+unsigned int sst_minSE = 90;
 
 /*
  * Should the PROXY (us) reject (with a 422 reply) and SE < sst_minSE
@@ -80,11 +69,11 @@ unsigned int sst_reject = 1;
 static int sst_flag = -1;
 static char *sst_flag_str = 0;
 
-/* 
+/*
  * The sst minimum interval in Session-Expires header if OpenSIPS
  * request the use of session times. The used value will be the
  * maximum value between OpenSIPS minSE, UAS minSE and this value
-*/ 
+*/
 unsigned int sst_interval = 0;
 
 /*
@@ -107,7 +96,6 @@ static cmd_export_t cmds[]={
 static param_export_t mod_params[]={
 	{ "enable_stats", INT_PARAM, &sst_enable_stats			},
 	{ "min_se", INT_PARAM, &sst_minSE						},
-	{ "timeout_avp", STR_PARAM, &timeout_spec				},
 	{ "reject_to_small",		INT_PARAM, &sst_reject 		},
 	{ "sst_flag",				STR_PARAM, &sst_flag_str	},
 	{ "sst_flag",				INT_PARAM, &sst_flag		},
@@ -123,11 +111,30 @@ static stat_export_t mod_stats[] = {
 	{0,0,0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "dialog",    DEP_ABORT },
+		/*
+		 * FIXME: silent module load ordering, due to Session-Expires updates from sst
+		 *        proper fix should involve dialog callback ordering
+		 */
+		{ MOD_TYPE_DEFAULT, "pua_dialoginfo", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports= {
 	"sst",        /* module's name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,         /* exported functions */
+	0,            /* exported async functions */
 	mod_params,   /* param exports */
 	mod_stats,    /* exported statistics */
 	0,            /* exported MI functions */
@@ -149,9 +156,8 @@ struct module_exports exports= {
  * @return 0 to continue to load the OpenSIPS, -1 to stop the loading
  * and abort OpenSIPS.
  */
-static int mod_init(void) 
+static int mod_init(void)
 {
-	str s;
 	LM_INFO("SIP Session Timer module - initializing\n");
 	/*
 	 * if statistics are disabled, prevent their registration to core.
@@ -160,28 +166,17 @@ static int mod_init(void)
 		exports.stats = 0;
 	}
 
-	fix_flag_name(&sst_flag_str, sst_flag);
+	fix_flag_name(sst_flag_str, sst_flag);
 
 	sst_flag = get_flag_id_by_name(FLAG_TYPE_MSG, sst_flag_str);
 
 	if (sst_flag == -1) {
 		LM_ERR("no sst flag set!!\n");
 		return -1;
-	} 
+	}
 	else if (sst_flag > MAX_FLAG) {
 		LM_ERR("invalid sst flag %d!!\n", sst_flag);
 		return -1;
-	}
-
-	if (timeout_spec != NULL) {
-		LM_DBG("Dialog AVP is %s", timeout_spec);
-		s.s = timeout_spec; s.len = strlen(s.s);
-		if (pv_parse_spec(&s, &timeout_avp)==0 
-		&& (timeout_avp.type != PVT_AVP)){
-			LM_ERR("malformed or non AVP timeout AVP definition in '%s'\n",
-					timeout_spec);
-			return -1;
-		}
 	}
 
 	/* load SIGNALING API */
@@ -193,19 +188,24 @@ static int mod_init(void)
 	/*
 	 * Init the handlers
 	 */
-	sst_handler_init((timeout_spec?&timeout_avp:0), sst_minSE, 
-			sst_flag, sst_reject,sst_interval);
+	sst_handler_init(sst_minSE, sst_flag, sst_reject,sst_interval);
 
 	/*
 	 * Register the main (static) dialog call back.
 	 */
 	if (load_dlg_api(&dialog_st) != 0) {
-		LM_ERR("failed to load dialog hooks");
+		LM_ERR("failed to load dialog hooks\n");
 		return(-1);
 	}
 
 	/* Load dialog hooks */
 	dialog_st.register_dlgcb(NULL, DLGCB_CREATED, sst_dialog_created_CB, NULL, NULL);
+
+	if (dialog_st.register_dlgcb(NULL, DLGCB_LOADED, sst_dialog_loaded_CB,
+				NULL, NULL) != 0) {
+		LM_ERR("cannot register dialog_loaded callback\n");
+		return -1;
+	}
 
 	/*
 	 * We are GOOD-TO-GO.

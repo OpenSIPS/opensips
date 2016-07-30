@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2009 Irina Stanescu
  * Copyright (C) 2009 Voice System
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History
  * --------
@@ -30,10 +28,16 @@
  * This is the Radius implementation for the generic AAA Interface.
  */
 
-#ifndef USE_FREERADIUS
-	#include <radiusclient-ng.h>
-#else
+#ifdef FREERADIUS
 	#include <freeradius-client.h>
+#else
+	#ifdef RADCLI
+		#include <radcli/radcli.h>
+	#else
+		#ifdef RADIUSCLIENT
+			#include <radiusclient-ng.h>
+		#endif
+	#endif
 #endif
 
 #ifndef REJECT_RC
@@ -47,6 +51,33 @@
 #include "rad.h"
 #include "../../ut.h"
 #include "../../usr_avp.h"
+#include "../../resolve.h"
+
+/**
+ * this function is removed from current versions
+ * of FREERADIUS-CLIENT and RADCLI because it only offers
+ * support for IPv4
+ * but since the whole code is built around IPv4 we will
+ * implement it only for IPv4 usage
+ */
+#ifdef RADCLI
+uint32_t rc_get_ipaddr (char *host)
+{
+	const struct hostent* he;
+	struct in_addr** addr_list;
+
+	he=resolvehost(host, 0/*do test if is ip*/);
+
+	/* FIXME the function is not for IPV6 */
+	addr_list = (struct in_addr **)he->h_addr_list;
+	if (addr_list[0])
+		return addr_list[0]->s_addr;
+
+	return 0;
+
+}
+#endif
+
 
 
 /*
@@ -54,7 +85,7 @@
 
 	For Radius, initialization consists of:
 	- the url is parsed and a configuration structure is obtained
-	- the rest field from the configuration structure is, for the radius 
+	- the rest field from the configuration structure is, for the radius
 	module, a string for the path of the radius configuration file
 	- obtain the connection handle
 	- initialize the dictionary
@@ -152,7 +183,7 @@ int extract_avp(VALUE_PAIR* vp) {
 	unsigned short flags = 0;
 
 	/* empty? */
-	if (vp->lvalue == 0 || vp->strvalue == 0)
+	if (vp->lvalue == 0)
 		return -1;
 
 	p = vp->strvalue;
@@ -269,7 +300,7 @@ int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message** reply) {
 				return -1;
 			}
 		} else if (result == REJECT_RC) {
-			LM_DBG("rc_auth function succeded with result REJECT_RC\n");
+			LM_DBG("rc_auth function succeeded with result REJECT_RC\n");
 			return result;
 		} else {
 			LM_ERR("rc_auth function failed\n");
@@ -292,7 +323,7 @@ int rad_send_message(aaa_conn* rh, aaa_message* request, aaa_message** reply) {
 	The return value is:
 	0, if the name is found
 	1, if the name isn't found
-	-1, if an error occured
+	-1, if an error occurred
  */
 int rad_find(aaa_conn* rh, aaa_map *map, int flag) {
 

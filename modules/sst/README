@@ -10,8 +10,7 @@ Ron Winacott
 
    Copyright © 2006 SOMA Networks, Inc.
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -30,9 +29,8 @@ Ron Winacott
               1.4.1. enable_stats (integer)
               1.4.2. min_se (integer)
               1.4.3. sst_interval (integer)
-              1.4.4. timeout_avp (string)
-              1.4.5. reject_to_small (integer)
-              1.4.6. sst_flag (string/integer)
+              1.4.4. reject_to_small (integer)
+              1.4.5. sst_flag (string/integer)
 
         1.5. Exported Functions
 
@@ -42,18 +40,15 @@ Ron Winacott
 
               1.6.1. expired_sst
 
-        1.7. Installation and Running
-
    List of Examples
 
    1.1. Session timer call flow
    1.2. Set enable_stats parameter
    1.3. Set min_se parameter
    1.4. Set sst_interval parameter
-   1.5. Set timeout_avp parameter
-   1.6. Set reject_to_small parameter
-   1.7. Set sst_flag parameter
-   1.8. sstCheckMin usage
+   1.5. Set reject_to_small parameter
+   1.6. Set sst_flag parameter
+   1.7. sstCheckMin usage
 
 Chapter 1. Admin Guide
 
@@ -74,8 +69,7 @@ Chapter 1. Admin Guide
    The sst module uses the dialog module to be notified of any new
    or updated dialogs. It will then look for and extract the
    session-expire: header value (if there is one) and override the
-   dialog expire timer value for the current context dialog by
-   setting the avp value.
+   dialog expire timer value for the current context dialog.
 
    You flag any call setup INVITE that you want to cause a timed
    session to be established. This will cause OpenSIPS to request
@@ -198,25 +192,7 @@ modparam("sst", "min_se", 2400)
 modparam("sst", "sst_interval", 2400)
 ...
 
-1.4.4. timeout_avp (string)
-
-   This parameter MUST be set to the same value as the dialog
-   parameter of the same name. If this parameter is NOT set, the
-   sst module will not do anything!
-
-   This is how the sst module knows which avp in the dialog module
-   to change with the new expire value.
-
-   Default value is “NULL!” it is not set by default.
-
-   Example 1.5. Set timeout_avp parameter
-...
-modparam("dialog", "timeout_avp", "$avp(10)")
-# Set the sst modules timeout_avp to be the same value
-modparam("sst", "timeout_avp", "$avp(10)")
-...
-
-1.4.5. reject_to_small (integer)
+1.4.4. reject_to_small (integer)
 
    In the initial INVITE if the UAC has requested a
    Session-Expire: and it's value is smaller then our local
@@ -231,12 +207,12 @@ modparam("sst", "timeout_avp", "$avp(10)")
 
    Default value is “1” (true/on).
 
-   Example 1.6. Set reject_to_small parameter
+   Example 1.5. Set reject_to_small parameter
 ...
 modparam("sst", "reject_to_small", 0)
 ...
 
-1.4.6. sst_flag (string/integer)
+1.4.5. sst_flag (string/integer)
 
    Keeping with OpenSIPS, the module will not do anything to any
    message unless instructed to do so via the opensips.cfg script.
@@ -257,7 +233,7 @@ modparam("sst", "reject_to_small", 0)
 
    Default value is “Not set!”.
 
-   Example 1.7. Set sst_flag parameter
+   Example 1.6. Set sst_flag parameter
 ...
 modparam("sst", "sst_flag", "SST_FLAG")
 ...
@@ -288,13 +264,10 @@ route {
      * min_allowed - The value to compare the MIN_SE header value
        to.
 
-   Example 1.8. sstCheckMin usage
+   Example 1.7. sstCheckMin usage
 
 ...
-modparam("dialog", "timeout_avp", "$avp(4242)")
-...
 modparam("sst", "sst_flag", 6)
-modparam("sst", "timeout_avp", "$avp(4242)")
 modparam("sst", "min_se", 2400) # Must be >= 90
 ...
 
@@ -332,7 +305,3 @@ route {
 1.6.1. expired_sst
 
    Number of dialogs which got expired session timer.
-
-1.7. Installation and Running
-
-   just load the module and remember to set the timeout_avp value.

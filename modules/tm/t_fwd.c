@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2010-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -71,7 +70,7 @@ void t_on_branch( unsigned int go_to )
 	struct cell *t = get_t();
 
 	/* in MODE_REPLY and MODE_ONFAILURE T will be set to current transaction;
-	 * in MODE_REQUEST T will be set only if the transaction was already 
+	 * in MODE_REQUEST T will be set only if the transaction was already
 	 * created; if not -> use the static variable */
 	if (route_type==BRANCH_ROUTE || !t || t==T_UNDEFINED )
 		goto_on_branch=go_to;
@@ -86,7 +85,7 @@ unsigned int get_on_branch(void)
 }
 
 
-static inline int pre_print_uac_request( struct cell *t, int branch, 
+static inline int pre_print_uac_request( struct cell *t, int branch,
 		struct sip_msg *request)
 {
 	int backup_route_type;
@@ -118,9 +117,36 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 			request->path_vec.len+1);
 	}
 
+	/* do the same for the advertised port & address */
+	if (request->set_global_address.len) {
+		t->uac[branch].adv_address.s = shm_resize(t->uac[branch].adv_address.s,
+			request->set_global_address.len+1);
+		if (t->uac[branch].adv_address.s==NULL) {
+			LM_ERR("shm_resize failed for storing the advertised address "
+				"(len=%d)\n",request->set_global_address.len);
+			goto error;
+		}
+		t->uac[branch].adv_address.len = request->set_global_address.len;
+		memcpy( t->uac[branch].adv_address.s, request->set_global_address.s,
+			request->set_global_address.len+1);
+	}
+	if (request->set_global_port.len) {
+		t->uac[branch].adv_port.s = shm_resize(t->uac[branch].adv_port.s,
+			request->set_global_port.len+1);
+		if (t->uac[branch].adv_port.s==NULL) {
+			LM_ERR("shm_resize failed for storing the advertised port "
+				"(len=%d)\n",request->set_global_port.len);
+			goto error;
+		}
+		t->uac[branch].adv_port.len = request->set_global_port.len;
+		memcpy( t->uac[branch].adv_port.s, request->set_global_port.s,
+			request->set_global_port.len+1);
+	}
+
+
 	/********** run route & callback ************/
 
-	/* run branch route, if any; run it before RURI's DNS lookup 
+	/* run branch route, if any; run it before RURI's DNS lookup
 	 * to allow to be changed --bogdan */
 	if (t->on_branch) {
 		/* need to pkg_malloc the dst_uri */
@@ -152,10 +178,15 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 			LM_DBG("dropping branch <%.*s>\n", request->new_uri.len,
 					request->new_uri.s);
 			_tm_branch_index = 0;
+			/* restore the route type */
+			set_route_type( backup_route_type );
+			/* restore original avp list */
+			set_avp_list( backup_list );
 			goto error;
 		}
-		_tm_branch_index = 0;
 
+		_tm_branch_index = 0;
+		/* restore the route type */
 		set_route_type( backup_route_type );
 		/* restore original avp list */
 		set_avp_list( backup_list );
@@ -192,7 +223,7 @@ static inline char *print_uac_request(struct sip_msg *i_req, unsigned int *len,
 	buf=build_req_buf_from_sip_req( i_req, len, send_sock, proto,
 			MSG_TRANS_SHM_FLAG);
 	if (!buf) {
-		LM_ERR("no more shm_mem\n"); 
+		LM_ERR("no more shm_mem\n");
 		ser_error=E_OUT_OF_MEM;
 		return NULL;
 	}
@@ -226,49 +257,6 @@ static inline void post_print_uac_request(struct sip_msg *request,
 }
 
 
-static inline struct proxy_l* shm_clone_proxy(struct proxy_l *sp,
-													unsigned int move_dn)
-{
-	struct proxy_l *dp;
-
-	dp = (struct proxy_l*)shm_malloc(sizeof(struct proxy_l));
-	if (dp==NULL) {
-		LM_ERR("no more shm memory\n");
-		return 0;
-	}
-	memset( dp , 0 , sizeof(struct proxy_l));
-
-	dp->port = sp->port;
-	dp->proto = sp->proto;
-	dp->addr_idx = sp->addr_idx;
-	dp->flags = PROXY_SHM_FLAG;
-
-	/* clone the hostent */
-	if (hostent_shm_cpy( &dp->host, &sp->host)!=0)
-		goto error0;
-
-	/* clone the dns resolver */
-	if (sp->dn) {
-		if (move_dn) {
-			dp->dn = sp->dn;
-			sp->dn = 0;
-		} else {
-			dp->dn = dns_res_copy(sp->dn);
-			if (dp->dn==NULL)
-				goto error1;
-		}
-	}
-
-	return dp;
-error1:
-	free_shm_hostent(&dp->host);
-error0:
-	shm_free(dp);
-	return 0;
-}
-
-
-
 /* introduce a new uac, which is blind -- it only creates the
    data structures and starts FR timer, but that's it; it does
    not print messages and send anything anywhere; that is good
@@ -287,7 +275,7 @@ int add_blind_uac(void)  /*struct cell *t*/
 		return -1;
 	}
 
-	branch=t->nr_of_outgoings;	
+	branch=t->nr_of_outgoings;
 	if (branch==MAX_BRANCHES) {
 		LM_ERR("maximum number of branches exceeded\n");
 		return -1;
@@ -350,15 +338,19 @@ static inline unsigned int count_local_rr(struct sip_msg *req)
 	unsigned int cnt = 0;
 	struct lump *r;
 
-	/* we look for the RR anchors only 
+	/* we look for the RR anchors only
 	 * in the main list (no after or before) */
 	for( r=req->add_rm ; r ; r=r->next )
-		if ( r->type==HDR_RECORDROUTE_T && r->op==LUMP_NOP) {
-			if (r->after && r->after->op==LUMP_ADD_OPT) {
+		if ( r->type==HDR_RECORDROUTE_T && r->op==LUMP_NOP && r->after) {
+			/* only the master RR anchor has "after" */
+			if (r->after->op==LUMP_ADD_OPT &&
+			r->after->u.cond==COND_IF_DIFF_REALMS) {
+				/* conditional second RR hdr (when doing double RR) */
 				if (r->after->flags&LUMPFLAG_COND_TRUE) {
 					cnt++;
 				}
 			} else {
+				/* mandatory first RR hdr */
 				cnt++;
 			}
 		}
@@ -371,8 +363,8 @@ static inline unsigned int count_local_rr(struct sip_msg *req)
    or error (<0); it doesn't send a message yet -- a reply to it
    might interfere with the processes of adding multiple branches
 */
-static int add_uac( struct cell *t, struct sip_msg *request, str *uri, 
-							str* next_hop, str* path, struct proxy_l *proxy)
+static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
+		str* next_hop, unsigned int bflags, str* path, struct proxy_l *proxy)
 {
 	unsigned short branch;
 	int do_free_proxy;
@@ -397,6 +389,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 	request->parsed_uri_ok=0;
 	request->dst_uri=*next_hop;
 	request->path_vec=*path;
+	request->ruri_bflags=bflags;
 
 	if ( pre_print_uac_request( t, branch, request)!= 0 ) {
 		ret = -1;
@@ -408,7 +401,9 @@ static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 		do_free_proxy = 0;
 	}else {
 		proxy=uri2proxy( request->dst_uri.len ?
-			&request->dst_uri:&request->new_uri, PROTO_NONE );
+			&request->dst_uri:&request->new_uri,
+			request->force_send_socket ?
+				request->force_send_socket->proto : PROTO_NONE );
 		if (proxy==0)  {
 			ret=E_BAD_ADDRESS;
 			goto error01;
@@ -440,7 +435,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 	t->uac[branch].uri.s=t->uac[branch].request.buffer.s+
 		request->first_line.u.request.method.len+1;
 	t->uac[branch].uri.len=request->new_uri.len;
-	t->uac[branch].br_flags = getb0flags();
+	t->uac[branch].br_flags = request->ruri_bflags;
 	t->uac[branch].added_rr = count_local_rr( request );
 	t->nr_of_outgoings++;
 
@@ -454,12 +449,28 @@ error02:
 	}
 error01:
 	post_print_uac_request( request, uri, next_hop);
+	if (ret < 0) {
+		/* destroy all the bavps added, the path vector and the destination,
+		 * since this branch will never be properly added to
+		 * the UAC list, otherwise we'll have memory leaks - razvanc */
+		if (t->uac[branch].user_avps)
+			destroy_avp_list(&t->uac[branch].user_avps);
+		if (t->uac[branch].path_vec.s)
+			shm_free(t->uac[branch].path_vec.s);
+		if (t->uac[branch].adv_address.s)
+			shm_free(t->uac[branch].adv_address.s);
+		if (t->uac[branch].adv_port.s)
+			shm_free(t->uac[branch].adv_port.s);
+		if (t->uac[branch].duri.s)
+			shm_free(t->uac[branch].duri.s);
+		memset(&t->uac[branch],0,sizeof(t->uac[branch]));
+	}
 error:
 	return ret;
 }
 
 
-int e2e_cancel_branch( struct sip_msg *cancel_msg, struct cell *t_cancel, 
+int e2e_cancel_branch( struct sip_msg *cancel_msg, struct cell *t_cancel,
 	struct cell *t_invite, int branch )
 {
 	int ret;
@@ -467,6 +478,8 @@ int e2e_cancel_branch( struct sip_msg *cancel_msg, struct cell *t_cancel,
 	unsigned int len;
 	str bk_dst_uri;
 	str bk_path_vec;
+	str bk_adv_address;
+	str bk_adv_port;
 
 	if (t_cancel->uac[branch].request.buffer.s) {
 		LM_CRIT("buffer rewrite attempt\n");
@@ -478,9 +491,13 @@ int e2e_cancel_branch( struct sip_msg *cancel_msg, struct cell *t_cancel,
 	cancel_msg->parsed_uri_ok=0;
 	bk_dst_uri = cancel_msg->dst_uri;
 	bk_path_vec = cancel_msg->path_vec;
+	bk_adv_address = cancel_msg->set_global_address;
+	bk_adv_port = cancel_msg->set_global_port;
 
-	/* force same path as for request */
+	/* force same path & advertising as for request */
 	cancel_msg->path_vec = t_invite->uac[branch].path_vec;
+	cancel_msg->set_global_address = t_invite->uac[branch].adv_address;
+	cancel_msg->set_global_port = t_invite->uac[branch].adv_port;
 
 	if ( pre_print_uac_request( t_cancel, branch, cancel_msg)!= 0 ) {
 		ret = -1;
@@ -522,6 +539,8 @@ error01:
 		&bk_dst_uri);
 	cancel_msg->dst_uri = bk_dst_uri;
 	cancel_msg->path_vec = bk_path_vec;
+	cancel_msg->set_global_address = bk_adv_address;
+	cancel_msg->set_global_port = bk_adv_port;
 error:
 	return ret;
 }
@@ -535,9 +554,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	"Reason: SIP;cause=487;text=\"ORIGINATOR_CANCEL\"" CRLF
 
 	branch_bm_t cancel_bitmap;
-	branch_bm_t dummy_bm;
 	str reason;
-	unsigned int i;
 	struct hdr_field *hdr;
 
 	cancel_bitmap=0;
@@ -576,6 +593,13 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	cancel_uacs(t_invite, cancel_bitmap );
 	set_cancel_extra_hdrs( NULL, 0);
 
+	/* Do not do anything about branches with no received reply;
+	 * continue the retransmission hoping to get something back;
+	 * if still not, we will generate the 408 Timeout based on FR
+	 * timer; this helps with better coping with missed/lated provisional
+	 * replies in the context of cancelling the transaction
+	 */
+#if 0
 	/* internally cancel branches with no received reply */
 	for (i=t_invite->first_branch; i<t_invite->nr_of_outgoings; i++) {
 		if (t_invite->uac[i].last_received==0){
@@ -586,6 +610,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 			relay_reply(t_invite,FAKED_REPLY,i,487,&dummy_bm);
 		}
 	}
+#endif
 }
 
 
@@ -594,7 +619,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
  *       1 - forward successful
  *      -1 - error during forward
  */
-int t_forward_nonack( struct cell *t, struct sip_msg* p_msg , 
+int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	struct proxy_l * proxy)
 {
 	str backup_uri;
@@ -607,8 +632,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	int success_branch;
 	str dst_uri;
 	struct socket_info *bk_sock;
-	unsigned int br_flags;
-	unsigned int bk_br_flags;
+	unsigned int br_flags, bk_bflags;
 	int idx;
 	str path;
 	str bk_path;
@@ -639,8 +663,9 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	backup_uri = p_msg->new_uri;
 	backup_dst = p_msg->dst_uri;
 	bk_sock = p_msg->force_send_socket;
-	bk_br_flags = getb0flags();
 	bk_path = p_msg->path_vec;
+	bk_bflags = p_msg->ruri_bflags;
+	/* advertised address/port are not changed */
 
 	/* check if the UAS retranmission port needs to be updated */
 	if ( (p_msg->msg_flags ^ t->uas.request->msg_flags) & FL_FORCE_RPORT )
@@ -655,8 +680,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 
 	/* as first branch, use current uri */
 	current_uri = *GET_RURI(p_msg);
-	branch_ret = add_uac( t, p_msg, &current_uri, &backup_dst, 
-		&p_msg->path_vec, proxy);
+	branch_ret = add_uac( t, p_msg, &current_uri, &backup_dst,
+		getb0flags(p_msg), &p_msg->path_vec, proxy);
 	if (branch_ret>=0)
 		added_branches |= 1<<branch_ret;
 	else
@@ -665,13 +690,13 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	/* ....and now add the remaining additional branches */
 	for( idx=0; (current_uri.s=get_branch( idx, &current_uri.len, &q,
 	&dst_uri, &path, &br_flags, &p_msg->force_send_socket))!=0 ; idx++ ) {
-		setb0flags(br_flags);
-		branch_ret = add_uac( t, p_msg, &current_uri, &dst_uri, &path, proxy);
+		branch_ret = add_uac( t, p_msg, &current_uri, &dst_uri,
+			br_flags, &path, proxy);
 		/* pick some of the errors in case things go wrong;
 		   note that picking lowest error is just as good as
 		   any other algorithm which picks any other negative
 		   branch result */
-		if (branch_ret>=0) 
+		if (branch_ret>=0)
 			added_branches |= 1<<branch_ret;
 		else
 			lowest_ret=branch_ret;
@@ -685,7 +710,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	p_msg->dst_uri = backup_dst;
 	p_msg->force_send_socket = bk_sock;
 	p_msg->path_vec = bk_path;
-	setb0flags(bk_br_flags);
+	p_msg->ruri_bflags = bk_bflags;
+
 	/* update on_branch, if modified */
 	t->on_branch = get_on_branch();
 	/* update flags, if changed in branch route */
@@ -703,10 +729,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	for (i=t->first_branch; i<t->nr_of_outgoings; i++) {
 		if (added_branches & (1<<i)) {
 
-#ifdef USE_TCP
 			if (t->uac[i].br_flags & tcp_no_new_conn_bflag)
 				tcp_no_new_conn = 1;
-#endif
 
 			do {
 				if (check_blacklists( t->uac[i].request.dst.proto,
@@ -716,10 +740,13 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 					LM_DBG("blocked by blacklists\n");
 					ser_error=E_IP_BLOCKED;
 				} else {
+					run_trans_callbacks(TMCB_PRE_SEND_BUFFER, t, p_msg, 0, i);
+
 					if (SEND_BUFFER( &t->uac[i].request)==0) {
 						ser_error = 0;
 						break;
 					}
+
 					LM_ERR("sending request failed\n");
 					ser_error=E_SEND;
 				}
@@ -734,9 +761,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 					break;
 			}while(1);
 
-#ifdef USE_TCP
 			tcp_no_new_conn = 0;
-#endif
 
 			if (ser_error) {
 				shm_free(t->uac[i].request.buffer.s);
@@ -795,7 +820,7 @@ int t_replicate(struct sip_msg *p_msg, str *dst, int flags)
 	if (!t || t==T_UNDEFINED) {
 		/* no transaction yet */
 		if (route_type==FAILURE_ROUTE) {
-			LM_CRIT(" BUG - undefined transaction in failure route\n");
+			LM_CRIT("BUG - undefined transaction in failure route\n");
 			return -1;
 		}
 		return t_relay_to( p_msg, NULL, flags|TM_T_REPLY_repl_FLAG);

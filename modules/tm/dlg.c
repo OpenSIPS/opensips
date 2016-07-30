@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -70,7 +68,7 @@
 void get_raw_uri(str* _s)
 {
         char* aq;
-        
+
         if (_s->s[_s->len - 1] == '>') {
                 aq = find_not_quoted(_s, '<');
                 _s->len -= aq - _s->s + 2;
@@ -155,9 +153,9 @@ static int _internal_new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str*
 		return -2;
 	}
 
-	     /* Clear everything */	
+	     /* Clear everything */
 	memset(res, 0, sizeof(dlg_t));
-	
+
 	     /* Make a copy of Call-ID */
 	if (shm_str_dup(&res->id.call_id, _cid) < 0) return -3;
 	     /* Make a copy of local tag (usually From tag) */
@@ -181,7 +179,7 @@ static int _internal_new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str*
 		shm_free(res);
 		return -2;
 	}
-	
+
 	return 0;
 }
 
@@ -329,7 +327,7 @@ static inline int get_route_set(struct sip_msg* _m, rr_t** _rs, unsigned char _o
 {
 	struct hdr_field* ptr;
 	rr_t* last, *p, *t;
-	
+
 	last = 0;
 	*_rs = 0;
 
@@ -358,11 +356,11 @@ static inline int get_route_set(struct sip_msg* _m, rr_t** _rs, unsigned char _o
 
 				p = p->next;
 			}
-			
+
 		}
 		ptr = ptr->next;
 	}
-	
+
 	return 0;
 
  error:
@@ -384,13 +382,13 @@ static inline int response2dlg(struct sip_msg* _m, dlg_t* _d)
 		LM_ERR("failed to parse headers\n");
 		return -1;
 	}
-	
+
 	if (get_contact_uri(_m, &contact) < 0) return -2;
 	if (contact.len && shm_str_dup(&_d->rem_target, &contact) < 0) return -3;
-	
+
 	if (get_to_tag(_m, &rtag) < 0) goto err1;
 	if (rtag.len && shm_str_dup(&_d->id.rem_tag, &rtag) < 0) goto err1;
-	
+
 	if (get_route_set(_m, &_d->route_set, REVERSE_ORDER) < 0) goto err2;
 
 	return 0;
@@ -416,9 +414,9 @@ static inline int dlg_new_resp_uac(dlg_t* _d, struct sip_msg* _m)
 	int code;
 	     /*
 	      * Dialog is in DLG_NEW state, we will copy remote
-	      * target URI, remote tag if present, and route-set 
-	      * if present. And we will transit into DLG_CONFIRMED 
-	      * if the response was 2xx and to DLG_DESTROYED if the 
+	      * target URI, remote tag if present, and route-set
+	      * if present. And we will transit into DLG_CONFIRMED
+	      * if the response was 2xx and to DLG_DESTROYED if the
 	      * request was a negative final response.
 	      */
 
@@ -442,7 +440,7 @@ static inline int dlg_new_resp_uac(dlg_t* _d, struct sip_msg* _m)
 			return -2;
 		}
 	} else {
-		     /* 
+		     /*
 		      * A negative final response, mark the dialog as destroyed
 		      * Again, I do not update the structures here because it
 		      * makes no sense to me, a dialog shouldn't be used after
@@ -464,7 +462,7 @@ static inline int dlg_new_resp_uac(dlg_t* _d, struct sip_msg* _m)
 static inline int dlg_early_resp_uac(dlg_t* _d, struct sip_msg* _m)
 {
 	int code;
-	code = _m->first_line.u.reply.statuscode;	
+	code = _m->first_line.u.reply.statuscode;
 
 	if (code < 200) {
 		     /* We are in early state already, do nothing
@@ -522,7 +520,7 @@ static inline int dlg_confirmed_resp_uac(dlg_t* _d, struct sip_msg* _m)
 	     /* Dialog has been already confirmed, that means we received
 	      * a response to a request sent within the dialog. We will
 	      * update remote target URI if and only if the message sent was
-	      * a target refresher. 
+	      * a target refresher.
 	      */
 
 	     /* FIXME: Currently we support only INVITEs as target refreshers,
@@ -639,7 +637,7 @@ static inline int get_dlg_uri(struct hdr_field* _h, str* _s)
 	     /* From was already parsed when extracting tag
 	      * and To is parsed by default
 	      */
-	
+
 	body = (struct to_body*)_h->parsed;
 
 	ptr = body->param_lst;
@@ -657,7 +655,7 @@ static inline int get_dlg_uri(struct hdr_field* _h, str* _s)
 		} else {
 			tag = body->body.s + body->body.len;
 		}
-		
+
 		if (ptr->next) {
 			tag_len = ptr->value.s + ptr->value.len - tag;
 		} else {
@@ -686,7 +684,7 @@ static inline int get_dlg_uri(struct hdr_field* _h, str* _s)
 
 
 /*
- * Extract all information from a request 
+ * Extract all information from a request
  * and update a dialog structure
  */
 static inline int request2dlg(struct sip_msg* _m, dlg_t* _d)
@@ -694,13 +692,13 @@ static inline int request2dlg(struct sip_msg* _m, dlg_t* _d)
 	str contact, rtag, callid;
 
 	if (parse_headers(_m, HDR_EOH_F, 0) == -1) {
-		LM_ERR("failed to parse headers");
+		LM_ERR("failed to parse headers\n");
 		return -1;
 	}
 
 	if (get_contact_uri(_m, &contact) < 0) return -2;
 	if (contact.len && shm_str_dup(&_d->rem_target, &contact) < 0) return -3;
-	
+
 	if (get_from_tag(_m, &rtag) < 0) goto err1;
 	if (rtag.len && shm_str_dup(&_d->id.rem_tag, &rtag) < 0) goto err1;
 
@@ -713,7 +711,7 @@ static inline int request2dlg(struct sip_msg* _m, dlg_t* _d)
 	if (get_dlg_uri(_m->from, &_d->rem_uri) < 0) goto err3;
 	if (get_dlg_uri(_m->to, &_d->loc_uri) < 0) goto err4;
 
-	if (get_route_set(_m, &_d->route_set, NORMAL_ORDER) < 0) goto err5;	
+	if (get_route_set(_m, &_d->route_set, NORMAL_ORDER) < 0) goto err5;
 
 	return 0;
  err5:
@@ -764,7 +762,7 @@ int new_dlg_uas(struct sip_msg* _req, int _code, /*str* _tag,*/ dlg_t** _d)
 		return -3;
 	}
 	     /* Clear everything */
-	memset(res, 0, sizeof(dlg_t));	
+	memset(res, 0, sizeof(dlg_t));
 
 	if (request2dlg(_req, res) < 0) {
 		LM_ERR("converting request to dialog failed\n");
@@ -778,7 +776,7 @@ int new_dlg_uas(struct sip_msg* _req, int _code, /*str* _tag,*/ dlg_t** _d)
 		free_dlg(res);
 		return -5;
 	}
-	
+
 	*_d = res;
 
 	(*_d)->state = DLG_CONFIRMED;
@@ -818,8 +816,8 @@ int dlg_request_uas(dlg_t* _d, struct sip_msg* _m)
 	     /* Neither out of order nor retransmission -> update */
 	_d->rem_seq.value = cseq;
 	_d->rem_seq.is_set = 1;
-	
-	     /* We will als update remote target URI if the message 
+
+	     /* We will als update remote target URI if the message
 	      * is target refresher
 	      */
 	if (_m->first_line.u.request.method_value == METHOD_INVITE) {
@@ -828,7 +826,7 @@ int dlg_request_uas(dlg_t* _d, struct sip_msg* _m)
 			LM_ERR("parsing headers failed\n");
 			return -4;
 		}
-		
+
 		if (get_contact_uri(_m, &contact) < 0) return -5;
 		if (contact.len) {
 			if (_d->rem_target.s) shm_free(_d->rem_target.s);
@@ -863,7 +861,7 @@ int calculate_routeset_length(dlg_t* _d)
 	}
 
 	if (_d->hooks.last_route) {
-		if (_d->hooks.first_route) 
+		if (_d->hooks.first_route)
 			len += ROUTE_SEPARATOR_LEN;
 		len += _d->hooks.last_route->len + 2; /* < > */
 	}
@@ -974,18 +972,18 @@ void print_dlg(FILE* out, dlg_t* _d)
 	case DLG_DESTROYED: fprintf(out, "DLG_DESTROYED\n"); break;
 	}
 	print_rr(out, _d->route_set);
-	if (_d->hooks.request_uri) 
+	if (_d->hooks.request_uri)
 		fprintf(out, "hooks.request_uri: '%.*s'\n",
 			_d->hooks.request_uri->len, _d->hooks.request_uri->s);
-	if (_d->hooks.next_hop) 
+	if (_d->hooks.next_hop)
 		fprintf(out, "hooks.next_hop   : '%.*s'\n",
 			_d->hooks.next_hop->len, _d->hooks.next_hop->s);
-	if (_d->hooks.first_route) 
+	if (_d->hooks.first_route)
 		fprintf(out, "hooks.first_route: '%.*s'\n",
 			_d->hooks.first_route->len,_d->hooks.first_route->nameaddr.name.s);
 	if (_d->hooks.last_route)
 		fprintf(out, "hooks.last_route : '%.*s'\n",
 			_d->hooks.last_route->len, _d->hooks.last_route->s);
-	
+
 	fprintf(out, "====dlg_t====\n");
 }

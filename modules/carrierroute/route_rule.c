@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -66,7 +64,7 @@ static int fixup_rule_backup(struct route_flags * rf, struct route_rule * rr);
 int add_route_rule(struct route_flags *rf, const str * prefix,
 		int max_targets, double prob, const str * rewrite_hostpart, int strip,
 		const str * rewrite_local_prefix, const str * rewrite_local_suffix,
-		int status, int hash_index, int backup, int * backed_up, 
+		int status, int hash_index, int backup, int * backed_up,
 		const str * comment) {
 	struct route_rule * shm_rr, * prev = NULL, * tmp = NULL;
 	struct route_rule_p_list * t_rl;
@@ -177,7 +175,7 @@ mem_error:
  */
 int rule_prio_cmp(struct failure_route_rule *rr1, struct failure_route_rule *rr2) {
 	int n1, n2, i;
-	
+
 	/* host has highest priority */
 	if ((rr1->host.len == 0) && (rr2->host.len > 0)) {
 		/* host1 is wildcard -> rr1 has lower priority */
@@ -215,7 +213,7 @@ int rule_prio_cmp(struct failure_route_rule *rr1, struct failure_route_rule *rr2
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -227,7 +225,7 @@ int rule_prio_cmp(struct failure_route_rule *rr1, struct failure_route_rule *rr2
  * @param failure_tree the current route tree node
  * @param prefix the whole scan prefix
  * @param host the hostname last tried
- * @param reply_code the reply code 
+ * @param reply_code the reply code
  * @param flags user defined flags
  * @param mask mask for user defined flags
  * @param next_domain continue routing with this domain
@@ -243,29 +241,29 @@ int add_failure_route_rule(struct failure_route_tree_item * failure_tree, const 
 	struct failure_route_rule * shm_rr;
 	struct failure_route_rule * rr;
 	struct failure_route_rule * prev;
-	
+
 	if ((shm_rr = shm_malloc(sizeof(struct failure_route_rule))) == NULL) {
 		LM_ERR("out of shared memory\n");
 		return -1;
 	}
 	memset(shm_rr, 0, sizeof(struct failure_route_rule));
-	
+
 	if (shm_str_dup(&shm_rr->host, host) != 0) {
 		goto mem_error;
 	}
-	
+
 	if (shm_str_dup(&shm_rr->reply_code, reply_code) != 0) {
 		goto mem_error;
 	}
-	
+
 	shm_rr->flags = flags;
 	shm_rr->mask = mask;
 	shm_rr->next_domain = next_domain;
-	
+
 	if (shm_str_dup(&shm_rr->comment, comment) != 0) {
 		goto mem_error;
 	}
-	
+
 	/* before inserting into list, check priorities! */
 	rr=failure_tree->rule_list;
 	prev=NULL;
@@ -280,7 +278,7 @@ int add_failure_route_rule(struct failure_route_tree_item * failure_tree, const 
 		shm_rr->next = failure_tree->rule_list;
 		failure_tree->rule_list = shm_rr;
 	}
-	
+
 	return 0;
 
 mem_error:
@@ -350,7 +348,7 @@ static int rule_fixup_recursor(struct route_tree_item * rt) {
 				p_dice = rr->dice_to;
 				rr = rr->next;
 			}
-			
+
 			if (rf->rule_num != rf->max_targets) {
 				LM_ERR("number of rules(%i) differs from max_targets(%i), maybe your config is wrong?\n", rf->rule_num, rf->max_targets);
 				return -1;
@@ -380,7 +378,7 @@ static int rule_fixup_recursor(struct route_tree_item * rt) {
 					LM_INFO("rule with host %.*s hash has hashindex %i.\n", rr->host.len, rr->host.s, rr->hash_index);
 				}
 			}
-			
+
 			rr = rf->rule_list;
 			i=0;
 			while (rr && i < rf->rule_num) {

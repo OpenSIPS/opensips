@@ -1,6 +1,4 @@
 /*
- *$Id$
- *
  * - various general purpose functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History
  * ------
@@ -74,7 +72,7 @@ int user2uid(int* uid, int* gid, char* user)
 {
 	char* tmp;
 	struct passwd *pw_entry;
-	
+
 	if (user){
 		*uid=strtol(user, &tmp, 10);
 		if ((tmp==0) ||(*tmp)){
@@ -97,7 +95,7 @@ int group2gid(int* gid, char* group)
 {
 	char* tmp;
 	struct group  *gr_entry;
-	
+
 	if (group){
 		*gid=strtol(group, &tmp, 10);
 		if ((tmp==0) ||(*tmp)){
@@ -145,7 +143,7 @@ int parse_reply_codes( str *options_reply_codes_str,
 		aux = sep2;
 		while(*sep1 == ' ')
 			sep1++;
-		
+
 		sep2--;
 		while(*sep2 == ' ')
 			sep2--;
@@ -154,7 +152,7 @@ int parse_reply_codes( str *options_reply_codes_str,
 		code_str.len = sep2-sep1+1;
 
 		if(str2int(&code_str, &code)< 0) {
-			LM_ERR("Bad format - not am integer [%.*s]\n", 
+			LM_ERR("Bad format - not am integer [%.*s]\n",
 					code_str.len, code_str.s);
 			return -1;
 		}
@@ -164,7 +162,7 @@ int parse_reply_codes( str *options_reply_codes_str,
 		}
 		(*options_reply_codes)[index] = code;
 		index++;
-	
+
 		sep1 = aux +1;
 		sep2 = strchr(sep1, ',');
 	}
@@ -237,7 +235,7 @@ void base64encode(unsigned char *out, unsigned char *in, int inlen)
 		*out++ = base64digits[fragment];
 		*out++ = (inlen < 2) ? '=' : base64digits[(in[1] << 2) & 0x3c];
 		*out++ = '=';
-		
+
 	}
 }
 
@@ -268,7 +266,7 @@ int base64decode(unsigned char *out,unsigned char *in,int len)
 			break;
 
 		out[out_len++] = (c1 << 2) | ((c2 & 0x30) >> 4);
-		
+
 		do
 		{
 			c3 = in[i++] & 0xFF;
@@ -283,7 +281,7 @@ int base64decode(unsigned char *out,unsigned char *in,int len)
 
 		out[out_len++] = ((c2 & 0x0f) << 4) | ((c3 & 0x3c) >> 2);
 
-		do 
+		do
 		{
 			c4 = in[i++] & 0xFF;
 			if (c4 == 61)
@@ -298,15 +296,5 @@ int base64decode(unsigned char *out,unsigned char *in,int len)
 	}
 
 	return out_len;
-}
-
-inline int calc_base64_encode_len(int len)
-{
-	return (len/3 + (len%3?1:0))*4;
-}
-
-inline int calc_max_base64_decode_len(int len)
-{
-	return len*3/4;	
 }
 

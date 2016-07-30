@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * db_berkeley module, portions of this code were templated using
  * the dbtext and postgres modules.
 
@@ -18,10 +16,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
  * History:
  * --------
  * 2007-09-19  genesis (wiquan)
@@ -92,11 +90,14 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
-struct module_exports exports = {	
+struct module_exports exports = {
 	"db_berkeley",
+	MOD_TYPE_SQLDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,     /* Exported functions */
+	0,        /* Exported async functions */
 	params,   /* Exported parameters */
 	0,        /* exported statistics */
 	mi_cmds,  /* exported MI functions */
@@ -112,12 +113,12 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	db_parms_t p;
-	
+
 	p.auto_reload = auto_reload;
 	p.log_enable = log_enable;
 	p.cache_size  = (4 * 1024 * 1024); //4Mb
 	p.journal_roll_interval = journal_roll_interval;
-	
+
 	if(bdblib_init(&p))
 		return -1;
 
@@ -142,7 +143,7 @@ int bdb_bind_api(const str* mod, db_func_t *dbb)
 	dbb->query       = (db_query_f)bdb_query;
 	dbb->free_result = bdb_free_query;
 	dbb->insert      = (db_insert_f)bdb_insert;
-	dbb->delete      = (db_delete_f)bdb_delete; 
+	dbb->delete      = (db_delete_f)bdb_delete;
 	dbb->update      = (db_update_f)bdb_update;
 
 	return 0;
@@ -161,12 +162,12 @@ db_con_t* bdb_init(const str* _sqlurl)
 	db_con_t* _res;
 	str _s;
 	char bdb_path[BDB_PATH_LEN];
-	
+
 	if (!_sqlurl || !_sqlurl->s) {
 		LM_ERR("invalid parameter value\n");
 		return 0;
 	}
-	
+
 	_s.s = _sqlurl->s;
 	_s.len = _sqlurl->len;
 	if(_s.len <= BDB_ID_LEN || strncmp(_s.s, BDB_ID, BDB_ID_LEN)!=0)
@@ -177,7 +178,7 @@ db_con_t* bdb_init(const str* _sqlurl)
 	}
 	_s.s   += BDB_ID_LEN;
 	_s.len -= BDB_ID_LEN;
-	
+
 	if(_s.s[0]!='/')
 	{
 		if(sizeof(CFG_DIR)+_s.len+2 > BDB_PATH_LEN)
@@ -191,7 +192,7 @@ db_con_t* bdb_init(const str* _sqlurl)
 		_s.len += sizeof(CFG_DIR);
 		_s.s = bdb_path;
 	}
-	
+
 	_res = pkg_malloc(sizeof(db_con_t)+sizeof(bdb_con_t));
 	if (!_res)
 	{
@@ -223,7 +224,7 @@ void bdb_close(db_con_t* _h)
 	pkg_free(_h);
 }
 
-/* 
+/*
  * n can be the dbenv path or a table name
 */
 int bdb_reload(char* _n)
@@ -233,12 +234,12 @@ int bdb_reload(char* _n)
 	LM_DBG("[bdb_reload] Initiate RELOAD in %s\n", _n);
 #endif
 
-	if ((rc = bdblib_close(_n)) != 0) 
+	if ((rc = bdblib_close(_n)) != 0)
 	{	LM_ERR("[bdb_reload] Error while closing db_berkeley DB.\n");
 		return rc;
 	}
 
-	if ((rc = bdblib_reopen(_n)) != 0) 
+	if ((rc = bdblib_reopen(_n)) != 0)
 	{	LM_ERR("[bdb_reload] Error while reopening db_berkeley DB.\n");
 		return rc;
 	}
@@ -264,40 +265,40 @@ void bdb_check_reload(db_con_t* _con)
 	char t[MAX_TABLENAME_SIZE];
 	table_p tp = NULL;
 	tbl_cache_p tbc = NULL;
-	
+
 	p=n;
 	rc = len = 0;
-	
+
 	/*get dbenv name*/
 	db = BDB_CON_CONNECTION(_con);
 	if(!db->dbenv)	return;
 	s.s = db->name.s;
 	s.len = db->name.len;
 	len+=s.len;
-	
+
 	if(len > MAX_ROW_SIZE)
 	{	LM_ERR("dbenv name too long \n");
 		return;
 	}
-	
+
 	strncpy(p, s.s, s.len);
 	p+=s.len;
-	
+
 	len++;
 	if(len > MAX_ROW_SIZE)
 	{	LM_ERR("dbenv name too long \n");
 		return;
 	}
-	
+
 	/*append slash */
 	*p = '/';
 	p++;
-	
+
 	/*get table name*/
 	s.s = CON_TABLE(_con)->s;
 	s.len = CON_TABLE(_con)->len;
 	len+=s.len;
-	
+
 	if((len>MAX_ROW_SIZE) || (s.len > MAX_TABLENAME_SIZE) )
 	{	LM_ERR("table name too long \n");
 		return;
@@ -305,23 +306,23 @@ void bdb_check_reload(db_con_t* _con)
 
 	strncpy(t, s.s, s.len);
 	t[s.len] = 0;
-	
+
 	strncpy(p, s.s, s.len);
 	p+=s.len;
 	*p=0;
-	
+
 	if( (tbc = bdblib_get_table(db, &s)) == NULL)
 		return;
-	
+
 	if( (tp = tbc->dtp) == NULL)
 		return;
-	
+
 	LM_DBG("stat file [%.*s]\n", len, n);
 	rc = stat(n, &st);
 	if(!rc)
 	{	if((tp->ino!=0) && (st.st_ino != tp->ino))
 			bdb_reload(t); /*file changed on disk*/
-		
+
 		tp->ino = st.st_ino;
 	}
 
@@ -352,14 +353,15 @@ int bdb_free_query(db_con_t* _h, db_res_t* _r)
  * _nc: number of columns to return
  * _o: order by the specified column
  */
-int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v, 
+int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 			db_key_t* _c, int _n, int _nc, db_key_t _o, db_res_t** _r)
 {
 	tbl_cache_p _tbc = NULL;
 	table_p _tp = NULL;
 	char kbuf[MAX_ROW_SIZE];
 	char dbuf[MAX_ROW_SIZE];
-	u_int32_t i, ret; 
+	u_int32_t i;
+	int ret;
 	int klen=MAX_ROW_SIZE;
 	int *lkey=NULL, *lres=NULL;
 	DBT key, data;
@@ -374,7 +376,7 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 		return -1;
 	}
 	*_r = NULL;
-	
+
 	/*check if underlying DB file has changed inode */
 	if(auto_reload)
 		bdb_check_reload(_con);
@@ -397,20 +399,20 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	if (_o)  LM_DBG("DONT-CARE : _o: order by the specified column \n");
 	if (_op) LM_DBG("DONT-CARE : _op: operators for refining query \n");
 #endif
-	
+
 	db = _tp->db;
 	if(!db) return -1;
-	
+
 	memset(&key, 0, sizeof(DBT));
 	memset(kbuf, 0, MAX_ROW_SIZE);
 	memset(&data, 0, sizeof(DBT));
 	memset(dbuf, 0, MAX_ROW_SIZE);
-	
+
 	data.data = dbuf;
 	data.ulen = MAX_ROW_SIZE;
 	data.flags = DB_DBT_USERMEM;
 
-	/* if _c is NULL and _nc is zero, you will get all table 
+	/* if _c is NULL and _nc is zero, you will get all table
 	   columns in the result
 	*/
 	if (_c)
@@ -420,10 +422,10 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 			goto error;
 		}
 	}
-	
+
 	if(_k)
 	{	lkey = bdb_get_colmap(_tbc->dtp, _k, _n);
-		if(!lkey) 
+		if(!lkey)
 		{	ret = -1;
 			goto error;
 		}
@@ -439,32 +441,32 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 #endif
 
 		/* Acquire a cursor for the database. */
-		if ((ret = db->cursor(db, NULL, &dbcp, 0)) != 0) 
+		if ((ret = db->cursor(db, NULL, &dbcp, 0)) != 0)
 		{	LM_ERR("Error creating cursor\n");
 			goto error;
 		}
-		
+
 		/*count the number of records*/
 		while ((ret = dbcp->c_get(dbcp, &key, &data, DB_NEXT)) == 0)
-		{	if(!strncasecmp((char*)key.data,"METADATA",8)) 
+		{	if(!strncasecmp((char*)key.data,"METADATA",8))
 				continue;
 			i++;
 		}
-		
+
 		dbcp->c_close(dbcp);
 		ret=0;
-		
+
 #ifdef BDB_EXTRA_DEBUG
 		LM_DBG("%i = SELECT COUNT(*) FROM %.*s\n", i, _tp->name.len, _tp->name.s);
 #endif
 
 		*_r = db_new_result();
-		if (!*_r) 
+		if (!*_r)
 		{	LM_ERR("no memory left for result \n");
 			ret = -2;
 			goto error;
 		}
-		
+
 		if(i == 0)
 		{
 			/*return empty table*/
@@ -475,7 +477,7 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 		RES_ROW_N(*_r) = i;
 
 		/*fill in the column part of db_res_t (metadata) */
-		if ((ret = bdb_get_columns(_tbc->dtp, *_r, lres, _nc)) < 0) 
+		if ((ret = bdb_get_columns(_tbc->dtp, *_r, lres, _nc)) < 0)
 		{	LM_ERR("Error while getting column names\n");
 			goto error;
 		}
@@ -487,7 +489,7 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 		}
 
 		/* Acquire a cursor for the database. */
-		if ((ret = db->cursor(db, NULL, &dbcp, 0)) != 0) 
+		if ((ret = db->cursor(db, NULL, &dbcp, 0)) != 0)
 		{	LM_ERR("Error creating cursor\n");
 			goto error;
 		}
@@ -496,9 +498,9 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 		i =0 ;
 		while ((ret = dbcp->c_get(dbcp, &key, &data, DB_NEXT)) == 0)
 		{
-			if(!strncasecmp((char*)key.data,"METADATA",8)) 
+			if(!strncasecmp((char*)key.data,"METADATA",8))
 				continue;
-			
+
 #ifdef BDB_EXTRA_DEBUG
 		LM_DBG("KEY: [%.*s]\nDATA: [%.*s]\n"
 			, (int)   key.size
@@ -508,19 +510,19 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 #endif
 
 			/*fill in the row part of db_res_t */
-			if ((ret=bdb_append_row( *_r, dbuf, lres, i)) < 0) 
+			if ((ret=bdb_append_row( *_r, dbuf, lres, i)) < 0)
 			{	LM_ERR("Error while converting row\n");
 				goto error;
 			}
 			i++;
 		}
-		
+
 		dbcp->c_close(dbcp);
 		BDB_CON_RESULT(_con) = *_r;
-		return 0; 
+		return 0;
 	}
 
-	if ( (ret = bdblib_valtochar(_tp, lkey, kbuf, &klen, _v, _n, BDB_KEY)) != 0 ) 
+	if ( (ret = bdblib_valtochar(_tp, lkey, kbuf, &klen, _v, _n, BDB_KEY)) != 0 )
 	{	LM_ERR("error in query key \n");
 		goto error;
 	}
@@ -536,7 +538,7 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 
 	/*create an empty db_res_t which gets returned even if no result*/
 	*_r = db_new_result();
-	if (!*_r) 
+	if (!*_r)
 	{	LM_ERR("no memory left for result \n");
 		ret = -2;
 		goto error;
@@ -551,7 +553,7 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 #endif
 
 	/*query Berkely DB*/
-	if ((ret = db->get(db, NULL, &key, &data, 0)) == 0) 
+	if ((ret = db->get(db, NULL, &key, &data, 0)) == 0)
 	{
 		#ifdef BDB_EXTRA_DEBUG
 		LM_DBG("RESULT\nKEY:  [%.*s]\nDATA: [%.*s]\n"
@@ -562,7 +564,7 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 #endif
 
 		/*fill in the col part of db_res_t */
-		if ((ret = bdb_get_columns(_tbc->dtp, *_r, lres, _nc)) < 0) 
+		if ((ret = bdb_get_columns(_tbc->dtp, *_r, lres, _nc)) < 0)
 		{	LM_ERR("Error while getting column names\n");
 			goto error;
 		}
@@ -572,31 +574,31 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 			goto error;
 		}
 		/*fill in the row part of db_res_t */
-		if ((ret=bdb_convert_row( *_r, dbuf, lres)) < 0) 
+		if ((ret=bdb_convert_row( *_r, dbuf, lres)) < 0)
 		{	LM_ERR("Error while converting row\n");
 			goto error;
 		}
-		
+
 	}
 	else
-	{	
+	{
 		/*Berkeley DB error handler*/
 		switch(ret)
 		{
-		
+
 		case DB_NOTFOUND:
-		
+
 #ifdef BDB_EXTRA_DEBUG
 			LM_DBG("NO RESULT for QUERY \n");
 #endif
-		
+
 			ret=0;
 			break;
 		/*The following are all critical/fatal */
-		case DB_LOCK_DEADLOCK:	
-		// The operation was selected to resolve a deadlock. 
+		case DB_LOCK_DEADLOCK:
+		// The operation was selected to resolve a deadlock.
 		case DB_SECONDARY_BAD:
-		// A secondary index references a nonexistent primary key. 
+		// A secondary index references a nonexistent primary key.
 		case DB_RUNRECOVERY:
 		default:
 			LM_CRIT("DB->get error: %s.\n", db_strerror(ret));
@@ -604,23 +606,23 @@ int bdb_query(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 			goto error;
 		}
 	}
-	
+
 	if(lkey)
 		pkg_free(lkey);
 	if(lres)
 		pkg_free(lres);
-	
+
 	return ret;
-	
+
 error:
 	if(lkey)
 		pkg_free(lkey);
 	if(lres)
 		pkg_free(lres);
-	if(*_r) 
+	if(*_r)
 		db_free_result(*_r);
 	*_r = NULL;
-	
+
 	return ret;
 }
 
@@ -680,12 +682,12 @@ int bdb_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 #ifdef BDB_EXTRA_DEBUG
 	LM_DBG("INSERT in %.*s\n", _tp->name.len, _tp->name.s );
 #endif
-	
+
 	db = _tp->db;
 	memset(&key, 0, sizeof(DBT));
 	memset(kbuf, 0, klen);
-	
-	if(_tp->ncols<_n) 
+
+	if(_tp->ncols<_n)
 	{	LM_WARN("more values than columns!!\n");
 		return -5;
 	}
@@ -703,14 +705,14 @@ int bdb_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 			goto error;
 		}
 	}
-	
+
 	/* make the key */
-	if ( (ret = bdblib_valtochar(_tp, lkey, kbuf, &klen, _v, _n, BDB_KEY)) != 0 ) 
-	{	LM_ERR("Error in bdblib_valtochar  \n");
+	if ( (ret = bdblib_valtochar(_tp, lkey, kbuf, &klen, _v, _n, BDB_KEY)) != 0 )
+	{	LM_ERR("Error in bdblib_valtochar\n");
 		ret = -9;
 		goto error;
 	}
-	
+
 	key.data = kbuf;
 	key.ulen = MAX_ROW_SIZE;
 	key.flags = DB_DBT_USERMEM;
@@ -720,8 +722,8 @@ int bdb_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 	memset(&data, 0, sizeof(DBT));
 	memset(dbuf, 0, MAX_ROW_SIZE);
 
-	if ( (ret = bdblib_valtochar(_tp, lkey, dbuf, &dlen, _v, _n, BDB_VALUE)) != 0 ) 
-	{	LM_ERR("Error in bdblib_valtochar \n");
+	if ( (ret = bdblib_valtochar(_tp, lkey, dbuf, &dlen, _v, _n, BDB_VALUE)) != 0 )
+	{	LM_ERR("Error in bdblib_valtochar\n");
 		ret = -9;
 		goto error;
 	}
@@ -731,7 +733,7 @@ int bdb_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 	data.flags = DB_DBT_USERMEM;
 	data.size = dlen;
 
-	if ((ret = db->put(db, NULL, &key, &data, 0)) == 0) 
+	if ((ret = db->put(db, NULL, &key, &data, 0)) == 0)
 	{
 		bdblib_log(JLOG_INSERT, _tp, dbuf, dlen);
 
@@ -748,9 +750,9 @@ int bdb_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 		switch(ret)
 		{
 		/*The following are all critical/fatal */
-		case DB_LOCK_DEADLOCK:	
-		/* The operation was selected to resolve a deadlock. */ 
-		
+		case DB_LOCK_DEADLOCK:
+		/* The operation was selected to resolve a deadlock. */
+
 		case DB_RUNRECOVERY:
 		default:
 			LM_CRIT("DB->put error: %s.\n", db_strerror(ret));
@@ -758,11 +760,11 @@ int bdb_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 			goto error;
 		}
 	}
-	
+
 error:
 	if(lkey)
 		pkg_free(lkey);
-	
+
 	return ret;
 
 }
@@ -779,13 +781,13 @@ int bdb_delete(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n)
 	tbl_cache_p _tbc = NULL;
 	table_p _tp = NULL;
 	char kbuf[MAX_ROW_SIZE];
-	int i, j, ret, klen;
+	int ret, klen;
 	int *lkey=NULL;
 	DBT key,data;
 	DB *db;
 	DBC *dbcp;
 
-	i = j = ret = 0;
+	ret = 0;
 	klen=MAX_ROW_SIZE;
 
 	if (_op)
@@ -818,14 +820,14 @@ int bdb_delete(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n)
 	if(!_k || !_v || _n<=0)
 	{
 		/* Acquire a cursor for the database. */
-		if ((ret = db->cursor(db, NULL, &dbcp, DB_WRITECURSOR) ) != 0) 
+		if ((ret = db->cursor(db, NULL, &dbcp, DB_WRITECURSOR) ) != 0)
 		{	LM_ERR("Error creating cursor\n");
 			goto error;
 		}
-		
+
 		while ((ret = dbcp->c_get(dbcp, &key, &data, DB_NEXT)) == 0)
 		{
-			if(!strncasecmp((char*)key.data,"METADATA",8)) 
+			if(!strncasecmp((char*)key.data,"METADATA",8))
 				continue;
 #ifdef BDB_EXTRA_DEBUG
 			LM_DBG("KEY: [%.*s]\n"
@@ -834,7 +836,7 @@ int bdb_delete(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n)
 #endif
 			ret = dbcp->c_del(dbcp, 0);
 		}
-		
+
 		dbcp->c_close(dbcp);
 		return 0;
 	}
@@ -843,7 +845,7 @@ int bdb_delete(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n)
 	if(!lkey)  return -5;
 
 	/* make the key */
-	if ( (ret = bdblib_valtochar(_tp, lkey, kbuf, &klen, _v, _n, BDB_KEY)) != 0 ) 
+	if ( (ret = bdblib_valtochar(_tp, lkey, kbuf, &klen, _v, _n, BDB_KEY)) != 0 )
 	{	LM_ERR("Error in bdblib_makekey\n");
 		ret = -6;
 		goto error;
@@ -865,14 +867,14 @@ int bdb_delete(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n)
 	else
 	{	/*Berkeley DB error handler*/
 		switch(ret){
-			
+
 		case DB_NOTFOUND:
 			ret = 0;
 			break;
-			
+
 		/*The following are all critical/fatal */
-		case DB_LOCK_DEADLOCK:	
-		/* The operation was selected to resolve a deadlock. */ 
+		case DB_LOCK_DEADLOCK:
+		/* The operation was selected to resolve a deadlock. */
 		case DB_SECONDARY_BAD:
 		/* A secondary index references a nonexistent primary key. */
 		case DB_RUNRECOVERY:
@@ -885,20 +887,20 @@ int bdb_delete(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n)
 	}
 
 	ret = 0;
-	
+
 error:
 	if(lkey)
 		pkg_free(lkey);
-	
+
 	return ret;
 
 }
 
 /*
-_bdb_delete_cursor -- called from bdb_delete when the query involves operators 
+_bdb_delete_cursor -- called from bdb_delete when the query involves operators
   other than equal '='. Adds support for queries like this:
 	DELETE from SomeTable WHERE _k[0] < _v[0]
-  In this case, the keys _k are not the actually schema keys, so we need to 
+  In this case, the keys _k are not the actually schema keys, so we need to
   iterate via cursor to perform this operation.
 */
 int _bdb_delete_cursor(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n)
@@ -908,14 +910,14 @@ int _bdb_delete_cursor(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, i
 	db_res_t* _r   = NULL;
 	char kbuf[MAX_ROW_SIZE];
 	char dbuf[MAX_ROW_SIZE];
-	int i, ret, klen=MAX_ROW_SIZE;
+	int ret, klen=MAX_ROW_SIZE;
 	DBT key, data;
 	DB *db;
 	DBC *dbcp;
 	int *lkey=NULL;
-	
-	i = ret = 0;
-	
+
+	ret = 0;
+
 	if ((!_h) || !CON_TABLE(_h))
 		return -1;
 
@@ -930,45 +932,45 @@ int _bdb_delete_cursor(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, i
 	{	LM_WARN("table not loaded!\n");
 		return -4;
 	}
-	
+
 #ifdef BDB_EXTRA_DEBUG
 	LM_DBG("DELETE by cursor in %.*s\n", _tp->name.len, _tp->name.s );
 #endif
 
 	if(_k)
 	{	lkey = bdb_get_colmap(_tp, _k, _n);
-		if(!lkey) 
+		if(!lkey)
 		{	ret = -1;
 			goto error;
 		}
 	}
-	
+
 	/* create an empty db_res_t which gets returned even if no result */
 	_r = db_new_result();
-	if (!_r) 
+	if (!_r)
 	{	LM_ERR("no memory for result \n");
 	}
-	
+
 	RES_ROW_N(_r) = 0;
-	
+
 	/* fill in the col part of db_res_t */
-	if ((ret = bdb_get_columns(_tp, _r, 0, 0)) != 0) 
+	if ((ret = bdb_get_columns(_tp, _r, 0, 0)) != 0)
 	{	LM_ERR("Error while getting column names\n");
 		goto error;
 	}
-	
+
 	db = _tp->db;
 	memset(&key, 0, sizeof(DBT));
 	memset(kbuf, 0, klen);
 	memset(&data, 0, sizeof(DBT));
 	memset(dbuf, 0, MAX_ROW_SIZE);
-	
+
 	data.data = dbuf;
 	data.ulen = MAX_ROW_SIZE;
 	data.flags = DB_DBT_USERMEM;
-	
+
 	/* Acquire a cursor for the database. */
-	if ((ret = db->cursor(db, NULL, &dbcp, DB_WRITECURSOR)) != 0) 
+	if ((ret = db->cursor(db, NULL, &dbcp, DB_WRITECURSOR)) != 0)
 	{	LM_ERR("Error creating cursor\n");
 	}
 
@@ -985,39 +987,39 @@ int _bdb_delete_cursor(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, i
 		RES_ROW_N(_r) = 1;
 
 
-	
+
 		if(!strncasecmp((char*)key.data,"METADATA",8))
 			continue;
-		
+
 		/*fill in the row part of db_res_t */
-		
-		if ((ret=bdb_convert_row( _r, dbuf, 0)) < 0) 
+
+		if ((ret=bdb_convert_row( _r, dbuf, 0)) < 0)
 		{	LM_ERR("Error while converting row\n");
 			goto error;
 		}
-		
+
 		if(bdb_row_match(_k, _op, _v, _n, _r, lkey ))
 		{
 
 #ifdef BDB_EXTRA_DEBUG
-			LM_DBG("DELETE ROW by KEY:  [%.*s]\n", (int) key.size, 
+			LM_DBG("DELETE ROW by KEY:  [%.*s]\n", (int) key.size,
 				(char *)key.data);
 #endif
 
 			if((ret = dbcp->c_del(dbcp, 0)) != 0)
-			{	
+			{
 				/* Berkeley DB error handler */
 				LM_CRIT("DB->get error: %s.\n", db_strerror(ret));
 				bdblib_recover(_tp,ret);
 			}
-			
+
 		}
-		
+
 		memset(dbuf, 0, MAX_ROW_SIZE);
 		db_free_rows( _r);
 	}
 	ret = 0;
-	
+
 error:
 	if(dbcp)
 		dbcp->c_close(dbcp);
@@ -1025,7 +1027,7 @@ error:
 		db_free_result(_r);
 	if(lkey)
 		pkg_free(lkey);
-	
+
 	return ret;
 }
 
@@ -1037,7 +1039,7 @@ error:
  * _k: key names
  * _op: operators
  * _v: values of the keys that must match
- * _uk: update keys; cols that need to be updated 
+ * _uk: update keys; cols that need to be updated
  * _uv: update values; col values that need to be commited
  * _un: number of rows to update
  */
@@ -1055,9 +1057,9 @@ int bdb_update(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	char * tmp;
 	DBT key, qdata, udata;
 	DB *db;
-	
+
 	sum = ret = i = qcol = len = 0;
-	
+
 	if (!_con || !CON_TABLE(_con) || !_uk || !_uv || _un <= 0)
 		return -1;
 
@@ -1072,27 +1074,27 @@ int bdb_update(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	{	LM_ERR("table not loaded\n");
 		return -1;
 	}
-	
+
 	db = _tp->db;
 	if(!db)
 	{	LM_ERR("DB null ptr\n");
 		return -1;
 	}
-	
+
 #ifdef BDB_EXTRA_DEBUG
 	LM_DBG("UPDATE in %.*s\n", _tp->name.len, _tp->name.s);
 	if (_op) LM_DBG("DONT-CARE : _op: operators for refining query \n");
 #endif
-	
+
 	memset(&key, 0, sizeof(DBT));
 	memset(kbuf, 0, MAX_ROW_SIZE);
 	memset(&qdata, 0, sizeof(DBT));
 	memset(qbuf, 0, MAX_ROW_SIZE);
-	
+
 	qdata.data = qbuf;
 	qdata.ulen = MAX_ROW_SIZE;
 	qdata.flags = DB_DBT_USERMEM;
-	
+
 	if(_k)
 	{	lkey = bdb_get_colmap(_tbc->dtp, _k, _n);
 		if(!lkey) return -4;
@@ -1102,23 +1104,23 @@ int bdb_update(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 		LM_ERR("Null keys in update _k=0 \n");
 		return -1;
 	}
-	
+
 	len = MAX_ROW_SIZE;
-	
-	if ( (ret = bdblib_valtochar(_tp, lkey, kbuf, &len, _v, _n, BDB_KEY)) != 0 ) 
+
+	if ( (ret = bdblib_valtochar(_tp, lkey, kbuf, &len, _v, _n, BDB_KEY)) != 0 )
 	{	LM_ERR("Error in query key \n");
 		goto cleanup;
 	}
-	
+
 	if(lkey) pkg_free(lkey);
-	
+
 	key.data = kbuf;
 	key.ulen = MAX_ROW_SIZE;
 	key.flags = DB_DBT_USERMEM;
 	key.size = len;
-	
+
 	/*stage 1: QUERY Berkely DB*/
-	if ((ret = db->get(db, NULL, &key, &qdata, 0)) == 0) 
+	if ((ret = db->get(db, NULL, &key, &qdata, 0)) == 0)
 	{
 
 #ifdef BDB_EXTRA_DEBUG
@@ -1133,17 +1135,17 @@ int bdb_update(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	else
 	{	goto db_error;
 	}
-	
+
 	/* stage 2: UPDATE row with new values */
-	
-	/* map the provided keys to those in our schema */ 
+
+	/* map the provided keys to those in our schema */
 	lkey = bdb_get_colmap(_tbc->dtp, _uk, _un);
 	if(!lkey) return -4;
-	
+
 	/* build a new row for update data (udata) */
 	memset(&udata, 0, sizeof(DBT));
 	memset(ubuf, 0, MAX_ROW_SIZE);
-	
+
 	/* loop over each column of the qbuf and copy it to our new ubuf unless
 	   its a field that needs to update
 	*/
@@ -1157,16 +1159,16 @@ int bdb_update(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	while( c!=NULL)
 	{	char* delim = DELIM;
 		int k;
-		
+
 		len = strlen(c);
 		sum+=len;
-		
+
 		if(sum > MAX_ROW_SIZE)
 		{	LM_ERR("value too long for string \n");
 			ret = -3;
 			goto cleanup;
 		}
-		
+
 		for(i=0;i<_un;i++)
 		{
 			k = lkey[i];
@@ -1181,15 +1183,15 @@ int bdb_update(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 
 				goto next;
 			}
-			
+
 		}
-		
+
 		/* copy original column to the new column */
 		strncpy(t, c, len);
 
 next:
 		t+=len;
-		
+
 		/* append DELIM */
 		sum += DELIM_LEN;
 		if(sum > MAX_ROW_SIZE)
@@ -1197,14 +1199,14 @@ next:
 			ret = -3;
 			goto cleanup;
 		}
-		
+
 		strncpy(t, delim, DELIM_LEN);
 		t += DELIM_LEN;
-		
+
 		c = strsep(&tmp, DELIM);
 		qcol++;
 	}
-	
+
 	ubuf[sum]  = '0';
 	udata.data = ubuf;
 	udata.ulen  = MAX_ROW_SIZE;
@@ -1228,9 +1230,9 @@ next:
 	else
 	{	goto db_error;
 	}
-	
+
 	/* stage 4: INSERT new row with key*/
-	if ((ret = db->put(db, NULL, &key, &udata, 0)) == 0) 
+	if ((ret = db->put(db, NULL, &key, &udata, 0)) == 0)
 	{
 		bdblib_log(JLOG_UPDATE, _tp, ubuf, sum);
 #ifdef BDB_EXTRA_DEBUG
@@ -1253,7 +1255,7 @@ next:
 cleanup:
 	if(lkey)
 		pkg_free(lkey);
-	
+
 	return ret;
 
 
@@ -1262,27 +1264,27 @@ db_error:
 	/*Berkeley DB error handler*/
 	switch(ret)
 	{
-	
+
 	case DB_NOTFOUND:
-	
+
 #ifdef BDB_EXTRA_DEBUG
 		LM_DBG("NO RESULT \n");
 #endif
 		return -1;
-	
+
 	/* The following are all critical/fatal */
-	case DB_LOCK_DEADLOCK:	
+	case DB_LOCK_DEADLOCK:
 	/* The operation was selected to resolve a deadlock. */
 	case DB_SECONDARY_BAD:
-	/* A secondary index references a nonexistent primary key.*/ 
+	/* A secondary index references a nonexistent primary key.*/
 	case DB_RUNRECOVERY:
 	default:
 		LM_CRIT("DB->get error: %s.\n", db_strerror(ret));
 		bdblib_recover(_tp,ret);
 	}
-	
+
 	if(lkey)
 		pkg_free(lkey);
-	
+
 	return ret;
 }

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
@@ -46,7 +44,7 @@ int ser_error=-1;
 /*! previous error */
 int prev_ser_error=-1;
 
-int err2reason_phrase( 
+int err2reason_phrase(
 	int ser_error,  	/*!< current internal ser error */
 	int *sip_error,  	/*!< the sip error code to which ser error will be turned */
 	char *phrase,    	/*!< resulting error text */
@@ -105,10 +103,6 @@ int err2reason_phrase(
 			error_txt="q parameter too big";
 			*sip_error=-E_BAD_REQ;
 			break;
-		case E_Q_DEC_MISSING:
-			error_txt="Decimal part missing in q";
-			*sip_error=-E_BAD_REQ;
-			break;
 		case E_NO_DESTINATION:
 			error_txt="No destination available";
 			*sip_error=-E_BAD_SERVER;
@@ -125,7 +119,7 @@ int err2reason_phrase(
 			*sip_error=-E_BAD_SERVER;
 			break;
 	}
-	return snprintf( phrase, etl, "%s (%d/%s)", error_txt, 
+	return snprintf( phrase, etl, "%s (%d/%s)", error_txt,
 		-ser_error, signature );
 }
 
@@ -231,7 +225,7 @@ void get_reply_status( str *status, struct sip_msg *reply, int code )
 	} else {
 		phrase=reply->first_line.u.reply.reason;
 	}
-	status->len=phrase.len+3/*code*/+1/*space*/; 
+	status->len=phrase.len+3/*code*/+1/*space*/;
 	status->s=pkg_malloc(status->len+1/*ZT */);
 	if (!status->s) {
 		LM_ERR("no pkg mem\n");

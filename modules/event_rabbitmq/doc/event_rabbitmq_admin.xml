@@ -60,7 +60,7 @@
 	<section>
 	<title>RabbitMQ socket syntax</title>
 	<para>
-		<para><emphasis>'rabbitmq:' [user[':'password] '@' host [':' port] '/' exchange</emphasis></para>
+		<para><emphasis>'rabbitmq:' [user[':'password] '@' host [':' port] '/' [exchange '?'] routing_key</emphasis></para>
 	</para>
 	<para>
 		Meanings:
@@ -86,9 +86,13 @@
 					default value is '5672'.
 			</para>	</listitem>
 			<listitem><para>
-					<emphasis>exchange</emphasis> - this is the exchange routing 
-					information used by the AMQP protocol. It is also used to
-					identify the queue where the event should be sent.
+					<emphasis>exchange</emphasis> - exchange of the RabbitMQ server. The
+					default value is ''.
+			</para>	</listitem>
+			<listitem><para>
+					<emphasis>routing_key</emphasis> - this is the routing key
+					used by the AMQP protocol and it is used to identify the queue
+					where the event should be sent.
 					<para>NOTE: if the queue does not exist, this module will not 
 						try to create it.</para>
 			</para>	</listitem>
@@ -129,9 +133,49 @@
 
 	<section>
 	<title>Exported Parameters</title>
+	<section>
+		<title><varname>heartbeat</varname> (integer)</title>
 		<para>
-		No parameter exported by this module.
+			Enables heartbeat support for the AMQP communication. If the
+			client does not receive a heartbeat from server within the
+			specified interval, the socket is automatically closed by the
+			rabbitmq-client. This prevents OpenSIPS from blocking while
+			waiting for a response from a dead rabbitmq-server. The value
+			represents the heartbit interval in seconds.
 		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>heartbeat</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_rabbitmq", "heartbeat", 3)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>sync_mode</varname> (integer)</title>
+		<para>
+			Specifies whether an event raise operates synchronous or asynchronous relative to the process where the raise is triggered.In synchronous mode the process waits for the status of the raise from the actual worker process.In asynchronous mode the process continues its operation without receiving any confirmation.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0 (asynchronous)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>sync_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_rabbitmq", "sync_mode", 1)
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section>

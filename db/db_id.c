@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * Copyright (C) 2001-2005 iptel.org
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /**
@@ -56,7 +54,7 @@ static int dupl_string(char** dst, const char* begin, const char* end)
 
 
 /**
- * Parse a database URL of form 
+ * Parse a database URL of form
  * scheme://[username[:password]@]hostname[:port]/database
  *
  * \param id filled id struct
@@ -127,7 +125,7 @@ static int parse_db_url(struct db_id* id, const str* url)
 				st = ST_USER_HOST;
 				begin = url->s + i + 1;
 				break;
-				
+
 			default:
 				goto err;
 			}
@@ -194,7 +192,7 @@ static int parse_db_url(struct db_id* id, const str* url)
 				return 0;
 			}
 			break;
-			
+
 		case ST_DB:
 			break;
 		}
@@ -235,10 +233,15 @@ struct db_id* new_db_id(const str* url)
 	}
 	memset(ptr, 0, sizeof(struct db_id));
 
+
 	if (parse_db_url(ptr, url) < 0) {
 		LM_ERR("error while parsing database URL: '%.*s' \n", url->len, url->s);
 		goto err;
 	}
+
+	/* store the original url */
+	ptr->url.s = url->s;
+	ptr->url.len = url->len;
 
 	return ptr;
 
@@ -260,7 +263,11 @@ unsigned char cmp_db_id(const struct db_id* id1, const struct db_id* id2)
 	if (id1->port != id2->port) return 0;
 
 	if (strcmp(id1->scheme, id2->scheme)) return 0;
-	if (strcmp(id1->username, id2->username)) return 0;
+	if (id1->username != 0 && id2->username != 0) {
+		if (strcmp(id1->username, id2->username)) return 0;
+	} else {
+		if (id1->username!=0 || id2->username!=0) return 0;
+	}
 	if (id1->password!=0 && id2->password!=0) {
 		if(strcmp(id1->password, id2->password)) return 0;
 	} else {

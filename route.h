@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,13 +13,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
- * \file 
+ * \file
  * \brief SIP routing engine
  */
 
@@ -52,6 +50,15 @@ struct script_timer_route{
 	struct action* a;
 };
 
+#define EV_ROUTE_SYNC  0
+#define EV_ROUTE_ASYNC 1
+
+struct script_event_route{
+	char *name;
+	int mode;
+	struct action *a;
+};
+
 extern struct script_route rlist[RT_NO];			/*!< main "script table" */
 extern struct script_route onreply_rlist[ONREPLY_RT_NO];	/*!< main reply route table */
 extern struct script_route failure_rlist[FAILURE_RT_NO];	/*!< Failure route table */
@@ -60,7 +67,7 @@ extern struct script_route local_rlist;			/*!< Local route table */
 extern struct script_route error_rlist;			/*!< Error route table */
 extern struct script_route startup_rlist;		/*!< Startup route table */
 extern struct script_timer_route timer_rlist[TIMER_RT_NO];	/*!< Timer route table */
-extern struct script_route event_rlist[EVENT_RT_NO];	/*!< Events route table */
+extern struct script_event_route event_rlist[EVENT_RT_NO];	/*!< Events route table */
 
 #define REQUEST_ROUTE 1   /*!< Request route block */
 #define FAILURE_ROUTE 2   /*!< Negative-reply route block */
@@ -108,5 +115,9 @@ int check_rls();
 int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val);
 
 int run_startup_route(void);
+
+int is_script_func_used( char *name, int param_no);
+int is_script_async_func_used( char *name, int param_no);
+
 
 #endif

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2005-2008 Voice Sistem SRL
  *
  * This file is part of Open SIP Server (OpenSIPS).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * For any questions about this software and its license, please contact
  * Voice Sistem at following e-mail address:
@@ -37,6 +35,7 @@
 #include "../../usr_avp.h"
 #include "../../time_rec.h"
 #include "prefix_tree.h"
+#include "../../map.h"
 
 #define RG_HASH_SIZE
 #define RG_INIT_LEN 4
@@ -50,14 +49,16 @@ typedef struct hb_ {
 
 /* routing data is comprised of:
 	- a list of PSTN gw
-	- a hash over routing groups containing 
+	- a hash over routing groups containing
 	pointers to the coresponding prefix trees
 */
 typedef struct rt_data_ {
-	/* list of PSTN gw */
-	pgw_t *pgw_l;
-	/* list of carriers */
-	pcr_t *carriers;
+	/* avl of PSTN gw */
+	map_t pgw_tree;
+
+	/* avl of carriers */
+	map_t carriers_tree;
+
 	/* default routing list for prefixless rules */
 	ptree_node_t noprefix;
 	/* tree with routing prefixes */
@@ -69,10 +70,7 @@ typedef struct _dr_group {
 	int type;
 	union {
 		unsigned int grp_id;
-		struct _avp_id{
-			int name;
-			unsigned short type;
-		}avp_id;
+		int avp_name;
 	}u;
 } dr_group_t;
 
@@ -83,11 +81,11 @@ build_rt_data( void );
 
 int
 add_carrier(
-	int db_id,
 	char *id,
 	int flags,
 	char *gwlist,
 	char *attrs,
+	int state,
 	rt_data_t *rd
 	);
 
@@ -97,7 +95,7 @@ add_dst(
 	rt_data_t*,
 	/* id */
 	char *,
-	/* ip address */ 
+	/* ip address */
 	char*,
 	/* strip len */
 	int,
@@ -108,6 +106,10 @@ add_dst(
 	/* dst attrs*/
 	char*,
 	/* probe_mode */
+	int,
+	/* socket */
+	struct socket_info*,
+	/* state */
 	int
 	);
 
@@ -136,8 +138,10 @@ parse_destination_list(
 
 void
 del_pgw_list(
-	pgw_t *pgw_l
-	);
+		map_t pgw_tree
+		);
+
+
 
 void
 free_rt_data(

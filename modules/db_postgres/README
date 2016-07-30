@@ -10,8 +10,7 @@ Greg Fausak
 
    Copyright © 2003 Greg Fausak
    Revision History
-   Revision $Revision$ $Date: 2009-07-20 19:41:39 +0300
-                              (Mon, 20 Jul 2009) $
+   Revision $Revision: 5898 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -27,6 +26,7 @@ Greg Fausak
         1.3. Exported Parameters
 
               1.3.1. exec_query_threshold (integer)
+              1.3.2. max_db_queries (integer)
 
         1.4. Exported Functions
         1.5. Installation and Running
@@ -34,6 +34,7 @@ Greg Fausak
    List of Examples
 
    1.1. Set exec_query_threshold parameter
+   1.2. Set max_db_queries parameter
 
 Chapter 1. Admin Guide
 
@@ -69,6 +70,18 @@ Chapter 1. Admin Guide
    Example 1.1. Set exec_query_threshold parameter
 ...
 modparam("db_postgres", "exec_query_threshold", 60000)
+...
+
+1.3.2. max_db_queries (integer)
+
+   The maximum number of database queries to be executed. If this
+   parameter is set improperly, it is set to default value.
+
+   Default value is 2.
+
+   Example 1.2. Set max_db_queries parameter
+...
+modparam("db_postgres", "max_db_queries", 2)
 ...
 
 1.4. Exported Functions

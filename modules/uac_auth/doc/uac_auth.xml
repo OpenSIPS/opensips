@@ -18,6 +18,11 @@
 	<productname class="trade">&osipsname;</productname>
 	<authorgroup>
 		<author>
+			<firstname>Bogdan-Andrei</firstname>
+			<surname>Iancu</surname>
+				<email>bogdan@opensips.org</email>
+		</author>
+		<author>
 			<firstname>Ovidiu</firstname>
 			<surname>Sas</surname>
 				<email>osas@voipembedded.com</email>
@@ -27,10 +32,19 @@
 			<surname>Sas</surname>
 				<email>osas@voipembedded.com</email>
 		</editor>
+		<editor>
+			<firstname>Bogdan-Andrei</firstname>
+			<surname>Iancu</surname>
+				<email>bogdan@opensips.org</email>
+		</editor>
 	</authorgroup>
 	<copyright>
 		<year>2011</year>
 		<holder>VoIP Embedded, Inc.</holder>
+	</copyright>
+	<copyright>
+		<year>2013</year>
+		<holder>&osipssol;</holder>
 	</copyright>
 	<revhistory>
 		<revision>

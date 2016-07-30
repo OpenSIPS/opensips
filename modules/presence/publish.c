@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * presence module - presence server implementation
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -32,13 +30,14 @@
 #include "../../ut.h"
 #include "../../str.h"
 #include "../../parser/parse_to.h"
-#include "../../parser/parse_uri.h" 
-#include "../../parser/parse_expires.h" 
-#include "../../parser/parse_event.h" 
-#include "../../parser/parse_content.h" 
+#include "../../parser/parse_uri.h"
+#include "../../parser/parse_expires.h"
+#include "../../parser/parse_event.h"
+#include "../../parser/parse_content.h"
 #include "../../lock_ops.h"
 #include "../../hash_func.h"
 #include "../../db/db.h"
+#include "../../evi/evi_modules.h"
 #include "presence.h"
 #include "notify.h"
 #include "utils_func.h"
@@ -58,7 +57,67 @@ struct p_modif
 #define MAX_NO_OF_EXTRA_HDRS 4
 
 
-void inline build_extra_hdrs(struct sip_msg* msg, const str* map, str* extra_hdrs)
+/* event declaration */
+extern event_id_t        presence_event_id;
+
+static inline void presence_raise_event(presentity_t* presentity)
+{
+        evi_params_p list;
+        static str parameter_user_str = { "user", 4 };
+        static str parameter_domain_str = { "domain", 6 };
+        static str parameter_eventname_str = { "event", 5 };
+        static str parameter_expires_str = { "expires", 7 };
+        static str parameter_etag_str = { "etag", 4 };
+        static str parameter_body_str = { "body", 4 };
+        if (presence_event_id == EVI_ERROR) {
+                LM_ERR("event not registered %d\n", presence_event_id);
+                return;
+        }
+
+        if (evi_probe_event(presence_event_id)) {
+                if (!(list = evi_get_params()))
+                        return;
+                //if (evi_param_add_str(list, &parameter_user_str, &user)) {
+                if (evi_param_add_str(list, &parameter_user_str, &presentity->user)) {
+                         LM_ERR("unable to add user parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_param_add_str(list, &parameter_domain_str, &presentity->domain)) {
+                         LM_ERR("unable to add domain parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_param_add_str(list, &parameter_eventname_str, &presentity->event->name)) {
+                         LM_ERR("unable to add event parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_param_add_int(list, &parameter_expires_str, &presentity->expires)) {
+                         LM_ERR("unable to add expires parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_param_add_str(list, &parameter_etag_str, &presentity->etag)) {
+                         LM_ERR("unable to add etag parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_param_add_str(list, &parameter_body_str, &presentity->body)) {
+                         LM_ERR("unable to add body parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_raise_event(presence_event_id, list)) {
+                        LM_ERR("unable to send event %d\n", presence_event_id);
+                }
+        } else {
+                LM_DBG("no event sent\n");
+        }
+}
+
+
+static inline void build_extra_hdrs(struct sip_msg* msg, const str* map, str* extra_hdrs)
 {
 	struct hdr_field *hf;
 	str xtra_hdr_list[MAX_NO_OF_EXTRA_HDRS];
@@ -119,7 +178,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	db_op_t  db_ops[2] ;
 	db_key_t result_cols[6];
 	db_res_t *result = NULL;
-	db_row_t *row ;	
+	db_row_t *row ;
 	db_val_t *row_vals ;
 	int i =0, size= 0;
 	struct p_modif* p= NULL;
@@ -132,7 +191,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	str* rules_doc= NULL;
 	static str query_str = str_init("username");
 
-	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
+	if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 	{
 		LM_ERR("in use_table\n");
 		return ;
@@ -196,7 +255,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 
 		event.s= (char*)row_vals[event_col].val.string_val;
 		event.len= strlen(event.s);
-		
+
 		size= sizeof(presentity_t) + user.len+ domain.len+ etag.len;
 		pres= (presentity_t*)pkg_malloc(size);
 		if(pres== NULL)
@@ -205,7 +264,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 		}
 		memset(pres, 0, size);
 		size= sizeof(presentity_t);
-		
+
 		pres->user.s= (char*)pres+ size;
 		memcpy(pres->user.s, user.s, user.len);
 		pres->user.len= user.len;
@@ -253,13 +312,13 @@ no_notify:
 
 		rules_doc= NULL;
 
-		if(p[i].p->event->get_rules_doc && 
+		if(p[i].p->event->get_rules_doc &&
 		p[i].p->event->get_rules_doc(&p[i].p->user, &p[i].p->domain, &rules_doc)< 0)
 		{
 			LM_ERR("getting rules doc\n");
 			goto error;
 		}
-		if(publ_notify( p[i].p, p[i].uri, NULL, &p[i].p->etag, rules_doc, NULL)< 0)
+		if(publ_notify( p[i].p, p[i].uri, NULL, &p[i].p->etag, rules_doc, NULL, 0)< 0)
 		{
 			LM_ERR("sending Notify request\n");
 			goto error;
@@ -282,7 +341,7 @@ error:
 	if(result)
 		pa_dbf.free_result(pa_db, result);
 
-	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
+	if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 	{
 		LM_ERR("in use_table\n");
 		goto clean;
@@ -298,7 +357,7 @@ clean:
 	{
 		for(i= 0; i< n; i++)
 		{
-			
+
 			if(p[i].p)
 				pkg_free(p[i].p);
 			if(p[i].uri.s)
@@ -394,7 +453,7 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		LM_DBG("Expires header found, value= %d\n", lexpire);
 
 	}
-	else 
+	else
 	{
 		LM_DBG("'expires' not found; default=%d\n",	event->default_expires);
 		lexpire = event->default_expires;
@@ -433,7 +492,7 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		LM_DBG("existing etag= %.*s\n", etag.len, etag.s);
 	}
 
-	if (!msg->content_length) 
+	if (!msg->content_length)
 	{
 		LM_ERR("no Content-Length header found!\n");
 		goto error;
@@ -489,8 +548,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		{
 			LM_ERR("bad sender SIP address!\n");
 			goto error;
-		} 
-		else 
+		}
+		else
 		{
 			LM_DBG("using user id [%.*s]\n",buf_len,buf);
 		}
@@ -530,6 +589,9 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	presentity.sphere = sphere;
 	presentity.body = body;
 
+	/* send event E_PRESENCE_PUBLISH*/
+	presence_raise_event(&presentity);
+
 	/* querry the database and update or insert */
 	if(update_presentity(msg, &presentity, &sent_reply) <0)
 	{
@@ -549,14 +611,14 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	return 1;
 
 unsupported_event:
-	
+
 	LM_ERR("Missing or unsupported event header field value\n");
-		
+
 	if(msg->event && msg->event->body.s && msg->event->body.len>0)
 		LM_ERR("\tevent=[%.*s]\n", msg->event->body.len, msg->event->body.s);
 
 	reply_code= BAD_EVENT_CODE;
-	reply_str=	pu_489_rpl; 
+	reply_str=	pu_489_rpl;
 
 error:
 	if(sent_reply== 0)

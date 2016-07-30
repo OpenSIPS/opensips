@@ -31,6 +31,7 @@ Vladut-Stefan Paiu
               1.5.4. receive_timeout (int)
               1.5.5. wr_consistency_level (int)
               1.5.6. rd_consistency_level (int)
+              1.5.7. exec_threshold (int)
 
         1.6. Exported Functions
         1.7. Known issues
@@ -44,6 +45,7 @@ Vladut-Stefan Paiu
    1.5. Set receive_timeout parameter
    1.6. Set wr_consistency_level parameter
    1.7. Set rd_consistency_level parameter
+   1.8. Set exec_threshold parameter
 
 Chapter 1. Admin Guide
 
@@ -62,7 +64,7 @@ Chapter 1. Admin Guide
        will not affect the DB. The Cassandra DB is also persistent
        so it can also be restarted without loss of information.
      * Cassandra is an open-source project so it can be used to
-       exchange data with various other applicationsr
+       exchange data with various other applications
      * By creating a Cassandra Cluster, multiple OpenSIPS
        instances can easily share key-value information
 
@@ -183,6 +185,19 @@ modparam("cachedb_cassandra", "wr_consistency_level",7);
    Example 1.7. Set rd_consistency_level parameter
 ...
 modparam("cachedb_cassandra", "rd_consistency_level",7);
+...
+
+1.5.7. exec_threshold (int)
+
+   The maximum number of microseconds that a cassandra cache query
+   can last. Anything above the threshold will trigger a warning
+   message to the log
+
+   Default value is “0 ( unlimited - no warnings )”.
+
+   Example 1.8. Set exec_threshold parameter
+...
+modparam("cachedb_cassandra", "exec_threshold", 100000)
 ...
 
 1.6. Exported Functions

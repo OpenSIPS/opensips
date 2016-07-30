@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="cc_cdrs" xmlns:db="http://docbook.org/ns/docbook">
+	<name>cc_cdrs</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Call Center module to store
+		the Call Data Records (CDRs) for all the handled calls.
+		More information can be found at: &OPENSIPS_MOD_DOC;call_center.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>CDR unique ID in DB
+		</description>
+	</column>
+
+	<column id="caller">
+		<name>caller</name>
+		<type>string</type>
+		<size>64</size>
+		<description>The SIP URI identifing the caller.
+		</description>
+	</column>
+
+	<column id="received_timestamp">
+		<name>received_timestamp</name>
+		<type>datetime</type>
+		<description>When the call was received.
+		</description>
+	</column>
+
+	<column id="wait_time">
+		<name>wait_time</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>Time (in seconds) spent by the call
+		in queue (onhold).
+		</description>
+	</column>
+
+	<column id="pickup_time">
+		<name>pickup_time</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>Time (in seconds) spent by the call
+		in ringing to the agent.
+		</description>
+	</column>
+
+	<column id="talk_time">
+		<name>talk_time</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>The duration (in seconds) of the call.
+		</description>
+	</column>
+
+	<column id="flowid">
+		<name>flow_id</name>
+		<type>string</type>
+		<size>128</size>
+		<description>The ID of the flow the call was
+		received on.
+		</description>
+	</column>
+
+	<column id="agentid">
+		<name>agent_id</name>
+		<type>string</type>
+		<size>128</size>
+		<null/>
+		<default><null/></default>
+		<description>The ID of the agent who picked
+		this call (if any).
+		</description>
+	</column>
+
+	<column id="calltype">
+		<name>call_type</name>
+		<type>int</type>
+		<size>11</size>
+		<default>-1</default>
+		<description>Type of call: -2 - call rejected by agent;
+		 -1 - call dropped because of internal error;
+		  0 - call handled by agent;
+		  1 - call dropped while in queue;
+		</description>
+	</column>
+
+	<column id="rejected">
+		<name>rejected</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>How many times the call was rejected by agents
+		(agent not answering his phone).
+		</description>
+	</column>
+
+	<column id="fstats">
+		<name>fstats</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>Bitmask of the following binary flags: 
+		0 - it is inbound call;
+		1 - call was distributed to agents;
+		2 - call was answered;
+		3 - call was abandoned.
+		</description>
+	</column>
+
+	<column id="cid">
+		<name>cid</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<null/>
+		<description>Sequence number of the call.
+		</description>
+	</column>
+
+</table>

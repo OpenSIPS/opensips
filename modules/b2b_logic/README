@@ -17,8 +17,7 @@ Ovidiu Sas
 
    Copyright © 2010 VoIP Embedded, Inc.
    Revision History
-   Revision $Revision: 8137 $ $Date: 2013-01-29 14:35:11 +0200
-                              (Tue, 29 Jan 2013) $
+   Revision $Revision: 8137 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -439,31 +438,24 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
      * b2bl_key - a pseudo-variable that contains the b2b_logic
        key
      * entity_no - a pseudo-variable that holds the entity of the
-       particapnt to bridge.
+       entity/participant to bridge.
 
    Example 1.18. b2b_bridge_request usage
 ...
-modparam("b2b_logic", "b2bl_key_avp", "$avp(99)")
+modparam("b2b_entities", "script_req_route", "b2b_request")
 ...
-route(X)
+route[b2b_request]
 {
-   # handling b2b calls here
+   # incoming requests from the B2B entities
    ...
-   b2b_init_request("top hiding");
-   xlog("L_INFO","[$mi] got b2bl_key='$avp(99)'\n");
-   # saving the b2b key into the local cache
-   cache_store("local","some_b2bl_key_identifier","$avp(99)");
-   ...
-}
-
-route(Y)
-{
-   # handling calls to bridge to existing b2b calls
-   ...
-   # retrieving the key of a b2b call
-   cache_fetch("local","some_b2bl_key_identifier", $avp(98) );
-   $var(entity) = 1;
-   b2b_bridge_request("$avp(98)","$var(entity)");
+   if ($ci~="^B2B") { #keep this aligned with b2b_key_prefix
+      # request coming from the UAC side;
+      # the Call-ID carries the B2B key ID
+      if (is_method("BYE") {
+         $var(entity) = 1;
+         b2b_bridge_request("$ci","$var(entity)");
+      }
+   }
    ...
 }
 ...

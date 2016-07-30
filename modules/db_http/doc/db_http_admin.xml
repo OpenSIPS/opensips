@@ -89,7 +89,7 @@ modparam("db_http", "SSL",1)
 		</example>
 	</section>
 	<section>
-		<title><varname>cap_raw_quey</varname>(int)</title>
+		<title><varname>cap_raw_query</varname>(int)</title>
 		<para>
 		Whether or not the server supports raw queries.
 		</para>
@@ -98,10 +98,10 @@ modparam("db_http", "SSL",1)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>cap_raw_quey</varname> parameter</title>
+		<title>Set <varname>cap_raw_query</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("db_http", "cap_raw_quey", 1)
+modparam("db_http", "cap_raw_query", 1)
 ...
 </programlisting>
 		</example>
@@ -222,6 +222,27 @@ modparam("db_http", "quote_delimiter","|")
 	</section>
 
 	<section>
+		<title><varname>value_delimiter</varname> (str)</title>
+		<para>
+		The delimiter used to separate multiple fields of a single
+		variable (see <xref linkend="http-variables"/>).
+		Only one char may be set.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>,</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>value_delimiter</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_http", "value_delimiter",";")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>timeout</varname> (int)</title>
 		<para>
 		The maximum number of milliseconds that the HTTP ops are allowed to last
@@ -234,7 +255,7 @@ modparam("db_http", "quote_delimiter","|")
 		<title>Set <varname>timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("db_http", "timeout","5000")
+modparam("db_http", "timeout",5000)
 ...
 </programlisting>
 		</example>
@@ -280,7 +301,7 @@ GET /presentity/?c=username,domain,event,expires HTTP/1.1
 	</section>
 
 
-	<section>
+	<section id="http-variables">
 		<title>Variables</title>
 		<para>
 		A description of all the variables. Each variable can have

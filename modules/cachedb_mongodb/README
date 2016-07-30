@@ -29,6 +29,7 @@ Vladut-Stefan Paiu
               1.5.2. op_timeout (int)
               1.5.3. slave_ok (int)
               1.5.4. write_concern (string)
+              1.5.5. exec_threshold (int)
 
         1.6. Exported Functions
         1.7. Raw Query Syntax
@@ -40,8 +41,9 @@ Vladut-Stefan Paiu
    1.3. Set op_timeout parameter
    1.4. Set slave_ok parameter
    1.5. Set write_concern parameter
-   1.6. Mongo Raw Query Syntax
-   1.7. Mongo Raw Query Examples
+   1.6. Set exec_threshold parameter
+   1.7. Mongo Raw Query Syntax
+   1.8. Mongo Raw Query Examples
 
 Chapter 1. Admin Guide
 
@@ -60,7 +62,7 @@ Chapter 1. Admin Guide
        will not affect the DB. The MongoDB is also persistent so
        it can also be restarted without loss of information.
      * MongoDB is an open-source project so it can be used to
-       exchange data with various other applicationsr
+       exchange data with various other applications
      * By creating a MongoDB Cluster, multiple OpenSIPS instances
        can easily share key-value information
      * This module also implements the CacheDB Raw query
@@ -86,9 +88,10 @@ Chapter 1. Admin Guide
        The libjson library can be downloaded from:
        http://oss.metaparadigm.com/json-c/
      * mongo-c-driver
-       The mongo C driver can be downloaded from
-       https://github.com/mongodb/mongo-c-driver Note : Please use
-       the 0.6 version of the driver
+       The mongo C driver can be downloaded from MongoDB's GitHub
+       repository. Make sure to get the 0.6 version:
+       "git clone https://github.com/mongodb/mongo-c-driver.git -b
+       v0.6"
 
 1.5. Exported Parameters
 
@@ -149,6 +152,19 @@ modparam("cachedb_mongodb","write_concern","{ \"getLastError\": 1, "j" :
  "true" }")
 ...
 
+1.5.5. exec_threshold (int)
+
+   The maximum number of microseconds that a mongodb query can
+   last. Anything above the threshold will trigger a warning
+   message to the log
+
+   Default value is “0 ( unlimited - no warnings )”.
+
+   Example 1.6. Set exec_threshold parameter
+...
+modparam("cachedb_mongodb", "exec_threshold", 100000)
+...
+
 1.6. Exported Functions
 
    The module does not export functions to be used in
@@ -165,7 +181,7 @@ modparam("cachedb_mongodb","write_concern","{ \"getLastError\": 1, "j" :
 
    The syntax looks like the following :
 
-   Example 1.6. Mongo Raw Query Syntax
+   Example 1.7. Mongo Raw Query Syntax
 ...
 cache_raw_query("mongodb","{ \"op\" : \"desiredOP\", \"ns\" : \"db.colle
 ction\", \"query\": {\"_id\" : $rU} }","$avp(mongo_result)");
@@ -201,7 +217,7 @@ ction\", \"query\": {\"_id\" : $rU} }","$avp(mongo_result)");
 
    Here are a couple examples of running some mongoDB queries :
 
-   Example 1.7. Mongo Raw Query Examples
+   Example 1.8. Mongo Raw Query Examples
 ...
 /* find documents where my_key has the value 345, and return just the en
 try1 and entry2 values from the matching documents */

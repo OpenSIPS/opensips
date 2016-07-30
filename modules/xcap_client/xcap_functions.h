@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * xcap_client module - XCAP client for OpenSIPS
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -48,7 +46,7 @@ typedef struct xcap_doc_sel
 {
 	str auid;
 	int doc_type;
-	int type; 
+	int type;
 	str xid;
 	str filename;
 }xcap_doc_sel_t;
@@ -102,10 +100,10 @@ xcap_node_sel_t* xcapNodeSelAddStep(xcap_node_sel_t* curr_sel, str* name,
 typedef xcap_node_sel_t* (*xcap_nodeSel_add_step_t)(xcap_node_sel_t* curr_sel,
 	str* name,str* namespace,int pos,attr_test_t*  attr_test,str* extra_sel);
 
-xcap_node_sel_t* xcapNodeSelAddTerminal(xcap_node_sel_t* curr_sel, 
+xcap_node_sel_t* xcapNodeSelAddTerminal(xcap_node_sel_t* curr_sel,
 		char* attr_sel, char* namespace_sel, char* extra_sel );
 
-typedef xcap_node_sel_t* (*xcap_nodeSel_add_terminal_t)(xcap_node_sel_t* curr_sel, 
+typedef xcap_node_sel_t* (*xcap_nodeSel_add_terminal_t)(xcap_node_sel_t* curr_sel,
 		char* attr_sel, char* namespace_sel, char* extra_sel );
 
 /* generical function to get an element from an xcap server */
@@ -117,7 +115,7 @@ void xcapFreeNodeSel(xcap_node_sel_t* node);
 
 typedef void (*xcap_nodeSel_free_t)(xcap_node_sel_t* node);
 
-/* specifical function to get a new document, not present in xcap table 
+/* specifical function to get a new document, not present in xcap table
  * to be updated and handled by the xcap_client module*/
 typedef int (*xcapGetNewDoc_t)(xcap_get_req_t req, str user, str domain,
 		str* xcap_doc);
@@ -139,6 +137,6 @@ typedef int (*bind_xcap_client_t)(xcap_client_api_t* api);
 char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 		int match_type, char** etag, int* doc_len);
 
-int xcapGetNewDoc(xcap_get_req_t req, str user, 
+int xcapGetNewDoc(xcap_get_req_t req, str user,
 		str domain, str* xcap_doc);
 #endif

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2004-2006 Voice Sistem SRL
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -34,6 +32,7 @@
 #include "../../db/db.h"
 #include "../../db/db_insertq.h"
 #include "../../dprint.h"
+#include "../../route.h"
 #include "avpops_parse.h"
 #include "avpops_db.h"
 
@@ -46,6 +45,8 @@ static db_val_t   vals_cmp[3]; /* statement as in "select" and "delete" */
 
 /* linked list with all defined DB schemes */
 static struct db_scheme  *db_scheme_list=0;
+
+struct db_url *default_db_url = NULL;
 
 /* array of db urls */
 static struct db_url *db_urls = NULL;  /* array of database urls */
@@ -113,10 +114,11 @@ int add_db_url(modparam_t type, void *val)
 		return E_OUT_OF_MEM;
 	}
 
+	memset(&db_urls[no_db_urls], '\0', sizeof *db_urls);
+
 	db_urls[no_db_urls].url.s = url;
 	db_urls[no_db_urls].url.len = strlen(url);
 	db_urls[no_db_urls].idx = idx;
-	db_urls[no_db_urls].hdl = NULL;
 
 	no_db_urls++;
 
@@ -145,8 +147,29 @@ int avpops_db_bind(void)
 		}
 	}
 
-	return 0;
+	/*
+	 * we cannot catch the default DB url usage at fixup time
+	 * as we do with the other bunch of extra avpops DB URLs
+	 *
+	 * so just dig through the whole script tree
+	 */
+	if (is_script_func_used("avp_db_query", 1) ||
+	    is_script_func_used("avp_db_query", 2)) {
+		if (!DB_CAPABILITY(default_db_url->dbf, DB_CAP_RAW_QUERY)) {
+			LM_ERR("driver for DB URL [default] does not support "
+				   "raw queries!\n");
+			return -1;
+		}
+	}
 
+	if (is_script_async_func_used("avp_db_query", 1) ||
+	    is_script_async_func_used("avp_db_query", 2)) {
+		if (!DB_CAPABILITY(default_db_url->dbf, DB_CAP_ASYNC_RAW_QUERY))
+			LM_WARN("async() calls for DB URL [default] will work "
+			        "in normal mode due to driver limitations\n");
+	}
+
+	return 0;
 }
 
 
@@ -399,17 +422,10 @@ int db_delete_avp(struct db_url *url, str *uuid, str *username, str *domain,
 }
 
 
-
-int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
+int db_query_avp(struct db_url *url, struct sip_msg *msg, str *query,
 														pvname_list_t* dest)
 {
-	int_str avp_val;
-	int_str avp_name;
-	unsigned short avp_type;
 	db_res_t* db_res = NULL;
-	int i, j;
-	pvname_list_t* crt;
-	static str query_str;
 
 	if(query==NULL)
 	{
@@ -417,15 +433,13 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 		return -1;
 	}
 
-	query_str.s = query;
-	query_str.len = strlen(query);
-	
-	if(url->dbf.raw_query( url->hdl, &query_str, &db_res)!=0)
+	if(url->dbf.raw_query( url->hdl, query, &db_res)!=0)
 	{
 		const str *t = url->hdl&&url->hdl->table&&url->hdl->table->s
 			? url->hdl->table : 0;
-		LM_ERR("raw_query failed: db%d(%.*s) %.40s...\n", 
-		  url->idx, t?t->len:0, t?t->s:"", query);
+		LM_ERR("raw_query failed: db%d(%.*s) %.*s...\n",
+		  url->idx, t?t->len:0, t?t->s:"", query->len > 40 ? 40 : query->len,
+		  query->s);
 		return -1;
 	}
 
@@ -436,16 +450,33 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 		return 1;
 	}
 
+	if (db_query_avp_print_results(msg, db_res, dest) != 0) {
+		LM_ERR("failed to print results\n");
+		db_close_query( url, db_res );
+		return -1;
+	}
+
+	db_close_query( url, db_res );
+	return 0;
+}
+
+int db_query_avp_print_results(struct sip_msg *msg, const db_res_t *db_res,
+								pvname_list_t *dest)
+{
+	int_str avp_val;
+	int_str avp_name;
+	unsigned short avp_type;
+	int i, j;
+	pvname_list_t* crt;
+
 	LM_DBG("rows [%d]\n", RES_ROW_N(db_res));
 	/* reverse order of rows so that first row get's in front of avp list */
-	for(i = RES_ROW_N(db_res)-1; i >= 0; i--) 
+	for(i = RES_ROW_N(db_res)-1; i >= 0; i--)
 	{
 		LM_DBG("row [%d]\n", i);
 		crt = dest;
-		for(j = 0; j < RES_COL_N(db_res); j++) 
+		for(j = 0; j < RES_COL_N(db_res); j++)
 		{
-			if(RES_ROWS(db_res)[i].values[j].nul)
-				goto next_avp;
 			avp_type = 0;
 			if(crt==NULL)
 			{
@@ -463,14 +494,20 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 					goto next_avp;
 				}
 			}
-			switch(RES_ROWS(db_res)[i].values[j].type)
-			{
+			if(RES_ROWS(db_res)[i].values[j].nul) {
+				avp_type |= AVP_VAL_STR;
+				/* keep the NULL value in sync with str_null as
+				 * defined in pvar.c !! */
+				avp_val.s.s = "<null>";
+				avp_val.s.len = 6;
+			} else {
+				switch(RES_ROWS(db_res)[i].values[j].type) {
 				case DB_STRING:
 					avp_type |= AVP_VAL_STR;
 					avp_val.s.s=
 						(char*)RES_ROWS(db_res)[i].values[j].val.string_val;
 					avp_val.s.len=strlen(avp_val.s.s);
-					if(avp_val.s.len<=0)
+					if(avp_val.s.len<0)
 						goto next_avp;
 				break;
 				case DB_STR:
@@ -479,41 +516,43 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 						RES_ROWS(db_res)[i].values[j].val.str_val.len;
 					avp_val.s.s=
 						(char*)RES_ROWS(db_res)[i].values[j].val.str_val.s;
-					if(avp_val.s.len<=0)
+					if(avp_val.s.len<0)
 						goto next_avp;
 				break;
 				case DB_BLOB:
 					avp_type |= AVP_VAL_STR;
-					avp_val.s.len=
+					avp_val.s.len =
 						RES_ROWS(db_res)[i].values[j].val.blob_val.len;
-					avp_val.s.s=
+					avp_val.s.s =
 						(char*)RES_ROWS(db_res)[i].values[j].val.blob_val.s;
-					if(avp_val.s.len<=0)
+					if(avp_val.s.len<0)
 						goto next_avp;
 				break;
 				case DB_INT:
-					avp_val.n
-						= (int)RES_ROWS(db_res)[i].values[j].val.int_val;
+					avp_val.n =
+						(int)RES_ROWS(db_res)[i].values[j].val.int_val;
 				break;
 				case DB_DATETIME:
-					avp_val.n
-						= (int)RES_ROWS(db_res)[i].values[j].val.time_val;
+					avp_val.n =
+						(int)RES_ROWS(db_res)[i].values[j].val.time_val;
 				break;
 				case DB_BITMAP:
-					avp_val.n
-						= (int)RES_ROWS(db_res)[i].values[j].val.bitmap_val;
+					avp_val.n =
+						(int)RES_ROWS(db_res)[i].values[j].val.bitmap_val;
 				break;
 				case DB_BIGINT:
-					avp_val.n = (int)RES_ROWS(db_res)[i].values[j].val.bigint_val;
+					avp_val.n =
+						(int)RES_ROWS(db_res)[i].values[j].val.bigint_val;
 				break;
 				default:
-					LM_WARN("Unknown type %d\n",RES_ROWS(db_res)[i].values[j].type);
+					LM_WARN("Unknown type %d\n",
+						RES_ROWS(db_res)[i].values[j].type);
 					goto next_avp;
+				}
 			}
 			if(add_avp(avp_type, avp_name.n, avp_val)!=0)
 			{
 				LM_ERR("unable to add avp\n");
-				db_close_query( url, db_res );
 				return -1;
 			}
 next_avp:
@@ -526,6 +565,5 @@ next_avp:
 		}
 	}
 
-	db_close_query( url, db_res );
 	return 0;
 }

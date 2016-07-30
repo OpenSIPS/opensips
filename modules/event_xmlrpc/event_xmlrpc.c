@@ -1,3 +1,28 @@
+/*
+ * Copyright (C) 2012 OpenSIPS Solutions
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ *
+ * history:
+ * ---------
+ *  2012-05-xx  created (razvancrainea)
+ */
+
 #include "../../sr_module.h"
 #include "../../resolve.h"
 #include "../../evi/evi_transport.h"
@@ -9,11 +34,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+extern unsigned xmlrpc_struct_on;
+extern unsigned xmlrpc_sync_mode;
+
 /**
  * module functions
  */
 static int mod_init(void);
 static void destroy(void);
+static int child_init(int);
 
 /**
  * exported functions
@@ -33,15 +62,25 @@ static proc_export_t procs[] = {
 	{0,0,0,0,0,0}
 };
 
+/* module parameters */
+static param_export_t mod_params[] = {
+	{"use_struct_param",		INT_PARAM, &xmlrpc_struct_on},
+	{"sync_mode",		INT_PARAM, &xmlrpc_sync_mode},
+	{0,0,0}
+};
+
 /**
  * module exports
  */
-struct module_exports exports= {
+struct module_exports exports = {
 	"event_xmlrpc",				/* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	0,							/* exported functions */
-	0,							/* exported parameters */
+	0,							/* exported async functions */
+	mod_params,					/* exported parameters */
 	0,							/* exported statistics */
 	0,							/* exported MI functions */
 	0,							/* exported pseudo-variables */
@@ -49,12 +88,11 @@ struct module_exports exports= {
 	mod_init,					/* module initialization function */
 	0,							/* response handling function */
 	destroy,					/* destroy function */
-	0							/* per-child init function */
+	child_init							/* per-child init function */
 };
 
-
 /**
- * exported functions for core event interface 
+ * exported functions for core event interface
  */
 static evi_export_t trans_export_xmlrpc = {
 	XMLRPC_STR,					/* transport module name */
@@ -66,6 +104,13 @@ static evi_export_t trans_export_xmlrpc = {
 	XMLRPC_FLAG					/* flags */
 };
 
+static int child_init(int rank) {
+	if (xmlrpc_init_writer() < 0) {
+		LM_ERR("cannot init writing pipe\n");
+		return -1;
+	}
+	return 0;
+}
 
 /**
  * init module function
@@ -91,7 +136,6 @@ static int mod_init(void)
 
 	return 0;
 }
-
 
 /* returns 0 if sockets match */
 static int xmlrpc_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
@@ -121,21 +165,30 @@ static int xmlrpc_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 /*
  * This is the parsing function
  * The socket grammar should be:
- * 		 ip ':' port ':' method
+ * 		 ip ':' port '/optional/path' ':' method
  */
 static evi_reply_sock* xmlrpc_parse(str socket)
 {
 	evi_reply_sock *sock = NULL;
 	unsigned short port = 0;
 	char *p = NULL;
-	str host, *method;
+	str host, path=str_init(NULL);
 	struct hostent *hentity;
 	int len;
+	struct xmlrpc_sock_param *params;
+
+	int http_buf_len=0;
 
 	if (!socket.len || !socket.s) {
 		LM_ERR("no socket specified\n");
 		return NULL;
 	}
+
+	if (!(params=shm_malloc(sizeof(struct xmlrpc_sock_param)))) {
+		LM_ERR("no more pkg mem!\n");
+		return NULL;
+	}
+	memset(params, 0, sizeof(struct xmlrpc_sock_param));
 
 	/* extract host */
 	host.s = socket.s;
@@ -145,6 +198,7 @@ static evi_reply_sock* xmlrpc_parse(str socket)
 		return NULL;
 	}
 	host.len = p - socket.s;
+
 	/* used to resolve host */
 	*p = '\0';
 	/* skip colon */
@@ -153,7 +207,7 @@ static evi_reply_sock* xmlrpc_parse(str socket)
 
 	LM_DBG("host is %.*s - remains <%.*s>[%d]\n", host.len, host.s,
 			socket.len, socket.s, socket.len);
-	
+
 	if (!socket.len || *socket.s == '\0') {
 		LM_ERR("invalid port number\n");
 		return NULL;
@@ -164,13 +218,32 @@ static evi_reply_sock* xmlrpc_parse(str socket)
 		LM_ERR("method not specified <%.*s>\n", socket.len, socket.s);
 		return NULL;
 	}
+
 	port = str2s(socket.s, p - socket.s, 0);
 	if (port == 0) {
-		LM_DBG("malformed port: %.*s\n",(int)(p - socket.s), socket.s);
-		return NULL;
+		/* most probably we've got path */
+		if ((path.s=(q_memchr(socket.s, SLASH_C, p-socket.s)))==NULL) {
+			LM_ERR("malformed port: %.*s\n",(int)(p - socket.s), socket.s);
+			return NULL;
+		} else {
+			port=str2s(socket.s, path.s-socket.s, 0);
+			if (port == 0) {
+				LM_ERR("malformed port: %.*s\n",(int)(p - socket.s), socket.s);
+				return NULL;
+			}
+
+			path.len = p - path.s;
+
+			socket.len -= ((path.s+path.len)-socket.s);
+			socket.s = path.s+path.len;
+		}
+
+		/* will use this later for allocation */
+		http_buf_len=LENOF(XMLRPC_HTTP_METHOD) +  path.len +
+			LENOF(XMLRPC_HTTP_PROTO_HOST);
 	}
 
-	/* skip colon */
+	/* jump over ':' */
 	socket.len = socket.len - (p - socket.s + 1);
 	socket.s = p + 1;
 
@@ -181,11 +254,10 @@ static evi_reply_sock* xmlrpc_parse(str socket)
 		LM_ERR("invalid method name\n");
 		return NULL;
 	}
-	
-	LM_DBG("method is %.*s[%d]\n", socket.len, socket.s, socket.len);
 
-	len = sizeof(evi_reply_sock) - sizeof(void*) + sizeof(str) + 
-		host.len + socket.len;
+	len = sizeof(evi_reply_sock) + host.len
+		+ sizeof(struct xmlrpc_sock_param)
+		+ socket.len /* this is method */+ http_buf_len;
 	sock = shm_malloc(len);
 	if (!sock) {
 		LM_ERR("no more memory for socket\n");
@@ -209,21 +281,52 @@ static evi_reply_sock* xmlrpc_parse(str socket)
 	}
 	sock->flags |= EVI_SOCKET;
 
-	/* copy method  - this should point to same address as params*/
-	method = (str *) &sock->params;
-	method->s = (char *) (method + 1);
-	method->len = socket.len;
-	memcpy(method->s, socket.s, socket.len);
-	sock->flags |= EVI_PARAMS;
-
-	/* address should point below method name */
-	sock->address.s = method->s + method->len;
+	/* address */
+	sock->address.s = (char*)(sock+1);
 	sock->address.len = host.len;
 	memcpy(sock->address.s, host.s, host.len);
 	sock->flags |= EVI_ADDRESS;
 
+
+
+	/* copy parameters: path and method */
+	params = (struct xmlrpc_sock_param*)(sock->address.s + host.len);
+	params->method.s = (char*)(params+1);
+
+	memcpy(params->method.s, socket.s, socket.len);
+	params->method.len = socket.len;
+
+	if (http_buf_len) {
+		/* build only once; not for every message */
+		params->first_line.s = (char*)(params->method.s+socket.len);
+
+		memcpy(params->method.s, socket.s, socket.len);
+
+		params->first_line.len = 0;
+
+		memcpy(params->first_line.s,
+				XMLRPC_HTTP_METHOD, LENOF(XMLRPC_HTTP_METHOD));
+		params->first_line.len = LENOF(XMLRPC_HTTP_METHOD);
+
+		memcpy(params->first_line.s+params->first_line.len, path.s, path.len);
+		params->first_line.len += path.len;
+
+		memcpy(params->first_line.s+params->first_line.len, XMLRPC_HTTP_PROTO_HOST,
+				LENOF(XMLRPC_HTTP_PROTO_HOST));
+		params->first_line.len += LENOF(XMLRPC_HTTP_PROTO_HOST);
+	} else {
+		params->first_line.s = XMLRPC_HTTP_CONST;
+		params->first_line.len = LENOF(XMLRPC_HTTP_CONST);
+	}
+
+
+
+	sock->flags |= EVI_PARAMS;
+
 	/* needs expire */
 	sock->flags |= EVI_EXPIRE|XMLRPC_FLAG;
+
+	sock->params= params;
 
 	return sock;
 error:
@@ -253,7 +356,8 @@ static str xmlrpc_print_s = { 0, 0 };
 
 static str xmlrpc_print(evi_reply_sock *sock)
 {
-	str aux, *method;
+	str aux;
+	struct xmlrpc_sock_param *params = sock->params;
 
 	xmlrpc_print_s.len = 0;
 
@@ -270,11 +374,10 @@ static str xmlrpc_print(evi_reply_sock *sock)
 		aux.s = int2str(sock->port, &aux.len);
 		DO_PRINT(aux.s, aux.len);
 	}
-		
+
 	if (sock->flags & EVI_PARAMS) {
 		DO_PRINT(":", 1);
-		method = (str *) &sock->params;
-		DO_PRINT(method->s, method->len);
+		DO_PRINT(params->method.s, params->method.len);
 	}
 
 end:
@@ -320,7 +423,6 @@ static int xmlrpc_raise(struct sip_msg *dummy_msg, str* ev_name,
 
 	if (xmlrpc_send(msg) < 0) {
 		LM_ERR("cannot send message\n");
-		shm_free(msg);
 		return -1;
 	}
 

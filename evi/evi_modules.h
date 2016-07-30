@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -33,7 +33,7 @@ struct sip_msg;
 
 /* functions used by modules */
 
-/* 
+/*
  * Used to register a new event
  * Parameters:
  *  + Event name
@@ -120,7 +120,7 @@ int evi_probe_event(event_id_t id);
  * Returns:
  *  - event_id or error
  */
-event_id_t evi_get_id(str *name); 
+event_id_t evi_get_id(str *name);
 
 /*
  * Used to return an event with a specific name
@@ -130,6 +130,6 @@ event_id_t evi_get_id(str *name);
  * Returns:
  *  - event_id or error
  */
-evi_event_p evi_get_event(str *name); 
+evi_event_p evi_get_event(str *name);
 
 #endif /* _EVI_MODULES_H_ */

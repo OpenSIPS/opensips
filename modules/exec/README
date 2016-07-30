@@ -10,8 +10,7 @@ Jan Janak
 
    Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -28,36 +27,44 @@ Jan Janak
 
               1.3.1. setvars (integer)
               1.3.2. time_to_kill (integer)
-              1.3.3. async (integer)
 
         1.4. Exported Functions
 
-              1.4.1. exec_dset(command)
-              1.4.2. exec_msg(command)
-              1.4.3. exec_avp(command [, avplist])
-              1.4.4. exec_getenv(environment_variable [, avp])
+              1.4.1. exec(command, [stdin], [stdout], [stderr],
+                      [envavp])
 
-        1.5. Known Issues
+              1.4.2. exec_dset(command) (DEPRECATED)
+              1.4.3. exec_msg(command) (DEPRECATED)
+              1.4.4. exec_avp(command[, avplist]) (DEPRECATED)
+              1.4.5. exec_getenv(environment_variable[, avp])
+                      (DEPRECATED)
+
+        1.5. Exported Asyncronous Functions
+
+              1.5.1. exec(command[,input[,output[,error[,env]]]])
+
+        1.6. Known Issues
 
    List of Examples
 
    1.1. Set “setvars” parameter
    1.2. Set “time_to_kill” parameter
-   1.3. Set “async” parameter
+   1.3. exec usage
    1.4. exec_dset usage
    1.5. exec_msg usage
    1.6. exec_avp usage
    1.7. exec_getenv usage
+   1.8. async exec usage
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
-   Exec module allows to start an external command from a OpenSIPS
-   script. The commands may be any valid shell commands--the
-   command string is passed to shell using “popen” command.
-   OpenSIPS passes additionally lot of information about request
-   in environment variables:
+   The Exec module enables the execution of external commands from
+   the OpenSIPS script. Any valid shell commands are accepted. The
+   final input string is evaluated and executed using the
+   "/bin/sh" symlink/binary. OpenSIPS may additionally pass a lot
+   more information about the request using environment variables:
      * SIP_HF_<hf_name> contains value of each header field in
        request. If a header field occurred multiple times, values
        are concatenated and comma-separated. <hf_name> is in
@@ -75,10 +82,10 @@ Chapter 1. Admin Guide
      * SIP_USER is userpart of current request URI.
      * SIP_OUSER is userpart of original request URI.
 
-   NOTE: The envirnment variables must be specified with double $
-   (e.g., $$SIP_OUSER) in the parameters given to exec functions.
-   Otherwise they will be evaluated as OpenSIPS pseudo-variables,
-   throwing errors.
+   NOTE: Any environment variables which are given to the exec
+   module functions must be specified using the '$$' delimiter
+   (e.g., $$SIP_OUSER), otherwise they will be evaluated as
+   OpenSIPS pseudo-variables, throwing scripting errors.
 
 1.2. Dependencies
 
@@ -97,10 +104,13 @@ Chapter 1. Admin Guide
 
 1.3.1. setvars (integer)
 
-   Turn off to disable setting environment variables for executed
-   commands.
+   Set to 1 to enable setting all above-mentioned environment
+   variables for all executed commands.
 
-   Default value is 1.
+   WARNING: Before enabling this parameter, make sure your
+   "/bin/sh" is safe from the Shellshock bash vulnerability!!!
+
+   Default value is 0 (disabled).
 
    Example 1.1. Set “setvars” parameter
 ...
@@ -110,129 +120,238 @@ modparam("exec", "setvars", 1)
 1.3.2.  time_to_kill (integer)
 
    Specifies the longest time a program is allowed to execute. If
-   the time is exceeded, the program is killed.
+   the time is exceeded, the program is killed (SIGTERM)
 
-   Default value is 0.
+   Default value is 0 (disabled).
 
    Example 1.2. Set “time_to_kill” parameter
 ...
 modparam("exec", "time_to_kill", 20)
 ...
 
-1.3.3. async (integer)
-
-   Turns on the asynchronous mode for 'exec_msg' function. All
-   commands will be executed by a different process and the caller
-   will continue it's flow, without waiting for a response.
-
-   Default value is 0.
-
-   Example 1.3. Set “async” parameter
-...
-modparam("exec", "async", 1)
-...
-
 1.4. Exported Functions
 
-1.4.1.  exec_dset(command)
+1.4.1.  exec(command, [stdin], [stdout], [stderr], [envavp])
 
-   Executes an external command. Current URI is passed to the
-   command as parameter. Output of the command is considered URI
-   set (separated by lines).
+   Executes an external command. The input is passed to the
+   standard input of the new process, if specified, and the output
+   is saved in the output variable.
+
+   The function waits for the external script until it provided
+   all its output (not necessary to actually finish). If no output
+   (standard output or standard error) is required by the
+   function, it will not block at all - it will simply launch the
+   external script and continue the script.
 
    Meaning of the parameters is as follows:
-     * command - Command to be executed. It can include pseudo-
-       variabes;
+     * command - command to be executed.It can include
+       pseudovariables.
+     * stdin - String to be passed to the standard input of the
+       command. The string can be given as a pseudovariable.
+     * stdout - pseudovariable where to store the output from the
+       standard output of the process.
+     * stderr - pseudovariable where to store the error from the
+       standard error of the process.
+     * envavp - Avp where to store the values for the environment
+       variables to be passed for the command. The names of the
+       environment variables will be "OSIPS_EXEC_#" where # will
+       start from 0. For example if you store 2 values into an avp
+       ("a" and "b") OSIPS_EXEC_0 will contain the first value and
+       OSIPS_EXEC_1 the second value.
 
-   WARNING: if the var you are passing out has a bash special
-   character in it, the var needs to be placed inside quotes, for
-   ex: exec_dset("print-contact.sh '$ct'");
+   WARNING: any OpenSIPS pseudo-vars which may contain special
+   bourne shell (sh/bash) characters should be placed inside
+   quotes, e.g. exec("update-stats.sh '$(ct{re.subst,/'//g})'");
+
+   WARNING: "stdin"/"stdout"/"stderr" parameters are not designed
+   for large amounts of data, so one should be careful when using
+   them. Because of the basic implementation, filled up pipes
+   could cause a read deadlock.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE,
+   ONREPLY_ROUTE.
+
+   Example 1.3. exec usage
+...
+$avp(env) = "a";
+$avp(env) = "b";
+exec("ls -l", , "$var(out)", "$var(err)", "$avp(env)");
+xlog("The output is $var(out)\n");
+xlog("Received the following error\n$var(err)");
+...
+$var(input) = "input";
+exec("/home/../myscript.sh", "this is my $var(input) for exec\n", , , "$
+avp(env)");
+...
+
+1.4.2.  exec_dset(command) (DEPRECATED)
+
+   WARNING - this function is deprecated and it will be remove in
+   the next version - please use the exec() function (
+   Section 1.4.1, “ exec(command, [stdin], [stdout], [stderr],
+   [envavp]) ” ).
+
+   Executes an external command. The current R-URI is appended to
+   the command as its last parameter. The output of the command
+   will rewrite the current R-URI. Multiple lines of output lead
+   to multiple branches.
+
+   Meaning of the parameters is as follows:
+     * command (string, pvar) - command to be executed. It can
+       include pseudo-variables or '$$' delimited UNIX environment
+       variables
+
+   WARNING: most OpenSIPS scripting variables should be quoted
+   before being passed to external commands, as in:
+   exec_avp("log-call.sh '$ct'"). This may help avoid some
+   unexpected behaviour (e.g. unwanted extra parameters, errors
+   due to special bash characters, etc.)
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
    Example 1.4. exec_dset usage
 ...
-exec_dset("echo TEST > /tmp/test.txt");
-exec_dset("echo TEST > /tmp/$rU.txt");
+exec_dset("ruri-changer.sh");
+exec_dset("ruri-changer.sh '$ct'");
 ...
 
-1.4.2.  exec_msg(command)
+1.4.3.  exec_msg(command) (DEPRECATED)
 
-   Executes an external command. The whole message is passed to it
-   in input, no command-line parameters are added, output of the
-   command is not processed.
+   WARNING - this function is deprecated and it will be remove in
+   the next version - please use the exec() function (
+   Section 1.4.1, “ exec(command, [stdin], [stdout], [stderr],
+   [envavp]) ” ).
+
+   Executes an external command. The current SIP message is passed
+   to it in the standard input, no command-line parameters are
+   added and the output of the command is ignored.
 
    See sip-server/modules/exec/etc/exec.cfg in the source tarball
    for information on usage.
 
    Meaning of the parameters is as follows:
-     * command - Command to be executed. It can include
-       pseudo-variables.
+     * command (string) - command to be executed. It can include
+       pseudo-variables or '$$' delimited UNIX environment
+       variables
 
-   WARNING: if the var you are passing out has a bash special
-   character in it, the var needs to be placed inside quotes, for
-   ex: exec_msg("print-contact.sh '$ct'");
+   WARNING: most OpenSIPS scripting variables should be quoted
+   before being passed to external commands, as in:
+   exec_avp("log-call.sh '$ct'"). This may help avoid some
+   unexpected behaviour (e.g. unwanted extra parameters, errors
+   due to special bash characters, etc.)
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
 
    Example 1.5. exec_msg usage
 ...
-exec_msg("echo TEST > /tmp/test.txt");
-exec_msg("echo TEST > /tmp/$rU.txt");
+exec_msg("call-logger.sh '$ct' >> /var/log/call-logger/'$rU'.calls");
 ...
 
-1.4.3.  exec_avp(command [, avplist])
+1.4.4.  exec_avp(command[, avplist]) (DEPRECATED)
 
-   Executes an external command. Each line from output of the
-   command is saved in an AVP from 'avplist'. If 'avplist' is
-   missing, the AVP are named 1, 2, 3, ...
+   WARNING - this function is deprecated and it will be remove in
+   the next version - please use the exec() function (
+   Section 1.4.1, “ exec(command, [stdin], [stdout], [stderr],
+   [envavp]) ” ).
+
+   Executes an external command. Each output line of the command
+   is saved in its corresponding AVP from avplist. If avplist is
+   missing or is incomplete, the populated AVPs will be 1, 2, 3...
+   or N, N+1, N+2...
 
    Meaning of the parameters is as follows:
-     * command - Command to be executed. It can include pseudo-
-       variabes;
-     * avplist - comma separated list with AVP names to store the
-       result in;
+     * command (string) - command to be executed. It can include
+       pseudo-variables or '$$' delimited UNIX environment
+       variables
+     * avplist (string) - comma separated list with AVP names to
+       store the result in
 
-   WARNING: if the var you are passing out has a bash special
-   character in it, the var needs to be placed inside quotes, for
-   ex: exec_avp("print-contact.sh '$ct'");
+   WARNING: most OpenSIPS scripting variables should be quoted
+   before being passed to external commands, as in:
+   exec_avp("log-call.sh '$ct'"). This may help avoid some
+   unexpected behaviour (e.g. unwanted extra parameters, errors
+   due to special bash characters, etc.)
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   LOCAL_ROUTE, STARTUP_ROUTE.
+   LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE,
+   ONREPLY_ROUTE.
 
    Example 1.6. exec_avp usage
 ...
-exec_avp("echo TEST");
-exec_avp("echo TEST", "$avp(test)");
+exec_avp("get-subscriber-details.sh '$rU'", "$avp(credit) $avp(contract_
+model)");
 ...
 
-1.4.4.  exec_getenv(environment_variable [, avp])
+1.4.5.  exec_getenv(environment_variable[, avp]) (DEPRECATED)
 
-   Get the value of an evironment_variable. The value is saved in
-   'avp'. If 'avp' is missing, the AVP is named 1. If there is no
-   such environment variable no value is returned.
+   WARNING - this function is deprecated and it will be remove in
+   the next version - please use the exec() function (
+   Section 1.4.1, “ exec(command, [stdin], [stdout], [stderr],
+   [envavp]) ” ).
+
+   Obtains the value of a UNIX evironment_variable. The value is
+   saved in 'avp'. If 'avp' is missing, output will be stored in
+   $avp(1). If there is no such environment variable no value will
+   be returned.
 
    Meaning of the parameters is as follows:
-     * environment_variable - Environent variable name. It can
-       include pseudo- variabes;
-     * avp - an AVP names to store the result in;
+     * environment_variable (string) - environent variable name.
+       Can also be specified as a pseudo-variable
+     * avp - an AVP to store the result in
 
-   WARNING: if the var you are passing out has a bash special
-   character in it, the var needs to be placed inside quotes, for
-   ex: exec_getenv("'$ct'");
+   WARNING: any OpenSIPS pseudo-vars which may contain special
+   bash characters should be placed inside quotes, e.g.
+   exec_getenv("'$ct'");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   LOCAL_ROUTE, STARTUP_ROUTE.
+   LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE,
+   ONREPLY_ROUTE.
 
    Example 1.7. exec_getenv usage
 ...
 exec_getenv("HOSTNAME");
-exec_getenv("HOSTNAME", "$avp(test)");
+exec_getenv("HOSTNAME", "$avp(localhost)");
 ...
 
-1.5. Known Issues
+1.5. Exported Asyncronous Functions
 
-   There is currently no guarantee that scripts ever return and
-   stop blocking SIP server. (There is kill.c but it is not used
-   along with the current mechanisms based on popen. Besides that
-   kill.c is ugly).
+1.5.1.  exec(command[,input[,output[,error[,env]]]])
+
+   Executes an external command. This function does exactly the
+   same as Section 1.4.1, “ exec(command, [stdin], [stdout],
+   [stderr], [envavp]) ” (in terms of input, output and
+   processing), but in an asynchronous way. The script execution
+   is suspended until the external script provided all its output.
+   OpenSIPS waits for the external script to close its output
+   stream, not necessarily to terminate (so the script may still
+   be running when OpenSIPS resumes the script execution on
+   "seeing" EOF on the the output stream).
+
+   NOTE: this function ignore the "error" parameters for now - the
+   asynchronous waiting is done only on the output stream !! This
+   may be fixed in the following versions.
+
+   To read and understand more on the asynchronous functions, how
+   to use them and what are their advantages, please refer to the
+   OpenSIPS online Manual.
+
+   Example 1.8. async exec usage
+{
+...
+async( exec("ruri-changer.sh","$ru","$ru"), resume );
+}
+
+route[resume] {
+...
+}
+
+1.6. Known Issues
+
+   When imposing an execution timeout using time_to_kill, make
+   sure your "/bin/sh" is a shell which does not fork when
+   executed, case in which the job itself will not be killed, but
+   rather its parent shell, while the job is silently inherited by
+   "init" and will continue to run. "/bin/dash" is one of these
+   troublesome shell environments.

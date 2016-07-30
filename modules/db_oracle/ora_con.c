@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007,2008 TRUNK MOBILE
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include <string.h>
@@ -68,8 +66,8 @@ bad_param:
 	}
 
 	memset(con, 0, sizeof(*con));
-	con->hdr.ref = 1;
-	con->hdr.id = (struct db_id*)id;	/* set here - freed on error */
+	con->ref = 1;
+	con->id = (struct db_id*)id;	/* set here - freed on error */
 	con->uri_len = uri_len;
 	memcpy(con->uri, buf, uri_len+1);
 
@@ -153,7 +151,7 @@ void db_oracle_free_connection(ora_con_t* con)
 		OCIHandleFree(con->errhp, OCI_HTYPE_ERROR);
 	if (con->envhp)
 		OCIHandleFree(con->envhp, OCI_HTYPE_ENV);
-	free_db_id(con->hdr.id);
+	free_db_id(con->id);
 	pkg_free(con);
 }
 

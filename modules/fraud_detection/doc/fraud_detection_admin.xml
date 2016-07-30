@@ -1,0 +1,688 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+		This module provides a way to prevent some basic fraud attacks.
+		Alerts are provided through return codes and events.
+	</para>
+		<section>
+		<title>Monitorized Stats</title>
+		<para>
+			Basically, this module watches the following parameters:
+			<itemizedlist>
+			<listitem>
+				<para>
+					Total calls
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					Calls per minute
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					Concurrent calls
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					Number of sequential calls
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					Call duration
+				</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			Each of the above parameters is monitored for every user and
+			every called prefix separately. The stats are altered whenever
+			the <emphasis>check_fraud</emphasis> function is called. The
+			function assumes a new call is made, and checks the called
+			number against all the rules from the supplied profile. The
+			rule's prefix is considered to be the called prefix which along with
+			the provided user will be used to monitor values for the 5
+			parameters.
+		</para>
+		</section>
+
+		<section>
+		<title>Fraud rules</title>
+		<para>
+			A rule is a set of two thresholds (warning and critical thresholds) for each of the
+			five parameters (as described above) and is only available for a specified prefix.
+			Further more, a rule will only match between the indicated hours in the indicated days
+			of the week (similarly to a dr rule). A fraud profile is simply a group of fraud rules
+			and is used to only to limit the list of rules to match when calling the check_fraud
+			function.
+		</para>
+		</section>
+	</section>
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				drouting
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				dialog
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External libraries or applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+		Database where to load the rules from.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>. At least one db_url should
+			be defined for the fraud_detection module to work.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <quote>db_url</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "db_url", "mysql://user:passwb@localhost/database")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>table_name</varname> (string)</title>
+		<para>
+		If you want to load the rules from the database you must set
+		this parameter as the database name.
+		</para>
+		<para>
+		<emphasis>
+			The default value is <quote>fraud_detection</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <quote>table_name</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "table_name", "my_fraud")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>rid_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			fraud rule's id.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>ruleid</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>rid_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "rid_col", "theruleid"")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>pid_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			fraud profile's id.
+		</para>
+		<para>
+			Please keep in mind that a profile is merely
+			a set of rules.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>profileid</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>pid_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "pid_col", "profile"")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>prefix_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			prefix for which the fraud rule will match.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>prefix</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>prefix_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "prefix_col", "myprefix")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>start_h</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			the start time of the interval in which the
+			rule will match.
+		</para>
+		<para>
+			The time needs to be specified as string using
+			the format: <quote>HH:MM</quote>
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>start_hour</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>start_h</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "start_h", "the_start_time")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>end_h</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			the end time of the interval in which the
+			rule will match.
+		</para>
+		<para>
+			The time needs to be specified as string using
+			the format: <quote>HH:MM</quote>
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>end_hour</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>end_h</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "end_h", "the_end_time")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>days_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			week days in which the fraud rule's interval
+			is available.
+		</para>
+		<para>
+			The daysoftheweek needs to be specified as a
+			string containing a list of days or intervals.
+			Each day must be specified using the first
+			three letters of its name. A valid string
+			would be: "Fri-Mon, Wed, Thu"
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>daysoftheweek</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>days_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "days_col", "days")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>cpm_thresh_warn_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			warning threshold value for calls per minute.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>cpm_warning</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>cpm_thresh_warn_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "cpm_thresh_warn_col", "cpm_warn_thresh")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>cpm_thresh_crit_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			critical threshold value for calls per minute.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>cpm_critical</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>cpm_thresh_crit_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "cpm_thresh_crit_col", "cpm_crit_thresh")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>calldur_thresh_warn_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			warning threshold value for call duration.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>call_duration_warning</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>calldur_thresh_warn_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "calldur_thresh_warn_col", "calldur_warn_thresh")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>calldur_thresh_crit_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			critical threshold value for call duration.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>call_duration_critical</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>calldur_thresh_crit_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "calldur_thresh_crit_col", "calldur_crit_thresh")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>totalc_thresh_warn_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			warning threshold value for the number of total calls.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>total_calls_warning</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>totalc_thresh_warn_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "totalc_thresh_warn_col", "totalc_warn_thresh")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>totalc_thresh_crit_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			critical threshold value for the number of total calls.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>total_calls_critical</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>totalc_thresh_crit_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "totalc_thresh_crit_col", "totalc_crit_thresh")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>concalls_thresh_warn_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			warning threshold value for the number of
+			concurrent calls.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>concurrent_calls_warning</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>concalls_thresh_warn_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "concalls_thresh_warn_col", "concalls_warn_thresh")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>concalls_thresh_crit_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			critical threshold value for the number of
+			concurrent calls.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>concurrent_calls_critical</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>concalls_thresh_crit_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "concalls_thresh_crit_col", "concalls_crit_thresh")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>seqcalls_thresh_warn_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			warning threshold value for the number of
+			sequential calls.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>sequential_calls_warning</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>seqcalls_thresh_warn_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "seqcalls_thresh_warn_col", "seqcalls_warn_thresh")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>seqcalls_thresh_crit_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the
+			critical threshold value for the number of
+			sequential calls.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>sequential_calls_critical</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>seqcalls_thresh_crit_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">check_fraud(user, number, profile_id)</function>
+		</title>
+		<para>
+			This method should be called each time a given <emphasis>user</emphasis>
+			calls a given <emphasis>number</emphasis>. It will try to match a fraud rule
+			within de given fraud profile and update the stats (see above). Furthermore,
+			the stats will be checked against the rule's thresholds. If any of the stats
+			is above it's threhsold value the appropriate event will also be raised
+			(see further details below).
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				<emphasis>user</emphasis> - the user who is making the call. Please keep in mind that
+				the user doesn't have to be registered. This string is only used do keep different stats
+				for different registered users.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>number</emphasis> - the number the user is calling to.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>profile_id</emphasis> - the fraud profile id (i.e. the subset of fraud
+				rules) in which to try and find a matching fraud rule.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+			The meaning of the return code is as follows:
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+					<emphasis>2</emphasis> - no matching fraud rule was found
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis>1</emphasis> - a matching rule was found, but there is no
+					parameter above the rule's threshlod, i.e - everything is ok
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis>-1</emphasis> - there is a parameter above the warning threhsold value.
+					Check the raised event for more info
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis>-2</emphasis> - there is a parameter above the critical threhsold value.
+					Check the raised event for more info
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis>-3</emphasis> - something went wrong (internal mechanism failed)
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported MI Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">show_fraud_stats</function>
+		</title>
+		<para>
+			Show the current stats of a given user for a given prefix.
+		</para>
+		<para>
+		Name: <emphasis>show_fraud_stats</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>user</para></listitem>
+
+			<listitem><para>number</para></listitem>
+
+			<listitem><para>prefix</para></listitem>
+		</itemizedlist>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">fraud_reload</function>
+		</title>
+		<para>
+		Reload the all the fraud rules.
+		</para>
+		<para>
+		Name: <emphasis>fraud_reload</emphasis>
+		</para>
+		<para>Parameters: <emphasis>none</emphasis></para>
+	</section>
+
+	</section>
+
+	<section>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_FRD_WARNING</function>
+		</title>
+		<para>
+			This event is raised whenever one of the 5 monitored parameters
+			is above the warning threhsold value</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>param</emphasis> - the name of the parameter.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>value</emphasis> - the current value of the parameter.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>threshold</emphasis> - the warning threshold value.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>user</emphasis> - the user who initiated the call.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>called_number</emphasis> - the number that was called.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>rule_id</emphasis> - the id of the fraud rule that matched
+					when the call was initiated
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">E_FRD_CRITICAL</function>
+		</title>
+		<para>
+			This event is raised whenever one of the 5 monitored parameters
+			is above the warning threhsold value</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>param</emphasis> - the name of the parameter.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>value</emphasis> - the current value of the parameter.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>threshold</emphasis> - the warning threshold value.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>user</emphasis> - the user who initiated the call.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>called_number</emphasis> - the number that was called.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>rule_id</emphasis> - the id of the fraud rule that matched
+					when the call was initiated
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
+
+</chapter>
+

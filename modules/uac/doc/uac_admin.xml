@@ -94,13 +94,13 @@
 			<listitem>
 				<para>
 				<quote>none</quote> - no information about original URI is 
-				stored; restoretion is not possible.
+				stored; restoration is not possible.
 				</para>
 			</listitem>
 			<listitem>
 				<para>
 				<quote>manual</quote> - all following replies will be restored,
-				but not also the sequential requests - this must be manually 
+				except for the sequential requests - these must be manually 
 				updated based on original URI.
 				</para>
 			</listitem>
@@ -132,7 +132,7 @@ modparam("uac","restore_mode","auto")
 		<section>
 			<title><varname>restore_passwd</varname> (string)</title>
 			<para>
-			String password to be used to encrypt the RR storing paramter
+			String password to be used to encrypt the RR storing parameter
 			(when replacing the TO/FROM headers). If empty, no encryption 
 			will be used.
 			</para>
@@ -190,78 +190,6 @@ modparam("uac","rr_from_store_param","my_Fparam")
 				<programlisting format="linespecific">
 ...
 modparam("uac","rr_to_store_param","my_Tparam")
-...
-				</programlisting>
-			</example>
-		</section>
-
-		<section id="auth-realm-avp-id">
-			<title><varname>auth_realm_avp</varname> (string)</title>
-			<para>
-			The definition of an AVP that might contain the realm to be used
-			to perform authentication.
-			</para>
-			<para><emphasis>
-				If you define it, you also need to define 
-				<quote>auth_username_avp</quote> 
-				(<xref linkend="auth-username-avp-id"/>) and 
-				<quote>auth_username_avp</quote> 
-				(<xref linkend="auth-password-avp-id"/>).
-			</emphasis></para>
-			<example>
-				<title>Set <varname>auth_realm_avp</varname> parameter</title>
-				<programlisting format="linespecific">
-...
-modparam("uac","auth_realm_avp","$avp(10)")
-...
-				</programlisting>
-			</example>
-		</section>
-
-		<section id="auth-username-avp-id">
-			<title><varname>auth_username_avp</varname> (string)</title>
-			<para>
-			The definition of an AVP that might contain the username to be used
-			to perform authentication.
-			</para>
-			<para><emphasis>
-				If you define it, you also need to define 
-				<quote>auth_realm_avp</quote> 
-				(<xref linkend="auth-realm-avp-id"/>) and 
-				<quote>auth_username_avp</quote> 
-				(<xref linkend="auth-password-avp-id"/>).
-			</emphasis></para>
-			<example>
-				<title>Set <varname>auth_username_avp</varname> parameter</title>
-				<programlisting format="linespecific">
-...
-modparam("uac","auth_username_avp","$avp(11)")
-...
-				</programlisting>
-			</example>
-		</section>
-
-		<section id="auth-password-avp-id">
-			<title><varname>auth_password_avp</varname> (string)</title>
-			<para>
-			The definition of an AVP that might contain the password to be used
-			to perform authentication. The password can be provided as a plain
-			text password or as a precalculated HA1 as a hexa (lower case) string
-			(of 32 chars) prefixed with "0x" (so a total of 34 chars) (for example 
-			"0xc17ba8157756f263d07e158504204629")
-			</para>
-			<para><emphasis>
-				If you define it, you also need to define 
-				<quote>auth_password_avp</quote> 
-				(<xref linkend="auth-password-avp-id"/>) and 
-				<quote>auth_username_avp</quote> 
-				(<xref linkend="auth-password-avp-id"/>).
-			</emphasis></para>
-			<example>
-				<title>Set <varname>auth_password_avp</varname> parameter</title>
-				<programlisting format="linespecific">
-...
-modparam("uac","auth_password_avp","$avp(12)")
 ...
 				</programlisting>
 			</example>
@@ -394,8 +322,8 @@ uac_restore_from();
 			build the authentication response header and insert it into the
 			request without sending anything.
 			Credentials for buiding the authentication response will be taken
-			from AVPs first (if AVPs are defined and populated) and then from
-			the list of credentials provided by the uac_auth module.
+			from the list of credentials provided by the uac_auth module (static
+			or via AVPs).
 			</para>
 			<para>
 			This function can be used from FAILURE_ROUTE.

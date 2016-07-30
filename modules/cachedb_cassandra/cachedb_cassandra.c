@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -45,6 +45,8 @@ int send_timeout=2000; /* ms */
 int recv_timeout=2000; /* ms */
 int rd_consistency_level=1;
 int wr_consistency_level=1;
+/* TODO - implement */
+int cassandra_exec_threshold = 0;
 
 static int mod_init(void);
 static int child_init(int);
@@ -65,16 +67,20 @@ static param_export_t params[]={
 	{ "receive_timeout",             INT_PARAM, &recv_timeout},
 	{ "rd_consistency_level",        INT_PARAM, &rd_consistency_level},
 	{ "wr_consistency_level",        INT_PARAM, &wr_consistency_level},
+	{ "exec_threshold",		 INT_PARAM, &cassandra_exec_threshold},
 	{0,0,0}
 };
 
 /** module exports */
 struct module_exports exports= {
 	"cachedb_cassandra",
+	MOD_TYPE_CACHEDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
+	NULL,            /* OpenSIPS module dependencies */
 	0,
-	params,	
+	0,
+	params,
 	0,
 	0,
 	0,
@@ -98,6 +104,8 @@ static int mod_init(void)
 		rd_consistency_level=1;
 	if (wr_consistency_level<1 || wr_consistency_level > 8)
 		wr_consistency_level=1;
+
+	memset(&cde, 0, sizeof(cachedb_engine));
 
 	cde.name = cache_mod_name;
 

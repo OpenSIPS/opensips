@@ -1,4 +1,4 @@
-/* $Id: $
+/*
  * Peering module
  *
  * Copyright (C) 2008 Juha Heinanen
@@ -17,9 +17,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -71,15 +71,27 @@ static param_export_t params[] = {
     {0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_AAA, NULL, DEP_WARN },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /*
  * Module interface
  */
 struct module_exports exports = {
-    "peering", 
+    "peering",
+    MOD_TYPE_DEFAULT,/* class of this module */
     MODULE_VERSION,  /* module version */
     DEFAULT_DLFLAGS, /* dlopen flags */
+    &deps,           /* OpenSIPS module dependencies */
     cmds,       /* Exported functions */
+    0,          /* Exported async functions */
     params,     /* Exported parameters */
     0,          /* exported statistics */
     0,          /* exported MI functions */

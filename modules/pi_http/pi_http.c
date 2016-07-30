@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -43,8 +41,9 @@ extern ph_framework_t *ph_framework_data;
 
 /* module functions */
 static int mod_init();
+static int child_init();
 static int destroy(void);
-void ph_answer_to_connection (void *cls, void *connection,
+int ph_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
@@ -81,12 +80,25 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "httpd", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /* module exports */
 struct module_exports exports = {
 	"pi_http",                          /* module name */
+	MOD_TYPE_DEFAULT,                   /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,                    /* dlopen flags */
+	&deps,                              /* OpenSIPS module dependencies */
 	0,                                  /* exported functions */
+	0,                                  /* exported async functions */
 	params,                             /* exported parameters */
 	0,                                  /* exported statistics */
 	mi_cmds,                            /* exported MI functions */
@@ -95,7 +107,7 @@ struct module_exports exports = {
 	mod_init,                           /* module initialization function */
 	(response_function) 0,              /* response handling function */
 	(destroy_function) destroy,         /* destroy function */
-	NULL                                /* per-child init function */
+	(child_init_function)child_init     /* per-child init function */
 };
 
 
@@ -164,20 +176,44 @@ static int mod_init(void)
 
 	/* init db connections */
 	for(i=0;i<ph_framework_data->ph_db_urls_size;i++){
+		ph_framework_data->ph_db_urls[i].http_db_handle =
+								pkg_malloc(sizeof(db_con_t *));
+		*ph_framework_data->ph_db_urls[i].http_db_handle = 0;
+
 		LM_DBG("initializing db[%d] [%s]\n",
 			i, ph_framework_data->ph_db_urls[i].db_url.s);
 		if (init_http_db(ph_framework_data, i)!=0) {
 			LM_ERR("failed to initialize the DB support\n");
 			return -1;
 		}
+
+
+	}
+
+	/* Build async lock */
+	if (ph_init_async_lock() != 0) exit(-1);
+
+	return 0;
+}
+
+static int child_init(int rank)
+{
+	int i;
+
+	LM_DBG("Child initialization\n");
+	if (rank==PROC_TCP_MAIN || rank==PROC_BIN)
+		return 0;
+
+
+	for(i=0;i<ph_framework_data->ph_db_urls_size;i++){
+		LM_DBG("connecting to db[%d] [%s]\n",
+			i, ph_framework_data->ph_db_urls[i].db_url.s);
+
 		if (connect_http_db(ph_framework_data, i)) {
 			LM_ERR("failed to connect to database\n");
 			return -1;
 		}
 	}
-
-	/* Build async lock */
-	if (ph_init_async_lock() != 0) exit(-1);
 
 	return 0;
 }
@@ -198,7 +234,7 @@ static ssize_t ph_flush_data(void *cls, uint64_t pos, char *buf, size_t max)
 }
 
 
-void ph_answer_to_connection (void *cls, void *connection,
+int ph_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
@@ -231,7 +267,7 @@ void ph_answer_to_connection (void *cls, void *connection,
 		*page = PI_HTTP_U_METHOD;
 	}
 
-	return;
+	return 200;
 }
 
 

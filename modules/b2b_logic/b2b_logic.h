@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * back-to-back logic module
  *
  * Copyright (C) 2009 Free Software Fundation
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -82,6 +80,7 @@ enum {
 	B2B_NOTIFY,
 	B2B_REFER,
 	B2B_CANCEL,
+	B2B_UPDATE,
 	B2B_METHODS_NO
 };
 
@@ -93,6 +92,8 @@ typedef struct b2b_scenario
 	char use_init_sdp;
 	xmlDocPtr doc;
 	xmlNodePtr init_node;
+	str body;
+	str body_type;
 	b2b_rule_t* request_rules[B2B_METHODS_NO];
 	b2b_rule_t* reply_rules;
 
@@ -155,6 +156,9 @@ static inline int b2b_get_request_id(str* request)
 
 	if(request->len==MESSAGE_LEN &&strncasecmp(request->s, MESSAGE, MESSAGE_LEN)==0)
 		return B2B_MESSAGE;
+
+	if(request->len==UPDATE_LEN &&strncasecmp(request->s, UPDATE, UPDATE_LEN)==0)
+		return B2B_UPDATE;
 
 	return -1;
 }

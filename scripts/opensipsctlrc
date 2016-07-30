@@ -12,11 +12,14 @@
 ## chrooted directory
 # $CHROOT_DIR="/path/to/chrooted/directory"
 
-## database type: MYSQL, PGSQL, ORACLE, DB_BERKELEY, or DBTEXT, 
+## database type: MYSQL, PGSQL, ORACLE, DB_BERKELEY, DBTEXT, or SQLITE
 ## by default none is loaded
 # If you want to setup a database with opensipsdbctl, you must at least specify
 # this parameter.
 # DBENGINE=MYSQL
+
+## database port (PostgreSQL=5432 default; MYSQL=3306 default)
+# DBPORT=3306
 
 ## database host
 # DBHOST=localhost
@@ -24,7 +27,7 @@
 ## database name (for ORACLE this is TNS name)
 # DBNAME=opensips
 
-# database path used by dbtext or db_berkeley
+# database path used by dbtext, db_berkeley, or sqlite
 # DB_PATH="/usr/local/etc/opensips/dbtext"
 
 ## database read/write user
@@ -33,12 +36,17 @@
 ## password for database read/write user
 # DBRWPW="opensipsrw"
 
+## engine type for the MySQL/MariaDB tabels (default InnoDB)
+# MYSQL_ENGINE="MyISAM"
+
 ## database super user (for ORACLE this is 'scheme-creator' user)
 # DBROOTUSER="root"
 
 # user name column
 # USERCOL="username"
 
+## for testing / development
+#ETCDIR=etc/
 
 # SQL definitions
 # If you change this definitions here, then you must change them 
@@ -58,6 +66,9 @@
 
 # awk tool
 # AWK="awk"
+
+# gdb tool
+# GDB="gdb"
 
 # grep tool
 # GREP="grep"
@@ -84,11 +95,12 @@
 
 # opensips standard modules
 # STANDARD_MODULES="standard acc domain group permissions registrar usrloc 
-#                   msilo alias_db uri_db speeddial avpops auth_db pdt dialog 
+#                   msilo alias_db uri_db speeddial avpops auth_db dialog 
 #                   dispatcher dialplan drouting nathelper load_balancer"
 
 # opensips extra modules
-# EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist b2b registrant"
+# EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist 
+#                 b2b registrant call_center fraud_detection cachedb_sql"
 
 
 ## type of aliases used: DB - database aliases; UL - usrloc aliases
@@ -132,3 +144,4 @@
 ## Extra start options - default is: not set
 # example: start opensips with 64MB share memory: STARTOPTIONS="-m 64"
 # STARTOPTIONS=
+

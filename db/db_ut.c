@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /**
@@ -175,7 +173,7 @@ inline int db_double2str(double _v, char* _s, int* _l)
 }
 
 
-/* 
+/*
  * Convert a string to time_t
  */
 inline int db_str2time(const char* _s, time_t* _v)
@@ -199,7 +197,7 @@ inline int db_str2time(const char* _s, time_t* _v)
 	* so let mktime to guess it. This eliminates the bug when
 	* contacts reloaded from the database have different time
 	* of expiration by one hour when daylight saving is used
-	*/ 
+	*/
 	time.tm_isdst = -1;
 	*_v = mktime(&time);
 
@@ -333,7 +331,7 @@ int db_print_where(const db_con_t* _c, char* _b, const int _l, const db_key_t* _
 
 	for(i = 0; i < _n; i++) {
 		if (_o) {
-			ret = snprintf(_b + len, _l - len, "%.*s%s", 
+			ret = snprintf(_b + len, _l - len, "%.*s%s",
 				_k[i]->len, _k[i]->s, _o[i]);
 			if (ret < 0 || ret >= (_l - len)) goto error;
 			len += ret;

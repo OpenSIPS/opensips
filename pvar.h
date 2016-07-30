@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -76,8 +74,8 @@
 							&& (pv)->pvp.pvn.u.isname.type&AVP_NAME_STR)
 #define pv_is_w(pv)	((pv)->setf!=NULL)
 
-enum _pv_type { 
-	PVT_NONE=0,           PVT_EMPTY,             PVT_NULL, 
+enum _pv_type {
+	PVT_NONE=0,           PVT_EMPTY,             PVT_NULL,
 	PVT_MARKER,           PVT_AVP,               PVT_HDR,
 	PVT_PID,              PVT_RETURN_CODE,       PVT_TIMES,
 	PVT_TIMEF,            PVT_MSGID,             PVT_METHOD,
@@ -109,7 +107,12 @@ enum _pv_type {
 	PVT_TIME,             PVT_PATH,              PVT_ARGV,
 	PVT_HDRCNT,           PVT_AUTH_NONCE_COUNT,  PVT_AUTH_QOP,
 	PVT_AUTH_ALGORITHM,   PVT_AUTH_OPAQUE,       PVT_AUTH_CNONCE,
-	PVT_RU_Q,             PVT_ROUTE_PARAM,       PVT_EXTRA /* keep it last */
+	PVT_RU_Q,             PVT_ROUTE_PARAM,       PVT_ROUTE_TYPE,
+	PVT_LINE_NUMBER,      PVT_CFG_FILE_NAME,     PVT_LOG_LEVEL,
+	/* registered by json module */
+	PVT_JSON,
+
+	PVT_EXTRA /* keep it last */
 };
 
 typedef enum _pv_type pv_type_t;
@@ -210,7 +213,11 @@ int pv_get_spec_value(struct sip_msg* msg, pv_spec_p sp, pv_value_t *value);
 int pv_print_spec(struct sip_msg* msg, pv_spec_p sp, char *buf, int *len);
 int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len);
 int pv_elem_free_all(pv_elem_p log);
+
+/* always obtain a printable version of the given (pv_value_t *) */
+str pv_value_print(pv_value_t *val);
 void pv_value_destroy(pv_value_t *val);
+
 void pv_spec_free(pv_spec_t *spec);
 int pv_spec_dbg(pv_spec_p sp);
 int pv_get_spec_index(struct sip_msg* msg, pv_param_p ip, int *idx, int *flags);

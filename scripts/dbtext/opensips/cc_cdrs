@@ -1,0 +1,1 @@
+id(int,auto) caller(string) received_timestamp(int) wait_time(int) pickup_time(int) talk_time(int) flow_id(string) agent_id(string,null) call_type(int) rejected(int) fstats(int) cid(int,null) 

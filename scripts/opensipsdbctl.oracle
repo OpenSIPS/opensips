@@ -13,8 +13,10 @@ DBSYSUSER="sys"
 
 # path to the database schemas
 DATA_DIR="/usr/local/share/opensips"
-if [ -d "$DATA_DIR/oracle" ] ; then
+if [ -d "$DATA_DIR/oracle" ]; then
 	DB_SCHEMA="$DATA_DIR/oracle"
+elif [ -d "scripts/oracle" ]; then
+	DB_SCHEMA="scripts/oracle"
 else
 	DB_SCHEMA="./oracle"
 fi
@@ -204,7 +206,7 @@ if [ -e $DB_SCHEMA/extensions-create.sql ]; then
 	fi
 fi
 
-minfo "Core OpenSIPS tables succesfully created."
+minfo "Core OpenSIPS tables successfully created."
 
 get_answer $INSTALL_PRESENCE_TABLES "Install presence related tables? (y/n): "
 if [ $ANSWER = "y" ]; then
@@ -240,7 +242,7 @@ if [ $? -ne 0 ] || check_oracle_log ; then
 	exit 1
 fi
 
-minfo "Presence tables succesfully created."
+minfo "Presence tables successfully created."
 }
 
 extra_create() # pars: <database name>
@@ -262,7 +264,7 @@ for TABLE in $EXTRA_MODULES; do
 	fi
 done
 
-minfo "Extra tables succesfully created."
+minfo "Extra tables successfully created."
 }
 
 

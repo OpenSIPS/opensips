@@ -1,4 +1,3 @@
-
 -------------------------------------------------------------------------
 IMPORTANT NOTES
 
@@ -17,6 +16,17 @@ IMPORTANT NOTES
 4) Note that the GPL bellow is copyrighted by the Free Software Foundation,
    but the opensips software is mainly copyrighted by FhG FOKUS (each source
    file has posted the copyright holder).
+
+5) In addition, as a special exception, the copyright holders give permission
+   to link the code of portions of this program with the OpenSSL library under
+   certain conditions as described in each individual source file, and
+   distribute linked combinations including the two.
+   You must obey the GNU General Public License in all respects for all of the
+   code used other than OpenSSL.  If you modify file(s) with this exception, 
+   you may extend this exception to your version of the file(s), but you are
+   not obligated to do so.  If you do not wish to do so, delete this exception
+   statement from your version.  If you delete this exception statement from
+   all source files in the program, then also delete it here.
 
 -------------------------------------------------------------------------
 
@@ -38,7 +48,7 @@ understand implications of the GNU license, read it.
 		       Version 2, June 1991
 
  Copyright (C) 1989, 1991 Free Software Foundation, Inc.
-     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  Everyone is permitted to copy and distribute verbatim copies
  of this license document, but changing it is not allowed.
 

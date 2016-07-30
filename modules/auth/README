@@ -24,8 +24,7 @@ Jan Janak
 
    Copyright © 2005 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -125,7 +124,7 @@ Chapter 1. Admin Guide
 
    The module depends on the following modules (in the other words
    the listed modules must be loaded before this module):
-     * signalign -- Signaling module
+     * signaling -- Signaling module
 
 1.3.2. External Libraries or Applications
 
@@ -312,7 +311,7 @@ modparam("auth", "disable_nonce_check", 1)
 
    Example 1.11. www_challenge usage
 ...
-if (www_authorize("siphub.net", "subscriber")) {
+if (!www_authorize("siphub.net", "subscriber")) {
         www_challenge("siphub.net", "1");
 };
 ...
@@ -423,7 +422,7 @@ append_rpid_hf();  # Append Remote-Party-ID header field
 
    Meaning of the parameters is as follows:
      * prefix - Prefix of the Remote-Party-ID URI. The string will
-       be added at the begining of body of the header field, just
+       be added at the beginning of body of the header field, just
        before the URI.
      * suffix - Suffix of the Remote-Party-ID header field. The
        string will be appended at the end of the header field. It
@@ -475,7 +474,7 @@ append_rpid_hf("", ";party=calling;id-type=subscriber;screen=yes");
 ...
 $var(username)="abc";
 $avp(password)="xyz";
-if (pv_www_authorize("opensips.org")) {
+if (!pv_www_authorize("opensips.org")) {
         www_challenge("opensips.org", "1");
 };
 ...

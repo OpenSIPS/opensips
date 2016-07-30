@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2004-2006 Voice Sistem SRL
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -118,6 +116,15 @@ struct db_param
 	struct db_scheme *scheme;  /* DB scheme */
 };
 
+typedef struct _query_async_param
+{
+	pvname_list_t *output_avps;
+	db_con_t      *hdl;
+	db_func_t     *dbf;
+	void		  *db_param;
+
+} query_async_param;
+
 void init_store_avps(str **db_columns);
 
 int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
@@ -131,6 +138,11 @@ int ops_dbstore_avps(struct sip_msg* msg, struct fis_param *sp,
 
 int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 					struct db_url *url, pvname_list_t* dest);
+
+int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rf,
+		void **rparam,  pv_elem_t *query, struct db_url *url, pvname_list_t *dest);
+
+int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param);
 
 int ops_delete_avp(struct sip_msg* msg,
 								struct fis_param *ap);

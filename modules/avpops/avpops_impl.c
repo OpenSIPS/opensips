@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2004-2006 Voice Sistem SRL
  *
  * This file is part of Open SIP Server (opensips).
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * History:
  * ---------
@@ -246,7 +244,7 @@ inline static str* get_source_uri(struct sip_msg* msg,int source)
 			return &(msg->new_uri);
 		return &(msg->first_line.u.request.uri);
 	} else {
-		LM_ERR("unknow source <%d>\n", source);
+		LM_ERR("unknown source <%d>\n", source);
 		goto error;
 	}
 error:
@@ -315,7 +313,7 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 		uuid.s   = sp->u.s.s;
 		uuid.len = sp->u.s.len;
 	}
-	
+
 	if(sp->opd&AVPOPS_FLAG_UUID0)
 	{
 		s0 = &uuid;
@@ -327,16 +325,32 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 			goto error;
 		}
 
-		/* check uri */
-		if(!uri.user.s|| !uri.user.len|| !uri.host.len|| !uri.host.s)
-		{
-			LM_ERR("incomplet uri <%.*s>\n", uuid.len, uuid.s);
-			goto error;
-		}
-		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_USER0))
-			s1 = &uri.user;
+                if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_USER0))
+                {
+			/* check that uri contains user part */
+			if(!uri.user.s|| !uri.user.len)
+			{
+				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, uuid.s);
+				goto error;
+			}
+			else
+			{
+				s1 = &uri.user;
+			}
+                }
 		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_DOMAIN0))
-			s2 = &uri.host;
+		{
+			/* check that uri contains host part */
+			if(!uri.host.len|| !uri.host.s)
+			{
+				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, uuid.s);
+				goto error;
+			}
+			else
+			{
+				s2 = &uri.host;
+			}
+		}
 	}
 
 	/* is dynamic avp name ? */
@@ -477,7 +491,7 @@ int ops_dbdelete_avps (struct sip_msg* msg, struct fis_param *sp,
 		uuid.s   = sp->u.s.s;
 		uuid.len = sp->u.s.len;
 	}
-	
+
 	if(sp->opd&AVPOPS_FLAG_UUID0)
 	{
 		s0 = &uuid;
@@ -489,16 +503,32 @@ int ops_dbdelete_avps (struct sip_msg* msg, struct fis_param *sp,
 			goto error;
 		}
 
-		/* check uri */
-		if(!uri.user.s|| !uri.user.len|| !uri.host.len|| !uri.host.s)
-		{
-			LM_ERR("incomplet uri <%.*s>\n", uuid.len, uuid.s);
-			goto error;
-		}
 		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_USER0))
-			s1 = &uri.user;
+		{
+			/* check that uri contains user part */
+			if(!uri.user.s|| !uri.user.len)
+			{
+				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, uuid.s);
+				goto error;
+			}
+			else
+			{
+				s1 = &uri.user;
+			}
+		}
 		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_DOMAIN0))
-			s2 = &uri.host;
+		{
+			/* check tah uri contains host part */
+			if(!uri.host.len|| !uri.host.s)
+			{
+				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, uuid.s);
+				goto error;
+			}
+			else
+			{
+				s2 = &uri.host;
+			}
+		}
 	}
 
 	/* is dynamic avp name ? */
@@ -577,7 +607,7 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 	}
 
 	keys_nr = 6; /* uuid, avp name, avp val, avp type, user, domain */
-	
+
 	/* get uuid from avp */
 	if (sp->opd&AVPOPS_VAL_PVAR)
 	{
@@ -596,7 +626,7 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 		uuid.s   = sp->u.s.s;
 		uuid.len = sp->u.s.len;
 	}
-	
+
 	if(sp->opd&AVPOPS_FLAG_UUID0)
 	{
 		s0 = &uuid;
@@ -608,16 +638,32 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 			goto error;
 		}
 
-		/* check uri */
-		if(!uri.user.s|| !uri.user.len|| !uri.host.len|| !uri.host.s)
-		{
-			LM_ERR("incomplet uri <%.*s>\n", uuid.len, uuid.s);
-			goto error;
-		}
 		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_USER0))
-			s1 = &uri.user;
+		{
+			/* check tha uri contains user part */
+			if(!uri.user.s|| !uri.user.len)
+			{
+				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, uuid.s);
+				goto error;
+			}
+			else
+			{
+				s1 = &uri.user;
+			}
+		}
 		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_DOMAIN0))
-			s2 = &uri.host;
+		{
+			/* check that uri contains host part */
+			if(!uri.host.len|| !uri.host.s)
+			{
+				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, uuid.s);
+				goto error;
+			}
+			else
+			{
+				s2 = &uri.host;
+			}
+		}
 	}
 
 	/* set values for keys  */
@@ -678,14 +724,14 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 			avp_name = dbp->a.u.sval.pvp.pvn.u.isname.name.n;
 		}
 	} else {
-		LM_WARN("TODO: avp is not a dinamic name <%.*s> name is %d\n", dbp->sa.len, dbp->sa.s, avp_name);
+		LM_WARN("TODO: avp is not a dynamic name <%.*s> name is %d\n", dbp->sa.len, dbp->sa.s, avp_name);
 		avp_name = -1;
 	}
 
 	/* set the script flags */
 	if(dbp->a.type==AVPOPS_VAL_PVAR)
 		name_type |= dbp->a.u.sval.pvp.pvn.u.isname.type&0xff00;
-	
+
 	/* set uuid/(username and domain) fields */
 
 	n =0 ;
@@ -766,18 +812,20 @@ error:
 
 
 
+/* @return : non-zero */
 int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 									struct db_url *url, pvname_list_t* dest)
 {
 	int printbuf_len;
 	int ret;
+	str qstr;
 
 	if(msg==NULL || query==NULL)
 	{
 		LM_ERR("bad parameters\n");
 		return -1;
 	}
-	
+
 	printbuf_len = buf_size-1;
 	if(pv_printf(msg, query, printbuf, &printbuf_len)<0 || printbuf_len<=0)
 	{
@@ -785,11 +833,13 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 		return -1;
 	}
 
-	LM_DBG("query [%s]\n", printbuf);
+	qstr.s = printbuf;
+	qstr.len = printbuf_len;
 
-	ret = db_query_avp(url, msg, printbuf, dest);
+	LM_DBG("query [%.*s]\n", printbuf_len, printbuf);
+	ret = db_query_avp(url, msg, &qstr, dest);
 
-	//Empty return set	
+	//Empty return set
 	if(ret==1)
 		return -2;
 
@@ -800,6 +850,118 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 	//Have a return set
 	return 1;
 }
+
+int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
+		void **rparam,  pv_elem_t *query, struct db_url *url, pvname_list_t *dest)
+{
+	int printbuf_len;
+	int rc, read_fd;
+	query_async_param *param;
+	str qstr;
+
+	void *_priv;
+
+	if (!msg || !query)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	printbuf_len = buf_size - 1;
+	if (pv_printf(msg, query, printbuf, &printbuf_len) < 0 || printbuf_len <= 0)
+	{
+		LM_ERR("cannot print the query\n");
+		return -1;
+	}
+
+	LM_DBG("query [%s]\n", printbuf);
+
+	qstr.s = printbuf;
+	qstr.len = printbuf_len;
+
+	/* No async capabilities - just run it in blocking mode */
+	if (!DB_CAPABILITY(url->dbf, DB_CAP_ASYNC_RAW_QUERY))
+	{
+		rc = db_query_avp(url, msg, &qstr, dest);
+		LM_DBG("sync query \"%.*s\" returned: %d\n", qstr.len, qstr.s, rc);
+
+		*rparam = NULL;
+		*rfunc = NULL;
+		async_status = ASYNC_NO_IO;
+
+		/* Empty_set / Other_errors / Success */
+		return rc == 1 ? -2 : (rc != 0 ? -1 : 1);
+	}
+
+	read_fd = url->dbf.async_raw_query(url->hdl, &qstr, &_priv);
+	if (read_fd < 0)
+	{
+		*rparam = NULL;
+		*rfunc = NULL;
+		return -1;
+	}
+
+	param = pkg_malloc(sizeof *param);
+	if (!param)
+	{
+		LM_ERR("no more pkg mem\n");
+		return E_OUT_OF_MEM;
+	}
+	memset(param, '\0', sizeof *param);
+
+	*rparam = param;
+	*rfunc = resume_async_dbquery;
+
+	param->output_avps = dest;
+	param->hdl = url->hdl;
+	param->dbf = &url->dbf;
+	param->db_param = _priv;
+
+	async_status = read_fd;
+	return 1;
+}
+
+int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
+{
+	db_res_t *res = NULL;
+	query_async_param *param = (query_async_param *)_param;
+	int rc, ret;
+
+	rc = param->dbf->async_resume(param->hdl, fd, &res, param->db_param);
+	if (async_status == ASYNC_CONTINUE || async_status == ASYNC_CHANGE_FD) {
+		return rc;
+	}
+
+	if (rc != 0) {
+		LM_ERR("async query returned error\n");
+		ret = -1;
+		goto err_free;
+	}
+
+	if (!res || RES_ROW_N(res) <= 0 || RES_COL_N(res) <= 0) {
+		LM_DBG("query returned no results\n");
+		ret = -2;
+		goto err_free;
+	}
+
+	if (db_query_avp_print_results(msg, res, param->output_avps) != 0) {
+		LM_ERR("failed to print results\n");
+		ret = -1;
+		goto err_free;
+	}
+
+	async_status = ASYNC_DONE;
+
+	param->dbf->async_free_result(param->hdl, res, param->db_param);
+	pkg_free(param);
+	return 1;
+
+err_free:
+	param->dbf->async_free_result(param->hdl, res, param->db_param);
+	pkg_free(param);
+	return ret;
+}
+
 
 
 int ops_delete_avp(struct sip_msg* msg, struct fis_param *ap)
@@ -1029,7 +1191,7 @@ int ops_pushto_avp (struct sip_msg* msg, struct fis_param* dst,
 			LM_CRIT("destination unknown (%d/%d)\n", dst->opd, dst->ops);
 			goto error;
 		}
-	
+
 		if ( act_type )
 		{
 			/* rewrite part of ruri */
@@ -1373,7 +1535,7 @@ int ops_print_avp(void)
 		}
 	}
 
-	
+
 	return 1;
 }
 
@@ -1406,7 +1568,7 @@ int ops_subst(struct sip_msg* msg, struct fis_param** src,
 
 	if(avp==NULL)
 		return -1;
-	
+
 	if(src[1]!=0)
 	{
 		/* get dst avp name */
@@ -1419,7 +1581,7 @@ int ops_subst(struct sip_msg* msg, struct fis_param** src,
 		name_type2 = name_type1;
 		avp_name2 = avp_name1;
 	}
-/* TODO: delete?	
+/* TODO: delete?
 	if(name_type2&AVP_NAME_STR)
 	{
 		if(avp_name2.s.len>=STR_BUF_SIZE)
@@ -1440,7 +1602,7 @@ int ops_subst(struct sip_msg* msg, struct fis_param** src,
 			avp = search_first_avp(name_type1, avp_name1, &avp_val, prev_avp);
 			continue;
 		}
-		
+
 		result=subst_str(avp_val.s.s, msg, se, &nmatches);
 		if(result!=NULL)
 		{
@@ -1687,7 +1849,7 @@ int ops_is_avp_set(struct sip_msg* msg, struct fis_param *ap)
 	int_str avp_value;
 	int index;
 	int findex;
-	
+
 	/* get avp name */
 	if(avpops_get_aname(msg, ap, &avp_name, &name_type)!=0)
 	{
@@ -1701,11 +1863,11 @@ int ops_is_avp_set(struct sip_msg* msg, struct fis_param *ap)
 		LM_ERR("failed to get AVP index\n");
 		return -1;
 	}
-	
+
 	avp=search_first_avp(name_type, avp_name, &avp_value, 0);
 	if(avp==0)
 		return -1;
-	
+
 	do {
 		/* last index [-1] or all [*] go here as well */
 		if(index<=0)
@@ -1734,7 +1896,7 @@ int ops_is_avp_set(struct sip_msg* msg, struct fis_param *ap)
 		}
 		index--;
 	} while ((avp=search_first_avp(name_type, avp_name, &avp_value, avp))!=0);
-	
+
 	return -1;
 }
 
@@ -1797,7 +1959,7 @@ int w_insert_avp(struct sip_msg* msg, char* name, char* value,
 	/* search the previous avp */
 	index--;
 	avp = NULL;
-	while ( (avp=search_first_avp( name_type, avp_name, 0, avp))!=0 ) 
+	while ( (avp=search_first_avp( name_type, avp_name, 0, avp))!=0 )
 	{
 		if( index == 0 )
 		{

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2005-2009 Voice Sistem SRL
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -42,7 +40,7 @@
  *  2003-10-24  converted to the new socket_info lists (andrei)
  *  2004-10-10  modified check_self to use grep_sock_info (andrei)
  *  2004-11-08  added force_send_socket support in get_send_socket (andrei)
- *  2006-09-06  added new algorithm for building VIA branch parameter for 
+ *  2006-09-06  added new algorithm for building VIA branch parameter for
  *              stateless requests - it complies to RFC3261 requirement to be
  *              unique through time and space (bogdan)
  */
@@ -65,6 +63,7 @@
 
 #include "forward.h"
 #include "parser/msg_parser.h"
+#include "parser/parse_from.h"
 #include "dprint.h"
 #include "ut.h"
 #include "dset.h"
@@ -73,60 +72,13 @@
 #include "sr_module.h"
 #include "ip_addr.h"
 #include "resolve.h"
+#include "net/trans.h"
 #include "name_alias.h"
 #include "socket_info.h"
 #include "core_stats.h"
 #include "blacklists.h"
 #include "msg_callbacks.h"
-
-
-/*************************** callback functions ***************************/
-struct fwd_callback {
-	fwd_cb_t* callback;         /* callback function */
-	struct fwd_callback* next;  /* next callback element*/
-};
-
-static struct fwd_callback* fwdcb_hl = 0;  /* head list */
-
-/* register a FWD callback */
-int register_fwdcb(fwd_cb_t f)
-{
-	struct fwd_callback *cbp;
-
-	/* build a new callback structure */
-	if (!(cbp=pkg_malloc( sizeof( struct fwd_callback)))) {
-		LM_ERR("out of pkg. mem\n");
-		return -1;
-	}
-
-	/* fill it up */
-	cbp->callback = f;
-	/* link it at the beginning of the list */
-	cbp->next = fwdcb_hl;
-	fwdcb_hl = cbp;
-
-	return 0;
-
-}
-
-static inline void run_fwd_callbacks(struct sip_msg *req, char *buf, int len,
-			struct socket_info* send_sock, int proto, union sockaddr_union *to)
-{
-	struct fwd_callback *cbp;
-	str buffer;
-
-	buffer.len = len;
-	buffer.s = buf;
-
-	for ( cbp=fwdcb_hl ; cbp ; cbp=cbp->next ) {
-		LM_DBG("FWD callback entered\n");
-		cbp->callback( req, &buffer, send_sock, proto, to);
-	}
-}
-
-
-/**************************************************************************/
-
+#include "md5utils.h"
 
 
 
@@ -142,7 +94,7 @@ struct socket_info* get_out_socket(union sockaddr_union* to, int proto)
 {
 	int temp_sock;
 	socklen_t len;
-	union sockaddr_union from; 
+	union sockaddr_union from;
 	struct socket_info* si;
 	struct ip_addr ip;
 
@@ -150,7 +102,7 @@ struct socket_info* get_out_socket(union sockaddr_union* to, int proto)
 		LM_CRIT("can only be called for UDP\n");
 		return 0;
 	}
-	
+
 	temp_sock=socket(to->s.sa_family, SOCK_DGRAM, 0 );
 	if (temp_sock==-1) {
 		LM_ERR("socket() failed: %s\n", strerror(errno));
@@ -182,15 +134,15 @@ error:
 /*! \brief returns a socket_info pointer to the sending socket or 0 on error
  * \param msg SIP message (can be null)
  * \param to  destination socket_union pointer
- * \param proto protocol 
+ * \param proto protocol
  *
  * \note if msg!=null and msg->force_send_socket, the force_send_socket will be used
  */
-struct socket_info* get_send_socket(struct sip_msg *msg, 
+struct socket_info* get_send_socket(struct sip_msg *msg,
 										union sockaddr_union* to, int proto)
 {
 	struct socket_info* send_sock;
-	
+
 	/* check if send interface is not forced */
 	if (msg && msg->force_send_socket){
 		if (msg->force_send_socket->proto!=proto){
@@ -199,7 +151,7 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 											msg->force_send_socket->port_no,
 											proto);
 		}
-		if (msg->force_send_socket && (msg->force_send_socket->socket!=-1)) 
+		if (msg->force_send_socket && (msg->force_send_socket->socket!=-1))
 			return msg->force_send_socket;
 		else{
 			if (msg->force_send_socket && msg->force_send_socket->socket==-1)
@@ -223,71 +175,20 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 	/* check if we need to change the socket (different address families -
 	 * eg: ipv4 -> ipv6 or ipv6 -> ipv4) */
 	switch(proto){
-#ifdef USE_TCP
-		case PROTO_TCP:
-		/* on tcp just use the "main address", we don't really now the
-		 * sending address (we can find it out, but we'll need also to see
-		 * if we listen on it, and if yes on which port -> too complicated*/
-			switch(to->s.sa_family){
-				/* FIXME */
-				case AF_INET:	send_sock=sendipv4_tcp;
-								break;
-#ifdef USE_IPV6
-				case AF_INET6:	send_sock=sendipv6_tcp;
-								break;
-#endif
-				default:	LM_ERR("don't know how to forward to af %d\n", 
-								to->s.sa_family);
-			}
-			break;
-#endif
-#ifdef USE_TLS
-		case PROTO_TLS:
-			switch(to->s.sa_family){
-				/* FIXME */
-				case AF_INET:	send_sock=sendipv4_tls;
-								break;
-#ifdef USE_IPV6
-				case AF_INET6:	send_sock=sendipv6_tls;
-								break;
-#endif
-				default:	LM_ERR("don't know how"
-									" to forward to af %d\n", to->s.sa_family);
-			}
-			break;
-#endif /* USE_TLS */
-#ifdef USE_SCTP
-		case PROTO_SCTP:
-			switch(to->s.sa_family){
-				case AF_INET:	send_sock=sendipv4_sctp;
-								break;
-#ifdef USE_IPV6
-				case AF_INET6:	send_sock=sendipv6_sctp;
-								break;
-#endif
-				default:	LM_ERR("don't know how to forward to af %d\n", 
-								to->s.sa_family);
-			}
-			break;
-#endif /* USE_SCTP */
 		case PROTO_UDP:
-			if ((bind_address==0)||(to->s.sa_family!=bind_address->address.af)||
-				  (bind_address->proto!=PROTO_UDP)){
-				switch(to->s.sa_family){
-					case AF_INET:	send_sock=sendipv4;
-									break;
-#ifdef USE_IPV6
-					case AF_INET6:	send_sock=sendipv6;
-									break;
-#endif
-					default:	LM_ERR("don't know how to forward to af %d\n",
-										to->s.sa_family);
-				}
-			}else send_sock = (msg && msg->rcv.bind_address->address.af==bind_address->address.af &&
-				msg->rcv.bind_address->proto==bind_address->proto)? msg->rcv.bind_address : bind_address;
-			break;
+			if (msg &&
+			msg->rcv.bind_address->address.af==to->s.sa_family &&
+			msg->rcv.bind_address->proto==PROTO_UDP) {
+				send_sock = msg->rcv.bind_address;
+				break;
+			}
+			/* default logic for all protos */
 		default:
-			LM_CRIT("unknown proto %d\n", proto);
+			/* we don't really now the sending address (we can find it out,
+			 * but we'll need also to see if we listen on it, and if yes on
+			 * which port -> too complicated*/
+			send_sock = (to->s.sa_family==AF_INET) ?
+				protos[proto].sendipv4 : protos[proto].sendipv6;
 	}
 	return send_sock;
 }
@@ -316,13 +217,13 @@ found:
 
 
 
-static inline str* get_sl_branch(struct sip_msg* msg)
+static inline int set_sl_branch(struct sip_msg* msg)
 {
-	static str default_branch = str_init("0");
 	struct hdr_field *h_via;
 	struct via_body  *b_via;
 	str *branch;
 	int via_parsed;
+	char b_md5[MD5_LEN];
 
 	via_parsed = 0;
 	branch = 0;
@@ -348,7 +249,7 @@ static inline str* get_sl_branch(struct sip_msg* msg)
 		if (!via_parsed) {
 			if ( parse_headers(msg,HDR_EOH_F,0)<0 ) {
 				LM_ERR("failed to parse all hdrs\n");
-				return 0;
+				return -1;
 			}
 			via_parsed = 1;
 		}
@@ -356,14 +257,45 @@ static inline str* get_sl_branch(struct sip_msg* msg)
 
 	/* no statefull branch :(.. -> use the branch from the last via */
 found:
-	if (branch) {
-		if (branch->len>(int)MAX_BRANCH_PARAM_LEN)
-			branch->len = MAX_BRANCH_PARAM_LEN;
-	} else {
-		/* no branch found/...use a default one*/
-		branch = &default_branch;
+	if (branch==NULL) {
+		/* no branch found :(.. -> try to use the From TAG param as 
+		 * a value to seed the MD5 - the From TAG is per call, so it gives
+		 * a bit of uniqueness; if this is empty, as a last resort, use the 
+		 * FROM URI (it cannot mis) */
+		if ( parse_from_header(msg)!=0 )
+		{
+			LM_ERR("failed to extract FROM header\n");
+			return -1;
+		}
+		if ( get_from(msg)->tag_value.len )
+			branch = &get_from(msg)->tag_value;
+		else
+			branch = &get_from(msg)->uri;
 	}
-	return branch;
+
+	/* make an MD5 over the found branch, to ensure a controlable 
+	 * length of the resulting branch */
+	MD5StringArray ( b_md5, branch, 1 );
+	/* and make a hash over transaction-related values */
+	if ( parse_headers(msg, HDR_CALLID_F|HDR_CSEQ_F,0)==-1 ||
+		msg->callid==NULL || msg->cseq==NULL )
+	{
+		LM_ERR("failed to extract CALLID or CSEQ hdr from SIP msg\n");
+		return -1;
+	}
+	/* build the new branch */
+	if (branch_builder(
+		core_hash( &msg->callid->body, &get_cseq(msg)->number, 1<<16 ),
+		0 /*labled - not used here */,
+		b_md5,
+		0 /*branch - not used here */,
+		msg->add_to_branch_s, &msg->add_to_branch_len )==0 )
+	{
+		LM_ERR("branch_builder failed to construct the branch\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 
@@ -371,27 +303,22 @@ found:
 int forward_request( struct sip_msg* msg, struct proxy_l * p)
 {
 	union sockaddr_union to;
-	unsigned int len;
-	char* buf;
+	str buf;
 	struct socket_info* send_sock;
 	struct socket_info* last_sock;
-	str *branch;
 
-	buf=0;
+	buf.s=NULL;
 
 	/* calculate branch for outbound request - if the branch buffer is already
-	 * set (maybe by an upper level as TM), used it; otherwise computes 
+	 * set (maybe by an upper level as TM), used it; otherwise computes
 	 * the branch for stateless fwd. . According to the latest discussions
 	 * on the topic, you should reuse the latest statefull branch
 	 * --bogdan */
 	if ( msg->add_to_branch_len==0 ) {
-		branch = get_sl_branch(msg);
-		if (branch==0) {
-			LM_ERR("unable to compute branch\n");
+		if (set_sl_branch(msg)!=0) {
+			LM_ERR("unable to compute and add stateless VIA branch\n");
 			goto error;
 		}
-		msg->add_to_branch_len = branch->len;
-		memcpy( msg->add_to_branch_s, branch->s, branch->len);
 	}
 
 	msg_callback_process(msg, REQ_PRE_FORWARD, (void *)p);
@@ -399,10 +326,8 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	hostent2su( &to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
 	last_sock = 0;
 
-#ifdef USE_TCP
-	if (getb0flags() & tcp_no_new_conn_bflag)
+	if (getb0flags(msg) & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
-#endif
 
 	do {
 		send_sock=get_send_socket( msg, &to, p->proto);
@@ -415,47 +340,44 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 
 		if ( last_sock!=send_sock ) {
 
-			if (buf)
-				pkg_free(buf);
+			if (buf.s)
+				pkg_free(buf.s);
 
-			buf = build_req_buf_from_sip_req(msg, &len, send_sock, p->proto, 0);
-			if (!buf){
+			buf.s = build_req_buf_from_sip_req( msg, (unsigned int*)&buf.len,
+				send_sock, p->proto, 0 /*flags*/);
+			if (!buf.s){
 				LM_ERR("building req buf failed\n");
-#ifdef USE_TCP
 				tcp_no_new_conn = 0;
-#endif
 				goto error;
 			}
 
 			last_sock = send_sock;
 		}
 
-		if (check_blacklists( p->proto, &to, buf, len)) {
+		if (check_blacklists( p->proto, &to, buf.s, buf.len)) {
 			LM_DBG("blocked by blacklists\n");
 			ser_error=E_IP_BLOCKED;
 			continue;
 		}
 
 		/* send it! */
-		LM_DBG("sending:\n%.*s.\n", (int)len, buf);
+		LM_DBG("sending:\n%.*s.\n", buf.len, buf.s);
 		LM_DBG("orig. len=%d, new_len=%d, proto=%d\n",
-			msg->len, len, p->proto );
+			msg->len, buf.len, p->proto );
 
-		if (msg_send(send_sock, p->proto, &to, 0, buf, len)<0){
+		if (msg_send(send_sock, p->proto, &to, 0, buf.s, buf.len, msg)<0){
 			ser_error=E_SEND;
 			continue;
 		}
 
-		run_fwd_callbacks( msg, buf, len, send_sock, p->proto, &to);
+		slcb_run_req_out( msg, &buf, &to, send_sock, p->proto);
 
 		ser_error = 0;
 		break;
 
 	}while( get_next_su( p, &to, (ser_error==E_IP_BLOCKED)?0:1)==0 );
 
-#ifdef USE_TCP
 	tcp_no_new_conn = 0;
-#endif
 
 	if (ser_error) {
 		update_stat( drp_reqs, 1);
@@ -465,12 +387,12 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	/* sent requests stats */
 	update_stat( fwd_reqs, 1);
 
-	pkg_free(buf);
+	pkg_free(buf.s);
 	/* received_buf & line_buf will be freed in receive_msg by free_lump_list*/
 	return 0;
 
 error:
-	if (buf) pkg_free(buf);
+	if (buf.s) pkg_free(buf.s);
 	return -1;
 }
 
@@ -486,7 +408,7 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 	unsigned short port;
 
 	port=0;
-	if(via==msg->via1){ 
+	if(via==msg->via1){
 		/* _local_ reply, we ignore any rport or received value
 		 * (but we will send back to the original port if rport is
 		 *  present) */
@@ -512,12 +434,12 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 
 		if (via->maddr){
 			name= &(via->maddr->value);
-			if (port==0) port=via->port?via->port:SIP_PORT; 
+			if (port==0) port=via->port?via->port:SIP_PORT;
 		} else if (via->received){
 			LM_DBG("using 'received'\n");
 			name=&(via->received->value);
 			/* making sure that we won't do SRV lookup on "received" */
-			if (port==0) port=via->port?via->port:SIP_PORT; 
+			if (port==0) port=via->port?via->port:SIP_PORT;
 		}else{
 			LM_DBG("using via host\n");
 			name=&(via->host);
@@ -531,7 +453,7 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 		LM_NOTICE("resolve_host(%.*s) failure\n", name->len, name->s);
 		return -1;
 	}
-		
+
 	hostent2su( to, he, 0, port);
 	return 1;
 }
@@ -548,11 +470,9 @@ int forward_reply(struct sip_msg* msg)
 	int proto;
 	int id; /* used only by tcp*/
 	struct socket_info *send_sock;
-#ifdef USE_TCP
 	char* s;
 	int len;
-#endif
-	
+
 	to=0;
 	id=0;
 	new_buf=0;
@@ -561,7 +481,7 @@ int forward_reply(struct sip_msg* msg)
 		if (check_self(&msg->via1->host,
 					msg->via1->port?msg->via1->port:SIP_PORT,
 					msg->via1->proto)!=1){
-			LM_ERR("host in first via!=me : %.*s:%d\n", 
+			LM_ERR("host in first via!=me : %.*s:%d\n",
 				msg->via1->host.len, msg->via1->host.s,	msg->via1->port);
 			/* send error msg back? */
 			goto error;
@@ -581,7 +501,7 @@ int forward_reply(struct sip_msg* msg)
 		goto skip;
 
 	/* we have to forward the reply stateless, so we need second via -bogdan*/
-	if (parse_headers( msg, HDR_VIA2_F, 0 )==-1 
+	if (parse_headers( msg, HDR_VIA2_F, 0 )==-1
 		|| (msg->via2==0) || (msg->via2->error!=PARSE_OK))
 	{
 		/* no second via => error */
@@ -598,12 +518,7 @@ int forward_reply(struct sip_msg* msg)
 	proto=msg->via2->proto;
 	if (update_sock_struct_from_via( to, msg, msg->via2 )==-1) goto error;
 
-#ifdef USE_TCP
-	if (proto==PROTO_TCP
-#ifdef USE_TLS
-			|| proto==PROTO_TLS
-#endif
-			){
+	if (is_tcp_based_proto(proto)){
 		/* find id in i param if it exists */
 		if (msg->via1->i&&msg->via1->i->value.s){
 			s=msg->via1->i->value.s;
@@ -611,17 +526,16 @@ int forward_reply(struct sip_msg* msg)
 			id=reverse_hex2int(s, len);
 		}
 	}
-#endif
 
 	send_sock = get_send_socket(msg, to, proto);
 
-	new_buf = build_res_buf_from_sip_res( msg, &new_len, send_sock);
+	new_buf = build_res_buf_from_sip_res( msg, &new_len, send_sock,0);
 	if (!new_buf){
 		LM_ERR("failed to build rpl from req failed\n");
 		goto error;
 	}
 
-	if (msg_send(send_sock, proto, to, id, new_buf, new_len)<0) {
+	if (msg_send(send_sock, proto, to, id, new_buf, new_len, msg)<0) {
 		update_stat( drp_rpls, 1);
 		goto error0;
 	}
@@ -632,7 +546,7 @@ int forward_reply(struct sip_msg* msg)
 	 * the correct port is choosen in update_sock_struct_from_via,
 	 * as its visible with su_getport(to); .
 	 */
-	LM_DBG("reply forwarded to %.*s:%d\n", msg->via2->host.len, 
+	LM_DBG("reply forwarded to %.*s:%d\n", msg->via2->host.len,
 		msg->via2->host.s, (unsigned short) msg->via2->port);
 
 	pkg_free(new_buf);

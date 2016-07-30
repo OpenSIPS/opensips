@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * uac_auth module
  *
  * Copyright (C) 2011 VoIP Embedded Inc.
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -94,7 +92,6 @@ static inline int load_uac_auth_api( uac_auth_api_t *uac_auth_api)
 
 	/* import the uac_auth auto-loading function */
 	if ( !(load_uac_auth=(load_uac_auth_f)find_export("load_uac_auth", 1, 0))) {
-		LM_ERR("can't import load_uac_auth\n");
 		return -1;
 	}
 

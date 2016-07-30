@@ -9,22 +9,28 @@
 	  <title>Overview</title>
 	    <para> 
 		The module enable &osips; to register itself on a remote SIP registrar.
-		Several registrant accounts can be defined, each account is
-		specified by the "uac" parameter.
 	    </para>
 	    <para>
 		At startup, the registrant records are loaded into
 		a hash table in memory and a timer is started.
 		The hash index is computed over the AOR field.
-		For better hash distribution, the size of the hash table is configurable.
-		When the timer fires for the first time, the first hash table will be checked and
+		</para>
+		<para>
+		The timer interval for checking records in a hash bucket is computed
+		by dividing the timer_interval module param by the number of hash buckets.
+		When the timer fires for the first time, the first hash bucket will be checked and
 		REGISTERs will be sent out for each record that is found.
-		On the next timeout fire, the second hash table will be checked and so on.
-		The timer interval is configurable.
+		On the next timeout fire, the second hash bucket will be checked and so on.
+		If the configured timer_interval module param is lower then the number of buckets,
+		the module will fail to start.
 	    </para>
 	    <para>
-		Each registrant has it's own state.
-		Registranr's status can be inspected via "reg_list" MI comand.
+	    Example: setting the timer_interval module to 8 with a hash_size of 2, will result
+	    in having 4 hash buckets (2^2=4) and buckets will be checked one by one every 2s (8/4=2).
+	    </para>
+	    <para>
+	    Each registrant has it's own state.
+	    Registranr's status can be inspected via "reg_list" MI comand.
 	    </para>
 	    <para>
 		UAC registrant states:
@@ -193,7 +199,7 @@ modparam("uac_registrant", "table_name", "my_registrant")
 		<title>Set <quote>registrar_column</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("uac_registrant", "registrar_column", "registranr_uri")
+modparam("uac_registrant", "registrar_column", "registrant_uri")
 ...
 </programlisting>
 		</example>
@@ -334,7 +340,7 @@ modparam("uac_registrant", "binding_URI_column", "contact_uri")
 		The column's name in the database storing the
 		binding params in REGISTER (not mandatory field).
 		If not NULL or not empty, the string stored here will be added
-		as paramns to the Contact URI in REGISTER (it MUST start with <quote>;</quote>.
+		as params to the Contact URI in REGISTER (it MUST start with <quote>;</quote>.
 		There is no validation on the string stored here.
 		</para>
 		<para>

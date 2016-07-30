@@ -39,19 +39,16 @@
 		weight value than 0) respond. Default weight is 1.
 	</para>
 	<para>
-		The selection of the set is done from script prior using 
-		unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
-		functions - see the set_rtp_proxy_set() function.
+		Starting with &osips; 1.11, the set_rtp_proxy_set() function has
+		been removed. The set is now specified for each function. If
+		absend, the default set 0 is used. Also, engage_rtp_proxy(),
+		unforce_rtp_proxy() and start_recording() functions have been deprecated
+		and replaced by rtpproxy_engage(), rtpproxy_unforce() and
+		rtpproxy_start_recording() respectively.
 	</para>
 	<para>
-		For backward compatibility reasons, a set with no id take by default 
-		the id 0. Also if no set is explicitly set before 
-		unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
-		the 0 id set will be used.
-	</para>
-	<para>
-		IMPORTANT: if you use multiple sets, take care and use the same set for
-		both rtpproxy_offer()/rtpproxy_answer() and unforce_rtpproxy()!!
+		IMPORTANT: if you use multiple sets, make sure you use the same set for
+		both rtpproxy_offer()/rtpproxy_answer() and rtpproxy_unforce()!!
 	</para>
 	</section>
 
@@ -84,7 +81,7 @@
 			module parameter in your configuration script. This is the socket where further
 			notification will be received from rtpproxies. This socket must be a TCP or 
 			UNIX socket. Also, for all the calls that require notification, the
-			engage_rtp_proxy(), rtpproxy_offer() and rtpproxy_answer() functions must
+			rtpproxy_engage(), rtpproxy_offer() and rtpproxy_answer() functions must
 			be called with the <quote>n</quote> flag.   
 		</para>
 		<para>
@@ -167,7 +164,7 @@
 
 			<listitem>
 			<para>
-				<emphasis>dialog</emphasis> module - if using the engage_rtp_proxy
+				<emphasis>dialog</emphasis> module - if using the rtpproxy_engage
 				functions or RTPProxy timeout notifications.
 			</para>
 			</listitem>
@@ -452,35 +449,6 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 		</example>
 	</section>
 
-	<section>
-		<title><varname>rtpp_sock_pvar</varname> (string)</title>
-		<para>
-			Socket url for the rtpproxy instance used for setting up the call.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL (don't set pvar)</quote>.
-		</emphasis>
-		</para>
-
-		<example>
-		<title>Set <varname>rtpp_sock_pvar</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("rtpproxy", "rtpp_sock_pvar", "$avp(rtp_sock)")
-
-#Load balancing rtpproxies
-modparam("rtpproxy", "rtpproxy_sock",
-	"udp:localhost:12221 udp:localhost:12222")
-
-engage_rtp_proxy("roc");
-xlog("Used rtpproxy $avp(rtp_sock) for callid $ci");
-...
-
-</programlisting>
-		</example>
-	</section>
-
 </section>
 
 
@@ -488,34 +456,8 @@ xlog("Used rtpproxy $avp(rtp_sock) for callid $ci");
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">set_rtp_proxy_set()</function>
-		</title>
-		<para>
-		Sets the Id of the rtpproxy set to be used for the next 
-		unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
-		command.
-		</para>
-		<para>
-		Paramter can also be a pseudo-variable that contain (as string
-		or integer) the ID of the rtpproxy set to be used.
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE.
-		</para>
-		<example>
-		<title><function>fix_nated_contact</function> usage</title>
-		<programlisting format="linespecific">
-...
-set_rtp_proxy_set("2");
-rtpproxy_offer();
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title>
-			<function moreinfo="none">engage_rtp_proxy([flags [, ip_address]])</function>
+			<function moreinfo="none">engage_rtp_proxy([flags [, ip_address [, set_id [, sock_pvar]]]]) - deprecated</function>,
+			<function moreinfo="none">rtpproxy_engage([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
 		</title>
 
 		<para>
@@ -532,7 +474,7 @@ rtpproxy_offer();
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>flags</emphasis> - flags to turn on some features.
+			<emphasis>flags(optional)</emphasis> - flags to turn on some features.
 			</para>
 			<itemizedlist>
 				<listitem><para>
@@ -604,29 +546,41 @@ rtpproxy_offer();
 			</itemizedlist>
 		</listitem>
 		<listitem><para>
-		<emphasis>ip_address</emphasis> - new SDP IP address.
+		<emphasis>ip_address(optional)</emphasis> - new SDP IP address.
+		</para></listitem>
+		<listitem><para>
+		<emphasis>set_id(optional)</emphasis> - the set used for this call.
+		</para></listitem>
+		<listitem><para>
+		<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
+		socket chosen for this call. Note that the variable will only be populated in the
+		initial request.
 		</para></listitem>
 		</itemizedlist>
-		<para>
-		Both parmeters do accept variables in any combination.
-		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 		</para>
 		<example>
-		<title><function>engage_rtp_proxy</function> usage</title>
+		<title><function>rtpproxy_engage</function> usage</title>
 		<programlisting format="linespecific">
-		...
-		if (is_method("INVITE") &amp;&amp;
-		has_totag()) {engage_rtp_proxy();};
-		...
+...
+if (is_method("INVITE") &amp;&amp; has_totag()) {
+	if ($var(setid) != 0) {
+		rtpproxy_engage(,,"$var(setid)", "$var(proxy)");
+		xlog("SCRIPT: RTPProxy server used is $var(proxy)\n");
+	} else {
+		rtpproxy_engage();
+		xlog("SCRIPT: using default RTPProxy set\n");
+	}
+}
+...
 		</programlisting>
 		</example>
 		</section>
 
         <section>
                 <title>
-                <function moreinfo="none">rtpproxy_offer([flags [, ip_address]])</function>
+                <function moreinfo="none">rtpproxy_offer([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
                 </title>
                 <para>
                 Rewrites &sdp; body to ensure that media is passed through
@@ -635,7 +589,7 @@ rtpproxy_offer();
 		when SDPs are in 200 OK and ACK.
                 </para>
                 <para>
-		See engage_rtp_proxy() function description above for the meaning of the
+		See rtpproxy_engage() function description above for the meaning of the
 		parameters.
 		</para>
 		<para>
@@ -648,14 +602,14 @@ rtpproxy_offer();
 route {
 ...
     if (is_method("INVITE")) {
-        if (has_sdp()) {
+        if (has_body("application/sdp")) {
             if (rtpproxy_offer())
                 t_on_reply("1");
         } else {
             t_on_reply("2");
         }
     }
-    if (is_method("ACK") &amp;&amp; has_sdp())
+    if (is_method("ACK") &amp;&amp; has_body("application/sdp"))
         rtpproxy_answer();
 ...
 }
@@ -663,7 +617,7 @@ route {
 onreply_route[1]
 {
 ...
-    if (has_sdp())
+    if (has_body("application/sdp"))
         rtpproxy_answer();
 ...
 }
@@ -671,7 +625,7 @@ onreply_route[1]
 onreply_route[2]
 {
 ...
-    if (has_sdp())
+    if (has_body("application/sdp"))
         rtpproxy_offer();
 ...
 }
@@ -680,7 +634,7 @@ onreply_route[2]
 	</section>
         <section>
                 <title>
-                <function moreinfo="none">rtpproxy_answer([flags [, ip_address]])</function>
+                <function moreinfo="none">rtpproxy_answer([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
                 </title>
 		<para>
 		Rewrites &sdp; body to ensure that media is passed through
@@ -689,7 +643,7 @@ onreply_route[2]
 		when SDPs are in 200 OK and ACK.
 		</para>
 		<para>
-		See engage_rtp_proxy() function description above for the meaning of the
+		See rtpproxy_engage() function description above for the meaning of the
 		parameters.
 		</para>
 		<para>
@@ -705,27 +659,38 @@ onreply_route[2]
         </section>
 	<section>
 		<title>
-		<function moreinfo="none">unforce_rtp_proxy()</function>
+		<function moreinfo="none">unforce_rtp_proxy([set_id [, sock_pvar]]) - deprecated</function>,
+		<function moreinfo="none">rtpproxy_unforce([set_id [, sock_pvar]])</function>
 		</title>
 		<para>
 		Tears down the RTPProxy session for the current call.
 		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>set_id(optional)</emphasis> - the set used for this call.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
+			socket chosen for this call.
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 		</para>
 		<example>
-		<title><function>unforce_rtp_proxy</function> usage</title>
+		<title><function>rtpproxy_unforce</function> usage</title>
 		<programlisting format="linespecific">
 ...
-unforce_rtp_proxy();
+rtpproxy_unforce();
 ...
 </programlisting>
 		</example>
 	</section>
 	<section id="rtpproxy_stream2xxx">
 	<title>
-	    <function>rtpproxy_stream2uac(prompt_name, count)</function>,
-	    <function>rtpproxy_stream2uas(prompt_name, count)</function>
+	    <function>rtpproxy_stream2uac(prompt_name, count [, set_id [, sock_pvar]])</function>,
+	    <function>rtpproxy_stream2uas(prompt_name, count [, set_id [, sock_pvar]])</function>
 	</title>
 	<para>
 	    Instruct the RTPproxy to stream prompt/announcement pre-encoded with
@@ -770,6 +735,13 @@ unforce_rtp_proxy();
 		    <function>rtpproxy_stop_stream2xxx</function> is issued.
 		</para>
 	    </listitem>
+			<listitem><para>
+			<emphasis>set_id(optional)</emphasis> - the set used for this call.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
+			socket chosen for this call.
+			</para></listitem>
 	</itemizedlist>
 	<example>
 	    <title><function>rtpproxy_stream2xxx</function> usage</title>
@@ -789,8 +761,8 @@ unforce_rtp_proxy();
 	</section>
 	<section id="rtpproxy_stop_stream2xxx">
 	<title>
-	    <function>rtpproxy_stop_stream2uac()</function>,
-	    <function>rtpproxy_stop_stream2uas()</function>
+	    <function>rtpproxy_stop_stream2uac([set_id [, sock_pvar]])</function>,
+	    <function>rtpproxy_stop_stream2uas([set_id [, sock_pvar]])</function>
 	</title>
 	<para>
 	    Stop streaming of announcement/prompt/MOH started previously by the
@@ -798,26 +770,47 @@ unforce_rtp_proxy();
 	    suffix selects whose announcement relatively to tha current
 	    transaction should be stopped - UAC or UAS.
 	</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>set_id(optional)</emphasis> - the set used for this call.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
+			socket chosen for this call.
+			</para></listitem>
+		</itemizedlist>
 	<para>
 	    These functions can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 	</para>
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">start_recording()</function>
+		<function moreinfo="none">start_recording([set_id [, sock_pvar]]) - deprecated</function>,
+		<function moreinfo="none">rtpproxy_start_recording([set_id [, sock_pvar]])</function>
 		</title>
 		<para>
 		This command will send a signal to the RTP-Proxy to record 
 		the RTP stream on the RTP-Proxy.
 		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>set_id(optional)</emphasis> - the set used for this call.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
+			socket chosen for this call.
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 		</para>
 		<example>
-		<title><function>start_recording</function> usage</title>
+		<title><function>rtpproxy_start_recording</function> usage</title>
 		<programlisting format="linespecific">
 ...
-start_recording();
+rtpproxy_start_recording();
 ...
 		</programlisting>
 		</example>
@@ -839,18 +832,28 @@ start_recording();
 			the config file).
 			</para>
 			<para>
-			The second parameter value must be a number in decimal.
+			The next parameter (optional) is the rtpproxy set ID (used for better
+			indentification of the rtpproxy instance to be enabled, for example
+			when a rtpproxy is used in multiple sets).
+			</para>
+			<para>
+			The last parameter must be a number in decimal representing the new
+			enabled/disabled state.
 			</para>
 			<para>
 			NOTE: if a rtpproxy is defined multiple times (in the same or
-			diferente sete), all its instances will be enables/disabled.
+			diferente sete), all its instances will be enables/disabled IF
+			no set ID provided (as second param).
 			</para>
 			<example>
 			<title>
 				<function moreinfo="none">rtpproxy_enable</function> usage</title>
 			<programlisting format="linespecific">
 ...
+## disable a RTPProxy by URL only
 $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
+## disable a RTPProxy by URL and set ID (3)
+$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 ...
 			</programlisting>
 			</example>

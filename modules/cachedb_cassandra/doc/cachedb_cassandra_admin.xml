@@ -46,7 +46,7 @@
 			<para>
 				<emphasis>Cassandra is an open-source project so
 				it can be used to exchange data
-				 with various other applicationsr</emphasis>
+				 with various other applications</emphasis>
 			</para>
 			</listitem>
 
@@ -271,6 +271,25 @@ modparam("cachedb_cassandra", "rd_consistency_level",7);
 		
 	</section>
 
+		<section>
+		<title><varname>exec_threshold</varname> (int)</title>
+		<para>
+			The maximum number of microseconds that a cassandra cache query can last.
+			Anything above the threshold will trigger a warning message to the log
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0 ( unlimited - no warnings )</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>exec_threshold</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_cassandra", "exec_threshold", 100000)
+...
+	</programlisting>
+		</example>
+	</section>
 </section>
 
 	<section>

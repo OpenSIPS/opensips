@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -26,8 +24,8 @@
  */
 
 /*!
- * \file 
- * \brief MI :: Tree 
+ * \file
+ * \brief MI :: Tree
  * \ingroup mi
  */
 
@@ -176,7 +174,7 @@ static inline struct mi_node *add_next(struct mi_node *brother,
 
 	if(!brother)
 		return NULL;
-	
+
 	new = create_mi_node(name, name_len, value, value_len, flags);
 	if(!new)
 		return NULL;
@@ -212,6 +210,13 @@ struct mi_node *addf_mi_node_sibling(struct mi_node *brother, int flags,
 }
 
 
+/**
+ * By default, the "value" reference will be copied into the returned node!
+ *
+ * In order to have this string fully duplicated and also transparently freed
+ * by free_mi_tree() / free_mi_node(), make sure to enable the MI_DUP_VALUE bit
+ * in the "flags" bitmask parameter
+ */
 struct mi_node *add_mi_node_child( struct mi_node *parent, int flags,
 						char *name, int name_len, char *value, int value_len)
 {

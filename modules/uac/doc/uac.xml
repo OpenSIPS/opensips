@@ -4,7 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "uac_admin.xml">
-<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY faq SYSTEM "uac_faq.xml">
 
 <!-- Include general SER documentation entities -->
 <!ENTITY % serentities SYSTEM "../../../doc/entities.xml">

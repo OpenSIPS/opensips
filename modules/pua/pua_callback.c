@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua module - presence user agent module
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -57,7 +55,7 @@ void destroy_puacb_list(void)
 	{
 		cbp_tmp = cbp;
 		cbp = cbp->next;
-		if (cbp_tmp->param) 
+		if (cbp_tmp->param)
 			shm_free( cbp_tmp->param );
 		shm_free( cbp_tmp );
 	}
@@ -73,7 +71,7 @@ int register_puacb( int types, pua_cb f, void* param )
 	struct pua_callback *cbp;
 
 	/* are the callback types valid?... */
-	if ( types<0 || types>PUACB_MAX ) 
+	if ( types<0 || types>PUACB_MAX )
 	{
 		LM_CRIT("invalid callback types: mask=%d\n",types);
 		return E_BUG;
@@ -86,7 +84,7 @@ int register_puacb( int types, pua_cb f, void* param )
 	}
 
 	/* build a new callback structure */
-	if (!(cbp=(struct pua_callback*)shm_malloc(sizeof( struct pua_callback)))) 
+	if (!(cbp=(struct pua_callback*)shm_malloc(sizeof( struct pua_callback))))
 	{
 		LM_ERR("out of share mem\n");
 		return E_OUT_OF_MEM;

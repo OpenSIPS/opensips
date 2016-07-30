@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * UNIXODBC module
  *
  * Copyright (C) 2005-2006 Marco Lorrai
@@ -20,13 +18,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
  * --------
  *  2005-12-01  initial commit (chgen)
- *  2006-01-10  UID (username) and PWD (password) attributes added to 
+ *  2006-01-10  UID (username) and PWD (password) attributes added to
  *              connection string (bogdan)
  *  2006-05-05  extract_error passes back last error state on return (sgupta)
  */
@@ -216,7 +214,7 @@ void db_unixodbc_extract_error(const char *fn, const SQLHANDLE handle, const SQL
 		ret = SQLGetDiagRec(type, handle, ++i, state, &native, text,
 			sizeof(text), &len );
 		if (SQL_SUCCEEDED(ret)) {
-			LM_ERR("unixodbc:%s=%s:%ld:%ld:%s\n", fn, state, (long)i, 
+			LM_ERR("unixodbc:%s=%s:%ld:%ld:%s\n", fn, state, (long)i,
 					(long)native, text);
 			if(stret) strcpy( stret, (char*)state );
 		}

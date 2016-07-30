@@ -1,0 +1,1 @@
+id(int,auto) state(int) ig_cback(int) no_rej(int) setup_time(int) eta(int) last_start(int) recv_time(int) caller_dn(string) caller_un(string) b2buaid(string) flow(string) agent(string) 

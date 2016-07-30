@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua module - presence user agent module
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -98,7 +96,7 @@ static int mod_init(void);
 static int child_init(int);
 static void destroy(void);
 
-static int update_pua(ua_pres_t* p, unsigned int hash_code);
+static int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final);
 
 static int db_restore(void);
 static void db_update(unsigned int ticks,void *param);
@@ -122,12 +120,25 @@ static param_export_t params[]={
 	{0,                          0,         0           }
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /** module exports */
 struct module_exports exports= {
 	"pua",                      /* module name */
+	MOD_TYPE_DEFAULT,           /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
+	&deps,                      /* OpenSIPS module dependencies */
 	cmds,                       /* exported functions */
+	0,                          /* exported async functions */
 	params,                     /* exported parameters */
 	0,                          /* exported statistics */
 	0,                          /* exported MI functions */
@@ -234,9 +245,11 @@ static int mod_init(void)
 		return -1;
 	}
 
-	register_timer("pua_clean", hashT_clean, 0, update_period- 5);
+	register_timer("pua_clean", hashT_clean, 0, update_period-5,
+		TIMER_FLAG_DELAY_ON_DELAY);
 
-	register_timer("pua_dbupdate", db_update, 0, update_period);
+	register_timer("pua_dbupdate", db_update, 0, update_period,
+		TIMER_FLAG_SKIP_ON_DELAY);
 
 
 	if(pua_db)
@@ -332,13 +345,13 @@ static int db_restore(void)
 		LM_ERR("null database connection\n");
 		return -1;
 	}
-	
+
 	if(pua_dbf.use_table(pua_db, &db_table)< 0)
 	{
 		LM_ERR("in use table\n");
 		return -1;
 	}
-	
+
 	if (DB_CAPABILITY(pua_dbf, DB_CAP_FETCH)) {
 		if(pua_dbf.query(pua_db,0, 0, 0, result_cols,0, n_result_cols, 0,0)< 0)
 		{
@@ -415,8 +428,11 @@ static int db_restore(void)
 				etag.s= (char*)row_vals[etag_col].val.string_val;
 				etag.len = strlen(etag.s);
 
-				tuple_id.s= (char*)row_vals[tuple_col].val.string_val;
-				tuple_id.len = strlen(tuple_id.s);
+				if(row_vals[tuple_col].val.string_val)
+				{
+					tuple_id.s= (char*)row_vals[tuple_col].val.string_val;
+					tuple_id.len = strlen(tuple_id.s);
+				}
 			}
 
 			if(row_vals[watcher_col].val.string_val)
@@ -432,24 +448,24 @@ static int db_restore(void)
 				LM_DBG("to_uri= %.*s\n", to_uri.len, to_uri.s);
 				call_id.s= (char*)row_vals[callid_col].val.string_val;
 				call_id.len = strlen(call_id.s);
-				
+
 				to_tag.s= (char*)row_vals[totag_col].val.string_val;
 				to_tag.len = strlen(to_tag.s);
-				
+
 				from_tag.s= (char*)row_vals[fromtag_col].val.string_val;
 				from_tag.len = strlen(from_tag.s);
-				
+
 				if(row_vals[record_route_col].val.string_val)
 				{
 					record_route.s= (char*)
 						row_vals[record_route_col].val.string_val;
 					record_route.len= strlen(record_route.s);
 				}
-				
+
 				contact.s= (char*)row_vals[contact_col].val.string_val;
 				contact.len = strlen(contact.s);
-				
-				remote_contact.s= 
+
+				remote_contact.s=
 					(char*)row_vals[remote_contact_col].val.string_val;
 				if(remote_contact.s)
 					remote_contact.len = strlen(remote_contact.s);
@@ -466,7 +482,7 @@ static int db_restore(void)
 			if(watcher_uri.s)
 				size+= sizeof(str)+ to_uri.len + watcher_uri.len+ call_id.len+ to_tag.len+
 					from_tag.len+ record_route.len+ contact.len;
-			
+
 			p= (ua_pres_t*)shm_malloc(size);
 			if(p== NULL)
 			{
@@ -475,14 +491,14 @@ static int db_restore(void)
 			}
 			memset(p, 0, size);
 			size= sizeof(ua_pres_t);
-			
+
 			p->pres_uri= (str*)((char*)p+ size);
 			size+= sizeof(str);
 			p->pres_uri->s= (char*)p + size;
 			memcpy(p->pres_uri->s, pres_uri.s, pres_uri.len);
 			p->pres_uri->len= pres_uri.len;
 			size+= pres_uri.len;
-			
+
 			if(pres_id.s)
 			{
 				CONT_COPY(p, p->id, pres_id);
@@ -538,7 +554,7 @@ static int db_restore(void)
 				{
 					LM_ERR("no more share memory\n");
 					goto error;
-				}	
+				}
 				memcpy(p->etag.s, etag.s, etag.len);
 				p->etag.len= etag.len;
 			}
@@ -573,7 +589,7 @@ static int db_restore(void)
 
 	pua_dbf.free_result(pua_db, res);
 	res = NULL;
-	
+
 	if(pua_dbf.delete(pua_db, 0, 0 , 0, 0) < 0)
 	{
 		LM_ERR("while deleting information from db\n");
@@ -613,14 +629,14 @@ static void hashT_clean(unsigned int ticks,void *param)
 			LM_DBG("---\n");
 			if(p->expires -update_period < now )
 			{
-				if((p->desired_expires> p->expires + 5) || 
+				if((p->desired_expires> p->expires + 5) ||
 						(p->desired_expires== 0 ))
 				{
 					LM_DBG("Desired expires greater than expires -> send a "
 						"refresh PUBLISH desired_expires=%d - expires=%d\n",
 						p->desired_expires, p->expires);
 
-					if(update_pua(p, i)< 0)
+					if(update_pua(p, i, 0)< 0)
 					{
 						LM_ERR("while updating record\n");
 						lock_release(&HashT->p_records[i].lock);
@@ -632,6 +648,10 @@ static void hashT_clean(unsigned int ticks,void *param)
 
 				LM_DBG("Found expired: uri= %.*s\n", p->pres_uri->len,
 						p->pres_uri->s);
+				if(update_pua(p, i, 1)< 0)
+				{
+					LM_ERR("while updating record\n");
+				}
 				/* delete it */
 				q = p->next;
 				delete_htable_safe(p, p->hash_index);
@@ -644,20 +664,27 @@ static void hashT_clean(unsigned int ticks,void *param)
 	}
 }
 
-int update_pua(ua_pres_t* p, unsigned int hash_code)
+int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final)
 {
 	str* str_hdr= NULL;
 	int expires;
 	int result;
-	
-	if(p->desired_expires== 0)
-		expires= 3600;
+
+	if(final > 0)
+	{
+		expires= 0;
+		p->desired_expires= 0;
+	}
 	else
-		expires= p->desired_expires- (int)time(NULL);
+	{
+		if(p->desired_expires== 0)
+			expires= 3600;
+		else
+			expires= p->desired_expires- (int)time(NULL);
 
-	if(expires < min_expires)
-		expires = min_expires;
-
+		if(expires < min_expires)
+			expires = min_expires;
+	}
 	if(p->watcher_uri== NULL)
 	{
 		str met= {"PUBLISH", 7};
@@ -678,7 +705,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 			LM_ERR("while building extra_headers\n");
 			goto error;
 		}
-		LM_DBG("str_hdr:\n%.*s\n ", str_hdr->len, str_hdr->s);
+		LM_DBG("str_hdr:\n%.*s expires:%d\n ", str_hdr->len, str_hdr->s, expires);
 
 		cb_param = PRES_HASH_ID(p);
 
@@ -740,7 +767,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 
 		pkg_free(td);
 		td= NULL;
-	}	
+	}
 
 	pkg_free(str_hdr);
 	return 0;
@@ -775,7 +802,7 @@ static void db_update(unsigned int ticks,void *param)
 	q_vals[puri_col].type = DB_STR;
 	q_vals[puri_col].nul = 0;
 	n_query_cols++;
-	
+
 	q_cols[pid_col= n_query_cols] = &str_pres_id_col;
 	q_vals[pid_col].type = DB_STR;
 	q_vals[pid_col].nul = 0;
@@ -900,13 +927,6 @@ static void db_update(unsigned int ticks,void *param)
 		return ;
 	}
 
-	db_vals[0].val.int_val= (int)time(NULL)- 10;
-	db_ops[0]= OP_LT;
-	if(pua_dbf.delete(pua_db, db_cols, db_ops, db_vals, 1) < 0)
-	{
-		LM_ERR("while deleting from db table pua\n");
-	}
-
 	for(i=0; i<HASH_SIZE; i++) 
 	{
 		if(!no_lock)
@@ -915,7 +935,7 @@ static void db_update(unsigned int ticks,void *param)
 		p = HashT->p_records[i].entity->next;
 		while(p)
 		{
-			if(p->expires - (int)time(NULL) < 0)
+			if(p->expires < time(NULL))
 			{
 				p= p->next;
 				continue;
@@ -1025,6 +1045,13 @@ static void db_update(unsigned int ticks,void *param)
 		}
 		if(!no_lock)
 			lock_release(&HashT->p_records[i].lock);
+	}
+
+	db_vals[0].val.int_val= (int)time(NULL)- 10;
+	db_ops[0]= OP_LT;
+	if(pua_dbf.delete(pua_db, db_cols, db_ops, db_vals, 1) < 0)
+	{
+		LM_ERR("while deleting from db table pua\n");
 	}
 
 	return ;

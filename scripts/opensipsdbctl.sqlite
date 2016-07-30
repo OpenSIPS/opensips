@@ -1,0 +1,223 @@
+# $Id$
+#
+# Script for adding and dropping OpenSIPS SQLITE tables
+#
+# History:
+# 2006-04-07  removed gen_ha1 dependency - use md5sum;
+#             separated the serweb from opensips tables;
+#             fixed the reinstall functionality (bogdan)
+# 2006-05-16  added ability to specify MD5 from a configuration file
+#             FreeBSD does not have the md5sum function (norm)
+# 2006-09-02  Added address table (juhe)
+# 2006-10-27  subscriber table cleanup; some columns are created only if
+#             serweb is installed (bogdan)
+# 2007-02-28  DB migration added (bogdan)
+# 2007-05-21  Move SQL database definitions out of this script (henning)
+# 2007-05-31  Move common definitions to opensipsdbctl.base file (henningw)
+# 2007-06-11  Use a common control tool for database tasks, like the opensipsctl
+
+# path to the database schemas
+DATA_DIR="/usr/local/share/opensips"
+if [ -d "$DATA_DIR/sqlite" ]; then
+	DB_SCHEMA="$DATA_DIR/sqlite"
+elif [ -d "scripts/mysql" ]; then
+	DB_SCHEMA="scripts/sqlite"
+else
+	DB_SCHEMA="./sqlite"
+fi
+
+#################################################################
+# config vars
+#################################################################
+
+# path to the db_sqlite database
+if [ -z "$DB_PATH" ]; then
+	DB_PATH="/usr/local/etc/opensips/sqlite"
+fi
+
+CMD="sqlite3"
+DUMP_CMD=".dump"
+#################################################################
+
+
+# read password
+prompt_pw()
+{
+	echo "SQLITE does not use password"
+}
+
+# execute sql command with optional db name 
+# and password parameters given
+sql_query()
+{
+	if [ $# -gt 1 ] ; then
+		if [ -n "$1" ]; then
+			DB="$1"
+		else
+			DB=""
+		fi
+		shift
+		$CMD $DB "$@"
+	else
+		merr "sqlite3 requires db name"
+	fi
+}
+
+
+opensips_drop()  # pars: <database name>
+{
+if [ $# -ne 1 ] ; then
+	merr "opensips_drop function takes two params"
+	exit 1
+fi
+
+#sql_query "" "drop database $1;"
+rm $1
+
+if [ $? -ne 0 ] ; then
+	merr "Dropping database $1 failed!"
+	exit 1
+fi
+minfo "Database $1 deleted"
+}
+
+
+db_charset_test()
+{
+#	if [ -n "$PW" ]; then
+#		CURRCHARSET=`echo "show variables like '%character_set_server%'" | $CMD | $AWK '{print $2}' | $SED -e 1d`
+#		ALLCHARSETS=`echo "show character set" | $CMD "-p$PW" | $AWK '{print $1}' | $SED -e 1d | $GREP -iv "utf8" | $GREP -iv "ucs2"`
+#	else
+	CURRCHARSET=`echo "show variables like '%character_set_server%'" | $CMD | $AWK '{print $2}' | $SED -e 1d`
+	ALLCHARSETS=`echo "show character set" | $CMD | $AWK '{print $1}' | $SED -e 1d | $GREP -iv  "utf8" | $GREP -iv "ucs2"`
+#	fi
+
+	if [ -z "$ALLCHARSETS" -o -z "$CURRCHARSET" ]; then
+		mwarn "Failed to get the available and used character sets"
+		exit 1;
+	fi
+
+	tries=0;
+
+	while [ `echo "$ALLCHARSETS" | $GREP -icw $CURRCHARSET`  = "0" ]
+	do
+		mwarn "Your current default mysql characters set cannot be used to create DB. Please choice another one from the following list:"
+		mecho "$ALLCHARSETS"
+
+		let tries=tries+1;
+		mecho "Enter character set name: "
+		read CURRCHARSET
+
+		if [ $tries -ge 3 ]
+		then
+			merr "Check your current charset"
+			merr "Exiting..."
+			exit 1;
+		fi
+	done
+	CHARSET=$CURRCHARSET
+}
+
+
+opensips_create () # pars: <database name>
+{
+if [ $# -ne 1 ] ; then
+	merr "opensips_create function takes one param"
+	exit 1
+fi
+
+#minfo "test server charset"
+
+#db_charset_test
+
+minfo "creating database $1 ..."
+
+# Users: opensips is the regular user, opensipsro only for reading
+#fi
+
+for TABLE in $STANDARD_MODULES; do
+	mdbg "Creating core table: $TABLE"
+	sql_query $1 ".read $DB_SCHEMA/$TABLE-create.sql"
+	if [ $? -ne 0 ] ; then
+		merr "Creating core tables failed!"
+		exit 1
+	fi
+done
+
+minfo "Core OpenSIPS tables succesfully created."
+
+if [ -e $DB_SCHEMA/extensions-create.sql ]
+then
+	minfo "Creating custom extensions tables"
+	sql_query $1 ".read $DB_SCHEMA/extensions-create.sql"
+	if [ $? -ne 0 ] ; then
+		merr "Creating custom extensions tables failed!"
+		exit 1
+	fi
+fi
+
+get_answer $INSTALL_PRESENCE_TABLES "Install presence related tables? (y/n): "
+if [ "$ANSWER" = "y" ]; then
+	presence_create $1
+fi
+
+get_answer $INSTALL_EXTRA_TABLES "Install tables for $EXTRA_MODULES? (y/n): "
+if [ "$ANSWER" = "y" ]; then
+	HAS_EXTRA="yes"
+	extra_create $1
+fi
+} # opensips_create
+
+
+presence_create () # pars: <database name>
+{
+if [ $# -ne 1 ] ; then
+	merr "presence_create function takes one param"
+	exit 1
+fi
+
+minfo "creating presence tables into $1 ..."
+
+sql_query $1 ".read $DB_SCHEMA/presence-create.sql"
+
+if [ $? -ne 0 ] ; then
+	merr "Failed to create presence tables!"
+	exit 1
+fi
+
+sql_query $1 ".read $DB_SCHEMA/rls-create.sql"
+
+if [ $? -ne 0 ] ; then
+	merr "Failed to create rls-presence tables!"
+	exit 1
+fi
+
+minfo "Presence tables succesfully created."
+}  # end presence_create
+
+
+extra_create () # pars: <database name>
+{
+if [ $# -ne 1 ] ; then
+	merr "extra_create function takes one param"
+	exit 1
+fi
+
+minfo "creating extra tables into $1 ..."
+
+for TABLE in $EXTRA_MODULES; do
+	mdbg "Creating extra table: $TABLE"
+	sql_query $1 ".read $DB_SCHEMA/$TABLE-create.sql"
+	if [ $? -ne 0 ] ; then
+		merr "Creating extra tables failed!"
+		exit 1
+		fi
+	done
+minfo "Extra tables succesfully created."
+}  # end extra_create
+
+
+#export PW
+#if [ "$#" -ne 0 ] && [ "$PW" = "" ]; then
+#	prompt_pw
+#fi

@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2006-2007 VozTelecom Sistemas S.L
  *
  * This file is part of opensips, a free SIP server.
@@ -14,26 +13,26 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*
  * =====================================================================================
- * 
+ *
  *        Filename:  encode_route.c
- * 
+ *
  *     Description:  functions to encode/decode/print the route header
- * 
+ *
  *         Version:  1.0
  *         Created:  20/11/05 04:24:55 CET
  *        Revision:  none
  *        Compiler:  gcc
- * 
+ *
  *          Author:  Elias Baixas (EB), elias@conillera.net
  *         Company:  VozTele.com
- * 
+ *
  * =====================================================================================
  */
 
@@ -69,7 +68,7 @@ int encode_route_body(char *hdr,int hdrlen,rr_t *route_parsed,unsigned char *whe
    int i=0,k,route_offset;
    unsigned char tmp[500];
    rr_t *myroute;
-   
+
    for(route_offset=0,i=0,myroute=route_parsed;myroute;myroute=myroute->next,i++){
       if((k=encode_route(hdr,hdrlen,myroute,&tmp[route_offset]))<0){
 	 LM_ERR("parsing route number %d\n",i);

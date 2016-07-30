@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2009 Voice Sistem SRL
  * Copyright (C) 2009 Razvan
  *
@@ -18,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -47,15 +45,15 @@
 
 #define DB_CAP_FAILOVER (0 | DB_CAP_QUERY | DB_CAP_RAW_QUERY | DB_CAP_INSERT | \
 DB_CAP_DELETE | DB_CAP_UPDATE | DB_CAP_REPLACE | DB_CAP_FETCH | \
-DB_CAP_LAST_INSERTED_ID  | DB_CAP_INSERT_UPDATE)
+DB_CAP_LAST_INSERTED_ID  | DB_CAP_INSERT_UPDATE | DB_CAP_ASYNC_RAW_QUERY)
 
 #define DB_CAP_PARALLEL (0 | DB_CAP_QUERY | DB_CAP_RAW_QUERY | DB_CAP_INSERT | \
 DB_CAP_DELETE | DB_CAP_UPDATE | DB_CAP_REPLACE | DB_CAP_FETCH | \
-DB_CAP_LAST_INSERTED_ID  | DB_CAP_INSERT_UPDATE)
+DB_CAP_LAST_INSERTED_ID  | DB_CAP_INSERT_UPDATE | DB_CAP_ASYNC_RAW_QUERY)
 
 #define DB_CAP_ROUND (0 | DB_CAP_QUERY | DB_CAP_RAW_QUERY | DB_CAP_INSERT | \
 DB_CAP_FETCH | \
-DB_CAP_LAST_INSERTED_ID  | DB_CAP_INSERT_UPDATE)
+DB_CAP_LAST_INSERTED_ID  | DB_CAP_INSERT_UPDATE | DB_CAP_ASYNC_RAW_QUERY)
 
 enum DB_MODE {FAILOVER=0, PARALLEL, ROUND};
 
@@ -97,7 +95,7 @@ typedef struct info_db{
 
 
 typedef struct info_set{
-    
+
     str         set_name;       /* name of the set; ex: set1, set2...*/
     char        set_mode;       /* mode of the set: PARALLEL, FAILOVER, ... */
 

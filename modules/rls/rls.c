@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * rls module - resource list server
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -197,12 +195,29 @@ static mi_export_t mi_cmds[] = {
 	{  0, 0, 0, 0,  0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm",        DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "xcap",      DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "pua",       DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "presence",  DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /** module exports */
 struct module_exports exports= {
 	"rls",                      /* module name */
+	MOD_TYPE_DEFAULT,           /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
+	&deps,                      /* OpenSIPS module dependencies */
 	cmds,                       /* exported functions */
+	0,                          /* exported async functions */
 	params,                     /* exported parameters */
 	0,                          /* exported statistics */
 	mi_cmds,                    /* exported MI functions */
@@ -238,7 +253,7 @@ static int mod_init(void)
 		return -1;
 	}
 	server_address.len= strlen(server_address.s);
-	
+
 	if(presence_server.s)
 		presence_server.len= strlen(presence_server.s);
 
@@ -351,7 +366,7 @@ static int mod_init(void)
 			LM_ERR("error during table version check.\n");
 			return -1;
 	}
-	
+
 	if(hash_size<=1)
 		hash_size= 512;
 	else
@@ -409,7 +424,7 @@ static int mod_init(void)
 		LM_ERR("Can't bind pua\n");
 		return -1;
 	}
-	
+
 	if (bind_pua(&pua) < 0)
 	{
 		LM_ERR("mod_init Can't bind pua\n");
@@ -421,7 +436,7 @@ static int mod_init(void)
 		return -1;
 	}
 	pua_send_subscribe= pua.send_subscribe;
-	
+
 	if(pua.get_record_id == NULL)
 	{
 		LM_ERR("Could not import send_subscribe\n");
@@ -445,7 +460,7 @@ static int mod_init(void)
 			LM_ERR("Can't bind xcap_client\n");
 			return -1;
 		}
-	
+
 		if (bind_xcap_client(&xcap_client_api) < 0)
 		{
 			LM_ERR("Can't bind xcap\n");
@@ -458,12 +473,15 @@ static int mod_init(void)
 			return -1;
 		}
 	}
-	register_timer( "rls-notify", timer_send_notify, 0, waitn_time);
-	
-	register_timer( "rls-pclean", rls_presentity_clean, 0, clean_period);
-	
-	register_timer( "rls-dbupdate", rlsubs_table_update, 0, clean_period);
-	
+	register_timer( "rls-notify", timer_send_notify, 0, waitn_time,
+		TIMER_FLAG_DELAY_ON_DELAY);
+
+	register_timer( "rls-pclean", rls_presentity_clean, 0, clean_period,
+		TIMER_FLAG_DELAY_ON_DELAY);
+
+	register_timer( "rls-dbupdate", rlsubs_table_update, 0, clean_period,
+		TIMER_FLAG_SKIP_ON_DELAY);
+
 	return 0;
 }
 
@@ -471,12 +489,12 @@ int parse_xcap_root(void)
 {
 	char* sep;
 	sep= strchr(xcap_root, ':');
-	
+
 	if(sep)
 	{
 		char* sep2= NULL;
 		str port_str;
-		
+
 		sep2= strchr(sep+ 1, '/');
 		if(!sep2)
 			sep2 = xcap_root + strlen(xcap_root);
@@ -490,7 +508,7 @@ int parse_xcap_root(void)
 					port_str.s);
 			return -1;
 		}
-		if(xcap_port< 0 || xcap_port> 65535)
+		if(xcap_port> 65535)
 		{
 			LM_ERR("wrong xcap server port\n");
 			return -1;
@@ -519,12 +537,12 @@ static int child_init(int rank)
 	}
 	else
 	{
-		if (rls_dbf.use_table(rls_db, &rlsubs_table) < 0)  
+		if (rls_dbf.use_table(rls_db, &rlsubs_table) < 0)
 		{
 			LM_ERR("child %d: Error in use_table rlsubs_table\n", rank);
 			return -1;
 		}
-		if (rls_dbf.use_table(rls_db, &rlpres_table) < 0)  
+		if (rls_dbf.use_table(rls_db, &rlpres_table) < 0)
 		{
 			LM_ERR("child %d: Error in use_table rlpres_table\n", rank);
 			return -1;
@@ -543,7 +561,7 @@ static int child_init(int rank)
 void destroy(void)
 {
 	LM_DBG("start\n");
-	
+
 	if(rls_table)
 	{
 		if(rls_db)
@@ -558,7 +576,7 @@ int handle_expired_record(subs_t* s)
 {
 	int expires = s->expires;
 	s->expires = 0;
-	/* send Notify with state terminated*/	
+	/* send Notify with state terminated*/
 	if( rls_send_notify(s, NULL, NULL, NULL)< 0)
 	{
 		LM_ERR("in function send_notify\n");
@@ -576,26 +594,26 @@ void rlsubs_table_update(unsigned int ticks,void *param)
 
 	if(ticks== 0 && param == NULL)
 		no_lock= 1;
-	
+
 	if(rls_dbf.use_table(rls_db, &rlsubs_table)< 0)
 	{
 		LM_ERR("sql use table failed\n");
 		return;
 	}
-	pres_update_db_subs(rls_db, rls_dbf, rls_table, hash_size, 
+	pres_update_db_subs(rls_db, rls_dbf, rls_table, hash_size,
 			no_lock, handle_expired_record);
 
 }
 
 int rls_restore_db_subs(void)
 {
-	db_key_t result_cols[22]; 
+	db_key_t result_cols[22];
 	db_res_t *res= NULL;
-	db_row_t *row = NULL;	
+	db_row_t *row = NULL;
 	db_val_t *row_vals= NULL;
 	int i;
 	int n_result_cols= 0;
-	int pres_uri_col, expires_col, from_user_col, from_domain_col,to_user_col; 
+	int pres_uri_col, expires_col, from_user_col, from_domain_col,to_user_col;
 	int callid_col,totag_col,fromtag_col,to_domain_col,sockinfo_col,reason_col;
 	int event_col,contact_col,record_route_col, event_id_col, status_col;
 	int remote_cseq_col, local_cseq_col, local_contact_col, version_col;
@@ -631,7 +649,7 @@ int rls_restore_db_subs(void)
 	result_cols[version_col= n_result_cols++] = &str_version_col;
 	result_cols[status_col= n_result_cols++] = &str_status_col;
 	result_cols[reason_col= n_result_cols++] = &str_reason_col;
-	
+
 	if(!rls_db)
 	{
 		LM_ERR("null database connection\n");
@@ -673,13 +691,13 @@ int rls_restore_db_subs(void)
 		memset(&s, 0, sizeof(subs_t));
 
 		expires= row_vals[expires_col].val.int_val;
-		
+
 		if(expires< (int)time(NULL))
 			continue;
-	
+
 		s.pres_uri.s= (char*)row_vals[pres_uri_col].val.string_val;
 		s.pres_uri.len= strlen(s.pres_uri.s);
-		
+
 		s.to_user.s=(char*)row_vals[to_user_col].val.string_val;
 		s.to_user.len= strlen(s.to_user.s);
 
@@ -688,7 +706,7 @@ int rls_restore_db_subs(void)
 
 		s.from_user.s=(char*)row_vals[from_user_col].val.string_val;
 		s.from_user.len= strlen(s.from_user.s);
-		
+
 		s.from_domain.s=(char*)row_vals[from_domain_col].val.string_val;
 		s.from_domain.len= strlen(s.from_domain.s);
 
@@ -703,7 +721,7 @@ int rls_restore_db_subs(void)
 
 		ev_sname.s= (char*)row_vals[event_col].val.string_val;
 		ev_sname.len= strlen(ev_sname.s);
-		
+
 		event= pres_contains_event(&ev_sname, &parsed_event);
 		if(event== NULL)
 		{
@@ -719,7 +737,7 @@ int rls_restore_db_subs(void)
 		s.remote_cseq= row_vals[remote_cseq_col].val.int_val;
 		s.local_cseq= row_vals[local_cseq_col].val.int_val;
 		s.version= row_vals[version_col].val.int_val;
-		
+
 		s.expires= expires- (int)time(NULL);
 		s.status= row_vals[status_col].val.int_val;
 
@@ -732,11 +750,11 @@ int rls_restore_db_subs(void)
 
 		s.local_contact.s=(char*)row_vals[local_contact_col].val.string_val;
 		s.local_contact.len= strlen(s.local_contact.s);
-	
+
 		s.record_route.s=(char*)row_vals[record_route_col].val.string_val;
 		if(s.record_route.s)
 			s.record_route.len= strlen(s.record_route.s);
-		
+
 		sockinfo_str.s = (char*)row_vals[sockinfo_col].val.string_val;
 		if (sockinfo_str.s)
 		{

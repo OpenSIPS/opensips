@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2009 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #ifndef _DB_PS_H
@@ -39,6 +37,7 @@ typedef void * db_ps_t;
 #define CON_PS_REFERENCE(cn)      ((cn)->curr_ps)
 
 #define CON_RESET_CURR_PS(cn)    *((void***)&cn->curr_ps)=NULL
+#define CON_SET_CURR_PS(cn, ptr)    *((void***)&cn->curr_ps)=ptr
 
 #endif
 

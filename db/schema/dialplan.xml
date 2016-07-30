@@ -9,7 +9,7 @@
 
 <table id="dialplan" xmlns:db="http://docbook.org/ns/docbook">
     <name>dialplan</name>
-    <version>4</version>
+    <version>5</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table is used by the dialplan module for the translation rules. More information is available at: &OPENSIPS_MOD_DOC;dialplan.html
@@ -52,7 +52,7 @@
         <name>match_exp</name>
         <type>string</type>
         <size>64</size>
-        <description>Matching expresion (regexp or string).</description>
+        <description>Matching expression (regexp or string).</description>
     </column>
 
      <column id="match_flags">
@@ -66,14 +66,24 @@
         <name>subst_exp</name>
         <type>string</type>
         <size>64</size>
-        <description>Substitution expresion.</description>
+        <null/>
+        <description>Substitution expression.</description>
     </column>
     
     <column id="repl_exp">
         <name>repl_exp</name>
         <type>string</type>
         <size>32</size>
-        <description>Replacement expresion (sed like).</description>
+        <null/>
+        <description>Replacement expression (sed like).</description>
+    </column>
+
+    <column id="timerec">
+        <name>timerec</name>
+        <type>string</type>
+        <size>255</size>
+        <null/>
+        <description>Time recurrence used to match this rule.</description>
     </column>
 
     <column id="disabled">
@@ -88,6 +98,7 @@
         <name>attrs</name>
         <type>string</type>
         <size>32</size>
+        <null/>
         <description>General attributes string to be returned in case of rule matching.</description>
     </column>
  

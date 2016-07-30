@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2009 Irina Stanescu
  * Copyright (C) 2009 Voice System
  *
@@ -16,9 +14,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301  USA
  *
  * History
  * --------
@@ -130,7 +129,7 @@ typedef int (send_request_f)(aaa_conn*, aaa_message*, aaa_message**);
 	This function searches a certain value for a name in the dictionary of
 	AVPs loaded at protcol intialization.
 	The result is returned in the value field of the aaa_map structure.
-	The third parameter represents the type of search wanted: for a value, 
+	The third parameter represents the type of search wanted: for a value,
 	for an attribute or for a vendor dictionary entry.
 	The return value is an error code.
  */
@@ -187,7 +186,7 @@ typedef aaa_conn* (init_prot_f)(str*);
 
 	This structure is a collection of callbacks provided by the modules
 	that implement this generic AAA interface.
-	A variable of this type will be filled when a bind call is made, and 
+	A variable of this type will be filled when a bind call is made, and
 	therefore it cannot be used before aaa_prot_bind.
  */
 typedef struct _aaa_prot {
@@ -207,7 +206,7 @@ typedef struct _aaa_prot {
 	This is the function called by a module that wishes to use an
 	implementation for an AAA protocol.
 	The first parameter is the protocol URL.
-	The second parameter represents the address where the structure for 
+	The second parameter represents the address where the structure for
 	the protocol callback functions should be stored.
  	The return value is an error code.
  */

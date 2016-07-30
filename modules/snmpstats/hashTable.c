@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
@@ -31,7 +29,7 @@
  * For an overview of its structures, please see hashTable.h
  *
  * Potential Performance Improvements: Pass the length of the aor strings around
- * everywhere, so we don't have to calculate it ourselves. 
+ * everywhere, so we don't have to calculate it ourselves.
  *
  */
 
@@ -51,7 +49,7 @@
 /* Calculates and returns a hash index to a hash table.  The index is calculated
  * by summing up all the characters specified with theString, and using the
  * hashTableSize as the modulus.  */
-int calculateHashSlot(char *theString, int hashTableSize) 
+int calculateHashSlot(char *theString, int hashTableSize)
 {
 	char *currentCharacter = theString;
 	int   runningTotal     = 0;
@@ -66,13 +64,13 @@ int calculateHashSlot(char *theString, int hashTableSize)
 
 /* Searches the hash table specified as theTable, of size 'size', for a record
  * indexed with 'aor'.  If a match is found, then an aorToIndextStruct_t
- * structure is returned. 
+ * structure is returned.
  *
- * This function is called to discover the map between OpenSER's "aor" 
+ * This function is called to discover the map between OpenSER's "aor"
  * (Address of Records) indexing scheme, and the SNMPStats modules integer
- * indexing scheme for its contact/user data. 
+ * indexing scheme for its contact/user data.
  *
- * Returns: the aorToIndexStruct_t mapping structure if a match was found, 
+ * Returns: the aorToIndexStruct_t mapping structure if a match was found,
  *          or NULL otherwise.
  */
 aorToIndexStruct_t *findHashRecord(hashSlot_t *theTable, char *aor, int size)
@@ -83,7 +81,7 @@ aorToIndexStruct_t *findHashRecord(hashSlot_t *theTable, char *aor, int size)
 	aorToIndexStruct_t *currentRecord = theTable[hashIndex].first;
 
 	while (currentRecord != NULL) {
-		
+
 		/* If the strings are the same length and the same in every
 		 * other way, then return the given record. */
 		if (currentRecord->aorLength == aorStringLength &&
@@ -101,7 +99,7 @@ aorToIndexStruct_t *findHashRecord(hashSlot_t *theTable, char *aor, int size)
 /* Returns a chunk of memory large enough to store 'size' hashSlot's.  The
  * table will contain mappings between OpenSER's "aor" user/contact indexing
  * scheme, and SNMPStats integer indexing scheme */
-hashSlot_t  *createHashTable(int size) 
+hashSlot_t  *createHashTable(int size)
 {
 	hashSlot_t *hashTable     = NULL;
 	int         numberOfBytes = sizeof(hashSlot_t)*size;
@@ -121,8 +119,8 @@ hashSlot_t  *createHashTable(int size)
 
 
 /* Inserts the record specified with 'theRecord' into our hash table. */
-void insertHashRecord(hashSlot_t *theTable, aorToIndexStruct_t *theRecord, 
-		int size) 
+void insertHashRecord(hashSlot_t *theTable, aorToIndexStruct_t *theRecord,
+		int size)
 {
 	int hashIndex = calculateHashSlot(theRecord->aor, size);
 
@@ -133,12 +131,12 @@ void insertHashRecord(hashSlot_t *theTable, aorToIndexStruct_t *theRecord,
 	/* This is the first record in the hash table, so assign the first and
 	 * last pointers to this record. */
 	if (theTable[hashIndex].last == NULL) {
-		
+
 		theTable[hashIndex].last  = theRecord;
 		theTable[hashIndex].first = theRecord;
 
 	} else {
-		
+
 		/* Make the element that was previously the last element point
 		 * to this new record, as its next element. */
 		theTable[hashIndex].last->next = theRecord;
@@ -147,12 +145,12 @@ void insertHashRecord(hashSlot_t *theTable, aorToIndexStruct_t *theRecord,
 		theTable[hashIndex].last = theRecord;
 
 	}
-	
+
 }
 
 /*
  * This function will search the provided hash table for an entry indexed by
- * 'aor'.  If an entry is found then: 
+ * 'aor'.  If an entry is found then:
  *
  *   - Its numContacts counter will be decremented.
  *   - If its numContacts counter reaches zero, then the entry will be removed
@@ -164,7 +162,6 @@ void deleteUser(hashSlot_t *theTable, char *aor, int hashTableSize)
 	int hashIndex = calculateHashSlot(aor, hashTableSize);
 	int searchStringLength = strlen(aor);
 
-	aorToIndexStruct_t *previousRecord = theTable[hashIndex].first;
 	aorToIndexStruct_t *currentRecord  = theTable[hashIndex].first;
 
 	while (currentRecord != NULL) {
@@ -179,7 +176,7 @@ void deleteUser(hashSlot_t *theTable, char *aor, int hashTableSize)
 
 			/* There are still contacts relying on this user, so
 			 * don't delete anything. */
-			if (currentRecord->numContacts > 0) 
+			if (currentRecord->numContacts > 0)
 			{
 				return;
 			}
@@ -191,7 +188,7 @@ void deleteUser(hashSlot_t *theTable, char *aor, int hashTableSize)
 
 			/* Maintenance of the hash table */
 
-			if (currentRecord->prev == NULL) 
+			if (currentRecord->prev == NULL)
 			{
 					/* Edge Case: First element in list was just deleted, so set
 					 * up the first element to point to the one after the one
@@ -226,7 +223,6 @@ void deleteUser(hashSlot_t *theTable, char *aor, int hashTableSize)
 		}
 
 		/* Advance to the next records. */
-		previousRecord = currentRecord;
 		currentRecord = currentRecord->next;
 	}
 
@@ -235,13 +231,13 @@ void deleteUser(hashSlot_t *theTable, char *aor, int hashTableSize)
 
 /* Returns a aorToIndexStruct_t, holding the given 'userIndex' and 'aor'.  The
  * structure is used to map between the "aor" (OpenSER's way of indexing
- * users/contacts), and the SNMPStats user and contact integer indexes.  
+ * users/contacts), and the SNMPStats user and contact integer indexes.
  *
  * NOTE: that this record does not make a copy of aor, but instead points
  * directly to the parameter.  Therefore make sure that aor is not on the stack,
- * and is not going to disappear before this record is deleted. 
+ * and is not going to disappear before this record is deleted.
  */
-aorToIndexStruct_t *createHashRecord(int userIndex, char *aor) 
+aorToIndexStruct_t *createHashRecord(int userIndex, char *aor)
 {
 	int aorLength =strlen(aor);
 
@@ -269,14 +265,14 @@ aorToIndexStruct_t *createHashRecord(int userIndex, char *aor)
 
 
 /* Debugging function.  Prints off an entire hash slot. */
-void printHashSlot(hashSlot_t *theTable, int index) 
+void printHashSlot(hashSlot_t *theTable, int index)
 {
 	aorToIndexStruct_t *currentRecord = theTable[index].first;
 
 	LM_ERR("dumping Hash Slot #%d\n", index);
 
 	while (currentRecord != NULL) {
-		LM_ERR( "\tString: %s - Index: %d\n", 
+		LM_ERR( "\tString: %s - Index: %d\n",
 				currentRecord->aor, currentRecord->userIndex);
 		currentRecord = currentRecord->next;
 	}

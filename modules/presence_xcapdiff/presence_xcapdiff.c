@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Copyright (C) 2008 AG Projects
  *
  * This file is part of opensips, a free SIP server.
@@ -16,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -39,11 +38,25 @@ static param_export_t params[] = {
     {0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "presence", DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "pua",      DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports= {
     "presence_xcapdiff",        /* module name */
+    MOD_TYPE_DEFAULT,           /* class of this module */
     MODULE_VERSION,             /* module version */
     DEFAULT_DLFLAGS,            /* dlopen flags */
+    &deps,                      /* OpenSIPS module dependencies */
     cmds,                       /* exported functions */
+    0,                          /* exported async functions */
     params,                     /* exported parameters */
     0,                          /* exported statistics */
     0,                          /* exported MI functions */

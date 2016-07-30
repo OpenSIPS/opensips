@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * Perl virtual database module interface
  *
  * Copyright (C) 2007 Collax GmbH
@@ -18,9 +16,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -72,7 +70,7 @@ AV *conds2perlarray(db_key_t* keys, db_op_t* ops, db_val_t* vals, int n) {
 			element = cond2perlcond(*(keys + i), "=", vals + i);
 #endif
 		}
-		
+
 		av_push(array, element);
 	}
 	return array;
@@ -87,7 +85,7 @@ AV *keys2perlarray(db_key_t* keys, int n) {
 	SV *element;
 	int i;
 	for (i = 0; i < n; i++) {
-		element = newSVpv((keys[i])->s, (keys[i])->len); 
+		element = newSVpv((keys[i])->s, (keys[i])->len);
 		av_push(array, element);
 	}
 
@@ -154,7 +152,7 @@ SV *val2perlval(db_val_t* val) {
 
 	p_data = valdata(val);
 	p_type = newSViv(val->type);
-	
+
 	retval = perlvdb_perlmethod(class, PERL_CONSTRUCTOR_NAME,
 			p_type, p_data, NULL, NULL);
 
@@ -175,37 +173,37 @@ SV *pair2perlpair(db_key_t key, db_val_t* val) {
 	p_key  = newSVpv(key->s, key->len);
 	p_type = newSViv(val->type);
 	p_data = valdata(val);
-	
+
 	retval = perlvdb_perlmethod(class, PERL_CONSTRUCTOR_NAME,
 			p_key, p_type, p_data, NULL);
 
 	SvREFCNT_dec(class);
 
 	return retval;
-	
+
 }
 
 SV *cond2perlcond(db_key_t key, db_op_t op, db_val_t* val) {
 	SV* retval;
 	SV *class;
-	
+
 	SV *p_key;
 	SV *p_op;
 	SV *p_type;
 	SV *p_data;
-	
+
 	ENTER;
 	SAVETMPS;
 	class = newSVpv(PERL_CLASS_REQCOND, 0);
-	
+
 	p_key  = newSVpv(key->s, key->len);
 	p_op   = newSVpv(op, strlen(op));
 	p_type = newSViv(val->type);
 	p_data = valdata(val);
-	
+
 	retval = perlvdb_perlmethod(sv_2mortal(class), PERL_CONSTRUCTOR_NAME,
 			sv_2mortal(p_key), sv_2mortal(p_op), sv_2mortal(p_type), sv_2mortal(p_data));
-	
+
 	FREETMPS;
 	LEAVE;
 	return retval;
@@ -214,7 +212,7 @@ SV *cond2perlcond(db_key_t key, db_op_t op, db_val_t* val) {
 
 
 int perlresult2dbres(SV *perlres, db_res_t **r) {
-	
+
 	HV * result = NULL;
 	SV *colarrayref = NULL;
 	AV *colarray = NULL;
@@ -239,7 +237,7 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 	char *currentstring;
 
 	int i, j;
-	
+
 	int retval = 0;
 	STRLEN len;
 
@@ -252,9 +250,9 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 		(sv_derived_from(perlres, "OpenSIPS::VDB::Result")))) {
 		goto error;
 	}
-	
+
 	result = (HV*)SvRV(perlres);
-	 
+
 	/* Memory allocation for C side result structure */
 	*r = db_new_result();
 	/* Fetch column definitions */
@@ -263,7 +261,7 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 			NULL, NULL, NULL, NULL); */
 	if (!(SvROK(colarrayref))) goto error;
 	colarray = (AV *)SvRV(colarrayref);
-	
+
 	/* SvREFCNT_dec(colarray); */
 
 	if (!(SvTYPE(colarray) == SVt_PVAV)) goto error;
@@ -281,7 +279,7 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 		(*r)->col.types[i] = SvIV(d1);
 
 		SvREFCNT_dec(d1);
-		
+
 		d1 = perlvdb_perlmethod(acol, PERL_VDB_NAMEMETHOD,
 				NULL, NULL, NULL, NULL);
 		if (!SvPOK(d1)) goto error;
@@ -294,7 +292,7 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 		(*r)->col.names[i]->s = charbuf;
 		(*r)->col.names[i]->len = strlen(charbuf);
 		SvREFCNT_dec(d1);
-		
+
 
 	}
 	if(hv_exists(result, "rows", 4)){
@@ -329,14 +327,14 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 	(*r)->n = rowcount;
 	(*r)->res_rows = rowcount;
 	(*r)->last_row = rowcount;
-	
+
 	db_allocate_rows(*r, rowcount);
         /*	(rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(_res)) */
 	/*	LM_DBG("We got %d rows each row requres %d bytes because the row struct is %d and"
-	       "the values in that row take up %d. That is %d values each size is %d\n", 
-		rowcount, sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(*r), sizeof(db_row_t), sizeof(db_val_t) * RES_COL_N(*r), RES_COL_N(*r), sizeof(db_val_t)); 
-	*/	
-		
+	       "the values in that row take up %d. That is %d values each size is %d\n",
+		rowcount, sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(*r), sizeof(db_row_t), sizeof(db_val_t) * RES_COL_N(*r), RES_COL_N(*r), sizeof(db_val_t));
+	*/
+
 	for (i = 0; i < rowcount; i++) {
 		arowref = *av_fetch(rowarray, i, 0);
 		if (!SvROK(arowref)) goto error;
@@ -349,7 +347,7 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 #define cur_val (((*r)->rows)[i].values)[j]
 			/*cur_val = (((*r)->rows)[i].values)[j];*/
 			  /* cur_val is just an "abbreviation" */
-			if (!(sv_isobject(aelement) && 
+			if (!(sv_isobject(aelement) &&
 				sv_derived_from(aelement, PERL_CLASS_VALUE))) {
 				cur_val.nul = 1;
 				continue;
@@ -370,12 +368,12 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 			} else {
 				switch (atype) {
 					case DB_INT:
-						cur_val.val.int_val = 
+						cur_val.val.int_val =
 							SvIV(aval);
 						cur_val.nul = 0;
 						break;
 					case DB_DOUBLE:
-						cur_val.val.double_val = 
+						cur_val.val.double_val =
 							SvNV(aval);
 						cur_val.nul = 0;
 						break;

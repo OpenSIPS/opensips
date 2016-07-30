@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -26,15 +24,15 @@
  */
 
 /*!
- * \file 
+ * \file
  * \brief MI :: Attributes
  * \ingroup mi
  */
 
 /*!
  * \defgroup mi OpenSIPS Management Interface
- * 
- * The OpenSIPS management interface (MI) is a plugin architecture with a few different 
+ *
+ * The OpenSIPS management interface (MI) is a plugin architecture with a few different
  * handlers that gives access to the management interface over various transports.
  *
  * The OpenSIPS core and modules register commands to the interface at runtime.
@@ -229,7 +227,7 @@ struct mi_root *mi_help(struct mi_root *root, void *param)
 			LM_ERR("cannot add new child\n");
 			goto error;
 		}
-		if (cmd->module.len && cmd->module.s && 
+		if (cmd->module.len && cmd->module.s &&
 				!add_mi_node_child(rpl, 0, "Exported by", 11,
 					cmd->module.s, cmd->module.len)) {
 			LM_ERR("cannot add new child\n");

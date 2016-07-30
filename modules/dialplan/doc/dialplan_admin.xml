@@ -2,12 +2,12 @@
 
 <chapter>
     <title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
 	This module implements generic string translations based on matching and
-	replacement rules. It can be used to manipulate R-URI or a PV and to 
+	replacement rules. It can be used to manipulate R-URI or a PV and to
 	translated to a new format/value.
 	</para>
 	</section>
@@ -15,44 +15,79 @@
 	<section>
 	<title>How it works</title>
 	<para>
-	At startup, the module will load a set of transformation rules from a 
-	database. Every database raw will be stored in memory as a translation 
-	rule. Each rule will describe how the matching should be made, how the 
-	input value should be modified and which attributes should be set for 
-	the matching transformation.
+	At startup, the module will load all transformation rules from one or more
+	dialplan-compatible tables. The data of each table will be stored in a
+	partition which is defined by the "db_url" and "table_name" parameters.
+	Every table row will be stored in memory as a translation rule. Each rule
+	will describe how the matching should be made, how the input value should
+	be modified and which attributes should be set for the matching transformation.
 	</para>
 	<para>
-	The module expects an input value which will be matched against a rules
-	via regexp or string matching. Overlapping matching expressions can be
-	controlled via priorities. Once a rule is matched, the defined 
-	transformation (if any) is applied and the result is returned as output 
-	value. Also, if any string attribute is associated to the rule, this will 
-	be returned to the script along with the output value.
+	A dialplan rule can be of two types:
+	<itemizedlist>
+	<listitem>
+	<para>
+		<emphasis>"String matching" rule</emphasis> - performs a
+		string equality test against the input string. The case of the
+		characters can be ignored by enabling bit 1 of the rule's "match_flags"
+		bitmask column
+		(i.e. set the column value to 1 or 0, for insensitive or sensitive)
+	</para>
+	</listitem>
+	<listitem>
+	<para>
+		<emphasis>"Regex matching" rule</emphasis> - uses Perl
+		Compatible Regular Expressions, and will attempt to match the rule's
+		expression against an input string. The regex
+		maching can be done in a caseless manner by enabling bit 1 of the
+		rule's "match_flags" bitmask column
+		(i.e. set the column value to 1 or 0, for insensitive or sensitive)
+	</para>
+	</listitem>
+	</itemizedlist>
 	</para>
 	<para>
-	<emphasis> The first matching rule will be processed.</emphasis>
+	The module provides the <emphasis>dp_translate()</emphasis> script function,
+	which expects an input <emphasis role='bold'>string</emphasis> value that
+	will be matched, at worst, against all rules of a partition.
+	</para>
+	<para>
+	Internally, the module groups a partition's rules into two sets, "string" and "regex".
+	The matching logic will attempt to find the first match within each of
+	these two sets of rules. Each set will be iterated in
+	<emphasis role='bold'>ascending</emphasis> order of priority. If an input
+	string happens to match a rule in each of the two sets, the rule with the
+	smallest priority will be chosen. Furthermore, should these two matching
+	rules also have equal priorities, the one with the smallest "id" field
+	(the unique key) will be chosen. 
+	</para>
+	<para>
+	Once a single rule is decided upon, the defined transformation (if any) is
+	applied and the result is returned as output value. Also, if any string
+	attribute is associated to the rule, this will be returned to the script
+	along with the output value.
 	</para>
 	</section>
 
 	<section>
 	<title>Usage cases</title>
 	<para>
-	The module can be used to implement dialplans - do to auto completion of 
-	the dial numbers (like national to international), to convert generic 
-	numbers to specific numbers (like for emergency numbers).
+	The module can be used to implement dialplans - to do auto completion of
+	the dialed numbers (e.g. national to international), to convert generic
+	numbers to specific numbers (e.g. for emergency numbers).
 	</para>
 	<para>
-	Also the module can be used for detecting range or sets of numbers mapped 
-	on a service/case - attributes string can be used here to store extra 
-	information about the service/case.
+	Also the module can be used for detecting ranges or sets of numbers mapped
+	on a service/case - the "attributes" string column can be used here to
+	store extra information about the service/case.
 	</para>
 	<para>
-	Non-SIP string translation can be implemented - like converting country 
+	Non-SIP string translation can also be implemented - like converting country
 	names from all possible formats to a canonical format:
 	(UK, England, United Kingdom) -> GB.
 	</para>
 	<para>
-	Any other string-base translation or detection for whatever other purposes.
+	Any other string-based translation or detection for whatever other purposes.
 	</para>
 	</section>
 
@@ -60,7 +95,7 @@
 		<title>Database structure and usage</title>
 		<para>
 		Depending what kind of operation (translation, matching, etc) you want
-		to do with the module, you need to appropriate populate the DB records.
+		to do with the module, you need to populate the appropriate DB records.
 		</para>
 		<para>
 		The definition of the tables used by the dialplan module can be found
@@ -73,7 +108,7 @@
 		<title>String translation (regexp detection, subst translation)</title>
 			<para>
 			Recognize a number block in all forms (international, national)
-			and convert it to a canonical format (e.164)
+			and convert it to a canonical format (E.164)
 			</para>
 			<itemizedlist>
 			<listitem>
@@ -84,7 +119,7 @@
 			<listitem>
 			<para>
 				<emphasis>match_exp</emphasis> = "^(0040|\+40|0|40)21[0-9]+" ;
-				regular expresion that will be used to match with this rule (if
+				regular expression that will be used to match with this rule (if
 				the rule should be applied for the input string)
 			</para>
 			</listitem>
@@ -97,13 +132,13 @@
 			<listitem>
 			<para>
 				<emphasis>subst_exp</emphasis> = "^(0040|\+40|0|40)(.+)" ;
-				regular expresion used to do the transformation (first part
+				regular expression used to do the transformation (first part
 				of the subst operation)
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>repl_exp</emphasis> = "40\2" ; second part of the 
+				<emphasis>repl_exp</emphasis> = "40\2" ; second part of the
 				subst (output) - linked to the subst_exp field; when both
 				defined, they work as a subst()
 			</para>
@@ -115,7 +150,7 @@
 		<title>String translation (regexp detection, replacement)</title>
 			<para>
 			Recognize the name of a country (multiple languages) and convert
-			it to a single fix value
+			it to a single, fixed value
 			</para>
 			<itemizedlist>
 			<listitem>
@@ -126,7 +161,7 @@
 			<listitem>
 			<para>
 				<emphasis>match_exp</emphasis> = "^((Germany)|(Germania)|(Deutschland)|(DE))" ;
-				regular expresion that will be used to match with this rule (if
+				regular expression that will be used to match with this rule (if
 				the rule should be applied for the input string)
 			</para>
 			</listitem>
@@ -139,13 +174,13 @@
 			<listitem>
 			<para>
 				<emphasis>subst_exp</emphasis> = NULL ;
-				when translation is actually a replacement, this field must 
+				when translation is actually a replacement, this field must
 				be NULL.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>repl_exp</emphasis> = "DE" ; static string to 
+				<emphasis>repl_exp</emphasis> = "DE" ; static string to
 				replace the input - whenever this rule will match, it will
 				return this string as output.
 			</para>
@@ -156,7 +191,7 @@
 		<section>
 		<title>Number detection (regexp detection, no replacement)</title>
 			<para>
-			Recognize a block of numbers as belong to a single service and 
+			Recognize a block of numbers as belong to a single service and
 			signalize this via an attribute.
 			</para>
 			<itemizedlist>
@@ -168,7 +203,7 @@
 			<listitem>
 			<para>
 				<emphasis>match_exp</emphasis> = "^021456[0-9]{5}" ;
-				regular expresion that will be used to match with this rule (if
+				regular expression that will be used to match with this rule (if
 				the rule should be applied for the input string)
 			</para>
 			</listitem>
@@ -186,14 +221,14 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>repl_exp</emphasis> = NULL ; 
+				<emphasis>repl_exp</emphasis> = NULL ;
 				no translation
 				</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>attrs</emphasis> = "serviceX" ; 
-				whatever string you will get into OpenSIPS script and it will 
+				<emphasis>attrs</emphasis> = "serviceX" ;
+				whatever string you will get into OpenSIPS script and it will
 				provide you more information (totally custom)
 				</para>
 			</listitem>
@@ -203,7 +238,7 @@
 		<section>
 		<title>String conversion (equal detection, replacement)</title>
 			<para>
-			Recognize a fix string/number and replace it with something fix.
+			Recognize a fixed string/number and replace it with something fixed.
 			</para>
 			<itemizedlist>
 			<listitem>
@@ -231,7 +266,7 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>repl_exp</emphasis> = "OpenSIPS" ; 
+				<emphasis>repl_exp</emphasis> = "OpenSIPS" ;
 				output string
 				</para>
 			</listitem>
@@ -264,7 +299,7 @@
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
-		The following libraries or applications must be installed before 
+		The following libraries or applications must be installed before
 		running &osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
@@ -280,16 +315,50 @@
 
 	<section>
 	<title>Exported Parameters</title>
+
+	<section>
+		<title><varname>partition</varname> (string)</title>
+		<para>
+		This can be used to define new db_url and table_name parameters from which
+		to load the translation rules. These parameters will be held in partitions.
+		The db_url parameter is mandatory. The order of the parameters does not matter.
+		Multiple partitions can be defined and you can also define the default partition
+		here. The name of this partition is "default". In order to be able to use a table
+		from a partition, its name must be found in the "version" table belonging to the
+		database defined in the partition's db_url.
+		</para>
+
+		<example>
+		<title> Set <varname>partition</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialplan", "partition",
+  "part2:table_name=dialplan;db_url=mysql://user:pw@localhost/db;")
+...
+		</programlisting>
+		</example>
+
+		<example>
+		<title> Set <varname>default partition</varname> with partition parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialplan", "partition",
+  "default:table_name=dialplan;db_url=mysql://user:pw@localhost/db;")
+...
+		</programlisting>
+		</example>
+	</section>
+
 	<section>
 		<title><varname>db_url</varname> (string)</title>
 		<para>
-		The translation rules will be loaded using this database url.
+		The translation rules will be loaded using this database url.This
+		will be the db_url parameter value for the default partition.
 		</para>
 		<para>
-		<emphasis>
-			Default value is 
-				<quote>&defaultdb;</quote>.
-		</emphasis>
+		NOTE: if you intend to use the default partition you have to explicity 
+		set this default db_url, otherwise OpenSIPS will not start (he value 
+		of global default db_url is not inherited here! ).
 		</para>
 		<example>
 		<title>Set <varname>db_url</varname> parameter</title>
@@ -304,7 +373,10 @@ modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
 	<section>
 		<title><varname>table_name</varname> (string)</title>
 		<para>
-		The table's name from which to load the translation rules.
+		The table's name from which to load the translation rules.This
+		will be the table_name parameter value for the default partition.
+		The db_url must be defined for the default partition in order to
+		be able to define it's table name.
 		</para>
 		<para>
 		<emphasis>
@@ -344,7 +416,8 @@ modparam("dialplan", "dpid_col", "column_name")
 	<section>
 		<title><varname>pr_col</varname> (string)</title>
 		<para>
-		The column name to store the priority of the corresponding rule from the 		database raw.
+		The column name to store the priority of the corresponding rule from
+		the table row. Smaller priority values have higher precedence.
 		</para>
 		<para>
 		<emphasis>
@@ -463,20 +536,21 @@ modparam("dialplan", "repl_exp_col", "column_name")
 	</section>
 
 	<section>
-		<title><varname>attrs_col</varname> (string)</title>
+		<title><varname>timerec_col</varname> (integer)</title>
 		<para>
-		The column name to store the rule's attributes to be set to the message.
+		The column name that indicates an additional time recurrence check within the rule.
+		(column values are RFC 2445-compatible strings)
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>attrs</quote>.
+			Default value is <quote>timerec</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>attrs_col</varname> parameter</title>
+		<title>Set <varname>timerec_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialplan", "attrs_col", "column_name")
+modparam("dialplan", "timerec_col", "month_match")
 ...
 		</programlisting>
 		</example>
@@ -502,23 +576,21 @@ modparam("dialplan", "disabled_col", "disabled_column")
 		</example>
 	</section>
 
-
 	<section>
-		<title><varname>attrs_pvar</varname> (string)</title>
+		<title><varname>attrs_col</varname> (string)</title>
 		<para>
-		The pvar to store the rule's attributes, after translation (dp_translate() succeeds).
-		This parameter can be any PVAR that can be written.
+		The column name to store rule-specific attributes.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>NULL</quote>.
+			Default value is <quote>attrs</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>attrs_pvar</varname> parameter</title>
+		<title>Set <varname>attrs_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialplan", "attrs_pvar", "$avp(dest)")
+modparam("dialplan", "attrs_col", "column_name")
 ...
 		</programlisting>
 		</example>
@@ -526,16 +598,15 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 
 	</section>
 
-
 	<section>
 	<title>Exported Functions</title>
-	
+
 	<section>
 	<title>
-		<function moreinfo="none">dp_translate([table/]id, src/dest)</function>
+		<function moreinfo="none">dp_translate([partition:]id, src/dest[, attrs_pvar])</function>
 	</title>
 	<para>
-	Will try to translate the src string into dest string according to 
+	Will try to translate the src string into dest string according to
 	the translation rules with dialplan ID equal to id.
 	</para>
 	<para>Meaning of the parameters is as follows:</para>
@@ -547,46 +618,62 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 		</para>
 		<itemizedlist>
 			<listitem>
-			<para><emphasis>integer</emphasis> - the dialplan id is statically 
+			<para><emphasis>integer</emphasis> - the dialplan id is statically
 			assigned </para>
 			</listitem>
-			
+
 			<listitem>
 			<para><emphasis>pvar</emphasis> - the dialplan id is the value of an
 			existing pseudo-variable (as integer value)
 			</para>
 			</listitem>
+
 		</itemizedlist>
 	</listitem>
 
 	<listitem>
 		<para>
-		<emphasis>table</emphasis> - Specifies the table where the search will
-		take place. This parameter can be ommited. The default table is dialplan.
-		The <emphasis>table</emphasis> parameter can have the following types:
+		<emphasis>partition</emphasis> - Specifies the partition where the search will
+		take place. This parameter can be ommited. If the paramater is omitted the default
+		partition will be used if exists.
+		The <emphasis>partition</emphasis> parameter can have the following types:
 		</para>
 		<itemizedlist>
 			<listitem>
-			<para><emphasis>string</emphasis> - the table name is statically 
+			<para><emphasis>string</emphasis> - the table name is statically
 			assigned </para>
 			</listitem>
+
+			<listitem>
+			<para><emphasis>pvar</emphasis> - the partition name is the value of an
+			existing pseudo-variable (as string value)
+			</para>
+			</listitem>
+
 		</itemizedlist>
 	</listitem>
 
 	<listitem>
 		<para>
 		<emphasis>src/dest</emphasis> - input and output of the function.
-		If this parameter is missing the default parameter 
-		<quote>ruri.user/ruri.user</quote> will be used, thus translating 
+		If this parameter is missing the default parameter
+		<quote>ruri.user/ruri.user</quote> will be used, thus translating
 		the request uri.
 		</para>
 		<para>
 		The <quote>src</quote> variable can be any type of pseudo-variable.
 		</para>
 		<para>
-		The <quote>dest</quote> variable  can be also any type of 
-		pseudo-variable, but it must be a writtable one.
+		The <quote>dest</quote> variable  can be also any type of
+		pseudo-variable, but it must be a writable one.
 		</para>
+	</listitem>
+
+	<listitem>
+		<para>
+		<emphasis>attrs_pvar (output, optional)</emphasis> - a pseudo-variable
+		which will hold the attributes of the matched translation rule.
+	</para>
 	</listitem>
 	</itemizedlist>
 	<para>
@@ -606,8 +693,8 @@ xlog("translated to var $avp(dest) \n");
 	<programlisting format="linespecific">
 ...
 $avp(src) = $ruri.user;
-dp_translate("$var(x)", "$avp(src)/$var(y)");
-xlog("translated to var $var(y) \n");
+dp_translate("$var(x)", "$avp(src)/$var(y)", "$var(attrs)");
+xlog("translated to var $var(y) with attributes: '$var(attrs)'\n");
 ...
 	</programlisting>
 	</example>
@@ -616,8 +703,19 @@ xlog("translated to var $var(y) \n");
 	<programlisting format="linespecific">
 ...
 $avp(src) = $uri.user;
-dp_translate("example_table/$var(x)", "$avp(src)/$var(y)");
-xlog("translated to var $var(y) \n");
+dp_translate("example_partition:$var(x)", "$avp(src)/$var(y)", "$avp(attrs)");
+xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
+...
+	</programlisting>
+	</example>
+	<example>
+	<title><function>dp_translate</function> usage</title>
+	<programlisting format="linespecific">
+...
+$var(partition) = "default";
+$var(id)	= 10;
+dp_translate("$var(partition):$var(id)", "$avp(src)/$var(y)");
+xlog("translate to var $var(y) partition $var(partition)")
 ...
 	</programlisting>
 	</example>
@@ -641,9 +739,9 @@ xlog("translated to var $var(y) \n");
 		<para>Parameters: <emphasis>1</emphasis></para>
 			<itemizedlist>
 				<listitem>
-				<para><emphasis>table_name</emphasis> - Table to be realoaded.
-				If no table is specified, the table specified in the "table_name"
-				parameter (default dialplan) will be reloaded.</para>
+				<para><emphasis>table_name</emphasis> - Partition to be reloaded.
+				If no table is specified, the table specified in the "partition"
+				parameter (default "default") will be reloaded.</para>
 				</listitem>
 			</itemizedlist>
  		<para>
@@ -654,7 +752,7 @@ xlog("translated to var $var(y) \n");
 		_empty_line_
 		</programlisting>
 		</section>
-    
+
     <section>
 			<title><varname>dp_translate</varname></title>
 			<para>
@@ -667,7 +765,7 @@ xlog("translated to var $var(y) \n");
         <para>Parameters: <emphasis>2</emphasis></para>
         	<itemizedlist>
                 <listitem>
-                <para><emphasis>[Table Name/]Dialplan ID</emphasis> - The dpid of the rules used to match the input string. The table name can be ommited. The default table is dialplan.</para>
+                <para><emphasis>[Partition Name:]Dialplan ID</emphasis> - The dpid of the rules used to match the input string. The table name can be ommited. The default table is dialplan.</para>
                 </listitem>
                 <listitem>
                 <para><emphasis>Input String</emphasis></para>
@@ -683,12 +781,37 @@ xlog("translated to var $var(y) \n");
         _empty_line_
 		</programlisting>
 		</section>
+
+    <section>
+			<title><varname>dp_show_partiton</varname></title>
+			<para>
+                Display partition(s) details.
+			</para>
+		<para>
+		Name: <emphasis>dp_show_partiton</emphasis>
+		</para>
+        <para>Parameters: <emphasis>2</emphasis></para>
+        	<itemizedlist>
+                <listitem>
+                <para><emphasis>Partition Name</emphasis> - The partition name.
+                If no partition is specified, all known partitions will be listed.</para>
+                </listitem>
+            </itemizedlist>
+ 		<para>
+		MI DATAGRAM Command Format:
+		</para>
+        <programlisting  format="linespecific">
+        :dp_translate:
+        default
+        _empty_line_
+		</programlisting>
+		</section>
 	</section>
 
 	<section>
 		<title>Installation</title>
 		<para>
-		The modules requires one table in OpenSIPS database: dialplan.The SQL 
+		The modules requires one table in OpenSIPS database: dialplan.The SQL
 		syntax to create them can be found in dialplan-create.sql
 		script in the database directories in the opensips/scripts folder.
 		You can also find the complete database documentation on the

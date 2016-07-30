@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -38,8 +36,8 @@
  */
 
 
-static struct module_exports dbex_exports= {	
-	"DBExample", 
+static struct module_exports dbex_exports= {
+	"DBExample",
 	(char*[]) {
 	},
 	(cmd_function[]) {
@@ -87,7 +85,7 @@ static int print_res(db_res_t* _r)
 				printf("%s ", RES_ROWS(_r)[i].values[j].val.string_val);
 				break;
 			case DB_STR:
-				printf("%.*s ", 
+				printf("%.*s ",
 				       RES_ROWS(_r)[i].values[j].val.str_val.len,
 				       RES_ROWS(_r)[i].values[j].val.str_val.s);
 				break;
@@ -102,11 +100,11 @@ static int print_res(db_res_t* _r)
 				printf("%d ", RES_ROWS(_r)[i].values[j].val.bitmap_val);
 				break;
 			}
-			
+
 		}
 		printf("\n");
 	}
-			
+
 	return TRUE;
 }
 
@@ -124,7 +122,7 @@ struct module_exports* mod_register()
 	db_key_t keys3[] = {"username", "contact"};
 	db_key_t keys4[] = {"contact", "q"};
 
-	db_val_t vals1[] = { 
+	db_val_t vals1[] = {
 		{ DB_STRING  , 0, { .string_val = "foo@bar.com" }              },
 		{ DB_STR     , 0, { .str_val    = { "real@foo.bar.com", 18 } } },
 		{ DB_DOUBLE  , 0, { .double_val = 1.2 }                        },
@@ -133,7 +131,7 @@ struct module_exports* mod_register()
 		{ DB_BITMAP  , 0, { .bitmap_val = FLAG_NAT | FLAG_INVITE }     }
 	};
 
-	db_val_t vals2[] = { 
+	db_val_t vals2[] = {
 		{ DB_STRING  , 0, { .string_val = "foo2@bar2.com" }              },
 		{ DB_STR     , 0, { .str_val    = { "real2@foo.bar2.com", 18 } } },
 		{ DB_DOUBLE  , 0, { .double_val = 1.3 }                          },
@@ -142,7 +140,7 @@ struct module_exports* mod_register()
                 { DB_BITMAP  , 0, { .bitmap_val = FLAG_NAT, FLAG_NOT_INVITE }    }
 	};
 
-	db_val_t vals3[] = { 
+	db_val_t vals3[] = {
 		{ DB_STRING  , 0, { .string_val = "foo3@bar3.com" }              },
 		{ DB_STR     , 0, { .str_val    = { "real3@foo.bar3.com", 18 } } },
 		{ DB_DOUBLE  , 0, { .double_val = 1.5 }                          },
@@ -155,7 +153,7 @@ struct module_exports* mod_register()
 		{ DB_STRING, 0, { .string_val = "foo2@bar2.com" } },
 		{ DB_DOUBLE, 0, { .double_val = 1.30 }            }
 	};
-		  
+
 	db_val_t vals5[] = {
 		{ DB_STRING, 0, { .string_val = "foo3@bar3.com" }      },
 		{ DB_STRING, 0, { .string_val = "real3@foo.bar3.com" } }
@@ -193,7 +191,7 @@ struct module_exports* mod_register()
 		return &dbex_exports;
 	}
 
-	     /* 
+	     /*
 	      * Specify a table name, that will
 	      * be used for manipulations
 	      */
@@ -265,7 +263,7 @@ struct module_exports* mod_register()
 
 	     /*
 	      * Close existing database connection
-	      * and free previously allocated 
+	      * and free previously allocated
 	      * memory
 	      */
 	db_close(h);

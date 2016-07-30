@@ -21,8 +21,7 @@ Sergio Gutierrez
    Copyright © 2007, 2008 1und1 Internet AG, BASIS AudioNet GmbH,
    Elena-Ramona Modroiu
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -62,22 +61,27 @@ Sergio Gutierrez
               1.4.17. release_dynamic_lock(string)
               1.4.18. strings_share_lock(string1, string2)
 
-        1.5. MI Commands
+        1.5. Exported Asyncronous Functions
 
-              1.5.1. rand_set_prop
-              1.5.2. rand_reset_prob
-              1.5.3. rand_get_prob
-              1.5.4. check_config_hash
-              1.5.5. get_config_hash
-              1.5.6. shv_set
-              1.5.7. shv_get
+              1.5.1. sleep(seconds)
+              1.5.2. usleep(seconds)
 
-        1.6. Exported pseudo-variables
+        1.6. MI Commands
 
-              1.6.1. $env(name)
-              1.6.2. $RANDOM
-              1.6.3. $ctime(name)
-              1.6.4. $shv(name)
+              1.6.1. rand_set_prop
+              1.6.2. rand_reset_prob
+              1.6.3. rand_get_prob
+              1.6.4. check_config_hash
+              1.6.5. get_config_hash
+              1.6.6. shv_set
+              1.6.7. shv_get
+
+        1.7. Exported pseudo-variables
+
+              1.7.1. $env(name)
+              1.7.2. $RANDOM
+              1.7.3. $ctime(name)
+              1.7.4. $shv(name)
 
    List of Examples
 
@@ -104,17 +108,19 @@ Sergio Gutierrez
    1.21. get_dynamic_lock usage
    1.22. release_dynamic_lock usage
    1.23. strings_share_lock usage
-   1.24. rand_set_prob usage
-   1.25. rand_reset_prob usage
-   1.26. rand_get_prob usage
-   1.27. check_config_hash usage
-   1.28. get_config_hash usage
-   1.29. shv_set usage
-   1.30. shv_get usage
-   1.31. env(name) pseudo-variable usage
-   1.32. RANDOM pseudo-variable usage
-   1.33. ctime(name) pseudo-variable usage
-   1.34. shv(name) pseudo-variable usage
+   1.24. async sleep usage
+   1.25. async usleep usage
+   1.26. rand_set_prob usage
+   1.27. rand_reset_prob usage
+   1.28. rand_get_prob usage
+   1.29. check_config_hash usage
+   1.30. get_config_hash usage
+   1.31. shv_set usage
+   1.32. shv_get usage
+   1.33. env(name) pseudo-variable usage
+   1.34. RANDOM pseudo-variable usage
+   1.35. ctime(name) pseudo-variable usage
+   1.36. shv(name) pseudo-variable usage
 
 Chapter 1. Admin Guide
 
@@ -425,8 +431,11 @@ ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
 1.4.13.  check_time_rec(time_string)
 
    The function returns a positive value if the specified time
-   reccurence string matches the current time, or a negative value
+   recurrence string matches the current time, or a negative value
    otherwise.
+
+   The syntax of each field is identical to the corresponding
+   field from RFC 2445.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
@@ -641,44 +650,90 @@ if (!release_dynamic_lock("$avp(1)") {
 }
 ...
 
-1.5. MI Commands
+1.5. Exported Asyncronous Functions
 
-1.5.1. rand_set_prop
+1.5.1.  sleep(seconds)
+
+   Waits a number of seconds. This function does exactly the same
+   as Section 1.4.5, “ sleep(time) ”, but in an asynchronous way.
+   The script execution is suspended until the waiting is done;
+   then OpenSIPS resumes the script execution via the resume
+   route.
+
+   To read and understand more on the asynchronous functions, how
+   to use them and what are their advantages, please refer to the
+   OpenSIPS online Manual.
+
+   Example 1.24. async sleep usage
+{
+...
+async( sleep("5"), after_sleep );
+}
+
+route[after_sleep] {
+...
+}
+
+1.5.2.  usleep(seconds)
+
+   Waits a number of micro-seconds. This function does exactly the
+   same as Section 1.4.6, “ usleep(time) ”, but in an asynchronous
+   way. The script execution is suspended until the waiting is
+   done; then OpenSIPS resumes the script execution via the resume
+   route.
+
+   To read and understand more on the asynchronous functions, how
+   to use them and what are their advantages, please refer to the
+   OpenSIPS online Manual.
+
+   Example 1.25. async usleep usage
+{
+...
+async( usleep("1000"), after_usleep );
+}
+
+route[after_usleep] {
+...
+}
+
+1.6. MI Commands
+
+1.6.1. rand_set_prop
 
    Set the probability value to the given parameter. The parameter
    should be a percent value.
 
    The parameter value must be a number from 0 to 99.
 
-   Example 1.24. rand_set_prob usage
+   Example 1.26. rand_set_prob usage
 ...
 $ opensipsctl fifo rand_set_prob 10
 ...
 
-1.5.2. rand_reset_prob
+1.6.2. rand_reset_prob
 
    Reset the probability value to the inital start value.
 
    This command don't need a parameter.
 
-   Example 1.25.  rand_reset_prob usage
+   Example 1.27.  rand_reset_prob usage
 ...
 $ opensipsctl fifo rand_reset_prob
 ...
 
-1.5.3. rand_get_prob
+1.6.3. rand_get_prob
 
    Return the actual probability setting.
 
    The function return the actual probability value.
 
-   Example 1.26. rand_get_prob usage
+   Example 1.28. rand_get_prob usage
 ...
 $ opensipsctl fifo get_prob
 The actual probability is 50 percent.
 ...
 
-1.5.4. check_config_hash
+1.6.4. check_config_hash
 
    Check if the actual config file hash is identical to the stored
    one.
@@ -688,26 +743,26 @@ The actual probability is 50 percent.
    been configured and 500 on errors. Additional a short text
    message is printed.
 
-   Example 1.27. check_config_hash usage
+   Example 1.29. check_config_hash usage
 ...
 $ opensipsctl fifo check_config_hash
 The actual config file hash is identical to the stored one.
 ...
 
-1.5.5. get_config_hash
+1.6.5. get_config_hash
 
    Return the stored config file hash.
 
    The function returns 200 OK and the hash value on success or
    404 if no file for hashing has been configured.
 
-   Example 1.28. get_config_hash usage
+   Example 1.30. get_config_hash usage
 ...
 $ opensipsctl fifo get_config_hash
 1580a37104eb4de69ab9f31ce8d6e3e0
 ...
 
-1.5.6. shv_set
+1.6.6. shv_set
 
    Set the value of a shared variable ($shv(name)).
 
@@ -725,12 +780,12 @@ $ opensipsctl fifo get_config_hash
                 _value_
                 _empty_line_
 
-   Example 1.29. shv_set usage
+   Example 1.31. shv_set usage
 ...
 $ opensipsctl fifo shv_set debug int 0
 ...
 
-1.5.7. shv_get
+1.6.7. shv_get
 
    Get the value of a shared variable ($shv(name)).
 
@@ -743,28 +798,28 @@ $ opensipsctl fifo shv_set debug int 0
                 _name_
                 _empty_line_
 
-   Example 1.30. shv_get usage
+   Example 1.32. shv_get usage
 ...
 $ opensipsctl fifo shv_get debug
 $ opensipsctl fifo shv_get
 ...
 
-1.6. Exported pseudo-variables
+1.7. Exported pseudo-variables
 
-1.6.1. $env(name)
+1.7.1. $env(name)
 
    This PV provides access to the environment variable 'name'.
 
-   Example 1.31. env(name) pseudo-variable usage
+   Example 1.33. env(name) pseudo-variable usage
 ...
 xlog("PATH environment variable is $env(PATH)\n");
 ...
 
-1.6.2. $RANDOM
+1.7.2. $RANDOM
 
    Returns a random value from the [0 - 2^31) range.
 
-   Example 1.32. RANDOM pseudo-variable usage
+   Example 1.34. RANDOM pseudo-variable usage
 ...
 $avp(10) = ($RANDOM / 16777216); # 2^24
 if ($avp(10) < 10) {
@@ -776,7 +831,7 @@ exit;
 # normal message processing follows
 
 
-1.6.3. $ctime(name)
+1.7.3. $ctime(name)
 
    The PV provides access to broken-down time attributes.
 
@@ -792,14 +847,14 @@ exit;
      * isdst - return daylight saving time status (int, 0 - DST
        off, >0 DST on)
 
-   Example 1.33. ctime(name) pseudo-variable usage
+   Example 1.35. ctime(name) pseudo-variable usage
 ...
 if ($ctime(year) == 2008) {
         xlog("request: $rm from $fu to $ru in year 2008\n");
 }
 ...
 
-1.6.4. $shv(name)
+1.7.4. $shv(name)
 
    It is a class of pseudo-variables stored in shared memory. The
    value of $shv(name) is visible across all opensips processes.
@@ -808,7 +863,7 @@ if ($ctime(year) == 2008) {
    variable. The module exports a set of MI functions to get/set
    the value of shared variables.
 
-   Example 1.34. shv(name) pseudo-variable usage
+   Example 1.36. shv(name) pseudo-variable usage
 ...
 modparam("cfgutils", "shvset", "debug=i:1")
 ...

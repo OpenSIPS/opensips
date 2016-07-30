@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
@@ -70,7 +70,7 @@ CassandraClient* client;
 protected:
 
 /* generate a timestamp in ms. Thrift stuff :| */
-long int make_cassandra_timestamp() const 
+long int make_cassandra_timestamp() const
 {
 	struct timeval tv;
 	long microseconds;
@@ -82,24 +82,24 @@ long int make_cassandra_timestamp() const
 
 public:
 
-CassandraConnection(const string& keyspace, const string& column_family,const string& counter_family) : 
+CassandraConnection(const string& keyspace, const string& column_family,const string& counter_family) :
 keyspace(keyspace),
 column_family(column_family),
 counter_family(counter_family),
 host(""),
-port(0), 
-client(NULL) 
+port(0),
+client(NULL)
 {
 }
 
-virtual ~CassandraConnection() 
+virtual ~CassandraConnection()
 {
 	cassandra_close();
 }
 
 int cassandra_open(const string& host, int port,
 	int connection_timeout,int receive_timeout,int send_timeout,
-	int read_cs_level,int write_cs_level) 
+	int read_cs_level,int write_cs_level)
 {
 
 	/* save host & port */
@@ -140,7 +140,7 @@ int cassandra_open(const string& host, int port,
 		client->set_keyspace(keyspace);
 		client->describe_version(version);
 		LM_DBG("Opened connection for KeySpace [%s]."
-			" Cassandra version = [%s]\n", 
+			" Cassandra version = [%s]\n",
 			keyspace.c_str(), version.c_str());
 
 		return 0;
@@ -157,7 +157,7 @@ int cassandra_open(const string& host, int port,
 	return -1;
 }
 
-void cassandra_close() 
+void cassandra_close()
 {
 	if (client) {
 		try {
@@ -173,7 +173,7 @@ void cassandra_close()
 	}
 }
 
-int cassandra_reopen() 
+int cassandra_reopen()
 {
 	cassandra_close();
 	return cassandra_open(host, port,conn_to,snd_to,rcv_to,rd_level,wr_level);
@@ -215,7 +215,7 @@ char* cassandra_simple_get(const string& attr)
  			LM_ERR("ERROR3: %s\n", e.what());
 		}
 	} while (retry-- && cassandra_reopen() == 0);
-		
+
 	LM_ERR("giving up on query\n");
 	return NULL;
 }
@@ -250,7 +250,7 @@ int cassandra_simple_get_counter(const string& attr,int *value)
 		catch (NotFoundException &nfx) {
 			/* if counter not found as set, return a 0 value */
 			if (value)
-				*value=0;	
+				*value=0;
 			return 0;
 		}
 		catch (TException &tx) {
@@ -260,7 +260,7 @@ int cassandra_simple_get_counter(const string& attr,int *value)
  			LM_ERR("ERROR3: %s\n", e.what());
 		}
 	} while (retry-- && cassandra_reopen() == 0);
-		
+
 	LM_ERR("giving up on query\n");
 	return -1;
 }
@@ -304,7 +304,7 @@ int cassandra_simple_insert(const string& name,const string& val, int expires)
  			LM_ERR("ERROR: %s\n", e.what());
 		}
 	} while (retry-- && cassandra_reopen() == 0);
-		
+
 	LM_ERR("giving up on query\n");
 	return -1;
 }
@@ -344,7 +344,7 @@ int cassandra_simple_remove(const string& name)
  			LM_ERR("ERROR: %s\n", e.what());
 		}
 	} while (retry-- && cassandra_reopen() == 0);
-		
+
 	LM_ERR("giving up on query\n");
 	return -1;
 }
@@ -368,7 +368,7 @@ int cassandra_simple_add(const string& name,int val)
 
 			CounterColumn cc;
 			cc.name = key;
-			cc.value = val; 
+			cc.value = val;
 
     			client->add(name, cp,cc,wr_level);
 			return 0;
@@ -382,7 +382,7 @@ int cassandra_simple_add(const string& name,int val)
  			LM_ERR("ERROR3: %s\n", e.what());
 		}
 	} while (retry-- && cassandra_reopen() == 0);
-		
+
 	LM_ERR("giving up on query\n");
 	return -1;
 }
@@ -406,7 +406,7 @@ int cassandra_simple_sub(const string& name,int val)
 
 			CounterColumn cc;
 			cc.name = key;
-			cc.value = -val; 
+			cc.value = -val;
 
     			client->add(name, cp,cc,wr_level);
 			return 0;
@@ -420,7 +420,7 @@ int cassandra_simple_sub(const string& name,int val)
  			LM_ERR("ERROR3: %s\n", e.what());
 		}
 	} while (retry-- && cassandra_reopen() == 0);
-		
+
 	LM_ERR("giving up on query\n");
 	return -1;
 }

@@ -9,6 +9,10 @@ Edited by
 
 Liviu Chircu
 
+Edited by
+
+Stephane Alnet
+
    Copyright © 2013 www.opensips-solutions.com
    Revision History
    Revision $Revision$ $Date$
@@ -31,21 +35,23 @@ Liviu Chircu
         1.4. Exported Functions
 
               1.4.1. math_eval(expression, result_pvar)
-              1.4.2. math_trunc(number, result_pvar)
-              1.4.3. math_floor(number, result_pvar)
-              1.4.4. math_ceil(number, result_pvar)
-              1.4.5. math_round(number, result_pvar[, decimals])
-              1.4.6. math_round_sf(number, result_pvar, figures)
+              1.4.2. math_rpn(expression, result_pvar)
+              1.4.3. math_trunc(number, result_pvar)
+              1.4.4. math_floor(number, result_pvar)
+              1.4.5. math_ceil(number, result_pvar)
+              1.4.6. math_round(number, result_pvar[, decimals])
+              1.4.7. math_round_sf(number, result_pvar, figures)
 
    List of Examples
 
    1.1. Setting the decimal_digits module parameter
    1.2. math_eval usage
-   1.3. math_trunc usage
-   1.4. math_floor usage
-   1.5. math_ceil usage
-   1.6. math_round usage
-   1.7. math_round_sf usage
+   1.3. math_rpn usage
+   1.4. math_trunc usage
+   1.5. math_floor usage
+   1.6. math_ceil usage
+   1.7. math_round usage
+   1.8. math_round_sf usage
 
 Chapter 1. Admin Guide
 
@@ -78,24 +84,31 @@ Chapter 1. Admin Guide
    Default value is “6”.
 
    Example 1.1. Setting the decimal_digits module parameter
-modparam("mathops", "decimal_digits", "10")
+modparam("mathops", "decimal_digits", 10)
 
 1.4. Exported Functions
 
 1.4.1.  math_eval(expression, result_pvar)
 
-   The function evaluates a given expression and writes the
-   results in the output pseudo-variable. The expression may
-   contain any number of pseudo variables.
+   The function evaluates a given expression and writes the result
+   in the output pseudo-variable. The expression may contain any
+   number of pseudo variables. Evaluation uses tinyexpr (see
+   https://github.com/codeplea/tinyexpr).
 
    Currently allowed syntax for specifying an expression:
-     * Nested parantheses
-     * binary + - / * operators
+     * Nested parentheses
+     * addition (+), subtraction/negation (-), multiplication (*),
+       division (/), exponentiation (^) and modulus (%) with the
+       normal operator precedence (the one exception being that
+       exponentiation is evaluated left-to-right)
+     * C math functions: abs (calls to fabs), acos, asin, atan,
+       ceil, cos, cosh, exp, floor, ln (calls to log), log (calls
+       to log10), sin, sinh, sqrt, tan, tanh
 
    Meaning of the parameters is as follows:
      * expression - String containing a mathematical expression.
-       It can also include pseudo variables. The string parameter
-       can only be given as a string.
+       It can also include pseudo variables. The expression
+       parameter can only be given as a string.
      * result_pvar - pseudo-variable which will hold the result of
        the evaluation. Specified as a quoted string.
 
@@ -118,7 +131,52 @@ vp(result)")) {
 
 ...
 
-1.4.2.  math_trunc(number, result_pvar)
+1.4.2.  math_rpn(expression, result_pvar)
+
+   The function evaluates a given RPN expression and writes the
+   result in the output pseudo-variable. The expression may
+   contain any number of pseudo variables.
+
+   The expression is specified in Reverse Polish Notation. Values
+   are pushed onto a stack, while operations are executed on that
+   stack. The following operations are supported:
+     * binary operators: + - / * mod pow
+     * unary functions: neg exp ln log10 abs sqrt cbrt floor ceil
+       round nearbyint trunc
+       neg will change the sign of the top of the stack
+       ln is natural logarithm; abs is absolute value; other
+       functions are standard C functions
+     * constants: e pi
+     * stack manipulations commands: drop dup swap
+
+   Meaning of the parameters is as follows:
+     * expression - String containing a RPN expression. It can
+       also include pseudo variables. The expression parameter can
+       only be given as a string.
+     * result_pvar - pseudo-variable which will hold the result of
+       the evaluation. Specified as a quoted string.
+
+   This function can be used from any route.
+
+   Example 1.3. math_rpn usage
+$avp(1) = "3";
+
+if (math_rpn("1 $avp(1) swap swap dup drop / exp ln 1 swap /", "$avp(res
+ult)")) {
+        xlog("Result of expression: $avp(result)\n");
+} else {
+        xlog("RPN eval failed!\n");
+}
+
+/* This example RPN script will push 1 then 3 onto the stack, then do a
+couple no-ops
+(exchange the two values twice, duplicate one of them then drop the dupl
+icate),
+compute the division of 1 by 3, then do another no-op (exponentiation th
+en logarithm), and
+finally compute 1 divided by the result, giving 3 as the result. */
+
+1.4.3.  math_trunc(number, result_pvar)
 
    Truncation of a number towards zero. This means that trunc(3.7)
    = 3.0 and trunc(-2.9) = -2.0.
@@ -134,7 +192,7 @@ vp(result)")) {
 
    This function can be used from any route.
 
-   Example 1.3. math_trunc usage
+   Example 1.4. math_trunc usage
 ...
 # Truncate a random number
 
@@ -147,7 +205,7 @@ if (math_trunc("$avp(1)", "$avp(result)")) {
 }
 ...
 
-1.4.3.  math_floor(number, result_pvar)
+1.4.4.  math_floor(number, result_pvar)
 
    Truncates a number, always towards -infinity. This means that
    floor(3.7) = 3.0 and floor(-2.9) = -3.0
@@ -163,7 +221,7 @@ if (math_trunc("$avp(1)", "$avp(result)")) {
 
    This function can be used from any route.
 
-   Example 1.4. math_floor usage
+   Example 1.5. math_floor usage
 ...
 # Truncate a random number
 
@@ -176,7 +234,7 @@ if (math_floor("$avp(1)", "$avp(result)")) {
 }
 ...
 
-1.4.4.  math_ceil(number, result_pvar)
+1.4.5.  math_ceil(number, result_pvar)
 
    Truncates a number, always towards +infinity. This means that
    ceil(3.2) = 4.0 and ceil(-2.9) = -2.0
@@ -192,7 +250,7 @@ if (math_floor("$avp(1)", "$avp(result)")) {
 
    This function can be used from any route.
 
-   Example 1.5. math_ceil usage
+   Example 1.6. math_ceil usage
 ...
 # Truncate a random number
 
@@ -205,7 +263,7 @@ if (math_ceil("$avp(1)", "$avp(result)")) {
 }
 ...
 
-1.4.5.  math_round(number, result_pvar[, decimals])
+1.4.6.  math_round(number, result_pvar[, decimals])
 
    The round function returns the nearest integer, and
    tie-breaking is done away from zero. Examples: round(1.2) =
@@ -230,7 +288,7 @@ if (math_ceil("$avp(1)", "$avp(result)")) {
 
    This function can be used from any route.
 
-   Example 1.6. math_round usage
+   Example 1.7. math_round usage
 ...
 # Rounding PI
 
@@ -255,7 +313,7 @@ if (math_round("$avp(1)", "$avp(result)", "4")) {
 }
 ...
 
-1.4.6.  math_round_sf(number, result_pvar, figures)
+1.4.7.  math_round_sf(number, result_pvar, figures)
 
    To give a simple explanation, rounding to N significant figures
    is done by first obtaining the number resulted from keeping N
@@ -284,7 +342,7 @@ if (math_round("$avp(1)", "$avp(result)", "4")) {
 
    This function can be used from any route.
 
-   Example 1.7. math_round_sf usage
+   Example 1.8. math_round_sf usage
 ...
 # Rounding PI
 

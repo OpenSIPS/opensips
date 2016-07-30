@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * Generic Parameter Parser
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -57,7 +55,7 @@ static inline void parse_contact_class(param_hooks_t* _h, param_t* _p)
 			_h->contact.q = _p;
 		}
 		break;
-		
+
 	case 'e':
 	case 'E':
 		if ((_p->name.len == 7) &&
@@ -66,7 +64,7 @@ static inline void parse_contact_class(param_hooks_t* _h, param_t* _p)
 			_h->contact.expires = _p;
 		}
 		break;
-		
+
 	case 'm':
 	case 'M':
 		if ((_p->name.len == 7) &&
@@ -75,7 +73,7 @@ static inline void parse_contact_class(param_hooks_t* _h, param_t* _p)
 			_h->contact.methods = _p;
 		}
 		break;
-		
+
 	case 'r':
 	case 'R':
 		if ((_p->name.len == 8) &&
@@ -146,7 +144,7 @@ static inline void parse_uri_class(param_hooks_t* _h, param_t* _p)
 			_h->uri.maddr = _p;
 		}
 		break;
-		
+
 	case 'd':
 	case 'D':
 		if ((_p->name.len == 5) &&
@@ -227,7 +225,7 @@ static inline int parse_token_param(str* _s, str* _r)
 		return -1;
 	}
 
-	     /* Save the begining of the
+	     /* Save the beginning of the
 	      * token in _r->s
 	      */
 	_r->s = _s->s;
@@ -303,7 +301,7 @@ static inline void parse_param_name(str* _s, pclass_t _c, param_hooks_t* _h, par
 
  out:
 	_p->name.len = _s->s - _p->name.s;
-	
+
 	switch(_c) {
 	case CLASS_CONTACT: parse_contact_class(_h, _p); break;
 	case CLASS_URI:     parse_uri_class(_h, _p);     break;
@@ -378,12 +376,12 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 
 		parse_param_name(_s, _c, _h, t);
 		trim_leading(_s);
-		
+
 		if (_s->len == 0) { /* The last parameter without body */
 			t->len = t->name.len;
 			goto ok;
 		}
-		
+
 		if (_s->s[0] == '=') {
 			_s->s++;
 			_s->len--;
@@ -420,7 +418,7 @@ int parse_params(str* _s, pclass_t _c, param_hooks_t* _h, param_t** _p)
 		_s->s++;
 		_s->len--;
 		trim_leading(_s);
-		
+
 		if (_s->len == 0) {
 			LM_ERR("param name missing after ;\n");
 			goto error;
@@ -449,13 +447,13 @@ ok:
 static inline void do_free_params(param_t* _p, int _shm)
 {
 	param_t* ptr;
-	
+
 	while(_p) {
 		ptr = _p;
 		_p = _p->next;
 		if (_shm) shm_free(ptr);
 		else pkg_free(ptr);
-	}	
+	}
 }
 
 
@@ -485,7 +483,7 @@ static inline void print_param(FILE* _o, param_t* _p)
 	char* type;
 
 	fprintf(_o, "---param(%p)---\n", _p);
-	
+
 	switch(_p->type) {
 	case P_OTHER:     type = "P_OTHER";     break;
 	case P_Q:         type = "P_Q";         break;
@@ -501,7 +499,7 @@ static inline void print_param(FILE* _o, param_t* _p)
 	case P_DSTPORT:   type = "P_DSTPORT";   break;
 	default:          type = "UNKNOWN";     break;
 	}
-	
+
 	fprintf(_o, "type: %s\n", type);
 	fprintf(_o, "name: \'%.*s\'\n", _p->name.len, _p->name.s);
 	fprintf(_o, "body: \'%.*s\'\n", _p->body.len, _p->body.s);
@@ -516,7 +514,7 @@ static inline void print_param(FILE* _o, param_t* _p)
 void print_params(FILE* _o, param_t* _p)
 {
 	param_t* ptr;
-	
+
 	ptr = _p;
 	while(ptr) {
 		print_param(_o, ptr);
@@ -536,7 +534,7 @@ static inline int do_duplicate_params(param_t** _n, param_t* _p, int _shm)
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
-	
+
 	last = 0;
 	*_n = 0;
 	ptr = _p;

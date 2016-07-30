@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -68,12 +66,12 @@ static struct mi_root* print_fifo_err(void);
 static int str_toklen(str * str, const char * delims)
 {
 	int len;
-	
+
 	if ((str==NULL) || (str->s==NULL)) {
 		/* No more tokens */
 		return -1;
 	}
-	
+
 	len=0;
 	while (len<str->len) {
 		if (strchr(delims,str->s[len])!=NULL) {
@@ -81,7 +79,7 @@ static int str_toklen(str * str, const char * delims)
 		}
 		len++;
 	}
-	
+
 	return len;
 }
 
@@ -126,12 +124,13 @@ struct mi_root* dump_fifo (struct mi_root* cmd_tree, void *param) {
 		LM_ERR("error during retrieve data\n");
 		return init_mi_tree(500, "error during command processing", 31);
 	}
-		
+
 	struct mi_root* rpl_tree;
 	struct mi_node* node = NULL;
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if(rpl_tree == NULL)
 		return 0;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 	node = addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "Printing routing information:");
 	if(node == NULL)
 		goto error;
@@ -184,12 +183,12 @@ struct mi_root* replace_host (struct mi_root* cmd_tree, void *param) {
 	if(mode != SP_ROUTE_MODE_FILE) {
 		return init_mi_tree(400, "Not running in config file mode, cannot modify route from command line", 70);
 	}
-	
+
 	node = cmd_tree->node.kids;
 	if (node==NULL || node->next!=NULL)
 		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
-	
+
 	/* look for command */
 	if (node->value.s==NULL)
 		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
@@ -232,7 +231,7 @@ struct mi_root* deactivate_host (struct mi_root* cmd_tree, void *param) {
 	if (node==NULL || node->next!=NULL)
 		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
-	
+
 	/* look for command */
 	if (node->value.s==NULL)
 		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
@@ -275,7 +274,7 @@ struct mi_root* activate_host (struct mi_root* cmd_tree, void *param) {
 	if (node==NULL || node->next!=NULL)
 		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
-	
+
 	/* look for command */
 	if (node->value.s==NULL)
 		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
@@ -357,7 +356,7 @@ struct mi_root* delete_host (struct mi_root* cmd_tree, void * param) {
 	if (node==NULL || node->next!=NULL)
 		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
-	
+
 	/* look for command */
 	if (node->value.s==NULL)
 		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
@@ -911,10 +910,10 @@ error:
  */
 struct mi_root* print_fifo_err(void) {
 	struct mi_root* rpl_tree;
-	
+
 	switch (fifo_err) {
-		case E_MISC: 
-			rpl_tree = init_mi_tree( 400, "An error occured", 17);
+		case E_MISC:
+			rpl_tree = init_mi_tree( 400, "An error occurred", 17);
 			if(rpl_tree == NULL)
 				return 0;
 			break;
@@ -997,7 +996,7 @@ struct mi_root* print_fifo_err(void) {
 			return print_replace_help();
 			break;
 		default:
-			rpl_tree = init_mi_tree( 500, "An error occured", 17);
+			rpl_tree = init_mi_tree( 500, "An error occurred", 17);
 			if(rpl_tree == NULL)
 				return 0;
 			break;

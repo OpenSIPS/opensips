@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2009 Sippy Software, Inc., http://www.sippysoft.com
  *
  * This file is part of opensips, a free SIP server.
@@ -17,14 +15,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
 /*
  * This is a mechanism to register per-message callback handlers
  * to be called at certain points of the message lifecycle.
- * 
+ *
  * Apart from the sip_msg structure, each handler is passed a
  * pointer to a handler type-specific structure from the core
  * and pointer to an opaque structure allocated by the module.

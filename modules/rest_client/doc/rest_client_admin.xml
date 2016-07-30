@@ -1,14 +1,14 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
 
 	<section id="sec-overview">
 	<title>Overview</title>
 	<para>
 	The <emphasis>rest_client</emphasis> module provides a means of interacting
-	with an HTTP server by doing RESTful queries, such as GET and POST. 
+	with an HTTP server by doing RESTful queries, such as GET and POST.
 	</para>
 	</section>
 
@@ -31,7 +31,7 @@
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
-		The following libraries or applications must be installed before 
+		The following libraries or applications must be installed before
 		running &osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
@@ -65,6 +65,7 @@ modparam("rest_client", "connection_timeout", 300)
 </programlisting>
 		</example>
 	</section>
+
 	<section>
 		<title><varname>curl_timeout</varname> (integer)</title>
 		<para>
@@ -85,13 +86,72 @@ modparam("rest_client", "curl_timeout", 300)
 		</example>
 	</section>
 
+	<section>
+		<title><varname>ssl_verifypeer</varname> (integer)</title>
+		<para>
+		Set this to 0 in order to disable the verification of the remote peer's
+		certificate. Verification is done using a default bundle of CA certificates
+		which come with libcurl.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1</quote> (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>ssl_verifypeer</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "ssl_verifypeer", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>ssl_verifyhost</varname> (integer)</title>
+		<para>
+		Set this to 0 in order to disable the verification that the remote peer
+		actually corresponds to the server listed in the certificate.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1</quote> (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>ssl_verifyhost</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "ssl_verifyhost", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>ssl_capath</varname> (integer)</title>
+		<para>
+		An optional path for CA certificates to be used for host verifications.
+		</para>
+		<example>
+		<title>Setting the <varname>ssl_capath</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>
 	<title>Exported Functions</title>
-	<section>
+	<section id="rest_get"
+			 xreflabel="rest_get">
 		<title>
-		<function moreinfo="none">rest_get(url, body_pv[, ctype_pv[, retcode_pv]])
+		<function moreinfo="none">rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
 		</function>
 		</title>
 		<para>
@@ -99,16 +159,17 @@ modparam("rest_client", "curl_timeout", 300)
 		of the resource.
 		</para>
 		<para>
-		The <emphasis>body_pv</emphasis> avp will hold the body of the HTTP
+		The <emphasis>body_pv</emphasis> pseudo-var will hold the body of the HTTP
 		response.
 		</para>
 		<para>
-		The optional <emphasis>ctype_pv</emphasis> avp will contain the value
+		The optional <emphasis>ctype_pv</emphasis> pseudo-var will contain the value
 		of the "Content-Type:" header.
 		</para>
 		<para>
-		The optional <emphasis>retcode_pv</emphasis> avp is used to retain the
-		HTTP status code of the response message.
+		The optional <emphasis>retcode_pv</emphasis> pseudo-var is used to retain the
+		HTTP status code of the response message. Since the module is based on libcurl,
+		a <emphasis role='bold'>0</emphasis> value means no HTTP reply arrived at all.
 		</para>
 
 		<para>Possible parameter types</para>
@@ -134,8 +195,8 @@ modparam("rest_client", "curl_timeout", 300)
 ...
 # Example of querying a REST service to get the credit of an account
 
-if (!rest_get("http://getcredit.org/?ruri=$fU", "$avp(credit)", "$avp(ct)", "$avp(rcode)")) {
-	xlog("Error code $avp(rcode) in HTTP GET!\n");
+if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)", "$var(ct)", "$var(rcode)")) {
+	xlog("Error code $var(rcode) in HTTP GET!\n");
 	send_reply("403", "Not registered");
 	exit;
 }
@@ -143,28 +204,32 @@ if (!rest_get("http://getcredit.org/?ruri=$fU", "$avp(credit)", "$avp(ct)", "$av
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="rest_post"
+			 xreflabel="rest_post">
 		<title>
-		<function moreinfo="none">rest_post(url, send_body_pv, send_ctype_pv,
-				recv_body_pv[, recv_ctype_pv[, retcode_pv]])
+		<function moreinfo="none">rest_post(url, send_body_pv, [send_ctype_pv],
+				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
 		</function>
 		</title>
 		<para>
-		Issues an HTTP POST request to the specified 'url'. The request body will
-		be copied from the 'send_body_pv' pseudo-variable. Its MIME content type
-		will be taken from 'send_ctype_pv'.
+			Issues an HTTP POST request to the specified <emphasis>url</emphasis>. The request body will
+		be copied from the <emphasis>send_body_pv</emphasis> pseudo-variable. The MIME Content-Type
+		header for the request will be taken from <emphasis>send_ctype_pv</emphasis> (default is
+		<emphasis>"application/x-www-form-urlencoded"</emphasis>)
 		</para>
 		<para>
-		The <emphasis>recv_body_pv</emphasis> avp will hold the body of the HTTP
+		The mandatory <emphasis>recv_body_pv</emphasis> pseudo-var will hold the body of the HTTP
 		response.
 		</para>
 		<para>
 		The optional <emphasis>recv_ctype_pv</emphasis> parameter will contain
-		the value of the "Content-Type:" header of the response message.
+		the value of the "Content-Type" header of the response message.
 		</para>
 		<para>
-		The optional <emphasis>retcode_pv</emphasis> avp parameter can be given
-		in order to save the HTTP status code of the response message.
+		The optional <emphasis>retcode_pv</emphasis> pseudo-var parameter can be given
+		in order to retrieve the HTTP status code of the response message. Since
+		the module based on libcurl, a <emphasis role='bold'>0</emphasis> value
+		means no HTTP reply arrived at all.
 		</para>
 		<para>Possible parameter types</para>
 		<itemizedlist>
@@ -188,8 +253,8 @@ if (!rest_get("http://getcredit.org/?ruri=$fU", "$avp(credit)", "$avp(ct)", "$av
 ...
 # Storing data using a RESTful service with an HTTP POST request
 
-if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain", "$avp(body)", "$avp(ct)", "$avp(rcode)")) {
-	xlog("Error code $avp(rcode) in HTTP POST!\n");
+if (!rest_post("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)")) {
+	xlog("Error code $var(rcode) in HTTP POST!\n");
 	send_reply("403", "POST Forbidden");
 	exit;
 }
@@ -197,7 +262,114 @@ if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain", "$avp(b
 </programlisting>
 		</example>
 	</section>
+	<section id="rest_append_hf" xreflabel="rest_append_hf">
+		<title>
+		<function moreinfo="none">rest_append_hf(txt)</function>
+		</title>
+		<para>
+		Appends 'txt' to the HTTP headers of the subsequent request.
+                Multiple headers can be appended by making multiple calls
+                before executing a request.
+		</para>
+		<para>
+		The contents of <emphasis>txt</emphasis> should adhere to the
+                specification for HTTP headers (ex. Field: Value)
+		</para>
+		<para>Parameter types</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>txt</emphasis> - String, pseudo-variable, or a String which includes pseudo-variables. (useful for specifying additional attribute-value fields in the URL)
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from the <emphasis>startup, branch, failure, request</emphasis> and <emphasis>timer</emphasis> routes.
+		</para>
+		<example>
+		<title><function moreinfo="none">rest_append_hf</function> usage</title>
+		<programlisting format="linespecific">
+...
+# Example of querying a REST service requiring additional headers
+
+rest_append_hf("Authorization: Bearer mF_9.B5f-4.1JqM");
+if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)")) {
+				...
+}
+...
+		</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Asynchronous Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
+		</function>
+		</title>
+		<para>
+		Sends a GET HTTP request. This function behaves exactly the same as
+		<emphasis role='bold'><xref linkend="rest_get"/></emphasis>
+		(in terms of input, output and processing),
+		but in an asynchronous way. Script execution is suspended until the
+		entire content of the HTTP response if available.
+		</para>
+		<example>
+		<title><function moreinfo="none">async rest_get</function> usage</title>
+		<programlisting format="linespecific">
+route {
+	...
+	async(rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)", , "$var(rcode)"), resume);
+}
+
+route [resume]
+{
+	if ($rc &lt; 0) {
+		xlog("Error code $var(rcode) in HTTP GET!\n");
+		send_reply("403", "GET Forbidden");
+		exit;
+	}
+	......
+}
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">rest_post(url, send_body_pv, [send_ctype_pv],
+				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
+		</function>
+		</title>
+		<para>
+		Sends a POST HTTP request. This function behaves exactly the same as
+		<emphasis role='bold'><xref linkend="rest_post"/></emphasis> (in terms of input, output and processing),
+		but in an asynchronous way. Script execution is suspended until the
+		entire content of the HTTP response if available.
+		</para>
+		<example>
+		<title><function moreinfo="none">async rest_post</function> usage</title>
+		<programlisting format="linespecific">
+route {
+	...
+	async(rest_post("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)"), resume);
+}
+
+route [resume]
+{
+	if ($rc &lt; 0) {
+		xlog("Error code $var(rcode) in HTTP POST!\n");
+		send_reply("403", "POST Forbidden");
+		exit;
+	}
+	......
+}
+</programlisting>
+		</example>
+	</section>
 
 	</section>
-</chapter>
 
+
+</chapter>

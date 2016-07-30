@@ -82,6 +82,79 @@ modparam("uac_auth","credential","username:domain:0xc17ba8157756f263d07e15850420
 				</programlisting>
 			</example>
 		</section>
+
+		<section id="auth-realm-avp-id">
+			<title><varname>auth_realm_avp</varname> (string)</title>
+			<para>
+			The definition of an AVP that might contain the realm to be used
+			to perform authentication.
+			</para>
+			<para><emphasis>
+				If you define it, you also need to define 
+				<quote>auth_username_avp</quote> 
+				(<xref linkend="auth-username-avp-id"/>) and 
+				<quote>auth_username_avp</quote> 
+				(<xref linkend="auth-password-avp-id"/>).
+			</emphasis></para>
+			<example>
+				<title>Set <varname>auth_realm_avp</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("uac_auth","auth_realm_avp","$avp(10)")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="auth-username-avp-id">
+			<title><varname>auth_username_avp</varname> (string)</title>
+			<para>
+			The definition of an AVP that might contain the username to be used
+			to perform authentication.
+			</para>
+			<para><emphasis>
+				If you define it, you also need to define 
+				<quote>auth_realm_avp</quote> 
+				(<xref linkend="auth-realm-avp-id"/>) and 
+				<quote>auth_username_avp</quote> 
+				(<xref linkend="auth-password-avp-id"/>).
+			</emphasis></para>
+			<example>
+				<title>Set <varname>auth_username_avp</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("uac_auth","auth_username_avp","$avp(11)")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="auth-password-avp-id">
+			<title><varname>auth_password_avp</varname> (string)</title>
+			<para>
+			The definition of an AVP that might contain the password to be used
+			to perform authentication. The password can be provided as a plain
+			text password or as a precalculated HA1 as a hexa (lower case) string
+			(of 32 chars) prefixed with "0x" (so a total of 34 chars) (for example 
+			"0xc17ba8157756f263d07e158504204629")
+			</para>
+			<para><emphasis>
+				If you define it, you also need to define 
+				<quote>auth_password_avp</quote> 
+				(<xref linkend="auth-password-avp-id"/>) and 
+				<quote>auth_username_avp</quote> 
+				(<xref linkend="auth-password-avp-id"/>).
+			</emphasis></para>
+			<example>
+				<title>Set <varname>auth_password_avp</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("uac_auth","auth_password_avp","$avp(12)")
+...
+				</programlisting>
+			</example>
+		</section>
+
 	</section>
 
 </chapter>

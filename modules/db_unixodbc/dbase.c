@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * UNIXODBC module core functions
  *
  * Copyright (C) 2005-2006 Marco Lorrai
@@ -20,7 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
  * History:
@@ -29,7 +27,7 @@
  *  2006-04-03  fixed invalid handle to extract error (sgupta)
  *  2006-04-04  removed deprecated ODBC functions, closed cursors on error
  *              (sgupta)
- *  2006-05-05  Fixed reconnect code to actually work on connection loss 
+ *  2006-05-05  Fixed reconnect code to actually work on connection loss
  *              (sgupta)
  */
 
@@ -113,7 +111,7 @@ static int db_unixodbc_submit_query(const db_con_t* _h, const str* _s)
 				(int)(long)CON_CONNECTION(_h));
 		db_unixodbc_extract_error("SQLAllocStmt", CON_CONNECTION(_h), SQL_HANDLE_DBC,
 			(char*)sqlstate);
-		
+
 		/* Connection broken */
 		if( !strncmp((char*)sqlstate,"08003",5) ||
 		!strncmp((char*)sqlstate,"08S01",5) ) {
@@ -134,7 +132,7 @@ static int db_unixodbc_submit_query(const db_con_t* _h, const str* _s)
 
 		/* Connection broken */
 		if( !strncmp((char*)sqlstate,"08003",5) ||
-		    !strncmp((char*)sqlstate,"08S01",5) 
+		    !strncmp((char*)sqlstate,"08S01",5)
 		    )
 		{
 			ret = reconnect(_h);
@@ -153,7 +151,7 @@ static int db_unixodbc_submit_query(const db_con_t* _h, const str* _s)
 
 		}
 		else {
-			/* Close the cursor */ 
+			/* Close the cursor */
 			SQLCloseCursor(CON_RESULT(_h));
 			SQLFreeHandle(SQL_HANDLE_STMT, CON_RESULT(_h));
 		}
@@ -245,8 +243,10 @@ int db_unixodbc_free_result(db_con_t* _h, db_res_t* _r)
 		LM_ERR("failed to free result structure\n");
 		return -1;
 	}
+
 	SQLFreeHandle(SQL_HANDLE_STMT, CON_RESULT(_h));
-	CON_RESULT(_h) = 0;
+	CON_RESULT(_h) = NULL;
+
 	return 0;
 }
 
@@ -334,7 +334,7 @@ int db_unixodbc_update(const db_con_t* _h, const db_key_t* _k,
 /*
  * Just like insert, but replace the row if it exists
  */
-int db_unixodbc_replace(const db_con_t* _h, const db_key_t* _k, 
+int db_unixodbc_replace(const db_con_t* _h, const db_key_t* _k,
 		const db_val_t* _v, const int _n)
 {
 	CON_RESET_CURR_PS(_h); /* no prepared statements support */

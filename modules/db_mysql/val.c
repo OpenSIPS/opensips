@@ -1,6 +1,4 @@
-/* 
- * $Id$ 
- *
+/*
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2008 1&1 Internet AG
  *
@@ -16,9 +14,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -37,7 +35,7 @@
 int db_mysql_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const int _l)
 {
 	static str dummy_string = {"", 0};
-	
+
 	if (!_v) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
@@ -91,7 +89,7 @@ int db_mysql_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const int
 			return 0;
 		}
 		break;
-	
+
 	case DB_DOUBLE:
 		LM_DBG("converting DOUBLE [%s]\n", _s);
 		if (db_str2double(_s, &VAL_DOUBLE(_v)) < 0) {
@@ -159,7 +157,7 @@ int db_mysql_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _len
 		*_len = snprintf(_s, *_len, "NULL");
 		return 0;
 	}
-	
+
 	switch(VAL_TYPE(_v)) {
 	case DB_INT:
 		if (db_int2str(VAL_INT(_v), _s, _len) < 0) {
@@ -251,7 +249,7 @@ int db_mysql_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _len
 			*_s = '\0';
 			*_len = _s - old_s;
 			return 0;
-		}			
+		}
 		break;
 
 	default:

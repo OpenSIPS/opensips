@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2012 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -47,7 +45,7 @@ char *prev_prefix=NULL;
 int run_locally=0;
 
 /* Init all the menus. Logic is hardcoded */
-int init_main_menu()
+int init_main_menu(void)
 {
 	select_menu *aux;
 
@@ -129,7 +127,7 @@ int init_main_menu()
 	link_child(main_menu,aux);
 
 	if (parse_make_conf() < 0) {
-		fprintf(output,"Failed to parse Makefile.conf");
+		fprintf(output,"Failed to parse %s\n", MAKE_CONF_FILE);
 		return -1;
 	}
 #else
@@ -211,7 +209,7 @@ int init_main_menu()
 		link_child(main_menu,aux);
 
 		if (parse_make_conf() < 0) {
-			fprintf(output,"Failed to parse Makefile.conf");
+			fprintf(output,"Failed to parse %s\n", MAKE_CONF_FILE);
 			return -1;
 		}
 	} else {
@@ -273,11 +271,11 @@ int main(int argc,char **argv)
 	}
 
 	/* don't buffer input until the enter key is pressed */
-	cbreak(); 
+	cbreak();
 	/* don't echo user input to the screen */
-	noecho(); 
+	noecho();
 	/* allow the use of arrow keys */
-	keypad(stdscr, TRUE); 
+	keypad(stdscr, TRUE);
 	/* Clear anything that might be on the screen */
 	clear();
 	refresh();

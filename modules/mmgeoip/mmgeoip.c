@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of openser, a free SIP server.
  *
  * openser is free software; you can redistribute it and/or modify it
@@ -14,14 +13,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
  * --------
  * 080511 -- Initial revision, KE
  *
- * XXX -- todo: Add command variant to pull source/dest IP from 
+ * XXX -- todo: Add command variant to pull source/dest IP from
  *              current SIP message.
  *
  */
@@ -34,6 +33,7 @@
 #include "../../str.h"
 #include "../../usr_avp.h"
 #include "../../mod_fix.h"
+#include "../../ut.h"
 #include "GeoIP.h"
 #include "GeoIPCity.h"
 
@@ -42,8 +42,40 @@
 static str MMG_city_db_path = {NULL, 0};
 static GeoIP *MMG_gi = NULL;
 
+static int geoip_cache_option = GEOIP_MMAP_CACHE;
+
+
+int parse_mem_option( unsigned int type, void *val)
+{
+	str opt_s;
+
+	static const str opt_STANDARD = str_init("STANDARD");
+	static const str opt_MMAP = str_init("MMAP_CACHE");
+	static const str opt_MEM_CHECK = str_init("MEM_CACHE_CHECK");
+
+	opt_s.s = (char *) val;
+	opt_s.len = strlen(opt_s.s);
+
+
+	if (opt_s.len == opt_STANDARD.len &&
+			!strncasecmp(opt_s.s, opt_STANDARD.s, opt_s.len)) {
+		geoip_cache_option = GEOIP_STANDARD;
+	} else if (opt_s.len == opt_MMAP.len &&
+			!strncasecmp(opt_s.s, opt_MMAP.s, opt_s.len)) {
+		geoip_cache_option = GEOIP_MMAP_CACHE;
+	} else if (opt_s.len == opt_MEM_CHECK.len &&
+			!strncasecmp(opt_s.s, opt_MEM_CHECK.s, opt_s.len)) {
+		geoip_cache_option = GEOIP_MEMORY_CACHE|GEOIP_CHECK_CACHE;
+	} else {
+		LM_ERR("Invalid cache option!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 static int
-mod_init(void) 
+mod_init(void)
 {
 	LM_INFO("MM GeoIP module - initializing\n");
 
@@ -53,7 +85,8 @@ mod_init(void)
 	}
 
 	MMG_city_db_path.len=strlen(MMG_city_db_path.s);
-	if(0==(MMG_gi = GeoIP_open(MMG_city_db_path.s, GEOIP_MMAP_CACHE))){
+	if(0==(MMG_gi = GeoIP_open(MMG_city_db_path.s,
+					geoip_cache_option))){
 		LM_ERR("Unable to open City DB at path '%.*s'.\n",
 			MMG_city_db_path.len,MMG_city_db_path.s);
 		return -1;
@@ -192,14 +225,14 @@ mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_d
 	token=strtok_r(field_buf,MMG_OP_DELIMS,&saveptr);
 	while (token) {
 		if(!strcmp(token,"lat")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%f",gir->latitude); }
-		else if(!strcmp(token,"lon"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%f",gir->longitude); } 
-		else if(!strcmp(token,"cont")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->continent_code); } 
-		else if(!strcmp(token,"cc"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->country_code); } 
-		else if(!strcmp(token,"reg"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->region); } 
-		else if(!strcmp(token,"city")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->city); } 
-		else if(!strcmp(token,"pc"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->postal_code); } 
-		else if(!strcmp(token,"dma"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%d",gir->dma_code); } 
-		else if(!strcmp(token,"ac"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%d",gir->area_code); } 
+		else if(!strcmp(token,"lon"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%f",gir->longitude); }
+		else if(!strcmp(token,"cont")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->continent_code); }
+		else if(!strcmp(token,"cc"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->country_code); }
+		else if(!strcmp(token,"reg"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->region); }
+		else if(!strcmp(token,"city")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->city); }
+		else if(!strcmp(token,"pc"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->postal_code); }
+		else if(!strcmp(token,"dma"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%d",gir->dma_code); }
+		else if(!strcmp(token,"ac"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%d",gir->area_code); }
 		else if(!strcmp(token,"rbc"))  {
 			rslt.s.len=snprintf(
 				rslt_buf,sizeof rslt_buf,"%s",GeoIP_region_name_by_code(gir->country_code, gir->region));
@@ -235,6 +268,7 @@ w_lookup_cmd2(struct sip_msg *m, char *ipaddr, char *dst)
  */
 static param_export_t mod_params[]={
 	{"mmgeoip_city_db_path",   STR_PARAM, &MMG_city_db_path.s},
+	{"cache_type", STR_PARAM|USE_FUNC_PARAM, parse_mem_option},
 	{ 0,0,0 }
 };
 
@@ -250,9 +284,12 @@ static cmd_export_t cmds[] = {
 
 struct module_exports exports= {
 	"mmgeoip",        /* module's name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,   /* module's name */
 	DEFAULT_DLFLAGS,  /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,             /* exported functions */
+	0,                /* exported async functions */
 	mod_params,       /* param exports */
 	0,                /* exported statistics */
 	0,                /* exported MI functions */

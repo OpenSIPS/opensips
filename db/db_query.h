@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007-2008 1&1 Internet AG
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -103,7 +101,7 @@ int db_do_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r,
  * \param _h structure representing database connection
  * \param _k key names
  * \param _v values of the keys
- * \param _n number of key/value pairs 
+ * \param _n number of key/value pairs
  * \param (*val2str) function pointer to the db specific val conversion function
  * \param (*submit_query) function pointer to the db specific query submit function
  * \return zero on success, negative on errors

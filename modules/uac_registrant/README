@@ -10,10 +10,9 @@ Ovidiu Sas
 
    <osas@voipembedded.com>
 
-   Copyright © 2011-2013 VoIP Embedded, Inc.
+   Copyright © 2011-2014 VoIP Embedded, Inc.
    Revision History
-   Revision $Revision$ $Date: 2013-01-29 07:35:11 -0500 (Tue, 29
-   Jan 2013) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -71,17 +70,24 @@ Chapter 1. Admin Guide
 1.1. Overview
 
    The module enable OpenSIPS to register itself on a remote SIP
-   registrar. Several registrant accounts can be defined, each
-   account is specified by the "uac" parameter.
+   registrar.
 
    At startup, the registrant records are loaded into a hash table
    in memory and a timer is started. The hash index is computed
-   over the AOR field. For better hash distribution, the size of
-   the hash table is configurable. When the timer fires for the
-   first time, the first hash table will be checked and REGISTERs
-   will be sent out for each record that is found. On the next
-   timeout fire, the second hash table will be checked and so on.
-   The timer interval is configurable.
+   over the AOR field.
+
+   The timer interval for checking records in a hash bucket is
+   computed by dividing the timer_interval module param by the
+   number of hash buckets. When the timer fires for the first
+   time, the first hash bucket will be checked and REGISTERs will
+   be sent out for each record that is found. On the next timeout
+   fire, the second hash bucket will be checked and so on. If the
+   configured timer_interval module param is lower then the number
+   of buckets, the module will fail to start.
+
+   Example: setting the timer_interval module to 8 with a
+   hash_size of 2, will result in having 4 hash buckets (2^2=4)
+   and buckets will be checked one by one every 2s (8/4=2).
 
    Each registrant has it's own state. Registranr's status can be
    inspected via "reg_list" MI comand.
@@ -152,8 +158,8 @@ modparam("uac_registrant", "timer_interval", 120)
 
    Example 1.3. Set “db_url” parameter
 ...
-modparam("uac_registrant", "db_url", "mysql://user:passw@localhost/data
-base")
+modparam("uac_registrant", "db_url", "mysql://user:passw@localhost/datab
+ase")
 ...
 
 1.3.4. table_name (string)
@@ -177,7 +183,7 @@ modparam("uac_registrant", "table_name", "my_registrant")
 
    Example 1.5. Set “registrar_column” parameter
 ...
-modparam("uac_registrant", "registrar_column", "registranr_uri")
+modparam("uac_registrant", "registrar_column", "registrant_uri")
 ...
 
 1.3.6. proxy_column (string)
@@ -267,7 +273,7 @@ modparam("uac_registrant", "binding_URI_column", "contact_uri")
 
    The column's name in the database storing the binding params in
    REGISTER (not mandatory field). If not NULL or not empty, the
-   string stored here will be added as paramns to the Contact URI
+   string stored here will be added as params to the Contact URI
    in REGISTER (it MUST start with “;”. There is no validation on
    the string stored here.
 

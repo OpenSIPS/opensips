@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2009-2014 OpenSIPS Solutions
  * Copyright (C) 2006-2009 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -15,19 +14,19 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
  * 2006-04-14  initial version (bogdan)
- * 2006-11-28  Added num_100s and num_200s to dlg_cell, to aid in adding 
+ * 2006-11-28  Added num_100s and num_200s to dlg_cell, to aid in adding
  *             statistics tracking of the number of early, and active dialogs.
  *             (Jeffrey Magder - SOMA Networks)
  * 2007-03-06  syncronized state machine added for dialog state. New tranzition
  *             design based on events; removed num_1xx and num_2xx (bogdan)
- * 2007-07-06  added flags, cseq, contact, route_set and bind_addr 
+ * 2007-07-06  added flags, cseq, contact, route_set and bind_addr
  *             to struct dlg_cell in order to store these information into db
  *             (ancuta)
  * 2008-04-17  added new dialog flag to avoid state tranzitions from DELETED to
@@ -41,6 +40,7 @@
 #define _DIALOG_DLG_HASH_H_
 
 #include "../../locking.h"
+#include "../../context.h"
 #include "../../mi/mi.h"
 #include "dlg_timer.h"
 #include "dlg_cb.h"
@@ -65,14 +65,16 @@
 #define DLG_FLAG_NEW			(1<<0)
 #define DLG_FLAG_CHANGED		(1<<1)
 #define DLG_FLAG_HASBYE			(1<<2)
-#define DLG_FLAG_BYEONTIMEOUT	(1<<3)
+#define DLG_FLAG_BYEONTIMEOUT		(1<<3)
 #define DLG_FLAG_ISINIT			(1<<4)
-#define DLG_FLAG_PING_CALLER	(1<<5)
-#define DLG_FLAG_PING_CALLEE	(1<<6)
+#define DLG_FLAG_PING_CALLER		(1<<5)
+#define DLG_FLAG_PING_CALLEE		(1<<6)
 #define DLG_FLAG_TOPHIDING		(1<<7)
 #define DLG_FLAG_VP_CHANGED		(1<<8)
 #define DLG_FLAG_DB_DELETED		(1<<9)
-#define DLG_FLAG_TOPH_KEEP_USER	(1<<10)
+#define DLG_FLAG_CSEQ_ENFORCE		(1<<10)
+#define DLG_FLAG_REINVITE_PING_CALLER	(1<<11)
+#define DLG_FLAG_REINVITE_PING_CALLEE	(1<<12)
 
 #define DLG_CALLER_LEG         0
 #define DLG_FIRST_CALLEE_LEG   1
@@ -92,10 +94,14 @@ struct dlg_leg {
 	str to_uri;		/* TO URI for this leg, in case of TO URI mangling */
 	str route_set;
 	str contact;
+	str th_sent_contact;	/* topology hiding advertised contact towards this leg - full header */
 	str route_uris[64];
+	str sdp;		/* latest SDP provided by this leg ( full body ), after all OpenSIPS changes */
 	int nr_uris;
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
+	unsigned int last_inv_gen_cseq; /* used when translating ACKs */
 	char reply_received;
+	char reinvite_confirmed;
 	struct socket_info *bind_addr;
 };
 
@@ -103,6 +109,14 @@ struct dlg_leg {
 #define DLG_LEGS_USED      0
 #define DLG_LEGS_ALLOCED   1
 #define DLG_LEG_200OK      2
+
+/* ALL module flags to be listed here - we have to centralize here :
+- in order to make it easier for future modules to use the flags  
+- sometimes, dialog internal behavior changes, depending on whether a certain module is loaded or not ( eg. topology_hiding ) */
+#define SST_DIALOG_FLAG   (1 << 0)
+#define TOPOH_ONGOING     (1 << 1)
+#define TOPOH_KEEP_USER   (1 << 2)
+#define TOPOH_HIDE_CALLID (1 << 3)
 
 struct dlg_cell
 {
@@ -113,14 +127,21 @@ struct dlg_cell
 	unsigned int         h_entry;
 	unsigned int         state;
 	unsigned int         lifetime;
+	unsigned short       lifetime_dirty; /* 1 if lifetime timer should
+	                                      * be updated */
+	unsigned short       locked_by;   /* holds the ID of the process locking
+	                                   * the dialog (if the case) while
+	                                   * calling a callback */
 	unsigned int         start_ts;    /* start time  (absolute UNIX ts)*/
 	unsigned int         flags;
 	unsigned int         from_rr_nb;
 	unsigned int         user_flags;
+	unsigned int         mod_flags;
 	unsigned int         initial_t_hash_index;
 	unsigned int         initial_t_label;
 	struct dlg_tl        tl;
 	struct dlg_ping_list *pl;
+	struct dlg_ping_list *reinvite_pl;
 	str                  terminate_reason;
 	str                  callid;
 	str                  from_uri;
@@ -154,16 +175,21 @@ struct dlg_table
 
 
 extern struct dlg_table *d_table;
-extern struct dlg_cell  *current_dlg_pointer;
+extern int ctx_dlg_idx;
 
 #define callee_idx(_dlg) \
 	(((_dlg)->legs_no[DLG_LEG_200OK]==0)? \
 		DLG_FIRST_CALLEE_LEG : (_dlg)->legs_no[DLG_LEG_200OK])
 
-#define set_current_dialog(_dlg) \
-		current_dlg_pointer = _dlg
+#define ctx_dialog_get() \
+	((struct dlg_cell*)context_get_ptr(CONTEXT_GLOBAL,current_processing_ctx,ctx_dlg_idx) )
+
+#define ctx_dialog_set(_dlg) \
+	context_put_ptr(CONTEXT_GLOBAL,current_processing_ctx, ctx_dlg_idx, _dlg)
 
 struct dlg_cell *get_current_dialog();
+
+#define dlg_hash(_callid) core_hash(_callid, 0, d_table->size)
 
 #define dlg_lock(_table, _entry) \
 		lock_set_get( (_table)->locks, (_entry)->lock_idx);
@@ -208,8 +234,8 @@ static inline str* dlg_leg_to_uri(struct dlg_cell *dlg,int leg_no)
 	return &dlg->to_uri;
 }
 
-inline void unlink_unsafe_dlg(struct dlg_entry *d_entry, struct dlg_cell *dlg);
-inline void destroy_dlg(struct dlg_cell *dlg);
+void unlink_unsafe_dlg(struct dlg_entry *d_entry, struct dlg_cell *dlg);
+void destroy_dlg(struct dlg_cell *dlg);
 
 #define ref_dlg_unsafe(_dlg,_cnt)     \
 	do { \
@@ -239,6 +265,45 @@ inline void destroy_dlg(struct dlg_cell *dlg);
 		}\
 	}while(0)
 
+/*
+ * @input - str
+ * @return - integer flag bitmask
+ */
+#define parse_create_dlg_flags(input) \
+	({ \
+		char *___p; \
+		int ___flags = 0; \
+		for (___p=(input).s; ___p < (input).s + (input).len; ___p++) \
+		{ \
+			switch (*___p) \
+			{ \
+				case 'P': \
+					___flags |= DLG_FLAG_PING_CALLER; \
+					LM_DBG("will ping caller\n"); \
+					break; \
+				case 'p': \
+					___flags |= DLG_FLAG_PING_CALLEE; \
+					LM_DBG("will ping callee\n"); \
+					break; \
+				case 'B': \
+					___flags |= DLG_FLAG_BYEONTIMEOUT; \
+					LM_DBG("bye on timeout activated\n"); \
+					break; \
+				case 'R': \
+					___flags |= DLG_FLAG_REINVITE_PING_CALLER; \
+					LM_DBG("re-invite ping caller activated\n"); \
+					break; \
+				case 'r': \
+					___flags |= DLG_FLAG_REINVITE_PING_CALLEE; \
+					LM_DBG("re-invite ping callee activated\n"); \
+					break; \
+				default: \
+					LM_DBG("unknown create_dialog flag : [%c] ." \
+						   "Skipping\n", *___p); \
+			} \
+		} \
+		___flags; \
+	})
 
 int dialog_cleanup( struct sip_msg *msg, void *param );
 
@@ -249,15 +314,14 @@ void destroy_dlg_table();
 struct dlg_cell* build_new_dlg(str *callid, str *from_uri,
 		str *to_uri, str *from_tag);
 
-int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, 
+int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		str *contact,str *cseq, struct socket_info *sock,
-		str *mangled_from,str *mangled_to);
+		str *mangled_from,str *mangled_to,str *sdp);
 
 int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq,
 						int field_type);
 
-int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
-													str *rr, str *contact );
+int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,str *rr, str *contact);
 
 struct dlg_cell* lookup_dlg( unsigned int h_entry, unsigned int h_id);
 
@@ -272,11 +336,17 @@ void unref_dlg(struct dlg_cell *dlg, unsigned int cnt);
 
 void ref_dlg(struct dlg_cell *dlg, unsigned int cnt);
 
-void next_state_dlg(struct dlg_cell *dlg, int event,
-		int *old_state, int *new_state, int *unref);
+void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
+		int *new_state, int *unref, int last_dst_leg, char is_replicated);
 
 struct mi_root * mi_print_dlgs(struct mi_root *cmd, void *param );
 struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd, void *param );
+
+static inline void unref_dlg_destroy_safe(struct dlg_cell *dlg, unsigned int cnt)
+{
+	if (d_table)
+		unref_dlg(dlg, cnt);
+}
 
 static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 			str *ftag, str *ttag, unsigned int *dir, unsigned int *dst_leg) {
@@ -415,5 +485,8 @@ static inline void init_dlg_term_reason(struct dlg_cell *dlg,char *reason,int re
 			LM_ERR("Failed to initialize the terminate reason \n");
 	}
 }
+
+int state_changed_event_init(void);
+void state_changed_event_destroy(void);
 
 #endif

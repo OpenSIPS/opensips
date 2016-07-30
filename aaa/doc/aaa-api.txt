@@ -167,7 +167,7 @@ f:  a flag representing the type of message (for authentication or accounting)
 2.1.4 Return Value
 
 The return value is a pointer to the AAA message structure, or NULL if error
-occured.
+occurred.
 
 
 2.2 Callback prot.destroy_aaa_message
@@ -292,7 +292,7 @@ flag   : a flag specifying the type of search in the AVPs list (from the start
 	 or from the current position)
 
 There are two possible values for the flag:
-AAA_GET_FROM_START : the search should start from the begining of the AVPs list
+AAA_GET_FROM_START : the search should start from the beginning of the AVPs list
 AAA_GET_FROM_CURRENT : the search should start from the current search position
 
 2.6.4 Return Value
@@ -320,7 +320,7 @@ url : a string that contains protocol dependent information needed to identify
 2.7.4 Return Value
 
 The return value is a pointer to a connection variable, or NULL if error
-occured.
+occurred.
 
 
 2.8 Function aaa_prot_bind

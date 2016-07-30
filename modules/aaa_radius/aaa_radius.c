@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2009 Irina Stanescu
  * Copyright (C) 2009 Voice System
 
@@ -18,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History
  * --------
@@ -28,15 +26,21 @@
  */
 
 /*
- * This is an implementation of the generic AAA Interface that also provides 
- * via script functions the possibility to run custom RADIUS requests and 
+ * This is an implementation of the generic AAA Interface that also provides
+ * via script functions the possibility to run custom RADIUS requests and
  * to get information from the RADIUS reply.
  */
 
-#ifndef USE_FREERADIUS
-	#include <radiusclient-ng.h>
-#else
+#ifdef FREERADIUS
 	#include <freeradius-client.h>
+#else
+	#ifdef RADCLI
+		#include <radcli/radcli.h>
+	#else
+		#ifdef RADIUSCLIENT
+			#include <radiusclient-ng.h>
+		#endif
+	#endif
 #endif
 
 #include "../../sr_module.h"
@@ -66,6 +70,7 @@ char* config_file = NULL;
 char* syslog_name = NULL;
 rc_handle *rh = NULL;
 DICT_ATTR *attr;
+static int fetch_all_values = 0;
 
 int mod_init(void);
 int init_radius_handle(void);
@@ -74,12 +79,38 @@ void destroy(void);
 int aaa_radius_bind_api(aaa_prot *rad_prot);
 
 int send_auth_func(struct sip_msg* msg, str* s1, str* s2);
+#ifdef RADIUS_ASYNC_SUPPORT
+int send_auth_func_async(struct sip_msg* msg, async_resume_module **resume_f,
+		void **resume_param, str* s1, str* s2);
+#endif
 int send_auth_fixup(void** param, int param_no);
 
 int send_acct_func(struct sip_msg* msg, str* s);
+#ifdef RADIUS_ASYNC_SUPPORT
+int send_acct_func_async(struct sip_msg* msg, async_resume_module **resume_f,
+		void **resume_param, str *s);
+#endif
 int send_acct_fixup(void** param, int param_no);
 
 int parse_sets_func(unsigned int type, void *val);
+
+#ifdef RADIUS_ASYNC_SUPPORT
+struct rad_ctx {
+	int index2;
+	VALUE_PAIR *send;
+	SEND_CONTEXT *ctx;
+};
+#endif
+
+
+
+static acmd_export_t acmds[] = {
+#ifdef RADIUS_ASYNC_SUPPORT
+	{"radius_send_auth", (acmd_function) send_auth_func_async, 2, send_auth_fixup},
+	{"radius_send_acct", (acmd_function) send_acct_func_async, 1, send_acct_fixup},
+#endif
+	{0, 0, 0, 0}
+};
 
 static cmd_export_t cmds[]= {
 	{"aaa_bind_api",  (cmd_function) aaa_radius_bind_api,  0, 0, 0, 0},
@@ -95,18 +126,22 @@ static cmd_export_t cmds[]= {
 
 
 static param_export_t params[] = {
-	{"sets",          STR_PARAM|USE_FUNC_PARAM, parse_sets_func},
-	{"radius_config", STR_PARAM,                &config_file},
-	{"syslog_name",   STR_PARAM,                &syslog_name},
+	{"sets",             STR_PARAM|USE_FUNC_PARAM, parse_sets_func},
+	{"radius_config",    STR_PARAM,                &config_file},
+	{"syslog_name",      STR_PARAM,                &syslog_name},
+	{"fetch_all_values", INT_PARAM,                &fetch_all_values},
 	{0, 0, 0}
 };
 
 
 struct module_exports exports= {
 	"aaa_radius",				/* module name */
+	MOD_TYPE_AAA,				/* class of this module */
 	MODULE_VERSION,				/* module version */
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	NULL,						/* OpenSIPS module dependencies */
 	cmds,						/* exported functions */
+	acmds,							/* exported async functions */
 	params,						/* exported parameters */
 	0,							/* exported statistics */
 	0,							/* exported MI functions */
@@ -180,6 +215,7 @@ int parse_set_content(str content, rad_set_elem *elem) {
 		s->len = strlen(p);
 
 		p = pv_parse_spec(s, mp->pv);
+		CHECK_COND(p != NULL);
 
 		for (; isspace(*p); p++);
 		if (*p != '\0') {
@@ -260,10 +296,11 @@ int make_send_message(struct sip_msg* msg, int index, VALUE_PAIR **send) {
 	map_list *mp = sets[index]->parsed;
 
 	for (; mp; mp = mp->next) {
-		pv_get_spec_value(msg, mp->pv, &pt);
+		if (pv_get_spec_value(msg, mp->pv, &pt) < 0)
+			return -1;
 
 		if (pt.flags & PV_VAL_INT) {
-			//LM_DBG("%.*s---->%d---->%d---->%d\n",mp->name.len, mp->name.s, 
+			//LM_DBG("%.*s---->%d---->%d---->%d\n",mp->name.len, mp->name.s,
 			//		pt.ri, mp->value, pt.flags);
 
 			if (!rc_avpair_add(rh, send, ATTRID(mp->value), &pt.ri, -1, VENDOR(mp->value)))
@@ -271,7 +308,7 @@ int make_send_message(struct sip_msg* msg, int index, VALUE_PAIR **send) {
 		}
 		else
 		if (pt.flags & PV_VAL_STR) {
-			//LM_DBG("%.*s----->%.*s---->%d---->%d---->%d\n",mp->name.len, 
+			//LM_DBG("%.*s----->%.*s---->%d---->%d---->%d\n",mp->name.len,
 			//		mp->name.s, pt.rs.len, pt.rs.s, mp->value, pt.flags, pt.rs.len);
 			if (rc_dict_getattr(rh,mp->value)->type == PW_TYPE_IPADDR) {
 				uint32_t ipaddr=rc_get_ipaddr(pt.rs.s);
@@ -329,15 +366,16 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 	}
 
 	res = rc_auth(rh, SIP_PORT, send, &recv, mess);
-	if (res!=OK_RC && res!=BADRESP_RC) {
+	if (res!=OK_RC && res!=REJECT_RC) {
 		LM_ERR("radius authentication message failed with %s\n",
-			(res==TIMEOUT_RC)?"TIMEOUT":"ERROR");
+			(res==TIMEOUT_RC)?"TIMEOUT":((res==BADRESP_RC)?"BAD REPLY":"ERROR"));
 	}else{
 		LM_DBG("radius authentication message sent\n");
 	}
 
 	for ( mp=sets[index2]->parsed; mp ; mp = mp->next) {
-		if ((vp = rc_avpair_get(recv, ATTRID(mp->value), VENDOR(mp->value)))) {
+		vp = recv;
+		while ( (vp=rc_avpair_get(vp, ATTRID(mp->value), VENDOR(mp->value)))!=NULL ) {
 			memset(&pvt, 0, sizeof(pv_value_t));
 			if (vp->type == PW_TYPE_INTEGER) {
 				pvt.flags = PV_VAL_INT|PV_TYPE_INT;
@@ -352,8 +390,7 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 			if (pv_set_value(msg, mp->pv, (int)EQ_T, &pvt) < 0) {
 				LM_ERR("setting avp failed....skipping\n");
 			}
-		} else {
-			LM_DBG("attribute was not found in received radius message\n");
+			vp = fetch_all_values ? vp->next : NULL;
 		}
 	}
 
@@ -362,9 +399,9 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 		for(; (vp = rc_avpair_get(vp, attr->value, 0)); vp = vp->next)
 			extract_avp(vp);
 
-	if ( res!=OK_RC && res!=BADRESP_RC)
+	if ( res!=OK_RC && res!=REJECT_RC)
 		goto error;
-	
+
 
 	if (send) rc_avpair_free(send);
 	if (recv) rc_avpair_free(recv);
@@ -376,6 +413,156 @@ error:
 	return -1;
 }
 
+
+#ifdef RADIUS_ASYNC_SUPPORT
+/* TODO
+ * when timeout mechanism will be available
+ * rc_auth_function shall be called to try another
+ * destination if the current one has timed out
+ * */
+int resume_send_auth(int fd, struct sip_msg *msg, void *param)
+{
+	int res;
+	map_list *mp;
+	pv_value_t pvt;
+	struct rad_ctx *rctx;
+
+	VALUE_PAIR *recv = NULL, *vp = NULL;
+
+	rctx = (struct rad_ctx *)param;
+	if (rctx == NULL) {
+		LM_ERR("no context given\n");
+		return -1;
+	}
+
+	res = rc_auth_resume(&rctx->ctx, &recv);
+
+	if (res == OK_RC || res == REJECT_RC) {
+		async_status = ASYNC_DONE;
+	} else if (res == READBLOCK_RC) {
+		async_status  = ASYNC_CONTINUE;
+		return 1;
+	} else {
+		LM_ERR("radius authentication message failed with %s\n",
+							((res==BADRESP_RC)?"BAD REPLY":"ERROR"));
+		goto error;
+	}
+
+	for ( mp=sets[rctx->index2]->parsed; mp ; mp = mp->next) {
+		vp = recv;
+		while ( (vp=rc_avpair_get(vp, ATTRID(mp->value), VENDOR(mp->value)))!=NULL ) {
+			memset(&pvt, 0, sizeof(pv_value_t));
+			if (vp->type == PW_TYPE_INTEGER) {
+				pvt.flags = PV_VAL_INT|PV_TYPE_INT;
+				pvt.ri = vp->lvalue;
+			}
+			else
+			if (vp->type == PW_TYPE_STRING) {
+				pvt.flags = PV_VAL_STR;
+				pvt.rs.s = vp->strvalue;
+				pvt.rs.len = vp->lvalue;
+			}
+			if (pv_set_value(msg, mp->pv, (int)EQ_T, &pvt) < 0) {
+				LM_ERR("setting avp failed....skipping\n");
+			}
+			vp = fetch_all_values ? vp->next : NULL;
+		}
+	}
+
+	vp = recv;
+	if (attr)
+		for(; (vp = rc_avpair_get(vp, attr->value, 0)); vp = vp->next)
+			extract_avp(vp);
+
+	if ( res!=OK_RC && res!=REJECT_RC)
+		goto error;
+
+
+	if (rctx->send) rc_avpair_free(rctx->send);
+	if (recv) rc_avpair_free(recv);
+
+	pkg_free(rctx);
+
+	return (res==OK_RC)?1:-2;
+error:
+	pkg_free(rctx);
+	if (rctx->send) rc_avpair_free(rctx->send);
+	if (recv) rc_avpair_free(recv);
+	return -1;
+
+}
+
+int send_auth_func_async(struct sip_msg* msg, async_resume_module **resume_f,
+		void **resume_param, str* s1, str* s2) {
+	int i, res;
+	int index1 = -1, index2 = -1;
+	char mess[1024];
+	SEND_CONTEXT *ctx = 0;
+	struct rad_ctx *rctx;
+
+	VALUE_PAIR *send = NULL, *recv = NULL;
+
+	if (!rh) {
+		if (init_radius_handle()) {
+			LM_ERR("invalid radius handle\n");
+			return -1;
+		}
+	}
+
+	for (i = 0; i < set_size; i++) {
+		if (sets[i]->set_name.len == s1->len &&
+				!strncmp(sets[i]->set_name.s, s1->s, s1->len))
+				index1 = i;
+		if (sets[i]->set_name.len == s2->len &&
+				!strncmp(sets[i]->set_name.s, s2->s, s2->len))
+				index2 = i;
+	}
+
+	if (index1 == -1) {
+		LM_ERR("the first set was not found\n");
+		return -1;
+	}
+
+	if (index2 == -1) {
+		LM_ERR("the second set was not found\n");
+		return -1;
+	}
+
+	if (make_send_message(msg, index1, &send) < 0) {
+		LM_ERR("make message failed\n");
+		return -1;
+	}
+
+	res = rc_auth_async(rh, SIP_PORT, send, &recv, mess, &ctx);
+
+	if (res == OK_RC) {
+		LM_DBG("radius authentication message sent\n");
+
+		rctx = pkg_malloc(sizeof(struct rad_ctx));
+		if (rctx == NULL) {
+			LM_ERR("no pkg mem\n");
+			if (send) rc_avpair_free(send);
+			return -1;
+		}
+
+		rctx->index2 = index2;
+		rctx->send	 = send;
+		rctx->ctx	 = ctx;
+
+		*resume_param = rctx;
+		*resume_f	  = resume_send_auth;
+		async_status  = ctx->sockfd;
+
+		return 1;
+	}
+
+	LM_ERR("radius authentication message failed with ERROR\n");
+
+	if (send) rc_avpair_free(send);
+	return -1;
+}
+
+#endif
 
 int send_auth_fixup(void** param, int param_no) {
 
@@ -440,6 +627,103 @@ int send_acct_func(struct sip_msg* msg, str *s) {
 	return 1;
 }
 
+#ifdef RADIUS_ASYNC_SUPPORT
+/* TODO
+ * when timeout mechanism will be available
+ * rc_auth_function shall be called to try another
+ * destination if the current one has timed out
+ * */
+int resume_send_acct(int fd, struct sip_msg *msg, void *param)
+{
+	int res, retval;
+	struct rad_ctx *rctx;
+
+	rctx = (struct rad_ctx *)param;
+	if (rctx == NULL) {
+		LM_ERR("no context given\n");
+		return -1;
+	}
+
+
+	res = rc_acct_resume(&rctx->ctx);
+	if (res == OK_RC || res == REJECT_RC) {
+		async_status = ASYNC_DONE;
+		retval = 1;
+	} else if (res == READBLOCK_RC) {
+		async_status  = ASYNC_CONTINUE;
+		retval = 1;
+		goto exit;
+	} else {
+		LM_ERR("radius authentication message failed with %s\n",
+							((res==BADRESP_RC)?"BAD REPLY":"ERROR"));
+		retval = -1;
+	}
+
+	if (rctx->send) rc_avpair_free(rctx->send);
+	pkg_free(rctx);
+
+exit:
+	return retval;
+}
+
+int send_acct_func_async(struct sip_msg* msg, async_resume_module **resume_f,
+		void **resume_param, str *s)
+{
+	int i, index = -1, res;
+	VALUE_PAIR *send = NULL;
+	SEND_CONTEXT *ctx = 0;
+	struct rad_ctx *rctx;
+
+
+	if (!rh) {
+		if (init_radius_handle()) {
+			LM_ERR("invalid radius handle\n");
+			return -1;
+		}
+	}
+
+	for (i = 0; i < set_size; i++) {
+		if (sets[i]->set_name.len == s->len &&
+				!strncmp(sets[i]->set_name.s, s->s, s->len))
+				index = i;
+	}
+
+	if (index == -1) {
+		LM_ERR("set not found\n");
+		return -1;
+	}
+
+	if (make_send_message(msg, index, &send) < 0) {
+		LM_ERR("make message failed\n");
+		return -1;
+	}
+
+	res = rc_acct_async(rh, SIP_PORT, send, &ctx);
+	if (res == OK_RC) {
+		LM_DBG("radius accounting message sent\n");
+
+		rctx = pkg_malloc(sizeof(struct rad_ctx));
+		if (rctx == NULL) {
+			LM_ERR("no pkg mem\n");
+			if (send) rc_avpair_free(send);
+			return -1;
+		}
+
+		rctx->send	 = send;
+		rctx->ctx	 = ctx;
+
+		*resume_param = rctx;
+		*resume_f	  = resume_send_acct;
+		async_status  = ctx->sockfd;
+
+		return 1;
+	}
+
+	if (send) rc_avpair_free(send);
+	return -1;
+
+}
+#endif
 
 int send_acct_fixup(void** param, int param_no) {
 
@@ -512,6 +796,11 @@ int init_radius_handle(void) {
 
 int mod_init(void) {
 	LM_DBG("aaa_radius module was initiated\n");
+#ifdef RADIUS_ASYNC_SUPPORT
+	LM_INFO("async support for radius enabled\n");
+#else
+	LM_INFO("no async support\n");
+#endif
 
 	return 0;
 }

@@ -1,6 +1,4 @@
-/* 
- * $Id$
- *
+/*
  * Domain table related functions
  *
  * Copyright (C) 2002-2003 Juha Heinanen
@@ -17,13 +15,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
- *  2004-06-07  updated to the new DB api, moved reload_table here, created 
+ *  2004-06-07  updated to the new DB api, moved reload_table here, created
  *               domain_db_{init.bind,ver,close} (andrei)
  *  2004-09-06  is_uri_host_local() can now be called also from
  *              failure route (juhe)
@@ -39,6 +37,8 @@
 #include "../../route.h"
 #include "../../pvar.h"
 #include "../../str.h"
+
+#define DOMAIN_TABLE_VERSION 3
 
 static db_con_t* db_handle=0;
 static db_func_t domain_dbf;
@@ -57,7 +57,7 @@ int domain_db_bind(const str* db_url)
 
 
 int domain_db_init(const str* db_url)
-{	
+{
 	if (domain_dbf.init==0){
 		LM_ERR("Unbound database module\n");
 		goto error;
@@ -93,21 +93,25 @@ int domain_db_ver(str* name, int version)
 }
 
 
-
 /*
- * Check if domain is local
+ * Check if domain is local and store attributes in a pvar
  */
-int is_domain_local(str* _host)
+int is_domain_local_pvar(struct sip_msg *msg, str* _host, char *pvar)
 {
+	pv_spec_t *pv = (pv_spec_t *)pvar;
+	pv_value_t val;
+	db_val_t *values;
+
 	if (db_mode == 0) {
 		db_key_t keys[1];
 		db_val_t vals[1];
-		db_key_t cols[1]; 
+		db_key_t cols[2];
 		db_res_t* res = NULL;
 
 		keys[0] = &domain_col;
 		cols[0] = &domain_col;
-		
+		cols[1] = &domain_attrs_col;
+
 		if (domain_dbf.use_table(db_handle, &domain_table) < 0) {
 			LM_ERR("Error while trying to use domain table\n");
 			return -3;
@@ -115,32 +119,57 @@ int is_domain_local(str* _host)
 
 		VAL_TYPE(vals) = DB_STR;
 		VAL_NULL(vals) = 0;
-		
+
 		VAL_STR(vals).s = _host->s;
 		VAL_STR(vals).len = _host->len;
 
-		if (domain_dbf.query(db_handle, keys, 0, vals, cols, 1, 1, 0, &res) < 0
+		if (domain_dbf.query(db_handle, keys, 0, vals, cols, 1, 2, 0, &res) < 0
 				) {
 			LM_ERR("Error while querying database\n");
 			return -3;
 		}
 
 		if (RES_ROW_N(res) == 0) {
-			LM_DBG("Realm '%.*s' is not local\n", 
+			LM_DBG("Realm '%.*s' is not local\n",
 			       _host->len, ZSW(_host->s));
 			domain_dbf.free_result(db_handle, res);
 			return -1;
 		} else {
-			LM_DBG("Realm '%.*s' is local\n", 
+			LM_DBG("Realm '%.*s' is local\n",
 			       _host->len, ZSW(_host->s));
+			if (pvar) {
+				/* XXX: what shall we do if there are duplicate entries? */
+				/* we only check the first row - razvanc */
+				values = ROW_VALUES(RES_ROWS(res));
+				if (!VAL_NULL(values +1)) {
+					if (VAL_TYPE(values + 1) == DB_STR) {
+						val.rs = VAL_STR(values + 1);
+					} else {
+						val.rs.s = (char *)VAL_STRING(values + 1);
+						val.rs.len = strlen(val.rs.s);
+					}
+					val.flags = PV_VAL_STR;
+					if (pv_set_value(msg, pv, 0, &val) != 0)
+						LM_ERR("Cannot set attributes value\n");
+				}
+			}
 			domain_dbf.free_result(db_handle, res);
 			return 1;
 		}
 	} else {
-		return hash_table_lookup (_host);
+		return hash_table_lookup (msg, _host, pv);
 	}
-			
+
 }
+
+/*
+ * Check if domain is local
+ */
+int is_domain_local(str* _host)
+{
+	return is_domain_local_pvar(NULL, _host, NULL);
+}
+
 
 /*
  * Check if host in From uri is local
@@ -154,7 +183,7 @@ int is_from_local(struct sip_msg* _msg, char* _s1, char* _s2)
 		return -2;
 	}
 
-	return is_domain_local(&(puri->host));
+	return is_domain_local_pvar(_msg, &(puri->host), _s1);
 
 }
 
@@ -167,7 +196,7 @@ int is_uri_host_local(struct sip_msg* _msg, char* _s1, char* _s2)
 		LM_ERR("Error while parsing R-URI\n");
 		return -1;
 	}
-	return is_domain_local(&(_msg->parsed_uri.host));
+	return is_domain_local_pvar(_msg, &(_msg->parsed_uri.host), _s1);
 }
 
 
@@ -181,13 +210,13 @@ int w_is_domain_local(struct sip_msg* _msg, char* _sp, char* _s2)
 
     sp = (pv_spec_t *)_sp;
 
-    if (sp && (pv_get_spec_value(_msg, sp, &pv_val) == 0)) {
+	if (sp && (pv_get_spec_value(_msg, sp, &pv_val) == 0)) {
 	if (pv_val.flags & PV_VAL_STR) {
 	    if (pv_val.rs.len == 0 || pv_val.rs.s == NULL) {
 		LM_DBG("Missing domain name\n");
 		return -1;
 	    }
-	    return is_domain_local(&(pv_val.rs));
+	    return is_domain_local_pvar(_msg, &(pv_val.rs), _s2);
 	} else {
 	   LM_DBG("Pseudo variable value is not string\n");
 	   return -1;
@@ -205,8 +234,7 @@ int w_is_domain_local(struct sip_msg* _msg, char* _sp, char* _s2)
  */
 int reload_domain_table ( void )
 {
-	db_val_t vals[1];
-	db_key_t cols[1];
+	db_key_t cols[2];
 	db_res_t* res = NULL;
 	db_row_t* row;
 	db_val_t* val;
@@ -214,17 +242,17 @@ int reload_domain_table ( void )
 	struct domain_list **new_hash_table;
 	int i;
 
+	str domain, attrs;
+
 	cols[0] = &domain_col;
+	cols[1] = &domain_attrs_col;
 
 	if (domain_dbf.use_table(db_handle, &domain_table) < 0) {
 		LM_ERR("Error while trying to use domain table\n");
 		return -3;
 	}
 
-	VAL_TYPE(vals) = DB_STR;
-	VAL_NULL(vals) = 0;
-
-	if (domain_dbf.query(db_handle, NULL, 0, NULL, cols, 0, 1, 0, &res) < 0) {
+	if (domain_dbf.query(db_handle, NULL, 0, NULL, cols, 0, 2, 0, &res) < 0) {
 		LM_ERR("Error while querying database\n");
 		return -3;
 	}
@@ -241,20 +269,37 @@ int reload_domain_table ( void )
 	row = RES_ROWS(res);
 
 	LM_DBG("Number of rows in domain table: %d\n", RES_ROW_N(res));
-		
+
 	for (i = 0; i < RES_ROW_N(res); i++) {
 		val = ROW_VALUES(row + i);
-		if ((ROW_N(row) == 1) && (VAL_TYPE(val) == DB_STRING)) {
-			
-			LM_DBG("Value: %s inserted into domain hash table\n",VAL_STRING(val));
-
-			if (hash_table_install(new_hash_table,(char*)VAL_STRING(val))==-1){
-				LM_ERR("Hash table problem\n");
-				domain_dbf.free_result(db_handle, res);
-				return -3;
-			}
+		if (VAL_TYPE(val) == DB_STRING) {
+			domain.s = (char *)VAL_STRING(val);
+			domain.len = strlen(domain.s);
+		} else if (VAL_TYPE(val) == DB_STR) {
+			domain = VAL_STR(val);
 		} else {
-			LM_ERR("Database problem\n");
+			LM_ERR("Database problem on domain column\n");
+			domain_dbf.free_result(db_handle, res);
+			return -3;
+		}
+		if (VAL_NULL(val + 1)) {
+			/* add a marker to determine whether the attributes exist or not */
+			attrs.len = 0;
+			attrs.s = NULL;
+		} else if (VAL_TYPE(val + 1) == DB_STRING) {
+			attrs.s = (char *)VAL_STRING(val + 1);
+			attrs.len = strlen(attrs.s);
+		} else if (VAL_TYPE(val + 1) == DB_STR) {
+			attrs = VAL_STR(val + 1);
+		} else {
+			LM_ERR("Database problem on attrs column\n");
+			domain_dbf.free_result(db_handle, res);
+			return -3;
+		}
+		LM_DBG("Value: %s inserted into domain hash table\n",VAL_STRING(val));
+
+		if (hash_table_install(new_hash_table, &domain, &attrs)==-1){
+			LM_ERR("Hash table problem\n");
 			domain_dbf.free_result(db_handle, res);
 			return -3;
 		}
@@ -262,7 +307,7 @@ int reload_domain_table ( void )
 	domain_dbf.free_result(db_handle, res);
 
 	*hash_table = new_hash_table;
-	
+
 	return 1;
 }
 

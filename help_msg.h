@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of OpenSIPS, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -34,7 +32,7 @@
  *
  * This page tries to give some starting points for developers that want to
  * understand the server structure and create their own extensions or modules.
- * 
+ *
  * \section db_sec Database interface
  * The server uses a own database interface to hide the differences of the
  * supported db engines. Every module that implementst this API can use all
@@ -83,13 +81,10 @@ Options:\n\
     -d           Debugging mode (multiple -d increase the level)\n\
     -D           Do not fork into daemon mode\n\
     -F           Daemon mode, but leave main process foreground\n\
-    -E           Log to stderr\n"
-#ifdef USE_TCP
-"    -T           Disable tcp\n\
+    -E           Log to stderr\n\
     -N processes Number of tcp child processes (default: equal to `-n`)\n\
-    -W method    poll method\n"
-#endif
-"    -V           Version number\n\
+    -W method    poll method\n\
+    -V           Version number\n\
     -h           This help message\n\
     -b nr        Maximum receive buffer size which will not be exceeded by\n\
                   auto-probing procedure even if  OS allows\n\
@@ -101,9 +96,6 @@ Options:\n\
     -g gid       Change gid \n\
     -P file      Create a pid file\n\
     -G file      Create a pgid file\n"
-#ifdef USE_SCTP
-"    -S         Disable sctp\n"
-#endif
 ;
 
 #endif

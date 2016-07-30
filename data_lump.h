@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * adding/removing headers or any other data chunk from a message
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,16 +15,16 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
  *  2003-01-29  s/int/enum ... more convenient for gdb (jiri)
  *  2003-03-31  added subst lumps -- they expand in ip addr, port a.s.o (andrei)
  *  2003-04-01  added opt (condition) lumps (andrei)
- *  2003-04-02  added more subst lumps: SUBST_{SND,RCV}_ALL  
+ *  2003-04-02  added more subst lumps: SUBST_{SND,RCV}_ALL
  *              => ip:port;transport=proto (andrei)
  *
  */
@@ -58,11 +56,19 @@ extern int init_lump_flags;
 	}while(0)
 
 
-/*! \brief adds a header to the end */
+/*! \brief adds a header to the end
+ * WARNING: currently broken! 
+ *   - lumps_len() needs to properly handle LUMP_ADD along the main chain of
+ *     lumps before we can use this
+ */
 struct lump* append_new_lump(struct lump** list, char* new_hdr,
 		unsigned int len, enum _hdr_types_t type);
 
-/*! \brief inserts a header to the beginning */
+/*! \brief inserts a header to the beginning
+ * WARNING: currently broken! 
+ *   - lumps_len() needs to properly handle LUMP_ADD along the main chain of
+ *     lumps before we can use this
+ */
 struct lump* insert_new_lump(struct lump** list, char* new_hdr,
 		unsigned int len, enum _hdr_types_t type);
 /*! \brief inserts a header to the beginning - after */
@@ -96,14 +102,11 @@ struct lump* del_lump(struct sip_msg* msg, unsigned int offset,
 	unsigned int len, enum _hdr_types_t type);
 /*! \brief set an anchor */
 struct lump* anchor_lump(struct sip_msg* msg, unsigned int offset,
-	unsigned int len, enum _hdr_types_t type);
+	enum _hdr_types_t type);
 
 
-
-/*! \brief duplicates a lump list shallowly in pkg-mem */
+/*! \brief duplicates a lump list in pkg-mem */
 struct lump* dup_lump_list( struct lump *l );
-/*! \brief frees a shallowly duplicated lump list */
-void free_duped_lump_list(struct lump* l);
 
 
 /*! \brief remove all flagged lumps from the list */

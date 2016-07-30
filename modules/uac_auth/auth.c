@@ -1,7 +1,6 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011 VoIP Embedded Inc.
+ * Copyright (C) 2013 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -42,8 +41,18 @@
 #include "uac_auth.h"
 
 
+extern int            realm_avp_name;
+extern unsigned short realm_avp_type;
+extern int            user_avp_name;
+extern unsigned short user_avp_type;
+extern int            pwd_avp_name;
+extern unsigned short pwd_avp_type;
+
+
+
 static str nc = {"00000001", 8};
 static str cnonce = {"o", 1};
+static str auth_hdr = {NULL, 0};
 
 static struct uac_credential *crd_list = NULL;
 
@@ -61,14 +70,15 @@ static struct uac_credential *crd_list = NULL;
 
 int has_credentials(void) {return (crd_list)?1:0;}
 
+
 void free_credential(struct uac_credential *crd)
 {
 	if (crd) {
 		if (crd->realm.s) pkg_free(crd->realm.s);
 		if (crd->user.s) pkg_free(crd->user.s);
-                if (crd->passwd.s) pkg_free(crd->passwd.s);
-                pkg_free(crd);
-        }
+			if (crd->passwd.s) pkg_free(crd->passwd.s);
+			pkg_free(crd);
+	}
 }
 
 
@@ -178,10 +188,46 @@ void destroy_credentials(void)
 }
 
 
+static inline struct uac_credential *get_avp_credential(str *realm)
+{
+	static struct uac_credential crd;
+	struct usr_avp *avp;
+	int_str val;
+
+	avp = search_first_avp( realm_avp_type, realm_avp_name, &val, 0);
+	if ( avp==NULL || (avp->flags&AVP_VAL_STR)==0 || val.s.len<=0 )
+		return 0;
+
+	crd.realm = val.s;
+	/* is it the domain we are looking for? */
+	if (realm->len!=crd.realm.len ||
+	strncmp( realm->s, crd.realm.s, realm->len)!=0 )
+		return 0;
+
+	/* get username and password */
+	avp = search_first_avp( user_avp_type, user_avp_name, &val, 0);
+	if ( avp==NULL || (avp->flags&AVP_VAL_STR)==0 || val.s.len<=0 )
+		return 0;
+	crd.user = val.s;
+
+	avp = search_first_avp( pwd_avp_type, pwd_avp_name, &val, 0);
+	if ( avp==NULL || (avp->flags&AVP_VAL_STR)==0 || val.s.len<=0 )
+		return 0;
+	crd.passwd = val.s;
+
+	return &crd;
+}
+
+
 struct uac_credential *lookup_realm( str *realm)
 {
 	struct uac_credential *crd;
 
+	/* first look into AVP, if set */
+	if ( realm_avp_name && (crd=get_avp_credential(realm))!=NULL )
+		return crd;
+
+	/* search in the static list */
 	for( crd=crd_list ; crd ; crd=crd->next )
 		if (realm->len==crd->realm.len &&
 		strncmp( realm->s, crd->realm.s, realm->len)==0 )
@@ -220,7 +266,7 @@ static inline void cvt_hex(HASH bin, HASHHEX hex)
 
 
 
-/* 
+/*
  * calculate H(A1)
  */
 void uac_calc_HA1( struct uac_credential *crd,
@@ -255,7 +301,7 @@ void uac_calc_HA1( struct uac_credential *crd,
 
 
 
-/* 
+/*
  * calculate H(A2)
  */
 void uac_calc_HA2( str *method, str *uri,
@@ -283,8 +329,8 @@ void uac_calc_HA2( str *method, str *uri,
 
 
 
-/* 
- * calculate request-digest/response-digest as per HTTP Digest spec 
+/*
+ * calculate request-digest/response-digest as per HTTP Digest spec
  */
 void uac_calc_response( HASHHEX ha1, HASHHEX ha2,
 		struct authenticate_body *auth,
@@ -411,11 +457,10 @@ void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
 	}while(0)
 
 
-str* build_authorization_hdr(int code, str *uri, 
+str* build_authorization_hdr(int code, str *uri,
 		struct uac_credential *crd, struct authenticate_body *auth,
 		struct authenticate_nc_cnonce *auth_nc_cnonce, char *response)
 {
-	static str hdr;
 	char *p;
 	int len;
 	int response_len;
@@ -438,14 +483,17 @@ str* build_authorization_hdr(int code, str *uri,
 				NC_FIELD_LEN + auth_nc_cnonce->nc->len + FIELD_SEPARATOR_UQ_LEN +
 				CNONCE_FIELD_LEN + auth_nc_cnonce->cnonce->len + FIELD_SEPARATOR_LEN;
 
-	hdr.s = (char*)pkg_malloc( len + 1);
-	if (hdr.s==0)
+	if (auth_hdr.s || auth_hdr.len)
+		LM_WARN("potential memory leak at addr: %p\n", auth_hdr.s);
+
+	auth_hdr.s = (char*)pkg_malloc( len + 1);
+	if (auth_hdr.s==NULL)
 	{
 		LM_ERR("no more pkg mem\n");
 		goto error;
 	}
 
-	p = hdr.s;
+	p = auth_hdr.s;
 	/* header start */
 	if (code==401)
 	{
@@ -462,7 +510,7 @@ str* build_authorization_hdr(int code, str *uri,
 		FIELD_SEPARATOR_LEN+REALM_FIELD_LEN);
 	add_string( p, crd->realm.s, crd->realm.len);
 	/* NONCE */
-	add_string( p, FIELD_SEPARATOR_S NONCE_FIELD_S, 
+	add_string( p, FIELD_SEPARATOR_S NONCE_FIELD_S,
 		FIELD_SEPARATOR_LEN+NONCE_FIELD_LEN);
 	add_string( p, auth->nonce.s, auth->nonce.len);
 	/* URI */
@@ -472,19 +520,19 @@ str* build_authorization_hdr(int code, str *uri,
 	/* OPAQUE */
 	if (auth->opaque.len )
 	{
-		add_string( p, FIELD_SEPARATOR_S OPAQUE_FIELD_S, 
+		add_string( p, FIELD_SEPARATOR_S OPAQUE_FIELD_S,
 			FIELD_SEPARATOR_LEN+OPAQUE_FIELD_LEN);
 		add_string( p, auth->opaque.s, auth->opaque.len);
 	}
 	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT))
 	{
-		add_string( p, FIELD_SEPARATOR_S QOP_FIELD_S, 
+		add_string( p, FIELD_SEPARATOR_S QOP_FIELD_S,
 			FIELD_SEPARATOR_LEN+QOP_FIELD_LEN);
 		add_string( p, "auth", 4);
-		add_string( p, FIELD_SEPARATOR_UQ_S NC_FIELD_S, 
+		add_string( p, FIELD_SEPARATOR_UQ_S NC_FIELD_S,
 			FIELD_SEPARATOR_UQ_LEN+NC_FIELD_LEN);
 		add_string( p, auth_nc_cnonce->nc->s, auth_nc_cnonce->nc->len);
-		add_string( p, FIELD_SEPARATOR_UQ_S CNONCE_FIELD_S, 
+		add_string( p, FIELD_SEPARATOR_UQ_S CNONCE_FIELD_S,
 			FIELD_SEPARATOR_UQ_LEN+CNONCE_FIELD_LEN);
 		add_string( p, auth_nc_cnonce->cnonce->s, auth_nc_cnonce->cnonce->len);
 	}
@@ -496,20 +544,20 @@ str* build_authorization_hdr(int code, str *uri,
 	add_string( p, FIELD_SEPARATOR_S ALGORITHM_FIELD_S CRLF,
 		FIELD_SEPARATOR_LEN+ALGORITHM_FIELD_LEN+CRLF_LEN);
 
-	hdr.len = p - hdr.s;
+	auth_hdr.len = p - auth_hdr.s;
 
-	if (hdr.len!=len)
+	if (auth_hdr.len!=len)
 	{
 		LM_CRIT("BUG: bad buffer computation "
-			"(%d<>%d)\n",len,hdr.len);
-		pkg_free( hdr.s );
+			"(%d<>%d)\n",len,auth_hdr.len);
+		pkg_free( auth_hdr.s );
+		auth_hdr.s = NULL; auth_hdr.len = 0;
 		goto error;
 	}
 
-	LM_DBG("hdr is <%.*s>\n",
-		hdr.len,hdr.s);
+	LM_DBG("auth_hdr is <%.*s>\n", auth_hdr.len, auth_hdr.s);
 
-	return &hdr;
+	return &auth_hdr;
 error:
 	return 0;
 }

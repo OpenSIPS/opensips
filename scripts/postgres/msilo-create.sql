@@ -8,9 +8,10 @@ CREATE TABLE silo (
     inc_time INTEGER DEFAULT 0 NOT NULL,
     exp_time INTEGER DEFAULT 0 NOT NULL,
     snd_time INTEGER DEFAULT 0 NOT NULL,
-    ctype VARCHAR(32) DEFAULT 'text/plain' NOT NULL,
-    body BYTEA DEFAULT '' NOT NULL
+    ctype VARCHAR(255) DEFAULT NULL,
+    body BYTEA DEFAULT NULL
 );
 
+ALTER SEQUENCE silo_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX silo_account_idx ON silo (username, domain);
 

@@ -4,7 +4,7 @@
 			<db_table_id>dialog</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>dlg_id</field></col>
+				<col><field>dlg_id</field><link_cmd>update</link_cmd></col>
 				<col><field>callid</field></col>
 				<col><field>from_uri</field></col>
 				<col><field>from_tag</field></col>
@@ -28,6 +28,7 @@
 				<col><field>vars</field></col>
 				<col><field>profiles</field></col>
 				<col><field>script_flags</field></col>
+				<col><field>module_flags</field></col>
 				<col><field>flags</field></col>
 			</query_cols>
 		</cmd>
@@ -59,6 +60,7 @@
 				<col><field>vars</field></col>
 				<col><field>profiles</field></col>
 				<col><field>script_flags</field></col>
+				<col><field>module_flags</field></col>
 				<col><field>flags</field></col>
 			</query_cols>
 		</cmd>
@@ -92,6 +94,7 @@
 				<col><field>vars</field></col>
 				<col><field>profiles</field></col>
 				<col><field>script_flags</field></col>
+				<col><field>module_flags</field></col>
 				<col><field>flags</field></col>
 			</query_cols>
 		</cmd>

@@ -9,7 +9,8 @@
 ## your SIP domain
 # SIP_DOMAIN=opensips.org
 
-## database type: MYSQL, PGSQL, ORACLE, DB_BERKELEY, or DBTEXT, by default none is loaded
+## database type: MYSQL, PGSQL, ORACLE, DB_BERKELEY, DBTEXT, or SQLITE
+## by default none is loaded
 # If you want to setup a database with opensipsdbctl, you must at least specify
 # this parameter.
 # DBENGINE=MYSQL
@@ -23,7 +24,7 @@
 ## database name (for ORACLE this is TNS name)
 # DBNAME=opensips
 
-## database path used by dbtext or db_berkeley
+## database path used by dbtext, db_berkeley, or sqlite
 # DB_PATH="/usr/local/etc/opensips/dbtext"
 
 ## database read/write user
@@ -60,11 +61,12 @@
 
 # opensips standard modules
 # STANDARD_MODULES="standard acc domain group permissions registrar usrloc msilo
-#                   alias_db uri_db speeddial avpops auth_db pdt dialog dispatcher
+#                   alias_db uri_db speeddial avpops auth_db dialog dispatcher
 #                   dialplan drouting nathelper load_balancer"
 
 # opensips extra modules
-# EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist"
+# EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist 
+#                b2b cachedb_sql registrant call_center fraud_detection"
 
 
 ## type of aliases used: DB - database aliases; UL - usrloc aliases

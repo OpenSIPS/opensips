@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  * USA
  *
  * History:
@@ -31,7 +29,7 @@
  *
  * The file implements the openserSIPStatusCodesTable.  For a full description
  * of the table, please see the OPENSER-SIP-COMMON-MIB.
- * 
+ *
  * This file is much larger and more complicated than the files for other
  * tables.  This is because the table is settable, bringing a lot of SNMP
  * overhead.  Most of the file consists of the original auto-generated
@@ -44,17 +42,17 @@
  *
  *    - The row structure has been modified from its default to store the
  *      number of messages that have been recieved and sent with a certain
- *      status code, at the time this row was created.  This function 
- *      populates that data. 
+ *      status code, at the time this row was created.  This function
+ *      populates that data.
  *
- * 2) openserSIPStatusCodesTable_extract_index() 
+ * 2) openserSIPStatusCodesTable_extract_index()
  *
  *    - Modified to fail if the index is invalid.  The index is invalid if it
  *      does not match up with the global userLookupCounter.
  *
  * 3) openserSIPStatusCodesTable_can_[activate|deactivate|delete]()
- *   
- *    - Simplified to always allow activation/deactivation/deletion. 
+ *
+ *    - Simplified to always allow activation/deactivation/deletion.
  *
  * 4) openserSIPStatusCodesTable_set_reserve1()
  *
@@ -67,12 +65,12 @@
  * 5) openserSIPStatusCodesTable_get_value()
  *
  *    - Instead of returning a variable binding to either
- *      openserSIPStatusCodeIns or openserSIPStatusCodeOuts, the function 
- *      returns a variable binding equal to the current value as per the 
+ *      openserSIPStatusCodeIns or openserSIPStatusCodeOuts, the function
+ *      returns a variable binding equal to the current value as per the
  *      statistics framework, minus either openserSIPStatusCodeIns or
  *      openserSIPStatusCodeOuts
  *
- * You can safely ignore the other functions.  
+ * You can safely ignore the other functions.
  *
  */
 
@@ -88,17 +86,17 @@
 static netsnmp_handler_registration *my_handler = NULL;
 static netsnmp_table_array_callbacks cb;
 
-oid openserSIPStatusCodesTable_oid[] = { 
+oid openserSIPStatusCodesTable_oid[] = {
 	openserSIPStatusCodesTable_TABLE_OID };
 
-size_t openserSIPStatusCodesTable_oid_len = 
+size_t openserSIPStatusCodesTable_oid_len =
 OID_LENGTH(openserSIPStatusCodesTable_oid);
 
 
-/* 
+/*
  * Initializes the openserSIPStatusCodesTable module.  This step is easier
  * than in the other tables because there is no table population.  All table
- * population takes place during run time. 
+ * population takes place during run time.
  */
 void init_openserSIPStatusCodesTable(void)
 {
@@ -113,23 +111,23 @@ static int openserSIPStatusCodesTable_row_copy(
 {
 	if(!dst||!src)
 		return 1;
-		
-	
+
+
 	/* copy index, if provided */
 	if(dst->index.oids)
 	{
 		free(dst->index.oids);
 	}
 
-	if(snmp_clone_mem( (void*)&dst->index.oids, src->index.oids, 
-				src->index.len * sizeof(oid) )) 
+	if(snmp_clone_mem( (void*)&dst->index.oids, src->index.oids,
+				src->index.len * sizeof(oid) ))
 	{
 		dst->index.oids = NULL;
 		return 1;
 	}
 
 	dst->index.len = src->index.len;
-	
+
 
 	/* copy components into the context structure */
 	dst->openserSIPStatusCodeMethod    = src->openserSIPStatusCodeMethod;
@@ -144,16 +142,16 @@ static int openserSIPStatusCodesTable_row_copy(
 /*
  * the *_extract_index routine (Mostly auto-generated)
  *
- * This routine is called when a set request is received for an index that 
+ * This routine is called when a set request is received for an index that
  * was not found in the table container. Here, we parse the oid in the
- * individual index components and copy those indexes to the context. Then 
+ * individual index components and copy those indexes to the context. Then
  * we make sure the indexes for the new row are valid.
  *
  * It has been modified from its original form in that the indexes aren't
- * returned if they are invalid.  An index is invalid if it is not between 
+ * returned if they are invalid.  An index is invalid if it is not between
  * 100 and 699 (Inclusive).
  */
-int openserSIPStatusCodesTable_extract_index( 
+int openserSIPStatusCodesTable_extract_index(
 		openserSIPStatusCodesTable_context * ctx, netsnmp_index * hdr)
 {
 
@@ -172,11 +170,11 @@ int openserSIPStatusCodesTable_extract_index(
 	 */
 	if(hdr) {
 		netsnmp_assert(ctx->index.oids == NULL);
-		if((hdr->len > MAX_OID_LEN) || 
-				snmp_clone_mem( 
+		if((hdr->len > MAX_OID_LEN) ||
+				snmp_clone_mem(
 					(void*)&ctx->index.oids,
 					hdr->oids,
-					hdr->len * sizeof(oid))) 
+					hdr->len * sizeof(oid)))
 		{
 			return -1;
 		}
@@ -186,33 +184,33 @@ int openserSIPStatusCodesTable_extract_index(
 
  	/* Initialize the two variables responsible for holding our two indices.
 	 */
-	memset(&var_openserSIPStatusCodeMethod, 0x00, 
+	memset(&var_openserSIPStatusCodeMethod, 0x00,
 			 sizeof(var_openserSIPStatusCodeMethod));
 
-	memset( &var_openserSIPStatusCodeValue, 0x00, 
+	memset( &var_openserSIPStatusCodeValue, 0x00,
 			sizeof(var_openserSIPStatusCodeValue) );
 
-	var_openserSIPStatusCodeMethod.type = ASN_UNSIGNED; 
+	var_openserSIPStatusCodeMethod.type = ASN_UNSIGNED;
 	var_openserSIPStatusCodeValue.type  = ASN_UNSIGNED;
 
-	var_openserSIPStatusCodeMethod.next_variable = 
+	var_openserSIPStatusCodeMethod.next_variable =
 		&var_openserSIPStatusCodeValue;
 
 	var_openserSIPStatusCodeValue.next_variable = NULL;
 
 	/* parse the oid into the individual index components */
-	err = parse_oid_indexes( hdr->oids, hdr->len, 
+	err = parse_oid_indexes( hdr->oids, hdr->len,
 			&var_openserSIPStatusCodeMethod );
 
 	if (err == SNMP_ERR_NOERROR) {
 
 		/* copy index components into the context structure */
-		ctx->openserSIPStatusCodeMethod = 
+		ctx->openserSIPStatusCodeMethod =
 			*var_openserSIPStatusCodeMethod.val.integer;
-		ctx->openserSIPStatusCodeValue  = 
+		ctx->openserSIPStatusCodeValue  =
 			*var_openserSIPStatusCodeValue.val.integer;
-   
-   
+
+
 		if (*var_openserSIPStatusCodeMethod.val.integer < 1)
 		{
 			err = -1;
@@ -225,7 +223,7 @@ int openserSIPStatusCodesTable_extract_index(
 
 	}
 
-	
+
 	/* parsing may have allocated memory. free it. */
 	snmp_reset_var_buffers( &var_openserSIPStatusCodeMethod );
 
@@ -234,10 +232,10 @@ int openserSIPStatusCodesTable_extract_index(
 
 
 /*
- * This is an auto-generated function.  In general the *_can_activate routine 
+ * This is an auto-generated function.  In general the *_can_activate routine
  * is called when a row is changed to determine if all the values set are
  * consistent with the row's rules for a row status of ACTIVE.  If not, then 0
- * can be returned to prevent the row status from becomming final. 
+ * can be returned to prevent the row status from becomming final.
  *
  * For our purposes, we have no need for this check, so we always return 1.
  */
@@ -250,7 +248,7 @@ int openserSIPStatusCodesTable_can_activate(
 }
 
 
-/* 
+/*
  * This is an auto-generated function.  In general the *_can_deactivate routine
  * is called when a row that is currently ACTIVE is set to a state other than
  * ACTIVE. If there are conditions in which a row should not be allowed to
@@ -273,10 +271,10 @@ int openserSIPStatusCodesTable_can_deactivate(
  * This is an auto-generated function.  In general the *_can_delete routine is
  * called to determine if a row can be deleted.  This usually involved checking
  * if it can be deactivated, and if it can be, then checking for other
- * conditions.  
+ * conditions.
  *
  * Since this table ha no reason why row deletion shouldn't be allowed, we
- * always return 1, unless we can't deactivate.  
+ * always return 1, unless we can't deactivate.
  */
 int openserSIPStatusCodesTable_can_delete(
 		openserSIPStatusCodesTable_context *undo_ctx,
@@ -285,17 +283,17 @@ int openserSIPStatusCodesTable_can_delete(
 {
 	if(openserSIPStatusCodesTable_can_deactivate(undo_ctx,row_ctx,rg) != 1)
 		return 0;
-	
+
 	return 1;
 }
 
 /*
- * (Mostly auto-generated function) 
+ * (Mostly auto-generated function)
  *
  * The *_create_row routine is called by the table handler to create a new row
  * for a given index. This is the first stage of the row creation process.  The
  * *_set_reserve_* functions can be used to prevent the row from being inserted
- * into the table even if the row passes any preliminary checks set here. 
+ * into the table even if the row passes any preliminary checks set here.
  *
  * Returns a newly allocated openserSIPRegUserLookupTable_context structure (a
  * row in the table) if the indexes are legal.  NULL will be returned otherwise.
@@ -303,10 +301,10 @@ int openserSIPStatusCodesTable_can_delete(
  * The function has been modified from its original form, in that it will store
  * the number of messages 'in' to the system, and the number of messages 'out'
  * of the system, that had a status code matching this rows status code, at the
- * time this row was created.  
+ * time this row was created.
  *
  * This value will be used in the future to calculate the delta between now and
- * the time this row has been read.  
+ * the time this row has been read.
  * */
 openserSIPStatusCodesTable_context *
 openserSIPStatusCodesTable_create_row( netsnmp_index* hdr)
@@ -318,7 +316,7 @@ openserSIPStatusCodesTable_create_row( netsnmp_index* hdr)
 		SNMP_MALLOC_TYPEDEF(openserSIPStatusCodesTable_context);
 	if(!ctx)
 		return NULL;
-		
+
 	/* The *_extract_index funtion already validates the indices, so we
 	 * don't need to do any further evaluations here.  */
 	if(openserSIPStatusCodesTable_extract_index( ctx, hdr )) {
@@ -346,12 +344,12 @@ openserSIPStatusCodesTable_create_row( netsnmp_index* hdr)
 	in_status_code  = get_stat_var_from_num_code(codeIndex, 0);
 	out_status_code = get_stat_var_from_num_code(codeIndex, 1);
 
-	if (in_status_code != NULL) 
+	if (in_status_code != NULL)
 	{
 		ctx->startingInStatusCodeValue  = *(long *)in_status_code->u.val;
 	}
 
-	if (out_status_code != NULL) 
+	if (out_status_code != NULL)
 	{
 		ctx->startingOutStatusCodeValue = *(long *)out_status_code->u.val;
 	}
@@ -360,11 +358,11 @@ openserSIPStatusCodesTable_create_row( netsnmp_index* hdr)
 }
 
 
-/* 
+/*
  * Auto-generated function.  The *_duplicate row routine
  */
 openserSIPStatusCodesTable_context *
-openserSIPStatusCodesTable_duplicate_row( 
+openserSIPStatusCodesTable_duplicate_row(
 		openserSIPStatusCodesTable_context * row_ctx)
 {
 	openserSIPStatusCodesTable_context * dup;
@@ -375,7 +373,7 @@ openserSIPStatusCodesTable_duplicate_row(
 	dup = SNMP_MALLOC_TYPEDEF(openserSIPStatusCodesTable_context);
 	if(!dup)
 		return NULL;
-		
+
 	if(openserSIPStatusCodesTable_row_copy(dup,row_ctx)) {
 		free(dup);
 		dup = NULL;
@@ -385,14 +383,14 @@ openserSIPStatusCodesTable_duplicate_row(
 }
 
 
-/* 
+/*
  * The *_delete_row method is auto-generated, and is called to delete a row.
  *
  * This will not be called if earlier checks said that this row can't be
  * deleted.  However, in our implementation there is never a reason why this
- * function can't be called. 
+ * function can't be called.
  */
-netsnmp_index * openserSIPStatusCodesTable_delete_row( 
+netsnmp_index * openserSIPStatusCodesTable_delete_row(
 		openserSIPStatusCodesTable_context * ctx )
 {
 	if(ctx->index.oids)
@@ -408,20 +406,20 @@ netsnmp_index * openserSIPStatusCodesTable_delete_row(
  * Large parts of this function have been auto-generated.  The functions purpose
  * is to check to make sure all SNMP set values for the given row, have been
  * valid.  If not, then the process is supposed to be aborted.  Otherwise, we
- * pass on to the *_reserve2 function.  
+ * pass on to the *_reserve2 function.
  *
  * For our purposes, our only check is to make sure that either of the following
- * conditions are true: 
+ * conditions are true:
  *
  * 1) If this row already exists, then the SET request is setting the rowStatus
  *    column to 'destroy'.
  *
- * 2) If this row does not already exist, then the SET request is setting the 
- *    rowStatus to 'createAndGo'. 
+ * 2) If this row does not already exist, then the SET request is setting the
+ *    rowStatus to 'createAndGo'.
  *
  * Since the MIB specified there are to be no other modifications to the row,
  * any other condition is considered illegal, and will result in an SNMP error
- * being returned. 
+ * being returned.
  */
 void openserSIPStatusCodesTable_set_reserve1( netsnmp_request_group *rg )
 {
@@ -440,33 +438,33 @@ void openserSIPStatusCodesTable_set_reserve1( netsnmp_request_group *rg )
 		var = current->ri->requestvb;
 		rc = SNMP_ERR_NOERROR;
 
-		switch(current->tri->colnum) 
+		switch(current->tri->colnum)
 		{
 			case COLUMN_OPENSERSIPSTATUSCODEROWSTATUS:
 
 				/** RowStatus = ASN_INTEGER */
-				rc = netsnmp_check_vb_type_and_size(var, 
+				rc = netsnmp_check_vb_type_and_size(var,
 						ASN_INTEGER,
 						sizeof(
 						row_ctx->openserSIPStatusCodeRowStatus));
-			
+
 				/* Want to make sure that if it already exists that it
 				 * is setting it to 'destroy', or if it doesn't exist,
 				 * that it is setting it to 'createAndGo' */
-				if (row_ctx->openserSIPStatusCodeRowStatus == 0 && 
-				    *var->val.integer != TC_ROWSTATUS_CREATEANDGO) 
-				{
-					rc = SNMP_ERR_BADVALUE;
-				}			
-
-				else if (row_ctx->openserSIPStatusCodeRowStatus ==
-						TC_ROWSTATUS_ACTIVE && 
-						*var->val.integer != 
-						TC_ROWSTATUS_DESTROY) 
+				if (row_ctx->openserSIPStatusCodeRowStatus == 0 &&
+				    *var->val.integer != TC_ROWSTATUS_CREATEANDGO)
 				{
 					rc = SNMP_ERR_BADVALUE;
 				}
-		
+
+				else if (row_ctx->openserSIPStatusCodeRowStatus ==
+						TC_ROWSTATUS_ACTIVE &&
+						*var->val.integer !=
+						TC_ROWSTATUS_DESTROY)
+				{
+					rc = SNMP_ERR_BADVALUE;
+				}
+
 
 				break;
 
@@ -478,7 +476,7 @@ void openserSIPStatusCodesTable_set_reserve1( netsnmp_request_group *rg )
 
 		if (rc)
 		{
-		   netsnmp_set_mode_request_error(MODE_SET_BEGIN, 
+		   netsnmp_set_mode_request_error(MODE_SET_BEGIN,
 				   current->ri, rc );
 		}
 
@@ -494,11 +492,10 @@ void openserSIPStatusCodesTable_set_reserve1( netsnmp_request_group *rg )
  */
 void openserSIPStatusCodesTable_set_reserve2( netsnmp_request_group *rg )
 {
-	openserSIPStatusCodesTable_context *undo_ctx = 
+	openserSIPStatusCodesTable_context *undo_ctx =
 		(openserSIPStatusCodesTable_context *)rg->undo_info;
 
 	netsnmp_request_group_item *current;
-	netsnmp_variable_list      *var;
 
 	int rc;
 
@@ -506,16 +503,15 @@ void openserSIPStatusCodesTable_set_reserve2( netsnmp_request_group *rg )
 
 	for( current = rg->list; current; current = current->next ) {
 
-		var = current->ri->requestvb;
 		rc = SNMP_ERR_NOERROR;
 
-		switch(current->tri->colnum) 
+		switch(current->tri->colnum)
 		{
 
 			case COLUMN_OPENSERSIPSTATUSCODEROWSTATUS:
 				/** RowStatus = ASN_INTEGER */
 				rc = netsnmp_check_vb_rowstatus(current->ri->requestvb,
-					undo_ctx ? 
+					undo_ctx ?
 					undo_ctx->openserSIPStatusCodeRowStatus:0);
 
 				rg->rg_void = current->ri;
@@ -527,7 +523,7 @@ void openserSIPStatusCodesTable_set_reserve2( netsnmp_request_group *rg )
 
 		if (rc)
 		{
-			netsnmp_set_mode_request_error(MODE_SET_BEGIN, 
+			netsnmp_set_mode_request_error(MODE_SET_BEGIN,
 					current->ri, rc);
 		}
 	}
@@ -537,19 +533,19 @@ void openserSIPStatusCodesTable_set_reserve2( netsnmp_request_group *rg )
 /*
  * This function is called only when all the *_reserve[1|2] functions were
  * succeful.  Its purpose is to make any changes to the row before it is
- * inserted into the table.  
+ * inserted into the table.
  *
  * In our case, we don't require any changes.  So we leave the original
- * auto-generated code as is.   
+ * auto-generated code as is.
  */
 void openserSIPStatusCodesTable_set_action( netsnmp_request_group *rg )
 {
 	netsnmp_variable_list *var;
 
-	openserSIPStatusCodesTable_context *row_ctx = 
+	openserSIPStatusCodesTable_context *row_ctx =
 		(openserSIPStatusCodesTable_context *)rg->existing_row;
 
-	openserSIPStatusCodesTable_context *undo_ctx = 
+	openserSIPStatusCodesTable_context *undo_ctx =
 		(openserSIPStatusCodesTable_context *)rg->undo_info;
 
 	netsnmp_request_group_item *current;
@@ -558,16 +554,16 @@ void openserSIPStatusCodesTable_set_action( netsnmp_request_group *rg )
 
 	/* Depending on what the snmpset was, set the row to be created or
 	 * deleted.   */
-	for( current = rg->list; current; current = current->next ) 
+	for( current = rg->list; current; current = current->next )
 	{
 		var = current->ri->requestvb;
 
-		switch(current->tri->colnum) 
+		switch(current->tri->colnum)
 		{
 			case COLUMN_OPENSERSIPSTATUSCODEROWSTATUS:
-			
+
 				/** RowStatus = ASN_INTEGER */
-				row_ctx->openserSIPStatusCodeRowStatus = 
+				row_ctx->openserSIPStatusCodeRowStatus =
 					*var->val.integer;
 
 				if (*var->val.integer == TC_ROWSTATUS_CREATEANDGO)
@@ -598,7 +594,7 @@ void openserSIPStatusCodesTable_set_action( netsnmp_request_group *rg )
 	 */
 #ifndef openserSIPStatusCodesTable_CAN_MODIFY_ACTIVE_ROW
 	if( undo_ctx && RS_IS_ACTIVE(undo_ctx->openserSIPStatusCodeRowStatus) &&
-		row_ctx && RS_IS_ACTIVE(row_ctx->openserSIPStatusCodeRowStatus)) 
+		row_ctx && RS_IS_ACTIVE(row_ctx->openserSIPStatusCodeRowStatus))
 	{
 			row_err = 1;
 	}
@@ -607,10 +603,10 @@ void openserSIPStatusCodesTable_set_action( netsnmp_request_group *rg )
 	/*
 	 * check activation/deactivation
 	 */
-	row_err = netsnmp_table_array_check_row_status(&cb, rg, 
-			row_ctx ? 
+	row_err = netsnmp_table_array_check_row_status(&cb, rg,
+			row_ctx ?
 			&row_ctx->openserSIPStatusCodeRowStatus : NULL,
-			undo_ctx ? 
+			undo_ctx ?
 			&undo_ctx->openserSIPStatusCodeRowStatus : NULL);
 	if(row_err) {
 		netsnmp_set_mode_request_error(MODE_SET_BEGIN,
@@ -635,7 +631,7 @@ void openserSIPStatusCodesTable_set_commit( netsnmp_request_group *rg )
  * This function is called if the *_reserve[1|2] calls failed.  Its supposed to
  * free up any resources allocated earlier.  However, we already take care of
  * all these resources in earlier functions.  So for our purposes, the function
- * body is empty. 
+ * body is empty.
  */
 void openserSIPStatusCodesTable_set_free( netsnmp_request_group *rg )
 {
@@ -643,10 +639,10 @@ void openserSIPStatusCodesTable_set_free( netsnmp_request_group *rg )
 }
 
 
-/* 
+/*
  * This function is called if an ACTION phase fails, to do extra clean-up work.
  * We don't have anything complicated enough to warrant putting anything in this
- * function.  Therefore, its just left with an empty function body. 
+ * function.  Therefore, its just left with an empty function body.
  */
 void openserSIPStatusCodesTable_set_undo( netsnmp_request_group *rg )
 {
@@ -657,7 +653,7 @@ void openserSIPStatusCodesTable_set_undo( netsnmp_request_group *rg )
 
 /*
  * Initialize the openserSIPStatusCodesTable table by defining how it is
- * structured. 
+ * structured.
  *
  * This function is mostly auto-generated.
  */
@@ -682,7 +678,7 @@ void initialize_table_openserSIPStatusCodesTable(void)
 			openserSIPStatusCodesTable_oid,
 			openserSIPStatusCodesTable_oid_len,
 			HANDLER_CAN_RWRITE);
-			
+
 	if (!my_handler || !table_info) {
 		snmp_log(LOG_ERR, "malloc failed in initialize_table_openserSIP"
 				"StatusCodesTable_handler\n");
@@ -702,7 +698,7 @@ void initialize_table_openserSIPStatusCodesTable(void)
 	 */
 	cb.get_value = openserSIPStatusCodesTable_get_value;
 
-	cb.container = 
+	cb.container =
 		netsnmp_container_find("openserSIPStatusCodesTable_primary:"
 				"openserSIPStatusCodesTable:"
 				"table_container");
@@ -721,10 +717,10 @@ void initialize_table_openserSIPStatusCodesTable(void)
 	cb.create_row    =
 		(UserRowMethod*)openserSIPStatusCodesTable_create_row;
 
-	cb.duplicate_row = 
+	cb.duplicate_row =
 		(UserRowMethod*)openserSIPStatusCodesTable_duplicate_row;
 
-	cb.delete_row    = 
+	cb.delete_row    =
 		(UserRowMethod*)openserSIPStatusCodesTable_delete_row;
 
 	cb.row_copy      = (Netsnmp_User_Row_Operation *)
@@ -736,38 +732,38 @@ void initialize_table_openserSIPStatusCodesTable(void)
 	cb.can_deactivate = (Netsnmp_User_Row_Action *)
 		openserSIPStatusCodesTable_can_deactivate;
 
-	cb.can_delete     = 
+	cb.can_delete     =
 		(Netsnmp_User_Row_Action *)openserSIPStatusCodesTable_can_delete;
 
 	cb.set_reserve1   = openserSIPStatusCodesTable_set_reserve1;
 	cb.set_reserve2   = openserSIPStatusCodesTable_set_reserve2;
-	
+
 	cb.set_action = openserSIPStatusCodesTable_set_action;
 	cb.set_commit = openserSIPStatusCodesTable_set_commit;
-	
+
 	cb.set_free = openserSIPStatusCodesTable_set_free;
 	cb.set_undo = openserSIPStatusCodesTable_set_undo;
-	
+
 	DEBUGMSGTL(("initialize_table_openserSIPStatusCodesTable",
 				"Registering table openserSIPStatusCodesTable "
 				"as a table array\n"));
-	
+
 	netsnmp_table_container_register(my_handler, table_info, &cb,
 			cb.container, 1);
 }
 
 /*
- * This function is called to handle SNMP GET requests.  
+ * This function is called to handle SNMP GET requests.
  *
  * The row which this function is called with, will store a message code.  The
  * function will retrieve the 'number of messages in' and 'number of messages
  * out' statistic for this particular message code from the statistics
- * framework.  
+ * framework.
  *
  * The function will then subtract from this value the value it was initialized
  * with when the row was first created.  In this sense, the row shows how many
  * ins and how many outs have been received (With respect to the message code)
- * since this row was created. 
+ * since this row was created.
  */
 int openserSIPStatusCodesTable_get_value(
 			netsnmp_request_info *request,
@@ -778,14 +774,14 @@ int openserSIPStatusCodesTable_get_value(
 
 	netsnmp_variable_list *var = request->requestvb;
 
-	openserSIPStatusCodesTable_context *context = 
+	openserSIPStatusCodesTable_context *context =
 		(openserSIPStatusCodesTable_context *)item;
 
 	/* Retrieve the statusCodeIdx so we can calculate deltas between current
 	 * values and previous values. */
 	int statusCodeIdx = context->openserSIPStatusCodeValue;
 
-	switch(table_info->colnum) 
+	switch(table_info->colnum)
 	{
 		case COLUMN_OPENSERSIPSTATUSCODEINS:
 
@@ -793,11 +789,11 @@ int openserSIPStatusCodesTable_get_value(
 
 			the_stat = get_stat_var_from_num_code(statusCodeIdx, 0);
 
-			if (the_stat != NULL)  
+			if (the_stat != NULL)
 			{
 				/* Calculate the Delta */
 				context->openserSIPStatusCodeIns =
-				*(long *)the_stat->u.val - 
+				*(long *)the_stat->u.val -
 				context->startingInStatusCodeValue;
 			}
 
@@ -806,9 +802,9 @@ int openserSIPStatusCodesTable_get_value(
 					&context->openserSIPStatusCodeIns,
 					sizeof(context->openserSIPStatusCodeIns));
 			break;
-	
+
 		case COLUMN_OPENSERSIPSTATUSCODEOUTS:
-			
+
 			context->openserSIPStatusCodeOuts = 0;
 
 			the_stat = get_stat_var_from_num_code(statusCodeIdx, 1);
@@ -817,7 +813,7 @@ int openserSIPStatusCodesTable_get_value(
 			{
 				/* Calculate the Delta */
 				context->openserSIPStatusCodeOuts =
-					*(long *)the_stat->u.val - 
+					*(long *)the_stat->u.val -
 					context->startingOutStatusCodeValue;
 			}
 			snmp_set_var_typed_value(var, ASN_COUNTER,
@@ -825,7 +821,7 @@ int openserSIPStatusCodesTable_get_value(
 					 &context->openserSIPStatusCodeOuts,
 					 sizeof(context->openserSIPStatusCodeOuts) );
 		break;
-	
+
 		case COLUMN_OPENSERSIPSTATUSCODEROWSTATUS:
 			/** RowStatus = ASN_INTEGER */
 			snmp_set_var_typed_value(var, ASN_INTEGER,
@@ -833,7 +829,7 @@ int openserSIPStatusCodesTable_get_value(
 					 &context->openserSIPStatusCodeRowStatus,
 					 sizeof(context->openserSIPStatusCodeRowStatus) );
 		break;
-	
+
 	default: /** We shouldn't get here */
 		snmp_log(LOG_ERR, "unknown column in "
 				 "openserSIPStatusCodesTable_get_value\n");

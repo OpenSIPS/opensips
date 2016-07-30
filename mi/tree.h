@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -26,7 +24,7 @@
  */
 
 /*!
- * \file 
+ * \file
  * \brief MI :: Tree
  * \ingroup mi
  */
@@ -48,7 +46,22 @@ struct mi_handler;
 #define MI_DUP_NAME   		(1<<0)
 #define MI_DUP_VALUE  		(1<<1)
 #define MI_NOT_COMPLETED  	(1<<2)
-#define MI_WRITTEN		(1<<3)
+#define MI_WRITTEN			(1<<3)
+/*
+ * Known issue when building arrays into your modules' MI trees:
+ *  +----------------------------------------------------+
+ *  |        only use MI_IS_ARRAY iff all "name"         |
+ *  |   attributes of each array object are identical,   |
+ *  |             see mi_ps() or mi_which()              |
+ *  +----------------------------------------------------+
+ *
+ * Why?
+ *	 commit 459dffba introduced a "common denominator" optimization:
+ *	   - [GOOD] reduces the amount of redundant data in all mi_json output
+ *	   - [BAD] breaks all code which builds arrays of items with
+ *	           non-identical "name" attributes
+ */
+#define MI_IS_ARRAY			(1<<4)
 
 #define MI_OK_S              "OK"
 #define MI_OK_LEN            (sizeof(MI_OK_S)-1)
@@ -64,6 +77,8 @@ struct mi_handler;
 #define MI_INTERNAL_ERR       MI_INTERNAL_ERR_S
 #define MI_MISSING_PARM       MI_MISSING_PARM_S
 #define MI_BAD_PARM           MI_BAD_PARM_S
+
+#define MI_DATE_BUF_LEN 21
 
 struct mi_node {
 	str value;

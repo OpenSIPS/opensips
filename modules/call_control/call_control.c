@@ -1,5 +1,4 @@
-/* $Id$ *
- *
+/*
  * Copyright (C) 2005-2008 Dan Pascu
  *
  * This file is part of OpenSIPS, a free SIP server.
@@ -21,7 +20,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -105,7 +104,7 @@ typedef struct AVP_List {
 typedef struct CallControlSocket {
     char *name;             // name
     int  sock;              // socket
-    int  timeout;           // how many miliseconds to wait for an answer
+    int  timeout;           // how many milliseconds to wait for an answer
     time_t last_failure;    // time of the last failure
     char data[BUFFER_SIZE]; // buffer for the answer data
 } CallControlSocket;
@@ -126,7 +125,7 @@ int parse_param_stop(unsigned int type, void *val);
 static CallControlSocket callcontrol_socket = {
     "/var/run/callcontrol/socket", // name
     -1,                            // sock
-    500,                           // timeout in 500 miliseconds if there is no answer
+    500,                           // timeout in 500 milliseconds if there is no answer
     0,                             // time of the last failure
     ""                             // data
 };
@@ -180,11 +179,24 @@ static param_export_t parameters[] = {
     {0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports = {
     "call_control",  // module name
+    MOD_TYPE_DEFAULT,// class of this module
     MODULE_VERSION,  // module version
     DEFAULT_DLFLAGS, // dlopen flags
+    &deps,           // OpenSIPS module dependencies
     commands,        // exported functions
+    0,               // exported async functions
     parameters,      // exported parameters
     NULL,            // exported statistics
     NULL,            // exported MI functions
@@ -1004,7 +1016,7 @@ __dialog_ended(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
     if ((int)(long)*_params->param == CCActive) {
         call_control_stop(_params->msg, dlg->callid);
-        *_params->param = CCInactive;
+        *_params->param = (void *)CCInactive;
     }
 }
 
@@ -1184,7 +1196,7 @@ mod_init(void)
         LM_CRIT("cannot register callback for dialogs loaded from the database\n");
     }
 
-	fix_flag_name(&prepaid_account_str, prepaid_account_flag);
+	fix_flag_name(prepaid_account_str, prepaid_account_flag);
 
 	prepaid_account_flag = get_flag_id_by_name(FLAG_TYPE_MSG, prepaid_account_str);
 

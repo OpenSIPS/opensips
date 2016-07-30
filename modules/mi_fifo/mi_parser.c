@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * History:
@@ -70,7 +68,7 @@ static inline int mi_parse_node( FILE *stream, str *buf, str *name, str *value)
 
 	/* read one line */
 	do {
-		if (mi_read_line( buf->s, buf->len, stream, &line_len)<0) {
+		if (mi_read_line( buf->s, buf->len, &stream, &line_len)<0) {
 			LM_ERR("failed to read from fifo\n");
 			return -1;
 		}
@@ -185,7 +183,7 @@ static inline int mi_parse_node( FILE *stream, str *buf, str *name, str *value)
 		buf->s = p;
 
 		/*read one more line */
-		if (mi_read_line( buf->s, buf->len, stream, &line_len)<0) {
+		if (mi_read_line( buf->s, buf->len, &stream, &line_len)<0) {
 			LM_ERR("failed to re-read from fifo\n");
 			return -1;
 		}
@@ -248,7 +246,7 @@ struct mi_root * mi_parse_tree(FILE *stream) {
 	if (ret==-1) {
 		/* consume the rest of the fifo request */
 		do {
-			mi_read_line(mi_parse_buffer,mi_parse_buffer_len,stream,&ret);
+			mi_read_line(mi_parse_buffer,mi_parse_buffer_len,&stream,&ret);
 		}while(ret>1);
 	}
 

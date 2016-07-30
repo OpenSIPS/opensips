@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History
  * -------
@@ -49,6 +47,7 @@
 #include "../flags.h"
 #include "../ip_addr.h"
 #include "../md5utils.h"
+#include "../qvalue.h"
 #include "../config.h"
 #include "parse_def.h"
 #include "parse_cseq.h"
@@ -96,19 +95,27 @@ enum request_method {
 #define FL_USE_UAC_TO        (1<<7)  /* take TO hdr from UAC insteas of UAS */
 #define FL_USE_UAC_CSEQ      (1<<8)  /* take CSEQ hdr from UAC insteas of UAS*/
 #define FL_REQ_UPSTREAM      (1<<9)  /* it's an upstream going request */
-#define FL_DO_KEEPALIVE      (1<<10) /* keepalive request's source after a 
+#define FL_DO_KEEPALIVE      (1<<10) /* keepalive request's source after a
                                       * positive reply */
 #define FL_USE_MEDIA_PROXY   (1<<11) /* use mediaproxy on all messages during
                                       * a dialog */
 #define FL_USE_RTPPROXY      (1<<12) /* used by rtpproxy to remember if the msg
-				      * callback had already been registered */
+                                      * callback had already been registered */
 #define FL_NAT_TRACK_DIALOG  (1<<13) /* trigger dialog tracking from the
                                       * nat_traversal module */
 #define FL_USE_SIPTRACE      (1<<14) /* used by siptrace to check if the tm
-									  * callbacks were registered */
+                                      * callbacks were registered */
+#define FL_SHM_UPDATABLE     (1<<15) /* a SHM cloned message can be updated
+                                      * (TM used, requires FL_SHM_CLONE) */
+#define FL_TM_CB_REGISTERED  (1<<16) /* tm callbacks for this message have been
+									 * registered (by setting this flag, you
+									 * will know if any tm callbacks for this
+									 * message have been registered) */
+#define FL_TM_FAKE_REQ       (1<<17) /* the SIP request is a fake one, generated based on the transaction, 
+					either in failure route or resume route */	
 
 /* define the # of unknown URI parameters to parse */
-#define URI_MAX_U_PARAMS 5
+#define URI_MAX_U_PARAMS 10
 
 #define IFISMETHOD(methodname,firstchar)                                  \
 if (  (*tmp==(firstchar) || *tmp==((firstchar) | 32)) &&                  \
@@ -143,7 +150,7 @@ if (  (*tmp==(firstchar) || *tmp==((firstchar) | 32)) &&                  \
 (((m)->new_uri.s && (m)->new_uri.len) ? (&(m)->new_uri) : (&(m)->first_line.u.request.uri))
 
 
-enum _uri_type{ERROR_URI_T=0, SIP_URI_T, SIPS_URI_T, TEL_URI_T, TELS_URI_T};
+enum _uri_type{ERROR_URI_T=0, SIP_URI_T, SIPS_URI_T, TEL_URI_T, TELS_URI_T, URN_SERVICE_URI_T};
 typedef enum _uri_type uri_type;
 
 struct sip_uri {
@@ -152,7 +159,7 @@ struct sip_uri {
 	str host;     /* Host name */
 	str port;     /* Port number */
 	str params;   /* Parameters */
-	str headers;  
+	str headers;
 	unsigned short port_no;
 	unsigned short proto; /* from transport */
 	uri_type type; /* uri scheme */
@@ -248,20 +255,29 @@ struct sip_msg {
 
 	char* eoh;        /* pointer to the end of header (if found) or null */
 	char* unparsed;   /* here we stopped parsing*/
-	
+
 	struct receive_info rcv; /* source & dest ip, ports, proto a.s.o*/
 
 	char* buf;        /* scratch pad, holds a unmodified message,
                            *  via, etc. point into it */
 	unsigned int len; /* message len (orig) */
 
-	/* modifications */
-
+	/* attributes of the msg as first/default branch */
 	str new_uri; /* changed first line uri, when you change this
                   * don't forget to set parsed_uri_ok to 0 */
-
 	str dst_uri; /* Destination URI, must be forwarded to this URI if len!=0 */
-	
+
+	qvalue_t ruri_q; /* Q value of RURI */
+
+	unsigned int ruri_bflags; /* per-branch flags for RURI*/
+
+	/* force sending on this socket */
+	struct socket_info* force_send_socket;
+
+	/* path vector to generate Route hdrs */
+	str path_vec;
+	/* end-of-attributes for RURI as first branch*/
+
 	/* current uri */
 	int parsed_uri_ok; /* 1 if parsed_uri is valid, 0 if not, set it to 0
 	                      if you modify the uri (e.g change new_uri)*/
@@ -271,6 +287,7 @@ struct sip_msg {
 	int parsed_orig_ruri_ok;
 	struct sip_uri parsed_orig_ruri;
 
+	/* modifications */
 	struct lump* add_rm;       /* used for all the forwarded requests/replies */
 	struct lump* body_lumps;     /* Lumps that update Content-Length */
 	struct lump_rpl *reply_lump; /* only for localy generated replies !!!*/
@@ -278,27 +295,21 @@ struct sip_msg {
 	/* whatever whoever want to append to branch comes here */
 	char add_to_branch_s[MAX_BRANCH_PARAM_LEN];
 	int add_to_branch_len;
-	
-	/* index to TM hash table; stored in core to avoid 
+
+	/* index to TM hash table; stored in core to avoid
 	 * unnecessary calculations */
 	unsigned int  hash_index;
 
 	/* flags used from script */
 	flag_t flags;
 
-	/* flags used by core - allows to set various flags on the message; may 
-	 * be used for simple inter-module communication or remembering 
+	/* flags used by core - allows to set various flags on the message; may
+	 * be used for simple inter-module communication or remembering
 	 * processing state reached */
 	unsigned int msg_flags;
 
 	str set_global_address;
 	str set_global_port;
-
-	/* force sending on this socket */
-	struct socket_info* force_send_socket;
-
-	/* create a route HF out of this path vector */
-	str path_vec;
 
 	struct msg_callback *msg_cb;
 };
@@ -345,7 +356,7 @@ inline static int char_msg_val( struct sip_msg *msg, char *cv )
 	src[2]= msg->callid->body;
 	src[3]= msg->first_line.u.request.uri;
 	src[4]= get_cseq( msg )->number;
-	
+
 	/* topmost Via is part of transaction key as well ! */
 	src[5]= msg->via1->host;
 	src[6]= msg->via1->port_str;
@@ -406,9 +417,9 @@ inline static int get_body(struct sip_msg *msg, str *body)
 }
 
 
-/* 
+/*
  * Search through already parsed headers (no parsing done) a non-standard
- * header - all known headers are skipped! 
+ * header - all known headers are skipped!
  */
 #define get_header_by_static_name(_msg, _name) \
 		get_header_by_name(_msg, _name, sizeof(_name)-1)
@@ -435,6 +446,35 @@ int set_ruri(struct sip_msg* msg, str* uri);
  * Make a private copy of the string and assign it to dst_uri
  */
 int set_dst_uri(struct sip_msg* msg, str* uri);
+
+
+/*
+ * Set the q value of the Request-URI
+ */
+#define set_ruri_q(_msg,_q) \
+	(_msg)->ruri_q = _q
+
+
+/*
+ * Get the q value of the Request-URI
+ */
+#define get_ruri_q(_msg) \
+	(_msg)->ruri_q
+
+
+/*
+ * Get the per branch flags for RURI
+ */
+#define getb0flags(_msg) \
+	(_msg)->ruri_bflags
+
+
+/*
+ * Set the per branch flags for RURI
+ */
+#define setb0flags( _msg, _flags) \
+	(_msg)->ruri_bflags = _flags
+
 
 /*
  * Make a private copy of the string and assign it to path_vec

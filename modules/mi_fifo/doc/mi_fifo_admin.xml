@@ -8,7 +8,15 @@
 	<title>Overview</title>
 	<para>
 		This is a module which provides a FIFO transport layer 
-		implementation for Management Interface.
+		implementation for Management Interface. It receives the
+		command over a FIFO file and returns the output through the
+		reply_fifo specified.
+	</para>
+	<para>
+		The module checks every 30 seconds if the FIFO file exists,
+		and if it was deleted, it recreates it. If one wants to force
+		the fifo file recreation, it should send a SIGHUP signal to
+		the MI process PID.
 	</para>
 	</section>
 

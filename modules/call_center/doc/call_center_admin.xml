@@ -1,0 +1,676 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+	The Call Center module implements an inbound call center system with call 
+	flows (for queuing the received calls) and agents (for answering the 
+	calls).
+	</para>
+	<para>
+	The module implements the queuing system, the call distribution 
+	to agents, agents managements, CDRs for the calls, statistics on 
+	call distribution and agent's activity - basically everything 
+	except the media playback (for the queue). This part must be provided via 
+	a third party media server (FreeSwitch, Asterisk or others).
+	</para>
+	</section>
+
+	<section>
+	<title>How it works</title>
+	<para>
+	The main entities in the modules are the flows (queues) and agents.
+	</para>
+		<section>
+		<title>DB tables</title>
+		<para>
+		Each entity has a corresponding table in the database, for 
+		provisioning purposes - the <emphasis>cc_flows</emphasis> and 
+		<emphasis>cc_agents</emphasis> tables, see
+		<ulink url='http://www.opensips.org/Documentation/Install-DBSchema-1-11#AEN2361'>DB schema</ulink>.
+		Data is loaded at startup and cached into memory ; runtime reload is 
+		possible via the MI commands (see the <emphasis>cc_reload</emphasis> 
+		command in <xref linkend="cc_mi_commands"/>).
+		</para>
+		<para>
+		Additionally there is a table <emphasis>cc_cdrs</emphasis> for writing 
+		the CDRs - this operation is done in realtime, after the call in 
+		completed, covering all possible cases: call was dropped while in 
+		queue, call was rejected by agent, call was accepted by agent, call 
+		terminated with error - NOTE that a call may generate more than one 
+		CDR (like call rejected by agent A, and redistributed and accepted by 
+		agent B).
+		</para>
+		<para>
+		The <emphasis>cc_calls</emphasis> table is used to store ongoing calls,
+		regardless it's state (in queue, to the agent, ended). It is populated
+		at runtime by the module and queried at startup. This table should not
+		be manually provisioned.
+		</para>
+		</section>
+
+		<section>
+		<title>Call Flows</title>
+		<para>
+		A flow is defined by a unique alphanumerical ID - the main attribute 
+		of a flow is the <emphasis>skill</emphasis> - the skill is a 
+		capability required by the flow for an agent to be able to answer the 
+		call ; the concept of <emphasis>skills</emphasis> is the link between 
+		the flows and the agents - telling what agents are serving what flows 
+		- the flows require a skill, while the agents provide a set of skills. 
+		Agents matching the required skill of a flow will automatically 
+		receive calls from that flow.
+		</para>
+		<para>
+		Additional, the flow has a <emphasis>priority</emphasis> - as agents 
+		may server multiple flows in the same time (based on skills), you can
+		define priorities between the flows - if the flows has a higher 
+		priority, its calls will be pushed (in deliver to agents and queuing) in
+		front of the calls from flows with a lower priority.
+		</para>
+		<para>
+		Optionally, the flow may define a <emphasis>prependcid</emphasis> - a
+		prefix to be added to the CLI (Caller ID) when the call is delivered to
+		the agents - as an agent may receive call from multiple flows, it is 
+		important for the user to see which was the queue a call was received.
+		</para>
+		<para>
+		In terms of media announcements, the flow defines the 
+		<emphasis>message_welcome</emphasis> (optional, to be played in the 
+		call, before doing anything with the call) and 
+		<emphasis>message_queue</emphasis> (mandatory, the looping message
+		providing infinite on hold media IMPORTANT - this message must cycle 
+		and media server must never hung up on it. Both announcements are 
+		provided as SIP URIs (where the call has to be sent in order to get
+		the playback).
+		</para>
+		</section>
+
+		<section>
+		<title>Agents</title>
+		<para>
+		An agent is defined by a unique alphanumerical ID - the main attribute 
+		of an agent is its the set of <emphasis>skills</emphasis> and its SIP
+		<emphasis>location</emphasis>. The set of skills will tell what calls
+		to be received (from which flows, based on the skill matching); the 
+		location is a SIP URI where to call must be sent in order to be 
+		answered by the agent.
+		</para>
+		<para>
+		Additionally, the agent has a initial <emphasis>logstate</emphasis> - 
+		if he is logged in or not (being logged in is a must in order to
+		receive calls). The log state may be changed at runtime via a 
+		dedicated MI command <emphasis>cc_agent_login</emphasis>, see 
+		<xref linkend="cc_mi_commands"/>.
+		</para>
+		<para>
+		There is a <emphasis>wrapup_time</emphasis> defined, saying the 
+		time interval for an agent before getting a new call from the system 
+		(after he finished a call).
+		</para>
+		</section>
+
+	</section>
+
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>b2b_logic</emphasis> - B2bUA module
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>database</emphasis> - one of the SQL DB modules
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+
+	<section>
+	<title>Exported Parameters</title>
+
+	<section>
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+		SQL address to the DB server -- database specific. This must be
+		the Database holding the provisioning tables (cc_flows, cc_agents
+		and cc_calls tables).
+		</para>
+		If not explicitly set, the global OpenSIPS DB URL will be used.
+		<para>
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "db_url", 
+	"mysql://opensips:opensipsrw@localhost/opensips")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>acc_db_url</varname> (string)</title>
+		<para>
+		SQL address to the DB server -- database specific. This must be
+		the Database where the CDRs table (cc_cdrs) is located.
+		</para>
+		If not explicitly set, the global OpenSIPS DB URL will be used.
+		<para>
+		</para>
+		<example>
+		<title>Set <varname>acc_db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "acc_db_url", 
+	"mysql://opensips:opensipsrw@localhost/opensips_cdrs")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>b2b_scenario</varname> (string)</title>
+		<para>
+		The name of the B2B scenario that is used by the module for handling
+		the calls in the queue. This is an advanced options and you should
+		not change it unless you really understand what you are doing.
+		</para>
+		<para>
+		The module provides an B2B scenario file 
+		<emphasis>scenario_callcenter.xml</emphasis> located in the module
+		directory. The name of this scenario from this file (which must be
+		loaded via the b2b_logic module) must match the 
+		<emphasis>b2b_scenario</emphasis> parameter.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>call center</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>b2b_scenario</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "script_scenario", "/etc/opensips/scenario_callcenter.xml")
+modparam("call_center", "b2b_scenario", "call center")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>wrapup_time</varname> (integer)</title>
+		<para>
+		Time for an agent between finishing a call and receiving the next
+		call from the system. Even if there are queued calls, the module
+		will not deliver call to agent during this wrapup interval.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>30 seconds</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>wrapup_time</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "wrapup_time", 45)
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+
+	<section>
+	<title>Exported Functions</title>
+	<section>
+		<title>
+		<function>cc_handle_call(flowID)</function>
+		</title>
+		<para>
+		This must be used only for initial INVITE requests - the function
+		pushes the call to be handled by the call center module (via a certain
+		flow/queue).
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<para>
+		The <emphasis role='bold'>flowID</emphasis> mandatory parameter is
+		the ID of the flow to handle this call (push the call to that flow).
+		This can be a variable or a static string.
+		</para>
+		<para>
+		The function returns TRUE back to the script if the call was 
+		successfully pushed and handled by the Call Center engine. IMPORTANT: 
+		you must not do any signaling on the call (reply, relay) after this
+		point.
+		</para>
+		<para>
+		In case of error, FALSE is returned to the script with the following 
+		return codes:
+		</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis role='bold'>-1</emphasis> - unable to get the flow ID
+			from the parameter;
+			</para></listitem>
+			<listitem><para>
+			<emphasis role='bold'>-2</emphasis> - unable to parse the FROM URI;
+			</para></listitem>
+			<listitem><para>
+			<emphasis role='bold'>-3</emphasis> - flow with FlowID not found;
+			</para></listitem>
+			<listitem><para>
+			<emphasis role='bold'>-4</emphasis> - no agents logged in the flow;
+			</para></listitem>
+			<listitem><para>
+			<emphasis role='bold'>-5</emphasis> - internal error;
+			</para></listitem>
+		</itemizedlist>
+		<example>
+		<title><function>cc_handle_call</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (is_method("INVITE") and !has_totag()) {
+	if (!cc_handle_call("tech_support")) {
+		send_reply("403","Cannot handle call");
+		exit;
+	}
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function>cc_agent_login(agentID, state)</function>
+		</title>
+		<para>
+		This function sets the login (on or off) state for an agent.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<para>
+		The <emphasis role='bold'>agentID</emphasis> mandatory parameter is
+		the ID of the agent and the <emphasis role='bold'>state</emphasis>
+		is an integer value giving the new state - 0 means logged off, 
+		anything else means logged in.
+		</para>
+		<example>
+		<title><function>cc_agent_login</function> usage</title>
+		<programlisting format="linespecific">
+...
+# log off the 'agentX' agent
+cc_agent_login("agentX","0");
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+
+	<section>
+	<title>Exported Statistics</title>
+
+	<section>
+	<title>Global statistics</title>
+		<section>
+		<title>ccg_incalls</title>
+			<para>
+			Total number of received calls. (counter type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccg_awt</title>
+			<para>
+			Global avg. waiting time for calls. (realtime type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccg_load</title>
+			<para>
+			Global load (across all flows). (realtime type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccg_distributed_incalls</title>
+			<para>
+			Total number of distributed calls. (counter type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccg_answered_incalls</title>
+			<para>
+			Total number of calls answered by agents. (counter type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccg_abandonned_incalls</title>
+			<para>
+			Total number of calls terminated by caller before being
+			answered by agents. (counter type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccg_onhold_calls</title>
+			<para>
+			Total number of calls in the queues (onhold). (realtime type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccg_free_agents</title>
+			<para>
+			Total number of free agents (across all flows). (realtime type)
+			</para>
+		</section>
+	</section>
+
+	<section>
+	<title>Per-flow statistics (one set for each flow)</title>
+		<section>
+		<title>ccf_incalls_flowID</title>
+			<para>
+			Number of received calls for the flow. (counter type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccf_dist_incalls_flowID</title>
+			<para>
+			Number of distributed calls in this flow. (counter type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccf_answ_incalls_flowID</title>
+			<para>
+			Nnumber of calls from the flow answered by agents. (counter type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccf_aban_incalls_flowID</title>
+			<para>
+			Number of calls (from the flow) terminated by caller before being
+			answered by agents. (counter type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccf_onhold_incalls_flowID</title>
+			<para>
+			Number of calls (from the flow) which were put onhold.
+			 (counter type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccf_queued_calls_flowID</title>
+			<para>
+			Number of calls which are queued for this flow. (realtime type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccf_free_agents_flowID</title>
+			<para>
+			Number of free agents serving this flow. (realtime type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccf_etw_flowID</title>
+			<para>
+			Estimated Time to Wait for this flow. (realtime type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccf_awt_flowID</title>
+			<para>
+			Avg. Wating Time for this flow. (realtime type)
+			</para>
+		</section>
+
+		<section>
+		<title>ccg_load_flowID</title>
+			<para>
+			The load on the flow (number of queued calls versus number of
+			logged agents). (realtime type)
+			</para>
+		</section>
+	</section>
+
+	<section>
+	<title>Per-agent statistics (one set for each agent)</title>
+		<section>
+		<title>cca_dist_incalls_agnetID</title>
+			<para>
+			Number of distributed calls to this agent. (counter type)
+			</para>
+		</section>
+
+		<section>
+		<title>cca_answ_incalls_agentID</title>
+			<para>
+			Nnumber of calls answered by the agent. (counter type)
+			</para>
+		</section>
+
+		<section>
+		<title>cca_aban_incalls_agentID</title>
+			<para>
+			Number of calls (sent to this agent) terminated by caller before 
+			being answered by agents. (counter type)
+			</para>
+		</section>
+
+		<section>
+		<title>cca_att_agentID</title>
+			<para>
+			Avg. Talk Time for this agent (realtime type)
+			</para>
+		</section>
+	</section>
+
+	</section>
+
+
+	<section id="cc_mi_commands">
+	<title>Exported MI Functions</title>
+
+	<section>
+		<title>
+		<function moreinfo="none">cc_reload</function>
+		</title>
+		<para>
+		Command to reload flows and agents definition from database.
+		</para>
+		<para>
+			It takes no parameter.
+		</para>
+		<para>
+		MI FIFO Command usage:
+		</para>
+		<programlisting  format="linespecific">
+opensipsctl fifo cc_reload
+</programlisting>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">cc_agent_login</function>
+		</title>
+		<para>
+		Command to login an agent into the Call Center engine.
+		</para>
+		<para>
+		It takes two mandatory parameters, the ID of the agent and the 
+		new login state (0 - log off, 1 - log in)
+		</para>
+		<para>
+		MI FIFO Command usage:
+		</para>
+		<programlisting  format="linespecific">
+opensipsctl fifo cc_agent_login agentX 0
+</programlisting>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">cc_list_queue</function>
+		</title>
+		<para>
+		Command to list all the calls in queuing - for each call, the 
+		following attributes will be printed: the flow of the call, for how
+		long the call is in the queue, the ETW for the call, call priority 
+		and the call skill (inherited from the flow).
+		</para>
+		<para>
+		It takes no parameter.
+		</para>
+		<para>
+		MI FIFO Command usage:
+		</para>
+		<programlisting  format="linespecific">
+opensipsctl fifo cc_list_queue
+</programlisting>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">cc_list_flows</function>
+		</title>
+		<para>
+		Command to list all the flows - for each flow, the 
+		following attributes will be printed: the flow ID, the avg. call 
+		duration, how many calls were processed, how many agents are logged, 
+		and how many onging calls are.
+		</para>
+		<para>
+		It takes no parameter.
+		</para>
+		<para>
+		MI FIFO Command usage:
+		</para>
+		<programlisting  format="linespecific">
+opensipsctl fifo cc_list_flows
+</programlisting>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">cc_list_agents</function>
+		</title>
+		<para>
+		Command to list all the agents - for each agent, the 
+		following attributes will be printed: agent ID, agent login state and
+		agent state (free, wrapup, incall).
+		</para>
+		<para>
+		It takes no parameter.
+		</para>
+		<para>
+		MI FIFO Command usage:
+		</para>
+		<programlisting  format="linespecific">
+opensipsctl fifo cc_list_agents
+</programlisting>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">cc_list_calls</function>
+		</title>
+		<para>
+		Command to list all the ongoing calls - for each call, the 
+		following attributes will be printed: call ID, call state 
+		(welcome, queued, toagent, ended), call duration, flow it belongs to,
+		agent serving the call (if any).
+		</para>
+		<para>
+		It takes no parameter.
+		</para>
+		<para>
+		MI FIFO Command usage:
+		</para>
+		<programlisting  format="linespecific">
+opensipsctl fifo cc_list_agents
+</programlisting>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">cc_reset_stats</function>
+		</title>
+		<para>
+		Command to reset all counter-like statistics.
+		</para>
+		<para>
+		It takes no parameter.
+		</para>
+		<para>
+		MI FIFO Command usage:
+		</para>
+		<programlisting  format="linespecific">
+opensipsctl fifo cc_reset_stats
+</programlisting>
+	</section>
+
+	</section>
+
+
+	<section>
+	<title>Exported pseudo-variables</title>
+	<para>
+	NONE
+	</para>
+	</section>
+
+
+
+</chapter>
+

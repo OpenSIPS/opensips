@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Nonce related functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -50,13 +48,13 @@ static inline void integer2hex(char* _d, int _s)
 
 	_s = htonl(_s);
 	s = (char*)&_s;
-    
+
 	for (i = 0; i < 4; i++) {
-		
+
 		j = (s[i] >> 4) & 0xf;
 		if (j <= 9) {
 			_d[i * 2] = (j + '0');
-		} else { 
+		} else {
 			_d[i * 2] = (j + 'a' - 10);
 		}
 
@@ -94,7 +92,7 @@ static inline int hex2integer(char* _s)
 
 /*
  * Calculate nonce value
- * Nonce value consists of the expires time (in seconds since 1.1 1970) 
+ * Nonce value consists of the expires time (in seconds since 1.1 1970)
  * and a secret phrase
  */
 void calc_nonce(char* _nonce, int _expires, int _index, str* _secret)
@@ -104,7 +102,7 @@ void calc_nonce(char* _nonce, int _expires, int _index, str* _secret)
 	unsigned int offset = 8;
 
 	MD5Init(&ctx);
-	
+
 
 	integer2hex(_nonce, _expires);
 
@@ -163,7 +161,7 @@ int check_nonce(str* _nonce, str* _secret)
 
     calc_nonce(non, expires, index, _secret);
 
- 	
+
 	LM_DBG("comparing [%.*s] and [%.*s]\n",
 			_nonce->len, ZSW(_nonce->s), ((!disable_nonce_check)?NONCE_LEN:NONCE_LEN-8), non);
     if (!memcmp(non, _nonce->s, _nonce->len)) {
@@ -176,7 +174,7 @@ int check_nonce(str* _nonce, str* _secret)
 /*
  * Check if a nonce is stale
  */
-int is_nonce_stale(str* _n) 
+int is_nonce_stale(str* _n)
 {
 	if (!_n->s) return 0;
 

@@ -1,0 +1,679 @@
+<!-- Module User's Guide -->
+
+<chapter>
+    <title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+	This module implements message compression/decompression and base64 encoding
+	for sip messages using deflate and gzip algorithm/headers. Another feature of
+	this module is reducing headers to compact for as specified in SIP RFC's,
+	sdp body codec unnecessary description removal (for codecs 0-97), whitelist
+	for headers not be removed (excepting necessary headers).
+	</para>
+	</section>
+
+	<section>
+	<title>How it works</title>
+	<para>
+	The module is using zlib library to implement compression and base64 encoding
+	for converting the message to human readable characters. It also uses
+	callbacks to do the compression/compaction of the message in order for this
+	operations to be done after all the other script functions have been applied
+	to the message.
+	</para>
+	</section>
+
+	<section>
+	<title>Usage cases</title>
+	<para>
+	As we know, udp fragmentation is a big problem these days, so this module
+	comes to try making the message smaller by any means. The module can be
+	used to compress the body or some headers found in the message or it can
+	decompress compressed messages. There are more possibilities to do this:
+	the body can be compressed along with the specified headers or the
+	headers can be compressed isolated from the body in a specific header.
+	</para>
+	<para>
+	Also the module does message compaction: reduction of sip header names
+	to short form (for example "Via" becomes 'v' and so on), sdp body
+	codec attributes unnecesary description ("a=rtpmap:0 PCMU/8000" becomes
+	"a=rtpmap:0"), unwanted headers removal by specfing the ones you want
+	to keep in a whitelist.
+	</para>
+	<para>
+	The module also does message decompresion and base64 decoding. It can
+	detect the algorithm used for compression from the Content-Encoding
+	header. At this moment only gzip and deflate algorithms are supported.
+	</para>
+	</section>
+
+
+	<section>
+		<title>Dependencies</title>
+		<section>
+			<title>&osips; Modules</title>
+			<para>
+			The following modules must be loaded before this module:
+				<itemizedlist>
+				<listitem>
+				<para>
+					<emphasis>None</emphasis>
+				</para>
+				</listitem>
+				</itemizedlist>
+			</para>
+		</section>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>zlib-dev - the development libraries of <ulink url="http://www.zlib.net/">zlib</ulink></emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+
+	<section>
+	<title>Exported Parameters</title>
+
+	<section>
+		<title><varname>mc_level</varname> (int)</title>
+		<para>
+		This parameter ranges from 1 to 9 and it specifies the level of compression you want to do.
+		Default is 6. 9 is the best, but the longest time consuming algorithm and 1 is the worst.
+		If, by mistake, you set a lower or a higher level, the default, 6, will be used, but you will
+		receive a warning.
+		</para>
+
+		<example>
+		<title> Set <varname>mc_level</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("mc", "mc_level", "3")
+...
+		</programlisting>
+		</example>
+	</section>
+
+
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+
+	<section>
+	<title>
+		<function moreinfo="none">mc_compress([algo], flags, [whitelist])</function>
+	</title>
+	<para>
+		This function will compress the current message as specified in the parameters. Keep in mind
+		that the compression is done just before the message is sent, so that all your lumps can be
+		applied.
+	</para>
+	<para>Meaning of the parameters is as follows:</para>
+	<itemizedlist>
+	<listitem>
+		<para>
+			<emphasis>algo</emphasis> - The algorithm used for compression. Currently
+			implemented are deflate ('0') and gzip ('1').
+		The <emphasis>algo</emphasis> parameter can have the following types:
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para><emphasis>integer</emphasis> - the compression algorithm is statically
+			assigned </para>
+			</listitem>
+
+			<listitem>
+			<para><emphasis>pvar</emphasis> - the compression algorithm is the value of an
+			existing pseudo-variable (as integer value)
+			</para>
+			</listitem>
+
+		</itemizedlist>
+	</listitem>
+
+	<listitem>
+		<para>
+			<emphasis>flags</emphasis> - Specifies on what to apply the compression and where
+			to put the result of the compression.
+		The <emphasis>flags</emphasis> parameter can have the following types:
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para><emphasis>string</emphasis> - the flags parameter is statically assigned
+			</para>
+			</listitem>
+
+			<listitem>
+			<para><emphasis>pvar</emphasis> - the flags paramater is the value of an
+			existing pseudo-variable (as string value)
+			</para>
+			</listitem>
+
+		</itemizedlist>
+		<para>
+		The <emphasis>flags</emphasis> parameter can have the following values:
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+					<quote>b</quote> - specifies that the body of the message shall be
+					compressed. Notice that if the message has no body, the flag will have
+					no effect.
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<quote>h</quote> - specifies that all the headers, except the mandatory
+					ones (which will be specified in "whitelist" parameter section) and the
+					ones in the whitelist shall be compressed.
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<quote>s</quote> - the headers and the body shall be compressed Separately,
+					meaning that a new header named "Comp-Hdrs" will be created, and this
+					header will keep the content of the compressed headers. Also, "Headers-Encoding"
+					header will be created in order to keep the algorithm used to compress the
+					headers. If this flag is not specified, the headers and the body (if 'b' and 'h'
+					flags are specified) will be compressed alltogether in the new body of the
+					message.
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<quote>e</quote> - specify that you want base64 Encoding. If you do not specify
+					this flag, by default the module will send the raw compressed message in
+					deflate/gzip format.
+				</para>
+			</listitem>
+
+		</itemizedlist>
+
+	</listitem>
+
+	<listitem>
+		<para>
+			<emphasis>whitelist</emphasis> - header names list, separated by '|' which will specify
+			which headers shall not be compressed, along with the mandatory ones, which can never be
+			compressed. The mandatory headers are the following: VIA, FROM, TO, CSEQ, ROUTE, RECORD_ROUTE,
+			CALLID. Also, CONTENT_TYPE is mandatory only if CONTENT-LENGTH > 0.
+			Also, in case you do not want to use body compression, the Content-Length header will
+			become a mandatory header, which can not be compressed. In case you do want body
+			compression, the old Content-Length Header will be compressed, and a new content length
+			will be calculated. When you will want to do decompression, the compressed length will
+			be removed, and the content length header will be the same as the one before the
+			compression.
+		</para>
+	</listitem>
+
+	</itemizedlist>
+	<para>
+		This function can be used from REQUEST_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
+	</para>
+	<example>
+	<title><function>mc_compress</function> usage</title>
+	<programlisting format="linespecific">
+...
+if (!mc_compress("0", "bhs", "Max-Forwards|Subject|P-Asserted-Identity"))
+	xlog("compression failed\n");
+...
+	</programlisting>
+	</example>
+	<example>
+	<title><function>mc_compress</function> usage</title>
+	<programlisting format="linespecific">
+...
+$avp(algo) = "1";
+$var(flags) = "bs";
+$var(list) = "Max-Forwards | Contact";
+mc_compres("$avp(algo", "$var(flags", "$var(list");
+xlog("compression registered\n");
+...
+	</programlisting>
+	</example>
+	</section>
+
+	<section>
+	<title>
+		<function moreinfo="none">mc_compact([whitelist])</function>
+	</title>
+	<para>
+		This function will realise four different things: headers which are not mandatory
+		and are not in the whitelist will be removed, headers of same type will be put
+		together, separated by ',', header names which have a short form
+		will be reduced to that short form and sdp rtpmap attribute headers which contain
+		a value lower than 98 will be removed, because it is no longer needed. No lumps
+		affected by this function, because it is applied after almost all the processing is
+		done.
+		The <emphasis>mc_compact</emphasis> supported short forms are:
+		<itemizedlist>
+			<listitem>
+				<para>
+					<quote>c</quote> - Content-Type (RFC 3261)
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<quote>f</quote> - From (RFC 3261)
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<quote>i</quote> - Call-ID (RFC 3261)
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<quote>k</quote> - Supported (RFC 3261)
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<quote>l</quote> - Content-Length (RFC 3261)
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<quote>m</quote> - Contact (RFC 3261)
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<quote>s</quote> - Subject (RFC 3261)
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<quote>t</quote> - To (RFC 3261)
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<quote>v</quote> - Via (RFC 3261)
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+					<quote>x</quote> - Session-Expires (RFC 4028)
+				</para>
+			</listitem>
+		</itemizedlist>
+	</para>
+	<para>Meaning of the parameters is as follows:</para>
+	<itemizedlist>
+	<listitem>
+		<para>
+			<emphasis>whitelist</emphasis> - Whitelist of headers not to be
+			removed, except from the mandatory ones. The whitelist header names
+			must pe separated by '|'.
+		The <emphasis>algo</emphasis> parameter can have the following types:
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para><emphasis>string</emphasis> - the whitelist is statically assigned </para>
+			</listitem>
+
+			<listitem>
+			<para><emphasis>pvar</emphasis> - the whitelist is the value of an
+			existing pseudo-variable (as integer value)
+			</para>
+			</listitem>
+
+		</itemizedlist>
+	</listitem>
+
+	</itemizedlist>
+	<para>
+		This function can be used from REQUEST_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
+	</para>
+	<example>
+	<title><function>mc_compress</function> usage</title>
+	<programlisting format="linespecific">
+...
+if (!mc_compact("Max-Forwards|P-Asserted-Identity"))
+	xlog("compaction failed\n");
+...
+	</programlisting>
+	</example>
+
+	</section>
+
+	<section>
+	<title>
+		<function moreinfo="none">mc_decompress()</function>
+	</title>
+	<para>
+		This function does the reverse of mc_compress, meaning that it does base64
+		decoding and gzip/deflate decompression. Keep in mind that gzip decompression
+		is a little bit more efficient because it is being known the size of the
+		compressed buffer as against deflate which does not hold the size of the buffer,
+		so the decompression will be made in a static buffer.
+	</para>
+	<para>This function requests no parameters.</para>
+	<para> WARNING: This function replaces the original buffer of the message with the
+		decompressed buffer, so any processing you do to the message will not be taken
+		into consideration. Try applying the decompression function, before you do
+		any other processing to the message.
+	</para>
+	<para>
+		This function can be used from REQUEST_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
+	</para>
+	<example>
+	<title><function>mc_decompress</function> usage</title>
+	<programlisting format="linespecific">
+...
+if (!mc_decompress())
+	xlog("decompression failed\n");
+...
+	</programlisting>
+	</example>
+	</section>
+
+	</section>
+
+	<section>
+	<title>Compression performance test for sip messages</title>
+	<para> The following results have been obtained using the compression function
+		included in the module. Using this results, you can improve the usage of
+		this module, in order to compress only when you think it is favorable
+		enough for you. The algorithm used is deflate for all cases because
+		gzip is always 16 bytes higher than deflate, which represents the
+		uncompressed size modulo 4GB. For the subtests in the same test, the
+		same SIP message have been used.
+	</para>
+
+	<table>
+		<title>mc_compress performance test results</title>
+
+		<tgroup cols="9">
+			<tbody>
+				<row>
+					<entry><constant>Test Number</constant></entry>
+
+					<entry><constant>Subtest Number</constant></entry>
+
+					<entry><constant>Body Size</constant></entry>
+
+					<entry><constant>Headers to Compress Size</constant></entry>
+
+					<entry><constant>Compressed Content</constant></entry>
+
+					<entry><constant>Compressed Content Size</constant></entry>
+
+					<entry><constant>Compression level</constant></entry>
+
+					<entry><constant>Compressed size</constant></entry>
+
+					<entry><constant>Compression ratio</constant></entry>
+				</row>
+
+				<row>
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>179</constant></entry>
+
+					<entry><constant>82</constant></entry>
+
+					<entry><constant>Body + Headers</constant></entry>
+
+					<entry><constant>261</constant></entry>
+
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>284</constant></entry>
+
+					<entry><constant>0.91</constant></entry>
+				</row>
+
+				<row>
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>2</constant></entry>
+
+					<entry><constant>179</constant></entry>
+
+					<entry><constant>82</constant></entry>
+
+					<entry><constant>Body + Headers</constant></entry>
+
+					<entry><constant>261</constant></entry>
+
+					<entry><constant>9</constant></entry>
+
+					<entry><constant>284</constant></entry>
+
+					<entry><constant>0.91</constant></entry>
+				</row>
+
+				<row>
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>3</constant></entry>
+
+					<entry><constant>179</constant></entry>
+
+					<entry><constant>82</constant></entry>
+
+					<entry><constant>Body</constant></entry>
+
+					<entry><constant>179</constant></entry>
+
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>196</constant></entry>
+
+					<entry><constant>0.91</constant></entry>
+				</row>
+
+				<row>
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>4</constant></entry>
+
+					<entry><constant>179</constant></entry>
+
+					<entry><constant>82</constant></entry>
+
+					<entry><constant>Body</constant></entry>
+
+					<entry><constant>179</constant></entry>
+
+					<entry><constant>9</constant></entry>
+
+					<entry><constant>196</constant></entry>
+
+					<entry><constant>0.91</constant></entry>
+				</row>
+
+				<row>
+					<entry><constant>2</constant></entry>
+
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>838</constant></entry>
+
+					<entry><constant>392</constant></entry>
+
+					<entry><constant>Body + Headers</constant></entry>
+
+					<entry><constant>1230</constant></entry>
+
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>898</constant></entry>
+
+					<entry><constant>1.36</constant></entry>
+				</row>
+
+				<row>
+					<entry><constant>2</constant></entry>
+
+					<entry><constant>2</constant></entry>
+
+					<entry><constant>838</constant></entry>
+
+					<entry><constant>392</constant></entry>
+
+					<entry><constant>Body + Headers</constant></entry>
+
+					<entry><constant>1230</constant></entry>
+
+					<entry><constant>9</constant></entry>
+
+					<entry><constant>872</constant></entry>
+
+					<entry><constant>1.41</constant></entry>
+				</row>
+
+				<row>
+					<entry><constant>2</constant></entry>
+
+					<entry><constant>3</constant></entry>
+
+					<entry><constant>838</constant></entry>
+
+					<entry><constant>392</constant></entry>
+
+					<entry><constant>Body</constant></entry>
+
+					<entry><constant>838</constant></entry>
+
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>568</constant></entry>
+
+					<entry><constant>1.47</constant></entry>
+				</row>
+
+
+				<row>
+					<entry><constant>2</constant></entry>
+
+					<entry><constant>4</constant></entry>
+
+					<entry><constant>838</constant></entry>
+
+					<entry><constant>392</constant></entry>
+
+					<entry><constant>Body</constant></entry>
+
+					<entry><constant>838</constant></entry>
+
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>540</constant></entry>
+
+					<entry><constant>1.55</constant></entry>
+				</row>
+
+				<row>
+					<entry><constant>3</constant></entry>
+
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>1329</constant></entry>
+
+					<entry><constant>607</constant></entry>
+
+					<entry><constant>Body + Headers</constant></entry>
+
+					<entry><constant>1936</constant></entry>
+
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>1396</constant></entry>
+
+					<entry><constant>1.38</constant></entry>
+				</row>
+
+				<row>
+					<entry><constant>3</constant></entry>
+
+					<entry><constant>2</constant></entry>
+
+					<entry><constant>1329</constant></entry>
+
+					<entry><constant>607</constant></entry>
+
+					<entry><constant>Body + Headers</constant></entry>
+
+					<entry><constant>1936</constant></entry>
+
+					<entry><constant>9</constant></entry>
+
+					<entry><constant>1352</constant></entry>
+
+					<entry><constant>1.43</constant></entry>
+				</row>
+
+				<row>
+					<entry><constant>3</constant></entry>
+
+					<entry><constant>3</constant></entry>
+
+					<entry><constant>1329</constant></entry>
+
+					<entry><constant>607</constant></entry>
+
+					<entry><constant>Body</constant></entry>
+
+					<entry><constant>1329</constant></entry>
+
+					<entry><constant>1</constant></entry>
+
+					<entry><constant>840</constant></entry>
+
+					<entry><constant>1.58</constant></entry>
+				</row>
+
+				<row>
+					<entry><constant>3</constant></entry>
+
+					<entry><constant>4</constant></entry>
+
+					<entry><constant>1329</constant></entry>
+
+					<entry><constant>607</constant></entry>
+
+					<entry><constant>Body + Headers</constant></entry>
+
+					<entry><constant>1329</constant></entry>
+
+					<entry><constant>9</constant></entry>
+
+					<entry><constant>804</constant></entry>
+
+					<entry><constant>1.65</constant></entry>
+				</row>
+			</tbody>
+		</tgroup>
+	</table>
+	</section>
+
+</chapter>

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 /*!
@@ -31,12 +29,28 @@
 
 int daemonize(char* name, int * own_pgid);
 int do_suid(const int uid, const int gid);
-int increase_open_fds(unsigned int target);
+int set_open_fds_limit(void);
 int set_core_dump(int enable, unsigned int size);
 
 int send_status_code(char val);
 void clean_write_pipeend(void);
 int create_status_pipe(void);
 int wait_for_all_children(void);
-inline void inc_init_timer(void);
+void inc_init_timer(void);
+
+
+#define report_failure_status() \
+	do { \
+		if (send_status_code(-1) < 0) \
+			LM_ERR("failed to send -1 status code\n"); \
+		clean_write_pipeend(); \
+	}while(0)
+
+#define report_conditional_status(_cond,_status) \
+	do { \
+		if ( (_cond) && send_status_code(_status) < 0) \
+			LM_ERR("failed to send %d status code\n",_status); \
+		clean_write_pipeend(); \
+	}while(0)
+
 #endif

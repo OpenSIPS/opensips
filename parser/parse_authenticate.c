@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2011 VoIP Embedded Inc. <http://www.voipembedded.com/>
  *
  *
@@ -16,16 +14,16 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
  *  2005-01-31  first version (ramona)
  *  2011-03-07  Initial revision (Ovidiu Sas)
  */
- 
+
 #include <stdlib.h>
 #include <string.h>
 #include "../dprint.h"
@@ -242,7 +240,7 @@ int parse_authenticate_body( str *body, struct authenticate_body *auth)
 				if (val.len==4 && LOWER4B(GET4B(val.s))==0x74727565) /*true*/
 				{
 						auth->flags |= AUTHENTICATE_STALE;
-				} else if ( !(val.len==5 && LOWER1B(val.s[4])=='e' && 
+				} else if ( !(val.len==5 && LOWER1B(val.s[4])=='e' &&
 					LOWER4B(GET4B(val.s))==0x66616c73) )
 				{
 					LM_ERR("unsupported stale value \"%.*s\"\n",val.len,val.s);

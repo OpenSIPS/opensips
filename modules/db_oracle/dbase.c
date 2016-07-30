@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Oracle module core functions
  *
  * Copyright (C) 2007,2008 TRUNK MOBILE
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include <stdio.h>
@@ -223,7 +221,7 @@ static int db_oracle_submit_query(const db_con_t* _h, const str* _s)
 			(unsigned)hc);
 		return -1;
 	}
-	
+
 	if (!pqd->_rs) {
 		/*
 		 * This method is at ~25% faster as set OCI_COMMIT_ON_SUCCESS
@@ -498,7 +496,7 @@ int db_oracle_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 {
 	query_data_t cb;
 	int rc;
-	
+
 	if (!_h || !CON_TABLE(_h)) {
 		LM_ERR("invalid parameter value\n");
 		return -1;

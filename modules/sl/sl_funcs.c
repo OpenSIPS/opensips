@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -45,7 +43,6 @@
 #include "../../dprint.h"
 #include "../../md5utils.h"
 #include "../../msg_translator.h"
-#include "../../udp_server.h"
 #include "../../timer.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
@@ -55,11 +52,14 @@
 #include "../../action.h"
 #include "../../config.h"
 #include "../../tags.h"
+#include "../../script_cb.h"
+#include "../../sl_cb.h"
 #include "sl.h"
 #include "sl_funcs.h"
-#include "sl_cb.h"
 #include "../../usr_avp.h"
 #include <string.h>
+
+
 /* to-tag including pre-calculated and fixed part */
 static char           sl_tag_buf[TOTAG_VALUE_LEN];
 static str            sl_tag = {sl_tag_buf,TOTAG_VALUE_LEN};
@@ -105,12 +105,12 @@ int sl_get_totag(struct sip_msg *msg, str *totag)
 
 
 /* Take care of the statistics associated with numerical codes and replies */
-static inline void update_sl_reply_stat(int code) 
+static inline void update_sl_reply_stat(int code)
 {
 	stat_var *numerical_stat;
 
 	/* If stats aren't enabled, just skip over this. */
-	if (!sl_enable_stats) 
+	if (!sl_enable_stats)
 		return;
 
 	/* OpenSIPS already kept track of the total number of 1xx, 2xx, replies.
@@ -165,7 +165,7 @@ int sl_send_reply_helper(struct sip_msg *msg ,int code, str *text)
 	/* add a to-tag if there is a To header field without it */
 	if ( code>=180 &&
 		(msg->to || (parse_headers(msg,HDR_TO_F, 0)!=-1 && msg->to))
-		&& (get_to(msg)->tag_value.s==0 || get_to(msg)->tag_value.len==0) ) 
+		&& (get_to(msg)->tag_value.s==0 || get_to(msg)->tag_value.len==0) )
 	{
 		calc_crc_suffix( msg, tag_suffix );
 		buf.s = build_res_buf_from_sip_req( code, text, &sl_tag, msg,
@@ -179,7 +179,7 @@ int sl_send_reply_helper(struct sip_msg *msg ,int code, str *text)
 		goto error;
 	}
 
-	run_sl_callbacks( SLCB_REPLY_OUT, msg, &buf, code, text, &to );
+	slcb_run_reply_out( msg, &buf, &to, code);
 
 	/* supress multhoming support when sending a reply back -- that makes sure
 	   that replies will come from where requests came in; good for NATs
@@ -190,7 +190,7 @@ int sl_send_reply_helper(struct sip_msg *msg ,int code, str *text)
 	mhomed=0;
 	/* use for sending the received interface -bogdan*/
 	ret = msg_send( msg->rcv.bind_address, msg->rcv.proto, &to,
-			msg->rcv.proto_reserved1, buf.s, buf.len);
+			msg->rcv.proto_reserved1, buf.s, buf.len, NULL);
 	mhomed=backup_mhomed;
 	pkg_free(buf.s);
 
@@ -220,7 +220,7 @@ int sl_reply_error(struct sip_msg *msg )
 	str text;
 	int ret;
 
-	ret = err2reason_phrase( prev_ser_error, &sip_error, 
+	ret = err2reason_phrase( prev_ser_error, &sip_error,
 		err_buf, sizeof(err_buf), "SL");
 	if (ret<=0) {
 		LM_ERR("err2reason failed\n");
@@ -254,7 +254,7 @@ int sl_filter_ACK(struct sip_msg *msg, void *bar )
 	/*check the timeout value*/
 	if ( *(sl_timeout)<= get_ticks() )
 	{
-		LM_DBG("to late to be a local ACK!\n");
+		LM_DBG("too late to be a local ACK!\n");
 		goto pass_it;
 	}
 
@@ -262,26 +262,27 @@ int sl_filter_ACK(struct sip_msg *msg, void *bar )
 	if (parse_headers( msg, HDR_TO_F, 0 )==-1)
 	{
 		LM_ERR("unable to parse To header\n");
-		return -1;
+		return SCB_RUN_ALL;
 	}
 
 	if (msg->to) {
 		tag_str = &(get_to(msg)->tag_value);
 		if ( tag_str->len==TOTAG_VALUE_LEN )
 		{
-			/* calculate the variable part of to-tag */	
+			/* calculate the variable part of to-tag */
 			calc_crc_suffix(msg, tag_suffix);
 			/* test whether to-tag equal now */
 			if (memcmp(tag_str->s,sl_tag.s,sl_tag.len)==0) {
 				LM_DBG("local ACK found -> dropping it!\n");
 				if_update_stat( sl_enable_stats, rcv_acks, 1);
-				run_sl_callbacks( SLCB_ACK_IN, msg, 0, 0, 0, 0 );
-				return 0;
+				slcb_run_ack_in( msg );
+
+				return SCB_DROP_MSG;
 			}
 		}
 	}
 
 pass_it:
-	return 1;
+	return SCB_RUN_ALL;
 }
 

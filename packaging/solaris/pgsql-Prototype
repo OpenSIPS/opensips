@@ -15,7 +15,7 @@ f none /opt/opensips/postgres/alias_db-create.sql 0644 root root
 f none /opt/opensips/postgres/auth_db-create.sql 0644 root root
 f none /opt/opensips/postgres/avpops-create.sql 0644 root root
 f none /opt/opensips/postgres/carrierroute-create.sql 0644 root root
-f none /opt/opensips/postgres/cpl-create.sql 0644 root root
+f none /opt/opensips/postgres/cpl_create.sql 0644 root root
 f none /opt/opensips/postgres/dialog-create.sql 0644 root root
 f none /opt/opensips/postgres/dialplan-create.sql 0644 root root
 f none /opt/opensips/postgres/dispatcher-create.sql 0644 root root
@@ -27,7 +27,6 @@ f none /opt/opensips/postgres/imc-create.sql 0644 root root
 f none /opt/opensips/postgres/load_balancer-create.sql 0644 root root
 f none /opt/opensips/postgres/msilo-create.sql 0644 root root
 f none /opt/opensips/postgres/nathelper-create.sql 0644 root root
-f none /opt/opensips/postgres/pdt-create.sql 0644 root root
 f none /opt/opensips/postgres/permissions-create.sql 0644 root root
 f none /opt/opensips/postgres/presence-create.sql 0644 root root
 f none /opt/opensips/postgres/registrar-create.sql 0644 root root

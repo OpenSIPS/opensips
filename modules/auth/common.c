@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Digest Authentication Module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -40,7 +38,7 @@
 #include "common.h"
 
 
-/* 
+/*
  * Return parsed To or From, host part of the parsed uri is realm
  */
 int get_realm(struct sip_msg* _m, hdr_types_t _hftype, struct sip_uri** _u)
@@ -48,15 +46,15 @@ int get_realm(struct sip_msg* _m, hdr_types_t _hftype, struct sip_uri** _u)
 
 	if(_u==NULL)
 		return -1;
-	if ((REQ_LINE(_m).method.len == 8) 
-	    && !memcmp(REQ_LINE(_m).method.s, "REGISTER", 8) 
+	if ((REQ_LINE(_m).method.len == 8)
+	    && !memcmp(REQ_LINE(_m).method.s, "REGISTER", 8)
 	    && (_hftype == HDR_AUTHORIZATION_T)
 	   ) {
 		if (!_m->to && ((parse_headers(_m, HDR_TO_F, 0)==-1) || (!_m->to))) {
 			LM_ERR("failed to parse TO headers\n");
 			return -1;
 		}
-		
+
 		/* Body of To header field is parsed automatically */
 		if((*_u = parse_to_uri(_m))==NULL)
 			return -1;
@@ -68,7 +66,7 @@ int get_realm(struct sip_msg* _m, hdr_types_t _hftype, struct sip_uri** _u)
 		if((*_u = parse_from_uri(_m))==NULL)
 			return -1;
 	}
-	
+
 	return 0;
 }
 

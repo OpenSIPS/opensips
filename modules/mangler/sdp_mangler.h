@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * mangler module
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,13 +15,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
- *  2003-04-07 first version.  
+ *  2003-04-07 first version.
  */
 
 /* TO DO: precompiled expresions */
@@ -38,10 +36,10 @@
 
 
 /* With STRICT_CHECK off:
-If you define a port like 41231311 and BEST_EFFORT is defined it will 
+If you define a port like 41231311 and BEST_EFFORT is defined it will
 consider a port the first 5 digits
 Similarly an ip like 12.31.12.313131132131 will be mangled with only 3 digits
-from the last group 
+from the last group
 */
 
 #ifdef STRICT_CHECK
@@ -71,7 +69,7 @@ regex_t *ipExpression;
 
 
 /* replaces all appearances of a port in lines like m=audio port with
-	a new value for port which is oldvalue+offset 
+	a new value for port which is oldvalue+offset
 	@param msg a pointer to a sip message
 	@param offset value of an offset.Must be a numeric format like "-12345"
 	@param unused unused parameter

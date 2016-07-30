@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Header file for hash table functions
  *
  * Copyright (C) 2002-2003 Juha Heinanen
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -30,8 +28,8 @@
 #include "domain_mod.h"
 #include "../../mi/mi.h"
 
-int hash_table_install (struct domain_list **hash_table, char *domain);
-int hash_table_lookup (str *domain);
+int hash_table_install (struct domain_list **hash_table, str *d, str *a);
+int hash_table_lookup (struct sip_msg *msg, str *domain, pv_spec_t *pv);
 int hash_table_mi_print(struct domain_list **hash_table, struct mi_node* rpl);
 void hash_table_free (struct domain_list **hash_table);
 

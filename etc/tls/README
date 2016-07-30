@@ -1,22 +1,20 @@
-
-
 This directory contains an already generated TLS certificate that can be
-used in your OpenSIPS configuration. It's a generic certificate with the 
-main purpose of serving as example and for testings.
+used in your OpenSIPS configuration. It is a generic certificate with the 
+main purpose of serving both as an example and a testing sample.
 
-IMPORTANT: it's not a trustable certificate - the CA is also an example.
+IMPORTANT: it is not a trustable certificate - the CA is also an example.
 
-All TLS configuration file may be found in "user" directory. If you want to
-generate your own certificate, you may find in the "rootCA" directory the 
-root CA to sign your request with. Use "opensipsctl tls userCERT" command to
-create a new certificate; the rootCA password is "opensips".
+All TLS configuration files may be found in the "user" directory. If you want
+to generate your own certificate, a CA you may sign your request with can
+be found in the "rootCA" directory. Use the "opensipsctl tls userCERT" command
+to create a new certificate; the rootCA passphrase is "opensips".
 
-What is the purpose of these default CA and certificate? First to make an 
+What is the purpose of the default CA and certificate? Firstly, to make an 
 out-of-the box TLS configuration for users not so familiar with SSL/TLS.
-Second, to give access to the same CA root to a large community in order to
-encourage testings and interconnections via TLS with minimum of troubles.
+Secondly, to give access to the same CA root to a large community in order to
+encourage testings and interconnections via TLS with a minimum of troubles.
 
-For any questions, please address to :
+If you have any questions, please address them to:
 	team@opensips.org (if you want to keep your question private)
 	users@opensips.org (public mailing list)
 

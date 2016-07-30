@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * XMPP Module
  * This file is part of opensips, a free SIP server.
  *
@@ -18,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * Author: Andreea Spirea
  *
@@ -151,14 +149,27 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /*
  * Module description
  */
 struct module_exports exports = {
 	"xmpp",          /* Module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,            /* Exported functions */
+	0,               /* Exported async functions */
 	params,          /* Exported parameters */
 	0,               /* exported statistics */
 	0,               /* exported MI functions */
@@ -181,7 +192,7 @@ static int mod_init(void) {
 		LM_ERR("failed to load tm API\n");
 		return -1;
 	}
-	
+
 	if (strcmp(backend, "component") && strcmp(backend, "server")) {
 		LM_ERR("invalid backend '%s'\n", backend);
 		return -1;
@@ -208,7 +219,7 @@ static int mod_init(void) {
 		LM_ERR("pipe() failed\n");
 		return -1;
 	}
-	
+
 	xmpp_pid = (int*)shm_malloc(sizeof(int));
 	if(xmpp_pid == NULL) {
 		LM_ERR("No more shared memory\n");
@@ -266,7 +277,7 @@ int xmpp_send_sip_msg(char *from, char *to, char *msg)
 	char buf_from[256];
 
 	ENC_SIP_URI(fromstr, buf_from, from);
-	
+
 	hdr.s = buf;
 	hdr.len = snprintf(buf, sizeof(buf),
 			"Content-type: text/plain" CRLF "Contact: %s" CRLF, from);
@@ -323,11 +334,11 @@ void xmpp_free_pipe_cmd(struct xmpp_pipe_cmd *cmd)
 	shm_free(cmd);
 }
 
-static int xmpp_send_pipe_cmd(enum xmpp_pipe_cmd_type type, str *from, str *to, 
+static int xmpp_send_pipe_cmd(enum xmpp_pipe_cmd_type type, str *from, str *to,
 		str *body, str *id)
 {
 	struct xmpp_pipe_cmd *cmd;
-	
+
 	/* todo: make shm allocation for one big chunk to include all fields */
 	cmd = (struct xmpp_pipe_cmd *) shm_malloc(sizeof(struct xmpp_pipe_cmd));
 	memset(cmd, 0, sizeof(struct xmpp_pipe_cmd));
@@ -368,7 +379,7 @@ static int cmd_send_message(struct sip_msg* msg, char* _foo, char* _bar)
 	int mime;
 
 	LM_DBG("cmd_send_message\n");
-	
+
 	/* extract body */
 	if (get_body(msg,&body)!=0 || body.len==0) {
 		LM_ERR("failed to extract body\n");
@@ -378,7 +389,7 @@ static int cmd_send_message(struct sip_msg* msg, char* _foo, char* _bar)
 		LM_ERR("failed parse content-type\n");
 		return -1;
 	}
-	if (mime != (TYPE_TEXT << 16) + SUBTYPE_PLAIN 
+	if (mime != (TYPE_TEXT << 16) + SUBTYPE_PLAIN
 			&& mime != (TYPE_MESSAGE << 16) + SUBTYPE_CPIM) {
 		LM_ERR("invalid content-type 0x%x\n", mime);
 		return -1;
@@ -394,7 +405,7 @@ static int cmd_send_message(struct sip_msg* msg, char* _foo, char* _bar)
 		LM_ERR("failed to parse From header\n");
 		return -1;
 	}
-	
+
 	from_uri.s = uri_sip2xmpp(&((struct to_body *) msg->from->parsed)->uri);
 	from_uri.len = strlen(from_uri.s);
 
@@ -406,7 +417,7 @@ static int cmd_send_message(struct sip_msg* msg, char* _foo, char* _bar)
 	if (msg->new_uri.len > 0) {
 		LM_DBG("using new URI as destination\n");
 		dst = msg->new_uri;
-	} else if (msg->first_line.u.request.uri.s 
+	} else if (msg->first_line.u.request.uri.s
 			&& msg->first_line.u.request.uri.len > 0) {
 		LM_DBG("using R-URI as destination\n");
 		dst = msg->first_line.u.request.uri;
@@ -419,7 +430,7 @@ static int cmd_send_message(struct sip_msg* msg, char* _foo, char* _bar)
 	}
 	dst.s = dst.s + 4;
 	dst.len = dst.len - 4;
-	
+
 	if (!xmpp_send_pipe_cmd(XMPP_PIPE_SEND_MESSAGE, &from_uri, &dst, &body,
 				&tagid))
 		return 1;

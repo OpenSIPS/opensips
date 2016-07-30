@@ -1,6 +1,4 @@
 /*
- * $Id: $
- *
  * Various URI checks and Request URI manipulation
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -19,9 +17,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -88,7 +86,7 @@ int aaa_does_uri_user_host_exist(str user, str host, str callid)
 			LM_ERR("adding User-Name failed\n");
 			goto error;
 		}
-		if (proto.avp_add(conn, send, &attrs[A_SIP_URI_HOST], 
+		if (proto.avp_add(conn, send, &attrs[A_SIP_URI_HOST],
 							host.s,	host.len, 0)) {
 			LM_ERR("adding SIP-URI-Host failed\n");
 			goto error;

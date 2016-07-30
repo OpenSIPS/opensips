@@ -14,11 +14,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
+
 #include "parse_from.h"
 #include "parse_to.h"
 #include <stdlib.h>
@@ -29,7 +29,7 @@
 #include "../errinfo.h"
 #include "../mem/mem.h"
 
- 
+
 /*
  * This method is used to parse P-Asserted-Identity header (RFC 3325).
  *
@@ -43,16 +43,16 @@
 int parse_pai_header( struct sip_msg *msg )
 {
     struct to_body* pai_b;
-    
+
     if ( !msg->pai &&
 	 (parse_headers(msg, HDR_PAI_F,0)==-1 || !msg->pai)) {
 	goto error;
     }
- 
+
     /* maybe the header is already parsed! */
     if (msg->pai->parsed)
 	return 0;
- 
+
     /* bad luck! :-( - we have to parse it */
     /* first, get some memory */
     pai_b = pkg_malloc(sizeof(struct to_body));
@@ -60,7 +60,7 @@ int parse_pai_header( struct sip_msg *msg )
 	LM_ERR("out of pkg_memory\n");
 	goto error;
     }
- 
+
     /* now parse it!! */
     parse_to(msg->pai->body.s,
 	     msg->pai->body.s + msg->pai->body.len+1,
@@ -74,7 +74,7 @@ int parse_pai_header( struct sip_msg *msg )
 	goto error;
     }
  	msg->pai->parsed = pai_b;
- 
+
  	return 0;
  error:
  	return -1;

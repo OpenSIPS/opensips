@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * pua_bla module - pua Bridged Line Appearance
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -74,12 +72,26 @@ static param_export_t params[]=
 	{0,                  0,                 0            }
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "pua",    DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "usrloc", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /** module exports */
 struct module_exports exports= {
 	"pua_bla",					/* module name */
+	MOD_TYPE_DEFAULT,           /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
+	&deps,                      /* OpenSIPS module dependencies */
 	 cmds,						/* exported functions */
+	 0,							/* exported async functions */
 	 params,					/* exported parameters */
 	 0,							/* exported statistics */
 	 0,							/* exported MI functions */
@@ -118,14 +130,14 @@ static int mod_init(void)
 	}
 
 	if(header_name.s == NULL )
-	{	
+	{
 		LM_ERR("header_name parameter not set\n");
 		return -1;
 	}
 	header_name.len= strlen(header_name.s);
 
 	if(bla_outbound_proxy.s == NULL )
-	{	
+	{
 		LM_DBG("No outbound proxy set\n");
 	}
 	else
@@ -137,7 +149,7 @@ static int mod_init(void)
 		LM_ERR("Can't bind pua\n");
 		return -1;
 	}
-	
+
 	if (bind_pua(&pua) < 0)
 	{
 		LM_ERR("Can't bind pua\n");
@@ -163,12 +175,12 @@ static int mod_init(void)
 		return -1;
 	}
 	pua_is_dialog= pua.is_dialog;
-	
+
 	if(pua.register_puacb== NULL)
 	{
 		LM_ERR("Could not import register callback\n");
 		return -1;
-	}	
+	}
 
 	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
 	if (!bind_usrloc)
@@ -194,19 +206,19 @@ static int mod_init(void)
 		return -1;
 	}
 	if(ul.register_ulcb(UL_CONTACT_EXPIRE, bla_cb, 0)< 0)
-	{	
+	{
 		LM_ERR("can not register callback for"
 				" insert\n");
 		return -1;
 	}
 	if(ul.register_ulcb(UL_CONTACT_UPDATE, bla_cb, 0)< 0)
-	{	
+	{
 		LM_ERR("can not register callback for"
 				" update\n");
 		return -1;
 	}
 	if(ul.register_ulcb(UL_CONTACT_DELETE, bla_cb, 0)< 0)
-	{	
+	{
 		LM_ERR("can not register callback for"
 				" delete\n");
 		return -1;
@@ -219,10 +231,10 @@ static int child_init(int rank)
 {
 	LM_DBG("child [%d]  pid [%d]\n", rank, getpid());
 	return 0;
-}	
+}
 
 static void destroy(void)
-{	
+{
 	LM_DBG("destroying module ...\n");
 
 	return ;
@@ -231,19 +243,19 @@ static void destroy(void)
 int bla_set_flag(struct sip_msg* msg , char* s1, char* s2)
 {
 	LM_DBG("mark as bla aor\n");
-	
+
 	is_bla_aor= 1;
-	
+
 	if( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{
 		LM_ERR("parsing headers\n");
 		return -1;
 	}
-	
+
 
 	if (msg->from->parsed == NULL)
 	{
-		if ( parse_from_header( msg )<0 ) 
+		if ( parse_from_header( msg )<0 )
 		{
 			LM_DBG("cannot parse From header\n");
 			return -1;
@@ -253,5 +265,5 @@ int bla_set_flag(struct sip_msg* msg , char* s1, char* s2)
 	reg_from_uri= ((struct to_body*)(msg->from->parsed))->uri;
 
 	return 1;
-}	
+}
 

@@ -12,8 +12,7 @@ Daniel-Constantin Mierla
 
    Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
-                              (Tue, 29 Jan 2013) $
+   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -58,7 +57,7 @@ Daniel-Constantin Mierla
         1.4. Exported Functions
 
               1.4.1. m_store([owner])
-              1.4.2. m_dump([owner])
+              1.4.2. m_dump([owner, [maxmsg]])
 
         1.5. Exported Statistics
 
@@ -510,7 +509,7 @@ m_store();
 m_store("$tu");
 ...
 
-1.4.2. m_dump([owner])
+1.4.2. m_dump([owner, [maxmsg]])
 
    The method sends stored messages for the SIP user that is going
    to register to his actual contact address. The method should be
@@ -520,14 +519,17 @@ m_store("$tu");
    Meaning of the parameters is as follows:
      * owner - is a string that must contain a SIP URI whose inbox
        will be dumped. It can have any pseudo variable. If "owner"
-       is missing, the SIP address is taken from To URI.
+       is missing, the SIP address is taken from To URI. maxmsg -
+       is a maximum number of messages to be dumped.
 
-   This function can be used from REQUEST_ROUTE.
+   This function can be used from REQUEST_ROUTE, STARTUP_ROUTE,
+   TIMER_ROUTE, EVENT_ROUTE
 
    Example 1.28. m_dump usage
 ...
 m_dump();
 m_dump("$fu");
+m_dump("$fu", 10);
 ...
 
 1.5. Exported Statistics
@@ -560,19 +562,15 @@ m_dump("$fu");
 
    Example 1.29. OpenSIPS config script - sample msilo usage
 ...
-# $Id$
 #
 # MSILO usage example
 #
 #
 
 
-debug=9           # debug level (cmd line: -dddddddddd)
-fork=no           # don't fork
-log_stderror=yes  # log to stderr (cmd line: -E)
+# running in debug mode (log level 4, log to stderr, stay in foreground)
+debug_mode=yes
 
-
-children=2        # number of children
 check_via=no      # (cmd. line: -v)
 dns=off           # (cmd. line: -r)
 rev_dns=off       # (cmd. line: -R)

@@ -1,6 +1,4 @@
 /*
- * $Id: xl_lib.h 5901 2009-07-21 07:45:05Z bogdan_iancu $
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #ifndef _XLOG_H_
@@ -36,6 +34,7 @@ typedef struct _xl_level
 
 extern int xlog_buf_size;
 extern int xlog_force_color;
+extern int xlog_default_level;
 
 int xlog_1(struct sip_msg*, char*, char*);
 int xlog_2(struct sip_msg*, char*, char*);

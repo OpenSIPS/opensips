@@ -88,8 +88,8 @@ Chapter 1. Admin Guide
 
    OpenSIPS is basically only a transaction statefull proxy,
    without any dialog support build in. There are many
-   features/services which actually requires a dialog awareness,
-   like storing the information in the dialog creation stage,
+   features/services which actually require dialog awareness, like
+   storing the information in the dialog creation stage,
    information which will be used during the whole dialog
    existence.
 
@@ -222,19 +222,19 @@ modparam("rr", "enable_socket_mismatch_warning", 0)
    loose_route. It also takes care of translating between
    strict-routers and loose-router.
 
-   The loose_route function analyzes the Route: headers in the
-   requests. If there is no Route: header, the function returns
-   FALSE and routing should be done with normal lookup functions.
-   If a Route: header is found, the function returns 1 and behaves
-   as described in section 16.12 of RFC 3261. The only exceptions
-   are : 1. If the request is out-of-dialog (no to-tag) and there
-   is only one Route: header indicating the local proxy, then the
-   Route: header is removed and the function returns FALSE. 2. If
-   the request in inside a dialog ( has a to-tag ), loose-routing
-   was used ($ru is end-point) and Route contains only the local
-   proxy, the function returns FALSE. 3. If there is a Route
-   Header but other parsing errors occur ( like parsing the TO
-   header to get the TAG ), the function also returns FALSE.
+   The loose_route() function analyzes the Route headers in the
+   requests. If there is no Route header, the function returns
+   FALSE and routing should be done exclusivly via RURI. If a
+   Route header is found, the function returns TRUE and behaves as
+   described in section 16.12 of RFC 3261. The only exception is
+   for requests with preload Route headers (intial requests,
+   carrying a Route header): if there is only one Route header
+   indicating the local proxy, then the Route header is removed
+   and the function returns FALSE.
+
+   If there is a Route header but other parsing errors occur (
+   like parsing the TO header to get the TAG ), the function also
+   returns FALSE.
 
    Make sure your loose_routing function can't be used by
    attackers to bypass proxy authorization.
@@ -366,7 +366,7 @@ if (is_direction("upstream")) {
 
 1.5.7.1. $rr_params
 
-   $rr_params - the whole string of the Route paramters - this is
+   $rr_params - the whole string of the Route parameters - this is
    available only after calling loose_route()
 
 Chapter 2. Developer Guide

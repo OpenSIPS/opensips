@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Digest response calculation as per RFC2617
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -36,7 +34,7 @@ inline void cvt_hex(HASH _b, HASHHEX _h)
 {
 	unsigned short i;
 	unsigned char j;
-	
+
 	for (i = 0; i < HASHLEN; i++) {
 		j = (_b[i] >> 4) & 0xf;
 		if (j <= 9) {
@@ -58,15 +56,15 @@ inline void cvt_hex(HASH _b, HASHHEX _h)
 }
 
 
-/* 
- * calculate H(A1) as per spec 
+/*
+ * calculate H(A1) as per spec
  */
 void calc_HA1(ha_alg_t _alg, str* _username, str* _realm, str* _password,
 	      str* _nonce, str* _cnonce, HASHHEX _sess_key)
 {
 	MD5_CTX Md5Ctx;
 	HASH HA1;
-	
+
 	MD5Init(&Md5Ctx);
 	MD5Update(&Md5Ctx, _username->s, _username->len);
 	MD5Update(&Md5Ctx, ":", 1);
@@ -89,8 +87,8 @@ void calc_HA1(ha_alg_t _alg, str* _username, str* _realm, str* _password,
 }
 
 
-/* 
- * calculate request-digest/response-digest as per HTTP Digest spec 
+/*
+ * calculate request-digest/response-digest as per HTTP Digest spec
  */
 void calc_response(HASHHEX _ha1,      /* H(A1) */
 		   str* _nonce,       /* nonce from server */
@@ -107,7 +105,7 @@ void calc_response(HASHHEX _ha1,      /* H(A1) */
 	HASH HA2;
 	HASH RespHash;
 	HASHHEX HA2Hex;
-	
+
 	     /* calculate H(A2) */
 	MD5Init(&Md5Ctx);
 	MD5Update(&Md5Ctx, _method->s, _method->len);
@@ -121,7 +119,7 @@ void calc_response(HASHHEX _ha1,      /* H(A1) */
 
 	MD5Final(HA2, &Md5Ctx);
 	cvt_hex(HA2, HA2Hex);
-	
+
 	     /* calculate response */
 	MD5Init(&Md5Ctx);
 	MD5Update(&Md5Ctx, _ha1, HASHHEXLEN);

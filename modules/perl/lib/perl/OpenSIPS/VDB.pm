@@ -20,7 +20,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 #
 
 =head1 OpenSIPS::VDB
@@ -45,7 +45,6 @@ use OpenSIPS::VDB::Result;
 use OpenSIPS::VDB::Value;
 use OpenSIPS::VDB::VTab;
 
-use UNIVERSAL qw ( can );
 
 our @ISA = qw ( OpenSIPS::Utils::Debug );
 
@@ -87,12 +86,12 @@ sub use_table {
 
 		OpenSIPS::log(L_DBG, "perlvdb:VDB: Setting VTab: v is $v (pkg is $pkg, func/method is $3)\n");
 
-		if (can($pkg, $3)) {
+		if ($pkg->can($3)) {
 			$self->{vtabs}->{$v} = new OpenSIPS::VDB::VTab( func => $pkg . "::" . $3);
-		} elsif (can($v, "init")) {
+		} elsif ($v->can("init")) {
 			$v->init();
 			$self->{vtabs}->{$v} = new OpenSIPS::VDB::VTab( obj => $v );
-		} elsif (can($v, "new")) {
+		} elsif ($v->can("new")) {
 			my $obj = $v->new();
 			$self->{vtabs}->{$v} = new OpenSIPS::VDB::VTab( obj => $obj );
 		} else {

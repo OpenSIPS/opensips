@@ -13,19 +13,25 @@ PATH=$PATH:/usr/local/sbin/
 TEST="false"
 
 ### include resource files, if any
-if [ -f /etc/opensips/opensipsctlrc ]; then
-	. /etc/opensips/opensipsctlrc
-fi
-if [ -f /usr/local/etc/opensips/opensipsctlrc ]; then
-	. /usr/local/etc/opensips/opensipsctlrc
-fi
-if [ -f ~/.opensipsctlrc ]; then
-	. ~/.opensipsctlrc
-fi
+if [ -n "$osipsctlrc" -a -f "$osipsctlrc" ]; then
+	. "$osipsctlrc"
+else
+	if [ -f /etc/opensips/opensipsctlrc ]; then
+		. /etc/opensips/opensipsctlrc
+	fi
+	if [ -f /usr/local/etc/opensips/opensipsctlrc ]; then
+		. /usr/local/etc/opensips/opensipsctlrc
+	fi
+	if [ -f ~/.opensipsctlrc ]; then
+		. ~/.opensipsctlrc
+	fi
 
-if [ $TEST = "true" ]; then
-	if [ -f ./opensipsctlrc ]; then
-		. ./opensipsctlrc
+	if [ $TEST = "true" ]; then
+		if [ -f ./opensipsctlrc ]; then
+			. ./opensipsctlrc
+		elif [ -f scripts/opensipsctlrc ]; then
+			. scripts/opensipsctlrc
+		fi
 	fi
 fi
 
@@ -118,6 +124,16 @@ case $DBENGINE in
 			merr "could not load the script in $MYLIBDIR/opensipsdbctl.db_berkeley for database engine $DBENGINE"
 		fi
 		;;
+	DB_SQLITE|db_sqlite|SQLITE|sqlite)
+		if [ -f "$MYLIBDIR/opensipsdbctl.sqlite" ]; then
+			. "$MYLIBDIR/opensipsdbctl.sqlite"
+			USED_DBENGINE="sqlite"
+			DBNAME=$DB_PATH
+		else
+			merr "could not load the script in $MYLIBDIR/opensipsdbctl.db_berkeley for database engine $DBENGINE"
+		fi
+		;;
+
 esac
 
 if [ -z "$USED_DBENGINE" ] ; then
@@ -137,6 +153,8 @@ opensips_dump()  # pars: <database name>
 	fi
 	if [ "$USED_DBENGINE" = "oracle" ]; then
 		oracle_dump $1 $2
+	elif [ "$USED_DBENGINE" = "sqlite" ]; then
+		sql_query $1 $DUMP_CMD > $2
 	elif [ "$PW" = "" ] ; then
 		$DUMP_CMD $1 > $2
 	else
@@ -158,6 +176,17 @@ opensips_restore() #pars: <database name> <filename>
 	fi
 	if [ "$USED_DBENGINE" = "oracle" ]; then
 		oracle_restore $1 $2
+	elif [ "$USED_DBENGINE" = "sqlite" ]; then
+		if [ -f $1 ] ; then
+			get_answer ask "Sqlite database exists? Remove current db (y/n): "
+			if [ "$ANSWER" = "y" ]; then
+				rm $1
+			else
+				minfo "Kept old database"
+				exit 0
+			fi
+		fi
+		sql_query $1 ".read $2"
 	else
 		sql_query $1 < $2
 	fi
@@ -191,7 +220,7 @@ opensips_pframework_create() #pars: none
 	fi
 
 
-	get_answer $INSTALL_EXTRA_TABLES "Add provisionning framework for extra tables? (y/n): "
+	oet_answer $INSTALL_EXTRA_TABLES "Add provisionning framework for extra tables? (y/n): "
 	if [ "$ANSWER" = "y" ]; then
 		PI_MODULES="$PI_MODULES $EXTRA_MODULES"
 	fi
@@ -273,15 +302,26 @@ opensips_pframework() #pars: <action>
 case $1 in
 	migrate)
 		if [ "$USED_DBENGINE" != "mysql" ] ; then
-			merr "$USED_DBENGINE don't support migrate operation"
+			merr "The \"$1\" operation is not supported for $USED_DBENGINE (MYSQL only)"
 			exit 1
 		fi
+
+		minfo	"MySQL DB migration tool for OpenSIPS 2.2.x databases\n\
+----------------------------------------------------------------------"
+		mwarn "\
+We recommend using this tool ONLY in order to upgrade an existing\n\
+OpenSIPS 2.2.x MySQL database to 2.3 schema. Behaviour when automatically\n\
+migrating earlier DB versions (1.8, 1.9, 1.10, 1.11, 2.1) to 2.3 is undefined"
+		read -p"Do you wish to continue? (y/N) " ANS
+
+		[ "$ANS" != "y" -a "$ANS" != "Y" ] && exit 1
+
 		if [ $# -ne 3 ] ; then
-			merr "migrate requires 2 parameters: old and new database"
+			merr "\"migrate\" command requires exactly 2 params: <old_database> and <new_database>"
 			exit 1
 		fi
 		# create new database
-		minfo "Creating new Database $3...."
+		minfo "Creating new database \"$3\" ..."
 		NO_USER_INIT="yes"
 		opensips_create $3
 		if [ "$?" -ne 0 ] ; then
@@ -289,7 +329,7 @@ case $1 in
 			exit 1
 		fi
 		# migrate data
-		minfo "Migrating data from $2 to $3...."
+		minfo "Migrating data from \"$2\" to \"$3\" ..."
 		migrate_db $2 $3
 		minfo "Migration successfully completed."
 		exit 0;
@@ -299,6 +339,21 @@ case $1 in
 		if [ "$USED_DBENGINE" = "berkeley" -o "$USED_DBENGINE" = "dbtext" ] ; then
 			merr "$USED_DBENGINE don't support this operation"
 			exit 1
+		fi
+		# sqlite has backup function which creats a copy of the db
+		if [ "$USED_DBENGINE" = "sqlite" ] ; then
+			if [ -f $2 ] ; then
+				get_answer ask "File $2 exists? Remove file and install new db instead? (y/n): "
+				if [ "$ANSWER" = "y" ]; then
+					rm $2
+				else
+					minfo "Kept old $2 file"
+					exit 0
+				fi
+			fi
+			sql_query $DBNAME ".backup $2"
+			minfo "Copy succesfully completed"
+			exit $?
 		fi
 		shift
 		if [ $# -ne 1 ]; then
@@ -410,6 +465,7 @@ case $1 in
 		echo  "$0 $VERSION"
 		;;
 	*)
+		merr "$0: Unknown command - \"$1\""
 		usage
 		exit 1;
 		;;

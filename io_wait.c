@@ -1,6 +1,4 @@
-/* 
- * $Id$
- * 
+/*
  * Copyright (C) 2005 iptelorg GmbH
  *
  * This file is part of opensips, a free SIP server.
@@ -17,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -29,11 +27,8 @@
 /*!
  * \file
  * \brief OpenSIPS TCP IO wait common functions
- * Used by tcp_main.c and tcp_read.c
  */
 
-
-#ifdef USE_TCP /*!< for now it make sense only with tcp */
 
 #ifdef HAVE_EPOLL
 #include <unistd.h> /* close() */
@@ -78,7 +73,7 @@ char* poll_support="poll"
 ;
 
 /*! supported poll methods */
-char* poll_method_str[POLL_END]={ "none", "poll", "epoll_lt", "epoll_et", 
+char* poll_method_str[POLL_END]={ "none", "poll", "epoll_lt", "epoll_et",
 								  "sigio_rt", "select", "kqueue",  "/dev/poll"
 								};
 
@@ -104,14 +99,14 @@ static int init_sigio(io_wait_h* h, int rsig)
 	int signo;
 	int start_sig;
 	sigset_t oldset;
-	
+
 	if (!_sigio_init){
 		_sigio_init=1;
 		_sigio_crt_rtsig=SIGRTMIN;
 		sigemptyset(&_sigio_rtsig_used);
 	}
 	h->signo=0;
-	
+
 	if (rsig==0){
 		start_sig=_sigio_crt_rtsig;
 		n=SIGRTMAX-SIGRTMIN;
@@ -124,7 +119,7 @@ static int init_sigio(io_wait_h* h, int rsig)
 		start_sig=rsig;
 		n=0;
 	}
-	
+
 	sigemptyset(&h->sset);
 	sigemptyset(&oldset);
 retry1:
@@ -135,7 +130,7 @@ retry1:
 				strerror(errno), errno);
 		/* try to continue */
 	}
-	
+
 	for (r=start_sig; r<=(n+start_sig); r++){
 		signo=(r>SIGRTMAX)?r-SIGRTMAX+SIGRTMIN:r;
 		if (! sigismember(&_sigio_rtsig_used, signo) &&
@@ -146,7 +141,7 @@ retry1:
 			break;
 		}
 	}
-	
+
 	if (h->signo==0){
 			LM_CRIT("init_sigio: %s\n",
 					rsig?"could not assign requested real-time signal":
@@ -155,7 +150,7 @@ retry1:
 	}
 
 	LM_DBG("trying signal %d... \n", h->signo);
-	
+
 	if (sigaddset(&h->sset, h->signo)==-1){
 		LM_ERR("sigaddset failed for %d: %s [%d]\n",
 				h->signo, strerror(errno), errno);
@@ -183,7 +178,7 @@ error:
 
 
 /*!
- * \brief sigio specific destroy 
+ * \brief sigio specific destroy
  * \param h IO handle
  */
 static void destroy_sigio(io_wait_h* h)
@@ -305,7 +300,7 @@ static void destroy_devpoll(io_wait_h* h)
 #ifdef HAVE_SELECT
 /*!
  * \brief select specific init
- * \param h IO handle 
+ * \param h IO handle
  * \return zero
  * \todo make this method void, and remove the check in io_wait.c
  */
@@ -322,7 +317,7 @@ static int init_select(io_wait_h* h)
  * \brief return system version
  * Return system version (major.minor.minor2) as (major<<16)|(minor)<<8|(minor2)
  * (if some of them are missing, they are set to 0)
- * if the parameters are not null they are set to the coresp. part 
+ * if the parameters are not null they are set to the coresp. part
  * \param major major version
  * \param minor minor version
  * \param minor2 minor2 version
@@ -335,7 +330,7 @@ static unsigned int get_sys_version(int* major, int* minor, int* minor2)
 	int m2;
 	int m3;
 	char* p;
-	
+
 	memset (&un, 0, sizeof(un));
 	m1=m2=m3=0;
 	/* get sys version */
@@ -368,7 +363,8 @@ char* check_poll_method(enum poll_types poll_method)
 	unsigned int os_ver;
 
 	ret=0;
-	os_ver=get_sys_version(0,0,0);	
+	os_ver=get_sys_version(0,0,0);
+	(void)os_ver;
 	switch(poll_method){
 		case POLL_NONE:
 			break;
@@ -448,11 +444,12 @@ enum poll_types choose_poll_method(void)
 	unsigned int os_ver;
 
 	os_ver=get_sys_version(0,0,0);
+	(void)os_ver;
 	poll_method=0;
 #ifdef HAVE_EPOLL
 	if (os_ver>=0x020542) /* if ver >= 2.5.66 */
 		poll_method=POLL_EPOLL_LT; /* or POLL_EPOLL_ET */
-		
+
 #endif
 #ifdef HAVE_KQUEUE
 	if (poll_method==0)
@@ -475,7 +472,7 @@ enum poll_types choose_poll_method(void)
 	#endif
 #endif
 #ifdef  HAVE_SIGIO_RT
-		if (poll_method==0) 
+		if (poll_method==0)
 			if (os_ver>=0x020200) /* if ver >= 2.2.0 */
 				poll_method=POLL_SIGIO_RT;
 #endif
@@ -502,19 +499,19 @@ char* poll_method_name(enum poll_types poll_method)
 /*!
  * \brief converts a string into a poll_method
  * \param s converted string
- * \return POLL_NONE (0) on error, else the corresponding poll type 
+ * \return POLL_NONE (0) on error, else the corresponding poll type
  */
 enum poll_types get_poll_type(char* s)
 {
 	int r;
 	unsigned int l;
-	
+
 	l=strlen(s);
 	for (r=POLL_END-1; r>POLL_NONE; r--)
 		if ((strlen(poll_method_str[r])==l) &&
 			(strncasecmp(poll_method_str[r], s, l)==0))
 			break;
-	return r; 
+	return r;
 }
 
 
@@ -525,11 +522,14 @@ enum poll_types get_poll_type(char* s)
  * \param  max_fd - maximum allowed fd number
  * \param  poll_method - poll method (0 for automatic best fit)
  */
-int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
+int init_io_wait(io_wait_h* h, char *name, int max_fd,
+								enum poll_types poll_method, int max_prio)
 {
 	char * poll_err;
-	
+
 	memset(h, 0, sizeof(*h));
+	h->name = name;
+	h->max_prio = max_prio;
 	h->max_fd_no=max_fd;
 #ifdef HAVE_EPOLL
 	h->epfd=-1;
@@ -541,7 +541,7 @@ int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
 	h->dpoll_fd=-1;
 #endif
 	poll_err=check_poll_method(poll_method);
-	
+
 	/* set an appropiate poll method */
 	if (poll_err || (poll_method==0)){
 		poll_method=choose_poll_method();
@@ -553,9 +553,9 @@ int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
 					" (auto detected)\n", poll_method_str[poll_method]);
 		}
 	}
-	
+
 	h->poll_method=poll_method;
-	
+
 	/* common stuff, everybody has fd_hash */
 	h->fd_hash=local_malloc(sizeof(*(h->fd_hash))*h->max_fd_no);
 	if (h->fd_hash==0){
@@ -564,45 +564,59 @@ int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
 		goto error;
 	}
 	memset((void*)h->fd_hash, 0, sizeof(*(h->fd_hash))*h->max_fd_no);
-	
+
+	/* init the fd array as needed for priority ordering */
+	h->fd_array=local_malloc(sizeof(*(h->fd_array))*h->max_fd_no);
+	if (h->fd_array==0){
+		LM_CRIT("could not alloc fd array (%ld bytes)\n",
+					(long)sizeof(*(h->fd_hash))*h->max_fd_no);
+		goto error;
+	}
+	memset((void*)h->fd_array, 0, sizeof(*(h->fd_array))*h->max_fd_no);
+	/* array with indexes in fd_array where the priority changes */
+	h->prio_idx=local_malloc(sizeof(*(h->prio_idx))*h->max_prio);
+	if (h->prio_idx==0){
+		LM_CRIT("could not alloc fd array (%ld bytes)\n",
+					(long)sizeof(*(h->prio_idx))*h->max_prio);
+		goto error;
+	}
+	memset((void*)h->prio_idx, 0, sizeof(*(h->prio_idx))*h->max_prio);
+
 	switch(poll_method){
 		case POLL_POLL:
+			break;
 #ifdef HAVE_SELECT
 		case POLL_SELECT:
-#endif
-#ifdef HAVE_SIGIO_RT
-		case POLL_SIGIO_RT:
-#endif
-#ifdef HAVE_DEVPOLL
-		case POLL_DEVPOLL:
-#endif
-			h->fd_array=local_malloc(sizeof(*(h->fd_array))*h->max_fd_no);
-			if (h->fd_array==0){
-				LM_CRIT("could not alloc fd array (%ld bytes)\n",
-							(long)sizeof(*(h->fd_hash))*h->max_fd_no);
-				goto error;
-			}
-			memset((void*)h->fd_array, 0, sizeof(*(h->fd_array))*h->max_fd_no);
-#ifdef HAVE_SIGIO_RT
-			if ((poll_method==POLL_SIGIO_RT) && (init_sigio(h, 0)<0)){
-				LM_CRIT("sigio init failed\n");
-				goto error;
-			}
-#endif
-#ifdef HAVE_DEVPOLL
-			if ((poll_method==POLL_DEVPOLL) && (init_devpoll(h)<0)){
-				LM_CRIT("/dev/poll init failed\n");
-				goto error;
-			}
-#endif
-#ifdef HAVE_SELECT
 			if ((poll_method==POLL_SELECT) && (init_select(h)<0)){
 				LM_CRIT("select init failed\n");
 				goto error;
 			}
-#endif
-			
 			break;
+#endif
+#ifdef HAVE_DEVPOLL
+		case POLL_DEVPOLL:
+			if ((poll_method==POLL_DEVPOLL) && (init_devpoll(h)<0)){
+				LM_CRIT("/dev/poll init failed\n");
+				goto error;
+			}
+			h->dp_changes=local_malloc(sizeof(*(h->dp_changes))*h->max_fd_no);
+			if (h->dp_changes==0){
+				LM_CRIT("could not alloc db changes array (%ld bytes)\n",
+							(long)sizeof(*(h->dp_changes))*h->max_fd_no);
+				goto error;
+			}
+			memset((void*)h->dp_changes, 0,
+				sizeof(*(h->dp_changes))*h->max_fd_no);
+			break;
+#endif
+#ifdef HAVE_SIGIO_RT
+		case POLL_SIGIO_RT:
+			if ((poll_method==POLL_SIGIO_RT) && (init_sigio(h, 0)<0)){
+				LM_CRIT("sigio init failed\n");
+				goto error;
+			}
+			break;
+#endif
 #ifdef HAVE_EPOLL
 		case POLL_EPOLL_LT:
 		case POLL_EPOLL_ET:
@@ -692,6 +706,10 @@ void destroy_io_wait(io_wait_h* h)
 #ifdef HAVE_DEVPOLL
 		case POLL_DEVPOLL:
 			destroy_devpoll(h);
+			if (h->dp_changes){
+				local_free(h->dp_changes);
+				h->dp_changes=0;
+			}
 			break;
 #endif
 		default: /*do  nothing*/
@@ -705,7 +723,39 @@ void destroy_io_wait(io_wait_h* h)
 			local_free(h->fd_hash);
 			h->fd_hash=0;
 		}
+		if (h->prio_idx){
+			local_free(h->prio_idx);
+			h->prio_idx=0;
+		}
+
 }
 
 
-#endif
+void fix_poll_method( enum poll_types *poll_method )
+{
+	char* poll_err;
+
+	/* fix config variables */
+	/* they can have only positive values due the config parser so we can
+	 * ignore most of them */
+	poll_err=check_poll_method(*poll_method);
+
+	/* set an appropiate poll method */
+	if (poll_err || (*poll_method==0)){
+		*poll_method=choose_poll_method();
+		if (poll_err){
+			LM_ERR("%s, using %s instead\n",
+					poll_err, poll_method_name(*poll_method));
+		}else{
+			LM_INFO("using %s as the IO watch method"
+					" (auto detected)\n", poll_method_name(*poll_method));
+		}
+	}else{
+			LM_INFO("using %s as the IO watch method (config)\n",
+					poll_method_name(*poll_method));
+	}
+
+	return;
+}
+
+

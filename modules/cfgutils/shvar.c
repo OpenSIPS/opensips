@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2007 Elena-Ramona Modroiu
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -37,9 +35,6 @@ int shvar_locks_no=16;
 gen_lock_set_t* shvar_locks=0;
 
 static sh_var_t *sh_vars = 0;
-static script_var_t *sh_local_vars = 0;
-static pv_spec_list_t *sh_pv_list = 0;
-static int shvar_initialized = 0;
 
 /*
  * Initialize locks
@@ -69,7 +64,6 @@ int shvar_init_locks(void)
 		}
 	} while (1);
 }
-
 
 void shvar_unlock_locks(void)
 {
@@ -118,7 +112,7 @@ void lock_shvar(sh_var_t *shv)
 #ifdef GEN_LOCK_T_PREFERED
 	lock_get(shv->lock);
 #else
-	ul_lock_idx(shv->lockidx);
+	shvar_lock_idx(shv->lockidx);
 #endif
 }
 
@@ -133,7 +127,7 @@ void unlock_shvar(sh_var_t *shv)
 #ifdef GEN_LOCK_T_PREFERED
 	lock_release(shv->lock);
 #else
-	ul_release_idx(shv->lockidx);
+	shvar_release_idx(shv->lockidx);
 #endif
 }
 
@@ -141,6 +135,13 @@ void unlock_shvar(sh_var_t *shv)
 sh_var_t* add_shvar(str *name)
 {
 	sh_var_t *sit;
+
+	if(!shvar_locks){
+		if(shvar_init_locks()){
+			LM_ERR("init shvars locks failed\n");
+			return 0;
+		}
+	}
 
 	if(name==0 || name->s==0 || name->len<=0)
 		return 0;
@@ -186,131 +187,6 @@ sh_var_t* add_shvar(str *name)
 	sh_vars = sit;
 
 	return sit;
-}
-
-script_var_t* add_local_shvar(str *name)
-{
-	script_var_t *it;
-
-	if(name==0 || name->s==0 || name->len<=0)
-		return 0;
-
-	for(it=sh_local_vars; it; it=it->next)
-	{
-		if(it->name.len==name->len
-				&& strncmp(name->s, it->name.s, name->len)==0)
-			return it;
-	}
-	it = (script_var_t*)pkg_malloc(sizeof(script_var_t));
-	if(it==0)
-	{
-		LM_ERR("out of pkg mem\n");
-		return 0;
-	}
-	memset(it, 0, sizeof(script_var_t));
-	it->name.s = (char*)pkg_malloc((name->len+1)*sizeof(char));
-
-	if(it->name.s==0)
-	{
-		LM_ERR("out of pkg mem!\n");
-		return 0;
-	}
-	it->name.len = name->len;
-	strncpy(it->name.s, name->s, name->len);
-	it->name.s[it->name.len] = '\0';
-
-	it->next = sh_local_vars;
-
-	sh_local_vars = it;
-
-	return it;
-}
-
-
-int init_shvars(void)
-{
-	script_var_t *lit = 0;
-	sh_var_t *sit = 0;
-	pv_spec_list_t *pvi = 0;
-	pv_spec_list_t *pvi0 = 0;
-
-	if(shvar_init_locks()!=0)
-		return -1;
-
-	LM_DBG("moving shvars in share memory\n");
-	for(lit=sh_local_vars; lit; lit=lit->next)
-	{
-		sit = (sh_var_t*)shm_malloc(sizeof(sh_var_t));
-		if(sit==0)
-		{
-			LM_ERR("out of sh mem\n");
-			return -1;
-		}
-		memset(sit, 0, sizeof(sh_var_t));
-		sit->name.s = (char*)shm_malloc((lit->name.len+1)*sizeof(char));
-
-		if(sit->name.s==0)
-		{
-			LM_ERR("out of pkg mem!\n");
-			shm_free(sit);
-			return -1;
-		}
-		sit->name.len = lit->name.len;
-		strncpy(sit->name.s, lit->name.s, lit->name.len);
-		sit->name.s[sit->name.len] = '\0';
-
-		if(sh_vars!=0)
-			sit->n = sh_vars->n + 1;
-		else
-			sit->n = 1;
-
-#ifdef GEN_LOCK_T_PREFERED
-		sit->lock = &shvar_locks->locks[sit->n%shvar_locks_no];
-#else
-		sit->lockidx = sit->n%shvar_locks_no;
-#endif
-
-		if(set_shvar_value(sit, &lit->v.value, lit->v.flags)==NULL)
-		{
-			shm_free(sit->name.s);
-			shm_free(sit);
-			return -1;
-		}
-
-		pvi0 = 0;
-		pvi = sh_pv_list;
-		while(pvi!=NULL)
-		{
-			if(pvi->spec->pvp.pvn.u.dname == lit)
-			{
-				pvi->spec->pvp.pvn.u.dname = (void*)sit;
-				if(pvi0!=NULL)
-				{
-					pvi0->next = pvi->next;
-					pkg_free(pvi);
-					pvi = pvi0->next;
-				} else {
-					sh_pv_list = pvi->next;
-					pkg_free(pvi);
-					pvi = sh_pv_list;
-				}
-			} else {
-				pvi0 = pvi;
-				pvi = pvi->next;
-			}
-		}
-
-		sit->next = sh_vars;
-		sh_vars = sit;
-	}
-	destroy_vars_list(sh_local_vars);
-	if(sh_pv_list != NULL)
-	{
-		LM_ERR("sh_pv_list not null!\n");
-		return -1;
-	}
-	shvar_initialized = 1;
-	return 0;
 }
 
 /* call it with lock set */
@@ -431,34 +307,15 @@ void destroy_shvars(void)
 /********* PV functions *********/
 int pv_parse_shvar_name(pv_spec_p sp, str *in)
 {
-	pv_spec_list_t *pvi = 0;
-	
 	if(in==NULL || in->s==NULL || sp==NULL)
 		return -1;
-	
+
 	sp->pvp.pvn.type = PV_NAME_PVAR;
-	if(shvar_initialized)
-		sp->pvp.pvn.u.dname = (void*)add_shvar(in);
-	else
-		sp->pvp.pvn.u.dname = (void*)add_local_shvar(in);
+	sp->pvp.pvn.u.dname = (void*)add_shvar(in);
 	if(sp->pvp.pvn.u.dname==NULL)
 	{
-		LM_ERR("cannot register shvar [%.*s] (%d)\n", in->len, in->s,
-				shvar_initialized);
+		LM_ERR("cannot register shvar [%.*s]\n", in->len, in->s);
 		return -1;
-	}
-
-	if(shvar_initialized==0)
-	{
-		pvi = (pv_spec_list_t*)pkg_malloc(sizeof(pv_spec_list_t));
-		if(pvi == NULL)
-		{
-			LM_ERR("cannot index shvar [%.*s]\n", in->len, in->s);
-			return -1;
-		}
-		pvi->spec = sp;
-		pvi->next = sh_pv_list;
-		sh_pv_list = pvi;
 	}
 
 	return 0;
@@ -470,13 +327,13 @@ int pv_get_shvar(struct sip_msg *msg,  pv_param_t *param,
 	int len = 0;
 	char *sval = NULL;
 	sh_var_t *shv=NULL;
-	
+
 	if(msg==NULL || res==NULL)
 		return -1;
 
 	if(param==NULL || param->pvn.u.dname==0)
 		return pv_get_null(msg, param, res);
-	
+
 	shv= (sh_var_t*)param->pvn.u.dname;
 
 	lock_shvar(shv);
@@ -496,16 +353,16 @@ int pv_get_shvar(struct sip_msg *msg,  pv_param_t *param,
 		}
 		strncpy(param->pvv.s, shv->v.value.s.s, shv->v.value.s.len);
 		param->pvv.len = shv->v.value.s.len;
-		
+
 		unlock_shvar(shv);
-		
+
 		res->rs = param->pvv;
 		res->flags = PV_VAL_STR;
 	} else {
 		res->ri = shv->v.value.n;
-		
+
 		unlock_shvar(shv);
-		
+
 		sval = sint2str(res->ri, &len);
 		res->rs.s = sval;
 		res->rs.len = len;
@@ -649,7 +506,7 @@ struct mi_root* mi_shvar_get(struct mi_root* cmd_tree, void* param)
 		shv = get_shvar_by_name(&name);
 		if(shv==NULL)
 			return init_mi_tree(404, MI_SSTR("Not found"));
-		
+
 		rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 		if (rpl_tree==NULL)
 			return NULL;
@@ -749,9 +606,7 @@ int param_set_xvar( modparam_t type, void* val, int mode)
 	int flags;
 	int ival;
 	script_var_t *sv;
-
-	if(shvar_initialized!=0)
-		goto error;
+	sh_var_t *shared_sv;
 
 	s.s = (char*)val;
 	if(s.s == NULL || s.s[0] == '\0')
@@ -762,7 +617,7 @@ int param_set_xvar( modparam_t type, void* val, int mode)
 
 	if(*p!='=')
 		goto error;
-	
+
 	s.len = p - s.s;
 	if(s.len == 0)
 		goto error;
@@ -784,18 +639,25 @@ int param_set_xvar( modparam_t type, void* val, int mode)
 			goto error;
 		isv.n = ival;
 	}
-	if(mode==0)
+	if(mode==0){
 		sv = add_var(&s);
-	else
-		sv = add_local_shvar(&s);
-	if(sv==NULL)
-		goto error;
-	if(set_var_value(sv, &isv, flags)==NULL)
-		goto error;
-	
+		if(sv==NULL)
+			goto error;
+		if(set_var_value(sv, &isv, flags)==NULL)
+			goto error;
+	}
+	else {
+		shared_sv = add_shvar(&s);
+		if(shared_sv == NULL)
+			goto error;
+		if(set_shvar_value(shared_sv, &isv, flags) == NULL)
+			goto error;
+	}
+
 	return 0;
 error:
-	LM_ERR("unable to set shv parame [%s]\n", s.s);
+	LM_ERR("unable to set %s parameter [%s]\n",
+			(mode == 0 ? "var" : "shv"), s.s);
 	return -1;
 }
 
@@ -819,7 +681,7 @@ int pv_parse_time_name(pv_spec_p sp, str *in)
 
 	switch(in->len)
 	{
-		case 3: 
+		case 3:
 			if(strncmp(in->s, "sec", 3)==0)
 				sp->pvp.pvn.u.isname.name.n = 0;
 			else if(strncmp(in->s, "min", 3)==0)
@@ -828,7 +690,7 @@ int pv_parse_time_name(pv_spec_p sp, str *in)
 				sp->pvp.pvn.u.isname.name.n = 4;
 			else goto error;
 		break;
-		case 4: 
+		case 4:
 			if(strncmp(in->s, "hour", 4)==0)
 				sp->pvp.pvn.u.isname.name.n = 2;
 			else if(strncmp(in->s, "mday", 4)==0)
@@ -841,7 +703,7 @@ int pv_parse_time_name(pv_spec_p sp, str *in)
 				sp->pvp.pvn.u.isname.name.n = 7;
 			else goto error;
 		break;
-		case 5: 
+		case 5:
 			if(strncmp(in->s, "isdst", 5)==0)
 				sp->pvp.pvn.u.isname.name.n = 8;
 			else goto error;
@@ -878,7 +740,7 @@ int pv_get_time(struct sip_msg *msg, pv_param_t *param,
 			return -1;
 		}
 	}
-	
+
 	switch(param->pvn.u.isname.name.n)
 	{
 		case 1:
@@ -888,16 +750,16 @@ int pv_get_time(struct sip_msg *msg, pv_param_t *param,
 		case 3:
 			return pv_get_uintval(msg, param, res, (unsigned int)stored_ts.tm_mday);
 		case 4:
-			return pv_get_uintval(msg, param, res, 
+			return pv_get_uintval(msg, param, res,
 					(unsigned int)(stored_ts.tm_mon+1));
 		case 5:
 			return pv_get_uintval(msg, param, res,
 					(unsigned int)(stored_ts.tm_year+1900));
 		case 6:
-			return pv_get_uintval(msg, param, res, 
+			return pv_get_uintval(msg, param, res,
 					(unsigned int)(stored_ts.tm_wday+1));
 		case 7:
-			return pv_get_uintval(msg, param, res, 
+			return pv_get_uintval(msg, param, res,
 					(unsigned int)(stored_ts.tm_yday+1));
 		case 8:
 			return pv_get_sintval(msg, param, res, stored_ts.tm_isdst);

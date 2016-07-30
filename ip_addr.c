@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * ip address & address family related functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -46,7 +44,7 @@ struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask)
 	struct net* n;
 	int warning;
 	unsigned int r;
-	
+
 	warning=0;
 	if ((ip->af != mask->af) || (ip->len != mask->len)){
 		LM_CRIT("trying to use a different mask family"
@@ -54,7 +52,7 @@ struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask)
 		goto error;
 	}
 	n=(struct net*)pkg_malloc(sizeof(struct net));
-	if (n==0){ 
+	if (n==0){
 		LM_CRIT("memory allocation failure\n");
 		goto error;
 	}
@@ -83,7 +81,7 @@ struct net* mk_net_bitlen(struct ip_addr* ip, unsigned int bitlen)
 {
 	struct ip_addr mask;
 	unsigned int r;
-	
+
 	if (bitlen>ip->len*8){
 		LM_CRIT("bad bitlen number %d\n", bitlen);
 		goto error;
@@ -93,7 +91,7 @@ struct net* mk_net_bitlen(struct ip_addr* ip, unsigned int bitlen)
 	if (bitlen%8) mask.u.addr[r]=  ~((1<<(8-(bitlen%8)))-1);
 	mask.af=ip->af;
 	mask.len=ip->len;
-	
+
 	return mk_net(ip, &mask);
 error:
 	return 0;
@@ -182,10 +180,8 @@ int is_mcast(struct ip_addr* ip)
 
 	if (ip->af==AF_INET){
 		return IN_MULTICAST(htonl(ip->u.addr32[0]));
-#ifdef USE_IPV6
 	} else if (ip->af==AF_INET6){
 		return IN6_IS_ADDR_MULTICAST((struct in6_addr *)ip->u.addr);
-#endif /* USE_IPV6 */
 	} else {
 		LM_ERR("unsupported protocol family\n");
 		return -1;

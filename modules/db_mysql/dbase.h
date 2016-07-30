@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * MySQL module core functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -18,9 +16,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 
@@ -83,7 +81,7 @@ int db_mysql_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, 
 /*
  * Delete a row from table
  */
-int db_mysql_delete(const db_con_t* _h, const db_key_t* _k, const 
+int db_mysql_delete(const db_con_t* _h, const db_key_t* _k, const
 	db_op_t* _o, const db_val_t* _v, const int _n);
 
 
@@ -104,6 +102,34 @@ int db_mysql_replace(const db_con_t* handle, const db_key_t* keys, const db_val_
  * Returns the last inserted ID
  */
 int db_last_inserted_id(const db_con_t* _h);
+
+/*
+ * Begins execution of an asynchronous, raw MySQL query. Possibly opens new TCP
+ * connections up to "db_max_async_connections". Returns immediately.
+ *
+ * \return
+ *		success: Unix FD for polling
+ *		failure: negative error code
+ */
+int db_mysql_async_raw_query(db_con_t *_h, const str *_s, void** _data);
+
+/*
+ * Reads data from the given connection file descriptor. If the query is fully
+ * completed, the global "async_status" will be equal to ASYNC_DONE.
+ *
+ * \return:
+ *		-> 0 on success, negative on failure
+ *		-> also populates the global "async_status": ASYNC_CONTINUE / ASYNC_DONE
+ */
+int db_mysql_async_resume(db_con_t *_h, int fd, db_res_t **_r, void* _data);
+
+/*
+ * Cleans up asynchronous query results along with other associated structures
+ *
+ * \return:
+ *		-> 0 on success, negative on failure
+ */
+int db_mysql_async_free_result(db_con_t *_h, db_res_t *_r, void *_data);
 
 /*
  * Insert a row into table, update on duplicate key

@@ -1,0 +1,43 @@
+#
+# $Id$
+#
+# opensips control tool for maintaining opensips
+#
+#===================================================================
+
+##### ----------------------------------------------- #####
+### SQLITE specific variables and functions
+#
+
+##### ----------------------------------------------- #####
+### load SQL base
+#
+if [ -f "$MYLIBDIR/opensipsctl.sqlbase" ]; then
+	. "$MYLIBDIR/opensipsctl.sqlbase"
+else
+	echo "Cannot load SQL core functions '$MYLIBDIR/opensipsctl.sqlbase' - exiting ..."
+	exit -1
+fi
+
+##### ----------------------------------------------- #####
+### binaries
+if [ -z "$SQLITE" ] ; then
+	locate_tool sqlite3
+	if [ -z "$TOOLPATH" ] ; then
+		echo "error: 'sqlite' tool not found: set SQLITE variable to correct tool path"
+		exit
+	fi
+	SQLITE="$TOOLPATH"
+fi
+
+# input: sql query, optional pgsql command-line params
+sqlite_query() {
+        # if password not yet queried, query it now
+        mecho "sqlite_query: $SQLITE $DB_PATH '$1'"
+        $SQLITE $DB_PATH "$1"
+}
+
+
+DBCMD=sqlite_query
+DBRAWPARAMS=""
+

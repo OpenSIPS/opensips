@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Perl module for OpenSIPS
  *
  * Copyright (C) 2006 Collax GmbH
@@ -20,7 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
 
@@ -28,6 +26,9 @@
 #define PERL_FUNC_H
 
 #include "../../parser/msg_parser.h"
+
+/* fixup for perl_exec and perl_exec_simple */
+int perl_fixup(void** param, int param_no);
 
 /*
  * Run a perl function without a sip message parameter.

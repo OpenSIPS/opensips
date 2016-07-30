@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -13,7 +11,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *  Jabber
  *  Copyright (C) 1998-1999 The Jabber Team http://jabber.org/
@@ -561,14 +559,14 @@ char* xode_get_data(xode node)
 
 int xode_get_datasz(xode node)
 {
-	
+
     if( node == NULL )
     {
-        return (int)(long)NULL;	    
-    }	    
+        return (int)(long)NULL;
+    }
     else if(xode_get_type(node) == XODE_TYPE_TAG) /* loop till we find a CDATA */
     {
-    	xode cur;	
+    	xode cur;
         for(cur = xode_get_firstchild(node); cur != NULL; cur = xode_get_nextsibling(cur))
             if(xode_get_type(cur) == XODE_TYPE_CDATA)
                 return cur->data_sz;
@@ -814,8 +812,8 @@ _xode_to_prettystr( xode_spool s, xode x, int deep )
 	xode y;
 
 	if(xode_get_type(x) != XODE_TYPE_TAG) return;
-	
-	for(i=0; i<deep; i++) xode_spool_add(s, "\t");	
+
+	for(i=0; i<deep; i++) xode_spool_add(s, "\t");
 
 	xode_spooler( s , "<" , xode_get_name(x) ,  s );
 
@@ -828,13 +826,13 @@ _xode_to_prettystr( xode_spool s, xode x, int deep )
 	}
 	xode_spool_add(s,">");
 	xode_spool_add(s,"\n");
-		
+
 	if( xode_get_data(x))
 	{
-		for(i=0; i<=deep; i++) xode_spool_add(s, "\t");	
-		xode_spool_add( s , xode_get_data(x)); 
+		for(i=0; i<=deep; i++) xode_spool_add(s, "\t");
+		xode_spool_add( s , xode_get_data(x));
 	}
-			
+
 	y = xode_get_firstchild(x);
 	while( y )
 	{
@@ -842,20 +840,20 @@ _xode_to_prettystr( xode_spool s, xode x, int deep )
 		y = xode_get_nextsibling(y);
 		xode_spool_add(s,"\n");
 	}
-		
-	for(i=0; i<deep; i++) xode_spool_add(s, "\t");	
+
+	for(i=0; i<deep; i++) xode_spool_add(s, "\t");
 	xode_spooler( s , "</" , xode_get_name(x) , ">" , s );
 
 	return;
 }
 
-char * 
+char *
 xode_to_prettystr( xode x )
 {
 	xode_spool s;
 
 	if( !x) return NULL;
-	
+
 	s = xode_spool_newfrompool( xode_get_pool(x));
 
 	_xode_to_prettystr( s , x, 0 );

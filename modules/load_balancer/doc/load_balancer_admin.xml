@@ -30,7 +30,7 @@
 	<title>How it works</title>
 		<para>
 		Please refer to the Load-Balancer tutorial from the &osips; website:
-		<ulink url='http://www.opensips.org/index.php?n=Resources.DocsTutLoadbalancing'>http://www.opensips.org/index.php?n=Resources.DocsTutLoadbalancing</ulink>.
+		<ulink url='http://www.opensips.org/Documentation/Tutorials-LoadBalancing-1-9'>http://www.opensips.org/Documentation/Tutorials-LoadBalancing-1-9</ulink>.
 		</para>
 	</section>
 
@@ -286,12 +286,13 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">load_balance(grp,resources[,alg])</function>
+		<function moreinfo="none">lb_start(grp,resources[,flags])</function>
 		</title>
 		<para>
-		The function performs load-balancing over the available destinations in
-		order to find the less loaded destination that can provide the 
-		requested resources and belong to a requested group.
+		The function starts a new load-balancing session over the available
+		destinations. This translates into finding the less loaded destination
+		that can provide the requested resources and belong to a requested
+		group.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -304,34 +305,50 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 		</listitem>
 		<listitem>
 			<para><emphasis>resources</emphasis> - string containing a 
-			semi-colon list of resources required by the current call.
+			semi-colon separated list of resources required by the current
+			call.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>algorithm</emphasis> - algorithm used for 
-			computing the available load on the system:
+			<para><emphasis>flags</emphasis> - various flags to controll the
+			LB algorithm ( or computing the available load on the system):
 			</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>0</emphasis> - Absolute value - the effective
+				<para><emphasis>n</emphasis> - Negative availability  - use
+				destinations with negative availability (exceeded capacity);
+				do not ignore resources with negative availability, and thus 
+				able to select for load balancing destinations with exceeded 
+				capacity. This might be needed in scenarios where we want to 
+				limit generic calls volume and always pass 
+				important/high-priority calls.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>r</emphasis> - Relative value - the relative
+				available load (how many percentages are free) is used in
+				computing the load of each pear/resource; Without this flag,
+				the Absolute value is assumed - the effective
 				available load ( maximum_load - current_load) is used in
 				computing the load of each pear/resource.
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>1</emphasis> - Relative value - the relative
-				available load (how many percentages are free) is used in
-				computing the load of each pear/resource.
+				<para><emphasis>s</emphasis> - Pick a random destination if
+				multiple destinations with the same load are found, instead
+				of always picking first matched destination.
+				This could help to offload an excessive load from the first
+				destination and distribute load in situations when failed
+				calls always routed to first destination, since they almost
+				does not affect load counters of destinations.
 				</para>
 			</listitem>
 			</itemizedlist>
-			<para>If missing, the default algorithm in 0.
-			</para>
 		</listitem>
 		</itemizedlist>
 		<para>
-		Function returns true is a new destination URI is set pointing to the 
-		selected destiantion.
+		Returns true if a new destination URI is set, pointing to the 
+		selected destination.
 		NOTE that the RURI will not be changed by this function.
 		</para>
 		<para>
@@ -339,10 +356,10 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 		FAILURE_ROUTE.
 		</para>
 		<example>
-		<title><function>load_balance</function> usage</title>
+		<title><function>lb_start</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (load_balance("1","trascoding;conference")) {
+if (lb_start("1","trascoding;conference")) {
 	# dst URI points to the new destination
 	xlog("sending call to $du\n");
 	t_relay();
@@ -355,24 +372,136 @@ if (load_balance("1","trascoding;conference")) {
 
 	<section>
 		<title>
-		<function moreinfo="none">lb_disable()</function>
+		<function moreinfo="none">lb_next()</function>
 		</title>
 		<para>
-		Marks as disabled the last destination that was used for the current
-		call. The disabling done via this function will prevent the 
-		destination to be used for usage from now on. The probing mechanism
-		can re-enable this peer (see the probing section in the begining)
+		Function to be used to pull the next available (and less loaded)
+		destination. You need to have an ongoing LB session (started with
+		lb_start()).
+		</para>
+		<para>
+		This function is mainly used for implementing failover for the LB
+		destinations.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 		<example>
-		<title><function>lb_disable()</function> usage</title>
+		<title><function>lb_next()</function> usage</title>
 		<programlisting format="linespecific">
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
-	lb_disable();
-	if ( load_balance("1","pstn") ) {
+	/* check next available LB destination */
+	if ( lb_next() ) {
+		t_on_failure("1");
+		xlog("-----------new dst is $du\n");
+		t_relay();
+		exit;
+	}
+}
+
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section>
+		<title>
+		<function moreinfo="none">lb_start_or_next(grp,resources[,flags])</function>
+		</title>
+		<para>
+		This is just a wrapper function to simplify scripting. If there is no
+		ongoing LB session, it acts as lb_start(); If there is an ongoing LB 
+		session, it acts as lb_next().
+		</para>
+	</section>
+
+
+	<section>
+		<title>
+		<function moreinfo="none">load_balance(grp,resources[,flags])</function>
+		</title>
+		<para>
+		Old name of the lb_start_or_next() function.
+		</para>
+		<para>
+		Take care, this will become obsolete.
+		</para>
+	</section>
+
+
+	<section>
+		<title>
+		<function moreinfo="none">lb_reset()</function>
+		</title>
+		<para>
+		Function to stop and flush a current LB session. To be used in 
+		failure route, if you want to stop the current LB session (not to try
+		any other destinations from this session) and to start a completly new
+		one.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>lb_next()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (t_check_status("(5[0-9][0-9])")) {
+	/* check next available LB destination */
+	if ( lb_next() ) {
+		t_on_failure("1");
+		xlog("-----------new dst is $du\n");
+		t_relay();
+		exit;
+	}
+} else if (t_check_status("(408)")) {
+	lb_reset();
+	if (lb_start("1","conference")) {
+		t_relay();
+		exit;
+	}
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">lb_is_started()</function>
+		</title>
+		<para>
+		Function to check if there is any ongoing LB session. Returns true if
+		so.
+		</para>
+		<para>
+		This function can be used in any type of route.
+		</para>
+	</section>
+
+
+	<section>
+		<title>
+		<function moreinfo="none">lb_disable_dst()</function>
+		</title>
+		<para>
+		Marks as disabled the last destination that was used for the current
+		call. The disabling done via this function will prevent the 
+		destination to be used for usage from now on. The probing mechanism
+		can re-enable this peer (see the probing section in the beginning)
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>lb_disable_dst()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (t_check_status("(408)|(5[0-9][0-9])")) {
+	lb_disable_dst();
+	if ( lb_next() ) {
 		t_on_failure("1");
 		xlog("-----------new dst is $du\n");
 		t_relay();
@@ -405,7 +534,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		<listitem>
 			<para><emphasis>ip</emphasis> and <emphasis>port</emphasis> - IP 
 			and PORT to be checked (any kind of variables are allowed, but
-			take care as the PORT variables should have an interger value); 
+			take care as the PORT variables should have an integer value); 
 			A value 0 for the port means "any" - will match any port.
 			</para>
 		</listitem>
@@ -428,7 +557,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		<title><function>lb_is_destination</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (is_destination("$si","$sp") ) {
+if (lb_is_destination("$si","$sp") ) {
 	# request from a LB destination
 }
 ...
@@ -438,7 +567,7 @@ if (is_destination("$si","$sp") ) {
 
 	<section>
 		<title>
-		<function moreinfo="none">lb_count_call(ip,port,grp,resources)</function>
+		<function moreinfo="none">lb_count_call(ip,port,grp,resources[,undo])</function>
 		</title>
 		<para>
 		The function counts the current call as load for a given destination 
@@ -461,7 +590,15 @@ if (is_destination("$si","$sp") ) {
 		</listitem>
 		<listitem>
 			<para><emphasis>resources</emphasis> - string containing a 
-			semi-colon list of resources required by the current call.
+			semi-colon separated list of resources required by the current call.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>undo</emphasis> - (optional) if set to a non zero
+			value, it will force the function to un-count -
+			actually it will undo the counting of this call as load in the 
+			current LB session; this might be needed if we count call for
+			particular resources and then need to un-count it.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -474,13 +611,13 @@ if (is_destination("$si","$sp") ) {
 		FAILURE_ROUTE.
 		</para>
 		<example>
-		<title><function>lb_count_count</function> usage</title>
+		<title><function>lb_count_call</function> usage</title>
 		<programlisting format="linespecific">
 ...
 # count as load also the calls orgininated by lb destinations
 if (lb_is_destination("$si","$sp") ) {
 	# inbound call from destination
-	lb_count_count("$si","$sp","-1","conference");
+	lb_count_call("$si","$sp","-1","conference");
 } else {
 	# outbound call to destinations
 	if ( !load_balance("1","conference") ) {
@@ -608,12 +745,31 @@ enable:: yes
 
 
 	<section>
-	<title>Exported pseudo-variables</title>
-	<para>
-	NONE
-	</para>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_LOAD_BALANCER_STATUS</function>
+		</title>
+		<para>
+			This event is raised when the module changes the state of a destination,
+			either through MI or probing.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>group</emphasis> - the group of the destination.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>uri</emphasis> - the URI of the destination.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>status</emphasis> - <emphasis>disabled</emphasis> if
+				the destination was disabled or <emphasis>enabled</emphasis> if 
+				the destination is being used.
+			</para></listitem>
+		</itemizedlist>
 	</section>
-
+	</section>
 
 
 </chapter>

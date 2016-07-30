@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2012 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -15,9 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * -------
@@ -30,9 +28,15 @@
 #include "menus.h"
 #include "cfg.h"
 
+#define GRP_START_STR	"#DEFS_GROUP_START"
+#define GRP_END_STR		"#DEFS_GROUP_END"
+
+#define SKIP_LINE_STR "##"
+#define SKIP_LINE_STRL 2
+
 int parse_dep_line(char *line,select_menu *parent);
 int parse_include_line(char *line,select_menu *parent);
-int parse_defs_line(char *line,select_menu *parent);
+int parse_defs_line(char *line,select_menu *parent,int *group_idx,int *start_grp);
 int parse_prefix_line(char *line,select_menu *menu);
 int parse_defs_m4_line(char *line,select_menu *menu);
 int parse_defs_m4(select_menu *curr_menu,cfg_gen_t *curr_cfg);

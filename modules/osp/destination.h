@@ -25,7 +25,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #ifndef _OSP_MOD_DESTINATION_H_
@@ -34,6 +34,26 @@
 #include <time.h>
 #include <osp/osp.h>
 #include "osp_mod.h"
+
+typedef struct _osp_inbound {
+    char ingressaddr[OSP_STRBUF_SIZE];
+    char srcdev[OSP_STRBUF_SIZE];
+    char source[OSP_STRBUF_SIZE];
+    char snid[OSP_STRBUF_SIZE];
+    char calling[OSP_STRBUF_SIZE];
+    char called[OSP_STRBUF_SIZE];
+    char fromdisplay[OSP_STRBUF_SIZE];
+    char fromuri[OSP_STRBUF_SIZE];
+    char touri[OSP_STRBUF_SIZE];
+    char paiuser[OSP_STRBUF_SIZE];
+    char rpiduser[OSP_STRBUF_SIZE];
+    char pciuser[OSP_STRBUF_SIZE];
+    char divuser[OSP_STRBUF_SIZE];
+    char divhost[OSP_STRBUF_SIZE];
+    char srcmedia[OSP_STRBUF_SIZE];
+    time_t date;
+    time_t authtime;
+} osp_inbound;
 
 typedef struct _osp_dest {
     int type;
@@ -48,34 +68,33 @@ typedef struct _osp_dest {
     unsigned int callidsize;
     char calling[OSP_STRBUF_SIZE];
     char called[OSP_STRBUF_SIZE];
-    char origcalled[OSP_STRBUF_SIZE];
-    char srcdev[OSP_STRBUF_SIZE];
-    char source[OSP_STRBUF_SIZE];
     char host[OSP_STRBUF_SIZE];
     char destdev[OSP_STRBUF_SIZE];
-    char snid[OSP_STRBUF_SIZE];
     char dnid[OSP_STRBUF_SIZE];
     char nprn[OSP_STRBUF_SIZE];
     char npcic[OSP_STRBUF_SIZE];
     int npdi;
     char opname[OSPC_OPNAME_NUMBER][OSP_STRBUF_SIZE];
-    char rpid[OSP_STRBUF_SIZE];
-    char pai[OSP_STRBUF_SIZE];
-    char divuser[OSP_STRBUF_SIZE];
-    char divhost[OSP_STRBUF_SIZE];
-    char pci[OSP_STRBUF_SIZE];
+    char cnam[OSP_STRBUF_SIZE];
+    char destmedia[OSP_STRBUF_SIZE];
+    char egress[OSP_STRBUF_SIZE];
     unsigned char token[OSP_TOKENBUF_SIZE];
     unsigned int tokensize;
     unsigned int timelimit;
     OSPE_PROTOCOL_NAME protocol;
+    OSPE_SERVICE srvtype;
     int lastcode;
-    time_t authtime;
+    time_t starttime;
+    time_t endtime;
     time_t time100;
     time_t time180;
     time_t time200;
 } osp_dest;
 
 int ospParseAvps(void);
+void ospInitInboundInfo(osp_inbound* inbound);
+int ospSaveInboundInfo(osp_inbound* inbound);
+osp_inbound* ospGetInboundInfo(void);
 osp_dest* ospInitDestination(osp_dest* dest);
 int ospSaveOrigDestination(osp_dest* dest);
 int ospSaveTermDestination(osp_dest* dest);

@@ -1,0 +1,1397 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	<title>&adminguide;</title>
+
+	<section>
+		<title>Overview</title>
+		<para>
+			This module is a management module for TLS certificates and
+			parameters. It provides an interfaces for all the modules that
+			use the TLS protocol. It also implements TLS related functions
+			to use in the routing script, and exports pseudo variables with
+			certificate and TLS parameters.
+		</para>
+	</section>
+
+	<section>
+		<title>History</title>
+		<para>
+		The TLS support was originally developed by Peter Griffiths and posted
+		as a patch on SER development mailing list. Thanks to Cesc
+		Santasusana, several problems were fixed and some improvements were
+		added.
+		</para>
+		<para>
+		The TLS support was simultaneously added in both projects. In SER,
+		the support was committed in a separate <quote>experimental</quote>
+		CVS tree, as patch to the main CVS tree. In OpenSIPS, the support was
+		integrated directly into the CVS tree, as a built-in component, and is
+		part of stable OpenSIPS since release >=1.0.0.
+		</para>
+		<para>
+			Starting from OpenSIPS 2.2, the certificates managemnet has been
+			decoupled from the TLS communication in two different modules:
+			<emphasis>dh_params</emphasis> which handles the TLS communication
+			and <emphasis>tls_mgm</emphasis> which handles TLS handshake
+			(certificates and parameters).
+		</para>
+	</section>
+
+	<section>
+		<title>Usage</title>
+		<para>
+			This module is used to provision TLS certificates and parameters
+			for all the modules that use TLS transport (currently only
+			<emphasis>proto_tls</emphasis>). The module supports multiple
+			virtual domains that can be assigned to different listeners
+			(servers) or new connections (clients). Each TLS module that uses
+			this management module should assign itself to one or more domains.
+		</para>
+		<para>
+		A script example which details this module's usage can be found in
+		<xref linkend="tls-example"/>.
+		</para>
+	</section>
+
+	<section>
+		<title>Dependencies of external libraries</title>
+		<para>
+			&osips; TLS v1.0 support requires the following packages:
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>openssl</emphasis> or
+					<emphasis>libssl</emphasis> >= 0.9.6
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>openssl-dev</emphasis> or
+					<emphasis>libssl-dev</emphasis>
+				</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			&osips; TLS v1.1/1.2 support requires the following packages:
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>openssl</emphasis> or
+					<emphasis>libssl</emphasis> >= 1.0.1e
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>openssl-dev</emphasis> or
+					<emphasis>libssl-dev</emphasis>
+				</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">is_peer_verified</function>
+		</title>
+		<para>
+		Returns 1 if the message is received via TLS and the peer was verified
+		during TLS connection handshake, otherwise it returns -1
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>is_peer_verified</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (is_peer_verified()) {
+        xlog("L_INFO","request from verified TLS peer\n");
+} else {
+        xlog("L_INFO","request not verified\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+        <section>
+            <title>Exported MI Functions</title>
+            <section>
+                <title>
+		<function moreinfo="none">tls_list</function>
+                </title>
+                <para>
+                List all domains information.
+                </para>
+            </section>
+
+            <section>
+                <title>
+		<function moreinfo="none">tls_reload</function>
+                </title>
+                <para>
+                Reloads information from the database.
+                </para>
+            </section>
+        </section>
+
+	<section>
+		<title>&osips; Exported parameters</title>
+		<para>
+		All these parameters can be used from the opensips.cfg file,
+		to configure the behavior of &osips;-TLS.
+		</para>
+
+		<section>
+			<title><varname>listen</varname>=interface</title>
+			<para>
+			Not specific to TLS. Allows to specify the protocol
+			(udp, tcp, tls), the IP address and the port where the
+			listening server will be.
+			</para>
+			<example>
+				<title>Set <varname>listen</varname> variable</title>
+				<programlisting format="linespecific">
+...
+listen = tls:1.2.3.4:5061
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><varname>tls_method</varname> [(string):](string)</title>
+			<para>
+				Sets the TLS protocol. The first parameter, if set, represents
+				the id of the domain. TLS method which can be:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>TLSv1_2</emphasis> - means &osips; will
+				accept only TLSv1.2 connections (rfc3261 conformant).
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>TLSv1</emphasis> - means &osips; will
+				accept only TLSv1 connections (rfc3261 conformant).
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>SSLv3</emphasis> - means &osips; will
+				accept only SSLv3 connections
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>SSLv2</emphasis> - means &osips; will
+				accept only SSLv2 connections (almost all old clients
+				support this).
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>SSLv23</emphasis> - means &osips; will
+				accept any of the above methods, but the initial SSL
+				hello must be v2 (in the initial hello all the supported
+				protocols are advertised enabling switching to a higher
+				and more secure version). The initial v2 hello means it
+				will not accept connections from SSLv3 or TLSv1 only
+				clients.
+				</para>
+				</listitem>
+			</itemizedlist>
+			<para><emphasis>
+				Default value is SSLv23.
+			</emphasis></para>
+			<warning><para>
+			Best is to use SSLv23, for extended compatibility. Using any
+			of the other will restrict the version to just that one
+			version. In fact, SSLv2 is disabled in the source code; to
+			use it, you need to edit tls/tls_init.c
+			</para></warning>
+			<para>
+			If you want RFC3261 conformance and all your clients support
+			TLSv1 (or you are planning to use encrypted "tunnels" only
+			between different &osips; proxies) use TLSv1. If you want to
+			support older clients use SSLv23 (in fact most of the
+			applications with SSL support use the SSLv23 method).
+			</para>
+			<example>
+				<title>Set <varname>tls_method</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "tls_method", "TLSv1")
+modparam("tls_mgm", "tls_method", "dom:TLSv1")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><varname>certificate</varname> [(string):](string)</title>
+			<para>
+			Public certificate file for &osips;. It will be used as
+			server-side certificate for incoming TLS connections, and as
+			a client-side certificate for outgoing TLS connections. The first
+			parameter, if set, represents the id of the domain.
+			</para>
+			<para><emphasis>
+				Default value is "CFG_DIR/cert.pem".
+			</emphasis></para>
+			<example>
+				<title>Set <varname>certificate</varname> variable
+					</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "certificate", "/mycerts/certs/opensips_server_cert.pem")
+modparam("tls_mgm", "certificate", "dom:/mycerts/certs/opensips_server_cert.pem")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><varname>private_key</varname> [(string):](string)</title>
+			<para>
+			Private key of the above certificate. I must be kept in a
+			safe place with tight permissions! The first parameter, if set,
+			represents the id of the domain.
+			</para>
+			<para><emphasis>
+				Default value is "CFG_DIR/cert.pem".
+			</emphasis></para>
+			<example>
+				<title>Set <varname>private_key</varname> variable
+					</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "private_key", "/mycerts/private/prik.pem")
+modparam("tls_mgm", "private_key", "dom:/mycerts/private/prik.pem")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><varname>ca_list</varname> [(string):]((string)</title>
+			<para>
+			List of trusted CAs. The file contains the certificates
+			accepted, one after the other. It MUST be a file, not
+			a folder. The first parameter, if set, represents the id
+			of the domain.
+			</para>
+			<para><emphasis>
+				Default value is "".
+			</emphasis></para>
+			<example>
+				<title>Set <varname>ca_list</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "ca_list", "/mycerts/certs/ca_list.pem")
+modparam("tls_mgm", "ca_list", "dom:/mycerts/certs/ca_list.pem")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><varname>ca_dir</varname> [(string):](string)</title>
+			<para>
+			Directory storing trusted CAs. The path contains the
+			certificates accepted, each as hash which is linked to
+			certificate file. The first parameter, if set, represents
+			the id of the domain.
+			</para>
+			<para><emphasis>
+				Default value is "".
+			</emphasis></para>
+			<example>
+				<title>Set <varname>ca_dir</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "ca_dir", "/mycerts/certs")
+modparam("tls_mgm", "ca_dir", "dom:/mycerts/certs")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><varname>ciphers_list</varname> [(string):](string)</title>
+			<para>
+			You can specify the list of algorithms for authentication
+			and encryption that you allow. The first parameter, if set,
+			represents the id of the domain. To obtain a list of ciphers
+			and then choose, use the openssl application:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para>openssl ciphers 'ALL:eNULL:!LOW:!EXPORT'</para>
+				</listitem>
+			</itemizedlist>
+			<warning><para>
+			Do not use the NULL algorithms (no encryption) ... only for testing!!!
+			</para></warning>
+			<para><emphasis>
+				It defaults to the OpenSSL default ciphers.
+			</emphasis></para>
+			<example>
+				<title>Set <varname>ciphers_list</varname> variable
+					</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "ciphers_list", "NULL")
+modparam("tls_mgm", "ciphers_list", "dom:NULL")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><varname>dh_params</varname> [(string):](string)</title>
+			<para>
+			You can specify a file which contains Diffie-Hellman
+			parameters as a PEM-file. This is needed if you would like
+			to specify ciphers including Diffie-Hellman mode. The first
+			parameter, if set, represents the id of the domain.
+			</para>
+			<para><emphasis>
+				It defaults to not set a dh param file.
+			</emphasis></para>
+			<example>
+				<title>Set <varname>dh_params</varname> variable
+					</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "dh_params", "/etc/pki/CA/dh1024.pem")
+modparam("tls_mgm", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><varname>ec_curve</varname>[(string):](string)</title>
+			<para>
+			You can specify an elliptic curve which should be used for
+			ciphers which demand an elliptic curve. The first parameter,
+			if set, represents the id of the domain.
+			</para>
+			<para>
+			It's usable only if TLS v1.1/1.2 support was compiled.
+			A list of curves which can be used you can get by
+			<programlisting format="linespecific">
+				openssl ecparam -list_curve
+			</programlisting>
+			</para>
+			<para><emphasis>
+				It defaults to not set a elliptic curve.
+			</emphasis></para>
+		</section>
+
+		<section>
+			<title><varname>verify_cert</varname> [(string):](string) and
+				<varname>require_cert</varname>[(string):](string)</title>
+			<para>
+			Technically, verify_cert activates SSL_VERIFY_PEER in the
+			ssl_context. 'require_cert' does the same with
+			SSL_VERIFY_FAIL_IF_NO_PEER_CERT, which is only possible if
+			SSL_VERIFY_PEER is also turned on. Since version 2.1, these parameters
+			act have been reduced to only one. They act both on client side and
+			server side if no domain specified, elseway they act on a specific domain,
+			depending on the first parameter.
+			</para>
+			<para>
+			These two parameters are used for incoming TLS connections, where
+			&osips; acts as server.
+			</para>
+			<para>
+			It's usable only if TLS support was compiled.
+			</para>
+			<para><emphasis>
+				Default value for both is 1.
+			</emphasis></para>
+			<example>
+				<title>Set <varname>verify_cert &amp; require_cert
+					</varname> variable</title>
+				<programlisting format="linespecific">
+...
+# turn on the strictest and strongest authentication possible
+modparam("tls_mgm", "require_cert", "1")
+modparam("tls_mgm", "require_cert", "1:1")
+modparam("tls_mgm", "verify_cert", "0")
+modparam("tls_mgm", "verify_cert", "1:1")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><varname>tls_handshake_timeout</varname> (integer) and
+				<varname>tls_send_timeout</varname> (integer)</title>
+			<para>
+			Timeouts ... advanced users only
+			</para>
+			<para><emphasis>
+				Default value for both is 30.
+			</emphasis></para>
+			<example>
+				<title>Set <varname>tls_handshake_timeout &amp;
+					tls_send_timeout </varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "tls_handshake_timeout", 119) # number of seconds
+modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><varname>client_domain_avp</varname> (integer)</title>
+			<para>
+			This sets the interger AVP used for name based TLS server domains (please see
+			tls_client_domain for more details). Setting the value to 0 disables name based
+			TLS client domains.
+			</para>
+			<para>
+			It's usable only if TLS support was compiled.
+			</para>
+			<para><emphasis>
+				Default value is 0.
+			</emphasis></para>
+			<example>
+				<title>Set <varname>tls_client_domain_avp</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "tls_client_domain_avp", "400")
+...
+				</programlisting>
+			</example>
+		</section>
+                <section>
+                    <title>
+                        <varname>db_mode</varname> (integer)
+                    </title>
+                    <para>
+                        When db_mode is enabled (1), this module cannot accept new domains
+                        configuration from the script.
+                    </para>
+                    <para>Default value is 0. (not enabled)</para>
+                    <example>
+				<title>Usage of <varname>db_mode</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "db_mode", 1)
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>db_url</varname> (string)
+                    </title>
+                    <para>
+                        The database url. It cannot be NULL.
+                    </para>
+                    <example>
+				<title>Usage of <varname>db_url</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "db_url", "mysql://root:admin@localhost/opensips")
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>db_table</varname> (string)
+                    </title>
+                    <para>
+                        Sets the database table name.
+                    </para>
+                    <para>Default value is "tls_mgm".</para>
+                    <example>
+				<title>Usage of <varname>db_table</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "db_table", "tls_mgm")
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>id_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the id column name.
+                    </para>
+                    <para>Default value is "id".</para>
+                    <example>
+				<title>Usage of <varname>id_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "id_col", "id")
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>address_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the address column name.
+                    </para>
+                    <para>Default value is "address".</para>
+                    <example>
+				<title>Usage of <varname>address_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "address_col", "addr")
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>address_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the address column name.
+                    </para>
+                    <para>Default value is "address".</para>
+                    <example>
+				<title>Usage of <varname>address_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "address_col", "addr")
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>tls_method_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the method column name.
+                    </para>
+                    <para>Default value is "method".</para>
+                    <example>
+				<title>Usage of <varname>tls_method_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "tls_method_col", "method")
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>verify_cert_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the verrify certificate column name.
+                    </para>
+                    <para>Default value is "verify_cert".</para>
+                    <example>
+				<title>Usage of <varname>vertify_cert_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "verify_cert_col", "verify_cert")
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>require_cert_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the require certificate column name.
+                    </para>
+                    <para>Default value is "require_cert".</para>
+                    <example>
+				<title>Usage of <varname>require_cert_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "require_cert_col", "req")
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>certificate_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the certificate column name.
+                    </para>
+                    <para>Default value is "certificate".</para>
+                    <example>
+				<title>Usage of <varname>certificate_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "certificate_col", "certificate")
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>private_key_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the private key column name.
+                    </para>
+                    <para>Default value is "private_key".</para>
+                    <example>
+				<title>Usage of <varname>private_key_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "private_key_col", "pk")
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>crl_check_all_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the crl_check_all column name.
+                    </para>
+                    <para>Default value is "crl_check_all".</para>
+                    <example>
+				<title>Usage of <varname>crl_check_all</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "crl_check_all_col", "crl_check")
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>crl_dir_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the crl directory column name.
+                    </para>
+                    <para>Default value is "crl_dir".</para>
+                    <example>
+				<title>Usage of <varname>crl_dir_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "crl_dir_col", "crl_dir")
+                                </programlisting>
+                    </example>
+                </section>
+                            <section>
+                    <title>
+                        <varname>ca_list_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the CA list column name.
+                    </para>
+                    <para>Default value is "ca_list".</para>
+                    <example>
+				<title>Usage of <varname>ca_list_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "ca_list_col", "ca_list")
+                                </programlisting>
+                    </example>
+                </section>
+
+
+
+                <section>
+                    <title>
+                        <varname>ca_dir_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the CA directory column name.
+                    </para>
+                    <para>Default value is "ca_dir".</para>
+                    <example>
+				<title>Usage of <varname>ca_dir_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "ca_dir_col", "ca_dir")
+                                </programlisting>
+                    </example>
+                </section>
+
+
+                 <section>
+                    <title>
+                        <varname>cipher_list_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the cipher list column name.
+                    </para>
+                    <para>Default value is "cipher_list".</para>
+                    <example>
+				<title>Usage of <varname>cipher_list_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "cipher_list_col", "cipher_list")
+                                </programlisting>
+                    </example>
+                </section>
+
+
+                <section>
+                    <title>
+                        <varname>dh_params_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the Diffie-Hellmann parameters column name.
+                    </para>
+                    <para>Default value is "dh_params".</para>
+                    <example>
+				<title>Usage of <varname>dh_params_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "dh_params_col", "dh_parms")
+                                </programlisting>
+                    </example>
+                </section>
+
+               <section>
+                    <title>
+                        <varname>ec_curve_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the ec_curve column name.
+                    </para>
+                    <para>Default value is "ec_curve".</para>
+                    <example>
+				<title>Usage of <varname>ec_curve_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "ec_curve_col", "ec_curve")
+                                </programlisting>
+                    </example>
+                </section>
+
+		<section>
+			<title><varname>server_domain, client_domain</varname> (string)</title>
+			<para>
+			If you only run one domain, the main one is enough. If you
+			are running several TLS servers (that is, you have more than
+			one listen=tls:ip:port entry in the config file), you can
+			specify some parameters for each of them separately (not all
+			the above).
+			</para>
+			<para>
+			The wording 'TLS domain' means that this TLS connection will have different
+			parameters than another TLS connection (from another TLS domain). Thus, TLS
+			domains must are not directly related to different SIP domains, although they
+			are often used in common. Depending on the direction of the TLS handshake, a
+			TLS domain is called 'client domain' (=outgouing TLS connection) or 'server domain'
+			(= incoming TLS connection).
+			</para>
+			<para>
+			For example, TLS domains can be used in virtual hosting scenarios with TLS.
+			&osips; offers SIP service for multiple domains, e.g. atlanta.com and biloxi.com. Altough
+			both domains will be hosted a single SIP proxy, the SIP proxy needs 2 certificates: One
+			for atlanta.com and one for biloxi.com. For incoming TLS connections, the SIP proxy
+			has to present the respective certificate during the TLS handshake. As the SIP proxy
+			does not have received a SIP message yet (this is done after the TLS handshake), the SIP
+			proxy can not retrieve the target domain (which will be usually retrieved from the domain in
+			the request URI). Thus, distinction for these domains must be done by using multiple sockets.
+			The socket on which the TLS connection is received, identifies the respective domain. Thus
+			the SIP proxy is able to present the proper certificate.
+			</para>
+			<para>
+			For outgoing TLS connections, the SIP proxy usually has to provide a client certificate. In
+			this scenario, socket based distinction is not possible as there is no dedicated outgoing socket.
+			Thus, the certificate selection (selection of the proper TLS client domain) will be name based.
+			For this purpose, TLS client domains can be associated with a name (e.g. the domain can be
+			used as name). If the SIP proxy establishes a new outgoing TLS connection, it checks
+			for the TLS client domain AVP (parameter tls_client_domain_avp). If this AVP is set (e.g.
+			in &osips;.cfg), &osips; searches for a TLS client domain with the same name and uses
+			the certificates defined in the respective tls_client_domain section.
+			</para>
+			<para>
+			TLS client domains can also be socket based. If name based domains are disabled or no
+			name based AVP is found, &osips; searches for socket based TLS client domains. In this case
+			the mapping between to the TLS client domain is done based on the destination socket of the
+			underlying outgoing TCP connection.
+			</para>
+			<para>
+			Note: If there is already an existing TLS connection to the remote target, it will be reused
+			wether the TLS client domain AVP matches or not.
+			</para>
+			<para>
+			NOTE: Make sure to also configure &osips; to listen on the specified
+			IP:port.
+			</para>
+			<para>
+			NOTE: Except tls_handshake_timeout and tls_send_timeout all TLS parameters can be set
+			per TLS domain. If a parameter is not explicit set, the default value will be used.
+			</para>
+			<para>
+			It's usable only if TLS support was compiled.
+			</para>
+			<example>
+				<title>Usage of <varname>tls_client_domain</varname> and
+					<varname>tls_server_domain</varname> block
+					</title>
+				<programlisting format="linespecific">
+...
+listen=tls:IP_2:port2
+listen=tls:IP_3:port3
+...
+# set the TLS client domain AVP
+modparam("proto_tls", "tls_client_domain_avp", "400")
+...
+
+# 'atlanta' server domain
+modparam("tls_mgm", "server_domain", "1=IP_2:port2")
+
+modparam("tls_mgm", "certificate", "1:/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "1:/certs/atlanta.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "1:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "1:tlsv1")
+modparam("tls_mgm", "verify_cert", "1:1")
+modparam("tls_mgm", "require_cert", "1:1")
+
+#'biloxy' server domain
+
+modparam("tls_mgm", "server_domain", "2=IP_3:port3")
+
+modparam("tls_mgm", "certificate", "2:/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "2:/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "2:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "2:tlsv1")
+modparam("tls_mgm", "verify_cert", "2:1")
+modparam("tls_mgm", "require_cert", "2:1")
+
+# 'atlanta' client domain
+modparam("tls_mgm", "client_domain", "3=IP_2:port2")
+
+modparam("tls_mgm", "certificate", "3:/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "3:/certs/atlanta.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "3:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "3:tlsv1")
+modparam("tls_mgm", "verify_cert", "3:1")
+modparam("tls_mgm", "require_cert", "3:1")
+
+#'biloxy' client domain
+modparam("tls_mgm", "client_domain", "4=IP_3:port3")
+
+modparam("tls_mgm", "certificate", "4:/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "4:/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "4:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "4:tlsv1")
+modparam("tls_mgm", "verify_cert", "4:1")
+modparam("tls_mgm", "require_cert", "4:1")
+
+
+
+
+# socket based TLS server domains (for TLS based downstream from GW provider)
+modparam("tls_mgm", "client_domain", "5=IP_5:port5")
+
+modparam("tls_mgm", "certificate", "5:/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "5:/certs/atlanta.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "5:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "5:tlsv1")
+modparam("tls_mgm", "verify_cert", "5:0")
+
+# socket based TLS client domains (for TLS based upstream to GW provider)
+# GW IP: 1.2.3.4, GW port: 6677
+modparam("tls_mgm", "client_domain", "6=1.2.3.4:6677")
+
+modparam("tls_mgm", "certificate", "6:/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "6:/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "ca_list", "6:/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "6:tlsv1")
+modparam("tls_mgm", "verify_cert", "6:0")
+
+...
+route{
+...
+    # calls to other SIP domains
+    # set the proper SSL context (certificate) for local hosted domains
+    avp_write("$fd","$avp(fd)");
+    t_relay(); # uses NAPTR and SRV lookups
+    exit;
+...
+    # calls to the PSTN GW
+    t_relay("tls:1.2.3.4:6677");
+    exit;
+...
+				</programlisting>
+			</example>
+		</section>
+	</section>
+
+
+	<section>
+	<title>Pseudo-Variables</title>
+	<para>
+	This module exports the follong pseudo-variables:
+	</para>
+	<para>
+	Some pseudo variables are available for both, the peer'S certificate and
+	the local certificate. Further, some parameters can be read from the
+	<quote>Subject</quote> field or the <quote>Issuer</quote> field.
+	</para>
+	<section>
+		<title>$tls_version</title>
+			<para>
+			<emphasis>$tls_version</emphasis> - the TLS/SSL version which is
+			used on the TLS connection from which the message was received.
+			String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_description</title>
+			<para>
+			<emphasis>$tls_description</emphasis> - the TLS/SSL description
+			of the TLS connection from which the message was received. String
+			type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_cipher_info</title>
+			<para>
+			<emphasis>$tls_cipher_info</emphasis> - the TLS/SSL cipher which
+			is used on the TLS connection from which the message was received.
+			String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_cipher_bits</title>
+			<para>
+			<emphasis>$tls_cipher_bits</emphasis> - the number of cipher bits
+			which are used on the TLS connection from which the message was
+			received. String and Integer type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_[peer|my]_version</title>
+			<para>
+			<emphasis>$tls_[peer|my]_version</emphasis> - the version of the
+			certificate. String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_[peer|my]_serial</title>
+			<para>
+			<emphasis>$tls_[peer|my]_serial</emphasis> - the serial number
+			of the certificate. String and Integer type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_[peer|my]_[subject|issuer]</title>
+			<para>
+			<emphasis>$tls_[peer|my]_[subject|issuer]</emphasis> - ASCII dump
+			of the fields in the issuer/subject section of the certificate.
+			String type.
+			</para>
+			<example>
+				<title>Example of <varname>$tls_[peer|my]_[subject|issuer]</varname></title>
+<programlisting format="linespecific">
+/C=AT/ST=Vienna/L=Vienna/O=enum.at/CN=enum.at
+</programlisting>
+			</example>
+
+	</section>
+	<section>
+		<title>$tls_[peer|my]_[subject|issuer]_cn</title>
+			<para>
+			<emphasis>$tls_[peer|my]_[subject|issuer]_cn</emphasis> -
+			commonName in the issuer/subject section of the certificate.
+			String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_[peer|my]_[subject|issuer]_locality</title>
+			<para>
+			<emphasis>$tls_[peer|my]_[subject|issuer]_locality</emphasis> -
+			localityName in the issuer/subject section of the certificate.
+			String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_[peer|my]_[subject|issuer]_country</title>
+			<para>
+			<emphasis>$tls_[peer|my]_[subject|issuer]_country</emphasis> -
+			countryName in the issuer/subject section of the certificate.
+			String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_[peer|my]_[subject|issuer]_state</title>
+			<para>
+			<emphasis>$tls_[peer|my]_[subject|issuer]_state</emphasis> -
+			stateOrProvinceName in the issuer/subject section of the
+			certificate. String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_[peer|my]_[subject|issuer]_organization</title>
+			<para>
+			<emphasis>$tls_[peer|my]_[subject|issuer]_organization</emphasis> -
+			organizationName in the issuer/subject section of the certificate.
+			String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_[peer|my]_[subject|issuer]_unit</title>
+			<para>
+			<emphasis>$tls_[peer|my]_[subject|issuer]_unit</emphasis> -
+			organizationalUnitName in the issuer/subject section of the
+			certificate. String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_[peer|my]_san_email</title>
+			<para>
+			<emphasis>$tls_[peer|my]_san_email</emphasis> - email address in
+			the <quote>subject alternative name</quote> extension. String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_[peer|my]_san_hostname</title>
+			<para>
+			<emphasis>$tls_[peer|my]_san_hostname</emphasis> - hostname (DNS)
+			in the <quote>subject alternative name</quote> extension. String
+			type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_[peer|my]_san_uri</title>
+			<para>
+			<emphasis>$tls_[peer|my]_san_uri</emphasis> - URI in the
+			<quote>subject alternative name</quote> extension.
+			String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_[peer|my]_san_ip</title>
+			<para>
+			<emphasis>$tls_[peer|my]_san_ip</emphasis> - ip address in the
+			<quote>subject alternative name</quote> extension.
+			String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_peer_verified</title>
+			<para>
+			<emphasis>$tls_peer_verified</emphasis> - Returns 1 if the peer's
+			certificate was successful verified. Otherwise it returns 0.
+			String and Integer type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_peer_revoked</title>
+			<para>
+			<emphasis>$tls_peer_revoked</emphasis> - Returns 1 if the peer's
+			certificate was revoked. Otherwise it returns 0.
+			String and Integer type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_peer_expired</title>
+			<para>
+			<emphasis>$tls_peer_expired</emphasis> - Returns 1 if the peer's
+			certificate is expired. Otherwise it returns 0.
+			String and Integer type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_peer_selfsigned</title>
+			<para>
+			<emphasis>$tls_peer_selfsigned</emphasis> - Returns 1 if the
+			peer's certificate is selfsigned. Otherwise it returns 0.
+			String and Integer type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_peer_notBefore</title>
+			<para>
+			<emphasis>$tls_peer_notBefore</emphasis> - Returns the notBefore
+			validity date of the peer's certificate.
+			String type.
+			</para>
+	</section>
+	<section>
+		<title>$tls_peer_notAfter</title>
+			<para>
+			<emphasis>$tls_peer_notAfter</emphasis> - Returns the notAfter
+			validity date of the peer's certificate.
+			String type.
+			</para>
+	</section>
+	</section>
+
+
+
+	<section id="tls-example">
+		<title>&osips; with TLS - script example</title>
+		<para>
+		IMPORTANT: The TLS support is based on TCP, and for allowing &osips;
+		to use TCP, it must be started in multi-process mode. So, there is
+		a must to have the "fork" parameter set to "yes":
+		</para>
+		<para>
+		NOTE: Since the TLS engine is quite memory consuming, increase the
+		used memory by the run time parameter "-m" (see &osips; -h for more
+		details).
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>fork = yes</para>
+			</listitem>
+		</itemizedlist>
+
+		<example>
+			<title>Script with TLS support</title>
+		<programlisting format="linespecific">
+  # ----------- global configuration parameters ------------------------
+  log_level=3
+  log_stderror=no
+
+  check_via=no
+  dns=no
+  rev_dns=no
+  listen=_your_serv_IP_
+  port=5060
+  children=4
+  fifo="/tmp/opensips_fifo"
+
+  # ------------------ module loading ----------------------------------
+
+  #TLS specific settings
+  loadmodule "tls_mgm.so"
+  loadmodule "proto_tls.so"
+
+  modparam("tls_mgm", "certificate", "/path/opensipsX_cert.pem")
+  modparam("tls_mgm", "private_key", "/path/privkey.pem")
+  modparam("tls_mgm", "ca_list", "/path/calist.pem")
+  modparam("tls_mgm", "ca_list", "/path/calist.pem")
+  modparam("tls_mgm", "require_cert", "1")
+  modparam("tls_mgm", "verify_cert", "1")
+
+  alias=_DNS_ALIAS_
+
+
+  loadmodule "modules/sl/sl.so"
+  loadmodule "modules/rr/rr.so"
+  loadmodule "modules/maxfwd/maxfwd.so"
+  loadmodule "modules/mysql/mysql.so"
+  loadmodule "modules/usrloc/usrloc.so"
+  loadmodule "modules/registrar/registrar.so"
+  loadmodule "modules/tm/tm.so"
+  loadmodule "modules/auth/auth.so"
+  loadmodule "modules/auth_db/auth_db.so"
+  loadmodule "modules/textops/textops.so"
+  loadmodule "modules/uri_db/uri_db.so"
+
+  # ----------------- setting module-specific parameters ---------------
+
+  # -- auth_db params --
+  modparam("auth_db", "db_url", "sql_url")
+  modparam("auth_db", "password_column", "password")
+  modparam("auth_db", "calculate_ha1", 1)
+
+  # -- registrar params --
+  # no multiple registrations
+  modparam("registrar", "append_branches", 0)
+
+  # -------------------------  request routing logic -------------------
+
+  # main routing logic
+
+  route{
+
+  # initial sanity checks
+  if (!mf_process_maxfwd_header("10")) {
+      sl_send_reply("483","Too Many Hops");
+      break;
+  };
+
+  # if somene claims to belong to our domain in From,
+  # challenge him (skip REGISTERs -- we will chalenge them later)
+  if (from_uri==myself) {
+      setflag(1);
+      if ( (method=="INVITE" || method=="SUBSCRIBE" || method=="MESSAGE")
+      &amp;&amp;  !(src_ip==myself) ) {
+          if  (!(proxy_authorize( "domA.net", "subscriber" ))) {
+              proxy_challenge("domA.net","0"/*no-qop*/);
+              break;
+          };
+          if (!db_check_from()) {
+              log("LOG: From Cheating attempt in INVITE\n");
+              sl_send_reply("403",
+                  "That is ugly -- use From=id next time (OB)");
+              break;
+          };
+      }; # non-REGISTER from other domain
+  } else if ( method=="INVITE" &amp;&amp; uri!=myself ) {
+      sl_send_reply("403", "No relaying");
+      break;
+  };
+
+  /* ********   do record-route and loose-route ******* */
+  if (!(method=="REGISTER"))
+      record_route();
+
+  if (loose_route()) {
+      append_hf("P-hint: rr-enforced\r\n");
+      route(1);
+      break;
+  };
+
+  /* ******* check for requests targeted out of our domain ******* */
+  if ( uri!=myself ) {
+      append_hf("P-hint: OUTBOUND\r\n");
+      if (uri=~".*@domB.net") {
+          t_relay_to_tls("domB.net","5061");
+      } else if (uri=~".*@domC.net") {
+          t_relay_to_tls("domC.net","5061");
+      } else {
+          route(1);
+      };
+      break;
+  };
+
+  /* ******* divert to other domain according to prefixes ******* */
+  if (method!="REGISTER") {
+      if ( uri=~"sip:201") {
+          strip(3);
+          sethost("domB.net");
+          t_relay_to_tls("domB.net","5061");
+          break;
+      } else if ( uri=~"sip:202" ) {
+          strip(3);
+          sethost("domC.net");
+          t_relay_to_tls("domC.net","5061");
+          break;
+      };
+  };
+
+  /* ************ requests for our domain ********** */
+  if (method=="REGISTER") {
+      if (!www_authorize( "domA.net", "subscriber" )) {
+          # challenge if none or invalid credentials
+          www_challenge( "domA.net" /* realm */,
+              "0" /* no qop -- some phones can't deal with it */);
+          break;
+      };
+      if (!db_check_to()) {
+          log("LOG: To Cheating attempt\n");
+          sl_send_reply("403", "That is ugly -- use To=id in REGISTERs");
+          break;
+      };
+      # it is an authenticated request, update Contact database now
+      if (!save("location")) {
+          sl_reply_error();
+      };
+      break;
+  };
+
+  # native SIP destinations are handled using USRLOC DB
+  if (!lookup("location")) {
+      # handle user which was not found
+      sl_send_reply("404", "Not Found");
+      break;
+  };
+
+  # remove all present Alert-info headers
+  remove_hf("Alert-Info");
+
+  if (method=="INVITE" &amp;&amp; (proto==tls || isflagset(1))) {
+      append_hf("Alert-info: 1\r\n");                     # cisco 7960
+      append_hf("Alert-info: Bellcore-dr4\r\n");          # cisco ATA
+      append_hf("Alert-info: http://foo.bar/x.wav\r\n");  # snom
+  };
+
+  # do forwarding
+  if (!t_relay()) {
+      sl_reply_error();
+  };
+
+  #end of script
+  }
+		</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>Debug TLS connections</title>
+	<para>If you want to debug TLS connections, put the following log
+	statements into your &osips;.cfg.
+	This will dump all available TLS pseudo variables.
+	</para>
+	<example>
+		<title>Example of TLS logging</title>
+<programlisting format="linespecific">
+xlog("L_INFO","================= start TLS pseudo variables ===============\n");
+xlog("L_INFO","$$tls_version                   = '$tls_version'\n");
+xlog("L_INFO","$$tls_description               = '$tls_description'\n");
+xlog("L_INFO","$$tls_cipher_info               = '$tls_cipher_info'\n");
+xlog("L_INFO","$$tls_cipher_bits               = '$tls_cipher_bits'\n");
+xlog("L_INFO","$$tls_peer_subject              = '$tls_peer_subject'\n");
+xlog("L_INFO","$$tls_peer_issuer               = '$tls_peer_issuer'\n");
+xlog("L_INFO","$$tls_my_subject                = '$tls_my_subject'\n");
+xlog("L_INFO","$$tls_my_issuer                 = '$tls_my_issuer'\n");
+xlog("L_INFO","$$tls_peer_version              = '$tls_peer_version'\n");
+xlog("L_INFO","$$tls_my_version                = '$tls_my_version'\n");
+xlog("L_INFO","$$tls_peer_serial               = '$tls_peer_serial'\n");
+xlog("L_INFO","$$tls_my_serial                 = '$tls_my_serial'\n");
+xlog("L_INFO","$$tls_peer_subject_cn           = '$tls_peer_subject_cn'\n");
+xlog("L_INFO","$$tls_peer_issuer_cn            = '$tls_peer_issuer_cn'\n");
+xlog("L_INFO","$$tls_my_subject_cn             = '$tls_my_subject_cn'\n");
+xlog("L_INFO","$$tls_my_issuer_cn              = '$tls_my_issuer_cn'\n");
+xlog("L_INFO","$$tls_peer_subject_locality     = '$tls_peer_subject_locality'\n");
+xlog("L_INFO","$$tls_peer_issuer_locality      = '$tls_peer_issuer_locality'\n");
+xlog("L_INFO","$$tls_my_subject_locality       = '$tls_my_subject_locality'\n");
+xlog("L_INFO","$$tls_my_issuer_locality        = '$tls_my_issuer_locality'\n");
+xlog("L_INFO","$$tls_peer_subject_country      = '$tls_peer_subject_country'\n");
+xlog("L_INFO","$$tls_peer_issuer_country       = '$tls_peer_issuer_country'\n");
+xlog("L_INFO","$$tls_my_subject_country        = '$tls_my_subject_country'\n");
+xlog("L_INFO","$$tls_my_issuer_country         = '$tls_my_issuer_country'\n");
+xlog("L_INFO","$$tls_peer_subject_state        = '$tls_peer_subject_state'\n");
+xlog("L_INFO","$$tls_peer_issuer_state         = '$tls_peer_issuer_state'\n");
+xlog("L_INFO","$$tls_my_subject_state          = '$tls_my_subject_state'\n");
+xlog("L_INFO","$$tls_my_issuer_state           = '$tls_my_issuer_state'\n");
+xlog("L_INFO","$$tls_peer_subject_organization = '$tls_peer_subject_organization'\n");
+xlog("L_INFO","$$tls_peer_issuer_organization  = '$tls_peer_issuer_organization'\n");
+xlog("L_INFO","$$tls_my_subject_organization   = '$tls_my_subject_organization'\n");
+xlog("L_INFO","$$tls_my_issuer_organization    = '$tls_my_issuer_organization'\n");
+xlog("L_INFO","$$tls_peer_subject_unit         = '$tls_peer_subject_unit'\n");
+xlog("L_INFO","$$tls_peer_issuer_unit          = '$tls_peer_issuer_unit'\n");
+xlog("L_INFO","$$tls_my_subject_unit           = '$tls_my_subject_unit'\n");
+xlog("L_INFO","$$tls_my_issuer_unit            = '$tls_my_issuer_unit'\n");
+xlog("L_INFO","$$tls_peer_san_email            = '$tls_peer_san_email'\n");
+xlog("L_INFO","$$tls_my_san_email              = '$tls_my_san_email'\n");
+xlog("L_INFO","$$tls_peer_san_hostname         = '$tls_peer_san_hostname'\n");
+xlog("L_INFO","$$tls_my_san_hostname           = '$tls_my_san_hostname'\n");
+xlog("L_INFO","$$tls_peer_san_uri              = '$tls_peer_san_uri'\n");
+xlog("L_INFO","$$tls_my_san_uri                = '$tls_my_san_uri'\n");
+xlog("L_INFO","$$tls_peer_san_ip               = '$tls_peer_san_ip'\n");
+xlog("L_INFO","$$tls_my_san_ip                 = '$tls_my_san_ip'\n");
+xlog("L_INFO","$$tls_peer_verified             = '$tls_peer_verified'\n");
+xlog("L_INFO","$$tls_peer_revoked              = '$tls_peer_revoked'\n");
+xlog("L_INFO","$$tls_peer_expired              = '$tls_peer_expired'\n");
+xlog("L_INFO","$$tls_peer_selfsigned           = '$tls_peer_selfsigned'\n");
+xlog("L_INFO","$$tls_peer_notBefore            = '$tls_peer_notBefore'\n");
+xlog("L_INFO","$$tls_peer_notAfter             = '$tls_peer_notAfter'\n");
+xlog("L_INFO","================= end TLS pseudo variables ===============\n");
+</programlisting>
+	</example>
+
+	</section>
+
+
+
+</chapter>

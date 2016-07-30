@@ -10,10 +10,9 @@ Andreea Spirea
 
    <team@voice-system.ro>
 
-   Copyright © 2006-2008 voice-system.ro
+   Copyright © 2006-2008 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -250,8 +249,6 @@ xmpp_send_message();
    configured to forward all SIP requests for XMPP world to it.
 ....
 #
-# $Id$
-#
 # simple quick-start config script for XMPP GW
 #
 # make sure in your main SIP server that you send
@@ -260,14 +257,11 @@ xmpp_send_message();
 #
 # ----------- global configuration parameters ------------------------
 
-debug=9            # debug level (cmd line: -dddddddddd)
-fork=no
-log_stderror=yes    # (cmd line: -E)
+log_level=3        # debug level (cmd line: -dddddddddd)
+log_stderror=no    # (cmd line: -E)
 
-/* Uncomment these lines to enter debugging mode
-fork=no
-log_stderror=yes
-*/
+/* Uncomment these line to enter debugging mode */
+#debug_mode=yes
 
 check_via=no    # (cmd. line: -v)
 dns=no          # (cmd. line: -r)
@@ -316,17 +310,12 @@ route{
                 exit;
         };
 
-        if (msg:len >=  2048 ) {
-                sl_send_reply("513", "Message too big");
-                exit;
-        };
-
         ### absorb retransmissions ###
         if (!t_newtran()) {
                 sl_reply_error();
                 return;
         }
-        if (method == "MESSAGE") {
+        if (is_method("MESSAGE")) {
                 log("*** xmpp-handled MESSAGE message.\n");
                 if (xmpp_send_message()) {
                         t_reply("200", "Accepted");

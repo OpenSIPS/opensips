@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * presence_xml module - 
+ * presence_xml module -
  *
  * Copyright (C) 2007 Voice Sistem S.R.L.
  *
@@ -17,9 +15,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -78,7 +76,7 @@ static void ietf_get_rules(subs_t* subs, xmlDocPtr xcap_tree, xcap_rule_t **rule
 		LM_DBG("ruleset_node NULL\n");
 		goto error;
 
-	}	
+	}
 	for(node1 = ruleset_node->children ; node1; node1 = node1->next)
 	{
 		if(xmlStrcasecmp(node1->name, (unsigned char*)"text")==0 )
@@ -89,7 +87,7 @@ static void ietf_get_rules(subs_t* subs, xmlDocPtr xcap_tree, xcap_rule_t **rule
 
 		cond_node = xmlNodeGetChildByName(node1, "conditions");
 		if(cond_node == NULL)
-		{	
+		{
 			LM_DBG("cond node NULL\n");
 			goto error;
 		}
@@ -99,9 +97,9 @@ static void ietf_get_rules(subs_t* subs, xmlDocPtr xcap_tree, xcap_rule_t **rule
 		if(validity_node !=NULL)
 		{
 			LM_DBG("found validity tag\n");
-		
+
 			t= time(NULL);
-		
+
 			/* search all from-until pair */
 			for(time_node= validity_node->children; time_node;
 					time_node= time_node->next)
@@ -124,22 +122,22 @@ static void ietf_get_rules(subs_t* subs, xmlDocPtr xcap_tree, xcap_rule_t **rule
 					LM_DBG("the lower time limit is not respected\n");
 					continue;
 				}
-				
+
 				time_node= time_node->next;
 				while(1)
 				{
 					if(time_node== NULL)
-					{	
+					{
 						LM_ERR("bad formatted xml doc:until child not found in"
 								" validity pair\n");
 						goto error;
 					}
-					if( xmlStrcasecmp(time_node->name, 
+					if( xmlStrcasecmp(time_node->name,
 								(unsigned char*)"until")== 0)
 						break;
 					time_node= time_node->next;
 				}
-				
+
 				time_cont= (char*)xmlNodeGetContent(time_node);
 				t_fin= xml_parse_dateTime(time_cont);
 				xmlFree(time_cont);
@@ -149,29 +147,29 @@ static void ietf_get_rules(subs_t* subs, xmlDocPtr xcap_tree, xcap_rule_t **rule
 					LM_ERR("failed to parse xml dateTime\n");
 					goto error;
 				}
-			
+
 				if(t <= t_fin)
 				{
 					LM_DBG("the rule is active at this time\n");
 					valid= 1;
 				}
-			
+
 			}
-		
+
 			if(!valid)
 			{
 				LM_DBG("the rule is not active at this time\n");
 				continue;
 			}
 
-		}	
-	
+		}
+
 		sphere_node = xmlNodeGetChildByName(cond_node, "sphere");
 		if(sphere_node!= NULL)
 		{
 			/* check to see if matches presentity current sphere */
 			/* ask presence for sphere information */
-			
+
 			char* sphere= pres_get_sphere(&subs->pres_uri);
 			if(sphere)
 			{
@@ -185,7 +183,7 @@ static void ietf_get_rules(subs_t* subs, xmlDocPtr xcap_tree, xcap_rule_t **rule
 				}
 				pkg_free(sphere);
 				xmlFree(attr);
-	
+
 			}
 			else
 			{
@@ -201,24 +199,24 @@ static void ietf_get_rules(subs_t* subs, xmlDocPtr xcap_tree, xcap_rule_t **rule
 		{
 			LM_ERR("didn't find identity tag\n");
 			goto error;
-		}	
-		
+		}
+
 		iden_child= xmlNodeGetChildByName(identity_node, "one");
-		if(iden_child)	
+		if(iden_child)
 		{
 			for(node2 = identity_node->children; node2; node2 = node2->next)
 			{
 				if(xmlStrcasecmp(node2->name, (unsigned char*)"one")!= 0)
 					continue;
-				
-				id = xmlNodeGetAttrContentByName(node2, "id");	
+
+				id = xmlNodeGetAttrContentByName(node2, "id");
 				if(id== NULL)
 				{
 					LM_ERR("while extracting attribute\n");
 					goto error;
 				}
-				if((strlen(id)== w_uri.len && 
-							(strncmp(id, w_uri.s, w_uri.len)==0)))	
+				if((strlen(id)== w_uri.len &&
+							(strncmp(id, w_uri.s, w_uri.len)==0)))
 				{
 					apply_rule = 1;
 					xmlFree(id);
@@ -226,33 +224,33 @@ static void ietf_get_rules(subs_t* subs, xmlDocPtr xcap_tree, xcap_rule_t **rule
 				}
 				xmlFree(id);
 			}
-		}	
+		}
 
 		/* search for many node*/
 		iden_child= xmlNodeGetChildByName(identity_node, "many");
-		if(iden_child)	
+		if(iden_child)
 		{
 			domain = NULL;
 			for(node2 = identity_node->children; node2; node2 = node2->next)
 			{
 				if(xmlStrcasecmp(node2->name, (unsigned char*)"many")!= 0)
 					continue;
-	
+
 				domain = xmlNodeGetAttrContentByName(node2, "domain");
 				if(domain == NULL)
-				{	
+				{
 					LM_DBG("No domain attribute to many\n");
 				}
-				else	
+				else
 				{
 					LM_DBG("<many domain= %s>\n", domain);
-					if((strlen(domain)!= subs->from_domain.len && 
+					if((strlen(domain)!= subs->from_domain.len &&
 								strncmp(domain, subs->from_domain.s,
 									subs->from_domain.len) ))
 					{
 						xmlFree(domain);
 						continue;
-					}	
+					}
 				}
 				xmlFree(domain);
 				apply_rule = 1;
@@ -265,18 +263,18 @@ static void ietf_get_rules(subs_t* subs, xmlDocPtr xcap_tree, xcap_rule_t **rule
 					if(xmlStrcasecmp(except_node->name, (unsigned char*)"except"))
 						continue;
 
-					id = xmlNodeGetAttrContentByName(except_node, "id");	
+					id = xmlNodeGetAttrContentByName(except_node, "id");
 					if(id!=NULL)
 					{
-						if((strlen(id)- 1== w_uri.len && 
-								(strncmp(id, w_uri.s, w_uri.len)==0)))	
+						if((strlen(id)- 1== w_uri.len &&
+								(strncmp(id, w_uri.s, w_uri.len)==0)))
 						{
 							xmlFree(id);
 							apply_rule = 0;
 							break;
 						}
 						xmlFree(id);
-					}	
+					}
 					else
 					{
 						domain = NULL;
@@ -286,7 +284,7 @@ static void ietf_get_rules(subs_t* subs, xmlDocPtr xcap_tree, xcap_rule_t **rule
 							LM_DBG("Found except domain= %s\n- strlen(domain)= %d\n",
 									domain, (int)strlen(domain));
 							if(strlen(domain)==subs->from_domain.len &&
-								(strncmp(domain,subs->from_domain.s , subs->from_domain.len)==0))	
+								(strncmp(domain,subs->from_domain.s , subs->from_domain.len)==0))
 							{
 								LM_DBG("except domain match\n");
 								xmlFree(domain);
@@ -294,14 +292,14 @@ static void ietf_get_rules(subs_t* subs, xmlDocPtr xcap_tree, xcap_rule_t **rule
 								break;
 							}
 							xmlFree(domain);
-						}	
+						}
 
-					}	
+					}
 				}
 				if(apply_rule== 1)  /* if a match was found no need to keep searching*/
 					break;
 
-			}		
+			}
 		}
 		if(apply_rule ==1)
 			break;

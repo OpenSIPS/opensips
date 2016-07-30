@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Header file for TM MI functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -18,9 +16,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History:
  * --------
@@ -63,28 +61,28 @@ static inline struct mi_root* mi_check_msg(struct sip_msg* msg, str* method,
 	struct cseq_body *parsed_cseq;
 
 	if (body && body->len && !msg->content_type)
-		return init_mi_tree( 400, "Content-Type missing", 19);
+		return init_mi_tree( 400, MI_SSTR("Content-Type missing"));
 
 	if (body && body->len && msg->content_length)
-		return init_mi_tree( 400, "Content-Length disallowed", 24);
+		return init_mi_tree( 400, MI_SSTR("Content-Length disallowed"));
 
 	if (!msg->to)
-		return init_mi_tree( 400, "To missing", 10);
+		return init_mi_tree( 400, MI_SSTR("To missing"));
 
 	if (!msg->from)
-		return init_mi_tree( 400, "From missing", 12);
+		return init_mi_tree( 400, MI_SSTR("From missing"));
 
 	/* we also need to know if there is from-tag and add it otherwise */
 	if (parse_from_header(msg) < 0)
-		return init_mi_tree( 400, "Error in From", 13);
+		return init_mi_tree( 400, MI_SSTR("Error in From"));
 
 	if (msg->cseq && (parsed_cseq = get_cseq(msg))) {
 		if (str2int( &parsed_cseq->number, (unsigned int*)cseq)!=0)
-			return init_mi_tree( 400, "Bad CSeq number", 15);
+			return init_mi_tree( 400, MI_SSTR("Bad CSeq number"));
 
 		if (parsed_cseq->method.len != method->len
 		|| memcmp(parsed_cseq->method.s, method->s, method->len) !=0 )
-			return init_mi_tree( 400, "CSeq method mismatch", 20);
+			return init_mi_tree( 400, MI_SSTR("CSeq method mismatch"));
 	} else {
 		*cseq = -1;
 	}
@@ -140,14 +138,14 @@ static inline char *get_hfblock( str *uri, struct hdr_field *hf, int *l,
 	for (; hf; hf=hf->next) {
 		if (skip_hf(hf)) continue;
 
-		begin=needle=hf->name.s; 
+		begin=needle=hf->name.s;
 		hf_avail=hf->len;
 
 		/* substitution loop */
 		while(hf_avail) {
 			d=memchr(needle, SUBST_CHAR, hf_avail);
 			if (!d || d+1>=needle+hf_avail) { /* nothing to substitute */
-				new=new_str(begin, hf_avail, &last, &total_len); 
+				new=new_str(begin, hf_avail, &last, &total_len);
 				if (!new) goto error;
 				break;
 			} else {
@@ -156,7 +154,7 @@ static inline char *get_hfblock( str *uri, struct hdr_field *hf, int *l,
 				switch(*d) {
 					case SUBST_CHAR:	/* double SUBST_CHAR: IP */
 						/* string before substitute */
-						new=new_str(begin, frag_len, &last, &total_len); 
+						new=new_str(begin, frag_len, &last, &total_len);
 						if (!new) goto error;
 						/* substitute */
 						if (!sock_name) {
@@ -361,7 +359,7 @@ static void mi_uac_dlg_hdl( struct cell *t, int type, struct tmcb_params *ps )
 		pkg_free(text.s);
 		mi_print_uris( &rpl_tree->node, 0 );
 		add_mi_node_child( &rpl_tree->node, 0, 0, 0, ".",1);
-	} else { 
+	} else {
 		addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "%d %.*s",
 			ps->rpl->first_line.u.reply.statuscode,
 			ps->rpl->first_line.u.reply.reason.len,
@@ -432,7 +430,7 @@ struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
 	node = node->next;
 	ruri = &node->value;
 	if (parse_uri( ruri->s, ruri->len, &pruri) < 0 )
-		return init_mi_tree( 400, "Invalid RURI", 12);
+		return init_mi_tree( 400, MI_SSTR("Invalid RURI"));
 
 	/* nexthop RURI (param 3) */
 	node = node->next;
@@ -441,7 +439,7 @@ struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
 		nexthop = 0;
 	} else {
 		if (parse_uri( nexthop->s, nexthop->len, &pnexthop) < 0 )
-			return init_mi_tree( 400, "Invalid NEXTHOP", 15);
+			return init_mi_tree( 400, MI_SSTR("Invalid NEXTHOP"));
 	}
 
 	/* socket (param 4) */
@@ -452,11 +450,11 @@ struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
 	} else {
 		if (parse_phostport( socket->s, socket->len, &s.s, &s.len,
 		&port,&proto)!=0)
-			return init_mi_tree( 404, "Invalid local socket", 20);
+			return init_mi_tree( 404, MI_SSTR("Invalid local socket"));
 		set_sip_defaults( port, proto);
 		sock = grep_sock_info( &s, (unsigned short)port, proto);
 		if (sock==0)
-			return init_mi_tree( 404, "Local socket not found", 22);
+			return init_mi_tree( 404, MI_SSTR("Local socket not found"));
 	}
 
 	/* new headers (param 5) */
@@ -467,10 +465,10 @@ struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
 		hdrs = &node->value;
 		/* use SIP parser to look at what is in the FIFO request */
 		memset( &tmp_msg, 0, sizeof(struct sip_msg));
-		tmp_msg.len = hdrs->len; 
+		tmp_msg.len = hdrs->len;
 		tmp_msg.buf = tmp_msg.unparsed = hdrs->s;
 		if (parse_headers( &tmp_msg, HDR_EOH_F, 0) == -1 )
-			return init_mi_tree( 400, "Bad headers", 11);
+			return init_mi_tree( 400, MI_SSTR("Bad headers"));
 	}
 
 	/* body (param 5 - optional) */
@@ -556,7 +554,7 @@ struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
 		return rpl_tree;
 	} else {
 		if (cmd_tree->async_hdl==NULL)
-			return init_mi_tree( 202, "Accepted", 8);
+			return init_mi_tree( 202, MI_SSTR("Accepted"));
 		else
 			return MI_ROOT_ASYNC_RPL;
 	}
@@ -578,7 +576,7 @@ struct mi_root* mi_tm_cancel(struct mi_root* cmd_tree, void* param)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
 	if( t_lookup_callid( &trans, node->value, node->next->value) < 0 )
-		return init_mi_tree( 481, "No such transaction", 19);
+		return init_mi_tree( 481, MI_SSTR("No such transaction"));
 
 	/* cancel the call */
 	LM_DBG("cancelling transaction %p\n",trans);
@@ -669,7 +667,7 @@ struct mi_root* mi_tm_reply(struct mi_root* cmd_tree, void* param)
 	/* reply code (param 1) */
 	node = cmd_tree->node.kids;
 	if (str2int( &node->value, &rpl_code)!=0 || rpl_code>=700)
-		return init_mi_tree( 400, "Invalid reply code", 18);
+		return init_mi_tree( 400, MI_SSTR("Invalid reply code"));
 
 	/* reason text (param 2) */
 	node = node->next;
@@ -680,19 +678,19 @@ struct mi_root* mi_tm_reply(struct mi_root* cmd_tree, void* param)
 	tmp = node->value;
 	p = memchr( tmp.s, ':', tmp.len);
 	if ( p==NULL)
-		return init_mi_tree( 400, "Invalid trans_id", 16);
+		return init_mi_tree( 400, MI_SSTR("Invalid trans_id"));
 
 	tmp.len = p-tmp.s;
 	if( str2int( &tmp, &hash_index)!=0 )
-		return init_mi_tree( 400, "Invalid index in trans_id", 25);
+		return init_mi_tree( 400, MI_SSTR("Invalid index in trans_id"));
 
 	tmp.s = p+1;
 	tmp.len = (node->value.s+node->value.len) - tmp.s;
 	if( str2int( &tmp, &hash_label)!=0 )
-		return init_mi_tree( 400, "Invalid label in trans_id", 25);
+		return init_mi_tree( 400, MI_SSTR("Invalid label in trans_id"));
 
 	if( t_lookup_ident( &trans, hash_index, hash_label)<0 )
-		return init_mi_tree( 404, "Transaction not found", 21);
+		return init_mi_tree( 404, MI_SSTR("Transaction not found"));
 
 	/* to_tag (param 4) */
 	node = node->next;
@@ -702,7 +700,7 @@ struct mi_root* mi_tm_reply(struct mi_root* cmd_tree, void* param)
 	node = node->next;
 	if (node->value.len==1 && node->value.s[0]=='.')
 		new_hdrs = 0;
-	else 
+	else
 		new_hdrs = &node->value;
 
 	/* body (param 5 - optional) */
@@ -717,7 +715,7 @@ struct mi_root* mi_tm_reply(struct mi_root* cmd_tree, void* param)
 	UNREF(trans);
 
 	if (n<0)
-		return init_mi_tree( 500, "Reply failed", 12);
+		return init_mi_tree( 500, MI_SSTR("Reply failed"));
 
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 }
