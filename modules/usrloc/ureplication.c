@@ -38,47 +38,73 @@ struct clusterer_binds clusterer_api;
 
 void replicate_urecord_insert(urecord_t *r)
 {
+	int rc;
+
 	if (bin_init(&repl_module_name, REPL_URECORD_INSERT, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
-	bin_push_int(clusterer_api.get_my_id());
-
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
 
-	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate urecord insert failed\n");
+	rc = clusterer_api.send_all(ul_replicate_cluster);
+ 	switch (rc) {
+ 	case CLUSTERER_CURR_DISABLED:
+ 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_DEST_DOWN:
+ 		LM_INFO("All destinations in cluster: %d are down or probing\n",
+ 			ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_SEND_ERR:
+ 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
  	}
+
+error:
+	LM_ERR("replicate urecord insert failed\n");
 }
 
 void replicate_urecord_delete(urecord_t *r)
 {
+	int rc;
 
 	if (bin_init(&repl_module_name, REPL_URECORD_DELETE, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
-	bin_push_int(clusterer_api.get_my_id());
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
 
-	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate urecord delete failed\n");
- 	}	
+	rc = clusterer_api.send_all(ul_replicate_cluster);
+ 	switch (rc) {
+ 	case CLUSTERER_CURR_DISABLED:
+ 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_DEST_DOWN:
+ 		LM_INFO("All destinations in cluster: %d are down or probing\n",
+ 			ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_SEND_ERR:
+ 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
+ 	}
+
+error:
+	LM_ERR("replicate urecord delete failed\n");	
 }
 
 void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 {
 	str st;
+	int rc;
 
 	if (bin_init(&repl_module_name, REPL_UCONTACT_INSERT, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
-	bin_push_int(clusterer_api.get_my_id());
 
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
@@ -108,22 +134,34 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.len = sizeof ci->last_modified;
 	bin_push_str(&st);
 
-	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate ucontact insert failed\n");
+	rc = clusterer_api.send_all(ul_replicate_cluster);
+ 	switch (rc) {
+ 	case CLUSTERER_CURR_DISABLED:
+ 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_DEST_DOWN:
+ 		LM_INFO("All destinations in cluster: %d are down or probing\n",
+ 			ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_SEND_ERR:
+ 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
  	}
 
+error:
+	LM_ERR("replicate ucontact insert failed\n");
 }
 
 void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 {
 	str st;
+	int rc;
 
 	if (bin_init(&repl_module_name, REPL_UCONTACT_UPDATE, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
-	bin_push_int(clusterer_api.get_my_id());
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
 	bin_push_str(contact);
@@ -152,28 +190,55 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.len = sizeof ci->last_modified;
 	bin_push_str(&st);
 
-	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate ucontact delete failed\n");
+	rc = clusterer_api.send_all(ul_replicate_cluster);
+ 	switch (rc) {
+ 	case CLUSTERER_CURR_DISABLED:
+ 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_DEST_DOWN:
+ 		LM_INFO("All destinations in cluster: %d are down or probing\n",
+ 			ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_SEND_ERR:
+ 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
  	}
+
+error:
+	LM_ERR("replicate ucontact delete failed\n");
 }
 
 void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 {
+	int rc;
+
 	if (bin_init(&repl_module_name, REPL_UCONTACT_DELETE, BIN_VERSION) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
-	
-	bin_push_int(clusterer_api.get_my_id());
+
 	bin_push_str(r->domain);
 	bin_push_str(&r->aor);
 	bin_push_str(&c->c);
 	bin_push_str(&c->callid);
 	bin_push_int(c->cseq);
 
-	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate ucontact delete failed\n");
+	rc = clusterer_api.send_all(ul_replicate_cluster);
+ 	switch (rc) {
+ 	case CLUSTERER_CURR_DISABLED:
+ 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_DEST_DOWN:
+ 		LM_INFO("All destinations in cluster: %d are down or probing\n",
+ 			ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_SEND_ERR:
+ 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
  	}
+
+error:
+	LM_ERR("replicate ucontact delete failed\n");
 }
 
 /* packet receiving */
@@ -529,30 +594,20 @@ error:
 	return -1;
 }
 
-void receive_binary_packet(int packet_type, struct receive_info *ri, void *att)
+void receive_binary_packet(enum clusterer_event ev, int packet_type,
+				struct receive_info *ri, int cluster_id, int src_id, int dest_id)
 {
 	int rc;
-	int server_id;
-	char *ip;
-	unsigned short port;
+
+	if (ev == CLUSTER_NODE_DOWN)
+		return;
+	else if (ev == CLUSTER_ROUTE_FAILED) {
+		LM_INFO("Failed to route replication packet of type %d from node id: %d "
+			"to node id: %d in cluster: %d\n", cluster_id, packet_type, src_id, dest_id);
+		return;
+	}
 
 	LM_DBG("received a binary packet [%d]!\n", packet_type);
-
-	if(get_bin_pkg_version() != BIN_VERSION){
-		LM_ERR("incompatible bin protocol version\n");
-		return;
-	}
-	
-	rc = bin_pop_int(&server_id);
-	if (rc < 0)
-		return;
-	
-	if (!clusterer_api.check(accept_replicated_udata, &ri->src_su, server_id, ri->proto)) {
-			get_su_info(&ri->src_su.s, ip, port);
-			LM_WARN("received bin packet from unknown source: %s:%hu\n",
-				ip, port);
-			return;
-	}
 
 	switch (packet_type) {
 	case REPL_URECORD_INSERT:

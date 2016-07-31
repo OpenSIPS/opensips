@@ -6,13 +6,14 @@
 			<query_cols>
 				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>cluster_id</field></col>
-				<col><field>machine_id</field></col>
+				<col><field>node_id</field></col>
 				<col><field>url</field></col>
 				<col><field>state</field></col>
-				<col><field>last_attempt</field></col>
-				<col><field>failed_attempts</field></col>
-				<col><field>no_tries</field></col>
-				<col><field>duration</field></col>
+				<col><field>ls_seq_no</field></col>
+				<col><field>top_seq_no</field></col>
+				<col><field>no_ping_retries</field></col>
+				<col><field>priority</field></col>
+				<col><field>sip_addr</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>
@@ -21,13 +22,14 @@
 			<cmd_type>DB_INSERT</cmd_type>
 			<query_cols>
 				<col><field>cluster_id</field></col>
-				<col><field>machine_id</field></col>
+				<col><field>node_id</field></col>
 				<col><field>url</field></col>
 				<col><field>state</field></col>
-				<col><field>last_attempt</field></col>
-				<col><field>failed_attempts</field></col>
-				<col><field>no_tries</field></col>
-				<col><field>duration</field></col>
+				<col><field>ls_seq_no</field></col>
+				<col><field>top_seq_no</field></col>
+				<col><field>no_ping_retries</field></col>
+				<col><field>priority</field></col>
+				<col><field>sip_addr</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>
@@ -39,13 +41,14 @@
 			</clause_cols>
 			<query_cols>
 				<col><field>cluster_id</field></col>
-				<col><field>machine_id</field></col>
+				<col><field>node_id</field></col>
 				<col><field>url</field></col>
 				<col><field>state</field></col>
-				<col><field>last_attempt</field></col>
-				<col><field>failed_attempts</field></col>
-				<col><field>no_tries</field></col>
-				<col><field>duration</field></col>
+				<col><field>ls_seq_no</field></col>
+				<col><field>top_seq_no</field></col>
+				<col><field>no_ping_retries</field></col>
+				<col><field>priority</field></col>
+				<col><field>sip_addr</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>
