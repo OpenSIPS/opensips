@@ -91,7 +91,7 @@ int bin_register_cb(char *mod_name, void (*)(int packet_type, struct receive_inf
  * first function called when building a binary packet
  *
  * @mod_name:  module specific string
- * @cmd_type:  module specific identifier for this new packet
+ * @packet_type:  module specific identifier for this new packet
  *
  * @return: 0 on success
  */
@@ -116,8 +116,50 @@ int bin_push_str(const str *info);
  */
 int bin_push_int(int info);
 
-/* TODO - comment, lol */
+/*
+ * removes an interger from the end of the send buffer
+ *
+ * @return:
+ *		0: success
+ *		< 0: error, no more integers in buffer
+ */
+int bin_alter_pop_int(int count);
+
+/*
+ * skips @count integers in the send buffer from the 'cpos' position
+ *
+ * @return:
+ *		0: success
+ *		< 0: error, no more integers in buffer
+ */
+int bin_skip_int_send_buffer(int count);
+
+/*
+ * returns the send buffer
+ *
+ * @return:
+ *		0: success
+ *		< 0: error
+ */
 int bin_get_buffer(str *buffer);
+
+/*
+ * returns the received buffer
+ *
+ * @return:
+ *		0: success
+ *		< 0: error
+ */
+int bin_get_recv_buffer(str *buffer);
+
+/*
+ * sets the send buffer
+ *
+ * @return:
+ *		0: success
+ *		< 0: error
+ */
+int bin_set_send_buffer(str buffer);
 
 /*
  * pops a str structure from a received binary packet
@@ -147,6 +189,17 @@ int bin_pop_str(str *info);
  * Note: Information is retrieved in the same order it was stored
  */
 int bin_pop_int(void *info);
+
+/*
+ * pops an integer from the end of a received binary packet
+ * @info:   pointer to store the result
+ *
+ * @return:
+ *		0 (success): info retrieved
+ *		1 (success): nothing returned, all data has been consumed!
+ *		< 0: error
+ */
+int bin_pop_back_int(void *info);
 
 /*
  * skips @count integers from a received binary packet

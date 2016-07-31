@@ -30,7 +30,6 @@
 
 struct socket_info *bin;
 
-
 static char *send_buffer;
 static char *cpos;
 
@@ -38,23 +37,12 @@ static char *rcv_buf;
 static char *rcv_end;
 
 static struct packet_cb_list *reg_modules;
-/**
- * bin_init - begins the construction of a new binary packet (header part):
- *
- * +-------------------+-----------------------------------------------------------------+
- * |    12-byte HEADER           |       BODY                max 65535 bytes             |
- * +-------------------+-----------------------------------------------------------------+
- * | PK_MARKER |PGK LEN| Version | LEN | MOD_NAME | CMD | LEN | FIELD | LEN | FIELD |....|
- * +-------------------+-----------------------------------------------------------------+
- *
- * @param: { LEN, MOD_NAME } + CMD
- */
+
 
 short get_bin_pkg_version(void)
 {
 	return  *(short *)(rcv_buf + BIN_PACKET_MARKER_SIZE + PKG_LEN_FIELD_SIZE);
 }
-
 
 void set_len(char *send_buffer, char *cpos){
 	unsigned short len = cpos - send_buffer, *px;
@@ -62,6 +50,17 @@ void set_len(char *send_buffer, char *cpos){
 	*px = len;
 }
 
+/**
+ * bin_init - begins the construction of a new binary packet (header part):
+ *
+ * +-----------------------------+-------------------------------------------------------+
+ * |    12-byte HEADER           |       BODY                max 65535 bytes             |
+ * +-----------------------------+-------------------------------------------------------+
+ * | PK_MARKER |PGK LEN| VERSION | LEN | MOD_NAME | CMD | LEN | FIELD | LEN | FIELD |....|
+ * +-------------------+-----------------------------------------------------------------+
+ *
+ * @param: { LEN, MOD_NAME } + CMD + VERSION
+ */
 int bin_init(str *mod_name, int cmd_type, short version)
 {
 	if (!send_buffer) {
@@ -143,6 +142,41 @@ int bin_push_int(int info)
 	return (int)(cpos - send_buffer);
 }
 
+/*
+ * removes @count intergers from the end of the send buffer
+ *
+ * @return:
+ *		0: success
+ *		< 0: error, no more integers in buffer
+ */
+int bin_alter_pop_int(int count) {
+	if (!cpos || (cpos - count * sizeof(int)) < send_buffer)
+		return -1;
+
+	cpos -= count * sizeof(int);
+	set_len(send_buffer, cpos);
+
+	return 0;
+}
+
+/*
+ * skips @count integers in the send buffer from the 'cpos' position
+ *
+ * @return:
+ *		0: success
+ *		< 0: error, no more integers in buffer
+ */
+int bin_skip_int_send_buffer(int count)
+{
+	if (!cpos || (cpos + count * sizeof(int) - send_buffer) > BUF_SIZE)
+		return -1;
+
+	cpos += count * sizeof(int);
+	set_len(send_buffer, cpos);
+
+	return 0;
+}
+
 int bin_get_buffer(str *buffer)
 {
 	if (!buffer)
@@ -152,6 +186,43 @@ int bin_get_buffer(str *buffer)
 	buffer->len = bin_send_size;
 
 	return 1;
+}
+
+/*
+ * returns the received buffer
+ *
+ * @return:
+ *		0: success
+ *		< 0: error
+ */
+int bin_get_recv_buffer(str *buffer)
+{
+	if (!buffer)
+		return -1;
+
+	buffer->s = rcv_buf;
+	buffer->len = bin_rcv_size;
+
+	return 0;
+}
+
+/*
+ * sets the send buffer
+ *
+ * @return:
+ *		0: success
+ *		< 0: error
+ */
+int bin_set_send_buffer(str buffer)
+{
+	if (!buffer.s)
+		return -1;
+
+	send_buffer = buffer.s;
+	cpos = send_buffer + buffer.len;
+	set_len(send_buffer, cpos);
+
+	return 0;
 }
 
 /*
@@ -279,6 +350,30 @@ int bin_pop_int(void *info)
 	return 0;
 }
 
+/*
+ * pops an integer value from the end of the buffer
+ * @info:   pointer to store the result
+ *
+ * @return:
+ *		0 (success): info retrieved
+ *		1 (success): nothing returned, all data has been consumed!
+ *		< 0: error
+ */
+int bin_pop_back_int(void *info) {
+	if (rcv_end == cpos)
+		return 1;
+
+	if (rcv_end - sizeof(int) < rcv_buf) {
+		LM_ERR("Receive binary packet buffer underflow");
+		return -1;
+	}
+
+	memcpy(info, rcv_end - sizeof(int), sizeof(int));
+	rcv_end -= sizeof(int);
+
+	return 0;
+}
+
 /**
  * bin_register_cb - registers a module handler for specific packets
  * @mod_name: used to classify the incoming packets
@@ -314,14 +409,26 @@ int bin_register_cb(char *mod_name, void (*cb)(int, struct receive_info *, void 
  */
 
 
-void call_callbacks(char* buffer, struct receive_info *rcv){
+void call_callbacks(char* buffer, struct receive_info *rcv)
+{
 	str name;
 	struct packet_cb_list *p;
+	unsigned short pkg_len;
 
-	rcv_buf = buffer;
+	if (!rcv_buf) {
+		rcv_buf = pkg_malloc(BUF_SIZE);
+		if (!rcv_buf) {
+			LM_ERR("No more pkg memory!\n");
+			return;
+		}
+	}
+
+	pkg_len = *(unsigned short*)(buffer + BIN_PACKET_MARKER_SIZE);
+
+	memcpy(rcv_buf, buffer, pkg_len);
 
 	get_name(rcv_buf, name);
-	rcv_end = rcv_buf + *(unsigned short*)(buffer + BIN_PACKET_MARKER_SIZE);
+	rcv_end = rcv_buf + pkg_len;
 
 	cpos = name.s + name.len + CMD_FIELD_SIZE;
 
@@ -339,12 +446,4 @@ void call_callbacks(char* buffer, struct receive_info *rcv){
 		}
 	}
 }
-
-
-/*
- * called in the OpenSIPS initialization phase by the main process.
- * forks the binary packet UDP receivers.
- *
- * @return: 0 on success
- */
 
