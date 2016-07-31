@@ -49,6 +49,7 @@
 #include "ureplication.h"
 #include "udomain.h"
 #include "dlist.h"
+#include "utime.h"
 
 extern event_id_t ei_c_update_id;
 
@@ -136,9 +137,12 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 		if (shm_str_dup( &c->attr, _ci->attr) < 0) goto mem_error;
 	}
 
+	get_act_time();
+
 	c->domain = _dom;
 	c->aor = _aor;
 	c->expires = _ci->expires;
+	c->expires_sip = _ci->expires - act_time;
 	c->q = _ci->q;
 	c->sock = _ci->sock;
 	c->cseq = _ci->cseq;
@@ -306,8 +310,11 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		_c->attr.len = 0;
 	}
 
+	get_act_time();
+
 	_c->sock = _ci->sock;
 	_c->expires = _ci->expires;
+	_c->expires_sip = _ci->expires - act_time;
 	_c->q = _ci->q;
 	_c->cseq = _ci->cseq;
 	_c->methods = _ci->methods;
