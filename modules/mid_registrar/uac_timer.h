@@ -38,6 +38,8 @@ extern struct usrloc_api ul_api;
 extern struct tm_binds tm_api;
 extern struct sig_binds sig_api;
 
+extern time_t act_time;
+
 /*
  * may act as an AoR or a contact, depending on whether contact aggregation is
  * enabled or not
@@ -49,14 +51,28 @@ struct mid_reg_queue_entry {
 	/* De-registrations will be generated over to this SIP URI */
 	str ruri;
 
-	unsigned int reg_tick;
+	str ct_uri;
+
+	unsigned int max_contacts;
+	unsigned int flags;
+
 	unsigned int expires;
+	unsigned int expires_out;
+
+	unsigned int next_check_ts;
+	unsigned int last_register_out_ts;
+
 	urecord_t *rec;
 	ucontact_t *con;
+	udomain_t *dom;
+	str aor;
 };
 
 /* add to a priority queue, sorted by registration time */
 void timer_queue_add(struct mid_reg_queue_entry *te);
+
+int should_relay_register(ucontact_t *con, unsigned int expires);
+int timer_queue_update_by_ct(ucontact_t *con, unsigned int expires);
 
 void timer_queue_del_contact(ucontact_t *ct);
 
