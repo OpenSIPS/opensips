@@ -149,16 +149,21 @@ int should_relay_register(ucontact_t *con, unsigned int expires)
 	list_for_each(it, uac_timer_queue) {
 		entry = list_entry(it, struct mid_reg_queue_entry, queue);
 		if (con == entry->con) {
+			LM_INFO("ct match!\n");
 			if (entry->expires != expires ||
 	//		    entry->next_check_ts < expires + act_time)
-			    entry->expires_out + entry->last_register_out_ts - act_time <= expires)
+			    entry->expires_out + entry->last_register_out_ts - act_time <= expires) {
+				LM_INFO("[%d - %d], [%d - %d - %d]\n", entry->expires, expires, entry->expires_out, entry->last_register_out_ts, expires);
 				lock_release(queue_lock);
 				return 1;
+			}
 
 			lock_release(queue_lock);
 			return 0;
 		}
 	}
+
+	LM_INFO("no match for [%d - %d, %d - %d]\n", entry->expires, entry->expires_out, entry->last_register_out_ts, expires);
 
 	lock_release(queue_lock);
 	return 1;

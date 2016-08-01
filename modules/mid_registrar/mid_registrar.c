@@ -1324,7 +1324,7 @@ static struct socket_info *get_sock_hdr(struct sip_msg *msg)
  * Fills the common part (for all contacts) of the info structure
  */
 static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
-						unsigned int _e, unsigned int _f, unsigned int _flags)
+    unsigned int _e, unsigned int _e_out, unsigned int _f, unsigned int _flags)
 {
 	static ucontact_info_t ci;
 	static str no_ua = str_init("n/a");
@@ -1419,6 +1419,7 @@ static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
 
 		/* set expire time */
 		ci.expires = _e + act_time;
+		ci.expires_out = _e_out;
 
 		/* Get methods of contact */
 		if (_c->methods) {
@@ -1668,7 +1669,7 @@ static inline int update_contacts(struct sip_msg* req, struct sip_msg* _m, ureco
 	cflags = (entry->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(req, 0, 0, cflags, entry->flags))==0 ) {
+	if ( (ci=pack_ci(req, 0, 0, 0, cflags, entry->flags))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		goto error;
 	}
@@ -1765,7 +1766,7 @@ static inline int update_contacts(struct sip_msg* req, struct sip_msg* _m, ureco
 				}
 
 				/* pack the contact_info */
-				if ( (ci=pack_ci( 0, _c, e_out, 0, entry->flags))==0 ) {
+				if ( (ci=pack_ci( 0, _c, e, e_out, 0, entry->flags))==0 ) {
 					LM_ERR("failed to extract contact info\n");
 					goto error;
 				}
@@ -1822,7 +1823,7 @@ static inline int update_contacts(struct sip_msg* req, struct sip_msg* _m, ureco
 				}
 
 				/* pack the contact specific info */
-				if ( (ci=pack_ci( 0, _c, e_out, 0, entry->flags))==0 ) {
+				if ( (ci=pack_ci( 0, _c, e, e_out, 0, entry->flags))==0 ) {
 					LM_ERR("failed to pack contact specific info\n");
 					goto error;
 				}
@@ -1953,7 +1954,7 @@ static inline int insert_contacts(struct sip_msg *req, struct sip_msg* _m,
 			}
 
 			/* pack the contact_info */
-			if ( (ci=pack_ci( (ci==0)?req:0, _c, e_out, cflags, entry->flags))==0 ) {
+			if ( (ci=pack_ci( (ci==0)?req:0, _c, e, e_out, cflags, entry->flags))==0 ) {
 				LM_ERR("failed to extract contact info\n");
 				goto error;
 			}
@@ -2185,7 +2186,7 @@ static int w_mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 	/* TODO FIXME */
 	//cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 	/* pack the contact_info */
-	if ( (ci=pack_ci(msg, 0, 0, 0, 0))==0 ) {
+	if ( (ci=pack_ci(msg, 0, 0, 0, 0, 0))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		ul_api.unlock_udomain(ud, &aor);
 		return -1;
@@ -2204,14 +2205,33 @@ static int w_mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 		} else if (ret == -2) { /* duplicate or lower cseq */
 			continue;
 		} else if (ret == 0) { /* found */
-			LM_INFO("found >> %d --- [ %ld, %ld ]\n", e, c->expires, c->expires_sip);
-			if (e == 0 || e != c->expires_sip)
+			LM_INFO("found >> %d --- [ %ld, %ld ]\n", e, c->expires_in, c->expires_out);
+			if (e == 0 || e != c->expires_in) {
+				LM_INFO("FWD 1\n");
 				goto out_forward;
+			}
 
-			if (should_relay_register(c, e))
+			//if (should_relay_register(c, e)) {
+			if (timer_queue_update_by_ct(c, e)) {
+				LM_INFO("FWD 2\n");
 				goto out_forward;
-			else
+			} else {
+				/* pack the contact specific info */
+				ci = pack_ci(msg, ct, e, c->expires_out, 0, 0);
+				if (!ci) {
+					LM_ERR("failed to pack contact specific info\n");
+					rerrno = R_UL_UPD_C;
+					goto out_error;
+				}
+
+				if (ul_api.update_ucontact(rec, c, ci, 0) < 0) {
+					rerrno = R_UL_UPD_C;
+					LM_ERR("failed to update contact\n");
+					goto out_error;
+				}
+
 				continue;
+			}
 		}
 
 		/* not found */
@@ -2220,11 +2240,18 @@ static int w_mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 
 	/* no contacts need updating on the far end registrar */
 	ul_api.unlock_udomain(ud, &aor);
+
+	/* quick SIP reply */
+	send_reply(msg, 0);
 	return 2;
 
 out_forward:
 	ul_api.unlock_udomain(ud, &aor);
 	return register_tm_handlers(msg, ud, &aor, expires_out);
+
+out_error:
+	send_reply(msg, 0);
+	return -1;
 }
 
 
