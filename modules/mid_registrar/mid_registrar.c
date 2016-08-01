@@ -2238,6 +2238,9 @@ static int w_mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 		goto out_forward;
 	}
 
+	/* prepare the Contact header field for the 200 OK response */
+	build_contact(rec->contacts, msg);
+
 	/* no contacts need updating on the far end registrar */
 	ul_api.unlock_udomain(ud, &aor);
 
