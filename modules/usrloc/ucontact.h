@@ -79,7 +79,8 @@ typedef struct ucontact {
 	str received;           /*!< IP+port+protocol we received the REGISTER from */
 	str path;               /*!< Path header */
 	time_t expires;         /*!< UNIX timestamp for the expiry */
-	time_t expires_sip;     /*!< Expires parameter */
+	time_t expires_in;      /*!< Expires value from the initial request */
+	time_t expires_out;     /*!< Expires value from the 200 OK reply */
 	qvalue_t q;             /*!< q parameter */
 	str instance;			/*!< instance parameter */
 	str callid;             /*!< Call-ID header field of registration */
@@ -109,6 +110,8 @@ typedef struct ucontact_info {
 	str received;
 	str* path;
 	time_t expires;
+	time_t expires_in;
+	time_t expires_out;
 	qvalue_t q;
 	str instance;
 	str* callid;
