@@ -1040,14 +1040,16 @@ static void repl_prof_utimer_f(utime_t ticks, void *param)
 {
 #define REPL_PROF_TRYSEND() \
 	do { \
+		nr++; \
 		if (ret > repl_prof_buffer_th) { \
 			/* send the buffer */ \
-			dlg_replicate_profiles(); \
-			replicated = 1; \
+			if (nr) \
+				dlg_replicate_profiles(); \
 			if (bin_init(&module_name, REPLICATION_DLG_PROFILE, BIN_VERSION) < 0) { \
 				LM_ERR("cannot initiate bin buffer\n"); \
 				return; \
 			} \
+			nr = 0; \
 		} \
 	} while (0)
 
@@ -1055,8 +1057,8 @@ static void repl_prof_utimer_f(utime_t ticks, void *param)
 	static str module_name = str_init("dialog");
 	map_iterator_t it;
 	unsigned int count;
-	int replicated = 0;
 	int i;
+	int nr = 0;
 	int ret;
 	void **dst;
 	str *value;
@@ -1123,7 +1125,7 @@ error:
 
 done:
 	/* check if there is anything else left to replicate */
-	if (!replicated)
+	if (nr)
 		dlg_replicate_profiles();
 #undef REPL_PROF_TRYSEND
 }

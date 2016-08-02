@@ -990,7 +990,6 @@ void rl_timer_repl(utime_t ticks, void *param)
 	str *key;
 	int nr = 0;
 	int ret;
-	int replicated = 0;
 
 	if (bin_init(&module_name, RL_PIPE_COUNTER, BIN_VERSION) < 0) {
 		LM_ERR("cannot initiate bin buffer\n");
@@ -1035,9 +1034,9 @@ void rl_timer_repl(utime_t ticks, void *param)
 			nr++;
 
 			if (ret > rl_buffer_th) {
-				/* always replicate the pipe to "simulate" pinging */
-				rl_replicate();
-				replicated = 1;
+				/* send the buffer */
+				if (nr)
+					rl_replicate();
 				if (bin_init(&module_name, RL_PIPE_COUNTER, BIN_VERSION) < 0) {
 					LM_ERR("cannot initiate bin buffer\n");
 					RL_RELEASE_LOCK(i);
@@ -1054,7 +1053,7 @@ next_map:
 		RL_RELEASE_LOCK(i);
 	}
 	/* if there is anything else to send, do it now */
-	if (!replicated)
+	if (nr)
 		rl_replicate();
 	return;
 error:
