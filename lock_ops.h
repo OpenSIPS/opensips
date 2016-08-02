@@ -100,8 +100,23 @@ typedef pthread_mutex_t gen_lock_t;
 
 inline static gen_lock_t* lock_init(gen_lock_t* lock)
 {
-	if (pthread_mutex_init(lock, 0)==0) return lock;
-	else return 0;
+	pthread_mutexattr_t attr;
+
+	if (pthread_mutexattr_init(&attr) != 0)
+		return 0;
+
+	if (pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED) != 0) {
+		pthread_mutexattr_destroy(&attr);
+		return 0;
+	}
+
+	if (pthread_mutex_init(lock, &attr) != 0) {
+		pthread_mutexattr_destroy(&attr);
+		return 0;
+	}
+
+	pthread_mutexattr_destroy(&attr);
+	return lock;
 }
 
 #define lock_get(lock) pthread_mutex_lock(lock)
