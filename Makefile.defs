@@ -1369,6 +1369,9 @@ ifeq ($(OS), linux)
 		DEFS+= -DUSE_POSIX_SEM  # try posix sems
 		found_lock_method=yes
 	endif
+	ifneq (,$(findstring USE_PTHREAD_MUTEX, $(DEFS)))
+		LIBS += -pthread
+	endif
 	# check for >= 2.5.44
 	ifeq ($(shell [ $(OSREL_N) -ge 2005044 ] && echo has_epoll), has_epoll)
 		ifeq ($(NO_EPOLL),)
