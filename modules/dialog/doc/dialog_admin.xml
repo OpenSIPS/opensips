@@ -2384,26 +2384,7 @@ $var(account) = $dlg_val(account_type);
 		_empty_line_
 		</programlisting>
 		</section>
-		<section>
-		<title>
-		<function moreinfo="none">profile_bin_status</function>
-		</title>
-		<para>
-		Dumps each destination used for profiles replication, as well as
-		the timestamp of the last message received from them.
-		</para>
-		<para>
-		Name: <emphasis>profile_bin_status</emphasis>
-		</para>
-		<para>Parameters: <emphasis>none</emphasis></para>
-		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		:profile_bin_status:_reply_fifo_file_
-		_empty_line_
-		</programlisting>
-		</section>
+
 	</section>
 
 
