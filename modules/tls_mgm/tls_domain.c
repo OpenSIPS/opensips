@@ -101,19 +101,15 @@ void tls_release_domain(struct tls_domain* dom)
 	lock_stop_write(dom_lock);
 }
 
-int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals)
+int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals, str* blob_vals)
 {
 	size_t len;
 	char *p;
 	struct tls_domain *d = *dom;
 	size_t cadir_len = strlen(str_vals[STR_VALS_CADIR_COL]);
-	size_t calist_len = strlen(str_vals[STR_VALS_CALIST_COL]);
-	size_t certificate_len = strlen(str_vals[STR_VALS_CERTIFICATE_COL]);
 	size_t cplist_len = strlen(str_vals[STR_VALS_CPLIST_COL]);
 	size_t crl_dir_len = strlen(str_vals[STR_VALS_CRL_DIR_COL]);
-	size_t dhparams_len = strlen(str_vals[STR_VALS_DHPARAMS_COL]);
 	size_t eccurve_len = strlen(str_vals[STR_VALS_ECCURVE_COL]);
-	size_t pk_len = strlen(str_vals[STR_VALS_PK_COL]);
 
 
 	len = sizeof(struct tls_domain) +d->id.len;
@@ -121,28 +117,26 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals)
 	if (cadir_len)
 		len += cadir_len + 1;
 
-	if (calist_len)
-		len += calist_len + 1;
-
-
-	if (certificate_len)
-		len += certificate_len + 1;
-
 	if (cplist_len)
 		len += cplist_len + 1;
 
 	if (crl_dir_len)
 		len += crl_dir_len + 1;
 
-	if (dhparams_len)
-		len += dhparams_len + 1;
-
 	if (eccurve_len)
 		len += eccurve_len + 1;
 
-	if (pk_len)
-		len += pk_len + 1;
+	if(blob_vals[BLOB_VALS_CERTIFICATE_COL].len && blob_vals[BLOB_VALS_CERTIFICATE_COL].s)
+		len += blob_vals[BLOB_VALS_CERTIFICATE_COL].len;
 
+	if(blob_vals[BLOB_VALS_PK_COL].len && blob_vals[BLOB_VALS_PK_COL].s)
+		len += blob_vals[BLOB_VALS_PK_COL].len;
+
+	if(blob_vals[BLOB_VALS_CALIST_COL].len && blob_vals[BLOB_VALS_CALIST_COL].s)
+		len += blob_vals[BLOB_VALS_CALIST_COL].len;
+
+	if(blob_vals[BLOB_VALS_DHPARAMS_COL].len && blob_vals[BLOB_VALS_DHPARAMS_COL].s)
+		len += blob_vals[BLOB_VALS_DHPARAMS_COL].len;
 
 	d = shm_realloc(d, len);
 	if (d == NULL) {
@@ -185,17 +179,20 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals)
 		p = p + cadir_len + 1;
 	}
 
-	if (calist_len) {
-		d->ca_file = p;
-		memcpy(p, str_vals[STR_VALS_CALIST_COL], calist_len);
-		p = p + calist_len + 1;
+	if (blob_vals[BLOB_VALS_CALIST_COL].len && blob_vals[BLOB_VALS_CALIST_COL].s) {
+		d->ca.s = p;
+		d->ca.len = blob_vals[BLOB_VALS_CALIST_COL].len;
+		memcpy(p, blob_vals[BLOB_VALS_CALIST_COL].s, blob_vals[BLOB_VALS_CALIST_COL].len);
+		p = p + d->ca.len;
 	}
 
-	if (certificate_len) {
-		d->cert_file = p;
-		memcpy(p, str_vals[STR_VALS_CERTIFICATE_COL], certificate_len);
-		p = p + certificate_len + 1;
+	if (blob_vals[BLOB_VALS_CERTIFICATE_COL].len && blob_vals[BLOB_VALS_CERTIFICATE_COL].s) {
+		d->cert.s = p;
+		d->cert.len = blob_vals[BLOB_VALS_CERTIFICATE_COL].len;
+		memcpy(p, blob_vals[BLOB_VALS_CERTIFICATE_COL].s, blob_vals[BLOB_VALS_CERTIFICATE_COL].len);
+		p = p + d->cert.len;
 	}
+
 
 	if (cplist_len) {
 		d->ciphers_list = p;
@@ -209,10 +206,11 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals)
 		p = p + crl_dir_len + 1;
 	}
 
-	if (dhparams_len) {
-		d->tmp_dh_file = p;
-		memcpy(p, str_vals[STR_VALS_DHPARAMS_COL], dhparams_len);
-		p = p + dhparams_len + 1;
+	if (blob_vals[BLOB_VALS_DHPARAMS_COL].len && blob_vals[BLOB_VALS_DHPARAMS_COL].s) {
+		d->dh_param.s = p;
+		d->dh_param.len = blob_vals[BLOB_VALS_DHPARAMS_COL].len;
+		memcpy(p, blob_vals[BLOB_VALS_DHPARAMS_COL].s, blob_vals[BLOB_VALS_DHPARAMS_COL].len);
+		p = p + d->dh_param.len;
 	}
 
 	if (eccurve_len) {
@@ -221,11 +219,138 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals)
 		p = p + eccurve_len + 1;
 	}
 
-	if (pk_len) {
-		d->pkey_file = p;
-		memcpy(p, str_vals[STR_VALS_PK_COL], pk_len);
-		p = p + pk_len + 1;
+	if (blob_vals[BLOB_VALS_PK_COL].len && blob_vals[BLOB_VALS_PK_COL].s) {
+		d->pkey.s = p;
+		d->pkey.len = blob_vals[BLOB_VALS_PK_COL].len;
+		memcpy(p, blob_vals[BLOB_VALS_PK_COL].s, blob_vals[BLOB_VALS_PK_COL].len);
+		p = p + d->pkey.len;
 	}
+
+	return 0;
+}
+
+int set_all_default_domain_attr(struct tls_domain *d, char **str_vals, int *int_vals, str* blob_vals)
+{
+	size_t len;
+	char *p;
+	size_t cadir_len = strlen(str_vals[STR_VALS_CADIR_COL]);
+	size_t cplist_len = strlen(str_vals[STR_VALS_CPLIST_COL]);
+	size_t crl_dir_len = strlen(str_vals[STR_VALS_CRL_DIR_COL]);
+	size_t eccurve_len = strlen(str_vals[STR_VALS_ECCURVE_COL]);
+
+	if (d->id.s) {
+		/* Not reininitialising a default domain
+		   TODO: do it in future */
+		return 0;
+	}
+
+	len = 0;
+
+	if (cadir_len)
+		len += cadir_len + 1;
+
+	if (cplist_len)
+		len += cplist_len + 1;
+
+	if (crl_dir_len)
+		len += crl_dir_len + 1;
+
+	if (eccurve_len)
+		len += eccurve_len + 1;
+
+	if(blob_vals[BLOB_VALS_CERTIFICATE_COL].len && blob_vals[BLOB_VALS_CERTIFICATE_COL].s)
+		len += blob_vals[BLOB_VALS_CERTIFICATE_COL].len;
+
+	if(blob_vals[BLOB_VALS_PK_COL].len && blob_vals[BLOB_VALS_PK_COL].s)
+		len += blob_vals[BLOB_VALS_PK_COL].len;
+
+	if(blob_vals[BLOB_VALS_CALIST_COL].len && blob_vals[BLOB_VALS_CALIST_COL].s)
+		len += blob_vals[BLOB_VALS_CALIST_COL].len;
+
+	if(blob_vals[BLOB_VALS_DHPARAMS_COL].len && blob_vals[BLOB_VALS_DHPARAMS_COL].s)
+		len += blob_vals[BLOB_VALS_DHPARAMS_COL].len;
+
+	p = shm_malloc(len);
+	if (p == NULL) {
+		LM_ERR("insufficient shm memory");
+		return -1;
+	}
+	memset(p, 0, len);
+
+	if (strcasecmp(str_vals[STR_VALS_METHOD_COL], "SSLV23") == 0 || strcasecmp(str_vals[STR_VALS_METHOD_COL], "TLSany") == 0)
+		d->method = TLS_USE_SSLv23;
+	else if (strcasecmp(str_vals[STR_VALS_METHOD_COL], "TLSV1") == 0)
+		d->method = TLS_USE_TLSv1;
+	else if (strcasecmp(str_vals[STR_VALS_METHOD_COL], "TLSV1_2") == 0)
+		d->method = TLS_USE_TLSv1_2;
+
+	if (int_vals[INT_VALS_VERIFY_CERT_COL] != -1) {
+		d->verify_cert = int_vals[INT_VALS_VERIFY_CERT_COL];
+	}
+
+	if (int_vals[INT_VALS_CRL_CHECK_COL] != -1) {
+		d->crl_check_all = int_vals[INT_VALS_CRL_CHECK_COL];
+	}
+
+	if (int_vals[INT_VALS_REQUIRE_CERT_COL] != -1) {
+		d->require_client_cert = int_vals[INT_VALS_REQUIRE_CERT_COL];
+	}
+
+	if (cadir_len) {
+		d->ca_directory = p;
+		memcpy(p, str_vals[STR_VALS_CADIR_COL], cadir_len);
+		p = p + cadir_len + 1;
+	}
+
+	if (blob_vals[BLOB_VALS_CALIST_COL].len && blob_vals[BLOB_VALS_CALIST_COL].s) {
+		d->ca.s = p;
+		d->ca.len = blob_vals[BLOB_VALS_CALIST_COL].len;
+		memcpy(p, blob_vals[BLOB_VALS_CALIST_COL].s, blob_vals[BLOB_VALS_CALIST_COL].len);
+		p = p + d->ca.len;
+	}
+
+	if (blob_vals[BLOB_VALS_CERTIFICATE_COL].len && blob_vals[BLOB_VALS_CERTIFICATE_COL].s) {
+		d->cert.s = p;
+		d->cert.len = blob_vals[BLOB_VALS_CERTIFICATE_COL].len;
+		memcpy(p, blob_vals[BLOB_VALS_CERTIFICATE_COL].s, blob_vals[BLOB_VALS_CERTIFICATE_COL].len);
+		p = p + d->cert.len;
+	}
+
+
+	if (cplist_len) {
+		d->ciphers_list = p;
+		memcpy(p, str_vals[STR_VALS_CPLIST_COL], cplist_len);
+		p = p + cplist_len + 1;
+	}
+
+	if (crl_dir_len) {
+		d->crl_directory = p;
+		memcpy(p, str_vals[STR_VALS_CRL_DIR_COL], crl_dir_len);
+		p = p + crl_dir_len + 1;
+	}
+
+	if (blob_vals[BLOB_VALS_DHPARAMS_COL].len && blob_vals[BLOB_VALS_DHPARAMS_COL].s) {
+		d->dh_param.s = p;
+		d->dh_param.len = blob_vals[BLOB_VALS_DHPARAMS_COL].len;
+		memcpy(p, blob_vals[BLOB_VALS_DHPARAMS_COL].s, blob_vals[BLOB_VALS_DHPARAMS_COL].len);
+		p = p + d->dh_param.len;
+	}
+
+	if (eccurve_len) {
+		d->tls_ec_curve = p;
+		memcpy(p, str_vals[STR_VALS_ECCURVE_COL], eccurve_len);
+		p = p + eccurve_len + 1;
+	}
+
+	if (blob_vals[BLOB_VALS_PK_COL].len && blob_vals[BLOB_VALS_PK_COL].s) {
+		d->pkey.s = p;
+		d->pkey.len = blob_vals[BLOB_VALS_PK_COL].len;
+		memcpy(p, blob_vals[BLOB_VALS_PK_COL].s, blob_vals[BLOB_VALS_PK_COL].len);
+		p = p + d->pkey.len;
+	}
+
+	/* save the pointer to the allocated to make possible future freeing */
+	d->id.s = p;
 
 	return 0;
 }

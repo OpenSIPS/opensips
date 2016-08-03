@@ -127,6 +127,8 @@ void tls_release_domain(struct tls_domain* dom);
 
 void tls_release_all_domains(struct tls_domain* dom);
 
-int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals);
+int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,  str* blob_vals);
+int set_all_default_domain_attr(struct tls_domain *dom, char **str_vals, int *int_vals,  str* blob_vals);
+
 
 #endif

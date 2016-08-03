@@ -24,11 +24,11 @@ struct tls_domain {
 	int             verify_cert;
 	int             require_client_cert;
 	int             crl_check_all;
-	char           *cert_file;
-	char           *pkey_file;
+	str            cert;
+	str            pkey;
 	char           *crl_directory;
-	char           *ca_file;
-	char           *tmp_dh_file;
+	str            ca;
+	str            dh_param;
 	char           *tls_ec_curve;
 	char           *ca_directory;
 	char           *ciphers_list;

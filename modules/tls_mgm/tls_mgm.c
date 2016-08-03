@@ -1,3 +1,42 @@
+ /*
+ * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2015 OpenSIPS Foundation
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ * In addition, as a special exception, the copyright holders give
+ * permission to link the code of portions of this program with the
+ * OpenSSL library under certain conditions as described in each
+ * individual source file, and distribute linked combinations
+ * including the two.
+ * You must obey the GNU General Public License in all respects
+ * for all of the code used other than OpenSSL.  If you modify
+ * file(s) with this exception, you may extend this exception to your
+ * version of the file(s), but you are not obligated to do so.  If you
+ * do not wish to do so, delete this exception statement from your
+ * version.  If you delete this exception statement from all source
+ * files in the program, then also delete it here.
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
+ *
+ * History:
+ * -------
+ *  2015-02-12  first version (bogdan)
+ */
+
 #include <openssl/ui.h>
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
@@ -353,6 +392,34 @@ set_dh_params(SSL_CTX * ctx, char *filename)
 	return 0;
 }
 
+static int set_dh_params_db(SSL_CTX * ctx, str *blob)
+{
+	LM_DBG("Entered\n");
+	BIO *bio;
+	DH *dh;
+
+	bio = BIO_new_mem_buf((void*)blob->s,blob->len);
+	if (!bio) {
+		LM_ERR("unable to create bio \n");
+		return -1;
+	}
+
+	dh = PEM_read_bio_DHparams(bio, 0, 0, 0);
+	BIO_free(bio);
+	if (!dh) {
+		LM_ERR("unable to read dh params from bio\n");
+		return -1;
+	}
+
+	if (!SSL_CTX_set_tmp_dh(ctx, dh)) {
+		LM_ERR("unable to set dh params\n");
+		return -1;
+	}
+
+	DH_free(dh);
+	LM_DBG("DH params from successfully set\n");
+	return 0;
+}
 
 /*
  * Set elliptic curve.
@@ -388,7 +455,8 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	struct tls_domain **serv_dom, struct tls_domain **cli_dom)
 {
 	int int_vals[4];
-	char *str_vals[11];
+	char *str_vals[8];
+	str blob_vals[4];
 	int i, n;
 	int no_rows = 5;
 	int db_cols = 15;
@@ -419,7 +487,7 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	columns[14] = &eccurve_col;
 
 	/* checking if the table version is up to date*/
-	if (db_check_table_version(dr_dbf, db_hdl, db_table, 1/*version*/) != 0)
+	if (db_check_table_version(dr_dbf, db_hdl, db_table, 2/*version*/) != 0)
 		goto error;
 
 	/* table to use*/
@@ -434,8 +502,8 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 			LM_ERR("DB query failed - retrieve valid connections \n");
 			goto error;
 		}
-		no_rows = estimate_available_rows(10 + 45 + 4 + 45 + 4 + 4 + 45 +
-			45 + 4 + 45 + 45 + 45 + 45 + 45 + 45, db_cols);
+		no_rows = estimate_available_rows(4 + 45 + 4 + 45 + 4 + 4 + 45 +
+			45 + 4 + 45 + 45 + 45 + 3 * 4096, db_cols);
 		if (no_rows == 0) no_rows = 5;
 		if (dr_dbf->fetch_result(db_hdl, &res, no_rows) < 0) {
 			LM_ERR("Error fetching rows\n");
@@ -474,11 +542,11 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 			check_val(require_cert_col, ROW_VALUES(row) + 5, DB_INT, 0, 0);
 			int_vals[INT_VALS_REQUIRE_CERT_COL] = VAL_INT(ROW_VALUES(row) + 5);
 
-			check_val(certificate_col, ROW_VALUES(row) + 6, DB_STRING, 0, 0);
-			str_vals[STR_VALS_CERTIFICATE_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 6);
+			check_val(certificate_col, ROW_VALUES(row) + 6, DB_BLOB, 0, 0);
+			blob_vals[BLOB_VALS_CERTIFICATE_COL] = VAL_BLOB(ROW_VALUES(row) + 6);
 
-			check_val(pk_col, ROW_VALUES(row) + 7, DB_STRING, 0, 0);
-			str_vals[STR_VALS_PK_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 7);
+			check_val(pk_col, ROW_VALUES(row) + 7, DB_BLOB, 0, 0);
+			blob_vals[BLOB_VALS_PK_COL] = VAL_BLOB(ROW_VALUES(row) + 7);
 
 			check_val(crl_check_col, ROW_VALUES(row) + 8, DB_INT, 0, 0);
 			int_vals[INT_VALS_CRL_CHECK_COL] = VAL_INT(ROW_VALUES(row) + 8);
@@ -486,8 +554,8 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 			check_val(crl_dir_col, ROW_VALUES(row) + 9, DB_STRING, 0, 0);
 			str_vals[STR_VALS_CRL_DIR_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 9);
 
-			check_val(calist_col, ROW_VALUES(row) + 10, DB_STRING, 0, 0);
-			str_vals[STR_VALS_CALIST_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 10);
+			check_val(calist_col, ROW_VALUES(row) + 10, DB_BLOB, 0, 0);
+			blob_vals[BLOB_VALS_CALIST_COL] = VAL_BLOB(ROW_VALUES(row) + 10);
 
 			check_val(cadir_col, ROW_VALUES(row) + 11, DB_STRING, 0, 0);
 			str_vals[STR_VALS_CADIR_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 11);
@@ -495,14 +563,13 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 			check_val(cplist_col, ROW_VALUES(row) + 12, DB_STRING, 0, 0);
 			str_vals[STR_VALS_CPLIST_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 12);
 
-			check_val(dhparams_col, ROW_VALUES(row) + 13, DB_STRING, 0, 0);
-			str_vals[STR_VALS_DHPARAMS_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 13);
+			check_val(dhparams_col, ROW_VALUES(row) + 13, DB_BLOB, 0, 0);
+			blob_vals[BLOB_VALS_DHPARAMS_COL] = VAL_BLOB(ROW_VALUES(row) + 13);
 
 			check_val(eccurve_col, ROW_VALUES(row) + 14, DB_STRING, 0, 0);
 			str_vals[STR_VALS_ECCURVE_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 14);
 
-			tlsp_db_add_domain(str_vals, int_vals, serv_dom, cli_dom);
-
+			tlsp_db_add_domain(str_vals, int_vals, blob_vals, serv_dom, cli_dom);
 			n++;
 		}
 
@@ -625,20 +692,26 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
  */
 static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 	int verify_mode;
+	int use_default = 0;
 
 #if (OPENSSL_VERSION_NUMBER > 0x10001000L)
 	/*
 	 * set dh params
 	 */
-	if (!d->tmp_dh_file) {
+	if (!d->dh_param.s) {
+		use_default = 1;
 		LM_DBG("no DH params file for tls[%s:%d] defined, "
 				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
 				tls_tmp_dh_file);
-		d->tmp_dh_file = tls_tmp_dh_file;
+		d->dh_param.s = tls_tmp_dh_file;
+		d->dh_param.len = len(tls_tmp_dh_file);
 	}
-	if (d->tmp_dh_file && set_dh_params(d->ctx, d->tmp_dh_file) < 0)
-		return -1;
-
+	if (!tls_db_enabled || use_default) {
+		if (d->dh_param.s && set_dh_params(d->ctx, d->dh_param.s) < 0)
+			return -1;
+	} else {
+		set_dh_params_db(d->ctx, &d->dh_param);
+	}
 	if (d->tls_ec_curve) {
 		if (set_ec_params(d->ctx, d->tls_ec_curve) < 0) {
 			return -1;
@@ -781,6 +854,36 @@ static int load_certificate(SSL_CTX * ctx, char *filename)
 	return 0;
 }
 
+/* TODO: currently we can't load a chain of certificates from database
+*/
+static int load_certificate_db(SSL_CTX * ctx, str *blob)
+{
+	LM_DBG("entered\n");
+	X509 *cert = NULL;
+	BIO *cbio;
+
+	cbio = BIO_new_mem_buf((void*)blob->s,blob->len);
+	if (!cbio) {
+		LM_ERR("Unable to create BIO buf\n");
+		return -1;
+	}
+
+	cert = PEM_read_bio_X509(cbio, NULL, 0, NULL);
+	BIO_free(cbio);
+	if (!cert) {
+		LM_ERR("unable to load certificate from buffer\n");
+		return -1;
+	}
+
+	if (! SSL_CTX_use_certificate(ctx, cert)) {
+		LM_ERR("unable to use certificate\n");
+	}
+
+	X509_free(cert);
+	LM_DBG("successfully loaded\n");
+	return 0;
+}
+
 static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
 {
 #if OPENSSL_VERSION_NUMBER >= 0x10000000L
@@ -887,6 +990,47 @@ static int load_ca(SSL_CTX * ctx, char *filename)
 	return 0;
 }
 
+static int load_ca_db(SSL_CTX * ctx, str *blob)
+{
+	X509_STORE *store;
+	X509 *cert;
+	BIO *cbio;
+
+	LM_DBG("Entered\n");
+
+	cbio = BIO_new_mem_buf((void*)blob->s,blob->len);
+
+	if (!cbio) {
+		LM_ERR("Unable to create BIO buf\n");
+		return -1;
+	}
+
+	cert = PEM_read_bio_X509(cbio, NULL, 0, NULL);
+	BIO_free(cbio);
+
+	if (!cert) {
+		LM_ERR("unable to load certificate from buffer\n");
+		return -1;
+	}
+
+	store =  SSL_CTX_get_cert_store(ctx);
+	if(!store) {
+		X509_free(cert);
+		LM_ERR("Unable to get X509 store from ssl context\n");
+		return -1;
+	}
+
+	if (!X509_STORE_add_cert(store, cert)){
+		X509_free(cert);
+		LM_ERR("Unable to add ca\n");
+		return -1;
+	}
+
+	X509_free(cert);
+	LM_DBG("CA successfully loaded\n");
+	return 0;
+}
+
 /*
  * Load a caList from a directory instead of a single file.
  */
@@ -965,6 +1109,49 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 	return 0;
 }
 
+static int load_private_key_db(SSL_CTX * ctx, str *blob)
+{
+#define NUM_RETRIES 3
+	int idx;
+	BIO *kbio;
+	EVP_PKEY *key;
+	LM_DBG("entered\n");
+
+	kbio = BIO_new_mem_buf((void*)blob->s, blob->len);
+
+	if (!kbio) {
+		LM_ERR("Unable to create BIO buf\n");
+		return -1;
+	}
+
+	for(idx = 0; idx < NUM_RETRIES; idx++ ) {
+		key = PEM_read_bio_PrivateKey(kbio,NULL, passwd_cb, "database");
+		if ( key ) {
+			break;
+		} else {
+			LM_ERR("unable to load private key. \n"
+				   "Retry (%d left) (check password case)\n",  (NUM_RETRIES - idx -1) );
+			continue;
+		}
+	}
+
+	BIO_free(kbio);
+	if(!key) {
+		LM_ERR("unable to load private key from buffer\n");
+		return -1;
+	}
+
+	if (!SSL_CTX_use_PrivateKey(ctx, key)) {
+		EVP_PKEY_free(key);
+		LM_ERR("key does not match the public key of the certificate\n");
+		return -1;
+	}
+
+	EVP_PKEY_free(key);
+	LM_DBG("key successfully loaded\n");
+	return 0;
+}
+
 
 /*
  * initialize tls virtual domains
@@ -972,6 +1159,7 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 static int init_tls_domains(struct tls_domain *d)
 {
 	struct tls_domain *dom;
+	int use_default = 0;
 
 	dom = d;
 	while (d) {
@@ -1007,14 +1195,22 @@ static int init_tls_domains(struct tls_domain *d)
 		/*
 		 * load certificate
 		 */
-		if (!d->cert_file) {
+		if (!d->cert.s) {
+			use_default = 1;
 			LM_NOTICE("no certificate for tls[%s:%d] defined, using default"
 					"'%s'\n", ip_addr2a(&d->addr), d->port,	tls_cert_file);
-			d->cert_file = tls_cert_file;
+			d->cert.s = tls_cert_file;
+			d->cert.len = len(tls_cert_file);
 		}
 
-		if (load_certificate(d->ctx, d->cert_file) < 0)
-			return -1;
+		if (!tls_db_enabled || use_default) {
+			if (load_certificate(d->ctx, d->cert.s) < 0)
+				return -1;
+		} else
+			if (load_certificate_db(d->ctx, &d->cert) < 0)
+				return -1;
+
+		use_default = 0;
 
 		/**
 		 * load crl from directory
@@ -1029,15 +1225,23 @@ static int init_tls_domains(struct tls_domain *d)
 		/*
 		 * load ca
 		 */
-		if (!d->ca_file) {
+		if (!d->ca.s) {
+			use_default = 1;
 			LM_NOTICE("no CA list for tls[%s:%d] defined, "
 					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
 					tls_ca_file);
-			d->ca_file = tls_ca_file;
+			d->ca.s = tls_ca_file;
+			d->ca.len = len(tls_ca_file);
 		}
-		if (d->ca_file && load_ca(d->ctx, d->ca_file) < 0)
-			return -1;
 
+		if (!tls_db_enabled || use_default) {
+			if (d->ca.s && load_ca(d->ctx, d->ca.s) < 0)
+				return -1;
+		} else {
+			if (load_ca_db(d->ctx, &d->ca) < 0)
+				return -1;
+		}
+		use_default = 0;
 		/*
 		 * load ca from directory
 		 */
@@ -1060,13 +1264,21 @@ static int init_tls_domains(struct tls_domain *d)
 	 */
 	d = dom;
 	while (d) {
-		if (!d->pkey_file) {
+		if (!d->pkey.s) {
 			LM_NOTICE("no private key for tls[%s:%d] defined, using default"
 					"'%s'\n", ip_addr2a(&d->addr), d->port, tls_pkey_file);
-			d->pkey_file = tls_pkey_file;
+			d->pkey.s = tls_pkey_file;
+			d->pkey.len = len(tls_pkey_file);
+			use_default = 1;
 		}
-		if (load_private_key(d->ctx, d->pkey_file) < 0)
-			return -1;
+		if (!tls_db_enabled || use_default) {
+			if (load_private_key(d->ctx, d->pkey.s) < 0)
+				return -1;
+		} else {
+			if (load_private_key_db(d->ctx, &d->pkey) < 0)
+				return -1;
+		}
+		use_default = 0;
 		d = d->next;
 	}
 
@@ -1368,6 +1580,11 @@ static int mod_init(void){
 	tls_default_server_domain.type = TLS_DOMAIN_DEF|TLS_DOMAIN_SRV;
 	tls_default_server_domain.addr.af = AF_INET;
 
+	if (tls_db_enabled && load_info(&dr_dbf, db_hdl, &tls_db_table, &tls_server_domains,
+			&tls_client_domains)){
+		return -1;
+	}
+
 	/*
 	 * now initialize tls default domains
 	 */
@@ -1381,12 +1598,6 @@ static int mod_init(void){
 	/*
 	 * now initialize tls virtual domains
 	 */
-
-	if (tls_db_enabled && load_info(&dr_dbf, db_hdl, &tls_db_table,
-			&tls_server_domains, &tls_client_domains)){
-		return -1;
-	}
-
 	if ( (n=init_tls_domains(tls_server_domains)) ) {
 		return n;
 	}
@@ -1430,6 +1641,16 @@ static void mod_destroy(void)
 		lock_dealloc(d->lock);
 		d = d->next;
 	}
+
+	if(tls_db_enabled) {
+		if(tls_default_server_domain.id.s){
+			shm_free(tls_default_server_domain.id.s);
+		}
+		if(tls_default_client_domain.id.s){
+			shm_free(tls_default_client_domain.id.s);
+		}
+	}
+
 	if (tls_default_server_domain.ctx) {
 		SSL_CTX_free(tls_default_server_domain.ctx);
 	}
@@ -1592,35 +1813,40 @@ static int list_domain(struct mi_node *root, struct tls_domain *d)
 			child = add_mi_node_child(node, 0, "CRL_CHECKALL", 12, "no", 2);
 		if (child == NULL) goto error;
 
-		child = add_mi_node_child(node, MI_DUP_VALUE, "CERT_FILE", 9,
-			d->cert_file, len(d->cert_file));
-		if (child == NULL) goto error;
+		if(!tls_db_enabled) {
+			child = add_mi_node_child(node, MI_DUP_VALUE, "CERT_FILE", 9,
+				d->cert.s, d->cert.len);
+			if (child == NULL) goto error;
+		}
 
 		child = add_mi_node_child(node, MI_DUP_VALUE, "CRL_DIR", 7,
 			d->crl_directory, len(d->crl_directory));
 		if (child == NULL) goto error;
 
-		child = add_mi_node_child(node, MI_DUP_VALUE, "CA_FILE", 7,
-			d->ca_file, len(d->ca_file));
-		if (child == NULL) goto error;
-
+		if(!tls_db_enabled) {
+			child = add_mi_node_child(node, MI_DUP_VALUE, "CA_FILE", 7,
+				d->ca.s, d->ca.len);
+			if (child == NULL) goto error;
+		}
 		child = add_mi_node_child(node, MI_DUP_VALUE, "CA_DIR", 6,
 			d->ca_directory, len(d->ca_directory));
 		if (child == NULL) goto error;
 
-		child = add_mi_node_child(node, MI_DUP_VALUE, "PKEY_FILE", 9,
-			d->pkey_file, len(d->pkey_file));
+		if(!tls_db_enabled) {
+			child = add_mi_node_child(node, MI_DUP_VALUE, "PKEY_FILE", 9,
+				d->pkey.s, d->pkey.len);
 
-		if (child == NULL) goto error;
-
+			if (child == NULL) goto error;
+		}
 		child = add_mi_node_child(node, MI_DUP_VALUE, "CIPHER_LIST", 11,
 			d->ciphers_list, len(d->ciphers_list));
 
 		if (child == NULL) goto error;
 
-		child = add_mi_node_child(node, MI_DUP_VALUE, "DH_PARAMS", 9,
-			d->tmp_dh_file, len(d->tmp_dh_file));
-
+		if(!tls_db_enabled) {
+			child = add_mi_node_child(node, MI_DUP_VALUE, "DH_PARAMS", 9,
+				d->dh_param.s, d->dh_param.len);
+		}
 		if (child == NULL) goto error;
 
 		child = add_mi_node_child(node, MI_DUP_VALUE, "EC_CURVE", 8,
