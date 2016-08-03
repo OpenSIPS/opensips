@@ -6,14 +6,14 @@ CREATE TABLE tls_mgm (
     method CHAR(16),
     verify_cert INT(1),
     require_cert INT(1),
-    certificate CHAR(255),
-    private_key CHAR(255),
+    certificate BLOB,
+    private_key BLOB,
     crl_check_all INT(1),
     crl_dir CHAR(255),
-    ca_list CHAR(255),
+    ca_list BLOB,
     ca_dir CHAR(255),
     cipher_list CHAR(255),
-    dh_params CHAR(255),
+    dh_params BLOB,
     ec_curve CHAR(255)
 ) ENGINE=InnoDB;
 
