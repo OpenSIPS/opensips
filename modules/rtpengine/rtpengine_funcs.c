@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
@@ -33,6 +33,7 @@
 #include "../../forward.h"
 #include "../../resolve.h"
 #include "../../globals.h"
+#include "../../udp_server.h"
 #include "../../pt.h"
 #include "../../parser/msg_parser.h"
 #include "../../trim.h"
@@ -294,7 +295,7 @@ ser_memmem(const void *b1, const void *b2, size_t len1, size_t len2)
                         if (memcmp(sp, pp, len2) == 0)
                                 return sp;
 
-                sp++;
+                        sp++;
         }
 
         return NULL;
@@ -411,7 +412,7 @@ get_via_branch(struct sip_msg* msg, int vianum, str* _branch)
 	struct via_body *via;
 	struct via_param *p;
 
-	if (parse_headers(msg, (vianum == 1) ? HDR_VIA1_F : HDR_VIA2_F, 0) < 0)
+	if ((parse_headers(msg, (vianum == 1) ? HDR_VIA1_F : HDR_VIA2_F, 0) == -1) < 0)
 		return -1;
 
 	via = (vianum == 1) ? msg->via1 : msg->via2;
