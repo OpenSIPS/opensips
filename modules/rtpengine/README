@@ -36,6 +36,12 @@ Richard Fuchs
 
    Sipwise GmbH
 
+Edited by
+
+Eric Tamme
+
+   OnSIP
+
    Copyright © 2003-2008 Sippy Software, Inc.
 
    Copyright © 2005 Voice Sistem SRL
@@ -45,6 +51,8 @@ Richard Fuchs
    Copyright © 2010 VoIPEmbedded Inc.
 
    Copyright © 2013-2014 Sipwise GmbH
+
+   Copyright © 2016 OnSIP
      __________________________________________________________
 
    Table of Contents
@@ -74,7 +82,6 @@ Richard Fuchs
               1.5.3. rtpengine_answer([flags])
               1.5.4. rtpengine_delete([flags])
               1.5.5. rtpengine_manage([flags])
-              1.5.6. rtpengine_start_recording()
 
         1.6. Exported Pseudo Variables
 
@@ -100,7 +107,7 @@ Richard Fuchs
    1.9. rtpengine_answer usage
    1.10. rtpengine_delete usage
    1.11. rtpengine_manage usage
-   1.12. rtpengine_start_recording usage
+   1.12. rtpengine recording usage
    1.13. $rtpstat Usage
    1.14. rtpengine_enable usage
    1.15. rtpengine_show usage
@@ -534,20 +541,33 @@ rtpengine_delete();
 
    Example 1.11. rtpengine_manage usage
 ...
-rtpengine_manage();
+   rtpengine_manage();
 ...
 
-1.5.6.  rtpengine_start_recording()
+1.5.6.  recording a call with rtpengine
 
-   This function will send a signal to the RTP proxy to record the
-   RTP stream on the RTP proxy. This function is not supported by
-   Sipwise rtpengine at the moment!
+   Call recording is activated through passing a key-value flag to
+   rtpengine, record-call=yes,  along with a set of optional encoded
+   json meta data that will be written to a file name matching the
+   call-id of the call.
 
-   This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
-
-   Example 1.12. rtpengine_start_recording usage
+   Example 1.12. rtpengine recording usage
 ...
-rtpengine_start_recording();
+
+    $var(rtpengine_flags) = $var(rtpengine_flags) + " record-call=yes";
+
+    $json(recording_keys) := "{}";
+    $json(recording_keys/callId) = $ci;
+    $json(recording_keys/fromUser) = $dlg_val(recording_from_user);
+    $json(recording_keys/fromDomain) = $dlg_val(recording_from_domain);
+    $json(recording_keys/fromTag) = $dlg_val(recording_from_tag);
+    $json(recording_keys/toUser) = $dlg_val(recording_to_user);
+    $json(recording_keys/toDomain) = $dlg_val(recording_to_domain);
+
+    $var(rtpengine_flags) = $var(rtpengine_flags) + " metadata=" + $(json(recording_keys){s.encode.hexa});
+
+    rtpengine_offer($var(rtpengine_flags)
+
 ...
 
 1.6. Exported Pseudo Variables
