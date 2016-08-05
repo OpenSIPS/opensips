@@ -612,15 +612,10 @@ static int w_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
 
 	/* get the port */
 	if (port) {
-		if (pv_get_spec_value( req, (pv_spec_t*)port, &val)!=0) {
+		if (fixup_get_ivalue( req, (gparam_p)port, &port_no)!=0) {
 			LM_ERR("failed to get PORT value from PV\n");
 			return -1;
 		}
-		if ( (val.flags&PV_VAL_INT)==0 ) {
-			LM_ERR("PORT PV val is not integer\n");
-			return -1;
-		}
-		port_no = val.ri;
 	} else {
 		port_no = 0;
 	}
