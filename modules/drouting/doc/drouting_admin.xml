@@ -681,29 +681,6 @@ modparam("drouting", "gw_sock_avp", '$avp(77)')
 		</example>
 	</section>
 
-		<section>
-		<title><varname>gw_attrs_avp</varname> (str)</title>
-		<para>
-		The name of the avp for storing GW attrs in case they are requested at least
-		once in the script.
-		</para>
-		<para>
-		<emphasis>Default value is <quote>$avp(___dr_gw_att__)</quote> if <varname>use_partitions</varname> parameter is 0
-		or <quote>$avp(___dr_gw_att__partition_name)</quote> where partition_name is the name of the partition
-		containing the AVP (as fetched from the database) if <varname>use_partitions</varname> parameter is 1.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>gw_attrs_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("drouting", "gw_attrs_avp", '$avp(dr_attrs_gw)')
-modparam("drouting", "gw_attrs_avp", '$avp(11)')
-...
-	</programlisting>
-		</example>
-	</section>
-
 			<section>
 		<title><varname>rule_attrs_avp</varname> (str)</title>
 		<para>
