@@ -154,7 +154,7 @@ inline static int _atomic_xchg(volatile int *lock, int val)
 			: "r"(1), "b" (lock) :
 			"memory", "cc"
         );
-#elif defined __CPU_mips2
+#elif defined(__CPU_mips2) || defined(__CPU_mips32) || defined(__CPU_mips64)
 	long tmp;
 	tmp=1; /* just to kill a gcc 2.95 warning */
 

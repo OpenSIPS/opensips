@@ -222,6 +222,7 @@ ppc64_macros= __ppc64__ _ARCH_PPC64
 mips_macros= __mips__ __mips _MIPS_ARCH_MIPS1
 mips2_macros= _MIPS_ISA_MIPS2 _MIPS_ISA_MIPS3 _MIPS_ISA_MIPS4 \
 			_MIPS_ARCH_MIPS2 _MIPS_ARCH_MIPS3 _MIPS_ARCH_MIPS4
+mips32_macros= _MIPS_ISA_MIPS32 _MIPS_ARCH_MIPS32R2 _MIPS_ARCH_MIPS32
 mips64_macros= _MIPS_ISA_MIPS64 _MIPS_ARCH_MIPS64
 
 alpha_macros= __alpha__ __alpha _M_ALPHA_
@@ -259,6 +260,8 @@ else ifneq ($(strip $(filter $(mips_macros), $(predef_macros))),)
 
 ifneq ($(strip $(filter $(mips64_macros), $(predef_macros))),)
 CC_ARCH=mips64
+else ifneq ($(strip $(filter $(mips32_macros), $(predef_macros))),)
+CC_ARCH=mips32
 else ifneq ($(strip $(filter $(mips2_macros), $(predef_macros))),)
 CC_ARCH=mips2
 else # mips2_macros
@@ -730,6 +733,14 @@ endif
 ifeq ($(ARCH), mips2)
 # mips2 arch and newer (mips3=R4000, mips4=R5000 a.s.o)
 	use_fast_lock=yes
+endif
+
+ifeq ($(ARCH), mips32)
+        use_fast_lock=yes
+endif
+
+ifeq ($(ARCH), mips64)
+        use_fast_lock=yes
 endif
 
 ifeq ($(ARCH), alpha)
