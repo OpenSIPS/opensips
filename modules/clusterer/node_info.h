@@ -91,7 +91,7 @@ struct cluster_info {
 	struct cluster_mod *modules;    /* modules registered for this cluster */
 	struct node_info *node_list;
 	int no_nodes;                   /* number of nodes in the cluster */
-	struct node_info *current_node;      /* current node's info in this cluster */
+	struct node_info *current_node; /* current node's info in this cluster */
 	int top_version;                /* topology version */
 	struct cluster_info *next;
 };

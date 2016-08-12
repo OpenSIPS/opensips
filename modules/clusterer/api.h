@@ -56,6 +56,8 @@ enum clusterer_send_ret {
 };
 
 enum clusterer_event {
+	/* node with id provided in the @dest_id param of clusterer_cb_f is back up */
+	CLUSTER_NODE_UP,
 	/* node with id provided in the @dest_id param of clusterer_cb_f is unreachable */
 	CLUSTER_NODE_DOWN,
 	/* failed to route received message (source and destination nodes

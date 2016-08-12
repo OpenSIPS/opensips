@@ -373,8 +373,7 @@ int get_next_hop(node_info_t *dest)
 	if (dest->link_state == LS_UP) {
 		dest->next_hop = dest;
 		return dest->node_id;
-	}
-	else
+	} else
 		return get_next_hop_2(dest);
 }
 
@@ -1071,27 +1070,58 @@ static int send_ls_update(node_info_t *node, clusterer_link_state new_ls)
 	return 0;
 }
 
-#define call_cbs_node_down(_node) \
+#define do_call_cbs_event(_node, _ev) \
 	do { \
 		struct cluster_mod *m_it = (_node)->cluster->modules; \
 		while (m_it) { \
-			m_it->reg->cb(CLUSTER_NODE_DOWN, UNDEFINED_PACKET_TYPE, NULL, \
+			m_it->reg->cb((_ev), UNDEFINED_PACKET_TYPE, NULL, \
 				(_node)->cluster->cluster_id, INVAL_NODE_ID, (_node)->node_id); \
 			m_it = m_it->next; \
 		} \
 	} while(0)
+
+static void call_cbs_node_event(node_info_t *node_s, enum clusterer_event ev)
+{
+	node_info_t *n;
+
+	for(n = node_s->cluster->node_list; n; n = n->next) {
+		if (n == node_s)
+			continue;
+		if (n->link_state != LS_UP) {
+			if(ev == CLUSTER_NODE_DOWN && n->next_hop && get_next_hop_2(n) <= 0)
+				do_call_cbs_event(n, ev);
+			if(ev == CLUSTER_NODE_UP && !n->next_hop && get_next_hop_2(n) > 0)
+				do_call_cbs_event(n, ev);
+		}
+	}
+}
 
 static int set_link_for_current(clusterer_link_state new_ls, node_info_t *node)
 {
 	if (new_ls != LS_UP && node->link_state == LS_UP) {
 		delete_neighbour(node->cluster->current_node, node);
 		node->cluster->top_version++;
-		if (get_next_hop_2(node) <= 0)
-			call_cbs_node_down(node);
+
+		/* if there is no other path to this neighbour, we check if any other nodes
+		 * were reachable only through this link and should be now down */
+		if (get_next_hop_2(node) <= 0) {
+			do_call_cbs_event(node, CLUSTER_NODE_DOWN);
+			call_cbs_node_event(node, CLUSTER_NODE_DOWN);
+		}
 	} else if (new_ls == LS_UP && node->link_state != LS_UP) {
-		if (add_neighbour(node->cluster->current_node, node) < 0)
+		if (add_neighbour(node->cluster->current_node, node) < 0) {
+			LM_ERR("Unable to add neighbour: %d to topology\n", node->node_id);
 			return -1;
+		}
 		node->cluster->top_version++;
+
+		/* if there was no other path to this neighbour, we check if any other nodes
+		 * are now reachable through this new link */
+		if (!node->next_hop) {
+			do_call_cbs_event(node, CLUSTER_NODE_UP);
+			call_cbs_node_event(node, CLUSTER_NODE_UP);
+		}
+		node->next_hop = node;
 	}
 
 	node->link_state = new_ls;
@@ -1117,9 +1147,10 @@ static int set_link(clusterer_link_state new_ls, node_info_t *node_a,
 			if (set_link_for_current(new_ls, node_b) < 0)
 				return -1;
 
+			/* send link state update about this neigbour to the others */
 			send_ls_update(node_b, LS_UP);
 
-			/* send topology update */
+			/* send topology update to neighbour */
 			if (send_top_update(node_b->cluster, node_b) < 0)
 				return -1;
 		} else
@@ -1130,19 +1161,26 @@ static int set_link(clusterer_link_state new_ls, node_info_t *node_a,
 			top_change += delete_neighbour(node_b, node_a);
 			if (top_change > 0) {
 				node_a->cluster->top_version++;
-				if (get_next_hop(node_b) <= 0)
-					call_cbs_node_down(node_b);
+				if (node_a->next_hop && get_next_hop(node_b) <= 0) {
+					do_call_cbs_event(node_b, CLUSTER_NODE_DOWN);
+					call_cbs_node_event(node_b, CLUSTER_NODE_DOWN);
+				}
 			}
-		} else {
+		} else { /* new_ls == LS_UP */
 			top_change = add_neighbour(node_a, node_b);
 			if (top_change < 0)
 				return -1;
 			top_change += add_neighbour(node_b, node_a);
 			if (top_change < 0)
 				return -1;
-
-			if (top_change > 0)
+			if (top_change > 0) {
 				node_a->cluster->top_version++;
+				if (node_a->next_hop && !node_b->next_hop) {
+					do_call_cbs_event(node_b, CLUSTER_NODE_UP);
+					call_cbs_node_event(node_b, CLUSTER_NODE_UP);
+					get_next_hop_2(node_b);
+				}
+			}
 		}
 	}
 

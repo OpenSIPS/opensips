@@ -599,7 +599,7 @@ void receive_binary_packet(enum clusterer_event ev, int packet_type,
 {
 	int rc;
 
-	if (ev == CLUSTER_NODE_DOWN)
+	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
 		return;
 	else if (ev == CLUSTER_ROUTE_FAILED) {
 		LM_INFO("Failed to route replication packet of type %d from node id: %d "

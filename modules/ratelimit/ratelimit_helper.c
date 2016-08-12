@@ -802,7 +802,7 @@ void rl_rcv_bin(enum clusterer_event ev, int packet_type,
 	time_t now;
 	rl_repl_counter_t *destination;
 
-	if (ev == CLUSTER_NODE_DOWN)
+	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
 		return;
 	else if (ev == CLUSTER_ROUTE_FAILED) {
 		LM_INFO("failed to route replication packet of type %d from node %d to node"
