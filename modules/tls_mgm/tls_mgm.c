@@ -1275,8 +1275,8 @@ static int mod_init(void){
 	if (!CRYPTO_set_mem_functions(os_malloc, os_realloc, os_free)) {
 		LM_ERR("unable to set the memory allocation functions\n");
 		LM_ERR("NOTE: check if you have openssl 1.0.1e-fips, as this "
-			"version is know to be broken; if so, you need to upgrade or "
-			"downgrade to a differen openssl version !!\n");
+			"version is known to be broken; if so, you need to upgrade or "
+			"downgrade to a different openssl version !!\n");
 		return -1;
 	}
 
