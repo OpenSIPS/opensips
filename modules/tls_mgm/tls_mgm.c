@@ -1273,10 +1273,16 @@ static int mod_init(void){
 	 * CRYPTO_malloc will set allow_customize in openssl to 0
 	 */
 	if (!CRYPTO_set_mem_functions(os_malloc, os_realloc, os_free)) {
+		void *(*m) (size_t);
+		void *(*r) (void *, size_t);
+		void (*f) (void *);
 		LM_ERR("unable to set the memory allocation functions\n");
 		LM_ERR("NOTE: check if you have openssl 1.0.1e-fips, as this "
 			"version is known to be broken; if so, you need to upgrade or "
 			"downgrade to a different openssl version !!\n");
+		CRYPTO_get_mem_functions(&m, &r, &f);
+		LM_ERR("extra: malloc=%p/%p realloc=%p/%p free=%p/%p\n",
+				os_malloc, m, os_realloc, r, os_free, f);
 		return -1;
 	}
 
