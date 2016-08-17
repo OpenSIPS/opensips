@@ -117,8 +117,8 @@ static int is_cdr_enabled=0;
 		is_evi_cdr_on(_mask)||is_diam_cdr_on(_mask))
 
 #define is_mc_acc_on(_mask) (is_log_mc_on(_mask)    ||              \
-		is_aaa_mc_on(_mask) || is_db_cdr_on(_mask)  ||              \
-		is_evi_cdr_on(_mask) || is_diam_cdr_on(_mask))
+		is_aaa_mc_on(_mask) || is_db_mc_on(_mask)  ||              \
+		is_evi_mc_on(_mask) || is_diam_mc_on(_mask))
 
 #define is_failed_acc_on(_mask) (is_log_failed_on(_mask)  ||        \
 		is_aaa_failed_on(_mask) || is_db_failed_on(_mask) ||        \
