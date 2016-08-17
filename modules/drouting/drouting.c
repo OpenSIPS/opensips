@@ -1542,20 +1542,22 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 		goto error1;
 	}
 
-	/* do some cleanup first */
-	destroy_avps( 0, ruri_avp, 1);
-	destroy_avps( 0, gw_id_avp, 1);
-	destroy_avps( 0, gw_sock_avp, 1);
-	destroy_avps( 0, rule_attrs_avp, 1);
-	destroy_avps( 0, gw_attrs_avp, 1);
-	destroy_avps( 0, carrier_attrs_avp, 1);
+	/* do some cleanup first (if without the CHECK_ONLY flag) */
+	if ((flags & DR_PARAM_ONLY_CHECK) == 0) {
+		destroy_avps( 0, ruri_avp, 1);
+		destroy_avps( 0, gw_id_avp, 1);
+		destroy_avps( 0, gw_sock_avp, 1);
+		destroy_avps( 0, rule_attrs_avp, 1);
+		destroy_avps( 0, gw_attrs_avp, 1);
+		destroy_avps( 0, carrier_attrs_avp, 1);
 
-	if (gw_priprefix_avp!=-1)
-		destroy_avps( 0, gw_priprefix_avp, 1);
-	if (rule_id_avp!=-1)
-		destroy_avps( 0, rule_id_avp, 1);
-	if (rule_prefix_avp!=-1)
-		destroy_avps( 0, rule_prefix_avp, 1);
+		if (gw_priprefix_avp!=-1)
+			destroy_avps( 0, gw_priprefix_avp, 1);
+		if (rule_id_avp!=-1)
+			destroy_avps( 0, rule_id_avp, 1);
+		if (rule_prefix_avp!=-1)
+			destroy_avps( 0, rule_prefix_avp, 1);
+	}
 
 	if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
 		/* not internally triggered, so get data from SIP msg */
