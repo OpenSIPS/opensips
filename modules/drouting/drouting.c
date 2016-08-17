@@ -2541,21 +2541,22 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 		goto error1;
 	}
 
-	/* do some cleanup first */
-	destroy_avps( 0, current_partition->ruri_avp, 1);
-	destroy_avps( 0, current_partition->gw_id_avp, 1);
-	destroy_avps( 0, current_partition->gw_sock_avp, 1);
-	destroy_avps( 0, current_partition->rule_attrs_avp, 1);
-	destroy_avps( 0, current_partition->gw_attrs_avp, 1);
-	destroy_avps( 0, current_partition->carrier_attrs_avp, 1);
+	/* do some cleanup first (if without the CHECK_ONLY flag) */
+	if ((flags & DR_PARAM_ONLY_CHECK) == 0) {
+		destroy_avps( 0, current_partition->ruri_avp, 1);
+		destroy_avps( 0, current_partition->gw_id_avp, 1);
+		destroy_avps( 0, current_partition->gw_sock_avp, 1);
+		destroy_avps( 0, current_partition->rule_attrs_avp, 1);
+		destroy_avps( 0, current_partition->gw_attrs_avp, 1);
+		destroy_avps( 0, current_partition->carrier_attrs_avp, 1);
 
-	if ((current_partition->gw_priprefix_avp)!=-1)
-		destroy_avps( 0, current_partition->gw_priprefix_avp, 1);
-	if ((current_partition->rule_id_avp)!=-1)
-		destroy_avps( 0, current_partition->rule_id_avp, 1);
-	if ((current_partition->rule_prefix_avp)!=-1)
-		destroy_avps( 0, current_partition->rule_prefix_avp, 1);
-
+		if ((current_partition->gw_priprefix_avp)!=-1)
+			destroy_avps( 0, current_partition->gw_priprefix_avp, 1);
+		if ((current_partition->rule_id_avp)!=-1)
+			destroy_avps( 0, current_partition->rule_id_avp, 1);
+		if ((current_partition->rule_prefix_avp)!=-1)
+			destroy_avps( 0, current_partition->rule_prefix_avp, 1);
+	}
 
 	if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
 		/* not internally triggered, so get data from SIP msg */
