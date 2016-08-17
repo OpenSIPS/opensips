@@ -35,7 +35,7 @@
 #include "tls.h"
 #include "api.h"
 
-#define DB_CAP DB_CAP_QUERY | DB_CAP_UPDATE 
+#define DB_CAP DB_CAP_QUERY | DB_CAP_UPDATE
 #define len(s)	s == NULL?0:strlen(s)
 
 #define check_val( _col, _val, _type, _not_null, _is_empty_str) \
@@ -119,13 +119,13 @@ static param_export_t params[] = {
 static cmd_export_t cmds[] = {
 	{"is_peer_verified", (cmd_function)is_peer_verified,   0, 0, 0,
 		REQUEST_ROUTE},
-	{"load_tls_mgm", (cmd_function)load_tls_mgm,   0, 0, 0, 0},	
+	{"load_tls_mgm", (cmd_function)load_tls_mgm,   0, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
 
 /*
  * Exported MI functions
- */	
+ */
 static mi_export_t mi_cmds[] = {
 	{ "tls_reload", "reloads stored data from the database", tls_reload, 0, 0, 0},
 	{ "tls_list", "lists all domains", tls_list, 0, 0, 0},
@@ -502,7 +502,7 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 			str_vals[STR_VALS_ECCURVE_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 14);
 
 			tlsp_db_add_domain(str_vals, int_vals, serv_dom, cli_dom);
-			
+
 			n++;
 		}
 
@@ -1004,7 +1004,7 @@ static int init_tls_domains(struct tls_domain *d)
 		}
 		if (init_ssl_ctx_behavior( d ) < 0)
 			return -1;
-		
+
 		/*
 		 * load certificate
 		 */
@@ -1281,8 +1281,9 @@ static int mod_init(void){
 			"version is known to be broken; if so, you need to upgrade or "
 			"downgrade to a different openssl version !!\n");
 		CRYPTO_get_mem_functions(&m, &r, &f);
-		LM_ERR("extra: malloc=%p/%p realloc=%p/%p free=%p/%p\n",
-				os_malloc, m, os_realloc, r, os_free, f);
+		LM_ERR("extra: malloc=%p/%p realloc=%p/%p free=%p/%p version=%s\n",
+				os_malloc, m, os_realloc, r, os_free, f,
+				SSLeay_version(SSLEAY_VERSION));
 		return -1;
 	}
 
@@ -1347,9 +1348,9 @@ static int mod_init(void){
 	/*
 	 * now initialize tls virtual domains
 	 */
-	
-	if (tls_db_enabled && load_info(&dr_dbf, db_hdl, &tls_db_table, &tls_server_domains,
-			&tls_client_domains)){
+
+	if (tls_db_enabled && load_info(&dr_dbf, db_hdl, &tls_db_table,
+			&tls_server_domains, &tls_client_domains)){
 		return -1;
 	}
 
