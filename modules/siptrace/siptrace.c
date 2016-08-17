@@ -680,6 +680,8 @@ static int trace_dialog(struct sip_msg *msg)
 	struct usr_avp *avp;
 	static int_str avp_value;
 	str *name;
+	struct cell *t;
+	struct tmcb_params ps;
 
 	if (!msg) {
 		LM_ERR("no msg specified\n");
@@ -743,6 +745,14 @@ static int trace_dialog(struct sip_msg *msg)
 
 	/* trace current request */
 	sip_trace(msg);
+
+	/* if transaction is found already created, it means our REQUEST_IN
+	   tm callback was triggered dry (we did not do anything as no
+	   tracing was set at that time) -> let's do this again now */
+	if ((t = tmb.t_gett())) {
+		ps.req = msg;
+		trace_onreq_in(t, TMCB_REQUEST_IN, &ps);
+	}
 
 	do_dlg_siptrace=1;
 	return 1;
