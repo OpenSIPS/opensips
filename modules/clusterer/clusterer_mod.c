@@ -379,7 +379,7 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 				MI_SSTR("URL"), n_info->url.s, n_info->url.len);
 			if (!attr) goto error;
 
-			val.s = int2str(n_info->enabled, &val.len);
+			val.s = int2str(n_info->flags & NODE_STATE_ENABLED ? 1 : 0, &val.len);
 			attr = add_mi_attr(node_s, MI_DUP_VALUE,
 				MI_SSTR("Enabled"), val.s, val.len);
 			if (!attr) goto error;

@@ -36,6 +36,10 @@
 #define DEFAULT_DB_UPDATE_INTERVAL 10
 #define CLUSTERER_TABLE_VERSION 2
 
+#define MAX_NO_NODES 64
+#define MAX_NO_CLUSTERS 16
+#define MAX_MODS_PER_CLUSTER 8
+
 enum db_int_vals_idx {
 	INT_VALS_ID_COL,
 	INT_VALS_CLUSTER_ID_COL,
@@ -63,7 +67,6 @@ struct cluster_info;
 struct node_info {
 	int id;                             /* DB id (PK) */
 	int node_id;
-	enum cl_node_state enabled;         /* node state (enabled/disabled) */
 	clusterer_link_state link_state;    /* state of the "link" with this node */
 	str description;
 	str url;
@@ -81,8 +84,7 @@ struct node_info {
 	int top_seq_no;                     /* sequence number of the last topology update message */
 	struct node_info *next_hop;         /* next hop from the shortest path */
 	struct node_search_info *sp_info;   /* shortest path info */
-	int tmp;
-	int db_synched;                     /* db updated with latest node info */
+	int flags;
 	struct node_info *next;
 };
 

@@ -122,7 +122,10 @@ static int add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_val
 
 	new_info->id = int_vals[INT_VALS_ID_COL];
 	new_info->node_id = int_vals[INT_VALS_NODE_ID_COL];
-	new_info->enabled = int_vals[INT_VALS_STATE_COL];
+	if (int_vals[INT_VALS_STATE_COL])
+		new_info->flags |= NODE_STATE_ENABLED;
+	else
+		new_info->flags &= ~NODE_STATE_ENABLED;
 
 	if (int_vals[INT_VALS_NODE_ID_COL] != current_id)
 		new_info->link_state = LS_RESTART_PINGING;
@@ -219,8 +222,7 @@ static int add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_val
 		goto error;
 	}
 	new_info->sp_info->node = new_info;
-	new_info->tmp = 0;
-	new_info->db_synched = 1;
+	new_info->flags |= DB_UPDATED;
 
 	if (int_vals[INT_VALS_NODE_ID_COL] != current_id) {
 		new_info->next = cluster->node_list;
@@ -456,7 +458,7 @@ int update_db_current(void)
 	lock_start_write(ref_lock);
 
 	for (cluster = *cluster_list; cluster; cluster = cluster->next) {
-		if (cluster->current_node->db_synched)
+		if (cluster->current_node->flags & DB_UPDATED)
 			continue;
 
 		VAL_TYPE(&update_vals[0]) = DB_INT;
@@ -467,14 +469,17 @@ int update_db_current(void)
 		VAL_INT(&update_vals[1]) = cluster->current_node->top_seq_no;
 		VAL_TYPE(&update_vals[2]) = DB_INT;
 		VAL_NULL(&update_vals[2]) = 0;
-		VAL_INT(&update_vals[2]) = cluster->current_node->enabled;
+		if (cluster->current_node->flags & NODE_STATE_ENABLED)
+			VAL_INT(&update_vals[2]) = STATE_ENABLED;
+		else
+			VAL_INT(&update_vals[2]) = STATE_DISABLED;
 
 		if (dr_dbf.update(db_hdl, &node_id_key, 0, &node_id_val, update_keys,
 			update_vals, 1, 3) < 0) {
 			LM_ERR("Failed to update clusterer DB for cluster: %d\n", cluster->cluster_id);
 			ret = -1;
 		} else {
-			cluster->current_node->db_synched = 1;
+			cluster->current_node->flags |= DB_UPDATED;
 			LM_DBG("Updated clusterer DB for cluster: %d\n", cluster->cluster_id);
 		}
 	}
