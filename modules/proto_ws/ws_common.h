@@ -556,8 +556,11 @@ again:
 		if (size)
 			goto again;
 		/* cleanup the existing request */
-		if (req != &_ws_common_current_req)
+		if (req != &_ws_common_current_req) {
+			/* make sure we cleanup the request in the connection */
+			con->con_req = NULL;
 			pkg_free(req);
+		}
 
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
