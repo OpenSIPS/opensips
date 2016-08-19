@@ -27,7 +27,7 @@
 #include "../../dprint.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
-#include "../../rw_locking.h"
+#include "../../locking.h"
 #include "../../resolve.h"
 #include "../../socket_info.h"
 
@@ -57,7 +57,7 @@ static db_op_t op_eq = OP_EQ;
 static db_key_t *clusterer_cluster_id_key;
 static db_val_t *clusterer_cluster_id_value;
 
-rw_lock_t *ref_lock;
+gen_lock_t *ref_lock;
 cluster_info_t **cluster_list;
 
 static int add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_vals)
@@ -455,7 +455,7 @@ int update_db_current(void)
 		return -1;
 	}
 
-	lock_start_write(ref_lock);
+	lock_get(ref_lock);
 
 	for (cluster = *cluster_list; cluster; cluster = cluster->next) {
 		if (cluster->current_node->flags & DB_UPDATED)
@@ -484,7 +484,7 @@ int update_db_current(void)
 		}
 	}
 
-	lock_stop_write(ref_lock);
+	lock_release(ref_lock);
 
 	return ret;
 }
@@ -602,20 +602,20 @@ clusterer_node_t* get_clusterer_nodes(int cluster_id)
 	node_info_t *node;
 	cluster_info_t *cl;
 
-	lock_start_read(ref_lock);
+	lock_get(ref_lock);
 
 	cl = get_cluster_by_id(cluster_id);
 	for (node = cl->node_list; node; node = node->next)
 		if (get_next_hop(node) > 0)
 			if (add_clusterer_node(&ret_nodes, node) < 0) {
-				lock_stop_read(ref_lock);
+				lock_release(ref_lock);
 				LM_ERR("Unable to add node: %d to the returned list of reachable nodes\n",
 					node->node_id);
 				free_clusterer_nodes(ret_nodes);
 				return NULL;
 			}
 
-	lock_stop_read(ref_lock);
+	lock_release(ref_lock);
 
 	return ret_nodes;
 }
@@ -627,7 +627,7 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 	cluster_info_t *cluster;
 	int rc;
 
-	lock_start_read(ref_lock);
+	lock_get(ref_lock);
 
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
@@ -653,7 +653,7 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 		return NULL;
 	}
 
-	lock_stop_read(ref_lock);
+	lock_release(ref_lock);
 
 	return ret;
 }

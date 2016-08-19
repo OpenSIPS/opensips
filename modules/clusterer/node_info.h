@@ -102,7 +102,7 @@ typedef struct node_info node_info_t;
 typedef struct cluster_info cluster_info_t;
 
 extern int current_id;
-extern rw_lock_t *ref_lock;
+extern gen_lock_t *ref_lock;
 extern cluster_info_t **cluster_list;
 
 int update_db_current(void);

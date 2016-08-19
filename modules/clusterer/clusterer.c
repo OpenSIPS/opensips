@@ -28,7 +28,7 @@
 #include "../../dprint.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
-#include "../../rw_locking.h"
+#include "../../locking.h"
 #include "../../bin_interface.h"
 #include "../../timer.h"
 #include "../../forward.h"
@@ -65,7 +65,7 @@ inline void heartbeats_timer(void)
 
 	gettimeofday(&now, NULL);
 
-	lock_start_write(ref_lock);
+	lock_get(ref_lock);
 
 	for (clusters_it = *cluster_list; clusters_it; clusters_it = clusters_it->next) {
 		if (!(clusters_it->current_node->flags & NODE_STATE_ENABLED))
@@ -245,11 +245,11 @@ int set_state(int cluster_id, enum cl_node_state state)
 	node_info_t *node;
 	int check_call_cbs_event = 0;
 
-	lock_start_write(ref_lock);
+	lock_get(ref_lock);
 
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
-		lock_stop_write(ref_lock);
+		lock_release(ref_lock);
 		LM_ERR("Cluster id: %d not found\n", cluster_id);
 		return -1;
 	}
@@ -276,7 +276,7 @@ int set_state(int cluster_id, enum cl_node_state state)
 	if (check_call_cbs_event)
 		call_cbs_event(cluster, &check_call_cbs_event, 1);
 	else
-		lock_stop_write(ref_lock);
+		lock_release(ref_lock);
 
 	return 0;
 }
@@ -448,22 +448,22 @@ enum clusterer_send_ret send_to(int cluster_id, int node_id)
 	cluster_info_t *cl;
 	int check_call_cbs_event = 0;
 
-	lock_start_write(ref_lock);
+	lock_get(ref_lock);
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
 		LM_ERR("Unknown cluster id: %d\n", cluster_id);
-		lock_stop_write(ref_lock);
+		lock_release(ref_lock);
 		return CLUSTERER_SEND_ERR;
 	}
 	if (!(cl->current_node->flags & NODE_STATE_ENABLED)) {
-		lock_stop_write(ref_lock);
+		lock_release(ref_lock);
 		return CLUSTERER_CURR_DISABLED;
 	}
 	node = get_node_by_id(cl, node_id);
 	if (!node) {
 		LM_ERR("Node id: %d not found in cluster\n", node_id);
-		lock_stop_write(ref_lock);
+		lock_release(ref_lock);
 		return CLUSTERER_SEND_ERR;
 	}
 
@@ -475,7 +475,7 @@ enum clusterer_send_ret send_to(int cluster_id, int node_id)
 	if (check_call_cbs_event)
 		call_cbs_event(cl, &check_call_cbs_event, 1);
 	else
-		lock_stop_write(ref_lock);
+		lock_release(ref_lock);
 
 	switch (rc) {
 	case  0:
@@ -496,16 +496,16 @@ enum clusterer_send_ret send_all(int cluster_id)
 	cluster_info_t *cl;
 	int check_call_cbs_event = 0;
 
-	lock_start_write(ref_lock);
+	lock_get(ref_lock);
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
 		LM_ERR("Unknown cluster, id: %d\n", cluster_id);
-		lock_stop_write(ref_lock);
+		lock_release(ref_lock);
 		return CLUSTERER_SEND_ERR;
 	}
 	if (!(cl->current_node->flags & NODE_STATE_ENABLED)) {
-		lock_stop_write(ref_lock);
+		lock_release(ref_lock);
 		return CLUSTERER_CURR_DISABLED;
 	}
 
@@ -524,7 +524,7 @@ enum clusterer_send_ret send_all(int cluster_id)
 	if (check_call_cbs_event)
 		call_cbs_event(cl, &check_call_cbs_event, 1);
 	else
-		lock_stop_write(ref_lock);
+		lock_release(ref_lock);
 
 	if (down)
 		return CLUSTERER_DEST_DOWN;
@@ -565,14 +565,14 @@ int clusterer_check_addr(int cluster_id, union sockaddr_union *su)
 	cluster_info_t *cluster;
 	int rc;
 
-	lock_start_read(ref_lock);
+	lock_get(ref_lock);
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
 		LM_WARN("Unknown cluster id: %d\n", cluster_id);
 		return 0;
 	}
 	rc = ip_check(cluster, su);
-	lock_stop_read(ref_lock);
+	lock_release(ref_lock);
 
 	return rc;
 }
@@ -675,7 +675,7 @@ void receive_clusterer_bin_packets(int packet_type, struct receive_info *ri, voi
 	LM_DBG("received clusterer message from: %s:%hu\n with source id: %d and cluster id: %d\n",
 		ip, port, source_id, cl_id);
 
-	lock_start_write(ref_lock);
+	lock_get(ref_lock);
 
 	cl = get_cluster_by_id(cl_id);
 	if (!cl) {
@@ -849,7 +849,7 @@ end:
 	if (check_call_cbs_event)
 		call_cbs_event(cl, &check_call_cbs_event, 1);
 	else
-		lock_stop_write(ref_lock);
+		lock_release(ref_lock);
 }
 
 static void bin_receive_packets(int packet_type, struct receive_info *ri, void *ptr)
@@ -882,7 +882,7 @@ static void bin_receive_packets(int packet_type, struct receive_info *ri, void *
 		return;
 	}
 
-	lock_start_write(ref_lock);
+	lock_get(ref_lock);
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
@@ -928,7 +928,7 @@ static void bin_receive_packets(int packet_type, struct receive_info *ri, void *
 			if (check_call_cbs_event)
 				call_cbs_event(cl, &check_call_cbs_event, 1);
 			else
-				lock_stop_write(ref_lock);
+				lock_release(ref_lock);
 			module->cb(CLUSTER_ROUTE_FAILED, packet_type, ri, cluster_id, source_id, dest_id);
 			return;
 		} else {
@@ -937,17 +937,17 @@ static void bin_receive_packets(int packet_type, struct receive_info *ri, void *
 			if (check_call_cbs_event)
 				call_cbs_event(cl, &check_call_cbs_event, 1);
 			else
-				lock_stop_write(ref_lock);
+				lock_release(ref_lock);
 			return;
 		}
 	} else {
-		lock_stop_write(ref_lock);
+		lock_release(ref_lock);
 		module->cb(CLUSTER_RECV_MSG, packet_type, ri, cluster_id, source_id, dest_id);
 		return;
 	}
 
 end:
-	lock_stop_write(ref_lock);
+	lock_release(ref_lock);
 }
 
 static int delete_neighbour(node_info_t *from_n, node_info_t *old_n)
@@ -1166,7 +1166,7 @@ static void call_cbs_event(cluster_info_t *clusters, int *clusters_to_call, int 
 				cbs[k][no_mods[k]++] = mod_it->reg->cb;
 	}
 
-	lock_stop_write(ref_lock);
+	lock_release(ref_lock);
 
 	/* call the callbacks */
 	for (k = 0; k < no_clusters; k++) {
