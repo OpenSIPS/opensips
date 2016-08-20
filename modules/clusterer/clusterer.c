@@ -722,9 +722,9 @@ void receive_clusterer_bin_packets(int packet_type, struct receive_info *ri, voi
 			if (node->link_state == LS_UP) {
 				set_link(LS_RESTART_PINGING, cl->current_node, node);
 				check_call_cbs_event = 1;
-			} else
-				LM_DBG("Replied to ping from node: %d\n", source_id);
-		}
+			}
+		} else
+			LM_DBG("Replied to ping from node: %d\n", source_id);
 
 		/* if the node was down, restart pinging */
 		if (node->link_state == LS_DOWN) {
