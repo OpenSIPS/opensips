@@ -44,6 +44,10 @@
 #define MI_DLG_OPERATION_ERR		"Operation failed"
 #define MI_DLG_OPERATION_ERR_LEN	(sizeof(MI_DLG_OPERATION_ERR)-1)
 
+#define DLG_PING_PENDING	(1<<0)
+#define DLG_PING_SUCCESS	(1<<1)
+#define DLG_PING_FAIL		(1<<2)
+
 extern struct tm_binds d_tmb;
 extern int dlg_enable_stats;
 extern stat_var * active_dlgs;

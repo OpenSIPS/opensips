@@ -80,13 +80,13 @@ str rr_param = {"did",3};
 static int dlg_hash_size = 4096;
 static str timeout_spec = {NULL, 0};
 static int default_timeout = 60 * 60 * 12;  /* 12 hours */
-static int options_ping_interval = 30;      /* seconds */
-static int reinvite_ping_interval = 300;    /* seconds */
 static char* profiles_wv_s = NULL;
 static char* profiles_nv_s = NULL;
 
 int dlg_bulk_del_no = 1; /* delete one by one */
 int seq_match_mode = SEQ_MATCH_STRICT_ID;
+int options_ping_interval = 30;      /* seconds */
+int reinvite_ping_interval = 300;    /* seconds */
 str dlg_extra_hdrs = {NULL,0};
 
 /* statistic variables */
@@ -891,13 +891,13 @@ static int mod_init(void)
 	}
 
 	if ( register_timer( "dlg-options-pinger", dlg_options_routine, NULL,
-	options_ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+	1 /* check every second if we need to ping */, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 		LM_ERR("failed to register timer 2\n");
 		return -1;
 	}
 
 	if ( register_timer( "dlg-reinvite-pinger", dlg_reinvite_routine, NULL,
-	reinvite_ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+	1 /* check every second if we need to ping */, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 		LM_ERR("failed to register timer 2\n");
 		return -1;
 	}

@@ -50,6 +50,7 @@ struct  dlg_timer
 struct dlg_ping_list
 {
 	struct dlg_cell* dlg;
+	volatile unsigned int timeout;
 	struct dlg_ping_list *next;
 	struct dlg_ping_list *prev;
 };
@@ -57,12 +58,14 @@ struct dlg_ping_list
 struct dlg_ping_timer
 {
 	struct dlg_ping_list *first;
+	struct dlg_ping_list *last;
 	gen_lock_t *lock;
 };
 
 struct dlg_reinvite_ping_timer
 {
 	struct dlg_ping_list *first;
+	struct dlg_ping_list *last;
 	gen_lock_t *lock;
 };
 

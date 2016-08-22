@@ -171,7 +171,7 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,char 
 	else
 		cell->legs[dst_leg].last_gen_cseq++;
 
-	*reply_marker = 0;
+	*reply_marker = DLG_PING_PENDING;
 
 	td->loc_seq.value = cell->legs[dst_leg].last_gen_cseq -1;
 
