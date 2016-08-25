@@ -394,7 +394,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	++se->stats.concurrent_calls;
 
 	/* Check the thresholds */
-	int rc = rc_no_rule;
+	int rc = rc_ok_thr;
 
 	frd_thresholds_t *thr = (frd_thresholds_t*)rule->attrs.s;
 
