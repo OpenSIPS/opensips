@@ -117,8 +117,13 @@ static int is_cdr_enabled=0;
 		is_evi_cdr_on(_mask)||is_diam_cdr_on(_mask))
 
 #define is_mc_acc_on(_mask) (is_log_mc_on(_mask)    ||              \
+<<<<<<< HEAD
+		is_aaa_mc_on(_mask) || is_db_cdr_on(_mask)  ||              \
+		is_evi_cdr_on(_mask) || is_diam_cdr_on(_mask))
+=======
 		is_aaa_mc_on(_mask) || is_db_mc_on(_mask)  ||              \
-		is_evi_mc_on(_mask) || is_diam_mc_on(_mask))
+		is_evi_mc_on(_mask))
+>>>>>>> 5b90068... [acc] fix missed call flag check macro
 
 #define is_failed_acc_on(_mask) (is_log_failed_on(_mask)  ||        \
 		is_aaa_failed_on(_mask) || is_db_failed_on(_mask) ||        \
@@ -562,7 +567,6 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 void acc_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params) {
 		str flags_s;
-		unsigned long long *flags;
 
 		if (!dlg) {
 			LM_ERR("null dialog - cannot fetch message flags\n");
@@ -574,17 +578,9 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 			return;
 		}
 
-		flags = shm_malloc(sizeof(unsigned long long));
-		if (flags == NULL) {
-			LM_ERR("no more shm!\n");
-			return;
-		}
-
-		memcpy(flags, flags_s.s, sizeof(unsigned long long));
-
 		/* register database callbacks */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
-				DLGCB_EXPIRED, acc_dlg_callback, flags, 0)){
+				DLGCB_EXPIRED, acc_dlg_callback, flags_s.s, 0)){
 			LM_ERR("cannot register callback for database accounting\n");
 			return;
 		}
