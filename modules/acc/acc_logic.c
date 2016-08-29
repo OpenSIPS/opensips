@@ -756,8 +756,11 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	env_set_code_status( code, reply);
 
 	/* search for table avp */
-	if (is_db_acc_on(ctx->flags)) {
+	if (is_db_acc_on(ctx->flags))
 		table = ctx->acc_table;
+	else {
+		table.s = 0;
+		table.len = 0;
 	}
 
 	if (is_invite(t) && !has_totag(req) && is_cdr_acc_on(ctx->flags) &&

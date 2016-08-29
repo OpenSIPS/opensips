@@ -839,7 +839,7 @@ static inline aaa_map *aaa_status( struct sip_msg *req, int code )
 
 int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag)
 {
-	int attr_cnt, extra_len;
+	int attr_cnt, extra_len = 0;
 	aaa_message *send;
 	int offset, i, av_type;
 	aaa_map *r_stat;
@@ -881,7 +881,7 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag)
 	ADD_AAA_AVPAIR( RA_TIME_STAMP, &av_type, -1);
 
 	if (ctx)
-		for (extra=aaa_extra_tags, extra_len=0; extra; extra=extra->next, extra_len++);
+		for (extra=aaa_extra_tags; extra; extra=extra->next, extra_len++);
 
 	/* add the values for the vector - start from 1 instead of
 	 * 0 to skip the first value which is the METHOD as string */
