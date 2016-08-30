@@ -445,12 +445,16 @@ bin:
 	$(TAR) -C tmp/$(NAME)/ -zcf ../$(NAME)-$(RELEASE)_$(OS)_$(ARCH).tar.gz .
 	rm -rf tmp/$(NAME)
 
-.PHONY: deb
-deb:
+.PHONY: deb-%
+deb-%:
 	rm -f debian
-	ln -sf packaging/debian
+	# dpkg-source cannot use links for debian source
+	cp -r packaging/debian/$(@:deb-%=%) debian
 	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
 	rm -f debian
+
+.PHONY: deb
+deb: deb-common
 
 
 .PHONY: sunpkg
