@@ -629,11 +629,18 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 
 send_response:
 	if (page.s) {
-		LM_DBG("MHD_create_response_from_data [%p:%d]\n",
-			page.s, page.len);
+#if defined MHD_VERSION && MHD_VERSION >= 0x00090000
+		response = MHD_create_response_from_buffer(page.len,
+							(void*)page.s,
+							MHD_RESPMEM_MUST_COPY);
+#else
+		/* use old constructor */
 		response = MHD_create_response_from_data(page.len,
 							(void*)page.s,
 							0, 1);
+#endif
+		LM_DBG("MHD_create_response_from_data [%p:%d]\n",
+			page.s, page.len);
 	} else {
 		LM_DBG("MHD_create_response_from_callback\n");
 		response = MHD_create_response_from_callback (MHD_SIZE_UNKNOWN,
