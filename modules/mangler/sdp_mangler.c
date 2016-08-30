@@ -490,7 +490,7 @@ continue2:
 
 }
 
-int compile_expresions(char *port,char *ip)
+int compile_expressions(char *port,char *ip)
 {
 	portExpression = NULL;
 	portExpression = pkg_malloc(sizeof(regex_t));
@@ -527,7 +527,7 @@ int compile_expresions(char *port,char *ip)
 	return 0;
 }
 
-int free_compiled_expresions(void)
+int free_compiled_expressions(void)
 {
 	if (portExpression != NULL)
 		{
