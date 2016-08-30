@@ -93,8 +93,6 @@ static str trace_local_proto = {NULL, 0};
 static str trace_local_ip = {NULL, 0};
 static unsigned short trace_local_port = 0;
 static int sl_ctx_idx=-1;
-static int default_hep_version=3;
-static int default_hep_proto=PROTO_HEP_TCP;
 
 tlist_elem_p trace_list=NULL;
 
@@ -255,7 +253,7 @@ get_db_struct(str *url, str *tb_name, st_db_struct_t **st_db)
 }
 
 static int
-parse_siptrace_uri(const str *token, str *uri, str *param1, str* param2)
+parse_siptrace_uri(const str *token, str *uri, str *param1)
 {
 	enum states {ST_TOK_NAME, ST_TOK_VALUE, ST_TOK_END};
 	enum states state = ST_TOK_NAME;
@@ -276,8 +274,6 @@ parse_siptrace_uri(const str *token, str *uri, str *param1, str* param2)
 
 	static str uri_str={"uri", sizeof("uri")-1};
 	static str tb_name_str={"table", sizeof("table")-1};
-	static str version_name_str={"version", sizeof("version")-1};
-	static str transport_name_str={"transport", sizeof("transport")-1};
 
 	str name={NULL, 0}, value={NULL, 0};
 
@@ -350,17 +346,9 @@ parse_siptrace_uri(const str *token, str *uri, str *param1, str* param2)
 			}
 
 			if (!(found_bitmask&HAVE_PARAM1)
-				&& ((uri_type == TYPE_DB && !str_strcasecmp(&tb_name_str, &name))
-					|| (uri_type == TYPE_HEP &&
-						!str_strcasecmp(&version_name_str, &name) ) ) ) {
+				&& ((uri_type == TYPE_DB && !str_strcasecmp(&tb_name_str, &name))) ) {
 				found_bitmask |= HAVE_PARAM1;
 				*param1 = value;
-			}
-
-			if (!(found_bitmask&HAVE_PARAM2)
-					&& !str_strcasecmp(&transport_name_str, &name)) {
-				found_bitmask |= HAVE_PARAM2;
-				*param2 = value;
 			}
 
 			state=ST_TOK_END;
@@ -488,15 +476,11 @@ static int parse_siptrace_id(str *suri)
 
 	unsigned int hash, param_hash;
 
-	char *new_url;
-
 	str name={NULL, 0};
 	str trace_uri;
-	str param1={NULL, 0}, param2={NULL,0};
+	str param1={NULL, 0};
 	tlist_elem_p    elem;
 	enum types uri_type;
-
-	unsigned int hep_version;
 
 
 	if (suri == NULL) {
@@ -521,7 +505,7 @@ static int parse_siptrace_id(str *suri)
 
 	PARSE_NAME(suri, name); /*parse '[<name>]'*/
 
-	if (parse_siptrace_uri(suri, &trace_uri, &param1, &param2) < 0) {
+	if (parse_siptrace_uri(suri, &trace_uri, &param1) < 0) {
 		LM_ERR("invalid uri <%.*s>\n", suri->len, suri->s);
 		return -1;
 	}
@@ -530,14 +514,6 @@ static int parse_siptrace_id(str *suri)
 
 	if (IS_HEP_URI(trace_uri)) {
 		uri_type = TYPE_HEP;
-		if (param1.s && param1.len) {
-			if (param2.s && param2.len) {
-				param_hash = core_hash(&param1, &param2, 0);
-			} else {
-				param_hash = core_hash(&param1, NULL, 0);
-			}
-			hash^= param_hash;
-		}
 	} else if (IS_SIP_URI(trace_uri)) {
 		uri_type = TYPE_SIP;
 	} else {
@@ -551,17 +527,6 @@ static int parse_siptrace_id(str *suri)
 	}
 
 	LIST_SEARCH(trace_list, uri_type, hash);
-
-	if (uri_type == TYPE_HEP) {
-		new_url = pkg_malloc(trace_uri.len);
-		if (new_url == NULL) {
-			LM_ERR("no more pkg mem!\n");
-			return -1;
-		}
-		memcpy(new_url, "sip", 3);
-		memcpy(new_url+3, trace_uri.s+3, trace_uri.len-3);
-		trace_uri.s = new_url;
-	}
 
 	ALLOC_EL(elem, sizeof(tlist_elem_t));
 
@@ -578,64 +543,15 @@ static int parse_siptrace_id(str *suri)
 					trace_uri.len, trace_uri.s, param1.len, param1.s);
 			return -1;
 		}
-	} else {
-		if (uri_type == TYPE_HEP) {
-			elem->el.hep = pkg_malloc(sizeof(st_hep_struct_t));
-			if (elem->el.hep == NULL) {
-				LM_ERR("no more pkg mem!\n");
-				return -1;
-			}
-			memset(elem->el.hep, 0, sizeof(st_hep_struct_t));
-		}
-
-		if (parse_uri(trace_uri.s, trace_uri.len,
-					uri_type == TYPE_SIP ? &elem->el.uri: &elem->el.hep->uri) < 0) {
+	} else if (uri_type == TYPE_SIP) {
+		if (parse_uri(trace_uri.s, trace_uri.len, &elem->el.uri) < 0) {
 			LM_ERR("failed to parse the URI!\n");
 			return -1;
 		}
-
-		if (uri_type == TYPE_HEP) {
-			/* version */
-			if (param1.s && param1.len) {
-				if (str2int(&param1, &hep_version) < 0) {
-					LM_ERR("invalid hep version parameter!\n");
-					return -1;
-				}
-
-				if (hep_version < 1 || hep_version > 3) {
-					LM_ERR("invalid hep protocol version %d\n", hep_version);
-					return -1;
-				}
-
-				elem->el.hep->version = hep_version;
-			} else {
-				elem->el.hep->version = default_hep_version;
-			}
-
-			if (param2.s && param2.len) {
-				if (IS_UDP(param2)) {
-					elem->el.hep->transport = PROTO_HEP_UDP;
-				} else if (IS_TCP(param2)) {
-					elem->el.hep->transport = PROTO_HEP_TCP;
-				} else {
-					LM_ERR("Invalid transport protocol [%.*s]\n",
-							param2.len, param2.s);
-					return -1;
-				}
-			} else {
-				if (elem->el.hep->version == 3)
-					elem->el.hep->transport = default_hep_proto;
-				else
-					elem->el.hep->transport = PROTO_HEP_UDP;
-			}
-
-			/* don't allow TCP for version 1 and 2 */
-			if ((elem->el.hep->version == 1 || elem->el.hep->version == 2) &&
-					elem->el.hep->transport == PROTO_HEP_TCP) {
-				LM_ERR("TCP not allowed for HEPv%d\n", elem->el.hep->version);
-				return -1;
-			}
-		}
+	} else {
+		/* jump over 'hep:' prefix and keep the name; will be loaded in mod init */
+		elem->el.hep.name.s = trace_uri.s + HEP_PREFIX_LEN;
+		elem->el.hep.name.len = trace_uri.len - HEP_PREFIX_LEN;
 	}
 
 
@@ -858,19 +774,27 @@ static int mod_init(void)
 		if (it->type!=TYPE_HEP)
 			continue;
 
-		LM_DBG("Loading hep api!\n");
-		load_hep = (load_hep_f)find_export("load_hep", 1, 0);
-		if (!load_hep) {
-			LM_ERR("Can't bind proto hep!\n");
-			return -1;
+		if (hep_api.get_hep_id_by_name == NULL) {
+			LM_DBG("Loading hep api!\n");
+			load_hep = (load_hep_f)find_export("load_hep", 1, 0);
+			if (!load_hep) {
+				LM_ERR("Can't bind proto hep!\n");
+				return -1;
+			}
+
+			if (load_hep(&hep_api)) {
+				LM_ERR("can't bind proto hep\n");
+				return -1;
+			}
 		}
 
-		if (load_hep(&hep_api)) {
-			LM_ERR("can't bind proto hep\n");
+		it->el.hep.hep_id = hep_api.get_hep_id_by_name(&it->el.hep.name);
+		if (it->el.hep.hep_id == NULL) {
+			LM_ERR("hep id not found!\n");
 			return -1;
 		}
-
-		break;
+		LM_DBG("hep id {%.*s} loaded succesfully!\n",
+					it->el.hep.name.len, it->el.hep.name.s);
 	}
 
 	/* set db_keys/vals info */
@@ -883,7 +807,7 @@ static int mod_init(void)
 		it->hash = core_hash(&it->name, NULL, 0);
 		it->traceable=shm_malloc(sizeof(unsigned char));
 		if (it->traceable==NULL) {
-			LM_ERR("no mre shmem!\n");
+			LM_ERR("no more shmem!\n");
 			return -1;
 		}
 		*it->traceable = trace_on;
@@ -1003,7 +927,7 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 					&db_vals[4].val.str_val, &db_vals[5].val.str_val,
 					db_vals[6].val.int_val, &db_vals[7].val.str_val,
 					&db_vals[8].val.str_val, db_vals[9].val.int_val,
-					it->el.hep) < 0) {
+					&it->el.hep) < 0) {
 				LM_ERR("Failed to duplicate with hep to <%.*s:%.*s>\n",
 						it->el.uri.host.len, it->el.uri.host.s,
 						it->el.uri.port.len, it->el.uri.port.s);
@@ -2132,13 +2056,13 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd_tree, void* param )
 				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("Database"));    \
                                                                                     \
 			if (_tid_el->type==TYPE_HEP) {                                          \
-				memcpy(uri, _tid_el->el.hep->uri.host.s, _tid_el->el.hep->uri.host.len);      \
-				uri[_tid_el->el.hep->uri.host.len] = ':';                                \
-				memcpy(uri+_tid_el->el.hep->uri.host.len+1,                              \
-						_tid_el->el.hep->uri.port.s, _tid_el->el.hep->uri.port.len);          \
+				memcpy(uri, _tid_el->el.hep.hep_id->ip.s, _tid_el->el.hep.hep_id->ip.len);      \
+				uri[_tid_el->el.hep.hep_id->ip.len] = ':';                                \
+				memcpy(uri+_tid_el->el.hep.hep_id->ip.len + 1,                                 \
+						_tid_el->el.hep.hep_id->port.s, _tid_el->el.hep.hep_id->port.len);      \
                                                                                     \
 				add_mi_attr(_node, 0, MI_SSTR("uri"), uri,                      \
-						_tid_el->el.hep->uri.host.len + 1 + _tid_el->el.hep->uri.port.len);    \
+						_tid_el->el.hep.hep_id->ip.len + 1 + _tid_el->el.hep.hep_id->port.len);    \
 			} else if (_tid_el->type==TYPE_SIP) {                 \
 				memcpy(uri, _tid_el->el.uri.host.s, _tid_el->el.uri.host.len);      \
 				uri[_tid_el->el.uri.host.len] = ':';                                \
@@ -2345,7 +2269,7 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 
 
 	/* create a temporary proxy*/
-	p=mk_proxy(&hep->uri.host, (hep->uri.port_no)?hep->uri.port_no:SIP_PORT,proto, 0);
+	p=mk_proxy(&hep->hep_id->ip, (hep->hep_id->port_no)?hep->hep_id->port_no:SIP_PORT,proto, 0);
 	if (p==0){
 		LM_ERR("bad host name in uri\n");
 		return -1;
@@ -2360,7 +2284,7 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 	hostent2su(to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
 
 	if (hep_api.pack_hep(&from_su, &to_su, proto, body->s, body->len,
-				hep->version, &hepbuf, &heplen)) {
+				hep->hep_id->version, &hepbuf, &heplen)) {
 		LM_ERR("failed to do hep packing\n");
 		return -1;
 	}
@@ -2369,7 +2293,7 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 
 	do {
 		/* send sock is being found in msg_send() function*/
-		if (msg_send(NULL, hep->transport, to, 0, hepbuf, heplen, NULL)<0){
+		if (msg_send(NULL, hep->hep_id->transport, to, 0, hepbuf, heplen, NULL)<0){
 			LM_ERR("cannot send duplicate message\n");
 			continue;
 		}

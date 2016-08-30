@@ -25,6 +25,7 @@
 
 #define NR_KEYS 14
 #define SIPTRACE_TABLE_VERSION 5
+#define HEP_PREFIX_LEN (sizeof("hep:") - 1)
 
 enum trace_flags {TRACE_MESSAGE=(1<<0), TRACE_TRANSACTION=(1<<1),
 			TRACE_SL_TRANSACTION=(1<<2), /* transaction aware in stateless mode */
@@ -42,9 +43,8 @@ typedef struct st_db_struct {
 } st_db_struct_t;
 
 typedef struct st_hep_struct {
-	struct sip_uri uri;
-	char version;
-	int transport;
+	str name;
+	hid_list_t* hep_id;
 } st_hep_struct_t;
 
 
@@ -57,7 +57,7 @@ typedef struct tlist_elem {
 
 	union {
 		st_db_struct_t  *db;
-		st_hep_struct_t *hep;
+		st_hep_struct_t hep;
 		struct sip_uri  uri;
 	} el;
 
@@ -116,7 +116,7 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
 static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri);
 static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 		unsigned short fromport, str *toproto, str *toip,
-		unsigned short toport, st_hep_struct_t* hep);
+		unsigned short toport, st_hep_struct_t *hep);
 
 
 
