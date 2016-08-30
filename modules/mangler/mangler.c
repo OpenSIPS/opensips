@@ -161,7 +161,7 @@ int prepare (void)
 {
 
 	/* using pre-compiled expressions to speed things up*/
-	compile_expresions(PORT_REGEX,IP_REGEX);
+	compile_expressions(PORT_REGEX,IP_REGEX);
 
 #ifdef DEMO
 	fprintf(stdout,"===============NEW RUN================\n");
@@ -196,7 +196,7 @@ static int mod_init (void)
 static void destroy (void)
 {
 	/*free some compiled regex expressions */
-	free_compiled_expresions();
+	free_compiled_expressions();
 #ifdef DEMO
 	fprintf(stdout,"Freeing pre-compiled expressions\n");
 #endif

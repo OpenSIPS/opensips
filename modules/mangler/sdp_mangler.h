@@ -24,7 +24,7 @@
  *  2003-04-07 first version.
  */
 
-/* TO DO: precompiled expresions */
+/* TO DO: precompiled expressions */
 
 #ifndef SDP_MANGLER_H
 #define SDP_MANGLER_H
@@ -88,7 +88,7 @@ int sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused);
 
 int sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip);
 
-int compile_expresions(char *port,char *ip);
-int free_compiled_expresions();
+int compile_expressions(char *port,char *ip);
+int free_compiled_expressions();
 
 #endif
