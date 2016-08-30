@@ -466,7 +466,7 @@ Description: LUA extensions for OpenSIPS
 Package: opensips-http-modules
 Architecture: any
 Multi-Arch: same
-Depends: libmicrohttpd5|libmicrohttpd10,
+Depends: libmicrohttpd10|libmicrohttpd12,
          opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
