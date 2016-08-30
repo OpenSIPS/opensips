@@ -262,7 +262,7 @@ Description: Carrierroute module for OpenSIPS
 Package: opensips-berkeley-module
 Architecture: any
 Multi-Arch: same
-Depends: db4.6-util,
+Depends: db-util (>= 4.6.19),
          opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
