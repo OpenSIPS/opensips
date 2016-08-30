@@ -28,6 +28,13 @@
 
 #include "../../ip_addr.h"
 
+/* first and last version of hep protocol */
+#define HEP_FIRST 1
+#define HEP_LAST  3
+
+#define HEP_PORT 9060
+#define HEP_PORT_STR "9060"
+
 #define HEP_HEADER_ID "\x48\x45\x50\x33"
 #define HEP_HEADER_ID_LEN (sizeof(HEP_HEADER_ID) - 1)
 
@@ -230,6 +237,28 @@ struct hep_context {
 	int resume_with_sip;
 };
 
+/*
+ * structure used for storing hep id's
+ * hid = hep_id
+ */
+typedef struct _hid_list {
+	str name;
+
+	/* FIXME consider the obs below! MI start/stop trace?? */
+	// unsigned char* traceable; /* do we want start/stop over hep id's?? */
+
+	str ip;
+
+
+	unsigned int port_no;
+	str port;
+
+	unsigned int version;
+	int transport;
+
+	struct _hid_list* next;
+} hid_list_t, *hid_list_p;
+
 int pack_hep(union sockaddr_union* from_su, union sockaddr_union* to_su,
 		int proto, char *payload, int plen, int hep_version,
 		char **retbuf, int *retlen);
@@ -237,10 +266,14 @@ int unpack_hepv12(char *buf, int len, struct hep_desc* h);
 int unpack_hepv3(char *buf, int len, struct hep_desc *h);
 int unpack_hep(char *buf, int len, int version, struct hep_desc* h);
 
+int parse_hep_id(unsigned int type, void *val);
+hid_list_p get_hep_id_by_name(str* name);
+
 
 typedef int (*pack_hep_t)(union sockaddr_union* from_su, union sockaddr_union* to_su,
 		int proto, char *payload, int plen, int hep_version,
 		char **retbuf, int *retlen);
 typedef int (*get_hep_ctx_id_t)(void);
+typedef hid_list_p (*get_hep_id_by_name_t)(str* );
 #endif
 
