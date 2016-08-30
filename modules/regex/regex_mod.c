@@ -254,7 +254,7 @@ static void destroy(void)
 }
 
 
-/*! \brief Convert the file content into regular expresions and store them in pcres */
+/*! \brief Convert the file content into regular expressions and store them in pcres */
 static int load_pcres(int action)
 {
 	int i, j;
