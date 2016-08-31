@@ -41,23 +41,38 @@
 #define CALL_CBS_DOWN		(1<<2)
 #define CALL_CBS_UP			(1<<3)
 #define DB_UPDATED			(1<<4)
+#define DB_PROVISIONED		(1<<5)
 
 typedef enum {
 	CLUSTERER_PING,
 	CLUSTERER_PONG,
 	CLUSTERER_LS_UPDATE,
-	CLUSTERER_FULL_TOP_UPDATE
+	CLUSTERER_FULL_TOP_UPDATE,
+	CLUSTERER_UNKNOWN_ID,
+	CLUSTERER_JOIN_REQUEST,
+	CLUSTERER_JOIN_ACCEPT,
+	CLUSTERER_JOIN_CONFIRM,
+	CLUSTERER_TOP_DESCRIPTION
 } clusterer_msg_type;
 
 typedef enum {
-	LS_UP = 0,
-	LS_DOWN = 1,
-	/* possbily down */
-	LS_RETRY_SEND_FAIL = 2,
-	LS_RESTART_PINGING = 3,
-	LS_RESTARTED = 4,
-	LS_RETRYING = 5
+	LS_UP,
+	LS_DOWN,
+	/* probing states */
+	LS_RETRY_SEND_FAIL,
+	LS_RESTART_PINGING,
+	LS_RESTARTED,
+	LS_RETRYING,
+	/* link not established */
+	LS_NO_LINK
 } clusterer_link_state;
+
+typedef enum {
+	JOIN_INIT,
+	JOIN_REQ_SENT,
+	JOIN_CONFIRM_SENT,
+	JOIN_SUCCESS
+} clusterer_join_state;
 
 struct mod_registration {
    str mod_name;

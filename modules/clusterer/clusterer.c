@@ -577,7 +577,7 @@ int clusterer_check_addr(int cluster_id, union sockaddr_union *su)
 	return rc;
 }
 
-static int flood_update(cluster_info_t *cluster, int source_id)
+static int flood_message(cluster_info_t *cluster, int source_id, int alter_is_orig_src)
 {
 	int path_len;
 	int path_nodes[UPDATE_MAX_PATH_LEN];
@@ -589,7 +589,7 @@ static int flood_update(cluster_info_t *cluster, int source_id)
 
 	bin_pop_int(&path_len);
 	if (path_len > UPDATE_MAX_PATH_LEN) {
-		LM_INFO("Too many hops for clusterer topology update message from node: %d\n",
+		LM_INFO("Too many hops for message from node: %d\n",
 			source_id);
 		return -1;
 	}
@@ -599,7 +599,7 @@ static int flood_update(cluster_info_t *cluster, int source_id)
 		bin_pop_int(&path_nodes[i]);
 		tmp_path_node = get_node_by_id(cluster, path_nodes[i]);
 		if (!tmp_path_node) {
-			LM_DBG("Unknown node in topology update path, id: %d\n", path_nodes[i]);
+			LM_DBG("Unknown node in message path, id: %d\n", path_nodes[i]);
 			continue;
 		}
 		tmp_path_node->flags |= TMP_FLAG;
@@ -615,12 +615,15 @@ static int flood_update(cluster_info_t *cluster, int source_id)
 			bin_get_recv_buffer(&bin_buffer);
 			bin_set_send_buffer(bin_buffer);
 			/* return to the path length position in the buffer */
-			bin_alter_pop_int(path_len + 1);
+			if (alter_is_orig_src) {
+				bin_alter_pop_int(path_len + 2);
+				bin_push_int(0);
+			} else
+				bin_alter_pop_int(path_len + 1);
 			/* set new path length */
 			bin_push_int(path_len + 1);
-			/* go to end of buffer */
+			/* go to end of the buffer and include current node in path */
 			bin_skip_int_send_buffer(path_len);
-			/* include current node in path */
 			bin_push_int(current_id);
 			bin_get_buffer(&bin_buffer);
 			msg_altered = 1;
@@ -628,7 +631,7 @@ static int flood_update(cluster_info_t *cluster, int source_id)
 
 		if (msg_send(NULL, clusterer_proto, &neigh->node->addr, 0, bin_buffer.s,
 			bin_buffer.len, 0) < 0) {
-			LM_ERR("Failed to flood topology update to node: %d\n",
+			LM_ERR("Failed to flood message to node: %d\n",
 				neigh->node->node_id);
 			/* this node was supposed to be up, restart pinging */
 			set_link(LS_RESTART_PINGING, cluster->current_node, neigh->node);
@@ -636,7 +639,7 @@ static int flood_update(cluster_info_t *cluster, int source_id)
 	}
 
 	if (msg_altered)
-		LM_DBG("Flooded topology update to all reachable neighbours\n");
+		LM_DBG("Flooded messages to all reachable neighbours\n");
 
 	/* reset marked nodes */
 	for (i = 0; i < path_len; i++) {
@@ -649,19 +652,321 @@ static int flood_update(cluster_info_t *cluster, int source_id)
 	return 0;
 }
 
+static void receive_full_top_update(cluster_info_t *cluster, node_info_t *source,
+										int *check_call_cbs_event)
+{
+	int seq_no;
+	int no_nodes, no_neigh;
+	int i, j;
+	int skip;
+	int top_node_id, neigh_id;
+	node_info_t *top_node, *top_neigh, *it;
+
+	bin_pop_int(&seq_no);
+	if (seq_no <= source->top_seq_no)
+		return;
+	else
+		source->top_seq_no = seq_no;
+
+	bin_pop_int(&no_nodes);
+	for (i = 0; i < no_nodes; i++) {
+		skip = 0;
+
+		bin_pop_int(&top_node_id);
+		if (top_node_id == current_id)
+			skip = 1;
+		top_node = get_node_by_id(cluster, top_node_id);
+		if (!skip && !top_node) {
+			LM_WARN("Unknown node id: %d in topology update from "
+				"node: %d\n", top_node_id, source->node_id);
+			skip = 1;
+		}
+		bin_pop_int(&seq_no);
+		if (!skip && i > 0)
+			if (seq_no <= top_node->ls_seq_no)
+				skip = 1;
+		bin_pop_int(&no_neigh);
+		if (skip) {
+			bin_skip_int(no_neigh);
+			continue;
+		}
+
+		top_node->ls_seq_no = seq_no;
+
+		for (j = 0; j < no_neigh; j++) {
+			bin_pop_int(&neigh_id);
+			top_neigh = get_node_by_id(cluster, neigh_id);
+			if (!top_neigh && neigh_id != current_id) {
+				LM_WARN("Unknown neighbour id: %d in topology update "
+					"about node: %d from source node: %d\n",
+					neigh_id, top_node_id, source->node_id);
+				continue;
+			}
+			if (neigh_id == current_id) {
+				if (top_node->link_state == LS_DOWN) {
+					set_link_for_current(LS_RESTART_PINGING, top_node);
+					*check_call_cbs_event = 1;
+				}
+			} else {
+				set_link(LS_UP, top_node, top_neigh);
+				*check_call_cbs_event = 1;
+				/* mark the node in order to identify neighbours which are missing
+				 * from the adjacency list and thus represent failed links */
+				top_neigh->flags |= TMP_FLAG;
+			}
+		}
+
+		/* search the marked nodes to delete the corresponding links */
+		for (it = cluster->node_list; it; it = it->next) {
+			if (it->node_id == top_node_id) {
+				it->flags &= ~TMP_FLAG;
+				continue;
+			}
+			if (!(it->flags & TMP_FLAG)) {
+				set_link(LS_DOWN, top_node, it);
+				*check_call_cbs_event = 1;
+			}
+
+			it->flags &= ~TMP_FLAG;
+		}
+	}
+
+	flood_message(cluster, source->node_id, 0);
+}
+
+static void receive_top_description(cluster_info_t *cluster, node_info_t *source)
+{
+	int no_nodes, no_neigh;
+	int i, j;
+	int skip;
+	int top_node_id, neigh_id;
+	node_info_t *top_node, *top_neigh, *it;
+
+	bin_pop_int(&no_nodes);
+	for (i = 0; i < no_nodes; i++) {
+		skip = 0;
+
+		bin_pop_int(&top_node_id);
+		if (top_node_id == current_id)
+			skip = 1;
+		top_node = get_node_by_id(cluster, top_node_id);
+		if (!skip && !top_node) {
+			LM_WARN("Unknown node id: %d in topology description from "
+				"node: %d\n", top_node_id, source->node_id);
+			skip = 1;
+		}
+
+		bin_pop_int(&no_neigh);
+		if (skip) {
+			bin_skip_int(no_neigh);
+			continue;
+		}
+
+		for (j = 0; j < no_neigh; j++) {
+			bin_pop_int(&neigh_id);
+			top_neigh = get_node_by_id(cluster, neigh_id);
+			if (!top_neigh && neigh_id != current_id) {
+				LM_WARN("Unknown neighbour id: %d in topology update "
+					"about node: %d from source node: %d\n",
+					neigh_id, top_node_id, source->node_id);
+				continue;
+			}
+			if (neigh_id != current_id)
+				set_link(LS_UP, top_node, top_neigh);
+		}
+	}
+
+	for (it = cluster->node_list; it; it = it->next)
+		it->link_state = LS_RESTART_PINGING;
+
+	cluster->join_state = JOIN_SUCCESS;
+}
+
+/* CLUSTERER_TOP_DESCRIPTION message format:
+ * +--------------------------------------------------------------------------------------------+
+ * | cluster | src_node | no_nodes | node_1 | no_neigh | neigh_1 | neigh_2 | ... | node_2 | ... |
+ * +--------------------------------------------------------------------------------------------+
+ */
+static int send_top_description(cluster_info_t *cluster, node_info_t *dest_node)
+{
+	static str module_name = str_init("clusterer");
+	str bin_buffer;
+	struct neighbour *neigh;
+	node_info_t *it;
+	int no_neigh;
+
+	if (bin_init(&module_name, CLUSTERER_TOP_DESCRIPTION, BIN_VERSION) < 0) {
+		LM_ERR("Failed to init bin send buffer\n");
+		return -1;
+	}
+	bin_push_int(cluster->cluster_id);
+	bin_push_int(current_id);
+
+    bin_push_int(cluster->no_nodes);
+
+	/* the first adjacency list in the message is for the current node */
+	bin_push_int(current_id);
+	bin_push_int(0); /* no neighbours for now */
+	for (neigh = cluster->current_node->neighbour_list, no_neigh = 0; neigh;
+		neigh = neigh->next, no_neigh++)
+		bin_push_int(neigh->node->node_id);
+	/* set the number of neighbours */
+	bin_alter_pop_int(no_neigh + 1);
+	bin_push_int(no_neigh);
+	bin_skip_int_send_buffer(no_neigh);
+
+	/* the adjacency lists for the rest of the nodes */
+	for (it = cluster->node_list; it; it = it->next) {
+		/* skip requesting node */
+		if (it->node_id == dest_node->node_id)
+			continue;
+		bin_push_int(it->node_id);
+		bin_push_int(0);
+		for (neigh = it->neighbour_list, no_neigh = 0; neigh;
+			neigh = neigh->next, no_neigh++)
+			bin_push_int(neigh->node->node_id);
+		/* the current node does not appear in the neighbour_list of other nodes
+		 * but it should be present in the adjacency list to be sent if there is a link */
+		if (it->link_state == LS_UP) {
+			bin_push_int(current_id);
+			no_neigh++;
+		}
+		/* set the number of neighbours */
+		bin_alter_pop_int(no_neigh + 1);
+		bin_push_int(no_neigh);
+		bin_skip_int_send_buffer(no_neigh);
+
+	}
+
+	bin_get_buffer(&bin_buffer);
+
+	if (msg_send(NULL, clusterer_proto, &dest_node->addr, 0, bin_buffer.s,
+		bin_buffer.len, 0) < 0) {
+		LM_ERR("Failed to send topology description to node: %d\n", dest_node->node_id);
+		return -1;
+	} else
+		LM_DBG("Sent topology description to node: %d\n", dest_node->node_id);
+
+	return 0;
+}
+
+static void receive_msg_unknown_source(cluster_info_t *cl, int packet_type,
+										union sockaddr_union *src_su, int src_node_id)
+{
+	static str module_name = str_init("clusterer");
+	str bin_buffer;
+	int is_orig_src;
+	str str_vals[NO_DB_STR_VALS];
+	char *char_str_vals[NO_DB_STR_VALS];
+	int int_vals[NO_DB_INT_VALS];
+	node_info_t *new_node;
+
+	switch (packet_type) {
+	case CLUSTERER_PING:
+		/* reply in order to inform node that it has an unknown id */
+		if (bin_init(&module_name, CLUSTERER_UNKNOWN_ID, BIN_VERSION) < 0) {
+			LM_ERR("Failed to init bin send buffer\n");
+			return;
+		}
+		bin_push_int(cl->cluster_id);
+		bin_push_int(current_id);
+		bin_get_buffer(&bin_buffer);
+
+		if (msg_send(NULL, clusterer_proto, src_su, 0, bin_buffer.s,
+			bin_buffer.len, 0) < 0)
+			LM_ERR("Failed to reply to ping from unknown node, id: %d\n", src_node_id);
+		else
+			LM_DBG("Replied to ping from unknown node, id: %d\n", src_node_id);
+
+		break;
+	case CLUSTERER_JOIN_REQUEST:
+		if (src_node_id == current_id)
+			break;
+
+		if (bin_init(&module_name, CLUSTERER_JOIN_ACCEPT, BIN_VERSION) < 0) {
+			LM_ERR("Failed to init bin send buffer\n");
+			return;
+		}
+		bin_push_int(cl->cluster_id);
+		bin_push_int(current_id);
+		bin_get_buffer(&bin_buffer);
+
+		if (msg_send(NULL, clusterer_proto, src_su, 0, bin_buffer.s,
+			bin_buffer.len, 0) < 0)
+			LM_ERR("Failed to reply to join request from unknown node, id: %d\n", src_node_id);
+		else
+			LM_DBG("Replied to join request from unknown node, id: %d\n", src_node_id);
+
+		break;
+	case CLUSTERER_JOIN_CONFIRM:
+		LM_DBG("Received join confirm message from node: %d\n", src_node_id);
+		/* pop info from message */
+		bin_pop_str(&str_vals[STR_VALS_DESCRIPTION_COL]);
+		char_str_vals[STR_VALS_DESCRIPTION_COL] = shm_malloc(str_vals[STR_VALS_DESCRIPTION_COL].len+1);
+		memcpy(char_str_vals[STR_VALS_DESCRIPTION_COL],
+			str_vals[STR_VALS_DESCRIPTION_COL].s, str_vals[STR_VALS_DESCRIPTION_COL].len);
+		char_str_vals[STR_VALS_DESCRIPTION_COL][str_vals[STR_VALS_DESCRIPTION_COL].len] = 0;
+
+		bin_pop_str(&str_vals[STR_VALS_URL_COL]);
+		char_str_vals[STR_VALS_URL_COL] = shm_malloc(str_vals[STR_VALS_URL_COL].len+1);
+		memcpy(char_str_vals[STR_VALS_URL_COL],
+			str_vals[STR_VALS_URL_COL].s, str_vals[STR_VALS_URL_COL].len);
+		char_str_vals[STR_VALS_URL_COL][str_vals[STR_VALS_URL_COL].len] = 0;
+
+		bin_pop_str(&str_vals[STR_VALS_SIP_ADDR_COL]);
+		char_str_vals[STR_VALS_SIP_ADDR_COL] = shm_malloc(str_vals[STR_VALS_SIP_ADDR_COL].len+1);
+		memcpy(char_str_vals[STR_VALS_SIP_ADDR_COL],
+			str_vals[STR_VALS_SIP_ADDR_COL].s, str_vals[STR_VALS_SIP_ADDR_COL].len);
+		char_str_vals[STR_VALS_SIP_ADDR_COL][str_vals[STR_VALS_SIP_ADDR_COL].len] = 0;
+
+		bin_pop_int(&int_vals[INT_VALS_PRIORITY_COL]);
+		bin_pop_int(&int_vals[INT_VALS_NO_PING_RETRIES_COL]);
+		bin_pop_int(&int_vals[INT_VALS_LS_SEQ_COL]);
+		bin_pop_int(&int_vals[INT_VALS_TOP_SEQ_COL]);
+		bin_pop_int(&is_orig_src);
+
+		int_vals[INT_VALS_ID_COL] = 0;	/* no valid DB id since it isn't loaded from DB */
+		int_vals[INT_VALS_CLUSTER_ID_COL] = cl->cluster_id;
+		int_vals[INT_VALS_NODE_ID_COL] = src_node_id;
+		int_vals[INT_VALS_STATE_COL] = 1;	/* enabled since messages were received from this node */
+
+		new_node = add_node_info(&cl, int_vals, char_str_vals);
+		if (!new_node) {
+			LM_ERR("Unable to add node info to backing list\n");
+			return;
+		}
+		shm_free(char_str_vals[STR_VALS_DESCRIPTION_COL]);
+		shm_free(char_str_vals[STR_VALS_URL_COL]);
+		shm_free(char_str_vals[STR_VALS_SIP_ADDR_COL]);
+		new_node->link_state = LS_RESTART_PINGING;
+		new_node->flags = NODE_STATE_ENABLED;
+
+		/* only the first node that receives the join confirm message sends back a topology description
+		 * to the joining node, the other nodes just flood it */
+		if (is_orig_src)
+			flood_message(cl, src_node_id, 1);
+		else
+			flood_message(cl, src_node_id, 0);
+
+		/* send topology description to joining node */
+		if (is_orig_src)
+			send_top_description(cl, new_node);
+
+		break;
+	default:
+		LM_DBG("Ignoring message, type: %d from unknown source\n", packet_type);
+	}
+}
+
 void receive_clusterer_bin_packets(int packet_type, struct receive_info *ri, void *att)
 {
 	int source_id, cl_id;
 	struct timeval now;
-	node_info_t *node = NULL, *ls_neigh, *top_neigh, *it, *top_node;
+	node_info_t *node = NULL, *ls_neigh;
 	cluster_info_t *cl;
 	static str module_name = str_init("clusterer");
 	str bin_buffer;
 	int seq_no, neigh_id, new_ls;
-	int i, j;
-	int skip;
-	int no_neigh, no_nodes;
-	int top_node_id;
 	char *ip;
 	unsigned short port;
 	int check_call_cbs_event = 0;
@@ -688,7 +993,10 @@ void receive_clusterer_bin_packets(int packet_type, struct receive_info *ri, voi
 	}
 	node = get_node_by_id(cl, source_id);
 	if (!node) {
-		LM_WARN("Received message from unknown source node, id: %d\n", source_id);
+		LM_INFO("Received message from unknown source node, id: %d\n", source_id);
+
+		receive_msg_unknown_source(cl, packet_type, &ri->src_su, source_id);
+
 		goto end;
 	}
 
@@ -762,83 +1070,83 @@ void receive_clusterer_bin_packets(int packet_type, struct receive_info *ri, voi
 			check_call_cbs_event = 1;
 		}
 
-		flood_update(cl, source_id);
+		flood_message(cl, source_id, 0);
 
 		break;
 	case CLUSTERER_FULL_TOP_UPDATE:
-		bin_pop_int(&seq_no);
-		if (seq_no <= node->top_seq_no)
-			goto end;
-		else
-			node->top_seq_no = seq_no;
-		bin_pop_int(&no_nodes);
-
 		LM_DBG("Received full topology update from node: %d\n", source_id);
 
-		for (i = 0; i < no_nodes; i++) {
-			skip = 0;
+		receive_full_top_update(cl, node, &check_call_cbs_event);
+		break;
+	case CLUSTERER_UNKNOWN_ID:
+		LM_DBG("NNN Received CLUSTERER_UNKNOWN_ID from node: %d\n", source_id);
 
-			bin_pop_int(&top_node_id);
-			if (top_node_id == current_id)
-				skip = 1;
-			top_node = get_node_by_id(cl, top_node_id);
-			if (!skip && !top_node) {
-				LM_WARN("Unknown node id: %d in topology update from "
-					"node: %d\n", top_node_id, source_id);
-				skip = 1;
-			}
-			bin_pop_int(&seq_no);
-			if (!skip && i > 0)
-				if (seq_no <= top_node->ls_seq_no)
-					skip = 1;
-			bin_pop_int(&no_neigh);
-			if (skip) {
-				bin_skip_int(no_neigh);
-				continue;
-			}
+		if (cl->join_state != JOIN_SUCCESS)
+			node->link_state = LS_NO_LINK;
 
-			top_node->ls_seq_no = seq_no;
+		if (cl->join_state != JOIN_INIT && cl->join_state != JOIN_REQ_SENT)
+			break;
 
-			for (j = 0; j < no_neigh; j++) {
-				bin_pop_int(&neigh_id);
-				top_neigh = get_node_by_id(cl, neigh_id);
-				if (!top_neigh && neigh_id != current_id) {
-					LM_WARN("Unknown neighbour id: %d in topology update "
-						"about node: %d from source node: %d\n",
-						neigh_id, top_node_id, source_id);
-					continue;
-				}
-				if (neigh_id == current_id) {
-					if (top_node->link_state == LS_DOWN) {
-						set_link_for_current(LS_RESTART_PINGING, top_node);
-						check_call_cbs_event = 1;
-					}
-				} else {
-					set_link(LS_UP, top_node, top_neigh);
-					check_call_cbs_event = 1;
-					/* mark the node in order to identify neighbours which are missing
-					 * from the adjacency list and thus represent failed links */
-					top_neigh->flags |= TMP_FLAG;
-				}
-			}
+		/* send request to join the cluster */
+		if (bin_init(&module_name, CLUSTERER_JOIN_REQUEST, BIN_VERSION) < 0) {
+			LM_ERR("Failed to init bin send buffer\n");
+			goto end;
+		}
+		bin_push_int(cl_id);
+		bin_push_int(current_id);
+		bin_get_buffer(&bin_buffer);
 
-			/* search the marked nodes to delete the corresponding links */
-			for (it = cl->node_list; it; it = it->next) {
-				if (it->node_id == top_node_id) {
-					it->flags &= ~TMP_FLAG;
-					continue;
-				}
-				if (!(it->flags & TMP_FLAG)) {
-					set_link(LS_DOWN, top_node, it);
-					check_call_cbs_event = 1;
-				}
-
-				it->flags &= ~TMP_FLAG;
-			}
+		if (msg_send(NULL, clusterer_proto, &node->addr, 0, bin_buffer.s,
+			bin_buffer.len, 0) < 0)
+			LM_ERR("Failed to send cluster join request to node: %d\n", node->node_id);
+		else {
+			LM_DBG("Sent cluster join request to node: %d\n", node->node_id);
+			cl->join_state = JOIN_REQ_SENT;
 		}
 
-		flood_update(cl, source_id);
-		
+		break;
+	case CLUSTERER_JOIN_ACCEPT:
+		if (cl->join_state != JOIN_REQ_SENT)
+			break;
+
+		/* send confirmation to join the cluster, acknowledging that the node was accepted */
+		if (bin_init(&module_name, CLUSTERER_JOIN_CONFIRM, BIN_VERSION) < 0) {
+			LM_ERR("Failed to init bin send buffer\n");
+			goto end;
+		}
+		bin_push_int(cl_id);
+		bin_push_int(current_id);
+
+		/* include info about current node */
+		bin_push_str(&cl->current_node->description);
+		bin_push_str(&cl->current_node->url);
+		bin_push_str(&cl->current_node->sip_addr);
+		bin_push_int(cl->current_node->priority);
+		bin_push_int(cl->current_node->no_ping_retries);
+		bin_push_int(cl->current_node->ls_seq_no);
+		bin_push_int(cl->current_node->top_seq_no);
+
+		bin_push_int(1);	/* original source of this join confirm message */
+
+		bin_push_int(1);	/* path length is 1, only current node at this point */
+		bin_push_int(current_id);
+
+		bin_get_buffer(&bin_buffer);
+		if (msg_send(NULL, clusterer_proto, &node->addr, 0, bin_buffer.s,
+			bin_buffer.len, 0) < 0)
+			LM_ERR("Failed to send cluster join confirmation to node: %d\n", node->node_id);
+		else {
+			LM_DBG("Sent cluster join confirmation to node: %d\n", node->node_id);
+			cl->join_state = JOIN_CONFIRM_SENT;
+		}
+
+		break;
+	case CLUSTERER_JOIN_CONFIRM:
+		LM_DBG("Already got join confirm from node: %d, drop this message\n", source_id);
+		break;
+	case CLUSTERER_TOP_DESCRIPTION:
+		LM_DBG("Received topology description from node: %d\n", source_id);
+		receive_top_description(cl, node);
 		break;
 	default:
 		LM_WARN("Invalid clusterer binary packet command from node: %d\n",

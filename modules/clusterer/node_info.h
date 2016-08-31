@@ -94,6 +94,7 @@ struct cluster_info {
 	struct node_info *node_list;
 	int no_nodes;                   /* number of nodes in the cluster */
 	struct node_info *current_node; /* current node's info in this cluster */
+	clusterer_join_state join_state;
 	int top_version;                /* topology version */
 	struct cluster_info *next;
 };
@@ -111,6 +112,7 @@ void free_info(cluster_info_t *cl_list);
 
 inline cluster_info_t *get_cluster_by_id(int cluster_id);
 inline node_info_t *get_node_by_id(cluster_info_t *cluster, int node_id);
+node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_vals);
 
 int get_my_id(void);
 clusterer_node_t* get_clusterer_nodes(int cluster_id);

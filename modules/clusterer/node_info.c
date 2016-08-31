@@ -60,7 +60,7 @@ static db_val_t *clusterer_cluster_id_value;
 gen_lock_t *ref_lock;
 cluster_info_t **cluster_list;
 
-static int add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_vals)
+node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_vals)
 {
 	char *host;
 	int hlen, port;
@@ -109,6 +109,7 @@ static int add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_val
 		cluster->node_list = NULL;
 		cluster->no_nodes = 0;
 		cluster->current_node = NULL;
+		cluster->join_state = JOIN_INIT;
 		cluster->top_version = 0;
 		cluster->next = *cl_list;
 		*cl_list = cluster;
@@ -119,6 +120,8 @@ static int add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_val
 		LM_ERR("no more shm memory\n");
 		goto error;
 	}
+
+	new_info->flags = DB_UPDATED | DB_PROVISIONED;
 
 	new_info->id = int_vals[INT_VALS_ID_COL];
 	new_info->node_id = int_vals[INT_VALS_NODE_ID_COL];
@@ -222,7 +225,6 @@ static int add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_val
 		goto error;
 	}
 	new_info->sp_info->node = new_info;
-	new_info->flags |= DB_UPDATED;
 
 	if (int_vals[INT_VALS_NODE_ID_COL] != current_id) {
 		new_info->next = cluster->node_list;
@@ -233,7 +235,7 @@ static int add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_val
 		cluster->current_node = new_info;
 	}
 
-	return 0;
+	return new_info;
 error:
 	if (new_info) {
 		if (new_info->sip_addr.s)
@@ -250,7 +252,7 @@ error:
 
 		shm_free(new_info);
 	}
-	return -1;
+	return NULL;
 }
 
 #define check_val( _col, _val, _type, _not_null, _is_empty_str) \
@@ -411,7 +413,7 @@ cluster_info_t* load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 		str_vals[STR_VALS_DESCRIPTION_COL] = (char*) VAL_STRING(ROW_VALUES(row) + 10);
 
 		/* add info to backing list */
-		if (add_node_info(&cl_list, int_vals, str_vals) < 0) {
+		if (add_node_info(&cl_list, int_vals, str_vals) == 0) {
 			LM_ERR("Unable to add node info to backing list\n");
 			goto error;
 		}
@@ -458,7 +460,8 @@ int update_db_current(void)
 	lock_get(ref_lock);
 
 	for (cluster = *cluster_list; cluster; cluster = cluster->next) {
-		if (cluster->current_node->flags & DB_UPDATED)
+		if ((cluster->current_node->flags & (DB_PROVISIONED | DB_UPDATED)) ==
+			(DB_PROVISIONED | DB_UPDATED))
 			continue;
 
 		VAL_TYPE(&update_vals[0]) = DB_INT;
