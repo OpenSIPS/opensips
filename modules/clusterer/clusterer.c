@@ -1221,6 +1221,7 @@ static void bin_receive_packets(int packet_type, struct receive_info *ri, void *
 	if (dest_id != current_id) {
 		bin_get_recv_buffer(&recv_buf);
 		bin_set_send_buffer(recv_buf);
+		bin_push_int(cluster_id);
 		bin_push_int(source_id);
 		bin_push_int(dest_id);
 
