@@ -46,6 +46,8 @@ extern int ping_interval;
 extern int node_timeout;
 extern int ping_timeout;
 
+static str tmp_buff;
+
 static int set_link(clusterer_link_state new_ls, node_info_t *node_a, node_info_t *node_b);
 static int set_link_for_current(clusterer_link_state new_ls, node_info_t *node);
 static void call_cbs_event(cluster_info_t *clusters, int *clusters_to_call, int no_clusters);
@@ -402,7 +404,7 @@ static int clusterer_send_msg(node_info_t *dest, int chg_dest, int *check_call_c
 {
 	int retr_send = 0;
 	node_info_t *chosen_dest = dest;
-	str tmp_buff, send_buffer;
+	str send_buffer;
 
 	do {
 		if (chosen_dest->link_state != LS_UP) {
@@ -426,11 +428,18 @@ static int clusterer_send_msg(node_info_t *dest, int chg_dest, int *check_call_c
 				send_buffer.len, 0) < 0) {
 			LM_ERR("msg_send() to node: %d failed\n", chosen_dest->node_id);
 			retr_send = 1;
-			memcpy(tmp_buff.s, send_buffer.s, send_buffer.len);
+
+			if (tmp_buff.s && tmp_buff.len < send_buffer.len)
+				pkg_free(tmp_buff.s);
+			if (tmp_buff.len < send_buffer.len)
+				tmp_buff.s = pkg_malloc(send_buffer.len);
 			tmp_buff.len = send_buffer.len;
+			memcpy(tmp_buff.s, send_buffer.s, send_buffer.len);
+
 			set_link(LS_RESTART_PINGING, chosen_dest->cluster->current_node,
 				chosen_dest);	/* this node was supposed to be up, retry pinging */
 			*check_call_cbs_event = 1;
+
 			bin_set_send_buffer(tmp_buff);
 		} else {
 			LM_DBG("sent bin packet to node: %d\n", chosen_dest->node_id);
