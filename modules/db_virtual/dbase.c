@@ -516,7 +516,7 @@ int db_virtual_insert_update(const db_con_t* _h, const db_key_t* _k,
 
 #define CURRCON(_ah) (_ah->current_con)
 
-#define db_generic_async_operation(_h,_ah, _resume_f, FUNC_WITH_ARGS)         \
+#define db_generic_async_operation(_h,_ah, _resume_f, FUNC, ...)         \
 do {                                                                            \
 	int mode;                                                                   \
     int rc=0;                                                                   \
@@ -545,7 +545,11 @@ do {                                                                            
 		if((handle->flags & CAN_USE) && (handle->flags & MAY_USE)){             \
 			LM_DBG("flags1 = %i\n", p->con_list[CURRCON(_ah)].flags);          \
                                                                                 \
-			rc=f->FUNC_WITH_ARGS;                                               \
+			if (f == NULL || f->FUNC == NULL) {                                 \
+				LM_ERR("async not supported for this backend!\n");              \
+				return -1;                                                      \
+			}                                                                   \
+			rc=f->FUNC(__VA_ARGS__);                                            \
                                                                                 \
 			if (rc<0) {                                                         \
 				/* FIXME quite a complicated case                               \
@@ -628,8 +632,9 @@ int db_virtual_async_raw_query(db_con_t *_h, const str *_s, void **_priv)
 
     _handle = &_p->con_list[CURRCON(_ah)];
 
-	db_generic_async_operation(_h, _ah,0, async_raw_query(_handle->con, _s,
-	                           &_ah->_priv) );
+	db_generic_async_operation(_h, _ah,0, async_raw_query, _handle->con, _s,
+	                           &_ah->_priv );
+
 	return 0;
 }
 
@@ -670,7 +675,7 @@ int db_virtual_async_resume(db_con_t *_h, int fd, db_res_t **_r, void *_priv)
 
 		/* try the next database connection */
 		db_generic_async_operation(_h, _ah,1,
-				async_raw_query(_handle->con, &_ah->query, _ah->_priv) );
+				async_raw_query, _handle->con, &_ah->query, _ah->_priv );
 	}
 
 	/* if here means it worked; we set this connection as current connection
