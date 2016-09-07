@@ -2346,8 +2346,8 @@ int hep_msg_received(void)
 		switch (h->version) {
 		case 1:
 		case 2:
-			msg.buf = h->u.hepv12.payload;
-			msg.len = strlen(msg.buf);
+			msg.buf = h->u.hepv12.payload.s;
+			msg.len = h->u.hepv12.payload.len;
 			break;
 		case 3:
 			msg.buf = h->u.hepv3.payload_chunk.data;
@@ -3433,8 +3433,7 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 		sco.msg.s = h->u.hepv3.payload_chunk.data;
 		sco.msg.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
 	} else {
-		sco.msg.s = h->u.hepv12.payload;
-		sco.msg.len = strlen(h->u.hepv12.payload);
+		sco.msg = h->u.hepv12.payload;
 	}
 	//EMPTY_STR(sco.msg);
 
@@ -4280,7 +4279,7 @@ static void hepv2_to_buf(struct hepv12* h2, char* buf, int *len)
 	}
 
 
-	memcpy(buf + buflen, h2->payload, payload_len);
+	memcpy(buf + buflen, h2->payload.s, payload_len);
 
 
 	*len = buflen + payload_len;

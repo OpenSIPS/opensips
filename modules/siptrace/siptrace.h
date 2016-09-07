@@ -26,6 +26,7 @@
 #define NR_KEYS 14
 #define SIPTRACE_TABLE_VERSION 5
 #define HEP_PREFIX_LEN (sizeof("hep:") - 1)
+#define TRACE_PROTO "proto_hep"
 
 enum trace_flags {TRACE_MESSAGE=(1<<0), TRACE_TRANSACTION=(1<<1),
 			TRACE_SL_TRANSACTION=(1<<2), /* transaction aware in stateless mode */

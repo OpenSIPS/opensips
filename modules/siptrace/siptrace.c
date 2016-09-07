@@ -60,7 +60,9 @@ static db_ps_t siptrace_ps = NULL;
 struct tm_binds tmb;
 struct dlg_binds dlgb;
 
-proto_hep_api_t hep_api;
+trace_proto_t tprot;
+
+
 load_hep_f load_hep;
 
 /* module function prototypes */
@@ -774,21 +776,15 @@ static int mod_init(void)
 		if (it->type!=TYPE_HEP)
 			continue;
 
-		if (hep_api.get_hep_id_by_name == NULL) {
-			LM_DBG("Loading hep api!\n");
-			load_hep = (load_hep_f)find_export("load_hep", 1, 0);
-			if (!load_hep) {
-				LM_ERR("Can't bind proto hep!\n");
-				return -1;
-			}
-
-			if (load_hep(&hep_api)) {
-				LM_ERR("can't bind proto hep\n");
+		if (tprot.get_trace_dest_by_name == NULL) {
+			LM_DBG("Loading tracing protocol!\n");
+			if (trace_prot_bind(TRACE_PROTO, &tprot)) {
+				LM_ERR("Failed to bind tracing protocol!\n");
 				return -1;
 			}
 		}
 
-		it->el.hep.hep_id = hep_api.get_hep_id_by_name(&it->el.hep.name);
+		it->el.hep.hep_id = tprot.get_trace_dest_by_name(&it->el.hep.name);
 		if (it->el.hep.hep_id == NULL) {
 			LM_ERR("hep id not found!\n");
 			return -1;
@@ -2241,78 +2237,42 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 		unsigned short fromport, str *toproto, str *toip,
 		unsigned short toport, st_hep_struct_t* hep)
 {
-	struct proxy_l * p=NULL /* make gcc happy */;
-	int ret;
 	union sockaddr_union from_su;
 	union sockaddr_union to_su;
 	unsigned int proto;
-	union sockaddr_union* to = NULL;
 
-	int heplen;
-	char *hepbuf;
+	trace_message trace_msg;
 
 	if(body->s==NULL || body->len <= 0)
 		return -1;
 
+	if (tprot.create_trace_message == NULL || tprot.send_message == NULL) {
+		LM_ERR("Trace api functions not implemented!\n");
+		return -1;
+	}
 
-	/* Convert proto:ip:port to sockaddress union SRC IP */
-	/* proto is going to be converted to netinet proto */
 	if (pipport2su(fromproto, fromip, fromport, &from_su, &proto)==-1 ||
 	(pipport2su(toproto, toip, toport, &to_su, &proto)==-1))
-		goto error;
+		return -1;
 
-	/* check if from and to are in the same family*/
-	if(from_su.s.sa_family != to_su.s.sa_family) {
-		LM_ERR("ERROR: trace_send_hep_duplicate: interworking detected ?\n");
-		goto error;
-	}
+	trace_msg = tprot.create_trace_message(&from_su, &to_su, proto, body,
+			HEP_PROTO_TYPE_SIP, hep->hep_id->version);
 
-
-	/* create a temporary proxy*/
-	p=mk_proxy(&hep->hep_id->ip, (hep->hep_id->port_no)?hep->hep_id->port_no:SIP_PORT,proto, 0);
-	if (p==0){
-		LM_ERR("bad host name in uri\n");
+	if (trace_msg == NULL) {
+		LM_ERR("failed to build trace message!\n");
 		return -1;
 	}
 
-	to=(union sockaddr_union*)pkg_malloc(sizeof(union sockaddr_union));
-	if (to==0){
-		LM_ERR("out of pkg memory\n");
-		return -1;
+	/* FIXME add correlation id chunk??? */
+
+	if (tprot.send_message(trace_msg, hep->hep_id, NULL) < 0) {
+		LM_ERR("failed to forward message to destination!\n");
+		return -1;;
 	}
 
-	hostent2su(to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
-
-	if (hep_api.pack_hep(&from_su, &to_su, proto, body->s, body->len,
-				hep->hep_id->version, &hepbuf, &heplen)) {
-		LM_ERR("failed to do hep packing\n");
-		return -1;
-	}
-
-	ret = -1;
-
-	do {
-		/* send sock is being found in msg_send() function*/
-		if (msg_send(NULL, hep->hep_id->transport, to, 0, hepbuf, heplen, NULL)<0){
-			LM_ERR("cannot send duplicate message\n");
-			continue;
-		}
-		ret = 0;
-		break;
-	}while( get_next_su( p, to, 0)==0 );
-	free_proxy(p); /* frees only p content, not p itself */
-	pkg_free(p);
-	pkg_free(to);
-	pkg_free(hepbuf);
-
-	return ret;
+	return 0;
 error:
-	if(p)
-	{
-		free_proxy(p); /* frees only p content, not p itself */
-		pkg_free(p);
-	}
-	if(to) pkg_free(to);
+	tprot.free_message(trace_msg);
 	return -1;
 }
 

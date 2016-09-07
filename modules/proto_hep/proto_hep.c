@@ -111,6 +111,7 @@ static cmd_export_t cmds[] = {
 	{"proto_init",            (cmd_function)proto_hep_init_udp,        0, 0, 0, 0},
 	{"proto_init",            (cmd_function)proto_hep_init_tcp,        0, 0, 0, 0},
 	{"load_hep",			  (cmd_function)bind_proto_hep,        1, 0, 0, 0},
+	{"trace_bind_api",        (cmd_function)hep_bind_trace_api,    1, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
 
