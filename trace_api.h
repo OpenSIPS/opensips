@@ -53,7 +53,7 @@ typedef void * trace_dest;
  */
 typedef trace_message (create_trace_message_f)(union sockaddr_union* from_su,
 		union sockaddr_union* to_su, int net_proto, str* payload, int pld_proto,
-		int version);
+		trace_dest dest);
 
 
 

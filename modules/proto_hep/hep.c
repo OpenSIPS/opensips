@@ -1130,7 +1130,6 @@ static char* build_hep12_buf(struct hep_desc* hep_msg, int* len)
 	}
 
 	memcpy(buf+p, hep_msg->u.hepv12.payload.s, hep_msg->u.hepv12.payload.len);
-	pkg_free(hep_msg);
 
 	*len = buflen;
 
@@ -1154,7 +1153,7 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 	int rem, hdr_len, pld_len;
 	char* buf;
 
-	generic_chunk_t *it, *foo;
+	generic_chunk_t *it;
 
 	*len = 0;
 
@@ -1202,11 +1201,7 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 
 
 
-	foo = NULL;
-	for (it=hep_msg->u.hepv3.chunk_list; it; foo=it, it=it->next) {
-		if (foo)
-			pkg_free(foo);
-
+	for (it=hep_msg->u.hepv3.chunk_list; it; it=it->next) {
 		hdr_len = it->chunk.length;
 
 		it->chunk.vendor_id = htons(it->chunk.vendor_id);
@@ -1219,11 +1214,6 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 		memcpy(buf+*len, &it->data, hdr_len - sizeof(hep_chunk_t));
 		UPDATE_CHECK_REMAINING(rem, *len, hdr_len - sizeof(hep_chunk_t));
 	}
-
-	if (foo)
-		pkg_free(foo);
-
-	pkg_free(hep_msg);
 
 	if (rem) {
 		LM_ERR("%d bytes not copied!\n", rem);
@@ -1249,23 +1239,25 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
  * create message function
  * */
 trace_message create_hep_message(union sockaddr_union* from_su, union sockaddr_union* to_su,
-		int net_proto, str* payload, int pld_proto, int version)
+		int net_proto, str* payload, int pld_proto, trace_dest dest)
 {
+	hid_list_p hep_dest = (hid_list_p) dest;
+
 	if (from_su == NULL || to_su == NULL || payload == NULL ||
 								payload->s == NULL || payload->len == 0) {
 		LM_ERR("invalid call! bad input params!\n");
 		return NULL;
 	}
 
-	switch (version) {
+	switch (hep_dest->version) {
 		case 1:
 		case 2:
-			return create_hep12_message(from_su, to_su, net_proto, payload, version);
+			return create_hep12_message(from_su, to_su, net_proto, payload, hep_dest->version);
 		case 3:
 			return create_hep3_message(from_su, to_su, net_proto, payload, pld_proto);
 	}
 
-	LM_ERR("invalid hep protocol version [%d]!", version);
+	LM_ERR("invalid hep protocol version [%d]!", hep_dest->version);
 	return NULL;
 }
 
@@ -1355,12 +1347,13 @@ int send_hep_message(trace_message message, trace_dest dest, struct socket_info*
 	struct proxy_l* p;
 	union sockaddr_union* to;
 
+	hid_list_p hep_dest = (hid_list_p) dest;
+
 	if (message == NULL || dest == NULL) {
 		LM_ERR("invalid call! bad input params!\n");
 		return -1;
 	}
 
-	hid_list_p hep_dest = (hid_list_p) dest;
 
 	if (((struct hep_desc *)message)->version == 3) {
 		/* hep msg will be freed after */
