@@ -830,6 +830,7 @@ static trace_message create_hep12_message(union sockaddr_union* from_su, union s
 		hep_msg->u.hepv12.hep_time.captid = hep_capture_id;
 	}
 
+
 	switch (hep_msg->u.hepv12.hdr.hp_f) {
 		case AF_INET:
 			/* Source && Destination ipaddresses*/
@@ -1101,6 +1102,13 @@ static char* build_hep12_buf(struct hep_desc* hep_msg, int* len)
 	char* buf;
 
 	buflen = hep_msg->u.hepv12.hdr.hp_l + hep_msg->u.hepv12.payload.len;
+
+	if (hep_msg->u.hepv12.hdr.hp_f == AF_INET) {
+		buflen += sizeof(struct hep_iphdr);
+	} else {
+		buflen += sizeof(struct hep_ip6hdr);
+	}
+
 	if (hep_msg->version == 2) {
 		buflen += sizeof(struct hep_timehdr);
 	}
@@ -1403,7 +1411,7 @@ int send_hep_message(trace_message message, trace_dest dest, struct socket_info*
 
 void free_hep_message(trace_message message)
 {
-	generic_chunk_t *foo, *it;
+	generic_chunk_t *foo=NULL, *it;
 	struct hep_desc* hep_msg = message;
 
 	if (hep_msg->version == 3) {
