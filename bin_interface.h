@@ -123,7 +123,7 @@ int bin_push_int(int info);
  *		0: success
  *		< 0: error, no more integers in buffer
  */
-int bin_alter_pop_int(int count);
+int bin_remove_int_send_buffer(int count);
 
 /*
  * skips @count integers in the send buffer from the 'cpos' position

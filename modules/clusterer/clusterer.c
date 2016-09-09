@@ -419,7 +419,7 @@ static int clusterer_send_msg(node_info_t *dest, int chg_dest, int *check_call_c
 
 		/* change destination node id */
 		if (chg_dest || chosen_dest != dest) {
-			bin_alter_pop_int(1);
+			bin_remove_int_send_buffer(1);
 			bin_push_int(dest->node_id);
 		}
 		bin_get_buffer(&send_buffer);
@@ -625,10 +625,10 @@ static int flood_message(cluster_info_t *cluster, int source_id, int alter_is_or
 			bin_set_send_buffer(bin_buffer);
 			/* return to the path length position in the buffer */
 			if (alter_is_orig_src) {
-				bin_alter_pop_int(path_len + 2);
+				bin_remove_int_send_buffer(path_len + 2);
 				bin_push_int(0);
 			} else
-				bin_alter_pop_int(path_len + 1);
+				bin_remove_int_send_buffer(path_len + 1);
 			/* set new path length */
 			bin_push_int(path_len + 1);
 			/* go to end of the buffer and include current node in path */
@@ -820,7 +820,7 @@ static int send_top_description(cluster_info_t *cluster, node_info_t *dest_node)
 		neigh = neigh->next, no_neigh++)
 		bin_push_int(neigh->node->node_id);
 	/* set the number of neighbours */
-	bin_alter_pop_int(no_neigh + 1);
+	bin_remove_int_send_buffer(no_neigh + 1);
 	bin_push_int(no_neigh);
 	bin_skip_int_send_buffer(no_neigh);
 
@@ -841,7 +841,7 @@ static int send_top_description(cluster_info_t *cluster, node_info_t *dest_node)
 			no_neigh++;
 		}
 		/* set the number of neighbours */
-		bin_alter_pop_int(no_neigh + 1);
+		bin_remove_int_send_buffer(no_neigh + 1);
 		bin_push_int(no_neigh);
 		bin_skip_int_send_buffer(no_neigh);
 
@@ -1354,7 +1354,7 @@ static int send_top_update(cluster_info_t *cluster, node_info_t *dest_node)
 		neigh = neigh->next, no_neigh++)
 		bin_push_int(neigh->node->node_id);
 	/* set the number of neighbours */
-	bin_alter_pop_int(no_neigh + 1);
+	bin_remove_int_send_buffer(no_neigh + 1);
 	bin_push_int(no_neigh);
 	bin_skip_int_send_buffer(no_neigh);
 
@@ -1376,7 +1376,7 @@ static int send_top_update(cluster_info_t *cluster, node_info_t *dest_node)
 			no_neigh++;
 		}
 		/* set the number of neighbours */
-		bin_alter_pop_int(no_neigh + 1);
+		bin_remove_int_send_buffer(no_neigh + 1);
 		bin_push_int(no_neigh);
 		bin_skip_int_send_buffer(no_neigh);
 
