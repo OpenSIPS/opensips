@@ -28,11 +28,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef _OSP_MOD_TIMEFUNC_H_
-#define _OSP_MOD_TIMEFUNC_H_
+#ifndef _OSP_MOD_SIGNALING_H_
+#define _OSP_MOD_SIGNALING_H_
 
-int ospStrToTime(const char* timestr, time_t* timeval);
-int ospTimeToStr(time_t timeval, char* timestr, int bufsize);
+extern struct sig_binds osp_sigb;
 
-#endif /* _OSP_MOD_TIMEFUNC_H_ */
+int ospInitSig(void);
+
+#endif /* _OSP_MOD_SIGNALING_H_ */
 

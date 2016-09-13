@@ -31,6 +31,8 @@
 #ifndef _OSP_MOD_TM_H_
 #define _OSP_MOD_TM_H_
 
+extern struct tm_binds osp_tmb;
+
 /*
  * Register for tm events and use them to record and report information
  * about the call set up transaction - return codes, call start, alert and
