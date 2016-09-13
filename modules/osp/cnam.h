@@ -1,3 +1,4 @@
+
 /*
  * opensips osp module.
  *
@@ -28,11 +29,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef _OSP_MOD_TIMEFUNC_H_
-#define _OSP_MOD_TIMEFUNC_H_
+#ifndef _OSP_MOD_CNAMFUNC_H_
+#define _OSP_MOD_CNAMFUNC_H_
 
-int ospStrToTime(const char* timestr, time_t* timeval);
-int ospTimeToStr(time_t timeval, char* timestr, int bufsize);
+#include "../../parser/msg_parser.h"
 
-#endif /* _OSP_MOD_TIMEFUNC_H_ */
+int ospProcessSubscribe(struct sip_msg* msg, char* cnamrecord, char* ignore2);
+
+#endif /* _OSP_MOD_CNAMFUNC_H_ */
 

@@ -26,13 +26,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
+ * History:
+ * ---------
+ *  2016-06-06  SIGNALING functions are loaded via API function
  */
 
-#ifndef _OSP_MOD_TIMEFUNC_H_
-#define _OSP_MOD_TIMEFUNC_H_
+#include "../signaling/signaling.h"
+#include "signaling.h"
 
-int ospStrToTime(const char* timestr, time_t* timeval);
-int ospTimeToStr(time_t timeval, char* timestr, int bufsize);
+struct sig_binds osp_sigb;
 
-#endif /* _OSP_MOD_TIMEFUNC_H_ */
+/*
+ * Load SIGNALING API
+ * return 0 success, -1 failure
+ */
+int ospInitSig(void)
+{
+    /* load SIGNALING API */
+    if (load_sig_api(&osp_sigb) < 0) {
+        LM_ERR("failed to load signaling functions\n");
+        return -1;
+    } else {
+        return 0;
+    }
+}
 
