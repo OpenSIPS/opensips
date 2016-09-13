@@ -64,6 +64,8 @@ extern int _osp_non_sip;
 extern int _osp_max_dests;
 extern int _osp_snid_avpid;
 extern unsigned short _osp_snid_avptype;
+extern int _osp_swid_avpid;
+extern unsigned short _osp_swid_avptype;
 extern int _osp_cinfo_avpid;
 extern unsigned short _osp_cinfo_avptype;
 extern int _osp_cnam_avpid;
@@ -371,6 +373,13 @@ static int ospLoadRoutes(
             dest->dnid[0] = '\0';
         }
 
+        errcode = OSPPTransactionGetDestSwitchId(trans, sizeof(dest->swid), dest->swid);
+        if (errcode != OSPC_ERR_NO_ERROR) {
+            /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
+            LM_DBG("cannot get dest switch ID (%d)\n", errcode);
+            dest->swid[0] = '\0';
+        }
+
         errcode = OSPPTransactionGetCNAM(trans, sizeof(dest->cnam), dest->cnam);
         if (errcode != OSPC_ERR_NO_ERROR) {
             LM_DBG("cannot get CNAM (%d)\n", errcode);
@@ -406,6 +415,7 @@ static int ospLoadRoutes(
             "protocol '%d' "
             "supported '%d' "
             "networkid '%s' "
+            "switchid '%s' "
             "tokensize '%d'\n",
             count,
             dest->validafter,
@@ -432,6 +442,7 @@ static int ospLoadRoutes(
             dest->protocol,
             dest->supported,
             dest->dnid,
+            dest->swid,
             dest->tokensize);
     }
 
@@ -558,27 +569,27 @@ int ospRequestRouting(
         }
 
         if (ospGetFromDisplay(msg, inbound.fromdisplay, sizeof(inbound.fromdisplay)) == 0) {
-            OSPPTransactionSetFrom(trans, OSPC_NFORMAT_DISPLAYNAME, inbound.fromdisplay);
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_FROM, OSPC_NFORMAT_DISPLAYNAME, inbound.fromdisplay);
         }
 
         if (ospGetFromUri(msg, inbound.fromuri, sizeof(inbound.fromuri)) == 0) {
-            OSPPTransactionSetFrom(trans, OSPC_NFORMAT_URL, inbound.fromuri);
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_FROM, OSPC_NFORMAT_URL, inbound.fromuri);
         }
 
         if (ospGetToUri(msg, inbound.touri, sizeof(inbound.touri)) == 0) {
-            OSPPTransactionSetTo(trans, OSPC_NFORMAT_URL, inbound.touri);
-        }
-
-        if (ospGetPaiUser(msg, inbound.paiuser, sizeof(inbound.paiuser)) == 0) {
-            OSPPTransactionSetAssertedId(trans, OSPC_NFORMAT_E164, inbound.paiuser);
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_TO, OSPC_NFORMAT_URL, inbound.touri);
         }
 
         if (ospGetRpidUser(msg, inbound.rpiduser, sizeof(inbound.rpiduser)) == 0) {
-            OSPPTransactionSetRemotePartyId(trans, OSPC_NFORMAT_E164, inbound.rpiduser);
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_RPID, OSPC_NFORMAT_E164, inbound.rpiduser);
+        }
+
+        if (ospGetPaiUser(msg, inbound.paiuser, sizeof(inbound.paiuser)) == 0) {
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_PAI, OSPC_NFORMAT_E164, inbound.paiuser);
         }
 
         if (ospGetPciUser(msg, inbound.pciuser, sizeof(inbound.pciuser)) == 0) {
-            OSPPTransactionSetChargeInfo(trans, OSPC_NFORMAT_E164, inbound.pciuser);
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_PCI, OSPC_NFORMAT_E164, inbound.pciuser);
         }
 
         if (ospGetDiversion(msg, inbound.divuser, sizeof(inbound.divuser), inbound.divhost, sizeof(inbound.divhost)) == 0) {
@@ -587,6 +598,10 @@ int ospRequestRouting(
             divhostbuf[0] = '\0';
         }
         OSPPTransactionSetDiversion(trans, inbound.divuser, divhostbuf);
+
+        if (ospGetPcvIcid(msg, inbound.pcvicid, sizeof(inbound.pcvicid)) == 0) {
+            OSPPTransactionSetChargingVector(trans, inbound.pcvicid, NULL, NULL, NULL);
+        }
 
         if (ospGetUserAgent(msg, useragent, sizeof(useragent)) == 0) {
             OSPPTransactionSetUserAgent(trans, useragent);
@@ -598,6 +613,12 @@ int ospRequestRouting(
             OSPPTransactionSetNetworkIds(trans, inbound.snid, "");
         } else {
             inbound.snid[0] = '\0';
+        }
+
+        if (ospGetAVP(_osp_swid_avpid, _osp_swid_avptype, inbound.swid, sizeof(inbound.swid)) == 0) {
+            OSPPTransactionSetSrcSwitchId(trans, inbound.swid);
+        } else {
+            inbound.swid[0] = '\0';
         }
 
         if (_osp_cinfo_avpid >= 0) {
@@ -664,6 +685,7 @@ int ospRequestRouting(
             "source '%s' "
             "srcdev '%s' "
             "snid '%s' "
+            "swid '%s' "
             "calling '%s' "
             "called '%s' "
             "preferred '%s' "
@@ -684,6 +706,7 @@ int ospRequestRouting(
             "pciuser '%s' "
             "divuser '%s' "
             "divhost '%s' "
+            "pcvicid '%s' "
             "srcmedia '%s' "
             "callid '%.*s' "
             "destcount '%d' "
@@ -692,6 +715,7 @@ int ospRequestRouting(
             sourcebuf,
             srcdevbuf,
             inbound.snid,
+            inbound.swid,
             inbound.calling,
             inbound.called,
             (preferred[0] == NULL) ? "" : preferred[0],
@@ -712,6 +736,7 @@ int ospRequestRouting(
             inbound.pciuser,
             inbound.divuser,
             divhostbuf,
+            inbound.pcvicid,
             inbound.srcmedia,
             callids[0]->Length,
             callids[0]->Value,

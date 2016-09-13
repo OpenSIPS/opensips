@@ -319,6 +319,29 @@ modparam("osp","networkid_param","networkid")
       </example>
     </section>
     <section>
+      <title><varname>switchid_location</varname></title>
+      <para>The switchid_location (integer) parameter instructs the OSP module where the destination switch ID should be appended. The default value is 2</para>
+      <para>0 - switch ID is not appended.</para>
+      <para>1 - switch ID is appended as userinfo parameter.</para>
+      <para>2 - switch ID is appended as URI parameter.</para>
+      <example>
+        <title>Append switchid location</title>
+        <programlisting format="linespecific">
+modparam("osp","switchid_location",2)
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><varname>switchid_parameter</varname></title>
+      <para>The switchid_parameter (string) parameter instructs the OSP module to use which parameter name in outbound destination URIs to append destination switch ID. The default value is "switchid"</para>
+      <example>
+        <title>Networkid parameter name</title>
+        <programlisting format="linespecific">
+modparam("osp","switchid_param","switchid")
+        </programlisting>
+      </example>
+    </section>
+    <section>
       <title><varname>parameterstring_location</varname></title>
       <para>The parameterstring_location (integer) parameter instructs the OSP module where the parameter string should be appended. The default value is 0</para>
       <para>0 - parameter string is not appended.</para>
@@ -362,6 +385,16 @@ modparam("osp","source_networkid_avp","$avp(snid)")
       </example>
     </section>
     <section>
+      <title><varname>source_switchid_avp</varname></title>
+      <para>The source_switchid_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source switch ID value. The default value is "$avp(_osp_source_switchid_)".  Then the source switch ID can be set by "$avp(_osp_source_switchid_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <example>
+        <title>Setting the source switch ID AVP</title>
+        <programlisting format="linespecific">
+modparam("osp","source_switchid_avp","$avp(swid)")
+        </programlisting>
+      </example>
+    </section>
+    <section>
       <title><varname>custom_info_avp</varname></title>
       <para>The custom_info_avp (string) parameter instructs the OSP module to use the defined AVP to pass the custom information values. The default value is "$avp(_osp_custom_info_)".  Then the custom information can be set by "$avp(_osp_custom_info_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
       <example>
@@ -378,6 +411,16 @@ modparam("osp","custom_info_avp","$avp(cinfo)")
         <title>Setting the CNAM AVP</title>
         <programlisting format="linespecific">
 modparam("osp","cnam_avp","$avp(cnam)")
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><varname>extraheaders_value</varname></title>
+      <para>The extraheaders_value (string) parameter instructs the OSP module to append the defined SIP headers in outbound SIP NOTIFY messages. The default value is empty.</para>
+      <example>
+        <title>Setting the NOTIFY extra headers</title>
+        <programlisting format="linespecific">
+modparam("osp", "extraheaders_value", "Source: N")
         </programlisting>
       </example>
     </section>
@@ -631,6 +674,36 @@ if (is_direction("downstream")) {
   if (!reportospusage("1")) {
     log(1,"This BYE message does not include OSP usage information\n");
   }
+}
+...
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><function moreinfo="none">processsubscribe()</function></title>
+      <para>This function should be called after receiving a SUBSCRIBE for CNAM message and there is a cached CNAM record for this message. This function generates a NOTIFY message including the cached CNAM record, then sends the NOTIFY message to the device sending the SUBSCRIBE message.</para>
+      <para>Meaning of the parameter is as follows:
+        <itemizedlist>
+          <listitem>
+            <para>cachedcnamrecord - Cached CNAM record.</para>
+          </listitem>
+        </itemizedlist>
+      </para>
+      <para>This function can be used from REQUEST_ROUTE.</para>
+      <example>
+        <title>processsubscribe usage</title>
+        <programlisting format="linespecific">
+...
+if (method == "SUBSCRIBE") {
+    if (($var(sevent) == "calling-name") &amp;&amp; (uri == myself)) {
+        if ($var(cnamrecord) != NULL) {
+            processsubscribe("$(var(cnamrecord){s.b64decode})");
+        } else {
+            t_relay("1.2.3.4", "0x02");
+        }
+    } else {
+        t_relay();
+    }
 }
 ...
         </programlisting>

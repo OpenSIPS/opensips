@@ -59,6 +59,8 @@
 #define OSP_MCC_SIZE        3
 #define OSP_MNC_NAME        "mnc"
 #define OSP_MNC_SIZE        3
+#define OSP_ICID_NAME       "icid-value"
+#define OSP_ICID_SIZE       10
 
 int ospGetAVP(int avpid, unsigned short avptype, char* avpstr, int bufsize);
 void ospCopyStrToBuffer(str* source, char* buffer, int bufsize);
@@ -74,6 +76,7 @@ int ospGetPaiUser(struct sip_msg* msg, char* paiuser, int bufsize);
 int ospGetRpidUser(struct sip_msg* msg, char* rpiduser, int bufsize);
 int ospGetPciUser(struct sip_msg* msg, char* paiuser, int bufsize);
 int ospGetDiversion(struct sip_msg* msg, char* user, int userbufsize, char* host, int hostbufsize);
+int ospGetPcvIcid(struct sip_msg* msg, char* pcvicid, int bufsize);
 int ospGetUriUser(struct sip_msg* msg, char* uriuser, int bufsize);
 int ospAddOspToken(struct sip_msg* msg, unsigned char* token, unsigned int tokensize);
 int ospGetOspToken(struct sip_msg* msg, unsigned char* token, unsigned int* tokensize);
