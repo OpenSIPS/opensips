@@ -536,6 +536,37 @@ error:
 }
 
 
+int start_timer_extra_processes(int *chd_rank)
+{
+	pid_t pid;
+
+	(*chd_rank)++;
+	if ( (pid=internal_fork( "Timer handler"))<0 ) {
+		LM_CRIT("cannot fork Timer handler process\n");
+		goto error;
+	} else if (pid==0) {
+		/* new Timer process */
+		/* set a more detailed description */
+			set_proc_attrs("Timer handler");
+			if (init_child(*chd_rank) < 0) {
+				report_failure_status();
+				exit(-1);
+			}
+
+			report_conditional_status( 1, 0);
+
+			while(1) { handle_timer_job(); }
+
+			exit(-1);
+	}
+	/*parent*/
+	return 0;
+
+error:
+	return -1;
+}
+
+
 void handle_timer_job(void)
 {
 	struct os_timer *t;

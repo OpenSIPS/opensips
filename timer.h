@@ -97,6 +97,8 @@ utime_t get_uticks(void);
 
 int start_timer_processes(void);
 
+int start_timer_extra_processes(int *chd_rank);
+
 int register_route_timers(void);
 
 void handle_timer_job(void);
