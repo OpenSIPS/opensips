@@ -60,7 +60,7 @@ int init_multi_proc_support(void)
 	/* info packet UDP receivers */
 
 	/* timer processes */
-	proc_no += 2 /* timer keeper + timer trigger */;
+	proc_no += 3 /* timer keeper + timer trigger + dedicated */;
 
 	/* count the processes requested by modules */
 	proc_no += count_module_procs();
@@ -177,6 +177,9 @@ int count_init_children(int flags)
 	ret += tcp_count_processes();
 
 	/* attendent */
+	ret++;
+
+	/* dedicated timer */
 	ret++;
 
 	/* count number of module procs going to be initialised */
