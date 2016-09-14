@@ -679,6 +679,12 @@ static int main_loop(void)
 		goto error;
 	}
 
+	/* fork for the extra timer processes */
+	if (start_timer_extra_processes( &chd_rank )!=0) {
+		LM_CRIT("cannot start timer extra process(es)\n");
+		goto error;
+	}
+
 	/* this is the main process -> it shouldn't send anything */
 	bind_address=0;
 
