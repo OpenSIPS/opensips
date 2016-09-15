@@ -1219,7 +1219,7 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 		memcpy(buf+*len, &it->chunk, sizeof(hep_chunk_t));
 		UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
 
-		memcpy(buf+*len, &it->data, hdr_len - sizeof(hep_chunk_t));
+		memcpy(buf+*len, it->data, hdr_len - sizeof(hep_chunk_t));
 		UPDATE_CHECK_REMAINING(rem, *len, hdr_len - sizeof(hep_chunk_t));
 	}
 
