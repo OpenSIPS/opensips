@@ -667,6 +667,12 @@ static int main_loop(void)
 		goto error;
 	}
 
+	/* fork for the extra timer processes */
+	if (start_timer_extra_processes( &chd_rank, startup_done )!=0) {
+		LM_CRIT("cannot start timer extra process(es)\n");
+		goto error;
+	}
+
 	/* fork all processes required by UDP network layer */
 	if (udp_start_processes( &chd_rank, startup_done)<0) {
 		LM_CRIT("cannot start TCP processes\n");
@@ -676,12 +682,6 @@ static int main_loop(void)
 	/* fork all processes required by TCP network layer */
 	if (tcp_start_processes( &chd_rank, startup_done)<0) {
 		LM_CRIT("cannot start TCP processes\n");
-		goto error;
-	}
-
-	/* fork for the extra timer processes */
-	if (start_timer_extra_processes( &chd_rank )!=0) {
-		LM_CRIT("cannot start timer extra process(es)\n");
 		goto error;
 	}
 
