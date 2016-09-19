@@ -1780,6 +1780,9 @@ int tcp_start_listener(void)
 {
 	pid_t pid;
 
+	if (tcp_disabled)
+		return 0;
+
 	/* start the TCP manager process */
 	if ( (pid=internal_fork( "TCP main"))<0 ) {
 		LM_CRIT("cannot fork tcp main process\n");
