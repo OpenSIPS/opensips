@@ -751,6 +751,12 @@ static int main_loop(void)
 		}
 	}
 
+	/* fork the TCP listening process */
+	if (tcp_start_listener()<0) {
+		LM_CRIT("cannot start TCP listener process\n");
+		goto error;
+	}
+
 	/* this is the main process -> it shouldn't send anything */
 	bind_address=0;
 

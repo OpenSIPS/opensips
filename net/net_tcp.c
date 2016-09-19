@@ -1750,6 +1750,16 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			handle_sigs();
 		}
 
+	return 0;
+error:
+	return -1;
+}
+
+
+int tcp_start_listener(void)
+{
+	pid_t pid;
+
 	/* start the TCP manager process */
 	if ( (pid=internal_fork( "TCP main"))<0 ) {
 		LM_CRIT("cannot fork tcp main process\n");
