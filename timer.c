@@ -33,6 +33,10 @@
  * \brief Timer handling
  */
 
+/* keep this first as it needs to include some glib h file with
+ * special defines enabled (mainly sys/types.h) */
+#include "reactor.h"
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/select.h>
@@ -536,6 +540,26 @@ error:
 }
 
 
+inline static int handle_io(struct fd_map* fm, int idx,int event_type)
+{
+	switch(fm->type){
+		case F_TIMER_JOB:
+			handle_timer_job();
+			return 0;
+		case F_SCRIPT_ASYNC:
+			async_script_resume_f( &fm->fd, fm->data);
+			return 0;
+		case F_FD_ASYNC:
+			async_fd_resume( &fm->fd, fm->data);
+			return 0;
+		default:
+			LM_CRIT("unknown fd type %d in Timer Extra\n", fm->type);
+			return -1;
+	}
+	return -1;
+}
+
+
 int start_timer_extra_processes(int *chd_rank)
 {
 	pid_t pid;
@@ -543,27 +567,42 @@ int start_timer_extra_processes(int *chd_rank)
 	(*chd_rank)++;
 	if ( (pid=internal_fork( "Timer handler"))<0 ) {
 		LM_CRIT("cannot fork Timer handler process\n");
-		goto error;
+		return -1;
 	} else if (pid==0) {
 		/* new Timer process */
 		/* set a more detailed description */
 			set_proc_attrs("Timer handler");
 			if (init_child(*chd_rank) < 0) {
 				report_failure_status();
-				exit(-1);
+				goto error;
 			}
 
 			report_conditional_status( 1, 0);
 
-			while(1) { handle_timer_job(); }
+			/* create the reactor for timer proc */
+			if ( init_worker_reactor( "Timer_extra", RCT_PRIO_MAX)<0 ) {
+				LM_ERR("failed to init reactor\n");
+				goto error;
+			}
+
+			/* init: start watching for the timer jobs */
+			if (reactor_add_reader( timer_fd_out, F_TIMER_JOB,
+			RCT_PRIO_TIMER,NULL)<0){
+				LM_CRIT("failed to add timer pipe_out to reactor\n");
+				goto error;
+			}
+
+			/* launch the reactor */
+			reactor_main_loop( 1/*timeout in sec*/, error , );
 
 			exit(-1);
 	}
 	/*parent*/
 	return 0;
 
+/* only from child process */
 error:
-	return -1;
+	exit(-1);
 }
 
 
@@ -580,6 +619,7 @@ void handle_timer_job(void)
 		LM_ERR("read failed:[%d] %s\n", errno, strerror(errno));
 		return;
 	}
+	LM_WARN("----running <%s>\n",t->label);
 
 	/* run the handler */
 	if (t->flags&TIMER_FLAG_IS_UTIMER) {
