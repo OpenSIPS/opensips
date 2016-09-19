@@ -52,8 +52,11 @@ void tcp_connect_proc_to_tcp_main( int proc_no, int chid );
 /* tells how many processes the TCP layer will create */
 int tcp_count_processes(void);
 
-/* starts all TCP related processes */
+/* starts all TCP worker processes */
 int tcp_start_processes(int *chd_rank, int *startup_done);
+
+/* starts the TCP listening process */
+int tcp_start_listener(void);
 
 /* MI function to list all existing TCP connections */
 struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param);
