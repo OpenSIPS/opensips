@@ -684,7 +684,6 @@ void handle_timer_job(void)
 		LM_ERR("read failed:[%d] %s\n", errno, strerror(errno));
 		return;
 	}
-	LM_WARN("----running <%s>\n",t->label);
 
 	/* run the handler */
 	if (t->flags&TIMER_FLAG_IS_UTIMER) {
