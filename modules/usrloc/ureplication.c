@@ -439,7 +439,7 @@ static int receive_ucontact_update(void)
 		}
 	} else {
 		rc = get_ucontact(record, &contact_str, &callid, ci.cseq + 1, &contact);
-		if (rc != 0 && rc != -2) {
+		if (rc == 1) {
 			LM_INFO("contact '%.*s' not found, inserting new (ci: '%.*s')\n",
 				contact_str.len, contact_str.s, callid.len, callid.s);
 
@@ -449,14 +449,15 @@ static int receive_ucontact_update(void)
 				unlock_udomain(domain, &aor);
 				goto error;
 			}
-		} else {
+		} else if (rc == 0) {
 			if (update_ucontact(record, contact, &ci, 1) != 0) {
 				LM_ERR("failed to update ucontact '%.*s' (ci: '%.*s')\n",
 					contact_str.len, contact_str.s, callid.len, callid.s);
 				unlock_udomain(domain, &aor);
 				goto error;
 			}
-		}
+		} /* XXX: for -2 and -1, the master should have already handled
+			 these errors - so we can skip them - razvanc */
 	}
 
 	unlock_udomain(domain, &aor);
