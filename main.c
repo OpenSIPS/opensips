@@ -749,12 +749,12 @@ static int main_loop(void)
 			LM_CRIT("cannot start timer extra process(es)\n");
 			goto error;
 		}
-	}
 
-	/* fork the TCP listening process */
-	if (tcp_start_listener()<0) {
-		LM_CRIT("cannot start TCP listener process\n");
-		goto error;
+		/* fork the TCP listening process */
+		if (tcp_start_listener()<0) {
+			LM_CRIT("cannot start TCP listener process\n");
+			goto error;
+		}
 	}
 
 	/* this is the main process -> it shouldn't send anything */
