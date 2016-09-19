@@ -67,7 +67,6 @@ static int            timer_pipe[2];
 
 int timer_fd_out = -1 ;
 
-extern void handle_sigs(void);
 
 /* ret 0 on success, <0 on error*/
 int init_timer(void)
@@ -602,7 +601,7 @@ error:
 }
 
 
-int start_timer_extra_processes(int *chd_rank, int *startup_done)
+int start_timer_extra_processes(int *chd_rank)
 {
 	pid_t pid;
 
@@ -613,39 +612,19 @@ int start_timer_extra_processes(int *chd_rank, int *startup_done)
 	} else if (pid==0) {
 		/* new Timer process */
 		/* set a more detailed description */
-		set_proc_attrs("Timer handler");
-		if (init_child(*chd_rank) < 0) {
-			report_failure_status();
-			if (startup_done)
-				*startup_done = -1;
-			exit(-1);
-		}
-		/* was startup route executed so far ? */
-		if (startup_done!=NULL && *startup_done==0) {
-			LM_DBG("running startup for first timer process\n");
-			if(run_startup_route()< 0) {
-				LM_ERR("Startup route processing failed\n");
+			set_proc_attrs("Timer handler");
+			if (init_child(*chd_rank) < 0) {
 				report_failure_status();
-				*startup_done = -1;
 				exit(-1);
 			}
-			*startup_done = 1;
-		}
 
-		report_conditional_status( 1, 0);
+			report_conditional_status( 1, 0);
 
-		while(1) { handle_timer_job(); }
+			while(1) { handle_timer_job(); }
 
-		exit(-1);
-	} else {
-		/*parent*/
-		/* wait for first proc to finish the startup route */
-		if (startup_done)
-			while(!(*startup_done)) {
-				usleep(5);
-				handle_sigs();
-			}
+			exit(-1);
 	}
+	/*parent*/
 	return 0;
 
 error:
