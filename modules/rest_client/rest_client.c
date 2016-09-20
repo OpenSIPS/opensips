@@ -39,7 +39,8 @@
 /*
  * Module parameters
  */
-long connection_timeout = 20;
+long connection_timeout = 20; /* s */
+long connect_poll_interval = 20; /* ms */
 long connection_timeout_ms;
 long curl_timeout = 20;
 
@@ -123,6 +124,7 @@ static cmd_export_t cmds[] = {
  */
 static param_export_t params[] = {
 	{ "connection_timeout",	INT_PARAM, &connection_timeout	},
+	{ "connect_poll_interval", INT_PARAM, &connect_poll_interval },
 	{ "curl_timeout",		INT_PARAM, &curl_timeout		},
 	{ "ssl_capath",			STR_PARAM, &ssl_capath			},
 	{ "ssl_verifypeer",		INT_PARAM, &ssl_verifypeer		},
@@ -201,6 +203,12 @@ static int mod_init(void)
 	LM_DBG("Initializing...\n");
 
 	connection_timeout_ms = connection_timeout * 1000L;
+
+	if (connect_poll_interval < 0) {
+		LM_ERR("Bad connect_poll_interval (%ldms), setting to 20ms\n",
+		       connect_poll_interval);
+		connect_poll_interval = 20;
+	}
 
 	curl_global_init_mem(CURL_GLOBAL_ALL,
 						 osips_malloc,

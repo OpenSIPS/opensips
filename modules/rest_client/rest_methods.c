@@ -46,9 +46,6 @@ static int read_fds[FD_SETSIZE];
 /* libcurl's reported running handles */
 static int running_handles;
 
-static long sleep_on_bad_timeout = 500; /* ms */
-
-
 #define clean_header_list \
 	do { \
 		if (header_list) { \
@@ -125,9 +122,9 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	CURLcode rc;
 	CURLMcode mrc;
 	fd_set rset, wset, eset;
-	int max_fd, fd, i;
+	int max_fd, fd;
 	long busy_wait, timeout;
-	long retry_time, check_time = 5; /* 5ms looping time */
+	long retry_time;
 	int msgs_in_queue;
 	CURLMsg *cmsg;
 
@@ -194,6 +191,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	curl_multi_add_handle(multi_handle, handle);
 
 	timeout = connection_timeout_ms;
+	busy_wait = connect_poll_interval;
+
 	/* obtain a read fd in "connection_timeout" seconds at worst */
 	for (timeout = connection_timeout_ms; timeout > 0; timeout -= busy_wait) {
 		mrc = curl_multi_perform(multi_handle, &running_handles);
@@ -208,12 +207,14 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 			goto error;
 		}
 
+		LM_DBG("libcurl TCP connect: we should wait up to %ldms "
+		       "(timeout=%ldms, poll=%ldms)!\n", retry_time,
+		       connection_timeout_ms, connect_poll_interval);
+
 		if (retry_time == -1) {
 			LM_INFO("curl_multi_timeout() returned -1, pausing %ldms...\n",
-					sleep_on_bad_timeout);
-			busy_wait = sleep_on_bad_timeout;
-			usleep(1000UL * busy_wait);
-			continue;
+			        busy_wait);
+			goto busy_wait;
 		}
 
 		if (retry_time > connection_timeout_ms)
@@ -222,45 +223,49 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 
 		busy_wait = retry_time < timeout ? retry_time : timeout;
 
-		/**
-		 * libcurl is currently stuck in internal operations (connect)
-		 *    we have to wait a bit until we receive a read fd
-		 */
-		for (i = 0; i < busy_wait; i += check_time) {
-			/* transfer may have already been completed!! */
-			while ((cmsg = curl_multi_info_read(multi_handle, &msgs_in_queue))) {
-				if (cmsg->easy_handle == handle && cmsg->msg == CURLMSG_DONE) {
-					LM_DBG("done, no need for async!\n");
+		/* transfer may have already been completed!! */
+		while ((cmsg = curl_multi_info_read(multi_handle, &msgs_in_queue))) {
+			if (cmsg->easy_handle == handle && cmsg->msg == CURLMSG_DONE) {
+				LM_DBG("done, no need for async!\n");
 
-					clean_header_list;
-					*out_handle = handle;
-					return ASYNC_SYNC;
-				}
+				clean_header_list;
+				*out_handle = handle;
+				return ASYNC_SYNC;
 			}
+		}
 
-			FD_ZERO(&rset);
-			mrc = curl_multi_fdset(multi_handle, &rset, &wset, &eset, &max_fd);
-			if (mrc != CURLM_OK) {
-				LM_ERR("curl_multi_fdset: %s\n", curl_multi_strerror(mrc));
-				goto error;
-			}
+		FD_ZERO(&rset);
+		mrc = curl_multi_fdset(multi_handle, &rset, &wset, &eset, &max_fd);
+		if (mrc != CURLM_OK) {
+			LM_ERR("curl_multi_fdset: %s\n", curl_multi_strerror(mrc));
+			goto error;
+		}
 
-			if (max_fd != -1) {
-				for (fd = 0; fd <= max_fd; fd++) {
-					if (FD_ISSET(fd, &rset)) {
+		if (max_fd != -1) {
+			for (fd = 0; fd <= max_fd; fd++) {
+				if (FD_ISSET(fd, &rset)) {
 
-						LM_DBG(" >>>>>>>>>> fd %d ISSET(read)\n", fd);
-						if (is_new_transfer(fd)) {
-							LM_DBG("add fd to read list: %d\n", fd);
-							add_transfer(fd);
-							goto success;
-						}
+					LM_DBG("ongoing transfer on fd %d\n", fd);
+					if (is_new_transfer(fd)) {
+						LM_DBG(">>> add fd %d to ongoing transfers\n", fd);
+						add_transfer(fd);
+						goto success;
 					}
 				}
 			}
-
-			usleep(1000UL * check_time);
 		}
+
+		/*
+		 * from curl_multi_timeout() docs: "retry_time" milliseconds "at most!"
+		 *         -> we'll only wait "connect_poll_interval" ms
+		 */
+		busy_wait = connect_poll_interval < timeout ?
+		            connect_poll_interval : timeout;
+
+busy_wait:
+		/* libcurl seems to be stuck in internal operations (TCP connect?) */
+		LM_DBG("busy waiting %ldms ...\n", busy_wait);
+		usleep(1000UL * busy_wait);
 	}
 
 	LM_ERR("timeout while connecting to '%s' (%ld sec)\n", url, connection_timeout);
