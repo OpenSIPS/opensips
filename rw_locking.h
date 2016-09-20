@@ -113,4 +113,25 @@ inline static void lock_destroy_rw(rw_lock_t *_lock)
 		lock_release((_lock)->lock); \
 	} while (0)
 
+/* switch to writing access with lock previously acquired for reading
+ * note: switching back to reading is required before releasing the lock
+ */
+#define lock_switch_write(_lock, __old) \
+	do { \
+		lock_get((_lock)->lock); \
+		__old = (_lock)->w_flag; \
+		(_lock)->w_flag = 1; \
+		lock_release((_lock)->lock); \
+		while ((_lock)->r_count > 1) \
+			usleep(LOCK_WAIT); \
+	} while (0)
+
+/* switch back to reading access if previously switched to writing */
+#define lock_switch_read(_lock, __old) \
+	do { \
+		lock_get((_lock)->lock); \
+		(_lock)->w_flag = __old; \
+		lock_release((_lock)->lock); \
+	} while (0)
+
 #endif
