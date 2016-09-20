@@ -33,6 +33,7 @@
 extern CURLM *multi_handle;
 
 extern long connection_timeout;
+extern long connect_poll_interval;
 extern long connection_timeout_ms;
 extern long curl_timeout;
 

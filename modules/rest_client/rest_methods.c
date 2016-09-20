@@ -46,9 +46,6 @@ static int read_fds[FD_SETSIZE];
 /* libcurl's reported running handles */
 static int running_handles;
 
-static long sleep_on_bad_timeout = 50; /* ms */
-
-
 #define clean_header_list \
 	do { \
 		if (header_list) { \
@@ -194,6 +191,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	curl_multi_add_handle(multi_handle, handle);
 
 	timeout = connection_timeout_ms;
+	busy_wait = connect_poll_interval;
+
 	/* obtain a read fd in "connection_timeout" seconds at worst */
 	for (timeout = connection_timeout_ms; timeout > 0; timeout -= busy_wait) {
 		mrc = curl_multi_perform(multi_handle, &running_handles);
@@ -209,12 +208,12 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		}
 
 		LM_DBG("libcurl TCP connect: we should wait up to %ldms "
-		       "(timeout=%ldms)!\n", retry_time, connection_timeout_ms);
+		       "(timeout=%ldms, poll=%ldms)!\n", retry_time,
+		       connection_timeout_ms, connect_poll_interval);
 
 		if (retry_time == -1) {
 			LM_INFO("curl_multi_timeout() returned -1, pausing %ldms...\n",
-					sleep_on_bad_timeout);
-			busy_wait = sleep_on_bad_timeout;
+			        busy_wait);
 			goto busy_wait;
 		}
 
@@ -254,8 +253,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		 * from curl_multi_timeout() docs: "retry_time" milliseconds "at most!"
 		 *         -> we'll wait only 1/10 of this time before retrying
 		 */
-		retry_time = retry_time / 10 + 1;
-		busy_wait = retry_time < timeout ? retry_time : timeout;
+		busy_wait = connect_poll_interval < timeout ?
+		            connect_poll_interval : timeout;
 
 busy_wait:
 		/* libcurl seems to be stuck in internal operations (TCP connect?) */
