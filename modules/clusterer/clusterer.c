@@ -399,7 +399,7 @@ inline void heartbeats_timer(void)
 	lock_stop_read(cl_list_lock);
 }
 
-int set_state(int cluster_id, enum cl_node_state state)
+int cl_set_state(int cluster_id, enum cl_node_state state)
 {
 	cluster_info_t *cluster = NULL;
 	node_info_t *node;
@@ -661,7 +661,7 @@ static int clusterer_send_msg(node_info_t *dest, int chg_dest, int *check_call_c
 	return 0;
 }
 
-enum clusterer_send_ret send_to(int cluster_id, int node_id)
+enum clusterer_send_ret cl_send_to(int cluster_id, int node_id)
 {
 	node_info_t *node;
 	int rc;
@@ -714,7 +714,7 @@ enum clusterer_send_ret send_to(int cluster_id, int node_id)
 	return CLUSTERER_SEND_ERR;
 }
 
-enum clusterer_send_ret send_all(int cluster_id)
+enum clusterer_send_ret cl_send_all(int cluster_id)
 {
 	node_info_t *node;
 	int rc, sent = 0, down = 1;

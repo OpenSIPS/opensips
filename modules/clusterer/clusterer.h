@@ -107,10 +107,10 @@ void receive_clusterer_bin_packets(int packet_type, struct receive_info *ri,
 
 int get_next_hop(struct node_info *dest);
 
-int set_state(int cluster_id, enum cl_node_state state);
+int cl_set_state(int cluster_id, enum cl_node_state state);
 int clusterer_check_addr(int cluster_id, union sockaddr_union *su);
-enum clusterer_send_ret send_to(int cluster_id, int node_id);
-enum clusterer_send_ret send_all(int cluster_id);
+enum clusterer_send_ret cl_send_to(int cluster_id, int node_id);
+enum clusterer_send_ret cl_send_all(int cluster_id);
 int cl_register_module(char *mod_name,  clusterer_cb_f cb, int auth_check,
 								int *accept_clusters_ids, int no_accept_clusters);
 

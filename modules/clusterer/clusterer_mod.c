@@ -322,7 +322,7 @@ static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param)
 	if (rc < 0 || (state != STATE_DISABLED && state != STATE_ENABLED))
 		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM));
 
-	rc = set_state(cluster_id, state);
+	rc = cl_set_state(cluster_id, state);
 	if (rc == -1)
 		return init_mi_tree(404, "Cluster id not found", 20);
 	if (rc == 1)
@@ -567,11 +567,11 @@ int load_clusterer(struct clusterer_binds *binds)
 {
 	binds->get_nodes = get_clusterer_nodes;
 	binds->free_nodes = free_clusterer_nodes;
-	binds->set_state = set_state;
+	binds->set_state = cl_set_state;
 	binds->check_addr = clusterer_check_addr;
-	binds->get_my_id = get_my_id;
-	binds->send_to = send_to;
-	binds->send_all = send_all;
+	binds->get_my_id = cl_get_my_id;
+	binds->send_to = cl_send_to;
+	binds->send_all = cl_send_all;
 	binds->get_next_hop = api_get_next_hop;
 	binds->free_next_hop = api_free_next_hop;
 	binds->register_module = cl_register_module;

@@ -712,7 +712,7 @@ void api_free_next_hop(clusterer_node_t *next_hop)
 		free_clusterer_node(next_hop);
 }
 
-int get_my_id(void)
+int cl_get_my_id(void)
 {
 	return current_id;
 }

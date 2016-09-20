@@ -116,7 +116,7 @@ inline cluster_info_t *get_cluster_by_id(int cluster_id);
 inline node_info_t *get_node_by_id(cluster_info_t *cluster, int node_id);
 node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_vals);
 
-int get_my_id(void);
+int cl_get_my_id(void);
 clusterer_node_t* get_clusterer_nodes(int cluster_id);
 void free_clusterer_nodes(clusterer_node_t *nodes);
 clusterer_node_t *api_get_next_hop(int cluster_id, int node_id);
