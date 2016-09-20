@@ -204,7 +204,7 @@ static int mod_init(void)
 
 	connection_timeout_ms = connection_timeout * 1000L;
 
-	if (connect_poll_interval < 0 || connect_poll_interval > 10) {
+	if (connect_poll_interval < 0) {
 		LM_ERR("Bad connect_poll_interval (%ldms), setting to 20ms\n",
 		       connect_poll_interval);
 		connect_poll_interval = 20;
