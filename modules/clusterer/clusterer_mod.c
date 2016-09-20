@@ -30,6 +30,7 @@
 #include "../../db/db.h"
 #include "../../mem/shm_mem.h"
 #include "../../locking.h"
+#include "../../rw_locking.h"
 #include "../../ut.h"
 #include "../../mi/mi.h"
 #include "../../timer.h"
@@ -188,12 +189,7 @@ static int mod_init(void)
 	}
 
 	/* create & init lock */
-	if ((ref_lock = lock_alloc()) == NULL) {
-		LM_CRIT("Failed to allocate lock\n");
-		return -1;
-	}
-	if (!lock_init(ref_lock)) {
-		lock_dealloc(ref_lock);
+	if ((cl_list_lock = lock_init_rw()) == NULL) {
 		LM_CRIT("Failed to init lock\n");
 		return -1;
 	}
@@ -249,9 +245,8 @@ static int mod_init(void)
 
 	return 0;
 error:
-	lock_destroy(ref_lock);
-	lock_dealloc(ref_lock);
-	ref_lock = 0;
+	lock_destroy_rw(cl_list_lock);
+	cl_list_lock = NULL;
 	if (cluster_list) {
 		shm_free(cluster_list);
 		cluster_list = 0;
@@ -294,10 +289,10 @@ static struct mi_root* clusterer_reload(struct mi_root* root, void *param)
 		return init_mi_tree(500, "Failed to reload", 16);
 	}
 
-	lock_get(ref_lock);
+	lock_start_write(cl_list_lock);
 	old_info = *cluster_list;
 	*cluster_list = new_info;
-	lock_release(ref_lock);
+	lock_stop_write(cl_list_lock);
 
 	if (old_info)
 		free_info(old_info);
@@ -357,7 +352,7 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 		return NULL;
 	rpl_tree->node.flags |= MI_IS_ARRAY;
 
-	lock_get(ref_lock);
+	lock_start_read(cl_list_lock);
 
 	/* iterate through clusters */
 	for (cl = *cluster_list; cl; cl = cl->next) {
@@ -384,10 +379,15 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 				MI_SSTR("URL"), n_info->url.s, n_info->url.len);
 			if (!attr) goto error;
 
+			lock_get(n_info->lock);
+
 			val.s = int2str(n_info->flags & NODE_STATE_ENABLED ? 1 : 0, &val.len);
 			attr = add_mi_attr(node_s, MI_DUP_VALUE,
 				MI_SSTR("Enabled"), val.s, val.len);
-			if (!attr) goto error;
+			if (!attr) {
+				lock_release(n_info->lock);
+				goto error;
+			}
 
 			if (n_info->link_state == LS_UP)
 				val = str_up;
@@ -399,7 +399,12 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 				val = str_prob;
 			attr = add_mi_attr(node_s, MI_DUP_VALUE,
 				MI_SSTR("Link_state"), val.s, val.len);
-			if (!attr) goto error;
+			if (!attr) {
+				lock_release(n_info->lock);
+				goto error;
+			}
+
+			lock_release(n_info->lock);
 
 			n_hop = get_next_hop(n_info); 
 			if (n_hop <= 0)
@@ -408,7 +413,8 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 				val.s = int2str(n_hop, &val.len);
 			attr = add_mi_attr(node_s, MI_DUP_VALUE,
 				MI_SSTR("Next_hop"), val.s, val.len);
-			if (!attr) goto error;
+			if (!attr)
+				goto error;
 
 			if (n_info->description.s)
 				attr = add_mi_attr(node_s, MI_DUP_VALUE,
@@ -422,10 +428,10 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 		}
 	}
 
-	lock_release(ref_lock);
+	lock_stop_read(cl_list_lock);
 	return rpl_tree;
 error:
-	lock_release(ref_lock);
+	lock_stop_read(cl_list_lock);
 	if (rpl_tree) free_mi_tree(rpl_tree);
 	return NULL;
 }
@@ -448,7 +454,7 @@ static struct mi_root * clusterer_list_topology(struct mi_root *cmd_tree, void *
 		return NULL;
 	rpl_tree->node.flags |= MI_IS_ARRAY;
 
-	lock_get(ref_lock);
+	lock_start_read(cl_list_lock);
 
 	/* iterate through clusters */
 	for (cl = *cluster_list; cl; cl = cl->next) {
@@ -482,11 +488,16 @@ static struct mi_root * clusterer_list_topology(struct mi_root *cmd_tree, void *
 			if (!node_s) goto error;
 
 			memset(neigh_list, 0, 500);
+
+			lock_get(n_info->lock);
+
 			for (neigh = n_info->neighbour_list; neigh; neigh = neigh->next) {
 				sprintf(neigh_list + strlen(neigh_list), "%d ", neigh->node->node_id);
 			}
 			if (n_info->link_state == LS_UP)
 				sprintf(neigh_list + strlen(neigh_list), "%d ", current_id);
+
+			lock_release(n_info->lock);
 
 			val.s = neigh_list;
 			val.len = strlen(neigh_list);
@@ -497,10 +508,10 @@ static struct mi_root * clusterer_list_topology(struct mi_root *cmd_tree, void *
 		}
 	}
 
-	lock_release(ref_lock);
+	lock_stop_read(cl_list_lock);
 	return rpl_tree;
 error:
-	lock_release(ref_lock);
+	lock_stop_read(cl_list_lock);
 	if (rpl_tree) free_mi_tree(rpl_tree);
 	return NULL;
 }
@@ -548,11 +559,8 @@ static void destroy(void)
 	}
 
 	/* destroy lock */
-	if (ref_lock) {
-		lock_destroy(ref_lock);
-		lock_dealloc(ref_lock);
-		ref_lock = NULL;
-	}
+	if (cl_list_lock)
+		lock_destroy_rw(cl_list_lock);
 }
 
 int load_clusterer(struct clusterer_binds *binds)

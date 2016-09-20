@@ -85,6 +85,7 @@ struct node_info {
 	struct node_info *next_hop;         /* next hop from the shortest path */
 	struct node_search_info *sp_info;   /* shortest path info */
 	int flags;
+	gen_lock_t *lock;
 	struct node_info *next;
 };
 
@@ -95,7 +96,8 @@ struct cluster_info {
 	int no_nodes;                   /* number of nodes in the cluster */
 	struct node_info *current_node; /* current node's info in this cluster */
 	clusterer_join_state join_state;
-	int top_version;                /* topology version */
+	int top_version;        		/* topology version */
+	gen_lock_t *lock;
 	struct cluster_info *next;
 };
 
@@ -103,7 +105,7 @@ typedef struct node_info node_info_t;
 typedef struct cluster_info cluster_info_t;
 
 extern int current_id;
-extern gen_lock_t *ref_lock;
+extern rw_lock_t *cl_list_lock;
 extern cluster_info_t **cluster_list;
 
 int update_db_current(void);

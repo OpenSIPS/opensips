@@ -28,6 +28,7 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../locking.h"
+#include "../../rw_locking.h"
 #include "../../resolve.h"
 #include "../../socket_info.h"
 
@@ -57,7 +58,9 @@ static db_op_t op_eq = OP_EQ;
 static db_key_t *clusterer_cluster_id_key;
 static db_val_t *clusterer_cluster_id_value;
 
-gen_lock_t *ref_lock;
+/* protects the cluster_list and the node_list from each cluster */
+rw_lock_t *cl_list_lock;
+
 cluster_info_t **cluster_list;
 
 node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_vals)
@@ -112,6 +115,15 @@ node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_v
 		cluster->join_state = JOIN_INIT;
 		cluster->top_version = 0;
 		cluster->next = *cl_list;
+		if ((cluster->lock = lock_alloc()) == NULL) {
+			LM_CRIT("Failed to allocate lock\n");
+			goto error;
+		}
+		if (!lock_init(cluster->lock)) {
+			lock_dealloc(cluster->lock);
+			LM_CRIT("Failed to init lock\n");
+			goto error;
+		}
 		*cl_list = cluster;
 	}
 
@@ -233,6 +245,16 @@ node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_v
 	} else {
 		new_info->next = NULL;
 		cluster->current_node = new_info;
+	}
+
+	if ((new_info->lock = lock_alloc()) == NULL) {
+		LM_CRIT("Failed to allocate lock\n");
+		goto error;
+	}
+	if (!lock_init(new_info->lock)) {
+		lock_dealloc(new_info->lock);
+		LM_CRIT("Failed to init lock\n");
+		goto error;
 	}
 
 	return new_info;
@@ -457,12 +479,16 @@ int update_db_current(void)
 		return -1;
 	}
 
-	lock_get(ref_lock);
+	lock_start_read(cl_list_lock);
 
 	for (cluster = *cluster_list; cluster; cluster = cluster->next) {
+		lock_get(cluster->current_node->lock);
+
 		if ((cluster->current_node->flags & (DB_PROVISIONED | DB_UPDATED)) ==
-			(DB_PROVISIONED | DB_UPDATED))
+			(DB_PROVISIONED | DB_UPDATED)) {
+			lock_release(cluster->current_node->lock);
 			continue;
+		}
 
 		VAL_TYPE(&update_vals[0]) = DB_INT;
 		VAL_NULL(&update_vals[0]) = 0;
@@ -477,17 +503,21 @@ int update_db_current(void)
 		else
 			VAL_INT(&update_vals[2]) = STATE_DISABLED;
 
+		lock_release(cluster->current_node->lock);
+
 		if (dr_dbf.update(db_hdl, &node_id_key, 0, &node_id_val, update_keys,
 			update_vals, 1, 3) < 0) {
 			LM_ERR("Failed to update clusterer DB for cluster: %d\n", cluster->cluster_id);
 			ret = -1;
 		} else {
+			lock_get(cluster->current_node->lock);
 			cluster->current_node->flags |= DB_UPDATED;
+			lock_release(cluster->current_node->lock);
 			LM_DBG("Updated clusterer DB for cluster: %d\n", cluster->cluster_id);
 		}
 	}
 
-	lock_release(ref_lock);
+	lock_stop_read(cl_list_lock);
 
 	return ret;
 }
@@ -510,6 +540,11 @@ void free_info(cluster_info_t *cl_list)
 				shm_free(info->sip_addr.s);
 			if (info->description.s)
 				shm_free(info->description.s);
+			if (info->lock) {
+				lock_destroy(info->lock);
+				lock_dealloc(info->lock);
+			}
+
 			tmp_info = info;
 			info = info->next;
 			shm_free(tmp_info);
@@ -520,6 +555,11 @@ void free_info(cluster_info_t *cl_list)
 			tmp_cl_m = cl_m;
 			cl_m = cl_m->next;
 			shm_free(tmp_cl_m);
+		}
+
+		if (tmp_cl->lock) {
+			lock_destroy(tmp_cl->lock);
+			lock_dealloc(tmp_cl->lock);
 		}
 
 		shm_free(tmp_cl);
@@ -605,20 +645,21 @@ clusterer_node_t* get_clusterer_nodes(int cluster_id)
 	node_info_t *node;
 	cluster_info_t *cl;
 
-	lock_get(ref_lock);
+	lock_start_read(cl_list_lock);
 
 	cl = get_cluster_by_id(cluster_id);
-	for (node = cl->node_list; node; node = node->next)
+	for (node = cl->node_list; node; node = node->next) {
 		if (get_next_hop(node) > 0)
 			if (add_clusterer_node(&ret_nodes, node) < 0) {
-				lock_release(ref_lock);
+				lock_stop_read(cl_list_lock);
 				LM_ERR("Unable to add node: %d to the returned list of reachable nodes\n",
 					node->node_id);
 				free_clusterer_nodes(ret_nodes);
 				return NULL;
 			}
+	}
 
-	lock_release(ref_lock);
+	lock_stop_read(cl_list_lock);
 
 	return ret_nodes;
 }
@@ -630,7 +671,7 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 	cluster_info_t *cluster;
 	int rc;
 
-	lock_get(ref_lock);
+	lock_start_read(cl_list_lock);
 
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
@@ -651,12 +692,16 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 		return NULL;
 	}
 
+	lock_get(dest_node->lock);
+
 	if (add_clusterer_node(&ret, dest_node->next_hop) < 0) {
 		LM_ERR("Failed to allocate next hop\n");
 		return NULL;
 	}
 
-	lock_release(ref_lock);
+	lock_release(dest_node->lock);
+
+	lock_stop_read(cl_list_lock);
 
 	return ret;
 }
