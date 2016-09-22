@@ -1142,6 +1142,7 @@ static void receive_msg_unknown_source(cluster_info_t *cl, int packet_type,
 	char *char_str_vals[NO_DB_STR_VALS];
 	int int_vals[NO_DB_INT_VALS];
 	node_info_t *new_node;
+	int lock_old_flag;
 
 	switch (packet_type) {
 	case CLUSTERER_PING:
@@ -1153,8 +1154,6 @@ static void receive_msg_unknown_source(cluster_info_t *cl, int packet_type,
 		bin_push_int(cl->cluster_id);
 		bin_push_int(current_id);
 		bin_get_buffer(&bin_buffer);
-
-		lock_stop_write(cl_list_lock);
 
 		if (msg_send(NULL, clusterer_proto, src_su, 0, bin_buffer.s,
 			bin_buffer.len, 0) < 0)
@@ -1174,8 +1173,6 @@ static void receive_msg_unknown_source(cluster_info_t *cl, int packet_type,
 		bin_push_int(cl->cluster_id);
 		bin_push_int(current_id);
 		bin_get_buffer(&bin_buffer);
-
-		lock_stop_write(cl_list_lock);
 
 		if (msg_send(NULL, clusterer_proto, src_su, 0, bin_buffer.s,
 			bin_buffer.len, 0) < 0)
@@ -1216,6 +1213,8 @@ static void receive_msg_unknown_source(cluster_info_t *cl, int packet_type,
 		int_vals[INT_VALS_NODE_ID_COL] = src_node_id;
 		int_vals[INT_VALS_STATE_COL] = 1;	/* enabled since messages were received from this node */
 
+		lock_switch_write(cl_list_lock, lock_old_flag);
+
 		new_node = add_node_info(&cl, int_vals, char_str_vals);
 		if (!new_node) {
 			LM_ERR("Unable to add node info to backing list\n");
@@ -1227,11 +1226,7 @@ static void receive_msg_unknown_source(cluster_info_t *cl, int packet_type,
 		new_node->link_state = LS_RESTART_PINGING;
 		new_node->flags = NODE_STATE_ENABLED;
 
-		/* no extra locking needed (for cluster_info_t or node_info_t structures)
-		 * up to this point because RW lock was acquired for writing but from now on
-		 * we acquire it for reading */
-		lock_stop_write(cl_list_lock);
-		lock_start_read(cl_list_lock);
+		lock_switch_read(cl_list_lock, lock_old_flag);
 
 		/* only the first node that receives the join confirm message sends back a topology description
 		 * to the joining node, the other nodes just flood it */
@@ -1244,12 +1239,9 @@ static void receive_msg_unknown_source(cluster_info_t *cl, int packet_type,
 		if (is_orig_src)
 			send_top_description(cl, new_node);
 
-		lock_stop_read(cl_list_lock);
-
 		break;
 	default:
 		LM_DBG("Ignoring message, type: %d from unknown source\n", packet_type);
-		lock_stop_write(cl_list_lock);
 	}
 }
 
@@ -1500,36 +1492,13 @@ void receive_clusterer_bin_packets(int packet_type, struct receive_info *ri, voi
 	lock_release(cl->current_node->lock);
 
 	node = get_node_by_id(cl, source_id);
+
 	if (!node) {
 		LM_INFO("Received message from unknown source node, id: %d\n", source_id);
 
-		lock_stop_read(cl_list_lock);
-		lock_start_write(cl_list_lock);
-
-		cl = NULL;
-		cl = get_cluster_by_id(cl_id);
-		if (!cl) {
-			LM_WARN("Received message from unknown cluster, id: %d\n", cl_id);
-			lock_stop_write(cl_list_lock);
-			return;
-		}
-		node = get_node_by_id(cl, source_id);
-		if (node) {
-			lock_stop_write(cl_list_lock);
-			lock_start_read(cl_list_lock);
-
-			receive_msg_known_source(cl, packet_type, node, now, &check_call_cbs_event);
-
-			goto end;
-		} else {
-			/* the RW lock is released from this function */
-			receive_msg_unknown_source(cl, packet_type, &ri->src_su, source_id);
-
-			return;
-		}
-	}
-
-	receive_msg_known_source(cl, packet_type, node, now, &check_call_cbs_event);
+		receive_msg_unknown_source(cl, packet_type, &ri->src_su, source_id);
+	} else
+		receive_msg_known_source(cl, packet_type, node, now, &check_call_cbs_event);
 
 end:
 	if (check_call_cbs_event)
