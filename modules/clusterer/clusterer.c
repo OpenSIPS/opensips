@@ -1361,7 +1361,7 @@ static void receive_msg_known_source(cluster_info_t *cl, int packet_type,
 		receive_full_top_update(cl, src_node, check_call_cbs_event);
 		break;
 	case CLUSTERER_UNKNOWN_ID:
-		LM_DBG("NNN Received CLUSTERER_UNKNOWN_ID from node: %d\n", src_node->node_id);
+		LM_DBG("Received CLUSTERER_UNKNOWN_ID from node: %d\n", src_node->node_id);
 
 		lock_get(cl->lock);
 
@@ -1402,6 +1402,10 @@ static void receive_msg_known_source(cluster_info_t *cl, int packet_type,
 		lock_get(cl->lock);
 
 		if (cl->join_state != JOIN_REQ_SENT) {
+			/* the confirmation is not actually sent right here but we want to prevent
+			 * other processes which may have received accepts to try to send confirmations
+			 * anyway */
+			cl->join_state = JOIN_CONFIRM_SENT;
 			lock_release(cl->lock);
 			break;
 		}
@@ -1432,15 +1436,14 @@ static void receive_msg_known_source(cluster_info_t *cl, int packet_type,
 
 		bin_get_buffer(&bin_buffer);
 		if (msg_send(NULL, clusterer_proto, &src_node->addr, 0, bin_buffer.s,
-			bin_buffer.len, 0) < 0)
+			bin_buffer.len, 0) < 0) {
 			LM_ERR("Failed to send cluster join confirmation to node: %d\n", src_node->node_id);
-		else {
-			LM_DBG("Sent cluster join confirmation to node: %d\n", src_node->node_id);
 
 			lock_get(cl->lock);
-			cl->join_state = JOIN_CONFIRM_SENT;
+			cl->join_state = JOIN_REQ_SENT;
 			lock_release(cl->lock);
-		}
+		} else
+			LM_DBG("Sent cluster join confirmation to node: %d\n", src_node->node_id);
 
 		break;
 	case CLUSTERER_JOIN_CONFIRM:
