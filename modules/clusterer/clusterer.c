@@ -986,8 +986,8 @@ static void receive_full_top_update(cluster_info_t *cluster, node_info_t *source
 				continue;
 
 			present = 0;
-			for (i = 0; i < no_present_nodes; i++)
-				if (it->node_id == present_nodes[i]) {
+			for (j = 0; j < no_present_nodes; j++)
+				if (it->node_id == present_nodes[j]) {
 					present = 1;
 					break;
 				}
