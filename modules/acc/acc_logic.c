@@ -135,9 +135,14 @@ static int is_cdr_enabled=0;
 #define set_dlg_cb_used(_mask) \
 	(_mask) |= ACC_DLG_CB_USED;
 
+#define set_failure_cb_registered(_mask) \
+	(_mask) |= ACC_TMCB_MISSED_REGISTERED;
+
 #define was_dlg_cb_used(_mask) (_mask&ACC_DLG_CB_USED)
 
 #define cdr_values_registered(_mask) ((_mask)&ACC_CDR_REGISTERED)
+
+#define failure_cb_registered(_mask) ((_mask)&ACC_TMCB_MISSED_REGISTERED)
 
 
 
@@ -1127,6 +1132,17 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 			}
 		}
 
+		/* if it's the first time the missed calls flag was used register the callback */
+		if (is_mc_acc_on(flag_mask) && !failure_cb_registered(*flag_mask_p)) {
+			if (tmb.register_tmcb( msg, 0, TMCB_ON_FAILURE, tmcb_func, flag_mask_p, 0)<=0) {
+				LM_ERR("cannot register missed calls callback\n");
+				return -1;
+			}
+
+			/* don't allow the callback to be registered agian in the future */
+			set_failure_cb_registered(*flag_mask_p);
+		}
+
 		*flag_mask_p |= flag_mask;
 		return 1;
 	}
@@ -1166,12 +1182,18 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		/* install additional handlers */
 		tmcb_types =
 			/* report on completed transactions */
-			TMCB_RESPONSE_IN |
+			TMCB_RESPONSE_IN;
+
+		if (is_invite && is_mc_acc_on(*flag_mask_p)) {
 			/* register it manually; see explanation below
 			 * get incoming replies ready for processing */
 			/* TMCB_RESPONSE_OUT | */
 			/* report on missed calls */
-			((is_invite && is_mc_acc_on(*flag_mask_p))?TMCB_ON_FAILURE:0) ;
+			tmcb_types |= TMCB_ON_FAILURE;
+			/* the flag will help on further do_accounting calls to know
+			 * not to register the callback twice */
+			set_failure_cb_registered(*flag_mask_p);
+		}
 
 		/* if cdr accounting is enabled */
 		if (is_cdr_acc_on(*flag_mask_p) && !has_totag(msg)) {
