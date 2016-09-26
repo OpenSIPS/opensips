@@ -528,21 +528,27 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 	{
 		if (!msg->event->parsed && (parse_event(msg->event) < 0))
 		{
+			LM_ERR("bad Event header\n");
 			goto error;
 		}
 		if(((event_t*)msg->event->parsed)->parsed == EVENT_OTHER)
 		{
+			LM_ERR("unrecognized value [%.*s] in Event header\n",
+				msg->event->body.len, msg->event->body.s);
 			goto bad_event;
 		}
-	}
-	else
+	} else {
+		LM_ERR("Missing Event header\n");
 		goto bad_event;
+	}
 
 	/* search event in the list */
 	parsed_event= (event_t*)msg->event->parsed;
 	event= search_event(parsed_event);
 	if(event== NULL)
 	{
+		LM_ERR("un-registered support for known event [%.*s]\n",
+			parsed_event->text.len, parsed_event->text.s);
 		goto bad_event;
 	}
 	subs.event= event;
