@@ -427,16 +427,21 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		}
 		if(((event_t*)msg->event->parsed)->parsed == EVENT_OTHER)
 		{
+			LM_ERR("unrecognized value [%.*s] in Event header\n",
+				msg->event->body.len, msg->event->body.s);
 			goto unsupported_event;
 		}
-	}
-	else
+	} else {
+		LM_ERR("Missing Event header\n");
 		goto unsupported_event;
+	}
 
 	/* search event in the list */
 	event= search_event((event_t*)msg->event->parsed);
 	if(event== NULL)
 	{
+		LM_ERR("un-registered support for known event [%.*s]\n",
+			msg->event->body.len, msg->event->body.s);
 		goto unsupported_event;
 	}
 
