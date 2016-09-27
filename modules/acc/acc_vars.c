@@ -135,6 +135,11 @@ int pv_get_acc_extra(struct sip_msg *msg, pv_param_t *param,
  */
 int set_value_shm(pv_value_t* pvt, extra_value_t* extra)
 {
+	if (pvt == NULL) {
+		LM_ERR("bad value!\n");
+		return -1;
+	}
+
 	if (pvt->flags&PV_TYPE_INT || pvt->flags&PV_VAL_STR) {
 		if (pvt->flags&PV_TYPE_INT || pvt->flags&PV_VAL_INT) {
 			/* transform the int value into a string */
