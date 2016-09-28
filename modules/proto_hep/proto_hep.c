@@ -192,7 +192,7 @@ static int mod_init(void)
 		}
 	}
 
-	hep_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, free_hep_context);
+	hep_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, 0);
 
 	return 0;
 }
@@ -941,7 +941,7 @@ static inline int hep_handle_req(struct tcp_req *req,
 				receive_msg(msg_buf, msg_len, &local_rcv, ctx) <0)
 				LM_ERR("receive_msg failed \n");
 
-		free_extra_chunks(&hep_ctx->h);
+		free_hep_context(hep_ctx);
 
 		if (!size && req != &hep_current_req) {
 			/* if we no longer need this tcp_req
@@ -1282,7 +1282,7 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 		receive_msg( msg.s, msg.len, &ri, ctx);
 	}
 
-	free_extra_chunks(&hep_ctx->h);
+	free_hep_context(hep_ctx);
 
 	return 0;
 
