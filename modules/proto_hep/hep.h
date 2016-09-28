@@ -236,6 +236,7 @@ int pack_hep(union sockaddr_union* from_su, union sockaddr_union* to_su,
 int unpack_hepv12(char *buf, int len, struct hep_desc* h);
 int unpack_hepv3(char *buf, int len, struct hep_desc *h);
 int unpack_hep(char *buf, int len, int version, struct hep_desc* h);
+void free_extra_chunks(struct hep_desc* h);
 
 
 typedef int (*pack_hep_t)(union sockaddr_union* from_su, union sockaddr_union* to_su,

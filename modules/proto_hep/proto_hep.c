@@ -941,6 +941,8 @@ static inline int hep_handle_req(struct tcp_req *req,
 				receive_msg(msg_buf, msg_len, &local_rcv, ctx) <0)
 				LM_ERR("receive_msg failed \n");
 
+		free_extra_chunks(&hep_ctx->h);
+
 		if (!size && req != &hep_current_req) {
 			/* if we no longer need this tcp_req
 			 * we can free it now */
@@ -1160,7 +1162,6 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 #else
 	static char buf [BUF_SIZE+1];
 #endif
-	char *tmp;
 	unsigned int fromlen;
 	str msg;
 
@@ -1280,6 +1281,8 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 		/* receive_msg must free buf too!*/
 		receive_msg( msg.s, msg.len, &ri, ctx);
 	}
+
+	free_extra_chunks(&hep_ctx->h);
 
 	return 0;
 
