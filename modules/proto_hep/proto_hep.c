@@ -1276,12 +1276,6 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 		}
 	}
 
-	if (ri.src_port==0){
-		tmp=ip_addr2a(&ri.src_ip);
-		LM_INFO("dropping 0 port packet for %s\n", tmp);
-		return 0;
-	}
-
 	if (ret != HEP_SCRIPT_SKIP) {
 		/* receive_msg must free buf too!*/
 		receive_msg( msg.s, msg.len, &ri, ctx);
