@@ -746,6 +746,8 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 			memset(gen_chunk, 0, sizeof(generic_chunk_t));
 			gen_chunk->chunk = *((hep_chunk_t*)buf);
 
+			CONVERT_TO_HBO(gen_chunk->chunk);
+
 			gen_chunk->data =
 				shm_malloc(gen_chunk->chunk.length - sizeof(hep_chunk_t));
 
@@ -758,7 +760,6 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 					gen_chunk->chunk.length - sizeof(hep_chunk_t));
 
 
-			CONVERT_TO_HBO(gen_chunk->chunk);
 			UPDATE_BUFFER(buf, tlen, gen_chunk->chunk.length);
 
 			if (h3.chunk_list == NULL) {
