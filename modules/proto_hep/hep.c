@@ -779,3 +779,25 @@ safe_exit:
 	return 0;
 }
 
+void free_extra_chunks(struct hep_desc* h)
+{
+	generic_chunk_t *it, *foo=NULL;
+	if (h == NULL)
+		return;
+
+	if (h->version < 3 || h->u.hepv3.chunk_list == NULL)
+		return;
+
+	for (it=h->u.hepv3.chunk_list; it; foo=it, it=it->next) {
+		if (foo) {
+			shm_free(foo->data);
+			shm_free(foo);
+		}
+	}
+
+	if (foo) {
+		shm_free(foo->data);
+		shm_free(foo);
+	}
+
+}
