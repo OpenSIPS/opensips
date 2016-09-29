@@ -154,23 +154,33 @@ modparam("auth_db", "password_column_2", "ha1_2")
 	<section>
 		<title><varname>calculate_ha1</varname> (integer)</title>
 		<para>
-		This parameter tells the server whether it should use plaintext 
-		passwords or a pre-calculated HA1 string for authentification.
+		This parameter tells the server whether it should considered the
+		loaded password (for authentification) as plaintext passwords or 
+		a pre-calculated HA1 string.
 		</para>
 		<para>
-		If the parameter is set to 1 and the username parameter of credentials
-		contains also <quote>@domain</quote> (some user agents append the
-		domain to the username parameter), then the server will use the HA1
-		values from the column specified in the 
-		<quote>password_column_2</quote> parameter. If the username parameter
-		doesn't contain a domain, the server will use the HA1 values from the
-		column given in the <quote>password_column</quote>parameter.
+		Possible meanings of this parameter are:
 		</para>
-		<para>
-		If the parameter is set to 0 then the HA1 value will be calculated
-		from the column specified in the <quote>password_column</quote>
-		parameter.
-		</para>
+		<itemizedlist>
+			<listitem><para><emphasis>1 (calculate HA1)</emphasis> - the loaded
+			password is a plaintext password, so OpenSIPS will internally
+			calculate the HA1. As the passwors will be loaded from the column 
+			specified in the <quote>password_column</quote> parameter, be sure
+			this parameter points to a column holding a plaintext password
+			(by default, this parameter points to <quote>ha1</quote> column);
+			</para></listitem>
+			<listitem><para><emphasis>0 (do NOT calculate HA1)</emphasis> - the
+			loaded password is an already computed HA1 value, so OpenSIPS does 
+			not have do any further computing (for HA1 value). Depending on 
+			the presence of a <quote>@domain</quote> part (some user agents 
+			append the domain to the username credentials parameter too),
+			the modules will load the password (pre-computed HA1) from the 
+			<quote>password_column_2</quote> column (if domain present) or from
+			the <quote>password_column</quote> column (if domain not present).
+			Usually, most of the UAs do NOT include a domain part in the 
+			username credentials parameter.
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		The <quote>password_column_2</quote> column contains also HA1 strings
 		but they should be calculated including the domain in the username
