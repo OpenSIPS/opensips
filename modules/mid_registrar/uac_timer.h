@@ -66,6 +66,10 @@ struct mid_reg_queue_entry {
 	ucontact_t *con;
 	udomain_t *dom;
 	str aor;
+
+	str to;
+	str from;
+	str callid;
 };
 
 /* add to a priority queue, sorted by registration time */

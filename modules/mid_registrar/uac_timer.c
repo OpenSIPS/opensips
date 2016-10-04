@@ -265,7 +265,7 @@ void unregister_contact(struct mid_reg_queue_entry *entry)
 	int result;
 
 	/* create a mystical dialog in preparation for our De-REGISTER */
-	if (tm_api.new_auto_dlg_uac(&mid_reg_from_uri, &entry->ruri, NULL, &dlg)) {
+	if (tm_api.new_auto_dlg_uac(&entry->from, entry->to.s ? &entry->to : &entry->ruri, &entry->callid, NULL, &dlg)) {
 		LM_ERR("failed to create new TM dlg\n");
 		return;
 	}
