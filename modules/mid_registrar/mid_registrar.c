@@ -264,16 +264,18 @@ str realm_prefix;
 int reg_use_domain = 0;
 //-------------------
 
-enum mr_mode {
+enum mid_reg_mode {
 	MID_REG_MIRROR,
 	MID_REG_THROTTLE_CT,
 	MID_REG_THROTTLE_AOR,
 };
 
-enum mr_routing_mode {
+enum mid_reg_routing_mode {
 	ROUTE_BY_CONTACT,
 	ROUTE_BY_PATH,
 };
+#define is_routing_mode(v) (v == ROUTE_BY_CONTACT || v == ROUTE_BY_PATH)
+#define routing_mode_str(v) (v == ROUTE_BY_CONTACT ? "by Contact" : "by Path")
 
 static int mod_init(void);
 
@@ -291,7 +293,7 @@ static int w_mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s);
  * 1 = registration traffic throttling mode (by Contact)
  * 2 = registration traffic throttling mode (by AoR)
  */
-enum mr_mode reg_mode = MID_REG_MIRROR;
+enum mid_reg_mode reg_mode = MID_REG_MIRROR;
 
 /*
  * Outbound expires
@@ -312,7 +314,7 @@ int matching_mode = 0;
 /*
  * TODO
  */
-enum mr_routing_mode routing_mode = ROUTE_BY_CONTACT;
+enum mid_reg_routing_mode routing_mode = ROUTE_BY_CONTACT;
 
 /*
  * TODO
@@ -451,10 +453,12 @@ static int mod_init(void)
 		reg_expire = min_reg_expire;
 	}
 
-	if (routing_mode != ROUTE_BY_CONTACT && routing_mode != ROUTE_BY_PATH) {
-		LM_WARN("bad \"routing_mode\" (%d) - "
-				"setting to default (route by Contact)\n", routing_mode);
+	if (!is_routing_mode(routing_mode)) {
 		routing_mode = ROUTE_BY_PATH;
+		LM_WARN("bad \"routing_mode\" (%d) - using '%s' as a default\n",
+		        routing_mode, routing_mode_str(routing_mode));
+	} else {
+		LM_DBG("contact routing mode: '%s'\n", routing_mode_str(routing_mode));
 	}
 
 	timer_queue_init();
