@@ -1579,7 +1579,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 	struct sip_msg *req = params->req;
 
 	struct mid_reg_queue_entry *entry = *(struct mid_reg_queue_entry **)(params->param);
-	str *ruri = GET_RURI(req);
+	str *ruri = GET_NEXT_HOP(req);
 	contact_t *c;
 	int timeout_tick, timeout;
 	struct lump *lump;
@@ -1627,8 +1627,9 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 			/* TODO ";expires" overwriting!!! */
 		}
 
-		ct_uri.len = c->len - 1;
+		ct_uri.len = c->uri.len;
 		ct_uri.s = c->uri.s;
+
 		shm_str_dup(&entry->ct_uri, &ct_uri);
 
 		LM_INFO("....... contact: '%.*s' Calculated TIMEOUT = %d (%d)\n", c->len, c->uri.s, timeout_tick, timeout);

@@ -233,10 +233,14 @@ void build_unregister_hdrs(struct mid_reg_queue_entry *entry)
 	memcpy(p, contact_hdr.s, contact_hdr.len);
 	p += contact_hdr.len;
 
+	LM_DBG("building contact from uri '%.*s'\n", entry->ct_uri.len, entry->ct_uri.s);
+
 	/* TODO FIXME - proper handling */
-	*p = '<'; p++;
+	*p++ = '<';
 	memcpy(p, entry->ct_uri.s, entry->ct_uri.len);
 	p += entry->ct_uri.len;
+	*p++ = '>';
+
 	if (1) {
 		/* adding exiration time as a parameter */
 		memcpy(p, expires_param.s, expires_param.len);
