@@ -196,14 +196,18 @@ int new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _rur
 /*
  * Create a new dialog (auto mode)
  */
-int new_auto_dlg_uac( str* _luri, str* _ruri, struct socket_info* _sock, dlg_t** _d)
+int new_auto_dlg_uac( str* _luri, str* _ruri, str *callid, struct socket_info* _sock, dlg_t** _d)
 {
-	str callid, fromtag;
+	str fromtag, clid;
 
-	generate_callid(&callid);
-	generate_fromtag(&fromtag, &callid);
+	if (!callid) {
+		generate_callid(&clid);
+		callid = &clid;
+	}
 
-	return _internal_new_dlg_uac(&callid, &fromtag, 13/*cseq*/,_luri,
+	generate_fromtag(&fromtag, callid);
+
+	return _internal_new_dlg_uac(callid, &fromtag, 13/*cseq*/,_luri,
 		_ruri,_sock,_d);
 }
 
