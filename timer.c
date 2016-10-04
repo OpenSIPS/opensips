@@ -489,7 +489,7 @@ static void run_timer_process_jif(void)
 	struct timeval o_tv;
 	struct timeval tv;
 	struct timeval sync_ts, last_ts;
-	utime_t interval, drift;
+	stime_t interval, drift;
 	utime_t last_ticks, last_sync = 0;
 
 	o_tv.tv_sec = 0;

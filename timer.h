@@ -39,6 +39,7 @@
 #define timer_h
 
 typedef unsigned long long utime_t;
+typedef long long stime_t;
 
 typedef void (timer_function)(unsigned int ticks, void* param);
 typedef void (utimer_function)(utime_t uticks, void* param);
