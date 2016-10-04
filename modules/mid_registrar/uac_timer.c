@@ -137,7 +137,7 @@ int __timer_queue_update_by_ct(ucontact_t *con, unsigned int expires)
 		}
 	}
 
-	return 0;
+	return 1;
 }
 
 int should_relay_register(ucontact_t *con, unsigned int expires)
