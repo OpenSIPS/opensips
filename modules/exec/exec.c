@@ -71,7 +71,7 @@ int exec_msg(struct sip_msg *msg, char *cmd )
 
 	LM_DBG("Forked pid %d\n", pid);
 
-	if (fwrite(msg->buf, 1, msg->len, pipe)!=msg->len) {
+	if (fwrite(msg->buf, 1, msg->len, pipe)!=msg->len || fflush(pipe)) {
 		LM_ERR("failed to write to pipe\n");
 		ser_error=E_EXEC;
 		goto error01;
