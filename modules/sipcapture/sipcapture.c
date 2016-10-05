@@ -3197,6 +3197,7 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 
               cb = (contact_body_t*)msg->contact->parsed;
 
+              memset(&contact, 0, sizeof(struct sip_uri));
               if(cb && cb->contacts) {
                   if(parse_uri( cb->contacts->uri.s, cb->contacts->uri.len, &contact)<0){
                         LM_ERR("bad contact dropping packet\n");
