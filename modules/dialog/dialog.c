@@ -57,6 +57,7 @@
 #include "../rr/api.h"
 #include "../../bin_interface.h"
 #include "../clusterer/api.h"
+#include "../../lib/container.h"
 
 #include "dlg_hash.h"
 #include "dlg_timer.h"
@@ -461,7 +462,7 @@ static int fixup_get_profile2(void** param, int param_no)
 			return E_SCRIPT;
 		}
 
-		p = list_entry(param, action_elem_t, u.data);
+		p = container_of(param, action_elem_t, u.data);
 		p++;
 		p->u.data = *param;
 
