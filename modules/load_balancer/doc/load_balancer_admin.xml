@@ -347,10 +347,34 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 		</listitem>
 		</itemizedlist>
 		<para>
-		Returns true if a new destination URI is set, pointing to the 
-		selected destination.
-		NOTE that the RURI will not be changed by this function.
+		The function may return:
 		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>1 (true)</emphasis> - if a new destination URI is 
+			set, pointing to the selected destination. NOTE that the RURI will
+			not be changed by this function.</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-1 (false)</emphasis> - generic internal error
+			(memory allocation, parsing)</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2 (false)</emphasis> - no capacity available 
+			(detinations are up and available, but they do not have any 
+			availabe channels)</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3 (false)</emphasis> - no destinations available 
+			(the requested resources did not match any active destination)
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-4 (false)</emphasis> - bad resources 
+			(requested resources do not exist)
+			</para>
+		</listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
 		FAILURE_ROUTE.
@@ -383,6 +407,31 @@ if (lb_start("1","trascoding;conference")) {
 		This function is mainly used for implementing failover for the LB
 		destinations.
 		</para>
+		<para>
+		The function may return:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>1 (true)</emphasis> - if a new destination URI is 
+			set, pointing to the selected destination. NOTE that the RURI will
+			not be changed by this function.</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-1 (false)</emphasis> - generic internal error
+			(memory allocation, parsing)</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2 (false)</emphasis> - no capacity available 
+			(detinations are up and available, but they do not have any 
+			availabe channels)</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3 (false)</emphasis> - no more destinations 
+			available (the requested resources did not match any active 
+			destination)
+			</para>
+		</listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
