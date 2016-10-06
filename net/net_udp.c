@@ -277,16 +277,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 }
 
 
-/**
- * Main UDP receiver loop, processes data from the network, does some error
- * checking and save it in an allocated buffer. This data is then forwarded
- * to the receive_msg function. If an dynamic buffer is used, the buffer
- * must be freed in later steps.
- * \see receive_msg
- * \see main_loop
- * \return -1 for errors
- */
-int udp_rcv_loop( struct socket_info *si )
+int udp_proc_reactor_init( struct socket_info *si )
 {
 
 	/* create the reactor for UDP proc */
@@ -307,9 +298,7 @@ int udp_rcv_loop( struct socket_info *si )
 		goto error;
 	}
 
-	/* launch the reactor */
-	reactor_main_loop( UDP_SELECT_TIMEOUT, error , );
-
+	return 0;
 error:
 	destroy_worker_reactor();
 	return -1;
@@ -348,7 +337,10 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 					set_proc_attrs("SIP receiver %.*s ",
 						si->sock_str.len, si->sock_str.s);
 					bind_address=si; /* shortcut */
-					if (init_child(*chd_rank) < 0) {
+					/* we first need to init the reactor to be able to add fd
+					 * into it in child_init routines */
+					if (udp_proc_reactor_init(si) < 0 ||
+							init_child(*chd_rank) < 0) {
 						report_failure_status();
 						if (*chd_rank == 1 && startup_done)
 							*startup_done = -1;
@@ -372,7 +364,18 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 					/* all UDP listeners on same interface
 					 * have same SHM load pointer */
 					pt[process_no].load = load_p;
-					udp_rcv_loop( si );
+
+					/**
+					 * Main UDP receiver loop, processes data from the
+					 * network, does some error checking and save it in an
+					 * allocated buffer. This data is then forwarded to the
+					 * receive_msg function. If an dynamic buffer is used, the
+					 * buffer must be freed in later steps.
+					 * \see receive_msg
+					 * \see main_loop
+					 */
+					reactor_main_loop(UDP_SELECT_TIMEOUT, error, );
+					destroy_worker_reactor();
 					exit(-1);
 				} else {
 					/*parent*/

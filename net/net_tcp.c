@@ -1736,7 +1736,8 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			set_proc_attrs("TCP receiver");
 			pt[process_no].idx=r;
 			pt[process_no].load = load_p;
-			if (init_child(*chd_rank) < 0) {
+			if (tcp_worker_proc_reactor_init(reader_fd[1]) < 0 ||
+					init_child(*chd_rank) < 0) {
 				LM_ERR("init_children failed\n");
 				report_failure_status();
 				if (startup_done)
@@ -1758,7 +1759,10 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 
 			report_conditional_status( 1, 0);
 
-			tcp_worker_proc( reader_fd[1] );
+			/* main loop */
+			reactor_main_loop( TCP_CHILD_SELECT_TIMEOUT, error, tcp_receive_timeout());
+			destroy_worker_reactor();
+			LM_CRIT("exiting...");
 			exit(-1);
 		}
 	}

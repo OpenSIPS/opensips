@@ -624,6 +624,26 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	return -1;
 }
 
+int timer_proc_reactor_init(void)
+{
+	/* create the reactor for timer proc */
+	if ( init_worker_reactor( "Timer_extra", RCT_PRIO_MAX)<0 ) {
+		LM_ERR("failed to init reactor\n");
+		goto error;
+	}
+
+	/* init: start watching for the timer jobs */
+	if (reactor_add_reader( timer_fd_out, F_TIMER_JOB,
+			RCT_PRIO_TIMER,NULL)<0){
+		LM_CRIT("failed to add timer pipe_out to reactor\n");
+		goto error;
+	}
+	return 0;
+
+error:
+	destroy_worker_reactor();
+	return -1;
+}
 
 int start_timer_extra_processes(int *chd_rank)
 {
@@ -637,28 +657,17 @@ int start_timer_extra_processes(int *chd_rank)
 		/* new Timer process */
 		/* set a more detailed description */
 			set_proc_attrs("Timer handler");
-			if (init_child(*chd_rank) < 0) {
+			if (timer_proc_reactor_init() < 0 ||
+					init_child(*chd_rank) < 0) {
 				report_failure_status();
 				goto error;
 			}
 
 			report_conditional_status( 1, 0);
 
-			/* create the reactor for timer proc */
-			if ( init_worker_reactor( "Timer_extra", RCT_PRIO_MAX)<0 ) {
-				LM_ERR("failed to init reactor\n");
-				goto error;
-			}
-
-			/* init: start watching for the timer jobs */
-			if (reactor_add_reader( timer_fd_out, F_TIMER_JOB,
-			RCT_PRIO_TIMER,NULL)<0){
-				LM_CRIT("failed to add timer pipe_out to reactor\n");
-				goto error;
-			}
-
 			/* launch the reactor */
 			reactor_main_loop( 1/*timeout in sec*/, error , );
+			destroy_worker_reactor();
 
 			exit(-1);
 	}

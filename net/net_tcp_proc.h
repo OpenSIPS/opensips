@@ -27,6 +27,9 @@
 #define _NET_net_tcp_proc_h
 
 /* Loop implementing a TCP worker */
-void tcp_worker_proc( int fd);
+int tcp_worker_proc_reactor_init( int fd);
+
+/*! \brief  releases expired connections and cleans up bad ones (state<0) */
+void tcp_receive_timeout(void);
 
 #endif

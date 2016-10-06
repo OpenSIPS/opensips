@@ -249,7 +249,7 @@ error:
 
 
 /*! \brief  releases expired connections and cleans up bad ones (state<0) */
-static inline void tcp_receive_timeout(void)
+void tcp_receive_timeout(void)
 {
 	struct tcp_connection* con;
 	struct tcp_connection* next;
@@ -291,7 +291,7 @@ static inline void tcp_receive_timeout(void)
 
 
 
-void tcp_worker_proc( int unix_sock)
+int tcp_worker_proc_reactor_init( int unix_sock)
 {
 	/* init reactor for TCP worker */
 	tcpmain_sock=unix_sock; /* init com. socket */
@@ -311,13 +311,10 @@ void tcp_worker_proc( int unix_sock)
 		goto error;
 	}
 
-	/* main loop */
-	reactor_main_loop( TCP_CHILD_SELECT_TIMEOUT, error, tcp_receive_timeout());
-
+	return 0;
 error:
 	destroy_worker_reactor();
-	LM_CRIT("exiting...");
-	exit(-1);
+	return -1;
 }
 
 
