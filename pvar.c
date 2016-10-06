@@ -3245,44 +3245,38 @@ int pv_get_log_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	return 0;
 }
 
-int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res){
-	if (param==NULL) {
-		LM_CRIT("BUG - bad parameters\n");
-		return -1;
-	}
-
+int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+#define _set_static_string(_s,_ss) {_s.s=_ss;_s.len=sizeof(_ss)-1;}
 	if(res == NULL) {
 		return -1;
 	}
 
 	switch(xlog_level) {
 	case L_ALERT:
-		res->rs.s = DP_ALERT_TEXT;
+		_set_static_string( res->rs, DP_ALERT_TEXT);
 		break;
 	case L_CRIT:
-		res->rs.s = DP_CRIT_TEXT;
+		_set_static_string( res->rs, DP_CRIT_TEXT);
 		break;
 	case L_ERR:
-		res->rs.s = DP_ERR_TEXT;
+		_set_static_string( res->rs, DP_ERR_TEXT);
 		break;
 	case L_WARN:
-		res->rs.s = DP_WARN_TEXT;
+		_set_static_string( res->rs, DP_WARN_TEXT);
 		break;
 	case L_NOTICE:
-		res->rs.s = DP_NOTICE_TEXT;
+		_set_static_string( res->rs, DP_NOTICE_TEXT);
 		break;
 	case L_INFO:
-		res->rs.s = DP_INFO_TEXT;
+		_set_static_string( res->rs, DP_INFO_TEXT);
 		break;
 	case L_DBG:
-		res->rs.s = DP_DBG_TEXT;
+		_set_static_string( res->rs, DP_DBG_TEXT);
 		break;
 	default:
-		LM_CRIT("BUG - xlog_level value unrecognized: %d\n", xlog_level);
-		return -1;
+		return pv_get_null(msg, param, res);
 	}
-
-	res->rs.len = strlen(res->rs.s);
 
 	res->flags = PV_VAL_STR;
 
