@@ -99,8 +99,10 @@ int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 	log_len = xlog_buf_size;
 
 	xlog_level = level;
-	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0)
+	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0) {
+		xlog_level = INT_MAX;
 		return -1;
+	}
 	xlog_level = INT_MAX;
 
 	/* log_buf[log_len] = '\0'; */
@@ -119,8 +121,12 @@ int xlog_1(struct sip_msg* msg, char* frm, char* str2)
 
 	log_len = xlog_buf_size;
 
-	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0)
+	xlog_level = xlog_default_level;
+	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0) {
+		xlog_level = INT_MAX;
 		return -1;
+	}
+	xlog_level = INT_MAX;
 
 	/* log_buf[log_len] = '\0'; */
 	LM_GEN1(xlog_default_level, "%.*s", log_len, log_buf);
@@ -139,8 +145,12 @@ int xdbg(struct sip_msg* msg, char* frm, char* str2)
 
 	log_len = xlog_buf_size;
 
-	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0)
+	xlog_level = L_DBG;
+	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0) {
+		xlog_level = INT_MAX;
 		return -1;
+	}
+	xlog_level = INT_MAX;
 
 	/* log_buf[log_len] = '\0'; */
 	LM_GEN1(L_DBG, "%.*s", log_len, log_buf);
