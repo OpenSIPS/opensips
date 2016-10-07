@@ -375,7 +375,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 
 	/* is the statistic found ? */
 	if (name->type==PV_NAME_INTSTR) {
-		LM_NOTICE("xXx stat with name %p still not found\n", name);
+		LM_DBG("stat with name %p still not found\n", name);
 		/* not yet :( */
 		/* do we have at least the name ?? */
 		if (name->u.isname.type==0) {
@@ -391,7 +391,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 		}
 		/* lookup for the statistic */
 		*stat = get_stat( &pv_val.rs );
-		LM_NOTICE("xXx stat name %p (%.*s) after lookup is %p\n",
+		LM_DBG("stat name %p (%.*s) after lookup is %p\n",
 			name, pv_val.rs.len, pv_val.rs.s, *stat);
 		if (*stat==NULL) {
 			if (!create)
@@ -408,7 +408,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 		/* if name is static string, better link the stat directly
 		 * and discard name */
 		if (name->u.isname.type==AVP_NAME_STR) {
-			LM_NOTICE("xXx name %p freeing %p\n",name,name->u.isname.name.s.s);
+			LM_DBG("name %p freeing %p\n",name,name->u.isname.name.s.s);
 			/* it is totally unsafe to free this shm block here, as it is
 			 * referred by the spec from all the processess. Even if we create
 			 * here a small leak (one time only), we do not have a better fix
@@ -422,7 +422,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 	} else {
 		/* stat already found ! */
 		*stat = (stat_var*)name->u.dname;
-		LM_NOTICE("xXx stat name %p is founded\n",name);
+		LM_DBG("stat name %p is founded\n",name);
 	}
 
 	return 0;
