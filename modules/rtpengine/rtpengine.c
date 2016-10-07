@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * ---------
@@ -55,7 +55,6 @@
 #include "../../data_lump_rpl.h"
 #include "../../error.h"
 #include "../../forward.h"
-#include "../../context.h"
 #include "../../mem/mem.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_to.h"
@@ -110,16 +109,8 @@
 #define MI_RECHECK_T_LEN			(sizeof(MI_RECHECK_TICKS)-1)
 
 
+
 #define	CPORT		"22222"
-
-#define ctx_rtpeset_get() \
-	((struct rtpe_set*)context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, ctx_rtpeset_idx))
-
-#define ctx_rtpeset_set(_set) \
-	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, ctx_rtpeset_idx, _set)
-
-
-
 
 enum rtpe_operation {
 	OP_OFFER = 1,
@@ -130,14 +121,9 @@ enum rtpe_operation {
 };
 
 struct ng_flags_parse {
-	int via, to, packetize, transport;
+	int via, to, packetize, transport, delete_delay;
 	bencode_item_t *dict, *flags, *direction, *replace, *rtcp_mux;
 };
-
-typedef struct rtpe_set_link {
-	struct rtpe_set *rset;
-	pv_spec_t rpv;
-} rtpe_set_link_t;
 
 static const char *command_strings[] = {
 	[OP_OFFER]		= "offer",
@@ -149,20 +135,20 @@ static const char *command_strings[] = {
 
 static char *gencookie();
 static int rtpe_test(struct rtpe_node*, int, int);
-static int start_recording_f(struct sip_msg *);
-static int rtpengine_answer1_f(struct sip_msg *, gparam_p str1);
-static int rtpengine_offer1_f(struct sip_msg *, gparam_p str1);
-static int rtpengine_delete1_f(struct sip_msg *, gparam_p str1);
-static int rtpengine_manage1_f(struct sip_msg *, gparam_p str1);
+static int start_recording_f(struct sip_msg *, char *, char *);
+static int rtpengine_answer1_f(struct sip_msg *, char *, char *);
+static int rtpengine_offer1_f(struct sip_msg *, char *, char *);
+static int rtpengine_delete1_f(struct sip_msg *, char *, char *);
+static int rtpengine_manage1_f(struct sip_msg *, char *, char *);
 
 static int parse_flags(struct ng_flags_parse *, struct sip_msg *, enum rtpe_operation *, const char *);
 
 static int rtpengine_offer_answer(struct sip_msg *msg, const char *flags, int op);
 static int add_rtpengine_socks(struct rtpe_set * rtpe_list, char * rtpengine);
 static int fixup_set_id(void ** param, int param_no);
-static int set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param);
+static int set_rtpengine_set_f(struct sip_msg * msg, char * str1, char * str2);
 static struct rtpe_set * select_rtpe_set(int id_set);
-static struct rtpe_node *select_rtpe_node(str, int, struct rtpe_set *);
+static struct rtpe_node *select_rtpe_node(str, int);
 static char *send_rtpe_command(struct rtpe_node *, bencode_item_t *, int *);
 static int get_extra_id(struct sip_msg* msg, str *id_str);
 
@@ -194,9 +180,10 @@ static char *setid_avp_param = NULL;
 static char ** rtpe_strings=0;
 static int rtpe_sets=0; /*used in rtpengine_set_store()*/
 static int rtpe_set_count = 0;
-static int ctx_rtpeset_idx = -1;
+static unsigned int current_msg_id = (unsigned int)-1;
 /* RTP proxy balancing list */
 struct rtpe_set_head * rtpe_set_list =0;
+struct rtpe_set * selected_rtpe_set =0;
 struct rtpe_set * default_rtpe_set=0;
 
 /* array with the sockets used by rtpengine (per process)*/
@@ -205,6 +192,11 @@ static int *rtpe_socks = 0;
 
 static int     setid_avp_type;
 static int_str setid_avp;
+
+typedef struct rtpe_set_link {
+	struct rtpe_set *rset;
+	pv_spec_t rpv;
+} rtpe_set_link_t;
 
 /* tm */
 static struct tm_binds tmb;
@@ -257,7 +249,7 @@ static pv_export_t mod_pvs[] = {
 
 static param_export_t params[] = {
 	{"rtpengine_sock",         STR_PARAM|USE_FUNC_PARAM,
-				 (void*)rtpengine_set_store          },
+	                         (void*)rtpengine_set_store          },
 	{"rtpengine_disable_tout", INT_PARAM, &rtpengine_disable_tout },
 	{"rtpengine_retr",         INT_PARAM, &rtpengine_retr         },
 	{"rtpengine_tout",         INT_PARAM, &rtpengine_tout         },
@@ -272,24 +264,11 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
-static dep_export_t deps = {
-	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "tm", DEP_SILENT },
-		{ MOD_TYPE_NULL, NULL, 0 },
-	},
-	{ /* modparam dependencies */
-		{ NULL, NULL },
-	},
-};
-
 struct module_exports exports = {
 	"rtpengine",
-	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	&deps,           /* OpenSIPS module dependencies */
 	cmds,
-	0,
 	params,
 	0,           /* exported statistics */
 	mi_cmds,     /* exported MI functions */
@@ -431,8 +410,8 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 			return -1;
 		}
 		memmove(pnode->rn_url.s, p1, p2 - p1);
-		pnode->rn_url.s[p2 - p1]	= 0;
-		pnode->rn_url.len			= p2-p1;
+		pnode->rn_url.s[p2 - p1] 	= 0;
+		pnode->rn_url.len 			= p2-p1;
 
 		LM_DBG("url is %s, len is %i\n", pnode->rn_url.s, pnode->rn_url.len);
 		/* Leave only address in rn_address */
@@ -759,8 +738,6 @@ mod_init(void)
 	unsigned short avp_flags;
 	str s;
 
-	ctx_rtpeset_idx = context_register_ptr(CONTEXT_GLOBAL, NULL);
-
 	/* any rtpengine configured? */
 	if(rtpe_set_list)
 		default_rtpe_set = select_rtpe_set(DEFAULT_RTPE_SET_ID);
@@ -955,9 +932,8 @@ static const char *transports[] = {
 	[0x01]	= "RTP/SAVP",
 	[0x02]	= "RTP/AVPF",
 	[0x03]	= "RTP/SAVPF",
-	[0x04]  = "UDP/TLS/RTP/SAVP",
-	[0x05]  = "UDP/TLS/RTP/SAVPF"
-
+  [0x04]  = "UDP/TLS/RTP/SAVP",
+  [0x05]  = "UDP/TLS/RTP/SAVPF"
 };
 
 static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg, enum rtpe_operation *op,
@@ -1026,16 +1002,16 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg, enu
 					ng_flags->transport |= 0x101;
 				else if (str_eq(&key, "AVPF"))
 					ng_flags->transport |= 0x102;
-				else if (str_eq(&key, "DTLS")){
-					err = "missing value";
-					if (!val.s)
-						goto error;
-					err = "invalid value";
-					if (str_eq(&val, "passive"))
-						bencode_dictionary_add_str(ng_flags->dict, "DTLS", &val);
-					else
-						goto error;
-				}
+        else if (str_eq(&key, "DTLS")){
+          err = "missing value";
+          if (!val.s)
+            goto error;
+          err = "invalid value";
+          if (str_eq(&val, "passive"))
+            bencode_dictionary_add_str(ng_flags->dict, "DTLS", &val);
+          else
+            goto error;
+        }
 				else
 					goto error;
 				break;
@@ -1070,6 +1046,12 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg, enu
 					ng_flags->transport = 0x102;
 				else if (str_eq(&key, "RTP/SAVP"))
 					ng_flags->transport = 0x101;
+				else if (str_eq(&key, "metadata")) {
+					err = "missing value";
+					if (!val.s)
+						goto error;
+					bencode_dictionary_add_str(ng_flags->dict, "metadata", &val);
+				}
 				else
 					goto error;
 				break;
@@ -1122,6 +1104,17 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg, enu
 						goto error;
 					bencode_dictionary_add_integer(ng_flags->dict, "repacketize", ng_flags->packetize);
 				}
+				else if (str_eq(&key, "record-call")) {
+          err = "missing value";
+          if (!val.s)
+           goto error;
+          else if (str_eq(&val, "yes")) {
+            bencode_dictionary_add_str(ng_flags->dict, "record-call", &val);
+          }
+          else if (str_eq(&val, "no")) {
+            bencode_dictionary_add_str(ng_flags->dict, "record-call", &val);
+          }
+        }
 				else
 					goto error;
 				break;
@@ -1132,6 +1125,18 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg, enu
 					if (*op != OP_OFFER)
 						goto error;
 					*op = OP_ANSWER;
+				} else if (str_eq(&key, "delete-delay")) {
+					err = "missing value";
+					if (!val.s)
+						goto error;
+					err = "invalid value";
+					ng_flags->delete_delay = (int) strtol(val.s, NULL, 10);
+					if (ng_flags->delete_delay == 0) {
+						ng_flags->delete_delay = -1;
+						goto error;
+					} else {
+						bencode_dictionary_add_integer(ng_flags->dict, "delete-delay", ng_flags->delete_delay);
+					}
 				}
 				else
 					goto error;
@@ -1178,20 +1183,20 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg, enu
 					goto error;
 				break;
 
-			case 16:
-				if (str_eq(&key, "UDP/TLS/RTP/SAVP"))
-					ng_flags->transport = 0x104;
-				else
-					goto error;
-				break;
-
-			case 17:
-				if (str_eq(&key, "UDP/TLS/RTP/SAVPF"))
-					ng_flags->transport = 0x105;
-				else
-					goto error;
-				break;
-
+      case 16:
+        if (str_eq(&key, "UDP/TLS/RTP/SAVP"))
+          ng_flags->transport = 0x104;
+        else
+          goto error;
+        break;
+ 
+      case 17:
+        if (str_eq(&key, "UDP/TLS/RTP/SAVPF"))
+          ng_flags->transport = 0x105;
+        else
+          goto error;
+        break;
+ 
 			case 26:
 				if (str_eq(&key, "replace-session-connection"))
 					bencode_list_add_string(ng_flags->replace, "session-connection");
@@ -1222,11 +1227,9 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 {
 	struct ng_flags_parse ng_flags;
 	bencode_item_t *item, *resp;
-	str callid, from_tag, to_tag, viabranch, error;
-	str body = { 0, 0 };
+	str callid, from_tag, to_tag, body, viabranch, error;
 	int ret;
 	struct rtpe_node *node;
-	struct rtpe_set *set;
 	char *cp;
 
 	/*** get & init basic stuff needed ***/
@@ -1333,11 +1336,11 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		goto error;
 	}
 
-	if ( (set=ctx_rtpeset_get())==NULL )
-		set = default_rtpe_set;
+	if(msg->id != current_msg_id)
+		selected_rtpe_set = default_rtpe_set;
 
 	do {
-		node = select_rtpe_node(callid, 1, set);
+		node = select_rtpe_node(callid, 1);
 		if (!node) {
 			LM_ERR("no available proxies\n");
 			goto error;
@@ -1499,7 +1502,7 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 		} while (len == -1 && errno == EINTR);
 		if (len <= 0) {
 			close(fd);
-			LM_ERR("can't send command to a RTP proxy (%s)\n",strerror(errno));
+			LM_ERR("can't send command to a RTP proxy\n");
 			goto badproxy;
 		}
 		do {
@@ -1525,7 +1528,7 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 		for (i = 0; i < rtpengine_retr; i++) {
 			do {
 				len = writev(rtpe_socks[node->idx], v, vcnt + 1);
-			} while (len == -1 && (errno == EINTR || errno == ENOBUFS || errno == EMSGSIZE));
+			} while (len == -1 && (errno == EINTR || errno == ENOBUFS));
 			if (len <= 0) {
 				LM_ERR("can't send command to a RTP proxy\n");
 				goto badproxy;
@@ -1599,19 +1602,19 @@ static struct rtpe_set * select_rtpe_set(int id_set ){
  * too expensive here.
  */
 static struct rtpe_node *
-select_rtpe_node(str callid, int do_test, struct rtpe_set *set)
+select_rtpe_node(str callid, int do_test)
 {
 	unsigned sum, sumcut, weight_sum;
 	struct rtpe_node* node;
 	int was_forced;
 
-	if(!set){
+	if(!selected_rtpe_set){
 		LM_ERR("script error -no valid set selected\n");
 		return NULL;
 	}
 	/* Most popular case: 1 proxy, nothing to calculate */
-	if (set->rtpe_node_count == 1) {
-		node = set->rn_first;
+	if (selected_rtpe_set->rtpe_node_count == 1) {
+		node = selected_rtpe_set->rn_first;
 		if (node->rn_disabled && node->rn_recheck_ticks <= get_ticks())
 			node->rn_disabled = rtpe_test(node, 1, 0);
 		return node->rn_disabled ? NULL : node;
@@ -1625,7 +1628,7 @@ select_rtpe_node(str callid, int do_test, struct rtpe_set *set)
 	was_forced = 0;
 retry:
 	weight_sum = 0;
-	for (node=set->rn_first; node!=NULL; node=node->rn_next) {
+	for (node=selected_rtpe_set->rn_first; node!=NULL; node=node->rn_next) {
 
 		if (node->rn_disabled && node->rn_recheck_ticks <= get_ticks()){
 			/* Try to enable if it's time to try. */
@@ -1639,7 +1642,7 @@ retry:
 		if (was_forced)
 			return NULL;
 		was_forced = 1;
-		for(node=set->rn_first; node!=NULL; node=node->rn_next) {
+		for(node=selected_rtpe_set->rn_first; node!=NULL; node=node->rn_next) {
 			node->rn_disabled = rtpe_test(node, 1, 1);
 		}
 		goto retry;
@@ -1649,7 +1652,7 @@ retry:
 	 * sumcut here lays from 0 to weight_sum-1.
 	 * Scan proxy list and decrease until appropriate proxy is found.
 	 */
-	for (node=set->rn_first; node!=NULL; node=node->rn_next) {
+	for (node=selected_rtpe_set->rn_first; node!=NULL; node=node->rn_next) {
 		if (node->rn_disabled)
 			continue;
 		if (sumcut < node->rn_weight)
@@ -1687,7 +1690,6 @@ set_rtpengine_set_from_avp(struct sip_msg *msg)
 {
 	struct usr_avp *avp;
 	int_str setid_val;
-	struct rtpe_set *set;
 
 	if ((setid_avp_param == NULL) ||
 			(avp = search_first_avp(setid_avp_type, setid_avp.n, &setid_val, 0))
@@ -1699,13 +1701,15 @@ set_rtpengine_set_from_avp(struct sip_msg *msg)
 		return -1;
 	}
 
-	if ( (set=select_rtpe_set(setid_val.n)) == NULL) {
+	selected_rtpe_set = select_rtpe_set(setid_val.n);
+	if(selected_rtpe_set == NULL) {
 		LM_ERR("could not locate rtpengine set %d\n", setid_val.n);
 		return -1;
 	}
 
-	ctx_rtpeset_set( set );
 	LM_DBG("using rtpengine set %d\n", setid_val.n);
+
+	current_msg_id = msg->id;
 
 	return 1;
 }
@@ -1715,7 +1719,7 @@ static int rtpengine_delete(struct sip_msg *msg, const char *flags) {
 }
 
 static int
-rtpengine_delete1_f(struct sip_msg* msg, gparam_p str1)
+rtpengine_delete1_f(struct sip_msg* msg, char* str1, char* str2)
 {
 	str flags;
 
@@ -1724,7 +1728,7 @@ rtpengine_delete1_f(struct sip_msg* msg, gparam_p str1)
 
 	flags.s = NULL;
 	if (str1)
-		fixup_get_svalue(msg, str1, &flags);
+		fixup_get_svalue(msg, (gparam_p)str1, &flags);
 
 	return rtpengine_delete(msg, flags.s);
 }
@@ -1732,16 +1736,19 @@ rtpengine_delete1_f(struct sip_msg* msg, gparam_p str1)
 /* This function assumes p points to a line of requested type. */
 
 static int
-set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param)
+set_rtpengine_set_f(struct sip_msg * msg, char * str1, char * str2)
 {
 	rtpe_set_link_t *rtpl;
 	pv_value_t val;
-	struct rtpe_set *set;
 
-	rtpl = set_param;
+	rtpl = (rtpe_set_link_t*)str1;
+
+	current_msg_id = 0;
+	selected_rtpe_set = 0;
 
 	if(rtpl->rset != NULL) {
-		ctx_rtpeset_set( rtpl->rset );
+		current_msg_id = msg->id;
+		selected_rtpe_set = rtpl->rset;
 	} else {
 		if(pv_get_spec_value(msg, &rtpl->rpv, &val)<0) {
 			LM_ERR("cannot evaluate pv param\n");
@@ -1751,12 +1758,12 @@ set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param)
 			LM_ERR("pv param must hold an integer value\n");
 			return -1;
 		}
-		set = select_rtpe_set(val.ri);
-		if(set==NULL) {
+		selected_rtpe_set = select_rtpe_set(val.ri);
+		if(selected_rtpe_set==NULL) {
 			LM_ERR("could not locate rtpengine set %d\n", val.ri);
 			return -1;
 		}
-		ctx_rtpeset_set( set );
+		current_msg_id = msg->id;
 	}
 	return 1;
 }
@@ -1814,7 +1821,7 @@ rtpengine_manage(struct sip_msg *msg, const char *flags)
 }
 
 static int
-rtpengine_manage1_f(struct sip_msg *msg, gparam_p str1)
+rtpengine_manage1_f(struct sip_msg *msg, char *str1, char *str2)
 {
 	str flags;
 
@@ -1823,13 +1830,13 @@ rtpengine_manage1_f(struct sip_msg *msg, gparam_p str1)
 
 	flags.s = NULL;
 	if (str1)
-		fixup_get_svalue(msg, str1, &flags);
+		fixup_get_svalue(msg, (gparam_p)str1, &flags);
 
 	return rtpengine_manage(msg, flags.s);
 }
 
 static int
-rtpengine_offer1_f(struct sip_msg *msg, gparam_p str1)
+rtpengine_offer1_f(struct sip_msg *msg, char *str1, char *str2)
 {
 	str flags;
 
@@ -1838,12 +1845,12 @@ rtpengine_offer1_f(struct sip_msg *msg, gparam_p str1)
 
 	flags.s = NULL;
 	if (str1)
-		fixup_get_svalue(msg, str1, &flags);
+		fixup_get_svalue(msg, (gparam_p)str1, &flags);
 	return rtpengine_offer_answer(msg, flags.s, OP_OFFER);
 }
 
 static int
-rtpengine_answer1_f(struct sip_msg *msg, gparam_p str1)
+rtpengine_answer1_f(struct sip_msg *msg, char *str1, char *str2)
 {
 	str flags;
 
@@ -1856,7 +1863,7 @@ rtpengine_answer1_f(struct sip_msg *msg, gparam_p str1)
 
 	flags.s = NULL;
 	if (str1)
-		fixup_get_svalue(msg, str1, &flags);
+		fixup_get_svalue(msg, (gparam_p)str1, &flags);
 	return rtpengine_offer_answer(msg, flags.s, OP_ANSWER);
 }
 
@@ -1899,7 +1906,7 @@ error:
 
 
 static int
-start_recording_f(struct sip_msg* msg)
+start_recording_f(struct sip_msg* msg, char *foo, char *bar)
 {
 	return rtpe_function_call_simple(msg, OP_START_RECORDING, NULL);
 }
@@ -1912,7 +1919,7 @@ pv_get_rtpstat_f(struct sip_msg *msg, pv_param_t *param,
 		  pv_value_t *res)
 {
 	bencode_buffer_t bencbuf;
-	bencode_item_t *dict, *tot, *rtp, *rtcp;
+  bencode_item_t *dict, *tot, *rtp, *rtcp;
 	static char buf[256];
 	str ret;
 
@@ -1921,20 +1928,22 @@ pv_get_rtpstat_f(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 
 	tot = bencode_dictionary_get_expect(dict, "totals", BENCODE_DICTIONARY);
-	rtp = bencode_dictionary_get_expect(tot, "RTP", BENCODE_DICTIONARY);
-	rtcp = bencode_dictionary_get_expect(tot, "RTCP", BENCODE_DICTIONARY);
-	if (!rtp || !rtcp)
+  rtp = bencode_dictionary_get_expect(tot, "RTP", BENCODE_DICTIONARY);
+  rtcp = bencode_dictionary_get_expect(tot, "RTCP", BENCODE_DICTIONARY);
+
+  if (!rtp || !rtcp)
 		goto error;
+
 	ret.s = buf;
 	ret.len = snprintf(buf, sizeof(buf),
-		"RTP: %lli bytes, %lli packets, %lli errors; "
-		"RTCP: %lli bytes, %lli packets, %lli errors",
-		bencode_dictionary_get_integer(rtp, "bytes", -1),
-		bencode_dictionary_get_integer(rtp, "packets", -1),
-		bencode_dictionary_get_integer(rtp, "errors", -1),
-		bencode_dictionary_get_integer(rtcp, "bytes", -1),
-		bencode_dictionary_get_integer(rtcp, "packets", -1),
-		bencode_dictionary_get_integer(rtcp, "errors", -1));
+            "RTP: %lli bytes, %lli packets, %lli errors; "
+            "RTCP: %lli bytes, %lli packets, %lli errors",
+            bencode_dictionary_get_integer(rtp, "bytes", -1),
+            bencode_dictionary_get_integer(rtp, "packets", -1),
+            bencode_dictionary_get_integer(rtp, "errors", -1),
+            bencode_dictionary_get_integer(rtcp, "bytes", -1),
+            bencode_dictionary_get_integer(rtcp, "packets", -1),
+            bencode_dictionary_get_integer(rtcp, "errors", -1));
 
 	bencode_buffer_free(&bencbuf);
 	return pv_get_strval(msg, param, res, &ret);
