@@ -324,7 +324,7 @@ int pv_parse_name(pv_spec_p sp, str *in)
 	if(in==NULL || in->s==NULL || sp==NULL)
 		return -1;
 
-	LM_NOTICE("xXx name %p with name <%.*s>\n", &sp->pvp.pvn, in->len, in->s);
+	LM_DBG("name %p with name <%.*s>\n", &sp->pvp.pvn, in->len, in->s);
 	if (pv_parse_format( in, &format)!=0) {
 		LM_ERR("failed to parse statistic name format <%.*s> \n",
 			in->len,in->s);
@@ -345,13 +345,13 @@ int pv_parse_name(pv_spec_p sp, str *in)
 				LM_ERR("failed to clone name of statistic \n");
 				return -1;
 			}
-			LM_NOTICE("xXx name %p, name cloned (in=%p, out=%p)\n",
+			LM_DBG("name %p, name cloned (in=%p, out=%p)\n",
 				&sp->pvp.pvn, in->s, sp->pvp.pvn.u.isname.name.s.s);
 		} else {
 			/* link the stat pointer directly as dynamic name */
 			sp->pvp.pvn.type = PV_NAME_PVAR;
 			sp->pvp.pvn.u.dname = (void*)stat;
-			LM_NOTICE("xXx name %p, stat found\n", &sp->pvp.pvn);
+			LM_DBG("name %p, stat found\n", &sp->pvp.pvn);
 		}
 
 	} else {
@@ -360,7 +360,7 @@ int pv_parse_name(pv_spec_p sp, str *in)
 			sp->pvp.pvn.u.isname.type = 0; /* not string */
 			sp->pvp.pvn.u.isname.name.s.s = (char*)(void*)format;
 			sp->pvp.pvn.u.isname.name.s.len = 0;
-			LM_NOTICE("xXx name %p, stat name is FMT\n", &sp->pvp.pvn);
+			LM_DBG("name %p, stat name is FMT\n", &sp->pvp.pvn);
 
 	}
 
