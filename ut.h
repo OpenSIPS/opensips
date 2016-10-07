@@ -531,6 +531,8 @@ static inline int str2sint(str* _s, int* _r)
 	if(_s->s[i]=='-') {
 		s=-1;
 		i++;
+	} else if (_s->s[i]=='+') {
+		i++;
 	}
 	for(; i < _s->len; i++) {
 		if ((_s->s[i] >= '0') && (_s->s[i] <= '9')) {
