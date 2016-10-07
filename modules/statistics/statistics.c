@@ -137,8 +137,6 @@ static int fixup_stat(void** param, int param_no)
 	struct stat_param *sp;
 	pv_elem_t *format;
 	str s;
-	long n;
-	int err;
 
 	s.s = (char*)*param;
 	s.len = strlen(s.s);
@@ -183,36 +181,28 @@ static int fixup_stat(void** param, int param_no)
 		*param=(void*)sp;
 		return 0;
 	} else if (param_no==2) {
-		/* update value - integer */
-		if (s.s[0]=='-' || s.s[0]=='+') {
-			n = str2s( s.s+1, s.len-1, &err);
-			if (s.s[0]=='-')
-				n = -n;
-		} else {
-			n = str2s( s.s, s.len, &err);
-		}
-		if (err==0){
-			if (n==0) {
-				LM_ERR("update with 0 has no sense\n");
-				return E_CFG;
-			}
-			pkg_free(*param);
-			*param=(void*)n;
-			return 0;
-		}else{
-			LM_ERR("bad update number <%s>\n",(char*)(*param));
-			return E_CFG;
-		}
+		/* update value - integer or variable */
+		return fixup_igp(param);
 	}
 	return 0;
 }
 
 
-static int w_update_stat(struct sip_msg *msg, char *stat_p, char *n)
+static int w_update_stat(struct sip_msg *msg, char *stat_p, char *val)
 {
 	struct stat_param *sp = (struct stat_param *)stat_p;
 	pv_value_t pv_val;
 	stat_var *stat;
+	int n;
+
+	/* evaluate the value first */
+	if (fixup_get_ivalue( msg, (gparam_p)val, &n)<0) {
+		LM_ERR("failed to extran a numerical value\n");
+		return -1;
+	}
+	/* update with 0 value makes no sense */
+	if (n==0)
+		return 1;
 
 	if (sp->type==STAT_PARAM_TYPE_STAT) {
 		/* we have the statistic */
@@ -375,7 +365,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 
 	/* is the statistic found ? */
 	if (name->type==PV_NAME_INTSTR) {
-		LM_NOTICE("xXx stat with name %p still not found\n", name);
+		LM_DBG("stat with name %p still not found\n", name);
 		/* not yet :( */
 		/* do we have at least the name ?? */
 		if (name->u.isname.type==0) {
@@ -391,7 +381,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 		}
 		/* lookup for the statistic */
 		*stat = get_stat( &pv_val.rs );
-		LM_NOTICE("xXx stat name %p (%.*s) after lookup is %p\n",
+		LM_DBG("stat name %p (%.*s) after lookup is %p\n",
 			name, pv_val.rs.len, pv_val.rs.s, *stat);
 		if (*stat==NULL) {
 			if (!create)
@@ -408,7 +398,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 		/* if name is static string, better link the stat directly
 		 * and discard name */
 		if (name->u.isname.type==AVP_NAME_STR) {
-			LM_NOTICE("xXx name %p freeing %p\n",name,name->u.isname.name.s.s);
+			LM_DBG("name %p freeing %p\n",name,name->u.isname.name.s.s);
 			/* it is totally unsafe to free this shm block here, as it is
 			 * referred by the spec from all the processess. Even if we create
 			 * here a small leak (one time only), we do not have a better fix
@@ -422,7 +412,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 	} else {
 		/* stat already found ! */
 		*stat = (stat_var*)name->u.dname;
-		LM_NOTICE("xXx stat name %p is founded\n",name);
+		LM_DBG("stat name %p is founded\n",name);
 	}
 
 	return 0;

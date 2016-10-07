@@ -91,7 +91,7 @@ modparam("statistics", "variable", "active_calls/no_reset")
 		</listitem>
 		<listitem>
 			<para><emphasis>value</emphasis> - value to update with; it may be
-			also negative.
+			also negative; variables (holding integer values) are also allowed.
 			</para>
 		</listitem>
 		</itemizedlist>
