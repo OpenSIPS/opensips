@@ -126,6 +126,9 @@ int t_resume_async(int *fd, void *param)
 	if (async_status==ASYNC_CONTINUE) {
 		/* do not run the resume route */
 		goto restore;
+	} else if (async_status==ASYNC_DONE_NO_IO) {
+		/* don't do any change on the fd, since the module handled everything */
+		goto route;
 	} else if (async_status==ASYNC_CHANGE_FD) {
 		if (return_code<0) {
 			LM_ERR("ASYNC_CHANGE_FD: given file descriptor shall be positive!\n");

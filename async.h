@@ -36,11 +36,12 @@
  * NOTE: all values in this enum must be negative
  */
 enum async_ret_code {
-	ASYNC_NO_IO = -6,
+	ASYNC_NO_IO = -7,
 	ASYNC_SYNC,
 	ASYNC_CONTINUE,
 	ASYNC_CHANGE_FD,
 	ASYNC_DONE_CLOSE_FD,
+	ASYNC_DONE_NO_IO,		/* don't do any I/O related changes */
 	ASYNC_DONE,
 };
 
