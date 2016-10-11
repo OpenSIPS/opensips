@@ -188,7 +188,7 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 			break;
 
 		case PROTO2UINT('h', 'e', 'p'):
-			if (len != 7) return -1;
+			if (len != 7 || s[3] != '_') return -1;
 
 			j=PROTO2UINT(s[4], s[5], s[6]);
 			switch (j) {
