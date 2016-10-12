@@ -555,8 +555,13 @@ phostport: proto COLON listen_id	{ $$=mk_listen_id($3, $1, 0); }
 			| proto COLON listen_id COLON port	{ $$=mk_listen_id($3, $1, $5);}
 			| proto COLON listen_id COLON error {
 				$$=0;
-				yyerror(" port number expected");
+				yyerror("port number expected");
+				YYABORT;
 				}
+			| NUMBER error { $$=0;
+				yyerror("protocol expected");
+				YYABORT;
+			}
 			;
 
 alias_def:	listen_id						{ $$=mk_listen_id($1, PROTO_NONE, 0); }
