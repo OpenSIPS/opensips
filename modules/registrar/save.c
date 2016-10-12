@@ -1222,8 +1222,3 @@ out_unlock:
 	return err;
 }
 
-int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
-{
-	LM_WARN("Deprecated! Use is_ip_registered() instead!\n");
-	return is_ip_registered(msg, _d, NULL, _s);
-}

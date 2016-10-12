@@ -160,8 +160,6 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE | FAILURE_ROUTE },
 	{"add_sock_hdr", (cmd_function)add_sock_hdr, 1,  fixup_str_null,   0,
 		REQUEST_ROUTE },
-	{"is_other_contact",      (cmd_function)is_other_contact_f, 2,
-		fixup_is_aor_registered/*same # of params*/, 0, REQUEST_ROUTE},
 	{"is_registered",      (cmd_function)is_registered, 1,
 		fixup_is_aor_registered, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},

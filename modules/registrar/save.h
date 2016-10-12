@@ -56,9 +56,4 @@ int save(struct sip_msg* _m, char* _d, char* _cflags, char* _s);
  */
 int _remove(struct sip_msg *msg, char *domain, char *aor, char *fixed_uri_param);
 
-/*
- * checks if there is another contact except the ones specified in the avp
- */
-int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s);
-
 #endif /* SAVE_H */

@@ -53,13 +53,12 @@ Bogdan-Andrei Iancu
               1.4.1. save(domain [,flags ,[aor]])
               1.4.2. remove(domain, AOR[, target])
               1.4.3. lookup(domain [, flags [, aor]])
-              1.4.4. is_other_contact(domain , IPs)
-              1.4.5. is_registered(domain ,[AOR])
-              1.4.6. is_contact_registered(domain
+              1.4.4. is_registered(domain ,[AOR])
+              1.4.5. is_contact_registered(domain
                       ,[AOR],[contact],[callid])
 
-              1.4.7. is_ip_registered(domain ,[AOR],IPvar)
-              1.4.8. add_sock_hdr(hdr_name)
+              1.4.6. is_ip_registered(domain ,[AOR],IPvar)
+              1.4.7. add_sock_hdr(hdr_name)
 
         1.5. Exported Statistics
 
@@ -92,11 +91,10 @@ Bogdan-Andrei Iancu
    1.17. save usage
    1.18. remove usage
    1.19. lookup usage
-   1.20. is_other_contact usage
-   1.21. is_registered usage
-   1.22. is_contact_registered usage
-   1.23. is_ip_registered usage
-   1.24. add_sock_hdr usage
+   1.20. is_registered usage
+   1.21. is_contact_registered usage
+   1.22. is_ip_registered usage
+   1.23. add_sock_hdr usage
 
 Chapter 1. Admin Guide
 
@@ -642,32 +640,7 @@ switch ($retcode) {
 };
 ...
 
-1.4.4.  is_other_contact(domain , IPs)
-
-   This function returns true if there are any other contacts
-   registered, different from the ones from the IPs avp.
-
-   Meaning of the parameters is as follows:
-     * domain - Name of table that should be used for contacts
-       lookup.
-     * IPs - an AVP containing the IP's that will be compared with
-       the contacts from usrloc.
-
-   This function can be used from REQUEST_ROUTE.
-
-   WARNING: THIS FUNCTION IS DEPRECATED! USE is_ip_registered()
-   INSTEAD.
-
-   Example 1.20. is_other_contact usage
-...
-
-if (is_other_contact("location", "$avp(ips)")) {
-        sl_send_reply("403", "Forbidden");
-        ...
-};
-...
-
-1.4.5.  is_registered(domain ,[AOR])
+1.4.4.  is_registered(domain ,[AOR])
 
    The function returns true if an AOR is registered, false
    otherwise. The function does not modify the message being
@@ -685,7 +658,7 @@ if (is_other_contact("location", "$avp(ips)")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.21. is_registered usage
+   Example 1.20. is_registered usage
 ...
 /**/
 if (is_method("REGISTER")) {
@@ -701,7 +674,7 @@ if (is_registered("location","$fu")) {
 }
 ...
 
-1.4.6.  is_contact_registered(domain ,[AOR],[contact],[callid])
+1.4.5.  is_contact_registered(domain ,[AOR],[contact],[callid])
 
    The function returns true if a contact and/or a callid from a
    certain AOR is registered, false otherwise. The function does
@@ -726,7 +699,7 @@ if (is_registered("location","$fu")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.22. is_contact_registered usage
+   Example 1.21. is_contact_registered usage
 ...
 /*let's say you want to block users that are not registered*/
 if (is_method("INVITE")) {
@@ -743,12 +716,12 @@ if(is_method("INVITE")) {
 }
 ...
 
-1.4.7.  is_ip_registered(domain ,[AOR],IPvar)
+1.4.6.  is_ip_registered(domain ,[AOR],IPvar)
 
    The function returns true if at least a contact has an IP from
-   the IPavp in it's received parameter,otherwise returns false.
+   the IPavp in it's received parameter, otherwise returns false.
    The function does not modify the message being process. This
-   function replaces the "is_other_contact" function.
+   function replaces the old "is_other_contact" function.
 
    Meaning of the parameters is as follows:
      * domain - Name of table that should be used for the lookup.
@@ -761,7 +734,7 @@ if(is_method("INVITE")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.23. is_ip_registered usage
+   Example 1.22. is_ip_registered usage
 ...
 /* check the source ip  whether it is already registered */
 if (is_method("REGISTER")) {
@@ -772,7 +745,7 @@ if (is_method("REGISTER")) {
 };
 ...
 
-1.4.8.  add_sock_hdr(hdr_name)
+1.4.7.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
    “hdr_name” which contains the description of the received
@@ -785,7 +758,7 @@ if (is_method("REGISTER")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.24. add_sock_hdr usage
+   Example 1.23. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...
