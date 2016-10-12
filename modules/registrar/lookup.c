@@ -504,7 +504,9 @@ int is_registered(struct sip_msg* _m, char *_d, char* _a)
 {
 	int ret=NOT_FOUND;
 	urecord_t* r;
+	ucontact_t *c;
 	udomain_t* ud = (udomain_t*)_d;
+	int_str istr;
 	str aor;
 
 	if (msg_aor_parse(_m, _a, &aor)) {
@@ -513,10 +515,24 @@ int is_registered(struct sip_msg* _m, char *_d, char* _a)
 	}
 
 	CHECK_DOMAIN(ud);
+	get_act_time();
 
+	LM_DBG("checking aor <%.*s>\n",aor.len,aor.s);
 	ul.lock_udomain(ud, &aor);
-	if (ul.get_urecord(ud, &aor, &r) == 0)
-		ret = IS_FOUND;
+	if (ul.get_urecord(ud, &aor, &r) == 0) {
+		for ( c=r->contacts; c && (ret==NOT_FOUND); c=c->next ) {
+			if (VALID_CONTACT(c,act_time)) {
+				/* populate the 'attributes' avp */
+				if (attr_avp_name != -1) {
+					istr.s = c->attr;
+					if (add_avp_last(AVP_VAL_STR, attr_avp_name, istr) != 0) {
+						LM_ERR("Failed to populate attr avp!\n");
+					}
+				}
+				ret = IS_FOUND;
+			}
+		}
+	}
 	ul.unlock_udomain(ud, &aor);
 
 	return ret;
