@@ -469,7 +469,7 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 	return res;
 }
 
-/*parameters from MI: h_entry, h_id of the requested dialog*/
+/*parameters from MI: dialog ID of the requested dialog*/
 struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 
 	struct mi_node* node;
@@ -492,7 +492,7 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 	if (node==NULL)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
-	/* parse first param as long long (hash or dialog_id ) */
+	/* parse first param as long long (dialog_id ) */
 	if ( node->value.s==NULL || node->value.len==0 )
 		goto error;
 	/* make value null terminated (in an ugly way) */
@@ -504,35 +504,18 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 	if (end-node->value.s!=node->value.len)
 		goto error; /* not a number*/
 
-	/* check the second parameter - NULL , number or string ?? */
-	node = node->next;
-	if (node==NULL) {
-		/* as we have only one param, we suppose it is a dialog id, no hdrs */
-		h_entry = (unsigned int)(d_id>>(8*sizeof(int)));
-		h_id = (unsigned int)(d_id &
-			(((unsigned long long)1<<(8*sizeof(int)))-1) );
-	} else {
-		if (node->value.s==NULL || node->value.len==0)
-			goto error;
-		if (strno2int(&node->value,&h_id)<0) {
-			/* second param is string -> hdrs */
-			h_entry = (unsigned int)(d_id>>(8*sizeof(int)));
-			h_id = (unsigned int)(d_id &
-				(((unsigned long long)1<<(8*sizeof(int)))-1) );
+	/* second param (optional) is the extra hdrs */
+	if (node->next) {
+		node = node->next;
+		if (node->value.len && node->value.s)
 			mi_extra_hdrs = &node->value;
-		} else {
-			/* second param is number -> h_id */
-			h_entry = (unsigned int)d_id;
-			/* any third one (hdrs) ? */
-			if (node->next) {
-				node = node->next;
-				if (node->value.len && node->value.s)
-					mi_extra_hdrs = &node->value;
-			}
-		}
 	}
 
-	LM_DBG("h_entry %u h_id %u\n", h_entry, h_id);
+	h_entry = (unsigned int)(d_id>>(8*sizeof(int)));
+	h_id = (unsigned int)(d_id &
+		(((unsigned long long)1<<(8*sizeof(int)))-1) );
+
+	LM_DBG("ID: %llu (h_entry %u h_id %u)\n", d_id, h_entry, h_id);
 
 	dlg = lookup_dlg(h_entry, h_id);
 

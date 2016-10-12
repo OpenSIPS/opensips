@@ -2164,34 +2164,16 @@ $var(account) = $dlg_val(account_type);
 			<para>
 				Terminates an ongoing dialog.
 				If dialog is established, BYEs are sent in both directions.
-				If dialog is in unconfirmed or early state, a CANCEL will be sent
-				to the callee side, that will trigger a 487 from the callee,
-				which, when relayed, will also end the dialog on the caller's side.
+				If dialog is in unconfirmed or early state, a CANCEL will be
+				sent to the callee side, that will trigger a 487 from the
+				callee, which, when relayed, will also end the dialog on 
+				the caller's side.
 			</para>
 		<para>
 		Name: <emphasis>dlg_end_dlg</emphasis>
 		</para>
-		<para>
-		The accepted formats (as parameters) may be:
-		</para>
+		<para>Parameters are:</para>
 		<itemizedlist>
-			<listitem>
-				<para>dlg_end_dlg h_entry h_id [extra_hdrs]</para>
-			</listitem>
-			<listitem>
-				<para>dlg_end_dlg dialog_id [extra_hdrs]</para>
-			</listitem>
-		</itemizedlist>
-		<para>Where:</para>
-		<itemizedlist>
-			<listitem><para>
-				<emphasis>h_entry</emphasis> - numerical hash entry of the 
-				dialog in the internal dialog table (provided by dlg_list)
-			</para></listitem>
-			<listitem><para>
-				<emphasis>h_id</emphasis> - numerical hash id of the dialog 
-				on the hash entry (provided by dlg_list)
-			</para></listitem>
 			<listitem><para>
 				<emphasis>dialog_id</emphasis> - numerical unique ID of the 
 				dialog (as provided by dlg_list)
@@ -2203,16 +2185,14 @@ $var(account) = $dlg_val(account_type);
 			</para></listitem>
 		</itemizedlist>
 		<para>
-		The values for the h_entry and h_id or dialog_id can be get via 
-		the "dlg_list" MI command.
+		The "dialog_id" value can be get via the "dlg_list" MI command.
 		</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
 		:dlg_end_dlg:_reply_fifo_file_
-		342
-		56
+		1391569858236
 		_empty_line_
 		</programlisting>
 		</section>

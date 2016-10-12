@@ -1070,12 +1070,7 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 	if (node==0)
 		goto error;
 
-	attr = addf_mi_attr( node, 0, "hash", 4, "%u:%u",
-			dlg->h_entry, dlg->h_id );
-	if (attr==0)
-		goto error;
-
-	attr = addf_mi_attr( node, 0, "dialog_id", 9, "%llu",
+	attr = addf_mi_attr( node, 0, "ID", 2, "%llu",
 			(((long long unsigned)dlg->h_entry)<<(8*sizeof(int)))+dlg->h_id );
 	if (attr==0)
 		goto error;
