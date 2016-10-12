@@ -443,10 +443,13 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 
 	struct mi_node* node;
 	unsigned int h_entry, h_id;
+	unsigned long long d_id;
 	struct dlg_cell * dlg = NULL;
 	str *mi_extra_hdrs = NULL;
 	int status, msg_len;
 	char *msg;
+	char *end;
+	char bkp;
 
 
 	if( d_table ==NULL)
@@ -455,20 +458,47 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 	node = cmd_tree->node.kids;
 	h_entry = h_id = 0;
 
-	if (node==NULL || node->next==NULL)
+	if (node==NULL)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
-	if (!node->value.s|| !node->value.len|| strno2int(&node->value,&h_entry)<0)
+	/* parse first param as long long (hash or dialog_id ) */
+	if ( node->value.s==NULL || node->value.len==0 )
 		goto error;
+	/* make value null terminated (in an ugly way) */
+	bkp = node->value.s[node->value.len];
+	node->value.s[node->value.len] = 0;
+	/* conver to long long */
+	d_id = strtoll( node->value.s, &end, 10);
+	node->value.s[node->value.len] = bkp;
+	if (end-node->value.s!=node->value.len)
+		goto error; /* not a number*/
 
+	/* check the second parameter - NULL , number or string ?? */
 	node = node->next;
-	if ( !node->value.s || !node->value.len || strno2int(&node->value,&h_id)<0)
-		goto error;
-
-	if (node->next) {
-		node = node->next;
-		if (node->value.len && node->value.s)
+	if (node==NULL) {
+		/* as we have only one param, we suppose it is a dialog id, no hdrs */
+		h_entry = (unsigned int)(d_id>>(8*sizeof(int)));
+		h_id = (unsigned int)(d_id &
+			(((unsigned long long)1<<(8*sizeof(int)))-1) );
+	} else {
+		if (node->value.s==NULL || node->value.len==0)
+			goto error;
+		if (strno2int(&node->value,&h_id)<0) {
+			/* second param is string -> hdrs */
+			h_entry = (unsigned int)(d_id>>(8*sizeof(int)));
+			h_id = (unsigned int)(d_id &
+				(((unsigned long long)1<<(8*sizeof(int)))-1) );
 			mi_extra_hdrs = &node->value;
+		} else {
+			/* second param is number -> h_id */
+			h_entry = (unsigned int)d_id;
+			/* any third one (hdrs) ? */
+			if (node->next) {
+				node = node->next;
+				if (node->value.len && node->value.s)
+					mi_extra_hdrs = &node->value;
+			}
+		}
 	}
 
 	LM_DBG("h_entry %u h_id %u\n", h_entry, h_id);
