@@ -1060,6 +1060,11 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 	if (attr==0)
 		goto error;
 
+	attr = addf_mi_attr( node, 0, "dialog_id", 9, "%llu",
+			(((long long unsigned)dlg->h_entry)<<(8*sizeof(int)))+dlg->h_id );
+	if (attr==0)
+		goto error;
+
 	p= int2str((unsigned long)dlg->state, &len);
 	node1 = add_mi_node_child( node, MI_DUP_VALUE, "state", 5, p, len);
 	if (node1==0)
