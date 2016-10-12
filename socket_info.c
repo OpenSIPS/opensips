@@ -362,7 +362,7 @@ error:
  * return: -1 on error, 0 on success
  */
 int add_interfaces(char* if_name, int family, unsigned short port,
-					unsigned short proto,
+					unsigned short proto, unsigned short children,
 					struct socket_info** list)
 {
 	struct ifconf ifc;
@@ -459,7 +459,7 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 			if (ifrcopy.ifr_flags & IFF_LOOPBACK)
 				flags|=SI_IS_LO;
 			/* add it to one of the lists */
-			if (new_sock2list(tmp, port, proto, 0, 0, 0, flags, list)!=0){
+			if (new_sock2list(tmp, port, proto, 0, 0, children, flags, list)!=0){
 				LM_ERR("new_sock2list failed\n");
 				goto error;
 			}
@@ -502,7 +502,7 @@ int fix_socket_list(struct socket_info **list)
 	for (si=*list;si;){
 		next=si->next;
 		if (add_interfaces(si->name.s, AF_INET, si->port_no,
-							si->proto, list)!=-1){
+							si->proto, si->children, list)!=-1){
 			/* success => remove current entry (shift the entire array)*/
 			sock_listrm(list, si);
 			free_sock_info(si);
