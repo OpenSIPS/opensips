@@ -8,8 +8,6 @@ Edited by
 
 Jan Janak
 
-Edited by
-
 Bogdan-Andrei Iancu
 
    Copyright © 2003 FhG FOKUS
@@ -98,8 +96,8 @@ Bogdan-Andrei Iancu
    1.20. registered usage
    1.21. is_other_contact usage
    1.22. is_registered usage
-   1.23. is_registered usage
-   1.24. is_registered usage
+   1.23. is_contact_registered usage
+   1.24. is_ip_registered usage
    1.25. add_sock_hdr usage
 
 Chapter 1. Admin Guide
@@ -389,7 +387,7 @@ modparam("registrar", "mcontact_avp", "$avp(register)")
    AVP to store specific additional information for each
    registration. This information is read from the AVP and stored
    (in memory, db or both) at every registrar 'save'. When a
-   registrar 'lookup' or 'registered' function is called, the
+   registrar 'lookup' or 'is_registered' function is called, the
    attr_avp is populated with the value saved at [re]registration.
 
    When doing call forking, the avp will hold multiple values. The
@@ -668,8 +666,8 @@ switch ($retcode) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   WARNING: THIS FUNCTION IS DEPRECATED! USE
-   is_contact_registered() INSTEAD.
+   WARNING: THIS FUNCTION IS DEPRECATED! USE is_registered()
+   INSTEAD.
 
    Example 1.20. registered usage
 ...
@@ -763,7 +761,7 @@ if (is_registered("location","$fu")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.23. is_registered usage
+   Example 1.23. is_contact_registered usage
 ...
 /*let's say you want to block users that are not registered*/
 if (is_method("INVITE")) {
@@ -798,7 +796,7 @@ if(is_method("INVITE")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.24. is_registered usage
+   Example 1.24. is_ip_registered usage
 ...
 /* check the source ip  whether it is already registered */
 if (is_method("REGISTER")) {
