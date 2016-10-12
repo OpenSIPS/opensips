@@ -751,14 +751,3 @@ out_unlock_found:
 #undef IS_FOUND
 #undef NOT_FOUND
 
-
-/*! \brief the registered() function
- * Return true if the AOR in the Request-URI is registered,
- * it is similar to lookup but registered neither rewrites
- * the Request-URI nor appends branches
- */
-int registered(struct sip_msg* _m, char* _t, char* _s, char *_c)
-{
-	LM_WARN("Deprecated! Use is_contact_registered() instead!\n");
-	return is_contact_registered(_m, _t, _s, NULL, _c);
-}

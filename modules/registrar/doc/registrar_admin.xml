@@ -468,7 +468,7 @@ modparam("registrar", "mcontact_avp", "$avp(register)")
 		<para>
 		AVP to store specific additional information for each registration.
 		This information is read from the AVP and stored (in memory, db or both)
-		at every registrar 'save'. When a registrar 'lookup' or 'registered'
+		at every registrar 'save'. When a registrar 'lookup' or 'is_registered'
 		function is called, the <emphasis>attr_avp</emphasis> is populated with
 		the value saved at [re]registration.
 		</para>
@@ -908,66 +908,6 @@ switch ($retcode) {
 
 	<section>
 		<title>
-		<function moreinfo="none">registered(domain [,AOR[, callid]])</function>
-		</title>
-		<para>
-		The function returns true if an AOR is registered, false otherwise.
-		The function does not modify the message being process.
-		</para>
-		<para>
-		NOTE: if called for a reply (from onreply_route), you must pass an
-		AOR (as parameter), otherwise the function will fail.
-		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para>
-			<emphasis>domain</emphasis> - Name of table that should be
-			used for the lookup.
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
-			missing, the RURI is used as AOR; This must be a variable.
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-			<emphasis>callid</emphasis> (optional)- callid to check if a
-			contact if registered with this callid (this may help you to
-			make distinction between newly registered contact (callid
-			not registered so far) and re-registration (callid already
-			registered).
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
-		</para>
-		<para>
-		WARNING: THIS FUNCTION IS DEPRECATED! USE
-		<emphasis>is_contact_registered()</emphasis> INSTEAD.
-		</para>
-		<example>
-		<title><function>registered</function> usage</title>
-		<programlisting format="linespecific">
-...
-if (registered("location")) {
-	sl_send_reply("100", "Trying");
-	...
-};
-if (registered("location","$fu")) {
-	xlog("caller is registered\n");
-}
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title>
 		<function moreinfo="none">is_other_contact(domain , IPs)</function>
 		</title>
 		<para>
@@ -1017,6 +957,10 @@ if (is_other_contact("location", "$avp(ips)")) {
 		<para>
 		The function returns true if an AOR is registered, false otherwise.
 		The function does not modify the message being process.
+		</para>
+		<para>
+		NOTE: if called for a reply (from onreply_route), you must pass an
+		AOR (as parameter), otherwise the function will fail.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -1108,7 +1052,7 @@ if (is_registered("location","$fu")) {
 			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 		</para>
 		<example>
-		<title><function>is_registered</function> usage</title>
+		<title><function>is_contact_registered</function> usage</title>
 		<programlisting format="linespecific">
 ...
 /*let's say you want to block users that are not registered*/
@@ -1166,7 +1110,7 @@ if(is_method("INVITE")) {
 			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 		</para>
 		<example>
-		<title><function>is_registered</function> usage</title>
+		<title><function>is_ip_registered</function> usage</title>
 		<programlisting format="linespecific">
 ...
 /* check the source ip  whether it is already registered */
