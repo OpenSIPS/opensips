@@ -1555,15 +1555,22 @@ $var(account) = $dlg_val(account_type);
 
    Name: dlg_end_dlg
 
-   Parameters:
-     * h_entry - hash entry of the dialog in the internal dialog
-       table
-     * h_id - hash id of the dialog on the hash entry
-     * extra_hdrs - (optional) string containg extra headers (full
-       format) to be added to the BYE requests.
+   The accepted formats (as parameters) may be:
+     * dlg_end_dlg h_entry h_id [extra_hdrs]
+     * dlg_end_dlg dialog_id [extra_hdrs]
 
-   The values for the h_entry and h_id can be get via the dlg_list
-   MI command.
+   Where:
+     * h_entry - numerical hash entry of the dialog in the
+       internal dialog table (provided by dlg_list)
+     * h_id - numerical hash id of the dialog on the hash entry
+       (provided by dlg_list)
+     * dialog_id - numerical unique ID of the dialog (as provided
+       by dlg_list)
+     * extra_hdrs - (optional) string containg the extra headers
+       (full format) to be added to the BYE requests.
+
+   The values for the h_entry and h_id or dialog_id can be get via
+   the "dlg_list" MI command.
 
    MI FIFO Command Format:
                 :dlg_end_dlg:_reply_fifo_file_
