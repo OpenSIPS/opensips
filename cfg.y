@@ -610,7 +610,7 @@ phostport:	listen_id				{ $$=mk_listen_id($1, 0, 0); }
 			| listen_id COLON port	{ $$=mk_listen_id($1, 0, $3); }
 			| proto COLON listen_id	{ $$=mk_listen_id($3, $1, 0); }
 			| proto COLON listen_id COLON port	{ $$=mk_listen_id($3, $1, $5);}
-			| listen_id COLON error { $$=0; yyerror(" port number expected"); }
+			| listen_id COLON error { $$=0; yyerror(" port number expected"); YYABORT; }
 			;
 
 id_lst:		phostport		{  $$=$1 ; }

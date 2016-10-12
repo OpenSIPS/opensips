@@ -782,15 +782,15 @@ int fix_all_socket_lists(void)
 #endif
 		){
 		/* get all listening ipv4 interfaces */
-		if (add_interfaces(0, AF_INET, 0,  PROTO_UDP, &udp_listen)==0){
+		if (add_interfaces(0, AF_INET, 0,  PROTO_UDP, 0, &udp_listen)==0){
 			/* if ok, try to add the others too */
 #ifdef USE_TCP
 			if (!tcp_disable){
-				if (add_interfaces(0, AF_INET, 0,  PROTO_TCP, &tcp_listen)!=0)
+				if (add_interfaces(0, AF_INET, 0,  PROTO_TCP, 0, &tcp_listen)!=0)
 					goto error;
 #ifdef USE_TLS
 				if (!tls_disable){
-					if (add_interfaces(0, AF_INET, 0, PROTO_TLS,
+					if (add_interfaces(0, AF_INET, 0, PROTO_TLS, 0,
 								&tls_listen)!=0)
 					goto error;
 				}
@@ -799,7 +799,7 @@ int fix_all_socket_lists(void)
 #endif
 #ifdef USE_SCTP
 			if (!sctp_disable){
-				if (add_interfaces(0, AF_INET, 0, PROTO_SCTP, &sctp_listen)!=0)
+				if (add_interfaces(0, AF_INET, 0, PROTO_SCTP, 0, &sctp_listen)!=0)
 					goto error;
 			}
 #endif
