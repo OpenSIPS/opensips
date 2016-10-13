@@ -1989,6 +1989,8 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		LM_ERR("invalid index\n");
 		return -1;
 	}
+	if (idxf==PV_IDX_APPEND)
+		return pv_get_null(msg, param, res);
 
 	if ((avp=search_first_avp(name_type, avp_name, &avp_value, 0))==0)
 		return pv_get_null(msg, param, res);
@@ -2433,6 +2435,14 @@ int pv_set_avp(struct sip_msg* msg, pv_param_t *param,
 		if(replace_avp(flags, avp_name, avp_val, idx)< 0)
 		{
 			LM_ERR("Failed to replace avp\n");
+			goto error;
+		}
+	}
+	else if (idxf == PV_IDX_APPEND) /* add AVP at the end */
+	{
+		if (add_avp_last(flags, avp_name, avp_val)<0)
+		{
+			LM_ERR("error - cannot add AVP\n");
 			goto error;
 		}
 	}
@@ -3089,6 +3099,21 @@ int pv_parse_avp_name(pv_spec_p sp, str *in)
 	return 0;
 }
 
+int pv_parse_avp_index(pv_spec_p sp, str *in)
+{
+	#define AVP_APPEND_IDX "append"
+
+	if(in==NULL || in->s==NULL || sp==NULL)
+		return -1;
+
+	if ( (in->len==(sizeof(AVP_APPEND_IDX)-1)) &&
+	strncasecmp(in->s,AVP_APPEND_IDX,in->len)==0) {
+		sp->pvp.pvi.type = PV_IDX_APPEND;
+		return 0;
+	}
+	return pv_parse_index(sp,in);
+}
+
 int pv_parse_index(pv_spec_p sp, str *in)
 {
 	char *p;
@@ -3290,7 +3315,7 @@ int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
  */
 static pv_export_t _pv_names_table[] = {
 	{{"avp", (sizeof("avp")-1)}, PVT_AVP, pv_get_avp, pv_set_avp,
-		pv_parse_avp_name, pv_parse_index, 0, 0},
+		pv_parse_avp_name, pv_parse_avp_index, 0, 0},
 	{{"hdr", (sizeof("hdr")-1)}, PVT_HDR, pv_get_hdr, 0, pv_parse_hdr_name,
 		pv_parse_index, 0, 0},
 	{{"hdrcnt", (sizeof("hdrcnt")-1)}, PVT_HDRCNT, pv_get_hdrcnt, 0, pv_parse_hdr_name, 0, 0, 0},
@@ -4160,7 +4185,7 @@ int pv_get_spec_index(struct sip_msg* msg, pv_param_p ip, int *idx, int *flags)
 	if(ip->pvi.type == 0)
 		return 0;
 
-	if(ip->pvi.type == PV_IDX_ALL) {
+	if(ip->pvi.type == PV_IDX_ALL || ip->pvi.type == PV_IDX_APPEND) {
 		return 0;
 	}
 
