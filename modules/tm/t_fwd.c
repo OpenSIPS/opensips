@@ -622,6 +622,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	struct proxy_l * proxy)
 {
+	str reply_reason_487 = str_init("Request Terminated");
 	str backup_uri;
 	str backup_dst;
 	int branch_ret, lowest_ret;
@@ -653,8 +654,20 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	}
 
 	/* do not forward requests which were already cancelled*/
-	if (was_cancelled(t) || no_new_branches(t)) {
-		LM_ERR("discarding fwd for a cancelled/6xx transaction\n");
+	if (no_new_branches(t)) {
+		LM_INFO("discarding fwd for a 6xx transaction\n");
+		ser_error = E_NO_DESTINATION;
+		return -1;
+	}
+	if (was_cancelled(t)) {
+		/* is this the first attempt of sending a branch out ? */
+		if (t->nr_of_outgoings==0) {
+			/* if no other signalling was performed on the transaction
+			 * and the transaction was already canceled, better
+			 * internally generate the 487 reply here */
+			t_reply( t, p_msg , 487 , &reply_reason_487);
+		}
+		LM_INFO("discarding fwd for a cancelled transaction\n");
 		ser_error = E_NO_DESTINATION;
 		return -1;
 	}
