@@ -1077,10 +1077,9 @@ static int fixup_body_type(void** param, int param_no)
 
 static int has_body_f(struct sip_msg *msg, char *type, char *str2 )
 {
-	struct multi_body * m;
-	struct part * p;
+	struct sip_msg_body * b;
+	struct body_part * p;
 
-	/* parse content len hdr */
 	if ( msg->content_length==NULL &&
 			(parse_headers(msg,HDR_CONTENTLENGTH_F, 0)==-1||msg->content_length==NULL))
 		return -1;
@@ -1105,26 +1104,18 @@ static int has_body_f(struct sip_msg *msg, char *type, char *str2 )
 	if (type==0)
 		return 1;
 
-	m = get_all_bodies(msg);
+	b = parse_sip_body(msg);
 
-	if (m == NULL)
+	if (b == NULL)
 	{
 		LM_ERR("Failed to get bodies\n");
 		return -1;
 	}
 
-	/* if there is no multipart and the type is unspecified default to
-	   application/sdp */
-
-	if (m->from_multi_part == 0 && m->part_count == 1 && m->first->content_type == 0)
-	{
-		m->first->content_type = ((TYPE_APPLICATION << 16) + SUBTYPE_SDP);
-	}
-
-	p = m->first;
+	p = &b->first;
 	while (p)
 	{
-		if( p->content_type == ((int)(long)type ) )
+		if( p->mime == ((int)(long)type ) )
 			return 1;
 		p = p->next;
 	}
@@ -1188,14 +1179,14 @@ out:
 
 static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
 {
-	struct multi_body * m;
-	struct part * p;
+	struct sip_msg_body * b;
+	struct body_part * p;
 	int deleted = 0,mime;
 
 
 	/* parse content len hdr */
 	if ( msg->content_length==NULL &&
-			(parse_headers(msg,HDR_CONTENTLENGTH_F, 0)==-1||msg->content_length==NULL))
+	(parse_headers(msg,HDR_CONTENTLENGTH_F, 0)==-1||msg->content_length==NULL))
 		return -1;
 
 	if (get_content_length (msg)==0) {
@@ -1206,10 +1197,9 @@ static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
 
 	mime = parse_content_type_hdr(msg);
 
-	if( ( ((int)(long)type )>>16) == TYPE_MULTIPART || (mime >>16) != TYPE_MULTIPART)
+	if( ( ((int)(long)type )>>16) == TYPE_MULTIPART ||
+	(mime >>16) != TYPE_MULTIPART)
 	{
-
-
 		if( mime == ((int)(long)type ) )
 		{
 			strip_body_f(msg,NULL,NULL);
@@ -1218,32 +1208,23 @@ static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
 		return -1;
 	}
 
+	b = parse_sip_body(msg);
 
-	m = get_all_bodies(msg);
-
-	if (m == NULL)
+	if (b == NULL)
 	{
-		LM_ERR("Failed to get bodies\n");
+		LM_ERR("Failed to parse body\n");
 		return -1;
 	}
 
-	/* if there is no multipart and the type is unspecified default to
-	   application/sdp */
-
-	if (m->from_multi_part == 0 && m->part_count == 1 && m->first->content_type == 0)
-	{
-		m->first->content_type = ((TYPE_APPLICATION << 16) + SUBTYPE_SDP);
-	}
-
-	p = m->first;
-
+	p = &b->first;
 	deleted = -1;
+
 	while (p)
 	{
-		if( p->content_type == ((int)(long)type ) )
+		if( p->mime == ((int)(long)type ) )
 		{
-			if( del_lump( msg, p->all_data.s - msg->buf - 4 - m->boundary.len,
-						p->all_data.len + 6 + m->boundary.len, 0 ) == 0 )
+			if( del_lump( msg, p->all_data.s - msg->buf - 4 - b->boundary.len,
+						p->all_data.len + 6 + b->boundary.len, 0 ) == 0 )
 			{
 				LM_ERR("Failed to add body lump\n");
 				return -1;
@@ -1392,14 +1373,16 @@ static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 )
 	int sdp_session_num = 0, sdp_stream_num;
 	sdp_session_cell_t* sdp_session;
 	sdp_stream_cell_t* sdp_stream;
+	sdp_info_t* sdp;
 
-	if (0 == parse_sdp(msg)) {
+	if ( (sdp=parse_sdp(msg))!=NULL ) {
 		for(;;) {
-			sdp_session = get_sdp_session(msg, sdp_session_num);
+			sdp_session = get_sdp_session(sdp, sdp_session_num);
 			if(!sdp_session) break;
 			sdp_stream_num = 0;
 			for(;;) {
-				sdp_stream = get_sdp_stream(msg, sdp_session_num, sdp_stream_num);
+				sdp_stream = get_sdp_stream(sdp, sdp_session_num,
+					sdp_stream_num);
 				if(!sdp_stream) break;
 				if(sdp_stream->media.len==AUDIO_STR_LEN &&
 						strncmp(sdp_stream->media.s,AUDIO_STR,AUDIO_STR_LEN)==0 &&

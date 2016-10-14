@@ -1415,9 +1415,9 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 	int idxf=-1;
 	int distance=0;
 	char buf[BUFLEN];
-	struct multi_body* multi;
-	struct part* body_part;
-	struct part* neg_index[2];
+	struct sip_msg_body* sbody;
+	struct body_part* body_part;
+	struct body_part* neg_index[2];
 
 	if(msg==NULL)
 		return -1;
@@ -1442,16 +1442,15 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 			return pv_get_strval(msg, param, res, &msg->content_type->body);
 	}
 
-	if ((multi=get_all_bodies(msg)) == 0 || multi->first == 0) {
-		LM_ERR("cannot get multi body\n");
+	if ( (sbody=parse_sip_body(msg))==NULL ) {
+		LM_ERR("cannot get SIP body\n");
 		return pv_get_null(msg, param, res);
-
 	}
 
 	/* one contenttype request */
 	if (idxf != PV_IDX_ALL) {
 		if (idx< 0) {
-			neg_index[0] = neg_index[1] = multi->first;
+			neg_index[0] = neg_index[1] = &sbody->first;
 			/*distance=last_body_postition-searched_body_position*/
 			distance -= idx+1;
 			while (neg_index[1]->next) {
@@ -1468,10 +1467,10 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 				return pv_get_null(msg, param, res);
 			}
 
-			s.s = convert_mime2string_CT(neg_index[0]->content_type);
+			s.s = convert_mime2string_CT(neg_index[0]->mime);
 			s.len = strlen(s.s);
 		} else {
-			body_part = multi->first;
+			body_part = &sbody->first;
 			distance = idx;
 			while (distance && body_part->next) {
 				distance--;
@@ -1483,7 +1482,7 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 				return pv_get_null(msg, param, res);
 			}
 
-			s.s = convert_mime2string_CT(body_part->content_type);
+			s.s = convert_mime2string_CT(body_part->mime);
 			s.len = strlen(s.s);
 		}
 	} else {
@@ -1493,9 +1492,9 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 		s.len = msg->content_type->body.len+1;
 
 		/* copy all the other contenttypes */
-		body_part = multi->first;
+		body_part = &sbody->first;
 		while (body_part) {
-			s.s = convert_mime2string_CT(body_part->content_type);
+			s.s = convert_mime2string_CT(body_part->mime);
 			if (s.len + strlen(s.s) >= BUFLEN) {
 				LM_CRIT("buffer overflow! Too many contenttypes!\n");
 				return pv_get_null(msg, param, res);
@@ -1543,9 +1542,9 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 	int idx=-1;
 	int idxf=-1;
 	int distance=0;
-	struct multi_body* multi;
-	struct part* body_part;
-	struct part* neg_index[2];
+	struct sip_msg_body* sbody;
+	struct body_part* body_part;
+	struct body_part* neg_index[2];
 
 	if(msg==NULL)
 		return -1;
@@ -1565,13 +1564,13 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 		goto end;
 	}
 
-	if ((multi=get_all_bodies(msg)) == 0 || multi->first == 0) {
-		LM_ERR("cannot get multi body\n");
+	if ( (sbody=parse_sip_body(msg)) == NULL ) {
+		LM_ERR("cannot get SIP body\n");
 		return pv_get_null(msg, param, res);
 	}
 
 	if (idx<0) {
-		neg_index[0] = neg_index[1] = multi->first;
+		neg_index[0] = neg_index[1] = &sbody->first;
 		/*distance=last_body_postition-searched_body_position*/
 		distance -= idx+1;
 		while (neg_index[1]->next) {
@@ -1591,7 +1590,7 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 		s.s = neg_index[0]->body.s;
 		s.len = neg_index[0]->body.len;
 	} else {
-		body_part = multi->first;
+		body_part = &sbody->first;
 		distance = idx;
 		while (distance && body_part->next) {
 			distance--;

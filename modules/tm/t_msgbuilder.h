@@ -241,14 +241,11 @@ inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 		faked_req->set_global_port.s = NULL;
 	}
 
-	/* SDP in not cloned into SHM, so if we have one, it means the SDP
+	/* MULTI-BODY in not cloned into SHM, so if we have one, it means it
 	 * was parsed in the fake environment, so we have to free it */
-	if (faked_req->sdp)
-		free_sdp(&(faked_req->sdp));
-
-	if (faked_req->multi) {
-		free_multi_body(faked_req->multi);
-		faked_req->multi = NULL;
+	if (faked_req->body) {
+		free_sip_body(faked_req->body);
+		faked_req->body = NULL;
 	}
 
 	if (faked_req->msg_cb) {

@@ -170,7 +170,7 @@
 #include "../../db/db.h"
 #include "../../parser/parse_content.h"
 #include "../../parser/msg_parser.h"
-#include "../../parser/parse_multipart.h"
+#include "../../parser/parse_body.h"
 #include "../../msg_callbacks.h"
 #include "../../evi/evi_modules.h"
 
@@ -1742,7 +1742,7 @@ extract_mediainfo(str *body, str *mediaport, str *payload_types)
 
 	cp1 = NULL;
 	for (cp = body->s; (len = body->s + body->len - cp) > 0;) {
-		cp1 = ser_memmem(cp, "m=", len, 2);
+		cp1 = l_memmem(cp, "m=", len, 2);
 		if (cp1 == NULL || cp1[-1] == '\n' || cp1[-1] == '\r')
 			break;
 		cp = cp1 + 2;
@@ -2984,8 +2984,8 @@ void engage_tm_reply_callback(struct cell* t, int type, struct tmcb_params *p)
 int msg_has_sdp(struct sip_msg *msg)
 {
 	str body;
-	struct part *p;
-	struct multi_body *m;
+	struct body_part *p;
+	struct sip_msg_body *b;
 
 	if(parse_headers(msg, HDR_CONTENTLENGTH_F,0) < 0) {
 		LM_ERR("cannot parse cseq header");
@@ -2996,14 +2996,14 @@ int msg_has_sdp(struct sip_msg *msg)
 	if (!body.len)
 		return 0;
 
-	m = get_all_bodies(msg);
-	if (!m) {
+	b = parse_sip_body(msg);
+	if (!b) {
 		LM_DBG("cannot parse body\n");
 		return 0;
 	}
 
-	for (p = m->first; p; p = p->next) {
-		if (p->content_type == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
+	for (p = &b->first; p; p = p->next) {
+		if (p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
 			return 1;
 	}
 
@@ -3262,10 +3262,11 @@ free_opts(struct options *op1, struct options *op2, struct options *op3)
     } while (0);
 
 static int
-force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid, char *var, int offer)
+force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid,
+														char *var, int offer)
 {
-	struct multi_body *m;
-	struct part * p;
+	struct sip_msg_body *b;
+	struct body_part *p;
 	struct force_rtpp_args args;
 	struct force_rtpp_args *ap;
 	union sockaddr_union to;
@@ -3273,9 +3274,9 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid, char *
 	struct cell *trans;
 
 	memset(&args, '\0', sizeof(args));
-	m = get_all_bodies(msg);
 
-	if (m == NULL)
+	b = parse_sip_body(msg);
+	if (b == NULL)
 	{
 		LM_ERR("Unable to parse body\n");
 		return -1;
@@ -3294,10 +3295,10 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid, char *
 	args.arg2 = str2;
 	args.offer = offer;
 
-	for (p = m->first; p != NULL; p = p->next)
+	for (p = &b->first; p != NULL; p = p->next)
 	{
 		int ret = 0;
-		if (p->content_type != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
+		if (p->mime != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
 			continue;
 		if (p->body.len == 0) {
 			LM_WARN("empty body\n");
@@ -3612,7 +3613,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 	proxied = 0;
 	if (nortpproxy_str.len) {
 		for ( cp=args->body.s ; (len=args->body.s+args->body.len-cp) >= nortpproxy_str.len ; ) {
-			cp1 = ser_memmem(cp, nortpproxy_str.s, len, nortpproxy_str.len);
+			cp1 = l_memmem(cp, nortpproxy_str.s, len, nortpproxy_str.len);
 			if (cp1 == NULL)
 				break;
 			if (cp1[-1] == '\n' || cp1[-1] == '\r') {

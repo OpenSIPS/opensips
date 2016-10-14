@@ -34,6 +34,7 @@
 #include "../../parser/parse_methods.h"
 #include "../../parser/parse_content.h"
 #include "../../parser/parse_authenticate.h"
+#include "../../parser/sdp/sdp.h"
 #include "../../locking.h"
 #include "../../script_cb.h"
 #include "../uac_auth/uac_auth.h"
@@ -2892,7 +2893,6 @@ int b2b_apply_lumps(struct sip_msg* msg)
 {
 	str obuf;
 	struct sip_msg tmp;
-	str body;
 
 	/* faked reply */
 	if (msg==NULL || msg == FAKED_REPLY || msg==&dummy_msg)
@@ -2956,10 +2956,7 @@ int b2b_apply_lumps(struct sip_msg* msg)
 	if (parse_msg(msg->buf, msg->len, msg) != 0)
 		LM_ERR("parse_msg failed\n");
 
-	/* if has body, check for SDP */
-	if (get_body(msg,&body) != 0 || body.len == 0)
-		return 1;
-
+	/* check for SDP */
 	if (parse_sdp(msg) < 0) {
 		LM_DBG("failed to parse SDP message\n");
 		return -1;

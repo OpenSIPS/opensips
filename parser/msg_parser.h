@@ -54,9 +54,8 @@
 #include "parse_content.h"
 #include "parse_via.h"
 #include "parse_fline.h"
-#include "parse_multipart.h"
+#include "parse_body.h"
 #include "hf.h"
-#include "sdp/sdp.h"
 
 
 /* convenience short-cut macros */
@@ -249,9 +248,7 @@ struct sip_msg {
 	struct hdr_field* proxy_authenticate;
 	struct hdr_field* min_expires;
 
-	struct sdp_info* sdp;
-
-	struct multi_body * multi;
+	struct sip_msg_body *body;
 
 	char* eoh;        /* pointer to the end of header (if found) or null */
 	char* unparsed;   /* here we stopped parsing*/

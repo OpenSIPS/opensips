@@ -132,35 +132,20 @@ typedef struct sdp_info {
 /*
  * Parse SDP.
  */
-int parse_sdp(struct sip_msg* _m);
+sdp_info_t* parse_sdp(struct sip_msg* _m);
 int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp,
                       sdp_info_t* _sdp);
 
 /**
- * Get number of sessions in existing SDP.
- */
-int get_sdp_session_num(struct sip_msg* _m);
-/**
- * Get number of streams in existing SDP.
- */
-int get_sdp_stream_num(struct sip_msg* _m);
-/**
- * Get a session for the current sip msg based on position inside SDP.
- */
-sdp_session_cell_t* get_sdp_session(struct sip_msg* _m, int session_num);
-/**
  * Get a session for the given sdp based on position inside SDP.
  */
-sdp_session_cell_t* get_sdp_session_sdp(struct sdp_info* sdp, int session_num);
+sdp_session_cell_t* get_sdp_session(sdp_info_t* sdp, int session_num);
 
-/**
- * Get a stream for the current sip msg based on positions inside SDP.
- */
-sdp_stream_cell_t* get_sdp_stream(struct sip_msg* _m, int session_num, int stream_num);
 /**
  * Get a stream for the given sdp based on positions inside SDP.
  */
-sdp_stream_cell_t* get_sdp_stream_sdp(struct sdp_info* sdp, int session_num, int stream_num);
+sdp_stream_cell_t* get_sdp_stream(sdp_info_t* sdp, int session_num,
+		int stream_num);
 
 /**
  * Get a payload from a stream based on payload.
@@ -177,8 +162,7 @@ sdp_payload_attr_t* get_sdp_payload4index(sdp_stream_cell_t *stream, int index);
  *
  * Note: this will free up the parsed sdp structure (form PKG_MEM).
  */
-void free_sdp(sdp_info_t** sdp);
-void __free_sdp(sdp_info_t* sdp);
+void free_sdp(sdp_info_t* sdp);
 
 
 /**
@@ -200,5 +184,19 @@ void print_sdp_session(sdp_session_cell_t* sdp_session, int log_level);
  */
 void print_sdp_stream(sdp_stream_cell_t *stream, int log_level);
 
+/**
+ * Get the first SDP from the body
+ */
+static inline sdp_info_t* get_sdp(struct sip_msg* _m)
+{
+	struct body_part *p;
+	if (_m->body) {
+		for( p=&_m->body->first ; p ; p=p->next)
+			if (p->mime==((TYPE_APPLICATION<<16)+SUBTYPE_SDP)
+			&& p->parsed )
+				return (sdp_info_t*)p->parsed;
+	}
+	return NULL;
+}
 
 #endif /* SDP_H */

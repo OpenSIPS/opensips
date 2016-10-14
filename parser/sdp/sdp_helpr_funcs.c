@@ -50,115 +50,6 @@ static struct {
 };
 
 
-#define READ(val) \
-	(*(val + 0) + (*(val + 1) << 8) + (*(val + 2) << 16) + (*(val + 3) << 24))
-#define advance(_ptr,_n,_str,_error) \
-	do{\
-		if ((_ptr)+(_n)>(_str).s+(_str).len)\
-			goto _error;\
-		(_ptr) = (_ptr) + (_n);\
-	}while(0);
-#define one_of_16( _x , _t ) \
-	(_x==_t[0]||_x==_t[15]||_x==_t[8]||_x==_t[2]||_x==_t[3]||_x==_t[4]\
-	||_x==_t[5]||_x==_t[6]||_x==_t[7]||_x==_t[1]||_x==_t[9]||_x==_t[10]\
-	||_x==_t[11]||_x==_t[12]||_x==_t[13]||_x==_t[14])
-#define one_of_8( _x , _t ) \
-	(_x==_t[0]||_x==_t[7]||_x==_t[1]||_x==_t[2]||_x==_t[3]||_x==_t[4]\
-	||_x==_t[5]||_x==_t[6])
-
-/*
- * ser_memmem() returns the location of the first occurrence of data
- * pattern b2 of size len2 in memory block b1 of size len1 or
- * NULL if none is found. Obtained from NetBSD.
- */
-static void * ser_memmem(const void *b1, const void *b2, size_t len1, size_t len2)
-{
-	/* Initialize search pointer */
-	char *sp = (char *) b1;
-
-	/* Initialize pattern pointer */
-	char *pp = (char *) b2;
-
-	/* Initialize end of search address space pointer */
-	char *eos = sp + len1 - len2;
-
-	/* Sanity check */
-	if(!(b1 && b2 && len1 && len2))
-		return NULL;
-
-	while (sp <= eos) {
-		if (*sp == *pp)
-			if (memcmp(sp, pp, len2) == 0)
-				return sp;
-
-		sp++;
-	}
-
-	return NULL;
-}
-
-
-int get_mixed_part_delimiter(str* body, str *mp_delimiter)
-{
-	static unsigned int boun[16] = {
-	        0x6e756f62,0x4e756f62,0x6e556f62,0x4e556f62,
-		0x6e754f62,0x4e754f62,0x6e554f62,0x4e554f62,
-		0x6e756f42,0x4e756f42,0x6e556f42,0x4e556f42,
-		0x6e754f42,0x4e754f42,0x6e554f42,0x4e554f42};
-	static unsigned int dary[16] = {
-	        0x79726164,0x59726164,0x79526164,0x59526164,
-		0x79724164,0x59724164,0x79524164,0x59524164,
-		0x79726144,0x59726144,0x79526144,0x59526144,
-		0x79724144,0x59724144,0x79524144,0x59524144};
-	str str_type;
-	unsigned int  x;
-	char          *p;
-
-
-	/* LM_DBG("<%.*s>\n",body->len,body->s); */
-	p = str_type.s = body->s;
-	str_type.len = body->len;
-	while (*p!=';' && p<(body->s+body->len))
-		advance(p,1,str_type,error);
-	p++;
-	str_type.s = p;
-	str_type.len = body->len - (p - body->s);
-	/* LM_DBG("string to parse: <%.*s>\n",str_type.len,str_type.s); */
-	/* skip spaces and tabs if any */
-	while (*p==' ' || *p=='\t')
-		advance(p,1,str_type,error);
-	advance(p,4,str_type,error);
-	x = READ(p-4);
-	if (!one_of_16(x,boun))
-		goto other;
-	advance(p,4,str_type,error);
-	x = READ(p-4);
-	if (!one_of_16(x,dary))
-		goto other;
-
-	/* skip spaces and tabs if any */
-	while (*p==' ' || *p=='\t')
-		advance(p,1,str_type,error);
-	if (*p!='=') {
-		LM_ERR("parse error: no = found after boundary field\n");
-		goto error;
-	}
-	advance(p,1,str_type,error);
-	while ((*p==' ' || *p=='\t') && p+1<str_type.s+str_type.len)
-		advance(p,1,str_type,error);
-	mp_delimiter->len = str_type.len - (int)(p-str_type.s);
-	mp_delimiter->s = p;
-	return 1;
-
-error:
-	return -1;
-other:
-	LM_DBG("'boundary' parsing error\n");
-	return -1;
-}
-
-
-
 int extract_rtpmap(str *body,
 	str *rtpmap_payload, str *rtpmap_encoding, str *rtpmap_clockrate, str *rtpmap_parmas)
 {
@@ -195,7 +86,7 @@ int extract_rtpmap(str *body,
 	}
 
 	rtpmap_encoding->s = cp;
-	cp1 = (char*)ser_memmem(cp, "/", len, 1);
+	cp1 = (char*)l_memmem(cp, "/", len, 1);
 	len -= cp1 - cp;
 	if (cp1==NULL || len <= 1 || cp == cp1) {
 		LM_ERR("invalid encoding in `a=rtpmap'\n");
@@ -207,7 +98,7 @@ int extract_rtpmap(str *body,
 	cp = cp1+1;
 	len--;
 
-	cp1 = (char*)ser_memmem(cp, "/", len, 1);
+	cp1 = (char*)l_memmem(cp, "/", len, 1);
 	if (cp1 == NULL) {
 		rtpmap_clockrate->s = cp;
 		rtpmap_clockrate->len = len;
@@ -358,7 +249,7 @@ int extract_bwidth(str *body, str *bwtype, str *bwwitdth)
 
 	cp1 = NULL;
 	for (cp = body->s; (len = body->s + body->len - cp) > 0;) {
-		cp1 = (char*)ser_memmem(cp, "b=", len, 2);
+		cp1 = (char*)l_memmem(cp, "b=", len, 2);
 		if (cp1 == NULL || cp1[-1] == '\n' || cp1[-1] == '\r')
 			break;
 		cp = cp1 + 2;
@@ -372,7 +263,7 @@ int extract_bwidth(str *body, str *bwtype, str *bwwitdth)
 
 	cp = bwtype->s;
 	len = bwtype->len;
-	cp1 = (char*)ser_memmem(cp, ":", len, 1);
+	cp1 = (char*)l_memmem(cp, ":", len, 1);
 	len -= cp1 - cp;
 	if (len <= 0) {
 		LM_ERR("invalid encoding in `b=%.*s'\n", bwtype->len, bwtype->s);
@@ -394,7 +285,7 @@ int extract_mediaip(str *body, str *mediaip, int *pf, char *line)
 
 	cp1 = NULL;
 	for (cp = body->s; (len = body->s + body->len - cp) > 0;) {
-		cp1 = (char*)ser_memmem(cp, line, len, 2);
+		cp1 = (char*)l_memmem(cp, line, len, 2);
 		if (cp1 == NULL || cp1[-1] == '\n' || cp1[-1] == '\r')
 			break;
 		cp = cp1 + 2;
@@ -450,7 +341,7 @@ int extract_media_attr(str *body, str *mediamedia, str *mediaport, str *mediatra
 
 	cp1 = NULL;
 	for (cp = body->s; (len = body->s + body->len - cp) > 0;) {
-		cp1 = (char*)ser_memmem(cp, "m=", len, 2);
+		cp1 = (char*)l_memmem(cp, "m=", len, 2);
 		if (cp1 == NULL || cp1[-1] == '\n' || cp1[-1] == '\r')
 			break;
 		cp = cp1 + 2;
@@ -544,7 +435,7 @@ char *find_sdp_line(char* p, char* plimit, char linechar)
 	for (;;) {
 		if (cp >= plimit)
 			return NULL;
-		cp1 = ser_memmem(cp, linehead, plimit-cp, 2);
+		cp1 = l_memmem(cp, linehead, plimit-cp, 2);
 		if (cp1 == NULL)
 			return NULL;
 		/*
@@ -555,7 +446,7 @@ char *find_sdp_line(char* p, char* plimit, char linechar)
 			return cp1;
 		/*
 		 * Having such data, but not at line beginning.
-		 * Skip them and reiterate. ser_memmem() will find next
+		 * Skip them and reiterate. l_memmem() will find next
 		 * occurence.
 		 */
 		if (plimit - cp1 < 2)
@@ -581,7 +472,7 @@ char *find_sdp_line_complex(char* p, char* plimit, char * name)
 	for (;;) {
 		if (cp >= plimit)
 			return NULL;
-		cp1 = ser_memmem(cp, name, plimit-cp, len);
+		cp1 = l_memmem(cp, name, plimit-cp, len);
 		if (cp1 == NULL)
 			return NULL;
 		/*
@@ -592,7 +483,7 @@ char *find_sdp_line_complex(char* p, char* plimit, char * name)
 			return cp1;
 		/*
 		 * Having such data, but not at line beginning.
-		 * Skip them and reiterate. ser_memmem() will find next
+		 * Skip them and reiterate. l_memmem() will find next
 		 * occurence.
 		 */
 		if (plimit - cp1 < 2)
@@ -678,50 +569,5 @@ error:
 	hdr->type=HDR_ERROR_T;
 	hdr->len=tmp-hdr->name.s;
 	return tmp;
-}
-
-
-
-char *find_sdp_line_delimiter(char* p, char* plimit, str delimiter)
-{
-  static char delimiterhead[3] = "--";
-  char *cp, *cp1;
-  /* Iterate through body */
-  cp = p;
-  for (;;) {
-    if (cp >= plimit)
-      return NULL;
-    for(;;) {
-      cp1 = ser_memmem(cp, delimiterhead, plimit-cp, 2);
-      if (cp1 == NULL)
-	return NULL;
-      /* We matched '--',
-       * now let's match the boundary delimiter */
-      if (strncmp(cp1+2, delimiter.s, delimiter.len) == 0)
-	break;
-      else
-	cp = cp1 + 2 + delimiter.len;
-      if (cp >= plimit)
-	return NULL;
-    }
-    if (cp1[-1] == '\n' || cp1[-1] == '\r')
-      return cp1;
-    if (plimit - cp1 < 2 + delimiter.len)
-      return NULL;
-    cp = cp1 + 2 + delimiter.len;
-  }
-}
-
-
-/*
- * This function assumes p points to a delimiter type line.
- */
-char *find_next_sdp_line_delimiter(char* p, char* plimit, str delimiter, char* defptr)
-{
-  char *t;
-  if (p >= plimit || plimit - p < 3)
-    return defptr;
-  t = find_sdp_line_delimiter(p + 2, plimit, delimiter);
-  return t ? t : defptr;
 }
 

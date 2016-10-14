@@ -808,32 +808,24 @@ sdp_1918(struct sip_msg* msg)
 {
 	str body, ip;
 	int pf;
-	struct multi_body * bodies;
-	struct part *p;
+	struct sip_msg_body * sbody;
+	struct body_part *p;
 	int ret = 0;
 
-	bodies = get_all_bodies(msg);
-
-	if( bodies == NULL)
+	if ( (sbody=parse_sip_body(msg)) == NULL )
 	{
 		LM_DBG("Unable to get bodies from message\n");
 		return 0;
 	}
 
-	p = bodies->first;
-
-	while(p)
-	{
+	for ( p=& sbody->first ; p ; p=p->next) {
 
 		body = p->body;
 		trim_r(body);
-		if( p->content_type != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
-							 || body.len == 0)
-		{
-			p=p->next;
-			continue;
-		}
 
+		if( p->mime != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
+							 || body.len == 0)
+			continue;
 
 		if (extract_mediaip(&body, &ip, &pf, "c=") == -1)
 		{
@@ -844,7 +836,6 @@ sdp_1918(struct sip_msg* msg)
 			return 0;
 
 		ret |= (is1918addr(&ip) == 1) ? 1 : 0;
-		p= p->next;
 	}
 
 	return ret;
@@ -1158,33 +1149,27 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 	int level;
 	char *buf;
 	struct lump* anchor;
-	struct multi_body * bodies;
-	struct part * p;
+	struct sip_msg_body * sbody;
+	struct body_part * p;
 
 	level = (int)(long)str1;
 	if (str2 && pv_printf_s( msg, (pv_elem_p)str2, &ip)!=0)
 		return -1;
 
-	bodies = get_all_bodies(msg);
-
-	if( bodies == NULL)
+	if ( (sbody=parse_sip_body(msg)) == NULL )
 	{
 		LM_ERR("Unable to get bodies from message\n");
 		return -1;
 	}
 
-	p = bodies->first;
-
-	while(p)
+	for ( p=&sbody->first ; p ; p=p->next )
 	{
 		body = p->body;
 		trim_r(body);
-		if( p->content_type != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
+		if( p->mime != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
 							 || body.len == 0)
-		{
-			p=p->next;
 			continue;
-		}
+
 		if (level & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
 			msg->msg_flags |= FL_FORCE_ACTIVE;
 			anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0);
@@ -1232,8 +1217,6 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 			if (replace_sdp_ip(msg, &body, "c=", str2?&ip:0)==-1)
 				return -1;
 		}
-
-		p= p->next;
 	}
 
 	return 1;

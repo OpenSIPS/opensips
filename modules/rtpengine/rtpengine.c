@@ -304,8 +304,8 @@ struct module_exports exports = {
 int msg_has_sdp(struct sip_msg *msg)
 {
 	str body;
-	struct part *p;
-	struct multi_body *m;
+	struct body_part *p;
+	struct sip_msg_body *b;
 
 	if(parse_headers(msg, HDR_CONTENTLENGTH_F,0) < 0) {
 		LM_ERR("cannot parse cseq header");
@@ -316,14 +316,14 @@ int msg_has_sdp(struct sip_msg *msg)
 	if (!body.len)
 		return 0;
 
-	m = get_all_bodies(msg);
-	if (!m) {
-		LM_DBG("cannot parse body\n");
+	b = parse_sip_body(msg);
+	if (!b) {
+		LM_DBG("no body found\n");
 		return 0;
 	}
 
-	for (p = m->first; p; p = p->next) {
-		if (p->content_type == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
+	for (p = &b->first; p; p = p->next) {
+		if (p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
 			return 1;
 	}
 
@@ -1786,7 +1786,7 @@ rtpengine_manage(struct sip_msg *msg, const char *flags)
 	if(msg_has_sdp(msg))
 		nosdp = 0;
 	else
-		nosdp = parse_sdp(msg);
+		nosdp = parse_sdp(msg)?1:0;
 
 	if(msg->first_line.type == SIP_REQUEST) {
 		if(method==METHOD_ACK && nosdp==0)

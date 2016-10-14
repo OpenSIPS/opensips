@@ -545,8 +545,7 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 	memcpy( new_msg , org_msg , sizeof(struct sip_msg));
 
 	/* avoid copying pointer to un-clonned structures */
-	new_msg->sdp = 0;
-	new_msg->multi = 0;
+	new_msg->body = 0;
 	new_msg->msg_cb = 0;
 
 	new_msg->msg_flags |= FL_SHM_CLONE;

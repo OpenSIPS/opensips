@@ -421,7 +421,8 @@ void add_sdp(qos_ctx_t *qos_ctx, unsigned int dir, struct sip_msg *_m, unsigned 
 		cseq_method->len, cseq_method->s, dir);
 
 	/* Let's iterate through all the received sessions */
-	recv_session = _m->sdp->sessions;
+	//FIXME
+	recv_session = NULL;//_m->sdp->sessions;
 	while(recv_session) {
 		qos_sdp = NULL;
 		sdp_match = find_qos_sdp(qos_ctx, dir, other_role, cseq_number, cseq_method_id, recv_session, _m, &qos_sdp);
