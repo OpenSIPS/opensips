@@ -1,0 +1,1 @@
+id(int,auto) username(string) ip(string) mask(int) flag(int)
