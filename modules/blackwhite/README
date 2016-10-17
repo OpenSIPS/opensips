@@ -1,0 +1,139 @@
+blackwhite Module
+
+sa
+
+   Copyright © 2016 sa
+   __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. db_url (string)
+              1.3.2. db_table (string)
+
+        1.4. Exported Functions
+
+              1.4.1. blackwhite()
+
+        1.5. Exported MI Functions
+
+              1.5.1. bw_reload
+              1.5.2. bw_dump
+
+   List of Examples
+
+   1.1. Set db_url parameter
+   1.2. Set db_table parameter
+   1.3. blackwhite usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   The module is designed to filter packets based on black and white lists.
+   For users specify black or white, or both the list of IP networks.
+   Black is access, which is prohibited. White - allowed.
+   If we have white addresses, then black unneeded.
+   If user is not present - pass packet.
+
+   In DB table lists stored in records:
+   username - ip+mask(net) - black/white flag
+   1 - black, 0 - white.
+   Table readed in memory on start and can be refreshed by MI bw_reload.
+
+   Function blackwhite do search
+   message parameters in memory structure.
+   The time of execution on core2duo 3GHz - 12 microseconds.
+   Practically not depend on number of entries.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * database - one of the DB modules
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported Parameters
+
+1.3.1. db_url (string)
+
+   This is URL of the database to be used.
+
+   Default value is “NULL”.
+
+   Example 1.1. Set db_url parameter
+...
+modparam("blackwhite", "db_url", "dbdriver://username:password@dbhost/d
+bname")
+...
+
+1.3.2. db_table (string)
+
+   Name of database table containing black and white lists.
+
+   Default value is “blackwhite”.
+
+   Example 1.2. Set db_table parameter
+...
+modparam("blackwhite", "db_table", "blackwhite")
+...
+
+1.4. Exported Functions
+
+1.4.1.  blackwhite()
+
+   Algorithm:
+   1. Find From username. If not found - return -3.
+   2. Find source IP of message in black list of user.
+   If found - return 1;
+   3. If white list empty - return -2.
+   4. Find source IP of message in white list of user.
+   If found - return -2.
+   5. Return 1.
+
+   Return values:
+      1 - block message
+     -1 - error
+     -2 - pass
+     -3 - username not found
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+
+   Example 1.3. blackwhite usage
+...
+if (blackwhite()) {
+	sl_send_reply("403","Forbidden");
+	exit;
+};
+...
+
+1.5. Exported MI Functions
+
+1.5.1.  bw_reload
+
+   Causes blackwhite module to re-read the contents of
+   the database table into memory.
+
+   Parameters: none
+
+1.5.2.  bw_dump
+
+   Causes blackwhite module to dump contents of memory.
+
+   Parameters: none
