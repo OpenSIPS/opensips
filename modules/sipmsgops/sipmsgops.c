@@ -1862,27 +1862,12 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 
 	/* if not CANCEL, check if it has body */
 	if (msg->first_line.type!=SIP_REQUEST || msg->REQ_METHOD!=METHOD_CANCEL) {
-		if (!msg->unparsed) {
+
+		if (get_body( msg, &body)!=0) {
 			strcpy(reason, "invalid parsing");
 			ret = SV_HDR_PARSE_ERROR;
 			goto failed;
 		}
-		hdrs_len=(unsigned int)(msg->unparsed-msg->buf);
-
-		if ((hdrs_len+2<=msg->len) && (strncmp(CRLF,msg->unparsed,CRLF_LEN)==0) )
-			body.s = msg->unparsed + CRLF_LEN;
-		else if ( (hdrs_len+1<=msg->len) &&
-				(*(msg->unparsed)=='\n' || *(msg->unparsed)=='\r' ) )
-			body.s = msg->unparsed + 1;
-		else {
-			/* no body */
-			body.s = NULL;
-			body.len = 0;
-		}
-
-		/* determine the length of the body */
-		if (body.s)
-			body.len = msg->buf + msg->len - body.s;
 
 		if (get_content_length(msg) != body.len) {
 			snprintf(reason, MAX_REASON-1, "invalid body - content length %ld different than actual body %d",
