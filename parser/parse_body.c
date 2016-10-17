@@ -301,8 +301,12 @@ void free_sip_body(struct sip_msg_body *body)
 	struct body_part * p, *tmp;
 
 	if (body) {
-		/* jump the first part, does not need to be freed */
-		p = body->first.next;
+		/* the first part does not need to be freed */
+		p = &body->first;
+		if (p->parsed && p->free_parsed_f)
+			p->free_parsed_f( p->parsed );
+		/* following parts need to be also freed */
+		p = p->next;
 		while(p) {
 			tmp =  p;
 			p = p->next;
