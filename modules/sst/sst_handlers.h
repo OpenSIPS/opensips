@@ -52,6 +52,7 @@ typedef struct sst_info_st {
 	enum sst_flags requester;
 	enum sst_flags supported;
 	unsigned int interval;
+	volatile unsigned int refcnt;
 } sst_info_t;
 
 
