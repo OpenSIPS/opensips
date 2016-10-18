@@ -118,6 +118,7 @@ typedef struct sst_msg_info_st {
 static void sst_dialog_confirmed_CB(struct dlg_cell* did, int type,
 		struct dlg_cb_params * params);
 #endif /* USE_CONFIRM_CALLBACK */
+static void sst_free_info(void* param);
 static void sst_dialog_terminate_CB(struct dlg_cell* did, int type,
 		struct dlg_cb_params * params);
 static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
@@ -262,6 +263,11 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 	}
 
 	info = (sst_info_t *)shm_malloc(sizeof(sst_info_t));
+	if (info == NULL) {
+		LM_ERR("No more shared memory!\n");
+		return;
+	}
+
 	memset(info, 0, sizeof(sst_info_t));
 	info->requester = (minfo.se?SST_UAC:SST_UNDF);
 	info->supported = (minfo.supported?SST_UAC:SST_UNDF);
@@ -355,6 +361,29 @@ static void sst_dialog_confirmed_CB(struct dlg_cell *did, int type,
 }
 #endif /* USE_CONFIRM_CALLBACK */
 
+/*
+ * free function for dialog callbacks
+ */
+static void sst_free_info(void* param)
+{
+	sst_info_t* info = (sst_info_t *) param;
+
+	if (info == NULL) {
+		LM_ERR("null sst info!\n");
+		return;
+	}
+
+	/*
+	 * FIXME refcnt is 0 that means no dialog termination callback
+	 * was called what shall we do here? For the moment we free
+	 * the memory but this might crash if the free function is called
+	 * multiple times
+	 *
+	 */
+	if (info->refcnt == 0 || (--info->refcnt) == 0)
+		shm_free(info);
+}
+
 /**
  * This callback is called when ever a dialog is terminated. The cause
  * of the termination can be normal, failed call, or expired. It is
@@ -382,14 +411,9 @@ static void sst_dialog_terminate_CB(struct dlg_cell* did, int type,
 			LM_DBG("Terminating DID %p session\n", did);
 			break;
 	}
-	/*
-	 * Free the param sst_info_t memory
-	 */
-	if (*(params->param)) {
-		LM_DBG("freeing the sst_info_t from dialog %p\n", did);
-		shm_free(*(params->param));
-		*(params->param) = NULL;
-	}
+
+	((sst_info_t *)(*params->param))->refcnt++;
+
 	return;
 }
 
@@ -923,7 +947,7 @@ static void setup_dialog_callbacks(struct dlg_cell *did, sst_info_t *info)
 			"DLGCB_FAILED|DLGCB_TERMINATED|DLGCB_EXPIRED\n");
 	dlg_binds->register_dlgcb(did,
 			DLGCB_FAILED|DLGCB_TERMINATED|DLGCB_EXPIRED,
-			sst_dialog_terminate_CB, (void *)info, NULL);
+			sst_dialog_terminate_CB, (void *)info, sst_free_info);
 	LM_DBG("Adding callback DLGCB_REQ_WITHIN\n");
 	/* This is for the reINVITE/UPDATE requests */
 	dlg_binds->register_dlgcb(did, DLGCB_REQ_WITHIN,
