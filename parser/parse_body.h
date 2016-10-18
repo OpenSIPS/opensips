@@ -81,7 +81,7 @@ struct sip_msg_body {
  *
  */
 
-struct sip_msg_body *parse_sip_body(struct sip_msg * msg);
+int parse_sip_body(struct sip_msg * msg);
 
 void free_sip_body(struct sip_msg_body *);
 

@@ -1442,8 +1442,8 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 			return pv_get_strval(msg, param, res, &msg->content_type->body);
 	}
 
-	if ( (sbody=parse_sip_body(msg))==NULL ) {
-		LM_ERR("cannot get SIP body\n");
+	if ( parse_sip_body(msg)<0 || (sbody=msg->body)==NULL ) {
+		LM_DBG("no body found\n");
 		return pv_get_null(msg, param, res);
 	}
 
@@ -1564,8 +1564,8 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 		goto end;
 	}
 
-	if ( (sbody=parse_sip_body(msg)) == NULL ) {
-		LM_ERR("cannot get SIP body\n");
+	if ( parse_sip_body(msg)<0 || (sbody=msg->body)==NULL ) {
+		LM_DBG("no body found\n");
 		return pv_get_null(msg, param, res);
 	}
 

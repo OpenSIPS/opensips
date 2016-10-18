@@ -882,7 +882,6 @@ end:
 int find_body_pidf(struct sip_msg *msg, char** pidf_body) {
 
 	struct body_part* mbody_part;
-	struct sip_msg_body *mbody;
 	char *body_start, *body_end;
 	char *body_aux;
 	int size_body = 0;
@@ -890,14 +889,13 @@ int find_body_pidf(struct sip_msg *msg, char** pidf_body) {
 	UNUSED(cont);
 
 	LM_DBG(" --- FIND PIDF BODY \n \n");
-	mbody = parse_sip_body(msg);
-	if (mbody == NULL) {
+	if ( parse_sip_body(msg)<0 || msg->body==NULL) {
 		LM_ERR("Failed to get bodies\n");
 		return -1;
 	}
 
 
-	mbody_part = &mbody->first;
+	mbody_part = &msg->body->first;
 	while (mbody_part != NULL) {
 		LM_DBG(" --- PIDF BODY %.*s", mbody_part->body.len, mbody_part->body.s);
 		LM_DBG(" --- PIDF BODY COUNT %d", ++cont);

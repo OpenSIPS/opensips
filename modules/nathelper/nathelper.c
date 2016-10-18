@@ -808,17 +808,16 @@ sdp_1918(struct sip_msg* msg)
 {
 	str body, ip;
 	int pf;
-	struct sip_msg_body * sbody;
 	struct body_part *p;
 	int ret = 0;
 
-	if ( (sbody=parse_sip_body(msg)) == NULL )
+	if ( parse_sip_body(msg)<0 || msg->body==NULL )
 	{
 		LM_DBG("Unable to get bodies from message\n");
 		return 0;
 	}
 
-	for ( p=& sbody->first ; p ; p=p->next) {
+	for ( p=&msg->body->first ; p ; p=p->next) {
 
 		body = p->body;
 		trim_r(body);
@@ -1149,20 +1148,19 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 	int level;
 	char *buf;
 	struct lump* anchor;
-	struct sip_msg_body * sbody;
 	struct body_part * p;
 
 	level = (int)(long)str1;
 	if (str2 && pv_printf_s( msg, (pv_elem_p)str2, &ip)!=0)
 		return -1;
 
-	if ( (sbody=parse_sip_body(msg)) == NULL )
+	if ( parse_sip_body(msg)<0 || msg->body==NULL )
 	{
 		LM_ERR("Unable to get bodies from message\n");
 		return -1;
 	}
 
-	for ( p=&sbody->first ; p ; p=p->next )
+	for ( p=&msg->body->first ; p ; p=p->next )
 	{
 		body = p->body;
 		trim_r(body);

@@ -1077,11 +1077,10 @@ static int fixup_body_type(void** param, int param_no)
 
 static int has_body_f(struct sip_msg *msg, char *type, char *str2 )
 {
-	struct sip_msg_body * b;
 	struct body_part * p;
 
 	if ( msg->content_length==NULL &&
-			(parse_headers(msg,HDR_CONTENTLENGTH_F, 0)==-1||msg->content_length==NULL))
+	(parse_headers(msg,HDR_CONTENTLENGTH_F, 0)==-1||msg->content_length==NULL))
 		return -1;
 
 	if (get_content_length (msg)==0) {
@@ -1104,15 +1103,12 @@ static int has_body_f(struct sip_msg *msg, char *type, char *str2 )
 	if (type==0)
 		return 1;
 
-	b = parse_sip_body(msg);
-
-	if (b == NULL)
-	{
-		LM_ERR("Failed to get bodies\n");
+	if (parse_sip_body(msg)<0 || msg->body==NULL) {
+		LM_DBG("no body found\n");
 		return -1;
 	}
 
-	p = &b->first;
+	p = &msg->body->first;
 	while (p)
 	{
 		if( p->mime == ((int)(long)type ) )
@@ -1208,11 +1204,8 @@ static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
 		return -1;
 	}
 
-	b = parse_sip_body(msg);
-
-	if (b == NULL)
-	{
-		LM_ERR("Failed to parse body\n");
+	if (parse_sip_body(msg)<0 || (b=msg->body)==NULL) {
+		LM_DBG("no body found\n");
 		return -1;
 	}
 

@@ -555,11 +555,10 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
  */
 sdp_info_t* parse_sdp(struct sip_msg* _m)
 {
-	struct sip_msg_body *sbody;
 	struct body_part *part;
 	sdp_info_t *sdp, *ret;
 
-	if ( (sbody=parse_sip_body(_m))==NULL ) {
+	if ( parse_sip_body(_m)<0 || _m->body==NULL) {
 		LM_DBG("message body has length zero\n");
 		return NULL;
 	}
@@ -567,7 +566,7 @@ sdp_info_t* parse_sdp(struct sip_msg* _m)
 	ret = NULL;
 
 	/* iterate all body parts and look for the SDP mime */
-	for( part=&sbody->first ; part ; part=part->next) {
+	for( part=&_m->body->first ; part ; part=part->next) {
 
 		if ( part->mime != ((TYPE_APPLICATION<<16)+SUBTYPE_SDP) )
 			continue;

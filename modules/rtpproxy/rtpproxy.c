@@ -2985,7 +2985,6 @@ int msg_has_sdp(struct sip_msg *msg)
 {
 	str body;
 	struct body_part *p;
-	struct sip_msg_body *b;
 
 	if(parse_headers(msg, HDR_CONTENTLENGTH_F,0) < 0) {
 		LM_ERR("cannot parse cseq header");
@@ -2996,13 +2995,12 @@ int msg_has_sdp(struct sip_msg *msg)
 	if (!body.len)
 		return 0;
 
-	b = parse_sip_body(msg);
-	if (!b) {
+	if (parse_sip_body(msg)<0 || msg->body==NULL) {
 		LM_DBG("cannot parse body\n");
 		return 0;
 	}
 
-	for (p = &b->first; p; p = p->next) {
+	for (p = &msg->body->first; p; p = p->next) {
 		if (p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
 			return 1;
 	}
@@ -3265,7 +3263,6 @@ static int
 force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid,
 														char *var, int offer)
 {
-	struct sip_msg_body *b;
 	struct body_part *p;
 	struct force_rtpp_args args;
 	struct force_rtpp_args *ap;
@@ -3275,9 +3272,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid,
 
 	memset(&args, '\0', sizeof(args));
 
-	b = parse_sip_body(msg);
-	if (b == NULL)
-	{
+	if (parse_sip_body(msg)<0 || msg->body==NULL) {
 		LM_ERR("Unable to parse body\n");
 		return -1;
 	}
@@ -3295,7 +3290,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid,
 	args.arg2 = str2;
 	args.offer = offer;
 
-	for (p = &b->first; p != NULL; p = p->next)
+	for (p = &msg->body->first; p != NULL; p = p->next)
 	{
 		int ret = 0;
 		if (p->mime != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))

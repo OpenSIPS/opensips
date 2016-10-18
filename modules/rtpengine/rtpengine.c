@@ -305,7 +305,6 @@ int msg_has_sdp(struct sip_msg *msg)
 {
 	str body;
 	struct body_part *p;
-	struct sip_msg_body *b;
 
 	if(parse_headers(msg, HDR_CONTENTLENGTH_F,0) < 0) {
 		LM_ERR("cannot parse cseq header");
@@ -316,13 +315,12 @@ int msg_has_sdp(struct sip_msg *msg)
 	if (!body.len)
 		return 0;
 
-	b = parse_sip_body(msg);
-	if (!b) {
+	if (parse_sip_body(msg)<0 || msg->body==NULL) {
 		LM_DBG("no body found\n");
 		return 0;
 	}
 
-	for (p = &b->first; p; p = p->next) {
+	for (p = &msg->body->first; p; p = p->next) {
 		if (p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
 			return 1;
 	}

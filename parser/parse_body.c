@@ -203,7 +203,7 @@ static int parse_single_part(struct body_part *part, char * start, char * end)
 };
 
 
-inline struct sip_msg_body* parse_sip_body(struct sip_msg * msg)
+int parse_sip_body(struct sip_msg * msg)
 {
 	char *start, *end;
 	int type = 0;
@@ -212,7 +212,7 @@ inline struct sip_msg_body* parse_sip_body(struct sip_msg * msg)
 
 	/* is body already parsed ? */
 	if (msg->body)
-		return msg->body;
+		return 0;
 
 	if ( get_body(msg,&body)!=0 || body.len==0)
 		return 0;
@@ -225,7 +225,7 @@ inline struct sip_msg_body* parse_sip_body(struct sip_msg * msg)
 	if (msg->body == 0)
 	{
 		LM_ERR("Unable to allocate memory\n");
-		return 0;
+		return -1;
 	}
 	memset(msg->body, 0, sizeof (struct sip_msg_body));
 
@@ -267,7 +267,7 @@ inline struct sip_msg_body* parse_sip_body(struct sip_msg * msg)
 			/* subtract 2 from end for last "\n\r" */
 			if (parse_single_part(part, start + delimiter.len + 4, end-2)!=0) {
 				LM_ERR("Unable to parse part:[%.*s]\n",(int)(end-start),start);
-				return 0;
+				return -1;
 			}
 
 			/* set the parsing for the next cycle */
@@ -293,7 +293,7 @@ inline struct sip_msg_body* parse_sip_body(struct sip_msg * msg)
 		msg->body->part_count++;
 	}
 
-	return msg->body;
+	return 0;
 
 };
 
@@ -319,4 +319,6 @@ void free_sip_body(struct sip_msg_body *body)
 		pkg_free(body);
 	}
 }
+
+
 
