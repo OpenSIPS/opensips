@@ -25,11 +25,16 @@
 #define _PARSE_SIPBODY
 
 typedef void (*free_parsed_part_function)(void *);
+typedef unsigned int (*dump_part_function)(void *, struct sip_msg *,
+		char *buf);
 
 struct body_part{
 
 	/* MIME content type */
 	int mime;
+
+	/* multi purpose flags */
+	unsigned int flags;
 
 	/* body of the current part */
 	str body;
@@ -41,17 +46,23 @@ struct body_part{
 	void * parsed;
 	free_parsed_part_function free_parsed_f;
 
+	/* function to regenerate the whole body part (no headers) */
+	dump_part_function dump_f;
+
 	struct body_part * next;
 };
 
 
 struct sip_msg_body {
 	/* original number of parts in the SIP body */
-	unsigned short part_count;
+	unsigned char part_count;
 
 	/* updated number of parts (after inserts/deletes of parts)
 	 * in the SIP parts */
-	unsigned short updated_part_count;
+	unsigned char updated_part_count;
+
+	/* multi purpose flags */
+	unsigned char flags;
 
 	/* the parts separator in the SIP body */
 	str boundary;

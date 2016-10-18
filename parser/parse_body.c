@@ -61,7 +61,8 @@ static char* get_hdr_field_unparsed(char* buf, char* end,struct hdr_field* hdr)
 		return buf;
 	}
 
-	LM_DBG("Trying to get header:[%.*s]\n", (int)(end - buf), buf);
+	LM_DBG("getting hdr from [%.*s...]\n",
+		(int)((end-buf)<25?end-buf:25), buf);
 
 	tmp = parse_hname(buf, end, hdr);
 	if (hdr->type == HDR_ERROR_T)
@@ -155,7 +156,8 @@ static int parse_single_part(struct body_part *part, char * start, char * end)
 	part->all_data.len = end - start;
 	part->mime = -1;
 
-	LM_DBG("parsing part:[%.*s]\n",(int)(end-start),start);
+	LM_DBG("parsing part [%.*s...]\n",
+		(int)((end-start)<25?end-start:25), start);
 
 	tmp = start;
 	while (1)
@@ -273,10 +275,9 @@ inline struct sip_msg_body* parse_sip_body(struct sip_msg * msg)
 
 			/* link the new part; note that the first part is part of 
 			 * the body structure, no need to be linked */
-			if (last) {
+			if (last)
 				last->next = part;
-				last = part;
-			}
+			last = part;
 			msg->body->part_count++;
 
 		}
