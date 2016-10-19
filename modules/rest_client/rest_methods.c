@@ -156,14 +156,14 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		break;
 	case REST_CLIENT_PUT:
 		w_curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "PUT");
-                w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req_body);
+		w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req_body);
 
-                if (req_ctype) {
-                        sprintf(print_buff, "Content-Type: %s", req_ctype);
-                        header_list = curl_slist_append(header_list, print_buff);
-                        w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
-                }
-                break;
+		if (req_ctype) {
+			sprintf(print_buff, "Content-Type: %s", req_ctype);
+			header_list = curl_slist_append(header_list, print_buff);
+			w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
+		}
+		break;
 
 	case REST_CLIENT_GET:
 		break;
@@ -640,106 +640,107 @@ cleanup:
 int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
                      pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
 {
-        CURLcode rc;
-        CURL *handle = NULL;
-        long http_rc;
-        str st = { 0, 0 };
-        str res_body = { NULL, 0 }, tbody;
-        pv_value_t pv_val;
+	CURLcode rc;
+	CURL *handle = NULL;
+	long http_rc;
+	str st = { 0, 0 };
+	str res_body = { NULL, 0 }, tbody;
+	pv_value_t pv_val;
 
-        handle = curl_easy_init();
-        if (!handle) {
-                LM_ERR("Init curl handle failed!\n");
-                clean_header_list;
-                return -1;
-        }
+	handle = curl_easy_init();
+	if (!handle) {
+		LM_ERR("Init curl handle failed!\n");
+		clean_header_list;
+		return -1;
+	}
 
-        if (ctype) {
-                sprintf(print_buff, "Content-Type: %s", ctype);
-                header_list = curl_slist_append(header_list, print_buff);
-        }
+	if (ctype) {
+		sprintf(print_buff, "Content-Type: %s", ctype);
+		header_list = curl_slist_append(header_list, print_buff);
+	}
 
-        if (header_list)
-                w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
+	if (header_list)
+		w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
 
-        w_curl_easy_setopt(handle, CURLOPT_URL, url);
+	w_curl_easy_setopt(handle, CURLOPT_URL, url);
 	w_curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "PUT");
-        w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, body);
+	w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, body);
 
-        w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
-        w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
+	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
+	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
 
-        w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
-        w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
-        w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1);
+	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
+	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1);
 
-        w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
-        w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, &res_body);
+	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
+	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, &res_body);
 
-        w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
-        w_curl_easy_setopt(handle, CURLOPT_HEADERDATA, &st);
+	w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
+	w_curl_easy_setopt(handle, CURLOPT_HEADERDATA, &st);
 
-        if (ssl_capath)
-                w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_capath);
+	if (ssl_capath)
+		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_capath);
 
-        if (!ssl_verifypeer)
-                w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+	if (!ssl_verifypeer)
+		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
 
-        if (!ssl_verifyhost)
-                w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+	if (!ssl_verifyhost)
+		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
 
-        rc = curl_easy_perform(handle);
-        clean_header_list;
+	rc = curl_easy_perform(handle);
+	clean_header_list;
 	if (code_pv) {
-                curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
-                LM_DBG("Last response code: %ld\n", http_rc);
+		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
+		LM_DBG("Last response code: %ld\n", http_rc);
 
-                pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
-                pv_val.ri = (int)http_rc;
+		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
+		pv_val.ri = (int)http_rc;
 
-                if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
-                        LM_ERR("Set code pv value failed!\n");
-                        goto cleanup;
-                }
-        }
+		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
+			LM_ERR("Set code pv value failed!\n");
+			goto cleanup;
+		}
+	}
 
-        if (rc != CURLE_OK) {
-                LM_ERR("curl_easy_perform: %s\n", curl_easy_strerror(rc));
-                goto cleanup;
-        }
+	if (rc != CURLE_OK) {
+		LM_ERR("curl_easy_perform: %s\n", curl_easy_strerror(rc));
+		goto cleanup;
+	}
 
-        tbody = res_body;
-        trim(&tbody);
+	tbody = res_body;
+	trim(&tbody);
 
-        pv_val.flags = PV_VAL_STR;
-        pv_val.rs = tbody;
+	pv_val.flags = PV_VAL_STR;
+	pv_val.rs = tbody;
 
-        if (pv_set_value(msg, body_pv, 0, &pv_val) != 0) {
-                LM_ERR("Set body pv value failed!\n");
-                goto cleanup;
-        }
+	if (pv_set_value(msg, body_pv, 0, &pv_val) != 0) {
+		LM_ERR("Set body pv value failed!\n");
+		goto cleanup;
+	}
 
-        if (res_body.s) {
-                pkg_free(res_body.s);
-        }
-	 if (ctype_pv) {
-                pv_val.rs = st;
+	if (res_body.s) {
+		pkg_free(res_body.s);
+	}
 
-                if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
-                        LM_ERR("Set content type pv value failed!\n");
-                        goto cleanup;
-                }
+	if (ctype_pv) {
+		pv_val.rs = st;
 
-                if (st.s)
-                        pkg_free(st.s);
-        }
+		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
+			LM_ERR("Set content type pv value failed!\n");
+			goto cleanup;
+		}
 
-        curl_easy_cleanup(handle);
-        return 1;
+		if (st.s)
+			pkg_free(st.s);
+	}
+
+	curl_easy_cleanup(handle);
+	return 1;
 
 cleanup:
-        curl_easy_cleanup(handle);
-        return -1;
+	curl_easy_cleanup(handle);
+	return -1;
 }
 
 /**
