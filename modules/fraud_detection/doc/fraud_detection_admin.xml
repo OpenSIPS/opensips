@@ -591,7 +591,7 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 		<function moreinfo="none">show_fraud_stats</function>
 		</title>
 		<para>
-			Show the current stats of a given user for a given prefix.
+			Show the current statistics for a user to a given prefix and fraud profile.
 		</para>
 		<para>
 		Name: <emphasis>show_fraud_stats</emphasis>
@@ -600,9 +600,9 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 		<itemizedlist>
 			<listitem><para>user</para></listitem>
 
-			<listitem><para>number</para></listitem>
-
 			<listitem><para>prefix</para></listitem>
+
+			<listitem><para>fraud_profile</para></listitem>
 		</itemizedlist>
 	</section>
 	<section>
