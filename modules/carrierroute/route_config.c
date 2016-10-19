@@ -51,8 +51,10 @@ static int backup_config();
  * @param ap format arguments
  */
 void conf_error(cfg_t *cfg, const char * fmt, va_list ap) {
-	// FIXME this don't seems to work reliable, produces strange error messages
-	LM_GEN1(L_ERR, (char *) fmt, ap);
+	/* FIXME this don't seems to work reliable, produces strange error messages */
+	static char buf[2048];
+	snprintf(buf, 2048, fmt, ap);
+	LM_ERR("%s\n", buf);
 }
 
 
