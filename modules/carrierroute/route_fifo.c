@@ -467,7 +467,7 @@ static int get_fifo_opts(str * buf, fifo_opt_t * opts, unsigned int opt_set[]) {
 		opt_argc++;
 	}
 	for (i=0; i<opt_argc; i++) {
-		LM_DBG("token %.*s", opt_argv[i].len, opt_argv[i].s);
+		LM_DBG("token %.*s\n", opt_argv[i].len, opt_argv[i].s);
 		if (opt_argv[i].len >= 1) {
 			switch(*opt_argv[i].s) {
 					case '-': switch(opt_argv[i].s[1]) {
@@ -604,13 +604,13 @@ static int update_route_data(fifo_opt_t * opts) {
 	}
 	memset(rd, 0, sizeof(struct rewrite_data));
 	if (load_config(rd) < 0) {
-		LM_ERR("could not load config");
+		LM_ERR("could not load config\n");
 		FIFO_ERR(E_LOADCONF);
 		return -1;
 	}
 
 	if (rule_fixup(rd) < 0) {
-		LM_ERR("could not fixup rules");
+		LM_ERR("could not fixup rules\n");
 		FIFO_ERR(E_RULEFIXUP);
 		return -1;
 	}
@@ -650,7 +650,7 @@ static int update_route_data(fifo_opt_t * opts) {
 		}
 		updated = 1;
 		if (rule_fixup(rd) < 0) {
-			LM_ERR("could not fixup rules after route appending");
+			LM_ERR("could not fixup rules after route appending\n");
 			FIFO_ERR(E_RULEFIXUP);
 			return -1;
 		}
@@ -670,19 +670,19 @@ static int update_route_data(fifo_opt_t * opts) {
 	}
 
 	if(!updated){
-		LM_ERR("no match for update found");
+		LM_ERR("no match for update found\n");
 		FIFO_ERR(E_NOUPDATE);
 		goto errout;
 	}
 
 	if (save_config(rd) < 0) {
-		LM_ERR("could not save config");
+		LM_ERR("could not save config\n");
 		FIFO_ERR(E_SAVECONF);
 		goto errout;
 	}
 
 	if (prepare_route_tree() == -1) {
-		LM_ERR("could not prepare the route tree");
+		LM_ERR("could not prepare the route tree\n");
 		FIFO_ERR(E_LOADCONF);
 		goto errout;
 	}

@@ -47,7 +47,7 @@
 int bind_data_loader(const char * source, route_data_load_func_t * api){
 	struct stat fs;
 	if(strcmp(source, "db") == 0){
-		LM_INFO("use database as configuration source");
+		LM_INFO("use database as configuration source\n");
 		*api = load_route_data;
 		mode = SP_ROUTE_MODE_DB;
 		if(db_init() < 0){
@@ -56,7 +56,7 @@ int bind_data_loader(const char * source, route_data_load_func_t * api){
 		return 0;
 	}
 	if(strcmp(source, "file") == 0){
-		LM_INFO("use file as configuration source");
+		LM_INFO("use file as configuration source\n");
 		*api = load_config;
 		mode = SP_ROUTE_MODE_FILE;
 		if(stat(config_file, &fs) != 0){
@@ -64,7 +64,7 @@ int bind_data_loader(const char * source, route_data_load_func_t * api){
 			return -1;
 		}
 		if(fs.st_mode & S_IWOTH){
-			LM_WARN("insecure file permissions, routing data is world writable");
+			LM_WARN("insecure file permissions, routing data is world writable\n");
 		}
 		if( !( fs.st_mode & S_IWOTH) &&
 			!((fs.st_mode & S_IWGRP) && (fs.st_gid == getegid())) &&
@@ -74,7 +74,7 @@ int bind_data_loader(const char * source, route_data_load_func_t * api){
 			}
 		return 0;
 	}
-	LM_ERR("could not bind configuration source <%s>", source);
+	LM_ERR("could not bind configuration source <%s>\n", source);
 	return -1;
 }
 
