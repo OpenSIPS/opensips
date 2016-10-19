@@ -1346,7 +1346,7 @@ fi
 %doc docdir/README.xmpp
 
 %changelog
-* Sat Mar 14 2015 Nick Altmann <nick.altmann@gmail.com> - 2.1.4-1
+* Sat Mar 14 2015 Nick Altmann <nick.altmann@gmail.com> - 2.1.5-1
 - Specification updated for opensips 2.1
 - Removed packages: auth_diameter, tlsops
 - New packages: compression, emergency, fraud_detection,
