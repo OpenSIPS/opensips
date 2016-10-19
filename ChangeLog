@@ -1,3 +1,380 @@
+=========================== Release 1.11.9 ==============================
+
+2016-10-19  Razvan Crainea  <razvan at opensips dot org>
+	* [141d4da] :
+
+	Increase version to 1.11.9
+
+
+2016-10-19  Razvan Crainea  <razvan at opensips dot org>
+	* [06867b9] :
+
+	userblacklist: sync between reload and read
+	This commit fixes possible crash due to concurrency between the data
+	read while checking the blacklist and reload.
+
+	Reported by Michele Pinassi
+
+	Close #884
+	(cherry picked from commit edad7265c71d2259003e7500872e51c1a461ad9f)
+
+
+2016-10-19  Razvan Crainea  <razvan at opensips dot org>
+	* [18b9901] :
+
+	dns_cache: fix examples
+	Credits go to Pete Kelly for reporting it.
+	(cherry picked from commit 7cdd3ee99d6c46dcde238c8571f21c46e85e82b3)
+
+
+2016-10-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [66ae29f] :
+
+	[sst] fix using unallocated memory bus
+	* sst was freeing shm memory after freeing it in dialog callbacs;
+	* sst was using memory without checking if it was allocated;
+	(cherry picked from commit 33dc084dd553a20cc691b3ec38e17993ac5ae5b6)
+
+	Conflicts:
+		modules/sst/sst_handlers.c
+
+
+2016-10-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f880642] :
+
+	Fix consistency and use dialog_id.
+	Dialog_id is printed by dlg_list (along the h_label and h_id) as a simpler alternative to identify the dialog.
+	Also, the dlg_end_dlg accepts both h_label and h_id or a dialog_id.
+	This is needed as the DB exposes only the dialog_id, and the dialogs from DB cannot be correlated anymore with the MI commands. See #963
+
+	Closes #963.
+	(cherry picked from commit 944fdc1e02c0d4da00272f0c80ea2f9c0406b188)
+
+
+2016-10-12  Liviu Chircu  <liviu at opensips dot org>
+	* [abbb653] :
+
+	Fix a possible segmentation fault on startup
+	Do not generate a corefile on "listen = udp:eth0:bad_port" errors
+	(cherry picked from commit 2352d57e35c15dab34c046566e5a89cbc5d068aa)
+
+	Conflicts:
+		cfg.y
+
+
+2016-10-12  Liviu Chircu  <liviu at opensips dot org>
+	* [a2cb338] :
+
+	Fix "use_children" to work with interface names
+	(cherry picked from commit c7da1af1642697269eb74865018d017f1a6ee664)
+
+
+2016-10-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3cce5bb] :
+
+	Downgrade logs from NOTICE to DBG - part 2
+	(cherry picked from commit dd518ccdcdc02503ccdbead26f5fc44f2c405093)
+
+
+2016-10-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8e9aa12] :
+
+	Downgrade logs from NOTICE to DBG
+	(cherry picked from commit 7b6d0d7d25ab2440d70fa98ca0bf3314c176dc43)
+
+
+2016-10-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [c999663] :
+
+	[sipcapture] memset contact uri structure to 0
+	(cherry picked from commit ac66dc14bb736bb5afd70d923db7e7fa065462ff)
+
+
+2016-10-05  Razvan Crainea  <razvan at opensips dot org>
+	* [817d16a] :
+
+	drouting: this version does not use partitions
+
+
+2016-10-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1ea39dd] :
+
+	Remove unnecessary test.
+	"res" cannot be null at that point
+	(cherry picked from commit 0b60681f0cc08ffd13fbac3dc5cbde17904ad177)
+
+
+2016-10-04  Ozzyboshi  <gun101 at email dot it>
+	* [89f78e3] :
+
+	Fixed memory leak on modules/drouting/drouting.c
+	This leak occures in function get_group_id() when do_routing is called without parameters in opensips.cfg.
+	In this case the dr_default_grp variable is not equal -1 and 'return dr_default_grp' is executed without freeing the res variable previously allocated for query execution.
+	(cherry picked from commit 65739943151f08aee18a7bc2125c7ac90ee84d00)
+
+
+2016-09-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e95ccf8] :
+
+	Fix documentation for calculate_ha1 parameter
+	Reported by Aqs Younas on the mailing list.
+	(cherry picked from commit f10e57f0f7abf9bf899f6649603774898b562013)
+
+
+2016-09-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c7ed0e0] :
+
+	Fix building the FROM header in XMPP2SIP.
+	Reported by Igor Pavlov.
+	(cherry picked from commit bf9acc3a15f376f17a8d415a5d48789e19ce3dee)
+
+
+2016-09-19  Razvan Crainea  <razvan at opensips dot org>
+	* [cdc4f6a] :
+
+	usrloc: fix race between update for different registers
+	In case there are two REGISTER messages with incremental CSEQ are
+	replicated in a different order, skip the processing, since this has
+	already been resolved by the master instance.
+
+	Thanks to Deniz Beskök for reporing this
+
+	Closes #956
+	(cherry picked from commit 26f6c1bacb33ddf0bcbd54ccffc65bee8754e01d)
+
+
+2016-09-07  Liviu Chircu  <liviu at opensips dot org>
+	* [3981114] :
+
+	TLS server: Properly empty the OpenSSL error queue
+	Thanks to Andreas Jansson and Jonas Borjesson from Twilio for providing a
+	detailed bug report on the matter
+
+
+2016-08-30  Razvan Crainea  <razvan at opensips dot org>
+	* [bd11206] :
+
+	packaging/debian: move all current files in a common directory
+	(cherry picked from commit 03b4a7eae52f21b0676d0ac1a337e6a996c2de42)
+	(cherry picked from commit 9f423f94a1327be7fc2250548de4549bc44a55cd)
+
+
+2016-08-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [10e26d1] :
+
+	Fix calling trace_dialog() after t_newtran().
+	The tracing relies on the REQUEST_IN callback - and this callback is triggered by t_newtran() before we decide (at script level) to do any tracing, so it will a try triggering (with no action).
+	The fix is to check (in trace_dialog()) if the tranaction exists (meaning the REQUEST_IN callback was already triggered) and if so, we trigger it again after setting all the tracing flags (to force the callback to actually do the job).
+
+
+2016-08-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ff8dd4f] :
+
+	Do not delete any internal AVP if "C" flag is used.
+	When calling do_routing() with "C" flag (only check the prefix, without actually doing any routing), do not remove any AVP (in the beginning) as we do not add any (after prefix matching) -> no adding, so no deleting.
+	This allows you to safely call do_routing("C") while looping throuhg the GWs of another do_routing().
+
+
+2016-08-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [40828a0] :
+
+	Fix bug in evaluating the port spec in lb_count_call
+	(cherry picked from commit e7319c1c8eb5632da28a5c1971b6fa9f7495df89)
+
+
+2016-08-02  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [97cd5c4] :
+
+	Merge pull request #937 from was4444/1.11
+	fix: pthread_mutex should be process-shared
+
+
+2016-07-26  wxf  <xiaofeng.wang at bqvision dot com>
+	* [54cdc17] :
+
+	fix: pthread_mutex should be process-shared
+
+
+2016-07-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [17beb2d] :
+
+	Fix db_url setting - do not make it mandatory if no db is used
+
+
+2016-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [30ae24a] :
+
+	flatstore: escape delimiter
+	(cherry picked from commit 7b5ce3909ac4d4b0002454129ed3cb654e9de279)
+
+
+2016-07-15  Liviu Chircu  <liviu at opensips dot org>
+	* [5fd7faa] :
+
+	rest_client: Fix incorrect trim operation
+	(cherry picked from commit d8bf10da34152612e7835a64cedbb7593b8fc57b)
+
+	Conflicts:
+		modules/rest_client/rest_methods.c
+
+
+2016-07-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [497eaa1] :
+
+	Fix building Via Branch in stateless mode
+	Instead of copying the branch value from a previous statefull Via header (which may lead to overflow as OpenSIPS has a maximum value for the built branch), we generate a new branch value based on the previous Via branch - in this way, we have full controll over the length of the resulting Branch and we also inherit the uniqueness of the branch value (from the prev Via hdr).
+
+	Reported by Gupta, Rahul and Elliott, Ray
+	(cherry picked from commit 482e643469b351d12418ff54c96beee7b27dca94)
+
+
+2016-07-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [59f1537] :
+
+	Fix advertised port and address per branch.
+	Before the advertised_port/address are preserved only in the UAS part of the transaction - that means it is only one value and it is from the setting done in Request Route; whatever later setting done in Failure Route or Branch Route are not preserved at transaction level (even if they are used on the spot, for sending out the INVITE).
+	So, when we have to build a local request (ACK or CANCEL), we do not remember which specific address/port were advertised for that particular UAC (branch).
+
+	Fixes #917.
+	(cherry picked from commit eb850a22f0af83bf75e75dfadbe1320e8b92784b)
+
+
+2016-07-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e7610aa] :
+
+	Fix populating blacklists.
+	When creating the blacklists, use the port and protocol of the destination too, otherwise the rules may conflict or be too wide to be used (like 2 destinations with same IP but different ports).
+	(cherry picked from commit 7fa9cee5037af26fd1c63b70710f2bc03e6a31f4)
+
+
+2016-07-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ff03d89] :
+
+	Fix populating blacklists.
+	When creating the blacklists, use the port and protocol of the destination too, otherwise the rules may conflict or be too wide to be used (like 2 destinations with same IP but different ports).
+	(cherry picked from commit 97f309c34c7333270a3f0f997868bdb9b94107f1)
+
+
+2016-07-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [38666a2] :
+
+	Fix populating blacklists.
+	When creating the blacklists, use the port and protocol of the destination too, otherwise the rules may conflict or be too wide to be used (like 2 destinations with same IP but different ports).
+	(cherry picked from commit 0495faa7d96f92da13102480ca43cd1befd37ba0)
+
+
+2016-07-11  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [1d6aa51] :
+
+	[acc][bugfix] check if database loaded before using its handler
+	(cherry picked from commit 8dd10d85b408947576223e75a67228ed7c7abd91)
+
+	Conflicts:
+		modules/acc/acc.c
+
+
+2016-07-08  Razvan Crainea  <razvan at opensips dot org>
+	* [ac8d93b] :
+
+	dialog: advance to next cell in case of error
+	(cherry picked from commit 70db2cfcdb0c74e6437db2aa9663fd0a5000ecdd)
+
+
+2016-07-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0a3eb39] :
+
+	Fix error message when a route is not defined.
+	Print the name of the route too - the ID is irrelevant for the script writter.
+	(cherry picked from commit 409481818148d7951e1520c9dd4eb715c2bec7c6)
+
+
+2016-07-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [19aff20] :
+
+	Fixed compiling on arm6 with fastlocks
+	Partial revert of 058e16 as we need some extra asm code for fast locking on arm6.
+	See #923
+	Closes #912
+	(cherry picked from commit a69c32877b99fbd6eef736eff58c9b6ed8228166)
+
+
+2016-07-04  Liviu Chircu  <liviu at opensips dot org>
+	* [e72eec1] :
+
+	acc: Fix incorrect Request-URI handling
+	If the config script does not include any Request-URI altering logic
+	(e.g. no lookup() or $ru manipulation), the acc module would incorrectly fill
+	in a "msg->new_uri" field which should NOT be freed into the SIP request
+	structure, leading to the memory pool being corrupted upon transaction release.
+
+	Credits to Guillaume Lacroix for reporting
+	(cherry picked from commit 02cb9f048d0a5e1f988aa9ccae1691216ed16ee5)
+
+
+2016-07-04  Razvan Crainea  <razvan at opensips dot org>
+	* [35970f1] :
+
+	permissions: fix get_source_group() return
+	In case a group is not found, return -1 instead of true
+	(cherry picked from commit e7f8d1b9290d7ca54460efb3c7905209152dbc80)
+
+
+2016-06-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [947b923] :
+
+	Fix dialplan module when using db_text backend.
+	The db_text makes no difference between NULL or "empty string" values in DB -> both are internally translated as NULL . The dialplan module, in a very abusive way, forces "not null" (in DB schema and in the code for data validation) even for columns that are optional (like subst_exp, repl_exp, timerec and attrs). Besides being bogus (if a column is not to be used, you have to set it to empty string rather than let it NULL), it makes impossible the usage of db_text with dialplan.
+	This fix allows (DB and code) the mentioned DB columns to be also NULL.
+	The change is backward compatible, it should not break any existing usage of the dialplan module.
+
+	(cherry picked from commit 8f548976389ee3968bf06f649b54d88db694f949)
+	(cherry picked from commit 618ff9254472e6f4e3c4af6f49b7513bbd49593d)
+
+
+2016-06-25  Liviu Chircu  <liviu at opensips dot org>
+	* [12af967] :
+
+	Fix undefined function
+	Thanks to Nick Altmann for the quick report
+
+
+2016-06-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e61a6b8] :
+
+	Fix script varibles for providing port and proto (as part of SIP URI).
+	If the SIP URI does not have an explicit port or proto, determine the default port/proto in a SIP wise manner (rather than returning 5060 / UDP) (Ex: sip:example.com;transport=tls has default port 5061 and not 5060 ; or sips:example.com has default proto TLS and not UDP).
+
+	Affected variables are $dp, $rp, $op and $dP, $rP, $oP
+	(cherry picked from commit 6cc850e34dcd022f1ed354bd50d9a1809518fa1f)
+
+
+2016-06-23  Razvan Crainea  <razvan at opensips dot org>
+	* [8c6cf70] :
+
+	init: use the specified CFGFILE in debian init
+	In case the CFGFILE changes in the init script, opensips will still start with
+	the compiled file instead of the one configured
+	(cherry picked from commit 030efef84d240646ed8e99616b8a6eb64f7d17d2)
+
+
+2016-06-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5fb3434] :
+
+	Fix potential 100 Trying duplicates.
+	Added the "auto_100trying" module parameter to allow the script writter to take control (from script level) over when the 100 Trying reply is to be sent back.
+	By default, the reply is automatically generated when the INVITE transaction is created (see 908ce1be3766d9c27bfb576e5e0cc3b4eecbee31)
+	Fixes #833
+
+	(cherry picked from commit b023c93a8c476e70b1550da4f46c91d6e2679442)
+	(cherry picked from commit 71b527446b00fc4e3886d8d02c7d03d313dbee05)
+	(cherry picked from commit 248c836280bca280d46a5468acf89a590fb58d29)
+
+
+2016-06-17  Razvan Crainea  <razvan at opensips dot org>
+	* [e885a77] :
+
+	Update ChangeLog
+
 =========================== Release 1.11.8 ==============================
 
 2016-06-17  Razvan Crainea  <razvan at opensips dot org>
