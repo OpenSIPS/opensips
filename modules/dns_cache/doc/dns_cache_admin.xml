@@ -44,9 +44,9 @@
 		<programlisting format="linespecific">
 ...
 #use internal cachedb_local module
-modparam("dns_cache", "cachedb_url","local://"); 
+modparam("dns_cache", "cachedb_url","local://")
 #use cachedb_memcached module with memcached server at 192.168.2.130
-modparam("dns_cache", "cachedb_url","memcached://192.168.2.130:8888/"); 
+modparam("dns_cache", "cachedb_url","memcached://192.168.2.130:8888/")
 ...
 		</programlisting>
 		</example>
@@ -64,7 +64,7 @@ modparam("dns_cache", "cachedb_url","memcached://192.168.2.130:8888/");
 		<title>Set <varname>blacklist_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dns_cache", "blacklist_timeout",7200); # 2 hours
+modparam("dns_cache", "blacklist_timeout",7200) # 2 hours
 ...
 		</programlisting>
 		</example>
