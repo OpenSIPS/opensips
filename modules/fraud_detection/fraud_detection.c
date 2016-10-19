@@ -438,10 +438,8 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 			param->ruleid = rule->id;
 			param->data_rev = frd_data_rev;
 
-			/* Register the dlg_terminate cb */
-			if (shm_str_dup(&param->number, &number) != 0)
-				shm_free(param);
-			else if (dlgb.register_dlgcb(dlgc, DLGCB_TERMINATED,
+			/* Register dialog termination hooks */
+			if (dlgb.register_dlgcb(dlgc, DLGCB_TERMINATED,
 						dialog_terminate_CB, param, NULL) != 0) {
 				LM_ERR("cannot register dialog callback\n");
 				shm_free(param->number.s);
