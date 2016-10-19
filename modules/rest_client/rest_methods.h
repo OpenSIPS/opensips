@@ -44,6 +44,7 @@ extern int ssl_verifyhost;
 /* Currently supported HTTP verbs */
 enum rest_client_method {
 	REST_CLIENT_GET,
+	REST_CLIENT_PUT,
 	REST_CLIENT_POST
 };
 
@@ -61,6 +62,8 @@ typedef struct rest_async_param_ {
 int rest_get_method(struct sip_msg *msg, char *url,
                     pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv);
 int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
+                     pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv);
+int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
                      pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv);
 
 int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
