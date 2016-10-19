@@ -420,18 +420,23 @@ static int check_blacklist(struct sip_msg *msg, struct check_blacklist_fs_t *arg
 	}
     *dst = '\0';
 
+	/* we guard the dt_root */
+	lock_get(lock);
 	LM_DBG("check entry %s\n", req_number);
 	if (dt_longest_match(arg1->dt_root, req_number, &whitelist) >= 0) {
 		if (whitelist) {
 			/* LM_DBG("whitelisted"); */
+			lock_release(lock);
 			return 1; /* found, but is whitelisted */
 		}
 	}
 	else {
 		/* LM_ERR("not found"); */
+		lock_release(lock);
 		return 1; /* not found is ok */
 	}
 
+	lock_release(lock);
 	LM_DBG("entry %s is blacklisted\n", req_number);
 	return -1;
 }
