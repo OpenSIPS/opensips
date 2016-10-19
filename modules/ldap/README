@@ -33,6 +33,7 @@ Christian Schlatter
         1.4. Exported Parameters
 
               1.4.1. config_file (string)
+              1.4.2. max_async_connections (int)
 
         1.5. Exported Functions
 
@@ -94,14 +95,15 @@ Christian Schlatter
    1.10. ldap_require_certificate example
    1.11. Example LDAP Configuration File
    1.12. config_file parameter usage
-   1.13. Example Usage of ldap_url
-   1.14. Example Usage
+   1.13. max_async_connections parameter usage
+   1.14. Example Usage of ldap_url
    1.15. Example Usage
    1.16. Example Usage
    1.17. Example Usage
    1.18. Example Usage
-   1.19. Example Usage of ldap_url
-   1.20. Example Usage
+   1.19. Example Usage
+   1.20. Example Usage of ldap_url
+   1.21. Example Usage
    2.1. Example code fragment to load LDAP module API
    2.2. Example LDAP module API function call
 
@@ -460,6 +462,19 @@ ldap_client_bind_timeout = 500
    Example 1.12. config_file parameter usage
 modparam("ldap", "config_file", "/etc/opensips/ldap.ini")
 
+1.4.2. max_async_connections (int)
+
+   Number of maximum asynchronous connections that will be started
+   with the ldap server for executing asynchronous ldap_search
+   calls. The number of connections is per process, so if there
+   are 8 worker processes with 20 max_async_connections, there
+   will be a maximum of 160 connections to the ldap server.
+
+   Default value: 20
+
+   Example 1.13. max_async_connections parameter usage
+modparam("ldap", "max_async_connections", 50)
+
 1.5. Exported Functions
 
 1.5.1. ldap_search(ldap_url)
@@ -483,7 +498,7 @@ modparam("ldap", "config_file", "/etc/opensips/ldap.ini")
           OpenSIPS pseudo variables and AVPs included in ldap_url
           do get substituted with their value.
 
-          Example 1.13. Example Usage of ldap_url
+          Example 1.14. Example Usage of ldap_url
 
           Search with LDAP session named sipaccounts, base
           ou=sip,dc=example,dc=com, one level deep using search
@@ -517,7 +532,7 @@ ldap://ldap_1/dc=example,dc=com?
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, and ONREPLY_ROUTE.
 
-   Example 1.14. Example Usage
+   Example 1.15. Example Usage
 ...
 # ldap search
 if (!ldap_search("ldap://sipaccounts/ou=sip,dc=example,dc=com??one?(cn=$
@@ -601,7 +616,7 @@ regex_subst])
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, and ONREPLY_ROUTE.
 
-   Example 1.15. Example Usage
+   Example 1.16. Example Usage
 ...
 
 # ldap_search call
@@ -674,7 +689,7 @@ regex_subst])
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, and ONREPLY_ROUTE.
 
-   Example 1.16. Example Usage
+   Example 1.17. Example Usage
 ...
 # ldap_search call
 ...
@@ -724,7 +739,7 @@ if (!ldap_result_check("sn/$ru", "/^sip:([^@]).*$/\1/"))
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, and ONREPLY_ROUTE.
 
-   Example 1.17. Example Usage
+   Example 1.18. Example Usage
 ...
 # ldap_search call
 ...
@@ -783,7 +798,7 @@ if (ldap_result_next())
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, and ONREPLY_ROUTE.
 
-   Example 1.18. Example Usage
+   Example 1.19. Example Usage
 ...
 if (!ldap_filter_url_encode("cn=$avp(name)", "$avp(name_esc)"))
 {
@@ -822,7 +837,7 @@ if (ldap_search(
           OpenSIPS pseudo variables and AVPs included in ldap_url
           do get substituted with their value.
 
-          Example 1.19. Example Usage of ldap_url
+          Example 1.20. Example Usage of ldap_url
 
           Search with LDAP session named sipaccounts, base
           ou=sip,dc=example,dc=com, one level deep using search
@@ -856,7 +871,7 @@ ldap://ldap_1/dc=example,dc=com?
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, and ONREPLY_ROUTE.
 
-   Example 1.20. Example Usage
+   Example 1.21. Example Usage
 ...
 # ldap search
 
