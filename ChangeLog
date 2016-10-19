@@ -1,3 +1,569 @@
+=========================== Release 2.2.2 ==============================
+
+2016-10-19  Razvan Crainea  <razvan at opensips dot org>
+	* [9e406b2] :
+
+	Increase version to 2.2.2
+
+
+2016-10-19  Razvan Crainea  <razvan at opensips dot org>
+	* [f79d3b4] :
+
+	userblacklist: sync between reload and read
+	This commit fixes possible crash due to concurrency between the data
+	read while checking the blacklist and reload.
+
+	Reported by Michele Pinassi
+
+	Close #884
+	(cherry picked from commit edad7265c71d2259003e7500872e51c1a461ad9f)
+
+
+2016-10-19  Liviu Chircu  <liviu at opensips dot org>
+	* [ab2a67b] :
+
+	fraud_detection: Fix docs for "show_fraud_stats"
+	(cherry picked from commit d25633505ceaf053bf96d78583f520e4f446d817)
+
+
+2016-10-19  Liviu Chircu  <liviu at opensips dot org>
+	* [243aacb] :
+
+	fraud_detection: Fix "concurrent_calls" statistic
+	Ensure the "concurrent_calls" stat is properly decremented for
+	un-established dialogs as well (due to negative INVITE replies).
+
+	Thanks to @Freenex for the bug report
+	Closes #949
+	(cherry picked from commit 703ce9098f0f91ee3ffa6ae0254d77903037b32a)
+
+
+2016-10-19  Liviu Chircu  <liviu at opensips dot org>
+	* [bb9fd7c] :
+
+	fraud_detection: Fix shm memory leak
+	(cherry picked from commit 4a0d22d95b34eed82c87b6b2f836b6d4789e4100)
+
+
+2016-10-19  Razvan Crainea  <razvan at opensips dot org>
+	* [14f72c6] :
+
+	dns_cache: fix examples
+	Credits go to Pete Kelly for reporting it.
+	(cherry picked from commit 7cdd3ee99d6c46dcde238c8571f21c46e85e82b3)
+
+
+2016-10-19  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [1c7e19d] :
+
+	Fix broken ldap async engine
+	   Previous ldap async engine implementation was broken. Now the
+	module stores a pool of connections for each session which will
+	be used for executing async queries and one separate connection
+	that will be used for synchronous queries, in case the maximum number
+	of open connections allowed(max_async_connections module parameter)
+	is reached. The sync connection will also be used for synchronous
+	queries from other functions.
+	   The connection pool is stored per process, so each worker
+	process will have its own pool and synchronous connection. For large
+	numbers of asynchronous ldap calls per second, having a higher value
+	for max_async_connections will result in better performance.
+	(cherry picked from commit 7d7dd9effd82275b0727d99d2d11ea00e016cad2)
+
+
+2016-10-19  Razvan Crainea  <razvan at opensips dot org>
+	* [1c5911e] :
+
+	Do not load a protocol module if there is no listener
+	(cherry picked from commit 3593690d5a7da57a00280743a6effbb443be0c33)
+
+
+2016-10-18  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [757389d] :
+
+	[sst] fix using unallocated memory bus
+	* sst was freeing shm memory after freeing it in dialog callbacs;
+	* sst was using memory without checking if it was allocated;
+	(cherry picked from commit 33dc084dd553a20cc691b3ec38e17993ac5ae5b6)
+
+
+2016-10-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9ed154b] :
+
+	Fix CANCELLing of transactions not forwarded.
+	Due async operations, a transaction may be created and it may exist for a long time before any branch is created for it (via a t_relay). The current fix takes care and does proper handling on incoming CANCELs matching the transaction while it has no branch (no t_relay() on it).
+	Old behavior - the INVITE transaction was never getting a final reply
+	New brhavior - the INVITE transaction gets an internally generated 487.
+	(cherry picked from commit fb0d90ec75601304eed98168bb988ebdbf10c260)
+
+
+2016-10-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [944fdc1] :
+
+	Fix consistency and use dialog_id.
+	Dialog_id is printed by dlg_list (along the h_label and h_id) as a simpler alternative to identify the dialog.
+	Also, the dlg_end_dlg accepts both h_label and h_id or a dialog_id.
+	This is needed as the DB exposes only the dialog_id, and the dialogs from DB cannot be correlated anymore with the MI commands. See #963
+
+	Closes #963.
+
+
+2016-10-12  Liviu Chircu  <liviu at opensips dot org>
+	* [bea4f4a] :
+
+	Fix a possible segmentation fault on startup
+	Do not generate a corefile on "listen = udp:eth0:bad_port" errors
+	(cherry picked from commit 2352d57e35c15dab34c046566e5a89cbc5d068aa)
+
+
+2016-10-12  Liviu Chircu  <liviu at opensips dot org>
+	* [de6dba0] :
+
+	Fix "use_children" to work with interface names
+	(cherry picked from commit c7da1af1642697269eb74865018d017f1a6ee664)
+
+
+2016-10-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b7ff6b3] :
+
+	Fix documentation errors
+
+
+2016-10-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [34bbe68] :
+
+	Fix regression on is_registered() returning the contact ATTRibutes.
+	The function, upon success, must also return the attributes of the first found contact for the searched AOR.
+
+	Reported by Rik Broers ( @hydrosine ).
+	Closes #960
+
+
+2016-10-11  Liviu Chircu  <liviu at opensips dot org>
+	* [e31aee8] :
+
+	Improve parsing for "hep_udp" and "hep_tcp" literals
+	(cherry picked from commit add97f8726a83aa0c408cd7701ce28f9d1f7ff62)
+
+
+2016-10-11  Liviu Chircu  <liviu at opensips dot org>
+	* [f94b24d] :
+
+	proto_sctp: Fix startup bug caused by a typo
+	(cherry picked from commit e8d9a71a44fc4d9a83ee2f8690904993330f05ef)
+
+
+2016-10-07  Liviu Chircu  <liviu at opensips dot org>
+	* [3fde889] :
+
+	rest_client: Update documentation
+	(cherry picked from commit efe5dd76e15b9ef06b7cf113c2e3fb7ec1e19d75)
+
+
+2016-10-07  Liviu Chircu  <liviu at opensips dot org>
+	* [7cdab71] :
+
+	rest_client: Add "connect_poll_interval" module parameter
+	Allows complete control over how quickly we want to detect libcurl's completed
+	TCP handshakes, so the transfers can be started. A lower "connect_poll_interval"
+	will speed up the HTTP transfer, but will also increase CPU usage.
+	(cherry picked from commit f5abfb3dee649a14ae39ad74d7f04454f815748f)
+
+	Conflicts:
+		modules/rest_client/rest_methods.c
+
+	Includes fix-commit 3ba7be6692c6987f.
+
+
+2016-10-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [db433bc] :
+
+	Downgrade logs from NOTICE to DBG - part 2
+	(cherry picked from commit dd518ccdcdc02503ccdbead26f5fc44f2c405093)
+
+
+2016-10-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7b6d0d7] :
+
+	Downgrade logs from NOTICE to DBG
+
+
+2016-10-06  Daniel Fussia  <daniell at inatel dot br>
+	* [8570c34] :
+
+	Changed from VAL_STR to VAL_STRING in case DB_STRING
+
+
+2016-10-05  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [dfdb2d8] :
+
+	Merge pull request #962 from tavyc/exec-flush
+	exec: Flush the pipe after writing the message
+	(cherry picked from commit bcf3118ec6b280d90f65a45747abd81c2fcfe44b)
+
+
+2016-10-05  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [9a7aac3] :
+
+	[sipcapture] memset contact uri structure to 0
+	(cherry picked from commit ac66dc14bb736bb5afd70d923db7e7fa065462ff)
+
+
+2016-10-04  rvlad-patrascu  <rvlad.patrascu at gmail dot com>
+	* [70e1d6b] :
+
+	Use signed type for computing timer drift
+	(cherry picked from commit f8c11e17532db852901b7cc4a040b613d91ed5e3)
+
+
+2016-10-03  Liviu Chircu  <liviu at opensips dot org>
+	* [a9bdf7b] :
+
+	usrloc User-Agent filtering: Fix memory corruption
+	The "ua_re_check" macro added by commit e5cb9805bc is broken in several ways:
+	    * unsafe read operation on shared memory
+	    * unsafe write operation on shared memory
+	    * incorrectly handled error case, without restoring the backup byte
+
+	This patch corrects the above issues by extending the user_agent buffer.
+	(cherry picked from commit 58a944cddbfbe7aab47a3e296d8aba5d36454a1e)
+
+	Includes fix commits:
+	    - 03398fbf
+	    - e16abb4b
+
+
+2016-09-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c8ee7d5] :
+
+	Fix computing the pinging partition in timer job.
+	Avoid using static variables in timer jobs as they may be run in different processes, leading to unexpected results.
+	Many thanks to Andrew ( @kertor on GITHUB) for spotting and reporting this.
+	Fixes #959
+	(cherry picked from commit 82fd3ae683b7fc108d47760f73cbdd80f2dd70af)
+
+
+2016-09-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f10e57f] :
+
+	Fix documentation for calculate_ha1 parameter
+	Reported by Aqs Younas on the mailing list.
+
+
+2016-09-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [f22b884] :
+
+	[proto_hep] fix bug introduced in 7190a2d
+		Commit 7190a2d was freeing the extra chunks twice when
+	the message was processed as SIP. Now the original hep context
+	free function is not registered as a context free function, but
+	called manually each time all the hep processing is done. This
+	way we avoid the memory leaks that appeared when the message was
+	not a SIP message, and the chunks were not freed.
+	(cherry picked from commit 63b2a52c2c2d453ccf889cc5e74991a2c81aaccd)
+
+
+2016-09-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [4198511] :
+
+	[proto_hep] fix extra chunks memory leak
+		Extra chunks (the ones that are not defined in the internal
+	hep structure) were not freed, causing a memory leak for each hep
+	packet that had such chunks.
+	(cherry picked from commit 7190a2d89f54998a88a2b0b208bba50c9bb4027d)
+
+
+2016-09-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [4e1ef8b] :
+
+	[proto_hep] don't drop packets with port 0
+	    This packets might be different than sip, internally generated
+	that might not necessarily be related to a connection.
+	(cherry picked from commit 7d2ab2bce0c5955b45cdbc88867e81c5e0d93908)
+
+
+2016-09-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [3f26dc2] :
+
+	[proto_hep] convert to host byte order before allocating custom chunk
+	(cherry picked from commit 89f5ec299f2d9bcaa1a0f5933ab6f59638ee1aa6)
+
+
+2016-09-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9432241] :
+
+	Extra logging to troubleshooting presence event handling
+	(cherry picked from commit d536c3d41b3738842e531448c53a82791dd5e9b7)
+
+
+2016-09-23  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [9a38079] :
+
+	[acc] fixed missed calls callback registration
+	If the missed calls callback was not registered the first time
+	do_accounting was called then it wouldn't have been registered
+	thereafter. A new internal flag was defined to know wheteher or
+	not the callback has been registered before the current
+	do_accounting call.
+	(cherry picked from commit 0592ab6db2f00b586d5f74fadd9f7f65cc00a7cf)
+
+	Conflicts:
+		modules/acc/acc_logic.c
+		modules/acc/acc_logic.h
+
+
+2016-09-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c26401a] :
+
+	Fix socket selection for outbound UDP.
+	Do not use the bind_address of the process when comes to send an UDP package (bind_address may be different from process to process, so the selection may give different results, depending on the processes sending the UDP).
+	If you have a sip_msg, try using received interface of the msg (if matches), otherwise use the first UDP interface.
+	(cherry picked from commit 7596eb99fceb68bd95653b76a388f8bc42fee5c6)
+
+
+2016-09-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e921f57] :
+
+	Remove testing warning message
+
+
+2016-09-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8aebdcb] :
+
+	Merge previous cherry-pick from trunk
+
+
+2016-09-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [73710a7] :
+
+	Fix async resume in the timer dedicated timer.
+	The timer dedicated timer may end up running script routes (like failure route), so it may trigger some async operations. So, the dedicated timer process must be async enabled.
+	(cherry picked from commit 91e87f18d48b9e66cd052e825ae1f2f3c061955f)
+
+
+2016-09-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e77626e] :
+
+	Fix starting TCP processes.
+	Do not start TCP main if tcp is disabled - this was introduced with the previous commit, when we split the starting of TCP workers and TCP main (see c2e2a0f141d11a972705f1555d0e2a23ec3f01ed).
+	(cherry picked from commit 542a9c98844bffec96d7cc790c37ef842b43ee66)
+
+
+2016-09-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3767f33] :
+
+	Fix the TCP forking sequence.
+	Keep the TCP-main the last forked process, to be sure it inherits all the communication sockets from all other OpenSIPS processes.
+	Credits go to Razvan for reporting.
+	Alternative fix for 9fd451fd684ed3c9133bcc0e896de8d28ad45208
+	(cherry picked from commit c2e2a0f141d11a972705f1555d0e2a23ec3f01ed)
+
+
+2016-09-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7080dda] :
+
+	Fix building the FROM header in XMPP2SIP.
+	Reported by Igor Pavlov.
+	(cherry picked from commit bf9acc3a15f376f17a8d415a5d48789e19ce3dee)
+
+
+2016-09-19  Razvan Crainea  <razvan at opensips dot org>
+	* [8d4ae49] :
+
+	usrloc: fix race between update for different registers
+	In case there are two REGISTER messages with incremental CSEQ are
+	replicated in a different order, skip the processing, since this has
+	already been resolved by the master instance.
+
+	Thanks to Deniz Beskök for reporing this
+
+	Closes #956
+	(cherry picked from commit 26f6c1bacb33ddf0bcbd54ccffc65bee8754e01d)
+
+
+2016-09-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a60f28d] :
+
+	Fix potential starvation for the timer tasks.
+	Even if the timer tasks have priority in the asyns reactor (for being handled), if all the worker processes are already busy in handling some SIP tasks which takes too long, may lead into a starvation of the timer tasks.
+	For the moment we address this by creating a extra worker processes (similar to the SIP workers) which is dedicated to executing the timer tasks. Still, based on their availability and load, the SIP workers are able to consume timer tasks.
+
+	In the next steps, this issue will be better addressed by implementing the concepts of "preferred jobs" and "capacity reservation" for the processes in the pool.
+
+	Credits for helping with the investigation and testing go to Ramachandran, Agalya
+	(cherry picked from commit c40f2b057209b8078520abc95e5d1bf5e5a28db6)
+
+
+2016-09-13  Di-Shi Sun  <di-shi at transnexus dot com>
+	* [68ace2e] :
+
+	Updated to support SUBSCRIBE/NOTIFY CNAM and OSP Toolkit 4.12.0.
+	1. Added SUBSCRIBE/NOTIFY CNAM support.
+	2. Formatted sample configuration file.
+	3. Updated for OSP Toolkit 4.12.0
+
+
+2016-09-07  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [a55ac46] :
+
+	[db_virtual] check if backend exports async function
+	(cherry picked from commit 4537a21ed3a4cbb1a3925e8d5a420d4400366a8d)
+
+
+2016-08-30  Razvan Crainea  <razvan at opensips dot org>
+	* [7261cf0] :
+
+	packaging/debian: move all current files in a common directory
+	(cherry picked from commit 03b4a7eae52f21b0676d0ac1a337e6a996c2de42)
+
+
+2016-08-30  Razvan Crainea  <razvan at opensips dot org>
+	* [57e94a2] :
+
+	packaging/debian: use newer version for libmicrohttpd
+	(cherry picked from commit 84d38d617e605cf56e89e098e4b911de2ee2c874)
+
+
+2016-08-30  Razvan Crainea  <razvan at opensips dot org>
+	* [dc732f2] :
+
+	fix expresion - expression typo
+	(cherry picked from commit c2d0b38d53dac8c8975f2d40a3268b14829e53b2)
+
+
+2016-08-30  Razvan Crainea  <razvan at opensips dot org>
+	* [098e448] :
+
+	debian packaging: remove non-existent dependency
+	replace dependency of db4.6-util to db-util (>= 4.6.19) for new Debian
+	versions
+	reported by Julián Moreno Patiño
+	(cherry picked from commit 6d7cf35658c22c8c65ddc3b6c54e9320c2198d5a)
+
+
+2016-08-29  Răzvan Crainea  <razvan at opensips dot org>
+	* [1ecb911] :
+
+	Merge pull request #944 from Deni90/master
+	Added support to fast_lock for mips and mips64el
+	(cherry picked from commit 65d86fd0c362f3081cc0341760c6ebd1b900abaa)
+
+
+2016-08-29  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [fb761ed] :
+
+	[acc] Remove accidentally added file
+
+
+2016-08-29  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [12c5864] :
+
+	fix bag pkg pointer used for storing accounting flags
+	This closes #906 (Many thanks to @gcuppers for support)
+
+
+2016-08-26  Razvan Crainea  <razvan at opensips dot org>
+	* [313b171] :
+
+	ws(s): make sure we cleanup the request in the con
+	Reported by Tito Cumpen
+	(cherry picked from commit 39e40f93fe5bc76c58c5b64f8b32b327b975f62e)
+
+
+2016-08-25  Liviu Chircu  <liviu at opensips dot org>
+	* [456fc2c] :
+
+	fraud_detection: Fix bad script retcode for check_fraud()
+	Thanks to Freenex on IRC for fixing and testing
+	(cherry picked from commit daf63bb229b810c21fee013c5ed01a00652fb850)
+
+
+2016-08-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d30f39a] :
+
+	Fix is_contact_registered() to accept less params.
+	The last 3 params are optional, so we can invoke the function without them.
+
+
+2016-08-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [65d981b] :
+
+	Fix using is_registered() function with first param only.
+	Reported by neo_land1 on the #opensips IRC channel.
+
+
+2016-08-17  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [373394b] :
+
+	[acc] fix missed call flag check macro
+	(cherry picked from commit 5b9006874ab0afd02d70a5317446220002c47449)
+
+	Conflicts:
+		modules/acc/acc_logic.c
+
+
+2016-08-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2f4d016] :
+
+	Do not delete any internal AVP if "C" flag is used.
+	When calling do_routing() with "C" flag (only check the prefix, without actually doing any routing), do not remove any AVP (in the beginning) as we do not add any (after prefix matching) -> no adding, so no deleting.
+	This allows you to safely call do_routing("C") while looping throuhg the GWs of another do_routing().
+	(cherry picked from commit 8fcc77cb87ba76e831466fb0a3da90eb556671d8)
+
+
+2016-08-09  Liviu Chircu  <liviu at opensips dot org>
+	* [0a60671] :
+
+	drouting: Fix docs
+	Thanks to Richard Robson for reporting
+	(cherry picked from commit 058991d7806c047e42d78ece45577f5dc2929634)
+
+
+2016-08-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e7319c1] :
+
+	Fix bug in evaluating the port spec in lb_count_call
+
+
+2016-08-02  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [2b79d96] :
+
+	Merge pull request #937 from was4444/1.11
+	fix: pthread_mutex should be process-shared
+	(cherry picked from commit 97cd5c481bfd9dca4fff941cc86a497d35474704)
+
+
+2016-08-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2e60179] :
+
+	Removes docs for old MI function
+	"profile_bin_status" was removed when dialog module was migrated to clusterer
+	Credits to Sebastien Couture (@sysreq0) for reporting
+	Closes #939.
+
+
+2016-07-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3fab95a] :
+
+	Remove unnecessary test.
+	"res" cannot be null at that point
+	(cherry picked from commit 0b60681f0cc08ffd13fbac3dc5cbde17904ad177)
+
+
+2016-07-22  Ozzyboshi  <gun101 at email dot it>
+	* [9568db8] :
+
+	Fixed memory leak on modules/drouting/drouting.c
+	This leak occures in function get_group_id() when do_routing is called without parameters in opensips.cfg.
+	In this case the dr_default_grp variable is not equal -1 and 'return dr_default_grp' is executed without freeing the res variable previously allocated for query execution.
+	(cherry picked from commit 65739943151f08aee18a7bc2125c7ac90ee84d00)
+
+
+2016-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [f090238] :
+
+	Update ChangeLog for 2.2.1
+
 =========================== Release 2.2.1 ==============================
 
 2016-07-20  Razvan Crainea  <razvan at opensips dot org>
