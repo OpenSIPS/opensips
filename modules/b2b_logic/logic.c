@@ -212,7 +212,7 @@ int b2b_msg_get_to(struct sip_msg* msg, str* to_uri, int flags)
 
 	if (flags & B2BL_FLAG_TRANSPARENT_TO)
 	{
-		if (!msg->to || !msg->to->body.s)
+		if (!msg || !msg->to || !msg->to->body.s)
 		{
 			LM_ERR("cannot find 'to' header!\n");
 			return -1;
@@ -228,7 +228,7 @@ int b2b_msg_get_to(struct sip_msg* msg, str* to_uri, int flags)
 		pto = (struct to_body*)msg->to->parsed;
 		pkg_str_dup(to_uri, &pto->uri);
 	} else {
-		if( parse_sip_msg_uri(msg)< 0)
+		if(!msg || parse_sip_msg_uri(msg)< 0)
 		{
 			LM_ERR("failed to parse R-URI\n");
 			return -1;
@@ -257,7 +257,7 @@ int b2b_msg_get_from(struct sip_msg* msg, str* from_uri, str* from_dname)
 	}
 
 	/* examine the from header */
-	if (!msg->from || !msg->from->body.s)
+	if (!msg || !msg->from || !msg->from->body.s)
 	{
 		LM_ERR("cannot find 'from' header!\n");
 		return -1;
