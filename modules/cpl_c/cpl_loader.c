@@ -149,7 +149,9 @@ int load_file( char *filename, str *xml)
 	return 1;
 error:
 	if (fd!=-1) close(fd);
-	if (xml->s) pkg_free( xml->s);
+	if (xml->s)
+		/* coverity[tainted_data] */
+		pkg_free( xml->s);
 	return -1;
 }
 
