@@ -332,7 +332,8 @@ void cleanup(int show_status)
 #endif
 	cleanup_log_level();
 
-	if (pt) shm_free(pt);
+	if (mem_lock && pt)
+		shm_free(pt);
 	pt=0;
 	if (show_status){
 			LM_GEN1(memdump, "Memory status (shm):\n");
