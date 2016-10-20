@@ -1324,7 +1324,7 @@ static int pv_parse_hep_net_name(pv_spec_p sp, str* in)
 		sp->pvp.pvn.u.isname.name.n = id;
 		sp->pvp.pvn.u.isname.type = 0;
 	} else {
-		e = pkg_malloc(sizeof(pv_spec_p));
+		e = pkg_malloc(sizeof(pv_spec_t));
 		if (e==NULL) {
 			LM_ERR("no more pkg mem!\n");
 			return -1;
