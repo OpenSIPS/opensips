@@ -976,11 +976,16 @@ moduleFunction (self, func, string1 = NULL, string2 = NULL)
 	LM_DBG("Calling exported func '%s', Param1 is '%s',"
 		" Param2 is '%s'\n", func, string1, string2);
 
-	ret = moduleFunc(msg, func, string1, string2, &retval);
-	if (ret < 0) {
-		LM_ERR("calling module function '%s' failed."
-			" Missing loadmodule?\n", func);
+	if (!msg) {
+		LM_ERR("invalid message received!\n");
 		retval = -1;
+	} else {
+		ret = moduleFunc(msg, func, string1, string2, &retval);
+		if (ret < 0) {
+			LM_ERR("calling module function '%s' failed."
+				" Missing loadmodule?\n", func);
+			retval = -1;
+		}
 	}
 	RETVAL = retval;
   OUTPUT:
