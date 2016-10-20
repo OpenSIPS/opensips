@@ -8,7 +8,7 @@
 	<title>Overview</title>
 	<para>
 	The <emphasis>rest_client</emphasis> module provides a means of interacting
-	with an HTTP server by doing RESTful queries, such as GET and POST.
+	with an HTTP server by doing RESTful queries, such as GET,PUT and POST.
 	</para>
 	</section>
 
@@ -281,6 +281,65 @@ if (!rest_post("http://myserver.org/register_user", "$fU", , "$var(body)", "$var
 	exit;
 }
 ...
+
+</programlisting>
+		</example>
+	</section>
+	<section id="rest_put"
+			 xreflabel="rest_put">
+		<title>
+		<function moreinfo="none">rest_put(url, send_body_pv, [send_ctype_pv],
+				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
+		</function>
+		</title>
+		<para>
+		Issues an HTTP PUT request to the specified <emphasis>url</emphasis>. The request body will
+		be copied from the <emphasis>send_body_pv</emphasis> pseudo-variable. The MIME Content-Type
+		header for the request will be taken from <emphasis>send_ctype_pv</emphasis> (default is
+		<emphasis>"application/x-www-form-urlencoded"</emphasis>)
+		</para>
+		<para>
+		The mandatory <emphasis>recv_body_pv</emphasis> pseudo-var will hold the body of the HTTP
+		response.
+		</para>
+		<para>
+		The optional <emphasis>recv_ctype_pv</emphasis> parameter will contain
+		the value of the "Content-Type" header of the response message.
+		</para>
+		<para>
+		The optional <emphasis>retcode_pv</emphasis> pseudo-var parameter can be given
+		in order to retrieve the HTTP status code of the response message. Since
+		the module based on libcurl, a <emphasis role='bold'>0</emphasis> value
+		means no HTTP reply arrived at all.
+		</para>
+		<para>Possible parameter types</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>url, send_body_pv, send_type_pv</emphasis> -
+			String, pseudo-variable, or a String which includes pseudo-variables.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>recv_body_pv, recv_ctype_pv, retcode_pv</emphasis> -
+			pseudo-variables</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from the <emphasis>startup, branch, failure,
+				request</emphasis> and <emphasis>timer</emphasis> routes.
+		</para>
+		<example>
+		<title><function moreinfo="none">rest_put</function> usage</title>
+		<programlisting format="linespecific">
+...
+# Storing data using a RESTful service with an HTTP PUT request
+
+if (!rest_put("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)")) {
+	xlog("Error code $var(rcode) in HTTP PUT!\n");
+	send_reply("403", "PUT Forbidden");
+	exit;
+}
+...
 </programlisting>
 		</example>
 	</section>
@@ -383,6 +442,40 @@ route [resume]
 	if ($rc &lt; 0) {
 		xlog("Error code $var(rcode) in HTTP POST!\n");
 		send_reply("403", "POST Forbidden");
+		exit;
+	}
+	......
+}
+
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">rest_put(url, send_body_pv, [send_ctype_pv],
+				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
+		</function>
+		</title>
+		<para>
+		Sends a PUT HTTP request. This function behaves exactly the same as
+		<emphasis role='bold'><xref linkend="rest_put"/></emphasis> (in terms of input, output and processing),
+		but in an asynchronous way. Script execution is suspended until the
+		entire content of the HTTP response if available.
+		</para>
+		<example>
+		<title><function moreinfo="none">async rest_put</function> usage</title>
+		<programlisting format="linespecific">
+route {
+	...
+	async(rest_put("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)"), resume);
+}
+
+route [resume]
+{
+	if ($rc &lt; 0) {
+		xlog("Error code $var(rcode) in HTTP PUT!\n");
+		send_reply("403", "PUT Forbidden");
 		exit;
 	}
 	......
