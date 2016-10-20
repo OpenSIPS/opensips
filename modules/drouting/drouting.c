@@ -3956,6 +3956,8 @@ static int strip_username(struct sip_msg* msg, int strip)
 {
 	struct action act;
 
+	/* initialize all the act fields */
+	memset(&act, 0, sizeof(act));
 	act.type = STRIP_T;
 	act.elem[0].type = NUMBER_ST;
 	act.elem[0].u.number = strip;
@@ -3973,6 +3975,8 @@ static int prefix_username(struct sip_msg* msg, str *pri)
 {
 	struct action act;
 
+	/* initialize all the act fields */
+	memset(&act, 0, sizeof(act));
 	act.type = PREFIX_T;
 	act.elem[0].type = STR_ST;
 	act.elem[0].u.s = *pri;

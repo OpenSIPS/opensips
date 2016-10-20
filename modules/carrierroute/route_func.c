@@ -677,6 +677,8 @@ int cr_do_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
 
 	LM_INFO("uri %.*s was rewritten to %.*s\n", rewrite_user.len, rewrite_user.s, dest.len, dest.s);
 
+	/* initialize all the act fields */
+	memset(&act, 0, sizeof(act));
 	act.type = SET_URI_T;
 	act.elem[0].type= STR_ST;
 	act.elem[0].u.s = dest;

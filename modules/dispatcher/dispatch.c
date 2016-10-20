@@ -1300,6 +1300,8 @@ int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock,
 	uri_type utype;
 	int typelen;
 
+	/* initialize all the act fields */
+	memset(&act, 0, sizeof(act));
 	switch(mode)
 	{
 		case 1:

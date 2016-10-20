@@ -256,6 +256,8 @@ int moduleFunc(struct sip_msg *m, char *func,
 		return -1;
 	}
 
+	/* initialize all the act fields */
+	memset(&act, 0, sizeof(act));
 	elems[0].type = CMD_ST;
 	elems[0].u.data = exp_func_struct;
 	elems[1].type = STRING_ST;
