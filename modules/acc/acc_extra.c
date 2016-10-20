@@ -101,7 +101,7 @@ static inline int add_tag(str* _stag, tag_t** tag_arr, int* tags_len)
 {
 	int ret=-1, i;
 
-	if (tags_len == 0) {
+	if (*tags_len == 0) {
 		(*tag_arr) = pkg_malloc(TAGS_FACTOR * sizeof(tag_t));
 		if ((*tag_arr) == NULL)
 			goto out_nomem;
