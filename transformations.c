@@ -1731,7 +1731,7 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				} else
 					LM_DBG("yay, we can use the pre-compile regexp\n");
 
-				if (val->rs.len > RE_MAX_SIZE) {
+				if (val->rs.len >= RE_MAX_SIZE) {
 					LM_ERR("regex value too long [%.*s]\n", val->rs.len, val->rs.s);
 					return -1;
 				}
