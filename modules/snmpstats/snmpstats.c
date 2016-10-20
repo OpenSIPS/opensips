@@ -178,10 +178,10 @@ static int register_message_code_statistics(void)
 		sizeof(in_message_code_names) / sizeof(char *);
 
 	in_message_code_stats =
-		shm_malloc(sizeof(stat_var) * number_of_message_codes);
+		shm_malloc(sizeof(stat_var *) * number_of_message_codes);
 
 	out_message_code_stats =
-		shm_malloc(sizeof(stat_var) * number_of_message_codes);
+		shm_malloc(sizeof(stat_var *) * number_of_message_codes);
 
 	/* We can only proceed if we had enough memory to allocate the
 	 * statistics.  Note that we don't free the memory, but we don't care
@@ -193,8 +193,10 @@ static int register_message_code_statistics(void)
 	}
 
 	/* Make sure everything is zeroed out */
-	memset(in_message_code_stats,  0, number_of_message_codes);
-	memset(out_message_code_stats, 0, number_of_message_codes);
+	memset(in_message_code_stats,  0,
+			number_of_message_codes * sizeof(stat_var *));
+	memset(out_message_code_stats, 0,
+			number_of_message_codes * sizeof(stat_var *));
 
 	for (i = 0; i < number_of_message_codes; i++)
 	{
