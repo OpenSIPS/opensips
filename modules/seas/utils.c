@@ -59,6 +59,8 @@
 
 static inline int memstr(char *haystack,int hlen,char *needle,int nlen);
 
+#if 0
+/* code not used !*/
 int buffered_printer(int infd)
 {
    int i,k=0,retval;
@@ -177,6 +179,7 @@ error:
       pkg_free(prefix);
    return retval;
 }
+#endif
 
 static inline int memstr(char *haystack,int hlen,char *needle,int nlen)
 {
