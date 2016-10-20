@@ -47,7 +47,7 @@ str mid_reg_from_uri   = { "sip:registrar@localhost", 23 };
 
 static void print_queue_entry(struct mid_reg_queue_entry *entry)
 {
-	LM_INFO("\n"
+	LM_DBG("\n"
 			"-- AoR: '%.*s', ruri: '%.*s', ct_uri: '%.*s'\n"
 			"-- mc %d, fl %d\n"
 			"-- e: %d, e_out: %d\n"
@@ -77,6 +77,8 @@ void __timer_queue_add(struct mid_reg_queue_entry *te)
 	struct mid_reg_queue_entry *entry;
 	int found = 0;
 
+	LM_DBG("add entry\n");
+
 	print_queue_entry(te);
 
 	list_for_each(it, uac_timer_queue) {
@@ -96,6 +98,8 @@ void timer_queue_add(struct mid_reg_queue_entry *te)
 {
 	if (!te)
 		return;
+
+	LM_DBG("add entry\n");
 
 	lock_get(queue_lock);
 	__timer_queue_add(te);
@@ -149,11 +153,11 @@ int should_relay_register(ucontact_t *con, unsigned int expires)
 	list_for_each(it, uac_timer_queue) {
 		entry = list_entry(it, struct mid_reg_queue_entry, queue);
 		if (con == entry->con) {
-			LM_INFO("ct match!\n");
+			LM_DBG("ct match!\n");
 			if (entry->expires != expires ||
 	//		    entry->next_check_ts < expires + act_time)
 			    entry->expires_out + entry->last_register_out_ts - act_time <= expires) {
-				LM_INFO("[%d - %d], [%d - %d - %d]\n", entry->expires, expires, entry->expires_out, entry->last_register_out_ts, expires);
+				LM_DBG("[%d - %d], [%d - %d - %d]\n", entry->expires, expires, entry->expires_out, entry->last_register_out_ts, expires);
 				lock_release(queue_lock);
 				return 1;
 			}
@@ -163,7 +167,7 @@ int should_relay_register(ucontact_t *con, unsigned int expires)
 		}
 	}
 
-	LM_INFO("no match for [%d - %d, %d - %d]\n", entry->expires, entry->expires_out, entry->last_register_out_ts, expires);
+	LM_DBG("no match for [%d - %d, %d - %d]\n", entry->expires, entry->expires_out, entry->last_register_out_ts, expires);
 
 	lock_release(queue_lock);
 	return 1;
@@ -172,6 +176,8 @@ int should_relay_register(ucontact_t *con, unsigned int expires)
 int timer_queue_update_by_ct(ucontact_t *con, unsigned int expires)
 {
 	int rc;
+
+	LM_DBG("update entry\n");
 
 	lock_get(queue_lock);
 	rc = __timer_queue_update_by_ct(con, expires);
@@ -197,7 +203,8 @@ void __timer_queue_del_contact(ucontact_t *ct)
 
 void timer_queue_del_contact(ucontact_t *ct)
 {
-	LM_INFO("----- DEL CONTACT\n");
+	LM_DBG("----- DEL CONTACT\n");
+
 	lock_get(queue_lock);
 	__timer_queue_del_contact(ct);
 	lock_release(queue_lock);
@@ -210,7 +217,7 @@ static inline void __print_list(struct list_head *list)
 
 	list_for_each(it, list) {
 		entry = list_entry(it, struct mid_reg_queue_entry, queue);
-		LM_INFO("  %d\n", entry->next_check_ts);
+		LM_DBG("  %d\n", entry->next_check_ts);
 	}
 }
 
@@ -260,7 +267,7 @@ void build_unregister_hdrs(struct mid_reg_queue_entry *entry)
 
 void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 {
-	LM_INFO(">> [REPLY] UNREGISTER !\n");
+	LM_DBG(">> [REPLY] UNREGISTER !\n");
 }
 
 void unregister_contact(struct mid_reg_queue_entry *entry)
@@ -311,7 +318,7 @@ void mid_reg_uac(unsigned int ticks, void *attr)
 	 */
 	now = time(NULL);
 
-	LM_INFO("++++++++++++ BEFORE +++++++++++++++\n");
+	LM_DBG("++++++++++++ BEFORE +++++++++++++++\n");
 
 	print_timer_queue();
 
@@ -338,14 +345,14 @@ void mid_reg_uac(unsigned int ticks, void *attr)
 	}
 	lock_release(queue_lock);
 
-	LM_INFO("++++++++++++ AFTER QUEUE +++++++++++++++\n");
+	LM_DBG("++++++++++++ AFTER QUEUE +++++++++++++++\n");
 	print_timer_queue();
-	LM_INFO("++++++++++++ AFTER DETACH +++++++++++++++\n");
+	LM_DBG("++++++++++++ AFTER DETACH +++++++++++++++\n");
 	__print_list(&unreg);
 
 	/* properly De-REGISTER all these contacts from the final registrar */
 	list_for_each_safe(it, next, &unreg) {
-		LM_INFO("sending De-REGISTER ...\n");
+		LM_DBG("sending De-REGISTER ...\n");
 		entry = list_entry(it, struct mid_reg_queue_entry, queue);
 
 		/* TODO: send REGISTER with "tm"
@@ -357,7 +364,7 @@ void mid_reg_uac(unsigned int ticks, void *attr)
 		shm_free(it);
 	}
 
-	LM_INFO("++++++++++++ FINAL QUEUE +++++++++++++++\n");
+	LM_DBG("++++++++++++ FINAL QUEUE +++++++++++++++\n");
 	print_timer_queue();
 
 	return;

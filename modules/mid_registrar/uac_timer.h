@@ -48,7 +48,7 @@ struct mid_reg_queue_entry {
 	struct list_head queue;
 	/* TODO add ld_queue and my_ld_queue */
 
-	/* De-registrations will be generated over to this SIP URI */
+	/* De-registrations will be sent to this SIP URI */
 	str ruri;
 
 	str ct_uri;
