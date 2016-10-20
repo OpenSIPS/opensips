@@ -531,15 +531,15 @@ void shm_mem_destroy(void)
 	if (mem_lock){
 		LM_DBG("destroying the shared memory lock\n");
 		lock_destroy(mem_lock); /* we don't need to dealloc it*/
-	}
 #ifdef STATISTICS
-	if (event_shm_threshold) {
-		if (event_shm_last)
-			shm_free(event_shm_last);
-		if (event_shm_pending)
-			shm_free(event_shm_pending);
-	}
+		if (event_shm_threshold) {
+			if (event_shm_last)
+				shm_free(event_shm_last);
+			if (event_shm_pending)
+				shm_free(event_shm_pending);
+		}
 #endif
+	}
 	if (shm_mempool && (shm_mempool!=(void*)-1)) {
 #ifdef SHM_MMAP
 		munmap(shm_mempool, /* SHM_MEM_SIZE */ shm_mem_size );
