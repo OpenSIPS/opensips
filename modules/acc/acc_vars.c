@@ -196,6 +196,7 @@ int pv_set_acc_extra(struct sip_msg *msg, pv_param_t *param, int op,
 
 	if (param == NULL || val == NULL) {
 		LM_ERR("bad params!\n");
+		return -1;
 	}
 
 	if (ctx == NULL) {
