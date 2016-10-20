@@ -1473,7 +1473,7 @@ static int dr_init(void)
 			goto skip;
 		}
 
-		head_db_end->db_con = pkg_malloc(sizeof(db_con_t **));
+		head_db_end->db_con = pkg_malloc(sizeof(db_con_t *));
 		(*(head_db_end->db_con)) = 0;
 
 		/* bind to the SQL module */
