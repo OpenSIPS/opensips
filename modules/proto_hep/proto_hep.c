@@ -1226,12 +1226,14 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 
 	if (!memcmp(buf, HEP_HEADER_ID, HEP_HEADER_ID_LEN)) {
 		/* HEPv3 */
+		/* coverity[tainted_data] */
 		if (unpack_hepv3(buf, len, &hep_ctx->h)) {
 			LM_ERR("hepv3 unpacking failed\n");
 			return -1;
 		}
 	} else {
 		/* HEPv2 */
+		/* coverity[tainted_data] */
 		if (unpack_hepv12(buf, len, &hep_ctx->h)) {
 			LM_ERR("hepv12 unpacking failed\n");
 			return -1;
