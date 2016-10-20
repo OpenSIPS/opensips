@@ -625,9 +625,9 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 			accX_unlock(&ctx->lock);
 		}
 	} else {
-		if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+((ctx&&cdr_flag)?2:0)) < 0 )
+		if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m) < 0 )
 				CON_RESET_INSLIST(db_handle);
-		if (acc_dbf.insert(db_handle, db_keys, db_vals, m+((ctx&&cdr_flag)?2:0)) < 0) {
+		if (acc_dbf.insert(db_handle, db_keys, db_vals, m) < 0) {
 			LM_ERR("failed to insert into database\n");
 			return -1;
 		}
