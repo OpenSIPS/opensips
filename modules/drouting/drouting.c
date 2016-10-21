@@ -4178,7 +4178,6 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 end:
 				return 1;
 			}
-			pgwa = pgwa->next;
 		}
 	}
 
