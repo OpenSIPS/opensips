@@ -1021,7 +1021,7 @@ static int init_tls_domains(struct tls_domain *d)
 		 * load crl from directory
 		 */
 		if (!d->crl_directory) {
-			LM_NOTICE("no crl for tls, using none");
+			LM_NOTICE("no crl for tls, using none\n");
 		} else {
 			if(load_crl(d->ctx, d->crl_directory, d->crl_check_all) < 0)
 				return -1;
