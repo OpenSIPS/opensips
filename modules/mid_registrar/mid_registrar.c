@@ -1627,7 +1627,7 @@ int decrypt_str(str *in, str *out)
 	return 0;
 }
 
-int fix_contact_domain(struct sip_msg *msg)
+int fix_contact_domain(struct sip_msg *msg, str *aor)
 {
 	struct sip_uri uri;
 	contact_t *c = NULL;
@@ -1637,7 +1637,8 @@ int fix_contact_domain(struct sip_msg *msg)
 	str hostport, left, left2;
 	char *cp, *buf, temp, *p;
 	int len, len1;
-	str enct = { NULL, 0 };
+	str enct = { NULL, 0 }, ustr;
+	char ubuf[2 * MAX_URI_SIZE];
 
 	adv_sock = *get_sock_info_list(PROTO_UDP);
 
@@ -1806,7 +1807,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 
 	if (routing_mode == ROUTE_BY_CONTACT) {
 		LM_DBG("fixing contact domain ... \n");
-		if (fix_contact_domain(req))
+		if (fix_contact_domain(req, &entry->aor))
 			LM_ERR("failed to overwrite Contact header field domain\n");
 	} else {
 		if (prepend_path(req, &entry->aor, 0, 0))
@@ -2079,6 +2080,48 @@ error:
 	return -1;
 }
 
+int get_match_token(str *uri, str *out_tok, struct sip_uri *out_puri, int *out_idx)
+{
+	struct sip_uri puri;
+	int i;
+
+	if (parse_uri(uri->s, uri->len, &puri) < 0) {
+		LM_ERR("failed to parse contact <%.*s>\n", uri->len, uri->s);
+		return -1;
+	}
+
+	if (matching_mode == MATCH_BY_PARAM) {
+		for (i = 0; i < puri.u_params_no; i++) {
+			if (!str_strcmp(&puri.u_name[i], &matching_param)) {
+				*out_tok = puri.u_val[i];
+				if (out_idx)
+					*out_idx = i;
+				break;
+			}
+		}
+
+		if (!out_tok->s || out_tok->len <= 0) {
+			LM_ERR("a Contact from main registrar (%.*s) is missing the '%.*s'"
+			       "hf parameter\n", uri->len, uri->s,
+			       matching_param.len, matching_param.s);
+			return -1;
+		}
+	} else {
+		*out_tok = puri.user;
+
+		if (!out_tok->s || out_tok->len <= 0) {
+			LM_ERR("missing SIP user in Contact from main registrar (%.*s)\n",
+			       uri->len, uri->s);
+			return -1;
+		}
+	}
+
+	if (out_puri)
+		*out_puri = puri;
+
+	return 0;
+}
+
 static inline int insert_contacts(struct sip_msg *req, struct sip_msg* _m,
 			struct mid_reg_queue_entry *entry, str* _a, urecord_t **rec)
 {
@@ -2258,6 +2301,7 @@ int fix_reply_contact_domain(struct sip_msg *req, struct sip_msg *rpl)
 	str match_tok, hostport, dec_uri;
 	char *buf;
 	int i;
+	int delim;
 	struct lump *anchor;
 
 	LM_DBG("fixing reply domain\n");
@@ -2273,34 +2317,9 @@ int fix_reply_contact_domain(struct sip_msg *req, struct sip_msg *rpl)
 	for (c = get_first_contact(rpl); c; c = get_next_contact(c)) {
 		memset(&match_tok, 0, sizeof match_tok);
 
-		if (parse_uri(c->uri.s, c->uri.len, &uri) < 0) {
-			LM_ERR("failed to parse contact <%.*s>\n",
-					c->uri.len, c->uri.s);
+		if (get_match_token(&c->uri, &match_tok, &uri, &i) != 0) {
+			LM_ERR("failed to get match token\n");
 			return -1;
-		}
-
-		if (matching_mode == MATCH_BY_PARAM) {
-			for (i = 0; i < uri.u_params_no; i++) {
-				if (!str_strcmp(&uri.u_name[i], &matching_param)) {
-					match_tok = uri.u_val[i];
-					break;
-				}
-			}
-
-			if (!match_tok.s || match_tok.len <= 0) {
-				LM_ERR("a Contact from main registrar (%.*s) is missing the '%.*s'"
-				       "hf parameter\n", c->uri.len, c->uri.s,
-				       matching_param.len, matching_param.s);
-				return -1;
-			}
-		} else {
-			match_tok = uri.user;
-
-			if (!match_tok.s || match_tok.len <= 0) {
-				LM_ERR("missing SIP user in Contact from main registrar (%.*s)\n",
-				       c->uri.len, c->uri.s);
-				return -1;
-			}
 		}
 
 		if (decrypt_str(&match_tok, &dec_uri)) {
@@ -2316,7 +2335,6 @@ int fix_reply_contact_domain(struct sip_msg *req, struct sip_msg *rpl)
 			       dec_uri.len, dec_uri.s);
 			return -1;
 		}
-
 
 		/* try to match the request Contact with a Contact from the reply */
 		if (compare_uris(NULL, &match_uri, NULL, &newuri))
@@ -2360,12 +2378,14 @@ int fix_reply_contact_domain(struct sip_msg *req, struct sip_msg *rpl)
 
 		LM_DBG("deleting param '%.*s' @ %p\n", uri.u_name[i].len, uri.u_name[i].s, uri.u_name[i].s);
 
-		/* remove our added matching parameter on the way back to the UAC */
-		if (!del_lump(rpl, uri.u_name[i].s - rpl->buf - 1 /* offset */,
-			1 + uri.u_name[i].len + 1 + match_tok.len /* ;param=value */, HDR_OTHER_T)) {
-			LM_ERR("del_lump 2 failed for reply Contact URI '%.*s'\n",
-			       c->uri.len, c->uri.s);
-			return -1;
+		if (matching_mode == MATCH_BY_PARAM) {
+			/* remove our added matching parameter on the way back to the UAC */
+			if (!del_lump(rpl, uri.u_name[i].s - rpl->buf - 1 /* offset */,
+				1 + uri.u_name[i].len + 1 + match_tok.len /* ;param=value */, HDR_OTHER_T)) {
+				LM_ERR("del_lump 2 failed for reply Contact URI '%.*s'\n",
+				       c->uri.len, c->uri.s);
+				return -1;
+			}
 		}
 
 		pkg_free(dec_uri.s);
@@ -2618,6 +2638,9 @@ out_error:
 	return -1;
 }
 
+//int set_ruri(struct sip_msg *msg, str *uri)
+//
+
 
 static int w_mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 {
@@ -2639,6 +2662,9 @@ static int w_mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	pv_value_t val;
 	int_str istr;
 	str sip_instance = {0,0},call_id = {0,0};
+	str pst, dec_tok, match_tok, hostport;
+	struct sip_uri dec_uri;
+	int i;
 
 	/* branch index */
 	int idx;
@@ -2646,6 +2672,8 @@ static int w_mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	/* temporary branch values*/
 	int tlen;
 	char *turi;
+
+	char ubuf[MAX_URI_SIZE];
 
 	qvalue_t tq;
 
@@ -2723,9 +2751,60 @@ static int w_mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		}
 		uri = val.rs;
 	} else {
-		if (_m->new_uri.s) uri = _m->new_uri;
-		else uri = _m->first_line.u.request.uri;
+		uri = *GET_RURI(_m);
 	}
+
+	if (get_match_token(&uri, &match_tok, NULL, NULL) != 0) {
+		LM_ERR("failed to get match token\n");
+		return -1;
+	}
+
+	if (decrypt_str(&match_tok, &dec_tok)) {
+		LM_ERR("failed to decrypt matching Contact param (%.*s=%.*s)\n",
+		       matching_param.len, matching_param.s,
+		       match_tok.len, match_tok.s);
+		return -1;
+	}
+
+	if (parse_uri(dec_tok.s, dec_tok.len, &dec_uri) < 0) {
+		LM_ERR("failed to parse dec URI <%.*s>\n", dec_tok.len, dec_tok.s);
+		return -1;
+	}
+
+	hostport = dec_uri.host;
+	if (dec_uri.port.len > 0)
+		hostport.len = dec_uri.port.s + dec_uri.port.len - dec_uri.host.s;
+
+	/* replace the host:port part */
+	dec_uri.port.s = NULL;
+	dec_uri.host = hostport;
+
+	/* remove the match parameter */
+	for (i = 0; i < dec_uri.u_params_no; i++) {
+		if (str_strcmp(&dec_uri.u_name[i], &matching_param) == 0) {
+			dec_uri.u_name[i].s = NULL;
+			break;
+		}
+	}
+
+	pst.s = ubuf;
+	pst.len = MAX_URI_SIZE;
+	if (print_uri(&dec_uri, &pst) != 0) {
+		LM_ERR("failed to print URI\n");
+		return -1;
+	}
+
+	pkg_free(dec_tok.s);
+
+	if (!_s) {
+		if (set_ruri(_m, &pst) != 0) {
+			LM_ERR("failed to set R-URI\n");
+			return -1;
+		}
+	}
+
+	if (routing_mode == ROUTE_BY_CONTACT)
+		return 1;
 
 	if (extract_aor(&uri, &aor,&sip_instance,&call_id) < 0) {
 		LM_ERR("failed to extract address of record\n");
