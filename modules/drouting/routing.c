@@ -282,7 +282,6 @@ int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 	/* link it */
 	key.s = id;
 	key.len = strlen(id);
-	LM_INFO("carriers key %.*s\n", key.len, key.s);
 	map_put(rd->carriers_tree, key, cr);
 
 
