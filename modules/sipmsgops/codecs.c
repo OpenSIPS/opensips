@@ -321,7 +321,7 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 	if (msg==NULL || msg==FAKED_REPLY)
 		return -1;
 
-	if(parse_sdp(msg))
+	if(!parse_sdp(msg))
 	{
 		LM_DBG("Message has no SDP\n");
 		return -1;
@@ -958,7 +958,7 @@ static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
 	if (msg==NULL || msg==FAKED_REPLY)
 		return -1;
 
-	if(parse_sdp(msg))
+	if(!parse_sdp(msg))
 	{
 		LM_DBG("Message has no SDP\n");
 		return -1;

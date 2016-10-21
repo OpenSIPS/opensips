@@ -2957,7 +2957,7 @@ int b2b_apply_lumps(struct sip_msg* msg)
 		LM_ERR("parse_msg failed\n");
 
 	/* check for SDP */
-	if (parse_sdp(msg) < 0) {
+	if (!parse_sdp(msg)) {
 		LM_DBG("failed to parse SDP message\n");
 		return -1;
 	}

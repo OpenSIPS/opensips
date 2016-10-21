@@ -148,7 +148,7 @@ void qos_dialog_created_CB(struct dlg_cell *did, int type, struct dlg_cb_params 
 
 	run_create_cbs(qos_ctx, msg);
 
-	if (0 == parse_sdp(msg)) {
+	if (parse_sdp(msg)) {
 		lock_get(&qos_ctx->lock);
 		add_sdp(qos_ctx, dir, msg, role, other_role);
 		lock_release(&qos_ctx->lock);
@@ -211,7 +211,7 @@ static void qos_dialog_request_CB(struct dlg_cell* did, int type, struct dlg_cb_
 			(msg->first_line.u.request.method_value == METHOD_UPDATE) ||
 			(msg->first_line.u.request.method_value == METHOD_ACK) ||
 			(msg->first_line.u.request.method_value == METHOD_PRACK)) {
-			if (0 == parse_sdp(msg)) {
+			if (parse_sdp(msg)) {
 				lock_get(&qos_ctx->lock);
 				add_sdp(qos_ctx, dir, msg, role, other_role);
 				lock_release(&qos_ctx->lock);
@@ -258,7 +258,7 @@ static void qos_dialog_response_CB(struct dlg_cell* did, int type, struct dlg_cb
 	if (msg->first_line.type == SIP_REPLY) {
 		if (msg->first_line.u.reply.statuscode > 100 &&
 			msg->first_line.u.reply.statuscode < 300) {
-			if (0 == parse_sdp(msg)) {
+			if (parse_sdp(msg)) {
 				lock_get(&qos_ctx->lock);
 				add_sdp(qos_ctx, dir, msg, role, other_role);
 				lock_release(&qos_ctx->lock);

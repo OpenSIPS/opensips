@@ -1872,7 +1872,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 		/* if has body, check for SDP */
 		if (body.s && body.len && (flags & SIP_PARSE_SDP) &&
 				parse_content_type_hdr(msg)==(TYPE_APPLICATION<<16 | SUBTYPE_SDP) ) {
-			if (parse_sdp(msg) < 0) {
+			if (!parse_sdp(msg)) {
 				strcpy(reason, "failed to parse SDP message");
 				ret = SV_PARSE_SDP;
 				goto failed;

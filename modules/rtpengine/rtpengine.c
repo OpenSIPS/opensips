@@ -1784,7 +1784,7 @@ rtpengine_manage(struct sip_msg *msg, const char *flags)
 	if(msg_has_sdp(msg))
 		nosdp = 0;
 	else
-		nosdp = parse_sdp(msg)?1:0;
+		nosdp = parse_sdp(msg)?0:1;
 
 	if(msg->first_line.type == SIP_REQUEST) {
 		if(method==METHOD_ACK && nosdp==0)

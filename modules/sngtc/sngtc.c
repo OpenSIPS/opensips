@@ -1305,7 +1305,7 @@ static int sngtc_callee_answer(struct sip_msg *msg)
 		goto out_free;
 	}
 
-	if (parse_sdp(msg) != 0) {
+	if (!parse_sdp(msg)) {
 		LM_ERR("failed to parse callee sdp body\n");
 		rc = SNGTC_SDP_ERR;
 		goto out_free;
