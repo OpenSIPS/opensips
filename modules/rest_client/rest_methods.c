@@ -417,6 +417,7 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	long http_rc;
 	pv_value_t pv_val;
 	str st = { 0, 0 };
+	str *stp, *bodyp;
 	str body = { NULL, 0 }, tbody;
 
 	handle = curl_easy_init();
@@ -439,10 +440,12 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
 
 	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
-	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, &body);
+	bodyp = &body; /* doing this just to make coverity happy */
+	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, bodyp);
 
 	w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
-	w_curl_easy_setopt(handle, CURLOPT_HEADERDATA, &st);
+	stp = &st; /* doing this just to make coverity happy */
+	w_curl_easy_setopt(handle, CURLOPT_HEADERDATA, stp);
 
 	if (ssl_capath)
 		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_capath);
