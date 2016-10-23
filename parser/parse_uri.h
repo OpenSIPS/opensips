@@ -32,11 +32,31 @@
 #include "../net/trans.h"
 #include "../parser/msg_parser.h"
 
+#define SIP_SCH			0x3a706973
+#define SIPS_SCH		0x73706973
+#define TEL_SCH			0x3a6c6574
+#define URN_SERVICE_SCH		0x3a6e7275
+#define URN_SERVICE_STR 	":service:"
+#define URN_SERVICE_STR_LEN	(sizeof(URN_SERVICE_STR) - 1)
+
 /* buf= pointer to beginning of uri (sip:x@foo.bar:5060;a=b?h=i)
  * len= len of uri
  * returns: fills uri & returns <0 on error or 0 if ok
  */
 int parse_uri(char *buf, int len, struct sip_uri* uri);
+
+/*
+ * Fully prints a given "struct sip_uri" into a given buffer
+ *
+ * The following "struct sip_uri" fields can be disabled by setting to NULL:
+ *   - passwd / host / port
+ *   - transport / ttl / user_param / maddr / method / lr / r2 / gr
+ *   - any of the unknown param names
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int print_uri(struct sip_uri *uri, str *out_buf);
+
 /* headers  : the list of headers to parse (taken from uri structure)
  * h_name[] : array of header names
  * h_val[]  : array of header values

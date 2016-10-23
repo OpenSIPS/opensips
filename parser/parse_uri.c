@@ -43,6 +43,51 @@
 #include "../core_stats.h"
 #include "../strcommon.h"
 
+static const str uri_type_names[6] = {
+	{NULL, 0}, /*This is the error type*/
+	str_init("sip"),
+	str_init("sips"),
+	str_init("tel"),
+	str_init("tels"),
+	str_init("urn:service")
+};
+
+char* uri_type2str(const uri_type type, char *result)
+{
+	if (type == ERROR_URI_T)
+		return NULL;
+
+	memcpy(result, uri_type_names[type].s, uri_type_names[type].len);
+	return result + uri_type_names[type].len;
+}
+
+int uri_typestrlen(const uri_type type)
+{
+	return uri_type_names[type].len;
+}
+
+uri_type str2uri_type(char * buf)
+{
+	int scheme = 0;
+	uri_type type = ERROR_URI_T;
+	scheme=buf[0]+(buf[1]<<8)+(buf[2]<<16)+(buf[3]<<24);
+	scheme|=0x20202020;
+	if (scheme==SIP_SCH){
+		type=SIP_URI_T;
+	}else if(scheme==SIPS_SCH){
+		if(buf[4]==':')
+			type=SIPS_URI_T;
+		else type = ERROR_URI_T;
+	}else if (scheme==TEL_SCH){
+		type=TEL_URI_T;
+	}else if (scheme==URN_SERVICE_SCH){
+		if (memcmp(buf+3,URN_SERVICE_STR,URN_SERVICE_STR_LEN) == 0) {
+			type=URN_SERVICE_URI_T;
+		}
+	}
+	return type;
+}
+
 int parse_uri_headers(str headers, str h_name[], str h_val[], int h_size)
 {
 	enum states {URI_H_HEADER, URI_H_VALUE};
@@ -148,6 +193,108 @@ int parse_uri_headers(str headers, str h_name[], str h_val[], int h_size)
 	return 0;
 }
 
+int print_uri(struct sip_uri *uri, str *out_buf)
+{
+#define append_str_chunk(field) \
+	do { \
+		if (bytes + uri->field.len > out_buf->len) { \
+			LM_ERR("no more space left! printed so far: '%.*s'\n", \
+		           bytes, out_buf->s); \
+			return -1; \
+		} \
+		memcpy(out_buf->s + bytes, uri->field.s, uri->field.len); \
+		bytes += uri->field.len; \
+	} while (0)
+
+#define append_char(ch) \
+	do { \
+		if (bytes + 1 > out_buf->len) { \
+			LM_ERR("no more space left! printed so far: '%.*s'\n", \
+		           bytes, out_buf->s); \
+			return -1; \
+		} \
+		out_buf->s[bytes++] = ch; \
+	} while (0)
+
+#define VAL(p) p##_val
+
+#define append_param(p) \
+	do { \
+		if (uri->p.s) { \
+			append_char(';'); \
+			append_str_chunk(p); \
+			if (uri->VAL(p).s) { \
+				append_char('='); \
+				append_str_chunk(VAL(p)); \
+			} \
+		} \
+	} while (0)
+
+#define append_uk_param(idx) \
+	do { \
+		if (uri->u_name[idx].s) { \
+			append_char(';'); \
+			if (bytes + uri->u_name[idx].len > out_buf->len) { \
+				LM_ERR("no more space left! printed so far: '%.*s'\n", \
+			           bytes, out_buf->s); \
+				return -1; \
+			} \
+			memcpy(out_buf->s + bytes, uri->u_name[idx].s, uri->u_name[idx].len); \
+			bytes += uri->u_name[idx].len; \
+			if (uri->u_val[idx].s) { \
+				append_char('='); \
+				if (bytes + uri->u_val[idx].len > out_buf->len) { \
+					LM_ERR("no more space left! printed so far: '%.*s'\n", \
+				           bytes, out_buf->s); \
+					return -1; \
+				} \
+				memcpy(out_buf->s + bytes, uri->u_val[idx].s, uri->u_val[idx].len); \
+				bytes += uri->u_val[idx].len; \
+			} \
+		} \
+	} while (0)
+
+	int bytes = 0;
+	int i;
+
+	memcpy(out_buf->s, uri_type_names[uri->type].s, uri_type_names[uri->type].len);
+	bytes += uri_type_names[uri->type].len;
+	append_char(':');
+	append_str_chunk(user);
+	if (uri->passwd.s) {
+		append_char(':');
+		append_str_chunk(passwd);
+	}
+	if (uri->host.s) {
+		append_char('@');
+		append_str_chunk(host);
+	}
+	if (uri->port.s) {
+		append_char(':');
+		append_str_chunk(port);
+	}
+
+	append_param(transport);
+	append_param(ttl);
+	append_param(user_param);
+	append_param(maddr);
+	append_param(method);
+	append_param(lr);
+	append_param(r2);
+	append_param(gr);
+
+	for (i = 0; i < uri->u_params_no; i++)
+		append_uk_param(i);
+
+	out_buf->len = bytes;
+
+	return 0;
+#undef append_str_chunk
+#undef append_char
+#undef VAL
+#undef append_param
+#undef append_uk_param
+}
 
 /* buf= pointer to beginning of uri (sip:x@foo.bar:5060;a=b?h=i)
  * len= len of uri
@@ -209,13 +356,6 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 #ifdef EXTRA_DEBUG
 	int i;
 #endif
-
-#define SIP_SCH			0x3a706973
-#define SIPS_SCH		0x73706973
-#define TEL_SCH			0x3a6c6574
-#define URN_SERVICE_SCH		0x3a6e7275
-#define URN_SERVICE_STR 	":service:"
-#define URN_SERVICE_STR_LEN	(sizeof(URN_SERVICE_STR) - 1)
 
 #define case_port( ch, var) \
 	case ch: \
@@ -1543,47 +1683,3 @@ headers_check:
 	return 0;
 }
 
-static const str uri_type_names[6] = {
-	{NULL, 0}, /*This is the error type*/
-	str_init("sip"),
-	str_init("sips"),
-	str_init("tel"),
-	str_init("tels"),
-	str_init("urn:service")
-};
-
-char* uri_type2str(const uri_type type, char *result)
-{
-	if (type == ERROR_URI_T)
-		return NULL;
-
-	memcpy(result, uri_type_names[type].s, uri_type_names[type].len);
-	return result + uri_type_names[type].len;
-}
-
-int uri_typestrlen(const uri_type type)
-{
-	return uri_type_names[type].len;
-}
-
-uri_type str2uri_type(char * buf)
-{
-	int scheme = 0;
-	uri_type type = ERROR_URI_T;
-	scheme=buf[0]+(buf[1]<<8)+(buf[2]<<16)+(buf[3]<<24);
-	scheme|=0x20202020;
-	if (scheme==SIP_SCH){
-		type=SIP_URI_T;
-	}else if(scheme==SIPS_SCH){
-		if(buf[4]==':')
-			type=SIPS_URI_T;
-		else type = ERROR_URI_T;
-	}else if (scheme==TEL_SCH){
-		type=TEL_URI_T;
-	}else if (scheme==URN_SERVICE_SCH){
-		if (memcmp(buf+3,URN_SERVICE_STR,URN_SERVICE_STR_LEN) == 0) {
-			type=URN_SERVICE_URI_T;
-		}
-	}
-	return type;
-}
