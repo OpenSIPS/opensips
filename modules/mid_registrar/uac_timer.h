@@ -34,10 +34,6 @@
 
 #include "../../lib/list.h"
 
-extern struct usrloc_api ul_api;
-extern struct tm_binds tm_api;
-extern struct sig_binds sig_api;
-
 extern time_t act_time;
 
 /*

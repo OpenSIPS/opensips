@@ -29,13 +29,10 @@
 #include "../tm/dlg.h"
 
 #include "uac_timer.h"
+#include "mid_registrar.h"
 
 static struct list_head *uac_timer_queue;
 static gen_lock_t *queue_lock;
-
-struct usrloc_api ul_api;
-struct tm_binds tm_api;
-struct sig_binds sig_api;
 
 static str register_method = str_init("REGISTER");
 static str contact_hdr = str_init("Contact: ");
