@@ -480,6 +480,11 @@ int compare_rtpp(struct rtpp_node *r_node, struct rtpp_notify_node *n_node)
 		LM_ERR("cannot resolve hostname %s\n", r_node->rn_address);
 		return 0;
 	}
+	if (rtpp_server->h_length > BUF_LEN) {
+		LM_ERR("length too big for rtpproxy server address: %d\n",
+				rtpp_server->h_length);
+		return 0;
+	}
 
 	if (memcmp(n_node->addr, rtpp_server->h_addr, rtpp_server->h_length)!= 0)
 		return 0;
