@@ -1312,12 +1312,12 @@ void timer_db_update(unsigned int ticks,void *param)
 		return;
 	}
 
-	update_db_subs(pa_db, pa_dbf, subs_htable,
+	update_db_subs(pa_db, &pa_dbf, subs_htable,
 			shtable_size, no_lock, handle_expired_subs);
 
 }
 
-void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
+void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	int htable_size, int no_lock, handle_expired_func_t handle_expired_func)
 {
 	static db_ps_t my_ps_delete = NULL;
@@ -1539,7 +1539,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 					update_vals[u_contact_col].val.str_val= s->contact;
 
 					CON_PS_REFERENCE(db) = &my_ps_update;
-					if(dbf.update(db, query_cols, 0, query_vals, update_cols,
+					if(dbf->update(db, query_cols, 0, query_vals, update_cols,
 								update_vals, n_query_update, n_update_cols)< 0)
 					{
 						LM_ERR("updating in database\n");
@@ -1581,7 +1581,7 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 					}
 
 					CON_PS_REFERENCE(db) = &my_ps_insert;
-					if(dbf.insert(db,query_cols,query_vals,n_query_cols )<0)
+					if(dbf->insert(db,query_cols,query_vals,n_query_cols )<0)
 					{
 						LM_ERR("unsuccessful sql insert\n");
 						if(!no_lock)
@@ -1606,10 +1606,10 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 	update_vals[0].val.int_val = (int)time(NULL);
 	update_ops[0] = OP_LT;
 	CON_PS_REFERENCE(db) = &my_ps_delete;
-	if (dbf.use_table(db, &active_watchers_table) < 0) {
+	if (dbf->use_table(db, &active_watchers_table) < 0) {
 		LM_ERR("deleting expired information from database\n");
 	} else {
-		if (dbf.delete(db, update_cols, update_ops, update_vals, 1) < 0)
+		if (dbf->delete(db, update_cols, update_ops, update_vals, 1) < 0)
 			LM_ERR("deleting expired information from database\n");
 	}
 
