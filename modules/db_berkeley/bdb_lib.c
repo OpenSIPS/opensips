@@ -357,7 +357,7 @@ database_p bdblib_get_db(str *_s)
 {
 	int rc;
 	database_p _db_p=NULL;
-	char name[512];
+	char name[512 + 1 /* null terminated */];
 
 	if(!_s || !_s->s || _s->len<=0 || _s->len > 512)
 		return NULL;
