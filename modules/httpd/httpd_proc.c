@@ -408,7 +408,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 			"versio=%s, upload_data[%zu]=%p, *con_cls=%p\n",
-			cls, connecti on, url, method, version,
+			cls, connection, url, method, version,
 			*upload_data_size, upload_data, *con_cls);
 
 	pr = *con_cls;
