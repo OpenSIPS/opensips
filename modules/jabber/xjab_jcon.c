@@ -191,6 +191,8 @@ int xj_jcon_user_auth(xj_jcon jbc, char *username, char *passwd,
 		goto error;
 
 	n = recv(jbc->sock, msg_buff, 4096, 0);
+	if (n < 0)
+		goto error;
 	msg_buff[n] = 0;
 	if(strncasecmp(msg_buff, JB_START_STREAM, JB_START_STREAM_LEN))
 		goto error;
