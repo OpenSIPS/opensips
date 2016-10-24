@@ -397,7 +397,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	struct MHD_Response *response;
 	int ret;
 	void *async_data = NULL;
-	struct httpd_cb *cb;
+	struct httpd_cb *cb NULL;
 	const char *normalised_url;
 	struct post_request *pr;
 	str_str_t *kv;
@@ -641,7 +641,7 @@ send_response:
 #endif
 		LM_DBG("MHD_create_response_from_data [%p:%d]\n",
 			page.s, page.len);
-	} else {
+	} else if (cb) {
 		LM_DBG("MHD_create_response_from_callback\n");
 		response = MHD_create_response_from_callback (MHD_SIZE_UNKNOWN,
 							buffer.len,
