@@ -252,6 +252,7 @@ int start_stats_server(char *stats_socket)
       LM_ERR("setsockopt (%s)\n",strerror(errno));
       goto error;
    }
+   memset(&su, 0, sizeof(su));
    su.sin_family = he->h_addrtype;
    su.sin_port=htons(stats_port);
    memcpy(&su.sin_addr,he->h_addr_list[0],4);
