@@ -429,6 +429,8 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 				LM_ERR("can't find media IP in the message\n");
 				return -1;
 			}
+			/* take the family from the more specific line */
+			pf = session->pf;
 		}
 
 		/* Extract the port on sdp_port */
