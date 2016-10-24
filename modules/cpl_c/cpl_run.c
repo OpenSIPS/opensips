@@ -91,7 +91,7 @@ static str cpl_302_reason = str_init("Moved temporarily");
 		_code_ = ntohs( *((unsigned short*)(_p_)) );\
 		_n_ =  ntohs( *((unsigned short*)((_p_)+2)) );\
 		/* make sure it remains positive! */\
-		if (_n_ < 0) {\
+		if (((short)(_n_)) < 0) {\
 			LM_ERR("negative attribute length %d\n", _n_);\
 			goto _error_; \
 		} \
