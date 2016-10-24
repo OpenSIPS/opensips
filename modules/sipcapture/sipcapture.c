@@ -1528,7 +1528,7 @@ static int get_hep_chunk(struct hepv3* h3, unsigned int chunk_id,
 		if (h3->hg.proto_t.chunk.length == 0)
 			goto chunk_not_set;
 
-		if (h3->hg.proto_t.data < 0 || h3->hg.proto_t.data >
+		if (h3->hg.proto_t.data >
 				(sizeof(hep_app_protos)/sizeof(str))-1) {
 			LM_DBG("Not a HEP default defined proto %d\n",
 					h3->hg.ip_proto.data);
