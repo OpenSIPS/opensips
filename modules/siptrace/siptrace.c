@@ -1882,7 +1882,7 @@ static int pipport2su (str *pipport, union sockaddr_union *tmp_su,
 	}
 	host_uri.s = p;
 
-	for (p=pipport->s+pipport->len ; p>=host_uri.s && *p!=':' ; p--);
+	for (p=pipport->s+pipport->len-1 ; p>=host_uri.s && *p!=':' ; p--);
 	if (*p!=':') {
 		LM_ERR("no port specified\n");
 		return -1;
