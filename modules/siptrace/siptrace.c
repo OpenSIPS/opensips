@@ -1520,6 +1520,9 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 		memset(info, 0, sizeof(trace_info_t));
 		if (extra_len)
 			info->trace_attrs = &trace_attrs;
+	} else {
+		LM_ERR("Unknown trace flags %x\n", trace_flags);
+		return -2;
 	}
 
 	info->trace_list=list;
