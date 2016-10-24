@@ -831,6 +831,8 @@ int put_dnscache_value(char *name,int r_type,void *record,int rdata_len,
 		LM_ERR("failed to create key\n");
 		return -1;
 	}
+	value.len = 0;
+	value.s = 0;
 
 	if (failure) {
 		/* just set value as failure marker, and push to back-end
