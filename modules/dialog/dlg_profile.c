@@ -183,9 +183,6 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 			for (++p; *p == ' ' && p < e; p++);
 			if ( p < e && *p == 's') {
 				if (cdb_url.len && cdb_url.s) {
-					if (type==REPL_PROTOBIN)
-						goto repl_error;
-
 					type= REPL_CACHEDB;
 				} else {
 					LM_WARN("profile %.*s configured to be stored in CacheDB, "
@@ -194,9 +191,6 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 				}
 			} else if ( p < e && *p == 'b') {
 				if (profile_replicate_cluster) {
-					if (type==REPL_CACHEDB)
-						goto repl_error;
-
 					type = REPL_PROTOBIN;
 				} else {
 					LM_WARN("profile %.*s configured to be replicated over BIN, "
@@ -232,10 +226,6 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 	}while( (p=d)!=NULL );
 
 	return 0;
-
-repl_error:
-	LM_ERR("Can't use both bin replication and cachedb!\n");
-	return -1;
 }
 
 #define DLG_COPY(_d, _s) \
