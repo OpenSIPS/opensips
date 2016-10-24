@@ -506,8 +506,7 @@ static int dr_disable(struct sip_msg *req, char * param_part_name) {
 		}
 	} else {
 		if( use_partitions ) {
-			LM_ERR("Partition name is mandatory <%.*s>\n", part_name.len
-					,part_name.s);
+			LM_ERR("Partition name is mandatory!\n");
 			return -1;
 		} else {
 			if( head_db_start==NULL ) {
