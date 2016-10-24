@@ -280,7 +280,7 @@ static int pack_hepv3(union sockaddr_union* from_su, union sockaddr_union* to_su
 	/* IPv6 */
 	else if(from_su->s.sa_family == AF_INET6) {
 		/* SRC IPv6 */
-		memcpy((void*) buffer+buflen, &src_ip4, sizeof(struct hep_chunk_ip6));
+		memcpy((void*) buffer+buflen, &src_ip6, sizeof(struct hep_chunk_ip6));
 		buflen += sizeof(struct hep_chunk_ip6);
 
 		memcpy((void*) buffer+buflen, &dst_ip6, sizeof(struct hep_chunk_ip6));
