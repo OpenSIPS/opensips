@@ -320,7 +320,7 @@ static struct lump* delete_existing_contact(struct sip_msg *msg)
 				if (!(foo->flags&LUMPFLAG_SHMEM))
 					pkg_free(foo);
 			}
-			if(lump == msg->add_rm)
+			if(lump == msg->add_rm && prev_crt)
 				msg->add_rm = lump->next;
 			else
 				prev_crt->next = lump->next;
@@ -366,6 +366,7 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 
 	prefix_len = 5; /* <sip: */
 
+	memset(&ctu, 0, sizeof(ctu));
 	if (dlg_api.is_mod_flag_set(dlg,TOPOH_KEEP_USER)) {
 		if ( parse_contact(msg->contact)<0 ||
 			((contact_body_t *)msg->contact->parsed)->contacts==NULL ||
@@ -449,7 +450,7 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 		goto error;
 	}
 
-	memcpy(prefix,"<sip:",prefix_len);
+	memcpy(prefix,"<sip:", 5);
 	if (dlg_api.is_mod_flag_set(dlg,TOPOH_KEEP_USER) && ct_username_len > 0) {
 		memcpy(prefix+5,ct_username,ct_username_len);
 		prefix[prefix_len-1] = '@';
@@ -1704,7 +1705,7 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags)
 		LM_ERR("no more pkg\n");
 		goto error;
 	}
-	memcpy(prefix,"<sip:",prefix_len);
+	memcpy(prefix,"<sip:",5);
 	if (flags & TOPOH_KEEP_USER && ct_username_len > 0) {
 		memcpy(prefix+5,ct_username,ct_username_len);
 		prefix[prefix_len-1] = '@';
