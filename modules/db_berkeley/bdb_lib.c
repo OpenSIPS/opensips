@@ -715,7 +715,7 @@ int bdblib_create_journal(table_p _tp)
 {
 	char *s;
 	char fn[1024];
-	char d[64];
+	char d[128];
 	FILE *fp = NULL;
 	struct tm *t;
 	int bl;
