@@ -397,7 +397,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	struct MHD_Response *response;
 	int ret;
 	void *async_data = NULL;
-	struct httpd_cb *cb NULL;
+	struct httpd_cb *cb = NULL;
 	const char *normalised_url;
 	struct post_request *pr;
 	str_str_t *kv;
