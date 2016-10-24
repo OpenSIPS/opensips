@@ -455,8 +455,7 @@ int imc_handle_invite(struct sip_msg* msg, imc_cmd_t *cmd,
 	}
 
 	body.len = 13 + member->uri.len - 4/* sip: */ + 28;
-	if(body.len>=IMC_BUF_SIZE || member->uri.len>=IMC_BUF_SIZE
-			|| room->uri.len>=IMC_BUF_SIZE)
+	if(body.len>=IMC_BUF_SIZE)
 	{
 		LM_ERR("buffer size overflow\n");
 		goto error;
