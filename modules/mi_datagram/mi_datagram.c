@@ -247,6 +247,13 @@ static int mi_mod_init(void)
 				return -1;
 			}
 		}
+		/* prevent buffer overflow */
+		n = strlen(mi_socket);
+		if (n > sizeof(mi_dtgram_addr.unix_addr.sun_path)) {
+			LM_ERR("socket name too long: %d - should be less than %d chars\n",
+					n, (int)sizeof(mi_dtgram_addr.unix_addr.sun_path));
+			return -1;
+		}
 
 		/*create the unix socket address*/
 		mi_dtgram_addr.unix_addr.sun_family = AF_LOCAL;
