@@ -41,24 +41,25 @@ int request_winfo(struct sip_msg* msg, char* uri, char* expires)
 	char buffer[PRINTBUF_SIZE];
 	str uri_str;
 
+	if(!uri) {
+		LM_ERR("no uri specified!\n");
+		return -1;
+	}
 	memset(&puri, 0, sizeof(struct sip_uri));
-	if(uri)
+	printbuf_len = PRINTBUF_SIZE-1;
+	if(pv_printf(msg, (pv_elem_t*)uri, buffer, &printbuf_len)<0)
 	{
-		printbuf_len = PRINTBUF_SIZE-1;
-		if(pv_printf(msg, (pv_elem_t*)uri, buffer, &printbuf_len)<0)
-		{
-			LM_ERR("cannot print the format\n");
-			return -1;
-		}
-		if(parse_uri(buffer, printbuf_len, &puri)!=0)
-		{
-			LM_ERR("bad owner SIP address!\n");
-			goto error;
-		} else
-		{
-			LM_DBG("using user id [%.*s]\n", printbuf_len,
-					buffer);
-		}
+		LM_ERR("cannot print the format\n");
+		return -1;
+	}
+	if(parse_uri(buffer, printbuf_len, &puri)!=0)
+	{
+		LM_ERR("bad owner SIP address!\n");
+		goto error;
+	} else
+	{
+		LM_DBG("using user id [%.*s]\n", printbuf_len,
+				buffer);
 	}
 	if(puri.user.len<=0 || puri.user.s==NULL
 			|| puri.host.len<=0 || puri.host.s==NULL)
