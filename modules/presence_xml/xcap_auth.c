@@ -477,7 +477,7 @@ static inline int get_resource_list(str *username, str *domain, str *filename, s
 	path.s = path_buf;
 	path.len = 0;
 	if (selector->s) {
-            while (checked < selector->len && path.len <= MAX_PATH_LEN)
+            while (checked < selector->len && path.len  + 7 + 1/* \0 */ <= MAX_PATH_LEN)
             {
                     if (selector->s[checked] == '/')
                     {
@@ -553,12 +553,8 @@ static inline int get_resource_list(str *username, str *domain, str *filename, s
         return 0;
 
 error:
-        if (doc != NULL)
-        {
-                if (doc->s != NULL)
-                        pkg_free(doc->s);
-                pkg_free(doc);
-        }
+		pkg_free(doc->s);
+		pkg_free(doc);
         if (etag != NULL)
         {
                 if (etag->s != NULL)
