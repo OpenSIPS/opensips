@@ -4322,8 +4322,9 @@ static void hepv3_to_buf(struct hepv3* h3, char* buf, int *len)
 		if (h3->hg.ip_family.data != AF_INET && h3->hg.ip_family.data != AF_INET6) {
 			LM_ERR("Unknown family <%d>! Will use IPv4\n", h3->hg.ip_family.data);
 			af = AF_INET;
+		} else {
+			af = h3->hg.ip_family.data;
 		}
-		af = h3->hg.ip_family.data;
 	}
 
 
