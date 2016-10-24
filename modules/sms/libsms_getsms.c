@@ -275,13 +275,15 @@ static int splitascii(struct modem *mdm, char *source, struct incame_sms *sms)
 {
 	char* start;
 	char* end;
+	char tbuf[TIME_LEN + 1];
+	char dbuf[DATE_LEN + 1];
 
 	/* the text is after the \r */
 	for( start=source ; *start && *start!='\r' ; start++ );
 	if (!*start)
 		return 1;
 	start++;
-	strcpy(sms->ascii,start);
+	strncpy(sms->ascii,start,500);
 	/* get the senders MSISDN */
 	start=strstr(source,"\",\"");
 	if (start==0) {
@@ -295,7 +297,7 @@ static int splitascii(struct modem *mdm, char *source, struct incame_sms *sms)
 		return 1;
 	}
 	*end=0;
-	strcpy(sms->sender,start);
+	strncpy(sms->sender,start,500);
 	/* Siemens M20 inserts the senders name between MSISDN and date */
 	start=end+3;
 	// Workaround for Thomas Stoeckel //
@@ -308,16 +310,18 @@ static int splitascii(struct modem *mdm, char *source, struct incame_sms *sms)
 			return 1;
 		}
 		*end=0;
-		strcpy(sms->name,start);
+		strncpy(sms->name,start,500);
 	}
 	/* Get the date */
 	start=end+3;
-	sprintf(sms->date,"%c%c-%c%c-%c%c",start[3],start[4],start[0],start[1],
-		start[6],start[7]);
+	snprintf(dbuf, DATE_LEN + 1, "%c%c-%c%c-%c%c",start[3],start[4],
+			start[0],start[1],start[6],start[7]);
+	memcpy(sms->date, dbuf, DATE_LEN);
 	/* Get the time */
 	start+=9;
-	sprintf(sms->time,"%c%c:%c%c:%c%c",start[0],start[1],start[3],start[4],
-		start[7],start[7]);
+	snprintf(tbuf, TIME_LEN + 1, "%c%c:%c%c:%c%c",start[0],start[1],
+			start[3],start[4],start[7],start[7]);
+	memcpy(sms->time, tbuf, TIME_LEN);
 	sms->userdatalength=strlen(sms->ascii);
 	return 1;
 }
