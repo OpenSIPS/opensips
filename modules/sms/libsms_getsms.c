@@ -285,7 +285,7 @@ static int splitascii(struct modem *mdm, char *source, struct incame_sms *sms)
 	start++;
 	strncpy(sms->ascii,start,sizeof(sms->ascii));
 	/* force \0 at end */
-	sms->ascii[sizeof(sms->ascii)] = 0;
+	sms->ascii[sizeof(sms->ascii) - 1] = 0;
 	/* get the senders MSISDN */
 	start=strstr(source,"\",\"");
 	if (start==0) {
@@ -314,7 +314,7 @@ static int splitascii(struct modem *mdm, char *source, struct incame_sms *sms)
 		}
 		*end=0;
 		strncpy(sms->name,start,sizeof(sms->name));
-		sms->name[sizeof(sms->name - 1)] = 0;
+		sms->name[sizeof(sms->name) - 1] = 0;
 	}
 	/* Get the date */
 	start=end+3;
