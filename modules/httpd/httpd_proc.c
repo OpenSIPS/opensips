@@ -408,7 +408,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 			"versio=%s, upload_data[%zu]=%p, *con_cls=%p\n",
-			cls, connection, url, method, version,
+			cls, connecti on, url, method, version,
 			*upload_data_size, upload_data, *con_cls);
 
 	pr = *con_cls;
@@ -648,6 +648,8 @@ send_response:
 							(MHD_ContentReaderCallback)cb->flush_data_callback,
 							(void*)async_data,
 							NULL);
+	} else {
+		return -1;
 	}
 	if (cnt_type==HTTPD_TEXT_XML_CNT_TYPE || accept_type==HTTPD_TEXT_XML_CNT_TYPE)
 		MHD_add_response_header(response,
