@@ -3421,21 +3421,26 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 	sco.correlation_id.len = 0;
 
 	/* MSG */
-	if (h && h->version == 3) {
-		for (it=h->u.hepv3.chunk_list; it; it=it->next) {
-			if (it->chunk.type_id == HEP_CORRELATION_ID) {
-				sco.correlation_id.s = it->data;
-				sco.correlation_id.len = it->chunk.length - sizeof(hep_chunk_t);
+	if (h) {
+		if (h->version == 3) {
+			for (it=h->u.hepv3.chunk_list; it; it=it->next) {
+				if (it->chunk.type_id == HEP_CORRELATION_ID) {
+					sco.correlation_id.s = it->data;
+					sco.correlation_id.len = it->chunk.length - sizeof(hep_chunk_t);
 
-				break;
+					break;
+				}
 			}
-		}
 
-		sco.msg.s = h->u.hepv3.payload_chunk.data;
-		sco.msg.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
+			sco.msg.s = h->u.hepv3.payload_chunk.data;
+			sco.msg.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
+		} else {
+			sco.msg.s = h->u.hepv12.payload;
+			sco.msg.len = strlen(h->u.hepv12.payload);
+		}
 	} else {
-		sco.msg.s = h->u.hepv12.payload;
-		sco.msg.len = strlen(h->u.hepv12.payload);
+		sco.msg.s = msg->buf;
+		sco.msg.len = msg->len;
 	}
 	//EMPTY_STR(sco.msg);
 
