@@ -117,7 +117,7 @@ int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
 			goto error;
 		}
 		cb_sort_index = (long int)param;
-		if(cb_sort_index > N_MAX_SORT_CBS) {
+		if(cb_sort_index >= N_MAX_SORT_CBS) {
 			LM_ERR("Sort cbs array not large enough to accomodate cb at dr\n");
 			goto error;
 		}
