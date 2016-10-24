@@ -955,7 +955,8 @@ static int handle_unc_as_data(int fd)
  */
 static inline int read_name(int sock,char *dst,int dstlen)
 {
-   int n,namelen;
+   int n;
+   char namelen;
    namelen=0;
 try_again1:
    if((n=read(sock,&namelen,1))<0){
@@ -969,7 +970,7 @@ try_again1:
       LM_WARN("uncomplete AS has disconnected before giving its name\n");
       return -2;
    }
-   if(namelen>dstlen || namelen==0){
+   if(namelen>=dstlen || namelen<=0){
       LM_ERR("name too long to fit in dst (%d > %d)\n",namelen,dstlen);
       return -1;
    }
@@ -985,7 +986,7 @@ try_again2:
       LM_WARN("uncomplete AS has disconnected before giving its name\n");
       return -2;
    }
-   dst[namelen]=0;
+   dst[(int)namelen]=0;
    return namelen;
 }
 
