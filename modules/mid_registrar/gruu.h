@@ -1,5 +1,5 @@
 /*
- * contact param handling
+ * Handling for Globally Routable UA URIs
  *
  * This module is intended to be used as a middle layer SIP component in
  * environments where a large proportion of SIP UAs (e.g. mobile devices)
@@ -26,15 +26,19 @@
  *
  * History:
  * --------
- *  2016-10-23 initial version (liviu)
+ *  2016-10-24 initial version (liviu)
  */
 
-#ifndef __MID_REG_ENCODE_
-#define __MID_REG_ENCODE_
+#ifndef _MID_REG_GRUU_
+#define _MID_REG_GRUU_
 
-#include "../../parser/msg_parser.h"
+#include "../../mod_fix.h"
 
-int decrypt_str(str *in, str *out);
-int encrypt_str(str *in, str *out);
+extern char tgruu_dec[];
+extern str gruu_secret;
+extern str default_gruu_secret;
 
-#endif /* __MID_REG_ENCODE_ */
+int calc_temp_gruu_len(str* aor,str* instance,str *callid);
+char * build_temp_gruu(str *aor,str *instance,str *callid,int *len);
+
+#endif /* _MID_REG_GRUU_ */

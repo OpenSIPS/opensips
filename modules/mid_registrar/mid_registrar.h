@@ -36,6 +36,7 @@
 #define __MID_REG_
 
 #include "../../parser/msg_parser.h"
+#include "../../parser/contact/contact.h"
 
 enum mid_reg_mode {
 	MID_REG_MIRROR,
@@ -53,9 +54,65 @@ enum mid_reg_matching_mode {
 	MATCH_BY_USER,
 };
 
+typedef enum rerr {
+	R_FINE = 0,   /*!< Everything went OK */
+	R_UL_DEL_R,   /*!< Usrloc record delete failed */
+	R_UL_GET_R,   /*!< Usrloc record get failed */
+	R_UL_NEW_R,   /*!< Usrloc new record failed */
+	R_INV_CSEQ,   /*!< Invalid CSeq value */
+	R_UL_INS_C,   /*!< Usrloc insert contact failed */
+	R_UL_INS_R,   /*!< Usrloc insert record failed */
+	R_UL_DEL_C,   /*!< Usrloc contact delete failed */
+	R_UL_UPD_C,   /*!< Usrloc contact update failed */
+	R_TO_USER,    /*!< No username part in To URI */
+	R_AOR_LEN,    /*!< Address Of Record too long */
+	R_AOR_PARSE,  /*!< Error while parsing Address Of Record */
+	R_INV_EXP,    /*!< Invalid expires parameter in contact */
+	R_INV_Q,      /*!< Invalid q parameter in contact */
+	R_PARSE,      /*!< Error while parsing message */
+	R_TO_MISS,    /*!< Missing To header field */
+	R_CID_MISS,   /*!< Missing Call-ID header field */
+	R_CS_MISS,    /*!< Missing CSeq header field */
+	R_PARSE_EXP,  /*!< Error while parsing Expires */
+	R_PARSE_CONT, /*!< Error while parsing Contact */
+	R_STAR_EXP,   /*!< star and expires != 0 */
+	R_STAR_CONT,  /*!< star and more contacts */
+	R_OOO,        /*!< Out-Of-Order request */
+	R_RETRANS,    /*!< Request is retransmission */
+	R_UNESCAPE,   /*!< Error while unescaping username */
+	R_TOO_MANY,   /*!< Too many contacts */
+	R_CONTACT_LEN,/*!< Contact URI or RECEIVED too long */
+	R_CALLID_LEN, /*!< Callid too long */
+	R_PARSE_PATH, /*!< Error while parsing Path */
+	R_PATH_UNSUP  /*!< Path not supported by UAC */
+
+} rerr_t;
+
+struct save_ctx {
+	unsigned int flags;
+	str aor;
+	unsigned int max_contacts;
+	unsigned int expires;
+	unsigned int expires_out;
+};
+
+extern str sock_hdr_name;
+extern str realm_prefix;
+extern int case_sensitive;
+
+extern rerr_t rerrno;
+
+extern int rerr_codes[];
+extern str error_info[];
+
 extern struct usrloc_api ul_api;
 extern struct tm_binds tm_api;
 extern struct sig_binds sig_api;
+
+extern int default_expires;
+extern int min_expires;
+extern int max_expires;
+extern unsigned int outbound_expires;
 
 extern enum mid_reg_mode reg_mode;
 extern enum mid_reg_routing_mode routing_mode;
@@ -63,10 +120,27 @@ extern enum mid_reg_matching_mode matching_mode;
 
 extern str matching_param;
 
+extern int disable_gruu;
+extern int reg_use_domain;
+
+extern int rcv_avp_name;
+extern unsigned short rcv_avp_type;
 extern int attr_avp_name;
+extern unsigned short attr_avp_type;
+
+extern int tcp_persistent_flag;
 
 time_t get_act_time(void);
 void update_act_time(void);
 int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id);
+
+int calc_contact_q(param_t* _q, qvalue_t* _r);
+
+contact_t* get_first_contact(struct sip_msg* _m);
+contact_t* get_next_contact(contact_t* _c);
+
+int get_expires_hf(struct sip_msg* _m);
+
+int parse_reg_headers(struct sip_msg *msg);
 
 #endif /* __MID_REG_ */

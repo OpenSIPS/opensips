@@ -33,6 +33,27 @@
 
 #include "../../ut.h"
 
+int encrypt_str(str *in, str *out)
+{
+	if (in->len == 0 || !in->s) {
+		out->len = 0;
+		out->s = NULL;
+		return 0;
+	}
+
+	out->len = calc_base64_encode_len(in->len);
+	out->s = pkg_malloc(out->len);
+	if (!out->s) {
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+
+	memset(out->s, 0, out->len);
+
+	base64encode((unsigned char *)out->s, (unsigned char *)in->s, in->len);
+	return 0;
+}
+
 int decrypt_str(str *in, str *out)
 {
 	out->len = calc_max_base64_decode_len(in->len);
