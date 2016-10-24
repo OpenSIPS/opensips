@@ -343,6 +343,7 @@ static inline int rewrite_ruri(struct sip_msg* _m, char* _s)
 {
 	struct action act;
 
+	memset(&act, 0, sizeof(act));
 	act.type = SET_URI_T;
 	act.elem[0].type = STR_ST;
 	act.elem[0].u.s.s = _s;
