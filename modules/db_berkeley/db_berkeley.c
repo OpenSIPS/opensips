@@ -262,7 +262,7 @@ void bdb_check_reload(db_con_t* _con)
 	struct stat st;
 	database_p db;
 	char n[MAX_ROW_SIZE];
-	char t[MAX_TABLENAME_SIZE];
+	char t[MAX_TABLENAME_SIZE + 1];
 	table_p tp = NULL;
 	tbl_cache_p tbc = NULL;
 
@@ -1053,7 +1053,7 @@ int bdb_update(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	table_p _tp = NULL;
 	char kbuf[MAX_ROW_SIZE];
 	char qbuf[MAX_ROW_SIZE];
-	char ubuf[MAX_ROW_SIZE];
+	char ubuf[MAX_ROW_SIZE + 1]; /* NULL terminated */
 	char * tmp;
 	DBT key, qdata, udata;
 	DB *db;
