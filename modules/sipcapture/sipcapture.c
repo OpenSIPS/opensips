@@ -3094,7 +3094,7 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 
 		sco.ruri = msg->first_line.u.request.uri;
 		sco.ruri_user = msg->parsed_uri.user;
-		sco.ruri_user = msg->parsed_uri.host;
+		sco.ruri_domain = msg->parsed_uri.host;
 	}
 	else if(msg->first_line.type == SIP_REPLY) {
 		sco.method = msg->first_line.u.reply.status;
