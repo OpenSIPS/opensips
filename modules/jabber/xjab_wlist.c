@@ -467,7 +467,7 @@ int  xj_wlist_set_aliases(xj_wlist jwl, char *als, char *jd, char *pa)
 		p0 = jwl->aliases->proxy->s;
 		if(jwl->aliases->proxy->len != i)
 		{
-			strncpy(p0, "sip:", 4);
+			strncpy(p0, "sip:", 5);
 			p0 += 4;
 		}
 		strncpy(p0, pa, i);
