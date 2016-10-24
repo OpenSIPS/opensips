@@ -367,6 +367,7 @@ retry:
 
 	if (!done) {
 		LM_ERR("request line too long\n");
+		fclose(new_stream);
 		return -1;
 	}
 	*read_len = i;
