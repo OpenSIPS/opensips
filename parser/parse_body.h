@@ -25,33 +25,49 @@
 #define _PARSE_SIPBODY
 
 typedef void (*free_parsed_part_function)(void *);
-typedef unsigned int (*dump_part_function)(void *, struct sip_msg *,
-		char *buf);
+typedef int (*dump_part_function)(void *, struct sip_msg *, str *buf);
+
+
+#define SIP_BODY_PART_FLAG_NEW      (1<<0)
+#define SIP_BODY_PART_FLAG_DELETED  (1<<1)
 
 struct body_part{
 
-	/* MIME content type */
+	/* MIME content type as a recognized/parsed value 
+	 * This is present only for recevied parts (not for the new parts) !*/
 	int mime;
 
-	/* multi purpose flags */
+	/* MIME content type as a string value 
+	 * This is present only for newly added parts !*/
+	str mime_s;
+
+	/* bitmask with multi purpose flags
+	 * like new part, deleted part, etc */
 	unsigned int flags;
 
-	/* body of the current part */
+	/* body of the current part
+	 * This is present for received parts and for new parts 
+	 *    with body (not with a dump function) */
 	str body;
 
 	/* the whole part ( body + headers) */
 	str all_data;
 
-	/* whatever information might be received from parsing the part */
+	/* whatever information might be received from parsing the part
+	 * This may be present for received and new parts too! */
 	void * parsed;
 	free_parsed_part_function free_parsed_f;
 
 	/* function to regenerate the whole body part (no headers) */
 	dump_part_function dump_f;
+	/* holder for the output of the dump function */
+	str dump;
 
 	struct body_part * next;
 };
 
+
+#define SIP_BODY_FLAG_NEW  (1<<0)
 
 struct sip_msg_body {
 	/* original number of parts in the SIP body */
@@ -63,6 +79,9 @@ struct sip_msg_body {
 
 	/* multi purpose flags */
 	unsigned char flags;
+
+	/* entire body (as received) */
+	str body;
 
 	/* the parts separator in the SIP body */
 	str boundary;
@@ -84,6 +103,10 @@ struct sip_msg_body {
 int parse_sip_body(struct sip_msg * msg);
 
 void free_sip_body(struct sip_msg_body *);
+
+struct body_part* add_body_part(struct sip_msg *msg, str *mime_s, str *body);
+
+int delete_body_part(struct sip_msg *msg, struct body_part *part);
 
 #endif
 

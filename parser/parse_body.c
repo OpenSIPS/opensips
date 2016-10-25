@@ -183,6 +183,7 @@ static int parse_single_part(struct body_part *part, char * start, char * end)
 				return -1;
 			}
 			part->mime = mime;
+			part->mime_s = hd.body;
 		}
 
 		if (hd.type == HDR_EOH_T)
@@ -228,6 +229,8 @@ int parse_sip_body(struct sip_msg * msg)
 		return -1;
 	}
 	memset(msg->body, 0, sizeof (struct sip_msg_body));
+
+	msg->body->body = body;
 
 	msg->body->boundary = ((content_t *) msg->content_type->parsed)->boundary;
 
@@ -293,6 +296,8 @@ int parse_sip_body(struct sip_msg * msg)
 		msg->body->part_count++;
 	}
 
+	msg->body->updated_part_count = msg->body->part_count;
+
 	return 0;
 
 };
@@ -321,4 +326,82 @@ void free_sip_body(struct sip_msg_body *body)
 }
 
 
+struct body_part* add_body_part(struct sip_msg *msg, str *mime_s, str *body)
+{
+	struct body_part *part, *last;
+	char *m;
+
+	if ( parse_sip_body(msg)<0) {
+		LM_ERR("failed to parse existing SIP body\n");
+		return NULL;
+	}
+
+	if (msg->body==NULL) {
+
+		/* the message has no body so far */
+		msg->body = (struct sip_msg_body*)pkg_malloc(
+			sizeof(struct sip_msg_body) + (body?body->len:0) + mime_s->len );
+
+		msg->body->part_count = 0;
+		msg->body->updated_part_count = 1;
+		msg->body->flags = SIP_BODY_FLAG_NEW;
+		msg->body->boundary.s = NULL;
+		msg->body->boundary.len = 0;
+
+		part = &msg->body->first;
+		m = (char*)(msg->body+1); /* pointer to mime */
+
+	} else {
+
+		/* allocate a new body part */
+		part = (struct body_part*)pkg_malloc(
+			sizeof(struct body_part) + (body?body->len:0) );
+		if (part==NULL) {
+			LM_ERR("failed to allocated pkg mem\n");
+			return NULL;
+		}
+
+		part->flags = SIP_BODY_PART_FLAG_NEW;
+
+		m = (char*)(part+1); /* pointer to mime */
+
+		/* link new part at the end of the parts list */
+		for (last=&msg->body->first; last->next ; last=last->next);
+		last->next = part;
+
+		msg->body->updated_part_count++;
+	}
+
+	memset( part, 0, sizeof(struct body_part) );
+
+	/* body follows right after the part, in the same mem chunk */
+	memcpy( m, mime_s->s, mime_s->len);
+	part->mime_s.s = m;
+	part->mime_s.len = mime_s->len;
+
+	if (body) {
+		/* body follows right after mime, in the same mem chunk */
+		part->body.s = m + mime_s->len;
+		memcpy( part->body.s, body->s, body->len);
+		part->body.len = body->len;
+	}
+
+	return part;
+}
+
+
+int delete_body_part(struct sip_msg *msg, struct body_part *part)
+{
+	if (msg->body==NULL) {
+		LM_BUG("deleting a body part, but body not found/parsed :-/\n");
+		return -1;
+	}
+
+	/* mark the part as deleted */
+	part->flags |= SIP_BODY_PART_FLAG_DELETED;
+
+	msg->body->updated_part_count--;
+
+	return 0;
+}
 

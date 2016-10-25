@@ -117,10 +117,10 @@ int received_test( struct sip_msg *msg );
 
 char *construct_uri(str *protocol,str *username,str *domain,str *port,
 		str *params,int *len);
-int lumps_len(struct sip_msg* msg, struct lump* lumps,
-		struct socket_info* send_sock);
-void process_lumps(	struct sip_msg* msg, struct lump* lumps, char* new_buf,
-		unsigned int* new_buf_offs, unsigned int* orig_offs, struct socket_info* send_sock);
+
+void process_lumps( struct sip_msg* msg, struct lump* lumps, char* new_buf,
+		unsigned int* new_buf_offs, unsigned int* orig_offs,
+		struct socket_info* send_sock, int max_offset);
 
 int is_del_via1_lump(struct sip_msg* msg);
 
