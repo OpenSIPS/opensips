@@ -1475,15 +1475,14 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 			/* old part with dump function */
 			if (part->dump_f) {
 				/* copy separator and headers from original message */
-				size += (part->body.s - msg->buf) - orig_offs;
-				len += len;
+				len += (part->body.s - msg->buf) - orig_offs;
 				/* put in the new body */
-				if ((size=part->dump_f( part->parsed ,msg, &part->dump))<0) {
+				if (part->dump_f( part->parsed ,msg, &part->dump)<0) {
 					LM_ERR("failed to build part, inserting empty\n");
 					part->dump.s = "";
 					part->dump.len = 0;
 				} else
-					len += size;
+					len += part->dump.len;
 				/* skip the old body */
 			} else
 			/* old part with lumps -> apply changes */
