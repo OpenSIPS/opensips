@@ -1243,7 +1243,7 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 	struct body_part *part;
 	struct lump* lump;
 	struct lump* ct;
-	int size;
+	unsigned int size;
 	unsigned int len = 0;
 	unsigned int orig_offs;
 	char *hdr;
@@ -1286,12 +1286,12 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 			/* trigger the the dump function link the resulting buffer
 			 * as 'dump' (and to be used and freed when the body buffer
 			 * is actually built) */
-			if ((size=part->dump_f( part->parsed ,msg, &part->dump))<0) {
+			if (part->dump_f( part->parsed ,msg, &part->dump)<0) {
 				LM_ERR("failed to build part, inserting empty\n");
 				part->dump.s = "";
 				part->dump.len = 0;
 			} else
-				len += size;
+				len += part->dump.len;
 		} else {
 			if ( part->flags & SIP_BODY_PART_FLAG_NEW ) {
 				/* simpy copy the body of the part */
@@ -1371,12 +1371,12 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 
 			/* part with dump function ? */
 			if (part->dump_f) {
-				if ((size=part->dump_f( part->parsed ,msg, &part->dump))<0) {
+				if (part->dump_f( part->parsed ,msg, &part->dump)<0) {
 					LM_ERR("failed to build part, inserting empty\n");
 					part->dump.s = "";
 					part->dump.len = 0;
 				} else
-					len += size;
+					len += part->dump.len;
 			} else
 			/* new part with body attached */
 			if ( part->flags & SIP_BODY_PART_FLAG_NEW ) {
@@ -1463,12 +1463,12 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 					CRLF_LEN + CRLF_LEN ;
 				/* simpy copy the body of the part */
 				if (part->dump_f) {
-					if ((size=part->dump_f( part->parsed ,msg, &part->dump))<0) {
+					if (part->dump_f( part->parsed ,msg, &part->dump)<0) {
 						LM_ERR("failed to build part, inserting empty\n");
 						part->dump.s = "";
 						part->dump.len = 0;
 					} else
-						len += size;
+						len += part->dump.len;
 				} else
 					len += part->body.len;
 			} else
