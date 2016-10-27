@@ -541,7 +541,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			caller_sock = create_socket_info(values, 15);
 			callee_sock = create_socket_info(values, 16);
 			if (caller_sock == NULL || callee_sock == NULL) {
-				LM_ERR("Dialog in DB doesn't match any listening sockets");
+				LM_ERR("Dialog in DB doesn't match any listening sockets\n");
 				continue;
 			}
 
