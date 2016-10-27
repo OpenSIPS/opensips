@@ -37,8 +37,10 @@ struct body_part{
 	 * This is present only for recevied parts (not for the new parts) !*/
 	int mime;
 
-	/* MIME content type as a string value 
-	 * This is present only for newly added parts !*/
+	/* MIME content type as a string value
+	 *  If received part, it points inside the msg buf
+	 *  If new part, it holds the mime string, but in the same mem chunk
+	 *    as the whole part -> no need for free on it */
 	str mime_s;
 
 	/* bitmask with multi purpose flags
@@ -46,11 +48,14 @@ struct body_part{
 	unsigned int flags;
 
 	/* body of the current part
-	 * This is present for received parts and for new parts 
-	 *    with body (not with a dump function) */
+	 *  If received part, it points inside the msg buf
+	 *  If new part, it may hold the new body part (if no dump function) ,
+	 *    but in the same mem chunk as the whole part -> no need 
+	 *    for free on it */
 	str body;
 
-	/* the whole part ( body + headers) */
+	/* the whole part ( body + headers)
+	 *   set only if this is a received part */
 	str all_data;
 
 	/* whatever information might be received from parsing the part
