@@ -500,6 +500,12 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 				should use the 'ie' flags. Depending on the scenario, the 'ii'
 				and 'ee' combination are also supported. Only makes sense when
 				RTPProxy is running in the bridge mode.
+				</para><para>
+				<emphasis>NOTE:</emphasis> when using RTPProxy in bridge mode,
+				all sessions are considered asymmetric (as oposed to symmetric
+				if used in normal mode). If you have symmetric clients (this
+				is the most common scenario), you'll have to force the
+				<emphasis>s</emphasis>!
 				</para></listitem>
 				<listitem><para>
 				<emphasis>f</emphasis> - instructs rtpproxy to ignore marks 
