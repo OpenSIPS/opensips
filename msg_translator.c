@@ -1243,7 +1243,7 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 	struct body_part *part;
 	struct lump* lump;
 	struct lump* ct;
-	unsigned int size;
+	int size;
 	unsigned int len = 0;
 	unsigned int orig_offs;
 	char *hdr;
