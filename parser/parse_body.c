@@ -291,6 +291,7 @@ int parse_sip_body(struct sip_msg * msg)
 		part = &msg->body->first;
 
 		part->mime = type;
+		part->mime_s = msg->content_type->body;
 		part->body = body;
 		part->all_data = body;
 		msg->body->part_count++;
