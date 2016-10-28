@@ -321,7 +321,8 @@ int msg_has_sdp(struct sip_msg *msg)
 	}
 
 	for (p = &msg->body->first; p; p = p->next) {
-		if (p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
+		if ( is_body_part_received(p) &&
+		p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP) )
 			return 1;
 	}
 

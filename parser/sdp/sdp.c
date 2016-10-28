@@ -570,6 +570,10 @@ sdp_info_t* parse_sdp(struct sip_msg* _m)
 	/* iterate all body parts and look for the SDP mime */
 	for( part=&_m->body->first ; part ; part=part->next) {
 
+		/* skip body parts which were deleted or newly added */
+		if (!is_body_part_received(part))
+			continue;
+
 		if ( part->mime != ((TYPE_APPLICATION<<16)+SUBTYPE_SDP) )
 			continue;
 

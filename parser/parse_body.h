@@ -71,6 +71,11 @@ struct body_part{
 	struct body_part * next;
 };
 
+#define is_body_part_received(_part) \
+	(((_part)->flags&(SIP_BODY_PART_FLAG_NEW|SIP_BODY_PART_FLAG_DELETED))==0)
+#define is_body_part_deleted(_part) \
+	(((_part)->flags&SIP_BODY_PART_FLAG_DELETED)!=0)
+
 
 #define SIP_BODY_FLAG_NEW  (1<<0)
 

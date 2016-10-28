@@ -171,6 +171,10 @@ int extract_body(struct sip_msg *msg, str *body )
 
 	for ( p=&msg->body->first ; p ; p=p->next )
 	{
+		/* skip body parts which were deleted or newly added */
+		if (!is_body_part_received(p))
+			continue;
+
 		*body = p->body;
 		trim_r(*body);
 		if( p->mime != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)

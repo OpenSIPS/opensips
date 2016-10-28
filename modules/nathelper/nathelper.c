@@ -819,6 +819,10 @@ sdp_1918(struct sip_msg* msg)
 
 	for ( p=&msg->body->first ; p ; p=p->next) {
 
+		/* skip body parts which were deleted or newly added */
+		if (!is_body_part_received(p))
+			continue;
+
 		body = p->body;
 		trim_r(body);
 
@@ -1162,6 +1166,10 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 
 	for ( p=&msg->body->first ; p ; p=p->next )
 	{
+		/* skip body parts which were deleted or newly added */
+		if (!is_body_part_received(p))
+			continue;
+
 		body = p->body;
 		trim_r(body);
 		if( p->mime != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)

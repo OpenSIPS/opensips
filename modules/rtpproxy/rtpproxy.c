@@ -3001,7 +3001,8 @@ int msg_has_sdp(struct sip_msg *msg)
 	}
 
 	for (p = &msg->body->first; p; p = p->next) {
-		if (p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
+		if ( is_body_part_received(p) &&
+		p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP) )
 			return 1;
 	}
 
@@ -3293,6 +3294,11 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid,
 	for (p = &msg->body->first; p != NULL; p = p->next)
 	{
 		int ret = 0;
+
+		/* skip body parts which were deleted or newly added */
+		if (!is_body_part_received(p))
+			continue;
+
 		if (p->mime != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
 			continue;
 		if (p->body.len == 0) {
