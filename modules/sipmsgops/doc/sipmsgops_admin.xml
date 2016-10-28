@@ -49,42 +49,6 @@
 
 	<section>
 	<title>Exported Functions</title>
-	<section>
-		<title>
-		<function moreinfo="none">filter_body(content_type)</function>
-		</title>
-		<para>
-		Filters multipart body by leaving out all other body
-		parts except the first body part of given type.
-		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>content_type</emphasis> -
-				Content type to be left in the body.
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
-		</para>
-		<example>
-		<title><function>filter_body</function> usage</title>
-		<programlisting format="linespecific">
-...
-if (has_body("multipart/mixed")) {
-    if (filter_body("application/sdp") {
-        remove_hf("Content-Type");
-        append_hf("Content-Type: application/sdp\r\n");
-    } else {
-        xlog("Body part application/sdp not found\n");
-    }
-}
-...
-</programlisting>
-		</example>
-	</section>
 
 	<section>
 		<title>
@@ -526,45 +490,22 @@ remove_hf("^X-g.+[0-9]", "r");
 
 	<section>
 		<title>
-		<function moreinfo="none">has_body()</function>,
-		<function moreinfo="none">has_body(mime)</function>
+		<function moreinfo="none">has_body_part([mime])</function>,
 		</title>
 		<para>
 		The function returns <emphasis>true</emphasis> if the SIP message
-		has a body attached. The checked includes also the 
-		<quote>Content-Lenght</quote> header presence and value.
+		has any body part with the given MIME. If there is no MIME given,
+		it will return true if at least one body part is found (with any MIME).
 		</para>
-		<para>
-		If a parameter is given, the mime described will be also checked against
-		the <quote>Content-Type</quote> header.
-		</para>
-
-                <para>
-                If the SIP message has a multipart body and mime is
-                not a multipart type , it will search through
-                all the parts for the given type.
-                </para>
-
-                <para>It will not handle multi-layer multiparts</para>
-                
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>mime</emphasis> - mime to be checked against the 
-				<quote>Content-Type</quote> header. If not present or 0, this
-				check will be disabled.
-			</para>
-		</listitem>
-		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
 		FAILURE_ROUTE and BRANCH_ROUTE.
 		</para>
 		<example>
-		<title><function>has_body</function> usage</title>
+		<title><function>has_body_part</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if(has_body("application/sdp"))
+if(has_body_part("application/sdp"))
 {
     # do interesting stuff here
 }
@@ -630,42 +571,48 @@ if(is_privacy("id"))
 
 	<section>
 		<title>
-		<function moreinfo="none">strip_body(),</function>
-		<function moreinfo="none">strip_body(mime)</function>
-                </title>
-		<para>
-		If the message has a body, this function deletes it,
-		correcting Content-Length. This function also deletes the 
-		Content-Type header.
-		</para>
-                <para>
-                If a MIME type is specified it will delete the body if it has
-                the same type or, if the message has a multipart body
-                it will go through the parts and delete all those with the specified type.
-                </para>
-                <para>It will not handle multi-layer multiparts</para>
+		<function moreinfo="none">remove_body_part([mime[,revert]]),</function>
+		</title>
 
-                <para>Meaning of the parameters is as follows:</para>
+		<para>
+		Removes from the message body all the body parts with the given mime.
+		The necessary corrections over the Content-Type and Content-Length
+		headers are automatically done.
+		</para>
+		<para>
+		If a MIME type is given, it will delete only the body parts with 
+		that mime. If no MIME given, all the parts (entire body) will be
+		removed.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>mime</emphasis> - mime to be checked against the
-				<quote>Content-Type</quote> header. If not present or 0, this
-				check will be disabled.
+			body parts; If not present, all parts are to remvoed;
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>revert</emphasis> - usefull only if a MIME was
+			specified. If "revert" string is given here, the function will
+			delete all body parts but the ones with the given MIME.
 			</para>
 		</listitem>
 		</itemizedlist>
 
-   		<para>
+		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
-		<title><function>strip_body</function> usage</title>
+		<title><function>remove_body_part()</function> usage</title>
 		<programlisting format="linespecific">
 ...
-strip_body();   #delete any body
-strip_body("multipart/related") # delete a multipart/related body
-strip_body("application/sdp") # delete all sdp bodies, even ones enclosed in multipart
+#delete entire body message (all parts)
+remove_body_part();
+# delete all body parts with mime "application/isup"
+remove_body_part("application/isup");
+# delete all body parts but keep the the ones with  "application/sdp"
+remove_body_part("application/sdp","revert")
 ...
 </programlisting>
 		</example>
@@ -673,25 +620,36 @@ strip_body("application/sdp") # delete all sdp bodies, even ones enclosed in mul
 
 	<section>
 		<title>
-		<function moreinfo="none">add_body(body_text, new_content_type)</function>
+		<function moreinfo="none">add_body_part(body,mime)</function>
 		</title>
 		<para>
-		This function can be used to add a body to a message. If a body already
-		exists, it will be replaced with the new one. The second parameter is 
-		the content type of the new body. It is optional: in case the function
-		is used to replace an existing body with a body of the same type, there
-		is no need to set this parameter. If the message has no body or if the
-		types are different, it is compulsory to set this parameter.
+		This function can be used to add a new body part to the message body.
+		If another part already exist, body of the message will be converted 
+		to a multi-part body automatically.
 		</para>
-   		<para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>body</emphasis> - the content of the body part
+			to be added - it may contain variables;
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>mime</emphasis> - the mime string for the body
+			part to be added.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
-		<title><function>add_body</function> usage</title>
+		<title><function>add_body_part</function> usage</title>
 		<programlisting format="linespecific">
 ...
-add_body("Hello World!", "text/plain");
+add_body_part("Hello World!", "text/plain");
 ...
 </programlisting>
 		</example>

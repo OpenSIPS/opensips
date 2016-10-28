@@ -108,7 +108,6 @@ static str header_body = {0, 0};
 #define AUDIO_STR "audio"
 #define AUDIO_STR_LEN 5
 
-static int filter_body_f(struct sip_msg*, char*, char*);
 static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo);
 static int remove_hf_match_f(struct sip_msg* msg, char* pattern, char* foo);
 static int is_present_hf_f(struct sip_msg* msg, char* str_hf, char* foo);
@@ -122,10 +121,8 @@ static int append_time_f(struct sip_msg* msg, char* , char *);
 static int is_method_f(struct sip_msg* msg, char* , char *);
 static int has_body_f(struct sip_msg *msg, char *type, char *str2 );
 static int is_privacy_f(struct sip_msg *msg, char *privacy, char *str2 );
-static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 );
-static int strip_body_f2(struct sip_msg *msg, char *str1, char *str2 );
-static int add_body_f_1(struct sip_msg *msg, char *str1, char *str2 );
-static int add_body_f_2(struct sip_msg *msg, char *str1, char *str2 );
+static int remove_body_part_f(struct sip_msg *msg, char *str1, char *str2 );
+static int add_body_part_f(struct sip_msg *msg, char *str1, char *str2 );
 static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 );
 static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result);
 
@@ -174,9 +171,6 @@ static cmd_export_t cmds[]={
 	{"is_present_hf",    (cmd_function)is_present_hf_f,   1,
 		hname_fixup, free_hname_fixup,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"filter_body",      (cmd_function)filter_body_f,     1,
-		fixup_str_null, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"append_time",      (cmd_function)append_time_f,     0,
 		0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
@@ -186,22 +180,28 @@ static cmd_export_t cmds[]={
 	{"has_body",         (cmd_function)has_body_f,        0,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"has_body_part",    (cmd_function)has_body_f,        0,
+		0, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"has_body",         (cmd_function)has_body_f,        1,
+		fixup_body_type, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"has_body_part",    (cmd_function)has_body_f,        1,
 		fixup_body_type, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"is_privacy",       (cmd_function)is_privacy_f,      1,
 		fixup_privacy, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"strip_body",      (cmd_function)strip_body_f,     0,
+	{"remove_body_part", (cmd_function)remove_body_part_f,0,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
-	{"strip_body",      (cmd_function)strip_body_f2,     1,
+	{"remove_body_part", (cmd_function)remove_body_part_f,1,
 		fixup_body_type, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
-	{"add_body",         (cmd_function)add_body_f_1,        1,
-		fixup_spve_null, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"add_body",         (cmd_function)add_body_f_2,        2,
+	{"remove_body_part", (cmd_function)remove_body_part_f,2,
+		fixup_body_type, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+	{"add_body_part",    (cmd_function)add_body_part_f,   2,
 		add_header_fixup, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"codec_exists",	(cmd_function)codec_find,	1,
@@ -323,70 +323,6 @@ static inline int find_line_start(char *text, unsigned int text_len,
 	return 0;
 }
 
-
-/* Filters multipart body by leaving out everything else except
- * first body part of given content type. */
-static int filter_body_f(struct sip_msg* msg, char* _content_type,
-		char* ignored)
-{
-	char *start;
-	unsigned int len;
-	str *content_type, body;
-
-	if ( get_body(msg,&body)!=0 || body.len==0) {
-		LM_DBG("message body has zero length\n");
-		return -1;
-	}
-
-	content_type = (str *)_content_type;
-	start = body.s;
-	len = body.len;
-
-	while (find_line_start("Content-Type: ", 14, &start, &len)) {
-		start = start + 14;
-		len = len - 14;
-		if (len > content_type->len + 2) {
-			if (strncasecmp(start, content_type->s, content_type->len)
-					== 0) {
-				start = start + content_type->len;
-				len = len - content_type->len;
-				if ((*start != 13) || (*(start + 1) != 10)) {
-					LM_ERR("No CRLF found after content type\n");
-					return -1;
-				}
-				while ((len > 3) && !(*start == 13 && *(start+1) == 10 && *(start+2) == 13 && *(start+3) == 10)) {
-					len = len - 1;
-					start = start + 1;
-				}
-				while ((len > 0) && ((*start == 13) || (*start == 10))) {
-					len = len - 1;
-					start = start + 1;
-				}
-				if (del_lump(msg, body.s - msg->buf, start - body.s, 0)
-						== 0) {
-					LM_ERR("Deleting lump <%.*s> failed\n",
-							(int)(start - body.s), body.s);
-					return -1;
-				}
-				if (find_line_start("--Boundary", 10, &start, &len)) {
-					if (del_lump(msg, start - msg->buf, len, 0) == 0) {
-						LM_ERR("Deleting lump <%.*s> failed\n",
-								len, start);
-						return -1;
-					} else {
-						return 1;
-					}
-				} else {
-					LM_ERR("Boundary not found after content\n");
-					return -1;
-				}
-			}
-		} else {
-			return -1;
-		}
-	}
-	return -1;
-}
 
 int get_pvs_header_value(struct sip_msg *msg, gparam_p gp, pv_value_p ret)
 {
@@ -1069,6 +1005,16 @@ static int fixup_body_type(void** param, int param_no)
 		}
 		pkg_free(*param);
 		*param = (void*)(long)type;
+	} else if(param_no==2) {
+		/* only by remove_body_part() */
+		p = (char*)*param;
+		if (p && strcmp(p,"revert")==0) {
+			pkg_free(*param);
+			*param = (void*)(long)1;
+		} else {
+			pkg_free(*param);
+			*param = (void*)(long)0;
+		}
 	}
 	return 0;
 
@@ -1130,79 +1076,11 @@ static int is_privacy_f(struct sip_msg *msg, char *_privacy, char *str2 )
 }
 
 
-/*
- *	Function to remove the body of a message
- * */
-static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 )
-{
-	str body;
-
-	/* get body pointer */
-	if ( get_body(msg,&body)!=0 || body.len==0) {
-		LM_DBG("message body has zero length\n");
-		return -1;
-	}
-
-	/* delete all body lumps from the list */
-	/* NOTE: do not delete the SHM lumps (which are primarily stored in TM
-	   Such lumps need to skipped and only detached  - bogdan */
-	del_notflaged_lumps( &msg->body_lumps, LUMPFLAG_SHMEM );
-	msg->body_lumps = NULL;
-
-	/* add delete body lump */
-	if( del_lump(msg, body.s-msg->buf, body.len, HDR_EOH_T) == 0) {
-		LM_ERR("failed to add lump to delete body\n");
-		return -1;
-	}
-
-	if (msg->content_type == NULL || msg->content_type->name.s == NULL ||
-			msg->content_type->name.len == 0) {
-		LM_WARN("You have a body but you don't have Content-Type! This is"
-				"not a valid SIP message! The body WILL BE stripped!\n");
-		goto out;
-	}
-
-	/* add delete content-type header lump */
-	if(del_lump(msg, msg->content_type->name.s- msg->buf, msg->content_type->len,
-				HDR_CONTENTTYPE_T) == 0) {
-		LM_ERR("failed to add lump to delete content type header\n");
-		return -1;
-	}
-
-out:
-	return 1;
-}
-
-static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
+static int remove_body_part_f(struct sip_msg *msg, char *type, char *revert )
 {
 	struct sip_msg_body * b;
 	struct body_part * p;
-	int deleted = 0,mime;
-
-
-	/* parse content len hdr */
-	if ( msg->content_length==NULL &&
-	(parse_headers(msg,HDR_CONTENTLENGTH_F, 0)==-1||msg->content_length==NULL))
-		return -1;
-
-	if (get_content_length (msg)==0) {
-		LM_DBG("content length is zero\n");
-		/* Nothing to see here, please move on. */
-		return -1;
-	}
-
-	mime = parse_content_type_hdr(msg);
-
-	if( ( ((int)(long)type )>>16) == TYPE_MULTIPART ||
-	(mime >>16) != TYPE_MULTIPART)
-	{
-		if( mime == ((int)(long)type ) )
-		{
-			strip_body_f(msg,NULL,NULL);
-		}
-
-		return -1;
-	}
+	int deleted = 0;
 
 	if (parse_sip_body(msg)<0 || (b=msg->body)==NULL) {
 		LM_DBG("no body found\n");
@@ -1212,21 +1090,14 @@ static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
 	p = &b->first;
 	deleted = -1;
 
-	while (p)
-	{
-		if( p->mime == ((int)(long)type ) )
-		{
-			if( del_lump( msg, p->all_data.s - msg->buf - 4 - b->boundary.len,
-						p->all_data.len + 6 + b->boundary.len, 0 ) == 0 )
-			{
-				LM_ERR("Failed to add body lump\n");
-				return -1;
-			}
+	for ( p=&b->first ; p ; p=p->next) {
 
+		if ( (type==NULL) || ( !revert && (p->mime==((int)(long)type)) )
+		|| ( revert && (p->mime!=((int)(long)type)) ) ) {
+			delete_body_part( msg, p);
 			deleted =  1;
 		}
 
-		p = p->next;
 	}
 
 	return deleted;
@@ -1235,131 +1106,40 @@ static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
 /*
  *	Function to add a new body
  * */
-static int add_body_f(struct sip_msg *msg, gparam_p nbody, gparam_p ctype )
+static int add_body_part_f(struct sip_msg *msg, char *nbody, char *ctype )
 {
 	str body;
-	struct lump* anchor;
-	unsigned int offset;
-	str new_body;
-	char* value= NULL;
-	str content_type, ctype_hf;
+	str mime;
 
-
-	if(fixup_get_svalue(msg, nbody, &new_body)!=0) {
+	if(fixup_get_svalue(msg, (gparam_p)nbody, &body)!=0) {
 		LM_ERR("cannot print the format\n");
 		return -1;
 	}
 
-	if(new_body.s== NULL || new_body.len == 0) {
+	if(body.s== NULL || body.len == 0) {
 		LM_ERR("null body parameter\n");
 		return -1;
 	}
 
-	/* get body pointer */
-	if ( get_body(msg,&body)!=0 ) {
-		LM_ERR("failed to get gody\n");
+	if(fixup_get_svalue(msg, (gparam_p)ctype, &mime)!=0) {
+		LM_ERR("cannot print the mime string\n");
 		return -1;
 	}
 
-	/* must delete all body lumps from the list */
-	free_lump_list(msg->body_lumps);
-	msg->body_lumps = NULL;
-
-	if (body.len!=0) {
-		/* delete old body */
-		offset = body.s - msg->buf;
-		if(del_lump(msg, offset, body.len, HDR_EOH_T) == 0) {
-			LM_ERR("failed to add lump to delete body\n");
-			return -1;
-		}
-	}
-	else
-	{
-		LM_DBG("content length is zero\n");
-		offset = msg->len;
-		if(ctype== NULL)
-		{
-			LM_ERR("No body found and no content-type name given"
-					" as parameter\n");
-			return -1;
-		}
-	}
-
-	/* add an add body lump */
-	anchor = anchor_lump(msg, offset, 0);
-	if(anchor == 0) {
-		LM_ERR("failed to insert an add new body anchor");
+	if(mime.s== NULL || mime.len == 0) {
+		LM_ERR("empty mime value\n");
 		return -1;
 	}
 
-	value = (char*)pkg_malloc(new_body.len);
-	if(value== NULL) {
-		LM_ERR("no more memory\n");
+	if (add_body_part(msg, &mime, &body)==NULL) {
+		LM_ERR("failed to add new body part <%.*s>\n",
+			mime.len, mime.s);
 		return -1;
 	}
-	memcpy(value, new_body.s, new_body.len);
-
-	if (insert_new_lump_before(anchor, value, new_body.len, 0) == 0) {
-		LM_ERR("failed to insert lump\n");
-		pkg_free(value);
-		return -1;
-	}
-
-	if(ctype) {
-		if(fixup_get_svalue(msg, ctype, &content_type)!=0) {
-			LM_ERR("cannot print the format\n");
-			return -1;
-		}
-
-		if(msg->content_type) {
-			/* verify if the parameter has the same value */
-			if(content_type.len == msg->content_type->body.len &&
-					strncmp(msg->content_type->body.s, content_type.s, content_type.len)== 0)
-			{
-				return 1;
-			}
-
-			if(del_lump(msg, msg->content_type->name.s- msg->buf, msg->content_type->len,
-						HDR_CONTENTTYPE_T) == 0) {
-				LM_ERR("failed to add lump to delete content type header\n");
-				return -1;
-			}
-		}
-		/* add new Content-Type header */
-
-		/* construct header */
-
-		ctype_hf.len = strlen("Content-Type: ") + content_type.len+ CRLF_LEN;
-		ctype_hf.s = (char*)pkg_malloc(ctype_hf.len);
-		if(ctype_hf.s == NULL) {
-			LM_ERR("no more memory\n");
-			return -1;
-		}
-		sprintf(ctype_hf.s, "Content-Type: %.*s%s", content_type.len,
-				content_type.s, CRLF);
-
-		if( add_hf_helper(msg, &ctype_hf, 0, 0, 0, 0)< 0) {
-			LM_ERR("failed to add content type header\n");
-			pkg_free(ctype_hf.s);
-			return -1;
-		}
-		pkg_free(ctype_hf.s);
-	}
-
 
 	return 1;
 }
 
-
-static int add_body_f_1(struct sip_msg *msg, char *nbody, char *ctype )
-{
-	return add_body_f(msg, (gparam_p)nbody, NULL);
-}
-
-static int add_body_f_2(struct sip_msg *msg, char *nbody, char *ctype )
-{
-	return add_body_f(msg, (gparam_p)nbody, (gparam_p)ctype);
-}
 
 static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 )
 {

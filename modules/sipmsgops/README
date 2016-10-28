@@ -11,19 +11,13 @@ Andrei Pelinescu-Onciul
 
    <pelinescu-onciul@fokus.fraunhofer.de>
 
-Edited by
-
 Daniel-Constantin Mierla
 
    <miconda@gmail.com>
 
-Edited by
-
 Ovidiu Sas
 
    <osas@voipembedded.com>
-
-Edited by
 
 Razvan Crainea
 
@@ -46,71 +40,69 @@ Razvan Crainea
 
         1.3. Exported Functions
 
-              1.3.1. filter_body(content_type)
-              1.3.2. append_to_reply(txt)
-              1.3.3. append_hf(txt)
-              1.3.4. append_hf(txt, hdr)
-              1.3.5. insert_hf(txt)
-              1.3.6. insert_hf(txt, hdr)
-              1.3.7. append_urihf(prefix, suffix)
-              1.3.8. is_present_hf(hf_name)
-              1.3.9. append_time()
-              1.3.10. is_method(name)
-              1.3.11. remove_hf(hname [,flags])
-              1.3.12. has_body(), has_body(mime)
-              1.3.13. is_audio_on_hold()
-              1.3.14. is_privacy(privacy_type)
-              1.3.15. strip_body(), strip_body(mime)
-              1.3.16. add_body(body_text, new_content_type)
-              1.3.17. sipmsg_validate([flags[,result_pvar]])
-              1.3.18. codec_exists (name [,clock] )
-              1.3.19. codec_delete (name [,clock] )
-              1.3.20. codec_move_up (name [,clock] )
-              1.3.21. codec_move_down (name [,clock] )
-              1.3.22. codec_exists_re ( regexp )
-              1.3.23. codec_delete_re ( regexp )
-              1.3.24. codec_delete_except_re ( regexp )
-              1.3.25. codec_move_up_re ( regexp )
-              1.3.26. codec_move_down_re ( regexp )
-              1.3.27. change_reply_status(code, reason)
-              1.3.28. stream_exists(regexp)
-              1.3.29. stream_delete(regexp)
+              1.3.1. append_to_reply(txt)
+              1.3.2. append_hf(txt)
+              1.3.3. append_hf(txt, hdr)
+              1.3.4. insert_hf(txt)
+              1.3.5. insert_hf(txt, hdr)
+              1.3.6. append_urihf(prefix, suffix)
+              1.3.7. is_present_hf(hf_name)
+              1.3.8. append_time()
+              1.3.9. is_method(name)
+              1.3.10. remove_hf(hname [,flags])
+              1.3.11. has_body_part([mime]),
+              1.3.12. is_audio_on_hold()
+              1.3.13. is_privacy(privacy_type)
+              1.3.14. remove_body_part([mime[,revert]]),
+              1.3.15. add_body_part(body,mime)
+              1.3.16. sipmsg_validate([flags[,result_pvar]])
+              1.3.17. codec_exists (name [,clock] )
+              1.3.18. codec_delete (name [,clock] )
+              1.3.19. codec_move_up (name [,clock] )
+              1.3.20. codec_move_down (name [,clock] )
+              1.3.21. codec_exists_re ( regexp )
+              1.3.22. codec_delete_re ( regexp )
+              1.3.23. codec_delete_except_re ( regexp )
+              1.3.24. codec_move_up_re ( regexp )
+              1.3.25. codec_move_down_re ( regexp )
+              1.3.26. change_reply_status(code, reason)
+              1.3.27. stream_exists(regexp)
+              1.3.28. stream_delete(regexp)
 
         1.4. Known Limitations
 
    List of Examples
 
-   1.1. filter_body usage
-   1.2. append_to_reply usage
+   1.1. append_to_reply usage
+   1.2. append_hf usage
    1.3. append_hf usage
-   1.4. append_hf usage
+   1.4. insert_hf usage
    1.5. insert_hf usage
-   1.6. insert_hf usage
-   1.7. append_urihf usage
-   1.8. is_present_hf usage
-   1.9. append_time usage
-   1.10. is_method usage
-   1.11. remove_hf usage
-   1.12. has_body usage
-   1.13. is_audio_on_hold usage
-   1.14. is_privacy usage
-   1.15. strip_body usage
-   1.16. add_body usage
-   1.17. sipmsg_validate usage
-   1.18. codec_exists usage
-   1.19. codec_delete usage
-   1.20. codec_move_up usage
+   1.6. append_urihf usage
+   1.7. is_present_hf usage
+   1.8. append_time usage
+   1.9. is_method usage
+   1.10. remove_hf usage
+   1.11. has_body_part usage
+   1.12. is_audio_on_hold usage
+   1.13. is_privacy usage
+   1.14. remove_body_part() usage
+   1.15. add_body_part usage
+   1.16. sipmsg_validate usage
+   1.17. codec_exists usage
+   1.18. codec_delete usage
+   1.19. codec_move_up usage
+   1.20. codec_move_down usage
    1.21. codec_move_down usage
-   1.22. codec_move_down usage
-   1.23. codec_exists_re usage
-   1.24. codec_delete_re usage
-   1.25. codec_delete_except_re usage
-   1.26. codec_move_up_re usage
-   1.27. codec_move_down_re usage
-   1.28. codec_move_down usage
-   1.29. change_reply_status usage
-   1.30. stream_exists usage
-   1.31. stream_delete usage
+   1.22. codec_exists_re usage
+   1.23. codec_delete_re usage
+   1.24. codec_delete_except_re usage
+   1.25. codec_move_up_re usage
+   1.26. codec_move_down_re usage
+   1.27. codec_move_down usage
+   1.28. change_reply_status usage
+   1.29. stream_exists usage
+   1.30. stream_delete usage
 
 Chapter 1. Admin Guide
 
@@ -137,30 +129,7 @@ Chapter 1. Admin Guide
 
 1.3. Exported Functions
 
-1.3.1.  filter_body(content_type)
-
-   Filters multipart body by leaving out all other body parts
-   except the first body part of given type.
-
-   Meaning of the parameters is as follows:
-     * content_type - Content type to be left in the body.
-
-   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-   FAILURE_ROUTE, BRANCH_ROUTE.
-
-   Example 1.1. filter_body usage
-...
-if (has_body("multipart/mixed")) {
-    if (filter_body("application/sdp") {
-        remove_hf("Content-Type");
-        append_hf("Content-Type: application/sdp\r\n");
-    } else {
-        xlog("Body part application/sdp not found\n");
-    }
-}
-...
-
-1.3.2.  append_to_reply(txt)
+1.3.1.  append_to_reply(txt)
 
    Append txt as header to all replies that will be generated by
    OpenSIPS for this request.
@@ -171,13 +140,13 @@ if (has_body("multipart/mixed")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ERROR_ROUTE.
 
-   Example 1.2. append_to_reply usage
+   Example 1.1. append_to_reply usage
 ...
 append_to_reply("Foo: bar\r\n");
 append_to_reply("Foo: $rm at $Ts\r\n");
 ...
 
-1.3.3.  append_hf(txt)
+1.3.2.  append_hf(txt)
 
    Appends 'txt' as header after the last header field.
 
@@ -194,13 +163,13 @@ append_to_reply("Foo: $rm at $Ts\r\n");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.3. append_hf usage
+   Example 1.2. append_hf usage
 ...
 append_hf("P-hint: VOICEMAIL\r\n");
 append_hf("From-username: $fU\r\n");
 ...
 
-1.3.4.  append_hf(txt, hdr)
+1.3.3.  append_hf(txt, hdr)
 
    Appends 'txt' as header after first 'hdr' header field.
 
@@ -212,13 +181,13 @@ append_hf("From-username: $fU\r\n");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.4. append_hf usage
+   Example 1.3. append_hf usage
 ...
 append_hf("P-hint: VOICEMAIL\r\n", "Call-ID");
 append_hf("From-username: $fU\r\n", "Call-ID");
 ...
 
-1.3.5.  insert_hf(txt)
+1.3.4.  insert_hf(txt)
 
    Inserts 'txt' as header before the first header field.
 
@@ -229,13 +198,13 @@ append_hf("From-username: $fU\r\n", "Call-ID");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.5. insert_hf usage
+   Example 1.4. insert_hf usage
 ...
 insert_hf("P-hint: VOICEMAIL\r\n");
 insert_hf("To-username: $tU\r\n");
 ...
 
-1.3.6.  insert_hf(txt, hdr)
+1.3.5.  insert_hf(txt, hdr)
 
    Inserts 'txt' as header before first 'hdr' header field.
 
@@ -247,13 +216,13 @@ insert_hf("To-username: $tU\r\n");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.6. insert_hf usage
+   Example 1.5. insert_hf usage
 ...
 insert_hf("P-hint: VOICEMAIL\r\n", "Call-ID");
 insert_hf("To-username: $tU\r\n", "Call-ID");
 ...
 
-1.3.7.  append_urihf(prefix, suffix)
+1.3.6.  append_urihf(prefix, suffix)
 
    Append header field name with original Request-URI in middle.
 
@@ -264,12 +233,12 @@ insert_hf("To-username: $tU\r\n", "Call-ID");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.7. append_urihf usage
+   Example 1.6. append_urihf usage
 ...
 append_urihf("CC-Diversion: ", "\r\n");
 ...
 
-1.3.8.  is_present_hf(hf_name)
+1.3.7.  is_present_hf(hf_name)
 
    Return true if a header field is present in message.
 
@@ -288,12 +257,12 @@ Note
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.8. is_present_hf usage
+   Example 1.7. is_present_hf usage
 ...
 if (is_present_hf("From")) log(1, "From HF Present");
 ...
 
-1.3.9.  append_time()
+1.3.8.  append_time()
 
    Adds a time header to the reply of the request. You must use it
    before functions that are likely to send a reply, e.g., save()
@@ -312,12 +281,12 @@ if (is_present_hf("From")) log(1, "From HF Present");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.9. append_time usage
+   Example 1.8. append_time usage
 ...
 append_time();
 ...
 
-1.3.10.  is_method(name)
+1.3.9.  is_method(name)
 
    Check if the method of the message matches the name. If name is
    a known method (invite, cancel, ack, bye, options, info,
@@ -342,7 +311,7 @@ append_time();
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, and BRANCH_ROUTE.
 
-   Example 1.10. is_method usage
+   Example 1.9. is_method usage
 ...
 if(is_method("INVITE"))
 {
@@ -354,7 +323,7 @@ if(is_method("OPTION|UPDATE"))
 }
 ...
 
-1.3.11.  remove_hf(hname [,flags])
+1.3.10.  remove_hf(hname [,flags])
 
    Remove from message all headers with name “hname”
 
@@ -377,7 +346,7 @@ if(is_method("OPTION|UPDATE"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.11. remove_hf usage
+   Example 1.10. remove_hf usage
 ...
 if(remove_hf("User-Agent"))
 {
@@ -391,37 +360,24 @@ remove_hf("X-Billing*", "g");
 remove_hf("^X-g.+[0-9]", "r");
 ...
 
-1.3.12.  has_body(), has_body(mime)
+1.3.11.  has_body_part([mime]),
 
-   The function returns true if the SIP message has a body
-   attached. The checked includes also the “Content-Lenght” header
-   presence and value.
-
-   If a parameter is given, the mime described will be also
-   checked against the “Content-Type” header.
-
-   If the SIP message has a multipart body and mime is not a
-   multipart type , it will search through all the parts for the
-   given type.
-
-   It will not handle multi-layer multiparts
-
-   Meaning of the parameters is as follows:
-     * mime - mime to be checked against the “Content-Type”
-       header. If not present or 0, this check will be disabled.
+   The function returns true if the SIP message has any body part
+   with the given MIME. If there is no MIME given, it will return
+   true if at least one body part is found (with any MIME).
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.12. has_body usage
+   Example 1.11. has_body_part usage
 ...
-if(has_body("application/sdp"))
+if(has_body_part("application/sdp"))
 {
     # do interesting stuff here
 }
 ...
 
-1.3.13.  is_audio_on_hold()
+1.3.12.  is_audio_on_hold()
 
    The function returns true if the SIP message has an SDP body
    attached and at least one audio stream in on hold.
@@ -429,7 +385,7 @@ if(has_body("application/sdp"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.13. is_audio_on_hold usage
+   Example 1.12. is_audio_on_hold usage
 ...
 if(is_audio_on_hold())
 {
@@ -437,7 +393,7 @@ if(is_audio_on_hold())
 }
 ...
 
-1.3.14.  is_privacy(privacy_type)
+1.3.13.  is_privacy(privacy_type)
 
    The function returns true if the SIP message has a Privacy
    header field that includes the given privacy_type among its
@@ -448,7 +404,7 @@ if(is_audio_on_hold())
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.14. is_privacy usage
+   Example 1.13. is_privacy usage
 ...
 if(is_privacy("id"))
 {
@@ -456,53 +412,56 @@ if(is_privacy("id"))
 }
 ...
 
-1.3.15.  strip_body(), strip_body(mime)
+1.3.14.  remove_body_part([mime[,revert]]),
 
-   If the message has a body, this function deletes it, correcting
-   Content-Length. This function also deletes the Content-Type
-   header.
+   Removes from the message body all the body parts with the given
+   mime. The necessary corrections over the Content-Type and
+   Content-Length headers are automatically done.
 
-   If a MIME type is specified it will delete the body if it has
-   the same type or, if the message has a multipart body it will
-   go through the parts and delete all those with the specified
-   type.
-
-   It will not handle multi-layer multiparts
+   If a MIME type is given, it will delete only the body parts
+   with that mime. If no MIME given, all the parts (entire body)
+   will be removed.
 
    Meaning of the parameters is as follows:
-     * mime - mime to be checked against the “Content-Type”
-       header. If not present or 0, this check will be disabled.
+     * mime - mime to be checked against the body parts; If not
+       present, all parts are to remvoed;
+     * revert - usefull only if a MIME was specified. If "revert"
+       string is given here, the function will delete all body
+       parts but the ones with the given MIME.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.15. strip_body usage
+   Example 1.14. remove_body_part() usage
 ...
-strip_body();   #delete any body
-strip_body("multipart/related") # delete a multipart/related body
-strip_body("application/sdp") # delete all sdp bodies, even ones enclose
-d in multipart
+#delete entire body message (all parts)
+remove_body_part();
+# delete all body parts with mime "application/isup"
+remove_body_part("application/isup");
+# delete all body parts but keep the the ones with  "application/sdp"
+remove_body_part("application/sdp","revert")
 ...
 
-1.3.16.  add_body(body_text, new_content_type)
+1.3.15.  add_body_part(body,mime)
 
-   This function can be used to add a body to a message. If a body
-   already exists, it will be replaced with the new one. The
-   second parameter is the content type of the new body. It is
-   optional: in case the function is used to replace an existing
-   body with a body of the same type, there is no need to set this
-   parameter. If the message has no body or if the types are
-   different, it is compulsory to set this parameter.
+   This function can be used to add a new body part to the message
+   body. If another part already exist, body of the message will
+   be converted to a multi-part body automatically.
+
+   Meaning of the parameters is as follows:
+     * body - the content of the body part to be added - it may
+       contain variables;
+     * mime - the mime string for the body part to be added.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.16. add_body usage
+   Example 1.15. add_body_part usage
 ...
-add_body("Hello World!", "text/plain");
+add_body_part("Hello World!", "text/plain");
 ...
 
-1.3.17.  sipmsg_validate([flags[,result_pvar]])
+1.3.16.  sipmsg_validate([flags[,result_pvar]])
 
    The function returns true if the SIP message is properly built
    according to SIP RFC3261. It verifies if the mandatory headers
@@ -562,7 +521,7 @@ add_body("Hello World!", "text/plain");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.17. sipmsg_validate usage
+   Example 1.16. sipmsg_validate usage
 ...
 if(!sipmsg_validate())
 {
@@ -580,7 +539,7 @@ if(!sipmsg_validate("sh"))
 }
 ...
 
-1.3.18.  codec_exists (name [,clock] )
+1.3.17.  codec_exists (name [,clock] )
 
    This function can be used to verify if a codec exists inside an
    sdp payload. It will search for the codec inside all streams
@@ -592,14 +551,14 @@ if(!sipmsg_validate("sh"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.18. codec_exists usage
+   Example 1.17. codec_exists usage
 ...
 codec_exists("speex");
 or
 codec_exists("GSM","8000");
 ...
 
-1.3.19.  codec_delete (name [,clock] )
+1.3.18.  codec_delete (name [,clock] )
 
    This function can be used to delete a codec from inside an sdp
    payload. It will search for the codec inside all streams from
@@ -613,14 +572,14 @@ codec_exists("GSM","8000");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.19. codec_delete usage
+   Example 1.18. codec_delete usage
 ...
 codec_delete("speex");
 or
 codec_delete("GSM","8000");
 ...
 
-1.3.20.  codec_move_up (name [,clock] )
+1.3.19.  codec_move_up (name [,clock] )
 
    This function can be used to move a codec up in the list of
    indexes ("m=..."). It will search for the codec inside all
@@ -635,14 +594,14 @@ codec_delete("GSM","8000");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.20. codec_move_up usage
+   Example 1.19. codec_move_up usage
 ...
 codec_move_up("speex");
 or
 codec_move_up("GSM","8000");
 ...
 
-1.3.21.  codec_move_down (name [,clock] )
+1.3.20.  codec_move_down (name [,clock] )
 
    This function can be used to move a codec down in the list of
    indexes ("m=..."). It will search for the codec inside all
@@ -656,14 +615,14 @@ codec_move_up("GSM","8000");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.21. codec_move_down usage
+   Example 1.20. codec_move_down usage
 ...
 codec_move_down("speex");
 or
 codec_move_down("GSM","8000");
 ...
 
-   Example 1.22. codec_move_down usage
+   Example 1.21. codec_move_down usage
 ...
 /*
   This example will move speex with 8000 codec to the back of the list,
@@ -676,7 +635,7 @@ codec_delete("GSM","8000");
 codec_move_up("speex");
 ...
 
-1.3.22.  codec_exists_re ( regexp )
+1.3.21.  codec_exists_re ( regexp )
 
    This function has the same effect as codec_exists ( without the
    clock parameter ) the only difference is that it takes a POSIX
@@ -685,12 +644,12 @@ codec_move_up("speex");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.23. codec_exists_re usage
+   Example 1.22. codec_exists_re usage
 ...
 codec_exists_re("sp[a-z]*");
 ...
 
-1.3.23.  codec_delete_re ( regexp )
+1.3.22.  codec_delete_re ( regexp )
 
    This function has the same effect as codec_delete ( without the
    clock parameter ) the only difference is that it takes a POSIX
@@ -699,13 +658,13 @@ codec_exists_re("sp[a-z]*");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.24. codec_delete_re usage
+   Example 1.23. codec_delete_re usage
 ...
 codec_delete_re("PCMA|PCMU");
 ...
 
 
-1.3.24.  codec_delete_except_re ( regexp )
+1.3.23.  codec_delete_except_re ( regexp )
 
    This function deletes all the codecs except those specified by
    the regular expression.
@@ -713,14 +672,14 @@ codec_delete_re("PCMA|PCMU");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.25. codec_delete_except_re usage
+   Example 1.24. codec_delete_except_re usage
 ...
 codec_delete_except_re("PCMA|PCMU");#will delete all codecs except PCMA
 and PCMU
 ...
 
 
-1.3.25.  codec_move_up_re ( regexp )
+1.3.24.  codec_move_up_re ( regexp )
 
    This function has the same effect as codec_move_up ( without
    the clock parameter ) the only difference is that it takes a
@@ -729,12 +688,12 @@ and PCMU
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.26. codec_move_up_re usage
+   Example 1.25. codec_move_up_re usage
 ...
 codec_move_up_re("sp[a-z]*");
 ...
 
-1.3.26.  codec_move_down_re ( regexp )
+1.3.25.  codec_move_down_re ( regexp )
 
    This function has the same effect as codec_move_down ( without
    the clock parameter ) the only difference is that it takes a
@@ -743,12 +702,12 @@ codec_move_up_re("sp[a-z]*");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.27. codec_move_down_re usage
+   Example 1.26. codec_move_down_re usage
 ...
 codec_move_down_re("sp[a-z]*");
 ...
 
-   Example 1.28. codec_move_down usage
+   Example 1.27. codec_move_down usage
 ...
 /*
   This example will move speex with 8000 codec to the back of the list,
@@ -761,7 +720,7 @@ codec_delete("GSM","8000");
 codec_move_up("speex");
 ...
 
-1.3.27.  change_reply_status(code, reason)
+1.3.26.  change_reply_status(code, reason)
 
    Intercept a SIP reply (in any onreply_route) and change its
    status code and reason phrase prior to propogating it.
@@ -772,7 +731,7 @@ codec_move_up("speex");
 
    This function can be used from ONREPLY_ROUTE.
 
-   Example 1.29. change_reply_status usage
+   Example 1.28. change_reply_status usage
 ...
 onreply_route {
     if ($rs == "603") {
@@ -782,7 +741,7 @@ onreply_route {
 }
 ...
 
-1.3.28.  stream_exists(regexp)
+1.3.27.  stream_exists(regexp)
 
    This function can be used to verify if a stream exists inside
    an sdp payload. It will search for the stream inside all sdp
@@ -796,13 +755,13 @@ onreply_route {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.30. stream_exists usage
+   Example 1.29. stream_exists usage
 ...
 # check for FAX
 stream_exists("image");
 ...
 
-1.3.29.  stream_delete(regexp)
+1.3.28.  stream_delete(regexp)
 
    This function can be used to delete a whole stream from inside
    an sdp payload. It will search for the stream inside all sdp
@@ -817,7 +776,7 @@ stream_exists("image");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.31. stream_delete usage
+   Example 1.30. stream_delete usage
 ...
 # prevent usage of video
 stream_delete("video");
