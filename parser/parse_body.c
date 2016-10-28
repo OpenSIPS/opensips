@@ -355,13 +355,11 @@ struct body_part* add_body_part(struct sip_msg *msg, str *mime_s, str *body)
 
 		/* allocate a new body part */
 		part = (struct body_part*)pkg_malloc(
-			sizeof(struct body_part) + (body?body->len:0) );
+			sizeof(struct body_part) + (body?body->len:0) + mime_s->len );
 		if (part==NULL) {
 			LM_ERR("failed to allocated pkg mem\n");
 			return NULL;
 		}
-
-		part->flags = SIP_BODY_PART_FLAG_NEW;
 
 		m = (char*)(part+1); /* pointer to mime */
 
@@ -373,6 +371,8 @@ struct body_part* add_body_part(struct sip_msg *msg, str *mime_s, str *body)
 	}
 
 	memset( part, 0, sizeof(struct body_part) );
+
+	part->flags = SIP_BODY_PART_FLAG_NEW;
 
 	/* body follows right after the part, in the same mem chunk */
 	memcpy( m, mime_s->s, mime_s->len);
