@@ -1360,7 +1360,7 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 			if ( (part->flags & SIP_BODY_PART_FLAG_DELETED) ) {
 				if ((part->flags & SIP_BODY_PART_FLAG_NEW) == 0)
 					/* reposition at the end of the skipped body */
-					orig_offs = part->body.s + part->body.len - msg->buf ;
+					orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
 				continue;
 			}
 
@@ -1377,11 +1377,13 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 					part->dump.len = 0;
 				} else
 					len += part->dump.len;
+				len += CRLF_LEN;
 			} else
 			/* new part with body attached */
 			if ( part->flags & SIP_BODY_PART_FLAG_NEW ) {
 				/* simpy copy the body of the part */
 				len += part->body.len;
+				len += CRLF_LEN;
 			} else
 			/* old part with lumps */
 			{
@@ -1395,13 +1397,13 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 						part->body.s+part->body.len-msg->buf);
 				}
 				/* and copy whatever is left, all the way to the end of part */
-				size = (part->body.s+part->body.len-msg->buf)-orig_offs;
+				size = (part->body.s+part->body.len-msg->buf+CRLF_LEN)-orig_offs;
 				len += size;
 			}
 
 			/* reposition at the end of the processed body */
 			if ((part->flags & SIP_BODY_PART_FLAG_NEW) == 0)
-				orig_offs = part->body.s + part->body.len - msg->buf ;
+				orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
 
 		} /* end for(over the parts) */
 
@@ -1448,7 +1450,7 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 			if ( (part->flags & SIP_BODY_PART_FLAG_DELETED) ) {
 				if ( (part->flags & SIP_BODY_PART_FLAG_NEW) == 0 )
 					/* reposition at the end of the skipped body */
-					orig_offs = part->body.s + part->body.len - msg->buf;
+					orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
 				continue;
 			}
 
@@ -1458,8 +1460,8 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 			/* new part ? */
 			if ( part->flags & SIP_BODY_PART_FLAG_NEW ) {
 				/* separator and CT header */
-				len += 2 /* "--" */ + msg->body->boundary.len + CRLF_LEN +
-					14 /* "Content-Type: " */ + part->mime_s.len +
+				len += 2 /* "--" */ + msg->body->boundary.len +
+					CRLF_LEN + 14 /* "Content-Type: " */ + part->mime_s.len +
 					CRLF_LEN + CRLF_LEN ;
 				/* simpy copy the body of the part */
 				if (part->dump_f) {
@@ -1471,6 +1473,7 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 						len += part->dump.len;
 				} else
 					len += part->body.len;
+				len += CRLF_LEN;
 			} else
 			/* old part with dump function */
 			if (part->dump_f) {
@@ -1483,6 +1486,7 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 					part->dump.len = 0;
 				} else
 					len += part->dump.len;
+				len += CRLF_LEN;
 				/* skip the old body */
 			} else
 			/* old part with lumps -> apply changes */
@@ -1500,14 +1504,13 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 							part->body.s+part->body.len-msg->buf);
 				}
 				/* and copy whatever is left, all the way to the end of part */
-				size = (part->body.s+part->body.len-msg->buf)-orig_offs;
+				size = (part->body.s+part->body.len-msg->buf+CRLF_LEN)-orig_offs;
 				len += size;
 			}
 
 			/* reposition at the end of the processed body */
 			if ((part->flags & SIP_BODY_PART_FLAG_NEW) == 0)
-				orig_offs = part->body.s + part->body.len - msg->buf ;
-
+				orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
 		} /* end for(over the parts) */
 
 		/* the final separator */
@@ -1607,7 +1610,7 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 			if ( (part->flags & SIP_BODY_PART_FLAG_DELETED) ) {
 				if ((part->flags & SIP_BODY_PART_FLAG_NEW) == 0)
 					/* reposition at the end of the skipped body */
-					*orig_offs = part->body.s + part->body.len - msg->buf ;
+					*orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
 				continue;
 			}
 
@@ -1627,12 +1630,16 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 				pkg_free(part->dump.s);
 				part->dump.s = NULL;
 				part->dump.len = 0;
+				memcpy(new_buf+offset, CRLF , CRLF_LEN);
+				offset += CRLF_LEN;
 			} else
 			/* new part with body attached */
 			if ( part->flags & SIP_BODY_PART_FLAG_NEW ) {
 				/* simpy copy the body of the part */
 				memcpy(new_buf+offset, part->body.s, part->body.len );
 				offset += part->body.len;
+				memcpy(new_buf+offset, CRLF , CRLF_LEN);
+				offset += CRLF_LEN;
 			} else
 			/* old part with lumps */
 			{
@@ -1646,14 +1653,14 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 						send_sock, part->body.s+part->body.len-msg->buf);
 				}
 				/* and copy whatever is left, all the way to the end of part */
-				size = (part->body.s+part->body.len-msg->buf)-*orig_offs;
+				size = (part->body.s+part->body.len-msg->buf+CRLF_LEN)-*orig_offs;
 				memcpy(new_buf+offset, msg->buf+*orig_offs, size);
 				offset += size;
 			}
 
 			/* reposition at the end of the processed body */
 			if ((part->flags & SIP_BODY_PART_FLAG_NEW) == 0)
-				*orig_offs = part->body.s + part->body.len - msg->buf ;
+				*orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN ;
 
 		} /* end for(over the parts) */
 
@@ -1678,7 +1685,7 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 			if ( (part->flags & SIP_BODY_PART_FLAG_DELETED) ) {
 				if ( (part->flags & SIP_BODY_PART_FLAG_NEW) == 0 )
 					/* reposition at the end of the skipped body */
-					*orig_offs = part->body.s + part->body.len - msg->buf;
+					*orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
 				continue;
 			}
 
@@ -1708,6 +1715,8 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 					memcpy(new_buf+offset, part->body.s, part->body.len );
 					offset += part->body.len;
 				}
+				memcpy(new_buf+offset, CRLF , CRLF_LEN);
+				offset += CRLF_LEN;
 			} else
 			/* old part with dump function */
 			if (part->dump_f) {
@@ -1721,6 +1730,8 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 				pkg_free(part->dump.s);
 				part->dump.s = NULL;
 				part->dump.len = 0;
+				memcpy(new_buf+offset, CRLF , CRLF_LEN);
+				offset += CRLF_LEN;
 			} else
 			/* old part with lumps -> apply changes */
 			{
@@ -1737,14 +1748,14 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 						send_sock, part->body.s+part->body.len-msg->buf);
 				}
 				/* and copy whatever is left, all the way to the end of part */
-				size = (part->body.s+part->body.len-msg->buf)-*orig_offs;
+				size = (part->body.s+part->body.len-msg->buf+CRLF_LEN)-*orig_offs;
 				memcpy(new_buf+offset, msg->buf+*orig_offs, size);
 				offset += size;
 			}
 
 			/* reposition at the end of the processed body */
 			if ((part->flags & SIP_BODY_PART_FLAG_NEW) == 0)
-				*orig_offs = part->body.s + part->body.len - msg->buf ;
+				*orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
 
 		} /* end for(over the parts) */
 
