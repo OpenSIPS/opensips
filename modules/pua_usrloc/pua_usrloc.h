@@ -26,7 +26,7 @@
 
 send_publish_t pua_send_publish;
 send_subscribe_t pua_send_subscribe;
-void ul_publish(ucontact_t* c, int type, void* param);
+void ul_contact_publish(void *binding, int type, void **data);
 int pua_set_publish(struct sip_msg* , char*, char*);
 
 extern str pres_prefix;

@@ -96,6 +96,8 @@ typedef struct ucontact {
 	struct proxy_l next_hop;/*!< SIP-wise determined next hop */
 	unsigned int label;     /*!< label to find the contact in contact list>*/
 
+	void **attached_data;   /*!< data attached by API subscribers >*/
+
 	struct ucontact* next;  /*!< Next contact in the linked list */
 	struct ucontact* prev;  /*!< Previous contact in the linked list */
 } ucontact_t;

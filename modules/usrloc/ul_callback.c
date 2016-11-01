@@ -33,11 +33,17 @@
 #include "../../dprint.h"
 #include "../../error.h"
 #include "../../mem/shm_mem.h"
+#include "../../lib/list.h"
 #include "ul_callback.h"
 
 
 struct ulcb_head_list* ulcb_list = 0;
 
+/*
+ * (u_contact_t) and (urecord_t) structures may be dynamically
+ * extended to hold data for any subscribing module
+ */
+int att_ct_items;
 
 
 int init_ulcb_list(void)
@@ -48,7 +54,7 @@ int init_ulcb_list(void)
 		LM_CRIT("no more shared mem\n");
 		return -1;
 	}
-	ulcb_list->first = 0;
+	INIT_LIST_HEAD(&ulcb_list->first);
 	ulcb_list->reg_types = 0;
 	return 1;
 }
@@ -56,16 +62,15 @@ int init_ulcb_list(void)
 
 void destroy_ulcb_list(void)
 {
-	struct ul_callback *cbp, *cbp_tmp;
+	struct list_head *ele, *next;
+	struct ul_callback *cbp;
 
 	if (!ulcb_list)
 		return;
 
-	for( cbp=ulcb_list->first; cbp ; ) {
-		cbp_tmp = cbp;
-		cbp = cbp->next;
-		if (cbp_tmp->param) shm_free( cbp_tmp->param );
-		shm_free( cbp_tmp );
+	list_for_each_safe(ele, next, &ulcb_list->first) {
+		cbp = list_entry(ele, struct ul_callback, list);
+		shm_free(cbp);
 	}
 
 	shm_free(ulcb_list);
@@ -76,7 +81,7 @@ void destroy_ulcb_list(void)
 /*! \brief
 	register a callback function 'f' for 'types' mask of events;
 */
-int register_ulcb( int types, ul_cb f, void *param )
+int register_ulcb( int types, ul_cb f, int attach_data )
 {
 	struct ul_callback *cbp;
 
@@ -96,22 +101,29 @@ int register_ulcb( int types, ul_cb f, void *param )
 		LM_ERR("no more share mem\n");
 		return E_OUT_OF_MEM;
 	}
+	memset(cbp, 0, sizeof *cbp);
+
+	if (list_empty(&ulcb_list->first))
+		cbp->id = 0;
+	else
+		cbp->id = list_last_entry(
+		               &ulcb_list->first, struct ul_callback, list)->id + 1;
 
 	/* link it into the proper place... */
-	cbp->next = ulcb_list->first;
-	ulcb_list->first = cbp;
+	list_add_tail(&cbp->list, &ulcb_list->first);
+
 	ulcb_list->reg_types |= types;
+
 	/* ... and fill it up */
 	cbp->callback = f;
-	cbp->param = param;
+
+	if (attach_data) {
+		cbp->has_data = 1;
+		if (is_contact_cb(types))
+			att_ct_items++;
+	}
+
 	cbp->types = types;
-	if (cbp->next)
-		cbp->id = cbp->next->id+1;
-	else
-		cbp->id = 0;
 
 	return 1;
 }
-
-
-
