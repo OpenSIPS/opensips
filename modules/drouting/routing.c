@@ -609,7 +609,6 @@ done:
 	key.s = id;
 	key.len = strlen(id);
 
-	LM_INFO("pgw tree %p\n", r->pgw_tree);
 	if (map_put(r->pgw_tree, key, pgw)) {
 		LM_ERR("Duplicate gateway!\n");
 		return -1;
