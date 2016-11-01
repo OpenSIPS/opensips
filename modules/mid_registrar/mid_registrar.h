@@ -38,6 +38,9 @@
 #include "../../parser/msg_parser.h"
 #include "../../parser/contact/contact.h"
 
+#include "../usrloc/usrloc.h"
+#include "../usrloc/urecord.h"
+
 enum mid_reg_mode {
 	MID_REG_MIRROR,
 	MID_REG_THROTTLE_CT,
@@ -52,6 +55,28 @@ enum mid_reg_routing_mode {
 enum mid_reg_matching_mode {
 	MATCH_BY_PARAM,
 	MATCH_BY_USER,
+};
+
+struct mid_reg_ct {
+	/* De-registrations will be sent to this SIP URI */
+	str ruri;
+
+	str ct_uri;
+
+	unsigned int max_contacts;
+	unsigned int flags;
+
+	unsigned int expires;
+	unsigned int expires_out;
+
+	unsigned int last_register_out_ts;
+
+	udomain_t *dom;
+	str aor;
+
+	str to;
+	str from;
+	str callid;
 };
 
 typedef enum rerr {
@@ -130,8 +155,14 @@ extern unsigned short attr_avp_type;
 
 extern int tcp_persistent_flag;
 
+extern int ucontact_data_idx;
+
+void set_ct(struct mid_reg_ct *ct);
+struct mid_reg_ct *get_ct(void);
+
 time_t get_act_time(void);
 void update_act_time(void);
+
 int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id);
 
 int calc_contact_q(param_t* _q, qvalue_t* _r);

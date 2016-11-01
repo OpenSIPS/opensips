@@ -95,4 +95,3 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 
 
 #endif /* __MID_REG_SAVE_ */
-

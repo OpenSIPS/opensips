@@ -85,7 +85,7 @@ int get_match_token(str *uri, str *out_tok, struct sip_uri *out_puri, int *out_i
 
 		if (!out_tok->s || out_tok->len <= 0) {
 			LM_ERR("a Contact from main registrar (%.*s) is missing the '%.*s'"
-			       "hf parameter\n", uri->len, uri->s,
+			       " hf parameter\n", uri->len, uri->s,
 			       matching_param.len, matching_param.s);
 			return -1;
 		}

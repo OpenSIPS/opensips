@@ -50,7 +50,7 @@ static void print_queue_entry(struct mid_reg_queue_entry *entry)
 			"-- e: %d, e_out: %d\n"
 			"-- NOW: %ld\n"
 			"-- ncheck: %d, last_reg_out: %d\n",
-			entry->aor.len, entry->aor.s, entry->ruri.len, entry->ruri.s, entry->ct_uri.len, entry->ct_uri.s, entry->max_contacts, entry->flags, entry->expires, entry->expires_out, act_time, entry->next_check_ts, entry->last_register_out_ts);
+			entry->aor.len, entry->aor.s, entry->ruri.len, entry->ruri.s, entry->ct_uri.len, entry->ct_uri.s, entry->max_contacts, entry->flags, entry->expires, entry->expires_out, get_act_time(), entry->next_check_ts, entry->last_register_out_ts);
 }
 
 int timer_queue_init(void)
@@ -112,13 +112,13 @@ int __timer_queue_update_by_ct(ucontact_t *con, unsigned int expires)
 		entry = list_entry(it, struct mid_reg_queue_entry, queue);
 		if (con == entry->con) {
 			if (entry->expires != expires ||
-			    entry->next_check_ts < expires + act_time) {
+			    entry->next_check_ts < expires + get_act_time()) {
 
 				print_queue_entry(entry);
 
 				list_del(it);
 				entry->expires = expires;
-				entry->next_check_ts = expires + act_time;
+				entry->next_check_ts = expires + get_act_time();
 				__timer_queue_add(entry);
 
 				/*
@@ -127,9 +127,9 @@ int __timer_queue_update_by_ct(ucontact_t *con, unsigned int expires)
 				 *
 				 * if yes, then we will have to forward this REGISTER
 				 */
-				if (act_time - entry->last_register_out_ts >=
+				if (get_act_time() - entry->last_register_out_ts >=
 				    entry->expires_out - expires) {
-					entry->last_register_out_ts = act_time;
+					entry->last_register_out_ts = get_act_time();
 					return 1;
 				}
 			}
@@ -152,8 +152,8 @@ int should_relay_register(ucontact_t *con, unsigned int expires)
 		if (con == entry->con) {
 			LM_DBG("ct match!\n");
 			if (entry->expires != expires ||
-	//		    entry->next_check_ts < expires + act_time)
-			    entry->expires_out + entry->last_register_out_ts - act_time <= expires) {
+	//		    entry->next_check_ts < expires + get_act_time())
+			    entry->expires_out + entry->last_register_out_ts - get_act_time() <= expires) {
 				LM_DBG("[%d - %d], [%d - %d - %d]\n", entry->expires, expires, entry->expires_out, entry->last_register_out_ts, expires);
 				lock_release(queue_lock);
 				return 1;

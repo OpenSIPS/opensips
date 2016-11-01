@@ -34,7 +34,7 @@
 
 #include "../../lib/list.h"
 
-extern time_t act_time;
+#include "mid_registrar.h"
 
 /*
  * may act as an AoR or a contact, depending on whether contact aggregation is

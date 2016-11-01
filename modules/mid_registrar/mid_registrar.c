@@ -43,6 +43,7 @@
 #include "save.h"
 #include "lookup.h"
 #include "encode.h"
+#include "ulcb.h"
 //----------------------
 #include "../../parser/contact/contact.h"
 #include "../../parser/contact/parse_contact.h"
@@ -81,6 +82,8 @@ int attr_avp_name;
 rerr_t rerrno;
 
 
+static struct mid_reg_ct *__contact;
+int ucontact_data_idx;
 
 
 #define PATH_MODE_STRICT	2
@@ -92,8 +95,17 @@ str sock_hdr_name = {0,0};
 
 
 
-time_t act_time;
+static time_t act_time;
 
+inline void set_ct(struct mid_reg_ct *ct)
+{
+	__contact = ct;
+}
+
+inline struct mid_reg_ct *get_ct(void)
+{
+	return __contact;
+}
 
 /*! \brief
  * Get actual time and store
@@ -103,6 +115,7 @@ void update_act_time(void)
 {
 	act_time = time(0);
 }
+
 
 time_t get_act_time(void)
 {
@@ -276,6 +289,19 @@ static int domain_fixup(void** param)
 	return 0;
 }
 
+static int mid_reg_pre_script(struct sip_msg *foo, void *bar)
+{
+	set_ct(NULL);
+	return SCB_RUN_ALL;
+}
+
+
+static int mid_reg_post_script(struct sip_msg *foo, void *bar)
+{
+	set_ct(NULL);
+	return SCB_RUN_ALL;
+}
+
 /*! \brief
  * Fixup for "save"+"lookup" functions - domain, flags, AOR params
  */
@@ -301,8 +327,6 @@ static int registrar_fixup(void** param, int param_no)
 
 static int mod_init(void)
 {
-	int itv;
-
 	if (load_ul_api(&ul_api) < 0) {
 		LM_ERR("failed to load user location API\n");
 		return -1;
@@ -342,8 +366,6 @@ static int mod_init(void)
 
 	matching_param.len = strlen(matching_param.s);
 
-	timer_queue_init();
-
 	if (outbound_expires < min_outbound_expires) {
 		LM_WARN("\"outbound_expires\" value too low (%us), using default "
 		        "minimum of %us\n", outbound_expires, min_reg_expire);
@@ -351,16 +373,24 @@ static int mod_init(void)
 	}
 
 	if (reg_mode != MID_REG_MIRROR) {
-		/* increase the routine's scheduling interval as much as possible */
-		itv = min_outbound_expires / 2;
-		if (itv < 1)
-			itv = 1;
-
-		if (register_timer("mid-reg-uac", mid_reg_uac, NULL, itv,
-		                   TIMER_FLAG_DELAY_ON_DELAY) < 0) {
-			LM_ERR("failed to register the 'mid-reg-uac' timer!\n");
+		if (ul_api.register_ulcb(
+			UL_CONTACT_INSERT|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE,
+			mid_reg_ct_event, &ucontact_data_idx) < 0) {
+			LM_ERR("cannot register callback for insert\n");
 			return -1;
 		}
+	}
+
+	if (register_script_cb(mid_reg_pre_script,
+	                       PRE_SCRIPT_CB|REQ_TYPE_CB, NULL) < 0) {
+		LM_ERR("failed to register pre script cb\n");
+		return -1;
+	}
+
+	if (register_script_cb(mid_reg_post_script,
+	                       POST_SCRIPT_CB|REQ_TYPE_CB, NULL) < 0) {
+		LM_ERR("failed to register post script cb\n");
+		return -1;
 	}
 
 	return 0;
