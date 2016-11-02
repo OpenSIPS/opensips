@@ -723,7 +723,7 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 		hf = 0;
 	}
 
-	hdr_len = msg_total_len;
+	hdr_len = msg_total_len + CRLF_LEN/* sip headers end with 2 * CRLF */;
 
 	buf_cpy = buf+CRLF_LEN;
 	frg = frg_head = pkg_malloc(sizeof(body_frag_t));
