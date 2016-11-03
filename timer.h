@@ -56,6 +56,9 @@ typedef void (utimer_function)(utime_t uticks, void* param);
 /* synchronize if drift is greater than internal timer tick */
 #define TIMER_MAX_DRIFT_TICKS ITIMER_TICK
 
+/* Define max number of timer pipes to create*/
+#define TIMER_MAX_PIPES 100
+
 struct os_timer{
 	/* unique ID in the list of timer handlers - not really used */
 	unsigned short id;
@@ -82,10 +85,10 @@ struct os_timer{
 	struct os_timer* next;
 };
 
+extern int timer_pipe_count;
+extern int timer_fds_out[];
 
-extern int timer_fd_out;
-
-int init_timer(void);
+int init_timer(int pipe_cnt);
 
 void destroy_timer(void);
 
@@ -111,6 +114,6 @@ int start_timer_extra_processes(int *chd_rank);
 
 int register_route_timers(void);
 
-void handle_timer_job(void);
+void handle_timer_job(int timer_pipe);
 
 #endif

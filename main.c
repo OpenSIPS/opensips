@@ -1161,7 +1161,7 @@ try_again:
 	}
 
 	/* init timer */
-	if (init_timer()<0){
+	if (init_timer(children_no + tcp_children_no)<0){
 		LM_CRIT("could not initialize timer, exiting...\n");
 		goto error;
 	}
