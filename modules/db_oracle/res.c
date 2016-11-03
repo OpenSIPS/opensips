@@ -293,7 +293,7 @@ static int convert_row(db_res_t* _res, db_row_t* _r, dmap_t* _d)
 			break;
 
 		case DB_BIGINT:
-			VAL_BIGINT(v) = *_d->pv[i].i;
+			VAL_BIGINT(v) = *((long long*)_d->pv[i].i);
 			break;
 
 		case DB_BITMAP:
