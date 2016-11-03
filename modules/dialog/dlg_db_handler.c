@@ -502,7 +502,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 	struct dlg_cell *dlg;
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
-	unsigned int next_id;
 	int no_rows = 10;
 	struct socket_info *caller_sock,*callee_sock;
 	int found_ended_dlgs=0;
@@ -579,10 +578,10 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			link_dlg(dlg, 0);
 
 			dlg->h_id = hash_id;
-			next_id = d_table->entries[dlg->h_entry].next_id;
 
-			d_table->entries[dlg->h_entry].next_id =
-				(next_id <= dlg->h_id) ? (dlg->h_id+1) : next_id;
+			/* next_id follows the max value of all loaded ids */
+			if (d_table->entries[dlg->h_entry].next_id <= dlg->h_id)
+				d_table->entries[dlg->h_entry].next_id = dlg->h_id + 1;
 
 			GET_STR_VALUE(to_tag, values, 5, 1, 1);
 
@@ -1477,7 +1476,7 @@ static int sync_dlg_db_mem(void)
 	db_row_t * rows;
 	struct dlg_entry *d_entry;
 	struct dlg_cell *it,*known_dlg,*dlg=NULL;
-	int i, nr_rows,callee_leg_idx,next_id,db_timeout;
+	int i, nr_rows,callee_leg_idx,db_timeout;
 	int no_rows = 10;
 	unsigned int db_caller_cseq,db_callee_cseq,dlg_caller_cseq,dlg_callee_cseq;
 	struct socket_info *caller_sock,*callee_sock;
@@ -1582,10 +1581,10 @@ static int sync_dlg_db_mem(void)
 				link_dlg(dlg, 0);
 
 				dlg->h_id = hash_id;
-				next_id = d_table->entries[dlg->h_entry].next_id;
 
-				d_table->entries[dlg->h_entry].next_id =
-					(next_id <= dlg->h_id) ? (dlg->h_id+1) : next_id;
+				/* next_id follows the max value of all loaded ids */
+				if (d_table->entries[dlg->h_entry].next_id <= dlg->h_id)
+					d_table->entries[dlg->h_entry].next_id = dlg->h_id + 1;
 
 				dlg->start_ts	= VAL_INT(values+6);
 
