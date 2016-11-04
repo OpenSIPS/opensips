@@ -273,10 +273,10 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	static str last_called_prefix;
 	extern unsigned int frd_data_rev;
 
-	if (dr_head == NULL) {
+	if (*dr_head == NULL) {
 		/* No data, probably still loading */
-		LM_ERR("no data\n");
-		return rc_error;
+		LM_INFO("rules are not available yet!\n");
+		return rc_ok_thr;
 	}
 
 	/* Get the actual params */
