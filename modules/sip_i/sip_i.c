@@ -42,12 +42,13 @@ int pv_get_isup_msg_type(struct sip_msg *msg, pv_param_t *param, pv_value_t *res
 int pv_parse_isup_param_name(pv_spec_p sp, str *in);
 int pv_parse_isup_param_index(pv_spec_p sp, str* in);
 int pv_get_isup_param(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t *val);
 
 static pv_export_t mod_items[] = {
 	{{"isup_msg_type", sizeof("isup_msg_type") - 1}, 1000, pv_get_isup_msg_type,
 		0, 0, 0, 0, 0},
 	{{"isup_param", sizeof("isup_param") - 1}, 1000, pv_get_isup_param,
-		0, pv_parse_isup_param_name, pv_parse_isup_param_index, 0, 0},
+		pv_set_isup_param, pv_parse_isup_param_name, pv_parse_isup_param_index, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -205,6 +206,11 @@ int pv_parse_isup_param_index(pv_spec_p sp, str* in)
 		return -1;
 	}
 
+	if (idx > PARAM_MAX_LEN - 1) {
+		LM_ERR("Index too big!\n");
+		return -1;
+	}
+
 	sp->pvp.pvi.type = PV_IDX_INT;
 	sp->pvp.pvi.u.ival = idx;
 
@@ -276,6 +282,8 @@ static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
 		return NULL;
 	}
 
+	parse_struct->total_len = 0;
+
 	/* parse message type */
 	parse_struct->message_type = *(unsigned char*)p->body.s;
 	offset++;
@@ -299,6 +307,7 @@ static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
 		}
 
 		parse_struct->mand_fix_params[i].len = isup_params[isup_param_idx].len;
+		parse_struct->total_len += isup_params[isup_param_idx].len;
 		memcpy(parse_struct->mand_fix_params[i].val, p->body.s + offset,
 				isup_params[isup_param_idx].len);
 
@@ -315,6 +324,7 @@ static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
 
 		parse_struct->mand_var_params[i].len =
 			*(unsigned char*)(param_pointer + *(unsigned char*)param_pointer);
+		parse_struct->total_len += parse_struct->mand_var_params[i].len;
 		memcpy(parse_struct->mand_var_params[i].val, param_pointer + *(unsigned char*)param_pointer + 1,
 			parse_struct->mand_var_params[i].len);
 
@@ -325,6 +335,7 @@ static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
 	}
 
 	parse_struct->opt_params_list = NULL;
+	parse_struct->no_opt_params = 0;
 
 	/* parse optional params */
 	if (remain_len > 0 && *param_pointer) {
@@ -339,8 +350,11 @@ static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
 			parse_struct->opt_params_list->param.param_code = *(unsigned char *)(p->body.s + offset);
 
 			parse_struct->opt_params_list->param.len = *(unsigned char *)(p->body.s + offset + 1);
+			parse_struct->total_len += parse_struct->opt_params_list->param.len;
 			memcpy(parse_struct->opt_params_list->param.val, p->body.s + offset + 2,
 					parse_struct->opt_params_list->param.len);
+
+			parse_struct->no_opt_params++;
 
 			remain_len -= (2 + parse_struct->opt_params_list->param.len);
 			offset += 2 + parse_struct->opt_params_list->param.len;
@@ -353,12 +367,98 @@ static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
 	return parse_struct;
 }
 
-static void print_hex(char *hex_str, unsigned char *val, int len)
+static int build_isup_body(str *buf, struct isup_parsed_struct *p)
 {
+	struct opt_param *it;
+	int offset = 0;
+	int msg_idx;
+	unsigned char param_pointer = 0;
+	int total_varp_len = 0;
 	int i;
 
-	for (i = 0; i < len; i++)
-		sprintf(hex_str + 2*i, "%02x", val[i]);
+	msg_idx = get_msg_idx_by_type(p->message_type);
+	if (msg_idx < 0)
+		return -1;
+
+	/* for each mand var param we have 2 extra bytes for the pointer and length idicator,
+	 * for each opt param we have 2 extra bytes for the param code and length idicator
+	 * and also, we have 1 byte for the message type code and 1 for the pointer to start of optional part(we
+	 * assume is we always have this pointer) */
+	buf->len = p->total_len + 2*isup_messages[msg_idx].mand_var_params + 2*p->no_opt_params + 2;
+	buf->len += p->no_opt_params > 0 ? 1 : 0;	/* end of optional params byte if needed */
+	buf->s = pkg_malloc(buf->len);
+	if (!buf->s) {
+		LM_ERR("No more pkg mem\n");
+		return -1;
+	}
+
+	buf->s[0] = p->message_type;
+	offset++;
+
+	/* mandatory fixed parms */
+	for (i = 0; i < isup_messages[msg_idx].mand_fixed_params; i++) {
+		memcpy(buf->s + offset, p->mand_fix_params[i].val, p->mand_fix_params[i].len);
+		offset += p->mand_fix_params[i].len;
+
+	}
+
+	/* mandatory variable params */
+	for (i = 0; i < isup_messages[msg_idx].mand_var_params; i++) {
+		param_pointer = isup_messages[msg_idx].mand_var_params + 1 + total_varp_len;
+		total_varp_len += p->mand_var_params[i].len;
+
+		/* param pointer */
+		buf->s[offset] = param_pointer;
+		/* len indicator */
+		buf->s[offset + param_pointer] = p->mand_var_params[i].len;
+		/* actual parameter */
+		memcpy(buf->s+offset+param_pointer+1, p->mand_var_params[i].val, p->mand_var_params[i].len);
+
+		offset++;
+	}
+
+	/* pointer to start of opt params */
+	if (p->no_opt_params > 0) {
+		param_pointer = 1 + isup_messages[msg_idx].mand_var_params + total_varp_len;
+		buf->s[offset] = param_pointer;
+	} else	/* no opt params, pointer has to be 0 */
+		buf->s[offset] = 0;
+
+	/* jump to opt params */
+	offset += param_pointer;
+
+	/* optional params */
+	for (it = p->opt_params_list; it; it = it->next) {
+		buf->s[offset] = it->param.param_code;
+		buf->s[offset + 1] = it->param.len;
+		memcpy(buf->s + offset + 2, it->param.val, it->param.len);
+		offset += 2 + it->param.len;
+	}
+
+	/* end of optional parameters if needed */
+	if (p->no_opt_params > 0)
+		buf->s[offset] = 0;
+
+	return 0;
+}
+
+int isup_dump(void *p, struct sip_msg *msg, str *buf)
+{
+	return build_isup_body(buf, (struct isup_parsed_struct *)p);
+}
+
+static int read_hex_param(char *hex_str, unsigned char *param_val, int param_len)
+{
+	int i;
+	unsigned int byte_val;
+
+	for (i = 0; i < param_len; i++)
+		if (hexstr2int(hex_str + 2*i, 2, &byte_val) < 0)
+			return -1;
+		else
+			param_val[i] = byte_val;
+
+	return 0;
 }
 
 int pv_get_isup_param(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
@@ -477,7 +577,7 @@ int pv_get_isup_param(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	}
 
 	if (pv_idx < 0) {	/* we don't have an index, print whole param as hex */
-		print_hex(buf, p->val, p->len);
+		string2hex(p->val, p->len, buf);
 		res->flags = PV_VAL_STR;
 		res->rs.len = 2 * p->len;
 		res->rs.s = buf;
@@ -491,6 +591,221 @@ int pv_get_isup_param(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 		res->rs.len = l;
 		res->ri = p->val[pv_idx];
 		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	}
+
+	return 0;
+}
+
+int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t *val)
+{
+	struct isup_parse_fixup *fix;
+	struct body_part *isup_part;
+	struct isup_parsed_struct *isup_struct;
+	struct param_parsed_struct *p = NULL;
+	struct opt_param *opt_p, *tmp;
+	int pv_idx = -1;
+	int msg_idx;
+	int i;
+	int param_type = -1;
+	int rc;
+	int new_len = 0;
+
+	if (!param)
+		return -1;
+	if (!param->pvn.u.dname) {
+		LM_ERR("Bad subname for $isup_param\n");
+		return -1;
+	}
+
+	if (param->pvi.type == PV_IDX_INT) {
+		if (param->pvi.u.ival < 0) {
+			LM_ERR("Bad index for $isup_param\n");
+			return -1;
+		}
+
+		pv_idx = param->pvi.u.ival;
+	} /* else - index not provided */
+
+	fix = (struct isup_parse_fixup *)param->pvn.u.dname;
+
+	if (!msg) {
+		LM_WARN("No sip msg\n");
+		return -1;
+	}
+
+	/* Parse IUSP message if not done already */
+	isup_part = get_isup_part(msg);
+	if (!isup_part) {
+		LM_INFO("No ISUP body for this message\n");
+		return -1;
+	}
+	if (isup_part->parsed)  /* already parsed */
+		isup_struct = (struct isup_parsed_struct*)isup_part->parsed;
+	else {
+		isup_struct = parse_isup_body(msg);
+		if (!isup_struct) {
+			LM_DBG("Unable to parse ISUP message\n");
+			return -1;
+		}
+	}
+
+	msg_idx = get_msg_idx_by_type(isup_struct->message_type);
+	if (msg_idx < 0) {
+		LM_ERR("BUG - Unknown ISUP message type: %d\n", isup_struct->message_type);
+		return -1;
+	}
+
+	/* find required parameter in the parsed struct */
+	for (i = 0; i < isup_messages[msg_idx].mand_fixed_params; i++)
+		if (isup_params[fix->isup_params_idx].param_code ==
+			isup_struct->mand_fix_params[i].param_code) {
+			p = isup_struct->mand_fix_params + i;
+			param_type = 0;
+			break;
+		}
+	if (!p)
+		for (i = 0; i < isup_messages[msg_idx].mand_var_params; i++)
+			if (isup_params[fix->isup_params_idx].param_code ==
+				isup_struct->mand_var_params[i].param_code) {
+				p = isup_struct->mand_var_params + i;
+				param_type = 1;
+				break;
+			}
+	if (!p)
+		for (opt_p = isup_struct->opt_params_list; opt_p; opt_p = opt_p->next)
+			if (isup_params[fix->isup_params_idx].param_code == opt_p->param.param_code) {
+				p = &opt_p->param;
+				param_type = 2;
+				break;
+			}
+	if (!p) {	/* param not found in parsed struct so it should be a new optional param */
+		opt_p = pkg_malloc(sizeof *opt_p);
+		opt_p->next = isup_struct->opt_params_list;
+		memset(&opt_p->param, 0, sizeof(struct param_parsed_struct));
+		opt_p->param.param_code = isup_params[fix->isup_params_idx].param_code;
+		isup_struct->opt_params_list = opt_p;
+		isup_struct->no_opt_params++;
+		p = &opt_p->param;
+		param_type = 3;
+	}
+
+	if (isup_params[fix->isup_params_idx].write_func && fix->subfield_id) {
+		if (pv_idx >= 0)
+			LM_INFO("Ignoring index for ISUP param: %.*s, known subfield provided\n",
+				isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+
+		new_len = p->len;
+		rc = isup_params[fix->isup_params_idx].write_func(fix->subfield_id, p->val, &new_len, val);
+		if (new_len != p->len)
+			isup_struct->total_len += new_len - p->len;
+		p->len = new_len;
+		LM_DBG("WWW new len = %d\n", p->len);
+		if (rc < 0) {
+			LM_WARN("Unable to write $isup_param(%*.s)\n",
+				isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+			return -1;
+		}
+
+		isup_part->dump_f = (dump_part_function)isup_dump;
+
+		return 0;
+	} else if (!isup_params[fix->isup_params_idx].write_func && fix->subfield_id) {
+		LM_ERR("BUG - Subfield known but no specific parse function\n");
+		return -1;
+	}
+
+	if (pv_idx < 0) {	/* we don't have an index, read whole param from hex str */
+
+		if (val == NULL || val->flags & PV_VAL_NULL) {
+			if (param_type < 2)	/* for mandatory params, fill with 0 */
+				memset(p->val, 0, p->len);
+			else {	/* if opt param, remove param from message */
+				opt_p = isup_struct->opt_params_list;
+				if (opt_p->param.param_code == p->param_code) {
+					isup_struct->opt_params_list = opt_p->next;
+					isup_struct->no_opt_params--;
+					pkg_free(opt_p);
+				} else
+					for (; opt_p->next; opt_p = opt_p->next)
+						if (opt_p->next->param.param_code == p->param_code) {
+							tmp = opt_p->next;
+							opt_p->next = opt_p->next->next;
+							isup_struct->no_opt_params--;
+							pkg_free(tmp);
+							break;
+						}
+			}
+
+			isup_part->dump_f = (dump_part_function)isup_dump;
+		} else if (val->flags & PV_TYPE_INT || val->flags & PV_VAL_INT) {
+			LM_WARN("Hex string value required for $isup_param(%*.s)\n",
+				isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+
+			return -1;
+		} else if (val->flags & PV_VAL_STR) {
+			if (param_type == 0 && val->rs.len/2 != isup_params[fix->isup_params_idx].len) {
+				LM_WARN("Incorrect length: %d for $isup_param(%.*s), it must be exactly: %d\n",
+					val->rs.len/2, isup_params[fix->isup_params_idx].name.len,
+					isup_params[fix->isup_params_idx].name.s, isup_params[fix->isup_params_idx].len);
+					return -1;
+			}
+
+			if (param_type == 3)	/* new optional param */
+				isup_struct->total_len += val->rs.len/2;
+			else if (param_type == 1 || param_type == 2)
+				isup_struct->total_len += val->rs.len/2 - p->len;
+
+			p->len = val->rs.len/2;
+
+			if (read_hex_param(val->rs.s, p->val, p->len) < 0) {
+				LM_WARN("Invalid hex value for $isup_param(%*.s)\n",
+					isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+				return -1;
+			}
+
+			isup_part->dump_f = (dump_part_function)isup_dump;
+		} else {
+			LM_ERR("Invalid value for $isup_param\n");
+			return -1;
+		}
+
+	} else {	/* we have an index, set the corresponding byte */
+
+		if (param_type == 0 && pv_idx > p->len - 1) { /* fixed length exceeded */
+			LM_ERR("Index: %d out of bounds, fixed parameter length is: %d\n", pv_idx, p->len);
+			return -1;
+		}
+
+		if (val == NULL || val->flags & PV_VAL_NULL) {
+			if (pv_idx > p->len - 1) {	/* extending the param */
+				/* fill the rest of the bytes up to the index with 0 */
+				memset(p->val + p->len, 0, pv_idx - p->len);
+				isup_struct->total_len += pv_idx + 1 - p->len;
+				p->len = pv_idx + 1;
+			}
+
+			p->val[pv_idx] = 0;
+
+			isup_part->dump_f = (dump_part_function)isup_dump;
+		} else if (val->flags & PV_TYPE_INT || val->flags & PV_VAL_INT) {
+			if (pv_idx > p->len - 1) {	/* extending the param */
+				/* fill the rest of the bytes up to the index with 0 */
+				memset(p->val + p->len, 0, pv_idx - p->len);
+				isup_struct->total_len += pv_idx + 1 - p->len;
+				p->len = pv_idx + 1;
+			}
+
+			p->val[pv_idx] = val->ri;
+
+			isup_part->dump_f = (dump_part_function)isup_dump;
+		} else if (val->flags & PV_VAL_STR) {
+			LM_WARN("Integer value required for %d byte of $isup_param(%*.s)\n", pv_idx,
+				isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+			return -1;
+		} else {
+			LM_ERR("Invalid value for $isup_param\n");
+			return -1;
+		}
 	}
 
 	return 0;

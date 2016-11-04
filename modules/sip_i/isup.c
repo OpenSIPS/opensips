@@ -24,6 +24,7 @@
  */
 
 #include "../../ut.h"
+#include "../../pvar.h"
 #include "isup.h"
 
 static int iam_params[] = {ISUP_PARM_NATURE_OF_CONNECTION_IND, ISUP_PARM_FORWARD_CALL_IND, ISUP_PARM_CALLING_PARTY_CAT,
@@ -162,6 +163,54 @@ static inline char digit2char(unsigned char digit)
 	}
 }
 
+static char char2digit(char localchar)
+{
+	switch (localchar) {
+		case '0':
+			return 0x0;
+		case '1':
+			return 0x1;
+		case '2':
+			return 0x2;
+		case '3':
+			return 0x3;
+		case '4':
+			return 0x4;
+		case '5':
+			return 0x5;
+		case '6':
+			return 0x6;
+		case '7':
+			return 0x7;
+		case '8':
+			return 0x8;
+		case '9':
+			return 0x9;
+		case 'a':
+		case 'A':
+			return 0xa;
+		case 'b':
+		case 'B':
+			return 0xb;
+		case 'c':
+		case 'C':
+			return 0xc;
+		case 'd':
+		case 'D':
+			return 0xd;
+		case 'e':
+		case 'E':
+		case '*':
+			return 0xe;
+		case 'f':
+		case 'F':
+		case '#':
+			return 0xf;
+		default:
+			return 0x0;
+	}
+}
+
 static void isup_get_number(str *dest, unsigned char *src, int srclen, int oddeven)
 {
 	int i;
@@ -178,27 +227,119 @@ static void isup_get_number(str *dest, unsigned char *src, int srclen, int oddev
 	dest->len = i;
 }
 
+static void isup_put_number(unsigned char *dest, str src, int *len, int *oddeven)
+{
+	int i = 0;
+
+	if (src.len % 2) {
+		*oddeven = 1;
+		*len = src.len/2 + 1;
+	} else {
+		*oddeven = 0;
+		*len = src.len/2;
+	}
+
+	while (i < src.len) {
+		dest[i] = 0;
+
+		if (!(i % 2))
+			dest[i/2] |= (char2digit(src.s[i]) & 0xf);
+		else
+			dest[i/2] |= ((char2digit(src.s[i]) << 4) & 0xf0);
+
+		i++;
+	}
+}
+
+#define SET_BITS(_byte, _mask, _shift, _new_val) \
+	(_byte & ~_mask) | ((_new_val << _shift) & _mask)
+
+#define PARAM_CHECK_INT_VAL() \
+do { \
+	if (val == NULL || val->flags & PV_VAL_NULL) \
+		new_val = 0; \
+	else if (val->flags & PV_TYPE_INT || val->flags & PV_VAL_INT) \
+		new_val = val->ri; \
+	else if (val->flags & PV_VAL_STR) { \
+		LM_ERR("Integer value required\n"); \
+		return -1; \
+	} else { \
+		LM_ERR("Invalid value\n"); \
+		return -1; \
+	} \
+} while (0)
+
+#define NUM_PARAM_GET_VAL_PV(_addr_sig_subf_id) \
+do { \
+	if (val == NULL || val->flags & PV_VAL_NULL) { \
+		new_val = 0; \
+		num.len = 0; \
+		num.s = NULL; \
+	} else  if (val->flags & PV_TYPE_INT || val->flags & PV_VAL_INT) { \
+		if (subfield_id == (_addr_sig_subf_id)) { \
+			LM_WARN("String value required\n"); \
+			return -1; \
+		} else { \
+			new_val = val->ri; \
+		} \
+	} else if (val->flags & PV_VAL_STR) { \
+		if (subfield_id == (_addr_sig_subf_id)) { \
+			num.len = val->rs.len; \
+			num.s = val->rs.s; \
+		} else { \
+			LM_ERR("Integer value required\n"); \
+			return -1; \
+		} \
+	} else { \
+		LM_ERR("Invalid value\n"); \
+		return -1; \
+	} \
+} while (0)
+
 /* specific parameter parse functions */
 
 void nature_of_conn_ind_parsef(int subfield_id, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
-	unsigned char con = *param_val;
-
 	switch (subfield_id) {
 	case 1:
-		*int_res = con & 0x03;
+		*int_res = param_val[0] & 0x3;
 		break;
 	case 2:
-		con >>= 2;
-		*int_res = con & 0x03;
+		*int_res = (param_val[0] >> 2) & 0x3;
 		break;
 	case 3:
-		con >>= 4;
-		*int_res = con & 0x01;
+		*int_res = (param_val[0] >> 4) & 0x01;
 	default:
 		LM_ERR("BUG - bad subfield\n");
 	}
+}
+
+int nature_of_conn_ind_writef(int subfield_id, unsigned char *param_val, int *len,
+									pv_value_t *val)
+{
+	unsigned char new_val;
+
+	PARAM_CHECK_INT_VAL();
+
+	switch (subfield_id) {
+	case 1:
+		param_val[0] = SET_BITS(param_val[0], 0x3, 0, new_val);
+		break;
+	case 2:
+		param_val[0] = SET_BITS(param_val[0], 0xc, 2, new_val);
+		break;
+	case 3:
+		param_val[0] = SET_BITS(param_val[0], 0x10, 4, new_val);
+		break;
+	default:
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	*len = 1;
+
+	return 0;
 }
 
 void forward_call_ind_parsef(int subfield_id, unsigned char *param_val, int len,
@@ -234,6 +375,48 @@ void forward_call_ind_parsef(int subfield_id, unsigned char *param_val, int len,
 	}
 }
 
+int forward_call_ind_writef(int subfield_id, unsigned char *param_val, int *len,
+									pv_value_t *val)
+{
+	unsigned char new_val;
+
+	PARAM_CHECK_INT_VAL();
+
+	switch (subfield_id) {
+	case 1:
+		param_val[0] = SET_BITS(param_val[0], 0x1, 0, new_val);
+		break;
+	case 2:
+		param_val[0] = SET_BITS(param_val[0], 0x6, 1, new_val);
+		break;
+	case 3:
+		param_val[0] = SET_BITS(param_val[0], 0x8, 3, new_val);
+		break;
+	case 4:
+		param_val[0] = SET_BITS(param_val[0], 0x10, 4, new_val);
+		break;
+	case 5:
+		param_val[0] = SET_BITS(param_val[0], 0x20, 5, new_val);
+		break;
+	case 6:
+		param_val[0] = SET_BITS(param_val[0], 0xc0, 6, new_val);
+		break;
+	case 7:
+		param_val[1] = SET_BITS(param_val[1], 0x1, 0, new_val);
+		break;
+	case 8:
+		param_val[1] = SET_BITS(param_val[1], 0x6, 1, new_val);
+		break;
+	default:
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	*len = 2;
+
+	return 0;
+}
+
 void opt_forward_call_ind_parsef(int subfield_id, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
@@ -250,6 +433,33 @@ void opt_forward_call_ind_parsef(int subfield_id, unsigned char *param_val, int 
 	default:
 		LM_ERR("BUG - bad subfield\n");
 	}
+}
+
+int opt_forward_call_ind_writef(int subfield_id, unsigned char *param_val, int *len,
+									pv_value_t *val)
+{
+	unsigned char new_val;
+
+	PARAM_CHECK_INT_VAL();
+
+	switch (subfield_id) {
+	case 1:
+		param_val[0] = SET_BITS(param_val[0], 0x3, 0, new_val);
+		break;
+	case 2:
+		param_val[0] = SET_BITS(param_val[0], 0x4, 2, new_val);
+		break;
+	case 3:
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
+		break;
+	default:
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	*len = 1;
+
+	return 0;
 }
 
 void called_party_num_parsef(int subfield_id, unsigned char *param_val, int len,
@@ -276,6 +486,46 @@ void called_party_num_parsef(int subfield_id, unsigned char *param_val, int len,
 	default:
 		LM_ERR("BUG - bad subfield\n");
 	}
+}
+
+int called_party_num_writef(int subfield_id, unsigned char *param_val, int *len,
+								pv_value_t *val)
+{
+	unsigned char new_val;
+	int num_len, oddeven;
+	str num;
+
+	NUM_PARAM_GET_VAL_PV(5);
+
+	switch (subfield_id) {
+	case 1:
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
+		break;
+	case 2:
+		param_val[0] = SET_BITS(param_val[0], 0x7f, 0, new_val);
+		break;
+	case 3:
+		param_val[1] = SET_BITS(param_val[1], 0x80, 7, new_val);
+		 break;
+	case 4:
+		param_val[1] = SET_BITS(param_val[1], 0x70, 4, new_val);
+		break;
+	case 5:
+		isup_put_number(param_val + 2, num, &num_len, &oddeven);
+		/* also set oddeven, just in case it wasn't already */
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
+		break;
+	default:
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	if (subfield_id == 7)
+		*len = num_len + 2;
+	else if (*len == 0)
+		*len = 2;
+
+	return 0;
 }
 
 void calling_party_num_parsef(int subfield_id, unsigned char *param_val, int len,
@@ -308,6 +558,52 @@ void calling_party_num_parsef(int subfield_id, unsigned char *param_val, int len
 	default:
 		LM_ERR("BUG - bad subfield\n");
 	}
+}
+
+int calling_party_num_writef(int subfield_id, unsigned char *param_val, int *len,
+								pv_value_t *val)
+{
+	unsigned char new_val;
+	int num_len, oddeven;
+	str num;
+
+	NUM_PARAM_GET_VAL_PV(7);
+
+	switch (subfield_id) {
+	case 1:
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
+		break;
+	case 2:
+		param_val[0] = SET_BITS(param_val[0], 0x7f, 0, new_val);
+		break;
+	case 3:
+		param_val[1] = SET_BITS(param_val[1], 0x80, 7, new_val);
+		break;
+	case 4:
+		param_val[1] = SET_BITS(param_val[1], 0x70, 4, new_val);
+		break;
+	case 5:
+		param_val[1] = SET_BITS(param_val[1], 0xc, 2, new_val);
+		break;
+	case 6:
+		param_val[1] = SET_BITS(param_val[1], 0x3, 0, new_val);
+		break;
+	case 7:
+		isup_put_number(param_val + 2, num, &num_len, &oddeven);
+		/* also set oddeven, just in case it wasn't already */
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
+		break;
+	default:
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	if (subfield_id == 7)
+		*len = num_len + 2;
+	else if (*len == 0)
+		*len = 2;
+
+	return 0;
 }
 
 void backward_call_ind_parsef(int subfield_id, unsigned char *param_val, int len,
@@ -352,6 +648,56 @@ void backward_call_ind_parsef(int subfield_id, unsigned char *param_val, int len
 	}
 }
 
+int backward_call_ind_writef(int subfield_id, unsigned char *param_val, int *len,
+								pv_value_t *val)
+{
+	unsigned char new_val;
+
+	PARAM_CHECK_INT_VAL();
+
+	switch (subfield_id) {
+	case 1:
+		param_val[0] = SET_BITS(param_val[0], 0x3, 0, new_val);
+		break;
+	case 2:
+		param_val[0] = SET_BITS(param_val[0], 0xc, 2, new_val);
+		break;
+	case 3:
+		param_val[0] = SET_BITS(param_val[0], 0x30, 4, new_val);
+		break;
+	case 4:
+		param_val[0] = SET_BITS(param_val[0], 0xc0, 6, new_val);
+		break;
+	case 5:
+		param_val[1] = SET_BITS(param_val[1], 0x1, 0, new_val);
+		break;
+	case 6:
+		param_val[1] = SET_BITS(param_val[1], 0x2, 1, new_val);
+		break;
+	case 7:
+		param_val[1] = SET_BITS(param_val[1], 0x4, 2, new_val);
+		break;
+	case 8:
+		param_val[1] = SET_BITS(param_val[1], 0x8, 3, new_val);
+		break;
+	case 9:
+		param_val[1] = SET_BITS(param_val[1], 0x10, 4, new_val);
+		break;
+	case 10:
+		param_val[1] = SET_BITS(param_val[1], 0x20, 5, new_val);
+		break;
+	case 11:
+		param_val[1] = SET_BITS(param_val[1], 0x180, 7, new_val);
+		break;
+	default:
+		LM_ERR("BUG - bad subfield\n");
+	}
+
+	*len = 2;
+
+	return 0;
+}
+
 void opt_backward_call_ind_parsef(int subfield_id, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
@@ -371,6 +717,36 @@ void opt_backward_call_ind_parsef(int subfield_id, unsigned char *param_val, int
 	default:
 		LM_ERR("BUG - bad subfield\n");
 	}
+}
+
+int opt_backward_call_ind_writef(int subfield_id, unsigned char *param_val, int *len,
+								pv_value_t *val)
+{
+	unsigned char new_val;
+
+	PARAM_CHECK_INT_VAL();
+
+	switch (subfield_id) {
+	case 1:
+		param_val[0] = SET_BITS(param_val[0], 0x1, 0, new_val);
+		break;
+	case 2:
+		param_val[0] = SET_BITS(param_val[0], 0x2, 1, new_val);
+		break;
+	case 3:
+		param_val[0] = SET_BITS(param_val[0], 0x4, 2, new_val);
+		break;
+	case 4:
+		param_val[0] = SET_BITS(param_val[0], 0x8, 3, new_val);
+		break;
+	default:
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	*len = 1;
+
+	return 0;
 }
 
 void connected_num_parsef(int subfield_id, unsigned char *param_val, int len,
@@ -402,6 +778,49 @@ void connected_num_parsef(int subfield_id, unsigned char *param_val, int len,
 	}
 }
 
+int connected_num_writef(int subfield_id, unsigned char *param_val, int *len,
+								pv_value_t *val)
+{
+	unsigned char new_val;
+	int num_len, oddeven;
+	str num;
+
+	NUM_PARAM_GET_VAL_PV(6);
+
+	switch (subfield_id) {
+	case 1:
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
+		break;
+	case 2:
+		param_val[0] = SET_BITS(param_val[0], 0x7f, 0, new_val);
+		break;
+	case 3:
+		param_val[1] = SET_BITS(param_val[1], 0x70, 4, new_val);
+		break;
+	case 4:
+		param_val[1] = SET_BITS(param_val[1], 0xc, 2, new_val);
+		break;
+	case 5:
+		param_val[1] = SET_BITS(param_val[1], 0x3, 0, new_val);
+		break;
+	case 6:
+		isup_put_number(param_val + 2, num, &num_len, &oddeven);
+		/* also set oddeven, just in case */
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
+		break;
+	default:
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	if (subfield_id == 7)
+		*len = num_len + 2;
+	else if (*len == 0)
+		*len = 2;
+
+	return 0;
+}
+
 void cause_ind_parsef(int subfield_id, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
@@ -418,6 +837,33 @@ void cause_ind_parsef(int subfield_id, unsigned char *param_val, int len,
 	default:
 		LM_ERR("BUG - bad subfield\n");
 	}
+}
+
+int cause_ind_writef(int subfield_id, unsigned char *param_val, int *len,
+								pv_value_t *val)
+{
+	unsigned char new_val;
+
+	PARAM_CHECK_INT_VAL();
+
+	switch (subfield_id) {
+	case 1:
+		param_val[0] = SET_BITS(param_val[0], 0xf, 0, new_val);
+		break;
+	case 2:
+		param_val[0] = SET_BITS(param_val[0], 0x60, 5, new_val);
+		break;
+	case 3:
+		param_val[1] = SET_BITS(param_val[1], 0x7f, 0, new_val);
+		break;
+	default:
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	*len = 2;
+
+	return 0;
 }
 
 void subsequent_num_parsef(int subfield_id, unsigned char *param_val, int len,
@@ -437,115 +883,146 @@ void subsequent_num_parsef(int subfield_id, unsigned char *param_val, int len,
 	}
 }
 
+int subsequent_num_writef(int subfield_id, unsigned char *param_val, int *len,
+								pv_value_t *val)
+{
+	unsigned char new_val;
+	int num_len, oddeven;
+	str num;
+
+	NUM_PARAM_GET_VAL_PV(2);
+
+	switch (subfield_id) {
+	case 1:
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
+		break;
+	case 2:
+		isup_put_number(param_val + 1, num, &num_len, &oddeven);
+		/* also set oddeven, just in case */
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
+		break;
+	default:
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	if (subfield_id == 7)
+		*len = num_len + 2;
+	else if (*len == 0)
+		*len = 2;
+
+	return 0;
+}
+
 struct isup_param_data isup_params[NO_ISUP_PARAMS] = {
-	{ISUP_PARM_CALL_REF, str_init("Call Reference"), NULL, NULL, 0},
-	{ISUP_PARM_TRANSMISSION_MEDIUM_REQS, str_init("Transmission Medium Requirement"), NULL, NULL, 1},
-	{ISUP_PARM_ACCESS_TRANS, str_init("Access Transport"), NULL, NULL, 0},
-	{ISUP_PARM_CALLED_PARTY_NUM, str_init("Called Party Number"), called_party_num_parsef, called_party_num_subf, 0},
-	{ISUP_PARM_SUBSEQUENT_NUMBER, str_init("Subsequent Number"), subsequent_num_parsef, subsequent_num_subf, 0},
-	{ISUP_PARM_NATURE_OF_CONNECTION_IND, str_init("Nature of Connection Indicators"), nature_of_conn_ind_parsef, nature_of_conn_ind_subf, 1},
-	{ISUP_PARM_FORWARD_CALL_IND, str_init("Forward Call Indicators"), forward_call_ind_parsef, forward_call_ind_subf, 2},
-	{ISUP_PARM_OPT_FORWARD_CALL_INDICATOR, str_init("Optional forward call indicators"), opt_forward_call_ind_parsef, opt_forward_call_ind_subf, 0},
-	{ISUP_PARM_CALLING_PARTY_CAT, str_init("Calling Party's Category"), NULL, NULL, 1},
-	{ISUP_PARM_CALLING_PARTY_NUM, str_init("Calling Party Number"), calling_party_num_parsef, calling_party_num_subf, 0},
-	{ISUP_PARM_REDIRECTING_NUMBER, str_init("Redirecting Number"), NULL, NULL, 0},
-	{ISUP_PARM_REDIRECTION_NUMBER, str_init("Redirection Number"), called_party_num_parsef, called_party_num_subf, 0},
-	{ISUP_PARM_CONNECTION_REQ, str_init("Connection Request"), NULL, NULL, 0},
-	{ISUP_PARM_INR_IND, str_init("Information Request Indicators"), NULL, NULL, 0},
-	{ISUP_PARM_INF_IND, str_init("Information Indicators"), NULL, NULL, 0},
-	{ISUP_PARM_CONTINUITY_IND, str_init("Continuity Indicators"), NULL, NULL, 0},
-	{ISUP_PARM_BACKWARD_CALL_IND, str_init("Backward Call Indicators"), backward_call_ind_parsef, backward_call_ind_subf, 2},
-	{ISUP_PARM_CAUSE, str_init("Cause Indicators"), cause_ind_parsef, cause_ind_subf, 0},
-	{ISUP_PARM_REDIRECTION_INFO, str_init("Redirection Information"), NULL, NULL, 0},
-	{ISUP_PARM_CIRCUIT_GROUP_SUPERVISION_IND, str_init("Circuit group supervision message type"), NULL, NULL, 0},
-	{ISUP_PARM_RANGE_AND_STATUS, str_init("Range and status"), NULL, NULL, 0},
-	{ISUP_PARM_CALL_MODIFICATION_IND, str_init("Call modification indicators"), NULL, NULL, 0},
-	{ISUP_PARM_FACILITY_IND, str_init("Facility Indicator"), NULL, NULL, 1},
-	{ISUP_PARM_CUG_INTERLOCK_CODE, str_init("CUG Interlock Code"), NULL, NULL, 0},
-	{ISUP_PARM_USER_SERVICE_INFO, str_init("User Service Information"), NULL, NULL, 0},
-	{ISUP_PARM_SIGNALLING_PC, str_init("Signalling point code"), NULL, NULL, 0},
-	{ISUP_PARM_USER_TO_USER_INFO, str_init("User-to-user information"), NULL, NULL, 0},
-	{ISUP_CONNECTED_NUMBER, str_init("Connected Number"), connected_num_parsef, connected_num_subf, 0},
-	{ISUP_PARM_SUSPEND_RESUME_IND, str_init("Suspend/Resume Indicators"), NULL, NULL, 1},
-	{ISUP_PARM_TRANSIT_NETWORK_SELECTION, str_init("Transit Network Selection"), NULL, NULL, 0},
-	{ISUP_PARM_EVENT_INFO, str_init("Event Information"), NULL, NULL, 1},
-	{ISUP_PARM_CIRCUIT_ASSIGNMENT_MAP, str_init("Circuit Assignment Map"), NULL, NULL, 0},
-	{ISUP_PARM_CIRCUIT_STATE_IND, str_init("Circuit State Indicator"), NULL, NULL, 0},
-	{ISUP_PARAM_AUTOMATIC_CONGESTION_LEVEL, str_init("Automatic congestion level"), NULL, NULL, 0},
-	{ISUP_PARM_ORIGINAL_CALLED_NUM, str_init("Original called number"), NULL, NULL, 0},
-	{ISUP_PARM_OPT_BACKWARD_CALL_IND, str_init("Optional Backward Call Indicators"), opt_backward_call_ind_parsef, opt_backward_call_ind_subf, 0},
-	{ISUP_PARM_USER_TO_USER_IND, str_init("User-to-user indicators"), NULL, NULL, 0},
-	{ISUP_PARM_ORIGINATION_ISC_PC, str_init("Origination ISC point code"), NULL, NULL, 0},
-	{ISUP_PARM_GENERIC_NOTIFICATION_IND, str_init("Generic Notification Indicator"), NULL, NULL, 0},
-	{ISUP_PARM_CALL_HISTORY_INFO, str_init("Call history information"), NULL, NULL, 0},
-	{ISUP_PARM_ACCESS_DELIVERY_INFO, str_init("Access Delivery Information"), NULL, NULL, 0},
-	{ISUP_PARM_NETWORK_SPECIFIC_FACILITY, str_init("Network specific facility"), NULL, NULL, 0},
-	{ISUP_PARM_USER_SERVICE_INFO_PRIME, str_init("User service information prime"), NULL, NULL, 0},
-	{ISUP_PARM_PROPAGATION_DELAY, str_init("Propagation Delay Counter"), NULL, NULL, 0},
-	{ISUP_PARM_REMOTE_OPERATIONS, str_init("Remote operations"), NULL, NULL, 0},
-	{ISUP_PARM_SERVICE_ACTIVATION, str_init("Service activation"), NULL, NULL, 0},
-	{ISUP_PARM_USER_TELESERVICE_INFO, str_init("User teleservice information"), NULL, NULL, 0},
-	{ISUP_PARM_TRANSMISSION_MEDIUM_USED, str_init("Transmission medium used"), NULL, NULL, 0},
-	{ISUP_PARM_CALL_DIVERSION_INFO, str_init("Call diversion information"), NULL, NULL, 0},
-	{ISUP_PARM_ECHO_CONTROL_INFO, str_init("Echo Control Information"), NULL, NULL, 0},
-	{ISUP_PARM_MESSAGE_COMPAT_INFO, str_init("Message compatibility information"), NULL, NULL, 0},
-	{ISUP_PARM_PARAMETER_COMPAT_INFO, str_init("Parameter Compatibility Information"), NULL, NULL, 0},
-	{ISUP_PARM_MLPP_PRECEDENCE, str_init("MLPP precedence"), NULL, NULL, 0},
-	{ISUP_PARM_MCID_REQUEST_IND, str_init("MCID request indicators"), NULL, NULL, 0},
-	{ISUP_PARM_MCID_RESPONSE_IND, str_init("MCID response indicators"), NULL, NULL, 0},
-	{ISUP_PARM_HOP_COUNTER, str_init("Hop Counter"), NULL, NULL, 0},
-	{ISUP_PARM_TRANSMISSION_MEDIUM_REQ_PRIME, str_init("Transmission medium requirement prime"), NULL, NULL, 0},
-	{ISUP_PARM_LOCATION_NUMBER, str_init("Location Number"), NULL, NULL, 0},
-	{ISUP_PARM_REDIRECTION_NUM_RESTRICTION, str_init("Redirection number restriction"), NULL, NULL, 0},
-	{ISUP_PARM_CALL_TRANSFER_REFERENCE, str_init("Call transfer reference"), NULL, NULL, 0},
-	{ISUP_PARM_LOOP_PREVENTION_IND, str_init("Loop prevention indicators"), NULL, NULL, 0},
-	{ISUP_PARM_CALL_TRANSFER_NUMBER, str_init("Call transfer number"), NULL, NULL, 0},
-	{ISUP_PARM_CCSS, str_init("CCSS"), NULL, NULL, 0},
-	{ISUP_PARM_FORWARD_GVNS, str_init("Forward GVNS"), NULL, NULL, 0},
-	{ISUP_PARM_BACKWARD_GVNS, str_init("Backward GVNS"), NULL, NULL, 0},
-	{ISUP_PARM_REDIRECT_CAPABILITY, str_init("Redirect capability"), NULL, NULL, 0},
-	{ISUP_PARM_NETWORK_MANAGEMENT_CONTROL, str_init("Network management controls"), NULL, NULL, 0},
-	{ISUP_PARM_CORRELATION_ID, str_init("Correlation id"), NULL, NULL, 0},
-	{ISUP_PARM_SCF_ID, str_init("SCF id"), NULL, NULL, 0},
-	{ISUP_PARM_CALL_DIVERSION_TREATMENT_IND, str_init("Call diversion treatment indicators"), NULL, NULL, 0},
-	{ISUP_PARM_CALLED_IN_NUMBER, str_init("Called IN number"), NULL, NULL, 0},
-	{ISUP_PARM_CALL_OFFERING_TREATMENT_IND, str_init("Call offering treatment indicators"), NULL, NULL, 0},
-	{ISUP_PARM_CHARGED_PARTY_IDENT, str_init("Charged party identification"), NULL, NULL, 0},
-	{ISUP_PARM_CONFERENCE_TREATMENT_IND, str_init("Conference treatment indicators"), NULL, NULL, 0},
-	{ISUP_PARM_DISPLAY_INFO, str_init("Display information"), NULL, NULL, 0},
-	{ISUP_PARM_UID_ACTION_IND, str_init("UID action indicators"), NULL, NULL, 0},
-	{ISUP_PARM_UID_CAPABILITY_IND, str_init("UID capability indicators"), NULL, NULL, 0},
-	{ISUP_PARM_REDIRECT_COUNTER, str_init("Redirect Counter"), NULL, NULL, 0},
-	{ISUP_PARM_APPLICATION_TRANSPORT, str_init("Application transport"), NULL, NULL, 0},
-	{ISUP_PARM_COLLECT_CALL_REQUEST, str_init("Collect call request"), NULL, NULL, 0},
-	{ISUP_PARM_CCNR_POSSIBLE_IND, str_init("CCNR possible indicator"), NULL, NULL, 0},
-	{ISUP_PARM_PIVOT_CAPABILITY, str_init("Pivot capability"), NULL, NULL, 0},
-	{ISUP_PARM_PIVOT_ROUTING_IND, str_init("Pivot routing indicators"), NULL, NULL, 0},
-	{ISUP_PARM_CALLED_DIRECTORY_NUMBER, str_init("Called directory number"), NULL, NULL, 0},
-	{ISUP_PARM_ORIGINAL_CALLED_IN_NUM, str_init("Original called IN number"), NULL, NULL, 0},
-	{ISUP_PARM_CALLING_GEODETIC_LOCATION, str_init("Calling geodetic location"), NULL, NULL, 0},
-	{ISUP_PARM_HTR_INFO, str_init("HTR information"), NULL, NULL, 0},
-	{ISUP_PARM_NETWORK_ROUTING_NUMBER, str_init("Network routing number"), NULL, NULL, 0},
-	{ISUP_PARM_QUERY_ON_RELEASE_CAPABILITY, str_init("Query on release capability"), NULL, NULL, 0},
-	{ISUP_PARM_PIVOT_STATUS, str_init("Pivot status"), NULL, NULL, 0},
-	{ISUP_PARM_PIVOT_COUNTER, str_init("Pivot counter"), NULL, NULL, 0},
-	{ISUP_PARM_PIVOT_ROUTING_FORWARD_IND, str_init("Pivot routing forward information"), NULL, NULL, 0},
-	{ISUP_PARM_PIVOT_ROUTING_BACKWARD_IND, str_init("Pivot routing backward information"), NULL, NULL, 0},
-	{ISUP_PARM_REDIRECT_STATUS, str_init("Redirect status"), NULL, NULL, 0},
-	{ISUP_PARM_REDIRECT_FORWARD_INFO, str_init("Redirect forward information"), NULL, NULL, 0},
-	{ISUP_PARM_REDIRECT_BACKWARD_INFO, str_init("Redirect backward information"), NULL, NULL, 0},
-	{ISUP_PARM_NUM_PORTABILITY_FORWARD_INFO, str_init("Number portability forward information"), NULL, NULL, 0},
-	{ISUP_PARM_GENERIC_ADDR, str_init("Generic Number"), NULL, NULL, 0},
-	{ISUP_PARM_GENERIC_DIGITS, str_init("Generic Digits"), NULL, NULL, 0},
-	{ISUP_PARM_EGRESS_SERV, str_init("Egress Service"), NULL, NULL, 0},
-	{ISUP_PARM_JIP, str_init("Jurisdiction Information Parameter"), NULL, NULL, 0},
-	{ISUP_PARM_CARRIER_ID, str_init("Carrier Identification"), NULL, NULL, 0},
-	{ISUP_PARM_BUSINESS_GRP, str_init("Business Group"), NULL, NULL, 0},
-	{ISUP_PARM_GENERIC_NAME, str_init("Generic Name"), NULL, NULL, 0},
-	{ISUP_PARM_LOCAL_SERVICE_PROVIDER_IDENTIFICATION, str_init("Local Service Provider ID"), NULL, NULL, 0},
-	{ISUP_PARM_ORIG_LINE_INFO, str_init("Originating line information"), NULL, NULL, 0},
-	{ISUP_PARM_CHARGE_NUMBER, str_init("Charge Number"), NULL, NULL, 0},
-	{ISUP_PARM_SELECTION_INFO, str_init("Selection Information"), NULL, NULL, 0}
+	{ISUP_PARM_CALL_REF, str_init("Call Reference"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_TRANSMISSION_MEDIUM_REQS, str_init("Transmission Medium Requirement"), NULL, NULL, NULL, 1},
+	{ISUP_PARM_ACCESS_TRANS, str_init("Access Transport"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CALLED_PARTY_NUM, str_init("Called Party Number"), called_party_num_parsef, called_party_num_writef, called_party_num_subf, 0},
+	{ISUP_PARM_SUBSEQUENT_NUMBER, str_init("Subsequent Number"), subsequent_num_parsef, subsequent_num_writef, subsequent_num_subf, 0},
+	{ISUP_PARM_NATURE_OF_CONNECTION_IND, str_init("Nature of Connection Indicators"), nature_of_conn_ind_parsef, nature_of_conn_ind_writef, nature_of_conn_ind_subf, 1},
+	{ISUP_PARM_FORWARD_CALL_IND, str_init("Forward Call Indicators"), forward_call_ind_parsef, forward_call_ind_writef, forward_call_ind_subf, 2},
+	{ISUP_PARM_OPT_FORWARD_CALL_INDICATOR, str_init("Optional forward call indicators"), opt_forward_call_ind_parsef, opt_forward_call_ind_writef, opt_forward_call_ind_subf, 0},
+	{ISUP_PARM_CALLING_PARTY_CAT, str_init("Calling Party's Category"), NULL, NULL, NULL, 1},
+	{ISUP_PARM_CALLING_PARTY_NUM, str_init("Calling Party Number"), calling_party_num_parsef, calling_party_num_writef, calling_party_num_subf, 0},
+	{ISUP_PARM_REDIRECTING_NUMBER, str_init("Redirecting Number"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_REDIRECTION_NUMBER, str_init("Redirection Number"), called_party_num_parsef, called_party_num_writef, called_party_num_subf, 0},
+	{ISUP_PARM_CONNECTION_REQ, str_init("Connection Request"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_INR_IND, str_init("Information Request Indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_INF_IND, str_init("Information Indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CONTINUITY_IND, str_init("Continuity Indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_BACKWARD_CALL_IND, str_init("Backward Call Indicators"), backward_call_ind_parsef, backward_call_ind_writef, backward_call_ind_subf, 2},
+	{ISUP_PARM_CAUSE, str_init("Cause Indicators"), cause_ind_parsef, cause_ind_writef, cause_ind_subf, 0},
+	{ISUP_PARM_REDIRECTION_INFO, str_init("Redirection Information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CIRCUIT_GROUP_SUPERVISION_IND, str_init("Circuit group supervision message type"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_RANGE_AND_STATUS, str_init("Range and status"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CALL_MODIFICATION_IND, str_init("Call modification indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_FACILITY_IND, str_init("Facility Indicator"), NULL, NULL, NULL, 1},
+	{ISUP_PARM_CUG_INTERLOCK_CODE, str_init("CUG Interlock Code"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_USER_SERVICE_INFO, str_init("User Service Information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_SIGNALLING_PC, str_init("Signalling point code"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_USER_TO_USER_INFO, str_init("User-to-user information"), NULL, NULL, NULL, 0},
+	{ISUP_CONNECTED_NUMBER, str_init("Connected Number"), connected_num_parsef, connected_num_writef, connected_num_subf, 0},
+	{ISUP_PARM_SUSPEND_RESUME_IND, str_init("Suspend/Resume Indicators"), NULL, NULL, NULL, 1},
+	{ISUP_PARM_TRANSIT_NETWORK_SELECTION, str_init("Transit Network Selection"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_EVENT_INFO, str_init("Event Information"), NULL, NULL, NULL, 1},
+	{ISUP_PARM_CIRCUIT_ASSIGNMENT_MAP, str_init("Circuit Assignment Map"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CIRCUIT_STATE_IND, str_init("Circuit State Indicator"), NULL, NULL, NULL, 0},
+	{ISUP_PARAM_AUTOMATIC_CONGESTION_LEVEL, str_init("Automatic congestion level"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_ORIGINAL_CALLED_NUM, str_init("Original called number"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_OPT_BACKWARD_CALL_IND, str_init("Optional Backward Call Indicators"), opt_backward_call_ind_parsef, opt_backward_call_ind_writef, opt_backward_call_ind_subf, 0},
+	{ISUP_PARM_USER_TO_USER_IND, str_init("User-to-user indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_ORIGINATION_ISC_PC, str_init("Origination ISC point code"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_GENERIC_NOTIFICATION_IND, str_init("Generic Notification Indicator"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CALL_HISTORY_INFO, str_init("Call history information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_ACCESS_DELIVERY_INFO, str_init("Access Delivery Information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_NETWORK_SPECIFIC_FACILITY, str_init("Network specific facility"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_USER_SERVICE_INFO_PRIME, str_init("User service information prime"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_PROPAGATION_DELAY, str_init("Propagation Delay Counter"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_REMOTE_OPERATIONS, str_init("Remote operations"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_SERVICE_ACTIVATION, str_init("Service activation"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_USER_TELESERVICE_INFO, str_init("User teleservice information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_TRANSMISSION_MEDIUM_USED, str_init("Transmission medium used"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CALL_DIVERSION_INFO, str_init("Call diversion information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_ECHO_CONTROL_INFO, str_init("Echo Control Information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_MESSAGE_COMPAT_INFO, str_init("Message compatibility information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_PARAMETER_COMPAT_INFO, str_init("Parameter Compatibility Information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_MLPP_PRECEDENCE, str_init("MLPP precedence"), NULL,NULL, NULL, 0},
+	{ISUP_PARM_MCID_REQUEST_IND, str_init("MCID request indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_MCID_RESPONSE_IND, str_init("MCID response indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_HOP_COUNTER, str_init("Hop Counter"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_TRANSMISSION_MEDIUM_REQ_PRIME, str_init("Transmission medium requirement prime"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_LOCATION_NUMBER, str_init("Location Number"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_REDIRECTION_NUM_RESTRICTION, str_init("Redirection number restriction"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CALL_TRANSFER_REFERENCE, str_init("Call transfer reference"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_LOOP_PREVENTION_IND, str_init("Loop prevention indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CALL_TRANSFER_NUMBER, str_init("Call transfer number"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CCSS, str_init("CCSS"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_FORWARD_GVNS, str_init("Forward GVNS"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_BACKWARD_GVNS, str_init("Backward GVNS"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_REDIRECT_CAPABILITY, str_init("Redirect capability"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_NETWORK_MANAGEMENT_CONTROL, str_init("Network management controls"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CORRELATION_ID, str_init("Correlation id"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_SCF_ID, str_init("SCF id"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CALL_DIVERSION_TREATMENT_IND, str_init("Call diversion treatment indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CALLED_IN_NUMBER, str_init("Called IN number"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CALL_OFFERING_TREATMENT_IND, str_init("Call offering treatment indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CHARGED_PARTY_IDENT, str_init("Charged party identification"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CONFERENCE_TREATMENT_IND, str_init("Conference treatment indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_DISPLAY_INFO, str_init("Display information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_UID_ACTION_IND, str_init("UID action indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_UID_CAPABILITY_IND, str_init("UID capability indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_REDIRECT_COUNTER, str_init("Redirect Counter"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_APPLICATION_TRANSPORT, str_init("Application transport"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_COLLECT_CALL_REQUEST, str_init("Collect call request"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CCNR_POSSIBLE_IND, str_init("CCNR possible indicator"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_PIVOT_CAPABILITY, str_init("Pivot capability"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_PIVOT_ROUTING_IND, str_init("Pivot routing indicators"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CALLED_DIRECTORY_NUMBER, str_init("Called directory number"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_ORIGINAL_CALLED_IN_NUM, str_init("Original called IN number"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CALLING_GEODETIC_LOCATION, str_init("Calling geodetic location"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_HTR_INFO, str_init("HTR information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_NETWORK_ROUTING_NUMBER, str_init("Network routing number"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_QUERY_ON_RELEASE_CAPABILITY, str_init("Query on release capability"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_PIVOT_STATUS, str_init("Pivot status"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_PIVOT_COUNTER, str_init("Pivot counter"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_PIVOT_ROUTING_FORWARD_IND, str_init("Pivot routing forward information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_PIVOT_ROUTING_BACKWARD_IND, str_init("Pivot routing backward information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_REDIRECT_STATUS, str_init("Redirect status"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_REDIRECT_FORWARD_INFO, str_init("Redirect forward information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_REDIRECT_BACKWARD_INFO, str_init("Redirect backward information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_NUM_PORTABILITY_FORWARD_INFO, str_init("Number portability forward information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_GENERIC_ADDR, str_init("Generic Number"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_GENERIC_DIGITS, str_init("Generic Digits"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_EGRESS_SERV, str_init("Egress Service"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_JIP, str_init("Jurisdiction Information Parameter"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CARRIER_ID, str_init("Carrier Identification"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_BUSINESS_GRP, str_init("Business Group"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_GENERIC_NAME, str_init("Generic Name"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_LOCAL_SERVICE_PROVIDER_IDENTIFICATION, str_init("Local Service Provider ID"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_ORIG_LINE_INFO, str_init("Originating line information"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_CHARGE_NUMBER, str_init("Charge Number"), NULL, NULL, NULL, 0},
+	{ISUP_PARM_SELECTION_INFO, str_init("Selection Information"), NULL, NULL, NULL, 0}
 };
 
 int get_param_idx_by_code(int param_code)

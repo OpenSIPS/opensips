@@ -23,6 +23,11 @@
  *  2016-09-xx  initial version (rvlad-patrascu)
  */
 
+#ifndef _ISUP_H_
+#define _ISUP_H_
+
+#include "../../pvar.h"
+
 #define NO_ISUP_MESSAGES 23
 
 /* ISUP messages */
@@ -176,6 +181,8 @@
 
 typedef void (*isup_param_parse_f)(int subfield_id, unsigned char *param_val, int len,
 									int *int_res, str *str_res);
+typedef int (*isup_param_write_f)(int subfield_id, unsigned char *param_val, int *len,
+									pv_value_t *val);
 
 struct isup_subfield {
 	int id;		/* not related to any specification, just for identifying */
@@ -186,6 +193,7 @@ struct isup_param_data {
 	int param_code;
 	str name;
 	isup_param_parse_f parse_func;
+	isup_param_write_f write_func;
 	struct isup_subfield *subfield_list;
 	int len;	/* for mandatory fixed params */
 };
@@ -199,8 +207,8 @@ struct isup_message_data {
 };
 
 struct param_parsed_struct {
-	int param_code;
-	int len;
+	unsigned char param_code;
+	unsigned char len;
 	unsigned char val[PARAM_MAX_LEN];
 };
 
@@ -211,6 +219,8 @@ struct opt_param {
 
 struct isup_parsed_struct {
 	int message_type;
+	int total_len;
+	int no_opt_params;
 	struct param_parsed_struct mand_fix_params[MAX_NO_FIXED_PARAMS];
 	struct param_parsed_struct mand_var_params[MAX_NO_VAR_PARAMS];
 	struct opt_param *opt_params_list;
@@ -222,3 +232,4 @@ extern struct isup_param_data isup_params[NO_ISUP_PARAMS];
 inline int get_param_idx_by_code(int param_code);
 inline int get_msg_idx_by_type(int msg_type);
 
+#endif /* _ISUP_H_ */

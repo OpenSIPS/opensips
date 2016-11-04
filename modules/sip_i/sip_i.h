@@ -23,6 +23,9 @@
  *  2016-09-xx  initial version (rvlad-patrascu)
  */
 
+#ifndef _SIP_I_H_
+#define _SIP_I_H_
+
 #define DEFAULT_PARAM_SUBF_SEP '|'
 
 struct isup_parse_fixup {
@@ -30,3 +33,4 @@ struct isup_parse_fixup {
 	int subfield_id;
 };
 
+#endif /* _SIP_I_H_ */
