@@ -1333,7 +1333,7 @@ static inline int push_ds_2_avps( ds_dest_t *ds, ds_partition_t *partition )
 	char buf[PTR_STRING_SIZE]; /* a hexa string */
 	int_str avp_val;
 
-	avp_val.s.len = 1 + snprintf( buf, PTR_STR_SIZE, "%p", ds->sock );
+	avp_val.s.len = snprintf( buf, PTR_STR_SIZE, "%p", ds->sock );
 	avp_val.s.s = buf;
 	if(add_avp(AVP_VAL_STR| partition->sock_avp_type,
 				partition->sock_avp_name, avp_val)!=0) {
