@@ -1254,7 +1254,7 @@ static inline int push_ds_2_avps( ds_dest_t *ds )
 	char buf[2+16+1]; /* a hexa string */
 	int_str avp_val;
 
-	avp_val.s.len = 1 + sprintf( buf, "%p", ds->sock );
+	avp_val.s.len = sprintf( buf, "%p", ds->sock );
 	avp_val.s.s = buf;
 	if(add_avp(AVP_VAL_STR|sock_avp_type, sock_avp_name, avp_val)!=0) {
 		LM_ERR("failed to add SOCK avp\n");
