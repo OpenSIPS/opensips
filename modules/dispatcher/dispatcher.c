@@ -936,9 +936,7 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	int _ret;
 	int run_prev_ds_select = 0;
 	ds_select_ctl_t prev_ds_select_ctl, ds_select_ctl;
-	char selected_dst_sock_buf[PTR_STRING_SIZE]; /* a hexa string */
 	ds_selected_dst selected_dst;
-	struct socket_info *sock = NULL;
 
 	if(msg==NULL)
 		return -1;
@@ -950,7 +948,6 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	ds_select_ctl.ds_flags = 0;
 
 	memset(&selected_dst, 0, sizeof(ds_selected_dst));
-	selected_dst.socket.s = selected_dst_sock_buf;
 
 	/* Retrieve dispatcher set */
 	ds_param_t *part_set_param = (ds_param_t*)part_set;
@@ -1066,14 +1063,8 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	}
 	else {
 		if (selected_dst.uri.s != NULL) {
-			if (selected_dst.socket.len != 0) {
-				if (sscanf( selected_dst.socket.s, "%p", (void**)&sock ) != 1) {
-					LM_ERR("unable to read forced destination socket\n");
-					ret = -4;
-					goto error;
-				}
-			}
-			if (ds_update_dst(msg, &selected_dst.uri, sock, ds_select_ctl.mode) != 0) {
+			if (ds_update_dst(msg, &selected_dst.uri, selected_dst.socket,
+			ds_select_ctl.mode) != 0) {
 				LM_ERR("cannot set dst addr\n");
 				ret = -3;
 				goto error;
