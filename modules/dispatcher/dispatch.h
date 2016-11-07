@@ -170,7 +170,7 @@ typedef struct
 typedef struct _ds_selected_dst
 {
 	str uri;
-	str socket;
+	struct socket_info *socket;
 } ds_selected_dst, *ds_selected_dst_p;
 
 extern str ds_set_id_col;
