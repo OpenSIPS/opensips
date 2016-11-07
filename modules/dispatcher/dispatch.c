@@ -1661,13 +1661,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 		LM_ERR("cannot set selected_dst uri\n");
 		goto error;
 	}
-	if (selected->sock) {
-		selected_dst->socket.len = 1 +
-		snprintf( selected_dst->socket.s, PTR_STR_SIZE, "%p", selected->sock );
-	}
-	else {
-		selected_dst->socket.len = 0;
-	}
+	selected_dst->socket = selected->sock;
 
 	LM_DBG("selected [%d-%d/%d] <%.*s>\n",
 		ds_select_ctl->alg, ds_select_ctl->set, ds_id,
