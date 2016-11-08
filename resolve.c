@@ -1761,7 +1761,8 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 		if (proto && *proto==PROTO_NONE)
 			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		if (port && *port==0)
-			*port = protos[*proto].default_port;
+			*port = (proto? (protos[*proto].default_port) :
+				((is_sips)?SIPS_PORT:SIP_PORT));
 		return ip_addr2he(name,ip);
 	}
 
