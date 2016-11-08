@@ -459,14 +459,14 @@ static char* serialize_dns_rdata(struct rdata *head,int buf_len,int *len,int do_
 	}
 
 	if (do_encoding) {
-		if (*len)
+		if (len)
 			*len = base64_len;
 
 		/* encode and return beggining of encoding */
 		base64encode(p,rdata_buf,buf_len);
 		return (char *)p;
 	} else {
-		if (*len)
+		if (len)
 			*len = needed_len;
 		return (char *)rdata_buf;
 	}
