@@ -384,8 +384,8 @@ static int dbcache_fetch_counter(cachedb_con *con,str *attr,int *ret_val)
 		case DB_INT:
 			if (ret_val)
 				*ret_val = RES_ROWS(db_res)[0].values[0].val.int_val;
-				if (cdb_dbf.free_result(cdb_db_handle, db_res) < 0)
-					LM_ERR("failed to freeing result of query\n");
+			if (cdb_dbf.free_result(cdb_db_handle, db_res) < 0)
+				LM_ERR("failed to freeing result of query\n");
 			break;
 		default:
 			LM_ERR("unknown type of DB user column\n");
