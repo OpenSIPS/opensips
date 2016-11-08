@@ -78,7 +78,7 @@ int timer_fds_out[TIMER_MAX_PIPES] = { [0 ... (TIMER_MAX_PIPES - 1) ] = -1 };
 
 
 /* ret 0 on success, <0 on error*/
-/* accepts number of pipes to create */
+/* accepts number of children to create pipes for */
 int init_timer(int pipe_cnt)
 {
 	int i = 0;
@@ -107,9 +107,14 @@ int init_timer(int pipe_cnt)
 	*ujiffies=0;
 	*ijiffies=0;
 
-	//Make as many pipes as children or up to TIMER_MAX_PIPES
-	if (pipe_cnt < TIMER_MAX_PIPES) {
+	//Limit max number of pipes to children count or TIMER_MAX_PIPES
+	if (pipe_cnt < timer_pipe_count) {
 		timer_pipe_count = pipe_cnt;
+	}
+
+	//Make sure we make atleast one pipe
+	if (timer_pipe_count <= 0) {
+		timer_pipe_count = 1;
 	}
 
 	//Make one pipe set for each child

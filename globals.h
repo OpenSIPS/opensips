@@ -140,6 +140,9 @@ extern int db_max_async_connections;
 
 extern int disable_503_translation;
 
+/*Timer behavior*/
+extern int children_per_timer;
+
 extern int enable_asserts;
 extern int abort_on_assert;
 #endif
