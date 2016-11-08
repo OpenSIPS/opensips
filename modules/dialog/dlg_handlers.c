@@ -2050,12 +2050,13 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 		buf = req->buf;
 
 		if (req->route) {
-			for (it=req->route;it;it=it->sibling)
+			for (it=req->route;it;it=it->sibling) {
 				if (it->parsed && ((rr_t*)it->parsed)->deleted)
 					continue;
-			if ((lmp = del_lump(req,it->name.s - buf,it->len,HDR_ROUTE_T)) == 0) {
-				LM_ERR("del_lump failed \n");
-				return -1;
+				if ((lmp = del_lump(req,it->name.s - buf,it->len,HDR_ROUTE_T)) == 0) {
+					LM_ERR("del_lump failed \n");
+					return -1;
+				}
 			}
 		}
 
