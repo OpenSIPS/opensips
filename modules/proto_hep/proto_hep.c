@@ -859,7 +859,7 @@ static inline int hep_handle_req(struct tcp_req *req,
 
 	int ret=0;
 
-	struct hep_context *hep_ctx;
+	struct hep_context *hep_ctx=NULL;
 	context_p ctx=NULL;
 
 	if (req->complete){
@@ -941,7 +941,8 @@ static inline int hep_handle_req(struct tcp_req *req,
 				receive_msg(msg_buf, msg_len, &local_rcv, ctx) <0)
 				LM_ERR("receive_msg failed \n");
 
-		free_hep_context(hep_ctx);
+		if (hep_ctx)
+			free_hep_context(hep_ctx);
 
 		if (!size && req != &hep_current_req) {
 			/* if we no longer need this tcp_req
