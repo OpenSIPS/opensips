@@ -144,10 +144,10 @@ int encode_contact(char *hdrstart,int hdrlen,contact_t *body,unsigned char *wher
       return -1;
    }else{
       if((j=encode_uri2(hdrstart,hdrlen,body->uri,&puri,&where[i]))<0){
-	 LM_ERR("failed to codify the URI\n");
-	 return -1;
+        LM_ERR("failed to codify the URI\n");
+        return -1;
       }else{
-	 i+=j;
+        i+=j;
       }
    }
    where[0]=flags;
@@ -250,8 +250,8 @@ int dump_contact_body_test(char *hdr,int hdrlen,unsigned char *payload,int payle
    }
    if(segregationLevel & (JUNIT|SEGREGATE|ONLY_URIS)){
       for(i=0,offset=2+numcontacts;i<numcontacts;i++){
-	 dump_contact_test(hdr,hdrlen,&payload[offset],payload[2+i],fd,segregationLevel,prefix);
-	 offset+=payload[2+i];
+          dump_contact_test(hdr,hdrlen,&payload[offset],payload[2+i],fd,segregationLevel,prefix);
+          offset+=payload[2+i];
       }
    }
    return 1;
@@ -289,24 +289,27 @@ int dump_contact_test(char *hdr,int hdrlen,unsigned char* payload,int paylen,int
          n=write(fd,&hdr[payload[i]],payload[i+1]);
          n=write(fd,"\n",1);
          i+=2;
-      }else
+      } else {
          n=write(fd,"(null)\n",7);
-         n=write(fd,prefix,strlen(prefix));
-         n=write(fd,"getQValue=(F)",13);
+      }
+      n=write(fd,prefix,strlen(prefix));
+      n=write(fd,"getQValue=(F)",13);
       if(flags & HAS_Q_F){
          n=write(fd,&hdr[payload[i]],payload[i+1]);
          n=write(fd,"\n",1);
          i+=2;
-      }else
+      } else {
          n=write(fd,"(null)\n",7);
-         n=write(fd,prefix,strlen(prefix));
-         n=write(fd,"getExpires=(I)",14);
+      }
+      n=write(fd,prefix,strlen(prefix));
+      n=write(fd,"getExpires=(I)",14);
       if(flags & HAS_EXPIRES_F){
          n=write(fd,&hdr[payload[i]],payload[i+1]);
          n=write(fd,"\n",1);
          i+=2;
-      }else
+      } else {
          n=write(fd,"(null)\n",7);
+      }
       if(flags & HAS_RECEIVED_F){
          i+=2;
       }
@@ -316,12 +319,12 @@ int dump_contact_test(char *hdr,int hdrlen,unsigned char* payload,int paylen,int
       n=write(fd,prefix,strlen(prefix));
       n=write(fd,"getParameter=(SAVP)",19);
       for(i+=payload[1];i<paylen-1;i+=2){
-	 printf("%.*s=",payload[i+1]-payload[i]-1,&hdr[payload[i]]);
-	 printf("%.*s;",(payload[i+2]-payload[i+1])==0?0:(payload[i+2]-payload[i+1]-1),&hdr[payload[i+1]]);
+          printf("%.*s=",payload[i+1]-payload[i]-1,&hdr[payload[i]]);
+          printf("%.*s;",(payload[i+2]-payload[i+1])==0?0:(payload[i+2]-payload[i+1]-1),&hdr[payload[i+1]]);
       }
       n=write(fd,"\n",1);
-	  if (n < 0)
-		  LM_ERR("error while writing the final eol\n");
+      if (n < 0)
+        LM_ERR("error while writing the final eol\n");
    }
    return 0;
 }

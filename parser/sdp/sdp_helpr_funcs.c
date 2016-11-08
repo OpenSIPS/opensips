@@ -91,7 +91,7 @@ static void * ser_memmem(const void *b1, const void *b2, size_t len1, size_t len
 			if (memcmp(sp, pp, len2) == 0)
 				return sp;
 
-			sp++;
+		sp++;
 	}
 
 	return NULL;
