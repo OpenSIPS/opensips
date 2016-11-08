@@ -98,9 +98,7 @@ int trans_load(void)
 			found_proto = 1;
 			/* check if there is any listener for this protocol */
 			if (!protos[pi.id].listeners) {
-				LM_WARN("No listener defined for proto %s; You will not "
-						"be able to send or receive messages using the %s "
-						"protocol!\n", pi.name, pi.name);
+				LM_DBG("No listener defined for proto %s\n", pi.name);
 				continue;
 			}
 
