@@ -378,7 +378,7 @@ int search_event_params(event_t* ev, event_t* searched_ev)
 					found= 1;
 					break;
 				}
-				p= p->next;
+			p= p->next;
 		}
 		if(found== 0)
 			return -1;

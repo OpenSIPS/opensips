@@ -625,18 +625,22 @@ static inline int mi_print_b2be_dlg(struct mi_node *rpl, b2b_table htable, unsig
 			{
 				node1 = add_mi_node_child(node, MI_DUP_VALUE, "tm_tran", 7, NULL, 0);
 				if(node1 == NULL) goto error;
-				if(dlg->uac_tran)
+				if(dlg->uac_tran) {
 					attr = add_mi_attr(node1,MI_DUP_VALUE,"uac",3,NULL,0);
 					if(attr == NULL) goto error;
-				if(dlg->uas_tran)
+				}
+				if(dlg->uas_tran) {
 					attr = add_mi_attr(node1,MI_DUP_VALUE,"uas",3,NULL,0);
 					if(attr == NULL) goto error;
-				if(dlg->update_tran)
+				}
+				if(dlg->update_tran) {
 					attr = add_mi_attr(node1,MI_DUP_VALUE,"update",6,NULL,0);
 					if(attr == NULL) goto error;
-				if(dlg->cancel_tm_tran)
+				}
+				if(dlg->cancel_tm_tran) {
 					attr = add_mi_attr(node1,MI_DUP_VALUE,"cancel_tm",9,NULL,0);
 					if(attr == NULL) goto error;
+				}
 			}
 
 			if ( (leg=dlg->legs)!=NULL ) {
