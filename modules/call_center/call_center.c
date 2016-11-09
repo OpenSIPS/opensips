@@ -574,6 +574,12 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		return 1;
 	}
 
+	/* we are not interested in B2B_RE_INVITE_CB and B2B_CONFIRMED_CB
+	 * events, just in the BYEs from media/agent side */
+	if (event!=B2B_BYE_CB)
+		return 0;
+
+	/* right-side leg of call sent BYE */
 	if (stat->call_time==0 && call->state == CC_CALL_TOAGENT) {
 		LM_INFO("*** AGENT answered and closed immediately %.*s\n",
 			call->agent->location.len, call->agent->location.s);
@@ -581,8 +587,8 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		lock_set_release( data->call_locks, call->lock_idx );
 		return 0;
 	}
-	
-	/* right-side leg of call sent BYE -> get next state */
+
+	/* get next state */
 	lock_get( data->lock );
 
 	if (cc_call_state_machine( data, call, &leg )!=0) {
