@@ -112,8 +112,14 @@ static int parse_branch(str branch)
 	branch.len -= BMAGIC_LEN;
 
 	end = q_memchr(branch.s, '.', branch.len);
-	if (0 == end)
+	if (0 == end) {
+		/* if reverse hex2int succeeds on this it's a simple
+		 * ping based on sipping_callid_cnt label */
+		if (reverse_hex2int(branch.s, end-branch.s) > 0)
+			return 0;
+
 		return 1;
+	}
 
 	hash_id = reverse_hex2int(branch.s, end-branch.s);
 
@@ -151,6 +157,7 @@ static int parse_branch(str branch)
 	p_cell->not_responded = 0;
 	/* mark for removal */
 	p_cell->timestamp = 0;
+
 	remove_given_cell(p_cell, &get_htable()->entries[p_cell->hash_id]);
 
 	unlock_hash(hash_id);
@@ -260,19 +267,21 @@ build_branch(char *branch, int *size,
 
 	branch += BMAGIC_LEN;
 
-	ret=int2reverse_hex(&branch, size, hash_id);
-	if (ret < 0)
-		goto out_nospace;
+	if (rm_on_to) {
+		ret=int2reverse_hex(&branch, size, hash_id);
+		if (ret < 0)
+			goto out_nospace;
 
-	*branch = '.';
-	branch++;
+		*branch = '.';
+		branch++;
 
-	ret=int64_2reverse_hex(&branch, size, contact_id);
-	if (ret < 0)
-		goto out_nospace;
+		ret=int64_2reverse_hex(&branch, size, contact_id);
+		if (ret < 0)
+			goto out_nospace;
 
-	*branch = '.';
-	branch++;
+		*branch = '.';
+		branch++;
+	}
 
 	ret=int2reverse_hex(&branch, size, label);
 	if (ret < 0)
