@@ -343,7 +343,8 @@ static int save_route_data_recursor(struct route_tree_item * rt, FILE * outfile)
 
 static int backup_config(void) {
 	FILE * from, * to;
-	char * backup_file, ch;
+	char * backup_file;
+	int ch;
 	LM_INFO("start configuration backup\n");
 	if((backup_file = pkg_malloc(strlen(config_file) + strlen (".bak") + 1)) == NULL){
 		LM_ERR("out of private memory\n");
