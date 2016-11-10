@@ -358,14 +358,17 @@ static void datagram_close_async(struct mi_root *mi_rpl,struct mi_handler *hdl,
 				LM_DBG("the response: %s has been sent in %i octets\n",
 					dtgram.start, ret);
 			}else{
-				LM_ERR("failed to send the response, ret is %i\n",ret);
+				LM_ERR("failed to send the response, ret is %i | errno=%d\n",
+						ret, errno);
 			}
 			free_mi_tree( mi_rpl );
 			pkg_free(dtgram.start);
 		} else {
-			mi_send_dgram(p->tx_sock, MI_COMMAND_FAILED, MI_COMMAND_FAILED_LEN,
+			if (mi_send_dgram(p->tx_sock, MI_COMMAND_FAILED, MI_COMMAND_FAILED_LEN,
 							(struct sockaddr*)&reply_addr, reply_addr_len,
-							mi_socket_timeout);
+							mi_socket_timeout) < 0)
+				LM_ERR("failed to send reply %s | errno=%d\n",
+						MI_COMMAND_FAILED, errno);
 		}
 	}
 
@@ -468,10 +471,12 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		if(ret != 0)
 		{
 			LM_ERR("command not available\n");
-			mi_send_dgram(tx_sock, MI_COMMAND_NOT_AVAILABLE,
+			if (mi_send_dgram(tx_sock, MI_COMMAND_NOT_AVAILABLE,
 						  MI_COMMAND_AVAILABLE_LEN,
 						  (struct sockaddr* )&reply_addr, reply_addr_len,
-						  mi_socket_timeout);
+						  mi_socket_timeout) < 0)
+				LM_ERR("failed to send reply %s | errno=%d\n",
+						MI_COMMAND_NOT_AVAILABLE, errno);
 			continue;
 		}
 		LM_DBG("we have a valid command \n");
@@ -482,9 +487,11 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 					&reply_addr, reply_addr_len, tx_sock);
 			if (hdl==0) {
 				LM_ERR("failed to build async handler\n");
-				mi_send_dgram(tx_sock, MI_INTERNAL_ERROR,
+				if (mi_send_dgram(tx_sock, MI_INTERNAL_ERROR,
 						MI_INTERNAL_ERROR_LEN,(struct sockaddr* )&reply_addr,
-						reply_addr_len, mi_socket_timeout);
+						reply_addr_len, mi_socket_timeout) < 0)
+				LM_ERR("failed to send reply %s | errno=%d\n",
+						MI_INTERNAL_ERROR, errno);
 				continue;
 			}
 		} else{
@@ -503,9 +510,11 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 			mi_cmd = mi_datagram_parse_tree(&dtgram);
 			if (mi_cmd==NULL){
 				LM_ERR("failed to parse the MI tree\n");
-				mi_send_dgram(tx_sock, MI_PARSE_ERROR, MI_PARSE_ERROR_LEN,
+				if (mi_send_dgram(tx_sock, MI_PARSE_ERROR, MI_PARSE_ERROR_LEN,
 							  (struct sockaddr* )&reply_addr, reply_addr_len,
-							  mi_socket_timeout);
+							  mi_socket_timeout))
+					LM_ERR("failed to send reply %s | errno=%d\n",
+							MI_PARSE_ERROR, errno);
 				free_async_handler(hdl);
 				continue;
 			}
@@ -517,9 +526,11 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		(mi_flush_f *)mi_datagram_flush_tree, &dtgram))==0 ) {
 		/*error while running the command*/
 			LM_ERR("failed to process the command\n");
-			mi_send_dgram(tx_sock, MI_COMMAND_FAILED, MI_COMMAND_FAILED_LEN,
+			if (mi_send_dgram(tx_sock, MI_COMMAND_FAILED, MI_COMMAND_FAILED_LEN,
 							(struct sockaddr* )&reply_addr, reply_addr_len,
-							mi_socket_timeout);
+							mi_socket_timeout))
+				LM_ERR("failed to send reply %s | errno=%d\n",
+						MI_COMMAND_FAILED, errno);
 			goto failure;
 		}
 

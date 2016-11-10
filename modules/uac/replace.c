@@ -524,7 +524,10 @@ int restore_uri( struct sip_msg *msg, int to, int check_from)
 
 	/* get new uri */
 	if ( new_uri.len<old_uri.len ) {
-		parse_headers(msg,HDR_CALLID_F,0);
+		if (parse_headers(msg,HDR_CALLID_F,0) < 0) {
+			LM_ERR("cannot find callid!\n");
+			goto failed;
+		}
 		if (msg->callid)
 			LM_ERR("new URI shorter than old URI (callid=%.*s)\n",
 				msg->callid->body.len,msg->callid->body.s);

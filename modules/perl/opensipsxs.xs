@@ -700,7 +700,8 @@ getFullHeader(self)
 			LM_ERR("getFullHeader: Invalid message type.\n");
 			ST(0)  = &PL_sv_undef;
 		} else {
-			parse_headers(msg, ~0, 0);
+			if (parse_headers(msg, ~0, 0) < 0)
+				LM_ERR("cannot parse headers\n");
 			if (getType(msg) == SIP_REQUEST) {
 				firsttoken = (msg->first_line).u.request.method.s;
 			} else { /* SIP_REPLY */
@@ -742,8 +743,12 @@ getBody(self)
 		ST(0) = &PL_sv_undef;
 	} else {
 		body.s = NULL;
-		get_body(msg,&body);
-		ST(0) = sv_2mortal(newSVpv(body.s, 0));
+		if (get_body(msg,&body) < 0) {
+			LM_ERR("Message has no body\n");
+			ST(0) = &PL_sv_undef;
+		} else {
+			ST(0) = sv_2mortal(newSVpv(body.s, 0));
+		}
 	}
 
 
@@ -795,7 +800,8 @@ getHeader(self, name)
 	if (!msg) {
 		LM_ERR("Invalid message reference\n");
 	} else {
-		parse_headers(msg, ~0, 0);
+		if (parse_headers(msg, ~0, 0) < 0)
+			LM_ERR("cannot parse headers!\n");
 		for (hf = msg->headers; hf; hf = hf->next) {
 			if (namelen == hf->name.len) {
 				if (strncmp(name, hf->name.s, namelen) == 0) {
@@ -832,7 +838,8 @@ getHeaderNames(self)
 	if (!msg) {
 		LM_ERR("Invalid message reference\n");
 	} else {
-		parse_headers(msg, ~0, 0);
+		if (parse_headers(msg, ~0, 0) < 0)
+			LM_ERR("cannot parse headers!\n");
 		for (hf = msg->headers; hf; hf = hf->next) {
 			found = 1;
 			XPUSHs(sv_2mortal(newSVpv(hf->name.s, hf->name.len)));
@@ -1310,15 +1317,17 @@ getParsedRURI(self)
 		LM_ERR("Invalid message reference\n");
 		ST(0) = NULL;
 	} else {
-		parse_sip_msg_uri(msg);
-		parse_headers(msg, ~0, 0);
+		if (parse_sip_msg_uri(msg) < 0 || parse_headers(msg, ~0, 0) < 0) {
+			LM_ERR("cannot parse message uri!\n");
+			ST(0) = &PL_sv_undef;
+		} else {
+			uri = &(msg->parsed_uri);
+			ret = sv_newmortal();
+			sv_setref_pv(ret, "OpenSIPS::URI", (void *)uri);
+			SvREADONLY_on(SvRV(ret));
 
-		uri = &(msg->parsed_uri);
-		ret = sv_newmortal();
-		sv_setref_pv(ret, "OpenSIPS::URI", (void *)uri);
-		SvREADONLY_on(SvRV(ret));
-
-		ST(0) = ret;
+			ST(0) = ret;
+		}
 	}
 	
 

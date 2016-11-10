@@ -75,8 +75,10 @@ encode_contact (struct sip_msg *msg, char *encoding_prefix,char *public_ip)
 		if (strlen(contact_flds_separator)>=1)
 			separator = contact_flds_separator[0];
 
-	if (msg->contact->parsed == NULL)
-		parse_contact (msg->contact);
+	if (msg->contact->parsed == NULL && parse_contact (msg->contact) < 0) {
+		LM_ERR("cannnot parse contact header!\n");
+		return -1;
+	}
 	if (msg->contact->parsed != NULL)
 	{
 		cb = (contact_body_t *) msg->contact->parsed;
@@ -238,7 +240,10 @@ decode_contact_header (struct sip_msg *msg,char *unused1,char *unused2)
 	fprintf (stdout, "INITIAL.s=[%.*s]\n", ruri->len, ruri->s);
 #endif
 
-	if (msg->contact->parsed == NULL) parse_contact (msg->contact);
+	if (msg->contact->parsed == NULL && parse_contact(msg->contact) < 0) {
+		LM_ERR("cannnot parse contact header!\n");
+		return -1;
+	}
 	if (msg->contact->parsed != NULL)
 	{
 		cb = (contact_body_t *) msg->contact->parsed;

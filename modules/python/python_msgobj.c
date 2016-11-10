@@ -169,7 +169,10 @@ msg_getHeader(msgobject *self, PyObject *args)
         return NULL;
     hname.len = strlen(hname.s);
 
-    parse_headers(self->msg, ~0, 0);
+    if (parse_headers(self->msg, ~0, 0) < 0) {
+		LM_ERR("cannot parse message!\n");
+		return NULL;
+	}
     hbody = NULL;
     for (hf = self->msg->headers; hf != NULL; hf = hf->next) {
         if (hname.len == hf->name.len &&

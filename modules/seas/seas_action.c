@@ -731,7 +731,10 @@ int ac_reply(as_p the_as,char *action,int len)
    if(is_invite(c) && my_msg->first_line.u.reply.statuscode>=200 && my_msg->first_line.u.reply.statuscode<300)
       c->flags |= T_IS_LOCAL_FLAG;
    /*WARNING casting unsigned int to int*/
-   get_body(my_msg, &body);
+   if (get_body(my_msg, &body) < 0) {
+	   LM_ERR("error getting message's body!\n");
+	   goto error;
+   }
 
    LM_DBG("Trying to construct a SipReply with: ReasonPhrase:[%.*s] body:[%.*s] headers:[%.*s] totag:[%.*s]\n",\
 	 my_msg->first_line.u.reply.reason.len,my_msg->first_line.u.reply.reason.s,\

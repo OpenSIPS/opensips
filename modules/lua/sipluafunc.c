@@ -98,7 +98,10 @@ static int siplua_exec(struct sip_msg* _msg, const char *fnc, const char *mystr)
   str reason;
 
   if ((_msg->first_line).type != SIP_INVALID)
-    parse_headers(_msg, ~0, 0);
+    if (parse_headers(_msg, ~0, 0) < 0) {
+		LM_ERR("failed to parse message\n");
+		return -1;
+	}
   switch ((_msg->first_line).type) {
   case SIP_REQUEST:
     if (parse_sip_msg_uri(_msg) < 0) {

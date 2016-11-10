@@ -267,9 +267,7 @@ static int fixup_prob( void** param, int param_no)
 
 	param_str.s=(char*) *param;
 	param_str.len=strlen(param_str.s);
-	str2int(&param_str, &myint);
-
-	if (myint > 100) {
+	if (str2int(&param_str, &myint) < 0 || myint > 100) {
 		LM_ERR("invalid probability <%d>\n", myint);
 		return E_CFG;
 	}

@@ -376,8 +376,10 @@ int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
 
     LM_DBG("Sending: from [%s] to [%s %i]\n", s,
 	    inet_ntoa(ctl.dst->sin_addr), ntohs(ctl.dst->sin_port));
-    sendto(ctl.sock_outbound, resp_buffer->buffer, resp_buffer->size, 0,
-	    (struct sockaddr *) ctl.dst, ctl.srs_size);
+    if (sendto(ctl.sock_outbound, resp_buffer->buffer, resp_buffer->size, 0,
+			(struct sockaddr *) ctl.dst, ctl.srs_size) < 0)
+		LM_DBG("error sending reply %d\n", errno);
+
 
     LM_DBG("\n\n\n");
 

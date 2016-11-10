@@ -200,10 +200,13 @@ static int register_message_code_statistics(void)
 
 	for (i = 0; i < number_of_message_codes; i++)
 	{
-		register_stat(SNMPSTATS_MODULE_NAME, in_message_code_names[i],
-				&in_message_code_stats[i], 0);
-		register_stat(SNMPSTATS_MODULE_NAME, out_message_code_names[i],
-				&out_message_code_stats[i], 0);
+		if (register_stat(SNMPSTATS_MODULE_NAME, in_message_code_names[i],
+					&in_message_code_stats[i], 0) < 0 ||
+				register_stat(SNMPSTATS_MODULE_NAME, out_message_code_names[i],
+					&out_message_code_stats[i], 0) < 0) {
+			LM_ERR("Cannot register %s statistic!\n", out_message_code_names[i]);
+			return -1;
+		}
 	}
 
 	return 0;

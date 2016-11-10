@@ -401,7 +401,10 @@ static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 	}
 
 	/* we need to be sure we have seen all HFs */
-	parse_headers(msg, HDR_EOH_F, 0);
+	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("cannot parse message!\n");
+		return -1;
+	}
 
 	for (hf=msg->headers; hf; hf=hf->next) {
 		/* for well known header names str_hf->s will be set to NULL
@@ -502,7 +505,10 @@ static int is_present_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 	}
 
 	/* we need to be sure we have seen all HFs */
-	parse_headers(msg, HDR_EOH_F, 0);
+	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("cannot parse message!\n");
+		return -1;
+	}
 
 	if (pval.flags & PV_VAL_INT) {
 		for (hf=msg->headers; hf; hf=hf->next)

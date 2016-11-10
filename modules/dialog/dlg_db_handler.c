@@ -1772,8 +1772,10 @@ static int sync_dlg_db_mem(void)
 						cseq2.len = strlen(cseq2.s);
 
 						callee_leg_idx = callee_idx(known_dlg);
-						str2int(&cseq2,&db_callee_cseq);
-						str2int(&known_dlg->legs[callee_leg_idx].r_cseq,&dlg_callee_cseq);
+						if (str2int(&cseq2,&db_callee_cseq) < 0)
+							LM_BUG("Callee CSEQ not numeric!\n");
+						if (str2int(&known_dlg->legs[callee_leg_idx].r_cseq,&dlg_callee_cseq) < 0)
+							LM_BUG("Caller CSEQ not numeric!\n");
 
 						/* Is DB cseq newer ? */
 						if (db_callee_cseq > dlg_callee_cseq) {
