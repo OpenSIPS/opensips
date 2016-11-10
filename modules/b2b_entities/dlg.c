@@ -1288,7 +1288,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 		if(tm_tran)
 		{
 			if(parse_method(tm_tran->method.s,
-					tm_tran->method.s + tm_tran->method.len, &method_value)< 0)
+					tm_tran->method.s + tm_tran->method.len, &method_value) == 0)
 			{
 				LM_ERR("Wrong method stored in tm transaction [%.*s]\n",
 					tm_tran->method.len, tm_tran->method.s);
@@ -2143,7 +2143,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		return;
 	}
 
-	if(parse_method(t->method.s, t->method.s + t->method.len, &method_id) < 0)
+	if(parse_method(t->method.s, t->method.s + t->method.len, &method_id) == 0)
 	{
 		LM_ERR("Failed to parse method [%.*s\n]\n", t->method.len, t->method.s);
 		return;
