@@ -524,7 +524,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		goto error;
 	}
 
-	if(parse_from_uri(msg)<0)
+	if(parse_from_uri(msg)==0)
 	{
 		LM_ERR("failed to parse From header\n");
 		goto error;
