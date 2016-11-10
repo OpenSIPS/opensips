@@ -398,7 +398,7 @@ static int mod_init(void)
 
 
 	/* if db_url is not used */
-	for( n=0 ; n < 8 * sizeof(unsigned int) ; n++) {
+	for( n=0 ; n < (8 * sizeof(unsigned int)) - 1 ; n++) {
 		if (rl_hash_size==(1<<n))
 			break;
 		if (rl_hash_size<(1<<n)) {
