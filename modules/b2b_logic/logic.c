@@ -1061,7 +1061,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 	}
 
 	method = get_cseq(msg)->method;
-	if(parse_method(method.s, method.s+method.len, &method_value)< 0)
+	if(parse_method(method.s, method.s+method.len, &method_value) == NULL)
 	{
 		LM_ERR("Failed to parse method\n");
 		goto error;
