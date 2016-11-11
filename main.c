@@ -670,7 +670,7 @@ static int main_loop(void)
 
 	/* fork all processes required by UDP network layer */
 	if (udp_start_processes( &chd_rank, startup_done)<0) {
-		LM_CRIT("cannot start TCP processes\n");
+		LM_CRIT("cannot start UDP processes\n");
 		goto error;
 	}
 
