@@ -46,6 +46,8 @@
 #include "ul_mod.h"            /* usrloc module parameters */
 #include "utime.h"
 #include "ureplication.h"
+#include "ul_callback.h"
+#include "usrloc.h"
 
 
 extern int max_contact_delete;
@@ -975,10 +977,13 @@ int mem_timer_udomain(udomain_t* _d)
 				flush=1;
 
 			/* Remove the entire record if it is empty */
-			if (ptr->contacts == 0)
+			if (ptr->contacts == NULL)
 			{
+				if (exists_ulcb_type(UL_AOR_EXPIRE))
+					run_ul_callbacks(UL_AOR_EXPIRE, ptr);
+
 				iterator_delete(&prev);
-				mem_delete_urecord(_d,ptr);
+				mem_delete_urecord(_d, ptr);
 			}
 		}
 
@@ -1097,6 +1102,9 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 		get_static_urecord( _d, _aor, _r);
 	}
 
+	if (exists_ulcb_type(UL_AOR_INSERT))
+		run_ul_callbacks(UL_AOR_INSERT, *_r);
+
 	return 0;
 }
 
@@ -1159,6 +1167,9 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 			return 0;
 		}
 	}
+
+	if (exists_ulcb_type(UL_AOR_DELETE))
+		run_ul_callbacks(UL_AOR_DELETE, _r);
 
 	if (!is_replicated && ul_replicate_cluster)
 		replicate_urecord_delete(_r);

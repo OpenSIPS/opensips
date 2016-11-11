@@ -50,6 +50,7 @@
 #include "udomain.h"
 #include "dlist.h"
 #include "utime.h"
+#include "usrloc.h"
 
 extern event_id_t ei_c_update_id;
 
@@ -108,7 +109,7 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 		LM_ERR("no more shm memory\n");
 		return NULL;
 	}
-	memset(c, 0, sizeof(ucontact_t));
+	memset(c, 0, sizeof(ucontact_t) + att_data_sz);
 
 	if (att_data_sz > 0)
 		c->attached_data = (void **)(c + 1);
@@ -197,6 +198,7 @@ void free_ucontact(ucontact_t* _c)
 	if (_c->callid.s) shm_free(_c->callid.s);
 	if (_c->c.s) shm_free(_c->c.s);
 	if (_c->attr.s) shm_free(_c->attr.s);
+	if (_c->attached_data) shm_free(_c->attached_data);
 	shm_free( _c );
 }
 

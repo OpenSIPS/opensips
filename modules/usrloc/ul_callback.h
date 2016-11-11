@@ -31,17 +31,26 @@
 #define _UL_CALLBACKS_H
 
 #include "ucontact.h"
+#include "urecord.h"
 #include "../../lib/list.h"
 
 #define UL_CONTACT_INSERT      (1<<0)
 #define UL_CONTACT_UPDATE      (1<<1)
-#define UL_CONTACT_DELETE      (1<<2)
-#define UL_CONTACT_EXPIRE      (1<<3)
-#define ULCB_MAX               ((1<<4)-1)
+#define UL_CONTACT_DELETE      (1<<2) /* exclusive with EXPIRE */
+#define UL_CONTACT_EXPIRE      (1<<3) /* exclusive with DELETE */
+#define UL_AOR_INSERT          (1<<4)
+#define UL_AOR_UPDATE          (1<<5)
+#define UL_AOR_DELETE          (1<<6) /* exclusive with EXPIRE */
+#define UL_AOR_EXPIRE          (1<<7) /* exclusive with DELETE */
+#define ULCB_MAX               ((1<<8)-1)
 
 #define is_contact_cb(type) \
 	(type & \
 	(UL_CONTACT_INSERT|UL_CONTACT_UPDATE|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE))
+
+#define is_aor_cb(type) \
+	(type & \
+	(UL_AOR_INSERT|UL_AOR_UPDATE|UL_AOR_DELETE|UL_AOR_EXPIRE))
 
 /*! \brief callback function prototype
  *
@@ -54,7 +63,7 @@
  */
 typedef void (ul_cb) (void *binding, int type, void **data);
 /*! \brief register callback function prototype */
-typedef int (*register_ulcb_t)( int cb_types, ul_cb f, int attach_data);
+typedef int (*register_ulcb_t)(int cb_types, ul_cb f, int *data_idx);
 
 
 struct ul_callback {
@@ -87,10 +96,11 @@ void destroy_ulcb_list();
  *
  * @types:       mask of callback types
  * @f:           registered function
- * @attach_data: if true, the concerned contact / record
- *                 structures will be extended to hold additional data
+ * @data_idx:    if given, the concerned contact / record
+ *                 structures will be extended to hold additional data,
+ *                 and the resulting "data_idx" can used to access it
  */
-int register_ulcb( int types, ul_cb f, int attach_data );
+int register_ulcb(int types, ul_cb f, int *data_idx);
 
 /*! \brief run all transaction callbacks for an event type
  *
@@ -103,7 +113,7 @@ static inline void run_ul_callbacks(int type, void *binding)
 {
 	struct list_head *ele;
 	struct ul_callback *cbp;
-	int ct_extra_idx = 0;
+	int ct_extra_idx = 0, aor_extra_idx = 0;
 
 	list_for_each(ele, &ulcb_list->first) {
 		cbp = list_entry(ele, struct ul_callback, list);
@@ -119,11 +129,22 @@ static inline void run_ul_callbacks(int type, void *binding)
 				} else {
 					cbp->callback(binding, type, NULL);
 				}
+			} else if (is_aor_cb(type)) {
+				if (cbp->has_data) {
+					cbp->callback(binding, type,
+					    ((urecord_t *)binding)->attached_data + aor_extra_idx);
+					aor_extra_idx++;
+				} else {
+					cbp->callback(binding, type, NULL);
+				}
 			}
 		}
 	}
 }
 
+/*
+ * Additional bytes attached to an (ucontact_t), as private data
+ */
 static inline size_t get_att_ct_data_sz(void)
 {
 	extern int att_ct_items;
@@ -131,6 +152,14 @@ static inline size_t get_att_ct_data_sz(void)
 	return att_ct_items * sizeof(void *);
 }
 
+/*
+ * Additional bytes attached to an (urecord_t), as private data
+ */
+static inline size_t get_att_aor_data_sz(void)
+{
+	extern int att_aor_items;
 
+	return att_aor_items * sizeof(void *);
+}
 
 #endif

@@ -51,6 +51,7 @@
 #include "ul_mod.h"
 #include "ul_callback.h"
 #include "ureplication.h"
+#include "usrloc.h"
 
 
 /*! \brief

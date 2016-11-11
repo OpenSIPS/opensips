@@ -44,6 +44,7 @@ struct ulcb_head_list* ulcb_list = 0;
  * extended to hold data for any subscribing module
  */
 int att_ct_items;
+int att_aor_items;
 
 
 int init_ulcb_list(void)
@@ -81,7 +82,7 @@ void destroy_ulcb_list(void)
 /*! \brief
 	register a callback function 'f' for 'types' mask of events;
 */
-int register_ulcb( int types, ul_cb f, int attach_data )
+int register_ulcb(int types, ul_cb f, int *data_idx)
 {
 	struct ul_callback *cbp;
 
@@ -117,10 +118,15 @@ int register_ulcb( int types, ul_cb f, int attach_data )
 	/* ... and fill it up */
 	cbp->callback = f;
 
-	if (attach_data) {
+	if (data_idx != NULL) {
 		cbp->has_data = 1;
-		if (is_contact_cb(types))
+		if (is_contact_cb(types)) {
+			*data_idx = att_ct_items;
 			att_ct_items++;
+		} else if (is_aor_cb(types)) {
+			*data_idx = att_aor_items;
+			att_aor_items++;
+		}
 	}
 
 	cbp->types = types;
