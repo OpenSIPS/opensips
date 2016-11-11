@@ -1743,8 +1743,10 @@ static int sync_dlg_db_mem(void)
 						cseq1.s = VAL_STR(values+9).s;
 						cseq1.len = strlen(cseq1.s);
 
-						str2int(&cseq1,&db_caller_cseq);
-						str2int(&known_dlg->legs[DLG_CALLER_LEG].r_cseq,&dlg_caller_cseq);
+						if (str2int(&cseq1,&db_caller_cseq) < 0)
+							LM_ERR("Caller CSEQ not numeric!\n");
+						if (str2int(&known_dlg->legs[DLG_CALLER_LEG].r_cseq,&dlg_caller_cseq) < 0)
+							LM_ERR("dlg Caller CSEQ not numeric!\n");
 
 						/* Is DB cseq newer ? */
 						if (db_caller_cseq > dlg_caller_cseq) {
@@ -1773,9 +1775,9 @@ static int sync_dlg_db_mem(void)
 
 						callee_leg_idx = callee_idx(known_dlg);
 						if (str2int(&cseq2,&db_callee_cseq) < 0)
-							LM_BUG("Callee CSEQ not numeric!\n");
+							LM_ERR("Callee CSEQ not numeric!\n");
 						if (str2int(&known_dlg->legs[callee_leg_idx].r_cseq,&dlg_callee_cseq) < 0)
-							LM_BUG("Caller CSEQ not numeric!\n");
+							LM_ERR("dlg Callee CSEQ not numeric!\n");
 
 						/* Is DB cseq newer ? */
 						if (db_callee_cseq > dlg_callee_cseq) {
