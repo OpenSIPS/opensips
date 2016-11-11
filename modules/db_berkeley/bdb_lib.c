@@ -1141,7 +1141,7 @@ int bdblib_valtochar(table_p _tp, int* _lres, char* _k, int* _klen, db_val_t* _v
 			  the schema. the app does not know the order
 			  of the columns in our schema!
 			 */
-			k = (_lres) ? _lres[j] : j;
+			k = _lres[j];
 
 			/*
 			 * k index will remap back to our schema order; like i

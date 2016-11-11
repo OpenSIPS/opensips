@@ -151,7 +151,7 @@ int hash_match(struct sip_msg *msg, struct address_list** table,
 		}
 
 		/* group not found */
-		if (!node || i == PERM_HASH_SIZE) {
+		if (!node) {
 			LM_DBG("specified group %u does not exist in hash table\n", grp);
 			return -2;
 		}

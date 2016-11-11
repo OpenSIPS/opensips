@@ -1218,6 +1218,8 @@ error:
 			xmlFree(new_body->s);
 		pkg_free(new_body);
 	}
+	/* none of these are used before error!
+	 * Detected by Coverity 40606-40609
 	if(class_cont)
 		xmlFree(class_cont);
 	if(occurence_ID)
@@ -1226,6 +1228,7 @@ error:
 		xmlFree(deviceID);
 	if(service_uri)
 		xmlFree(service_uri);
+	*/
 
 	return NULL;
 }

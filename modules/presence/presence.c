@@ -729,7 +729,6 @@ static inline int mi_print_shtable_record(struct mi_node *rpl, subs_t* s)
 	attr = add_mi_attr(node, MI_DUP_VALUE, "event_id", 8, s->event_id.s, s->event_id.len);
 	if (attr==NULL) goto error;
 	*/
-	if (attr==NULL) goto error;
 	_ts = (time_t)s->expires;
 	date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
 						"%Y-%m-%d %H:%M:%S", localtime(&_ts));

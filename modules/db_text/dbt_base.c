@@ -314,12 +314,10 @@ int dbt_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 		goto error;
 	}
 
-	if(_k)
-	{
-		lkey = dbt_get_refs(_tbc, _k, _n);
-		if(!lkey)
-			goto error;
-	}
+	lkey = dbt_get_refs(_tbc, _k, _n);
+	if(!lkey)
+		goto error;
+
 	_drp = dbt_row_new(_tbc->nrcols);
 	if(!_drp)
 	{
@@ -329,7 +327,7 @@ int dbt_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 
 	for(i=0; i<_n; i++)
 	{
-		j = (lkey)?lkey[i]:i;
+		j = lkey[i];
 		if(dbt_is_neq_type(_tbc->colv[j]->type, _v[i].type))
 		{
 			LM_ERR("incompatible types v[%d] - c[%d]!\n", i, j);

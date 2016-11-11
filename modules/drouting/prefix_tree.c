@@ -104,7 +104,7 @@ err_exit:
 ok_exit:
 	/* if rules are still in this node, point to the next index */
 	*rgidx = (rtlw->next) ? j : 0 ;
-	return rtlw?rtlw->rtl:0;
+	return rtlw->rtl;
 }
 
 

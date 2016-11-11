@@ -326,12 +326,6 @@ done:
 error:
 	if(entity)
 		pkg_free(entity);
-	if(body)
-	{
-		if(body->s)
-			xmlFree(body->s);
-		pkg_free(body);
-	}
 	if(status_cont)
 		xmlFree(status_cont);
 	if(show_cont)
@@ -437,7 +431,7 @@ error:
 int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 {
 	subs_info_t subs;
-	char* type= NULL, *uri= NULL;
+	char *uri= NULL;
  	str to_uri= {0, 0};
  	str from_uri= {0, 0};
  	char buf_from[256];
@@ -505,8 +499,6 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 	return 0;
 
 error:
-	if(type)
-		xmlFree(type);
 	return -1;
 }
 

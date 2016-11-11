@@ -448,12 +448,6 @@ done:
 	return notify_body;
 
 error:
-	if(notify_body)
-	{
-		if(notify_body->s)
-			xmlFree(notify_body->s);
-		pkg_free(notify_body);
-	}
 	free_watcher_list(watchers);
 	return NULL;
 }
