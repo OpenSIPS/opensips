@@ -1810,17 +1810,19 @@ int pv_set_tm_branch_avp(struct sip_msg *msg, pv_param_t *param, int op,
 	struct usr_avp **old_list=NULL;
 	struct usr_avp **avp_list=NULL;
 
-	if (!msg || !val)
+	if (!msg) {
+		LM_ERR("bavp set but no msg found!\n");
 		goto error;
-
-	avp_list = get_bavp_list();
-	if (!avp_list) {
-		pv_get_null(msg, param, val);
-		goto success;
 	}
 
 	if (!param) {
 		LM_ERR("bad parameters\n");
+		goto error;
+	}
+
+	avp_list = get_bavp_list();
+	if (!avp_list) {
+		LM_ERR("cannot find the branch avp list!\n");
 		goto error;
 	}
 
