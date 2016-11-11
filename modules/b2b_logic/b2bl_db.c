@@ -314,9 +314,10 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 		else
 			logic_restored = 1;
 
+		/* TODO: store headers in database */
 		entity= b2bl_create_new_entity(tuple->bridge_entities[i]->type,
 			&tuple->bridge_entities[i]->key,&tuple->bridge_entities[i]->to_uri,
-			&tuple->bridge_entities[i]->from_uri, 0, &tuple->bridge_entities[i]->scenario_id, 0);
+			&tuple->bridge_entities[i]->from_uri, 0, &tuple->bridge_entities[i]->scenario_id,0, 0);
 		if(client_id)
 			pkg_free(client_id);
 		if(entity == NULL)

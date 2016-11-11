@@ -1725,7 +1725,8 @@ int b2b_send_request(b2b_req_data_t* req_data)
 			return -1;
 	}
 
-	if(b2breq_complete_ehdr(req_data->extra_headers, &ehdr, req_data->body,
+	if(b2breq_complete_ehdr(req_data->extra_headers, req_data->client_headers,
+			&ehdr, req_data->body,
 			((et==B2B_SERVER)?&dlg->contact[CALLEE_LEG]:&dlg->contact[CALLER_LEG]))< 0)
 	{
 		LM_ERR("Failed to complete extra headers\n");
@@ -2833,14 +2834,15 @@ static inline int is_CT_present(struct hdr_field* headers)
 	return 0;
 }
 
-int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
-		str* local_contact)
+int b2breq_complete_ehdr(str* extra_headers, str *client_headers,
+		str* ehdr_out, str* body, str* local_contact)
 {
 	str ehdr= {NULL,0};
 	static char buf[BUF_LEN];
 	static struct sip_msg foo_msg;
 
-	if((extra_headers?extra_headers->len:0) + 14 + local_contact->len > BUF_LEN)
+	if(((extra_headers?extra_headers->len:0) + 14 + local_contact->len +
+		(client_headers?client_headers->len:0))> BUF_LEN)
 	{
 		LM_ERR("Buffer too small\n");
 		return -1;
@@ -2854,8 +2856,11 @@ int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
 	}
 	ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: <%.*s>\r\n",
 		local_contact->len, local_contact->s);
-
-
+	if (client_headers && client_headers->len && client_headers->s)
+	{
+		memcpy(ehdr.s + ehdr.len, client_headers->s, client_headers->len);
+		ehdr.len += client_headers->len;
+	}
 
 	/* if not present and body present add content type */
 	if(body) {

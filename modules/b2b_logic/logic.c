@@ -69,6 +69,7 @@ struct to_body* get_b2bl_from(struct sip_msg* msg);
 
 int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 		b2bl_tuple_t* tuple, struct sip_msg* msg, str* client_to);
+str *b2b_scenario_hdrs(xmlNodePtr client_node, b2bl_tuple_t* tuple);
 
 int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned int local_index,
 			b2bl_entity_id_t **entity, int etype, str *ekey);
@@ -279,14 +280,15 @@ int b2b_msg_get_from(struct sip_msg* msg, str* from_uri, str* from_dname)
 
 
 b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_id,
-		str* to_uri,str* from_uri,str*from_dname, str* ssid, struct sip_msg* msg)
+		str* to_uri,str* from_uri,str*from_dname, str* ssid, str* hdrs, struct sip_msg* msg)
 {
 	unsigned int size;
 	b2bl_entity_id_t* entity;
 
 	size = sizeof(b2bl_entity_id_t) + ((ssid!=NULL)?ssid->len:0) +
 		((entity_id!=NULL)?entity_id->len:0)+ ((to_uri !=NULL)?to_uri->len:0)
-		+ ((from_uri!=NULL)?from_uri->len:0)+ ((from_dname!=NULL)?from_dname->len:0);
+		+ ((from_uri!=NULL)?from_uri->len:0)+ ((from_dname!=NULL)?from_dname->len:0)
+		+ ((hdrs!=NULL)?hdrs->len:0);
 
 	entity = (b2bl_entity_id_t*)shm_malloc(size);
 	if(entity == NULL)
@@ -340,6 +342,14 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
 		memcpy(entity->from_dname.s, from_dname->s, from_dname->len);
 		entity->from_dname.len= from_dname->len;
 		size+= from_dname->len;
+	}
+
+	if(hdrs)
+	{
+		entity->hdrs.s= (char*)entity+ size;
+		memcpy(entity->hdrs.s, hdrs->s, hdrs->len);
+		entity->hdrs.len= hdrs->len;
+		size+= hdrs->len;
 	}
 
 	entity->type = type;
@@ -568,8 +578,8 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	return process_bridge_dialog_end(tuple, entity_no, entity);
 }
 
-b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
-		b2bl_tuple_t* tuple, str* ssid, struct sip_msg* msg)
+static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
+		b2bl_tuple_t* tuple, str* ssid, str* hdrs, struct sip_msg* msg)
 {
 	client_info_t ci;
 	str* client_id;
@@ -580,6 +590,7 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	ci.to_uri        = *to_uri;
 	ci.from_uri      = *from_uri;
 	ci.extra_headers = tuple->extra_headers;
+	ci.client_headers= hdrs;
 	ci.body          = (tuple->sdp.s?&tuple->sdp:NULL);
 	ci.from_tag      = NULL;
 	ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
@@ -604,7 +615,7 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	}
 	/* save the client_id in the structure */
 	entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &ci.to_uri,
-			&ci.from_uri, 0, ssid, 0);
+			&ci.from_uri, 0, ssid, hdrs, 0);
 	if(entity == NULL)
 	{
 		LM_ERR("failed to create new client entity\n");
@@ -701,6 +712,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				LM_DBG("From dname: %.*s\n", ci.from_dname.len, ci.from_dname.s);
 			}
 
+			ci.client_headers= &bentity1->hdrs;
 			ci.extra_headers = extra_headers;
 			ci.body          = body;
 			ci.from_tag      = NULL;
@@ -722,7 +734,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			}
 			/* save the client_id in the structure */
 			entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &ci.to_uri,
-					&ci.from_uri, 0, &bentity1->scenario_id, 0);
+					&ci.from_uri, 0, &bentity1->scenario_id, &bentity1->hdrs, 0);
 			if(entity == NULL)
 			{
 				LM_ERR("failed to create new client entity\n");
@@ -747,6 +759,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			req_data.et =bentity1->type;
 			req_data.b2b_key =&bentity1->key;
 			req_data.method =&method_invite;
+			req_data.client_headers=&bentity1->hdrs;;
 			req_data.extra_headers =extra_headers;
 			req_data.body =body;
 			req_data.dlginfo =bentity1->dlginfo;
@@ -835,6 +848,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				req_data.et =bentity0->type;
 				req_data.b2b_key =&bentity0->key;
 				req_data.method =&method_invite;
+				req_data.client_headers=&bentity0->hdrs;
 				req_data.extra_headers = extra_headers;
 				req_data.body = body;
 				req_data.dlginfo =bentity0->dlginfo;
@@ -864,7 +878,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		{
 			/* contact the real destination */
 			entity =  b2bl_new_client(&tuple->bridge_entities[2]->to_uri, &bentity0->from_uri,
-					tuple, &tuple->bridge_entities[2]->scenario_id, msg);
+					tuple, &tuple->bridge_entities[2]->scenario_id, &tuple->bridge_entities[2]->hdrs, msg);
 			if(entity == NULL)
 			{
 				LM_ERR("Failed to generate new client\n");
@@ -891,6 +905,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		req_data.et =bentity0->type;
 		req_data.b2b_key =&bentity0->key;
 		req_data.method =&method_invite;
+		req_data.client_headers=&bentity0->hdrs;
 		req_data.extra_headers =extra_headers;
 		req_data.body =body;
 		req_data.dlginfo =bentity0->dlginfo;
@@ -2291,6 +2306,7 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 	xmlNodePtr value_node;
 	char* value_content= 0;
 	b2b_req_data_t req_data;
+	str *hdrs;
 
 	/* extract provisional media uri if exists */
 	node = xmlNodeGetChildByName(bridge_node, "provisional_media");
@@ -2466,9 +2482,12 @@ entity_search_done:
 				}
 
 			}
+
+			hdrs = b2b_scenario_hdrs(client_node, tuple);
+
 			LM_DBG("New entity, dest = [%.*s]\n", entity_dest.len, entity_dest.s);
 			entity = b2bl_create_new_entity(B2B_CLIENT, 0, &entity_dest, 0,
-					from_dname.s?&from_dname:0, &attr, 0);
+					from_dname.s?&from_dname:0, &attr, hdrs, 0);
 
 			if(fdname_content)
 				xmlFree(fdname_content);
@@ -2515,7 +2534,7 @@ entity_search_done:
 		{
 			tuple->bridge_entities[2]= bridge_entities[1];
 
-			tuple->bridge_entities[1] = b2bl_create_new_entity(B2B_CLIENT, 0, &provmedia_uri, 0, 0,0, 0);
+			tuple->bridge_entities[1] = b2bl_create_new_entity(B2B_CLIENT, 0, &provmedia_uri, 0, 0,0,0,0);
 			if(tuple->bridge_entities[1] == NULL)
 			{
 				LM_ERR("Failed to create new b2b entity\n");
@@ -2529,6 +2548,7 @@ entity_search_done:
 		PREP_REQ_DATA(old_entity);
 		req_data.method =&method_invite;
 		req_data.extra_headers = NULL;
+		req_data.client_headers = &old_entity->hdrs;
 		b2b_api.send_request(&req_data);
 		old_entity->state = 0;
 		old_entity->sdp_type = B2BL_SDP_LATE;
@@ -2538,6 +2558,7 @@ entity_search_done:
 		str from_uri   = bridge_entities[1]->to_uri;
 		str to_uri     = bridge_entities[0]->to_uri;
 		str from_dname = bridge_entities[0]->from_dname;
+		str hdrs = bridge_entities[0]->hdrs;
 
 		memset(&ci, 0, sizeof(client_info_t));
 		ci.method        = method_invite;
@@ -2545,6 +2566,7 @@ entity_search_done:
 		ci.from_uri      = from_uri;
 		ci.from_dname    = from_dname;
 		ci.extra_headers = tuple->extra_headers;
+		ci.client_headers= &hdrs;
 		/* if we use init sdp and we have it, just use it */
 		if (tuple->scenario && tuple->scenario->use_init_sdp && tuple->scenario->body.len) {
 			ci.body          = &tuple->scenario->body;
@@ -2574,7 +2596,7 @@ entity_search_done:
 		}
 		/* save the client_id in the structure */
 		entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &to_uri,
-				&from_uri,0,&bridge_entities[0]->scenario_id, 0);
+				&from_uri,0,&bridge_entities[0]->scenario_id, &hdrs, 0);
 		if(entity == NULL)
 		{
 			LM_ERR("failed to create new client entity\n");
@@ -2736,7 +2758,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	}
 
 	tuple->servers[0] = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri, &from_uri,
-			0,0, msg);
+			0,0,0, msg);
 	if(tuple->servers[0] == NULL)
 	{
 		LM_ERR("Failed to create server entity\n");
@@ -2784,7 +2806,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	}
 
 	client_entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &to_uri, &from_uri,
-			0, 0, 0);
+			0, 0, 0, 0);
 	if(client_entity == NULL)
 	{
 		LM_ERR("Failed to create server entity\n");
@@ -2819,7 +2841,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 			goto error;
 		}
 		client_entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &to_uri, &from_uri,
-			0, 0, 0);
+			0, 0, 0, 0);
 		if (client_entity == NULL)
 		{
 			LM_ERR("Failed to create client entity\n");
@@ -2918,7 +2940,7 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 			goto error;
 		}
 
-		if(param_no > B2B_INIT_MAX_PARAMNO || param_no < 1)
+		if(param_no > MAX_SCENARIO_PARAMS || param_no < 1)
 		{
 			LM_ERR("Scenary document not well formed. Client to param not valid [%d]\n", param_no);
 			goto error;
@@ -3020,6 +3042,144 @@ error:
 		xmlFree(value_type);
 	return -1;
 }
+str *b2b_scenario_hdrs(xmlNodePtr client_node, b2bl_tuple_t* tuple)
+{
+	static int b2b_hdrs_buf_len;
+	static str b2b_hdrs_buf = {0, 0};
+	xmlNodePtr hdr_node, node;
+	unsigned char *type;
+	unsigned int param_no, len;
+	unsigned char *body_s, *name_s;
+	str value, name_value, body_value;
+	char *tmp_buf;
+
+	/* reset the buffer to fill in with new information */
+	b2b_hdrs_buf.len = 0;
+
+	for (hdr_node = client_node->children; hdr_node; hdr_node = hdr_node->next)
+	{
+		if (xmlStrcasecmp(hdr_node->name, (unsigned char *)"header") != 0)
+			continue;
+
+		node = xmlNodeGetChildByName(hdr_node, "name");
+		if(node == NULL)
+		{
+			LM_WARN("header without a name... ignoring it\n");
+			continue;
+		}
+
+		body_s = name_s = NULL;
+		type = xmlNodeGetAttrContentByName(node, "type");
+		if(type == NULL || (xmlStrcasecmp(type, (unsigned char*)"text") == 0))
+		{
+			/* no type, use plain name */
+			name_s = xmlNodeGetContent(node);
+			name_value.s = (char *)name_s;
+			name_value.len = strlen(name_value.s);
+		} else
+			if (type && (xmlStrcasecmp(type, (unsigned char*)"param") == 0))
+			{
+				value.s = (char *)xmlNodeGetContent(node);
+				value.len = strlen(value.s);
+				if(str2int(&value, &param_no)< 0)
+				{
+					LM_ERR("non-int parameter index for header name\n");
+					xmlFree(value.s);
+					goto next;
+				}
+				xmlFree(value.s);
+
+				if(param_no > MAX_SCENARIO_PARAMS || param_no < 1)
+				{
+					LM_ERR("bad parameter index for header name\n");
+					goto next;
+				}
+				name_value = tuple->scenario_params[param_no-1];
+			} else {
+				LM_WARN("unknown header type <%s>\n", type);
+				goto next;
+			}
+		trim(&name_value);
+
+		LM_DBG("header name: <%.*s>\n", name_value.len, name_value.s);
+
+		node = xmlNodeGetChildByName(hdr_node, "value");
+		if(node == NULL)
+		{
+			LM_WARN("header %.*s without a value... ignoring it\n",
+					name_value.len, name_value.s);
+			goto next;
+		}
+
+		if (type)
+			xmlFree(type);
+		type = xmlNodeGetAttrContentByName(node, "type");
+		if(type == NULL || (xmlStrcasecmp(type, (unsigned char*)"text") == 0))
+		{
+			/* no type, use plain name */
+			body_s = xmlNodeGetContent(node);
+			body_value.s = (char *)body_s;
+			body_value.len = strlen(body_value.s);
+		} else
+			if (type && (xmlStrcasecmp(type, (unsigned char*)"param") == 0))
+			{
+				value.s = (char *)xmlNodeGetContent(node);
+				value.len = strlen(value.s);
+				if(str2int(&value, &param_no)< 0)
+				{
+					LM_ERR("non-int parameter index for header <%.*s>\n",
+						name_value.len, name_value.s);
+					xmlFree(value.s);
+					goto next;
+				}
+				xmlFree(value.s);
+
+				if(param_no > MAX_SCENARIO_PARAMS || param_no < 1)
+				{
+					LM_ERR("bad parameter index for header <%.*s>\n",
+							name_value.len, name_value.s);
+					goto next;
+				}
+				body_value = tuple->scenario_params[param_no-1];
+			} else {
+				LM_WARN("unknown header type <%s> for <%.*s>\n", type,
+						name_value.len, name_value.s);
+				goto next;
+			}
+		trim(&body_value);
+		LM_DBG("header value: <%.*s>\n", body_value.len, body_value.s);
+
+		len = name_value.len + 2 /* ': ' */ + body_value.len + 2 /* '\r\n' */;
+		if (b2b_hdrs_buf.len + len > b2b_hdrs_buf_len) {
+			tmp_buf = pkg_realloc(b2b_hdrs_buf.s, b2b_hdrs_buf.len + len);
+			if (!tmp_buf) {
+				LM_ERR("not enough memory to add header <%.*s: %.*s>\n",
+						name_value.len, name_value.s, body_value.len, body_value.s);
+				goto next;
+			}
+			b2b_hdrs_buf.s = tmp_buf;
+			b2b_hdrs_buf_len += len;
+		}
+		memcpy(b2b_hdrs_buf.s + b2b_hdrs_buf.len, name_value.s, name_value.len);
+		b2b_hdrs_buf.len += name_value.len;
+		memcpy(b2b_hdrs_buf.s + b2b_hdrs_buf.len, ": ", 2);
+		b2b_hdrs_buf.len += 2;
+		memcpy(b2b_hdrs_buf.s + b2b_hdrs_buf.len, body_value.s, body_value.len);
+		b2b_hdrs_buf.len += body_value.len;
+		memcpy(b2b_hdrs_buf.s + b2b_hdrs_buf.len, "\r\n", 2);
+		b2b_hdrs_buf.len += 2;
+
+next:
+		if (body_s)
+			xmlFree(body_s);
+		if (name_s)
+			xmlFree(name_s);
+		if (type)
+			xmlFree(type);
+	}
+
+	return b2b_hdrs_buf.len ? &b2b_hdrs_buf : NULL;
+}
 
 int udh_to_uri(str user, str host, str port, str* uri)
 {
@@ -3070,6 +3230,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 	str to_uri={NULL, 0}, from_uri, from_dname;
 	int eno = 0;
 	str new_body={0, 0};
+	str *hdrs;
 
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||
 	b2b_msg_get_to(msg, &to_uri, params->flags)< 0)
@@ -3175,8 +3336,9 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 			xmlFree(entity_sid.s);
 			goto error;
 		}
+		hdrs = b2b_scenario_hdrs(server_node, tuple);
 		tuple->servers[0] = b2bl_create_new_entity(B2B_SERVER, server_id,
-			&to_uri, &from_uri,0,&entity_sid,msg);
+			&to_uri, &from_uri,0,&entity_sid,hdrs,msg);
 		tuple->servers[0]->no = eno++;
 		tuple->bridge_entities[0] = tuple->servers[0];
 		if(tuple->servers[0] == NULL)
@@ -3249,6 +3411,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 			goto error2;
 		}
 		xmlFree(value_content);
+		hdrs = b2b_scenario_hdrs(node, tuple);
 
 		if(xmlStrcasecmp((unsigned char*)type, (unsigned char*)"message") == 0)
 		{
@@ -3258,6 +3421,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 			ci.from_uri      = from_uri;
 			ci.from_dname    = from_dname;
 			ci.extra_headers = tuple->extra_headers;
+			ci.client_headers= hdrs;
 			ci.body          = (body.s?&body:NULL);
 			ci.send_sock     = msg->force_send_socket?
 				msg->force_send_socket:msg->rcv.bind_address;
@@ -3278,7 +3442,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 			}
 
 			client_entity = b2bl_create_new_entity(B2B_CLIENT, client_id,
-				&client_to, &from_uri,0,&entity_sid, 0);
+				&client_to, &from_uri,0,&entity_sid,hdrs, 0);
 			if(client_entity == NULL)
 			{
 				LM_ERR("failed to create new client entity\n");
@@ -3579,6 +3743,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		ci.from_uri      = tuple->servers[0]->to_uri;
 		ci.from_dname    = *new_from_dname;
 		ci.extra_headers = tuple->extra_headers;
+		ci.client_headers= &tuple->servers[0]->hdrs;
 		ci.body          = tuple->b1_sdp.s?&tuple->b1_sdp:0;
 		ci.cseq          = 1;
 		ci.local_contact = tuple->local_contact;
@@ -3592,7 +3757,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		}
 		/* save the client_id in the structure */
 		entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &ci.to_uri,
-				&ci.from_uri, 0, 0, 0);
+				&ci.from_uri, 0, 0, &tuple->servers[0]->hdrs, 0);
 		if(entity == NULL)
 		{
 			LM_ERR("failed to create new client entity\n");
@@ -3608,7 +3773,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 	else
 	{
 		entity = b2bl_create_new_entity( B2B_CLIENT, 0, new_dst, 0,
-			new_from_dname,0,0);
+			new_from_dname,0,0,0);
 		if(entity == NULL)
 		{
 			LM_ERR("Failed to create new b2b entity\n");
@@ -3620,6 +3785,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		memset(&req_data, 0, sizeof(b2b_req_data_t));
 		PREP_REQ_DATA(tuple->servers[0]);
 		req_data.method =&method_invite;
+		req_data.client_headers =&tuple->servers[0]->hdrs;;
 		if(b2b_api.send_request(&req_data) < 0)
 		{
 			LM_ERR("Failed to send INVITE request\n");
@@ -3929,6 +4095,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	PREP_REQ_DATA(e1);
 	req_data.method =&method_invite;
 	req_data.extra_headers = NULL;
+	req_data.client_headers = &e1->hdrs;
 	if(b2b_api.send_request(&req_data) < 0)
 	{
 		LM_ERR("Failed to send reInvite\n");
@@ -4094,7 +4261,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	}
 
 	entity = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri, &from_uri,
-			0,0, msg);
+			0,0,0, msg);
 	if(entity == NULL)
 	{
 		LM_ERR("Failed to create server entity\n");
@@ -4128,6 +4295,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
 	PREP_REQ_DATA(bridging_entity);
 	req_data.method =&method_invite;
+	req_data.client_headers =&bridging_entity->hdrs;
 	req_data.body = &body;
 	if(b2b_api.send_request(&req_data) < 0)
 	{

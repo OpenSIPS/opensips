@@ -133,6 +133,7 @@ typedef struct client_info
 	str to_uri;
 	str to_dname;
 	str* extra_headers;
+	str* client_headers;
 	str* body;
 	str* from_tag;
 	str local_contact;
@@ -157,6 +158,7 @@ typedef struct b2b_req_data
 	str* b2b_key;
 	str* method;
 	str* extra_headers;
+	str* client_headers;
 	str* body;
 	b2b_dlginfo_t* dlginfo;
 	unsigned int no_cb;
@@ -234,8 +236,8 @@ void b2b_tm_cback(struct cell* t, b2b_table htable, struct tmcb_params *ps);
 
 void print_b2b_entities(void);
 
-int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
-		str* contact);
+int b2breq_complete_ehdr(str* extra_headers, str *client_headers,
+		str* ehdr_out, str* body, str* contact);
 
 b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		unsigned int local_index, str* to_tag, str* from_tag, str* callid);
