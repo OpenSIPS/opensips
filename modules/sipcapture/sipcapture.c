@@ -5199,28 +5199,31 @@ int raw_capture_rcv_loop(int rsock, int port1, int port2, int ipip) {
 	                        continue;
         	        }
 	        }
+			/* cleaup previous values in dst and ri */
+			memset(&dst_ip, 0, sizeof(dst_ip));
+			memset(&ri, 0, sizeof(ri));
 
-		/*FIL IPs*/
-		dst_ip.af=AF_INET;
-	        dst_ip.len=4;
-        	dst_ip.u.addr32[0]=iph->ip_dst.s_addr;
-	        /* fill dst_port */
-        	dst_port=ntohs(udph->uh_dport);
-	        ip_addr2su(&to, &dst_ip, dst_port);
-        	/* fill src_port */
-	        src_port=ntohs(udph->uh_sport);
-                src_ip.af=AF_INET;
- 	        src_ip.len=4;
-                src_ip.u.addr32[0]=iph->ip_src.s_addr;
-                ip_addr2su(&from, &src_ip, src_port);
-	        su_setport(&from, src_port);
+			/*FIL IPs*/
+			dst_ip.af=AF_INET;
+			dst_ip.len=4;
+			dst_ip.u.addr32[0]=iph->ip_dst.s_addr;
+			/* fill dst_port */
+			dst_port=ntohs(udph->uh_dport);
+			ip_addr2su(&to, &dst_ip, dst_port);
+			/* fill src_port */
+			src_port=ntohs(udph->uh_sport);
+			src_ip.af=AF_INET;
+			src_ip.len=4;
+			src_ip.u.addr32[0]=iph->ip_src.s_addr;
+			ip_addr2su(&from, &src_ip, src_port);
+			su_setport(&from, src_port);
 
-		ri.src_su=from;
-                su2ip_addr(&ri.src_ip, &from);
-                ri.src_port=src_port;
-                su2ip_addr(&ri.dst_ip, &to);
-                ri.dst_port=dst_port;
-                ri.proto=PROTO_UDP;
+			ri.src_su=from;
+			su2ip_addr(&ri.src_ip, &from);
+			ri.src_port=src_port;
+			su2ip_addr(&ri.dst_ip, &to);
+			ri.dst_port=dst_port;
+			ri.proto=PROTO_UDP;
 
 		/* cut off the offset */
 	        len -= offset;
