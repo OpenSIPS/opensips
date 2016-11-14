@@ -342,7 +342,7 @@ static int save_route_data_recursor(struct route_tree_item * rt, FILE * outfile)
 }
 
 static int backup_config(void) {
-	FILE * from, * to;
+	FILE * from = NULL, * to = NULL;
 	char * backup_file;
 	int ch;
 	LM_INFO("start configuration backup\n");
@@ -398,6 +398,10 @@ static int backup_config(void) {
 	pkg_free(backup_file);
 	return 0;
 errout:
+	if (to)
+		fclose(to);
+	if (from)
+		fclose(from);
 	pkg_free(backup_file);
 	return -1;
 }
