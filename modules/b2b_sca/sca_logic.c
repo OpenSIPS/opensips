@@ -578,7 +578,7 @@ handle_appearance:
 			lock_release(&b2b_sca_htable[hash_index].lock);
 			return B2B_DROP_MSG_CB_RET;
 		}
-		if ( (sdp=parse_sdp(msg)) != NULL ) {
+		if ( msg && (sdp=parse_sdp(msg)) != NULL ) {
 			sdp_session = get_sdp_session(sdp, sdp_session_num);
 			if(!sdp_session) break;
 			sdp_stream_num = 0;
