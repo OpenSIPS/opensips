@@ -1428,6 +1428,31 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
 		</example>
 	</section>
 
+	<section>
+		<title>
+		<function moreinfo="none">t_add_cancel_reason("Reason_hdr")</function>
+		</title>
+		This function is used to enforce from the script level a custom
+		"Reason" header into a CANCEL request. Normally, the Reason header is
+		inherited form the received CANCEL (note that CANCEL propagates in a
+		hop-by-hop manner - it is re-generated at each hop), but this function
+		can overwrite it. It must be called before relaying the CANCEL request
+		and its input must be a fully formated Reason header with name, body 
+		and CRLF.
+		<para>
+		</para>
+		<example>
+		<title><function>t_add_cancel_reason</function> usage</title>
+		<programlisting format="linespecific">
+...
+t_add_cancel_reason('Reason: SIP ;cause=200;text="Call completed elsewhere"');
+t_relay();
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	<section id="treplicate">
 		<title>
 		<function moreinfo="none">t_replicate(URI,[flags])</function>

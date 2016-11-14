@@ -224,6 +224,8 @@ static cmd_export_t cmds[]={
 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_new_request",    (cmd_function)w_t_new_request, 6, fixup_t_new_request,
 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"t_add_cancel_reason",(cmd_function)t_add_reason,  1, fixup_spve_null,
+		0, REQUEST_ROUTE},
 	{"load_tm",         (cmd_function)load_tm,          0, 0,
 			0, 0},
 	{0,0,0,0,0,0}

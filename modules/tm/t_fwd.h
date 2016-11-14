@@ -44,6 +44,8 @@ int t_replicate(struct sip_msg *p_msg, str *dst, int flags);
 int t_forward_nonack( struct cell *t, struct sip_msg* p_msg,
 		struct proxy_l * p);
 
+int t_add_reason(struct sip_msg *msg, char *val);
+
 int t_forward_ack( struct sip_msg* p_msg );
 
 void t_on_branch( unsigned int go_to );

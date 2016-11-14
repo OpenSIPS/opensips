@@ -60,6 +60,7 @@
 #include "fix_lumps.h"
 #include "config.h"
 #include "../../msg_callbacks.h"
+#include "../../mod_fix.h"
 
 /* route to execute for the branches */
 static int goto_on_branch;
@@ -545,6 +546,32 @@ error:
 	return ret;
 }
 
+static int _reason_avp_id = 0;
+
+int t_add_reason(struct sip_msg *msg, char *val)
+{
+	str avp_name = str_init("_reason_avp_internal");
+	int_str reason;
+
+	if (fixup_get_svalue(msg, (gparam_p)val, &reason.s)!=0) {
+		LM_ERR("invalid reason value\n");
+		return -1;
+	}
+
+	if (_reason_avp_id==0) {
+		if (parse_avp_spec( &avp_name, &_reason_avp_id) ) {
+			LM_ERR("failed to init the internal AVP\n");
+			return -1;
+		}
+	}
+
+	if (add_avp( AVP_VAL_STR, _reason_avp_id, reason)!=0) {
+		LM_ERR("failed to add the internal reason AVP\n");
+		return -1;
+	}
+
+	return 1;
+}
 
 
 void cancel_invite(struct sip_msg *cancel_msg,
@@ -556,6 +583,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	branch_bm_t cancel_bitmap;
 	str reason;
 	struct hdr_field *hdr;
+	int_str avp_reason;
 
 	cancel_bitmap=0;
 
@@ -566,16 +594,21 @@ void cancel_invite(struct sip_msg *cancel_msg,
 
 	reason.s = NULL;
 	reason.len = 0;
-	/* propagate the REASON flag ? */
-	if ( t_cancel->flags&T_CANCEL_REASON_FLAG ) {
-		/* look for the Reason header */
-		if (parse_headers(cancel_msg, HDR_EOH_F, 0)<0) {
-			LM_ERR("failed to parse all hdrs - ignoring Reason hdr\n");
-		} else {
-			hdr = get_header_by_static_name(cancel_msg, "Reason");
-			if (hdr!=NULL) {
-				reason.s = hdr->name.s;
-				reason.len = hdr->len;
+
+	if (search_first_avp( AVP_VAL_STR, _reason_avp_id, &avp_reason, NULL)) {
+		reason = avp_reason.s;
+	} else {
+		/* propagate the REASON flag ? */
+		if ( t_cancel->flags&T_CANCEL_REASON_FLAG ) {
+			/* look for the Reason header */
+			if (parse_headers(cancel_msg, HDR_EOH_F, 0)<0) {
+				LM_ERR("failed to parse all hdrs - ignoring Reason hdr\n");
+				} else {
+				hdr = get_header_by_static_name(cancel_msg, "Reason");
+				if (hdr!=NULL) {
+					reason.s = hdr->name.s;
+					reason.len = hdr->len;
+				}
 			}
 		}
 	}
