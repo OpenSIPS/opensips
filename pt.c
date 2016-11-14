@@ -131,7 +131,8 @@ pid_t internal_fork(char *proc_desc)
 	pt[process_counter].pid = 0;
 
 	if ( (pid=fork())<0 ){
-		LM_CRIT("cannot fork \"%s\" process\n",proc_desc);
+		LM_CRIT("cannot fork \"%s\" process (%d: %s)\n",proc_desc,
+				errno, strerror(errno));
 		return -1;
 	}
 
