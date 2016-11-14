@@ -298,7 +298,7 @@ db_con_t* db_virtual_init(const str* _set_url)
 
     //if(!private_handles){
     if(!private || !private->hset_list){
-        LM_ERR("private handles NULL %p %p \n", private, private->hset_list);
+        LM_ERR("private handles NULL %p \n", private);
         return NULL;
     }
 
