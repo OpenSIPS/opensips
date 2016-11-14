@@ -270,6 +270,8 @@ void initialize_table_openserSIPPortTable(void)
 	if (!my_handler || !table_info) {
 		snmp_log(LOG_ERR, "malloc failed in "
 			 "initialize_table_openserSIPPortTable_handler\n");
+		if (table_info)
+			SNMP_FREE(table_info);
 		return; /** mallocs failed */
 	}
 
