@@ -1397,8 +1397,8 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 						part->body.s+part->body.len-msg->buf);
 				}
 				/* and copy whatever is left, all the way to the end of part */
-				size = (part->body.s+part->body.len-msg->buf+CRLF_LEN)-orig_offs;
-				len += size;
+				size = (part->body.s+part->body.len-msg->buf)-orig_offs;
+				len += size + CRLF_LEN;
 			}
 
 			/* reposition at the end of the processed body */
@@ -1653,9 +1653,11 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 						send_sock, part->body.s+part->body.len-msg->buf);
 				}
 				/* and copy whatever is left, all the way to the end of part */
-				size = (part->body.s+part->body.len-msg->buf+CRLF_LEN)-*orig_offs;
+				size = (part->body.s+part->body.len-msg->buf)-*orig_offs;
 				memcpy(new_buf+offset, msg->buf+*orig_offs, size);
 				offset += size;
+				memcpy(new_buf+offset, CRLF , CRLF_LEN);
+				offset += CRLF_LEN;
 			}
 
 			/* reposition at the end of the processed body */
@@ -1747,7 +1749,8 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 					process_lumps( msg, lump, new_buf, &offset, orig_offs,
 						send_sock, part->body.s+part->body.len-msg->buf);
 				}
-				/* and copy whatever is left, all the way to the end of part */
+				/* and copy whatever is left, all the way to the end of part,
+				 * including the next CRLF */
 				size = (part->body.s+part->body.len-msg->buf+CRLF_LEN)-*orig_offs;
 				memcpy(new_buf+offset, msg->buf+*orig_offs, size);
 				offset += size;
