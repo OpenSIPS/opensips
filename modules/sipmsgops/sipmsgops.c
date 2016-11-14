@@ -671,8 +671,8 @@ static int add_hf_helper(struct sip_msg* msg, str *str1, str *str2,
 
 	memcpy(s, s0.s, s0.len);
 	if (str2) {
-		memcpy(s+str1->len, REQ_LINE(msg).uri.s, REQ_LINE(msg).uri.len);
-		memcpy(s+str1->len+REQ_LINE(msg).uri.len, str2->s, str2->len );
+		memcpy(s+s0.len, REQ_LINE(msg).uri.s, REQ_LINE(msg).uri.len);
+		memcpy(s+s0.len+REQ_LINE(msg).uri.len, str2->s, str2->len );
 	}
 
 	if (insert_new_lump_before(anchor, s, len, 0) == 0) {
@@ -1192,9 +1192,8 @@ static int fixup_sip_validate(void** param, int param_no)
 	str s;
 
 	if (param_no==1) {
-		if (!param) {
-			goto end;
-		}
+		if (!param)
+			return -1;
 		flags_s = (char*)*param;
 		end = flags_s + strlen(flags_s);
 
@@ -1240,7 +1239,6 @@ static int fixup_sip_validate(void** param, int param_no)
 					break;
 			}
 		}
-end:
 		*param = (void *)(unsigned long)flags;
 		return 0;
 	} else if (param_no==2) {
