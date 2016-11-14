@@ -110,7 +110,7 @@ b2b_dlg_t* b2b_search_htable_next_dlg(b2b_dlg_t* start_dlg, b2b_table table, uns
 		/*check if the dialog information correspond */
 		if(table == server_htable)
 		{
-			if(!from_tag)
+			if(!from_tag || !callid)
 				return NULL;
 			dlg_from_tag= dlg->tag[CALLER_LEG];
 			/* check from tag and callid */
@@ -131,7 +131,7 @@ b2b_dlg_t* b2b_search_htable_next_dlg(b2b_dlg_t* start_dlg, b2b_table table, uns
 				dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s, dlg->state);
 			*/
 			/* it is an UAC dialog (callid is the key)*/
-			if(dlg->tag[CALLER_LEG].len == to_tag->len &&
+			if(to_tag && dlg->tag[CALLER_LEG].len == to_tag->len &&
 				strncmp(dlg->tag[CALLER_LEG].s, to_tag->s, to_tag->len)== 0)
 			{
 
