@@ -82,8 +82,9 @@ int attr_avp_name;
 rerr_t rerrno;
 
 
-static struct mid_reg_ct *__contact;
+static struct mid_reg_info *__info;
 int ucontact_data_idx;
+int urecord_data_idx;
 
 
 #define PATH_MODE_STRICT	2
@@ -97,14 +98,14 @@ str sock_hdr_name = {0,0};
 
 static time_t act_time;
 
-inline void set_ct(struct mid_reg_ct *ct)
+inline void set_ct(struct mid_reg_info *ct)
 {
-	__contact = ct;
+	__info = ct;
 }
 
-inline struct mid_reg_ct *get_ct(void)
+inline struct mid_reg_info *get_ct(void)
 {
-	return __contact;
+	return __info;
 }
 
 /*! \brief
@@ -373,11 +374,25 @@ static int mod_init(void)
 	}
 
 	if (reg_mode != MID_REG_MIRROR) {
-		if (ul_api.register_ulcb(
-			UL_CONTACT_INSERT|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE,
-			mid_reg_ct_event, &ucontact_data_idx) < 0) {
-			LM_ERR("cannot register callback for insert\n");
+		if (ul_api.db_mode == DB_ONLY) {
+			LM_ERR("mid_registrar traffic conversion cannot work with "
+			       "usrloc \"db_mode\" = %d!\n", DB_ONLY);
 			return -1;
+		}
+
+		if (reg_mode == MID_REG_THROTTLE_CT) {
+			if (ul_api.register_ulcb(
+				UL_CONTACT_INSERT|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE,
+				mid_reg_ct_event, &ucontact_data_idx) < 0) {
+				LM_ERR("cannot register usrloc contact callback\n");
+				return -1;
+			}
+		} else if (reg_mode == MID_REG_THROTTLE_AOR) {
+			if (ul_api.register_ulcb(UL_AOR_INSERT|UL_AOR_DELETE|UL_AOR_EXPIRE,
+				mid_reg_aor_event, &urecord_data_idx) < 0) {
+				LM_ERR("cannot register usrloc AoR callback\n");
+				return -1;
+			}
 		}
 	}
 
@@ -394,6 +409,38 @@ static int mod_init(void)
 	}
 
 	return 0;
+}
+
+void mri_free(struct mid_reg_info *mri)
+{
+	LM_DBG("aor: '%.*s' %p\n", mri->aor.len, mri->aor.s, mri->aor.s);
+	LM_DBG("from: '%.*s' %p\n", mri->from.len, mri->from.s, mri->from.s);
+	LM_DBG("callid: '%.*s' %p\n", mri->callid.len, mri->callid.s, mri->callid.s);
+	LM_DBG("ruri: '%.*s' %p\n", mri->ruri.len, mri->ruri.s, mri->ruri.s);
+	LM_DBG("ct_uri: '%.*s' %p\n", mri->ct_uri.len, mri->ct_uri.s, mri->ct_uri.s);
+
+	if (mri->aor.s)
+		shm_free(mri->aor.s);
+
+	if (mri->from.s)
+		shm_free(mri->from.s);
+
+	if (mri->callid.s)
+		shm_free(mri->callid.s);
+
+	if (mri->ruri.s)
+		shm_free(mri->ruri.s);
+
+	if (mri->next_hop.s)
+		shm_free(mri->next_hop.s);
+
+	if (mri->ct_uri.s)
+		shm_free(mri->ct_uri.s);
+
+#ifdef EXTRA_DEBUG
+	memset(mri, 0, sizeof *mri);
+#endif
+	shm_free(mri);
 }
 
 contact_t* get_first_contact(struct sip_msg* _m)

@@ -57,9 +57,10 @@ enum mid_reg_matching_mode {
 	MATCH_BY_USER,
 };
 
-struct mid_reg_ct {
+struct mid_reg_info {
 	/* De-registrations will be sent to this SIP URI */
 	str ruri;
+	str next_hop;
 
 	str ct_uri;
 
@@ -156,9 +157,12 @@ extern unsigned short attr_avp_type;
 extern int tcp_persistent_flag;
 
 extern int ucontact_data_idx;
+extern int urecord_data_idx;
 
-void set_ct(struct mid_reg_ct *ct);
-struct mid_reg_ct *get_ct(void);
+void mri_free(struct mid_reg_info *mri);
+
+void set_ct(struct mid_reg_info *ct);
+struct mid_reg_info *get_ct(void);
 
 time_t get_act_time(void);
 void update_act_time(void);

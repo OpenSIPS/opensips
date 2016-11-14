@@ -30,14 +30,12 @@
 
 #include "uac_timer.h"
 #include "mid_registrar.h"
+#include "ulcb.h"
 
 static struct list_head *uac_timer_queue;
 static gen_lock_t *queue_lock;
 
 static str register_method = str_init("REGISTER");
-static str contact_hdr = str_init("Contact: ");
-static str expires_hdr = str_init("Expires: ");
-static str expires_param = str_init(";expires=");
 
 /* typically used to send out De-REGISTER requests */
 str mid_reg_from_uri   = { "sip:registrar@localhost", 23 };
@@ -229,39 +227,6 @@ void print_timer_queue(void)
 char extra_hdrs_buf[512];
 static str extra_hdrs={extra_hdrs_buf, 512};
 
-void build_unregister_hdrs(struct mid_reg_queue_entry *entry)
-{
-	char *p;
-
-	p = extra_hdrs.s;
-	memcpy(p, contact_hdr.s, contact_hdr.len);
-	p += contact_hdr.len;
-
-	LM_DBG("building contact from uri '%.*s'\n", entry->ct_uri.len, entry->ct_uri.s);
-
-	/* TODO FIXME - proper handling */
-	*p++ = '<';
-	memcpy(p, entry->ct_uri.s, entry->ct_uri.len);
-	p += entry->ct_uri.len;
-	*p++ = '>';
-
-	if (1) {
-		/* adding exiration time as a parameter */
-		memcpy(p, expires_param.s, expires_param.len);
-		p += expires_param.len;
-	} else {
-		/* adding exiration time as a header */
-		memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
-		memcpy(p, expires_hdr.s, expires_hdr.len);
-		p += expires_hdr.len;
-	}
-
-	*p++ = '0';
-	memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
-
-	extra_hdrs.len = (int)(p - extra_hdrs.s);
-}
-
 void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 {
 	LM_DBG(">> [REPLY] UNREGISTER !\n");
@@ -278,8 +243,6 @@ void unregister_contact(struct mid_reg_queue_entry *entry)
 		return;
 	}
 	dlg->state = DLG_CONFIRMED;
-
-	build_unregister_hdrs(entry);
 
 	result = tm_api.t_request_within(
 		&register_method,	/* method */

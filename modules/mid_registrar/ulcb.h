@@ -33,5 +33,6 @@
 #define __MID_REG_ULCB_
 
 void mid_reg_ct_event(void *binding, int type, void **data);
+void mid_reg_aor_event(void *binding, int type, void **data);
 
 #endif /* __MID_REG_ULCB_ */
