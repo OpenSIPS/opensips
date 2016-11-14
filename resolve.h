@@ -282,6 +282,7 @@ static inline struct ip_addr* str2ip6(str* st)
 	unsigned char* limit;
 	unsigned char* s;
 
+	if (st == NULL || st->s == NULL) goto error_char;
 	/* init */
 	if ((st->len) && (st->s[0]=='[')){
 		/* skip over [ ] */
