@@ -371,7 +371,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 		if (name->u.isname.type==0) {
 			/* name is FMT */
 			if (pv_printf_s( msg, (pv_elem_t *)name->u.isname.name.s.s,
-			&(pv_val.rs) )!=0 || (pv_val.flags&PV_VAL_NULL) ) {
+			&(pv_val.rs) )!=0) {
 				LM_ERR("failed to get format string value\n");
 				return -1;
 			}
