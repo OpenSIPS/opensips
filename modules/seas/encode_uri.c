@@ -449,5 +449,6 @@ int print_uri_junit_tests(char *hdrstart,int hdrlen,unsigned char *payload,int p
       i+=2;
    }
    fprintf(fp,"\n");
+   fclose(fp);
    return 0;
 }
