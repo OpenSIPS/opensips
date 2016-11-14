@@ -427,12 +427,6 @@ str* build_dialoginfo(str* pres_user, str* pres_domain)
 	xmlCleanupParser();
 	return body;
 error:
-	if(body)
-	{
-		if(body->s)
-			xmlFree(body->s);
-		pkg_free(body);
-	}
 	if(doc)
 		xmlFreeDoc(doc);
 	return NULL;

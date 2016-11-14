@@ -178,12 +178,6 @@ str* build_pidf(ucontact_t* c)
 	return body;
 
 error:
-	if(body)
-	{
-		if(body->s)
-			xmlFree(body->s);
-		pkg_free(body);
-	}
 	if(doc)
 		xmlFreeDoc(doc);
 	return NULL;
