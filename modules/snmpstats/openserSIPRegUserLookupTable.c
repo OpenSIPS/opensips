@@ -705,6 +705,8 @@ void initialize_table_openserSIPRegUserLookupTable(void)
 		snmp_log(LOG_ERR, "malloc failed in "
 				 "initialize_table_openserSIPRegUserLookup"
 				 "Table_handler\n");
+		if (table_info)
+			SNMP_FREE(table_info);
 		return; /** mallocs failed */
 	}
 
