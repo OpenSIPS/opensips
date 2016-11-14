@@ -194,7 +194,12 @@ int msg_add_dlginfo(b2bl_entity_id_t* entity, struct sip_msg* msg, str* totag)
 	}
 	fromtag = ((struct to_body*)msg->from->parsed)->tag_value;
 
-	dlginfo.totag  = *totag;
+	if (totag)
+		dlginfo.totag  = *totag;
+	else {
+		dlginfo.totag.s = 0;
+		dlginfo.totag.len = 0;
+	}
 	dlginfo.callid = callid;
 	dlginfo.fromtag= fromtag;
 
@@ -978,6 +983,11 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 		LM_DBG("B2B logic record doesn't exist after B2B_BYE_CB\n");
 		return -1;
 	}
+	if(ekey == NULL)
+	{
+		LM_DBG("entity key does not exist!\n");
+		return -1;
+	}
 	if(etype == B2B_SERVER)
 	{
 		for (index = 0; index < MAX_B2BL_ENT && not_found; index++)
@@ -1013,8 +1023,7 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 			while (e)
 			{
 				LM_DBG("[%p] vs [%p]\n", e, *entity);
-				if (e && ekey)
-					LM_DBG("[%.*s] vs [%.*s]\n", e->key.len, e->key.s, ekey->len, ekey->s);
+				LM_DBG("[%.*s] vs [%.*s]\n", e->key.len, e->key.s, ekey->len, ekey->s);
 				if(e == *entity && e->key.len == ekey->len &&
 					strncmp(e->key.s, ekey->s, ekey->len)==0)
 				{
