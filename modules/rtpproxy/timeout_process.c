@@ -191,30 +191,29 @@ void timeout_listener_process(int rank)
 
 				/* if not found add a new one */
 				if (!rtpp_lst) {
-					/* leave the lock for a moment */
-					lock_release(rtpp_notify_h->lock);
 					rtpp_lst = (struct rtpp_notify_node*)
 						shm_malloc(sizeof(struct rtpp_notify_node));
 					if (!rtpp_lst) {
 						LM_ERR("no shm more memory\n");
-						return;
-					}
-					rtpp_lst->index = 0;
-					rtpp_lst->mode = 0;
-					rtpp_lst->addr = 0;
+					} else {
+						rtpp_lst->index = 0;
+						rtpp_lst->mode = 0;
+						rtpp_lst->addr = 0;
 
-					/* copy the socket name */
-					len = strlen(s_un->sun_path);
-					rtpp_lst->addr = (char *)shm_malloc(len + 1);
-					if (!rtpp_lst->addr) {
-						LM_ERR("no more shm memory\n");
-						return;
-					}
-					memcpy(rtpp_lst->addr, s_un->sun_path, len + 1);
+						/* copy the socket name */
+						len = strlen(s_un->sun_path);
+						rtpp_lst->addr = (char *)shm_malloc(len + 1);
+						if (!rtpp_lst->addr) {
+							shm_free(rtpp_lst);
+							rtpp_lst = NULL;
+							LM_ERR("no more shm memory\n");
+						} else {
+							memcpy(rtpp_lst->addr, s_un->sun_path, len + 1);
 
-					lock_get(rtpp_notify_h->lock);
-					rtpp_lst->next = rtpp_notify_h->rtpp_list;
-					rtpp_notify_h->rtpp_list = rtpp_lst;
+							rtpp_lst->next = rtpp_notify_h->rtpp_list;
+							rtpp_notify_h->rtpp_list = rtpp_lst;
+						}
+					}
 				}
 			} else {
 				/* search if I can find this connection */
