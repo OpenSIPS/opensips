@@ -328,6 +328,7 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 	{
 		/* invalid value for the netmask specified in oldip */
 		LM_ERR("invalid value for the netmask specified in oldip\n");
+		if (pos != NULL) free (pos);
 		return -5;
 	}
 	else
