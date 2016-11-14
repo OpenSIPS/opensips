@@ -315,40 +315,38 @@ void serve_stats(int fd)
    signal(SIGCHLD,sig_handler);
 
    while(1){
-      su_len = sizeof(union sockaddr_union);
-      sock=-1;
-      sock=accept(fd, &su.s, &su_len);
-      if(sock==-1){
-	 if(errno==EINTR){
-	    continue;
-	 }else{
-	    LM_ERR("failed to accept connection: %s\n", strerror(errno));
-	    return ;
-	 }
-      }
-      while(0!=(i=read(sock,&f,1))){
-	 if(i==-1){
-	    if(errno==EINTR){
-	       continue;
-	    }else{
-	       LM_ERR("unknown error reading from socket\n");
-	       close(sock);
-	       /** and continue accept()'ing*/
-	       break;
-	    }
-	 }
-	 retrn=print_stats_info(f,sock);
-	 if(retrn==-1){
-	    /**simple error happened, dont worry*/
-	       LM_ERR("printing statisticss \n");
-	       continue;
-	 }else if(retrn==-2){
-	    /**let's go to the outer loop, and receive more Statistics clients*/
-	    LM_ERR("statistics client left\n");
-	    close(sock);
-	    break;
-	 }
-      }
+	   su_len = sizeof(union sockaddr_union);
+	   sock=accept(fd, &su.s, &su_len);
+	   if(sock < 0){
+		   if(errno==EINTR){
+			   continue;
+		   }else{
+			   LM_ERR("failed to accept connection: %s\n", strerror(errno));
+			   return ;
+		   }
+	   }
+	   while(0!=(i=read(sock,&f,1))){
+		   if(i<0){
+			   if(errno==EINTR){
+				   continue;
+			   }else{
+				   LM_ERR("unknown error reading from socket\n");
+				   /** and continue accept()'ing*/
+				   break;
+			   }
+		   }
+		   retrn=print_stats_info(f,sock);
+		   if(retrn==-1){
+			   /**simple error happened, dont worry*/
+			   LM_ERR("printing statisticss \n");
+			   continue;
+		   }else if(retrn==-2){
+			   /**let's go to the outer loop, and receive more Statistics clients*/
+			   LM_ERR("statistics client left\n");
+			   break;
+		   }
+	   }
+	   close(sock);
    }
 }
 
