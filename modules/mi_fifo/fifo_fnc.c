@@ -160,6 +160,7 @@ FILE* mi_init_fifo_server(char *fifo_name, int fifo_mode,
 
 	if (signal(SIGHUP, mi_sig_hup) == SIG_ERR ) {
 		LM_ERR("cannot install SIGHUP signal\n");
+		fclose(fifo_stream);
 		pkg_free(reply_fifo_s);
 		return 0;
 	}
