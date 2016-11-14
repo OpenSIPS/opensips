@@ -431,6 +431,7 @@ static int spawn_sysUpTime_child(void)
 		LM_ERR("Ran out of memory while trying to retrieve sysUpTime.  ");
 		LM_ERR( "                  openserSIPServiceStartTime is "
 				"defaulting to zero\n");
+		close(snmpget_fd);
 		return -1;
 	}
 	else
