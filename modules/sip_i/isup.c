@@ -520,7 +520,7 @@ int called_party_num_writef(int subfield_id, unsigned char *param_val, int *len,
 		return -1;
 	}
 
-	if (subfield_id == 7)
+	if (subfield_id == 5)
 		*len = num_len + 2;
 	else if (*len == 0)
 		*len = 2;
