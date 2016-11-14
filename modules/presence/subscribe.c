@@ -503,7 +503,7 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 	pres_ev_t* event= NULL;
 	event_t* parsed_event= NULL;
 	param_t* ev_param= NULL;
-	int found;
+	int found = 0;
 	str reason= {0, 0};
 	int reply_code;
 	str reply_str;
