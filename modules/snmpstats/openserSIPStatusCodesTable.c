@@ -180,7 +180,8 @@ int openserSIPStatusCodesTable_extract_index(
 		}
 
 		ctx->index.len = hdr->len;
-	}
+	} else
+		return -1;
 
  	/* Initialize the two variables responsible for holding our two indices.
 	 */

@@ -167,7 +167,8 @@ int openserSIPRegUserLookupTable_extract_index(
 			return -1;
 		}
 		ctx->index.len = hdr->len;
-	}
+	} else
+		return -1;
 
 	/* Set up the index */
 	memset(&var_openserSIPRegUserLookupIndex, 0x00,
