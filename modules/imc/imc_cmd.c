@@ -300,7 +300,7 @@ int imc_handle_join(struct sip_msg* msg, imc_cmd_t *cmd,
 			if(member == NULL)
 			{
 				LM_ERR("adding new user [%.*s]\n", src->user.len, src->user.s);
-				goto error;
+				goto done;
 			}
 			goto build_inform;
 		} else {
@@ -312,7 +312,7 @@ int imc_handle_join(struct sip_msg* msg, imc_cmd_t *cmd,
 		{
 			LM_ERR("attept to join private room [%.*s] from user [%.*s]\n",
 					room_name.len, room_name.s,	src->user.len, src->user.s);
-			goto build_inform;
+			goto done;
 
 		}
 
