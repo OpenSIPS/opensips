@@ -198,7 +198,6 @@ void free_ucontact(ucontact_t* _c)
 	if (_c->callid.s) shm_free(_c->callid.s);
 	if (_c->c.s) shm_free(_c->c.s);
 	if (_c->attr.s) shm_free(_c->attr.s);
-	if (_c->attached_data) shm_free(_c->attached_data);
 	shm_free( _c );
 }
 

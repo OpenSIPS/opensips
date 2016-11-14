@@ -112,7 +112,6 @@ void free_urecord(urecord_t* _r)
 	/* if mem cache is not used, the urecord struct is static*/
 	if (db_mode!=DB_ONLY) {
 		if (_r->aor.s) shm_free(_r->aor.s);
-		if (_r->attached_data) shm_free(_r->attached_data);
 		shm_free(_r);
 	} else {
 		_r->contacts = NULL;
