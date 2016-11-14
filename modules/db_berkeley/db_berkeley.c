@@ -913,7 +913,7 @@ int _bdb_delete_cursor(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, i
 	int ret, klen=MAX_ROW_SIZE;
 	DBT key, data;
 	DB *db;
-	DBC *dbcp;
+	DBC *dbcp = NULL;
 	int *lkey=NULL;
 
 	ret = 0;
