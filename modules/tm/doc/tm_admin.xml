@@ -1445,7 +1445,7 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
 		<title><function>t_add_cancel_reason</function> usage</title>
 		<programlisting format="linespecific">
 ...
-t_add_cancel_reason('Reason: SIP ;cause=200;text="Call completed elsewhere"');
+t_add_cancel_reason('Reason: SIP ;cause=200;text="Call completed elsewhere"\r\n');
 t_relay();
 ...
 </programlisting>

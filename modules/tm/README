@@ -1069,7 +1069,7 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
    Example 1.35. t_add_cancel_reason usage
 ...
 t_add_cancel_reason('Reason: SIP ;cause=200;text="Call completed elsewhe
-re"');
+re"\r\n');
 t_relay();
 ...
 
