@@ -1096,7 +1096,7 @@ int pres_get_rules_doc(str* user, str* domain, str** rules_doc)
 
 static int http_get_xcap_doc(str* user, str* domain, int type, str** doc)
 {
-	str body;
+	str body = {0, 0};
 	str *doc_tmp;
 	xcap_doc_sel_t doc_sel;
 	xcap_serv_t* xs;
