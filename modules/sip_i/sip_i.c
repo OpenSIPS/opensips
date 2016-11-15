@@ -44,6 +44,9 @@ int pv_parse_isup_param_index(pv_spec_p sp, str* in);
 int pv_get_isup_param(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t *val);
 
+/* script functions */
+static int add_isup_part_cmd(struct sip_msg *msg, char *param);
+
 static pv_export_t mod_items[] = {
 	{{"isup_msg_type", sizeof("isup_msg_type") - 1}, 1000, pv_get_isup_msg_type,
 		0, 0, 0, 0, 0},
@@ -52,13 +55,21 @@ static pv_export_t mod_items[] = {
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
+static cmd_export_t cmds[] = {
+	{"add_isup_part", (cmd_function)add_isup_part_cmd, 0, 0, 0, REQUEST_ROUTE | FAILURE_ROUTE |
+		 ONREPLY_ROUTE | LOCAL_ROUTE},
+	{"add_isup_part", (cmd_function)add_isup_part_cmd, 1, 0, 0, REQUEST_ROUTE | FAILURE_ROUTE |
+		 ONREPLY_ROUTE | LOCAL_ROUTE},
+	{0,0,0,0,0,0}
+};
+
 struct module_exports exports= {
 	"sip_i",        	/* module's name */
 	MOD_TYPE_DEFAULT,	/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, 	/* dlopen flags */
 	0,           		/* OpenSIPS module dependencies */
-	0,            		/* exported functions */
+	cmds,            	/* exported functions */
 	0,               	/* exported async functions */
 	0,      			/* param exports */
 	0,       			/* exported statistics */
@@ -70,6 +81,8 @@ struct module_exports exports= {
 	mod_destroy,
 	child_init       	/* per-child init function */
 };
+
+str isup_mime = str_init(ISUP_MIME_S);
 
 static int mod_init(void)
 {
@@ -181,8 +194,6 @@ int pv_parse_isup_param_index(pv_spec_p sp, str* in)
 {
 	int idx;
 
-	LM_DBG("PPP Entering index parsing function\n");
-
 	if (!in || !in->s || !in->len) {
 		LM_ERR("Bad index for $isup_param\n");
 		return -1;
@@ -246,7 +257,8 @@ static struct body_part *get_isup_part(struct sip_msg *msg)
 	}
 
 	for (p = &msg->body->first; p; p = p->next)
-		if (p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_ISUP))
+		if ((p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_ISUP)) ||
+			(p->flags & SIP_BODY_FLAG_NEW && !str_strcmp(&p->mime_s, &isup_mime))) /* newly added isup part */
 			return p;
 
 	return NULL;
@@ -512,7 +524,7 @@ int pv_get_isup_param(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	else {
 		parse_struct = parse_isup_body(msg);
 		if (!parse_struct) {
-			LM_DBG("Unable to parse ISUP message\n");
+			LM_WARN("Unable to parse ISUP message\n");
 			return pv_get_null(msg, param, res);
 		}
 	}
@@ -644,7 +656,7 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 	else {
 		isup_struct = parse_isup_body(msg);
 		if (!isup_struct) {
-			LM_DBG("Unable to parse ISUP message\n");
+			LM_WARN("Unable to parse ISUP message\n");
 			return -1;
 		}
 	}
@@ -699,7 +711,6 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 		if (new_len != p->len)
 			isup_struct->total_len += new_len - p->len;
 		p->len = new_len;
-		LM_DBG("WWW new len = %d\n", p->len);
 		if (rc < 0) {
 			LM_WARN("Unable to write $isup_param(%*.s)\n",
 				isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
@@ -840,3 +851,104 @@ int pv_get_isup_msg_type(struct sip_msg *msg, pv_param_t *param, pv_value_t *res
 	return 0;
 }
 
+static int add_isup_part_cmd(struct sip_msg *msg, char *param)
+{
+	struct isup_parsed_struct *isup_struct;
+	struct body_part *isup_part;
+	int isup_msg_idx = -1;
+	str param_msg_type;
+	int i;
+
+	/* if isup message type not provided as param, try to map sip msg to
+	 * isup msg type by defaault */
+	if (!param) {
+		if (msg->first_line.type == SIP_REQUEST) {
+			if (msg->REQ_METHOD == METHOD_INVITE) {
+				/* INVITE -> IAM */
+				isup_msg_idx = get_msg_idx_by_type(ISUP_IAM);
+			} else if (msg->REQ_METHOD == METHOD_BYE) {
+				/* BYE -> REL */
+				isup_msg_idx = get_msg_idx_by_type(ISUP_REL);
+			} else {
+				LM_WARN("Could not map SIP message to ISUP message type by default\n");
+				return -1;
+			}
+		} else if (msg->first_line.type == SIP_REPLY) {
+			if (msg->REPLY_STATUS == 180 || msg->REPLY_STATUS == 183)
+				/* 180, 183 -> ACM */
+				isup_msg_idx = get_msg_idx_by_type(ISUP_ACM);
+			else if (msg->REPLY_STATUS/100 == 4 || msg->REPLY_STATUS/100 == 5)
+				/* 4xx, 5xx -> REL */
+				isup_msg_idx = get_msg_idx_by_type(ISUP_REL);
+			else if (msg->REPLY_STATUS == 200) {
+				if (get_cseq(msg)->method_id == METHOD_INVITE)
+					/* 200 OK INVITE -> ANM */
+					isup_msg_idx = get_msg_idx_by_type(ISUP_REL);
+				else if (get_cseq(msg)->method_id == METHOD_BYE)
+					/* 200 OK INVITE -> RLC */
+					isup_msg_idx = get_msg_idx_by_type(ISUP_RLC);
+				else {
+					LM_WARN("Could not map SIP message to ISUP message type by default\n");
+					return -1;
+				}
+			} else {
+				LM_WARN("Could not map SIP message to ISUP message type by default\n");
+				return -1;
+			}
+		} else {
+			LM_ERR("Invalid SIP message\n");
+			return -1;
+		}
+	} else {
+		param_msg_type.len = strlen(param);
+		param_msg_type.s = param;
+
+		for (i = 0; i < NO_ISUP_MESSAGES; i++)
+			if (!str_strcasecmp(&isup_messages[i].name, &param_msg_type)) {
+				isup_msg_idx = get_param_idx_by_code(isup_messages[i].message_type);
+				break;
+			}
+
+		if (isup_msg_idx < 0) {
+			LM_ERR("Unknown ISUP message type\n");
+			return -1;
+		}
+	}
+
+	/* build a blank isup message (no optional params, all mandatory params zeroed) */
+
+	isup_struct = pkg_malloc(sizeof(struct isup_parsed_struct));
+	if (!isup_struct) {
+		LM_ERR("No more pkg mem for isup struct\n");
+		return -1;
+	}
+
+	memset(isup_struct, 0, sizeof(struct isup_parsed_struct));
+
+	isup_struct->message_type = isup_messages[isup_msg_idx].message_type;
+
+	for (i = 0; i < isup_messages[isup_msg_idx].mand_fixed_params; i++) {
+		isup_struct->mand_fix_params[i].param_code =
+			isup_messages[isup_msg_idx].mand_param_list[i];
+		isup_struct->mand_fix_params[i].len =
+			isup_params[get_param_idx_by_code(isup_messages[isup_msg_idx].mand_param_list[i])].len;
+
+		isup_struct->total_len += isup_struct->mand_fix_params[i].len;
+	}
+
+	for (i = 0; i < isup_messages[isup_msg_idx].mand_var_params; i++)
+		isup_struct->mand_var_params[i].param_code =
+			isup_messages[isup_msg_idx].mand_param_list[isup_messages[isup_msg_idx].mand_fixed_params+i];
+
+	isup_part = add_body_part(msg, &isup_mime, NULL);
+	if (!isup_part) {
+		LM_ERR("Failed to add isup body part\n");
+		return -1;
+	}
+
+	isup_part->parsed = isup_struct;
+	isup_part->dump_f = (dump_part_function)isup_dump;
+	isup_part->free_parsed_f = (free_parsed_part_function)free_isup_parsed;
+
+	return 1;
+}

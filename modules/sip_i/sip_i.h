@@ -28,6 +28,8 @@
 
 #define DEFAULT_PARAM_SUBF_SEP '|'
 
+#define ISUP_MIME_S "application/ISUP;version=itu-t92+"
+
 struct isup_parse_fixup {
 	int isup_params_idx;
 	int subfield_id;
