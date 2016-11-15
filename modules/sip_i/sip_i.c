@@ -63,6 +63,15 @@ static cmd_export_t cmds[] = {
 	{0,0,0,0,0,0}
 };
 
+static str param_subf_sep = str_init(DEFAULT_PARAM_SUBF_SEP);
+static str isup_mime = str_init(ISUP_MIME_S);
+
+static param_export_t params[] = {
+	{"param_subfield_separator", STR_PARAM, &param_subf_sep.s},
+	{"isup_mime_str", STR_PARAM, &isup_mime.s},
+	{0,0,0}
+};
+
 struct module_exports exports= {
 	"sip_i",        	/* module's name */
 	MOD_TYPE_DEFAULT,	/* class of this module */
@@ -71,7 +80,7 @@ struct module_exports exports= {
 	0,           		/* OpenSIPS module dependencies */
 	cmds,            	/* exported functions */
 	0,               	/* exported async functions */
-	0,      			/* param exports */
+	params,      			/* param exports */
 	0,       			/* exported statistics */
 	0,         			/* exported MI functions */
 	mod_items,       	/* exported pseudo-variables */
@@ -81,8 +90,6 @@ struct module_exports exports= {
 	mod_destroy,
 	child_init       	/* per-child init function */
 };
-
-str isup_mime = str_init(ISUP_MIME_S);
 
 static int mod_init(void)
 {
@@ -117,7 +124,7 @@ int pv_parse_isup_param_name(pv_spec_p sp, str *in)
 
 	param_s.s = in->s;
 
-	subfield_s.s = q_memchr(in->s, DEFAULT_PARAM_SUBF_SEP, in->len);
+	subfield_s.s = q_memchr(in->s, param_subf_sep.s[0], in->len);
 
 	if (subfield_s.s) {
 		param_s.len = subfield_s.s - param_s.s;

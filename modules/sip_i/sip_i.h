@@ -26,7 +26,7 @@
 #ifndef _SIP_I_H_
 #define _SIP_I_H_
 
-#define DEFAULT_PARAM_SUBF_SEP '|'
+#define DEFAULT_PARAM_SUBF_SEP "|"
 
 #define ISUP_MIME_S "application/ISUP;version=itu-t92+"
 
