@@ -176,7 +176,6 @@ int extract_body(struct sip_msg *msg, str *body )
 			continue;
 
 		*body = p->body;
-		trim_r(*body);
 		if( p->mime != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
 							 || body->len == 0)
 			continue;
