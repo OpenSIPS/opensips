@@ -47,8 +47,6 @@
 #include "hep.h"
 #include "hep_cb.h"
 
-#define HEP_FIRST 1
-#define HEP_LAST  3
 
 
 static int mod_init(void);
@@ -69,7 +67,7 @@ static void update_recv_info(struct receive_info *ri, struct hep_desc *h);
 
 void free_hep_context(void* ptr);
 
-static int hep_port = 5656;
+static int hep_port = HEP_PORT;
 static int hep_async = 1;
 static int hep_send_timeout = 100;
 static int hep_async_max_postponed_chunks = 32;
@@ -113,6 +111,7 @@ static cmd_export_t cmds[] = {
 	{"proto_init",            (cmd_function)proto_hep_init_udp,        0, 0, 0, 0},
 	{"proto_init",            (cmd_function)proto_hep_init_tcp,        0, 0, 0, 0},
 	{"load_hep",			  (cmd_function)bind_proto_hep,        1, 0, 0, 0},
+	{"trace_bind_api",        (cmd_function)hep_bind_trace_api,    1, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
 
@@ -130,6 +129,7 @@ static param_export_t params[] = {
 	{ "hep_async_local_write_timeout",   INT_PARAM,
 											&hep_async_local_write_timeout  },
 	{ "compressed_payload",				 INT_PARAM, &payload_compression},
+	{ "hep_id",						 STR_PARAM|USE_FUNC_PARAM, parse_hep_id },
 	{0, 0, 0}
 };
 

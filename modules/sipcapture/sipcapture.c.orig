@@ -3435,11 +3435,16 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 			sco.msg.s = h->u.hepv3.payload_chunk.data;
 			sco.msg.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
 		} else {
-			sco.msg = h->u.hepv12.payload;
+			sco.msg.s = h->u.hepv12.payload;
+			sco.msg.len = strlen(h->u.hepv12.payload);
 		}
 	} else {
+<<<<<<< HEAD
 		sco.msg.s = msg->buf;
 		sco.msg.len = msg->len;
+=======
+		sco.msg = h->u.hepv12.payload;
+>>>>>>> cb7d74b
 	}
 	//EMPTY_STR(sco.msg);
 

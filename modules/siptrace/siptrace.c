@@ -43,11 +43,11 @@
 #include "../../script_cb.h"
 #include "../tm/tm_load.h"
 #include "../dialog/dlg_load.h"
-#include "../proto_hep/hep.h"
-#include "../proto_hep/hep_cb.h"
 #include "../../mod_fix.h"
 #include "siptrace.h"
 
+/* trace info context position */
+int sl_ctx_idx=-1;
 
 /* DB structures used for all queries */
 db_key_t db_keys[NR_KEYS];
@@ -60,8 +60,9 @@ static db_ps_t siptrace_ps = NULL;
 struct tm_binds tmb;
 struct dlg_binds dlgb;
 
-proto_hep_api_t hep_api;
-load_hep_f load_hep;
+trace_proto_t tprot;
+
+trace_type_id_t sip_trace_id;
 
 /* module function prototypes */
 static int mod_init(void);
@@ -92,11 +93,64 @@ int *trace_on_flag = NULL;
 static str trace_local_proto = {NULL, 0};
 static str trace_local_ip = {NULL, 0};
 static unsigned short trace_local_port = 0;
-static int sl_ctx_idx=-1;
-static int default_hep_version=3;
-static int default_hep_proto=PROTO_HEP_TCP;
 
 tlist_elem_p trace_list=NULL;
+
+
+/**
+ * SIPTRACE FUNCTIONS
+ *
+ * **/
+static int sip_trace_fixup(void **param, int param_no);
+static int sip_trace_w(struct sip_msg*, char*, char*, char*, char*);
+static int sip_trace(struct sip_msg*, trace_info_p);
+
+static int trace_dialog(struct sip_msg*, trace_info_p);
+static int trace_transaction(struct sip_msg* msg, trace_info_p info,
+								char dlg_tran);
+
+
+static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps);
+static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps);
+static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps);
+static void trace_msg_out(struct sip_msg* req, str  *buffer,
+			struct socket_info* send_sock, int proto, union sockaddr_union *to,
+			trace_info_p info);
+static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *param);
+
+/*
+ * callback used for statelessly forwarded requests; also catches the ACK in
+ * stateful transaction
+ */
+static void trace_slreq_out(struct sip_msg* req, str *buffer,int rpl_code,
+				union sockaddr_union *to, struct socket_info *sock, int proto);
+static void trace_slreply_out(struct sip_msg* req, str *buffer,int rpl_code,
+				union sockaddr_union *dst, struct socket_info *sock, int proto);
+
+#if 0
+static void trace_slack_in(struct sip_msg* req, str *buffer,int rpl_code,
+				union sockaddr_union *dst, struct socket_info *sock, int proto);
+#endif
+
+static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
+
+static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri);
+static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
+		unsigned short fromport, str *toproto, str *toip,
+		unsigned short toport, trace_dest dest);
+
+
+
+static int pipport2su (str *sproto, str *ip, unsigned short port,
+			union sockaddr_union *tmp_su, unsigned int *proto);
+
+static int parse_trace_id(unsigned int type, void *val);
+
+void free_trace_info_pkg(void *param);
+void free_trace_info_shm(void *param);
+
+
+
 
 /*
  * Exported functions
@@ -108,6 +162,9 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"sip_trace", (cmd_function)sip_trace_w, 3, sip_trace_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"sip_trace", (cmd_function)sip_trace_w, 4, sip_trace_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"load_siptrace", (cmd_function) bind_siptrace_proto, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -255,7 +312,7 @@ get_db_struct(str *url, str *tb_name, st_db_struct_t **st_db)
 }
 
 static int
-parse_siptrace_uri(const str *token, str *uri, str *param1, str* param2)
+parse_siptrace_uri(const str *token, str *uri, str *param1)
 {
 	enum states {ST_TOK_NAME, ST_TOK_VALUE, ST_TOK_END};
 	enum states state = ST_TOK_NAME;
@@ -276,8 +333,6 @@ parse_siptrace_uri(const str *token, str *uri, str *param1, str* param2)
 
 	static str uri_str={"uri", sizeof("uri")-1};
 	static str tb_name_str={"table", sizeof("table")-1};
-	static str version_name_str={"version", sizeof("version")-1};
-	static str transport_name_str={"transport", sizeof("transport")-1};
 
 	str name={NULL, 0}, value={NULL, 0};
 
@@ -350,17 +405,9 @@ parse_siptrace_uri(const str *token, str *uri, str *param1, str* param2)
 			}
 
 			if (!(found_bitmask&HAVE_PARAM1)
-				&& ((uri_type == TYPE_DB && !str_strcasecmp(&tb_name_str, &name))
-					|| (uri_type == TYPE_HEP &&
-						!str_strcasecmp(&version_name_str, &name) ) ) ) {
+				&& ((uri_type == TYPE_DB && !str_strcasecmp(&tb_name_str, &name))) ) {
 				found_bitmask |= HAVE_PARAM1;
 				*param1 = value;
-			}
-
-			if (!(found_bitmask&HAVE_PARAM2)
-					&& !str_strcasecmp(&transport_name_str, &name)) {
-				found_bitmask |= HAVE_PARAM2;
-				*param2 = value;
 			}
 
 			state=ST_TOK_END;
@@ -488,15 +535,11 @@ static int parse_siptrace_id(str *suri)
 
 	unsigned int hash, param_hash;
 
-	char *new_url;
-
 	str name={NULL, 0};
 	str trace_uri;
-	str param1={NULL, 0}, param2={NULL,0};
+	str param1={NULL, 0};
 	tlist_elem_p    elem;
 	enum types uri_type;
-
-	unsigned int hep_version;
 
 
 	if (suri == NULL) {
@@ -521,7 +564,7 @@ static int parse_siptrace_id(str *suri)
 
 	PARSE_NAME(suri, name); /*parse '[<name>]'*/
 
-	if (parse_siptrace_uri(suri, &trace_uri, &param1, &param2) < 0) {
+	if (parse_siptrace_uri(suri, &trace_uri, &param1) < 0) {
 		LM_ERR("invalid uri <%.*s>\n", suri->len, suri->s);
 		return -1;
 	}
@@ -530,14 +573,6 @@ static int parse_siptrace_id(str *suri)
 
 	if (IS_HEP_URI(trace_uri)) {
 		uri_type = TYPE_HEP;
-		if (param1.s && param1.len) {
-			if (param2.s && param2.len) {
-				param_hash = core_hash(&param1, &param2, 0);
-			} else {
-				param_hash = core_hash(&param1, NULL, 0);
-			}
-			hash^= param_hash;
-		}
 	} else if (IS_SIP_URI(trace_uri)) {
 		uri_type = TYPE_SIP;
 	} else {
@@ -551,17 +586,6 @@ static int parse_siptrace_id(str *suri)
 	}
 
 	LIST_SEARCH(trace_list, uri_type, hash);
-
-	if (uri_type == TYPE_HEP) {
-		new_url = pkg_malloc(trace_uri.len);
-		if (new_url == NULL) {
-			LM_ERR("no more pkg mem!\n");
-			return -1;
-		}
-		memcpy(new_url, "sip", 3);
-		memcpy(new_url+3, trace_uri.s+3, trace_uri.len-3);
-		trace_uri.s = new_url;
-	}
 
 	ALLOC_EL(elem, sizeof(tlist_elem_t));
 
@@ -578,64 +602,15 @@ static int parse_siptrace_id(str *suri)
 					trace_uri.len, trace_uri.s, param1.len, param1.s);
 			return -1;
 		}
-	} else {
-		if (uri_type == TYPE_HEP) {
-			elem->el.hep = pkg_malloc(sizeof(st_hep_struct_t));
-			if (elem->el.hep == NULL) {
-				LM_ERR("no more pkg mem!\n");
-				return -1;
-			}
-			memset(elem->el.hep, 0, sizeof(st_hep_struct_t));
-		}
-
-		if (parse_uri(trace_uri.s, trace_uri.len,
-					uri_type == TYPE_SIP ? &elem->el.uri: &elem->el.hep->uri) < 0) {
+	} else if (uri_type == TYPE_SIP) {
+		if (parse_uri(trace_uri.s, trace_uri.len, &elem->el.uri) < 0) {
 			LM_ERR("failed to parse the URI!\n");
 			return -1;
 		}
-
-		if (uri_type == TYPE_HEP) {
-			/* version */
-			if (param1.s && param1.len) {
-				if (str2int(&param1, &hep_version) < 0) {
-					LM_ERR("invalid hep version parameter!\n");
-					return -1;
-				}
-
-				if (hep_version < 1 || hep_version > 3) {
-					LM_ERR("invalid hep protocol version %d\n", hep_version);
-					return -1;
-				}
-
-				elem->el.hep->version = hep_version;
-			} else {
-				elem->el.hep->version = default_hep_version;
-			}
-
-			if (param2.s && param2.len) {
-				if (IS_UDP(param2)) {
-					elem->el.hep->transport = PROTO_HEP_UDP;
-				} else if (IS_TCP(param2)) {
-					elem->el.hep->transport = PROTO_HEP_TCP;
-				} else {
-					LM_ERR("Invalid transport protocol [%.*s]\n",
-							param2.len, param2.s);
-					return -1;
-				}
-			} else {
-				if (elem->el.hep->version == 3)
-					elem->el.hep->transport = default_hep_proto;
-				else
-					elem->el.hep->transport = PROTO_HEP_UDP;
-			}
-
-			/* don't allow TCP for version 1 and 2 */
-			if ((elem->el.hep->version == 1 || elem->el.hep->version == 2) &&
-					elem->el.hep->transport == PROTO_HEP_TCP) {
-				LM_ERR("TCP not allowed for HEPv%d\n", elem->el.hep->version);
-				return -1;
-			}
-		}
+	} else {
+		/* jump over 'hep:' prefix and keep the name; will be loaded in mod init */
+		elem->el.hep.name.s = trace_uri.s + HEP_PREFIX_LEN;
+		elem->el.hep.name.len = trace_uri.len - HEP_PREFIX_LEN;
 	}
 
 
@@ -858,19 +833,25 @@ static int mod_init(void)
 		if (it->type!=TYPE_HEP)
 			continue;
 
-		LM_DBG("Loading hep api!\n");
-		load_hep = (load_hep_f)find_export("load_hep", 1, 0);
-		if (!load_hep) {
-			LM_ERR("Can't bind proto hep!\n");
-			return -1;
+		if (tprot.get_trace_dest_by_name == NULL) {
+			LM_DBG("Loading tracing protocol!\n");
+			/*
+			 * if more tracing protocols shall implement the api then
+			 * this should be a modparam
+			 */
+			if (trace_prot_bind(TRACE_PROTO, &tprot)) {
+				LM_ERR("Failed to bind tracing protocol!\n");
+				return -1;
+			}
 		}
 
-		if (load_hep(&hep_api)) {
-			LM_ERR("can't bind proto hep\n");
+		it->el.hep.hep_id = tprot.get_trace_dest_by_name(&it->el.hep.name);
+		if (it->el.hep.hep_id == NULL) {
+			LM_ERR("hep id not found!\n");
 			return -1;
 		}
-
-		break;
+		LM_DBG("hep id {%.*s} loaded succesfully!\n",
+					it->el.hep.name.len, it->el.hep.name.s);
 	}
 
 	/* set db_keys/vals info */
@@ -883,7 +864,7 @@ static int mod_init(void)
 		it->hash = core_hash(&it->name, NULL, 0);
 		it->traceable=shm_malloc(sizeof(unsigned char));
 		if (it->traceable==NULL) {
-			LM_ERR("no mre shmem!\n");
+			LM_ERR("no more shmem!\n");
 			return -1;
 		}
 		*it->traceable = trace_on;
@@ -893,6 +874,12 @@ static int mod_init(void)
 	do_sort(&trace_list);
 	if (trace_list==NULL) {
 		LM_WARN("No trace id defined! The module is useless!\n");
+	}
+
+	sip_trace_id=register_traced_type(SIP_TRACE_TYPE_STR);
+	if (sip_trace_id == -1) {
+		LM_ERR("failed to get an id for \"%s\" tracing!\n", SIP_TRACE_TYPE_STR);
+		return -1;
 	}
 
 	return 0;
@@ -940,7 +927,6 @@ static void destroy(void)
 	}
 
 	if (last)
-		pkg_free(last);
 
 	if (trace_on_flag)
 		shm_free(trace_on_flag);
@@ -999,11 +985,11 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 
 		switch (it->type) {
 		case TYPE_HEP:
-			if (trace_send_hep_duplicate(&db_vals[0].val.blob_val,
+			if (send_trace_proto_duplicate(&db_vals[0].val.blob_val,
 					&db_vals[4].val.str_val, &db_vals[5].val.str_val,
 					db_vals[6].val.int_val, &db_vals[7].val.str_val,
 					&db_vals[8].val.str_val, db_vals[9].val.int_val,
-					it->el.hep) < 0) {
+					it->el.hep.hep_id) < 0) {
 				LM_ERR("Failed to duplicate with hep to <%.*s:%.*s>\n",
 						it->el.uri.host.len, it->el.uri.host.s,
 						it->el.uri.port.len, it->el.uri.port.s);
@@ -1047,10 +1033,6 @@ static void trace_transaction_dlgcb(struct dlg_cell* dlg, int type,
 
 	info=*params->param;
 
-	/* for sl callbacks */
-	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx,
-				sl_ctx_idx, info);
-
 	if (trace_transaction(params->msg, info, 1)<0) {
 		LM_ERR("trace transaction failed!\n");
 		return;
@@ -1074,6 +1056,9 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info,
 {
 	if (msg==NULL)
 		return 0;
+
+	/* context for the request message */
+	SET_SIPTRACE_CONTEXT(info);
 
 	if(tmb.register_tmcb( msg, 0, TMCB_REQUEST_BUILT, trace_onreq_out, info, 0) <=0)
 	{
@@ -1209,7 +1194,49 @@ static int st_parse_flags(str *sflags)
 	}
 
 	return flags;
+}
 
+int st_parse_types(str* stypes)
+{
+
+	str tok;
+	int have_next=1, i, ret=0;
+	char* end;
+	const char** trace_names;
+	static const char type_delim = '|';
+
+	trace_names = get_trace_names();
+
+	while (have_next) {
+		end=q_memchr(stypes->s, type_delim, stypes->len);
+		if (end==NULL) {
+			have_next = 0;
+			tok.len = stypes->len;
+		} else {
+			tok.len = end - stypes->s;
+		}
+
+		tok.s = stypes->s;
+
+		stypes->len -= tok.len + 1/* delimiter */;
+		stypes->s = end + 1;
+
+		str_trim_spaces_lr(tok);
+
+		for (i=0; i<get_trace_names_no(); i++) {
+			if (!strncmp(tok.s, trace_names[i], strlen(trace_names[i]))) {
+				ret |= (1<<i);
+				break;
+			}
+		}
+		if (i==get_trace_names_no()) {
+			/* the trace type was not found; throw error */
+			LM_ERR("trace type [%.*s] wasn't defined!\n", tok.len, tok.s);
+			return -1;
+		}
+	}
+
+	return ret;
 }
 
 
@@ -1244,7 +1271,7 @@ static int sip_trace_fixup(void **param, int param_no)
 	pv_elem_p el;
 	tid_param_p tparam;
 
-	if (param_no < 1 || param_no > 3) {
+	if (param_no < 1 || param_no > 4) {
 		LM_ERR("bad param number!\n");
 		return -1;
 	}
@@ -1346,7 +1373,11 @@ static int sip_trace_fixup(void **param, int param_no)
 		*param = (void *)((unsigned long)_flags);
 
 		break;
+	/* types of messages to be traced */
 	case 3:
+
+		return fixup_spve(param);
+	case 4:
 		_trace_attrs.s = (char *)*param;
 		_trace_attrs.len = strlen(_trace_attrs.s);
 
@@ -1387,14 +1418,18 @@ int trace_has_totag(struct sip_msg* _m)
 
 /* siptrace wrapper that verifies if the trace is on */
 static int sip_trace_w(struct sip_msg *msg, char *param1,
-									char *param2, char *param3)
+									char *param2, char *param3, char *param4)
 {
 
 	int extra_len=0;
 	int trace_flags;
+	int trace_types=0;
 
 	str tid_name;
 	str trace_attrs={NULL, 0};
+	str trace_types_s;
+
+	gparam_p gp;
 
 	tlist_elem_p list;
 	tid_param_p tparam;
@@ -1472,8 +1507,32 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 		trace_flags = TRACE_MESSAGE;
 	}
 
+	/* parse trace types */
 	if (param3 != NULL) {
-		if (pv_printf_s(msg, (pv_elem_p)param3, &trace_attrs) < 0) {
+		gp = (gparam_p)param3;
+		if (gp->type == GPARAM_TYPE_PVE) {
+			/* they are already parsed */
+			if (pv_printf_s(msg, gp->v.pve, &trace_types_s) < 0) {
+				LM_ERR("failed to get trace_types param!\n");
+				return -1;
+			}
+		} else {
+			trace_types_s = gp->v.sval;
+		}
+
+		trace_types = st_parse_types(&trace_types_s);
+		if (trace_types == -1) {
+			LM_ERR("failed to parse trace types!\n");
+			return -1;
+		}
+	} else {
+		/* if no flags defined at least sip type of tracing shall be made
+		 * else the function will be useless */
+		trace_types = sip_trace_id;
+	}
+
+	if (param4 != NULL) {
+		if (pv_printf_s(msg, (pv_elem_p)param4,  &trace_attrs) < 0) {
 			LM_ERR("failed to get trace_attrs param!\n");
 			return -1;
 		}
@@ -1526,10 +1585,10 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 	}
 
 	info->trace_list=list;
+	info->trace_types = trace_types;
 
 	if (trace_flags != TRACE_MESSAGE) {
-		context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx,
-					sl_ctx_idx, info);
+		SET_SIPTRACE_CONTEXT(info);
 		/* this flag here will help catching
 		 * stateless replies(sl_send_reply(...))*/
 		msg->msg_flags |= FL_USE_SIPTRACE;
@@ -1688,8 +1747,7 @@ static void trace_slreq_out(struct sip_msg* req, str *buffer,int rpl_code,
 {
 	trace_info_p info;
 
-	info = context_get_ptr(CONTEXT_GLOBAL,
-				current_processing_ctx, sl_ctx_idx);
+	info = GET_SIPTRACE_CONTEXT;
 
 	trace_msg_out(req, buffer, sock, proto, to, info);
 }
@@ -1706,7 +1764,7 @@ static void trace_slreply_out(struct sip_msg* req, str *buffer,int rpl_code,
 
 	trace_info_p info;
 
-	info = context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, sl_ctx_idx);
+	info = GET_SIPTRACE_CONTEXT;
 	if (info == NULL) {
 		LM_BUG("null trace info!something is wrong here \n");
 		return;
@@ -1900,6 +1958,9 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	struct sip_msg* req;
 	char statusbuf[INT2STR_MAX_LEN];
 	int len;
+
+	/* context for replies */
+	SET_SIPTRACE_CONTEXT((trace_info_p)(*ps->param));
 
 	if(t==NULL || t->uas.request==0 || ps==NULL)
 	{
@@ -2135,13 +2196,13 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd_tree, void* param )
 				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("Database"));    \
                                                                                     \
 			if (_tid_el->type==TYPE_HEP) {                                          \
-				memcpy(uri, _tid_el->el.hep->uri.host.s, _tid_el->el.hep->uri.host.len);      \
-				uri[_tid_el->el.hep->uri.host.len] = ':';                                \
-				memcpy(uri+_tid_el->el.hep->uri.host.len+1,                              \
-						_tid_el->el.hep->uri.port.s, _tid_el->el.hep->uri.port.len);          \
+				memcpy(uri, _tid_el->el.hep.hep_id->ip.s, _tid_el->el.hep.hep_id->ip.len);      \
+				uri[_tid_el->el.hep.hep_id->ip.len] = ':';                                \
+				memcpy(uri+_tid_el->el.hep.hep_id->ip.len + 1,                                 \
+						_tid_el->el.hep.hep_id->port.s, _tid_el->el.hep.hep_id->port.len);      \
                                                                                     \
 				add_mi_attr(_node, 0, MI_SSTR("uri"), uri,                      \
-						_tid_el->el.hep->uri.host.len + 1 + _tid_el->el.hep->uri.port.len);    \
+						_tid_el->el.hep.hep_id->ip.len + 1 + _tid_el->el.hep.hep_id->port.len);    \
 			} else if (_tid_el->type==TYPE_SIP) {                 \
 				memcpy(uri, _tid_el->el.uri.host.s, _tid_el->el.uri.host.len);      \
 				uri[_tid_el->el.uri.host.len] = ':';                                \
@@ -2316,83 +2377,47 @@ static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri)
 	return ret;
 }
 
-static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
+
+static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 		unsigned short fromport, str *toproto, str *toip,
-		unsigned short toport, st_hep_struct_t* hep)
+		unsigned short toport, trace_dest dest)
 {
-	struct proxy_l * p=NULL /* make gcc happy */;
-	int ret;
 	union sockaddr_union from_su;
 	union sockaddr_union to_su;
 	unsigned int proto;
-	union sockaddr_union* to = NULL;
 
-	int heplen;
-	char *hepbuf;
+	trace_message trace_msg;
 
 	if(body->s==NULL || body->len <= 0)
 		return -1;
 
+	if (tprot.create_trace_message == NULL || tprot.send_message == NULL) {
+		LM_ERR("Trace api functions not implemented!\n");
+		return -1;
+	}
 
-	/* Convert proto:ip:port to sockaddress union SRC IP */
-	/* proto is going to be converted to netinet proto */
 	if (pipport2su(fromproto, fromip, fromport, &from_su, &proto)==-1 ||
 	(pipport2su(toproto, toip, toport, &to_su, &proto)==-1))
-		goto error;
+		return -1;
 
-	/* check if from and to are in the same family*/
-	if(from_su.s.sa_family != to_su.s.sa_family) {
-		LM_ERR("ERROR: trace_send_hep_duplicate: interworking detected ?\n");
-		goto error;
-	}
+	trace_msg = tprot.create_trace_message(&from_su, &to_su, proto, body,
+			HEP_PROTO_TYPE_SIP, dest);
 
-
-	/* create a temporary proxy*/
-	p=mk_proxy(&hep->uri.host, (hep->uri.port_no)?hep->uri.port_no:SIP_PORT,proto, 0);
-	if (p==0){
-		LM_ERR("bad host name in uri\n");
+	if (trace_msg == NULL) {
+		LM_ERR("failed to build trace message!\n");
 		return -1;
 	}
 
-	to=(union sockaddr_union*)pkg_malloc(sizeof(union sockaddr_union));
-	if (to==0){
-		LM_ERR("out of pkg memory\n");
-		return -1;
+	/* FIXME add correlation id chunk??? */
+
+	if (tprot.send_message(trace_msg, dest, NULL) < 0) {
+		LM_ERR("failed to forward message to destination!\n");
+		return -1;;
 	}
 
-	hostent2su(to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
+	tprot.free_message(trace_msg);
 
-	if (hep_api.pack_hep(&from_su, &to_su, proto, body->s, body->len,
-				hep->version, &hepbuf, &heplen)) {
-		LM_ERR("failed to do hep packing\n");
-		return -1;
-	}
-
-	ret = -1;
-
-	do {
-		/* send sock is being found in msg_send() function*/
-		if (msg_send(NULL, hep->transport, to, 0, hepbuf, heplen, NULL)<0){
-			LM_ERR("cannot send duplicate message\n");
-			continue;
-		}
-		ret = 0;
-		break;
-	}while( get_next_su( p, to, 0)==0 );
-	free_proxy(p); /* frees only p content, not p itself */
-	pkg_free(p);
-	pkg_free(to);
-	pkg_free(hepbuf);
-
-	return ret;
-error:
-	if(p)
-	{
-		free_proxy(p); /* frees only p content, not p itself */
-		pkg_free(p);
-	}
-	if(to) pkg_free(to);
-	return -1;
+	return 0;
 }
 
 /*!
@@ -2464,3 +2489,121 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 	LM_ERR("host <%.*s> is not an IP\n",host_uri.len,host_uri.s);
 	return -1;
 }
+
+/**
+ * SIPTRACE API IMPLEMENTATION
+ *
+ *
+ */
+static char* trace_names[MAX_TRACE_NAMES];
+static int trace_names_no=0;
+
+int get_trace_types(void)
+{
+	trace_info_p info = GET_SIPTRACE_CONTEXT;
+	if (info==NULL)
+		return -1;
+
+	return info->trace_types;
+}
+
+int get_trace_dest_hash(void)
+{
+	trace_info_p info = GET_SIPTRACE_CONTEXT;
+	if (info==NULL || info->trace_list == NULL)
+		return 0;
+
+	return info->trace_list->hash;
+}
+
+trace_dest get_next_trace_dest(trace_dest last_dest, siptrace_id_hash_t hash)
+{
+	int found_last=0;
+
+	tlist_elem_p it;
+	trace_info_p info = GET_SIPTRACE_CONTEXT;
+
+	if (info==NULL)
+		return NULL;
+
+	if (last_dest == NULL)
+		found_last = 1;
+
+	for (it=info->trace_list; it && it->hash == hash; it=it->next) {
+		if (it->type == TYPE_HEP) {
+			if (found_last)
+				return it->el.hep.hep_id;
+			else if (it->el.hep.hep_id == last_dest)
+				found_last = 1;
+		}
+	}
+
+	return NULL;
+}
+
+
+trace_type_id_t register_traced_type(char* name)
+{
+	if (trace_names_no + 1 == MAX_TRACE_NAMES) {
+		LM_BUG("more than %ld types of tracing!"
+				"Increase MAX_TRACE_NAMES value!\n", MAX_TRACE_NAMES);
+		return -1;
+	}
+
+	trace_names[trace_names_no] = name;
+
+	return trace_names_no++;
+}
+
+siptrace_id_hash_t is_id_traced(int id)
+{
+	int trace_types = get_trace_types();
+
+	if (trace_types == -1)
+		return 0;
+
+	if (1<<id & trace_types)
+		return get_trace_dest_hash();
+
+	return 0;
+}
+
+const char** get_trace_names(void)
+{
+	return (const char **)trace_names;
+}
+
+int get_trace_names_no(void)
+{
+	return trace_names_no;
+}
+
+int bind_siptrace_proto(siptrace_api_t* api)
+{
+
+	if (api == NULL) {
+		LM_ERR("invalid parameter value!\n");
+		return -1;
+	}
+
+	if (tprot.get_trace_dest_by_name == NULL) {
+		LM_DBG("Tracing prtocol not loaded!"
+				" Trying to bind it!\n");
+		if (trace_prot_bind(TRACE_PROTO, &tprot)) {
+			LM_ERR("Failed to bind tracing protocol!\n");
+			return -1;
+		}
+	}
+
+	api->trace_api = &tprot;
+	api->register_type = register_traced_type;
+	api->is_id_traced = &is_id_traced;
+	api->get_next_destination = &get_next_trace_dest;
+
+	return 0;
+}
+
+
+
+
+
