@@ -345,6 +345,7 @@ static int backup_config(void) {
 	FILE * from = NULL, * to = NULL;
 	char * backup_file;
 	int ch;
+	int ret = -1;
 	LM_INFO("start configuration backup\n");
 	if((backup_file = pkg_malloc(strlen(config_file) + strlen (".bak") + 1)) == NULL){
 		LM_ERR("out of private memory\n");
@@ -387,21 +388,23 @@ static int backup_config(void) {
 
 	if (fclose(from)==EOF) {
 		LM_ERR("Error closing source file.\n");
-		goto errout;
+		goto close_to;
 	}
 
 	if (fclose(to)==EOF) {
 		LM_ERR("Error closing destination file.\n");
-		goto errout;
+		goto exit;
 	}
 	LM_NOTICE("backup written to %s\n", backup_file);
-	pkg_free(backup_file);
-	return 0;
+	ret = 0;
+	goto exit;
 errout:
-	if (to)
-		fclose(to);
 	if (from)
 		fclose(from);
+close_to:
+	if (to)
+		fclose(to);
+exit:
 	pkg_free(backup_file);
-	return -1;
+	return ret;
 }
