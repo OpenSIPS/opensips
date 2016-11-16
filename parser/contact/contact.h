@@ -52,6 +52,8 @@ typedef struct contact {
 
 /*
  * Parse contacts in a Contact HF
+ *
+ * WARNING: "_s" will be mangled, make a copy beforehand!
  */
 int parse_contacts(str* _s, contact_t** _c);
 
