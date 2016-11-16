@@ -116,7 +116,7 @@ char* parse_method(char* start, char* end, unsigned int* method)
 		case 'i':
 			if(end && max<4)
 				goto unknown;
-			if(start[1]=='n' || start[1]=='N')
+			if(start[1]!='n' && start[1]!='N')
 				goto unknown;
 
 			if ((start[2]=='f' || start[2]=='F')
