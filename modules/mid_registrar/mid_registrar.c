@@ -54,6 +54,11 @@
 #include "../../data_lump_rpl.h"
 #include "../../net/trans.h"
 
+str register_method = str_init("REGISTER");
+str contact_hdr = str_init("Contact: ");
+str expires_hdr = str_init("Expires: ");
+str expires_param = str_init("expires");
+
 struct usrloc_api ul_api;
 struct tm_binds tm_api;
 struct sig_binds sig_api;
@@ -94,6 +99,8 @@ int urecord_data_idx;
 
 str sock_hdr_name = {0,0};
 
+
+char uri_buf[MAX_URI_SIZE];
 
 
 static time_t act_time;
@@ -380,14 +387,14 @@ static int mod_init(void)
 			return -1;
 		}
 
-		if (reg_mode == MID_REG_THROTTLE_CT) {
-			if (ul_api.register_ulcb(
-				UL_CONTACT_INSERT|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE,
-				mid_reg_ct_event, &ucontact_data_idx) < 0) {
-				LM_ERR("cannot register usrloc contact callback\n");
-				return -1;
-			}
-		} else if (reg_mode == MID_REG_THROTTLE_AOR) {
+		if (ul_api.register_ulcb(
+			UL_CONTACT_INSERT|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE,
+			mid_reg_ct_event, &ucontact_data_idx) < 0) {
+			LM_ERR("cannot register usrloc contact callback\n");
+			return -1;
+		}
+
+		if (reg_mode == MID_REG_THROTTLE_AOR) {
 			if (ul_api.register_ulcb(UL_AOR_INSERT|UL_AOR_DELETE|UL_AOR_EXPIRE,
 				mid_reg_aor_event, &urecord_data_idx) < 0) {
 				LM_ERR("cannot register usrloc AoR callback\n");

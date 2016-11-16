@@ -136,8 +136,6 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	int tlen;
 	char *turi;
 
-	char ubuf[MAX_URI_SIZE];
-
 	qvalue_t tq;
 
 	LM_DBG("mid_reg_lookup ... \n");
@@ -250,7 +248,7 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		}
 	}
 
-	pst.s = ubuf;
+	pst.s = uri_buf;
 	pst.len = MAX_URI_SIZE;
 	if (print_uri(&dec_uri, &pst) != 0) {
 		LM_ERR("failed to print URI\n");

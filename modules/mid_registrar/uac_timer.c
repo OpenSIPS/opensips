@@ -35,7 +35,6 @@
 static struct list_head *uac_timer_queue;
 static gen_lock_t *queue_lock;
 
-static str register_method = str_init("REGISTER");
 
 /* typically used to send out De-REGISTER requests */
 str mid_reg_from_uri   = { "sip:registrar@localhost", 23 };

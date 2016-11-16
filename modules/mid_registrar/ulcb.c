@@ -39,11 +39,6 @@
 char extra_hdrs_buf[512];
 static str extra_hdrs={extra_hdrs_buf, 512};
 
-static str register_method = str_init("REGISTER");
-static str contact_hdr = str_init("Contact: ");
-static str expires_hdr = str_init("Expires: ");
-static str expires_param = str_init(";expires=");
-
 static void build_unregister_hdrs(struct mid_reg_info *mri)
 {
 	char *p;
@@ -62,8 +57,10 @@ static void build_unregister_hdrs(struct mid_reg_info *mri)
 
 	if (1) {
 		/* adding exiration time as a parameter */
+		*p++ = ';';
 		memcpy(p, expires_param.s, expires_param.len);
 		p += expires_param.len;
+		*p++ = '=';
 	} else {
 		/* adding exiration time as a header */
 		memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
@@ -122,8 +119,10 @@ void mid_reg_ct_event(void *binding, int type, void **data)
 	if (type & UL_CONTACT_INSERT)
 		*data = get_ct();
 
-	if (type & UL_CONTACT_UPDATE)
+	if (type & UL_CONTACT_UPDATE) {
+		LM_DBG("settting e_out to %d\n", get_ct()->expires_out);
 		mri->expires_out = get_ct()->expires_out;
+	}
 
 	if (type & (UL_CONTACT_DELETE|UL_CONTACT_EXPIRE)) {
 		unregister_contact(mri);

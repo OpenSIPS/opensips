@@ -64,11 +64,11 @@ struct mid_reg_info {
 
 	str ct_uri;
 
-	unsigned int max_contacts;
-	unsigned int flags;
+	int max_contacts;
+	int flags;
 
-	unsigned int expires;
-	unsigned int expires_out;
+	int expires;
+	int expires_out;
 
 	unsigned int last_register_out_ts;
 
@@ -122,6 +122,8 @@ struct save_ctx {
 	unsigned int expires_out;
 };
 
+extern char uri_buf[MAX_URI_SIZE];
+
 extern str sock_hdr_name;
 extern str realm_prefix;
 extern int case_sensitive;
@@ -143,6 +145,11 @@ extern unsigned int outbound_expires;
 extern enum mid_reg_mode reg_mode;
 extern enum mid_reg_routing_mode routing_mode;
 extern enum mid_reg_matching_mode matching_mode;
+
+extern str register_method;
+extern str contact_hdr;
+extern str expires_hdr;
+extern str expires_param;
 
 extern str matching_param;
 
