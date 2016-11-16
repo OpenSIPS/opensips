@@ -220,7 +220,7 @@ opensips_pframework_create() #pars: none
 	fi
 
 
-	oet_answer $INSTALL_EXTRA_TABLES "Add provisionning framework for extra tables? (y/n): "
+	get_answer $INSTALL_EXTRA_TABLES "Add provisionning framework for extra tables? (y/n): "
 	if [ "$ANSWER" = "y" ]; then
 		PI_MODULES="$PI_MODULES $EXTRA_MODULES"
 	fi
