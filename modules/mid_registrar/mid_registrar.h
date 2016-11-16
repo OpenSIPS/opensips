@@ -63,6 +63,7 @@ struct mid_reg_info {
 	str next_hop;
 
 	str ct_uri;
+	str ct_body; /* if present, overrides ct_uri */
 
 	int max_contacts;
 	int flags;

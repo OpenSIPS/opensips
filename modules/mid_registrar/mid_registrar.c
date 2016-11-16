@@ -444,6 +444,9 @@ void mri_free(struct mid_reg_info *mri)
 	if (mri->ct_uri.s)
 		shm_free(mri->ct_uri.s);
 
+	if (mri->ct_body.s)
+		shm_free(mri->ct_body.s);
+
 #ifdef EXTRA_DEBUG
 	memset(mri, 0, sizeof *mri);
 #endif

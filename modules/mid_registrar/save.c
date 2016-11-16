@@ -1414,7 +1414,7 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 	int tcp_check;
 	struct sip_uri uri;
 	struct lump *anchor;
-	str ct_uri;
+	str ct;
 	char *buf;
 	int len;
 
@@ -1516,6 +1516,10 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		if (!r) {
 			if (reg_mode == MID_REG_THROTTLE_AOR) {
 				cti = mri_dup(mri);
+				ct.len = _c->len;
+				ct.s = _c->name.s;
+				shm_str_dup(&cti->ct_body, &ct);
+
 				cti->expires_out = e_out;
 				cti->last_register_out_ts = mri->last_register_out_ts;
 				set_ct(cti);
@@ -1553,10 +1557,10 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 
 			if (reg_mode != MID_REG_MIRROR) {
 				cti = mri_dup(mri);
-				ct_uri.len = _c->uri.len;
-				ct_uri.s = _c->uri.s;
+				ct.len = _c->uri.len;
+				ct.s = _c->uri.s;
 
-				shm_str_dup(&cti->ct_uri, &ct_uri);
+				shm_str_dup(&cti->ct_uri, &ct);
 
 				cti->expires = e;
 				cti->expires_out = e_out;
