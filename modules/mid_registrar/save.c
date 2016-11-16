@@ -1730,6 +1730,8 @@ static int fix_rpl_contact_by_ct(struct sip_msg *req, struct sip_msg *rpl)
 		LM_DBG("> hostport for dec_uri '%.*s' is '%.*s\n", dec_uri.len,
 		       dec_uri.s, hostport.len, hostport.s);
 
+		/* ERASE host:port part */
+
 		anchor = del_lump(rpl, hostport.s - rpl->buf /* offset */,
 		                  hostport.len, HDR_CONTACT_T);
 		if (!anchor) {
@@ -1760,6 +1762,8 @@ static int fix_rpl_contact_by_ct(struct sip_msg *req, struct sip_msg *rpl)
 
 		LM_DBG("deleting param '%.*s' @ %p\n", uri.u_name[i].len, uri.u_name[i].s, uri.u_name[i].s);
 
+		/* ERASE ";param=value" part */
+
 		if (matching_mode == MATCH_BY_PARAM) {
 			/* remove our added matching parameter on the way back to the UAC */
 			if (!del_lump(rpl, uri.u_name[i].s - rpl->buf - 1 /* offset */,
@@ -1779,7 +1783,6 @@ static int fix_rpl_contact_by_ct(struct sip_msg *req, struct sip_msg *rpl)
 void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 {
 	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
-	//udomain_t *ud = (udomain_t *)dom;
 	urecord_t *rec = NULL;
 	struct sip_msg *rpl = params->rpl;
 	struct sip_msg *req = params->req;
@@ -1793,77 +1796,34 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	if (code < 200 || code >= 300)
 		return;
 
-	//------------------------------------------------
-	/**
-	 * TODO
-	 *
-	 * if throttling_mode == True:
-	 *     lock_udomain()
-	 *     save_contacts()
-	 *     urec = get_urecord()
-	 *     if urec->contacts == 1:
-	 *         ref(urec)
-	 *         write_lock(uac_timer_queue)
-	 *         add_to_pending(urec, expires)
-	 *         write_unlock(uac_timer_queue)
-	 *     unlock_udomain()
-	 * else:
-	 *     reg_tmcb()
-	 */
 	update_act_time();
 
 	parse_reg_headers(req);
 	parse_reg_headers(rpl);
 
-	if (reg_mode != MID_REG_MIRROR &&
-	    routing_mode == ROUTE_BY_CONTACT) {
+	if (reg_mode != MID_REG_MIRROR && routing_mode == ROUTE_BY_CONTACT) {
 		LM_DBG("fixing contact domain ... \n");
 		if (reg_mode == MID_REG_THROTTLE_CT) {
 			if (fix_rpl_contact_by_ct(req, rpl))
 				LM_ERR("failed to overwrite Contact header field domain\n");
 		}
-		//else {
-		//	if (fix_rpl_contact_by_aor(req, rpl))
-		//		LM_ERR("failed to overwrite Contact header field domain\n");
-		//}
 	}
 
 	ul_api.lock_udomain(mri->dom, &mri->aor);
 
 	ul_api.get_urecord(mri->dom, &mri->aor, &rec);
-	/*
-	 * at least 1 binding for this AoR, which means the module's
-	 * UAC timer is already aware of it
-	 */
-	//if (rc == 0) {
-	//	LM_DBG("+++++ top UPDATE\n");
-	//	if (update_contacts(req, rpl, rec, mri)) {
-	//		//build_contact(rec->contacts, rpl);
-	//		ul_api.release_urecord(rec, 0);
-	//		ul_api.unlock_udomain(mri->dom, &mri->aor);
-	//		return;
-	//	}
 
-	//	//build_contact(rec->contacts, rpl);
-	//	//ul_api.release_urecord(rec, 0);
-
-	//	/* TODO: ref urecord_t */
-
-	//} else {
-	//
-		//LM_DBG("..... top INSERT\n");
-		if (reg_mode == MID_REG_THROTTLE_CT) {
-			if (insert_rpl_contacts(req, rpl, mri, &mri->aor, &rec)) {
-				ul_api.unlock_udomain(mri->dom, &mri->aor);
-				return;
-			}
-		} else if (reg_mode == MID_REG_THROTTLE_AOR) {
-			if (insert_req_contacts(req, rpl, mri, &mri->aor, &rec)) {
-				ul_api.unlock_udomain(mri->dom, &mri->aor);
-				return;
-			}
+	if (reg_mode == MID_REG_MIRROR || reg_mode == MID_REG_THROTTLE_CT) {
+		if (insert_rpl_contacts(req, rpl, mri, &mri->aor, &rec)) {
+			ul_api.unlock_udomain(mri->dom, &mri->aor);
+			return;
 		}
-	//}
+	} else if (reg_mode == MID_REG_THROTTLE_AOR) {
+		if (insert_req_contacts(req, rpl, mri, &mri->aor, &rec)) {
+			ul_api.unlock_udomain(mri->dom, &mri->aor);
+			return;
+		}
+	}
 
 	ul_api.unlock_udomain(mri->dom, &mri->aor);
 
@@ -1874,7 +1834,8 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 }
 
 /* !! retcodes: 1 or -1 !! */
-static int prepare_forward(struct sip_msg *msg, udomain_t *ud, str *aor, int expires_out)
+static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
+                           str *aor, int expires_out)
 {
 	struct mid_reg_info *mri;
 	struct to_body *from; /* this always cracks me up! */

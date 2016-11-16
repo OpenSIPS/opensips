@@ -215,57 +215,58 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		uri = *GET_RURI(_m);
 	}
 
-	if (get_match_token(&uri, &match_tok, NULL, NULL) != 0) {
-		LM_ERR("failed to get match token\n");
-		return -1;
-	}
-
-	if (decrypt_str(&match_tok, &dec_tok)) {
-		LM_ERR("failed to decrypt matching Contact param (%.*s=%.*s)\n",
-		       matching_param.len, matching_param.s,
-		       match_tok.len, match_tok.s);
-		return -1;
-	}
-
-	if (parse_uri(dec_tok.s, dec_tok.len, &dec_uri) < 0) {
-		LM_ERR("failed to parse dec URI <%.*s>\n", dec_tok.len, dec_tok.s);
-		return -1;
-	}
-
-	hostport = dec_uri.host;
-	if (dec_uri.port.len > 0)
-		hostport.len = dec_uri.port.s + dec_uri.port.len - dec_uri.host.s;
-
-	/* replace the host:port part */
-	dec_uri.port.s = NULL;
-	dec_uri.host = hostport;
-
-	/* remove the match parameter */
-	for (i = 0; i < dec_uri.u_params_no; i++) {
-		if (str_strcmp(&dec_uri.u_name[i], &matching_param) == 0) {
-			dec_uri.u_name[i].s = NULL;
-			break;
-		}
-	}
-
-	pst.s = uri_buf;
-	pst.len = MAX_URI_SIZE;
-	if (print_uri(&dec_uri, &pst) != 0) {
-		LM_ERR("failed to print URI\n");
-		return -1;
-	}
-
-	pkg_free(dec_tok.s);
-
-	if (!_s) {
-		if (set_ruri(_m, &pst) != 0) {
-			LM_ERR("failed to set R-URI\n");
+	if (reg_mode == MID_REG_THROTTLE_CT && routing_mode == ROUTE_BY_CONTACT) {
+		if (get_match_token(&uri, &match_tok, NULL, NULL) != 0) {
+			LM_ERR("failed to get match token\n");
 			return -1;
 		}
-	}
 
-	if (routing_mode == ROUTE_BY_CONTACT)
+		if (decrypt_str(&match_tok, &dec_tok)) {
+			LM_ERR("failed to decrypt matching Contact param (%.*s=%.*s)\n",
+			       matching_param.len, matching_param.s,
+			       match_tok.len, match_tok.s);
+			return -1;
+		}
+
+		if (parse_uri(dec_tok.s, dec_tok.len, &dec_uri) < 0) {
+			LM_ERR("failed to parse dec URI <%.*s>\n", dec_tok.len, dec_tok.s);
+			return -1;
+		}
+
+		hostport = dec_uri.host;
+		if (dec_uri.port.len > 0)
+			hostport.len = dec_uri.port.s + dec_uri.port.len - dec_uri.host.s;
+
+		/* replace the host:port part */
+		dec_uri.port.s = NULL;
+		dec_uri.host = hostport;
+
+		/* remove the match parameter */
+		for (i = 0; i < dec_uri.u_params_no; i++) {
+			if (str_strcmp(&dec_uri.u_name[i], &matching_param) == 0) {
+				dec_uri.u_name[i].s = NULL;
+				break;
+			}
+		}
+
+		pst.s = uri_buf;
+		pst.len = MAX_URI_SIZE;
+		if (print_uri(&dec_uri, &pst) != 0) {
+			LM_ERR("failed to print URI\n");
+			return -1;
+		}
+
+		pkg_free(dec_tok.s);
+
+		if (!_s) {
+			if (set_ruri(_m, &pst) != 0) {
+				LM_ERR("failed to set R-URI\n");
+				return -1;
+			}
+		}
+
 		return 1;
+	}
 
 	if (extract_aor(&uri, &aor,&sip_instance,&call_id) < 0) {
 		LM_ERR("failed to extract address of record\n");
