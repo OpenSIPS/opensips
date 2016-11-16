@@ -56,7 +56,7 @@ void free_contact(contact_body_t** _c);
 /*
  * Print structure, for debugging only
  */
-void print_contact(FILE* _o, contact_body_t* _c);
+void log_contact(contact_body_t* _c);
 
 
 /*
