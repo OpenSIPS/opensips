@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding='ISO-8859-1'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+
+<!ENTITY admin SYSTEM "sip_i_admin.xml">
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book>
+    <bookinfo>
+	<title>SIP-I Module</title>
+	<productname class="trade">&osipsname;</productname>
+	<authorgroup>
+	    <author>
+		<firstname>Robert-Vladut</firstname>
+		<surname>Patrascu</surname>
+		<email>vladp@opensips.org</email>
+	    </author>
+	</authorgroup>
+	<copyright>
+		<year>2016</year>
+		<holder>&osips; Project</holder>
+	</copyright>
+    </bookinfo>
+    <toc></toc>
+
+    &admin;
+
+</book>

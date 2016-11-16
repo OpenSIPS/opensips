@@ -1,0 +1,236 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+		This module offers the possibility of processing ISDN User Part(ISUP) messages encapsulated in SIP. The available operations are: reading and modifying parameters from an ISUP message, removing or adding new optional parameters, adding an ISUP part to a SIP message body. This is done explicitly via script pseudovariables and functions.
+	</para>
+	<para>
+		The supported ISUP message types are only the ones that can be included in a SIP message according to the SIP-I(SIP with encapsulated ISUP) protocol defined by ITU-T.
+	</para>
+	<para>
+		The format and specification of the ISUP messages and parameters follow the recomandations from ITU-T Rec. Q.763.
+	</para>
+	</section>
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+	<section>
+	<title>Parameters</title>
+	<section>
+		<title><varname>param_subfield_separator</varname> (str)</title>
+		<para>
+		The character to be used as separator in the subname of the $isup_param pseudovariable between the ISUP parameter name and subfield.
+		</para>
+		<para>
+		<emphasis>
+			Default value is "|".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>param_subfield_separator</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sip_i", "param_subfield_separator", ":")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>isup_mime_str</varname> (str)</title>
+		<para>
+			The string to be used for the Content-Type header field of the ISUP MIME body when creating a new ISUP part.
+		</para>
+		<para>
+		<emphasis>
+			Default value is "application/ISUP;version=itu-t92+".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>isup_mime_str</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+</section>
+
+	<section>
+	<title>Exported Functions</title>
+
+		<section>
+		<title>
+			<function moreinfo="none">add_isup_part([isup_msg_type])</function>
+		</title>
+		<para>
+			Adds a new ISUP part to the SIP message body.
+		</para>
+		<para>
+			The newly added part contains a blank ISUP message(i.e. all mandatory parameters zeroed and no optional ones) and all the required parameters should be set through $isup_param.
+		</para>
+		<para>
+			If the type of the isup message is not explicitly provided, it is automatically deduced from the SIP message as follows:
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>INVITE - IAM</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>BYE - REL</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>180, 183 - REL</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>4xx, 5xx - REL</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>200 OK INVITE - ANM</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>200 OK BYE - RLC</emphasis>.
+			</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>isup_msg_type (string)</emphasis> - name of the ISUP message to be added, as it appears in ITU-T Rec. Q.763.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,LOCAL_ROUTE.
+		</para>
+	<example>
+	<title><function>add_isup_part</function> usage</title>
+	<programlisting format="linespecific">
+...
+if ($rs == "183") {
+	# Encapsulate a CPG
+	add_isup_part("Call progress");
+	# set desired parameters
+	...
+}
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+	</section>
+
+	<section>
+	<title>Exported PseudoVariables</title>
+
+	<section>
+	<title>
+		<function moreinfo="none">$(isup_param(param_name{sep}subfield_name)[byte_index])</function>
+	</title>
+	<para>The parameter named <emphasis>param_name</emphasis> of a received or newly added ISUP message can be accessed through this read-write variable. For optional parameters, writing to a <emphasis>param_name</emphasis> that does not exist in this IUSP message will insert it. Assigning null to this variable will remove an optional parameter from the message or zeroize a mandatory parameter.
+	</para>
+	<para>The format of the subname for $isup_param is the following:</para>
+	<itemizedlist>
+		<listitem>
+		<para><emphasis>param_name</emphasis> - name of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>sep</emphasis> - separator </para>
+		</listitem>
+		<listitem>
+		<para><emphasis>subfield_name</emphasis> - name of the subfield of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
+		</listitem>
+	</itemizedlist>
+	<para> The ISUP parameter can be addressed in different ways:</para>
+	<itemizedlist>
+		<listitem>
+		<para>
+			entire parameter - by providing as subname for the varaiable only the ISUP parameter name, allowing access to the contents of the entire parameter as a hex string (similar to a hex "dump") 
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			at subfield level - by providing as subname for the varaiable the ISUP parameter name and the subfield name, allowing access to the specific subfield as an integer value or string representing a telephone number (for some parameters such as Called Party Number)
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			at byte level - by providing as subname for the variable the ISUP parameter name and a variable index, allowing access to the byte with the specific index as an integer value
+		</para>
+		</listitem>
+	</itemizedlist>
+	<para>Addressing at subfield level is supported only for the following ISUP parameters: Called Party Number, Subsequent Number, Nature of Connection Indicators, Forward Call Indicators, Calling Party Number, Redirection Number, Backward Call Indicators, Cause Indicators, Connected Number.</para>
+	<example>
+	<title><function>isup_param</function> usage</title>
+	<programlisting format="linespecific">
+...
+	$isup_param(Called Party Number | Nature of address indicator) = 3;
+	$isup_param(Called Party Number | Address signal) = "99991234";
+	$isup_param(Calling party's category) = "0a"
+	$(isup_param(Forward Call Indicators)[0]) = 96;
+	$(isup_param(Forward Call Indicators)[1]) = 1;
+...
+	</programlisting>
+	</example>
+	</section>
+
+	<section>
+	<title>
+		<function moreinfo="none">$isup_msg_type</function>
+	</title>
+	<para>
+		Read-only variable, returns the ISUP message type as string.
+	</para>
+	</section>
+
+</section>
+
+</chapter>
+
