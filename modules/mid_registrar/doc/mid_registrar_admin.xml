@@ -1,0 +1,654 @@
+<!-- Module User's Guide -->
+
+<chapter id="sec-admin-guide">
+	<title>&adminguide;</title>
+
+	<section id="sec-overview">
+	<title>Overview</title>
+	<para>
+		The <emphasis>mid_registrar</emphasis> component of a VoIP platform is
+		a registration front-end, an in-between SIP registrar.
+		It opens up new possibilities for leveraging existing infrastructure
+		in order to support larger user bases / heavier traffic loads while minimizing
+		the need to add additional hardware. This is possible through the
+		optimized SIP user location implementation of OpenSIPS, capable of handling high
+		subscriber numbers and large amounts of registration traffic.
+	</para>
+	<para>
+		The main motivation behind the mid-registrar concept
+		stems from the fact that SIP User Agents have been (and still are!) continually shifting towards
+		mobile devices. These UAs are known to have unstable network presence,
+		hence they have short built-in registration times, imposed by their manufacturers
+		(usually 60 seconds). This, in effect, causes them to put more and more
+		registration traffic overhead on existing platforms.
+	</para>
+	<para>
+		Acting as an intermediary registration front-end between users and main SIP registrar,
+		the mid-registrar is able to:
+		<itemizedlist>
+			<listitem>
+			<para>
+				convert incoming high-rate registration traffic into a low-rate variant,
+				towards the main registrar layer. With proper configuration, it can
+				absorb over 90% of existing registration traffic while
+				preserving the back-end's user location state, effectively reducing
+				resource usage at the respective layer.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				stay in perfect sync with the registration back-end
+				(from a SIP perspective), by properly adhering to the contact
+				states and expiration times imposed by the main registrar
+			</para>
+			</listitem>
+		</itemizedlist>
+	</para>
+	</section>
+
+	<section id="sec-working-modes">
+	<title>Working modes</title>
+	<para>
+		Depending on the value of the <emphasis><xref linkend="modparam-mode"/></emphasis>
+		module parameter, the mid_registrar can function in one of the following ways:
+	</para>
+
+	<section id="sec-mirror-mode">
+		<title>Mirror (default, mode = 0)</title>
+		<para>
+			This basic usage of the module highlights its capability to properly handle
+			expiry times imposed by the main registrar layer.
+			In other words, any contact-related operation will only be performed on a 200 OK reply.
+		</para>
+		<para>
+			In "mirror mode", the mid-registrar will not alter any Contact or Expires header,
+			nor append additional ones. It will not modify a REGISTER request at all.
+		</para>
+		<para>
+			A possible usage of this mode, for example, would be to cache registrations in
+			order to offload the main registrar from processing a subset of all
+			types of incoming SIP requests.
+		</para>
+
+	</section>
+
+	<section id="sec-device-throttling-mode">
+		<title>Device throttling (mode = 1)</title>
+		<para>
+		This working mode employs a SIP contact-oriented approach (hence "device"),
+		in which subsequent registration traffic is throttled (i.e. absorbed /
+		immediately replied to / not forwarded to the main registrar) for each unique
+		SIP "Contact" header field that manages to successfully register.
+		</para>
+		<para>
+		Device throttling is the first level of registration traffic optimization. This
+		is possible through the use of the
+		<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis> module
+		parameter or the corresponding parameter to
+		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>,
+		which allow the script writer to prolong the life of the registrations on the way
+		to the main registrar.
+		</para>
+		<para>
+		Once a prolonged registration is completed, subsequent registrations for the same
+		SIP Contact header field value will be continuously absorbed by the mid-registrar
+		until, eventually, the lifetime of the remote registration will have decreased
+		enough that a refresh (i.e. simply forwarding the next REGISTER request) is mandatory.
+		</para>
+		<para>
+		A common occurence is for some SIP User Agents to lose their network connection
+		(especially when dealing with mobile devices), hence not de-registering themselves
+		from the mid-registrar. In this case, in order to avoid zombie registrations on the
+		main registrar (which contains SIP contacts with greatly extended lifetimes!),
+		the mid-registrar will appropriately generate De-REGISTER requests and remove
+		these contacts from the main registrar's location service as soon as it considers
+		them to have expired.
+		</para>
+		<para>
+			In "device throttling mode", depending on the "outgoing_expires" value, the
+			mid-registrar may alter Contact header field values found in the initial request,
+			including their ";expires" parameters, as needed. If an "Expires" header field
+			is present, its value may also be altered. Finally, the module may also insert a "Path"
+			header if the <emphasis>countact_routing_mode</emphasis> module parameter indicates
+			this.
+		</para>
+		<para>
+			Practical usages for this mode include the above "registration caching" concept,
+			along with "traffic conversion". The latter does nothing more than to save
+			resources on the back-end layer, allowing it to dedicate more processing power
+			to critical areas of the platform, such as advanced SIP calling features and/or media handling.
+		</para>
+	</section>
+
+	<section id="sec-user-throttling-mode">
+		<title>User throttling (mode = 2)</title>
+		<para>
+			This working mode employs a SIP Address-of-record-oriented approach (hence "user"),
+			in which subsequent registration traffic is throttled (i.e. absorbed /
+			immediately replied to / not forwarded to the main registrar) for each unique
+			SIP "To" header field username part that manages to successfully register.
+		</para>
+		<para>
+			User-level throttling is the second level of registration traffic optimization,
+			effectively building upon the previous "device throttling" mode. This
+			is also possible through the use of the <emphasis>outgoing_expires</emphasis> module
+			parameter or the corresponding parameter to
+			<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>,
+			which allow the script writer to prolong the life of the registrations on the way
+			to the main registrar.
+		</para>
+		<para>
+			Once a prolonged registration is completed, subsequent registrations to the same
+			Address-of-record (the username of the "To" header field URI of a
+			REGISTER request) will be continuously absorbed by the mid-registrar until,
+			eventually, the lifetime of the remote registration will have decreased enough
+			that a refresh (i.e. simply forwarding the next REGISTER request) is mandatory.
+		</para>
+		<para>
+			A common occurence is for some SIP User Agents to lose their network connection
+			(especially when dealing with mobile devices), hence not de-registering themselves
+			from the mid-registrar. In this case, in order to avoid zombie registrations on the
+			main registrar (which contains SIP contacts with greatly extended lifetimes!),
+			the mid-registrar will appropriately generate De-REGISTER requests and remove
+			these contacts from the main registrar's location service as soon as it considers
+			them to have expired.
+		</para>
+		<para>
+			Of all three modes, "user throttling" potentially offers the best reduction in
+			traffic on the way to the main registrar. By aggregating contacts, it also
+			has the added benefit of reducing the number of contacts that the main registrar
+			must handle.
+		</para>
+		<para>
+			Regarding SIP request mangling in this mode, the module will always
+			replace all Contact header fields with a single Contact header
+			field, for registration requests headed over to the
+			main registrar, indicating that the AoR is local to the front-end,
+			along with all of its contacts.
+		</para>
+		<para>
+			Practical usages for this mode include the "registration caching" concept,
+			along with "traffic conversion". The latter does nothing more than to save
+			resources on the back-end layer, allowing it to dedicate even more processing power
+			to critical areas of the platform, such as advanced SIP calling features and/or media handling.
+		</para>
+	</section>
+	</section>
+
+	<section id="sec-contact-routing-modes">
+	<title>Contact routing modes</title>
+	<para>
+		A defining feature of the module is that it must be easy to integrate,
+		ideally a "plug-and-play" SIP component, without imposing any additional
+		"outbound-proxy" configurations on any of the platform's layers.
+	</para>
+	<para>
+		With the above in mind, the script writer can choose between two
+		out-of-the-box contact routing mechanisms: either by having the module modify Contact
+		headers when forwarding registrations, or instruct it to make use
+		of a Path header (RFC 3327).
+	</para>
+	<section id="sec-contact-routing-by-contact">
+		<title>Route by Contact (default, contact_routing_mode = 0)</title>
+		<para>
+			In this routing mode, the module will mangle the Contact header field values
+			of all forwarded registration requests, by replacing any
+			original IP and port of a Contact URI with those of one of the
+			mid-registrar's listening interfaces.
+		</para>
+		<para>
+			The module will also append a parameter to each Contact URI
+			("rinstance" by default, can be changed through the
+			<emphasis><xref linkend="modparam-contact-match-param"/></emphasis> module parameter)
+			This URI parameter allows reply contacts to be matched with the
+			ones from the request. This same parameter will also be used when
+			routing calls to the users. In this case, it will be taken from
+			the INVITE's Request-URI.
+		</para>
+	</section>
+	<section id="sec-contact-routing-by-path">
+		<title>Route by Path (contact_routing_mode = 1)</title>
+		<para>
+			Instructs the module to append a "Path" header field to each
+			forwarded registration request. By recording itself between each
+			user and the main registrar, the mid-registrar allows subsequent
+			calls to be properly routed to the called party.
+		</para>
+	</section>
+	</section>
+
+	<section id="sec-dependencies">
+	<title>Dependencies</title>
+	<section id="sec-module-dependencies">
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>usrloc</emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>signaling</emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>tm</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section id="sec-external-dependencies">
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="sec-modparam">
+	<title>Exported Parameters</title>
+
+	<section id="modparam-mode" xreflabel="mode">
+		<title><varname>mode</varname> (integer)</title>
+		<para>
+			Working mode of the module.
+			Refer to <xref linkend="sec-working-modes"/> for
+			more details. Possible values are:
+		</para>
+
+		<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>0 (mirror mode)</emphasis>
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>1 (device throttling mode)</emphasis>
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>2 (user throttling mode)</emphasis>
+		</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			Default value is <emphasis role='bold'>0</emphasis> (mirror mode)
+		</para>
+		<example>
+		<title>Setting the <emphasis>mode</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "mode", 2)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-contact-routing-mode" xreflabel="contact_routing_mode">
+		<title><varname>contact_routing_mode</varname> (integer)</title>
+		<para>
+			Contact routing mode of the module. Only relevant in
+			"device throttling" mode. Refer to
+			<xref linkend="sec-contact-routing-modes"/> for more details. Possible
+			values are:
+		</para>
+
+		<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>0 (route by Contact)</emphasis>
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>1 (route by Path)</emphasis>
+		</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+		Default value is <emphasis role='bold'>0</emphasis> (route by Contact)
+		</para>
+		<example>
+		<title>Setting the <emphasis>contact_routing_mode</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "contact_routing_mode", 1)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-outgoing-expires" xreflabel="outgoing_expires">
+		<title><varname>outgoing_expires</varname> (integer)</title>
+		<para>
+			Only relevant in device/user throttling modes. Sets the default
+			value for the expiration intervals of outgoing contacts. Values for
+			this parameter which are shorter than the expiration intervals of
+			some contacts present in a REGISTER request being processed will
+			lead to the outgoing expiration intervals of these contacts
+			remaining unchanged.
+		</para>
+
+		<para>
+		Default value is <emphasis role='bold'>600</emphasis> (seconds)
+		</para>
+		<example>
+		<title>Setting the <emphasis>outgoing_expires</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "outgoing_expires", 3600)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-contact-match-param" xreflabel="contact_match_param">
+		<title><varname>contact_match_param</varname> (string)</title>
+		<para>
+			Only relevant in device throttling mode. Specifies the name of the
+			Contact URI parameter which is used by the module in order to
+			match contacts and route calls.
+		</para>
+
+		<para>
+			Default value is <emphasis role='bold'><quote>rinstance</quote></emphasis>
+		</para>
+		<example>
+		<title>Setting the <emphasis>contact_match_param</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "contact_match_param", "mid-reg-id")
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="sec-modfunc">
+	<title>Exported Functions</title>
+	<section id="modfunc-mid-registrar-save" xreflabel="mid_registrar_save()">
+		<title>
+		<function moreinfo="none">mid_registrar_save(domain[, [flags][, [aor][, [outgoing_expires]]]])</function>
+		</title>
+		<para>
+		Sets up the internally required hooks in order for the user location
+		update (i.e. any contact additions/updates/deletions)
+		to be transparently performed once a 200 OK reply is received.
+		</para>
+		<para>
+			In device/user throttling modes (more info about working modes in <xref linkend="sec-working-modes"/>),
+			the return value of this function indicates whether the script
+			writer must forward the REGISTER request to the main registrar,
+			or just wrap up any left-over processing and exit script execution, as
+			the current REGISTER request has been answered with 200 OK
+			(absorbed at mid-registrar level).
+		</para>
+		<para>
+			In the above-mentioned working modes, the
+			<emphasis>mid_registrar_save()</emphasis> function may additionally perform
+			the following series of transformations when relaying REGISTER requests:
+		</para>
+		<para>
+			<itemizedlist>
+				<listitem>
+					<para> in <emphasis>"device throttling"</emphasis> mode </para>
+					<itemizedlist>
+						<listitem>
+							<para>
+								change the value of the <emphasis>Expires</emphasis>
+								header field to the value of
+								<emphasis>outgoing_expires</emphasis>, if given,
+								otherwise the value given by the
+								<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis>
+								module parameter.
+								The same applies to any <emphasis>";expires"</emphasis>
+								Contact URI parameter.
+							</para>
+						</listitem>
+						<listitem>
+							<para>
+								replace the "host:port" part of all Contact URIs of the
+								incoming REGISTER request with an OpenSIPS listening interface
+							</para>
+						</listitem>
+						<listitem>
+							<para>
+								append a parameter to each
+								<emphasis>Contact</emphasis> URI, which will
+								allow the module to match the reply contacts
+								and also route calls. The name of this URI
+								parameter is configurable via
+								<emphasis><xref linkend="modparam-contact-match-param"/></emphasis>
+							</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para> in <emphasis>"user throttling"</emphasis> mode </para>
+					<itemizedlist>
+						<listitem>
+							<para>
+								change the value of the <emphasis>Expires</emphasis>
+								header field to the value of
+								<emphasis>outgoing_expires</emphasis>, if given,
+								otherwise the value given by the
+								<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis>
+								module parameter.
+							</para>
+						</listitem>
+						<listitem>
+							<para>
+								replace all <emphasis>Contact</emphasis> header
+								fields of the request with a single <emphasis>Contact</emphasis> header field,
+								which will contain the following SIP URI: "sip:address-of-record@proxy_ip:proxy_port"
+							</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+			</itemizedlist>
+		</para>
+
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>domain</emphasis> - logical domain within the registrar.
+			If a database is used, then this must be name of the <emphasis>usrloc</emphasis>
+			table which stores the contacts
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>flags (optional)</emphasis> - TODO - not fully implemented
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>aor (optional)</emphasis> - variable holding a custom Address-of-Record.
+				If not given, the AoR will be taken from the <emphasis>To</emphasis> header URI
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>outgoing_expires (optional, only relevant
+			in device/user throttling modes)</emphasis> - custom value
+		for the contact expiration interval of the outgoing REGISTER
+		request, which overrides the default
+			<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis> module parameter.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para><emphasis role='bold'>Return value</emphasis></para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				1 (success) - current REGISTER request must be dispatched by the
+				script writer over to the main registrar
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				2 (success) - current REGISTER request has been absorbed by the
+				mid-registrar; a 200 OK reply has been sent upstream
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				-1 (error) - generic error code; the logs should provide more help
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can only be used from the request route.
+		</para>
+		<example>
+			<title><function moreinfo="none"><emphasis>mid_registrar_save</emphasis></function> usage</title>
+		<programlisting format="linespecific">
+...
+if (is_method("REGISTER")) {
+	mid_registrar_save("location");
+	switch ($retcode) {
+	case 1:
+		xlog("L_INFO", "forwarding REGISTER to main registrar...\n");
+		$ru = "sip:10.0.0.3:5070";
+		if (!t_relay()) {
+			send_reply("500", "Server Internal Error 1");
+		}
+
+		break;
+	case 2:
+		xlog("L_INFO", "REGISTER has been absorbed!\n");
+		break;
+	default:
+		xlog("L_ERR", "mid-registrar error!\n");
+		send_reply("500", "Server Internal Error 2");
+	}
+
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="modfunc-mid-registrar-lookup" xreflabel="mid_registrar_lookup()">
+		<title>
+		<function moreinfo="none">mid_registrar_lookup(domain[, [flags][, [aor]]])</function>
+		</title>
+		<para>
+		Performs the necessary processing in order to build the proper branch
+		set for the currently requested Address-of-record. Depending on the
+		current working <emphasis><xref linkend="modparam-mode"/></emphasis>,
+		the function will behave as follows:
+		</para>
+		<para>
+		<itemizedlist>
+		<listitem>
+		<para> in <emphasis>"mirror"</emphasis> mode </para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				extract the username (Address-of-Record) from the Request-URI
+				and look up all of its contact bindings stored in the user
+				location. The Request-URI (<emphasis role='bold'>$ru</emphasis>
+				variable) will be overwritten with the highest q-value contact,
+				with additional branches for each contact being optionally
+				created. (depending on the <emphasis>flags</emphasis> parameter)
+			</para>
+		</listitem>
+		</itemizedlist>
+		</listitem>
+		<listitem>
+		<para> in <emphasis>"device throttling"</emphasis> mode </para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				extract the <emphasis><xref linkend="modparam-contact-match-param"/></emphasis>
+				from the Request-URI, derive the actual SIP URI of the destination
+				from it and set it as the new Request-URI of the INVITE
+				(<emphasis role='bold'>$ru</emphasis> variable).
+			</para>
+		</listitem>
+		</itemizedlist>
+		</listitem>
+		<listitem>
+		<para> in <emphasis>"user throttling"</emphasis> mode </para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				extract the username (Address-of-Record) from the Request-URI
+				and look up all of its contact bindings stored in the user
+				location. The Request-URI (<emphasis role='bold'>$ru</emphasis>
+				variable) will be overwritten with the highest q-value contact,
+				with additional branches for each contact being optionally
+				created. (depending on the <emphasis>flags</emphasis> parameter)
+			</para>
+		</listitem>
+		</itemizedlist>
+		</listitem>
+		</itemizedlist>
+		</para>
+
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>domain</emphasis> - logical domain within the registrar.
+			If a database is used, then this must be name of the <emphasis>usrloc</emphasis>
+			table which stores the contacts
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>flags (optional)</emphasis> - TODO - not fully implemented
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>aor (optional)</emphasis> - variable holding a custom Address-of-Record.
+				If not given, the AoR will be taken from the <emphasis>Request-URI</emphasis>
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para><emphasis role='bold'>Return value</emphasis></para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				1 (success) - branch set successfully built
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				-1 (error) - generic error code; the logs should provide more help
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can only be used from the request route.
+		</para>
+		<example>
+			<title><function moreinfo="none"><emphasis>mid_registrar_lookup</emphasis></function> usage</title>
+		<programlisting format="linespecific">
+...
+	# initial invites from the main registrar - need to look them up!
+	if (is_method("INVITE") and $si == "10.0.0.3" and $sp == 5070) {
+		if (!mid_registrar_lookup("location")) {
+			t_reply("404", "Not Found");
+			exit;
+		}
+
+		if (!t_relay())
+			send_reply("500", "Server Internal Error 3");
+
+	    exit;
+	}
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	</section>
+</chapter>
+
