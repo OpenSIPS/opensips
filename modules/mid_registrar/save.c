@@ -955,17 +955,34 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 static int match_contact(struct sip_uri *ct, struct sip_msg *msg, contact_t **out)
 {
 	contact_t *c;
-	struct sip_uri uri;
+	struct sip_uri uri, match_uri;
+	str match_tok, dec_uri;
+	int i;
 
 	for (c = get_first_contact(msg); c; c = get_next_contact(c)) {
 		LM_DBG("it='%.*s'\n", c->uri.len, c->uri.s);
 
-		if (parse_uri(c->uri.s, c->uri.len, &uri) < 0) {
-			LM_ERR("failed to parse contact <%.*s>\n", c->uri.len, c->uri.s);
+		if (get_match_token(&c->uri, &match_tok, &uri, &i) != 0) {
+			LM_ERR("failed to get match token\n");
 			return -1;
 		}
 
-		if (str_strcmp(&ct->user, &uri.user) == 0) {
+		if (decrypt_str(&match_tok, &dec_uri)) {
+			LM_ERR("failed to decrypt matching Contact param (%.*s=%.*s)\n",
+			       matching_param.len, matching_param.s,
+			       match_tok.len, match_tok.s);
+			return -1;
+		}
+
+		if (parse_uri(dec_uri.s, dec_uri.len, &match_uri) < 0) {
+			pkg_free(dec_uri.s);
+			LM_ERR("failed to parse decrypted uri <%.*s>\n",
+			       dec_uri.len, dec_uri.s);
+			return -1;
+		}
+
+		/* try to match the request Contact with a Contact from the reply */
+		if (compare_uris(NULL, &match_uri, NULL, ct) == 0) {
 			*out = c;
 			return 0;
 		}
@@ -990,11 +1007,10 @@ static int match_contact(struct sip_uri *ct, struct sip_msg *msg, contact_t **ou
  * contain all bindings, not just the ones from the request!
  */
 static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
-			struct mid_reg_info *mri, str* _a, urecord_t **rec)
+			struct mid_reg_info *mri, str* _a, urecord_t *r)
 {
 	struct mid_reg_info *cti;
 	ucontact_info_t* ci = NULL;
-	urecord_t* r = *rec;
 	ucontact_t* c;
 	contact_t *_c, *__c;
 	unsigned int cflags;
@@ -1012,15 +1028,19 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		e_max = tcp_check = 0;
 	}
 
+	if (!r) {
+		if (ul_api.insert_urecord(mri->dom, _a, &r, 0) < 0) {
+			rerrno = R_UL_NEW_R;
+			LM_ERR("failed to insert new record structure\n");
+			goto error;
+		}
+	}
+
 	LM_DBG("running\n");
 
 	for (__c = get_first_contact(req); __c; __c = get_next_contact(__c)) {
 		/* calculate expires */
 		calc_contact_expires(req, __c->expires, &e, NULL);
-
-		/* Skip contacts with zero expires */
-		if (e == 0)
-			continue;
 
 		if (parse_uri(__c->uri.s, __c->uri.len, &uri) < 0) {
 			LM_ERR("failed to parse contact <%.*s>\n",
@@ -1032,9 +1052,14 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		       uri.user.len, uri.user.s, __c->uri.len, __c->uri.s);
 
 		if (match_contact(&uri, rpl, &_c) != 0) {
-			LM_ERR("Contact '%.*s' not found in reply from main registrar!\n",
-			       __c->uri.len, __c->uri.s);
-			return -1;
+			if (e != 0) {
+				LM_ERR("Contact '%.*s' not found in reply from main registrar!\n",
+				       __c->uri.len, __c->uri.s);
+				return -1;
+			}
+
+			/* Contact deleted on main registrar! We can also delete it now! */
+			goto update_usrloc;
 		}
 
 		calc_contact_expires(rpl, _c->expires, &e_out, NULL);
@@ -1064,24 +1089,6 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		 * }
 		 */
 
-		if (!r) {
-			if (reg_mode == MID_REG_THROTTLE_AOR) {
-				cti = mri_dup(mri);
-				cti->expires = e;
-				cti->expires_out = e_out;
-				cti->last_register_out_ts = mri->last_register_out_ts;
-				set_ct(cti);
-			}
-
-			if (ul_api.insert_urecord(mri->dom, _a, &r, 0) < 0) {
-				rerrno = R_UL_NEW_R;
-				LM_ERR("failed to insert new record structure\n");
-				goto error;
-			}
-
-			set_ct(NULL);
-		}
-
 		LM_DBG("    >> REGISTER %ds ------- %ds 200 OK <<!\n", e, e_out);
 
 		if (e != e_out) {
@@ -1090,7 +1097,9 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 				return -1;
 			}
 		}
+		c = NULL;
 
+update_usrloc:
 		/* pack the contact_info */
 		ci = pack_ci(req, __c, e, e_out, cflags, mri->flags);
 		if (ci == NULL) {
@@ -1098,8 +1107,8 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 			goto error;
 		}
 
-		if ( r->contacts==0 ||
-		ul_api.get_ucontact(r, &__c->uri, ci->callid, ci->cseq+1, &c)!=0 ) {
+		if ((r->contacts==0 ||
+		ul_api.get_ucontact(r, &__c->uri, ci->callid, ci->cseq+1, &c)!=0) && e > 0) {
 			LM_DBG("INSERTING .....\n");
 			LM_DBG(":: inserting contact with expires %lu\n", ci->expires);
 
@@ -1124,7 +1133,16 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 
 			set_ct(NULL);
 
-		} else {
+		} else if (c != NULL) {
+			if (e == 0) {
+				if (ul_api.delete_ucontact(r, c, 0) < 0) {
+					rerrno = R_UL_UPD_C;
+					LM_ERR("failed to update contact\n");
+					goto error;
+				}
+				continue;
+			}
+
 			LM_DBG("UPDATING .....\n");
 			if (reg_mode != MID_REG_MIRROR) {
 				mri->expires_out = e_out;
@@ -1161,8 +1179,6 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		//	build_contact(r->contacts,rpl);
 		//}
 		ul_api.release_urecord(r, 0);
-		if (rec)
-			*rec = r;
 	}
 
 	if ( tcp_check && e_max>0 ) {
@@ -1218,16 +1234,14 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		if (_c == NULL)
 			return 0;
 
-		if (reg_mode == MID_REG_THROTTLE_AOR) {
-			cti = mri_dup(mri);
-			ct.len = _c->len;
-			ct.s = _c->name.s;
-			shm_str_dup(&cti->ct_body, &ct);
-			cti->expires_out = e_out;
-			cti->last_register_out_ts = mri->last_register_out_ts;
+		cti = mri_dup(mri);
+		ct.len = _c->len;
+		ct.s = _c->name.s;
+		shm_str_dup(&cti->ct_body, &ct);
+		cti->expires_out = e_out;
+		cti->last_register_out_ts = mri->last_register_out_ts;
 
-			set_ct(cti);
-		}
+		set_ct(cti);
 
 		if (ul_api.insert_urecord(mri->dom, _a, &r, 0) < 0) {
 			rerrno = R_UL_NEW_R;
@@ -1561,7 +1575,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	LM_DBG("rec=%p\n", rec);
 
 	if (reg_mode == MID_REG_MIRROR || reg_mode == MID_REG_THROTTLE_CT) {
-		if (insert_rpl_contacts(req, rpl, mri, &mri->aor, &rec)) {
+		if (insert_rpl_contacts(req, rpl, mri, &mri->aor, rec)) {
 			ul_api.unlock_udomain(mri->dom, &mri->aor);
 			return;
 		}

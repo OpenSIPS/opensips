@@ -145,7 +145,12 @@ static int unregister_contact(struct mid_reg_info *mri)
 void mid_reg_ct_event(void *binding, int type, void **data)
 {
 	ucontact_t *c = (ucontact_t *)binding;
-	struct mid_reg_info *mri = *(struct mid_reg_info **)data;
+	struct mid_reg_info *mri;
+
+	if (data == NULL)
+		return;
+
+	mri = *(struct mid_reg_info **)data;
 
 	LM_DBG("Contact callback (%d): contact='%.*s' | "
 	       "param=(%p -> %p) | data[%d]=(%p)\n", type, c->c.len, c->c.s, data,
