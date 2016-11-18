@@ -867,7 +867,7 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 	int i;
 
 	/* if isup message type not provided as param, try to map sip msg to
-	 * isup msg type by defaault */
+	 * isup msg type by default */
 	if (!param) {
 		if (msg->first_line.type == SIP_REQUEST) {
 			if (msg->REQ_METHOD == METHOD_INVITE) {
@@ -912,7 +912,7 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 
 		for (i = 0; i < NO_ISUP_MESSAGES; i++)
 			if (!str_strcasecmp(&isup_messages[i].name, &param_msg_type)) {
-				isup_msg_idx = get_param_idx_by_code(isup_messages[i].message_type);
+				isup_msg_idx = get_msg_idx_by_type(isup_messages[i].message_type);
 				break;
 			}
 
