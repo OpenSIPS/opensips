@@ -88,8 +88,8 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct s
 	}
 
 	/* extend outbound timeout, thus "throttling" heavy incoming traffic */
-	if (*_e > 0 && *_e < outbound_expires)
-		*_e = outbound_expires;
+	if (*_e > 0 && *_e < outgoing_expires)
+		*_e = outgoing_expires;
 
 	/* Convert to absolute value */
 	if (*_e > 0) *_e += get_act_time();
@@ -2165,6 +2165,11 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 	int expires_out;
 	int rc;
 
+	if (msg->REQ_METHOD != METHOD_REGISTER) {
+		LM_ERR("ignoring non-REGISTER SIP request (%d)\n", msg->REQ_METHOD);
+		return -1;
+	}
+
 	LM_DBG("saving to %.*s...\n", ud->name->len, ud->name->s);
 
 	if (flags_gp && fixup_get_svalue(msg, (gparam_p)flags_gp, &flags)) {
@@ -2180,9 +2185,9 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 	}
 
 	if (!expires_gp) {
-		expires_out = outbound_expires;
+		expires_out = outgoing_expires;
 	} else if (fixup_get_ivalue(msg, (gparam_p)expires_gp, &expires_out)) {
-		LM_ERR("invalid outbound_expires parameter");
+		LM_ERR("invalid outgoing_expires parameter");
 		return -1;
 	}
 

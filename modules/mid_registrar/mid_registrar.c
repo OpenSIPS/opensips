@@ -199,8 +199,8 @@ enum mid_reg_mode reg_mode = MID_REG_MIRROR;
  *
  * default value: 0 (not set - all incoming traffic is mirrored)
  */
-unsigned int outbound_expires = 600;
-unsigned int min_outbound_expires = 4;
+unsigned int outgoing_expires = 600;
+unsigned int min_outgoing_expires = 4;
 
 #define is_matching_mode(v) (v == MATCH_BY_PARAM || v == MATCH_BY_USER)
 #define matching_mode_str(v) (v == MATCH_BY_PARAM ? "by uri param" : "by user")
@@ -243,7 +243,7 @@ static cmd_export_t cmds[] = {
 static param_export_t mod_params[] = {
 	{ "mode", INT_PARAM, &reg_mode },
 	{ "min_expires", INT_PARAM, &reg_expire },
-	{ "outbound_expires", INT_PARAM, &outbound_expires },
+	{ "outgoing_expires", INT_PARAM, &outgoing_expires },
 	{ "contact_routing_mode", INT_PARAM, &routing_mode },
 	{ "contact_match_mode", INT_PARAM, &matching_mode },
 	{ "contact_match_param", STR_PARAM, &matching_param.s },
@@ -374,10 +374,10 @@ static int mod_init(void)
 
 	matching_param.len = strlen(matching_param.s);
 
-	if (outbound_expires < min_outbound_expires) {
-		LM_WARN("\"outbound_expires\" value too low (%us), using default "
-		        "minimum of %us\n", outbound_expires, min_reg_expire);
-		outbound_expires = min_outbound_expires;
+	if (outgoing_expires < min_outgoing_expires) {
+		LM_WARN("\"outgoing_expires\" value too low (%us), using default "
+		        "minimum of %us\n", outgoing_expires, min_reg_expire);
+		outgoing_expires = min_outgoing_expires;
 	}
 
 	if (reg_mode != MID_REG_MIRROR) {

@@ -141,7 +141,7 @@ extern struct sig_binds sig_api;
 extern int default_expires;
 extern int min_expires;
 extern int max_expires;
-extern unsigned int outbound_expires;
+extern unsigned int outgoing_expires;
 
 extern enum mid_reg_mode reg_mode;
 extern enum mid_reg_routing_mode routing_mode;
