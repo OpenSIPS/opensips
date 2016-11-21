@@ -663,12 +663,14 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 						MAX(minfo.se, sst_min_se), info_dirty, tmp_info);
 				snprintf(se_buf, 80, "Session-Expires: %d;refresher=uac\r\n",
 						info->interval);
+
+				if (add_timer_ext(msg))
+					LM_ERR("failed to append timer extension to Required\n");
+
 				if (append_header(msg, se_buf)) {
 					LM_ERR("failed to append Session-Expires header\n");
 					return;
 				}
-				if (add_timer_ext(msg))
-					LM_ERR("failed to append timer extension to Required\n");
 
 				/* Set the dialog timeout HERE */
 				set_dialog_lifetime(did, info->interval);
