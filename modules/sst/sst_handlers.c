@@ -141,6 +141,7 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 static int send_response(struct sip_msg *request, int code, str *reason,
 		char *header, int header_len);
 static int append_header(struct sip_msg *msg, const char *header);
+static int add_timer_ext(struct sip_msg *msg);
 static int remove_minse_header(struct sip_msg *msg);
 static int parse_msg_for_sst_info(struct sip_msg *msg, sst_msg_info_t *minfo);
 static int send_reject(struct sip_msg *msg, unsigned int min_se);
@@ -666,6 +667,9 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 					LM_ERR("failed to append Session-Expires header\n");
 					return;
 				}
+				if (add_timer_ext(msg))
+					LM_ERR("failed to append timer extension to Required\n");
+
 				/* Set the dialog timeout HERE */
 				set_dialog_lifetime(did, info->interval);
 			}
@@ -834,6 +838,71 @@ static int send_response(struct sip_msg *request, int code, str *reason,
 	else {
 		return -1;
 	}
+	return(0);
+}
+
+/**
+ * Adds the timer extension to the Require header, if it does
+ * not exist. Adds a new Require header if it does not exist.
+ *
+ * @param msg The message to add the extension to
+ *
+ * @return 0 on success, non-zero on failure.
+ */
+static int add_timer_ext(struct sip_msg *msg)
+{
+	struct hdr_field *require_hdr, *hdr;
+	struct lump* anchor = NULL;
+	char *s = NULL;
+	int len = 0;
+	unsigned int reqmask;
+
+	LM_DBG("Appending timer extension\n");
+
+	if (parse_headers(msg, HDR_EOH_F, 0) == -1) {
+		LM_ERR("failed to parse headers in message.\n");
+		return(1);
+	}
+
+	require_hdr = get_header_by_static_name(msg, "Require");
+	if (!require_hdr) {
+		LM_DBG("Require header does not exist - adding a new one\n");
+		return append_header(msg, "Require: timer\r\n");
+	}
+
+	/* search through all the headers, if there is any timer in there */
+	for (hdr = require_hdr; hdr; hdr = hdr->sibling) {
+		/* XXX: it is ineficient to parse it every time
+		 * but this is the only place it is used, and it
+		 * is only called once.
+		 * Calling Supported's parse function, the format
+		 * is similar to Require's one */
+		parse_supported_body(&(hdr->body), &reqmask);
+		if (reqmask & F_SUPPORTED_TIMER) {
+			LM_DBG("timer already in Require\n");
+			return (0);
+		}
+	}
+	LM_DBG("appending timer to the end of first Require header\n");
+
+	/* timer not found - adding at the end of Require */
+	if ((anchor = anchor_lump(msg, require_hdr->body.s +
+				require_hdr->body.len - msg->buf, 0)) == 0) {
+		LM_ERR("failed to get anchor to append header\n");
+		return(1);
+	}
+	len = strlen(", timer");
+	if ((s = (char *)pkg_malloc(len)) == 0) {
+		LM_ERR("No more pkg memory. (size requested = %d)\n", len);
+		return(1);
+	}
+	memcpy(s, ", timer", len);
+	if (insert_new_lump_before(anchor, s, len, 0) == 0) {
+		LM_ERR("failed to insert lump\n");
+		pkg_free(s);
+		return(1);
+	}
+	LM_DBG("Done appending extension successfully.\n");
 	return(0);
 }
 
