@@ -1091,9 +1091,9 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 				return -1;
 			}
 		}
-		c = NULL;
 
 update_usrloc:
+		c = NULL;
 		/* pack the contact_info */
 		ci = pack_ci(req, __c, e, e_out, cflags, mri->flags);
 		if (ci == NULL) {
@@ -1327,9 +1327,9 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		 */
 
 		LM_DBG("    >> REGISTER %ds ------- %ds 200 OK <<!\n", e, e_out);
-		c = NULL;
 
 update_usrloc:
+		c = NULL;
 		/* pack the contact_info */
 		ci = pack_ci(req, __c, e, e_out, cflags, mri->flags);
 		if (ci == NULL) {
