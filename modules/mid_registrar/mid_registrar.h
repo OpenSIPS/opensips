@@ -120,7 +120,10 @@ struct save_ctx {
 	str aor;
 	unsigned int max_contacts;
 	unsigned int expires;
-	unsigned int expires_out;
+	int expires_out;
+
+	unsigned int min_expires;
+	unsigned int max_expires;
 };
 
 extern char uri_buf[MAX_URI_SIZE];
@@ -141,6 +144,8 @@ extern struct sig_binds sig_api;
 extern int default_expires;
 extern int min_expires;
 extern int max_expires;
+extern int max_contacts;
+extern int retry_after;
 extern unsigned int outgoing_expires;
 
 extern enum mid_reg_mode reg_mode;
@@ -156,6 +161,10 @@ extern str matching_param;
 
 extern int disable_gruu;
 extern int reg_use_domain;
+
+extern str rcv_param;
+
+extern str gruu_secret;
 
 extern int rcv_avp_name;
 extern unsigned short rcv_avp_type;

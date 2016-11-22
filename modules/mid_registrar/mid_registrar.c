@@ -1,8 +1,7 @@
 /*
  * Support for:
- *  - REGISTER traffic throttling, optionally with outbound contact aggregation
- *  - proxying REGISTER traffic while saving registration state
- *       (contact expirations are taken from the downstream UAS's 200 OK reply)
+ *  - REGISTER traffic throttling, optionally with contact aggregation
+ *  - processing registrations upon receiving 200 OK replies
  *
  * This module is intended to be used as a middle layer SIP component in
  * environments where a large proportion of SIP UAs (e.g. mobile devices)
@@ -44,7 +43,7 @@
 #include "lookup.h"
 #include "encode.h"
 #include "ulcb.h"
-//----------------------
+
 #include "../../parser/contact/contact.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/msg_parser.h"
@@ -63,16 +62,22 @@ struct usrloc_api ul_api;
 struct tm_binds tm_api;
 struct sig_binds sig_api;
 
-int default_expires = 3600; 			/*!< Default expires value in seconds */
-int min_expires     = 10;			/*!< Minimum expires the phones are allowed to use in seconds
- 						 * use 0 to switch expires checking off */
+int default_expires = 3600; /*!< Default expires value in seconds */
+int min_expires     = 10;   /*!< Minimum expires the phones are allowed to use
+							  in seconds - use 0 to switch expires checking off */
 int max_expires     = 3600;
+
+int max_contacts = 0;		/*!< Maximum number of contacts per AOR
+                                 (0=no checking) */
+int retry_after = 0;		/*!< The value of Retry-After HF in 5xx replies */
+
+qvalue_t default_q  = Q_UNSPECIFIED; /*!< Default q value multiplied by 1000 */
 
 char* rcv_avp_param = 0;
 unsigned short rcv_avp_type = 0;
 int rcv_avp_name;
 
-int tcp_persistent_flag = -1;			/*!< if the TCP connection should be kept open */
+int tcp_persistent_flag = -1;  /*!< if the TCP connection should be kept open */
 char *tcp_persistent_flag_s = 0;
 
 char* mct_avp_param = 0;
@@ -99,6 +104,8 @@ int urecord_data_idx;
 
 str sock_hdr_name = {0,0};
 
+#define RCV_NAME "received"
+str rcv_param = str_init(RCV_NAME);
 
 char uri_buf[MAX_URI_SIZE];
 
@@ -130,7 +137,6 @@ time_t get_act_time(void)
 	return act_time;
 }
 
-qvalue_t default_q  = Q_UNSPECIFIED;	/*!< Default q value multiplied by 1000 */
 int calc_contact_q(param_t* _q, qvalue_t* _r)
 {
 	int rc;
@@ -169,11 +175,11 @@ contact_t* get_next_contact(contact_t* _c)
 	}
 }
 int case_sensitive  = 1;			/*!< If set to 0, username in aor will be case insensitive */
+str gruu_secret = {0,0};
 int disable_gruu = 1;
 char* realm_pref    = "";
 str realm_prefix;
 int reg_use_domain = 0;
-//-------------------
 
 #define is_routing_mode(v) (v == ROUTE_BY_CONTACT || v == ROUTE_BY_PATH)
 #define routing_mode_str(v) (v == ROUTE_BY_CONTACT ? "by Contact" : "by Path")
@@ -215,13 +221,6 @@ enum mid_reg_matching_mode  matching_mode = MATCH_BY_PARAM;
  */
 str matching_param = str_init("rinstance");
 
-/*
- * MIN: 4 seconds
- * MAX: 4294967295 (max uint) seconds
- */
-unsigned int min_reg_expire = 4;
-unsigned int reg_expire = 30;
-
 static cmd_export_t cmds[] = {
 	{ "mid_registrar_save", (cmd_function)mid_reg_save, 1,
 	  registrar_fixup, NULL, REQUEST_ROUTE },
@@ -241,12 +240,24 @@ static cmd_export_t cmds[] = {
 };
 
 static param_export_t mod_params[] = {
-	{ "mode", INT_PARAM, &reg_mode },
-	{ "min_expires", INT_PARAM, &reg_expire },
-	{ "outgoing_expires", INT_PARAM, &outgoing_expires },
+	{ "mode",                 INT_PARAM, &reg_mode },
+	{ "min_expires",          INT_PARAM, &min_expires },
+	{ "default_q",            INT_PARAM, &default_q },
+	{ "tcp_persistent_flag",  INT_PARAM, &tcp_persistent_flag },
+	{ "tcp_persistent_flag",  STR_PARAM, &tcp_persistent_flag_s },
+	{ "realm_prefix",         STR_PARAM, &realm_pref },
+	{ "case_sensitive",       INT_PARAM, &case_sensitive },
+	{ "received_avp",         STR_PARAM, &rcv_avp_param },
+	{ "received_param",       STR_PARAM, &rcv_param.s },
+	{ "max_contacts",         INT_PARAM, &max_contacts },
+	{ "retry_after",          INT_PARAM, &retry_after },
+	{ "sock_hdr_name",        STR_PARAM, &sock_hdr_name.s },
+	{ "gruu_secret",          STR_PARAM, &gruu_secret.s },
+	{ "disable_gruu",         INT_PARAM, &disable_gruu },
+	{ "outgoing_expires",     INT_PARAM, &outgoing_expires },
 	{ "contact_routing_mode", INT_PARAM, &routing_mode },
-	{ "contact_match_mode", INT_PARAM, &matching_mode },
-	{ "contact_match_param", STR_PARAM, &matching_param.s },
+	{ "contact_match_mode",   INT_PARAM, &matching_mode },
+	{ "contact_match_param",  STR_PARAM, &matching_param.s },
 	{ 0,0,0 }
 };
 
@@ -335,6 +346,9 @@ static int registrar_fixup(void** param, int param_no)
 
 static int mod_init(void)
 {
+	str s;
+	pv_spec_t avp_spec;
+
 	if (load_ul_api(&ul_api) < 0) {
 		LM_ERR("failed to load user location API\n");
 		return -1;
@@ -348,12 +362,6 @@ static int mod_init(void)
 	if(load_sig_api(&sig_api)< 0) {
 		LM_ERR("can't load signaling functions\n");
 		return -1;
-	}
-
-	if (reg_expire < min_reg_expire) {
-		LM_WARN("\"min_expires\" value too low (%us), using default "
-		        "minimum of %us\n", reg_expire, min_reg_expire);
-		reg_expire = min_reg_expire;
 	}
 
 	if (!is_routing_mode(routing_mode)) {
@@ -372,13 +380,52 @@ static int mod_init(void)
 		LM_DBG("contact matching mode: '%s'\n", matching_mode_str(matching_mode));
 	}
 
-	matching_param.len = strlen(matching_param.s);
-
-	if (outgoing_expires < min_outgoing_expires) {
-		LM_WARN("\"outgoing_expires\" value too low (%us), using default "
-		        "minimum of %us\n", outgoing_expires, min_reg_expire);
-		outgoing_expires = min_outgoing_expires;
+	/* Normalize default_q parameter */
+	if (default_q != Q_UNSPECIFIED) {
+		if (default_q > MAX_Q) {
+			LM_DBG("default_q = %d, lowering to MAX_Q: %d\n", default_q, MAX_Q);
+			default_q = MAX_Q;
+		} else if (default_q < MIN_Q) {
+			LM_DBG("default_q = %d, raising to MIN_Q: %d\n", default_q, MIN_Q);
+			default_q = MIN_Q;
+		}
 	}
+
+	if (rcv_avp_param && *rcv_avp_param) {
+		s.s = rcv_avp_param; s.len = strlen(s.s);
+		if (pv_parse_spec(&s, &avp_spec)==0
+				|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP %s AVP definition\n", rcv_avp_param);
+			return -1;
+		}
+
+		if(pv_get_avp_name(0, &avp_spec.pvp, &rcv_avp_name, &rcv_avp_type)!=0)
+		{
+			LM_ERR("[%s]- invalid AVP definition\n", rcv_avp_param);
+			return -1;
+		}
+	} else {
+		rcv_avp_name = -1;
+		rcv_avp_type = 0;
+	}
+
+	rcv_param.len = strlen(rcv_param.s);
+
+	realm_prefix.s = realm_pref;
+	realm_prefix.len = strlen(realm_pref);
+
+	if (sock_hdr_name.s)
+		sock_hdr_name.len = strlen(sock_hdr_name.s);
+
+	if (gruu_secret.s)
+		gruu_secret.len = strlen(gruu_secret.s);
+
+	/* fix the flags */
+	fix_flag_name(tcp_persistent_flag_s, tcp_persistent_flag);
+	tcp_persistent_flag = get_flag_id_by_name(FLAG_TYPE_MSG, tcp_persistent_flag_s);
+	tcp_persistent_flag = (tcp_persistent_flag != -1) ? (1 << tcp_persistent_flag) : 0;
+
+	matching_param.len = strlen(matching_param.s);
 
 	if (reg_mode != MID_REG_MIRROR) {
 		if (ul_api.db_mode == DB_ONLY) {

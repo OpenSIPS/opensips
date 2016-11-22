@@ -35,7 +35,6 @@
 #include "../../mod_fix.h"
 
 extern char tgruu_dec[];
-extern str gruu_secret;
 extern str default_gruu_secret;
 
 int calc_temp_gruu_len(str* aor,str* instance,str *callid);

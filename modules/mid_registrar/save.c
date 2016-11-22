@@ -60,8 +60,6 @@ static struct {
 	int data_len;
 } contact = {0, 0, 0};
 
-int retry_after = 0;				/*!< The value of Retry-After HF in 5xx replies */
-
 #define MAX_AOR_LEN 256
 
 #define MSG_200 "OK"
@@ -72,9 +70,6 @@ int retry_after = 0;				/*!< The value of Retry-After HF in 5xx replies */
 
 #define RETRY_AFTER "Retry-After: "
 #define RETRY_AFTER_LEN (sizeof(RETRY_AFTER) - 1)
-
-#define RCV_NAME "received"
-str rcv_param = str_init(RCV_NAME);
 
 /* with the optionally added outbound timeout extension */
 void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx)
@@ -723,6 +718,8 @@ static struct mid_reg_info *mri_dup(struct mid_reg_info *mri)
 		return NULL;
 	memset(ret, 0, sizeof *ret);
 
+	ret->flags = mri->flags;
+
 	if (mri->aor.s)
 		shm_str_dup(&ret->aor, &mri->aor);
 
@@ -1015,17 +1012,14 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 	contact_t *_c, *__c;
 	unsigned int cflags;
 	int e, e_out;
-	int e_max;
-	int tcp_check;
+	int e_max = 0;
+	int tcp_check = 0;
 	struct sip_uri uri;
 	str ct_uri;
 
 	cflags = (mri->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
-	if (is_tcp_based_proto(rpl->rcv.proto) && (rpl->flags&tcp_persistent_flag)) {
-		e_max = 0;
+	if (is_tcp_based_proto(req->rcv.proto) && (req->flags & tcp_persistent_flag)) {
 		tcp_check = 1;
-	} else {
-		e_max = tcp_check = 0;
 	}
 
 	if (!r) {
@@ -1183,7 +1177,7 @@ update_usrloc:
 
 	if ( tcp_check && e_max>0 ) {
 		e_max -= get_act_time();
-		trans_set_dst_attr( &rpl->rcv, DST_FCNTL_SET_LIFETIME,
+		trans_set_dst_attr( &req->rcv, DST_FCNTL_SET_LIFETIME,
 			(void*)(long)(e_max + 10) );
 	}
 
@@ -1203,8 +1197,8 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 	contact_t *_c, *__c;
 	unsigned int cflags;
 	int e, e_out = -1;
-	int e_max;
-	int tcp_check;
+	int e_max = 0;
+	int tcp_check = 0;
 	struct sip_uri uri;
 	struct lump *anchor;
 	str ct;
@@ -1212,11 +1206,8 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 	int len;
 
 	cflags = (mri->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
-	if (is_tcp_based_proto(rpl->rcv.proto) && (rpl->flags&tcp_persistent_flag)) {
-		e_max = 0;
+	if (is_tcp_based_proto(req->rcv.proto) && (req->flags & tcp_persistent_flag)) {
 		tcp_check = 1;
-	} else {
-		e_max = tcp_check = 0;
 	}
 
 	LM_DBG("running\n");
@@ -1423,7 +1414,7 @@ update_usrloc:
 
 	if ( tcp_check && e_max>0 ) {
 		e_max -= get_act_time();
-		trans_set_dst_attr( &rpl->rcv, DST_FCNTL_SET_LIFETIME,
+		trans_set_dst_attr( &req->rcv, DST_FCNTL_SET_LIFETIME,
 			(void*)(long)(e_max + 10) );
 	}
 
@@ -1596,7 +1587,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 
 /* !! retcodes: 1 or -1 !! */
 static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
-                           str *aor, int expires_out)
+                           str *aor, struct save_ctx *sctx)
 {
 	struct mid_reg_info *mri;
 	struct to_body *from;
@@ -1614,9 +1605,10 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 	memset(mri, 0, sizeof *mri);
 
 	mri->expires = 0;
-	mri->expires_out = expires_out;
+	mri->expires_out = sctx->expires_out;
 	mri->dom = ud;
 	mri->last_register_out_ts = get_act_time();
+	mri->flags = sctx->flags;
 
 	if (aor)
 		shm_str_dup(&mri->aor, aor);
@@ -1935,20 +1927,20 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
  *
  * return: fwd / nfwd / error
  */
-static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec)
+static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
+                                  unsigned int flags)
 {
-	int e, ret;
+	int e, ret, cflags;
 	struct mid_reg_info *mri;
 	ucontact_info_t *ci;
 	ucontact_t *c;
 	contact_t *ct;
 
 	LM_DBG("processing contacts...\n");
+	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
-	/* TODO FIXME */
-	//cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 	/* pack the contact_info */
-	if ( (ci=pack_ci(msg, 0, 0, 0, 0, 0))==0 ) {
+	if ( (ci=pack_ci(msg, 0, 0, 0, 0, cflags))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
@@ -1981,7 +1973,7 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec)
 				return 1;
 			} else {
 				/* pack the contact specific info */
-				ci = pack_ci(msg, ct, e, c->expires_out, 0, 0);
+				ci = pack_ci(msg, ct, e, c->expires_out, 0, cflags);
 				if (!ci) {
 					LM_ERR("failed to pack contact specific info\n");
 					rerrno = R_UL_UPD_C;
@@ -2046,9 +2038,10 @@ static int calc_max_ct_diff(urecord_t *urec)
  *
  * return: fwd / nfwd / error
  */
-static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec)
+static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
+                                   unsigned int flags)
 {
-	int e, ret, max_diff = -1;
+	int e, ret, cflags, max_diff = -1;
 	struct mid_reg_info *cinfo, *rinfo;
 	ucontact_info_t *ci;
 	ucontact_t *c;
@@ -2063,10 +2056,10 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec)
 
 	LM_DBG("processing contacts...\n");
 
-	/* TODO FIXME */
-	//cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
+	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
+
 	/* pack the contact_info */
-	if ( (ci=pack_ci(req, 0, 0, 0, 0, 0))==0 ) {
+	if ( (ci=pack_ci(req, 0, 0, 0, 0, cflags))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
@@ -2102,7 +2095,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec)
 			set_ct(cinfo);
 
 			/* pack the contact specific info */
-			ci = pack_ci(req, ct, e, c->expires_out, 0, 0);
+			ci = pack_ci(req, ct, e, c->expires_out, 0, cflags);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
@@ -2124,7 +2117,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec)
 			set_ct(cinfo);
 
 			/* pack the contact specific info */
-			ci = pack_ci(req, ct, e, e_out, 0, 0);
+			ci = pack_ci(req, ct, e, e_out, 0, cflags);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
@@ -2154,15 +2147,64 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec)
 	return 2;
 }
 
+static void parse_save_flags(str *flags_s, struct save_ctx *out_sctx)
+{
+	int st;
+
+	for( st=0 ; st< flags_s->len ; st++ ) {
+		switch (flags_s->s[st]) {
+			case 'm': out_sctx->flags |= REG_SAVE_MEMORY_FLAG; break;
+			case 'r': out_sctx->flags |= REG_SAVE_NOREPLY_FLAG; break;
+			case 's': out_sctx->flags |= REG_SAVE_SOCKET_FLAG; break;
+			case 'v': out_sctx->flags |= REG_SAVE_PATH_RECEIVED_FLAG; break;
+			case 'f': out_sctx->flags |= REG_SAVE_FORCE_REG_FLAG; break;
+			case 'c':
+				out_sctx->max_contacts = 0;
+				while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
+					out_sctx->max_contacts = out_sctx->max_contacts*10 +
+						flags_s->s[st+1] - '0';
+					st++;
+				}
+				break;
+			case 'e':
+				out_sctx->min_expires = 0;
+				while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
+					out_sctx->min_expires = out_sctx->min_expires*10 +
+						flags_s->s[st+1] - '0';
+					st++;
+				}
+				break;
+			case 'E':
+				out_sctx->max_expires = 0;
+				while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
+					out_sctx->max_expires = out_sctx->max_expires*10 +
+						flags_s->s[st+1] - '0';
+					st++;
+				}
+				break;
+			case 'p':
+				if (st<flags_s->len-1) {
+					st++;
+					if (flags_s->s[st]=='2') {
+						out_sctx->flags |= REG_SAVE_PATH_STRICT_FLAG; break; }
+					if (flags_s->s[st]=='1') {
+						out_sctx->flags |= REG_SAVE_PATH_LAZY_FLAG; break; }
+					if (flags_s->s[st]=='0') {
+						out_sctx->flags |= REG_SAVE_PATH_OFF_FLAG; break; }
+				}
+			default: LM_WARN("unsupported flag %c \n",flags_s->s[st]);
+		}
+	}
+}
 
 int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
                           char *to_uri_gp, char *expires_gp)
 {
 	udomain_t *ud = (udomain_t *)dom;
 	urecord_t *rec;
-	str flags = { NULL, 0 }, to_uri = { NULL, 0 };
+	str flags_str = { NULL, 0 }, to_uri = { NULL, 0 };
 	str aor = { NULL, 0 };
-	int expires_out;
+	struct save_ctx sctx;
 	int rc;
 
 	if (msg->REQ_METHOD != METHOD_REGISTER) {
@@ -2170,11 +2212,17 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 		return -1;
 	}
 
+	memset(&sctx, 0, sizeof sctx);
+
 	LM_DBG("saving to %.*s...\n", ud->name->len, ud->name->s);
 
-	if (flags_gp && fixup_get_svalue(msg, (gparam_p)flags_gp, &flags)) {
-		LM_ERR("invalid flags parameter");
-		return -1;
+	if (flags_gp) {
+		if (fixup_get_svalue(msg, (gparam_p)flags_gp, &flags_str)) {
+			LM_ERR("invalid flags parameter");
+			return -1;
+		}
+
+		parse_save_flags(&flags_str, &sctx);
 	}
 
 	if (!to_uri_gp) {
@@ -2185,8 +2233,8 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 	}
 
 	if (!expires_gp) {
-		expires_out = outgoing_expires;
-	} else if (fixup_get_ivalue(msg, (gparam_p)expires_gp, &expires_out)) {
+		sctx.expires_out = outgoing_expires;
+	} else if (fixup_get_ivalue(msg, (gparam_p)expires_gp, &sctx.expires_out)) {
 		LM_ERR("invalid outgoing_expires parameter");
 		return -1;
 	}
@@ -2204,20 +2252,20 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 
 	/* in mirror mode, all REGISTER requests simply pass through */
 	if (reg_mode == MID_REG_MIRROR)
-		return prepare_forward(msg, ud, &aor, expires_out);
+		return prepare_forward(msg, ud, &aor, &sctx);
 
 	update_act_time();
 	ul_api.lock_udomain(ud, &aor);
 
 	if (ul_api.get_urecord(ud, &aor, &rec) != 0) {
 		ul_api.unlock_udomain(ud, &aor);
-		return prepare_forward(msg, ud, &aor, expires_out);
+		return prepare_forward(msg, ud, &aor, &sctx);
 	}
 
 	if (reg_mode == MID_REG_THROTTLE_CT)
-		rc = process_contacts_by_ct(msg, rec);
+		rc = process_contacts_by_ct(msg, rec, sctx.flags);
 	else if (reg_mode == MID_REG_THROTTLE_AOR)
-		rc = process_contacts_by_aor(msg, rec);
+		rc = process_contacts_by_aor(msg, rec, sctx.flags);
 
 	if (rc == -1)
 		goto out_error;
@@ -2234,16 +2282,19 @@ quick_reply:
 	ul_api.unlock_udomain(ud, &aor);
 
 	/* quick SIP reply */
-	send_reply(msg, 0);
+	if (!(sctx.flags & REG_SAVE_NOREPLY_FLAG))
+		send_reply(msg, sctx.flags);
+
 	return 2;
 
 out_forward:
 	ul_api.unlock_udomain(ud, &aor);
-	return prepare_forward(msg, ud, &aor, expires_out);
+	return prepare_forward(msg, ud, &aor, &sctx);
 
 out_error:
 	ul_api.unlock_udomain(ud, &aor);
-	send_reply(msg, 0);
+	if (!(sctx.flags & REG_SAVE_NOREPLY_FLAG))
+		send_reply(msg, sctx.flags);
 	return -1;
 }
 
