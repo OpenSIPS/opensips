@@ -1,5 +1,5 @@
 /*
- * User location callbacks
+ * mid-registrar User location callbacks
  *
  * This module is intended to be used as a middle layer SIP component in
  * environments where a large proportion of SIP UAs (e.g. mobile devices)

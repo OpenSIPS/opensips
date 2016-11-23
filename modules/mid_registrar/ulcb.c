@@ -1,5 +1,5 @@
 /*
- * User location callbacks
+ * mid-registrar User location callbacks
  *
  * This module is intended to be used as a middle layer SIP component in
  * environments where a large proportion of SIP UAs (e.g. mobile devices)
@@ -36,6 +36,7 @@
 #include "../tm/dlg.h"
 
 #include "mid_registrar.h"
+#include "rerrno.h"
 
 char extra_hdrs_buf[512];
 static str extra_hdrs={extra_hdrs_buf, 512};

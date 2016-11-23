@@ -1,5 +1,5 @@
 /*
- * contact storing
+ * mid-registrar contact storing
  *
  * This module is intended to be used as a middle layer SIP component in
  * environments where a large proportion of SIP UAs (e.g. mobile devices)
@@ -69,29 +69,13 @@
 #define SIP_PROTO "sip:"
 #define SIP_PROTO_SIZE (sizeof(SIP_PROTO) - 1)
 
-#define PUB_GRUU ";pub-gruu="
-#define PUB_GRUU_SIZE (sizeof(PUB_GRUU) - 1)
-
-#define TEMP_GRUU ";temp-gruu="
-#define TEMP_GRUU_SIZE (sizeof(TEMP_GRUU) - 1)
-
 #define SIP_INSTANCE ";+sip.instance="
 #define SIP_INSTANCE_SIZE (sizeof(SIP_INSTANCE) - 1)
-
-#define TEMP_GRUU_HEADER "tgruu."
-#define TEMP_GRUU_HEADER_SIZE (sizeof(TEMP_GRUU_HEADER) - 1)
-
-#define GR_PARAM ";gr="
-#define GR_PARAM_SIZE (sizeof(GR_PARAM) - 1)
-
-#define GR_NO_VAL ";gr"
-#define GR_NO_VAL_SIZE (sizeof(GR_NO_VAL) - 1)
 
 #define CONTACT_SEP ", "
 #define CONTACT_SEP_LEN (sizeof(CONTACT_SEP) - 1)
 
 int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
                           char *to_uri_gp, char *expires_gp);
-
 
 #endif /* __MID_REG_SAVE_ */

@@ -59,6 +59,7 @@
 #define REG_LOOKUP_UAFILTER_FLAG       (1<<2)
 #define REG_BRANCH_AOR_LOOKUP_FLAG     (1<<3)
 
+char uri_buf[MAX_URI_SIZE];
 unsigned int nbranches;
 static char urimem[MAX_BRANCHES-1][MAX_URI_SIZE];
 static str branch_uris[MAX_BRANCHES-1];

@@ -1,8 +1,7 @@
 /*
  * Support for:
- *  - REGISTER traffic throttling, optionally with outbound contact aggregation
- *  - proxying REGISTER traffic while saving registration state
- *       (contact expirations are taken from the downstream UAS's 200 OK reply)
+ *  - REGISTER traffic throttling, optionally with contact aggregation
+ *  - processing registrations upon receiving 200 OK replies
  *
  * This module is intended to be used as a middle layer SIP component in
  * environments where a large proportion of SIP UAs (e.g. mobile devices)
@@ -37,6 +36,11 @@
 
 #include "../../parser/msg_parser.h"
 #include "../../parser/contact/contact.h"
+#include "../../script_cb.h"
+#include "../../socket_info.h"
+
+#include "../tm/tm_load.h"
+#include "../signaling/signaling.h"
 
 #include "../usrloc/usrloc.h"
 #include "../usrloc/urecord.h"
@@ -81,40 +85,6 @@ struct mid_reg_info {
 	str callid;
 };
 
-typedef enum rerr {
-	R_FINE = 0,   /*!< Everything went OK */
-	R_UL_DEL_R,   /*!< Usrloc record delete failed */
-	R_UL_GET_R,   /*!< Usrloc record get failed */
-	R_UL_NEW_R,   /*!< Usrloc new record failed */
-	R_INV_CSEQ,   /*!< Invalid CSeq value */
-	R_UL_INS_C,   /*!< Usrloc insert contact failed */
-	R_UL_INS_R,   /*!< Usrloc insert record failed */
-	R_UL_DEL_C,   /*!< Usrloc contact delete failed */
-	R_UL_UPD_C,   /*!< Usrloc contact update failed */
-	R_TO_USER,    /*!< No username part in To URI */
-	R_AOR_LEN,    /*!< Address Of Record too long */
-	R_AOR_PARSE,  /*!< Error while parsing Address Of Record */
-	R_INV_EXP,    /*!< Invalid expires parameter in contact */
-	R_INV_Q,      /*!< Invalid q parameter in contact */
-	R_PARSE,      /*!< Error while parsing message */
-	R_TO_MISS,    /*!< Missing To header field */
-	R_CID_MISS,   /*!< Missing Call-ID header field */
-	R_CS_MISS,    /*!< Missing CSeq header field */
-	R_PARSE_EXP,  /*!< Error while parsing Expires */
-	R_PARSE_CONT, /*!< Error while parsing Contact */
-	R_STAR_EXP,   /*!< star and expires != 0 */
-	R_STAR_CONT,  /*!< star and more contacts */
-	R_OOO,        /*!< Out-Of-Order request */
-	R_RETRANS,    /*!< Request is retransmission */
-	R_UNESCAPE,   /*!< Error while unescaping username */
-	R_TOO_MANY,   /*!< Too many contacts */
-	R_CONTACT_LEN,/*!< Contact URI or RECEIVED too long */
-	R_CALLID_LEN, /*!< Callid too long */
-	R_PARSE_PATH, /*!< Error while parsing Path */
-	R_PATH_UNSUP  /*!< Path not supported by UAC */
-
-} rerr_t;
-
 struct save_ctx {
 	unsigned int flags;
 	str aor;
@@ -126,13 +96,8 @@ struct save_ctx {
 	unsigned int max_expires;
 };
 
-extern char uri_buf[MAX_URI_SIZE];
-
-extern str sock_hdr_name;
 extern str realm_prefix;
 extern int case_sensitive;
-
-extern rerr_t rerrno;
 
 extern int rerr_codes[];
 extern str error_info[];

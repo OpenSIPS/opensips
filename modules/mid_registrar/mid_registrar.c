@@ -38,11 +38,11 @@
 #include "../../data_lump.h"
 
 #include "mid_registrar.h"
-#include "uac_timer.h"
 #include "save.h"
 #include "lookup.h"
 #include "encode.h"
 #include "ulcb.h"
+#include "rerrno.h"
 
 #include "../../parser/contact/contact.h"
 #include "../../parser/contact/parse_contact.h"
@@ -89,92 +89,14 @@ unsigned short attr_avp_type = 0;
 int attr_avp_name;
 
 
-rerr_t rerrno;
-
-
 static struct mid_reg_info *__info;
 int ucontact_data_idx;
 int urecord_data_idx;
 
-
-#define PATH_MODE_STRICT	2
-#define PATH_MODE_LAZY		1
-#define PATH_MODE_OFF		0
-
-
-str sock_hdr_name = {0,0};
-
 #define RCV_NAME "received"
 str rcv_param = str_init(RCV_NAME);
 
-char uri_buf[MAX_URI_SIZE];
-
-
-static time_t act_time;
-
-inline void set_ct(struct mid_reg_info *ct)
-{
-	__info = ct;
-}
-
-inline struct mid_reg_info *get_ct(void)
-{
-	return __info;
-}
-
-/*! \brief
- * Get actual time and store
- * value in act_time
- */
-void update_act_time(void)
-{
-	act_time = time(0);
-}
-
-
-time_t get_act_time(void)
-{
-	return act_time;
-}
-
-int calc_contact_q(param_t* _q, qvalue_t* _r)
-{
-	int rc;
-
-	if (!_q || (_q->body.len == 0)) {
-		*_r = default_q;
-	} else {
-		rc = str2q(_r, _q->body.s, _q->body.len);
-		if (rc < 0) {
-			rerrno = R_INV_Q; /* Invalid q parameter */
-			LM_ERR("invalid qvalue (%.*s): %s\n",
-					_q->body.len, _q->body.s, qverr2str(rc));
-			return -1;
-		}
-	}
-	return 0;
-}
-
-static struct hdr_field* act_contact;
-contact_t* get_next_contact(contact_t* _c)
-{
-	struct hdr_field* p = NULL;
-	if (_c->next == 0) {
-		if (act_contact)
-			p = act_contact->next;
-		while(p) {
-			if (p->type == HDR_CONTACT_T) {
-				act_contact = p;
-				return (((contact_body_t*)p->parsed)->contacts);
-			}
-			p = p->next;
-		}
-		return 0;
-	} else {
-		return _c->next;
-	}
-}
-int case_sensitive  = 1;			/*!< If set to 0, username in aor will be case insensitive */
+int case_sensitive  = 1; /*!< If set to 0, username in aor will be case insensitive */
 str gruu_secret = {0,0};
 int disable_gruu = 1;
 char* realm_pref    = "";
@@ -190,23 +112,14 @@ static int domain_fixup(void** param);
 static int registrar_fixup(void** param, int param_no);
 
 /* 
- * TODO
- * 0 = proxy mode
- * 1 = registration traffic throttling mode (by Contact)
- * 2 = registration traffic throttling mode (by AoR)
+ * Working modes:
+ *    0 = mirror
+ *    1 = device throttling
+ *    2 = user throttling
  */
 enum mid_reg_mode reg_mode = MID_REG_MIRROR;
 
-/*
- * Outbound expires
- *
- * min: 4 sec
- * max: 4294967295 sec
- *
- * default value: 0 (not set - all incoming traffic is mirrored)
- */
 unsigned int outgoing_expires = 600;
-unsigned int min_outgoing_expires = 4;
 
 #define is_matching_mode(v) (v == MATCH_BY_PARAM || v == MATCH_BY_USER)
 #define matching_mode_str(v) (v == MATCH_BY_PARAM ? "by uri param" : "by user")
@@ -251,7 +164,6 @@ static param_export_t mod_params[] = {
 	{ "received_param",       STR_PARAM, &rcv_param.s },
 	{ "max_contacts",         INT_PARAM, &max_contacts },
 	{ "retry_after",          INT_PARAM, &retry_after },
-	{ "sock_hdr_name",        STR_PARAM, &sock_hdr_name.s },
 	{ "gruu_secret",          STR_PARAM, &gruu_secret.s },
 	{ "disable_gruu",         INT_PARAM, &disable_gruu },
 	{ "outgoing_expires",     INT_PARAM, &outgoing_expires },
@@ -414,9 +326,6 @@ static int mod_init(void)
 	realm_prefix.s = realm_pref;
 	realm_prefix.len = strlen(realm_pref);
 
-	if (sock_hdr_name.s)
-		sock_hdr_name.len = strlen(sock_hdr_name.s);
-
 	if (gruu_secret.s)
 		gruu_secret.len = strlen(gruu_secret.s);
 
@@ -463,6 +372,69 @@ static int mod_init(void)
 	}
 
 	return 0;
+}
+
+inline void set_ct(struct mid_reg_info *ct)
+{
+	__info = ct;
+}
+
+inline struct mid_reg_info *get_ct(void)
+{
+	return __info;
+}
+
+static time_t act_time;
+/*! \brief
+ * Get actual time and store
+ * value in act_time
+ */
+void update_act_time(void)
+{
+	act_time = time(0);
+}
+
+time_t get_act_time(void)
+{
+	return act_time;
+}
+
+int calc_contact_q(param_t* _q, qvalue_t* _r)
+{
+	int rc;
+
+	if (!_q || (_q->body.len == 0)) {
+		*_r = default_q;
+	} else {
+		rc = str2q(_r, _q->body.s, _q->body.len);
+		if (rc < 0) {
+			rerrno = R_INV_Q; /* Invalid q parameter */
+			LM_ERR("invalid qvalue (%.*s): %s\n",
+					_q->body.len, _q->body.s, qverr2str(rc));
+			return -1;
+		}
+	}
+	return 0;
+}
+
+static struct hdr_field* act_contact;
+contact_t* get_next_contact(contact_t* _c)
+{
+	struct hdr_field* p = NULL;
+	if (_c->next == 0) {
+		if (act_contact)
+			p = act_contact->next;
+		while(p) {
+			if (p->type == HDR_CONTACT_T) {
+				act_contact = p;
+				return (((contact_body_t*)p->parsed)->contacts);
+			}
+			p = p->next;
+		}
+		return 0;
+	} else {
+		return _c->next;
+	}
 }
 
 void mri_free(struct mid_reg_info *mri)
@@ -559,104 +531,6 @@ int parse_reg_headers(struct sip_msg* _m)
 	return 0;
 }
 
-#define EI_R_FINE       "No problem"                                /* R_FINE */
-#define EI_R_UL_DEL_R   "usrloc_record_delete failed"               /* R_UL_DEL_R */
-#define	EI_R_UL_GET_R   "usrloc_record_get failed"                  /* R_UL_GET */
-#define	EI_R_UL_NEW_R   "usrloc_record_new failed"                  /* R_UL_NEW_R */
-#define	EI_R_INV_CSEQ   "Invalid CSeq number"                       /* R_INV_CSEQ */
-#define	EI_R_UL_INS_C   "usrloc_contact_insert failed"              /* R_UL_INS_C */
-#define	EI_R_UL_INS_R   "usrloc_record_insert failed"               /* R_UL_INS_R */
-#define	EI_R_UL_DEL_C   "usrloc_contact_delete failed"              /* R_UL_DEL_C */
-#define	EI_R_UL_UPD_C   "usrloc_contact_update failed"              /* R_UL_UPD_C */
-#define	EI_R_TO_USER    "No username in To URI"                     /* R_TO_USER */
-#define	EI_R_AOR_LEN    "Address Of Record too long"                /* R_AOR_LEN */
-#define	EI_R_AOR_PARSE  "Error while parsing AOR"                   /* R_AOR_PARSE */
-#define	EI_R_INV_EXP    "Invalid expires param in contact"          /* R_INV_EXP */
-#define	EI_R_INV_Q      "Invalid q param in contact"                /* R_INV_Q */
-#define	EI_R_PARSE      "Message parse error"                       /* R_PARSE */
-#define	EI_R_TO_MISS    "To header not found"                       /* R_TO_MISS */
-#define	EI_R_CID_MISS   "Call-ID header not found"                  /* R_CID_MISS */
-#define	EI_R_CS_MISS    "CSeq header not found"                     /* R_CS_MISS */
-#define	EI_R_PARSE_EXP	"Expires parse error"                       /* R_PARSE_EXP */
-#define	EI_R_PARSE_CONT	"Contact parse error"                       /* R_PARSE_CONT */
-#define	EI_R_STAR_EXP	"* used in contact and expires is not zero" /* R_STAR__EXP */
-#define	EI_R_STAR_CONT	"* used in contact and more than 1 contact" /* R_STAR_CONT */
-#define	EI_R_OOO	"Out of order request"                      /* R_OOO */
-#define	EI_R_RETRANS	"Retransmission"                            /* R_RETRANS */
-#define EI_R_UNESCAPE   "Error while unescaping username"           /* R_UNESCAPE */
-#define EI_R_TOO_MANY   "Too many registered contacts"              /* R_TOO_MANY */
-#define EI_R_CONTACT_LEN  "Contact/received too long"               /* R_CONTACT_LEN */
-#define EI_R_CALLID_LEN  "Callid too long"                          /* R_CALLID_LEN */
-#define EI_R_PARSE_PATH  "Path parse error"                         /* R_PARSE_PATH */
-#define EI_R_PATH_UNSUP  "No support for found Path indicated"      /* R_PATH_UNSUP */
-
-str error_info[] = {
-	{EI_R_FINE,       sizeof(EI_R_FINE) - 1},
-	{EI_R_UL_DEL_R,   sizeof(EI_R_UL_DEL_R) - 1},
-	{EI_R_UL_GET_R,   sizeof(EI_R_UL_GET_R) - 1},
-	{EI_R_UL_NEW_R,   sizeof(EI_R_UL_NEW_R) - 1},
-	{EI_R_INV_CSEQ,   sizeof(EI_R_INV_CSEQ) - 1},
-	{EI_R_UL_INS_C,   sizeof(EI_R_UL_INS_C) - 1},
-	{EI_R_UL_INS_R,   sizeof(EI_R_UL_INS_R) - 1},
-	{EI_R_UL_DEL_C,   sizeof(EI_R_UL_DEL_C) - 1},
-	{EI_R_UL_UPD_C,   sizeof(EI_R_UL_UPD_C) - 1},
-	{EI_R_TO_USER,    sizeof(EI_R_TO_USER) - 1},
-	{EI_R_AOR_LEN,    sizeof(EI_R_AOR_LEN) - 1},
-	{EI_R_AOR_PARSE,  sizeof(EI_R_AOR_PARSE) - 1},
-	{EI_R_INV_EXP,    sizeof(EI_R_INV_EXP) - 1},
-	{EI_R_INV_Q,      sizeof(EI_R_INV_Q) - 1},
-	{EI_R_PARSE,      sizeof(EI_R_PARSE) - 1},
-	{EI_R_TO_MISS,    sizeof(EI_R_TO_MISS) - 1},
-	{EI_R_CID_MISS,   sizeof(EI_R_CID_MISS) - 1},
-	{EI_R_CS_MISS,    sizeof(EI_R_CS_MISS) - 1},
-	{EI_R_PARSE_EXP,  sizeof(EI_R_PARSE_EXP) - 1},
-	{EI_R_PARSE_CONT, sizeof(EI_R_PARSE_CONT) - 1},
-	{EI_R_STAR_EXP,   sizeof(EI_R_STAR_EXP) - 1},
-	{EI_R_STAR_CONT,  sizeof(EI_R_STAR_CONT) - 1},
-	{EI_R_OOO,        sizeof(EI_R_OOO) - 1},
-	{EI_R_RETRANS,    sizeof(EI_R_RETRANS) - 1},
-	{EI_R_UNESCAPE,   sizeof(EI_R_UNESCAPE) - 1},
-	{EI_R_TOO_MANY,   sizeof(EI_R_TOO_MANY) - 1},
-	{EI_R_CONTACT_LEN,sizeof(EI_R_CONTACT_LEN) - 1},
-	{EI_R_CALLID_LEN, sizeof(EI_R_CALLID_LEN) - 1},
-	{EI_R_PARSE_PATH, sizeof(EI_R_PARSE_PATH) - 1},
-	{EI_R_PATH_UNSUP, sizeof(EI_R_PATH_UNSUP) - 1}
-
-};
-
-int rerr_codes[] = {
-	200, /* R_FINE */
-	500, /* R_UL_DEL_R */
-	500, /* R_UL_GET */
-	500, /* R_UL_NEW_R */
-	400, /* R_INV_CSEQ */
-	500, /* R_UL_INS_C */
-	500, /* R_UL_INS_R */
-	500, /* R_UL_DEL_C */
-	500, /* R_UL_UPD_C */
-	400, /* R_TO_USER */
-	500, /* R_AOR_LEN */
-	400, /* R_AOR_PARSE */
-	400, /* R_INV_EXP */
-	400, /* R_INV_Q */
-	400, /* R_PARSE */
-	400, /* R_TO_MISS */
-	400, /* R_CID_MISS */
-	400, /* R_CS_MISS */
-	400, /* R_PARSE_EXP */
-	400, /* R_PARSE_CONT */
-	400, /* R_STAR_EXP */
-	400, /* R_STAR_CONT */
-	200, /* R_OOO */
-	200, /* R_RETRANS */
-	400, /* R_UNESCAPE */
-	503, /* R_TOO_MANY */
-	400, /* R_CONTACT_LEN */
-	400, /* R_CALLID_LEN */
-	400, /* R_PARSE_PATH */
-	420  /* R_PATH_UNSUP */
-
-};
 
 int get_expires_hf(struct sip_msg* _m)
 {

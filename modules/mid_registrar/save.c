@@ -1,5 +1,5 @@
 /*
- * contact storing
+ * mid-registrar contact storing
  *
  * This module is intended to be used as a middle layer SIP component in
  * environments where a large proportion of SIP UAs (e.g. mobile devices)
@@ -34,7 +34,7 @@
 #include "encode.h"
 #include "save.h"
 #include "gruu.h"
-#include "uac_timer.h"
+#include "rerrno.h"
 
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
@@ -89,7 +89,6 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct s
 	/* Convert to absolute value */
 	if (*_e > 0) *_e += get_act_time();
 
-	/* TODO FIXME ceiling up to "min_expires" is bad! */
 	if (*_e > 0 && (*_e - get_act_time()) < min_expires) {
 		*_e = min_expires + get_act_time();
 	}
@@ -361,11 +360,6 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 			LM_ERR("failed to replace expires for ct '%.*s'\n",
 			       c->uri.len, c->uri.s);
 		}
-
-		//ct_uri.len = c->uri.len;
-		//ct_uri.s = c->uri.s;
-
-		//shm_str_dup(&mri->ct_uri, &ct_uri);
 	}
 
 	shm_str_dup(&mri->ruri, ruri);
@@ -389,46 +383,6 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 
 	LM_DBG("REQ FORWARDED TO '%.*s', expires=%d\n",
 	       ruri->len, ruri->s, mri->expires_out);
-}
-
-static struct socket_info *get_sock_hdr(struct sip_msg *msg)
-{
-	struct socket_info *sock;
-	struct hdr_field *hf;
-	str socks;
-	str hosts;
-	int port;
-	int proto;
-
-	if (parse_headers( msg, HDR_EOH_F, 0) == -1) {
-		LM_ERR("failed to parse message\n");
-		return 0;
-	}
-
-	hf = get_header_by_name( msg, sock_hdr_name.s, sock_hdr_name.len);
-	if (hf==0)
-		return 0;
-
-	trim_len( socks.len, socks.s, hf->body );
-	if (socks.len==0)
-		return 0;
-
-	if (parse_phostport( socks.s, socks.len, &hosts.s, &hosts.len,
-	&port, &proto)!=0) {
-		LM_ERR("bad socket <%.*s> in \n",
-			socks.len, socks.s);
-		return 0;
-	}
-	set_sip_defaults( port, proto);
-	sock = grep_sock_info(&hosts,(unsigned short)port,(unsigned short)proto);
-	if (sock==0) {
-		LM_ERR("non-local socket <%.*s>\n",	socks.len, socks.s);
-		return 0;
-	}
-
-	LM_DBG("%d:<%.*s>:%d -> p=%p\n", proto,socks.len,socks.s,port,sock );
-
-	return sock;
 }
 
 /*! \brief
@@ -491,12 +445,6 @@ int build_path_vector(struct sip_msg *_m, str *path, str *received,
 			}
 			if (hooks.contact.received)
 				*received = hooks.contact.received->body;
-			/*for (;params; params = params->next) {
-				if (params->type == P_RECEIVED) {
-					*received = hooks.contact.received->body;
-					break;
-				}
-			}*/
 			free_params(params);
 		}
 		free_rr(&route);
@@ -549,14 +497,7 @@ static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
 			goto error;
 		}
 
-		/* set received socket */
-		if ( _flags&REG_SAVE_SOCKET_FLAG) {
-			ci.sock = get_sock_hdr(_m);
-			if (ci.sock==0)
-				ci.sock = _m->rcv.bind_address;
-		} else {
-			ci.sock = _m->rcv.bind_address;
-		}
+		ci.sock = _m->rcv.bind_address;
 
 		/* additional info from message */
 		if (parse_headers(_m, HDR_USERAGENT_F, 0) != -1 && _m->user_agent &&
@@ -1169,9 +1110,6 @@ update_usrloc:
 	}
 
 	if (r) {
-		//if (r->contacts) {
-		//	build_contact(r->contacts,rpl);
-		//}
 		ul_api.release_urecord(r, 0);
 	}
 
@@ -1260,7 +1198,7 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 	}
 
 #ifdef EXTRA_DEBUG
-	//log_contacts(get_first_contact(req));
+	log_contacts(get_first_contact(req));
 #endif
 
 	for (__c = get_first_contact(req); __c; __c = get_next_contact(__c)) {
@@ -1300,31 +1238,6 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 			pkg_free(buf);
 			return -1;
 		}
-
-		/*
-		 * if (mri->max_contacts && (num >= mri->max_contacts)) {
-		 * 	if (mri->flags&REG_SAVE_FORCE_REG_FLAG) {
-		 * 		// we are overflowing the number of maximum contacts,
-		 * 		 //  so remove the first (oldest) one to prevent this
-		 * 		if (r==NULL || r->contacts==NULL) {
-		 * 			LM_CRIT("BUG - overflow detected with r=%p and "
-		 * 				"contacts=%p\n",r,r->contacts);
-		 * 			goto error;
-		 * 		}
-		 * 		if (ul_api.delete_ucontact( r, r->contacts, 0)!=0) {
-		 * 			LM_ERR("failed to remove contact\n");
-		 * 			goto error;
-		 * 		}
-		 * 	} else {
-		 * 		LM_ERR("too many contacts (%d) for AOR <%.*s>, max=%d\n",
-		 * 				num, _a->len, _a->s, mri->max_contacts);
-		 * 		rerrno = R_TOO_MANY;
-		 * 		goto error;
-		 * 	}
-		 * } else {
-		 * 	num++;
-		 * }
-		 */
 
 		LM_DBG("    >> REGISTER %ds ------- %ds 200 OK <<!\n", e, e_out);
 
@@ -1406,9 +1319,6 @@ update_usrloc:
 	}
 
 	if (r) {
-		//if (r->contacts) {
-		//	build_contact(r->contacts,rpl);
-		//}
 		ul_api.release_urecord(r, 0);
 	}
 
@@ -1513,7 +1423,7 @@ static int fix_rpl_contact_by_ct(struct sip_msg *req, struct sip_msg *rpl)
 
 		LM_DBG("deleting param '%.*s' @ %p\n", uri.u_name[i].len, uri.u_name[i].s, uri.u_name[i].s);
 
-		/* ERASE ";param=value" part */
+		/* We now erase the ";param=value" part */
 
 		if (matching_mode == MATCH_BY_PARAM) {
 			/* remove our added matching parameter on the way back to the UAC */
