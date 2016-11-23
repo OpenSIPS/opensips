@@ -253,7 +253,7 @@ Chapter 1. Admin Guide
    of one of the mid-registrar's listening interfaces.
 
    The module will also append a parameter to each Contact URI
-   ("rinstance" by default, can be changed through the
+   ("rid" by default, can be changed through the
    contact_match_param module parameter) This URI parameter allows
    reply contacts to be matched with the ones from the request.
    This same parameter will also be used when routing calls to the
@@ -330,10 +330,10 @@ modparam("mid_registrar", "outgoing_expires", 3600)
    the Contact URI parameter which is used by the module in order
    to match contacts and route calls.
 
-   Default value is “rinstance”
+   Default value is “rid”
 
    Example 1.4. Setting the contact_match_param module parameter
-modparam("mid_registrar", "contact_match_param", "mid-reg-id")
+modparam("mid_registrar", "contact_match_param", "regid")
 
 1.5.5. default_q (integer)
 

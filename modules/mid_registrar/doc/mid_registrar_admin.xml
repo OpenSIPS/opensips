@@ -198,7 +198,7 @@
 		</para>
 		<para>
 			The module will also append a parameter to each Contact URI
-			("rinstance" by default, can be changed through the
+			("rid" by default, can be changed through the
 			<emphasis><xref linkend="modparam-contact-match-param"/></emphasis> module parameter)
 			This URI parameter allows reply contacts to be matched with the
 			ones from the request. This same parameter will also be used when
@@ -360,12 +360,12 @@ modparam("mid_registrar", "outgoing_expires", 3600)
 		</para>
 
 		<para>
-			Default value is <emphasis role='bold'><quote>rinstance</quote></emphasis>
+			Default value is <emphasis role='bold'><quote>rid</quote></emphasis>
 		</para>
 		<example>
 		<title>Setting the <emphasis>contact_match_param</emphasis> module parameter</title>
 		<programlisting format="linespecific">
-modparam("mid_registrar", "contact_match_param", "mid-reg-id")
+modparam("mid_registrar", "contact_match_param", "regid")
 </programlisting>
 		</example>
 	</section>

@@ -132,7 +132,7 @@ enum mid_reg_matching_mode  matching_mode = MATCH_BY_PARAM;
  * Allows us to match the request contact set with the reply contact set,
  * which contains rewritten Contact header field domains
  */
-str matching_param = str_init("rinstance");
+str matching_param = str_init("rid");
 
 static cmd_export_t cmds[] = {
 	{ "mid_registrar_save", (cmd_function)mid_reg_save, 1,
