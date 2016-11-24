@@ -140,6 +140,8 @@ static int unregister_contact(struct mid_reg_info *mri)
 		NULL,	/* callback param */
 		NULL);	/* function to release the parameter */
 
+	tm_api.free_dlg(dlg);
+
 	return (ret == 1 ? 0 : ret);
 }
 
