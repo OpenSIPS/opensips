@@ -429,7 +429,7 @@ int pv_set_stat(struct sip_msg* msg, pv_param_t *param, int op,
 		return -1;
 	}
 
-	if (val != 0)
+	if (val->ri != 0)
 		LM_WARN("non-zero value - setting value to 0\n");
 
 	reset_stat( stat );
