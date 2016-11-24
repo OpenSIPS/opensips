@@ -83,25 +83,18 @@ Chapter 1. Admin Guide
 
 1.1. Overview
 
-   The mid_registrar component of a VoIP platform is a
-   registration front-end, an in-between SIP registrar. It opens
-   up new possibilities for leveraging existing infrastructure in
-   order to support larger user bases / heavier traffic loads
-   while minimizing the need to add additional hardware. This is
-   possible through the optimized SIP user location implementation
-   of OpenSIPS, capable of handling high subscriber numbers and
-   large amounts of registration traffic.
+   The mid_registrar is an in-between component of a SIP platform,
+   designed to work between end users and the platform's main
+   registration layer. It opens up new possibilities for
+   leveraging existing infrastructure in order to support larger
+   user bases / heavier traffic loads while minimizing the need to
+   add additional hardware. This is possible through the optimized
+   SIP user location implementation of OpenSIPS, capable of
+   handling high subscriber numbers and large amounts of
+   registration traffic.
 
-   The main motivation behind the mid-registrar concept stems from
-   the fact that SIP User Agents have been (and still are!)
-   continually shifting towards mobile devices. These UAs are
-   known to have unstable network presence, hence they have short
-   built-in registration times, imposed by their manufacturers
-   (usually 60 seconds). This, in effect, causes them to put more
-   and more registration traffic overhead on existing platforms.
-
-   Acting as an intermediary registration front-end between users
-   and main SIP registrar, the mid-registrar is able to:
+   Acting as a registration front-end to the main SIP registrar,
+   the mid-registrar is able to:
      * convert incoming high-rate registration traffic into a
        low-rate variant, towards the main registrar layer. With
        proper configuration, it can absorb over 90% of existing
@@ -119,7 +112,7 @@ Chapter 1. Admin Guide
 
 1.2.1. Mirror (default, mode = 0)
 
-   This basic usage of the module highlights its capability to
+   The basic usage of the module, highlighting its capability to
    properly handle expiry times imposed by the main registrar
    layer. In other words, any contact-related operation will only
    be performed on a 200 OK reply.
@@ -134,11 +127,10 @@ Chapter 1. Admin Guide
 
 1.2.2. Device throttling (mode = 1)
 
-   This working mode employs a SIP contact-oriented approach
-   (hence "device"), in which subsequent registration traffic is
-   throttled (i.e. absorbed / immediately replied to / not
-   forwarded to the main registrar) for each unique SIP "Contact"
-   header field that manages to successfully register.
+   In this working mode, the mid-registrar will absorb a fraction
+   of all registrations of each unique SIP Contact, by not
+   forwarding them to the main registrar, and immediately
+   responding with 200 OK.
 
    Device throttling is the first level of registration traffic
    optimization. This is possible through the use of the
@@ -181,24 +173,22 @@ Chapter 1. Admin Guide
 
 1.2.3. User throttling (mode = 2)
 
-   This working mode employs a SIP Address-of-record-oriented
-   approach (hence "user"), in which subsequent registration
-   traffic is throttled (i.e. absorbed / immediately replied to /
-   not forwarded to the main registrar) for each unique SIP "To"
-   header field username part that manages to successfully
-   register.
+   In this working mode, the mid-registrar will absorb a fraction
+   of all registrations of each unique SIP AOR (username of the
+   "To" header field URI of a REGISTER request), by not forwarding
+   them to the main registrar, and immediately responding with 200
+   OK.
 
    User-level throttling is the second level of registration
    traffic optimization, effectively building upon the previous
-   "device throttling" mode. This is also possible through the use
-   of the outgoing_expires module parameter or the corresponding
-   parameter to mid_registrar_save(), which allow the script
-   writer to prolong the life of the registrations on the way to
-   the main registrar.
+   "device throttling" mode. This behaviour is also made possible
+   through the outgoing_expires module parameter or the
+   corresponding parameter to mid_registrar_save(), which allow
+   the script writer to prolong the life of the registrations on
+   the way to the main registrar.
 
    Once a prolonged registration is completed, subsequent
-   registrations to the same Address-of-record (the username of
-   the "To" header field URI of a REGISTER request) will be
+   registrations to the same Address-of-record will be
    continuously absorbed by the mid-registrar until, eventually,
    the lifetime of the remote registration will have decreased
    enough that a refresh (i.e. simply forwarding the next REGISTER
@@ -252,8 +242,8 @@ Chapter 1. Admin Guide
    replacing any original IP and port of a Contact URI with those
    of one of the mid-registrar's listening interfaces.
 
-   The module will also append a parameter to each Contact URI
-   ("rid" by default, can be changed through the
+   The mid-registrar will also append a parameter to each Contact
+   URI ("rid" by default, can be changed through the
    contact_match_param module parameter) This URI parameter allows
    reply contacts to be matched with the ones from the request.
    This same parameter will also be used when routing calls to the
