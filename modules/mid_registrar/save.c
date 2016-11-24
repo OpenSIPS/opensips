@@ -667,6 +667,9 @@ static struct mid_reg_info *mri_dup(struct mid_reg_info *mri)
 	if (mri->from.s)
 		shm_str_dup(&ret->from, &mri->from);
 
+	if (mri->to.s)
+		shm_str_dup(&ret->to, &mri->to);
+
 	if (mri->callid.s)
 		shm_str_dup(&ret->callid, &mri->callid);
 
@@ -1500,7 +1503,7 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
                            str *aor, struct save_ctx *sctx)
 {
 	struct mid_reg_info *mri;
-	struct to_body *from;
+	struct to_body *to, *from;
 
 	LM_DBG("from: '%.*s'\n", msg->from->body.len, msg->from->body.s);
 	LM_DBG("Call-ID: '%.*s'\n", msg->callid->body.len, msg->callid->body.s);
@@ -1530,6 +1533,9 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 
 	from = get_from(msg);
 	shm_str_dup(&mri->from, &from->uri);
+
+	to = get_to(msg);
+	shm_str_dup(&mri->to, &to->uri);
 
 	shm_str_dup(&mri->callid, &msg->callid->body);
 

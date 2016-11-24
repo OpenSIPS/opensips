@@ -119,7 +119,7 @@ static int unregister_contact(struct mid_reg_info *mri)
 	int ret;
 
 	/* create a mystical dialog in preparation for our De-REGISTER */
-	if (tm_api.new_auto_dlg_uac(&mri->from, mri->to.s ? &mri->to : &mri->next_hop,
+	if (tm_api.new_auto_dlg_uac(&mri->from, &mri->to, &mri->next_hop,
 	    &mri->callid, NULL, &dlg)) {
 		LM_ERR("failed to create new TM dlg\n");
 		return -1;

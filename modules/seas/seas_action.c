@@ -999,7 +999,7 @@ int ac_uac_req(as_p the_as,char *action,int len)
       cseq--;
    }
    if(seas_f.tmb.new_dlg_uac(&(my_msg->callid->body),&(fb->tag_value),cseq,\
-	    &(fb->uri),&(tb->uri),&my_dlg) < 0) {
+	    &(fb->uri),&(tb->uri),NULL,&my_dlg) < 0) {
       as_action_fail_resp(uac_id,SE_UAC,"Error creating new dialog",0);
       LM_ERR("Error while creating new dialog\n");
       goto error;

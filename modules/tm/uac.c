@@ -542,7 +542,7 @@ int req_outside(str* method, str* to, str* from,
 	generate_callid(&callid);
 	generate_fromtag(&fromtag, &callid);
 
-	if (new_dlg_uac(&callid, &fromtag, DEFAULT_CSEQ, from, to, dialog) < 0) {
+	if (new_dlg_uac(&callid, &fromtag, DEFAULT_CSEQ, from, to, NULL, dialog) < 0) {
 		LM_ERR("failed to create new dialog\n");
 		goto err;
 	}
@@ -568,7 +568,7 @@ int request(str* m, str* ruri, str* to, str* from, str* h, str* b, str *oburi,
 	generate_callid(&callid);
 	generate_fromtag(&fromtag, &callid);
 
-	if (new_dlg_uac(&callid, &fromtag, DEFAULT_CSEQ, from, to, &dialog) < 0) {
+	if (new_dlg_uac(&callid, &fromtag, DEFAULT_CSEQ, from, to, NULL, &dialog) < 0) {
 		LM_ERR("failed to create temporary dialog\n");
 		goto err;
 	}

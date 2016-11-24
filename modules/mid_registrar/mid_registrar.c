@@ -441,6 +441,7 @@ void mri_free(struct mid_reg_info *mri)
 {
 	LM_DBG("aor: '%.*s' %p\n", mri->aor.len, mri->aor.s, mri->aor.s);
 	LM_DBG("from: '%.*s' %p\n", mri->from.len, mri->from.s, mri->from.s);
+	LM_DBG("to: '%.*s' %p\n", mri->to.len, mri->to.s, mri->to.s);
 	LM_DBG("callid: '%.*s' %p\n", mri->callid.len, mri->callid.s, mri->callid.s);
 	LM_DBG("ruri: '%.*s' %p\n", mri->ruri.len, mri->ruri.s, mri->ruri.s);
 	LM_DBG("ct_uri: '%.*s' %p\n", mri->ct_uri.len, mri->ct_uri.s, mri->ct_uri.s);
@@ -450,6 +451,9 @@ void mri_free(struct mid_reg_info *mri)
 
 	if (mri->from.s)
 		shm_free(mri->from.s);
+
+	if (mri->to.s)
+		shm_free(mri->to.s);
 
 	if (mri->callid.s)
 		shm_free(mri->callid.s);
