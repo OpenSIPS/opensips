@@ -218,7 +218,7 @@ int bin_set_send_buffer(str buffer)
 	if (!buffer.s)
 		return -1;
 
-	send_buffer = buffer.s;
+	memcpy(send_buffer, buffer.s, buffer.len);
 	cpos = send_buffer + buffer.len;
 	set_len(send_buffer, cpos);
 
