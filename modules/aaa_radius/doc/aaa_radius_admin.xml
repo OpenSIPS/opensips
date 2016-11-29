@@ -70,8 +70,25 @@
 			</listitem>
 			</itemizedlist>
 			<para>
-				By default, radiusclient-ng is used. To change at compile time
-				to freeradius, uncomment the USE_FREERADIUS=1 line in main Makefile.
+				One can force the radius library that is usedby setting RADIUSCLIENT env, before compiling the module, to one of the following values:
+				<itemizedlist>
+					<listitem>
+						<para><emphasis>RADCLI  ***</emphasis> libradcli-dev library shall be used;</para>
+					</listitem>
+
+					<listitem>
+						<para><emphasis>FREERADIUS  ***</emphasis> libfreeradius-client-dev library shall be used;</para>
+					</listitem>
+
+					<listitem>
+						<para><emphasis>RADIUSCLIENT  ***</emphasis> libradiusclient-ng library shall be used;</para>
+					</listitem>
+				</itemizedlist>
+
+				<para>IMPORTANT: If the selected library is not installed the module won't compile.</para>
+				<para>NOTE: If RADIUSCLIENT env not set, the module will try to find one of the three radius libraries in
+				the following order: radcli, freeradius, radiusclient-ng. That is if radcli library is installed
+				it shall be used, else freeradius shall be looked for and so on.</para>
 			</para>
 	</section>
 	</section>
