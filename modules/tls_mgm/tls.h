@@ -64,14 +64,59 @@
 	#warning ""
 #endif
 
-static int tls_static_locks_no=0;
-static gen_lock_set_t* tls_static_locks=NULL;
-
 static SSL_METHOD     *ssl_methods[TLS_USE_TLSv1_2 + 1];
 
 #define VERIFY_DEPTH_S 3
 
 
+/*
+ * Wrappers around OpenSIPS shared memory functions
+ * (which can be macros)
+ */
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+static void* os_malloc(size_t size, const char *file, int line)
+#else
+static void* os_malloc(size_t size)
+#endif
+{
+#if (defined DBG_MALLOC  && OPENSSL_VERSION_NUMBER >= 0x10100000L)
+	return _shm_malloc(size, file, __FUNCTION__, line);
+#else
+	return shm_malloc(size);
+#endif
+}
+
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+static void* os_realloc(void *ptr, size_t size, const char *file, int line)
+#else
+static void* os_realloc(void *ptr, size_t size)
+#endif
+{
+#if (defined DBG_MALLOC  && OPENSSL_VERSION_NUMBER >= 0x10100000L)
+	return _shm_realloc(ptr, size, file, __FUNCTION__, line);
+#else
+	return shm_realloc(ptr, size);
+#endif
+}
+
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+static void os_free(void *ptr, const char *file, int line)
+#else
+static void os_free(void *ptr)
+#endif
+{
+	/* TODO: also handle free file and line */
+	if (ptr)
+		shm_free(ptr);
+}
+
+
+
+
+/* these locks can not be used in 1.1.0, because the interface has changed */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 struct CRYPTO_dynlock_value {
 	gen_lock_t lock;
 };
@@ -80,46 +125,6 @@ static unsigned long tls_get_id(void)
 {
 	return my_pid();
 }
-
-/*
- * Wrappers around OpenSIPS shared memory functions
- * (which can be macros)
- */
-static void* os_malloc(size_t size)
-{
-	return shm_malloc(size);
-}
-
-
-static void* os_realloc(void *ptr, size_t size)
-{
-	return shm_realloc(ptr, size);
-}
-
-
-static void os_free(void *ptr)
-{
-	if (ptr)
-		shm_free(ptr);
-}
-
-
-
-
-static void tls_static_locks_ops(int mode, int n, const char* file, int line)
-{
-	if (n<0 || n>tls_static_locks_no) {
-		LM_ERR("BUG - SSL Lib attempting to acquire bogus lock\n");
-		abort();
-	}
-
-	if (mode & CRYPTO_LOCK) {
-		lock_set_get(tls_static_locks,n);
-	} else {
-		lock_set_release(tls_static_locks,n);
-	}
-}
-
 
 static struct CRYPTO_dynlock_value* tls_dyn_lock_create(const char* file,
 																	int line)
@@ -158,5 +163,6 @@ static void tls_dyn_lock_destroy(struct CRYPTO_dynlock_value *dyn_lock,
 	lock_destroy(&dyn_lock->lock);
 	shm_free(dyn_lock);
 }
+#endif
 
 #endif /* _PROTO_TLS_H_ */

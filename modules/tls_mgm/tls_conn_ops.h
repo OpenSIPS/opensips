@@ -116,11 +116,13 @@ static int tls_conn_init(struct tcp_connection* c, struct tls_mgm_binds *api)
 		return -1;
 	}
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 #ifndef OPENSSL_NO_KRB5
 	if ( ((SSL *)c->extra_data)->kssl_ctx ) {
 		kssl_ctx_free( ((SSL *)c->extra_data)->kssl_ctx );
 		((SSL *)c->extra_data)->kssl_ctx = 0;
 	}
+#endif
 #endif
 
 	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {

@@ -557,11 +557,10 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 	LM_NOTICE("subject = %s\n", buf);
 	LM_NOTICE("verify error:num=%d:%s\n",
 			err, X509_verify_cert_error_string(err));
-	LM_NOTICE("error code is %d\n", ctx->error);
 
-	switch (ctx->error) {
+	switch (err) {
 		case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
-			X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert),
+			X509_NAME_oneline(X509_get_issuer_name(err_cert),
 					buf,sizeof buf);
 			LM_NOTICE("issuer= %s\n",buf);
 			break;
@@ -611,7 +610,7 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 
 		default:
 			LM_NOTICE("something wrong with the cert"
-					" ... error code is %d (check x509_vfy.h)\n", ctx->error);
+					" ... error code is %d (check x509_vfy.h)\n", err);
 			break;
 	}
 
@@ -1074,9 +1073,11 @@ static int init_tls_domains(struct tls_domain *d)
 	return 0;
 }
 
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 static int check_for_krb(void)
 {
 	SSL_CTX *xx;
+
 	int j;
 
 	xx = SSL_CTX_new(ssl_methods[tls_default_method - 1]);
@@ -1096,6 +1097,27 @@ static int check_for_krb(void)
 	SSL_CTX_free(xx);
 	return 0;
 }
+#endif
+
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
+static int tls_static_locks_no=0;
+static gen_lock_set_t* tls_static_locks=NULL;
+
+static void tls_static_locks_ops(int mode, int n, const char* file, int line)
+{
+	if (n<0 || n>tls_static_locks_no) {
+		LM_ERR("BUG - SSL Lib attempting to acquire bogus lock\n");
+		abort();
+	}
+
+	if (mode & CRYPTO_LOCK) {
+		lock_set_get(tls_static_locks,n);
+	} else {
+		lock_set_release(tls_static_locks,n);
+	}
+}
+
+
 
 static int tls_init_multithread(void)
 {
@@ -1126,6 +1148,7 @@ static int tls_init_multithread(void)
 
 	return 0;
 }
+#endif
 
 /*
  * initialize ssl methods
@@ -1135,18 +1158,30 @@ init_ssl_methods(void)
 {
 	LM_DBG("entered\n");
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	ssl_methods[TLS_USE_TLSv1_cli-1] = (SSL_METHOD*)TLS_client_method();
+	ssl_methods[TLS_USE_TLSv1_srv-1] = (SSL_METHOD*)TLS_server_method();
+	ssl_methods[TLS_USE_TLSv1-1] = (SSL_METHOD*)TLS_method();
+#else
 	ssl_methods[TLS_USE_TLSv1_cli-1] = (SSL_METHOD*)TLSv1_client_method();
 	ssl_methods[TLS_USE_TLSv1_srv-1] = (SSL_METHOD*)TLSv1_server_method();
 	ssl_methods[TLS_USE_TLSv1-1] = (SSL_METHOD*)TLSv1_method();
+#endif
 
 	ssl_methods[TLS_USE_SSLv23_cli-1] = (SSL_METHOD*)SSLv23_client_method();
 	ssl_methods[TLS_USE_SSLv23_srv-1] = (SSL_METHOD*)SSLv23_server_method();
 	ssl_methods[TLS_USE_SSLv23-1] = (SSL_METHOD*)SSLv23_method();
 
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	ssl_methods[TLS_USE_TLSv1_2_cli-1] = (SSL_METHOD*)TLS_client_method();
+	ssl_methods[TLS_USE_TLSv1_2_srv-1] = (SSL_METHOD*)TLS_server_method();
+	ssl_methods[TLS_USE_TLSv1_2-1] = (SSL_METHOD*)TLS_method();
+#else
 	ssl_methods[TLS_USE_TLSv1_2_cli-1] = (SSL_METHOD*)TLSv1_2_client_method();
 	ssl_methods[TLS_USE_TLSv1_2_srv-1] = (SSL_METHOD*)TLSv1_2_server_method();
 	ssl_methods[TLS_USE_TLSv1_2-1] = (SSL_METHOD*)TLSv1_2_method();
+#endif
 #endif
 }
 
@@ -1273,17 +1308,11 @@ static int mod_init(void){
 	 * CRYPTO_malloc will set allow_customize in openssl to 0
 	 */
 	if (!CRYPTO_set_mem_functions(os_malloc, os_realloc, os_free)) {
-		void *(*m) (size_t);
-		void *(*r) (void *, size_t);
-		void (*f) (void *);
 		LM_ERR("unable to set the memory allocation functions\n");
-		LM_ERR("NOTE: check if you have openssl 1.0.1e-fips, as this "
-			"version is known to be broken; if so, you need to upgrade or "
-			"downgrade to a different openssl version !!\n");
-		CRYPTO_get_mem_functions(&m, &r, &f);
-		LM_ERR("extra: malloc=%p/%p realloc=%p/%p free=%p/%p version=%s\n",
-				os_malloc, m, os_realloc, r, os_free, f,
-				SSLeay_version(SSLEAY_VERSION));
+		LM_ERR("NOTE: check if you are using openssl 1.0.1e-fips, (or other "
+			"FIPS version of openssl, as this is known to be broken; if so, "
+			"you need to upgrade or downgrade to a different openssl version!\n");
+		LM_ERR("current version: %s\n", SSLeay_version(SSLEAY_VERSION));
 		return -1;
 	}
 
@@ -1298,15 +1327,18 @@ static int mod_init(void){
 		sk_SSL_COMP_zero(comp_methods);
 	}
 #endif
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 	if (tls_init_multithread() < 0) {
 		LM_ERR("failed to init multi-threading support\n");
 		return -1;
 	}
+#endif
 
 	SSL_library_init();
 	SSL_load_error_strings();
 	init_ssl_methods();
 
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 	n = check_for_krb();
 	if (n==-1) {
 		LM_ERR("kerberos check failed\n");
@@ -1325,6 +1357,7 @@ static int mod_init(void){
 				(n==1)?"":"no ",(n!=1)?"no ":"");
 		return -1;
 	}
+#endif
 
 	/*
 	 * finish setting up the tls default domains
