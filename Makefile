@@ -31,14 +31,6 @@
 #  2007-09-28  added db_berkeley (wiquan)
 #
 
-#FREERADIUS=1
-# freeradius libs check (must be done in toplevel makefile)
-ifeq ($(RADIUSCLIENT),)
-RADIUSCLIENT=$(shell if [ -n "`ldconfig -p | grep radcli`" ]; then echo "RADCLI"; \
-		 elif [ -n "`ldconfig -p | grep freeradius`" ]; then echo "FREERADIUS"; \
-		  elif [ -n "`ldconfig -p | grep radiusclient-ng`" ];then echo "RADIUSCLIENT"; fi)
-endif
-
 #SQLITE_BIND=1
 NICER?=1
 auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
@@ -715,11 +707,6 @@ doxygen:
 	echo "HAVE_DOT=no" ;\
 	echo "PROJECT_NUMBER=$(NAME)-$(RELEASE)" )| doxygen -
 	-@echo "Doxygen documentation created"
-
-
-.PHONY: print radius_lib
-print_radius_lib:
-	@echo $(RADIUSCLIENT)
 
 comp_menuconfig:
 	$(MAKE) -C menuconfig
