@@ -207,7 +207,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, in
 		/* LM_DBG("[n]=%d, [i]=%d, [j]=%d xml_array[i]=%p\n", n, i, j, xml_array[j] ); */
 		p_root= xmlDocGetRootElement(xml_array[i]);
 			if(p_root ==NULL) {
-				LM_ERR("while geting the xml_tree root element\n");
+				LM_ERR("while getting the xml_tree root element\n");
 				goto error;
 			}
 			if (p_root->children) {

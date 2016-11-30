@@ -369,7 +369,7 @@ int mi_xmlrpc_http_flush_tree(void* param, struct mi_root *tree)
 				html_p_data->buffer.len, tree);
 		break;
 	default:
-		LM_ERR("Version param not set acordingly");
+		LM_ERR("Version param not set accordingly");
 		return -1;
 	
 	}
@@ -862,7 +862,7 @@ int mi_xmlrpc_http_build_page(str *page, int max_page_len,
 			return -1;
 		break;
 	default:
-		LM_ERR("Version param not set acordingly");
+		LM_ERR("Version param not set accordingly");
 		return -1;
 	
 	}

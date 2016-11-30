@@ -108,7 +108,7 @@ int err2reason_phrase(
 			*sip_error=-E_BAD_SERVER;
 			break;
 		case E_OUT_OF_MEM:
-		/* dont disclose lack of mem in release mode */
+		/* don't disclose lack of mem in release mode */
 #ifdef DEBUG
 			error_txt="Excuse me I ran out of memory";
 			*sip_error=-E_BAD_SERVER;

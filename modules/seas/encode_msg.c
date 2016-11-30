@@ -111,7 +111,7 @@ char get_header_code(struct hdr_field *hf)
  * parts.
  *
  * RETURNS: LENGTH of structure on success, <0 if failure
- * if there was failure, you dont need to pkg_free the payload (it is done inside).
+ * if there was failure, you don't need to pkg_free the payload (it is done inside).
  * if there was success, you __NEED_TO_PKG_FREE_THE_PAYLOAD__ from the calling function.
  *
  * The encoded meta-info is composed by 3 sections:

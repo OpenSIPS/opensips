@@ -318,7 +318,7 @@ struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
 	if (tls_db_enabled)
 		lock_start_read(dom_lock);
 	if (!avp) {
-		LM_DBG("no TLS client doman AVP set, looking "
+		LM_DBG("no TLS client domain AVP set, looking "
 			"for socket based TLS client domain\n");
 		dom = tls_find_client_domain_addr(ip, port);
 		if (dom) {

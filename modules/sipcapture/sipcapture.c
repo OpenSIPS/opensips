@@ -3104,7 +3104,7 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 		EMPTY_STR(sco.ruri_user);
 	}
 	else {
-		LM_ERR("unknow type [%i]\n", msg->first_line.type);
+		LM_ERR("unknown type [%i]\n", msg->first_line.type);
 		EMPTY_STR(sco.method);
 		EMPTY_STR(sco.reply_reason);
 		EMPTY_STR(sco.ruri);

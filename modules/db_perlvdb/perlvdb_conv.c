@@ -385,7 +385,7 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 						break;
 					case DB_STRING:
 					case DB_STR:
-				/* We dont support DB_STR for now.
+				/* We don't support DB_STR for now.
 				 * Set DB_STRING instead */
 						cur_val.type = DB_STRING;
 						currentstring = SvPV(aval, len);

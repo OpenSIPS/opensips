@@ -90,7 +90,7 @@ typedef int (async_resume_fd)
  * on the fd.
  * The return code of the f resume function dictates when the fd will be
  * removed from the reactor (see async_ret_code).
- * Returns : 0 - on succesfull FD registration
+ * Returns : 0 - on successful FD registration
  *          -1 - failure to register the FD
  * Function to be used by modules seeking to launch async I/O ops
  */

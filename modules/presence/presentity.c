@@ -73,7 +73,7 @@ int generate_ETag(int publ_count, str* etag)
 			prefix, (int)startup_time, pid, counter, publ_count);
 	if( etag->len <0 )
 	{
-		LM_ERR("unsuccessfull sprintf\n ");
+		LM_ERR("unsuccessful sprintf\n ");
 		return -1;
 	}
 	if(etag->len > ETAG_LEN)

@@ -129,7 +129,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	CURLMsg *cmsg;
 
 	if (transfers == FD_SETSIZE) {
-		LM_ERR("too many ongoing tranfers: %d\n", FD_SETSIZE);
+		LM_ERR("too many ongoing transfers: %d\n", FD_SETSIZE);
 		clean_header_list;
 		return ASYNC_NO_IO;
 	}

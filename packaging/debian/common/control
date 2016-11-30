@@ -509,7 +509,7 @@ Description: Emerrgency call module for OpenSIPS
  per second even on low-budget hardware.
  .
  The emergency module provides emergency call treatment for OpenSIPS, following
- the architecture i2 specification of the american entity NENA. (National
+ the architecture i2 specification of the American entity NENA. (National
  Emergency Number Association).
 
 Package: opensips-tlsmgm-module

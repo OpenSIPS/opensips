@@ -174,7 +174,7 @@ int init_data(void)
 	start = dp_hlist;
 	if (!start) {
 		LM_BUG("not even default partition defined!"
-				"An error occured!\n");
+				"An error occurred!\n");
 		return -1;
 	}
 

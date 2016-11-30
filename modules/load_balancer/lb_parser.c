@@ -103,7 +103,7 @@ struct lb_res_str_list *parse_resources_list(char *r_list, int has_val)
 	} while(end && *p);
 
 	if (n==0) {
-		LM_ERR("empty list of resorces\n");
+		LM_ERR("empty list of resources\n");
 		goto error;
 	}
 	LM_DBG("discovered %d resources\n",n);

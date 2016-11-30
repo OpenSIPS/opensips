@@ -979,12 +979,12 @@ static inline int handle_new_connect(struct socket_info* si)
 		LM_ERR("maximum number of connections exceeded: %d/%d\n",
 					tcp_connections_no, tcp_max_connections);
 		close(new_sock);
-		return 1; /* success, because the accept was succesfull */
+		return 1; /* success, because the accept was successful */
 	}
 	if (tcp_init_sock_opt(new_sock)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		close(new_sock);
-		return 1; /* success, because the accept was succesfull */
+		return 1; /* success, because the accept was successful */
 	}
 
 	/* add socket to list */
@@ -1011,7 +1011,7 @@ static inline int handle_new_connect(struct socket_info* si)
 		LM_ERR("tcpconn_new failed, closing socket\n");
 		close(new_sock);
 	}
-	return 1; /* accept() was succesfull */
+	return 1; /* accept() was successful */
 }
 
 
@@ -1021,7 +1021,7 @@ static inline int handle_new_connect(struct socket_info* si)
  * \param    tcpconn - pointer to the tcp_connection for which we have an io ev.
  * \param    fd_i    - index in the fd_array table (needed for delete)
  * \return   handle_* return convention, but on success it always returns 0
- *           (because it's one-shot, after a succesfull execution the fd is
+ *           (because it's one-shot, after a successful execution the fd is
  *            removed from tcp_main's watch fd list and passed to a child =>
  *            tcp_main is not interested in further io events that might be
  *            queued for this fd)
@@ -1746,7 +1746,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 
 			/* was startup route executed so far ? */
 			if (startup_done!=NULL && *startup_done==0 && r==0) {
-				LM_DBG("runing startup for first TCP\n");
+				LM_DBG("running startup for first TCP\n");
 				if(run_startup_route()< 0) {
 					LM_ERR("Startup route processing failed\n");
 					report_failure_status();

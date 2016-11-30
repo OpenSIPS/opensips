@@ -1339,7 +1339,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 				dlg->state= B2B_TERMINATED;
 			UPDATE_DBFLAG(dlg);
 		}
-		LM_DBG("Reseted transaction- send final reply [%p], uas_tran=0\n", dlg);
+		LM_DBG("Reset transaction- send final reply [%p], uas_tran=0\n", dlg);
 		if(sip_method == METHOD_UPDATE)
 			dlg->update_tran = NULL;
 		else

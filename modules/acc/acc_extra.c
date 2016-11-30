@@ -523,7 +523,7 @@ int extra2strar( extra_value_t* values, str *val_arr, int idx)
 		/* get the value */
 		/* check for overflow */
 		if (n==MAX_ACC_EXTRA) {
-			LM_WARN("array to short -> ommiting extras for accounting\n");
+			LM_WARN("array to short -> omitting extras for accounting\n");
 			goto done;
 		}
 

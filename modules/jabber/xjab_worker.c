@@ -1027,7 +1027,7 @@ int xj_manage_jab(char *buf, int len, int *pos, xj_jalias als, xj_jcon jbc)
 		if(!strncasecmp(type, "unsubscribed", 12))
 		{
 #ifdef XJ_EXTRA_DEBUG
-			LM_DBG("user <%s> does not allow to see this"
+			LM_DBG("user <%s> does not allow one to see this"
 				" presence status\n", from);
 #endif
 			if(prc->state != XJ_PS_REFUSED)

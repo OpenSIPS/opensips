@@ -700,7 +700,7 @@ void reply_in_redirect( struct cell* t, int type, struct tmcb_params *params){
 				}else{
 					if(resp == 0){
 						if(call_cell->lro == empty){
-							LM_ERR("dont exits esgwri/ert or lro to routing\n");
+							LM_ERR("don't exits esgwri/ert or lro to routing\n");
 							goto end;
 						}
 					}
@@ -708,7 +708,7 @@ void reply_in_redirect( struct cell* t, int type, struct tmcb_params *params){
 			}else{
 				LM_DBG("exits lro to routing %d\n", resp);
 				if(call_cell->lro == empty){
-					LM_ERR("dont exits esgwri/ert or lro to routing\n");
+					LM_ERR("don't exits esgwri/ert or lro to routing\n");
 					goto end;
 				}
 			}
@@ -1203,7 +1203,7 @@ int send_request_vpc(struct sip_msg *msg) {
 		if(locationHeader && strlen(locationHeader)>1){
 			lie = locationHeader;
 		}else{
-			LM_ERR("INVITE whithout location information\n");
+			LM_ERR("INVITE without location information\n");
 			return -1;
 		}
 	}

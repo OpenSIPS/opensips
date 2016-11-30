@@ -568,7 +568,7 @@ int lds_resume(
 
 	switch (rc) {
 		case -1:
-			/* Leave the connection for other requests if we're not succesfull */
+			/* Leave the connection for other requests if we're not successful */
 			release_ldap_connection(conn);
 			LM_ERR("[%s]: ldap result failed\n", lds->name);
 			return -1;
@@ -578,7 +578,7 @@ int lds_resume(
 			return 0;
 		default:
 			/* receive successfull */
-			LM_DBG("Succesfully received response from ldap server!\n");
+			LM_DBG("Successfully received response from ldap server!\n");
 			/* FIXME we release the connection now; calling another async
 			 * operation before calling ldap_result will break this mechanism,
 			 * since the connection is released and the handle is being kept

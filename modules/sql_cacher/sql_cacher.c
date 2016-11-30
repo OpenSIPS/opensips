@@ -638,7 +638,7 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
 		return NULL;
 	}
-	/* setting and geting a test key in cachedb */
+	/* setting and getting a test key in cachedb */
 	if (new_db_hdls->cdbf.set(new_db_hdls->cdbcon, &cdb_test_key, &cdb_test_val, 0) < 0) {
 		LM_ERR("Failed to set test key in cachedb: %.*s\n",
 			c_entry->cachedb_url.len, c_entry->cachedb_url.s);

@@ -231,7 +231,7 @@ int init_rl_table(unsigned int size)
 	/* resolve the default algorithm */
 	rl_default_algo = get_rl_algo(rl_default_algo_s);
 	if (rl_default_algo == PIPE_ALGO_NOP) {
-		LM_ERR("unknown algoritm <%.*s>\n", rl_default_algo_s.len,
+		LM_ERR("unknown algorithm <%.*s>\n", rl_default_algo_s.len,
 			rl_default_algo_s.s);
 		return -1;
 	}
@@ -890,7 +890,7 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri, int server_id)
 		}
 
 		if (!*pipe) {
-			/* if the pipe does not exist, alocate it in case we need it later */
+			/* if the pipe does not exist, allocate it in case we need it later */
 			*pipe = shm_malloc(sizeof(rl_pipe_t));
 			if (!*pipe) {
 				LM_ERR("no more shm memory\n");

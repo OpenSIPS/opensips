@@ -1040,7 +1040,7 @@ int ac_uac_req(as_p the_as,char *action,int len)
       body.s[body.len]=0;
       LM_DBG("Trying to construct a Sip Request with: body:%d[%.*s] headers:%d[%.*s]\n",\
 	    body.len,body.len,body.s,headers.len,headers.len,headers.s);
-      /*t_reply_with_body un-ref-counts the transaction, so dont use it anymore*/
+      /*t_reply_with_body un-ref-counts the transaction, so don't use it anymore*/
    }
    /*Now... create the UAC !!
     * it would be great to know the hash_index and the label that have been assigned

@@ -400,7 +400,7 @@ int getTlvAttribute(IN_OUT Buffer* buf, IN_OUT StunMsg* msg){
     /*
      * return number of bytes eaten
      * 0					; ok
-     * -1   attribute allready exists		; will be ignored
+     * -1   attribute already exists		; will be ignored
      * -1   non-mandatory unknown attribute	; will be ignored
      * -2   responce address familly != 0x01	; drop msg
      * -3   attribute length overflows buffer	; drop msg
@@ -446,7 +446,7 @@ int getTlvAttribute(IN_OUT Buffer* buf, IN_OUT StunMsg* msg){
 		msg->changeRequestFlags = ntohl(*(T32*) b);
 		b+=4;
 	    }else{
-		LM_DBG("Attribute CHANGE_REQUEST allready exists; "
+		LM_DBG("Attribute CHANGE_REQUEST already exists; "
 			"ignore attribute\n");
 		rc = -1;
 	    }
@@ -473,7 +473,7 @@ int getTlvAttribute(IN_OUT Buffer* buf, IN_OUT StunMsg* msg){
 		b+=1;
 
 		if(msg->responceAddress->family != 0x01){
-		    LM_DBG("Responce address familly != 0x01\n");
+		    LM_DBG("Response address familly != 0x01\n");
 		    rc = -2;
 		}
 
@@ -484,7 +484,7 @@ int getTlvAttribute(IN_OUT Buffer* buf, IN_OUT StunMsg* msg){
 		b+=4;
 
 	    }else{
-		LM_DBG("Attribute RESPONSE_ADDRESS allready exists; "
+		LM_DBG("Attribute RESPONSE_ADDRESS already exists; "
 			"ignore attribute\n");
 		rc = -1;
 	    }
@@ -519,7 +519,7 @@ int getTlvAttribute(IN_OUT Buffer* buf, IN_OUT StunMsg* msg){
 		b+=20;
 
 	    }else{
-		LM_DBG("Attribute allready exists, will ignore attribute\n");
+		LM_DBG("Attribute already exists, will ignore attribute\n");
 		rc = -1;
 	    }
 

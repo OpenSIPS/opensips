@@ -1369,7 +1369,7 @@ static inline int get_url(struct sip_msg* msg, struct db_url_container* _url_str
 			}
 
 			if (id2db_url(id,1, is_async, parsed_url)) {
-				LM_ERR("faild to get db url!\n");
+				LM_ERR("failed to get db url!\n");
 				return -1;
 			}
 		} else {

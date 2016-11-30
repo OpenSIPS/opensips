@@ -357,7 +357,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 					/* first UDP proc runs statup_route (if defined) */
 					if(*chd_rank == 1 && startup_done!=NULL) {
-						LM_DBG("runing startup for first UDP\n");
+						LM_DBG("running startup for first UDP\n");
 						if(run_startup_route()< 0) {
 							report_failure_status();
 							*startup_done = -1;

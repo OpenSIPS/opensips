@@ -47,7 +47,7 @@ static db_func_t lb_dbf;
 #define check_val( _val, _type, _not_null, _is_empty_str) \
 	do{\
 		if ((_val)->type!=_type) { \
-			LM_ERR("bad colum type\n");\
+			LM_ERR("bad column type\n");\
 			goto error;\
 		} \
 		if (_not_null && (_val)->nul) { \

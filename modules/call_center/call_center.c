@@ -746,7 +746,7 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 
 	/* get the flow name */
 	if (fixup_get_svalue(msg, (gparam_p)flow_var, &val)!=0) {
-		LM_ERR("failed to avaluate the flow name variable\n");
+		LM_ERR("failed to evaluate the flow name variable\n");
 		return -1;
 	}
 

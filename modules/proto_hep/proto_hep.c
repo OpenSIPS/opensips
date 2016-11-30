@@ -388,8 +388,8 @@ again:
 		buf += n;
 		len -= n;
 	} else {
-		/* succesful write from the first try */
-		LM_DBG("Async succesful write from first try on %p\n",c);
+		/* successful write from the first try */
+		LM_DBG("Async successful write from first try on %p\n",c);
 		return len;
 	}
 
@@ -674,7 +674,7 @@ static int hep_tcp_send (struct socket_info* send_sock,
 
 	if (n < 0) {
 		/* error during conn get, return with error too */
-		LM_ERR("failed to aquire connection\n");
+		LM_ERR("failed to acquire connection\n");
 		return -1;
 	}
 
@@ -700,7 +700,7 @@ static int hep_tcp_send (struct socket_info* send_sock,
 				/* connect is still in progress, break the sending
 				 * flow now (the actual write will be done when
 				 * connect will be completed */
-				LM_DBG("Succesfully started async connection \n");
+				LM_DBG("Successfully started async connection \n");
 				tcp_conn_release(c, 0);
 				return len;
 			}
@@ -1122,7 +1122,7 @@ again:
 			/* report back we have more writting to be done */
 			return 1;
 		} else {
-			LM_ERR("Error occured while sending async chunk %d (%s)\n",
+			LM_ERR("Error occurred while sending async chunk %d (%s)\n",
 				   errno,strerror(errno));
 			/* report the conn as broken */
 			return -1;

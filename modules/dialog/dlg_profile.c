@@ -1392,7 +1392,7 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 					delete_entry = delete_entry->next;
 					pkg_free(deleted);
 				}
-				LM_CRIT("eror while terminating dlg\n");
+				LM_CRIT("error while terminating dlg\n");
 				return init_mi_tree( 400, MI_SSTR("Dialog internal error"));
 			}
 

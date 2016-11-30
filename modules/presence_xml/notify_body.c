@@ -268,7 +268,7 @@ str* agregate_dialog_xmls(str* pres_user, str* pres_domain, str** body_array, in
 	if(xml_array== NULL)
 	{
 
-		LM_ERR("while alocating memory");
+		LM_ERR("while allocating memory");
 		return NULL;
 	}
 	memset(xml_array, 0, (n+2)*sizeof(xmlDocPtr)) ;
@@ -301,7 +301,7 @@ str* agregate_dialog_xmls(str* pres_user, str* pres_domain, str** body_array, in
 	p_root = xmlDocGetNodeByName( xml_array[j], root_name, NULL);
 	if(p_root ==NULL)
 	{
-		LM_ERR("while geting the xml_tree root\n");
+		LM_ERR("while getting the xml_tree root\n");
 		goto error;
 	}
 
@@ -312,7 +312,7 @@ str* agregate_dialog_xmls(str* pres_user, str* pres_domain, str** body_array, in
 		new_p_root= xmlDocGetNodeByName( xml_array[i], root_name, NULL);
 		if(new_p_root ==NULL)
 		{
-			LM_ERR("while geting the xml_tree root\n");
+			LM_ERR("while getting the xml_tree root\n");
 			goto error;
 		}
 
@@ -485,7 +485,7 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
     xml_array = (xmlDocPtr*)pkg_malloc( (n+2)*sizeof(xmlDocPtr));
     if(xml_array == NULL)
     {
-        LM_ERR("while alocating memory");
+        LM_ERR("while allocating memory");
         return NULL;
     }
     memset(xml_array, 0, (n+2)*sizeof(xmlDocPtr)) ;
@@ -574,7 +574,7 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
         current_doc_root = xmlDocGetRootElement(xml_array[i]);
         if(current_doc_root == NULL)
         {
-            LM_ERR("while geting the xml_tree root\n");
+            LM_ERR("while getting the xml_tree root\n");
             continue;
         }
 

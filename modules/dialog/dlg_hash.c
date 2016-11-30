@@ -656,7 +656,7 @@ struct dlg_cell* get_dlg( str *callid, str *ftag, str *ttag,
 		if (match_dialog( dlg, callid, ftag, ttag, dir, dst_leg)==1) {
 			if (dlg->state==DLG_STATE_DELETED)
 				/* even if matched, skip the deleted dialogs as they may be
-				   a previous unsuccessfull attempt of established call
+				   a previous unsuccessful attempt of established call
 				   with the same callid and fromtag - like in auth/challenge
 				   case -bogdan */
 				continue;

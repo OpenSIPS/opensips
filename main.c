@@ -355,7 +355,7 @@ void cleanup(int show_status)
  * it's not in interactive mode and we don't want this. The non-daemonized
  * case can occur when an error is encountered before daemonize is called
  * (e.g. when parsing the config file) or when opensips is started in
- * "dont-fork" mode.
+ * "don't-fork" mode.
  * \param signum signal for killing the children
  */
 static void kill_all_children(int signum)

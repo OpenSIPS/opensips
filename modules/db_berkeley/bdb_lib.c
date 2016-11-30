@@ -1152,7 +1152,7 @@ int bdblib_valtochar(table_p _tp, int* _lres, char* _k, int* _klen, db_val_t* _v
 				 KEY was provided; append to buffer;
 				 _k[j] contains a key, but its a key that
 				 corresponds to column k of our schema.
-				 now we know its a match, and we dont need
+				 now we know its a match, and we don't need
 				 index k for anything else
 				*/
 #ifdef BDB_EXTRA_DEBUG

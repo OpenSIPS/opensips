@@ -411,7 +411,7 @@ int check_zlib_rc(int rc)
 {
 	switch (rc) {
 		case Z_OK:
-			LM_DBG("compression succesfull\n");
+			LM_DBG("compression successful\n");
 			return 0;
 		case Z_MEM_ERROR:
 			LM_ERR("not enough memory in compressed buffer\n");

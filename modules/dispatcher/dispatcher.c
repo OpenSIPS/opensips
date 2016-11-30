@@ -422,7 +422,7 @@ static int parse_partition_argument(str *arg, ds_db_head_t **found_head)
 
 	ds_db_head_t *new_partition = pkg_malloc(sizeof (ds_db_head_t));
 	if (new_partition == NULL) {
-		LM_ERR("failed to alocate data in shm\n");
+		LM_ERR("failed to allocate data in shm\n");
 		return -1;
 	}
 
@@ -1448,7 +1448,7 @@ static int w_ds_is_in_list(struct sip_msg *msg,char *ip,char *port,char *set,
 					return -1;
 				}
 				if (tmp_lst->next != NULL) {
-					LM_ERR("Only one set is allowd\n");
+					LM_ERR("Only one set is allowed\n");
 					return -1;
 				}
 				i_set = tmp_lst->v.ival;

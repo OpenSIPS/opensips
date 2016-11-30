@@ -1023,7 +1023,7 @@ static int parse_msg_for_sst_info(struct sip_msg *msg, sst_msg_info_t *minfo)
 	/*
 	 * The parse_supported() will return 0 if found and parsed OK, -1
 	 * if not found or an error parsing the one it did find! So assume
-	 * it is not found if unsuccessfull.
+	 * it is not found if unsuccessful.
 	 */
 	if (msg->supported && parse_supported(msg) == 0 &&
 	(get_supported(msg) & F_SUPPORTED_TIMER))

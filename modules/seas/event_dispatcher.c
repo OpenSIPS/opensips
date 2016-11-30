@@ -177,7 +177,7 @@ int dispatcher_main_loop(void)
       sig_flag=0;
       clean_index=0;
       LM_INFO("polling [2 ServSock] [1 pipe] [%d App Servers]"
-			  " [%d Uncomplete AS]\n",as_nr,unc_as_nr);
+			  " [%d Incomplete AS]\n",as_nr,unc_as_nr);
       poll_events = poll(poll_fds,3+unc_as_nr+as_nr,-1);
       if (poll_events == -1) {
 	 if(errno==EINTR){
@@ -276,19 +276,19 @@ int dispatcher_main_loop(void)
 		   }
 	    }
 	 }
-	 /*now handle data sent from uncompleted AS*/
-	 LM_DBG("Scanning data from %d uncomplete AS \n",unc_as_nr);
+	 /*now handle data sent from incompleted AS*/
+	 LM_DBG("Scanning data from %d incomplete AS \n",unc_as_nr);
 	 clean_index=0;
 	 for(i=0;i<unc_as_nr && poll_events;i++){
 	    poll_tmp=&poll_fds[3+as_nr+i];
 	    if(poll_tmp->revents)
 	       poll_events--;
 	    if(poll_tmp->revents & POLLIN){
-	       LM_DBG("POLLIN found in %d uncomplete AS \n",i);
+	       LM_DBG("POLLIN found in %d incomplete AS \n",i);
 	       poll_tmp->revents &= (~POLLIN);
 	       fd=handle_unc_as_data(poll_tmp->fd);
 	       if(fd>0){
-		  /* there's a new AS, push the uncomplete poll_fds up and set the AS */
+		  /* there's a new AS, push the incomplete poll_fds up and set the AS */
 		  for(k=i;k>0;k--){
 		     j=3+as_nr+k;
 		     poll_fds[j].fd=poll_fds[j-1].fd;
@@ -300,7 +300,7 @@ int dispatcher_main_loop(void)
 		  poll_fds[3+as_nr].revents=0;
 		  as_nr++;/*not very sure if this is thread-safe*/
 		  unc_as_nr--;
-	       }else if(fd<=0){/* pull the upper set of uncomplete AS down and take this one out*/
+	       }else if(fd<=0){/* pull the upper set of incomplete AS down and take this one out*/
 		  poll_tmp->revents=0;
 		  for(k=i;k<(unc_as_nr-1);k++){
 		     j=3+as_nr+k;
@@ -315,7 +315,7 @@ int dispatcher_main_loop(void)
 	       }
 	    }
 	    if(poll_tmp->revents & POLLHUP){
-	       LM_DBG("POLLHUP found in %d uncomplete AS \n",i);
+	       LM_DBG("POLLHUP found in %d incomplete AS \n",i);
 	       close(poll_tmp->fd);
 	       for(k=i;k<(unc_as_nr-1);k++){
 		  j=3+as_nr+k;
@@ -682,7 +682,7 @@ static inline int print_sock_info(char *buffer,int wheremax,int *idx,struct sock
 
 /**
  * Handles data from an AppServer. First searches in the AS table which was the AS
- * that sent the data (we dont already know it because this comes from a poll_fd
+ * that sent the data (we don't already know it because this comes from a poll_fd
  * struct). When the one is found, it calls process_event_reply, which in turn
  * looks if there's a complete event in the buffer, and if there is, processes it.
  *
@@ -877,17 +877,17 @@ static int handle_unc_as_data(int fd)
    int i,j,k,len;
    char *name1;
    struct as_entry *as;
-   /*first, we see if the data to read is from any of the uncompleted as's*/
+   /*first, we see if the data to read is from any of the incompleted as's*/
    for(i=0;i<2*MAX_UNC_AS_NR ;i++)
       if(unc_as_t[i].valid && unc_as_t[i].fd==fd)
 	 break;
    if(i==2*MAX_UNC_AS_NR){
-      LM_ERR("has received an fd which is not in uncompleted AS array\n");
+      LM_ERR("has received an fd which is not in incompleted AS array\n");
       return -1;
    }
    if(unc_as_t[i].flags & HAS_NAME){/*shouldn't happen, if it has a name, it shouldnt be in fdset[]*/
       LM_WARN("this shouldn't happen\n");
-      return 0;/*already have a name, please take me out the uncompleted AS array*/
+      return 0;/*already have a name, please take me out the incompleted AS array*/
    }
    LM_DBG("Reading client name\n");
 
@@ -967,7 +967,7 @@ try_again1:
 	 return -1;
       }
    }else if(n==0){
-      LM_WARN("uncomplete AS has disconnected before giving its name\n");
+      LM_WARN("incomplete AS has disconnected before giving its name\n");
       return -2;
    }
    if(namelen>=dstlen || namelen<=0){
@@ -983,7 +983,7 @@ try_again2:
 	 return -1;
       }
    }else if(n==0){
-      LM_WARN("uncomplete AS has disconnected before giving its name\n");
+      LM_WARN("incomplete AS has disconnected before giving its name\n");
       return -2;
    }
    dst[(int)namelen]=0;
@@ -1025,7 +1025,7 @@ again:
       case 'e':
 	 for(i=0;i<MAX_UNC_AS_NR && unc_as_t[i].valid;i++);
 	 if(i==MAX_UNC_AS_NR){
-	    LM_WARN("no more uncomplete connections allowed\n");
+	    LM_WARN("no more incomplete connections allowed\n");
 	    goto error;
 	 }
 	 unc_as_t[i].fd=sock;
@@ -1036,7 +1036,7 @@ again:
       case 'a':
 	 for(i=MAX_UNC_AS_NR;(i<(2*MAX_UNC_AS_NR)) && unc_as_t[i].valid;i++);
 	 if(i==2*MAX_UNC_AS_NR){
-	    LM_WARN("no more uncomplete connections allowed\n");
+	    LM_WARN("no more incomplete connections allowed\n");
 	    goto error;
 	 }
 	 unc_as_t[i].fd=sock;

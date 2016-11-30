@@ -3238,7 +3238,7 @@ int pv_set_log_level(struct sip_msg* msg, pv_param_t *param, int op,
 		reset_proc_log_level();
 	} else {
 		if ((val->flags&PV_TYPE_INT)==0) {
-			LM_ERR("input for $log_level found not to be an interger\n");
+			LM_ERR("input for $log_level found not to be an integer\n");
 			return -1;
 		}
 		set_proc_log_level(val->ri);

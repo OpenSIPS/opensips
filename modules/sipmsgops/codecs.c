@@ -143,7 +143,7 @@ static int create_codec_lumps(struct sip_msg * msg)
 
 			if( text.s == NULL )
 			{
-				LM_ERR("Error alocating lump buffer\n");
+				LM_ERR("Error allocating lump buffer\n");
 				return -1;
 			}
 
