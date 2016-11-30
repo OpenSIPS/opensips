@@ -1734,8 +1734,9 @@ static int verify_callback(int ok, X509_STORE_CTX * stor)
 {
 	if (!ok)
 	{
+		int err = X509_STORE_CTX_get_error(stor);
 		LM_INFO("certificate validation failed: %s\n",
-			X509_verify_cert_error_string(stor->error));
+			X509_verify_cert_error_string(err));
 	}
 
 	return ok;
