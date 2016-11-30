@@ -107,6 +107,9 @@
 #include "identity.h"
 
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define EVP_MD_CTX_free EVP_MD_CTX_cleanup
+#endif
 
 /* parameters */
 
@@ -834,7 +837,6 @@ static int addIdentity(char * dateHF, struct sip_msg * msg)
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	EVP_MD_CTX *pctx;
 #else
-#define W_EVP_CTX_free	EVP_MD_CTX_cleanup
 	EVP_MD_CTX ctx, *pctx = &ctx;
 #endif
 	unsigned int siglen = 0;
@@ -859,19 +861,19 @@ static int addIdentity(char * dateHF, struct sip_msg * msg)
 	sig = pkg_malloc(EVP_PKEY_size(privKey_evp));
 	if(!sig)
 	{
-		W_EVP_CTX_free(pctx);
+		EVP_MD_CTX_free(pctx);
 		LM_ERR("failed allocating memory\n");
 		return 0;
 	}
 
 	if(!EVP_SignFinal(pctx, sig, &siglen, privKey_evp))
 	{
-		W_EVP_CTX_free(pctx);
+		EVP_MD_CTX_free(pctx);
 		pkg_free(sig);
 		LM_ERR("error calculating signature\n");
 		return 0;
 	}
-	W_EVP_CTX_free(pctx);
+	EVP_MD_CTX_free(pctx);
 
 	/* ###Base64-encoding### */
 	/* annotation: The next few lines are based on example 7-11 of [VIE-02] */
@@ -1270,7 +1272,11 @@ static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 	int siglen = -1;
 	unsigned char * sigbuf = NULL;
 	int b64len = 0;
-	EVP_MD_CTX ctx;
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	EVP_MD_CTX *pctx;
+#else
+	EVP_MD_CTX ctx, *pctx = &ctx;
+#endif
 	int result = 0;
 	char *p;
 	unsigned long err;
@@ -1314,22 +1320,25 @@ static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 	p=strstr(identityHF , "=");
 	siglen-=strspn(p , "=");
 
-	EVP_VerifyInit(&ctx, EVP_sha1());
-	EVP_VerifyUpdate(&ctx, digestString, strlen(digestString));
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	pctx = EVP_MD_CTX_new();
+#endif
+	EVP_VerifyInit(pctx, EVP_sha1());
+	EVP_VerifyUpdate(pctx, digestString, strlen(digestString));
 
 	pubkey = X509_get_pubkey(cert);
 	if(!pubkey)
 	{
-		EVP_MD_CTX_cleanup(&ctx);
+		EVP_MD_CTX_free(pctx);
 		pkg_free(sigbuf);
 		LM_ERR("error reading pubkey from cert\n");
 		return 0;
 	}
 
-	result = EVP_VerifyFinal(&ctx, sigbuf, siglen, pubkey);
+	result = EVP_VerifyFinal(pctx, sigbuf, siglen, pubkey);
 
 	EVP_PKEY_free(pubkey);
-	EVP_MD_CTX_cleanup(&ctx);
+	EVP_MD_CTX_free(pctx);
 	pkg_free(sigbuf);
 
 	switch(result)
