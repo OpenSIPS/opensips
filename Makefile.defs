@@ -87,10 +87,10 @@ else
 	GETARCH=uname -m
 endif
 
-HOST_ARCH := $(shell $(GETARCH) |sed -e s/i.86/i386/ -e s/sun4u/sparc64/  \
-			-e s/armv4l/arm/ -e "s/Power Macintosh/ppc/" \
-			-e s/sun4v/sparc64/ -e "s/cobalt/mips2/" \
-			-e s/amd64/x86_64/ )
+HOST_ARCH := $(shell $(GETARCH) |sed -e s/i.86/i386/ -e s/sun4[uv]/sparc64/  \
+			-e s/sparcv9/sparc64/ -e s/armv[3-5].*/arm/ \
+			-e s/armv6.*/arm6/ -e "s/Power Macintosh/ppc/" \
+			-e "s/cobalt/mips2/" -e s/amd64/x86_64/ )
 
 # fix sparc -> sparc64
 ifeq ($(HOST_ARCH),sparc)
