@@ -1,11 +1,7 @@
 /*
- * mid-registrar errno
+ * Registrar errno
  *
- * This module is intended to be used as a middle layer SIP component in
- * environments where a large proportion of SIP UAs (e.g. mobile devices)
- * register at high enough frequencies that they actually degrade the
- * performance of their registrars.
- *
+ * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2016 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -23,10 +19,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2016-07-06 initial version (liviu)
  */
 
 #include "../../str.h"
@@ -66,7 +58,6 @@ str error_info[] = {
 	{EI_R_CALLID_LEN, sizeof(EI_R_CALLID_LEN) - 1},
 	{EI_R_PARSE_PATH, sizeof(EI_R_PARSE_PATH) - 1},
 	{EI_R_PATH_UNSUP, sizeof(EI_R_PATH_UNSUP) - 1}
-
 };
 
 int rerr_codes[] = {
@@ -100,5 +91,4 @@ int rerr_codes[] = {
 	400, /* R_CALLID_LEN */
 	400, /* R_PARSE_PATH */
 	420  /* R_PATH_UNSUP */
-
 };

@@ -1,11 +1,7 @@
 /*
- * mid-registrar errno
+ * Registrar errno
  *
- * This module is intended to be used as a middle layer SIP component in
- * environments where a large proportion of SIP UAs (e.g. mobile devices)
- * register at high enough frequencies that they actually degrade the
- * performance of their registrars.
- *
+ * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2016 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -23,39 +19,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2016-07-06 initial version (liviu)
  */
 
-#ifndef __MID_REG_ERRNO_
-#define __MID_REG_ERRNO_
+#ifndef __LIB_REG_RERRNO_H__
+#define __LIB_REG_RERRNO_H__
 
 #define EI_R_FINE       "No problem"                                /* R_FINE */
 #define EI_R_UL_DEL_R   "usrloc_record_delete failed"               /* R_UL_DEL_R */
-#define	EI_R_UL_GET_R   "usrloc_record_get failed"                  /* R_UL_GET */
-#define	EI_R_UL_NEW_R   "usrloc_record_new failed"                  /* R_UL_NEW_R */
-#define	EI_R_INV_CSEQ   "Invalid CSeq number"                       /* R_INV_CSEQ */
-#define	EI_R_UL_INS_C   "usrloc_contact_insert failed"              /* R_UL_INS_C */
-#define	EI_R_UL_INS_R   "usrloc_record_insert failed"               /* R_UL_INS_R */
-#define	EI_R_UL_DEL_C   "usrloc_contact_delete failed"              /* R_UL_DEL_C */
-#define	EI_R_UL_UPD_C   "usrloc_contact_update failed"              /* R_UL_UPD_C */
-#define	EI_R_TO_USER    "No username in To URI"                     /* R_TO_USER */
-#define	EI_R_AOR_LEN    "Address Of Record too long"                /* R_AOR_LEN */
-#define	EI_R_AOR_PARSE  "Error while parsing AOR"                   /* R_AOR_PARSE */
-#define	EI_R_INV_EXP    "Invalid expires param in contact"          /* R_INV_EXP */
-#define	EI_R_INV_Q      "Invalid q param in contact"                /* R_INV_Q */
-#define	EI_R_PARSE      "Message parse error"                       /* R_PARSE */
-#define	EI_R_TO_MISS    "To header not found"                       /* R_TO_MISS */
-#define	EI_R_CID_MISS   "Call-ID header not found"                  /* R_CID_MISS */
-#define	EI_R_CS_MISS    "CSeq header not found"                     /* R_CS_MISS */
-#define	EI_R_PARSE_EXP	"Expires parse error"                       /* R_PARSE_EXP */
-#define	EI_R_PARSE_CONT	"Contact parse error"                       /* R_PARSE_CONT */
-#define	EI_R_STAR_EXP	"* used in contact and expires is not zero" /* R_STAR__EXP */
-#define	EI_R_STAR_CONT	"* used in contact and more than 1 contact" /* R_STAR_CONT */
-#define	EI_R_OOO	"Out of order request"                      /* R_OOO */
-#define	EI_R_RETRANS	"Retransmission"                            /* R_RETRANS */
+#define EI_R_UL_GET_R   "usrloc_record_get failed"                  /* R_UL_GET */
+#define EI_R_UL_NEW_R   "usrloc_record_new failed"                  /* R_UL_NEW_R */
+#define EI_R_INV_CSEQ   "Invalid CSeq number"                       /* R_INV_CSEQ */
+#define EI_R_UL_INS_C   "usrloc_contact_insert failed"              /* R_UL_INS_C */
+#define EI_R_UL_INS_R   "usrloc_record_insert failed"               /* R_UL_INS_R */
+#define EI_R_UL_DEL_C   "usrloc_contact_delete failed"              /* R_UL_DEL_C */
+#define EI_R_UL_UPD_C   "usrloc_contact_update failed"              /* R_UL_UPD_C */
+#define EI_R_TO_USER    "No username in To URI"                     /* R_TO_USER */
+#define EI_R_AOR_LEN    "Address Of Record too long"                /* R_AOR_LEN */
+#define EI_R_AOR_PARSE  "Error while parsing AOR"                   /* R_AOR_PARSE */
+#define EI_R_INV_EXP    "Invalid expires param in contact"          /* R_INV_EXP */
+#define EI_R_INV_Q      "Invalid q param in contact"                /* R_INV_Q */
+#define EI_R_PARSE      "Message parse error"                       /* R_PARSE */
+#define EI_R_TO_MISS    "To header not found"                       /* R_TO_MISS */
+#define EI_R_CID_MISS   "Call-ID header not found"                  /* R_CID_MISS */
+#define EI_R_CS_MISS    "CSeq header not found"                     /* R_CS_MISS */
+#define EI_R_PARSE_EXP	"Expires parse error"                       /* R_PARSE_EXP */
+#define EI_R_PARSE_CONT "Contact parse error"                       /* R_PARSE_CONT */
+#define EI_R_STAR_EXP	"* used in contact and expires is not zero" /* R_STAR__EXP */
+#define EI_R_STAR_CONT	"* used in contact and more than 1 contact" /* R_STAR_CONT */
+#define EI_R_OOO	"Out of order request"                      /* R_OOO */
+#define EI_R_RETRANS	"Retransmission"                            /* R_RETRANS */
 #define EI_R_UNESCAPE   "Error while unescaping username"           /* R_UNESCAPE */
 #define EI_R_TOO_MANY   "Too many registered contacts"              /* R_TOO_MANY */
 #define EI_R_CONTACT_LEN  "Contact/received too long"               /* R_CONTACT_LEN */
@@ -94,9 +86,8 @@ typedef enum rerr {
 	R_CALLID_LEN, /*!< Callid too long */
 	R_PARSE_PATH, /*!< Error while parsing Path */
 	R_PATH_UNSUP  /*!< Path not supported by UAC */
-
 } rerr_t;
 
 extern rerr_t rerrno;
 
-#endif /* __MID_REG_ERRNO_ */
+#endif /* __RERRNO_H__ */

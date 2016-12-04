@@ -42,8 +42,8 @@
 #include "lookup.h"
 #include "encode.h"
 #include "ulcb.h"
-#include "rerrno.h"
 
+#include "../../lib/reg/rerrno.h"
 #include "../../parser/contact/contact.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/msg_parser.h"

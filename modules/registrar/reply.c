@@ -39,7 +39,7 @@
 #include "../../parser/parse_supported.h"
 #include "../../data_lump_rpl.h"
 #include "../usrloc/usrloc.h"
-#include "rerrno.h"
+#include "../../lib/reg/rerrno.h"
 #include "reg_mod.h"
 #include "regtime.h"
 #include "reply.h"

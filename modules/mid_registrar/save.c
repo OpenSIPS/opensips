@@ -34,8 +34,8 @@
 #include "encode.h"
 #include "save.h"
 #include "gruu.h"
-#include "rerrno.h"
 
+#include "../../lib/reg/rerrno.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
 #include "../../parser/contact/contact.h"

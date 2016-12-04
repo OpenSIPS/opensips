@@ -34,9 +34,9 @@
 #include "../../parser/contact/contact.h"
 #include "../tm/tm_load.h"
 #include "../tm/dlg.h"
+#include "../../lib/reg/rerrno.h"
 
 #include "mid_registrar.h"
-#include "rerrno.h"
 
 char extra_hdrs_buf[512];
 static str extra_hdrs={extra_hdrs_buf, 512};
