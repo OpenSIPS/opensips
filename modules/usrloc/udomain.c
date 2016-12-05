@@ -1168,9 +1168,6 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 		}
 	}
 
-	if (exists_ulcb_type(UL_AOR_DELETE))
-		run_ul_callbacks(UL_AOR_DELETE, _r);
-
 	if (!is_replicated && ul_replicate_cluster)
 		replicate_urecord_delete(_r);
 
