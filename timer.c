@@ -187,7 +187,7 @@ int register_utimer(char *label, utimer_function f, void* param,
 	struct os_timer* t;
 
 	flags = flags | TIMER_FLAG_IS_UTIMER; /* just to be sure */
-	t = new_os_timer( label, 1, (timer_function*)f, param, interval);
+	t = new_os_timer( label, flags, (timer_function*)f, param, interval);
 	if (t==NULL)
 		return E_OUT_OF_MEM;
 	/* insert it into the utimer list*/
