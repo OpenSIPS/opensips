@@ -42,70 +42,9 @@
 #include "../../dprint.h"
 #include "../../resolve.h"  /* for str2ip() */
 #include "../../ut.h"
+
 #include "tls_params.h"
-
-
-static int parse_domain_address(char *val, struct ip_addr **ip,
-											unsigned int *port, str *domain)
-{
-	char *p = (char*)val;
-	str s;
-
-	/* get IP */
-	s.s = p;
-	if ( (p=strchr( p, ':'))==NULL )
-		goto has_domain;
-	s.len = p-s.s;
-	p++;
-	if ( (*ip=str2ip( &s ))==NULL ) {
-		LM_ERR("[%.*s] is not an ip\n", s.len, s.s);
-		goto parse_err;
-	}
-
-	/* what is left should be a port */
-	s.s = p;
-	s.len = val + strlen(val) - p;
-	if (str2int( &s, port)<0) {
-		LM_ERR("[%.*s] is not a port\n", s.len, s.s);
-		goto parse_err;
-	}
-
-	return 0;
-
-has_domain:
-	/* what is left should be a domain */
-	domain->s = s.s;
-	domain->len = val + strlen(val) - s.s;
-	*ip = NULL;
-
-	return 0;
-parse_err:
-	LM_ERR("invalid TSL domain [%s] (error around pos %d)\n",
-		val, (int)(long)(p-val) );
-	return -1;
-	
-}
-
-
-static int parse_domain_def(char *val, str *id, struct ip_addr **ip,
-											unsigned int *port, str *domain)
-{
-	char *p = (char*)val;
-
-	/* first get the ID */
-	id->s = p;
-	if ( (p=strchr( p, '='))==NULL )
-		goto parse_err;
-	id->len = p-id->s;
-	p++;
-	
-	return parse_domain_address(p, ip, port, domain);
-
-parse_err:
-	LM_ERR("invalid TSL domain [%s] (error around pos %d)\n",
-		val, (int)(long)(p-val) );
-	return -1;
-}
+#include "api.h"
 
 
 int tlsp_add_srv_domain(modparam_t type, void *val)
