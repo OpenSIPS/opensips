@@ -40,9 +40,6 @@
 #include "sip_msg.h"
 
 
-static struct hdr_field* act_contact;
-
-
 /*! \brief
  * Return value of Expires header field
  * if the HF exists converted to absolute
@@ -64,50 +61,6 @@ static inline int get_expires_hf(struct sip_msg* _m)
 		return act_time + default_expires;
 	}
 }
-
-/*! \brief
- * Get the first contact in message
- */
-contact_t* get_first_contact(struct sip_msg* _m)
-{
-	if (_m->contact == 0) return 0;
-
-	act_contact = _m->contact;
-	return (((contact_body_t*)_m->contact->parsed)->contacts);
-}
-
-
-/*! \brief
- * Get next contact in message
- */
-contact_t* get_next_contact(contact_t* _c)
-{
-	struct hdr_field* p = NULL;
-	if (_c->next == 0) {
-		if (act_contact)
-			p = act_contact->next;
-		while(p) {
-			if (p->type == HDR_CONTACT_T) {
-				act_contact = p;
-				return (((contact_body_t*)p->parsed)->contacts);
-			}
-			p = p->next;
-		}
-		return 0;
-	} else {
-		return _c->next;
-	}
-}
-
-
-/*! \brief
- * Set to NULL the pointer to the first contact in message
- */
-void reset_first_contact(void)
-{
-	act_contact = NULL;
-}
-
 
 /*! \brief
  * Calculate absolute expires value per contact as follows:

@@ -153,9 +153,6 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id);
 
 int calc_contact_q(param_t* _q, qvalue_t* _r);
 
-contact_t* get_first_contact(struct sip_msg* _m);
-contact_t* get_next_contact(contact_t* _c);
-
 int get_expires_hf(struct sip_msg* _m);
 
 #endif /* __MID_REG_ */

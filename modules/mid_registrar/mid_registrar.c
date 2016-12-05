@@ -44,6 +44,7 @@
 #include "ulcb.h"
 
 #include "../../lib/reg/rerrno.h"
+#include "../../lib/reg/sip_msg.h"
 #include "../../parser/contact/contact.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/msg_parser.h"
@@ -417,26 +418,6 @@ int calc_contact_q(param_t* _q, qvalue_t* _r)
 	return 0;
 }
 
-static struct hdr_field* act_contact;
-contact_t* get_next_contact(contact_t* _c)
-{
-	struct hdr_field* p = NULL;
-	if (_c->next == 0) {
-		if (act_contact)
-			p = act_contact->next;
-		while(p) {
-			if (p->type == HDR_CONTACT_T) {
-				act_contact = p;
-				return (((contact_body_t*)p->parsed)->contacts);
-			}
-			p = p->next;
-		}
-		return 0;
-	} else {
-		return _c->next;
-	}
-}
-
 void mri_free(struct mid_reg_info *mri)
 {
 	LM_DBG("aor: '%.*s' %p\n", mri->aor.len, mri->aor.s, mri->aor.s);
@@ -474,14 +455,6 @@ void mri_free(struct mid_reg_info *mri)
 	memset(mri, 0, sizeof *mri);
 #endif
 	shm_free(mri);
-}
-
-contact_t* get_first_contact(struct sip_msg* _m)
-{
-	if (_m->contact == 0) return 0;
-
-	act_contact = _m->contact;
-	return (((contact_body_t*)_m->contact->parsed)->contacts);
 }
 
 int get_expires_hf(struct sip_msg* _m)

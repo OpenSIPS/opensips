@@ -148,3 +148,76 @@ int check_contacts(struct sip_msg* _m, int* _s)
 	return 0;
 }
 
+static struct hdr_field* act_contact_1;
+static struct hdr_field* act_contact_2;
+
+/*! \brief
+ * Get the first contact in message
+ */
+static contact_t* __get_first_contact(struct sip_msg* _m, struct hdr_field **act_contact)
+{
+	if (_m->contact == 0) return 0;
+
+	*act_contact = _m->contact;
+	return (((contact_body_t*)_m->contact->parsed)->contacts);
+}
+
+/*! \brief
+ * Get next contact in message
+ */
+static contact_t* __get_next_contact(contact_t* _c, struct hdr_field **act_contact)
+{
+	struct hdr_field* p = NULL;
+	if (_c->next == 0) {
+		if (*act_contact)
+			p = (*act_contact)->next;
+		while(p) {
+			if (p->type == HDR_CONTACT_T) {
+				*act_contact = p;
+				return (((contact_body_t*)p->parsed)->contacts);
+			}
+			p = p->next;
+		}
+		return 0;
+	} else {
+		return _c->next;
+	}
+}
+
+/*! \brief
+ * Set to NULL the pointer to the first contact in message
+ */
+static void __reset_first_contact(struct hdr_field **act_contact)
+{
+	*act_contact = NULL;
+}
+
+contact_t* get_first_contact(struct sip_msg* _m)
+{
+	return __get_first_contact(_m, &act_contact_1);
+}
+
+contact_t* get_next_contact(contact_t* _c)
+{
+	return __get_next_contact(_c, &act_contact_1);
+}
+
+void reset_first_contact(void)
+{
+	return __reset_first_contact(&act_contact_1);
+}
+
+contact_t* get_first_contact2(struct sip_msg* _m)
+{
+	return __get_first_contact(_m, &act_contact_2);
+}
+
+contact_t* get_next_contact2(contact_t* _c)
+{
+	return __get_next_contact(_c, &act_contact_2);
+}
+
+void reset_first_contact2(void)
+{
+	return __reset_first_contact(&act_contact_2);
+}

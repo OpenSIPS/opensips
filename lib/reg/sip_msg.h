@@ -48,4 +48,18 @@ int parse_reg_headers(struct sip_msg* _m);
  */
 int check_contacts(struct sip_msg* _m, int* _s);
 
+/*! \brief
+ * Iterators through all Contact hf values of a SIP request
+ *
+ * Note: each pair of functions has a global state, so two pairs are
+ * provided in order to satisfy most nested iteration needs
+ */
+contact_t* get_first_contact(struct sip_msg* _m);
+contact_t* get_next_contact(contact_t* _c);
+void reset_first_contact(void);
+
+contact_t* get_first_contact2(struct sip_msg* _m);
+contact_t* get_next_contact2(contact_t* _c);
+void reset_first_contact2(void);
+
 #endif /* __LIB_REG_CONTACT__ */

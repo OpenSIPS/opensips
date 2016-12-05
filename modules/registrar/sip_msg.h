@@ -42,25 +42,6 @@ struct save_ctx {
 };
 
 /*! \brief
- * Get the first contact in message
- */
-contact_t* get_first_contact(struct sip_msg* _m);
-
-
-/*! \brief
- * Get next contact in message
- */
-contact_t* get_next_contact(contact_t* _c);
-
-
-
-/*! \brief
- * Set to NULL the pointer to the first contact in message
- */
-void reset_first_contact(void);
-
-
-/*! \brief
  * Calculate absolute expires value per contact as follows:
  * 1) If the contact has expires value, use the value. If it
  *    is not zero, add actual time to it
