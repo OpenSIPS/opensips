@@ -49,6 +49,7 @@
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
 #include "../../lib/path.h"
+#include "../../lib/reg/sip_msg.h"
 #include "../../trim.h"
 
 #include "../usrloc/usrloc.h"
@@ -2113,15 +2114,57 @@ static void parse_save_flags(str *flags_s, struct save_ctx *out_sctx)
 	}
 }
 
+/*! \brief
+ * Process request that contained a star, in that case,
+ * we will remove all bindings with the given username
+ * from the usrloc and return 200 OK response
+ */
+static inline int star(udomain_t* _d, struct save_ctx *_sctx,
+		struct sip_msg *_m)
+{
+	urecord_t* r;
+	ucontact_t* c;
+
+	ul_api.lock_udomain(_d, &_sctx->aor);
+
+	if (!ul_api.get_urecord(_d, &_sctx->aor, &r)) {
+		c = r->contacts;
+		while(c) {
+			if (_sctx->flags&REG_SAVE_MEMORY_FLAG) {
+				c->flags |= FL_MEM;
+			} else {
+				c->flags &= ~FL_MEM;
+			}
+			c = c->next;
+		}
+	}
+
+	if (ul_api.delete_urecord(_d, &_sctx->aor, NULL, 0) < 0) {
+		LM_ERR("failed to remove record from usrloc\n");
+
+		     /* Delete failed, try to get corresponding
+		      * record structure and send back all existing
+		      * contacts
+		      */
+		rerrno = R_UL_DEL_R;
+		if (!ul_api.get_urecord(_d, &_sctx->aor, &r)) {
+			build_contact(r->contacts,_m);
+		}
+		ul_api.unlock_udomain(_d, &_sctx->aor);
+		return -1;
+	}
+	ul_api.unlock_udomain(_d, &_sctx->aor);
+	return 0;
+}
+
 int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
                           char *to_uri_gp, char *expires_gp)
 {
 	udomain_t *ud = (udomain_t *)dom;
 	urecord_t *rec;
 	str flags_str = { NULL, 0 }, to_uri = { NULL, 0 };
-	str aor = { NULL, 0 };
 	struct save_ctx sctx;
-	int rc;
+	int rc, st;
 
 	if (msg->REQ_METHOD != METHOD_REGISTER) {
 		LM_ERR("ignoring non-REGISTER SIP request (%d)\n", msg->REQ_METHOD);
@@ -2155,27 +2198,36 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 		return -1;
 	}
 
-	if (extract_aor(&to_uri, &aor, 0, 0) < 0) {
+	if (extract_aor(&to_uri, &sctx.aor, 0, 0) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
-		ul_api.unlock_udomain(ud, &aor);
+		ul_api.unlock_udomain(ud, &sctx.aor);
 		return -1;
 	}
 
 	parse_reg_headers(msg);
+
+	if (check_contacts(msg, &st) > 0) {
+		goto out_error;
+	}
+
 	if (get_first_contact(msg) == NULL) {
+		if (st) {
+			if (star((udomain_t *)dom, &sctx, msg) < 0)
+				goto out_error;
+		}
 		goto quick_reply;
 	}
 
 	/* in mirror mode, all REGISTER requests simply pass through */
 	if (reg_mode == MID_REG_MIRROR)
-		return prepare_forward(msg, ud, &aor, &sctx);
+		return prepare_forward(msg, ud, &sctx.aor, &sctx);
 
 	update_act_time();
-	ul_api.lock_udomain(ud, &aor);
+	ul_api.lock_udomain(ud, &sctx.aor);
 
-	if (ul_api.get_urecord(ud, &aor, &rec) != 0) {
-		ul_api.unlock_udomain(ud, &aor);
-		return prepare_forward(msg, ud, &aor, &sctx);
+	if (ul_api.get_urecord(ud, &sctx.aor, &rec) != 0) {
+		ul_api.unlock_udomain(ud, &sctx.aor);
+		return prepare_forward(msg, ud, &sctx.aor, &sctx);
 	}
 
 	if (reg_mode == MID_REG_THROTTLE_CT)
@@ -2195,7 +2247,7 @@ quick_reply:
 	build_contact(rec->contacts, msg);
 
 	/* no contacts need updating on the far end registrar */
-	ul_api.unlock_udomain(ud, &aor);
+	ul_api.unlock_udomain(ud, &sctx.aor);
 
 	/* quick SIP reply */
 	if (!(sctx.flags & REG_SAVE_NOREPLY_FLAG))
@@ -2204,11 +2256,11 @@ quick_reply:
 	return 2;
 
 out_forward:
-	ul_api.unlock_udomain(ud, &aor);
-	return prepare_forward(msg, ud, &aor, &sctx);
+	ul_api.unlock_udomain(ud, &sctx.aor);
+	return prepare_forward(msg, ud, &sctx.aor, &sctx);
 
 out_error:
-	ul_api.unlock_udomain(ud, &aor);
+	ul_api.unlock_udomain(ud, &sctx.aor);
 	if (!(sctx.flags & REG_SAVE_NOREPLY_FLAG))
 		send_reply(msg, sctx.flags);
 	return -1;

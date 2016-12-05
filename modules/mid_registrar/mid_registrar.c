@@ -484,58 +484,6 @@ contact_t* get_first_contact(struct sip_msg* _m)
 	return (((contact_body_t*)_m->contact->parsed)->contacts);
 }
 
-int parse_reg_headers(struct sip_msg* _m)
-{
-	struct hdr_field* ptr;
-
-	if (parse_headers(_m, HDR_EOH_F, 0) == -1) {
-		rerrno = R_PARSE;
-		LM_ERR("failed to parse headers\n");
-		return -1;
-	}
-
-	if (!_m->to) {
-		rerrno = R_TO_MISS;
-		LM_ERR("To not found\n");
-		return -2;
-	}
-
-	if (!_m->callid) {
-		rerrno = R_CID_MISS;
-		LM_ERR("Call-ID not found\n");
-		return -3;
-	}
-
-	if (!_m->cseq) {
-		rerrno = R_CS_MISS;
-		LM_ERR("CSeq not found\n");
-		return -4;
-	}
-
-	if (_m->expires && !_m->expires->parsed && (parse_expires(_m->expires) < 0)) {
-		rerrno = R_PARSE_EXP;
-		LM_ERR("failed to parse expires body\n");
-		return -5;
-	}
-
-	if (_m->contact) {
-		ptr = _m->contact;
-		while(ptr) {
-			if (ptr->type == HDR_CONTACT_T) {
-				if (!ptr->parsed && (parse_contact(ptr) < 0)) {
-					rerrno = R_PARSE_CONT;
-					LM_ERR("failed to parse Contact body\n");
-					return -6;
-				}
-			}
-			ptr = ptr->next;
-		}
-	}
-
-	return 0;
-}
-
-
 int get_expires_hf(struct sip_msg* _m)
 {
 	exp_body_t* p;

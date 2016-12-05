@@ -158,6 +158,4 @@ contact_t* get_next_contact(contact_t* _c);
 
 int get_expires_hf(struct sip_msg* _m);
 
-int parse_reg_headers(struct sip_msg *msg);
-
 #endif /* __MID_REG_ */
