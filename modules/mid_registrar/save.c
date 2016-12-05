@@ -122,9 +122,8 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 			return -1;
 	}
 
-	c = ((contact_body_t *)ct->parsed)->contacts;
-
-	for (c = get_first_contact(msg); c; c = get_next_contact(c)) {
+	for (c = ((contact_body_t *)ct->parsed)->contacts; c;
+	     c = get_next_contact(c)) {
 		LM_DBG("deleting Contact '%.*s'\n", c->len, c->name.s);
 		anchor = del_lump(msg, c->name.s - msg->buf, c->len, HDR_CONTACT_T);
 		if (!anchor)
