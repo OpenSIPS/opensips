@@ -1072,8 +1072,7 @@ ifeq		($(CC_NAME), gcc)
 					-Wall -marm
 			#if gcc 4.x+
 ifeq			($(CC_CLASS), 4.x)
-					CFLAGS+=-mcpu=strongarm1100 -minline-all-stringops \
-							-ftree-vectorize
+					CFLAGS+=-mcpu=strongarm1100 -ftree-vectorize
 else
 			#if gcc 3.0+
 ifeq			($(CC_CLASS), 3.x)
