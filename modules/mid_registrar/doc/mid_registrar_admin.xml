@@ -362,7 +362,7 @@ modparam("mid_registrar", "contact_match_param", "regid")
 		<title><varname>default_q</varname> (integer)</title>
 		<para>
 		Sets the default <emphasis>"q"</emphasis> value for new contacts.
-		Because &osips; doesn't support floating point module parameters,
+		Because &osips; does not support floating point module parameters,
 		the supplied <emphasis>"q"</emphasis> value must be multiplied by 1000.
 		For example, if you want
 		<emphasis><xref linkend="modparam-default-q"/></emphasis>
@@ -412,8 +412,8 @@ modparam("mid_registrar", "tcp_persistent_flag", "TCP_PERSIST_REGISTRATIONS")
 		a save, or <emphasis>Request-URIs</emphasis> when doing a lookup.
 		</para>
 		<para>
-		It is meant as an alternative to
-		 SRV records (not all SIP clients support SRV lookup), a subdomain of
+		It is meant as an alternative to DNS SRV records (not all SIP clients
+		support SRV lookups), a subdomain of
 		 the master domain can be defined for SIP purposes (like
 		 "sip.mydomain.net" pointing to same IP address as the SRV record for
 		 "mydomain.net"). By ignoring the realm_prefix "sip.", at registration,
@@ -451,8 +451,8 @@ modparam("mid_registrar", "case_sensitive", 0)
 		<title><varname>received_avp</varname> (string)</title>
 		<para>
 		The module will store the value of the AVP configured by this
-		parameter in the <emphasis>received</emphasis> column in the user
-		location database. It will leave the column empty if the AVP is empty.
+		parameter in the <emphasis>received</emphasis> column of the user
+		location table. It will leave the column empty if the AVP is empty.
 		The AVP should contain a SIP URI consisting of the source IP, port,
 		and protocol of the REGISTER message being processed.
 		</para>
@@ -879,7 +879,7 @@ if (is_method("REGISTER")) {
 			<listitem>
 				<para>
 				<emphasis>'b' (no Branches)</emphasis> - this flag controls how
-				lookup function processes multiple contacts.  If there are
+				this function processes multiple contacts.  If there are
 				multiple contacts for the given username in usrloc and this
 				flag is not set, Request-URI will be overwritten with the
 				highest-q rated contact and the rest will be appended to
@@ -904,8 +904,9 @@ if (is_method("REGISTER")) {
 				<para>
 				<emphasis role='bold'>WARNING: </emphasis>
 				<emphasis>if you want this flag activated,
-				the 'b' (no Branches) flag must not be set, because by setting
-				that flag you won't allow lookup to write in a branch.</emphasis>
+				the 'b' (no Branches) flag must not be set, otherwise
+				the lookup function will be unable to add new branches
+				</emphasis>
 				</para>
 			</listitem>
 

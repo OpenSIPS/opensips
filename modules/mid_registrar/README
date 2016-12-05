@@ -328,7 +328,7 @@ modparam("mid_registrar", "contact_match_param", "regid")
 1.5.5. default_q (integer)
 
    Sets the default "q" value for new contacts. Because OpenSIPS
-   doesn't support floating point module parameters, the supplied
+   does not support floating point module parameters, the supplied
    "q" value must be multiplied by 1000. For example, if you want
    default_q to be 0.38, set this parameter to 380.
 
@@ -360,8 +360,8 @@ ONS")
    header field URIs when doing a save, or Request-URIs when doing
    a lookup.
 
-   It is meant as an alternative to SRV records (not all SIP
-   clients support SRV lookup), a subdomain of the master domain
+   It is meant as an alternative to DNS SRV records (not all SIP
+   clients support SRV lookups), a subdomain of the master domain
    can be defined for SIP purposes (like "sip.mydomain.net"
    pointing to same IP address as the SRV record for
    "mydomain.net"). By ignoring the realm_prefix "sip.", at
@@ -387,9 +387,9 @@ modparam("mid_registrar", "case_sensitive", 0)
 1.5.9. received_avp (string)
 
    The module will store the value of the AVP configured by this
-   parameter in the received column in the user location database.
-   It will leave the column empty if the AVP is empty. The AVP
-   should contain a SIP URI consisting of the source IP, port, and
+   parameter in the received column of the user location table. It
+   will leave the column empty if the AVP is empty. The AVP should
+   contain a SIP URI consisting of the source IP, port, and
    protocol of the REGISTER message being processed.
 
 Note
@@ -622,7 +622,7 @@ if (is_method("REGISTER")) {
        is used, then this must be name of the usrloc table which
        stores the contacts
      * flags(optional)
-          + 'b' (no Branches) - this flag controls how lookup
+          + 'b' (no Branches) - this flag controls how this
             function processes multiple contacts. If there are
             multiple contacts for the given username in usrloc and
             this flag is not set, Request-URI will be overwritten
@@ -641,8 +641,8 @@ if (is_method("REGISTER")) {
             the branches. The AOR's that were in branches before
             the function call shall be removed.
             WARNING: if you want this flag activated, the 'b' (no
-            Branches) flag must not be set, because by setting
-            that flag you won't allow lookup to write in a branch.
+            Branches) flag must not be set, otherwise the lookup
+            function will be unable to add new branches
           + 'm' (Method filtering) - this flag tells if the
             contact filtering based on supported methods should be
             performed during lookup.
