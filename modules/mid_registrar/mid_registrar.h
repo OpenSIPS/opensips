@@ -71,6 +71,7 @@ struct mid_reg_info {
 
 	int max_contacts;
 	int flags;
+	int star;
 
 	int expires;
 	int expires_out;
@@ -91,6 +92,7 @@ struct save_ctx {
 	unsigned int max_contacts;
 	unsigned int expires;
 	int expires_out;
+	int star;
 
 	unsigned int min_expires;
 	unsigned int max_expires;
