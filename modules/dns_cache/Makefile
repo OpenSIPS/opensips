@@ -9,7 +9,4 @@ include ../../Makefile.defs
 auto_gen=
 NAME=dns_cache.so
 
-DEFS+=-I$(LOCALBASE)/include
-LIBS=-L$(LOCALBASE)/lib
-
 include ../../Makefile.modules
