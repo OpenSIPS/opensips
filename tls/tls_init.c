@@ -837,7 +837,7 @@ init_tls_domains(struct tls_domain *d)
 		* load ca
 		*/
 		if (!d->ca_file) {
-			LM_NOTICE("no CA for tls[%s:%d] defined, "
+			LM_NOTICE("no CA list for tls[%s:%d] defined, "
 				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
 				tls_ca_file);
 			d->ca_file = tls_ca_file;
@@ -850,7 +850,7 @@ init_tls_domains(struct tls_domain *d)
 		*/
 		if (!d->ca_directory) {
 
-			LM_NOTICE("no CA for tls[%s:%d] defined, "
+			LM_NOTICE("no CA dir for tls[%s:%d] defined, "
 				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
 				 tls_ca_dir);
 			d->ca_directory = tls_ca_dir;
