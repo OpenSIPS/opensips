@@ -1823,7 +1823,7 @@ int pv_set_tm_branch_avp(struct sip_msg *msg, pv_param_t *param, int op,
 	avp_list = get_bavp_list();
 	if (!avp_list) {
 		LM_DBG("cannot find the branch avp list!\n");
-		goto error;
+		return -2;
 	}
 
 	if (pv_get_avp_name(msg, param, &avp_name, &name_type)) {
