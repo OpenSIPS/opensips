@@ -246,6 +246,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 	int i;
 	struct dlg_cell *dlg = NULL;
 	pv_value_t val;
+	int ret;
 
 	/* consistency check! in AUTO mode, do NOT allow URI changing
 	 * in sequential request */
@@ -350,21 +351,27 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 	if (dlg) {
 		val.rs = body->uri;
 		val.flags = AVP_VAL_STR;
-		pv_set_value(msg,(to?&to_bavp_spec:&from_bavp_spec),EQ_T,&val);
+		ret = pv_set_value(msg,(to?&to_bavp_spec:&from_bavp_spec),EQ_T,&val);
 		/* if function call was in branch route - store in bavp */
-		if (!(msg->msg_flags&uac_flag) && val.rs.len && val.rs.s){
-			if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT,
-					move_bavp_callback,0,0)!=1) {
-				LM_ERR("failed to install TM callback\n");
-				goto error;
+		if (ret < 0) {
+			if (ret == -2) {
+				/* the call wasn't in branch route - store in dlg */
+				if (dlg_api.store_dlg_value(dlg, rr_param, &body->uri) < 0) {
+					LM_ERR("cannot store value\n");
+					goto error;
+				}
+				LM_DBG("stored <%.*s> param in dialog\n", rr_param->len, rr_param->s);
+			} else {
+				LM_ERR("cannot store branch avp to restore at 200 OK!\n");
 			}
 		} else {
-			/* if the call wasn't in branch route - store in dlg */
-			if (dlg_api.store_dlg_value(dlg, rr_param, &body->uri) < 0) {
-				LM_ERR("cannot store value\n");
-				goto error;
+			if (!(msg->msg_flags&uac_flag)){
+				if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT,
+						move_bavp_callback,0,0)!=1) {
+					LM_ERR("failed to install TM callback\n");
+					goto error;
+				}
 			}
-			LM_DBG("stored <%.*s> param in dialog\n", rr_param->len, rr_param->s);
 		}
 		if (dlg_api.store_dlg_value(dlg,
 					to ? &rr_to_param_new : &rr_from_param_new, uri) < 0) {
