@@ -62,6 +62,7 @@ int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 
 		if (sqlite3_column_type(CON_SQLITE_PS(_h), col) == SQLITE_NULL) {
 			VAL_NULL(_v) = 1;
+			VAL_TYPE(_v) = RES_TYPES(_res)[col];
 			continue;
 		}
 
