@@ -38,7 +38,6 @@
  *  - -4: invalid message
  */
 int w_cgr_acc(struct sip_msg* msg, char* acc_c, char *dst_c);
-void cgr_free_ctx(void *param);
 
 extern struct dlg_binds cgr_dlgb;
 extern struct tm_binds cgr_tmb;

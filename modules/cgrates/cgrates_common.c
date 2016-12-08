@@ -592,3 +592,20 @@ int cgrates_process(json_object *jobj,
 	return 0;
 }
 
+void cgr_free_ctx(void *param)
+{
+	struct list_head *l;
+	struct list_head *t;
+	struct cgr_ctx *ctx = (struct cgr_ctx *)param;
+
+	if (!ctx)
+		return;
+
+	/* remove all elements */
+	list_for_each_safe(l, t, &ctx->kv_store)
+		cgr_free_kv(list_entry(l, struct cgr_kv, list));
+	if (ctx->reply)
+		pkg_free(ctx->reply);
+	pkg_free(ctx);
+}
+

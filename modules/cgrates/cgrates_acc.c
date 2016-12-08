@@ -72,28 +72,17 @@ static inline struct cgr_acc_ctx *cgr_get_acc_ctx_new(void)
 
 static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx)
 {
+	struct list_head *l;
+	struct list_head *t;
+
 	if (ctx->acc)
 		shm_free(ctx->acc);
 	if (ctx->dst)
 		shm_free(ctx->dst);
-	shm_free(ctx);
-}
-
-void cgr_free_ctx(void *param)
-{
-	struct list_head *l;
-	struct list_head *t;
-	struct cgr_ctx *ctx = (struct cgr_ctx *)param;
-
-	if (!ctx)
-		return;
-
 	/* remove all elements */
 	list_for_each_safe(l, t, &ctx->kv_store)
 		cgr_free_kv(list_entry(l, struct cgr_kv, list));
-	if (ctx->reply)
-		pkg_free(ctx->reply);
-	pkg_free(ctx);
+	shm_free(ctx);
 }
 
 static int cgr_proc_start_acc_reply(struct cgr_conn *c, json_object *jobj,
@@ -466,13 +455,14 @@ static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps)
 
 	return;
 error:
-	/* TODO: handle error: set timeout to 0? */
 	terminate_str.s = "CGRateS Accounting Denied";
 	terminate_str.len = strlen(terminate_str.s);
 	if (cgr_dlgb.terminate_dlg(dlg->h_entry, dlg->h_id, &terminate_str) < 0)
 		LM_ERR("cannot terminate the dialog!\n");
 	dlg->lifetime = 0;
 	dlg->lifetime_dirty = 1; /* not really necessary */
+	/* TODO: mark context as done! */
+	/* TODO: process CDR here? */
 	return;
 }
 
@@ -496,8 +486,8 @@ static void cgr_cdr_cb(struct cell* t, int type, struct tmcb_params *ps)
 		return;
 	}
 
-	if (cgr_handle_cmd(ps->req, jmsg, cgr_proc_cdr_acc_reply, ctx) < 0)
-		return;
+	cgr_handle_cmd(ps->req, jmsg, cgr_proc_cdr_acc_reply, ctx);
+	cgr_free_acc_ctx(ctx);
 }
 
 static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
@@ -520,7 +510,7 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 	}
 
 	if (cgr_handle_cmd(_params->msg, jmsg, cgr_proc_stop_acc_reply, ctx) < 0)
-		return;
+		goto free_ctx;
 
 	/* if it's not a local transaction we do the accounting on the tm callbacks */
 	if (((t = cgr_tmb.t_gett()) == T_UNDEFINED) ||
@@ -531,8 +521,9 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 		if (cgr_tmb.register_tmcb(_params->msg, NULL,
 						TMCB_RESPONSE_OUT, cgr_cdr_cb, ctx, 0) < 0) {
 			LM_ERR("failed to register cdr callback!\n");
-			return;
+			goto free_ctx;
 		}
+		return;
 	/* for local transactions we generate CDRs here, since all the messages
 	 * have been processed */
 	} else if (t != NULL && cgr_tmb.t_is_local(_params->msg)) {
@@ -541,5 +532,8 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 		ps.param = (void *)ctx;
 		/* TODO: send CDR */
 		cgr_cdr_cb(0, 0, &ps);
+		return;
 	}
+free_ctx:
+	cgr_free_acc_ctx(ctx);
 }

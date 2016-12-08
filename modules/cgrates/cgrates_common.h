@@ -94,6 +94,7 @@ int cgr_dup_kvlist_shm(struct list_head *from, struct list_head *to);
 /* context manipulation */
 extern int cgr_ctx_idx;
 struct cgr_ctx *cgr_get_ctx_new(void);
+void cgr_free_ctx(void *param);
 
 #define CGR_GET_CTX() ((struct cgr_ctx *)context_get_ptr(CONTEXT_GLOBAL, \
 		current_processing_ctx, cgr_ctx_idx))
