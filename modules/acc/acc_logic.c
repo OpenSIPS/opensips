@@ -867,7 +867,7 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 	gettimeofday(&ctx->bye_time, NULL);
 
 	/* if it's not a local transaction we do the accounting on the tm callbacks */
-	if (((t=tmb.t_gett()) == T_UNDEFINED) ||
+	if (((t=tmb.t_gett()) == T_UNDEFINED) || !t ||
 			(t != NULL && !tmb.t_is_local(_params->msg))) {
 		/* normal dialogs will have to do accounting when the response for
 		 * the bye will come since users should be able to populate extra
