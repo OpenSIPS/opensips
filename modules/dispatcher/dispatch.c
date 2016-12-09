@@ -638,6 +638,7 @@ static void ds_inherit_state( ds_data_t *old_data , ds_data_t *new_data)
 {
 	ds_set_p new_set, old_set;
 	ds_dest_p new_ds, old_ds;
+	int changed;
 
 	/* search the new sets through the old sets */
 	for ( new_set=new_data->sets ; new_set ; new_set=new_set->next ) {
@@ -650,6 +651,7 @@ static void ds_inherit_state( ds_data_t *old_data , ds_data_t *new_data)
 			continue;
 		}
 		LM_DBG("set id %d found in old sets\n",new_set->id);
+		changed = 0;
 
 		/* sets are matching, try to match the destinations, one by one */
 		for ( new_ds=new_set->dlist ; new_ds ; new_ds=new_ds->next ) {
@@ -658,7 +660,10 @@ static void ds_inherit_state( ds_data_t *old_data , ds_data_t *new_data)
 				strncasecmp(new_ds->uri.s, old_ds->uri.s, old_ds->uri.len)==0 ) {
 					LM_DBG("DST <%.*s> found in old set, copying state\n",
 						new_ds->uri.len,new_ds->uri.s);
-					new_ds->flags = old_ds->flags;
+					if (new_ds->flags != old_ds->flags) {
+						new_ds->flags = old_ds->flags;
+						changed = 1;
+					}
 					break;
 				}
 			}
@@ -666,6 +671,8 @@ static void ds_inherit_state( ds_data_t *old_data , ds_data_t *new_data)
 				LM_DBG("DST <%.*s> not found in old set\n",
 					new_ds->uri.len,new_ds->uri.s);
 		}
+		if (changed)
+			re_calculate_active_dsts(new_set);
 	}
 }
 
