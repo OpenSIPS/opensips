@@ -309,35 +309,32 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 
 #if defined(SHM_EXTRA_STATS) && defined(SHM_SHOW_DEFAULT_GROUP)
 	/* we create the the default group statistic where memory alocated untill groups are defined is indexed */
-	int size_prealoc;
-	char *start;
-
-	size_prealoc = sizeof(struct module_info) + 3 * (sizeof(stat_var) + sizeof(stat_val));
 
 	#ifndef DBG_MALLOC
-		memory_mods_stats = MY_MALLOC_UNSAFE(shm_block, size_prealoc);
+	memory_mods_stats = MY_MALLOC_UNSAFE(shm_block, sizeof(struct module_info));
 	#else
-		memory_mods_stats = MY_MALLOC_UNSAFE(shm_block, size_prealoc, __FILE__, __FUNCTION__, __LINE__ );
+	memory_mods_stats = MY_MALLOC_UNSAFE(shm_block, sizeof(struct module_info), __FILE__, __FUNCTION__, __LINE__ );
 	#endif
 
 	if(!memory_mods_stats){
 		LM_CRIT("could not alloc shared memory");
 		return -1;
 	}
-	memset( (void*)memory_mods_stats, 0, size_prealoc);
-	start = (char*)memory_mods_stats + sizeof(struct module_info);
+	//initialize the new created groups
+	memset((void*)&memory_mods_stats[0], 0, sizeof(struct module_info));
+	if (init_new_stat((stat_var*)&memory_mods_stats[0].fragments) < 0)
+		return -1;
 	
-	memory_mods_stats->fragments = (stat_var *)(start );
-	memory_mods_stats->memory_used = (stat_var *)(start + sizeof(stat_var));
-	memory_mods_stats->real_used = (stat_var *)(start + 2 * sizeof(stat_var));
+	if (init_new_stat((stat_var*)&memory_mods_stats[0].memory_used) < 0)
+		return -1;
 	
-	memory_mods_stats->fragments->u.val = (stat_val*)(start + 3 * sizeof(stat_var));
-	memory_mods_stats->memory_used->u.val = (stat_val*)(start + 3 * sizeof(stat_var) + sizeof(stat_val));
-	memory_mods_stats->real_used->u.val = (stat_val*)(start + 3 * sizeof(stat_var) + 2 * sizeof(stat_val));
-			
-	update_stat(memory_mods_stats[0].fragments, 1);
-	update_stat(memory_mods_stats[0].memory_used, size_prealoc);
-	update_stat(memory_mods_stats[0].real_used, size_prealoc + FRAG_OVERHEAD);
+	if (init_new_stat((stat_var*)&memory_mods_stats[0].real_used) < 0)
+		return -1;
+
+	update_stat((stat_var*)&memory_mods_stats[0].fragments, 4);
+	update_stat((stat_var*)&memory_mods_stats[0].memory_used, sizeof(stat_val) * 3 + sizeof(struct module_info));
+	update_stat((stat_var*)&memory_mods_stats[0].real_used, sizeof(stat_val) * 3 + sizeof(struct module_info) 
+					+ 4 * FRAG_OVERHEAD);
 #endif
 
 
@@ -454,21 +451,24 @@ void init_shm_statistics(void)
 	struct multi_str *mod_name;
 	int i, len;
 	char *full_name = NULL;
+	stat_var *p;
 
 	if(mem_free_idx != 1){
 
 #ifdef SHM_SHOW_DEFAULT_GROUP
-		if (register_stat("shmem_group_default", "fragments", (stat_var **)&memory_mods_stats[0].fragments, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+		p = (stat_var *)&memory_mods_stats[0].fragments;
+		if (register_stat("shmem_group_default", "fragments", &p, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+			LM_CRIT("can't add stat variable");
+			return;
+		}
+		p = (stat_var *)&memory_mods_stats[0].memory_used;
+		if (register_stat("shmem_group_default", "memory_used", &p, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}
 
-		if (register_stat("shmem_group_default", "memory_used", (stat_var **)&memory_mods_stats[0].memory_used, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
-			LM_CRIT("can't add stat variable");
-			return;
-		}
-
-		if (register_stat("shmem_group_default", "real_used", (stat_var **)&memory_mods_stats[0].real_used, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+		p = (stat_var *)&memory_mods_stats[0].real_used;
+		if (register_stat("shmem_group_default", "real_used", &p, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}
@@ -484,17 +484,20 @@ void init_shm_statistics(void)
 
 			strcpy(full_name, STAT_PREFIX);
 			strcat(full_name, mod_name->s);
-			if (register_stat(full_name, "fragments", (stat_var **)&memory_mods_stats[i].fragments, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+			p = (stat_var *)&memory_mods_stats[i].fragments;
+			if (register_stat(full_name, "fragments", &p, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
 				LM_CRIT("can't add stat variable");
 				return;
 			}
 
-			if (register_stat(full_name, "memory_used", (stat_var **)&memory_mods_stats[i].memory_used, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+			p = (stat_var *)&memory_mods_stats[i].memory_used;
+			if (register_stat(full_name, "memory_used", &p, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
 				LM_CRIT("can't add stat variable");
 				return;
 			}
 
-			if (register_stat(full_name, "real_used", (stat_var **)&memory_mods_stats[i].real_used, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+			p = (stat_var *) &memory_mods_stats[i].real_used;
+			if (register_stat(full_name, "real_used", &p, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
 				LM_CRIT("can't add stat variable");
 				return;
 			}

@@ -38,9 +38,9 @@ extern volatile struct module_info* memory_mods_stats;
 extern int core_index;
 
 struct module_info{
-	stat_var* fragments;
-	stat_var* memory_used;
-	stat_var* real_used;
+	stat_var fragments;
+	stat_var memory_used;
+	stat_var real_used;
 };
 
 struct multi_str{
@@ -53,4 +53,6 @@ int set_mem_idx(char* mod_name, int  mem_free_idx);
 void update_module_stats(long mem_used, long real_used, int frags, int group_idx);
 
 int alloc_group_stat(void);
+
+int init_new_stat(stat_var *);
 #endif
