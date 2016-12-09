@@ -73,7 +73,6 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
 
 	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
-	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1);
 	w_curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, err_buff);
 	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
 
@@ -190,7 +189,6 @@ int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
 	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
 	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
 	w_curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, err_buff);
-	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1);
 
 	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
 	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, &res_body);
