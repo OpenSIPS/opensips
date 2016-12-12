@@ -577,39 +577,40 @@ void destroy_linkers(struct dlg_profile_link *linker, char is_replicated)
 			if (!cdbc) {
 				LM_WARN("CacheDB not initialized - some information might"
 						" not be deleted from the cachedb engine\n");
-				return;
+				goto skip_and_continue;
 			}
 
 			/* prepare buffers */
 			if( l->profile->has_value) {
 
 				if (dlg_fill_value(&l->profile->name, &l->value) < 0)
-					return;
+					goto skip_and_continue;
 				if (dlg_fill_size(&l->profile->name) < 0)
-					return;
+					goto skip_and_continue;
 				/* not really interested in the new val */
 				if (cdbf.sub(cdbc, &dlg_prof_val_buf, 1,
 							profile_timeout, NULL) < 0) {
 					LM_ERR("cannot remove profile from CacheDB\n");
-					return;
+					goto skip_and_continue;
 				}
 				/* fill size into name */
 				if (cdbf.sub(cdbc, &dlg_prof_size_buf, 1,
 							profile_timeout, NULL) < 0) {
 					LM_ERR("cannot remove size profile from CacheDB\n");
-					return;
+					goto skip_and_continue;
 				}
 			} else {
 				if (dlg_fill_name(&l->profile->name) < 0)
-					return;
+					goto skip_and_continue;
 				if (cdbf.sub(cdbc, &dlg_prof_noval_buf, 1,
 							profile_timeout, NULL) < 0) {
 					LM_ERR("cannot remove profile from CacheDB\n");
-					return;
+					goto skip_and_continue;
 				}
 			}
 		}
 
+skip_and_continue:
 		/* free memory */
 		shm_free(l);
 	}
