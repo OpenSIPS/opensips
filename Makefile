@@ -447,11 +447,11 @@ bin:
 
 .PHONY: deb-%
 deb-%:
-	rm -f debian
+	rm -rf debian
 	# dpkg-source cannot use links for debian source
 	cp -r packaging/debian/$(@:deb-%=%) debian
 	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
-	rm -f debian
+	rm -rf debian
 
 .PHONY: deb
 deb: deb-common
