@@ -1458,6 +1458,11 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 				for( ds_id=0 ; ds_id<set_size ; ds_id++ )
 					if (ds_rand<idx->dlist[ds_id].running_weight)
 						break;
+				if (ds_id==set_size) {
+					LM_CRIT("BUG - no node found with weight %d in set %d\n",
+						ds_rand,idx->id);
+					goto error;
+				}
 			} else {
 				/* get a candidate simply based on hash */
 				ds_id = ds_hash % set_size;
@@ -1488,12 +1493,22 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 							if ( dst_is_active(idx->dlist[i]) &&
 							(ds_rand<idx->dlist[i].active_running_weight) )
 								break;
+						if (i==set_size) {
+							LM_CRIT("BUG - no active node found with "
+								"weight %d in set %d\n",ds_rand,idx->id);
+							goto error;
+						}
 					} else {
 						j = ds_hash % cnt;
 						/* translate this index to the full set of dsts */
 						for ( i=0 ; i<set_size ; i++ ) {
 							if ( dst_is_active(idx->dlist[i]) ) j--;
 							if (j<0) break;
+						}
+						if (i==set_size) {
+							LM_CRIT("BUG - no active node found with "
+								"in set %d\n",idx->id);
+							goto error;
 						}
 					}
 				}
