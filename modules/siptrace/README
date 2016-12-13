@@ -186,13 +186,13 @@ modparam("siptrace", "trace_id",
 
 /* hep version 3 with tcp - ALSO DEFAULT ONE */
 modparam("siptrace", "trace_id",
-"[tid]uri=hep:10.10.10.12:5061;transport=tcp;version=3")
+"[tid]uri=hep:10.10.10.12:5061;transport=tcp;version=3;")
 /* hep version 3 with udp (version not set-default will be 3)*/
 modparam("siptrace", "trace_id",
-"[tid]uri=hep:10.10.10.12:5061;transport=udp")
+"[tid]uri=hep:10.10.10.12:5061;transport=udp;")
 /* hep version 1 */
 modparam("siptrace", "trace_id",
-"[tid]uri=hep:10.10.10.12:5061;version=1")
+"[tid]uri=hep:10.10.10.12:5061;version=1;")
 
 ...
 
