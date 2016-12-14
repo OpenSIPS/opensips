@@ -19,16 +19,14 @@ Liviu Chircu
         1.1. Overview
         1.2. Working modes
 
-              1.2.1. Mirror (default, mode = 0)
-              1.2.2. Device throttling (mode = 1)
-              1.2.3. User throttling (mode = 2)
+              1.2.1. Contact mirroring (default)
+              1.2.2. Contact throttling
+              1.2.3. AOR throttling
 
-        1.3. Contact routing modes
+        1.3. Insertion modes
 
-              1.3.1. Route by Contact (default,
-                      contact_routing_mode = 0)
-
-              1.3.2. Route by Path (contact_routing_mode = 1)
+              1.3.1. Insertion by Contact (default)
+              1.3.2. Insertion by Path
 
         1.4. Dependencies
 
@@ -38,7 +36,7 @@ Liviu Chircu
         1.5. Exported Parameters
 
               1.5.1. mode (integer)
-              1.5.2. contact_routing_mode (integer)
+              1.5.2. insertion_mode (integer)
               1.5.3. outgoing_expires (integer)
               1.5.4. contact_match_param (string)
               1.5.5. default_q (integer)
@@ -63,7 +61,7 @@ Liviu Chircu
    List of Examples
 
    1.1. Setting the mode module parameter
-   1.2. Setting the contact_routing_mode module parameter
+   1.2. Setting the insertion_mode module parameter
    1.3. Setting the outgoing_expires module parameter
    1.4. Setting the contact_match_param module parameter
    1.5. Setting the default_q module parameter
@@ -83,15 +81,12 @@ Chapter 1. Admin Guide
 
 1.1. Overview
 
-   The mid_registrar is an in-between component of a SIP platform,
+   The mid_registrar is a mid-component of a SIP platform,
    designed to work between end users and the platform's main
-   registration layer. It opens up new possibilities for
-   leveraging existing infrastructure in order to support larger
-   user bases / heavier traffic loads while minimizing the need to
-   add additional hardware. This is possible through the optimized
-   SIP user location implementation of OpenSIPS, capable of
-   handling high subscriber numbers and large amounts of
-   registration traffic.
+   registration component. It opens up new possibilities for
+   leveraging existing infrastructure in order to continue to grow
+   (as subscribers and as registration traffic) while keeping an
+   existing low-resources registrar server.
 
    Acting as a registration front-end to the main SIP registrar,
    the mid-registrar is able to:
@@ -101,94 +96,82 @@ Chapter 1. Admin Guide
        registration traffic while preserving the back-end's user
        location state, effectively reducing resource usage at the
        respective layer.
-     * stay in perfect sync with the registration back-end (from a
-       SIP perspective), by properly adhering to the contact
-       states and expiration times imposed by the main registrar
+     * stay synchronized with the main registrar (from a user
+       location perspective), by properly accepting the contact
+       states and expirations it decides.
 
 1.2. Working modes
 
-   Depending on the value of the mode module parameter, the
-   mid_registrar can function in one of the following ways:
+   The mid_registrar may function in one of several modes:
 
-1.2.1. Mirror (default, mode = 0)
+1.2.1. Contact mirroring (default)
 
-   The basic usage of the module, highlighting its capability to
-   properly handle expiry times imposed by the main registrar
-   layer. In other words, any contact-related operation will only
-   be performed on a 200 OK reply.
+   In "contact mirroring" mode, the mid-registrar will insert
+   itself in the registration flow between end user and main
+   registrar only as a simple proxy registrar, without any other
+   contact processing. The incoming REGISTER requests will be
+   proxied further to the main registrar; the registered contact
+   will be stored in the mid-registrar only on 2xx replies,
+   according to the information returned by the main registrar.
 
-   In "mirror mode", the mid-registrar will not alter any Contact
-   or Expires header, nor append additional ones. It will not
-   modify a REGISTER request at all.
+   A possible usage of this mode, for example, would be to clone
+   registrations on a SIP front-end that extends the main platform
+   with new services (like adding IM/messaging routing).
 
-   A possible usage of this mode, for example, would be to cache
-   registrations in order to offload the main registrar from
-   processing a subset of all types of incoming SIP requests.
+1.2.2. Contact throttling
 
-1.2.2. Device throttling (mode = 1)
+   In "contact throttling" mode, the mid-registrar can
+   significantly reduce the registration rate on the main
+   registrar side (between mid-registrar and main registrar),
+   while coping with a high registration rate on the end-user side
+   (between end-user and mid-registrar). This is useful in
+   scenarios were the end-users are very dynamic and short-lived
+   (like on mobile devices), but the main registrar cannot cope
+   with large traffic.
 
-   In this working mode, the mid-registrar will absorb a fraction
-   of all registrations of each unique SIP Contact, by not
-   forwarding them to the main registrar, and immediately
-   responding with 200 OK.
-
-   Device throttling is the first level of registration traffic
-   optimization. This is possible through the use of the
-   outgoing_expires module parameter or the corresponding
-   parameter to mid_registrar_save(), which allow the script
-   writer to prolong the life of the registrations on the way to
-   the main registrar.
-
-   Once a prolonged registration is completed, subsequent
-   registrations for the same SIP Contact header field value will
-   be continuously absorbed by the mid-registrar until,
-   eventually, the lifetime of the remote registration will have
-   decreased enough that a refresh (i.e. simply forwarding the
-   next REGISTER request) is mandatory.
+   Traffic conversion is done in a "per-device" manner, according
+   to each unique SIP Contact header field value. It is achieved
+   by increasing the "expires" parameter value of each contact,
+   when relaying registrations to the main registrar. Once such a
+   registration is completed, subsequent registrations for the
+   same SIP Contact header field value will be continuously
+   absorbed by the mid-registrar until, eventually, the lifetime
+   of the remote registration will have decreased enough that a
+   refresh (i.e. simply forwarding the next REGISTER request) is
+   mandatory.
 
    A common occurence is for some SIP User Agents to lose their
    network connection (especially when dealing with mobile
-   devices), hence not de-registering themselves from the
-   mid-registrar. In this case, in order to avoid zombie
+   devices), hence they do not properly de-register from the
+   mid-registrar. In this case, in order to avoid stale
    registrations on the main registrar (which contains SIP
    contacts with greatly extended lifetimes!), the mid-registrar
    will appropriately generate De-REGISTER requests and remove
    these contacts from the main registrar's location service as
    soon as it considers them to have expired.
 
-   In "device throttling mode", depending on the
-   "outgoing_expires" value, the mid-registrar may alter Contact
-   header field values found in the initial request, including
-   their ";expires" parameters, as needed. If an "Expires" header
-   field is present, its value may also be altered. Finally, the
-   module may also insert a "Path" header if the
-   countact_routing_mode module parameter indicates this.
+   The main practical use for this mode is registration traffic
+   conversion. By minimizing the strain of processing
+   registrations on the main registrar, we allow it to dedicate
+   more system resources to critical areas of the platform, such
+   as advanced SIP calling features and/or media handling.
 
-   Practical usages for this mode include the above "registration
-   caching" concept, along with "traffic conversion". The latter
-   does nothing more than to save resources on the back-end layer,
-   allowing it to dedicate more processing power to critical areas
-   of the platform, such as advanced SIP calling features and/or
-   media handling.
+1.2.3. AOR throttling
 
-1.2.3. User throttling (mode = 2)
+   In "AOR throttling" mode, the mid-registrar helps with handling
+   multiple registrations per user/AOR. This is done by
+   aggregating all the end-user registered contacts from a single
+   AOR under a single registration into the main registrar. This
+   can dramatically reduce the incoming rate of registrations (to
+   a single registration per AOR), but also helps in dealing with
+   registrar servers which are not able to implement parallel
+   forking/ringing.
 
-   In this working mode, the mid-registrar will absorb a fraction
-   of all registrations of each unique SIP AOR (username of the
-   "To" header field URI of a REGISTER request), by not forwarding
-   them to the main registrar, and immediately responding with 200
-   OK.
-
-   User-level throttling is the second level of registration
-   traffic optimization, effectively building upon the previous
-   "device throttling" mode. This behaviour is also made possible
-   through the outgoing_expires module parameter or the
-   corresponding parameter to mid_registrar_save(), which allow
-   the script writer to prolong the life of the registrations on
-   the way to the main registrar.
-
-   Once a prolonged registration is completed, subsequent
-   registrations to the same Address-of-record will be
+   Traffic conversion is done in a "per-user" manner, according to
+   each unique SIP AOR. It is achieved by providing a contact with
+   a large "expires" parameter value, when relaying registrations
+   to the main registrar. Once such a registration is completed,
+   subsequent registrations to the same Address-of-record will be
    continuously absorbed by the mid-registrar until, eventually,
    the lifetime of the remote registration will have decreased
    enough that a refresh (i.e. simply forwarding the next REGISTER
@@ -196,61 +179,61 @@ Chapter 1. Admin Guide
 
    A common occurence is for some SIP User Agents to lose their
    network connection (especially when dealing with mobile
-   devices), hence not de-registering themselves from the
-   mid-registrar. In this case, in order to avoid zombie
-   registrations on the main registrar (which contains SIP
-   contacts with greatly extended lifetimes!), the mid-registrar
-   will appropriately generate De-REGISTER requests and remove
-   these contacts from the main registrar's location service as
-   soon as it considers them to have expired.
+   devices), hence they do not properly de-register from the
+   mid-registrar. In this case, in order to avoid stale
+   registrations on the main registrar (which contains SIP AORs
+   with greatly extended lifetimes!), the mid-registrar will
+   appropriately generate De-REGISTER requests and remove these
+   contacts from the main registrar's location service as soon as
+   it considers them to have expired.
 
-   Of all three modes, "user throttling" potentially offers the
+   Of all three modes, "AOR throttling" potentially offers the
    best reduction in traffic on the way to the main registrar. By
    aggregating contacts, it also has the added benefit of reducing
    the number of contacts that the main registrar must handle.
 
    Regarding SIP request mangling in this mode, the module will
-   always replace all Contact header fields with a single Contact
-   header field, for registration requests headed over to the main
-   registrar, indicating that the AOR is local to the front-end,
-   along with all of its contacts.
+   always replace all Contact header field values with a single
+   Contact header field value when proxying registrations to the
+   main registrar, indicating that the AOR is local to the
+   front-end, and its contacts can be found there.
 
-   Practical usages for this mode include the "registration
-   caching" concept, along with "traffic conversion". The latter
-   does nothing more than to save resources on the back-end layer,
-   allowing it to dedicate even more processing power to critical
-   areas of the platform, such as advanced SIP calling features
-   and/or media handling.
+   The main practical uses for this mode are registration traffic
+   conversion towards the main registrar, as well as taking over
+   its call forking duties. By minimizing the strain of processing
+   registrations / forking calls on the main registrar, we allow
+   it to dedicate more system resources to critical areas of the
+   platform, such as advanced SIP calling features and/or media
+   handling.
 
-1.3. Contact routing modes
+1.3. Insertion modes
 
-   A defining feature of the module is that it must be easy to
-   integrate, ideally a "plug-and-play" SIP component, without
-   imposing any additional "outbound-proxy" configurations on any
-   of the platform's layers.
+   A defining feature of the mid-registrar is that it must be easy
+   to integrate, ideally a "plug-and-play" SIP component. It
+   should not impose any "outbound-proxy" configurations on any of
+   the platform's layers and automatically insert itself on the
+   call flow of successful registrations.
 
-   With the above in mind, the script writer can choose between
-   two out-of-the-box contact routing mechanisms: either by having
-   the module modify Contact headers when forwarding
-   registrations, or instruct it to make use of a Path header (RFC
-   3327).
+   The script writer can choose between two SIP insertion
+   mechanisms: either by having the module modify Contact headers
+   when forwarding registrations, or instruct it to make use of a
+   Path header (RFC 3327).
 
-1.3.1. Route by Contact (default, contact_routing_mode = 0)
+1.3.1. Insertion by Contact (default)
 
-   In this routing mode, the module will mangle the Contact header
-   field values of all forwarded registration requests, by
-   replacing any original IP and port of a Contact URI with those
-   of one of the mid-registrar's listening interfaces.
+   This insertion mode will mangle the Contact header field values
+   of all forwarded registration requests, by replacing any
+   original IP and port of a Contact URI with those of one of the
+   mid-registrar's listening interfaces.
 
    The mid-registrar will also append a parameter to each Contact
    URI ("rid" by default, can be changed through the
    contact_match_param module parameter) This URI parameter allows
-   reply contacts to be matched with the ones from the request.
-   This same parameter will also be used when routing calls to the
-   users. In this case, it will be taken from the INVITE's
-   Request-URI.
+   reply contacts to be matched with request ones. This same
+   parameter will also be used when routing calls to the users. In
+   this case, it will be taken from the INVITE's Request-URI.
 
-1.3.2. Route by Path (contact_routing_mode = 1)
+1.3.2. Insertion by Path
 
    Instructs the module to append a "Path" header field to each
    forwarded registration request. By recording itself between
@@ -277,32 +260,66 @@ Chapter 1. Admin Guide
 1.5.1. mode (integer)
 
    Working mode of the module. Refer to Section 1.2, “Working
-   modes” for more details. Possible values are:
-     * 0 (mirror mode)
-     * 1 (device throttling mode)
-     * 2 (user throttling mode)
+   modes” for more details.
 
-   Default value is 0 (mirror mode)
+   The following is true for all working modes:
+     * when a REGISTER is received, the script writer must call
+       mid_registrar_save()
+     * the mid-registrar will insert itself on the call flow of
+       all registrations according to the insertion_mode.
+     * registrations handled by the mid-registrar will
+       transparently result in a user location update if their
+       reply status is 2xx.
+
+   Each working mode behaves differently, as follows:
+     * 0 (Contact mirroring mode)
+       The module will only insert itself on the call flow.
+       Contact expirations are left unchanged.
+     * 1 (Contact throttling mode)
+       Contact throttling is a first step in lowering registration
+       traffic rates. This is possible through the use of the
+       outgoing_expires module parameter or the corresponding
+       parameter to mid_registrar_save(), which allow the script
+       writer to prolong the life of the registrations on the way
+       to the main registrar.
+       In this mode, the mid-registrar may alter Expires header
+       field values or "expires" Contact header field parameters
+       found in the initial request when forwarding registrations,
+       according to outgoing_expires
+     * 2 (AOR throttling mode)
+       AOR throttling is a step beyond "Contact throttling", as
+       the main registrar is made aware of the network presence of
+       AORs, rather than Contacts. This behaviour is also made
+       possible through the outgoing_expires module parameter or
+       the corresponding parameter to mid_registrar_save(), which
+       allow the script writer to prolong the life of the
+       registrations on the way to the main registrar.
+       In this mode, the mid-registrar will fully replace the
+       Contact set of all forwarded registrations with a single
+       Contact, advertising that the AOR is available to the main
+       registrar. The expiration value for this Contact is given
+       by outgoing_expires.
+
+   Default value is 0 (contact mirroring mode)
 
    Example 1.1. Setting the mode module parameter
 modparam("mid_registrar", "mode", 2)
 
-1.5.2. contact_routing_mode (integer)
+1.5.2. insertion_mode (integer)
 
-   Contact routing mode of the module. Only relevant in "device
-   throttling" mode. Refer to Section 1.3, “Contact routing modes”
-   for more details. Possible values are:
-     * 0 (route by Contact)
-     * 1 (route by Path)
+   SIP insertion mode of the module. Refer to Section 1.3,
+   “Insertion modes” for more details. Possible values are:
+     * 0 (Insertion by Contact)
+     * 1 (Insertion by Path)
 
    Default value is 0 (route by Contact)
 
-   Example 1.2. Setting the contact_routing_mode module parameter
-modparam("mid_registrar", "contact_routing_mode", 1)
+   Example 1.2. Setting the insertion_mode module parameter
+modparam("mid_registrar", "insertion_mode", 1)
 
 1.5.3. outgoing_expires (integer)
 
-   Only relevant in device/user throttling modes. Sets the default
+   Only relevant in Contact/AOR throttling modes. Sets the default
    value for the expiration intervals of outgoing contacts. Values
    for this parameter which are shorter than the expiration
    intervals of some contacts present in a REGISTER request being
@@ -316,9 +333,9 @@ modparam("mid_registrar", "outgoing_expires", 3600)
 
 1.5.4. contact_match_param (string)
 
-   Only relevant in device throttling mode. Specifies the name of
-   the Contact URI parameter which is used by the module in order
-   to match contacts and route calls.
+   Only relevant in "Contact throttling" mode. Specifies the name
+   of the Contact URI parameter which is used by the module in
+   order to match contacts and route calls.
 
    Default value is “rid”
 
@@ -475,11 +492,15 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 1.6.1.  mid_registrar_save(domain[, [flags][, [aor][,
 [outgoing_expires]]]])
 
-   Sets up the internally required hooks in order for the user
-   location update (i.e. any contact additions/updates/deletions)
-   to be transparently performed once a 200 OK reply is received.
+   Function to be called when handling REGISTER requests. This
+   function decides if a REGISTER should be forwarded to the main
+   registrar and performs all the necessary changes over the
+   registered contacts. The function is also covering the handling
+   of the 2xx REGISTER replies - the contacts confirmed by the
+   main registrar will be automatically saved in the local user
+   location (without any additional scripting).
 
-   In device/user throttling modes (more info about working modes
+   In Contact/AOR throttling modes (more info about working modes
    in Section 1.2, “Working modes”), the return value of this
    function indicates whether the script writer must forward the
    REGISTER request to the main registrar, or just wrap up any
@@ -487,11 +508,11 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
    REGISTER request has been answered with 200 OK (absorbed at
    mid-registrar level).
 
-   In the above-mentioned working modes, the mid_registrar_save()
+   Depending on the current working mode and insertion_mode, the
    function may additionally perform the following series of
    transformations when relaying REGISTER requests:
 
-     * in "device throttling" mode
+     * in "Contact throttling" mode
           + change the value of the Expires header field to the
             value of outgoing_expires, if given, otherwise the
             value given by the outgoing_expires module parameter.
@@ -504,7 +525,8 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
             allow the module to match the reply contacts and also
             route calls. The name of this URI parameter is
             configurable via contact_match_param
-     * in "user throttling" mode
+          + append a "Path" header to the current REGISTER request
+     * in "AOR throttling" mode
           + change the value of the Expires header field to the
             value of outgoing_expires, if given, otherwise the
             value given by the outgoing_expires module parameter.
@@ -512,6 +534,7 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
             a single Contact header field, which will contain the
             following SIP URI:
             "sip:address-of-record@proxy_ip:proxy_port"
+          + append a "Path" header to the current REGISTER request
 
    Meaning of the parameters is as follows:
      * domain - logical domain within the registrar. If a database
@@ -547,7 +570,7 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
      * aor (optional) - variable holding a custom
        Address-of-Record. If not given, the AOR will be taken from
        the To header URI
-     * outgoing_expires (optional, only relevant in device/user
+     * outgoing_expires (optional, only relevant in Contact/AOR
        throttling modes) - custom value for the contact expiration
        interval of the outgoing REGISTER request, which overrides
        the default outgoing_expires module parameter.
@@ -590,8 +613,13 @@ if (is_method("REGISTER")) {
 
 1.6.2.  mid_registrar_lookup(domain[, [flags][, [aor]]])
 
-   Performs the necessary processing in order to build the proper
-   branch set for the currently requested Address-of-record.
+   Function to be called when receiving requests from the main
+   registrar (to be routed to the end-user). It performs the local
+   lookup (in user location) and the necessary RURI processing in
+   order to route the requests further to the end-user registered
+   contacts (note that multiple branches/destinations may result
+   after the lookup).
+
    Depending on the current working mode, the function will behave
    as follows:
 
@@ -603,12 +631,12 @@ if (is_method("REGISTER")) {
             contact, with additional branches for each contact
             being optionally created. (depending on the flags
             parameter)
-     * in "device throttling" mode
+     * in "Contact throttling" mode
           + extract the contact_match_param from the Request-URI,
             derive the actual SIP URI of the destination from it
             and set it as the new Request-URI of the INVITE ($ru
             variable).
-     * in "user throttling" mode
+     * in "AOR throttling" mode
           + extract the username (Address-of-Record) from the
             Request-URI and look up all of its contact bindings
             stored in the user location. The Request-URI ($ru
