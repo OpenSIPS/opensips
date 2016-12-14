@@ -30,6 +30,7 @@
 #include "../../str.h"
 #include "../../ip_addr.h"
 #include "../../sr_module.h"
+#include "../../bin_interface.h"
 
 #define UNDEFINED_PACKET_TYPE -1
 #define INVAL_NODE_ID -1
@@ -83,10 +84,10 @@ typedef int (*check_addr_f)(int cluster_id, union sockaddr_union *su);
 typedef int (*get_my_id_f)(void);
 
 /* send message to specific node in the cluster */
-typedef enum clusterer_send_ret (*send_to_f)(int cluster_id, int node_id);
+typedef enum clusterer_send_ret (*send_to_f)(bin_packet_t *packet, int cluster_id, int node_id);
 
 /* send message to all nodes in the cluster */
-typedef enum clusterer_send_ret (*send_all_f)(int cluster_id);
+typedef enum clusterer_send_ret (*send_all_f)(bin_packet_t *packet, int cluster_id);
 
 /* return the next hop from the shortest path to the given destination */
 typedef clusterer_node_t* (*get_next_hop_f)(int cluster_id, int node_id);
@@ -98,7 +99,7 @@ typedef void (*free_next_hop_f)(clusterer_node_t *next_hop);
  * This function will be called for every binary packet received or
  * to signal certain cluster events.
  */
-typedef void (*clusterer_cb_f)(enum clusterer_event ev, int packet_type,
+typedef void (*clusterer_cb_f)(enum clusterer_event ev,bin_packet_t *, int packet_type,
 				struct receive_info *ri, int cluster_id, int src_id, int dest_id);
 
 /* Register module to clusterer; must be called only once for each module

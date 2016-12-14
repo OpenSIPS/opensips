@@ -34,6 +34,7 @@
 #define DEFAULT_NODE_TIMEOUT 60
 #define DEFAULT_PING_TIMEOUT 1000 /* in milliseconds */
 #define UPDATE_MAX_PATH_LEN 25
+#define SMALL_MSG 300
 
 /* node flags */
 #define NODE_STATE_ENABLED	(1<<0)
@@ -102,15 +103,15 @@ extern enum sip_protos clusterer_proto;
 
 inline void heartbeats_timer(void);
 
-void receive_clusterer_bin_packets(int packet_type, struct receive_info *ri,
+void receive_clusterer_bin_packets(bin_packet_t *packet, int packet_type, struct receive_info *ri,
 									void *att);
 
 int get_next_hop(struct node_info *dest);
 
 int cl_set_state(int cluster_id, enum cl_node_state state);
 int clusterer_check_addr(int cluster_id, union sockaddr_union *su);
-enum clusterer_send_ret cl_send_to(int cluster_id, int node_id);
-enum clusterer_send_ret cl_send_all(int cluster_id);
+enum clusterer_send_ret cl_send_to(bin_packet_t *, int cluster_id, int node_id);
+enum clusterer_send_ret cl_send_all(bin_packet_t *, int cluster_id);
 int cl_register_module(char *mod_name,  clusterer_cb_f cb, int auth_check,
 								int *accept_clusters_ids, int no_accept_clusters);
 
