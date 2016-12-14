@@ -104,8 +104,8 @@ char* realm_pref    = "";
 str realm_prefix;
 int reg_use_domain = 0;
 
-#define is_routing_mode(v) (v == ROUTE_BY_CONTACT || v == ROUTE_BY_PATH)
-#define routing_mode_str(v) (v == ROUTE_BY_CONTACT ? "by Contact" : "by Path")
+#define is_insertion_mode(v) (v == INSERT_BY_CONTACT || v == INSERT_BY_PATH)
+#define insertion_mode_str(v) (v == INSERT_BY_CONTACT ? "by Contact" : "by Path")
 
 static int mod_init(void);
 
@@ -125,11 +125,11 @@ unsigned int outgoing_expires = 600;
 #define is_matching_mode(v) (v == MATCH_BY_PARAM || v == MATCH_BY_USER)
 #define matching_mode_str(v) (v == MATCH_BY_PARAM ? "by uri param" : "by user")
 
-enum mid_reg_routing_mode   routing_mode  = ROUTE_BY_CONTACT;
+enum mid_reg_insertion_mode   insertion_mode  = INSERT_BY_CONTACT;
 enum mid_reg_matching_mode  matching_mode = MATCH_BY_PARAM;
 
 /*
- * Only used in ROUTE_BY_CONTACT routing mode
+ * Only used in INSERT_BY_CONTACT insertion mode
  * Allows us to match the request contact set with the reply contact set,
  * which contains rewritten Contact header field domains
  */
@@ -168,7 +168,7 @@ static param_export_t mod_params[] = {
 	{ "gruu_secret",          STR_PARAM, &gruu_secret.s },
 	{ "disable_gruu",         INT_PARAM, &disable_gruu },
 	{ "outgoing_expires",     INT_PARAM, &outgoing_expires },
-	{ "contact_routing_mode", INT_PARAM, &routing_mode },
+	{ "insertion_mode",       INT_PARAM, &insertion_mode },
 	{ "contact_match_mode",   INT_PARAM, &matching_mode },
 	{ "contact_match_param",  STR_PARAM, &matching_param.s },
 	{ 0,0,0 }
@@ -277,12 +277,12 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (!is_routing_mode(routing_mode)) {
-		routing_mode = ROUTE_BY_PATH;
-		LM_WARN("bad \"routing_mode\" (%d) - using '%s' as a default\n",
-		        routing_mode, routing_mode_str(routing_mode));
+	if (!is_insertion_mode(insertion_mode)) {
+		insertion_mode = INSERT_BY_PATH;
+		LM_WARN("bad \"insertion_mode\" (%d) - using '%s' as a default\n",
+		        insertion_mode, insertion_mode_str(insertion_mode));
 	} else {
-		LM_DBG("contact routing mode: '%s'\n", routing_mode_str(routing_mode));
+		LM_DBG("insertion mode: '%s'\n", insertion_mode_str(insertion_mode));
 	}
 
 	if (!is_matching_mode(matching_mode)) {

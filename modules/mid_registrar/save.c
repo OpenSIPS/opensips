@@ -377,7 +377,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 	shm_str_dup(&mri->ruri, ruri);
 	shm_str_dup(&mri->next_hop, next_hop);
 
-	if (routing_mode == ROUTE_BY_PATH) {
+	if (insertion_mode == INSERT_BY_PATH) {
 		if (prepend_path(req, &mri->aor, 0, 0))
 			LM_ERR("failed to append Path header for aor '%.*s'!\n",
 			       mri->aor.len, mri->aor.s);
@@ -1531,7 +1531,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 		goto out;
 	}
 
-	if (reg_mode != MID_REG_MIRROR && routing_mode == ROUTE_BY_CONTACT) {
+	if (reg_mode != MID_REG_MIRROR && insertion_mode == INSERT_BY_CONTACT) {
 		LM_DBG("fixing contact domain ... \n");
 		if (reg_mode == MID_REG_THROTTLE_CT) {
 			if (fix_rpl_contact_by_ct(req, rpl)) {

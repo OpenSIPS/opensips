@@ -51,9 +51,9 @@ enum mid_reg_mode {
 	MID_REG_THROTTLE_AOR,
 };
 
-enum mid_reg_routing_mode {
-	ROUTE_BY_CONTACT,
-	ROUTE_BY_PATH,
+enum mid_reg_insertion_mode {
+	INSERT_BY_CONTACT,
+	INSERT_BY_PATH,
 };
 
 enum mid_reg_matching_mode {
@@ -116,7 +116,7 @@ extern int retry_after;
 extern unsigned int outgoing_expires;
 
 extern enum mid_reg_mode reg_mode;
-extern enum mid_reg_routing_mode routing_mode;
+extern enum mid_reg_insertion_mode insertion_mode;
 extern enum mid_reg_matching_mode matching_mode;
 
 extern str register_method;

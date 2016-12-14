@@ -216,7 +216,7 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		uri = *GET_RURI(_m);
 	}
 
-	if (reg_mode == MID_REG_THROTTLE_CT && routing_mode == ROUTE_BY_CONTACT) {
+	if (reg_mode == MID_REG_THROTTLE_CT && insertion_mode == INSERT_BY_CONTACT) {
 		if (get_match_token(&uri, &match_tok, NULL, NULL) != 0) {
 			LM_ERR("failed to get match token\n");
 			return -1;
