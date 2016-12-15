@@ -601,6 +601,10 @@ int is_contact_registered(struct sip_msg* _m, char *_d, char* _a,
 				return -1;
 			}
 			curi = val.rs;
+		} else {
+			/* this is not really necessary, but just to make gcc happy :P */
+			curi.s = NULL;
+			curi.len = 0;
 		}
 
 		if (_cid) {
