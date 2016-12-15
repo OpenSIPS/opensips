@@ -556,8 +556,8 @@ int is_contact_registered(struct sip_msg* _m, char *_d, char* _a,
 {
 	int exp;
 
-	str aor;
-	str curi, callid;
+	str aor, curi, callid;
+	pv_value_t val;
 
 	udomain_t* ud = (udomain_t*)_d;
 	urecord_t* r;
@@ -594,17 +594,23 @@ int is_contact_registered(struct sip_msg* _m, char *_d, char* _a,
 		curi = ct->uri;
 	} else {
 		if (_c) {
-			if (fixup_get_svalue(_m, (gparam_p)_c, &curi) != 0) {
-				LM_ERR("failed to retrieve contact value from pv!\n");
+			if (pv_get_spec_value(_m, (pv_spec_p)_c, &val)!=0 ||
+			(val.flags&PV_VAL_STR)==0 ) {
+				LM_ERR("failed to retrieve string value from CONTACT "
+					"parameter!\n");
 				return -1;
 			}
+			curi = val.rs;
 		}
 
 		if (_cid) {
-			if (fixup_get_svalue(_m, (gparam_p)_cid, &callid) != 0) {
-				LM_ERR("failed to retrieve contact value from pv!\n");
+			if (pv_get_spec_value(_m, (pv_spec_p)_cid, &val)!=0 ||
+			(val.flags&PV_VAL_STR)==0 ) {
+				LM_ERR("failed to retrieve string value from CALLID "
+					"parameter!\n");
 				return -1;
 			}
+			callid = val.rs;
 		}
 	}
 
