@@ -53,6 +53,7 @@ static int w_async_cgr_engage(struct sip_msg* msg,
 		char* acc_c, char *dst_c);
 #endif
 static int fixup_cgrates(void ** param, int param_no);
+static int fixup_cgrates_acc(void ** param, int param_no);
 static int mod_init(void);
 static void mod_destroy(void);
 static int child_init(int rank);
@@ -73,13 +74,9 @@ struct cgr_param {
 #define CGRF_ENGAGED	0x1
 
 int cgr_ctx_idx;
-static int cgr_tm_ctx_idx;
+int cgr_ctx_local_idx;
+int cgr_tm_ctx_idx = -1;
 // TODO static inline struct cgr_acc_ctx *cgr_get_acc_branch(void);
-
-#define CGR_GET_SHM_CTX(_t) \
-	(cgr_tmb.t_ctx_get_ptr(_t, cgr_tm_ctx_idx))
-#define CGR_PUT_SHM_CTX(_t, _p) \
-	cgr_tmb.t_ctx_put_ptr(_t, cgr_tm_ctx_idx, _p)
 
 static int cgrates_async_resume_repl(int fd, struct sip_msg *msg, void *param);
 
@@ -96,9 +93,17 @@ static inline int cgr_replace_shm_kv(struct list_head *head,
 LIST_HEAD(cgrates_engines);
 
 static cmd_export_t cmds[] = {
-	{"cgrates_acc", (cmd_function)w_cgr_acc, 1, fixup_cgrates, 0,
+	{"cgrates_acc", (cmd_function)w_cgr_acc, 0, fixup_cgrates_acc, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"cgrates_acc", (cmd_function)w_cgr_acc, 1, fixup_cgrates_acc, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"cgrates_acc", (cmd_function)w_cgr_acc, 2, fixup_cgrates_acc, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"cgrates_auth", (cmd_function)w_cgr_auth, 0, fixup_cgrates, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"cgrates_auth", (cmd_function)w_cgr_auth, 1, fixup_cgrates, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"cgrates_auth", (cmd_function)w_cgr_auth, 2, fixup_cgrates, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -172,6 +177,31 @@ static int fixup_cgrates(void ** param, int param_no)
 	return E_UNSPEC;
 }
 
+static int fixup_cgrates_acc(void ** param, int param_no)
+{
+	if (load_dlg_api(&cgr_dlgb)!=0)
+		LM_DBG("failed to find dialog API - is dialog module loaded?\n");
+
+	if (!cgr_dlgb.get_dlg) {
+		LM_WARN("error loading dialog module - acc cannot be generated\n");
+		return -1;
+	}
+
+#if 0
+	if (cgr_dlgb.get_dlg && dlg_api.register_dlgcb(NULL,
+				DLGCB_LOADED,acc_loaded_callback, NULL, NULL) < 0)
+		LM_ERR("cannot register callback for dialog loaded - accounting "
+				"for ongoing calls will be lost after restart\n");
+#endif
+
+	if (param_no > 0 && param_no < 5)
+		return fixup_spve(param);
+	if (param_no == 5)
+		return fixup_pvar(param);
+	LM_CRIT("Unknown parameter number %d\n", param_no);
+	return E_UNSPEC;
+}
+
 static int mod_init(void)
 {
 	if (cgre_conn_tout < 0) {
@@ -187,22 +217,24 @@ static int mod_init(void)
 
 	/* load the TM API */
 	if (load_tm_api(&cgr_tmb)!=0) {
-		LM_ERR("can't load TM API\n");
-		return -1;
+		LM_INFO("TM not loaded- cannot store variables in transaction!\n");
+	} else {
+		cgr_tm_ctx_idx = cgr_tmb.t_ctx_register_ptr(NULL);
+		/* register a routine to move the pointer in tm when the transaction
+		 * is created! */
+		if (cgr_tmb.register_tmcb(0, 0, TMCB_REQUEST_IN, cgr_move_ctx, 0, 0)<=0) {
+			LM_ERR("cannot register tm callbacks\n");
+			return -2;
+		}
 	}
 
-	if (load_dlg_api(&cgr_dlgb)!=0) {
-		LM_ERR("failed to find dialog API - is dialog module loaded?\n");
-		return -1;
-	}
-	
 	/* TODO: register also for loaded dialogs */
 
 	if (cgre_bind_ip.s)
 		cgre_bind_ip.len = strlen(cgre_bind_ip.s);
 
 	cgr_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, cgr_free_ctx);
-	cgr_tm_ctx_idx = cgr_tmb.t_ctx_register_ptr(NULL);
+	cgr_ctx_local_idx = context_register_ptr(CONTEXT_GLOBAL, cgr_free_local_ctx);
 
 	return 0;
 }
@@ -358,7 +390,7 @@ static inline int async_cgr_handle_cmd(struct sip_msg *msg,
 	memset(cp, 0, sizeof *cp);
 
 	/* reset the error */
-	CGR_RESET_REPLY_CTX();
+	// TODO: CGR_RESET_REPLY_CTX();
 
 	/* connect to all servers */
 	/* go through each server and initialize the state */
@@ -631,7 +663,7 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 	}
 
-	if (!(ctx = cgr_get_ctx_new()))
+	if (!(ctx = cgr_get_ctx()))
 		return -2;
 
 	/* check if there already is a kv with that name */
@@ -645,7 +677,7 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 			return 0;
 		}
 	} else {
-		kv = cgr_new_kv(name_val.rs, dup);
+		kv = cgr_new_real_kv(name_val.rs.s, name_val.rs.len, dup);
 		if (!kv) {
 			LM_ERR("cannot allocate new key-value\n");
 			return -1;
@@ -658,16 +690,16 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 		kv->flags |= CGR_KVF_TYPE_INT;
 		kv->value.n = val->ri;
 	} else if (val->flags & PV_VAL_STR) {
-		kv->value.s.s = pkg_malloc(val->rs.len);
+		kv->value.s.s = shm_malloc(val->rs.len);
 		if (!kv->value.s.s) {
-			LM_ERR("out of pkg mem!\n");
+			LM_ERR("out of shm mem!\n");
 			goto free_kv;
 		}
 		memcpy(kv->value.s.s, val->rs.s, val->rs.len);
 		kv->value.s.len = val->rs.len;
 		kv->flags |= CGR_KVF_TYPE_STR;
 	}
-	LM_INFO("ADDED: %d %s\n", kv->key.len, kv->key.s);
+	LM_DBG("add cgr kv: %d %s\n", kv->key.len, kv->key.s);
 
 	return 0;
 free_kv:
@@ -726,14 +758,14 @@ static int pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_cgr_reply(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val)
 {
-	struct cgr_ctx *ctx;
+	struct cgr_local_ctx *ctx;
 
 	if (!param || !val) {
 		LM_ERR("invalid parameter or value to set\n");
 		return -1;
 	}
 
-	if (!(ctx = CGR_GET_CTX()) || !ctx->reply)
+	if (!(ctx = CGR_GET_LOCAL_CTX()) || !ctx->reply)
 		return pv_get_null(msg, param, val);
 
 	if (ctx->reply_flags & CGR_KVF_TYPE_STR) {

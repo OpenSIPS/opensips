@@ -24,6 +24,9 @@
 #include "../../str.h"
 #include "../../async.h"
 #include "../../mem/mem.h"
+#include "../../mod_fix.h"
+#include "../../parser/parse_from.h"
+#include "../../parser/parse_uri.h"
 #include "cgrates.h"
 #include "cgrates_common.h"
 #include "cgrates_engine.h"
@@ -47,27 +50,47 @@ struct cgr_kv *cgr_get_kv(struct list_head *ctx, str name)
 	return NULL;
 }
 
-struct cgr_kv *cgr_new_kv(str key, int dup)
+struct cgr_kv *cgr_get_const_kv(struct list_head *ctx, const char *name)
+{
+	str sname;
+	sname.s = (char *)name;
+	sname.len = strlen(name);
+	return cgr_get_kv(ctx, sname);
+}
+
+struct cgr_kv *cgr_new_real_kv(char *key, int klen, int dup)
 {
 	struct cgr_kv *kv;
-	int len = sizeof *kv + (dup? (key.len + 1) : 0);
-	kv = pkg_malloc(len);
+	int len = sizeof *kv + (dup? (klen + 1) : 0);
+	kv = shm_malloc(len);
 	if (!kv) {
-		LM_ERR("out of pkg mem\n");
+		LM_ERR("out of shm mem\n");
 		return NULL;
 	}
 	memset(kv, 0, sizeof *kv);
 	if (dup) {
 		kv->key.s = (char *)(kv + 1);
-		memcpy(kv->key.s, key.s, key.len);
-		kv->key.len = key.len;
+		memcpy(kv->key.s, key, klen);
+		kv->key.len = klen;
 		kv->key.s[kv->key.len] = '\0';
 	} else {
-		kv->key = key;
+		kv->key.s = key;
+		kv->key.len = klen;
 	}
 	return kv;
 }
 
+struct cgr_kv *cgr_new_kv(str key)
+{
+	return cgr_new_real_kv(key.s, key.len, 1);
+}
+
+struct cgr_kv *cgr_new_const_kv(const char *key)
+{
+	return cgr_new_real_kv((char *)key, strlen(key), 0);
+}
+
+/* TODO: delete me! */
 int cgr_push_kv_str(struct list_head *list, const char *key,
 		str *value)
 {
@@ -76,7 +99,8 @@ int cgr_push_kv_str(struct list_head *list, const char *key,
 	skey.s = (char *)key;
 	skey.len = strlen(key);
 	/* XXX: note that for now we do not need to duplicate the key's value */
-	struct cgr_kv *kv = cgr_new_kv(skey, 0);
+	//struct cgr_kv *kv = cgr_new_kv(skey, 0);
+	struct cgr_kv *kv = cgr_new_kv(skey);
 	if (!kv)
 		return -1;
 	kv->value.s.s = pkg_malloc(value->len);
@@ -91,6 +115,7 @@ int cgr_push_kv_str(struct list_head *list, const char *key,
 	return 0;
 }
 
+/* TODO: delete me! */
 int cgr_push_kv_int(struct list_head *list, const char *key,
 		int value)
 {
@@ -99,7 +124,8 @@ int cgr_push_kv_int(struct list_head *list, const char *key,
 	skey.s = (char *)key;
 	skey.len = strlen(key);
 	/* XXX: note that for now we do not need to duplicate the key's value */
-	struct cgr_kv *kv = cgr_new_kv(skey, 0);
+	//struct cgr_kv *kv = cgr_new_kv(skey, 0);
+	struct cgr_kv *kv = cgr_new_kv(skey);
 	if (!kv)
 		return -1;
 	kv->flags |= CGR_KVF_TYPE_INT;
@@ -110,8 +136,8 @@ int cgr_push_kv_int(struct list_head *list, const char *key,
 
 void cgr_free_kv_val(struct cgr_kv *kv)
 {
-	if (kv->flags & CGR_KVF_TYPE_STR && !(kv->flags & CGR_KVF_TYPE_SHM)) {
-		pkg_free(kv->value.s.s);
+	if ((kv->flags & CGR_KVF_TYPE_STR) && kv->value.s.s) {
+		shm_free(kv->value.s.s);
 		kv->value.s.s = 0;
 		kv->value.s.len = 0;
 	}
@@ -122,11 +148,8 @@ void cgr_free_kv_val(struct cgr_kv *kv)
 void cgr_free_kv(struct cgr_kv *kv)
 {
 	list_del(&kv->list);
-	cgr_free_kv_val(kv); /* there should be no problem calling this twice */
-	if (kv->flags & CGR_KVF_TYPE_SHM)
-		shm_free(kv);
-	else
-		pkg_free(kv);
+	cgr_free_kv_val(kv); /* it's safe to call this twice */
+	shm_free(kv);
 }
 
 static inline struct cgr_kv *cgr_dup_kvlist_shm_kv(struct cgr_kv *kv)
@@ -186,15 +209,23 @@ error:
 
 int cgrates_set_reply(int type, int_str *value)
 {
-	struct cgr_ctx *ctx;
+	struct cgr_local_ctx *ctx;
 
 	if (type & CGR_KVF_TYPE_NULL)
 		return 1;
 
 	/* reset the error */
-	if ((ctx = cgr_get_ctx_new()) == NULL) {
-		LM_ERR("cannot create new context!\n");
-		return -2;
+	ctx = CGR_GET_LOCAL_CTX();
+	if (ctx == NULL) {
+		/* create a new context */
+		ctx = pkg_malloc(sizeof(*ctx));
+		if (!ctx) {
+			LM_ERR("out of pkg memory\n");
+			return -2;
+		}
+		memset(ctx, 0, sizeof(*ctx));
+		CGR_PUT_LOCAL_CTX(ctx);
+		LM_DBG("new local ctx=%p\n", ctx);
 	}
 	ctx->reply = pkg_malloc(sizeof(int_str) +
 			((type & CGR_KVF_TYPE_STR)?value->s.len:0));
@@ -207,8 +238,11 @@ int cgrates_set_reply(int type, int_str *value)
 		ctx->reply->s.s = ((char *)ctx->reply) + sizeof(int_str);
 		ctx->reply->s.len = value->s.len;
 		memcpy(ctx->reply->s.s, value->s.s, ctx->reply->s.len);
-	} else
+		LM_DBG("Setting reply to s=%.*s\n", value->s.len, value->s.s);
+	} else {
 		ctx->reply->n = value->n;
+		LM_DBG("Setting reply to n=%d\n", value->n);
+	}
 	return 0;
 }
 
@@ -220,28 +254,28 @@ int cgrates_set_reply(int type, int_str *value)
 		} \
 	} while (0)
 
-json_object *cgr_get_generic_msg(char *method, struct list_head *list,
-		struct list_head *prio_list)
+struct cgr_msg *cgr_get_generic_msg(char *method, struct list_head *list)
 {
-	char *r;
+	static struct cgr_msg cmsg;
 	struct cgr_kv *kv;
 	struct list_head *l;
 
 	json_object *jtmp = NULL;
 	json_object *jarr = NULL;
-	json_object *jobj = NULL;
-	json_object *jmsg = json_object_new_object();
+	cmsg.msg = json_object_new_object();
 
-	JSON_CHECK(jmsg, "new json object");
+	JSON_CHECK(cmsg.msg, "new json object");
 	JSON_CHECK(jtmp = json_object_new_string(method), "method");
-	json_object_object_add(jmsg,"method", jtmp);
+	json_object_object_add(cmsg.msg,"method", jtmp);
 
 	JSON_CHECK(jarr = json_object_new_array(), "params array");
-	json_object_object_add(jmsg,"params", jarr);
+	json_object_object_add(cmsg.msg,"params", jarr);
 
-	JSON_CHECK(jobj = json_object_new_object(), "params object");
-	json_object_array_add(jarr, jobj);
+	JSON_CHECK(cmsg.params = json_object_new_object(), "params object");
+	json_object_array_add(jarr, cmsg.params);
 
+#if 0
+	/* TODO: delete me! */
 	/* add all the values in the context */
 	if (prio_list) {
 		list_for_each(l, prio_list) {
@@ -258,12 +292,10 @@ json_object *cgr_get_generic_msg(char *method, struct list_head *list,
 			json_object_object_add(jobj, kv->key.s, jtmp);
 		}
 	}
+#endif
 	if (list) {
 		list_for_each(l, list) {
 			kv = list_entry(l, struct cgr_kv, list);
-			/* if found in prio, skip it! */
-			if (cgr_get_kv(prio_list, kv->key))
-				continue;
 			if (kv->flags & CGR_KVF_TYPE_NULL) {
 				jtmp = NULL;
 			} else if (kv->flags & CGR_KVF_TYPE_INT) {
@@ -273,23 +305,80 @@ json_object *cgr_get_generic_msg(char *method, struct list_head *list,
 				jtmp = json_object_new_string_len(kv->value.s.s, kv->value.s.len);
 				JSON_CHECK(jtmp, kv->key.s);
 			}
-			json_object_object_add(jobj, kv->key.s, jtmp);
+			json_object_object_add(cmsg.params, kv->key.s, jtmp);
 		}
 	}
-	r = (char *)json_object_to_json_string(jmsg);
 
-	LM_DBG("Resulted json string: %s\n", r);
-
-	return jmsg;
+	return &cmsg;
 error:
-	if (jmsg)
-		json_object_put(jmsg);
+	json_object_put(cmsg.msg);
 	return NULL;
 }
+
+int cgr_msg_push_str(struct cgr_msg *cmsg, const char *key, str *value)
+{
+	json_object *jmsg;
+	jmsg = json_object_new_string_len(value->s, value->len);
+	JSON_CHECK(jmsg, key);
+	json_object_object_add(cmsg->params, key, jmsg);
+	return 0;
+error:
+	return -1;
+}
+
 #undef JSON_CHECK
 
 /* context manipulation */
-struct cgr_ctx *cgr_get_ctx_new(void)
+struct cgr_ctx *cgr_try_get_ctx(void)
+{
+	struct cell* t;
+	struct cgr_ctx* ctx = NULL;
+
+	if ((ctx = CGR_GET_CTX()) != NULL)
+		return ctx;
+
+	/* local one not found - search in transaction */
+	t = cgr_tmb.t_gett ? cgr_tmb.t_gett() : NULL;
+	t = t==T_UNDEFINED ? NULL : t;
+
+	return (t ? CGR_GET_TM_CTX(t) : NULL);
+}
+
+struct cgr_ctx *cgr_get_ctx(void)
+{
+	struct cell* t;
+	struct cgr_ctx *ctx = CGR_GET_CTX();
+
+	t = cgr_tmb.t_gett ? cgr_tmb.t_gett() : NULL;
+	t = t==T_UNDEFINED ? NULL : t;
+
+	if (ctx) {
+		/* if it is local, and we have transaction, move it in transaction */
+		if (t) {
+			CGR_PUT_TM_CTX(t, ctx);
+			CGR_PUT_CTX(NULL);
+		}
+		return ctx;
+	}
+
+	ctx = shm_malloc(sizeof *ctx);
+	if (!ctx) {
+		LM_ERR("out of shm memory\n");
+		return NULL;
+	}
+	memset(ctx, 0, sizeof *ctx);
+	INIT_LIST_HEAD(&ctx->kv_store);
+	
+	if (t)
+		CGR_PUT_TM_CTX(t, ctx);
+	else
+		CGR_PUT_CTX(ctx);
+	LM_DBG("new ctx=%p\n", ctx);
+	return ctx;
+}
+
+/* TODO: delete */
+struct cgr_ctx *cgr_ctx_new(void)
 {
 	struct cgr_ctx *ctx = CGR_GET_CTX();
 	if (!ctx) {
@@ -304,6 +393,16 @@ struct cgr_ctx *cgr_get_ctx_new(void)
 	}
 	return ctx;
 }
+
+#define CGR_RESET_REPLY_CTX() \
+	do { \
+		struct cgr_local_ctx *_c = CGR_GET_LOCAL_CTX(); \
+		if (_c) {\
+			if (_c->reply) \
+				pkg_free(_c->reply); \
+			_c->reply = 0; \
+		} \
+	} while (0)
 
 /* CGR logic */
 /* Returns:
@@ -322,9 +421,16 @@ int cgr_handle_cmd(struct sip_msg *msg, json_object *jmsg,
 	struct cgr_conn *c = NULL;
 	int ret = 1;
 	str smsg;
+	char *r;
+
+	/* reset the error */
+	CGR_RESET_REPLY_CTX();
 
 	smsg.s = (char *)json_object_to_json_string(jmsg);
 	smsg.len = strlen(smsg.s);
+
+	r = (char *)json_object_to_json_string(jmsg);
+	LM_DBG("sending json string: %s\n", r);
 
 	/* connect to all servers */
 	/* go through each server and initialize the state */
@@ -600,12 +706,89 @@ void cgr_free_ctx(void *param)
 
 	if (!ctx)
 		return;
+	LM_DBG("release ctx=%p\n", ctx);
 
 	/* remove all elements */
 	list_for_each_safe(l, t, &ctx->kv_store)
 		cgr_free_kv(list_entry(l, struct cgr_kv, list));
+	shm_free(ctx);
+}
+
+/* function that moves the context from global context to the transaction one */
+void cgr_move_ctx( struct cell* t, int type, struct tmcb_params *ps)
+{
+	struct cgr_ctx *ctx = (struct cgr_ctx *)*ps->param;
+
+	if (!ctx)
+		return; /* nothing to move */
+
+	t = cgr_tmb.t_gett ? cgr_tmb.t_gett() : NULL;
+	if (!t || t == T_UNDEFINED) {
+		LM_DBG("no transaction - can't move the context - freeing!\n");
+		cgr_free_ctx(ctx);
+		return;
+	}
+
+	LM_DBG("context moved in transaction\n");
+	CGR_PUT_TM_CTX(t, ctx);
+	CGR_PUT_CTX(NULL);
+}
+
+/* function that removes local context */
+void cgr_free_local_ctx(void *param)
+{
+	struct cgr_local_ctx *ctx = (struct cgr_local_ctx *)param;
+	LM_DBG("release local ctx=%p\n", ctx);
 	if (ctx->reply)
 		pkg_free(ctx->reply);
 	pkg_free(ctx);
 }
 
+
+/* functions related to parameters fix */
+str *cgr_get_acc(struct sip_msg *msg, char *acc_p)
+{
+	static str acc;
+	struct to_body *from;
+	struct sip_uri  uri;
+
+	if (acc_p) {
+		if (fixup_get_svalue(msg, (gparam_p)acc_p, &acc) < 0)
+			goto error;
+		else
+			return &acc;
+	}
+	/* get the username from FROM_HDR */
+	if (parse_from_header(msg) != 0) {
+		LM_ERR("unable to parse from hdr\n");
+		goto error;
+	}
+	from = (struct to_body *)msg->from->parsed;
+	if (parse_uri(from->uri.s, from->uri.len, &uri)!=0) {
+		LM_ERR("unable to parse from uri\n");
+		goto error;
+	}
+error:
+	LM_ERR("failed fo fetch account's name\n");
+	return NULL;
+}
+
+str *cgr_get_dst(struct sip_msg *msg, char *dst_p)
+{
+	static str dst;
+
+	if (dst_p) {
+		if (fixup_get_svalue(msg, (gparam_p)dst_p, &dst) < 0)
+			goto error;
+		else
+			return &dst;
+	}
+	if(msg->parsed_uri_ok == 0 && parse_sip_msg_uri(msg)<0) {
+		LM_ERR("cannot parse Requst URI!\n");
+		return NULL;
+	}
+	return &msg->parsed_uri.user;
+error:
+	LM_ERR("failed fo fetch destination\n");
+	return NULL;
+}

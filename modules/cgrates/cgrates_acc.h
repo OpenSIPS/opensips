@@ -22,9 +22,6 @@
 #ifndef _CGRATES_ACC_H_
 #define _CGRATES_ACC_H_
 
-#include "../tm/tm_load.h"
-#include "../dialog/dlg_load.h"
-
 /*
  * Starts a CGR accounting session
  * Input:
@@ -38,10 +35,6 @@
  *  - -4: invalid message
  */
 int w_cgr_acc(struct sip_msg* msg, char* acc_c, char *dst_c);
-
-extern struct dlg_binds cgr_dlgb;
-extern struct tm_binds cgr_tmb;
-
 
 #endif /* _CGRATES_ACC_H_ */
 

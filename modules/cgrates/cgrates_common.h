@@ -27,12 +27,17 @@
 #include "../../str.h"
 #include "../../usr_avp.h"
 #include "../../context.h"
-#include "../../parser/parse_uri.h"
 
-#define CGR_KVF_TYPE_SHM	0x1
-#define CGR_KVF_TYPE_INT	0x2
-#define CGR_KVF_TYPE_STR	0x4
-#define CGR_KVF_TYPE_NULL	0x8
+#include "../tm/tm_load.h"
+#include "../dialog/dlg_load.h"
+
+extern struct dlg_binds cgr_dlgb;
+extern struct tm_binds cgr_tmb;
+
+#define CGR_KVF_TYPE_INT	0x1
+#define CGR_KVF_TYPE_STR	0x2
+#define CGR_KVF_TYPE_NULL	0x4
+#define CGR_KVF_TYPE_SHM	0x8 /* TODO: delete me */
 
 
 struct cgr_kv {
@@ -48,17 +53,18 @@ struct cgr_ctx {
 
 	unsigned flags;
 
-	/* reply status */
-	unsigned reply_flags;
-	int_str *reply;
-
-	/* acc info */
+	/* acc context holder */
 	struct cgr_acc_ctx *acc;
 
 	/* variables */
 	struct list_head kv_store;
 };
 
+struct cgr_local_ctx {
+	/* reply status */
+	unsigned reply_flags;
+	int_str *reply;
+};
 
 enum cgrc_state {
 	CGRC_FREE, CGRC_USED, CGRC_CLOSED
@@ -73,17 +79,25 @@ struct cgr_conn {
 	struct list_head list;
 };
 
+struct cgr_msg {
+	json_object *msg;
+	json_object *params;
+};
 
 /* message builder */
 int cgrates_set_reply(int type, int_str *value);
-json_object *cgr_get_generic_msg(char *method, struct list_head *list,
-		struct list_head *prio_list);
+struct cgr_msg *cgr_get_generic_msg(char *method, struct list_head *list);
+int cgr_msg_push_str(struct cgr_msg *cmsg, const char *key, str *value);
 
 /* key-value manipulation */
-struct cgr_kv *cgr_new_kv(str key, int dup);
+struct cgr_kv *cgr_new_kv(str key);
+struct cgr_kv *cgr_new_const_kv(const char *key);
+struct cgr_kv *cgr_new_real_kv(char *key, int klen, int dup);
 void cgr_free_kv(struct cgr_kv *kv);
 void cgr_free_kv_val(struct cgr_kv *kv);
 struct cgr_kv *cgr_get_kv(struct list_head *ctx, str name);;
+struct cgr_kv *cgr_get_const_kv(struct list_head *ctx, const char *name);
+
 int cgr_push_kv_str(struct list_head *list, const char *key,
 		str *value);
 int cgr_push_kv_int(struct list_head *list, const char *key,
@@ -93,21 +107,29 @@ int cgr_dup_kvlist_shm(struct list_head *from, struct list_head *to);
 
 /* context manipulation */
 extern int cgr_ctx_idx;
+extern int cgr_ctx_local_idx;
+extern int cgr_tm_ctx_idx;
 struct cgr_ctx *cgr_get_ctx_new(void);
+struct cgr_ctx *cgr_get_ctx(void);
+struct cgr_ctx *cgr_try_get_ctx(void);
 void cgr_free_ctx(void *param);
+void cgr_free_local_ctx(void *param);
+void cgr_move_ctx( struct cell* t, int type, struct tmcb_params *ps);
 
 #define CGR_GET_CTX() ((struct cgr_ctx *)context_get_ptr(CONTEXT_GLOBAL, \
 		current_processing_ctx, cgr_ctx_idx))
 #define CGR_PUT_CTX(_p) context_put_ptr(CONTEXT_GLOBAL, \
 		current_processing_ctx, cgr_ctx_idx, (_p))
-
-#define CGR_RESET_REPLY_CTX() \
-	do { \
-		struct cgr_ctx *_c = CGR_GET_CTX(); \
-		if (_c->reply) \
-			pkg_free(_c->reply); \
-		_c->reply = 0; \
-	} while (0)
+#define CGR_GET_LOCAL_CTX() \
+	((struct cgr_local_ctx *)context_get_ptr(CONTEXT_GLOBAL, \
+		current_processing_ctx, cgr_ctx_local_idx))
+#define CGR_PUT_LOCAL_CTX(_p) \
+	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, \
+		cgr_ctx_local_idx, (_p))
+#define CGR_GET_TM_CTX(_t) \
+	(cgr_tmb.t_ctx_get_ptr(_t, cgr_tm_ctx_idx))
+#define CGR_PUT_TM_CTX(_t, _p) \
+	cgr_tmb.t_ctx_put_ptr(_t, cgr_tm_ctx_idx, _p)
 
 
 /* CGR logic */
@@ -130,15 +152,8 @@ int cgrc_async_read(struct cgr_conn *c,
 int cgrates_process(json_object *jobj,
 		struct cgr_conn *c, cgr_proc_reply_f proc_reply, void *p);
 
-/* sip-msg manipulation */
-static inline str *get_request_user(struct sip_msg *msg)
-{
-	if(msg->parsed_uri_ok == 0 && parse_sip_msg_uri(msg)<0) {
-		LM_ERR("cannot parse Requst URI!\n");
-		return NULL;
-	}
-	return &msg->parsed_uri.user;
-}
-
+/* parameters manipulation */
+str *cgr_get_acc(struct sip_msg *msg, char *acc_p);
+str *cgr_get_dst(struct sip_msg *msg, char *acc_p);
 
 #endif /* _CGRATES_COMMON_H_ */
