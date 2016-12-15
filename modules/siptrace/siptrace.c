@@ -749,7 +749,8 @@ static int trace_dialog(struct sip_msg *msg)
 	/* if transaction is found already created, it means our REQUEST_IN
 	   tm callback was triggered dry (we did not do anything as no
 	   tracing was set at that time) -> let's do this again now */
-	if ((t = tmb.t_gett())) {
+	t = tmb.t_gett();
+	if (t && t != T_UNDEFINED) {
 		ps.req = msg;
 		trace_onreq_in(t, TMCB_REQUEST_IN, &ps);
 	}
