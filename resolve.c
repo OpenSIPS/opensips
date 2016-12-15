@@ -1751,14 +1751,18 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	struct rdata *head;
 	struct rdata *rd;
 	struct hostent* he;
+	unsigned short local_proto=PROTO_NONE;
 
 	if (dn)
 		*dn = 0;
 
+	if (proto==NULL)
+		proto = &local_proto;
+
 	/* check if it's an ip address */
 	if ( ((ip=str2ip(name))!=0) || ((ip=str2ip6(name))!=0) ){
 		/* we are lucky, this is an ip address */
-		if (proto && *proto==PROTO_NONE)
+		if (*proto==PROTO_NONE)
 			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		if (port && *port==0)
 			*port = protos[*proto].default_port;
@@ -1770,13 +1774,13 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 		/* have port -> no NAPTR, no SRV lookup, just A record lookup */
 		LM_DBG("has port -> do A record lookup!\n");
 		/* set default PROTO if not set */
-		if (proto && *proto==PROTO_NONE)
+		if (*proto==PROTO_NONE)
 			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		goto do_a;
 	}
 
 	/* no port... what about proto? */
-	if ( proto && (*proto)!=PROTO_NONE ) {
+	if ( (*proto)!=PROTO_NONE ) {
 		/* have proto, but no port -> do SRV lookup */
 		LM_DBG("no port, has proto -> do SRV lookup!\n");
 		if (is_sips && (*proto)!=PROTO_TLS) {
@@ -1787,8 +1791,7 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	}
 
 	if ( dns_try_naptr==0 ) {
-		if (proto)
-			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
+		*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		goto do_srv;
 	}
 	LM_DBG("no port, no proto -> do NAPTR lookup!\n");
