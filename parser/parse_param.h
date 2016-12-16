@@ -141,7 +141,7 @@ void shm_free_params(param_t* _p);
 /*
  * Print linked list of parameters, just for debugging
  */
-void print_params(FILE* _o, param_t* _p);
+void print_params(param_t* _p);
 
 
 /*

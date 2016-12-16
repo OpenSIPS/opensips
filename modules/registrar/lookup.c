@@ -40,6 +40,7 @@
 #include "../../parser/parse_rr.h"
 #include "../usrloc/usrloc.h"
 #include "../../parser/parse_from.h"
+#include "../../lib/reg/sip_msg.h"
 #include "common.h"
 #include "regtime.h"
 #include "reg_mod.h"
@@ -419,7 +420,7 @@ struct to_body* select_uri(struct sip_msg* _m)
 
 	} else {
 		/* WARNING in msg_aor_parse the to header is checked in
-		 * parse_message so no need to check it; take care when
+		 * parse_reg_headers so no need to check it; take care when
 		 * you use this function */
 		return get_to(_m);
 	}
@@ -449,7 +450,7 @@ int msg_aor_parse(struct sip_msg* _m, char *_aor, str *_saor)
 	pv_value_t val;
 	struct to_body *hdr;
 
-	if (parse_message(_m) < 0) {
+	if (parse_reg_headers(_m) < 0) {
 		LM_ERR("unable to parse message\n");
 		return -2;
 	}

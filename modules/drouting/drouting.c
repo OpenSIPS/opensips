@@ -711,7 +711,8 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 
 			/* Execute the Dialog using the "request"-Method of the
 			 * TM-Module.*/
-			if (dr_tmb.new_auto_dlg_uac(&dr_probe_from, &uri, dst->sock, &dlg)!=0) {
+			if (dr_tmb.new_auto_dlg_uac(&dr_probe_from, &uri, NULL, NULL,
+			    dst->sock, &dlg)!=0) {
 				LM_ERR("failed to create new TM dlg\n");
 				continue;
 			}

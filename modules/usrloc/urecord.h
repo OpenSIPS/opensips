@@ -58,6 +58,8 @@ typedef struct urecord {
 
 	struct hslot* slot;            /*!< Collision slot in the hash table
                                     * array we belong to */
+
+	void **attached_data;          /*!< data attached by API subscribers >*/
 } urecord_t;
 
 

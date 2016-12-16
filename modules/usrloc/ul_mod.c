@@ -122,7 +122,7 @@ str sip_instance_col = str_init(SIP_INSTANCE_COL);
 str contactid_col   = str_init(CONTACTID_COL);
 str db_url          = {NULL, 0};					/*!< Database URL */
 int timer_interval  = 60;				/*!< Timer interval in seconds */
-int db_mode         = 0;				/*!< Database sync scheme: 0-no db, 1-write through, 2-write back, 3-only db */
+enum usrloc_modes db_mode = NO_DB;		/*!< Database sync scheme */
 int use_domain      = 0;				/*!< Whether usrloc should use domain part of aor */
 int desc_time_order = 0;				/*!< By default do not enable timestamp ordering */
 

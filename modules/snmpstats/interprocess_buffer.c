@@ -141,8 +141,9 @@ int setInterprocessBuffersAlarm(void)
  * any race conditions between this function and the consumeInterprocessBuffer()
  * function.
  */
-void handleContactCallbacks(ucontact_t *contactInfo, int type, void *param)
+void handleContactCallbacks(void *binding, int type, void **data)
 {
+	ucontact_t *contactInfo = (ucontact_t *)binding;
 	char *p;
 
 	interprocessBuffer_t *currentBufferElement;

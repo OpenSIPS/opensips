@@ -2300,7 +2300,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 					/* Execute the Dialog using the "request"-Method of the
 					 * TM-Module.*/
 					if (tmb.new_auto_dlg_uac(&ds_ping_from,
-					&list->dlist[j].uri,
+					&list->dlist[j].uri, NULL, NULL,
 					list->dlist[j].sock?list->dlist[j].sock:probing_sock,
 					&dlg) != 0 ) {
 						LM_ERR("failed to create new TM dlg\n");

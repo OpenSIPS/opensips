@@ -1,7 +1,12 @@
 /*
- * Registrar errno
+ * contact param handling
  *
- * Copyright (C) 2001-2003 FhG Fokus
+ * This module is intended to be used as a middle layer SIP component in
+ * environments where a large proportion of SIP UAs (e.g. mobile devices)
+ * register at high enough frequencies that they actually degrade the
+ * performance of their registrars.
+ *
+ * Copyright (C) 2016 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,16 +23,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
+ * History:
+ * --------
+ *  2016-10-23 initial version (liviu)
  */
 
-/*!
- * \file
- * \brief SIP registrar module - registrar errno
- * \ingroup registrar
- */
+#ifndef __MID_REG_ENCODE_
+#define __MID_REG_ENCODE_
 
+#include "../../parser/msg_parser.h"
 
-#include "rerrno.h"
+int decrypt_str(str *in, str *out);
+int encrypt_str(str *in, str *out);
 
-rerr_t rerrno;
-
+#endif /* __MID_REG_ENCODE_ */

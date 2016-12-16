@@ -478,11 +478,11 @@ void shm_free_params(param_t* _p)
 /*
  * Print a parameter structure, just for debugging
  */
-static inline void print_param(FILE* _o, param_t* _p)
+static inline void print_param(param_t* _p)
 {
 	char* type;
 
-	fprintf(_o, "---param(%p)---\n", _p);
+	LM_DBG("---param(%p)---\n", _p);
 
 	switch(_p->type) {
 	case P_OTHER:     type = "P_OTHER";     break;
@@ -500,24 +500,24 @@ static inline void print_param(FILE* _o, param_t* _p)
 	default:          type = "UNKNOWN";     break;
 	}
 
-	fprintf(_o, "type: %s\n", type);
-	fprintf(_o, "name: \'%.*s\'\n", _p->name.len, _p->name.s);
-	fprintf(_o, "body: \'%.*s\'\n", _p->body.len, _p->body.s);
-	fprintf(_o, "len : %d\n", _p->len);
-	fprintf(_o, "---/param---\n");
+	LM_DBG("type: %s\n", type);
+	LM_DBG("name: \'%.*s\'\n", _p->name.len, _p->name.s);
+	LM_DBG("body: \'%.*s\'\n", _p->body.len, _p->body.s);
+	LM_DBG("len : %d\n", _p->len);
+	LM_DBG("---/param---\n");
 }
 
 
 /*
  * Print linked list of parameters, just for debugging
  */
-void print_params(FILE* _o, param_t* _p)
+void print_params(param_t* _p)
 {
 	param_t* ptr;
 
 	ptr = _p;
 	while(ptr) {
-		print_param(_o, ptr);
+		print_param(ptr);
 		ptr = ptr->next;
 	}
 }

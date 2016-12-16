@@ -59,9 +59,10 @@
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
 #include "../usrloc/usrloc.h"
+#include "../../lib/reg/rerrno.h"
+#include "../../lib/reg/sip_msg.h"
 #include "common.h"
 #include "sip_msg.h"
-#include "rerrno.h"
 #include "reply.h"
 #include "reg_mod.h"
 #include "regtime.h"
@@ -794,7 +795,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 	if (sctx.max_contacts == -1)
 		sctx.max_contacts = max_contacts;
 
-	if (parse_message(_m) < 0) {
+	if (parse_reg_headers(_m) < 0) {
 		goto error;
 	}
 
@@ -908,9 +909,9 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 		return -1;
 	}
 
-	if (parse_message(_m) < 0) return -1;
+	if (parse_reg_headers(_m) < 0) return -1;
 	if (check_contacts(_m, &st) > 0) return -1;
-	if (parse_message(msg) < 0) return -1;
+	if (parse_reg_headers(msg) < 0) return -1;
 	if (check_contacts(msg, &st) > 0) return -1;
 
 	/* msg - request

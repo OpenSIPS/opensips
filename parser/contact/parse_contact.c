@@ -115,12 +115,12 @@ void free_contact(contact_body_t** _c)
 /*
  * Print structure, for debugging only
  */
-void print_contact(FILE* _o, contact_body_t* _c)
+void log_contact(contact_body_t* _c)
 {
-	fprintf(_o, "===Contact body===\n");
-	fprintf(_o, "star: %d\n", _c->star);
-	print_contacts(_o, _c->contacts);
-	fprintf(_o, "===/Contact body===\n");
+	LM_DBG("===Contact body===\n");
+	LM_DBG("star: %d\n", _c->star);
+	log_contacts(_c->contacts);
+	LM_DBG("===/Contact body===\n");
 }
 
 
