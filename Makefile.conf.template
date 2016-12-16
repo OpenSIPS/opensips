@@ -88,6 +88,6 @@ DEFS+= -DDBG_MALLOC #Enables debugging for memory allocators
 #DEFS+= -DNOSMP #Do not use SMP sompliant locking. Faster but won't work on SMP machines
 #DEFS+= -DEXTRA_DEBUG #Compiles in some extra debugging code
 #DEFS+= -DORACLE_USRLOC #Uses Oracle compatible queries for USRLOC
-#DEFS+= -DSHM_EXTRA_STATS #Needed when using the mem-group core parameter
+#DEFS+= -DSHM_EXTRA_STATS #Provides tools to get extra statistics for the shared memory used
 
 PREFIX ?= /usr/local/

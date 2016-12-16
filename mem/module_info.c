@@ -65,7 +65,7 @@ int set_mem_idx(char* mod_name, int  mem_free_idx){
 	}
 
 	*var = mem_free_idx;
-	LM_INFO("changed module variable %s = %d\n", buff, *var);
+	LM_DBG("changed module variable %s = %d\n", buff, *var);
 
 	return 0;
 }
