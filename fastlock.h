@@ -30,6 +30,8 @@
  *  2005-05-25  PPC locking code enabled for PPC64; added a lwsync to
  *               the tsl part and replaced the sync with a lwsync for the
  *               unlock part (andrei)
+ *  2016-12-07  Add support for armv6 (razvanc)
+ *  2016-12-07  Add support for armv7 - not tested (razvanc)
  */
 
 /*!
@@ -121,6 +123,21 @@ inline static int tsl(volatile int* lock)
 			: "r"(1), "r" (lock) : "memory"
 	);
 
+#elif defined(__CPU_arm6) || defined(__CPU_arm7)
+	asm volatile(
+			"ldrex   %0, [%2] \n\t"
+			"cmp     %0, #0 \n\t"
+			"strexeq %0, %1, [%2] \n\t"
+#ifndef NOSMP
+#if defined(__CPU_arm7)
+			"dmb \n\t"
+#else
+			"mcr p15, #0, r1, c7, c10, #5\n\t"
+#endif
+#endif
+			: "=&r" (val)
+			: "r"(1), "r" (lock) : "memory"
+	);
 #elif defined(__CPU_ppc) || defined(__CPU_ppc64)
 	asm volatile(
 			"1: lwarx  %0, 0, %2\n\t"
@@ -249,8 +266,15 @@ inline static void release_lock(fl_lock_t* lock_struct)
 			: "r" (lock)
 			: "memory"
 	);
-#elif defined __CPU_arm
+#elif defined(__CPU_arm) || defined(__CPU_arm6) || defined(__CPU_arm7)
 	asm volatile(
+#ifndef NOSMP
+#if defined(__CPU_arm7)
+		"dmb \n\t"
+#else
+		"mcr p15, #0, r1, c7, c10, #5\n\t"
+#endif
+#endif
 		" str %0, [%1] \n\r"
 		: /*no outputs*/
 		: "r"(0), "r"(lock)

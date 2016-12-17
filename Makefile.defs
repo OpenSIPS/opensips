@@ -48,6 +48,7 @@
 #  2007-11-29  Add support for GNU/kFreeBSD. Substitute / for _ in $(OS).
 #  2009-01-15  Detection of CPU Type in Solaris to apply specific optimization
 #	       flags (saguti)
+#  2016-12-07  Add support for arm7 - not tested! (razvanc)
 
 # check if already included/exported
 
@@ -89,8 +90,9 @@ endif
 
 HOST_ARCH := $(shell $(GETARCH) |sed -e s/i.86/i386/ -e s/sun4[uv]/sparc64/  \
 			-e s/sparcv9/sparc64/ -e s/armv[3-5].*/arm/ \
-			-e s/armv6.*/arm6/ -e "s/Power Macintosh/ppc/" \
-			-e "s/cobalt/mips2/" -e s/amd64/x86_64/ )
+			-e s/armv6.*/arm6/ -e s/armv7.*/arm7/ \
+			-e "s/Power Macintosh/ppc/" -e "s/cobalt/mips2/" \
+			-e s/amd64/x86_64/ )
 
 # fix sparc -> sparc64
 ifeq ($(HOST_ARCH),sparc)
@@ -215,6 +217,7 @@ sparc64_macros= __sparcv9 __sparc_v9__
 
 arm_macros= __arm__ __thumb__
 arm6_macros= __ARM_ARCH_6__
+arm7_macros= __ARM_ARCH_7__
 
 ppc_macros= __powerpc __powerpc__ __POWERPC__ __ppc__ _ARCH_PPC
 ppc64_macros= __ppc64__ _ARCH_PPC64
@@ -248,6 +251,8 @@ else ifneq ($(strip $(filter $(arm_macros), $(predef_macros))),)
 
 ifneq ($(strip $(filter $(arm6_macros), $(predef_macros))),)
 CC_ARCH=arm6
+else ifneq ($(strip $(filter $(arm7_macros), $(predef_macros))),)
+CC_ARCH=arm7
 else # arm6_macros
 CC_ARCH=arm
 endif # arm6_macros
@@ -697,10 +702,13 @@ ifeq ($(ARCH), arm)
 	use_fast_lock=yes
 endif
 
-# use need some asm code for locking before enabling this
-#ifeq ($(ARCH), arm6)
-#	use_fast_lock=yes
-#endif
+ifeq ($(ARCH), arm6)
+	use_fast_lock=yes
+endif
+
+ifeq ($(ARCH), arm7)
+	use_fast_lock=yes
+endif
 
 ifeq ($(ARCH), ppc)
 	use_fast_lock=yes

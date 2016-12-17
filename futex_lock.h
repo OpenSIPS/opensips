@@ -20,6 +20,7 @@
  * History:
  * --------
  *  2012-09-04  created by Ryan Bullock
+ *  2016-12-07  Add support for arm architectures (razvanc)
  */
 
 /*!
@@ -103,11 +104,15 @@ typedef struct fx_lock_t_{
  * returns previous value of lock
  */
 #ifndef DBG_LOCK
-inline static int _atomic_xchg(fx_lock_t* lock, int val)
+inline static int _atomic_xchg(fx_lock_t* lock, int newval)
 #else
-inline static int _atomic_xchg(volatile int *lock, int val)
+inline static int _atomic_xchg(volatile int *lock, int newval)
 #endif
 {
+	int val;
+#if defined(__CPU_arm6) || defined(__CPU_arm7)
+	unsigned int tmp;
+#endif
 #if defined(__CPU_i386) || defined(__CPU_x86_64)
 
 #ifdef NOSMP
@@ -132,10 +137,26 @@ inline static int _atomic_xchg(volatile int *lock, int val)
 
 #elif defined __CPU_arm
 	asm volatile(
-			"# here \n\t"
 			"swpb %0, %1, [%2] \n\t"
 			: "=&r" (val)
-			: "r"(1), "r" (lock) : "memory"
+			: "r"(newval), "r" (lock) : "memory"
+	);
+
+#elif defined(__CPU_arm6) || defined(__CPU_arm7)
+	asm volatile(
+			"1: ldrex %0, [%3] \n\t"
+			"   strex %1, %2, [%3] \n\t"
+			"   teq   %1, #0 \n\t"
+			"   bne 1b \n\t"
+#ifndef NOSMP
+#if defined(__CPU_arm7)
+			"dmb \n\t"
+#else
+			"mcr p15, #0, r1, c7, c10, #5\n\t"
+#endif
+#endif
+			: "=&r" (val), "=&r" (tmp)
+			: "r"(newval), "r" (lock) : "memory"
 	);
 
 #elif defined(__CPU_ppc) || defined(__CPU_ppc64)
