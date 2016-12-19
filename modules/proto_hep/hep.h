@@ -54,9 +54,10 @@ enum hep_generic_chunks { HEP_PROTO_FAMILY=0x0001, HEP_PROTO_ID=0x0002,
 		(1<<HEP_TIMESTAMP)|(1<<HEP_TIMESTAMP_US)|(1<<HEP_PROTO_TYPE)|         \
 		(1<<HEP_AGENT_ID)|(1<<HEP_PAYLOAD)|(1<<HEP_COMPRESSED_PAYLOAD))
 
-#define CHUNK_IS_GENERIC(_cid) (_cid>=HEP_MIN_INDEX || _cid<=HEP_MAX_INDEX)
+#define CHUNK_IS_GENERIC(_cid) (_cid>=HEP_MIN_INDEX && _cid<=HEP_MAX_INDEX)
 
-#define CHUNK_IS_IN_HEPSTRUCT(_cid) ((1<<_cid)&HEP_STRUCT_CHUNKS)
+#define CHUNK_IS_IN_HEPSTRUCT(_cid) (CHUNK_IS_GENERIC(_cid) && \
+						((1<<_cid)&HEP_STRUCT_CHUNKS))
 
 /* HEPv3 types */
 
