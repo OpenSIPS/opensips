@@ -122,6 +122,74 @@ typedef struct _trace_prot {
 	get_message_id_f*         get_message_id;
 } trace_proto_t;
 
+/**
+ * message scope tracing functions
+ * currently only siptrace module populates these functions
+ */
+/**
+ * the function registers a name for certain type of messages to be traced
+ *
+ * @param {name} string trace type identifier; shall be used by the module
+ *               implementing the function as a traced type identifier from
+ *               the script (for exmaple xlog message tracing shall be
+ *               identified with "xlog" name)
+ *
+ * @return {id} integer identifier for this type of tracing; shall be used
+ *              at runtime to check whether or not {name} messages are being
+ *              traced
+ */
+typedef int(*register_trace_type_f)(char* id_name);
+
+/**
+ * the function checks whether certain types of messages are being traced;
+ * it shall return
+ *
+ * @param {id}  identifier returned by register_trace_type_f function;
+ * @return {destination_id} an id that shall be passed to get_next_destination
+ *                          function in order to return a trace_dest structure
+ *                          to which we shall send the traced packet
+ */
+typedef int(*check_is_traced_f)(int id);
+
+/**
+ * this shall be used along with check_is_traced; it returns a trace_dest
+ * structure that shall be used for sending the message using the trace protocol
+ * @param {last_dest} if null the first destiantion corresponding to that id_hash
+ *                    shall be returned, else it shall be returned the next after
+ *                    last_dest
+ * @param {id_hash} an id which will identify the set of destinations to which
+ *                  the traced message shall be sent
+ * @return {trace_destination} the destination to which we shall send the packet
+ */
+typedef trace_dest(*get_next_destination_f)(trace_dest last_dest, int id_hash);
+
+
+/**
+ * generic tracing function in sip context(currently dirrectly related
+ * to siptrace module); if custom message needs to be send
+ * (with custom chunks for example for proto_hep module)
+ * one can choose to use the trace api function along with check_is_traced_f
+ * and get_next_destination_f
+ * @param {id} id returned by register_trace_type function
+ * @param {from_su} data sender
+ * @param {to_su} data receiver
+ * @param {payload} packet payload
+ * @param {net_proto} the protocol that was used for this message
+ * @param {correlation_id} string identifier to link this message to the
+ *                         sip message; it can be for example the callid
+ *
+ */
+typedef int(*sip_context_trace_f)(int id, union sockaddr_union* from_su,
+		union sockaddr_union* to_su, str* payload, int net_proto,
+		str* correlation_id);
+
+
+extern register_trace_type_f register_trace_type;
+extern check_is_traced_f check_is_traced;
+extern get_next_destination_f get_next_destination;
+extern sip_context_trace_f sip_context_trace;
+
+
 /*
 	Type definition for a bind function.
  */

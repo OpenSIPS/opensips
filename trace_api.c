@@ -26,6 +26,10 @@
 #include "trace_api.h"
 #include "dprint.h"
 
+register_trace_type_f register_trace_type=NULL;
+check_is_traced_f check_is_traced=NULL;
+get_next_destination_f get_next_destination=NULL;
+sip_context_trace_f sip_context_trace=NULL;
 
 int trace_prot_bind(char* module_name, trace_proto_t* prot)
 {

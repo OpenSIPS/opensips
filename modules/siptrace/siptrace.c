@@ -46,8 +46,6 @@
 #include "../../mod_fix.h"
 #include "siptrace.h"
 
-#include "../../xlog.h"
-
 /* trace info context position */
 int sl_ctx_idx=-1;
 
@@ -65,7 +63,7 @@ struct dlg_binds dlgb;
 trace_proto_t tprot;
 
 /* "sip" tracing identifier */
-trace_proto_id_t sip_trace_id;
+int sip_trace_id;
 
 /* module function prototypes */
 static int mod_init(void);
@@ -167,7 +165,6 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"sip_trace", (cmd_function)sip_trace_w, 4, sip_trace_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"load_siptrace", (cmd_function) bind_siptrace_proto, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -885,14 +882,18 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (xlog_register_trace_type == NULL)
-		xlog_register_trace_type = &register_traced_type;
+	if (register_trace_type == NULL)
+		register_trace_type = &register_traced_type;
 
-	if (xlog_check_is_traced == NULL)
-		xlog_check_is_traced = &is_id_traced;
+	if (check_is_traced == NULL)
+		check_is_traced = &is_id_traced;
 
-	if (xlog_get_next_destination == NULL)
-		xlog_get_next_destination = get_next_trace_dest;
+	if (get_next_destination == NULL)
+		get_next_destination = get_next_trace_dest;
+
+	if (sip_context_trace == NULL) {
+		sip_context_trace = sip_context_trace_impl;
+	}
 
 	return 0;
 }
@@ -2529,7 +2530,7 @@ int get_trace_dest_hash(void)
 	return info->trace_list->hash;
 }
 
-trace_dest get_next_trace_dest(trace_dest last_dest, siptrace_id_hash_t hash)
+trace_dest get_next_trace_dest(trace_dest last_dest, int hash)
 {
 	int found_last=0;
 
@@ -2543,7 +2544,7 @@ trace_dest get_next_trace_dest(trace_dest last_dest, siptrace_id_hash_t hash)
 		found_last = 1;
 
 	for (it=info->trace_list; it && it->hash == hash; it=it->next) {
-		if (it->type == TYPE_HEP) {
+		if (it->type == TYPE_HEP && (*it->traceable)) {
 			if (found_last)
 				return it->el.hep.hep_id;
 			else if (it->el.hep.hep_id == last_dest)
@@ -2555,7 +2556,7 @@ trace_dest get_next_trace_dest(trace_dest last_dest, siptrace_id_hash_t hash)
 }
 
 
-trace_proto_id_t register_traced_type(char* name)
+int register_traced_type(char* name)
 {
 	int id;
 
@@ -2580,10 +2581,15 @@ trace_proto_id_t register_traced_type(char* name)
 	return id;
 }
 
-siptrace_id_hash_t is_id_traced(int id)
+int is_id_traced(int id)
 {
 	int pos;
 	int trace_types = get_trace_types();
+
+	if (!(*trace_on_flag)) {
+		LM_DBG("trace is off!\n");
+		return 0;
+	}
 
 	if (trace_types == -1)
 		return 0;
@@ -2604,6 +2610,68 @@ siptrace_id_hash_t is_id_traced(int id)
 	return 0;
 }
 
+int sip_context_trace_impl(int id, union sockaddr_union* from_su,
+		union sockaddr_union* to_su, str* payload,
+		int net_proto, str* correlation_id)
+{
+	int trace_id_hash;
+
+	tlist_elem_p it;
+	trace_info_p info = GET_SIPTRACE_CONTEXT;
+
+	trace_message trace_msg;
+
+	if (tprot.send_message == NULL) {
+		LM_DBG("trace api not loaded! aborting trace...\n");
+		return 0;
+	}
+
+	if (!(*trace_on_flag)) {
+		LM_DBG("trace is off!\n");
+		return 0;
+	}
+
+	if ((trace_id_hash=is_id_traced(id)) == 0) {
+		LM_DBG("id %d not traced! aborting...\n", id);
+		return 0;
+	}
+
+	if (info==NULL) {
+		LM_DBG("no id to trace! aborting...\n");
+		return 0;
+	}
+
+	for (it=info->trace_list;
+			it && it->hash == trace_id_hash; it=it->next) {
+		if (it->type != TYPE_HEP || !(*it->traceable))
+			continue;
+
+		trace_msg = tprot.create_trace_message(from_su, to_su,
+				net_proto, payload, id, it->el.hep.hep_id);
+
+		if (trace_msg == NULL) {
+			LM_ERR("failed to create trace message!\n");
+			return -1;
+		}
+
+		if (correlation_id && tprot.add_trace_data(trace_msg,
+			correlation_id->s, correlation_id->len,
+				TRACE_TYPE_STR, 0x0011/* correlation id*/, 0)) {
+			LM_ERR("failed to add correlation id to the packet!\n");
+			return -1;
+		}
+
+		if (tprot.send_message(trace_msg, it->el.hep.hep_id, NULL) < 0) {
+			LM_ERR("failed to send trace message!\n");
+			return -1;
+		}
+
+		tprot.free_message(trace_msg);
+	}
+
+	return 0;
+}
+
 const struct trace_proto* get_traced_protos(void)
 {
 	return (const struct trace_proto*)traced_protos;
@@ -2613,33 +2681,3 @@ int get_traced_protos_no(void)
 {
 	return traced_protos_no;
 }
-
-int bind_siptrace_proto(siptrace_api_t* api)
-{
-
-	if (api == NULL) {
-		LM_ERR("invalid parameter value!\n");
-		return -1;
-	}
-
-	if (tprot.get_trace_dest_by_name == NULL) {
-		LM_DBG("Tracing prtocol not loaded!"
-				" Trying to bind it!\n");
-		if (trace_prot_bind(TRACE_PROTO, &tprot)) {
-			LM_ERR("Failed to bind tracing protocol!\n");
-			return -1;
-		}
-	}
-
-	api->trace_api = &tprot;
-	api->register_type = &register_traced_type;
-	api->is_id_traced = &is_id_traced;
-	api->get_next_destination = &get_next_trace_dest;
-
-	return 0;
-}
-
-
-
-
-

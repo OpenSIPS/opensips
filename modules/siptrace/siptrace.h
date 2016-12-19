@@ -92,10 +92,6 @@ typedef struct trace_info {
 	tlist_elem_p trace_list;
 } trace_info_t, *trace_info_p;
 
-
-
-/* SIPTRACE API */
-
 /* maximum 32 types to trace; this way we'll
  * be able to know all types by having set bits into an integer value */
 #define MAX_TRACE_NAMES (sizeof(int) * 8)
@@ -116,47 +112,13 @@ struct trace_proto {
 const struct trace_proto* get_traced_protos(void);
 int get_traced_protos_no(void);
 
-/* SIPTRACE API data types */
-typedef int trace_proto_id_t;
-typedef int siptrace_id_hash_t;
-typedef void * siptrace_dest_t;
-
-/* SIPTRACE API function defintions */
-typedef trace_proto_id_t(register_traced_type_f)(char* name);
-typedef siptrace_id_hash_t(is_id_traced_f)(int id);
-typedef trace_dest(get_next_trace_dest_f)(trace_dest last_dest,
-								siptrace_id_hash_t hash);
-
-typedef struct {
-	trace_proto_t*          trace_api;
-	register_traced_type_f* register_type;
-	is_id_traced_f*         is_id_traced;
-	get_next_trace_dest_f*  get_next_destination;
-} siptrace_api_t;
-
-typedef int (*load_siptrace_api_f)(siptrace_api_t* api);
-
-int bind_siptrace_proto(siptrace_api_t* api);
-trace_proto_id_t register_traced_type(char* name);
-siptrace_id_hash_t is_id_traced(int id);
-trace_dest get_next_trace_dest(trace_dest last_dest, siptrace_id_hash_t hash);
-
-static inline int load_siptrace_api(siptrace_api_t* api)
-{
-	load_siptrace_api_f load_siptrace;
-
-	if ( !(load_siptrace = (load_siptrace_api_f)find_export("load_siptrace", 0, 0))) {
-		LM_ERR("failed to import load_siptrace function!\n");
-		return -1;
-	}
-
-	if (load_siptrace( api ) == -1)
-		return -1;
-
-	return 0;
-}
-
-
+/* implementations for trace_api.h message context tracing functions */
+int register_traced_type(char* name);
+int is_id_traced(int id);
+trace_dest get_next_trace_dest(trace_dest last_dest, int hash);
+int sip_context_trace_impl(int id, union sockaddr_union* from_su,
+		union sockaddr_union* to_su, str* payload,
+		int net_proto, str* correlation_id);
 
 #endif
 

@@ -47,14 +47,5 @@ int pv_get_color(struct sip_msg *msg, pv_param_t *param,
 
 int init_xlog(void);
 
-typedef int(*xlog_register_trace_type_f)(char* id_name);
-typedef int(*xlog_check_is_traced_f)(int id);
-typedef void*(*xlog_get_next_destination_f)(void* last_dest, int id_hash);
-
-extern xlog_register_trace_type_f xlog_register_trace_type;
-extern xlog_check_is_traced_f xlog_check_is_traced;
-extern xlog_get_next_destination_f xlog_get_next_destination;
-
-
 #endif
 
