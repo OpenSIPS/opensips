@@ -361,7 +361,6 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 	fd_set rset, wset, eset;
 	pv_value_t val;
 	int ret = 1;
-	long retry_time;
 	CURLM *multi_handle;
 
 	multi_handle = param->multi_list->multi_handle;
@@ -372,16 +371,6 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 		return -1;
 	}
 	LM_DBG("running handles: %d\n", running);
-
-	mrc = curl_multi_timeout(multi_handle, &retry_time);
-	if (mrc != CURLM_OK) {
-		LM_ERR("curl_multi_timeout: %s\n", curl_multi_strerror(mrc));
-		return -1;
-	}
-
-	LM_DBG("libcurl TCP connect: we should wait up to %ldms "
-	       "(timeout=%ldms, poll=%ldms)!\n", retry_time,
-	       connection_timeout_ms, connect_poll_interval);
 
 	if (running == 1) {
 		async_status = ASYNC_CONTINUE;
