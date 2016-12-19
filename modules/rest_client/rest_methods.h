@@ -30,10 +30,11 @@
 #include "../../error.h"
 #include "../../mem/mem.h"
 
-extern CURLM *multi_handle;
+extern struct list_head multi_pool;
 
 extern long connection_timeout;
 extern long connection_timeout_ms;
+extern int max_async_transfers;
 extern long curl_timeout;
 
 extern char *ssl_capath;
@@ -46,8 +47,15 @@ enum rest_client_method {
 	REST_CLIENT_POST
 };
 
+struct _oss_curlm {
+	CURLM *multi_handle;
+	struct list_head list;
+};
+typedef struct _oss_curlm OSS_CURLM;
+
 typedef struct rest_async_param_ {
 	enum rest_client_method method;
+	OSS_CURLM *multi_list;
 	CURL *handle;
 	str body;
 	str ctype;
@@ -64,7 +72,7 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 					     char *url, char *req_body, char *req_ctype,
-					     CURL **out_handle, str *body, str *ctype);
+					     rest_async_param *async_parm, str *body, str *ctype);
 enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *param);
 
 #endif /* _REST_METHODS_ */

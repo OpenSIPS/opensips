@@ -33,6 +33,7 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../mod_fix.h"
+#include "../../lib/list.h"
 
 #include "rest_methods.h"
 
@@ -41,6 +42,7 @@
  */
 long connection_timeout = 20;
 long connection_timeout_ms;
+int max_async_transfers = 100;
 long curl_timeout = 20;
 
 char *ssl_capath;
@@ -53,7 +55,6 @@ int ssl_verifyhost = 1;
  * Module initialization and cleanup
  */
 static int mod_init(void);
-static int child_init(int rank);
 static void mod_destroy(void);
 
 /*
@@ -119,6 +120,7 @@ static cmd_export_t cmds[] = {
  */
 static param_export_t params[] = {
 	{ "connection_timeout",	INT_PARAM, &connection_timeout	},
+	{ "max_async_transfers", INT_PARAM, &max_async_transfers },
 	{ "curl_timeout",		INT_PARAM, &curl_timeout		},
 	{ "ssl_capath",			STR_PARAM, &ssl_capath			},
 	{ "ssl_verifypeer",		INT_PARAM, &ssl_verifypeer		},
@@ -146,7 +148,7 @@ struct module_exports exports = {
 	mod_init, /* module initialization function */
 	NULL,     /* response function*/
 	mod_destroy,
-	child_init,/* per-child init function */
+	NULL,     /* per-child init function */
 };
 
 /*
@@ -235,23 +237,9 @@ static int mod_init(void)
 						 osips_strdup,
 						 osips_calloc);
 
-	multi_handle = curl_multi_init();
+	INIT_LIST_HEAD(&multi_pool);
 
 	LM_INFO("Module initialized!\n");
-
-	return 0;
-}
-
-static int child_init(int rank)
-{
-	if (rank <= PROC_MAIN)
-		return 0;
-
-	multi_handle = curl_multi_init();
-	if (!multi_handle) {
-		LM_ERR("failed to init CURLM handle\n");
-		return -1;
-	}
 
 	return 0;
 }
@@ -394,7 +382,7 @@ static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
 	memset(param, '\0', sizeof *param);
 
 	read_fd = start_async_http_req(msg, REST_CLIENT_GET, url.s, NULL, NULL,
-				&param->handle, &param->body, ctype_pv ? &param->ctype : NULL);
+				param, &param->body, ctype_pv ? &param->ctype : NULL);
 
 	/* error occurred; no transfer done */
 	if (read_fd == ASYNC_NO_IO) {
@@ -415,7 +403,8 @@ static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
 		curl_easy_cleanup(param->handle);
 		pkg_free(param);
 
-		return ASYNC_SYNC;
+		async_status = ASYNC_SYNC;
+		return 1;
 	}
 
 	*resume_f = resume_async_http_req;
@@ -464,7 +453,7 @@ static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f
 	memset(param, '\0', sizeof *param);
 
 	read_fd = start_async_http_req(msg, REST_CLIENT_POST, url.s, body.s, ctype.s,
-				&param->handle, &param->body, ctype_pv ? &param->ctype : NULL);
+				param, &param->body, ctype_pv ? &param->ctype : NULL);
 
 	/* error occurred; no transfer done */
 	if (read_fd == ASYNC_NO_IO) {
@@ -485,7 +474,8 @@ static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f
 		curl_easy_cleanup(param->handle);
 		pkg_free(param);
 
-		return ASYNC_SYNC;
+		async_status = ASYNC_SYNC;
+		return 1;
 	}
 
 	*resume_f = resume_async_http_req;
