@@ -100,7 +100,7 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 	}
 
 	/* xlog not traced; exit... */
-	if (check_is_traced && check_is_traced(xlog_proto_id) == 0)
+	if (!check_is_traced || check_is_traced(xlog_proto_id) == 0)
 		return 0;
 
 	/*
