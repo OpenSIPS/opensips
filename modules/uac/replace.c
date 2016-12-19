@@ -737,7 +737,7 @@ void rr_checker(struct sip_msg *msg, str *r_param, void *cb_param)
 
 
 static inline int restore_uri_reply(struct sip_msg *rpl,
-						struct hdr_field *rpl_hdr, struct hdr_field *req_hdr)
+						struct to_body *rpl_hdr, struct to_body *req_hdr)
 {
 	struct lump* l;
 	struct to_body *body;
@@ -746,7 +746,7 @@ static inline int restore_uri_reply(struct sip_msg *rpl,
 	char *p;
 
 	/* duplicate the new hdr value */
-	body = (struct to_body*)req_hdr->parsed;
+	body = req_hdr;
 	for( p = body->uri.s+body->uri.len, len=0; isspace(p[len]) ; len++ );
 	len =  p - body->body.s + ((p[len]=='>') ? (len+1) : 0) ;
 	new_val.s = pkg_malloc( len );
@@ -757,7 +757,7 @@ static inline int restore_uri_reply(struct sip_msg *rpl,
 	memcpy( new_val.s, body->body.s, len);
 	new_val.len = len;
 
-	body = (struct to_body*)rpl_hdr->parsed;
+	body = rpl_hdr;
 	for( p = body->uri.s+body->uri.len, len=0; isspace(p[len]) ; len++ );
 	len =  p - body->body.s + ((p[len]=='>') ? (len+1) : 0) ;
 	LM_DBG("removing <%.*s>\n", len,body->body.s);
@@ -851,6 +851,7 @@ void restore_uris_reply(struct cell* t, int type, struct tmcb_params *p)
 {
 	struct sip_msg *req;
 	struct sip_msg *rpl;
+	struct to_body local_body;
 
 	if ( !t || !t->uas.request || !p->rpl )
 		return;
@@ -866,8 +867,24 @@ void restore_uris_reply(struct cell* t, int type, struct tmcb_params *p)
 			LM_ERR("failed to find/parse FROM hdr\n");
 			return;
 		}
-		if (restore_uri_reply( rpl, rpl->from, req->from)) {
-			LM_ERR("failed to restore FROM\n");
+		if (req->from->parsed) {
+			/* FROM body is already parsed */
+			if (restore_uri_reply( rpl, (struct to_body*)rpl->from->parsed,
+			(struct to_body*)req->from->parsed))
+				LM_ERR("failed to restore FROM\n");
+		} else {
+			/* FROM body has to be locally parsed and freed */
+			memset( &local_body, 0, sizeof(struct to_body));
+			parse_to( req->from->body.s,
+				req->from->body.s+req->from->body.len+1, &local_body);
+			if (local_body.error == PARSE_ERROR) {
+				LM_ERR("failed to parse FROM hdr from TM'ed request\n");
+			} else {
+				if (restore_uri_reply( rpl, (struct to_body*)rpl->from->parsed,
+				&local_body))
+					LM_ERR("failed to restore FROM\n");
+				free_to_params( &local_body );
+			}
 		}
 	}
 
@@ -877,9 +894,10 @@ void restore_uris_reply(struct cell* t, int type, struct tmcb_params *p)
 			LM_ERR("failed to parse TO hdr\n");
 			return;
 		}
-		if (restore_uri_reply( rpl, rpl->to, req->to)) {
+		/* TO body should be allways parsed  */
+		if (restore_uri_reply( rpl, (struct to_body*)rpl->to->parsed,
+		(struct to_body*)req->to->parsed) )
 			LM_ERR("failed to restore FROM\n");
-		}
 	}
 }
 
