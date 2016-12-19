@@ -98,12 +98,28 @@ typedef trace_dest (get_trace_dest_by_name_f)(str *);
 typedef void (free_trace_message_f)(trace_message message);
 
 
+/*
+ * get an unique identifier for each type of message traced
+ * current types of messages that should be returned an id for
+ * "sip"
+ * "rest" (not implemented)
+ * "xlog"
+ * "mi"   (not implemented)
+ *
+ * @param1 the name of the protocol requesting an id(should be one of the above)
+ * @return integer value uniquely identifying a certain type of packet
+ *
+ */
+typedef int (get_message_id_f)(char* proto);
+
+
 typedef struct _trace_prot {
 	create_trace_message_f*   create_trace_message;
 	add_trace_data_f*         add_trace_data;
 	trace_send_message_f*     send_message;
 	get_trace_dest_by_name_f* get_trace_dest_by_name;
 	free_trace_message_f*     free_message;
+	get_message_id_f*         get_message_id;
 } trace_proto_t;
 
 /*

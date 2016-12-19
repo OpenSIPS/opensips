@@ -37,13 +37,6 @@
 #include "pvar.h"
 #include "trace_api.h"
 
-/*
- * FIXME FIXME FIXME
- * this should not be defined here
- *
- */
-#define HEP_PROTO_TYPE_XLOG 0x056
-
 #define XLOG_TRACE_API_MODULE "proto_hep"
 
 xlog_register_trace_type_f xlog_register_trace_type=NULL;
@@ -66,6 +59,8 @@ trace_proto_t xlog_trace_api;
 
 /* id with which xlog will be identified by siptrace module */
 int xlog_type_id;
+/* xlog message id */
+int xlog_message_id;
 
 /* xlog string identifier */
 static const char* xlog_id_s="xlog";
@@ -96,9 +91,11 @@ int init_xlog(void)
 		LM_DBG("no trace module loaded!\n");
 	}
 
-	if (xlog_register_trace_type) {
+	if (xlog_register_trace_type)
 		xlog_type_id = xlog_register_trace_type((char *)xlog_id_s);
-	}
+
+	if (xlog_trace_api.get_message_id)
+		xlog_type_id = xlog_trace_api.get_message_id((char *)xlog_id_s);
 
 	return 0;
 }
@@ -145,7 +142,7 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 
 	while((send_dest=xlog_get_next_destination(old_dest, siptrace_id_hash))) {
 		trace_msg = xlog_trace_api.create_trace_message(&from_su, &to_su,
-				proto, &x_msg, HEP_PROTO_TYPE_XLOG, send_dest);
+				proto, &x_msg, xlog_message_id, send_dest);
 		if (trace_msg == NULL) {
 			LM_ERR("failed to create trace message!\n");
 			return -1;

@@ -66,6 +66,9 @@ trace_proto_t tprot;
 
 trace_type_id_t sip_trace_id;
 
+/* sip message identifier in hep packet */
+int sip_message_id;
+
 /* module function prototypes */
 static int mod_init(void);
 static int child_init(int rank);
@@ -892,6 +895,8 @@ static int mod_init(void)
 
 	if (xlog_get_next_destination == NULL)
 		xlog_get_next_destination = get_next_trace_dest;
+
+	sip_message_id = tprot.get_message_id(SIP_TRACE_TYPE_STR);
 
 	return 0;
 }
@@ -2412,7 +2417,7 @@ static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 		return -1;
 
 	trace_msg = tprot.create_trace_message(&from_su, &to_su, proto, body,
-			HEP_PROTO_TYPE_SIP, dest);
+			sip_message_id, dest);
 
 	if (trace_msg == NULL) {
 		LM_ERR("failed to build trace message!\n");

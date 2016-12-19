@@ -48,6 +48,12 @@
 #define GENERIC_VENDOR_ID 0x0000
 #define HEP_PROTO_SIP  0x01
 
+struct hep_message_id {
+	char* proto;
+	int id;
+};
+
+
 /* for safety this should stay static */
 static hid_list_p hid_list=NULL;
 
@@ -55,6 +61,12 @@ extern int hep_capture_id;
 extern int payload_compression;
 
 extern compression_api_t compression_api;
+
+struct hep_message_id hep_ids[] = {
+	{ "sip" , 0x01},
+	{ "xlog", 0x56},
+	{ NULL  , 0   }
+};
 
 /*
  * @in1 buffer = hep + sip
@@ -1432,6 +1444,18 @@ trace_dest get_trace_dest_by_name(str *name)
 	return get_hep_id_by_name(name);
 }
 
+int get_hep_message_id(char* proto)
+{
+	int idx;
+
+	for ( idx=0; hep_ids[idx].proto != NULL; idx++ )
+		if (strcmp(proto, hep_ids[idx].proto) == 0)
+			return hep_ids[idx].id;
+
+	LM_ERR("can't find proto <%s>\n", proto);
+	return -1;
+}
+
 int hep_bind_trace_api(trace_proto_t* prot)
 {
 	if (!prot)
@@ -1444,6 +1468,7 @@ int hep_bind_trace_api(trace_proto_t* prot)
 	prot->send_message = send_hep_message;
 	prot->get_trace_dest_by_name = get_trace_dest_by_name;
 	prot->free_message = free_hep_message;
+	prot->get_message_id = get_hep_message_id;
 
 	return 0;
 }
