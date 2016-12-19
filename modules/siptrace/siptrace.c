@@ -891,9 +891,12 @@ static int mod_init(void)
 	if (get_next_destination == NULL)
 		get_next_destination = get_next_trace_dest;
 
-	if (sip_context_trace == NULL) {
+	if (sip_context_trace == NULL)
 		sip_context_trace = sip_context_trace_impl;
-	}
+
+	/* set the global trace api for other modules/functions if loaded */
+	if (tprot.get_trace_dest_by_name && !global_trace_api)
+		global_trace_api = &tprot;
 
 	return 0;
 }

@@ -200,6 +200,7 @@ extern register_trace_type_f register_trace_type;
 extern check_is_traced_f check_is_traced;
 extern get_next_destination_f get_next_destination;
 extern sip_context_trace_f sip_context_trace;
+extern trace_proto_t* global_trace_api;
 
 
 /*

@@ -31,6 +31,8 @@ check_is_traced_f check_is_traced=NULL;
 get_next_destination_f get_next_destination=NULL;
 sip_context_trace_f sip_context_trace=NULL;
 
+trace_proto_t* global_trace_api=NULL;
+
 int trace_prot_bind(char* module_name, trace_proto_t* prot)
 {
 	trace_bind_api_f bind_f;
