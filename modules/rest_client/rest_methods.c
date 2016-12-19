@@ -29,12 +29,12 @@
 
 #include "../../mem/shm_mem.h"
 #include "../../async.h"
+#include "../../lib/list.h"
+
 #include "rest_methods.h"
 #include "rest_cb.h"
 
 static char print_buff[MAX_CONTENT_TYPE_LEN];
-
-CURLM *multi_handle;
 
 /* additional HTTP headers for the next request */
 static struct curl_slist *header_list = NULL;
@@ -101,6 +101,55 @@ static inline char del_transfer(int fd)
 }
 
 /**
+ * We cannot use the "parallel transfers" feature of libcurl's multi interface
+ * because that would consume read events from some its file descriptors that
+ * we also manually add to the OpenSIPS reactor. This may lead to dangling
+ * descriptors in the reactor, as well as some OpenSIPS async routes which
+ * are not triggered.
+ *
+ * To work around this, we can still achieve the desired effect with a pool of
+ * multi handles each doing a single transfer, rather than using 1 multi handle
+ * doing multiple transfers.
+ *
+ * The size of the multi pool may grow indefinitely.
+ */
+struct list_head multi_pool;
+static int multi_pool_sz;
+
+static OSS_CURLM *get_multi(void)
+{
+	OSS_CURLM *multi_list;
+
+	if (list_empty(&multi_pool)) {
+		if (multi_pool_sz == max_async_transfers) {
+			LM_ERR("max async transfers! (%d)\n", max_async_transfers);
+			return NULL;
+		}
+
+		multi_list = pkg_malloc(sizeof *multi_list);
+		if (!multi_list) {
+			LM_ERR("out of mem!\n");
+			return NULL;
+		}
+		multi_pool_sz++;
+		LM_DBG("multi pool size is now %d\n", multi_pool_sz);
+
+		multi_list->multi_handle = curl_multi_init();
+		return multi_list;
+	}
+
+	multi_list = list_entry(multi_pool.next, OSS_CURLM, list);
+	list_del(multi_pool.next);
+
+	return multi_list;
+}
+
+static void put_multi(OSS_CURLM *multi_list)
+{
+	list_add(&multi_list->list, &multi_pool);
+}
+
+/**
  * start_async_http_req - performs an HTTP request, stores results in pvars
  *		- TCP connect phase is synchronous, due to libcurl limitations
  *		- TCP read phase is asynchronous, thanks to the libcurl multi interface
@@ -110,13 +159,13 @@ static inline char del_transfer(int fd)
  * @url:		HTTP URL to be queried
  * @req_body:	Body of the request (NULL if not needed)
  * @req_ctype:	Value for the "Content-Type: " header of the request (same as ^)
- * @out_handle: CURL easy handle used to perform the transfer
+ * @async_parm: output param, will contain async handles
  * @body:	    reply body; gradually reallocated as data arrives
  * @ctype:	    will eventually hold the last "Content-Type" header of the reply
  */
 int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 					     char *url, char *req_body, char *req_ctype,
-					     CURL **out_handle, str *body, str *ctype)
+					     rest_async_param *async_parm, str *body, str *ctype)
 {
 	CURL *handle;
 	CURLcode rc;
@@ -125,8 +174,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	int max_fd, fd;
 	long busy_wait, timeout;
 	long retry_time;
-	int msgs_in_queue;
-	CURLMsg *cmsg;
+	OSS_CURLM *multi_list;
+	CURLM *multi_handle;
 
 	if (transfers == FD_SETSIZE) {
 		LM_ERR("too many ongoing transfers: %d\n", FD_SETSIZE);
@@ -198,6 +247,16 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	if (!ssl_verifyhost)
 		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
 
+	multi_list = get_multi();
+	if (!multi_list) {
+		LM_INFO("failed to get a multi handle, doing blocking query\n");
+		rc = curl_easy_perform(handle);
+		clean_header_list;
+		async_parm->handle = handle;
+		return ASYNC_SYNC;
+	}
+
+	multi_handle = multi_list->multi_handle;
 	curl_multi_add_handle(multi_handle, handle);
 
 	timeout = connection_timeout_ms;
@@ -228,14 +287,17 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		}
 
 		/* transfer may have already been completed!! */
-		while ((cmsg = curl_multi_info_read(multi_handle, &msgs_in_queue))) {
-			if (cmsg->easy_handle == handle && cmsg->msg == CURLMSG_DONE) {
-				LM_DBG("done, no need for async!\n");
+		if (running_handles == 0) {
+			LM_DBG("done, no need for async!\n");
 
-				clean_header_list;
-				*out_handle = handle;
-				return ASYNC_SYNC;
+			clean_header_list;
+			async_parm->handle = handle;
+			mrc = curl_multi_remove_handle(multi_handle, handle);
+			if (mrc != CURLM_OK) {
+				LM_ERR("curl_multi_remove_handle: %s\n", curl_multi_strerror(mrc));
 			}
+			put_multi(multi_list);
+			return ASYNC_SYNC;
 		}
 
 		FD_ZERO(&rset);
@@ -277,13 +339,16 @@ busy_wait:
 
 success:
 	clean_header_list;
-	*out_handle = handle;
+	async_parm->handle = handle;
+	async_parm->multi_list = multi_list;
 	return fd;
 
 error:
 	mrc = curl_multi_remove_handle(multi_handle, handle);
-	if (mrc != CURLM_OK)
+	if (mrc != CURLM_OK) {
 		LM_ERR("curl_multi_remove_handle: %s\n", curl_multi_strerror(mrc));
+	}
+	put_multi(multi_list);
 
 cleanup:
 	clean_header_list;
@@ -296,10 +361,15 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 	CURLcode rc;
 	CURLMcode mrc;
 	rest_async_param *param = (rest_async_param *)_param;
-	int running, max_fd;
+	int running = 0, max_fd;
 	long http_rc;
 	fd_set rset, wset, eset;
 	pv_value_t val;
+	int ret = 1;
+	long retry_time;
+	CURLM *multi_handle;
+
+	multi_handle = param->multi_list->multi_handle;
 
 	mrc = curl_multi_perform(multi_handle, &running);
 	if (mrc != CURLM_OK) {
@@ -308,40 +378,38 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 	}
 	LM_DBG("running handles: %d\n", running);
 
-	if (running == running_handles) {
+	mrc = curl_multi_timeout(multi_handle, &retry_time);
+	if (mrc != CURLM_OK) {
+		LM_ERR("curl_multi_timeout: %s\n", curl_multi_strerror(mrc));
+		return -1;
+	}
+
+	LM_DBG("libcurl TCP connect: we should wait up to %ldms "
+	       "(timeout=%ldms, poll=%ldms)!\n", retry_time,
+	       connection_timeout_ms, connect_poll_interval);
+
+	if (running == 1) {
 		async_status = ASYNC_CONTINUE;
 		return 1;
 	}
 
-	if (running > running_handles) {
-		LM_BUG("incremented handles!!");
-		/* default async status is DONE */
-		return -1;
+	if (running != 0) {
+		LM_BUG("non-zero running handles!! (%d)", running);
+		abort();
 	}
-
-	running_handles = running;
 
 	FD_ZERO(&rset);
 	mrc = curl_multi_fdset(multi_handle, &rset, &wset, &eset, &max_fd);
 	if (mrc != CURLM_OK) {
 		LM_ERR("curl_multi_fdset: %s\n", curl_multi_strerror(mrc));
-		/* default async status is DONE */
-		return -1;
+		ret = -1;
+		goto out;
 	}
 
 	if (max_fd == -1) {
-		if (running_handles != 0) {
-			LM_BUG("running_handles == %d", running_handles);
-			abort();
-			/* default async status is DONE */
-			return -1;
-		}
-
 		if (FD_ISSET(fd, &rset)) {
 			LM_BUG("fd %d is still in rset!", fd);
 			abort();
-			/* default async status is DONE */
-			return -1;
 		}
 
 	} else if (FD_ISSET(fd, &rset)) {
@@ -353,8 +421,6 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 	if (del_transfer(fd) != 0) {
 		LM_BUG("failed to delete fd %d", fd);
 		abort();
-		/* default async status is DONE */
-		return -1;
 	}
 
 	mrc = curl_multi_remove_handle(multi_handle, param->handle);
@@ -363,6 +429,7 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 		/* default async status is DONE */
 		return -1;
 	}
+	put_multi(param->multi_list);
 
 	val.flags = PV_VAL_STR;
 	val.rs = param->body;
@@ -390,6 +457,7 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 			LM_ERR("failed to set output code pv\n");
 	}
 
+out:
 	pkg_free(param->body.s);
 	if (param->ctype_pv && param->ctype.s)
 		pkg_free(param->ctype.s);
@@ -397,7 +465,7 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 	pkg_free(param);
 
 	/* default async status is DONE */
-	return 1;
+	return ret;
 }
 
 /**
