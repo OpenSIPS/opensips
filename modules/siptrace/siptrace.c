@@ -990,6 +990,11 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 		return 0;
 	}
 
+	if (!is_id_traced(sip_trace_id)) {
+		LM_DBG("sip messages tracing not enabled!\n");
+		return 1;
+	}
+
 	hash = info->trace_list->hash;
 	/* check where the hash matches and take the proper action */
 	for (it=info->trace_list; it && (it->hash == hash); it=it->next) {
