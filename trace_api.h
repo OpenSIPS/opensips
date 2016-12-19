@@ -112,6 +112,17 @@ typedef void (free_trace_message_f)(trace_message message);
  */
 typedef int (get_message_id_f)(char* proto);
 
+/*
+ * get identifier for some data as is the correlation id or specific
+ * vendor data
+ *
+ * @param1 string identifier for data
+ * @param2 {out} vendor identifier for data
+ * @param3 {out} data identifier
+ * @return positive value if found 0 else
+ */
+typedef int (get_data_id_f)(const char* data_name, int* vendor, int* data_id);
+
 
 typedef struct _trace_prot {
 	create_trace_message_f*   create_trace_message;
@@ -120,6 +131,7 @@ typedef struct _trace_prot {
 	get_trace_dest_by_name_f* get_trace_dest_by_name;
 	free_trace_message_f*     free_message;
 	get_message_id_f*         get_message_id;
+	get_data_id_f*            get_data_id;
 } trace_proto_t;
 
 /**

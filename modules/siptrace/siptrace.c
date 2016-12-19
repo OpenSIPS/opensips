@@ -2626,6 +2626,10 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 
 	trace_message trace_msg;
 
+	static const char* corr_id_s="correlation_id";
+	static int corr_vendor = -1;
+	static int corr_id=-1;
+
 	if (tprot.send_message == NULL) {
 		LM_DBG("trace api not loaded! aborting trace...\n");
 		return 0;
@@ -2646,6 +2650,12 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		return 0;
 	}
 
+	if (corr_id == -1 && corr_vendor == -1) {
+		if (tprot.get_data_id(corr_id_s, &corr_vendor, &corr_id) == 0) {
+			LM_DBG("no data id!\n");
+		}
+	}
+
 	for (it=info->trace_list;
 			it && it->hash == trace_id_hash; it=it->next) {
 		if (it->type != TYPE_HEP || !(*it->traceable))
@@ -2659,9 +2669,10 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 			return -1;
 		}
 
-		if (correlation_id && tprot.add_trace_data(trace_msg,
-			correlation_id->s, correlation_id->len,
-				TRACE_TYPE_STR, 0x0011/* correlation id*/, 0)) {
+		if (correlation_id && corr_id != -1 && corr_vendor != -1 &&
+				tprot.add_trace_data(trace_msg,
+					correlation_id->s, correlation_id->len,
+				TRACE_TYPE_STR, corr_id, corr_vendor)) {
 			LM_ERR("failed to add correlation id to the packet!\n");
 			return -1;
 		}

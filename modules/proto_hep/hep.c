@@ -53,6 +53,13 @@ struct hep_message_id {
 	int id;
 };
 
+struct hep_custom_chunk_desc {
+	str chunk_name;
+
+	int vendor;
+	int chunk_id;
+};
+
 
 /* for safety this should stay static */
 static hid_list_p hid_list=NULL;
@@ -66,6 +73,11 @@ struct hep_message_id hep_ids[] = {
 	{ "sip" , 0x01},
 	{ "xlog", 0x56},
 	{ NULL  , 0   }
+};
+
+struct hep_custom_chunk_desc hep_chunks[] = {
+	{ str_init("correlation_id") , 0                     , 0x11},
+	{ { NULL, 0}                 , 0                     , 0   }
 };
 
 /*
@@ -1444,6 +1456,11 @@ trace_dest get_trace_dest_by_name(str *name)
 	return get_hep_id_by_name(name);
 }
 
+
+/**
+ * to add new ids see hep_ids structure defined below
+ *
+ */
 int get_hep_message_id(char* proto)
 {
 	int idx;
@@ -1454,6 +1471,31 @@ int get_hep_message_id(char* proto)
 
 	LM_ERR("can't find proto <%s>\n", proto);
 	return -1;
+}
+
+/**
+ * to add new chunks see hep_chunks structure defined below
+ *
+ */
+int get_hep_chunk_id(const char* name, int* vendor, int* id)
+{
+	int i;
+
+	if (name == NULL || vendor == NULL || id == NULL) {
+		LM_ERR("bad call!\n");
+		return 0;
+	}
+
+	for ( i=0; hep_chunks[i].chunk_name.s != NULL; i++) {
+		if (!memcmp(name, hep_chunks[i].chunk_name.s, hep_chunks[i].chunk_name.len)) {
+			*vendor = hep_chunks[i].vendor;
+			*id = hep_chunks[i].chunk_id;
+
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 int hep_bind_trace_api(trace_proto_t* prot)
@@ -1469,6 +1511,7 @@ int hep_bind_trace_api(trace_proto_t* prot)
 	prot->get_trace_dest_by_name = get_trace_dest_by_name;
 	prot->free_message = free_hep_message;
 	prot->get_message_id = get_hep_message_id;
+	prot->get_data_id = get_hep_chunk_id;
 
 	return 0;
 }
