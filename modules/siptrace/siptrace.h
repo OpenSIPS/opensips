@@ -99,18 +99,30 @@ typedef struct trace_info {
 /* maximum 32 types to trace; this way we'll
  * be able to know all types by having set bits into an integer value */
 #define MAX_TRACE_NAMES (sizeof(int) * 8)
+#define MAX_TRACED_PROTOS (sizeof(int) * 8)
 #define TRACE_PROTO "proto_hep"
 
-const char** get_trace_names(void);
-int get_trace_names_no(void);
+/**
+ * structure identifying a protocol that is traced
+ * has the traced proto name and it's id which
+ * helps the TRACE(proto_hep) protocol identifying
+ * the TRACED(mi, xlog, rest...) protocol
+ */
+struct trace_proto {
+	char* proto_name;
+	int   proto_id;
+};
+
+const struct trace_proto* get_traced_protos(void);
+int get_traced_protos_no(void);
 
 /* SIPTRACE API data types */
-typedef int trace_type_id_t;
+typedef int trace_proto_id_t;
 typedef int siptrace_id_hash_t;
 typedef void * siptrace_dest_t;
 
 /* SIPTRACE API function defintions */
-typedef trace_type_id_t(register_traced_type_f)(char* name);
+typedef trace_proto_id_t(register_traced_type_f)(char* name);
 typedef siptrace_id_hash_t(is_id_traced_f)(int id);
 typedef trace_dest(get_next_trace_dest_f)(trace_dest last_dest,
 								siptrace_id_hash_t hash);
@@ -125,7 +137,7 @@ typedef struct {
 typedef int (*load_siptrace_api_f)(siptrace_api_t* api);
 
 int bind_siptrace_proto(siptrace_api_t* api);
-trace_type_id_t register_traced_type(char* name);
+trace_proto_id_t register_traced_type(char* name);
 siptrace_id_hash_t is_id_traced(int id);
 trace_dest get_next_trace_dest(trace_dest last_dest, siptrace_id_hash_t hash);
 

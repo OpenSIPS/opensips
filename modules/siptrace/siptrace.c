@@ -64,10 +64,8 @@ struct dlg_binds dlgb;
 
 trace_proto_t tprot;
 
-trace_type_id_t sip_trace_id;
-
-/* sip message identifier in hep packet */
-int sip_message_id;
+/* "sip" tracing identifier */
+trace_proto_id_t sip_trace_id;
 
 /* module function prototypes */
 static int mod_init(void);
@@ -896,8 +894,6 @@ static int mod_init(void)
 	if (xlog_get_next_destination == NULL)
 		xlog_get_next_destination = get_next_trace_dest;
 
-	sip_message_id = tprot.get_message_id(SIP_TRACE_TYPE_STR);
-
 	return 0;
 }
 
@@ -1218,10 +1214,10 @@ int st_parse_types(str* stypes)
 	str tok;
 	int have_next=1, i, ret=0;
 	char* end;
-	const char** trace_names;
+	const struct trace_proto* traced_protos;
 	static const char type_delim = '|';
 
-	trace_names = get_trace_names();
+	traced_protos = get_traced_protos();
 
 	while (have_next) {
 		end=q_memchr(stypes->s, type_delim, stypes->len);
@@ -1239,13 +1235,14 @@ int st_parse_types(str* stypes)
 
 		str_trim_spaces_lr(tok);
 
-		for (i=0; i<get_trace_names_no(); i++) {
-			if (!strncmp(tok.s, trace_names[i], strlen(trace_names[i]))) {
+		for (i=0; i<get_traced_protos_no(); i++) {
+			if (!strncmp(tok.s, traced_protos[i].proto_name,
+								strlen(traced_protos[i].proto_name))) {
 				ret |= (1<<i);
 				break;
 			}
 		}
-		if (i==get_trace_names_no()) {
+		if (i==get_traced_protos_no()) {
 			/* the trace type was not found; throw error */
 			LM_ERR("trace type [%.*s] wasn't defined!\n", tok.len, tok.s);
 			return -1;
@@ -2417,7 +2414,7 @@ static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 		return -1;
 
 	trace_msg = tprot.create_trace_message(&from_su, &to_su, proto, body,
-			sip_message_id, dest);
+			sip_trace_id, dest);
 
 	if (trace_msg == NULL) {
 		LM_ERR("failed to build trace message!\n");
@@ -2507,12 +2504,12 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 }
 
 /**
+ *
  * SIPTRACE API IMPLEMENTATION
  *
- *
  */
-static char* trace_names[MAX_TRACE_NAMES];
-static int trace_names_no=0;
+static struct trace_proto traced_protos[MAX_TRACED_PROTOS];
+static int traced_protos_no=0;
 
 int get_trace_types(void)
 {
@@ -2558,40 +2555,63 @@ trace_dest get_next_trace_dest(trace_dest last_dest, siptrace_id_hash_t hash)
 }
 
 
-trace_type_id_t register_traced_type(char* name)
+trace_proto_id_t register_traced_type(char* name)
 {
-	if (trace_names_no + 1 == MAX_TRACE_NAMES) {
+	int id;
+
+	if (traced_protos_no + 1 == MAX_TRACED_PROTOS) {
 		LM_BUG("more than %ld types of tracing!"
-				"Increase MAX_TRACE_NAMES value!\n", MAX_TRACE_NAMES);
+				"Increase MAX_TRACE_NAMES value!\n", MAX_TRACED_PROTOS);
 		return -1;
 	}
 
-	trace_names[trace_names_no] = name;
+	if (!tprot.get_message_id)
+		return -1;
 
-	return trace_names_no++;
+	/* proto id will be the same as the packet id */
+	if ((id = tprot.get_message_id(name)) == -1) {
+		LM_ERR("proto <%s> not registered!\n", name);
+		return -1;
+	}
+
+	traced_protos[traced_protos_no].proto_id = id;
+	traced_protos[traced_protos_no++].proto_name = name;
+
+	return id;
 }
 
 siptrace_id_hash_t is_id_traced(int id)
 {
+	int pos;
 	int trace_types = get_trace_types();
 
 	if (trace_types == -1)
 		return 0;
 
-	if (1<<id & trace_types)
+	/* find the corresponding position for this id */
+	for (pos=0; pos < traced_protos_no; pos++)
+		if (traced_protos[pos].proto_id == id)
+			break;
+
+	if (pos == traced_protos_no) {
+		LM_ERR("can't find any proto with id %d\n", id);
+		return 0;
+	}
+
+	if ((1<<pos) & trace_types)
 		return get_trace_dest_hash();
 
 	return 0;
 }
 
-const char** get_trace_names(void)
+const struct trace_proto* get_traced_protos(void)
 {
-	return (const char **)trace_names;
+	return (const struct trace_proto*)traced_protos;
 }
 
-int get_trace_names_no(void)
+int get_traced_protos_no(void)
 {
-	return trace_names_no;
+	return traced_protos_no;
 }
 
 int bind_siptrace_proto(siptrace_api_t* api)

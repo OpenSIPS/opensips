@@ -57,10 +57,9 @@ int xlog_level = INT_MAX;
 
 trace_proto_t xlog_trace_api;
 
-/* id with which xlog will be identified by siptrace module */
-int xlog_type_id;
-/* xlog message id */
-int xlog_message_id;
+/* id with which xlog will be identified by siptrace module
+ * and will identify an xlog tracing packet */
+int xlog_proto_id;
 
 /* xlog string identifier */
 static const char* xlog_id_s="xlog";
@@ -92,10 +91,7 @@ int init_xlog(void)
 	}
 
 	if (xlog_register_trace_type)
-		xlog_type_id = xlog_register_trace_type((char *)xlog_id_s);
-
-	if (xlog_trace_api.get_message_id)
-		xlog_type_id = xlog_trace_api.get_message_id((char *)xlog_id_s);
+		xlog_proto_id = xlog_register_trace_type((char *)xlog_id_s);
 
 	return 0;
 }
@@ -122,7 +118,7 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 		return 0;
 
 	/* xlog not traced; exit... */
-	if (xlog_check_is_traced && (siptrace_id_hash=xlog_check_is_traced(xlog_type_id)) == 0)
+	if (xlog_check_is_traced && (siptrace_id_hash=xlog_check_is_traced(xlog_proto_id)) == 0)
 		return 0;
 
 	if (!xlog_get_next_destination)
@@ -142,7 +138,7 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 
 	while((send_dest=xlog_get_next_destination(old_dest, siptrace_id_hash))) {
 		trace_msg = xlog_trace_api.create_trace_message(&from_su, &to_su,
-				proto, &x_msg, xlog_message_id, send_dest);
+				proto, &x_msg, xlog_proto_id, send_dest);
 		if (trace_msg == NULL) {
 			LM_ERR("failed to create trace message!\n");
 			return -1;
