@@ -126,6 +126,8 @@ typedef int (*load_siptrace_api_f)(siptrace_api_t* api);
 
 int bind_siptrace_proto(siptrace_api_t* api);
 trace_type_id_t register_traced_type(char* name);
+siptrace_id_hash_t is_id_traced(int id);
+trace_dest get_next_trace_dest(trace_dest last_dest, siptrace_id_hash_t hash);
 
 static inline int load_siptrace_api(siptrace_api_t* api)
 {

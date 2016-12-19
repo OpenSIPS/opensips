@@ -46,6 +46,8 @@
 #include "../../mod_fix.h"
 #include "siptrace.h"
 
+#include "../../xlog.h"
+
 /* trace info context position */
 int sl_ctx_idx=-1;
 
@@ -881,6 +883,15 @@ static int mod_init(void)
 		LM_ERR("failed to get an id for \"%s\" tracing!\n", SIP_TRACE_TYPE_STR);
 		return -1;
 	}
+
+	if (xlog_register_trace_type == NULL)
+		xlog_register_trace_type = &register_traced_type;
+
+	if (xlog_check_is_traced == NULL)
+		xlog_check_is_traced = &is_id_traced;
+
+	if (xlog_get_next_destination == NULL)
+		xlog_get_next_destination = get_next_trace_dest;
 
 	return 0;
 }
@@ -2596,7 +2607,7 @@ int bind_siptrace_proto(siptrace_api_t* api)
 	}
 
 	api->trace_api = &tprot;
-	api->register_type = register_traced_type;
+	api->register_type = &register_traced_type;
 	api->is_id_traced = &is_id_traced;
 	api->get_next_destination = &get_next_trace_dest;
 
