@@ -25,6 +25,10 @@
  */
 #include "ut.h"
 
+/* INADDR_LOOPBACK is internally stored in network byte order;
+ * we need little endian so we'll define our own loopback address */
+#define TRACE_INADDR_LOOPBACK	((in_addr_t) 0x0100007f) /* Inet 127.0.0.1.  */
+
 enum TRACE_DATA_TYPES {
 	TRACE_TYPE_GENERIC=0, /* for data fields/chunks that can have only one type */
 	TRACE_TYPE_STR=1,
