@@ -36,6 +36,8 @@
 
 #include "pvar.h"
 
+#include "modules/siptrace/siptrace.h"
+
 
 char *log_buf = NULL;
 
@@ -47,6 +49,13 @@ int xlog_default_level = L_ERR;
  * the current logging level of that xlog() ; it has no meaning outside
  * the scope of an xlog() ! */
 int xlog_level = INT_MAX;
+
+/* tracing api */
+siptrace_api_t siptrace_api;
+/* id with which xlog will be identified by siptrace module */
+trace_type_id_t xlog_type_id;
+/* xlog string identifier */
+static const char* xlog_id_s="xlog";
 
 static int buf_init(void)
 {
@@ -60,15 +69,104 @@ static int buf_init(void)
 	return 0;
 }
 
-int xl_print_log(struct sip_msg* msg, pv_elem_p list, int *len)
+int init_xlog(void)
 {
-	if (log_buf == NULL)
-		if (buf_init())
-		{
-			LM_ERR("Cannot print message\n");
+	if (log_buf == NULL) {
+		if (buf_init()) {
+			LM_ERR("Cannot print message!\n");
 			return -1;
 		}
-	return pv_printf(msg, list, log_buf, len);
+	}
+
+	memset(&siptrace_api, 0, sizeof(siptrace_api_t));
+
+	/* try loading siptrace api */
+	if (load_siptrace_api(&siptrace_api) == 0) {
+		/* tracing module loaded; try registering string identifier */
+		xlog_type_id = siptrace_api.register_type((char *)xlog_id_s);
+	}
+
+	return 0;
+}
+
+static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
+{
+	str x_msg = {buf, len};
+
+	int siptrace_id_hash=0;
+	union sockaddr_union to_su, from_su;
+
+	const int proto = IPPROTO_TCP;
+
+	trace_dest send_dest, old_dest=NULL;
+	trace_message trace_msg;
+
+	if (msg == NULL || buf == NULL) {
+		LM_ERR("bad input!\n");
+		return -1;
+	}
+
+	/* api not loaded; no need to continue */
+	if (siptrace_api.trace_api == NULL)
+		return 0;
+
+	/* xlog not traced; exit... */
+	if ((siptrace_id_hash=siptrace_api.is_id_traced(xlog_type_id)) == 0)
+		return 0;
+
+
+	/*
+	 * Source and destination will be set to localhost(127.0.0.1) port 0
+	 */
+	from_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
+	from_su.sin.sin_port = 0;
+	from_su.sin.sin_family = AF_INET;
+
+	to_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
+	to_su.sin.sin_port = 0;
+	to_su.sin.sin_family = AF_INET;
+
+
+	while((send_dest=siptrace_api.get_next_destination(old_dest, siptrace_id_hash))) {
+		trace_msg = siptrace_api.trace_api->create_trace_message(&from_su, &to_su,
+				proto, &x_msg, HEP_PROTO_TYPE_XLOG, send_dest);
+		if (trace_msg == NULL) {
+			LM_ERR("failed to create trace message!\n");
+			return -1;
+		}
+
+		if (siptrace_api.trace_api->add_trace_data(trace_msg, msg->callid->body.s,
+			msg->callid->body.len, TRACE_TYPE_STR, 0x0011/* correlation id*/, 0) < 0) {
+			LM_ERR("failed to add correlation id to the packet!\n");
+			return -1;
+		}
+
+		if (siptrace_api.trace_api->send_message(trace_msg, send_dest, NULL) < 0) {
+			LM_ERR("failed to send trace message!\n");
+			return -1;
+		}
+
+		siptrace_api.trace_api->free_message(trace_msg);
+
+		old_dest=send_dest;
+	}
+
+	return 0;
+}
+
+int xl_print_log(struct sip_msg* msg, pv_elem_p list, int *len)
+{
+	if (pv_printf(msg, list, log_buf, len) < 0) {
+		LM_ERR("failed to resolve xlog variables!\n");
+		return -1;
+	}
+
+	if (trace_xlog(msg, log_buf, *len) < 0) {
+		LM_ERR("failed to trace xlog message!\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 
