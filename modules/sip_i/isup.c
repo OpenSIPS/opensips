@@ -117,7 +117,7 @@ static struct isup_subfield connected_num_subf[] = {{1, str_init("Odd/even indic
 	{6, str_init("Address signal")}, {0, {0,0}}};
 
 static struct isup_subfield cause_ind_subf[] = {{1, str_init("Location")}, {2, str_init("Coding standard")},
-	{3, str_init("Cause value")}, {0,{0,0}}};
+	{3, str_init("Cause value")}, {0,{0,0}}};	/* Recommendation and Diagnostics subfields not supported */
 
 static struct isup_subfield subsequent_num_subf[] = {{1, str_init("Odd/even indicator")},
 	{2, str_init("Address signal")}, {0, {0,0}}};
@@ -845,6 +845,10 @@ int cause_ind_writef(int subfield_id, unsigned char *param_val, int *len,
 	unsigned char new_val;
 
 	PARAM_CHECK_INT_VAL();
+
+	/* Extension indicators set to "last octet" */
+	param_val[0] = SET_BITS(param_val[0], 0x80, 7, 1);
+	param_val[1] = SET_BITS(param_val[1], 0x80, 7, 1);
 
 	switch (subfield_id) {
 	case 1:
