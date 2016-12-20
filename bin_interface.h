@@ -27,12 +27,14 @@
 
 #include "ip_addr.h"
 #include "crc.h"
+#include "net/proto_tcp/tcp_common_defs.h"
 
+#define MAX_BUF_LEN TCP_BUF_SIZE
 #define BIN_PACKET_MARKER      "P4CK"
 #define BIN_PACKET_MARKER_SIZE 4
 #define PKG_LEN_FIELD_SIZE     4
 #define VERSION_FIELD_SIZE     2
-#define LEN_FIELD_SIZE         2
+#define LEN_FIELD_SIZE         (sizeof(unsigned short))
 #define CMD_FIELD_SIZE         sizeof(int)
 #define HEADER_SIZE            (BIN_PACKET_MARKER_SIZE + PKG_LEN_FIELD_SIZE + VERSION_FIELD_SIZE)
 #define MIN_BIN_PACKET_SIZE \
@@ -41,7 +43,6 @@
 #define is_valid_bin_packet(_p) \
 	(memcmp(_p, BIN_PACKET_MARKER, BIN_PACKET_MARKER_SIZE) == 0)
 
-#define MAX_BUF_LEN 2000000
 
 typedef struct bin_packet {
 	str buffer;
@@ -188,6 +189,10 @@ int bin_skip_str(bin_packet_t *packet, int count);
  */
 void bin_free_packet(bin_packet_t *packet);
 
+/*
+ * resets the packet, equvalent to calling bin_free_packet and than reinitializing the packet
+ */
+int bin_reset_back_pointer(bin_packet_t *packet);
 /*
  * returns the buffer with the data in the bin packet
 */

@@ -722,7 +722,7 @@ error:
 }
 
 static void bin_parse_headers(struct tcp_req *req){
-	unsigned short  *px;
+	unsigned int  *px;
 	if(req->content_len == 0 && req->pos - req->buf < HEADER_SIZE){
 		req->parsed = req->pos;
 		return;
@@ -734,7 +734,7 @@ static void bin_parse_headers(struct tcp_req *req){
 		return;
 	}
 
-	px = (unsigned short*)(req->buf + MARKER_SIZE);
+	px = (unsigned int*)(req->buf + MARKER_SIZE);
 	req->content_len = (*px);
 	if(req->pos - req->buf == req->content_len){
 		LM_DBG("received a COMPLETE message\n");

@@ -66,7 +66,7 @@ int bin_init(bin_packet_t *packet, str *mod_name, int cmd_type, short version, i
 	}
 
 	if (!length) 
-		length = BUF_SIZE;
+		length = MAX_BUF_LEN;
 
 	packet->buffer.s = pkg_malloc(length);
 	if (!packet->buffer.s) {
@@ -267,10 +267,11 @@ int bin_pop_str(bin_packet_t *packet, str *info)
 	if (packet->front_pointer - packet->buffer.s > packet->buffer.len)
 		goto error;
 
+	info->len = 0;
 	memcpy(&info->len, packet->front_pointer, LEN_FIELD_SIZE);
 	packet->front_pointer += LEN_FIELD_SIZE;
 
-	if (packet->front_pointer - packet->buffer.s + info->len >= packet->buffer.len)
+	if (packet->front_pointer - packet->buffer.s + info->len > packet->buffer.len)
 		goto error;
 
 	if (info->len == 0)
@@ -324,13 +325,8 @@ int bin_pop_int(bin_packet_t *packet, void *info)
  *		< 0: error
  */
 int bin_pop_back_int(bin_packet_t *packet, void *info) {
-	if (packet->front_pointer - packet->buffer.s == packet->buffer.len)
-		return 1;
-
-	if (packet->front_pointer < packet->buffer.s + sizeof(int)) {
-		LM_ERR("Receive binary packet buffer underflow");
+	if (packet->buffer.len < sizeof(int) + HEADER_SIZE)
 		return -1;
-	}
 
 	memcpy(info, packet->buffer.s + packet->buffer.len - sizeof(int), sizeof(int));
 	packet->buffer.len -= sizeof(int);
@@ -387,7 +383,7 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 	memcpy(packet.buffer.s, buffer, pkg_len);
 
 	mod_name.len = *(unsigned short*)(buffer + HEADER_SIZE);
-	mod_name.s = buffer + HEADER_SIZE + LEN_FIELD_SIZE;
+	mod_name.s = packet.buffer.s + HEADER_SIZE + LEN_FIELD_SIZE;
 
 	packet.front_pointer = mod_name.s + mod_name.len + CMD_FIELD_SIZE;
 	packet_type = *(int *)(mod_name.s + mod_name.len);
@@ -405,6 +401,8 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 			break;
 		}
 	}
+
+	bin_free_packet(&packet);
 }
 
 static int bin_realloc(bin_packet_t *packet, int size) {
@@ -424,6 +422,11 @@ static int bin_realloc(bin_packet_t *packet, int size) {
 
 	packet->buffer.s = pkg_realloc(packet->buffer.s, packet->size);
 
+	if (!packet->buffer.s) {
+		LM_ERR("pkg realloc failed\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -432,7 +435,7 @@ void bin_free_packet(bin_packet_t *packet) {
 		pkg_free(packet->buffer.s);
 		packet->buffer.s = NULL;
 	} else {
-		LM_ERR("atempting to free uninitialized binary packet\n");
+		LM_INFO("atempting to free uninitialized binary packet\n");
 	}
 }
 
@@ -445,4 +448,17 @@ int bin_get_buffer(bin_packet_t *packet, str *buffer)
 	buffer->len = packet->buffer.len;
 
 	return 1;
+}
+
+int bin_reset_back_pointer(bin_packet_t *packet)
+{
+	int mod_len;
+	if (!packet->buffer.s  || !packet->size)
+		return -1;
+
+	mod_len = *(unsigned short*)(packet->buffer.s + HEADER_SIZE);
+
+	packet->buffer.len = HEADER_SIZE + LEN_FIELD_SIZE + CMD_FIELD_SIZE + mod_len;
+
+	return 0;
 }
