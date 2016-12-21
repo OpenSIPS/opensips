@@ -29,6 +29,9 @@
 #include "../../pvar.h"
 #include "../../ut.h"
 #include "../../parser/parse_body.h"
+#include "../../parser/parse_pai.h"
+#include "../../parser/parse_privacy.h"
+#include "../../parser/parse_uri.h"
 #include "isup.h"
 #include "sip_i.h"
 
@@ -65,10 +68,12 @@ static cmd_export_t cmds[] = {
 
 static str param_subf_sep = str_init(DEFAULT_PARAM_SUBF_SEP);
 static str isup_mime = str_init(ISUP_MIME_S);
+static str country_code = str_init(DEFAULT_COUNTRY_CODE);
 
 static param_export_t params[] = {
 	{"param_subfield_separator", STR_PARAM, &param_subf_sep.s},
 	{"isup_mime_str", STR_PARAM, &isup_mime.s},
+	{"country_code", STR_PARAM, &country_code.s},
 	{0,0,0}
 };
 
@@ -93,6 +98,11 @@ struct module_exports exports= {
 
 static int mod_init(void)
 {
+	if (country_code.len < 2 || country_code.len > 4) {
+		LM_ERR("Invalid country code parameter, must be a \"+\" sign followed by 1-3 digits\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -858,6 +868,457 @@ int pv_get_isup_msg_type(struct sip_msg *msg, pv_param_t *param, pv_value_t *res
 	return 0;
 }
 
+
+static inline struct opt_param *alloc_opt_param(int param_code)
+{
+	struct opt_param *new_opt_param;
+
+	new_opt_param = pkg_malloc(sizeof *new_opt_param);
+	if (!new_opt_param) {
+		LM_ERR("No more pkg mem!\n");
+		return NULL;
+	}
+	new_opt_param->next = NULL;
+	memset(&new_opt_param->param, 0, sizeof(struct param_parsed_struct));
+	new_opt_param->param.param_code = param_code;
+
+	return new_opt_param;
+}
+
+static inline void link_new_opt_param(struct isup_parsed_struct *isup_struct,
+										struct opt_param *new_param, int len)
+{
+	new_param->param.len = len;
+	isup_struct->opt_params_list = new_param;
+	isup_struct->no_opt_params++;
+	isup_struct->total_len += len;
+}
+
+static int init_iam_default(struct sip_msg *sip_msg, struct isup_parsed_struct *isup_struct)
+{
+	int param_idx;
+	pv_value_t val;
+	str *ruri;
+	char number[16]; /* E.164 number - max 15 digits */
+	char intl_num = 0;
+	char *p;
+	int i = 0;
+	struct opt_param *cgpn;
+	struct to_body* pai;
+	int apri_val;
+	int new_len = 0;
+	int rc = 0;
+
+	val.flags = PV_VAL_INT;
+
+	/* set Nature of Connection Indicators */
+	param_idx = get_param_idx_by_code(ISUP_PARM_NATURE_OF_CONNECTION_IND);
+	val.ri = 1;
+	isup_params[param_idx].write_func(1, isup_struct->mand_fix_params[0].val,
+		&new_len, &val);
+
+	/* set Forward Call Indicators */
+	param_idx = get_param_idx_by_code(ISUP_PARM_FORWARD_CALL_IND);
+	val.ri = 1;
+	isup_params[param_idx].write_func(3, isup_struct->mand_fix_params[1].val,
+		&new_len, &val);
+	val.ri = 1;
+	isup_params[param_idx].write_func(6, isup_struct->mand_fix_params[1].val,
+		&new_len, &val);
+
+	/* set Calling Party's Category */
+	isup_struct->mand_fix_params[2].val[0] = 10; /* ordinary calling subscriber */
+
+	/* set Transmission Medium Requirement */
+	isup_struct->mand_fix_params[3].val[0] = 3; /* 3.1 kHz audio */
+
+	/* set Called Party Number */
+	param_idx = get_param_idx_by_code(ISUP_PARM_CALLED_PARTY_NUM);
+	new_len = 0;
+
+	val.ri = 1;	/* routing to internal network number not allowed */
+	isup_params[param_idx].write_func(3, isup_struct->mand_var_params[0].val,
+		&new_len, &val);
+	val.ri = 1;	/* ISDN numbering plan */
+	isup_params[param_idx].write_func(4, isup_struct->mand_var_params[0].val,
+		&new_len, &val);
+
+	/* check RURI */
+	ruri = GET_RURI(sip_msg);
+	if (!ruri->s || ruri->len < 7) {
+		LM_DBG("invalid R-URI length\n");
+		goto cpn_err;
+	}
+	/* sip: URI required */
+	if (memcmp(ruri->s, "sip:", 4)) {
+		LM_DBG("\"sip:\" URI required for the R-URI\n");
+		goto cpn_err;
+	}
+	/* user=phone parameter required for RURI */
+	if (!l_memmem(ruri->s, "user=phone", ruri->len, 10)) {
+		LM_DBG("\"user=phone\" parameter required for R-URI\n");
+		goto cpn_err;
+	}
+	/* if "+" prefix is present it is an international call */
+	if (ruri->s[4] == '+')
+		intl_num = 1;
+
+	/* get number from RURI */
+	for (p = ruri->s + (intl_num?5:4); *p != '@' && *p != ';' && p - ruri->s < ruri->len; p++)
+		if ((*p >= '0' && *p <= '9') || char2digit(*p)) /* phone or dtmf digit */
+			number[i++] = *p;
+		else if (*p != '-' && *p != '.' && *p != '(' && *p != ')') { /* not a visual separator */
+			LM_DBG("Unknown char <%c> in R-URI number\n", *p);
+			goto cpn_err;
+		}
+	if (i < 3) {
+		LM_DBG("R-URI number to short\n");
+		goto cpn_err;
+	}
+
+	val.ri = intl_num ? 4 : 3; /* international or national number */
+	isup_params[param_idx].write_func(2, isup_struct->mand_var_params[0].val,
+		&new_len, &val);
+
+	/* Address signal */
+	val.flags = PV_VAL_STR;
+	val.rs.s = number;
+	val.rs.len = i;
+	isup_params[param_idx].write_func(5, isup_struct->mand_var_params[0].val,
+		&new_len, &val);
+	LM_DBG("Called party number set to: %.*s\n", i, number);
+
+	isup_struct->mand_var_params[0].len = new_len;
+	isup_struct->total_len += new_len;
+
+	goto set_cgpn;
+
+cpn_err:
+	rc = -1;
+	LM_INFO("Unable to map Called Party Number from SIP by default\n");
+set_cgpn:
+	/* set Calling Party Number */
+	param_idx = get_param_idx_by_code(ISUP_PARM_CALLING_PARTY_NUM);
+	new_len = 0;
+
+	/* if P-Asserted-Identity absent, don't set CgPN */
+	if (parse_headers(sip_msg, HDR_PAI_F | HDR_PRIVACY_F, 0)) {
+		LM_ERR("Unable to parse Privacy and/or P-Asserted-Identity headers\n");
+		goto cgpn_err;
+	}
+	if (!sip_msg->pai)
+		return 0;
+	if (parse_pai_header(sip_msg) < 0) {
+		LM_ERR("Unable to parse P-Asserted-Identity\n");
+		goto cgpn_err;
+	}
+	pai = get_pai(sip_msg);
+	if (parse_uri(pai->uri.s, pai->uri.len, &pai->parsed_uri) < 0) {
+		LM_ERR("Unable to parse P-Asserted-Identity URI\n");
+		goto cgpn_err;
+	}
+
+	/* P-Asserted-Identity should be a sip: or tel: URI with a global number in the form: "+"CC + NDC + SN */
+	if (pai->parsed_uri.type != SIP_URI_T && pai->parsed_uri.type != TEL_URI_T) {
+		LM_DBG("\"sip:\" URI required for P-Asserted-Identity\n");
+		goto cgpn_err;
+	}
+	if (pai->parsed_uri.user.s[0] != '+') {
+		LM_DBG("P-Asserted-Identity number should start with \"+\" sign\n");
+		goto cgpn_err;
+	}
+
+	/* add the new optional parameter to isup struct */
+	if ((cgpn = alloc_opt_param(ISUP_PARM_CALLING_PARTY_NUM)) == NULL)
+		goto cgpn_err;
+
+	val.flags = PV_VAL_INT;
+
+	/* Numbering plan indicator */
+	val.ri = 1; /* ISDN (Telephony) numbering plan */
+	isup_params[param_idx].write_func(4, cgpn->param.val, &new_len, &val);
+
+	/* Screening Indicator */
+	val.ri = 3; /* network provided */
+	isup_params[param_idx].write_func(6, cgpn->param.val, &new_len, &val);
+
+	/* Nature of Address Indicator */
+	if (memcmp(pai->parsed_uri.user.s, country_code.s, country_code.len))
+		intl_num = 1;
+	else
+		intl_num = 0;
+	val.ri = intl_num ? 4 : 3; /* international or national number */
+	isup_params[param_idx].write_func(2, cgpn->param.val, &new_len, &val);
+
+	/* Address Presentation Restricted Indicator */
+	apri_val = 0; /* presentation allowed */
+	if (sip_msg->privacy) {
+		if (parse_privacy(sip_msg) < 0) {
+			LM_ERR("Unable to parse Privacy header\n");
+			goto cgpn_err;
+		}
+		/* presentation restricted */
+		if ((get_privacy_values(sip_msg) & (PRIVACY_NONE | PRIVACY_ID)) == (PRIVACY_NONE | PRIVACY_ID))
+			apri_val = 1;
+		else if (get_privacy_values(sip_msg) & (PRIVACY_HEADER | PRIVACY_USER | PRIVACY_ID))
+			apri_val = 1;
+	}
+	val.ri = apri_val;
+	isup_params[param_idx].write_func(5, cgpn->param.val, &new_len, &val);
+
+	/* Address signal */
+	i = 0;
+	for (p = pai->parsed_uri.user.s + 1; *p != ';' && p - pai->parsed_uri.user.s < pai->parsed_uri.user.len; p++)
+		if ((*p >= '0' && *p <= '9') || char2digit(*p)) /* phone or dtmf digit */
+			number[i++] = *p;
+		else if (*p != '-' && *p != '.' && *p != '(' && *p != ')') { /* not a visual separator */
+			LM_DBG("Unknown char <%c> in P-Asserted-Identity number\n", *p);
+			goto cgpn_err;
+		}
+	if (i < 3) {
+		LM_DBG("P-Asserted-Identity number to short, only <%d> digits\n", i);
+		goto cgpn_err;
+	}
+	val.flags = PV_VAL_STR;
+	val.rs.s = intl_num ? number : number + country_code.len - 1;
+	val.rs.len = intl_num ? i : i - country_code.len + 1;
+	isup_params[param_idx].write_func(7, cgpn->param.val, &new_len, &val);
+	LM_DBG("Calling party number set to: %.*s\n", val.rs.len, val.rs.s);
+
+	cgpn->param.len = new_len;
+	isup_struct->opt_params_list = cgpn;
+	isup_struct->no_opt_params++;
+	isup_struct->total_len += new_len;
+
+	link_new_opt_param(isup_struct, cgpn, new_len);
+
+	return rc;
+
+cgpn_err:
+	LM_INFO("Unable to map Callig Party Number from SIP by default\n");
+	if (cgpn)
+		pkg_free(cgpn);
+	return -1;
+}
+
+static unsigned int get_cause_from_reason(struct sip_msg *sip_msg) {
+	struct hdr_field *reason_hdr;
+	char *p;
+	char cause_val_s[3];
+	str cause_val_str = {0, 0};
+	unsigned int cause_val;
+
+	if (parse_headers(sip_msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("Failed to parse all headers\n");
+		return -1;
+	}
+
+	reason_hdr = get_header_by_static_name(sip_msg, "Reason");
+	if (!reason_hdr)
+		return -1;
+
+	if (!l_memmem(reason_hdr->body.s, "Q.850", reason_hdr->body.len, 5)) {
+		LM_DBG("\"Q.850\" protocol required in Reason header\n");
+		return -1;
+	}
+
+	if ((p = l_memmem(reason_hdr->body.s, "cause=", reason_hdr->body.len, 6)) == NULL) {
+		LM_DBG("protocol-cause in the from \"cause=XX\" required in Reason header\n");
+		return -1;
+	}
+
+	cause_val_str.s = cause_val_s;
+	for (p = p + 6; *p >= '0' && *p <= '9' && cause_val_str.len < 3; p++)
+		cause_val_str.s[cause_val_str.len++] = *p;
+	if (cause_val_str.len == 0 || str2int(&cause_val_str, &cause_val) < 0) {
+		LM_DBG("Invalid cause value in Reason header\n");
+		return -1;
+	}
+
+	return cause_val;
+}
+
+static int init_rel_default(struct sip_msg *sip_msg, struct isup_parsed_struct *isup_struct)
+{
+	int param_idx;
+	pv_value_t val;
+	int new_len = 0;
+
+	val.flags = PV_VAL_INT;
+
+	/* set Cause indicators */
+	param_idx = get_param_idx_by_code(ISUP_PARM_CAUSE);
+
+	/* Location */
+	val.ri = 10; /* network beyond interworking point */
+	isup_params[param_idx].write_func(1, isup_struct->mand_var_params[0].val,
+		&new_len, &val);
+
+	if (sip_msg->first_line.type == SIP_REQUEST) {
+		if (sip_msg->REQ_METHOD == METHOD_BYE) {
+			val.ri = get_cause_from_reason(sip_msg);
+			if (val.ri < 1 || val.ri > 127)
+				val.ri = 16; /* Normal call clearing */
+		}
+		else if (sip_msg->REQ_METHOD == METHOD_CANCEL) {
+			val.ri = get_cause_from_reason(sip_msg);
+			if (val.ri < 1 || val.ri > 127)
+				val.ri = 31; /* Normal, unspecified */
+		} else
+			goto error;
+	} else if (sip_msg->first_line.type == SIP_REPLY && sip_msg->REPLY_STATUS/100 >= 4) {
+		val.ri = get_cause_from_reason(sip_msg);
+		if (val.ri < 1 || val.ri > 127)
+			switch (sip_msg->REPLY_STATUS) {
+				case 404:
+					val.ri = 1; /* Unallocated number */
+					break;
+				case 410:
+					val.ri = 22; /* Number changed */
+					break;
+				case 480:
+					val.ri = 20; /* Subscriber absent */
+					break;
+				case 484:
+					val.ri = 28; /* Invalid Number format */
+					break;
+				case 486:
+					val.ri = 17; /* User busy */
+					break;
+				case 491:
+					goto error; /* No mapping */
+				case 600:
+					val.ri = 17; /* User busy */
+					break;
+				case 603:
+					val.ri = 21; /* Call rejected */
+					break;
+				case 604:
+					val.ri = 1; /* Unallocated number */
+					break;
+				default:
+					val.ri = 127; /* Interworking */
+			}
+	} else
+		goto error;
+
+	isup_params[param_idx].write_func(3, isup_struct->mand_var_params[0].val,
+		&new_len, &val);
+
+	LM_DBG("Cause value from Cause Indicators set to: %d\n", val.ri);
+
+	isup_struct->mand_var_params[0].len = new_len;
+	isup_struct->total_len += new_len;
+
+	return 0;
+
+error:
+	LM_INFO("Unable to map Cause indicators from SIP by default\n");
+	return -1;
+}
+
+static int init_acm_default(struct sip_msg *sip_msg, struct isup_parsed_struct *isup_struct)
+{
+	int param_idx;
+	pv_value_t val;
+	int new_len = 0;
+
+	val.flags = PV_VAL_INT;
+
+	/* set Backward call indicators */
+	param_idx = get_param_idx_by_code(ISUP_PARM_BACKWARD_CALL_IND);
+	/* Called Party's Status Indicator */
+	val.ri = 1; /* subscriber free */
+	isup_params[param_idx].write_func(2, isup_struct->mand_fix_params[0].val,
+		&new_len, &val);
+	/* Interworking Indicator */
+	val.ri = 1; /* interworking encountered */
+	isup_params[param_idx].write_func(5, isup_struct->mand_fix_params[0].val,
+		&new_len, &val);
+
+	return 0;
+}
+
+static int init_cpg_default(struct sip_msg *sip_msg, struct isup_parsed_struct *isup_struct)
+{
+	int param_idx;
+	pv_value_t val;
+	int new_len = 0;
+	struct opt_param *b_ind;
+
+	if (sip_msg->first_line.type == SIP_REPLY && sip_msg->REPLY_STATUS == 180)
+		isup_struct->mand_fix_params[0].val[0] = 1; /* set Event information to ALERTING */
+	else if (sip_msg->first_line.type == SIP_REPLY && sip_msg->REPLY_STATUS == 183)
+		isup_struct->mand_fix_params[0].val[0] = 2; /* set Event information to PROGRESS */
+	else {
+		LM_INFO("Unable to map Event information and Backward call indicators from SIP by default\n");
+		return -1;
+	}
+
+	/* set Backward call indicators */
+	param_idx = get_param_idx_by_code(ISUP_PARM_BACKWARD_CALL_IND);
+
+	/* add the new optional parameter to isup struct */
+	if ((b_ind = alloc_opt_param(ISUP_PARM_BACKWARD_CALL_IND)) == NULL)
+		return -1;
+
+	val.flags = PV_VAL_INT;
+
+	/* Called Party's Status Indicator */
+	val.ri = 1; /* subscriber free */
+	isup_params[param_idx].write_func(2, b_ind->param.val, &new_len, &val);
+	/* Interworking Indicator */
+	val.ri = 1; /* interworking encountered */
+	isup_params[param_idx].write_func(5, b_ind->param.val, &new_len, &val);
+
+	link_new_opt_param(isup_struct, b_ind, new_len);
+
+	return 0;
+}
+
+static int init_con_default(struct sip_msg *sip_msg, struct isup_parsed_struct *isup_struct)
+{
+	int param_idx;
+	pv_value_t val;
+	int new_len = 0;
+
+	val.flags = PV_VAL_INT;
+
+	/* set Backward call indicators */
+	param_idx = get_param_idx_by_code(ISUP_PARM_BACKWARD_CALL_IND);
+	val.ri = 1; /* interworking encountered */
+	isup_params[param_idx].write_func(5, isup_struct->mand_fix_params[0].val,
+		&new_len, &val);
+
+	return 0;
+}
+
+static int init_anm_default(struct sip_msg *sip_msg, struct isup_parsed_struct *isup_struct)
+{
+	int param_idx;
+	pv_value_t val;
+	int new_len = 0;
+	struct opt_param *b_ind;
+
+	/* set Backward call indicators */
+	param_idx = get_param_idx_by_code(ISUP_PARM_BACKWARD_CALL_IND);
+
+	/* add the new optional parameter to isup struct */
+	if ((b_ind = alloc_opt_param(ISUP_PARM_BACKWARD_CALL_IND)) == NULL)
+		return -1;
+
+	val.flags = PV_VAL_INT;
+
+	/* Interworking Indicator */
+	val.ri = 1; /* interworking encountered */
+	isup_params[param_idx].write_func(5, b_ind->param.val, &new_len, &val);
+
+	link_new_opt_param(isup_struct, b_ind, new_len);
+
+	return 0;
+}
+
+
 static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 {
 	struct isup_parsed_struct *isup_struct;
@@ -865,6 +1326,7 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 	int isup_msg_idx = -1;
 	str param_msg_type;
 	int i;
+	int rc;
 
 	/* if isup message type not provided as param, try to map sip msg to
 	 * isup msg type by default */
@@ -920,9 +1382,16 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 			LM_ERR("Unknown ISUP message type\n");
 			return -1;
 		}
+
+		if (isup_messages[isup_msg_idx].message_type == ISUP_IAM &&
+			(msg->first_line.type != SIP_REQUEST ||
+			msg->REQ_METHOD != METHOD_INVITE)) {
+			LM_WARN("Initial address message maps only to INVITE\n");
+			return -1;
+		}
 	}
 
-	/* build a blank isup message (no optional params, all mandatory params zeroed) */
+	/* first, build a blank isup message (no optional params, all mandatory fixed params zeroed) */
 
 	isup_struct = pkg_malloc(sizeof(struct isup_parsed_struct));
 	if (!isup_struct) {
@@ -947,12 +1416,43 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 		isup_struct->mand_var_params[i].param_code =
 			isup_messages[isup_msg_idx].mand_param_list[isup_messages[isup_msg_idx].mand_fixed_params+i];
 
+
+	/* set parameter fields to default values for some message types */
+	switch (isup_messages[isup_msg_idx].message_type) {
+		case ISUP_IAM:
+			rc = init_iam_default(msg, isup_struct);
+			break;
+		case ISUP_REL:
+			rc = init_rel_default(msg, isup_struct);
+			break;
+		case ISUP_ACM:
+			rc = init_acm_default(msg, isup_struct);
+			break;
+		case ISUP_CPG:
+			rc = init_cpg_default(msg, isup_struct);
+			break;
+		case ISUP_ANM:
+			rc = init_anm_default(msg, isup_struct);
+			break;
+		case ISUP_CON:
+			rc = init_con_default(msg, isup_struct);
+			break;
+		default:
+			rc = 1;
+	}
+
+	if (rc < 0)
+		LM_INFO("Unable to set %.*s message parameters by default\n",
+			isup_messages[isup_msg_idx].name.len, isup_messages[isup_msg_idx].name.s);
+	else if (rc == 0)
+		LM_DBG("%.*s message parameters set by default\n",
+			isup_messages[isup_msg_idx].name.len, isup_messages[isup_msg_idx].name.s);
+
 	isup_part = add_body_part(msg, &isup_mime, NULL);
 	if (!isup_part) {
 		LM_ERR("Failed to add isup body part\n");
 		return -1;
 	}
-
 	isup_part->parsed = isup_struct;
 	isup_part->dump_f = (dump_part_function)isup_dump;
 	isup_part->free_parsed_f = (free_parsed_part_function)free_isup_parsed;

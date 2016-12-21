@@ -232,4 +232,6 @@ extern struct isup_param_data isup_params[NO_ISUP_PARAMS];
 inline int get_param_idx_by_code(int param_code);
 inline int get_msg_idx_by_type(int msg_type);
 
+char char2digit(char localchar);
+
 #endif /* _ISUP_H_ */

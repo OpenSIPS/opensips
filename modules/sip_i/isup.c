@@ -163,7 +163,7 @@ static inline char digit2char(unsigned char digit)
 	}
 }
 
-static char char2digit(char localchar)
+char char2digit(char localchar)
 {
 	switch (localchar) {
 		case '0':
