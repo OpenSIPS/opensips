@@ -163,9 +163,9 @@ int pv_parse_isup_param_name(pv_spec_p sp, str *in)
 			if (subfield_s.s && subfield_s.len) {
 				if (!isup_params[i].subfield_list) {
 					subfield_id = 0;
-					LM_INFO("No subfields defined for ISUP parameter: %.*s, returning whole parameter\n",
+					LM_ERR("No subfields supported for ISUP parameter <%.*s>\n",
 						isup_params[i].name.len, isup_params[i].name.s);
-					break;
+					return -1;
 				}
 
 				for (j = 0; isup_params[i].subfield_list[j].id; j++) {
@@ -175,9 +175,9 @@ int pv_parse_isup_param_name(pv_spec_p sp, str *in)
 					}
 				}
 				if (!isup_params[i].subfield_list[j].id) {
-					subfield_id = 0;
-					LM_INFO("Unknown subfield: %.*s for ISUP parameter: %.*s, returning whole parameter\n",
+					LM_ERR("Unknown subfield <%.*s> for ISUP parameter <%.*s>\n",
 						subfield_s.len, subfield_s.s, isup_params[i].name.len, isup_params[i].name.s);
+					return -1;
 				}
 			} else /* return whole parameter */
 				subfield_id = 0;
