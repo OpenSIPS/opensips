@@ -200,6 +200,7 @@ struct isup_param_data {
 
 struct isup_message_data {
 	str name;
+	char short_name[3];
 	int message_type;		/* message type code */
 	int mand_fixed_params;	/* no mandatory fixed params */
 	int mand_var_params;	/* no mandatory variable params */

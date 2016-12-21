@@ -862,8 +862,8 @@ int pv_get_isup_msg_type(struct sip_msg *msg, pv_param_t *param, pv_value_t *res
 	}
 
 	res->flags = PV_VAL_STR;
-	res->rs.s = isup_messages[msg_idx].name.s;
-	res->rs.len = isup_messages[msg_idx].name.len;
+	res->rs.s = isup_messages[msg_idx].short_name;
+	res->rs.len = 3;
 
 	return 0;
 }
@@ -1373,9 +1373,16 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 		param_msg_type.s = param;
 
 		for (i = 0; i < NO_ISUP_MESSAGES; i++)
-			if (!str_strcasecmp(&isup_messages[i].name, &param_msg_type)) {
-				isup_msg_idx = get_msg_idx_by_type(isup_messages[i].message_type);
-				break;
+			if (param_msg_type.len == 3) {
+				if (!memcmp(&isup_messages[i].short_name, param_msg_type.s, 3)) {
+					isup_msg_idx = get_msg_idx_by_type(isup_messages[i].message_type);
+					break;
+				}
+			} else {
+				if (!str_strcasecmp(&isup_messages[i].name, &param_msg_type)) {
+					isup_msg_idx = get_msg_idx_by_type(isup_messages[i].message_type);
+					break;
+				}
 			}
 
 		if (isup_msg_idx < 0) {
