@@ -729,7 +729,7 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 			isup_struct->total_len += new_len - p->len;
 		p->len = new_len;
 		if (rc < 0) {
-			LM_WARN("Unable to write $isup_param(%*.s)\n",
+			LM_WARN("Unable to write $isup_param(%.*s)\n",
 				isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
 			return -1;
 		}
@@ -766,7 +766,7 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 
 			isup_part->dump_f = (dump_part_function)isup_dump;
 		} else if (val->flags & PV_TYPE_INT || val->flags & PV_VAL_INT) {
-			LM_WARN("Hex string value required for $isup_param(%*.s)\n",
+			LM_WARN("Hex string value required for $isup_param(%.*s)\n",
 				isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
 
 			return -1;
@@ -786,21 +786,22 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 			p->len = val->rs.len/2;
 
 			if (read_hex_param(val->rs.s, p->val, p->len) < 0) {
-				LM_WARN("Invalid hex value for $isup_param(%*.s)\n",
+				LM_WARN("Invalid hex value for $isup_param(%.*s)\n",
 					isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
 				return -1;
 			}
 
 			isup_part->dump_f = (dump_part_function)isup_dump;
 		} else {
-			LM_ERR("Invalid value for $isup_param\n");
+			LM_ERR("Invalid value for $isup_param(%.*s)\n", isup_params[fix->isup_params_idx].name.len,
+				isup_params[fix->isup_params_idx].name.s);
 			return -1;
 		}
 
 	} else {	/* we have an index, set the corresponding byte */
 
 		if (param_type == 0 && pv_idx > p->len - 1) { /* fixed length exceeded */
-			LM_ERR("Index: %d out of bounds, fixed parameter length is: %d\n", pv_idx, p->len);
+			LM_ERR("Index [%d] out of bounds, fixed parameter length is: %d\n", pv_idx, p->len);
 			return -1;
 		}
 
@@ -827,11 +828,12 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 
 			isup_part->dump_f = (dump_part_function)isup_dump;
 		} else if (val->flags & PV_VAL_STR) {
-			LM_WARN("Integer value required for %d byte of $isup_param(%*.s)\n", pv_idx,
+			LM_WARN("Integer value required for byte [%d] of $isup_param(%.*s)\n", pv_idx,
 				isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
 			return -1;
 		} else {
-			LM_ERR("Invalid value for $isup_param\n");
+			LM_ERR("Invalid value for $isup_param(%.*s)\n", isup_params[fix->isup_params_idx].name.len,
+				isup_params[fix->isup_params_idx].name.s);
 			return -1;
 		}
 	}
