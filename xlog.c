@@ -56,7 +56,7 @@ int xlog_level = INT_MAX;
  * and will identify an xlog tracing packet */
 int xlog_proto_id;
 /* tracing module api */
-trace_proto_t tprot;
+static trace_proto_t tprot;
 
 
 /* xlog string identifier */

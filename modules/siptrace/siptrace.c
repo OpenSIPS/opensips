@@ -60,7 +60,7 @@ static db_ps_t siptrace_ps = NULL;
 struct tm_binds tmb;
 struct dlg_binds dlgb;
 
-trace_proto_t tprot;
+static trace_proto_t tprot;
 
 /* "sip" tracing identifier */
 int sip_trace_id;
