@@ -53,7 +53,7 @@ int trace_prot_bind(char* module_name, trace_proto_t* prot)
 			return -1;
 		}
 	} else {
-		LM_ERR("<%s> has no bind api function\n", module_name);
+		LM_DBG("<%s> has no bind api function\n", module_name);
 		return -1;
 	}
 
