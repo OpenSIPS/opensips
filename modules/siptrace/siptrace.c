@@ -1011,9 +1011,9 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 					db_vals[6].val.int_val, &db_vals[7].val.str_val,
 					&db_vals[8].val.str_val, db_vals[9].val.int_val,
 					it->el.hep.hep_id) < 0) {
-				LM_ERR("Failed to duplicate with hep to <%.*s:%.*s>\n",
-						it->el.uri.host.len, it->el.uri.host.s,
-						it->el.uri.port.len, it->el.uri.port.s);
+				LM_ERR("Failed to duplicate with hep to <%.*s:%u>\n",
+						it->el.hep.hep_id->ip.len, it->el.hep.hep_id->ip.s,
+						it->el.hep.hep_id->port_no);
 				continue;
 			}
 
