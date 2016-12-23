@@ -883,6 +883,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 			switch (dlg->state) {
 				case DLG_STATE_EARLY:
 				case DLG_STATE_CONFIRMED_NA:
+				case DLG_STATE_CONFIRMED:
 					break;
 				default:
 					log_next_state_dlg(event, dlg);
