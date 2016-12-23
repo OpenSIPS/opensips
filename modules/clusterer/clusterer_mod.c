@@ -95,11 +95,15 @@ static param_export_t params[] = {
 	{"ping_interval",		INT_PARAM,	&ping_interval		},
 	{"node_timeout",		INT_PARAM,	&node_timeout		},
 	{"ping_timeout",		INT_PARAM,	&ping_timeout		},
+	{"id_col",				STR_PARAM,	&id_col.s			},
 	{"cluster_id_col",		STR_PARAM,	&cluster_id_col.s	},
 	{"node_id_col",			STR_PARAM,	&node_id_col.s		},
-	{"id_col",				STR_PARAM,	&id_col.s			},
-	{"state_col",			STR_PARAM,	&state_col.s		},
 	{"url_col",				STR_PARAM,	&url_col.s			},
+	{"state_col",			STR_PARAM,	&state_col.s		},
+	{"ls_seq_no_col",		STR_PARAM,	&ls_seq_no_col.s	},
+	{"top_seq_no_col",		STR_PARAM,	&top_seq_no_col.s	},
+	{"no_ping_retries_col",	STR_PARAM,	&no_ping_retries_col.s	},
+	{"priority_col",		STR_PARAM,  &priority_col		},
 	{"sip_addr_col",		STR_PARAM,	&sip_addr_col.s		},
 	{"description_col",		STR_PARAM,	&description_col.s	},
 	{0, 0, 0}
@@ -170,6 +174,19 @@ static int mod_init(void)
 	LM_INFO("Clusterer module - initializing\n");
 
 	init_db_url(clusterer_db_url, 0 /*cannot be null*/);
+	db_table.len = strlen(db_table.s);
+	id_col.len = strlen(id_col.s);
+	cluster_id_col.len = strlen(cluster_id_col.s);
+	node_id_col.len = strlen(node_id_col.s);
+	id_col.len = strlen(id_col.s);
+	url_col.len = strlen(url_col.s);
+	state_col.len = strlen(state_col.s);
+	ls_seq_no_col.len = strlen(ls_seq_no_col.s);
+	top_seq_no_col.len = strlen(top_seq_no_col.s);
+	no_ping_retries_col.len = strlen(no_ping_retries_col.s);
+	priority_col.len = strlen(priority_col.s);
+	sip_addr_col.len = strlen(sip_addr_col.s);
+	description_col.len = strlen(description_col.s);
 
 	if (current_id < 1) {
 		LM_CRIT("Invalid current_id parameter\n");
