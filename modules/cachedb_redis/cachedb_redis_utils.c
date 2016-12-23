@@ -83,7 +83,7 @@ unsigned int redisHash(redis_con *con, str* key)
 	return crc16(key->s,key->len) & con->slots_assigned;
 }
 
-inline cluster_node *get_redis_connection(redis_con *con,str *key)
+cluster_node *get_redis_connection(redis_con *con,str *key)
 {
 	unsigned short hash_slot;
 	cluster_node *it;
