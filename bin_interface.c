@@ -231,6 +231,7 @@ int bin_skip_str(bin_packet_t *packet, int count)
 		if (packet->front_pointer - packet->buffer.s + LEN_FIELD_SIZE > packet->buffer.len)
 			goto error;
 
+		len = 0;
 		memcpy(&len, packet->front_pointer, LEN_FIELD_SIZE);
 		packet->buffer.len += LEN_FIELD_SIZE;
 
