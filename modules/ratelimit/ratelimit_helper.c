@@ -790,7 +790,7 @@ error:
 
 
 
-void rl_rcv_bin(enum clusterer_event ev, int packet_type,
+void rl_rcv_bin(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
 					struct receive_info *ri, int cluster_id, int src_id, int dest_id)
 {
 	rl_algo_t algo;
@@ -819,20 +819,20 @@ void rl_rcv_bin(enum clusterer_event ev, int packet_type,
 	now = time(0);
 
 	for (;;) {
-		if (bin_pop_str(&name) == 1)
+		if (bin_pop_str(packet, &name) == 1)
 			break; /* pop'ed all pipes */
 
-		if (bin_pop_int(&algo) < 0) {
+		if (bin_pop_int(packet, &algo) < 0) {
 			LM_ERR("cannot pop pipe's algorithm\n");
 			return;
 		}
 
-		if (bin_pop_int(&limit) < 0) {
+		if (bin_pop_int(packet, &limit) < 0) {
 			LM_ERR("cannot pop pipe's limit\n");
 			return;
 		}
 
-		if (bin_pop_int(&counter) < 0) {
+		if (bin_pop_int(packet, &counter) < 0) {
 			LM_ERR("cannot pop pipe's counter\n");
 			return;
 		}
@@ -957,11 +957,11 @@ int rl_repl_init(void)
 	return 0;
 }
 
-static inline void rl_replicate(void)
+static inline void rl_replicate(bin_packet_t *packet)
 {
 	int rc;
 
-	rc = clusterer_api.send_all(rl_repl_cluster);
+	rc = clusterer_api.send_all(packet, rl_repl_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
 		LM_INFO("Current node is disabled in cluster: %d\n", rl_repl_cluster);
@@ -990,8 +990,9 @@ void rl_timer_repl(utime_t ticks, void *param)
 	str *key;
 	int nr = 0;
 	int ret;
+	bin_packet_t packet;
 
-	if (bin_init(&module_name, RL_PIPE_COUNTER, BIN_VERSION) < 0) {
+	if (bin_init(&packet, &module_name, RL_PIPE_COUNTER, BIN_VERSION, 0) < 0) {
 		LM_ERR("cannot initiate bin buffer\n");
 		return;
 	}
@@ -1020,28 +1021,24 @@ void rl_timer_repl(utime_t ticks, void *param)
 				goto next_pipe;
 			}
 
-			if (bin_push_str(key) < 0)
+			if (bin_push_str(&packet, key) < 0)
 				goto error;
 
-			if (bin_push_int((*pipe)->algo) < 0)
+			if (bin_push_int(&packet, (*pipe)->algo) < 0)
 				goto error;
 
-			if (bin_push_int((*pipe)->limit) < 0)
+			if (bin_push_int(&packet, (*pipe)->limit) < 0)
 				goto error;
 
-			if ((ret = bin_push_int((*pipe)->my_last_counter)) < 0)
+			if ((ret = bin_push_int(&packet, (*pipe)->my_last_counter)) < 0)
 				goto error;
 			nr++;
 
 			if (ret > rl_buffer_th) {
 				/* send the buffer */
 				if (nr)
-					rl_replicate();
-				if (bin_init(&module_name, RL_PIPE_COUNTER, BIN_VERSION) < 0) {
-					LM_ERR("cannot initiate bin buffer\n");
-					RL_RELEASE_LOCK(i);
-					return;
-				}
+					rl_replicate(&packet);
+				bin_reset_back_pointer(&packet);
 				nr = 0;
 			}
 
@@ -1054,13 +1051,15 @@ next_map:
 	}
 	/* if there is anything else to send, do it now */
 	if (nr)
-		rl_replicate();
+		rl_replicate(&packet);
+	bin_free_packet(&packet);
 	return;
 error:
 	LM_ERR("cannot add pipe info in buffer\n");
 	RL_RELEASE_LOCK(i);
 	if (nr)
-		rl_replicate();
+		rl_replicate(&packet);
+	bin_free_packet(&packet);
 }
 
 int rl_get_all_counters(rl_pipe_t *pipe)
