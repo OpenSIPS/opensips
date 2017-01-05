@@ -3024,7 +3024,9 @@ no_gws:
 	/* we are done reading -> unref the data */
 	lock_stop_read( current_partition->ref_lock );
 
-	if ( flags & DR_PARAM_RULE_FALLBACK ) {
+	/* prepare data for fallback  only if instructed so and if there is
+	 * place for fallback (more rules or shorter prefix are available) */
+	if ( flags & DR_PARAM_RULE_FALLBACK && (prefix_len!=0 || rule_idx!=0) ) {
 		if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
 			/* first time ? we need to save some date, to be able to
 			   do the rule fallback later in "next_gw" */
