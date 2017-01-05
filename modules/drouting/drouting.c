@@ -1956,6 +1956,7 @@ no_gws:
 				val.n = flags ;
 				if (add_avp( 0, avpID_store_flags, val) ) {
 					LM_ERR("failed to insert flags avp for fallback\n");
+				}
 			}
 		} else {
 			/* update the fallback coordonats for next resume */
