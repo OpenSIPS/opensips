@@ -1906,57 +1906,62 @@ no_gws:
 	/* we are done reading -> unref the data */
 	lock_stop_read( ref_lock );
 
-	/* prepare data for fallback  only if instructed so and if there is
-	 * place for fallback (more rules or shorter prefix are available) */
-	if ( flags & DR_PARAM_RULE_FALLBACK && (prefix_len!=0 || rule_idx!=0) ) {
+	/* prepare/update data for fallback */
+	if ( flags & DR_PARAM_RULE_FALLBACK ) {
 		if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
-			/* first time ? we need to save some date, to be able to
-			   do the rule fallback later in "next_gw" */
-			LM_DBG("saving rule_idx %d, prefix %.*s\n",rule_idx,
-				prefix_len - (rule_idx?0:1), username.s);
-			val.n = rule_idx;
-			if (add_avp( 0 , avpID_store_index, val) ) {
-				LM_ERR("failed to insert index avp for fallback\n");
-				flags = flags & ~DR_PARAM_RULE_FALLBACK;
-			}
-			/* if no rules available on current prefix (index is 0), simply
-			   reduce the len of the prefix from start, to lookup another
-			   prefix in the DR tree */
-			val.s.s = username.s ;
-			val.s.len = prefix_len - (rule_idx?0:1);
-			if (add_avp( AVP_VAL_STR, avpID_store_prefix, val) ) {
-				LM_ERR("failed to insert prefix avp for fallback\n");
-				flags = flags & ~DR_PARAM_RULE_FALLBACK;
-			}
-			/* also store current ruri as we will need it */
-			val.s = ruri;
-			if (add_avp( AVP_VAL_STR, avpID_store_ruri, val) ) {
-				LM_ERR("failed to insert ruri avp for fallback\n");
-				flags = flags & ~DR_PARAM_RULE_FALLBACK;
-			}
-			/* we need to save a some date, to be able to do the rule
-			   fallback later in "next_gw" (prefix/index already added) */
-			if (wl_list) {
-				val.s = parsed_whitelist ;
-				val.s.len++; /* we need extra space to place \0 when using */
-				if (add_avp( AVP_VAL_STR, avpID_store_whitelist, val) ) {
-					LM_ERR("failed to insert whitelist avp for fallback\n");
+			/* first time - we need to save some date, to be able to
+			 * do the rule fallback later in "next_gw" , but do it only if 
+			 * there is place for fallback (more rules or shorter prefix are 
+			 * available) */
+			if (prefix_len!=0 || rule_idx!=0) {
+				/* first time ? we need to save some date, to be able to
+				   do the rule fallback later in "next_gw" */
+				LM_DBG("saving rule_idx %d, prefix %.*s\n",rule_idx,
+					prefix_len - (rule_idx?0:1), username.s);
+				val.n = rule_idx;
+				if (add_avp( 0 , avpID_store_index, val) ) {
+					LM_ERR("failed to insert index avp for fallback\n");
 					flags = flags & ~DR_PARAM_RULE_FALLBACK;
 				}
-			}
-			val.n = grp_id ;
-			if (add_avp( 0, avpID_store_group, val) ) {
-				LM_ERR("failed to insert group avp for fallback\n");
-				flags = flags & ~DR_PARAM_RULE_FALLBACK;
-			}
-			val.n = flags ;
-			if (add_avp( 0, avpID_store_flags, val) ) {
-				LM_ERR("failed to insert flags avp for fallback\n");
+				/* if no rules available on current prefix (index is 0), simply
+				   reduce the len of the prefix from start, to lookup another
+				   prefix in the DR tree */
+				val.s.s = username.s ;
+				val.s.len = prefix_len - (rule_idx?0:1);
+				if (add_avp( AVP_VAL_STR, avpID_store_prefix, val) ) {
+					LM_ERR("failed to insert prefix avp for fallback\n");
+					flags = flags & ~DR_PARAM_RULE_FALLBACK;
+				}
+				/* also store current ruri as we will need it */
+				val.s = ruri;
+				if (add_avp( AVP_VAL_STR, avpID_store_ruri, val) ) {
+					LM_ERR("failed to insert ruri avp for fallback\n");
+					flags = flags & ~DR_PARAM_RULE_FALLBACK;
+				}
+				/* we need to save a some date, to be able to do the rule
+				   fallback later in "next_gw" (prefix/index already added) */
+				if (wl_list) {
+					val.s = parsed_whitelist ;
+					val.s.len++;/* we need extra space to place \0 when using*/
+					if (add_avp( AVP_VAL_STR, avpID_store_whitelist, val) ) {
+						LM_ERR("failed to insert whitelist avp for fallback\n");
+						flags = flags & ~DR_PARAM_RULE_FALLBACK;
+					}
+				}
+				val.n = grp_id ;
+				if (add_avp( 0, avpID_store_group, val) ) {
+					LM_ERR("failed to insert group avp for fallback\n");
+					flags = flags & ~DR_PARAM_RULE_FALLBACK;
+				}
+				val.n = flags ;
+				if (add_avp( 0, avpID_store_flags, val) ) {
+					LM_ERR("failed to insert flags avp for fallback\n");
 			}
 		} else {
 			/* update the fallback coordonats for next resume */
 			/* using ugly hack by directly accessing the AVP data in order
-			   to perform changes - we want to avoid re-creating the AVP -bogdan */
+			 * to perform changes - we want to avoid re-creating the 
+			 * AVP -bogdan */
 			avp_index->data = (void *)(long)rule_idx;
 			if (rule_idx==0) {
 				void *data;
