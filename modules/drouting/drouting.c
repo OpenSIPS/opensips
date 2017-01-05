@@ -1967,7 +1967,7 @@ no_gws:
 				void *data;
 				/* all rules under current prefix used -> reduce the prefix */
 				data = (void*)&avp_prefix->data;
-				((str*)data)->len = prefix_len-1;
+				((str*)data)->len = prefix_len?prefix_len-1:0;
 			}
 			LM_DBG("updating to %d, prefix %.*s \n",rule_idx,
 				prefix_len-(rule_idx?1:0),username.s);
