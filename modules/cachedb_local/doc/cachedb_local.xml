@@ -4,7 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "cachedb_local_admin.xml">
-<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY faq SYSTEM "cachedb_local_faq.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">

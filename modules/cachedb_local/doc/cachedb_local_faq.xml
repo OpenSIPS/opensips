@@ -1,0 +1,26 @@
+<!-- Module FAQ -->
+
+<chapter>
+
+	<title>&faqguide;</title>
+	<qandaset defaultlabel="number">
+
+	<qandaentry>
+		<question>
+		<para> What happened with old cache_table_size parameter? </para>
+		</question>
+		<answer>
+		<para>
+			The parameter was removed because it was redundant. Since the
+			addition of collections, the old hash now belongs to the
+			default collection. This collection is created every time and
+			it has a default size of 512. The size can be changed by
+			setting the default collection size using cache_collections paramter.
+		</para>
+		</answer>
+	</qandaentry>
+
+	</qandaset>
+
+</chapter>
+
