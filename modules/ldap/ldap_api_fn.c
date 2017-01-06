@@ -162,6 +162,31 @@ int get_connected_ldap_session(char* _lds_name, struct ld_session** _lds)
 		return -1;
 	}
 
+	return 0;
+}
+
+/**
+ * reconnect if a session is disconnected
+ */
+static inline int check_reconnect(char* _lds_name, struct ld_conn* conn)
+{
+	if ( conn == NULL ) {
+		LM_ERR("no session to reconect!\n");
+		return -1;
+	}
+
+	if (conn->handle == NULL) {
+		if ( ldap_reconnect(_lds_name, conn) != 0) {
+			if ( last_ldap_result != NULL ) {
+				ldap_msgfree(last_ldap_result);
+				last_ldap_result = NULL;
+			}
+
+			ldap_disconnect( _lds_name, conn);
+			LM_ERR("[%s]: reconnect failed for synchronous connection!\n", _lds_name);
+			return -1;
+		}
+	}
 
 	return 0;
 }
@@ -232,10 +257,27 @@ int ldap_params_search_async(
 			NULL,
 			_msgidp,
 			conn)
-		) < 0)
+		) != 0)
 	{
-		LM_ERR("async ldap_search failed!\n");
-		return -1;
+		/* try again if LDAP API ERROR */
+		if (LDAP_API_ERROR(rc) &&
+			lds_search_async(_lds_name,
+						_dn,
+						_scope,
+						filter_str,
+						_attrs,
+						NULL,
+						_msgidp,
+						conn) != 0) {
+				LM_ERR("[%s]: LDAP search (dn [%s], scope [%d],"
+					" filter [%s]) failed: %s\n",
+					_lds_name,
+					_dn,
+					_scope,
+					filter_str,
+					ldap_err2string(rc));
+				return -1;
+		}
 	}
 
 	return rc;
@@ -552,31 +594,45 @@ int ldap_str2scope(char* scope_str)
  * c) other type of failure - @return < 0
  */
 int lds_resume(
-	struct ld_session *lds,
-	int msgidp,
-	struct ld_conn* conn,
+	struct ldap_async_params* asp,
 	int *ld_result_count)
 {
 
-	int rc;
+	int rc, rc_new;
 	struct timeval zerotime;
 
 	zerotime.tv_sec = zerotime.tv_usec = 0L;
 
-	rc = ldap_result(conn->handle, msgidp, LDAP_MSG_ALL,
+	rc = ldap_result(asp->conn->handle, asp->msgid, LDAP_MSG_ALL,
 			&zerotime, &last_ldap_result);
 
 	switch (rc) {
-		case -1:
-			/* Leave the connection for other requests if we're not successful */
-			release_ldap_connection(conn);
-			LM_ERR("[%s]: ldap result failed\n", lds->name);
-			return -1;
 		case 0:
 			/* receive did not succeed; reactor needed */
 			LM_DBG("Timeout exceeded! Async operation not complete!\n");
 			return 0;
 		default:
+			if (LDAP_API_ERROR(rc)) {
+				ldap_disconnect( asp->lds->name, asp->conn);
+
+				/**
+				 * FIXME FIXME we should continue asynchronously here
+				 */
+				/* this time try synchronously */
+				/* execute the query again; we might have a failover server */
+				if ((rc_new = ldap_url_search( asp->ldap_url.s, ld_result_count)) < 0) {
+					/* LDAP search error; abort */
+					rc = -2;
+					goto error;
+				}
+
+				if ( *ld_result_count < 1) {
+					LM_DBG("no LDAP entry found!\n");
+				}
+
+				return 1;
+			}
+
 			/* receive successfull */
 			LM_DBG("Successfully received response from ldap server!\n");
 			/* FIXME we release the connection now; calling another async
@@ -585,21 +641,25 @@ int lds_resume(
 			 * in last_ldap_handle global parameter
 			 *
 			 */
-			release_ldap_connection(conn);
+			release_ldap_connection(asp->conn);
 			break;
 	}
 
-	last_ldap_handle = conn->handle;
-	*ld_result_count = ldap_count_entries(conn->handle, last_ldap_result);
+	last_ldap_handle = asp->conn->handle;
+	*ld_result_count = ldap_count_entries(asp->conn->handle, last_ldap_result);
 
 	if (*ld_result_count < 0)
 	{
-		LM_DBG("[%s]: ldap_count_entries failed\n", lds->name);
+		LM_DBG("[%s]: ldap_count_entries failed\n", asp->lds->name);
 		return -1;
 	}
 
 	return 1;
+error:
+	release_ldap_connection(asp->conn);
+	return rc;
 }
+
 
 int lds_search_async(
 	char* _lds_name,
@@ -627,10 +687,10 @@ int lds_search_async(
 		return -1;
 	}
 
+
 	if ((*conn=get_ldap_connection(lds)) == NULL) {
 		LM_DBG("No more connections available! will do synchronous query\n");
 	}
-
 
 	LM_DBG(	"[%s]: performing LDAP search: dn [%s],"
 		" scope [%d], filter [%s], client_timeout [%d] usecs\n",
@@ -650,6 +710,11 @@ int lds_search_async(
 	 */
 
 	if (*conn) {
+		if ( check_reconnect( _lds_name, *conn) < 0 ) {
+			LM_ERR("Reconnect failed!\n");
+			return -1;
+		}
+
 		ld_error = ldap_search_ext(
 			(*conn)->handle,
 			_dn,
@@ -666,6 +731,11 @@ int lds_search_async(
 		rc = 0;
 	} else {
 		/* falling back to sync */
+		if ( check_reconnect( _lds_name, &lds->conn_s) < 0 ) {
+			LM_ERR("Reconnect failed!\n");
+			return -1;
+		}
+
 		ld_error = ldap_search_ext_s(
 			lds->conn_s.handle,
 			_dn,
@@ -691,8 +761,6 @@ int lds_search_async(
 		(int)((after_search.tv_sec * 1000000 + after_search.tv_usec)
 		- (before_search.tv_sec * 1000000 + before_search.tv_usec)));
 #endif
-
-
 
 	if (ld_error != LDAP_SUCCESS)
 	{
@@ -748,10 +816,15 @@ int lds_search(
 	/*
 	 * free last_ldap_result
 	 */
-        if (last_ldap_result != NULL) {
-                ldap_msgfree(last_ldap_result);
-                last_ldap_result = NULL;
-        }
+	if ( check_reconnect( _lds_name, conn) < 0 ) {
+		LM_ERR("Reconnect failed!\n");
+		return -1;
+	}
+
+	if (last_ldap_result != NULL) {
+		ldap_msgfree(last_ldap_result);
+		last_ldap_result = NULL;
+	}
 
 
 	LM_DBG(	"[%s]: performing LDAP search: dn [%s],"
