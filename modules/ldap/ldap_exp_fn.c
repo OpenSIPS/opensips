@@ -60,8 +60,7 @@ int resume_ldap_search(int fd, struct sip_msg *msg, void *param)
 
 	as_params = (struct ldap_async_params*) param;
 
-	rc = lds_resume( as_params->lds, as_params->msgid,
-						as_params->conn, &ld_result_count);
+	rc = lds_resume( as_params, &ld_result_count);
 
 	switch (rc) {
 	case -1:
@@ -79,7 +78,6 @@ int resume_ldap_search(int fd, struct sip_msg *msg, void *param)
 
 		break;
 	default:
-		/* invalid rc */
 		LM_BUG("invalid return code\n");
 		return -1;
 	}
@@ -163,6 +161,7 @@ int ldap_search_impl_async(
 	}
 
 	as_params->msgid = msgid;
+	as_params->ldap_url = ldap_url;
 	as_params->lds	 = lds;
 	as_params->conn  = conn;
 

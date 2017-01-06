@@ -382,7 +382,7 @@ int ldap_disconnect(char* _ld_name, struct ld_conn* conn)
 
 
 		for (it=lds->conn_pool; it; foo=it, it=it->next) {
-			ldap_unbind_ext(it->handle, NULL, NULL);
+			ldap_unbind_ext_s(it->handle, NULL, NULL);
 			if (foo)
 				pkg_free(foo);
 		}
@@ -393,7 +393,7 @@ int ldap_disconnect(char* _ld_name, struct ld_conn* conn)
 
 		lds->conn_pool = NULL;
 	} else {
-		ldap_unbind_ext(conn->handle, NULL, NULL);
+		ldap_unbind_ext_s(conn->handle, NULL, NULL);
 		conn->handle = NULL;
 		conn->is_used = 0;
 	}
@@ -405,7 +405,7 @@ int ldap_reconnect(char* _ld_name, struct ld_conn* conn)
 {
 	int rc;
 
-	if (ldap_disconnect(_ld_name, conn) != 0)
+	if (conn->handle && ldap_disconnect(_ld_name, conn) != 0)
 	{
 		LM_ERR("[%s]: disconnect failed\n", _ld_name);
 		return -1;
@@ -421,6 +421,7 @@ int ldap_reconnect(char* _ld_name, struct ld_conn* conn)
 		LM_DBG("[%s]: LDAP reconnect successful\n",
 				_ld_name);
 	}
+
 	return rc;
 }
 
