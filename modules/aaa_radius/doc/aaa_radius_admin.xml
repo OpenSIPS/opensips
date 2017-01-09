@@ -71,7 +71,7 @@
 			</itemizedlist>
 			<para>
 				By default, radiusclient-ng is used. To change at compile time
-				to freeradius, uncomment the USE_FREERADIUS=1 line in main Makefile.
+				to freeradius, uncomment the FREERADIUS=1 line in main Makefile.
 			</para>
 	</section>
 	</section>

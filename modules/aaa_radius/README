@@ -103,7 +103,7 @@ Chapter 1. Admin Guide
      * freeradius-client See http://freeradius.org/.
 
    By default, radiusclient-ng is used. To change at compile time
-   to freeradius, uncomment the USE_FREERADIUS=1 line in main
+   to freeradius, uncomment the FREERADIUS=1 line in main
    Makefile.
 
 1.3. Exported Parameters
