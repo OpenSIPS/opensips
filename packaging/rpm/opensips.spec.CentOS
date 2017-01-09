@@ -1,6 +1,6 @@
 %define name    opensips
 %define ver     2.2
-%define rel     1
+%define rel     2
 %define _sharedir %{_prefix}/share
 
 Summary:      OpenSIPS, very fast and flexible SIP Server
@@ -933,7 +933,7 @@ fi
 * Sun Apr 13 2014 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Fix x64_86 compilation problems
 
-* Tue Mar 22.2.24 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
+* Tue Mar 22 2014 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Some new rpm optional modules are added:
   b2b_sca,call_center,mi_json,script_helper
 
@@ -945,7 +945,7 @@ fi
 - Some new rpm optional modules are added:
   cachedb_cassandra,cachedb_mongodb,osp,perl,perlvdb,tlsops
 
-* Sun Jun 02.2.23 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
+* Sun Jun 02 2013 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - CentOS 6 support
   Remove rpmbuild warning on BuildPrereq now deprecated for BuildRequires
 - opensips 1.9.1 support
