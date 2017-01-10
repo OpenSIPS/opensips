@@ -84,6 +84,9 @@ struct fm_frag{
 	unsigned long check;
 	char is_free;
 #endif
+#ifdef SHM_EXTRA_STATS
+	unsigned long statistic_index;
+#endif
 };
 
 struct fm_frag_lnk{
@@ -138,6 +141,16 @@ void*  fm_realloc(struct fm_block*, void* p, unsigned long size);
 void  fm_status(struct fm_block*);
 void  fm_info(struct fm_block*, struct mem_info*);
 
+#ifdef SHM_EXTRA_STATS
+void set_stat_index (void *ptr, unsigned long idx);
+unsigned long get_stat_index(void *ptr);
+#endif
+
+#ifdef DBG_MALLOC
+	#define _FRAG_FILE(_p) ((struct fm_frag*)((char *)_p - sizeof(struct fm_frag)))->file
+	#define _FRAG_FUNC(_p) ((struct fm_frag*)((char *)_p - sizeof(struct fm_frag)))->func
+	#define _FRAG_LINE(_p) ((struct fm_frag*)((char *)_p - sizeof(struct fm_frag)))->line
+#endif
 
 #ifdef STATISTICS
 static inline unsigned long fm_get_size(struct fm_block* qm)
