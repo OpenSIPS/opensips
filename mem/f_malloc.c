@@ -141,6 +141,19 @@ inline static unsigned long big_hash_idx(unsigned long s)
 #define END_CHECK_PATTERN2 0xabcdefed
 #endif
 
+#ifdef SHM_EXTRA_STATS
+void set_stat_index (void *ptr, unsigned long idx) {
+	struct fm_frag *f;
+	f = (char*)ptr - sizeof(struct fm_frag);
+	f->statistic_index = idx;
+}
+
+unsigned long get_stat_index(void *ptr) {
+	struct fm_frag *f;
+	f = (char*)ptr - sizeof(struct fm_frag);
+	return f->statistic_index;
+}
+#endif
 
 
 static inline void fm_insert_free(struct fm_block* qm, struct fm_frag* frag)

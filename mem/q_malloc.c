@@ -171,6 +171,20 @@ unsigned long frag_size(void* p){
 	return (((struct qm_frag*) ((char*)p-sizeof(struct qm_frag)))->size);
 }
 
+#ifdef SHM_EXTRA_STATS
+void set_stat_index (void *ptr, unsigned long idx) {
+	struct qm_frag *f;
+	f = (char*)ptr - sizeof(struct qm_frag);
+	f->statistic_index = idx;
+}
+
+unsigned long get_stat_index(void *ptr) {
+	struct qm_frag *f;
+	f = (char*)ptr - sizeof(struct qm_frag);
+	return f->statistic_index;
+}
+#endif
+
 static inline void qm_insert_free(struct qm_block* qm, struct qm_frag* frag)
 {
 	struct qm_frag* f;
