@@ -28,6 +28,7 @@
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_uri.h"
 #include "cgrates.h"
+#include "cgrates_acc.h"
 #include "cgrates_common.h"
 #include "cgrates_engine.h"
 
@@ -42,6 +43,8 @@ struct cgr_kv *cgr_get_kv(struct list_head *ctx, str name)
 	struct list_head *l;
 	struct cgr_kv *kv;
 
+	if (!ctx)
+		return NULL;
 	list_for_each(l, ctx) {
 		kv = list_entry(l, struct cgr_kv, list);
 		if (kv->key.len == name.len && !memcmp(kv->key.s, name.s, name.len))
@@ -367,7 +370,18 @@ struct cgr_ctx *cgr_get_ctx(void)
 		return NULL;
 	}
 	memset(ctx, 0, sizeof *ctx);
-	INIT_LIST_HEAD(&ctx->kv_store);
+	ctx->acc = cgr_tryget_acc_ctx();
+	if (!ctx->acc) {
+		ctx->kv_store = shm_malloc(sizeof *ctx->kv_store);
+		if (!ctx->kv_store) {
+			LM_ERR("out of shm memory\n");
+			shm_free(ctx);
+			return NULL;
+		}
+		INIT_LIST_HEAD(ctx->kv_store);
+	} else {
+		ctx->kv_store = ctx->acc->kv_store;
+	}
 	
 	if (t)
 		CGR_PUT_TM_CTX(t, ctx);
@@ -378,6 +392,7 @@ struct cgr_ctx *cgr_get_ctx(void)
 }
 
 /* TODO: delete */
+#if 0
 struct cgr_ctx *cgr_ctx_new(void)
 {
 	struct cgr_ctx *ctx = CGR_GET_CTX();
@@ -393,6 +408,7 @@ struct cgr_ctx *cgr_ctx_new(void)
 	}
 	return ctx;
 }
+#endif
 
 #define CGR_RESET_REPLY_CTX() \
 	do { \
@@ -708,9 +724,12 @@ void cgr_free_ctx(void *param)
 		return;
 	LM_DBG("release ctx=%p\n", ctx);
 
-	/* remove all elements */
-	list_for_each_safe(l, t, &ctx->kv_store)
-		cgr_free_kv(list_entry(l, struct cgr_kv, list));
+	/* if somebody is doing accounting, let them free the list */
+	if (!ctx->acc) {
+		list_for_each_safe(l, t, ctx->kv_store)
+			cgr_free_kv(list_entry(l, struct cgr_kv, list));
+		shm_free(ctx->kv_store);
+	}
 	shm_free(ctx);
 }
 

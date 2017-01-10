@@ -59,10 +59,6 @@ static void mod_destroy(void);
 static int child_init(int rank);
 static int cgrates_set_engine(modparam_t type, void * val);
 
-struct cgr_uac {
-	struct list_head kv_store;
-};
-
 #define CGRB_ALL_BRANCHES ((unsigned int)-1)
 
 struct cgr_param {
@@ -667,7 +663,7 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 		return -2;
 
 	/* check if there already is a kv with that name */
-	kv = cgr_get_kv(&ctx->kv_store, name_val.rs);
+	kv = cgr_get_kv(ctx->kv_store, name_val.rs);
 	if (kv) {
 		/* replace the old value */
 		cgr_free_kv_val(kv);
@@ -682,7 +678,7 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 			LM_ERR("cannot allocate new key-value\n");
 			return -1;
 		}
-		list_add(&kv->list, &ctx->kv_store);
+		list_add(&kv->list, ctx->kv_store);
 	}
 	if (val->flags & PV_VAL_NULL) {
 		kv->flags |= CGR_KVF_TYPE_NULL;
@@ -738,7 +734,7 @@ static int pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
 	}
 
 	/* check if there already is a kv with that name */
-	if (!(kv = cgr_get_kv(&ctx->kv_store, name_val.rs)) || \
+	if (!(kv = cgr_get_kv(ctx->kv_store, name_val.rs)) || \
 			kv->flags & CGR_KVF_TYPE_NULL)
 		return pv_get_null(msg, param, val);
 

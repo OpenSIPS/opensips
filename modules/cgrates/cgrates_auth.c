@@ -67,8 +67,7 @@ static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst)
 	ctx = CGR_GET_CTX();
 	stime.s = int2str(time(NULL), &stime.len);
 
-	cmsg = cgr_get_generic_msg("SMGenericV1.MaxUsage",
-			ctx ? &ctx->kv_store : NULL);
+	cmsg = cgr_get_generic_msg("SMGenericV1.MaxUsage", ctx->kv_store);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
@@ -76,7 +75,7 @@ static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst)
 
 	/* OriginID */
 	/* if origin was not added from script, add it now */
-	if (ctx && !cgr_get_const_kv(&ctx->kv_store, "OriginID") &&
+	if (ctx && !cgr_get_const_kv(ctx->kv_store, "OriginID") &&
 			cgr_msg_push_str(cmsg, "OriginID", &msg->callid->body) < 0) {
 		LM_ERR("cannot push OriginID!\n");
 		goto error;

@@ -57,7 +57,7 @@ struct cgr_ctx {
 	struct cgr_acc_ctx *acc;
 
 	/* variables */
-	struct list_head kv_store;
+	struct list_head *kv_store;
 };
 
 struct cgr_local_ctx {

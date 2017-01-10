@@ -36,5 +36,27 @@
  */
 int w_cgr_acc(struct sip_msg* msg, char* acc_c, char *dst_c);
 
+enum cgr_acc_state {
+	CGRS_EARLY = 0,
+	CGRS_ENGAGED
+};
+
+struct cgr_acc_ctx {
+
+	enum cgr_acc_state state;
+
+	/* all branches info */
+	str acc;
+	str dst;
+	time_t time;
+	unsigned int duration;
+
+	/* variables */
+	struct list_head *kv_store;
+};
+
+
+struct cgr_acc_ctx *cgr_tryget_acc_ctx(void);
+
 #endif /* _CGRATES_ACC_H_ */
 

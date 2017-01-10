@@ -27,56 +27,92 @@
 struct dlg_binds cgr_dlgb;
 struct tm_binds cgr_tmb;
 
-enum cgr_acc_state {
-	CGRS_EARLY = 0,
-	CGRS_ENGAGED
-};
-
-struct cgr_acc_ctx {
-
-	enum cgr_acc_state state;
-
-	/* all branches info */
-	str *acc;
-	str *dst;
-	time_t time;
-
-	/* variables */
-	struct list_head kv_store;
-
-	/* branches */
-	/*
-	unsigned engaged_branches;
-	struct cgr_uac uacs[MAX_BRANCHES];
-	*/
-};
-
-static inline struct cgr_acc_ctx *cgr_get_acc_ctx(void);
 static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx);
 static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps);
 static void cgr_tmcb_func_free(void *param);
 static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params);
 
+static str cgr_ctx_str = str_init("cgrX_ctx");
 
 static inline struct cgr_acc_ctx *cgr_get_acc_ctx(void)
 {
+	str ctxstr;
+	struct dlg_cell *dlg;
 	struct cgr_ctx *ctx = cgr_get_ctx();
 	if (!ctx) {
 		LM_ERR("cannot create global context\n");
 		return NULL;
 	}
 	if (!ctx->acc) {
+		dlg = cgr_dlgb.get_dlg();
+		if (!dlg) {
+			LM_ERR("cannot find a dialog!\n");
+			return NULL;
+		}
 		ctx->acc = shm_malloc(sizeof(*ctx->acc));
 		if (!ctx->acc) {
 			LM_ERR("cannot create acc context\n");
 			return NULL;
 		}
 		memset(ctx->acc, 0, sizeof(*ctx->acc));
-		/* TODO: register to tm? */
+		/* point to the same kv_store */
+		ctx->acc->kv_store = ctx->kv_store;
+		LM_DBG("new acc ctx=%p\n", ctx->acc);
+		ctxstr.len = sizeof(ctx->acc);
+		ctxstr.s = (char *)&ctx->acc;
+		if (cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr))
+			LM_ERR("cannot store context in dialog!\n");
+	} else {
+		LM_DBG("same acc ctx=%p\n", ctx->acc);
 	}
-	LM_DBG("new acc ctx=%p\n", ctx->acc);
 	return ctx->acc;
+}
+
+struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
+{
+	struct cgr_acc_ctx *acc_ctx;
+	str ctxstr;
+	struct cgr_kv *kv;
+	struct list_head *l;
+	struct list_head *t;
+	struct dlg_cell *dlg;
+	struct cgr_ctx *ctx = CGR_GET_CTX();
+
+	if (ctx && ctx->acc)
+		return NULL;
+
+	dlg = cgr_dlgb.get_dlg();
+	if (!dlg) /* dialog not found yet, moving later */
+		return NULL;
+	/* search for the accounting ctx */
+	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_ctx_str, &ctxstr, 0) < 0)
+		return NULL;
+	if (ctxstr.len != sizeof(struct cgr_acc_ctx *)) {
+		LM_BUG("Invalid ctx pointer size %d\n", ctxstr.len);
+		return NULL;
+	}
+	acc_ctx = *(struct cgr_acc_ctx **)ctxstr.s;
+	if (!acc_ctx) /* nothing to do now */
+		return NULL;
+
+	/* if there is a context, move everything from static ctx to the shared
+	 * one, but keep the newever values in the store */
+	if (ctx) {
+		list_for_each_safe(l, t, acc_ctx->kv_store) {
+			kv = list_entry(l, struct cgr_kv, list);
+			if (cgr_get_kv(ctx->kv_store, kv->key))
+				cgr_free_kv(kv);
+			else {
+				list_del(&kv->list);
+				list_add(&kv->list, ctx->kv_store);
+			}
+		}
+		shm_free(acc_ctx->kv_store);
+		acc_ctx->kv_store = ctx->kv_store;
+	}
+
+	return acc_ctx;
 }
 
 static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx)
@@ -84,15 +120,18 @@ static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx)
 	struct list_head *l;
 	struct list_head *t;
 
-	if (ctx->acc)
-		shm_free(ctx->acc);
-	if (ctx->dst)
-		shm_free(ctx->dst);
-	/* remove all elements */
-	list_for_each_safe(l, t, &ctx->kv_store)
-		cgr_free_kv(list_entry(l, struct cgr_kv, list));
-	shm_free(ctx);
 	LM_DBG("release acc ctx=%p\n", ctx);
+	if (ctx->acc.s)
+		shm_free(ctx->acc.s);
+	if (ctx->dst.s)
+		shm_free(ctx->dst.s);
+	/* remove all elements */
+	if (ctx->kv_store) {
+		list_for_each_safe(l, t, ctx->kv_store)
+			cgr_free_kv(list_entry(l, struct cgr_kv, list));
+		shm_free(ctx->kv_store);
+	}
+	shm_free(ctx);
 }
 
 static int cgr_proc_start_acc_reply(struct cgr_conn *c, json_object *jobj,
@@ -198,9 +237,7 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 	}
 	time(&ctx->time);
 
-	stime.s = int2str(ctx->time, &stime.len);
-	cmsg = cgr_get_generic_msg("SMGenericV1.InitiateSession",
-			&ctx->kv_store);
+	cmsg = cgr_get_generic_msg("SMGenericV1.InitiateSession", ctx->kv_store);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
@@ -208,26 +245,27 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 
 	/* OriginID */
 	/* if origin was not added from script, add it now */
-	if (ctx && !cgr_get_const_kv(&ctx->kv_store, "OriginID") &&
+	if (ctx && !cgr_get_const_kv(ctx->kv_store, "OriginID") &&
 			cgr_msg_push_str(cmsg, "OriginID", &msg->callid->body) < 0) {
 		LM_ERR("cannot push OriginID!\n");
 		goto error;
 	}
 
 	/* Account */
-	if (cgr_msg_push_str(cmsg, "Account", ctx->acc) < 0) {
+	if (cgr_msg_push_str(cmsg, "Account", &ctx->acc) < 0) {
 		LM_ERR("cannot push Account info!\n");
 		goto error;
 	}
 
 	/* SetupTime */
+	stime.s = int2str(ctx->time, &stime.len);
 	if (cgr_msg_push_str(cmsg, "AnswerTime", &stime) < 0) {
 		LM_ERR("cannot push AnswerTime info!\n");
 		goto error;
 	}
 
 	/* Destination */
-	if (cgr_msg_push_str(cmsg, "Destination", ctx->dst) < 0) {
+	if (cgr_msg_push_str(cmsg, "Destination", &ctx->dst) < 0) {
 		LM_ERR("cannot push Destination info!\n");
 		goto error;
 	}
@@ -235,22 +273,20 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 	return cmsg->msg;
 error:
 	json_object_put(cmsg->msg);
-	return cmsg->msg;
+	return NULL;
 }
 
 static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 		struct cgr_acc_ctx *ctx, str *callid)
 {
-	struct list_head extra_list;
-	struct list_head *l, *t;
 	struct dlg_cell *dlg;
 	struct cgr_msg *cmsg = NULL;
-	str name;
+	str tmp;
 	char int2str_buf[INT2STR_MAX_LEN + 1];
 	/* compute the duration */
-	unsigned int duration = time(NULL) - ctx->time;
+	time_t now = time(NULL);
 
-	INIT_LIST_HEAD(&extra_list);
+	ctx->duration = now - ctx->time;
 
 	/* OriginID */
 	if ((dlg = cgr_dlgb.get_dlg()) == NULL) {
@@ -258,49 +294,56 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 		return NULL;
 	}
 
-	/* TODO: shall we add an index or smth? */
-	if (cgr_push_kv_str(&extra_list, "OriginID", callid) < 0) {
-		LM_ERR("cannot add OriginID node\n");
+	cmsg = cgr_get_generic_msg("SMGenericV1.TerminateSession", ctx->kv_store);
+	if (!cmsg) {
+		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
 	}
 
-	if (ctx->acc && cgr_push_kv_str(&extra_list, "Account", ctx->acc) < 0) {
-		LM_ERR("cannot add Account node\n");
-		goto exit;
+	/* OriginID */
+	/* if origin was not added from script, add it now */
+	if (ctx && !cgr_get_const_kv(ctx->kv_store, "OriginID") &&
+			cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
+		LM_ERR("cannot push OriginID!\n");
+		goto error;
 	}
-	time(&ctx->time);
 
-	name.s = int2bstr(duration, int2str_buf, &name.len);
+	/* Account */
+	if (cgr_msg_push_str(cmsg, "Account", &ctx->acc) < 0) {
+		LM_ERR("cannot push Account info!\n");
+		goto error;
+	}
+
+	/* AnswerTime */
+	tmp.s = int2str(now, &tmp.len);
+	if (cgr_msg_push_str(cmsg, "AnswerTime", &tmp) < 0) {
+		LM_ERR("cannot push AnswerTime info!\n");
+		goto error;
+	}
+
+	tmp.s = int2bstr(ctx->duration, int2str_buf, &tmp.len);
 	/* add an s at the end */
-	name.s[name.len] = 's';
-	name.len++;
-	name.s[name.len] = 0;
-	if (cgr_push_kv_str(&extra_list, "Usage", &name) < 0) {
+	tmp.s[tmp.len] = 's';
+	tmp.len++;
+	tmp.s[tmp.len] = 0;
+	if (cgr_msg_push_str(cmsg, "Usage", &tmp) < 0) {
 		LM_ERR("cannot add Usage node\n");
-		goto exit;
+		goto error;
 	}
 
-	/* TODO: shall we merge what is in extra_list with what is in the local
-	 * context? */
-
-	cmsg = cgr_get_generic_msg("SMGenericV1.TerminateSession",
-			&ctx->kv_store/* TODO:h &extra_list*/);
-
-exit:
-	list_for_each_safe(l, t, &extra_list)
-		cgr_free_kv(list_entry(l, struct cgr_kv, list));
 	return cmsg->msg;
+
+error:
+	json_object_put(cmsg->msg);
+	return NULL;
 }
 
 static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 		struct cgr_acc_ctx *ctx, str *callid)
 {
-	struct list_head extra_list;
-	struct list_head *l, *t;
 	struct dlg_cell *dlg;
 	struct cgr_msg *cmsg = NULL;
-
-	INIT_LIST_HEAD(&extra_list);
+	str tmp;
 
 	/* OriginID */
 	if ((dlg = cgr_dlgb.get_dlg()) == NULL) {
@@ -308,40 +351,34 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 		return NULL;
 	}
 
-	/* TODO: shall we add an index or smth? */
-	if (cgr_push_kv_str(&extra_list, "OriginID", &dlg->callid) < 0) {
-		LM_ERR("cannot add OriginID node\n");
+	cmsg = cgr_get_generic_msg("SMGenericV1.ProcessCDR", ctx->kv_store);
+	if (!cmsg) {
+		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
 	}
 
-	if (ctx->acc && cgr_push_kv_str(&extra_list, "Account", ctx->acc) < 0) {
+	/* TODO: shall we add an index or smth? */
+	if (cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
+		LM_ERR("cannot add OriginID node\n");
+		goto error;
+	}
+
+	if (cgr_msg_push_str(cmsg, "Account", &ctx->acc) < 0) {
 		LM_ERR("cannot add Account node\n");
-		goto exit;
+		goto error;
 	}
-	time(&ctx->time);
 
-#if 0
-	name.s = int2bstr(duration, int2str_buf, &name.len);
-	/* add an s at the end */
-	name.s[name.len] = 's';
-	name.len++;
-	name.s[name.len] = 0;
-	if (cgr_push_kv_str(&extra_list, "Usage", &name) < 0) {
-		LM_ERR("cannot add Usage node\n");
-		goto exit;
+	tmp.s = int2str(ctx->duration, &tmp.len);
+	if (cgr_msg_push_str(cmsg, "Duration", &tmp) < 0) {
+		LM_ERR("cannot add Duration node\n");
+		goto error;
 	}
-#endif
 
-	/* TODO: shall we merge what is in extra_list with what is in the local
-	 * context? */
-
-	cmsg = cgr_get_generic_msg("SMGenericV1.ProcessCDR",
-			&ctx->kv_store/* TODO: , &extra_list */);
-
-exit:
-	list_for_each_safe(l, t, &extra_list)
-		cgr_free_kv(list_entry(l, struct cgr_kv, list));
 	return cmsg->msg;
+
+error:
+	json_object_put(cmsg->msg);
+	return NULL;
 }
 
 static void cgr_cdr(struct sip_msg *msg, struct cgr_acc_ctx *ctx, str *callid)
@@ -355,6 +392,7 @@ static void cgr_cdr(struct sip_msg *msg, struct cgr_acc_ctx *ctx, str *callid)
 	}
 
 	cgr_handle_cmd(msg, jmsg, cgr_proc_cdr_acc_reply, ctx);
+	cgr_free_acc_ctx(ctx);
 }
 
 int w_cgr_acc(struct sip_msg* msg, char* acc_c, char *dst_c)
@@ -375,7 +413,7 @@ int w_cgr_acc(struct sip_msg* msg, char* acc_c, char *dst_c)
 
 	if ((acc = cgr_get_acc(msg, acc_c)) == NULL)
 		return -4;
-	if ((dst = cgr_get_acc(msg, dst_c)) == NULL)
+	if ((dst = cgr_get_dst(msg, dst_c)) == NULL)
 		return -4;
 
 	/* get the dialog */
@@ -388,6 +426,12 @@ int w_cgr_acc(struct sip_msg* msg, char* acc_c, char *dst_c)
 	if (!ctx) {
 		LM_ERR("cannot create acc context\n");
 		return -1;
+	}
+
+	/* store accounting and destination values */
+	if (shm_str_dup(&ctx->acc, acc) < 0 || shm_str_dup(&ctx->dst, dst) < 0) {
+		LM_ERR("out of shm mem!\n");
+		goto internal_error;
 	}
 
 	/* TODO: check if it was already engaged! */
