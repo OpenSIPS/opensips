@@ -23,25 +23,38 @@ ifneq ($(RADIUSCLIENT), RADCLI)
 ifneq ($(RADIUSCLIENT), FREERADIUS)
 ifeq ($(RADIUSCLIENT), RADIUSCLIENT)
 	DEFS+= -DRADIUSCLIENT
-	RADIUS_LIB= -lradiusclient-ng
+	RADIUS_LIB=-lradiusclient-ng
+	RADIUS_PACKET=libradiusclient-ng
 endif
 else
 	DEFS+= -DFREERADIUS
-	RADIUS_LIB= -lfreeradius-client
+	RADIUS_LIB=-lfreeradius-client
+	RADIUS_PACKET=libfreeradius-client
 endif
 else
-	RADIUS_LIB= -lradiusclient-ng
 	DEFS+= -DRADCLI
-	RADIUS_LIB= -lradcli
+	RADIUS_LIB=-lradcli
+	RADIUS_PACKET=libradcli
 endif
 
+$(warning Aici)
+ifeq ($(CROSS_COMPILE),)
+	BUILDER=$(shell if pkg-config --exists $(RADIUS_PACKET); then \
+		echo "pkg-config $(RADIUS_PACKET)"; \
+	fi)
+else
+	DEFS+=-I$(LOCALBASE)/include
+	LIBS=-L$(LOCALBASE)/lib $(RADIUS_LIB)
+endif
 
+ifneq ($(BUILDER),)
+	DEFS+= $(shell $(BULDER) --cflags)
+	LIBS+= $(shell $(BULDER) --libs)
+endif
 
 
 # Comment the next two line and uncomment the following two if you want
 # to enable Radius support
-DEFS+= -I$(LOCALBASE)/include
-LIBS=-L$(LOCALBASE)/lib $(RADIUS_LIB)
 
 include ../../Makefile.modules
 
