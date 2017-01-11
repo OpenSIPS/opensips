@@ -164,7 +164,8 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 				LM_ERR("out of pkg mem\n");
 				goto out;
 			}
-			memcpy(faked_req->dst_uri.s, shm_msg->dst_uri.s, shm_msg->dst_uri.len);
+			memcpy(faked_req->dst_uri.s, shm_msg->dst_uri.s,
+				shm_msg->dst_uri.len);
 		}
 	} else {
 		faked_req->dst_uri.s = NULL;
@@ -172,23 +173,24 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 	}
 
 	if (shm_msg->set_global_address.s) {
-		faked_req->set_global_address.s = pkg_malloc(shm_msg->set_global_address.len);
+		faked_req->set_global_address.s = pkg_malloc
+			(shm_msg->set_global_address.len);
 		if (!faked_req->set_global_address.s) {
 			LM_ERR("out of pkg mem\n");
 			goto out;
 		}
 		memcpy(faked_req->set_global_address.s, shm_msg->set_global_address.s,
-			   shm_msg->set_global_address.len);
+			shm_msg->set_global_address.len);
 	}
 
 	if (shm_msg->set_global_port.s) {
-		faked_req->set_global_port.s = pkg_malloc(shm_msg->set_global_port.len);
+		faked_req->set_global_port.s=pkg_malloc(shm_msg->set_global_port.len);
 		if (!faked_req->set_global_port.s) {
 			LM_ERR("out of pkg mem\n");
 			goto out1;
 		}
 		memcpy(faked_req->set_global_port.s, shm_msg->set_global_port.s,
-			   shm_msg->set_global_port.len);
+			shm_msg->set_global_port.len);
 	}
 
 	if (shm_msg->path_vec.s) {
@@ -201,12 +203,19 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 			   shm_msg->path_vec.len);
 	}
 
+	if (clone_sip_msg_body( shm_msg, faked_req, &faked_req->body, 0)!=0) {
+		LM_ERR("out of pkg mem - cannot clone body\n");
+		goto out3;
+	}
+
 	/* set as flags the global flags and the branch flags from the
 	 * elected branch */
 	faked_req->flags = uas->request->flags;
 	setb0flags( faked_req, uac->br_flags);
 
 	return 1;
+out3:
+	pkg_free(faked_req->path_vec.s);
 out2:
 	pkg_free(faked_req->set_global_port.s);
 out1:
@@ -241,8 +250,7 @@ inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 		faked_req->set_global_port.s = NULL;
 	}
 
-	/* MULTI-BODY in not cloned into SHM, so if we have one, it means it
-	 * was parsed in the fake environment, so we have to free it */
+	/* clean the pkg copy of the body */
 	if (faked_req->body) {
 		free_sip_body(faked_req->body);
 		faked_req->body = NULL;
@@ -257,12 +265,14 @@ inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 	del_notflaged_lumps( &(faked_req->body_lumps), LUMPFLAG_SHMEM );
 	del_nonshm_lump_rpl( &(faked_req->reply_lump) );
 
-        if (faked_req->add_rm && faked_req->add_rm != t->uas.request->add_rm)
-       		shm_free(faked_req->add_rm);
-        if (faked_req->body_lumps && faked_req->body_lumps != t->uas.request->body_lumps)
-       		shm_free(faked_req->body_lumps);
-        if (faked_req->reply_lump && faked_req->reply_lump != t->uas.request->reply_lump)
-       		shm_free(faked_req->reply_lump);
+	if (faked_req->add_rm && faked_req->add_rm != t->uas.request->add_rm)
+		shm_free(faked_req->add_rm);
+	if (faked_req->body_lumps
+	&& faked_req->body_lumps != t->uas.request->body_lumps)
+		shm_free(faked_req->body_lumps);
+	if (faked_req->reply_lump
+	&& faked_req->reply_lump != t->uas.request->reply_lump)
+		shm_free(faked_req->reply_lump);
 
 	clean_msg_clone( faked_req, t->uas.request, t->uas.end_request);
 }
