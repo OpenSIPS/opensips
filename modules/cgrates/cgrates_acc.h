@@ -34,12 +34,14 @@
  *  - -3: no suitable cgrates server found
  *  - -4: invalid message
  */
-int w_cgr_acc(struct sip_msg* msg, char* acc_c, char *dst_c);
+int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c);
 
 struct cgr_acc_ctx {
 
 	int ref_no;
 	gen_lock_t ref_lock;
+
+	unsigned flags;
 
 	/* all branches info */
 	str acc;
@@ -51,8 +53,10 @@ struct cgr_acc_ctx {
 	struct list_head *kv_store;
 };
 
-
 struct cgr_acc_ctx *cgr_tryget_acc_ctx(void);
+
+#define CGRF_DO_CDR		(1<<0)
+#define CGRF_DO_MISSED	(1<<1)
 
 #endif /* _CGRATES_ACC_H_ */
 

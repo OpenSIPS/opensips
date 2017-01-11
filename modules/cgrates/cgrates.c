@@ -95,6 +95,8 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"cgrates_acc", (cmd_function)w_cgr_acc, 2, fixup_cgrates_acc, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"cgrates_acc", (cmd_function)w_cgr_acc, 3, fixup_cgrates_acc, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"cgrates_auth", (cmd_function)w_cgr_auth, 0, fixup_cgrates, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"cgrates_auth", (cmd_function)w_cgr_auth, 1, fixup_cgrates, 0,
@@ -175,10 +177,16 @@ static int fixup_cgrates(void ** param, int param_no)
 
 static int fixup_cgrates_acc(void ** param, int param_no)
 {
-	if (load_dlg_api(&cgr_dlgb)!=0)
+	static int warned = 0;
+	unsigned flags = 0;
+	char *p, *e;
+	str s;
+
+	if (load_dlg_api(&cgr_dlgb)!=0 && !warned)
 		LM_DBG("failed to find dialog API - is dialog module loaded?\n");
 
-	if (!cgr_dlgb.get_dlg) {
+	if (!cgr_dlgb.get_dlg && !warned) {
+		warned = 1;
 		LM_WARN("error loading dialog module - acc cannot be generated\n");
 		return -1;
 	}
@@ -190,10 +198,35 @@ static int fixup_cgrates_acc(void ** param, int param_no)
 				"for ongoing calls will be lost after restart\n");
 #endif
 
-	if (param_no > 0 && param_no < 5)
+	if (param_no == 1) {
+		/* parse flags */
+		s.s = (char *)*param;
+		e = s.s + strlen(s.s);
+		while (s.s < e) {
+			p = strchr(s.s, '|');
+			s.len = (p ? (p - s.s) : strlen(s.s));
+			str_trim_spaces_lr(s);
+			if (!strncasecmp(s.s, "missed", 6))
+				flags |= CGRF_DO_MISSED;
+			else if (!strncasecmp(s.s, "cdr", 3))
+				flags |= CGRF_DO_CDR;
+			else
+				LM_WARN("unknown flag [%.*s]\n", s.len, s.s);
+			if (p)
+				s.s = p + 1;
+			else
+				break;
+		}
+		if ((flags & (CGRF_DO_MISSED|CGRF_DO_CDR)) == CGRF_DO_MISSED) {
+			LM_WARN("missed flag without cdr does not do anything; "
+					"ignoring it...\n");
+			flags &= ~CGRF_DO_MISSED;
+		}
+		*param = (unsigned long *)(unsigned long)flags;
+		return 0;
+	}
+	if (param_no == 2 || param_no == 3)
 		return fixup_spve(param);
-	if (param_no == 5)
-		return fixup_pvar(param);
 	LM_CRIT("Unknown parameter number %d\n", param_no);
 	return E_UNSPEC;
 }

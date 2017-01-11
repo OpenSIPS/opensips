@@ -417,7 +417,7 @@ static void cgr_cdr(struct sip_msg *msg, struct cgr_acc_ctx *ctx, str *callid)
 	cgr_handle_cmd(msg, jmsg, cgr_proc_cdr_acc_reply, ctx);
 }
 
-int w_cgr_acc(struct sip_msg* msg, char* acc_c, char *dst_c)
+int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c)
 {
 	str *acc;
 	str *dst;
@@ -449,6 +449,8 @@ int w_cgr_acc(struct sip_msg* msg, char* acc_c, char *dst_c)
 		LM_ERR("cannot create acc context\n");
 		return -1;
 	}
+
+	ctx->flags = (unsigned long)flag_c;
 
 	/* store accounting and destination values */
 	if (shm_str_dup(&ctx->acc, acc) < 0 || shm_str_dup(&ctx->dst, dst) < 0) {
@@ -502,7 +504,8 @@ static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps)
 	/* TODO: determine context */
 	ctx = (struct cgr_acc_ctx *)*ps->param;
 	if (type & (TMCB_ON_FAILURE|TMCB_TRANS_CANCELLED)) {
-		cgr_cdr(ps->req, ctx, &t->callid);
+		if (ctx->flags & CGRF_DO_MISSED && ctx->flags & CGRF_DO_CDR)
+			cgr_cdr(ps->req, ctx, &t->callid);
 		return;
 	} else if ((type & TMCB_RESPONSE_OUT) && (ps->code < 200 || ps->code >= 300)) {
 		return;
@@ -573,22 +576,24 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 	if (cgr_handle_cmd(_params->msg, jmsg, cgr_proc_stop_acc_reply, ctx) < 0)
 		goto free_ctx;
 
-	/* if it's not a local transaction we do the accounting on the tm callbacks */
-	if (((t = cgr_tmb.t_gett()) == T_UNDEFINED) || !t ||
-			(t != NULL && !cgr_tmb.t_is_local(_params->msg))) {
-		/* normal dialogs will have to do accounting when the response for
-		 * the bye will come since users should be able to populate extra
-		 * vars and leg vars */
-		if (cgr_tmb.register_tmcb(_params->msg, NULL,
-						TMCB_RESPONSE_OUT, cgr_cdr_cb, ctx, 0) < 0) {
-			LM_ERR("failed to register cdr callback!\n");
-			goto free_ctx;
+	if (ctx->flags & CGRF_DO_CDR) {
+		/* if it's not a local transaction we do the accounting on the tm callbacks */
+		if (((t = cgr_tmb.t_gett()) == T_UNDEFINED) || !t ||
+				(t != NULL && !cgr_tmb.t_is_local(_params->msg))) {
+			/* normal dialogs will have to do accounting when the response for
+			 * the bye will come because users should be able to populate extra
+			 * vars and leg vars */
+			if (cgr_tmb.register_tmcb(_params->msg, NULL,
+							TMCB_RESPONSE_OUT, cgr_cdr_cb, ctx, 0) < 0) {
+				LM_ERR("failed to register cdr callback!\n");
+				goto free_ctx;
+			}
+			return;
+		} else if (t != NULL && cgr_tmb.t_is_local(_params->msg)) {
+			/* for local transactions we generate CDRs here, since all the messages
+			 * have been processed */
+			cgr_cdr(_params->msg, ctx, &dlg->callid);
 		}
-		return;
-	} else if (t != NULL && cgr_tmb.t_is_local(_params->msg)) {
-		/* for local transactions we generate CDRs here, since all the messages
-		 * have been processed */
-		cgr_cdr(_params->msg, ctx, &dlg->callid);
 	}
 free_ctx:
 	cgr_free_acc_ctx(ctx);
