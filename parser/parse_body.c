@@ -451,7 +451,7 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 	pb_malloc my_malloc;
 
 	if (src_msg==NULL || src_msg->body==NULL) {
-		dst = NULL;
+		*p_dst = NULL;
 		return 0;
 	}
 
@@ -512,7 +512,7 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 	*p_dst = dst;
 	return 0;
 err:
-	*p_dst = NULL;
+	if (dst) free_sip_body(dst);
 	return -1;
 }
 
