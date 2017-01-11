@@ -147,7 +147,7 @@ modparam("proto_hep", "hep_max_msg_chunks", 8)
 		<title>Set <varname>hep_async</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_bin", "hep_async", 0)
+modparam("proto_hep", "hep_async", 0)
 ...
 </programlisting>
 		</example>
