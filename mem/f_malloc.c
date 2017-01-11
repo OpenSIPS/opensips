@@ -144,13 +144,13 @@ inline static unsigned long big_hash_idx(unsigned long s)
 #ifdef SHM_EXTRA_STATS
 void set_stat_index (void *ptr, unsigned long idx) {
 	struct fm_frag *f;
-	f = (char*)ptr - sizeof(struct fm_frag);
+	f = (struct fm_frag *)((char*)ptr - sizeof(struct fm_frag));
 	f->statistic_index = idx;
 }
 
 unsigned long get_stat_index(void *ptr) {
 	struct fm_frag *f;
-	f = (char*)ptr - sizeof(struct fm_frag);
+	f = (struct fm_frag *)((char*)ptr - sizeof(struct fm_frag));
 	return f->statistic_index;
 }
 #endif

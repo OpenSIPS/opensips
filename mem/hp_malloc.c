@@ -180,13 +180,13 @@ unsigned long frag_size(void* p){
 #ifdef SHM_EXTRA_STATS
 void set_stat_index (void *ptr, unsigned long idx) {
 	struct hp_frag *f;
-	f = (char*)ptr - sizeof(struct hp_frag);
+	f = (struct hp_frag *)((char*)ptr - sizeof(struct hp_frag));
 	f->statistic_index = idx;
 }
 
 unsigned long get_stat_index(void *ptr) {
 	struct hp_frag *f;
-	f = (char*)ptr - sizeof(struct hp_frag);
+	f = (struct hp_frag *)((char*)ptr - sizeof(struct hp_frag));
 	return f->statistic_index;
 }
 #endif

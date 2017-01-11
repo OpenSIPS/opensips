@@ -331,10 +331,14 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 	if (init_new_stat((stat_var*)&memory_mods_stats[0].real_used) < 0)
 		return -1;
 
-	update_stat((stat_var*)&memory_mods_stats[0].fragments, 4);
-	update_stat((stat_var*)&memory_mods_stats[0].memory_used, sizeof(stat_val) * 3 + sizeof(struct module_info));
-	update_stat((stat_var*)&memory_mods_stats[0].real_used, sizeof(stat_val) * 3 + sizeof(struct module_info) 
-					+ 4 * FRAG_OVERHEAD);
+	#ifdef HP_MALLOC
+		update_stat((stat_var*)&memory_mods_stats[0].fragments, shm_block->total_fragments);
+	#else
+		update_stat((stat_var*)&memory_mods_stats[0].fragments, shm_block->fragments);
+	#endif
+
+	update_stat((stat_var*)&memory_mods_stats[0].memory_used, shm_block->used);
+	update_stat((stat_var*)&memory_mods_stats[0].real_used, shm_block->real_used);
 #endif
 
 

@@ -146,22 +146,24 @@ int alloc_group_stat(void) {
 
 	if(core_index) {
 		if(mem_free_idx - 1 == core_index) {
-			update_module_stats(size_prealoc + groups * sizeof(stat_val) * 3, size_prealoc +
-							groups * sizeof(stat_val) * 3 + FRAG_OVERHEAD * (groups * 3 + 1), groups * 3 + 1, core_index);
-			update_module_stats(-((groups - 1) * sizeof(struct module_info) + (groups - 1) * sizeof(stat_val) * 3),
-			-((groups - 1) * sizeof(struct module_info) + (groups - 1) * sizeof(stat_val) * 3 + FRAG_OVERHEAD * ((groups - 1) * 3 + 1)),
-			  -((groups - 1) * 3 + 1), 0);
+			#ifdef HP_MALLOC
+				update_module_stats(shm_block->used, shm_block->real_used, shm_block->total_fragments, core_index);
+			#else
+				update_module_stats(shm_block->used, shm_block->real_used, shm_block->fragments, core_index);
+			#endif
+			
+			#ifdef SHM_SHOW_DEFAULT_GROUP
+				reset_stat(&memory_mods_stats[0].fragments);
+				reset_stat(&memory_mods_stats[0].memory_used);
+				reset_stat(&memory_mods_stats[0].real_used);
+			#endif
 		} else {
 			update_module_stats(sizeof(stat_val) * 3 + sizeof(struct module_info), sizeof(stat_val) * 3 + sizeof(struct module_info) 
 							+ 3 * FRAG_OVERHEAD, 3, core_index);
 		}
 	} else {
-#ifdef SHM_SHOW_DEFAULT_GROUP
-	update_stat(&memory_mods_stats[0].fragments, 3);
-	update_stat(&memory_mods_stats[0].memory_used, sizeof(stat_val) * 3 + sizeof(struct module_info));
-	update_stat(&memory_mods_stats[0].real_used, sizeof(stat_val) * 3 + sizeof(struct module_info)
-							+ 3 * FRAG_OVERHEAD);
-#endif
+		update_module_stats(sizeof(stat_val) * 3 + sizeof(struct module_info), sizeof(stat_val) * 3 + 
+			sizeof(struct module_info) + 3 * FRAG_OVERHEAD, 3, 0);
 	}
 
 
