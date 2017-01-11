@@ -575,9 +575,9 @@ inline static void shm_free(void *_p)
 #ifdef HP_MALLOC
 	#ifdef SHM_EXTRA_STATS
 	if (get_stat_index(_p) !=  VAR_STAT(MOD_NAME)) {
-			update_module_stats(-frag_size(_p), -(frag_size(_p) + FRAG_OVERHEAD), -1, get_stat_index(_p);
+			update_module_stats(-frag_size(_p), -(frag_size(_p) + FRAG_OVERHEAD), -1, get_stat_index(_p));
 			LM_GEN1(memlog, "memory freed from diferent module than it was allocated, allocated in"
-				"module with index %ld, freed in module index %ld, at %s: %s %ld \n", get_stat_index(_p), VAR_STAT(MOD_NAME),
+				"module with index %ld, freed in module index %ld, at %s: %s %d \n", get_stat_index(_p), VAR_STAT(MOD_NAME),
 				__FILE__, __FUNCTION__, __LINE__);
 		} else {
 			update_module_stats(-frag_size(_p), -(frag_size(_p) + FRAG_OVERHEAD), -1, VAR_STAT(MOD_NAME));
