@@ -141,7 +141,7 @@ modparam("proto_hep", "hep_max_msg_chunks", 8)
 
    Example 1.4. Set hep_async parameter
 ...
-modparam("proto_bin", "hep_async", 0)
+modparam("proto_hep", "hep_async", 0)
 ...
 
 1.3.5. hep_async_max_postponed_chunks (integer)
