@@ -24,6 +24,15 @@
 #include "cgrates_common.h"
 #include "cgrates_acc.h"
 
+#define CGR_REF_CHG(_c, _n) \
+	do { \
+		lock_get(&_c->ref_lock); \
+		_c->ref_no+= _n; \
+		lock_release(&_c->ref_lock); \
+	} while(0)
+#define CGR_REF_INC(_c) CGR_REF_CHG(_c, 1)
+#define CGR_REF_DEC(_c) CGR_REF_CHG(_c, -1)
+
 struct dlg_binds cgr_dlgb;
 struct tm_binds cgr_tmb;
 
@@ -61,6 +70,9 @@ static inline struct cgr_acc_ctx *cgr_get_acc_ctx(void)
 		LM_DBG("new acc ctx=%p\n", ctx->acc);
 		ctxstr.len = sizeof(ctx->acc);
 		ctxstr.s = (char *)&ctx->acc;
+
+		ctx->acc->ref_no = 1;
+		lock_init(&ctx->acc->ref_lock);
 		if (cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr))
 			LM_ERR("cannot store context in dialog!\n");
 	} else {
@@ -120,18 +132,29 @@ static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx)
 	struct list_head *l;
 	struct list_head *t;
 
-	LM_DBG("release acc ctx=%p\n", ctx);
-	if (ctx->acc.s)
-		shm_free(ctx->acc.s);
-	if (ctx->dst.s)
-		shm_free(ctx->dst.s);
-	/* remove all elements */
-	if (ctx->kv_store) {
-		list_for_each_safe(l, t, ctx->kv_store)
-			cgr_free_kv(list_entry(l, struct cgr_kv, list));
-		shm_free(ctx->kv_store);
+	lock_get(&ctx->ref_lock);
+	ctx->ref_no--;
+
+	if (ctx->ref_no == 0) {
+		LM_DBG("release acc ctx=%p\n", ctx);
+		if (ctx->acc.s)
+			shm_free(ctx->acc.s);
+		if (ctx->dst.s)
+			shm_free(ctx->dst.s);
+		/* remove all elements */
+		if (ctx->kv_store) {
+			list_for_each_safe(l, t, ctx->kv_store)
+				cgr_free_kv(list_entry(l, struct cgr_kv, list));
+			shm_free(ctx->kv_store);
+		}
+		shm_free(ctx);
+	} else if (ctx->ref_no < 0) {
+		LM_BUG("ref=%d ctx=%p gone negative!\n", ctx->ref_no, ctx);
+	} else {
+		LM_DBG("ref=%d ctx=%p\n", ctx->ref_no, ctx);
 	}
-	shm_free(ctx);
+
+	lock_release(&ctx->ref_lock);
 }
 
 static int cgr_proc_start_acc_reply(struct cgr_conn *c, json_object *jobj,
@@ -392,7 +415,6 @@ static void cgr_cdr(struct sip_msg *msg, struct cgr_acc_ctx *ctx, str *callid)
 	}
 
 	cgr_handle_cmd(msg, jmsg, cgr_proc_cdr_acc_reply, ctx);
-	cgr_free_acc_ctx(ctx);
 }
 
 int w_cgr_acc(struct sip_msg* msg, char* acc_c, char *dst_c)
@@ -435,8 +457,14 @@ int w_cgr_acc(struct sip_msg* msg, char* acc_c, char *dst_c)
 	}
 
 	/* TODO: check if it was already engaged! */
-	if (cgr_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT|TMCB_ON_FAILURE|
-			TMCB_TRANS_CANCELLED, cgr_tmcb_func, ctx, cgr_tmcb_func_free)<=0) {
+	if (cgr_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT,
+			cgr_tmcb_func, ctx, cgr_tmcb_func_free)<=0) {
+		LM_ERR("cannot register tm callbacks\n");
+		goto internal_error;
+	}
+
+	if (cgr_tmb.register_tmcb( msg, 0, TMCB_ON_FAILURE|TMCB_TRANS_CANCELLED,
+			cgr_tmcb_func, ctx, NULL)<=0) {
 		LM_ERR("cannot register tm callbacks\n");
 		goto internal_error;
 	}
@@ -455,11 +483,7 @@ internal_error:
 
 static void cgr_tmcb_func_free(void *param)
 {
-	struct cgr_acc_ctx *ctx = (struct cgr_acc_ctx *)param;
-	/* only free in the EARLY state, because if ENGAGED, then dialog takes
-	 * care of it */
-	if (ctx->state == CGRS_EARLY)
-		cgr_free_acc_ctx(ctx);
+	cgr_free_acc_ctx((struct cgr_acc_ctx *)param);
 }
 
 static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps)
@@ -500,7 +524,7 @@ static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps)
 	if (cgr_handle_cmd(ps->req, jmsg, cgr_proc_start_acc_reply, dlg) < 0)
 		goto error;
 
-	ctx->state = CGRS_ENGAGED;
+	CGR_REF_INC(ctx);
 	return;
 error:
 	terminate_str.s = "CGRateS Accounting Denied";
@@ -524,6 +548,7 @@ static void cgr_cdr_cb(struct cell* t, int type, struct tmcb_params *ps)
 	ctx = *ps->param;
 
 	cgr_cdr(ps->req, ctx, &dlg->callid);
+	cgr_free_acc_ctx(ctx);
 }
 
 static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
@@ -560,11 +585,10 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 			goto free_ctx;
 		}
 		return;
-	/* for local transactions we generate CDRs here, since all the messages
-	 * have been processed */
 	} else if (t != NULL && cgr_tmb.t_is_local(_params->msg)) {
+		/* for local transactions we generate CDRs here, since all the messages
+		 * have been processed */
 		cgr_cdr(_params->msg, ctx, &dlg->callid);
-		return;
 	}
 free_ctx:
 	cgr_free_acc_ctx(ctx);

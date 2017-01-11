@@ -36,14 +36,10 @@
  */
 int w_cgr_acc(struct sip_msg* msg, char* acc_c, char *dst_c);
 
-enum cgr_acc_state {
-	CGRS_EARLY = 0,
-	CGRS_ENGAGED
-};
-
 struct cgr_acc_ctx {
 
-	enum cgr_acc_state state;
+	int ref_no;
+	gen_lock_t ref_lock;
 
 	/* all branches info */
 	str acc;
