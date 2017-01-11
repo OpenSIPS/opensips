@@ -31,12 +31,6 @@
 
 typedef int (*taddblind_f)( /*struct cell *t */ );
 
-void e2e_cancel( struct sip_msg *cancel_msg, struct cell *t_cancel,
-		struct cell *t_invite );
-
-int e2e_cancel_branch( struct sip_msg *cancel_msg, struct cell *t_cancel,
-		struct cell *t_invite, int branch );
-
 int add_blind_uac( );
 
 int t_replicate(struct sip_msg *p_msg, str *dst, int flags);
