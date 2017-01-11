@@ -24,7 +24,14 @@
 #ifndef _PARSE_SIPBODY
 #define _PARSE_SIPBODY
 
-typedef void (*free_parsed_part_function)(void *);
+struct body_part;
+
+typedef void* (*pb_malloc)(unsigned long);
+typedef void  (*pb_free)(void *);
+
+typedef void (*free_parsed_part_function)(void *, pb_free);
+typedef void* (*clone_parsed_part_function)(struct body_part*,
+		struct body_part*, struct sip_msg *, struct sip_msg* , pb_malloc);
 typedef int (*dump_part_function)(void *, struct sip_msg *, str *buf);
 
 
@@ -62,6 +69,7 @@ struct body_part{
 	 * This may be present for received and new parts too! */
 	void * parsed;
 	free_parsed_part_function free_parsed_f;
+	clone_parsed_part_function clone_parsed_f;
 
 	/* function to regenerate the whole body part (no headers) */
 	dump_part_function dump_f;
@@ -78,6 +86,7 @@ struct body_part{
 
 
 #define SIP_BODY_FLAG_NEW  (1<<0)
+#define SIP_BODY_FLAG_SHM  (1<<1)
 
 struct sip_msg_body {
 	/* original number of parts in the SIP body */

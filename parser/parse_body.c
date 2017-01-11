@@ -303,29 +303,6 @@ int parse_sip_body(struct sip_msg * msg)
 
 };
 
-void free_sip_body(struct sip_msg_body *body)
-{
-	struct body_part * p, *tmp;
-
-	if (body) {
-		/* the first part does not need to be freed */
-		p = &body->first;
-		if (p->parsed && p->free_parsed_f)
-			p->free_parsed_f( p->parsed );
-		/* following parts need to be also freed */
-		p = p->next;
-		while(p) {
-			tmp =  p;
-			p = p->next;
-			/* any need to free some parsed format of the part ? */
-			if (tmp->parsed && tmp->free_parsed_f)
-				tmp->free_parsed_f( tmp->parsed );
-			pkg_free(tmp);
-		}
-		pkg_free(body);
-	}
-}
-
 
 struct body_part* add_body_part(struct sip_msg *msg, str *mime_s, str *body)
 {
@@ -375,7 +352,7 @@ struct body_part* add_body_part(struct sip_msg *msg, str *mime_s, str *body)
 
 	part->flags = SIP_BODY_PART_FLAG_NEW;
 
-	/* body follows right after the part, in the same mem chunk */
+	/* mime follows right after the part, in the same mem chunk */
 	memcpy( m, mime_s->s, mime_s->len);
 	part->mime_s.s = m;
 	part->mime_s.len = mime_s->len;
@@ -405,4 +382,139 @@ int delete_body_part(struct sip_msg *msg, struct body_part *part)
 
 	return 0;
 }
+
+
+static void *pb_pkg_malloc(unsigned long size)
+{
+	return pkg_malloc(size);
+}
+
+static void pb_pkg_free(void *p)
+{
+	pkg_free(p);
+}
+
+static void *pb_shm_malloc(unsigned long size)
+{
+	return shm_malloc(size);
+}
+
+static void pb_shm_free(void *p)
+{
+	shm_free(p);
+}
+
+
+void free_sip_body(struct sip_msg_body *body)
+{
+	struct body_part * p, *tmp;
+	pb_free my_free;
+
+	if (body) {
+		my_free = (body->flags&SIP_BODY_FLAG_SHM) ? pb_shm_free : pb_pkg_free;
+		/* the first part does not need to be freed */
+		p = &body->first;
+		if (p->parsed && p->free_parsed_f)
+			p->free_parsed_f( p->parsed, my_free );
+		/* following parts need to be also freed */
+		p = p->next;
+		while(p) {
+			tmp =  p;
+			p = p->next;
+			/* any need to free some parsed format of the part ? */
+			if (tmp->parsed && tmp->free_parsed_f)
+				tmp->free_parsed_f( tmp->parsed, my_free );
+			my_free(tmp);
+		}
+		my_free(body);
+	}
+}
+
+
+/* Clones the sip_msg_body structure attached to a sip msg into shm or pkg
+ * memory.
+ * Parameters:
+ *    * src_msg - the original sip_msg containing the sip_msg_body to be cloned
+ *                It can be in shm or pkg and it is mandatory.
+ *    * dst_msg - the destination sip_msg - this is need only when cloning into
+ *                shm, as we need to translate to this new sip msg all the 
+ *                pointers (from our structure) into inside the buffer of the
+ *                sip msg; must be provided if cloning to shm;
+ *    * p_dst   - the holder where the clone will be returned if success.
+ *    * shared  - 1 if to SHM or 0 if to PKG
+ */
+int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
+									struct sip_msg_body **p_dst, int shared)
+{
+	struct sip_msg_body *dst, *src;
+	struct body_part *p, *np;
+	pb_malloc my_malloc;
+
+	if (src_msg==NULL || src_msg->body==NULL) {
+		dst = NULL;
+		return 0;
+	}
+
+	my_malloc = shared ? pb_shm_malloc : pb_pkg_malloc;
+	src = src_msg->body;
+
+	/* clone the SIP MSG BODY */ \
+	if ( (dst=my_malloc(sizeof(struct sip_msg_body)))==NULL ) {
+		LM_ERR("failed to allocate new sip_msg_body clone (shared=%d)\n",
+			shared);
+		goto err;
+	}
+	memcpy( dst, src, sizeof(struct sip_msg_body));
+	if (shared)
+		dst->flags |= SIP_BODY_FLAG_SHM;
+	/* update the links inside it */
+	if (dst_msg) { \
+		dst->body.s = translate_pointer(dst_msg->buf ,src_msg->buf,
+			src->body.s );
+		dst->boundary.s = translate_pointer(dst_msg->buf ,src_msg->buf,
+			src->boundary.s );
+	}
+	/* clone the body parts */
+	for( p=&src->first,np=NULL ; p ; p=p->next) {
+		if (np==NULL) { \
+			/* first body part */
+			np = &dst->first;
+		} else {
+			if ((np->next=my_malloc(sizeof(struct body_part)))==NULL){
+				LM_ERR("failed to allocate new body_part clone (shared=%d)\n",
+					shared);
+				goto err;
+			} \
+			np = np->next;
+		} \
+		memcpy( np, p, sizeof(struct body_part));
+		/* update the links inside it */
+		if (p->flags&SIP_BODY_PART_FLAG_NEW) {
+			/* links are pointing inside the body_part structure */
+			np->body.s = translate_pointer((char*)np ,(char*)p, p->body.s);
+			np->mime_s.s = translate_pointer((char*)np, (char*)p, p->mime_s.s);
+		} else {
+			/* links are pointing inside the sip msg body, so update only
+			 * a new sip msg was provided */ \
+			if (dst_msg) { \
+				np->body.s = translate_pointer( dst_msg->buf,
+					src_msg->buf, p->body.s );
+				np->mime_s.s = translate_pointer( dst_msg->buf,
+					src_msg->buf, p->mime_s.s );
+				np->all_data.s = translate_pointer( dst_msg->buf,
+						src_msg->buf, p->all_data.s );
+			}
+		}
+		if (p->parsed && p->clone_parsed_f)
+			np->parsed = p->clone_parsed_f(p, np, src_msg, dst_msg, my_malloc);
+	}
+
+	*p_dst = dst;
+	return 0;
+err:
+	*p_dst = NULL;
+	return -1;
+}
+
+
 
