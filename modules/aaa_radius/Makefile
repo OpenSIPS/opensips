@@ -24,20 +24,19 @@ ifneq ($(RADIUSCLIENT), FREERADIUS)
 ifeq ($(RADIUSCLIENT), RADIUSCLIENT)
 	DEFS+= -DRADIUSCLIENT
 	RADIUS_LIB=-lradiusclient-ng
-	RADIUS_PACKET=libradiusclient-ng
+	RADIUS_PACKET=libradiusclient-ng-dev
 endif
 else
 	DEFS+= -DFREERADIUS
 	RADIUS_LIB=-lfreeradius-client
-	RADIUS_PACKET=libfreeradius-client
+	RADIUS_PACKET=libfreeradius-client2
 endif
 else
 	DEFS+= -DRADCLI
 	RADIUS_LIB=-lradcli
-	RADIUS_PACKET=libradcli
+	RADIUS_PACKET=libradcli4
 endif
 
-$(warning Aici)
 ifeq ($(CROSS_COMPILE),)
 	BUILDER=$(shell if pkg-config --exists $(RADIUS_PACKET); then \
 		echo "pkg-config $(RADIUS_PACKET)"; \
