@@ -34,7 +34,7 @@ endif
 else
 	DEFS+= -DRADCLI
 	RADIUS_LIB=-lradcli
-	RADIUS_PACKET=libradcli4
+	RADIUS_PACKET=libradcli
 endif
 
 ifeq ($(CROSS_COMPILE),)
