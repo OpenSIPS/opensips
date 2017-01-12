@@ -251,14 +251,9 @@ int hash_mi_print(struct address_list **table, struct mi_node* rpl,
 	int i;
     struct address_list *node;
 
-	if (addf_mi_node_child(rpl, 0, 0, 0,
-				"%.*s\n",
-				pm->name.len, pm->name.s) == 0)
-		return -1;
-
-    for (i = 0; i < PERM_HASH_SIZE; i++)
-		for (node = table[i]; node; node=node->next)
-	    	if (addf_mi_node_child(rpl, 0, 0, 0,
+    for (i = 0; i < PERM_HASH_SIZE; i++) {
+		for (node = table[i]; node; node=node->next) {
+			if (addf_mi_node_child(rpl, 0, "dest", 4,
 				   "\t%4d <%s,%u, %u, %d, %s, %s>",
 				   i,
 				   ip_addr2a(node->ip),
@@ -268,6 +263,8 @@ int hash_mi_print(struct address_list **table, struct mi_node* rpl,
 				   node->pattern?node->pattern:"NULL",
 				   node->info?node->info:"NULL") == 0)
 					return -1;
+		}
+	}
     return 0;
 }
 
