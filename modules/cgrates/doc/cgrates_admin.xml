@@ -119,6 +119,18 @@
 		balancing logic between the servers, but this is a feature one of the CGRateS
 		component does starting with newer versions.
 	</para>
+	<para>
+		Each CGRateS engine has assigned up to 
+		<emphasis>max_async_connections</emphasis> connections, plus one
+		used for synchronous commands. If a connection fails (due to network
+		issues, or server issues), it is marked as closed and a new one is
+		tried. If all connections to that engine are down, then the entire
+		engine is marked as disabled, and a new engine is queried. After an
+		engine is down for more than <emphasis>retry_timeout</emphasis>
+		seconds, &osips; tries to connect once again to that server. If it
+		succeeds, that server is enabled. Otherwise, the other engines are
+		used, until none is available and the command fails.
+	</para>
 	</section>
 
 	<section>
@@ -220,6 +232,26 @@ modparam("cgrates", "bind_ip", "10.0.0.100")
 		<programlisting format="linespecific">
 ...
 modparam("cgrates", "max_async_connections", 20)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>retry_timeout</varname> (integer)</title>
+		<para>
+			The number of seconds after which a disabled connection/engine
+			is retried.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>60</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>retry_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cgrates", "retry_timeout", 120)
 ...
 </programlisting>
 		</example>

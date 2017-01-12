@@ -23,8 +23,8 @@
 #define _CGRATES_H_
 
 #define CGR_DEFAULT_PORT 2012			 /* default port of the CGR Engine */
-#define CGR_DEFAULT_CONN_TIMEOUT 500	/* default connection timeout (ms) */
 #define CGR_DEFAULT_MAX_CONNS 10		/* maximum number of conections per process */
+#define CGR_DEFAULT_RETRY_TIMEOUT 60	/* default timeout for re-connection */
 
 #define CGR_BUFFER_SIZE 4096			/* buffer read size */
 

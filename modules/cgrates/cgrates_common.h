@@ -74,6 +74,7 @@ struct cgr_conn {
 	int fd;
 	char flags;
 	enum cgrc_state state;
+	time_t disable_time;
 	struct cgr_engine *engine;
 	struct json_tokener *jtok;
 	struct list_head list;

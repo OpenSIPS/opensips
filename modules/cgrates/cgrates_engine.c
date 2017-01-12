@@ -30,9 +30,28 @@ struct cgr_conn *cgr_get_free_conn(struct cgr_engine *e)
 {
 	struct list_head *l;
 	struct cgr_conn *c;
+	time_t now = time(NULL);
+	int disabled_no = 0;
+
+	if (e->disable_time && e->disable_time + cgre_retry_tout > now)
+		return NULL;
 
 	list_for_each(l, &e->conns) {
 		c = list_entry(l, struct cgr_conn, list);
+		if (c->state == CGRC_CLOSED) {
+			if (c->disable_time + cgre_retry_tout < now) {
+				if (tcp_connect_blocking(c->fd, &c->engine->su.s, sockaddru_len(c->engine->su))<0){
+					LM_INFO("cannot connect to %.*s:%d\n", c->engine->host.len,
+							c->engine->host.s, c->engine->port);
+					c->disable_time = now;
+				} else {
+					c->state = CGRC_FREE;
+					e->disable_time = 0;
+					return c;
+				}
+			}
+			disabled_no++;
+		}
 		if (c->state == CGRC_FREE)
 			return c;
 	}
@@ -41,22 +60,46 @@ struct cgr_conn *cgr_get_free_conn(struct cgr_engine *e)
 	if (e->conns_no < cgrc_max_conns) {
 		if ((c = cgrc_new(e)) && cgrc_conn(c) >= 0) {
 			e->conns_no++;
+			e->disable_time = 0;
 			list_add(&c->list, &e->conns);
 			return c;
-		} else
-			LM_ERR("cannot create a new connection!\n");
+		}
+		LM_ERR("cannot create a new connection!\n");
 	} else {
 		LM_DBG("maximum async connections per process reached!\n");
+	}
+	if (disabled_no > 0) {
+		LM_INFO("Disabling CGRateS engine %.*s:%d for %ds\n",
+				e->host.len, e->host.s, e->port, cgre_retry_tout);
+		e->disable_time = now;
+		return NULL;
 	}
 	return cgr_get_default_conn(e);
 }
 
 struct cgr_conn *cgr_get_default_conn(struct cgr_engine *e)
 {
+	time_t now = time(NULL);
+
+	if (e->disable_time && e->disable_time + cgre_retry_tout > now)
+		return NULL;
+
 	/* use the default connection */
-	if (e->default_con && e->default_con->state == CGRC_FREE) {
+	if (!e->default_con)
+		return NULL;
+	if (e->default_con->state == CGRC_FREE) {
 		LM_DBG("using default connection - running in sync mode!\n");
 		return e->default_con;
+	} else if (e->default_con->disable_time + cgre_retry_tout < now) {
+		if (tcp_connect_blocking(e->default_con->fd, &e->su.s, sockaddru_len(e->su))<0){
+				LM_INFO("cannot connect to %.*s:%d\n", e->host.len,
+						e->host.s, e->port);
+				e->default_con->disable_time = now;
+			} else {
+				e->default_con->state = CGRC_FREE;
+				e->disable_time = 0;
+				return e->default_con;
+			}
 	}
 	return NULL;
 }
@@ -88,6 +131,7 @@ error:
 void cgrc_close(struct cgr_conn *c, int release)
 {
 	c->state = CGRC_CLOSED;
+	c->disable_time = time(NULL);
 	/* clean whatever was left in the buffer */
 	json_tokener_reset(c->jtok);
 	if (release) {

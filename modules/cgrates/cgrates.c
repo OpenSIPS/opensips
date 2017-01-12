@@ -41,7 +41,7 @@
 #include "cgrates_common.h"
 #include "cgrates_engine.h"
 
-int cgre_conn_tout = CGR_DEFAULT_CONN_TIMEOUT;
+int cgre_retry_tout = CGR_DEFAULT_RETRY_TIMEOUT;
 int cgrc_max_conns = CGR_DEFAULT_MAX_CONNS;
 str cgre_bind_ip;
 
@@ -110,6 +110,7 @@ static param_export_t params[] = {
 		(void*)cgrates_set_engine },
 	{"bind_ip", STR_PARAM, &cgre_bind_ip.s },
 	{"max_async_connections", INT_PARAM, &cgrc_max_conns },
+	{"retry_timeout", INT_PARAM, &cgre_retry_tout },
 	{0, 0, 0}
 };
 
@@ -213,8 +214,8 @@ static int fixup_cgrates_acc(void ** param, int param_no)
 
 static int mod_init(void)
 {
-	if (cgre_conn_tout < 0) {
-		LM_ERR("Invalid connection timeout to CGR engine\n");
+	if (cgre_retry_tout < 0) {
+		LM_ERR("Invalid retry connection timeout\n");
 		return -1;
 	}
 
