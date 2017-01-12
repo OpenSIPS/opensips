@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Razvan Crainea <razvan@opensips.org>
+ * Copyright (C) 2017 Răzvan Crainea <razvan@opensips.org>
  *
  * This file is part of opensips, a free SIP server.
  *
