@@ -38,6 +38,10 @@ Razvan Crainea
               1.8.1. $cgr(name)
               1.8.2. $cgrret
 
+        1.9. Exported Asynchronous Functions
+
+              1.9.1. cgrates_auth([account[, destination]])
+
    List of Examples
 
    1.1. Set cgrates_engine parameter
@@ -47,6 +51,7 @@ Razvan Crainea
    1.5. cgrates_auth() usage
    1.6. $cgr(name) usage
    1.7. $cgrret usage
+   1.8. async cgrates_auth usage
 
 Chapter 1. Admin Guide
 
@@ -238,7 +243,7 @@ modparam("cgrates", "max_async_connections", 20)
 
 1.7.2.  cgrates_auth([account[, destination]])
 
-   cgrates_auth() does call authentication through using the
+   cgrates_auth() does call authorization through using the
    CGRateS engine.
 
    Meaning of the parameters is as follows:
@@ -282,6 +287,14 @@ modparam("cgrates", "max_async_connections", 20)
    CGRateS command. Each name-value pair will be encoded as a
    string - value attribute in the JSON message sent to CGRateS.
 
+   The name-values pairs are stored in the transaction (if tm
+   module is loaded). Therefore the values are accessible in the
+   reply.
+
+   When the cgrates_acc() function is called, all the name-value
+   pairs are moved in the dialog. Therefore the values will be
+   accessible along the dialog's lifetime.
+
    Example 1.6. $cgr(name) usage
                 ...
                 if (!has_totag()) {
@@ -306,3 +319,46 @@ ounting
                 cgrates_auth("$fU", "$rU");
                 xlog("Call is allowed to run $cgrret seconds\n");
                 ...
+
+1.9. Exported Asynchronous Functions
+
+1.9.1.  cgrates_auth([account[, destination]])
+
+   Does the CGRateS authorization call in an asynchronous way.
+   Script execution is suspended until the CGRateS engine sends
+   the reply back.
+
+   Meaning of the parameters is as follows:
+     * account - the account that will be checked in CGrateS. This
+       parameter is optional, and if not specified, the user in
+       the From header is used.
+     * destination - the dialled number. Optional parameter, if
+       not present the request URI user is used.
+
+   The function can return the following values:
+     * 1 - successful call - the CGRateS account is allowed to
+       make the call.
+     * -1 - OpenSIPS returned an internal error (i.e. server is
+       out of memory).
+     * -2 - the CGRateS engine returned error.
+     * -3 - No suitable CGRateS server found. message type (not an
+       initial INVITE).
+     * -4 - the SIP message is invalid: either it has missing
+       headers, or it is not an initial INVITE.
+     * -5 - CGRateS returned an invalid message.
+
+   Example 1.8. async cgrates_auth usage
+route {
+        ...
+        async(cgrates_auth("$fU", "$rU"), auth_reply);
+}
+
+route [auth_reply]
+{
+        if ($rc < 0) {
+                xlog("Call not authorized: code=$cgrret!\n");
+                send_reply("403", "Forbidden");
+                exit;
+        }
+        ...
+}

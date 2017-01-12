@@ -316,7 +316,7 @@ modparam("cgrates", "max_async_connections", 20)
 			<function moreinfo="none">cgrates_auth([account[, destination]])</function>
 		</title>
 		<para>
-			<function moreinfo="none">cgrates_auth()</function> does call authentication
+			<function moreinfo="none">cgrates_auth()</function> does call authorization
 			through using the CGRateS engine.
 		</para>
 
@@ -405,6 +405,17 @@ modparam("cgrates", "max_async_connections", 20)
 				a <emphasis>string - value</emphasis> attribute in the
 				JSON message sent to CGRateS.
 			</para>
+			<para>
+				The name-values pairs are stored in the transaction (if
+				tm module is loaded). Therefore the values are accessible
+				in the reply.
+			</para>
+			<para>
+				When the <emphasis>cgrates_acc()</emphasis> function is
+				called, all the name-value pairs are moved in the dialog.
+				Therefore the values will be accessible along the dialog's
+				lifetime.
+			</para>
 		<example>
 				<title>$cgr(name) usage</title>
 				<programlisting format="linespecific">
@@ -438,6 +449,88 @@ modparam("cgrates", "max_async_connections", 20)
 		</example>
 		</section>
 
+	</section>
+
+	<section>
+	<title>Exported Asynchronous Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">cgrates_auth([account[, destination]])</function>
+		</title>
+		<para>
+			Does the CGRateS authorization call in an asynchronous way. Script
+			execution is suspended until the CGRateS engine sends the reply back.
+		</para>
+		<para>
+			Meaning of the parameters is as follows:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>account</emphasis> - the account that will be checked
+				in CGrateS. This parameter is optional, and if not specified,
+				the user in the From header is used.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>destination</emphasis> - the dialled number. Optional
+				parameter, if not present the request URI user is used.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			The function can return the following values:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>1</emphasis> - successful call - the CGRateS account
+				is allowed to make the call.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-1</emphasis> - &osips; returned an internal error
+				(i.e. server is out of memory).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2</emphasis> - the CGRateS engine returned error.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3</emphasis> - No suitable CGRateS server found.
+				message type (not an initial INVITE).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-4</emphasis> - the SIP message is invalid: either
+				it has missing headers, or it is not an initial INVITE.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-5</emphasis> - CGRateS returned an invalid message.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<example>
+		<title><function moreinfo="none">async cgrates_auth</function> usage</title>
+		<programlisting format="linespecific">
+route {
+	...
+	async(cgrates_auth("$fU", "$rU"), auth_reply);
+}
+
+route [auth_reply]
+{
+	if ($rc &lt; 0) {
+		xlog("Call not authorized: code=$cgrret!\n");
+		send_reply("403", "Forbidden");
+		exit;
+	}
+	...
+}
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 </chapter>
