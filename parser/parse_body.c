@@ -507,6 +507,8 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 		}
 		if (p->parsed && p->clone_parsed_f)
 			np->parsed = p->clone_parsed_f(p, np, src_msg, dst_msg, my_malloc);
+		else
+			np->parsed = NULL;
 	}
 
 	*p_dst = dst;
