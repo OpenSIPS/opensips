@@ -2522,7 +2522,12 @@ static int traced_protos_no=0;
 
 int get_trace_types(void)
 {
-	trace_info_p info = GET_SIPTRACE_CONTEXT;
+	trace_info_p info;
+
+	if (sl_ctx_idx < 0)
+		return -1;
+
+	info = GET_SIPTRACE_CONTEXT;
 	if (info==NULL)
 		return -1;
 
