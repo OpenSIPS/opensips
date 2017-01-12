@@ -161,6 +161,14 @@ This module implements a CPL (Call Processing Language) interpreter.
 Support for uploading/downloading/removing scripts via SIP REGISTER method
 is present.
 
+%package  cgrates
+Summary:  CGRateS connector
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description	cgrates
+This module implements a connector to the CGRateS billing/rating engine.
+
 %package  db_berkeley
 Summary:  Berkeley DB backend support
 Group:    System Environment/Daemons
@@ -1176,6 +1184,10 @@ fi
 %files cpl_c
 %{_libdir}/opensips/modules/cpl_c.so
 %doc docdir/README.cpl_c
+
+%files cgrates
+%{_libdir}/opensips/modules/cgrates.so
+%doc docdir/README.cgrates
 
 %files db_berkeley
 %{_sbindir}/bdb_recover
