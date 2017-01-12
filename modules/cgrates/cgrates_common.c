@@ -93,50 +93,6 @@ struct cgr_kv *cgr_new_const_kv(const char *key)
 	return cgr_new_real_kv((char *)key, strlen(key), 0);
 }
 
-/* TODO: delete me! */
-int cgr_push_kv_str(struct list_head *list, const char *key,
-		str *value)
-{
-	str skey;
-	
-	skey.s = (char *)key;
-	skey.len = strlen(key);
-	/* XXX: note that for now we do not need to duplicate the key's value */
-	//struct cgr_kv *kv = cgr_new_kv(skey, 0);
-	struct cgr_kv *kv = cgr_new_kv(skey);
-	if (!kv)
-		return -1;
-	kv->value.s.s = pkg_malloc(value->len);
-	if (!kv->value.s.s) {
-		LM_ERR("cannot allocate memory for %s value\n", key);
-		return -1;
-	}
-	kv->flags |= CGR_KVF_TYPE_STR;
-	kv->value.s.len = value->len;
-	memcpy(kv->value.s.s, value->s, value->len);
-	list_add(&kv->list, list);
-	return 0;
-}
-
-/* TODO: delete me! */
-int cgr_push_kv_int(struct list_head *list, const char *key,
-		int value)
-{
-	str skey;
-	
-	skey.s = (char *)key;
-	skey.len = strlen(key);
-	/* XXX: note that for now we do not need to duplicate the key's value */
-	//struct cgr_kv *kv = cgr_new_kv(skey, 0);
-	struct cgr_kv *kv = cgr_new_kv(skey);
-	if (!kv)
-		return -1;
-	kv->flags |= CGR_KVF_TYPE_INT;
-	kv->value.n = value;
-	list_add(&kv->list, list);
-	return 0;
-}
-
 void cgr_free_kv_val(struct cgr_kv *kv)
 {
 	if ((kv->flags & CGR_KVF_TYPE_STR) && kv->value.s.s) {
@@ -154,59 +110,6 @@ void cgr_free_kv(struct cgr_kv *kv)
 	cgr_free_kv_val(kv); /* it's safe to call this twice */
 	shm_free(kv);
 }
-
-static inline struct cgr_kv *cgr_dup_kvlist_shm_kv(struct cgr_kv *kv)
-{
-	struct cgr_kv *newkv;
-	int len = kv->key.len + 1;
-
-	if (kv->flags & CGR_KVF_TYPE_STR)
-		len += kv->value.s.len;
-
-	newkv = shm_malloc(sizeof(*newkv) + len);
-	if (!newkv) {
-		LM_ERR("no more shm memory!\n");
-		return NULL;
-	}
-	newkv->flags = kv->flags | CGR_KVF_TYPE_SHM;
-	newkv->key.s = (char *)(newkv + 1);
-	newkv->key.len = kv->key.len;
-	memcpy(newkv->key.s, kv->key.s, newkv->key.len);
-	newkv->key.s[newkv->key.len] = 0;
-
-	if (kv->flags & CGR_KVF_TYPE_STR) {
-		newkv->value.s.s = newkv->key.s + newkv->key.len + 1;
-		newkv->value.s.len = kv->value.s.len;
-		memcpy(newkv->value.s.s, kv->value.s.s, newkv->value.s.len);
-	}
-
-	return newkv;
-}
-
-int cgr_dup_kvlist_shm(struct list_head *from, struct list_head *to)
-{
-	struct list_head *l, *lt;
-	struct cgr_kv *kv, *newkv;
-
-	INIT_LIST_HEAD(to);
-	list_for_each(l, from) {
-		kv = list_entry(l, struct cgr_kv, list);
-		newkv = cgr_dup_kvlist_shm_kv(kv);
-		if (!newkv) {
-			LM_ERR("cannot dup kv!\n");
-			goto error;
-		}
-		list_add_tail(&newkv->list, to);
-	}
-
-	return 0;
-error:
-	/* remove whatever we've managed to add */
-	list_for_each_safe(l, lt, to)
-		cgr_free_kv(list_entry(l, struct cgr_kv, list));
-	return -1;
-}
-
 
 /* message builder */
 
@@ -277,25 +180,6 @@ struct cgr_msg *cgr_get_generic_msg(char *method, struct list_head *list)
 	JSON_CHECK(cmsg.params = json_object_new_object(), "params object");
 	json_object_array_add(jarr, cmsg.params);
 
-#if 0
-	/* TODO: delete me! */
-	/* add all the values in the context */
-	if (prio_list) {
-		list_for_each(l, prio_list) {
-			kv = list_entry(l, struct cgr_kv, list);
-			if (kv->flags & CGR_KVF_TYPE_NULL) {
-				jtmp = NULL;
-			} else if (kv->flags & CGR_KVF_TYPE_INT) {
-				jtmp = json_object_new_int(kv->value.n);
-				JSON_CHECK(jtmp, kv->key.s);
-			} else {
-				jtmp = json_object_new_string_len(kv->value.s.s, kv->value.s.len);
-				JSON_CHECK(jtmp, kv->key.s);
-			}
-			json_object_object_add(jobj, kv->key.s, jtmp);
-		}
-	}
-#endif
 	if (list) {
 		list_for_each(l, list) {
 			kv = list_entry(l, struct cgr_kv, list);
@@ -390,25 +274,6 @@ struct cgr_ctx *cgr_get_ctx(void)
 	LM_DBG("new ctx=%p\n", ctx);
 	return ctx;
 }
-
-/* TODO: delete */
-#if 0
-struct cgr_ctx *cgr_ctx_new(void)
-{
-	struct cgr_ctx *ctx = CGR_GET_CTX();
-	if (!ctx) {
-		ctx = pkg_malloc(sizeof *ctx);
-		if (!ctx) {
-			LM_ERR("out of pkg memory\n");
-			return NULL;
-		}
-		memset(ctx, 0, sizeof *ctx);
-		INIT_LIST_HEAD(&ctx->kv_store);
-		CGR_PUT_CTX(ctx);
-	}
-	return ctx;
-}
-#endif
 
 #define CGR_RESET_REPLY_CTX() \
 	do { \

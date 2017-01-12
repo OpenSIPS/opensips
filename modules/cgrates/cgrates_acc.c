@@ -501,7 +501,6 @@ static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps)
 	if (!is_invite(t) || has_totag(ps->req))
 		return;
 
-	/* TODO: determine context */
 	ctx = (struct cgr_acc_ctx *)*ps->param;
 	if (type & (TMCB_ON_FAILURE|TMCB_TRANS_CANCELLED)) {
 		if (ctx->flags & CGRF_DO_MISSED && ctx->flags & CGRF_DO_CDR)

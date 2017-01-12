@@ -23,8 +23,6 @@
  * engage per branch
  * drop accounting for all branches
  * drop accounting for a specific branch
- * close call
- * generate CDR
  * add multi-leg values
  * raw commands
  */
@@ -47,11 +45,6 @@ int cgre_conn_tout = CGR_DEFAULT_CONN_TIMEOUT;
 int cgrc_max_conns = CGR_DEFAULT_MAX_CONNS;
 str cgre_bind_ip;
 
-#if 0
-static int w_async_cgr_engage(struct sip_msg* msg,
-		async_resume_module **resume_f, void **resume_p,
-		char* acc_c, char *dst_c);
-#endif
 static int fixup_cgrates(void ** param, int param_no);
 static int fixup_cgrates_acc(void ** param, int param_no);
 static int mod_init(void);
@@ -59,21 +52,14 @@ static void mod_destroy(void);
 static int child_init(int rank);
 static int cgrates_set_engine(modparam_t type, void * val);
 
-#define CGRB_ALL_BRANCHES ((unsigned int)-1)
-
 struct cgr_param {
 	int wait_for_reply;
 	struct sip_msg *msg;
 	struct cgr_conn *c;
 };
-
-#define CGRF_ENGAGED	0x1
-
 int cgr_ctx_idx;
 int cgr_ctx_local_idx;
 int cgr_tm_ctx_idx = -1;
-// TODO static inline struct cgr_acc_ctx *cgr_get_acc_branch(void);
-
 static int cgrates_async_resume_repl(int fd, struct sip_msg *msg, void *param);
 
 static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
@@ -297,232 +283,6 @@ static void mod_destroy(void)
 	return;
 }
 
-/*
-static json_object *cgr_get_start_msg(struct sip_msg *msg, str *acc, str *dst)
-{
-	struct dlg_cell *dlg = cgr_dlgb.get_dlg();
-	if (!dlg) {
-		LM_ERR("Cannot retrieve the dialog information\n");
-		return NULL;
-	}
-	return cgr_get_generic_msg("SMGenericV1.InitiateSession", NULL, 1);
-}
-*/
-
-#if 0
-static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst)
-{
-	struct dlg_cell *dlg = cgr_dlgb.get_dlg();
-	struct list_head *hlist, *l, *lt;
-	struct cgr_kv *kv, *newkv;
-	struct cgr_ctx *ctx;
-	struct cell *t;
-	int_str val;
-
-	if (!dlg) {
-		LM_ERR("Cannot retrieve the dialog information\n");
-		return NULL;
-	}
-	if (!(t = cgr_tmb.t_gett())) {
-		if (cgr_tmb.t_newtran(msg) < 0 || !(t = cgr_tmb.t_gett())) {
-			LM_ERR("cannot create transaction!\n");
-			return NULL;
-		}
-	}
-	hlist = CGR_GET_SHM_CTX(t);
-	if (!hlist) {
-		hlist = shm_malloc(sizeof *hlist);
-		if (!hlist) {
-			LM_ERR("out of shm memory!\n");
-			return NULL;
-		}
-		INIT_LIST_HEAD(hlist);
-	}
-	if ((ctx = CGR_GET_CTX()) != NULL) {
-		list_for_each(l, &ctx->kv_store) {
-			kv = list_entry(l, struct cgr_kv, list);
-			newkv = cgr_dup_kvlist_shm_kv(kv);
-			if (!newkv) {
-				LM_ERR("cannot duplicate args list\n");
-				goto error;
-			}
-			list_add(&newkv->list, hlist);
-		}
-	}
-
-	/* OriginID */
-	if(msg->callid==NULL && ((parse_headers(msg, HDR_CALLID_F, 0)==-1) ||
-			(msg->callid==NULL)) ) {
-		LM_ERR("Cannot get callid of the message!\n");
-		goto error;
-	}
-	val.s = msg->callid->body;
-	if (cgr_replace_shm_kv(hlist, "OriginID", CGR_KVF_TYPE_STR,
-			&val) < 0) {
-		LM_ERR("Cannot add OriginID header\n");
-		goto error;
-	}
-
-	val.s = *acc;
-	if (cgr_replace_shm_kv(hlist, "Account", CGR_KVF_TYPE_STR,
-			&val) < 0) {
-		LM_ERR("Cannot add Account header\n");
-		goto error;
-	}
-
-	val.s = *dst;
-	if (cgr_replace_shm_kv(hlist, "Destination", CGR_KVF_TYPE_STR,
-			&val) < 0) {
-		LM_ERR("Cannot add Destination header\n");
-		goto error;
-	}
-
-#if 0
-	val.n = dlg->h_entry;
-	if (cgr_replace_shm_kv(hlist, "DialogEntry", CGR_KVF_TYPE_INT,
-			&val) < 0) {
-		LM_ERR("Cannot add DialogEntry header\n");
-		goto error;
-	}
-	val.n = dlg->h_id;
-	if (cgr_replace_shm_kv(hlist, "DialogId", CGR_KVF_TYPE_INT,
-			&val) < 0) {
-		LM_ERR("Cannot add DialogId header\n");
-		goto error;
-	}
-	CGR_PUT_SHM_CTX(t, hlist);
-#endif
-	
-	return cgr_get_generic_msg("SMGenericV1.MaxUsage", hlist, 0);
-error:
-	list_for_each_safe(l, lt, hlist)
-		cgr_free_kv(list_entry(l, struct cgr_kv, list));
-	shm_free(hlist);
-	return NULL;
-}
-#endif
-
-
-static inline int async_cgr_handle_cmd(struct sip_msg *msg,
-		async_resume_module **resume_f, void **resume_p, str *smsg)
-{
-	struct list_head *l;
-	struct cgr_engine *e;
-	struct cgr_conn *c;
-	struct cgr_param *cp = NULL;
-	int ret = 1;
-	cp = pkg_malloc(sizeof *cp);
-	if (!cp) {
-		LM_ERR("out of pkg memory\n");
-		return -2;
-	}
-	memset(cp, 0, sizeof *cp);
-
-	/* reset the error */
-	// TODO: CGR_RESET_REPLY_CTX();
-
-	/* connect to all servers */
-	/* go through each server and initialize the state */
-	list_for_each(l, &cgrates_engines) {
-		e = list_entry(l, struct cgr_engine, list);
-		if (!(c = cgr_get_free_conn(e)))
-			continue;
-		/* found a free connection - build the buffer */
-		cp->c = c;
-		cp->wait_for_reply = 1;
-		if (cgrc_send(c, smsg) < 0) {
-			cgrc_close(c, CGRC_IS_LISTEN(c));
-			continue;
-		}
-		/* message succesfully sent - now fetch the reply */
-		if (CGRC_IS_DEFAULT(c)) {
-			cp->msg = msg;
-			do {
-				ret = cgrc_async_read(c, NULL, cp);
-			} while(async_status == ASYNC_CONTINUE);
-			pkg_free(cp);
-			if (async_status == ASYNC_DONE)
-				/* do the reading in sync mode */
-				async_status = ASYNC_SYNC;
-			else
-				return -3;
-		} else {
-			c->state = CGRC_USED;
-			if (CGRC_IS_LISTEN(c)) {
-				/* remove the fd from the reactor because it will be added at the end of
-				 * this function */
-				reactor_del_reader(c->fd, -1, 0);
-				CGRC_UNSET_LISTEN(c);
-			}
-			async_status = c->fd;
-			*resume_f = cgrates_async_resume_repl;
-			*resume_p = cp;
-		}
-		return ret;
-	}
-	async_status = ASYNC_NO_IO;
-	pkg_free(cp);
-	return -3;
-}
-
-#if 0
-static int w_async_cgr_engage(struct sip_msg* msg,
-		async_resume_module **resume_f, void **resume_p,
-		char* acc_c, char *dst_c)
-{
-	str acc_str;
-	str dst;
-	json_object *jmsg = NULL;
-	str smsg;
-	int ret;
-
-	if (msg->REQ_METHOD != METHOD_INVITE || has_totag(msg)) {
-		LM_DBG("cgrates not engaged on initial INVITE\n");
-		return -4;
-	}
-
-	if (acc_c && fixup_get_svalue(msg, (gparam_p)acc_c, &acc_str) < 0) {
-		LM_ERR("failed fo fetch account's name\n");
-		return -2;
-	}
-
-	if (dst_c) {
-		if (fixup_get_svalue(msg, (gparam_p)dst_c, &dst) < 0) {
-			LM_ERR("failed fo fetch the destination\n");
-			return -2;
-		}
-	} else if (get_request_user(msg) == 0) {
-		LM_ERR("failed to get destination from R-URI\n");
-		return -4;
-	}
-
-	/* create the dialog if does not exist yet */
-	if (!cgr_dlgb.get_dlg() && cgr_dlgb.create_dlg(msg, 0) < 0) {
-		LM_ERR("error creating new dialog\n");
-		return -2;
-	}
-
-	if (cgr_tmb.register_tmcb( msg, 0, TMCB_ON_FAILURE|TMCB_RESPONSE_OUT,
-			cgr_tmcb_func, 0, 0)<=0) {
-		LM_ERR("cannot register tm callbacks\n");
-		return -2;
-	}
-
-	jmsg = cgr_get_auth_msg(msg, &acc_str, &dst);
-	if (!jmsg) {
-		LM_ERR("cannot build the json to send to cgrates\n");
-		return -2;
-	}
-	smsg.s = (char *)json_object_to_json_string(jmsg);
-	smsg.len = strlen(smsg.s);
-
-	ret = async_cgr_handle_cmd(msg, resume_f, resume_p, &smsg);
-	json_object_put(jmsg);
-
-	return ret;
-}
-#endif
-
 static int cgrates_set_engine(modparam_t type, void * val)
 {
 	char *p;
@@ -581,30 +341,6 @@ static int cgrates_set_engine(modparam_t type, void * val)
 	list_add_tail(&e->list, &cgrates_engines);
 
 	return 0;
-}
-
-
-static int cgrates_async_resume_repl(int fd,
-		struct sip_msg *msg, void *param)
-{
-	int ret;
-	struct cgr_param *cp = (struct cgr_param *)param;
-	struct cgr_conn *c = cp->c;
-
-	cp->msg = msg;
-
-	ret = cgrc_async_read(c, NULL, cp);
-
-	if (async_status == ASYNC_DONE) {
-		/* processing done - remove the FD and replace the handler */
-		async_status = ASYNC_DONE_NO_IO;
-		reactor_del_reader(c->fd, -1, 0);
-		if (cgrc_start_listen(c) < 0) {
-			LM_CRIT("cannot re-register fd for cgrates events!\n");
-			return -1;
-		}
-	}
-	return ret;
 }
 
 
