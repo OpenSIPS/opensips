@@ -64,10 +64,10 @@ static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst)
 		LM_ERR("Cannot get callid of the message!\n");
 		return NULL;
 	}
-	ctx = CGR_GET_CTX();
+	ctx = cgr_try_get_ctx();
 	stime.s = int2str(time(NULL), &stime.len);
 
-	cmsg = cgr_get_generic_msg("SMGenericV1.MaxUsage", ctx->kv_store);
+	cmsg = cgr_get_generic_msg("SMGenericV1.MaxUsage", ctx ? ctx->kv_store : NULL);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
@@ -75,7 +75,7 @@ static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst)
 
 	/* OriginID */
 	/* if origin was not added from script, add it now */
-	if (ctx && !cgr_get_const_kv(ctx->kv_store, "OriginID") &&
+	if (((ctx && !cgr_get_const_kv(ctx->kv_store, "OriginID")) || !ctx) &&
 			cgr_msg_push_str(cmsg, "OriginID", &msg->callid->body) < 0) {
 		LM_ERR("cannot push OriginID!\n");
 		goto error;
@@ -124,4 +124,26 @@ int w_cgr_auth(struct sip_msg* msg, char* acc_c, char *dst_c)
 	}
 
 	return cgr_handle_cmd(msg, jmsg, cgr_proc_auth_reply, NULL);
+}
+
+int w_acgr_auth(struct sip_msg* msg, async_resume_module **resume_f,
+		void **resume_p, char* acc_c, char *dst_c)
+{
+	str *acc;
+	str *dst;
+	json_object *jmsg = NULL;
+
+	if ((acc = cgr_get_acc(msg, acc_c)) == NULL)
+		return -4;
+	if ((dst = cgr_get_dst(msg, dst_c)) == NULL)
+		return -4;
+
+	jmsg = cgr_get_auth_msg(msg, acc, dst);
+	if (!jmsg) {
+		LM_ERR("cannot build the json to send to cgrates\n");
+		return -1;
+	}
+
+	return cgr_handle_async_cmd(msg, jmsg, cgr_proc_auth_reply, NULL,
+			resume_f, resume_p);
 }

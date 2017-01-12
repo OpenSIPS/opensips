@@ -34,7 +34,6 @@
 #include "../../mod_fix.h"
 #include "../../lib/list.h"
 #include "../../resolve.h"
-#include "../../reactor_defs.h"
 #include "cgrates.h"
 #include "cgrates_acc.h"
 #include "cgrates_auth.h"
@@ -52,15 +51,9 @@ static void mod_destroy(void);
 static int child_init(int rank);
 static int cgrates_set_engine(modparam_t type, void * val);
 
-struct cgr_param {
-	int wait_for_reply;
-	struct sip_msg *msg;
-	struct cgr_conn *c;
-};
 int cgr_ctx_idx;
 int cgr_ctx_local_idx;
 int cgr_tm_ctx_idx = -1;
-static int cgrates_async_resume_repl(int fd, struct sip_msg *msg, void *param);
 
 static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 		int op, pv_value_t *val);
@@ -102,10 +95,9 @@ static pv_export_t pvars[] = {
 
 
 static acmd_export_t acmds[] = {
-	/*
-	{"cgrates_engage",  (acmd_function)w_async_cgr_engage, 1,
-		fixup_cgrates},
-		*/
+	{"cgrates_auth",  (acmd_function)w_acgr_auth, 0, fixup_cgrates},
+	{"cgrates_auth",  (acmd_function)w_acgr_auth, 1, fixup_cgrates},
+	{"cgrates_auth",  (acmd_function)w_acgr_auth, 2, fixup_cgrates},
 	{0, 0, 0, 0, }
 };
 
@@ -153,10 +145,8 @@ struct module_exports exports = {
 
 static int fixup_cgrates(void ** param, int param_no)
 {
-	if (param_no > 0 && param_no < 5)
+	if (param_no == 1 || param_no == 2)
 		return fixup_spve(param);
-	if (param_no == 5)
-		return fixup_pvar(param);
 	LM_CRIT("Unknown parameter number %d\n", param_no);
 	return E_UNSPEC;
 }
@@ -234,7 +224,7 @@ static int mod_init(void)
 	if (load_tm_api(&cgr_tmb)!=0) {
 		LM_INFO("TM not loaded- cannot store variables in transaction!\n");
 	} else {
-		cgr_tm_ctx_idx = cgr_tmb.t_ctx_register_ptr(NULL);
+		cgr_tm_ctx_idx = cgr_tmb.t_ctx_register_ptr(cgr_free_ctx);
 		/* register a routine to move the pointer in tm when the transaction
 		 * is created! */
 		if (cgr_tmb.register_tmcb(0, 0, TMCB_REQUEST_IN, cgr_move_ctx, 0, 0)<=0) {

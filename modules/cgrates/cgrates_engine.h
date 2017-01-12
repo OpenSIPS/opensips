@@ -59,6 +59,7 @@ int cgrc_start_listen(struct cgr_conn *c);
 void cgrc_close(struct cgr_conn *c, int remove);
 struct cgr_conn *cgrc_new(struct cgr_engine *e);
 struct cgr_conn *cgr_get_free_conn(struct cgr_engine *e);
+struct cgr_conn *cgr_get_default_conn(struct cgr_engine *e);
 
 #endif /* _CGRATES_ENGINE_H_ */
 

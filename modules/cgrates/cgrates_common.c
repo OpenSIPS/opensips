@@ -27,6 +27,7 @@
 #include "../../mod_fix.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_uri.h"
+#include "../../reactor_defs.h"
 #include "cgrates.h"
 #include "cgrates_acc.h"
 #include "cgrates_common.h"
@@ -234,19 +235,21 @@ struct cgr_ctx *cgr_try_get_ctx(void)
 struct cgr_ctx *cgr_get_ctx(void)
 {
 	struct cell* t;
-	struct cgr_ctx *ctx = CGR_GET_CTX();
+	struct cgr_ctx *ctx = cgr_try_get_ctx();
 
 	t = cgr_tmb.t_gett ? cgr_tmb.t_gett() : NULL;
 	t = t==T_UNDEFINED ? NULL : t;
 
 	if (ctx) {
 		/* if it is local, and we have transaction, move it in transaction */
-		if (t) {
+		if (t && CGR_GET_CTX()) {
+			LM_DBG("ctx=%p moved in transaction\n", ctx);
 			CGR_PUT_TM_CTX(t, ctx);
 			CGR_PUT_CTX(NULL);
 		}
 		return ctx;
 	}
+
 
 	ctx = shm_malloc(sizeof *ctx);
 	if (!ctx) {
@@ -316,7 +319,7 @@ int cgr_handle_cmd(struct sip_msg *msg, json_object *jmsg,
 	/* go through each server and initialize the state */
 	list_for_each(l, &cgrates_engines) {
 		e = list_entry(l, struct cgr_engine, list);
-		if (!(c = cgr_get_free_conn(e)))
+		if (!(c = cgr_get_default_conn(e)))
 			continue;
 		/* found a free connection - build the buffer */
 		if (cgrc_send(c, &smsg) > 0)
@@ -338,6 +341,108 @@ int cgr_handle_cmd(struct sip_msg *msg, json_object *jmsg,
 	} while(async_status == ASYNC_CONTINUE);
 
 	return ret;
+}
+
+struct cgr_param {
+	struct cgr_conn *c;
+	cgr_proc_reply_f reply_f;
+	void *reply_p;
+};
+
+static int cgrates_async_resume_repl(int fd,
+		struct sip_msg *msg, void *param)
+{
+	int ret;
+	struct cgr_param *cp = (struct cgr_param *)param;
+	struct cgr_conn *c = cp->c;
+
+	/* reset the error */
+	CGR_RESET_REPLY_CTX();
+
+	ret = cgrc_async_read(c, cp->reply_f, cp->reply_p);
+
+	if (async_status == ASYNC_DONE) {
+		/* processing done - remove the FD and replace the handler */
+		async_status = ASYNC_DONE_NO_IO;
+		reactor_del_reader(c->fd, -1, 0);
+		if (cgrc_start_listen(c) < 0) {
+			LM_CRIT("cannot re-register fd for cgrates events!\n");
+			ret = -1;
+			goto end;
+		}
+	}
+end:
+	/* done with this connection */
+	c->state = CGRC_FREE;
+	pkg_free(cp);
+	return ret;
+}
+
+int cgr_handle_async_cmd(struct sip_msg *msg, json_object *jmsg,
+		cgr_proc_reply_f f, void *p, async_resume_module **resume_f,
+		void **resume_p)
+{
+	struct list_head *l;
+	struct cgr_engine *e;
+	struct cgr_conn *c;
+	struct cgr_param *cp = NULL;
+	int ret = 1;
+	str smsg;
+	char *r;
+
+	smsg.s = (char *)json_object_to_json_string(jmsg);
+	smsg.len = strlen(smsg.s);
+
+	cp = pkg_malloc(sizeof *cp);
+	if (!cp) {
+		LM_ERR("out of pkg memory\n");
+		return -1;
+	}
+	memset(cp, 0, sizeof *cp);
+	cp->reply_f = f;
+	cp->reply_p = p;
+
+	r = (char *)json_object_to_json_string(jmsg);
+	LM_DBG("sending json string: %s\n", r);
+
+	list_for_each(l, &cgrates_engines) {
+		e = list_entry(l, struct cgr_engine, list);
+		if (!(c = cgr_get_free_conn(e)))
+			continue;
+		/* found a free connection - build the buffer */
+		if (cgrc_send(c, &smsg) < 0) {
+			cgrc_close(c, CGRC_IS_LISTEN(c));
+			continue;
+		}
+		cp->c = c;
+		/* message succesfully sent - now fetch the reply */
+		if (CGRC_IS_DEFAULT(c)) {
+			/* reset the error */
+			CGR_RESET_REPLY_CTX();
+			do {
+				ret = cgrc_async_read(c, f, p);
+			} while(async_status == ASYNC_CONTINUE);
+			if (async_status == ASYNC_DONE)
+				/* do the reading in sync mode */
+				async_status = ASYNC_SYNC;
+			pkg_free(cp);
+			return ret;
+		} else {
+			c->state = CGRC_USED;
+			if (CGRC_IS_LISTEN(c)) {
+				/* remove the fd from the reactor because it will be added at the end of
+				 * this function */
+				reactor_del_reader(c->fd, -1, 0);
+				CGRC_UNSET_LISTEN(c);
+			}
+			async_status = c->fd;
+			*resume_f = cgrates_async_resume_repl;
+			*resume_p = cp;
+		}
+		return ret;
+	}
+	pkg_free(cp);
+	return -3;
 }
 
 /* returns the processing status */
@@ -600,7 +705,7 @@ void cgr_free_ctx(void *param)
 /* function that moves the context from global context to the transaction one */
 void cgr_move_ctx( struct cell* t, int type, struct tmcb_params *ps)
 {
-	struct cgr_ctx *ctx = (struct cgr_ctx *)*ps->param;
+	struct cgr_ctx *ctx = cgr_try_get_ctx();
 
 	if (!ctx)
 		return; /* nothing to move */
@@ -612,7 +717,7 @@ void cgr_move_ctx( struct cell* t, int type, struct tmcb_params *ps)
 		return;
 	}
 
-	LM_DBG("context moved in transaction\n");
+	LM_DBG("ctx=%p moved in transaction\n", ctx);
 	CGR_PUT_TM_CTX(t, ctx);
 	CGR_PUT_CTX(NULL);
 }

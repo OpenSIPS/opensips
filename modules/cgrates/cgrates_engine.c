@@ -48,6 +48,11 @@ struct cgr_conn *cgr_get_free_conn(struct cgr_engine *e)
 	} else {
 		LM_DBG("maximum async connections per process reached!\n");
 	}
+	return cgr_get_default_conn(e);
+}
+
+struct cgr_conn *cgr_get_default_conn(struct cgr_engine *e)
+{
 	/* use the default connection */
 	if (e->default_con && e->default_con->state == CGRC_FREE) {
 		LM_DBG("using default connection - running in sync mode!\n");
