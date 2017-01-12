@@ -161,7 +161,7 @@ int cgrates_set_reply(int type, int_str *value)
 		} \
 	} while (0)
 
-struct cgr_msg *cgr_get_generic_msg(char *method, struct list_head *list)
+struct cgr_msg *cgr_get_generic_msg(str *method, struct list_head *list)
 {
 	static struct cgr_msg cmsg;
 	struct cgr_kv *kv;
@@ -172,7 +172,7 @@ struct cgr_msg *cgr_get_generic_msg(char *method, struct list_head *list)
 	cmsg.msg = json_object_new_object();
 
 	JSON_CHECK(cmsg.msg, "new json object");
-	JSON_CHECK(jtmp = json_object_new_string(method), "method");
+	JSON_CHECK(jtmp = json_object_new_string_len(method->s, method->len), "method");
 	json_object_object_add(cmsg.msg,"method", jtmp);
 
 	JSON_CHECK(jarr = json_object_new_array(), "params array");

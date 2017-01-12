@@ -35,6 +35,7 @@
 #include "../../lib/list.h"
 #include "../../resolve.h"
 #include "cgrates.h"
+#include "cgrates_cmd.h"
 #include "cgrates_acc.h"
 #include "cgrates_auth.h"
 #include "cgrates_common.h"
@@ -82,6 +83,8 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"cgrates_auth", (cmd_function)w_cgr_auth, 2, fixup_cgrates, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"cgrates_cmd", (cmd_function)w_cgr_cmd, 1, fixup_spve_null, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -98,6 +101,7 @@ static acmd_export_t acmds[] = {
 	{"cgrates_auth",  (acmd_function)w_acgr_auth, 0, fixup_cgrates},
 	{"cgrates_auth",  (acmd_function)w_acgr_auth, 1, fixup_cgrates},
 	{"cgrates_auth",  (acmd_function)w_acgr_auth, 2, fixup_cgrates},
+	{"cgrates_cmd",   (acmd_function)w_acgr_cmd,  1, fixup_spve_null},
 	{0, 0, 0, 0, }
 };
 

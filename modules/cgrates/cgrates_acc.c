@@ -252,6 +252,7 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 {
 	struct cgr_msg *cmsg;
 	str stime;
+	static str cmd = str_init("SMGenericV1.InitiateSession");
 
 	if (msg->callid==NULL && ((parse_headers(msg, HDR_CALLID_F, 0)==-1) ||
 			(msg->callid==NULL)) ) {
@@ -260,7 +261,7 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 	}
 	time(&ctx->time);
 
-	cmsg = cgr_get_generic_msg("SMGenericV1.InitiateSession", ctx->kv_store);
+	cmsg = cgr_get_generic_msg(&cmd, ctx->kv_store);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
@@ -308,6 +309,7 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 	char int2str_buf[INT2STR_MAX_LEN + 1];
 	/* compute the duration */
 	time_t now = time(NULL);
+	static str cmd = str_init("SMGenericV1.TerminateSession");
 
 	ctx->duration = now - ctx->time;
 
@@ -317,7 +319,7 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 		return NULL;
 	}
 
-	cmsg = cgr_get_generic_msg("SMGenericV1.TerminateSession", ctx->kv_store);
+	cmsg = cgr_get_generic_msg(&cmd, ctx->kv_store);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
@@ -367,6 +369,7 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 	struct dlg_cell *dlg;
 	struct cgr_msg *cmsg = NULL;
 	str tmp;
+	static str cmd = str_init("SMGenericV1.ProcessCDR");
 
 	/* OriginID */
 	if ((dlg = cgr_dlgb.get_dlg()) == NULL) {
@@ -374,7 +377,7 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 		return NULL;
 	}
 
-	cmsg = cgr_get_generic_msg("SMGenericV1.ProcessCDR", ctx->kv_store);
+	cmsg = cgr_get_generic_msg(&cmd, ctx->kv_store);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;

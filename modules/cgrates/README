@@ -14,33 +14,36 @@ Razvan Crainea
         1.1. Overview
         1.2. Authorization
         1.3. Accounting
-        1.4. CGRateS Failover
-        1.5. Dependencies
+        1.4. Other Commands
+        1.5. CGRateS Failover
+        1.6. Dependencies
 
-              1.5.1. OpenSIPS Modules
-              1.5.2. External Libraries or Applications
+              1.6.1. OpenSIPS Modules
+              1.6.2. External Libraries or Applications
 
-        1.6. Exported Parameters
+        1.7. Exported Parameters
 
-              1.6.1. cgrates_engine (string)
-              1.6.2. bind_ip (string)
-              1.6.3. max_async_connections (integer)
+              1.7.1. cgrates_engine (string)
+              1.7.2. bind_ip (string)
+              1.7.3. max_async_connections (integer)
 
-        1.7. Exported Functions
+        1.8. Exported Functions
 
-              1.7.1. cgrates_acc([flags[, account[,
+              1.8.1. cgrates_acc([flags[, account[,
                       destination]]])
 
-              1.7.2. cgrates_auth([account[, destination]])
+              1.8.2. cgrates_auth([account[, destination]])
+              1.8.3. cgrates_cmd(command)
 
-        1.8. Exported pseudo-variables
+        1.9. Exported pseudo-variables
 
-              1.8.1. $cgr(name)
-              1.8.2. $cgrret
+              1.9.1. $cgr(name)
+              1.9.2. $cgrret
 
-        1.9. Exported Asynchronous Functions
+        1.10. Exported Asynchronous Functions
 
-              1.9.1. cgrates_auth([account[, destination]])
+              1.10.1. cgrates_auth([account[, destination]])
+              1.10.2. cgrates_cmd(command)
 
    List of Examples
 
@@ -49,9 +52,11 @@ Razvan Crainea
    1.3. Set max_async_connections parameter
    1.4. cgrates_acc() usage
    1.5. cgrates_auth() usage
-   1.6. $cgr(name) usage
-   1.7. $cgrret usage
-   1.8. async cgrates_auth usage
+   1.6. cgrates_cmd() usage
+   1.7. $cgr(name) usage
+   1.8. $cgrret usage
+   1.9. async cgrates_auth usage
+   1.10. async cgrates_cmd usage
 
 Chapter 1. Admin Guide
 
@@ -122,7 +127,26 @@ Chapter 1. Admin Guide
                 cgrate_acc("cdr", "$fU", "$rU");
                 ...
 
-1.4. CGRateS Failover
+1.4. Other Commands
+
+   You can use the cgrates_cmd() to send arbitrary commands to the
+   CGRateS engine, and use the $cgrret pseudo-variable to retrieve
+   the response.
+
+   The following example simulates the cgrates_auth() CGRateS
+   call:
+                ...
+                $cgr(Tenant) = $fd;
+                $cgr(Account) = $fU;
+                $cgr(OriginID) = $ci;
+                $cgr(SetupTime) = "" + $Ts;
+                $cgr(RequestType) = "*prepaid";
+                $cgr(Destination) = $rU;
+                cgrate_cmd("SMGenericV1.MaxUsage");
+                xlog("Call is allowed to run $cgrret seconds\n");
+                ...
+
+1.5. CGRateS Failover
 
    Multiple CGRateS engines can be provisioned to use in a
    failover manner: in case one engine is down, the next one is
@@ -130,22 +154,22 @@ Chapter 1. Admin Guide
    servers, but this is a feature one of the CGRateS component
    does starting with newer versions.
 
-1.5. Dependencies
+1.6. Dependencies
 
-1.5.1. OpenSIPS Modules
+1.6.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * dialog -- in case CGRateS accounting is used.
 
-1.5.2. External Libraries or Applications
+1.6.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * libjson
 
-1.6. Exported Parameters
+1.7. Exported Parameters
 
-1.6.1. cgrates_engine (string)
+1.7.1. cgrates_engine (string)
 
    This parameter is used to specify a CGRateS engine connection.
    The format is IP[:port]. The port is optional, and if missing,
@@ -162,7 +186,7 @@ modparam("cgrates", "cgrates_engine", "127.0.0.1")
 modparam("cgrates", "cgrates_engine", "127.0.0.1:2013")
 ...
 
-1.6.2. bind_ip (string)
+1.7.2. bind_ip (string)
 
    IP used to bind the socket that communicates with the CGRateS
    engines. This is useful to set when the engine is runing in a
@@ -176,7 +200,7 @@ modparam("cgrates", "cgrates_engine", "127.0.0.1:2013")
 modparam("cgrates", "bind_ip", "10.0.0.100")
 ...
 
-1.6.3. max_async_connections (integer)
+1.7.3. max_async_connections (integer)
 
    The maximum number of simultaneous asynchronous connections to
    a CGRateS engine.
@@ -188,9 +212,9 @@ modparam("cgrates", "bind_ip", "10.0.0.100")
 modparam("cgrates", "max_async_connections", 20)
 ...
 
-1.7. Exported Functions
+1.8. Exported Functions
 
-1.7.1.  cgrates_acc([flags[, account[, destination]]])
+1.8.1.  cgrates_acc([flags[, account[, destination]]])
 
    cgrates_acc() starts an accounting session on the CGRateS
    engine for the current dialog. It also ends the session when
@@ -241,7 +265,7 @@ modparam("cgrates", "max_async_connections", 20)
                 }
                 ...
 
-1.7.2.  cgrates_auth([account[, destination]])
+1.8.2.  cgrates_auth([account[, destination]])
 
    cgrates_auth() does call authorization through using the
    CGRateS engine.
@@ -279,9 +303,43 @@ modparam("cgrates", "max_async_connections", 20)
                 }
                 ...
 
-1.8. Exported pseudo-variables
+1.8.3.  cgrates_cmd(command)
 
-1.8.1. $cgr(name)
+   cgrates_cmd() can send arbitrary commands to the CGRateS
+   engine.
+
+   Meaning of the parameters is as follows:
+     * command - the command sent to the CGRateS engine. This is a
+       mandatory parameter.
+
+   The function can return the following values:
+     * 1 - successful call - the CGRateS account is allowed to
+       make the call.
+     * -1 - OpenSIPS returned an internal error (i.e. server is
+       out of memory).
+     * -2 - the CGRateS engine returned error.
+     * -3 - No suitable CGRateS server found. message type (not an
+       initial INVITE).
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Example 1.6. cgrates_cmd() usage
+                ...
+                # cgrate_auth("$fU", "$rU"); simulation
+                $cgr(Tenant) = $fd;
+                $cgr(Account) = $fU;
+                $cgr(OriginID) = $ci;
+                $cgr(SetupTime) = "" + $Ts;
+                $cgr(RequestType) = "*prepaid";
+                $cgr(Destination) = $rU;
+                cgrate_cmd("SMGenericV1.MaxUsage");
+                xlog("Call is allowed to run $cgrret seconds\n");
+                ...
+
+1.9. Exported pseudo-variables
+
+1.9.1. $cgr(name)
 
    Pseudo-variable used to set different parameters for the
    CGRateS command. Each name-value pair will be encoded as a
@@ -295,7 +353,7 @@ modparam("cgrates", "max_async_connections", 20)
    pairs are moved in the dialog. Therefore the values will be
    accessible along the dialog's lifetime.
 
-   Example 1.6. $cgr(name) usage
+   Example 1.7. $cgr(name) usage
                 ...
                 if (!has_totag()) {
                         ...
@@ -310,26 +368,26 @@ ounting
                 }
                 ...
 
-1.8.2. $cgrret
+1.9.2. $cgrret
 
-   Provides the reply message of a CGRateS command in script.
+   Returns the reply message of a CGRateS command in script.
 
-   Example 1.7. $cgrret usage
+   Example 1.8. $cgrret usage
                 ...
                 cgrates_auth("$fU", "$rU");
                 xlog("Call is allowed to run $cgrret seconds\n");
                 ...
 
-1.9. Exported Asynchronous Functions
+1.10. Exported Asynchronous Functions
 
-1.9.1.  cgrates_auth([account[, destination]])
+1.10.1.  cgrates_auth([account[, destination]])
 
    Does the CGRateS authorization call in an asynchronous way.
    Script execution is suspended until the CGRateS engine sends
    the reply back.
 
    Meaning of the parameters is as follows:
-     * account - the account that will be checked in CGrateS. This
+     * account - the account that will be checked in CGRateS. This
        parameter is optional, and if not specified, the user in
        the From header is used.
      * destination - the dialled number. Optional parameter, if
@@ -347,10 +405,51 @@ ounting
        headers, or it is not an initial INVITE.
      * -5 - CGRateS returned an invalid message.
 
-   Example 1.8. async cgrates_auth usage
+   Example 1.9. async cgrates_auth usage
 route {
         ...
         async(cgrates_auth("$fU", "$rU"), auth_reply);
+}
+
+route [auth_reply]
+{
+        if ($rc < 0) {
+                xlog("Call not authorized: code=$cgrret!\n");
+                send_reply("403", "Forbidden");
+                exit;
+        }
+        ...
+}
+
+1.10.2.  cgrates_cmd(command)
+
+   Can run an arbitrary CGRateS command in an asynchronous way.
+   The execution is suspended until the CGRateS engine sends the
+   reply back.
+
+   Meaning of the parameters is as follows:
+     * command - the command sent to the CGRateS engine. This is a
+       mandatory parameter.
+
+   The function can return the following values:
+     * 1 - successful call - the CGRateS account is allowed to
+       make the call.
+     * -1 - OpenSIPS returned an internal error (i.e. server is
+       out of memory).
+     * -2 - the CGRateS engine returned error.
+     * -3 - No suitable CGRateS server found. message type (not an
+       initial INVITE).
+
+   Example 1.10. async cgrates_cmd usage
+route {
+        ...
+        $cgr(Tenant) = $fd;
+        $cgr(Account) = $fU;
+        $cgr(OriginID) = $ci;
+        $cgr(SetupTime) = "" + $Ts;
+        $cgr(RequestType) = "*prepaid";
+        $cgr(Destination) = $rU;
+        async(cgrates_cmd("SMGenericV1.MaxUsage"), auth_reply);
 }
 
 route [auth_reply]

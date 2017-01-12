@@ -57,6 +57,7 @@ static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst)
 {
 	struct cgr_ctx *ctx;
 	struct cgr_msg *cmsg = NULL;
+	static str cmd = str_init("SMGenericV1.MaxUsage");
 	str stime;
 
 	if (msg->callid==NULL && ((parse_headers(msg, HDR_CALLID_F, 0)==-1) ||
@@ -67,7 +68,7 @@ static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst)
 	ctx = cgr_try_get_ctx();
 	stime.s = int2str(time(NULL), &stime.len);
 
-	cmsg = cgr_get_generic_msg("SMGenericV1.MaxUsage", ctx ? ctx->kv_store : NULL);
+	cmsg = cgr_get_generic_msg(&cmd, ctx ? ctx->kv_store : NULL);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;

@@ -87,14 +87,29 @@
 	</para>
 	</section>
 
-	<!--
 	<section>
 	<title>Other Commands</title>
 	<para>
-		TODO
+		You can use the <emphasis>cgrates_cmd()</emphasis> to send arbitrary
+		commands to the CGRateS engine, and use the <emphasis>$cgrret</emphasis>
+		pseudo-variable to retrieve the response.
+	</para>
+	<para>
+		The following example simulates the <emphasis>cgrates_auth()</emphasis> CGRateS call:
+		<programlisting format="linespecific">
+		...
+		$cgr(Tenant) = $fd;
+		$cgr(Account) = $fU;
+		$cgr(OriginID) = $ci;
+		$cgr(SetupTime) = "" + $Ts;
+		$cgr(RequestType) = "*prepaid";
+		$cgr(Destination) = $rU;
+		cgrate_cmd("SMGenericV1.MaxUsage");
+		xlog("Call is allowed to run $cgrret seconds\n");
+		...
+		</programlisting>
 	</para>
 	</section>
-	-->
 
 	<section>
 	<title>CGRateS Failover</title>
@@ -392,6 +407,74 @@ modparam("cgrates", "max_async_connections", 20)
 		</example>
 
 	</section>
+	<section id="cgrates_cmd">
+		<title>
+			<function moreinfo="none">cgrates_cmd(command)</function>
+		</title>
+		<para>
+			<function moreinfo="none">cgrates_cmd()</function> can send
+			arbitrary commands to the CGRateS engine.
+		</para>
+
+		<para>
+			Meaning of the parameters is as follows:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>command</emphasis> - the command sent to the
+				CGRateS engine. This is a mandatory parameter.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			The function can return the following values:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>1</emphasis> - successful call - the CGRateS account
+				is allowed to make the call.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-1</emphasis> - &osips; returned an internal error
+				(i.e. server is out of memory).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2</emphasis> - the CGRateS engine returned error.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3</emphasis> - No suitable CGRateS server found.
+				message type (not an initial INVITE).
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+
+		<example>
+				<title>cgrates_cmd() usage</title>
+				<programlisting format="linespecific">
+		...
+		# cgrate_auth("$fU", "$rU"); simulation
+		$cgr(Tenant) = $fd;
+		$cgr(Account) = $fU;
+		$cgr(OriginID) = $ci;
+		$cgr(SetupTime) = "" + $Ts;
+		$cgr(RequestType) = "*prepaid";
+		$cgr(Destination) = $rU;
+		cgrate_cmd("SMGenericV1.MaxUsage");
+		xlog("Call is allowed to run $cgrret seconds\n");
+		...
+		</programlisting>
+		</example>
+
+	</section>
 	</section>
 
 	<section>
@@ -436,7 +519,7 @@ modparam("cgrates", "max_async_connections", 20)
 		<section>
 			<title><varname>$cgrret</varname></title>
 			<para>
-				Provides the reply message of a CGRateS command in script.
+				Returns the reply message of a CGRateS command in script.
 			</para>
 		<example>
 				<title>$cgrret usage</title>
@@ -467,7 +550,7 @@ modparam("cgrates", "max_async_connections", 20)
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>account</emphasis> - the account that will be checked
-				in CGrateS. This parameter is optional, and if not specified,
+				in CGRateS. This parameter is optional, and if not specified,
 				the user in the From header is used.
 			</para>
 		</listitem>
@@ -517,6 +600,75 @@ modparam("cgrates", "max_async_connections", 20)
 route {
 	...
 	async(cgrates_auth("$fU", "$rU"), auth_reply);
+}
+
+route [auth_reply]
+{
+	if ($rc &lt; 0) {
+		xlog("Call not authorized: code=$cgrret!\n");
+		send_reply("403", "Forbidden");
+		exit;
+	}
+	...
+}
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">cgrates_cmd(command)</function>
+		</title>
+		<para>
+			Can run an arbitrary CGRateS command in an asynchronous way. The
+			execution is suspended until the CGRateS engine sends the reply back.
+		</para>
+		<para>
+			Meaning of the parameters is as follows:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>command</emphasis> - the command sent to the
+				CGRateS engine. This is a mandatory parameter.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			The function can return the following values:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>1</emphasis> - successful call - the CGRateS account
+				is allowed to make the call.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-1</emphasis> - &osips; returned an internal error
+				(i.e. server is out of memory).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2</emphasis> - the CGRateS engine returned error.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3</emphasis> - No suitable CGRateS server found.
+				message type (not an initial INVITE).
+			</para>
+		</listitem>
+		</itemizedlist>
+		<example>
+		<title><function moreinfo="none">async cgrates_cmd</function> usage</title>
+		<programlisting format="linespecific">
+route {
+	...
+	$cgr(Tenant) = $fd;
+	$cgr(Account) = $fU;
+	$cgr(OriginID) = $ci;
+	$cgr(SetupTime) = "" + $Ts;
+	$cgr(RequestType) = "*prepaid";
+	$cgr(Destination) = $rU;
+	async(cgrates_cmd("SMGenericV1.MaxUsage"), auth_reply);
 }
 
 route [auth_reply]
