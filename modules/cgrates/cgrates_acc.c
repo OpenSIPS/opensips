@@ -430,18 +430,18 @@ int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c)
 
 	if (!cgr_dlgb.get_dlg) {
 		LM_ERR("cannot do cgrates accounting without dialog support!\n");
-		return -3;
+		return -2;
 	}
 
 	if ((acc = cgr_get_acc(msg, acc_c)) == NULL)
-		return -4;
+		return -2;
 	if ((dst = cgr_get_dst(msg, dst_c)) == NULL)
-		return -4;
+		return -2;
 
 	/* get the dialog */
 	if (!cgr_dlgb.get_dlg() && cgr_dlgb.create_dlg(msg, 0) < 0) {
 		LM_ERR("Cannot create dialog!\n");
-		return -2;
+		return -1;
 	}
 
 	ctx = cgr_get_acc_ctx();

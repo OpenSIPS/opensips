@@ -224,7 +224,7 @@ int cgrates_set_reply(int type, int_str *value)
 		ctx = pkg_malloc(sizeof(*ctx));
 		if (!ctx) {
 			LM_ERR("out of pkg memory\n");
-			return -2;
+			return -1;
 		}
 		memset(ctx, 0, sizeof(*ctx));
 		CGR_PUT_LOCAL_CTX(ctx);
@@ -234,7 +234,7 @@ int cgrates_set_reply(int type, int_str *value)
 			((type & CGR_KVF_TYPE_STR)?value->s.len:0));
 	if (!ctx->reply) {
 		LM_ERR("out of memory!\n");
-		return -2;
+		return -1;
 	}
 	ctx->reply_flags = type;
 	if (type & CGR_KVF_TYPE_STR) {
@@ -422,7 +422,6 @@ struct cgr_ctx *cgr_ctx_new(void)
 
 /* CGR logic */
 /* Returns:
- *   2 - if cgrates already engaged by a different call
  *   1 - if cgrates successfully engaged
  *  -1 - cgrates returned error
  *  -2 - internal error
@@ -555,7 +554,7 @@ done:
 disable:
 	cgrc_close(c, 0);
 	async_status = ASYNC_DONE_CLOSE_FD;
-	return -1;
+	return -2;
 }
 
 

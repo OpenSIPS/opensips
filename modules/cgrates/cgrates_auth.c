@@ -31,15 +31,15 @@ static int cgr_proc_auth_reply(struct cgr_conn *c, json_object *jobj,
 		val.s.len = strlen(error);
 		if (cgrates_set_reply(CGR_KVF_TYPE_STR, &val) < 0) {
 			LM_ERR("cannot set the reply code!\n");
-			return -2;
+			return -1;
 		}
-		return -1;
+		return -2;
 	}
 
 	if (json_object_get_type(jobj) != json_type_int) {
 		LM_ERR("CGRateS returned a non-int type in Auth reply: %d %s\n",
 				json_object_get_type(jobj), json_object_to_json_string(jobj));
-		return -4;
+		return -5;
 	}
 	val.n = json_object_get_int(jobj);
 	/* -1: always allowed (postpaid)
@@ -48,9 +48,9 @@ static int cgr_proc_auth_reply(struct cgr_conn *c, json_object *jobj,
 	 */
 	if (cgrates_set_reply(CGR_KVF_TYPE_INT, &val) < 0) {
 		LM_ERR("cannot set the reply value!\n");
-		return -2;
+		return -1;
 	}
-	return ((val.n == 0) ? -1: 1);
+	return ((val.n == 0) ? -2: 1);
 }
 
 static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst)
@@ -120,7 +120,7 @@ int w_cgr_auth(struct sip_msg* msg, char* acc_c, char *dst_c)
 	jmsg = cgr_get_auth_msg(msg, acc, dst);
 	if (!jmsg) {
 		LM_ERR("cannot build the json to send to cgrates\n");
-		return -2;
+		return -1;
 	}
 
 	return cgr_handle_cmd(msg, jmsg, cgr_proc_auth_reply, NULL);

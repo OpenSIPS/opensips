@@ -29,9 +29,9 @@
  *  - destination (optional)
  * Returns:
  *  -  1: user is allowed to call
- *  - -1: cgrates error
- *  - -2: internal error
- *  - -3: no suitable cgrates server found
+ *  - -1: internal error
+ *  - -2: cgrates error
+ *  - -3: invalid message type
  *  - -4: invalid message
  */
 int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c);
