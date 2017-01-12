@@ -45,6 +45,7 @@ Depends: adduser, ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 Suggests: opensips-b2bua-module,
           opensips-berkeley-module,
           opensips-carrierroute-module,
+          opensips-cgrates-module,
           opensips-compression-module,
           opensips-console,
           opensips-cpl-module,
@@ -583,3 +584,14 @@ Description: REST client module for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides the REST client support for OpenSIPS.
+
+Package: opensips-cgrates-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: CGRateS connector for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides a connnector to the CGRateS rating/billing engine.

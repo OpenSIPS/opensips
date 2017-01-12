@@ -298,6 +298,10 @@ Files: modules/carrierroute/*
 Copyright: 2007, 2008, 1&1 Internet AG
 License: GPL-2+
 
+Files: modules/cgrates/*
+Copyright: 2017, Răzvan Crainea
+License: GPL-2+
+
 Files: modules/cfgutils/*
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+

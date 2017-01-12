@@ -1,14 +1,13 @@
-opensips (2.2.0-1) stable; urgency=low
+opensips (2.3.0-1) unstable; urgency=medium
 
-  * Major Release
+  * New upstream release.
+  * debian/rules:
+    + Add packaging for the cgrates module.
+  * debian/control:
+    + Add new opensips-cgrates-module.
+  * debian/copyright:
+    + Add copyright info for cgrates module files.
 
- -- Razvan Crainea <razvan@opensips.org>  Fri, 04 Sep 2015 13:44:06 +0200
-
-
-opensips (2.1.0) stable; urgency=low
-
-  * Major Public Release.
-
- -- Bogdan-Andrei Iancu <bogdan@opensips.org>  Tue, 07 May 2015 19:22:57 +0200
+ -- Răzvan Crainea <razvan@opensips.org>  Thu, 12 Jan 2017 16:20:44 +0200
 
 
