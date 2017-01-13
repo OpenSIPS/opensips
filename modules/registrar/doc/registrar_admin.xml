@@ -698,7 +698,7 @@ save("location","mr", "$avp(aor)");
 
 	<section>
 		<title>
-		<function moreinfo="none">remove(domain, AOR[, target])</function>
+		<function moreinfo="none">remove(domain, AOR[, [contact], ip])</function>
 		</title>
 		<para>
 		Explicitly remove contacts behind a given address-of-record.
@@ -709,35 +709,41 @@ save("location","mr", "$avp(aor)");
 			<para>
 			<emphasis>domain</emphasis> - Logical domain within registrar.
 			If database is used then this must be name of the table which
-			stores the contacts.
+			stores the contacts;
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>AOR</emphasis> - address-of-record to be searched (SIP URI)
+			<emphasis>AOR</emphasis> - address-of-record to be searched (SIP URI);
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-				<emphasis>target (optional)</emphasis> -
-				may be specified in two ways:
-				<itemizedlist>
-				<listitem>
-					<para>
-						<emphasis role='bold'>single delete - </emphasis>
-						Specific contact to be deleted (SIP URI)
-					</para>
-				</listitem>
-				<listitem>
-					<para>
-						<emphasis role='bold'>multi delete - </emphasis>
-						IP/hostname of the AOR's contacts which will be deleted
-					</para>
-				</listitem>
-				</itemizedlist>
+				<emphasis>contact (optional)</emphasis> - sip uri for the contact
+				to be removed;
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>ip (optional)</emphasis> - source IP/hostname of the endpoint that
+				registered this contact; it matches the <emphasis>PATH</emphasis> header if the registration
+				had one, the ip from where the registration request came from if the request came
+				from behind nat(if nathelper module used) or the actual ip of the contact;
 			</para>
 		</listitem>
 		</itemizedlist>
+		<para>
+			<emphasis role='bold'>IMPORTANT: </emphasis>Contact parameter can be used without
+			defining the ip parameter, that is the function can have 3 arguments. On the other
+			side, if only the ip parameter is desired to be used, without the contact, the third
+			parameter has to be set to NULL( see more in the examples).
+		</para>
+		<para>
+			<emphasis role='bold'>IMPORTANT#2: </emphasis> If both contact and ip are defined,
+			only the contact that will match both the contact and the IP will be removed,
+			that is a logical AND between the two. If none defined, all the contacts from
+			the specfied AOR shall be removed.
+		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 		</para>
@@ -748,12 +754,17 @@ save("location","mr", "$avp(aor)");
 # remove all contacts belonging to the "bob" AOR
 remove("location", "sip:bob@atlanta.com");
 ...
-# remove only bob's home phone
+# remove only bob's home phone contact
 remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78");
 ...
 # remove all bob's phones which are behind "50.60.50.60"
+# note that "contact" parameter has to be specified with NULL value even though not used
 $var(next_hop) = "50.60.50.60"
-remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
+remove("location", "sip:bob@atlanta.com",, "$var(next_hop)");
+...
+# remove bob's phone with the contact "sip:bob@46.50.64.78" that is behind "50.60.50.60"
+$var(next_hop) = "50.60.50.60"
+remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.50.60");
 ...
 </programlisting>
 		</example>
@@ -1034,9 +1045,9 @@ if(is_method("INVITE")) {
 		<function moreinfo="none">is_ip_registered(domain ,[AOR],IPvar)</function>
 		</title>
 		<para>
-		The function returns true if at least a contact has an IP from the 
-		IPavp in it's received parameter, otherwise returns false. The 
-		function does not modify the message being process. This function 
+		The function returns true if at least a contact has an IP from the
+		IPavp in it's received parameter, otherwise returns false. The
+		function does not modify the message being process. This function
 		replaces the old "is_other_contact" function.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>

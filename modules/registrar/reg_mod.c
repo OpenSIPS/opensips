@@ -148,9 +148,11 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"save",         (cmd_function)save,         3,  registrar_fixup,  0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"remove",       (cmd_function)_remove,      2,  fixup_remove,     0,
+	{"remove",       (cmd_function)w_remove_2,   2,  fixup_remove,     0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"remove",       (cmd_function)_remove,      3,  fixup_remove,     0,
+	{"remove",       (cmd_function)w_remove_3,   3,  fixup_remove,     0,
+		REQUEST_ROUTE|ONREPLY_ROUTE },
+	{"remove",       (cmd_function)_remove,      4,  fixup_remove,     0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"lookup",       (cmd_function)lookup,       1,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
@@ -417,6 +419,8 @@ static int fixup_remove(void** param, int param_no)
 	case 2:
 		return fixup_spve(param);
 	case 3:
+		return fixup_spve(param);
+	case 4:
 		return fixup_spve(param);
 
 	default:

@@ -8,6 +8,8 @@ Edited by
 
 Jan Janak
 
+Edited by
+
 Bogdan-Andrei Iancu
 
    Copyright © 2003 FhG FOKUS
@@ -51,7 +53,7 @@ Bogdan-Andrei Iancu
         1.4. Exported Functions
 
               1.4.1. save(domain [,flags ,[aor]])
-              1.4.2. remove(domain, AOR[, target])
+              1.4.2. remove(domain, AOR[, [contact], ip])
               1.4.3. lookup(domain [, flags [, aor]])
               1.4.4. is_registered(domain ,[AOR])
               1.4.5. is_contact_registered(domain
@@ -526,20 +528,33 @@ save("location","","$fu");
 save("location","mr", "$avp(aor)");
 ...
 
-1.4.2.  remove(domain, AOR[, target])
+1.4.2.  remove(domain, AOR[, [contact], ip])
 
    Explicitly remove contacts behind a given address-of-record.
 
    Meaning of the parameters is as follows:
      * domain - Logical domain within registrar. If database is
        used then this must be name of the table which stores the
-       contacts.
-     * AOR - address-of-record to be searched (SIP URI)
-     * target (optional) - may be specified in two ways:
-          + single delete - Specific contact to be deleted (SIP
-            URI)
-          + multi delete - IP/hostname of the AOR's contacts which
-            will be deleted
+       contacts;
+     * AOR - address-of-record to be searched (SIP URI);
+     * contact (optional) - sip uri for the contact to be removed;
+     * ip (optional) - source IP/hostname of the endpoint that
+       registered this contact; it matches the PATH header if the
+       registration had one, the ip from where the registration
+       request came from if the request came from behind nat(if
+       nathelper module used) or the actual ip of the contact;
+
+   IMPORTANT: Contact parameter can be used without defining the
+   ip parameter, that is the function can have 3 arguments. On the
+   other side, if only the ip parameter is desired to be used,
+   without the contact, the third parameter has to be set to NULL(
+   see more in the examples).
+
+   IMPORTANT#2: If both contact and ip are defined, only the
+   contact that will match both the contact and the IP will be
+   removed, that is a logical AND between the two. If none
+   defined, all the contacts from the specfied AOR shall be
+   removed.
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
@@ -548,12 +563,20 @@ save("location","mr", "$avp(aor)");
 # remove all contacts belonging to the "bob" AOR
 remove("location", "sip:bob@atlanta.com");
 ...
-# remove only bob's home phone
+# remove only bob's home phone contact
 remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78");
 ...
 # remove all bob's phones which are behind "50.60.50.60"
+# note that "contact" parameter has to be specified with NULL value even
+ though not used
 $var(next_hop) = "50.60.50.60"
-remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
+remove("location", "sip:bob@atlanta.com",, "$var(next_hop)");
+...
+# remove bob's phone with the contact "sip:bob@46.50.64.78" that is behi
+nd "50.60.50.60"
+$var(next_hop) = "50.60.50.60"
+remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.
+50.60");
 ...
 
 1.4.3.  lookup(domain [, flags [, aor]])
