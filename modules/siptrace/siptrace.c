@@ -254,160 +254,104 @@ get_db_struct(str *url, str *tb_name, st_db_struct_t **st_db)
 
 }
 
-static int
-parse_siptrace_uri(const str *token, str *uri, str *param1, str* param2)
+static inline void get_value_and_update(str* token, char delim, str* value)
 {
-	enum states {ST_TOK_NAME, ST_TOK_VALUE, ST_TOK_END};
-	enum states state = ST_TOK_NAME;
+	char* end;
 
-	unsigned int p;
-	unsigned int last_equal=0;
+	value->s = token->s;
+	if ( !(end=q_memchr(token->s, delim, token->len)) ) {
+		value->len = token->len;
+		token->len = 0;
+	} else {
+		value->len = end - token->s;
+		token->len = token->len - ((end + 1) - token->s);
 
-	int _word_start=-1, _word_end=-1;
+		/* might have a negative value if ';' is the last character */
+		if ( token->len > 0 )
+			token->s = end + 1;
+	}
 
-	#define HAVE_URI   (1<<0)
-	#define HAVE_PARAM1 (1<<1)
-	#define HAVE_PARAM2   (1<<2)
+	str_trim_spaces_lr(*value);
+}
 
-	unsigned char found_bitmask=0;
-	unsigned char uri_type=TYPE_END;
-	unsigned char no_parsing=0;
+static int
+parse_siptrace_uri(str* token, str* uri, str* param1, str* param2)
+{
 
+	static const char key_value_delim = '=';
+	static const char param_delim = ';';
+	static const char db_delim = '\\';
 
 	static str uri_str={"uri", sizeof("uri")-1};
 	static str tb_name_str={"table", sizeof("table")-1};
 	static str version_name_str={"version", sizeof("version")-1};
 	static str transport_name_str={"transport", sizeof("transport")-1};
 
-	str name={NULL, 0}, value={NULL, 0};
+	char *end;
 
-	if (!token) {
-		LM_ERR("bad input parameter!\n");
-		return -1;
-	}
+	str key, value, aux;
 
-	if (!uri || !param1) {
-		LM_ERR("bad output parameter!\n");
-		return -1;
-	}
+	/* we must be careful because there might be a mysql password containing
+	 * our delimiters; so we first parse the key then carefully go through
+	 * the value if it's an uri */
 
-	for (p=0; p<token->len; p++) {
-		switch (token->s[p]){
-		case '=':
-			if (no_parsing)
-				break;
-			_word_end = _word_end == -1 ? p : _word_end;
+	str_trim_spaces_lr(*token);
 
-			if (state==ST_TOK_VALUE) {
-				LM_ERR("bad value declaration!parsed until <%.*s>!\n",
-						token->len-p, token->s+p);
-				return -1;
-			}
-
-			name.s = token->s + _word_start;
-			name.len = _word_end - _word_start;
-			last_equal = p;
-
-			state=ST_TOK_VALUE;
-			_word_start=_word_end=-1;
-			/* just for databases we need to know what it is before parsing */
-			if (NULL !=
-					q_memchr(&token->s[p+1], '@', token->len - (p + 1)))
-				no_parsing=1;
-
-			break;
-		case ';':
-			if (no_parsing)
-				break;
-			if (state==ST_TOK_NAME || last_equal == 0) {
-				LM_ERR("bad name declaration!parsed until <%.*s>!\n",
-						token->len-p, token->s+p);
-				return -1;
-			}
-
-			_word_end = _word_end == -1 ? p : _word_end;
-			value.s = token->s + _word_start;;
-			value.len = _word_end - _word_start;
-
-			str_trim_spaces_lr(value);
-			if (value.len > 3 && uri_type == TYPE_END) {
-				if (!memcmp(value.s, "hep", 3)) {
-					uri_type = TYPE_HEP;
-				} else if (!memcmp(value.s, "sip", 3)) {
-					uri_type = TYPE_SIP;
-				} else {
-					uri_type = TYPE_DB;
-				}
-			}
-
-			/* most probably will be found first; will do strcmp only once */
-			if (!(found_bitmask&HAVE_URI) && !str_strcasecmp(&uri_str, &name)) {
-				found_bitmask |= HAVE_URI;
-				*uri = value;
-			}
-
-			if (!(found_bitmask&HAVE_PARAM1)
-				&& ((uri_type == TYPE_DB && !str_strcasecmp(&tb_name_str, &name))
-					|| (uri_type == TYPE_HEP &&
-						!str_strcasecmp(&version_name_str, &name) ) ) ) {
-				found_bitmask |= HAVE_PARAM1;
-				*param1 = value;
-			}
-
-			if (!(found_bitmask&HAVE_PARAM2)
-					&& !str_strcasecmp(&transport_name_str, &name)) {
-				found_bitmask |= HAVE_PARAM2;
-				*param2 = value;
-			}
-
-			state=ST_TOK_END;
-			_word_start=_word_end=-1;
-
-			break;
-		case '@':
-			/* continue parsing; passed over database password */
-			if (no_parsing) {
-				no_parsing=0;
-			}
-			break;
-		case '\n':
-		case '\r':
-		case '\t':
-		case ' ':
-			if (_word_start > 0) {
-				LM_ERR("invalid definition! parsed until <%.*s>\n",
-						token->len-p, &token->s[p]);
-				return -1;
-			}
-		case '(':
-		case ')':
-		case '/':
-		case ':':
-		case '.':
-		case '_':
-			break;
-		default:
-			if (_word_start==-1 && (isalnum(token->s[p])||token->s[p]=='$')) {
-				_word_start = p;
-			}
-
-			if (no_parsing)
-				break;
-			if (_word_end == -1 && !isalnum(token->s[p]))
-				_word_end = p;
-
-			if (state==ST_TOK_END)
-				state = ST_TOK_NAME;
-			break;
+	while ( token->len > 0 ) {
+		if ( !(end=q_memchr(token->s, key_value_delim, token->len)) ) {
+			LM_ERR("key delimiter '=' not found in <%.*s>\n", token->len, token->s);
+			return -1;
 		}
-	}
 
-	if (state != ST_TOK_END)
-		return -1;
+		key.s = token->s;
+		key.len = end - token->s;
 
-	if (!(found_bitmask&HAVE_URI)) {
-		LM_ERR("URL is MANDATORY!\n");
-		return -1;
+		str_trim_spaces_lr(key);
+
+		token->len -= ((end + 1) - token->s);
+		token->s = end + 1;
+
+		if ( !strncmp(key.s, uri_str.s, uri_str.len) ) {
+			if ( !(end=q_memrchr( token->s, db_delim, token->len)) ) {
+				/* no '/' so it's not a db url; just do a normal parse  */
+				get_value_and_update( token, param_delim, &value);
+			} else {
+				aux.s = end;
+				aux.len = token->len - (end - token->s);
+
+				value.s = token->s;
+				/* now search the actual delimiter */
+				if ( !(end=q_memchr( aux.s, param_delim, aux.len)) ) {
+					value.len = token->len;
+
+					token->len = 0;
+				} else {
+					value.len = end - token->s;
+					token->len = token->len - ((end+1) - token->s);
+
+					if ( token->len > 0 )
+						token->s = end + 1;
+				}
+
+			}
+
+			*uri = value;
+		} else if ( !strncmp(key.s, tb_name_str.s, tb_name_str.len) ) {
+			get_value_and_update( token, param_delim, &value);
+
+			*param1 = value;
+		} else if ( !strncmp(key.s, version_name_str.s, version_name_str.len) ) {
+			get_value_and_update( token, param_delim, &value);
+
+			*param1 = value;
+		} else if ( !strncmp(key.s, transport_name_str.s, transport_name_str.len) ) {
+			get_value_and_update( token, param_delim, &value);
+
+			*param2 = value;
+		} else {
+			LM_ERR("Invalid key <%.*s> in trace id!\n", key.len, key.s);
+			return -1;
+		}
 	}
 
 	return 0;
