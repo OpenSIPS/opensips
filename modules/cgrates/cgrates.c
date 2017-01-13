@@ -63,8 +63,6 @@ static int pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
 static int pv_parse_cgr(pv_spec_p sp, str *in);
 static int pv_get_cgr_reply(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
-static inline int cgr_replace_shm_kv(struct list_head *head,
-		const char *key, int flags, int_str *val);
 
 LIST_HEAD(cgrates_engines);
 
@@ -158,26 +156,27 @@ static int fixup_cgrates(void ** param, int param_no)
 
 static int fixup_cgrates_acc(void ** param, int param_no)
 {
-	static int warned = 0;
+	static int dlg_loaded = 0;
 	unsigned flags = 0;
 	char *p, *e;
 	str s;
 
-	if (load_dlg_api(&cgr_dlgb)!=0 && !warned)
-		LM_DBG("failed to find dialog API - is dialog module loaded?\n");
+	if (!dlg_loaded) {
+		dlg_loaded = 1;
+		if (load_dlg_api(&cgr_dlgb)!=0)
+			LM_DBG("failed to find dialog API - is dialog module loaded?\n");
 
-	if (!cgr_dlgb.get_dlg && !warned) {
-		warned = 1;
-		LM_WARN("error loading dialog module - acc cannot be generated\n");
-		return -1;
+		if (!cgr_dlgb.get_dlg) {
+			LM_WARN("error loading dialog module - acc cannot be generated\n");
+			return -1;
+		}
+
+		if (cgr_dlgb.register_dlgcb(NULL, DLGCB_LOADED, cgr_loaded_callback,
+				NULL, NULL) < 0)
+			LM_ERR("cannot register callback for dialog loaded - accounting "
+					"for ongoing calls will be lost after restart\n");
+		LM_DBG("loaded cgr_loaded_callback!\n");
 	}
-
-#if 0
-	if (cgr_dlgb.get_dlg && dlg_api.register_dlgcb(NULL,
-				DLGCB_LOADED,acc_loaded_callback, NULL, NULL) < 0)
-		LM_ERR("cannot register callback for dialog loaded - accounting "
-				"for ongoing calls will be lost after restart\n");
-#endif
 
 	if (param_no == 1) {
 		/* parse flags */
@@ -337,57 +336,6 @@ static int cgrates_set_engine(modparam_t type, void * val)
 
 	return 0;
 }
-
-
-static inline int cgr_replace_shm_kv(struct list_head *head,
-		const char *key, int flags, int_str *val)
-{
-	struct cgr_kv *kv;
-	int len;
-	str n = { (char *)key, strlen(key) };
-	kv = cgr_get_kv(head, n);
-	flags |= CGR_KVF_TYPE_SHM;
-	if (kv) {
-		if (flags & CGR_KVF_TYPE_STR) {
-			if ((kv->flags & CGR_KVF_TYPE_STR) &&
-					val->s.len <= kv->value.s.len) {
-				/* simply update the value */
-				kv->value.s.len = val->s.len;
-				memcpy(kv->value.s.s, val->s.s, val->s.len);
-				return 0;
-			} else {
-				/* free it and remove it, because we need to add a new one */
-				cgr_free_kv(kv);
-			}
-		} else {
-			kv->flags = flags;
-			kv->value.n = val->n;
-			return 0;
-		}
-	}
-	len = sizeof(*kv) + strlen(key) + 1;
-
-	if (flags & CGR_KVF_TYPE_STR)
-		len += val->s.len;
-	kv = shm_malloc(len);
-	if (!kv) {
-		LM_ERR("cannot allocate memory for kv\n");
-		return -1;
-	}
-	kv->key.s = (char *)(kv + 1);
-	kv->key.len = strlen(key);
-	memcpy(kv->key.s, key, kv->key.len + 1); /* also copy \0 */
-	if (flags & CGR_KVF_TYPE_STR) {
-		kv->value.s.s = kv->key.s + kv->key.len + 1;
-		kv->value.s.len = val->s.len;
-		memcpy(kv->value.s.s, val->s.s, val->s.len);
-	} else if (flags & CGR_KVF_TYPE_INT)
-		kv->value.n = val->n;
-	kv->flags = flags;
-	list_add(&kv->list, head);
-	return 0;
-}
-
 
 static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 		int op, pv_value_t *val)

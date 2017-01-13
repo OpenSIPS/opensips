@@ -37,11 +37,10 @@ extern struct tm_binds cgr_tmb;
 #define CGR_KVF_TYPE_INT	0x1
 #define CGR_KVF_TYPE_STR	0x2
 #define CGR_KVF_TYPE_NULL	0x4
-#define CGR_KVF_TYPE_SHM	0x8 /* TODO: delete me */
 
 
 struct cgr_kv {
-	int flags;
+	unsigned char flags;
 	str key; /* must be null terminated */
 	int_str value;
 	struct list_head list;

@@ -81,6 +81,7 @@ struct cgr_kv *cgr_new_real_kv(char *key, int klen, int dup)
 		kv->key.s = key;
 		kv->key.len = klen;
 	}
+	LM_DBG("created new key %s\n", kv->key.s);
 	return kv;
 }
 
@@ -249,7 +250,6 @@ struct cgr_ctx *cgr_get_ctx(void)
 		}
 		return ctx;
 	}
-
 
 	ctx = shm_malloc(sizeof *ctx);
 	if (!ctx) {

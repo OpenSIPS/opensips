@@ -44,11 +44,31 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 
 static str cgr_ctx_str = str_init("cgrX_ctx");
 
-static inline struct cgr_acc_ctx *cgr_get_acc_ctx(void)
+static inline struct cgr_acc_ctx *cgr_new_acc_ctx(struct dlg_cell *dlg)
 {
 	str ctxstr;
+	struct cgr_acc_ctx *ctx = shm_malloc(sizeof(*ctx));
+	if (!ctx) {
+		LM_ERR("cannot create acc context\n");
+		return NULL;
+	}
+	memset(ctx, 0, sizeof(*ctx));
+	LM_DBG("new acc ctx=%p\n", ctx);
+	ctxstr.len = sizeof(ctx);
+	ctxstr.s = (char *)&ctx;
+
+	ctx->ref_no = 1;
+	lock_init(&ctx->ref_lock);
+	if (cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr))
+		LM_ERR("cannot store context in dialog!\n");
+	return ctx;
+}
+
+static inline struct cgr_acc_ctx *cgr_get_acc_ctx(void)
+{
 	struct dlg_cell *dlg;
 	struct cgr_ctx *ctx = cgr_get_ctx();
+
 	if (!ctx) {
 		LM_ERR("cannot create global context\n");
 		return NULL;
@@ -59,22 +79,9 @@ static inline struct cgr_acc_ctx *cgr_get_acc_ctx(void)
 			LM_ERR("cannot find a dialog!\n");
 			return NULL;
 		}
-		ctx->acc = shm_malloc(sizeof(*ctx->acc));
-		if (!ctx->acc) {
-			LM_ERR("cannot create acc context\n");
-			return NULL;
-		}
-		memset(ctx->acc, 0, sizeof(*ctx->acc));
-		/* point to the same kv_store */
-		ctx->acc->kv_store = ctx->kv_store;
-		LM_DBG("new acc ctx=%p\n", ctx->acc);
-		ctxstr.len = sizeof(ctx->acc);
-		ctxstr.s = (char *)&ctx->acc;
-
-		ctx->acc->ref_no = 1;
-		lock_init(&ctx->acc->ref_lock);
-		if (cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr))
-			LM_ERR("cannot store context in dialog!\n");
+		if ((ctx->acc = cgr_new_acc_ctx(dlg)) != NULL)
+			/* point to the same kv_store */
+			ctx->acc->kv_store = ctx->kv_store;
 	} else {
 		LM_DBG("same acc ctx=%p\n", ctx->acc);
 	}
@@ -420,11 +427,100 @@ static void cgr_cdr(struct sip_msg *msg, struct cgr_acc_ctx *ctx, str *callid)
 	cgr_handle_cmd(msg, jmsg, cgr_proc_cdr_acc_reply, ctx);
 }
 
+static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *_params)
+{
+	struct cgr_acc_ctx *ctx;
+	struct list_head *l;
+	struct cgr_kv *kv;
+	str buf;
+	char *p;
+
+	ctx = *_params->param;
+	LM_DBG("storing in dialog acc ctx=%p\n", ctx);
+
+	buf.len = sizeof(ctx->flags) + sizeof(unsigned) + ctx->acc.len +
+		sizeof(unsigned) + ctx->dst.len + sizeof(ctx->time);
+	if (ctx->kv_store) {
+		list_for_each(l, ctx->kv_store) {
+			kv = list_entry(l, struct cgr_kv, list);
+			buf.len += sizeof(unsigned) + kv->key.len + sizeof(unsigned char);
+			if (kv->flags & CGR_KVF_TYPE_INT)
+				buf.len += sizeof(int);
+			else if (kv->flags & CGR_KVF_TYPE_STR)
+				buf.len += sizeof(unsigned) + kv->value.s.len;
+		}
+	}
+	buf.s = pkg_malloc(buf.len);
+	if (!buf.s) {
+		LM_ERR("cannot allocate buffer for context serialization!\n");
+		return;
+	}
+	p = buf.s;
+	/* flags */
+	memcpy(p, &ctx->flags, sizeof(ctx->flags));
+	p += sizeof(ctx->flags);
+
+	/* acc */
+	memcpy(p, &ctx->acc.len, sizeof(unsigned));
+	p += sizeof(unsigned);
+	memcpy(p, ctx->acc.s, ctx->acc.len);
+	p += ctx->acc.len;
+
+	/* dst */
+	memcpy(p, &ctx->dst.len, sizeof(unsigned));
+	p += sizeof(unsigned);
+	memcpy(p, ctx->dst.s, ctx->dst.len);
+	p += ctx->dst.len;
+
+	/* time */
+	memcpy(p, &ctx->time, sizeof(ctx->time));
+	p += sizeof(ctx->time);
+
+	/* kv */
+	if (ctx->kv_store) {
+		list_for_each(l, ctx->kv_store) {
+			kv = list_entry(l, struct cgr_kv, list);
+
+			/* kv->key */
+			memcpy(p, &kv->key.len, sizeof(unsigned));
+			p += sizeof(unsigned);
+			memcpy(p, kv->key.s, kv->key.len);
+			p += kv->key.len;
+
+			/* kv->flags */
+			*(unsigned char *)p = kv->flags;
+			p += sizeof(unsigned char);
+
+			/* kv->value */
+			if (kv->flags & CGR_KVF_TYPE_INT) {
+				memcpy(p, &kv->value.n, sizeof(int));
+				p += sizeof(int);
+			} else if (kv->flags & CGR_KVF_TYPE_STR) {
+				memcpy(p, &kv->value.s.len, sizeof(unsigned));
+				p += sizeof(unsigned);
+				memcpy(p, kv->value.s.s, kv->value.s.len);
+				p += kv->value.s.len;
+			}
+		}
+	}
+
+	/* sanity check :D */
+	if (buf.len != p - buf.s)
+		LM_BUG("length mismatch between computed and result: %d != %d\n",
+				buf.len, (int)(p - buf.s));
+
+	if (cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &buf) < 0)
+		LM_ERR("cannot store the serialized context value!\n");
+	pkg_free(buf.s);
+}
+
 int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c)
 {
 	str *acc;
 	str *dst;
 	struct cgr_acc_ctx *ctx;
+	struct dlg_cell *dlg;
 
 	if (msg->REQ_METHOD != METHOD_INVITE) {
 		LM_DBG("accounting not called on INVITE\n");
@@ -446,6 +542,7 @@ int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c)
 		LM_ERR("Cannot create dialog!\n");
 		return -1;
 	}
+	dlg = cgr_dlgb.get_dlg();
 
 	ctx = cgr_get_acc_ctx();
 	if (!ctx) {
@@ -474,9 +571,15 @@ int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c)
 		goto internal_error;
 	}
 
-	if (cgr_dlgb.register_dlgcb(cgr_dlgb.get_dlg(), DLGCB_TERMINATED |
-			DLGCB_EXPIRED, cgr_dlg_callback, ctx, 0)){
+	if (cgr_dlgb.register_dlgcb(dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
+			cgr_dlg_callback, ctx, 0)){
 		LM_ERR("cannot register callback for database accounting\n");
+		goto internal_error;
+	}
+
+	if (cgr_dlgb.register_dlgcb(dlg, DLGCB_DB_WRITE_VP,
+				cgr_dlg_onshutdown, ctx, NULL) != 0) {
+		LM_ERR("cannot register callback for program shutdown!\n");
 		goto internal_error;
 	}
 
@@ -555,6 +658,115 @@ static void cgr_cdr_cb(struct cell* t, int type, struct tmcb_params *ps)
 	cgr_cdr(ps->req, ctx, &dlg->callid);
 	cgr_free_acc_ctx(ctx);
 }
+
+#define CGR_CTX_COPY(_t, _s, _e) \
+	do { \
+		if (p + (_s) <= end) { \
+			memcpy((_t), p, (_s)); \
+			p += (_s); \
+		} else { \
+			LM_ERR("invalid ctx stored buffer: no more length for %s\n", _e); \
+			goto internal_error; \
+		} \
+	} while (0)
+
+void cgr_loaded_callback(struct dlg_cell *dlg, int type,
+			struct dlg_cb_params *_params)
+{
+	struct cgr_acc_ctx *ctx;
+	str buf;
+	str kvs;
+	struct cgr_kv *kv;
+	char *p, *end;
+
+	if (!dlg) {
+		LM_ERR("null dialog - cannot fetch message flags\n");
+		return;
+	}
+
+	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_ctx_str, &buf, 0) < 0) {
+		LM_DBG("ctx was not saved in dialog\n");
+		return;
+	}
+
+	ctx = cgr_new_acc_ctx(dlg);
+	if (!ctx)
+		return;
+	LM_DBG("loading from dialog acc ctx=%p\n", ctx);
+
+	p = buf.s;
+	end = buf.s + buf.len;
+	CGR_CTX_COPY(&ctx->flags, sizeof(ctx->flags), "flags");
+	CGR_CTX_COPY(&ctx->acc.len, sizeof(unsigned), "acc.len");
+	if (!(ctx->acc.s = shm_malloc(ctx->acc.len))) {
+		LM_ERR("cannot allocate account in ctx=%p len=%d!\n", ctx, ctx->acc.len);
+		goto internal_error;
+	}
+	CGR_CTX_COPY(ctx->acc.s, ctx->acc.len, "acc.s");
+	CGR_CTX_COPY(&ctx->dst.len, sizeof(unsigned), "dst.len");
+	if (!(ctx->dst.s = shm_malloc(ctx->dst.len))) {
+		LM_ERR("cannot allocate dest in ctx=%p len=%d!\n", ctx, ctx->dst.len);
+		goto internal_error;
+	}
+	CGR_CTX_COPY(ctx->dst.s, ctx->dst.len, "dst.s");
+	CGR_CTX_COPY(&ctx->time, sizeof(ctx->time), "time");
+
+	if (p < end) {
+		/* we also have some values stored in the context */
+		ctx->kv_store = shm_malloc(sizeof(*ctx->kv_store));
+		if (!ctx->kv_store) {
+			LM_ERR("cannot allocate key-value store for ctx=%p\n", ctx);
+			goto internal_error;
+		}
+		INIT_LIST_HEAD(ctx->kv_store);
+		while (p < end) {
+			LM_DBG("p=%p end=%p\n", p, end);
+			CGR_CTX_COPY(&kvs.len, sizeof(unsigned), "key.len");
+			/* do the key manually because it's not worth doing a copy */
+			if (p + kvs.len <= end) {
+				kvs.s = p;
+				p += kvs.len;
+			} else {
+				LM_ERR("invalid ctx stored buffer: no more length for key.str\n");
+				goto internal_error;
+			}
+			kv = cgr_new_kv(kvs);
+			if (!kv) {
+				LM_ERR("cannot allocate a new kv\n");
+				goto internal_error;
+			}
+			CGR_CTX_COPY(&kv->flags, sizeof(unsigned char), "key.flags");
+			if (kv->flags & CGR_KVF_TYPE_INT)
+				CGR_CTX_COPY(&kv->value.n, sizeof(int), "key.value.int");
+			else if (kv->flags & CGR_KVF_TYPE_STR) {
+				CGR_CTX_COPY(&kv->value.s.len, sizeof(unsigned), "key.value.str.len");
+				kv->value.s.s = shm_malloc(kv->value.s.len);
+				if (!kv->value.s.s) {
+					LM_ERR("out of shm mem!\n");
+					cgr_free_kv(kv);
+					goto internal_error;
+				}
+				CGR_CTX_COPY(kv->value.s.s, kv->value.s.len, "key.value.str.s");
+				/* all good - link the new value */
+				list_add(&kv->list, ctx->kv_store);
+			}
+		}
+	}
+
+	if (p != end)
+		LM_BUG("inconsistent state in cdr restore p=%p end=%p\n", p, end);
+
+	if (cgr_dlgb.register_dlgcb(dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
+			cgr_dlg_callback, ctx, 0)){
+		LM_ERR("cannot register callback for database accounting\n");
+		goto internal_error;
+	}
+	LM_DBG("successfully loaded acc ctx=%p\n", ctx);
+	return;
+internal_error:
+	cgr_free_acc_ctx(ctx);
+}
+#undef CGR_CTX_COPY
 
 static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)

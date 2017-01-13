@@ -22,6 +22,8 @@
 #ifndef _CGRATES_ACC_H_
 #define _CGRATES_ACC_H_
 
+#include "../dialog/dlg_load.h"
+
 /*
  * Starts a CGR accounting session
  * Input:
@@ -54,6 +56,8 @@ struct cgr_acc_ctx {
 };
 
 struct cgr_acc_ctx *cgr_tryget_acc_ctx(void);
+void cgr_loaded_callback(struct dlg_cell *dlg, int type,
+			struct dlg_cb_params *_params);
 
 #define CGRF_DO_CDR		(1<<0)
 #define CGRF_DO_MISSED	(1<<1)
