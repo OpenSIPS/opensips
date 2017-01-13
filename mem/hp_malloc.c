@@ -177,6 +177,20 @@ unsigned long frag_size(void* p){
 	return ((struct hp_frag*) ((char*)p - sizeof(struct hp_frag)))->size;
 }
 
+#ifdef SHM_EXTRA_STATS
+void set_stat_index (void *ptr, unsigned long idx) {
+	struct hp_frag *f;
+	f = (struct hp_frag *)((char*)ptr - sizeof(struct hp_frag));
+	f->statistic_index = idx;
+}
+
+unsigned long get_stat_index(void *ptr) {
+	struct hp_frag *f;
+	f = (struct hp_frag *)((char*)ptr - sizeof(struct hp_frag));
+	return f->statistic_index;
+}
+#endif
+
 static inline void hp_frag_attach(struct hp_block *hpb, struct hp_frag *frag)
 {
 	struct hp_frag **f;
