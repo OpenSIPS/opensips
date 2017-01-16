@@ -461,18 +461,18 @@ void init_shm_statistics(void)
 
 #ifdef SHM_SHOW_DEFAULT_GROUP
 		p = (stat_var *)&memory_mods_stats[0].fragments;
-		if (register_stat("shmem_group_default", "fragments", &p, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+		if (register_stat("shmem_group_default", "fragments", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}
 		p = (stat_var *)&memory_mods_stats[0].memory_used;
-		if (register_stat("shmem_group_default", "memory_used", &p, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+		if (register_stat("shmem_group_default", "memory_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}
 
 		p = (stat_var *)&memory_mods_stats[0].real_used;
-		if (register_stat("shmem_group_default", "real_used", &p, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+		if (register_stat("shmem_group_default", "real_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}
@@ -489,19 +489,19 @@ void init_shm_statistics(void)
 			strcpy(full_name, STAT_PREFIX);
 			strcat(full_name, mod_name->s);
 			p = (stat_var *)&memory_mods_stats[i].fragments;
-			if (register_stat(full_name, "fragments", &p, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+			if (register_stat(full_name, "fragments", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
 				LM_CRIT("can't add stat variable");
 				return;
 			}
 
 			p = (stat_var *)&memory_mods_stats[i].memory_used;
-			if (register_stat(full_name, "memory_used", &p, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+			if (register_stat(full_name, "memory_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
 				LM_CRIT("can't add stat variable");
 				return;
 			}
 
 			p = (stat_var *) &memory_mods_stats[i].real_used;
-			if (register_stat(full_name, "real_used", &p, STAT_NO_RESET|STAT_ONLY_REGISTER)!=0 ) {
+			if (register_stat(full_name, "real_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
 				LM_CRIT("can't add stat variable");
 				return;
 			}
@@ -534,6 +534,43 @@ void shm_mem_destroy(void)
 			shm_free(event_shm_pending);
 	}
 #endif
+
+#ifdef SHM_EXTRA_STATS
+	int i, core_group;
+	int offset;
+	if (memory_mods_stats) {
+		core_group = -1;
+		offset = 0;
+		#ifndef SHM_SHOW_DEFAULT_GROUP
+		offset = -1;
+		#endif
+
+		if (core_index)
+			core_group = core_index + offset;
+		else {
+			#ifndef SHM_SHOW_DEFAULT_GROUP
+			core_group = 0;
+			#endif
+		}
+
+
+		for (i = 0; i < mem_free_idx + offset; i++)
+			if (i != core_group) {
+				shm_free(memory_mods_stats[i].fragments.u.val);
+				shm_free(memory_mods_stats[i].memory_used.u.val);
+				shm_free(memory_mods_stats[i].real_used.u.val);
+			}
+
+		if (core_group >= 0) {
+			shm_free(memory_mods_stats[core_group].fragments.u.val);
+			shm_free(memory_mods_stats[core_group].memory_used.u.val);
+			shm_free(memory_mods_stats[core_group].real_used.u.val);
+		}
+
+		shm_free((void*)memory_mods_stats);
+	}
+#endif
+
 	if (shm_mempool && (shm_mempool!=(void*)-1)) {
 #ifdef SHM_MMAP
 		munmap(shm_mempool, /* SHM_MEM_SIZE */ shm_mem_size );

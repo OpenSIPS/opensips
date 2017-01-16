@@ -365,21 +365,23 @@ void destroy_stats_collector(void)
 			for( stat=collector->hstats[i] ; stat ; ) {
 				tmp_stat = stat;
 				stat = stat->hnext;
-				if ((tmp_stat->flags&STAT_IS_FUNC)==0 && tmp_stat->u.val)
+				if ((tmp_stat->flags&STAT_IS_FUNC)==0 && tmp_stat->u.val && !(tmp_stat->flags&STAT_NO_ALLOC))
 					shm_free(tmp_stat->u.val);
 				if ( (tmp_stat->flags&STAT_SHM_NAME) && tmp_stat->name.s)
 					shm_free(tmp_stat->name.s);
-				shm_free(tmp_stat);
+				if (!(tmp_stat->flags&STAT_NO_ALLOC))
+					shm_free(tmp_stat);
 			}
 			/* dynamic stats*/
 			for( stat=collector->dy_hstats[i] ; stat ; ) {
 				tmp_stat = stat;
 				stat = stat->hnext;
-				if ((tmp_stat->flags&STAT_IS_FUNC)==0 && tmp_stat->u.val)
+				if ((tmp_stat->flags&STAT_IS_FUNC)==0 && tmp_stat->u.val && !(tmp_stat->flags&STAT_NO_ALLOC))
 					shm_free(tmp_stat->u.val);
 				if ( (tmp_stat->flags&STAT_SHM_NAME) && tmp_stat->name.s)
 					shm_free(tmp_stat->name.s);
-				shm_free(tmp_stat);
+				if (!(tmp_stat->flags&STAT_NO_ALLOC))
+					shm_free(tmp_stat);
 			}
 		}
 
@@ -428,7 +430,7 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 
 	name_len = strlen(name);
 
-	if(flags&STAT_ONLY_REGISTER){
+	if(flags&STAT_NO_ALLOC){
 		stat = *pvar;
 		goto do_register;
 	}
@@ -481,7 +483,7 @@ do_register:
 
 	stat->name.len = name_len;
 	if ( (flags&STAT_SHM_NAME)==0 ) {
-		if(flags&STAT_ONLY_REGISTER)
+		if(flags&STAT_NO_ALLOC)
 			stat->name.s = shm_malloc_unsafe(name_len);
 		else
 			stat->name.s = (char*)(stat+1);
