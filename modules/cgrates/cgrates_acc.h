@@ -56,6 +56,7 @@ struct cgr_acc_ctx {
 };
 
 struct cgr_acc_ctx *cgr_tryget_acc_ctx(void);
+void cgr_ref_acc_ctx(struct cgr_acc_ctx *ctx, int how, const char *who);
 void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params);
 

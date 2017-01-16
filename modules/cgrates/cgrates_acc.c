@@ -24,14 +24,7 @@
 #include "cgrates_common.h"
 #include "cgrates_acc.h"
 
-#define CGR_REF_CHG(_c, _n) \
-	do { \
-		lock_get(&_c->ref_lock); \
-		_c->ref_no+= _n; \
-		lock_release(&_c->ref_lock); \
-	} while(0)
-#define CGR_REF_INC(_c) CGR_REF_CHG(_c, 1)
-#define CGR_REF_DEC(_c) CGR_REF_CHG(_c, -1)
+#define CGR_REF_DBG(_c, _s) LM_DBG("%s ref=%d ctx=%p\n", _s, _c->ref_no, _c)
 
 struct dlg_binds cgr_dlgb;
 struct tm_binds cgr_tmb;
@@ -58,6 +51,7 @@ static inline struct cgr_acc_ctx *cgr_new_acc_ctx(struct dlg_cell *dlg)
 	ctxstr.s = (char *)&ctx;
 
 	ctx->ref_no = 1;
+	CGR_REF_DBG(ctx, "init");
 	lock_init(&ctx->ref_lock);
 	if (cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr))
 		LM_ERR("cannot store context in dialog!\n");
@@ -79,9 +73,11 @@ static inline struct cgr_acc_ctx *cgr_get_acc_ctx(void)
 			LM_ERR("cannot find a dialog!\n");
 			return NULL;
 		}
-		if ((ctx->acc = cgr_new_acc_ctx(dlg)) != NULL)
+		if ((ctx->acc = cgr_new_acc_ctx(dlg)) != NULL) {
 			/* point to the same kv_store */
 			ctx->acc->kv_store = ctx->kv_store;
+			cgr_ref_acc_ctx(ctx->acc, 1, "general ctx");
+		}
 	} else {
 		LM_DBG("same acc ctx=%p\n", ctx->acc);
 	}
@@ -138,28 +134,40 @@ static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx)
 {
 	struct list_head *l;
 	struct list_head *t;
+	struct dlg_cell *dlg;
+	str ctxstr;
 
-	lock_get(&ctx->ref_lock);
-	ctx->ref_no--;
-
-	if (ctx->ref_no == 0) {
-		LM_DBG("release acc ctx=%p\n", ctx);
-		if (ctx->acc.s)
-			shm_free(ctx->acc.s);
-		if (ctx->dst.s)
-			shm_free(ctx->dst.s);
-		/* remove all elements */
-		if (ctx->kv_store) {
-			list_for_each_safe(l, t, ctx->kv_store)
-				cgr_free_kv(list_entry(l, struct cgr_kv, list));
-			shm_free(ctx->kv_store);
-		}
-		shm_free(ctx);
-	} else if (ctx->ref_no < 0) {
-		LM_BUG("ref=%d ctx=%p gone negative!\n", ctx->ref_no, ctx);
-	} else {
-		LM_DBG("ref=%d ctx=%p\n", ctx->ref_no, ctx);
+	LM_DBG("release acc ctx=%p\n", ctx);
+	if (ctx->acc.s)
+		shm_free(ctx->acc.s);
+	if (ctx->dst.s)
+		shm_free(ctx->dst.s);
+	/* remove all elements */
+	if (ctx->kv_store) {
+		list_for_each_safe(l, t, ctx->kv_store)
+			cgr_free_kv(list_entry(l, struct cgr_kv, list));
+		shm_free(ctx->kv_store);
+		ctx->kv_store = 0;
 	}
+	shm_free(ctx);
+	ctx = 0;
+	ctxstr.len = sizeof(ctx);
+	ctxstr.s = (char *)&ctx;
+	dlg = cgr_dlgb.get_dlg();
+	if (!dlg || cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr))
+		LM_ERR("cannot reset context in dialog %p!\n", dlg);
+}
+
+void cgr_ref_acc_ctx(struct cgr_acc_ctx *ctx, int how, const char *who)
+{
+	lock_get(&ctx->ref_lock);
+	ctx->ref_no += how;
+	CGR_REF_DBG(ctx, who);
+
+	if (ctx->ref_no == 0)
+		cgr_free_acc_ctx(ctx);
+	else if (ctx->ref_no < 0)
+		LM_BUG("ref=%d ctx=%p gone negative!\n", ctx->ref_no, ctx);
 
 	lock_release(&ctx->ref_lock);
 }
@@ -521,6 +529,7 @@ int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c)
 	str *dst;
 	struct cgr_acc_ctx *ctx;
 	struct dlg_cell *dlg;
+	int unref = 1;
 
 	if (msg->REQ_METHOD != METHOD_INVITE) {
 		LM_DBG("accounting not called on INVITE\n");
@@ -564,6 +573,8 @@ int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c)
 		LM_ERR("cannot register tm callbacks\n");
 		goto internal_error;
 	}
+	unref--;
+	cgr_ref_acc_ctx(ctx, 1, "tm");
 
 	if (cgr_tmb.register_tmcb( msg, 0, TMCB_ON_FAILURE|TMCB_TRANS_CANCELLED,
 			cgr_tmcb_func, ctx, NULL)<=0) {
@@ -585,16 +596,16 @@ int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c)
 
 	return 1;
 internal_error:
-	cgr_free_acc_ctx(ctx);
+	cgr_ref_acc_ctx(ctx, unref, "acc");
 	return -1;
 }
 
 static void cgr_tmcb_func_free(void *param)
 {
-	cgr_free_acc_ctx((struct cgr_acc_ctx *)param);
+	cgr_ref_acc_ctx((struct cgr_acc_ctx *)param, -1, "tm");
 }
 
-static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps)
+static void cgr_tmcb_func(struct cell* t, int type, struct tmcb_params *ps)
 {
 	struct cgr_acc_ctx *ctx;
 	json_object *jmsg;
@@ -611,7 +622,7 @@ static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps)
 	if (type & (TMCB_ON_FAILURE|TMCB_TRANS_CANCELLED)) {
 		if (ctx->flags & CGRF_DO_MISSED && ctx->flags & CGRF_DO_CDR)
 			cgr_cdr(ps->req, ctx, &t->callid);
-		return;
+		goto unref;
 	} else if ((type & TMCB_RESPONSE_OUT) && (ps->code < 200 || ps->code >= 300)) {
 		return;
 	}
@@ -621,7 +632,7 @@ static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps)
 	dlg = cgr_dlgb.get_dlg();
 	if (!dlg) {
 		LM_ERR("cannot find dialog!\n");
-		return;
+		goto unref;
 	}
 	jmsg = cgr_get_start_acc_msg(ps->req, ctx);
 	if (!jmsg) {
@@ -632,16 +643,16 @@ static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps)
 	if (cgr_handle_cmd(ps->req, jmsg, cgr_proc_start_acc_reply, dlg) < 0)
 		goto error;
 
-	CGR_REF_INC(ctx);
+	/* should have reffed engaged and unref tm, so we simply return :D */
 	return;
 error:
 	terminate_str.s = "CGRateS Accounting Denied";
 	terminate_str.len = strlen(terminate_str.s);
-	if (cgr_dlgb.terminate_dlg(dlg->h_entry, dlg->h_id, &terminate_str) < 0)
-		LM_ERR("cannot terminate the dialog!\n");
-	dlg->lifetime = 0;
-	dlg->lifetime_dirty = 1; /* not really necessary */
-	return;
+	if (cgr_dlgb.terminate_dlg(dlg->h_entry, dlg->h_id, &terminate_str) >= 0)
+		return;
+	LM_ERR("cannot terminate the dialog!\n");
+unref:
+	cgr_ref_acc_ctx(ctx, -1, "tm");
 }
 
 static void cgr_cdr_cb(struct cell* t, int type, struct tmcb_params *ps)
@@ -656,7 +667,7 @@ static void cgr_cdr_cb(struct cell* t, int type, struct tmcb_params *ps)
 	ctx = *ps->param;
 
 	cgr_cdr(ps->req, ctx, &dlg->callid);
-	cgr_free_acc_ctx(ctx);
+	cgr_ref_acc_ctx(ctx, -1, "engaged");
 }
 
 #define CGR_CTX_COPY(_t, _s, _e) \
@@ -756,6 +767,7 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 	if (p != end)
 		LM_BUG("inconsistent state in cdr restore p=%p end=%p\n", p, end);
 
+	cgr_ref_acc_ctx(ctx, 1, "dialog");
 	if (cgr_dlgb.register_dlgcb(dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
 			cgr_dlg_callback, ctx, 0)){
 		LM_ERR("cannot register callback for database accounting\n");
@@ -788,7 +800,7 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 	}
 
 	if (cgr_handle_cmd(_params->msg, jmsg, cgr_proc_stop_acc_reply, ctx) < 0)
-		goto free_ctx;
+		goto unref_ctx;
 
 	if (ctx->flags & CGRF_DO_CDR) {
 		/* if it's not a local transaction we do the accounting on the tm callbacks */
@@ -800,7 +812,7 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 			if (cgr_tmb.register_tmcb(_params->msg, NULL,
 							TMCB_RESPONSE_OUT, cgr_cdr_cb, ctx, 0) < 0) {
 				LM_ERR("failed to register cdr callback!\n");
-				goto free_ctx;
+				goto unref_ctx;
 			}
 			return;
 		} else if (t != NULL && cgr_tmb.t_is_local(_params->msg)) {
@@ -809,6 +821,6 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 			cgr_cdr(_params->msg, ctx, &dlg->callid);
 		}
 	}
-free_ctx:
-	cgr_free_acc_ctx(ctx);
+unref_ctx:
+	cgr_ref_acc_ctx(ctx, -1, "dialog");
 }

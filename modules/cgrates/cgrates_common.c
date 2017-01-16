@@ -268,6 +268,7 @@ struct cgr_ctx *cgr_get_ctx(void)
 		INIT_LIST_HEAD(ctx->kv_store);
 	} else {
 		ctx->kv_store = ctx->acc->kv_store;
+		cgr_ref_acc_ctx(ctx->acc, 1, "general ctx");
 	}
 	
 	if (t)
@@ -698,7 +699,8 @@ void cgr_free_ctx(void *param)
 		list_for_each_safe(l, t, ctx->kv_store)
 			cgr_free_kv(list_entry(l, struct cgr_kv, list));
 		shm_free(ctx->kv_store);
-	}
+	} else
+		cgr_ref_acc_ctx(ctx->acc, -1, "general ctx");
 	shm_free(ctx);
 }
 
