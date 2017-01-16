@@ -154,7 +154,7 @@ static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx)
 	ctxstr.len = sizeof(ctx);
 	ctxstr.s = (char *)&ctx;
 	dlg = cgr_dlgb.get_dlg();
-	if (!dlg || cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr))
+	if (dlg && !cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr))
 		LM_ERR("cannot reset context in dialog %p!\n", dlg);
 }
 
