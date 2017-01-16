@@ -81,25 +81,33 @@ struct cgr_conn *cgr_get_default_conn(struct cgr_engine *e)
 {
 	time_t now = time(NULL);
 
-	if (e->disable_time && e->disable_time + cgre_retry_tout > now)
+	if (e->disable_time && e->disable_time + cgre_retry_tout > now) {
+		LM_DBG("engine=%p down now=%lu until=%lu\n", e, now,
+				e->disable_time + cgre_retry_tout);
 		return NULL;
+	}
+	LM_INFO("deault_con = %p\n", e->default_con);
 
 	/* use the default connection */
 	if (!e->default_con)
 		return NULL;
+	LM_DBG("conn=%p state=%x now=%lu until=%lu\n", e->default_con,
+			e->default_con->state, now, e->default_con->disable_time + cgre_retry_tout);
 	if (e->default_con->state == CGRC_FREE) {
 		LM_DBG("using default connection - running in sync mode!\n");
 		return e->default_con;
 	} else if (e->default_con->disable_time + cgre_retry_tout < now) {
-		if (tcp_connect_blocking(e->default_con->fd, &e->su.s, sockaddru_len(e->su))<0){
-				LM_INFO("cannot connect to %.*s:%d\n", e->host.len,
-						e->host.s, e->port);
-				e->default_con->disable_time = now;
-			} else {
-				e->default_con->state = CGRC_FREE;
-				e->disable_time = 0;
-				return e->default_con;
-			}
+		if (cgrc_conn(e->default_con)<0){
+			LM_INFO("cannot connect to %.*s:%d\n", e->host.len,
+					e->host.s, e->port);
+			e->default_con->disable_time = now;
+		} else {
+			LM_INFO("re-connected to %.*s:%d\n", e->host.len,
+					e->host.s, e->port);
+			e->default_con->state = CGRC_FREE;
+			e->disable_time = 0;
+			return e->default_con;
+		}
 	}
 	return NULL;
 }
