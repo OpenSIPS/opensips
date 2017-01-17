@@ -36,6 +36,7 @@ Irina-Maria Stanescu
               1.2.1. Overview
               1.2.2. Definitions and syntax
               1.2.3. How it works
+              1.2.4. Radius accounting dependencies
 
         1.3. Multi Call-Legs accounting
 
@@ -260,6 +261,12 @@ modparam("acc", "extra_fields", "log: a -> test_a")
    will enable you to set the value for test_a field of the log
    only by setting $acc_etra(a) variable. Else the field shall be
    log with no value(null).
+
+1.2.4. Radius accounting dependencies
+
+   If radius accounting is used, except from a radius client which
+   is mandatory, dictionary.rfc2866 must be used in order for the
+   module to work properly.
 
 1.3. Multi Call-Legs accounting
 

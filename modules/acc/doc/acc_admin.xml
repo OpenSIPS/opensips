@@ -198,6 +198,13 @@ modparam("acc", "extra_fields", "log: a -> test_a")
 				Else the field shall be log with no value(null).
 			</para>
 		</section>
+		<section>
+			<title>Radius accounting dependencies</title>
+			<para>
+				If radius accounting is used, except from a radius client library which is mandatory,
+				<emphasis role='bold'>dictionary.rfc2866</emphasis> must be included for the module
+				to work properly.</para>
+		</section>
 	</section>
 
 	<section id="multi-call-legs">
