@@ -22,6 +22,7 @@
 #ifndef _CGRATES_ACC_H_
 #define _CGRATES_ACC_H_
 
+#include <json.h>
 #include "../dialog/dlg_load.h"
 
 /*
@@ -59,6 +60,7 @@ struct cgr_acc_ctx *cgr_tryget_acc_ctx(void);
 void cgr_ref_acc_ctx(struct cgr_acc_ctx *ctx, int how, const char *who);
 void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params);
+int cgr_acc_terminate(json_object *param, json_object **ret);
 
 #define CGRF_DO_CDR		(1<<0)
 #define CGRF_DO_MISSED	(1<<1)

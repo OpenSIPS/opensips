@@ -86,13 +86,10 @@ struct cgr_conn *cgr_get_default_conn(struct cgr_engine *e)
 				e->disable_time + cgre_retry_tout);
 		return NULL;
 	}
-	LM_INFO("deault_con = %p\n", e->default_con);
 
 	/* use the default connection */
 	if (!e->default_con)
 		return NULL;
-	LM_DBG("conn=%p state=%x now=%lu until=%lu\n", e->default_con,
-			e->default_con->state, now, e->default_con->disable_time + cgre_retry_tout);
 	if (e->default_con->state == CGRC_FREE) {
 		LM_DBG("using default connection - running in sync mode!\n");
 		return e->default_con;
@@ -106,8 +103,12 @@ struct cgr_conn *cgr_get_default_conn(struct cgr_engine *e)
 					e->host.s, e->port);
 			e->default_con->state = CGRC_FREE;
 			e->disable_time = 0;
+			cgrc_start_listen(e->default_con);
 			return e->default_con;
 		}
+	} else {
+		LM_DBG("conn=%p state=%x now=%lu until=%lu\n", e->default_con,
+				e->default_con->state, now, e->default_con->disable_time + cgre_retry_tout);
 	}
 	return NULL;
 }

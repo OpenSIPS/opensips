@@ -215,6 +215,17 @@ error:
 	return -1;
 }
 
+int cgr_msg_push_int(struct cgr_msg *cmsg, const char *key, unsigned int value)
+{
+	json_object *jmsg;
+	jmsg = json_object_new_int(value);
+	JSON_CHECK(jmsg, key);
+	json_object_object_add(cmsg->params, key, jmsg);
+	return 0;
+error:
+	return -1;
+}
+
 #undef JSON_CHECK
 
 /* context manipulation */
@@ -305,7 +316,6 @@ int cgr_handle_cmd(struct sip_msg *msg, json_object *jmsg,
 	struct cgr_conn *c = NULL;
 	int ret = 1;
 	str smsg;
-	char *r;
 
 	/* reset the error */
 	CGR_RESET_REPLY_CTX();
@@ -313,8 +323,7 @@ int cgr_handle_cmd(struct sip_msg *msg, json_object *jmsg,
 	smsg.s = (char *)json_object_to_json_string(jmsg);
 	smsg.len = strlen(smsg.s);
 
-	r = (char *)json_object_to_json_string(jmsg);
-	LM_DBG("sending json string: %s\n", r);
+	LM_DBG("sending json string: %s\n", smsg.s);
 
 	/* connect to all servers */
 	/* go through each server and initialize the state */
@@ -389,7 +398,6 @@ int cgr_handle_async_cmd(struct sip_msg *msg, json_object *jmsg,
 	struct cgr_param *cp = NULL;
 	int ret = 1;
 	str smsg;
-	char *r;
 
 	smsg.s = (char *)json_object_to_json_string(jmsg);
 	smsg.len = strlen(smsg.s);
@@ -403,8 +411,7 @@ int cgr_handle_async_cmd(struct sip_msg *msg, json_object *jmsg,
 	cp->reply_f = f;
 	cp->reply_p = p;
 
-	r = (char *)json_object_to_json_string(jmsg);
-	LM_DBG("sending json string: %s\n", r);
+	LM_DBG("sending json string: %s\n", smsg.s);
 
 	list_for_each(l, &cgrates_engines) {
 		e = list_entry(l, struct cgr_engine, list);
@@ -532,19 +539,59 @@ disable:
 /* function ran when an event is sent over a fd */
 int cgrates_async_resume_req(int fd, void *param)
 {
-	if (cgrc_async_read((struct cgr_conn *)param, NULL, NULL) < 0)
-		return -1;
+	cgrc_async_read((struct cgr_conn *)param, NULL, NULL);
 	/* if successfull, just continue listening */
 	if (async_status == ASYNC_DONE)
 		async_status = ASYNC_CONTINUE;
+
+	/* XXX: return is only used if fd changes - we are not currently
+	 * support this */
 	return 1;
 }
 
-static inline int cgrates_process_req(struct cgr_engine *e, json_object *id,
+static inline int cgrates_process_req(struct cgr_conn *c, json_object *id,
 		char *method, json_object *param)
 {
+	int ret;
+	json_object *jobj = NULL;
+	json_object *jret = NULL;
+	str smsg;
+
 	LM_INFO("Received new request method=%s param=%p\n",
 			method, param);
+	if (strcmp(method, "SMGClientV1.DisconnectSession") == 0) {
+		ret = cgr_acc_terminate(param, &jret);
+	} else {
+		LM_ERR("cannot handle method %s\n", method);
+		ret = -1;
+		jret = json_object_new_string("Unknown Method");
+	}
+
+	jobj = json_object_new_object();
+	if (!jobj) {
+		LM_ERR("cannot create a new json object!\n");
+		if (jret)
+			json_object_put(jret);
+		return -1;
+	}
+	if (ret < 0) {
+		json_object_object_add(jobj, "error", jret);
+		json_object_object_add(jobj, "result", NULL);
+	} else {
+		json_object_object_add(jobj, "error", NULL);
+		json_object_object_add(jobj, "result", jret);
+	}
+	if (id)
+		json_object_object_add(jobj, "id", id);
+
+	smsg.s = (char *)json_object_to_json_string(jobj);
+	smsg.len = strlen(smsg.s);
+
+	LM_DBG("sending json response: %s\n", smsg.s);
+	cgrc_send(c, &smsg);
+
+	json_object_put(jobj);
+
 	return -1;
 }
 
@@ -572,7 +619,6 @@ int cgrates_process(json_object *jobj,
 	int l = 0;
 	enum cgrm_type msg_type = CGRM_UNSPEC;
 	enum json_type type;
-	struct cgr_engine *e = c->engine;
 
 	LM_DBG("Processing JSON: %s\n",
 			(char *)json_object_to_json_string(jobj));
@@ -603,7 +649,7 @@ int cgrates_process(json_object *jobj,
 					err = 0;
 					break;
 				case json_type_string:
-					error = (char *)json_object_to_json_string(val);
+					error = (char *)json_object_get_string(val);
 					break;
 				default:
 					LM_DBG("Unknown type %d for the \"error\" key\n", type);
@@ -619,7 +665,7 @@ int cgrates_process(json_object *jobj,
 				LM_DBG("Unknown type %d for the \"method\" key\n", type);
 				return -3;
 			}
-			method = (char *)json_object_to_json_string(val);
+			method = (char *)json_object_get_string(val);
 		} else if (strcmp(key, "params") == 0) {
 			if (msg_type != CGRM_UNSPEC && msg_type != CGRM_REQ) {
 				LM_ERR("Invalid JSON \"params\" property in a JSON-RPC reply!\n");
@@ -677,7 +723,7 @@ int cgrates_process(json_object *jobj,
 				LM_ERR("no method or parameters specified!\n");
 				return -3;
 			}
-			cgrates_process_req(e, id, method, jresult);
+			cgrates_process_req(c, id, method, jresult);
 			return 0;
 	}
 	/* never gets here */

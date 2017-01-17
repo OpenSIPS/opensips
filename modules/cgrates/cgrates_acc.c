@@ -154,7 +154,7 @@ static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx)
 	ctxstr.len = sizeof(ctx);
 	ctxstr.s = (char *)&ctx;
 	dlg = cgr_dlgb.get_dlg();
-	if (dlg && !cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr))
+	if (dlg && cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr) < 0)
 		LM_ERR("cannot reset context in dialog %p!\n", dlg);
 }
 
@@ -263,7 +263,7 @@ static inline int cgr_help_set_str(str **dst, str src)
 
 
 static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
-		struct cgr_acc_ctx *ctx)
+		struct dlg_cell *dlg, struct cgr_acc_ctx *ctx)
 {
 	struct cgr_msg *cmsg;
 	str stime;
@@ -287,6 +287,18 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 	if (ctx && !cgr_get_const_kv(ctx->kv_store, "OriginID") &&
 			cgr_msg_push_str(cmsg, "OriginID", &msg->callid->body) < 0) {
 		LM_ERR("cannot push OriginID!\n");
+		goto error;
+	}
+
+	if (ctx && !cgr_get_const_kv(ctx->kv_store, "DialogID") &&
+			cgr_msg_push_int(cmsg, "DialogID", dlg->h_id) < 0) {
+		LM_ERR("cannot push DialogID!\n");
+		goto error;
+	}
+
+	if (ctx && !cgr_get_const_kv(ctx->kv_store, "DialogEntry") &&
+			cgr_msg_push_int(cmsg, "DialogEntry", dlg->h_entry) < 0) {
+		LM_ERR("cannot push DialogEntry!\n");
 		goto error;
 	}
 
@@ -634,7 +646,7 @@ static void cgr_tmcb_func(struct cell* t, int type, struct tmcb_params *ps)
 		LM_ERR("cannot find dialog!\n");
 		goto unref;
 	}
-	jmsg = cgr_get_start_acc_msg(ps->req, ctx);
+	jmsg = cgr_get_start_acc_msg(ps->req, dlg, ctx);
 	if (!jmsg) {
 		LM_ERR("cannot build the json to send to cgrates\n");
 		goto error;
@@ -823,4 +835,78 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 	}
 unref_ctx:
 	cgr_ref_acc_ctx(ctx, -1, "dialog");
+}
+
+int cgr_acc_terminate(json_object *param, json_object **ret)
+{
+	str terminate_str;
+	const char *err;
+	str reason = {0, 0};
+	json_object *event = NULL;
+	unsigned int h_entry, h_id;
+	unsigned int h_id_found = 0;
+	unsigned int h_entry_found = 0;
+	static str terminate_str_pre = str_init("CGRateS Disconnect: ");
+
+	json_object_object_foreach(param, pkey, pval) {
+		switch (json_object_get_type(pval)) {
+		case json_type_string:
+			if (strcmp(pkey, "Reason") != 0)
+				continue;
+			reason.s = (char *)json_object_get_string(pval);
+		break;
+		case json_type_object:
+			if (strcmp(pkey, "EventStart") != 0)
+				continue;
+			event = json_object_get(pval);
+		default:
+		break;
+		}
+	}
+	if (!event) {
+		err = "EventStart parameter not found";
+		goto error;
+	}
+
+	json_object_object_foreach(event, key, val) {
+		if (strcmp(key, "DialogID") == 0) {
+			h_id = json_object_get_int(val);
+			h_id_found = 1;
+		} else if (strcmp(key, "DialogEntry") == 0) {
+			h_entry = json_object_get_int(val);
+			h_entry_found = 1;
+		}
+	}
+	if (!h_entry_found || !h_id_found) {
+		err = "dialog identifiers not found";
+		goto error;
+	}
+	if (reason.s) {
+		reason.len = strlen(reason.s);
+		terminate_str.s = pkg_malloc(terminate_str_pre.len + reason.len);
+		if (!terminate_str.s) {
+			err = "internal error";
+			goto error;
+		}
+		memcpy(terminate_str.s, terminate_str_pre.s, terminate_str_pre.len);
+		memcpy(terminate_str.s + terminate_str_pre.len, reason.s, reason.len);
+		terminate_str.len = terminate_str_pre.len + reason.len;
+	} else {
+		terminate_str.s = terminate_str_pre.s;
+		terminate_str.len = terminate_str_pre.len - 2 /* skip the ': ' */;
+	}
+	if (cgr_dlgb.terminate_dlg(h_entry, h_id, &terminate_str) < 0) {
+		if (terminate_str.s != terminate_str_pre.s)
+			pkg_free(terminate_str.s);
+		err = "cannot terminate dialog";
+		goto error;
+	}
+	if (terminate_str.s != terminate_str_pre.s)
+		pkg_free(terminate_str.s);
+	*ret = json_object_new_int(0);
+	return 0;
+error:
+	LM_ERR("cannot handle terminate: %s\n", err);
+	*ret = json_object_new_string(err);
+	return -1;
 }

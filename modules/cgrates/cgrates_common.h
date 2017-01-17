@@ -88,6 +88,7 @@ struct cgr_msg {
 int cgrates_set_reply(int type, int_str *value);
 struct cgr_msg *cgr_get_generic_msg(str *method, struct list_head *list);
 int cgr_msg_push_str(struct cgr_msg *cmsg, const char *key, str *value);
+int cgr_msg_push_int(struct cgr_msg *cmsg, const char *key, unsigned int value);
 
 /* key-value manipulation */
 struct cgr_kv *cgr_new_kv(str key);
