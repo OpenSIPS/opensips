@@ -1412,6 +1412,16 @@ void *hp_shm_realloc(struct hp_block *hpb, void *p, unsigned long size)
 	return p;
 }
 
+#ifdef SHM_EXTRA_STATS
+void set_indexes(int core_index) {
+
+	struct hp_frag* f;
+	for (f=shm_block->first_frag; (char*)f<(char*)shm_block->last_frag; f=FRAG_NEXT(f))
+		if (!f->is_free)
+			f->statistic_index = core_index;
+}
+#endif
+
 void hp_status(struct hp_block *hpb)
 {
 	struct hp_frag *f;

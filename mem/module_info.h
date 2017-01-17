@@ -26,6 +26,7 @@
 #define _MODULE_INFO__
 
 #include "../statistics.h"
+#include "../lock_ops.h" 
 
 #define STAT_SUFIX "_mem_stat"
 #define STAT_PREFIX "shmem_group_"
@@ -41,6 +42,8 @@ struct module_info{
 	stat_var fragments;
 	stat_var memory_used;
 	stat_var real_used;
+    stat_var max_real_used;
+    gen_lock_t *lock;
 };
 
 struct multi_str{
