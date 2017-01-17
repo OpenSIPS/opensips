@@ -221,6 +221,13 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 			embedded in a single string in a comma-separated format.
 			</para>
 		</section>
+		<section>
+			<title>Radius accounting dependencies</title>
+			<para>
+				If radius accounting is used, except from a radius client library which is mandatory,
+				<emphasis role='bold'>dictionary.rfc2866</emphasis> must be included for the module
+				to work properly.</para>
+		</section>
 	</section>
 
 	<section id="multi-call-legs">
