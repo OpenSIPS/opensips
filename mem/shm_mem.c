@@ -331,6 +331,21 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 	if (init_new_stat((stat_var*)&memory_mods_stats[0].real_used) < 0)
 		return -1;
 
+	if (init_new_stat((stat_var*)&memory_mods_stats[0].max_real_used) < 0)
+		return -1;
+
+	memory_mods_stats[0].lock = shm_malloc_unsafe(sizeof (gen_lock_t));
+
+	if (!memory_mods_stats[0].lock) {
+		LM_ERR("Failed to allocate lock \n");
+		return -1;
+	}
+
+	if (!lock_init(memory_mods_stats[0].lock)) {
+		LM_ERR("Failed to init lock \n");
+		return -1;
+	}
+
 	#ifdef HP_MALLOC
 		update_stat((stat_var*)&memory_mods_stats[0].fragments, shm_block->total_fragments);
 	#else
@@ -477,6 +492,12 @@ void init_shm_statistics(void)
 			return;
 		}
 
+		p = (stat_var *)&memory_mods_stats[0].max_real_used;
+		if (register_stat("shmem_group_default", "max_real_used", &p, STAT_NO_ALLOC)!=0 ) {
+			LM_CRIT("can't add stat variable");
+			return;
+		}
+
 
 		i = mem_free_idx - 1;
 #else
@@ -502,6 +523,12 @@ void init_shm_statistics(void)
 
 			p = (stat_var *) &memory_mods_stats[i].real_used;
 			if (register_stat(full_name, "real_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
+				LM_CRIT("can't add stat variable");
+				return;
+			}
+
+			p = (stat_var *) &memory_mods_stats[i].max_real_used;
+			if (register_stat(full_name, "max_real_used", &p, STAT_NO_ALLOC) != 0) {
 				LM_CRIT("can't add stat variable");
 				return;
 			}
@@ -559,12 +586,17 @@ void shm_mem_destroy(void)
 				shm_free(memory_mods_stats[i].fragments.u.val);
 				shm_free(memory_mods_stats[i].memory_used.u.val);
 				shm_free(memory_mods_stats[i].real_used.u.val);
+				shm_free(memory_mods_stats[i].max_real_used.u.val);
+				lock_destroy(memory_mods_stats[i].lock);
+				lock_dealloc(memory_mods_stats[i].lock);
 			}
 
 		if (core_group >= 0) {
 			shm_free(memory_mods_stats[core_group].fragments.u.val);
 			shm_free(memory_mods_stats[core_group].memory_used.u.val);
 			shm_free(memory_mods_stats[core_group].real_used.u.val);
+			lock_destroy(memory_mods_stats[core_group].lock);
+			lock_dealloc(memory_mods_stats[core_group].lock);
 		}
 
 		shm_free((void*)memory_mods_stats);

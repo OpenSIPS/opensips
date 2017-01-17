@@ -144,6 +144,7 @@ void  fm_info(struct fm_block*, struct mem_info*);
 #ifdef SHM_EXTRA_STATS
 void set_stat_index (void *ptr, unsigned long idx);
 unsigned long get_stat_index(void *ptr);
+void set_indexes(int core_index);
 #endif
 
 #ifdef DBG_MALLOC
