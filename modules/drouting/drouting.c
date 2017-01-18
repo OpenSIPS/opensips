@@ -192,12 +192,15 @@ typedef struct dr_partition {
 		gparam_p part_name;
 	} v;
 
-	enum dr_partition_type { DR_PTR_PART, DR_GPARAM_PART, DR_WILDCARD_PART, DR_NO_PART } type;
+	enum dr_partition_type { DR_PTR_PART, DR_GPARAM_PART,
+		DR_WILDCARD_PART, DR_NO_PART } type;
 } dr_partition_t;
 
 typedef struct dr_part_group {
+	/* pointer to partition */
 	dr_partition_t * dr_part;
-	dr_group_t * group;
+	/* pointer to the group info (int or variable) */
+	gparam_t *gid;
 } dr_part_group_t;
 
 static dr_part_group_t * default_part; /* for do_routing, used when
@@ -229,13 +232,15 @@ static int fixup_dr_disable(void **,int);
 //static struct head_db * get_partition(const str *);
 static int _is_dr_gw_w_part(struct sip_msg* , char * , char* ,
 		int , struct ip_addr* , unsigned int);
-static int use_next_gw_w_part( struct sip_msg*, struct head_db *, char *, char *, char *);
+static int use_next_gw_w_part( struct sip_msg*, struct head_db *, char *,
+		char *, char *);
 static int dr_disable(struct sip_msg *req, char * current_partition);
-static int dr_disable_w_part(struct sip_msg *req, struct head_db *current_partition);
+static int dr_disable_w_part(struct sip_msg *req,
+		struct head_db *current_partition);
 static int to_partition(struct sip_msg*, dr_partition_t *,
 		struct head_db **);
 static inline int init_part_grp(dr_part_group_t **, struct head_db *,
-		dr_group_t*);
+		gparam_t*);
 
 
 /* reader-writers lock for reloading the data */
@@ -1985,7 +1990,8 @@ static inline str* build_ruri(struct sip_uri *uri, int strip, str *pri,
 
 
 static inline int init_part_grp(dr_part_group_t ** part_w_no_grp,
-		struct head_db * current_partition, dr_group_t * drg) {
+							struct head_db * current_partition, gparam_t * grp)
+{
 	dr_partition_t * part;
 	*part_w_no_grp = pkg_malloc(sizeof(dr_part_group_t));
 	if(*part_w_no_grp == NULL) {
@@ -2002,7 +2008,7 @@ static inline int init_part_grp(dr_part_group_t ** part_w_no_grp,
 	part->type = DR_PTR_PART;
 	part->v.part = current_partition;
 
-	(*part_w_no_grp)->group = drg;
+	(*part_w_no_grp)->gid = grp;
 	(*part_w_no_grp)->dr_part = part;
 	return 0;
 }
@@ -2043,9 +2049,9 @@ static int do_routing_1(struct sip_msg* msg, char *part_grp, char* grp_flags,
 			return -1;
 		}
 		if(part_grp != NULL) {
-			default_part->group = ((dr_part_group_t*)part_grp)->group;
+			default_part->gid = ((dr_part_group_t*)part_grp)->gid;
 		} else {
-			default_part->group = NULL;
+			default_part->gid = NULL;
 		}
 		dr_part_group = default_part;
 		_flags = grp_flags;
@@ -2142,7 +2148,7 @@ static int use_next_gw_w_part(struct sip_msg* msg,
 	struct usr_avp *avp, *avp_ru, *avp_sk;
 	unsigned int flags;
 	gparam_t wl_list;
-	dr_group_t grp;
+	gparam_t grp;
 	int_str val;
 	pv_value_t pv_val;
 	str ruri;
@@ -2326,8 +2332,8 @@ rule_fallback:
 		LM_ERR("Cannot find group AVP during a fallback\n");
 		goto fallback_failed;
 	}
-	grp.type = 0;
-	grp.u.grp_id = val.n;
+	grp.type = GPARAM_TYPE_INT;
+	grp.v.ival = val.n;
 
 	if (!search_first_avp( AVP_VAL_STR, current_partition->avpID_store_whitelist,
 				&val, NULL)) {
@@ -2552,7 +2558,7 @@ struct head_db * get_partition(const str *name) {
 
 
 static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
-		int flags, gparam_t* whitelist)
+												int flags, gparam_t* whitelist)
 {
 	unsigned short dsts_idx[DR_MAX_GWLIST];
 	unsigned short carrier_idx[DR_MAX_GWLIST];
@@ -2560,7 +2566,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 	struct sip_uri  uri;
 	rt_info_t  *rt_info;
 	pv_value_t pv_val;
-	struct usr_avp *avp, *avp_prefix=NULL, *avp_index=NULL;
+	struct usr_avp *avp_prefix=NULL, *avp_index=NULL;
 	str parsed_whitelist;
 	pgw_list_t *dst, *cdst;
 	pgw_list_t *wl_list;
@@ -2568,7 +2574,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 	unsigned int rule_idx;
 	struct head_db *current_partition=NULL;
 	unsigned short wl_len;
-	dr_group_t * drg;
+	gparam_t *gid;
 	str username;
 	int grp_id;
 	int i, j, n;
@@ -2646,7 +2652,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 			LM_ERR("Error while loading configuration for do_routing\n");
 		}
 	}
-	drg = part_group->group;
+	gid = part_group->gid;
 
 
 	/* allow no GWs if we're only trying to use DR for checking purposes */
@@ -2675,7 +2681,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 
 	if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
 		/* not internally triggered, so get data from SIP msg */
-		if(drg==NULL)
+		if(gid==NULL)
 		{
 			/* get the username from FROM_HDR */
 			if (parse_from_header(msg)!=0) {
@@ -2695,18 +2701,10 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 				goto error1;
 			}
 		} else {
-			if(drg->type==0)
-				grp_id = (int)drg->u.grp_id;
-			else if(drg->type==1) {
-				grp_id = 0; /* call get avp here */
-				if((avp=search_first_avp(0, drg->u.avp_name, &val, 0))==NULL ||
-						(avp->flags&AVP_VAL_STR) ) {
-					LM_ERR( "failed to get group id from avp\n");
-					goto error1;
-				}
-				grp_id = val.n;
-			} else
-				grp_id = 0;
+			if (fixup_get_ivalue( msg, gid, &grp_id)!=0) {
+				LM_ERR("failed to get Group ID\n");
+				goto error1;
+			}
 		}
 
 		/* get the number/RURI and make a copy of it */
@@ -2760,7 +2758,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 			LM_ERR("unable to parse RURI from AVP\n");
 			goto error1;
 		}
-		grp_id = (int)drg->u.grp_id;
+		grp_id = (int)gid->v.ival;
 		ruri.s = NULL; ruri.len = 0;
 	}
 
@@ -3416,15 +3414,15 @@ error_free:
 	return -1;
 }
 
-int fxup_split_param(void ** fst_param, void ** scnd_param) {
+int fxup_split_param(char* fst_param, char** scnd_param) {
 	char * ch_it ;
 	*scnd_param = 0;
 
-	if(*fst_param == NULL || ((char*)*fst_param)[0] == 0) { /* NULL string */
+	if(fst_param == NULL || *fst_param==0 ) { /* NULL string */
 		return -1;
 	}
 
-	for(ch_it=*fst_param; (*ch_it)!=0 && (*ch_it)!=':'; ch_it++);
+	for(ch_it=fst_param; (*ch_it)!=0 && (*ch_it)!=':'; ch_it++);
 
 	if(*ch_it == 0) {
 		LM_CRIT("No partition specified. Missing ':'.\n");
@@ -3437,11 +3435,11 @@ int fxup_split_param(void ** fst_param, void ** scnd_param) {
 	return 0;
 }
 
-int fxup_get_partition(void ** part_name, dr_partition_t ** x) {
+int fxup_get_partition( char* part_name, dr_partition_t ** x) {
 	str str_part_name;
 	struct head_db* part;
 
-	trim_char((char**)part_name);
+	trim_char(&part_name);
 	*x = (dr_partition_t*)pkg_malloc( sizeof(dr_partition_t) );
 	if(*x == NULL) {
 		LM_ERR("no more pkg memory\n");
@@ -3449,21 +3447,20 @@ int fxup_get_partition(void ** part_name, dr_partition_t ** x) {
 	}
 	memset(*x, 0, sizeof(dr_partition_t));
 
-	if(part_name == 0 || *part_name == 0 || **(char**)part_name == 0) {
+	if(part_name == 0 || *part_name == 0) {
 		(*x)->type = DR_NO_PART; /* NO partition specified */
 		LM_ERR("No partition\n");
 		return 0;
 	}
 
-
-	if( fixup_sgp((void**)part_name)!=0 ) {
+	if( fixup_sgp((void**)&part_name)!=0 ) {
 		LM_CRIT("Failed to get partition name\n");
 		return -1;
 	}
 
-	if( ((gparam_p)(*part_name))->type==GPARAM_TYPE_STR ) { /* was
-															   defined statically */
-		str_part_name = (( (gparam_p) (*part_name))->v.sval);
+	if( ((gparam_p)(part_name))->type==GPARAM_TYPE_STR ) {
+		/* was defined statically */
+		str_part_name = (( (gparam_p)part_name)->v.sval);
 		str_trim_spaces_lr(str_part_name);
 		if (str_part_name.len == 1 && str_part_name.s[0] == '*') {
 			(*x)->type = DR_WILDCARD_PART;
@@ -3478,7 +3475,7 @@ int fxup_get_partition(void ** part_name, dr_partition_t ** x) {
 		(*x)->v.part = part;
 		(*x)->type = DR_PTR_PART;
 	} else { /* defined via avp/pv => will be evaluated at runtime*/
-		(*x)->v.part_name = *part_name;
+		(*x)->v.part_name = (gparam_p)part_name;
 		(*x)->type = DR_GPARAM_PART;
 	}
 	return 0;
@@ -3562,12 +3559,8 @@ static int fixup_dr_disable(void ** param, int param_no) {
 static int fixup_do_routing(void** param, int param_no)
 {
 	char *s;
-	dr_group_t * drg = 0;
 	dr_part_group_t * part_param;
-	pv_spec_t avp_spec;
-	unsigned short dummy;
 	char * scnd_param;
-	str r;
 
 	s = (char*)*param;
 
@@ -3581,10 +3574,10 @@ static int fixup_do_routing(void** param, int param_no)
 			}
 			memset(part_param, 0, sizeof(dr_part_group_t));
 			if(use_partitions == 1) {
-				if(fxup_split_param(param, (void **)&scnd_param) < 0) {
+				if(fxup_split_param( s, &scnd_param) < 0) {
 					return -1;
 				}
-				if(fxup_get_partition(param, &(part_param->dr_part)) < 0) {
+				if(fxup_get_partition( s, &(part_param->dr_part)) < 0) {
 					return -1;
 				}
 
@@ -3594,49 +3587,18 @@ static int fixup_do_routing(void** param, int param_no)
 			} else {
 				scnd_param = s;
 			}
+
+			/* parse the group ID part */
 			s = scnd_param;
 			trim_char(&s);
-			if ( s==NULL || s[0]==0 ) {
-				*param = (void*)part_param;
-				return 0;
+			if ( s && s[0] ) {
+				if ( fixup_igp((void**)&s)!=0 ) {
+					LM_ERR("[%s]- invalid group definition (not a number or "
+						"variable)\n", s);
+				}
+				part_param->gid = (gparam_t*)s;
 			}
 
-			drg = pkg_malloc(sizeof(dr_group_t));
-			if(drg == NULL) {
-				LM_ERR("No more pkg memory.\n");
-				return -1;
-			}
-			memset(drg, 0, sizeof(dr_group_t));
-
-			if (s[0]=='$') {
-				/* param is a PV (AVP only supported) */
-				r.s = s;
-				r.len = strlen(s);
-				if (pv_parse_spec( &r, &avp_spec)==0
-						|| avp_spec.type!=PVT_AVP) {
-					LM_ERR("malformed or non AVP %s AVP definition\n", s);
-					return E_CFG;
-				}
-
-				if( pv_get_avp_name(0, &(avp_spec.pvp),
-							&drg->u.avp_name, &dummy )!=0) {
-					LM_ERR("[%s]- invalid AVP definition\n", s);
-					return E_CFG;
-				}
-				drg->type = 1;
-				/* do not free the param as the AVP spec may point inside
-				   this string*/
-			} else {
-				while(s && *s) {
-					if(*s<'0' || *s>'9') {
-						LM_ERR( "bad number\n");
-						return E_UNSPEC;
-					}
-					drg->u.grp_id = (drg->u.grp_id)*10+(*s-'0');
-					s++;
-				}
-			}
-			part_param->group = drg;
 			*param = (void*)part_param;
 			return 0;
 
@@ -3693,7 +3655,7 @@ static int fixup_next_gw( void** param, int param_no)
 					return -1;
 				}
 				memset(part, 0, sizeof(dr_partition_t));
-				if(fxup_get_partition(param, &part) < 0)
+				if(fxup_get_partition((char*)*param, &part) < 0)
 					return -1;
 				if(part->type == DR_NO_PART) {
 					LM_ERR("Partition name is mandatory for use_next_gw.\n");
@@ -3749,7 +3711,7 @@ static int fixup_from_gw( void** param, int param_no)
 				}
 				memset(part, 0, sizeof(dr_partition_t));
 
-				if(fxup_get_partition(param, &part) < 0)
+				if(fxup_get_partition((char*)*param, &part) < 0)
 					return -1;
 				*param = part;
 
@@ -3805,7 +3767,7 @@ static int fixup_is_gw( void** param, int param_no)
 				}
 				memset(part, 0, sizeof(dr_partition_t));
 
-				if(fxup_get_partition(param, &part) < 0)
+				if(fxup_get_partition((char*)*param, &part) < 0)
 					return -1;
 				*param = part;
 				return 0;
@@ -3859,10 +3821,10 @@ static int fixup_route2_carrier( void** param, int param_no)
 			}
 			memset(part_param, 0, sizeof(dr_part_old_t));
 			if(use_partitions == 1) {
-				if(fxup_split_param(param, (void**)&scnd_param) < 0) {
+				if(fxup_split_param((char*)*param, &scnd_param) < 0) {
 					return -1;
 				}
-				if(fxup_get_partition(param, &(part_param->dr_part)) < 0) {
+				if(fxup_get_partition((char*)*param,&(part_param->dr_part))<0){
 					return -1;
 				}
 				if(part_param->dr_part->type == DR_NO_PART) {
@@ -3917,10 +3879,10 @@ static int fixup_route2_gw( void** param, int param_no)
 			}
 			memset(part_param, 0, sizeof(dr_part_old_t));
 			if(use_partitions == 1) {
-				if(fxup_split_param(param, (void**)&gw) < 0) {
+				if(fxup_split_param((char*)*param, &gw) < 0) {
 					return -1;
 				}
-				if(fxup_get_partition(param, &(part_param->dr_part))<0) {
+				if(fxup_get_partition((char*)*param,&(part_param->dr_part))<0){
 					return -1;
 				}
 				if(part_param->dr_part->type == DR_NO_PART) {
