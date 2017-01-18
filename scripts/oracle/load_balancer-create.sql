@@ -5,7 +5,7 @@ CREATE TABLE load_balancer (
     dst_uri VARCHAR2(128),
     resources VARCHAR2(255),
     probe_mode NUMBER(10) DEFAULT 0 NOT NULL,
-    description VARCHAR2(128) DEFAULT ''
+    description VARCHAR2(128) DEFAULT NULL
 );
 
 CREATE OR REPLACE TRIGGER load_balancer_tr

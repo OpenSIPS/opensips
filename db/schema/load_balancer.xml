@@ -65,7 +65,8 @@
 		<name>description</name>
 		<type>string</type>
 		<size>128</size>
-		<default></default>
+		<null/>
+		<default><null/></default>
 		<description>Text description of the destination</description>
 	</column>
 

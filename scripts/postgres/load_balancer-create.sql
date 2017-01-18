@@ -5,7 +5,7 @@ CREATE TABLE load_balancer (
     dst_uri VARCHAR(128) NOT NULL,
     resources VARCHAR(255) NOT NULL,
     probe_mode INTEGER DEFAULT 0 NOT NULL,
-    description VARCHAR(128) DEFAULT '' NOT NULL
+    description VARCHAR(128) DEFAULT NULL
 );
 
 ALTER SEQUENCE load_balancer_id_seq MAXVALUE 2147483647 CYCLE;
