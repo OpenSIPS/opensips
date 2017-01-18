@@ -174,13 +174,13 @@ unsigned long frag_size(void* p){
 #ifdef SHM_EXTRA_STATS
 void set_stat_index (void *ptr, unsigned long idx) {
 	struct qm_frag *f;
-	f = (char*)ptr - sizeof(struct qm_frag);
+	f = (struct qm_frag *)((char*)ptr - sizeof(struct qm_frag));
 	f->statistic_index = idx;
 }
 
 unsigned long get_stat_index(void *ptr) {
 	struct qm_frag *f;
-	f = (char*)ptr - sizeof(struct qm_frag);
+	f = (struct qm_frag *)((char*)ptr - sizeof(struct qm_frag));
 	return f->statistic_index;
 }
 #endif
