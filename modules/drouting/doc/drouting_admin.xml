@@ -1092,109 +1092,116 @@ modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 		</para>
 		<para>
-		If you set <varname>use_partitions</varname> to 1 the <emphasis role='bold'>
-		part_or_groupID</emphasis> parameter becomes mandatory.
+		If you set <varname>use_partitions</varname> to 1 the 
+		<emphasis role='bold'>part_or_groupID</emphasis> parameter becomes 
+		mandatory.
 		</para>
 		<para>
-			All parameters are optional. Any of them may be ignored, provided
-			the necessary separation marks "," are properly placed.
-			<itemizedlist>
-				<listitem>
-					<para>
-					<emphasis role='bold'>part_and_or_groupID</emphasis> - Specifies the group of the caller
-					for routing purposes. Depending on the value of the <varname>use_partitions</varname>
-					parameter, it contains:
-				</para>
-					<itemizedlist>
-					<listitem>
-					<para>
-						the routing group the caller belongs to if <varname>use_partitions</varname>
-						is 0 - this may be a statical numerical value or an AVP specification (value
-						must be numerical type, string types are ignored!). If none specified the
-						function will automatically try to query the dr_group table to get this information
-					</para>
-					</listitem>
-					<listitem>
-					<para>
-						the partition and routing group the caller belongs to, the format is:
-						"partition':'[groupID]" if <varname>use_partitions</varname>
-						parameter is 1 - both the partition name and the groupId may be statical
-						values or AVP specifications. If no group is specified the function will
-						try to query the dr_group table for the given partition to get this information.
-						If <emphasis>* (wildcard)</emphasis> operator is used all partitions shall be checked.
-					</para>
-					</listitem>
-					</itemizedlist>
-				</listitem>
-				<listitem>
-					<para>
-					<emphasis role='bold'>flags</emphasis> - Controls the behavior of the
-					function. Possible flags are:
-				</para>
-					<itemizedlist>
-					<listitem>
-					<para>
-						<emphasis role='bold'>W</emphasis> - Instead of using the destination
-						(from the rule definition) in the given order, sort them
-						based on their weight.
-					</para>
-					</listitem>
-					<listitem>
-					<para>
-						<emphasis role='bold'>F</emphasis> - Enable rule fallback; normally
-						the engine is using a single rule for routing a call; by
-						setting this flag, the engine will fallback and use
-						rules with less priority or shorter prefix when all the
-						destination from the current rules failed.
-					</para>
-					</listitem>
-					<listitem>
-					<para>
-						<emphasis role='bold'>L</emphasis> - Do strict length matching over the
-						prefix - actually DR engine will do full number matching and
-						not prefix matching anymore.
-					</para>
-					</listitem>
-					<listitem>
-					<para>
-						<emphasis role='bold'>C</emphasis> - Only check if the dialed number
-						matches any routing rule, without loading / applying any
-						routing info (no GW is set, the RURI is not altered)
-					</para>
-					</listitem>
-					</itemizedlist>
-				</listitem>
-				<listitem>
-					<para>
-					<emphasis role='bold'>gw_whitelist</emphasis> - a comma separated white
-					list of gateways. This will force routing over, at most, this
-					list of carriers or gateways (in other words, the whitelist
-					will be intersected with the results of the search through the rules).
-					</para>
-				</listitem>
-				<listitem>
-					<para>
-					<emphasis role='bold'>rule_attrs_pvar</emphasis> (output, optional)- a writable
-					pseudo-variable which will be populated with the attributes
-					of the matched dynamic routing rule.
-					</para>
-				</listitem>
-				<listitem>
-					<para>
-					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
-					- a writable pseudo-variable which will be populated with
-					the attributes of the matched gateway.
-					</para>
-				</listitem>
-				<listitem>
-					<para>
-					<emphasis role='bold'>carrier_attrs_pvar </emphasis> (output, optional) - a writable
-					pseudo-variable which will be populated with the attributes
-					of the matched carrier.
-					</para>
-				</listitem>
-			</itemizedlist>
+		All parameters are optional. Any of them may be ignored, provided
+		the necessary separation marks "," are properly placed.
 		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis role='bold'>part_and_or_groupID</emphasis> - 
+			Specifies the group of the caller for routing purposes. 
+			Depending on the value of the 
+			<varname>use_partitions</varname> parameter, it contains:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				the routing group the caller belongs to if 
+				<varname>use_partitions</varname> is 0 - this may be a statical
+				numerical value or a variable (value must be numerical type, 
+				string types are ignored!). If none specified the function will
+				automatically try to query the dr_group table to get this 
+				information
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				the partition and routing group the caller belongs to, the 
+				format is: "partition':'[groupID]" if 
+				<varname>use_partitions</varname> parameter is 1 - both the 
+				partition name and the groupId may be statical values or AVP 
+				specifications. If no group is specified the function will
+				try to query the dr_group table for the given partition to get
+				this information. If <emphasis>* (wildcard)</emphasis> 
+				operator is used all partitions shall be checked.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>flags</emphasis> - Controls the behavior 
+			of the function. Possible flags are:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>W</emphasis> - Instead of using the 
+				destination (from the rule definition) in the given order, 
+				sort them based on their weight.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>F</emphasis> - Enable rule fallback; 
+				normally the engine is using a single rule for routing a call;
+				by setting this flag, the engine will fallback and use
+				rules with less priority or shorter prefix when all the
+				destination from the current rules failed.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>L</emphasis> - Do strict length matching
+				over the prefix - actually DR engine will do full number 
+				matching and not prefix matching anymore.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>C</emphasis> - Only check if the dialed
+				number matches any routing rule, without loading / applying any
+				routing info (no GW is set, the RURI is not altered)
+				</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>gw_whitelist</emphasis> - a comma separated
+			white list of gateways. This will force routing over, at most, this
+			list of carriers or gateways (in other words, the whitelist
+			will be intersected with the results of the search through the
+			rules).
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>rule_attrs_pvar</emphasis> (output, 
+			optional)- a writable variable which will be populated 
+			with the attributes of the matched dynamic routing rule.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
+			a writable variable which will be populated with
+			the attributes of the matched gateway.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>carrier_attrs_pvar </emphasis> (output, 
+			optional) - a writable variable which will be populated with 
+			the attributes of the matched carrier.
+			</para>
+		</listitem>
+		</itemizedlist>
 
 		<example>
 		<title><function>do_routing</function> usage</title>
@@ -1212,8 +1219,8 @@ do_routing("0");
 # group id 0, sort on order, <varname>use_partitions</varname> is 1, route by partition named "part"
 do_routing("part:0");
 ...
-# group id from $avp(10), sort on order, <varname>use_partitions</varname> is 0
-do_routing("$avp(10)");
+# group id from $var(id), sort on order, <varname>use_partitions</varname> is 0
+do_routing("$var(id)");
 ...
 # all groups, sort on weights, <varname>use_partitions</varname> is 0
 do_routing("", "W");
@@ -1254,13 +1261,13 @@ do_routing("2", "F", , , "$var(gw_attributes)");
 						<listitem>
 							<para>
 								the ID (name) of the carrier to be used, if <varname>use_partitions</varname>
-								parameter is 0; pseudo-variables are accepted.
+								parameter is 0; variables are accepted.
 							</para>
 						</listitem>
 						<listitem>
 							<para>
 								the partition and carrier to be used, if <varname>use_partitions</varname> parameter
-								is 1. The format is "partition_name':'carrierId"; pseudo-variables are accepted.
+								is 1. The format is "partition_name':'carrierId"; variables are accepted.
 							</para>
 						</listitem>
 					</itemizedlist>
@@ -1268,14 +1275,14 @@ do_routing("2", "F", , , "$var(gw_attributes)");
 				<listitem>
 					<para>
 					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
-					- a writable pseudo-variable which will be populated with
+					- a writable variable which will be populated with
 					the attributes of the currently matched gateway of this carrier.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
 					<emphasis role='bold'>carrier_attrs_pvar </emphasis> (output, optional)
-					- a writable pseudo-variable which will be populated with the attributes
+					- a writable variable which will be populated with the attributes
 					of this carrier.
 					</para>
 				</listitem>
@@ -1313,7 +1320,7 @@ if ( route_to_carrier("my_partition:my_top_carrier", , "$var(carrier_att)") ) {
 		</example>
 <example>
 		<title><function>route_to_carrier</function> usage when <varname>use_partitions</varname>
-		parameter is 1 with pseudovariables</title>
+		parameter is 1 with variables</title>
 		<programlisting format="linespecific">
 ...
 if ( route_to_carrier("$var(my_partition):$var(carrierId)") ) {
@@ -1370,7 +1377,7 @@ if ( route_to_carrier("$var(my_partition):$var(carrierId)") ) {
 				<listitem>
 					<para>
 					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
-					- a writable pseudo-variable which will be populated with
+					- a writable variable which will be populated with
 					the attributes of the currently matched gateway.
 					</para>
 				</listitem>
@@ -1453,21 +1460,21 @@ if ( route_to_gw("my_partition:gw1,gw2,gw3", "$var(gw_attrs)") ) {
 				<listitem>
 					<para>
 					<emphasis role='bold'>rule_attrs_pvar </emphasis> (output, optional) - a writable
-					pseudo-variable which will be populated with the attributes
+					variable which will be populated with the attributes
 					of the matched dynamic routing rule.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
 					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
-					- a writable pseudo-variable which will be populated with
+					- a writable variable which will be populated with
 					the attributes of the matched gateway.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
 					<emphasis role='bold'>carrier_attrs_pvar </emphasis> (output, optional) - a writable
-					pseudo-variable which will be populated with the attributes
+					variable which will be populated with the attributes
 					of the matched carrier.
 					</para>
 				</listitem>
@@ -1598,7 +1605,7 @@ if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
 				<listitem>
 					<para>
 					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
-					- a writable pseudo-variable which will be populated with
+					- a writable variable which will be populated with
 					the attributes of the matched gateway.
 					</para>
 				</listitem>
@@ -1705,7 +1712,7 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 				<listitem>
 					<para>
 					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
-					- a writable pseudo-variable which will be populated with
+					- a writable variable which will be populated with
 					the attributes of the matched gateway.
 					</para>
 				</listitem>
@@ -1761,7 +1768,7 @@ if (is_from_gw("my_partition","3","1") {
 				<listitem>
 					<para>
 					<emphasis role='bold'>src_avp</emphasis> (mandatory) - avp containing a SIP URI.
-					Does not support other OpenSIPS pseudo-variables.
+					Does not support other OpenSIPS variables.
 					</para>
 				</listitem>
 				<listitem>
@@ -1810,7 +1817,7 @@ if (is_from_gw("my_partition","3","1") {
 				<listitem>
 					<para>
 					<emphasis role='bold'>gw_attrs_pvar</emphasis> (output, optional)
-					- a writable pseudo-variable which will be populated with
+					- a writable variable which will be populated with
 					the attributes of the matched gateway.
 					</para>
 				</listitem>

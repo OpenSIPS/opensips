@@ -8,8 +8,6 @@ Edited by
 
 Bogdan-Andrei Iancu
 
-Edited by
-
 Anca-Maria Vamanu
 
    Copyright © 2005-2008 Voice Sistem SRL
@@ -147,7 +145,7 @@ Anca-Maria Vamanu
    1.32. route_to_carrier usage when use_partitions parameter is 0
    1.33. route_to_carrier usage when use_partitions parameter is 1
    1.34. route_to_carrier usage when use_partitions parameter is 1
-          with pseudovariables
+          with variables
 
    1.35. route_to_gw usage when use_partition parameter is 0
    1.36. route_to_gw usage when use_partition parameter is 1
@@ -860,10 +858,10 @@ modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
        use_partitions parameter, it contains:
           + the routing group the caller belongs to if
             use_partitions is 0 - this may be a statical numerical
-            value or an AVP specification (value must be numerical
-            type, string types are ignored!). If none specified
-            the function will automatically try to query the
-            dr_group table to get this information
+            value or a variable (value must be numerical type,
+            string types are ignored!). If none specified the
+            function will automatically try to query the dr_group
+            table to get this information
           + the partition and routing group the caller belongs to,
             the format is: "partition':'[groupID]" if
             use_partitions parameter is 1 - both the partition
@@ -893,15 +891,15 @@ modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
        carriers or gateways (in other words, the whitelist will be
        intersected with the results of the search through the
        rules).
-     * rule_attrs_pvar (output, optional)- a writable
-       pseudo-variable which will be populated with the attributes
-       of the matched dynamic routing rule.
-     * gw_attrs_pvar (output, optional) - a writable
-       pseudo-variable which will be populated with the attributes
-       of the matched gateway.
-     * carrier_attrs_pvar (output, optional) - a writable
-       pseudo-variable which will be populated with the attributes
-       of the matched carrier.
+     * rule_attrs_pvar (output, optional)- a writable variable
+       which will be populated with the attributes of the matched
+       dynamic routing rule.
+     * gw_attrs_pvar (output, optional) a writable variable which
+       will be populated with the attributes of the matched
+       gateway.
+     * carrier_attrs_pvar (output, optional) - a writable variable
+       which will be populated with the attributes of the matched
+       carrier.
 
    Example 1.31. do_routing usage
 ...
@@ -919,8 +917,8 @@ do_routing("0");
 ed "part"
 do_routing("part:0");
 ...
-# group id from $avp(10), sort on order, use_partitions is 0
-do_routing("$avp(10)");
+# group id from $var(id), sort on order, use_partitions is 0
+do_routing("$var(id)");
 ...
 # all groups, sort on weights, use_partitions is 0
 do_routing("", "W");
@@ -950,18 +948,16 @@ do_routing("2", "F", , , "$var(gw_attributes)");
 
      * part_and_or_carrier_id (mandatory):
           + the ID (name) of the carrier to be used, if
-            use_partitions parameter is 0; pseudo-variables are
-            accepted.
+            use_partitions parameter is 0; variables are accepted.
           + the partition and carrier to be used, if
             use_partitions parameter is 1. The format is
-            "partition_name':'carrierId"; pseudo-variables are
-            accepted.
-     * gw_attrs_pvar (output, optional) - a writable
-       pseudo-variable which will be populated with the attributes
-       of the currently matched gateway of this carrier.
-     * carrier_attrs_pvar (output, optional) - a writable
-       pseudo-variable which will be populated with the attributes
-       of this carrier.
+            "partition_name':'carrierId"; variables are accepted.
+     * gw_attrs_pvar (output, optional) - a writable variable
+       which will be populated with the attributes of the
+       currently matched gateway of this carrier.
+     * carrier_attrs_pvar (output, optional) - a writable variable
+       which will be populated with the attributes of this
+       carrier.
 
    Example 1.32. route_to_carrier usage when use_partitions
    parameter is 0
@@ -987,7 +983,7 @@ if ( route_to_carrier("my_partition:my_top_carrier", , "$var(carrier_att
 ...
 
    Example 1.34. route_to_carrier usage when use_partitions
-   parameter is 1 with pseudovariables
+   parameter is 1 with variables
 ...
 if ( route_to_carrier("$var(my_partition):$var(carrierId)") ) {
         xlog("Routing to \"my_top_carrier\" - $var(carrier_att)\n");
@@ -1018,9 +1014,9 @@ if ( route_to_carrier("$var(my_partition):$var(carrierId)") ) {
             if use_partition parameter is 1. The format is:
             "partition_name':'gwId1, gwId2, gwId3".
             Pseudo-variables are accepted.
-     * gw_attrs_pvar (output, optional) - a writable
-       pseudo-variable which will be populated with the attributes
-       of the currently matched gateway.
+     * gw_attrs_pvar (output, optional) - a writable variable
+       which will be populated with the attributes of the
+       currently matched gateway.
 
    Example 1.35. route_to_gw usage when use_partition parameter is
    0
@@ -1079,15 +1075,15 @@ if ( route_to_gw("my_partition:gw1,gw2,gw3", "$var(gw_attrs)") ) {
      * partition (mandatory if use_partitions parameter is 1,
        otherwise it will be omitted altogether) It is the
        partition in which the gateways have been defined.
-     * rule_attrs_pvar (output, optional) - a writable
-       pseudo-variable which will be populated with the attributes
-       of the matched dynamic routing rule.
-     * gw_attrs_pvar (output, optional) - a writable
-       pseudo-variable which will be populated with the attributes
-       of the matched gateway.
-     * carrier_attrs_pvar (output, optional) - a writable
-       pseudo-variable which will be populated with the attributes
-       of the matched carrier.
+     * rule_attrs_pvar (output, optional) - a writable variable
+       which will be populated with the attributes of the matched
+       dynamic routing rule.
+     * gw_attrs_pvar (output, optional) - a writable variable
+       which will be populated with the attributes of the matched
+       gateway.
+     * carrier_attrs_pvar (output, optional) - a writable variable
+       which will be populated with the attributes of the matched
+       carrier.
 
    Example 1.37. use_next_gw usage
 ...
@@ -1163,9 +1159,9 @@ if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
             matching
           + 'c' (Carrier ID) - return the carrier id into
             carrier_id_avp AVP
-     * gw_attrs_pvar (output, optional) - a writable
-       pseudo-variable which will be populated with the attributes
-       of the matched gateway.
+     * gw_attrs_pvar (output, optional) - a writable variable
+       which will be populated with the attributes of the matched
+       gateway.
 
    Example 1.39. goes_to_gw usage when use_partitions parameter is
    0
@@ -1219,9 +1215,9 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
             matching
           + 'c' (Carrier ID) - return the carrier id into
             carrier_id_avp AVP
-     * gw_attrs_pvar (output, optional) - a writable
-       pseudo-variable which will be populated with the attributes
-       of the matched gateway.
+     * gw_attrs_pvar (output, optional) - a writable variable
+       which will be populated with the attributes of the matched
+       gateway.
 
    Example 1.41. is_from_gw usage when use_partitions is 0
 ...
@@ -1254,7 +1250,7 @@ if (is_from_gw("my_partition","3","1") {
        otherwise it will be omitted altogether) - Partition
        containing the destinations/gateways to be checked.
      * src_avp (mandatory) - avp containing a SIP URI. Does not
-       support other OpenSIPS pseudo-variables.
+       support other OpenSIPS variables.
      * type (optional) - GW/destination type to be checked; when
        omitting this parameter or specifying a negative value i.e.
        "-1", matching will be done against all groups
@@ -1269,9 +1265,9 @@ if (is_from_gw("my_partition","3","1") {
           + 'n' (Ignore port) - ignores port number
           + 'c' (Carrier ID) - return the carrier id into
             carrier_id_avp AVP
-     * gw_attrs_pvar (output, optional) - a writable
-       pseudo-variable which will be populated with the attributes
-       of the matched gateway.
+     * gw_attrs_pvar (output, optional) - a writable variable
+       which will be populated with the attributes of the matched
+       gateway.
 
    Example 1.43. dr_is_gw usage when use_partitions is 0
 ...
