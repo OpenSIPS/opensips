@@ -21,6 +21,8 @@ cscope*
 # /menuconfig/
 /menuconfig/configure
 /Makefile.conf
+/mem/mem_stats.c
+/mem/mem_stats.h
 
 # /utils/opensipsunix/
 /utils/opensipsunix/opensipsunix
