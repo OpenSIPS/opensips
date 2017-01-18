@@ -161,6 +161,7 @@ int qm_mem_check(struct qm_block *qm);
 #ifdef SHM_EXTRA_STATS
 void set_stat_index (void *ptr, unsigned long idx);
 unsigned long get_stat_index(void *ptr);
+void set_indexes(int core_index);
 #endif
 
 #ifdef DBG_MALLOC
