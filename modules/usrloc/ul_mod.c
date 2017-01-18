@@ -96,6 +96,8 @@ int max_contact_delete=10;
 db_key_t *cid_keys=NULL;
 db_val_t *cid_vals=NULL;
 
+int cid_regen=0;
+
 
 
 /*
@@ -186,6 +188,7 @@ static param_export_t params[] = {
 	{ "replicate_contacts_to",	INT_PARAM, &ul_replicate_cluster   },
 	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops     },
 	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
+	{ "regen_broken_contactid", INT_PARAM, &cid_regen},
 	{0, 0, 0}
 };
 

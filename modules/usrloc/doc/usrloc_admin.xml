@@ -137,7 +137,7 @@
 			<listitem>
 			<para>
 				<emphasis>clusterer, if <xref linkend="replicate_contacts_to"/>
-				parameters is turned on (contact replication via clusterer 
+				parameters is turned on (contact replication via clusterer
 				module)</emphasis>.
 			</para>
 			</listitem>
@@ -857,6 +857,34 @@ modparam("usrloc", "max_contact_delete", 10)
 		<programlisting format="linespecific">
 ...
 modparam("usrloc", "hash_size", 10)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>regen_broken_contactid</varname> (integer)</title>
+		<para>
+			Since version 2.2, <emphasis role='bold'>contact_id</emphasis> concept
+		was introduced. Since this parameter validates a contact each time &osips;
+		is started, there are times when the value of this parameter should be
+		regenerated. That is when <emphasis role='bold'>location</emphasis> table
+		is being migrated from a version older than 2.2 or when
+		<emphasis role='bold'>hash_size</emphasis> module parameter is changed.
+		Enabling this parameter will regenerate broken contact id's based on
+		current configurations.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <quote>0(not enabled)</quote>
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>regen_broken_contactid</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "regen_broken_contactid", 1)
 ...
 </programlisting>
 		</example>
