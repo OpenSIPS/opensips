@@ -22,10 +22,12 @@
  *  2015-10-01 initial version (Ionel Cerghit)
  */
 
+#ifdef SHM_EXTRA_STATS
 #ifndef _MODULE_INFO__
 #define _MODULE_INFO__
 
 #include "../statistics.h"
+#include "../lock_ops.h" 
 
 #define STAT_SUFIX "_mem_stat"
 #define STAT_PREFIX "shmem_group_"
@@ -41,6 +43,8 @@ struct module_info{
 	stat_var fragments;
 	stat_var memory_used;
 	stat_var real_used;
+    stat_var max_real_used;
+    gen_lock_t *lock;
 };
 
 struct multi_str{
@@ -56,3 +60,4 @@ int alloc_group_stat(void);
 
 int init_new_stat(stat_var *);
 #endif
+#endif /* SHM_EXTRA_STATS */

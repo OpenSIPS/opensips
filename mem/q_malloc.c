@@ -670,8 +670,16 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 	return p;
 }
 
+#ifdef SHM_EXTRA_STATS
+void set_indexes(int core_index) {
 
+	struct qm_frag* f;
+	for (f=shm_block->first_frag; (char*)f<(char*)shm_block->last_frag_end; f=FRAG_NEXT(f))
+		if (!f->u.is_free)
+			f->statistic_index = core_index;
 
+}
+#endif
 
 void qm_status(struct qm_block* qm)
 {
