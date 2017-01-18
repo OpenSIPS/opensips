@@ -50,6 +50,8 @@
 		<name>timerec</name>
 		<type>string</type>
 		<size>255</size>
+		<null/>
+		<default><null/></default>
 		<description>Time recurrence used for matching this rule.</description>
 	</column>
 
@@ -94,7 +96,8 @@
 		<name>description</name>
 		<type>string</type>
 		<size>128</size>
-		<default></default>
+		<null/>
+		<default><null/></default>
 		<description>Text description of the rule</description>
 	</column>
 

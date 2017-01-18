@@ -68,7 +68,7 @@
 		<type>string</type>
 		<size>255</size>
 		<null/>
-		<default></default>
+		<default><null/></default>
 		<description>Attributes string for the carrier
 		</description>
 	</column>
@@ -77,7 +77,8 @@
 		<name>description</name>
 		<type>string</type>
 		<size>128</size>
-		<default></default>
+		<null/>
+		<default><null/></default>
 		<description>Text description of the GW list</description>
 	</column>
 

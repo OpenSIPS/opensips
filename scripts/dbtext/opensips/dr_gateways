@@ -1,1 +1,1 @@
-id(int,auto) gwid(string) type(int) address(string) strip(int) pri_prefix(string,null) attrs(string,null) probe_mode(int) state(int) socket(string,null) description(string) 
+id(int,auto) gwid(string) type(int) address(string) strip(int) pri_prefix(string,null) attrs(string,null) probe_mode(int) state(int) socket(string,null) description(string,null) 

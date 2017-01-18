@@ -10,7 +10,7 @@ CREATE TABLE dr_gateways (
     probe_mode NUMBER(10) DEFAULT 0 NOT NULL,
     state NUMBER(10) DEFAULT 0 NOT NULL,
     socket VARCHAR2(128) DEFAULT NULL,
-    description VARCHAR2(128) DEFAULT '',
+    description VARCHAR2(128) DEFAULT NULL,
     CONSTRAINT dr_gateways_dr_gw_idx  UNIQUE (gwid)
 );
 
@@ -27,12 +27,12 @@ CREATE TABLE dr_rules (
     ruleid NUMBER(10) PRIMARY KEY,
     groupid VARCHAR2(255),
     prefix VARCHAR2(64),
-    timerec VARCHAR2(255),
+    timerec VARCHAR2(255) DEFAULT NULL,
     priority NUMBER(10) DEFAULT 0 NOT NULL,
     routeid VARCHAR2(255) DEFAULT NULL,
     gwlist VARCHAR2(255),
     attrs VARCHAR2(255) DEFAULT NULL,
-    description VARCHAR2(128) DEFAULT ''
+    description VARCHAR2(128) DEFAULT NULL
 );
 
 CREATE OR REPLACE TRIGGER dr_rules_tr
@@ -50,8 +50,8 @@ CREATE TABLE dr_carriers (
     gwlist VARCHAR2(255),
     flags NUMBER(10) DEFAULT 0 NOT NULL,
     state NUMBER(10) DEFAULT 0 NOT NULL,
-    attrs VARCHAR2(255) DEFAULT '',
-    description VARCHAR2(128) DEFAULT '',
+    attrs VARCHAR2(255) DEFAULT NULL,
+    description VARCHAR2(128) DEFAULT NULL,
     CONSTRAINT dr_carriers_dr_carrier_idx  UNIQUE (carrierid)
 );
 
@@ -67,9 +67,9 @@ INSERT INTO version (table_name, table_version) values ('dr_groups','2');
 CREATE TABLE dr_groups (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64),
-    domain VARCHAR2(128) DEFAULT '',
+    domain VARCHAR2(128) DEFAULT NULL,
     groupid NUMBER(10) DEFAULT 0 NOT NULL,
-    description VARCHAR2(128) DEFAULT ''
+    description VARCHAR2(128) DEFAULT NULL
 );
 
 CREATE OR REPLACE TRIGGER dr_groups_tr
