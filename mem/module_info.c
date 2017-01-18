@@ -22,6 +22,8 @@
  *  2015-10-01 initial version (Ionel Cerghit)
  */
 
+#ifdef SHM_EXTRA_STATS
+
 #include <dlfcn.h>
 #include <string.h>
 
@@ -209,3 +211,5 @@ int alloc_group_stat(void) {
 
 	return 0;
 }
+
+#endif /* SHM_EXTRA_STATS */

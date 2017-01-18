@@ -22,6 +22,7 @@
  *  2015-10-01 initial version (Ionel Cerghit)
  */
 
+#ifdef SHM_EXTRA_STATS
 #ifndef _MODULE_INFO__
 #define _MODULE_INFO__
 
@@ -59,3 +60,4 @@ int alloc_group_stat(void);
 
 int init_new_stat(stat_var *);
 #endif
+#endif /* SHM_EXTRA_STATS */
