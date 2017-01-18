@@ -14,9 +14,9 @@ Bogdan-Andrei Iancu
 
 Ovidiu Sas
 
-   Copyright © 2003 FhG FOKUS
+   Copyright � 2003 FhG FOKUS
 
-   Copyright © 2005-2008 Voice Sistem SRL
+   Copyright � 2005-2008 Voice Sistem SRL
    Revision History
    Revision $Revision: 8740 $ $Date$
      __________________________________________________________
@@ -30,6 +30,7 @@ Ovidiu Sas
               1.1.1. Per-Branch flags
               1.1.2. Timeout-Based Failover
               1.1.3. DNS Failover
+              1.1.4. Usage Scope
 
         1.2. Dependencies
 
@@ -245,7 +246,7 @@ Chapter 1. Admin Guide
    executing replies from the other branch).
 
    For how to define branch flags and use via script, see
-   Section 1.4.14, “ t_on_branch(branch_route) ” and the
+   Section 1.4.14, " t_on_branch(branch_route) " and the
    setbflag(), resetbflag() and isbflagset() script functions.
 
    Also, modules may set branch flags before transaction creation
@@ -307,6 +308,19 @@ Chapter 1. Admin Guide
    failover is globally disabled (see the core parameter
    disable_dns_failover) or when the relay flag (per transaction)
    is set (see the t_relay() function).
+
+1.1.4. Usage Scope
+
+   Transaction functions and pseudo-variables are only designed to
+   be called on SIP request messages where a transaction can be
+   created, or in routes that are transaction aware, such as
+   branch_route[name], failure_route[name] or onreply_route[name].
+   Using TM functtions or pseudo-variables in a route that is not
+   transaction aware, such as the generic onreply_route,
+   error_route or timer_route[name, timer] may lead to undefined
+   behavior, and most of the time in bogus or malformed
+   signalling. Therefore it is strongly recommended to avoid using
+   them in non-tm context aware routes.
 
 1.2. Dependencies
 
@@ -476,8 +490,8 @@ modparam("tm", "restart_fr_on_each_reply", 0)
    availabe at:
    http://opensips.org/docs/pseudo-variables-1.1.x.html
 
-   Each element will be appended per line in “name: value” format.
-   Element “$rb (message body)” is the only one which does not
+   Each element will be appended per line in "name: value" format.
+   Element "$rb (message body)" is the only one which does not
    accept name; the body it will be printed all the time at the
    end, disregarding its position in the definition string.
 
@@ -677,14 +691,14 @@ if (!t_relay()) {
 1.4.2.  t_relay(proto:host:port,[flags])
 
    Relay a message statefully to a fixed destination. The
-   destination is specified as “[proto:]host[:port]”. If a
-   destination URI “$du” for this message was set before the
+   destination is specified as "[proto:]host[:port]". If a
+   destination URI "$du" for this message was set before the
    function is called then this value will be used as the
    destination instead of the function parameter.
 
    The function may take as parameter an optional set of flags for
    controlling the internal behaviour - for details see the above
-   “t_relay([flags])” function.
+   "t_relay([flags])" function.
 
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -794,7 +808,7 @@ if ( is_method("CANCEL") ) {
 
 1.4.7.  t_check_status(re)
 
-   Returns true if the regualr expression “re” match the reply
+   Returns true if the regualr expression "re" match the reply
    code of the response message as follows:
      * in routing block - the code of the last sent reply.
      * in on_reply block - the code of the current received reply.
@@ -816,7 +830,7 @@ if (t_check_status("(487)|(408)")) {
    Returns true if all or last (depending of the parameter)
    reply(es) were local generated (and not received).
 
-   Parameter may be “all” or “last”.
+   Parameter may be "all" or "last".
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    FAILURE_ROUTE and ONREPLY_ROUTE.
@@ -902,7 +916,7 @@ ydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!"))
    new branch (good for services such as forward_on_no_reply) or
    send a final reply on your own (good for example for message
    silo, which received a negative reply from upstream and wants
-   to tell upstream “202 I will take care of it”).
+   to tell upstream "202 I will take care of it").
 
    As not all functions are available from failure route, please
    check the documentation for each function to see the
@@ -1085,7 +1099,7 @@ t_relay();
 
    The function may take as parameter an optional set of flags for
    controlling the internal behaviour - for description see the
-   above “t_relay([flags])” function. Note that only 0x4 is
+   above "t_relay([flags])" function. Note that only 0x4 is
    applicable here.
 
    This functions can be used from REQUEST_ROUTE.
@@ -1101,7 +1115,7 @@ t_replicate("sip:1.2.3.4","0x4");
 
    Write via FIFO file or UNIX socket a lot of information
    regarding the request. Which information should be written may
-   be control via the “tw_append” parameter.
+   be control via the "tw_append" parameter.
 
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE
    and BRANCH_ROUTE.
@@ -1192,13 +1206,13 @@ t_flush_flags();
    Parameters:
      * method - request method
      * RURI - request SIP URI
-     * NEXT HOP - next hop SIP URI (OBP); use “.” if no value.
+     * NEXT HOP - next hop SIP URI (OBP); use "." if no value.
      * socket - local socket to be used for sending the request;
-       use “.” if no value.
+       use "." if no value.
      * headers - set of additional headers to be added to the
-       request; at least “From” and “To” headers must be specify)
+       request; at least "From" and "To" headers must be specify)
      * body - (optional, may not be present) request body (if
-       present, requires the “Content-Type” and “Content-length”
+       present, requires the "Content-Type" and "Content-length"
        headers)
 
 1.6.2.  t_uac_cancel
@@ -1228,15 +1242,15 @@ t_flush_flags();
        format)
      * to_tag - To tag to be added to TO header
      * new_headers - extra headers to be appended to the reply;
-       use a dot (“.”) char only if there are no headers;
+       use a dot (".") char only if there are no headers;
      * body - (optional, may not be present) reply body (if
-       present, requires the “Content-Type” and “Content-length”
+       present, requires the "Content-Type" and "Content-length"
        headers)
 
 1.7. Exported statistics
 
    Exported statistics are listed in the next sections. All
-   statistics except “inuse_transactions” can be reset.
+   statistics except "inuse_transactions" can be reset.
 
 1.7.1. received_replies
 
@@ -1294,7 +1308,7 @@ Chapter 2. Developer Guide
 
    Meaning of the parameters is as follows:
      * import_structure - Pointer to the import structure - see
-       “struct tm_binds” in modules/tm/tm_load.h
+       "struct tm_binds" in modules/tm/tm_load.h
 
 Chapter 3. Frequently Asked Questions
 

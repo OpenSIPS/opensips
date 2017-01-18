@@ -187,6 +187,24 @@
 		function).
 		</para>
 	</section>
+	<section>
+		<title>Usage Scope</title>
+		<para>
+		Transaction functions and pseudo-variables are only designed to be
+		called on SIP request messages where a transaction can be created, or
+		in routes that are transaction aware, such as
+		<emphasis>branch_route[name]</emphasis>,
+		<emphasis>failure_route[name]</emphasis> or
+		<emphasis>onreply_route[name]</emphasis>. Using TM functtions or
+		pseudo-variables in a route that is not transaction aware, such as
+		the generic <emphasis>onreply_route</emphasis>,
+		<emphasis>error_route</emphasis> or
+		<emphasis>timer_route[name, timer]</emphasis> may lead to undefined
+		behavior, and most of the time in bogus or malformed signalling.
+		Therefore it is strongly recommended to avoid using them in non-tm
+		context aware routes.
+		</para>
+	</section>
 	</section>
 
 	<section>
