@@ -51,6 +51,7 @@
 
 
 extern int max_contact_delete;
+extern int cid_regen;
 extern db_key_t *cid_keys;
 extern db_val_t *cid_vals;
 int cid_len=0;
@@ -528,6 +529,9 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	unsigned int   rlabel;
 	UNUSED(n);
 
+	time_t old_expires=0;
+	char suggest_regen=0;
+
 	urecord_t* r;
 	ucontact_t* c;
 
@@ -641,36 +645,71 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 					goto error;
 				}
 
+				/* set the record label */
 				sl = r->aorhash&(_d->size-1);
-				if (_d->table[sl].next_label <= rlabel)
-					_d->table[sl].next_label = rlabel;
-				else if (_d->table[sl].next_label == 0)
-					_d->table[sl].next_label = rand();
 
-				r->label = CID_NEXT_RLABEL(_d, sl);
-				r->next_clabel = CLABEL_INC_AND_TEST(clabel);
+				if ((unsigned short)r->aorhash == aorhash) {
+					r->label = rlabel;
+				}/* else we'll get in trouble below */
+
 			} else if (ret < 0) {
 				unlock_udomain(_d, &user);
 				goto error;
-			} else {
-				if (r->next_clabel <= clabel)
-					r->next_clabel = CLABEL_INC_AND_TEST(clabel);
 			}
 
 			if ((unsigned short)r->aorhash != aorhash) {
-				LM_ERR("failed to match aorhashes for user %.*s,"
-						"db aorhash [%u] new aorhash [%u],"
-						"db contactid [%" PRIu64 "]\n",
-						user.len, user.s, aorhash,
-						(unsigned short)(r->aorhash&(_d->size-1)),
-						ci->contact_id);
-				if (ret > 0) {
-					LM_DBG("release bogus urecord\n");
-					release_urecord(r, 0);
+				/* we've got an invalid contact;
+				 * if regeneration not set we throw error else we will try generate
+				 * new indexes for record and contact labels */
+				if ( !cid_regen ) {
+					suggest_regen=1;
+					LM_ERR("failed to match aorhashes for user %.*s,"
+							"db aorhash [%u] new aorhash [%u],"
+							"db contactid [%" PRIu64 "]\n",
+							user.len, user.s, aorhash,
+							(unsigned short)(r->aorhash&(_d->size-1)),
+							ci->contact_id);
+					if (ret > 0) {
+						LM_DBG("release bogus urecord\n");
+						release_urecord(r, 0);
+					}
+					unlock_udomain(_d, &user);
+					continue;
+				} else {
+					/* invalid contact
+					 * regenerate aor label and contact label if they're not */
+					if ( r->label == 0 ) {
+						if (_d->table[sl].next_label == 0)
+							_d->table[sl].next_label = rand();
+
+						r->label = CID_NEXT_RLABEL(_d, sl);
+					} else {
+						if (_d->table[sl].next_label == 0)
+							_d->table[sl].next_label = r->label;
+					}
+
+					if (r->next_clabel == 0)
+						r->next_clabel = rand();
+
+					old_expires = ci->expires;
+
+					/* mark contact with broken contact id as expired for deletion */
+					ci->expires = 1;
 				}
-				unlock_udomain(_d, &user);
-				continue;
+			} else {
+				/* we've got a valid contact */
+				/* update indexes accordingly */
+				sl = r->aorhash&(_d->size-1);
+
+				if (_d->table[sl].next_label < rlabel || _d->table[sl].next_label == 0)
+					_d->table[sl].next_label = rlabel + 1;
+
+				if (r->next_clabel < clabel || r->next_clabel == 0)
+					r->next_clabel = CLABEL_INC_AND_TEST(clabel);
+
+				r->label = rlabel;
 			}
+
 
 			if ( (c=mem_insert_ucontact(r, &contact, ci)) == 0) {
 				LM_ERR("inserting contact failed\n"
@@ -689,7 +728,47 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 
 			/* We have to do this, because insert_ucontact sets state to CS_NEW
 			 * and we have the contact in the database already */
-			c->state = CS_SYNC;
+			/* if contact id regeneration requested then we need to update the
+			 * database so we set the state to CS_DIRTY */
+			if ( !cid_regen )
+				c->state = CS_SYNC;
+			else {
+				/* mark for removal if we've it has an invalid aorhash */
+				if (old_expires)
+					c->state = CS_DIRTY;
+				else
+					c->state = CS_SYNC;
+			}
+
+			/* if we've found a broken contact id and regeneration set
+			 * reinsert the newly created contact that will have a valid contact id */
+			if (cid_regen && old_expires) {
+				/* rebuild the contact id for this contact */
+				ci->contact_id = pack_indexes(r->aorhash, r->label, r->next_clabel);
+				r->next_clabel = CLABEL_INC_AND_TEST(r->next_clabel);
+
+				ci->expires = old_expires;
+
+				if ( (c=mem_insert_ucontact(r, &contact, ci)) == 0) {
+					LM_ERR("inserting contact failed\n"
+							"Found a bad contact with id:[%" PRIu64 "] "
+							"aor:[%.*s] contact:[%.*s] received:[%.*s]!\n"
+							"Will continue but that contact needs to be REMOVED!!\n",
+							ci->contact_id,
+							r->aor.len, r->aor.s,
+							contact.len, contact.s,
+							ci->received.len, ci->received.s);
+					unlock_udomain(_d, &user);
+					free_ucontact(c);
+					continue;
+				}
+
+				/* mark for database insertion */
+				c->state = CS_NEW;
+
+				LM_DBG("regenerated contact id to %"PRIu64"\n", ci->contact_id);
+			}
+
 			unlock_udomain(_d, &user);
 		}
 
@@ -705,6 +784,16 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	} while(RES_ROW_N(res)>0);
 
 	ul_dbf.free_result(_c, res);
+
+	if ( suggest_regen ) {
+		LM_NOTICE("At least 1 contact(s) from the database has invalid contact_id!\n"
+				"Possible causes for this can be:\n"
+				"\t* you are migrating your location table from a version older than 2.2\n"
+				"\t* you have changed 'hash_size' module parameter from "
+				"when current contact_id's were generated;\n"
+				"If you want to regenerate new contact_id's for the broken entries"
+				" enable 'regen_broken_contactid' module parameter.\n");
+	}
 
 	/* for each not populated slot with record label
 	 * populate it*/

@@ -68,6 +68,7 @@ Ovidiu Sas
               1.3.27. skip_replicated_db_ops (int)
               1.3.28. max_contact_delete (int)
               1.3.29. hash_size (integer)
+              1.3.30. regen_broken_contactid (integer)
 
         1.4. Exported Functions
         1.5. Exported MI Functions
@@ -161,6 +162,7 @@ Ovidiu Sas
    1.27. Setting the skip_replicated_db_ops parameter
    1.28. Setting the max_contact_delete parameter
    1.29. Set hash_size parameter
+   1.30. Set regen_broken_contactid parameter
 
 Chapter 1. Admin Guide
 
@@ -659,6 +661,23 @@ modparam("usrloc", "max_contact_delete", 10)
    Example 1.29. Set hash_size parameter
 ...
 modparam("usrloc", "hash_size", 10)
+...
+
+1.3.30. regen_broken_contactid (integer)
+
+   Since version 2.2, contact_id concept was introduced. Since
+   this parameter validates a contact each time OpenSIPS is
+   started, there are times when the value of this parameter
+   should be regenerated. That is when location table is being
+   migrated from a version older than 2.2 or when hash_size module
+   parameter is changed. Enabling this parameter will regenerate
+   broken contact id's based on current configurations.
+
+   Default value is “0(not enabled)”
+
+   Example 1.30. Set regen_broken_contactid parameter
+...
+modparam("usrloc", "regen_broken_contactid", 1)
 ...
 
 1.4. Exported Functions
