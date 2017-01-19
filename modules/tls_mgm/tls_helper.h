@@ -11,7 +11,6 @@
 #define F_TLS_DO_ACCEPT  (1<<0)
 #define F_TLS_DO_CONNECT (1<<1)
 
-#include <openssl/ssl.h>
 #include "tls_config_helper.h"
 #include "../../locking.h"
 
@@ -20,7 +19,7 @@ struct tls_domain {
 	int             type;
 	struct ip_addr  addr;
 	unsigned short  port;
-	SSL_CTX        *ctx;
+	void           *ctx; /* libssl's SSL_CTX  */
 	int             verify_cert;
 	int             require_client_cert;
 	int             crl_check_all;

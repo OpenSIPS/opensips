@@ -130,7 +130,7 @@ static int mysql_mod_init(void)
 		}
 
 		if (load_tls_mgm_api(&tls_api) != 0) {
-			LM_ERR("failed to load tls_mgm API!\n");
+			LM_ERR("failed to load tls_mgm API! Is the \"tls_mgm\" module loaded?\n");
 			return -1;
 		}
 
