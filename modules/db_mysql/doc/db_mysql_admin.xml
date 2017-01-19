@@ -21,7 +21,7 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>No dependencies on other &osips; modules</emphasis>.
+				<emphasis>If a <xref linkend="modparam-tls-client-domain"/> is defined, the <emphasis role='bold'>tls_mgm</emphasis> module will need to be loaded as well</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -131,7 +131,7 @@ modparam("db_mysql", "max_db_retries", 2)
 </programlisting>
 		</example>
 	</section>
-        <section>
+        <section id="modparam-tls-client-domain" xreflabel="tls_client_domain">
 		<title><varname>tls_client_domain</varname> (string)</title>
 		<para>
 		Setting this parameter will enable TLS for all MySQL connections

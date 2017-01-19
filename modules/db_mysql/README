@@ -59,7 +59,8 @@ Chapter 1. Admin Guide
 1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * No dependencies on other OpenSIPS modules.
+     * If a tls_client_domain is defined, the tls_mgm module will
+       need to be loaded as well.
 
 1.2.2. External Libraries or Applications
 
