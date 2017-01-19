@@ -1535,6 +1535,24 @@ static int pv_get_content_length(struct sip_msg *msg, pv_param_t *param,
 			&msg->content_length->body);
 }
 
+int pv_parse_rb_name(pv_spec_p sp, str *in)
+{
+	if(in==NULL || in->s==NULL || sp==NULL)
+		return -1;
+
+	if (decode_mime_type( in->s, in->s+in->len ,
+	(unsigned int *)&sp->pvp.pvn.u.isname.name.n , NULL) == 0) {
+		LM_ERR("unsupported mime <%.*s>\n",in->len,in->s);
+		return -1;
+	}
+
+	sp->pvp.pvn.type = PV_NAME_INTSTR;  /* INT/STR for var name type */
+	sp->pvp.pvn.u.isname.type = 0;      /* name is INT */
+
+	return 0;
+}
+
+
 static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -1545,6 +1563,7 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 	struct sip_msg_body* sbody;
 	struct body_part* body_part;
 	struct body_part* neg_index[2];
+	unsigned int mime;
 
 	if(msg==NULL)
 		return -1;
@@ -1554,14 +1573,19 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 	}
 
-	/* if no index specified or index requests all bodies*/
+	/* any index specified */
 	if (param->pvi.type==0 || idxf==PV_IDX_ALL) {
-		if (get_body( msg, &s)!=0 || s.len==0 )
-		{
-			LM_DBG("no message body\n");
-			return pv_get_null(msg, param, res);
+		if (param->pvn.u.isname.name.n==0) {
+			/* no name/mime -> requests all bodies */
+			if (get_body( msg, &s)!=0 || s.len==0 ) {
+				LM_DBG("no message body\n");
+				return pv_get_null(msg, param, res);
+			}
+			goto end;
+		} else {
+			/* return first part with the requested mime */
+			idx = 0;
 		}
-		goto end;
 	}
 
 	if ( parse_sip_body(msg)<0 || (sbody=msg->body)==NULL ) {
@@ -1569,36 +1593,50 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 	}
 
+	mime = param->pvn.u.isname.name.n;
+	LM_DBG("--------mime is <%d>, idx=%d\n",mime, idx);
+
+#define first_part_by_mime( _part_start, _part_end, _mime) \
+	do {\
+		_part_end = _part_start;\
+		while( (_part_end) && \
+		!(is_body_part_received(_part_end) && ((_mime)==0 || \
+		(_mime)==(_part_end)->mime )) ) { \
+			_part_end = (_part_end)->next; \
+		} \
+	}while(0)
+
 	if (idx<0) {
-		neg_index[0] = neg_index[1] = &sbody->first;
+		first_part_by_mime( &sbody->first, neg_index[1], mime );
+		neg_index[0] = neg_index[1];
 		/*distance=last_body_postition-searched_body_position*/
 		distance -= idx+1;
 		while (neg_index[1]->next) {
 			if (distance == 0) {
-				neg_index[0] = neg_index[0]->next;
+				first_part_by_mime( neg_index[0]->next, neg_index[0], mime );
 			} else {
 				distance--;
 			}
-			neg_index[1] = neg_index[1]->next;
+			first_part_by_mime( neg_index[1]->next, neg_index[1], mime );
 		}
 
 		if (distance>0) {
-			LM_ERR("Index too low [%d]\n", idx);
+			LM_DBG("Index too low [%d]\n", idx);
 			return pv_get_null(msg, param, res);
 		}
 
 		s.s = neg_index[0]->body.s;
 		s.len = neg_index[0]->body.len;
 	} else {
-		body_part = &sbody->first;
+		first_part_by_mime( &sbody->first, body_part, mime );
 		distance = idx;
-		while (distance && body_part->next) {
+		while (distance && body_part ) {
 			distance--;
-			body_part=body_part->next;
+			first_part_by_mime( body_part->next, body_part, mime );
 		}
 
-		if (distance > 0) {
-			LM_ERR("Index too big [%d]\n", idx);
+		if (distance>0 || body_part==NULL) {
+			LM_DBG("Index too big [%d], body_part=%p\n", idx,body_part);
 			return pv_get_null(msg, param, res);
 		}
 
@@ -3521,6 +3559,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"rb", (sizeof("rb")-1)}, /* */
 		PVT_MSG_BODY, pv_get_msg_body, 0,
 		0, pv_parse_index, 0, 0},
+	{{"rb", (sizeof("rb")-1)}, /* */
+		PVT_MSG_BODY, pv_get_msg_body, 0,
+		pv_parse_rb_name, pv_parse_index, 0, 0},
 	{{"rc", (sizeof("rc")-1)}, /* */
 		PVT_RETURN_CODE, pv_get_return_code, 0,
 		0, 0, 0, 0},
