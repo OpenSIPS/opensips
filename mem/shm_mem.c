@@ -476,24 +476,24 @@ void init_shm_statistics(void)
 
 #ifdef SHM_SHOW_DEFAULT_GROUP
 		p = (stat_var *)&memory_mods_stats[0].fragments;
-		if (register_stat("shmem_group_default", "fragments", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
+		if (register_stat(STAT_PREFIX "default", "fragments", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}
 		p = (stat_var *)&memory_mods_stats[0].memory_used;
-		if (register_stat("shmem_group_default", "memory_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
+		if (register_stat(STAT_PREFIX "default", "memory_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}
 
 		p = (stat_var *)&memory_mods_stats[0].real_used;
-		if (register_stat("shmem_group_default", "real_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
+		if (register_stat(STAT_PREFIX "default", "real_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}
 
 		p = (stat_var *)&memory_mods_stats[0].max_real_used;
-		if (register_stat("shmem_group_default", "max_real_used", &p, STAT_NO_ALLOC)!=0 ) {
+		if (register_stat(STAT_PREFIX "default", "max_real_used", &p, STAT_NO_ALLOC)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}

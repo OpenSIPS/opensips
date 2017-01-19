@@ -30,7 +30,7 @@
 #include "../lock_ops.h" 
 
 #define STAT_SUFIX "_mem_stat"
-#define STAT_PREFIX "shmem_group_"
+#define STAT_PREFIX "shmem_"
 #define STAT_PREFIX_LEN 12
 
 extern struct multi_str* mod_names;
