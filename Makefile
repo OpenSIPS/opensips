@@ -68,6 +68,10 @@ ifeq (,$(wildcard Makefile.conf))
 $(shell cp Makefile.conf.template Makefile.conf)
 endif
 include Makefile.conf
+ifneq (,$(findstring SHM_EXTRA_STATS, $(DEFS)))
+deps_gen += mem/mem_stats.h
+auto_gen += mem/mem_stats.c
+endif
 include Makefile.sources
 include Makefile.defs
 
@@ -118,7 +122,7 @@ modules_names=$(patsubst modules/%, %.so, $(modules))
 modules_basenames=$(patsubst modules/%, %, $(modules))
 modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
 
-ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf
+ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf $(deps_gen)
 
 install_docs := README-MODULES AUTHORS NEWS README
 ifneq ($(skip-install-doc),yes)
@@ -165,7 +169,7 @@ ifeq (,$(FASTER))
 endif
 	$(Q)$(LEX) $(LEX_FLAGS) $<
 
-cfg.tab.c cfg.tab.h: cfg.y  $(ALLDEP)
+cfg.tab.c cfg.tab.h: cfg.y $(ALLDEP)
 ifeq (,$(FASTER))
 	@echo "Generating parser"
 endif

@@ -35,6 +35,10 @@ endif
 
 include ../../Makefile.sources
 
+ifneq (,$(findstring SHM_EXTRA_STATS, $(DEFS)))
+ALLDEP += ../../mem/mem_stats.h
+endif
+
 ifeq (,$(filter $(MOD_NAME), $(static_modules)))
 CFLAGS:=$(MOD_CFLAGS)
 LDFLAGS:=$(MOD_LDFLAGS)
