@@ -17,8 +17,7 @@ CREATE TABLE location (
     socket VARCHAR2(64) DEFAULT NULL,
     methods NUMBER(10) DEFAULT NULL,
     sip_instance VARCHAR2(255) DEFAULT NULL,
-    attr VARCHAR2(255) DEFAULT NULL,
-    CONSTRAINT location_account_contact_idx  UNIQUE (username, domain, contact, callid)
+    attr VARCHAR2(255) DEFAULT NULL
 );
 
 CREATE OR REPLACE TRIGGER location_tr
