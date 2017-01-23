@@ -14,8 +14,10 @@
 	</para>
 
 	<para>
-		This module provides an interface for &osips; to communicate directly with
-		the CGRateS engine, using efficient <ulink url='http://json-rpc.org/'>JSON-RPC</ulink>
+		This module can be used to communicate with the CGRates engine in order to do
+		call authorization and accounting for billing purposes. The &osips; module does
+		not do any billing by itself, but provides an interface to communicate with the
+		CGRateS engine using efficient <ulink url='http://json-rpc.org/'>JSON-RPC</ulink>
 		APIs in both synchronous and asynchronous ways. For each command the user can
 		provide a set of parameters that will be forwarded to the CGRateS engine, using
 		the <emphasis>$cgr()</emphasis> variable. You can find usage examples in the
@@ -84,6 +86,11 @@
 		cgrate_acc("cdr", "$fU", "$rU");
 		...
 		</programlisting>
+	</para>
+	<para>
+		Note that when using the <emphasis>cdr</emphasis> flag, CDRs are exported by
+		the CGRateS engine in various formats, not by &osips;. Check the CGRateS
+		documentation for more information.
 	</para>
 	</section>
 

@@ -69,12 +69,15 @@ Chapter 1. Admin Guide
    postpaid and prepaid rating. It may also be use to generate and
    aggragate CDRs in multiple formats.
 
-   This module provides an interface for OpenSIPS to communicate
-   directly with the CGRateS engine, using efficient JSON-RPC APIs
-   in both synchronous and asynchronous ways. For each command the
-   user can provide a set of parameters that will be forwarded to
-   the CGRateS engine, using the $cgr() variable. You can find
-   usage examples in the following sections.
+   This module can be used to communicate with the CGRates engine
+   in order to do call authorization and accounting for billing
+   purposes. The OpenSIPS module does not do any billing by
+   itself, but provides an interface to communicate with the
+   CGRateS engine using efficient JSON-RPC APIs in both
+   synchronous and asynchronous ways. For each command the user
+   can provide a set of parameters that will be forwarded to the
+   CGRateS engine, using the $cgr() variable. You can find usage
+   examples in the following sections.
 
    The module can be used to implement the following features:
 
@@ -128,6 +131,10 @@ Chapter 1. Admin Guide
                 # do accounting for this call
                 cgrate_acc("cdr", "$fU", "$rU");
                 ...
+
+   Note that when using the cdr flag, CDRs are exported by the
+   CGRateS engine in various formats, not by OpenSIPS. Check the
+   CGRateS documentation for more information.
 
 1.4. Other Commands
 
