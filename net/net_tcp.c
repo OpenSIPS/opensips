@@ -1859,7 +1859,7 @@ struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param)
 					goto error;
 
 				/* add state */
-				p = int2str((unsigned long)conn->state, &len);
+				p = sint2str((long)conn->state, &len);
 				attr = add_mi_attr( node, MI_DUP_VALUE,MI_SSTR("State"),p,len);
 				if (attr==0)
 					goto error;
