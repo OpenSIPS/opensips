@@ -41,7 +41,7 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
-		str *buffer, str *page);
+		str *buffer, str *page, union sockaddr_union* cl_socket);
 static ssize_t mi_xmlrpc_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max);
 
 str http_root = str_init("RPC2");
@@ -256,7 +256,7 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
-		str *buffer, str *page)
+		str *buffer, str *page, union sockaddr_union* cl_socket)
 {
 	str arg = {NULL, 0};
 	struct mi_root *tree = NULL;
