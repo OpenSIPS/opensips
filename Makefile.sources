@@ -9,7 +9,7 @@
 # defines: sources, objs, depends
 #
 
-sources=$(filter-out $(auto_gen) $(exclude_files), $(wildcard *.c) \
+sources=$(filter-out $(auto_gen) $(exclude_files), $(wildcard *.c) $(extra_sources) \
 		$(wildcard mem/*.c) $(wildcard aaa/*.c) \
 		$(wildcard parser/*.c) $(wildcard lib/*.c) \
 		$(wildcard lib/reg/*.c) \
