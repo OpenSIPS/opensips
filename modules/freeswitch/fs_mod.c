@@ -1,12 +1,7 @@
 /*
  * Client for the FreeSWITCH ESL (Event Socket Layer)
  *
- * This module is intended to be used as a middle layer SIP component in
- * environments where a large proportion of SIP UAs (e.g. mobile devices)
- * register at high enough frequencies that they actually degrade the
- * performance of their registrars.
- *
- * Copyright (C) 2016 OpenSIPS Solutions
+ * Copyright (C) 2017 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -38,7 +33,6 @@
 #include "fs_api.h"
 
 static int mod_init(void);
-int fs_bind(fs_api_t *fapi);
 
 static cmd_export_t cmds[] = {
 	{ "fs_bind", (cmd_function)fs_bind, 1, NULL, NULL, 0 },
@@ -79,6 +73,7 @@ struct module_exports exports= {
 
 static int mod_init(void)
 {
+	
 	return 0;
 }
 
