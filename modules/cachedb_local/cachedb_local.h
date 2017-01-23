@@ -39,10 +39,11 @@ extern int local_exec_threshold;
 
 typedef struct {
 	struct cachedb_id *id;
-	/* local cache hash structure */
-	struct lcache_col* col;
 	unsigned int ref;
 	struct cachedb_pool_con_t *next;
+
+	/* local cache hash structure */
+	struct lcache_col* col;
 } lcache_con;
 
 typedef struct lcache_col {

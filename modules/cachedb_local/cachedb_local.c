@@ -387,9 +387,6 @@ static int mod_init(void)
 
 	if ( it ) {
 		while (it) {
-			if (foo)
-				pkg_free(foo);
-
 			con = lcache_init(&it->url);
 			if (con == NULL) {
 				LM_ERR("failed to init connection for collection <%.*s>!\n",0,"");
@@ -403,6 +400,7 @@ static int mod_init(void)
 
 			foo = it;
 			it = it->next;
+			pkg_free(foo);
 		}
 	} else {
 		/* no url defined; keep old functionality */
