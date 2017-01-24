@@ -662,6 +662,7 @@ int is_mod_func_used(struct action *a, char *name, int param_no)
 		if (a->type==MODULE_T) {
 			/* first param is the name of the function */
 			cmd = (cmd_export_t*)a->elem[0].u.data;
+			LM_DBG("reached to <%s>\n",cmd->name);
 			if (strcasecmp(cmd->name, name)==0 &&
 			(param_no==cmd->param_no || param_no==-1) ) {
 				LM_DBG("function %s found to be used in script\n",name);
@@ -669,27 +670,34 @@ int is_mod_func_used(struct action *a, char *name, int param_no)
 			}
 		}
 
-		if (a->type==IF_T || a->type==WHILE_T)
+		/* follow all leads from actions/expressions than may have 
+		 * sub-blocks of instructions */
+		if (a->elem[0].type==ACTIONS_ST)
+			if (is_mod_func_used((struct action*)a->elem[0].u.data,
+			name,param_no)==1)
+				return 1;
+		if (a->elem[0].type==EXPR_ST)
 			if (is_mod_func_in_expr((struct expr*)a->elem[0].u.data,
 			name,param_no)==1)
 				return 1;
 
-		/* follow all leads from actions than may have 
-		 * sub-blocks of instructions */
-		if (a->elem[0].type==ACTIONS_ST)
-				if (is_mod_func_used((struct action*)a->elem[0].u.data,
-				name,param_no)==1)
-					return 1;
-
 		if (a->elem[1].type==ACTIONS_ST)
-				if (is_mod_func_used((struct action*)a->elem[1].u.data,
-				name,param_no)==1)
-					return 1;
+			if (is_mod_func_used((struct action*)a->elem[1].u.data,
+			name,param_no)==1)
+				return 1;
+		if (a->elem[1].type==EXPR_ST)
+			if (is_mod_func_in_expr((struct expr*)a->elem[1].u.data,
+			name,param_no)==1)
+				return 1;
 
 		if (a->elem[2].type==ACTIONS_ST)
-				if (is_mod_func_used((struct action*)a->elem[2].u.data,
-				name,param_no)==1)
-					return 1;
+			if (is_mod_func_used((struct action*)a->elem[2].u.data,
+			name,param_no)==1)
+				return 1;
+		if (a->elem[2].type==EXPR_ST)
+			if (is_mod_func_in_expr((struct expr*)a->elem[2].u.data,
+			name,param_no)==1)
+				return 1;
 
 		a = a->next;
 	}
