@@ -498,8 +498,8 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	w_curl_easy_setopt(sync_handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
 	w_curl_easy_setopt(sync_handle, CURLOPT_TIMEOUT, curl_timeout);
 
-	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
-	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(sync_handle, CURLOPT_VERBOSE, 1);
+	w_curl_easy_setopt(sync_handle, CURLOPT_STDERR, stdout);
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEFUNCTION, write_func);
 	bodyp = &body; /* doing this just to make coverity happy */
@@ -625,8 +625,8 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	w_curl_easy_setopt(sync_handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
 	w_curl_easy_setopt(sync_handle, CURLOPT_TIMEOUT, curl_timeout);
 
-	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
-	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(sync_handle, CURLOPT_VERBOSE, 1);
+	w_curl_easy_setopt(sync_handle, CURLOPT_STDERR, stdout);
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEFUNCTION, write_func);
 	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEDATA, &res_body);
@@ -742,8 +742,8 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	w_curl_easy_setopt(sync_handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
 	w_curl_easy_setopt(sync_handle, CURLOPT_TIMEOUT, curl_timeout);
 
-	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
-	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(sync_handle, CURLOPT_VERBOSE, 1);
+	w_curl_easy_setopt(sync_handle, CURLOPT_STDERR, stdout);
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEFUNCTION, write_func);
 	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEDATA, &res_body);
