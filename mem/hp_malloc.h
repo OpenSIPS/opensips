@@ -156,6 +156,9 @@ struct hp_frag {
 	const char* file;
 	const char* func;
 	unsigned long line;
+#endif
+
+#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 	char is_free;
 #endif
 #ifdef SHM_EXTRA_STATS

@@ -213,7 +213,7 @@ static inline void hp_frag_attach(struct hp_block *hpb, struct hp_frag *frag)
 		(*f)->prev = &(frag->u.nxt_free);
 
 	/* mark fragment as "free" */
-#ifdef DBG_MALLOC
+#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 	frag->is_free = 1;
 #endif
 
@@ -825,14 +825,13 @@ found:
 	hp_frag_detach(hpb, frag);
 	update_stats_pkg_frag_detach(hpb, frag);
 
-#ifdef DBG_MALLOC
+#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 	/* mark fragment as "busy" */
 	frag->is_free = 0;
-
+#endif
 #ifndef STATISTICS
 	hpb->used += frag->size;
 	hpb->real_used += frag->size + FRAG_OVERHEAD;
-#endif
 #endif
 
 	/* split the fragment if possible */
@@ -930,10 +929,12 @@ found:
 		hpb->real_used += frag->size + FRAG_OVERHEAD;
 	}
 
-#ifdef DBG_MALLOC
+#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 	/* mark it as "busy" */
 	frag->is_free = 0;
+#endif
 
+#ifdef DBG_MALLOC
 	/* split the fragment if possible */
 	shm_frag_split_unsafe(hpb, frag, size, file, "fragm. from hp_malloc", line);
 	frag->file=file;
@@ -1037,10 +1038,12 @@ found:
 	hpb->real_used += (frag)->size + FRAG_OVERHEAD;
 #endif
 
-#ifdef DBG_MALLOC
+#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 	/* mark fragment as "busy" */
 	frag->is_free = 0;
+#endif
 
+#ifdef DBG_MALLOC
 	/* split the fragment if possible */
 	shm_frag_split(hpb, frag, size, hash, file, "fragm. from hp_malloc", line);
 	frag->file=file;

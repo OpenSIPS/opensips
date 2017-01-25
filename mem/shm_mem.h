@@ -263,7 +263,7 @@ inline static void* _shm_realloc(void *ptr, unsigned int size,
 	void *p;
 
 	#ifdef SHM_EXTRA_STATS
-		unsigned long origin;
+		unsigned long origin = 0;
 		if (ptr) {
 			origin = get_stat_index(ptr);
 			update_module_stats(-frag_size(ptr), -(frag_size(ptr) + FRAG_OVERHEAD), -1, get_stat_index(ptr));
@@ -302,7 +302,7 @@ inline static void* _shm_realloc_unsafe(void *ptr, unsigned int size,
 	void *p;
 
 	#ifdef SHM_EXTRA_STATS
-		unsigned long origin;
+		unsigned long origin = 0;
 		if (ptr) {
 			origin = get_stat_index(ptr);
 			update_module_stats(-frag_size(ptr), -(frag_size(ptr) + FRAG_OVERHEAD), -1, get_stat_index(ptr));
@@ -472,7 +472,7 @@ inline static void* shm_realloc(void *ptr, unsigned int size)
 #endif
 
 #ifdef SHM_EXTRA_STATS
-	unsigned long origin;
+	unsigned long origin = 0;
 	if (ptr) {
 		origin = get_stat_index(ptr);
 		update_module_stats(-frag_size(ptr), -(frag_size(ptr) + FRAG_OVERHEAD), -1, get_stat_index(ptr));
@@ -505,7 +505,7 @@ inline static void* shm_realloc_unsafe(void *ptr, unsigned int size)
 {
 	void *p;
 #ifdef SHM_EXTRA_STATS
-	unsigned long origin;
+	unsigned long origin = 0;
 	if (ptr) {
 		origin = get_stat_index(ptr);
 		update_module_stats(-frag_size(ptr), -(frag_size(ptr) + FRAG_OVERHEAD), -1, get_stat_index(ptr));

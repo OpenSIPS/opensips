@@ -177,7 +177,7 @@ static inline void fm_insert_free(struct fm_block* qm, struct fm_frag* frag)
 	if( *f )
 		(*f)->prev = &(frag->u.nxt_free);
 
-#ifdef DBG_MALLOC
+#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 	/* mark fragment as "free" */
 	frag->is_free = 1;
 #endif
@@ -397,7 +397,7 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 				#endif
 
 				if( frag->size >size ) {
-					#ifdef DBG_MALLOC
+					#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 					/* mark it as "busy" */
 					frag->is_free = 0;
 					#endif
@@ -427,7 +427,7 @@ found:
 
 	fm_remove_free(qm,frag);
 
-	#ifdef DBG_MALLOC
+	#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 	/* mark it as "busy" */
 	frag->is_free = 0;
 	#endif
