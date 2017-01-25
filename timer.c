@@ -67,14 +67,21 @@ static unsigned int  *jiffies=0;
 static utime_t       *ujiffies=0;
 static utime_t       *ijiffies=0;
 static unsigned short timer_id=0;
-static int            timer_pipe[2];
+static int	      timer_pipes[TIMER_MAX_PIPES];
+static int	      timer_pipe_current = 0;
 
-int timer_fd_out = -1 ;
+//Number of pips made
+int	      timer_pipe_count = TIMER_MAX_PIPES;
+
+/*Reader pipes for children*/
+int timer_fds_out[TIMER_MAX_PIPES] = { [0 ... (TIMER_MAX_PIPES - 1) ] = -1 };
 
 
 /* ret 0 on success, <0 on error*/
-int init_timer(void)
+/* accepts number of children to create pipes for */
+int init_timer(int pipe_cnt)
 {
+	int i = 0;
 	int optval;
 
 	jiffies  = shm_malloc(sizeof(unsigned int));
@@ -100,24 +107,52 @@ int init_timer(void)
 	*ujiffies=0;
 	*ijiffies=0;
 
-	/* create the pipe for dispatching the timer jobs */
-	if ( pipe(timer_pipe)!=0 ) {
-		LM_ERR("failed to create time pipe (%s)!\n",strerror(errno));
-		return E_UNSPEC;
+	//Limit max number of pipes to children count or TIMER_MAX_PIPES
+	if (pipe_cnt < timer_pipe_count) {
+		timer_pipe_count = pipe_cnt;
 	}
-	/* make reading fd non-blocking */
-	optval=fcntl(timer_pipe[0], F_GETFL);
-	if (optval==-1){
-		LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
-		return E_UNSPEC;
+
+	//Make sure we make atleast one pipe
+	if (timer_pipe_count <= 0) {
+		timer_pipe_count = 1;
 	}
-	if (fcntl(timer_pipe[0],F_SETFL,optval|O_NONBLOCK)==-1){
-		LM_ERR("set non-blocking failed: (%d) %s\n",
-			errno, strerror(errno));
-		return E_UNSPEC;
+
+	//Make one pipe set for each child
+	while (i < timer_pipe_count) {
+		int new_pipe[2];
+		/* create the pipe for dispatching the timer jobs */
+		if ( pipe(new_pipe)!=0 ) {
+			LM_ERR("failed to create time pipe (%s)!\n",strerror(errno));
+			return E_UNSPEC;
+		}
+		/* make reading fd non-blocking */
+		optval=fcntl(new_pipe[0], F_GETFL);
+		if (optval==-1){
+			LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
+			return E_UNSPEC;
+		}
+		if (fcntl(new_pipe[0],F_SETFL,optval|O_NONBLOCK)==-1){
+			LM_ERR("set non-blocking failed: (%d) %s\n",
+				errno, strerror(errno));
+			return E_UNSPEC;
+		}
+
+		/* make writing fd non-blocking */
+		optval=fcntl(new_pipe[1], F_GETFL);
+		if (optval==-1){
+			LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
+			return E_UNSPEC;
+		}
+		if (fcntl(new_pipe[1],F_SETFL,optval|O_NONBLOCK)==-1){
+			LM_ERR("set non-blocking failed: (%d) %s\n",
+				errno, strerror(errno));
+			return E_UNSPEC;
+		}
+
+		timer_fds_out[i] = new_pipe[0];
+		timer_pipes[i] = new_pipe[1];
+		i++;
 	}
-	/* make visible the "read" part of the pipe */
-	timer_fd_out = timer_pipe[0];
 
 	return 0;
 }
@@ -287,6 +322,7 @@ static inline void timer_ticker(struct os_timer *timer_list)
 	struct os_timer* t;
 	unsigned int j;
 	ssize_t l;
+	int push_attempt;
 
 	/* we need to store the original time as while executing the
 	   the handlers, the time may pass, affecting the way we
@@ -318,13 +354,36 @@ static inline void timer_ticker(struct os_timer *timer_list)
 			t->trigger_time = *ijiffies;
 			t->time = j;
 			/* push the jobs for execution */
-again:
-			l = write( timer_pipe[1], &t, sizeof(t));
-			if (l==-1) {
-				if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
-					goto again;
-				LM_ERR("writing failed:[%d] %s, skipping job <%s> at %d s\n",
+
+			push_attempt = 0;
+
+			/*We will attempt to push the timer to the next available pipe.
+			  If there is a failure we attempt to push it to the next available pipe
+                          until we have exhausted all pipes*/
+			while (push_attempt < timer_pipe_count) {
+				l = write( timer_pipes[timer_pipe_current], &t, sizeof(t));
+				//Advance pipe for next timer push
+				timer_pipe_current++;
+				if (timer_pipe_current >= timer_pipe_count) {
+				//Wrap back to start
+					timer_pipe_current = 0;
+				}
+
+				push_attempt++;
+
+				//Check for write errors and log
+				if (l==-1) {
+					LM_WARN("writing failed:[%d] %s, skipping pipe for job <%s> at %d us\n",
 					errno, strerror(errno),t->label, j);
+				} else {
+				//Write was fine, go to next timer job
+					break;
+				}
+			}
+
+			if (l==-1) {
+				LM_ERR("writing failed:[%d] %s, skipping job <%s> at %d us\n",
+				errno, strerror(errno),t->label, j);
 			}
 		}
 	}
@@ -337,7 +396,7 @@ static inline void utimer_ticker(struct os_timer *utimer_list)
 	struct os_timer* t;
 	utime_t uj;
 	ssize_t l;
-
+	int push_attempt;
 	/* see comment on timer_ticket */
 	uj = *ujiffies;
 
@@ -364,14 +423,37 @@ static inline void utimer_ticker(struct os_timer *utimer_list)
 			t->expires = uj + t->interval;
 			t->trigger_time = *ijiffies;
 			t->time = uj;
+
 			/* push the jobs for execution */
-again:
-			l = write( timer_pipe[1], &t, sizeof(t));
-			if (l==-1) {
-				if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
-					goto again;
-				LM_ERR("writing failed:[%d] %s, skipping job <%s> at %lld us\n",
+			push_attempt = 0;
+
+			/*We will attempt to push the timer to the next available pipe.
+			  If there is a failure we attempt to push it to the next available pipe
+                          until we have exhausted all pipes*/
+			while (push_attempt < timer_pipe_count) {
+				l = write( timer_pipes[timer_pipe_current], &t, sizeof(t));
+				//Advance pipe for next timer push
+				timer_pipe_current++;
+				if (timer_pipe_current >= timer_pipe_count) {
+				//Wrap back to start
+					timer_pipe_current = 0;
+				}
+
+				push_attempt++;
+
+				//Check for write errors and log
+				if (l==-1) {
+					LM_WARN("writing failed:[%d] %s, skipping pipe for job <%s> at %lld us\n",
 					errno, strerror(errno),t->label, uj);
+				} else {
+				//Write was fine, go to next timer job
+					break;
+				}
+			}
+
+			if (l==-1) {
+				LM_ERR("writing failed:[%d] %s, skipping job <%s> at %lld us\n",
+				errno, strerror(errno),t->label, uj);
 			}
 		}
 	}
@@ -609,7 +691,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 {
 	switch(fm->type){
 		case F_TIMER_JOB:
-			handle_timer_job();
+			handle_timer_job(fm->fd);
 			return 0;
 		case F_SCRIPT_ASYNC:
 			async_script_resume_f( &fm->fd, fm->data);
@@ -628,6 +710,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 int start_timer_extra_processes(int *chd_rank)
 {
 	pid_t pid;
+	int i = 0;
 
 	(*chd_rank)++;
 	if ( (pid=internal_fork( "Timer handler"))<0 ) {
@@ -650,13 +733,16 @@ int start_timer_extra_processes(int *chd_rank)
 				goto error;
 			}
 
-			/* init: start watching for the timer jobs */
-			if (reactor_add_reader( timer_fd_out, F_TIMER_JOB,
-			RCT_PRIO_TIMER,NULL)<0){
-				LM_CRIT("failed to add timer pipe_out to reactor\n");
-				goto error;
+			/* init: start watching for the timer jobs
+			   We listen on all timer pipes to pickup slack incase all other works are busy*/
+			while (i < timer_pipe_count) {
+				if (reactor_add_reader( timer_fds_out[i], F_TIMER_JOB,
+				RCT_PRIO_TIMER,NULL)<0){
+					LM_CRIT("failed to add timer pipe_out to reactor\n");
+					goto error;
+				}
+				i++;
 			}
-
 			/* launch the reactor */
 			reactor_main_loop( 1/*timeout in sec*/, error , );
 
@@ -671,13 +757,13 @@ error:
 }
 
 
-void handle_timer_job(void)
+void handle_timer_job(int timer_pipe)
 {
 	struct os_timer *t;
 	ssize_t l;
 
 	/* read one "os_timer" pointer from the pipe (non-blocking) */
-	l = read( timer_fd_out, &t, sizeof(t) );
+	l = read( timer_pipe, &t, sizeof(t) );
 	if (l==-1) {
 		if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
 			return;

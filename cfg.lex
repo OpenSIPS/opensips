@@ -354,6 +354,7 @@ DISABLE_STATELESS_FWD	"disable_stateless_fwd"
 DB_VERSION_TABLE "db_version_table"
 DB_DEFAULT_URL "db_default_url"
 DB_MAX_ASYNC_CONNECTIONS "db_max_async_connections"
+CHILDREN_PER_TIMER	children_per_timer
 DISABLE_503_TRANSLATION "disable_503_translation"
 
 MPATH	mpath
@@ -650,6 +651,8 @@ IMPORTFILE      "import_file"
 									return DB_DEFAULT_URL; }
 <INITIAL>{DB_MAX_ASYNC_CONNECTIONS}	{	count(); yylval.strval=yytext;
 									return DB_MAX_ASYNC_CONNECTIONS; }
+<INITIAL>{CHILDREN_PER_TIMER}		{	count(); yylval.strval=yytext;
+									return CHILDREN_PER_TIMER; }
 <INITIAL>{DISABLE_503_TRANSLATION}	{	count(); yylval.strval=yytext;
 									return DISABLE_503_TRANSLATION; }
 

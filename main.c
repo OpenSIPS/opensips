@@ -237,6 +237,9 @@ int gid = 0;
 int disable_core_dump=0; /* by default enabled */
 int open_files_limit=-1; /* don't touch it by default */
 
+/* timer config options */
+int children_per_timer=0;
+
 #ifdef USE_MCAST
 int mcast_loopback = 0;
 int mcast_ttl = -1; /* if -1, don't touch it, use the default (usually 1) */
@@ -1162,7 +1165,8 @@ try_again:
 	}
 
 	/* init timer */
-	if (init_timer()<0){
+	/* Enforce 1 global timer pipe based on config */
+	if (init_timer(children_per_timer <= 0 ? 1 : ((children_no + tcp_children_no)/children_per_timer))<0) {
 		LM_CRIT("could not initialize timer, exiting...\n");
 		goto error;
 	}

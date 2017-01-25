@@ -392,10 +392,10 @@ static struct multi_str *tmp_mod;
 %token DB_VERSION_TABLE
 %token DB_DEFAULT_URL
 %token DB_MAX_ASYNC_CONNECTIONS
+%token CHILDREN_PER_TIMER
 %token DISABLE_503_TRANSLATION
 %token SYNC_TOKEN
 %token ASYNC_TOKEN
-
 
 
 
@@ -1085,6 +1085,8 @@ assign_stm: DEBUG EQUAL snumber
 		| DB_MAX_ASYNC_CONNECTIONS EQUAL error {
 				yyerror("integer value expected");
 				}
+		| CHILDREN_PER_TIMER EQUAL NUMBER { children_per_timer=$3; }
+		| CHILDREN_PER_TIMER EQUAL error { yyerror("integer value expected"); }
 		| DISABLE_503_TRANSLATION EQUAL NUMBER { disable_503_translation=$3; }
 		| DISABLE_503_TRANSLATION EQUAL error {
 				yyerror("integer value expected");

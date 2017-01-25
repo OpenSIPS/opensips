@@ -261,7 +261,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			update_stat( pt[process_no].load, -1 );
 			return n;
 		case F_TIMER_JOB:
-			handle_timer_job();
+			handle_timer_job(fm->fd);
 			return 0;
 		case F_SCRIPT_ASYNC:
 			async_script_resume_f( &fm->fd, fm->data);
@@ -286,7 +286,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
  * \see main_loop
  * \return -1 for errors
  */
-int udp_rcv_loop( struct socket_info *si )
+int udp_rcv_loop( struct socket_info *si, int timer_pipe_id)
 {
 
 	/* create the reactor for UDP proc */
@@ -296,7 +296,7 @@ int udp_rcv_loop( struct socket_info *si )
 	}
 
 	/* init: start watching for the timer jobs */
-	if (reactor_add_reader( timer_fd_out, F_TIMER_JOB, RCT_PRIO_TIMER,NULL)<0){
+	if (reactor_add_reader( timer_fds_out[timer_pipe_id], F_TIMER_JOB, RCT_PRIO_TIMER,NULL)<0){
 		LM_CRIT("failed to add timer pipe_out to reactor\n");
 		goto error;
 	}
@@ -322,7 +322,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 	struct socket_info *si;
 	stat_var *load_p = NULL;
 	pid_t pid;
-	int i,p;
+	int i,p,timer_pipe_id;
 
 	if (udp_disabled)
 		return 0;
@@ -338,6 +338,11 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 			}
 
 			for (i=0;i<si->children;i++) {
+
+				//Timer pipe id for this child to listen on
+				//This will cause it to wrap in the event of more children than pipes
+		                timer_pipe_id = (*chd_rank) % timer_pipe_count;
+
 				(*chd_rank)++;
 				if ( (pid=internal_fork( "UDP receiver"))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
@@ -372,7 +377,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 					/* all UDP listeners on same interface
 					 * have same SHM load pointer */
 					pt[process_no].load = load_p;
-					udp_rcv_loop( si );
+					udp_rcv_loop( si, timer_pipe_id );
 					exit(-1);
 				} else {
 					/*parent*/
