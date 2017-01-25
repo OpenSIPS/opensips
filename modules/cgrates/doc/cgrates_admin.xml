@@ -179,7 +179,7 @@
 		<para>
 			This parameter is used to specify a CGRateS engine connection.
 			The format is <emphasis>IP[:port]</emphasis>. The port is optional,
-			and if missing, <emphasis>2012</emphasis> is used.
+			and if missing, <emphasis>2014</emphasis> is used.
 		</para>
 		<para>
 			This parameter can have multiple values, for each server

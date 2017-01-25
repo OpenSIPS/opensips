@@ -193,7 +193,7 @@ Chapter 1. Admin Guide
 
    This parameter is used to specify a CGRateS engine connection.
    The format is IP[:port]. The port is optional, and if missing,
-   2012 is used.
+   2014 is used.
 
    This parameter can have multiple values, for each server used
    for failover. At least one server should be provisioned.
