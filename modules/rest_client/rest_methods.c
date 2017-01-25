@@ -43,6 +43,9 @@ static struct curl_slist *header_list = NULL;
 static int transfers;
 static int read_fds[FD_SETSIZE];
 
+/* handle for use with synchronous reqs */
+static CURL *sync_handle = NULL;
+
 /* libcurl's reported running handles */
 static int running_handles;
 
@@ -469,53 +472,57 @@ int rest_get_method(struct sip_msg *msg, char *url,
                     pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
 {
 	CURLcode rc;
-	CURL *handle = NULL;
 	long http_rc;
 	pv_value_t pv_val;
 	str st = { 0, 0 };
 	str *stp, *bodyp;
 	str body = { NULL, 0 }, tbody;
 
-	handle = curl_easy_init();
-	if (!handle) {
-		LM_ERR("Init curl handle failed!\n");
-		clean_header_list;
-		return -1;
+	/*Init handle for first use*/
+	if (!sync_handle) {
+		sync_handle = curl_easy_init();
+		if (!sync_handle) {
+			LM_ERR("Init curl handle failed!\n");
+			clean_header_list;
+			return -1;
+		}
+	} else {
+		curl_easy_reset(sync_handle);
 	}
 
 	if (header_list)
-		w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
+		w_curl_easy_setopt(sync_handle, CURLOPT_HTTPHEADER, header_list);
 
-	w_curl_easy_setopt(handle, CURLOPT_URL, url);
+	w_curl_easy_setopt(sync_handle, CURLOPT_URL, url);
 
-	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
-	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
+	w_curl_easy_setopt(sync_handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
+	w_curl_easy_setopt(sync_handle, CURLOPT_TIMEOUT, curl_timeout);
 
-	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
-	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(sync_handle, CURLOPT_VERBOSE, 1);
+	w_curl_easy_setopt(sync_handle, CURLOPT_STDERR, stdout);
 
-	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
+	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEFUNCTION, write_func);
 	bodyp = &body; /* doing this just to make coverity happy */
-	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, bodyp);
+	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEDATA, bodyp);
 
-	w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
+	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERFUNCTION, header_func);
 	stp = &st; /* doing this just to make coverity happy */
-	w_curl_easy_setopt(handle, CURLOPT_HEADERDATA, stp);
+	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERDATA, stp);
 
 	if (ssl_capath)
-		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_capath);
+		w_curl_easy_setopt(sync_handle, CURLOPT_CAPATH, ssl_capath);
 
 	if (!ssl_verifypeer)
-		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+		w_curl_easy_setopt(sync_handle, CURLOPT_SSL_VERIFYPEER, 0L);
 
 	if (!ssl_verifyhost)
-		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+		w_curl_easy_setopt(sync_handle, CURLOPT_SSL_VERIFYHOST, 0L);
 
-	rc = curl_easy_perform(handle);
+	rc = curl_easy_perform(sync_handle);
 	clean_header_list;
 
 	if (code_pv) {
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
+		curl_easy_getinfo(sync_handle, CURLINFO_RESPONSE_CODE, &http_rc);
 		LM_DBG("Last response code: %ld\n", http_rc);
 
 		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
@@ -523,13 +530,13 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set code pv value failed!\n");
-			goto cleanup;
+			return -1;
 		}
 	}
 
 	if (rc != CURLE_OK) {
 		LM_ERR("curl_easy_perform: %s\n", curl_easy_strerror(rc));
-		goto cleanup;
+		return -1;
 	}
 
 	tbody = body;
@@ -540,7 +547,7 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 	if (pv_set_value(msg, body_pv, 0, &pv_val) != 0) {
 		LM_ERR("Set body pv value failed!\n");
-		goto cleanup;
+		return -1;
 	}
 
 	if (body.s) {
@@ -552,18 +559,16 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");
-			goto cleanup;
+			return -1;
 		}
 
 		if (st.s)
 			pkg_free(st.s);
 	}
 
-	curl_easy_cleanup(handle);
 	return 1;
 
 cleanup:
-	curl_easy_cleanup(handle);
 	return -1;
 }
 
@@ -581,14 +586,24 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
                      pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
 {
 	CURLcode rc;
-	CURL *handle = NULL;
 	long http_rc;
 	str st = { 0, 0 };
 	str res_body = { NULL, 0 }, tbody;
 	pv_value_t pv_val;
 
-	handle = curl_easy_init();
-	if (!handle) {
+	/*Init handle for first use*/
+	if (!sync_handle) {
+		sync_handle = curl_easy_init();
+		if (!sync_handle) {
+			LM_ERR("Init curl handle failed!\n");
+			clean_header_list;
+			return -1;
+		}
+	} else {
+		curl_easy_reset(sync_handle);
+	}
+
+	if (!sync_handle) {
 		LM_ERR("Init curl handle failed!\n");
 		clean_header_list;
 		return -1;
@@ -600,39 +615,39 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	}
 
 	if (header_list)
-		w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
+		w_curl_easy_setopt(sync_handle, CURLOPT_HTTPHEADER, header_list);
 
-	w_curl_easy_setopt(handle, CURLOPT_URL, url);
+	w_curl_easy_setopt(sync_handle, CURLOPT_URL, url);
 
-	w_curl_easy_setopt(handle, CURLOPT_POST, 1);
-	w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, body);
+	w_curl_easy_setopt(sync_handle, CURLOPT_POST, 1);
+	w_curl_easy_setopt(sync_handle, CURLOPT_POSTFIELDS, body);
 
-	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
-	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
+	w_curl_easy_setopt(sync_handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
+	w_curl_easy_setopt(sync_handle, CURLOPT_TIMEOUT, curl_timeout);
 
-	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
-	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(sync_handle, CURLOPT_VERBOSE, 1);
+	w_curl_easy_setopt(sync_handle, CURLOPT_STDERR, stdout);
 
-	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
-	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, &res_body);
+	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEFUNCTION, write_func);
+	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEDATA, &res_body);
 
-	w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
-	w_curl_easy_setopt(handle, CURLOPT_HEADERDATA, &st);
+	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERFUNCTION, header_func);
+	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERDATA, &st);
 
 	if (ssl_capath)
-		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_capath);
+		w_curl_easy_setopt(sync_handle, CURLOPT_CAPATH, ssl_capath);
 
 	if (!ssl_verifypeer)
-		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+		w_curl_easy_setopt(sync_handle, CURLOPT_SSL_VERIFYPEER, 0L);
 
 	if (!ssl_verifyhost)
-		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+		w_curl_easy_setopt(sync_handle, CURLOPT_SSL_VERIFYHOST, 0L);
 
-	rc = curl_easy_perform(handle);
+	rc = curl_easy_perform(sync_handle);
 	clean_header_list;
 
 	if (code_pv) {
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
+		curl_easy_getinfo(sync_handle, CURLINFO_RESPONSE_CODE, &http_rc);
 		LM_DBG("Last response code: %ld\n", http_rc);
 
 		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
@@ -640,13 +655,13 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set code pv value failed!\n");
-			goto cleanup;
+			return -1;
 		}
 	}
 
 	if (rc != CURLE_OK) {
 		LM_ERR("curl_easy_perform: %s\n", curl_easy_strerror(rc));
-		goto cleanup;
+		return -1;
 	}
 
 	tbody = res_body;
@@ -657,7 +672,7 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 	if (pv_set_value(msg, body_pv, 0, &pv_val) != 0) {
 		LM_ERR("Set body pv value failed!\n");
-		goto cleanup;
+		return -1;
 	}
 
 	if (res_body.s) {
@@ -669,18 +684,15 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");
-			goto cleanup;
+			return -1;
 		}
 
 		if (st.s)
 			pkg_free(st.s);
 	}
 
-	curl_easy_cleanup(handle);
 	return 1;
-
 cleanup:
-	curl_easy_cleanup(handle);
 	return -1;
 }
 
@@ -698,17 +710,21 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
                      pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
 {
 	CURLcode rc;
-	CURL *handle = NULL;
 	long http_rc;
 	str st = { 0, 0 };
 	str res_body = { NULL, 0 }, tbody;
 	pv_value_t pv_val;
 
-	handle = curl_easy_init();
-	if (!handle) {
-		LM_ERR("Init curl handle failed!\n");
-		clean_header_list;
-		return -1;
+	/*Init handle for first use*/
+	if (!sync_handle) {
+		sync_handle = curl_easy_init();
+		if (!sync_handle) {
+			LM_ERR("Init curl handle failed!\n");
+			clean_header_list;
+			return -1;
+		}
+	} else {
+		curl_easy_reset(sync_handle);
 	}
 
 	if (ctype) {
@@ -717,37 +733,37 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	}
 
 	if (header_list)
-		w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
+		w_curl_easy_setopt(sync_handle, CURLOPT_HTTPHEADER, header_list);
 
-	w_curl_easy_setopt(handle, CURLOPT_URL, url);
-	w_curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "PUT");
-	w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, body);
+	w_curl_easy_setopt(sync_handle, CURLOPT_URL, url);
+	w_curl_easy_setopt(sync_handle, CURLOPT_CUSTOMREQUEST, "PUT");
+	w_curl_easy_setopt(sync_handle, CURLOPT_POSTFIELDS, body);
 
-	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
-	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
+	w_curl_easy_setopt(sync_handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
+	w_curl_easy_setopt(sync_handle, CURLOPT_TIMEOUT, curl_timeout);
 
-	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
-	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(sync_handle, CURLOPT_VERBOSE, 1);
+	w_curl_easy_setopt(sync_handle, CURLOPT_STDERR, stdout);
 
-	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
-	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, &res_body);
+	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEFUNCTION, write_func);
+	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEDATA, &res_body);
 
-	w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
-	w_curl_easy_setopt(handle, CURLOPT_HEADERDATA, &st);
+	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERFUNCTION, header_func);
+	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERDATA, &st);
 
 	if (ssl_capath)
-		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_capath);
+		w_curl_easy_setopt(sync_handle, CURLOPT_CAPATH, ssl_capath);
 
 	if (!ssl_verifypeer)
-		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+		w_curl_easy_setopt(sync_handle, CURLOPT_SSL_VERIFYPEER, 0L);
 
 	if (!ssl_verifyhost)
-		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+		w_curl_easy_setopt(sync_handle, CURLOPT_SSL_VERIFYHOST, 0L);
 
-	rc = curl_easy_perform(handle);
+	rc = curl_easy_perform(sync_handle);
 	clean_header_list;
 	if (code_pv) {
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
+		curl_easy_getinfo(sync_handle, CURLINFO_RESPONSE_CODE, &http_rc);
 		LM_DBG("Last response code: %ld\n", http_rc);
 
 		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
@@ -755,13 +771,13 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set code pv value failed!\n");
-			goto cleanup;
+			return -1;
 		}
 	}
 
 	if (rc != CURLE_OK) {
 		LM_ERR("curl_easy_perform: %s\n", curl_easy_strerror(rc));
-		goto cleanup;
+		return -1;
 	}
 
 	tbody = res_body;
@@ -772,7 +788,7 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 	if (pv_set_value(msg, body_pv, 0, &pv_val) != 0) {
 		LM_ERR("Set body pv value failed!\n");
-		goto cleanup;
+		return -1;
 	}
 
 	if (res_body.s) {
@@ -784,18 +800,16 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");
-			goto cleanup;
+			return -1;
 		}
 
 		if (st.s)
 			pkg_free(st.s);
 	}
 
-	curl_easy_cleanup(handle);
 	return 1;
 
 cleanup:
-	curl_easy_cleanup(handle);
 	return -1;
 }
 
