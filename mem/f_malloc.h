@@ -82,8 +82,12 @@ struct fm_frag{
 	const char* func;
 	unsigned long line;
 	unsigned long check;
+#endif
+
+#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 	char is_free;
 #endif
+
 #ifdef SHM_EXTRA_STATS
 	unsigned long statistic_index;
 #endif
