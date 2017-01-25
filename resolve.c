@@ -2088,3 +2088,40 @@ struct dns_node *dns_res_copy(struct dns_node *s)
 	return d;
 }
 
+int resolve_hostport(str *in, unsigned short default_port,
+                     union sockaddr_union *dst)
+{
+	struct proxy_l* proxy;
+	char *p;
+	unsigned int port;
+	str st;
+
+	p = memchr(in->s, ':', in->len);
+	if (p != NULL) {
+		st.s = p+1;
+		st.len = in->len - (p + 1 - in->s);
+
+		if (str2int(&st, &port) != 0) {
+			LM_ERR("failed to parse port '%.*s' %d in host '%.*s'\n",
+			       st.len, st.s, st.len, in->len, in->s);
+			return -1;
+		}
+		st.s = in->s;
+		st.len = p - in->s;
+	} else {
+		st = *in;
+		port = default_port;
+	}
+
+	proxy = mk_proxy(&st, port, PROTO_NONE, 0);
+	if (proxy == NULL) {
+		LM_ERR("could not resolve hostname '%.*s'\n", in->len, in->s);
+		return -1;
+	}
+
+	hostent2su(dst, &proxy->host, proxy->addr_idx, proxy->port);
+
+	free_proxy(proxy);
+	pkg_free(proxy);
+	return 0;
+}

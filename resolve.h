@@ -177,6 +177,10 @@ struct hostent* resolvehost(char* name, int no_ip_test);
 
 struct hostent* rev_resolvehost(struct ip_addr *ip);
 
+/*! \brief Generic "ip[:port]" string parsing + resolving */
+int resolve_hostport(str *in, unsigned short default_port,
+                     union sockaddr_union *dst);
+
 /*! \brief free the DNS resolver state machine */
 void free_dns_res( struct proxy_l *p );
 
