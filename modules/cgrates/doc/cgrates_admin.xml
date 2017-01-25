@@ -8,9 +8,11 @@
 	<title>Overview</title>
 	<para>
 		<ulink url='http://www.cgrates.org/'><emphasis>CGRateS</emphasis></ulink>
-		is an OpenSource rating engine used for carrier-grade realtime billing. It has
-		a multitenant design and can do both postpaid and prepaid rating. It may also be
-		use to generate and aggragate CDRs in multiple formats.
+		is an open-source rating engine used for carrier-grade, multi-tenant,
+		real-time billing. It is able to do both postpaid and prepaid rating
+		for multiple concurrent sessions with different balance units (eg: Monetary,
+		SMS, Internet Traffic). CGRateS can also export accurate CDRs in various
+		formats.
 	</para>
 
 	<para>
