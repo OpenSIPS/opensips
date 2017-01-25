@@ -79,7 +79,7 @@
 		Usage example:
 		<programlisting format="linespecific">
 		...
-		if (!cgrates_auth("$fU", "$rU"))
+		if (!cgrates_auth("$fU", "$rU")) {
 			sl_send_reply("403", "Forbidden");
 			exit;
 		}
@@ -361,6 +361,7 @@ modparam("cgrates", "retry_timeout", 120)
 			...
 			if (cgrates_auth("$fU", "$rU"))
 				cgrates_acc("cdr|missed", "$fU", "$rU");
+			...
 		}
 		...
 		</programlisting>
@@ -442,6 +443,7 @@ modparam("cgrates", "retry_timeout", 120)
 				sl_send_reply("403", "Forbidden");
 				exit;
 			}
+			...
 		}
 		...
 		</programlisting>

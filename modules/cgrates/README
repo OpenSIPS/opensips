@@ -125,7 +125,7 @@ Chapter 1. Admin Guide
 
    Usage example:
                 ...
-                if (!cgrates_auth("$fU", "$rU"))
+                if (!cgrates_auth("$fU", "$rU")) {
                         sl_send_reply("403", "Forbidden");
                         exit;
                 }
@@ -296,6 +296,7 @@ modparam("cgrates", "retry_timeout", 120)
                         ...
                         if (cgrates_auth("$fU", "$rU"))
                                 cgrates_acc("cdr|missed", "$fU", "$rU");
+                        ...
                 }
                 ...
 
@@ -334,6 +335,7 @@ modparam("cgrates", "retry_timeout", 120)
                                 sl_send_reply("403", "Forbidden");
                                 exit;
                         }
+                        ...
                 }
                 ...
 
