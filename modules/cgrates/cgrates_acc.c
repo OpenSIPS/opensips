@@ -274,7 +274,7 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 		LM_ERR("Cannot get callid of the message!\n");
 		return NULL;
 	}
-	time(&ctx->time);
+	time(&ctx->answer_time);
 
 	cmsg = cgr_get_generic_msg(&cmd, ctx->kv_store);
 	if (!cmsg) {
@@ -309,7 +309,14 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 	}
 
 	/* SetupTime */
-	stime.s = int2str(ctx->time, &stime.len);
+	stime.s = int2str(ctx->setup_time, &stime.len);
+	if (cgr_msg_push_str(cmsg, "SetupTime", &stime) < 0) {
+		LM_ERR("cannot push SetupTime info!\n");
+		goto error;
+	}
+
+	/* AnswerTime */
+	stime.s = int2str(ctx->answer_time, &stime.len);
 	if (cgr_msg_push_str(cmsg, "AnswerTime", &stime) < 0) {
 		LM_ERR("cannot push AnswerTime info!\n");
 		goto error;
@@ -334,11 +341,10 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 	struct cgr_msg *cmsg = NULL;
 	str tmp;
 	char int2str_buf[INT2STR_MAX_LEN + 1];
-	/* compute the duration */
 	time_t now = time(NULL);
 	static str cmd = str_init("SMGenericV1.TerminateSession");
 
-	ctx->duration = now - ctx->time;
+	ctx->duration = now - ctx->answer_time;
 
 	/* OriginID */
 	if ((dlg = cgr_dlgb.get_dlg()) == NULL) {
@@ -366,8 +372,17 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 		goto error;
 	}
 
+	/* SetupTime */
+	if (ctx->answer_time != ctx->setup_time) {
+		tmp.s = int2str(ctx->setup_time, &tmp.len);
+		if (cgr_msg_push_str(cmsg, "SetupTime", &tmp) < 0) {
+			LM_ERR("cannot push SetupTime info!\n");
+			goto error;
+		}
+	}
+
 	/* AnswerTime */
-	tmp.s = int2str(now, &tmp.len);
+	tmp.s = int2str(ctx->answer_time, &tmp.len);
 	if (cgr_msg_push_str(cmsg, "AnswerTime", &tmp) < 0) {
 		LM_ERR("cannot push AnswerTime info!\n");
 		goto error;
@@ -396,6 +411,7 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 	struct dlg_cell *dlg;
 	struct cgr_msg *cmsg = NULL;
 	str tmp;
+	char int2str_buf[INT2STR_MAX_LEN + 1];
 	static str cmd = str_init("SMGenericV1.ProcessCDR");
 
 	/* OriginID */
@@ -421,10 +437,30 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 		goto error;
 	}
 
-	tmp.s = int2str(ctx->duration, &tmp.len);
-	if (cgr_msg_push_str(cmsg, "Duration", &tmp) < 0) {
-		LM_ERR("cannot add Duration node\n");
+	tmp.s = int2bstr(ctx->duration, int2str_buf, &tmp.len);
+	/* add an s at the end */
+	tmp.s[tmp.len] = 's';
+	tmp.len++;
+	tmp.s[tmp.len] = 0;
+	if (cgr_msg_push_str(cmsg, "Usage", &tmp) < 0) {
+		LM_ERR("cannot add Usage node\n");
 		goto error;
+	}
+
+	if (ctx->answer_time) {
+		tmp.s = int2str(ctx->answer_time, &tmp.len);
+		if (cgr_msg_push_str(cmsg, "AnswerTime", &tmp) < 0) {
+			LM_ERR("cannot add AnswerTime node\n");
+			goto error;
+		}
+	}
+
+	if (ctx->setup_time && ctx->setup_time != ctx->answer_time) {
+		tmp.s = int2str(ctx->setup_time, &tmp.len);
+		if (cgr_msg_push_str(cmsg, "SetupTime", &tmp) < 0) {
+			LM_ERR("cannot add SetupTime node\n");
+			goto error;
+		}
 	}
 
 	return cmsg->msg;
@@ -460,7 +496,8 @@ static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 	LM_DBG("storing in dialog acc ctx=%p\n", ctx);
 
 	buf.len = sizeof(ctx->flags) + sizeof(unsigned) + ctx->acc.len +
-		sizeof(unsigned) + ctx->dst.len + sizeof(ctx->time);
+		sizeof(unsigned) + ctx->dst.len + sizeof(ctx->setup_time) +
+		sizeof(ctx->answer_time);
 	if (ctx->kv_store) {
 		list_for_each(l, ctx->kv_store) {
 			kv = list_entry(l, struct cgr_kv, list);
@@ -493,9 +530,13 @@ static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 	memcpy(p, ctx->dst.s, ctx->dst.len);
 	p += ctx->dst.len;
 
-	/* time */
-	memcpy(p, &ctx->time, sizeof(ctx->time));
-	p += sizeof(ctx->time);
+	/* setup time */
+	memcpy(p, &ctx->setup_time, sizeof(ctx->setup_time));
+	p += sizeof(ctx->setup_time);
+
+	/* answer_time */
+	memcpy(p, &ctx->answer_time, sizeof(ctx->answer_time));
+	p += sizeof(ctx->answer_time);
 
 	/* kv */
 	if (ctx->kv_store) {
@@ -572,6 +613,7 @@ int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c)
 	}
 
 	ctx->flags = (unsigned long)flag_c;
+	time(&ctx->setup_time);
 
 	/* store accounting and destination values */
 	if (shm_str_dup(&ctx->acc, acc) < 0 || shm_str_dup(&ctx->dst, dst) < 0) {
@@ -732,7 +774,8 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 		goto internal_error;
 	}
 	CGR_CTX_COPY(ctx->dst.s, ctx->dst.len, "dst.s");
-	CGR_CTX_COPY(&ctx->time, sizeof(ctx->time), "time");
+	CGR_CTX_COPY(&ctx->setup_time, sizeof(ctx->setup_time), "setup time");
+	CGR_CTX_COPY(&ctx->answer_time, sizeof(ctx->answer_time), "answer time");
 
 	if (p < end) {
 		/* we also have some values stored in the context */

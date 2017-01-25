@@ -49,7 +49,8 @@ struct cgr_acc_ctx {
 	/* all branches info */
 	str acc;
 	str dst;
-	time_t time;
+	time_t setup_time;
+	time_t answer_time;
 	unsigned int duration;
 
 	/* variables */
