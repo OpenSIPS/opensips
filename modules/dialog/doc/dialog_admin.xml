@@ -1570,12 +1570,14 @@ if (is_in_profile("caller","XX")) {
 		<example>
 		<title><function>get_profile_size</function> usage</title>
 		<programlisting format="linespecific">
+modparam("dialog", "profiles_no_value", "inboundCalls")
+modparam("dialog", "profiles_with_value", "caller")
 ...
-get_profile_size("inbound_call","$avp(size)");
-xlog("currently there are $avp(size) inbound calls\n");
+get_profile_size("inboundCalls",,"$var(size)");
+xlog("inboundCalls: $var(size)\n");
 ...
-get_profile_size("caller","$fu");
-xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
+get_profile_size("caller", "$fu", "$var(size)");
+xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 ...
 </programlisting>
 		</example>
