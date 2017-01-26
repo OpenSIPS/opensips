@@ -498,14 +498,24 @@ reprocess:
 		ret = 0;
 	}
 	/* check to see if there is anything else to process */
+#if JSON_LIB_VERSION >= 10
 	jerr = json_tokener_get_error(c->jtok);
+#else
+	jerr = c->jtok->err;
+#endif
 	if (jerr == json_tokener_continue) {
 		LM_DBG("we need to read more until this is completed\n");
 		async_status = ASYNC_CONTINUE;
 		/* we do not release the context yet */
 		return 1;
 	} else if (jerr != json_tokener_success) {
-		LM_ERR("Unable to parse json: %s\n", json_tokener_error_desc(jerr));
+		LM_ERR("Unable to parse json: %s\n",
+#if JSON_LIB_VERSION >= 10
+				json_tokener_error_desc(jerr)
+#else
+				json_tokener_errors[(unsigned long)jerr]
+#endif
+			  );
 		goto disable;
 	}
 	/* now we need to see if there are any other bytes to read */

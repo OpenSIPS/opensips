@@ -23,8 +23,10 @@
 #define _CGRATES_COMMON_H_
 
 /* fix json_object_object_foreach for older STDC versions */
+#ifndef JSON_C_VERSION_NUM
 #if defined(__GNUC__) && __STDC_VERSION__ < 199901L
 #define __STRICT_ANSI__
+#endif
 #endif
 
 #include <json.h>
