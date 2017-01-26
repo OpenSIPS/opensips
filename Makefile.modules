@@ -33,11 +33,18 @@ ALLDEP+=../../Makefile ../../Makefile.defs
 
 endif
 
-include ../../Makefile.sources
-
 ifneq (,$(findstring SHM_EXTRA_STATS, $(DEFS)))
-ALLDEP += ../../mem/mem_stats.h
+MEM_STATS_HDR = ../../mem/mem_stats.h
+ALLDEP += $(MEM_STATS_HDR)
+EXPECTED_MD5=$(shell [ -f $(MEM_STATS_HDR) ] && tail -n 1 $(MEM_STATS_HDR) | awk '{print $$4}')
+MODULES_MD5=$(shell find $(dir $(MEM_STATS_HDR))/../modules -name "[Mm]akefile" | \
+			awk -F/ '{print $2}' | sort | md5sum | awk '{print $$1}')
+ifneq ($(EXPECTED_MD5),$(MODULES_MD5))
+REGENERATE_MEM_STATS=remove-mem-stats
 endif
+endif
+
+include ../../Makefile.sources
 
 ifeq (,$(filter $(MOD_NAME), $(static_modules)))
 CFLAGS:=$(MOD_CFLAGS)

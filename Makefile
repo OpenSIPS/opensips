@@ -69,7 +69,8 @@ $(shell cp Makefile.conf.template Makefile.conf)
 endif
 include Makefile.conf
 ifneq (,$(findstring SHM_EXTRA_STATS, $(DEFS)))
-deps_gen += mem/mem_stats.h
+MEM_STATS_HDR = mem/mem_stats.h
+deps_gen += $(MEM_STATS_HDR)
 auto_gen += mem/mem_stats.c
 endif
 include Makefile.sources
