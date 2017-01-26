@@ -22,14 +22,6 @@
 #ifndef _CGRATES_COMMON_H_
 #define _CGRATES_COMMON_H_
 
-/* fix json_object_object_foreach for older STDC versions */
-#ifndef JSON_C_VERSION_NUM
-/* FIXME: remove me when json_object_object_foreach is dropped */
-#if defined(__GNUC__) && __STDC_VERSION__ < 199901L
-#define __STRICT_ANSI__
-#endif
-#endif
-
 #include <json.h>
 
 #if JSON_LIB_VERSION < 10

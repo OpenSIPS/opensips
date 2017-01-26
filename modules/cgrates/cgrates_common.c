@@ -33,11 +33,6 @@
 #include "cgrates_common.h"
 #include "cgrates_engine.h"
 
-enum cgrm_type {
-	CGRM_UNSPEC, CGRM_REQ, CGRM_REPL
-};
-
-
 /* key-value manipulation */
 struct cgr_kv *cgr_get_kv(struct list_head *ctx, str name)
 {
@@ -622,122 +617,84 @@ int cgrates_process(json_object *jobj,
 		struct cgr_conn *c, cgr_proc_reply_f proc_reply, void *p)
 {
 	json_object *jresult = NULL;
-	char *error = NULL;
 	char *method = NULL;
 	json_object *id = NULL;
-	int err = 0;
+	json_object *tmp = NULL;
 	int l = 0;
-	enum cgrm_type msg_type = CGRM_UNSPEC;
+	int is_reply = 0;
 	enum json_type type;
 
-	LM_DBG("Processing JSON: %s\n",
+	LM_DBG("Processing JSON-RPC: %s\n",
 			(char *)json_object_to_json_string(jobj));
-	/* FIXME: replace this with json_object_object_get_ex */
-	json_object_object_foreach(jobj, key, val) {
-		/* most likely the compiler will figure out a better way to optimize
-		 * this strcmp */
-		type = json_object_get_type(val);
-		if (strcmp(key, "result") == 0) {
-			if (msg_type != CGRM_UNSPEC && msg_type != CGRM_REPL) {
-				LM_ERR("Invalid JSON \"result\" property in a JSON-RPC request!\n");
-				return -3;
-			}
-			msg_type = CGRM_REPL;
-			if (type != json_type_null)
-				jresult = val;
-			else
-				/* must be an error - result might be updated afterwards, or
-				 * has already been set */
-				err = 1;
-		} else if (strcmp(key, "error") == 0) {
-			if (msg_type != CGRM_UNSPEC && msg_type != CGRM_REPL) {
-				LM_ERR("Invalid JSON \"error\" property in a JSON-RPC request!\n");
-				return -3;
-			}
-			msg_type = CGRM_REPL;
-			switch (type) {
-				case json_type_null:
-					err = 0;
-					break;
-				case json_type_string:
-					error = (char *)json_object_get_string(val);
-					break;
-				default:
-					LM_DBG("Unknown type %d for the \"error\" key\n", type);
-					return -3;
-			}
-		} else if (strcmp(key, "method") == 0) {
-			if (msg_type != CGRM_UNSPEC && msg_type != CGRM_REQ) {
-				LM_ERR("Invalid JSON \"method\" property in a JSON-RPC reply!\n");
-				return -3;
-			}
-			msg_type = CGRM_REQ;
-			if (type != json_type_string) {
-				LM_DBG("Unknown type %d for the \"method\" key\n", type);
-				return -3;
-			}
-			method = (char *)json_object_get_string(val);
-		} else if (strcmp(key, "params") == 0) {
-			if (msg_type != CGRM_UNSPEC && msg_type != CGRM_REQ) {
-				LM_ERR("Invalid JSON \"params\" property in a JSON-RPC reply!\n");
-				return -3;
-			}
-			msg_type = CGRM_REQ;
-			if (type != json_type_array) {
-				LM_DBG("Unknown type %d for the \"params\" key\n", type);
-				return -3;
-			}
-			if ((l = json_object_array_length(val)) != 1) {
-				LM_ERR("too many elements in JSON array: %d\n", l);
-				return -3;
-			}
-			jresult = json_object_array_get_idx(val, 0);
-		} else if (strcmp(key, "id") == 0) {
-			if (msg_type != CGRM_UNSPEC && msg_type != CGRM_REQ) {
-				LM_ERR("Invalid JSON \"id\" property in a JSON-RPC reply!\n");
-				return -3;
-			}
-			/* we simply preserve the ID as whatever object it was */
-			id = val;
-		} /* unhandled properties */
+
+	/* check to see if it is a reply */
+	if (json_object_object_get_ex(jobj, "result", &jresult) && jresult) {
+		is_reply = 1;
+		if (json_object_get_type(jresult) == json_type_null)
+			jresult = NULL;
 	}
 
-	/* check for consistency */
-	switch (msg_type) {
-		case CGRM_UNSPEC:
-			LM_ERR("Unknown JSON properties!\n");
-			return -3;
-		case CGRM_REPL:
-			if (err) {
-				if (jresult) {
-					LM_ERR("Non-null error and result properties!"
-							"Can't handle response!\n");
-					return -3;
-				}
-				if (!error)
-					error = "Unknown";
-				return proc_reply(c, NULL, p, error);
-			} else {
-				if (error) {
-					LM_ERR("Non-null error and result properties!"
-							"Can't handle response!\n");
-					return -3;
-				}
+	if (is_reply) {
+		LM_DBG("treating JSON-RPC as a reply\n");
+		if (json_object_object_get_ex(jobj, "error", &tmp) && tmp) {
+			type = json_object_get_type(tmp);
+			switch (type) {
+			case json_type_null:
 				if (!jresult) {
-					LM_ERR("No result received for reply!\n");
+					LM_ERR("Invalid RPC: both \"error\" and \"result\" are null\n");
 					return -3;
 				}
-				return proc_reply(c, jresult, p, NULL);
-			}
-		case CGRM_REQ:
-			if (!method || !jresult) {
-				LM_ERR("no method or parameters specified!\n");
+				break;
+			case json_type_string:
+				if (!jresult) {
+					LM_ERR("Invalid RPC: both \"error\" and \"result\" are not null\n");
+					return -3;
+				}
+				return proc_reply(c, NULL, p, (char *)json_object_get_string(tmp));
+			default:
+				LM_DBG("Invalid RPC: Unknown type %d for the \"error\" key\n", type);
 				return -3;
 			}
-			cgrates_process_req(c, id, method, jresult);
-			return 0;
+		}
+		/* if error does not exist, treat it as successful */
+		return proc_reply(c, jresult, p, NULL);
+	} else {
+		LM_DBG("treating JSON-RPC as a request\n");
+		if (json_object_object_get_ex(jobj, "method", &tmp) && tmp) {
+			if (json_object_get_type(tmp) != json_type_string) {
+				LM_ERR("Invalid RPC: \"method\" not string\n");
+				return -3;
+			}
+			method = (char *)json_object_get_string(tmp);
+		} else {
+			LM_ERR("Invalid RPC: \"method\" not present in request\n");
+			return -3;
+		}
+		if (json_object_object_get_ex(jobj, "params", &tmp) && tmp) {
+			switch (json_object_get_type(tmp)) {
+			case json_type_object:
+				jresult = tmp;
+				break;
+			case json_type_array:
+				if ((l = json_object_array_length(tmp)) != 1) {
+					LM_ERR("too many elements in JSON array: %d\n", l);
+					return -3;
+				}
+				jresult = json_object_array_get_idx(tmp, 0);
+				break;
+			default:
+				LM_ERR("Invalid RPC: \"params\" is not array\n");
+				return -3;
+			}
+		} else {
+			LM_ERR("Invalid RPC: \"params\" not present in request\n");
+			return -3;
+		}
+
+		/* check to see if there is an id */
+		json_object_object_get_ex(jobj, "id", &id);
+		cgrates_process_req(c, id, method, jresult);
 	}
-	/* never gets here */
 	return 0;
 }
 
