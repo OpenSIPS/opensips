@@ -61,6 +61,7 @@ static str backend = str_init("fifo");
 static int volatile mi_reload_fifo = 0;
 
 str correlation_value;
+extern int mi_trace_mod_id;
 
 FILE* mi_create_fifo(void)
 {
@@ -435,7 +436,7 @@ static void fifo_close_async( struct mi_root *mi_rpl, struct mi_handler *hdl,
 		}
 
 		if (mi_rpl!=0) {
-			mi_write_tree( reply_stream, mi_rpl);
+			mi_write_tree( reply_stream, mi_rpl, 0);
 			free_mi_tree( mi_rpl );
 		} else {
 			mi_fifo_reply( reply_stream, "%d %.*s\n", code, reason.len, reason.s);
@@ -501,11 +502,12 @@ static inline struct mi_handler* build_async_handler( char *name, int len)
 		} \
 	} while(0);
 
-#define mi_throw_error( _stream, _buf, _code, _err, ...) \
+#define mi_throw_error( f, _stream, _buf, _code, _err, ...) \
 	do { \
 		mi_write_err2buf( _buf, _code, _err, __VA_ARGS__); \
 		mi_fifo_reply(_stream, "%d %.*s\n", _code, _buf.len, _buf.s); \
-		mi_trace_reply( 0, 0, _code, &_buf, 0, t_dst); \
+		if ( f && is_mi_cmd_traced( mi_trace_mod_id, f) ) \
+			mi_trace_reply( 0, 0, _code, &_buf, 0, t_dst); \
 	} while(0);
 
 
@@ -582,7 +584,7 @@ void mi_fifo_server(FILE *fifo_stream)
 			LM_ERR("command %s is not available\n", command);
 			mi_open_reply( file, reply_stream, consume1);
 
-			mi_throw_error( reply_stream, err_reason, INTERNAL_ERR_CODE,
+			mi_throw_error( 0, reply_stream, err_reason, INTERNAL_ERR_CODE,
 				consume2, "command '%s' not available", command);
 
 			goto consume2;
@@ -595,7 +597,7 @@ void mi_fifo_server(FILE *fifo_stream)
 				LM_ERR("failed to build async handler\n");
 				mi_open_reply( file, reply_stream, consume1);
 
-				mi_throw_error( reply_stream, err_reason, INTERNAL_ERR_CODE,
+				mi_throw_error( f, reply_stream, err_reason, INTERNAL_ERR_CODE,
 					consume2, "Internal server error");
 
 				goto consume2;
@@ -615,7 +617,7 @@ void mi_fifo_server(FILE *fifo_stream)
 				if (!reply_stream)
 					mi_open_reply( file, reply_stream, consume3);
 
-				mi_throw_error( reply_stream, err_reason, PARSE_ERR_CODE,
+				mi_throw_error( f, reply_stream, err_reason, PARSE_ERR_CODE,
 					consume3, "Parse error in command '%s'", command);
 				goto consume3;
 			}
@@ -624,19 +626,23 @@ void mi_fifo_server(FILE *fifo_stream)
 
 		LM_DBG("done parsing the mi tree\n");
 
-		mi_trace_request( 0, 0, command, file_sep - command, mi_cmd, &backend, t_dst);
+		if ( (is_mi_cmd_traced(mi_trace_mod_id, f)) ) {
+			mi_trace_request( 0, 0, command, file_sep - command,
+											mi_cmd, &backend, t_dst);
+		}
 
 		if ( (mi_rpl=run_mi_cmd(f, mi_cmd,
 		(mi_flush_f *)mi_flush_tree, reply_stream))==0 ) {
 			if (!reply_stream)
 				mi_open_reply( file, reply_stream, failure);
 
-			mi_throw_error( reply_stream, err_reason, INTERNAL_ERR_CODE,
+			mi_throw_error( f, reply_stream, err_reason, INTERNAL_ERR_CODE,
 					consume3, "command '%s' failed", command);
 		} else if (mi_rpl!=MI_ROOT_ASYNC_RPL) {
 			if (!reply_stream)
 				mi_open_reply( file, reply_stream, failure);
-			mi_write_tree( reply_stream, mi_rpl);
+			mi_write_tree( reply_stream, mi_rpl,
+					( f && is_mi_cmd_traced( mi_trace_mod_id, f) ) );
 
 			free_mi_tree( mi_rpl );
 		} else {

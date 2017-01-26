@@ -172,7 +172,7 @@ static int recur_write_tree(FILE *stream, struct mi_node *tree, str *buf,
 
 
 
-int mi_write_tree(FILE *stream, struct mi_root *tree)
+int mi_write_tree(FILE *stream, struct mi_root *tree, int cmd_is_traced)
 {
 	str buf;
 	str code;
@@ -209,7 +209,7 @@ int mi_write_tree(FILE *stream, struct mi_root *tree)
 	*(buf.s++)='\n';
 	buf.len--;
 
-	if ( t_dst ) {
+	if ( cmd_is_traced && t_dst ) {
 		rpl_msg.s = mi_write_buffer;
 		rpl_msg.len = buf.s - mi_write_buffer;
 		mi_trace_reply( 0, 0, tree->code, &tree->reason, &rpl_msg, t_dst);
