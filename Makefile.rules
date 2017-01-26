@@ -72,7 +72,7 @@ Makefile.conf: Makefile.conf.template
 		print "#ifdef SHM_EXTRA_STATS"; \
 		print "unsigned long core_mem_stat; /* core statistic */"; } \
 		{ print "unsigned long " $$(NF-1) "_mem_stat;" } \
-		END { print "#endif /* SHM_EXTRA_STATS */"}' > $@
+		END { print "#endif /* SHM_EXTRA_STATS */"; fflush()}' > $@
 
 %mem_stats.h: $(NEWREVISION)
 	@find $(dir $@)/../modules/ -name "[Mm]akefile" -exec grep NAME= {} \; \
@@ -84,7 +84,7 @@ Makefile.conf: Makefile.conf.template
 		print "#define __MEM_STAT_H_"; \
 		print "extern unsigned long core_mem_stat; /* core statistic */"; } \
 		{ print "extern unsigned long " $$(NF-1) "_mem_stat;" } \
-		END { print "#endif /* __MEM_STAT_H_ */\n#endif /* SHM_EXTRA_STATS */"}' > $@
+		END { print "#endif /* __MEM_STAT_H_ */\n#endif /* SHM_EXTRA_STATS */"; fflush()}' > $@
 
 $(cfg_prefix)/$(cfg_dir):
 		mkdir -m 700 -p $(cfg_prefix)/$(cfg_dir)
