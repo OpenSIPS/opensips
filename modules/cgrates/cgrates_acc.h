@@ -22,8 +22,8 @@
 #ifndef _CGRATES_ACC_H_
 #define _CGRATES_ACC_H_
 
-#include <json.h>
 #include "../dialog/dlg_load.h"
+#include "cgrates_common.h"
 
 /*
  * Starts a CGR accounting session

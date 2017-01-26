@@ -21,7 +21,6 @@
 
 #include "../../ut.h"
 #include "../../mod_fix.h"
-#include "cgrates_common.h"
 #include "cgrates_acc.h"
 
 #define CGR_REF_DBG(_c, _s) LM_DBG("%s ref=%d ctx=%p\n", _s, _c->ref_no, _c)
@@ -886,7 +885,7 @@ int cgr_acc_terminate(json_object *param, json_object **ret)
 	const char *err;
 	str reason = {0, 0};
 	json_object *event = NULL;
-	unsigned int h_entry, h_id;
+	unsigned int h_entry = 0, h_id = 0;
 	unsigned int h_id_found = 0;
 	unsigned int h_entry_found = 0;
 	static str terminate_str_pre = str_init("CGRateS Disconnect: ");

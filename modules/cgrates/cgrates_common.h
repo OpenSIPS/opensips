@@ -22,6 +22,11 @@
 #ifndef _CGRATES_COMMON_H_
 #define _CGRATES_COMMON_H_
 
+/* fix json_object_object_foreach for older STDC versions */
+#if defined(__GNUC__) && __STDC_VERSION__ < 199901L
+#define __STRICT_ANSI__
+#endif
+
 #include <json.h>
 #include "../../lib/list.h"
 #include "../../str.h"
