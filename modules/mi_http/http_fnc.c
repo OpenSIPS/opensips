@@ -32,11 +32,15 @@
 #include "../../globals.h"
 #include "../../locking.h"
 
+#include "../../mi/mi_trace.h"
+#include "../httpd/httpd_load.h"
 #include "http_fnc.h"
 
 
 extern str http_root;
 extern int http_method;
+extern trace_dest t_dst;
+extern httpd_api_t httpd_api;
 str upSinceCTime;
 
 http_mi_cmd_t* http_mi_cmds;
@@ -44,6 +48,7 @@ int http_mi_cmds_size;
 mi_http_html_page_data_t html_page_data;
 
 gen_lock_t* mi_http_lock;
+
 
 #define MI_HTTP_COPY(p,str)	\
 do{	\
@@ -561,7 +566,8 @@ static inline struct mi_handler* mi_http_build_async_handler(int mod, int cmd)
 }
 
 struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
-			str *page, str *buffer, struct mi_handler **async_hdl)
+			str *page, str *buffer, struct mi_handler **async_hdl,
+			union sockaddr_union* cl_socket)
 {
 	struct mi_cmd *f;
 	struct mi_root *mi_cmd = NULL;
@@ -624,6 +630,12 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 		*page = html_page_data.page;
 	}
 	LM_DBG("got mi_rpl=[%p]\n",mi_rpl);
+
+
+	if ( !sv_socket ) {
+		sv_socket = httpd_api.get_server_info();
+	}
+	mi_trace_request( cl_socket, sv_socket, miCmd.s, miCmd.len, mi_cmd, &backend, t_dst);
 
 	*async_hdl = hdl;
 
@@ -999,6 +1011,7 @@ int mi_http_build_content(str *page, int max_page_len,
 			if (mi_http_recur_write_tree(&p, buf, max_page_len,
 							tree->node.kids, 0)<0)
 				return -1;
+
 			page->len = p - page->s;
 		}
 	}
