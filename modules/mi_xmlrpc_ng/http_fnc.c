@@ -37,6 +37,8 @@
 #include "../../strcommon.h"
 
 #include "http_fnc.h"
+#include "../../mi/mi_trace.h"
+#include "../httpd/httpd_load.h"
 
 
 #define MI_XMLRPC_HTTP_XML_METHOD_CALL_NODE "methodCall"
@@ -50,6 +52,8 @@
 
 extern str http_root;
 extern int version;
+extern trace_dest t_dst;
+extern  httpd_api_t httpd_api;
 
 mi_xmlrpc_http_page_data_t html_page_data;
 
@@ -371,7 +375,7 @@ int mi_xmlrpc_http_flush_tree(void* param, struct mi_root *tree)
 	default:
 		LM_ERR("Version param not set accordingly");
 		return -1;
-	
+
 	}
 	return 0;
 }
@@ -457,7 +461,8 @@ static inline struct mi_handler* mi_xmlrpc_http_build_async_handler(void)
 }
 
 struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
-		str *page, str *buffer, struct mi_handler **async_hdl)
+		str *page, str *buffer, struct mi_handler **async_hdl,
+		union sockaddr_union* cl_socket)
 {
 	static str esc_buf = {NULL, 0};
 	struct mi_cmd *f;
@@ -607,6 +612,13 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	}
 	LM_DBG("got mi_rpl=[%p]\n",mi_rpl);
 
+	if ( !sv_socket ) {
+		sv_socket = httpd_api.get_server_info();
+	}
+
+	mi_trace_request(cl_socket, sv_socket, miCmd.s, miCmd.len,
+			mi_cmd, &backend, t_dst);
+
 	*async_hdl = hdl;
 
 	if (mi_cmd) free_mi_tree(mi_cmd);
@@ -634,7 +646,7 @@ static int mi_xmlrpc_http_recur_write_node(char** pointer, char* buf, int max_pa
 	if(dump_name){
 		MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_START);
 
-		if (node->name.s!=NULL) 
+		if (node->name.s!=NULL)
 			MI_XMLRPC_HTTP_ESC_COPY(*pointer, node->name, temp_holder, temp_counter);
 		else
 			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_DEFAULT);
@@ -645,7 +657,7 @@ static int mi_xmlrpc_http_recur_write_node(char** pointer, char* buf, int max_pa
 	MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_START);
 
 	if(!node->kids && !node->attributes){
-		if (node->value.s!=NULL) 
+		if (node->value.s!=NULL)
 			MI_XMLRPC_HTTP_ESC_COPY(*pointer, node->value, temp_holder, temp_counter);
 		else
 			MI_XMLRPC_HTTP_ESC_COPY(*pointer, node->value, temp_holder, temp_counter);
@@ -679,14 +691,14 @@ static int mi_xmlrpc_http_recur_write_node(char** pointer, char* buf, int max_pa
 					MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_END);
 					MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_START);
 
-					if (attr->value.s!=NULL) 
+					if (attr->value.s!=NULL)
 						MI_XMLRPC_HTTP_ESC_COPY(*pointer, attr->value,temp_holder,temp_counter);
 					else
 						MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_DEFAULT);
 
 					MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_END);
 					MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_END);
-				} 
+				}
 			}
 
 			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_END);
@@ -864,7 +876,7 @@ int mi_xmlrpc_http_build_page(str *page, int max_page_len,
 	default:
 		LM_ERR("Version param not set accordingly");
 		return -1;
-	
+
 	}
 	return 0;
 }
@@ -1008,11 +1020,11 @@ static int mi_xmlrpc_http_recur_flush_tree(char** pointer, char *buf, int max_pa
 			tree->kids = kid;
 
 			if(!tmp->kids){
-		
+
 				free_mi_node(tmp);
 			}
 		} else {
-		
+
 			return 1;
 		}
 	}
