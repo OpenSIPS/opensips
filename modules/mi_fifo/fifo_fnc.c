@@ -45,6 +45,10 @@
 #include "mi_parser.h"
 #include "mi_writer.h"
 
+#define INTERNAL_ERR_CODE 500
+#define PARSE_ERR_CODE 400
+#define ERR_BUF_SIZE 256
+
 static char *mi_buf = 0;
 static char *reply_fifo_s = 0;
 static int  reply_fifo_len = 0;
@@ -52,8 +56,11 @@ static char *mi_fifo_name = NULL;
 static int mi_fifo_mode;
 static int mi_fifo_uid;
 static int mi_fifo_gid;
+static str backend = str_init("fifo");
 
 static int volatile mi_reload_fifo = 0;
+
+str correlation_value;
 
 FILE* mi_create_fifo(void)
 {
@@ -77,6 +84,8 @@ FILE* mi_create_fifo(void)
 
 	if ((mi_fifo_uid!=-1) || (mi_fifo_gid!=-1)){
 		if (chown(mi_fifo_name, mi_fifo_uid, mi_fifo_gid)<0){
+
+#include "../../mi/mi_trace.h"
 			LM_ERR("failed to change the owner/group for %s to %d.%d; %s[%d]\n",
 				mi_fifo_name, mi_fifo_uid, mi_fifo_gid, strerror(errno), errno);
 			return 0;
@@ -412,6 +421,9 @@ static void fifo_close_async( struct mi_root *mi_rpl, struct mi_handler *hdl,
 	FILE *reply_stream;
 	char *name;
 
+	static const int code = 500;
+	static str reason = str_init("command failed");
+
 	name = (char*)hdl->param;
 
 	if ( mi_rpl!=0 || done ) {
@@ -426,7 +438,8 @@ static void fifo_close_async( struct mi_root *mi_rpl, struct mi_handler *hdl,
 			mi_write_tree( reply_stream, mi_rpl);
 			free_mi_tree( mi_rpl );
 		} else {
-			mi_fifo_reply( reply_stream, "500 command failed\n");
+			mi_fifo_reply( reply_stream, "%d %.*s\n", code, reason.len, reason.s);
+			mi_trace_reply( 0, 0, code, &reason, 0, t_dst);
 		}
 
 		fclose(reply_stream);
@@ -479,6 +492,23 @@ static inline struct mi_handler* build_async_handler( char *name, int len)
 		} \
 	} while(0)
 
+#define mi_write_err2buf( _buf, _max_size, _err, ...) \
+	do { \
+		_buf.len = snprintf( _buf.s, _max_size, __VA_ARGS__); \
+		if ( _buf.len >= _max_size ) { \
+			LM_ERR("can't fit message in reply buffer!\n"); \
+			goto _err; \
+		} \
+	} while(0);
+
+#define mi_throw_error( _stream, _buf, _code, _err, ...) \
+	do { \
+		mi_write_err2buf( _buf, _code, _err, __VA_ARGS__); \
+		mi_fifo_reply(_stream, "%d %.*s\n", _code, _buf.len, _buf.s); \
+		mi_trace_reply( 0, 0, _code, &_buf, 0, t_dst); \
+	} while(0);
+
+
 
 
 void mi_fifo_server(FILE *fifo_stream)
@@ -490,6 +520,9 @@ void mi_fifo_server(FILE *fifo_stream)
 	char *file_sep, *command, *file;
 	struct mi_cmd *f;
 	FILE *reply_stream;
+
+	static char err_rpl_buf[ERR_BUF_SIZE];
+	static str err_reason = { err_rpl_buf, 0};
 
 	while(1) {
 		reply_stream = NULL;
@@ -548,8 +581,10 @@ void mi_fifo_server(FILE *fifo_stream)
 		if (f==0) {
 			LM_ERR("command %s is not available\n", command);
 			mi_open_reply( file, reply_stream, consume1);
-			mi_fifo_reply( reply_stream, "500 command '%s' not available\n",
-				command);
+
+			mi_throw_error( reply_stream, err_reason, INTERNAL_ERR_CODE,
+				consume2, "command '%s' not available", command);
+
 			goto consume2;
 		}
 
@@ -559,7 +594,10 @@ void mi_fifo_server(FILE *fifo_stream)
 			if (hdl==0) {
 				LM_ERR("failed to build async handler\n");
 				mi_open_reply( file, reply_stream, consume1);
-				mi_fifo_reply( reply_stream, "500 Internal server error\n");
+
+				mi_throw_error( reply_stream, err_reason, INTERNAL_ERR_CODE,
+					consume2, "Internal server error");
+
 				goto consume2;
 			}
 		} else {
@@ -576,8 +614,9 @@ void mi_fifo_server(FILE *fifo_stream)
 				LM_ERR("error parsing MI tree\n");
 				if (!reply_stream)
 					mi_open_reply( file, reply_stream, consume3);
-				mi_fifo_reply( reply_stream, "400 parse error in "
-					"command '%s'\n", command);
+
+				mi_throw_error( reply_stream, err_reason, PARSE_ERR_CODE,
+					consume3, "Parse error in command '%s'", command);
 				goto consume3;
 			}
 			mi_cmd->async_hdl = hdl;
@@ -585,16 +624,20 @@ void mi_fifo_server(FILE *fifo_stream)
 
 		LM_DBG("done parsing the mi tree\n");
 
+		mi_trace_request( 0, 0, command, file_sep - command, mi_cmd, &backend, t_dst);
+
 		if ( (mi_rpl=run_mi_cmd(f, mi_cmd,
 		(mi_flush_f *)mi_flush_tree, reply_stream))==0 ) {
 			if (!reply_stream)
 				mi_open_reply( file, reply_stream, failure);
-			mi_fifo_reply(reply_stream, "500 command '%s' failed\n", command);
-			LM_ERR("command (%s) processing failed\n", command );
+
+			mi_throw_error( reply_stream, err_reason, INTERNAL_ERR_CODE,
+					consume3, "command '%s' failed", command);
 		} else if (mi_rpl!=MI_ROOT_ASYNC_RPL) {
 			if (!reply_stream)
 				mi_open_reply( file, reply_stream, failure);
 			mi_write_tree( reply_stream, mi_rpl);
+
 			free_mi_tree( mi_rpl );
 		} else {
 			if (mi_cmd) free_mi_tree( mi_cmd );
