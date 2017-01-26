@@ -52,7 +52,8 @@ httpd_api_t httpd_api;
 static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 
-
+int mi_trace_mod_id;
+char* mi_trace_bwlist_s;
 
 #define MI_XMLRPC_NOT_ACCEPTABLE_STR	"406"
 #define MI_XMLRPC_INTERNAL_ERROR_STR	"500"
@@ -84,6 +85,7 @@ static param_export_t mi_params[] = {
 	{"http_root",        STR_PARAM, &http_root.s},
 	{"format_version",   INT_PARAM, &version},
 	{"trace_destination", STR_PARAM, &trace_destination_name.s},
+	{"trace_bwlist",        STR_PARAM,    &mi_trace_bwlist_s  },
 	{0,0,0}
 };
 
@@ -130,6 +132,14 @@ void proc_init(void)
 			LM_ERR("can't find correlation id params!\n");
 			exit(-1);
 		}
+
+		if ( mi_trace_api && mi_trace_bwlist_s ) {
+			if ( parse_mi_cmd_bwlist( mi_trace_mod_id,
+						mi_trace_bwlist_s, strlen(mi_trace_bwlist_s) ) < 0 ) {
+				LM_ERR("invalid bwlist <%s>!\n", mi_trace_bwlist_s);
+				exit(-1);
+			}
+		}
 	}
 
 
@@ -158,6 +168,8 @@ static int mod_init(void)
 		if (mi_trace_api && mi_trace_api->get_trace_dest_by_name) {
 			t_dst = mi_trace_api->get_trace_dest_by_name(&trace_destination_name);
 		}
+
+		mi_trace_mod_id = register_mi_trace_mod();
 	}
 
 	return 0;
@@ -312,7 +324,7 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 	struct mi_root *tree = NULL;
 	struct mi_handler *async_hdl;
 	int ret_code = MI_XMLRPC_OK;
-	int is_shm = 0;
+	int is_shm = 0, is_cmd_traced=0;
 
 	page->s = err_buf;
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
@@ -323,7 +335,7 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 		httpd_api.lookup_arg(connection, "1", *con_cls, &arg);
 		if (arg.s) {
 			tree = mi_xmlrpc_http_run_mi_cmd(&arg,
-						page, buffer, &async_hdl, cl_socket);
+						page, buffer, &async_hdl, cl_socket, &is_cmd_traced);
 			if (tree == MI_ROOT_ASYNC_RPL) {
 				LM_DBG("got an async reply\n");
 				tree = mi_xmlrpc_wait_async_reply(async_hdl);
@@ -335,8 +347,10 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 				LM_ERR("no reply\n");
 				*page = MI_XMLRPC_U_ERROR;
 
-				trace_xml( cl_socket, (char *)url, 0,
+				if ( is_cmd_traced ) {
+					trace_xml( cl_socket, (char *)url, 0,
 						&MI_XMLRPC_U_ERROR_REASON, MI_XMLRPC_INTERNAL_ERROR, 0);
+				}
 			} else {
 				LM_DBG("building on page [%p:%d]\n",
 					page->s, page->len);
@@ -344,15 +358,18 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 					LM_ERR("unable to build response\n");
 					*page = MI_XMLRPC_U_ERROR;
 
-					mi_trace_reply( sv_socket, cl_socket, MI_XMLRPC_INTERNAL_ERROR,
+					if ( is_cmd_traced )
+						mi_trace_reply( sv_socket, cl_socket, MI_XMLRPC_INTERNAL_ERROR,
 							&MI_XMLRPC_U_ERROR_REASON, 0, t_dst);
 				} else {
 					if (tree->code >= 400) {
 						MI_XMLRPC_PRINT_FAULT(page, tree->code, tree->reason);
 					}
 
-					mi_trace_reply( sv_socket, cl_socket, tree->code,
+					if ( is_cmd_traced) {
+						mi_trace_reply( sv_socket, cl_socket, tree->code,
 							&tree->reason, page, t_dst);
+					}
 				}
 			}
 		} else {

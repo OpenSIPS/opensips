@@ -53,7 +53,8 @@
 extern str http_root;
 extern int version;
 extern trace_dest t_dst;
-extern  httpd_api_t httpd_api;
+extern httpd_api_t httpd_api;
+extern int mi_trace_mod_id;
 
 mi_xmlrpc_http_page_data_t html_page_data;
 
@@ -462,7 +463,7 @@ static inline struct mi_handler* mi_xmlrpc_http_build_async_handler(void)
 
 struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 		str *page, str *buffer, struct mi_handler **async_hdl,
-		union sockaddr_union* cl_socket)
+		union sockaddr_union* cl_socket, int* is_traced)
 {
 	static str esc_buf = {NULL, 0};
 	struct mi_cmd *f;
@@ -511,6 +512,15 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	if (f == NULL) {
 		LM_ERR("unable to find mi command [%.*s]\n", miCmd.len, miCmd.s);
 		goto xml_error;
+	}
+
+	if ( ! is_traced ) {
+		LM_ERR("bad output is_traced param!\n");
+		return 0;
+	} else {
+		if ( f ) {
+			*is_traced = is_mi_cmd_traced( mi_trace_mod_id, f);
+		}
 	}
 
 	if (f->flags&MI_ASYNC_RPL_FLAG) {
@@ -616,8 +626,10 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 		sv_socket = httpd_api.get_server_info();
 	}
 
-	mi_trace_request(cl_socket, sv_socket, miCmd.s, miCmd.len,
-			mi_cmd, &backend, t_dst);
+	if ( *is_traced ) {
+		mi_trace_request(cl_socket, sv_socket, miCmd.s, miCmd.len,
+				mi_cmd, &backend, t_dst);
+	}
 
 	*async_hdl = hdl;
 

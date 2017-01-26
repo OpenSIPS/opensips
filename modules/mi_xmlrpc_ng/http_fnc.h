@@ -99,7 +99,7 @@ void mi_xmlrpc_http_destroy_async_lock(void);
 
 struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 			str *page, str *buffer, struct mi_handler **async_hdl,
-			union sockaddr_union* cl_socket);
+			union sockaddr_union* cl_socket, int* is_cmd_traced);
 int mi_xmlrpc_http_build_page(str* page, int max_page_len,
 				struct mi_root* tree);
 
