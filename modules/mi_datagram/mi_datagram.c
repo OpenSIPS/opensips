@@ -98,6 +98,10 @@ static char *mi_reply_indent = DEFAULT_MI_REPLY_IDENT;
 static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 
+int mi_trace_mod_id;
+char* mi_trace_bwlist_s;
+
+
 
 static proc_export_t mi_procs[] = {
 	{"MI Datagram",  pre_datagram_process,  post_datagram_process,
@@ -117,6 +121,7 @@ static param_export_t mi_params[] = {
 	{"unix_socket_user",    INT_PARAM,    &mi_unix_socket_uid       },
 	{"reply_indent",        STR_PARAM,    &mi_reply_indent          },
 	{"trace_destination", STR_PARAM, &trace_destination_name.s},
+	{"trace_bwlist",        STR_PARAM,    &mi_trace_bwlist_s        },
 	{0,0,0}
 };
 
@@ -269,6 +274,8 @@ static int mi_mod_init(void)
 		if (mi_trace_api && mi_trace_api->get_trace_dest_by_name) {
 			t_dst = mi_trace_api->get_trace_dest_by_name(&trace_destination_name);
 		}
+
+		mi_trace_mod_id = register_mi_trace_mod();
 	}
 
 
@@ -332,6 +339,14 @@ static void datagram_process(int rank)
 		if ( load_correlation_id() < 0 ) {
 			LM_ERR("can't find correlation id params!\n");
 			exit(-1);
+		}
+
+		if ( mi_trace_api && mi_trace_bwlist_s ) {
+			if ( parse_mi_cmd_bwlist( mi_trace_mod_id,
+						mi_trace_bwlist_s, strlen(mi_trace_bwlist_s) ) < 0 ) {
+				LM_ERR("invalid bwlist <%s>!\n", mi_trace_bwlist_s);
+				exit(-1);
+			}
 		}
 	}
 
