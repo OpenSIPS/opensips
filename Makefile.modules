@@ -33,11 +33,11 @@ ALLDEP+=../../Makefile ../../Makefile.defs
 
 endif
 
-include ../../Makefile.sources
-
 ifneq (,$(findstring SHM_EXTRA_STATS, $(DEFS)))
 ALLDEP += ../../mem/mem_stats.h
 endif
+
+include ../../Makefile.sources
 
 ifeq (,$(filter $(MOD_NAME), $(static_modules)))
 CFLAGS:=$(MOD_CFLAGS)

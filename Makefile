@@ -196,7 +196,7 @@ $(modules):
 		)
 
 .PHONY: modules
-modules:
+modules: $(deps_gen)
 ifeq (,$(FASTER))
 	@set -e; \
 	for r in $(modules) "" ; do \
