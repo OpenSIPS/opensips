@@ -885,44 +885,37 @@ int cgr_acc_terminate(json_object *param, json_object **ret)
 	const char *err;
 	str reason = {0, 0};
 	json_object *event = NULL;
+	json_object *tmp = NULL;
 	unsigned int h_entry = 0, h_id = 0;
-	unsigned int h_id_found = 0;
-	unsigned int h_entry_found = 0;
 	static str terminate_str_pre = str_init("CGRateS Disconnect: ");
 
-	json_object_object_foreach(param, pkey, pval) {
-		switch (json_object_get_type(pval)) {
-		case json_type_string:
-			if (strcmp(pkey, "Reason") != 0)
-				continue;
-			reason.s = (char *)json_object_get_string(pval);
-		break;
-		case json_type_object:
-			if (strcmp(pkey, "EventStart") != 0)
-				continue;
-			event = json_object_get(pval);
-		default:
-		break;
-		}
-	}
-	if (!event) {
-		err = "EventStart parameter not found";
-		goto error;
-	}
+	if (json_object_object_get_ex(param, "Reason", &tmp) && tmp &&
+			json_object_get_type(tmp) == json_type_string)
+		reason.s = (char *)json_object_get_string(tmp);
 
-	json_object_object_foreach(event, key, val) {
-		if (strcmp(key, "DialogID") == 0) {
-			h_id = json_object_get_int(val);
-			h_id_found = 1;
-		} else if (strcmp(key, "DialogEntry") == 0) {
-			h_entry = json_object_get_int(val);
-			h_entry_found = 1;
-		}
-	}
-	if (!h_entry_found || !h_id_found) {
-		err = "dialog identifiers not found";
+	if (!json_object_object_get_ex(param, "EventStart", &tmp) || !tmp ||
+			json_object_get_type(tmp) != json_type_object) {
+		err = "EventStart parameter is invalid or not found";
 		goto error;
 	}
+	event = json_object_get(tmp);
+
+	/* search for DialogID */
+	if (!json_object_object_get_ex(event, "DialogID", &tmp) || !tmp ||
+			json_object_get_type(tmp) != json_type_int) {
+		err = "DialogID parameter is invalid or not found";
+		goto error;
+	}
+	h_id = json_object_get_int(tmp);
+
+	/* search for DialogEntry */
+	if (!json_object_object_get_ex(event, "DialogEntry", &tmp) || !tmp ||
+			json_object_get_type(tmp) != json_type_int) {
+		err = "DialogEntry parameter is invalid or not found";
+		goto error;
+	}
+	h_entry = json_object_get_int(tmp);
+
 	if (reason.s) {
 		reason.len = strlen(reason.s);
 		terminate_str.s = pkg_malloc(terminate_str_pre.len + reason.len);

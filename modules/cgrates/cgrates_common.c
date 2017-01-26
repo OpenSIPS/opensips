@@ -632,6 +632,7 @@ int cgrates_process(json_object *jobj,
 
 	LM_DBG("Processing JSON: %s\n",
 			(char *)json_object_to_json_string(jobj));
+	/* FIXME: replace this with json_object_object_get_ex */
 	json_object_object_foreach(jobj, key, val) {
 		/* most likely the compiler will figure out a better way to optimize
 		 * this strcmp */

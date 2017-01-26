@@ -24,12 +24,25 @@
 
 /* fix json_object_object_foreach for older STDC versions */
 #ifndef JSON_C_VERSION_NUM
+/* FIXME: remove me when json_object_object_foreach is dropped */
 #if defined(__GNUC__) && __STDC_VERSION__ < 199901L
 #define __STRICT_ANSI__
 #endif
 #endif
 
 #include <json.h>
+
+#if JSON_LIB_VERSION < 10
+static inline json_bool json_object_object_get_ex(struct json_object* jso,
+		const char *key, struct json_object **value)
+{
+	struct json_object *val = json_object_object_get(jso, key);
+	if (value)
+		*value = val;
+	return val != NULL;
+}
+#endif
+
 #include "../../lib/list.h"
 #include "../../str.h"
 #include "../../usr_avp.h"
