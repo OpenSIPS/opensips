@@ -39,16 +39,31 @@
 
 #include "mi_datagram.h"
 
-#define MI_COMMAND_FAILED              "500 command failed\n"
-#define MI_COMMAND_FAILED_LEN          (sizeof(MI_COMMAND_FAILED)-1)
-#define MI_COMMAND_NOT_AVAILABLE       "500 command not available\n"
-#define MI_COMMAND_AVAILABLE_LEN       (sizeof(MI_COMMAND_NOT_AVAILABLE)-1)
-#define MI_PARSE_ERROR       		   "400 parse error in command\n"
-#define MI_PARSE_ERROR_LEN       	   (sizeof(MI_PARSE_ERROR)-1)
-#define MI_INTERNAL_ERROR				"500 Internal server error\n"
-#define MI_INTERNAL_ERROR_LEN			(sizeof(MI_INTERNAL_ERROR)-1)
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
 
+#define MI_ERR( CODE, REASON) TOSTRING(CODE##_ERR_CODE) " " REASON##_REASON "\n"
+
+#define MI_INTERNAL_ERR_CODE             500
+#define MI_PARSE_ERR_CODE                400
+
+#define MI_COMMAND_FAILED_REASON         "command failed"
+
+#define MI_COMMAND_FAILED                MI_ERR(MI_INTERNAL, MI_COMMAND_FAILED)
+#define MI_COMMAND_FAILED_LEN            (sizeof(MI_COMMAND_FAILED)-1)
+
+#define MI_COMMAND_NOT_AVAILABLE_REASON  "command not available"
+#define MI_COMMAND_NOT_AVAILABLE         MI_ERR(MI_INTERNAL, MI_COMMAND_NOT_AVAILABLE)
+#define MI_COMMAND_AVAILABLE_LEN         (sizeof(MI_COMMAND_NOT_AVAILABLE)-1)
+
+#define MI_PARSE_ERROR_REASON            "parse_error"
+#define MI_PARSE_ERROR                   MI_ERR(MI_PARSE, MI_PARSE_ERROR)
+#define MI_PARSE_ERROR_LEN               (sizeof(MI_PARSE_ERROR)-1)
+
+#define MI_INTERNAL_ERROR_REASON         "Internal server error"
+#define MI_INTERNAL_ERROR                MI_ERR(MI_INTERNAL, MI_INTERNAL_ERROR)
+#define MI_INTERNAL_ERROR_LEN            (sizeof(MI_INTERNAL_ERROR)-1)
 
 typedef struct datagram_str{
 	char * start, * current;
