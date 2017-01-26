@@ -64,6 +64,8 @@ struct mi_cmd {
 	mi_cmd_f *f;
 	unsigned int flags;
 	void *param;
+
+	volatile unsigned char* trace_mask;
 };
 
 

@@ -101,5 +101,14 @@ static inline void mi_trace_request( union sockaddr_union* src, union sockaddr_u
 	}
 }
 
+int register_mi_trace_mod(void);
+int init_mod_trace_cmds(int id, int white);
+
+int block_mi_cmd_trace(int id, char* name, int len);
+int allow_mi_cmd_trace(int id, char* name, int len);
+unsigned char is_mi_cmd_traced(int id, struct mi_cmd* cmd);
+int parse_mi_cmd_bwlist(int id, char* bw_string, int len);
+
+
 
 #endif
