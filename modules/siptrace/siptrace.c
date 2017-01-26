@@ -2243,10 +2243,18 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd_tree, void* param )
 				return 0;
 			rpl = &rpl_tree->node;
 
-			it=get_list_start(&node->value);
-			hash=it->hash;
-			for (;it&&it->hash==hash;it=it->next)
-				TID_INFO(it, node, rpl);
+			if ( node->value.len && node->value.s ) {
+				it=get_list_start(&node->value);
+				if ( it ) {
+					hash=it->hash;
+					for (;it&&it->hash==hash;it=it->next)
+						TID_INFO(it, node, rpl);
+				} else {
+					return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+				}
+			} else {
+				return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+			}
 
 			return rpl_tree;
 		} else if (node && node->next && !node->next->next) {
