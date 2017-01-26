@@ -54,6 +54,9 @@ static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 extern http_mi_cmd_t* http_mi_cmds;
 
+int mi_trace_mod_id;
+char* mi_trace_bwlist_s;
+
 
 static const str MI_HTTP_U_ERROR = str_init("<html><body>"
 "Internal server error!</body></html>");
@@ -72,6 +75,7 @@ static param_export_t mi_params[] = {
 	{"mi_http_root",   STR_PARAM, &http_root.s},
 	{"mi_http_method", INT_PARAM, &http_method},
 	{"trace_destination", STR_PARAM, &trace_destination_name.s},
+	{"trace_bwlist",        STR_PARAM,    &mi_trace_bwlist_s  },
 	{0,0,0}
 };
 
@@ -122,6 +126,14 @@ void proc_init(void)
 			LM_ERR("can't find correlation id params!\n");
 			exit(-1);
 		}
+
+		if ( mi_trace_api && mi_trace_bwlist_s ) {
+			if ( parse_mi_cmd_bwlist( mi_trace_mod_id,
+						mi_trace_bwlist_s, strlen(mi_trace_bwlist_s) ) < 0 ) {
+				LM_ERR("invalid bwlist <%s>!\n", mi_trace_bwlist_s);
+				exit(-1);
+			}
+		}
 	}
 
 	return;
@@ -153,6 +165,8 @@ static int mod_init(void)
 		if (mi_trace_api && mi_trace_api->get_trace_dest_by_name) {
 			t_dst = mi_trace_api->get_trace_dest_by_name(&trace_destination_name);
 		}
+
+		mi_trace_mod_id = register_mi_trace_mod();
 	}
 
 	return 0;
@@ -308,7 +322,7 @@ int mi_http_answer_to_connection (void *cls, void *connection,
 	struct mi_root *tree = NULL;
 	struct mi_handler *async_hdl;
 	int ret_code = MI_HTTP_OK;
-	int is_shm = 0;
+	int is_shm = 0, is_cmd_traced=0;
 
 	static const str ok_trace_reason = str_init("OK");
 
@@ -322,7 +336,7 @@ int mi_http_answer_to_connection (void *cls, void *connection,
 			if (mod>=0 && cmd>=0 && arg.s) {
 				LM_DBG("arg [%p]->[%.*s]\n", arg.s, arg.len, arg.s);
 				tree = mi_http_run_mi_cmd(mod, cmd, &arg,
-							page, buffer, &async_hdl, cl_socket);
+							page, buffer, &async_hdl, cl_socket, &is_cmd_traced);
 				if (tree == MI_ROOT_ASYNC_RPL) {
 					LM_DBG("got an async reply\n");
 					tree = mi_http_wait_async_reply(async_hdl);
@@ -335,7 +349,8 @@ int mi_http_answer_to_connection (void *cls, void *connection,
 					*page = MI_HTTP_U_ERROR;
 					ret_code = MI_HTTP_INTERNAL_ERROR;
 
-					trace_http( cl_socket, http_mi_cmds[mod].cmds[cmd].name.s,
+					if ( is_cmd_traced )
+						trace_http( cl_socket, http_mi_cmds[mod].cmds[cmd].name.s,
 							0, &MI_HTTP_U_ERROR_REASON, MI_HTTP_INTERNAL_ERROR, 0);
 				} else {
 					LM_DBG("building on page [%p:%d]\n",
@@ -349,13 +364,15 @@ int mi_http_answer_to_connection (void *cls, void *connection,
 						ret_code = MI_HTTP_INTERNAL_ERROR;
 
 						/* already traced the request; trace the reply only */
-						mi_trace_reply( sv_socket, cl_socket,
+						if ( is_cmd_traced )
+							mi_trace_reply( sv_socket, cl_socket,
 								MI_HTTP_INTERNAL_ERROR, &MI_HTTP_U_ERROR_REASON,
 								0, t_dst);
 					} else {
 						ret_code = tree->code;
 
-						mi_trace_reply( sv_socket, cl_socket,
+						if ( is_cmd_traced )
+							mi_trace_reply( sv_socket, cl_socket,
 								tree->code, &tree->reason, page, t_dst);
 					}
 				}

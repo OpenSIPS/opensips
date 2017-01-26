@@ -40,6 +40,7 @@
 extern str http_root;
 extern int http_method;
 extern trace_dest t_dst;
+extern int mi_trace_mod_id;
 extern httpd_api_t httpd_api;
 str upSinceCTime;
 
@@ -567,7 +568,7 @@ static inline struct mi_handler* mi_http_build_async_handler(int mod, int cmd)
 
 struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 			str *page, str *buffer, struct mi_handler **async_hdl,
-			union sockaddr_union* cl_socket)
+			union sockaddr_union* cl_socket, int* is_traced)
 {
 	struct mi_cmd *f;
 	struct mi_root *mi_cmd = NULL;
@@ -585,6 +586,15 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 	if (f == NULL) {
 		LM_ERR("unable to find mi command [%.*s]\n", miCmd.len, miCmd.s);
 		goto error;
+	}
+
+	if ( ! is_traced ) {
+		LM_ERR("bad output is_traced param!\n");
+		return 0;
+	} else {
+		if ( f ) {
+			*is_traced = is_mi_cmd_traced( mi_trace_mod_id, f);
+		}
 	}
 
 	if (f->flags&MI_ASYNC_RPL_FLAG) {
@@ -635,7 +645,10 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 	if ( !sv_socket ) {
 		sv_socket = httpd_api.get_server_info();
 	}
-	mi_trace_request( cl_socket, sv_socket, miCmd.s, miCmd.len, mi_cmd, &backend, t_dst);
+
+	if ( *is_traced ) {
+		mi_trace_request( cl_socket, sv_socket, miCmd.s, miCmd.len, mi_cmd, &backend, t_dst);
+	}
 
 	*async_hdl = hdl;
 
