@@ -99,7 +99,7 @@ void lcache_htable_destroy(lcache_t** cache_htable_p, int size)
 		}
 	}
 	shm_free(cache_htable);
-	cache_htable = NULL;
+	*cache_htable_p = NULL;
 }
 
 int lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires)

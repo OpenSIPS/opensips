@@ -448,7 +448,7 @@ static void destroy(void)
 	lcache_col_t* it;
 
 	for ( it=lcache_collection; it; it=it->next) {
-		lcache_htable_destroy( it->col_htable, it->size);
+		lcache_htable_destroy(&it->col_htable, it->size);
 	}
 }
 
