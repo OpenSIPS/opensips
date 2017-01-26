@@ -33,7 +33,7 @@
 #include <json.h>
 
 #if JSON_LIB_VERSION < 10
-static inline json_bool json_object_object_get_ex(struct json_object* jso,
+static inline int json_object_object_get_ex(struct json_object* jso,
 		const char *key, struct json_object **value)
 {
 	struct json_object *val = json_object_object_get(jso, key);
