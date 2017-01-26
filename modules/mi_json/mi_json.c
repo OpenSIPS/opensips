@@ -52,6 +52,9 @@ httpd_api_t httpd_api;
 static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 
+int mi_trace_mod_id;
+char* mi_trace_bwlist_s;
+
 static const str MI_HTTP_U_ERROR = str_init("Internal server error");
 static const str MI_HTTP_U_METHOD = str_init("Unexpected method");
 static const str MI_HTTP_U_NOT_FOUND = str_init("Command not found");
@@ -68,6 +71,7 @@ static str backend = str_init("json");
 static param_export_t mi_params[] = {
 	{"mi_json_root",      STR_PARAM, &http_root.s},
 	{"trace_destination", STR_PARAM, &trace_destination_name.s},
+	{"trace_bwlist",        STR_PARAM,    &mi_trace_bwlist_s  },
 	{0,0,0}
 };
 
@@ -114,6 +118,14 @@ void proc_init(void)
 			LM_ERR("can't find correlation id params!\n");
 			exit(-1);
 		}
+
+		if ( mi_trace_api && mi_trace_bwlist_s ) {
+			if ( parse_mi_cmd_bwlist( mi_trace_mod_id,
+						mi_trace_bwlist_s, strlen(mi_trace_bwlist_s) ) < 0 ) {
+				LM_ERR("invalid bwlist <%s>!\n", mi_trace_bwlist_s);
+				exit(-1);
+			}
+		}
 	}
 
 	return;
@@ -142,6 +154,8 @@ static int mod_init(void)
 		if (mi_trace_api && mi_trace_api->get_trace_dest_by_name) {
 			t_dst = mi_trace_api->get_trace_dest_by_name(&trace_destination_name);
 		}
+
+		mi_trace_mod_id = register_mi_trace_mod();
 	}
 
 	return 0;
@@ -262,12 +276,15 @@ static inline struct mi_root* mi_json_wait_async_reply(struct mi_handler *hdl)
 #define MI_JSON_NOT_ACCEPTABLE	406
 #define MI_JSON_INTERNAL_ERROR	500
 
-static inline void trace_json( union sockaddr_union* cl_socket, char* url,
+static inline void trace_json( struct mi_cmd* f, union sockaddr_union* cl_socket, char* url,
 		struct mi_root* mi_req, str* error, int code, str* message)
 {
 	static union sockaddr_union* sv_socket = NULL;
 
 	char* command;
+
+	if ( f && !is_mi_cmd_traced( mi_trace_mod_id, f) )
+		return;
 
 	if ( !sv_socket ) {
 		sv_socket = httpd_api.get_server_info();
@@ -322,7 +339,7 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 						MI_JSON_INTERNAL_ERROR,
 						MI_HTTP_U_NOT_FOUND.len, MI_HTTP_U_NOT_FOUND.s);
 
-				trace_json( cl_socket, command.s, 0, (str *)&MI_HTTP_U_NOT_FOUND,
+				trace_json( f, cl_socket, command.s, 0, (str *)&MI_HTTP_U_NOT_FOUND,
 						MI_JSON_INTERNAL_ERROR, 0);
 			} else {
 
@@ -342,7 +359,7 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 							MI_JSON_INTERNAL_ERROR,
 							MI_HTTP_U_ERROR.len, MI_HTTP_U_ERROR.s);
 
-					trace_json( cl_socket, command.s, 0, (str *)&MI_HTTP_U_ERROR,
+					trace_json( f, cl_socket, command.s, 0, (str *)&MI_HTTP_U_ERROR,
 							MI_JSON_INTERNAL_ERROR, 0);
 				} else {
 					LM_DBG("building on page [%p:%d]\n",
@@ -354,7 +371,7 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 								MI_JSON_INTERNAL_ERROR,
 								MI_HTTP_U_ERROR.len, MI_HTTP_U_ERROR.s);
 
-						trace_json( cl_socket, command.s, 0, (str *)&MI_HTTP_U_ERROR,
+						trace_json( f, cl_socket, command.s, 0, (str *)&MI_HTTP_U_ERROR,
 								MI_JSON_INTERNAL_ERROR, 0);
 					} else {
 						if (tree->code >= 400) {
@@ -363,12 +380,12 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 									MI_JSON_COMMAND_ERROR_S,
 									tree->code, tree->reason.len, tree->reason.s);
 
-							trace_json( cl_socket, command.s, 0, &tree->reason,
+							trace_json( f, cl_socket, command.s, 0, &tree->reason,
 									tree->code, 0);
 						}
 
 						/* everything ok here */
-						trace_json( cl_socket, command.s, tree, &tree->reason,
+						trace_json( f, cl_socket, command.s, tree, &tree->reason,
 								tree->code, page);
 					}
 				}
@@ -381,7 +398,7 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 					MI_HTTP_U_ERROR.len, MI_HTTP_U_ERROR.s);
 
 
-			trace_json( cl_socket, command.s, 0, (str *)&MI_HTTP_U_ERROR,
+			trace_json( 0, cl_socket, command.s, 0, (str *)&MI_HTTP_U_ERROR,
 					MI_JSON_INTERNAL_ERROR, 0);
 		}
 		if (tree) {
@@ -395,7 +412,7 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 					MI_JSON_NOT_ACCEPTABLE,
 					MI_HTTP_U_METHOD.len, MI_HTTP_U_METHOD.s);
 
-		trace_json( cl_socket, *(char**)&url, 0, (str *)&MI_HTTP_U_METHOD,
+		trace_json( 0, cl_socket, *(char**)&url, 0, (str *)&MI_HTTP_U_METHOD,
 					MI_JSON_NOT_ACCEPTABLE, 0);
 	}
 
