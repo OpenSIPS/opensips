@@ -1603,6 +1603,62 @@ $dlg_val(callee) = $ru;
 
 	<section>
 		<title>
+		<function moreinfo="none">get_dialog_vals(names,vals,callid)</function>
+		</title>
+		<para>
+		The function fetches all the dialog variables of another dialog.
+		It first searches through all existing (ongoing) dialogs based on the 
+		given SIP CallID. If found, it returns all the dialog variables as 
+		two parallel arrays of names and values (using the given variables
+		"names" and "vals"). As these variables have to hold arrays, they must
+		be AVPs.
+		</para>
+		<para>
+		NOTE: the function does not require to be called in the context of
+		a dialog - you can use it whenever / whereever for searching for other
+		dialogs.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>names</emphasis> - the name of an AVP variable to
+			hold all the names of the variables from the found dialog.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>vals</emphasis> - the name of an AVP variable to
+			hold all the values of the variables from the found dialog.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>callid</emphasis> - the callid of a dialog to be 
+			searched (and have the variables fetched).
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any type of route.
+		</para>
+		<example>
+		<title><function>get_dialog_vals</function> usage</title>
+		<programlisting format="linespecific">
+...
+if ( get_dialog_vals("$avp(d_names)","$avp(d_vals)","$var(callid)") ) {
+	xlog("the call $var(callid) has the variables:\n);
+	$var(i) = 0;
+	while ( $(avp(d_names)[$var(i)])!=NULL ) {
+		xlog("var $var(i) is $(avp(d_names)[$var(i)])='$(avp(d_vals)[$var(i)])'\n");
+		$var(i) = $var(i) + 1;
+	}
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section>
+		<title>
 		<function moreinfo="none">set_dlg_profile(profile,[value])</function>
 		</title>
 		<para>
