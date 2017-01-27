@@ -6,6 +6,7 @@
 #cachedb_mongodb= Implementation of a cache system designed to work with a MongoDB server. | libjson and the mongo-c-driver
 #cachedb_redis= Implementation of a cache system designed to work with Redis servers | Redis client library, hiredis
 #carrierroute= Provides routing, balancing and blacklisting capabilities. | libconfuse, a configuration file parser library
+#cgrates= Provides integration with the CGRateS billing/rating engine. | JSON library, libjson
 #compression= Implements SIP message compression/decompression and base64 encoding | zlib dev library, tipically zlib1g-dev
 #cpl_c= Implements a CPL (Call Processing Language) interpreter | library for parsing XML files, tipically libxml2 and libxml2-devel
 #db_berkeley= Integrates the Berkeley DB into OpenSIPS | Berkeley embedded database
