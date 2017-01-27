@@ -707,6 +707,35 @@ struct dlg_cell* get_dlg_by_val(str *attr, str *val)
 }
 
 
+struct dlg_cell* get_dlg_by_callid( str *callid)
+{
+	struct dlg_cell *dlg;
+	struct dlg_entry *d_entry;
+	unsigned int h_entry;
+
+	h_entry = dlg_hash(callid);
+	d_entry = &(d_table->entries[h_entry]);
+
+	dlg_lock( d_table, d_entry);
+
+	LM_DBG("input ci=<%.*s>(%d)\n", callid->len,callid->s, callid->len);
+
+	for( dlg = d_entry->first ; dlg ; dlg = dlg->next ) {
+		if ( dlg->state>DLG_STATE_CONFIRMED )
+			continue;
+		if ( dlg->callid.len==callid->len &&
+		strcasecmp( dlg->callid.s, callid->s, callid->len)==0 ) {
+			ref_dlg_unsafe( dlg, 1);
+			dlg_unlock( d_table, d_entry);
+			return dlg;
+		}
+	}
+
+	dlg_unlock( d_table, d_entry);
+	return NULL;
+}
+
+
 void link_dlg(struct dlg_cell *dlg, int n)
 {
 	struct dlg_entry *d_entry;

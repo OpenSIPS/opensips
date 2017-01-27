@@ -330,6 +330,8 @@ struct dlg_cell* get_dlg(str *callid, str *ftag, str *ttag,
 
 struct dlg_cell* get_dlg_by_val(str *attr, str *val);
 
+struct dlg_cell* get_dlg_by_callid( str *callid);
+
 void link_dlg(struct dlg_cell *dlg, int n);
 
 void unref_dlg(struct dlg_cell *dlg, unsigned int cnt);
