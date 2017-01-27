@@ -26,13 +26,24 @@
 #ifndef _RMQ_SERVERS_H_
 #define _RMQ_SERVERS_H_
 
-enum rmq_server_state { RMQS_NONE, RMQS_INIT, RMQS_ENABLED };
+#define RMQ_DEFAULT_HEARTBEAT			0 /* 0 seconds - disabled */
+#define RMQ_DEFAULT_MAX_CHANNELS		0 /* unlimited */
+#define RMQ_DEFAULT_MAX_FRAMES			131072
+
+#include <amqp.h>
+
+enum rmq_server_state { RMQS_NONE, RMQS_INIT, RMQS_CONN };
 
 struct rmq_server {
 	enum rmq_server_state state;
 	str cid; /* connection id */
-	struct db_id *id;
 	struct list_head list;
+
+	int max_frames;
+	int max_channels;
+	int heartbeat;
+	amqp_connection_state_t conn;
+	struct amqp_connection_info uri;
 };
 
 int rmq_server_add(modparam_t type, void * val);

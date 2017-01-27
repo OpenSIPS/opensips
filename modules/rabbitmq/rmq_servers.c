@@ -33,6 +33,11 @@
 
 #include "rmq_servers.h"
 
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00040000
+  #define AMQP_VERSION_v04
+#include <amqp_tcp_socket.h>
+#endif
+
 static LIST_HEAD(rmq_servers);
 
 enum rmq_func_param_type { RMQT_SERVER, RMQT_PVAR };
@@ -41,6 +46,49 @@ struct rmq_func_param {
 	void *value;
 };
 
+/* function that checks for error */
+static int rmq_error(char const *context, amqp_rpc_reply_t x)
+{
+	amqp_connection_close_t *mconn;
+	amqp_channel_close_t *mchan;
+
+	switch (x.reply_type) {
+		case AMQP_RESPONSE_NORMAL:
+			return 0;
+
+		case AMQP_RESPONSE_NONE:
+			LM_ERR("%s: missing RPC reply type!", context);
+			break;
+
+		case AMQP_RESPONSE_LIBRARY_EXCEPTION:
+			LM_ERR("%s: %s\n", context,  "(end-of-stream)");
+			break;
+
+		case AMQP_RESPONSE_SERVER_EXCEPTION:
+			switch (x.reply.id) {
+				case AMQP_CONNECTION_CLOSE_METHOD:
+					mconn = (amqp_connection_close_t *)x.reply.decoded;
+					LM_ERR("%s: server connection error %d, message: %.*s",
+							context, mconn->reply_code,
+							(int)mconn->reply_text.len,
+							(char *)mconn->reply_text.bytes);
+					break;
+				case AMQP_CHANNEL_CLOSE_METHOD:
+						mchan = (amqp_channel_close_t *)x.reply.decoded;
+					LM_ERR("%s: server channel error %d, message: %.*s",
+							context, mchan->reply_code,
+							(int)mchan->reply_text.len,
+							(char *)mchan->reply_text.bytes);
+					break;
+				default:
+					LM_ERR("%s: unknown server error, method id 0x%08X",
+							context, x.reply.id);
+					break;
+			}
+			break;
+	}
+	return -1;
+}
 
 /* function used to get a rmq_server based on a cid */
 struct rmq_server *rmq_get_server(str *cid)
@@ -71,17 +119,95 @@ struct rmq_server *rmq_resolve_server(struct sip_msg *msg, char *param)
 	return rmq_get_server(&cid);
 }
 
+static void rmq_clean_server(struct rmq_server *srv)
+{
+	switch (srv->state) {
+	case RMQS_CONN:
+	case RMQS_INIT:
+		rmq_error("closing connection",
+				amqp_connection_close(srv->conn, AMQP_REPLY_SUCCESS));
+		if (amqp_destroy_connection(srv->conn) < 0)
+			LM_ERR("cannot destroy connection\n");
+	case RMQS_NONE:
+		break;
+	default:
+		LM_WARN("Unknown rmq server state %d\n", srv->state);
+	}
+}
+
+#if 0
+static void rmq_destroy_server(struct rmq_server *srv)
+{
+	rmq_clean_server(srv);
+	pkg_free(srv);
+}
+#endif
+
 /*
  * function used to reconnect a RabbitMQ server
  */
 int rmq_reconnect(struct rmq_server *srv)
 {
+#if defined AMQP_VERSION_v04
+	amqp_socket_t *amqp_sock;
+#endif
+	int socket;
+
 	switch (srv->state) {
 	case RMQS_NONE:
-		break;
+		srv->conn = amqp_new_connection();
+		if (!srv) {
+			LM_ERR("cannot create amqp connection!\n");
+			return -1;
+		}
+#if defined AMQP_VERSION_v04
+		amqp_sock = amqp_tcp_socket_new(srv->conn);
+		if (!amqp_sock) {
+			LM_ERR("cannot create AMQP socket\n");
+			goto clean_rmq_conn;
+		}
+		socket = amqp_socket_open(amqp_sock, srv->uri.host, srv->uri.port);
+		if (socket < 0) {
+			LM_ERR("cannot open AMQP socket\n");
+			goto clean_rmq_conn;
+		}
+#else
+		socket = amqp_open_socket(srv->uri.host, srv->uri.port);
+		if (socket < 0) {
+			LM_ERR("cannot open AMQP socket\n");
+			goto clean_rmq_conn;
+		}
+		amqp_set_sockfd(srv->conn, socket);
+#endif
+		srv->state = RMQS_INIT;
+	case RMQS_INIT:
+		if (rmq_error("Logging in", amqp_login(
+				srv->conn,
+				srv->uri.vhost,
+				srv->max_channels,
+				srv->max_frames,
+				srv->heartbeat,
+				AMQP_SASL_METHOD_PLAIN,
+				srv->uri.user,
+				srv->uri.password)))
+			goto clean_rmq_server;
+		/* all good - return success */
+		srv->state = RMQS_CONN;
+	case RMQS_CONN:
+		amqp_channel_open(srv->conn, 1);
+		if (rmq_error("Opening channel", amqp_get_rpc_reply(srv->conn)))
+			goto clean_rmq_server;
+		return 0;
 	default:
-		break;
+		LM_WARN("Unknown rmq server state %d\n", srv->state);
+		return -1;
 	}
+clean_rmq_server:
+	rmq_clean_server(srv);
+	return -2;
+clean_rmq_conn:
+	if (amqp_destroy_connection(srv->conn) < 0)
+		LM_ERR("cannot destroy connection\n");
 	return -1;
 }
 
@@ -95,9 +221,12 @@ int rmq_server_add(modparam_t type, void * val)
 	struct rmq_server *srv;
 	str s;
 	str cid;
-	str uri = {0, 0};
+	str suri = {0, 0};
 	char uri_pending = 0;
-	struct db_id *id;
+	char *uri;
+	int max_channels = RMQ_DEFAULT_MAX_CHANNELS;
+	int max_frames = RMQ_DEFAULT_MAX_FRAMES;
+	int heartbeat = RMQ_DEFAULT_HEARTBEAT;
 
 	if (type != STR_PARAM) {
 		LM_ERR("invalid parameter type %d\n", type);
@@ -147,7 +276,7 @@ int rmq_server_add(modparam_t type, void * val)
 			s.len--;
 
 			/* remember where the uri starts */
-			uri = s;
+			suri = s;
 			uri_pending = 1;
 		} else {
 			/* we eneded up in a place that has ';' - if we haven't found
@@ -164,46 +293,49 @@ int rmq_server_add(modparam_t type, void * val)
 				break;
 	}
 	/* if we don't have an uri, we forfeit */
-	if (!uri.s) {
+	if (!suri.s) {
 		LM_ERR("cannot find an uri!");
 		return -1;
 	}
 	/* if still pending, remove the last ';' */
-	trim_spaces_lr(uri);
-	if (uri_pending && uri.s[uri.len - 1] == ';')
-		uri.len--;
-	trim_spaces_lr(uri);
+	trim_spaces_lr(suri);
+	if (uri_pending && suri.s[suri.len - 1] == ';')
+		suri.len--;
+	trim_spaces_lr(suri);
 
-	id = new_db_id(&uri);
-	if (!id) {
-		LM_ERR("invalid url specified\n");
+	if ((srv = pkg_malloc(sizeof *srv + suri.len + 1)) == NULL) {
+		LM_ERR("cannot alloc memory for rabbitmq server\n");
 		return -1;
 	}
+	uri = ((char *)srv) + sizeof *srv;
+	memcpy(uri, suri.s, suri.len);
+	uri[suri.len] = 0;
 
-	/* check schema type */
-	if (strcmp(id->scheme, "amqp") != 0) {
-		LM_ERR("invalid URL scheme '%s' currently only amqp is accepted!\n",
-				id->scheme);
+	if (amqp_parse_url(uri, &srv->uri) != 0) {
+		LM_ERR("cannot parse rabbitmq uri: %s\n", uri);
 		goto free;
 	}
-	/* TODO: handle amqps */
 
-	if ((srv = pkg_malloc(sizeof *srv)) == NULL) {
-		LM_ERR("cannot alloc memory for rabbitmq url\n");
+	if (srv->uri.ssl) {
+		LM_WARN("we currently do not support ssl connections!\n");
 		goto free;
 	}
+
 	srv->state = RMQS_NONE;
-	srv->id = id;
 	srv->cid = cid;
 
+	srv->max_frames = max_frames;
+	srv->max_channels = max_channels;
+	srv->heartbeat = heartbeat;
+
 	list_add(&srv->list, &rmq_servers);
-	LM_DBG("new AMQP uri=%.*s with cid=%.*s\n",
-			srv->id->url.len, srv->id->url.s, srv->cid.len, srv->cid.s);
+	LM_DBG("new AMQP host=%s:%u with cid=%.*s\n",
+			srv->uri.host, srv->uri.port, srv->cid.len, srv->cid.s);
 
 	/* parse the url */
 	return 0;
 free:
-	free_db_id(id);
+	pkg_free(srv);
 	return -1;
 }
 #undef IS_WS
@@ -259,8 +391,8 @@ void rmq_connect_servers(void)
 	list_for_each(it, &rmq_servers) {
 		srv = container_of(it, struct rmq_server, list);
 		if (rmq_reconnect(srv) < 0)
-			LM_ERR("cannot connect to RabbitMQ server %.*s\n",
-					srv->id->url.len, srv->id->url.s);
+			LM_ERR("cannot connect to RabbitMQ server %s:%u\n",
+					srv->uri.host, srv->uri.port);
 	}
 	
 }
