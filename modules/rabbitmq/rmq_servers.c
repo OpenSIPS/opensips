@@ -25,7 +25,6 @@
 
 #include "../../mem/shm_mem.h"
 #include "../../sr_module.h"
-#include "../../db/db_id.h"
 #include "../../lib/list.h"
 #include "../../mod_fix.h"
 #include "../../dprint.h"
@@ -35,8 +34,57 @@
 #include <amqp_framing.h>
 
 #if defined AMQP_VERSION && AMQP_VERSION >= 0x00040000
-  #define AMQP_VERSION_v04
-#include <amqp_tcp_socket.h>
+#define rmq_parse amqp_parse_url
+#else
+#include "../../db/db_id.h"
+#warning "You are using an old, unsupported RabbitMQ library version - compile on your own risk!"
+/* ugly hack to move ptr from id to rmq_uri */
+#define PTR_MOVE(_from, _to) \
+	do { \
+		(_to) = (_from); \
+		(_from) = NULL; \
+	} while(0)
+static inline int rmq_parse(char *url, rmq_uri *uri)
+{
+	str surl;
+	struct db_id *id;
+
+	surl.s = url;
+	surl.len = strlen(url);
+
+	if ((id = new_db_id(&surl)) == NULL)
+		return -1;
+
+	if (strcmp(id->scheme, "amqps") == 0)
+		uri->ssl = 1;
+
+	/* there might me a pkg leak compared to the newer version, but parsing
+	 * only happends at startup, so we should not worry about this now */
+	if (id->username)
+		PTR_MOVE(id->username, uri->user);
+	else
+		uri->user = "guest";
+	if (id->password)
+		PTR_MOVE(id->password, uri->password);
+	else
+		uri->password = "guest";
+	if (id->host)
+		PTR_MOVE(id->host, uri->host);
+	else
+		uri->host = "localhost";
+	if (id->database)
+		PTR_MOVE(id->database, uri->vhost);
+	else
+		uri->host = "/";
+	if (id->port)
+		uri->port = id->port;
+	else if (uri->ssl)
+		uri->port = 5671;
+	else
+		uri->port = 5672;
+	free_db_id(id);
+	return 0;
+}
 #endif
 
 static LIST_HEAD(rmq_servers);
@@ -426,7 +474,7 @@ no_value:
 	memcpy(uri, suri.s, suri.len);
 	uri[suri.len] = 0;
 
-	if (amqp_parse_url(uri, &srv->uri) != 0) {
+	if (rmq_parse(uri, &srv->uri) != 0) {
 		LM_ERR("[%.*s] cannot parse rabbitmq uri: %s\n", cid.len, cid.s, uri);
 		goto free;
 	}
@@ -444,7 +492,7 @@ no_value:
 		}
 		memcpy(srv->exchange.bytes, exchange.s, exchange.len);
 	} else
-		srv->exchange = amqp_empty_bytes;
+		srv->exchange = RMQ_EMPTY;
 
 	srv->state = RMQS_OFF;
 	srv->cid = cid;

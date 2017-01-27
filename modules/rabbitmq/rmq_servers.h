@@ -33,6 +33,30 @@
 
 #include <amqp.h>
 
+/* AMQP_VERSION was only added in v0.4.0 - there is no way to check the
+ * version of the library before this, so we consider everything beyond v0.4.0
+ * as old and inneficient */
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00040000
+  #define AMQP_VERSION_v04
+#include <amqp_tcp_socket.h>
+#define rmq_uri struct amqp_connection_info
+#define RMQ_EMPTY amqp_empty_bytes
+#else
+/* although struct amqp_connection_info was added in v0.2.0, there is no way
+ * to check against that version, so we assume it does not exist until v0.4.0
+ */
+typedef struct _rmq_uri {
+	char *user;
+	char *password;
+	char *host;
+	char *vhost;
+	int port;
+	int ssl;
+} rmq_uri;
+#define RMQ_EMPTY AMQP_EMPTY_BYTES
+#endif
+
+
 enum rmq_server_state { RMQS_OFF, RMQS_INIT, RMQS_CONN, RMQS_ON };
 
 #define RMQF_IMM	(1<<0) /* message MUST be delivered to a consumer immediately. */
@@ -44,13 +68,13 @@ struct rmq_server {
 	str cid; /* connection id */
 	struct list_head list;
 
+	rmq_uri uri;
 	unsigned flags;
 	int retries;
 	int heartbeat;
 	int max_frames;
 	amqp_bytes_t exchange;
 	amqp_connection_state_t conn;
-	struct amqp_connection_info uri;
 };
 
 int rmq_server_add(modparam_t type, void * val);
