@@ -58,13 +58,15 @@ enum reactor_prios {
 
 enum fd_types { F_NONE=0,
 		/* generic fd types, to be handled by all SIP worker processes */
-		F_TIMER_JOB,  F_FD_ASYNC, F_SCRIPT_ASYNC=16,
+		F_TIMER_JOB, F_FD_ASYNC, F_SCRIPT_ASYNC=16,
 		/* fd type specifc to UDP oriented processes (SIP workers) */
 		F_UDP_READ,
 		/* fd types specific to TCP oriented processes (SIP workers) */
 		F_TCPMAIN, F_TCPCONN,
 		/* fd types for TCP management process (TCP main process) */
-		F_TCP_LISTENER, F_TCP_TCPWORKER, F_TCP_WORKER
+		F_TCP_LISTENER, F_TCP_TCPWORKER, F_TCP_WORKER,
+		/* fd type specific to FreeSWITCH ESL traffic (FS Stats process) */
+		F_FS_STATS,
 		};
 
 extern io_wait_h _worker_io;

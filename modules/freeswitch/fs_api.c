@@ -40,7 +40,7 @@ typedef struct _fs_mod_ref {
 
 static fs_mod_ref *mk_fs_mod_ref(str *tag);
 static void free_fs_mod_ref(fs_mod_ref *mod_tag);
-static fs_evs *find_fs_evs(union sockaddr_union *sock);
+static fs_evs *find_fs_evs(str *hostport);
 
 static fs_mod_ref *mk_fs_mod_ref(str *tag)
 {
@@ -81,7 +81,7 @@ static int has_tag(fs_evs *evs, str *tag)
 	return -1;
 }
 
-static fs_evs *find_fs_evs(union sockaddr_union *sock)
+static fs_evs *find_fs_evs(str *hostport)
 {
 	struct list_head *ele;
 	fs_evs *evs;
@@ -89,7 +89,7 @@ static fs_evs *find_fs_evs(union sockaddr_union *sock)
 	list_for_each(ele, fs_boxes) {
 		evs = list_entry(ele, fs_evs, list);
 
-		if (su_cmp(sock, &evs->su) == 1) {
+		if (str_strcmp(hostport, &evs->host) == 0) {
 			return evs;
 		}
 	}
@@ -97,12 +97,55 @@ static fs_evs *find_fs_evs(union sockaddr_union *sock)
 	return NULL;
 }
 
+static fs_evs *mk_fs_evs(str *hostport)
+{
+	fs_evs *evs;
+	char *p;
+	str st;
+	unsigned int port;
+
+	p = memchr(hostport->s, ':', hostport->len);
+	if (p != NULL) {
+		st.s = p + 1;
+		st.len = hostport->len - (p + 1 - hostport->s);
+
+		if (str2int(&st, &port) != 0) {
+			LM_ERR("failed to parse port '%.*s' %d in host '%.*s'\n",
+			       st.len, st.s, st.len, hostport->len, hostport->s);
+			return NULL;
+		}
+
+		st.s = hostport->s;
+		st.len = p - hostport->s;
+	} else {
+		st = *hostport;
+		port = FS_DEFAULT_EVS_PORT;
+	}
+
+
+	evs = shm_malloc(sizeof *evs + st.len + 1);
+	if (!evs) {
+		LM_ERR("out of mem\n");
+		return NULL;
+	}
+	memset(evs, 0, sizeof *evs);
+
+	LM_DBG("new FS box: host=%.*s, port=%d\n", st.len, st.s, port);
+
+	evs->host.s = (char *)(evs + 1);
+	evs->host.len = st.len;
+	memcpy(evs->host.s, st.s, st.len);
+	evs->host.s[evs->host.len] = '\0';
+
+	evs->port = port;
+	return evs;
+}
+
 fs_evs *add_fs_event_sock(str *evs_str, str *tag, enum fs_evs_types type,
                                ev_hrbeat_cb_f scb, void *info)
 {
 	fs_evs *evs;
 	fs_mod_ref *mtag;
-	union sockaddr_union su;
 
 	if (!evs_str->s || evs_str->len == 0 || !tag) {
 		LM_ERR("bad params: '%.*s', %.*s\n", evs_str->len, evs_str->s,
@@ -110,12 +153,7 @@ fs_evs *add_fs_event_sock(str *evs_str, str *tag, enum fs_evs_types type,
 		return NULL;
 	}
 
-	if (resolve_hostport(evs_str, FS_DEFAULT_EVS_PORT, &su) != 0) {
-		LM_ERR("bad ip[:port] string! (%.*s)\n", evs_str->len, evs_str->s);
-		return NULL;
-	}
-
-	evs = find_fs_evs(&su);
+	evs = find_fs_evs(evs_str);
 	if (evs) {
 		if (!has_tag(evs, tag)) {
 			mtag = mk_fs_mod_ref(tag);
@@ -127,24 +165,17 @@ fs_evs *add_fs_event_sock(str *evs_str, str *tag, enum fs_evs_types type,
 			list_add(&mtag->list, &evs->modlist);
 		}
 	} else {
-		evs = shm_malloc(sizeof *evs);
+		evs = mk_fs_evs(evs_str);
 		if (!evs) {
-			LM_ERR("out of mem\n");
+			LM_ERR("failed to create FS box!\n");
 			return NULL;
 		}
-		memset(evs, 0, sizeof *evs);
-
 		evs->type = type;
-		evs->su = su;
 
 		list_add(&evs->list, fs_boxes);
 	}
 
 	return evs;
-
-out_free:
-	shm_free(evs);
-	return NULL;
 }
 
 int del_fs_event_sock(fs_evs *evs, str *tag)

@@ -30,7 +30,10 @@
 #include "../../lib/list.h"
 #include "../../ip_addr.h"
 
+#include "esl/src/include/esl.h"
+
 #define FS_DEFAULT_EVS_PORT 8021
+#define FS_HEARTBEAT_ITV      20
 
 enum fs_evs_types {
 	FS_GW_STATS,
@@ -38,7 +41,10 @@ enum fs_evs_types {
 
 typedef struct _fs_evs {
 	enum fs_evs_types type;
-	union sockaddr_union su;
+	str host; /* host->s is also NULL-terminated */
+	esl_port_t port;
+
+	esl_handle_t *handle;
 
 	struct list_head list;    /* distinct FS boxes */
 	struct list_head modlist; /* distinct module references to the same box */

@@ -31,6 +31,7 @@
 #include "../../parser/msg_parser.h"
 
 #include "fs_api.h"
+#include "fs_proc.h"
 
 static int mod_init(void);
 
@@ -42,6 +43,12 @@ static cmd_export_t cmds[] = {
 static param_export_t mod_params[] = {
 	{ 0,0,0 }
 };
+
+static proc_export_t procs[] = {
+	{ "fs_stats", NULL, NULL, fs_stats_loop, 1, 0 },
+	{ 0, 0, 0, 0, 0, 0 },
+};
+
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
@@ -64,7 +71,7 @@ struct module_exports exports= {
 	NULL,       /* exported statistics */
 	NULL,         /* exported MI functions */
 	NULL,       /* exported pseudo-variables */
-	NULL,               /* extra processes */
+	procs,               /* extra processes */
 	mod_init,        /* module initialization function */
 	NULL,               /* reply processing function */
 	NULL,
@@ -73,7 +80,18 @@ struct module_exports exports= {
 
 static int mod_init(void)
 {
-	
+	str st = { "test", 4};
+
+	fs_boxes = shm_malloc(sizeof *fs_boxes);
+	if (fs_boxes == NULL) {
+		LM_ERR("out of mem\n");
+		return -1;
+	}
+	INIT_LIST_HEAD(fs_boxes);
+
+	str dst = {MI_SSTR("10.0.0.238:8021")};
+	add_fs_event_sock(&dst, &st, FS_GW_STATS, NULL, NULL);
+
 	return 0;
 }
 
