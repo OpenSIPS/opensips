@@ -27,8 +27,8 @@
 #include "../../pvar.h"
 #include "isup.h"
 
-static int iam_params[] = {ISUP_PARM_NATURE_OF_CONNECTION_IND, ISUP_PARM_FORWARD_CALL_IND, ISUP_PARM_CALLING_PARTY_CAT,
-	ISUP_PARM_TRANSMISSION_MEDIUM_REQS, ISUP_PARM_CALLED_PARTY_NUM, -1};
+static int iam_params[] = {ISUP_PARM_NATURE_OF_CONNECTION_IND, ISUP_PARM_FORWARD_CALL_IND,
+	ISUP_PARM_CALLING_PARTY_CAT, ISUP_PARM_TRANSMISSION_MEDIUM_REQS, ISUP_PARM_CALLED_PARTY_NUM, -1};
 
 static int acm_params[] = {ISUP_PARM_BACKWARD_CALL_IND, -1};
 
@@ -78,49 +78,148 @@ struct isup_message_data isup_messages[NO_ISUP_MESSAGES] = {
 };
 
 
-static struct isup_subfield nature_of_conn_ind_subf[] = {{1, str_init("Satellite indicator")},
-	{2, str_init("Continuity check indicator")}, {3, str_init("Echo control device indicator")}, {0, {0,0}}};
+#define SUBF_INIT_EMPTY {{0,0}, 0, {{0, 0}}, {0}}
 
-static struct isup_subfield forward_call_ind_subf[] = {{1, str_init("National/international call indicator")},
-	{2, str_init("End-to-end method indicator")}, {3, str_init("Interworking indicator")},
-	{4, str_init("End-to-end information indicator")}, {5, str_init("ISDN user part indicator")},
-	{6, str_init("ISDN user part preference indicator")}, {7, str_init("ISDN access indicator")},
-	{8, str_init("SCCP method indicator")}, {0, {0,0}}};
+static struct isup_subfield nature_of_conn_ind_subf[] = {
+	{str_init("Satellite indicator"), 3,
+		{str_init("no satellite"), str_init("one satellite"), str_init("two satellites")}, {0,1,2}},
+	{str_init("Continuity check indicator"), 3,
+		{str_init("not required"), str_init("required"), str_init("performed")}, {0,1,2}},
+	{str_init("Echo control device indicator"), 2,
+		{str_init("not included"), str_init("included")}, {0,1}},
+	SUBF_INIT_EMPTY};
 
-static struct isup_subfield opt_forward_call_ind_subf[] = {{1, str_init("Closed user group call indicator")},
-	{2, str_init("Simple segmentation indicator")}, {3, str_init("Connected line identity request indicator")},
-	{0, {0,0}}};
+static struct isup_subfield forward_call_ind_subf[] = {
+	{str_init("National/international call indicator"), 2,
+		{str_init("national"), str_init("international")}, {0,1}},
+	{str_init("End-to-end method indicator"), 4,
+		{str_init("no method"), str_init("pass-along"), str_init("SCCP"),
+		 str_init("pass-along and SCCP")}, {0,1,2,3}},
+	{str_init("Interworking indicator"), 2,
+		{str_init("no interworking"), str_init("interworking")}, {0,1}},
+	{str_init("End-to-end information indicator"), 2,
+		{str_init("no end-to-end"), str_init("end-to-end")}, {0,1}},
+	{str_init("ISDN user part indicator"), 2,
+		{str_init("not all the way"), str_init("all the way")}, {0,1}},
+	{str_init("ISDN user part preference indicator"), 3,
+		{str_init("prefered"), str_init("not required"), str_init("required")}, {0,1,2}},
+	{str_init("ISDN access indicator"), 2,
+		{str_init("non-ISDN"), str_init("ISDN")}, {0,1}},
+	{str_init("SCCP method indicator"), 4,
+		{str_init("no indication"), str_init("connectionless"), str_init("connection"),
+		 str_init("connectionless and connection")}, {0,1,2,3}},
+	SUBF_INIT_EMPTY};
 
-static struct isup_subfield called_party_num_subf[] = {{1, str_init("Odd/even indicator")},
-	{2, str_init("Nature of address indicator")}, {3, str_init("Internal Network Number indicator")},
-	{4, str_init("Numbering plan indicator")}, {5, str_init("Address signal")}, {0, {0,0}}};
+static struct isup_subfield opt_forward_call_ind_subf[] = {
+	{str_init("Closed user group call indicator"), 3,
+		{str_init("non-CUG"), str_init("outgoing allowed"), str_init("outgoing not allowed")}, {0,2,3}},
+	{str_init("Simple segmentation indicator"), 2,
+		{str_init("no additional information"), str_init("additional information")}, {0,1}},
+	{str_init("Connected line identity request indicator"), 2,
+		{str_init("not requested"), str_init("requested")}, {0,1}},
+	SUBF_INIT_EMPTY};
 
-static struct isup_subfield calling_party_num_subf[] = {{1, str_init("Odd/even indicator")},
-	{2, str_init("Nature of address indicator")}, {3, str_init("Number Incomplete indicator")},
-	{4, str_init("Numbering plan indicator")}, {5, str_init("Address presentation restricted indicator")},
-	{6, str_init("Screening indicator")},  {7, str_init("Address signal")}, {0, {0,0}}};
+static struct isup_subfield called_party_num_subf[] = {
+	{str_init("Odd/even indicator"), 2,
+		{str_init("even"), str_init("odd")}, {0,1}},
+	{str_init("Nature of address indicator"), 8,
+		{str_init("subscriber"), str_init("unknown"), str_init("national"), str_init("international"),
+		 str_init("network-specific"), str_init("network routing national"),
+		 str_init("network routing network-specific"), str_init("network routing with CDN")},
+		{1,2,3,4,5,6,7,8}},
+	{str_init("Internal Network Number indicator"), 2,
+		{str_init("allowed"), str_init("not allowed")}, {0,1}},
+	{str_init("Numbering plan indicator"), 3,
+		{str_init("ISDN"), str_init("Data"), str_init("Telex")}, {1,3,4}},
+	{str_init("Address signal"), 0, {{0, 0}}, {0}},
+	SUBF_INIT_EMPTY};
 
-static struct isup_subfield backward_call_ind_subf[] = {{1, str_init("Charge indicator")},
-	{2, str_init("Called party's status indicator")}, {3, str_init("Called party's category indicator")},
-	{4, str_init("End to End method indicator")}, {5, str_init("Interworking indicator")},
-	{6, str_init("End to End information indicator")}, {7, str_init("ISDN user part indicator")},
-	{8, str_init("Holding indicator")}, {9, str_init("ISDN access indicator")},
-	{10, str_init("Echo control device indicator")}, {11, str_init("SCCP method indicator")}, {0, {0, 0}}};
+static struct isup_subfield calling_party_num_subf[] = {
+	{str_init("Odd/even indicator"), 2,
+		{str_init("even"), str_init("odd")}, {0,1}},
+	{str_init("Nature of address indicator"), 4,
+		{str_init("subscriber"), str_init("unknown"), str_init("national"),
+		 str_init("international")}, {1,2,3,4}},
+	{str_init("Number Incomplete indicator"), 2,
+		{str_init("complete"), str_init("incomplete")}, {0,1}},
+	{str_init("Numbering plan indicator"), 3,
+		{str_init("ISDN"), str_init("Data"), str_init("Telex")}, {1,3,4}},
+	{str_init("Address presentation restricted indicator"), 4,
+		{str_init("allowed"), str_init("restricted"), str_init("not available"),
+		 str_init("reserved")}, {0,1,2,3}},
+	{str_init("Screening indicator"), 2,
+		{str_init("user"), str_init("network")}, {1,3}},
+	{str_init("Address signal"), 0, {{0, 0}}, {0}},
+	SUBF_INIT_EMPTY};
 
-static struct isup_subfield opt_backward_call_ind_subf[] = {{1, str_init("In-band information indicator")},
-	{2, str_init("Call diversion may occur indicator")}, {3, str_init("Simple segmentation indicator")},
-	{4, str_init("MLPP user indicator")}, {0, {0,0}}};
+static struct isup_subfield backward_call_ind_subf[] = {
+	{str_init("Charge indicator"), 2,
+		{str_init("no indication"), str_init("no charge")}, {0,1}},
+	{str_init("Called party's status indicator"), 3,
+		{str_init("no indication"), str_init("subscriber free"), str_init("connect")}, {0,1,2}},
+	{str_init("Called party's category indicator"), 3,
+		{str_init("no indication"), str_init("ordinary subscriber"), str_init("payphone")}, {0,1,2}},
+	{str_init("End to End method indicator"), 4,
+		{str_init("no end-to-end"), str_init("pass-along"), str_init("SCCP"),
+		 str_init("pass-along and SCCP")}, {0,1,2,3}},
+	{str_init("Interworking indicator"), 2,
+		{str_init("no interworking"), str_init("interworking")}, {0,1}},
+	{str_init("End to End information indicator"), 2,
+		{str_init("no end-to-end"), str_init("end-to-end")}, {0,1}},
+	{str_init("ISDN user part indicator"), 2,
+		{str_init("not all the way"), str_init("all the way")}, {0,1}},
+	{str_init("Holding indicator"), 2,
+		{str_init("not requested"), str_init("requested")}, {0,1}},
+	{str_init("ISDN access indicator"), 2,
+		{str_init("non-ISDN"), str_init("ISDN")}, {0,1}},
+	{str_init("Echo control device indicator"), 2,
+		{str_init("not included"), str_init("included")}, {0,1}},
+	{str_init("SCCP method indicator"), 4,
+		{str_init("no indication"), str_init("connectionless"), str_init("connection"),
+		 str_init("connectionless and connection")}, {0,1,2,3}},
+	SUBF_INIT_EMPTY};
 
-static struct isup_subfield connected_num_subf[] = {{1, str_init("Odd/even indicator")},
-	{2, str_init("Nature of address indicator")}, {3, str_init("Numbering plan indicator")},
-	{4, str_init("Address presentation restricted indicator")}, {5, str_init("Screening indicator")},
-	{6, str_init("Address signal")}, {0, {0,0}}};
+static struct isup_subfield opt_backward_call_ind_subf[] = {
+	{str_init("In-band information indicator"), 2,
+		{str_init("no indication"), str_init("available")}, {0,1}},
+	{str_init("Call diversion may occur indicator"), 2,
+		{str_init("no indication"), str_init("call diversion")}, {0,1}},
+	{str_init("Simple segmentation indicator"), 2,
+		{str_init("no additional information"), str_init("additional information")}, {0,1}},
+	{str_init("MLPP user indicator"), 2,
+		{str_init("no indication"), str_init("MLPP user")}, {0,1}},
+	SUBF_INIT_EMPTY};
 
-static struct isup_subfield cause_ind_subf[] = {{1, str_init("Location")}, {2, str_init("Coding standard")},
-	{3, str_init("Cause value")}, {0,{0,0}}};	/* Recommendation and Diagnostics subfields not supported */
+static struct isup_subfield connected_num_subf[] = {
+	{str_init("Odd/even indicator"), 2,
+		{str_init("even"), str_init("odd")}, {0,1}},
+	{str_init("Nature of address indicator"), 4,
+		{str_init("subscriber"), str_init("unknown"), str_init("national"),
+		 str_init("international")}, {1,2,3,4}},
+	{str_init("Numbering plan indicator"), 3,
+		{str_init("ISDN"), str_init("Data"), str_init("Telex")}, {1,3,4}},
+	{str_init("Address presentation restricted indicator"), 3,
+		{str_init("allowed"), str_init("restricted"), str_init("not available")}, {0,1,2}},
+	{str_init("Screening indicator"), 2,
+		{str_init("user"), str_init("network")}, {1,3}},
+	{str_init("Address signal"), 0, {{0, 0}}, {0}},
+	SUBF_INIT_EMPTY};
 
-static struct isup_subfield subsequent_num_subf[] = {{1, str_init("Odd/even indicator")},
-	{2, str_init("Address signal")}, {0, {0,0}}};
+/* Recommendation and Diagnostics subfields not supported */
+static struct isup_subfield cause_ind_subf[] = {
+	{str_init("Location"), 8,
+		{str_init("user"), str_init("LPN"),str_init("LN"), str_init("TN"), str_init("RLN"),
+		 str_init("RPN"), str_init("INTL"), str_init("BI")}, {0,1,2,3,4,5,7,10}},
+	{str_init("Coding standard"), 3,
+		{str_init("ITU-T"), str_init("ISO/IEC"), str_init("national"), str_init("location")}, {0,1,2,3}},
+	{str_init("Cause value"), 0, {{0, 0}}, {0}},
+	SUBF_INIT_EMPTY};
+
+static struct isup_subfield subsequent_num_subf[] = {
+	{str_init("Odd/even indicator"), 2,
+		{str_init("even"), str_init("odd")}, {0,1}},
+	{str_init("Address signal"), 0, {{0, 0}}, {0}},
+	SUBF_INIT_EMPTY};
 
 
 static inline char digit2char(unsigned char digit)
@@ -251,6 +350,18 @@ static void isup_put_number(unsigned char *dest, str src, int *len, int *oddeven
 	}
 }
 
+static inline int get_predef_val(int param_idx, int subfield_idx, str val_alias)
+{
+	int i;
+
+	for (i = 0; i < isup_params[param_idx].subfield_list[subfield_idx].no_predef_vals; i++)
+		if (!memcmp(isup_params[param_idx].subfield_list[subfield_idx].predef_vals_aliases[i].s,
+			val_alias.s, val_alias.len))
+			return isup_params[param_idx].subfield_list[subfield_idx].predef_vals[i];
+
+	return -1;
+}
+
 #define SET_BITS(_byte, _mask, _shift, _new_val) \
 	(_byte & ~_mask) | ((_new_val << _shift) & _mask)
 
@@ -261,34 +372,38 @@ do { \
 	else if (val->flags & PV_TYPE_INT || val->flags & PV_VAL_INT) \
 		new_val = val->ri; \
 	else if (val->flags & PV_VAL_STR) { \
-		LM_ERR("Integer value required\n"); \
-		return -1; \
+		if ((new_val = get_predef_val(param_idx, subfield_idx, val->rs)) < 0) { \
+			LM_ERR("Unknown value alias <%.*s>\n", val->rs.len, val->rs.s); \
+			return -1; \
+		} \
 	} else { \
 		LM_ERR("Invalid value\n"); \
 		return -1; \
 	} \
 } while (0)
 
-#define NUM_PARAM_GET_VAL_PV(_addr_sig_subf_id) \
+#define NUM_PARAM_GET_VAL_PV(_addr_sig_subf_idx) \
 do { \
 	if (val == NULL || val->flags & PV_VAL_NULL) { \
 		new_val = 0; \
 		num.len = 0; \
 		num.s = NULL; \
 	} else  if (val->flags & PV_TYPE_INT || val->flags & PV_VAL_INT) { \
-		if (subfield_id == (_addr_sig_subf_id)) { \
-			LM_WARN("String value required\n"); \
+		if (subfield_idx == (_addr_sig_subf_idx)) { \
+			LM_ERR("String value required\n"); \
 			return -1; \
 		} else { \
 			new_val = val->ri; \
 		} \
 	} else if (val->flags & PV_VAL_STR) { \
-		if (subfield_id == (_addr_sig_subf_id)) { \
+		if (subfield_idx == (_addr_sig_subf_idx)) { \
 			num.len = val->rs.len; \
 			num.s = val->rs.s; \
 		} else { \
-			LM_ERR("Integer value required\n"); \
-			return -1; \
+			if ((new_val = get_predef_val(param_idx, subfield_idx, val->rs)) < 0) { \
+				LM_ERR("Unknown value alias <%.*s>\n", val->rs.len, val->rs.s); \
+				return -1; \
+			} \
 		} \
 	} else { \
 		LM_ERR("Invalid value\n"); \
@@ -296,40 +411,40 @@ do { \
 	} \
 } while (0)
 
-/* specific parameter parse functions */
+/* specific parameter parse/write functions */
 
-void nature_of_conn_ind_parsef(int subfield_id, unsigned char *param_val, int len,
+void nature_of_conn_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		*int_res = param_val[0] & 0x3;
 		break;
-	case 2:
+	case 1:
 		*int_res = (param_val[0] >> 2) & 0x3;
 		break;
-	case 3:
+	case 2:
 		*int_res = (param_val[0] >> 4) & 0x01;
 	default:
 		LM_ERR("BUG - bad subfield\n");
 	}
 }
 
-int nature_of_conn_ind_writef(int subfield_id, unsigned char *param_val, int *len,
+int nature_of_conn_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 									pv_value_t *val)
 {
 	unsigned char new_val;
 
 	PARAM_CHECK_INT_VAL();
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		param_val[0] = SET_BITS(param_val[0], 0x3, 0, new_val);
 		break;
-	case 2:
+	case 1:
 		param_val[0] = SET_BITS(param_val[0], 0xc, 2, new_val);
 		break;
-	case 3:
+	case 2:
 		param_val[0] = SET_BITS(param_val[0], 0x10, 4, new_val);
 		break;
 	default:
@@ -342,32 +457,32 @@ int nature_of_conn_ind_writef(int subfield_id, unsigned char *param_val, int *le
 	return 0;
 }
 
-void forward_call_ind_parsef(int subfield_id, unsigned char *param_val, int len,
+void forward_call_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		*int_res = param_val[0] & 1;
 		break;
-	case 2:
+	case 1:
 		*int_res = (param_val[0] >> 1) & 3;
 		break;
-	case 3:
+	case 2:
 		*int_res = (param_val[0] >> 3) & 1;
 		break;
-	case 4:
+	case 3:
 		*int_res = (param_val[0] >> 4) & 1;
 		break;
-	case 5:
+	case 4:
 		*int_res = (param_val[0] >> 5) & 1;
 		break;
-	case 6:
+	case 5:
 		*int_res = (param_val[0] >> 6) & 3;
 		break;
-	case 7:
+	case 6:
 		*int_res = param_val[1] & 1;
 		break;
-	case 8:
+	case 7:
 		*int_res = (param_val[1] >> 1) & 3;
 		break;
 	default:
@@ -375,36 +490,36 @@ void forward_call_ind_parsef(int subfield_id, unsigned char *param_val, int len,
 	}
 }
 
-int forward_call_ind_writef(int subfield_id, unsigned char *param_val, int *len,
-									pv_value_t *val)
+int forward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val,
+								int *len, pv_value_t *val)
 {
 	unsigned char new_val;
 
 	PARAM_CHECK_INT_VAL();
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		param_val[0] = SET_BITS(param_val[0], 0x1, 0, new_val);
 		break;
-	case 2:
+	case 1:
 		param_val[0] = SET_BITS(param_val[0], 0x6, 1, new_val);
 		break;
-	case 3:
+	case 2:
 		param_val[0] = SET_BITS(param_val[0], 0x8, 3, new_val);
 		break;
-	case 4:
+	case 3:
 		param_val[0] = SET_BITS(param_val[0], 0x10, 4, new_val);
 		break;
-	case 5:
+	case 4:
 		param_val[0] = SET_BITS(param_val[0], 0x20, 5, new_val);
 		break;
-	case 6:
+	case 5:
 		param_val[0] = SET_BITS(param_val[0], 0xc0, 6, new_val);
 		break;
-	case 7:
+	case 6:
 		param_val[1] = SET_BITS(param_val[1], 0x1, 0, new_val);
 		break;
-	case 8:
+	case 7:
 		param_val[1] = SET_BITS(param_val[1], 0x6, 1, new_val);
 		break;
 	default:
@@ -417,17 +532,17 @@ int forward_call_ind_writef(int subfield_id, unsigned char *param_val, int *len,
 	return 0;
 }
 
-void opt_forward_call_ind_parsef(int subfield_id, unsigned char *param_val, int len,
+void opt_forward_call_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		*int_res = param_val[0] & 0x03;
 		break;
-	case 2:
+	case 1:
 		*int_res = param_val[0] & (1 << 2);
 		break;
-	case 3:
+	case 2:
 		*int_res = param_val[0] & (1 << 7);
 		break;
 	default:
@@ -435,21 +550,21 @@ void opt_forward_call_ind_parsef(int subfield_id, unsigned char *param_val, int 
 	}
 }
 
-int opt_forward_call_ind_writef(int subfield_id, unsigned char *param_val, int *len,
+int opt_forward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 									pv_value_t *val)
 {
 	unsigned char new_val;
 
 	PARAM_CHECK_INT_VAL();
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		param_val[0] = SET_BITS(param_val[0], 0x3, 0, new_val);
 		break;
-	case 2:
+	case 1:
 		param_val[0] = SET_BITS(param_val[0], 0x4, 2, new_val);
 		break;
-	case 3:
+	case 2:
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
 		break;
 	default:
@@ -462,25 +577,25 @@ int opt_forward_call_ind_writef(int subfield_id, unsigned char *param_val, int *
 	return 0;
 }
 
-void called_party_num_parsef(int subfield_id, unsigned char *param_val, int len,
+void called_party_num_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
 	int oddeven = (param_val[0] >> 7) & 0x1;
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		*int_res = oddeven;
 		break;
-	case 2:
+	case 1:
 		*int_res = param_val[0] & 0x7f;
 		break;
-	case 3:
+	case 2:
 		*int_res = (param_val[1] >> 7) & 0x1;
 		 break;
-	case 4:
+	case 3:
 		*int_res = (param_val[1] >> 4) & 0x7;
 		break;
-	case 5:
+	case 4:
 		isup_get_number(str_res, param_val + 2, len - 2, oddeven);
 		break;
 	default:
@@ -488,29 +603,29 @@ void called_party_num_parsef(int subfield_id, unsigned char *param_val, int len,
 	}
 }
 
-int called_party_num_writef(int subfield_id, unsigned char *param_val, int *len,
-								pv_value_t *val)
+int called_party_num_writef(int param_idx, int subfield_idx, unsigned char *param_val,
+								int *len, pv_value_t *val)
 {
 	unsigned char new_val;
 	int num_len, oddeven;
 	str num;
 
-	NUM_PARAM_GET_VAL_PV(5);
+	NUM_PARAM_GET_VAL_PV(4);
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
 		break;
-	case 2:
+	case 1:
 		param_val[0] = SET_BITS(param_val[0], 0x7f, 0, new_val);
 		break;
-	case 3:
+	case 2:
 		param_val[1] = SET_BITS(param_val[1], 0x80, 7, new_val);
 		 break;
-	case 4:
+	case 3:
 		param_val[1] = SET_BITS(param_val[1], 0x70, 4, new_val);
 		break;
-	case 5:
+	case 4:
 		isup_put_number(param_val + 2, num, &num_len, &oddeven);
 		/* also set oddeven, just in case it wasn't already */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
@@ -520,7 +635,7 @@ int called_party_num_writef(int subfield_id, unsigned char *param_val, int *len,
 		return -1;
 	}
 
-	if (subfield_id == 5)
+	if (subfield_idx == 4)
 		*len = num_len + 2;
 	else if (*len == 0)
 		*len = 2;
@@ -528,31 +643,31 @@ int called_party_num_writef(int subfield_id, unsigned char *param_val, int *len,
 	return 0;
 }
 
-void calling_party_num_parsef(int subfield_id, unsigned char *param_val, int len,
+void calling_party_num_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
 	int oddeven = (param_val[0] >> 7) & 0x1;
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		*int_res = oddeven;
 		break;
-	case 2:
+	case 1:
 		*int_res = param_val[0] & 0x7f;
 		break;
-	case 3:
+	case 2:
 		*int_res = (param_val[1] >> 7) & 0x1;
 		break;
-	case 4:
+	case 3:
 		*int_res = (param_val[1] >> 4) & 0x7;
 		break;
-	case 5:
+	case 4:
 		*int_res = (param_val[1] >> 2) & 0x3;
 		break;
-	case 6:
+	case 5:
 		*int_res = param_val[1] & 0x3;
 		break;
-	case 7:
+	case 6:
 		isup_get_number(str_res, param_val + 2, len - 2, oddeven);
 		break;
 	default:
@@ -560,35 +675,35 @@ void calling_party_num_parsef(int subfield_id, unsigned char *param_val, int len
 	}
 }
 
-int calling_party_num_writef(int subfield_id, unsigned char *param_val, int *len,
+int calling_party_num_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
 	unsigned char new_val;
 	int num_len, oddeven;
 	str num;
 
-	NUM_PARAM_GET_VAL_PV(7);
+	NUM_PARAM_GET_VAL_PV(6);
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
 		break;
-	case 2:
+	case 1:
 		param_val[0] = SET_BITS(param_val[0], 0x7f, 0, new_val);
 		break;
-	case 3:
+	case 2:
 		param_val[1] = SET_BITS(param_val[1], 0x80, 7, new_val);
 		break;
-	case 4:
+	case 3:
 		param_val[1] = SET_BITS(param_val[1], 0x70, 4, new_val);
 		break;
-	case 5:
+	case 4:
 		param_val[1] = SET_BITS(param_val[1], 0xc, 2, new_val);
 		break;
-	case 6:
+	case 5:
 		param_val[1] = SET_BITS(param_val[1], 0x3, 0, new_val);
 		break;
-	case 7:
+	case 6:
 		isup_put_number(param_val + 2, num, &num_len, &oddeven);
 		/* also set oddeven, just in case it wasn't already */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
@@ -598,7 +713,7 @@ int calling_party_num_writef(int subfield_id, unsigned char *param_val, int *len
 		return -1;
 	}
 
-	if (subfield_id == 7)
+	if (subfield_idx == 6)
 		*len = num_len + 2;
 	else if (*len == 0)
 		*len = 2;
@@ -606,41 +721,41 @@ int calling_party_num_writef(int subfield_id, unsigned char *param_val, int *len
 	return 0;
 }
 
-void backward_call_ind_parsef(int subfield_id, unsigned char *param_val, int len,
+void backward_call_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		*int_res = param_val[0] & 0x3;
 		break;
-	case 2:
+	case 1:
 		*int_res = (param_val[0] >> 2) & 0x3;
 		break;
-	case 3:
+	case 2:
 		*int_res = (param_val[0] >> 4) & 0x3;
 		break;
-	case 4:
+	case 3:
 		*int_res = (param_val[0] >> 6) & 0x3;
 		break;
-	case 5:
+	case 4:
 		*int_res = param_val[1] & 0x1;
 		break;
-	case 6:
+	case 5:
 		*int_res = (param_val[1] >> 1) & 0x1;
 		break;
-	case 7:
+	case 6:
 		*int_res = (param_val[1] >> 2) & 0x1;
 		break;
-	case 8:
+	case 7:
 		*int_res = (param_val[1] >> 3) & 0x1;
 		break;
-	case 9:
+	case 8:
 		*int_res = (param_val[1] >> 4) & 0x1;
 		break;
-	case 10:
+	case 9:
 		*int_res = (param_val[1] >> 5) & 0x1;
 		break;
-	case 11:
+	case 10:
 		*int_res = (param_val[1] >> 7) & 0x3;
 		break;
 	default:
@@ -648,45 +763,45 @@ void backward_call_ind_parsef(int subfield_id, unsigned char *param_val, int len
 	}
 }
 
-int backward_call_ind_writef(int subfield_id, unsigned char *param_val, int *len,
+int backward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
 	unsigned char new_val;
 
 	PARAM_CHECK_INT_VAL();
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		param_val[0] = SET_BITS(param_val[0], 0x3, 0, new_val);
 		break;
-	case 2:
+	case 1:
 		param_val[0] = SET_BITS(param_val[0], 0xc, 2, new_val);
 		break;
-	case 3:
+	case 2:
 		param_val[0] = SET_BITS(param_val[0], 0x30, 4, new_val);
 		break;
-	case 4:
+	case 3:
 		param_val[0] = SET_BITS(param_val[0], 0xc0, 6, new_val);
 		break;
-	case 5:
+	case 4:
 		param_val[1] = SET_BITS(param_val[1], 0x1, 0, new_val);
 		break;
-	case 6:
+	case 5:
 		param_val[1] = SET_BITS(param_val[1], 0x2, 1, new_val);
 		break;
-	case 7:
+	case 6:
 		param_val[1] = SET_BITS(param_val[1], 0x4, 2, new_val);
 		break;
-	case 8:
+	case 7:
 		param_val[1] = SET_BITS(param_val[1], 0x8, 3, new_val);
 		break;
-	case 9:
+	case 8:
 		param_val[1] = SET_BITS(param_val[1], 0x10, 4, new_val);
 		break;
-	case 10:
+	case 9:
 		param_val[1] = SET_BITS(param_val[1], 0x20, 5, new_val);
 		break;
-	case 11:
+	case 10:
 		param_val[1] = SET_BITS(param_val[1], 0x180, 7, new_val);
 		break;
 	default:
@@ -698,20 +813,20 @@ int backward_call_ind_writef(int subfield_id, unsigned char *param_val, int *len
 	return 0;
 }
 
-void opt_backward_call_ind_parsef(int subfield_id, unsigned char *param_val, int len,
+void opt_backward_call_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		*int_res = param_val[0] & 1;
 		break;
-	case 2:
+	case 1:
 		*int_res = (param_val[0] >> 1) & 1;
 		break;
-	case 3:
+	case 2:
 		*int_res = (param_val[0] >> 2) & 1;
 		break;
-	case 4:
+	case 3:
 		*int_res = (param_val[0] >> 3) & 1;
 		break;
 	default:
@@ -719,24 +834,24 @@ void opt_backward_call_ind_parsef(int subfield_id, unsigned char *param_val, int
 	}
 }
 
-int opt_backward_call_ind_writef(int subfield_id, unsigned char *param_val, int *len,
+int opt_backward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
 	unsigned char new_val;
 
 	PARAM_CHECK_INT_VAL();
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		param_val[0] = SET_BITS(param_val[0], 0x1, 0, new_val);
 		break;
-	case 2:
+	case 1:
 		param_val[0] = SET_BITS(param_val[0], 0x2, 1, new_val);
 		break;
-	case 3:
+	case 2:
 		param_val[0] = SET_BITS(param_val[0], 0x4, 2, new_val);
 		break;
-	case 4:
+	case 3:
 		param_val[0] = SET_BITS(param_val[0], 0x8, 3, new_val);
 		break;
 	default:
@@ -749,28 +864,28 @@ int opt_backward_call_ind_writef(int subfield_id, unsigned char *param_val, int 
 	return 0;
 }
 
-void connected_num_parsef(int subfield_id, unsigned char *param_val, int len,
+void connected_num_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
 	int oddeven = (param_val[0] >> 7) & 0x1;
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		*int_res = oddeven;
 		break;
-	case 2:
+	case 1:
 		*int_res = param_val[0] & 0x7f;
 		break;
-	case 3:
+	case 2:
 		*int_res = (param_val[1] >> 4) & 0x7;
 		break;
-	case 4:
+	case 3:
 		*int_res = (param_val[1] >> 2) & 0x3;
 		break;
-	case 5:
+	case 4:
 		*int_res = param_val[1] & 0x3;
 		break;
-	case 6:
+	case 5:
 		isup_get_number(str_res, param_val + 2, len - 2, oddeven);
 		break;
 	default:
@@ -778,32 +893,32 @@ void connected_num_parsef(int subfield_id, unsigned char *param_val, int len,
 	}
 }
 
-int connected_num_writef(int subfield_id, unsigned char *param_val, int *len,
+int connected_num_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
 	unsigned char new_val;
 	int num_len, oddeven;
 	str num;
 
-	NUM_PARAM_GET_VAL_PV(6);
+	NUM_PARAM_GET_VAL_PV(5);
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
 		break;
-	case 2:
+	case 1:
 		param_val[0] = SET_BITS(param_val[0], 0x7f, 0, new_val);
 		break;
-	case 3:
+	case 2:
 		param_val[1] = SET_BITS(param_val[1], 0x70, 4, new_val);
 		break;
-	case 4:
+	case 3:
 		param_val[1] = SET_BITS(param_val[1], 0xc, 2, new_val);
 		break;
-	case 5:
+	case 4:
 		param_val[1] = SET_BITS(param_val[1], 0x3, 0, new_val);
 		break;
-	case 6:
+	case 5:
 		isup_put_number(param_val + 2, num, &num_len, &oddeven);
 		/* also set oddeven, just in case */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
@@ -813,7 +928,7 @@ int connected_num_writef(int subfield_id, unsigned char *param_val, int *len,
 		return -1;
 	}
 
-	if (subfield_id == 7)
+	if (subfield_idx == 5)
 		*len = num_len + 2;
 	else if (*len == 0)
 		*len = 2;
@@ -821,17 +936,17 @@ int connected_num_writef(int subfield_id, unsigned char *param_val, int *len,
 	return 0;
 }
 
-void cause_ind_parsef(int subfield_id, unsigned char *param_val, int len,
+void cause_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		*int_res = param_val[0] & 0xf;
 		break;
-	case 2:
+	case 1:
 		*int_res = (param_val[0] & 0x60) >> 5;
 		break;
-	case 3:
+	case 2:
 		*int_res = param_val[1] & 0x7f;
 		break;
 	default:
@@ -839,7 +954,7 @@ void cause_ind_parsef(int subfield_id, unsigned char *param_val, int len,
 	}
 }
 
-int cause_ind_writef(int subfield_id, unsigned char *param_val, int *len,
+int cause_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
 	unsigned char new_val;
@@ -850,14 +965,14 @@ int cause_ind_writef(int subfield_id, unsigned char *param_val, int *len,
 	param_val[0] = SET_BITS(param_val[0], 0x80, 7, 1);
 	param_val[1] = SET_BITS(param_val[1], 0x80, 7, 1);
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		param_val[0] = SET_BITS(param_val[0], 0xf, 0, new_val);
 		break;
-	case 2:
+	case 1:
 		param_val[0] = SET_BITS(param_val[0], 0x60, 5, new_val);
 		break;
-	case 3:
+	case 2:
 		param_val[1] = SET_BITS(param_val[1], 0x7f, 0, new_val);
 		break;
 	default:
@@ -870,16 +985,16 @@ int cause_ind_writef(int subfield_id, unsigned char *param_val, int *len,
 	return 0;
 }
 
-void subsequent_num_parsef(int subfield_id, unsigned char *param_val, int len,
+void subsequent_num_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
 	int oddeven = (param_val[0] >> 7) & 0x1;
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		*int_res = oddeven;
 		break;
-	case 2:
+	case 1:
 		isup_get_number(str_res, param_val + 1, len - 1, oddeven);
 		break;
 	default:
@@ -887,20 +1002,20 @@ void subsequent_num_parsef(int subfield_id, unsigned char *param_val, int len,
 	}
 }
 
-int subsequent_num_writef(int subfield_id, unsigned char *param_val, int *len,
+int subsequent_num_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
 	unsigned char new_val;
 	int num_len, oddeven;
 	str num;
 
-	NUM_PARAM_GET_VAL_PV(2);
+	NUM_PARAM_GET_VAL_PV(1);
 
-	switch (subfield_id) {
-	case 1:
+	switch (subfield_idx) {
+	case 0:
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
 		break;
-	case 2:
+	case 1:
 		isup_put_number(param_val + 1, num, &num_len, &oddeven);
 		/* also set oddeven, just in case */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
@@ -910,7 +1025,7 @@ int subsequent_num_writef(int subfield_id, unsigned char *param_val, int *len,
 		return -1;
 	}
 
-	if (subfield_id == 7)
+	if (subfield_idx == 1)
 		*len = num_len + 2;
 	else if (*len == 0)
 		*len = 2;

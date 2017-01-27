@@ -34,7 +34,7 @@
 
 struct isup_parse_fixup {
 	int isup_params_idx;
-	int subfield_id;
+	int subfield_idx;
 };
 
 #endif /* _SIP_I_H_ */
