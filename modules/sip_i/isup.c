@@ -221,6 +221,14 @@ static struct isup_subfield subsequent_num_subf[] = {
 	{str_init("Address signal"), 0, {{0, 0}}, {0}},
 	SUBF_INIT_EMPTY};
 
+static struct isup_subfield event_info_subf[] = {
+	{str_init("Event indicator"), 6,
+		{str_init("alerting"), str_init("progress"), str_init("in-band or pattern"),
+		 str_init("busy"), str_init("no reply"), str_init(" unconditional")}, {1,2,3,4,5,6}},
+	{str_init("Event presentation restricted indicator"), 2,
+		{str_init("no indication"), str_init("restricted")}, {0,1}},
+	SUBF_INIT_EMPTY};
+
 
 static inline char digit2char(unsigned char digit)
 {
@@ -1033,6 +1041,45 @@ int subsequent_num_writef(int param_idx, int subfield_idx, unsigned char *param_
 	return 0;
 }
 
+void event_info_parsef(int subfield_idx, unsigned char *param_val, int len,
+									int *int_res, str *str_res)
+{
+	switch (subfield_idx) {
+	case 0:
+		*int_res = param_val[0] & 0x7f;
+		break;
+	case 1:
+		*int_res = (param_val[0] >> 7) & 0x1;
+		break;
+	default:
+		LM_ERR("BUG - bad subfield\n");
+	}
+}
+
+int event_info_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
+								pv_value_t *val)
+{
+	unsigned char new_val;
+
+	PARAM_CHECK_INT_VAL();
+
+	switch (subfield_idx) {
+	case 0:
+		param_val[0] = SET_BITS(param_val[0], 0x7f, 0, new_val);
+		break;
+	case 1:
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
+		break;
+	default:
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	*len = 1;
+
+	return 0;
+}
+
 struct isup_param_data isup_params[NO_ISUP_PARAMS] = {
 	{ISUP_PARM_CALL_REF, str_init("Call Reference"), NULL, NULL, NULL, 0},
 	{ISUP_PARM_TRANSMISSION_MEDIUM_REQS, str_init("Transmission Medium Requirement"), NULL, NULL, NULL, 1},
@@ -1064,7 +1111,7 @@ struct isup_param_data isup_params[NO_ISUP_PARAMS] = {
 	{ISUP_CONNECTED_NUMBER, str_init("Connected Number"), connected_num_parsef, connected_num_writef, connected_num_subf, 0},
 	{ISUP_PARM_SUSPEND_RESUME_IND, str_init("Suspend/Resume Indicators"), NULL, NULL, NULL, 1},
 	{ISUP_PARM_TRANSIT_NETWORK_SELECTION, str_init("Transit Network Selection"), NULL, NULL, NULL, 0},
-	{ISUP_PARM_EVENT_INFO, str_init("Event Information"), NULL, NULL, NULL, 1},
+	{ISUP_PARM_EVENT_INFO, str_init("Event Information"), event_info_parsef, event_info_writef, event_info_subf, 1},
 	{ISUP_PARM_CIRCUIT_ASSIGNMENT_MAP, str_init("Circuit Assignment Map"), NULL, NULL, NULL, 0},
 	{ISUP_PARM_CIRCUIT_STATE_IND, str_init("Circuit State Indicator"), NULL, NULL, NULL, 0},
 	{ISUP_PARAM_AUTOMATIC_CONGESTION_LEVEL, str_init("Automatic congestion level"), NULL, NULL, NULL, 0},
