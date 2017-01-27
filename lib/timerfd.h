@@ -28,8 +28,6 @@
 #if (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 8)
 	#include <sys/timerfd.h>  /* for timer FD */
 	#define HAVE_TIMER_FD 1
-#else
-	#warning "Skipping timerfd!"
 #endif
 
 #endif /* __LIB_TIMERFD__ */
