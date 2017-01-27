@@ -152,7 +152,9 @@ static int fixup_dlg_fval(void** param, int param_no);
 static int w_store_dlg_value(struct sip_msg*, char*, char*);
 static int w_fetch_dlg_value(struct sip_msg*, char*, char*);
 static int fixup_get_info(void** param, int param_no);
+static int fixup_get_vals(void** param, int param_no);
 static int w_get_dlg_info(struct sip_msg*, char*, char*, char*, char*);
+static int w_get_dlg_vals(struct sip_msg*, char*, char*, char*);
 static int w_tsl_dlg_flag(struct sip_msg *msg, char *_idx, char *_val);
 
 /* item/pseudo-variables functions */
@@ -218,6 +220,9 @@ static cmd_export_t cmds[]={
 	{"get_dialog_info",(cmd_function)w_get_dlg_info,      4,fixup_get_info,
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
 			BRANCH_ROUTE | LOCAL_ROUTE },
+	{"get_dialog_vals",(cmd_function)w_get_dlg_vals,      3,fixup_get_vals,
+			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
+			BRANCH_ROUTE | LOCAL_ROUTE | EVENT_ROUTE | TIMER_ROUTE },
 	{"match_dialog",  (cmd_function)w_match_dialog,       0,NULL,
 			0, REQUEST_ROUTE},
 	{"load_dlg",  (cmd_function)load_dlg,   0, 0, 0, 0},
@@ -606,6 +611,31 @@ static int fixup_get_info(void** param, int param_no)
 
 	return 0;
 }
+
+static int fixup_get_vals(void** param, int param_no)
+{
+	pv_spec_t *sp;
+	int ret;
+
+	if (param_no==1 || param_no==2) {
+		/* variables to be populated with the name:value of the 
+		 * found dialog ; we accept only AVPs are they are the
+		 * only one able to hold arrays */
+		ret = fixup_pvar(param);
+		if (ret<0) return ret;
+		sp = (pv_spec_t*)(*param);
+		if (sp->type!=PVT_AVP) {
+			LM_ERR("return must be an AVP!\n");
+			return E_SCRIPT;
+		}
+	} else if (param_no==3) {
+		/* the callid of the dialog to be looked up */
+		return fixup_sgp(param);
+	}
+
+	return 0;
+}
+
 
 static int create_dialog_wrapper(struct sip_msg *req,int flags)
 {
@@ -1474,6 +1504,59 @@ static int w_get_dlg_info(struct sip_msg *msg, char *attr, char *attr_val,
 	unref_dlg(dlg, 1);
 
 	return n;
+}
+
+
+static int w_get_dlg_vals(struct sip_msg *msg, char *v_name, char  *v_val,
+																char *callid)
+{
+	struct dlg_cell *dlg;
+	struct dlg_val *dv;
+	pv_value_t val;
+	str callid_s;
+
+	if (fixup_get_svalue(msg, (gparam_p)callid, &callid_s)!=0 ||
+	callid_s.len == 0 || callid_s.s == NULL) {
+		LM_WARN("cannot get string for dialog callid\n");
+		return -1;
+	}
+
+	dlg = get_dlg_by_callid( &callid_s );
+
+	if (dlg==NULL) {
+		/* nothing found */
+		LM_DBG("no dialog found\n");
+		return -1;
+	}
+
+	/* dlg found - NOTE you have a ref! */
+	LM_DBG("dialog found, fetching all variable\n");
+
+	/* iterate the list with all the dlg variables */
+	for( dv=dlg->vals ; dv ; dv=dv->next) {
+
+		/* add name to AVP */
+		val.flags = PV_VAL_STR;
+		val.rs = dv->name;
+		if ( !pv_set_value( msg, (pv_spec_p)v_name, 0, &val) ) {
+			LM_ERR("failed to add new name in dlg val list, ignoring\n");
+		} else {
+			/* add value to AVP */
+			val.flags = PV_VAL_STR;
+			val.rs = dv->val;
+			if ( !pv_set_value( msg, (pv_spec_p)v_val, 0, &val) ) {
+				LM_ERR("failed to add new value in dlg val list, ignoring\n");
+				/* better exit here, as we will desync the lists */
+				unref_dlg(dlg, 1);
+				return -1;
+			}
+		}
+
+	}
+
+	unref_dlg(dlg, 1);
+
+	return 1;
 }
 
 
