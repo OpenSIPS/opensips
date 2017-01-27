@@ -724,7 +724,7 @@ struct dlg_cell* get_dlg_by_callid( str *callid)
 		if ( dlg->state>DLG_STATE_CONFIRMED )
 			continue;
 		if ( dlg->callid.len==callid->len &&
-		strcasecmp( dlg->callid.s, callid->s, callid->len)==0 ) {
+		strncmp( dlg->callid.s, callid->s, callid->len)==0 ) {
 			ref_dlg_unsafe( dlg, 1);
 			dlg_unlock( d_table, d_entry);
 			return dlg;
