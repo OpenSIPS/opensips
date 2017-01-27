@@ -26,22 +26,29 @@
 #ifndef _RMQ_SERVERS_H_
 #define _RMQ_SERVERS_H_
 
-#define RMQ_DEFAULT_HEARTBEAT			0 /* 0 seconds - disabled */
-#define RMQ_DEFAULT_MAX_CHANNELS		0 /* unlimited */
-#define RMQ_DEFAULT_MAX_FRAMES			131072
+#define RMQ_DEFAULT_HEARTBEAT		0 /* 0 seconds - disabled */
+#define RMQ_DEFAULT_RETRIES			0 /* 0 times - do not retry */
+#define RMQ_MIN_FRAMES				4096
+#define RMQ_DEFAULT_FRAMES			131072
 
 #include <amqp.h>
 
-enum rmq_server_state { RMQS_NONE, RMQS_INIT, RMQS_CONN };
+enum rmq_server_state { RMQS_OFF, RMQS_INIT, RMQS_CONN, RMQS_ON };
+
+#define RMQF_IMM	(1<<0) /* message MUST be delivered to a consumer immediately. */
+#define RMQF_MAND	(1<<1) /* message MUST be routed to a queue */
+#define RMQF_NOPER	(1<<2) /* message must not be persistent */
 
 struct rmq_server {
 	enum rmq_server_state state;
 	str cid; /* connection id */
 	struct list_head list;
 
-	int max_frames;
-	int max_channels;
+	unsigned flags;
+	int retries;
 	int heartbeat;
+	int max_frames;
+	amqp_bytes_t exchange;
 	amqp_connection_state_t conn;
 	struct amqp_connection_info uri;
 };
