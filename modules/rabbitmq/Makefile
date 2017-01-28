@@ -27,7 +27,7 @@ ifeq ($(CC_NAME),gcc)
 DEFS += -Wno-error=cpp
 else ifeq ($(CC_NAME),clang)
 DEFS += -Wno-\#warnings
-#else
+else
 DEFS += -Wno-error
 endif
 
