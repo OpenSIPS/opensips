@@ -23,7 +23,13 @@ else
 endif
 
 # make sure travis does not fail this module for older RabbitMQ versions
+ifeq ($(CC_NAME),gcc)
 DEFS += -Wno-error=cpp
+else ifeq ($(CC_NAME),clang)
+DEFS += -Wno-\#warnings=cpp
+#else
+DEFS += -Wno-error
+endif
 
 include ../../Makefile.modules
 
