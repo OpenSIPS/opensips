@@ -22,5 +22,8 @@ else
 	LIBS += $(shell $(RABBITMQ_BUILDER) --libs)
 endif
 
+# make sure travis does not fail this module for older RabbitMQ versions
+DEFS += -Wno-error=cpp
+
 include ../../Makefile.modules
 
