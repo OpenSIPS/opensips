@@ -424,41 +424,35 @@ do { \
 void nature_of_conn_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
-	switch (subfield_idx) {
-	case 0:
-		*int_res = param_val[0] & 0x3;
-		break;
-	case 1:
-		*int_res = (param_val[0] >> 2) & 0x3;
-		break;
-	case 2:
-		*int_res = (param_val[0] >> 4) & 0x01;
-	default:
+	int idx[] =   {0,0,0};
+	int shift[] = {0,2,4};
+	int mask[] =  {3,3,1};
+
+	if (subfield_idx < 0 || subfield_idx > 2) {
 		LM_ERR("BUG - bad subfield\n");
+		return;
 	}
+
+	*int_res = (param_val[idx[subfield_idx]] >> shift[subfield_idx]) & mask[subfield_idx];
 }
 
 int nature_of_conn_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 									pv_value_t *val)
 {
 	unsigned char new_val;
+	int idx[] =   {0,0,0};
+	int mask[] =  {0x3,0xc,0x10};
+	int shift[] = {0,2,4};
 
 	PARAM_CHECK_INT_VAL();
 
-	switch (subfield_idx) {
-	case 0:
-		param_val[0] = SET_BITS(param_val[0], 0x3, 0, new_val);
-		break;
-	case 1:
-		param_val[0] = SET_BITS(param_val[0], 0xc, 2, new_val);
-		break;
-	case 2:
-		param_val[0] = SET_BITS(param_val[0], 0x10, 4, new_val);
-		break;
-	default:
+	if (subfield_idx < 0 || subfield_idx > 2) {
 		LM_ERR("BUG - bad subfield\n");
 		return -1;
 	}
+
+	param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
+										mask[subfield_idx], shift[subfield_idx], new_val);
 
 	*len = 1;
 
@@ -468,72 +462,35 @@ int nature_of_conn_ind_writef(int param_idx, int subfield_idx, unsigned char *pa
 void forward_call_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
-	switch (subfield_idx) {
-	case 0:
-		*int_res = param_val[0] & 1;
-		break;
-	case 1:
-		*int_res = (param_val[0] >> 1) & 3;
-		break;
-	case 2:
-		*int_res = (param_val[0] >> 3) & 1;
-		break;
-	case 3:
-		*int_res = (param_val[0] >> 4) & 1;
-		break;
-	case 4:
-		*int_res = (param_val[0] >> 5) & 1;
-		break;
-	case 5:
-		*int_res = (param_val[0] >> 6) & 3;
-		break;
-	case 6:
-		*int_res = param_val[1] & 1;
-		break;
-	case 7:
-		*int_res = (param_val[1] >> 1) & 3;
-		break;
-	default:
+	int idx[] =   {0,0,0,0,0,0,1,1};
+	int shift[] = {0,1,3,4,5,6,0,1};
+	int mask[] =  {1,3,1,1,1,3,1,3};
+
+	if (subfield_idx < 0 || subfield_idx > 7) {
 		LM_ERR("BUG - bad subfield\n");
+		return;
 	}
+
+	*int_res = (param_val[idx[subfield_idx]] >> shift[subfield_idx]) & mask[subfield_idx];
 }
 
 int forward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val,
 								int *len, pv_value_t *val)
 {
 	unsigned char new_val;
+	int idx[] =   {0,0,0,0,0,0,1,1};
+	int mask[] =  {0x1,0x6,0x8,0x10,0x20,0xc0,0x1,0x6};
+	int shift[] = {0,1,3,4,5,6,0,1};
 
 	PARAM_CHECK_INT_VAL();
 
-	switch (subfield_idx) {
-	case 0:
-		param_val[0] = SET_BITS(param_val[0], 0x1, 0, new_val);
-		break;
-	case 1:
-		param_val[0] = SET_BITS(param_val[0], 0x6, 1, new_val);
-		break;
-	case 2:
-		param_val[0] = SET_BITS(param_val[0], 0x8, 3, new_val);
-		break;
-	case 3:
-		param_val[0] = SET_BITS(param_val[0], 0x10, 4, new_val);
-		break;
-	case 4:
-		param_val[0] = SET_BITS(param_val[0], 0x20, 5, new_val);
-		break;
-	case 5:
-		param_val[0] = SET_BITS(param_val[0], 0xc0, 6, new_val);
-		break;
-	case 6:
-		param_val[1] = SET_BITS(param_val[1], 0x1, 0, new_val);
-		break;
-	case 7:
-		param_val[1] = SET_BITS(param_val[1], 0x6, 1, new_val);
-		break;
-	default:
+	if (subfield_idx < 0 || subfield_idx > 7) {
 		LM_ERR("BUG - bad subfield\n");
 		return -1;
 	}
+
+	param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
+										mask[subfield_idx], shift[subfield_idx], new_val);
 
 	*len = 2;
 
@@ -562,23 +519,19 @@ int opt_forward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *
 									pv_value_t *val)
 {
 	unsigned char new_val;
+	int idx[] =   {0,0,0};
+	int mask[] =  {0x3,0x4,0x80};
+	int shift[] = {0,2,7};
 
 	PARAM_CHECK_INT_VAL();
 
-	switch (subfield_idx) {
-	case 0:
-		param_val[0] = SET_BITS(param_val[0], 0x3, 0, new_val);
-		break;
-	case 1:
-		param_val[0] = SET_BITS(param_val[0], 0x4, 2, new_val);
-		break;
-	case 2:
-		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
-		break;
-	default:
+	if (subfield_idx < 0 || subfield_idx > 2) {
 		LM_ERR("BUG - bad subfield\n");
 		return -1;
 	}
+
+	param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
+										mask[subfield_idx], shift[subfield_idx], new_val);
 
 	*len = 1;
 
@@ -588,26 +541,25 @@ int opt_forward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *
 void called_party_num_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
+	int idx[] =   {0,0,1,1};
+	int shift[] = {7,0,7,4};
+	int mask[] =  {1,0x7f,1,7};
 	int oddeven = (param_val[0] >> 7) & 0x1;
+
+	if (subfield_idx < 0 || subfield_idx > 4) {
+		LM_ERR("BUG - bad subfield\n");
+		return;
+	}
 
 	switch (subfield_idx) {
 	case 0:
 		*int_res = oddeven;
 		break;
-	case 1:
-		*int_res = param_val[0] & 0x7f;
-		break;
-	case 2:
-		*int_res = (param_val[1] >> 7) & 0x1;
-		 break;
-	case 3:
-		*int_res = (param_val[1] >> 4) & 0x7;
-		break;
 	case 4:
 		isup_get_number(str_res, param_val + 2, len - 2, oddeven);
 		break;
 	default:
-		LM_ERR("BUG - bad subfield\n");
+		*int_res = (param_val[idx[subfield_idx]] >> shift[subfield_idx]) & mask[subfield_idx];
 	}
 }
 
@@ -617,31 +569,24 @@ int called_party_num_writef(int param_idx, int subfield_idx, unsigned char *para
 	unsigned char new_val;
 	int num_len, oddeven;
 	str num;
+	int idx[] =   {0,0,1,1};
+	int mask[] =  {0x80,0x7f,0x80,0x70};
+	int shift[] = {7,0,7,4};
 
 	NUM_PARAM_GET_VAL_PV(4);
 
-	switch (subfield_idx) {
-	case 0:
-		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
-		break;
-	case 1:
-		param_val[0] = SET_BITS(param_val[0], 0x7f, 0, new_val);
-		break;
-	case 2:
-		param_val[1] = SET_BITS(param_val[1], 0x80, 7, new_val);
-		 break;
-	case 3:
-		param_val[1] = SET_BITS(param_val[1], 0x70, 4, new_val);
-		break;
-	case 4:
-		isup_put_number(param_val + 2, num, &num_len, &oddeven);
-		/* also set oddeven, just in case it wasn't already */
-		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
-		break;
-	default:
+	if (subfield_idx < 0 || subfield_idx > 4) {
 		LM_ERR("BUG - bad subfield\n");
 		return -1;
 	}
+
+	if (subfield_idx == 4) {
+		isup_put_number(param_val + 2, num, &num_len, &oddeven);
+		/* also set oddeven, just in case it wasn't already */
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
+	} else
+		param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
+										mask[subfield_idx], shift[subfield_idx], new_val);
 
 	if (subfield_idx == 4)
 		*len = num_len + 2;
@@ -654,32 +599,25 @@ int called_party_num_writef(int param_idx, int subfield_idx, unsigned char *para
 void calling_party_num_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
+	int idx[] =   {0,0,1,1,1,1};
+	int shift[] = {7,0,7,4,2,0};
+	int mask[] =  {1,0x7f,1,7,3,3};
 	int oddeven = (param_val[0] >> 7) & 0x1;
+
+	if (subfield_idx < 0 || subfield_idx > 6) {
+		LM_ERR("BUG - bad subfield\n");
+		return;
+	}
 
 	switch (subfield_idx) {
 	case 0:
 		*int_res = oddeven;
 		break;
-	case 1:
-		*int_res = param_val[0] & 0x7f;
-		break;
-	case 2:
-		*int_res = (param_val[1] >> 7) & 0x1;
-		break;
-	case 3:
-		*int_res = (param_val[1] >> 4) & 0x7;
-		break;
-	case 4:
-		*int_res = (param_val[1] >> 2) & 0x3;
-		break;
-	case 5:
-		*int_res = param_val[1] & 0x3;
-		break;
 	case 6:
 		isup_get_number(str_res, param_val + 2, len - 2, oddeven);
 		break;
 	default:
-		LM_ERR("BUG - bad subfield\n");
+		*int_res = (param_val[idx[subfield_idx]] >> shift[subfield_idx]) & mask[subfield_idx];
 	}
 }
 
@@ -689,37 +627,24 @@ int calling_party_num_writef(int param_idx, int subfield_idx, unsigned char *par
 	unsigned char new_val;
 	int num_len, oddeven;
 	str num;
+	int idx[] =   {0,0,1,1,1,1};
+	int mask[] =  {0x80,0x7f,0x80,0x70,0xc,0x3};
+	int shift[] = {7,0,7,4,2,0};
 
 	NUM_PARAM_GET_VAL_PV(6);
 
-	switch (subfield_idx) {
-	case 0:
-		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
-		break;
-	case 1:
-		param_val[0] = SET_BITS(param_val[0], 0x7f, 0, new_val);
-		break;
-	case 2:
-		param_val[1] = SET_BITS(param_val[1], 0x80, 7, new_val);
-		break;
-	case 3:
-		param_val[1] = SET_BITS(param_val[1], 0x70, 4, new_val);
-		break;
-	case 4:
-		param_val[1] = SET_BITS(param_val[1], 0xc, 2, new_val);
-		break;
-	case 5:
-		param_val[1] = SET_BITS(param_val[1], 0x3, 0, new_val);
-		break;
-	case 6:
-		isup_put_number(param_val + 2, num, &num_len, &oddeven);
-		/* also set oddeven, just in case it wasn't already */
-		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
-		break;
-	default:
+	if (subfield_idx < 0 || subfield_idx > 6) {
 		LM_ERR("BUG - bad subfield\n");
 		return -1;
 	}
+
+	if (subfield_idx == 6) {
+		isup_put_number(param_val + 2, num, &num_len, &oddeven);
+		/* also set oddeven, just in case it wasn't already */
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
+	} else
+		param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
+										mask[subfield_idx], shift[subfield_idx], new_val);
 
 	if (subfield_idx == 6)
 		*len = num_len + 2;
@@ -732,89 +657,35 @@ int calling_party_num_writef(int param_idx, int subfield_idx, unsigned char *par
 void backward_call_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
-	switch (subfield_idx) {
-	case 0:
-		*int_res = param_val[0] & 0x3;
-		break;
-	case 1:
-		*int_res = (param_val[0] >> 2) & 0x3;
-		break;
-	case 2:
-		*int_res = (param_val[0] >> 4) & 0x3;
-		break;
-	case 3:
-		*int_res = (param_val[0] >> 6) & 0x3;
-		break;
-	case 4:
-		*int_res = param_val[1] & 0x1;
-		break;
-	case 5:
-		*int_res = (param_val[1] >> 1) & 0x1;
-		break;
-	case 6:
-		*int_res = (param_val[1] >> 2) & 0x1;
-		break;
-	case 7:
-		*int_res = (param_val[1] >> 3) & 0x1;
-		break;
-	case 8:
-		*int_res = (param_val[1] >> 4) & 0x1;
-		break;
-	case 9:
-		*int_res = (param_val[1] >> 5) & 0x1;
-		break;
-	case 10:
-		*int_res = (param_val[1] >> 7) & 0x3;
-		break;
-	default:
+	int idx[] =   {0,0,0,0,1,1,1,1,1,1,1};
+	int shift[] = {0,2,4,6,0,1,2,3,4,5,7};
+	int mask[] =  {3,3,3,3,1,1,1,1,1,1,3};
+
+	if (subfield_idx < 0 || subfield_idx > 10) {
 		LM_ERR("BUG - bad subfield\n");
+		return;
 	}
+
+	*int_res = (param_val[idx[subfield_idx]] >> shift[subfield_idx]) & mask[subfield_idx];
 }
 
 int backward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
 	unsigned char new_val;
+	int idx[] =   {0,0,0,0,1,1,1,1,1,1,1};
+	int mask[] =  {0x3,0xc,0x30,0xc0,0x1,0x2,0x4,0x8,0x10,0x20,0x180};
+	int shift[] = {0,2,4,6,0,1,2,3,4,5,7};
 
 	PARAM_CHECK_INT_VAL();
 
-	switch (subfield_idx) {
-	case 0:
-		param_val[0] = SET_BITS(param_val[0], 0x3, 0, new_val);
-		break;
-	case 1:
-		param_val[0] = SET_BITS(param_val[0], 0xc, 2, new_val);
-		break;
-	case 2:
-		param_val[0] = SET_BITS(param_val[0], 0x30, 4, new_val);
-		break;
-	case 3:
-		param_val[0] = SET_BITS(param_val[0], 0xc0, 6, new_val);
-		break;
-	case 4:
-		param_val[1] = SET_BITS(param_val[1], 0x1, 0, new_val);
-		break;
-	case 5:
-		param_val[1] = SET_BITS(param_val[1], 0x2, 1, new_val);
-		break;
-	case 6:
-		param_val[1] = SET_BITS(param_val[1], 0x4, 2, new_val);
-		break;
-	case 7:
-		param_val[1] = SET_BITS(param_val[1], 0x8, 3, new_val);
-		break;
-	case 8:
-		param_val[1] = SET_BITS(param_val[1], 0x10, 4, new_val);
-		break;
-	case 9:
-		param_val[1] = SET_BITS(param_val[1], 0x20, 5, new_val);
-		break;
-	case 10:
-		param_val[1] = SET_BITS(param_val[1], 0x180, 7, new_val);
-		break;
-	default:
+	if (subfield_idx < 0 || subfield_idx > 10) {
 		LM_ERR("BUG - bad subfield\n");
+		return -1;
 	}
+
+	param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
+										mask[subfield_idx], shift[subfield_idx], new_val);
 
 	*len = 2;
 
@@ -824,48 +695,35 @@ int backward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *par
 void opt_backward_call_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
-	switch (subfield_idx) {
-	case 0:
-		*int_res = param_val[0] & 1;
-		break;
-	case 1:
-		*int_res = (param_val[0] >> 1) & 1;
-		break;
-	case 2:
-		*int_res = (param_val[0] >> 2) & 1;
-		break;
-	case 3:
-		*int_res = (param_val[0] >> 3) & 1;
-		break;
-	default:
+	int idx[] =   {0,0,0,0};
+	int shift[] = {0,1,2,3};
+	int mask[] =  {1,1,1,1};
+
+	if (subfield_idx < 0 || subfield_idx > 3) {
 		LM_ERR("BUG - bad subfield\n");
+		return;
 	}
+
+	*int_res = (param_val[idx[subfield_idx]] >> shift[subfield_idx]) & mask[subfield_idx];
 }
 
 int opt_backward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
 	unsigned char new_val;
+	int idx[] =   {0,0,0,0};
+	int mask[] =  {1,2,4,8};
+	int shift[] = {0,1,2,3};
 
 	PARAM_CHECK_INT_VAL();
 
-	switch (subfield_idx) {
-	case 0:
-		param_val[0] = SET_BITS(param_val[0], 0x1, 0, new_val);
-		break;
-	case 1:
-		param_val[0] = SET_BITS(param_val[0], 0x2, 1, new_val);
-		break;
-	case 2:
-		param_val[0] = SET_BITS(param_val[0], 0x4, 2, new_val);
-		break;
-	case 3:
-		param_val[0] = SET_BITS(param_val[0], 0x8, 3, new_val);
-		break;
-	default:
+	if (subfield_idx < 0 || subfield_idx > 3) {
 		LM_ERR("BUG - bad subfield\n");
 		return -1;
 	}
+
+	param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
+										mask[subfield_idx], shift[subfield_idx], new_val);
 
 	*len = 1;
 
@@ -875,29 +733,25 @@ int opt_backward_call_ind_writef(int param_idx, int subfield_idx, unsigned char 
 void connected_num_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
+	int idx[] =   {0,0,1,1,1};
+	int shift[] = {7,0,4,2,0};
+	int mask[] =  {1,0x7f,7,3,3};
 	int oddeven = (param_val[0] >> 7) & 0x1;
+
+	if (subfield_idx < 0 || subfield_idx > 5) {
+		LM_ERR("BUG - bad subfield\n");
+		return;
+	}
 
 	switch (subfield_idx) {
 	case 0:
 		*int_res = oddeven;
 		break;
-	case 1:
-		*int_res = param_val[0] & 0x7f;
-		break;
-	case 2:
-		*int_res = (param_val[1] >> 4) & 0x7;
-		break;
-	case 3:
-		*int_res = (param_val[1] >> 2) & 0x3;
-		break;
-	case 4:
-		*int_res = param_val[1] & 0x3;
-		break;
 	case 5:
 		isup_get_number(str_res, param_val + 2, len - 2, oddeven);
 		break;
 	default:
-		LM_ERR("BUG - bad subfield\n");
+		*int_res = (param_val[idx[subfield_idx]] >> shift[subfield_idx]) & mask[subfield_idx];
 	}
 }
 
@@ -907,34 +761,25 @@ int connected_num_writef(int param_idx, int subfield_idx, unsigned char *param_v
 	unsigned char new_val;
 	int num_len, oddeven;
 	str num;
+	int idx[] =   {0,0,1,1,1};
+	int mask[] =  {0x80,0x7f,0x70,0xc,0x3};
+	int shift[] = {7,0,4,2,0};
 
 	NUM_PARAM_GET_VAL_PV(5);
 
-	switch (subfield_idx) {
-	case 0:
-		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
-		break;
-	case 1:
-		param_val[0] = SET_BITS(param_val[0], 0x7f, 0, new_val);
-		break;
-	case 2:
-		param_val[1] = SET_BITS(param_val[1], 0x70, 4, new_val);
-		break;
-	case 3:
-		param_val[1] = SET_BITS(param_val[1], 0xc, 2, new_val);
-		break;
-	case 4:
-		param_val[1] = SET_BITS(param_val[1], 0x3, 0, new_val);
-		break;
-	case 5:
-		isup_put_number(param_val + 2, num, &num_len, &oddeven);
-		/* also set oddeven, just in case */
-		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
-		break;
-	default:
+
+	if (subfield_idx < 0 || subfield_idx > 5) {
 		LM_ERR("BUG - bad subfield\n");
 		return -1;
 	}
+
+	if (subfield_idx == 5) {
+		isup_put_number(param_val + 2, num, &num_len, &oddeven);
+		/* also set oddeven, just in case it wasn't already */
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
+	} else
+		param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
+										mask[subfield_idx], shift[subfield_idx], new_val);
 
 	if (subfield_idx == 5)
 		*len = num_len + 2;
