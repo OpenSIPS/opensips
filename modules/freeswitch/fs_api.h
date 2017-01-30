@@ -39,56 +39,65 @@ enum fs_evs_types {
 	FS_GW_STATS,
 };
 
-typedef struct _fs_evs {
+typedef struct _fs_evs fs_evs;
+typedef struct _fs_ev_hb fs_ev_hb;
+
+typedef int (*ev_hb_cb_f) (fs_evs *evs, str *tag, fs_ev_hb *hb, const void *priv);
+
+typedef struct _fs_mod_ref {
+	str tag;
+	ev_hb_cb_f hb_cb;
+	const void *priv;
+
+	struct list_head list;
+} fs_mod_ref;
+
+struct _fs_evs {
 	enum fs_evs_types type;
-	str host; /* host->s is also NULL-terminated */
+	str host; /* host->s is NULL-terminated */
 	esl_port_t port;
 
 	esl_handle_t *handle;
 
-	struct list_head list;    /* distinct FS boxes */
-	struct list_head modlist; /* distinct module references to the same box */
-} fs_evs;
+	struct list_head list;     /* distinct FS boxes */
+	struct list_head modules;  /* distinct modules referencing the same box */
+};
 
 /* statistics contained within a FreeSWITCH "HEARTBEAT" event */
-typedef struct _fs_ev_hrbeat {
+struct _fs_ev_hb {
 	float id_cpu;
 	int sess;
 	int max_sess;
-} fs_ev_hrbeat;
+};
 
 typedef struct _fs_api_t fs_api_t;
                        /* host[:port] (8021)       struct/lock/etc. */
-typedef int (*ev_hrbeat_cb_f) (fs_evs *evs, str *tag, fs_ev_hrbeat *hb, void *info);
-typedef fs_evs* (*add_fs_evs_f) (str *evs_str, str *tag, enum fs_evs_types type,
-                               ev_hrbeat_cb_f scb, void *info);
+typedef fs_evs* (*add_hb_evs_f) (str *evs_str, str *tag,
+                                 ev_hb_cb_f scb, const void *priv);
 
-typedef int (*del_fs_evs_f) (fs_evs *evs, str *tag);
+typedef int (*del_hb_evs_f) (fs_evs *evs, str *tag);
 
 // XXX remove after dev
-fs_evs *add_fs_event_sock(str *evs_str, str *tag, enum fs_evs_types type,
-                               ev_hrbeat_cb_f scb, void *info);
-int del_fs_event_sock(fs_evs *evs, str *tag);
+fs_evs *add_hb_evs(str *evs_str, str *tag, ev_hb_cb_f scb, const void *priv);
+int del_hb_evs(fs_evs *evs, str *tag);
 
 struct _fs_api_t {
 	/*
-	 * Creates & registers a new FS event socket
-	 *	(to be managed by the stat-fetching thread)
+	 * Creates & registers a new FS "HEARTBEAT" event socket
+	 *	(all FS connections will be managed by one process)
 	 *
 	 *	Return: the newly created event socket
 	 */
-	add_fs_evs_f add_fs_evs;
+	add_hb_evs_f add_hb_evs;
 
 	/*
-	 * Detach & free a FS event sock from the stat-fetching thread's iteration list
+	 * Detach & free a FS "HEARTBEAT" event sock from the
+	 * stat-fetching process' iteration list
 	 *
 	 * Return: 0 on success, < 0 on failure
 	 */
-	del_fs_evs_f del_fs_evs;
-
+	del_hb_evs_f del_hb_evs;
 };
-
-extern struct list_head *fs_boxes;
 
 int fs_bind(fs_api_t *fapi);
 

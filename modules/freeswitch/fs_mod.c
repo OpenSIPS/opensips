@@ -29,9 +29,13 @@
 #include "../../timer.h"
 #include "../../mod_fix.h"
 #include "../../parser/msg_parser.h"
+#include "../../mem/mem.h"
+#include "../../lib/osips_malloc.h"
 
 #include "fs_api.h"
 #include "fs_proc.h"
+
+extern struct list_head *fs_boxes;
 
 static int mod_init(void);
 
@@ -81,21 +85,21 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	str st = { "test", 4};
+	cJSON_Hooks hooks;
 
 	fs_boxes = shm_malloc(sizeof *fs_boxes);
-	if (fs_boxes == NULL) {
+	if (!fs_boxes) {
 		LM_ERR("out of mem\n");
 		return -1;
 	}
 	INIT_LIST_HEAD(fs_boxes);
 
+	hooks.malloc_fn = osips_pkg_malloc;
+	hooks.free_fn = osips_pkg_free;
+	cJSON_InitHooks(&hooks);
+
 	str dst = {MI_SSTR("10.0.0.238:8021")};
-	add_fs_event_sock(&dst, &st, FS_GW_STATS, NULL, NULL);
+	add_hb_evs(&dst, &st, NULL, NULL);
 
-	return 0;
-}
-
-int fs_bind(fs_api_t *fapi)
-{
 	return 0;
 }

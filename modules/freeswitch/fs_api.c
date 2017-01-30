@@ -33,30 +33,29 @@
 
 struct list_head *fs_boxes;
 
-typedef struct _fs_mod_ref {
-	str tag;
-	struct list_head list;
-} fs_mod_ref;
-
-static fs_mod_ref *mk_fs_mod_ref(str *tag);
+static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv);
 static void free_fs_mod_ref(fs_mod_ref *mod_tag);
 static fs_evs *find_fs_evs(str *hostport);
 
-static fs_mod_ref *mk_fs_mod_ref(str *tag)
+static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv)
 {
-	fs_mod_ref *fs_tag = NULL;
+	fs_mod_ref *mref = NULL;
 
-	fs_tag = shm_malloc(sizeof *fs_tag + tag->len);
-	if (!fs_tag) {
+	mref = shm_malloc(sizeof *mref + tag->len);
+	if (!mref) {
 		LM_ERR("out of mem\n");
 		return NULL;
 	}
+	memset(mref, 0, sizeof *mref);
 
-	fs_tag->tag.s = (char *)(fs_tag + 1);
-	fs_tag->tag.len = tag->len;
-	memcpy(fs_tag->tag.s, tag->s, tag->len);
+	mref->tag.s = (char *)(mref + 1);
+	mref->tag.len = tag->len;
+	memcpy(mref->tag.s, tag->s, tag->len);
 
-	return fs_tag;
+	mref->hb_cb = cbf;
+	mref->priv = priv;
+
+	return mref;
 }
 
 static void free_fs_mod_ref(fs_mod_ref *mod_tag)
@@ -70,7 +69,7 @@ static int has_tag(fs_evs *evs, str *tag)
 	struct list_head *ele;
 	fs_mod_ref *mtag;
 
-	list_for_each(ele, &evs->modlist) {
+	list_for_each(ele, &evs->modules) {
 		mtag = list_entry(ele, fs_mod_ref, list);
 
 		if (str_strcmp(&mtag->tag, tag) == 0) {
@@ -129,6 +128,7 @@ static fs_evs *mk_fs_evs(str *hostport)
 		return NULL;
 	}
 	memset(evs, 0, sizeof *evs);
+	INIT_LIST_HEAD(&evs->modules);
 
 	LM_DBG("new FS box: host=%.*s, port=%d\n", st.len, st.s, port);
 
@@ -141,11 +141,10 @@ static fs_evs *mk_fs_evs(str *hostport)
 	return evs;
 }
 
-fs_evs *add_fs_event_sock(str *evs_str, str *tag, enum fs_evs_types type,
-                               ev_hrbeat_cb_f scb, void *info)
+fs_evs *add_hb_evs(str *evs_str, str *tag, ev_hb_cb_f cbf, const void *priv)
 {
 	fs_evs *evs;
-	fs_mod_ref *mtag;
+	fs_mod_ref *mref;
 
 	if (!evs_str->s || evs_str->len == 0 || !tag) {
 		LM_ERR("bad params: '%.*s', %.*s\n", evs_str->len, evs_str->s,
@@ -154,31 +153,41 @@ fs_evs *add_fs_event_sock(str *evs_str, str *tag, enum fs_evs_types type,
 	}
 
 	evs = find_fs_evs(evs_str);
-	if (evs) {
-		if (!has_tag(evs, tag)) {
-			mtag = mk_fs_mod_ref(tag);
-			if (!mtag) {
-				LM_ERR("mk tag failed\n");
-				return NULL;
-			}
-
-			list_add(&mtag->list, &evs->modlist);
-		}
-	} else {
+	if (!evs) {
 		evs = mk_fs_evs(evs_str);
 		if (!evs) {
 			LM_ERR("failed to create FS box!\n");
 			return NULL;
 		}
-		evs->type = type;
+		evs->type = FS_GW_STATS;
 
 		list_add(&evs->list, fs_boxes);
+	}
+
+	if (!has_tag(evs, tag)) {
+		mref = mk_fs_mod_ref(tag, cbf, priv);
+		if (!mref) {
+			LM_ERR("mk tag failed\n");
+			return NULL;
+		}
+
+		list_add(&mref->list, &evs->modules);
 	}
 
 	return evs;
 }
 
-int del_fs_event_sock(fs_evs *evs, str *tag)
+int del_hb_evs(fs_evs *evs, str *tag)
 {
+	return 0;
+}
+
+int fs_bind(fs_api_t *fapi)
+{
+	memset(fapi, 0, sizeof *fapi);
+
+	fapi->add_hb_evs = add_hb_evs;
+	fapi->del_hb_evs = del_hb_evs;
+
 	return 0;
 }

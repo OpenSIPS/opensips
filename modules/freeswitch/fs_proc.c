@@ -34,10 +34,17 @@
 
 #include "fs_api.h"
 
+extern struct list_head *fs_boxes;
+
 inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 {
+	struct list_head *ele;
 	fs_evs *box = (fs_evs *)fm->data;
+	fs_mod_ref *mod;
+	fs_ev_hb hb;
 	esl_status_t rc;
+	cJSON *ev = NULL;
+	char *s, *end;
 
 	LM_DBG("FS data is available!\n");
 
@@ -65,14 +72,50 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 				return 0;
 			}
 
-			/* TODO: push stats to subscribers */
-			LM_INFO("FS stats:\n%s\n", box->handle->last_sr_event->body);
+			ev = cJSON_Parse(box->handle->last_sr_event->body);
+			if (!ev) {
+				LM_ERR("oom\n");
+				return 0;
+			}
+
+			s = cJSON_GetObjectItem(ev, "Idle-CPU")->valuestring;
+			hb.id_cpu = strtof(s, &end);
+			if (*end) {
+				LM_ERR("bad Idle-CPU: %s\n", s);
+				goto out_free;
+			}
+
+			s = cJSON_GetObjectItem(ev, "Session-Count")->valuestring;
+			hb.sess = strtol(s, &end, 0);
+			if (*end) {
+				LM_ERR("bad Session-Count: %s\n", s);
+				goto out_free;
+			}
+
+			s = cJSON_GetObjectItem(ev, "Max-Sessions")->valuestring;
+			hb.max_sess = strtol(s, &end, 0);
+			if (*end) {
+				LM_ERR("bad Max-Sessions: %s\n", s);
+				goto out_free;
+			}
+
+			LM_DBG("FS (%s:%d) heartbeat (id: %.3f, ch: %d/%d):\n%s\n", box->host.s,
+			       box->port, hb.id_cpu, hb.sess, hb.max_sess,
+			       box->handle->last_sr_event->body);
+
+			list_for_each(ele, &box->modules) {
+				mod = list_entry(ele, fs_mod_ref, list);
+				mod->hb_cb(box, &mod->tag, &hb, mod->priv);
+			}
+
 			break;
 		default:
 			LM_CRIT("unknown fd type %d in FreeSWITCH worker\n", fm->type);
 			return -1;
 	}
 
+out_free:
+	cJSON_Delete(ev);
 	return 0;
 }
 
