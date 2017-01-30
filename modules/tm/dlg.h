@@ -104,6 +104,8 @@ typedef struct dlg {
 				 * prevent repeated analyzing of the dialog data
 				 */
 	struct socket_info* send_sock;
+	unsigned short mf_enforced; /* if Max-Forward is to be enforced */
+	unsigned short mf_value;    /* the Mx-Forward values, if enforced */
 	void *dialog_ctx;       /* backpointer to dialog ctx */
 	struct usr_avp *avps;
 } dlg_t;
