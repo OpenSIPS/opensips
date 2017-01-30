@@ -35,6 +35,8 @@ Andreea-Ancuta Onofrei
 
               1.4.6. socket_timeout (integer)
               1.4.7. reply_indent (string)
+              1.4.8. trace_destination (string)
+              1.4.9. trace_bwlist (string)
 
         1.5. Exported Functions
         1.6. Example
@@ -50,7 +52,9 @@ Andreea-Ancuta Onofrei
    1.5. Set unix_socket_user parameter
    1.6. Set socket_timeout parameter
    1.7. Set reply_indent parameter
-   1.8. DATAGRAM request
+   1.8. Set trace_destination parameter
+   1.9. Set trace_destination parameter
+   1.10. DATAGRAM request
 
 Chapter 1. Admin Guide
 
@@ -174,6 +178,57 @@ modparam("mi_datagram", "socket_timeout", 2000)
 modparam("mi_datagram", "reply_indent", "    ")
 ...
 
+1.4.8. trace_destination (string)
+
+   Trace destination as defined in the tracing module. Currently
+   the only tracing module is proto_hep. This is where traced mi
+   messages will go.
+
+   WARNING: A tracing module must be loaded in order for this
+   parameter to work. (for example proto_hep).
+
+   Default value is none(not defined).
+
+   Example 1.8. Set trace_destination parameter
+...
+modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
+=tcp;version=3")
+
+modparam("mi_datagram", "trace_destination", "hep_dest")
+...
+
+1.4.9. trace_bwlist (string)
+
+   Filter traced mi commands based on a blacklist or a whitelist.
+   trace_destination must be defined for this parameter to have
+   any purpose. Whitelists can be defined using 'w' or 'W',
+   blacklists using 'b' or 'B'. The type is separate by the actual
+   blacklist by ':'. The mi commands in the list must be separated
+   by ','.
+
+   Defining a blacklists means all the commands that are not
+   blacklisted will be traced. Defining a whitelist means all the
+   commands that are not whitelisted will not be traced. WARNING:
+   One can't define both a whitelist and a blacklist. Only one of
+   them is allowed. Defining the parameter a second time will just
+   overwrite the first one.
+
+   WARNING: A tracing module must be loaded in order for this
+   parameter to work. (for example proto_hep).
+
+   Default value is none(not defined).
+
+   Example 1.9. Set trace_destination parameter
+...
+## blacklist ps and which mi commands
+## all the other commands shall be traced
+modparam("mi_datagram", "trace_bwlist", "b: ps, which")
+...
+## allow only sip_trace mi command
+## all the other commands will not be traced
+modparam("mi_datagram", "trace_bwlist", "w: sip_trace")
+...
+
 1.5. Exported Functions
 
    No function exported to be used from configuration file.
@@ -183,7 +238,7 @@ modparam("mi_datagram", "reply_indent", "    ")
    This is an example showing the DATAGRAM format for the
    “get_statistics dialog: tm:” MI commad: response.
 
-   Example 1.8. DATAGRAM request
+   Example 1.10. DATAGRAM request
 
 :get_statistics:\n
 dialog:\n
@@ -194,46 +249,46 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Both UNIX and UDP type of socket can be created simultaneusly?
+   Both UNIX and UDP type of socket can be created simultaneusly?
 
-       This version supports only one kind of socket at a time. If
-       there are more than one value set for socket_name the last one
-       will take effect.
+   This version supports only one kind of socket at a time. If
+   there are more than one value set for socket_name the last one
+   will take effect.
 
    2.2.
 
-       Is there a limit in the datagram request's size?
+   Is there a limit in the datagram request's size?
 
-       The maximum length of a datagram request or reply is 65457
-       bytes.
+   The maximum length of a datagram request or reply is 65457
+   bytes.
 
    2.3.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.4.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.5.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
