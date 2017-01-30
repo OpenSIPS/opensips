@@ -106,31 +106,31 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 			return 0;
 
 		case AMQP_RESPONSE_NONE:
-			LM_ERR("%s: missing RPC reply type!", context);
+			LM_ERR("%s: missing RPC reply type!\n", context);
 			break;
 
 		case AMQP_RESPONSE_LIBRARY_EXCEPTION:
-			LM_ERR("%s: %s\n", context,  "(end-of-stream)");
+			LM_ERR("%s: (end-of-stream)\n", context);
 			break;
 
 		case AMQP_RESPONSE_SERVER_EXCEPTION:
 			switch (x.reply.id) {
 				case AMQP_CONNECTION_CLOSE_METHOD:
 					mconn = (amqp_connection_close_t *)x.reply.decoded;
-					LM_ERR("%s: server connection error %d, message: %.*s",
+					LM_ERR("%s: server connection error %d, message: %.*s\n",
 							context, mconn->reply_code,
 							(int)mconn->reply_text.len,
 							(char *)mconn->reply_text.bytes);
 					break;
 				case AMQP_CHANNEL_CLOSE_METHOD:
 						mchan = (amqp_channel_close_t *)x.reply.decoded;
-					LM_ERR("%s: server channel error %d, message: %.*s",
+					LM_ERR("%s: server channel error %d, message: %.*s\n",
 							context, mchan->reply_code,
 							(int)mchan->reply_text.len,
 							(char *)mchan->reply_text.bytes);
 					break;
 				default:
-					LM_ERR("%s: unknown server error, method id 0x%08X",
+					LM_ERR("%s: unknown server error, method id 0x%08X\n",
 							context, x.reply.id);
 					break;
 			}
@@ -254,6 +254,7 @@ int rmq_reconnect(struct rmq_server *srv)
 		if (rmq_error("Opening channel", amqp_get_rpc_reply(srv->conn)))
 			goto clean_rmq_server;
 		LM_DBG("[%.*s] successfully connected!\n", srv->cid.len, srv->cid.s);
+		srv->state = RMQS_ON;
 	case RMQS_ON:
 		return 0;
 	default:
@@ -638,19 +639,76 @@ no_close:
 #endif
 }
 
-int rmq_send(struct rmq_server *srv, str *rkey, str *body, str *ctype)
+#define RMQ_ALLOC_STEP 2
+
+int rmq_send(struct rmq_server *srv, str *rkey, str *body, str *ctype,
+		int *names, int *values)
 {
-	int ret;
+	int nr;
+	int_str v;
+	int ret = -1;
 	amqp_bytes_t akey;
 	amqp_bytes_t abody;
 	amqp_basic_properties_t props;
 	int retries = srv->retries;
+	static int htable_allocated = 0;
+	static amqp_table_entry_t *htable = NULL;
+	struct usr_avp *aname = NULL, *aval = NULL;
+	amqp_table_entry_t *htmp = NULL;
 
 	akey.len = rkey->len;
 	akey.bytes = rkey->s;
 	abody.len = body->len;
 	abody.bytes = body->s;
 	memset(&props, 0, sizeof props);
+
+	/* populates props based on the names and values */
+	if (names && values) {
+		/* count the number of avps */
+		nr = 0;
+		for (;;) {
+			aname = search_first_avp(0, *names, &v, aname);
+			if (!aname)
+				break;
+			if (nr >= htable_allocated) {
+				htmp = pkg_realloc(htable, (htable_allocated + RMQ_ALLOC_STEP) *
+						sizeof(amqp_table_entry_t));
+				if (!htmp) {
+					LM_ERR("out of pkg memory for headers!\n");
+					return -1;
+				}
+				htable_allocated += RMQ_ALLOC_STEP;
+				htable = htmp;
+			}
+			if (aname->flags & AVP_VAL_STR) {
+				htable[nr].key.len = v.s.len;
+				htable[nr].key.bytes = v.s.s;
+			} else {
+				htable[nr].key.bytes = int2str(v.n, (int *)&htable[nr].key.len);
+			}
+			aval = search_first_avp(0, *values, &v, aval);
+			if (!aval) {
+				LM_ERR("names and values number mismatch!\n");
+				break;
+			}
+			if (aval->flags & AVP_VAL_STR) {
+				htable[nr].value.kind = AMQP_FIELD_KIND_UTF8;
+				htable[nr].value.value.bytes.bytes = v.s.s;
+				htable[nr].value.value.bytes.len = v.s.len;
+			} else {
+				htable[nr].value.kind = AMQP_FIELD_KIND_I32;
+				htable[nr].value.value.i32 = v.n;
+			}
+			LM_DBG("added key no. %d %.*s type %s\n", nr + 1,
+					(int)htable[nr].key.len, (char *)htable[nr].key.bytes,
+					(htable[nr].value.kind == AMQP_FIELD_KIND_UTF8 ? "string":"int"));
+			nr++;
+		}
+		LM_DBG("doing a rabbitmq query with %d headers\n", nr);
+		props.headers.entries = htable;
+		props.headers.num_entries = nr;
+		props._flags |= AMQP_BASIC_HEADERS_FLAG;
+	}
 
 	if (ctype) {
 		props._flags |= AMQP_BASIC_CONTENT_TYPE_FLAG;
@@ -666,7 +724,7 @@ int rmq_send(struct rmq_server *srv, str *rkey, str *body, str *ctype)
 		if (rmq_reconnect(srv) < 0) {
 			LM_ERR("[%.*s] cannot send RabbitMQ message\n",
 					srv->cid.len, srv->cid.s);
-			return -1;
+			return ret;
 		}
 
 		ret = amqp_basic_publish(srv->conn, 1, srv->exchange, akey, \

@@ -84,4 +84,7 @@ struct rmq_server *rmq_get_server(str *cid);
 struct rmq_server *rmq_resolve_server(struct sip_msg *msg, char *param);
 void rmq_connect_servers(void);
 
+int rmq_send(struct rmq_server *srv, str *rkey, str *body, str *ctype,
+		int *names, int *values);
+
 #endif /* _RMQ_SERVERS_H_ */
