@@ -330,6 +330,7 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 		data->last_dst = dst;
 	}
 	data->dst_no++;
+	dst->queue_loc = data->dst_no;
 
 	pkg_free(lb_rl);
 	return 0;
@@ -459,7 +460,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 	struct lb_dst *it_d;
 	struct lb_resource *it_r;
 	int load, it_l;
-	int i, j, cond, cnt_aval_dst;
+	int i, j, cond, cnt_aval_dst, q_lowest;
 
 
 	/* init control vars state */
@@ -666,7 +667,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 
 	/* init selected destinations buff */
 	dsts_cur = NULL;
-	dsts_size_max = (flags & LB_FLAGS_RANDOM) ? data->dst_no : 1;
+	dsts_size_max = (flags & (LB_FLAGS_RANDOM||LB_FLAGS_QUEUE)) ? data->dst_no : 1;
 	if( dsts_size_max > 1 ) {
 		if( dsts_size_max > dsts_size ) {
 			dsts = (struct lb_dst **)pkg_realloc
@@ -778,7 +779,16 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 	}
 	/* choose one destination among selected */
 	if( dsts_size_cur > 0 ) {
-		if( (dsts_size_cur > 1) && (flags & LB_FLAGS_RANDOM) ) {
+		if((dsts_size_cur > 1) && (flags & LB_FLAGS_QUEUE)){
+			//Find lowest queue number in virtual queue
+			q_lowest = data->dst_no;
+			for( i=0 ; i<dsts_size_cur; i++){
+				if (dsts[i]->queue_loc < q_lowest){
+					q_lowest = dsts_cur[i]->queue_loc;
+					dst = dsts_cur[i];
+				}
+			}
+		}else if( (dsts_size_cur > 1) && (flags & LB_FLAGS_RANDOM) ) {
 			dst = dsts_cur[rand() % dsts_size_cur];
 		} else {
 			dst = dsts_cur[0];
@@ -811,6 +821,13 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 		LM_DBG("%s call of LB - no destination found\n",
 			(reuse ? "sequential" : "initial"));
 	}
+
+	//Move members around in virtual queue
+	for( it_d=data->dsts; it_d; it_d=it_d->next){
+		if(it_d->queue_loc > dst->queue_loc){it_d->queue_loc--;}
+	}
+	//Move chosen dst to end of virtual queue
+	dst->queue_loc = data->dst_no;
 
 	/* unlock resources */
 	for( i=0 ; i<res_cur_n ; i++ )
@@ -905,6 +922,7 @@ int do_lb_reset(struct sip_msg *req, struct lb_data *data)
 	struct usr_avp *res_avp, *del_res_avp;
 	int_str id_val;
 	int_str res_val;
+	int i;
 
 	struct dlg_cell *dlg;
 	struct lb_dst *it_d, *last_dst;
@@ -959,6 +977,13 @@ int do_lb_reset(struct sip_msg *req, struct lb_data *data)
 			res_avp = search_next_avp(del_res_avp, &res_val);
 			destroy_avp(del_res_avp);
 		}
+	}
+
+	//Refresh Queue Order (Starts at 1)
+	i=1;
+	for(it_d=data->dsts; it_d; it_d=it_d->next){
+		it_d->queue_loc=i;
+		i++;
 	}
 
 	return 0;
@@ -1076,6 +1101,7 @@ int lb_count_call(struct lb_data *data, struct sip_msg *req,struct ip_addr *ip,
 	struct dlg_cell *dlg;
 	struct lb_resource *res;
 	struct lb_dst *dst;
+	struct lb_dst *it_d;
 	int i,k;
 
 	/* search for the destination we need to count for */
@@ -1099,10 +1125,16 @@ end_search:
 		return -1;
 	}
 
+	//Move chosen dst in virtual queue (won't be used unless flag is set when session starts)
+	for( it_d=data->dsts ; it_d; it_d=it_d->next){
+		if(it_d->queue_loc > dst->queue_loc){it_d->queue_loc--;}
+	}
+	dst->queue_loc = data->dst_no;
+
 	/* get references to the resources */
 	if (rl->n>call_res_no) {
 		call_res = (struct lb_resource**)pkg_realloc
-			(call_res, rl->n*sizeof(struct lb_resorce*));
+			(call_res, rl->n*sizeof(struct lb_resource*));
 		if (call_res==NULL) {
 			call_res_no = 0;
 			LM_ERR("no more pkg mem - res ptr realloc\n");

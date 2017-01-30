@@ -232,7 +232,7 @@ static int fixup_resources(void** param, int param_no)
 		/* try first as number */
 		s.s = (char*)*param;
 		s.len = strlen(s.s);
-		if (str2int(&s, (unsigned int*)&lbgp->grp_no)==0) {
+		if (str2sint(&s, (int*)&lbgp->grp_no)==0) {
 			lbgp->grp_pv = NULL;
 			pkg_free(*param);
 		} else {
@@ -607,6 +607,10 @@ static int w_lb_start(struct sip_msg *req, char *grp, char *rl, char *fl)
 				case 's':
 					flags |= LB_FLAGS_RANDOM;
 					LM_DBG("pick a random destination among all selected dsts with equal load\n");
+					break;
+				case 'q':
+					flags |= LB_FLAGS_QUEUE;
+					LM_DBG("cycle destinations through a virtual queue");
 					break;
 				default:
 					LM_DBG("skipping unknown flag: [%c]\n", *f);
