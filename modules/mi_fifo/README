@@ -32,6 +32,8 @@ Bogdan-Andrei Iancu
               1.4.4. fifo_user (integer) fifo_group (string)
               1.4.5. reply_dir (string)
               1.4.6. reply_indent (string)
+              1.4.7. trace_destination (string)
+              1.4.8. trace_bwlist (string)
 
         1.5. Exported Functions
         1.6. Example
@@ -44,7 +46,9 @@ Bogdan-Andrei Iancu
    1.4. Set fifo_user parameter
    1.5. Set reply_dir parameter
    1.6. Set reply_indent parameter
-   1.7. FIFO request
+   1.7. Set trace_destination parameter
+   1.8. Set trace_destination parameter
+   1.9. FIFO request
 
 Chapter 1. Admin Guide
 
@@ -158,6 +162,57 @@ modparam("mi_fifo", "reply_dir", "/home/opensips/tmp/")
 modparam("mi_fifo", "reply_indent", "    ")
 ...
 
+1.4.7. trace_destination (string)
+
+   Trace destination as defined in the tracing module. Currently
+   the only tracing module is proto_hep. This is where traced mi
+   messages will go.
+
+   WARNING: A tracing module must be loaded in order for this
+   parameter to work. (for example proto_hep).
+
+   Default value is none(not defined).
+
+   Example 1.7. Set trace_destination parameter
+...
+modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
+=tcp;version=3")
+
+modparam("mi_fifo", "trace_destination", "hep_dest")
+...
+
+1.4.8. trace_bwlist (string)
+
+   Filter traced mi commands based on a blacklist or a whitelist.
+   trace_destination must be defined for this parameter to have
+   any purpose. Whitelists can be defined using 'w' or 'W',
+   blacklists using 'b' or 'B'. The type is separate by the actual
+   blacklist by ':'. The mi commands in the list must be separated
+   by ','.
+
+   Defining a blacklists means all the commands that are not
+   blacklisted will be traced. Defining a whitelist means all the
+   commands that are not whitelisted will not be traced. WARNING:
+   One can't define both a whitelist and a blacklist. Only one of
+   them is allowed. Defining the parameter a second time will just
+   overwrite the first one.
+
+   WARNING: A tracing module must be loaded in order for this
+   parameter to work. (for example proto_hep).
+
+   Default value is none(not defined).
+
+   Example 1.8. Set trace_destination parameter
+...
+## blacklist ps and which mi commands
+## all the other commands shall be traced
+modparam("mi_fifo", "trace_bwlist", "b: ps, which")
+...
+## allow only sip_trace mi command
+## all the other commands will not be traced
+modparam("mi_fifo", "trace_bwlist", "w: sip_trace")
+...
+
 1.5. Exported Functions
 
    No function exported to be used from configuration file.
@@ -167,7 +222,7 @@ modparam("mi_fifo", "reply_indent", "    ")
    This is an example showing the FIFO format for the
    “get_statistics dialog: tm:” MI commad: response.
 
-   Example 1.7. FIFO request
+   Example 1.9. FIFO request
 
 :get_statistics:reply_fifo\n
 dialog:\n
