@@ -81,6 +81,8 @@ int probing_threshhold = 3; /* number of failed requests, before a destination
 str ds_ping_method = {"OPTIONS",7};
 str ds_ping_from   = {"sip:dispatcher@localhost", 24};
 static int ds_ping_interval = 0;
+/* no MAX-FWD enforced from the module */
+int ds_ping_maxfwd = -1;
 int ds_probing_mode = 0;
 int ds_persistent_state = 1;
 int_list_t *ds_probing_list = NULL;
@@ -260,6 +262,7 @@ static param_export_t params[]={
 	{"ds_ping_method",        STR_PARAM, &ds_ping_method.s},
 	{"ds_ping_from",          STR_PARAM, &ds_ping_from.s},
 	{"ds_ping_interval",      INT_PARAM, &ds_ping_interval},
+	{"ds_ping_maxfwd",        INT_PARAM, &ds_ping_maxfwd},
 	{"ds_probing_mode",       INT_PARAM, &ds_probing_mode},
 	{"options_reply_codes",   STR_PARAM, &options_reply_codes_str.s},
 	{"ds_probing_sock",       STR_PARAM, &probing_sock_s},

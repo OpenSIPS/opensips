@@ -2287,10 +2287,9 @@ void ds_check_timer(unsigned int ticks, void* param)
 			for(j=0; j<list->nr; j++)
 			{
 				/* If list is probed by this proxy and the Flag of
-                                 * the entry has "Probing" set, send a probe:
-                                 */
+				 * the entry has "Probing" set, send a probe: */
 				if ( (!ds_probing_list || in_int_list(ds_probing_list, list->id)==0) &&
-                                ((list->dlist[j].flags&DS_INACTIVE_DST)==0) &&
+				((list->dlist[j].flags&DS_INACTIVE_DST)==0) &&
 				(ds_probing_mode==1 || (list->dlist[j].flags&DS_PROBING_DST)!=0
 				))
 				{
@@ -2307,6 +2306,11 @@ void ds_check_timer(unsigned int ticks, void* param)
 						continue;
 					}
 					dlg->state = DLG_CONFIRMED;
+
+					if (ds_ping_maxfwd>=0) {
+						dlg->mf_enforced = 1;
+						dlg->mf_value = (unsigned short)ds_ping_maxfwd;
+					}
 
 					ds_options_callback_param_t *cb_param =
 								shm_malloc(sizeof(*cb_param));
