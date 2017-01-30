@@ -153,6 +153,9 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 			level_s.len = sizeof(DP_DBG_TEXT) - 1;
 
 			break;
+		default:
+			LM_ERR("Unexpected log level [%d]\n", xlog_level);
+			return -1;
 		}
 
 	/*
