@@ -317,4 +317,12 @@ error:
 	return -1;
 }
 
-
+void tcp_worker_proc_loop(void)
+{
+	/* main loop */
+	reactor_main_loop( TCP_CHILD_SELECT_TIMEOUT, error, tcp_receive_timeout());
+	LM_CRIT("exiting...");
+	exit(-1);
+error:
+	destroy_worker_reactor();
+}

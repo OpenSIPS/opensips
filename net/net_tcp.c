@@ -1759,11 +1759,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 
 			report_conditional_status( 1, 0);
 
-			/* main loop */
-			reactor_main_loop( TCP_CHILD_SELECT_TIMEOUT, error, tcp_receive_timeout());
-			destroy_worker_reactor();
-			LM_CRIT("exiting...");
-			exit(-1);
+			tcp_worker_proc_loop();
 		}
 	}
 
