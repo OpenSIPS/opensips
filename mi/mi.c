@@ -177,7 +177,8 @@ int register_mi_cmd( mi_cmd_f f, char *name, char *help, void *param,
 		return -1;
 	}
 
-	*cmds->trace_mask = 0;
+	/* by default all commands are traced */
+	*cmds->trace_mask = (~(volatile unsigned char)0);
 
 	return 0;
 }
