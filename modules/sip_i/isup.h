@@ -178,18 +178,22 @@
 #define MAX_NO_VAR_PARAMS 2
 #define PARAM_MAX_LEN 128
 #define PV_RES_BUF_MAXLEN 256
-#define MAX_SUBF_PREDEF_VALS 10
+#define MAX_PREDEF_VALS 15
 
 typedef void (*isup_param_parse_f)(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res);
 typedef int (*isup_param_write_f)(int param_idx, int subfield_idx, unsigned char *param_val,
 									int *len, pv_value_t *val);
 
+struct isup_predef_vals {
+	int no_vals;
+	str aliases[MAX_PREDEF_VALS];
+	unsigned char vals[MAX_PREDEF_VALS];
+};
+
 struct isup_subfield {
 	str name;
-	int no_predef_vals;
-	str predef_vals_aliases[MAX_SUBF_PREDEF_VALS];
-	unsigned char predef_vals[MAX_SUBF_PREDEF_VALS];
+	struct isup_predef_vals predef_vals;
 };
 
 struct isup_param_data {
@@ -198,6 +202,7 @@ struct isup_param_data {
 	isup_param_parse_f parse_func;
 	isup_param_write_f write_func;
 	struct isup_subfield *subfield_list;
+	struct isup_predef_vals *single_fld_pvals;
 	int len;	/* for mandatory fixed params */
 };
 
