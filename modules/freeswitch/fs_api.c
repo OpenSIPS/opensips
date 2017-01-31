@@ -137,7 +137,6 @@ static fs_evs *mk_fs_evs(str *hostport)
 	memcpy(evs->host.s, st.s, st.len);
 	evs->host.s[evs->host.len] = '\0';
 
-	evs->ref = 1;
 	evs->port = port;
 	return evs;
 }
