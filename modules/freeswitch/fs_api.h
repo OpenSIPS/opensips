@@ -28,6 +28,7 @@
 #define __FREESWITCH_API__
 
 #include "../../lib/list.h"
+#include "../../rw_locking.h"
 #include "../../ip_addr.h"
 
 #include "esl/src/include/esl.h"
@@ -58,6 +59,8 @@ struct _fs_evs {
 	esl_port_t port;
 
 	esl_handle_t *handle;
+
+	int ref;
 
 	struct list_head list;     /* distinct FS boxes */
 	struct list_head modules;  /* distinct modules referencing the same box */

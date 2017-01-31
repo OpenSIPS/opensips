@@ -36,6 +36,7 @@
 #include "fs_proc.h"
 
 extern struct list_head *fs_boxes;
+extern rw_lock_t *box_lock;
 
 static int mod_init(void);
 
@@ -82,6 +83,13 @@ struct module_exports exports= {
 	NULL       /* per-child init function */
 };
 
+//XXX remove after dev
+static int testcb(fs_evs *evs, str *tag, fs_ev_hb *hb, const void *priv)
+{
+	LM_DBG("test: %p, %.*s, %p, %p\n", evs, tag->len, tag->s, hb, priv);
+	return 0;
+}
+
 static int mod_init(void)
 {
 	str st = { "test", 4};
@@ -94,12 +102,20 @@ static int mod_init(void)
 	}
 	INIT_LIST_HEAD(fs_boxes);
 
+	box_lock = shm_malloc(sizeof *box_lock);
+	if (!box_lock) {
+		LM_ERR("out of mem\n");
+		return -1;
+	}
+
+	box_lock = lock_init_rw();
+
 	hooks.malloc_fn = osips_pkg_malloc;
 	hooks.free_fn = osips_pkg_free;
 	cJSON_InitHooks(&hooks);
 
 	str dst = {MI_SSTR("10.0.0.238:8021")};
-	add_hb_evs(&dst, &st, NULL, NULL);
+	add_hb_evs(&dst, &st, testcb, NULL);
 
 	return 0;
 }

@@ -32,10 +32,11 @@
 #include "fs_api.h"
 
 struct list_head *fs_boxes;
+rw_lock_t *box_lock;
 
 static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv);
-static void free_fs_mod_ref(fs_mod_ref *mod_tag);
-static fs_evs *find_fs_evs(str *hostport);
+static void free_fs_mod_ref(fs_mod_ref *mref);
+static fs_evs *get_fs_evs(str *hostport);
 
 static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv)
 {
@@ -58,29 +59,29 @@ static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv)
 	return mref;
 }
 
-static void free_fs_mod_ref(fs_mod_ref *mod_tag)
+static void free_fs_mod_ref(fs_mod_ref *mref)
 {
-	mod_tag->tag.s = NULL;
-	shm_free(mod_tag);
+	mref->tag.s = NULL;
+	shm_free(mref);
 }
 
-static int has_tag(fs_evs *evs, str *tag)
+static fs_mod_ref *get_fs_mod_ref(fs_evs *evs, str *tag)
 {
 	struct list_head *ele;
-	fs_mod_ref *mtag;
+	fs_mod_ref *mref;
 
 	list_for_each(ele, &evs->modules) {
-		mtag = list_entry(ele, fs_mod_ref, list);
+		mref = list_entry(ele, fs_mod_ref, list);
 
-		if (str_strcmp(&mtag->tag, tag) == 0) {
-			return 0;
+		if (str_strcmp(&mref->tag, tag) == 0) {
+			return mref;
 		}
 	}
 
-	return -1;
+	return NULL;
 }
 
-static fs_evs *find_fs_evs(str *hostport)
+static fs_evs *get_fs_evs(str *hostport)
 {
 	struct list_head *ele;
 	fs_evs *evs;
@@ -121,7 +122,6 @@ static fs_evs *mk_fs_evs(str *hostport)
 		port = FS_DEFAULT_EVS_PORT;
 	}
 
-
 	evs = shm_malloc(sizeof *evs + st.len + 1);
 	if (!evs) {
 		LM_ERR("out of mem\n");
@@ -137,6 +137,7 @@ static fs_evs *mk_fs_evs(str *hostport)
 	memcpy(evs->host.s, st.s, st.len);
 	evs->host.s[evs->host.len] = '\0';
 
+	evs->ref = 1;
 	evs->port = port;
 	return evs;
 }
@@ -152,34 +153,63 @@ fs_evs *add_hb_evs(str *evs_str, str *tag, ev_hb_cb_f cbf, const void *priv)
 		return NULL;
 	}
 
-	evs = find_fs_evs(evs_str);
+	lock_start_write(box_lock);
+
+	evs = get_fs_evs(evs_str);
 	if (!evs) {
 		evs = mk_fs_evs(evs_str);
 		if (!evs) {
 			LM_ERR("failed to create FS box!\n");
-			return NULL;
+			goto out_err;
 		}
 		evs->type = FS_GW_STATS;
 
 		list_add(&evs->list, fs_boxes);
 	}
 
-	if (!has_tag(evs, tag)) {
+	if (!get_fs_mod_ref(evs, tag)) {
 		mref = mk_fs_mod_ref(tag, cbf, priv);
 		if (!mref) {
 			LM_ERR("mk tag failed\n");
-			return NULL;
+			goto out_err;
 		}
 
 		list_add(&mref->list, &evs->modules);
 	}
 
+	evs->ref++;
+
+	lock_stop_write(box_lock);
 	return evs;
+
+out_err:
+	lock_stop_write(box_lock);
+	return NULL;
 }
 
 int del_hb_evs(fs_evs *evs, str *tag)
 {
+	fs_mod_ref *mref;
+
+	lock_start_write(box_lock);
+	mref = get_fs_mod_ref(evs, tag);
+	if (!mref) {
+		LM_ERR("mod ref %.*s does not exist in evs %s:%d\n", tag->len, tag->s,
+		       evs->host.s, evs->port);
+		goto out_err;
+	}
+
+	list_del(&mref->list);
+	free_fs_mod_ref(mref);
+
+	evs->ref--;
+
+	lock_stop_write(box_lock);
 	return 0;
+
+out_err:
+	lock_stop_write(box_lock);
+	return -1;
 }
 
 int fs_bind(fs_api_t *fapi)

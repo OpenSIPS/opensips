@@ -35,6 +35,28 @@
 #include "fs_api.h"
 
 extern struct list_head *fs_boxes;
+extern rw_lock_t *box_lock;
+
+static int destroy_fs_evs(fs_evs *evs, int idx)
+{
+	esl_status_t rc;
+	int ret = 0;
+
+	if (reactor_del_reader(evs->handle->sock, idx, IO_WATCH_READ) != 0) {
+		LM_ERR("del failed for sock %d\n", evs->handle->sock);
+		ret = 1;
+	}
+
+	rc = esl_disconnect(evs->handle);
+	if (rc != ESL_SUCCESS) {
+		LM_ERR("disconnect error %d on FS box %.*s:%d\n",
+		       rc, evs->host.len, evs->host.s, evs->port);
+		ret = 1;
+	}
+
+	shm_free(evs);
+	return ret;
+}
 
 inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 {
@@ -48,6 +70,15 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 
 	LM_DBG("FS data is available!\n");
 
+	lock_start_read(box_lock);
+	if (box->ref == 0) {
+		if (destroy_fs_evs(box, idx) != 0) {
+			LM_ERR("failed to destroy FS evs!\n");
+		}
+
+		goto out;
+	}
+
 	switch (fm->type) {
 		case F_FS_STATS:
 			rc = esl_recv_event(box->handle, 0, &box->handle->last_sr_event);
@@ -58,7 +89,7 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 				if (reactor_del_reader(box->handle->sock, idx,
 				                       IO_WATCH_READ) != 0) {
 					LM_ERR("del failed for sock %d\n", box->handle->sock);
-					return 0;
+					goto out;
 				}
 
 				rc = esl_disconnect(box->handle);
@@ -66,16 +97,16 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 					LM_ERR("disconnect error %d on FS box %.*s:%d\n",
 					       rc, box->host.len, box->host.s, box->port);
 					box->handle->connected = 0;
-					return 0;
+					goto out;
 				}
 
-				return 0;
+				goto out;
 			}
 
 			ev = cJSON_Parse(box->handle->last_sr_event->body);
 			if (!ev) {
 				LM_ERR("oom\n");
-				return 0;
+				goto out;
 			}
 
 			s = cJSON_GetObjectItem(ev, "Idle-CPU")->valuestring;
@@ -111,11 +142,14 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 			break;
 		default:
 			LM_CRIT("unknown fd type %d in FreeSWITCH worker\n", fm->type);
-			return -1;
+			goto out;
 	}
 
 out_free:
 	cJSON_Delete(ev);
+
+out:
+	lock_stop_read(box_lock);
 	return 0;
 }
 
