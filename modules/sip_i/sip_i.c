@@ -248,18 +248,69 @@ int pv_parse_isup_param_index(pv_spec_p sp, str* in)
 	return 0;
 }
 
-void free_isup_parsed(void *param)
+void free_isup_parsed(void *parsed, pb_free free_f)
 {
 	struct opt_param *it, *tmp;
 
-	it = ((struct isup_parsed_struct *)param)->opt_params_list;
+	it = ((struct isup_parsed_struct *)parsed)->opt_params_list;
 	while (it) {
 		tmp = it;
 		it = it->next;
-		pkg_free(tmp);
+		free_f(tmp);
 	}
 
-	pkg_free(param);
+	free_f(parsed);
+}
+
+void *clone_isup_parsed(struct body_part *old_part, struct body_part *new_part,
+					struct sip_msg *src_msg, struct sip_msg *dst_msg, pb_malloc malloc_f)
+{
+	struct isup_parsed_struct *new_ps, *old_ps;
+	struct opt_param *optp_it, *optp_new = NULL, *optp_prev = NULL;
+
+	LM_INFO("Entering ISUP parsed cloning function\n");
+
+	if (!old_part) {
+		LM_ERR("No old ISUP body part\n");
+		return NULL;
+	}
+
+	old_ps = (struct isup_parsed_struct *)old_part->parsed;
+	if (!old_ps) {
+		LM_ERR("Old parsed data not found\n");
+		return NULL;
+	}
+
+	new_ps = malloc_f(sizeof(struct isup_parsed_struct));
+	if (!new_ps) {
+		LM_ERR("No more pkg mem for cloned data\n");
+		return NULL;
+	}
+
+	memcpy(new_ps, old_ps, sizeof(struct isup_parsed_struct));
+	new_ps->opt_params_list = NULL;
+
+	/* clone list of optional params */
+	for (optp_it = old_ps->opt_params_list; optp_it; optp_it = optp_it->next) {
+		optp_new = malloc_f(sizeof(struct opt_param));
+		if (!optp_new) {
+			LM_ERR("No more pkg mem\n");
+			return NULL;
+		}
+
+		if (optp_it == old_ps->opt_params_list)
+			new_ps->opt_params_list = optp_new;
+
+		memcpy(optp_new, optp_it, sizeof(struct opt_param));
+		optp_new->next = NULL;
+		if (optp_prev)
+			optp_prev->next = optp_new;
+		optp_prev = optp_new;
+	}
+
+	LM_INFO("Exiting ISUP parsed cloning function\n");
+
+	return (void *)new_ps;
 }
 
 static struct body_part *get_isup_part(struct sip_msg *msg)
@@ -395,6 +446,7 @@ static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
 
 	p->parsed = (void*)parse_struct;
 	p->free_parsed_f = (free_parsed_part_function)free_isup_parsed;
+	p->clone_parsed_f = (clone_parsed_part_function)clone_isup_parsed;
 
 	return parse_struct;
 }
@@ -1597,6 +1649,7 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 	isup_part->parsed = isup_struct;
 	isup_part->dump_f = (dump_part_function)isup_dump;
 	isup_part->free_parsed_f = (free_parsed_part_function)free_isup_parsed;
+	isup_part->clone_parsed_f = (clone_parsed_part_function)clone_isup_parsed;
 
 	return 1;
 }
