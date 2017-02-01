@@ -695,7 +695,7 @@ int rls_send_notify(subs_t* subs, str* body, str* start_cid,
 		LM_ERR("while building dlg_t structure\n");
 		goto error;	
 	}
-
+	
 	LM_DBG("constructed dlg_t struct\n");
 	size= sizeof(dialog_id_t)+(subs->to_tag.len+ subs->callid.len+ 
 			subs->from_tag.len) *sizeof(char);
@@ -729,12 +729,6 @@ int rls_send_notify(subs_t* subs, str* body, str* start_cid,
 		goto error;
 	}
 	LM_DBG("str_hdr= %.*s\n", str_hdr.len, str_hdr.s);
-
-#ifdef USE_TCP
-        /* don't open new TCP connections if connection is down */
-	tcp_no_new_conn = 1;
-#endif
-
 	rt = tmb.t_request_within
 		(&met,
 		&str_hdr,
@@ -743,10 +737,6 @@ int rls_send_notify(subs_t* subs, str* body, str* start_cid,
 		rls_notify_callback,
 		(void*)cb_param,
 		NULL);
-
-#ifdef USE_TCP
-	tcp_no_new_conn = 0;
-#endif
 
 	if(rt < 0)
 	{
