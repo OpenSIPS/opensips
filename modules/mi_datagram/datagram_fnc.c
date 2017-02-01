@@ -633,12 +633,7 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		LM_DBG("command process (%s)succeeded\n",f->name.s);
 
 		if (mi_rpl!=MI_ROOT_ASYNC_RPL) {
-						resp_message.s = dtgram.start;
-			resp_message.len = len;
-
 			trace_datagram_request( f, cmd_buf, cmd_len, mi_cmd);
-
-
 
 			if(mi_datagram_write_tree(&dtgram , mi_rpl) != 0){
 				LM_ERR("failed to build the response \n");
