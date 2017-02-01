@@ -70,7 +70,7 @@
 #include "ds_fixups.h"
 #include "ds_bl.h"
 
-#define DS_TABLE_VERSION	7
+#define DS_TABLE_VERSION	8
 
 extern ds_partition_t *partitions;
 

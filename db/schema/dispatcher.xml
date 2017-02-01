@@ -9,7 +9,7 @@
 
 <table id="dispatcher" xmlns:db="http://docbook.org/ns/docbook">
     <name>dispatcher</name>
-    <version>7</version>
+    <version>8</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table is used by the dispatcher module. It contains the sets of destinations used for load balancing and dispatching. More information about the dispatcher module can be found at: &OPENSIPS_MOD_DOC;dispatcher.html
@@ -50,6 +50,17 @@
         <default><null/></default>
         <description>Local Socket to be used when sending requests (traffic and probes)
         to the destination - must be an listener configured in opensips.
+        </description>
+    </column>
+
+    <column>
+        <name>comm_socket</name>
+        <type>string</type>
+        <size>128</size>
+        <null/>
+        <default><null/></default>
+		<description>Generic communication socket related to the given destination.
+			Typical usages for it include pushing or pulling destination-related data.
         </description>
     </column>
 

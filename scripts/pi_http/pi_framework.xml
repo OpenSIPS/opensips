@@ -417,6 +417,7 @@
 		<column><field>setid</field><type>DB_INT</type></column>
 		<column><field>destination</field><type>DB_STR</type></column>
 		<column><field>socket</field><type>DB_STR</type></column>
+		<column><field>comm_socket</field><type>DB_STR</type></column>
 		<column><field>state</field><type>DB_INT</type></column>
 		<column><field>weight</field><type>DB_INT</type></column>
 		<column><field>priority</field><type>DB_INT</type></column>
@@ -2430,6 +2431,7 @@
 				<col><field>setid</field></col>
 				<col><field>destination</field></col>
 				<col><field>socket</field></col>
+				<col><field>comm_socket</field></col>
 				<col><field>state</field></col>
 				<col><field>weight</field></col>
 				<col><field>priority</field></col>
@@ -2444,6 +2446,7 @@
 				<col><field>setid</field></col>
 				<col><field>destination</field></col>
 				<col><field>socket</field></col>
+				<col><field>comm_socket</field></col>
 				<col><field>state</field></col>
 				<col><field>weight</field></col>
 				<col><field>priority</field></col>
@@ -2461,6 +2464,7 @@
 				<col><field>setid</field></col>
 				<col><field>destination</field></col>
 				<col><field>socket</field></col>
+				<col><field>comm_socket</field></col>
 				<col><field>state</field></col>
 				<col><field>weight</field></col>
 				<col><field>priority</field></col>
