@@ -64,7 +64,7 @@ Suggests: opensips-b2bua-module,
           opensips-perl-modules,
           opensips-postgres-module,
           opensips-presence-modules,
-          opensips-rabbitmq-module,
+          opensips-rabbitmq-modules,
           opensips-radius-modules,
           opensips-redis-module,
           opensips-regex-module,
@@ -446,7 +446,7 @@ Description: Interface module to interact with a Redis server
  to either a single Redis server instance, or to a Redis Server inside
  a Redis Cluster. It uses the Key-Value interface exported from the core.
 
-Package: opensips-rabbitmq-module
+Package: opensips-rabbitmq-modules
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
@@ -457,7 +457,8 @@ Description: Interface module to interact with a RabbitMQ server
  .
  This package provides the implementation of a RabbitMQ client for the Event
  Interface. It is used to send AMQP messages to a RabbitMQ server each time
- the Event Interface triggers an event subscribed for.
+ the Event Interface triggers an event subscribed for. It also provides a
+ module to publish RabbitMQ messages to a RabbitMQ server.
 
 Package: opensips-lua-module
 Architecture: any

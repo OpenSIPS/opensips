@@ -913,6 +913,10 @@ Files: modules/qos/qos_ctx_helpers.h
 Copyright: 2006-2008, SOMA Networks, INC
 License: GPL-2+
 
+Files: modules/rabbitmq/*
+Copyright: 2017, OpenSIPS Project
+License: GPL-2+
+
 Files: modules/ratelimit/*
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+

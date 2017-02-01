@@ -662,6 +662,15 @@ Requires: %{name} = %{version}-%{release}
 %description  python
 Helps implement your own OpenSIPS extensions in Python
 
+%package  rabbitmq
+Summary:  RabbitMQ module
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires:	librabbitmq-devel
+
+%description  rabbitmq
+This module provides the implementation of a RabbitMQ publisher.
+
 %if %{undefined el5}
 %package  redis
 Summary:  Redis connector
@@ -1423,6 +1432,10 @@ fi
 %{_libdir}/opensips/modules/cachedb_redis.so
 %doc docdir/README.cachedb_redis
 %endif
+
+%files rabbitmq
+%{_libdir}/opensips/modules/rabbitmq.so
+%doc docdir/README.rabbitmq
 
 %files regex
 %{_libdir}/opensips/modules/regex.so
