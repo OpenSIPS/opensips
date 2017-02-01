@@ -1,0 +1,1214 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+		This module offers the possibility of processing ISDN User Part(ISUP) messages encapsulated in SIP. The available operations are: reading and modifying parameters from an ISUP message, removing or adding new optional parameters, adding an ISUP part to a SIP message body. This is done explicitly via script pseudovariables and functions.
+	</para>
+	<para>
+		The supported ISUP message types are only the ones that can be included in a SIP message according to the SIP-I(SIP with encapsulated ISUP) protocol defined by ITU-T.
+	</para>
+	<para>
+		The format and specification of the ISUP messages and parameters follow the recomandations from ITU-T Rec. Q.763.
+	</para>
+	</section>
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+	<section>
+	<title>Parameters</title>
+	<section>
+		<title><varname>param_subfield_separator</varname> (str)</title>
+		<para>
+		The character to be used as separator in the subname of the $isup_param pseudovariable between the ISUP parameter name and subfield.
+		</para>
+		<para>
+		<emphasis>
+			Default value is "|".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>param_subfield_separator</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sip_i", "param_subfield_separator", ":")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>isup_mime_str</varname> (str)</title>
+		<para>
+			The string to be used for the Content-Type header field of the ISUP MIME body when creating a new ISUP part.
+		</para>
+		<para>
+		<emphasis>
+			Default value is "application/ISUP;version=itu-t92+".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>isup_mime_str</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+</section>
+
+	<section>
+	<title>Exported Functions</title>
+
+		<section>
+		<title>
+			<function moreinfo="none">add_isup_part([isup_msg_type])</function>
+		</title>
+		<para>
+			Adds a new ISUP part to the SIP message body.
+		</para>
+		<para>
+			With the exception of some ISUP message types(IAM, REL, ACM, CPG, ANM, CON), the newly added part contains a blank ISUP message(i.e. all mandatory parameters zeroed and no optional ones) and all the required parameters should be set through $isup_param. For the previously mentioned message types, the mandatory parameters and some optional ones are automaticaly set to default values according to basic SIP-ISUP interworking rules from ITU-T Rec. Q.1912.5. This only provides a general and simplified mapping from SIP headers and message type (request method, reply code etc.) to ISUP parameters and you should not base your SIP-ISUP interworking only on this.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>isup_msg_type (string)</emphasis> - name of the ISUP message to be added, exactly as it appears in ITU-T Rec. Q.763 or an abbreviation(eg. for "Initial address" - "IAM").
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+			If <emphasis>isup_msg_type</emphasis> is not explicitly provided, it is automatically deduced from the SIP message as follows:
+		<itemizedlist>
+			<listitem>
+			<para>
+				INVITE - IAM
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				BYE - REL
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				180, 183 - REL
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				4xx, 5xx - REL
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				200 OK INVITE - ANM
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				200 OK BYE - RLC
+			</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+			The abbreviations that can be given as <emphasis>isup_msg_type</emphasis> are the following:
+		<itemizedlist>
+			<listitem>
+			<para>
+				Initial address - IAM
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Address complete - ACM
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Answer - ANM
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Connect - CON
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Connect - CON
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Release - REL
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Release complete - RLC
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Facility reject - FRJ
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Facility accepted - FAA
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Facility request - FAR
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Confusion - CFN
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Suspend - SUS
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Resume - RES
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Subsequent address - SAM
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Forward transfer - FOT
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				User-to-user information - USR
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Network resource management - NRM
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Facility - FAC
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Identification request - IRQ
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Identification response - IRS
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Loop prevention - LPR
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Application transport - APT
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Pre-release information - PRI
+			</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,LOCAL_ROUTE.
+		</para>
+	<example>
+	<title><function>add_isup_part</function> usage</title>
+	<programlisting format="linespecific">
+...
+if ($rs == "183") {
+	# Encapsulate a CPG
+	add_isup_part("Call progress");
+	# set desired parameters
+	...
+}
+...
+	</programlisting>
+	</example>
+
+		</section>
+
+	</section>
+
+	<section>
+	<title>Exported PseudoVariables</title>
+
+	<section>
+	<title>
+		<function moreinfo="none">$(isup_param(param_name{sep}subfield_name)[byte_index])</function>
+	</title>
+	<para>The ISUP parameter named <emphasis>param_name</emphasis> of a received or newly added ISUP message can be accessed through this read-write variable. For optional parameters, writing to a <emphasis>param_name</emphasis> that does not exist in this ISUP message will insert it. Assigning null to this variable will remove an optional parameter from the message or zeroize a mandatory parameter.
+	</para>
+	<para>The format of the subname for $isup_param is the following:</para>
+	<itemizedlist>
+		<listitem>
+		<para><emphasis>param_name</emphasis> - name of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>sep</emphasis> - separator </para>
+		</listitem>
+		<listitem>
+		<para><emphasis>subfield_name</emphasis> - name of the subfield of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
+		</listitem>
+	</itemizedlist>
+	<para> The ISUP parameter can be addressed in different ways:</para>
+	<itemizedlist>
+		<listitem>
+		<para>
+			entire parameter - by providing as subname for the varaiable only the ISUP parameter name, allowing access to the contents of the entire parameter as a hex string(similar to a hex "dump") for read/write or as a string alias or integer value for writing; when assigning a hex string, the hex value must be preceded by "0x"
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			at subfield level - by providing as subname for the varaiable the ISUP parameter name and the subfield name, allowing access to the specific subfield as an integer value or string value(eg. telephone number for parameters such as Called Party Number) for read/write or as a string alias for writing
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			at byte level - by providing as subname for the variable the ISUP parameter name and a variable index, allowing access to the byte with the specific index as an integer value
+		</para>
+		</listitem>
+	</itemizedlist>
+	<para>Addressing at entire parameter level as a hex string and at byte level are supported for all the ISUP parameters defined in the ITU-T Rec. Q.763. Addressing at subfield level is supported only for some ISUP parameters and not all of the subfields of a parameter defined in the ITU Recommandation are supported.</para>
+	<para>String aliases are not available for all parameters or parameter subfields. Also, not all the possible values of a parameter or parameter subfield have a string alias defined.</para>
+	<example>
+	<title><function>isup_param</function> usage</title>
+	<programlisting format="linespecific">
+...
+	$isup_param(Called Party Number | Nature of address indicator) = 3;
+	# string alias
+	$isup_param(Called Party Number | Numbering plan indicator) = "ISDN";
+	$isup_param(Called Party Number | Address signal) = "99991234";
+	$isup_param(Nature of connection indicators) = "0x01"
+	$isup_param(Calling party's category) = 10;
+	# string alias
+	$isup_param(Transmission Medium Requirement) = "speech";
+	# at byte level
+	$(isup_param(Forward Call Indicators)[0]) = 96;
+	$(isup_param(Forward Call Indicators)[1]) = 1;
+...
+	</programlisting>
+	</example>
+	</section>
+
+	<section>
+	<title>
+		<function moreinfo="none">$isup_param_str(param_name{sep}subfield_name)</function>
+	</title>
+	<para>The ISUP parameter named <emphasis>param_name</emphasis> of a received or newly added ISUP message can also be accessed through this read-only variable. This variable is similar in usage with <emphasis>$isup_param</emphasis> except it will return the string alias for the value when possible.
+	</para>
+	<para>The format of the subname for $isup_param is the following:</para>
+	<itemizedlist>
+		<listitem>
+		<para><emphasis>param_name</emphasis> - name of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>sep</emphasis> - separator </para>
+		</listitem>
+		<listitem>
+		<para><emphasis>subfield_name</emphasis> - name of the subfield of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
+		</listitem>
+	</itemizedlist>
+	<example>
+	<title><function>isup_param</function> usage</title>
+	<programlisting format="linespecific">
+...
+	# may print: "NOA is: national"  
+	xlog("NOA is: $isup_param(Called Party Number | Nature of address indicator)");
+	# may print: "CpN is: 99991234"
+	xlog("CpN is: $isup_param(Called Party Number | Address signal)");
+	# may print: "nature of conn: 0x01"
+	xlog("nature of conn: $isup_param(Nature of connection indicators)");
+	# may print: "Cg cat is: ordinary"
+	xlog("$isup_param(Calling party's category)");
+...
+	</programlisting>
+	</example>
+	</section>
+
+	<section>
+	<title>
+		<function moreinfo="none">$isup_msg_type</function>
+	</title>
+	<para>
+		Read-only variable, returns the ISUP message type as string.
+	</para>
+	<example>
+	<title><function>isup_msg_type</function> usage</title>
+	<programlisting format="linespecific">
+...
+	# may print: "ISUP msg is: Initial address"
+	xlog("ISUP msg is: $isup_msg_type");
+...
+	</programlisting>
+	</example>
+	</section>
+
+</section>
+
+<section>
+	<title>String aliases</title>
+	<para>The supported ISUP parameter subfields and the predefined string aliases for values are the following: </para>
+	<itemizedlist>
+		<listitem>
+			<para>Nature of Connection Indicators</para>
+			<itemizedlist>
+				<listitem>
+					<para>Satellite indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no satellite - 0</para>
+						</listitem>
+						<listitem>
+							<para>one satellite - 1</para>
+						</listitem>
+						<listitem>
+							<para>two satellite - 2</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Continuity check indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>not required - 0</para>
+						</listitem>
+						<listitem>
+							<para>required - 1</para>
+						</listitem>
+						<listitem>
+							<para>performed - 2</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Echo control device indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>not included - 0</para>
+						</listitem>
+						<listitem>
+							<para>included - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Forward Call Indicators</para>
+			<itemizedlist>
+				<listitem>
+					<para>National/international call indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>national - 0</para>
+						</listitem>
+						<listitem>
+							<para>international - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>End-to-end method indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no method - 0</para>
+						</listitem>
+						<listitem>
+							<para>pass-along - 1</para>
+						</listitem>
+						<listitem>
+							<para>SCCP - 2</para>
+						</listitem>
+						<listitem>
+							<para>pass-along and SCCP - 3</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Interworking indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no interworking - 0</para>
+						</listitem>
+						<listitem>
+							<para>interworking - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>End-to-end information indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no end-to-end - 0</para>
+						</listitem>
+						<listitem>
+							<para>end-to-end - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>ISDN user part indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>not all the way - 0</para>
+						</listitem>
+						<listitem>
+							<para>all the way - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>ISDN user part preference indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>prefered - 0</para>
+						</listitem>
+						<listitem>
+							<para>not required - 1</para>
+						</listitem>
+						<listitem>
+							<para>required - 2</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>ISDN access indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>non-ISDN - 0</para>
+						</listitem>
+						<listitem>
+							<para>ISDN - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>SCCP method indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no indication - 0</para>
+						</listitem>
+						<listitem>
+							<para>connectionless - 1</para>
+						</listitem>
+						<listitem>
+							<para>connection - 2</para>
+						</listitem>
+						<listitem>
+							<para>connectionless and connection - 3</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Optional forward call indicators</para>
+			<itemizedlist>
+				<listitem>
+					<para>Closed user group call indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>non-CUG - 0</para>
+						</listitem>
+						<listitem>
+							<para>outgoing allowed - 2</para>
+						</listitem>
+						<listitem>
+							<para>outgoing not allowed - 3</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Simple segmentation indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no additional information - 0</para>
+						</listitem>
+						<listitem>
+							<para>additional information - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Connected line identity request indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>not requested - 0</para>
+						</listitem>
+						<listitem>
+							<para>requested - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Called Party Number</para>
+			<itemizedlist>
+				<listitem>
+					<para>Odd/even indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>even - 0</para>
+						</listitem>
+						<listitem>
+							<para>odd - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Nature of address indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>subscriber - 1</para>
+						</listitem>
+						<listitem>
+							<para>unknown - 2</para>
+						</listitem>
+						<listitem>
+							<para>national - 3</para>
+						</listitem>
+						<listitem>
+							<para>international - 4</para>
+						</listitem>
+						<listitem>
+							<para>network-specific - 5</para>
+						</listitem>
+						<listitem>
+							<para>network routing national - 6</para>
+						</listitem>
+						<listitem>
+							<para>network routing network-specific - 7</para>
+						</listitem>
+						<listitem>
+							<para>network routing with CDN - 8</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Internal Network Number indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>allowed - 0</para>
+						</listitem>
+						<listitem>
+							<para>not allowed - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Numbering plan indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>ISDN - 1</para>
+						</listitem>
+						<listitem>
+							<para>Data - 3</para>
+						</listitem>
+						<listitem>
+							<para>Telex - 4</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Address signal</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Calling Party Number</para>
+			<itemizedlist>
+				<listitem>
+					<para>Odd/even indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>even - 0</para>
+						</listitem>
+						<listitem>
+							<para>odd - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Nature of address indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>subscriber - 1</para>
+						</listitem>
+						<listitem>
+							<para>unknown - 2</para>
+						</listitem>
+						<listitem>
+							<para>national - 3</para>
+						</listitem>
+						<listitem>
+							<para>international - 4</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Number Incomplete indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>complete - 0</para>
+						</listitem>
+						<listitem>
+							<para>incomplete - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Numbering plan indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>ISDN - 1</para>
+						</listitem>
+						<listitem>
+							<para>Data - 3</para>
+						</listitem>
+						<listitem>
+							<para>Telex - 4</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Address presentation restricted indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>allowed - 0</para>
+						</listitem>
+						<listitem>
+							<para>restricted - 1</para>
+						</listitem>
+						<listitem>
+							<para>not available - 2</para>
+						</listitem>
+						<listitem>
+							<para>reserved - 3</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Screening indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>user - 0</para>
+						</listitem>
+						<listitem>
+							<para>network - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Address signal</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Backward Call Indicators</para>
+			<itemizedlist>
+				<listitem>
+					<para>Charge indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no indication - 0</para>
+						</listitem>
+						<listitem>
+							<para>no charge - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Called party's status indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no indication - 0</para>
+						</listitem>
+						<listitem>
+							<para>subscriber free - 1</para>
+						</listitem>
+						<listitem>
+							<para>connect - 2</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Called party's category indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no indication - 0</para>
+						</listitem>
+						<listitem>
+							<para>ordinary subscriber - 1</para>
+						</listitem>
+						<listitem>
+							<para>payphone - 2</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>End to End method indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no end-to-end - 0</para>
+						</listitem>
+						<listitem>
+							<para>pass-along - 1</para>
+						</listitem>
+						<listitem>
+							<para>SCCP - 2</para>
+						</listitem>
+						<listitem>
+							<para>pass-along and SCCP - 3</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Interworking indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no interworking - 0</para>
+						</listitem>
+						<listitem>
+							<para>interworking - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>End to End information indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no end-to-end - 0</para>
+						</listitem>
+						<listitem>
+							<para>end-to-end - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>ISDN user part indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>not all the way - 0</para>
+						</listitem>
+						<listitem>
+							<para>all the way - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Holding indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>not requested - 0</para>
+						</listitem>
+						<listitem>
+							<para>requested - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>ISDN access indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>non-ISDN - 0</para>
+						</listitem>
+						<listitem>
+							<para>ISDN - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Echo control device indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>not included - 0</para>
+						</listitem>
+						<listitem>
+							<para>included - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>SCCP method indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no indication - 0</para>
+						</listitem>
+						<listitem>
+							<para>connectionless - 1</para>
+						</listitem>
+						<listitem>
+							<para>connection - 2</para>
+						</listitem>
+						<listitem>
+							<para>connectionless and connection - 3</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Optional Backward Call Indicators</para>
+			<itemizedlist>
+				<listitem>
+					<para>In-band information indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no indication- 0</para>
+						</listitem>
+						<listitem>
+							<para>available - 2</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Call diversion may occur indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no indication - 0</para>
+						</listitem>
+						<listitem>
+							<para>call diversion - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Simple segmentation indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no additional information - 0</para>
+						</listitem>
+						<listitem>
+							<para>additional information - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>MLPP user indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no indication - 0</para>
+						</listitem>
+						<listitem>
+							<para>MLPP user - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Connected Number</para>
+			<itemizedlist>
+				<listitem>
+					<para>Odd/even indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>even - 0</para>
+						</listitem>
+						<listitem>
+							<para>odd - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Nature of address indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>subscriber - 1</para>
+						</listitem>
+						<listitem>
+							<para>unknown - 2</para>
+						</listitem>
+						<listitem>
+							<para>national - 3</para>
+						</listitem>
+						<listitem>
+							<para>international - 4</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Numbering plan indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>ISDN - 1</para>
+						</listitem>
+						<listitem>
+							<para>Data - 3</para>
+						</listitem>
+						<listitem>
+							<para>Telex - 4</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Address presentation restricted indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>allowed - 0</para>
+						</listitem>
+						<listitem>
+							<para>restricted - 1</para>
+						</listitem>
+						<listitem>
+							<para>not available - 2</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Screening indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>user - 0</para>
+						</listitem>
+						<listitem>
+							<para>network - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Address signal</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Cause Indicators</para>
+			<itemizedlist>
+				<listitem>
+					<para>Location</para>
+					<itemizedlist>
+						<listitem>
+							<para>user - 0</para>
+						</listitem>
+						<listitem>
+							<para>LPN - 1</para>
+						</listitem>
+						<listitem>
+							<para>LN - 2</para>
+						</listitem>
+						<listitem>
+							<para>TN - 3</para>
+						</listitem>
+						<listitem>
+							<para>RLN - 4</para>
+						</listitem>
+						<listitem>
+							<para>RPN - 5</para>
+						</listitem>
+						<listitem>
+							<para>INTL - 7</para>
+						</listitem>
+						<listitem>
+							<para>BI - 10</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Coding standard</para>
+					<itemizedlist>
+						<listitem>
+							<para>ITU-T - 0</para>
+						</listitem>
+						<listitem>
+							<para>ISO/IEC - 1</para>
+						</listitem>
+						<listitem>
+							<para>national - 2</para>
+						</listitem>
+						<listitem>
+							<para>location - 3</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Cause value</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Subsequent Number</para>
+			<itemizedlist>
+				<listitem>
+					<para>Odd/even indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>even - 0</para>
+						</listitem>
+						<listitem>
+							<para>odd - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Address signal</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Event Information</para>
+			<itemizedlist>
+				<listitem>
+					<para>Event indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>alerting - 1</para>
+						</listitem>
+						<listitem>
+							<para>progress - 2</para>
+						</listitem>
+						<listitem>
+							<para>in-band or pattern - 3</para>
+						</listitem>
+						<listitem>
+							<para>busy - 4</para>
+						</listitem>
+						<listitem>
+							<para>no reply - 5</para>
+						</listitem>
+						<listitem>
+							<para>unconditional - 6</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Event presentation restricted indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para>no indication - 0</para>
+						</listitem>
+						<listitem>
+							<para>restricted - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Calling Party's Category</para>
+			<itemizedlist>
+				<listitem>
+					<para>unknown - 0</para>
+				</listitem>
+				<listitem>
+					<para>french - 1</para>
+				</listitem>
+				<listitem>
+					<para>english - 2</para>
+				</listitem>
+				<listitem>
+					<para>german - 3</para>
+				</listitem>
+				<listitem>
+					<para>russian - 4</para>
+				</listitem>
+				<listitem>
+					<para>spanish - 5</para>
+				</listitem>
+				<listitem>
+					<para>ordinary - 10</para>
+				</listitem>
+				<listitem>
+					<para>priority - 11</para>
+				</listitem>
+				<listitem>
+					<para>data - 12</para>
+				</listitem>
+				<listitem>
+					<para>test - 13</para>
+				</listitem>
+				<listitem>
+					<para>payphone - 15</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Transmission Medium Requirement</para>
+			<itemizedlist>
+				<listitem>
+					<para>speech - 0</para>
+				</listitem>
+				<listitem>
+					<para>64 kbit/s unrestricted - 2</para>
+				</listitem>
+				<listitem>
+					<para>3.1 kHz audio - 3</para>
+				</listitem>
+				<listitem>
+					<para>64 kbit/s preferred - 6</para>
+				</listitem>
+				<listitem>
+					<para>2 x 64 kbit/s - 7</para>
+				</listitem>
+				<listitem>
+					<para>384 kbit/s - 8</para>
+				</listitem>
+				<listitem>
+					<para>1536 kbit/s - 9</para>
+				</listitem>
+				<listitem>
+					<para>1920 kbit/s - 10</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+	</itemizedlist>
+</section>
+
+</chapter>
