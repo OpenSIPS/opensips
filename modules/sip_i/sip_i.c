@@ -584,7 +584,7 @@ int get_isup_param(struct sip_msg *msg, pv_param_t *param, int *pv_idx, struct i
 
 	/* Parse IUSP message if not done already */
 	*isup_part = get_isup_part(msg);
-	if (!isup_part) {
+	if (!*isup_part) {
 		LM_INFO("No ISUP body for this message\n");
 		return -1;
 	}
