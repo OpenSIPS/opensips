@@ -130,6 +130,13 @@ static fs_evs *mk_fs_evs(str *hostport)
 	memset(evs, 0, sizeof *evs);
 	INIT_LIST_HEAD(&evs->modules);
 
+	evs->hb_lk = lock_init_rw();
+	if (!evs->hb_lk) {
+		LM_ERR("out of mem\n");
+		shm_free(evs);
+		return NULL;
+	}
+
 	LM_DBG("new FS box: host=%.*s, port=%d\n", st.len, st.s, port);
 
 	evs->host.s = (char *)(evs + 1);

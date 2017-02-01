@@ -43,7 +43,7 @@ enum fs_evs_types {
 typedef struct _fs_evs fs_evs;
 typedef struct _fs_ev_hb fs_ev_hb;
 
-typedef int (*ev_hb_cb_f) (fs_evs *evs, str *tag, fs_ev_hb *hb, const void *priv);
+typedef int (*ev_hb_cb_f) (fs_evs *evs, str *tag, const void *priv);
 
 typedef struct _fs_mod_ref {
 	str tag;
@@ -53,6 +53,15 @@ typedef struct _fs_mod_ref {
 	struct list_head list;
 } fs_mod_ref;
 
+/* statistics contained within a FreeSWITCH "HEARTBEAT" event */
+struct _fs_ev_hb {
+	float id_cpu;
+	int sess;
+	int max_sess;
+
+	int is_valid; /* FS load stats are invalid until the first heartbeat */
+};
+
 struct _fs_evs {
 	enum fs_evs_types type;
 	str host; /* host->s is NULL-terminated */
@@ -60,17 +69,13 @@ struct _fs_evs {
 
 	esl_handle_t *handle;
 
+	rw_lock_t *hb_lk;
+	fs_ev_hb hb_data;
+
 	int ref;
 
 	struct list_head list;     /* distinct FS boxes */
 	struct list_head modules;  /* distinct modules referencing the same box */
-};
-
-/* statistics contained within a FreeSWITCH "HEARTBEAT" event */
-struct _fs_ev_hb {
-	float id_cpu;
-	int sess;
-	int max_sess;
 };
 
 typedef struct _fs_api_t fs_api_t;
