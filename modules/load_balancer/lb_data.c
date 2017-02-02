@@ -667,7 +667,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 
 	/* init selected destinations buff */
 	dsts_cur = NULL;
-	dsts_size_max = (flags & (LB_FLAGS_RANDOM||LB_FLAGS_QUEUE)) ? data->dst_no : 1;
+	dsts_size_max = (flags & (LB_FLAGS_RANDOM|LB_FLAGS_QUEUE)) ? data->dst_no : 1;
 	if( dsts_size_max > 1 ) {
 		if( dsts_size_max > dsts_size ) {
 			dsts = (struct lb_dst **)pkg_realloc
