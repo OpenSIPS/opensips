@@ -817,6 +817,15 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 			if( it_d == dst ) { dst_bitmap_cur[i] &= ~(1 << j); break; }
 			if( ++j == (8 * sizeof(unsigned int)) ) { i++; j=0; }
 		}
+
+		//Move members around in virtual queue
+		for( it_d=data->dsts; it_d; it_d=it_d->next){
+		if(it_d->queue_loc > dst->queue_loc){it_d->queue_loc--;}
+		}
+	
+		//Move chosen dst to end of virtual queue
+		dst->queue_loc = data->dst_no;
+
 	} else {
 		LM_DBG("%s call of LB - no destination found\n",
 			(reuse ? "sequential" : "initial"));
