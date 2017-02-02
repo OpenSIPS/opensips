@@ -789,6 +789,7 @@ int init_acc_aaa(char* aaa_proto_url, int srv_type)
 	n += extra2attrs( aaa_leg_tags, rd_attrs, n);
 
 	rd_attrs[n++].name = "Sip-Call-Duration";
+	rd_attrs[n++].name = "Sip-Call-MSDuration";
 	rd_attrs[n++].name = "Sip-Call-Setuptime";
 	rd_attrs[n++].name = "Sip-Call-Created";
 
