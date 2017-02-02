@@ -75,7 +75,7 @@ static inline int rmq_parse(char *url, rmq_uri *uri)
 	if (id->database)
 		PTR_MOVE(id->database, uri->vhost);
 	else
-		uri->host = "/";
+		uri->vhost = "/";
 	if (id->port)
 		uri->port = id->port;
 	else if (uri->ssl)
