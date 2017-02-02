@@ -831,13 +831,6 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 			(reuse ? "sequential" : "initial"));
 	}
 
-	//Move members around in virtual queue
-	for( it_d=data->dsts; it_d; it_d=it_d->next){
-		if(it_d->queue_loc > dst->queue_loc){it_d->queue_loc--;}
-	}
-	//Move chosen dst to end of virtual queue
-	dst->queue_loc = data->dst_no;
-
 	/* unlock resources */
 	for( i=0 ; i<res_cur_n ; i++ )
 		lock_release(res_cur[i]->lock);
