@@ -953,8 +953,8 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 		goto error;
 	}
 
-	/* count the number of values in one leg */
-	for (extra=aaa_leg_tags; extra; extra=extra->next, ++ret);
+	/* count the number of extra values */
+	for (extra=aaa_extra_tags; extra; extra=extra->next, ++ret);
 	/* count the number of values in one leg */
 	for (extra=aaa_leg_tags, nr_leg_vals=0; extra; extra=extra->next, nr_leg_vals++);
 
