@@ -119,6 +119,26 @@ static int child_init(int rank)
 	return 0;
 }
 
+static inline int get_param_idx_by_code(int param_code)
+{
+	int i;
+
+	for (i = 0; i < NO_ISUP_PARAMS; i++)
+		if (param_code == isup_params[i].param_code)
+			return i;
+	return -1;
+}
+
+static inline int get_msg_idx_by_type(int msg_type)
+{
+	int i;
+
+	for (i = 0; i < NO_ISUP_MESSAGES; i++)
+		if (msg_type == isup_messages[i].message_type)
+			return i;
+	return -1;
+}
+
 int pv_parse_isup_param_name(pv_spec_p sp, str *in)
 {
 	str param_s = {0, 0}, subfield_s = {0, 0};

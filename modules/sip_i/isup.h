@@ -238,9 +238,6 @@ struct isup_parsed_struct {
 extern struct isup_message_data isup_messages[NO_ISUP_MESSAGES];
 extern struct isup_param_data isup_params[NO_ISUP_PARAMS];
 
-int get_param_idx_by_code(int param_code);
-int get_msg_idx_by_type(int msg_type);
-
 char char2digit(char localchar);
 
 #endif /* _ISUP_H_ */

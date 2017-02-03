@@ -1052,23 +1052,3 @@ struct isup_param_data isup_params[NO_ISUP_PARAMS] = {
 	{ISUP_PARM_SELECTION_INFO, str_init("Selection Information"), NULL, NULL, NULL, NULL, 0}
 };
 
-int get_param_idx_by_code(int param_code)
-{
-	int i;
-
-	for (i = 0; i < NO_ISUP_PARAMS; i++)
-		if (param_code == isup_params[i].param_code)
-			return i;
-	return -1;
-}
-
-int get_msg_idx_by_type(int msg_type)
-{
-	int i;
-
-	for (i = 0; i < NO_ISUP_MESSAGES; i++)
-		if (msg_type == isup_messages[i].message_type)
-			return i;
-	return -1;
-}
-
