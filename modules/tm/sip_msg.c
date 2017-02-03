@@ -965,6 +965,7 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 
 	/* clone the "updatable" part of the msg */
 
+	LM_DBG("---------mode is %d \n",updatable);
 	switch (updatable) {
 	case 0: /* no update ever -> copy in the same chunk */
 		/* new_uri */
@@ -999,13 +1000,6 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 		CLONE_LUMP_LIST(p, &(new_msg->body_lumps), org_msg->body_lumps);
 		new_msg->reply_lump = 0;
 		CLONE_RPL_LUMP_LIST( p, &(new_msg->reply_lump), org_msg->reply_lump);
-
-		/* clone the body parts also */
-		if ( clone_sip_msg_body( org_msg, new_msg, &new_msg->body, 1)!=0 ) {
-			LM_ERR("failed to clone the body parts\n");
-			free_cloned_msg(new_msg);
-			return 0;
-		}
 
 	case 1: /* updatable and cloning now */
 		new_msg->msg_flags |= FL_SHM_UPDATABLE;
@@ -1060,6 +1054,13 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 		CLONE_LUMP_LIST( p, &(new_msg->body_lumps), org_msg->body_lumps);
 		p = (char*)new_msg->reply_lump;
 		CLONE_RPL_LUMP_LIST( p, &(new_msg->reply_lump), org_msg->reply_lump);
+		/* clone the body parts also */
+		if ( clone_sip_msg_body( org_msg, new_msg, &new_msg->body, 1)!=0 ) {
+			LM_ERR("failed to clone the body parts\n");
+			free_cloned_msg(new_msg);
+			return 0;
+		}
+
 		break;
 
 	case 2: /* updatable, but no cloning now */

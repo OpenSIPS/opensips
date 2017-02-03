@@ -467,6 +467,8 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 	memcpy( dst, src, sizeof(struct sip_msg_body));
 	if (shared)
 		dst->flags |= SIP_BODY_FLAG_SHM;
+	else
+		dst->flags &= ~SIP_BODY_FLAG_SHM;
 	/* update the links inside it */
 	if (dst_msg) { \
 		dst->body.s = translate_pointer(dst_msg->buf ,src_msg->buf,
