@@ -210,7 +210,7 @@ static struct isup_subfield cause_ind_subf[] = {
 	{str_init("Location"), {8,
 		{str_init("user"), str_init("LPN"),str_init("LN"), str_init("TN"), str_init("RLN"),
 		 str_init("RPN"), str_init("INTL"), str_init("BI")}, {0,1,2,3,4,5,7,10}}},
-	{str_init("Coding standard"), {3,
+	{str_init("Coding standard"), {4,
 		{str_init("ITU-T"), str_init("ISO/IEC"), str_init("national"), str_init("location")}, {0,1,2,3}}},
 	{str_init("Cause value"), {0, {{0, 0}}, {0}}},
 	SUBF_INIT_EMPTY};
