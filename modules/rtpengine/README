@@ -12,25 +12,15 @@ Edited by
 
 Maxim Sobolev
 
-Edited by
-
 Bogdan-Andrei Iancu
-
-Edited by
 
 Juha Heinanen
 
-Edited by
-
 Sas Ovidiu
-
-Edited by
 
 Carsten Bock
 
    ng-voice GmbH
-
-Edited by
 
 Richard Fuchs
 
@@ -84,6 +74,7 @@ Richard Fuchs
 
               1.7.1. rtpengine_enable
               1.7.2. rtpengine_show
+              1.7.3. teardown
 
    2. Frequently Asked Questions
 
@@ -104,6 +95,7 @@ Richard Fuchs
    1.13. $rtpstat Usage
    1.14. rtpengine_enable usage
    1.15. rtpengine_show usage
+   1.16. teardown usage
 
 Chapter 1. Admin Guide
 
@@ -595,6 +587,21 @@ $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
    Example 1.15.  rtpengine_show usage
 ...
 $ opensipsctl fifo rtpengine_show
+...
+
+1.7.3. teardown
+
+   Terminates the SIP dialog by the SIP Call-ID given as
+   parameter.
+
+   Note this is a just a wrapper function over the “dlg_end_dlg”
+   MI function provided by the “dialog” module. This wrapping is
+   done just to make rtpengine happy when trying to terminate SIP
+   calls based on RTP timeouts.
+
+   Example 1.16.  teardown usage
+...
+$ opensipsctl fifo teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 ...
 
 Chapter 2. Frequently Asked Questions

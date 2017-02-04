@@ -690,7 +690,7 @@ $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 			</example>
 		</section>
 
-			<section id="rtpengine.m.rtpengine_show">
+		<section id="rtpengine.m.rtpengine_show">
 			<title><function moreinfo="none">rtpengine_show</function></title>
 			<para>
 			Displays all the &rtp; proxies and their information: set and
@@ -709,6 +709,32 @@ $ opensipsctl fifo rtpengine_show
 			</programlisting>
 			</example>
 		</section>
+
+		<section id="rtpengine.m.teardown">
+			<title><function moreinfo="none">teardown</function></title>
+			<para>
+			Terminates the SIP dialog by the SIP Call-ID given as parameter.
+			</para>
+			<para>
+			Note this is a just a wrapper function over the 
+			<quote>dlg_end_dlg</quote> MI function provided by the
+			<quote>dialog</quote> module. This wrapping is done just to
+			make rtpengine happy when trying to terminate SIP calls based on
+			RTP timeouts.
+			</para>
+			<example>
+			<title>
+				<function moreinfo="none">teardown</function> usage</title>
+			<programlisting format="linespecific">
+...
+$ opensipsctl fifo teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
+...
+			</programlisting>
+			</example>
+		</section>
+
+
+
 	</section>
 
 </chapter>
