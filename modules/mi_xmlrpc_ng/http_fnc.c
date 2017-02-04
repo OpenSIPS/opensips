@@ -484,23 +484,27 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	//LM_DBG("arg [%p]->[%.*s]\n", arg->s, arg->len, arg->s);
 	doc = xmlParseMemory(arg->s, arg->len);
 	if(doc==NULL){
+		xml_errcode = ERR_BAD_REQ;
 		LM_ERR("Failed to parse xml document: [%s]\n", arg->s);
 		return NULL;
 	}
 	methodCall_node = mi_xmlNodeGetNodeByName(doc->children,
 						MI_XMLRPC_HTTP_XML_METHOD_CALL_NODE);
 	if (methodCall_node==NULL) {
+		xml_errcode= ERR_MISS_METCALL;
 		LM_ERR("missing node %s\n", MI_XMLRPC_HTTP_XML_METHOD_CALL_NODE);
 		goto xml_error;
 	}
 	methodName_node = mi_xmlNodeGetNodeByName(methodCall_node->children,
 						MI_XMLRPC_HTTP_XML_METHOD_NAME_NODE);
 	if (methodName_node==NULL) {
+		xml_errcode= ERR_MISS_METNAME;
 		LM_ERR("missing node %s\n", MI_XMLRPC_HTTP_XML_METHOD_NAME_NODE);
 		goto xml_error;
 	}
 	miCmd.s = (char*)xmlNodeGetContent(methodName_node);
 	if (miCmd.s==NULL) {
+		xml_errcode= ERR_MISS_METNAME;
 		LM_ERR("missing content for node %s\n",
 				MI_XMLRPC_HTTP_XML_METHOD_NAME_NODE);
 		goto xml_error;
@@ -510,6 +514,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 
 	f = lookup_mi_cmd(miCmd.s, miCmd.len);
 	if (f == NULL) {
+		xml_errcode = ERR_NOT_AVAIL;
 		LM_ERR("unable to find mi command [%.*s]\n", miCmd.len, miCmd.s);
 		goto xml_error;
 	}
@@ -528,6 +533,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 		hdl = mi_xmlrpc_http_build_async_handler();
 		if (hdl==NULL) {
 			LM_ERR("failed to build async handler\n");
+			xml_errcode = ERR_INTERNAL;
 			goto xml_error;
 		}
 	} else {
@@ -540,6 +546,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 		if (arg->s) {
 			mi_cmd = init_mi_tree(0,0,0);
 			if (mi_cmd==NULL) {
+				xml_errcode = ERR_INTERNAL;
 				LM_ERR("the MI tree cannot be initialized!\n");
 				goto xml_error;
 			}
@@ -553,6 +560,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 						value_node = mi_xmlNodeGetNodeByName(param_node->children,
 								MI_XMLRPC_HTTP_XML_VALUE_NODE);
 						if (value_node==NULL) {
+							xml_errcode = ERR_MISS_VALUE;
 							LM_ERR("missing node %s\n",
 									MI_XMLRPC_HTTP_XML_VALUE_NODE);
 							goto xml_error;
@@ -560,18 +568,21 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 						string_node = mi_xmlNodeGetNodeByName(value_node->children,
 								MI_XMLRPC_HTTP_XML_STRING_NODE);
 						if (string_node==NULL) {
+							xml_errcode = ERR_MISS_STRING;
 							LM_ERR("missing node %s\n",
 								MI_XMLRPC_HTTP_XML_STRING_NODE);
 							goto xml_error;
 						}
 						val.s = (char*)xmlNodeGetContent(string_node);
 						if(val.s==NULL){
+							xml_errcode = ERR_EMPTY_STRING;
 							LM_ERR("No content for node [%s]\n",
 								string_node->name);
 							goto xml_error;
 						}
 						val.len = strlen(val.s);
 						if(val.len==0){
+							xml_errcode = ERR_EMPTY_STRING;
 							LM_ERR("Empty content for node [%s]\n",
 								string_node->name);
 							goto xml_error;
@@ -581,6 +592,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 						if (val.len > esc_buf.len) {
 							esc_buf.s = shm_realloc(esc_buf.s, val.len);
 							if (!esc_buf.s) {
+								xml_errcode = ERR_INTERNAL;
 								esc_buf.len = 0;
 								free_mi_tree(mi_cmd);
 								goto xml_error;
@@ -594,6 +606,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 
 						node = &mi_cmd->node;
 						if(!add_mi_node_child(node,MI_DUP_VALUE,NULL,0,esc_val.s,esc_val.len)){
+							xml_errcode = ERR_INTERNAL;
 							LM_ERR("cannot add the child node to the tree\n");
 							free_mi_tree(mi_cmd);
 							goto xml_error;
@@ -615,6 +628,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	mi_rpl = run_mi_cmd(f, mi_cmd,
 				(mi_flush_f *)mi_xmlrpc_http_flush_tree, &html_page_data);
 	if (mi_rpl == NULL) {
+		xml_errcode = ERR_CMD_FAILED;
 		LM_ERR("failed to process the command\n");
 		goto xml_error;
 	} else {

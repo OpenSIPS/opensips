@@ -106,5 +106,11 @@ int mi_xmlrpc_http_build_page(str* page, int max_page_len,
 static union sockaddr_union* sv_socket = NULL;
 static str backend = str_init("xmlrpc");
 
+enum xml_err_enum { ERR_EMPTY=0, ERR_BAD_REQ=1, ERR_NOT_AVAIL=2, ERR_UNEXPECTED,
+	ERR_MISS_METCALL, ERR_MISS_METNAME, ERR_MISS_VALUE, ERR_MISS_STRING,
+	ERR_EMPTY_STRING, ERR_INTERNAL, ERR_CMD_FAILED, ERR_MAX };
+
+static int xml_errcode;
+
 #endif
 
