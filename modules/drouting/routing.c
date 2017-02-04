@@ -111,7 +111,7 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 				LM_ERR("not enough shm mem to resize\n");
 				goto error;
 			}
-			memset( p+pgwl_size, 0, 2*pgwl_size*sizeof(pgw_list_t));
+			memset( p+pgwl_size, 0, pgwl_size*sizeof(pgw_list_t));
 			memcpy( p, pgwl, pgwl_size*sizeof(pgw_list_t));
 			pkg_free(pgwl);
 			pgwl_size*=2;
