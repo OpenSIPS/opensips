@@ -1104,6 +1104,8 @@ static int w_match_dialog(struct sip_msg *msg)
 	int backup,i;
 	void *match_param = NULL;
 	struct sip_uri *r_uri;
+	str s;
+	char *p;
 
 
 	/* dialog already found ? */
@@ -1139,7 +1141,29 @@ static int w_match_dialog(struct sip_msg *msg)
 					r_uri->u_val[i].len,r_uri->u_val[i].s);
 				/* pass the param value to the matching funcs */
 				match_param = (void *)(&r_uri->u_val[i]);
+				break;
 			}
+		if (match_param==NULL) {
+			/* looking for ".did.hash.label" in the USERNAME */
+			s = r_uri->user;
+			while( (p=q_memchr(s.s,DLG_SEPARATOR,s.len))!=NULL ) {
+				if ( s.s+s.len-p-1 > rr_param.len+2 ) {
+					if (strncmp( p+1, rr_param.s, rr_param.len)==0 &&
+					p[rr_param.len+1]==DLG_SEPARATOR ) {
+						p += rr_param.len+2;
+						s.len = s.s+s.len-p;
+						s.s = p;
+						match_param = (void*)(&s);
+						break;
+					}
+				}
+				if (p+1<s.s+s.len) {
+					s.len = s.s+s.len-p+1;
+					s.s = p+1;
+				} else
+					break;
+			}
+		}
 	}
 
 sipwise:

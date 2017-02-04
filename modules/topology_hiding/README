@@ -216,6 +216,9 @@ modparam("topology_hiding", "th_contact_encode_param", "customparam")
    Optionally,the function also receives a string parameter, which
    holds string flags. Current options for the string flags are :
      * U - Propagate the Username in the Contact header URI
+     * D - Dialog ID (DID) is pushed into Contact username, rather
+       than URI param. This option makes sense only when using
+       topology hiding with dialog support.
      * C - Encode the callid header
        There are many cases where propagating the callid towards
        the callee side is not a good idea, since sometimes the

@@ -376,15 +376,24 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 			contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
 			if(parse_uri(contact.s, contact.len, &ctu) < 0) {
 				LM_ERR("Bad Contact URI\n");
+				if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER))
+					prefix_len += RR_DLG_PARAM_SIZE + 1;
 			} else {
 				ct_username = ctu.user.s;
 				ct_username_len = ctu.user.len;
 				LM_DBG("Trying to propagate username [%.*s]\n",ct_username_len,
 									ct_username);
-				if (ct_username_len > 0)
+				if (ct_username_len > 0) {
 					prefix_len += 1 + /* @ */ + ct_username_len;
+					if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER))
+						prefix_len += RR_DLG_PARAM_SIZE;
+				} else if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER)) {
+					prefix_len += RR_DLG_PARAM_SIZE + 1;
+				}
 			}
 		}
+	} else if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER)) {
+		prefix_len += RR_DLG_PARAM_SIZE + 1;
 	}
 
 	prefix = pkg_malloc(prefix_len);
@@ -393,7 +402,10 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 		goto error;
 	}
 
-	suffix_len = RR_DLG_PARAM_SIZE+1; /* > */
+	if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER))
+		suffix_len = 1; /* > */
+	else
+		suffix_len = RR_DLG_PARAM_SIZE+1; /* > */
 	if (th_param_list) {
 		if ( parse_contact(msg->contact)<0 ||
 			((contact_body_t *)msg->contact->parsed)->contacts==NULL ||
@@ -450,28 +462,59 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 		goto error;
 	}
 
-	memcpy(prefix,"<sip:", 5);
-	if (dlg_api.is_mod_flag_set(dlg,TOPOH_KEEP_USER) && ct_username_len > 0) {
-		memcpy(prefix+5,ct_username,ct_username_len);
-		prefix[prefix_len-1] = '@';
-	}
-
 	rr_param = dlg_api.get_rr_param();
+
+	p = prefix;
+	memcpy( p, "<sip:", 5);
+	p += 5;
+	if (dlg_api.is_mod_flag_set(dlg,TOPOH_KEEP_USER) && ct_username_len > 0) {
+		memcpy( p, ct_username, ct_username_len);
+		p += ct_username_len;
+	}
+	if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER)) {
+		if (p==prefix+5)
+			*(p++) = 'X';
+		/* add '.' */
+		*(p++) = DLG_SEPARATOR;
+		/* add "did" */
+		memcpy(p,rr_param->s,rr_param->len);
+		p+=rr_param->len;
+		/* add '.' */
+		*(p++) = DLG_SEPARATOR;
+		/* add hash entry as hexa */
+		n = RR_DLG_PARAM_SIZE - (p-prefix);
+		if (int2reverse_hex( &p, &n, dlg->h_entry)==-1)
+			return -1;
+		/* add '.' */
+		*(p++) = DLG_SEPARATOR;
+		/* add hash entry as hexa */
+		n = RR_DLG_PARAM_SIZE - (p-prefix);
+		if (int2reverse_hex( &p, &n, dlg->h_id)==-1)
+			return -1;
+	}
+	if (p!=prefix+5)
+		*(p++) = '@';
+
+	prefix_len = p - prefix;
+
 	p_init = p = suffix;
-	*p++ = ';';
-	memcpy(p,rr_param->s,rr_param->len);
-	p+=rr_param->len;
-	*p++ = '=';
 
-	n = RR_DLG_PARAM_SIZE - (p-p_init);
-	if (int2reverse_hex( &p, &n, dlg->h_entry)==-1)
-		return -1;
+	if (!dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER)) {
+		*p++ = ';';
+		memcpy(p,rr_param->s,rr_param->len);
+		p+=rr_param->len;
+		*p++ = '=';
 
-	*(p++) = DLG_SEPARATOR;
+		n = RR_DLG_PARAM_SIZE - (p-p_init);
+		if (int2reverse_hex( &p, &n, dlg->h_entry)==-1)
+			return -1;
 
-	n = RR_DLG_PARAM_SIZE - (p-p_init);
-	if (int2reverse_hex( &p, &n, dlg->h_id)==-1)
-		return -1;
+		*(p++) = DLG_SEPARATOR;
+
+		n = RR_DLG_PARAM_SIZE - (p-p_init);
+		if (int2reverse_hex( &p, &n, dlg->h_id)==-1)
+			return -1;
+	}
 
 	if (th_param_list) {
 		for (el=th_param_list;el;el=el->next) {

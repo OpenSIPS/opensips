@@ -212,6 +212,10 @@ int w_topology_hiding1(struct sip_msg *req,char *param)
 				flags |= TOPOH_HIDE_CALLID;
 				LM_DBG("Will change callid while doing topo hiding\n");
 				break;
+			case 'D':
+				flags |= TOPOH_DID_IN_USER;
+				LM_DBG("Will push DID into contact username\n");
+				break;
 			default:
 				LM_DBG("unknown topology_hiding flag : [%c] . Skipping\n",*p);
 		}
