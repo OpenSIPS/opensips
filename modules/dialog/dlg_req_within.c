@@ -477,6 +477,7 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 	unsigned long long d_id;
 	struct dlg_cell * dlg = NULL;
 	str *mi_extra_hdrs = NULL;
+	str dialog_id;
 	int status, msg_len;
 	char *msg;
 	char *end;
@@ -495,14 +496,7 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 	/* parse first param as long long (dialog_id ) */
 	if ( node->value.s==NULL || node->value.len==0 )
 		goto error;
-	/* make value null terminated (in an ugly way) */
-	bkp = node->value.s[node->value.len];
-	node->value.s[node->value.len] = 0;
-	/* conver to long long */
-	d_id = strtoll( node->value.s, &end, 10);
-	node->value.s[node->value.len] = bkp;
-	if (end-node->value.s!=node->value.len)
-		goto error; /* not a number*/
+	dialog_id = node->value;
 
 	/* second param (optional) is the extra hdrs */
 	if (node->next) {
@@ -511,17 +505,31 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 			mi_extra_hdrs = &node->value;
 	}
 
-	h_entry = (unsigned int)(d_id>>(8*sizeof(int)));
-	h_id = (unsigned int)(d_id &
-		(((unsigned long long)1<<(8*sizeof(int)))-1) );
+	/* Get the dialog based of the dialog_id. This may be a
+	 * numerical DID or a string SIP Call-ID */
 
-	LM_DBG("ID: %llu (h_entry %u h_id %u)\n", d_id, h_entry, h_id);
+	/* make value null terminated (in an ugly way) */
+	bkp = dialog_id.s[dialog_id.len];
+	dialog_id.s[dialog_id.len] = 0;
+	/* conver to long long */
+	d_id = strtoll( dialog_id.s, &end, 10);
+	dialog_id.s[dialog_id.len] = bkp;
+	if (end-dialog_id.s==dialog_id.len) {
+		/* the ID is numeric, so let's consider it DID */
+		h_entry = (unsigned int)(d_id>>(8*sizeof(int)));
+		h_id = (unsigned int)(d_id &
+			(((unsigned long long)1<<(8*sizeof(int)))-1) );
+		LM_DBG("ID: %llu (h_entry %u h_id %u)\n", d_id, h_entry, h_id);
+		dlg = lookup_dlg(h_entry, h_id);
+	} else {
+		/* the ID is not a number, so let's consider
+		 * the value a SIP call-id */
+		LM_DBG("Call-ID: <%.*s>\n", dialog_id.len, dialog_id.s);
+		dlg = get_dlg_by_callid( &dialog_id );
+	}
 
-	dlg = lookup_dlg(h_entry, h_id);
-
-	/* lookup_dlg has incremented the reference count !! */
-
-	if(dlg){
+	if (dlg) {
+		/* lookup_dlg has incremented the reference count !! */
 		init_dlg_term_reason(dlg,"MI Termination",sizeof("MI Termination")-1);
 
 		if ( dlg_end_dlg( dlg, mi_extra_hdrs) ) {

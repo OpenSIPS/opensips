@@ -2177,18 +2177,13 @@ $var(account) = $dlg_val(account_type);
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:dlg_list:_reply_fifo_file_
-		_empty_line_
-		</programlisting>
-		<programlisting  format="linespecific">
-		:dlg_list:_reply_fifo_file_
-		abcdrssfrs122444@192.168.1.1
-		AAdfeEFF33
-		</programlisting>
-		<programlisting  format="linespecific">
-		:dlg_list:_reply_fifo_file_
-		40
-		10
+		## list all ongoing dialogs
+		opensipsctl fifo dlg_list
+		## list the dialog by callid and From TAG
+		opensipsctl fifo dlg_list abcdrssfrs122444@192.168.1.1 AAdfeEFF33
+		## list 10 dialogs, starting from the position 40
+		## (in the list of all ongoing dialogs)
+		opensipsctl fifo dlg_list 40 10
 		</programlisting>
 		</section>
 
@@ -2212,8 +2207,7 @@ $var(account) = $dlg_val(account_type);
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:dlg_list_ctx:_reply_fifo_file_
-		_empty_line_
+		opensipsctl fifo dlg_list_ctx
 		</programlisting>
 		</section>
 
@@ -2233,8 +2227,10 @@ $var(account) = $dlg_val(account_type);
 		<para>Parameters are:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>dialog_id</emphasis> - numerical unique ID of the 
-				dialog (as provided by dlg_list)
+				<emphasis>dialog_id</emphasis> - this is an identifier
+				of the dialog - it can be either (1) the numerical unique ID 
+				of the dialog (as provided by dlg_list), either (2) the 
+				SIP Call-ID of the dialog.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>extra_hdrs</emphasis> - (optional) string containg
@@ -2249,9 +2245,10 @@ $var(account) = $dlg_val(account_type);
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:dlg_end_dlg:_reply_fifo_file_
-		1391569858236
-		_empty_line_
+		# terminate the dialog via the internal Dialog-ID
+		opensipsctl fifo dlg_end_dlg 1391569858236
+		# terminate the dialog via its SIP Call-ID
+		opensipsctl fifo dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
 		</programlisting>
 		</section>
 
@@ -2283,9 +2280,7 @@ $var(account) = $dlg_val(account_type);
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:profile_get_size:_reply_fifo_file_
-		inbound_calls
-		_empty_line_
+		opensipsctl fifo profile_get_size inbound_calls
 		</programlisting>
 		</section>
 
@@ -2319,9 +2314,7 @@ $var(account) = $dlg_val(account_type);
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:profile_list_dlgs:_reply_fifo_file_
-		inbound_calls
-		_empty_line_
+		opensipsctl fifo profile_list_dlgs inbound_calls
 		</programlisting>
 		</section>
 
@@ -2347,9 +2340,7 @@ $var(account) = $dlg_val(account_type);
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:profile_get_values:_reply_fifo_file_
-		inbound_calls
-		_empty_line_
+		opensipsctl fifo profile_get_values inbound_calls
 		</programlisting>
 		</section>
 		<section>
@@ -2375,9 +2366,7 @@ $var(account) = $dlg_val(account_type);
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:profile_end_dlgs:_reply_fifo_file_
-		inbound_calls
-		_empty_line_
+		opensipsctl fifo profile_end_dlgs inbound_calls
 		</programlisting>
 		</section>
 		<section>
@@ -2395,8 +2384,7 @@ $var(account) = $dlg_val(account_type);
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:dlg_db_sync:_reply_fifo_file_
-		_empty_line_
+		opensipsctl fifo dlg_db_sync
 		</programlisting>
 		</section>
 
@@ -2414,8 +2402,7 @@ $var(account) = $dlg_val(account_type);
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:dlg_restore_db:_reply_fifo_file_
-		_empty_line_
+		opensipsctl fifo dlg_restore_db
 		</programlisting>
 		</section>
 
@@ -2434,8 +2421,7 @@ $var(account) = $dlg_val(account_type);
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:list_all_profiles:_reply_fifo_file_
-		_empty_line_
+		opensipsctl fifo list_all_profiles
 		</programlisting>
 		</section>
 
