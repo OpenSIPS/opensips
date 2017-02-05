@@ -521,38 +521,6 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 			ref_dlg(dlg,1);
 		}
 
-		if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
-			if (0 != insert_ping_timer( dlg)) {
-				LM_CRIT("Unable to insert ping dlg %p [%u:%u] on event %d [%d->%d] "
-					"with clid '%.*s' and tags '%.*s' '%.*s'\n",
-					dlg, dlg->h_entry, dlg->h_id, event, old_state, new_state,
-					dlg->callid.len, dlg->callid.s,
-					dlg->legs[DLG_CALLER_LEG].tag.len,
-					dlg->legs[DLG_CALLER_LEG].tag.s,
-					dlg->legs[callee_idx(dlg)].tag.len,
-					ZSW(dlg->legs[callee_idx(dlg)].tag.s));
-			} else {
-				/* reference dialog as kept in ping timer list */
-				ref_dlg(dlg,1);
-			}
-		}
-
-		if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER || dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
-			if (0 != insert_reinvite_ping_timer( dlg)) {
-				LM_CRIT("Unable to insert ping dlg %p [%u:%u] on event %d [%d->%d] "
-					"with clid '%.*s' and tags '%.*s' '%.*s'\n",
-					dlg, dlg->h_entry, dlg->h_id, event, old_state, new_state,
-					dlg->callid.len, dlg->callid.s,
-					dlg->legs[DLG_CALLER_LEG].tag.len,
-					dlg->legs[DLG_CALLER_LEG].tag.s,
-					dlg->legs[callee_idx(dlg)].tag.len,
-					ZSW(dlg->legs[callee_idx(dlg)].tag.s));
-			} else {
-				/* reference dialog as kept in reinvite ping timer list */
-				ref_dlg(dlg,1);
-			}
-		}
-
 		/* save the settings to the database,
 		 * if realtime saving mode configured- save dialog now
 		 * else: the next time the timer will fire the update*/
@@ -1807,10 +1775,12 @@ early_check:
 		/* within dialog request */
 		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, NULL, 0);
 
-		LM_DBG("EARLY event %d successfully processed (dst_leg=%d)\n",event,dst_leg);
-			if (dst_leg==-1 || switch_cseqs(dlg, dst_leg) != 0 ||
-				update_cseqs(dlg,req,dst_leg,0))
-				LM_ERR("cseqs update failed on leg=%d\n",dst_leg);
+		LM_DBG("EARLY event %d successfully processed (dst_leg=%d)\n",
+			event,dst_leg);
+
+		if (dst_leg==-1 || switch_cseqs(dlg, dst_leg) != 0 ||
+		update_cseqs(dlg,req,dst_leg,0))
+			LM_ERR("cseqs update failed on leg=%d\n",dst_leg);
 	}
 
 	if(new_state==DLG_STATE_CONFIRMED && old_state==DLG_STATE_CONFIRMED_NA){
@@ -1820,6 +1790,41 @@ early_check:
 
 		if (dialog_replicate_cluster)
 			replicate_dialog_updated(dlg);
+
+		if (dlg->flags & DLG_FLAG_PING_CALLER ||
+		dlg->flags & DLG_FLAG_PING_CALLEE) {
+			if (0 != insert_ping_timer( dlg)) {
+				LM_CRIT("Unable to insert ping dlg %p [%u:%u] on event %d "
+					"[%d->%d] with clid '%.*s' and tags '%.*s' '%.*s'\n",
+					dlg, dlg->h_entry, dlg->h_id, event, old_state, new_state,
+					dlg->callid.len, dlg->callid.s,
+					dlg->legs[DLG_CALLER_LEG].tag.len,
+					dlg->legs[DLG_CALLER_LEG].tag.s,
+					dlg->legs[callee_idx(dlg)].tag.len,
+					ZSW(dlg->legs[callee_idx(dlg)].tag.s));
+			} else {
+				/* reference dialog as kept in ping timer list */
+				ref_dlg(dlg,1);
+			}
+		}
+
+		if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+		dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+			if (0 != insert_reinvite_ping_timer( dlg)) {
+				LM_CRIT("Unable to insert ping dlg %p [%u:%u] on event %d "
+					"[%d->%d] with clid '%.*s' and tags '%.*s' '%.*s'\n",
+					dlg, dlg->h_entry, dlg->h_id, event, old_state, new_state,
+					dlg->callid.len, dlg->callid.s,
+					dlg->legs[DLG_CALLER_LEG].tag.len,
+					dlg->legs[DLG_CALLER_LEG].tag.s,
+					dlg->legs[callee_idx(dlg)].tag.len,
+					ZSW(dlg->legs[callee_idx(dlg)].tag.s));
+			} else {
+				/* reference dialog as kept in reinvite ping timer list */
+				ref_dlg(dlg,1);
+			}
+		}
+
 	}
 
 	return;
