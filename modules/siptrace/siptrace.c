@@ -2093,25 +2093,34 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[2].val.str_val.s = t->method.s;
 	db_vals[2].val.str_val.len = t->method.len;
 
-
-	if(trace_local_ip.s && trace_local_ip.len > 0){
-		set_columns_to_trace_local_ip(db_vals[4], db_vals[5], db_vals[6]);
-	}
-	else {
-		set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-			&msg->rcv.dst_ip, msg->rcv.dst_port, msg->rcv.proto);
-	}
-
 	strcpy(statusbuf, int2str(ps->code, &len));
 	db_vals[3].val.str_val.s = statusbuf;
 	db_vals[3].val.str_val.len = len;
 
-	memset(&to_ip, 0, sizeof(struct ip_addr));
 	dst = (struct dest_info*)ps->extra2;
+
+	if (trace_local_ip.s && trace_local_ip.len > 0){
+		set_columns_to_trace_local_ip( db_vals[4], db_vals[5], db_vals[6]);
+	}
+	else {
+		if(dst==NULL || dst->send_sock==0 || dst->send_sock->sock_str.s==0)
+		{
+			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+					&msg->rcv.dst_ip, msg->rcv.dst_port, msg->rcv.proto);
+		} else {
+			char *nbuff = proto2str(dst->send_sock->proto,fromip_buff);
+			db_vals[4].val.str_val.s = fromip_buff;
+			db_vals[4].val.str_val.len = nbuff - fromip_buff;
+			db_vals[5].val.str_val = dst->send_sock->address_str;
+			db_vals[6].val.int_val = dst->send_sock->port_no;
+		}
+	}
+
 	if(dst==0)
 	{
 		set_columns_to_any( db_vals[7], db_vals[8], db_vals[9]);
 	} else {
+		memset(&to_ip, 0, sizeof(struct ip_addr));
 		su2ip_addr(&to_ip, &dst->to);
 		set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
 			&to_ip, (unsigned long)su_getport(&dst->to), dst->proto);
