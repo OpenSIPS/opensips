@@ -31,6 +31,7 @@ Bogdan-Andrei Iancu
               1.4.2. acc_db_url (string)
               1.4.3. b2b_scenario (string)
               1.4.4. wrapup_time (integer)
+              1.4.5. queue_pos_param (string)
 
         1.5. Exported Functions
 
@@ -67,8 +68,9 @@ Bogdan-Andrei Iancu
    1.2. Set acc_db_url parameter
    1.3. Set b2b_scenario parameter
    1.4. Set wrapup_time parameter
-   1.5. cc_handle_call usage
-   1.6. cc_agent_login usage
+   1.5. Set queue_pos_param parameter
+   1.6. cc_handle_call usage
+   1.7. cc_agent_login usage
 
 Chapter 1. Admin Guide
 
@@ -238,6 +240,20 @@ modparam("call_center", "b2b_scenario", "call center")
 modparam("call_center", "wrapup_time", 45)
 ...
 
+1.4.5. queue_pos_param (string)
+
+   The name of an SIP URI parameter to be used to report the
+   position in the waiting queue when sending the call to media
+   server for onwait/queue playback. The position 0 means it is
+   the next call to be delivered to an agent.
+
+   Default value is “empty(none)”.
+
+   Example 1.5. Set queue_pos_param parameter
+...
+modparam("call_center", "queue_pos_param", "cc_pos")
+...
+
 1.5. Exported Functions
 
 1.5.1.  cc_handle_call(flowID)
@@ -265,7 +281,7 @@ modparam("call_center", "wrapup_time", 45)
      * -4 - no agents logged in the flow;
      * -5 - internal error;
 
-   Example 1.5. cc_handle_call usage
+   Example 1.6. cc_handle_call usage
 ...
 if (is_method("INVITE") and !has_totag()) {
         if (!cc_handle_call("tech_support")) {
@@ -285,7 +301,7 @@ if (is_method("INVITE") and !has_totag()) {
    state is an integer value giving the new state - 0 means logged
    off, anything else means logged in.
 
-   Example 1.6. cc_agent_login usage
+   Example 1.7. cc_agent_login usage
 ...
 # log off the 'agentX' agent
 cc_agent_login("agentX","0");
@@ -484,31 +500,31 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    3.2.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    3.3.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.

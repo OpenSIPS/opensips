@@ -915,7 +915,7 @@ void print_queue(struct cc_data *data)
 }
 
 
-void cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top)
+int cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top)
 {
 	struct cc_call *call_it;
 	int n = 0;
@@ -971,6 +971,8 @@ void cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top)
 
 	if (call->queue_start==0)
 		call->queue_start = get_ticks();
+
+	return data->queue.calls_no-1-n;
 }
 
 

@@ -85,6 +85,9 @@ stat_var *stg_onhold_calls = 0;
 /* a default of 30 secs wrapup time for agents */
 unsigned int wrapup_time = 30;
 
+/* the name of the URI param to report the queue position */
+str queue_pos_param = {NULL,0};
+
 
 
 static cmd_export_t cmds[]={
@@ -101,12 +104,13 @@ static param_export_t mod_params[]={
 	{ "acc_db_url",           STR_PARAM, &acc_db_url.s         },
 	{ "b2b_scenario",         STR_PARAM, &b2b_scenario.s       },
 	{ "wrapup_time",          INT_PARAM, &wrapup_time          },
+	{ "queue_pos_param",      STR_PARAM, &queue_pos_param.s    },
 	{ 0,0,0 }
 };
 
 
 static mi_export_t mi_cmds[] = {
-	{ "cc_reload",      "", mi_cc_reload,     MI_NO_INPUT_FLAG, 0, mi_child_init},
+	{ "cc_reload",      "", mi_cc_reload,    MI_NO_INPUT_FLAG,0,mi_child_init},
 	{ "cc_agent_login", "", mi_agent_login,                  0, 0, 0},
 	{ "cc_list_queue",  "", mi_cc_list_queue, MI_NO_INPUT_FLAG, 0, 0},
 	{ "cc_list_flows",  "", mi_cc_list_flows, MI_NO_INPUT_FLAG, 0, 0},
@@ -118,14 +122,14 @@ static mi_export_t mi_cmds[] = {
 
 
 static stat_export_t mod_stats[] = {
-	{"ccg_incalls",               0,              &stg_incalls                     },
-	{"ccg_awt",                   STAT_IS_FUNC,   (stat_var**)stg_awt              },
-	{"ccg_load",                  STAT_IS_FUNC,   (stat_var**)stg_load             },
-	{"ccg_distributed_incalls",   0,              &stg_dist_incalls                },
-	{"ccg_answered_incalls" ,     0,              &stg_answ_incalls                },
-	{"ccg_abandonned_incalls" ,   0,              &stg_aban_incalls                },
-	{"ccg_onhold_calls",          STAT_NO_RESET,  &stg_onhold_calls                },
-	{"ccg_free_agents",           STAT_IS_FUNC,   (stat_var**)stg_free_agents      },
+	{"ccg_incalls",             0,             &stg_incalls                  },
+	{"ccg_awt",                 STAT_IS_FUNC,  (stat_var**)stg_awt           },
+	{"ccg_load",                STAT_IS_FUNC,  (stat_var**)stg_load          },
+	{"ccg_distributed_incalls", 0,             &stg_dist_incalls             },
+	{"ccg_answered_incalls" ,   0,             &stg_answ_incalls             },
+	{"ccg_abandonned_incalls" , 0,             &stg_aban_incalls             },
+	{"ccg_onhold_calls",        STAT_NO_RESET, &stg_onhold_calls             },
+	{"ccg_free_agents",         STAT_IS_FUNC,  (stat_var**)stg_free_agents   },
 	{0,0,0}
 };
 
@@ -240,6 +244,8 @@ static int mod_init(void)
 	init_db_url( db_url , 0 /*cannot be null*/);
 	init_db_url( acc_db_url , 0 /*cannot be null*/);
 	b2b_scenario.len = strlen(b2b_scenario.s);
+	if (queue_pos_param.s)
+		queue_pos_param.len = strlen(queue_pos_param.s);
 
 	/* Load B2BUA API */
 	if (load_b2b_logic_api( &b2b_api) != 0) {

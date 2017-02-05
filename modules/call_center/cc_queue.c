@@ -24,10 +24,12 @@
  *  2014-03-17 initial version (bogdan)
  */
 
+#include "../../ut.h"
 #include "cc_queue.h"
 
 extern stat_var *stg_terminated_calls;
 extern stat_var *stg_dist_incalls;
+extern str queue_pos_param;
 
 
 /* this function must be call under
@@ -40,6 +42,9 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 	struct cc_agent *agent;
 	str *out = NULL;
 	int state =0;
+	int pos = -1;
+	int len;
+	char *s;
 
 	switch (call->state) {
 		case CC_CALL_NONE:
@@ -81,7 +86,7 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 					break;
 				}
 				/* add it to queue */
-				cc_queue_push_call( data, call, 0);
+				pos = cc_queue_push_call( data, call, 0);
 			}
 			break;
 		case CC_CALL_TOAGENT:
@@ -94,10 +99,24 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 	}
 
 	if (out) {
-		leg->s = (char*)pkg_malloc( out->len );
+		/* compute the new SIP URI */
+		/* report the queue position ? */
+		if (queue_pos_param.s && pos>=0)
+			s = int2str((unsigned long)pos, &len);
+		else
+			s = NULL;
+		leg->s = (char*)pkg_malloc(out->len+(s?(queue_pos_param.len+len+2):0));
 		if (leg->s) {
 			leg->len = out->len;
 			memcpy(leg->s,out->s,out->len);
+			if (s) {
+				leg->s[leg->len++] = ';';
+				memcpy(leg->s+leg->len, queue_pos_param.s,queue_pos_param.len);
+				leg->len += queue_pos_param.len;
+				leg->s[leg->len++] = '=';
+				memcpy(leg->s+leg->len, s, len);
+				leg->len += len;
+			}
 			call->prev_state = call->state;
 			call->state = state;
 			return 0;
