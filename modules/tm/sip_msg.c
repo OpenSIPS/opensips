@@ -965,7 +965,6 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 
 	/* clone the "updatable" part of the msg */
 
-	LM_DBG("---------mode is %d \n",updatable);
 	switch (updatable) {
 	case 0: /* no update ever -> copy in the same chunk */
 		/* new_uri */
