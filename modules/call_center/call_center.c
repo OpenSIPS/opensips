@@ -485,7 +485,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	int cnt;
 	b2bl_dlg_stat_t* stat = params->stat;
 
-	LM_DBG(" call (%p) has BYE for %d, \n", call, event);
+	LM_DBG(" call (%p) has event %d, \n", call, event);
 
 	lock_set_get( data->call_locks, call->lock_idx );
 	cs = call->state;
@@ -533,7 +533,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		}
 	}
 	
-	if (event==B2B_BYE_CB && params->entity==1) {
+	if (event==B2B_BYE_CB && params->entity==0) {
 		LM_DBG("BYE from the customer\n");
 		/* external caller terminated the call */
 		call->state = CC_CALL_ENDED;
@@ -559,12 +559,12 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		return 2;
 	}
 	/* if reInvite to the customer failed - end the call */
-	if(event == B2B_REJECT_CB && params->entity==1) {
+	if(event == B2B_REJECT_CB && params->entity==0) {
 		lock_set_release( data->call_locks, call->lock_idx );
 		return 1;
 	}
 
-	if(event == B2B_REJECT_CB && params->entity>1) {
+	if(event == B2B_REJECT_CB && params->entity>0) {
 		if(call->state == CC_CALL_TOAGENT) {
 			handle_agent_reject(call, 1, stat->setup_time);
 			lock_set_release( data->call_locks, call->lock_idx );
