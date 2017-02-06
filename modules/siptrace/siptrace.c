@@ -816,27 +816,30 @@ static int mod_init(void)
 		LM_WARN("No trace id defined! The module is useless!\n");
 	}
 
-	sip_trace_id=register_traced_type(SIP_TRACE_TYPE_STR);
-	if (sip_trace_id == -1) {
-		LM_ERR("failed to get an id for \"%s\" tracing!\n", SIP_TRACE_TYPE_STR);
-		return -1;
+	/* this makes sense only if trace protocol is loaded */
+	if ( tprot.send_message ) {
+		sip_trace_id=register_traced_type(SIP_TRACE_TYPE_STR);
+		if (sip_trace_id == -1) {
+			LM_ERR("failed to get an id for \"%s\" tracing!\n", SIP_TRACE_TYPE_STR);
+			return -1;
+		}
+
+		if (register_trace_type == NULL)
+			register_trace_type = &register_traced_type;
+
+		if (check_is_traced == NULL)
+			check_is_traced = &is_id_traced;
+
+		if (get_next_destination == NULL)
+			get_next_destination = get_next_trace_dest;
+
+		if (sip_context_trace == NULL)
+			sip_context_trace = sip_context_trace_impl;
+
+		/* set the global trace api for other modules/functions if loaded */
+		if (tprot.get_trace_dest_by_name && !global_trace_api)
+			global_trace_api = &tprot;
 	}
-
-	if (register_trace_type == NULL)
-		register_trace_type = &register_traced_type;
-
-	if (check_is_traced == NULL)
-		check_is_traced = &is_id_traced;
-
-	if (get_next_destination == NULL)
-		get_next_destination = get_next_trace_dest;
-
-	if (sip_context_trace == NULL)
-		sip_context_trace = sip_context_trace_impl;
-
-	/* set the global trace api for other modules/functions if loaded */
-	if (tprot.get_trace_dest_by_name && !global_trace_api)
-		global_trace_api = &tprot;
 
 	return 0;
 }
@@ -933,7 +936,8 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 		return 0;
 	}
 
-	if (!is_id_traced(sip_trace_id)) {
+	/* makes sense only if trace protocol loaded */
+	if ( tprot.send_message && !is_id_traced(sip_trace_id)) {
 		LM_DBG("sip messages tracing not enabled!\n");
 		return 1;
 	}
@@ -1470,7 +1474,8 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 	}
 
 	/* parse trace types */
-	if (param3 != NULL) {
+	/* this makes sense only if trace protocol is loaded */
+	if ( tprot.send_message && param3 != NULL) {
 		gp = (gparam_p)param3;
 		if (gp->type == GPARAM_TYPE_PVE) {
 			/* they are already parsed */
@@ -2529,6 +2534,11 @@ trace_dest get_next_trace_dest(trace_dest last_dest, int hash)
 int register_traced_type(char* name)
 {
 	int id;
+
+	/* if trace proto not loaded return 0 */
+	if ( !tprot.send_message ) {
+		return 0;
+	}
 
 	if (traced_protos_no + 1 == MAX_TRACED_PROTOS) {
 		LM_BUG("more than %ld types of tracing!"
