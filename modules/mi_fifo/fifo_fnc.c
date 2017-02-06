@@ -506,7 +506,7 @@ static inline struct mi_handler* build_async_handler( char *name, int len)
 	do { \
 		mi_write_err2buf( _buf, _code, _err, __VA_ARGS__); \
 		mi_fifo_reply(_stream, "%d %.*s\n", _code, _buf.len, _buf.s); \
-		if ( f && is_mi_cmd_traced( mi_trace_mod_id, f) ) \
+		if ( (f && is_mi_cmd_traced( mi_trace_mod_id, f)) || !f ) \
 			mi_trace_reply( 0, 0, _code, &_buf, 0, t_dst); \
 	} while(0);
 
@@ -584,6 +584,8 @@ void mi_fifo_server(FILE *fifo_stream)
 			LM_ERR("command %s is not available\n", command);
 			mi_open_reply( file, reply_stream, consume1);
 
+			mi_trace_request( 0, 0, command, strlen(command),
+											0, &backend, t_dst);
 			mi_throw_error( 0, reply_stream, err_reason, INTERNAL_ERR_CODE,
 				consume2, "command '%s' not available", command);
 
@@ -626,7 +628,7 @@ void mi_fifo_server(FILE *fifo_stream)
 
 		LM_DBG("done parsing the mi tree\n");
 
-		if ( (is_mi_cmd_traced(mi_trace_mod_id, f)) ) {
+		if ( (is_mi_cmd_traced(mi_trace_mod_id, f)) || !f ) {
 			mi_trace_request( 0, 0, command, file_sep - command,
 											mi_cmd, &backend, t_dst);
 		}
