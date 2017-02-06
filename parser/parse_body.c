@@ -449,6 +449,7 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 	struct sip_msg_body *dst, *src;
 	struct body_part *p, *np;
 	pb_malloc my_malloc;
+	int extra_len;
 
 	if (src_msg==NULL || src_msg->body==NULL) {
 		*p_dst = NULL;
@@ -458,13 +459,15 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 	my_malloc = shared ? pb_shm_malloc : pb_pkg_malloc;
 	src = src_msg->body;
 
-	/* clone the SIP MSG BODY */ \
-	if ( (dst=my_malloc(sizeof(struct sip_msg_body)))==NULL ) {
+	/* clone the SIP MSG BODY */
+	extra_len = (src->flags&SIP_BODY_FLAG_NEW) ?
+		src->first.mime_s.len+src->first.body.len : 0 ;
+	if ( (dst=my_malloc(sizeof(struct sip_msg_body)+extra_len))==NULL ) {
 		LM_ERR("failed to allocate new sip_msg_body clone (shared=%d)\n",
 			shared);
 		goto err;
 	}
-	memcpy( dst, src, sizeof(struct sip_msg_body));
+	memcpy( dst, src, sizeof(struct sip_msg_body)+extra_len);
 	if (shared)
 		dst->flags |= SIP_BODY_FLAG_SHM;
 	else
@@ -481,20 +484,32 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 		if (np==NULL) { \
 			/* first body part */
 			np = &dst->first;
+			extra_len = 0;
 		} else {
-			if ((np->next=my_malloc(sizeof(struct body_part)))==NULL){
+			extra_len = (p->flags&SIP_BODY_PART_FLAG_NEW) ?
+				p->mime_s.len+p->body.len : 0 ;
+			if((np->next=my_malloc(sizeof(struct body_part)+extra_len))==NULL){
 				LM_ERR("failed to allocate new body_part clone (shared=%d)\n",
 					shared);
 				goto err;
 			} \
 			np = np->next;
 		} \
-		memcpy( np, p, sizeof(struct body_part));
+		memcpy( np, p, sizeof(struct body_part)+extra_len);
 		/* update the links inside it */
 		if (p->flags&SIP_BODY_PART_FLAG_NEW) {
 			/* links are pointing inside the body_part structure */
-			np->body.s = translate_pointer((char*)np ,(char*)p, p->body.s);
-			np->mime_s.s = translate_pointer((char*)np, (char*)p, p->mime_s.s);
+			if (p==&src->first) {
+				np->body.s = translate_pointer((char*)dst ,(char*)src,
+					p->body.s);
+				np->mime_s.s = translate_pointer((char*)dst, (char*)src,
+					p->mime_s.s);
+			} else {
+				np->body.s = translate_pointer((char*)np ,(char*)p,
+					p->body.s);
+				np->mime_s.s = translate_pointer((char*)np, (char*)p,
+					p->mime_s.s);
+			}
 		} else {
 			/* links are pointing inside the sip msg body, so update only
 			 * a new sip msg was provided */ \
