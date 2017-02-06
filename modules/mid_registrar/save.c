@@ -965,7 +965,7 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 	struct mid_reg_info *cti;
 	ucontact_info_t* ci = NULL;
 	ucontact_t* c;
-	contact_t *_c, *__c;
+	contact_t *_c = NULL, *__c;
 	unsigned int cflags;
 	int e, e_out;
 	int e_max = 0;
@@ -2189,7 +2189,7 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 	urecord_t *rec;
 	str flags_str = { NULL, 0 }, to_uri = { NULL, 0 };
 	struct save_ctx sctx;
-	int rc, st;
+	int rc = -1, st;
 
 	if (msg->REQ_METHOD != METHOD_REGISTER) {
 		LM_ERR("ignoring non-REGISTER SIP request (%d)\n", msg->REQ_METHOD);
