@@ -178,6 +178,13 @@ struct module_exports exports = {
 
 static int mod_init(void)
 {
+	/* check if any listeners defined for this proto */
+	if ( !protos[PROTO_HEP_UDP].listeners && !protos[PROTO_HEP_TCP].listeners ) {
+		LM_ERR("No HEP listener defined, neither TCP nor UDP!\n");
+		return -1;
+	}
+
+
 	if (payload_compression) {
 		load_compression =
 			(load_compression_f)find_export("load_compression", 1, 0);
