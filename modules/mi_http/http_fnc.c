@@ -574,7 +574,8 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 	struct mi_root *mi_cmd = NULL;
 	struct mi_root *mi_rpl = NULL;
 	struct mi_handler *hdl = NULL;
-	str miCmd;
+	/* avoid uninit str when tracing */
+	str miCmd={NULL, 0};
 	str buf;
 
 	if (mod<0 && cmd<0) {
@@ -594,6 +595,9 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 	} else {
 		if ( f ) {
 			*is_traced = is_mi_cmd_traced( mi_trace_mod_id, f);
+		} else {
+			/* trace all errors */
+			*is_traced = 1;
 		}
 	}
 
@@ -655,6 +659,10 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 	if (mi_cmd) free_mi_tree(mi_cmd);
 	return mi_rpl;
 error:
+	mi_trace_request( cl_socket, sv_socket, miCmd.s, miCmd.len, mi_cmd, &backend, t_dst);
+	/* trace all errors */
+	*is_traced = 1;
+
 	if (mi_cmd) free_mi_tree(mi_cmd);
 	if (hdl) shm_free(hdl);
 	*async_hdl  = NULL;
