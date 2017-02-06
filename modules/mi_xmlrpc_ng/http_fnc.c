@@ -471,7 +471,8 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	struct mi_root *mi_cmd = NULL;
 	struct mi_root *mi_rpl = NULL;
 	struct mi_handler *hdl = NULL;
-	str miCmd;
+	/* avoid uninit str when tracing */
+	str miCmd={NULL, 0};
 	xmlDocPtr doc;
 	xmlNodePtr methodCall_node;
 	xmlNodePtr methodName_node;
@@ -525,6 +526,9 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	} else {
 		if ( f ) {
 			*is_traced = is_mi_cmd_traced( mi_trace_mod_id, f);
+		} else {
+			/* trace all errors */
+			*is_traced = 1;
 		}
 	}
 
@@ -653,6 +657,11 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	return mi_rpl;
 
 xml_error:
+	mi_trace_request(cl_socket, sv_socket, miCmd.s, miCmd.len,
+				mi_cmd, &backend, t_dst);
+	/* trace all errors */
+	*is_traced= 1;
+
 	if (mi_cmd) free_mi_tree(mi_cmd);
 	if (hdl) shm_free(hdl);
 	*async_hdl = NULL;
