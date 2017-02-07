@@ -53,6 +53,8 @@
 #include "../../mod_fix.h"
 #include "../../db/db.h"
 
+#include "../freeswitch/fs_api.h"
+
 #include "dispatch.h"
 #include "ds_bl.h"
 #include "ds_fixups.h"
@@ -61,6 +63,7 @@
 #define DS_SET_ID_COL		"setid"
 #define DS_DEST_URI_COL		"destination"
 #define DS_DEST_SOCK_COL	"socket"
+#define DS_DEST_COMSOCK_COL	"comm_socket"
 #define DS_DEST_STATE_COL	"state"
 #define DS_DEST_WEIGHT_COL	"weight"
 #define DS_DEST_PRIO_COL	"priority"
@@ -138,6 +141,7 @@ typedef struct {
 str ds_set_id_col     = str_init(DS_SET_ID_COL);
 str ds_dest_uri_col   = str_init(DS_DEST_URI_COL);
 str ds_dest_sock_col  = str_init(DS_DEST_SOCK_COL);
+str ds_dest_comsock_col  = str_init(DS_DEST_COMSOCK_COL);
 str ds_dest_state_col = str_init(DS_DEST_STATE_COL);
 str ds_dest_weight_col= str_init(DS_DEST_WEIGHT_COL);
 str ds_dest_prio_col = str_init(DS_DEST_PRIO_COL);
@@ -159,6 +163,7 @@ ds_partition_t *partitions = NULL, *default_partition = NULL;
 static str dispatcher_event = str_init("E_DISPATCHER_STATUS");
 event_id_t dispatch_evi_id;
 
+int fetch_freeswitch_load;
 
 /** module functions */
 static int mod_init(void);
@@ -245,6 +250,7 @@ static param_export_t params[]={
 	{"setid_col",       STR_PARAM, &ds_set_id_col.s},
 	{"destination_col", STR_PARAM, &ds_dest_uri_col.s},
 	{"socket_col",      STR_PARAM, &ds_dest_sock_col.s},
+	{"comm_socket_col",      STR_PARAM, &ds_dest_comsock_col.s},
 	{"state_col",       STR_PARAM, &ds_dest_state_col.s},
 	{"weight_col",      STR_PARAM, &ds_dest_weight_col.s},
 	{"priority_col",    STR_PARAM, &ds_dest_prio_col.s},
@@ -269,6 +275,7 @@ static param_export_t params[]={
 	{"ds_probing_list",       STR_PARAM|USE_FUNC_PARAM, (void*)set_probing_list},
 	{"ds_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_ds_bl},
 	{"persistent_state",      INT_PARAM, &ds_persistent_state},
+	{"fetch_freeswitch_load", INT_PARAM, &fetch_freeswitch_load},
 	{0,0,0}
 };
 
@@ -278,6 +285,14 @@ static module_dependency_t *get_deps_ds_ping_interval(param_export_t *param)
 		return NULL;
 
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tm", DEP_ABORT);
+}
+
+static module_dependency_t *get_deps_fetch_fs_load(param_export_t *param)
+{
+	if (*(int *)param->param_pointer <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "freeswitch", DEP_ABORT);
 }
 
 static mi_export_t mi_cmds[] = {
@@ -293,7 +308,8 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "ds_ping_interval", get_deps_ds_ping_interval },
+		{ "ds_ping_interval",      get_deps_ds_ping_interval },
+		{ "fetch_freeswitch_load", get_deps_fetch_fs_load },
 		{ NULL, NULL },
 	},
 };
@@ -724,10 +740,17 @@ static int mod_init(void)
 	ds_set_id_col.len = strlen(ds_set_id_col.s);
 	ds_dest_uri_col.len = strlen(ds_dest_uri_col.s);
 	ds_dest_sock_col.len = strlen(ds_dest_sock_col.s);
+	ds_dest_comsock_col.len = strlen(ds_dest_comsock_col.s);
 	ds_dest_state_col.len = strlen(ds_dest_state_col.s);
 	ds_dest_weight_col.len = strlen(ds_dest_weight_col.s);
 	ds_dest_attrs_col.len = strlen(ds_dest_attrs_col.s);
 
+	if (fetch_freeswitch_load) {
+		if (load_fs_api(&fs_api) == -1) {
+			LM_ERR("failed to load the FS API!\n");
+			return -1;
+		}
+	}
 
 	if(hash_pvar_param.s && (hash_pvar_param.len=strlen(hash_pvar_param.s))>0){
 		if(pv_parse_format(&hash_pvar_param, &hash_param_model) < 0

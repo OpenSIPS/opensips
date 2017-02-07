@@ -42,6 +42,7 @@
 #include "../../mod_fix.h"
 #include "../../parser/msg_parser.h"
 #include "../tm/tm_load.h"
+#include "../freeswitch/fs_api.h"
 #include "../../db/db.h"
 #include "../../rw_locking.h"
 
@@ -177,6 +178,7 @@ typedef struct _ds_selected_dst
 extern str ds_set_id_col;
 extern str ds_dest_uri_col;
 extern str ds_dest_sock_col;
+extern str ds_dest_comsock_col;
 extern str ds_dest_state_col;
 extern str ds_dest_weight_col;
 extern str ds_dest_prio_col;
@@ -190,12 +192,16 @@ extern pv_spec_t ds_setid_pv;
 
 /* Structure containing pointers to TM-functions */
 struct tm_binds tmb;
+
+extern struct fs_binds fs_api;
 extern str ds_ping_method;
 extern str ds_ping_from;
 extern int ds_ping_maxfwd;
 extern int probing_threshhold; /* number of failed requests,
 						before a destination is taken into probing */
 extern int ds_probing_mode;
+
+extern int fetch_freeswitch_load;
 
 int init_ds_db(ds_partition_t *partition);
 int ds_connect_db(ds_partition_t *partition);

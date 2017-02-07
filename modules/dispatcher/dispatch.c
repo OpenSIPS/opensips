@@ -78,6 +78,8 @@ extern struct socket_info *probing_sock;
 extern event_id_t dispatch_evi_id;
 extern ds_partition_t *default_partition;
 
+struct fs_binds fs_api;
+
 #define dst_is_active(_dst) \
 	(!((_dst).flags&(DS_INACTIVE_DST|DS_PROBING_DST)))
 
@@ -148,7 +150,7 @@ void ds_destroy_data(ds_partition_t *partition)
 }
 
 
-int add_dest2list(int id, str uri, struct socket_info *sock, int state,
+int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int state,
 							int weight, int prio, str attrs, str description, ds_data_t *d_data)
 {
 	ds_dest_p dp = NULL;
@@ -156,6 +158,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	short new_set = 0;
 	ds_dest_p dp_it, dp_prev;
 	struct sip_uri puri;
+	str ds_str = {MI_SSTR("dispatcher")};
 
 	/* For DNS-Lookups */
 	struct proxy_l *proxy;
@@ -300,6 +303,10 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	/* free al the helper structures */
 	free_proxy(proxy);
 	pkg_free(proxy);
+
+	if (fetch_freeswitch_load && comsock->s && comsock->len > 0) {
+		fs_api.add_hb_evs(comsock, &ds_str, NULL, NULL);
+	}
 
 	/*
 	 * search the proper place based on priority
@@ -750,13 +757,13 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 {
 	ds_data_t *d_data;
-	int i, id, nr_rows, cnt, nr_cols = 8;
+	int i, id, nr_rows, cnt, nr_cols = 9;
 	int state;
 	int weight;
 	int prio;
 	struct socket_info *sock;
 	str uri;
-	str attrs;
+	str attrs, comsock;
 	str host;
 	str description;
 	int port, proto;
@@ -764,9 +771,10 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	db_val_t * values;
 	db_row_t * rows;
 
-	db_key_t query_cols[8] = {&ds_set_id_col, &ds_dest_uri_col,
+	db_key_t query_cols[9] = {&ds_set_id_col, &ds_dest_uri_col,
 			&ds_dest_sock_col, &ds_dest_weight_col, &ds_dest_attrs_col,
-			&ds_dest_prio_col, &ds_dest_description_col, &ds_dest_state_col};
+			&ds_dest_prio_col, &ds_dest_description_col, &ds_dest_state_col,
+			&ds_dest_comsock_col};
 
 	if (!use_state_col)
 		nr_cols--;
@@ -863,10 +871,14 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		else
 			state = VAL_INT(values+7);
 
-		get_str_from_dbval( "DESCIPTION", values+6,
+		/* communication socket */
+		get_str_from_dbval( "COMSOCKET", values+8,
+			0/*not_null*/, 0/*not_empty*/, comsock, error2);
+
+		get_str_from_dbval( "DESCRIPTION", values+6,
 			0/*not_null*/, 0/*not_empty*/, description, error2);
 
-		if (add_dest2list(id, uri, sock, state, weight, prio, attrs, description, d_data)
+		if (add_dest2list(id, uri, sock, &comsock, state, weight, prio, attrs, description, d_data)
 		!= 0) {
 			LM_WARN("failed to add destination <%.*s> in group %d\n",
 				uri.len,uri.s,id);
