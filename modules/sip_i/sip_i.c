@@ -63,9 +63,9 @@ static pv_export_t mod_items[] = {
 
 static cmd_export_t cmds[] = {
 	{"add_isup_part", (cmd_function)add_isup_part_cmd, 0, 0, 0, REQUEST_ROUTE | FAILURE_ROUTE |
-		 ONREPLY_ROUTE | LOCAL_ROUTE},
+		 ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE},
 	{"add_isup_part", (cmd_function)add_isup_part_cmd, 1, 0, 0, REQUEST_ROUTE | FAILURE_ROUTE |
-		 ONREPLY_ROUTE | LOCAL_ROUTE},
+		 ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE},
 	{0,0,0,0,0,0}
 };
 
