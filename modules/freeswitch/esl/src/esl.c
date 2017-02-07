@@ -913,8 +913,10 @@ ESL_DECLARE(int) esl_wait_sock(esl_socket_t sock, uint32_t ms, esl_poll_t flags)
 #ifdef ESL_USE_POLL
 ESL_DECLARE(int) esl_wait_sock(esl_socket_t sock, uint32_t ms, esl_poll_t flags)
 {
-	struct pollfd pfds[2] = { { 0 } };
+	struct pollfd pfds[2];
 	int s = 0, r = 0;
+
+	memset(pfds, 0, 2 * sizeof *pfds);
 
 	if (sock == ESL_SOCK_INVALID) {
 		return ESL_SOCK_INVALID;
@@ -961,7 +963,7 @@ ESL_DECLARE(esl_status_t) esl_connect_timeout(esl_handle_t *handle, const char *
 	char sendbuf[256];
 	int rval = 0;
 	const char *hval;
-	struct addrinfo hints = { 0 }, *result;
+	struct addrinfo hints, *result;
 	struct sockaddr_in *sockaddr_in;
 	struct sockaddr_in6 *sockaddr_in6;
 	socklen_t socklen;
@@ -977,6 +979,8 @@ ESL_DECLARE(esl_status_t) esl_connect_timeout(esl_handle_t *handle, const char *
 	}
 
 #endif
+
+	memset(&hints, 0, sizeof hints);
 
 	if (!handle->mutex) {
 		esl_mutex_create(&handle->mutex);
