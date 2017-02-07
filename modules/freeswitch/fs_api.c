@@ -149,8 +149,8 @@ static fs_evs *mk_fs_evs(str *fs_url)
 	memset(evs, 0, sizeof *evs);
 	INIT_LIST_HEAD(&evs->modules);
 
-	evs->hb_lk = lock_init_rw();
-	if (!evs->hb_lk) {
+	evs->hb_data_lk = lock_init_rw();
+	if (!evs->hb_data_lk) {
 		LM_ERR("out of mem\n");
 		shm_free(evs);
 		return NULL;
@@ -193,15 +193,13 @@ fs_evs *add_hb_evs(str *evs_str, str *tag, ev_hb_cb_f cbf, const void *priv)
 		list_add(&evs->list, fs_boxes);
 	}
 
-	if (!get_fs_mod_ref(evs, tag)) {
-		mref = mk_fs_mod_ref(tag, cbf, priv);
-		if (!mref) {
-			LM_ERR("mk tag failed\n");
-			goto out_err;
-		}
-
-		list_add(&mref->list, &evs->modules);
+	mref = mk_fs_mod_ref(tag, cbf, priv);
+	if (!mref) {
+		LM_ERR("mk tag failed\n");
+		goto out_err;
 	}
+
+	list_add(&mref->list, &evs->modules);
 
 	evs->ref++;
 

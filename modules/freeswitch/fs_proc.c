@@ -54,8 +54,10 @@ static int destroy_fs_evs(fs_evs *evs, int idx)
 		ret = 1;
 	}
 
-	lock_destroy_rw(evs->hb_lk);
+	list_del(&evs->list);
+	lock_destroy_rw(evs->hb_data_lk);
 	shm_free(evs);
+
 	return ret;
 }
 
@@ -69,15 +71,19 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 	cJSON *ev = NULL;
 	char *s, *end;
 
-	LM_DBG("FS data is available!\n");
+	LM_DBG("FS data available on box %s:%d, ref: %d\n",
+	       box->host.s, box->port, box->ref);
 
 	lock_start_read(box_lock);
 	if (box->ref == 0) {
+		lock_stop_read(box_lock);
+		lock_start_write(box_lock);
 		if (destroy_fs_evs(box, idx) != 0) {
 			LM_ERR("failed to destroy FS evs!\n");
 		}
+		lock_stop_write(box_lock);
 
-		goto out;
+		return 0;
 	}
 
 	switch (fm->type) {
@@ -135,9 +141,9 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 			       box->port, hb.id_cpu, hb.sess, hb.max_sess,
 			       box->handle->last_sr_event->body);
 
-			lock_start_write(box->hb_lk);
+			lock_start_write(box->hb_data_lk);
 			box->hb_data = hb;
-			lock_stop_write(box->hb_lk);
+			lock_stop_write(box->hb_data_lk);
 
 			list_for_each(ele, &box->modules) {
 				mod = list_entry(ele, fs_mod_ref, list);

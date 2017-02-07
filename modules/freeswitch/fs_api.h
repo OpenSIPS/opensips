@@ -73,7 +73,7 @@ struct _fs_evs {
 
 	esl_handle_t *handle;
 
-	rw_lock_t *hb_lk;
+	rw_lock_t *hb_data_lk;
 	fs_ev_hb hb_data;
 
 	int ref;
