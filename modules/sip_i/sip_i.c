@@ -288,8 +288,6 @@ void *clone_isup_parsed(struct body_part *old_part, struct body_part *new_part,
 	struct isup_parsed_struct *new_ps, *old_ps;
 	struct opt_param *optp_it, *optp_new = NULL, *optp_prev = NULL;
 
-	LM_INFO("Entering ISUP parsed cloning function\n");
-
 	if (!old_part) {
 		LM_ERR("No old ISUP body part\n");
 		return NULL;
@@ -328,8 +326,6 @@ void *clone_isup_parsed(struct body_part *old_part, struct body_part *new_part,
 		optp_prev = optp_new;
 	}
 
-	LM_INFO("Exiting ISUP parsed cloning function\n");
-
 	return (void *)new_ps;
 }
 
@@ -349,7 +345,7 @@ static struct body_part *get_isup_part(struct sip_msg *msg)
 
 	for (p = &msg->body->first; p; p = p->next)
 		if ((p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_ISUP)) ||
-			(p->flags & SIP_BODY_FLAG_NEW && !str_strcmp(&p->mime_s, &isup_mime))) /* newly added isup part */
+			(p->flags & SIP_BODY_PART_FLAG_NEW && !str_strcmp(&p->mime_s, &isup_mime))) /* newly added isup part */
 			return p;
 
 	return NULL;
