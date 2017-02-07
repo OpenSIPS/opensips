@@ -40,6 +40,8 @@ extern rw_lock_t *box_lock;
 
 static int mod_init(void);
 
+int fs_bind(struct fs_binds *fapi);
+
 static cmd_export_t cmds[] = {
 	{ "fs_bind", (cmd_function)fs_bind, 1, NULL, NULL, 0 },
 	{ NULL, NULL, 0, NULL, NULL, 0 }

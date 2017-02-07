@@ -181,7 +181,7 @@ fs_evs *add_hb_evs(str *evs_str, str *tag, ev_hb_cb_f cbf, const void *priv)
 	lock_start_write(box_lock);
 
 	evs = get_fs_evs(evs_str);
-	LM_DBG("getevs: %p\n", evs);
+	LM_DBG("getevs (%.*s): %p\n", evs_str->len, evs_str->s, evs);
 	if (!evs) {
 		evs = mk_fs_evs(evs_str);
 		if (!evs) {
@@ -238,8 +238,10 @@ out_err:
 	return -1;
 }
 
-int fs_bind(fs_api_t *fapi)
+int fs_bind(struct fs_binds *fapi)
 {
+	LM_INFO("loading FS API ...\n");
+
 	memset(fapi, 0, sizeof *fapi);
 
 	fapi->add_hb_evs = add_hb_evs;

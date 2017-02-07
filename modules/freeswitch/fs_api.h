@@ -82,7 +82,6 @@ struct _fs_evs {
 	struct list_head modules;  /* distinct modules referencing the same box */
 };
 
-typedef struct _fs_api_t fs_api_t;
                        /* host[:port] (8021)       struct/lock/etc. */
 typedef fs_evs* (*add_hb_evs_f) (str *evs_str, str *tag,
                                  ev_hb_cb_f scb, const void *priv);
@@ -93,7 +92,7 @@ typedef int (*del_hb_evs_f) (fs_evs *evs, str *tag);
 fs_evs *add_hb_evs(str *evs_str, str *tag, ev_hb_cb_f scb, const void *priv);
 int del_hb_evs(fs_evs *evs, str *tag);
 
-struct _fs_api_t {
+struct fs_binds {
 	/*
 	 * Creates & registers a new FS "HEARTBEAT" event socket
 	 *	(all FS connections will be managed by one process)
@@ -111,6 +110,21 @@ struct _fs_api_t {
 	del_hb_evs_f del_hb_evs;
 };
 
-int fs_bind(fs_api_t *fapi);
+typedef int (*bind_fs_t)(struct fs_binds *fsb);
+static inline int load_fs_api(struct fs_binds *fsb)
+{
+	bind_fs_t bind_fs;
+
+	bind_fs = (bind_fs_t)find_export("fs_bind", 1, 0);
+	if (!bind_fs) {
+		LM_ERR("can't bind fs!\n");
+		return -1;
+	}
+
+	if (bind_fs(fsb) < 0)
+		return -1;
+
+	return 0;
+}
 
 #endif /* __FREESWITCH_API__ */
