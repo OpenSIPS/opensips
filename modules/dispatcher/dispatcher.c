@@ -878,8 +878,9 @@ static int mod_init(void)
 		}
 
 		/* Register the weight-recalculation timer */
-		if (register_timer("ds-update-weights", ds_update_weights, NULL,
-		FS_HEARTBEAT_ITV, TIMER_FLAG_SKIP_ON_DELAY)<0) {
+		if (fetch_freeswitch_load &&
+		    register_timer("ds-update-weights", ds_update_weights, NULL,
+		                   FS_HEARTBEAT_ITV, TIMER_FLAG_SKIP_ON_DELAY)<0) {
 			LM_ERR("failed to register timer for weight recalc!\n");
 			return -1;
 		}
