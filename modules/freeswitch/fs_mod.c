@@ -65,22 +65,22 @@ static dep_export_t deps = {
 };
 
 struct module_exports exports= {
-	"mid_registrar",        /* module's name */
-	MOD_TYPE_DEFAULT,/* class of this module */
+	"freeswitch",     /* module's name */
+	MOD_TYPE_DEFAULT, /* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS, /* dlopen flags */
-	&deps,           /* OpenSIPS module dependencies */
-	cmds,            /* exported functions */
-	NULL,               /* exported async functions */
-	mod_params,      /* param exports */
-	NULL,       /* exported statistics */
-	NULL,         /* exported MI functions */
-	NULL,       /* exported pseudo-variables */
-	procs,               /* extra processes */
-	mod_init,        /* module initialization function */
-	NULL,               /* reply processing function */
+	DEFAULT_DLFLAGS,  /* dlopen flags */
+	&deps,            /* OpenSIPS module dependencies */
+	cmds,             /* exported functions */
+	NULL,             /* exported async functions */
+	mod_params,       /* param exports */
+	NULL,             /* exported statistics */
+	NULL,             /* exported MI functions */
+	NULL,             /* exported pseudo-variables */
+	procs,            /* extra processes */
+	mod_init,         /* module initialization function */
+	NULL,             /* reply processing function */
 	NULL,
-	NULL       /* per-child init function */
+	NULL              /* per-child init function */
 };
 
 static int mod_init(void)

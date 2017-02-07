@@ -38,6 +38,37 @@ static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv);
 static void free_fs_mod_ref(fs_mod_ref *mref);
 static fs_evs *get_fs_evs(str *hostport);
 
+static void parse_fs_url(str *in, str *host_out, unsigned int *port_out)
+{
+	str st = *in;
+	char *p;
+
+	if (st.len > FS_SOCK_PREFIX_LEN) {
+		if (memcmp(st.s, FS_SOCK_PREFIX, FS_SOCK_PREFIX_LEN) == 0) {
+			st.len -= FS_SOCK_PREFIX_LEN;
+			st.s += FS_SOCK_PREFIX_LEN;
+		}
+	}
+
+	p = memchr(st.s, ':', st.len);
+	if (p != NULL) {
+		host_out->s = p + 1;
+		host_out->len = st.len - (p + 1 - st.s);
+
+		if (str2int(host_out, port_out) != 0) {
+			LM_ERR("failed to parse port '%.*s' %d in host '%.*s'\n",
+			       host_out->len, host_out->s, host_out->len, st.len, st.s);
+			return;
+		}
+
+		host_out->s = st.s;
+		host_out->len = p - st.s;
+	} else {
+		*host_out = st;
+		*port_out = FS_DEFAULT_EVS_PORT;
+	}
+}
+
 static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv)
 {
 	fs_mod_ref *mref = NULL;
@@ -81,15 +112,19 @@ static fs_mod_ref *get_fs_mod_ref(fs_evs *evs, str *tag)
 	return NULL;
 }
 
-static fs_evs *get_fs_evs(str *hostport)
+static fs_evs *get_fs_evs(str *fs_url)
 {
 	struct list_head *ele;
+	str host;
+	unsigned int port;
 	fs_evs *evs;
+
+	parse_fs_url(fs_url, &host, &port);
 
 	list_for_each(ele, fs_boxes) {
 		evs = list_entry(ele, fs_evs, list);
 
-		if (str_strcmp(hostport, &evs->host) == 0) {
+		if (str_strcmp(&host, &evs->host) == 0 && port == evs->port) {
 			return evs;
 		}
 	}
@@ -97,32 +132,16 @@ static fs_evs *get_fs_evs(str *hostport)
 	return NULL;
 }
 
-static fs_evs *mk_fs_evs(str *hostport)
+
+static fs_evs *mk_fs_evs(str *fs_url)
 {
 	fs_evs *evs;
-	char *p;
-	str st;
+	str host;
 	unsigned int port;
 
-	p = memchr(hostport->s, ':', hostport->len);
-	if (p != NULL) {
-		st.s = p + 1;
-		st.len = hostport->len - (p + 1 - hostport->s);
+	parse_fs_url(fs_url, &host, &port);
 
-		if (str2int(&st, &port) != 0) {
-			LM_ERR("failed to parse port '%.*s' %d in host '%.*s'\n",
-			       st.len, st.s, st.len, hostport->len, hostport->s);
-			return NULL;
-		}
-
-		st.s = hostport->s;
-		st.len = p - hostport->s;
-	} else {
-		st = *hostport;
-		port = FS_DEFAULT_EVS_PORT;
-	}
-
-	evs = shm_malloc(sizeof *evs + st.len + 1);
+	evs = shm_malloc(sizeof *evs + host.len + 1);
 	if (!evs) {
 		LM_ERR("out of mem\n");
 		return NULL;
@@ -137,11 +156,11 @@ static fs_evs *mk_fs_evs(str *hostport)
 		return NULL;
 	}
 
-	LM_DBG("new FS box: host=%.*s, port=%d\n", st.len, st.s, port);
+	LM_DBG("new FS box: host=%.*s, port=%d\n", host.len, host.s, port);
 
 	evs->host.s = (char *)(evs + 1);
-	evs->host.len = st.len;
-	memcpy(evs->host.s, st.s, st.len);
+	evs->host.len = host.len;
+	memcpy(evs->host.s, host.s, host.len);
 	evs->host.s[evs->host.len] = '\0';
 
 	evs->port = port;
@@ -162,6 +181,7 @@ fs_evs *add_hb_evs(str *evs_str, str *tag, ev_hb_cb_f cbf, const void *priv)
 	lock_start_write(box_lock);
 
 	evs = get_fs_evs(evs_str);
+	LM_DBG("getevs: %p\n", evs);
 	if (!evs) {
 		evs = mk_fs_evs(evs_str);
 		if (!evs) {

@@ -30,8 +30,12 @@
 #include "../../lib/list.h"
 #include "../../rw_locking.h"
 #include "../../ip_addr.h"
+#include "../../sr_module.h"
 
 #include "esl/src/include/esl.h"
+
+#define FS_SOCK_PREFIX        "fs://"
+#define FS_SOCK_PREFIX_LEN    (sizeof(FS_SOCK_PREFIX) - 1)
 
 #define FS_DEFAULT_EVS_PORT 8021
 #define FS_HEARTBEAT_ITV      20
