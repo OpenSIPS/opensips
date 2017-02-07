@@ -1287,11 +1287,6 @@ set_cgpn:
 	isup_params[param_idx].write_func(param_idx, 6, cgpn->param.val, &new_len, &val);
 	LM_DBG("Calling party number set to: %.*s\n", val.rs.len, val.rs.s);
 
-	cgpn->param.len = new_len;
-	isup_struct->opt_params_list = cgpn;
-	isup_struct->no_opt_params++;
-	isup_struct->total_len += new_len;
-
 	link_new_opt_param(isup_struct, cgpn, new_len);
 
 	return rc;
