@@ -876,6 +876,13 @@ static int mod_init(void)
 			LM_ERR("failed to register timer for probing!\n");
 			return -1;
 		}
+
+		/* Register the weight-recalculation timer */
+		if (register_timer("ds-update-weights", ds_update_weights, NULL,
+		FS_HEARTBEAT_ITV, TIMER_FLAG_SKIP_ON_DELAY)<0) {
+			LM_ERR("failed to register timer for weight recalc!\n");
+			return -1;
+		}
 	}
 
 	/* register timer to flush the state of destination back to DB */

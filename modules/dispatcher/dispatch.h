@@ -82,7 +82,8 @@ typedef struct _ds_dest
 	str attrs;
 	str description;
 	int flags;
-	unsigned short weight;
+	unsigned short in_weight; /* initial weight - must not change at runtime */
+	unsigned short weight;    /* dynamic weight - may change at runtime */
 	unsigned short rr_count; /* times it was chosen in a row for weighted round-robin */
 	unsigned short running_weight;
 	unsigned short active_running_weight;
@@ -95,6 +96,7 @@ typedef struct _ds_dest
 	unsigned short failure_count;
 	unsigned short chosen_count;
 	void *param;
+	fs_evs *fs_sock;
 	struct _ds_dest *next;
 } ds_dest_t, *ds_dest_p;
 
@@ -104,6 +106,7 @@ typedef struct _ds_set
 	int nr;				/* number of items in dst set */
 	int active_nr;		/* number of active items in dst set */
 	int last;			/* last used item in dst set */
+	int redo_weights;   /* whether at least one item has dynamic weight */
 	ds_dest_p dlist;
 	struct _ds_set *next;
 } ds_set_t, *ds_set_p;
@@ -229,6 +232,7 @@ int ds_is_in_list(struct sip_msg *_m, gparam_t *addr, gparam_t *port,
 void ds_check_timer(unsigned int ticks, void* param);
 void ds_flusher_routine(unsigned int ticks, void* param);
 
+void ds_update_weights(unsigned int ticks, void *param);
 
 int check_options_rplcode(int code);
 

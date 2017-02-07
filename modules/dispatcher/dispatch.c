@@ -110,6 +110,7 @@ static void ds_destroy_data_set( ds_data_t *d)
 	ds_set_p  sp;
 	ds_set_p  sp_curr;
 	ds_dest_p dest;
+	str ds_str = {MI_SSTR("dispatcher")};
 
 	/* free the list of sets */
 	sp = d->sets;
@@ -124,6 +125,8 @@ static void ds_destroy_data_set( ds_data_t *d)
 					shm_free(dest->uri.s);
 				if(dest->param)
 					shm_free(dest->param);
+				if (dest->fs_sock)
+					fs_api.del_hb_evs(dest->fs_sock, &ds_str);
 				dest = dest->next;
 			}while(dest);
 			shm_free(sp_curr->dlist);
@@ -258,7 +261,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 
 	/* copy state, weight & socket */
 	dp->sock = sock;
-	dp->weight = weight;
+	dp->in_weight = dp->weight = weight;
 	switch (state) {
 		case 0:
 			dp->flags = 0;
@@ -305,7 +308,12 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 	pkg_free(proxy);
 
 	if (fetch_freeswitch_load && comsock->s && comsock->len > 0) {
-		fs_api.add_hb_evs(comsock, &ds_str, NULL, NULL);
+		dp->fs_sock = fs_api.add_hb_evs(comsock, &ds_str, NULL, NULL);
+		if (!dp->fs_sock) {
+			LM_ERR("failed to create FreeSWITCH stats socket!\n");
+		} else {
+			sp->redo_weights = 1;
+		}
 	}
 
 	/*
@@ -324,7 +332,6 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 		dp_prev->next = dp;
 	}
 	sp->nr++;
-
 
 	if (new_set) {
 		sp->next = d_data->sets;
@@ -358,26 +365,43 @@ err:
 static inline void re_calculate_active_dsts(ds_set_p sp)
 {
 	int j,i;
+	ds_dest_p dst;
 
 	/* pre-calculate the running weights for each destination */
 	for( j=0,i=-1,sp->active_nr=sp->nr ; j<sp->nr ; j++ ) {
+		dst = &sp->dlist[j];
+		if (dst->fs_sock && dst->fs_sock->hb_data.is_valid) {
+			lock_start_read(dst->fs_sock->hb_data_lk);
+
+			dst->weight = round(dst->in_weight *
+			(1 - dst->fs_sock->hb_data.sess /
+			     (float)dst->fs_sock->hb_data.max_sess) *
+			(dst->fs_sock->hb_data.id_cpu / (float)100));
+
+			LM_DBG("weight update for %.*s: %d -> %d (%d %d %.3f)\n",
+			       dst->uri.len, dst->uri.s, dst->in_weight, dst->weight,
+				   dst->fs_sock->hb_data.sess, dst->fs_sock->hb_data.max_sess,
+				   dst->fs_sock->hb_data.id_cpu);
+
+			lock_stop_read(dst->fs_sock->hb_data_lk);
+		}
+
 		/* running weight is the current weight plus the running weight of
 		 * the previous element */
-		sp->dlist[j].running_weight = sp->dlist[j].weight
+		dst->running_weight = dst->weight
 			+ ((j==0) ? 0 : sp->dlist[j-1].running_weight);
 		/* now the running weight for the active destinations */
-		if ( dst_is_active(sp->dlist[j]) ) {
-			sp->dlist[j].active_running_weight = sp->dlist[j].weight
+		if ( dst_is_active(*dst)) {
+			dst->active_running_weight = dst->weight
 				+ ((i==-1) ? 0 : sp->dlist[i].active_running_weight);
 			i = j; /* last active destination */
 		} else {
-			sp->dlist[j].active_running_weight =
+			dst->active_running_weight =
 				((i==-1) ? 0 : sp->dlist[i].active_running_weight);
 			sp->active_nr --;
 		}
 		LM_DBG("destination i=%d, j=%d, weight=%d, sum=%d, active_sum=%d\n",
-			i,j, sp->dlist[j].weight,
-			sp->dlist[j].running_weight,sp->dlist[j].active_running_weight);
+			i,j, dst->weight, dst->running_weight, dst->active_running_weight);
 	}
 }
 
@@ -2351,6 +2375,21 @@ void ds_check_timer(unsigned int ticks, void* param)
 	}
 }
 
+void ds_update_weights(unsigned int ticks, void *param)
+{
+	ds_partition_t *part;
+	ds_set_p sp;
+
+	for (part = partitions; part; part = part->next) {
+		lock_start_write(part->lock);
+		for (sp = (*part->data)->sets; sp; sp = sp->next) {
+			if (sp->redo_weights) {
+				re_calculate_active_dsts(sp);
+			}
+		}
+		lock_stop_write(part->lock);
+	}
+}
 
 int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
 													ds_partition_t *partition)
