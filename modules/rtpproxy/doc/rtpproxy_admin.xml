@@ -75,6 +75,19 @@
 		allow a longer period for call establishment.
 	</para>
 	<para>
+		Note that RTPProxy version
+		<ulink url='http://www.rtpproxy.org/post/v2release/'>v2.0.0</ulink>
+		has integrated this feature upstream, therefore this patch is no
+		longer needed.
+	</para>
+	<para>
+		Starting with commit
+		<ulink url='https://github.com/sippy/rtpproxy/commit/21e59778973c8aa85e26a7ef7a21a02695673656'>
+			21e5977</ulink>, the timeout notification sockets are handled a bit
+		different by RTPProxy. This makes later RTPProxy releases
+		incompatible with &osips;.
+	</para>
+	<para>
 		To enable timeout notification there are several steps that you must follow:
 		<para>
 			Start &osips; timeout detection by setting the <quote>rtpp_notify_socket</quote>
