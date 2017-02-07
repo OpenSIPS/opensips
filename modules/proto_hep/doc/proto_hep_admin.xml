@@ -65,6 +65,49 @@ listen = hep_udp:127.0.0.1:6061 		# change the listening IP
 
 	<section>
 	<title>Exported Parameters</title>
+
+
+	<section>
+		<title><varname>hep_id</varname> (str)</title>
+		<para>
+			Specify a destination for HEP packets and the version of
+			HEP protocol used. All parameters inside
+			<emphasis role="bold">hep_id</emphasis> must be separated by
+			<emphasis role="bold">;</emphasis>. The parameters
+			are given in key-value format, the possible keys being
+			<emphasis role="bold">uri</emphasis>, <emphasis role="bold">transport</emphasis>
+			and <emphasis role="bold">version</emphasis>, except destiantion's
+			URI which doesn't have a key and is in <emphasis role="bold">host:port
+			</emphasis>. <emphasis role="bold">transport</emphasis> key can be
+			<emphasis role="bold">TCP</emphasis> or <emphasis role="bold">UDP</emphasis>.
+			<emphasis role="bold">TCP</emphasis> works only for HEP version 3.
+			<emphasis role="bold">Version</emphasis> is the hep protocol version
+			and can be <emphasis role="bold">1</emphasis>, <emphasis role="bold">2</emphasis>
+			or <emphasis role="bold">3</emphasis>.
+		</para>
+		<para>
+			HEPv1 and HEPv2 can use only UDP. HEPv3 can use both TCP and UDP having the
+			default set to TCP. If no hep version defined, the default is version 3 with TCP.
+		</para>
+		<para>
+			NO default value. If <emphasis role="bold">hep_id</emphasis> the module
+		can't be used for HEP tracing.
+		</para>
+		<example>
+		<title> Set <varname>hep_id</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+/* define a destination to localhost on port 8001 using hepV3 on tcp */
+modparam("proto_hep", "hep_id",
+"[hep_dst] 127.0.0.1:8001; transport=tcp; version=3")
+/* define a destination to 1.2.3.4 on port 5000 using hepV2; no transport(default UDP) */
+modparam("proto_hep", "hep_id", "[hep_dst] 1.2.3.4:5000; version=2")
+/* define only the destination uri; version will be 3(default) and transport TCP(default) */
+modparam("proto_hep", "hep_id", "[hep_dst] 1.2.3.4:5000")
+</programlisting>
+	</example>
+	</section>
+
 	<section>
 		<title><varname>hep_port</varname> (integer)</title>
 		<para>
