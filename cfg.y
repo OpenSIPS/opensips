@@ -763,6 +763,7 @@ assign_stm: DEBUG EQUAL snumber
 			}
 		| EVENT_SHM_THRESHOLD EQUAL error { yyerror("int value expected"); }
 		| EVENT_PKG_THRESHOLD EQUAL NUMBER {
+			#ifdef PKG_MALLOC
 			#ifdef STATISTICS
 			#ifdef USE_SHM_MEM
 				warn("No PKG memory, all allocations are mapped to SHM; "
@@ -776,6 +777,9 @@ assign_stm: DEBUG EQUAL snumber
 			#endif
 			#else
 			yyerror("statistics support not compiled in");
+			#endif
+			#else
+			yyerror("pkg_malloc support not compiled in");
 			#endif
 			}
 		| EVENT_PKG_THRESHOLD EQUAL error { yyerror("int value expected"); }
