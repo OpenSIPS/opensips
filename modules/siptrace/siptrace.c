@@ -1259,7 +1259,7 @@ static int sip_trace_fixup(void **param, int param_no)
 		if (gp->type==GPARAM_TYPE_STR) {
 			tparam->type = TYPE_LIST;
 			if ((tparam->u.lst=get_list_start(&gp->v.sval))==NULL) {
-				LM_ERR("Trace id <%.*s> not defined!\n",
+				LM_ERR("Trace id <%.*s> used in sip_trace() function not defined!\n",
 						gp->v.sval.len, gp->v.sval.s);
 				return -1;
 			}
