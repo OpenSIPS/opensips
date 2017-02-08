@@ -38,6 +38,16 @@ static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv);
 static void free_fs_mod_ref(fs_mod_ref *mref);
 static fs_evs *get_fs_evs(str *hostport);
 
+int is_fs_url(str *in)
+{
+	if (in->len < FS_SOCK_PREFIX_LEN ||
+	    memcmp(in->s, FS_SOCK_PREFIX, FS_SOCK_PREFIX_LEN) != 0) {
+		return 0;
+	}
+
+	return 1;
+}
+
 static void parse_fs_url(str *in, str *host_out, unsigned int *port_out)
 {
 	str st = *in;

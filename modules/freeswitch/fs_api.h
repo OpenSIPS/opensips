@@ -110,6 +110,8 @@ struct fs_binds {
 	del_hb_evs_f del_hb_evs;
 };
 
+int is_fs_url(str *in);
+
 typedef int (*bind_fs_t)(struct fs_binds *fsb);
 static inline int load_fs_api(struct fs_binds *fsb)
 {
