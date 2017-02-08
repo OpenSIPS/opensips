@@ -1029,6 +1029,14 @@ static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 		return;
 	}
 
+	/* we also may end up here via TERMINATE event triggered by internal
+	 * dlg termination -> the requests we have here are dummy, so nothing
+	 * to be done */
+	if (req->via1==NULL) {
+		LM_DBG("dummy request identified, skipping...\n");
+		return;
+	}
+
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(req, HDR_EOH_F, 0)< 0) {
 		LM_ERR("Failed to parse reply\n");
