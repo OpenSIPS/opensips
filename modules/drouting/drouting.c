@@ -1931,16 +1931,20 @@ static inline str* build_ruri(struct sip_uri *uri, int strip, str *pri,
 		str *hostport)
 {
 	static str uri_str;
+	int user_len;
 	char *p;
 
-	if (uri->user.len<=strip) {
-		LM_ERR("stripping %d makes "
-				"username <%.*s> null\n",strip,uri->user.len,uri->user.s);
-		return 0;
-	}
+	if (uri->user.len<=strip)
+		strip = uri->user.len;
+	user_len = uri->user.len - strip + pri->len;
 
-	uri_str.len = 4 /*sip:*/ + uri->user.len - strip +pri->len +
-		(uri->passwd.s?(uri->passwd.len+1):0) + 1/*@*/ + hostport->len +
+	uri_str.len = 4 /*sip:*/ + user_len;
+	if (uri->passwd.s && uri->passwd.len)
+		uri_str.len += uri->passwd.len+1;
+	if ((uri->passwd.s && uri->passwd.len) || user_len > 0)
+		uri_str.len++; /*@*/
+
+	uri_str.len += hostport->len +
 		(uri->params.s?(uri->params.len+1):0) +
 		(uri->headers.s?(uri->headers.len+1):0);
 
@@ -1965,7 +1969,8 @@ static inline str* build_ruri(struct sip_uri *uri, int strip, str *pri,
 		memcpy(p, uri->passwd.s, uri->passwd.len);
 		p += uri->passwd.len;
 	}
-	*(p++)='@';
+	if ((uri->passwd.s && uri->passwd.len) || user_len > 0)
+		*(p++)='@';
 	memcpy(p, hostport->s, hostport->len);
 	p += hostport->len;
 	if (uri->params.s && uri->params.len) {
