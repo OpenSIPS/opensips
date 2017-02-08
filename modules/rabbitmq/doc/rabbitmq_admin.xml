@@ -143,6 +143,7 @@ heartbeat = 5")
 		</programlisting>
 		</example>
 	</section>
+	</section>
 	
 
 	<section>
@@ -228,7 +229,6 @@ heartbeat = 5")
 	</programlisting>
 			</example>
 		</section>
-	</section>
 	</section>
 
 </chapter>

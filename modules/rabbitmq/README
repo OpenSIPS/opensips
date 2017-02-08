@@ -24,7 +24,12 @@ Razvan Crainea
         1.3. Exported Parameters
 
               1.3.1. server_id (string)
-              1.3.2. Exported Functions
+
+        1.4. Exported Functions
+
+              1.4.1. rabbitmq_publish(server_id, routing_key,
+                      message [, [content_type [, headers,
+                      headers_vals]]])
 
    List of Examples
 
@@ -104,9 +109,9 @@ modparam("rabbitmq", "server_id","[ID2] uri = amqp://127.0.0.1;
 heartbeat = 5")
 ...
 
-1.3.2. Exported Functions
+1.4. Exported Functions
 
-1.3.2.1.  rabbitmq_publish(server_id, routing_key, message [,
+1.4.1.  rabbitmq_publish(server_id, routing_key, message [,
 [content_type [, headers, headers_vals]]])
 
    Sends a publish message to a RabbitMQ server.
