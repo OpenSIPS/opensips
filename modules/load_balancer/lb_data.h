@@ -34,6 +34,7 @@
 #include "../../locking.h"
 #include "../../parser/msg_parser.h"
 #include "../dialog/dlg_load.h"
+#include "../freeswitch/fs_api.h"
 #include "lb_parser.h"
 
 #define LB_FLAGS_RELATIVE (1<<0) /* do relative versus absolute estimation. default is absolute */
@@ -61,6 +62,8 @@ struct lb_resource {
 struct lb_resource_map {
 	struct lb_resource *resource;
 	unsigned int max_load;
+
+	int fs_enabled;
 };
 
 struct lb_dst {
@@ -75,6 +78,7 @@ struct lb_dst {
 	unsigned short int ports[LB_MAX_IPS]; /* Port of the request URI */
 	unsigned short int protos[LB_MAX_IPS]; /* Protocol of the request URI */
 	unsigned short ips_cnt;
+	fs_evs *fs_sock;
 	struct lb_dst *next;
 };
 

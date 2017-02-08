@@ -33,8 +33,10 @@
 #include "../../mod_fix.h"
 #include "../../rw_locking.h"
 #include "../../usr_avp.h"
+
 #include "../dialog/dlg_load.h"
 #include "../tm/tm_load.h"
+#include "../freeswitch/fs_api.h"
 
 #include "lb_parser.h"
 #include "lb_db.h"
@@ -60,10 +62,15 @@ static unsigned int lb_prob_interval = 30;
 static unsigned int lb_prob_verbose = 0;
 static str lb_probe_replies = {NULL,0};
 struct tm_binds lb_tmb;
+struct fs_binds fs_api;
+
 str lb_probe_method = str_init("OPTIONS");
 str lb_probe_from = str_init("sip:prober@localhost");
 static int* probing_reply_codes = NULL;
 static int probing_codes_no = 0;
+
+int fetch_freeswitch_load;
+int startup_fs_load = 100;
 
 static int mod_init(void);
 static int child_init(int rank);
@@ -108,6 +115,7 @@ static int w_lb_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
 
 
 static void lb_prob_handler(unsigned int ticks, void* param);
+static void lb_update_max_loads(unsigned int ticks, void *param);
 
 
 
@@ -156,6 +164,8 @@ static param_export_t mod_params[]={
 	{ "probing_from",          STR_PARAM, &lb_probe_from.s          },
 	{ "probing_reply_codes",   STR_PARAM, &lb_probe_replies.s       },
 	{ "lb_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_lb_bl},
+	{ "fetch_freeswitch_load", INT_PARAM, &fetch_freeswitch_load},
+	{ "startup_freeswitch_load", INT_PARAM, &startup_fs_load},
 	{ 0,0,0 }
 };
 
@@ -176,6 +186,14 @@ static module_dependency_t *get_deps_probing_interval(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tm", DEP_ABORT);
 }
 
+static module_dependency_t *get_deps_fetch_fs_load(param_export_t *param)
+{
+	if (*(int *)param->param_pointer <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "freeswitch", DEP_ABORT);
+}
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
@@ -183,7 +201,8 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "probing_interval", get_deps_probing_interval },
+		{ "probing_interval",      get_deps_probing_interval },
+		{ "fetch_freeswitch_load", get_deps_fetch_fs_load },
 		{ NULL, NULL },
 	},
 };
@@ -391,6 +410,13 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (fetch_freeswitch_load) {
+		if (load_fs_api(&fs_api) == -1) {
+			LM_ERR("failed to load the FS API!\n");
+			return -1;
+		}
+	}
+
 	/* data pointer in shm */
 	curr_data = (struct lb_data**)shm_malloc( sizeof(struct lb_data*) );
 	if (curr_data==0) {
@@ -443,6 +469,14 @@ static int mod_init(void)
 		if (register_timer( "lb-pinger", lb_prob_handler , NULL,
 		lb_prob_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 			LM_ERR("failed to register probing handler\n");
+			return -1;
+		}
+
+		/* Register the max load recalculation timer */
+		if (fetch_freeswitch_load &&
+		    register_timer("lb-update-max-load", lb_update_max_loads, NULL,
+		                   FS_HEARTBEAT_ITV, TIMER_FLAG_SKIP_ON_DELAY)<0) {
+			LM_ERR("failed to register timer for max load recalc!\n");
 			return -1;
 		}
 
@@ -891,6 +925,28 @@ static void lb_prob_handler(unsigned int ticks, void* param)
 	lock_stop_read( ref_lock );
 }
 
+static void lb_update_max_loads(unsigned int ticks, void *param)
+{
+	struct lb_dst *dst;
+	int ri;
+
+	lock_start_write(ref_lock);
+	for (dst = (*curr_data)->dsts; dst; dst = dst->next) {
+		if (!dst->fs_sock)
+			continue;
+
+		lock_start_read(dst->fs_sock->hb_data_lk);
+		for (ri = 0; ri < dst->rmap_no; ri++) {
+			if (dst->rmap[ri].fs_enabled) {
+				dst->rmap[ri].max_load =
+					(dst->fs_sock->hb_data.id_cpu / (float)100) *
+					dst->fs_sock->hb_data.max_sess;
+			}
+		}
+		lock_stop_read(dst->fs_sock->hb_data_lk);
+	}
+	lock_stop_write(ref_lock);
+}
 
 /******************** MI commands ***********************/
 

@@ -33,6 +33,8 @@
 
 struct lb_res_str {
 	str name;
+
+	str fs_url;       /* fs_url || val */
 	unsigned int val;
 };
 

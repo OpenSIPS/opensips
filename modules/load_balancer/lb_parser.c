@@ -32,6 +32,8 @@
 #include "../../ut.h"
 #include "../../mem/mem.h"
 
+#include "../freeswitch/fs_api.h"
+
 #include "lb_parser.h"
 
 
@@ -159,7 +161,10 @@ struct lb_res_str_list *parse_resources_list(char *r_list, int has_val)
 			}
 			val.len = ( end?end:(r_list+strlen(r_list)) ) - val.s;
 			for( ; isspace(val.s[val.len-1]) ; val.len--);
-			if (str2int( &val , &lb_rl->resources[n].val)!=0) {
+			if (is_fs_url(&val)) {
+				lb_rl->resources[n].fs_url = val;
+				lb_rl->resources[n].val = 0;
+			} else if (str2int( &val , &lb_rl->resources[n].val)!=0) {
 				LM_ERR("invalid value [%.*s]\n",val.len,val.s);
 				goto error1;
 			}
