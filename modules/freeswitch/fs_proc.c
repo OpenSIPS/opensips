@@ -179,6 +179,7 @@ static int handle_reconnects(int first_run)
 
 	LM_DBG("handling FS reconnects\n");
 
+	lock_start_read(box_lock);
 	list_for_each(ele, fs_boxes) {
 		box = list_entry(ele, fs_evs, list);
 
@@ -241,6 +242,7 @@ static int handle_reconnects(int first_run)
 			continue;
 		}
 	}
+	lock_stop_read(box_lock);
 
 	return ret;
 }
