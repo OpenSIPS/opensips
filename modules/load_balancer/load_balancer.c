@@ -928,7 +928,9 @@ static void lb_prob_handler(unsigned int ticks, void* param)
 static void lb_update_max_loads(unsigned int ticks, void *param)
 {
 	struct lb_dst *dst;
-	int ri;
+	int ri, old, psz;
+
+	LM_DBG("updating max loads...\n");
 
 	lock_start_write(ref_lock);
 	for (dst = (*curr_data)->dsts; dst; dst = dst->next) {
@@ -938,9 +940,31 @@ static void lb_update_max_loads(unsigned int ticks, void *param)
 		lock_start_read(dst->fs_sock->hb_data_lk);
 		for (ri = 0; ri < dst->rmap_no; ri++) {
 			if (dst->rmap[ri].fs_enabled) {
-				dst->rmap[ri].max_load =
+				psz = lb_dlg_binds.get_profile_size(
+				            dst->rmap[ri].resource->profile, &dst->profile_id);
+				old = dst->rmap[ri].max_load;
+
+				/*
+				 * The normal case. OpenSIPS sees, at _most_, the same number
+				 * of sessions as FreeSWITCH does. Any differences must be
+				 * subtracted from the remote "max sessions" value
+				 */
+				if (psz < dst->fs_sock->hb_data.max_sess) {
+					dst->rmap[ri].max_load =
 					(dst->fs_sock->hb_data.id_cpu / (float)100) *
-					dst->fs_sock->hb_data.max_sess;
+						(dst->fs_sock->hb_data.max_sess -
+						 (dst->fs_sock->hb_data.sess - psz));
+				} else {
+					dst->rmap[ri].max_load =
+					(dst->fs_sock->hb_data.id_cpu / (float)100) *
+						dst->fs_sock->hb_data.max_sess;
+				}
+				LM_DBG("load update on FS (%p) %s:%d: "
+				       "%d -> %d (%d %d %.3f), prof=%d\n",
+				       dst->fs_sock, dst->fs_sock->host.s, dst->fs_sock->port,
+				       old, dst->rmap[ri].max_load, dst->fs_sock->hb_data.sess,
+				       dst->fs_sock->hb_data.max_sess,
+				       dst->fs_sock->hb_data.id_cpu, psz);
 			}
 		}
 		lock_stop_read(dst->fs_sock->hb_data_lk);

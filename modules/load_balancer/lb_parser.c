@@ -36,6 +36,7 @@
 
 #include "lb_parser.h"
 
+extern int fetch_freeswitch_load;
 
 struct lb_res_str* search_resource_str( struct lb_res_str_list *lb_rl,
 																	str*name)
@@ -162,12 +163,16 @@ struct lb_res_str_list *parse_resources_list(char *r_list, int has_val)
 			}
 			val.len = ( end?end:(r_list+strlen(r_list)) ) - val.s;
 			for( ; isspace(val.s[val.len-1]) ; val.len--);
-			if (is_fs_url(&val)) {
-				lb_rl->resources[n].fs_url = val;
-				lb_rl->resources[n].val = 0;
-			} else if (str2int( &val , &lb_rl->resources[n].val)!=0) {
-				LM_ERR("invalid value [%.*s]\n",val.len,val.s);
-				goto error1;
+
+			if (str2int(&val, &lb_rl->resources[n].val) != 0) {
+				if (fetch_freeswitch_load && is_fs_url(&val)) {
+					LM_DBG("setting FS URL!\n");
+					lb_rl->resources[n].fs_url = val;
+					lb_rl->resources[n].val = 0;
+				} else {
+					LM_ERR("invalid value [%.*s]\n",val.len,val.s);
+					goto error1;
+				}
 			}
 		} else {
 			lb_rl->resources[n].val = 0;
